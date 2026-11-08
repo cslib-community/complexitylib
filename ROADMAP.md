@@ -519,8 +519,11 @@ index links to canonical definitions rather than keeping a second set.
   separately: their broader collapse is conditional on the explicit circuit-hardness assumption,
   with resetting-error and time regimes distinguished from KMPS's unconditional results.
 - **Randomized logspace** ([#459], [#474]): two-sided `BPL` amplification, the random-walk proof
-  of `USTCON ∈ RL` (membership already follows from `L_subset_RL` and `USTCON_mem_L`), Nisan's
-  generator, `BPL ⊆ L²` and Saks–Zhou. The preprint route to native `RL = L` remains open in
+  of `USTCON ∈ RL` (membership already follows from `L_subset_RL` and `USTCON_mem_L`), the
+  space-efficient computability of Nisan's generator and the bridge from configuration graphs to
+  read-once programs (its fooling theorem for read-once branching programs is
+  [#3187](https://github.com/cslib-community/complexitylib/issues/3187)), `BPL ⊆ L²` and
+  Saks–Zhou. The preprint route to native `RL = L` remains open in
   [#1444](https://github.com/cslib-community/complexitylib/issues/1444). Its estimator work in
   [#1721](https://github.com/cslib-community/complexitylib/issues/1721) has an integer-grid slack
   schedule with endpointwise telescoping and summable available-scale precision payments.
