@@ -41,14 +41,16 @@ permutations. -/
 example : ∀ τ : Equiv.Perm (Fin 3), ∑ i, c3 (i, scaledAuctionPerm c3 i) ≤ ∑ i, c3 (i, τ i) := by
   decide +kernel
 
-/-- On the costs scaled by `n + 1 = 4`, the auction makes `3` bids and ends at prices `[2, 9, 7]`,
-well within `bids_scaledAuctionPerm_le` with row cost range `C = 4`. -/
-example : (auction (fun e => 4 * c3 e) 1).bids = 3 ∧
-    (List.finRange 3).map (auction (fun e => 4 * c3 e) 1).price = [2, 9, 7] := by
+/-- The exact auction `scaledAuction c3` (costs scaled by `n + 1 = 4`, `ε = 1`) makes `3` bids and
+ends at prices `[2, 9, 7]`. The row cost ranges of `c3` are at most `C = 5`, so
+`bids_scaledAuction_le` allows `3 * (4 * 5 + 1) + 1 = 64` bids. -/
+example : (scaledAuction c3).bids = 3 ∧
+    (List.finRange 3).map (scaledAuction c3).price = [2, 9, 7] ∧
+    (∀ i j k : Fin 3, c3 (i, k) - c3 (i, j) ≤ 5) ∧ 3 * ((3 + 1) * 5 + 1) + 1 = 64 := by
   decide +kernel
 
 /-- The final prices satisfy `1`-complementary slackness (`isEpsCompSlack_auctionPerm`)
-but not `0`-complementary slackness: person `1` could gain `1` by switching to object `2`. -/
+but not `0`-complementary slackness: person `1` could gain `1` by switching to object `1`. -/
 example : IsEpsCompSlack (fun e => (3 + 1) * c3 e) 1 (scaledAuctionPerm c3)
       (auction (fun e => (3 + 1) * c3 e) 1).price ∧
     ¬ IsEpsCompSlack (fun e => (3 + 1) * c3 e) 0 (scaledAuctionPerm c3)
@@ -87,9 +89,12 @@ def tie : Fin 3 × Fin 3 → ℤ := fun e => if e.2 = 2 then 0 else -10
 /-- The row cost range of `tie` is `10`, and `bidBound 3 10 1 = 34`. -/
 example : (∀ i j k : Fin 3, tie (i, k) - tie (i, j) ≤ 10) ∧ bidBound 3 10 1 = 34 := by decide
 
-/-- With `ε = 1` the persons bid the prices of objects `0` and `1` up in steps of `ε` until object
-`2` becomes competitive: `13` bids, within the bound `34` of `bids_auction_le`. All assignments
-are optimal for `tie`, and the output is `0 ↦ 2, 1 ↦ 0, 2 ↦ 1`. -/
+/-- With `ε = 1`, starting from the empty assignment, the persons bid the prices of objects `0`
+and `1` up alternately, by `ε` at the first bid and then mostly by `2 ε` per bid (as in
+[Bertsekas1998], Fig. 1.14, which starts instead from the partial assignment
+`{(1, 1), (2, 2)}`), until both prices reach `C + ε = 11` and object `2` receives a bid: `13`
+bids, within the bound `34` of `bids_auction_le`. All assignments are optimal for `tie`, and the
+output is `0 ↦ 2, 1 ↦ 0, 2 ↦ 1`. -/
 example : (auction tie 1).bids = 13 ∧
     (List.finRange 3).map (auctionPerm tie one_pos) = [2, 0, 1] := by
   decide +kernel

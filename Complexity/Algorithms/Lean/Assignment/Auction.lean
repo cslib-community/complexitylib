@@ -49,10 +49,12 @@ when the bidder has a single object; we raise the price by `ε` instead, which a
   objects, which is not charged. There is no `TimeM` accounting here.
 * The bid bound `bids_auction_le` is pseudo-polynomial: at most `n (C + ε) / ε + 1` bids when every
   row has cost range at most `C`; it comes from the measure `n (C + ε) - ∑ j, p j`, which every bid
-  lowers by at least `ε` and which stays nonnegative while some person is unassigned. This matches
-  the pure (unscaled) auction's `O(n A C / ε)` running time of [Bertsekas1988], §1, with `A = n²`
-  arcs. The `ε`-scaling version and its `O(n A log (n C))` bound ([Bertsekas1998], Prop. 7.3) are
-  not formalized.
+  lowers by at least `ε` and which stays nonnegative while some person is unassigned. With an
+  `O(n)` scan per bid this gives `O(n² C / ε)` operations, consistent with (and, on complete
+  instances with `A = n²` arcs, sharper than) the pure (unscaled) auction's `O(n A C / ε)` running
+  time of [Bertsekas1988], §1. There `C = max |a i j|`; here `C` bounds the row cost ranges, so
+  `C = 2 max |c (i, j)|` is always admissible. The `ε`-scaling version and its
+  `O(n A log (n C))` bound ([Bertsekas1998], Prop. 7.3) are not formalized.
 * Integer costs and prices, complete bipartite instances (every person may take every object),
   and square instances (`n` persons, `n` objects) only. The Jacobi (parallel bidding), reverse and
   asymmetric auctions of [Bertsekas1998], §7.1–7.2 are not covered.
@@ -63,7 +65,8 @@ when the bidder has a single object; we raise the price by `ε` instead, which a
   the auction as a Lean program.
 * `bidBound`, `costSpread`, `auction`: the fuel bound and the complete algorithm.
 * `auctionPerm c hε`: the computed assignment, as a permutation of `Fin n`.
-* `scaledAuctionPerm c`: the auction run on `(n + 1) • c` with `ε = 1`.
+* `scaledAuction c`, `scaledAuctionPerm c`: the exact auction, run on `(n + 1) • c` with `ε = 1`,
+  and its assignment.
 * `AuctionInv`: the invariant (partial matching, exact free list, unassigned objects at price `0`,
   `ε`-complementary slackness).
 
@@ -78,7 +81,7 @@ when the bidder has a single object; we raise the price by `ε` instead, which a
   satisfies `ε`-complementary slackness with the final prices, costs at most `n * ε` more than every
   assignment, and the final prices give a dual certificate of this ([Bertsekas1998], Props. 1.4
   and 7.2).
-* `sum_scaledAuctionPerm_le`, `bids_scaledAuctionPerm_le`: exact optimality for integer costs after
+* `sum_scaledAuctionPerm_le`, `bids_scaledAuction_le`: exact optimality for integer costs after
   scaling by `n + 1` with `ε = 1` ([Bertsekas1988], §3; [Bertsekas1998], §7.1.4), within
   `n ((n + 1) C + 1) + 1` bids.
 
@@ -592,9 +595,17 @@ theorem sum_auctionPerm_le_rowPotential (hε : 0 < ε) :
   have := (isEpsCompSlack_auctionPerm (c := c) hε).sum_le_rowPotential
   rwa [Fintype.card_fin, nsmul_eq_mul] at this
 
-/-- The auction on the costs scaled by `n + 1`, with `ε = 1`. -/
+/-- The exact auction: the auction on the costs scaled by `n + 1`, with `ε = 1`. -/
+@[expose] def scaledAuction (c : Fin n × Fin n → ℤ) : AuctionState n :=
+  auction (fun e => ((n : ℤ) + 1) * c e) 1
+
+/-- The assignment computed by the exact auction `scaledAuction`. -/
 @[expose] def scaledAuctionPerm (c : Fin n × Fin n → ℤ) : Equiv.Perm (Fin n) :=
   auctionPerm (fun e => ((n : ℤ) + 1) * c e) one_pos
+
+/-- `scaledAuctionPerm c` reads the assignment off the final state `scaledAuction c`. -/
+theorem scaledAuctionPerm_apply (c : Fin n × Fin n → ℤ) (i : Fin n) :
+    scaledAuctionPerm c i = (scaledAuction c).objectOf i := rfl
 
 /-- **Exact optimality** for integer costs ([Bertsekas1998], Prop. 7.2 with integer data and
 `ε < 1 / n`; scaling by `n + 1` as in [Bertsekas1988], §3): on the costs scaled by `n + 1` and with
@@ -609,15 +620,15 @@ theorem sum_scaledAuctionPerm_le (τ : Equiv.Perm (Fin n)) :
   have := mul_le_mul_of_nonneg_left hlt' (by positivity : (0 : ℤ) ≤ n + 1)
   linarith
 
-/-- **Bid bound for the exact algorithm**: if every row cost range is at most `C`, the scaled
-auction behind `scaledAuctionPerm` makes at most `n ((n + 1) C + 1) + 1` bids. -/
-theorem bids_scaledAuctionPerm_le {C : ℤ} (hC : ∀ i j k, c (i, k) - c (i, j) ≤ C) :
-    (auction (fun e => ((n : ℤ) + 1) * c e) 1).bids ≤ n * (((n : ℤ) + 1) * C + 1).toNat + 1 := by
+/-- **Bid bound for the exact algorithm**: if every row cost range is at most `C`, the exact
+auction `scaledAuction` makes at most `n ((n + 1) C + 1) + 1` bids. -/
+theorem bids_scaledAuction_le {C : ℤ} (hC : ∀ i j k, c (i, k) - c (i, j) ≤ C) :
+    (scaledAuction c).bids ≤ n * (((n : ℤ) + 1) * C + 1).toNat + 1 := by
   have hC' : ∀ i j k, ((n : ℤ) + 1) * c (i, k) - ((n : ℤ) + 1) * c (i, j) ≤ ((n : ℤ) + 1) * C :=
     fun i j k => by
       rw [← mul_sub]
       exact mul_le_mul_of_nonneg_left (hC i j k) (by positivity)
   have := bids_auction_le (c := fun e => ((n : ℤ) + 1) * c e) one_pos hC'
-  simpa only [bidBound, Int.toNat_one, Nat.div_one] using this
+  simpa only [scaledAuction, bidBound, Int.toNat_one, Nat.div_one] using this
 
 end Cslib.Algorithms.Lean.Assignment
