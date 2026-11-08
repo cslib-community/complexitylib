@@ -1151,11 +1151,12 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Quantum query lower bounds**
   ([#3203](https://github.com/cslib-community/complexitylib/issues/3203)): Ambainis's relational
   adversary bound (Theorems 2 and 6 of the source) gives the bounded-error parity, majority,
-  threshold, Tribes and `AND`-of-`OR`s lower bounds, including promise versions. Next: the
-  Nayak–Wu promise-threshold bound `Ω(√(N/Δ) + √(a(N − a))/Δ)` via relations between distant weight
-  layers, and the weighted, spectral and negative-weight (general) adversaries for arbitrary
-  relations. Non-Boolean input alphabets (permutation inversion, Theorem 7) need the
-  value-query model above.
+  threshold, Tribes and `AND`-of-`OR`s lower bounds, including promise versions. The containment
+  relation between two weight layers gives the Nayak–Wu promise-threshold bound
+  `Ω(√(N/Δ) + √(m(N − m))/Δ)` and the `Ω(1/ε)` approximate-median bound. Next: the weighted,
+  spectral and negative-weight (general) adversaries for arbitrary relations, and the
+  approximate-count and `k`th-smallest consequences of Nayak–Wu. Non-Boolean input alphabets
+  (permutation inversion, Theorem 7) need the value-query model above.
 
 - **Shor's algorithm:** bounded-error polynomial-time integer factoring and discrete logarithms
   in the native uniform quantum-circuit model, with explicit input/output encodings, success

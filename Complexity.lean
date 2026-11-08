@@ -2922,6 +2922,7 @@ public import Complexity.Computability.QueryComplexity.Quantum.Adversary
 public import Complexity.Computability.QueryComplexity.Quantum.AmbainisAdversary
 public import Complexity.Computability.QueryComplexity.Quantum.AmbainisAdversary.Symmetric
 public import Complexity.Computability.QueryComplexity.Quantum.AmbainisAdversary.Tribes
+public import Complexity.Computability.QueryComplexity.Quantum.AmbainisAdversary.WeightLayers
 public import Complexity.Computability.QueryComplexity.Quantum.BernsteinVazirani
 public import Complexity.Computability.QueryComplexity.Quantum.BitQuery
 public import Complexity.Computability.QueryComplexity.Quantum.Composition
