@@ -27,7 +27,11 @@ related mechanical fixes when they share a contract and validation; split at ind
 boundaries rather than creating a PR per cleanup. Include a checked client for a new API and
 instances showing that bundled hypotheses can be met. Preserve
 the original authors and licenses when porting code; cite mathematical sources in module
-docstrings through [references.bib](references.bib), whose entries stay sorted by key.
+docstrings through [references.bib](references.bib), whose entries stay sorted by key. Two
+branches that add entries between the same neighbours conflict as text;
+`scripts/resolve_bib_conflict.py` merges the file entry by entry and refuses when both sides
+changed one entry. To have `git merge` use it for `references.bib`, run once per clone:
+`git config merge.bibkeys.driver 'python3 scripts/resolve_bib_conflict.py --driver %O %A %B'`.
 
 Develop against representative clients and state the public contract: model or encodings,
 mathematical behavior, and resource or security claim. Test automation on ordinary expressions,
@@ -298,6 +302,8 @@ where they teach a reusable method or a model boundary. Agents should be able to
 maintained account without repeating the investigation or relying on earlier conversations.
 Keep the Agent Operator's Manual short and directed at the person driving the agents; put
 participant procedures in the Operator's Manual and historical evidence in its supplement.
+Place a new section where its topic belongs in a chapter rather than at the end: sections that
+concurrent PRs append at the same place conflict in the merge queue.
 
 Keep executable Lean examples in `ComplexityTests/` or the checked Verso guide and link their
 complete source, including imports and local context. Use checked excerpts rather than a second

@@ -1257,11 +1257,6 @@ private theorem bind_four_comm_fifth {α₁ α₂ α₃ α₄ α₅ β : Type*}
   congr 1; funext a₃
   exact PMF.bind_comm p₄ p₅ (fun a₄ a₅ => PMF.pure (F a₁ a₂ a₃ a₄ a₅))
 
-private theorem ofList_take_eq_ofList (m : ℕ) (w : List Bool) :
-    ofList m (w.take m) = ofList m w := by
-  funext i
-  simp [ofList, List.getD_eq_getElem?_getD, List.getElem?_take_of_lt i.isLt]
-
 private theorem ofList_ofFn_ofList_of_le {m L : ℕ} (h : m ≤ L) (w : List Bool) :
     ofList m (List.ofFn (ofList L w)) = ofList m w := by
   funext i
@@ -1360,7 +1355,7 @@ private theorem entropy_fullGen_condSeedSet_ge (g : List Bool → List Bool) (im
     have hmap_lhl : D_lhl = D_out.map (fun y : BitString L => ofList m_lhl (List.ofFn y)) := by
       simp only [D_lhl, D_out, PMF.map_comp, Function.comp_def]
       congr 1; funext z
-      rw [ofList_take_eq_ofList, ofList_ofFn_ofList_of_le (lhlPrefixLen_le_output d γ k n)]
+      rw [BitString.ofList_take, ofList_ofFn_ofList_of_le (lhlPrefixLen_le_output d γ k n)]
     rw [hmap_out, hmap_lhl]
     exact PMF.entropy_map_le D_out _
   let packLHL
