@@ -55,18 +55,6 @@ private theorem swap_least {α β : Type*} [DecidableEq α] [LinearOrder β]
   · rw [Equiv.swap_apply_of_ne_of_ne hwa hwb]
     exact hσ w hw hwa
 
-private theorem swap_greatest {α β : Type*} [DecidableEq α] [LinearOrder β]
-    {S : Finset α} {a b : α} (hb : b ∈ S) {σ : α ≃ β}
-    (hσ : ∀ w ∈ S, w ≠ a → σ w < σ a) :
-    ∀ w ∈ S, w ≠ b → ((Equiv.swap a b).trans σ) w < ((Equiv.swap a b).trans σ) b := by
-  intro w hw hwb
-  simp only [Equiv.trans_apply, Equiv.swap_apply_right]
-  by_cases hwa : w = a
-  · rw [hwa, Equiv.swap_apply_left]
-    exact hσ b hb (fun h => hwb (hwa.trans h.symm))
-  · rw [Equiv.swap_apply_of_ne_of_ne hwa hwb]
-    exact hσ w hw hwa
-
 variable {α β : Type*} [Fintype α] [DecidableEq α] [Fintype β] [DecidableEq β] [LinearOrder β]
 
 /-- In a uniform random bijection `σ : α ≃ β` into a linear order `β`, each element of a nonempty
@@ -105,31 +93,16 @@ subset `S ⊆ α` is the greatest element of `S` for exactly a `1 / |S|` fractio
 theorem card_filter_greatest_mul_card {S : Finset α} {u : α} (hu : u ∈ S) :
     (univ.filter fun σ : α ≃ β => ∀ w ∈ S, w ≠ u → σ w < σ u).card * S.card =
       Fintype.card (α ≃ β) := by
-  set E : α → Finset (α ≃ β) := fun x => univ.filter fun σ => ∀ w ∈ S, w ≠ x → σ w < σ x
-  have hconj {a b : α} (hb : b ∈ S) {σ : α ≃ β} (hσ : σ ∈ E a) :
-      (Equiv.swap a b).trans σ ∈ E b := by
-    simp only [E, mem_filter, mem_univ, true_and] at hσ ⊢
-    exact swap_greatest hb hσ
-  have heq : ∀ x ∈ S, (E x).card = (E u).card := fun x hx =>
-    card_nbij' (fun σ => (Equiv.swap x u).trans σ) (fun σ => (Equiv.swap u x).trans σ)
-      (fun σ hσ => hconj hu hσ) (fun σ hσ => hconj hx hσ)
-      (fun σ _ => by ext v; simp [Equiv.swap_comm u x])
-      (fun σ _ => by ext v; simp [Equiv.swap_comm u x])
-  have hcover : (univ : Finset (α ≃ β)) = S.biUnion E := by
-    ext σ
-    simp only [mem_univ, mem_biUnion, true_iff]
-    obtain ⟨x, hx, hmax⟩ := S.exists_max_image σ ⟨u, hu⟩
-    refine ⟨x, hx, ?_⟩
-    simp only [E, mem_filter, mem_univ, true_and]
-    exact fun w hw hwx => lt_of_le_of_ne (hmax w hw) (fun h => hwx (σ.injective h))
-  have hdisj : (S : Set α).PairwiseDisjoint E := by
-    intro x _ y _ hxy
-    refine disjoint_left.2 fun σ hx hy => ?_
-    simp only [E, mem_filter, mem_univ, true_and] at hx hy
-    exact lt_asymm (hy x ‹_› hxy) (hx y ‹_› (Ne.symm hxy))
-  have hcard : Fintype.card (α ≃ β) = (univ : Finset (α ≃ β)).card := card_univ.symm
-  change (E u).card * S.card = _
-  rw [hcard, hcover, card_biUnion hdisj, sum_congr rfl heq, sum_const, smul_eq_mul, mul_comm]
+  have h := card_filter_least_mul_card (β := OrderDual β) hu
+  have hequiv : (univ.filter fun σ : α ≃ β => ∀ w ∈ S, w ≠ u → σ w < σ u).card =
+      (univ.filter fun σ : α ≃ OrderDual β => ∀ w ∈ S, w ≠ u → σ u < σ w).card := by
+    refine card_nbij' (fun σ => σ.trans OrderDual.toDual) (fun σ => σ.trans OrderDual.ofDual)
+      (fun σ hσ => by simpa [OrderDual.toDual_lt_toDual] using hσ)
+      (fun σ hσ => by simpa [OrderDual.toDual_lt_toDual] using hσ)
+      (fun σ _ => by ext; simp) (fun σ _ => by ext; simp)
+  have hcard : Fintype.card (α ≃ OrderDual β) = Fintype.card (α ≃ β) :=
+    Fintype.card_congr (Equiv.equivCongr (Equiv.refl α) OrderDual.toDual)
+  rw [hequiv, h, hcard]
 
 omit [Fintype β] [DecidableEq β] [LinearOrder β] in
 /-- In a uniform random permutation of a finite linear order `α`, each element of a nonempty
