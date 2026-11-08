@@ -780,8 +780,12 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 ### Proof complexity
 
-- Proof-space lower bounds, Frege, polynomial calculus and sum-of-squares, and certified DPLL
-  solver runtimes.
+- Proof-space lower bounds, polynomial calculus and sum-of-squares, and certified DPLL solver
+  runtimes.
+- **Frege** ([#3069](https://github.com/cslib-community/complexitylib/issues/3069)): implicational
+  completeness of the Hilbert-style system (Kalmár); formula-size measures; the simulation of
+  resolution as a p-simulation of Cook–Reckhow proof systems, with encodings and translation
+  time; the mutual p-simulation of Frege systems; and Extended Frege.
 - **Cutting planes:** Krajíček's feasible interpolation for cutting planes with bounded
   coefficients and the resulting clique–colouring lower bound
   ([#2019](https://github.com/cslib-community/complexitylib/issues/2019), M4); Pudlák's
