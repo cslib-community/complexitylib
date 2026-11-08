@@ -38,8 +38,9 @@ of `(U * V) x y`, so it has the right sign (`PrivateCoin.exists_solvesUnbounded_
 `PrivateCoin.uppComplexityFun_le_log_signRank_add_two`). All probabilities are dyadic, so finitely
 many private random bits suffice; the lower bound holds for any finite number of them.
 
-As a consequence equality, which needs `⌈log₂ |X|⌉ + 1` bits deterministically, needs at most three
-with unbounded error (`PrivateCoin.uppComplexityFun_equality_le_three`).
+As a consequence equality on a finite set `X`, which needs `⌈log₂ |X|⌉ + 1` bits deterministically
+when `|X| ≥ 2` (`ecomplexityFun_equality`), needs at most three with unbounded error
+(`PrivateCoin.uppComplexityFun_equality_le_three`).
 
 The cost model is that of `PrivateCoin`: the depth of the protocol tree, with the output at the
 leaves known to both players and private random strings of finite, unbounded length. Sherstov and
@@ -184,7 +185,6 @@ private theorem exists_int_weights [Finite X] [Finite Y] {r : ℕ} (U : Matrix X
     simp only [S]
     ring
 
-
 namespace PrivateCoin
 
 variable {a b : ℕ}
@@ -193,29 +193,27 @@ variable {a b : ℕ}
 random strings on which it answers `false`, minus the number on which it answers `true`, multiplied
 by the sign of `f x y`, is `2 ^ a * 2 ^ b * (1 - 2 * errorProb)`. -/
 theorem signMatrix_mul_sum (P : PrivateCoin a b X Y Bool) (f : X → Y → Bool) (x : X) (y : Y) :
-    signMatrix ℝ f x y * ∑ s, ∑ t, (if P.run (x, s) (y, t) then (-1 : ℝ) else 1) =
+    signMatrix ℝ f x y * ∑ s, ∑ t, BitString.signVal (P.run (x, s) (y, t)) =
       2 ^ a * 2 ^ b * (1 - 2 * P.errorProb (fun x y z => f x y = z) x y) := by
-  classical
-  have h : ∀ s t, signMatrix ℝ f x y * (if P.run (x, s) (y, t) then (-1 : ℝ) else 1) =
+  have h : ∀ s t, signMatrix ℝ f x y * BitString.signVal (P.run (x, s) (y, t)) =
       1 - 2 * (if ¬f x y = P.run (x, s) (y, t) then 1 else 0) := by
     intro s t
-    rw [signMatrix_apply]
-    cases f x y <;> cases P.run (x, s) (y, t) <;> norm_num
+    rw [signMatrix_apply_eq_signVal, BitString.signVal_mul_signVal]
+    split_ifs <;> norm_num
   rw [errorProb_eq_card, mul_sum]
   simp only [mul_sum, h]
   rw [← Fintype.sum_prod_type' (f := fun s t => 1 - 2 * (if ¬f x y = P.run (x, s) (y, t) then
     (1 : ℝ) else 0)), sum_sub_distrib, ← mul_sum, sum_boole, sum_const, card_univ,
-    Fintype.card_prod, BitString.card, BitString.card]
+    Fintype.card_prod, BitString.card, BitString.card, nsmul_eq_mul, mul_one]
   have : (0 : ℝ) < 2 ^ a * 2 ^ b := by positivity
+  push_cast
   field_simp
-  ring_nf
-  congr
 
 /-- A private-coin protocol for `f` has error less than `1 / 2` on `x` and `y` exactly when its
 signed vote `∑ s, ∑ t, ±1` has the sign of `signMatrix ℝ f x y`. -/
 theorem errorProb_lt_half_iff (P : PrivateCoin a b X Y Bool) (f : X → Y → Bool) (x : X) (y : Y) :
     P.errorProb (fun x y z => f x y = z) x y < 1 / 2 ↔
-      0 < signMatrix ℝ f x y * ∑ s, ∑ t, (if P.run (x, s) (y, t) then (-1 : ℝ) else 1) := by
+      0 < signMatrix ℝ f x y * ∑ s, ∑ t, BitString.signVal (P.run (x, s) (y, t)) := by
   rw [signMatrix_mul_sum]
   have : (0 : ℝ) < 2 ^ a * 2 ^ b := by positivity
   rw [mul_pos_iff_of_pos_left this]
@@ -228,9 +226,9 @@ theorem signRank_le_leafCount [Fintype Y] {f : X → Y → Bool} (P : PrivateCoi
     (hP : P.SolvesUnbounded (fun x y z => f x y = z) Set.univ Set.univ) :
     signRank f ≤ P.leafCount := by
   refine (signRank_le_rank (A := Matrix.of fun x y => ∑ s, ∑ t,
-    (fun z : Bool => if z then (-1 : ℝ) else 1) (P.run (x, s) (y, t))) fun x y => ?_).trans
+    BitString.signVal (P.run (x, s) (y, t))) fun x y => ?_).trans
     (Protocol.rank_sum_comp_run_le (X := X) (Y := Y) (p := P) (fun x s => (x, s))
-      (fun y t => (y, t)) (fun z : Bool => if z then (-1 : ℝ) else 1))
+      (fun y t => (y, t)) BitString.signVal)
   exact (errorProb_lt_half_iff P f x y).mp (hP x trivial y trivial)
 
 /-- A private-coin protocol computing `f` with unbounded error sends at least
@@ -269,7 +267,7 @@ private theorem exists_protocol_of_weights {ι : Type*} [Fintype ι] [Nonempty �
     (hι : Fintype.card ι ≤ 2 ^ n) (w : X → ι → ℕ) (hw : ∀ x, ∑ i, w x i = 2 ^ α)
     (c : Y → ι → ℕ) (hc : ∀ y i, c y i ≤ 2 ^ β) :
     ∃ P : PrivateCoin α β X Y Bool, P.depth ≤ n + 1 ∧ ∀ x y,
-      ∑ s, ∑ t, (if P.run (x, s) (y, t) then (-1 : ℝ) else 1) =
+      ∑ s, ∑ t, BitString.signVal (P.run (x, s) (y, t)) =
         ∑ i, (w x i : ℝ) * (2 ^ β - 2 * c y i) := by
   classical
   choose σ hσ using fun x => exists_sampler (w x) (hw x)
@@ -285,14 +283,13 @@ private theorem exists_protocol_of_weights {ι : Type*} [Fintype ι] [Nonempty �
   · exact Protocol.depth_aliceSend_le fun m => by simp
   · simp only [Protocol.run_aliceSend, Protocol.run_bob, Protocol.run_output,
       Function.leftInverse_invFun e.injective _]
-    have hb : ∀ i, ∑ t, (if cond (τ y i t) true false then (-1 : ℝ) else 1) =
-        2 ^ β - 2 * c y i := by
+    have hb : ∀ i, ∑ t, BitString.signVal (cond (τ y i t) true false) = 2 ^ β - 2 * c y i := by
       intro i
-      have := hτ y i fun b => if b then (-1 : ℝ) else 1
-      simp only [Fintype.sum_bool, ite_true, Bool.false_eq_true, ite_false] at this
+      have := hτ y i BitString.signVal
+      simp only [Fintype.sum_bool, ite_true, Bool.false_eq_true, ite_false,
+        BitString.signVal_true, BitString.signVal_false] at this
       rw [Nat.cast_sub (hc y i)] at this
-      have hcond : ∀ b : Bool, (if cond b true false then (-1 : ℝ) else 1) =
-          if b then -1 else 1 := fun b => by cases b <;> rfl
+      have hcond : ∀ b : Bool, cond b true false = b := fun b => by cases b <;> rfl
       simp only [hcond]
       rw [this]
       push_cast
@@ -360,8 +357,8 @@ theorem clog_signRank_le_uppComplexityFun_le [Finite X] [Fintype Y] (f : X → Y
   ⟨clog_signRank_le_uppComplexityFun f, uppComplexityFun_le_log_signRank_add_two f⟩
 
 /-- **Equality is cheap with unbounded error**: on any finite set, three bits suffice, since
-equality has sign-rank at most three. Deterministically it needs `⌈log₂ |X|⌉ + 1` bits
-(`ecomplexityFun_equality`). -/
+equality has sign-rank at most three. Deterministically it needs `⌈log₂ |X|⌉ + 1` bits when
+`|X| ≥ 2` (`ecomplexityFun_equality`). -/
 theorem uppComplexityFun_equality_le_three [Finite X] [DecidableEq X] :
     uppComplexityFun (equality (X := X)) ≤ 3 := by
   have := Fintype.ofFinite X

@@ -423,6 +423,15 @@ In order:
   VOLE-in-the-head remain (#643);
 - libzk's compositional structure as a composition of these components, without ciphersuites.
 
+### Private information retrieval ([#3251](https://github.com/cslib-community/complexitylib/issues/3251))
+
+- **Information-theoretic PIR:** `Crypto/Protocols/PIR` covers one-round schemes with perfect
+  correctness and single-server privacy, the one-round single-server bound, the subcube schemes
+  with the rows transformation, and schemes from perfectly smooth decoders. Next targets are the
+  covering-code two-server scheme with `O(n^{1/3})` bits (CGKS Section 3.3), the multi-round
+  single-server bound, `t`-private schemes against coalitions, block retrieval, the converse
+  from schemes to smooth codes (Katz–Trevisan), and two-server lower bounds.
+
 ### Concurrent and quantum security
 
 - **Concurrent composition:** extend the protocol semantics with environments, scheduling,
@@ -631,9 +640,11 @@ index links to canonical definitions rather than keeping a second set.
   `Cslib.Circuits.Program` straight-line programs with `s`-pebble black pebbling. Bennett's
   reversible game and its exact prices on the path, `⌈log₂ (v + 2)⌉` (visiting) and
   `⌈log₂ (v + 1)⌉ + 1` (persistent), are in `Pebbling/ReversiblePath.lean`
-  ([#3163](https://github.com/cslib-community/complexitylib/issues/3163)). Next: black-white
-  pebbling; the full reachable-configuration characterization and the reversible time–space and
-  erasure trade-offs of Li–Tromp–Vitányi
+  ([#3163](https://github.com/cslib-community/complexitylib/issues/3163)), and the
+  Li–Tromp–Vitányi characterization of every reachable configuration (their Theorem 1 and
+  Corollary 1) is in `Pebbling/ReversiblePathReachable.lean`. Next: black-white pebbling; the
+  reversible time–space trade-offs (is `3 ^ k` optimal for `k + 1` pebbles?) and the erasure
+  trade-off of Li–Tromp–Vitányi
   ([#3199](https://github.com/cslib-community/complexitylib/issues/3199));
   the Hopcroft–Paul–Valiant `O(n / log n)` pebbling of bounded-indegree DAGs and the matching
   Paul–Tarjan–Celoni `Ω(n / log n)` family; Gilbert–Tarjan and Lengauer–Tarjan time–space
@@ -769,9 +780,9 @@ index links to canonical definitions rather than keeping a second set.
 
 - **MIP = NEXP** ([#892]): `NEXP ⊆ MIP₂` through the BFL multilinearity test and arithmetization
   of exponential-time tableaux; an efficient GKR verifier under log-space uniformity.
-- **Goldwasser–Sipser** ([#2981](https://github.com/cslib-community/complexitylib/issues/2981)):
-  `IP[k] ⊆ AM[k + 2]` for the private-coin games `IPk`, by the set lower bound protocol on the
-  gap-amplified game (`IPGameClass.exists_repeat`).
+- **Oracle-model `IP[k]`**: oracle-PPT `IP` verifiers with at most `k` queries give exactly the
+  count-based `IPk` (coin fixing and padding to `k` rounds), which carries `IPk_eq_AM` to the
+  oracle model; `IP[k(n)] ⊆ AM[k(n) + 2]` for patterns that depend on the input length.
 - The Babai–Moran speedup `AM[2 t(n)] = AM[t(n)]` for polynomially many rounds (patterns that
   depend on the input length), interactive-machine characterizations of Arthur–Merlin classes, and
   statistical and perfect zero knowledge.
@@ -849,10 +860,12 @@ universe size, not supplied as unverified input tables. In dependency order:
   `Primcodable` bridge from Mathlib `L.Sentence` that transfers the results to Mathlib syntax
   ([#2886](https://github.com/cslib-community/complexitylib/issues/2886)).
 - **Logic and automata on words**, after Büchi–Elgot–Trakhtenbrot for finite words (MSO =
-  regular) and FO[<] ⊊ MSO via EVEN
-  ([#2885](https://github.com/cslib-community/complexitylib/issues/2885)): FO[<] = star-free =
-  aperiodic (McNaughton–Papert, Schützenberger; star-free ⇒ FO is
-  [#3075](https://github.com/cslib-community/complexitylib/issues/3075));
+  regular), FO[<] ⊊ MSO via EVEN
+  ([#2885](https://github.com/cslib-community/complexitylib/issues/2885)) and star-free ⇒ FO[<]
+  ([#3075](https://github.com/cslib-community/complexitylib/issues/3075)): the converse FO[<] ⇒
+  star-free over a finite alphabet (McNaughton–Papert), by composition of rank-k types, and
+  star-free = aperiodic (Schützenberger), from cslib's syntactic monoid, with decidability of
+  first-order definability for regular languages;
   closure of regular languages under homomorphic images, upstream to cslib; the non-elementary
   lower bound on formula-to-automaton translation; Büchi's theorem for ω-words (S1S) over
   cslib's ω-regular languages; and MSO on trees: finite trees and tree automata
@@ -892,6 +905,14 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Parameterized:** strongly uniform variants (computable `f`), further explicit polynomial
   kernels, the W and A hierarchies, and parameterized lower bounds; connect these to
   [structural graph algorithms](#structural-graph-algorithms) and their decomposition costs.
+- **Kernelization lower bounds**
+  ([#3210](https://github.com/cslib-community/complexitylib/issues/3210)): `NP/poly`, and the
+  Fortnow–Santhanam theorem that an OR-distillation of an `NP`-hard problem gives
+  `coNP ⊆ NP/poly`, in the class-wise form over a polynomial equivalence relation. Remaining:
+  OR-cross-composition, polynomial compressions and the Bodlaender–Jansen–Kratsch theorem ruling
+  out polynomial kernels unless `coNP ⊆ NP/poly`; concrete lower bounds (k-Path, Clique
+  parameterized by vertex cover); Yap's collapse `coNP ⊆ NP/poly → PH = Σ₃`; AND-composition
+  (Drucker).
 - **Color coding** ([#2870](https://github.com/cslib-community/complexitylib/issues/2870)):
   colorful k-Path is in `FPT` by the dynamic programming over color sets. Remaining: random
   colorings (a fixed `k`-set is colorful with probability `K.descFactorial k / K ^ k ≥ e ^ (-k)`)
@@ -995,7 +1016,20 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   - total and variable space;
   - time–space trade-offs for pebbling formulas, building on `Complexity/Computability/Pebbling`;
   - degree versus space in polynomial calculus.
-- Polynomial calculus and sum-of-squares, and certified DPLL solver runtimes.
+- **Sum-of-squares** ([#3260](https://github.com/cslib-community/complexitylib/issues/3260)):
+  `Algebraic/SumOfSquares/` has degree-`d` refutations and pseudo-expectations with the easy
+  duality direction, Schoenebeck's pseudo-expectation for parity systems with no width-`d`
+  derivation of `0 = 1` (Schoenebeck Lemma 13), and Grigoriev's bound `e(G) ≤ d` for Tseitin
+  parity systems, with a linear-degree expander family. Next:
+  - the converse duality, by hyperplane separation, and the Lasserre/Sherali–Adams hierarchies with
+    a bridge to the proof system;
+  - Grigoriev's `Ω(n)` bound for random `3`-XOR (Barak–Steurer Theorem 2), through expansion of
+    random hypergraphs, and Schoenebeck's gaps for CSPs implied by XOR;
+  - the `0/1` encoding and Grigoriev's knapsack bound;
+  - the full Positivstellensatz calculus with inequality constraints and products of constraints,
+    and its relation to the equational form here;
+  - size–degree relations for sum-of-squares, and size lower bounds.
+- Polynomial calculus, and certified DPLL solver runtimes.
 - **Frege** ([#3069](https://github.com/cslib-community/complexitylib/issues/3069)): implicational
   completeness of the Hilbert-style system (Kalmár); formula-size measures; the simulation of
   resolution as a p-simulation of Cook–Reckhow proof systems, with encodings and translation
@@ -1222,9 +1256,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   Tanner-code distance bound in `Complexity/Foundations/Combinatorics/Expander/TannerCode.lean`.
 - **Channel coding** ([#3304](https://github.com/cslib-community/complexitylib/issues/3304)):
   achievability for the binary symmetric channel (random codes with nearest codeword decoding at
-  every rate below `1 - h₂(p)`, maximal error `≤ 10 exp (-δ n)`) is in place. Remaining: the
-  converse (weak, via Fano, and strong: every code of rate above capacity has error bounded
-  away from zero), general discrete memoryless channels with mutual-information capacity,
+  every rate below `1 - h₂(p)`, maximal error `≤ 10 exp (-δ n)`) and the weak converse (via
+  Fano's inequality: above capacity the average error of every code is bounded away from zero)
+  are in place. Remaining: the strong converse (Wolfowitz: the error tends to `1` above
+  capacity), general discrete memoryless channels with mutual-information capacity (the chain
+  rule for `n` channel uses and the data-processing inequality), channels with feedback,
   explicit and efficiently decodable capacity-achieving codes (Forney concatenation, polar
   codes), and the link to list decoding.
 - **Locally decodable codes** ([#2929](https://github.com/cslib-community/complexitylib/issues/2929)):
@@ -1280,9 +1316,9 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Number-on-forehead multiparty protocols**
   ([#3197](https://github.com/cslib-community/complexitylib/issues/3197)): `NOF.Protocol`,
   public-coin NOF protocols, cylinder intersections and the multiparty discrepancy bound
-  `2 γ ≤ 2 ^ c disc_ν(f)`, with the two-player case matching the two-party discrepancy. Next: the
-  Chung–Raz cube bound `disc(f) ^ (2 ^ k) ≤ E(f)` and the Babai–Nisan–Szegedy lower bound
-  `Ω(n / 4 ^ k)` for generalized inner product. Remaining: the sharper `Ω(n / 2 ^ k)` bound for
+  `2 γ ≤ 2 ^ c disc_ν(f)`, with the two-player case matching the two-party discrepancy; the cube
+  bound `disc(f) ^ (2 ^ k) ≤ E(f)` and the Babai–Nisan–Szegedy lower bound `Ω(n / 4 ^ k)` for
+  generalized inner product. Remaining: the sharper `Ω(n / 2 ^ k)` bound for
   generalized inner product (source to be verified before citing) and Grolmusz's `O(k n / 2 ^ k)`
   protocol; matrix multiplication (Raz) and NOF disjointness lower bounds; and applications to
   `ACC⁰` and branching-program lower bounds. A two-party companion is the Aho–Ullman–Yannakakis bound
@@ -1305,7 +1341,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   `t_q lg(t_u / t_q) = Ω(lg n)` information-transfer trade-off; and reductions to dynamic
   connectivity.
 - **Streaming and sketching:** native time and space bounds for Count-Min, including hash-seed
-  storage and evaluation; the AMS sketch for `F₀`, the AMS `F_k` estimator for streams of unknown
+  storage and evaluation; the AMS sketch for `F₀`; for distinct elements
+  ([#3340](https://github.com/cslib-community/complexitylib/issues/3340)), the median amplification
+  and `Solves` statement for the k-minimum-values sketch, the space-optimal `F₀` estimators
+  (Bar-Yossef et al. Theorems 2–3, Kane–Nelson–Woodruff `O(ε⁻² + log n)`) and the
+  `Ω(ε⁻²)` and `Ω(log n)` lower bounds for approximate `F₀`; the AMS `F_k` estimator for
+  streams of unknown
   length (reservoir sampling), and the `n^{Ω(1)}` lower bounds for `F_k` with `k ≥ 6`; `ProbComp`
   samplers and native realizations of the AMS sketches; CountSketch, turnstile updates, and
   heavy-hitter recovery; multi-pass communication-to-streaming transfers with pass counts.
@@ -1469,6 +1510,16 @@ each statement against the numbered result. Organize modules by subject, not cha
   exponentiation, and the classical reductions from factoring and discrete logarithms;
   certify uniform circuit generation and polynomial gate bounds alongside correctness.
 
+- **Nonlocal games** ([#3313](https://github.com/cslib-community/complexitylib/issues/3313)):
+  beyond CHSH and Tsirelson's bound in the finite-dimensional tensor-product model, give general
+  XOR games Tsirelson's vector characterization and its semidefinite program (Cleve–Høyer–Toner–
+  Watrous, Theorem 4 and Proposition 5) and the Grothendieck-constant bound on the quantum
+  advantage (Theorem 7); mixed shared states and the commuting-operator model, with the inclusion
+  of the tensor-product value; parallel repetition of entangled games, alongside the classical theorem
+  ([#886](https://github.com/cslib-community/complexitylib/issues/886)); rigidity (self-testing)
+  of the CHSH strategy; and the entangled-prover class `MIP*`, toward the optional
+  [MIP* = RE](#optional-landmark-projects) project.
+
 ### Differential privacy and adaptive data analysis
 
 - Dataset adjacency and `(ε, δ)`-differential privacy for probabilistic programs, with
@@ -1555,6 +1606,17 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   Tutte–Berge formula are proved in `Foundations/Combinatorics/SimpleGraph/{Berge,TutteBerge}`;
   still open are Edmonds' blossom-contraction lemma, an executable blossom algorithm with its
   `O(|V|²|E|)` bound, weighted general matching, and the Gallai–Edmonds decomposition.
+- **Global minimum cut** ([#3369](https://github.com/cslib-community/complexitylib/issues/3369)):
+  beyond Karger's and Karger–Stein's randomized algorithms (`Algorithms/WordRAM/Karger`) and the
+  deterministic Stoer–Wagner algorithm with the maximum adjacency ordering lemma and an `O(n³)`
+  `TimeM` bound on natural-number weights (`Algorithms/Lean/StoerWagner`,
+  `WeightedCut/MAOrdering`): the `O(n m + n² log n)` priority-queue version, real weights,
+  Nagamochi–Ibaraki sparse certificates for `k`-edge-connectivity,
+  Karger's near-linear minimum cut algorithm, and Queyranne's minimization of symmetric submodular
+  functions (which generalizes the maximum adjacency argument to hypergraph cuts). Moving the
+  contraction API (`contractMatrix`, `contractPart`, `contractCut`) from `WordRAM/Karger` into
+  `WeightedCut` ([#3403](https://github.com/cslib-community/complexitylib/issues/3403)) would let
+  both algorithms share one foundation.
 - **Gomory–Hu trees** ([#3320](https://github.com/cslib-community/complexitylib/issues/3320)):
   remaining after the existence theorem for cut-equivalent trees of symmetric submodular set
   functions and weighted undirected graphs, with flow-equivalence, the minimum-cut triangle
@@ -1562,6 +1624,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   [#3285](https://github.com/cslib-community/complexitylib/issues/3285)): the Gomory–Hu or
   Gusfield construction with `n - 1` maximum-flow calls as a `TimeM` program over Edmonds–Karp,
   with its running-time bound, and real-valued capacities.
+- **Push–relabel maximum flow** ([#3373](https://github.com/cslib-community/complexitylib/issues/3373)):
+  remaining after preflows, valid labelings, optimality at termination with a gap minimum cut, the
+  operation bounds of the generic Goldberg–Tarjan algorithm and a verified executable scheduler
+  (`Algorithms/Lean/MaxFlow/{Preflow,PushRelabel}`): a charged `TimeM` version with current-arc
+  scanning (`O(|V|² |E|)`), the FIFO and relabel-to-front rules (`O(|V|³)`), highest-label
+  selection (`O(|V|² √|E|)`), gap and global-relabelling heuristics, and dynamic trees
+  (`O(|V| |E| log(|V|² / |E|))`).
 - **Algebraic matching** ([#3052](https://github.com/cslib-community/complexitylib/issues/3052)):
   remaining after Edmonds' determinant criterion and Lovász's randomized test for bipartite
   graphs (`Algorithms/Matching/Edmonds`), the bipartite Mulmuley–Vazirani–Vazirani core
@@ -1676,6 +1745,17 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   succinct game encodings; polynomial-time algorithms for symmetric network congestion games;
   exponentially long better-response paths. Mixed Nash equilibria of finite games
   (Nash's theorem) and PPAD-completeness of computing them.
+- **Bimatrix games and Lemke–Howson:** `GameTheory/Bimatrix/*` proves the undirected parity
+  argument, so a nondegenerate bimatrix game has an odd number of Nash equilibria
+  ([#3334](https://github.com/cslib-community/complexitylib/issues/3334)). Remaining, tracked in
+  [#3391](https://github.com/cslib-community/complexitylib/issues/3391): two-player Nash in PPAD.
+  This needs an orientation of the Lemke–Howson paths (Shapley's index), bit-size bounds on the
+  rational vertices, an encoding of games as a TFNP search problem, and a polynomial-time pivoting
+  map into the end-of-line principle. Also remaining: degenerate games (lexicographic
+  perturbation, giving Nash's theorem for all bimatrix games), the Lemke–Howson path as an
+  algorithm, and the Savani–von Stengel exponential lower bound. Infrastructure: move
+  `IsMixedStrategy` and its simplex lemmas to a game-agnostic `GameTheory/MixedStrategy` module
+  shared with `Strategic/Mixed`, and relate `Matrix.IsVertex` to `Set.extremePoints`.
 - **Equilibrium concepts and dynamics:** mixed and correlated equilibria between pure Nash and
   coarse correlated equilibria; swap regret and convergence to correlated equilibria, extending
   the Hedge dynamics of [#3034](https://github.com/cslib-community/complexitylib/issues/3034);
@@ -1849,6 +1929,22 @@ pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
   pattern matcher with charged updates and a union bound over all windows, and the private-coin
   `O(log n)` equality protocol in `Communication/Randomized`. Native machine or RAM realizations
   with bit-level arithmetic costs are a separate endpoint.
+
+### String algorithms
+
+- **Suffix arrays** ([#3331](https://github.com/cslib-community/complexitylib/issues/3331)):
+  `Algorithms/Lean/SuffixArray` has the suffix-array specification with uniqueness, a sort-based
+  reference construction, Kasai et al.'s LCP construction with at most `2|w|` character
+  comparisons, and plain binary-search pattern matching with at most `2|p|(⌊log₂ n⌋ + 1)`
+  comparisons. Remaining: linear-time construction (SA-IS of Nong, Zhang and Chan, or the DC3
+  skew algorithm of Kärkkäinen and Sanders) with a charged cost model for integer alphabets; a
+  comparison-count bound for the sort-based reference construction (through `mergeSortM` with a
+  charged suffix comparator);
+  Manber–Myers `O(|p| + log n)` search with precomputed LCP information; suffix trees (Ukkonen or
+  McCreight construction) and their equivalence with suffix arrays plus LCP arrays; and
+  applications such as longest repeated substring and the Burrows–Wheeler transform. Once a second
+  client appears (Z-function, LCP-accelerated search), move `lcpLen` and its lemmas to a
+  `Foundations/Data/List` module in the `List` namespace.
 
 ## Machines, RAM and data structures
 
