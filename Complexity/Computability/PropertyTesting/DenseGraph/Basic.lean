@@ -9,12 +9,13 @@ module
 
 public import Complexity.Init
 public import Complexity.Languages.Probabilistic.Oracle.QueryCount
+public import Complexity.Languages.Probabilistic.Repeat
 public import Complexity.Languages.Probabilistic.Semantics
 public import Mathlib.Combinatorics.SimpleGraph.DeleteEdges
 public import Mathlib.Combinatorics.SimpleGraph.Triangle.Basic
 public import Mathlib.Order.SymmDiff
+import Complexity.Foundations.Analysis.SpecialFunctions.ExpBounds
 import Complexity.Foundations.Combinatorics.SimpleGraph.SymmDiff
-import Mathlib.Analysis.SpecialFunctions.Exp
 
 /-!
 # Property testing in the dense graph model
@@ -36,7 +37,10 @@ pair accounting for two entries, so his distance `ε` corresponds to `IsFar G P 
 with the property with probability one and accepts every `ε`-far graph with probability at most
 `1 / 3`; a family of properties is `OneSidedTestable` with query bound `q` if every proximity
 `ε > 0` and every number of vertices admits a one-sided tester with `q ε` queries, independent
-of `n`.
+of `n`. Goldreich restricts property testing to graph properties that are invariant under graph
+isomorphism. The definitions `IsOneSidedTester` and `OneSidedTestable` here do not require
+isomorphism invariance, allowing arbitrary predicates `P : SimpleGraph (Fin n) → Prop`; this is
+a harmless generalization that specializes to isomorphism-invariant properties.
 
 The far notion is related to Mathlib's deletion distance: an `ε`-far graph is
 `ε n²`-delete-far (`IsFar.deleteFar`), in particular `ε`-far from triangle-free in the sense of
@@ -48,7 +52,7 @@ Repetition (`repeatAll`) runs independent copies of a tester and accepts when al
 its acceptance probability is the power of the single-run acceptance probability
 (`acceptProb_repeatAll`). This turns a perfectly complete `q`-query test that rejects far graphs
 with probability at least `δ` into a one-sided tester after `k` runs with `2 ≤ δ k`
-(`IsOneSidedTester.of_repeatAll`).
+(`isOneSidedTester_repeatAll`).
 
 This file bounds queries only; it makes no claim about running time.
 
@@ -70,7 +74,7 @@ This file bounds queries only; it makes no claim about running time.
   distance.
 * `Cslib.DenseGraphTesting.acceptProb_repeatAll`, `isQueryBounded_repeatAll`: repetition
   multiplies acceptance probabilities and query bounds.
-* `Cslib.DenseGraphTesting.IsOneSidedTester.of_repeatAll`: amplification of a perfectly complete
+* `Cslib.DenseGraphTesting.isOneSidedTester_repeatAll`: amplification of a perfectly complete
   test.
 
 ## References
@@ -132,7 +136,8 @@ def IsFar {V : Type*} [Fintype V] (G : SimpleGraph V) (P : SimpleGraph V → Pro
 /-- `T` is a one-sided tester for the property `P` of graphs on `Fin n` with proximity `ε` and
 query bound `q`: every run asks at most `q` vertex-pair queries, every graph with property `P` is
 accepted with probability one, and every graph `ε`-far from `P` is accepted with probability at
-most `1 / 3`. -/
+most `1 / 3`. The property `P` need not be isomorphism-invariant: this generalizes Goldreich's
+definition, which restricts to invariant graph properties. -/
 structure IsOneSidedTester {n : ℕ} (T : Tester n) (P : SimpleGraph (Fin n) → Prop) (ε : ℝ)
     (q : ℕ) : Prop where
   /-- Every run of the tester asks at most `q` vertex-pair queries. -/
@@ -145,7 +150,9 @@ structure IsOneSidedTester {n : ℕ} (T : Tester n) (P : SimpleGraph (Fin n) →
 
 /-- The family of graph properties `P n` (one for each number `n` of vertices) is one-sided
 testable with query bound `q`: for every proximity `ε > 0` and every `n` there is a one-sided
-tester for `P n` with proximity `ε` asking at most `q ε` queries, a bound independent of `n`. -/
+tester for `P n` with proximity `ε` asking at most `q ε` queries, a bound independent of `n`.
+The properties `P n` need not be isomorphism-invariant; this harmlessly generalizes Goldreich's
+definition. -/
 def OneSidedTestable (P : ∀ n, SimpleGraph (Fin n) → Prop) (q : ℝ → ℕ) : Prop :=
   ∀ ε, 0 < ε → ∀ n, ∃ T : Tester n, IsOneSidedTester T (P n) ε (q ε)
 
@@ -210,7 +217,7 @@ section Far
 variable {V : Type*} [Fintype V]
 
 /-- A graph with property `P` is not `ε`-far from `P` for any `ε ≥ 0`. -/
-theorem not_isFar_of {G : SimpleGraph V} {P : SimpleGraph V → Prop} (hG : P G) {ε : ℝ}
+theorem not_isFar_of_property {G : SimpleGraph V} {P : SimpleGraph V → Prop} (hG : P G) {ε : ℝ}
     (hε : 0 ≤ ε) : ¬ IsFar G P ε := fun h => by
   have h₁ := h G hG
   rw [editDist_self, Nat.cast_zero] at h₁
@@ -274,10 +281,8 @@ def queryAdj {n : ℕ} (u v : Fin n) : ProbOracleComp (pairSpec (Fin n)) Bool :=
 
 /-- Run `k` independent copies of the tester `T` in sequence, rejecting as soon as one of them
 rejects and accepting when all of them accept. -/
-def repeatAll {n : ℕ} (T : Tester n) : ℕ → Tester n
-  | 0 => pure true
-  | k + 1 => do
-    if ← T then repeatAll T k else pure false
+def repeatAll {n : ℕ} (T : Tester n) : ℕ → Tester n :=
+  OracleComp.repeatAll T
 
 /-- A uniform coin toss of a tester is distributed as the corresponding `ProbComp`. -/
 theorem evalWith_sample {n : ℕ} (G : SimpleGraph (Fin n)) {α : Type} (p : ProbComp α) :
@@ -319,15 +324,8 @@ theorem IsOneSidedTester.evalWith_false_eq_zero {n : ℕ} {P : SimpleGraph (Fin 
 
 /-- Independent repetition multiplies acceptance probabilities. -/
 theorem acceptProb_repeatAll {n : ℕ} (T : Tester n) (G : SimpleGraph (Fin n)) (k : ℕ) :
-    acceptProb (repeatAll T k) G = acceptProb T G ^ k := by
-  induction k with
-  | zero => simp only [repeatAll, acceptProb_pure, ite_true, pow_zero]
-  | succ k ih =>
-    rw [pow_succ', ← ih]
-    simp only [acceptProb, repeatAll, OracleComp.evalWith_bind]
-    rw [PMF.bind_apply, tsum_fintype, Fintype.sum_bool]
-    simp only [ite_true, Bool.false_eq_true, ite_false, OracleComp.evalWith_pure, PMF.pure_apply,
-      Bool.true_eq_false, mul_zero, add_zero, ENNReal.toReal_mul]
+    acceptProb (repeatAll T k) G = acceptProb T G ^ k :=
+  OracleComp.evalWith_repeatAll_true_toReal _ T k
 
 /-- `k` repetitions of a `q`-query tester ask at most `q k` queries. -/
 theorem isQueryBounded_repeatAll {n : ℕ} {T : Tester n} {q : ℕ}
@@ -342,21 +340,10 @@ theorem isQueryBounded_repeatAll {n : ℕ} {T : Tester n} {q : ℕ}
     · exact OracleComp.IsCostBounded.pure _ _
     · exact ih
 
-private theorem pow_le_one_third {p δ : ℝ} (hp : 0 ≤ p) (hpδ : p ≤ 1 - δ) {k : ℕ}
-    (hk : 2 ≤ δ * k) : p ^ k ≤ 1 / 3 := by
-  have h₁ : p ^ k ≤ Real.exp (-δ) ^ k :=
-    pow_le_pow_left₀ hp (hpδ.trans (Real.one_sub_le_exp_neg δ)) k
-  rw [← Real.exp_nat_mul] at h₁
-  have h₂ : Real.exp (k * -δ) ≤ Real.exp (-2) := Real.exp_le_exp.mpr (by nlinarith)
-  have h₃ : Real.exp (-2) ≤ 1 / 3 := by
-    rw [Real.exp_neg, inv_eq_one_div, div_le_div_iff₀ (Real.exp_pos 2) (by norm_num)]
-    linarith [Real.add_one_le_exp 2]
-  linarith
-
 /-- Amplification: if the `q`-query tester `T` accepts every graph with property `P` with
 probability one and accepts every `ε`-far graph with probability at most `1 - δ`, then `k`
 independent repetitions with `2 ≤ δ k` form a one-sided tester with `q k` queries. -/
-theorem IsOneSidedTester.of_repeatAll {n : ℕ} {T : Tester n} {P : SimpleGraph (Fin n) → Prop}
+theorem isOneSidedTester_repeatAll {n : ℕ} {T : Tester n} {P : SimpleGraph (Fin n) → Prop}
     {ε δ : ℝ} {q k : ℕ} (hq : ProbOracleComp.IsQueryBounded T q)
     (hacc : ∀ G, P G → acceptProb T G = 1)
     (hrej : ∀ G, IsFar G P ε → acceptProb T G ≤ 1 - δ) (hk : 2 ≤ δ * k) :
@@ -365,6 +352,6 @@ theorem IsOneSidedTester.of_repeatAll {n : ℕ} {T : Tester n} {P : SimpleGraph 
   accept G hG := by rw [acceptProb_repeatAll, hacc G hG, one_pow]
   reject G hG := by
     rw [acceptProb_repeatAll]
-    exact pow_le_one_third (acceptProb_nonneg T G) (hrej G hG) hk
+    exact Real.pow_le_one_third (acceptProb_nonneg T G) (hrej G hG) hk
 
 end Cslib.DenseGraphTesting

@@ -214,10 +214,10 @@ theorem isOneSidedTester_triangleTester {n : ℕ} {ε : ℝ} (hε : 0 < ε) {k :
   | zero =>
     refine ⟨isQueryBounded_triangleTester 0 k, fun G _ => by simp [triangleTester],
       fun G hG => ?_⟩
-    exact absurd hG (not_isFar_of (SimpleGraph.cliqueFree_of_card_lt (by simp)) hε.le)
+    exact absurd hG (not_isFar_of_property (SimpleGraph.cliqueFree_of_card_lt (by simp)) hε.le)
   | succ m =>
     classical
-    refine IsOneSidedTester.of_repeatAll (δ := 6 * triangleRemovalBound ε)
+    refine isOneSidedTester_repeatAll (δ := 6 * triangleRemovalBound ε)
       (isQueryBounded_triangleTrial m) (fun G hG => ?_) (fun G hG => ?_) (by linarith)
     · rw [acceptProb_triangleTrial, SimpleGraph.cliqueFinset_eq_empty_iff.mpr hG,
         Finset.card_empty, Nat.cast_zero, mul_zero, zero_div, sub_zero]
