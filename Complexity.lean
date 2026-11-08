@@ -1498,7 +1498,9 @@ public import Complexity.Computability.Communication.Lifting.Density
 public import Complexity.Computability.Communication.Lifting.Gadget
 public import Complexity.Computability.Communication.Lifting.Partition
 public import Complexity.Computability.Communication.Lifting.Simulation
+public import Complexity.Computability.Communication.NOF.Cube
 public import Complexity.Computability.Communication.NOF.Discrepancy
+public import Complexity.Computability.Communication.NOF.GeneralizedInnerProduct
 public import Complexity.Computability.Communication.NOF.Protocol
 public import Complexity.Computability.Communication.NOF.Randomized
 public import Complexity.Computability.Communication.NOF.TwoParty
@@ -4355,6 +4357,7 @@ public import Complexity.Foundations.Data.Fin.Tuple
 public import Complexity.Foundations.Data.Finset.Average
 public import Complexity.Foundations.Data.Finset.Expect
 public import Complexity.Foundations.Data.Finset.ExpectPi
+public import Complexity.Foundations.Data.Finset.ExpectResample
 public import Complexity.Foundations.Data.Finset.Finpartition
 public import Complexity.Foundations.Data.Finset.Holder
 public import Complexity.Foundations.Data.Finset.KthLargest
