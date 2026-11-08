@@ -16,6 +16,7 @@ public import Mathlib.Algebra.Order.Monoid.WithTop
 public import Mathlib.Order.Bounds.Defs
 public import Mathlib.Data.Fintype.Card
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+import Complexity.Algorithms.Lean.TimeM.Loops
 import Mathlib.Data.List.Perm.Subperm
 import Mathlib.Data.List.Nodup
 import Mathlib.Tactic.Ring
@@ -540,33 +541,21 @@ def bellmanFordM (adj : V → List (V × W)) (vs : List V) (s : V) :
   let d ← roundsM adj vs (vs.length - 1) d
   checkM adj vs d
 
-omit [DecidableEq V] [AddCommMonoid W] [LinearOrder W] in
-private theorem foldlM_spec {α β : Type*} (f : β → α → β) (c : α → ℕ) (g : β → α → TimeM ℕ β)
-    (hg : ∀ b a, (g b a).ret = f b a ∧ (g b a).time = c a) :
-    ∀ (l : List α) (b : β),
-      (l.foldlM g b).ret = l.foldl f b ∧ (l.foldlM g b).time = (l.map c).sum
-  | [], b => by simp
-  | a :: l, b => by
-    obtain ⟨h₁, h₂⟩ := hg b a
-    obtain ⟨h₃, h₄⟩ := foldlM_spec f c g hg l (f b a)
-    simp only [List.foldlM_cons, TimeM.ret_bind, TimeM.time_bind, h₁, h₂, h₃, h₄,
-      List.foldl_cons, List.map_cons, List.sum_cons, true_and]
-
 private theorem scanM_spec (adj : V → List (V × W)) (d : V → WithTop W) (u : V) :
     (scanM adj d u).ret = (adj u).foldl (fun d e => relax d u e.1 e.2) d ∧
       (scanM adj d u).time = 1 + (adj u).length := by
-  obtain ⟨h₁, h₂⟩ := foldlM_spec (fun d e => relax d u e.1 e.2) (fun _ => 1)
-    (fun d e => relaxM d u e.1 e.2) (fun _ _ => ⟨rfl, rfl⟩) (adj u) d
-  simp only [scanM, TimeM.ret_bind, TimeM.time_bind, TimeM.time_tick, h₁, h₂, true_and]
+  refine ⟨by rw [scanM, TimeM.ret_bind, ret_foldlM]; rfl, ?_⟩
+  rw [scanM, TimeM.time_bind, TimeM.time_tick, time_foldlM_eq_sum _ (fun _ => 1) (fun _ _ => rfl)]
   simp
 
 theorem ret_roundM (adj : V → List (V × W)) (vs : List V) (d : V → WithTop W) :
-    (roundM adj vs d).ret = round adj vs d :=
-  (foldlM_spec _ _ _ (fun d u => scanM_spec adj d u) vs d).1
+    (roundM adj vs d).ret = round adj vs d := by
+  rw [roundM, ret_foldlM, round]
+  exact congrArg (fun f => vs.foldl f d) (funext₂ fun d u => (scanM_spec adj d u).1)
 
 theorem time_roundM (adj : V → List (V × W)) (vs : List V) (d : V → WithTop W) :
     (roundM adj vs d).time = vs.length + (vs.map fun u => (adj u).length).sum := by
-  rw [roundM, (foldlM_spec _ _ _ (fun d u => scanM_spec adj d u) vs d).2, List.sum_map_add]
+  rw [roundM, time_foldlM_eq_sum _ _ (fun d u => (scanM_spec adj d u).2), List.sum_map_add]
   simp
 
 theorem ret_roundsM (adj : V → List (V × W)) (vs : List V) (k : ℕ) (d : V → WithTop W) :
@@ -597,24 +586,23 @@ private theorem checkScanM_spec (adj : V → List (V × W)) (d : V → WithTop W
     (checkScanM adj d o u).ret =
         (bif (adj u).all (fun e => decide (d e.1 ≤ d u + e.2)) then o else none) ∧
       (checkScanM adj d o u).time = 1 + (adj u).length := by
-  obtain ⟨h₁, h₂⟩ := foldlM_spec
-    (fun o (e : V × W) => bif decide (d e.1 ≤ d u + e.2) then o else none) (fun _ => 1)
-    (testM d u) (fun _ _ => ⟨rfl, rfl⟩) (adj u) o
-  simp only [checkScanM, TimeM.ret_bind, TimeM.time_bind, TimeM.time_tick, h₁, h₂, foldl_cond,
-    true_and]
-  simp
+  refine ⟨?_, ?_⟩
+  · rw [checkScanM, TimeM.ret_bind, ret_foldlM]
+    exact foldl_cond (fun e : V × W => decide (d e.1 ≤ d u + e.2)) (adj u) o
+  · rw [checkScanM, TimeM.time_bind, TimeM.time_tick,
+      time_foldlM_eq_sum _ (fun _ => 1) (fun _ _ => rfl)]
+    simp
 
 omit [DecidableEq V] in
 theorem ret_checkM (adj : V → List (V × W)) (vs : List V) (d : V → WithTop W) :
     (checkM adj vs d).ret = if check adj vs d then some d else none := by
-  rw [checkM, (foldlM_spec (fun o u => bif (adj u).all (fun e => decide (d e.1 ≤ d u + e.2))
-    then o else none) _ _ (checkScanM_spec adj d) vs (some d)).1, foldl_cond, check, cond_eq_ite]
+  rw [checkM, ret_foldlM, funext₂ fun o u => (checkScanM_spec adj d o u).1, foldl_cond, check,
+    cond_eq_ite]
 
 omit [DecidableEq V] in
 theorem time_checkM (adj : V → List (V × W)) (vs : List V) (d : V → WithTop W) :
     (checkM adj vs d).time = vs.length + (vs.map fun u => (adj u).length).sum := by
-  rw [checkM, (foldlM_spec (fun o u => bif (adj u).all (fun e => decide (d e.1 ≤ d u + e.2))
-    then o else none) _ _ (checkScanM_spec adj d) vs (some d)).2, List.sum_map_add]
+  rw [checkM, time_foldlM_eq_sum _ _ (fun o u => (checkScanM_spec adj d o u).2), List.sum_map_add]
   simp
 
 /-- `bellmanFordM` computes `bellmanFord`. -/
