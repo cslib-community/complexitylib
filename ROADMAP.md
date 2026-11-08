@@ -1798,9 +1798,8 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   nondecreasing latencies (Beckmann's convex potential); beyond the Pigou bound, worst-case
   networks for latency classes without the constant functions (parallel links and unions of paths)
   and the M/M/1 and M/G/1 delay bounds (Roughgarden 2003, Theorems 4.5 and 4.9 and Section 5); the
-  price of stability by the potential
-  method, including the `H_k` bound for network cost-sharing games
-  ([#3035](https://github.com/cslib-community/complexitylib/issues/3035)); Braess's paradox;
+  price of stability by the potential method, including the `H_k` bound for network cost-sharing
+  games ([#3035](https://github.com/cslib-community/complexitylib/issues/3035)); Braess's paradox;
   weighted and mixed-strategy atomic congestion games; the Monderer–Shapley characterization of
   potential games as congestion games.
 

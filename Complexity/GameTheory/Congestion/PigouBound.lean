@@ -125,7 +125,7 @@ theorem lt_pigouBound_iff {C : Set (ℝ → ℝ)} {a : ℝ≥0∞} :
   · rintro ⟨c, hc, r, x, hr, hx, h⟩
     exact ⟨c, hc, r, hr, x, hx, h⟩
 
-/-- The Pigou bound is at least `1` as soon as some `c ∈ C` is positive at some `r ≥ 0`: the
+/-- The Pigou bound is at least `1` as soon as some `c ∈ C` and `r ≥ 0` have `r c(r) > 0`: the
 ratio at `x = r` is `1`. -/
 theorem one_le_pigouBound {C : Set (ℝ → ℝ)} {c : ℝ → ℝ} (hc : c ∈ C) {r : ℝ} (hr : 0 ≤ r)
     (hpos : 0 < r * c r) : 1 ≤ pigouBound C := by

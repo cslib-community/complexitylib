@@ -244,8 +244,9 @@ quadratic latencies are not affine, that `5/2` and `4/3` cannot be lowered, and 
 non-Wardrop flows. [ComplexityTests/GameTheory/PigouBound.lean](../../ComplexityTests/GameTheory/PigouBound.lean)
 checks Pigou's ratio `4/3`, the Pigou bounds `1` and `4/3` for degrees `0` and `1`, and a
 quadratic network whose equilibrium costs `8/5` times a feasible flow, more than the affine bound.
-It also checks that polynomials of unbounded degree have an infinite Pigou bound, and it applies
-the tightness theorem. [ComplexityTests/GameTheory/Strategic.lean](../../ComplexityTests/GameTheory/Strategic.lean)
+It also checks that polynomials of unbounded degree have an infinite Pigou bound. It applies the
+tightness theorem and both directions of `pigouBound_le_ofReal_iff`: `4/3` bounds every game with
+affine latencies and `13/10` does not. [ComplexityTests/GameTheory/Strategic.lean](../../ComplexityTests/GameTheory/Strategic.lean)
 checks the following:
 
 - the Monderer–Shapley Prisoner's Dilemma with its exact potential;

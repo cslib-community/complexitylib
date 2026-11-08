@@ -17,7 +17,9 @@ Checked instances of the Pigou bound for nonatomic selfish routing:
   feasible flow, more than the affine bound `4/3`, and the polynomial theorem bounds it.
 * Allowing polynomials of every degree makes the Pigou bound infinite, so the finiteness hypothesis
   of the general theorem is not automatic.
-* The tightness theorem applies to polynomial latencies.
+* The tightness theorem applies to polynomial latencies, and both directions of
+  `pigouBound_le_ofReal_iff` hold for affine latencies: `4/3` bounds every game and `13/10` does
+  not.
 -/
 
 namespace ComplexityTests.GameTheory.PigouBound
@@ -89,6 +91,11 @@ example : pigouBound (⋃ d, polynomialLatencies d) = ⊤ := by
     rw [mul_div_assoc', div_lt_one hk0]; linarith
   nlinarith [M.coe_nonneg]
 
+/-- Nonnegative constant functions are affine latencies. -/
+theorem const_mem_polynomialLatencies_one (a : ℝ) (ha : 0 ≤ a) :
+    (fun _ => a) ∈ polynomialLatencies 1 :=
+  ⟨![a, 0], fun i => by fin_cases i <;> simp [ha], fun x => by simp⟩
+
 /-- The tightness theorem: for affine latencies, some Pigou-like network beats every ratio below
 `4/3`. -/
 example : ∃ (G : NonatomicCongestionGame Unit (Fin 2) (Fin 2)) (f g : Fin 2 → ℝ),
@@ -96,9 +103,28 @@ example : ∃ (G : NonatomicCongestionGame Unit (Fin 2) (Fin 2)) (f g : Fin 2 �
       0 < G.cost g ∧ 13 / 10 * G.cost g < G.cost f := by
   refine exists_lt_cost_of_lt_pigouBound (C := polynomialLatencies 1)
     (fun c hc x hx => nonneg_of_mem_polynomialLatencies hc hx)
-    (fun c hc => monotoneOn_of_mem_polynomialLatencies hc)
-    (fun a ha => ⟨![a, 0], fun i => by fin_cases i <;> simp [ha], fun x => by simp⟩) ?_
+    (fun c hc => monotoneOn_of_mem_polynomialLatencies hc) const_mem_polynomialLatencies_one ?_
   rw [pigouBound_polynomialLatencies_one, ENNReal.ofReal_lt_ofReal_iff (by norm_num)]
+  norm_num
+
+/-- The exact worst case, `→`: since the Pigou bound of affine latencies is `4/3`, every game with
+latencies in `polynomialLatencies 1`, of any topology, has price of anarchy at most `4/3`. -/
+example (K P E : Type) [Fintype P] [Finite E] [DecidableEq K] [DecidableEq E]
+    (G : NonatomicCongestionGame K P E) (f g : P → ℝ)
+    (hG : ∀ e, G.latency e ∈ polynomialLatencies 1)
+    (hf : G.IsWardrop f) (hg : G.IsFeasible g) : G.cost f ≤ 4 / 3 * G.cost g :=
+  (pigouBound_le_ofReal_iff (fun _ hc _ hx => nonneg_of_mem_polynomialLatencies hc hx)
+    (fun _ hc => monotoneOn_of_mem_polynomialLatencies hc) const_mem_polynomialLatencies_one).1
+    pigouBound_polynomialLatencies_one.le K P E G f g hG hf hg
+
+/-- The exact worst case, `←`: the ratio `13/10 < 4/3` does not bound the price of anarchy of all
+games with affine latencies. -/
+example : ¬ ∀ (K P E : Type) [Fintype P] [Finite E] [DecidableEq K] [DecidableEq E]
+    (G : NonatomicCongestionGame K P E) (f g : P → ℝ), (∀ e, G.latency e ∈ polynomialLatencies 1) →
+      G.IsWardrop f → G.IsFeasible g → G.cost f ≤ 13 / 10 * G.cost g := by
+  rw [← pigouBound_le_ofReal_iff (fun _ hc _ hx => nonneg_of_mem_polynomialLatencies hc hx)
+    (fun _ hc => monotoneOn_of_mem_polynomialLatencies hc) const_mem_polynomialLatencies_one,
+    pigouBound_polynomialLatencies_one, ENNReal.ofReal_le_ofReal_iff (by norm_num)]
   norm_num
 
 end ComplexityTests.GameTheory.PigouBound
