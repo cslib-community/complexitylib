@@ -173,6 +173,8 @@ public import Complexity.Algorithms.Lean.TreeDecomposition.IndependentSet
 public import Complexity.Algorithms.Lean.TreeDecomposition.IndependentSetFPT
 public import Complexity.Algorithms.Lean.VertexCover.Matching
 public import Complexity.Algorithms.Lean.Yates
+public import Complexity.Algorithms.Lean.ZFunction.Basic
+public import Complexity.Algorithms.Lean.ZFunction.Search
 public import Complexity.Algorithms.Matching.Edmonds
 public import Complexity.Algorithms.Matching.MVV
 public import Complexity.Algorithms.Matching.Tutte
@@ -4526,6 +4528,7 @@ public import Complexity.Foundations.Data.List.BalancedFold
 public import Complexity.Foundations.Data.List.Basic
 public import Complexity.Foundations.Data.List.Blocks
 public import Complexity.Foundations.Data.List.Boole
+public import Complexity.Foundations.Data.List.CommonPrefix
 public import Complexity.Foundations.Data.List.Counting
 public import Complexity.Foundations.Data.List.DotProduct
 public import Complexity.Foundations.Data.List.Equiv

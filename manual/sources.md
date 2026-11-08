@@ -512,6 +512,11 @@ The draft does not name Wolfowitz. The manual's attribution of the strong conver
 
 Dan Gusfield. “Very Simple Methods for All Pairs Network Flow Analysis.” *SIAM Journal on Computing* 19(1), 143–155, 1990. https://doi.org/10.1137/0219009 . Bibliographic metadata checked through the publisher record; the article body (paywalled) was not inspected, so no theorem or page locator is given. Cited for the variant of the Gomory–Hu construction without contraction: a parent array, one minimum cut computation per non-root vertex in the original graph, the re-hanging of vertices on the source side, and the swap of `s` and `t` when the parent of `t` is on the source side. That description was taken from secondary accounts of the algorithm. The Lean proof of correctness (`isGomoryHuTree_gusfieldParent`) is self-contained and does not follow the article's argument.
 
+<a id="gusfield97"></a>
+## gusfield97
+
+Dan Gusfield. *Algorithms on Strings, Trees, and Sequences: Computer Science and Computational Biology.* Cambridge University Press, 1997. https://doi.org/10.1017/CBO9780511574931 . Bibliographic metadata checked through the publisher record, and section titles through a table of contents; the book body was not inspected in this pass. Cited for the Z-values and Z-boxes of §1.3, the linear-time Z algorithm of §1.4, and exact matching through the Z-values of `P$T` in §1.5; these locators come from the section titles. Theorem numbers and the precise statements in the body were not checked.
+
 <a id="harpeledindykmotwani12"></a>
 ## harpeledindykmotwani12
 
