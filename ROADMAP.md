@@ -1142,11 +1142,37 @@ outside every scope are retained. These are semantic identities of the existing
 certified machine; its actual binary resource bounds are unchanged and no
 exhaustive-rank replacement algorithm is introduced.
 
-The final native-sum/incidence-polynomial identity is not yet assembled. It
-still needs global reindexing into the original equation/subset families,
-invalid binary-rank removal and identification of listed-test integer lifts and
-group-local coordinates with the finite normalized equations. Then compose
+The native fitting-rank finite-sum identity is now assembled below, including
+unused binary-rank removal. The identification with the original equation/subset
+families still needs the listed-test integer lifts and group-local coordinates
+connected to the finite normalized equations. Then compose
 high-incidence branches, every parity query, sharper sparsification, explicit
 exponent absorption and weighted eta-time rescaling. The old counter's extra
 log-log factor and the raw-row/common-occurrence/table/graph/Theorem 7.1/ALL-main
 limitations remain; no complete sharper-counter endpoint is claimed.
+
+
+`IncidenceRankSum` now proves the actual finite-sum support/reconstruction
+endpoint.
+`polyContraction_eq_rankPolynomial` identifies every actual padded contraction
+with its sum over fitting combination-rank tuples: unused binary ranks force an
+actual zero row and are removed, and the physical-wire equivalence reindexes the
+surviving assignments without multiplicity. Dead arrays, impossible capacities,
+zero widths and the empty assignment are covered. The actual row coefficient
+products and declared-variable weight then yield
+`truncNatHom_polyContraction_eq_rankIncidencePolynomial` in the truncated ring.
+`sumArrays_eq_rankIncidenceResidue` proves exact scalar native readback from the
+global grouped incidence sum for n≥1. No desired output/coefficient congruence is
+assumed, and no exhaustive evaluator replaces the certified native machine.
+Its actual binary time and polynomial original-input peak space are unchanged.
+
+The precise remaining equality is between the images under
+`truncRingHom (n+1) (n+1)` of (1) the sum of `rankIncidencePolynomial` over the
+actual decoded arrays and (2) `systemIncidencePolynomial k (n,sys)`. Derive it
+from original test-incidence partitioning, canonical listed integer lifts and
+finite subset-family reindexing. It is not a premise smuggled into a count
+endpoint. Original-assignment count correctness, complete sharper-counter
+branch/parity/sparsification composition and actual eta-time absorption/rescaling
+remain open. The old complete counter still retains its extra log-log factor;
+common-occurrence weighted rows, arbitrary variable-length raw rows, tables,
+graphs, Theorem 7.1 and ALL-main retain their broader limits.

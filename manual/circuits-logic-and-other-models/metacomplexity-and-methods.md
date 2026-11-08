@@ -1066,13 +1066,67 @@ assignments, zero widths and no blocks, forced padding multiplicity, live/dead
 padded readback, a negative test-coefficient product modulo 16, and variables
 outside every scope contributing their powers of two.
 
-The final global sum identity is still open. Reindex the supported unpadded
-contractions by the original equation/subset families, remove invalid binary
-ranks via the actual row-zero tests, and identify the listed-test integer lifts
-and group-local test coordinates with `systemIncidencePolynomial`'s finite
-normalized equations. The new component identities do not assert that final
-equality. High-incidence branch and parity-query composition, sharper
+The native finite-sum support/readback stage is now proved below. Its grouped
+incidence polynomial still needs identification with the polynomial on original
+finite normalized equations. The new identity is not yet original-assignment
+count correctness. High-incidence branch and parity-query composition, sharper
 sparsification, explicit exponent absorption and weighted eta-time rescaling
 remain after it. The old complete counter still retains its extra log-log
 factor; the common-occurrence weighted frontend, arbitrary variable-length raw
 rows, table/graph endpoints, full Theorem 7.1 and ALL-main remain open.
+
+
+### Read the actual native stream as a fitting-rank incidence sum
+
+Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceRankSum`
+and open `Cslib.Circuits.Frontier.IncidenceNetwork`.
+`polyContraction_eq_rankPolynomial` is an exact finite-sum identity for each
+actual padded network. It reindexes all main-wire assignments by full-width
+binary ranks, proves every unused rank makes its actual group row zero, removes
+those terms, and bijects the remainder with `CombinationRanks`. These tuples
+contain one `Fin (choose capacity degree)` per computed pair. The proof also
+covers dead arrays, zero capacities, zero widths and no wire blocks. Padding
+preservation is included. It assumes no contraction value or output relation.
+
+`rankIncidencePolynomial` is the resulting integer polynomial specification:
+for each fitting tuple, multiply the actual test-group Möbius coefficients by
+the constant $2^u$ for declared variables absent from all actual row selections;
+retain the actual global degree-cap check. The polynomial's coefficients can
+be negative. `truncNatHom_polyContraction_eq_rankIncidencePolynomial` proves its
+image in the truncated modular ring equals the actual natural contraction.
+This composes the real wire assignment, row coefficients and variable weights;
+none of these correspondences are supplied as premises.
+
+`sumArrays_eq_rankIncidenceResidue` then proves the complete existing native
+stream's scalar output is exactly the least nonnegative residue of the sum of
+those polynomials' coefficients below $V^{n+1}$, modulo $2^{n+1}$. It assumes
+$n\ge1$ for positive quarter-root groups. The natural finite-rank identity also
+handles no groups; the zero-variable counting dispatch remains separate. The
+coefficient congruences and canonical residue are derived, rather than assumed.
+These finite sums specify the existing fast native contraction; no exhaustive
+rank/powerset evaluator is substituted. Its actual binary time and original-input
+polynomial peak-space certificates remain unchanged. The complete client
+combines the output identity with that certificate on a genuine sparse family.
+
+From the repository root run
+`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceRankSum`.
+The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceRankSum.lean)
+checks a genuine unused two-bit encoding (three fitting singleton subsets), zero
+from impossible capacity and cap overflow, the unique empty-assignment term,
+padded truncated reconstruction and exact native grouped readback/resource
+composition.
+
+This completes the native-to-grouped finite-sum identity, not its remaining
+identification with `systemIncidencePolynomial`. At the computed cap and groups,
+the next exact target is equality of their images under `truncRingHom (n+1) (n+1)`:
+the sum of `rankIncidencePolynomial` over actual decoded arrays versus
+`systemIncidencePolynomial k (n,sys)`. Prove that equality from the partition of
+original test incidences, canonical listed integer lifts and the finite subset
+families; it is not an assumption of a new count theorem. Only then does the
+already proved `rootCount_eq_incidenceResidue` connect this native output to the
+original assignment count. The high-incidence/parity/sharper-sparsification and
+eta-time absorption/rescaling stages, the old complete counter's extra log-log
+factor, common-occurrence weighted rows and raw-row/table/graph/ALL-main gaps
+remain open. The source locator is OpenAI2026ETH, Appendix D.3, Lemma D.2,
+PDF pp.55–56, especially the unique-index/zero-unused-bit and contraction-sum
+paragraphs; no full 1575 Lemma 3.2 or Theorem 7.1 endpoint is claimed.
