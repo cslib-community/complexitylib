@@ -68,7 +68,9 @@ theorem sum_abs_pow_sub_pow_le {A B : Matrix ι ι ℝ} {δ : ℝ}
   exact (linfty_opNorm_le_iff (by positivity)).1 h i
 
 /-- Powers of a nonnegative matrix whose rows sum to at most `1` have rows summing to at most
-`1`. -/
+`1`. This is the all-ones case `e = 1` of `Matrix.pow_mulVec_mem_Icc` in
+`Foundations/LinearAlgebra/Matrix/TimeLayer`, stated with row sums and proved directly to keep this
+leaf's imports small. -/
 theorem sum_pow_apply_le_one {A : Matrix ι ι ℝ} (h0 : ∀ i j, 0 ≤ A i j)
     (h1 : ∀ i, ∑ j, A i j ≤ 1) (m : ℕ) (i : ι) : ∑ j, (A ^ m) i j ≤ 1 := by
   induction m generalizing i with

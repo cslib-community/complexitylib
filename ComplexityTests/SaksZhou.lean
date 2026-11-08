@@ -69,31 +69,60 @@ example : ¬ IsDyadicSubstochastic 1 (!![1 / 3] : Matrix (Fin 1) (Fin 1) ℝ) :=
 -- The exact power satisfies the hypothesis with `ε = 0`: the set of bad seeds is empty.
 example (d n₁ : ℕ) (M : Matrix (Fin 2) (Fin 2) ℝ) (A : Matrix (Fin 2) (Fin 2) ℝ)
     (_ : A = M ∨ IsDyadicSubstochastic d A) :
-    (({y : Unit | ∃ i j, (0 : ℝ) < |(fun A (_ : Unit) => A ^ n₁) A y i j - (A ^ n₁) i j|} :
-      Finset Unit).dens : ℝ) ≤ 0 := by
-  simp
+    ((entryFarSet 0 ((fun A (_ : Unit) => A ^ n₁) A) (A ^ n₁)).dens : ℝ) ≤ 0 := by
+  simp [entryFarSet]
 
 -- A `pow` that always returns `0` violates the hypothesis at `A = 1`, `n₁ = 1` and `ε = 1/2`.
 example :
-    ¬ (({_y : Unit | ∃ i j, (1 / 2 : ℝ) <
-        |(0 : Matrix (Fin 1) (Fin 1) ℝ) i j - ((1 : Matrix (Fin 1) (Fin 1) ℝ) ^ 1) i j|} :
-      Finset Unit).dens : ℝ) ≤ 1 / 2 := by
-  norm_num [Finset.filter_true_of_mem]
+    ¬ ((entryFarSet (1 / 2) (fun _ : Unit => (0 : Matrix (Fin 1) (Fin 1) ℝ))
+      ((1 : Matrix (Fin 1) (Fin 1) ℝ) ^ 1)).dens : ℝ) ≤ 1 / 2 := by
+  norm_num [entryFarSet, Finset.filter_true_of_mem]
 
 -- With the exact power (`ε = 0`), Lemma A.4 bounds the density of the far set by
 -- `n₂ w ^ 2 2 ^ (-d)`; here `w = 2`, `n₁ = 2`, `n₂ = 3` and `d = 10` give `12 / 1024`.
--- Restating the far set at `ι = Fin 2` elaborates its `∃ i` with `Nat.decidableExistsFin`
--- instead of `Fintype.decidableExistsFintype`, so the set is matched by `congr!` rather than by
--- unification.
 example (M : Matrix (Fin 2) (Fin 2) ℝ) (h0 : ∀ i j, 0 ≤ M i j) (h1 : ∀ i, ∑ j, M i j ≤ 1) :
-    (({p : Unit × (Fin 3 → Fin (2 ^ 10)) | ∃ i,
-        ((2 : ℕ) : ℝ) ^ 3 * (Fintype.card (Fin 2) * (2 / 2 ^ 10)) <
-          ∑ j, |snapIter 10 (fun A => A ^ 2) M 3 p.2 i j - (M ^ 2 ^ 3) i j|} :
-          Finset _).dens : ℝ) ≤ 3 / 256 := by
-  convert dens_snapIter_far_le_of_two_le 10 3 le_rfl (fun A (_ : Unit) => A ^ 2) h0 h1 le_rfl
-    (fun A _ => by simp) using 1
-  · congr!
-  · norm_num
+    ((rowFarSet (((2 : ℕ) : ℝ) ^ 3 * (Fintype.card (Fin 2) * (2 / 2 ^ 10)))
+        (fun p : Unit × (Fin 3 → Fin (2 ^ 10)) => snapIter 10 (fun A => A ^ 2) M 3 p.2)
+        (M ^ 2 ^ 3)).dens : ℝ) ≤ 3 / 256 := by
+  refine (dens_snapIter_far_le_of_two_le 10 3 le_rfl (fun A (_ : Unit) => A ^ 2) h0 h1 le_rfl
+    fun A _ => by simp [entryFarSet]).trans_eq ?_
+  norm_num
+
+/-! ### A randomized `pow` with a bad seed -/
+
+/-- The exact square, except that seed `0` of `2 ^ 15` returns the zero matrix. -/
+noncomputable def faultySquare (A : Matrix (Fin 2) (Fin 2) ℝ) (y : Fin 32768) :
+    Matrix (Fin 2) (Fin 2) ℝ :=
+  if y = 0 then 0 else A ^ 2
+
+-- Only seed `0` can be bad, so the bad-seed density is at most `ε = 2 ^ (-15)` for every `A`.
+theorem dens_entryFarSet_faultySquare_le (A : Matrix (Fin 2) (Fin 2) ℝ) :
+    ((entryFarSet (1 / 32768) (faultySquare A) (A ^ 2)).dens : ℝ) ≤ 1 / 32768 := by
+  have hsub : entryFarSet (1 / 32768) (faultySquare A) (A ^ 2) ⊆ {0} := by
+    intro y hy
+    rw [Finset.mem_singleton]
+    by_contra hne
+    obtain ⟨i, j, h⟩ := mem_entryFarSet.1 hy
+    simp [faultySquare, hne] at h
+    linarith
+  calc ((entryFarSet (1 / 32768) (faultySquare A) (A ^ 2)).dens : ℝ)
+      ≤ (({0} : Finset (Fin 32768)).dens : ℝ) := NNRat.cast_le.2 (Finset.dens_le_dens hsub)
+    _ = 1 / 32768 := by simp [Finset.dens]
+
+-- The bad seed is genuinely bad: at `A = 1`, seed `0` is `1`-far from `A ^ 2`.
+example : (0 : Fin 32768) ∈ entryFarSet (1 / 32768) (faultySquare 1) (1 ^ 2) :=
+  mem_entryFarSet.2 ⟨0, 0, by norm_num [faultySquare]⟩
+
+-- Lemma A.4 for this randomized `pow`, at `w = 2`, `n₁ = n₂ = 2` and `d = 5`: the far set has
+-- density at most `2 (2 ^ (-15) + 4 (2 ^ (-10) + 2 ^ (-5))) < 1 / 3`.
+example (M : Matrix (Fin 2) (Fin 2) ℝ) (h0 : ∀ i j, 0 ≤ M i j) (h1 : ∀ i, ∑ j, M i j ≤ 1) :
+    ((rowFarSet (((2 : ℕ) : ℝ) ^ 2 * (Fintype.card (Fin 2) * (2 / 2 ^ 5)))
+        (fun p : Fin 32768 × (Fin 2 → Fin (2 ^ 5)) =>
+          snapIter 5 (fun A => faultySquare A p.1) M 2 p.2)
+        (M ^ 2 ^ 2)).dens : ℝ) ≤ 1 / 3 := by
+  refine (dens_snapIter_far_le_of_two_le 5 2 le_rfl faultySquare h0 h1 (by norm_num)
+    fun A _ => dens_entryFarSet_faultySquare_le A).trans ?_
+  norm_num
 
 /-! ### `n₁ = 1` -/
 
@@ -103,7 +132,10 @@ example : snapIter 2 (· ^ 1) (1 : Matrix (Fin 1) (Fin 1) ℝ) 3 (fun _ => 3) 0 
   norm_num [snapIter_succ, snapMatrix_apply, snap_def, Fin.init]
 
 -- So the error `3/4` exceeds `n w 2 ^ (1 - d) = 1/2` for `n = 1 ^ 3`, while the exact bound
--- `(∑_{k < 3} 1 ^ k) w 2 ^ (1 - d) = 3/2` of `sum_abs_snapIter_sub_pow_le` holds.
+-- `(∑_{k < 3} 1 ^ k) w 2 ^ (1 - d) = 3/2` of `sum_abs_snapIter_sub_pow_le` holds. The density
+-- form fails too: at `d = 4`, `n₂ = 3` and `ε = 0`, a direct enumeration of the `16 ^ 3` shift
+-- triples (not checked in Lean) finds error above `n w 2 ^ (1 - d) = 1/8` for `3375` of them,
+-- about `0.82`, with maximum error `3/16`.
 example : (1 : ℝ) ^ 3 * (Fintype.card (Fin 1) * (2 / 2 ^ 2)) <
     ∑ j, |snapIter 2 (· ^ 1) (1 : Matrix (Fin 1) (Fin 1) ℝ) 3 (fun _ => 3) 0 j -
       ((1 : Matrix (Fin 1) (Fin 1) ℝ) ^ 1 ^ 3) 0 j| := by

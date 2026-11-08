@@ -21,30 +21,39 @@ iterating an approximate `n₁`-th power `n₂` times. Each round reuses the sam
 uses a fresh random shift `zᵢ`. In the presentation of [ChattopadhyayLiao2020, Appendix A.1], let
 `pow A y` be an "offline randomized" approximation of `A ^ n₁` with seed `y ∈ Ω`, and let
 `M̂₀ = M` and `M̂ᵢ = Snap_d(pow M̂ᵢ₋₁ y, zᵢ)` (`snapIter`). Lemma A.4 there states that `M̂_{n₂}` is
-close to `M ^ (n₁ ^ n₂)` with high probability over `(y, z₁, …, z_{n₂})`. This file proves it in
-exact density form, with explicit constants and for an arbitrary finite seed space `Ω`.
+close to `M ^ (n₁ ^ n₂)` with high probability over `(y, z₁, …, z_{n₂})`. This file proves this
+probability statement in exact density form, with explicit constants and for an arbitrary finite
+seed space `Ω`. Here `pow` is an arbitrary function, so the space clause of Lemma A.4
+(`M̂_{n₂}` is computable in space `O(r + n₂ (s + d))`) is not formalized; it belongs to the
+space-bounded realization in [#474](https://github.com/cslib-community/complexitylib/issues/474).
 
 Suppose that for `A = M` and for every dyadic substochastic `A` at precision `d`, at most an `ε`
-fraction of the seeds `y` give `|pow A y - A ^ n₁| > ε` in some entry. Then:
+fraction of the seeds `y` give `|pow A y - A ^ n₁| > ε` in some entry (`entryFarSet`). Then:
 
 * (`dens_snapIter_ne_le`) the iteration agrees with the *reference iteration*
   `Mᵢ = Snap_d(Mᵢ₋₁ ^ n₁, zᵢ)`, which does not depend on `y`, except on a set of density at most
   `n₂ (ε + w ^ 2 (2 ^ d ε + 2 ^ (-d)))`, where `w` is the number of states;
 * (`sum_abs_snapIter_sub_pow_le`) deterministically, every row of the reference iterate is within
   `(∑_{k < n₂} n₁ ^ k) w 2 ^ (1 - d)` of `M ^ (n₁ ^ n₂)` in absolute sum;
-* (`dens_snapIter_far_le`, `dens_snapIter_far_le_of_two_le`) hence, except on a set of the same
-  density, every row of `M̂_{n₂} - M ^ (n₁ ^ n₂)` has absolute sum at most
+* (`dens_snapIter_far_le`, `dens_snapIter_far_le_of_two_le`) hence, outside a set of the same
+  density (a `rowFarSet`), every row of `M̂_{n₂} - M ^ (n₁ ^ n₂)` has absolute sum at most
   `(∑_{k < n₂} n₁ ^ k) w 2 ^ (1 - d)`, and at most `n₁ ^ n₂ w 2 ^ (1 - d)` when `n₁ ≥ 2`.
 
 With `n = n₁ ^ n₂`, this is the bound `‖M̂_{n₂} - M ^ n‖_∞ ≤ n w 2 ^ (1 - d)` of
 [ChattopadhyayLiao2020, Lemma A.4], with failure probability
-`n₂ (ε + w ^ 2 (2 ^ d ε + 2 ^ (-d)))` in place of `O(w ^ 2 n₂ (2 ^ d ε + 2 ^ (-d)))`. Two points
-differ from that statement. The hypothesis on `pow` is needed only for `M` and for dyadic
-substochastic matrices, which are the only matrices the reference iteration visits; this is the
-setting of [Hoza2021, proof of Theorem A.3], where the matrices have `a`-bit entries. The
-geometric sum `∑_{k < n₂} n₁ ^ k` is the exact solution of the error recursion; it is at most
-`n₁ ^ n₂` only for `n₁ ≥ 2`. For `n₁ = 1` the iteration can lose `2 ^ (-d)` in every round, so the
-form `n w 2 ^ (1 - d)` needs `n₁ ≥ 2`. The tests give a `1 × 1` example.
+`n₂ (ε + w ^ 2 (2 ^ d ε + 2 ^ (-d)))` in place of `O(w ^ 2 n₂ (2 ^ d ε + 2 ^ (-d)))`. Three points
+differ from that statement. Only the probability statement is formalized, not the space clause.
+The hypothesis on `pow` is needed only for `M` and for dyadic substochastic matrices, which are
+the only matrices the reference iteration visits; this is the setting of [Hoza2021, proof of
+Theorem A.3], where the matrices have `a`-bit entries. The geometric sum `∑_{k < n₂} n₁ ^ k` is
+the exact solution of the error recursion; it is at most `n₁ ^ n₂` only for `n₁ ≥ 2`. For
+`n₁ = 1` the iteration can lose `2 ^ (-d)` in every round, so the form `n w 2 ^ (1 - d)` needs
+`n₁ ≥ 2`. The tests give a `1 × 1` example.
+
+The bad-seed and far sets are named (`entryFarSet`, `rowFarSet`) so that their decidability
+instances are fixed once. Restating them with set-builder notation at a concrete `ι = Fin w`
+would elaborate `∃ i` with `Nat.decidableExistsFin` instead of `Fintype.decidableExistsFintype`,
+and the two sets would then match only up to `congr!`.
 
 ## Proof
 
@@ -55,20 +64,23 @@ in `y`, or if the two are `ε`-close but snap differently under the fresh shift 
 density at most `w ^ 2 (2 ^ d ε + 2 ^ (-d))` in `zᵢ` by Lemma A.3 (`dens_snapMatrix_ne_le`). A
 hybrid argument over the rounds sums these bounds. For the deterministic
 error, snapping a nonnegative matrix changes each row by at most `w 2 ^ (1 - d)` in absolute sum,
-and powers of substochastic matrices are `1`-Lipschitz in the matrix `∞`-norm up to the factor
-`n₁` (`Matrix.sum_abs_pow_sub_pow_le`). So the error `Eᵢ` satisfies
-`Eᵢ ≤ w 2 ^ (1 - d) + n₁ Eᵢ₋₁`, which [ChattopadhyayLiao2020] cites as Lemma 5.4 of
-[SaksZhou1999].
+which is the per-step bound of [ChattopadhyayLiao2020, proof of Lemma A.4], and the `n₁`-th power
+is `n₁`-Lipschitz on the unit ball of the matrix `∞`-norm (`Matrix.sum_abs_pow_sub_pow_le`). So the
+error `Eᵢ` satisfies `Eᵢ ≤ w 2 ^ (1 - d) + n₁ Eᵢ₋₁`. This recursion and its exact solution are
+derived here; [ChattopadhyayLiao2020] states only the per-step bound and then cites Lemma 5.4 of
+[SaksZhou1999] for the conclusion.
 
 ## Main definitions
 
 * `Cslib.Probability.SaksZhou.snapIter`: the iteration `M̂ᵢ = Snap_d(pow M̂ᵢ₋₁, zᵢ)`.
+* `Cslib.Probability.SaksZhou.entryFarSet`, `Cslib.Probability.SaksZhou.rowFarSet`: the points
+  where a matrix-valued function is far from a fixed matrix, entrywise or in some row sum.
 
 ## Main results
 
 * `Cslib.Probability.SaksZhou.isDyadicSubstochastic_snapIter`: the reference iterates are dyadic
   substochastic.
-* `Cslib.Probability.SaksZhou.sum_abs_snapIter_sub_pow_le`: the deterministic error recursion.
+* `Cslib.Probability.SaksZhou.sum_abs_snapIter_sub_pow_le`: the deterministic error bound.
 * `Cslib.Probability.SaksZhou.dens_snapIter_ne_le`: the coupling with the reference iteration.
 * `Cslib.Probability.SaksZhou.dens_snapIter_far_le`,
   `Cslib.Probability.SaksZhou.dens_snapIter_far_le_of_two_le`: Lemma A.4.
@@ -91,6 +103,29 @@ namespace Cslib.Probability.SaksZhou
 open Finset
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
+
+/-- The points `y` at which `X y` is `ε`-far from `B` in some entry. For `X = pow A` and
+`B = A ^ n₁` these are the bad seeds of the hypothesis of Lemma A.4. -/
+noncomputable def entryFarSet {Ω κ ν : Type*} [Fintype Ω] [Fintype κ] [Fintype ν] (ε : ℝ)
+    (X : Ω → Matrix κ ν ℝ) (B : Matrix κ ν ℝ) : Finset Ω :=
+  {y | ∃ i j, ε < |X y i j - B i j|}
+
+omit [Fintype ι] [DecidableEq ι] in
+@[simp] theorem mem_entryFarSet {Ω κ ν : Type*} [Fintype Ω] [Fintype κ] [Fintype ν] {ε : ℝ}
+    {X : Ω → Matrix κ ν ℝ} {B : Matrix κ ν ℝ} {y : Ω} :
+    y ∈ entryFarSet ε X B ↔ ∃ i j, ε < |X y i j - B i j| := by
+  simp [entryFarSet]
+
+/-- The points `p` at which some row of `X p - B` has absolute sum greater than `c`. -/
+noncomputable def rowFarSet {Ω κ ν : Type*} [Fintype Ω] [Fintype κ] [Fintype ν] (c : ℝ)
+    (X : Ω → Matrix κ ν ℝ) (B : Matrix κ ν ℝ) : Finset Ω :=
+  {p | ∃ i, c < ∑ j, |X p i j - B i j|}
+
+omit [Fintype ι] [DecidableEq ι] in
+@[simp] theorem mem_rowFarSet {Ω κ ν : Type*} [Fintype Ω] [Fintype κ] [Fintype ν] {c : ℝ}
+    {X : Ω → Matrix κ ν ℝ} {B : Matrix κ ν ℝ} {p : Ω} :
+    p ∈ rowFarSet c X B ↔ ∃ i, c < ∑ j, |X p i j - B i j| := by
+  simp [rowFarSet]
 
 /-- The Saks–Zhou iteration: `snapIter d pow M n z` is `M̂ₙ`, where `M̂₀ = M` and
 `M̂ᵢ₊₁ = Snap_d(pow M̂ᵢ, zᵢ)` for the shifts `z = (z₀, …, z_{n-1})`. With `pow = (· ^ n₁)` it is the
@@ -144,7 +179,10 @@ private theorem snapIter_nonneg_sum (d n₁ : ℕ) {M : Matrix ι ι ℝ}
 
 /-- **The deterministic error of the reference iteration**: every row of `Mₙ - M ^ (n₁ ^ n)` has
 absolute sum at most `(∑_{k < n} n₁ ^ k) w 2 ^ (1 - d)`, where `w = |ι|`. This solves the
-recursion `Eᵢ ≤ w 2 ^ (1 - d) + n₁ Eᵢ₋₁` of [ChattopadhyayLiao2020, proof of Lemma A.4]. -/
+recursion `Eᵢ ≤ w 2 ^ (1 - d) + n₁ Eᵢ₋₁`, derived here from the per-step snapping bound of
+[ChattopadhyayLiao2020, proof of Lemma A.4] and the power perturbation bound
+`Matrix.sum_abs_pow_sub_pow_le`; [ChattopadhyayLiao2020] cites Lemma 5.4 of [SaksZhou1999] for
+this step. -/
 theorem sum_abs_snapIter_sub_pow_le (d n₁ : ℕ) {M : Matrix ι ι ℝ}
     (h0 : ∀ i j, 0 ≤ M i j) (h1 : ∀ i, ∑ j, M i j ≤ 1) (n : ℕ)
     (z : Fin n → Fin (2 ^ d)) (i : ι) :
@@ -268,12 +306,13 @@ private theorem card_ne_le_of_step {Ω T S : Type*} [Fintype Ω] [Fintype T] [De
 `Snap_d(pow R y, z) ≠ Snap_d(R ^ n₁, z)` have density at most `ε + w ^ 2 (2 ^ d ε + 2 ^ (-d))`. -/
 private theorem card_snap_pow_ne_le {Ω : Type*} [Fintype Ω] (d n₁ : ℕ)
     (pow : Matrix ι ι ℝ → Ω → Matrix ι ι ℝ) (R : Matrix ι ι ℝ) {ε : ℝ} (hε : 0 ≤ ε)
-    (hR : (#{y : Ω | ∃ i j, ε < |pow R y i j - (R ^ n₁) i j|} : ℝ) ≤ ε * Fintype.card Ω) :
+    (hR : (#(entryFarSet ε (pow R) (R ^ n₁)) : ℝ) ≤ ε * Fintype.card Ω) :
     (#{p : Ω × Fin (2 ^ d) |
         snapMatrix d (pow R p.1) p.2 ≠ snapMatrix d (R ^ n₁) p.2} : ℝ) ≤
       (ε + Fintype.card ι ^ 2 * (2 ^ d * ε + (2 ^ d)⁻¹)) *
         (Fintype.card Ω * Fintype.card (Fin (2 ^ d))) := by
   have hq : (0 : ℝ) < 2 ^ d := by positivity
+  rw [entryFarSet] at hR
   set c : ℝ := Fintype.card ι * Fintype.card ι * (4 ^ d * ε + 1) with hc
   have hy : ∀ y : Ω,
       (#{t : Fin (2 ^ d) | snapMatrix d (pow R y) t ≠ snapMatrix d (R ^ n₁) t} : ℝ) ≤
@@ -328,7 +367,7 @@ theorem dens_snapIter_ne_le {Ω : Type*} [Fintype Ω] (d n₁ n₂ : ℕ)
     (pow : Matrix ι ι ℝ → Ω → Matrix ι ι ℝ) {M : Matrix ι ι ℝ} {ε : ℝ}
     (h0 : ∀ i j, 0 ≤ M i j) (h1 : ∀ i, ∑ j, M i j ≤ 1) (hε : 0 ≤ ε)
     (hpow : ∀ A, A = M ∨ IsDyadicSubstochastic d A →
-      (({y : Ω | ∃ i j, ε < |pow A y i j - (A ^ n₁) i j|} : Finset Ω).dens : ℝ) ≤ ε) :
+      ((entryFarSet ε (pow A) (A ^ n₁)).dens : ℝ) ≤ ε) :
     (({p : Ω × (Fin n₂ → Fin (2 ^ d)) |
         snapIter d (fun A => pow A p.1) M n₂ p.2 ≠ snapIter d (· ^ n₁) M n₂ p.2} :
           Finset _).dens : ℝ) ≤
@@ -353,40 +392,43 @@ theorem dens_snapIter_ne_le {Ω : Type*} [Fintype Ω] (d n₁ n₂ : ℕ)
 /-- **The Saks–Zhou iteration** [ChattopadhyayLiao2020, Lemma A.4], with the exact error sum.
 Under the hypotheses of `dens_snapIter_ne_le`, the pairs `(y, z)` for which some row of
 `M̂_{n₂} - M ^ (n₁ ^ n₂)` has absolute sum greater than `(∑_{k < n₂} n₁ ^ k) w 2 ^ (1 - d)` have
-density at most `n₂ (ε + w ^ 2 (2 ^ d ε + 2 ^ (-d)))`. -/
+density at most `n₂ (ε + w ^ 2 (2 ^ d ε + 2 ^ (-d)))`. Only the probability statement of
+Lemma A.4 is formalized: `pow` is an arbitrary function, and the space clause is left to the
+space-bounded realization ([#474](https://github.com/cslib-community/complexitylib/issues/474)).
+-/
 theorem dens_snapIter_far_le {Ω : Type*} [Fintype Ω] (d n₁ n₂ : ℕ)
     (pow : Matrix ι ι ℝ → Ω → Matrix ι ι ℝ) {M : Matrix ι ι ℝ} {ε : ℝ}
     (h0 : ∀ i j, 0 ≤ M i j) (h1 : ∀ i, ∑ j, M i j ≤ 1) (hε : 0 ≤ ε)
     (hpow : ∀ A, A = M ∨ IsDyadicSubstochastic d A →
-      (({y : Ω | ∃ i j, ε < |pow A y i j - (A ^ n₁) i j|} : Finset Ω).dens : ℝ) ≤ ε) :
-    (({p : Ω × (Fin n₂ → Fin (2 ^ d)) | ∃ i,
-        (∑ k ∈ range n₂, (n₁ : ℝ) ^ k) * (Fintype.card ι * (2 / 2 ^ d)) <
-          ∑ j, |snapIter d (fun A => pow A p.1) M n₂ p.2 i j - (M ^ n₁ ^ n₂) i j|} :
-          Finset _).dens : ℝ) ≤
+      ((entryFarSet ε (pow A) (A ^ n₁)).dens : ℝ) ≤ ε) :
+    ((rowFarSet ((∑ k ∈ range n₂, (n₁ : ℝ) ^ k) * (Fintype.card ι * (2 / 2 ^ d)))
+        (fun p : Ω × (Fin n₂ → Fin (2 ^ d)) => snapIter d (fun A => pow A p.1) M n₂ p.2)
+        (M ^ n₁ ^ n₂)).dens : ℝ) ≤
       n₂ * (ε + Fintype.card ι ^ 2 * (2 ^ d * ε + (2 ^ d)⁻¹)) := by
   refine le_trans ?_ (dens_snapIter_ne_le d n₁ n₂ pow h0 h1 hε hpow)
   refine NNRat.cast_le.2 (Finset.dens_le_dens fun p => ?_)
-  simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+  simp only [mem_rowFarSet, Finset.mem_filter, Finset.mem_univ, true_and]
   rintro ⟨i, hi⟩ heq
   rw [heq] at hi
   exact (sum_abs_snapIter_sub_pow_le d n₁ h0 h1 n₂ p.2 i).not_gt hi
 
 /-- **The Saks–Zhou iteration** [ChattopadhyayLiao2020, Lemma A.4]: for `n₁ ≥ 2` and
 `n = n₁ ^ n₂`, except on a set of density at most `n₂ (ε + w ^ 2 (2 ^ d ε + 2 ^ (-d)))`, every row
-of `M̂_{n₂} - M ^ n` has absolute sum at most `n w 2 ^ (1 - d)`. -/
+of `M̂_{n₂} - M ^ n` has absolute sum at most `n w 2 ^ (1 - d)`. As in `dens_snapIter_far_le`,
+only the probability statement is formalized, not the space clause. The restriction `n₁ ≥ 2` is
+needed: for `n₁ = 1` the error can reach `n₂ 2 ^ (-d)`, and the tests give an example. -/
 theorem dens_snapIter_far_le_of_two_le {Ω : Type*} [Fintype Ω] (d : ℕ) {n₁ : ℕ} (n₂ : ℕ)
     (hn₁ : 2 ≤ n₁) (pow : Matrix ι ι ℝ → Ω → Matrix ι ι ℝ) {M : Matrix ι ι ℝ} {ε : ℝ}
     (h0 : ∀ i j, 0 ≤ M i j) (h1 : ∀ i, ∑ j, M i j ≤ 1) (hε : 0 ≤ ε)
     (hpow : ∀ A, A = M ∨ IsDyadicSubstochastic d A →
-      (({y : Ω | ∃ i j, ε < |pow A y i j - (A ^ n₁) i j|} : Finset Ω).dens : ℝ) ≤ ε) :
-    (({p : Ω × (Fin n₂ → Fin (2 ^ d)) | ∃ i,
-        (n₁ : ℝ) ^ n₂ * (Fintype.card ι * (2 / 2 ^ d)) <
-          ∑ j, |snapIter d (fun A => pow A p.1) M n₂ p.2 i j - (M ^ n₁ ^ n₂) i j|} :
-          Finset _).dens : ℝ) ≤
+      ((entryFarSet ε (pow A) (A ^ n₁)).dens : ℝ) ≤ ε) :
+    ((rowFarSet ((n₁ : ℝ) ^ n₂ * (Fintype.card ι * (2 / 2 ^ d)))
+        (fun p : Ω × (Fin n₂ → Fin (2 ^ d)) => snapIter d (fun A => pow A p.1) M n₂ p.2)
+        (M ^ n₁ ^ n₂)).dens : ℝ) ≤
       n₂ * (ε + Fintype.card ι ^ 2 * (2 ^ d * ε + (2 ^ d)⁻¹)) := by
   refine le_trans ?_ (dens_snapIter_far_le d n₁ n₂ pow h0 h1 hε hpow)
   refine NNRat.cast_le.2 (Finset.dens_le_dens fun p => ?_)
-  simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+  simp only [mem_rowFarSet]
   rintro ⟨i, hi⟩
   refine ⟨i, lt_of_le_of_lt ?_ hi⟩
   have hgeom : ∑ k ∈ range n₂, (n₁ : ℝ) ^ k ≤ (n₁ : ℝ) ^ n₂ := by
