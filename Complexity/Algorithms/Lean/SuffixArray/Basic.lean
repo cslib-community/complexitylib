@@ -8,8 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
+public import Complexity.Foundations.Data.List.CommonPrefix
 public import Mathlib.Data.List.Lex
-import Complexity.Foundations.Data.List.Lex
 import Mathlib.Data.List.Nodup
 
 /-!
@@ -18,9 +18,10 @@ import Mathlib.Data.List.Nodup
 The suffix array of a word `w` over a linearly ordered alphabet lists the starting positions
 `0, …, |w| - 1` of its nonempty suffixes `w.drop i` in increasing lexicographic order
 (`[ManberMyers1993]`). Its LCP array records the length of the longest common prefix of every
-two suffixes adjacent in that order. This module gives the specifications, the uniqueness of
-suffix arrays, a reference construction by sorting, and the combinatorial lemma behind Kasai
-et al.'s linear-time LCP construction (`[KasaiLeeArimuraArikawaPark2001]`).
+two suffixes adjacent in that order, measured by `List.lcpLen`
+(`Complexity.Foundations.Data.List.CommonPrefix`). This module gives the specifications, the
+uniqueness of suffix arrays, a reference construction by sorting, and the combinatorial lemma
+behind Kasai et al.'s linear-time LCP construction (`[KasaiLeeArimuraArikawaPark2001]`).
 
 ## Source Conventions
 
@@ -32,7 +33,6 @@ et al.'s linear-time LCP construction (`[KasaiLeeArimuraArikawaPark2001]`).
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.SuffixArray.lcpLen`: length of the longest common prefix of two lists.
 * `Cslib.Algorithms.Lean.SuffixArray.IsSuffixArray`: `sa` is a permutation of
   `List.range w.length` whose suffixes are strictly increasing.
 * `Cslib.Algorithms.Lean.SuffixArray.suffixArray`: the positions sorted by their suffixes.
@@ -44,9 +44,6 @@ et al.'s linear-time LCP construction (`[KasaiLeeArimuraArikawaPark2001]`).
 * `Cslib.Algorithms.Lean.SuffixArray.isSuffixArray_suffixArray`: the sorting construction is the
   suffix array.
 * `Cslib.Algorithms.Lean.SuffixArray.IsSuffixArray.lt_iff_drop_lt`: rank order is suffix order.
-* `Cslib.Algorithms.Lean.SuffixArray.lcpLen_le_lcpLen_of_le_of_le_left` and
-  `Cslib.Algorithms.Lean.SuffixArray.lcpLen_le_lcpLen_of_le_of_le_right`: a list
-  lexicographically between two others shares their longest common prefix.
 * `Cslib.Algorithms.Lean.SuffixArray.IsSuffixArray.getElem_lcpArray_sub_one_le`: the height lemma
   `lcp[rank[i + 1]] ≥ lcp[rank[i]] - 1` of `[KasaiLeeArimuraArikawaPark2001]`, stated for ranks
   `r`, `r'` with `sa[r] + 1 = sa[r']`.
@@ -64,154 +61,6 @@ public section
 namespace Cslib.Algorithms.Lean.SuffixArray
 
 variable {α : Type*}
-
-/-! ## Longest common prefix -/
-
-/-- Length of the longest common prefix of `u` and `v`. -/
-def lcpLen [DecidableEq α] : List α → List α → ℕ
-  | a :: u, b :: v => if a = b then lcpLen u v + 1 else 0
-  | _, _ => 0
-
-section lcp
-
-variable [DecidableEq α]
-
-@[simp] theorem lcpLen_nil_left (v : List α) : lcpLen [] v = 0 := by
-  cases v <;> rfl
-
-@[simp] theorem lcpLen_nil_right (u : List α) : lcpLen u [] = 0 := by
-  cases u <;> rfl
-
-theorem lcpLen_cons_cons (a b : α) (u v : List α) :
-    lcpLen (a :: u) (b :: v) = if a = b then lcpLen u v + 1 else 0 := by
-  rw [lcpLen]
-
-@[simp] theorem lcpLen_cons_cons_self (a : α) (u v : List α) :
-    lcpLen (a :: u) (a :: v) = lcpLen u v + 1 := by
-  simp only [lcpLen_cons_cons, ↓reduceIte]
-
-theorem lcpLen_comm (u v : List α) : lcpLen u v = lcpLen v u := by
-  induction u generalizing v with
-  | nil => simp only [lcpLen_nil_left, lcpLen_nil_right]
-  | cons a u ih =>
-    cases v with
-    | nil => simp only [lcpLen_nil_left, lcpLen_nil_right]
-    | cons b v =>
-      simp only [lcpLen_cons_cons, ih v]
-      by_cases h : a = b
-      · simp only [h, ↓reduceIte]
-      · simp only [h, ↓reduceIte, Ne.symm h]
-
-theorem lcpLen_le_length_left (u v : List α) : lcpLen u v ≤ u.length := by
-  induction u generalizing v with
-  | nil => simp only [lcpLen_nil_left, List.length_nil, Nat.le_refl]
-  | cons a u ih =>
-    cases v with
-    | nil => simp only [lcpLen_nil_right, Nat.zero_le]
-    | cons b v =>
-      rw [lcpLen_cons_cons]
-      split_ifs
-      · have := ih v
-        simp only [List.length_cons]
-        omega
-      · exact Nat.zero_le _
-
-theorem lcpLen_le_length_right (u v : List α) : lcpLen u v ≤ v.length := by
-  rw [lcpLen_comm]
-  exact lcpLen_le_length_left v u
-
-/-- `k ≤ lcpLen u v` iff both lists have length at least `k` and agree on their first `k`
-entries. -/
-theorem le_lcpLen_iff {u v : List α} {k : ℕ} :
-    k ≤ lcpLen u v ↔ k ≤ u.length ∧ k ≤ v.length ∧ u.take k = v.take k := by
-  induction k generalizing u v with
-  | zero => simp only [Nat.zero_le, List.take_zero, and_self]
-  | succ k ih =>
-    cases u with
-    | nil => simp only [lcpLen_nil_left, List.length_nil]; omega
-    | cons a u =>
-      cases v with
-      | nil => simp only [lcpLen_nil_right, List.length_nil]; omega
-      | cons b v =>
-        rw [lcpLen_cons_cons, List.take_succ_cons, List.take_succ_cons, List.cons_eq_cons,
-          List.length_cons, List.length_cons]
-        by_cases hab : a = b
-        · simp only [hab, ↓reduceIte, true_and, Nat.add_le_add_iff_right, ih]
-        · simp only [hab, ↓reduceIte, false_and, and_false, iff_false]
-          omega
-
-/-- A common prefix of length `h` splits off the longest common prefix. -/
-theorem lcpLen_eq_add_lcpLen_drop {u v : List α} {h : ℕ} (hh : h ≤ lcpLen u v) :
-    lcpLen u v = h + lcpLen (u.drop h) (v.drop h) := by
-  induction h generalizing u v with
-  | zero => simp only [List.drop_zero, Nat.zero_add]
-  | succ h ih =>
-    cases u with
-    | nil => simp only [lcpLen_nil_left] at hh; omega
-    | cons a u =>
-      cases v with
-      | nil => simp only [lcpLen_nil_right] at hh; omega
-      | cons b v =>
-        rw [lcpLen_cons_cons] at hh ⊢
-        by_cases hab : a = b
-        · simp only [hab, ↓reduceIte] at hh ⊢
-          rw [ih (by omega), List.drop_succ_cons, List.drop_succ_cons]
-          omega
-        · simp only [hab, ↓reduceIte] at hh
-          omega
-
-/-- Dropping one leading entry from both lists shortens their longest common prefix by at most
-one. -/
-theorem lcpLen_sub_one_le_lcpLen_tail (u v : List α) :
-    lcpLen u v - 1 ≤ lcpLen u.tail v.tail := by
-  cases u with
-  | nil => simp only [lcpLen_nil_left, Nat.zero_sub, Nat.zero_le]
-  | cons a u =>
-    cases v with
-    | nil => simp only [lcpLen_nil_right, Nat.zero_sub, Nat.zero_le]
-    | cons b v =>
-      rw [lcpLen_cons_cons, List.tail_cons, List.tail_cons]
-      split_ifs <;> omega
-
-end lcp
-
-section order
-
-variable [LinearOrder α]
-
-/-- A list lexicographically between `u` and `x` shares at least `lcpLen u x` leading entries
-with `u`. -/
-theorem lcpLen_le_lcpLen_of_le_of_le_left {u v x : List α} (huv : u ≤ v) (hvx : v ≤ x) :
-    lcpLen u x ≤ lcpLen u v := by
-  set k := lcpLen u x
-  obtain ⟨hku, hkx, htake⟩ := le_lcpLen_iff.mp (le_refl k)
-  have hpu : u.take k <+: u := List.take_prefix k u
-  have hpx : u.take k <+: x := htake ▸ List.take_prefix k x
-  have hpv : u.take k <+: v := List.IsPrefix.of_prefix_of_le_of_le hpu hpx huv hvx
-  have hlen : (u.take k).length = k := by simp only [List.length_take]; omega
-  refine le_lcpLen_iff.mpr ⟨hku, ?_, ?_⟩
-  · have := hpv.length_le; omega
-  · have := List.prefix_iff_eq_take.mp hpv
-    rw [hlen] at this
-    exact this
-
-/-- A list lexicographically between `u` and `x` shares at least `lcpLen u x` leading entries
-with `x`. -/
-theorem lcpLen_le_lcpLen_of_le_of_le_right {u v x : List α} (huv : u ≤ v) (hvx : v ≤ x) :
-    lcpLen u x ≤ lcpLen v x := by
-  set k := lcpLen u x
-  obtain ⟨hku, hkx, htake⟩ := le_lcpLen_iff.mp (le_refl k)
-  have hpu : u.take k <+: u := List.take_prefix k u
-  have hpx : u.take k <+: x := htake ▸ List.take_prefix k x
-  have hpv : u.take k <+: v := List.IsPrefix.of_prefix_of_le_of_le hpu hpx huv hvx
-  have hlen : (u.take k).length = k := by simp only [List.length_take]; omega
-  refine le_lcpLen_iff.mpr ⟨?_, hkx, ?_⟩
-  · have := hpv.length_le; omega
-  · have := List.prefix_iff_eq_take.mp hpv
-    rw [hlen] at this
-    rw [← this, htake]
-
-end order
 
 /-! ## Suffix arrays -/
 
@@ -331,7 +180,7 @@ variable [DecidableEq α]
 is the length of the longest common prefix of the suffixes at `sa[r - 1]` and `sa[r]`. -/
 def lcpArray (w : List α) : List ℕ → List ℕ
   | [] => []
-  | i :: sa => 0 :: List.zipWith (fun j k => lcpLen (w.drop j) (w.drop k)) (i :: sa) sa
+  | i :: sa => 0 :: List.zipWith (fun j k => List.lcpLen (w.drop j) (w.drop k)) (i :: sa) sa
 
 @[simp] theorem length_lcpArray (w : List α) (sa : List ℕ) :
     (lcpArray w sa).length = sa.length := by
@@ -350,7 +199,7 @@ theorem getElem_lcpArray_zero (w : List α) (sa : List ℕ) (h : 0 < (lcpArray w
 theorem getElem_lcpArray_of_pos (w : List α) (sa : List ℕ) {r : ℕ}
     (hr : r < (lcpArray w sa).length) (hr0 : 0 < r) :
     (lcpArray w sa)[r] =
-      lcpLen (w.drop (sa[r - 1]'(by simp only [length_lcpArray] at hr; omega)))
+      List.lcpLen (w.drop (sa[r - 1]'(by simp only [length_lcpArray] at hr; omega)))
         (w.drop (sa[r]'(by simpa only [length_lcpArray] using hr))) := by
   cases sa with
   | nil => simp only [length_lcpArray, List.length_nil] at hr; omega
@@ -376,15 +225,15 @@ theorem IsSuffixArray.getElem_lcpArray_sub_one_le (h : IsSuffixArray w sa) {r r'
   rw [getElem_lcpArray_of_pos w sa _ hr0]
   set i := sa[r]
   set j := sa[r - 1]'(by omega)
-  set L := lcpLen (w.drop j) (w.drop i) with hL
-  have hshift : L - 1 ≤ lcpLen (w.drop (j + 1)) (w.drop (i + 1)) := by
-    have := lcpLen_sub_one_le_lcpLen_tail (w.drop j) (w.drop i)
+  set L := List.lcpLen (w.drop j) (w.drop i) with hL
+  have hshift : L - 1 ≤ List.lcpLen (w.drop (j + 1)) (w.drop (i + 1)) := by
+    have := List.lcpLen_sub_one_le_lcpLen_tail (w.drop j) (w.drop i)
     simpa only [List.tail_drop] using this
   rcases Nat.lt_or_ge L 2 with hL2 | hL2
   · omega
   -- Both suffixes have length at least `L ≥ 2`, so `j + 1 < |w|`.
   have hjn : j + 1 < w.length := by
-    have := lcpLen_le_length_left (w.drop j) (w.drop i)
+    have := List.lcpLen_le_length_left (w.drop j) (w.drop i)
     simp only [List.length_drop] at this
     omega
   obtain ⟨q, hq, hqj⟩ := h.exists_getElem_eq hjn
@@ -396,7 +245,7 @@ theorem IsSuffixArray.getElem_lcpArray_sub_one_le (h : IsSuffixArray w sa) {r r'
     rw [List.drop_eq_getElem_cons hjw, List.drop_eq_getElem_cons hiw] at hlt hL
     have heq : w[j] = w[i] := by
       by_contra hne
-      simp only [lcpLen_cons_cons, hne, ↓reduceIte] at hL
+      simp only [List.lcpLen_cons_cons, hne, ↓reduceIte] at hL
       omega
     rw [heq] at hlt
     exact List.lex_cons_iff.mp hlt
@@ -410,7 +259,7 @@ theorem IsSuffixArray.getElem_lcpArray_sub_one_le (h : IsSuffixArray w sa) {r r'
     · simp only [heq, le_refl]
   have hle2 : w.drop sa[r' - 1] ≤ w.drop sa[r'] :=
     le_of_lt (h.drop_lt_drop (by omega) hr')
-  have := lcpLen_le_lcpLen_of_le_of_le_right hle1 hle2
+  have := List.lcpLen_le_lcpLen_of_le_of_le_right hle1 hle2
   rw [hqj] at this
   rw [hsucc] at hshift
   omega
