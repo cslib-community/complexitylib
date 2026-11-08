@@ -113,4 +113,16 @@ theorem Circuit.depthWith_le_of_evalCode (cost : σ.Op → ℕ) (c : Circuit σ 
   · exact Nat.zero_le _
   · exact h v (List.mem_of_getElem? hv)
 
+/-- **Depths through the code.** The depth with costs of the wire of output `j` is the value at
+its number of the code of the circuit evaluated in the depth interpretation from zero inputs. -/
+theorem Circuit.getD_evalCode_depthInterpretation (cost : σ.Op → ℕ) (c : Circuit σ n m)
+    (j : Fin m) :
+    (evalCode (depthInterpretation cost) 0 (List.replicate n 0) c.code.1).getD
+      (c.outputs j).toNat 0 = c.program.wireDepthsWith cost (c.outputs j) := by
+  have heval := c.eval_eq_getD (depthInterpretation cost) 0 (fun _ => 0) j
+  rw [List.ofFn_const] at heval
+  rw [← heval]
+  cases hj : c.outputs j <;> simp [Circuit.eval, Program.trace, Program.wireDepthsWith,
+    Program.depthsWith, hj]
+
 end Cslib.Circuits
