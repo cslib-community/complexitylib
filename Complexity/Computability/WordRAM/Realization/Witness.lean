@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Renfei Zhou. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Renfei Zhou
 -/
 
 module
@@ -153,3 +153,48 @@ def Witness.reindex {ε : Type} {m : ℕ} (h : Witness B p input output safe wor
   code_spec := Spec.reindex h.code_spec f env ix hw
 
 end Cslib.WordRAM.Realization.Realizes
+
+namespace Cslib.WordRAM.Realization.RealizesBounded
+
+open Cslib.DataStructure
+
+variable {B : Basis} {δ α : Type} {k l : ℕ}
+  {p : δ → Memory.Prog α} {input : δ ↪ (Fin k → ℕ)} {output : α ↪ (Fin l → ℕ)}
+  {safe : ℕ → δ → Memory.State → Prop} {work : δ → Memory.State → ℕ}
+
+/-- A specified frontier-bounded realization, retaining its resource parameters and emitter. -/
+structure Witness (B : Basis) (p : δ → Memory.Prog α) (input : δ ↪ (Fin k → ℕ))
+    (output : α ↪ (Fin l → ℕ)) (safe : ℕ → δ → Memory.State → Prop)
+    (work : δ → Memory.State → ℕ) where
+  /-- Auxiliary registers, excluding results and the reserved extra slot. -/
+  scratchSize : ℕ
+  /-- Exchange factor for memory charges plus local work. -/
+  factor : ℕ
+  /-- The emitter, fixed before all runtime values and register placements. -/
+  code : ∀ {r : ℕ}, (frontier : Fin r) → (Fin k → Fin r) →
+    (Fin (l + scratchSize + 1) → Fin r) → Code B r
+  /-- The frontier-bounded execution, whole-memory/frontier and register-frame contract. -/
+  code_spec : Realizes.SpecBounded B p input output safe work scratchSize factor code
+
+/-- Forget resource and emitter selection to `RealizesBounded`. -/
+theorem Witness.toRealizesBounded (h : Witness B p input output safe work) :
+    RealizesBounded B p input output safe work :=
+  ⟨h.scratchSize, h.factor, h.code, h.code_spec⟩
+
+/-- Erase the frontier bound on a retained witness. -/
+def Witness.toWitness (h : Witness B p input output safe work) :
+    Realizes.Witness B p input output safe work where
+  scratchSize := h.scratchSize
+  factor := h.factor
+  code := h.code
+  code_spec := Realizes.SpecBounded.toSpec h.code_spec
+
+/-- Select a witness from an existential `RealizesBounded` proof. -/
+noncomputable def Witness.ofRealizesBounded (h : RealizesBounded B p input output safe work) :
+    Witness B p input output safe work where
+  scratchSize := h.choose
+  factor := h.choose_spec.choose
+  code := h.choose_spec.choose_spec.choose
+  code_spec := h.choose_spec.choose_spec.choose_spec
+
+end Cslib.WordRAM.Realization.RealizesBounded

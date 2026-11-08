@@ -1,12 +1,13 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Renfei Zhou. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Renfei Zhou
 -/
 
 module
 -- upstream: candidate
 
+public import Complexity.Computability.WordRAM.BoundedExec
 public import Complexity.Computability.WordRAM.Controller
 public import Complexity.Computability.WordRAM.MapOp
 public import Complexity.DataStructure.Memory.Spec
@@ -30,11 +31,14 @@ not a competing execution semantics or a second client language.
 * `memoryState`: the functional whole-memory/frontier abstraction.
 * `memoryCost`: the memory-level charge of the client's actual deterministic history.
 * `Realizes`: uniform native realization with a combined instruction currency and register frame.
+* `Realizes.SpecBounded`, `RealizesBounded`: frontier-bounded strengthening certifying
+  `ExecBounded w (y.regs frontier)` for lifting to the Resizable Word RAM.
 
 ## Main results
 
 * `Realizes.Spec.consequence`, `Realizes.consequence`: strengthen the domain or enlarge work.
 * `Realizes.exists_refines`: forget the fresh-register frame to the existing `Refines` API.
+* `RealizesBounded.toRealizes`: erase the frontier-access bound back to `Realizes`.
 
 The realization certificate and its grading are original infrastructure. The memory interface,
 free-monad interpreter and native execution rules are reused unchanged.
@@ -225,6 +229,202 @@ theorem exists_refines (h : Realizes B p input output safe work) :
   obtain ⟨y, hy, hm, hout, _⟩ := (he frontier src tmp hi hd hf hs).2 w d x hx hin hsafe hv
   exact ⟨hv, y, hy, hm, hout⟩
 
+/-- Frontier-bounded execution contract strengthening `Realizes.Spec` with
+`ExecBounded w (y.regs frontier)`. -/
+def SpecBounded (B : Basis) (p : δ → Memory.Prog α)
+    (input : δ ↪ (Fin k → ℕ)) (output : α ↪ (Fin l → ℕ))
+    (safe : ℕ → δ → Memory.State → Prop) (work : δ → Memory.State → ℕ) (n C : ℕ)
+    (emit : ∀ {r : ℕ}, (frontier : Fin r) → (Fin k → Fin r) →
+      (Fin (l + n + 1) → Fin r) → Code B r) : Prop :=
+  ∀ {r : ℕ} (frontier : Fin r) (src : Fin k → Fin r)
+    (tmp : Fin (l + n + 1) → Fin r),
+    Function.Injective tmp → (∀ i j, src i ≠ tmp j) →
+    (∀ j, tmp j ≠ frontier) → (∀ i, src i ≠ frontier) →
+    ¬(emit frontier src tmp).ReadsWidth ∧
+    ∀ (w : ℕ) (d : δ) (x : Data r), x.Bounded w → x.regs ∘ src = input d →
+      safe w d (memoryState frontier x) →
+      (Memory.spec w).ValidHistory (memoryState frontier x)
+        ((Memory.spec w).clientHistory (memoryState frontier x) (p d)) →
+      ∃ y, ExecBounded w (y.regs frontier) (emit frontier src tmp) x y
+          (C * (memoryCost (p d) (memoryState frontier x) +
+            work d (memoryState frontier x) + 1)) ∧
+        memoryState frontier y = (Memory.spec w).clientState (memoryState frontier x) (p d) ∧
+        (∀ i : Fin l, y.regs (tmp (Fin.castAdd (n + 1) i)) =
+          output ((Memory.spec w).clientResult (memoryState frontier x) (p d)) i) ∧
+        ∀ i, i ≠ frontier → (∀ j, tmp j ≠ i) → y.regs i = x.regs i
+
+/-- Erase the frontier-access bound from `SpecBounded` back to `Spec`. -/
+theorem SpecBounded.toSpec {n C : ℕ}
+    {emit : ∀ {r : ℕ}, (frontier : Fin r) → (Fin k → Fin r) →
+      (Fin (l + n + 1) → Fin r) → Code B r}
+    (he : SpecBounded B p input output safe work n C emit) :
+    Spec B p input output safe work n C emit := by
+  intro r frontier src tmp hi hd hf hs
+  obtain ⟨hnw, hrun⟩ := he frontier src tmp hi hd hf hs
+  refine ⟨hnw, fun w d x hx hin hsafe hv => ?_⟩
+  obtain ⟨y, hy, hm, hout, hframe⟩ := hrun w d x hx hin hsafe hv
+  exact ⟨y, hy.toExecWithin, hm, hout, hframe⟩
+
+/-- Strengthen the visible entry domain or enlarge the local-work charge for `SpecBounded`. -/
+theorem SpecBounded.consequence {safe' : ℕ → δ → Memory.State → Prop}
+    {work' : δ → Memory.State → ℕ} {n C : ℕ}
+    {emit : ∀ {r : ℕ}, (frontier : Fin r) → (Fin k → Fin r) →
+      (Fin (l + n + 1) → Fin r) → Code B r}
+    (he : SpecBounded B p input output safe work n C emit)
+    (hsafe : ∀ w d s, (∀ i, Fits w (input d i)) → Memory.WellFormed w s →
+      safe' w d s → safe w d s)
+    (hwork : ∀ d s, work d s ≤ work' d s) :
+    SpecBounded B p input output safe' work' n C emit := by
+  intro r frontier src tmp hi hd hf hs
+  obtain ⟨hnw, hrun⟩ := he frontier src tmp hi hd hf hs
+  refine ⟨hnw, ?_⟩
+  intro w d x hx hin hsafe' hv
+  have hwords (i : Fin k) : Fits w (input d i) := congrFun hin i ▸ hx.1 (src i)
+  obtain ⟨y, hy, hm, hout, hframe⟩ :=
+    hrun w d x hx hin (hsafe w d _ hwords (wellFormed_memoryState hx) hsafe') hv
+  exact ⟨y, hy.mono (Nat.mul_le_mul_left C (by have := hwork d (memoryState frontier x); omega)),
+    hm, hout, hframe⟩
+
 end Realizes
+
+/-- Uniform frontier-bounded realization of a `Memory.Prog` family, certifying that every native
+`load` and `store` accesses an address strictly below `y.regs frontier`. -/
+def RealizesBounded (B : Basis) (p : δ → Memory.Prog α)
+    (input : δ ↪ (Fin k → ℕ)) (output : α ↪ (Fin l → ℕ))
+    (safe : ℕ → δ → Memory.State → Prop) (work : δ → Memory.State → ℕ) : Prop :=
+  ∃ n C : ℕ,
+    ∃ emit : ∀ {r : ℕ}, (frontier : Fin r) → (Fin k → Fin r) →
+        (Fin (l + n + 1) → Fin r) → Code B r,
+      Realizes.SpecBounded B p input output safe work n C emit
+
+namespace RealizesBounded
+
+section CoreBinders
+
+variable {p : δ → Memory.Prog α} {input : δ ↪ (Fin k → ℕ)}
+  {output : α ↪ (Fin l → ℕ)} {safe : ℕ → δ → Memory.State → Prop}
+  {work : δ → Memory.State → ℕ}
+
+/-- Erase the frontier-access bound back to `Realizes`. -/
+theorem toRealizes (h : RealizesBounded B p input output safe work) :
+    Realizes B p input output safe work :=
+  let ⟨n, C, emit, he⟩ := h
+  ⟨n, C, emit, he.toSpec⟩
+
+/-- Strengthen the visible entry domain or enlarge the local-work charge. -/
+theorem consequence {safe' : ℕ → δ → Memory.State → Prop} {work' : δ → Memory.State → ℕ}
+    (h : RealizesBounded B p input output safe work)
+    (hsafe : ∀ w d s, (∀ i, Fits w (input d i)) → Memory.WellFormed w s →
+      safe' w d s → safe w d s)
+    (hwork : ∀ d s, work d s ≤ work' d s) : RealizesBounded B p input output safe' work' :=
+  let ⟨n, C, emit, he⟩ := h
+  ⟨n, C, emit, he.consequence hsafe hwork⟩
+
+/-- Transport a frontier-bounded realization certificate along a basis simulation. -/
+theorem mapSimulates {B' : Basis} (h : RealizesBounded B p input output safe work)
+    (φ : B.Simulates B') : RealizesBounded B' p input output safe work := by
+  obtain ⟨n, C, emit, he⟩ := h
+  refine ⟨n, C, fun frontier src tmp => (emit frontier src tmp).mapSimulates φ, ?_⟩
+  intro r frontier src tmp hi hd hf hs
+  obtain ⟨hnw, hrun⟩ := he frontier src tmp hi hd hf hs
+  refine ⟨fun h => hnw (Code.readsWidth_of_mapSimulates φ h), ?_⟩
+  intro w d x hx hin hsafe hv
+  obtain ⟨y, hy, hm, hout, hframe⟩ := hrun w d x hx hin hsafe hv
+  exact ⟨y, hy.mapSimulates φ, hm, hout, hframe⟩
+
+end CoreBinders
+
+end RealizesBounded
+
+end Cslib.WordRAM.Realization
+
+namespace Cslib.WordRAM.Realization
+
+open Cslib.DataStructure
+
+section ReindexBinders
+
+variable {B : Basis} {ε δ α : Type} {k m l : ℕ}
+
+/-- Rewire a `SpecBounded` emitter's inputs by a fixed index map. -/
+theorem Realizes.SpecBounded.reindex {p : δ → Memory.Prog α} {input : δ ↪ (Fin k → ℕ)}
+    {output : α ↪ (Fin l → ℕ)} {safe : ℕ → δ → Memory.State → Prop}
+    {work : δ → Memory.State → ℕ} {n C : ℕ}
+    {emit : ∀ {r : ℕ}, (frontier : Fin r) → (Fin k → Fin r) →
+      (Fin (l + n + 1) → Fin r) → Code B r}
+    (he : Realizes.SpecBounded B p input output safe work n C emit)
+    (f : ε → δ) (env : ε ↪ (Fin m → ℕ)) (ix : Fin k → Fin m)
+    (hw : ∀ e i, input (f e) i = env e (ix i)) :
+    Realizes.SpecBounded B (fun e => p (f e)) env output
+      (fun w e s => safe w (f e) s) (fun e s => work (f e) s) n C
+      (fun frontier src tmp => emit frontier (src ∘ ix) tmp) := by
+  intro r frontier src tmp hi hd hf hs
+  obtain ⟨hnw, hrun⟩ := he frontier (src ∘ ix) tmp hi
+    (fun i j => hd (ix i) j) hf (fun i => hs (ix i))
+  refine ⟨hnw, fun w e x hx hin hsafe hv => ?_⟩
+  have hin' : x.regs ∘ (src ∘ ix) = input (f e) := by
+    funext i
+    exact (congrFun hin (ix i)).trans (hw e i).symm
+  exact hrun w (f e) x hx hin' hsafe hv
+
+/-- Pull a `RealizesBounded` certificate back along a fixed register-index map. -/
+theorem RealizesBounded.reindex {p : δ → Memory.Prog α} {input : δ ↪ (Fin k → ℕ)}
+    {output : α ↪ (Fin l → ℕ)} {safe : ℕ → δ → Memory.State → Prop}
+    {work : δ → Memory.State → ℕ} (h : RealizesBounded B p input output safe work)
+    (f : ε → δ) (env : ε ↪ (Fin m → ℕ)) (ix : Fin k → Fin m)
+    (hw : ∀ e i, input (f e) i = env e (ix i)) :
+    RealizesBounded B (fun e => p (f e)) env output
+      (fun w e s => safe w (f e) s) (fun e s => work (f e) s) :=
+  let ⟨n, C, emit, he⟩ := h
+  ⟨n, C, fun frontier src tmp => emit frontier (src ∘ ix) tmp, he.reindex f env ix hw⟩
+
+end ReindexBinders
+
+section AbsorbBinders
+
+variable {B : Basis} {δ α : Type} {k l : ℕ}
+  {p : δ → Memory.Prog α} {input : δ ↪ (Fin k → ℕ)} {output : α ↪ (Fin l → ℕ)}
+  {safe : ℕ → δ → Memory.State → Prop} {work work' : δ → Memory.State → ℕ}
+
+/-- Absorb local work dominated by a constant multiple of the memory charge plus another grading. -/
+theorem RealizesBounded.mono_mul (h : RealizesBounded B p input output safe work) (K : ℕ)
+    (hwork : ∀ d s, work d s ≤ K * (memoryCost (p d) s + work' d s + 1)) :
+    RealizesBounded B p input output safe work' := by
+  obtain ⟨n, C, emit, he⟩ := h
+  refine ⟨n, C * (K + 1), emit, fun frontier src tmp hi hd hf hs => ?_⟩
+  obtain ⟨hnw, hrun⟩ := he frontier src tmp hi hd hf hs
+  refine ⟨hnw, fun w d x hx hin hsafe hv => ?_⟩
+  obtain ⟨y, hy, hm, hout, hframe⟩ := hrun w d x hx hin hsafe hv
+  refine ⟨y, hy.mono ?_, hm, hout, hframe⟩
+  have hw := hwork d (memoryState frontier x)
+  rw [Nat.mul_assoc]
+  apply Nat.mul_le_mul_left
+  have hexpand : (K + 1) * (memoryCost (p d) (memoryState frontier x) +
+      work' d (memoryState frontier x) + 1) =
+      K * (memoryCost (p d) (memoryState frontier x) + work' d (memoryState frontier x) + 1) +
+        (memoryCost (p d) (memoryState frontier x) + work' d (memoryState frontier x) + 1) := by
+    ring
+  omega
+
+/-- Pointwise equal programs have the same frontier-bounded certificates. -/
+theorem RealizesBounded.congr {p' : δ → Memory.Prog α}
+    (h : RealizesBounded B p input output safe work)
+    (hp : ∀ d, p d = p' d) : RealizesBounded B p' input output safe work :=
+  funext hp ▸ h
+
+/-- Strengthen the visible domain under the client's own valid history. -/
+theorem RealizesBounded.consequence_valid {safe' : ℕ → δ → Memory.State → Prop}
+    (h : RealizesBounded B p input output safe work)
+    (hsafe : ∀ w d s, (∀ i, Fits w (input d i)) → Memory.WellFormed w s →
+      (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (p d)) →
+      safe' w d s → safe w d s) : RealizesBounded B p input output safe' work := by
+  obtain ⟨n, C, emit, he⟩ := h
+  refine ⟨n, C, emit, fun frontier src tmp hi hd hf hs => ?_⟩
+  obtain ⟨hnw, hrun⟩ := he frontier src tmp hi hd hf hs
+  refine ⟨hnw, fun w d x hx hin hsafe' hv => hrun w d x hx hin ?_ hv⟩
+  exact hsafe w d _ (fun i => congrFun hin i ▸ hx.1 (src i))
+    (wellFormed_memoryState hx) hv hsafe'
+
+end AbsorbBinders
 
 end Cslib.WordRAM.Realization
