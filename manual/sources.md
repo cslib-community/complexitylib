@@ -24,6 +24,11 @@ Noga Alon, Yossi Matias, Mario Szegedy. “The Space Complexity of Approximating
 
 Noga Alon, Raphael Yuster, Uri Zwick. "Color-Coding." *Journal of the ACM* 42(4), 844–856, 1995. https://doi.org/10.1145/210332.210337 . Bibliographic data from the DOI record. The locator Lemma 3.1 (colorful paths by dynamic programming over color sets) was taken from secondary descriptions; the full text was not inspected in this pass.
 
+<a id="barak-steurer16"></a>
+## barak-steurer16
+
+Boaz Barak and David Steurer. *Proofs, beliefs, and algorithms through the lens of sum-of-squares*. Lecture notes, 2016, https://www.sumofsquares.org/ . On 2026-11-08 UTC worker w96-sos consulted these author-hosted lectures: "Mathematical definitions" (https://www.sumofsquares.org/public/lec01-2_definitions.pdf), for Theorem 19, the duality of sum-of-squares certificates and pseudo-distributions; "The sos algorithm over general domains" (https://www.sumofsquares.org/public/lec-definitions-general.pdf), for Definition 1 (sos proofs), the remark after Theorem 2 (degree-`d` sos refutations), Definitions 5 and 7 (pseudo-distributions and the constraints they satisfy) and Theorem 8; and "Higher-degree integrality gaps" (https://www.sumofsquares.org/public/lec03-2_lowerbounds_csp.pdf), for Theorem 2, Lemmas 7 and 9, and Lemma 24 (Grigoriev's bound for Tseitin tautologies on vertex expanders). The sum-of-squares modules cite these locators. The notes are a living document, and the numbering may change.
+
 <a id="barrett26"></a>
 ## barrett26
 
@@ -288,6 +293,11 @@ Oded Goldreich. *Foundations of Cryptography, Volume 2: Basic Applications*. Cam
 ## gomoryhu61
 
 Ralph E. Gomory and T. C. Hu. “Multi-Terminal Network Flows.” *Journal of the Society for Industrial and Applied Mathematics* 9(4), 551–570, 1961. https://doi.org/10.1137/0109047 . Bibliographic metadata checked through the publisher record; the article body was not inspected in this pass. The manual cites it for cut-equivalent (Gomory–Hu) trees and the triangle inequality for minimum cut values, as described in [Schrijver 2003](#schrijver03), Section 15.4.
+
+<a id="grigoriev01"></a>
+## grigoriev01
+
+Dima Grigoriev. *Linear lower bound on degrees of Positivstellensatz calculus proofs for the parity*. Theoretical Computer Science 259(1–2), 613–622, 2001. https://doi.org/10.1016/S0304-3975(00)00157-2 . Bibliographic metadata checked against the Crossref record on 2026-11-08 UTC. The article is behind a publisher paywall, so its text was not consulted, and no theorem or page locator in it is claimed. The library attributes the linear degree lower bound for Tseitin parity systems on expanders to this paper. The precise statement used is that of [barak-steurer16](#barak-steurer16), lecture "Higher-degree integrality gaps", Lemma 24.
 
 <a id="grs12"></a>
 ## grs12
@@ -608,6 +618,11 @@ Tim Roughgarden and Éva Tardos. *How Bad Is Selfish Routing?* Journal of the AC
 ## sakszhou99
 
 Michael Saks and Shiyu Zhou. *BP_H SPACE(S) ⊆ DSPACE(S^{3/2})*. Journal of Computer and System Sciences 58(2), 376–403, 1999. https://doi.org/10.1006/jcss.1998.1616 . The publisher copy is paywalled and was not consulted, so its internal numbering (including the Lemma 5.4 cited by Chattopadhyay–Liao) is unverified. The iteration is formalized from the presentation of Chattopadhyay and Liao (2020), Appendix A.1.
+
+<a id="schoenebeck08"></a>
+## schoenebeck08
+
+Grant Schoenebeck. *Linear Level Lasserre Lower Bounds for Certain k-CSPs*. 49th Annual IEEE Symposium on Foundations of Computer Science (FOCS 2008), 593–602. https://doi.org/10.1109/FOCS.2008.74 . Bibliographic metadata checked against the Crossref record on 2026-11-08 UTC. On the same date worker w96-sos consulted the author-hosted copy https://schoeneb.people.si.umich.edu/papers/LasserreNew.pdf (19 pages, TeX output dated 6 December 2008) for Definition 5 (rounds of Lasserre), Definition 10 (width-`w` resolution on XOR formulas), Lemma 13 (the main lemma, p. 8) and Claim 14. In that copy Lemma 13 grants a feasible solution at the `w/2`-th round of Lasserre. An independent review reported `w/4` from a different version, so the constant is version-dependent. The library proves the sum-of-squares form of the lemma and does not construct Lasserre vectors. The typeset FOCS version was not consulted.
 
 <a id="schrijver03"></a>
 ## schrijver03

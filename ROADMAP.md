@@ -993,7 +993,20 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   - total and variable space;
   - time–space trade-offs for pebbling formulas, building on `Complexity/Computability/Pebbling`;
   - degree versus space in polynomial calculus.
-- Polynomial calculus and sum-of-squares, and certified DPLL solver runtimes.
+- **Sum-of-squares** ([#3260](https://github.com/cslib-community/complexitylib/issues/3260)):
+  `Algebraic/SumOfSquares/` has degree-`d` refutations and pseudo-expectations with the easy
+  duality direction, Schoenebeck's pseudo-expectation for parity systems with no width-`d`
+  derivation of `0 = 1` (Schoenebeck Lemma 13), and Grigoriev's bound `e(G) ≤ d` for Tseitin
+  parity systems, with a linear-degree expander family. Next:
+  - the converse duality, by hyperplane separation, and the Lasserre/Sherali–Adams hierarchies with
+    a bridge to the proof system;
+  - Grigoriev's `Ω(n)` bound for random `3`-XOR (Barak–Steurer Theorem 2), through expansion of
+    random hypergraphs, and Schoenebeck's gaps for CSPs implied by XOR;
+  - the `0/1` encoding and Grigoriev's knapsack bound;
+  - the full Positivstellensatz calculus with inequality constraints and products of constraints,
+    and its relation to the equational form here;
+  - size–degree relations for sum-of-squares, and size lower bounds.
+- Polynomial calculus, and certified DPLL solver runtimes.
 - **Frege** ([#3069](https://github.com/cslib-community/complexitylib/issues/3069)): implicational
   completeness of the Hilbert-style system (Kalmár); formula-size measures; the simulation of
   resolution as a p-simulation of Cook–Reckhow proof systems, with encodings and translation
