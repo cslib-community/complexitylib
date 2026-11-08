@@ -544,6 +544,11 @@ Alvin E. Roth. *Incentive Compatibility in a Market with Indivisible Goods*. Eco
 
 Alvin E. Roth and Andrew Postlewaite. *Weak versus Strong Domination in a Market with Indivisible Goods*. Journal of Mathematical Economics 4(2), 131–137, 1977. https://doi.org/10.1016/0304-4068(77)90004-0 . Bibliographic metadata only; the publisher's text is paywalled and was not inspected, so no theorem number is cited. The housing-market modules attribute to it, as the standard primary reference and without a verified locator, the uniqueness of the strict-core (weak-domination) allocation and its agreement with the competitive allocation; neither [schummervohra07](#schummervohra07) nor [roughgarden13cs364a](#roughgarden13cs364a), Lecture #9, cites it.
 
+<a id="rothsotomayor90"></a>
+## rothsotomayor90
+
+Alvin E. Roth and Marilda A. Oliveira Sotomayor. *Two-Sided Matching: A Study in Game-Theoretic Modeling and Analysis*. Econometric Society Monographs, Cambridge University Press, 1990. https://doi.org/10.1017/CCOL052139015X . Bibliographic metadata checked against Crossref on 2026-11-08. The book itself was not inspected. Its Chapter 2 theorem numbers and statements were checked against Muriel Niederle's lecture notes *Matching: The Theory* (Stanford, 26 September 2011, https://web.stanford.edu/~niederle/MarketDesignClassIntro2.pdf), which follow the book's numbering. They are Theorem 2.8 (a stable matching exists for every marriage market), Theorem 2.12 (with strict preferences there are M-optimal and W-optimal stable matchings), Theorem 2.13 (opposing interests, credited to Knuth) and Theorem 2.22 (with strict preferences, the set of people who are single is the same for all stable matchings). The incomplete-list stable-matching modules cite these theorems.
+
 <a id="roughgarden13cs364a"></a>
 ## roughgarden13cs364a
 
