@@ -8,26 +8,28 @@ module
 -- upstream: candidate
 
 public import Complexity.DataStructure.Dictionary.Dynamic.Spec
+public import Complexity.Foundations.Data.BitString.List.PrefixFree
 public import Complexity.Foundations.Data.Nat.IterLog
 public import Complexity.Probability.Coding.PrefixFreeEntropy
 public import Complexity.Probability.Coding.SetSeparator
 public import Complexity.Probability.Uniform
 
 /-!
-# Tests for `IterLog`, `PrefixFreeEntropy`, and `SetSeparator`
+# Tests for `IterLog`, `BitString.PrefixFree`, `PrefixFreeEntropy`, and `SetSeparator`
 
 Concrete evaluation checks, dependent self-delimiting code composition, Kraft–Gibbs compression
-examples, and non-vacuous instantiations of `exists_prefixFree_separator_code`.
+examples, and non-vacuous instantiations of `exists_prefixFree_separator_code` (strictly beating the
+trivial `(S + 1)`-bit subset-indicator encoding).
 -/
 
 public section
 
 namespace CslibTests.SetSeparator
 
-open Cslib Cslib.Probability.PMF Cslib.Probability.Coding InformationTheory
+open Nat Cslib Cslib.BitString Cslib.Probability.PMF Cslib.Probability.Coding InformationTheory
 open scoped BigOperators ENNReal
 
-/-! ### 1. `iterLog` and `logStar` concrete evaluations and ceiling bridges -/
+/-! ### 1. `Nat.iterLog` and `Nat.floorLogStar` concrete evaluations and ceiling bridges -/
 
 example : iterLog 0 65536 = 65536 := by decide
 example : iterLog 1 65536 = 16 := by decide
@@ -36,21 +38,26 @@ example : iterLog 3 65536 = 2 := by decide
 example : iterLog 4 65536 = 1 := by decide
 example : iterLog 5 65536 = 0 := by decide
 
-example : logStar 0 = 0 := by decide
-example : logStar 1 = 0 := by decide
-example : logStar 2 = 1 := by decide
-example : logStar 3 = 1 := by decide
-example : logStar 4 = 2 := by decide
-example : logStar 15 = 2 := by decide
-example : logStar 16 = 3 := by decide
-example : logStar 65535 = 3 := by decide
-example : logStar 65536 = 4 := by decide
+example : floorLogStar 0 = 0 := by decide
+example : floorLogStar 1 = 0 := by decide
+example : floorLogStar 2 = 1 := by decide
+example : floorLogStar 3 = 1 ∧ logStar 3 = 2 := by decide
+example : floorLogStar 4 = 2 := by decide
+example : floorLogStar 15 = 2 ∧ logStar 15 = 3 := by decide
+example : floorLogStar 16 = 3 := by decide
+example : floorLogStar 65535 = 3 := by decide
+example : floorLogStar 65536 = 4 := by decide
+
+/-- Floor/ceiling comparison and base/step equations for `Nat.floorLogStar`. -/
+theorem floorLogStar_bridges (n : ℕ) :
+    floorLogStar n ≤ logStar n ∧ logStar n ≤ floorLogStar n + 1 :=
+  ⟨floorLogStar_le_logStar n, logStar_le_floorLogStar_add_one n⟩
 
 /-- Bridge between `iterLog 2 (max n 4)` and `Dynamic.logLogFactor n`. -/
 theorem iterLog_two_bridges_logLogFactor (n : ℕ) :
     max (iterLog 2 (max n 4)) 1 = iterLog 2 (max n 4) ∧
-      iterLog 2 (max n 4) ≤ Cslib.DataStructure.Dictionary.Dynamic.logLogFactor n ∧
-      Cslib.DataStructure.Dictionary.Dynamic.logLogFactor n ≤ 2 * iterLog 2 (max n 4) :=
+      iterLog 2 (max n 4) ≤ DataStructure.Dictionary.Dynamic.logLogFactor n ∧
+      DataStructure.Dictionary.Dynamic.logLogFactor n ≤ 2 * iterLog 2 (max n 4) :=
   ⟨max_iterLog_two_max_four n, iterLog_two_max_four_le_clog n,
     clog_clog_max_four_le_two_mul_iterLog n⟩
 
@@ -148,21 +155,23 @@ theorem conditional_kraft_nonvacuous :
       rintro _ ⟨i, _, rfl⟩
       rfl
 
-/-! ### 4. Non-vacuous set-separator instantiation and multi-field composition -/
+/-! ### 4. Non-vacuous set-separator instantiation beating the `(S + 1)`-bit trivial code -/
 
-/-- Explicit distribution over two disjoint subset pairs of `Fin 6`, verifying separation,
-`≤ 2 * E[|A| + |B|] + 7` expected bit length, and self-delimiting concatenation with a subsequent
+/-- Explicit distribution over two sparse disjoint subset pairs of `Fin 20`, verifying separation
+(including `mem_sepSet`), expected bit length `≤ 15 < 20` (strictly below the `20`-bit truth table
+and `21`-bit fallback encoding on `Fin 20`), and self-delimiting concatenation with a subsequent
 fixed-width field. -/
 theorem separator_code_nonvacuous_and_composable :
-    let pair₁ : Finset (Fin 6) × Finset (Fin 6) := ({0, 1}, {2, 4})
-    let pair₂ : Finset (Fin 6) × Finset (Fin 6) := ({3}, {0, 5})
-    let supp : Finset (Finset (Fin 6) × Finset (Fin 6)) := {pair₁, pair₂}
+    let pair₁ : Finset (Fin 20) × Finset (Fin 20) := ({0, 1}, {2, 4})
+    let pair₂ : Finset (Fin 20) × Finset (Fin 20) := ({3}, {0, 19})
+    let supp : Finset (Finset (Fin 20) × Finset (Fin 20)) := {pair₁, pair₂}
     have hne : supp.Nonempty := ⟨pair₁, Finset.mem_insert_self pair₁ _⟩
-    let μ : _root_.PMF (Finset (Fin 6) × Finset (Fin 6)) := uniformOfFinset supp hne
-    ∃ (enc : Finset (Fin 6) × Finset (Fin 6) → List Bool)
-      (sep : List Bool → Fin 6 → Bool),
-      IsPrefixFree (Set.range (fun p : (Finset (Fin 6) × Finset (Fin 6)) × Fin 3 =>
+    let μ : _root_.PMF (Finset (Fin 20) × Finset (Fin 20)) := uniformOfFinset supp hne
+    ∃ (enc : Finset (Fin 20) × Finset (Fin 20) → List Bool)
+      (sep : List Bool → Fin 20 → Bool),
+      IsPrefixFree (Set.range (fun p : (Finset (Fin 20) × Finset (Fin 20)) × Fin 3 =>
         enc p.1 ++ finIdxBits 3 p.2)) ∧
+      (0 : Fin 20) ∈ sepSet sep (enc pair₁) ∧ (2 : Fin 20) ∉ sepSet sep (enc pair₁) ∧
       pair₁.1 ⊆ sepSet sep (enc pair₁) ∧ Disjoint pair₁.2 (sepSet sep (enc pair₁)) ∧
       pair₂.1 ⊆ sepSet sep (enc pair₂) ∧ Disjoint pair₂.2 (sepSet sep (enc pair₂)) ∧
       ∑ ab, (μ ab).toReal * ((enc ab).length : ℝ) ≤ 15 := by
@@ -172,8 +181,8 @@ theorem separator_code_nonvacuous_and_composable :
     rw [mem_support_uniformOfFinset_iff] at hab
     simp only [supp, Finset.mem_insert, Finset.mem_singleton] at hab
     rcases hab with rfl | rfl <;> decide
-  obtain ⟨enc, sep, hpf, hsep, hlen⟩ := exists_prefixFree_separator_code 6 μ hdisj
-  have hcard_le : ∀ ab : Finset (Fin 6) × Finset (Fin 6),
+  obtain ⟨enc, sep, hpf, hsep, hlen⟩ := exists_prefixFree_separator_code 20 μ hdisj
+  have hcard_le : ∀ ab : Finset (Fin 20) × Finset (Fin 20),
       (μ ab).toReal * ((ab.1.card + ab.2.card : ℕ) : ℝ) ≤ (μ ab).toReal * 4 := by
     intro ab
     by_cases hab : ab ∈ μ.support
@@ -188,15 +197,20 @@ theorem separator_code_nonvacuous_and_composable :
         ≤ ∑ ab, (μ ab).toReal * 4 := Finset.sum_le_sum fun ab _ => hcard_le ab
       _ = 4 := by rw [← Finset.sum_mul, sum_toReal μ, one_mul]
   have hpf_comp : IsPrefixFree
-      (Set.range fun p : (Finset (Fin 6) × Finset (Fin 6)) × Fin 3 =>
+      (Set.range fun p : (Finset (Fin 20) × Finset (Fin 20)) × Fin 3 =>
         enc p.1 ++ finIdxBits 3 p.2) := by
     refine (hpf.bind_append fun _ _ => isPrefixFree_range_finIdxBits 3).anti ?_
     rintro _ ⟨⟨ab, j⟩, rfl⟩
     exact ⟨enc ab, ⟨ab, rfl⟩, finIdxBits 3 j, ⟨j, rfl⟩, rfl⟩
-  have hs₁ := subset_sepSet_and_disjoint (hsep pair₁.1 pair₁.2 (by decide)).1
-    (hsep pair₁.1 pair₁.2 (by decide)).2
+  have h₁ := hsep pair₁.1 pair₁.2 (by decide)
+  have hs₁ := subset_sepSet_and_disjoint h₁.1 h₁.2
   have hs₂ := subset_sepSet_and_disjoint (hsep pair₂.1 pair₂.2 (by decide)).1
     (hsep pair₂.1 pair₂.2 (by decide)).2
-  exact ⟨enc, sep, hpf_comp, hs₁.1, hs₁.2, hs₂.1, hs₂.2, by linarith⟩
+  have hmem0 : (0 : Fin 20) ∈ sepSet sep (enc pair₁) :=
+    mem_sepSet.mpr (h₁.1 0 (by decide))
+  have hnmem2 : (2 : Fin 20) ∉ sepSet sep (enc pair₁) := by
+    rw [mem_sepSet, h₁.2 2 (by decide)]
+    decide
+  exact ⟨enc, sep, hpf_comp, hmem0, hnmem2, hs₁.1, hs₁.2, hs₂.1, hs₂.2, by linarith⟩
 
 end CslibTests.SetSeparator

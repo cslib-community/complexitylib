@@ -4007,6 +4007,7 @@ public import Complexity.Foundations.Data.BitString.List.Binary
 public import Complexity.Foundations.Data.BitString.List.BinaryOrder
 public import Complexity.Foundations.Data.BitString.List.Operations
 public import Complexity.Foundations.Data.BitString.List.Positions
+public import Complexity.Foundations.Data.BitString.List.PrefixFree
 public import Complexity.Foundations.Data.BitString.List.Vote
 public import Complexity.Foundations.Data.BitString.PadBlocks
 public import Complexity.Foundations.Data.BitString.Parity

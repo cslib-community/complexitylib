@@ -83,7 +83,9 @@ Laurinharju–Suomela speedup lemma on shift colourings (`Cslib.IsShiftColoring`
 `exists_colorsCycle_three_and_logStar_le` packages both directions: `⌈(log* n) / 2⌉ + 3` rounds
 suffice for `n ≠ 1`, and any algorithm needs `log* n ≤ 2t + 2`, so the optimum is known up to an
 additive `4`. `Nat.logStar` and `Nat.twoTower` live in `Complexity.Foundations.Data.Nat.LogStar`;
-use `Nat.logStar_le_iff` rather than unfolding, and `decide` for small values. `Nat.twoTower` is a
+use `Nat.logStar_le_iff` rather than unfolding, and `decide` for small values. The companion
+iterated floor logarithm `Nat.iterLog` and floor stopping count `Nat.floorLogStar`
+(`Nat.floorLogStar_le_iff`) live in `Complexity.Foundations.Data.Nat.IterLog`. `Nat.twoTower` is a
 structurally recursive copy of Mathlib's `hyperoperation 4 2` (`Nat.twoTower_eq_hyperoperation`),
 kept because `decide` cannot evaluate the well-founded `hyperoperation`.
 [Graph.lean](../../Complexity/Computability/Distributed/OrientedCycle/Graph.lean) connects the

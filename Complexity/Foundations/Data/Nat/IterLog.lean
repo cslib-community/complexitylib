@@ -5,49 +5,51 @@ Authors: Renfei Zhou
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, next to `Mathlib/Data/Nat/Log.lean`)
 
 public import Complexity.Foundations.Data.Nat.LogStar
+public import Complexity.Init
 
 /-!
-# Iterated Base-2 Floor Logarithm (`iterLog` and `logStar`)
+# Iterated Base-2 Floor Logarithm (`Nat.iterLog` and `Nat.floorLogStar`)
 
 `Complexity/Foundations/Data/Nat/LogStar.lean` defines the tower of twos `Nat.twoTower` and its
 ceiling-logarithm inverse `Nat.logStar` (the least `k` with `(Nat.clog 2)^[k] n ≤ 1`, equivalently
 `n ≤ Nat.twoTower k`). This module supplies the companion **iterated base-2 floor logarithm**
-`Cslib.iterLog k n = (Nat.log 2)^[k] n` and its exact stopping count
-`Cslib.logStar n = Nat.logStar (n + 1) - 1` (the least `k` such that `iterLog k n ≤ 1`,
+`Nat.iterLog k n = (Nat.log 2)^[k] n` and its exact stopping count
+`Nat.floorLogStar n = Nat.logStar (n + 1) - 1` (the least `k` such that `Nat.iterLog k n ≤ 1`,
 equivalently `n < Nat.twoTower (k + 1)`).
 
-Keeping `Cslib.logStar` defined directly in terms of `Nat.logStar` avoids duplicating structural
-fuel recursion while providing exact floor-logarithm recurrence laws
-(`logStar_of_gt_one : 1 < n → logStar n = logStar (Nat.log 2 n) + 1` and
-`lt_logStar_iff : k < logStar n ↔ 1 < iterLog k n`) and explicit bridges to both `Nat.logStar` and
-two-step ceiling logarithms.
+Naming the floor stopping count `Nat.floorLogStar` avoids collision with the ceiling convention
+`Nat.logStar` (whose values differ at `n = 3` and `n = 5, …, 15`), while defining it in terms of
+`Nat.logStar` avoids duplicating structural fuel recursion and provides exact floor-logarithm
+recurrence laws (`floorLogStar_of_gt_one : 1 < n → floorLogStar n = floorLogStar (Nat.log 2 n) + 1`
+and `lt_floorLogStar_iff : k < floorLogStar n ↔ 1 < iterLog k n`).
 
 ## Main definitions
 
-* `Cslib.iterLog`: iterated base-2 floor logarithm `⌊log₂^(k) n⌋`.
-* `Cslib.logStar`: base-2 floor iterated logarithm `Nat.logStar (n + 1) - 1`, the least `k` with
+* `Nat.iterLog`: iterated base-2 floor logarithm `⌊log₂^(k) n⌋`.
+* `Nat.floorLogStar`: base-2 floor iterated logarithm `Nat.logStar (n + 1) - 1`, the least `k` with
   `iterLog k n ≤ 1`.
 
 ## Main results
 
-* `Cslib.iterLog_eq_iterate`, `Cslib.iterLog_succ_apply`, `Cslib.iterLog_add`: iteration laws.
-* `Cslib.iterLog_mono`, `Cslib.iterLog_anti_left`: monotonicity in `n` and antitonicity in `k`.
-* `Cslib.iterLog_le_one_iff_lt_twoTower`: `iterLog k n ≤ 1 ↔ n < Nat.twoTower (k + 1)`.
-* `Cslib.logStar_le_one`, `Cslib.logStar_of_gt_one`: base and `Nat.log 2` step equations.
-* `Cslib.iterLog_logStar_le_one`, `Cslib.lt_logStar_iff`, `Cslib.logStar_le_iff`: exact threshold
-  characterizations `k < logStar n ↔ 1 < iterLog k n` and `logStar n ≤ k ↔ iterLog k n ≤ 1`.
-* `Cslib.logStar_mono`, `Cslib.logStar_le_natLogStar`, `Cslib.natLogStar_le_logStar_add_one`:
-  monotonicity and comparison within `1` of `Nat.logStar`.
-* `Cslib.max_iterLog_two_max_four`, `Cslib.iterLog_two_max_four_le_clog`,
-  `Cslib.clog_clog_max_four_le_two_mul_iterLog`: positivity and ceiling comparison at `k = 2`.
+* `Nat.iterLog_eq_iterate`, `Nat.iterLog_succ_apply`, `Nat.iterLog_add`: iteration laws.
+* `Nat.iterLog_mono`, `Nat.iterLog_anti_left`: monotonicity in `n` and antitonicity in `k`.
+* `Nat.iterLog_le_one_iff_lt_twoTower`: `iterLog k n ≤ 1 ↔ n < twoTower (k + 1)`.
+* `Nat.floorLogStar_of_le_one`, `Nat.floorLogStar_of_gt_one`: base and `Nat.log 2` step equations.
+* `Nat.iterLog_floorLogStar_le_one`, `Nat.lt_floorLogStar_iff`, `Nat.floorLogStar_le_iff`: exact
+  threshold characterizations `k < floorLogStar n ↔ 1 < iterLog k n` and
+  `floorLogStar n ≤ k ↔ iterLog k n ≤ 1`.
+* `Nat.floorLogStar_mono`, `Nat.floorLogStar_le_logStar`, `Nat.logStar_le_floorLogStar_add_one`:
+  monotonicity and comparison within `1` of ceiling `Nat.logStar`.
+* `Nat.max_iterLog_two_max_four`, `Nat.iterLog_two_max_four_le_clog`,
+  `Nat.clog_clog_max_four_le_two_mul_iterLog`: positivity and ceiling comparison at `k = 2`.
 -/
 
 public section
 
-namespace Cslib
+namespace Nat
 
 /-- Iterated base-2 floor logarithm `⌊log₂^(k) n⌋`: `iterLog 0 n = n` and
 `iterLog (k + 1) n = Nat.log 2 (iterLog k n)`. -/
@@ -96,14 +98,12 @@ theorem iterLog_le_self (k n : ℕ) : iterLog k n ≤ n := by
   | zero => exact le_rfl
   | succ k ih => exact (Nat.log_le_self 2 (iterLog k n)).trans ih
 
-/-- `iterLog k` is monotone in its argument `n`. -/
-theorem iterLog_mono {m n : ℕ} (k : ℕ) (h : m ≤ n) : iterLog k m ≤ iterLog k n := by
+/-- `iterLog k` is monotone in its second argument. -/
+theorem iterLog_mono (k : ℕ) : Monotone (iterLog k) := by
+  intro m n h
   induction k with
   | zero => exact h
   | succ k ih => exact Nat.log_mono_right ih
-
-theorem iterLog_monotone (k : ℕ) : Monotone (iterLog k) :=
-  fun _ _ h => iterLog_mono k h
 
 /-- `iterLog k n` is antitone in the iteration count `k`. -/
 theorem iterLog_anti_left {j k : ℕ} (n : ℕ) (h : j ≤ k) : iterLog k n ≤ iterLog j n := by
@@ -116,94 +116,92 @@ theorem iterLog_lt_of_gt_one {k n : ℕ} (h : 1 < iterLog k n) :
     iterLog (k + 1) n < iterLog k n :=
   Nat.log_lt_self 2 (by omega)
 
-/-- `iterLog k n ≤ 1` holds iff `n` is strictly below `Nat.twoTower (k + 1)`. -/
+/-- `iterLog k n ≤ 1` holds iff `n` is strictly below `twoTower (k + 1)`. -/
 theorem iterLog_le_one_iff_lt_twoTower {k n : ℕ} :
-    iterLog k n ≤ 1 ↔ n < Nat.twoTower (k + 1) := by
+    iterLog k n ≤ 1 ↔ n < twoTower (k + 1) := by
   induction k generalizing n with
   | zero =>
     change n ≤ 1 ↔ n < 2
     omega
   | succ k ih =>
-    rw [iterLog_succ_apply, ih, Nat.twoTower_succ]
+    rw [iterLog_succ_apply, ih, twoTower_succ]
     rcases Nat.eq_zero_or_pos n with rfl | hn
-    · simp [Nat.twoTower_pos, Nat.two_pow_pos]
+    · simp [twoTower_pos, Nat.two_pow_pos]
     · exact Nat.log_lt_iff_lt_pow Nat.one_lt_two hn.ne'
 
-/-- Base-2 floor iterated logarithm `log* n`: the least `k : ℕ` such that `iterLog k n ≤ 1`,
-expressed via `Nat.logStar (n + 1) - 1` so it shares `Nat.logStar`'s structural kernel reduction. -/
-@[expose] def logStar (n : ℕ) : ℕ :=
-  Nat.logStar (n + 1) - 1
+/-- Base-2 floor iterated logarithm: the least `k : ℕ` such that `iterLog k n ≤ 1`,
+expressed via `logStar (n + 1) - 1` so it shares `logStar`'s structural kernel reduction. -/
+@[expose] def floorLogStar (n : ℕ) : ℕ :=
+  logStar (n + 1) - 1
 
-/-- Threshold characterization: `logStar n ≤ k` iff `iterLog k n ≤ 1`. -/
-theorem logStar_le_iff {k n : ℕ} : logStar n ≤ k ↔ iterLog k n ≤ 1 := by
-  rw [logStar, Nat.sub_le_iff_le_add, Nat.logStar_le_iff, iterLog_le_one_iff_lt_twoTower]
+/-- Threshold characterization: `floorLogStar n ≤ k` iff `iterLog k n ≤ 1`. -/
+theorem floorLogStar_le_iff {k n : ℕ} : floorLogStar n ≤ k ↔ iterLog k n ≤ 1 := by
+  rw [floorLogStar, Nat.sub_le_iff_le_add, logStar_le_iff, iterLog_le_one_iff_lt_twoTower]
   omega
 
-/-- Strict threshold characterization: `k < logStar n` iff `1 < iterLog k n`. -/
-theorem lt_logStar_iff {k n : ℕ} : k < logStar n ↔ 1 < iterLog k n := by
-  rw [← not_le, logStar_le_iff, not_le]
+/-- Strict threshold characterization: `k < floorLogStar n` iff `1 < iterLog k n`. -/
+theorem lt_floorLogStar_iff {k n : ℕ} : k < floorLogStar n ↔ 1 < iterLog k n := by
+  rw [← not_le, floorLogStar_le_iff, not_le]
 
-/-- After `logStar n` iterations, `iterLog` reaches at most `1`. -/
-theorem iterLog_logStar_le_one (n : ℕ) : iterLog (logStar n) n ≤ 1 :=
-  logStar_le_iff.mp le_rfl
+/-- After `floorLogStar n` iterations, `iterLog` reaches at most `1`. -/
+theorem iterLog_floorLogStar_le_one (n : ℕ) : iterLog (floorLogStar n) n ≤ 1 :=
+  floorLogStar_le_iff.mp le_rfl
 
-/-- Base equation: `logStar n = 0` for `n ≤ 1`. -/
-theorem logStar_le_one {n : ℕ} (hn : n ≤ 1) : logStar n = 0 :=
-  Nat.le_zero.mp (logStar_le_iff.mpr hn)
-
-@[simp]
-theorem logStar_zero : logStar 0 = 0 := rfl
+/-- Base equation: `floorLogStar n = 0` for `n ≤ 1`. -/
+theorem floorLogStar_of_le_one {n : ℕ} (hn : n ≤ 1) : floorLogStar n = 0 :=
+  Nat.le_zero.mp (floorLogStar_le_iff.mpr hn)
 
 @[simp]
-theorem logStar_one : logStar 1 = 0 := rfl
+theorem floorLogStar_zero : floorLogStar 0 = 0 := rfl
 
-/-- Step equation: for `1 < n`, `logStar n = logStar (Nat.log 2 n) + 1`. -/
-theorem logStar_of_gt_one {n : ℕ} (hn : 1 < n) : logStar n = logStar (Nat.log 2 n) + 1 := by
+@[simp]
+theorem floorLogStar_one : floorLogStar 1 = 0 := rfl
+
+/-- Step equation: for `1 < n`, `floorLogStar n = floorLogStar (Nat.log 2 n) + 1`. -/
+theorem floorLogStar_of_gt_one {n : ℕ} (hn : 1 < n) :
+    floorLogStar n = floorLogStar (Nat.log 2 n) + 1 := by
   apply le_antisymm
-  · rw [logStar_le_iff, iterLog_succ_apply]
-    exact iterLog_logStar_le_one (Nat.log 2 n)
-  · have hpos : 0 < logStar n := lt_logStar_iff.mpr hn
+  · rw [floorLogStar_le_iff, iterLog_succ_apply]
+    exact iterLog_floorLogStar_le_one (Nat.log 2 n)
+  · have hpos : 0 < floorLogStar n := lt_floorLogStar_iff.mpr hn
     obtain ⟨k, hk⟩ := Nat.exists_eq_add_of_le (Nat.succ_le_of_lt hpos)
     have hle : iterLog (k + 1) n ≤ 1 := by
       rw [Nat.add_comm 1 k] at hk
-      exact hk ▸ iterLog_logStar_le_one n
-    rw [iterLog_succ_apply, ← logStar_le_iff] at hle
+      exact hk ▸ iterLog_floorLogStar_le_one n
+    rw [iterLog_succ_apply, ← floorLogStar_le_iff] at hle
     omega
 
 @[simp]
-theorem logStar_two : logStar 2 = 1 := rfl
+theorem floorLogStar_two : floorLogStar 2 = 1 := rfl
 
-/-- `logStar` is monotone. -/
-theorem logStar_mono {m n : ℕ} (h : m ≤ n) : logStar m ≤ logStar n :=
-  logStar_le_iff.mpr ((iterLog_mono (logStar n) h).trans (iterLog_logStar_le_one n))
+/-- `floorLogStar` is monotone. -/
+theorem floorLogStar_mono : Monotone floorLogStar := fun _ n h =>
+  floorLogStar_le_iff.mpr ((iterLog_mono (floorLogStar n) h).trans (iterLog_floorLogStar_le_one n))
 
-theorem logStar_monotone : Monotone logStar :=
-  fun _ _ h => logStar_mono h
+/-- Floor `floorLogStar` never exceeds ceiling `logStar`. -/
+theorem floorLogStar_le_logStar (n : ℕ) : floorLogStar n ≤ logStar n := by
+  rw [floorLogStar_le_iff, iterLog_le_one_iff_lt_twoTower]
+  exact lt_of_le_of_lt (le_twoTower_logStar n) (twoTower_lt_twoTower_succ _)
 
-/-- Floor `Cslib.logStar` never exceeds ceiling `Nat.logStar`. -/
-theorem logStar_le_natLogStar (n : ℕ) : logStar n ≤ Nat.logStar n := by
-  rw [logStar_le_iff, iterLog_le_one_iff_lt_twoTower]
-  exact lt_of_le_of_lt (Nat.le_twoTower_logStar n) (Nat.twoTower_lt_twoTower_succ _)
+/-- Ceiling `logStar` exceeds floor `floorLogStar` by at most `1`. -/
+theorem logStar_le_floorLogStar_add_one (n : ℕ) : logStar n ≤ floorLogStar n + 1 := by
+  rw [logStar_le_iff]
+  exact (iterLog_le_one_iff_lt_twoTower.mp (iterLog_floorLogStar_le_one n)).le
 
-/-- Ceiling `Nat.logStar` exceeds floor `Cslib.logStar` by at most `1`. -/
-theorem natLogStar_le_logStar_add_one (n : ℕ) : Nat.logStar n ≤ logStar n + 1 := by
-  rw [Nat.logStar_le_iff]
-  exact ((iterLog_le_one_iff_lt_twoTower.mp (iterLog_logStar_le_one n)).le)
-
-/-- `logStar n` never exceeds `n`. -/
-theorem logStar_le_self (n : ℕ) : logStar n ≤ n :=
-  (logStar_le_natLogStar n).trans (Nat.logStar_le_self n)
+/-- `floorLogStar n` never exceeds `n`. -/
+theorem floorLogStar_le_self (n : ℕ) : floorLogStar n ≤ n :=
+  (floorLogStar_le_logStar n).trans (logStar_le_self n)
 
 /-- Clamping at `4` makes the two-step floor logarithm at least `1`. -/
 theorem one_le_iterLog_two_max_four (n : ℕ) : 1 ≤ iterLog 2 (max n 4) := by
   have h4 : iterLog 2 4 = 1 := by decide
   rw [← h4]
-  exact iterLog_mono 2 (le_max_right n 4)
+  exact iterLog_mono 2 (_root_.le_max_right n 4)
 
 /-- Exact clamping bridge: `max (iterLog 2 (max n 4)) 1 = iterLog 2 (max n 4)`. -/
 theorem max_iterLog_two_max_four (n : ℕ) :
     max (iterLog 2 (max n 4)) 1 = iterLog 2 (max n 4) :=
-  max_eq_left (one_le_iterLog_two_max_four n)
+  _root_.max_eq_left (one_le_iterLog_two_max_four n)
 
 /-- Floor-to-ceiling lower bound: `iterLog 2 (max n 4) ≤ ⌈log₂ ⌈log₂ (max n 4)⌉⌉`. -/
 theorem iterLog_two_max_four_le_clog (n : ℕ) :
@@ -229,4 +227,4 @@ theorem clog_clog_max_four_le_two_mul_iterLog (n : ℕ) :
     (Nat.clog_le_iff_le_pow Nat.one_lt_two).mpr hclog1
   omega
 
-end Cslib
+end Nat

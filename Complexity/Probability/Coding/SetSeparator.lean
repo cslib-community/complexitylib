@@ -8,23 +8,32 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Probability.Coding.PrefixFreeEntropy
+public import Complexity.Probability.PMF
+public import Mathlib.Basic.Real.Basic
+public import Mathlib.InformationTheory.Coding.PrefixFree
+import Batteries.Data.Fin.Lemmas
+import Complexity.Foundations.Analysis.BernoulliInequality
+import Complexity.Foundations.Data.BitString.List.PrefixFree
 import Complexity.Probability.PMF.Expect
 import Mathlib.Algebra.Field.GeomSum
-import Mathlib.Analysis.SpecialFunctions.Exp
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.Fintype.Pi
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.Positivity
+import Mathlib.Tactic.Ring
 
 /-!
-# Prefix-Free Set-Separator Codes (`arXiv:2306.02253`, Theorem 5.2)
+# Distributional Prefix-Free Set-Separator Codes
 
 Given a finite universe `Fin S` and any distribution `μ` over disjoint subset pairs
-`(A, B) : Finset (Fin S) × Finset (Fin S)`, this module constructs a deterministic prefix-free
-binary code `enc` together with a decoding predicate `sep : List Bool → Fin S → Bool` such that:
+`(A, B) : Finset (Fin S) × Finset (Fin S)`, this module constructs a `μ`-dependent deterministic
+prefix-free binary code `enc` together with a decoding predicate `sep : List Bool → Fin S → Bool`
+such that:
 
 1. `Set.range enc` satisfies `InformationTheory.IsPrefixFree`, so `enc (A, B)` can be concatenated
    with subsequent protocol fields without length headers via
-   `InformationTheory.IsPrefixFree.bind_append`.
+   `InformationTheory.IsPrefixFree.bind_append`
+   (`Complexity/Foundations/Data/BitString/List/PrefixFree.lean`).
 2. For every disjoint pair `(A, B)`, `sep (enc (A, B))` evaluates to `true` on `A` and `false` on
    `B` (so `sepSet sep (enc (A, B))` contains `A` and is disjoint from `B`).
 3. Under `μ`, the expected bit length of `enc` is at most
@@ -32,27 +41,26 @@ binary code `enc` together with a decoding predicate `sep : List Bool → Fin S 
 
 ## Source attribution and formalization adaptation
 
-* **Pinned source:** Tianxiao Li, Jingxun Liang, Huacheng Yu, and Renfei Zhou, *"Tight Cell-Probe
-  Lower Bounds for Dynamic Succinct Dictionaries"*, in *Proceedings of the 2023 IEEE 64th Annual
-  Symposium on Foundations of Computer Science* (FOCS 2023), pp. 1842–1862
-  (`arXiv:2306.02253v3`, Section 5.1, Theorem 5.2, PDF p. 23 / printed p. 22, and its application
-  to cell sets `S_B` and `S_A \ S_B` in Section 5.1 Step 3, PDF p. 23 / printed p. 22, and
-  Section 5.2 Eq. (11), PDF p. 25 / printed p. 24).
-* **Source statement (paraphrase):** Theorem 5.2 cites Bernard Chazelle, Joe Kilian, Ronitt
-  Rubinfeld, and Ayellet Tal, *"The Bloomier Filter: An Efficient Data Structure for Static Support
-  Lookup Tables"*, SODA 2004, pp. 30–39, stating that for any two disjoint subsets `A, B` of a
-  finite universe there exists a separating set `S*` (`A ⊆ S*` and `B ∩ S* = ∅`) encodable within
-  at most `β (|A| + |B|)` bits in expectation for all `|A| + |B| > 0`, for a global constant
-  `β > 0`.
+* **Pinned source:** [LiLiangYuZhou2023] (`arXiv:2306.02253v3`, Section 5.1, Theorem 5.2, PDF p. 23
+  / printed p. 22, and its application to cell sets `S_B` and `S_A \ S_B` in Section 5.1 Step 3,
+  PDF p. 23 / printed p. 22, and Section 5.2 Eq. (11), PDF p. 25 / printed p. 24).
+* **Source statement (paraphrase):** Theorem 5.2 of [LiLiangYuZhou2023] cites
+  [ChazelleKilianRubinfeldTal2004], stating that for any two disjoint subsets `A, B` of a finite
+  universe there exists a separating set `S*` (`A ⊆ S*` and `B ∩ S* = ∅`) encodable within at most
+  `β (|A| + |B|)` bits in expectation for all `|A| + |B| > 0`, for a global constant `β > 0`.
 * **Intentional proof and statement adaptation (original):** Rather than formalizing hypergraph
-  peeling from Chazelle–Kilian–Rubinfeld–Tal (`β = log₂ e ≈ 1.443` under shared randomness), we
-  exploit that receiver Bob in the cell-probe communication game has unbounded free computation and
-  knows the input distribution `μ`. Sampling `T = 2 ^ (2 * S + 2)` independent uniform bitmasks on
-  `Fin S`, encoding the 1-based index of the first separating mask via `true :: eliasGamma (j₀ + 1)`
-  (or `false :: List.ofFn (fun i => decide (i ∈ A))` of length `S + 1` if none separates), and
-  averaging over the random codebook fixes a single deterministic prefix-free code `(enc, sep)` for
-  `μ` with explicit linear factor `β = 2` and additive constant `C = 7` bits across all pairs
-  (including `|A| + |B| = 0`).
+  peeling from [ChazelleKilianRubinfeldTal2004], `exists_prefixFree_separator_code` proves a
+  distributional prefix-free variant tailored to [LiLiangYuZhou2023] Section 5.1 Step 3 and
+  Section 5.2 Eq. (11), where receiver Bob has unbounded free computation and knows the input
+  distribution `μ`. Specifically, `exists_prefixFree_separator_code` differs from Theorem 5.2 in
+  three ways:
+  1. `enc` and `sep` depend on `μ` (fixing a deterministic codebook `θ₀` adapted to `μ`);
+  2. only the `μ`-average codeword length `E_μ[|enc(A, B)|]` is bounded (not per-pair expectation);
+  3. there is an additive `+ 7` bits covering the empty case `|A| + |B| = 0` alongside `β = 2`.
+  Sampling `T = 2 ^ (2 * S + 2)` independent uniform bitmasks on `Fin S`, encoding the 1-based
+  index of the first separating mask (`Fin.find?`) via `true :: eliasGamma (j₀ + 1)` (or
+  `false :: List.ofFn (fun i => decide (i ∈ A))` of length `S + 1` if none separates), and
+  averaging over the random codebook yields `(enc, sep)`.
 
 ## Main definitions
 
@@ -61,22 +69,35 @@ binary code `enc` together with a decoding predicate `sep : List Bool → Fin S 
 
 ## Main results
 
-* `Cslib.Probability.Coding.exists_prefixFree_separator_code`: existence of a deterministic
-  prefix-free separator code with expected bit length `≤ 2 * E_μ[|A| + |B|] + 7`.
-* `Cslib.Probability.Coding.subset_sepSet_and_disjoint`: `sepSet` turns pointwise Boolean
-  separation into `A ⊆ sepSet sep w ∧ Disjoint B (sepSet sep w)`.
+* `Cslib.Probability.Coding.mem_sepSet`, `Cslib.Probability.Coding.subset_sepSet_and_disjoint`:
+  membership characterization and conversion from pointwise Boolean separation to
+  `A ⊆ sepSet sep w ∧ Disjoint B (sepSet sep w)`.
+* `Cslib.Probability.Coding.exists_prefixFree_separator_code`: existence of a `μ`-dependent
+  deterministic prefix-free separator code with `μ`-expected bit length `≤ 2 * E_μ[|A| + |B|] + 7`.
+
+## References
+
+* [B. Chazelle, J. Kilian, R. Rubinfeld, A. Tal, *The Bloomier Filter: An Efficient Data Structure
+  for Static Support Lookup Tables*][ChazelleKilianRubinfeldTal2004].
+* [T. Li, J. Liang, H. Yu, R. Zhou, *Tight Cell-Probe Lower Bounds for Dynamic Succinct
+  Dictionaries*][LiLiangYuZhou2023], Section 5.1, Theorem 5.2, and Section 5.2, Eq. (11).
 -/
 
 public section
 
 namespace Cslib.Probability.Coding
 
-open InformationTheory Cslib.Probability.PMF
+open Cslib.BitString Cslib.Probability.PMF InformationTheory
 open scoped BigOperators ENNReal
 
 /-- Finite separating set `{x : Fin S | sep w x = true}` decoded from a separator codeword `w`. -/
-@[expose] def sepSet {S : ℕ} (sep : List Bool → Fin S → Bool) (w : List Bool) : Finset (Fin S) :=
+def sepSet {S : ℕ} (sep : List Bool → Fin S → Bool) (w : List Bool) : Finset (Fin S) :=
   Finset.univ.filter fun x => sep w x = true
+
+@[simp]
+theorem mem_sepSet {S : ℕ} {sep : List Bool → Fin S → Bool} {w : List Bool} {x : Fin S} :
+    x ∈ sepSet sep w ↔ sep w x = true := by
+  simp [sepSet]
 
 /-- Pointwise Boolean separation on `(A, B)` implies `A ⊆ sepSet sep w` and
 `Disjoint B (sepSet sep w)`. -/
@@ -84,10 +105,10 @@ theorem subset_sepSet_and_disjoint {S : ℕ} {sep : List Bool → Fin S → Bool
     {A B : Finset (Fin S)}
     (hA : ∀ x ∈ A, sep w x = true) (hB : ∀ y ∈ B, sep w y = false) :
     A ⊆ sepSet sep w ∧ Disjoint B (sepSet sep w) := by
-  refine ⟨fun x hx => Finset.mem_filter.mpr ⟨Finset.mem_univ x, hA x hx⟩, ?_⟩
+  refine ⟨fun x hx => (mem_sepSet).mpr (hA x hx), ?_⟩
   rw [Finset.disjoint_left]
   intro y hy hmem
-  have htrue : sep w y = true := (Finset.mem_filter.mp hmem).2
+  have htrue : sep w y = true := (mem_sepSet).mp hmem
   rw [hB y hy] at htrue
   cases htrue
 
@@ -100,55 +121,9 @@ private theorem separates_eq_true_iff {S : ℕ} {r : Fin S → Bool} {A B : Fins
     separates r A B = true ↔ (∀ x ∈ A, r x = true) ∧ (∀ y ∈ B, r y = false) :=
   decide_eq_true_iff
 
-private def firstHit : {T : ℕ} → (Fin T → Bool) → Option (Fin T)
-  | 0, _ => none
-  | _ + 1, p =>
-    if p 0 then some 0
-    else (firstHit (fun j => p j.succ)).map Fin.succ
-
-private theorem firstHit_eq_some {T : ℕ} {p : Fin T → Bool} {j₀ : Fin T}
-    (h : firstHit p = some j₀) : p j₀ = true := by
-  induction T with
-  | zero => exact j₀.elim0
-  | succ T ih =>
-    unfold firstHit at h
-    split_ifs at h with hp0
-    · cases h
-      exact hp0
-    · obtain ⟨j', hj', rfl⟩ := Option.map_eq_some_iff.mp h
-      exact ih hj'
-
-private theorem firstHit_lt_eq_false {T : ℕ} {p : Fin T → Bool} {j₀ i : Fin T}
-    (h : firstHit p = some j₀) (hlt : i.val < j₀.val) : p i = false := by
-  induction T with
-  | zero => exact j₀.elim0
-  | succ T ih =>
-    unfold firstHit at h
-    split_ifs at h with hp0
-    · cases h
-      simp at hlt
-    · obtain ⟨j', hj', rfl⟩ := Option.map_eq_some_iff.mp h
-      cases i using Fin.cases with
-      | zero => exact Bool.eq_false_iff.mpr hp0
-      | succ i' =>
-        simp only [Fin.val_succ, Nat.add_lt_add_iff_right] at hlt
-        exact ih hj' hlt
-
-private theorem firstHit_eq_none {T : ℕ} {p : Fin T → Bool}
-    (h : firstHit p = none) (i : Fin T) : p i = false := by
-  induction T with
-  | zero => exact i.elim0
-  | succ T ih =>
-    unfold firstHit at h
-    split_ifs at h with hp0
-    rw [Option.map_eq_none_iff] at h
-    cases i using Fin.cases with
-    | zero => exact Bool.eq_false_iff.mpr hp0
-    | succ i' => exact ih h i'
-
 private def encOf {S T : ℕ} (θ : Fin T → Fin S → Bool)
     (ab : Finset (Fin S) × Finset (Fin S)) : List Bool :=
-  match firstHit (fun j => separates (θ j) ab.1 ab.2) with
+  match Fin.find? (fun j : Fin T => separates (θ j) ab.1 ab.2) with
   | some j₀ => true :: eliasGamma (j₀.val + 1)
   | none => false :: List.ofFn (fun i : Fin S => decide (i ∈ ab.1))
 
@@ -163,8 +138,8 @@ private theorem isPrefixFree_range_encOf {S T : ℕ} (θ : Fin T → Fin S → B
     IsPrefixFree (Set.range (encOf θ)) := by
   rintro _ ⟨ab₁, rfl⟩ _ ⟨ab₂, rfl⟩ hpref
   unfold encOf at hpref ⊢
-  cases h₁ : firstHit (fun j => separates (θ j) ab₁.1 ab₁.2) <;>
-    cases h₂ : firstHit (fun j => separates (θ j) ab₂.1 ab₂.2) <;>
+  cases h₁ : Fin.find? (fun j : Fin T => separates (θ j) ab₁.1 ab₁.2) <;>
+    cases h₂ : Fin.find? (fun j : Fin T => separates (θ j) ab₂.1 ab₂.2) <;>
     simp only [h₁, h₂] at hpref ⊢
   · rcases hpref with ⟨r, hr⟩
     have hlen := congrArg List.length hr
@@ -181,14 +156,14 @@ private theorem sepOf_encOf {S T : ℕ} (θ : Fin T → Fin S → Bool)
     (∀ x ∈ A, sepOf θ (encOf θ (A, B)) x = true) ∧
       (∀ y ∈ B, sepOf θ (encOf θ (A, B)) y = false) := by
   unfold encOf
-  cases h : firstHit (fun j => separates (θ j) A B) with
+  cases h : Fin.find? (fun j : Fin T => separates (θ j) A B) with
   | none =>
     refine ⟨fun x hx => ?_, fun y hy => ?_⟩
     · simp [sepOf, hx]
     · have hyA : y ∉ A := Finset.disjoint_right.mp hdisj hy
       simp [sepOf, hyA]
   | some j₀ =>
-    have hsep := separates_eq_true_iff.mp (firstHit_eq_some h)
+    have hsep := separates_eq_true_iff.mp (Fin.eq_true_of_find?_eq_some h)
     have hdec : decodeEliasGamma (eliasGamma (j₀.val + 1)) - 1 = j₀.val := by
       rw [decodeEliasGamma_eliasGamma (by omega)]
       omega
@@ -337,21 +312,6 @@ private theorem sum_codebook_prefix_false {S T : ℕ} {A B : Finset (Fin S)}
       exact ⟨⟨x, lt_of_lt_of_le hxm hm⟩, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hxm⟩, rfl⟩
   rw [hcard]
 
-private theorem one_sub_pow_le_inv {p : ℝ} (hp1 : p ≤ 1) (m : ℕ)
-    (hmp : 0 < (m : ℝ) * p) : (1 - p) ^ m ≤ ((m : ℝ) * p)⁻¹ := by
-  have hexp1 : 1 - p ≤ Real.exp (-p) := by
-    have h := Real.add_one_le_exp (-p)
-    linarith
-  have hpow : (1 - p) ^ m ≤ Real.exp (-(m : ℝ) * p) := by
-    calc (1 - p) ^ m ≤ (Real.exp (-p)) ^ m := pow_le_pow_left₀ (by linarith) hexp1 m
-      _ = Real.exp (-(m : ℝ) * p) := by rw [← Real.exp_nat_mul]; ring_nf
-  have hexp2 : (m : ℝ) * p ≤ Real.exp ((m : ℝ) * p) := by
-    have h := Real.add_one_le_exp ((m : ℝ) * p)
-    linarith
-  calc (1 - p) ^ m ≤ Real.exp (-(m : ℝ) * p) := hpow
-    _ = (Real.exp ((m : ℝ) * p))⁻¹ := by rw [neg_mul, Real.exp_neg]
-    _ ≤ ((m : ℝ) * p)⁻¹ := inv_anti₀ hmp hexp2
-
 private theorem nat_log_le_add_sum_ge {v k L : ℕ} (hv1 : 1 ≤ v) (hvL : v ≤ 2 ^ L) :
     Nat.log 2 v ≤ k + ∑ s ∈ Finset.range (L - k), (if 2 ^ (k + 1 + s) ≤ v then 1 else 0) := by
   set ℓ := Nat.log 2 v
@@ -398,9 +358,9 @@ private theorem expected_length_encOf_le {S : ℕ} {A B : Finset (Fin S)} (hdisj
           2 * (∑ s ∈ Finset.range (L - k), fail (2 ^ (k + s)) θ) +
           (S + 1 : ℝ) * fail T θ := by
     unfold encOf
-    cases hhit : firstHit (fun j => separates (θ j) A B) with
+    cases hhit : Fin.find? (fun j : Fin T => separates (θ j) A B) with
     | none =>
-      have hall : ∀ j : Fin T, separates (θ j) A B = false := firstHit_eq_none hhit
+      have hall : ∀ j : Fin T, separates (θ j) A B = false := Fin.eq_false_of_find?_eq_none hhit
       have hfT : fail T θ = 1 := ite_eq_left fun j _ => hall j
       have hsum_nn : 0 ≤ ∑ s ∈ Finset.range (L - k), fail (2 ^ (k + s)) θ :=
         Finset.sum_nonneg fun s _ => hfail_nonneg _ θ
@@ -425,7 +385,8 @@ private theorem expected_length_encOf_le {S : ℕ} {A B : Finset (Fin S)} (hdisj
             have hpos : 1 ≤ 2 ^ (k + s) := Nat.one_le_two_pow
             omega
           have hfail_one : fail (2 ^ (k + s)) θ = 1 :=
-            ite_eq_left fun j hj => firstHit_lt_eq_false hhit (lt_of_lt_of_le hj h2)
+            ite_eq_left fun j hj =>
+              Fin.eq_false_of_find?_eq_some_of_lt hhit j (Fin.lt_def.mpr (lt_of_lt_of_le hj h2))
           rw [hfail_one]
         · exact hfail_nonneg _ θ
       have hfT_nn : 0 ≤ (S + 1 : ℝ) * fail T θ :=
@@ -435,6 +396,7 @@ private theorem expected_length_encOf_le {S : ℕ} {A B : Finset (Fin S)} (hdisj
       linarith
   let cbPMF := PMF.uniformOfFintype (Fin T → Fin S → Bool)
   set p : ℝ := (2⁻¹ : ℝ) ^ k
+  have hp0 : 0 ≤ p := by positivity
   have hp1 : p ≤ 1 := pow_le_one₀ (by norm_num) (by norm_num)
   have hsum_pt : ∑ θ, (cbPMF θ).toReal * ((encOf θ (A, B)).length : ℝ) ≤
       2 + 2 * (k : ℝ) +
@@ -473,8 +435,10 @@ private theorem expected_length_encOf_le {S : ℕ} {A B : Finset (Fin S)} (hdisj
         rw [mul_right_comm, ← mul_pow, mul_inv_cancel₀ (by norm_num), one_pow, one_mul]
       have hmp_pos : 0 < ((2 ^ (k + s) : ℕ) : ℝ) * p := by
         rw [hmp_eq]; positivity
-      refine (one_sub_pow_le_inv hp1 (2 ^ (k + s)) hmp_pos).trans_eq ?_
-      rw [hmp_eq, inv_pow]
+      have hbern := Real.one_sub_pow_le_one_div_one_add_mul hp0 hp1 (2 ^ (k + s))
+      refine hbern.trans ?_
+      rw [one_div, inv_pow, ← hmp_eq]
+      exact inv_anti₀ hmp_pos (by linarith)
     calc ∑ s ∈ Finset.range (L - k), (∑ θ, (cbPMF θ).toReal * fail (2 ^ (k + s)) θ)
         ≤ ∑ s ∈ Finset.range (L - k), (2⁻¹ : ℝ) ^ s := Finset.sum_le_sum hterm_le
       _ = ((2⁻¹ : ℝ) ^ (L - k) - 1) / (2⁻¹ - 1) := geom_sum_eq (by norm_num) (L - k)
@@ -497,8 +461,10 @@ private theorem expected_length_encOf_le {S : ℕ} {A B : Finset (Fin S)} (hdisj
         calc S + 1 ≤ 2 ^ (S + 1) := Nat.lt_two_pow_self.le
           _ ≤ 2 ^ (L - k) := Nat.pow_le_pow_right Nat.two_pos (by omega)
       exact_mod_cast hnat
-    have hinv := one_sub_pow_le_inv hp1 T hTp_pos
-    rw [hTp_eq] at hinv
+    have hinv : (1 - p) ^ T ≤ ((2 : ℝ) ^ (L - k))⁻¹ := by
+      refine (Real.one_sub_pow_le_one_div_one_add_mul hp0 hp1 T).trans ?_
+      rw [one_div, ← hTp_eq]
+      exact inv_anti₀ hTp_pos (by linarith)
     calc (S + 1 : ℝ) * (1 - p) ^ T
         ≤ (S + 1 : ℝ) * ((2 : ℝ) ^ (L - k))⁻¹ :=
           mul_le_mul_of_nonneg_left hinv (by positivity)
@@ -507,11 +473,15 @@ private theorem expected_length_encOf_le {S : ℕ} {A B : Finset (Fin S)} (hdisj
       _ = 1 := mul_inv_cancel₀ (by positivity)
   linarith
 
-/-- **Self-contained prefix-free set-separator code** (adapting Li–Liang–Yu–Zhou FOCS 2023,
-`arXiv:2306.02253v3`, Section 5.1, Theorem 5.2, without hypergraph peeling): for any distribution
-`μ` over disjoint pairs `(A, B)` of subsets of `Fin S`, there exist a deterministic prefix-free
-encoding `enc` (`IsPrefixFree (Set.range enc)`) and decoding predicate `sep` separating all
-disjoint pairs with expected codeword length `≤ 2 * E_μ[|A| + |B|] + 7`. -/
+/-- **Distributional prefix-free set-separator code** (adapting [LiLiangYuZhou2023], Section 5.1,
+Theorem 5.2, without hypergraph peeling from [ChazelleKilianRubinfeldTal2004]): for any
+distribution `μ` over disjoint pairs `(A, B)` of subsets of `Fin S`, there exist a deterministic
+prefix-free encoding `enc` (`IsPrefixFree (Set.range enc)`) and decoding predicate `sep` separating
+all disjoint pairs with `μ`-expected codeword length `≤ 2 * E_μ[|A| + |B|] + 7`.
+
+Unlike Theorem 5.2 of [LiLiangYuZhou2023] (which gives a single randomized scheme with per-instance
+expected length `β (|A| + |B|)` for `|A| + |B| > 0`), here `enc` and `sep` depend on `μ`, only the
+`μ`-average codeword length is bounded, and the `+ 7` term covers `|A| + |B| = 0`. -/
 theorem exists_prefixFree_separator_code (S : ℕ)
     (μ : PMF (Finset (Fin S) × Finset (Fin S)))
     (hdisj : ∀ ab ∈ μ.support, Disjoint ab.1 ab.2) :
