@@ -150,6 +150,16 @@ theorem mistakes_le_length (A : OnlineLearner α) (S : List (α × Bool)) :
     mistakes A S ≤ S.length :=
   mistakesFrom_le_length A [] S
 
+/-- The mistakes on `S ++ S'` are those on `S`, then those on `S'` after the history `h ++ S`. -/
+theorem mistakesFrom_append (A : OnlineLearner α) (h S S' : List (α × Bool)) :
+    mistakesFrom A h (S ++ S') = mistakesFrom A h S + mistakesFrom A (h ++ S) S' := by
+  induction S generalizing h with
+  | nil => simp
+  | cons p S ih =>
+    obtain ⟨x, y⟩ := p
+    rw [List.cons_append, mistakesFrom_cons, mistakesFrom_cons, ih]
+    simp only [List.append_assoc, List.singleton_append, Nat.add_assoc]
+
 /-- After the history `h`, the mistakes on `S` are the rounds `t` on which the prediction from
 `h` and the first `t` examples of `S` is wrong. -/
 theorem mistakesFrom_eq_card (A : OnlineLearner α) (h S : List (α × Bool)) :
