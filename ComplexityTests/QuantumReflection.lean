@@ -7,10 +7,10 @@ Authors: Samuel Schlesinger
 import Complexity.Computability.Circuit.Quantum.PhaseOracle
 import Complexity.Foundations.LinearAlgebra.PlaneRotation
 
-/-! Controlled circuits, the reflection about zero and rotation by two reflections: Shi's
-controlled `T = H[a] Λ(σ_x)[a, b] H[a]` built from a Toffoli gate, the reflection about `|00⟩`
-negating `|00⟩` and fixing `|10⟩`, and the quarter turn of the plane `ℝ²` produced by two
-reflections at angle `π / 4`. -/
+/-! Controlled circuits, the reflection about zero and rotation by two reflections: the
+controlled `T = H[a] Λ(σ_x)[a, b] H[a]` built from a Toffoli gate (a variant of Shi's `T_{π/4}`,
+without its final `σ_x` on `b`), the reflection about `|00⟩` negating `|00⟩` and fixing `|10⟩`,
+and the quarter turn of the plane `ℝ²` produced by two reflections at angle `π / 4`. -/
 
 namespace ComplexityTests.QuantumReflection
 
@@ -18,7 +18,7 @@ open Cslib Cslib.Quantum Cslib.Quantum.GateCode Cslib.Quantum.Circuit
 
 /-! ### Controlled `T` from a Toffoli gate -/
 
-/-- **Shi's `Λ(T)`**: the codes `H[1] Λ₂(σ_x)[0, 1; 2] H[1]` are `T = H[1] Λ(σ_x)[1, 2] H[1]`
+/-- **A controlled `T`**: the codes `H[1] Λ₂(σ_x)[0, 1; 2] H[1]` are `T = H[1] Λ(σ_x)[1, 2] H[1]`
 controlled by qubit `0`. The Toffoli gate is the CNOT `Λ(σ_x)[1, 2]` with the extra control `0`. -/
 example : IsControlled (0 : Fin 3)
     (ofCodes 3 [(true, 1, []), (false, 2, [0, 1]), (true, 1, [])])

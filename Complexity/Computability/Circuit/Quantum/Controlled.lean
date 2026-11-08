@@ -26,6 +26,8 @@ the control `c` to classical codes (NOT becomes CNOT, CNOT becomes Toffoli) cont
 do not touch `c` gives the controlled conjugate (`Cslib.Quantum.Circuit.IsControlled.conj`). This
 is how [Shi][Shi2003], §4.2, realizes `Λ(T_θ)` from `Λ₂(σ_x)` and single-qubit gates: with
 `T = H[a] Λ(σ_x)[a, b] H[a]`, the codes `H[a] Λ₂(σ_x)[c, a; b] H[a]` are `T` controlled by `c`.
+This `T` is a variant of Shi's `T_{π/4} = U_{-π/4}[a] Λ(σ_x)[a, b] U_{π/4}[a] = σ_x[b] T`, without
+the final `σ_x` on the target: a real involution with the same entry `⟨00|T|00⟩ = cos² (π/4)`.
 Controlled circuits compose (`Cslib.Quantum.Circuit.IsControlled.append`).
 
 ## Main definitions

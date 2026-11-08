@@ -64,8 +64,8 @@ namespace Gate
 theorem hadamard_mul_not_mul_hadamard :
     ((hadamard * Gate.not * hadamard : Gate 1) : Matrix (Fin 1 → Bool) (Fin 1 → Bool) ℂ) =
       Matrix.diagonal fun x => if x 0 then -1 else 1 := by
-  have h2 : ((Real.sqrt 2)⁻¹ : ℂ) ^ 2 = 1 / 2 := by
-    rw [inv_pow, ← Complex.ofReal_pow, Real.sq_sqrt (by norm_num)]
+  have h2 : (Real.sqrt 2 : ℂ)⁻¹ * (Real.sqrt 2 : ℂ)⁻¹ = 1 / 2 := by
+    rw [← sq, inv_pow, ← Complex.ofReal_pow, Real.sq_sqrt (by norm_num)]
     norm_num
   have hext {x y : Fin 1 → Bool} : x = y ↔ x 0 = y 0 :=
     ⟨fun h => h ▸ rfl, fun h => funext fun i => by rwa [Subsingleton.elim i 0]⟩
@@ -75,7 +75,7 @@ theorem hadamard_mul_not_mul_hadamard :
   ext y x
   simp only [Submonoid.coe_mul, Matrix.mul_apply, hsum, hadamard_apply, not_apply,
     Matrix.diagonal_apply, hext]
-  cases y 0 <;> cases x 0 <;> simp <;> ring_nf <;> simp only [h2] <;> norm_num
+  cases y 0 <;> cases x 0 <;> norm_num [h2]
 
 end Gate
 

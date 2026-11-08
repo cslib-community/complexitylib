@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, near `Mathlib/LinearAlgebra/Reflection.lean`)
 
 public import Complexity.Init
 public import Mathlib.Analysis.RCLike.Basic
@@ -23,12 +23,17 @@ Then `R_b R_a` maps `v(φ)` to `-v(φ - 2γ)`
 (`Cslib.LinearAlgebra.reflection_comp_reflection`), so `T` rounds map `v(φ)` to
 `(-1)^T v(φ - 2Tγ)` (`Cslib.LinearAlgebra.iterate_reflection_comp_reflection`). The hypotheses
 mention only the plane, so they can be checked one vector at a time in a larger space; no inner
-product is assumed.
+product is assumed. Mathlib's `Module.reflection_mul_reflection_pow_apply` computes the powers of a
+product of two `Module.reflection`s through Chebyshev polynomials; it is not used here because
+`R_a` and `R_b` are arbitrary linear maps, constrained only on the plane.
 
 This is the geometry of Grover's algorithm, as Shi uses it to rotate a state that is almost
 orthogonal to `a` onto a chosen real direction [Shi][Shi2003], §4.2 (proof of Lemma 4.5, Figure 1).
-There `R_a` is the reflection along `1̂` (negating `0̂`) and `R_b` is the reflection
-`T_θ^{⊗k} (-Λ̄(σ_z)) T_θ^{⊗k}` along `1̃`; the sign `(-1)^T` reflects that convention.
+There `a = 0̂`, `e = 1̂` and `b = 1̃`, and `R_a` is `Λ̄(σ_z)`, Shi's reflection along `1̂`. Shi's
+reflection along `1̃` is `R = T_θ^{⊗k} (-Λ̄(σ_z)) T_θ^{⊗k}`, which fixes `1̃`. The map `R_b` here
+negates `1̃` instead: it is `T_θ^{⊗k} Λ̄(σ_z) T_θ^{⊗k} = -R`. Hence Shi's Grover iterate is
+`(R Λ̄(σ_z))^T = (-1)^T (R_b R_a)^T`, which maps `v(φ)` to `v(φ - 2Tγ)`; the sign `(-1)^T` comes
+from negating `b` here rather than fixing it.
 
 ## Main results
 
