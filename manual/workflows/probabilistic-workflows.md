@@ -142,12 +142,27 @@ If the chain is confined to a set `C` closed under `P` and does not mix on all o
 only for neighbors in `C`, and bound the distance from starts in `C`, for a stationary law
 supported in `C`. The client is Glauber dynamics with a frozen boundary,
 `glauberColoringOn G q U hU`, which recolors only vertices of `U`. On the proper colorings
-`frozenColorings G q U b` that agree with `b` off `U`, `dist_glauberColoringOn_frozen_le_of_le`
-gives the sampling time of Levin and Peres, (14.23). For approximate counting,
+`G.frozenColorings q U b` that agree with `b` off `U`, `dist_glauberColoringOn_frozen_le_of_le`
+gives the sampling time of Levin and Peres, (14.23). It needs `2Δ < q`, `|U| ≤ n`, a start `x`
+that agrees with `b` off `U`, a nonempty `G.frozenColorings q U b` (from `mem_frozenColorings_self`
+when `b` is proper), `0 < δ` and `t ≥ ((q - Δ) / (q - 2Δ)) n (log n - log δ)`, and gives distance
+at most `δ` to the uniform law on `G.frozenColorings q U b`; `dist_glauberColoringOn_edge` in the
+checks below instantiates it. For approximate counting,
 [Coloring/Ratio.lean](../../Complexity/Probability/MarkovChain/Coloring/Ratio.lean) proves their
 Lemma 14.16, `inv_exp_mul_le_card_frozenColorings_erase_div`: freezing one more vertex keeps at
-least a `1 / (e q)` fraction of the colorings. The estimator of Theorem 14.14 is not yet
-formalized.
+least a `1 / (e q)` fraction of the colorings.
+[Coloring/Count.lean](../../Complexity/Probability/MarkovChain/Coloring/Count.lean) proves their
+Theorem 14.14, `le_toOuterMeasure_coloringCountEstimator`: `coloringCountEstimator` multiplies,
+over the `n` vertices, the fraction of `a` frozen-boundary samples in which one more vertex keeps
+its color, and with `t` and `a` as in (14.21) it is within relative error `ε` of
+`1 / |properColorings|` with probability at least `1 - η`. The concentration step is the generic
+product estimator of [Product/Estimator.lean](../../Complexity/Probability/Product/Estimator.lean):
+`le_toOuterMeasure_productEstimate` needs each stage probability within relative error
+`ε / (6 n)` of a target `r k ≥ b > 0` and `48 n ≤ 5 η ε² a b`, and proves it from the exact
+mean and second moment of independent empirical frequencies by Chebyshev's inequality. Both
+results concern only the law of `W`. The `n t a` Glauber updates are not charged in any cost
+model, so this is not yet the fully polynomial randomized approximation scheme of Levin and Peres,
+Remark 14.15.
 
 The [checked clients](../../ComplexityTests/MarkovChain.lean) compute `d(t) = (2/3)(1/4)^t` and
 `t_mix(1/4) = 1` exactly for a two-state chain with non-uniform stationary law, show that the flip
@@ -155,7 +170,10 @@ chain never mixes, compute a Metropolis acceptance probability, and give the hyp
 with `n = 1`. The [path-coupling checks](../../ComplexityTests/PathCoupling.lean) instantiate the
 coloring bound on a single edge, show that the condition `ρ ≥ 1` off the diagonal cannot be
 dropped, and compute the frozen colorings, the ratio of Lemma 14.16 and the frozen sampling time
-on a single edge. Run `scripts/build.sh ComplexityTests.MarkovChain ComplexityTests.PathCoupling`.
+on a single edge. The [counting checks](../../ComplexityTests/ColoringCount.lean) instantiate
+Theorem 14.14 on a single edge, show that its sample sizes can always be met, and show that one
+sample per stage never gives relative error `1 / 2` there. Run
+`scripts/build.sh ComplexityTests.MarkovChain ComplexityTests.PathCoupling ComplexityTests.ColoringCount`.
 A goal of the form `t_mix(ε) = k` needs both directions: `mixingTime_le_of_distToStationary_le`
 for `≤`, and `(hπ : P.IsStationary π).mixingTime_le_iff` at `k - 1` for `≥`.
 
@@ -212,6 +230,26 @@ perfect matching of `K₄` from the rotation of `Fin 4`, show that the triangle'
 singular at all values and that the star `K₁,₃` has the zero Tutte polynomial, and show that the
 zero-diagonal hypothesis is needed over `ZMod 2`. Run
 `scripts/build.sh ComplexityTests.TutteMatching`.
+
+To find the matching rather than only detect it, import
+[Matching/MVV.lean](../../Complexity/Algorithms/Matching/MVV.lean), the algebraic core of
+Mulmuley, Vazirani and Vazirani for bipartite graphs. `weightedEdmonds G w` is the Edmonds matrix
+over `ℤ` at the values `2 ^ w (i, j)`. When `IsUniqueMinMatching G w σ₀` holds,
+`matchingWeight_eq_padicValInt_det` recovers the weight `W` of `σ₀` as the `2`-adic valuation of
+the determinant, and `apply_eq_iff_not_two_pow_succ_dvd_mul_adjugate` gives
+`σ₀ i = j ↔ ¬ 2 ^ (W + 1) ∣ B i j * adj(B) j i`. The procedure itself is the named relation
+`mvvOutput G w`, and `mvvOutput_iff_apply_eq` says that on isolating weights it outputs exactly
+`σ₀`. Edge weights are functions `Edges G → Fin N`, read as `1, …, N` by `extendWeight`.
+`half_le_dens_exists_isUniqueMinMatching` applies the isolation lemma when `2 |E| ≤ N`, and
+`half_le_dens_mvv` states that `MVVSucceeds G (extendWeight w)` (the output is a perfect matching)
+holds for at least half of the weight functions. Module clients work through the characterization
+lemmas `isUniqueMinMatching_iff`, `matchingWeight_def`, `mvvOutput_iff`, `mvvSucceeds_iff`,
+`mem_matchingEdges`, `extendWeight_of_edge` and `extendWeight_of_not_edge`. MVV state the
+determinant lemmas for the Tutte matrix of a general graph; general graphs and the parallel
+determinant and inverse computations are not formalized. The
+[checked clients](../../ComplexityTests/MVVMatching.lean), a `module`, recover the identity
+matching on `K₂,₂` from the determinant `-12` and show that equal weights make the determinant
+vanish. Run `scripts/build.sh ComplexityTests.MVVMatching`.
 
 ## Compose local embeddings and extract a strategy
 
@@ -415,8 +453,18 @@ CHSH has value `3/4`, and the [parallel repetition clients](../../ComplexityTest
 derive `(3/4)^n ≤ v(CHSHⁿ) ≤ (1 - (1/4)³ / 6000)^{n / 2}`. They also show that the value of the
 repetition tends to zero for every game of value below one, and apply Lemma 6.5 with nothing
 conditioned, which gives a coordinate won with probability at most `G.value`. Run
-`scripts/build.sh ComplexityTests.ParallelRepetition`. The library does not yet use
-the theorem for small-soundness Label Cover
+`scripts/build.sh ComplexityTests.ParallelRepetition`.
+
+For Label Cover, import
+[LabelCover/Repetition.lean](../../Complexity/Computability/PCP/Approximation/LabelCover/Repetition.lean)
+and apply `LabelCoverRepetition.one_sub_unsatVal_pow_le hsimple hβγ hε k`. Its premises are that the
+instance is simple (`Graph.IsSimple`, decidable), that `2 ≤ |β| |γ|` and that `ε` is at most the
+unsatisfied value of the instance. The conclusion bounds the satisfied proportion of the `k`-fold
+repetition `LabelCoverRepetition.pow k g`. The bound does not require the edge list to be nonempty
+or well formed. The [Label Cover repetition clients](../../ComplexityTests/LabelCoverRepetition.lean)
+compute the numbering of a two-fold repetition, separate simple from non-simple instances, and
+bound the repetitions of an instance of value `1/2` by `(1 - (1/2)³ / 6000)^{k / 2}`. NP-hardness of
+small-soundness Label Cover is not yet derived
 ([#886](https://github.com/cslib-community/complexitylib/issues/886)).
 
 ## Project a continuous Gaussian density
