@@ -21,10 +21,10 @@ An *orthonormal representation* of a simple graph `G` on `V` is a family of unit
 in a real inner product space such that `u v ⟂ u w` whenever `v ≠ w` are nonadjacent. Lovász's
 theta function is
 `ϑ(G) = min_{u, c} max_v 1 / ⟪c, u v⟫²`,
-over orthonormal representations `u` and unit vectors `c` (the *handle*) [Lovasz1979Shannon]; this is the
-unweighted case of `ϑ₁` in Knuth's notes [Knuth1994, §5, (5.2)], whose *orthogonal labelings* are
-orthonormal representations in this sense [Knuth1994, §1]. We define `ϑ(G)` as the infimum of all
-`t > 0` such that `1 ≤ t ⟪c, u v⟫²` for every vertex `v`, for some orthonormal representation in
+over orthonormal representations `u` and unit vectors `c` (the *handle*) [Lovasz1979Shannon]; this
+is the unweighted case of `ϑ₁` in Knuth's notes [Knuth1994, §5, (5.2)], whose *orthogonal labelings*
+are orthonormal representations in this sense [Knuth1994, §1]. We define `ϑ(G)` as the infimum of
+all `t > 0` such that `1 ≤ t ⟪c, u v⟫²` for every vertex `v`, for some orthonormal representation in
 some `ℝᵈ` and a unit vector `c`; for each `(u, c)` these are exactly the `t ≥ max_v 1 / ⟪c, u v⟫²`.
 So `lovaszTheta` is the infimum of the source's objective; that the infimum is attained (the
 source's `min`) is not needed here and is not formalized. Representations in an arbitrary real
