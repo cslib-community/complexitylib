@@ -15,6 +15,7 @@ public import Complexity.Computability.WordRAM.ExactNotation
 public import Complexity.DataStructure.WordRAM.Randomized.StateTransition
 import all Complexity.DataStructure.Dictionary.DoubleHashing
 import Complexity.Probability.PMF.Expect
+import Complexity.Tactic.Fits
 
 /-!
 # Self-Contained Open-Addressed Permutation-Probing Dictionary on the Word-RAM
@@ -595,13 +596,12 @@ theorem allocSpan_execWithin {w base c_exp n_max : ℕ} {x : Data 16}
       x₁.mem = x.mem ∧
       x₁.regs regBase = base ∧
       x₁.regs regV = base + space c_exp n_max := by
-  have hfit_sp : Fits w (space c_exp n_max) := hS.of_le (by omega)
   set s1 := x.set regBase base
   have e1 : Exec w (.op (.copy regBase regV) : Code .exact 16) x s1 1 := by
     simpa [s1, hfr] using (Exec.copy (B := .exact) (w := w) (d := regBase) (s := regV) (x := x))
   set s2 := s1.set regCond (space c_exp n_max)
   have e2 : Exec w (.op (.const regCond (space c_exp n_max)) : Code .exact 16) s1 s2 1 :=
-    Exec.const hfit_sp
+    Exec.const (by fits)
   set s3 := s2.set regV (base + space c_exp n_max)
   have e3 : Exec w (.op (.exactBin .add regV regBase regCond) : Code .exact 16) s2 s3 1 :=
     Exec.alu (by simp +decide [StandardOp.evalExact, s2, s1]) hS
@@ -636,8 +636,8 @@ theorem fits_of_space {w base c_exp n_max : ℕ} (hS : Fits w (base + space c_ex
   have hM1_le : 2 ^ (bucketBits n_max - 1) ≤ numBuckets n_max :=
     Nat.pow_le_pow_right (by decide) (Nat.sub_le _ 1)
   have h4 := four_le_numBuckets n_max
-  refine ⟨hS.of_le (by omega), hS.of_le (by omega), hS.of_le (by omega), hS.of_le (by omega),
-    hS.of_le (by omega), hS.of_le (by omega), hS.of_le (by omega), hS.of_le (by omega),
+  refine ⟨by fits, by fits, by fits, by fits,
+    hS.of_le (by omega), by fits, by fits, by fits,
     hS.of_le (by omega)⟩
 
 /-- Deterministic 2-instruction glue advancing `regBase` by `singleTabSpace c_exp n_max`. -/
@@ -653,10 +653,9 @@ theorem initMidCode_exec {w base c_exp n_max : ℕ} {d : Data 16}
     (hbase : d.regs regBase = base) (hS : Fits w (base + space c_exp n_max)) :
     Exec w (initMidCode c_exp n_max) d (initMidData base c_exp n_max d) 2 := by
   obtain ⟨hfit_btab, _, _, _, _, _, _, _, _⟩ := fits_of_space hS
-  have hfit_tab : Fits w (singleTabSpace c_exp n_max) := hfit_btab.of_le (by omega)
   set s1 := d.set regCond (singleTabSpace c_exp n_max)
   have e1 : Exec w (.op (.const regCond (singleTabSpace c_exp n_max)) : Code .exact 16) d s1 1 :=
-    Exec.const hfit_tab
+    Exec.const (by fits)
   set s2 := s1.set regBase (base + singleTabSpace c_exp n_max)
   have e2 : Exec w (.op (.exactBin .add regBase regBase regCond) : Code .exact 16) s1 s2 1 :=
     Exec.alu (by simp +decide [StandardOp.evalExact, s1, hbase]) hfit_btab
@@ -677,14 +676,12 @@ theorem initPostCode_exec {w base c_exp n_max : ℕ} {d : Data 16}
     (hS : Fits w (base + space c_exp n_max)) :
     Exec w (initPostCode c_exp n_max) d (initPostData base c_exp n_max d) 2 := by
   obtain ⟨hfit_btab, _, _, _, _, _, _, _, _⟩ := fits_of_space hS
-  have hfit_tab : Fits w (singleTabSpace c_exp n_max) := hfit_btab.of_le (by omega)
-  have hfit_base : Fits w base := hfit_btab.of_le (by omega)
   set s1 := d.set regCond (singleTabSpace c_exp n_max)
   have e1 : Exec w (.op (.const regCond (singleTabSpace c_exp n_max)) : Code .exact 16) d s1 1 :=
-    Exec.const hfit_tab
+    Exec.const (by fits)
   set s2 := s1.set regBase base
   have e2 : Exec w (.op (.exactBin .sub regBase regBase regCond) : Code .exact 16) s1 s2 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, s1, hbase]) hfit_base
+    Exec.alu (by simp +decide [StandardOp.evalExact, s1, hbase]) (by fits)
   exact e1.seq e2
 
 /-- Complete randomized setup program `initSetup c_exp n_max`: resamples the primary Double
@@ -1092,15 +1089,12 @@ theorem probeCheckCode_execWithin {w base c_exp U n_max : ℕ} {d : Data 16}
       ∀ r : Fin 16, r ≠ regAddr → r ≠ regCond → d'.regs r = d.regs r := by
   have hslot_lt := slot.isLt
   have hsp : space c_exp n_max = slotOffset c_exp n_max + 3 * numBuckets n_max := rfl
-  have hfit_0 : Fits w 0 := hS.of_le (by omega)
-  have hfit_1 : Fits w 1 := hS.of_le (by omega)
+  have hfit_0 : Fits w 0 := by fits
   let sBase := base + slotOffset c_exp n_max
   let m := numBuckets n_max
-  have hfit_a0 : Fits w (sBase + slot.val) := hS.of_le (by omega)
-  have hfit_a1 : Fits w (sBase + slot.val + m) := hS.of_le (by omega)
   set s1 := d.set regAddr (sBase + slot.val)
   have e1 : Exec w (.op (.exactBin .add regAddr regSlotBase regSlot) : Code .exact 16) d s1 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, hsbase, hslot, sBase]) hfit_a0
+    Exec.alu (by simp +decide [StandardOp.evalExact, hsbase, hslot, sBase]) (by fits)
   let usedVal := d.mem (sBase + slot.val)
   set s2 := s1.set regCond usedVal
   have e2 : Exec w (.op (.load regCond regAddr) : Code .exact 16) s1 s2 1 := by
@@ -1124,7 +1118,7 @@ theorem probeCheckCode_execWithin {w base c_exp U n_max : ℕ} {d : Data 16}
       simp +decide [Cond.Holds, s2, s1, usedVal, sBase, hused1, hzero]
     set s3 := s2.set regAddr (sBase + slot.val + m)
     have e3 : Exec w (.op (.exactBin .add regAddr regAddr regM) : Code .exact 16) s2 s3 1 :=
-      Exec.alu (by simp +decide [StandardOp.evalExact, s2, s1, hm, m]) hfit_a1
+      Exec.alu (by simp +decide [StandardOp.evalExact, s2, s1, hm, m]) (by fits)
     have haddr_eq : sBase + slot.val + m = sBase + m + slot.val := by omega
     let keyVal := d.mem (sBase + m + slot.val)
     set s4 := s3.set regCond keyVal
@@ -1151,7 +1145,7 @@ theorem probeCheckCode_execWithin {w base c_exp U n_max : ℕ} {d : Data 16}
     · have hc2 : ¬(Cond.eq regCond regU).Holds s4 := by
         simp +decide [Cond.Holds, s4, s3, s2, s1, hkey, hu]
       set s5 := s4.set regCond 1
-      have e5 : Exec w (.op (.const regCond 1) : Code .exact 16) s4 s5 1 := Exec.const hfit_1
+      have e5 : Exec w (.op (.const regCond 1) : Code .exact 16) s4 s5 1 := Exec.const (by fits)
       have hmem : slot ∈ otherOccupiedSlots (extractSlots base c_exp U n_max d.mem) u := by
         rw [mem_otherOccupiedSlots_extractSlots_iff hwf]
         exact ⟨hused1, hkey⟩
@@ -1240,10 +1234,10 @@ theorem probeLoop_execWithin_aux {w base c_exp U n_max : ℕ} (θ : Seed c_exp n
     have hfit_add : Fits w (slot_i.val + (strideHash θ u).val) := by
       have := slot_i.isLt
       have := (strideHash θ u).isLt
-      exact hS.of_le (by omega)
+      fits
     have hfit_next : Fits w slot_next.val := by
       have := slot_next.isLt
-      exact hS.of_le (by omega)
+      fits
     set s1 := d.set regSlot (slot_i.val + (strideHash θ u).val)
     have e1 : Exec w (.op (.exactBin .add regSlot regSlot regStride) : Code .exact 16) d s1 1 :=
       Exec.alu (by simp +decide [StandardOp.evalExact, hslot, hstride, slot_i]) hfit_add
@@ -1353,8 +1347,7 @@ theorem opEvalHashesCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_
   obtain ⟨hfit_btab, hfit_b2tab, hfit_powB, _, hfit_powM, hfit_mask_M, hfit_powM1, _, hfit_1⟩ :=
     fits_of_space hS
   have hsp : space c_exp n_max = slotOffset c_exp n_max + 3 * numBuckets n_max := rfl
-  have hfit_tab : Fits w (singleTabSpace c_exp n_max) := hfit_btab.of_le (by omega)
-  have hfit_base : Fits w base := hfit_btab.of_le (by omega)
+  have hfit_tab : Fits w (singleTabSpace c_exp n_max) := by fits
   set s1 := x.set regCond u.val
   have e1 : Exec w (.op (.copy regCond regU) : Code .exact 16) x s1 1 := by
     simpa [s1, hu] using (Exec.copy (B := .exact) (w := w) (d := regCond) (s := regU) (x := x))
@@ -1444,30 +1437,22 @@ theorem opEvalHashesCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_
   -- Execute opPostEvalCode
   have hraw_lt := two_mul_rawStrideHash_add_one_lt θ u
   have hM_eq : 2 ^ bucketBits n_max = numBuckets n_max := rfl
-  have hfit_2raw : Fits w ((rawStrideHash θ u).val + (rawStrideHash θ u).val) :=
-    hfit_powM.of_le (by omega)
-  have hfit_stride : Fits w ((strideHash θ u).val) :=
-    hfit_powM.of_le (by have := (strideHash θ u).isLt; omega)
-  have hfit_so : Fits w (slotOffset c_exp n_max) := hS.of_le (by omega)
-  have hfit_bso : Fits w (base + slotOffset c_exp n_max) := hS.of_le (by omega)
-  have hfit_m : Fits w (numBuckets n_max) := hS.of_le (by omega)
-  have hfit_0 : Fits w 0 := hS.of_le (by omega)
   set s7 := s6.set regCond (singleTabSpace c_exp n_max)
   have e7 : Exec w (.op (.const regCond (singleTabSpace c_exp n_max)) : Code .exact 16) s6 s7 1 :=
     Exec.const hfit_tab
   set s8 := s7.set regBase base
   have e8 : Exec w (.op (.exactBin .sub regBase regBase regCond) : Code .exact 16) s7 s8 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, s7, hs6_base]) hfit_base
+    Exec.alu (by simp +decide [StandardOp.evalExact, s7, hs6_base]) (by fits)
   set s9 := s8.set regCond 1
   have e9 : Exec w (.op (.const regCond 1) : Code .exact 16) s8 s9 1 :=
     Exec.const hfit_1
   set s10 := s9.set regStride ((rawStrideHash θ u).val + (rawStrideHash θ u).val)
   have e10 : Exec w (.op (.exactBin .add regStride regAddr regAddr) : Code .exact 16) s9 s10 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, s9, s8, s7, hs6_addr]) hfit_2raw
+    Exec.alu (by simp +decide [StandardOp.evalExact, s9, s8, s7, hs6_addr]) (by fits)
   set s11 := s10.set regStride (strideHash θ u).val
   have e11 : Exec w (.op (.exactBin .add regStride regStride regCond) : Code .exact 16)
       s10 s11 1 := by
-    refine Exec.alu ?_ hfit_stride
+    refine Exec.alu ?_ (by fits)
     have hval : (rawStrideHash θ u).val + (rawStrideHash θ u).val + 1 = (strideHash θ u).val := by
       rw [val_strideHash]
       omega
@@ -1479,20 +1464,20 @@ theorem opEvalHashesCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_
   set s13 := s12.set regSlotBase (slotOffset c_exp n_max)
   have e13 : Exec w (.op (.const regSlotBase (slotOffset c_exp n_max)) : Code .exact 16)
       s12 s13 1 :=
-    Exec.const hfit_so
+    Exec.const (by fits)
   set s14 := s13.set regSlotBase (base + slotOffset c_exp n_max)
   have e14 : Exec w (.op (.exactBin .add regSlotBase regBase regSlotBase) : Code .exact 16)
       s13 s14 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, s13, s12, s11, s10, s9, s8]) hfit_bso
+    Exec.alu (by simp +decide [StandardOp.evalExact, s13, s12, s11, s10, s9, s8]) (by fits)
   set s15 := s14.set regMaskM (numBuckets n_max - 1)
   have e15 : Exec w (.op (.const regMaskM (numBuckets n_max - 1)) : Code .exact 16) s14 s15 1 :=
     Exec.const hfit_mask_M
   set s16 := s15.set regM (numBuckets n_max)
   have e16 : Exec w (.op (.const regM (numBuckets n_max)) : Code .exact 16) s15 s16 1 :=
-    Exec.const hfit_m
+    Exec.const (by fits)
   set s17 := s16.set regZero 0
   have e17 : Exec w (.op (.const regZero 0) : Code .exact 16) s16 s17 1 :=
-    Exec.const hfit_0
+    Exec.const (by fits)
   have ePost : Exec w (opPostEvalCode c_exp n_max) s6 s17 11 :=
     e7.seq (e8.seq (e9.seq (e10.seq (e11.seq
       (e12.seq (e13.seq (e14.seq (e15.seq (e16.seq e17)))))))))
@@ -1548,16 +1533,11 @@ theorem finishQueryCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_e
   let slot := targetSlot (probePerm θ) T u hO
   have hslot_lt := slot.isLt
   have hsp : space c_exp n_max = slotOffset c_exp n_max + 3 * numBuckets n_max := rfl
-  have hfit_0 : Fits w 0 := hS.of_le (by omega)
-  have hfit_1 : Fits w 1 := hS.of_le (by omega)
   let sBase := base + slotOffset c_exp n_max
   let m := numBuckets n_max
-  have hfit_a0 : Fits w (sBase + slot.val) := hS.of_le (by omega)
-  have hfit_a1 : Fits w (sBase + slot.val + m) := hS.of_le (by omega)
-  have hfit_a2 : Fits w (sBase + slot.val + m + m) := hS.of_le (by omega)
   set s1 := d.set regAddr (sBase + slot.val)
   have e1 : Exec w (.op (.exactBin .add regAddr regSlotBase regSlot) : Code .exact 16) d s1 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, hsbase, hslot, sBase, slot, T]) hfit_a0
+    Exec.alu (by simp +decide [StandardOp.evalExact, hsbase, hslot, sBase, slot, T]) (by fits)
   let usedVal := x.mem (sBase + slot.val)
   set s2 := s1.set regCond usedVal
   have e2 : Exec w (.op (.load regCond regAddr) : Code .exact 16) s1 s2 1 := by
@@ -1572,7 +1552,7 @@ theorem finishQueryCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_e
     have hc : (Cond.eq regCond regZero).Holds s2 := by
       simp +decide [Cond.Holds, s2, s1, hused0, hzero]
     set s3 := s2.set regOp 0
-    have e3 : Exec w (.op (.const regOp 0) : Code .exact 16) s2 s3 1 := Exec.const hfit_0
+    have e3 : Exec w (.op (.const regOp 0) : Code .exact 16) s2 s3 1 := Exec.const (by fits)
     refine ⟨s3,
       (e1.within.seq (e2.within.seq (ExecWithin.branch_pos hc e3.within))).mono (by omega),
       hmem, by simp +decide [s3, s2, s1, hbase], by simp +decide [s3]⟩
@@ -1581,15 +1561,14 @@ theorem finishQueryCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_e
       simpa [slot, T, hsu] using htarget
     obtain ⟨hused1, _, hval_eq⟩ := (extractSlots_eq_some_iff hrep.slot_wf slot u v).mp hT_some
     have hv_lt : v < V := hrep.vals_bounded u v hsu
-    have hfit_v1 : Fits w (v + 1) := hV.of_le (by omega)
     have hc : ¬(Cond.eq regCond regZero).Holds s2 := by
       simp +decide [Cond.Holds, s2, s1, usedVal, sBase, hused1, hzero]
     set s3 := s2.set regAddr (sBase + slot.val + m)
     have e3 : Exec w (.op (.exactBin .add regAddr regAddr regM) : Code .exact 16) s2 s3 1 :=
-      Exec.alu (by simp +decide [StandardOp.evalExact, s2, s1, hm, m]) hfit_a1
+      Exec.alu (by simp +decide [StandardOp.evalExact, s2, s1, hm, m]) (by fits)
     set s4 := s3.set regAddr (sBase + slot.val + m + m)
     have e4 : Exec w (.op (.exactBin .add regAddr regAddr regM) : Code .exact 16) s3 s4 1 :=
-      Exec.alu (by simp +decide [StandardOp.evalExact, s3, s2, s1, hm, m]) hfit_a2
+      Exec.alu (by simp +decide [StandardOp.evalExact, s3, s2, s1, hm, m]) (by fits)
     have haddr2_eq :
         sBase + slot.val + m + m =
           base + slotOffset c_exp n_max + 2 * numBuckets n_max + slot.val := by
@@ -1600,10 +1579,10 @@ theorem finishQueryCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_e
       simpa +decide [s5, s4, s3, s2, s1, hmem, haddr2_eq, hval_eq] using
         (Exec.load (B := .exact) (w := w) (d := regOp) (a := regAddr) (x := s4))
     set s6 := s5.set regCond 1
-    have e6 : Exec w (.op (.const regCond 1) : Code .exact 16) s5 s6 1 := Exec.const hfit_1
+    have e6 : Exec w (.op (.const regCond 1) : Code .exact 16) s5 s6 1 := Exec.const (by fits)
     set s7 := s6.set regOp (v + 1)
     have e7 : Exec w (.op (.exactBin .add regOp regOp regCond) : Code .exact 16) s6 s7 1 :=
-      Exec.alu (by simp +decide [StandardOp.evalExact, s6, s5]) hfit_v1
+      Exec.alu (by simp +decide [StandardOp.evalExact, s6, s5]) (by fits)
     refine ⟨s7,
       (e1.within.seq (e2.within.seq
         (ExecWithin.branch_neg hc
@@ -1657,40 +1636,35 @@ theorem finishInsertCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_
   have hslot_lt := slot.isLt
   have hsp : space c_exp n_max = slotOffset c_exp n_max + 3 * numBuckets n_max := rfl
   have hso : slotOffset c_exp n_max = 2 * singleTabSpace c_exp n_max := rfl
-  have hfit_0 : Fits w 0 := hS.of_le (by omega)
-  have hfit_1 : Fits w 1 := hS.of_le (by omega)
   let sBase := base + slotOffset c_exp n_max
   let m := numBuckets n_max
-  have hfit_a0 : Fits w (sBase + slot.val) := hS.of_le (by omega)
-  have hfit_a1 : Fits w (sBase + slot.val + m) := hS.of_le (by omega)
-  have hfit_a2 : Fits w (sBase + slot.val + m + m) := hS.of_le (by omega)
   have ha1_eq : sBase + slot.val + m = sBase + m + slot.val := by omega
   have ha2_eq : sBase + slot.val + m + m = sBase + 2 * m + slot.val := by omega
   set s1 := d.set regAddr (sBase + slot.val)
   have e1 : Exec w (.op (.exactBin .add regAddr regSlotBase regSlot) : Code .exact 16) d s1 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, hsbase, hslot, sBase, slot, T]) hfit_a0
+    Exec.alu (by simp +decide [StandardOp.evalExact, hsbase, hslot, sBase, slot, T]) (by fits)
   set s2 := s1.set regCond 1
-  have e2 : Exec w (.op (.const regCond 1) : Code .exact 16) s1 s2 1 := Exec.const hfit_1
+  have e2 : Exec w (.op (.const regCond 1) : Code .exact 16) s1 s2 1 := Exec.const (by fits)
   set s3 := s2.write (sBase + slot.val) 1
   have e3 : Exec w (.op (.store regAddr regCond) : Code .exact 16) s2 s3 1 := by
     simpa +decide [s3, s2, s1] using
       (Exec.store (B := .exact) (w := w) (a := regAddr) (s := regCond) (x := s2))
   set s4 := s3.set regAddr (sBase + slot.val + m)
   have e4 : Exec w (.op (.exactBin .add regAddr regAddr regM) : Code .exact 16) s3 s4 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, s3, s2, s1, hm, m]) hfit_a1
+    Exec.alu (by simp +decide [StandardOp.evalExact, s3, s2, s1, hm, m]) (by fits)
   set s5 := s4.write (sBase + m + slot.val) u.val
   have e5 : Exec w (.op (.store regAddr regU) : Code .exact 16) s4 s5 1 := by
     simpa +decide [s5, s4, s3, s2, s1, ha1_eq, hu] using
       (Exec.store (B := .exact) (w := w) (a := regAddr) (s := regU) (x := s4))
   set s6 := s5.set regAddr (sBase + slot.val + m + m)
   have e6 : Exec w (.op (.exactBin .add regAddr regAddr regM) : Code .exact 16) s5 s6 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, s5, s4, s3, s2, s1, hm, m]) hfit_a2
+    Exec.alu (by simp +decide [StandardOp.evalExact, s5, s4, s3, s2, s1, hm, m]) (by fits)
   set s7 := s6.write (sBase + 2 * m + slot.val) v
   have e7 : Exec w (.op (.store regAddr regV) : Code .exact 16) s6 s7 1 := by
     simpa +decide [s7, s6, s5, s4, s3, s2, s1, ha2_eq, hv] using
       (Exec.store (B := .exact) (w := w) (a := regAddr) (s := regV) (x := s6))
   set s8 := s7.set regOp 0
-  have e8 : Exec w (.op (.const regOp 0) : Code .exact 16) s7 s8 1 := Exec.const hfit_0
+  have e8 : Exec w (.op (.const regOp 0) : Code .exact 16) s7 s8 1 := Exec.const (by fits)
   have eAll := (e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq e8))))))).within
   have hs8_mem_below : ∀ a < sBase, s8.mem a = x.mem a := by
     intro a ha

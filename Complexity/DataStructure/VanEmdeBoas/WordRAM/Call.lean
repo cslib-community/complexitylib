@@ -15,6 +15,7 @@ public import Complexity.DataStructure.VanEmdeBoas.WordRAM.Successor
 public import Complexity.Computability.WordRAM.Dynamic
 public import Complexity.DataStructure.OrderedSet.Basic
 public import Mathlib.Data.Nat.Log
+import Complexity.Tactic.Fits
 
 /-!
 # Complete native van Emde Boas calls and adaptive dynamic realization
@@ -429,25 +430,21 @@ theorem arguments_fit {d w base stackBase₀ : ℕ}
     Fits w ((dynamicProgram d w).encode o j) := by
   have h5_le := five_le_span d
   have hu_le := universeSize_le_span d
-  have h0 : Fits w 0 := hstk_fit.of_le (by omega)
-  have h1 : Fits w 1 := hstk_fit.of_le (by omega)
-  have h2 : Fits w 2 := hstk_fit.of_le (by omega)
   cases o with
   | insert k =>
-    have hk : Fits w k := hstk_fit.of_le (by dsimp only [spec] at ho; omega)
     simp only [dynamicProgram]
     split
-    · exact h0
-    · exact hk
+    · fits
+    · fits
   | member q =>
     simp only [dynamicProgram]
     split
-    · exact h1
+    · fits
     · exact ho
   | successor q =>
     simp only [dynamicProgram]
     split
-    · exact h2
+    · fits
     · exact ho
 
 /-- Unified per-operation dispatch theorem for `(dynamicProgram d w)`: every admissible operation
@@ -463,7 +460,7 @@ theorem dispatch_spec {d w base stackBase₀ : ℕ} {s : Finset ℕ} {x : Data 3
       (∀ a, (a < base ∨ base + span d ≤ a) →
         (a < stackBase₀ ∨ stackBase₀ + 4 * d ≤ a) → y.mem a = x.mem a) := by
   obtain ⟨t, hvalid, helem, hrep⟩ := hx.tree
-  have ha : Fits w (base + span d) := hstk_fit.of_le (by omega)
+  have ha : Fits w (base + span d) := by fits
   have hprep_bounded : ((dynamicProgram d w).prepare o x).Bounded w :=
     (dynamicProgram d w).prepare_bounded hx.bounded
       (fun j _ => arguments_fit hstk_lo hstk_fit o ho j)
@@ -639,9 +636,8 @@ theorem run_initialized {d w base : ℕ} {s₀ : Data 32}
     init_call hs₀ ha hroot hdepth
   have hx₀ : SetRep d base (base + span d) w (∅ : Finset ℕ) x₀ :=
     ⟨hbounded₀, hroot₀, hstk₀, Tree.empty d, Tree.valid_empty d, Tree.elements_empty d, hrep₀⟩
-  have hstk_fit : Fits w (base + span d + 4 * d) := ha.of_le (by omega)
   obtain ⟨y, traces, he_client, hy, hcost, hframe_client⟩ :=
-    client_spec le_rfl hstk_fit p hx₀ hv
+    client_spec le_rfl (by fits) p hx₀ hv
   refine ⟨x₀, n_init, y, traces, hn_init, he_init, hx₀, he_client, hy, hcost, ?_⟩
   intro j hj
   rw [hframe_client j (by omega) (by omega), hframe₀ j hj]

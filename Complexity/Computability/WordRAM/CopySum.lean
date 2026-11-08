@@ -11,6 +11,7 @@ public import Complexity.Computability.WordRAM.Copy
 public import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Copying an array while accumulating its original words
@@ -100,10 +101,10 @@ theorem exec {w : ℕ} (x : Data 8) (h1 : Fits w 1)
         z.regs idx = y.regs idx + 1 := by
     obtain ⟨hys, hyd, hyl, hyo, hym, hyt⟩ := hy
     have hsrc : Fits w (y.regs src + y.regs idx) := by
-      rw [hys]; exact hs.of_le (by omega)
+      rw [hys]; fits
     have hdst : Fits w (y.regs dst + y.regs idx) := by
-      rw [hyd]; exact hd.of_le (by omega)
-    have hinc : Fits w (y.regs idx + 1) := hs.of_le (by omega)
+      rw [hyd]; fits
+    have hinc : Fits w (y.regs idx + 1) := by fits
     have hread : y.mem (y.regs src + y.regs idx) = x.mem (x.regs src + y.regs idx) := by
       rw [hym, hys]
       exact ArrayCopy.copyPrefix_outside (by omega)

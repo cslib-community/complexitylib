@@ -11,6 +11,7 @@ public import Complexity.Computability.WordRAM.Signed.ArrayArithmetic.Body
 public import Complexity.Computability.WordRAM.Signed.Fits
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Complete native signed array arithmetic with exact aliases
@@ -74,9 +75,9 @@ theorem exec {w n A B : ℕ} (subtract : Bool) (x : Data 16) (u v : ℕ → ℤ)
       exec_body subtract y (u (y.regs Reg.index)) (v (y.regs Reg.index))
         (hbound.of_natAbs_le ((hu _ hlt).trans (by omega)))
         (hbound.of_natAbs_le ((hv _ hlt).trans (by omega))) readA readB
-        (by rw [hra]; exact ha.of_le (by omega))
-        (by rw [hrb]; exact hb.of_le (by omega))
-        (by rw [hro]; exact hout.of_le (by omega)) (hout.of_le (by omega)) h1
+        (by rw [hra]; fits)
+        (by rw [hrb]; fits)
+        (by rw [hro]; fits) (by fits) h1
     have hm : z.mem = Function.update y.mem (x.regs Reg.output + y.regs Reg.index)
         (encode (if subtract then u (y.regs Reg.index) - v (y.regs Reg.index)
           else u (y.regs Reg.index) + v (y.regs Reg.index))) := by

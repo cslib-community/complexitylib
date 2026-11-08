@@ -9,6 +9,7 @@ module
 
 public import Complexity.DataStructure.Memory.Spec
 public import Complexity.DataStructure.StateTransition.Refinement
+import Complexity.Tactic.Fits
 
 /-!
 # Footprints, room, and products of data structures sharing one memory
@@ -369,7 +370,7 @@ theorem frame {s : State} (o : D.Op) {a : D.Result o} {s' : State}
   have hf := frontier_le_of_clientRun hrun
   have hroom' := room_of_run o hM hv hrun hroom
   obtain ⟨hN', habs, hfp, hr⟩ := N.congr hN (agree_of_run N o hM hN hd hv hrun) hf
-    (hroom'.of_le (by omega))
+    (by fits)
   refine ⟨habs, hN', hfp, hr, Finset.disjoint_left.mpr fun b hb hb' => ?_, hr ▸ hroom'⟩
   rw [hfp] at hb'
   obtain ⟨-, hgrow, -⟩ := M.modifies o hM hv hrun
@@ -429,9 +430,9 @@ def prod : Framed (product D₁ D₂) w where
   congr {_ _} hs h hf hr := by
     obtain ⟨h₁, h₂, hd, -⟩ := hs
     obtain ⟨h₁', habs₁, hfp₁, hr₁⟩ := M₁.congr h₁
-      (fun a ha => h a (Finset.mem_union_left _ ha)) hf (hr.of_le (by omega))
+      (fun a ha => h a (Finset.mem_union_left _ ha)) hf (by fits)
     obtain ⟨h₂', habs₂, hfp₂, hr₂⟩ := M₂.congr h₂
-      (fun a ha => h a (Finset.mem_union_right _ ha)) hf (hr.of_le (by omega))
+      (fun a ha => h a (Finset.mem_union_right _ ha)) hf (by fits)
     refine ⟨⟨h₁', h₂', ?_, ?_⟩, ?_, ?_, ?_⟩
     · rwa [hfp₁, hfp₂]
     · rwa [hr₁, hr₂]
@@ -522,7 +523,7 @@ theorem prod_of_fresh {s s' : State} (h₁ : M₁.inv s)
     (M₁.prod M₂).inv s' ∧ (M₁.prod M₂).abs s' = (M₁.abs s, M₂.abs s') ∧
       (M₁.prod M₂).footprint s' = M₁.footprint s ∪ M₂.footprint s' ∧
       (M₁.prod M₂).room s' = M₁.room s + M₂.room s' := by
-  obtain ⟨h₁', habs, hfp₁, hr₁⟩ := M₁.of_fresh h₁ hmem hf (hroom.of_le (by omega))
+  obtain ⟨h₁', habs, hfp₁, hr₁⟩ := M₁.of_fresh h₁ hmem hf (by fits)
   exact ⟨⟨h₁', h₂, by rwa [hfp₁], by rwa [hr₁]⟩, by rw [prod_abs, habs],
     by rw [prod_footprint, hfp₁], by rw [prod_room, hr₁]⟩
 

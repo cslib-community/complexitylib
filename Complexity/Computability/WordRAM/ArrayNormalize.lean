@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.WordRAM.Notation
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Charged in-place normalization of an array
@@ -84,7 +85,7 @@ theorem exec {W b M n : ℕ} (x : Data 7) (hb : x.regs base = b)
     ∃ y, ExecWithin W program x y (7 * n + 4) ∧ y.mem = normalizePrefix x.mem b M n ∧
       y.regs base = b ∧ y.regs length = n ∧ y.regs modulus = M := by
   have h0 : Fits W 0 := fits_zero _
-  have h1 : Fits W 1 := hfit.of_le (by omega)
+  have h1 : Fits W 1 := by fits
   let start := (x.set index 0).set one 1
   have hs : ExecWithin (B := .standard) W (ram[ index ← #0; one ← #1 ]) x start 2 := by
     ram_eval [start, h0, h1]
@@ -97,10 +98,10 @@ theorem exec {W b M n : ℕ} (x : Data 7) (hb : x.regs base = b)
       ∃ z, ExecWithin W body y z 5 ∧ P (y.regs index + 1) z ∧
         z.regs index = y.regs index + 1 := by
     obtain ⟨yb, yn, ym, yo, ymem⟩ := hy
-    have ha : Fits W (b + y.regs index) := hfit.of_le (by omega)
+    have ha : Fits W (b + y.regs index) := by fits
     have hv : Fits W (x.mem (b + y.regs index) % M) :=
       hfit.of_le ((Nat.mod_lt _ hM).le.trans (by omega))
-    have hj : Fits W (y.regs index + 1) := hfit.of_le (by omega)
+    have hj : Fits W (y.regs index + 1) := by fits
     have hread : y.mem (b + y.regs index) = x.mem (b + y.regs index) := by
       rw [ymem]
       simp [normalizePrefix]

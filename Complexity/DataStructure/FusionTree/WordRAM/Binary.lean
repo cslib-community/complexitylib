@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.WordRAM.Notation
 public import Complexity.DataStructure.FusionTree.Correction
 import Mathlib.Algebra.BigOperators.Fin
+import Complexity.Tactic.Fits
 
 /-!
 # Two-child node search
@@ -109,10 +110,10 @@ theorem exec {w : ℕ} (x : Data registers) (ha : Fits w (x.regs pointer + 20)) 
       (result x).regs out = rank (x.regs query)
         (x.mem (x.regs pointer + 18)) (x.mem (x.regs pointer + 20)) := by
   have h0 := fits_zero w
-  have h1 : Fits w 1 := ha.of_le (by omega)
-  have h2 : Fits w 2 := ha.of_le (by omega)
-  have h18 : Fits w 18 := ha.of_le (by omega)
-  have hp18 : Fits w (x.regs pointer + 18) := ha.of_le (by omega)
+  have h1 : Fits w 1 := by fits
+  have h2 : Fits w 2 := by fits
+  have h18 : Fits w 18 := by fits
+  have hp18 : Fits w (x.regs pointer + 18) := by fits
   have hp20 : Fits w (x.regs pointer + 18 + 2) := by simpa only [Nat.add_assoc] using ha
   have hresult : (result x).regs out = rank (x.regs query)
       (x.mem (x.regs pointer + 18)) (x.mem (x.regs pointer + 20)) := by

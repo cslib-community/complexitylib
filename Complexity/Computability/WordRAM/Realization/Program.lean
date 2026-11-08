@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.WordRAM.Realization.Basic
+import Complexity.Tactic.Fits
 
 /-!
 # Flat programs from graded memory-client realizations
@@ -126,12 +127,11 @@ theorem inputPrefix_exec {r k w : ℕ} (frontier ptr : Fin r) (src : Fin k → F
   let x₂ := x₁.set frontier words.length
   let x₃ := x₂.set ptr 1
   let x₄ := x₃.set frontier (words.length + 1)
-  have h1 : Fits w 1 := hw.of_le (by omega)
   have e₁ : ExecWithin (B := .exact) w (.op (.const ptr 0)) x x₁ 1 := ExecWithin.const (fits_zero w)
   have e₂ : ExecWithin (B := .exact) w (.op (.load frontier ptr)) x₁ x₂ 1 := by
     simpa [x₂, x₁, x] using
       (ExecWithin.load (B := .exact) (w := w) (x := x₁) (d := frontier) (a := ptr))
-  have e₃ : ExecWithin (B := .exact) w (.op (.const ptr 1)) x₂ x₃ 1 := ExecWithin.const h1
+  have e₃ : ExecWithin (B := .exact) w (.op (.const ptr 1)) x₂ x₃ 1 := ExecWithin.const (by fits)
   have e₄ : ExecWithin w (.op (.exactBin .add frontier frontier ptr)) x₃ x₄ 1 := by
     apply ExecWithin.op
     simp [Op.eval_exactBin, BinOp.evalExact, x₄, x₃, x₂, hp.symm, Data.put_of_fits hw]

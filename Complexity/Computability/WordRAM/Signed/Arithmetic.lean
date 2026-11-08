@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.WordRAM.Signed.Encoding
 public import Complexity.Computability.WordRAM.Notation
 public import Complexity.Computability.WordRAM.Compile
+import Complexity.Tactic.Fits
 
 /-!
 # Signed arithmetic implemented by unsigned word-RAM instructions
@@ -178,7 +179,7 @@ private theorem exec_finish {w : ℕ} (x : Data (r + 9)) {m s : ℕ}
     (hm : x.regs result = m) (hs : x.regs signA = s) (hz : x.regs zero = 0)
     (hfit : Fits w (2 * m + s)) :
     ∃ y, ExecWithin w finish x y 4 ∧ y.regs result = packed m s ∧ y.mem = x.mem := by
-  have hd : Fits w (m + m) := hfit.of_le (by omega)
+  have hd : Fits w (m + m) := by fits
   have hf : Fits w (m + m + s) := by simpa only [two_mul] using hfit
   by_cases hm0 : m = 0
   · refine ⟨x.set result 0, ?_, ?_, rfl⟩
@@ -237,10 +238,9 @@ private theorem exec_addCore {w : ℕ} (x : Data (r + 9)) {a b sa sb : ℕ}
   have hsle : sumSign a b sa sb ≤ 1 := by
     unfold sumSign
     split_ifs <;> omega
-  have hfit : Fits w (2 * sumMagnitude a b sa sb + sumSign a b sa sb) :=
-    hf.of_le (by omega)
+  have hfit : Fits w (2 * sumMagnitude a b sa sb + sumSign a b sa sb) := by fits
   obtain ⟨y, hy, hyr, hym⟩ := exec_finish z hmag hsign hzero hfit
-  refine ⟨y, (exec_addMagnitudes x ha hb hsa hsb (hf.of_le (by omega))).seq hy, ?_, ?_⟩
+  refine ⟨y, (exec_addMagnitudes x ha hb hsa hsb (by fits)).seq hy, ?_, ?_⟩
   · rw [hyr, ← encode_signedValue hsle, sum_value hsa1 hsb1]
   · exact hym.trans (by unfold z sumData; split_ifs <;> rfl)
 
@@ -315,7 +315,7 @@ theorem exec_subtract {w : ℕ} {a b : ℤ} (ha : GenericRAM.Signed.Fits w a)
   let q := (z.set result 1).set signB (1 - if b < 0 then 1 else 0)
   have hu := exec_unpack two_fits x hxa hxb (magnitude_fits ha) (magnitude_fits hb)
   have h1 : Fits (w + 2) 1 := two_fits.of_le (by omega : 1 ≤ 2)
-  have hf : Fits (w + 2) (1 - if b < 0 then 1 else 0) := h1.of_le (Nat.sub_le ..)
+  have hf : Fits (w + 2) (1 - if b < 0 then 1 else 0) := by fits
   have hflip : Exec (w + 2)
       (ram[ result ← #1; signB ← result - signB ]) z q 2 := by
     ram_eval [q, z, unpacked, result, signB, Fin.mk.injEq, h1, hf]
@@ -359,14 +359,14 @@ theorem exec_multiply {w : ℕ} {a b : ℤ} (ha : GenericRAM.Signed.Fits w a)
     rw [Int.natAbs_mul] at this
     omega
   have hf := arithmetic_fits ha.1 hprod
-  have hmul : Fits (w + 2) (a.natAbs * b.natAbs) := hf.of_le (by omega)
-  have h1 : Fits (w + 2) 1 := two_fits.of_le (by omega : 1 ≤ 2)
+  have hmul : Fits (w + 2) (a.natAbs * b.natAbs) := by fits
+  have h1 : Fits (w + 2) 1 := by fits
   have hpre : ExecWithin (w + 2) multiplyMagnitudes z q 4 := by
     by_cases hna : a < 0 <;> by_cases hnb : b < 0 <;>
       ram_eval [multiplyMagnitudes, q, z, unpacked, sa, sb, s, result, magA, magB,
         signA, signB, Fin.mk.injEq, hna, hnb, hmul, h1]
   have hsign : s ≤ 1 := by dsimp only [s]; split_ifs <;> omega
-  have hfit : Fits (w + 2) (2 * (a.natAbs * b.natAbs) + s) := hf.of_le (by omega)
+  have hfit : Fits (w + 2) (2 * (a.natAbs * b.natAbs) + s) := by fits
   obtain ⟨y, hy, hyr, hym⟩ := exec_finish q (m := a.natAbs * b.natAbs) (s := s)
     (by simp [q, result, signA, Fin.mk.injEq]) (by simp [q])
     (by simp [q, z, unpacked, zero, result, magA, magB, signA, signB, Fin.mk.injEq]) hfit
@@ -474,10 +474,10 @@ theorem exec_divide {w : ℕ} {a b : ℤ} (ha : GenericRAM.Signed.Fits w a)
     have := Nat.two_pow_pos (w - 1)
     omega
   have hf := arithmetic_fits ha.1 hqbound
-  have hdiv : Fits (w + 2) (a.natAbs / b.natAbs) := hf.of_le (by omega)
+  have hdiv : Fits (w + 2) (a.natAbs / b.natAbs) := by fits
   have hmod : Fits (w + 2) (a.natAbs % b.natAbs) :=
     (magnitude_fits ha).of_le (Nat.mod_le a.natAbs b.natAbs)
-  have hinc : Fits (w + 2) (a.natAbs / b.natAbs + 1) := hf.of_le (by omega)
+  have hinc : Fits (w + 2) (a.natAbs / b.natAbs + 1) := by fits
   have hpre : ExecWithin (w + 2) divideMagnitudes z q 10 := by
     by_cases hnz : 0 < b.natAbs <;> by_cases hna : a < 0 <;>
       by_cases hnb : b < 0 <;> by_cases hrem : 0 < a.natAbs % b.natAbs <;>

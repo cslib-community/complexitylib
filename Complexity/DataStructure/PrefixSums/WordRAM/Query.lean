@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.DataStructure.PrefixSums.WordRAM.Update
+import Complexity.Tactic.Fits
 
 /-!
 # Fixed Word-RAM prefix queries
@@ -67,11 +68,11 @@ private theorem queryBody_exec (hx : Entry b n i δ x) (hi : i ≤ n) (hn : 0 < 
     (hl : i ≠ n → n / 2 ≤ i → Fits w (a + x.mem (b + 1))) :
     ExecWithin w queryBody x (queryNext x b n i a) 11 := by
   obtain ⟨hz, ho, ht, hp, hn', hi', hd⟩ := hx
-  have hf : Fits w (n / 2) := ha.of_le (by omega)
-  have hb : Fits w (b + 1) := ha.of_le (by omega)
-  have hb' : Fits w (b + n / 2) := ha.of_le (by omega)
-  have hb'' : Fits w (b + n / 2 + n / 2) := ha.of_le (by omega)
-  have hi'' : Fits w (i - n / 2) := ha.of_le (by omega)
+  have hf : Fits w (n / 2) := by fits
+  have hb : Fits w (b + 1) := by fits
+  have hb' : Fits w (b + n / 2) := by fits
+  have hb'' : Fits w (b + n / 2 + n / 2) := by fits
+  have hi'' : Fits w (i - n / 2) := by fits
   by_cases he : i = n
   · ram_eval [queryBody, queryNext, hp, hn', hi', hxans, he, hv]
   · by_cases hc : i < n / 2
@@ -153,7 +154,7 @@ theorem queryLoop_spec (t : Tree h) (hx : Entry b (2 ^ h) i δ x) (hi : i ≤ 2 
       · have hy' : Entry (b + 1) (2 ^ h) i δ y := by simpa [hhalf, hleft] using hy
         have hyans : y.regs ans = a := by simp +decide [y, queryNext, hie, hhalf, hleft, hxans]
         obtain ⟨z, hz, hans, hm⟩ := ih l hy' hleft.le hyans
-          (by simpa [y] using hr.2.1) (ha.of_le (by rw [hsize]; omega))
+          (by simpa [y] using hr.2.1) (by fits)
           (hv.of_le (by simp only [Tree.total]; omega))
         refine ⟨z, (he.loop_iter hcond hz).mono (by omega), ?_, hm.trans queryNext_mem⟩
         simpa [Tree.prefixSum, hleft] using hans
@@ -162,7 +163,7 @@ theorem queryLoop_spec (t : Tree h) (hx : Entry b (2 ^ h) i δ x) (hi : i ≤ 2 
         have hyans : y.regs ans = a + l.total := by
           simp +decide [y, queryNext, hie, hhalf, hleft, hr.2.1.root]
         obtain ⟨z, hz, hans, hm⟩ := ih r hy' (by rw [hsize] at hi; omega) hyans
-          (by simpa [y] using hr.2.2) (ha.of_le (by rw [hsize]; omega))
+          (by simpa [y] using hr.2.2) (by fits)
           (by simpa [Tree.total, Nat.add_assoc] using hv)
         refine ⟨z, (he.loop_iter hcond hz).mono (by omega), ?_, hm.trans queryNext_mem⟩
         simpa [Tree.prefixSum, hleft, Nat.add_assoc] using hans

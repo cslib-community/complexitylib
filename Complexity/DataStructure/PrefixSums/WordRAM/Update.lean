@@ -10,6 +10,7 @@ module
 public import Complexity.DataStructure.PrefixSums.WordRAM.Tree
 public import Complexity.Computability.WordRAM.Compile
 public import Complexity.Computability.WordRAM.Notation
+import Complexity.Tactic.Fits
 
 /-!
 # Fixed Word-RAM point updates for aggregation trees
@@ -113,11 +114,11 @@ private theorem updateBody_exec (hx : Entry b n i δ x) (hi : i < n)
     (ha : Fits w (b + 2 * n)) (hv : Fits w (x.mem b + δ)) :
     ExecWithin w updateBody x (updateNext x b n i δ) 9 := by
   obtain ⟨hz, ho, ht, hp, hl, hi', hd⟩ := hx
-  have hf : Fits w (n / 2) := ha.of_le (by omega)
-  have hb : Fits w (b + 1) := ha.of_le (by omega)
-  have hb' : Fits w (b + n / 2) := ha.of_le (by omega)
-  have hb'' : Fits w (b + n / 2 + n / 2) := ha.of_le (by omega)
-  have hi'' : Fits w (i - n / 2) := ha.of_le (by omega)
+  have hf : Fits w (n / 2) := by fits
+  have hb : Fits w (b + 1) := by fits
+  have hb' : Fits w (b + n / 2) := by fits
+  have hb'' : Fits w (b + n / 2 + n / 2) := by fits
+  have hi'' : Fits w (i - n / 2) := by fits
   by_cases hc : i < n / 2
   · ram_eval [updateBody, updateNext, hp, hl, hi', hd, ho, ht, hc, hv, hf, hb]
   · ram_eval [updateBody, updateNext, hp, hl, hi', hd, ho, ht, hc, hv, hf, hb', hb'', hi'']
@@ -184,7 +185,7 @@ theorem updateLoop_spec (t : Tree h) (hx : Entry b (2 ^ h) i δ x) (hi : i < 2 ^
       exact Nat.two_pow_pos _
     by_cases hleft : i < 2 ^ h
     · have hy' : Entry (b + 1) (2 ^ h) i δ y := by simpa [hhalf, hleft] using hy
-      obtain ⟨z, hz, hzrep, hzframe⟩ := ihl hy' hleft hl (ha.of_le (by rw [hsize]; omega))
+      obtain ⟨z, hz, hzrep, hzframe⟩ := ihl hy' hleft hl (by fits)
         (hv.of_le (by simp only [Tree.total]; omega))
       refine ⟨z, (he.loop_iter hcond hz).mono (by omega), ?_, ?_⟩
       · simp only [Tree.add, hleft, ↓reduceIte, Tree.Rep, Tree.total_add]

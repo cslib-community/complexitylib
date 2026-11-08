@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.WordRAM.Allocation
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Copying arrays on the word RAM
@@ -115,10 +116,10 @@ theorem exec_of_separated_or_eq {w : ℕ} (x : Data 7) (h1 : Fits w 1)
         z.regs idx = y.regs idx + 1 := by
     obtain ⟨hys, hyd, hyl, hyo, hym⟩ := hy
     have hsrc : Fits w (y.regs src + y.regs idx) := by
-      rw [hys]; exact hs.of_le (by omega)
+      rw [hys]; fits
     have hdst : Fits w (y.regs dst + y.regs idx) := by
-      rw [hyd]; exact hd.of_le (by omega)
-    have hinc : Fits w (y.regs idx + 1) := hs.of_le (by omega)
+      rw [hyd]; fits
+    have hinc : Fits w (y.regs idx + 1) := by fits
     have hread : y.mem (y.regs src + y.regs idx) = x.mem (x.regs src + y.regs idx) := by
       rw [hym, hys]
       apply copyPrefix_outside

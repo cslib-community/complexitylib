@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.WordRAM.Notation
 public import Complexity.Foundations.Data.Nat.Radix
 import Mathlib.Tactic.Linarith
+import Complexity.Tactic.Fits
 
 /-!
 # Multiword arithmetic on the checked word RAM
@@ -165,9 +166,8 @@ private theorem exec_exact {w : ℕ} (x : Data 7)
     (hd : x.regs addend < radix w) (hc : x.regs carry < radix w) :
     Exec w program x (result x) 5 := by
   have hs := limb_update_fits ha hb hd hc
-  have hp : Fits w (x.regs left * x.regs right) := hs.of_le (by omega)
-  have hpd : Fits w (x.regs left * x.regs right + x.regs addend) :=
-    hs.of_le (by omega)
+  have hp : Fits w (x.regs left * x.regs right) := by fits
+  have hpd : Fits w (x.regs left * x.regs right + x.regs addend) := by fits
   have hm : Fits w ((x.regs left * x.regs right + x.regs addend + x.regs carry) %
       x.regs base) := hs.of_le (Nat.mod_le _ _)
   have hq : Fits w ((x.regs left * x.regs right + x.regs addend + x.regs carry) /

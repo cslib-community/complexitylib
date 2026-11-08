@@ -10,6 +10,7 @@ module
 public import Complexity.DataStructure.VanEmdeBoas.WordRAM.Model
 public import Complexity.DataStructure.VanEmdeBoas.WordRAM.Program
 public import Complexity.DataStructure.VanEmdeBoas.Insert
+import Complexity.Tactic.Fits
 
 /-!
 # Native van Emde Boas insertion descent
@@ -194,9 +195,9 @@ theorem insertBody_exec {d w base key : ℕ} {tree : Tree d} {s : Data 32}
               base + span (d + 1) := by simpa only [hd_eq] using hsafe.2.2
           have hu := universeSize_le_span d
           have hu' := span_le_succ d
-          have hhi : Fits w (m / universeSize d) := ha.of_le (by omega)
-          have hlo : Fits w (m % universeSize d) := ha.of_le (by omega)
-          have hnext : Fits w (m / universeSize d + 1) := ha.of_le (by omega)
+          have hhi : Fits w (m / universeSize d) := by fits
+          have hlo : Fits w (m % universeSize d) := by fits
+          have hnext : Fits w (m / universeSize d + 1) := by fits
           have hprod : Fits w ((m / universeSize d + 1) * span d) := by
             apply ha.of_le; dsimp only [clusterOffset] at hend; omega
           have hchild : Fits w (base + 5 + (m / universeSize d + 1) * span d) := by
@@ -233,9 +234,9 @@ theorem insertBody_exec {d w base key : ℕ} {tree : Tree d} {s : Data 32}
               base + span (d + 1) := by simpa only [hd_eq] using hsafe.2.2
           have hu := universeSize_le_span d
           have hu' := span_le_succ d
-          have hhi : Fits w (key / universeSize d) := ha.of_le (by omega)
-          have hlo : Fits w (key % universeSize d) := ha.of_le (by omega)
-          have hnext : Fits w (key / universeSize d + 1) := ha.of_le (by omega)
+          have hhi : Fits w (key / universeSize d) := by fits
+          have hlo : Fits w (key % universeSize d) := by fits
+          have hnext : Fits w (key / universeSize d + 1) := by fits
           have hprod : Fits w ((key / universeSize d + 1) * span d) := by
             apply ha.of_le; dsimp only [clusterOffset] at hend; omega
           have hchild : Fits w (base + 5 + (key / universeSize d + 1) * span d) := by

@@ -10,6 +10,7 @@ module
 public import Complexity.DataStructure.VanEmdeBoas.Successor
 public import Complexity.DataStructure.VanEmdeBoas.WordRAM.Model
 public import Complexity.DataStructure.VanEmdeBoas.WordRAM.Program
+import Complexity.Tactic.Fits
 
 /-!
 # Native van Emde Boas strict-successor certification
@@ -190,10 +191,10 @@ theorem successorDescentBody_exec {d w stackBase₀ sp₀ base query : ℕ} {tre
           have hu_le : universeSize d ≤ span (d + 1) :=
             (universeSize_le_span d).trans (span_le_succ d)
           have hqne : universeSize d ≠ 0 := Nat.ne_of_gt (universeSize_pos d)
-          have hw_base : Fits w base := ha.of_le (by omega)
-          have hw_hi : Fits w (query / universeSize d) := ha.of_le (by omega)
-          have hw_lo : Fits w (query % universeSize d) := ha.of_le (by omega)
-          have hw_hi1 : Fits w (query / universeSize d + 1) := ha.of_le (by omega)
+          have hw_base : Fits w base := by fits
+          have hw_hi : Fits w (query / universeSize d) := by fits
+          have hw_lo : Fits w (query % universeSize d) := by fits
+          have hw_hi1 : Fits w (query / universeSize d + 1) := by fits
           have hw_off : Fits w ((query / universeSize d + 1) * span d) :=
             ha.of_le (by dsimp only [clusterOffset] at hend; omega)
           have hw_ch : Fits w (base + 5 + (query / universeSize d + 1) * span d) :=
@@ -205,11 +206,11 @@ theorem successorDescentBody_exec {d w stackBase₀ sp₀ base query : ℕ} {tre
               Nat.div_mul_le_self query (universeSize d)
             have hM_lt : M < universeSize (d + 1) := (maximum_lt_universe ht hr rfl).2
             have hu1_le : universeSize (d + 1) ≤ span (d + 1) := universeSize_le_span (d + 1)
-            exact ha.of_le (by omega)
-          have hsp1 : Fits w (sp₀ + 1) := hsp.of_le (by omega)
-          have hsp2 : Fits w (sp₀ + 2) := hsp.of_le (by omega)
-          have hsp3 : Fits w (sp₀ + 3) := hsp.of_le (by omega)
-          have hsp4 : Fits w (sp₀ + 4) := hsp.of_le (by omega)
+            fits
+          have hsp1 : Fits w (sp₀ + 1) := by fits
+          have hsp2 : Fits w (sp₀ + 2) := by fits
+          have hsp3 : Fits w (sp₀ + 3) := by fits
+          have hsp4 : Fits w (sp₀ + 4) := by fits
           let ch := base + 5 + (query / universeSize d + 1) * span d
           by_cases hch0 : s.mem ch = 0
           · ram_eval [successorDescentBody, readAt, coordinates, descendSummary, pushFrame,
@@ -287,10 +288,10 @@ theorem successorUnwindBody_cluster_exec {w stackBase₀ sp₀ pay qv tv childAn
     (hsp : Fits w (sp₀ + 4)) (hout : Fits w (pay + childAns)) :
     ExecWithin w successorUnwindBody s (successorUnwindNext s sp₀) 19 := by
   obtain ⟨hz, ho, hfive, _, hsp_eq, _, hout_eq, hmem⟩ := hs
-  have hsp3 : Fits w (sp₀ + 3) := hsp.of_le (by omega)
-  have hsp2 : Fits w (sp₀ + 2) := hsp.of_le (by omega)
-  have hsp1 : Fits w (sp₀ + 1) := hsp.of_le (by omega)
-  have hsp0 : Fits w sp₀ := hsp.of_le (by omega)
+  have hsp3 : Fits w (sp₀ + 3) := by fits
+  have hsp2 : Fits w (sp₀ + 2) := by fits
+  have hsp1 : Fits w (sp₀ + 1) := by fits
+  have hsp0 : Fits w sp₀ := by fits
   ram_eval [successorUnwindBody, popFrame, successorUnwindNext,
     hz, ho, hfive, hsp_eq, hout_eq, hmem, hk, hpay, hqv, htv,
     hsp3, hsp2, hsp1, hsp0, hout, Nat.add_sub_assoc, Nat.add_zero]
@@ -306,17 +307,17 @@ theorem successorUnwindBody_summary_exec {d w stackBase₀ sp₀ base j cm : ℕ
     (ha : Fits w (base + span (d + 1))) (hsp : Fits w (sp₀ + 4)) :
     ExecWithin w successorUnwindBody s (successorUnwindNext s sp₀) 19 := by
   obtain ⟨hz, ho, hfive, _, hsp_eq, _, hout_eq, hmem⟩ := hs
-  have hsp3 : Fits w (sp₀ + 3) := hsp.of_le (by omega)
-  have hsp2 : Fits w (sp₀ + 2) := hsp.of_le (by omega)
-  have hsp1 : Fits w (sp₀ + 1) := hsp.of_le (by omega)
-  have hsp0 : Fits w sp₀ := hsp.of_le (by omega)
+  have hsp3 : Fits w (sp₀ + 3) := by fits
+  have hsp2 : Fits w (sp₀ + 2) := by fits
+  have hsp1 : Fits w (sp₀ + 1) := by fits
+  have hsp0 : Fits w sp₀ := by fits
   have hend := cluster_end_le_span d hj
   dsimp only [clusterOffset] at hend
   have hj1 : Fits w (j + 1) :=
     ha.of_le (by have := (universeSize_le_span d).trans (span_le_succ d); omega)
-  have hoff : Fits w ((j + 1) * span d) := ha.of_le (by omega)
-  have hb5 : Fits w (base + 5) := ha.of_le (by have := five_le_span (d + 1); omega)
-  have hch : Fits w (base + 5 + (j + 1) * span d) := ha.of_le (by omega)
+  have hoff : Fits w ((j + 1) * span d) := by fits
+  have hb5 : Fits w (base + 5) := by fits
+  have hch : Fits w (base + 5 + (j + 1) * span d) := by fits
   have hch1 : Fits w (base + 5 + (j + 1) * span d + 1) :=
     ha.of_le (by have := five_le_span d; omega)
   have hmul_lt : j * universeSize d + cm < universeSize (d + 1) := by
@@ -325,8 +326,8 @@ theorem successorUnwindBody_summary_exec {d w stackBase₀ sp₀ base j cm : ℕ
     rw [Nat.succ_mul] at h
     omega
   have hu1_le : universeSize (d + 1) ≤ span (d + 1) := universeSize_le_span (d + 1)
-  have hmul : Fits w (j * universeSize d) := ha.of_le (by omega)
-  have hans : Fits w (j * universeSize d + cm) := ha.of_le (by omega)
+  have hmul : Fits w (j * universeSize d) := by fits
+  have hans : Fits w (j * universeSize d + cm) := by fits
   ram_eval [successorUnwindBody, popFrame, readAt, successorUnwindNext,
     hz, ho, hfive, hsp_eq, hout_eq, hmem, hk, hpay, hqv, htv, hcm,
     hsp3, hsp2, hsp1, hsp0, hj1, hoff, hb5, hch, hch1, hmul, hans,
@@ -345,8 +346,7 @@ private theorem successor_some_spec {d w stackBase₀ sp₀ base query ans : ℕ
         ExecWithin w successorUnwind s₁ z (21 * d + T) := by
   induction d generalizing sp₀ base query ans s with
   | zero =>
-    have ha : Fits w (base + span 0) := hfit.of_le (by omega)
-    have he := successorDescentBody_exec hs ht hr ha hfit
+    have he := successorDescentBody_exec hs ht hr (by fits) hfit
     have hheader := hr.header
     cases tree with
     | leaf b =>
@@ -383,7 +383,7 @@ private theorem successor_some_spec {d w stackBase₀ sp₀ base query ans : ℕ
         · intro z T hcont
           simpa only [Nat.mul_zero, Nat.zero_add] using hcont
   | succ d ih =>
-    have ha : Fits w (base + span (d + 1)) := hfit.of_le (by omega)
+    have ha : Fits w (base + span (d + 1)) := by fits
     have he := successorDescentBody_exec hs ht hr ha hfit
     have hheader := hr.header
     cases tree with
@@ -543,9 +543,8 @@ private theorem successor_some_spec {d w stackBase₀ sp₀ base query ans : ℕ
                       dsimp only [clusterOffset] at hend_j
                       omega
                     rw [hframe_sp _ (by omega), hnext_away _ (Or.inl hlt_sp), hcm_mem]
-                  have hsp4_fit : Fits w (sp₀ + 4) := hfit.of_le (by omega)
                   have hbody := successorUnwindBody_summary_exec hs₂ hk_mem hpay_mem hqv_mem
-                    htv_mem hj hcm_s₁ hcm_lt ha hsp4_fit
+                    htv_mem hj hcm_s₁ hcm_lt ha (by fits)
                   let s₃ := successorUnwindNext s₂ sp₀
                   have hpres₃ := successorUnwindNext_preserved hs₂
                   have hs₃ : UnwindState stackBase₀ sp₀ ans s₁.mem s₃ := by
@@ -659,7 +658,6 @@ private theorem successor_some_spec {d w stackBase₀ sp₀ base query ans : ℕ
               have htv_mem : s₁.mem (sp₀ + 3) = span d := by
                 rw [hframe_sp (sp₀ + 3) (by omega), hnext_eq]
                 simp +decide [pushFrameData, Data.write_mem, Data.set_mem]
-              have hsp4_fit : Fits w (sp₀ + 4) := hfit.of_le (by omega)
               have hout_fit : Fits w (i.val * universeSize d + y) := by
                 have hmul_lt : i.val * universeSize d + y < universeSize (d + 1) := by
                   rw [universeSize_succ]
@@ -668,9 +666,9 @@ private theorem successor_some_spec {d w stackBase₀ sp₀ base query ans : ℕ
                   rw [Nat.succ_mul] at h
                   omega
                 have hu1_le := universeSize_le_span (d + 1)
-                exact ha.of_le (by omega)
+                fits
               have hbody := successorUnwindBody_cluster_exec hs₂ hk_mem hpay_mem hqv_mem
-                htv_mem hsp4_fit hout_fit
+                htv_mem (by fits) hout_fit
               let s₃ := successorUnwindNext s₂ sp₀
               have hpres₃ := successorUnwindNext_preserved hs₂
               have hs₃ : UnwindState stackBase₀ sp₀ ans s₁.mem s₃ := by
@@ -711,8 +709,7 @@ private theorem successor_none_spec {d w stackBase₀ sp₀ base query : ℕ} {t
     ∃ s₁, ExecWithin w successorDescent s s₁ 46 ∧
       s₁.regs stackBase = stackBase₀ ∧ s₁.regs sp = sp₀ ∧
       s₁.regs found = 0 ∧ s₁.regs out = 0 ∧ s₁.mem = s.mem := by
-  have ha : Fits w (base + span d) := hfit.of_le (by omega)
-  have he := successorDescentBody_exec hs ht hr ha hfit
+  have he := successorDescentBody_exec hs ht hr (by fits) hfit
   let s₁ := successorDescentNext s sp₀ base query
   have hconst := successorDescentNext_constants hs
   have hheader := hr.header

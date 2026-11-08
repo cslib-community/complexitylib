@@ -9,6 +9,7 @@ module
 
 public import Complexity.DataStructure.Queue.WordRAM.RegisterCorrectness
 public import Complexity.Computability.WordRAM.Realization.Backend
+import Complexity.Tactic.Fits
 
 /-!
 # One fixed queue dispatcher over realized physical-array methods
@@ -142,11 +143,9 @@ theorem initialize_exec {w base capacity : ℕ} {x : Data registers} (hx : x.Bou
     (hc : Fits w (base + 2 * capacity)) :
     Exec w (initializeCode base capacity) x (initialized base capacity x) 6 ∧
       (initialized base capacity x).Bounded w ∧ (initialized base capacity x).mem = x.mem := by
-  have hb : Fits w base := hc.of_le (by omega)
-  have hcap : Fits w capacity := hc.of_le (by omega)
   have he : Exec w (initializeCode base capacity) x (initialized base capacity x) 6 :=
     (Exec.const hc).seq ((Exec.const (fits_zero w)).seq ((Exec.const (fits_zero w)).seq
-      ((Exec.const hb).seq ((Exec.const hcap).seq (Exec.const (fits_zero w))))))
+      ((Exec.const (by fits)).seq ((Exec.const (by fits)).seq (Exec.const (fits_zero w))))))
   exact ⟨he, he.bounded hx, rfl⟩
 
 end Cslib.DataStructure.Queue.WordRAM

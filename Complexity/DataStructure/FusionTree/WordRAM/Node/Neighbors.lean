@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.DataStructure.FusionTree.WordRAM.Node.Sketch
+import Complexity.Tactic.Fits
 
 /-!
 # Actual full-key neighbor loads
@@ -68,9 +69,9 @@ theorem exec_neighbors {w n q a : ℕ} {keys : Fin n → ℕ} (p : NodeParameter
   let u := moved neighborInputs x
   have hfu : Frame x u := frame_moved _ _ (by simp [neighborInputs, neighborBank, bank])
   let v := ((u.set (neighborBank 3) 18).set (neighborBank 3) (a + 18)).set (neighborBank 4) 2
-  have h18 : Fits w 18 := ha.of_le (by omega)
-  have h2 : Fits w 2 := ha.of_le (by omega)
-  have ha18 : Fits w (a + 18) := ha.of_le (Nat.le_add_right _ _)
+  have h18 : Fits w 18 := by fits
+  have h2 : Fits w 2 := by fits
+  have ha18 : Fits w (a + 18) := by fits
   have huv : Exec w neighborAddress u v 3 := by
     have hua := hfu.2 pointer (by decide)
     ram_eval [neighborAddress, v, hua, hxa, h18, h2, ha18]

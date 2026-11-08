@@ -11,6 +11,7 @@ public import Complexity.Computability.WordRAM.Dynamic
 public import Complexity.Computability.WordRAM.Heap
 public import Complexity.Computability.WordRAM.MapOp
 public import Complexity.Computability.WordRAM.RegisterFrame
+import Complexity.Tactic.Fits
 
 /-!
 # Composable Word-RAM subroutine infrastructure
@@ -212,7 +213,7 @@ theorem zeroFillCode_exec (P : SubroutineCode B r_ds k_init)
       (∀ j, x₂.regs (P.initParams j) = params j) ∧
       (∀ a ∈ (Block.mk base space).footprint, x₂.mem a = 0) ∧
       Modifies (Block.mk base space).footprint x₁.mem x₂.mem := by
-  have hfit0 : Fits w 0 := (hx₁.1 P.baseReg).of_le (Nat.zero_le _)
+  have hfit0 : Fits w 0 := by fits
   have hfit_stop : Fits w (base + space) := hfr₁ ▸ hx₁.1 P.frontierReg
   obtain ⟨hcur_not, hzero_not, hone_not, hbase_ne_fr, _⟩ :=
     (List.nodup_cons.mp hclear).imp_right fun h =>
@@ -231,7 +232,7 @@ theorem zeroFillCode_exec (P : SubroutineCode B r_ds k_init)
   · have hc_pos : (Cond.lt P.baseReg P.frontierReg).Holds x₁ := by
       simp only [Cond.Holds, hb₁, hfr₁]
       omega
-    have hfit1 : Fits w 1 := hfit_stop.of_le (by omega)
+    have hfit1 : Fits w 1 := by fits
     let x_z := x₁.set P.zeroReg 0
     let x_o := x_z.set P.oneReg 1
     let x_c := x_o.set P.curReg (x_o.regs P.baseReg)
@@ -281,7 +282,7 @@ theorem zeroFillCode_exec (P : SubroutineCode B r_ds k_init)
       have hst_fit : Fits w (x_st.regs P.curReg + 1) := by
         change Fits w ((xs i).regs P.curReg + 1)
         rw [hsi_cur]
-        exact hfit_stop.of_le (by omega)
+        fits
       have hinc : ExecWithin w (.op P.incCur) x_st (x_st.set P.curReg (x_st.regs P.curReg + 1)) 1 :=
         (Exec.op (hinc hst_one hst_fit)).within
       have htarget : x_st.set P.curReg (x_st.regs P.curReg + 1) = xs (i + 1) := by
