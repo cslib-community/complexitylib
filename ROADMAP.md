@@ -1259,6 +1259,15 @@ Binary bounds vary with the input, and all their bits/writes are charged. This i
 fixed-rule corollary, a full size-distribution iterator, a witness/optimization algorithm or a fresh
 bit-transition machine simulation. No marking multiplicity or assumed constructor/runtime is used.
 
+`DigraphKernel` now supplies Proposition D.5's actual outgoing-absorbing directed reduction,
+original vertex-set count and decision algorithm. It reuses the explicit matrix writer without
+symmetrization, emits exactly two positive-vertex queries with `2v-1` variables, width three and
+at most `3v²` clauses, and retains the empty kernel. One complete native certificate composes
+construction, counting and binary positivity with original-vertex single-loglog time and global
+polynomial workspace. The source applies to loopless digraphs; the explicitly defined kernel
+predicate is also counted correctly on canonical directed matrices with loops. No graph admission,
+witness extraction, succinct declaration or fresh bit-transition simulation is implicit.
+
 Remaining STOC1575 objectives, keeping the original inventory open:
 
 - Theorems 1.1–1.2: actual generic bounded-term DNF constructor/count/resource transfer and the
@@ -1269,18 +1278,24 @@ Remaining STOC1575 objectives, keeping the original inventory open:
   Alternative raw table formats/parser/admission transfers remain separate.
 - Theorem 7.1: the parsed ragged weighted-row counting/reduction is covered for the explicit
   nonsuccinct unary-declaration input encoding, with actual sharp time/polynomial space.
-- Corollary 7.2 / Theorem 7.3: fixed finite/cofinite degree rules and fixed labeled partition
-  matrices still need their actual local degree-rule/partition construction and complete resource/
-  count transfer; q and cutoff D must remain fixed independently of the input. Functional linear
-  input cardinality tests and complete signed size-constrained independent-domination counting
-  are now implemented. General degree-rule/matrix construction remains open.
-- Corollaries 7.4–7.5 / Proposition 7.6: graph decision/witness/optimum and induced-matching
-  distribution endpoints remain open. Upper-domination width-3 differences count set–marking
-  pairs, not original sets. Query budgets, directed/undirected promises, empty graphs and
-  polynomially many distribution/threshold queries must be retained.
+- Corollary 7.2: general fixed finite/cofinite sigma-rho degree-rule construction and full count/
+  resource transfer remain open. Fixed cutoff D must not grow with the input. The independent-
+  domination rule and functional signed cardinality tests are covered, including input bounds.
+- Theorem 7.3: fixed q,D labeled degree matrices and optional per-class input cardinality tests
+  still need their actual class/neighbor-threshold construction and complete resource/count proof.
+- Corollary 7.4: independent-domination counting with input size bounds and outgoing-absorbing
+  digraph-kernel counting/decision are covered for the stated explicit encodings. Maximum induced matching, perfect matching cut,
+  upper domination and dominating induced matching remain open. Complete witness extraction and
+  optimum-threshold recovery are not yet composed, including for the covered decision predicates.
+- Corollary 7.5: the induced-matching endpoint-set bijection, total counts and full edge-size
+  distribution iterator/resources remain open; a functional size test alone does not supply them.
+- Proposition 7.6: upper domination's actual width-three set–marking-pair construction/count
+  (`4v+a-1` variables), and the alternative width-four original-set count (`5v+a-1` variables),
+  remain open. Preserve that count distinction, input thresholds, directed/undirected promises,
+  empty graphs and polynomially many distribution/self-reduction calls.
 
-Remaining graph/general-rule and other-paper/ALL-main endpoints remain open; the generic DNF
-and independent-domination milestones do not complete the original ALL-main objective.
+Remaining graph/general-rule and other-paper/ALL-main endpoints remain open; generic DNF,
+independent-domination and directed-kernel milestones do not complete the original ALL-main objective.
 
 The older interpolation counter is unchanged; its extra loglog and nu²-denominator schedule are
 not relabeled. Graph endpoints and other-paper objectives remain open.

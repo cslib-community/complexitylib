@@ -428,7 +428,7 @@ The `BinaryFrontend.compile` continuation below now supplies the complete actual
 constructor and sharp counting resource endpoint for the explicit promised table encoding.
 The rational kernel's own coefficient-growth theorem is not implied by the binary backend.
 The weighted-row endpoint later in this chapter is also certified; the independent-domination
-frontend below covers one graph rule, with the other graph endpoints still open.
+frontends below cover independent domination and directed kernels, with other graph endpoints open.
 
 The listing resource bound is promise-restricted. Without `DimensionOne`, take
 one width-$w$ table containing the all-zero tuple, all-one tuple and all $w$
@@ -652,8 +652,56 @@ Small test oracles enumerate original selections only; production uses the prove
 These are native word/resource certificates on explicit framed encodings, with unary declarations,
 binary references and signed binary bounds. They do not add a fresh bit-transition machine
 simulation or arbitrary untrusted-byte graph admission. General finite/cofinite degree-rule and
-labeled partition constructors, the other Corollary 7.4 applications, induced-matching size
-distributions, upper-domination marking counts, witness/optimum extraction and ALL-main remain open.
+labeled partition constructors, the other graph applications beyond the directed-kernel endpoint
+below, induced-matching distributions, upper-domination marking counts, witness/optimum extraction
+and ALL-main remain open.
+
+### Outgoing-absorbing kernels in directed graphs
+
+Import `Complexity.Computability.Complexity.FineGrained.DigraphKernel` and open
+`Cslib.Logic.PL.DigraphKernel`. `ofDigraph G` writes the canonical directed adjacency matrix on
+`Fin v`. It retains arc orientation, unary vertex declaration and framed Boolean cells. The input
+encoding and actual arc-exclusion/neighborhood traversal are shared with `IndependentDomination`;
+this reuse does not convert the input to an undirected graph. `plan` performs actual binary query
+writing and `plan_polytime` charges all matrix lookups, loops and literal writes.
+
+`Digraph.IsKernel G S` means that no arc joins two selected vertices and every outside vertex has
+an **outgoing** arc into the selected set. Reversing every arc gives the opposite convention.
+`finite_semantics` proves the formula correspondence and `plan_count` counts original vertex sets,
+with no marking or selection-code multiplicity. A directed odd cycle can have no kernel; a single
+arc has its head as the unique kernel. `query_count` gives two ordinary queries for $v\ge1$;
+`plan_budget` gives $N=2v-1$, width three and at most $3v^2$ clauses per query. At zero vertices,
+the one ordinary query has zero variables and no clauses, and counts the empty kernel once.
+
+`exists_count_sharp_certificate` composes construction, sequential counting and reconstruction
+with global polynomial workspace and $L^{O(1)}2^{O(\eta(v))}$ native time. Its count is the
+cardinality of actual kernel vertex sets. `exists_decide_sharp_certificate` additionally charges
+binary positivity postprocessing: the count certificate's global space/output bound proves that
+reading its result is polynomial in the original input length. The real-eta versions use
+$\eta(v)=v\log\log v/\sqrt{\log v}$ for $v\ge16$, and the rounded versions retain all smaller
+and empty inputs. No assumed graph reduction, count, runtime or extra-loglog suppression is used.
+
+This is Proposition D.5 (PDF p. 37) and the kernel decision specialization of Corollary 7.4
+(p. 26). The source is loopless and directed. The proved formulas also count the same explicitly
+defined kernel predicate on canonical directed matrices with loops; there is no symmetry or
+looplessness hypothesis hidden in the interface. Raw encoded construction/global space are total,
+without asserting arbitrary-byte graph admission. Certificates use the existing native word/resource
+model, not a fresh bit-transition simulation; declarations remain unary.
+
+From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.DigraphKernel`.
+The [complete checked client](../../ComplexityTests/PaperEndpoints/DigraphKernel.lean) computes
+empty, isolated, single-arc, reversed-arc, oriented-star, directed odd/even cycle, transitive and
+dense symmetric cases. It checks actual original selections, the stronger loop case, nonvacuous
+kernel/nonkernel instances and query metadata at 64 vertices without selection enumeration.
+Tiny exhaustive query oracles are tests only; production certificates use the proved sharp counter.
+
+The general Corollary 7.2 degree rules and Theorem 7.3 labeled partitions remain open. Of the six
+Corollary 7.4 predicates, independent-domination counting with size bounds and kernel counting/
+decision are covered; maximum induced matching, perfect matching cut, upper domination and
+dominating induced matching remain open.
+Complete witness/optimum extraction is still separate. Corollary 7.5 needs the induced-matching
+bijection and distribution iterator/resources; Proposition 7.6 needs its actual set–marking versus
+set-count constructions. These graph milestones do not complete ALL-main.
 
 ## Known Limitations
 
