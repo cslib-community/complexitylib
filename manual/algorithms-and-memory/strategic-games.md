@@ -3,7 +3,8 @@
 [Chapter index](index.md) · [Online and streaming models](online-and-streaming.md)
 
 This page covers finite strategic games in cost-minimization form, potential games, atomic and
-nonatomic congestion games, price-of-anarchy bounds, and no-regret (Hedge) dynamics. All of it is
+nonatomic congestion games, price-of-anarchy and price-of-stability bounds, fair cost-sharing
+games, and no-regret (Hedge) dynamics. All of it is
 mathematics about real-valued costs. No machine model is involved, and equilibrium computation
 carries no resource claim [complexitylib][complexitylib].
 
@@ -121,6 +122,49 @@ of anarchy bounds of `5/2` follow:
 `exists_socialCost_eq_five_halves_mul` shows that `5/2` is attained, by a three-player game on six
 resources.
 
+## The price of stability
+
+The price of stability compares the *best* pure Nash equilibrium with the optimum
+[roughgardenTardos07][roughgardenTardos07]. As for the price of anarchy, the library defines no
+ratio. A price-of-stability bound `ρ` is the statement that some pure Nash equilibrium `s`
+satisfies `socialCost s ≤ ρ * socialCost s'` for every profile `s'`.
+
+[Strategic/Stability.lean](../../Complexity/GameTheory/Strategic/Stability.lean) proves the potential
+function method (Theorem 19.13 of [tardosWexler07][tardosWexler07]). Suppose a generalized ordinal
+potential `Φ` satisfies `socialCost s ≤ A * Φ s` and `Φ s ≤ B * socialCost s` for every profile,
+with `0 ≤ A`, and there are finitely many profiles. The source assumes an exact potential with
+`A, B > 0`. The main results:
+
+- `IsGeneralizedOrdinalPotential.exists_isPureNash_socialCost_le`: a global minimizer of `Φ` is a
+  pure Nash equilibrium within `A * B` of the optimum.
+- `exists_reflTransGen_isPureNash_socialCost_le`: better-response dynamics from any `s₀` reach a
+  pure Nash equilibrium of social cost at most `A * B * socialCost s₀`.
+
+The method has two applications to atomic congestion games:
+
+- **Affine latencies.** [Congestion/Stability.lean](../../Complexity/GameTheory/Congestion/Stability.lean)
+  proves `rosenthalPotential_le_socialCost` for nondecreasing latencies and
+  `socialCost_le_two_mul_rosenthalPotential` for nonnegative affine latencies. These are the bounds
+  of Exercise 55 of [roughgarden13cs364a][roughgarden13cs364a], Exercise Set #7. The method then
+  gives a price of stability at most `2` (`exists_isPureNash_socialCost_le_two_mul`). This bound is
+  not tight.
+- **Fair cost sharing.** [Congestion/CostSharing.lean](../../Complexity/GameTheory/Congestion/CostSharing.lean)
+  defines `fairCostSharing resources c`, the congestion game with latency `c e / k`. It is the
+  network cost-sharing game of Lecture #15, with paths abstracted to resource sets. Its social cost
+  is the total cost of the resources in use (`socialCost_fairCostSharing`). Rosenthal's potential
+  is `∑ e, c e * H (load s e)`, and with nonnegative costs it lies between `socialCost` and
+  `H k * socialCost` (Lemma 19.8). So the price of stability is at most `H k`
+  (`exists_isPureNash_fairCostSharing_socialCost_le_harmonic_mul`). This is the theorem of
+  [anshelevichDKTWR08][anshelevichDKTWR08], proved as in Theorem 19.10 and Lecture #15,
+  Theorem 2.1.
+
+The opt-out game `optOut k ε` shows that `H k` is tight. Player `i` opts out on a private resource
+of cost `1 / (i + 1)` or shares a resource of cost `1 + ε`. For `ε > 0`, `isPureNash_optOut_iff`
+shows that everyone opting out, of social cost `H k`, is the unique pure Nash equilibrium.
+`exists_forall_isPureNash_optOut_mul_lt` turns this into the statement that no factor `r < H k`
+works. The source's network has extra zero-cost edges; they change no player's cost and are
+omitted.
+
 ## Nonatomic selfish routing
 
 [Congestion/Nonatomic.lean](../../Complexity/GameTheory/Congestion/Nonatomic.lean) models
@@ -162,11 +206,22 @@ checks the following:
 
 The congestion tests also check that Hedge dynamics start uniform, and they apply the Hedge
 price-of-anarchy bound to the two-link game for every horizon.
+[ComplexityTests/GameTheory/Stability.lean](../../ComplexityTests/GameTheory/Stability.lean) checks
+the following price-of-stability instances:
+
+- the potential function method on a coordination game whose worst equilibrium costs twice its
+  best;
+- the bounds `socialCost / 2 ≤ Φ ≤ socialCost`, both strict, on the two-link game;
+- a two-player VHS-or-Betamax game with two equilibria;
+- the opt-out game with three players. It also checks that `isPureNash_optOut_iff` fails for
+  `ε = 0`.
 
 ## Known Limitations
 
 Mixed Nash and correlated equilibria (with swap regret), existence of Wardrop flows, and weighted
-congestion games are not formalized. The same holds for the Monderer–Shapley isomorphism between
+congestion games are not formalized. Nor are the tight price of stability of affine congestion
+games (below `2`), strong Nash equilibria and their price of anarchy, and price-of-stability
+bounds for undirected network design. The same holds for the Monderer–Shapley isomorphism between
 potential games and congestion games (Theorems 2.8 and 3.2) and for the complexity of finding
 equilibria (PLS- and PPAD-completeness). These are ROADMAP directions under
 [#2900](https://github.com/cslib-community/complexitylib/issues/2900). Hedge dynamics are
@@ -175,9 +230,12 @@ feedback, and only time-average guarantees are proved, not last-iterate converge
 The theorems of Rosenthal, Christodoulou–Koutsoupias and Awerbuch–Azar–Epstein are attributed as
 cited in the Monderer–Shapley and Roughgarden papers; their own texts were not consulted.
 
+[anshelevichDKTWR08]: ../sources.md#anshelevichdktwr08
 [complexitylib]: ../sources.md#complexitylib
 [mondererShapley96]: ../sources.md#monderershapley96
 [rosenthal73]: ../sources.md#rosenthal73
 [roughgarden13cs364a]: ../sources.md#roughgarden13cs364a
 [roughgarden15]: ../sources.md#roughgarden15
 [roughgardenTardos02]: ../sources.md#roughgardentardos02
+[roughgardenTardos07]: ../sources.md#roughgardentardos07
+[tardosWexler07]: ../sources.md#tardoswexler07
