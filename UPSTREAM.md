@@ -754,7 +754,8 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `isRealizableBy_map_graph` and `IsRealizableBy.optimalError_eq_zero`, so reconcile names
   before submission. #966 would make `sampleComplexity` and `vcDim` `ℕ∞`-valued;
   `sampleComplexity_realizableDistributions_le_of_finite`,
-  `sampleComplexity_realizableDistributions_le_of_hasFiniteVCDim` and
+  `sampleComplexity_realizableDistributions_le_of_hasFiniteVCDim`,
+  `sampleComplexity_univ_le_of_finite` (agnostic, `AgnosticFiniteClass`) and
   `growthFunction_le_sum_choose_vcDim` will need restating if it lands.
 
 These are coordination references, not a second record of live PR status. Check the relevant
