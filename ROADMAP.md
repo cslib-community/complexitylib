@@ -516,6 +516,17 @@ index links to canonical definitions rather than keeping a second set.
   (`S(5) = 47,176,870`, verified by the bbchallenge Coq proof) as a cross-check;
   independence of busy beaver values from ZFC (Aaronson–Yedidia); and the connection to Chaitin's
   `Ω`.
+- **Degrees of unsolvability** ([#3379](https://github.com/cslib-community/complexitylib/issues/3379)):
+  oracle codes for Mathlib's `RecursiveIn` with stage-bounded evaluation, the use principle and
+  the equivalence `f ≤ᵀ g ↔ ∃ c, Code.eval g c = f`, and the incomparability part of the
+  Kleene–Post theorem by finite extension, are in `Foundations/Computability`.
+  Remaining: the Kleene–Post bound `A, B ≤ᵀ ∅′` (a primitive recursive oracle `evaln` on encoded
+  codes, typed `RecursiveIn` combinators, the halting set and the jump; merged Mathlib lacks
+  these, and the open
+  [mathlib4#38973](https://github.com/leanprover-community/mathlib4/pull/38973) proposes an
+  oracle `evaln` code and the jump, a possible route); the Friedberg–Muchnik
+  theorem (incomparable computably enumerable degrees, by finite injury); Sacks splitting and
+  density of the c.e. degrees; and Spector's minimal degree.
 - **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
   degrees `1 ≤ a < b`, in deterministic and in nondeterministic time, and the `O(t log t)`
   universal simulation ([#800]) gives `DTIME f ⊂ DTIME g` for time-constructible `f ≥ n` once
