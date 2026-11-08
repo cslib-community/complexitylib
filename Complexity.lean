@@ -793,6 +793,7 @@ public import Complexity.Computability.BlumComplexity.RecursiveRelatedness
 public import Complexity.Computability.BlumComplexity.Speedup
 public import Complexity.Computability.BranchingProgram.MonoidProgram
 public import Complexity.Computability.BranchingProgram.PolyLength
+public import Complexity.Computability.BranchingProgram.ReadOnce
 public import Complexity.Computability.Catalytic.Comparison
 public import Complexity.Computability.Circuit.Approximation
 public import Complexity.Computability.Circuit.Approximation.Hamming
@@ -3469,6 +3470,8 @@ public import Complexity.Crypto.Primitives.BlockCipher.Modes
 public import Complexity.Crypto.Primitives.PRG.Circuit
 public import Complexity.Crypto.Primitives.PRG.Game
 public import Complexity.Crypto.Primitives.PRG.NextBit
+public import Complexity.Crypto.Primitives.PRG.Nisan
+public import Complexity.Crypto.Primitives.PRG.Nisan.Bits
 public import Complexity.Crypto.Primitives.PRG.NisanWigderson
 public import Complexity.Crypto.Primitives.PRG.NisanWigderson.Circuit
 public import Complexity.Crypto.Primitives.PRG.NisanWigderson.Derandomization
@@ -4875,6 +4878,7 @@ public import Complexity.Probability.BitString.List.All
 public import Complexity.Probability.BitString.List.Vote
 public import Complexity.Probability.BitString.SubsetSum
 public import Complexity.Probability.BitString.SubsetSum.Matrix
+public import Complexity.Probability.BitString.ToeplitzHash
 public import Complexity.Probability.BoundedDifferences
 public import Complexity.Probability.Chernoff
 public import Complexity.Probability.Collision
@@ -4964,6 +4968,7 @@ public import Complexity.Probability.PairwiseIndependentHash.FrameRetention
 public import Complexity.Probability.PairwiseIndependentHash.FrameSubstitution
 public import Complexity.Probability.PairwiseIndependentHash.HeavyCount
 public import Complexity.Probability.PairwiseIndependentHash.HierarchyChannels
+public import Complexity.Probability.PairwiseIndependentHash.Mixing
 public import Complexity.Probability.PairwiseIndependentHash.Retention
 public import Complexity.Probability.PairwiseIndependentHash.RetentionChannel
 public import Complexity.Probability.PairwiseIndependentHash.RowFourthMoment
