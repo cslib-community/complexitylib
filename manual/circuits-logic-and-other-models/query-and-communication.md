@@ -186,7 +186,9 @@ gathering solves it in `5` rounds, and that the trichotomy puts it in the `Θ(n)
 Only oriented cycles are covered. General graphs with port numbering, Linial's `O(Δ²)` colouring,
 `(Δ + 1)`-colouring and MIS on bounded-degree graphs, the CONGEST message-size bound,
 randomized LOCAL algorithms, and LCLs with inputs or on paths and undirected cycles remain open;
-see `ROADMAP.md`.
+see `ROADMAP.md`. A centralized simulation of the phases of Luby's randomized MIS algorithm on
+general finite graphs, without messages, is described in
+[Luby's randomized maximal independent set](../algorithms-and-memory/algorithm-endpoints.md#lubys-randomized-maximal-independent-set).
 
 ## Locally decodable codes
 

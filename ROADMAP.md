@@ -1637,9 +1637,16 @@ densities (expected revenue equals expected virtual welfare; Vickrey with a rese
   `½ log* n + O_|L|(1)` upper bound for flexible problems, LCLs with inputs, on paths (directed
   or undirected) and on undirected cycles, general graphs with port numbering, Linial's `O(Δ²)` colouring and
   `(Δ + 1)`-colouring/MIS on bounded-degree graphs, CONGEST message bounds, randomized LOCAL
-  algorithms such as Luby's MIS, and closing the additive gaps between the
+  algorithms, and closing the additive gaps between the
   `⌈(log* n) / 2⌉ + 3` and `(log* n) / 2 - 1` round bounds for 3-colouring cycles and between
-  `⌈(log* n) / 2⌉ + 5` and `(log* n) / 2 - 2` for MIS on cycles.
+  `⌈(log* n) / 2⌉ + 5` and `(log* n) / 2 - 2` for MIS on cycles. A centralized simulation of the
+  random-priority variant of Luby's MIS algorithm exists (`Algorithms/Lean/LubyMIS.lean`,
+  [#3270](https://github.com/cslib-community/complexitylib/issues/3270)): Las Vegas correctness,
+  the half-edge removal lemma and an `O(log n)` phase bound with failure `n^-c` via Markov. Open
+  there: a LOCAL message-passing formalization with `O(log n)` rounds, the expected phase count,
+  Luby's original marking algorithm with its pairwise-independent analysis and NC
+  derandomization, Ghaffari's `O(log Δ) + poly(log log n)` bound, and the
+  Kuhn–Moscibroda–Wattenhofer lower bounds.
 
 ## Coverage and reuse
 
