@@ -2025,7 +2025,9 @@ public import Complexity.Computability.Complexity.Problems.CSP.Basic
 public import Complexity.Computability.Complexity.Problems.CSP.Constant
 public import Complexity.Computability.Complexity.Problems.CSP.Hardness
 public import Complexity.Computability.Complexity.Problems.CSP.Horn
+public import Complexity.Computability.Complexity.Problems.CSP.Incidence
 public import Complexity.Computability.Complexity.Problems.CSP.Majority
+public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
 public import Complexity.Computability.Complexity.Problems.CSP.Schaefer
 public import Complexity.Computability.Complexity.Problems.CSP.SelfDualThreeSAT
 public import Complexity.Computability.Complexity.Problems.ChromaticNumber
@@ -2055,6 +2057,7 @@ public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalPath
 public import Complexity.Computability.Complexity.Problems.Graph.PerfectMatching
 public import Complexity.Computability.Complexity.Problems.Graph.PerfectMatchingPolyTime
 public import Complexity.Computability.Complexity.Problems.Graph.Ports
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem
 public import Complexity.Computability.Complexity.Problems.Graph.SpanningTrees
 public import Complexity.Computability.Complexity.Problems.Graph.VertexColors
 public import Complexity.Computability.Complexity.Problems.GraphIsomorphism
@@ -3027,6 +3030,7 @@ public import Complexity.Computability.PolyTime.CSP.Boolean
 public import Complexity.Computability.PolyTime.CSP.CNFTemplate
 public import Complexity.Computability.PolyTime.CSP.Gadget
 public import Complexity.Computability.PolyTime.CSP.Gadget.Size
+public import Complexity.Computability.PolyTime.CSP.Table
 public import Complexity.Computability.PolyTime.CSP.ToCNF
 public import Complexity.Computability.PolyTime.CSP.Vars
 public import Complexity.Computability.PolyTime.CommonCountingAccum
@@ -5127,9 +5131,11 @@ public import Complexity.Logics.Propositional.CSP.Boolean
 public import Complexity.Logics.Propositional.CSP.CNFTemplate
 public import Complexity.Logics.Propositional.CSP.ExactlyOne
 public import Complexity.Logics.Propositional.CSP.HardCore
+public import Complexity.Logics.Propositional.CSP.Occurrence
 public import Complexity.Logics.Propositional.CSP.PartitionFunction
 public import Complexity.Logics.Propositional.CSP.Permanent
 public import Complexity.Logics.Propositional.CSP.PrimitivePositive
+public import Complexity.Logics.Propositional.CSP.Table
 public import Complexity.Logics.Propositional.CSP.ToBoolean
 public import Complexity.Logics.Propositional.CSP.ToCNF
 public import Complexity.Logics.Propositional.CSP.ToCNF.Count
