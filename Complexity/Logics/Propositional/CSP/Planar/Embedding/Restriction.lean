@@ -34,6 +34,22 @@ theorem getD_restrictPrefix_one (c : Graph.RotationCertificate) (darts i : ℕ)
   rw [List.find?_cons_of_pos (by simpa [Graph.RotationCertificate.walk] using hs)]
   rfl
 
+/-- Restriction to the full table is literal identity when every successor stays within
+its length. This includes the empty table, without inventing a positive scan clock. -/
+theorem restrictPrefix_eq_self (c : Graph.RotationCertificate)
+    (h : ∀ i < c.successor.length, c.successor.getD i 0 < c.successor.length) :
+    restrictPrefix c.successor.length c = c := by
+  apply congrArg Graph.RotationCertificate.mk
+  refine List.ext_getElem (by
+    change (restrictPrefix c.successor.length c).successor.length = c.successor.length
+    rw [length_restrictPrefix]) ?_
+  intro i hi hj
+  change i < (restrictPrefix c.successor.length c).successor.length at hi
+  change (restrictPrefix c.successor.length c).successor[i] = c.successor[i]
+  rw [← List.getD_eq_getElem (restrictPrefix c.successor.length c).successor 0 hi,
+    ← List.getD_eq_getElem c.successor 0 hj]
+  exact getD_restrictPrefix_one c _ i hj (by omega) (h i hj)
+
 /-- If the first successor is deleted and the second retained, two list-funded steps find
 the second successor exactly. No search clock depends on the numerical table entries. -/
 theorem getD_restrictPrefix_two (c : Graph.RotationCertificate) (darts i : ℕ)
