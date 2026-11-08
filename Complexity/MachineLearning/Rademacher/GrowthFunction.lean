@@ -28,6 +28,8 @@ complexity by `√(2 log Π_C(m) / m)` [MohriRostamizadehTalwalkar2018, Corollar
 
 ## Main results
 
+* `Cslib.MachineLearning.mem_signClass`, `Cslib.MachineLearning.signClass_singleton`:
+  membership, and the sign class of a single concept.
 * `Cslib.MachineLearning.empiricalRademacherComplexity_signClass_le`,
   `Cslib.MachineLearning.rademacherComplexity_signClass_le`: the growth-function bound.
 * `Cslib.MachineLearning.empiricalRademacherComplexity_signClass_le_vc`,
@@ -57,6 +59,11 @@ def signClass (C : ConceptClass α Bool) : Set (α → ℝ) :=
 theorem mem_signClass {C : ConceptClass α Bool} {f : α → ℝ} :
     f ∈ signClass C ↔ ∃ c ∈ C, (fun x => signVal (c x)) = f := by
   rw [signClass, Set.mem_image]
+
+/-- A single concept gives a single sign function. -/
+theorem signClass_singleton (c : α → Bool) :
+    signClass ({c} : ConceptClass α Bool) = {fun x => signVal (c x)} := by
+  rw [signClass, Set.image_singleton]
 
 /-- Functions of `signClass C` take values in `[-1, 1]`. -/
 theorem abs_le_one_of_mem_signClass {C : ConceptClass α Bool} {f : α → ℝ}

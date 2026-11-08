@@ -10,6 +10,7 @@ module
 public import Complexity.MachineLearning.Rademacher.Basic
 public import Complexity.Probability.BoundedDifferences
 public import Complexity.Probability.PMF.Event
+import Complexity.Probability.BitString.Massart
 import Complexity.Probability.PMF.Expect
 import Mathlib.Algebra.Order.BigOperators.Expect
 
@@ -25,7 +26,9 @@ deviation term. With probability at least `1 - δ`, for all `f ∈ F`,
 * `E_D f ≤ Ê_S f + 2 R̂_S(F) + 3 (b - a) √(log (2 / δ) / (2 m))`,
 
 [MohriRostamizadehTalwalkar2018, Theorem 3.3] (stated there for `[0, 1]`-valued classes, the case
-`a = 0`, `b = 1`) [BartlettMendelson2002, Theorem 8] [ShalevShwartzBenDavid2014, Chapter 26].
+`a = 0`, `b = 1`); see also [ShalevShwartzBenDavid2014, Chapter 26], and cf.
+[BartlettMendelson2002, Theorem 8], a variant for loss classes with a different normalization of the
+Rademacher complexity and different constants.
 The second bound is data-dependent: its complexity term can be computed from the sample.
 
 The proof has two parts.
@@ -53,7 +56,7 @@ Probabilities are the outer measures of the finite product distribution
 * `Cslib.MachineLearning.rademacherComplexity_generalization_bound`: the bound with `R_m(F)`.
 * `Cslib.MachineLearning.empiricalRademacherComplexity_generalization_bound`: the data-dependent
   bound with `R̂_S(F)`.
-* `Cslib.MachineLearning.generalization_bound_of_finset`: a finite class with values in
+* `Cslib.MachineLearning.rademacher_generalization_bound_of_finset`: a finite class with values in
   `[0, 1]`, through Massart's lemma.
 
 ## References
@@ -61,7 +64,8 @@ Probabilities are the outer measures of the finite product distribution
 * [M. Mohri, A. Rostamizadeh, A. Talwalkar, *Foundations of Machine Learning*, 2nd
   ed.][MohriRostamizadehTalwalkar2018], Theorem 3.3
 * [P. L. Bartlett, S. Mendelson, *Rademacher and Gaussian complexities: risk bounds and
-  structural results*][BartlettMendelson2002], Theorem 8
+  structural results*][BartlettMendelson2002], Theorem 8 (a variant with a different
+  normalization and constants)
 * [S. Shalev-Shwartz, S. Ben-David, *Understanding Machine Learning: From Theory to
   Algorithms*][ShalevShwartzBenDavid2014], Chapter 26
 * [C. McDiarmid, *On the method of bounded differences*][McDiarmid1989]
@@ -79,11 +83,6 @@ open Cslib.BitString
 variable {Z : Type*}
 
 /-! ### Boundedness helpers -/
-
-/-- The averages of a uniformly bounded family are bounded above. -/
-private theorem bddAbove_range_expect {ι κ : Type*} [Fintype κ] (g : ι → κ → ℝ) {B : ℝ}
-    (hg : ∀ j k, |g j k| ≤ B) : BddAbove (Set.range fun j => 𝔼 k, g j k) := by
-  simpa only [signVal_false, one_mul] using bddAbove_range_expect_signVal_mul g hg fun _ => false
 
 /-- The gaps between population and empirical means over a bounded class are bounded above. -/
 private theorem bddAbove_range_sub [Fintype Z] (D : PMF Z) {m : ℕ} (hm : 0 < m)
@@ -131,8 +130,8 @@ private theorem ciSup_sub_le_sum (D : PMF Z) {m : ℕ} (hm : 0 < m) {F : Set (Z 
   refine ciSup_le fun f => ?_
   have hbdd (S' : Fin m → Z) :
       BddAbove (Set.range fun g : F => 𝔼 i, ((g : Z → ℝ) (S' i) - (g : Z → ℝ) (S i))) :=
-    bddAbove_range_expect _ (B := B + B) fun g i =>
-      (abs_sub _ _).trans (by linarith [hF g g.2 (S' i), hF g g.2 (S i)])
+    Fintype.bddAbove_range_expect _ (B := B + B) fun g i =>
+      (le_abs_self _).trans ((abs_sub _ _).trans (by linarith [hF g g.2 (S' i), hF g g.2 (S i)]))
   calc ∑ z, (D z).toReal * (f : Z → ℝ) z - 𝔼 i, (f : Z → ℝ) (S i)
       = ∑ S' : Fin m → Z, (P S').toReal * 𝔼 i, ((f : Z → ℝ) (S' i) - (f : Z → ℝ) (S i)) := by
         simp only [Finset.expect_sub_distrib, mul_sub, Finset.sum_sub_distrib,
@@ -470,8 +469,8 @@ lemma: the probability that some `f ∈ F` has
 `E_D f > Ê_S f + 2 √(2 log |F| / m) + √(log (1 / δ) / (2 m))` is at most `δ`
 [MohriRostamizadehTalwalkar2018, Theorem 3.3 and Theorem 3.7]. This illustrates the method;
 Hoeffding's inequality with a union bound gives the sharper `√(log (|F| / δ) / (2 m))`. -/
-theorem generalization_bound_of_finset (D : PMF Z) {m : ℕ} (hm : 0 < m) {F : Finset (Z → ℝ)}
-    (hF : ∀ f ∈ F, ∀ z, f z ∈ Set.Icc 0 1) {δ : ℝ} (hδ : 0 < δ) :
+theorem rademacher_generalization_bound_of_finset (D : PMF Z) {m : ℕ} (hm : 0 < m)
+    {F : Finset (Z → ℝ)} (hF : ∀ f ∈ F, ∀ z, f z ∈ Set.Icc 0 1) {δ : ℝ} (hδ : 0 < δ) :
     ((Probability.PMF.pi fun _ : Fin m => D).toOuterMeasure
       {S | ∃ f ∈ F, 𝔼 i, f (S i) + 2 * √(2 * Real.log F.card / m) +
         √(Real.log (1 / δ) / (2 * m)) < ∑ z, (D z).toReal * f z}).toReal ≤ δ := by

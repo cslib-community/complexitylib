@@ -52,19 +52,32 @@ class.
 
 ## Main results
 
+* `Cslib.MachineLearning.rademacherAverage_def`,
+  `Cslib.MachineLearning.empiricalRademacherComplexity_def`,
+  `Cslib.MachineLearning.rademacherComplexity_def`: the defining equations; the definitions are
+  not exposed.
+* `Cslib.MachineLearning.rademacherAverage_eq_expect_ciSup_sum_div`: the Rademacher average with
+  the normalization `1 / m` outside the expectation.
 * `Cslib.MachineLearning.rademacherAverage_le`,
   `Cslib.MachineLearning.rademacherAverage_le_mul_sqrt`: Massart's lemma in normalized form.
 * `Cslib.MachineLearning.rademacherAverage_nonneg`,
   `Cslib.MachineLearning.rademacherAverage_unique`,
+  `Cslib.MachineLearning.rademacherAverage_of_isEmpty`,
   `Cslib.MachineLearning.rademacherAverage_le_of_forall_exists`: nonnegativity, the value `0` for a
-  single vector, and monotonicity.
+  single vector and for the empty family, and monotonicity.
 * `Cslib.MachineLearning.empiricalRademacherComplexity_singleton`,
-  `Cslib.MachineLearning.empiricalRademacherComplexity_mono`: a single function has complexity
-  `0`, and the complexity is monotone in the class.
+  `Cslib.MachineLearning.empiricalRademacherComplexity_empty`,
+  `Cslib.MachineLearning.empiricalRademacherComplexity_nonneg`,
+  `Cslib.MachineLearning.empiricalRademacherComplexity_mono`: a single function and the empty
+  class have complexity `0`, a nonempty bounded class has nonnegative complexity, and the
+  complexity is monotone in the class.
 * `Cslib.MachineLearning.empiricalRademacherComplexity_le_of_finite`: the bound through the number
   of restriction patterns.
 * `Cslib.MachineLearning.empiricalRademacherComplexity_le_of_finset`,
   `Cslib.MachineLearning.rademacherComplexity_le_of_finset`: finite classes.
+* `Cslib.MachineLearning.rademacherComplexity_le`,
+  `Cslib.MachineLearning.rademacherComplexity_nonneg`: a bound on every empirical complexity bounds
+  the Rademacher complexity, which is nonnegative for a nonempty bounded class.
 
 ## References
 
@@ -109,20 +122,6 @@ theorem rademacherAverage_eq_expect_ciSup_sum_div {ι : Type*} {m : ℕ} (a : ι
   rw [← div_eq_mul_inv]
   congr 1
   exact Finset.sum_congr rfl fun i _ => mul_comm _ _
-
-/-- The correlations of a uniformly bounded family of vectors with a fixed sign vector are bounded
-above. -/
-theorem bddAbove_range_expect_signVal_mul {ι κ : Type*} [Fintype κ] (a : ι → κ → ℝ) {B : ℝ}
-    (ha : ∀ j i, |a j i| ≤ B) (σ : κ → Bool) :
-    BddAbove (Set.range fun j => 𝔼 i, signVal (σ i) * a j i) := by
-  refine ⟨max B 0, ?_⟩
-  rintro _ ⟨j, rfl⟩
-  refine (le_abs_self _).trans ((Finset.abs_expect_le _ _).trans ?_)
-  rcases isEmpty_or_nonempty κ with hκ | hκ
-  · simp
-  · refine Finset.expect_le Finset.univ_nonempty fun i _ => ?_
-    rw [abs_mul, abs_signVal, one_mul]
-    exact (ha j i).trans (le_max_left _ _)
 
 /-- The correlation of a fixed vector with a uniformly random sign vector has mean zero. -/
 private theorem expect_expect_signVal_mul_eq_zero {m : ℕ} (b : Fin m → ℝ) :

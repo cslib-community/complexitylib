@@ -33,6 +33,10 @@ Minimizing over `t` gives `r √(2 log |ι|)`.
 
 ## Main results
 
+* `Fintype.bddAbove_range_expect`: the averages of a family of functions bounded above by `B`
+  are bounded above, the side condition for suprema of averages.
+* `Cslib.BitString.bddAbove_range_expect_signVal_mul`: the correlations of a uniformly bounded
+  family of vectors with a fixed sign vector are bounded above.
 * `Cslib.BitString.expect_sum_mul_signVal_eq_zero`: a Rademacher sum has mean zero.
 * `Cslib.BitString.expect_ciSup_sum_mul_signVal_le`: **Massart's lemma**.
 
@@ -49,7 +53,27 @@ public section
 open Finset Real
 open scoped BigOperators
 
+/-- The averages of a family of functions on a finite type that is bounded above by `B` are
+bounded above. -/
+theorem Fintype.bddAbove_range_expect {ι κ : Type*} [Fintype κ] (g : ι → κ → ℝ) {B : ℝ}
+    (hg : ∀ j k, g j k ≤ B) : BddAbove (Set.range fun j => 𝔼 k, g j k) := by
+  refine ⟨max B 0, ?_⟩
+  rintro _ ⟨j, rfl⟩
+  rcases isEmpty_or_nonempty κ with hκ | hκ
+  · simp
+  · exact Finset.expect_le Finset.univ_nonempty fun k _ => (hg j k).trans (le_max_left _ _)
+
 namespace Cslib.BitString
+
+/-- The correlations of a uniformly bounded family of vectors with a fixed sign vector are bounded
+above. -/
+theorem bddAbove_range_expect_signVal_mul {ι κ : Type*} [Fintype κ] (a : ι → κ → ℝ) {B : ℝ}
+    (ha : ∀ j i, |a j i| ≤ B) (σ : κ → Bool) :
+    BddAbove (Set.range fun j => 𝔼 i, signVal (σ i) * a j i) :=
+  Fintype.bddAbove_range_expect _ fun j i =>
+    calc signVal (σ i) * a j i ≤ |signVal (σ i) * a j i| := le_abs_self _
+      _ = |a j i| := by rw [abs_mul, abs_signVal, one_mul]
+      _ ≤ B := ha j i
 
 /-- A Rademacher sum has mean zero: flipping every sign negates it. -/
 theorem expect_sum_mul_signVal_eq_zero {κ : Type*} [Fintype κ] [DecidableEq κ] (a : κ → ℝ) :
