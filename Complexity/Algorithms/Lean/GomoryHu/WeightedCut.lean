@@ -32,9 +32,10 @@ is the value of a maximum `s`–`t` flow in the network with capacities `W`
 (`Cslib.Algorithms.Lean.MaxFlow.Network.Flow.IsMaxFlow.value_eq_minCutBetween`), so the Gomory–Hu
 tree also encodes all pairwise maximum flow values.
 
-The results are existence statements for natural-number weights. Gomory and Hu's construction of
-the tree with `|V| - 1` maximum flow computations, and Gusfield's variant without contraction
-([Gusfield1990]), are not formalized here.
+The results are existence statements for natural-number weights. Gusfield's construction of the
+tree with `|V| - 1` maximum flow computations, without the contractions of Gomory and Hu
+([Gusfield1990]), is in `Complexity.Algorithms.Lean.GomoryHu.Gusfield` (abstract cut oracle) and
+`Complexity.Algorithms.Lean.GomoryHu.Construction` (Edmonds–Karp, with running time).
 
 ## Main results
 

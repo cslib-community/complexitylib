@@ -37,7 +37,9 @@ public import Complexity.Algorithms.Lean.Euler.Circuit
 public import Complexity.Algorithms.Lean.Euler.Handshake
 public import Complexity.Algorithms.Lean.Freivalds
 public import Complexity.Algorithms.Lean.GomoryHu.Basic
+public import Complexity.Algorithms.Lean.GomoryHu.Construction
 public import Complexity.Algorithms.Lean.GomoryHu.Existence
+public import Complexity.Algorithms.Lean.GomoryHu.Gusfield
 public import Complexity.Algorithms.Lean.GomoryHu.WeightedCut
 public import Complexity.Algorithms.Lean.HousingMarket.Basic
 public import Complexity.Algorithms.Lean.HousingMarket.Incentives

@@ -1553,13 +1553,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   Tutte–Berge formula are proved in `Foundations/Combinatorics/SimpleGraph/{Berge,TutteBerge}`;
   still open are Edmonds' blossom-contraction lemma, an executable blossom algorithm with its
   `O(|V|²|E|)` bound, weighted general matching, and the Gallai–Edmonds decomposition.
-- **Gomory–Hu trees** ([#3320](https://github.com/cslib-community/complexitylib/issues/3320)):
-  remaining after the existence theorem for cut-equivalent trees of symmetric submodular set
-  functions and weighted undirected graphs, with flow-equivalence, the minimum-cut triangle
-  inequality and the `n - 1` bound on distinct minimum cut values (`Algorithms/Lean/GomoryHu`,
-  [#3285](https://github.com/cslib-community/complexitylib/issues/3285)): the Gomory–Hu or
-  Gusfield construction with `n - 1` maximum-flow calls as a `TimeM` program over Edmonds–Karp,
-  with its running-time bound, and real-valued capacities.
+- **Gomory–Hu trees** ([#3422](https://github.com/cslib-community/complexitylib/issues/3422)):
+  remaining after the existence theorem for cut-equivalent trees, flow-equivalence, the
+  minimum-cut triangle inequality, the `n - 1` bound on distinct minimum cut values, and Gusfield's
+  construction with `n - 1` Edmonds–Karp calls and its `TimeM` bound (`Algorithms/Lean/GomoryHu`,
+  [#3285](https://github.com/cslib-community/complexitylib/issues/3285),
+  [#3320](https://github.com/cslib-community/complexitylib/issues/3320)): returning the tree's
+  edge weights from the maximum flow values, and real-valued capacities.
 - **Algebraic matching** ([#3052](https://github.com/cslib-community/complexitylib/issues/3052)):
   remaining after Edmonds' determinant criterion and Lovász's randomized test for bipartite
   graphs (`Algorithms/Matching/Edmonds`), the bipartite Mulmuley–Vazirani–Vazirani core

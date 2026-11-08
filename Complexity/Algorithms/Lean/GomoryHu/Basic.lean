@@ -39,7 +39,9 @@ the weighted-graph instance in `Complexity.Algorithms.Lean.GomoryHu.WeightedCut`
 
 * `Cslib.Algorithms.Lean.GomoryHu.exists_isMinCutBetween`: minimum cuts exist between distinct
   elements, for values in a linear order.
-* `Cslib.Algorithms.Lean.GomoryHu.IsMinCutBetween.inter`: uncrossing of minimum cuts for a
+* `Cslib.Algorithms.Lean.GomoryHu.IsMinCutBetween.inter`,
+  `Cslib.Algorithms.Lean.GomoryHu.IsMinCutBetween.union`,
+  `Cslib.Algorithms.Lean.GomoryHu.IsMinCutBetween.sdiff`: uncrossing of minimum cuts for a
   submodular function.
 * `Cslib.Algorithms.Lean.GomoryHu.mem_edgeSide_of_mem_darts`: along a path in a forest, the start
   and the end of the path lie on opposite sides of each edge of the path.
@@ -134,6 +136,34 @@ theorem IsMinCutBetween.inter [AddCommMonoid β] [LinearOrder β] [IsOrderedCanc
       _ = f (X ∪ U) + f (X ∩ U) := add_comm _ _
       _ ≤ f X + f U := hsub X U
   exact (le_of_add_le_add_right h3).trans (hX.le ha hb)
+
+/-- **Uncrossing by union.** For a submodular `f`, if `U` is a minimum `s`–`t` cut, `A` is a
+minimum `a`–`t` cut and `a ∈ U`, then `U ∪ A` is a minimum `s`–`t` cut too. -/
+theorem IsMinCutBetween.union [AddCommMonoid β] [LinearOrder β] [IsOrderedCancelAddMonoid β]
+    [DecidableEq V] {f : Finset V → β} {s t a : V} {U A : Finset V} (hsub : IsSubmodular f)
+    (hU : IsMinCutBetween f s t U) (hA : IsMinCutBetween f a t A) (haU : a ∈ U) :
+    IsMinCutBetween f s t (U ∪ A) := by
+  have htU : t ∉ U ∪ A := by
+    simp only [Finset.mem_union, not_or]
+    exact ⟨hU.right_notMem, hA.right_notMem⟩
+  refine ⟨Finset.mem_union_left _ hU.left_mem, htU, fun Y hs ht => ?_⟩
+  have h1 : f A ≤ f (U ∩ A) :=
+    hA.le (Finset.mem_inter.mpr ⟨haU, hA.left_mem⟩)
+      (fun h => hA.right_notMem (Finset.mem_inter.mp h).2)
+  have h2 : f (U ∪ A) + f (U ∩ A) ≤ f U + f (U ∩ A) :=
+    (hsub U A).trans (add_le_add le_rfl h1)
+  exact (le_of_add_le_add_right h2).trans (hU.le hs ht)
+
+/-- **Uncrossing by difference.** For a symmetric submodular `f`, if `U` is a minimum `s`–`t`
+cut, `A` is a minimum `a`–`t` cut, `a ∉ U` and `s ∉ A`, then `U \ A` is a minimum `s`–`t` cut
+too. -/
+theorem IsMinCutBetween.sdiff [Fintype V] [AddCommMonoid β] [LinearOrder β]
+    [IsOrderedCancelAddMonoid β] [DecidableEq V] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
+    (hsub : IsSubmodular f) {s t a : V} {U A : Finset V} (hU : IsMinCutBetween f s t U)
+    (hA : IsMinCutBetween f a t A) (haU : a ∉ U) (hsA : s ∉ A) :
+    IsMinCutBetween f s t (U \ A) := by
+  rw [Finset.sdiff_eq_inter_compl]
+  exact hU.inter hsub (hA.compl hsym) (Finset.mem_compl.mpr hsA) haU
 
 /-! ### Sides of tree edges -/
 
