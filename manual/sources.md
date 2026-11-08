@@ -287,7 +287,7 @@ Yoeng-Jin Chu and Tseng-Hong Liu. "On the Shortest Arborescence of a Directed Gr
 <a id="chvatal83"></a>
 ## chvatal83
 
-Vašek Chvátal. *Linear Programming*. W. H. Freeman, New York, 1983. Bibliographic data from library and search summaries; the book was not inspected in this pass. The chapter locators used in the manual and docstrings (Chapter 2 for dictionaries, pivoting and the optimality test; Chapters 2–3 for the unboundedness test, which search summaries of the table of contents place in Chapter 3; Chapter 3 for cycling, the cycling example and the smallest-subscript rule; Chapter 5 for duality and the dual solution read off the final dictionary) come from secondary summaries and memory of the book, not from a copy, and are unverified. The coefficients of the cycling example in `ComplexityTests/Algorithms/Lean/Simplex.lean` were taken from those summaries and checked by running Dantzig's rule on them, which returns to the initial basis after six degenerate pivots.
+Vašek Chvátal. *Linear Programming*. W. H. Freeman, New York, 1983. Bibliographic data from library and search summaries; the book was not inspected in this pass. The chapter locators used in the manual and docstrings (Chapter 2 for dictionaries, pivoting and the optimality test; Chapters 2–3 for the unboundedness test, which search summaries of the table of contents place in Chapter 3; Chapter 3 for cycling, the cycling example and the smallest-subscript rule; Chapter 4 for the Klee–Minty programs and the `2^n - 1` pivots of the largest-coefficient rule on them; Chapter 5 for duality and the dual solution read off the final dictionary) come from secondary summaries and memory of the book, not from a copy, and are unverified. The coefficients of the cycling example in `ComplexityTests/Algorithms/Lean/Simplex.lean` were taken from those summaries and checked by running Dantzig's rule on them, which returns to the initial basis after six degenerate pivots.
 
 <a id="cks20"></a>
 ## cks20
@@ -736,6 +736,11 @@ Jonathan Katz and Yehuda Lindell. *Introduction to Modern Cryptography*, 3rd edi
 ## khot10
 
 Subhash Khot. "On the Unique Games Conjecture (Invited Survey)." *2010 IEEE 25th Annual Conference on Computational Complexity (CCC)*, 99–121, 2010. https://doi.org/10.1109/CCC.2010.19 . Author-hosted copy inspected: https://cs.nyu.edu/~khot/papers/UGCSurvey.pdf (Section 2.4, p. 6 of the author copy: the second paragraph after Definition 2.4, beginning "Let us return", on finding a satisfying labelling of a value-1 instance by trying every label for one vertex and propagating along each connected component, and the remark after Conjecture 2.5 that the conjecture would be false with `ε = 0`). The page range and DOI are from the bibliographic record and were not checked against the typeset proceedings.
+
+<a id="kleeminty72"></a>
+## kleeminty72
+
+Victor Klee and George J. Minty. "How Good Is the Simplex Algorithm?" In O. Shisha (ed.), *Inequalities III*, Academic Press, New York, 1972, pp. 159–175. Bibliographic data from search summaries; the paper was not inspected in this pass, and no theorem number is claimed. The manual credits it with the deformed cubes on which Dantzig's largest-coefficient rule visits all `2^n` vertices. The formalized program, `max ∑ 10^(n-j) x_j` subject to `2 ∑_{j<i} 10^(i-j) x_j + x_i ≤ 100^(i-1)` and `x ≥ 0`, is the textbook form attributed to [chvatal83](#chvatal83), Chapter 4, which was not inspected either; the coefficients were taken from secondary summaries and checked by running Dantzig's rule on them for `n ≤ 7`, which takes `2^n - 1` pivots in each case.
 
 <a id="kleenepost54"></a>
 ## kleenepost54

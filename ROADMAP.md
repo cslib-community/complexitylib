@@ -1788,12 +1788,15 @@ each statement against the numbered result. Organize modules by subject, not cha
   `Problems/LinearProgramming`. The simplex method on dictionaries with Bland's rule, its no-cycling
   theorem, termination within `N.choose m - 1` pivots, the optimality and unboundedness certificates
   and an optimal dual solution read off the final dictionary are in `Algorithms/Lean/Simplex`
-  ([#3370](https://github.com/cslib-community/complexitylib/issues/3370)). Remaining: a
+  ([#3370](https://github.com/cslib-community/complexitylib/issues/3370)), as is the Klee–Minty
+  lower bound: Dantzig's rule makes exactly `2ⁿ - 1` pivots on the `n`-dimensional Klee–Minty
+  program ([#3441](https://github.com/cslib-community/complexitylib/issues/3441)). Remaining: a
   polynomial-time LP algorithm (ellipsoid or interior point) with bit complexity and intermediate
   precision accounted for; and LP optimization as a search problem with rational outputs. For the
-  simplex method: Phase I (an initial feasible dictionary or an infeasibility certificate); the
-  Klee–Minty cube on which Dantzig's rule makes `2ⁿ - 1` pivots; smoothed analysis (Spielman–Teng);
-  strongly polynomial special cases; and a costed implementation.
+  simplex method: Phase I (an initial feasible dictionary or an infeasibility certificate);
+  exponential lower bounds for other pivoting rules, such as Bland's rule on Klee–Minty-type
+  programs (Avis–Chvátal 1978); smoothed analysis (Spielman–Teng); strongly polynomial special
+  cases; and a costed implementation.
 - **Extension complexity** ([#3258](https://github.com/cslib-community/complexitylib/issues/3258)):
   nonnegative rank, slack matrices, extended formulations with free equations, Yannakakis's
   factorization theorem `xc P = rank₊ S` for nontrivial polytopes, and the rectangle covering bound
