@@ -45,7 +45,7 @@ theorem retainedLastEdgeDart_reverse (G : Graph) (u v : ℕ) (d : Dart G) :
 
 /-- If no declared vertex loses its last incidence, deletion preserves the actual incident
 vertex set. The premise is on endpoint occurrences, rather than an unchecked cardinality. -/
-def incidentVertexEquiv_deleteLastEdge {G : Graph} {u v : ℕ}
+def incidentVertexEquivDeleteLastEdge {G : Graph} {u v : ℕ}
     (hH : ∀ w ∈ (lastEdgeGraph G u v).incidenceVertices, w ∈ (lastEdgeGraph G u v).1)
     (hi : ∀ w ∈ G.1, ∃ d : Dart G, d.vertex = w) :
     IncidentVertex G ≃ IncidentVertex (lastEdgeGraph G u v) where
@@ -69,7 +69,7 @@ theorem card_faces_deleteLastEdge_le {G : Graph} {u v : ℕ}
   have hc : Nat.card (Quotient (Perm.SameCycle.setoid r.rotate)) =
       Nat.card (Quotient (Perm.SameCycle.setoid r.deleteLastEdge.rotate)) := by
     rw [Nat.card_congr r.rotateOrbitEquiv, Nat.card_congr r.deleteLastEdge.rotateOrbitEquiv]
-    exact (Nat.card_congr (incidentVertexEquiv_deleteLastEdge hH hi)).symm
+    exact (Nat.card_congr (incidentVertexEquivDeleteLastEdge hH hi)).symm
   have hb := r.card_faces_deleteLastEdge_balance
   have hs := card_orbits_mul_swap (e.permCongr r.faceNext) (some none) none (by simp)
   have hf := card_orbits_permCongr e r.faceNext
