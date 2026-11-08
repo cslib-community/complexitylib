@@ -10,7 +10,9 @@ module
 public import Complexity.Computability.Complexity.Classes.Immune.Complete
 public import Complexity.Computability.Complexity.Classes.Immune.PolyTimeCore
 public import Complexity.Computability.Complexity.Classes.Ladner.Basic
+import Complexity.Computability.Complexity.Classes.EXP.Decidable
 import Complexity.Computability.Complexity.Classes.Ladner.PolyTime
+import Complexity.Computability.Complexity.Classes.Ladner.Stages
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -53,7 +55,7 @@ Stage `n` runs at most `n` machines for `n` steps each, so the table of the firs
 polynomial-time in `n` in unary (`Cslib.Complexity.BiImmune.computableInPolyTime_table`). The word
 `y` has index below `2 ^ (|y| + 1)`, so its membership is computed in polynomial time from
 `(y, 2 ^ |y|)`, and the language is in `E`
-(`Cslib.Complexity.setOf_mem_E_of_computableInPolyTime_pad`).
+(`Cslib.Complexity.Ladner.setOf_index_mem_E_of_computableInPolyTime`).
 
 By Berman's theorem (`Complexity.Computability.Complexity.Classes.Immune.Complete`), the language is
 not complete for `E` or `EXP` (`Cslib.Complexity.BiImmune.not_polyTimeComplete_E_language`,
@@ -269,40 +271,20 @@ theorem computableInPolyTime_table : ComputableInPolyTime table encUnary (encLis
               simpa using (act_le m).trans (by have := List.mem_range.mp hm; omega)
         _ ≤ n * (2 * n + 1) := by rw [length_table]; exact Nat.mul_le_mul_right _ hi)
 
-/-- Membership of `y`, read from the table of the actions at the first `2 * N` stages. -/
-private def memTable (p : List Bool × ℕ) : Bool :=
-  ((List.range (2 * p.2)).find? fun j => decide (word j = p.1)).elim false
-    fun j => decide ((table (2 * p.2)).getD j 0 % 2 = 1)
-
-private theorem computableInPolyTime_memTable :
-    ComputableInPolyTime memTable (encPair encBits encUnary) encBool := by
-  have ht := computableInPolyTime_table
-  unfold memTable
+/-- **The actions are polynomial-time** in the stage, in unary. -/
+theorem computableInPolyTime_act : ComputableInPolyTime act encUnary encUnary := by
+  have h₁ := computableInPolyTime_actStep
+  have h₂ := computableInPolyTime_table
+  unfold act
   fun_prop
 
-private theorem memTable_iff {y : List Bool} {N : ℕ} (hN : index y < 2 * N) :
-    memTable (y, N) = true ↔ y ∈ language := by
-  have hfind : (List.range (2 * N)).find? (fun j => decide (word j = y)) = some (index y) := by
-    rw [List.find?_range_eq_some]
-    refine ⟨by simp, List.mem_range.mpr hN, fun j hj => ?_⟩
-    simp only [Bool.not_eq_eq_eq_not, Bool.not_true, decide_eq_false_iff_not]
-    rintro rfl
-    rw [index_word] at hj
-    exact lt_irrefl _ hj
-  rw [memTable, hfind, Option.elim_some, table_eq, List.getD_eq_getElem?_getD,
-    List.getElem?_map, List.getElem?_range hN]
-  simp [language]
-
-/-- **The problem is in `E`.** -/
+/-- **The problem is in `E`**: the decision at each stage is polynomial-time in the stage
+(`Cslib.Complexity.Ladner.setOf_index_mem_E_of_computableInPolyTime`). -/
 theorem language_mem_E : language ∈ E encBits := by
-  have h := setOf_mem_E_of_computableInPolyTime_pad computableInPolyTime_memTable
-  convert h using 1
-  ext y
-  simp only [Set.mem_ofPred_eq]
-  rw [memTable_iff]
-  have := index_add_two_le y
-  rw [pow_succ] at this
-  omega
+  have h := computableInPolyTime_act
+  change {w | act (index w) % 2 = 1} ∈ E encBits
+  simpa only [decide_eq_true_eq] using
+    setOf_index_mem_E_of_computableInPolyTime (sel := fun n => decide (act n % 2 = 1)) (by fun_prop)
 
 theorem language_mem_EXP : language ∈ EXP encBits := E_subset_EXP language_mem_E
 
@@ -394,8 +376,7 @@ theorem not_polyTimeHard_EXP_language : ¬ PolyTimeHard @EXP encBits language :=
 
 /-- The problem is decidable: it is decided within time `c₁ 2 ^ (k n) + c₂`. -/
 theorem isDecidable_language : IsDecidable language encBits :=
-  let ⟨_, _, _, _, h⟩ := mem_E_iff.mp language_mem_E
-  ⟨_, _, h⟩
+  isDecidable_of_mem_E language_mem_E
 
 /-- **Every machine deciding the problem runs in superpolynomial time almost everywhere**: for every
 polynomially bounded `p`, it halts within `p |x|` steps on only finitely many `x`. -/
