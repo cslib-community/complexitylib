@@ -251,7 +251,7 @@ The mathematical symbols of the available copy of Atserias and Dalmau's paper do
 
 - `Tseitin.minBalancedCut_le_of_refutableInSpace` gives `e(G) ≤ s + k - 3` on a connected multigraph whose vertices have at most `k` non-loop edges;
 - `Tseitin.edgeExpansion_mul_card_div_three_add_three_le_of_refutableInSpace` gives `h(G) |V| / 3 + 3 ≤ s + |D|` on a rotation map with `h(G) > 0`;
-- `CNF.exists_forall_refutableInSpace_le` is a family with explicit constants. For `n ≥ 4392000` it has at most `120 n` variables, `2 ^ 120 · n` clauses of width at most `120`, and every refutation in clause space `s` has `n ≤ 36000 s`. It shares its setup with the size family of the Tseitin-expander module through `Tseitin.exists_expander_tseitinFormula`. That lemma gives the Tseitin formula of the `120`-regular expander on `n ≥ 2` vertices with its explicit constants: connectivity, degree at most `120`, `e(G) ≥ n / 18000`, and the variable and clause counts.
+- `CNF.exists_forall_refutableInSpace_le` is a family with explicit constants. For `n ≥ 4392000` it has at most `120 n` variables, `2 ^ 120 · n` clauses of width at most `120`, and every refutation in clause space `s` has `n ≤ 36000 s`. It shares its setup with the size family of the Tseitin-expander module through `Tseitin.exists_expander_tseitinFormula`. That lemma gives the Tseitin formula of the `120`-regular expander on `n ≥ 2` vertices with its explicit constants: connectivity, degree at most `120`, `e(G) ≥ n / 18000`, at most `120 n` variables and `2 ^ 120 · n` clauses, clauses with at most `120` literals (so of width at most `120`), and unsatisfiability.
 
 As with the size bound, the expanders come from a counting argument.
 
