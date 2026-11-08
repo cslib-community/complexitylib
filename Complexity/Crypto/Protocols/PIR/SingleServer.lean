@@ -21,7 +21,7 @@ private one-server scheme has some query `q` on which the answer map `x ↦ answ
 
 This is the one-round case of [Chor, Goldreich, Kushilevitz and Sudan,
 Section 5.1][ChorGoldreichKushilevitzSudan1998], whose argument also covers interactive protocols;
-multi-round protocols are not modelled here. The proof adapts theirs to one round. By privacy, a
+`PIR.Interactive` proves the interactive case. The proof adapts theirs to one round. By privacy, a
 query that the user can send for one index can be sent for every index; on that query the user must
 recover every bit of the database from the one answer.
 

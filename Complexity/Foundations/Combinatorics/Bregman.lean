@@ -309,7 +309,7 @@ theorem permanent_le_prod_factorial_rpow {A : Matrix n n ℕ} (hA : ∀ i j, A i
   rw [hrow i]
 
 /-- **Brégman's theorem for regular 0/1 matrices**: if every row sum is `d`, then
-`per A ≤ d! ^ (n / d)`. For `d = 0` both sides are `0` and `1`. -/
+`per A ≤ d! ^ (n / d)`. For `d = 0` and nonempty `n` the two sides are `0` and `1`. -/
 theorem permanent_le_factorial_rpow_card_div {A : Matrix n n ℕ} (hA : ∀ i j, A i j ≤ 1) {d : ℕ}
     (hd : ∀ i, ∑ j, A i j = d) :
     (A.permanent : ℝ) ≤ (d.factorial : ℝ) ^ ((Fintype.card n : ℝ) / d) := by

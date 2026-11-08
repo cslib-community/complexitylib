@@ -68,7 +68,8 @@ private theorem head_mem_IP2 : {w : List Bool | w.headD false = true} ∈ IPk en
   rw [AMk_two]
   exact BPP_subset_AM (P_subset_BPP ⟨fun w => w.headD false, by fun_prop, fun _ => Iff.rfl⟩)
 
-/-- A problem in `IP[2]`, through the emulation, has a public-coin verifier with four moves. -/
+/-- A problem in `IP[2]`, through the emulation, has a public-coin verifier whose pattern has five
+entries, four moves once the adjacent Merlin moves are merged. -/
 example : {w : List Bool | w.headD false = true} ∈
     AMGameClass encBits [.arthur, .merlin, .merlin, .arthur, .merlin] :=
   IPGameClass_subset_AMGameClass _ head_mem_IP2
