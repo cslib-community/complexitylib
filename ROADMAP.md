@@ -1107,6 +1107,13 @@ each statement against the numbered result. Organize modules by subject, not cha
   randomized weighted majority and sampled Hedge as probabilistic computations, the regret lower
   bound, finite-precision implementations with charged running time, and applications to packing
   and covering LPs, boosting and learning.
+- **Online convex optimization:** projected online gradient descent and its `O(GD√T)` and
+  strongly convex `O(log T)` regret bounds (Zinkevich; Hazan Theorems 3.1 and 3.3), over the
+  metric projection onto complete convex sets, are in `MachineLearning/OnlineLearning`
+  ([#2983](https://github.com/cslib-community/complexitylib/issues/2983)). Remaining:
+  follow-the-regularized-leader and online mirror descent (recovering Hedge as the entropic
+  case), the `Ω(GD√T)` lower bound, online Newton step for exp-concave losses, Blackwell
+  approachability and calibration, and finite-precision implementations.
 
 ### Combinatorial optimization
 
