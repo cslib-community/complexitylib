@@ -12,11 +12,37 @@ The [superquadratic sensitivity separation](https://github.com/cslib-community/c
 
 [BiMonotoneComparison](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/DecisionTree/Separable.lean#L58) uses the same tree syntax with coordinates interpreted as monotone two-sided comparisons or comparisons of separable real scores. The cost is number of comparisons, regardless of the work needed to compute a score. Rectangle geometry gives leaf-count lower bounds.
 
-[RandomizedDecisionTree](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/QueryComplexity/Randomized.lean#L78) is a finite-support real simplex over deterministic trees. Its cost is the largest structural depth of any supported tree, and its error bound holds separately on every input. This is a worst-case randomized-query model, not an expected-query model. The natural-valued infimum has the documented convention zero for an impossible negative-error requirement; normal theorems assume nonnegative error.
+[RandomizedDecisionTree](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/QueryComplexity/Randomized.lean#L78) is a finite-support real simplex over deterministic trees. Its cost is the largest structural depth of any supported tree, and its error bound holds separately on every input. This is a worst-case randomized-query model, not an expected-query model. The natural-valued infimum has the documented convention zero for an impossible negative-error requirement; normal theorems assume nonnegative error. `RandomizedDecisionTree.mapOutput g` post-processes the output by relabelling leaves with `DecisionTree.map g`. It adds no depth (`depth_mapOutput_le`) and no error against `g ∘ f` (`errorProb_mapOutput_le`), so lower bounds for `g ∘ f` transfer to `f`. More generally, `RandomizedDecisionTree.mapTree φ` applies a tree transformation `φ` to the drawn tree. It adds the depth that `φ` adds (`depth_mapTree_le`) and no error when `φ` preserves correctness (`errorProb_mapTree_le`). The Simon search lower bounds are derived from the decision version in these two ways: `mapOutput` for the variant that includes `s = 0`, and a verification appended by `mapTree` for the problem with `s ≠ 0`. For search problems with many distinct answers, `RandomizedDecisionTree.card_mul_one_sub_le_two_pow_depth` ([Randomized/Counting.lean](../../Complexity/Computability/QueryComplexity/Randomized/Counting.lean)) gives the counting lower bound `|S| (1 − ε) ≤ 2^q`; Bernstein–Vazirani uses it.
+
+The [zero-error module](../../Complexity/Computability/QueryComplexity/Randomized/ZeroError.lean) adds the expected-query view on the same simplex type, not a second randomized-tree type. `RandomizedDecisionTree.expectedCost` is the weighted average of the queries the drawn tree actually makes on one input (`DecisionTree.cost`, counting repeats), and `QueryComplexity.zeroErrorComplexity` is the real-valued Las Vegas complexity `R₀`, which takes the infimum over always-correct trees of the worst-input expected cost. It satisfies `R₀ <= D`. Worst-case `randomizedComplexity 0` equals `D`, so `R₀` is the measure that can drop below it. `RandomizedDecisionTree.uniformMixture` builds the algorithm whose coins select a deterministic tree uniformly. For the complete binary AND–OR tree `T_{2,k}` on `n = 4^k` leaves, with AND at the root as in Motwani–Raghavan, every deterministic tree reads all leaves on some input, so `D = n`. This is in [AndOrTree](../../Complexity/Computability/QueryComplexity/AndOrTree.lean), via the Rivest–Vuillemin top-Fourier-coefficient criterion in [Evasive](../../Complexity/Computability/DecisionTree/Evasive.lean). The directional algorithm in [AndOrTree/Randomized](../../Complexity/Computability/QueryComplexity/AndOrTree/Randomized.lean) has an exact expected-cost recurrence. From it come Motwani–Raghavan's `R₀ <= 3^k = n^(log₄ 3)` and Snir's sharp `R₀ <= (α - 1/2) n^(log₂ α)` with `α = (1 + √33)/4`, about `n^0.7537`. Nonconstant functions have `1 <= R₀`. The AND-rooted and OR-rooted orientations transfer through [dual trees](../../Complexity/Computability/DecisionTree/Dual.lean), which swap children and negate leaves. The matching Saks–Wigderson lower bound `Ω(n^(log₂ α))` is not formalized.
 
 [distributionalComplexity](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/QueryComplexity/Yao.lean#L74) instead fixes a distribution on inputs and minimizes deterministic depth subject to average error. Yao's theorem equates randomized complexity to the supremum of these distributional complexities on the finite domain and supplies an attaining hard distribution. The [Nisan relation](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/QueryComplexity/Randomized/Nisan.lean) gives `D <= 27 R_(1/3)^3`; approximate degree and block-sensitivity lower bounds are stated over the same cost convention.
 
-Quantum queries use arbitrary input-independent isometries and a controlled phase oracle, charging only oracle uses. Their definitions and BBBV/polynomial/adversary/Grover endpoints are described in [algebraic and quantum models](algebraic-and-quantum.md). That chapter also covers the exponential separation between quantum and randomized queries for Simon's problem, whose classical side is the randomized decision-tree lower bound [simon_randomized_lower_bound](../../Complexity/Computability/QueryComplexity/Simon.lean).
+Quantum queries use arbitrary input-independent isometries and a controlled phase oracle, charging only oracle uses. Their definitions and BBBV/polynomial/adversary/Grover endpoints are described in [algebraic and quantum models](algebraic-and-quantum.md). That chapter also covers the exponential separation between quantum and randomized queries for Simon's problem, whose classical side is the randomized decision-tree lower bound [simon_randomized_lower_bound](../../Complexity/Computability/QueryComplexity/Simon.lean). It also covers Deutsch–Jozsa. The deterministic bound `N/2 + 1` is in [DeutschJozsa](../../Complexity/Computability/QueryComplexity/DeutschJozsa.lean). Three random queries with error `1/4` on the promise ([Randomized/DeutschJozsa](../../Complexity/Computability/QueryComplexity/Randomized/DeutschJozsa.lean), through `RandomizedDecisionTree.errorProb_uniformMixture`) show that its quantum advantage holds only for exact algorithms.
+
+## Adaptive cell-probe trees and schemes
+
+[`Complexity.Computability.CellProbe.Defs`](../../Complexity/Computability/CellProbe/Defs.lean), [`Complexity.Computability.CellProbe.DecisionTree`](../../Complexity/Computability/CellProbe/DecisionTree.lean), and [`Complexity.Computability.CellProbe.Randomized`](../../Complexity/Computability/CellProbe/Randomized.lean) formalize the adaptive cell-probe model (`Cslib.CellProbe`), originating in Minsky and Papert and developed in dynamic form by Fredman and static form by Yao. In a time-invariant deterministic `Scheme`, persistent state between operations consists solely of `S` cells of `w`-bit words (`Mem S w := Fin S → Fin (2 ^ w)`), with no persistent registers across operation boundaries; `IndexedScheme` is a **time-aware relaxation** whose `step` additionally receives the global operation index `t : ℕ` (a free clock outside cell memory). Each deterministic operation is an adaptive read/write decision tree `ProbeTree S w α` (`OracleComp (@ProbeOp.Result S w) α`): reading cell `i` branches `2 ^ w`-ways on `m i`, writing `v` updates cell `i` and returns `PUnit`, reads and writes are charged separately at one probe each (at most twice the cost of combined read-and-write nodes), and local computation and initial memory (`Scheme.init`, equivalent for deterministic schemes to `zeroMem` via uncharged XOR relabeling) charge zero probes.
+
+Structural worst-case height `ProbeTree.depth`, input-specific path cost `ProbeTree.probes m`, and the distinct accessed footprint `ProbeTree.probedCells m` are kept separate (`card_probedCells_le_probes`, `probes_le_depth`). Frame lemmas (`ProbeTree.nextMem_eq_of_notMem_probedCells`, `IndexedScheme.nextMem_runInterval_eq_of_notMem_probedCellsInterval`) show that unprobed cells retain their initial values, while `ProbeTree.run_eq_of_eq_on_probedCells` and `IndexedScheme.runInterval_eq_of_eq_on_probedCellsInterval` establish cell-probe locality: if two memories agree on the cells probed from the first memory, replaying the tree or operation slice from the second memory yields the same output transcript, probe count, probed-cell set, and post-memory contents on all probed cells. In `DecisionTree.lean`, `ProbeTree.ofDecisionTree` embeds static 1-bit `DecisionTree (Fin S) α` trees as read-only `ProbeTree S 1 α` computations preserving output, `probes`, `probedCells`, and `depth`, while `ProbeTree.card_le_pow_depth_of_injective` and `ProbeTree.clog_le_depth_of_injective` prove the standard `2 ^ w`-ary branching bound `K ≤ (2 ^ w) ^ t.depth` (`Nat.clog (2 ^ w) K ≤ t.depth`, for any `w : ℕ`) whenever `t` distinguishes `K` memory states.
+
+`RandProbeTree S w α` (`ProbOracleComp (@ProbeOp.Result S w) α`) adds private finite-uniform coin draws (`unifSpec`) at zero probe cost, with `ℝ≥0∞`-valued expectation `RandProbeTree.expectedProbes` and single-operation coin-fixing equivalence `RandProbeTree.run_eq_coinLaw_bind_fixCoins`. Over oblivious operation sequences, `Randomized.Scheme.exists_det_indexedScheme_le_expectedSeqProbes` gives the **averaging (coin-fixing) argument, the easy direction of Yao's principle, for zero-error (Las Vegas) schemes** (`Cslib.Probability.PMF.exists_mem_support_tsum_mul_le_tsum_mul`): `hcorr` requires every supported transcript on `correctSeqs` to satisfy `Good`, so bounded-error (Monte Carlo) schemes and adaptive sequence adversaries are out of scope. Taking an explicit finite `opsAlphabet : Finset Op` and `horizon : ℕ` and separating `correctSeqs` from `hardDist`, it produces a step-indexed `IndexedScheme` in `indexedSchemeLaw`'s support, so deterministic lower bounds paired with it must hold against time-aware `IndexedScheme`s. In the random-initial-memory / coin-free-step specialization (`IsCoinFree`, where randomness lives only in the initial-memory distribution `init` and operations observe it only by probing cells), `Randomized.Scheme.exists_det_scheme_le_expectedSeqProbes` returns a time-invariant `CellProbe.Scheme` without `opsAlphabet` or `horizon`.
+
+The complete [checked client](../../ComplexityTests/CellProbe.lean) exercises read/write locality and frame lemmas on distinct memories, the `DecisionTree` adapter, a tight `K = 17` lower and upper bound in `Mem 3 2` (`3 ≤ t.depth`, plus `w = 0`), and zero-error coin-fixing over an infinite operation type where `correctSeqs` strictly extends `hardDist.support` (plus a non-trivial write-read check on uniform random initial memory). Run `scripts/build.sh --wfail --iofail ComplexityTests.CellProbe`. These modules define the standalone cell-probe layer without `Cslib.DataStructure` specification wrappers or a Word-RAM simulation theorem; transferring a cell-probe lower bound to Word-RAM instruction counts requires a separate machine-to-cell-probe simulation bridge.
+
+[`Complexity.Computability.CellProbe.Chronogram`](../../Complexity/Computability/CellProbe/Chronogram.lean) is the problem-independent bookkeeping behind Fredman and Saks's chronogram method for dynamic lower bounds (history in Pătraşcu–Demaine 2006, §3.1). An `IndexedScheme` runs consecutive operation segments `seg 0, seg 1, …` from step `t₀` and memory `m₀`; `segStart` and `segMem` give the step and memory at which segment `j` starts. `laterCells L j` collects the cells probed by segments `j + 1, …, L - 1`, and `lastCells L j` the cells probed by segment `j` and by no later segment. These sets are defined by *probes*, not writes: a later read also removes a cell from `lastCells`. This suffices because a cell that no later segment probes keeps its contents, and the cells probed later are exactly those whose final contents the overlay records. `overlayMem L j` lays the final contents of `laterCells` over the memory before segment `j`. It agrees with the memory after all `L` segments outside `lastCells L j` (`overlayMem_eq_of_notMem_lastCells`) and differs from `segMem j` on at most `#laterCells` cells (`hammingDist_overlayMem_le`), which is at most `d * Σ_{j < k < L} |seg k|` under a uniform step-depth bound `d` (`card_laterCells_le`). The sets `lastCells L j` for `j < L` are pairwise disjoint, so a probe set `P` meets at most `#P` of them (`card_filter_lastCells_le`). A query tree whose probes on the final memory avoid `lastCells L j` answers identically, with the same probe count, on the overlay (`run_overlayMem_eq`). `card_filter_hammingDist_le_le_pow` bounds the number of memories within Hamming distance `r` of a fixed memory by `(S * (2 ^ w - 1) + 1) ^ r`, a special case of the alphabet-generic `Code.card_filter_hammingDist_le_le_pow` in [`Complexity.Foundations.Data.Code.HammingBound`](../../Complexity/Foundations/Data/Code/HammingBound.lean); this is the count of possible overlays in an encoding argument, about `log S + w` bits per recorded cell. The module proves no lower bound by itself; [`Complexity.DataStructure.PrefixSums.CellProbe.LowerBound`](../../Complexity/DataStructure/PrefixSums/CellProbe/LowerBound.lean), described next, uses it. Its [checked client](../../ComplexityTests/CellProbeChronogram.lean) uses an adaptive copy-and-write scheme in which a later read alone removes a cell from `lastCells`. It also shows that the overlay differs from the final memory exactly on a last-touched cell, and that a query probing that cell answers differently, so the disjointness hypothesis of `run_overlayMem_eq` is needed. Run `scripts/build.sh --wfail --iofail ComplexityTests.CellProbeChronogram`.
+
+[`Complexity.DataStructure.PrefixSums.CellProbe.LowerBound`](../../Complexity/DataStructure/PrefixSums/CellProbe/LowerBound.lean) proves the Fredman–Saks chronogram lower bound for dynamic prefix parity: partial sums over `ZMod 2`, where `update i b` sets bit `i` and `query i` returns `A 0 + ⋯ + A i`, as in Pătraşcu–Demaine 2006, §2.1. `AnswersQueries D` says that a deterministic `IndexedScheme (Op n) Result S w` answers every query correctly after every operation sequence. Suppose updates have depth at most `t_u`, `L β ^ L ≤ n`, `β ≥ 4` and `(S 2 ^ w + 1) ^ (8 t_u) ≤ 2 ^ β`. Then the average query over the hard distribution makes at least `L / 64` probes (`card_mul_le_sum_probes`, `exists_le_mul_probes`), and a query-depth bound `t_q` gives `L ≤ 64 t_q` (`le_mul_of_answersQueries`). With `S ≤ 2 ^ w`, choosing `β = max 4 (8 t_u (2 w + 1))` and `L = ⌊log_β n / 2⌋` gives `log_β n ≤ 128 t_q + 1` (`log_le_of_answersQueries`). This is the trade-off `t_q = Ω(lg n / (lg b + lg t_u))` for word size `b` that Pătraşcu–Demaine §3.1 attributes to Fredman–Saks 1989.
+
+The hard instance `hardUpdates hn X` has `L` epochs. Epoch `j` writes the `β ^ (L - j)` bits `X j` at positions `k β ^ j L + j`, and query `q < β ^ L` then answers `Σ_j prefixParity (X j) (q / β ^ j)` (`prefixParity_hardUpdates`). For each epoch the proof counts the *bad* queries, those whose probes meet `lastCells`, and replays the others on the overlay. At most `(S 2 ^ w + 1) ^ (2 t_u β ^ (L - j - 1))` overlays exist, and an overlay determines the prefix-parity vector of epoch `j` up to a Hamming ball of radius `β ^ (L - j) / 16`. Hence at most half of the values of epoch `j` leave fewer than `β ^ L / 32` bad queries. Finally, the bad queries of distinct epochs are charged to distinct probed cells.
+
+The scope is deterministic schemes with worst-case update depth, and the constants are not optimized. Amortized updates, Las Vegas randomization and the stronger Pătraşcu–Demaine trade-offs remain open in [#3207](https://github.com/cslib-community/complexitylib/issues/3207). The [checked client](../../ComplexityTests/CellProbeFredmanSaks.lean) does three things:
+
+- It checks the hard-instance layout and answer formula for `β = L = 2`.
+- It proves correct the one-cell-per-bit scheme (update depth `1`, query depth `n`). That scheme meets all hypotheses of the hard-instance form with one epoch (`n = 64`, `w = 1`, `β = 64`) and with two (`n = 131072`, `w = 1`, `β = 256`), and of the logarithmic form (`n ≤ 2 ^ w`).
+- It shows that a probe-free scheme answering `0` meets every hypothesis except `AnswersQueries`, which the theorem then refutes.
+
+Run `scripts/build.sh --wfail --iofail ComplexityTests.CellProbeFredmanSaks`.
 
 ## Deterministic communication and its variants
 
@@ -32,6 +58,8 @@ The relation-solving predicate is defined on explicit input domains, and extende
 | [PrivateCoin](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Communication/Randomized.lean#L221) | Deterministic protocol on inputs augmented by independent finite uniform private tapes. |
 | [IsCover](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Communication/Nondeterministic/Basic.lean#L139) | Cover by valid monochromatic rectangles; k certificate bits provide at most `2^k` rectangles. |
 
+Two building blocks bound concrete protocols. In `Protocol.ecomplexityFun_le_clog_card_finset_succ`, Alice sends a value from a known finite set and Bob answers, at a cost of `⌈log₂ |s|⌉ + 1` bits. [Binary search](../../Complexity/Computability/Communication/BinarySearch.lean) (`Protocol.exists_search_lt`) finds an index at which Bob's integer weight is below Alice's, given that Bob's total over a list is below hers. It needs `⌈log₂ |l|⌉` comparisons of partial sums, each of cost at most `c`. Krajíček's cutting-planes interpolation uses both.
+
 The nondeterministic cover convention does not charge a final output announcement. Its relationship to a tree in which both parties know the answer therefore has an explicit small overhead. Public-coin PMFs and finite-support randomized query trees are different probability representations; neither should be silently substituted for the other.
 
 ## Major communication bridges and bounds
@@ -40,13 +68,23 @@ The Karchmer–Wigderson relation asks parties holding opposite outputs of a Boo
 
 The communication development includes public-coin equality protocols and linear lower bounds for disjointness and inner product at bounded error, using corruption and discrepancy methods. Its Newman theorem replaces public randomness by a finite seed selection at an additive communication/error cost; the finite statement keeps the input-domain cardinalities and error increment visible. See [communication abstract](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/CommunicationAbstract.lean) for the precise finite statements and their hypotheses.
 
+[Information cost](../../Complexity/Computability/Communication/Information.lean) measures what a protocol's transcript reveals, not how many bits it sends. It uses the mutual and conditional mutual information of [MutualInformation](../../Complexity/Probability/MutualInformation.lean). Both costs are stated for a joint law of `(X, Y, T)`, with `T` the leaf reached, so they apply to any protocol model with a transcript law. `internalInfoCost` is `I(T; Y | X) + I(T; X | Y)`, what each player learns about the other's input. `externalInfoCost` is `I(T; XY)`, what an observer learns. `Protocol.transcriptLaw` and `PrivateCoin.transcriptLaw` build the law from inputs drawn from `μ`; private coins are uniform and independent of the inputs. A public-coin protocol's cost is the average over its coins of the cost of the deterministic protocol they select, following Braverman and Rao (Lemma 3.13). For all three models, internal cost is at most external cost, which is at most the depth. This strengthens Braverman–Rao's Lemma 3.14 (information at most communication) by going through the external cost; their proof bounds each transmitted bit's two terms by `1` using the same per-bit independence. The proof is an induction on the tree. It keeps the invariant that, conditioned on the transcript so far, the players' views have law of product form `w(x, y) α(u) β(v)`. With independent inputs the two costs agree, by the information identity `externalInfoCost_sub_internalInfoCost`. Public-coin costs are valued in `ℝ≥0∞`, like public-coin depth, and the deterministic and private-coin costs are real, so the two meet through `ENNReal.ofReal`. `PublicCoin.infoComplexity` is the least internal cost under `μ` of a public-coin protocol solving the relation with error at most `ε` on every input pair in `A × B`. It is at most `ecomplexity` (`infoComplexity_le_ecomplexity`), and `le_infoComplexity_iff` is the interface for lower bounds. The error requirement is worst-case on the input domain, not Braverman–Rao's distributional error under `μ`, and the infimum ranges over public-coin protocols without private coins. So, for `μ` supported on `A × B`, `infoComplexity` is an upper bound on their information complexity. Without that hypothesis it is not, because inputs outside `A × B` carry no correctness requirement. For example, for `A = B = ∅` it is `0`. Distributional information complexity, additivity, the direct-sum theorem and the BJKS disjointness bound are not formalized. The [checked examples](../../ComplexityTests/InformationComplexity.lean) show the gap can be strict. When Alice announces her bit on perfectly correlated inputs, the internal cost is `0` and the external cost is `1`, so computing her bit has information complexity `0`, although every deterministic protocol computing it sends at least one bit.
+
 The deterministic lifting theorem composes a Boolean function with an index gadget. For the theorem's parameters m and tau, a protocol of cost c yields a decision tree of depth d with `(m/tau)^d <= 4^c`, assuming `4 <= tau`, `tau^2 <= m` and `320 n^2 (log2 m+1) <= tau`. Choosing tau around the square root of m gives a gadget on the order of `n^4 log^2 n`, rather than the smaller gadgets of more recent sharp lifting theorems. This is a documented quantitative scope choice. The source is [the lifting simulation](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Communication/Lifting/Simulation.lean).
+
+## Number-on-forehead multiparty communication
+
+Import `Complexity.Computability.Communication.NOF.TwoParty`, which brings in the whole NOF development, or one of the modules below it. [ComplexityTests/CommunicationNOF.lean](../../ComplexityTests/CommunicationNOF.lean) is a worked example: it has small protocols, cylinder intersections, and the inner-product bound through the two-player bridge. The model is due to Chandra, Furst and Lipton [ChandraFurstLipton1983]. In the number-on-forehead model, players indexed by a type `ι` share an input `x : ∀ i, X i`. Player `i` sees every part except its own, `NOF.view i x`. A [NOF.Protocol](../../Complexity/Computability/Communication/NOF/Protocol.lean) is a tree whose nodes are owned by players, and each written bit is a function of the owner's view. Cost is tree depth, as in the two-party model. Each player still computes for free, and every leaf announces the output to all players. [NOF.PublicCoin](../../Complexity/Computability/Communication/NOF/Randomized.lean) is a PMF over such trees, with the same error and worst-supported-depth conventions as the two-party `PublicCoin`.
+
+A cylinder intersection is presented as the set `cylinderIntersection φ` of inputs on which every player's test `φ i (view i x)` succeeds. `isCylinderIntersection_iff` matches this with the textbook definition: an intersection of sets, each closed under changing one coordinate. [NOF discrepancy](../../Complexity/Computability/Communication/NOF/Discrepancy.lean) is the largest `ν`-signed imbalance of `f` on a cylinder intersection. The discrepancy bound `2 γ ≤ 2 ^ c disc_ν(f)` holds for deterministic protocols with distributional error `1/2 - γ` and for public-coin protocols with worst-case error `1/2 - γ`. With players `Fin 2`, cylinder intersections are rectangles. [The two-player bridge](../../Complexity/Computability/Communication/NOF/TwoParty.lean) proves that the NOF discrepancy then equals the two-party `discrepancy`, transported along `piFinTwoEquiv`. It also runs two-party protocols as NOF protocols of the same depth. The Babai–Nisan–Szegedy lower bound for generalized inner product, via the Chung–Raz cube bound, is the planned next milestone.
 
 ## Distributed rounds in the LOCAL model
 
-Import `Complexity.Computability.Distributed.OrientedCycle.RoundComplexity` or
-`Complexity.Computability.Distributed.OrientedCycle.MIS` (or one of the modules below them) for
-deterministic synchronous algorithms in Linial's LOCAL model on consistently oriented cycles.
+Import `Complexity.Computability.Distributed.OrientedCycle.RoundComplexity`,
+`Complexity.Computability.Distributed.OrientedCycle.MIS` or
+`Complexity.Computability.Distributed.OrientedCycle.LCL.Classification` (or one of the modules below
+them) for deterministic synchronous algorithms in Linial's LOCAL model on consistently oriented
+cycles.
 The nodes of the oriented `n`-cycle are `ZMod n`: node `v` has predecessor `v - 1` and successor
 `v + 1`, and `n = 0` gives the infinite oriented path `ℤ`. An
 `Algorithm I S O` has an initial state from each node's input, a step function from the round
@@ -81,7 +119,9 @@ Laurinharju–Suomela speedup lemma on shift colourings (`Cslib.IsShiftColoring`
 `exists_colorsCycle_three_and_logStar_le` packages both directions: `⌈(log* n) / 2⌉ + 3` rounds
 suffice for `n ≠ 1`, and any algorithm needs `log* n ≤ 2t + 2`, so the optimum is known up to an
 additive `4`. `Nat.logStar` and `Nat.twoTower` live in `Complexity.Foundations.Data.Nat.LogStar`;
-use `Nat.logStar_le_iff` rather than unfolding, and `decide` for small values. `Nat.twoTower` is a
+use `Nat.logStar_le_iff` rather than unfolding, and `decide` for small values. The companion
+iterated floor logarithm `Nat.iterLog` and floor stopping count `Nat.floorLogStar`
+(`Nat.floorLogStar_le_iff`) live in `Complexity.Foundations.Data.Nat.IterLog`. `Nat.twoTower` is a
 structurally recursive copy of Mathlib's `hyperoperation 4 2` (`Nat.twoTower_eq_hyperoperation`),
 kept because `decide` cannot evaluate the well-founded `hyperoperation`.
 [Graph.lean](../../Complexity/Computability/Distributed/OrientedCycle/Graph.lean) connects the
@@ -109,14 +149,151 @@ standard consequences of the 3-colouring bounds. Compose algorithms with `Algori
 convert an algorithm to a `LocalRule` with `Algorithm.toLocalRule` just to compose it, since
 flooding its whole window makes `decide` impractical.
 
+[LCL/Basic.lean](../../Complexity/Computability/Distributed/OrientedCycle/LCL/Basic.lean),
+[LCL/Flexible.lean](../../Complexity/Computability/Distributed/OrientedCycle/LCL/Flexible.lean),
+[LCL/Linear.lean](../../Complexity/Computability/Distributed/OrientedCycle/LCL/Linear.lean) and
+[LCL/Classification.lean](../../Complexity/Computability/Distributed/OrientedCycle/LCL/Classification.lean)
+cover the classification of LCL problems without inputs on directed cycles by Chang,
+Studený and Suomela (TCS 2023, Table 1). A problem is a relation `R : L → L → Prop`, and
+`LCL.IsSolution R ℓ` asks `R (ℓ v) (ℓ (v + 1))` at every node. Their node-edge-checkable problems
+are the instance `LCL.nodeEdge` (`isSolution_nodeEdge_iff`, `nodeEdge_iff`), and MIS is an example
+with `L = Bool × Bool` in the tests. `Algorithm.SolvesLCL A R n t` quantifies over identifier
+bijections onto `{0, …, n - 1}`, like `ColorsCycle`. With a loop `R a a`, `Algorithm.const a`
+solves `R` in `0` rounds (`Algorithm.solvesLCL_const`). Without a loop every solution is a proper
+colouring, so `Algorithm.SolvesLCL.logStar_le` gives `log* n ≤ 2t + log* |L|` from Linial's bound,
+and `Algorithm.SolvesLCL.exists_loop` is the resulting `ω(1)`/`o(log* n)` gap.
+`LCL.IsFlexible R q K` asks for closed walks `q ⇝ q` of every length `m ≥ K`, stated with cslib's
+`Relation.RelatesInSteps`; `IsFlexible.of_two_three` gives `K = 2` from walks of lengths `2` and
+`3`.
+`IsFlexible.exists_solvesLCL` solves such a problem for `n ≥ K` in
+`(K - 1) (s + 2 · 3 ^ (K - 1) + 2) + 1` rounds when `log* n ≤ 2s`. The algorithm builds a
+distance-`(K - 1)` colouring from `K - 1` dilated runs of `fastThreeColoringRule` (the
+Cole–Vishkin algorithm as a `LocalRule`), takes its strict local minima as anchors and fills each
+gap with a closed walk. These anchors are spaced like a ruling set but need not form the source's
+maximal anchoring (Def. 3.8). `IsFlexible.exists_solvesLCL_and_logStar_le`
+packages the `Θ(log* n)` bounds for flexible problems without a loop. The leading coefficient
+`(K - 1) / 2` is not tight. These rules are compositions of `LocalRule`s (`LocalRule.comp`,
+`LocalRule.apply_comp` in `Basic.lean`), so run them with `LocalRule.toAlgorithm_run` instead of
+unfolding `Algorithm.run`.
+In `Linear.lean`, `Algorithm.SolvesLCL.le_of_forall_not_isFlexible` is the `Ω(n)` lower bound
+(their Thm 6.5 via Lemma 6.3): if no state is flexible, every `t`-round algorithm has
+`n ≤ (|L| + 1) (2t + 1)`. The proof takes two nodes with equal outputs and disjoint windows, then
+moves one node so that one of the windows shifts by one. This gives closed walks of the consecutive
+lengths `d` and `d + 1`, and `IsFlexible.of_consecutive` (Mathlib's `frobeniusNumber_pair`) then
+makes that state flexible. The source instead moves nodes repeatedly; the single move is a
+difference in proof route, not a new result. `IsSolution.exists_solvesLCL` is the matching upper
+bound: on a cycle where `R` is solvable, `gatherRule` sees the whole cycle in `⌊n / 2⌋` rounds and
+outputs a rotation of a fixed solution. It finds the node with identifier `0`, so it relies on the
+`{0, …, n - 1}` identifier convention. Theorem 6.5 also assumes a repeatable state, which only
+makes `R` solvable on infinitely many cycles; the Lean bounds are stated for each solvable `n`
+instead. `LCL.trichotomy` in `Classification.lean` assembles the three rows for finite `L`: a loop
+and `0` rounds, no loop but a flexible state and `Θ(log* n)`, or no flexible state and `Θ(n)`. The
+bounds hold for each `n`, and the algorithms of the last two rows may depend on `n`. The last row
+also contains the problems solvable on no cycle (no repeatable state), which the source lists
+separately as unsolvable; for them its clauses are vacuous. The lower-bound clauses quantify over
+state types of any universe, so destructuring `trichotomy` needs explicit universes, as in
+`trichotomy.{0, 0, 0} R`.
+
 [Checked examples](../../ComplexityTests/Computability/Distributed/OrientedCycle.lean) run the
 algorithms on a 5-cycle and on the infinite path. They also show that the one-node cycle has no
 proper colouring and no MIS, and that two rounds of 3-colouring fail on the cycle of length
 `2 ↑↑ 6 + 1`. The 5-cycle examples include the greedy MIS steps and the full `misAlgorithm 2` run.
+[LCL examples](../../ComplexityTests/Computability/Distributed/LCL.lean) check that 3-colouring
+and MIS are flexible without a loop, and the anchors and filling on a 6-cycle. For 2-colouring,
+which has no flexible state, they check that no `1`-round algorithm solves the 10-cycle, that
+gathering solves it in `5` rounds, and that the trichotomy puts it in the `Θ(n)` row.
 
-Only oriented cycles are covered. General graphs with port numbering, Linial's `O(Δ²)` colouring,
-`(Δ + 1)`-colouring and MIS on bounded-degree graphs, the CONGEST message-size bound and
-randomized LOCAL algorithms remain open; see `ROADMAP.md`.
+Only oriented cycles are covered in the LOCAL model. General graphs with port numbering, Linial's
+`O(Δ²)` colouring, `(Δ + 1)`-colouring and MIS on bounded-degree graphs, the CONGEST message-size
+bound, randomized LOCAL algorithms, and LCLs with inputs or on paths and undirected cycles remain
+open; see `ROADMAP.md`.
+
+## Byzantine agreement
+
+Import `Complexity.Computability.Distributed.Byzantine.NodeBound` for the impossibility theorems,
+or `Complexity.Computability.Distributed.Byzantine.OralMessages` for these together with the
+single-fault protocol. Both build on
+[Byzantine/Basic.lean](../../Complexity/Computability/Distributed/Byzantine/Basic.lean), the model
+of deterministic synchronous message passing on the complete graph of a process type `P`. A
+`Protocol P State Msg` gives every process an initial state from its input bit (`init`), a message
+to every process (itself included) in each round (`send r i s j`), a state update from the messages
+received (`update r i s m`, where `m j` came from `j`), and a Boolean decision (`output`). All four
+take the process as an argument, so processes may run different code. Messages and local
+computation are unbounded and the round number is common knowledge.
+
+Faults are Byzantine and static. `Protocol.state π F adv x r i` is the state of `i` after `r` rounds
+on inputs `x : P → Bool` when the processes in `F : Finset P` are faulty. In round `r + 1` a faulty
+`j` sends `adv r j i` to `i`, arbitrarily and possibly differently to different recipients.
+`Protocol.decision π F adv x R i` is the decision after `R` rounds. Runs are deterministic, so a
+fixed table `adv` is as strong as an adaptive or rushing adversary: the messages such an adversary
+sends on a given input form a table. `Protocol.adaptiveState_eq_state` checks this for a rushing
+adversary `strat r σ j i` that sees the global state `σ` after `r` rounds, and
+`SolvesByzantineAgreement.adaptive` transfers agreement and validity to such adversaries.
+`SolvesByzantineAgreement t R` requires, for every `F` with at most `t` processes, every `adv` and
+every `x`, *agreement* (all correct processes decide alike) and *validity* (if every correct
+process has input `v`, every correct process decides `v`). Decisions are read after exactly `R`
+rounds, which is how termination is expressed; a protocol that decides earlier keeps its state.
+Protocols whose decision round depends on the run are not covered. For finite `P` and `Msg` this
+loses nothing, since by König's lemma they decide within a bound uniform over all runs, but for
+infinite `Msg` a fixed `R` is strictly narrower than eventual decision. To prove that a protocol
+solves the problem, unfold `Protocol.decision` and `Protocol.state` round by round, as
+`om1_heard` and `om1_report` in
+[OralMessages.lean](../../Complexity/Computability/Distributed/Byzantine/OralMessages.lean) do.
+
+Impossibility proofs use the covering lemma `Protocol.state_eq_coverState`. A covering network is
+given by a node type `N`, a process `label a` whose code node `a` runs, an input `input a`, and the
+node `nbr a j` that sends to `a` in the role of process `j`; `Protocol.coverState` is its run. If
+the correct processes embed into the network by `e`, keeping their code, inputs and mutual wiring,
+and every faulty process sends to a correct `i` what the network shows `e i`, then every correct
+`i` is in the state of `e i` after every round. This lemma packages the Locality and Fault axioms of
+Fischer, Lynch and Merritt (PODC 1985, §2) for this model. To use it, supply the network and check
+the four hypotheses: `hlabel`, `hinput` and `hadv` are usually `rfl`, and `hnbr` is the
+combinatorial content.
+
+[Byzantine/NodeBound.lean](../../Complexity/Computability/Distributed/Byzantine/NodeBound.lean)
+proves their Theorem 1 (§3.1): `Protocol.not_solvesByzantineAgreement` says that no protocol on
+`n` processes with `2 ≤ n ≤ 3t` solves Byzantine agreement against `t` faults, for any fixed
+decision round `R`. `Protocol.not_solvesByzantineAgreement_three` is the hexagon case `n = 3`,
+`t = 1`. Both follow from `Protocol.not_solvesByzantineAgreement_of_partition`, which needs a
+map `g : P → Fin 3` whose fibres have at most `t` elements, with `g a = 0` and `g c = 2` for some
+`a`, `c`. The proof glues two copies of the network, with inputs `0` and `1`, crossing the edges
+between the groups `0` and `2`. Unlike the paper, the middle group may be empty, so `n = 2` is
+included. For `n ≤ 1` agreement is trivial: `Protocol.solvesByzantineAgreement_ownInput` (in
+`Byzantine/Basic.lean`) decides the own input.
+
+[Byzantine/OralMessages.lean](../../Complexity/Computability/Distributed/Byzantine/OralMessages.lean)
+gives the matching upper bound for one fault. `om1` sends inputs in round 1 and relays them in
+round 2. A process estimates the input of each `k` by the strict majority of the relays from the
+processes `j ≠ k`, and decides the strict majority of these estimates, ties going to `false`.
+`solvesByzantineAgreement_om1` proves that it tolerates one fault among `n ≥ 4` processes in any
+`R ≥ 2` rounds. This is the single-fault procedure of Pease, Shostak and Lamport (JACM 1980, §2;
+there for `n = 4`), generalized to `n ≥ 4` and followed by a majority vote, as in `OM(1)` of
+Lamport, Shostak and Pease (TOPLAS 1982, Theorem 1).
+`exists_solvesByzantineAgreement_one_iff` combines the bounds: for `R ≥ 2`, `n` processes can
+tolerate one fault exactly when `n ≤ 1` or `n ≥ 4`. The statement quantifies over `S M : Type`.
+
+[Checked examples](../../ComplexityTests/Computability/Distributed/Byzantine.lean) show a leader
+protocol that solves the fault-free problem and fails against a faulty leader that tells different
+processes different things. They also run `om1` on four processes against an equivocating process,
+with mixed and with unanimous inputs, and against a rushing process, and instantiate the node bound
+at `n = 2` and `n = 6`.
+
+Only static faults on the complete graph with Boolean inputs are covered. The connectivity bound
+`κ ≥ 2t + 1` (Fischer, Lynch and Merritt, §3.2), the general upper bound for `n > 3t` (`OM(t)` or
+exponential information gathering), the `t + 1` round lower bound, authenticated agreement and
+randomized agreement remain open; see `ROADMAP.md`. The asynchronous impossibility of Fischer,
+Lynch and Paterson is upstream in CSLib (`Cslib/Computability/Distributed/FLP`), in a separate
+asynchronous crash-fault model.
+
+## Locally decodable codes
+
+[LocallyDecodable/Basic](../../Complexity/Computability/LocallyDecodable/Basic.lean) is the local-decoding model. A code is `C : (ι → Bool) → P → Γ`. A decoder for the bit `i` is a `ProbOracleComp (fun _ : P => Γ) Bool`: it draws private uniform coins and queries positions of a received word `y : P → Γ`, possibly adaptively. `decodeLaw program y` is its output law with the queries answered by `y`. The query budget is the worst-case `ProbOracleComp.IsQueryBounded`, which counts queries on every path and not private samples. `IsLocalDecoder C q δ ε A` asks for at most `q` queries and success probability at least `1/2 + ε` from every word within Hamming distance `δ |P|` of a codeword. `IsSmoothDecoder C q c ε A` asks only for success on codewords, and for each position to be read at most `c / |P|` times in expectation. `expectedReads` is an `OracleComp.expectedCost` from [QueryCount/Expected](../../Complexity/Languages/Probabilistic/QueryCount/Expected.lean). This expected-reads notion bounds the probability of reading a position, so it implies the read-probability bound of Katz–Trevisan smoothness (Kerenidis–de Wolf, Definition 3 in arXiv:quant-ph/0208062v2). It does not imply the non-adaptivity that the source definitions require, because the decoders here may be adaptive. For `δ < 0` the local-decoding condition is vacuous, so the results assume `0 < δ` where it matters. `nonadaptive coins Q output` builds a non-adaptive decoder, and its reads do not depend on the received word (`hasObliviousReads_nonadaptive`).
+
+The [Hadamard decoder](../../Complexity/Computability/LocallyDecodable/Hadamard.lean) reads `y r` and `y (eᵢ + r)` for a uniform `r`. It is a `(2, δ, 1/2 − 2δ)` local decoder for every `δ` and a `(2, 2, 1/2)` smooth decoder. [Smoothing](../../Complexity/Computability/LocallyDecodable/Smoothing.lean) proves Katz–Trevisan smoothing (Katz–Trevisan, Theorem 1, restated as Kerenidis–de Wolf, Theorem 9 for non-adaptive decoders): `isSmoothDecoder_mask_heavyPositions` turns a `(q, δ, ε)` local decoder with oblivious reads into a `(q, q/δ, ε)` smooth decoder. It does so by answering queries to the heavy positions from a fixed word. Every non-adaptive decoder and every one-query decoder has oblivious reads. Smoothing adaptive decoders that make several queries is not covered. [OneQuery](../../Complexity/Computability/LocallyDecodable/OneQuery.lean) proves an original explicit one-query bound by a degree-one Fourier argument. Katz and Trevisan proved that one-query locally decodable codes have bounded message length. The inequality here is a different one, polynomial in `|Γ| − 1`, and we did not find it in the literature. `IsSmoothDecoder.four_mul_card_mul_sq_le` proves `4 |ι| ε² ≤ c² (|Γ| − 1)` for `(1, c, ε)` smooth decoders with `0 ≤ ε`. `IsLocalDecoder.four_mul_sq_mul_card_mul_sq_le` proves `4 δ² |ι| ε² ≤ |Γ| − 1` for `(1, δ, ε)` local decoders, whatever the length `|P|`. The proof uses `BitString.sq_sum_sum_abs_fourierCoeff_fiber_le` from [FiberWeight](../../Complexity/Foundations/BooleanAnalysis/FiberWeight.lean), a bound on the degree-one weight of the fibers of a map from the cube. The [checked examples](../../ComplexityTests/LocallyDecodable.lean) include the Hadamard and smoothed Hadamard decoders, and a repetition code. The repetition code is a `(1, 1/3, 1/6)` locally decodable code, its Katz–Trevisan smoothing is `(1, 3, 1/6)`, and it attains the one-query bound. They also show that no two-bit binary code is `(1, 1, 1/2)` smooth. The general Katz–Trevisan bound `n ≥ Ω(k^{q/(q−1)})` and the two-query exponential bounds remain open; see `ROADMAP.md`.
+
+## Expander codes and flip decoding
+
+The coding-theory API (minimum distance, the Hamming, Singleton and Johnson bounds, Reed–Solomon and list decoding, Justesen codes) lives in `Complexity/Foundations/Data/Code` and has no chapter of its own yet. Expander codes sit here next to locally decodable codes because their decoder is also local: each flip reads only the checks around one variable. [Expander/Bipartite](../../Complexity/Foundations/Combinatorics/Expander/Bipartite.lean) treats a bipartite graph as a decidable relation `G : ι → κ → Prop` between variables and checks. `neighbors G S` and `uniqueNeighbors G S` are the neighbours and unique neighbours of a set of variables. `IsVertexExpander G k α` asks every set of at most `k` variables to have at least `α |S|` neighbours; this is the `(n, m, c, γ, α)` expander of Guruswami–Rudra–Sudan (Definition 11.2.2 in the August 2025 draft) with `k = γ n`. Left degrees are only bounded by `c` (`IsLeftBounded`), not required to equal `c`. The unique-neighbour lemma `IsVertexExpander.le_card_uniqueNeighbors` gives `(2 α − c) |S| ≤ |U(S)|`. [Code/ExpanderCode](../../Complexity/Foundations/Data/Code/ExpanderCode.lean) defines the Sipser–Spielman code `ExpanderCode.code G`, the kernel of the incidence matrix over `Bool`, as a `Submodule Bool (ι → Bool)`. It proves the rate bounds `2 ^ (n − m) ≤ |C|` and `log₂ |C| / n ≥ 1 − c / d` for `(c, d)`-biregular graphs. For distance, if `c < 2 α` then codewords differ in more than `k` positions (`lt_hammingDist`, `lt_minDist`), and in fact `2 α k ≤ c · d` (`two_mul_mul_le_hammingDist`, GRS Theorem 11.3.8). [Code/FlipDecoding](../../Complexity/Foundations/Data/Code/FlipDecoding.lean) proves correctness of the flip decoder for `3 c < 4 α` (Guruswami–Sharma notes, Lemmas 5 and 6). Each flip lowers the number of violated checks, so a run of `t` flips from `x` has `t ≤ #unsat(x) ≤ c · d(x, w)`. `decode_eq` shows that the bounded decoder `decode pick n` returns `w` for any pivot rule satisfying `IsFlipRule` whenever `c · d(x, w) < (2 α − c) k` and `n ≥ #unsat(x)`. `decode_eq_of_two_mul_le` specializes this to error weight at most `k / 2`. Rounds are counted abstractly; no RAM implementation of the linear-time decoder is given. The [checked examples](../../ComplexityTests/Code/ExpanderCode.lean) use the Fano plane, a `(3, 3)`-biregular graph that expands pairs of points by `5/2`. On it, the distance bound `d ≥ 4` is tight and the decoder corrects every single error. The examples also show that expansion fails for a collinear triple and that two errors can be ambiguous. Lossless expanders themselves (probabilistic existence, Capalbo–Reingold–Vadhan–Wigderson), Spielman's linear-time encodable codes and Zémor's decoding of Tanner codes (whose distance on small-bias Cayley graphs is in [Expander/TannerCode](../../Complexity/Foundations/Combinatorics/Expander/TannerCode.lean)) remain open; see `ROADMAP.md`.
 
 ## Known Limitations
 

@@ -33,9 +33,52 @@ Moser's resampling algorithm is a step function `Moser.step` reading an explicit
 Fortnow's exposition. On the fair-coin tape `Cslib.BitString.coinFlips`,
 `Moser.ae_exists_eval_final` says the run almost surely stops with a satisfying assignment, and
 `Moser.lintegral_resamplings_le` bounds the expected number of resamplings by `m + 2`, the
-constant of this encoding. These count resamplings, not machine time. The
-[checked examples](../../ComplexityTests/Moser.lean) include a concrete run, its log and the
-recovered tape; check them with `scripts/build.sh ComplexityTests.Moser`.
+constant of this encoding. These count resamplings, not machine time. The existential Local Lemma
+for the same formulas is `CNF.IsExactDistinct.satisfiable_of_exp_mul_le` in
+`Complexity.Logics.Propositional.CNF.LocalLemma`: `Moser.degree φ i ≤ d` for every clause and
+`Real.exp 1 * (d + 1) ≤ 2 ^ k` give satisfiability, with no algorithm. Its constant is better, but
+it does not say how to find the assignment. Fortnow's Kolmogorov-complexity form of the
+compression argument is in `Complexity.Logics.Propositional.CNF.Moser.Kolmogorov`. There the
+complexity is `ecomplexity` for the explicit decoder `Moser.descriptionMethod φ k L`, not for a
+universal machine. Under `3 ≤ k`, `CNF.IsExactDistinct k φ` and `degree φ i < 2 ^ (k - 3)`,
+`Moser.not_exhausts_of_length_sub_le_ecomplexity` shows that a tape word `y` of length `n + t k`
+whose complexity for `Moser.descriptionMethod φ k (k - 3)` is at least `n + t k - c` does not use
+up a budget of `t > m + c` resamplings. The
+[checked examples](../../ComplexityTests/Moser.lean) include a concrete run, its log, the
+recovered tape and its description, and a formula where only the existential bound applies;
+check them with `scripts/build.sh ComplexityTests.Moser`.
+
+The general Moser–Tardos theorem for the variable form of the Local Lemma is in
+`Complexity.Probability.MoserTardos` [mosertardos10]. The setting is finitely many independent
+variables `σ v ∼ μ v` and finitely many measurable events `A i`, each depending (in Mathlib's
+`DependsOn` sense) only on the variables in a finite set `vbl i`. The algorithm's randomness is
+the table `MoserTardos.table μ` of independent samples `T (v, n)`, where `T (v, n)` is the value
+of `v` after its `n`-th resampling. A selection rule `sel T w : Option ι` picks the next event
+after the log `w`. It may depend on the whole table, and it is *valid* when it only picks events
+that occur. Assume `x i ∈ [0, 1)` and `Pr[A i] ≤ x i ∏ j ∈ Γ i, (1 - x j)`, where `Γ i`
+contains every other event sharing a variable with `A i`. Under this hypothesis, Theorem 1.2 of
+the paper is `MoserTardos.lintegral_resamplings_le`: for every valid rule the expected number of
+resamplings of `A i` is at most `x i / (1 - x i)`. The rule need not be measurable, so this `∫⁻`
+is a lower integral. `exists_measurable_ge_resamplings` closes the gap: one measurable function
+with the same bound dominates the count under every valid rule, so the bound also holds for the
+outer expectation. The total over all events is `lintegral_sum_resamplings_le`. Almost sure
+termination is `ae_exists_run_eq_none`. `ae_exists_forall_notMem_run` says that a valid rule
+that stops only when no event occurs almost surely reaches an assignment avoiding every event;
+`ae_exists_forall_notMem_run_greedy` is the greedy case. The existential corollary is
+`exists_forall_notMem`. The witness trees of the proof are recorded as finite sets of
+`(label, depth)` pairs in `Complexity.Probability.MoserTardos.Witness`. Lemma 2.1 is
+`proper_witness`, the coupling `check_witness`, `measure_check_eq_prod` and, combined,
+`table_witness_le`. Here `Proper` is the level independence proved inside Lemma 2.1(i), which
+implies the paper's properness. The paper's Galton–Watson counting is replaced by a depth
+induction, `sum_prod_shapes_le`. The model counts resamplings; it does not charge for sampling or
+for detecting occurring events. Theorems 1.3 (the parallel version) and 1.4 (the deterministic
+version) and the lopsided form are not formalized. The
+[checked examples](../../ComplexityTests/MoserTardos.lean) give one fair coin, where the bound is
+`x / (1 - x) = 1`, two dependent events on three coins that meet the hypothesis with equality, an
+impossible event with `x = 0`, two complementary events for which no `x` satisfies the
+hypothesis, and a concrete valid log on a fixed table whose witness tree is computed by `decide`
+and passes its check. Check them with
+`scripts/build.sh ComplexityTests.MoserTardos`.
 
 Support-based CNF model counting counts assignments to variables that occur. Declared-universe counting instead fixes a larger variable set and can include free choices for unused variables. The library supplies relabeling and exact gadget-counting bridges, so a reduction claiming preservation of counts must specify which convention it preserves. This distinction is particularly relevant to dense relabeling and the [native fixed-width counting endpoint](../machines-and-classes/native-counting.md).
 
@@ -212,13 +255,70 @@ A tree-like derivation yields a decision tree that finds a clause falsified by t
 
 [The Tseitin-expander result](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/TseitinExpander.lean) combines a graph-expansion width lower bound with that tradeoff. It gives a family of linear-variable, constant-width unsatisfiable CNFs requiring exponentially many proof lines. The expansion witnesses are obtained nonconstructively from counting, and the source explicitly says so: existence of a hard family is proved, while an efficient explicit expander/formula generator is not supplied by that endpoint.
 
+[The cut space of a multigraph](../../Complexity/Foundations/Combinatorics/Multigraph/CutSpace.lean) holds the edge-cut algebra that Tseitin lower bounds beyond resolution (polynomial calculus, SOS) are meant to use. Import `Complexity.Foundations.Combinatorics.Multigraph.CutSpace`. `Multigraph.edgeCut_symmDiff` sends a symmetric difference of vertex sets to the symmetric difference of their edge cuts, and `Multigraph.edgeCut_singleton` identifies the cut of one vertex with its edges other than self-loops. On a connected multigraph, `Multigraph.eq_empty_or_eq_univ_of_edgeCut_eq_empty` says that only `∅` and the set of all vertices have empty cuts. `Multigraph.three_mul_card_lt_of_card_edgeCut_lt` is the expansion dichotomy: a set of at most two thirds of the vertices that fewer than `e(G)` edges leave has fewer than a third of them. The [checked examples](../../ComplexityTests/Foundations/Combinatorics/Multigraph/CutSpace.lean) show that connectivity and the two-thirds hypothesis cannot be dropped; check them with `scripts/build.sh ComplexityTests.Foundations.Combinatorics.Multigraph.CutSpace`.
+
 Interpolation modules extract circuits separating the two sides of a refuted conjunction. Monotone extraction supports clique/coloring lower-bound applications, and a separate polynomial-time file addresses encoded extraction. The distinction between semantic existence of an interpolant and a native efficient extraction algorithm follows the same design pattern as circuits and finite-model logic. See [interpolation](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/Interpolation.lean), [monotone extraction](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/Interpolation/MonotoneExtraction.lean) and [native extraction](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/Interpolation/PolyTime.lean).
+
+[Semantic derivations](../../Complexity/Logics/Propositional/SemanticDerivation.lean) formalize Krajíček's communication route to interpolation, which is not tied to one proof system. Import `Complexity.Logics.Propositional.SemanticDerivation`. A line is a set of assignments, and `IsSemanticRefutation (initSets 𝒜 ℬ) D` says that each of the `k` lines of `D` is either a cylinder over an initial set, everything, or contains the intersection of two earlier lines, and that some line is `∅`. `IsSemanticRefutation.exists_dagProtocol` turns such a refutation into a dag-like Karchmer–Wigderson protocol with `k` inner nodes and communication `2 t`. This requires two per-line costs to be at most `t`: deciding whether the mixed assignment `(v, q, r)` lies in each line, and finding a coordinate at each `𝒜`-cylinder. For shared variables of type `Fin n`, `exists_circuit` and `exists_monotone_circuit` then give a separating circuit with at most `(k · 2 ^ (2 t) + 1) · 2 ^ (2 t + 1)` gates. The `_of_commComplexity_le` forms state this for lines with Krajíček's `CC` and `MCC_U` at most `t`; the monotone form assumes the models of `𝒜` are upward closed. This sharpens the bounds of Theorem 5.1, `(k + 2 n) · 2 ^ O(t)` and, in the monotone case, `(k + n) · 2 ^ O(t)`: the `2 n` answer nodes of the source's protocol are leaves here and cost nothing. `lt_of_forall_lt_size` is the transfer to line lower bounds. Only the monotone case for the `𝒜` side is stated. Cutting planes is the first proof-system client (see below); resolution refutations are not yet translated into semantic refutations. The [checked examples](../../ComplexityTests/ProofComplexity/SemanticDerivation.lean) apply every form to a three-line refutation of `x₀ = 1` against `x₀ = 0`; check them with `scripts/build.sh ComplexityTests.ProofComplexity.SemanticDerivation`.
+
+## Clause space
+
+Import `Complexity.Logics.Propositional.Resolution.SpaceWidth` for the definitions and the inequality, `Complexity.Logics.Propositional.Resolution.TseitinSpace` for the Tseitin corollaries, `Complexity.Logics.Propositional.Resolution.TreeLikeSpace` for tree-like refutations, or `Complexity.Logics.Propositional.Resolution.PigeonholeSpace` for Duplicator strategies and the pigeonhole bounds.
+
+[Configuration-style resolution](../../Complexity/Logics/Propositional/Resolution/Space.lean) follows Esteban and Torán. It keeps a `Finset` of clauses in memory, and each move (`ConfigMove`) changes it by one of three rules (`CNF.ConfigStep`): download a clause of the formula, add the resolvent of two clauses in memory, or erase a clause. The resolution rule is that of `CNF.IsProof`, with no weakening. `CNF.configLTS φ s` is the cslib `LTS` of these moves, restricted to configurations of at most `s` clauses. It follows the same pattern as the pebbling library's `Cslib.Pebbling.blackPebbleGame`.
+
+`CNF.RefutableInSpace φ s` holds when some `MTr` run from `∅` reaches a configuration containing `[]`. Space counts distinct clauses, and time (the number of moves) is not bounded. Clauses are lists, but this does not change the least space compared with clauses as sets: mapping clauses to their literal sets never increases space, and a refutation on sets lifts by fixing one list per set. The module proves the basic properties:
+
+- soundness: `RefutableInSpace.not_satisfiable`;
+- space is at most size: `RefutableInSize.refutableInSpace`;
+- completeness: `exists_refutableInSpace_iff_not_satisfiable`;
+- `RefutableInSpace.three_le`: space is at least `3` unless `[] ∈ φ`.
+
+[The space–width module](../../Complexity/Logics/Propositional/Resolution/SpaceWidth.lean) proves the Atserias–Dalmau inequality (their Theorem 3) in the form of Theorem 1 of Filmus, Lauria, Mikša, Nordström and Vinyals (STACS 2014), whose constant `s + k - 3` it uses; Atserias and Dalmau's own constant is not claimed. `RefutableInSpace.refutableInWidth` says that if every clause has width at most `k`, clause space `s` gives a refutation of width `s + k - 3`, with truncated subtraction. Unlike that paper, the theorem does not assume `[] ∉ φ`. The contrapositive `RefutableInSpace.add_four_le` turns a width lower bound `¬ RefutableInWidth w` into the space bound `w + 4 ≤ s + k`.
+
+The proof keeps Atserias and Dalmau's Duplicator strategy, the partial assignments that falsify no clause derivable within width `w`, as private definitions. The converse characterization of width (their Lemma 2) is not exported.
+
+[The existential pebble module](../../Complexity/Logics/Propositional/Resolution/ExistentialPebble.lean) exports the game for lower bounds. Import `Complexity.Logics.Propositional.Resolution.ExistentialPebble`. A partial assignment is a total assignment `σ` read on a finite set `d`, and `CNF.Falsifies σ d c` says that every literal of `c` is on a variable of `d` and false under `σ`. `CNF.DuplicatorStrategy φ k` is Atserias and Dalmau's Definition 2: a nonempty family of such assignments on at most `k` variables that falsify no clause of `φ`, closed under restriction, and extendable to any variable from fewer than `k` variables. `DuplicatorStrategy.not_refutableInWidth` is their Lemma 3 in the library's width convention: a strategy with `w + 1` pebbles rules out `RefutableInWidth w`. The game has nothing to do with the black pebble game of `Complexity/Computability/Pebbling`.
+
+[The pigeonhole space module](../../Complexity/Logics/Propositional/Resolution/PigeonholeSpace.lean) applies it to Atserias and Dalmau's Section 5 example. Import `Complexity.Logics.Propositional.Resolution.PigeonholeSpace`.
+
+- [The extended pigeonhole formula](../../Complexity/Logics/Propositional/Pigeonhole/Extension.lean) `CNF.pigeonholeExt m n` (`EPHP^m_n`) replaces each width-`n` pigeon clause of `PHP^m_n` with a chain of start, step and stop clauses of width at most `3`. The chain runs through variables "pigeon `i` sits in a hole `≥ j`". `satisfiable_pigeonholeExt_iff` says it is satisfiable exactly when `m ≤ n`.
+- `CNF.pigeonholeExtStrategy m n` is Duplicator's strategy on `EPHP^m_{n+1}` with `n + 1` pebbles: the partial assignments that agree with a placement of pigeons that is injective on the pebbled pigeons.
+- So with `n + 1` holes there is no refutation of width `n` (`not_refutableInWidth_pigeonholeExt`). Stated per hole count, every refutation of `EPHP^m_n` has width at least `n` (`le_of_refutableInWidth_pigeonholeExt`) and clause space at least `n` (`le_of_refutableInSpace_pigeonholeExt`, through `RefutableInSpace.add_four_le` with `k = 3`). The number of pigeons is arbitrary.
+
+The mathematical symbols of the available copy of Atserias and Dalmau's paper do not extract. So neither their exact clauses nor the pebble count of their Lemma 6 is quoted; the encoding, the strategy and these constants are ours. The clause space of the wide formula `PHP^m_n` itself, proved by Alekhnovich, Ben-Sasson, Razborov and Wigderson, is not treated, and their paper was not inspected.
+
+[The Tseitin module](../../Complexity/Logics/Propositional/Resolution/TseitinSpace.lean) combines this with the width bound of Ben-Sasson and Wigderson:
+
+- `Tseitin.minBalancedCut_le_of_refutableInSpace` gives `e(G) ≤ s + k - 3` on a connected multigraph whose vertices have at most `k` non-loop edges;
+- `Tseitin.edgeExpansion_mul_card_div_three_add_three_le_of_refutableInSpace` gives `h(G) |V| / 3 + 3 ≤ s + |D|` on a rotation map with `h(G) > 0`;
+- `CNF.exists_forall_refutableInSpace_le` is a family with explicit constants. For `n ≥ 4392000` it has at most `120 n` variables, `2 ^ 120 · n` clauses of width at most `120`, and every refutation in clause space `s` has `n ≤ 36000 s`.
+
+As with the size bound, the expanders come from a counting argument.
+
+[The tree-like module](../../Complexity/Logics/Propositional/Resolution/TreeLikeSpace.lean) proves Esteban and Torán's bound: clause space is at most logarithmic in tree-like size. The statement is taken from Torán's survey (Bulletin of the EATCS 83, 2004, Theorem 9), which states `tree-size(F) ≥ 2 ^ space(F) - 1`. The original paper was not inspected. The survey's pebble game (Definition 7, identified with its space by Lemma 8) lets an inference shift a pebble from a premise to the resolvent, so its space is at most one less than clause space here. `CNF.configLTS` keeps both premises, so every bound here is one larger:
+
+- `Derivation.strahler` is the Horton–Strahler number of a tree-like derivation, the height of the largest complete binary tree embedded in it. It is the Ehrenfeucht–Haussler rank `Cslib.DecisionTree.rank` of the derivation's decision tree `Derivation.toDecisionTree` (`Derivation.strahler_eq_rank_toDecisionTree`). `Derivation.two_pow_strahler_add_one_le` gives `2 ^ (r + 1) ≤ S + 1` for a derivation of `S` nodes, from `DecisionTree.two_pow_rank_le_leafCount` (a tree of rank `r` has at least `2 ^ r` leaves).
+- `Derivation.refutableInSpace` gives clause space `r + 2`: derive the premise of larger number first and keep it. This matches the black pebbling price `h + 2` of the complete binary tree of height `h ≥ 1` in `Complexity/Computability/Pebbling/BinaryTree.lean`.
+- `Derivation.refutableInSpace_log` gives clause space `log₂ (S + 1) + 1`. Its contrapositive, `Derivation.two_pow_le_size_add_one`, turns `¬ RefutableInSpace s` into `2 ^ s ≤ S + 1`; `x ∧ ¬x` attains it.
+- `CNF.refutableInSpace_of_not_satisfiable` refutes every unsatisfiable formula on `n` variables in clause space `n + 2`, the survey's `n + 1`. It splits on a variable (`CNF.exists_derivation_strahler_le`), lifting tree-like refutations of the restrictions with `Derivation.exists_of_restrict`.
+
+The [checked examples](../../ComplexityTests/ProofComplexity/Space.lean) refute `x ∧ ¬x` in space `3` and show that space `2` is impossible. They also give a five-line refutation that erasure keeps in space `3`, and a formula with a width-`3` clause on which the inequality is attained: `k = s = 3`, width `3` and not `2`. Check them with `scripts/build.sh ComplexityTests.ProofComplexity.Space`. The [tree-like examples](../../ComplexityTests/ProofComplexity/TreeLikeSpace.lean) compute Strahler numbers, show that `x ∧ ¬x` attains both the Esteban–Torán bound and the bound `n + 2`, and turn the Tseitin space bound into tree-like size at least `2 ^ 121 - 1`. On a unit-propagation chain with a 7-node refutation, the Strahler bound gives the optimal space `3` where the logarithmic bound gives `4`. Check them with `scripts/build.sh ComplexityTests.ProofComplexity.TreeLikeSpace`. The [pigeonhole examples](../../ComplexityTests/ProofComplexity/PigeonholeSpace.lean) build Duplicator strategies from satisfying assignments and with no pebble, and show there is none for `x ∧ ¬x` with one pebble. They also check that `EPHP^3_2` is refutable but not in width `1`, and that `EPHP^6_5` is refutable but needs clause space `5`. Check them with `scripts/build.sh ComplexityTests.ProofComplexity.PigeonholeSpace`.
+
+Not yet formalized:
+
+- clause space of the wide pigeonhole formula and of random `k`-CNFs;
+- the converse of Atserias and Dalmau's Lemma 3 (their Lemma 2) as a public statement;
+- total and variable space;
+- time–space trade-offs and pebbling formulas;
+- the polynomial-calculus analogue, degree versus space, which is open.
 
 ## Cutting planes
 
-Import `Complexity.Logics.Propositional.CuttingPlanes.Separation` for everything below, or the
-smaller modules `CuttingPlanes`, `CuttingPlanes.Resolution` and `CuttingPlanes.Pigeonhole`
-under `Complexity.Logics.Propositional`.
+Import `Complexity.Logics.Propositional.CuttingPlanes.Separation` for everything below except
+interpolation, or the smaller modules `CuttingPlanes`, `CuttingPlanes.Resolution` and
+`CuttingPlanes.Pigeonhole` under `Complexity.Logics.Propositional`. Interpolation is in
+`Complexity.Logics.Propositional.CuttingPlanes.Interpolation`.
 
 [Cutting planes](../../Complexity/Logics/Propositional/CuttingPlanes.lean) is the line-based proof system on integer linear inequalities over 0/1 variables. `Cslib.Logic.PL.Ineq V` has finitely supported coefficients `V →₀ ℤ` and an integer bound and means `∑ aᵥ xᵥ ≥ bound`; inequalities form an additive group, and `Ineq.Holds σ I` evaluates `I` under an assignment `σ : V → Bool`. `CuttingPlanes.IsProof Γ ls` lists a proof from the set `Γ` from its last line to its first. A line is a member of `Γ`, an axiom `xᵥ ≥ 0` (`Ineq.nonneg`) or `-xᵥ ≥ -1` (`Ineq.leOne`), the sum of two earlier lines, an earlier line times a positive natural number, or an earlier line divided by a positive `c` that divides every coefficient. In the last case `Ineq.div` rounds the bound up. Size is the number of lines (`DerivableInSize`, and `RefutableInSize` for deriving `Ineq.contra`, which is `0 ≥ 1`). Coefficient sizes are not measured. `IsProof.holds` gives soundness. A clause translates to `∑_{v ∈ C} xᵥ + ∑_{¬v ∈ C} (1 - xᵥ) ≥ 1` over its *distinct* literals (`Clause.toIneq`, with `Clause.holds_toIneq_iff`), and `CNF.toIneqs φ` collects these inequalities.
 
@@ -228,7 +328,24 @@ To build a derivation, combine the `DerivableInSize` lemmas `hyp`, `nonneg`, `le
 
 [The pigeonhole module](../../Complexity/Logics/Propositional/CuttingPlanes/Pigeonhole.lean) proves the Cook–Coullard–Turán upper bound. For `n < m`, `CuttingPlanes.refutableInSize_pigeonhole` gives a refutation of `PHP^m_n` in at most `(n + 1) (m + 1)²` lines. With Haken's bound above, [the separation module](../../Complexity/Logics/Propositional/CuttingPlanes/Separation.lean) gives `two_pow_le_of_forall_refutableInSize_pigeonhole`: any map `f` that turns `s`-line cutting-planes refutations of `PHP^{n+1}_n` into `f s`-line resolution refutations satisfies `2^(n/24) ≤ f ((n + 1) (n + 2)²)`. `not_exists_polynomiallyBounded_refutableInSize_pigeonhole` states the corresponding non-polynomial conclusion. These are line-count statements about the given proof representations. They are not p-simulations between `ProofSystem` instances, which would also charge encodings and translation time. Tree-like cutting planes are not defined, so the fact that the pigeonhole refutation is tree-like is noted in the source but not stated in Lean.
 
+[The interpolation module](../../Complexity/Logics/Propositional/CuttingPlanes/Interpolation.lean) proves Krajíček's feasible interpolation for cutting planes (Theorem 6.4). Alice's system `ΓA` is a set of inequalities over `Fin n ⊕ Y` and Bob's `ΓB` a set over `Fin n ⊕ Z`, with `Y` and `Z` finite. A refutation is an `IsProof` from their images under `Ineq.relabel (Sum.map id Sum.inl)` and `Ineq.relabel (Sum.map id Sum.inr)` in `Fin n ⊕ (Y ⊕ Z)` that contains `Ineq.contra`. `IsProof.isSemanticRefutation` turns it into a semantic refutation with as many lines. Deciding a line costs `⌈log₂ (2 M |Y| + 1)⌉ + 1` bits when its `y`-coefficients are at most `M` (`ecomplexity_memRight_holds_le`). Binary search at an inequality of `ΓA` with shared coefficients at most `M₀` costs `⌈log₂ n⌉ (⌈log₂ (2 M₀ n + 1)⌉ + 1)` bits (`ecomplexity_search_holds_le`, built on `Protocol.exists_search_lt`). For `t` at least both costs, `IsProof.exists_circuit` gives a circuit with at most `(k · 2 ^ (2 t) + 1) · 2 ^ (2 t + 1)` gates, where `k` is the number of lines. The circuit is true on every `u` with `ΓA(u, q)` for some `q` and false on every `v` with `ΓB(v, r)` for some `r`. `IsProof.exists_monotone_circuit` gives a monotone circuit when the shared coefficients of `ΓA` are nonnegative. The `_of_abs_coeff_le` forms take Krajíček's single bound `M` on every coefficient of the refutation; `2 ^ t` is then `(M N) ^ O(1) (M n) ^ O(log n)`, as in the source. The separate bounds `M₀` and `M` matter for clause translations, where `M₀ = 1`. Not yet stated: the monotone case in which the shared variables occur in `ΓB` with nonpositive coefficients only, which needs the `ℬ`-monotone semantic theorem, and the clique–colouring lower bound of Corollary 7.3. The circuits are non-uniform; no extraction algorithm is given. The [interpolation examples](../../ComplexityTests/ProofComplexity/CuttingPlanesInterpolation.lean) refute `{y ≥ 1, x₀ - y ≥ 0}` against `{-x₀ ≥ 0}` through the private variable `y` and check that the interpolant computes `x₀`. Check them with `scripts/build.sh ComplexityTests.ProofComplexity.CuttingPlanesInterpolation`.
+
 The [checked examples](../../ComplexityTests/ProofComplexity/CuttingPlanes.lean) include a three-line refutation of `x ∧ ¬x`, a rounding step that cuts off the fractional point `(1/4, 1/4)`, and a case showing that division without the divisibility condition derives `0 ≥ 1` from the satisfiable `x ≥ 1`. They also cover soundness on a satisfiable CNF, a translated resolution refutation, and the pigeonhole and separation instances. Check them with `scripts/build.sh ComplexityTests.ProofComplexity.CuttingPlanes`.
+
+## Frege proofs
+
+Import `Complexity.Logics.Propositional.Frege.Resolution` for everything below, or
+`Complexity.Logics.Propositional.Frege` for the proof system alone.
+
+[The Frege module](../../Complexity/Logics/Propositional/Frege.lean) fixes one Hilbert-style proof system. Cook and Reckhow [cookreckhow79][cookreckhow79] require a Frege system to have finitely many sound schemes and rules that are also implicationally complete. This system is complete by the standard argument for its classical axiomatization, but the library does not prove that yet ([#3069](https://github.com/cslib-community/complexitylib/issues/3069)). Formulas are cslib's `Cslib.Logic.PL.Proposition` over the atoms `WithBot V` (`Cslib.Logic.PL.Frege.Formula`), with cslib's `⊥`, the atom `⊥`, read as falsity, and cslib's `Proposition.neg φ = φ → ⊥`. `Formula.eval σ` evaluates a formula under `σ : V → Bool`, because cslib's propositions carry no Boolean semantics. `IsAxiom` lists the schemes K, S and double-negation elimination for `→` and `⊥`, together with introduction and elimination schemes for `∧` and `∨`; modus ponens is the only rule. `IsProof Γ L` lists a proof from the hypotheses `Γ` from its last line to its first, as resolution and cutting planes do, and its size is the number of lines. `DerivableInSize Γ φ n` says that `φ` has a proof of at most `n` lines, as for cutting planes. `IsProof.eval` gives soundness.
+
+Two lemmas build proofs with explicit line counts. `IsProof.cut` replays a proof from `Γ ++ Δ` on top of a proof from `Γ` that already contains the formulas of `Δ`, adding at most as many lines as the replayed proof has, so later steps can reuse earlier lines. `IsProof.deduction` is the deduction theorem with linear overhead. A proof from `Γ ++ Δ` becomes a proof from `Γ` that contains `Δ ⇒ φ` (`Formula.imps`) for each line `φ`, with at most `10 (|Δ| + 1)` lines per original line. Discharging the hypotheses one at a time would instead multiply the size by a constant for each hypothesis.
+
+[The simulation module](../../Complexity/Logics/Propositional/Frege/Resolution.lean) translates a clause into `¬ℓ₁ → ⋯ → ¬ℓₖ → ⊥` over its distinct literals (`Clause.toFormula`, with `Clause.eval_toFormula`). `Frege.derivableInSize_toFormula_resolvent` derives the formula of a resolvent from the formulas of its premises in at most `stepBound w = 10 (2 w + 1) (42 w + 23)` lines, where `w` is the larger premise width. The pivot need not occur in either premise. `CNF.IsProof.frege` turns an `s`-line resolution proof of width at most `w` into a Frege proof of at most `stepBound w * s` lines that contains the formula of every line. `CNF.RefutableInSize.frege` turns an `s`-line refutation of a CNF on `N` variables into a Frege proof of `⊥` of at most `stepBound (2 N) * s` lines. `CNF.exists_frege_refutation_iff_not_satisfiable` combines this with resolution completeness and Frege soundness: Frege refutes exactly the unsatisfiable CNFs.
+
+These are line counts. Each translated line has `O(w)` connectives, but formula size is not measured, and none of these results is a p-simulation between `ProofSystem` instances. The library does not yet have implicational completeness of Frege, machine-level p-simulations, the mutual p-simulation of Frege systems or Extended Frege; [#3069](https://github.com/cslib-community/complexitylib/issues/3069) tracks them.
+
+The [checked examples](../../ComplexityTests/ProofComplexity/Frege.lean) include a five-line proof of `p → p` built from the constructors, clause formulas and their semantics, a translated refutation of `x ∧ ¬x`, soundness on a satisfiable CNF, and one resolution step on width-10 clauses. Check them with `scripts/build.sh ComplexityTests.ProofComplexity.Frege`.
 
 ## Foundations for algebraic degree lower bounds
 
@@ -236,6 +353,8 @@ Two Boolean-analysis lemmas from the subset-sum degree lower bound of Impagliazz
 
 ## Known Limitations
 
-This section inventories resolution, cutting planes and their syntax clients. It does not reclassify PCPs or interactive proofs as resolution proof systems; their verifier and protocol models have separate owners. The endpoint statements and model conventions are source-inspected, while every proof body and every original lower-bound paper has not been independently checked in this worker pass.
+This section inventories resolution, including clause space, cutting planes, semantic derivations, Frege proofs and their syntax clients. It does not reclassify PCPs or interactive proofs as resolution proof systems; their verifier and protocol models have separate owners. The endpoint statements and model conventions are source-inspected, while every proof body and every original lower-bound paper has not been independently checked in this worker pass.
 
 [complexitylib]: ../sources.md#complexitylib
+[cookreckhow79]: ../sources.md#cookreckhow79
+[mosertardos10]: ../sources.md#mosertardos10
