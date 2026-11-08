@@ -114,6 +114,7 @@ public import Complexity.Algorithms.Lean.StableMatching.Blocking
 public import Complexity.Algorithms.Lean.StableMatching.DeferredAcceptance
 public import Complexity.Algorithms.Lean.StableMatching.Incentives
 public import Complexity.Algorithms.Lean.StableMatching.Lattice
+public import Complexity.Algorithms.Lean.StoerWagner.Basic
 public import Complexity.Algorithms.Lean.Submodular.Basic
 public import Complexity.Algorithms.Lean.Submodular.Greedy
 public import Complexity.Algorithms.Lean.SuffixArray.Basic
@@ -4265,6 +4266,7 @@ public import Complexity.Foundations.Combinatorics.TupleCover
 public import Complexity.Foundations.Combinatorics.UniformSchedules
 public import Complexity.Foundations.Combinatorics.WeightBudget
 public import Complexity.Foundations.Combinatorics.WeightedCut
+public import Complexity.Foundations.Combinatorics.WeightedCut.MAOrdering
 public import Complexity.Foundations.Combinatorics.WeightedCut.MinCutBetween
 public import Complexity.Foundations.Combinatorics.WeightedCut.Multigraph
 public import Complexity.Foundations.Computability.ComputablePred

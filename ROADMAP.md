@@ -1583,6 +1583,17 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   Tutte–Berge formula are proved in `Foundations/Combinatorics/SimpleGraph/{Berge,TutteBerge}`;
   still open are Edmonds' blossom-contraction lemma, an executable blossom algorithm with its
   `O(|V|²|E|)` bound, weighted general matching, and the Gallai–Edmonds decomposition.
+- **Global minimum cut** ([#3369](https://github.com/cslib-community/complexitylib/issues/3369)):
+  beyond Karger's and Karger–Stein's randomized algorithms (`Algorithms/WordRAM/Karger`) and the
+  deterministic Stoer–Wagner algorithm with the maximum adjacency ordering lemma and an `O(n³)`
+  `TimeM` bound on natural-number weights (`Algorithms/Lean/StoerWagner`,
+  `WeightedCut/MAOrdering`): the `O(n m + n² log n)` priority-queue version, real weights,
+  Nagamochi–Ibaraki sparse certificates for `k`-edge-connectivity,
+  Karger's near-linear minimum cut algorithm, and Queyranne's minimization of symmetric submodular
+  functions (which generalizes the maximum adjacency argument to hypergraph cuts). Moving the
+  contraction API (`contractMatrix`, `contractPart`, `contractCut`) from `WordRAM/Karger` into
+  `WeightedCut` ([#3403](https://github.com/cslib-community/complexitylib/issues/3403)) would let
+  both algorithms share one foundation.
 - **Gomory–Hu trees** ([#3320](https://github.com/cslib-community/complexitylib/issues/3320)):
   remaining after the existence theorem for cut-equivalent trees of symmetric submodular set
   functions and weighted undirected graphs, with flow-equivalence, the minimum-cut triangle

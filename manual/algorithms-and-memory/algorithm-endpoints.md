@@ -216,6 +216,31 @@ The specification `ApproximateMembership.spec U n ε` enforces strict set validi
 
 The Karger–Stein endpoint uses one fixed 24-register program, `O(n² log n)` worst-case steps and `O(n²)` matrix scratch per tree, with success at least `1/(floorlog₂(n)+15)`. Repetition gives minimum-cut **value** with failure at most `1/(2n)` in `O(n² log³ n)`. It does not enumerate all minimum cuts or attain the source's sparse-space formulation. The threshold is an integer inequality rather than a literal square-root expression; the abstract labels the implementation and proof adaptations.
 
+### Deterministic minimum cut: Stoer–Wagner
+
+Import `Complexity.Algorithms.Lean.StoerWagner.Basic` ([Basic.lean](../../Complexity/Algorithms/Lean/StoerWagner/Basic.lean)). It uses the weighted multigraphs of `Cslib.WeightedCut` (`W : Fin n → Fin n → ℕ`, symmetric with zero diagonal) and Karger's contraction (`contractMatrix`, `contractPart`). The algorithm follows [Stoer and Wagner][stoerwagner97].
+
+- **MA orderings:** [MAOrdering.lean](../../Complexity/Foundations/Combinatorics/WeightedCut/MAOrdering.lean) defines `attachWeight W A x = ∑ a ∈ A, W a x`, maximum adjacency orderings (`IsMAOrdering`, decidable) and maximum adjacency search `maSearch`, with ties broken by list order. `cutWeight_singleton_le_of_isMAOrdering` is the MA-ordering lemma ([Nagamochi and Ibaraki][nagamochiibaraki92]; the cut-of-the-phase lemma of [Stoer and Wagner][stoerwagner97]). If an MA ordering ends with `s, t`, then `{t}` weighs at most every vertex set containing exactly one of `s` and `t`. The proof is an induction over the prefixes of the ordering. `cutWeight_singleton_eq_minCutBetween_of_isMAOrdering` restates it as `cutWeight W {t} = minCutBetween W s t`, using the minimum `s`–`t` cut weight shared with the Gomory–Hu development. `maSearch_spec` shows that the search produces an MA ordering.
+- **Phase recursion:** `cutWeight_contractCut` shows that merging `t` into `s` preserves the cuts that do not separate them. `minCut_eq_min_contractMatrix` says that `minCut W` is the minimum of the weight of a minimum `s`–`t` cut and the `minCut` after the merge. `minCut_eq_min_minCutBetween` states it as `minCut W = min (minCutBetween W s t) (minCut (contractMatrix W s t))`. `minCut_eq_min_of_isMAOrdering` applies this to one phase.
+- **Algorithm:** `stoerWagner W` returns a `CutResult` with one side of a cut and its weight. It is structurally recursive (`run`, with fuel in `maSearch`), so `decide` evaluates it. `stoerWagner_spec`: for `2 ≤ n` and `IsMultigraph W`, the side is a non-trivial cut whose weight is the answered weight, which equals `minCut W`.
+- **Cost:** `stoerWagnerM` adds `TimeM.tick` charges to the same program, and `ret_stoerWagnerM` shows that it returns the same result. `time_stoerWagnerM_le` bounds the time by `n ^ 3 + 4 n ^ 2`, and the tests pin the charged time `509` on the 8-vertex example. The unit-cost model is an array implementation; for a phase on `m` supervertices of a graph on `n` vertices:
+  - initializing the keys costs `m`;
+  - a search step over `r` candidates costs `2 r − 1`;
+  - recording a cut of the phase costs `m + n`;
+  - a merge costs `4 m + n + 1`: merging row and column `t` into `s`, moving row and column `m − 1` into the freed slot, relabelling the original vertices, and one comparison.
+
+  The charges are annotations; they are not derived from the Lean evaluation, which uses closures.
+
+The [checked examples](../../ComplexityTests/StoerWagner.lean) test three graphs against brute force over all vertex sets. The first is a weighted 4-cycle. The second is the 8-vertex example graph of [Stoer and Wagner][stoerwagner97], with edge weights from a secondary reproduction (Wikipedia's article). It has minimum cut `4`, and search from its vertex `2` gives the ordering `2, 3, 4, 7, 8, 6, 5, 1` of the worked example's first phase, with cut of the phase `5`. The third is the Boost Graph Library example, which asserts minimum cut weight `7`. The examples also show that an ordering without the MA property can end in a pair whose last-vertex cut is not minimal. They cover a disconnected graph and `n = 0, 1, 2`. Not formalized:
+- the `O(n m + n² log n)` priority-queue version;
+- real weights (rational weights need scaling);
+- enumeration of all minimum cuts;
+- Nagamochi–Ibaraki sparse certificates;
+- Karger's near-linear algorithm;
+- Queyranne's symmetric submodular minimization ([#3369](https://github.com/cslib-community/complexitylib/issues/3369)).
+
+The contraction API comes from the randomized Karger module, so this deterministic module imports its probability dependencies; [#3403](https://github.com/cslib-community/complexitylib/issues/3403) tracks moving it into `WeightedCut`.
+
 ## Gomory–Hu trees
 
 Import `Complexity.Algorithms.Lean.GomoryHu.WeightedCut` ([source](../../Complexity/Algorithms/Lean/GomoryHu/WeightedCut.lean)). The declarations live in `Cslib.Algorithms.Lean.GomoryHu` and `Cslib.WeightedCut`. This is a theorem-level development: there is no algorithm and no running time. For a weighted multigraph `W : V → V → ℕ` with `IsMultigraph W`, `minCutBetween W s t` is the minimum `s`–`t` cut weight `λ(s, t)` ([source](../../Complexity/Foundations/Combinatorics/WeightedCut/MinCutBetween.lean)). `Network.Flow.IsMaxFlow.value_eq_minCutBetween` identifies it with the value of a maximum `s`–`t` flow in the network with capacities `W`, using the existing max-flow min-cut theorem. [MinCutBetween.lean](../../Complexity/Foundations/Combinatorics/WeightedCut/MinCutBetween.lean) also proves:
@@ -1052,6 +1077,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [lll82]: ../sources.md#lll82
 [manbermyers93]: ../sources.md#manbermyers93
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
+[nagamochiibaraki92]: ../sources.md#nagamochiibaraki92
 [roth82]: ../sources.md#roth82
 [rothpostlewaite77]: ../sources.md#rothpostlewaite77
 [roughgarden13cs364a]: ../sources.md#roughgarden13cs364a
@@ -1060,6 +1086,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [schummervohra07]: ../sources.md#schummervohra07
 [shapleyscarf74]: ../sources.md#shapleyscarf74
 [sipser13]: ../sources.md#sipser13
+[stoerwagner97]: ../sources.md#stoerwagner97
 [vww18]: ../sources.md#vww18
 [thorup13]: ../sources.md#thorup13
 [wattenhofer16]: ../sources.md#wattenhofer16
