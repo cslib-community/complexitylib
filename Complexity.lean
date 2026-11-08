@@ -66,6 +66,8 @@ public import Complexity.Algorithms.Lean.MaxFlow.BipartiteMatching
 public import Complexity.Algorithms.Lean.MaxFlow.EdmondsKarp
 public import Complexity.Algorithms.Lean.MaxFlow.HopcroftKarp
 public import Complexity.Algorithms.Lean.MaxFlow.Hungarian
+public import Complexity.Algorithms.Lean.MaxFlow.Preflow
+public import Complexity.Algorithms.Lean.MaxFlow.PushRelabel
 public import Complexity.Algorithms.Lean.MaxFlow.WeightedMatching
 public import Complexity.Algorithms.Lean.MergeSort.Comparator
 public import Complexity.Algorithms.Lean.Query.Arith.FFT.Correctness
