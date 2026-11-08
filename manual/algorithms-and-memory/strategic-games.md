@@ -164,7 +164,9 @@ can be infinite, as it is for polynomials of unbounded degree. The main results:
 - `pigouBound_polynomialLatencies` (Proposition 5.1): `polynomialLatencies d` is the class of
   polynomials of degree at most `d` with nonnegative coefficients, and its bound is
   `(1 - d (d+1)^{-(d+1)/d})⁻¹`. `pigouBound_le_ofReal_inv_one_sub` reduces such computations to the
-  inequality `x (c(r) - c(x)) ≤ β r c(r)`.
+  inequality `x (c(r) - c(x)) ≤ β r c(r)`. `pow_mem_polynomialLatencies` and
+  `const_mem_polynomialLatencies` place `x ^ d` and the nonnegative constants in the class, so the
+  tightness theorems above apply to it.
 - `IsWardrop.cost_le_of_mem_polynomialLatencies` is the resulting price-of-anarchy bound.
   `exists_cost_eq_mul_of_mem_polynomialLatencies` attains it with Pigou's `x ^ d` network.
 - `IsWardrop.cost_le` and `exists_cost_eq_four_thirds_mul` are the affine case `d = 1`: a bound of
@@ -246,7 +248,7 @@ checks Pigou's ratio `4/3`, the Pigou bounds `1` and `4/3` for degrees `0` and `
 quadratic network whose equilibrium costs `8/5` times a feasible flow, more than the affine bound.
 It also checks that polynomials of unbounded degree have an infinite Pigou bound. It applies the
 tightness theorem and both directions of `pigouBound_le_ofReal_iff`: `4/3` bounds every game with
-affine latencies and `13/10` does not. [ComplexityTests/GameTheory/Strategic.lean](../../ComplexityTests/GameTheory/Strategic.lean)
+affine latencies and no `β < 4/3` does. [ComplexityTests/GameTheory/Strategic.lean](../../ComplexityTests/GameTheory/Strategic.lean)
 checks the following:
 
 - the Monderer–Shapley Prisoner's Dilemma with its exact potential;

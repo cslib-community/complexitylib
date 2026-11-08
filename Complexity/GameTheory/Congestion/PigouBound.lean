@@ -211,6 +211,19 @@ theorem pow_mem_polynomialLatencies (d : ℕ) : (fun x : ℝ => x ^ d) ∈ polyn
       simp [hi]
     · simp
 
+/-- Nonnegative constant functions are polynomial latencies of every degree. -/
+theorem const_mem_polynomialLatencies {d : ℕ} (a : ℝ) (ha : 0 ≤ a) :
+    (fun _ : ℝ => a) ∈ polynomialLatencies d := by
+  refine ⟨Pi.single 0 a, fun i => ?_, fun x => ?_⟩
+  · by_cases h : i = 0
+    · subst h; simpa using ha
+    · simp [h]
+  · rw [Finset.sum_eq_single 0]
+    · simp
+    · intro i _ hi
+      simp [hi]
+    · simp
+
 /-- Polynomial latencies with nonnegative coefficients are nonnegative on `[0, ∞)`. -/
 theorem nonneg_of_mem_polynomialLatencies {d : ℕ} {c : ℝ → ℝ} (hc : c ∈ polynomialLatencies d)
     {x : ℝ} (hx : 0 ≤ x) : 0 ≤ c x := by
@@ -577,11 +590,7 @@ theorem exists_cost_eq_mul_of_mem_polynomialLatencies (d : ℕ) :
     pigouNetwork_isWardrop _ zero_le_one, pigouNetwork_isFeasible _ ht0.le ht1, ?_, ?_⟩
   · fin_cases e
     · exact pow_mem_polynomialLatencies d
-    · refine ⟨Pi.single 0 1, fun i => ?_, fun x => ?_⟩
-      · by_cases h : i = 0
-        · subst h; simp
-        · simp [h]
-      · simp [pigouNetwork, Pi.single_apply]
+    · exact const_mem_polynomialLatencies _ (pow_nonneg zero_le_one d)
   · rw [hcost]; exact hpos
   · rw [hcost, inv_mul_cancel₀ hpos.ne', pigouNetwork_cost]
     simp
