@@ -8,7 +8,7 @@ import CslibFrontier.Computability.PropertyTesting.Distribution.IdentityReductio
 
 /-! Concrete instances of Goldreich's reduction from identity testing to uniformity testing. -/
 
-namespace ComplexityTests.DistributionTestingIdentity
+namespace CslibFrontierTests.DistributionTestingIdentity
 
 open Cslib.Probability.PMF Cslib.DistributionTesting
 
@@ -82,4 +82,4 @@ example : acceptProb (identityTester (PMF.pure (0 : Fin 4)) 5761 (1 / 2)) (unifo
   simp only [PMF.pure_apply, uniformOfFintype_apply, Fintype.card_fin]
   norm_num
 
-end ComplexityTests.DistributionTestingIdentity
+end CslibFrontierTests.DistributionTestingIdentity

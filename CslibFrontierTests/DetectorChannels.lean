@@ -10,7 +10,7 @@ import Mathlib.Tactic.NormNum.Prime
 # Tests for affine channels in the column detector
 -/
 
-namespace ComplexityTests.DetectorChannels
+namespace CslibFrontierTests.DetectorChannels
 
 open Finset Matrix Cslib.Probability
 
@@ -40,4 +40,4 @@ example (G : Matrix (ZMod 5) (ZMod 5) ℝ) (y : ZMod 5) :
   norm_num at this hcard
   linarith
 
-end ComplexityTests.DetectorChannels
+end CslibFrontierTests.DetectorChannels

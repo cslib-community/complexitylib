@@ -13,7 +13,7 @@ both plaintexts, and a growing-input client composes key generation, encryption,
 decryption through their native certificates. No security or bootstrappability is assumed.
 -/
 
-namespace ComplexityTests.GSWEvaluation
+namespace CslibFrontierTests.GSWEvaluation
 
 open Cslib Cslib.Probability Cslib.Crypto.Homomorphic.GSW
 open Turing.MultiTapeTM
@@ -140,4 +140,4 @@ example : IsPPTOn
   unfold completeClient
   ppt
 
-end ComplexityTests.GSWEvaluation
+end CslibFrontierTests.GSWEvaluation

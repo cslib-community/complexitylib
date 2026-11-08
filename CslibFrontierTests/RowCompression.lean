@@ -16,7 +16,7 @@ These examples exercise a preserved large entry, actual partial clipping between
 thresholds, negative inputs, dummy padding with a positive default, and the exception capacity.
 -/
 
-namespace ComplexityTests.RowCompression
+namespace CslibFrontierTests.RowCompression
 
 open Finset Cslib.RowCompression
 
@@ -99,4 +99,4 @@ example (y : Fin 2) (ν : Fin 2) :
   norm_num at h ⊢
   exact h
 
-end ComplexityTests.RowCompression
+end CslibFrontierTests.RowCompression

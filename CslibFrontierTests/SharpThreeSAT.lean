@@ -11,7 +11,7 @@ import CslibFrontier.Logics.Propositional.CNF.ThreeCNF.Exact.PolyTime
 # Tests for the #P-completeness of #3SAT and #3SAT-3
 -/
 
-namespace ComplexityTests.SharpThreeSAT
+namespace CslibFrontierTests.SharpThreeSAT
 
 open Cslib.Logic.PL Cslib.Complexity Turing.MultiTapeTM
 
@@ -47,4 +47,4 @@ example {β : Type} {encB : β ↪ List Bool} {g : β → ℕ}
 example : SharpThreeSAT ∈ SharpP encCNF ∧ SharpThreeSATThree ∈ SharpP encCNF :=
   ⟨SharpThreeSAT_sharpPComplete.1, SharpThreeSATThree_sharpPComplete.1⟩
 
-end ComplexityTests.SharpThreeSAT
+end CslibFrontierTests.SharpThreeSAT

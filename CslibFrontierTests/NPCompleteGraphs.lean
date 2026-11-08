@@ -20,7 +20,7 @@ Concrete, boundary, and `fun_prop` checks for `VertexCover`, `KColoring`,
 reductions and `TSP` are tested in `CslibFrontierTests/NPCompleteGraphs/`.
 -/
 
-namespace ComplexityTests.NPCompleteGraphs
+namespace CslibFrontierTests.NPCompleteGraphs
 
 open Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -319,4 +319,4 @@ example : SAT.toDirHamPath [[(0, false), (1, false), (0, true), (2, false)], [(1
     DirHamPath :=
   (SAT.toDirHamPath_mem_iff _).2 ⟨fun _ => true, rfl⟩
 
-end ComplexityTests.NPCompleteGraphs
+end CslibFrontierTests.NPCompleteGraphs

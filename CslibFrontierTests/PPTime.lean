@@ -13,7 +13,7 @@ import CslibFrontier.Tactic.PPT
 `BPTIME`, and a halting fair-coin machine that outputs `[true]` with probability exactly `1 / 2`,
 which decides `∅` by strict majority but not `Set.univ`. -/
 
-namespace ComplexityTests.PPTime
+namespace CslibFrontierTests.PPTime
 
 open Cslib Cslib.Complexity Cslib.Probability Turing Turing.MultiTapeTM
 open scoped ENNReal
@@ -69,4 +69,4 @@ example {k : ℕ} {State : Type} (machine : MultiTapePTM k Bool State) {t : List
       (fun x : List Bool × List Bool => decide (machine.runClosedCoins x.2 x.1 = [true])) w (t w) :=
   ((MultiTapePTM.decidesByMajorityInTime_iff.mp h) w).2.mp (Set.mem_univ w)
 
-end ComplexityTests.PPTime
+end CslibFrontierTests.PPTime

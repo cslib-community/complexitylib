@@ -10,7 +10,7 @@ import CslibFrontier.Tactic.PPT
 
 /-! Functional stretch, captured parameters, strict reductions and zero-count boundaries. -/
 
-namespace ComplexityTests.PRGStretch
+namespace CslibFrontierTests.PRGStretch
 
 open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 
@@ -341,4 +341,4 @@ example {generator : List Bool → List Bool}
       (fun _ => BitString.uniformList 0) :=
   PRGStretch.indistinguishable_take_forwardIterate hgenerator (ComputableInPolyTime.const 0)
 
-end ComplexityTests.PRGStretch
+end CslibFrontierTests.PRGStretch

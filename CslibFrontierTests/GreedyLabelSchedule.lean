@@ -12,7 +12,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 # Concrete tests for runtime balanced label schedules
 -/
 
-namespace ComplexityTests.GreedyLabelSchedule
+namespace CslibFrontierTests.GreedyLabelSchedule
 
 open Finset Cslib.BalancedSchedules Cslib.GenericRAM Turing.MultiTapeTM
 
@@ -114,4 +114,4 @@ example : ∃ poly : ℕ → ℕ, Cslib.PolynomiallyBounded poly ∧
   refine ⟨fun n => p1 n + p2 n, by fun_prop, ?_, (hb1 testParams).2.trans (Nat.le_add_right _ _),
     ?_, (hb2 testParams).2.trans (Nat.le_add_left _ _)⟩ <;> dsimp only <;> omega
 
-end ComplexityTests.GreedyLabelSchedule
+end CslibFrontierTests.GreedyLabelSchedule

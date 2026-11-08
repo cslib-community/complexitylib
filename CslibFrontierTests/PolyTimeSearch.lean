@@ -9,7 +9,7 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! Bounded search with captured predicates, inclusive bounds and exact default-zero behavior. -/
 
-namespace ComplexityTests.PolyTimeSearch
+namespace CslibFrontierTests.PolyTimeSearch
 
 open Turing.MultiTapeTM
 
@@ -60,4 +60,4 @@ example :
     Nat.findGreatest (fun i => ([false, true, false, true][i]?).getD false = true) 6 = 3 ∧
     Nat.findGreatest (fun i => i * i ≤ 24) 25 = 4 := by decide
 
-end ComplexityTests.PolyTimeSearch
+end CslibFrontierTests.PolyTimeSearch

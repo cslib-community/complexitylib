@@ -30,7 +30,7 @@ proofs, and `#check_abstract` audits the remaining dependency boundary.
 * [S. Jukna, *Boolean Function Complexity*][Jukna2012]
 -/
 
-namespace ComplexityTests.Abstracts.ConstantDepthAbstract
+namespace CslibFrontierTests.Abstracts.ConstantDepthAbstract
 
 /-- Parity is true when an odd number of bits are true. -/
 def parity (n : ℕ) (x : Fin n → Bool) : Bool :=
@@ -76,12 +76,12 @@ theorem razborov_smolensky {p n ℓ : ℕ} (prime : p.Prime) (odd : p ≠ 2)
     2 * 2 ^ ℓ ≤ 5 * C.size :=
   ConstantDepthBridge.razborov_smolensky prime odd C correct hℓ budget
 
-/-- info: abstract audit passed for `ComplexityTests.Abstracts.ConstantDepthAbstract`: 8 root
+/-- info: abstract audit passed for `CslibFrontierTests.Abstracts.ConstantDepthAbstract`: 8 root
 declarations -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.ConstantDepthAbstract allowing [
+#check_abstract CslibFrontierTests.Abstracts.ConstantDepthAbstract allowing [
   CslibFrontier.Computability.Circuit.Boolean.Unbounded,
   CslibFrontier.Computability.Circuit.Depth
 ]
 
-end ComplexityTests.Abstracts.ConstantDepthAbstract
+end CslibFrontierTests.Abstracts.ConstantDepthAbstract

@@ -18,7 +18,7 @@ with digit zero, which denotes negative movement rather than a stationary head.
 
 public section
 
-namespace ComplexityTests.ScheduleRead
+namespace CslibFrontierTests.ScheduleRead
 
 open Turing.MultiTapePTM.BlockComputation.ScheduleRead
 
@@ -49,4 +49,4 @@ example : providerPort 0 0 (20, 3, 2) = some 2 := by decide
 example : providerMap 1 (380, 3) 0 2 = some 2 := by decide
 example : providerMap 1 (0, 3) 0 0 = none := by decide
 
-end ComplexityTests.ScheduleRead
+end CslibFrontierTests.ScheduleRead

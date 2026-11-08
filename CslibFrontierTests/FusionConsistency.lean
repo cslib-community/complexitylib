@@ -14,7 +14,7 @@ A three-bit conjunction admits an exactly consistent semifilter, while the nonem
 semifilter gives a one-sided witness for the same complete literal family that is not exact.
 -/
 
-namespace ComplexityTests.FusionConsistency
+namespace CslibFrontierTests.FusionConsistency
 
 open Cslib.Circuits.Fusion
 
@@ -87,4 +87,4 @@ example : ¬ nonemptySets.IsConsistentWith Subtype.val point.val := by
 -- Even a nonempty exact witness class need not contain every one-sided witness.
 example : Nonempty (SemifilterWitness target inputs) := ⟨exactWitness⟩
 
-end ComplexityTests.FusionConsistency
+end CslibFrontierTests.FusionConsistency

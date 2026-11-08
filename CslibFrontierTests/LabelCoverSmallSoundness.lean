@@ -11,7 +11,7 @@ import CslibFrontier.Computability.PCP.Approximation.LabelCover.SmallSoundness
 Loop removal on a concrete loop, the parallel edges of the incidence reduction of a loop and their
 removal by loop removal, the edges of a repetition, and the hardness statements. -/
 
-namespace ComplexityTests.LabelCoverSmallSoundness
+namespace CslibFrontierTests.LabelCoverSmallSoundness
 
 open Cslib.PCP Cslib.PCP.Encoded Cslib.Complexity Turing.MultiTapeTM
 
@@ -75,4 +75,4 @@ example : ∃ k : ℕ, 0 < k ∧ PromiseProblem.NPHard
       (Fin k → Bool × (Fin 6 → Bool)) 1 (1 / 100)) :=
   exists_GapLabelCover_npHard (by norm_num) (by norm_num)
 
-end ComplexityTests.LabelCoverSmallSoundness
+end CslibFrontierTests.LabelCoverSmallSoundness

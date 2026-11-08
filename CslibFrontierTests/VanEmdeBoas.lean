@@ -21,7 +21,7 @@ open Cslib.DataStructure.OrderedSet Cslib.DataStructure
 
 @[expose] public section
 
-namespace ComplexityTests.VanEmdeBoas
+namespace CslibFrontierTests.VanEmdeBoas
 
 /-- Insert a list of keys into the empty vEB tree of depth `d`. -/
 def ofList (d : ℕ) (xs : List ℕ) : Tree d :=
@@ -233,4 +233,4 @@ info: 'Cslib.DataStructure.VanEmdeBoas.Tree.valid_empty' depends on axioms: [pro
 #guard_msgs in
 #print axioms Tree.valid_empty
 
-end ComplexityTests.VanEmdeBoas
+end CslibFrontierTests.VanEmdeBoas

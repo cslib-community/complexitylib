@@ -11,7 +11,7 @@ guess-and-verify deciders for verifier `NP`, and verifiers checking encoded acce
 computations, including empty instances and padded certificates. Only the nondeterministic
 verifier API is imported. -/
 
-namespace ComplexityTests.NondeterministicVerifiers
+namespace CslibFrontierTests.NondeterministicVerifiers
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
@@ -410,4 +410,4 @@ example (w : List Bool) : twice.toMultiTapeNTM.checkChoices encBits ([], w) = fa
   rw [show p.time = 2 from hp, runFrom_twice] at hlast
   simp [hlast] at hout
 
-end ComplexityTests.NondeterministicVerifiers
+end CslibFrontierTests.NondeterministicVerifiers

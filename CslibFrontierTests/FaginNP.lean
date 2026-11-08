@@ -18,11 +18,11 @@ Colorability, through `Cslib.Logic.ESO.Definable.colorable`, gives the headline 
 `NP` a nonvacuous client.
 -/
 
-namespace ComplexityTests.FaginNP
+namespace CslibFrontierTests.FaginNP
 
 open FirstOrder Language Structure CategoryTheory Cslib.Logic Cslib.Logic.ESO Cslib.Complexity
 open Turing.MultiTapeTM
-open ComplexityTests.FaginEncoding
+open CslibFrontierTests.FaginEncoding
 
 /-- The sentence `∃ U, ∀ x, U x` with one unary relation variable. -/
 def allMarked : ESO.Sentence Language.graph :=
@@ -96,4 +96,4 @@ example {V : Type} (G : SimpleGraph V) (hG : G.Colorable 3) {m : ℕ} (e : V ≃
   obtain ⟨C⟩ := hG
   exact ⟨inferInstance, C, fun x y h => C.valid h⟩
 
-end ComplexityTests.FaginNP
+end CslibFrontierTests.FaginNP

@@ -37,7 +37,7 @@ The main hypotheses of `Cslib.Complexity.Fortune.SAT_mem_P`, `Cslib.Complexity.M
 instantiated unless `P = NP`; the tests check the procedures and the other hypotheses instead.
 -/
 
-namespace ComplexityTests.SparseHardSets
+namespace CslibFrontierTests.SparseHardSets
 
 open Cslib Cslib.Complexity Cslib.Complexity.Fortune Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -395,4 +395,4 @@ example (φ : CNF ℕ) :
   · split <;> simp_all
   · split at hw <;> simp_all
 
-end ComplexityTests.SparseHardSets
+end CslibFrontierTests.SparseHardSets

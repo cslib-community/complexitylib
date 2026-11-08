@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Circuit.Boolean.Synthesis
 /-! Truth tables of small De Morgan circuits under the pointwise lift, on two and three inputs,
 with zero inputs and with an empty set of points. -/
 
-namespace ComplexityTests.CircuitHamming.Pointwise
+namespace CslibFrontierTests.CircuitHamming.Pointwise
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean
 
@@ -77,4 +77,4 @@ example (a : Fin 2 → Empty → Bool) :
     (Circuit.computes_iff_eval_pointwise_proj _ _ _).2 rfl,
     funext fun e => e.elim⟩
 
-end ComplexityTests.CircuitHamming.Pointwise
+end CslibFrontierTests.CircuitHamming.Pointwise

@@ -14,7 +14,7 @@ words, checked by the kernel and compiled, agreeing with `ExecutableGenerator.at
 `encodeTuple` on both singular and nonsingular inputs. Axiom guards cover the headline theorems.
 -/
 
-namespace ComplexityTests.RationalHitting.Point
+namespace CslibFrontierTests.RationalHitting.Point
 
 open Cslib.Circuits Cslib.Circuits.Rational
 open Turing MultiTapeTM MultiTapeTM.ComputableTidilyInPolyTime
@@ -106,4 +106,4 @@ info: 'Cslib.Circuits.Rational.cramerRows_eq' depends on axioms: [propext, Quot.
 #guard_msgs (whitespace := lax) in
 #print axioms cramerRows_eq
 
-end ComplexityTests.RationalHitting.Point
+end CslibFrontierTests.RationalHitting.Point

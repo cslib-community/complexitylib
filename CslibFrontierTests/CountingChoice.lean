@@ -10,7 +10,7 @@ import Mathlib.Tactic.FinCases
 /-! The parsimonious bridge retains duplicate occurrences and forces every padding bit.
 Width two includes unused local codes and a final partial block. -/
 
-namespace ComplexityTests.CountingChoice
+namespace CslibFrontierTests.CountingChoice
 
 open _root_.Turing _root_.Turing.MultiTapeTM
 
@@ -49,4 +49,4 @@ example (input : List Bool) :
     (by intro cfg; cases hs : cfg.state <;> simp [MultiTapeCTM.actions, hs, double])
     (halts input) (by decide), count]
 
-end ComplexityTests.CountingChoice
+end CslibFrontierTests.CountingChoice

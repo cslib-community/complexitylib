@@ -80,7 +80,7 @@ allowlisted.
   problems*][Schoening1999]
 -/
 
-namespace ComplexityAbstracts.SchoeningAbstract
+namespace CslibFrontierAbstracts.SchoeningAbstract
 
 /-! ## Words, operations, and instructions
 
@@ -371,6 +371,6 @@ info: abstract audit passed for `CslibFrontierAbstracts.SchoeningAbstract`: 291 
 declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.SchoeningAbstract
+#check_abstract CslibFrontierAbstracts.SchoeningAbstract
 
-end ComplexityAbstracts.SchoeningAbstract
+end CslibFrontierAbstracts.SchoeningAbstract

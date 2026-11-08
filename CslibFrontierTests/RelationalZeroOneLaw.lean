@@ -18,7 +18,7 @@ nonvacuity of the extension theory through a sentence it proves; the distinction
 has probability `2⁻ⁿ`; and a vocabulary with a nullary relation symbol, for which the law fails.
 -/
 
-namespace ComplexityTests.RelationalZeroOneLaw
+namespace CslibFrontierTests.RelationalZeroOneLaw
 
 open FirstOrder Language Structure Cslib.Logic.FO Cslib.Circuits.Boolean.ModelChecking Filter
 
@@ -164,4 +164,4 @@ example : ¬∀ φ : nullaryLang.Sentence,
 example : (Relational.extensionTheory nullaryLang).IsSatisfiable :=
   Relational.isSatisfiable_extensionTheory
 
-end ComplexityTests.RelationalZeroOneLaw
+end CslibFrontierTests.RelationalZeroOneLaw

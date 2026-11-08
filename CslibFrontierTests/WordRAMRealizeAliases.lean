@@ -19,7 +19,7 @@ input and output abbreviations. Method selection must normalize those codomains 
 composing the opaque call with a real memory query and result projection.
 -/
 
-namespace ComplexityTests.WordRAMRealizeAliases
+namespace CslibFrontierTests.WordRAMRealizeAliases
 
 open Cslib.DataStructure Cslib.WordRAM Cslib.WordRAM.Realization
 
@@ -62,4 +62,4 @@ example (method : Empty → Memory.Prog Empty)
       (fun _ _ _ => True) (fun _ _ => 0) := by
   realize
 
-end ComplexityTests.WordRAMRealizeAliases
+end CslibFrontierTests.WordRAMRealizeAliases

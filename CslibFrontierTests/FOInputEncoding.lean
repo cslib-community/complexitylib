@@ -9,7 +9,7 @@ import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.Power
 
 /-! # Native input-layout formulas at markers, payloads, terminators, and padding -/
 
-namespace ComplexityTests.FOInputEncoding
+namespace CslibFrontierTests.FOInputEncoding
 
 open FirstOrder Language Cslib.Logic Turing.MultiTapeTM
 
@@ -99,4 +99,4 @@ example :
     change FO.Ordered.lexRank (![1, 0] : Fin 2 → Fin 2) < 2 at hh
     exact (by decide : ¬ FO.Ordered.lexRank (![1, 0] : Fin 2 → Fin 2) < 2) hh
 
-end ComplexityTests.FOInputEncoding
+end CslibFrontierTests.FOInputEncoding

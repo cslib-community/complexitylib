@@ -11,7 +11,7 @@ import CslibFrontier.Tactic.PPT
 
 /-! Extraction clients: computed dimensions, encodings, missing callbacks and malformed inputs. -/
 
-namespace ComplexityTests.PseudoentropyExtraction
+namespace CslibFrontierTests.PseudoentropyExtraction
 
 open Cslib Cslib.Probability Cslib.Crypto.Pseudoentropy Cslib.BitString Turing.MultiTapeTM
 
@@ -93,4 +93,4 @@ example {output : List Bool}
   apply List.eq_nil_of_length_eq_zero
   exact length_extractWordObservations 2 0 [[], [true]] (by simp) h
 
-end ComplexityTests.PseudoentropyExtraction
+end CslibFrontierTests.PseudoentropyExtraction

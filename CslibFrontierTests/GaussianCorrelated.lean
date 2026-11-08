@@ -12,7 +12,7 @@ The halfspace stability `1 - (2 / π) arccos ρ` at `ρ = 1`, `0`, `1 / 2` and `
 at `ρ = 0`, a concrete instance of Fact 11.7 in the plane, the degenerate pairs at `ρ = ±1`, the
 stability of a constant, and a nonvacuity check of the uniqueness theorem for Definition 11.6. -/
 
-namespace ComplexityTests.GaussianCorrelated
+namespace CslibFrontierTests.GaussianCorrelated
 
 open MeasureTheory ProbabilityTheory Real Set
 open scoped RealInnerProductSpace
@@ -118,4 +118,4 @@ example {ρ : ℝ} (hρ : |ρ| ≤ 1) : correlatedGaussian ρ = correlatedGaussi
       exact_mod_cast this)
     (integral_correlatedGaussian_fst_mul_snd hρ)
 
-end ComplexityTests.GaussianCorrelated
+end CslibFrontierTests.GaussianCorrelated

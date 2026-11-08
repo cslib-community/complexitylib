@@ -26,10 +26,10 @@ exercise a case in which non-uniformity reaches the circuit, which needs a circu
 bits than the (astronomical) independence.
 -/
 
-namespace ComplexityTests.BravermanResilience
+namespace CslibFrontierTests.BravermanResilience
 
 open Finset Function Cslib Cslib.BitString Cslib.Circuits Cslib.Circuits.Boolean
-  Cslib.Circuits.Boolean.Braverman Cslib.Probability ComplexityTests.BravermanFooling
+  Cslib.Circuits.Boolean.Braverman Cslib.Probability CslibFrontierTests.BravermanFooling
 open scoped BigOperators
 
 /-! ### The definitions, on both sides -/
@@ -283,4 +283,4 @@ example (hK : 192 ^ 122 ≤ K) :
       (fun x => (or₂ (2 * K)).eval Unbounded.interpretation x 0) ≤ 1 / 2 + 1 / 2 ^ 3 :=
   isKWiseResilient_or₂ hK {0} (card_singleton 0) _ (isKWiseIndependent_parityPair K)
 
-end ComplexityTests.BravermanResilience
+end CslibFrontierTests.BravermanResilience

@@ -10,7 +10,7 @@ import Mathlib.Analysis.Complex.ExponentialBounds
 
 /-! Tests for short `ε`-biased lists and Cayley graphs of the cube. -/
 
-namespace ComplexityTests.SmallBiasCayley
+namespace CslibFrontierTests.SmallBiasCayley
 
 open Finset Cslib Cslib.BitString Cslib.RotationMap Cslib.Probability.PMF
 open scoped BigOperators
@@ -62,4 +62,4 @@ example : (#((cubeCayley ![![false], ![true]]).interedges {![false]} {![true]}) 
   have h := card_interedges_cubeCayley_le _ le_rfl isSmallBias_zero_pair {![false]} {![true]}
   simpa using h
 
-end ComplexityTests.SmallBiasCayley
+end CslibFrontierTests.SmallBiasCayley

@@ -20,7 +20,7 @@ Concrete `decide` and end-to-end semantic/resource tests for `sparseCNFDeclaredC
 
 @[expose] public section
 
-namespace ComplexityTests.SparseCNFLeafCounter
+namespace CslibFrontierTests.SparseCNFLeafCounter
 
 open Cslib.BitString Cslib.Complexity Cslib.Complexity.InitialTestsSearch
 open Cslib.Complexity.SparseCNFLeafCounter Cslib.GenericRAM
@@ -113,4 +113,4 @@ example :
    polyBounded_sparseCNFLeafCertificate_space 3 16 (by fun_prop) (by fun_prop)
      countSystemExhaustiveCertificate polyBounded_countSystemExhaustive_space⟩
 
-end ComplexityTests.SparseCNFLeafCounter
+end CslibFrontierTests.SparseCNFLeafCounter

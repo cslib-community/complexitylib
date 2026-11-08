@@ -63,7 +63,7 @@ depend only on this file, the displayed shared foundations, and upstream mathema
 * [V. Kabanets, J.-Y. Cai, *Circuit minimization problem*, STOC 2000][KabanetsCai2000]
 -/
 
-namespace ComplexityAbstracts.MagnificationAbstract
+namespace CslibFrontierAbstracts.MagnificationAbstract
 
 /-! ## De Morgan circuits and the Minimum Circuit Size Problem -/
 
@@ -119,9 +119,9 @@ each input length `m`, without any machine that constructs the circuit family.
 multi-tape Turing machine. -/
 def P : Set (Set (List Bool)) :=
   {A | ∃ f : List Bool → Bool,
-    ComplexityTests.Abstracts.Computation.PolyTime f
-      ComplexityTests.Abstracts.Encoding.encBits
-      ComplexityTests.Abstracts.Encoding.encBool ∧
+    CslibFrontierTests.Abstracts.Computation.PolyTime f
+      CslibFrontierTests.Abstracts.Encoding.encBits
+      CslibFrontierTests.Abstracts.Encoding.encBool ∧
     ∀ w, w ∈ A ↔ f w = true}
 
 /-- A function `V : List Bool × List Bool → Bool` verifies a bit-string language `A` with
@@ -135,8 +135,8 @@ def IsVerifier (p : Polynomial ℕ) (V : List Bool × List Bool → Bool)
 polynomial time by a deterministic multi-tape Turing machine. -/
 def NP : Set (Set (List Bool)) :=
   {A | ∃ (p : Polynomial ℕ) (V : List Bool × List Bool → Bool),
-    ComplexityTests.Abstracts.Computation.PolyTimeVerifier
-      ComplexityTests.Abstracts.Encoding.encBits V ∧
+    CslibFrontierTests.Abstracts.Computation.PolyTimeVerifier
+      CslibFrontierTests.Abstracts.Encoding.encBits V ∧
     IsVerifier p V A}
 
 /-- The nonuniform class `P/poly` of bit-string languages decided at each input length `m` by a
@@ -196,8 +196,8 @@ info: abstract audit passed for `CslibFrontierAbstracts.MagnificationAbstract`:
 17 root declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.MagnificationAbstract allowing [
-  ComplexityAbstracts.Encoding, ComplexityAbstracts.Computation
+#check_abstract CslibFrontierAbstracts.MagnificationAbstract allowing [
+  CslibFrontierAbstracts.Encoding, CslibFrontierAbstracts.Computation
 ]
 
-end ComplexityAbstracts.MagnificationAbstract
+end CslibFrontierAbstracts.MagnificationAbstract

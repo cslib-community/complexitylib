@@ -18,9 +18,9 @@ charging one `rand` call, `rand(2 ^ w - 1)` uniformity, `rand` faulting at `2 ^ 
 duplicate-heavy, singleton, and out-of-range inputs.
 -/
 
-namespace ComplexityTests.Abstracts.RandomizedWordRAMTests
+namespace CslibFrontierTests.Abstracts.RandomizedWordRAMTests
 
-open ComplexityAbstracts.RandomizedWordRAMAbstract
+open CslibFrontierAbstracts.RandomizedWordRAMAbstract
 
 /-- Program executing `R[0] ← rand(R[0]); halt R[0]`. On `init []`, `R[0] = 0`, so this tests
 `rand(0)` in `2` instructions (`rand` then `halt`). -/
@@ -317,4 +317,4 @@ theorem quickselect_out_of_range_instances :
       obtain ⟨reg, mem, hcfg, -, -, hm⟩ := h2.2.2.1 cfg hc
       exact ⟨reg, mem, hcfg, hm⟩, h2.2.2.2⟩⟩
 
-end ComplexityTests.Abstracts.RandomizedWordRAMTests
+end CslibFrontierTests.Abstracts.RandomizedWordRAMTests

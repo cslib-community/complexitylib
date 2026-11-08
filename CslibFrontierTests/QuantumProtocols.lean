@@ -11,7 +11,7 @@ import CslibFrontier.Foundations.Quantum.NoCloning
 /-! Teleportation, superdense coding and no-cloning: concrete instances, and an operation that
 clones some states but not all. -/
 
-namespace ComplexityTests.QuantumProtocols
+namespace CslibFrontierTests.QuantumProtocols
 
 open Cslib.Quantum Matrix Gate
 open scoped Kronecker InnerProductSpace TensorProduct
@@ -164,4 +164,4 @@ example : star bell.ofLp ⬝ᵥ ((pauliZ ⊗ₖ pauliZ) *ᵥ bell.ofLp) = 1 := b
   rw [bell_eq_maxEntangled, star_maxEntangled_dotProduct_kronecker_mulVec_eq_trace]
   simp [Matrix.trace, pauliZ]
 
-end ComplexityTests.QuantumProtocols
+end CslibFrontierTests.QuantumProtocols

@@ -13,7 +13,7 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! Semantic regressions and client certificates for the selected assignment tester. -/
 
-namespace ComplexityTests.PCPSelectedAssignmentTester
+namespace CslibFrontierTests.PCPSelectedAssignmentTester
 
 open Cslib.PCP Cslib.PCP.HadamardTester Turing.MultiTapeTM
 
@@ -97,4 +97,4 @@ example : 1 / 840 ≤ rejectingGraph.composeSelected.unsatVal := by
 example : Fintype.card (Bool × (Fin 6 → Bool)) = 128 :=
   ConstraintGraph.card_alphabet_composeSelected
 
-end ComplexityTests.PCPSelectedAssignmentTester
+end CslibFrontierTests.PCPSelectedAssignmentTester

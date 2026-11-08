@@ -14,7 +14,7 @@ import CslibFrontier.Tactic.OptionMatch
 
 public section
 
-namespace ComplexityTests.OptionMatch
+namespace CslibFrontierTests.OptionMatch
 
 open Turing.MultiTapeTM
 
@@ -85,4 +85,4 @@ example {α : Type} (enc : α ↪ List Bool) :
       simp only [Option.elim_none, Option.elim_some, length_encPair, encOption_some,
         List.length_cons] <;> omega
 
-end ComplexityTests.OptionMatch
+end CslibFrontierTests.OptionMatch

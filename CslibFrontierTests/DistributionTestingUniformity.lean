@@ -10,7 +10,7 @@ import CslibFrontier.Computability.PropertyTesting.Distribution.UniformityLowerB
 /-! Concrete instances of the collision moments, the collision tester and Paninski's lower bound
 for uniformity testing. -/
 
-namespace ComplexityTests.DistributionTestingUniformity
+namespace CslibFrontierTests.DistributionTestingUniformity
 
 open Cslib.Probability.PMF Cslib.DistributionTesting
 
@@ -85,4 +85,4 @@ example (k : ℕ) (T : (Fin k → Fin 4) → PMF Bool) : ¬ IsTester T {uniformO
   have h := card_le_of_isTester_uniform ⟨2, by simp⟩ hT (by norm_num)
   norm_num at h
 
-end ComplexityTests.DistributionTestingUniformity
+end CslibFrontierTests.DistributionTestingUniformity

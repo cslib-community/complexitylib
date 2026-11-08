@@ -39,7 +39,7 @@ over the same cells twice is excluded by the product's precondition.
 
 @[expose] public section
 
-namespace ComplexityTests.DataStructureMemoryAlloc
+namespace CslibFrontierTests.DataStructureMemoryAlloc
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.Memory
 
@@ -589,4 +589,4 @@ example (s : State) : ¬((inputStack 0 (by decide) [7, 5]).prod
   have hd : Disjoint (layout 0).footprint (layout 0).footprint := Allocator.ProdPre.disjoint hs
   exact absurd hd (by decide)
 
-end ComplexityTests.DataStructureMemoryAlloc
+end CslibFrontierTests.DataStructureMemoryAlloc

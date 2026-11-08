@@ -14,7 +14,7 @@ support. The nonzero-noise fixture connects word algorithms to ordinary typed de
 These are construction and runtime tests, with no security or bootstrappability assumption.
 -/
 
-namespace ComplexityTests.GSWNative
+namespace CslibFrontierTests.GSWNative
 
 open Cslib Cslib.Probability Cslib.Crypto.Homomorphic.GSW
 open Turing.MultiTapeTM
@@ -164,4 +164,4 @@ example : IsPPTOn (encPair encUnary encBool) (encPair (encPair encBits encBits) 
       return (keys, ciphertext)) := by
   ppt
 
-end ComplexityTests.GSWNative
+end CslibFrontierTests.GSWNative

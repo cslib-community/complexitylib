@@ -20,7 +20,7 @@ weights `3, 1, 4, 2`, importing only the probability-free contraction module:
   one that separates them need not.
 -/
 
-namespace ComplexityTests.WeightedCutContraction
+namespace CslibFrontierTests.WeightedCutContraction
 
 open Cslib.WeightedCut
 
@@ -96,4 +96,4 @@ example : cutWeight G4 {0} = 5 ∧ cutWeight (contractMatrix G4 0 1) (contractCu
 example : IsContractionOf G4 (contractPart id (0 : Fin 4) 1 (by decide)) (contractMatrix G4 0 1) :=
   isContractionOf_contract (isContractionOf_id isMultigraph_G4) (by decide)
 
-end ComplexityTests.WeightedCutContraction
+end CslibFrontierTests.WeightedCutContraction

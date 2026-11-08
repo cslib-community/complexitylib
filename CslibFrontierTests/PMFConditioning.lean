@@ -16,7 +16,7 @@ the first of two independent fair bits leaves the other one an independent fair 
 point masses injectively keeps them at distance one.
 -/
 
-namespace ComplexityTests.PMFConditioning
+namespace CslibFrontierTests.PMFConditioning
 
 open Cslib.Probability.PMF
 open scoped Cslib.Probability.PMF
@@ -60,4 +60,4 @@ example : ((pi fun _ : Fin 2 => uniformOfFintype Bool).map
   rw [pi_map_piEquivPiSubtypeProd, PMF.map_bind]
   simp only [hk, PMF.bind_const]
 
-end ComplexityTests.PMFConditioning
+end CslibFrontierTests.PMFConditioning

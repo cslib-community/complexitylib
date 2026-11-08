@@ -9,7 +9,7 @@ import CslibFrontier.Probability.Product
 
 /-! Conditioning tests cover null observations, unequal fibers and joint reconstruction. -/
 
-namespace ComplexityTests.ConditioningCollision
+namespace CslibFrontierTests.ConditioningCollision
 
 open Cslib Cslib.Probability Cslib.Probability.PMF Cslib.Crypto
 
@@ -77,4 +77,4 @@ example {f : List Bool → List Bool} (hf : OneWay f) :
       Real.toNNReal (collisionProbability ((BitString.uniformList n).map f))) :=
   hf.output_collision_negligible
 
-end ComplexityTests.ConditioningCollision
+end CslibFrontierTests.ConditioningCollision

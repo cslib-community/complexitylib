@@ -9,7 +9,7 @@ import CslibFrontier.Crypto.Computational.SIS.ModulusSwitch.Native
 
 /-! Actual encryption, all modulus parities, nonzero errors/carries, ties and decoding failures. -/
 
-namespace ComplexityTests.Crypto.ModulusSwitchCorrectness
+namespace CslibFrontierTests.Crypto.ModulusSwitchCorrectness
 
 open Cslib.Crypto
 open scoped Matrix
@@ -133,4 +133,4 @@ lands at the threshold and decodes false; distance three still decodes true. -/
 example : decodePolyMsg (encodePolyMsg 16 ![true] + ![-4]) = ![false] := by decide
 example : decodePolyMsg (encodePolyMsg 16 ![true] + ![-3]) = ![true] := by decide
 
-end ComplexityTests.Crypto.ModulusSwitchCorrectness
+end CslibFrontierTests.Crypto.ModulusSwitchCorrectness

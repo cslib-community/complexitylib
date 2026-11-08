@@ -15,7 +15,7 @@ than the disjoint bind's seven, and no randomized Backend or new execution model
 Native bounds here count the body; argument installation and halt are separate.
 -/
 
-namespace ComplexityTests.WordRAMRealizationRandomWitness
+namespace CslibFrontierTests.WordRAMRealizationRandomWitness
 
 open Cslib Cslib.DataStructure Cslib.WordRAM Cslib.WordRAM.Realization
 
@@ -216,4 +216,4 @@ example : ¬(Memory.spec 2).ValidHistory ⟨fun _ => 0, 2⟩
       Memory.write 2 0
       Memory.read 2)) := by decide
 
-end ComplexityTests.WordRAMRealizationRandomWitness
+end CslibFrontierTests.WordRAMRealizationRandomWitness

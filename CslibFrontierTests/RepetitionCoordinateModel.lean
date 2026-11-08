@@ -18,7 +18,7 @@ unchanged. An embedding of the questions in the model's conditioned law is exact
 strategy extraction.
 -/
 
-namespace ComplexityTests.RepetitionCoordinateModel
+namespace CslibFrontierTests.RepetitionCoordinateModel
 
 open Cslib.PCP Cslib.PCP.ParallelRepetition Cslib.Probability.CorrelatedSampling
 open Cslib.Probability.PMF (uniformOfFintype)
@@ -80,4 +80,4 @@ example [Fintype A] [Fintype B] [Nonempty A] [Nonempty B] (C : Finset (Fin n)) (
   rw [← map_condLaw_questions hC, PMF.map_comp]
   exact hε
 
-end ComplexityTests.RepetitionCoordinateModel
+end CslibFrontierTests.RepetitionCoordinateModel

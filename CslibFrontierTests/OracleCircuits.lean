@@ -13,7 +13,7 @@ Zero-arity queries inspect the empty word; sequential queries consume earlier an
 The clients also cover zero-gate inlining and an inhabited relativized circuit class.
 -/
 
-namespace ComplexityTests.OracleCircuits
+namespace CslibFrontierTests.OracleCircuits
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean
 
@@ -75,4 +75,4 @@ example : PPolyOracle (0 : Language Bool) = PPoly :=
 example : (⊤ : Language Bool) ∈ PPolyOracle (0 : Language Bool) :=
   PPoly.subset_PPolyOracle _ PPoly.top_mem
 
-end ComplexityTests.OracleCircuits
+end CslibFrontierTests.OracleCircuits

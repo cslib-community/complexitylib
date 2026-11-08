@@ -15,7 +15,7 @@ subsequent invocation or changing the successful tactic's output.
 
 open Lean Meta Elab Tactic Turing.MultiTapeTM
 
-namespace ComplexityTests.PolyTimeFailureHint
+namespace CslibFrontierTests.PolyTimeFailureHint
 
 /-- Check a real failed invocation while preserving the surrounding proof and its goals. -/
 private meta def checkFailure (type : Expr) (required forbidden : Array String) : TacticM Unit := do
@@ -88,4 +88,4 @@ example (callback : List Bool → Bool)
   fail_if_success (clear hcallback; polytime)
   polytime
 
-end ComplexityTests.PolyTimeFailureHint
+end CslibFrontierTests.PolyTimeFailureHint

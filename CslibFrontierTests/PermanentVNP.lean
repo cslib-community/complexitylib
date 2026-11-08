@@ -16,7 +16,7 @@ The two-column witness has signed values `0`, `-10`, `-21` and `60` on the four 
 matrix and characteristic two test the boundary cases of the ring-general Ryser identity.
 -/
 
-namespace ComplexityTests.PermanentVNP
+namespace CslibFrontierTests.PermanentVNP
 
 open Cslib Cslib.Circuits Cslib.Circuits.Arithmetic MvPolynomial
 
@@ -70,4 +70,4 @@ example : aeval (![1, 1, 1, 1] : Fin 4 → ZMod 2)
   norm_num [Matrix.permanent, genericMatrix, finProdFinEquiv]
   decide
 
-end ComplexityTests.PermanentVNP
+end CslibFrontierTests.PermanentVNP

@@ -25,7 +25,7 @@ Concrete instances of `CslibFrontier.Computability.Circuit.Boolean.SymAnd.Mobius
 
 @[expose] public section
 
-namespace ComplexityTests.Computability.Circuit.Boolean.SymAnd.Mobius
+namespace CslibFrontierTests.Computability.Circuit.Boolean.SymAnd.Mobius
 
 open Cslib Cslib.BitString Cslib.Circuits.Boolean Finset
 
@@ -80,4 +80,4 @@ example : (SymAnd.ofLowDegree 2 3 xor2 fun z => decide (z ≠ 0)).eval ![false, 
 example : (SymAnd.ofLowDegree 1 3 xor2 fun z => decide (z ≠ 0)).eval ![true, true] = true := by
   decide +kernel
 
-end ComplexityTests.Computability.Circuit.Boolean.SymAnd.Mobius
+end CslibFrontierTests.Computability.Circuit.Boolean.SymAnd.Mobius

@@ -22,9 +22,9 @@ trivial problems in `AP` and `APSPACE` under every encoding; the headline theore
 in `PSPACE` and `EXP`.
 -/
 
-namespace ComplexityTests.Abstracts.AlternationTests
+namespace CslibFrontierTests.Abstracts.AlternationTests
 
-open ComplexityAbstracts.AlternationAbstract
+open CslibFrontierAbstracts.AlternationAbstract
 
 /-- Write `b` to the output and halt, without moving. -/
 def haltWith (b : Bool) : Turing.Action 0 Bool Unit :=
@@ -168,4 +168,4 @@ example {α : Type} (enc : α ↪ List Bool) : (∅ : Set α) ∈ PSPACE enc :=
 example {α : Type} (enc : α ↪ List Bool) : (Set.univ : Set α) ∈ EXP enc :=
   apspace_eq_exp enc ▸ univ_mem_APSPACE enc
 
-end ComplexityTests.Abstracts.AlternationTests
+end CslibFrontierTests.Abstracts.AlternationTests

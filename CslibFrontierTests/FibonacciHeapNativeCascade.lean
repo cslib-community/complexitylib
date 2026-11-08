@@ -21,7 +21,7 @@ arbitrary manually modified record satisfies the full heap invariant.
 
 public section
 
-namespace ComplexityTests.FibonacciHeapNativeCascade
+namespace CslibFrontierTests.FibonacciHeapNativeCascade
 
 open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 open Cslib.WordRAM Cslib.WordRAM.Realization FibonacciHeap FibonacciHeap.Native
@@ -186,4 +186,4 @@ example : ∃ y, ExecWithin 6 (realizes_cascade.code frontier source scratch)
 
 end
 
-end ComplexityTests.FibonacciHeapNativeCascade
+end CslibFrontierTests.FibonacciHeapNativeCascade

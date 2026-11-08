@@ -16,7 +16,7 @@ Exact joint sampling laws, empty dimensions, zero widths and the native scalar s
 are checked separately. No security or complete matrix-algorithm efficiency claim is made.
 -/
 
-namespace ComplexityTests.GSWSampling
+namespace CslibFrontierTests.GSWSampling
 
 open Cslib Cslib.ProbComp Cslib.Probability Cslib.Crypto.Homomorphic.GSW
 open Turing.MultiTapeTM
@@ -156,4 +156,4 @@ example : IsPPTOn encUnary encSerializedKeyInputs
 example : IsPPTOn encUnary encSerializedCoins (fun size => sampleCoinsSerialized size size size) :=
   isPPTOn_sampleCoinsSerialized (by fun_prop) (by fun_prop) (by fun_prop)
 
-end ComplexityTests.GSWSampling
+end CslibFrontierTests.GSWSampling

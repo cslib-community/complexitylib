@@ -56,7 +56,7 @@ Constant functions will come from the composition machinery upstream; this file 
 against definitions that are accidentally unsatisfiable.
 -/
 
-namespace ComplexityTests.NonVacuity
+namespace CslibFrontierTests.NonVacuity
 
 open Turing Turing.MultiTapeTM Cslib.Complexity Cslib.Circuits.Boolean Finset Cslib
 
@@ -869,4 +869,4 @@ example {n ℓ : ℕ} (hℓ : 1 ≤ ℓ) (C : Circuit Unbounded.extSignature n 1
 
 end SmolenskyField
 
-end ComplexityTests.NonVacuity
+end CslibFrontierTests.NonVacuity

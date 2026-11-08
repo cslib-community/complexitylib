@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 acceptance probability, a superposition of proofs with the weighted average, and the containments
 `MA ⊆ QMA` and `BPP ⊆ BQP` on a concrete language. -/
 
-namespace ComplexityTests.QMAMA
+namespace CslibFrontierTests.QMAMA
 
 open Cslib Cslib.Quantum Cslib.Complexity Finset Turing.MultiTapeTM
 
@@ -131,4 +131,4 @@ example : {w : List Bool | w.headD false = true} ∈ QMA encBits :=
 example : {w : List Bool | w.headD false = true} ∈ BQP encBits :=
   BPP_subset_BQP (P_subset_BPP head_mem_P)
 
-end ComplexityTests.QMAMA
+end CslibFrontierTests.QMAMA

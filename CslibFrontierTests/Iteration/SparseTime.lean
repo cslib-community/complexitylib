@@ -17,7 +17,7 @@ A concrete interval chart checks satisfiability of the chart contract; coordinat
 actual identity circuits.
 -/
 
-namespace ComplexityTests.Iteration.SparseTime
+namespace CslibFrontierTests.Iteration.SparseTime
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Circuits.Boolean.Iteration
 open Cslib.FunctionalGraph
@@ -193,4 +193,4 @@ example : ∃ out : Circuit signature (2 + 2) (visitScheduleWidth 2),
   rw [he] at h
   simpa using h
 
-end ComplexityTests.Iteration.SparseTime
+end CslibFrontierTests.Iteration.SparseTime

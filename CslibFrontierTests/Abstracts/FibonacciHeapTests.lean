@@ -18,9 +18,9 @@ strictly above the current global minimum—and checks memory confinement outsid
 `[base, base + 11 * n_max + 1)`.
 -/
 
-namespace ComplexityTests.Abstracts.FibonacciHeapTests
+namespace CslibFrontierTests.Abstracts.FibonacciHeapTests
 
-open ComplexityAbstracts.FibonacciHeapAbstract
+open CslibFrontierAbstracts.FibonacciHeapAbstract
 
 /-- Concrete 7-operation adaptive client on capacity `n_max = 4` exercising all five `Op`
 constructors on a non-full heap (`size ≤ 2 < 4`):
@@ -176,4 +176,4 @@ example :
   exact ⟨r, p_init, p_op, K, t₀, t_init, h₁, ops, q_f, reg_f, mem_f, t_ops, extLog,
     hops, hr₀, hh₀, hruns, hm9, hm55, ht_init, ht_ops, hext⟩
 
-end ComplexityTests.Abstracts.FibonacciHeapTests
+end CslibFrontierTests.Abstracts.FibonacciHeapTests

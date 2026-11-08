@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.PrepareClo
 
 /-! Clock consumption, stateless coin hypotheses, and tactic-certified budget preparation. -/
 
-namespace ComplexityTests.MachineClock
+namespace CslibFrontierTests.MachineClock
 
 open Cslib Turing MultiTapeMachine
 
@@ -101,4 +101,4 @@ example : MultiTapeTM.ComputableInPolyTime (MultiTapeTM.PolynomialClock.budget 0
 example : MultiTapeTM.ComputableInPolyTime (MultiTapeTM.PolynomialClock.budget 5 0)
     MultiTapeTM.encBits MultiTapeTM.encBits := by fun_prop
 
-end ComplexityTests.MachineClock
+end CslibFrontierTests.MachineClock

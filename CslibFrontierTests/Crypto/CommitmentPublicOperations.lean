@@ -20,7 +20,7 @@ Schnorr group of order `11` modulo `23`; composition clients charge the public k
 
 public section
 
-namespace ComplexityTests.Crypto.CommitmentPublicOperations
+namespace CslibFrontierTests.Crypto.CommitmentPublicOperations
 
 open Cslib Cslib.Crypto Cslib.Crypto.PrimeOrderGroupFamily Turing.MultiTapeTM
 
@@ -73,4 +73,4 @@ example : ComputableInPolyTime
   exact schnorrGroups.pedersenPublicOperations.computableInPolyTime_verify
     hk hrest.fst' hco.fst' hco.snd'
 
-end ComplexityTests.Crypto.CommitmentPublicOperations
+end CslibFrontierTests.Crypto.CommitmentPublicOperations

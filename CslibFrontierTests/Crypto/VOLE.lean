@@ -17,7 +17,7 @@ commitment (`voleCommitWitness`, `voleAdjustReceiver`), IT-MAC unforgeability
 (`voleMulCheck`), and `voleInTheHeadSigma`.
 -/
 
-namespace ComplexityTests.Crypto.VOLE
+namespace CslibFrontierTests.Crypto.VOLE
 
 open Cslib.Crypto.Protocols Cslib.Crypto.Protocols.VOLE
 
@@ -152,4 +152,4 @@ example :
 
 end SigmaTest
 
-end ComplexityTests.Crypto.VOLE
+end CslibFrontierTests.Crypto.VOLE

@@ -21,7 +21,7 @@ work-head residues. Its native certificate uses the same concrete representation
 
 @[expose] public section
 
-namespace ComplexityTests.QueryReplayAccess
+namespace CslibFrontierTests.QueryReplayAccess
 
 open Turing MultiTapeTM MultiTapePTM.BlockComputation.QueryReplay
 
@@ -56,4 +56,4 @@ example : (rawResult { QueryReplay.state 0 with width := 4 }).toView 4 =
 example : (loadView (k := 0) (Q := Unit) 3 1 (fun _ => -100)
     ((some (), fun _ => 0, .empty), Fin.elim0)).inputPos = 0 := by decide
 
-end ComplexityTests.QueryReplayAccess
+end CslibFrontierTests.QueryReplayAccess

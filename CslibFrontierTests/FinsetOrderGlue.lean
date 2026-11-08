@@ -7,7 +7,7 @@ Authors: Erik Demaine
 import CslibFrontier.Foundations.Data.Finset.OrderGlue
 import Mathlib.Data.Fin.VecNotation
 
-namespace ComplexityTests.FinsetOrderGlue
+namespace CslibFrontierTests.FinsetOrderGlue
 
 open Finset
 
@@ -65,4 +65,4 @@ example : optionalValues = glue selected card_selected
     exact (not_not.mp ha).symm
   · decide +kernel
 
-end ComplexityTests.FinsetOrderGlue
+end CslibFrontierTests.FinsetOrderGlue

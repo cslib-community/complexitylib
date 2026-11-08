@@ -11,7 +11,7 @@ import CslibFrontierAbstracts.USTCONAbstract
 
 /-! # Input layout checks for the Andreev and undirected-connectivity abstracts -/
 
-namespace ComplexityTests.Abstracts.InputLayouts
+namespace CslibFrontierTests.Abstracts.InputLayouts
 
 open FormulaBoundsAbstract
 
@@ -50,4 +50,4 @@ example : USTCONAbstract.encode edgeWithIsolatedVertex =
 -- An endpoint rules out a zero-vertex instance.
 example (I : USTCONAbstract.Instance) : 0 < I.vertexCount := Fin.pos I.source
 
-end ComplexityTests.Abstracts.InputLayouts
+end CslibFrontierTests.Abstracts.InputLayouts

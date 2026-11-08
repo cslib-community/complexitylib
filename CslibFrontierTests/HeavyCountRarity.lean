@@ -17,7 +17,7 @@ masks, and nonzero signed fourth-moment errors. A noise counterexample records w
 error must be independent of the environment after fixing the source and endpoint.
 -/
 
-namespace ComplexityTests.HeavyCountRarity
+namespace CslibFrontierTests.HeavyCountRarity
 
 open Finset Cslib Cslib.Probability
 open scoped BigOperators
@@ -233,4 +233,4 @@ example :
   rw [hfactor] at h
   exact h
 
-end ComplexityTests.HeavyCountRarity
+end CslibFrontierTests.HeavyCountRarity

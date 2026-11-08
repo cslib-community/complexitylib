@@ -19,7 +19,7 @@ indicator of the all-`true` input on `n` bits, the biased Bernoulli variable of
 `B`-reasonable for `B < 2 ^ n`, and the bound `1 / λ` of Proposition 9.5 is attained.
 -/
 
-namespace ComplexityTests.FriedgutKalaiNaor
+namespace CslibFrontierTests.FriedgutKalaiNaor
 
 open Finset Cslib Cslib.BitString
 open scoped BigOperators
@@ -115,4 +115,4 @@ example (n : ℕ) :
       (𝔼 x : Fin n → Bool, (if x = fun _ => true then (1 : ℝ) else 0) ^ 2) ^ 2 := by
   rw [expect_pow_four_indicator_eq, ← mul_assoc, inv_mul_cancel₀ (by positivity), one_mul]
 
-end ComplexityTests.FriedgutKalaiNaor
+end CslibFrontierTests.FriedgutKalaiNaor

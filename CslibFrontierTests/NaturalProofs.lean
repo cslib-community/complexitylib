@@ -13,7 +13,7 @@ functions at every input length from `16` on, the GGM family on fixed-width labe
 generator with its circuits and security theorem, and the identity and constant families as
 witnesses that exponential security is consistent and has content. -/
 
-namespace ComplexityTests.NaturalProofs
+namespace CslibFrontierTests.NaturalProofs
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Circuits.Boolean.NaturalProof Cslib.Crypto
   Cslib.Crypto.PRG Cslib.MCSP Filter Finset
@@ -230,4 +230,4 @@ example {G : ∀ k, PRG.Generator (BitString k) (BitString (2 * k))} {d : ℕ}
       2 ^ n / (5 * n) < complexity interpretation (single f)} := fun hC =>
   not_isUseful_PPoly_of_isNatural_of_generator hsize hG hC isUseful_PPoly_setOf_lt_complexity
 
-end ComplexityTests.NaturalProofs
+end CslibFrontierTests.NaturalProofs

@@ -18,7 +18,7 @@ The initialized composition client is separate. No enormous encoder run is evalu
 
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMExactTriangleRecordWitness
+namespace CslibFrontierTests.WordRAMExactTriangleRecordWitness
 
 open Cslib.WordRAM Cslib.Matrix Cslib.Algorithms.ExactTriangle
 open Cslib.Algorithms.WordRAM.ExactTriangle
@@ -144,9 +144,9 @@ example : ∃ y : Data 400, ∃ t S : ℕ,
       y.regs RecordWitness.Reg.witnessB = v.val ∧ y.regs RecordWitness.Reg.witnessC = c.val :=
   initialized_zero side le_rfl
 
-end ComplexityTests.WordRAMExactTriangleRecordWitness
+end CslibFrontierTests.WordRAMExactTriangleRecordWitness
 
-namespace ComplexityTests.WordRAMExactTriangleRecordWitness
+namespace CslibFrontierTests.WordRAMExactTriangleRecordWitness
 
 open Cslib.WordRAM Cslib.Algorithms.WordRAM.ExactTriangle
 
@@ -165,4 +165,4 @@ private def observeRepeated : Option (List ℕ) :=
 
 #guard observeRepeated == some ([0, 2, 2, 0, 123, side - 2])
 
-end ComplexityTests.WordRAMExactTriangleRecordWitness
+end CslibFrontierTests.WordRAMExactTriangleRecordWitness

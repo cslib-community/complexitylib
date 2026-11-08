@@ -18,7 +18,7 @@ These are kernel-checked clients of the actual initialized program, not supplied
 restatements of signatures or enormous VM fixtures.
 -/
 
-namespace ComplexityTests.WordRAMSubquadraticThreeSum
+namespace CslibFrontierTests.WordRAMSubquadraticThreeSum
 
 open Cslib.WordRAM Cslib.Algorithms.ThreeSum
 open Cslib.Algorithms.WordRAM.ThreeSum.Decision
@@ -108,4 +108,4 @@ example : ∃ (y : Data 848) (steps : ℕ),
     omega
   exact ⟨y, steps, by simpa only [hans] using he, hr⟩
 
-end ComplexityTests.WordRAMSubquadraticThreeSum
+end CslibFrontierTests.WordRAMSubquadraticThreeSum

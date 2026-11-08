@@ -27,7 +27,7 @@ These kernel-checked examples (using no `native_decide`) exercise:
 
 public section
 
-namespace ComplexityTests.BinPackingApprox
+namespace CslibFrontierTests.BinPackingApprox
 
 open Cslib.Algorithms.Lean.BinPacking
 
@@ -111,4 +111,4 @@ example : (∀ l C, (∀ a ∈ l, a ≤ C) → IsPacking C l (exactPacking (l, C
 /-- First Fit violates the ratio hypothesis of `Cslib.Complexity.P_eq_NP_of_binPacking_approx`. -/
 example : ¬ (2 * (firstFit 6 [1, 1, 5, 5]).length < 3 * [[1, 5], [1, 5]].length) := by decide
 
-end ComplexityTests.BinPackingApprox
+end CslibFrontierTests.BinPackingApprox

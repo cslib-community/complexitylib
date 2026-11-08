@@ -21,7 +21,7 @@ Concrete instances of `CslibFrontier.Computability.Circuit.Boolean.SymAnd.Evalua
   which `truthTableM_spec` allows.
 -/
 
-namespace ComplexityTests.Computability.Circuit.Boolean.SymAnd.Evaluate
+namespace CslibFrontierTests.Computability.Circuit.Boolean.SymAnd.Evaluate
 
 open Cslib Cslib.BitString Cslib.Circuits.Boolean Cslib.Circuits.Boolean.SymAnd
   Cslib.Algorithms.Lean
@@ -96,4 +96,4 @@ example : (truthTableM xorGates fun j => pure (if j ≤ 3 then j == 1 else true)
       rfl)
     (fun _ _ => le_rfl)).1
 
-end ComplexityTests.Computability.Circuit.Boolean.SymAnd.Evaluate
+end CslibFrontierTests.Computability.Circuit.Boolean.SymAnd.Evaluate

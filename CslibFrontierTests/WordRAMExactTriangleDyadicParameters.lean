@@ -19,7 +19,7 @@ parameter geometry to the same final state, including the small/empty regime.
 
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMExactTriangleDyadicParameters
+namespace CslibFrontierTests.WordRAMExactTriangleDyadicParameters
 
 open Cslib.WordRAM Cslib.Algorithms.ExactTriangle
 open Cslib.Algorithms.WordRAM.ExactTriangle
@@ -124,4 +124,4 @@ example : ∃ y t, t + 1 ≤ 38340 ∧
   · rw [hg, hd]
     exact ParameterChoice.groups_sq_le_window_rpow _
 
-end ComplexityTests.WordRAMExactTriangleDyadicParameters
+end CslibFrontierTests.WordRAMExactTriangleDyadicParameters

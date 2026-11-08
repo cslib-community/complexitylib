@@ -12,7 +12,7 @@ import CslibFrontier.Algorithms.WordRAM.ThreeSum.Cell
 These execute the actual unsigned instructions, including index and address computations.
 -/
 
-namespace ComplexityTests.ThreeSumCell
+namespace CslibFrontierTests.ThreeSumCell
 
 open Cslib
 open WordRAM.Signed (encode result)
@@ -77,4 +77,4 @@ example : ∃ y, WordRAM.ExecWithin 8 step (args 0 2) y 128 ∧
   rw [hm]
   decide
 
-end ComplexityTests.ThreeSumCell
+end CslibFrontierTests.ThreeSumCell

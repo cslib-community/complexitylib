@@ -19,7 +19,7 @@ Here the containments use a concrete time-constructible bound, discharging `max 
 combine with `BPTIME ⊆ PPTIME`. The explicit-network tests keep the simultaneous time/space
 certificate and extract membership in `DSPACE` from the same machine. -/
 
-namespace ComplexityTests.CountingSimulationContainments
+namespace CslibFrontierTests.CountingSimulationContainments
 
 open Turing.MultiTapeTM Cslib.Complexity Cslib.Complexity.CountingSimulation
 
@@ -113,4 +113,4 @@ example (A : ContractionAlgorithm (encPair encNat encExplicitNetwork) (fun G => 
   · exact ComputableInTimeAndSpace.mono h (fun _ => le_rfl)
       (fun _ => by rw [Nat.one_mul, Nat.add_zero])
 
-end ComplexityTests.CountingSimulationContainments
+end CslibFrontierTests.CountingSimulationContainments

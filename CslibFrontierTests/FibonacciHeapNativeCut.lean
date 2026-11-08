@@ -22,7 +22,7 @@ or extraction, which still require the loop certificates and their reached-state
 
 public section
 
-namespace ComplexityTests.FibonacciHeapNativeCut
+namespace CslibFrontierTests.FibonacciHeapNativeCut
 
 open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 open Cslib.WordRAM Cslib.WordRAM.Realization FibonacciHeap FibonacciHeap.Native
@@ -182,4 +182,4 @@ example : ∃ y, ExecWithin 6 (realizes_cut.code frontier source scratch) loaded
 
 end
 
-end ComplexityTests.FibonacciHeapNativeCut
+end CslibFrontierTests.FibonacciHeapNativeCut

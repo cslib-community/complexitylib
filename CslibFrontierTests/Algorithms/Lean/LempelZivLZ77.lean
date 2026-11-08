@@ -30,7 +30,7 @@ This file is a `module`, so it sees only the public API.
 
 public section
 
-namespace ComplexityTests.Algorithms.Lean.LempelZivLZ77
+namespace CslibFrontierTests.Algorithms.Lean.LempelZivLZ77
 
 open Cslib.Algorithms.Lean.LempelZiv Cslib.Algorithms.Lean.LempelZiv.LZ77
 
@@ -135,4 +135,4 @@ example (x : List Bool) (hx : x.length = 256) :
     (by rw [Fintype.card_bool, hx]; exact hε)
   rwa [Fintype.card_bool, hx, Nat.cast_ofNat, Nat.cast_ofNat] at h
 
-end ComplexityTests.Algorithms.Lean.LempelZivLZ77
+end CslibFrontierTests.Algorithms.Lean.LempelZivLZ77

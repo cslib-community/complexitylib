@@ -20,7 +20,7 @@ together they pin the size at `2 ^ Θ(n ^ (1 / (d - 1)))`. The first-order state
 instantiated for a concrete language with a unary predicate and an order.
 -/
 
-namespace ComplexityTests.HastadSharp
+namespace CslibFrontierTests.HastadSharp
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean
 
@@ -146,4 +146,4 @@ example (φ : ordLang.Sentence) : ¬ ∀ (M : Type) [ordLang.Structure M] [Finit
         FirstOrder.Language.Structure.RelMap (L := ordLang) Rel.P ![m]})) :=
   ModelChecking.not_forall_realize_iff_even_card Rel.P φ 0
 
-end ComplexityTests.HastadSharp
+end CslibFrontierTests.HastadSharp

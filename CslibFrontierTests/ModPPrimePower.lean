@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 
 /-! Prime-power moduli, binomial #P counts and base-`p` digits. -/
 
-namespace ComplexityTests.ModPPrimePower
+namespace CslibFrontierTests.ModPPrimePower
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -82,4 +82,4 @@ example : (Set.univ : Set (List Bool)) ∈ ModP 9 encBits := by
 /-- The divisor inclusion at a composite modulus that is not a prime power. -/
 example : ModP 3 encBits ⊆ ModP 6 encBits := ModP_subset_ModP_of_dvd (by decide) (by decide)
 
-end ComplexityTests.ModPPrimePower
+end CslibFrontierTests.ModPPrimePower

@@ -16,7 +16,7 @@ circuit, including an empty batch and the balanced bounds. Promised batches use 
 set and a non-invariant singleton, checking both actual outputs and the smaller storage budget.
 -/
 
-namespace ComplexityTests.Iteration.Batch
+namespace CslibFrontierTests.Iteration.Batch
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Circuits.Boolean.Iteration
 
@@ -145,4 +145,4 @@ example (T : ℕ) : ∃ out : Circuit signature 6 6,
     batched_fixed_power_on_optimized flipTail leftHalf 3 T flipTail_invariant
       (by decide) (by decide)
 
-end ComplexityTests.Iteration.Batch
+end CslibFrontierTests.Iteration.Batch

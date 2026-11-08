@@ -14,7 +14,7 @@ self-loop and an acyclic graph, arcs to undeclared vertices, Karp's reduction fr
 and the headline results.
 -/
 
-namespace ComplexityTests.FeedbackVertexSet
+namespace CslibFrontierTests.FeedbackVertexSet
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -141,4 +141,4 @@ example : ((([0, 1], [(0, 1)]) : Graph), 1) ∈ VertexCover ↔
     VertexCover.toFeedbackVertexSet ((([0, 1], [(0, 1)]) : Graph), 1) ∈ FeedbackVertexSet :=
   (VertexCover.toFeedbackVertexSet_mem_iff _).symm
 
-end ComplexityTests.FeedbackVertexSet
+end CslibFrontierTests.FeedbackVertexSet

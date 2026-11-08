@@ -14,7 +14,7 @@ the independent sets weighted by `t ^ size`, its constraint network and admissib
 and the counters. Perfect matchings of the 4-cycle as a Holant instance with one variable per edge
 and an exactly-one constraint per vertex. -/
 
-namespace ComplexityTests.ContractionPartitionFunction
+namespace CslibFrontierTests.ContractionPartitionFunction
 
 open Cslib.Logic.PL Cslib.Circuits.Frontier Cslib.Circuits.Frontier.ClauseNetwork
   Cslib.Complexity Cslib.Complexity.ContractionPartitionFunction Cslib.Complexity.CountingSimulation
@@ -130,4 +130,4 @@ example : ∀ v, cycle₄.vars.count v ≤ 2 := by
     List.cons_append, List.nil_append, List.count_cons, List.count_nil, beq_iff_eq]
   split_ifs <;> omega
 
-end ComplexityTests.ContractionPartitionFunction
+end CslibFrontierTests.ContractionPartitionFunction

@@ -18,7 +18,7 @@ residue lists test both zero entries and larger residues; a full register table 
 
 public section
 
-namespace ComplexityTests.TreeEvalPackingParameters
+namespace CslibFrontierTests.TreeEvalPackingParameters
 
 open Cslib.TreeEval.Ary.Packed Turing.MultiTapeTM
 
@@ -73,4 +73,4 @@ theorem full_register_storage (S : Fin 3 → Fin 2 → ZMod (fieldModulus 2 5)) 
   obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hv
   exact ZMod.val_lt _
 
-end ComplexityTests.TreeEvalPackingParameters
+end CslibFrontierTests.TreeEvalPackingParameters

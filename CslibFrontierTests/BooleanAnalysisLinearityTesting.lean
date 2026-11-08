@@ -19,9 +19,9 @@ triples, and is not affine. A negated parity passes both affinity tests with pro
 the BLR test with probability zero, so the affinity tests accept functions the BLR test rejects.
 -/
 
-namespace ComplexityTests.BooleanAnalysisLinearityTesting
+namespace CslibFrontierTests.BooleanAnalysisLinearityTesting
 
-open Cslib Cslib.BitString Finset ComplexityTests.BooleanAnalysisExamples
+open Cslib Cslib.BitString Finset CslibFrontierTests.BooleanAnalysisExamples
 
 /-! ### The BLR rejection probability -/
 
@@ -139,4 +139,4 @@ example : blrAcceptance negParity₂ = 0 ∧ affinityAcceptance negParity₂ = 1
   norm_num at hle
   linarith
 
-end ComplexityTests.BooleanAnalysisLinearityTesting
+end CslibFrontierTests.BooleanAnalysisLinearityTesting

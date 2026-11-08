@@ -17,7 +17,7 @@ and Håstad's 3-bit linear test on concrete Label Cover graphs, including genuin
 with proved optimum value.
 -/
 
-namespace ComplexityTests.Hastad
+namespace CslibFrontierTests.Hastad
 
 open Cslib Cslib.BitString Cslib.Complexity Cslib.Logic.PL Cslib.PCP Cslib.PCP.Encoded Finset
 
@@ -171,4 +171,4 @@ theorem exists_soundness_noInstance : ∃ η : ℝ, 0 < η ∧ η < 1 ∧ ∃ n 
   exact ⟨η, hη, hη1, n, parallelGraph_nonempty n, parallelGraph_wellFormed n, hval, hno, hB,
     (h (parallelGraph_nonempty n)).2 hno _ _ hB⟩
 
-end ComplexityTests.Hastad
+end CslibFrontierTests.Hastad

@@ -20,7 +20,7 @@ rounds below `T`.
 
 open Cslib.MachineLearning.OnlineLearning.MistakeBound Finset
 
-namespace ComplexityTests.AgnosticOnline
+namespace CslibFrontierTests.AgnosticOnline
 
 /-- The two constant classifiers on `Unit`. -/
 def constants : Finset (Unit → Bool) := {fun _ => true, fun _ => false}
@@ -84,4 +84,4 @@ example (A : OnlineLearner Unit) :
       ∃ c ∈ (↑constants : Set (Unit → Bool)), 2 * S.countP (fun p => c p.1 ≠ p.2) ≤ 100 :=
   exists_mistakes_eq_length_of_const_mem (by simp [constants]) (by simp [constants]) A () 100
 
-end ComplexityTests.AgnosticOnline
+end CslibFrontierTests.AgnosticOnline

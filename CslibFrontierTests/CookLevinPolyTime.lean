@@ -18,7 +18,7 @@ the binary encoding of SAT. A concrete zero-work-tape machine checks that the ma
 are inhabited; certificate variables remain available even for an empty control-state type.
 -/
 
-namespace ComplexityTests.CookLevinPolyTime
+namespace CslibFrontierTests.CookLevinPolyTime
 
 open Turing.MultiTapeTM Cslib.Complexity Cslib.Complexity.CookLevin
 
@@ -118,4 +118,4 @@ example :
    UNSAT_coNPComplete.2 encBits _
      (P_subset_coNP ⟨fun w => w.headD false, by fun_prop, fun _ => Iff.rfl⟩)⟩
 
-end ComplexityTests.CookLevinPolyTime
+end CslibFrontierTests.CookLevinPolyTime

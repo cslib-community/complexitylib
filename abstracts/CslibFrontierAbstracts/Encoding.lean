@@ -21,7 +21,7 @@ The conventions are those of Christian Reitwiessner's native-machine encoding AP
 definitions are collected here so each theorem can be read before its serialization details.
 -/
 
-namespace ComplexityTests.Abstracts.Encoding
+namespace CslibFrontierTests.Abstracts.Encoding
 
 /-- Make a word self-delimiting: tag each bit by `true` and finish with `false`. -/
 def frame (w : List Bool) : List Bool := w.flatMap (fun b => [true, b]) ++ [false]
@@ -64,11 +64,11 @@ def encUnary : ℕ ↪ List Bool := ⟨fun n => List.replicate n true, by
   intro a b h
   simpa only [List.length_replicate] using congrArg List.length h⟩
 
-end ComplexityTests.Abstracts.Encoding
+end CslibFrontierTests.Abstracts.Encoding
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.Encoding`:
+info: abstract audit passed for `CslibFrontierTests.Abstracts.Encoding`:
 14 root declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.Encoding
+#check_abstract CslibFrontierTests.Abstracts.Encoding

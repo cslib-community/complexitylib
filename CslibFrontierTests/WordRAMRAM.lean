@@ -14,7 +14,7 @@ explicit halting with zero, and the length information lost by bare RAM input li
 clients of the executable compiler and its proved padded and prepared input cost bounds.
 -/
 
-namespace ComplexityTests.WordRAMRAM
+namespace CslibFrontierTests.WordRAMRAM
 
 open Cslib Cslib.WordRAM
 
@@ -90,4 +90,4 @@ example :
     have := congrArg (fun s : State 1 => s.data.mem 0) h
     simp [State.init] at this
 
-end ComplexityTests.WordRAMRAM
+end CslibFrontierTests.WordRAMRAM

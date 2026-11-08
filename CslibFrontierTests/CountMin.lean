@@ -19,7 +19,7 @@ family, four buckets and three independent rows.
 
 public section
 
-namespace ComplexityTests.CountMin
+namespace CslibFrontierTests.CountMin
 
 open Cslib Cslib.DataStructure.CountMin Cslib.Probability
 
@@ -100,4 +100,4 @@ example {n : ℕ} (s : List (BitString n × ℕ)) (x : BitString n) :
     (ε := (1 / 2 : ℝ)) (by norm_num) (by norm_num) using 1
   norm_num
 
-end ComplexityTests.CountMin
+end CslibFrontierTests.CountMin

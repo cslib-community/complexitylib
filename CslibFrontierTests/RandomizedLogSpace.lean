@@ -13,7 +13,7 @@ import CslibFrontier.Computability.Complexity.Classes.LogSpace.USTCON
 # Tests for randomized logarithmic space
 -/
 
-namespace ComplexityTests.RandomizedLogSpace
+namespace CslibFrontierTests.RandomizedLogSpace
 
 open Cslib.Complexity
 
@@ -238,4 +238,4 @@ example (enc : ℕ ↪ List Bool) : (Set.univ : Set ℕ) ∈ Cslib.Complexity.P 
 
 end ConfigurationMatrix
 
-end ComplexityTests.RandomizedLogSpace
+end CslibFrontierTests.RandomizedLogSpace

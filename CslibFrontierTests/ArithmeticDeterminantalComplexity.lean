@@ -25,7 +25,7 @@ every commutative ring, so `5 ≤ dc(perm₃) ≤ 7` over `ℚ`. At `n = 2` it g
 value `2`.
 -/
 
-namespace ComplexityTests.ArithmeticDeterminantalComplexity
+namespace CslibFrontierTests.ArithmeticDeterminantalComplexity
 
 open Cslib.Circuits.Arithmetic MvPolynomial
 
@@ -147,4 +147,4 @@ example : IsProjection (genericMatrix ℤ 3).permanent (genericMatrix ℤ 7).det
 example : determinantalComplexity (genericMatrix (ZMod 2) 4).permanent ≤ 15 :=
   determinantalComplexity_permanent_le 4
 
-end ComplexityTests.ArithmeticDeterminantalComplexity
+end CslibFrontierTests.ArithmeticDeterminantalComplexity

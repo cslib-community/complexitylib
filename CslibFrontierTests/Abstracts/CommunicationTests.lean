@@ -14,9 +14,9 @@ Check that its cost/error conditions admit actual protocols and that its finite 
 bound excludes a small communication budget.
 -/
 
-namespace ComplexityTests.Abstracts.CommunicationTests
+namespace CslibFrontierTests.Abstracts.CommunicationTests
 
-open ComplexityAbstracts.CommunicationAbstract
+open CslibFrontierAbstracts.CommunicationAbstract
 
 /-- Alice sends her bit, and Bob sends the equality verdict. -/
 def oneBitEquality : Protocol 1 :=
@@ -54,4 +54,4 @@ example (μ : RandomizedProtocol (2 ^ 20)) (hc : CostAtMost μ 15)
   have h := disjointness_lower_bound μ hc he
   norm_num at h
 
-end ComplexityTests.Abstracts.CommunicationTests
+end CslibFrontierTests.Abstracts.CommunicationTests

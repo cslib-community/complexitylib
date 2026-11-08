@@ -12,7 +12,7 @@ public import CslibFrontier.Computability.Machines.ReadMachine.Tidy
 /-! Native counted constructors and a zero-cost stopped read-machine simulation. -/
 
 @[expose] public section
-namespace ComplexityTests.Internal.CountedConsumers
+namespace CslibFrontierTests.Internal.CountedConsumers
 open Turing Turing.MultiTapeTM Cslib.GenericRAM
 
 noncomputable def nativeId : NativeCertificate (fun n : ℕ => n) encNat encNat :=
@@ -65,4 +65,4 @@ theorem stoppedResource : stopped.toStepMachine.ResourceCertificate
     exact h.mono 3 (fun _ => by change 2 ≤ 3; decide)
       (fun _ => by change 0 ≤ 3; decide)
 
-end ComplexityTests.Internal.CountedConsumers
+end CslibFrontierTests.Internal.CountedConsumers

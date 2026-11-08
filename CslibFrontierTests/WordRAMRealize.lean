@@ -16,7 +16,7 @@ their local-work gradings; `realize` replaces the hand-assembled bind trees and 
 fit and domain conditions. The queue's enqueue runs through `link` and the pair of stacks. The
 failure tests pin the messages for unsupported forms. -/
 
-namespace ComplexityTests.WordRAMRealize
+namespace CslibFrontierTests.WordRAMRealize
 
 open Cslib.DataStructure Cslib.WordRAM Cslib.WordRAM.Realization
 open MemoryStack
@@ -363,4 +363,4 @@ error: realize: the goal is not a `Realizes` certificate:
 example : True := by
   realize
 
-end ComplexityTests.WordRAMRealize
+end CslibFrontierTests.WordRAMRealize

@@ -26,7 +26,7 @@ lists:
    incomplete lists agrees with the complete-list implementation.
 -/
 
-namespace ComplexityTests.StableMatchingIncomplete
+namespace CslibFrontierTests.StableMatchingIncomplete
 
 open Cslib.Algorithms.Lean.StableMatching
 
@@ -130,4 +130,4 @@ example : roth.toIncompleteInstance.receiverDeferredAcceptance =
     roth.receiverDeferredAcceptance.toPEquiv :=
   roth.receiverDeferredAcceptance_toIncompleteInstance
 
-end ComplexityTests.StableMatchingIncomplete
+end CslibFrontierTests.StableMatchingIncomplete

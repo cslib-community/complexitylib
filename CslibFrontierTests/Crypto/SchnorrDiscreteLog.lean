@@ -21,7 +21,7 @@ groups of order at least `2 ^ n`, and their premises are satisfiable: both a sil
 and an eavesdropper that forwards the public key and challenge are uniform strict PPT.
 -/
 
-namespace ComplexityTests.Crypto.SchnorrDiscreteLog
+namespace CslibFrontierTests.Crypto.SchnorrDiscreteLog
 
 open Cslib Cslib.Probability Cslib.Crypto Turing.MultiTapeTM
 open scoped NNReal
@@ -148,4 +148,4 @@ example (setup : ℕ → PMF schnorrGroups.Desc) (hDL : schnorrGroups.DiscreteLo
   PrimeOrderGroupFamily.schnorr_isEavesdropSecure_of_discreteLogHard hDL
     (ComputableInPolyTime.of_eq fun _ => rfl) hsize negligible_inv_two_pow
 
-end ComplexityTests.Crypto.SchnorrDiscreteLog
+end CslibFrontierTests.Crypto.SchnorrDiscreteLog

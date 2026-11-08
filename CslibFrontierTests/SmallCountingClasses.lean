@@ -13,7 +13,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 /-! Concrete clients for small counting classes, including nonconstant characteristic functions,
 multiple witnesses, prime and composite moduli, and degenerate moduli. -/
 
-namespace ComplexityTests.SmallCountingClasses
+namespace CslibFrontierTests.SmallCountingClasses
 
 open Cslib Cslib.Complexity Turing.MultiTapeTM
 
@@ -91,4 +91,4 @@ example :
 /-- Why the product argument needs primality: two nonzero residues can multiply to zero. -/
 example : 2 % 6 ≠ 0 ∧ 3 % 6 ≠ 0 ∧ (2 * 3) % 6 = 0 := by decide
 
-end ComplexityTests.SmallCountingClasses
+end CslibFrontierTests.SmallCountingClasses

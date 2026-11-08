@@ -21,7 +21,7 @@ swapped, the only interpolant is `¬x`, and no monotone circuit is an interpolan
 swapped formula has a refutation of the same shape.
 -/
 
-namespace ComplexityTests.ProofComplexity.Interpolation
+namespace CslibFrontierTests.ProofComplexity.Interpolation
 
 open Cslib Cslib.Circuits Cslib.Logic.PL
 
@@ -181,4 +181,4 @@ example : ¬ ∃ C : Circuit Monotone.signature 1 1,
   rw [h₀, h₁] at this
   exact absurd this (by decide)
 
-end ComplexityTests.ProofComplexity.Interpolation
+end CslibFrontierTests.ProofComplexity.Interpolation

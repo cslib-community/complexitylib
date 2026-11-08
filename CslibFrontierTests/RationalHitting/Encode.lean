@@ -15,7 +15,7 @@ rational encodings; and composed clients of `binary_div`, `binary_mod`, `binary_
 `encodeNat_polytime`, and `encodeDivInt_polytime` under `fun_prop`.
 -/
 
-namespace ComplexityTests.RationalHitting.Encode
+namespace CslibFrontierTests.RationalHitting.Encode
 
 open Turing MultiTapeTM ComputableTidilyInPolyTime
 open Cslib.Circuits.Rational
@@ -111,4 +111,4 @@ example : ComputableInPolyTime
       (encPair encIntBin encIntBin) encBits := by fun_prop
   fun_prop
 
-end ComplexityTests.RationalHitting.Encode
+end CslibFrontierTests.RationalHitting.Encode

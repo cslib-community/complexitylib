@@ -11,7 +11,7 @@ import CslibFrontier.Tactic.PolyTime
 The enormous fixed amplification tables are not materialized by these semantic clients.
 -/
 
-namespace ComplexityTests.PCPEncodedGap
+namespace CslibFrontierTests.PCPEncodedGap
 
 open Cslib.Logic.PL Cslib.PCP.Encoded Turing.MultiTapeTM
 open Cslib.PCP.ConstraintGraph.Amplification.Arithmetic
@@ -78,4 +78,4 @@ example : gap ≤ ((gapGraph wideContradiction).toGraph id).unsatVal := by
 
 example : (gapGraph wideContradiction).WellFormed := wellFormed_gapGraph _
 
-end ComplexityTests.PCPEncodedGap
+end CslibFrontierTests.PCPEncodedGap

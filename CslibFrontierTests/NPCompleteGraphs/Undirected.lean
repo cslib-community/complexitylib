@@ -14,7 +14,7 @@ Concrete, boundary, and `fun_prop` checks for `Graph.split` and the reductions f
 directed to undirected Hamiltonian paths and cycles.
 -/
 
-namespace ComplexityTests.NPCompleteGraphs.Undirected
+namespace CslibFrontierTests.NPCompleteGraphs.Undirected
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -149,4 +149,4 @@ example : Graph.split ([], []) ∉ HamCycle := by
   obtain ⟨v, hv⟩ := List.exists_mem_of_ne_nil p hne
   simpa using (hcov v).1 hv
 
-end ComplexityTests.NPCompleteGraphs.Undirected
+end CslibFrontierTests.NPCompleteGraphs.Undirected

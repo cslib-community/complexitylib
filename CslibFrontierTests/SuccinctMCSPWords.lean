@@ -14,7 +14,7 @@ encoded contradictory sample set. The identity membership is witnessed by an exp
 certificate, while every certificate for the contradictory instance is rejected.
 -/
 
-namespace ComplexityTests.SuccinctMCSPWords
+namespace CslibFrontierTests.SuccinctMCSPWords
 
 open Cslib Cslib.Circuits.Boolean Cslib.Complexity Turing.MultiTapeTM
 
@@ -41,4 +41,4 @@ example (w : List Bool) : SuccinctMCSP.verifier (contradictoryInstance, w) = fal
   Bool.eq_false_iff.mpr fun hw =>
     contradictory_not_mem (SuccinctMCSP.mem_of_verifier_eq_true hw)
 
-end ComplexityTests.SuccinctMCSPWords
+end CslibFrontierTests.SuccinctMCSPWords

@@ -14,7 +14,7 @@ A nonnumeric instance exercises indirect memory and counted execution without a 
 A failed primitive test must fault rather than taking its false branch.
 -/
 
-namespace ComplexityTests.GenericRAM
+namespace CslibFrontierTests.GenericRAM
 
 open Cslib.GenericRAM
 
@@ -48,4 +48,4 @@ example :
    Executes.of_run (by decide : run () program 6 initial = some (false, 6)),
    rfl⟩
 
-end ComplexityTests.GenericRAM
+end CslibFrontierTests.GenericRAM

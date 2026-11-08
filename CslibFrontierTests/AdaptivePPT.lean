@@ -12,7 +12,7 @@ import Mathlib.Logic.Relation
 
 /-! Adaptive closed programs, invariant-based resource proofs and independent saved blocks. -/
 
-namespace ComplexityTests.AdaptivePPT
+namespace CslibFrontierTests.AdaptivePPT
 
 open Cslib Cslib.Probability Turing.MultiTapeTM
 
@@ -226,4 +226,4 @@ example : IsPPTOn (encPair encBits encUnary) encBool (fun p => do
 example : ProbComp.eval (sampledRows ([true, false], 0)) = PMF.pure [] := by
   simp [sampledRows]
 
-end ComplexityTests.AdaptivePPT
+end CslibFrontierTests.AdaptivePPT

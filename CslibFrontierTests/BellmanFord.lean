@@ -20,7 +20,7 @@ that is not reachable from the source (distances still returned), and exact tick
 
 public section
 
-namespace ComplexityTests.BellmanFord
+namespace CslibFrontierTests.BellmanFord
 
 open Cslib.Algorithms.Lean.BellmanFord
 
@@ -90,4 +90,4 @@ example : ¬ NegCycleReachable h' 0 := fun hn =>
 example : NegCycleReachable (fun _ : Fin 1 => [((0 : Fin 1), (-1 : ℤ))]) 0 :=
   (bellmanFord_eq_none_iff List.mem_finRange).1 (by decide +kernel)
 
-end ComplexityTests.BellmanFord
+end CslibFrontierTests.BellmanFord

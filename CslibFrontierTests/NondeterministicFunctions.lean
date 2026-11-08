@@ -11,7 +11,7 @@ lower bound and the cover of the zeros of `x₀ ∧ y₀` by two rectangles; the
 at `v = 2`, the smallest case where it is positive; and deterministic lower bounds for equality,
 disjointness and inner product obtained through `ecomplexityFun_le_protocol`. -/
 
-namespace ComplexityTests.NondeterministicFunctions
+namespace CslibFrontierTests.NondeterministicFunctions
 
 open Cslib Cslib.Communication Cslib.Communication.Nondeterministic
 
@@ -43,4 +43,4 @@ example (v : ℕ) :
 example (v : ℕ) : (v : ℕ∞) ≤ Protocol.ecomplexityFun fun x y : BitString v => x ⬝ᵥ y :=
   (le_ecomplexityFun_false_dotProduct v).trans (ecomplexityFun_le_protocol false)
 
-end ComplexityTests.NondeterministicFunctions
+end CslibFrontierTests.NondeterministicFunctions

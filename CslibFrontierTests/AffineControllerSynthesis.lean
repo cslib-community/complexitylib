@@ -14,7 +14,7 @@ non-symmetric affine shear. They check the resulting nontrivial fourth power, in
 budgets, and the zero-width payload case.
 -/
 
-namespace ComplexityTests.AffineControllerSynthesis
+namespace CslibFrontierTests.AffineControllerSynthesis
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Circuits.Boolean.Iteration
 
@@ -97,4 +97,4 @@ example : ∃ c : Circuit signature ((16 + 2) + 3) (16 + 2),
   · decide
   · simpa [affineControllerSynthesisBudget] using hs
 
-end ComplexityTests.AffineControllerSynthesis
+end CslibFrontierTests.AffineControllerSynthesis

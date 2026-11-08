@@ -18,7 +18,7 @@ zero row entry moves to the new default `3/8`. In the second example the padded 
 moves from zero to `1/8`, inside the flat region. A nonzero gated output is preserved in both.
 -/
 
-namespace ComplexityTests.RowCompressionReference
+namespace CslibFrontierTests.RowCompressionReference
 
 open Finset Cslib.RowCompression
 
@@ -174,4 +174,4 @@ example : rowOutput (update univ 3 2 (1 / 8) 0 lowRow 0 0)
   rw [low_rank]
   norm_num [rowOutput, lowRow]
 
-end ComplexityTests.RowCompressionReference
+end CslibFrontierTests.RowCompressionReference

@@ -17,7 +17,7 @@ weighted fourth-moment estimate is sharp. Values outside the retained source can
 An actual compression run then yields the strict tail comparison `21^4 ≤ 49^4`.
 -/
 
-namespace ComplexityTests.OverflowMomentBudget
+namespace CslibFrontierTests.OverflowMomentBudget
 
 open Finset Cslib Cslib.RowCompression
 open scoped BigOperators
@@ -145,4 +145,4 @@ example : vertexNormPow 4 1 (1 / 2) active
   rw [selected_tail]
   norm_num [active]
 
-end ComplexityTests.OverflowMomentBudget
+end CslibFrontierTests.OverflowMomentBudget

@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.PPSZ.Unique
 depth-two bound `2^{-(39/70) n}` beats the PPZ bound, and a 3-CNF formula with two solutions at
 distance three, each of them `2`-isolated. -/
 
-namespace ComplexityTests.PPSZUnique
+namespace CslibFrontierTests.PPSZUnique
 
 open Cslib.Logic.PL Cslib.Complexity.PPSZ
 
@@ -91,4 +91,4 @@ example : (2 : ℝ) ^ (-(39 / 70 * 3 : ℝ)) ≤ ((round ψ 3) fun _ => some tru
   convert h using 3
   norm_num
 
-end ComplexityTests.PPSZUnique
+end CslibFrontierTests.PPSZUnique

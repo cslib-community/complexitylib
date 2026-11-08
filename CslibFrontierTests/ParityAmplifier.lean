@@ -11,7 +11,7 @@ import Mathlib.Data.Rat.Defs
 `CslibFrontier.Foundations.Data.Polynomial.ParityAmplifier` (Lemmas 5.1, 5.2, and B.1 of the
 subexponential `#k-SAT` manuscript). -/
 
-namespace ComplexityTests.ParityAmplifier
+namespace CslibFrontierTests.ParityAmplifier
 
 open Finset Polynomial
 
@@ -124,4 +124,4 @@ example :
     (fun i _ => by rw [MvPolynomial.totalDegree_X])
   simpa only [card_univ, Fintype.card_fin] using h
 
-end ComplexityTests.ParityAmplifier
+end CslibFrontierTests.ParityAmplifier

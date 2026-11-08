@@ -19,7 +19,7 @@ the general theorems hold here.
 
 set_option linter.hashCommand false
 
-namespace ComplexityTests.DataStructureBinaryHeapMemory
+namespace CslibFrontierTests.DataStructureBinaryHeapMemory
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.Memory Cslib.DataStructure.PriorityQueue
   Cslib.DataStructure.PriorityQueue.BinaryHeap.Memory
@@ -76,4 +76,4 @@ example : Inv (allocated 4 empty.frontier) ⟨empty.mem, empty.frontier + 1 + sp
 /-- A word size too small for the keys: `9` does not fit three bits. -/
 example : ¬Fits 3 9 := by decide
 
-end ComplexityTests.DataStructureBinaryHeapMemory
+end CslibFrontierTests.DataStructureBinaryHeapMemory

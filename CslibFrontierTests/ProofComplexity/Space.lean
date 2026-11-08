@@ -17,7 +17,7 @@ the lemma needs its hypothesis on the width of the clauses; and space lower boun
 formulas.
 -/
 
-namespace ComplexityTests.ProofComplexity.Space
+namespace CslibFrontierTests.ProofComplexity.Space
 
 open Cslib Cslib.Logic.PL
 
@@ -177,4 +177,4 @@ example : ∃ m, ∃ φ : CNF (Fin m), ¬ φ.Satisfiable ∧ ∀ s, φ.Refutable
   obtain ⟨m, -, φ, -, -, hφ, hs⟩ := CNF.exists_forall_refutableInSpace_le 4392000 le_rfl
   exact ⟨m, φ, hφ, fun s h => by have := hs s h; omega⟩
 
-end ComplexityTests.ProofComplexity.Space
+end CslibFrontierTests.ProofComplexity.Space

@@ -8,7 +8,7 @@ import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.Modulus
 
 /-! # Complete native two-prime modulus computations -/
 
-namespace ComplexityTests.WordRAMChanHeModulus
+namespace CslibFrontierTests.WordRAMChanHeModulus
 
 open Cslib.WordRAM Cslib.WordRAM.Signed
 open Cslib.Algorithms.WordRAM.ThreeSum.ChanHe
@@ -104,4 +104,4 @@ example : ∃ y, ExecWithin 10 Modulus.program
     simp only [hn] at hv
     exact hv.trans hvalue
 
-end ComplexityTests.WordRAMChanHeModulus
+end CslibFrontierTests.WordRAMChanHeModulus

@@ -8,7 +8,7 @@ import CslibFrontier.Computability.PCP.Approximation.ThreeXOR
 
 /-! Concrete systems for the four-clause XOR reduction, including the tight `7 / 8` boundary. -/
 
-namespace ComplexityTests.ThreeXOR
+namespace CslibFrontierTests.ThreeXOR
 
 open Cslib.Logic.PL Cslib.Complexity Turing.MultiTapeTM
 
@@ -67,4 +67,4 @@ example : ComputableInPolyTime
     (encCSP encBool encNat) encUnary := by
   fun_prop
 
-end ComplexityTests.ThreeXOR
+end CslibFrontierTests.ThreeXOR

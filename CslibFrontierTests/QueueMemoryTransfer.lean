@@ -11,7 +11,7 @@ public import CslibFrontier.DataStructure.Queue.Memory.Transfer
 
 @[expose] public section
 
-namespace ComplexityTests.QueueMemoryTransfer
+namespace CslibFrontierTests.QueueMemoryTransfer
 
 open Cslib Cslib.DataStructure Cslib.WordRAM Cslib.WordRAM.Realization
 
@@ -66,4 +66,4 @@ example :
   · rfl
   · decide
 
-end ComplexityTests.QueueMemoryTransfer
+end CslibFrontierTests.QueueMemoryTransfer

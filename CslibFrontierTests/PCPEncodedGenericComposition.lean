@@ -10,7 +10,7 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! A non-Boolean assignment tester client for the shared executable composition engine. -/
 
-namespace ComplexityTests.PCPEncodedGenericComposition
+namespace CslibFrontierTests.PCPEncodedGenericComposition
 
 open Cslib Cslib.PCP Cslib.PCP.Encoded Turing.MultiTapeTM
 
@@ -100,4 +100,4 @@ example : ComputableInPolyTime
     (Graph.encoding (encPi (encPi encBool))) := by
   fun_prop
 
-end ComplexityTests.PCPEncodedGenericComposition
+end CslibFrontierTests.PCPEncodedGenericComposition

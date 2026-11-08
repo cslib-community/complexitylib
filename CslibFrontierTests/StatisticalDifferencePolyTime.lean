@@ -18,10 +18,10 @@ with the error parameter in unary applied to them for every `k`, and a polynomia
 polarization of a computed instance with a computed parameter.
 -/
 
-namespace ComplexityTests.StatisticalDifferencePolyTime
+namespace CslibFrontierTests.StatisticalDifferencePolyTime
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Complexity Turing.MultiTapeTM
-open ComplexityTests.StatisticalDifference
+open CslibFrontierTests.StatisticalDifference
 
 /-! ### Replicated codes -/
 
@@ -115,4 +115,4 @@ example : ComputableInPolyTime (fun p : SDInstance × ℕ => p.1.polarize 1 2 p.
   SDInstance.computableInPolyTime_polarize_comp (ComputableInPolyTime.fst _ _)
     (ComputableInPolyTime.const 1) (ComputableInPolyTime.const 2) (ComputableInPolyTime.snd _ _)
 
-end ComplexityTests.StatisticalDifferencePolyTime
+end CslibFrontierTests.StatisticalDifferencePolyTime

@@ -9,7 +9,7 @@ import CslibFrontierResults.Registry
 
 /-! Export records stored by the compiled canonical Lean registry. -/
 
-open Lean ComplexityResults
+open Lean CslibFrontierResults
 
 unsafe def main : IO Unit := do
   initSearchPath (← findSysroot)

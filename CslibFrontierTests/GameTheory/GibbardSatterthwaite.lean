@@ -34,7 +34,7 @@ exposed definitions.
 
 @[expose] public section
 
-namespace ComplexityTests.GameTheory.GibbardSatterthwaite
+namespace CslibFrontierTests.GameTheory.GibbardSatterthwaite
 
 open Cslib.GameTheory.SocialChoice SocialChoiceFunction
 
@@ -349,4 +349,4 @@ theorem borda_not_isStrategyProof : ¬ borda.IsStrategyProof := by
 
 end Borda
 
-end ComplexityTests.GameTheory.GibbardSatterthwaite
+end CslibFrontierTests.GameTheory.GibbardSatterthwaite

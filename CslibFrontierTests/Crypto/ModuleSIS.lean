@@ -22,7 +22,7 @@ Concrete evaluations and nonvacuity checks for:
    nonvacuity of `ModuleSIS.Hard`.
 -/
 
-namespace ComplexityTests.Crypto.ModuleSIS
+namespace CslibFrontierTests.Crypto.ModuleSIS
 
 open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 open scoped NNReal ENNReal _root_.Matrix
@@ -249,4 +249,4 @@ theorem not_decisionModuleLWE_zeroNoise :
   have hc : Negligible (fun _ : ℕ => (2⁻¹ : ℝ≥0)) := hneg.congr hadv
   exact not_negligible_const (by norm_num) hc
 
-end ComplexityTests.Crypto.ModuleSIS
+end CslibFrontierTests.Crypto.ModuleSIS

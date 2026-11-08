@@ -12,7 +12,7 @@ import Mathlib.Tactic.FinCases
 
 set_option linter.privateModule false
 
-namespace ComplexityTests.SignedResidualBins
+namespace CslibFrontierTests.SignedResidualBins
 
 open Matrix Finset
 open scoped BigOperators
@@ -91,4 +91,4 @@ example : ResidualBinTask.value switch scales 3 0 route (fun _ => 1)
   norm_num [ResidualBinTask.value, CorrectionRowRecipe.residual, base, correction,
     Fin.sum_univ_two]
 
-end ComplexityTests.SignedResidualBins
+end CslibFrontierTests.SignedResidualBins

@@ -19,7 +19,7 @@ Padding checks empty/nonempty output, overwritten dirty cells and both adjacent 
 
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMCountingLoop
+namespace CslibFrontierTests.WordRAMCountingLoop
 
 open Cslib.WordRAM
 
@@ -99,4 +99,4 @@ example : ∃ y, ExecWithin 5 Padding.program (paddingStart 2) y 29 ∧
   refine ⟨y, hy, ?_, ?_, ?_, hr Padding.pad3 (by decide)⟩
   all_goals rw [hm]; decide
 
-end ComplexityTests.WordRAMCountingLoop
+end CslibFrontierTests.WordRAMCountingLoop

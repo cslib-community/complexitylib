@@ -10,7 +10,7 @@ import CslibFrontier.Algorithms.Matching.Edmonds
 its detection from three values, a graph without a perfect matching, the empty vertex type, the
 a one-vertex instance where values from a one-element set fail to detect the matching. -/
 
-namespace ComplexityTests.EdmondsMatching
+namespace CslibFrontierTests.EdmondsMatching
 
 open Finset Matrix Cslib.Algorithms.Matching Cslib.Circuits.BipartiteMatching
 
@@ -77,4 +77,4 @@ example (r : Fin 1 × Fin 1 → ℤ) (hr : ∀ e, r e ∈ ({0} : Finset ℤ)) :
   rw [det_unique, edmondsEval_apply]
   simpa using hr _
 
-end ComplexityTests.EdmondsMatching
+end CslibFrontierTests.EdmondsMatching

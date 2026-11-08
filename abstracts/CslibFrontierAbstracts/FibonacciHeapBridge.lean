@@ -43,11 +43,11 @@ syntax abbreviation `wramBlock` are global, since Lean cannot scope syntax categ
 `Cslib.WordRAM`, so none of this syntax is active there.
 -/
 
-namespace ComplexityAbstracts.FibonacciHeapBridge
+namespace CslibFrontierAbstracts.FibonacciHeapBridge
 
 open Cslib.WordRAM
 open Cslib.DataStructure Cslib.DataStructure.PriorityQueue Cslib.DataStructure.PriorityQueue.WordRAM
-open ComplexityTests.Abstracts
+open CslibFrontierTests.Abstracts
 open WordRAMBridge
 
 /-! ## Priority-queue presentation and agreement with `MinPQ` -/
@@ -843,4 +843,4 @@ theorem amortized_reusable (S : WordRAMBridge.Presentation) (hS : WordRAMBridge.
   · rw [← P.numQueries_eq hP tr.ops, ← P.numInserts_eq hP tr.ops, ← P.numDecreaseKeys_eq hP tr.ops]
     exact ht_ops
 
-end ComplexityAbstracts.FibonacciHeapBridge
+end CslibFrontierAbstracts.FibonacciHeapBridge

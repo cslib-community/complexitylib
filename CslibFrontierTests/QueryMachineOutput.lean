@@ -18,7 +18,7 @@ Padding a clock must not invoke that function again or duplicate the final word.
 
 @[expose] public section
 
-namespace ComplexityTests.QueryMachineOutput
+namespace CslibFrontierTests.QueryMachineOutput
 
 open Turing
 
@@ -54,4 +54,4 @@ example (k : ℕ) : echoOnce.output [true] (1 + k) = [true, false] := by
   rw [echoOnce.output_add_of_halted [true] (t := 1) (by decide)]
   decide
 
-end ComplexityTests.QueryMachineOutput
+end CslibFrontierTests.QueryMachineOutput

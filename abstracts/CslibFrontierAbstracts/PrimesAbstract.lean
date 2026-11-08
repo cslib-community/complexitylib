@@ -35,27 +35,27 @@ by a Turing machine.
 * [M. Agrawal, N. Kayal, N. Saxena, *PRIMES is in P*][AKS2004]
 -/
 
-namespace ComplexityAbstracts.PrimesAbstract
+namespace CslibFrontierAbstracts.PrimesAbstract
 
 /-- The class `P` with respect to an encoding `enc`: the problems `A` decided by a Boolean
 function computable in polynomial time, that is, `a ∈ A` exactly when `f a = true`. -/
 def P {α : Type} (enc : α ↪ List Bool) : Set (Set α) :=
   {A | ∃ f : α → Bool,
-    ComplexityTests.Abstracts.Computation.PolyTime f enc
-      ComplexityTests.Abstracts.Encoding.encBool ∧
+    CslibFrontierTests.Abstracts.Computation.PolyTime f enc
+      CslibFrontierTests.Abstracts.Encoding.encBool ∧
     ∀ a, a ∈ A ↔ f a = true}
 
 /-- **PRIMES is in P** [Agrawal, Kayal, Saxena][AKS2004]: the set of primes, with naturals
 encoded by their binary digits, is decidable in deterministic polynomial time. -/
-theorem primes_mem_P : {n : ℕ | n.Prime} ∈ P ComplexityTests.Abstracts.Encoding.encNat :=
+theorem primes_mem_P : {n : ℕ | n.Prime} ∈ P CslibFrontierTests.Abstracts.Encoding.encNat :=
   PrimesBridge.primes_mem_P
 
 /--
 info: abstract audit passed for `CslibFrontierAbstracts.PrimesAbstract`: 2 root declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.PrimesAbstract allowing [
-  ComplexityAbstracts.Encoding, ComplexityAbstracts.Computation
+#check_abstract CslibFrontierAbstracts.PrimesAbstract allowing [
+  CslibFrontierAbstracts.Encoding, CslibFrontierAbstracts.Computation
 ]
 
-end ComplexityAbstracts.PrimesAbstract
+end CslibFrontierAbstracts.PrimesAbstract

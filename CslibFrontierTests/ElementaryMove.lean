@@ -14,7 +14,7 @@ function on `(ZMod P) ^ 3` invariant under the six elementary moves is constant 
 vectors.
 -/
 
-namespace ComplexityTests.ElementaryMove
+namespace CslibFrontierTests.ElementaryMove
 
 open Cslib Cslib.RotationMap Finset
 open scoped BigOperators
@@ -47,4 +47,4 @@ example (P : ℕ) [Fact P.Prime] (g : (Fin 3 → ZMod P) → ℝ)
     exact sub_eq_zero.1 (pow_eq_zero_iff two_ne_zero |>.1 this)
   rw [e F hF, e F' hF']
 
-end ComplexityTests.ElementaryMove
+end CslibFrontierTests.ElementaryMove

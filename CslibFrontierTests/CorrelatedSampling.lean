@@ -14,7 +14,7 @@ For a point mass against a uniform bit, the agreement bound is `1/3`. When both 
 know the target kernel, the local embedding is exact.
 -/
 
-namespace ComplexityTests.CorrelatedSampling
+namespace CslibFrontierTests.CorrelatedSampling
 
 open Cslib.Probability.CorrelatedSampling
 open scoped Cslib.Probability.PMF
@@ -58,4 +58,4 @@ example : dist ((Cslib.Probability.PMF.uniformOfFintype Bool).map id)
       ((Cslib.Probability.PMF.uniformOfFintype Bool).toOuterMeasure {b | id b ≠ true}).toReal :=
   Cslib.Probability.PMF.dist_map_map_le _ _ _
 
-end ComplexityTests.CorrelatedSampling
+end CslibFrontierTests.CorrelatedSampling

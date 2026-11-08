@@ -14,7 +14,7 @@ semantic phases, rather than assuming that the native counter decreases. The fir
 two instructions and the second costs four; the complete loop costs twelve, including control.
 -/
 
-namespace ComplexityTests.NativeGhostPotential
+namespace CslibFrontierTests.NativeGhostPotential
 
 open Cslib.WordRAM
 
@@ -98,4 +98,4 @@ private def initialized : Code .standard 4 :=
 #guard_msgs in
 #eval (Code.eval 1 3 initialized (Data.init [])).isNone
 
-end ComplexityTests.NativeGhostPotential
+end CslibFrontierTests.NativeGhostPotential

@@ -8,7 +8,7 @@ import CslibFrontier.Computability.Machines.Turing.TM2.Reverse.Transfer
 
 /-! Public clients for the reverse stack-machine compiler. -/
 
-namespace ComplexityTests.MathlibTM2Reverse
+namespace CslibFrontierTests.MathlibTM2Reverse
 
 open Turing Turing.MultiTapeTM
 
@@ -133,4 +133,4 @@ example : ∃ (f : List Bool → Bool) (h : TM2Computable (encList (encFinEnum B
     (Cslib.Complexity.mem_PSPACE_of_computableInPolySpace
       (.of_polyTime (.of_tidy (.listIsEmpty' (encFinEnum Bool)))) (fun _ => Iff.rfl))
 
-end ComplexityTests.MathlibTM2Reverse
+end CslibFrontierTests.MathlibTM2Reverse

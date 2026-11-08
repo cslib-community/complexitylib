@@ -11,7 +11,7 @@ import CslibFrontier.Tactic.PPT
 Common-length padding, arbitrary certified callbacks, and indexed entropy-grid clients.
 -/
 
-namespace ComplexityTests.GeneratorPadding
+namespace CslibFrontierTests.GeneratorPadding
 
 open Cslib Cslib.Probability Cslib.BitString Cslib.Crypto Cslib.Crypto.Pseudoentropy
   Turing.MultiTapeTM
@@ -107,4 +107,4 @@ example : ∃ common : ℕ → ℕ, ComputableInPolyTime common encUnary encUnar
       (densityBound := fun n => 16 * (n + 7)) (by polytime) (by polytime) (by polytime)
   exact ⟨common, hcommon, hmono, hself, hbound⟩
 
-end ComplexityTests.GeneratorPadding
+end CslibFrontierTests.GeneratorPadding

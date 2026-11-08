@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.BlockNe
 clock, their counting identity and admissibility, and the class containments conditional only
 on a contraction algorithm. -/
 
-namespace ComplexityTests.HPVNetworkFamilies
+namespace CslibFrontierTests.HPVNetworkFamilies
 
 open Turing MultiTapeMachine MultiTapeTM Cslib.Complexity Cslib.Complexity.CountingSimulation
   Cslib.Circuits.Frontier
@@ -51,4 +51,4 @@ example {α : Type} {enc : α ↪ List Bool} {T : ℕ → ℕ}
     NTIME enc T ⊆ ⋃ C, DTIME enc fun n => 2 ^ (C * T n / Nat.sqrt (Nat.log 2 (T n))) :=
   NTIME_subset_iUnion_DTIME_of_contractionAlgorithm A hT hTn
 
-end ComplexityTests.HPVNetworkFamilies
+end CslibFrontierTests.HPVNetworkFamilies

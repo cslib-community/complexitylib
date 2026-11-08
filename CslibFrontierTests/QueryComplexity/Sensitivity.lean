@@ -15,7 +15,7 @@ majority, monotone and symmetric functions, one-sided bounds and polynomial boun
 concrete values checked against the general formulas, and witnesses that the monotonicity and
 symmetry hypotheses are satisfiable. -/
 
-namespace ComplexityTests.QueryComplexity.Sensitivity
+namespace CslibFrontierTests.QueryComplexity.Sensitivity
 
 open Cslib Cslib.BitString Cslib.QueryComplexity Finset
 
@@ -101,4 +101,4 @@ example {n : ℕ} (hn : 1 ≤ n) (f : BooleanFunction n) :
   · rw [blockSensitivity_eq_sensitivity_of_monotone monotone_andOr]
     decide
 
-end ComplexityTests.QueryComplexity.Sensitivity
+end CslibFrontierTests.QueryComplexity.Sensitivity

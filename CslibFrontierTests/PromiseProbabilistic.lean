@@ -13,7 +13,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 a genuinely partial promise problem, and randomized one-sided promise reductions (`RPReducible`,
 `RPReducibleWithError`). -/
 
-namespace ComplexityTests.PromiseProbabilistic
+namespace CslibFrontierTests.PromiseProbabilistic
 
 open Cslib Cslib.Complexity Cslib.Probability Turing.MultiTapeTM
 
@@ -128,4 +128,4 @@ example (q : Polynomial ℕ) :
       (repeatMajority encBits (6 * q) 1 partialVerifier) :=
   solvesWithBoundedError_partialSingletonBit.repeatMajority q
 
-end ComplexityTests.PromiseProbabilistic
+end CslibFrontierTests.PromiseProbabilistic

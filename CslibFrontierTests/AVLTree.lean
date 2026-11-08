@@ -29,7 +29,7 @@ These kernel-checked examples (using no `native_decide`) exercise:
 
 public section
 
-namespace ComplexityTests.AVLTree
+namespace CslibFrontierTests.AVLTree
 
 open Cslib.DataStructure Cslib.DataStructure.AVLTree Cslib.DataStructure.OrderedSet
 
@@ -217,4 +217,4 @@ example :
   · simp [misorderedAVL, mkNode, Ordered, Cslib.DataStructure.SearchTree.Ordered,
       Cslib.DataStructure.SearchTree.elements]
 
-end ComplexityTests.AVLTree
+end CslibFrontierTests.AVLTree

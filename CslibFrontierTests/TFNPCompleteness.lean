@@ -10,7 +10,7 @@ import CslibFrontier.Tactic.PolyTime
 /-! Uniform circuit compilation and total-search completeness, including zero vertex width and
 local-search costs whose bit-length exceeds the vertex width. -/
 
-namespace ComplexityTests.TFNPCompleteness
+namespace CslibFrontierTests.TFNPCompleteness
 
 open Cslib.Complexity Cslib.BitString Cslib.Circuits.Boolean
 open Turing.MultiTapeTM
@@ -81,4 +81,4 @@ example : endOfLineRel (fun _ : Bool => 0) (fun p => p.2) (fun p => p.2) false [
 example : leafRel (fun _ : Bool => 0) (fun p => p.2) (fun p => p.2) false [] := by
   simp [leafRel, hasOddDegree, undirectedEdge, zeroVertex]
 
-end ComplexityTests.TFNPCompleteness
+end CslibFrontierTests.TFNPCompleteness

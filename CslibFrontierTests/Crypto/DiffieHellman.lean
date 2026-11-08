@@ -23,7 +23,7 @@ ElGamal bit encoding and decryption, instantiations of `DL ≤ CDH ≤ DDH`, DDH
 self-reducibility, and ElGamal IND-CPA security under DDH.
 -/
 
-namespace ComplexityTests.Crypto.DiffieHellman
+namespace CslibFrontierTests.Crypto.DiffieHellman
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.PrimeOrderGroupFamily Turing.MultiTapeTM
 open scoped NNReal
@@ -879,4 +879,4 @@ theorem not_demOneTimeKeyWordINDCPA_identitySym :
   simp only [hadv] at hneg
   exact not_negligible_const one_ne_zero hneg
 
-end ComplexityTests.Crypto.DiffieHellman
+end CslibFrontierTests.Crypto.DiffieHellman

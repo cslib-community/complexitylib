@@ -8,7 +8,7 @@ import CslibFrontier.Languages.Probabilistic.Oracle.Support
 
 /-! # One semantics for oracle programs -/
 
-namespace ComplexityTests.OracleSemantics
+namespace CslibFrontierTests.OracleSemantics
 
 open Cslib OracleComp
 
@@ -89,4 +89,4 @@ example (s : ℕ) :
   rw [ProbOracleComp.acceptProbWith_lift]
   simp [coinThenQuery, ProbOracleComp.sample_eq_liftLeft, ProbOracleComp.query]
 
-end ComplexityTests.OracleSemantics
+end CslibFrontierTests.OracleSemantics

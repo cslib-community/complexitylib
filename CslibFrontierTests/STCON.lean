@@ -20,7 +20,7 @@ The hardness hypothesis is satisfiable: undirected connectivity, which is in `L`
 `STCON` through the configuration graph of its logarithmic-space decider.
 -/
 
-namespace ComplexityTests.STCON
+namespace CslibFrontierTests.STCON
 
 open Cslib Cslib.Complexity
 
@@ -89,4 +89,4 @@ example : LogSpaceReducible encUSTCON encSTCON USTCON STCON :=
 example (h : STCON ∈ L encSTCON) : STCONᶜ ∈ L encSTCON :=
   (STCON.mem_L_iff_forall_NL_eq_L.mp h encSTCON) ▸ STCON.compl_mem_NL
 
-end ComplexityTests.STCON
+end CslibFrontierTests.STCON

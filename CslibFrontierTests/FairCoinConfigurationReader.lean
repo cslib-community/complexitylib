@@ -16,7 +16,7 @@ two coin branches, and distinguish an absorbing halted row from the zero live ro
 and a native space certificate on the exact binary query tuple are also checked.
 -/
 
-namespace ComplexityTests.FairCoinConfigurationReader
+namespace CslibFrontierTests.FairCoinConfigurationReader
 
 open Cslib.Turing Turing MultiTapeTM
 open MultiTapeNTM.ConfigurationGraph MultiTapePTM.ConfigurationGraph
@@ -156,4 +156,4 @@ example : ComputableInSpace
     (budget_comp_linear (fst _ _) hr₁) (budget_comp_linear (fst _ _) hr₂)
     (budget_comp_linear (fst _ _) hr₃) (budget_comp_linear (snd _ _) hr₃) (.refl _)
 
-end ComplexityTests.FairCoinConfigurationReader
+end CslibFrontierTests.FairCoinConfigurationReader

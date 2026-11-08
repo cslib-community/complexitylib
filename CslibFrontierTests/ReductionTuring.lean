@@ -23,7 +23,7 @@ Tests for `PolyTimeTuringReducible`, truth-table-to-Turing embeddings, and hardn
 open Cslib.Complexity
 open Turing.MultiTapeTM
 
-namespace ComplexityTests.ReductionTuring
+namespace CslibFrontierTests.ReductionTuring
 
 variable (B : Set (List Bool))
 
@@ -128,4 +128,4 @@ example :
   exact ⟨NPHard.P_eq_NP_of_turing_mem_P CookLevin.SAT_npHard hred,
     NPHard.NP_eq_coNP_of_turing_mem_NP_inter_coNP CookLevin.SAT_npHard hred⟩
 
-end ComplexityTests.ReductionTuring
+end CslibFrontierTests.ReductionTuring

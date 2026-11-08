@@ -16,7 +16,7 @@ from a uniform bit as `|Pr[true] - 1 / 2|`. This bridge converts both to the lib
 `PMF.minEntropy` and statistical distance.
 -/
 
-namespace ComplexityAbstracts.ChorGoldreichBridge
+namespace CslibFrontierAbstracts.ChorGoldreichBridge
 
 open Cslib Cslib.Probability Cslib.Probability.PMF
 
@@ -78,4 +78,4 @@ theorem orthogonal_sources {n : ℕ} (S : Finset (Fin n)) :
   · rw [do_eq_bind, hconst]
     simp
 
-end ComplexityAbstracts.ChorGoldreichBridge
+end CslibFrontierAbstracts.ChorGoldreichBridge

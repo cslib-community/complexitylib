@@ -29,7 +29,7 @@ Non-vacuity and concrete evaluation tests for `CslibFrontier.Foundations.Data.Na
 
 public section
 
-namespace ComplexityTests.DoubleHashing
+namespace CslibFrontierTests.DoubleHashing
 
 open Cslib.DataStructure Cslib.DataStructure.Dictionary
 open Cslib.DataStructure.Dictionary.UniformProbing
@@ -246,4 +246,4 @@ example (u : Fin 10000) :
       (doubleHashOddStridePerm 4 10 10000 9 θ) hvh)
     hdom u
 
-end ComplexityTests.DoubleHashing
+end CslibFrontierTests.DoubleHashing

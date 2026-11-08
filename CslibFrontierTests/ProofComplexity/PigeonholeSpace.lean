@@ -18,7 +18,7 @@ empty clause. Atserias and Dalmau's Lemma 2 gives back a strategy from the width
 space bound also follows from the strategy directly.
 -/
 
-namespace ComplexityTests.ProofComplexity.PigeonholeSpace
+namespace CslibFrontierTests.ProofComplexity.PigeonholeSpace
 
 open Cslib Cslib.Logic.PL
 
@@ -120,4 +120,4 @@ example (m n w s : ℕ) (hw : (CNF.pigeonholeExt m n).RefutableInWidth w)
     (hs : (CNF.pigeonholeExt m n).RefutableInSpace s) : n ≤ w ∧ n ≤ s :=
   ⟨CNF.le_of_refutableInWidth_pigeonholeExt hw, CNF.le_of_refutableInSpace_pigeonholeExt hs⟩
 
-end ComplexityTests.ProofComplexity.PigeonholeSpace
+end CslibFrontierTests.ProofComplexity.PigeonholeSpace

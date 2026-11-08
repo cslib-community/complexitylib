@@ -17,7 +17,7 @@ hardness transfer applies to a language that is hard by counting, and the member
 encoding in `E` applies to a language in `P` (the two hypotheses of the derandomization theorem
 are separately satisfiable; jointly they are open). -/
 
-namespace ComplexityTests.WorstCaseHardness
+namespace CslibFrontierTests.WorstCaseHardness
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Code Cslib.HardnessEncoding Finset Filter
 
@@ -168,4 +168,4 @@ example : ∃ L : Language Bool, ∀ᶠ N in atTop,
     nlinarith
   exact (le_of_mul_le_mul_right key h5).trans hc
 
-end ComplexityTests.WorstCaseHardness
+end CslibFrontierTests.WorstCaseHardness

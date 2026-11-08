@@ -11,7 +11,7 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! Ordinary finite-table programs, with unbounded entries and empty types. -/
 
-namespace ComplexityTests.FiniteTables
+namespace CslibFrontierTests.FiniteTables
 
 open Cslib.Turing Turing.MultiTapeTM
 
@@ -81,4 +81,4 @@ example (values : Fin 3 → List Bool) {bound : ℕ} (h : ∀ i, (values i).leng
     (encPi encBits values).length ≤ 3 * (2 * bound + 1) := by
   simpa using length_encPi_le encBits values h
 
-end ComplexityTests.FiniteTables
+end CslibFrontierTests.FiniteTables

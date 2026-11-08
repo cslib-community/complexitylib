@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Complexity.Problems.CSP.Majority
 
 /-! Native tractability on concrete languages with inconsistent and empty-relation instances. -/
 
-namespace ComplexityTests.CSPTractability
+namespace CslibFrontierTests.CSPTractability
 
 open Cslib Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -62,4 +62,4 @@ example : [(true, [0])] ∉ CSPSAT unary maybePin := by
   rintro ⟨_, _, hσ⟩
   exact Bool.false_ne_true hσ
 
-end ComplexityTests.CSPTractability
+end CslibFrontierTests.CSPTractability

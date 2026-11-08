@@ -14,7 +14,7 @@ program on concrete operands, instances of the binary length bounds, and compose
 integer certificates under `fun_prop`.
 -/
 
-namespace ComplexityTests.IntBinary
+namespace CslibFrontierTests.IntBinary
 
 open Turing MultiTapeTM ComputableTidilyInPolyTime
 
@@ -112,4 +112,4 @@ example : ComputableInPolyTime (fun p : ℕ × ℕ => (p.1 - p.2) * p.1 ^ 3)
     (encPair encNat encNat) encNat := by
   fun_prop
 
-end ComplexityTests.IntBinary
+end CslibFrontierTests.IntBinary

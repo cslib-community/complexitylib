@@ -12,7 +12,7 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! Logarithmic graph loops using the existing iteration calculus and complete encoding bounds. -/
 
-namespace ComplexityTests.PCPEncodedIteration
+namespace CslibFrontierTests.PCPEncodedIteration
 
 open Cslib.PCP.Encoded Turing.MultiTapeTM
 
@@ -91,4 +91,4 @@ example : (Graph.encoding encBool graph).length ≤ Graph.iterationSize 0 1 2 gr
 example : (doubleEdges^[Nat.clog 2 (Graph.mk 5 ([] : List (Edge Bool))).edges.length]
     ⟨5, []⟩).vertices = 5 := by decide
 
-end ComplexityTests.PCPEncodedIteration
+end CslibFrontierTests.PCPEncodedIteration

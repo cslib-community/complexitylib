@@ -20,7 +20,7 @@ written statements by definitional equality.
 
 public section
 
-namespace ComplexityComparator.Automation
+namespace CslibFrontierComparator.Automation
 
 /-- Reuse the existing `polytime`-generated proof for half-word function padding. -/
 theorem padded_function : PaddedFunction := by
@@ -31,4 +31,4 @@ theorem padded_function : PaddedFunction := by
 theorem dot_product_halves : DotProductHalves := by
   exact Cslib.Crypto.GoldreichLevin.polyTime_paddedPredicate
 
-end ComplexityComparator.Automation
+end CslibFrontierComparator.Automation

@@ -26,7 +26,7 @@ planes refutation `l₁ = y ≥ 1`, `l₂ = x₀ - y ≥ 0`, `l₁ + l₂ = x₀
   `⌈log₂ 2⌉ (⌈log₂ 5⌉ + 1) = 4` bits.
 -/
 
-namespace ComplexityTests.CuttingPlanesInterpolation
+namespace CslibFrontierTests.CuttingPlanesInterpolation
 
 open Cslib Cslib.Communication Cslib.Circuits Cslib.Logic.PL Cslib.Logic.PL.CuttingPlanes
 open Cslib.Logic.PL.SemanticDerivation
@@ -169,4 +169,4 @@ example (A : Set ((Fin 2 → Bool) × (Unit → Bool))) (B : Set ((Fin 2 → Boo
   · fin_cases i <;> simp [E₂]
   · cases hu : u i <;> cases hv : v i <;> fin_cases i <;> simp_all [E₂]
 
-end ComplexityTests.CuttingPlanesInterpolation
+end CslibFrontierTests.CuttingPlanesInterpolation

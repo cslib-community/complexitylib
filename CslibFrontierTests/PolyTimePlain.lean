@@ -17,7 +17,7 @@ including the verifier for SAT, give upstream machines within polynomial time an
 predicate `Turing.MultiTapeTM.ComputableInPolyTime` is proved by `fun_prop` and `polytime` from
 plain hypotheses and tidy certificates, with the limits of `fun_prop` tested below. -/
 
-namespace ComplexityTests.PolyTimePlain
+namespace CslibFrontierTests.PolyTimePlain
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
@@ -154,4 +154,4 @@ example {α β γ : Type} {input : α ↪ List Bool} {middle : β ↪ List Bool}
   fail_if_success (clear hf; fun_prop)
   fun_prop
 
-end ComplexityTests.PolyTimePlain
+end CslibFrontierTests.PolyTimePlain

@@ -12,7 +12,7 @@ import Mathlib.Data.List.OfFn
 
 /-! # Transfer of Reingold's theorem along the exact adjacency-matrix encoding -/
 
-namespace ComplexityTests.Abstracts.USTCONBridge
+namespace CslibFrontierTests.Abstracts.USTCONBridge
 
 /-- A Boolean is encoded as one bit. -/
 def encBool : Bool ↪ List Bool := ⟨fun b => [b], by intro a b h; injection h⟩
@@ -118,4 +118,4 @@ theorem ustcon_mem_l : USTCON ∈ L encInstance := by
   rw [encode_eq]
   exact hM (toInternal I)
 
-end ComplexityTests.Abstracts.USTCONBridge
+end CslibFrontierTests.Abstracts.USTCONBridge

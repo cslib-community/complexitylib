@@ -14,7 +14,7 @@ majority, and the sharing example `g_i = f + x_i` with exact distances and costs
 the boundary cases of zero inputs and an empty index type. Exact distances are checked both from
 the general theorems and by evaluation. -/
 
-namespace ComplexityTests.CircuitHamming.Gates
+namespace CslibFrontierTests.CircuitHamming.Gates
 
 open Cslib Cslib.BitString Cslib.Circuits Cslib.Circuits.Boolean
 
@@ -211,4 +211,4 @@ info: 'Cslib.BitString.median_median_distrib' depends on axioms:
 #guard_msgs (whitespace := lax) in
 #print axioms median_median_distrib
 
-end ComplexityTests.CircuitHamming.Gates
+end CslibFrontierTests.CircuitHamming.Gates

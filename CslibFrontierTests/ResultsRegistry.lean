@@ -74,7 +74,7 @@ register_result "registry-private" where
 
 open Lean Elab Command in
 run_cmd do
-  let registered := ComplexityResults.entries.getState (← getEnv)
+  let registered := CslibFrontierResults.entries.getState (← getEnv)
   unless (registered.filter (·.id == "registry-fixture")).size == 1 do
     throwError "the valid fixture was not registered exactly once"
   if registered.any (fun entry => ["registry-duplicate", "registry-missing", "registry-nonprop",

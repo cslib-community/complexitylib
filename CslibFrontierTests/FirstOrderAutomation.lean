@@ -20,7 +20,7 @@ cliques are shown nonvacuous and distinct on a two-vertex structure. The closure
 `subformulas` are checked on the sentence saying that a graph has no loops.
 -/
 
-namespace ComplexityTests.FirstOrderAutomation
+namespace CslibFrontierTests.FirstOrderAutomation
 
 open FirstOrder Language Structure CategoryTheory Cslib.Logic Cslib.Logic.FO sizedGraph
 
@@ -386,4 +386,4 @@ example :
 
 end Subformulas
 
-end ComplexityTests.FirstOrderAutomation
+end CslibFrontierTests.FirstOrderAutomation

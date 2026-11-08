@@ -21,7 +21,7 @@ determinant family is in `VNP`. The permanent expands along row 0 on both a conc
 integer matrix and the `2 × 2` generic matrix polynomial.
 -/
 
-namespace ComplexityTests.AlgebraicComplexity
+namespace CslibFrontierTests.AlgebraicComplexity
 
 open Cslib Cslib.Circuits Cslib.Circuits.Arithmetic MvPolynomial
 
@@ -161,4 +161,4 @@ example : productFamily ∈ VNP ℚ :=
   VNP.of_isPProjection (VP_subset_VNP detFamily_mem_VP) productFamily_isPProjection_detFamily
     PolynomiallyBounded.id
 
-end ComplexityTests.AlgebraicComplexity
+end CslibFrontierTests.AlgebraicComplexity

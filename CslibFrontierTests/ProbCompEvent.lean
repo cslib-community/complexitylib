@@ -15,7 +15,7 @@ graph-algorithm import or a second ProbComp-specific probability API. -/
 
 @[expose] public section
 
-namespace ComplexityTests.ProbCompEvent
+namespace CslibFrontierTests.ProbCompEvent
 
 open Cslib
 open scoped ENNReal
@@ -70,4 +70,4 @@ example (later : Bool → ProbComp Bool) :
   simpa only [show ((1 + 1 : ℕ) : ℝ≥0∞) = 2 by norm_num, htwo,
     ProbComp.eval_bind, ProbComp.eval_pure, ← PMF.bind_pure_comp, Function.comp_def] using h
 
-end ComplexityTests.ProbCompEvent
+end CslibFrontierTests.ProbCompEvent

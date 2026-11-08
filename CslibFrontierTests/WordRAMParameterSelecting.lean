@@ -19,7 +19,7 @@ small dimensions. Complete admitted large-geometry clients are separate proof cl
 
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMParameterSelecting
+namespace CslibFrontierTests.WordRAMParameterSelecting
 
 open Cslib.WordRAM
 open Cslib.Algorithms.WordRAM.ExactTriangle
@@ -45,4 +45,4 @@ private def runSmall (n : ℕ) (z : ℤ) : Option (List ℕ) :=
 #guard runSmall 1 (-1) == some [1, 2, 1, 1, 1, 17, 0, 0, 1, 1, 99, 99, 717]
 #guard runSmall 2 0 == some [2, 1, 1, 1, 1, 20, 1, 0, 1, 1, 99, 99, 717]
 
-end ComplexityTests.WordRAMParameterSelecting
+end CslibFrontierTests.WordRAMParameterSelecting

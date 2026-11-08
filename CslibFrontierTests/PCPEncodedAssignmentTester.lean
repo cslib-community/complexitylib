@@ -14,7 +14,7 @@ import Mathlib.Tactic.FinCases
 
 /-! Tests for executable assignment testing and its uniform finite-table certificates. -/
 
-namespace ComplexityTests.PCPEncodedTester
+namespace CslibFrontierTests.PCPEncodedTester
 
 open Cslib.PCP Cslib.PCP.HadamardTester Turing.MultiTapeTM
 
@@ -101,4 +101,4 @@ example : ComputableInPolyTime
     (encPair encBits (encPair (encFinEnum (Rand Bool)) (encFinEnum Query)))
     (encFinEnum (Pos Bool)) := by polytime
 
-end ComplexityTests.PCPEncodedTester
+end CslibFrontierTests.PCPEncodedTester

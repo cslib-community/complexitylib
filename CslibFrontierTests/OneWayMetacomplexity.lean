@@ -15,7 +15,7 @@ and Kabanets–Cai.
 The hypotheses of the inverter and distinguisher lemmas are discharged for concrete functions and
 deciders; one-wayness and `MCSP ∈ BPP` are open and are not instantiated. -/
 
-namespace ComplexityTests.OneWayMetacomplexity
+namespace CslibFrontierTests.OneWayMetacomplexity
 
 open Turing.MultiTapeTM Cslib Cslib.Crypto Cslib.Complexity
 
@@ -99,4 +99,4 @@ example : Probability.IsOraclePPT Turing.MultiTapeTM.encBool
     (KabanetsCai.mcspDistinguisher 0 (fun x => x.2.isEmpty) 3) :=
   KabanetsCai.isOraclePPT_mcspDistinguisher 3 (by fun_prop)
 
-end ComplexityTests.OneWayMetacomplexity
+end CslibFrontierTests.OneWayMetacomplexity

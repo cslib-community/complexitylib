@@ -9,7 +9,7 @@ import CslibFrontier.Probability.Extractor.TwoSource
 /-! Two-source extractors: the Chor–Goldreich bound on concrete sources, the necessity of the
 entropy threshold, and weighted Lindsey. -/
 
-namespace ComplexityTests.TwoSourceExtractor
+namespace CslibFrontierTests.TwoSourceExtractor
 
 open Cslib Cslib.Probability Cslib.Probability.PMF
 
@@ -57,4 +57,4 @@ example :
     (fun y => if y = 0 then (1 : ℝ) else 0)
   simpa only [Fintype.card_fin] using h
 
-end ComplexityTests.TwoSourceExtractor
+end CslibFrontierTests.TwoSourceExtractor

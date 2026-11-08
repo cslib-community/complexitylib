@@ -22,7 +22,7 @@ private variable, have the three-line semantic refutation `Ã, B̃, ∅` (`lines
 * `![∅]` is not a semantic derivation from these initial sets.
 -/
 
-namespace ComplexityTests.SemanticDerivation
+namespace CslibFrontierTests.SemanticDerivation
 
 open Cslib Cslib.Communication Cslib.Circuits Cslib.Logic.PL Cslib.Logic.PL.SemanticDerivation
 
@@ -176,4 +176,4 @@ example :
   · exact Set.empty_ne_univ h
   · exact absurd h₁ (Fin.not_lt_zero _)
 
-end ComplexityTests.SemanticDerivation
+end CslibFrontierTests.SemanticDerivation

@@ -16,7 +16,7 @@ import CslibFrontier.Foundations.BooleanAnalysis.RelevantCoordinates
 /-! Clients and axiom guards for the Fourier analysis of decision trees, of low-degree Boolean
 functions and of monotone Boolean functions. -/
 
-namespace ComplexityTests.BooleanAnalysisDecisionTree
+namespace CslibFrontierTests.BooleanAnalysisDecisionTree
 
 open Cslib Cslib.BitString Finset Function
 open scoped BigOperators
@@ -101,4 +101,4 @@ example (n : ℕ) (x : Fin 3 → Bool) :
 #guard_msgs (whitespace := lax) in
 #print axioms DecisionTree.leafCount_le_two_pow_depth
 
-end ComplexityTests.BooleanAnalysisDecisionTree
+end CslibFrontierTests.BooleanAnalysisDecisionTree

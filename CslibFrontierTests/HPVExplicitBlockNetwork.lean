@@ -10,7 +10,7 @@ import CslibFrontier.Foundations.Data.Nat.Log
 /-! Explicit block-counting networks of concrete fair-coin machines: the letter numbering on
 concrete letters, the counting identity, and the size, degree and bipartition of the networks. -/
 
-namespace ComplexityTests.HPVExplicitBlockNetwork
+namespace CslibFrontierTests.HPVExplicitBlockNetwork
 
 open Turing MultiTapeMachine MultiTapePTM Cslib.Circuits.Frontier
 
@@ -96,4 +96,4 @@ example (σ : Schedule 0 1) :
   rw [show Nat.log 2 2 = 1 by decide] at h
   simpa using h
 
-end ComplexityTests.HPVExplicitBlockNetwork
+end CslibFrontierTests.HPVExplicitBlockNetwork

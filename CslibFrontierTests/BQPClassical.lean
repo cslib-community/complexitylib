@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Complexity.Problems.CircuitValue
 /-! `P ⊆ BQP`: the reversible compilation of a concrete De Morgan gate list, its exact acceptance
 probability, and the circuit value problem in `BQP`. -/
 
-namespace ComplexityTests.BQPClassical
+namespace CslibFrontierTests.BQPClassical
 
 open Cslib Cslib.Quantum Cslib.Complexity Cslib.Circuits Cslib.Circuits.Boolean
 
@@ -43,4 +43,4 @@ example : acceptProb (2 + xorGates.length + 1) (Reversible.circuitCodes 2 (xorGa
 /-- The circuit value problem is in `BQP`. -/
 example : CircuitValue ∈ BQP encCircuitValue := P_subset_BQP CircuitValue.mem_P
 
-end ComplexityTests.BQPClassical
+end CslibFrontierTests.BQPClassical

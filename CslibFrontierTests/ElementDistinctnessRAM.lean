@@ -14,7 +14,7 @@ a distinct list and a duplicate list, both with the supplied padded workspace an
 fixed five-word scratch prefix followed by charged preparation.
 -/
 
-namespace ComplexityTests.ElementDistinctnessRAM
+namespace CslibFrontierTests.ElementDistinctnessRAM
 
 open Cslib Cslib.WordRAM Cslib.Algorithms.WordRAM.ElementDistinctness
 
@@ -54,4 +54,4 @@ example : RAM.HaltsWithResultInTime RAM.logCost ramProgram (RAM.Input.encode 5 [
     0 (2735 * 3 * 2) := by
   simpa [show Nat.log 2 3 = 1 by decide] using haltsWithResultInTime_nodup ⟨[1, 1], by simp⟩
 
-end ComplexityTests.ElementDistinctnessRAM
+end CslibFrontierTests.ElementDistinctnessRAM

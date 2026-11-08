@@ -13,7 +13,7 @@ outputs and a schedule already over budget. Malformed references exercise preser
 specified fallback semantics and total runtime; they do not assert well-formedness.
 -/
 
-namespace ComplexityTests.CircuitLayerPadding
+namespace CslibFrontierTests.CircuitLayerPadding
 
 open Cslib.Circuits.Boolean.Layered Turing.MultiTapeTM
 
@@ -71,4 +71,4 @@ info: 'Cslib.Circuits.Boolean.Layered.WellFormed.padTo' depends on axioms: [prop
 #guard_msgs (whitespace := lax) in
 #print axioms WellFormed.padTo
 
-end ComplexityTests.CircuitLayerPadding
+end CslibFrontierTests.CircuitLayerPadding

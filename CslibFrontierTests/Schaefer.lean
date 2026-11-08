@@ -14,7 +14,7 @@ The final theorem is also applied symbolically at unrestricted fixed arities and
 alphabet. These tests use the original CSP syntax and native binary encoding.
 -/
 
-namespace ComplexityTests.Schaefer
+namespace CslibFrontierTests.Schaefer
 
 open Cslib.Logic Cslib.Logic.PL Cslib.Complexity Turing.MultiTapeTM
 
@@ -104,4 +104,4 @@ example (encEmpty : Empty ↪ List Bool) :
     CSPSAT (Empty.elim : Empty → ℕ) (fun r => r.elim) ∈ P (encCSP encEmpty encNat) :=
   CSPSAT.mem_P_of_hasSchaeferPolymorphism encEmpty _ _ (.inl fun r => r.elim)
 
-end ComplexityTests.Schaefer
+end CslibFrontierTests.Schaefer

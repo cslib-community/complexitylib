@@ -17,7 +17,7 @@ NP-hardness statements are not vacuous; the translation of a small constraint gr
 and Label Cover satisfiability.
 -/
 
-namespace ComplexityTests.PCPApproximation
+namespace CslibFrontierTests.PCPApproximation
 
 open Cslib Cslib.Complexity Cslib.Logic.PL Cslib.PCP Cslib.PCP.Encoded Turing.MultiTapeTM
 
@@ -179,4 +179,4 @@ example : UniqueGamesConjecture → ∃ L : ℕ, PromiseProblem.NPHard
     norm_num at hL ⊢
     exact hL
 
-end ComplexityTests.PCPApproximation
+end CslibFrontierTests.PCPApproximation

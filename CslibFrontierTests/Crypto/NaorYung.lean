@@ -18,7 +18,7 @@ probability at least `1 / 2` at every parameter `n` (confirming that the `OneWay
 hypothesis is essential).
 -/
 
-namespace ComplexityTests.Crypto.NaorYung
+namespace CslibFrontierTests.Crypto.NaorYung
 
 open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 open scoped NNReal
@@ -208,4 +208,4 @@ example {f : List Bool → List Bool} (hf : OneWayPermutation f) :
     ∃ H : KeyedHashFamily, H.TargetCollisionResistant :=
   hf.exists_targetCollisionResistant_keyedHashFamily
 
-end ComplexityTests.Crypto.NaorYung
+end CslibFrontierTests.Crypto.NaorYung

@@ -18,7 +18,7 @@ import CslibFrontier.Crypto.Protocols.PIR.CoveringCode
   server emulating three neighbours cannot cover the three-bit cube (the volume bound).
 -/
 
-namespace ComplexityTests.Crypto.PIRCoveringCode
+namespace CslibFrontierTests.Crypto.PIRCoveringCode
 
 open Cslib.Crypto.Protocols.PIR
 
@@ -77,4 +77,4 @@ example : ¬ ∀ w : Fin 4 → Bool, ∃ b : Bool, hammingDist (fun _ : Fin 4 =>
 example : IsEmpty (RadiusOneCover Unit (Fin 3) (Fin 3)) :=
   ⟨fun K => absurd K.two_pow_card_le (by decide)⟩
 
-end ComplexityTests.Crypto.PIRCoveringCode
+end CslibFrontierTests.Crypto.PIRCoveringCode

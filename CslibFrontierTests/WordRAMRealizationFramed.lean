@@ -20,7 +20,7 @@ on it (`run_allocated`). Two stacks share one memory with two frames (`modifies_
 open Cslib Cslib.DataStructure Cslib.WordRAM Cslib.WordRAM.Realization
   Cslib.WordRAM.Realization.MemoryStack Cslib.DataStructure.Queue
 
-namespace ComplexityTests.WordRAMRealizationFramed
+namespace CslibFrontierTests.WordRAMRealizationFramed
 
 open Cslib.DataStructure.Stack.Native (Tag certificates backend implements)
 
@@ -269,4 +269,4 @@ theorem allocate_pair : ∃ K, ∀ {w C : ℕ} {x : Data (Backend.registers pair
       hroom.of_le (by omega))
   exact ⟨y, n, he, hn, _, _, hrep⟩
 
-end ComplexityTests.WordRAMRealizationFramed
+end CslibFrontierTests.WordRAMRealizationFramed

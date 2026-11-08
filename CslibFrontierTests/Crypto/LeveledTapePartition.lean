@@ -17,7 +17,7 @@ exactly those read by `publicKeyGameCoins`. This is a charged tape-partition cer
 runtime bound for the callbacks or the complete reduction.
 -/
 
-namespace ComplexityTests.Crypto.LeveledTapePartition
+namespace CslibFrontierTests.Crypto.LeveledTapePartition
 
 open Turing.MultiTapeTM Cslib.Crypto.Homomorphic
 
@@ -70,4 +70,4 @@ example : partition ([true, false], 0, 0) = ([], [], [true, false]) := rfl
 example : partition ([true, false], 100, 100) = ([true, false], [], []) := by decide
 example : partition ([], 100, 100) = ([], [], []) := by decide
 
-end ComplexityTests.Crypto.LeveledTapePartition
+end CslibFrontierTests.Crypto.LeveledTapePartition

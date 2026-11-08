@@ -19,7 +19,7 @@ unreachable, and on the trivial walk at depth zero; walks of the path through
 polynomial-space form for a family of depths, so that their hypotheses are satisfiable.
 -/
 
-namespace ComplexityTests.Savitch
+namespace CslibFrontierTests.Savitch
 
 open Cslib Cslib.Reachability Turing.MultiTapeTM
 
@@ -129,4 +129,4 @@ example : ∃ t s, PolyBounded (fun n : ℕ => (encUnary n).length) s ∧
   exact exists_polyBounded_space_savitch (edge := fun _ u v => decide (u = v)) hedge hin
     (fun _ => rfl) fun _ => rfl
 
-end ComplexityTests.Savitch
+end CslibFrontierTests.Savitch

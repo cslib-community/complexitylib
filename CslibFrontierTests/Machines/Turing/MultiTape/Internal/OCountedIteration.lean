@@ -14,7 +14,7 @@ import Lean.Elab.Command
 /-! Binary counts, zero workspace, growing output and the original complete trajectory contract. -/
 
 @[expose] public section
-namespace ComplexityTests.Internal.OCountedIteration
+namespace CslibFrontierTests.Internal.OCountedIteration
 open Turing.MultiTapeTM
 open Turing.MultiTapeTM.Internal.BinaryCounter
 
@@ -102,4 +102,4 @@ run_cmd do
     if (← getEnv).contains name then
       throwError "A higher tidy calculus was imported: {name}"
 
-end ComplexityTests.Internal.OCountedIteration
+end CslibFrontierTests.Internal.OCountedIteration

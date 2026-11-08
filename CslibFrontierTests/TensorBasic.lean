@@ -15,7 +15,7 @@ tensor is the diagonal, the trivial rank bounds `Rank 8 (mm 2 2 2)` and `Rank 3 
 are instances of `rank_mm` and `rank_full`, Strassen's algorithm is a checked witness of
 `Rank 7 (mm 2 2 2)`, and the primal packing has a nonvacuous instance. -/
 
-namespace ComplexityTests.TensorBasic
+namespace CslibFrontierTests.TensorBasic
 
 open Cslib.Tensor
 
@@ -83,4 +83,4 @@ example : IsSLDegen (K := ℚ) (Fin.castLE (by omega)) 1 (slSum (primalTargets 1
     (slSum fun _ : Fin 2 => full 1 (1 + 1)) :=
   isSLDegen_primal le_rfl le_rfl le_rfl (by norm_num)
 
-end ComplexityTests.TensorBasic
+end CslibFrontierTests.TensorBasic

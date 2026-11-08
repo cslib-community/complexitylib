@@ -25,7 +25,7 @@ Exercises:
    infinite ground type `ℕ` with matching bound `id`.
 -/
 
-namespace ComplexityTests.MatroidGreedy
+namespace CslibFrontierTests.MatroidGreedy
 
 open Cslib Cslib.Query Cslib.Algorithms.Lean.Matroid
 
@@ -220,4 +220,4 @@ example (xs : List (Fin 4)) :
       greedyMaxIndep u24Indep u24Weights xs := by
   simp
 
-end ComplexityTests.MatroidGreedy
+end CslibFrontierTests.MatroidGreedy

@@ -8,7 +8,7 @@ import CslibFrontier.Foundations.Geometry.Orthogonal.Macrocell
 
 /-! Concrete contacts and noncontacts in the real 240-by-240 tiling. -/
 
-namespace ComplexityTests.OrthogonalMacrocell
+namespace CslibFrontierTests.OrthogonalMacrocell
 
 open Cslib.Orthogonal
 
@@ -61,4 +61,4 @@ example : cellPort 120 (0, 0) 1 ≠ cellPort 120 (2, 0) 0 := by decide
 -- Zero radius is deliberately excluded from the separation theorem.
 example : cellPort 0 (0, 0) 0 = cellPort 0 (20, -30) 3 := by decide
 
-end ComplexityTests.OrthogonalMacrocell
+end CslibFrontierTests.OrthogonalMacrocell

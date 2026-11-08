@@ -11,7 +11,7 @@ import CslibFrontier.Computability.PCP.Completeness
 
 /-! # Transfer of the explicit PCP verifier contract to the certified gap construction -/
 
-namespace ComplexityTests.Abstracts.PCPBridge
+namespace CslibFrontierTests.Abstracts.PCPBridge
 
 /-- Frame each bit as `[true, b]` and terminate the word with `[false]`. -/
 def frame (w : List Bool) : List Bool := w.flatMap (fun b => [true, b]) ++ [false]
@@ -110,4 +110,4 @@ theorem pcp_theorem {α : Type} (enc : α ↪ List Bool) :
   rw [hNP]
   exact Cslib.Complexity.NP_eq_PCP_log enc
 
-end ComplexityTests.Abstracts.PCPBridge
+end CslibFrontierTests.Abstracts.PCPBridge

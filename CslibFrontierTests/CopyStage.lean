@@ -9,7 +9,7 @@ import CslibFrontier.Computability.LogSpaceDerandomization.CopyStage
 # Tests for one stage of the correction-and-copy hierarchy
 -/
 
-namespace ComplexityTests.CopyStage
+namespace CslibFrontierTests.CopyStage
 
 open Finset Matrix
 
@@ -151,4 +151,4 @@ example :
       · exact card_pos.mpr ⟨1, by norm_num [C]⟩⟩)
   simpa using h
 
-end ComplexityTests.CopyStage
+end CslibFrontierTests.CopyStage

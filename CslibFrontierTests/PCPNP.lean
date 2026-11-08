@@ -10,7 +10,7 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! Sparse proof tables, duplicate addresses, malformed witnesses, and exact NP containment. -/
 
-namespace ComplexityTests.PCPNP
+namespace CslibFrontierTests.PCPNP
 
 open Cslib Cslib.Complexity Turing.MultiTapeTM
 
@@ -147,4 +147,4 @@ example {α : Type} (enc : α ↪ List Bool) (V : PCPVerifier α) (c : ℕ)
     have : ComputableInPolyTime V.tableVerifier (encPair enc encBits) encBool := by fun_prop
   trivial
 
-end ComplexityTests.PCPNP
+end CslibFrontierTests.PCPNP

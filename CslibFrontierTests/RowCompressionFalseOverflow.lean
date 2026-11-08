@@ -17,7 +17,7 @@ The first overflow is group one. Neither true target is heavy, and the charge is
 the actual raw prefix, despite the nonzero preceding compression loss.
 -/
 
-namespace ComplexityTests.RowCompressionFalseOverflow
+namespace CslibFrontierTests.RowCompressionFalseOverflow
 
 open Finset Cslib.RowCompression
 
@@ -110,4 +110,4 @@ example : (2 : ℝ) ^ (4 + 1) / (2 * dyadicFloor 1 2 1 ^ 4) *
   norm_num [uncompressedRow, increments, initial, clippedError, dyadicFloor, dyadicSlack,
     Fin.sum_univ_two, sum_range_succ]
 
-end ComplexityTests.RowCompressionFalseOverflow
+end CslibFrontierTests.RowCompressionFalseOverflow

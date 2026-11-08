@@ -19,7 +19,7 @@ Strassen or modular triangle counter is claimed.
 -- These regression commands intentionally run the actual native interpreter.
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMCyclicConvolution
+namespace CslibFrontierTests.WordRAMCyclicConvolution
 
 open Cslib.WordRAM Cslib.WordRAM.Signed
 open Cslib.Algorithms.WordRAM.CyclicConvolution
@@ -120,4 +120,4 @@ example : InputFits 10 input ∧ ∃ y t, t + 1 ≤ 414 ∧
       (p := (complete 1 4 7 3).program Reg.output) (Program.Contains.self _).append_left
   · simpa only [State.init, hptr] using hex.executes Reg.output
 
-end ComplexityTests.WordRAMCyclicConvolution
+end CslibFrontierTests.WordRAMCyclicConvolution

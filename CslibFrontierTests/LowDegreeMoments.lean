@@ -21,7 +21,7 @@ dropped: for `f = 0` the event `|f| ≥ t ‖f‖_2` is everything. Khintchine's
 linear threshold function, so the Gotsman–Linial Theorem bounds its weight of degree at most one.
 -/
 
-namespace ComplexityTests.LowDegreeMoments
+namespace CslibFrontierTests.LowDegreeMoments
 
 open Finset Cslib Cslib.BitString
 open scoped BigOperators
@@ -110,4 +110,4 @@ example : Real.exp (-(2 * 1)) ≤
   simpa only [Nat.cast_one] using IsPTF.exp_neg_two_mul_le_sum_fourierCoeff_sq
     BooleanAnalysisPolynomialThreshold.isPTF_one_majority_three
 
-end ComplexityTests.LowDegreeMoments
+end CslibFrontierTests.LowDegreeMoments

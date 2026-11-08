@@ -15,7 +15,7 @@ Arbitrary positive arity is exercised symbolically; nullary operations are expli
 whereas empty and nullary relations remain allowed.
 -/
 
-namespace ComplexityTests.BooleanClone
+namespace CslibFrontierTests.BooleanClone
 
 open Cslib.Logic Cslib.Logic.BooleanClone Cslib.Logic.PL.CSP
 
@@ -108,4 +108,4 @@ example : (fun a : Fin 1 → Bool => !(a 0)) ∈
     (ofRelations (fun _ : Unit => 0) (fun _ => Set.univ)).operations 1 :=
   ⟨by decide, fun _ _ _ => Set.mem_univ _⟩
 
-end ComplexityTests.BooleanClone
+end CslibFrontierTests.BooleanClone

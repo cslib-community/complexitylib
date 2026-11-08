@@ -10,7 +10,7 @@ import CslibFrontier.Foundations.Data.List.Lookup
 
 /-! # Native prepared adjacency with signed asymmetric input -/
 
-namespace ComplexityTests.WordRAMExactTriangleAdjacency
+namespace CslibFrontierTests.WordRAMExactTriangleAdjacency
 
 open Cslib.WordRAM Cslib.Matrix Cslib.Algorithms.ExactTriangle
 open Cslib.Algorithms.WordRAM.ExactTriangle
@@ -118,4 +118,4 @@ example : ∃ y t, t ≤ 2826240 ∧
     rw [hBC]
     decide
 
-end ComplexityTests.WordRAMExactTriangleAdjacency
+end CslibFrontierTests.WordRAMExactTriangleAdjacency

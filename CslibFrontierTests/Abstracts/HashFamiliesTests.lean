@@ -14,10 +14,10 @@ import CslibFrontierAbstracts.HashFamiliesAbstract
 Non-vacuity and concrete evaluation checks for `CslibFrontierAbstracts.HashFamiliesAbstract`.
 -/
 
-namespace ComplexityTests.Abstracts.HashFamiliesTests
+namespace CslibFrontierTests.Abstracts.HashFamiliesTests
 
 open scoped ENNReal
-open ComplexityAbstracts.HashFamiliesAbstract
+open CslibFrontierAbstracts.HashFamiliesAbstract
 
 /-! ## Concrete Resource and Epoch Computations -/
 
@@ -241,4 +241,4 @@ example : ∃ (p_op : List (Instr 23)) (ν₀ ν_final : PMF (SeqState 16 16)),
       doubleTabEvalTime (resampleTime 4 regimeThreshold) sampleOps ν₀ ν_final :=
   nonvacuous_large_fresh_eval regimeThreshold le_rfl
 
-end ComplexityTests.Abstracts.HashFamiliesTests
+end CslibFrontierTests.Abstracts.HashFamiliesTests

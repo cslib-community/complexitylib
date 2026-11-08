@@ -11,7 +11,7 @@ import Mathlib.Tactic.IntervalCases
 The native emitter is selected globally before all these installed-argument memory fixtures.
 No native instruction or algorithm-specific register-frame proof is supplied by the tests. -/
 
-namespace ComplexityTests.WordRAMBinaryHeapSiftUp
+namespace CslibFrontierTests.WordRAMBinaryHeapSiftUp
 
 open Cslib.WordRAM Cslib.WordRAM.Realization
 open Cslib.DataStructure.PriorityQueue.BinaryHeap.Native
@@ -239,4 +239,4 @@ example : ¬(packed (state true) 4).Bounded 3 := by
 
 end
 
-end ComplexityTests.WordRAMBinaryHeapSiftUp
+end CslibFrontierTests.WordRAMBinaryHeapSiftUp

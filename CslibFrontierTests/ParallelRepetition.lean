@@ -17,7 +17,7 @@ the lower bound `v(G)^n ≤ v(Gⁿ)` of product strategies. With nothing conditi
 coordinate that is won with probability at most `v(G)`.
 -/
 
-namespace ComplexityTests.ParallelRepetition
+namespace CslibFrontierTests.ParallelRepetition
 
 open Filter Topology
 open Cslib.PCP
@@ -88,4 +88,4 @@ example {X Y A B : Type*} [Fintype X] [Fintype Y] [Fintype A] [Fintype B]
   refine ⟨j, ?_⟩
   simpa using hj
 
-end ComplexityTests.ParallelRepetition
+end CslibFrontierTests.ParallelRepetition

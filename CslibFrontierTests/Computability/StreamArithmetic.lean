@@ -24,7 +24,7 @@ recipes, and two-coordinate row-compression recipes.
 
 @[expose] public section
 
-namespace ComplexityTests.StreamArithmetic
+namespace CslibFrontierTests.StreamArithmetic
 
 open Cslib Cslib.SignedDigitStream Cslib.StreamArithmetic Finset
 
@@ -647,4 +647,4 @@ example :
 
 end EstimatorAndRowCompressionChecks
 
-end ComplexityTests.StreamArithmetic
+end CslibFrontierTests.StreamArithmetic

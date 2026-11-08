@@ -22,7 +22,7 @@ checks for `CslibFrontier.DataStructure.Online.Basic`, `CslibFrontier.DataStruct
 
 @[expose] public section
 
-namespace ComplexityTests.Paging
+namespace CslibFrontierTests.Paging
 
 open Cslib.DataStructure.Online Cslib.DataStructure.Paging
 
@@ -136,4 +136,4 @@ example (A : DetStrategy (problem (Fin 2) 1)) (b : Nat) :
         99 * (problem (Fin 2) 1).scheduleCost ∅ reqs offStates + b < 100 * A.cost ∅ reqs :=
   fin_exists_ratio_violation_empty_of_lt (by omega) A (by omega) b
 
-end ComplexityTests.Paging
+end CslibFrontierTests.Paging

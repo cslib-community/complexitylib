@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Complexity.Classes.IP.Games.GoldwasserSipser
 /-! Concrete clients for `AM ⊆ NP/poly`: a problem in `BPP`, graph isomorphism and a problem in
 `IP[2]`. -/
 
-namespace ComplexityTests.AMAdvice
+namespace CslibFrontierTests.AMAdvice
 
 open Cslib Cslib.Complexity Turing.MultiTapeTM
 
@@ -45,4 +45,4 @@ example : {w : List Bool | w.headD false = true} ∈ NPPoly encBits :=
 example {α : Type} (enc : α ↪ List Bool) (k : ℕ) : IPk enc k ⊆ NPPoly enc :=
   IPGameClass_subset_NPPoly _
 
-end ComplexityTests.AMAdvice
+end CslibFrontierTests.AMAdvice

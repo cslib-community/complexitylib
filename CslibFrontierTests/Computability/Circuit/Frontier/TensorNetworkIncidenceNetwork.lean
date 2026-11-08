@@ -20,7 +20,7 @@ rows-first bipartite, and the hypotheses of the degree and wire bounds hold for 
 
 @[expose] public section
 
-namespace ComplexityTests.TensorNetworkIncidenceNetwork
+namespace CslibFrontierTests.TensorNetworkIncidenceNetwork
 
 open Cslib.Circuits.Frontier Cslib.Circuits.Frontier.IncidenceNetwork Cslib.Complexity
 
@@ -85,4 +85,4 @@ example : Nat.ceilQuarter 16 = 2 :=
 example : 16 ≤ Nat.ceilQuarter 16 ^ 4 ∧ Nat.ceilQuarter 16 * Nat.ceilQuarter 16 ≤ 4 * 16 :=
   ⟨Nat.le_ceilQuarter_pow 16, Nat.ceilQuarter_mul_self_le (by norm_num)⟩
 
-end ComplexityTests.TensorNetworkIncidenceNetwork
+end CslibFrontierTests.TensorNetworkIncidenceNetwork

@@ -27,7 +27,7 @@ are met by the sum over paths (`immFormula`). At small `d`, such as `d = 11` wit
 bound is trivial: `d ^ (1 / 3) < 10` makes the exponent negative.
 -/
 
-namespace ComplexityTests.ArithmeticGeneralLowerBound
+namespace CslibFrontierTests.ArithmeticGeneralLowerBound
 
 open Cslib.Circuits Cslib.Circuits.Arithmetic Cslib.Circuits.Arithmetic.SPFormula MvPolynomial
 
@@ -254,4 +254,4 @@ example {K : Type*} [Field K] (n : ℕ) [NeZero n] (hn : n = 2 ^ 98162880) :
     132651 * n ^ 2 < (immFormula K n 132651).nodeCount :=
   lt_nodeCount rfl hn (productDepth_immFormula_le _) (rename_polynomial_immFormula _)
 
-end ComplexityTests.ArithmeticGeneralLowerBound
+end CslibFrontierTests.ArithmeticGeneralLowerBound

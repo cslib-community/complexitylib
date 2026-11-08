@@ -14,10 +14,10 @@ import CslibFrontierAbstracts.HashTablesAbstract
 Non-vacuity and concrete evaluation checks for `CslibFrontierAbstracts.HashTablesAbstract`.
 -/
 
-namespace ComplexityTests.Abstracts.HashTablesTests
+namespace CslibFrontierTests.Abstracts.HashTablesTests
 
 open scoped ENNReal
-open ComplexityAbstracts.HashTablesAbstract
+open CslibFrontierAbstracts.HashTablesAbstract
 
 /-! ## Concrete Resource and Constant Evaluations -/
 
@@ -296,4 +296,4 @@ theorem nonvacuous_cuckooHashing :
   obtain ⟨μ_final, T_ops, hops, hbound1, hbound2⟩ := hseq sampleOps validDictHistory_sampleOps
   exact ⟨p_init, p_op, Seed, μ_init, μ_final, T_ops, hinit, hsupp, hops, hbound1, hbound2⟩
 
-end ComplexityTests.Abstracts.HashTablesTests
+end CslibFrontierTests.Abstracts.HashTablesTests

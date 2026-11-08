@@ -20,7 +20,7 @@ Concrete kernel-checked evaluations and theorem instantiations for
 - plain `ComputableInPolyTime` composition via `fun_prop`.
 -/
 
-namespace ComplexityTests.JetArray
+namespace CslibFrontierTests.JetArray
 
 open Cslib
 open Turing MultiTapeTM
@@ -127,4 +127,4 @@ example :
       (encList (encList encIntBin)) :=
   ⟨by fun_prop, by fun_prop⟩
 
-end ComplexityTests.JetArray
+end CslibFrontierTests.JetArray

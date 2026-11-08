@@ -14,7 +14,7 @@ Concrete, boundary, and `fun_prop` checks for `TSP`, its verifier, and the reduc
 `HamCycle.toTSP` from `HamCycle`.
 -/
 
-namespace ComplexityTests.NPCompleteGraphs.TSP
+namespace CslibFrontierTests.NPCompleteGraphs.TSP
 
 open Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -198,4 +198,4 @@ example : (([0, 1, 0], [(0, 1)]) : Graph) ∉ HamCycle :=
 example : (([], []) : Graph) ∉ HamCycle :=
   fun h => notMem_TSP (by decide) ((HamCycle.toTSP_mem_iff _).2 h)
 
-end ComplexityTests.NPCompleteGraphs.TSP
+end CslibFrontierTests.NPCompleteGraphs.TSP

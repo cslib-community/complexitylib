@@ -16,7 +16,7 @@ both after the reply and during its terminal computation. Earlier false-witness 
 full-view separation tests remain imported above.
 -/
 
-namespace ComplexityTests.Crypto.VOLEAdaptiveMulCheck
+namespace CslibFrontierTests.Crypto.VOLEAdaptiveMulCheck
 
 open Cslib Cslib.Probability Cslib.Interactive Cslib.Interactive.Spec
   Cslib.Crypto.Protocols.VOLE
@@ -141,4 +141,4 @@ example : maskedMulCheckReceiverView wire wire wire constantReceiver
         falseView.2.1.2.2.1.1 * falseView.1.1 + falseView.2.1.2.2.1.2) := by decide
   exact hfalse hcheck
 
-end ComplexityTests.Crypto.VOLEAdaptiveMulCheck
+end CslibFrontierTests.Crypto.VOLEAdaptiveMulCheck

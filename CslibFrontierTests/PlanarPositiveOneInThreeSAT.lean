@@ -8,7 +8,7 @@ import CslibFrontier.Computability.Complexity.Problems.PlanarPositiveOneInThreeS
 
 /-! Nonempty, signed and rejected source instances of the actual planar positive compiler. -/
 
-namespace ComplexityTests.PlanarPositiveOneInThreeSAT
+namespace CslibFrontierTests.PlanarPositiveOneInThreeSAT
 
 open Cslib.Logic.PL Cslib.Complexity
 
@@ -70,4 +70,4 @@ example : SharpPositiveOneInExactThreeSATThree
   rw [sharpPositiveOneInExactThreeSATThree_toPlanarPositiveOneInExactThreeSATThree]
   decide
 
-end ComplexityTests.PlanarPositiveOneInThreeSAT
+end CslibFrontierTests.PlanarPositiveOneInThreeSAT

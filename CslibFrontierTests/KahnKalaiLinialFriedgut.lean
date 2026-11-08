@@ -9,7 +9,7 @@ import CslibFrontier.Foundations.BooleanAnalysis.FriedgutJunta
 /-! Instances and non-vacuity witnesses for the Kahn–Kalai–Linial theorem, Talagrand's
 inequality and Friedgut's junta theorem. -/
 
-namespace ComplexityTests.KahnKalaiLinialFriedgut
+namespace CslibFrontierTests.KahnKalaiLinialFriedgut
 
 open Cslib Cslib.BitString Finset
 open scoped BigOperators
@@ -95,4 +95,4 @@ example (f : (ι → Bool) → Bool) :
   rw [expect_sub_expect_sq_eq_sum_fourierCoeff_sq]
   simp only [subset_empty]
 
-end ComplexityTests.KahnKalaiLinialFriedgut
+end CslibFrontierTests.KahnKalaiLinialFriedgut

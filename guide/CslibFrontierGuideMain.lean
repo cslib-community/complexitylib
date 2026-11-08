@@ -18,8 +18,8 @@ elaborates them, before this program runs.
 open Verso.Genre.Manual
 
 def main (options : List String) : IO UInt32 := do
-  let env ← ComplexityGuide.ApiDocs.importEnv `CslibFrontierGuide
-  let apiDocs := ComplexityGuide.ApiDocs.linkTargets env
+  let env ← CslibFrontierGuide.ApiDocs.importEnv `CslibFrontierGuide
+  let apiDocs := CslibFrontierGuide.ApiDocs.linkTargets env
   manualMain (%doc CslibFrontierGuide) (options := options) (config := {
     emitTeX := false
     emitHtmlSingle := .no

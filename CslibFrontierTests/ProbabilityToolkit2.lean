@@ -11,7 +11,7 @@ import CslibFrontier.Probability.Pinsker
 /-! Kullback–Leibler divergence, Gibbs and Pinsker, subadditivity, Han and Shearer: concrete
 instances, satisfiable hypotheses and a strict case. -/
 
-namespace ComplexityTests.ProbabilityToolkit2
+namespace CslibFrontierTests.ProbabilityToolkit2
 
 open Cslib Cslib.Probability Finset InformationTheory MeasureTheory
 open scoped BigOperators Cslib.Probability.PMF
@@ -134,4 +134,4 @@ example : ∏ j : Fin 3, #(cornerSet.image (univ.erase j).restrict) = 12 := by d
 
 example : #(univ : Finset (Fin 3 → Bool)) ^ 2 = 64 := by simp
 
-end ComplexityTests.ProbabilityToolkit2
+end CslibFrontierTests.ProbabilityToolkit2

@@ -23,7 +23,7 @@ supported on `[-noiseWidth, noiseWidth]` (`errorLaw`). Honest encryption draws o
 bits, the entries of its `0/1` matrix `R`.
 -/
 
-namespace ComplexityTests.Abstracts.GSW
+namespace CslibFrontierTests.Abstracts.GSW
 
 /-- Write exactly `w` digits, least significant first, including leading zeros. -/
 def lowBits (w value : ℕ) : List Bool := (List.range w).map value.testBit
@@ -86,13 +86,13 @@ noncomputable def errorLaw (noiseWidth : ℕ) : PMF ℤ := do
   let negative ← Randomized.uniformBits noiseWidth
   return (positive.count true : ℤ) - negative.count true
 
-end ComplexityTests.Abstracts.GSW
+end CslibFrontierTests.Abstracts.GSW
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.GSW`:
+info: abstract audit passed for `CslibFrontierTests.Abstracts.GSW`:
 11 root declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.GSW allowing [
-  ComplexityAbstracts.Randomized
+#check_abstract CslibFrontierTests.Abstracts.GSW allowing [
+  CslibFrontierAbstracts.Randomized
 ]

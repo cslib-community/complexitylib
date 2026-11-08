@@ -17,7 +17,7 @@ two i.i.d. uniform bidders, so its hypotheses are satisfiable. The rising densit
 fails `IsRegular` for every choice of its value at `0`, which illustrates the endpoint convention.
 -/
 
-namespace ComplexityTests.GameTheory.OptimalAuction
+namespace CslibFrontierTests.GameTheory.OptimalAuction
 
 open MeasureTheory Set Cslib.GameTheory Cslib.GameTheory.SingleParameter
   Cslib.GameTheory.SingleParameter.Vickrey
@@ -233,4 +233,4 @@ theorem not_isRegular_rising (c : NNReal) :
     have hsq : (0 : ℝ) ≤ 1 / 64 - v ^ 2 := by nlinarith
     nlinarith [mul_nonneg (by positivity : (0 : ℝ) ≤ 1 + t) hsq]
 
-end ComplexityTests.GameTheory.OptimalAuction
+end CslibFrontierTests.GameTheory.OptimalAuction

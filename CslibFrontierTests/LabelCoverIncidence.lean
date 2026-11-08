@@ -9,7 +9,7 @@ import CslibFrontier.Computability.PCP.Encoded.Count
 
 /-! Concrete incidence reductions, including tight factor-two loss and empty relations. -/
 
-namespace ComplexityTests.LabelCoverIncidence
+namespace CslibFrontierTests.LabelCoverIncidence
 
 open Cslib.PCP Cslib.PCP.Encoded Cslib.Complexity LabelCoverIncidence Turing.MultiTapeTM
 
@@ -105,4 +105,4 @@ example : ComputableInPolyTime
   have h := isPolyTime_reduce pairs false true encBool
   fun_prop
 
-end ComplexityTests.LabelCoverIncidence
+end CslibFrontierTests.LabelCoverIncidence

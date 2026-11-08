@@ -24,7 +24,7 @@ the kernel, with no `native_decide`.
 
 @[expose] public section
 
-namespace ComplexityTests.SearchTree
+namespace CslibFrontierTests.SearchTree
 
 open Cslib.DataStructure.SearchTree Cslib.DataStructure.OrderedSet Cslib.DataStructure
 
@@ -160,4 +160,4 @@ example :
       ¬ sortedFirst.height ≤ 3 :=
   ⟨by decide, rfl, by simp [malformed, Ordered, elements], by decide⟩
 
-end ComplexityTests.SearchTree
+end CslibFrontierTests.SearchTree

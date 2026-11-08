@@ -15,7 +15,7 @@ constants in input atoms, least-significant-bit indexing, quantifier binding, ex
 counts, the minimum permitted universe, and a numeric-only sentence with no input bits.
 -/
 
-namespace ComplexityTests.OrderedFirstOrderCircuits
+namespace CslibFrontierTests.OrderedFirstOrderCircuits
 
 open FirstOrder Language
 open Cslib.Circuits.Boolean
@@ -234,4 +234,4 @@ example : markedStructure ![true, false] ∉ evenMarked := by
 example : ¬ Definable evenMarked :=
   ModelChecking.Ordered.not_definable_even_card (L := inputLanguage) Relation.mark
 
-end ComplexityTests.OrderedFirstOrderCircuits
+end CslibFrontierTests.OrderedFirstOrderCircuits

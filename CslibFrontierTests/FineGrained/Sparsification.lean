@@ -15,7 +15,7 @@ and wide formulas, against exhaustive search; and the non-vacuity of the hypothe
 and of the headline theorems.
 -/
 
-namespace ComplexityTests.FineGrained.Sparsification
+namespace CslibFrontierTests.FineGrained.Sparsification
 
 open Cslib.Complexity Cslib.Logic.PL Cslib.Logic.PL.CNF.Sparsification
 
@@ -96,4 +96,4 @@ example : ∃ c : ℕ, DecidableInExpTime (KSAT 3) encCNF CNF.numVars (1 + c * (
 example (h : ¬DecidableInSubexpTime ThreeSAT encCNF List.length) : 0 < satExponent 3 :=
   ETH_iff_satExponent_pos.mp (ETH_iff_not_decidableInSubexpTime_length.mpr h)
 
-end ComplexityTests.FineGrained.Sparsification
+end CslibFrontierTests.FineGrained.Sparsification

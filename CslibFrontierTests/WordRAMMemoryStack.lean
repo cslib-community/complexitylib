@@ -10,7 +10,7 @@ import CslibFrontier.Computability.WordRAM.Realization.Client.MemoryStack
 payload, so a successor-based option encoding could not satisfy this instance. Both methods retain
 the literal inaccessible memory. These instruction bounds include certified local work. -/
 
-namespace ComplexityTests.WordRAMMemoryStack
+namespace CslibFrontierTests.WordRAMMemoryStack
 
 open Cslib.DataStructure Cslib.WordRAM Cslib.WordRAM.Realization
 open MemoryStack
@@ -169,4 +169,4 @@ example : (Memory.spec 4).clientResult empty (Stack.Memory.pop L) = none := by d
 
 example : optionWords (some 15) = ![1, 15] ∧ Fits 4 15 ∧ ¬Fits 4 (15 + 1) := by decide
 
-end ComplexityTests.WordRAMMemoryStack
+end CslibFrontierTests.WordRAMMemoryStack

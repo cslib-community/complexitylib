@@ -14,7 +14,7 @@ These VM examples complement the general execution and resource proofs.
 
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMSchonhageBoxQuery
+namespace CslibFrontierTests.WordRAMSchonhageBoxQuery
 
 open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage
 
@@ -170,4 +170,4 @@ example : (queryLeaves 2 1 (PrunedQuery.queryAt (99 : Fin (10 ^ 2)))).card = 19 
 example : (queryLeaves 2 2 (PrunedQuery.queryAt (99 : Fin (10 ^ 2)))).card = 100 := by
   decide +kernel
 
-end ComplexityTests.WordRAMSchonhageBoxQuery
+end CslibFrontierTests.WordRAMSchonhageBoxQuery

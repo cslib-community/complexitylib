@@ -15,7 +15,7 @@ including a register borrowed from the Cook–Mertz state, and a wraparound coun
 that the modulus bound of `natCast_sqDist_eq_zero_iff` cannot be dropped.
 -/
 
-namespace ComplexityTests.CatalyticComparison
+namespace CslibFrontierTests.CatalyticComparison
 
 open Cslib.Catalytic
 
@@ -98,4 +98,4 @@ example (V : Fin 4 → ℤ) : keyTest 5 (1 : Fin 4) 1 V 2 = (V, 7) := by
   rw [keyTest_eq]
   norm_num
 
-end ComplexityTests.CatalyticComparison
+end CslibFrontierTests.CatalyticComparison

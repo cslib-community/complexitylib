@@ -15,7 +15,7 @@ runtime certificates. Invalid codes test total runtime only; they need not prese
 semantics of a different raw interpreter.
 -/
 
-namespace ComplexityTests.CircuitLayering
+namespace CslibFrontierTests.CircuitLayering
 
 open Cslib.Circuits Boolean Boolean.Layered Turing.MultiTapeTM
 
@@ -101,4 +101,4 @@ example : ComputableInPolyTime
     (fun p : ℕ × (List (Op × List ℕ) × List ℕ) => compile p.1 p.2)
     (encPair encUnary encCode) encCompiled := by fun_prop
 
-end ComplexityTests.CircuitLayering
+end CslibFrontierTests.CircuitLayering

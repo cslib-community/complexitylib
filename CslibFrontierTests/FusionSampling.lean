@@ -15,7 +15,7 @@ matching literals of the positive input. A complementary pair covers it, and the
 sampling and fixed-distribution theorems apply to its probability-one point mass.
 -/
 
-namespace ComplexityTests.FusionSampling
+namespace CslibFrontierTests.FusionSampling
 
 open Cslib.Circuits.Fusion
 open scoped BigOperators
@@ -67,4 +67,4 @@ example : ¬ ∀ p : Set ↥(targetᶜ) × Set ↥(targetᶜ),
     (by simp) (d := 1 / 25) (by simpa using hd)
   norm_num at h
 
-end ComplexityTests.FusionSampling
+end CslibFrontierTests.FusionSampling

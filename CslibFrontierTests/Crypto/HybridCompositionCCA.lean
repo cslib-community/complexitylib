@@ -19,12 +19,12 @@ end-to-end encrypted-key KEM client. Native adaptive traces cover prechallenge o
 changed KEM components, malformed encodings, rejected replies and accepted empty values.
 -/
 
-namespace ComplexityTests.Crypto.HybridCompositionCCA
+namespace CslibFrontierTests.Crypto.HybridCompositionCCA
 
 open Cslib Cslib.Crypto Cslib.Crypto.Encryption Cslib.Probability Turing.MultiTapeTM
-open ComplexityTests.Crypto.AuthenticatedEncryption
-open ComplexityTests.Crypto.HybridDEMCCA
-open ComplexityTests.Crypto.KEMFromPKECCA
+open CslibFrontierTests.Crypto.AuthenticatedEncryption
+open CslibFrontierTests.Crypto.HybridDEMCCA
+open CslibFrontierTests.Crypto.KEMFromPKECCA
 
 /-- Every actual strict-PPT key generator has one native unary seed schedule and total native
 postprocessor. Support holds for every seed, not merely for seeds of the selected width. -/
@@ -259,4 +259,4 @@ example (n : ℕ) : Game.advantage
     ChoiceOut.msg₀, ChoiceOut.msg₁, ChoiceOut.state, encPair_apply, encBits_apply,
     dropFrame, List.replicate_succ, Game.advantage, Game.succProbability]
 
-end ComplexityTests.Crypto.HybridCompositionCCA
+end CslibFrontierTests.Crypto.HybridCompositionCCA

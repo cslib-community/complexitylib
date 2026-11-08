@@ -9,7 +9,7 @@ import CslibFrontier.Computability.QueryComplexity.Quantum.Search
 /-! Measurement of finite-dimensional states: basis states, and the query model's register
 probability as an instance. -/
 
-namespace ComplexityTests.QuantumMeasurement
+namespace CslibFrontierTests.QuantumMeasurement
 
 open Cslib.Quantum
 
@@ -33,4 +33,4 @@ example (ψ : State 4 Unit) (i : Fin 4) :
     regProb ψ i = measureProb ψ (Finset.univ.filter fun p => p.1 = i) :=
   rfl
 
-end ComplexityTests.QuantumMeasurement
+end CslibFrontierTests.QuantumMeasurement

@@ -16,7 +16,7 @@ raw variables alongside helpers, a genuine multiplication of supplied inputs, an
 circuits over arbitrary fields and explicitly in characteristic two.
 -/
 
-namespace ComplexityTests.ArithmeticHessianRelative
+namespace CslibFrontierTests.ArithmeticHessianRelative
 
 open Cslib.Circuits MvPolynomial
 
@@ -96,4 +96,4 @@ example {K : Type*} [Field K] :
     rfl,
     by apply emptyPairing.pairing_le_mulCost id 0; simp [emptyPairing]⟩
 
-end ComplexityTests.ArithmeticHessianRelative
+end CslibFrontierTests.ArithmeticHessianRelative

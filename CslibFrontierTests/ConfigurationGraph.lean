@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace
 /-! Compact graph checks: native acceptance with zero tapes on every input, empty-input
 boundaries, ternary blank gaps and erasure, absorbing rejecting output, and native routines. -/
 
-namespace ComplexityTests.ConfigurationGraph
+namespace CslibFrontierTests.ConfigurationGraph
 
 open Cslib.Turing Turing Turing.MultiTapeTM
 open Turing.MultiTapeNTM.ConfigurationGraph
@@ -75,4 +75,4 @@ example : ComputableInSpace
     (budget_comp_linear (fst _ _) hr₂) (budget_comp_linear (fst _ _) hr₃)
     (budget_comp_linear (snd _ _) hr₃) (.refl _)
 
-end ComplexityTests.ConfigurationGraph
+end CslibFrontierTests.ConfigurationGraph

@@ -15,7 +15,7 @@ two-point walk, and a uniform spectral gap for the box product of two shear-tran
 unrelated sizes, with every hypothesis discharged.
 -/
 
-namespace ComplexityTests.BoxProductExpander
+namespace CslibFrontierTests.BoxProductExpander
 
 open Cslib Cslib.RotationMap Finset
 open scoped BigOperators
@@ -69,4 +69,4 @@ example (n m : ℕ) [NeZero n] [NeZero m] :
   norm_num at this ⊢
   linarith
 
-end ComplexityTests.BoxProductExpander
+end CslibFrontierTests.BoxProductExpander

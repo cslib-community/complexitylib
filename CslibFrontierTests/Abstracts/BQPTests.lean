@@ -17,9 +17,9 @@ first-bit language, decided exactly by a family without gates, is in the public 
 headline places it in the public `PP`.
 -/
 
-namespace ComplexityTests.Abstracts.BQPTests
+namespace CslibFrontierTests.Abstracts.BQPTests
 
-open ComplexityAbstracts ComplexityAbstracts.BQPAbstract
+open CslibFrontierAbstracts CslibFrontierAbstracts.BQPAbstract
 
 /-! ### The explicit gates -/
 
@@ -45,7 +45,7 @@ theorem acceptProb_hadamard (x : List Bool) :
     intro g hg
     rw [List.mem_singleton.mp hg]
     exact ⟨Nat.succ_pos _, rfl⟩
-  exact (BQPBridge.acceptProb_eq hwf x).trans (ComplexityTests.BQP.acceptProb_hadamardOnce x)
+  exact (BQPBridge.acceptProb_eq hwf x).trans (CslibFrontierTests.BQP.acceptProb_hadamardOnce x)
 
 /-! ### Membership and the headline -/
 
@@ -61,11 +61,11 @@ theorem mem_BQP_of_mem {α : Type} {enc : α ↪ List Bool} {A : Set α}
 
 /-- Words whose first bit is one are in the public `BQP`. -/
 theorem firstBit_mem_BQP :
-    ComplexityTests.BQP.FirstBit ∈ BQP ComplexityTests.Abstracts.Encoding.encBits :=
-  mem_BQP_of_mem ComplexityTests.BQP.firstBit_mem_BQP
+    CslibFrontierTests.BQP.FirstBit ∈ BQP CslibFrontierTests.Abstracts.Encoding.encBits :=
+  mem_BQP_of_mem CslibFrontierTests.BQP.firstBit_mem_BQP
 
 /-- The headline then places them in the public `PP`. -/
-example : ComplexityTests.BQP.FirstBit ∈ PP ComplexityTests.Abstracts.Encoding.encBits :=
+example : CslibFrontierTests.BQP.FirstBit ∈ PP CslibFrontierTests.Abstracts.Encoding.encBits :=
   BQP_subset_PP _ firstBit_mem_BQP
 
-end ComplexityTests.Abstracts.BQPTests
+end CslibFrontierTests.Abstracts.BQPTests

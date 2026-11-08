@@ -14,7 +14,7 @@ it has no asserted spectral gap. The arithmetic family's spectral instance is se
 
 open Cslib Cslib.RotationMap Turing.MultiTapeTM
 
-namespace ComplexityTests.PCPExpander
+namespace CslibFrontierTests.PCPExpander
 
 example : ComputableInPolyTime
     (fun index : ℕ => (⟨index % 1, Nat.mod_lt _ (by decide)⟩ : Fin 1))
@@ -111,4 +111,4 @@ example : ComputableInPolyTime arithmeticExpanderRotate
     (encPair encUnary (encFinEnum (AffinePlaneFamilyLabel (ZMod 257) 257))) :=
   polytime_arithmeticExpanderRotate _
 
-end ComplexityTests.PCPExpander
+end CslibFrontierTests.PCPExpander

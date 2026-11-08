@@ -18,7 +18,7 @@ without changing search limits or relying on machine-dependent resource exhausti
 
 open Lean Meta Elab Tactic Turing.MultiTapeTM Cslib.Tactic.PolyTime
 
-namespace ComplexityTests.PolyTimeFailureHintScope
+namespace CslibFrontierTests.PolyTimeFailureHintScope
 
 /-- Exercise a failed backend attempt and retain only the invocation's diagnostic state. -/
 private meta def seedHint (type : Expr) : TacticM Unit := do
@@ -93,4 +93,4 @@ example (outerMissing innerMissing : List Bool → Bool) :
     (ComputableInPolyTime innerMissing encBits encBool)
   rfl
 
-end ComplexityTests.PolyTimeFailureHintScope
+end CslibFrontierTests.PolyTimeFailureHintScope

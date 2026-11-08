@@ -17,7 +17,7 @@ answer from one to zero. Making both coin branches coincide changes one to two. 
 and runtime register bounds in these runs are discharged.
 -/
 
-namespace ComplexityTests.FairCoinInput
+namespace CslibFrontierTests.FairCoinInput
 
 open Cslib.Turing Turing MultiTapeTM CounterProgram Instr Expr
 open MultiTapeNTM.ConfigurationGraph MultiTapePTM.ConfigurationGraph
@@ -167,4 +167,4 @@ example : (coinCountProgram (machine false) 1).ReachesOut (frame [true])
 -- The returned label is an actual halt of the concrete program.
 example (different : Bool) : (coinCountProgram (machine different) 1).instr 6 = halt [] := rfl
 
-end ComplexityTests.FairCoinInput
+end CslibFrontierTests.FairCoinInput

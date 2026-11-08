@@ -21,10 +21,10 @@ through the actual multi-pass callbacks.
 
 @[expose] public section
 
-namespace ComplexityTests.UniversalComposition
+namespace CslibFrontierTests.UniversalComposition
 
 open Turing.MultiTapeTM Turing.MultiTapeTM.Universal
-open ComplexityTests.UniversalExecution (emitsAcrossSilence)
+open CslibFrontierTests.UniversalExecution (emitsAcrossSilence)
 
 /-- Copy each input bit and move right; a missing transition on blank halts without emission. -/
 def copyBits : Desc where
@@ -110,4 +110,4 @@ example :
       passOutput firstBit copyBits [true, false] 20 = [true] ∧
       passOutput copyBits emptyOutput [] 8 = [] := by decide
 
-end ComplexityTests.UniversalComposition
+end CslibFrontierTests.UniversalComposition

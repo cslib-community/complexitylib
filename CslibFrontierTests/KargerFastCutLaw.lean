@@ -20,11 +20,11 @@ minimum-cut hypothesis required by the quantitative success theorem.
 
 @[expose] public section
 
-namespace ComplexityTests.KargerFastCutLaw
+namespace CslibFrontierTests.KargerFastCutLaw
 
 open scoped ENNReal
 open Cslib Cslib.WeightedCut Cslib.Algorithms.Lean.Karger
-open ComplexityTests.KargerContraction
+open CslibFrontierTests.KargerContraction
 
 example : fastCutLaw 3 ⟨3, triangle⟩ = answerLaw ⟨3, triangle⟩ :=
   fastCutLaw_leaf (by decide) _
@@ -87,4 +87,4 @@ example (G : Graph) :
   simpa only [show Cslib.Algorithms.WordRAM.Karger.fastCutThreshold 7 = 6 by decide] using
     fastCutLaw_node (by decide : 7 ≤ 7) G
 
-end ComplexityTests.KargerFastCutLaw
+end CslibFrontierTests.KargerFastCutLaw

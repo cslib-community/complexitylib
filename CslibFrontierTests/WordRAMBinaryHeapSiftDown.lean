@@ -10,7 +10,7 @@ import Mathlib.Tactic.IntervalCases
 /-! One globally selected emitter handles a left-only swap, a real read-then-stop, a right
 selection by the strict handle tie, and index zero. The fixtures retain an inaccessible cell. -/
 
-namespace ComplexityTests.WordRAMBinaryHeapSiftDown
+namespace CslibFrontierTests.WordRAMBinaryHeapSiftDown
 
 open Cslib.WordRAM Cslib.WordRAM.Realization
 open Cslib.DataStructure Cslib.DataStructure.Memory Cslib.DataStructure.PriorityQueue
@@ -256,4 +256,4 @@ example : ∃ y, ExecWithin 1 (realizes_siftDown.code frontier src tmp) smallDat
 
 end
 
-end ComplexityTests.WordRAMBinaryHeapSiftDown
+end CslibFrontierTests.WordRAMBinaryHeapSiftDown

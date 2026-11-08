@@ -11,7 +11,7 @@ import Mathlib.Tactic.NormNum
 
 /-! Regression tests for `CslibFrontier.Computability.PolyTime.CommonCountingAccum`. -/
 
-namespace ComplexityTests.CommonCountingAccum
+namespace CslibFrontierTests.CommonCountingAccum
 
 open Cslib Cslib.BitString Cslib.CommonCountingAccum Polynomial Turing.MultiTapeTM
 
@@ -150,4 +150,4 @@ example (factors : ℕ → List JetRows)
       encNat (encList (encList encIntBin)) := by fun_prop (config := { maxTransitionDepth := 1 })
   trivial
 
-end ComplexityTests.CommonCountingAccum
+end CslibFrontierTests.CommonCountingAccum

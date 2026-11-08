@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Distributed.OrientedCycle.RoundComplexity
 colourings; the flooding simulation; instances of Linial's lower bound; the bridge to Mathlib's
 `cycleGraph`; and maximal independent sets. -/
 
-namespace ComplexityTests.Distributed.OrientedCycle
+namespace CslibFrontierTests.Distributed.OrientedCycle
 
 open Cslib Cslib.Distributed.OrientedCycle
 
@@ -226,4 +226,4 @@ example {S : Type} (A : Algorithm ℕ S Bool) : ¬A.FindsMIS 65537 0 := fun hA =
 example : ∃ (S : Type) (A : Algorithm ℕ S Bool), A.FindsMIS 5 7 :=
   (exists_findsMIS_and_logStar_le.{0} (n := 5) (by decide)).1
 
-end ComplexityTests.Distributed.OrientedCycle
+end CslibFrontierTests.Distributed.OrientedCycle

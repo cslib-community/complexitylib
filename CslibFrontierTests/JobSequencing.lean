@@ -14,7 +14,7 @@ binary numbers), instances in and out of `JobSequencing`, Karp's reduction from 
 and no instances including targets above the total, and compositional `fun_prop` synthesis.
 -/
 
-namespace ComplexityTests.JobSequencing
+namespace CslibFrontierTests.JobSequencing
 
 open Cslib.Complexity Turing.MultiTapeTM
 open scoped List
@@ -95,4 +95,4 @@ example : ComputableInPolyTime (fun σ : List (ℕ × ℕ × ℕ) => JobSequenci
 example : ComputableInPolyTime (fun x : List ℕ × ℕ => SubsetSum.toJobSequencing (x.1, x.2 + 1))
     (encPair (encList encNat) encNat) encJobSequencing := by fun_prop
 
-end ComplexityTests.JobSequencing
+end CslibFrontierTests.JobSequencing

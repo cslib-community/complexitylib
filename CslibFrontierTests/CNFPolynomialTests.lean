@@ -9,7 +9,7 @@ import Mathlib.Tactic.FinCases
 
 /-! Tests for `𝔽₂` polynomial compilation of CNF clause-violation parity checks. -/
 
-namespace ComplexityTests.CNFPolynomialTests
+namespace CslibFrontierTests.CNFPolynomialTests
 
 open Finset Cslib.BitString Cslib.Logic.PL
 
@@ -158,4 +158,4 @@ example :
       (by decide) (by simp [unitRows]) (fun _ => unitList) (fun _ => List.replicate_succ' ..)
       le_rfl⟩
 
-end ComplexityTests.CNFPolynomialTests
+end CslibFrontierTests.CNFPolynomialTests

@@ -54,7 +54,7 @@ Adapted from `scripts/CheckAbstract.lean` in `edemaine/lean-canny` (commit `2a50
 Demaine.
 -/
 
-namespace ComplexityTests.Abstracts
+namespace CslibFrontierTests.Abstracts
 
 open Lean Elab Command
 
@@ -174,4 +174,4 @@ def elabCheckAbstract : CommandElab
     checkAbstract ns.getId (mods.map (·.getId))
   | _ => throwUnsupportedSyntax
 
-end ComplexityTests.Abstracts
+end CslibFrontierTests.Abstracts

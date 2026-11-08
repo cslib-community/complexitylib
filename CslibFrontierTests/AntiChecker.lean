@@ -16,7 +16,7 @@ inputs and zero gates. The final example applies the certificate-length bound to
 one-input function satisfying the circuit-hardness hypothesis.
 -/
 
-namespace ComplexityTests.AntiChecker
+namespace CslibFrontierTests.AntiChecker
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Finset
 
@@ -129,4 +129,4 @@ example : ∃ S : Finset (BitString 1), #S ≤ 32 ∧
     (by decide : 0 < 1) (by decide : 1 ≤ 1) hf
   exact ⟨S, hS, MCSP.isAntiChecker_computableFunctions_iff_notMem.mp hanti⟩
 
-end ComplexityTests.AntiChecker
+end CslibFrontierTests.AntiChecker

@@ -28,7 +28,7 @@ Verifies non-vacuity and concrete behavior of:
 
 public section
 
-namespace ComplexityTests.StreamingMomentLowerBound
+namespace CslibFrontierTests.StreamingMomentLowerBound
 
 open Cslib Cslib.Streaming Finset
 
@@ -150,4 +150,4 @@ example (N : ℕ) : N / 3 ≤ N * N :=
               (Nat.succ_le_of_lt Nat.lt_two_pow_self)) _
         _ = 2 ^ (N * N) := by rw [← pow_mul]))
 
-end ComplexityTests.StreamingMomentLowerBound
+end CslibFrontierTests.StreamingMomentLowerBound

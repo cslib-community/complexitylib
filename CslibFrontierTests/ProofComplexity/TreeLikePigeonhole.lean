@@ -17,7 +17,7 @@ including a choice of `h` that beats `h = n / 2`, a comparison with the bound fr
 a weak instance with many pigeons, and the corresponding DPLL leaf bound.
 -/
 
-namespace ComplexityTests.ProofComplexity.TreeLikePigeonhole
+namespace CslibFrontierTests.ProofComplexity.TreeLikePigeonhole
 
 open Cslib Cslib.Logic.PL Function
 
@@ -106,4 +106,4 @@ example {t : DecisionTree (Fin 5 × Fin 4) (Clause (Fin 5 × Fin 4))}
   have := CNF.pow_lt_two_mul_leafCount_pigeonhole 2 (by decide) ht
   omega
 
-end ComplexityTests.ProofComplexity.TreeLikePigeonhole
+end CslibFrontierTests.ProofComplexity.TreeLikePigeonhole

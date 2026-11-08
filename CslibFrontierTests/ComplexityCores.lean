@@ -21,7 +21,7 @@ why the class form needs decidability. Bounded halting also has an infinite deci
 it, while the recursive core construction applied to a problem in `P` yields a finite set.
 -/
 
-namespace ComplexityTests.ComplexityCores
+namespace CslibFrontierTests.ComplexityCores
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -112,4 +112,4 @@ example : IsDecidable (BoundedHalting ∩ BiImmune.language) encBits ∧
   ⟨BoundedHalting.isDecidable.inter BiImmune.isDecidable_language,
     BoundedHalting.isDecidable.union BiImmune.isDecidable_language⟩
 
-end ComplexityTests.ComplexityCores
+end CslibFrontierTests.ComplexityCores

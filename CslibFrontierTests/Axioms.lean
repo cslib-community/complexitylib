@@ -25,7 +25,7 @@ already covers the standard set, so a named guard is added only for such a resul
 epic's own test module rather than here.
 -/
 
-namespace ComplexityTests.Axioms
+namespace CslibFrontierTests.Axioms
 
 open Lean Elab Command in
 run_cmd do
@@ -101,7 +101,7 @@ info: 'Cslib.Crypto.GoldreichLevin.checkCandidates_correct' depends on axioms:
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.Crypto.GoldreichLevin.checkCandidates_correct
 
-end ComplexityTests.Axioms
+end CslibFrontierTests.Axioms
 
 /--
 info: 'Cslib.OracleComp.map_run_interpret' depends on axioms:

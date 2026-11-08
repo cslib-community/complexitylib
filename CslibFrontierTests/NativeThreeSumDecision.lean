@@ -13,7 +13,7 @@ exercise initialized execution and the existing distinct-position predicate, rat
 abstract whole-host solver hypothesis. Tiny inputs also run through the actual flat interpreter.
 -/
 
-namespace ComplexityTests.NativeThreeSumDecision
+namespace CslibFrontierTests.NativeThreeSumDecision
 
 open Cslib.WordRAM
 open Cslib.Algorithms.WordRAM.ThreeSum
@@ -91,4 +91,4 @@ example : ∃ steps, Executes (Decision.width 1 live.widthCoefficient 3)
   rw [h0] at he
   exact ⟨steps, he, ht⟩
 
-end ComplexityTests.NativeThreeSumDecision
+end CslibFrontierTests.NativeThreeSumDecision

@@ -12,7 +12,7 @@ import CslibFrontier.Logics.Propositional.CNF.ThreeOccurrence
 # Tests for the count-preserving split into width three
 -/
 
-namespace ComplexityTests.Exact3CNF
+namespace CslibFrontierTests.Exact3CNF
 
 open Cslib.Logic.PL
 
@@ -69,4 +69,4 @@ example (φ : CNF ℕ) :
 example (φ : CNF ℕ) : φ.toExact3CNF.vars.length ≤ 7 * φ.vars.length :=
   CNF.length_vars_toExact3CNF_le φ
 
-end ComplexityTests.Exact3CNF
+end CslibFrontierTests.Exact3CNF

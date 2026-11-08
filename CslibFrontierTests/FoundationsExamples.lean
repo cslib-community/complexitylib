@@ -37,7 +37,7 @@ approximate counting. The examples apply headline theorems to objects satisfying
 hypotheses, so these theorems are not vacuous, and `decide` checks the computed values.
 -/
 
-namespace ComplexityTests.FoundationsExamples
+namespace CslibFrontierTests.FoundationsExamples
 
 open Cslib Finset
 open scoped Matrix
@@ -412,4 +412,4 @@ example : 3 / 4 ≤ dens {ω : ∀ j : Fin (7 * 1 * 2 + 1),
 
 end ApproximateCounting
 
-end ComplexityTests.FoundationsExamples
+end CslibFrontierTests.FoundationsExamples

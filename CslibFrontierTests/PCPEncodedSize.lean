@@ -10,7 +10,7 @@ import CslibFrontier.Computability.PCP.Encoded.Constraints
 
 /-! Full encoded graph sizes, alternative descriptor encodings, and essential bounds. -/
 
-namespace ComplexityTests.PCPEncodedSize
+namespace CslibFrontierTests.PCPEncodedSize
 
 open Cslib.PCP.Encoded Turing.MultiTapeTM
 
@@ -59,4 +59,4 @@ example :
     simp [tableGraph, graph, Graph.WellFormed, Graph.mapConstraints]
   exact hg.length_encoding_le _ _ fun edge _ => Graph.length_constraintTable_le edge.constraint
 
-end ComplexityTests.PCPEncodedSize
+end CslibFrontierTests.PCPEncodedSize

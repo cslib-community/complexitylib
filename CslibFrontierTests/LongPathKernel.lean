@@ -19,7 +19,7 @@ equality of unary numbers. The hypotheses of the cross-composition theorem hold 
 kernel lower bound is conditional only on `coNP ⊄ NP/poly`.
 -/
 
-namespace ComplexityTests.LongPathKernel
+namespace CslibFrontierTests.LongPathKernel
 
 open Cslib Cslib.Complexity Turing.MultiTapeTM ComputableInPolyTime
 
@@ -123,4 +123,4 @@ example (h : ¬ coNP encCNF ⊆ NPPoly encCNF) :
     ¬ HasPolyKernel (encPair encGraph encNat) Prod.snd LongPath :=
   not_hasPolyKernel_LongPath h
 
-end ComplexityTests.LongPathKernel
+end CslibFrontierTests.LongPathKernel

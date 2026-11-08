@@ -20,7 +20,7 @@ impersonator that computes the witness succeeds with probability one, so the ext
 gives the rewinding extractor success probability at least `10 / 11`.
 -/
 
-namespace ComplexityTests.Crypto.SigmaIdentification
+namespace CslibFrontierTests.Crypto.SigmaIdentification
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Protocols SigmaProtocol
 
@@ -99,4 +99,4 @@ example :
         (linearSimulate (fun _ => LinearMap.toSpanSingleton (ZMod 11) (ZMod 11) 2) id ι)) :=
   schnorr_eavesdropAttack_eq_directAttack _
 
-end ComplexityTests.Crypto.SigmaIdentification
+end CslibFrontierTests.Crypto.SigmaIdentification

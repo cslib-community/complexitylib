@@ -19,7 +19,7 @@ one modular accumulator rather than a table of assignments.
 
 public section
 
-namespace ComplexityTests.GateInterpolation
+namespace CslibFrontierTests.GateInterpolation
 
 open Turing MultiTapeTM MultiTapePTM.BlockComputation
 open MultiTapePTM.BlockComputation.QueryReplay
@@ -46,4 +46,4 @@ example : observe ((Interpolation.machine haltedControl code).runFrom [true]
     (Interpolation.initial params) 5) = some (2, 0) := by decide
 example : (Interpolation.start (k := 0) code (params, 1, 0)).1 = (1, 0) := rfl
 
-end ComplexityTests.GateInterpolation
+end CslibFrontierTests.GateInterpolation

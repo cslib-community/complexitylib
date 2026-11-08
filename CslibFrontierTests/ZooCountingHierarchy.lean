@@ -12,7 +12,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 
 /-! Clients of counting targets, unique solutions and the Boolean hierarchy. -/
 
-namespace ComplexityTests.ZooCountingHierarchy
+namespace CslibFrontierTests.ZooCountingHierarchy
 
 open Cslib Cslib.Complexity Turing.MultiTapeTM
 
@@ -181,4 +181,4 @@ private theorem not_coBH_zero_subset_BH_zero : ¬ (coBH encBool 0 ⊆ BH encBool
 example : ¬ (BH encBool 1 ⊆ BH encBool 0) :=
   fun h => not_coBH_zero_subset_BH_zero (BH_succ_subset_iff_coBH_subset.mp h)
 
-end ComplexityTests.ZooCountingHierarchy
+end CslibFrontierTests.ZooCountingHierarchy

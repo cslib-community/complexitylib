@@ -16,7 +16,7 @@ conditional probability one; a nonzero matrix also has positive hit probability.
 zero inner radius and zero output dimension are checked separately.
 -/
 
-namespace ComplexityTests.Crypto.LyubashevskyCommitment
+namespace CslibFrontierTests.Crypto.LyubashevskyCommitment
 
 open Cslib.Probability Cslib.Probability.PMF Cslib.Crypto.Protocols.SigmaProtocol
 open scoped Matrix ENNReal
@@ -144,4 +144,4 @@ example :
   simp only [hw, List.lookup_cons_self, Option.isSome_some, PMF.monad_bind_eq_bind,
     PMF.monad_pure_eq_pure, PMF.bind_const]
 
-end ComplexityTests.Crypto.LyubashevskyCommitment
+end CslibFrontierTests.Crypto.LyubashevskyCommitment

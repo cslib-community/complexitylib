@@ -8,7 +8,7 @@ import CslibFrontier.Crypto.Negligible.Basic
 
 /-! Square-root closure of negligible advantages, including composition and missing premises. -/
 
-namespace ComplexityTests.NegligibleSqrt
+namespace CslibFrontierTests.NegligibleSqrt
 
 open Cslib.Crypto
 open scoped NNReal
@@ -35,4 +35,4 @@ example : ∀ᶠ n : ℕ in Filter.atTop,
     (negligible_geometric (by norm_num : (1 / 4 : ℝ≥0) < 1)).sqrt.eventually_le_inv_polynomial
       (p := fun n => n + 1) (by fun_prop) (by intro n; lia)
 
-end ComplexityTests.NegligibleSqrt
+end CslibFrontierTests.NegligibleSqrt

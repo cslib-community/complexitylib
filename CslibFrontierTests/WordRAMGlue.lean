@@ -15,7 +15,7 @@ meta import Mathlib.Tactic.FunProp.Decl
 
 public section
 
-namespace ComplexityTests.WordRAMGlue
+namespace CslibFrontierTests.WordRAMGlue
 
 open Cslib.WordRAM
 
@@ -311,4 +311,4 @@ example : lazyDivide.eval 3 0 ⟨![0, 0, 0, 7], fun _ => 17⟩ =
 example : lazyDivide.eval 3 0 ⟨![2, 0, 0, 7], fun _ => 17⟩ =
     some ((⟨![2, 0, 0, 7], fun _ => 17⟩ : Data 4).set 2 3, 3) := rfl
 
-end ComplexityTests.WordRAMGlue
+end CslibFrontierTests.WordRAMGlue

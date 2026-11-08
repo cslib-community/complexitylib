@@ -14,7 +14,7 @@ success is one quarter. Empty commitments have extraction error one. The determi
 extractor is checked on empty, tied and strict-majority inputs and against its native certificate.
 -/
 
-namespace ComplexityTests.Crypto.OTCommitmentExtraction
+namespace CslibFrontierTests.Crypto.OTCommitmentExtraction
 
 open Cslib.Probability Cslib.Crypto.Protocols.MPC
 open OTCommitment Turing.MultiTapeTM Turing.MultiTapeTM.Encodings
@@ -120,4 +120,4 @@ example : simulatedOpening mixedSender 0 (pure ()) (fun _ => pure (claimOne 0, (
   have he : extract (k := 0) Fin.elim0 = false := by decide
   simp [simulatedOpening, senderTables_zero, he, openResult, claimOne, Accepts, PMF.bind_const]
 
-end ComplexityTests.Crypto.OTCommitmentExtraction
+end CslibFrontierTests.Crypto.OTCommitmentExtraction

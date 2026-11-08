@@ -14,7 +14,7 @@ Regression clients for the enumeration of distinct values (`Nat.distinctValues`,
 Kolmogorov–Levin symmetry of information.
 -/
 
-namespace ComplexityTests.KolmogorovSymmetryOfInformation
+namespace CslibFrontierTests.KolmogorovSymmetryOfInformation
 
 open Cslib Cslib.Kolmogorov Cslib.Kolmogorov.DescriptionMethod Nat.Partrec
 
@@ -119,4 +119,4 @@ example : ∃ c : ℕ, ∀ x y, algorithmicInformation x y ≤
   obtain ⟨c, hc⟩ := exists_abs_algorithmicInformation_sub_algorithmicInformation_le
   exact ⟨c, fun x y => by have := (abs_le.mp (hc x y)).2; omega⟩
 
-end ComplexityTests.KolmogorovSymmetryOfInformation
+end CslibFrontierTests.KolmogorovSymmetryOfInformation

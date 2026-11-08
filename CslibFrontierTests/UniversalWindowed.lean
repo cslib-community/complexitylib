@@ -19,7 +19,7 @@ windows.
 
 @[expose] public section
 
-namespace ComplexityTests.UniversalWindowed
+namespace CslibFrontierTests.UniversalWindowed
 
 open Turing.MultiTapeTM.Universal Turing.MultiTapeTM.Universal.Windowed
 
@@ -52,4 +52,4 @@ example (n : ℕ) :
     (sim readZero n (extract n (initWin readZero [0, 1]))).1.2.length = 2 :=
   (length_sim _ _ _).trans rfl
 
-end ComplexityTests.UniversalWindowed
+end CslibFrontierTests.UniversalWindowed

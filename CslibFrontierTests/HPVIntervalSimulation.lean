@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Inter
 /-! Interval steps of a concrete fair-coin machine, decided by finite simulation: the finite
 storage of an embedded window is evaluated, and the semantic interval step follows. -/
 
-namespace ComplexityTests.HPVIntervalSimulation
+namespace CslibFrontierTests.HPVIntervalSimulation
 
 open Turing MultiTapeMachine MultiTapePTM MultiTapeNTM.ChoiceTable Cslib.Turing
 
@@ -55,4 +55,4 @@ example : ¬ walk.LocalIntervalStep 2 [true] J₀ δ₁ c₀ (fun _ _ _ => none)
 example : walk.IntervalStep 2 [true] J₀ δ₁ c₀ (fun _ _ _ => none) [true, false] c₁ w₁ :=
   (walk.intervalStep_iff_localIntervalStep 2 _ _ _ _ _ _ _ _).mpr (by decide)
 
-end ComplexityTests.HPVIntervalSimulation
+end CslibFrontierTests.HPVIntervalSimulation

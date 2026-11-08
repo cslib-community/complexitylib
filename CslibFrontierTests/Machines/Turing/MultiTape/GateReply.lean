@@ -18,7 +18,7 @@ the initial packed vector, while positive intervals delegate to the actual inter
 
 public section
 
-namespace ComplexityTests.GateReply
+namespace CslibFrontierTests.GateReply
 
 open Turing MultiTapeTM MultiTapePTM.BlockComputation
 open MultiTapePTM.BlockComputation.QueryReplay
@@ -59,4 +59,4 @@ example : GateReply.prepare 1 ((0, 2, []), params) =
 example : (GateReply.machine reader code).halted
     (GateReply.initial reader code ((0, 2, [1]), params)) = true := by decide
 
-end ComplexityTests.GateReply
+end CslibFrontierTests.GateReply

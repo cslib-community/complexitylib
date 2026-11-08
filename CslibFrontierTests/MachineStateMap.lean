@@ -8,7 +8,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Repla
 
 /-! Noninjective control-state maps retain choice and query effects over a non-Boolean alphabet. -/
 
-namespace ComplexityTests.MachineStateMap
+namespace CslibFrontierTests.MachineStateMap
 
 open Cslib Turing Turing.MultiTapeMachine
 
@@ -91,4 +91,4 @@ example (fuel : ℕ) :
   rw [map_run, MultiTapeMachine.runConfigFrom_halted source choose query fuel halted rfl]
   rfl
 
-end ComplexityTests.MachineStateMap
+end CslibFrontierTests.MachineStateMap

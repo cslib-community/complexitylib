@@ -9,7 +9,7 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! Functional configuration programs with complete storage and input-boundary accounting. -/
 
-namespace ComplexityTests.ConfigurationPolyTime
+namespace CslibFrontierTests.ConfigurationPolyTime
 
 open Turing Turing.MultiTapeTM Turing.MultiTapeMachine Cslib.Turing
 
@@ -67,4 +67,4 @@ example : ∃ c : ℕ, ∀ word answer : List Bool,
     hc word.length 1 answer.length _
       ((FiniteConfig.spaceBound_init 0 word answer.length).receive 1 1 answer le_rfl)
 
-end ComplexityTests.ConfigurationPolyTime
+end CslibFrontierTests.ConfigurationPolyTime

@@ -18,7 +18,7 @@ PPT. This bridge identifies those laws with the complete serialized programs and
 native generated-key security theorem. The bridge introduces no notation or elaboration rules.
 -/
 
-namespace ComplexityTests.Abstracts.GSWSecurityBridge
+namespace CslibFrontierTests.Abstracts.GSWSecurityBridge
 
 /-- The secret dimension and centered-binomial width are positive at every parameter. -/
 def dimension (security : ℕ) : ℕ := security + 1
@@ -207,4 +207,4 @@ theorem indCPA (hLWE : DecisionLWE) : ChosenMessageSecure := by
     Crypto.Homomorphic.GSW.Parameters.samples, Crypto.Homomorphic.GSW.Parameters.width,
     Crypto.Homomorphic.GSW.Parameters.noise, Crypto.Homomorphic.GSW.Parameters.rows] using h
 
-end ComplexityTests.Abstracts.GSWSecurityBridge
+end CslibFrontierTests.Abstracts.GSWSecurityBridge

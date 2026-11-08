@@ -14,7 +14,7 @@ Exercise stable ties, empty records and keys, and arbitrary selected coordinates
 checks use the stored evaluator; kernel checks and the public semantics cover the same API.
 -/
 
-namespace ComplexityTests.CompareSwap
+namespace CslibFrontierTests.CompareSwap
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean
 
@@ -97,4 +97,4 @@ example : (compareSwapCircuit (![2, 0, 2] : Fin 3 → Fin 3)).size = 38 := by
       let expected := if swap then Fin.append y x else Fin.append x y
       (c.evalVector interpretation (Fin.append x y)).toArray == (Vector.ofFn expected).toArray
 
-end ComplexityTests.CompareSwap
+end CslibFrontierTests.CompareSwap

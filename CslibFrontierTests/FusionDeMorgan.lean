@@ -16,7 +16,7 @@ headline bounds are instantiated for an arbitrary function, and the dual-rail in
 evaluation theorem is instantiated at `n = 2`.
 -/
 
-namespace ComplexityTests.FusionDeMorgan
+namespace CslibFrontierTests.FusionDeMorgan
 
 open Cslib Cslib.Circuits Cslib.Circuits.Fusion Cslib.Circuits.Boolean
 
@@ -118,4 +118,4 @@ example : ∀ x : BitString 2, (Monotone.literalsRailCircuit 2).eval Monotone.in
 example : (Monotone.literalsRailCircuit 3).program.cost Monotone.andCost = 0 :=
   Monotone.cost_literalsRailCircuit
 
-end ComplexityTests.FusionDeMorgan
+end CslibFrontierTests.FusionDeMorgan

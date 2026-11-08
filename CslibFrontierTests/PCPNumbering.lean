@@ -16,7 +16,7 @@ public import Mathlib.Data.List.OfFn
 
 @[expose] public section
 
-namespace ComplexityTests.PCPNumbering
+namespace CslibFrontierTests.PCPNumbering
 
 open Cslib Cslib.PCP.HadamardTester Cslib.PCP.Encoded
 
@@ -108,4 +108,4 @@ theorem nodup_queries : queries.Nodup :=
 theorem mem_queries (i : Query) : i ∈ queries :=
   List.mem_ofFn.mpr ⟨numberQueries.2 i, numberQueries.2.symm_apply_apply i⟩
 
-end ComplexityTests.PCPNumbering
+end CslibFrontierTests.PCPNumbering

@@ -11,7 +11,7 @@ import CslibFrontier.DataStructure.PriorityQueue.BinaryHeap.Native.Program
 the decoding tests independent of private register geometry. These are decoder tests, not
 assertions that a native operation produced the register values. -/
 
-namespace ComplexityTests.WordRAMPriorityQueueDecode
+namespace CslibFrontierTests.WordRAMPriorityQueueDecode
 
 open Cslib.WordRAM Cslib.DataStructure.PriorityQueue
 open Cslib.DataStructure.PriorityQueue.WordRAM
@@ -51,4 +51,4 @@ example : Program.code.decode (n := 0) (K_max := 0) .isEmpty (fun _ => 0) = some
 example : Program.code.decode (n := 0) (K_max := 0) .isEmpty (fun _ => 1) = some true :=
   PQCode.decode_isEmpty _ _ rfl
 
-end ComplexityTests.WordRAMPriorityQueueDecode
+end CslibFrontierTests.WordRAMPriorityQueueDecode

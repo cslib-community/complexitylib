@@ -23,7 +23,7 @@ The conditional-averaging bound is applied to the affine-plane expander over `�
 to slice coordinates, which discharges its spectral hypothesis on every slice.
 -/
 
-namespace ComplexityTests.ConditionalAveraging
+namespace CslibFrontierTests.ConditionalAveraging
 
 open Cslib Cslib.Probability Finset Matrix
 open scoped BigOperators
@@ -88,4 +88,4 @@ example (y : ZMod 5) (f : RetentionSlice 5 2 0 3 y → ℝ) (t : ℕ) :
   have h := expect_walk_pow_sliceGraph_sub_expect_sq_le (by norm_num) _ hG y f t
   rwa [pow_mul, Real.sq_sqrt (by norm_num)] at h
 
-end ComplexityTests.ConditionalAveraging
+end CslibFrontierTests.ConditionalAveraging

@@ -8,7 +8,7 @@ import CslibFrontier.Computability.Complexity.Classes.Time.AcceptCount
 
 /-! Accepting choice strings of concrete fair-coin and nondeterministic machines. -/
 
-namespace ComplexityTests.HPVChoiceCount
+namespace CslibFrontierTests.HPVChoiceCount
 
 open Cslib Turing
 open scoped ENNReal
@@ -158,4 +158,4 @@ example (h : {b : Bool | b = true} ∈ Complexity.BPTIME MultiTapeTM.encBool fun
         (a ∈ {b : Bool | b = true} ↔ 2 ^ τ < 2 * machine.acceptCount (MultiTapeTM.encBool a) τ) :=
   Complexity.exists_acceptCount_of_mem_BPTIME h
 
-end ComplexityTests.HPVChoiceCount
+end CslibFrontierTests.HPVChoiceCount

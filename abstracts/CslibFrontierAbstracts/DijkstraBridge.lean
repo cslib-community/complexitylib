@@ -48,9 +48,9 @@ abbreviation `wramBlock` are global, since Lean cannot scope them, and outside `
 syntax is active there.
 -/
 
-namespace ComplexityAbstracts.DijkstraBridge
+namespace CslibFrontierAbstracts.DijkstraBridge
 
-open Cslib.WordRAM Cslib.Algorithms.WordRAM.Dijkstra ComplexityTests.Abstracts
+open Cslib.WordRAM Cslib.Algorithms.WordRAM.Dijkstra CslibFrontierTests.Abstracts
 
 /-- The defining equations of a walk predicate: `W G u l v` says that the list `l` of edges
 `(target, weight)` is a walk from `u` to `v` in the graph with adjacency lists `G`. -/
@@ -200,4 +200,4 @@ theorem fibonacci (S : WordRAMBridge.Presentation) (h : WordRAMBridge.Laws S)
   · rw [Machine.stateOf, hmem, walkDist_eq hW ⟨n, G, s⟩]
     exact hd u
 
-end ComplexityAbstracts.DijkstraBridge
+end CslibFrontierAbstracts.DijkstraBridge

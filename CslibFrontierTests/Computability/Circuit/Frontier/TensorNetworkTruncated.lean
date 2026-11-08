@@ -24,7 +24,7 @@ interpolates. At a modulus with enough residues it returns the truncated contrac
 
 @[expose] public section
 
-namespace ComplexityTests.TensorNetworkTruncated
+namespace CslibFrontierTests.TensorNetworkTruncated
 
 open Cslib Cslib.Circuits.Frontier Cslib.Circuits.Frontier.DescribedNetwork
 
@@ -90,4 +90,4 @@ example : G₁.truncContraction entry 1 1 =
     obtain rfl : i = 0 := by omega
     cases entry t bs <;> simp
 
-end ComplexityTests.TensorNetworkTruncated
+end CslibFrontierTests.TensorNetworkTruncated

@@ -17,7 +17,7 @@ multiplication, bit extraction, bounded list folds, and exponentially long itera
 polynomial space.
 -/
 
-namespace ComplexityTests.InSpacePlain
+namespace CslibFrontierTests.InSpacePlain
 
 open Cslib Turing.MultiTapeTM
 
@@ -135,4 +135,4 @@ example : fill (true, [false, true, false]) = [true, true, true] := rfl
 example : fill (false, [true, false]) = [false, false] := rfl
 example : fill (true, []) = [] := rfl
 
-end ComplexityTests.InSpacePlain
+end CslibFrontierTests.InSpacePlain

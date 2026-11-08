@@ -17,9 +17,9 @@ empty cases and repeated or non-dense variable labels. They also exercise the ex
 theorem. The implementation imports stay outside the abstract's audited statement surface.
 -/
 
-namespace ComplexityTests.Abstracts.SubexponentialSATTests
+namespace CslibFrontierTests.Abstracts.SubexponentialSATTests
 
-open ComplexityAbstracts.SubexponentialSATAbstract
+open CslibFrontierAbstracts.SubexponentialSATAbstract
 
 example (φ : Formula) (σ : ℕ → Bool) : eval φ σ = Cslib.Logic.PL.CNF.eval σ φ := rfl
 
@@ -87,4 +87,4 @@ example : ∃ count : Formula → ℕ,
   obtain ⟨count, _, _, _, hcount, _⟩ := exact_count 2
   refine ⟨count, ?_, ?_, ?_⟩ <;> rw [hcount _ (by simp [HasWidth])] <;> decide
 
-end ComplexityTests.Abstracts.SubexponentialSATTests
+end CslibFrontierTests.Abstracts.SubexponentialSATTests

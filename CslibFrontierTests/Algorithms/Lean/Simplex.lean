@@ -40,7 +40,7 @@ These kernel-checked examples (using no `native_decide`) exercise
 
 public section
 
-namespace ComplexityTests.Algorithms.Lean.Simplex
+namespace CslibFrontierTests.Algorithms.Lean.Simplex
 
 open Cslib.Algorithms.Lean.Simplex Dictionary Matrix Finset
 
@@ -193,4 +193,4 @@ example : (Fintype.card (Fin (3 + 3))).choose #(slackDictionary A₁ b₁ c₁).
     (Fintype.card (Fin (4 + 3))).choose #(slackDictionary A₂ b₂ c₂).basis - 1 = 34 := by
   decide +kernel
 
-end ComplexityTests.Algorithms.Lean.Simplex
+end CslibFrontierTests.Algorithms.Lean.Simplex

@@ -15,7 +15,7 @@ Miller–Rabin verifier: witnesses and liars for small composites, including the
 `561` and the strong pseudoprime `2047` to base `2`, moduli where the Rabin–Monier bound is attained
 or fails, and the verifier accepting and rejecting concrete random words. -/
 
-namespace ComplexityTests.Primality
+namespace CslibFrontierTests.Primality
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -137,4 +137,4 @@ example (r : Fin 6 → Bool) : MillerRabin.verifier (7, List.ofFn r) = false := 
   rw [hlen] at h
   exact h r
 
-end ComplexityTests.Primality
+end CslibFrontierTests.Primality

@@ -17,7 +17,7 @@ matrix `J₃` attains the bound with `per J₃ = 6 = (3!) ^ (3 / 3)`, the upper 
 
 open Finset Matrix
 
-namespace ComplexityTests.Bregman
+namespace CslibFrontierTests.Bregman
 
 /-- `(3!) ^ (1 / 3)` cubed is `3! = 6`. -/
 private theorem factorial_three_rpow_cube :
@@ -108,4 +108,4 @@ example {V : Type*} [Fintype V] [DecidableEq V] (G : V × V → Bool) :
         (1 / (#{w | G (v, w) = true} : ℝ)) :=
   Equiv.card_filter_forall_rel_le_prod_factorial_rpow fun v w => G (v, w) = true
 
-end ComplexityTests.Bregman
+end CslibFrontierTests.Bregman

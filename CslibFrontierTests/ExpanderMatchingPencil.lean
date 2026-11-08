@@ -19,7 +19,7 @@ Both pencil branches are then nonsingular for an explicit perturbation budget.
 The final client uses actual length-ten path parameters over a nonempty interval of angles.
 -/
 
-namespace ComplexityTests.ExpanderMatchingPencil
+namespace CslibFrontierTests.ExpanderMatchingPencil
 
 open Matrix Cslib.MatchingPencil
 
@@ -134,4 +134,4 @@ example (f : Fin 4 → ℝ) (x : Fin 4 → ℕ → ℝ)
   rw [← coreQ_eq]
   exact coreQ_gap z
 
-end ComplexityTests.ExpanderMatchingPencil
+end CslibFrontierTests.ExpanderMatchingPencil

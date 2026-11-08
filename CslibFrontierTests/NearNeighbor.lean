@@ -27,7 +27,7 @@ import Mathlib.Tactic.NormNum
 
 public section
 
-namespace ComplexityTests.NearNeighbor
+namespace CslibFrontierTests.NearNeighbor
 
 open Cslib.Probability Cslib.DataStructure.NearNeighbor
 
@@ -116,4 +116,4 @@ example :
     (x₀ := word₁) one_pos one_lt_two (by simp only [Fintype.card_fin]; norm_num)
     List.mem_cons_self (by norm_num [show hammingDist word₁ word₀ = 1 by decide])
 
-end ComplexityTests.NearNeighbor
+end CslibFrontierTests.NearNeighbor

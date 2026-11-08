@@ -15,7 +15,7 @@ import CslibFrontier.Tactic.PolyTime
 Concrete, boundary, and `fun_prop` checks for `ThreeSAT`, `IndependentSet`, and `Clique`.
 -/
 
-namespace ComplexityTests.KarpReductions
+namespace CslibFrontierTests.KarpReductions
 
 open Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -141,4 +141,4 @@ example : Clique.verifier
 example : SAT.toIndependentSet unsatFormula = (([0, 2], [(0, 2), (2, 0)]), 2) := rfl
 example : IndependentSet.verifier (SAT.toIndependentSet unsatFormula, [true, true]) = false := rfl
 
-end ComplexityTests.KarpReductions
+end CslibFrontierTests.KarpReductions

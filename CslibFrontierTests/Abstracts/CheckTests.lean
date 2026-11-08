@@ -18,21 +18,21 @@ Each test places a deliberate leak in its own namespace and pins the audit's err
 `#guard_msgs`; the positive tests pin the success report.
 -/
 
-namespace ComplexityTests.Abstracts.CheckTests
+namespace CslibFrontierTests.Abstracts.CheckTests
 
 /- A bridge moved to the dedicated library is still a repository-local dependency. -/
 namespace MovedBridgeLeak
-def leaked : List Bool := ComplexityTests.Abstracts.CookLevinBridge.frame []
+def leaked : List Bool := CslibFrontierTests.Abstracts.CookLevinBridge.frame []
 end MovedBridgeLeak
 
 /--
 error: abstract audit:
-`ComplexityTests.Abstracts.CheckTests.MovedBridgeLeak.leaked` depends on
-implementation declaration `ComplexityTests.Abstracts.CookLevinBridge.frame` from
+`CslibFrontierTests.Abstracts.CheckTests.MovedBridgeLeak.leaked` depends on
+implementation declaration `CslibFrontierTests.Abstracts.CookLevinBridge.frame` from
 `CslibFrontierAbstracts.CookLevinBridge`
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.CheckTests.MovedBridgeLeak
+#check_abstract CslibFrontierTests.Abstracts.CheckTests.MovedBridgeLeak
 
 /-! ### Rejected leaks -/
 
@@ -43,12 +43,12 @@ end DirectDefLeak
 
 /--
 error: abstract audit:
-`ComplexityTests.Abstracts.CheckTests.DirectDefLeak.leakedDef` depends on
+`CslibFrontierTests.Abstracts.CheckTests.DirectDefLeak.leakedDef` depends on
 implementation declaration `Cslib.Complexity.SAT` from
 `CslibFrontier.Computability.Complexity.Problems.SAT`
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.CheckTests.DirectDefLeak
+#check_abstract CslibFrontierTests.Abstracts.CheckTests.DirectDefLeak
 
 /- 2. Transitive leak through a `private` pattern-matching helper inside the namespace. -/
 namespace PrivateMatcherLeak
@@ -60,12 +60,12 @@ end PrivateMatcherLeak
 
 /--
 error: abstract audit:
-`ComplexityTests.Abstracts.CheckTests.PrivateMatcherLeak.publicWrapper` depends on
+`CslibFrontierTests.Abstracts.CheckTests.PrivateMatcherLeak.publicWrapper` depends on
 implementation declaration `Cslib.Complexity.SAT` from
 `CslibFrontier.Computability.Complexity.Problems.SAT`
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.CheckTests.PrivateMatcherLeak
+#check_abstract CslibFrontierTests.Abstracts.CheckTests.PrivateMatcherLeak
 
 /- 3. Leak in a `theorem` statement (even when the proof is `rfl`). -/
 namespace TheoremTypeLeak
@@ -74,11 +74,11 @@ end TheoremTypeLeak
 
 /--
 error: abstract audit:
-`ComplexityTests.Abstracts.CheckTests.TheoremTypeLeak.leakedStmt` depends on
+`CslibFrontierTests.Abstracts.CheckTests.TheoremTypeLeak.leakedStmt` depends on
 implementation declaration `Cslib.Logic.PL.CNF` from `CslibFrontier.Logics.Propositional.CNF`
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.CheckTests.TheoremTypeLeak
+#check_abstract CslibFrontierTests.Abstracts.CheckTests.TheoremTypeLeak
 
 /- 4. Leak to a declaration in the same file outside the audited namespace. -/
 def outsideHelper : Nat := 42
@@ -88,12 +88,12 @@ end OutsideNamespaceLeak
 
 /--
 error: abstract audit:
-`ComplexityTests.Abstracts.CheckTests.OutsideNamespaceLeak.usesOutside` depends on
-declaration `ComplexityTests.Abstracts.CheckTests.outsideHelper` outside
-`ComplexityTests.Abstracts.CheckTests.OutsideNamespaceLeak`
+`CslibFrontierTests.Abstracts.CheckTests.OutsideNamespaceLeak.usesOutside` depends on
+declaration `CslibFrontierTests.Abstracts.CheckTests.outsideHelper` outside
+`CslibFrontierTests.Abstracts.CheckTests.OutsideNamespaceLeak`
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.CheckTests.OutsideNamespaceLeak
+#check_abstract CslibFrontierTests.Abstracts.CheckTests.OutsideNamespaceLeak
 
 /- 5. Leak inside the constructor of a `private inductive` referenced only by type. -/
 namespace PrivateInductiveCtorLeak
@@ -104,12 +104,12 @@ end PrivateInductiveCtorLeak
 
 /--
 error: abstract audit:
-`ComplexityTests.Abstracts.CheckTests.PrivateInductiveCtorLeak.usesHiddenType`
+`CslibFrontierTests.Abstracts.CheckTests.PrivateInductiveCtorLeak.usesHiddenType`
 depends on implementation declaration `Cslib.Complexity.SAT` from
 `CslibFrontier.Computability.Complexity.Problems.SAT`
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.CheckTests.PrivateInductiveCtorLeak
+#check_abstract CslibFrontierTests.Abstracts.CheckTests.PrivateInductiveCtorLeak
 
 /- 6. Rejection of `opaque` / `partial` definitions in an abstract namespace. -/
 namespace OpaqueDefLeak
@@ -118,11 +118,11 @@ end OpaqueDefLeak
 
 /--
 error: abstract audit:
-`ComplexityTests.Abstracts.CheckTests.OpaqueDefLeak.hiddenVal` is `opaque`,
+`CslibFrontierTests.Abstracts.CheckTests.OpaqueDefLeak.hiddenVal` is `opaque`,
 `partial`, or `unsafe`
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.CheckTests.OpaqueDefLeak
+#check_abstract CslibFrontierTests.Abstracts.CheckTests.OpaqueDefLeak
 
 /- 7. The allowlist is transitive: `Cslib.Complexity.NPComplete` lives in the allowlisted
 `Reduction` module, but its definition reaches declarations from modules that are not
@@ -134,12 +134,12 @@ end AllowlistTransitiveLeak
 
 /--
 error: abstract audit:
-`ComplexityTests.Abstracts.CheckTests.AllowlistTransitiveLeak.usesNPComplete` depends on
+`CslibFrontierTests.Abstracts.CheckTests.AllowlistTransitiveLeak.usesNPComplete` depends on
 implementation declaration `Cslib.Complexity.NP` from
 `CslibFrontier.Computability.Complexity.Classes.NP`
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.CheckTests.AllowlistTransitiveLeak allowing [
+#check_abstract CslibFrontierTests.Abstracts.CheckTests.AllowlistTransitiveLeak allowing [
   CslibFrontier.Computability.Complexity.Reduction
 ]
 
@@ -150,12 +150,12 @@ private theorem hiddenMain : Cslib.Complexity.SAT = Cslib.Complexity.SAT := rfl
 end PrivateTheoremLeak
 
 /--
-error: abstract audit: `ComplexityTests.Abstracts.CheckTests.PrivateTheoremLeak.hiddenMain`
+error: abstract audit: `CslibFrontierTests.Abstracts.CheckTests.PrivateTheoremLeak.hiddenMain`
 depends on implementation declaration `Cslib.Logic.PL.CNF` from
 `CslibFrontier.Logics.Propositional.CNF`
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.CheckTests.PrivateTheoremLeak
+#check_abstract CslibFrontierTests.Abstracts.CheckTests.PrivateTheoremLeak
 
 /- 10. A user declaration with an internal-looking name is audited. -/
 namespace InternalNameLeak
@@ -163,11 +163,11 @@ theorem eq_1 : Cslib.Complexity.SAT = Cslib.Complexity.SAT := rfl
 end InternalNameLeak
 
 /--
-error: abstract audit: `ComplexityTests.Abstracts.CheckTests.InternalNameLeak.eq_1` depends on
+error: abstract audit: `CslibFrontierTests.Abstracts.CheckTests.InternalNameLeak.eq_1` depends on
 implementation declaration `Cslib.Logic.PL.CNF` from `CslibFrontier.Logics.Propositional.CNF`
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.CheckTests.InternalNameLeak
+#check_abstract CslibFrontierTests.Abstracts.CheckTests.InternalNameLeak
 
 /- 11. A structure-field default value is audited. -/
 namespace StructureDefaultLeak
@@ -177,11 +177,11 @@ end StructureDefaultLeak
 
 /--
 error: abstract audit:
-`ComplexityTests.Abstracts.CheckTests.StructureDefaultLeak.Hidden.x._default` depends on
+`CslibFrontierTests.Abstracts.CheckTests.StructureDefaultLeak.Hidden.x._default` depends on
 implementation declaration `Cslib.Logic.PL.CNF` from `CslibFrontier.Logics.Propositional.CNF`
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.CheckTests.StructureDefaultLeak
+#check_abstract CslibFrontierTests.Abstracts.CheckTests.StructureDefaultLeak
 
 /- 12. `partial` definitions are rejected. -/
 namespace PartialDefLeak
@@ -189,11 +189,11 @@ partial def loop (n : Nat) : Nat := loop (n + 1)
 end PartialDefLeak
 
 /--
-error: abstract audit: `ComplexityTests.Abstracts.CheckTests.PartialDefLeak.loop` is `opaque`,
+error: abstract audit: `CslibFrontierTests.Abstracts.CheckTests.PartialDefLeak.loop` is `opaque`,
 `partial`, or `unsafe`
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.CheckTests.PartialDefLeak
+#check_abstract CslibFrontierTests.Abstracts.CheckTests.PartialDefLeak
 
 /- 13. `unsafe` definitions are rejected. -/
 namespace UnsafeDefLeak
@@ -201,29 +201,29 @@ unsafe def hiddenUnsafe : Nat := 0
 end UnsafeDefLeak
 
 /--
-error: abstract audit: `ComplexityTests.Abstracts.CheckTests.UnsafeDefLeak.hiddenUnsafe` is
+error: abstract audit: `CslibFrontierTests.Abstracts.CheckTests.UnsafeDefLeak.hiddenUnsafe` is
 `opaque`, `partial`, or `unsafe`
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.CheckTests.UnsafeDefLeak
+#check_abstract CslibFrontierTests.Abstracts.CheckTests.UnsafeDefLeak
 
-end ComplexityTests.Abstracts.CheckTests
+end CslibFrontierTests.Abstracts.CheckTests
 
 /- 8. Declarations that an imported module (here the Cook–Levin bridge) places in the audited
 namespace are rejected, even if this file adds its own declarations there. -/
-namespace ComplexityTests.Abstracts.CookLevinBridge
+namespace CslibFrontierTests.Abstracts.CookLevinBridge
 def localAddition : Nat := 0
-end ComplexityTests.Abstracts.CookLevinBridge
+end CslibFrontierTests.Abstracts.CookLevinBridge
 
 /--
-error: abstract audit: `ComplexityTests.Abstracts.CookLevinBridge.ComputableInPolyTime` lies in
-`ComplexityTests.Abstracts.CookLevinBridge` but is defined in imported module
+error: abstract audit: `CslibFrontierTests.Abstracts.CookLevinBridge.ComputableInPolyTime` lies in
+`CslibFrontierTests.Abstracts.CookLevinBridge` but is defined in imported module
 `CslibFrontierAbstracts.CookLevinBridge`, not in the current file
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.CookLevinBridge
+#check_abstract CslibFrontierTests.Abstracts.CookLevinBridge
 
-namespace ComplexityTests.Abstracts.CheckTests
+namespace CslibFrontierTests.Abstracts.CheckTests
 
 /-! ### Accepted abstracts -/
 
@@ -233,11 +233,11 @@ def usesEncNat : ℕ ↪ List Bool := Turing.MultiTapeTM.encNat
 end AllowlistAccepted
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.CheckTests.AllowlistAccepted`: 1 root
+info: abstract audit passed for `CslibFrontierTests.Abstracts.CheckTests.AllowlistAccepted`: 1 root
 declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.CheckTests.AllowlistAccepted allowing [
+#check_abstract CslibFrontierTests.Abstracts.CheckTests.AllowlistAccepted allowing [
   CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Bits
 ]
 
@@ -248,10 +248,10 @@ def usesArithmetic : ℕ := (1 + 2) * (3 + 4)
 end DependencyCountUnpinned
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.CheckTests.DependencyCountUnpinned`: 1
+info: abstract audit passed for `CslibFrontierTests.Abstracts.CheckTests.DependencyCountUnpinned`: 1
 root declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.CheckTests.DependencyCountUnpinned
+#check_abstract CslibFrontierTests.Abstracts.CheckTests.DependencyCountUnpinned
 
-end ComplexityTests.Abstracts.CheckTests
+end CslibFrontierTests.Abstracts.CheckTests

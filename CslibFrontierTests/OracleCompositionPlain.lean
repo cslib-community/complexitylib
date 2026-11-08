@@ -10,7 +10,7 @@ import CslibFrontier.Tactic.PolyTime
 /-! Plain-hypothesis strict oracle PPT combinators: branches, finite dispatch and loops whose side
 conditions are ordinary `ComputableInPolyTime` certificates. -/
 
-namespace ComplexityTests.OracleCompositionPlain
+namespace CslibFrontierTests.OracleCompositionPlain
 
 open Cslib Cslib.Probability Turing Turing.MultiTapeTM
 
@@ -93,4 +93,4 @@ example : IsOraclePPTOn encUnary encBits (fun n => OracleComp.iterate n
     (fun _ _ _ _ hbits _ hnext => (length_le_of_mem_collectStep hnext).trans (by lia))
     polyBounded_unary (fun _ _ _ hi hbits => by simp only [encBits_apply]; exact hbits.trans hi)).1
 
-end ComplexityTests.OracleCompositionPlain
+end CslibFrontierTests.OracleCompositionPlain

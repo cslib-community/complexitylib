@@ -15,7 +15,7 @@ API, independently of complexity classes and the padding argument.
 
 open Turing.MultiTapeTM
 
-namespace ComplexityTests.QuantitativeEncoding
+namespace CslibFrontierTests.QuantitativeEncoding
 
 -- An arbitrary embedding reuses the same bit-word machine and evaluates its bounds on the word.
 example {α β : Type} {encOut : β ↪ List Bool} {f : List Bool → β} {T S : List Bool → ℕ}
@@ -39,4 +39,4 @@ example {α : Type} (enc : α ↪ List Bool) {f : List Bool → ℕ} {T S : List
       (fun a => S (enc a) + 2 ^ f (enc a)) :=
   (ComputableInO.unary_two_pow.comp h).comp_enc enc
 
-end ComplexityTests.QuantitativeEncoding
+end CslibFrontierTests.QuantitativeEncoding

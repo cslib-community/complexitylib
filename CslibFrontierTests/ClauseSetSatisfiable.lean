@@ -11,7 +11,7 @@ variables, decided by evaluation; a clause that makes a satisfiable set unsatisf
 along an injective map, which preserves satisfiability, and along a map identifying two variables,
 which does not; agreement with `CNF.Satisfiable`; and the width bound under relabelling. -/
 
-namespace ComplexityTests.ClauseSetSatisfiable
+namespace CslibFrontierTests.ClauseSetSatisfiable
 
 open Cslib.Logic.PL
 
@@ -65,4 +65,4 @@ example : ¬φ.toCNF.toClauseSet.Satisfiable := by
 example : ∀ C ∈ ψ.relabel (Fin.succ : Fin 2 → Fin 3), C.card ≤ 2 :=
   fun _ hC => ClauseSet.card_le_of_mem_relabel (by decide) hC
 
-end ComplexityTests.ClauseSetSatisfiable
+end CslibFrontierTests.ClauseSetSatisfiable

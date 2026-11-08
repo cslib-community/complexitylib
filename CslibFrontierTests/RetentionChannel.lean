@@ -15,7 +15,7 @@ given identifiers jointly at rate `(2 / 5) ^ 2`. Over `𝔽₇` in two coordinat
 `f = (1 / 2) ^ 2`, the channel properties hold with side `L = ⌈7 / 2⌉ = 4`.
 -/
 
-namespace ComplexityTests.RetentionChannel
+namespace CslibFrontierTests.RetentionChannel
 
 open Cslib Cslib.Probability Finset
 
@@ -53,4 +53,4 @@ example : (1 / 2 : ℝ) ^ 2 ≤ ((4 : ℝ) / 7) ^ 2 ∧ ((4 : ℝ) / 7) ^ 2 ≤ 
   push_cast at hlo hhi
   exact ⟨hlo, hhi⟩
 
-end ComplexityTests.RetentionChannel
+end CslibFrontierTests.RetentionChannel

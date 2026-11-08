@@ -13,7 +13,7 @@ general correctness theorems. The same fixture satisfies their explicit noise ma
 These tests do not assert sampling, efficiency, security or bootstrappability.
 -/
 
-namespace ComplexityTests.GSW
+namespace CslibFrontierTests.GSW
 
 open Cslib.Crypto.Homomorphic.GSW
 open scoped Matrix
@@ -139,4 +139,4 @@ example : (bitMatrix (ZMod (2 ^ 3)) (flattenMatrix 3 nonbinary) *ᵥ
       nonbinary *ᵥ powersOfTwo 3 (fun _ : Fin 1 => 3) := by
   refine ⟨?_, ?_, flattenMatrix_mulVec 3 nonbinary (fun _ => 3)⟩ <;> decide +kernel
 
-end ComplexityTests.GSW
+end CslibFrontierTests.GSW

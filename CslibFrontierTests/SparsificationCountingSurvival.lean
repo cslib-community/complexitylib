@@ -13,7 +13,7 @@ public section
 open Cslib.Logic.PL
 open ClauseSet.Sparsification Finset
 
-namespace ComplexityTests.SparsificationCountingSurvival
+namespace CslibFrontierTests.SparsificationCountingSurvival
 
 private def θ (j : ℕ) := 2 ^ j
 
@@ -148,4 +148,4 @@ example : ∀ C ∈ ({∅} : ClauseSet Empty), ∀ l ∈ C, Std.Sat.Literal.nega
     (fun _ => 0) (fun _ => ∅) (fun _ => false) (by intro i hi; omega)
     (by intro i hi; omega) (by simp) (t := 0) le_rfl
 
-end ComplexityTests.SparsificationCountingSurvival
+end CslibFrontierTests.SparsificationCountingSurvival

@@ -20,7 +20,7 @@ distributed without `state`), this exercises both randomized stage-1 selection a
 stage 2. We also exercise the plain `ComputableInPolyTime` and `IsPPT` certificates.
 -/
 
-namespace ComplexityTests.Crypto.Commitment
+namespace CslibFrontierTests.Crypto.Commitment
 
 open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 open scoped NNReal
@@ -88,4 +88,4 @@ theorem not_statefulHiding_leakCommit : ¬ StatefulHiding leakCommit := by
   rw [hone] at hnegl
   exact not_negligible_const one_ne_zero hnegl
 
-end ComplexityTests.Crypto.Commitment
+end CslibFrontierTests.Crypto.Commitment

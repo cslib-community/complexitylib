@@ -17,7 +17,7 @@ the actual graph-complement reduction and transfers known hardness. It is an app
 existing results, not a new completeness theorem.
 -/
 
-namespace ComplexityTests.NPCompleteness
+namespace CslibFrontierTests.NPCompleteness
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -73,4 +73,4 @@ example {γ : Type} {enc : γ ↪ List Bool} {f : γ → (Graph × ℕ) × List 
     ComputableInPolyTime (fun c => Clique.verifier (f c)) enc encBool := by
   fun_prop
 
-end ComplexityTests.NPCompleteness
+end CslibFrontierTests.NPCompleteness

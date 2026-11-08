@@ -25,7 +25,7 @@ zero-width states, on an empty and a singleton invariant set, through an encodin
 a higher universe, and for permutation inversion and periodicity.
 -/
 
-namespace ComplexityTests.Iteration
+namespace CslibFrontierTests.Iteration
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Circuits.Boolean.Iteration
 
@@ -424,4 +424,4 @@ example :
           lowerBudget 64 < c.size ∧ r ≤ c.size :=
   batched_hard_counter_power 64 (by decide)
 
-end ComplexityTests.Iteration
+end CslibFrontierTests.Iteration

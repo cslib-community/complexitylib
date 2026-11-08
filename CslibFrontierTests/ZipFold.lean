@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Zip
 
 /-! Tests of `zipFold`: what it computes, and that its cost theorem applies to a concrete walk. -/
 
-namespace ComplexityTests.ZipFold
+namespace CslibFrontierTests.ZipFold
 
 open Turing.MultiTapeTM
 
@@ -60,4 +60,4 @@ example : ComputableInO
     simp only [length_encPair]
     omega
 
-end ComplexityTests.ZipFold
+end CslibFrontierTests.ZipFold

@@ -19,10 +19,10 @@ import Cslib.Computability.Circuit.Boolean.Basic
   input; the correctness theorem; perfect privacy against the garbler; and the evaluator bound with
   injective tweaks (`id`), which checks that its hypothesis is satisfiable. -/
 
-namespace ComplexityTests.Crypto.Yao
+namespace CslibFrontierTests.Crypto.Yao
 
 open Cslib Cslib.Circuits Cslib.Crypto Cslib.Crypto.Garbling Cslib.Crypto.Protocols.MPC
-open ComplexityTests.Crypto.MPC
+open CslibFrontierTests.Crypto.MPC
 
 /-! ### The semi-honest advantage -/
 
@@ -106,4 +106,4 @@ example (x : (i : Fin 2) → YaoIn 1 1 i)
   semiHonestAdvantage_yao_evaluator_le andC Boolean.interpretation toyF id Function.injective_id
     x D
 
-end ComplexityTests.Crypto.Yao
+end CslibFrontierTests.Crypto.Yao

@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Complexity.Problems.MonotoneCircuitValue.Comp
 /-! Clients of monotone circuit value: both answers occur, dual rails preserve negation,
 empty inputs are supported, and the generic writer has a concrete zero-chunk instance. -/
 
-namespace ComplexityTests.MonotoneCircuitValue
+namespace CslibFrontierTests.MonotoneCircuitValue
 
 open Cslib Cslib.Complexity Cslib.Circuits Turing Turing.MultiTapeTM
 
@@ -77,4 +77,4 @@ example (h : MonotoneCircuitValue ∈ L encMonotoneCircuitValue) :
     CircuitValue ∈ L encCircuitValue :=
   MonotoneCircuitValue.mem_L_iff_forall_P_eq_L.1 h encCircuitValue ▸ CircuitValue.mem_P
 
-end ComplexityTests.MonotoneCircuitValue
+end CslibFrontierTests.MonotoneCircuitValue

@@ -30,7 +30,7 @@ statements use the definitions here, the displayed shared foundations, and upstr
 * [C. H. Papadimitriou, *Computational Complexity*][Papadimitriou94], Theorem 8.2.
 -/
 
-namespace ComplexityTests.Abstracts.CookLevinAbstract
+namespace CslibFrontierTests.Abstracts.CookLevinAbstract
 
 /-! ## Propositional CNF formulas and satisfiability
 
@@ -155,12 +155,12 @@ theorem exactThreeSAT_npComplete : NPComplete encCNF ExactThreeSAT :=
   CookLevinBridge.exactThreeSAT_npComplete
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.CookLevinAbstract`:
+info: abstract audit passed for `CslibFrontierTests.Abstracts.CookLevinAbstract`:
 19 root declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.CookLevinAbstract allowing [
-  ComplexityAbstracts.Encoding, ComplexityAbstracts.Computation
+#check_abstract CslibFrontierTests.Abstracts.CookLevinAbstract allowing [
+  CslibFrontierAbstracts.Encoding, CslibFrontierAbstracts.Computation
 ]
 
-end ComplexityTests.Abstracts.CookLevinAbstract
+end CslibFrontierTests.Abstracts.CookLevinAbstract

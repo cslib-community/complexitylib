@@ -24,7 +24,7 @@ run_cmd do
   if (← getEnv).contains `Turing.MultiTapeTM.ComputableTidilyInPolySpace then
     throwError "The retired tidy polynomial-space calculus was imported"
 
-namespace ComplexityTests.ResourceBoundsPlain
+namespace CslibFrontierTests.ResourceBoundsPlain
 
 universe u v
 
@@ -260,4 +260,4 @@ example {α : Type} {enc : α ↪ List Bool} {f : α → Logic.PL.QBF ℕ}
     mem_PSPACE_iff_computableInPolySpace.mpr ⟨_, hcomp, fun a => hA (f a)⟩,
     ⟨g, hg, hSAT⟩⟩
 
-end ComplexityTests.ResourceBoundsPlain
+end CslibFrontierTests.ResourceBoundsPlain

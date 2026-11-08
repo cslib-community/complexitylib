@@ -27,7 +27,7 @@ import Mathlib.Tactic.FinCases
   recursion is correct, and for large `s` the parameters of every active call are admissible.
 -/
 
-namespace ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.Recursion
+namespace CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.Recursion
 
 open Polynomial Cslib.Circuits.Frontier TensorNetwork
 
@@ -179,4 +179,4 @@ example (C : ℕ) : ∃ s₀, ∀ s, s₀ ≤ s → ∀ d M p, Active C s d M p 
   obtain ⟨s₀, hs₀⟩ := exists_activeBounds C
   exact ⟨s₀, fun s hs d M p hA => ((hs₀ s hs).2 d M p hA).admissible le_rfl⟩
 
-end ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.Recursion
+end CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.Recursion

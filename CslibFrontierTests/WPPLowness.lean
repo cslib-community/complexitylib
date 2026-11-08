@@ -13,7 +13,7 @@ public import CslibFrontier.Computability.Complexity.Classes.WPP.Lowness
 
 @[expose] public section
 
-namespace ComplexityTests.WPPLowness
+namespace CslibFrontierTests.WPPLowness
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -98,4 +98,4 @@ example : ∃ S : ℕ → ℤ, ComputableInPolyTime S encUnary encIntBin ∧
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.Complexity.acceptWeight_exact
 
-end ComplexityTests.WPPLowness
+end CslibFrontierTests.WPPLowness

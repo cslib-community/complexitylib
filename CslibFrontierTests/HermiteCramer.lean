@@ -22,7 +22,7 @@ plain `ComputableInPolyTime` composition tests for:
   bit-length bounds).
 -/
 
-namespace ComplexityTests.HermiteCramer
+namespace CslibFrontierTests.HermiteCramer
 
 open Polynomial
 open Turing MultiTapeTM
@@ -201,4 +201,4 @@ example {row₁ row₂ : List ℤ} (hrow₁ : row₁ ∈ hermiteRows [-1, 2] 3) 
       (by decide +kernel) hrow₂ hz₂,
     by fun_prop, by fun_prop, by fun_prop⟩
 
-end ComplexityTests.HermiteCramer
+end CslibFrontierTests.HermiteCramer

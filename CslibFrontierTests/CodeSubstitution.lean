@@ -14,7 +14,7 @@ The example uses both fixed Boolean constants, a live input, an internal wire an
 designated outputs. Empty prefixes and zero live-input counts still retain two shared constants.
 -/
 
-namespace ComplexityTests.CodeSubstitution
+namespace CslibFrontierTests.CodeSubstitution
 
 open Cslib.Circuits Cslib.Circuits.Boolean Turing.MultiTapeTM
 
@@ -62,4 +62,4 @@ example : ComputableInPolyTime
     (fun p : (List Bool × ℕ) × (List (Op × List ℕ) × List ℕ) => prefixCode p.1.1 p.1.2 p.2)
     (encPair (encPair encBits encNat) encCode) encCode := by fun_prop
 
-end ComplexityTests.CodeSubstitution
+end CslibFrontierTests.CodeSubstitution

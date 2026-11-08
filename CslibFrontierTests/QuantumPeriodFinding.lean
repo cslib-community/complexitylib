@@ -11,7 +11,7 @@ import CslibFrontier.Foundations.Data.Nat.Totient
 quantum Fourier transform for `N = 2` (the Hadamard matrix), concrete outcome distributions and
 recovery probabilities, and edge cases of the totient bound. -/
 
-namespace ComplexityTests.QuantumPeriodFinding
+namespace CslibFrontierTests.QuantumPeriodFinding
 
 open Cslib Cslib.Quantum Finset ZMod
 
@@ -135,4 +135,4 @@ example : 2 = Nat.totient 2 * (Nat.log 2 2 + 1) := by
   rw [Nat.totient_two, Nat.log_eq_one_iff'.mpr ⟨le_rfl, by norm_num⟩]
 example : 30 ≤ Nat.totient 30 * (Nat.log 2 30 + 1) := Nat.le_totient_mul_log_add_one 30
 
-end ComplexityTests.QuantumPeriodFinding
+end CslibFrontierTests.QuantumPeriodFinding

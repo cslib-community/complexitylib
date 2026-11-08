@@ -9,7 +9,7 @@ import CslibFrontier.Computability.QueryComplexity.AndOrTree.Randomized
 /-! Clients for the evasiveness of the AND–OR tree, dual decision trees, zero-error complexity and
 the directional algorithm. -/
 
-namespace ComplexityTests.QueryComplexity.AndOrTree
+namespace CslibFrontierTests.QueryComplexity.AndOrTree
 
 open Cslib Cslib.QueryComplexity Cslib.QueryComplexity.NandTree Cslib.RandomizedDecisionTree
 
@@ -125,4 +125,4 @@ example : zeroErrorComplexity (fun x : Fin 2 → Bool => x 0 && x 1) ≤
     DecisionTree.complexity fun x : Fin 2 → Bool => x 0 && x 1 :=
   zeroErrorComplexity_le_complexity _
 
-end ComplexityTests.QueryComplexity.AndOrTree
+end CslibFrontierTests.QueryComplexity.AndOrTree

@@ -18,7 +18,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 
 open Turing.MultiTapeTM Cslib.Complexity
 
-namespace ComplexityTests.WPPTruthTable
+namespace CslibFrontierTests.WPPTruthTable
 
 def oracle : Set (List Bool) := {w | w.getD 0 false = true}
 
@@ -113,4 +113,4 @@ example : {w | (fun x : List Bool × List Bool => x.1.getD 0 false)
   truthTable_mem_LWPP (d := fun x => x.1.getD 0 false)
     joint_mem_LWPP (.const 0) (by fun_prop)
 
-end ComplexityTests.WPPTruthTable
+end CslibFrontierTests.WPPTruthTable

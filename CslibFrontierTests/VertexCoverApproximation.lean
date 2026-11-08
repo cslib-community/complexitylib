@@ -31,7 +31,7 @@ These kernel-checked examples (using no `native_decide`) exercise
 
 public section
 
-namespace ComplexityTests.VertexCoverApproximation
+namespace CslibFrontierTests.VertexCoverApproximation
 
 open Cslib.Complexity Cslib.Complexity.VertexCover Cslib.Algorithms.Lean.VertexCover
 open Turing.MultiTapeTM
@@ -110,4 +110,4 @@ graph, by composing the certificate with list membership. -/
 example : ComputableInPolyTime (fun G => decide (0 ∈ approxCover G)) encGraph encBool := by
   fun_prop
 
-end ComplexityTests.VertexCoverApproximation
+end CslibFrontierTests.VertexCoverApproximation

@@ -11,7 +11,7 @@ and with an elimination step, Littlestone's Theorem 7 on the first run, the lowe
 two-literal disjunctions of eight variables with the matching WINNOW1 upper bound, and the empty
 class when `k > n`. -/
 
-namespace ComplexityTests.Winnow
+namespace CslibFrontierTests.Winnow
 
 open Cslib.MachineLearning Cslib.MachineLearning.OnlineLearning.MistakeBound
 open PACLearning (vcDim)
@@ -95,4 +95,4 @@ example : optimalMistakeBound (monotoneDisjunctions 2 3) = 0 := by
     Set.not_nonempty_iff_eq_empty.mp (by rw [monotoneDisjunctions_nonempty_iff]; omega)
   rw [h, optimalMistakeBound_empty]
 
-end ComplexityTests.Winnow
+end CslibFrontierTests.Winnow

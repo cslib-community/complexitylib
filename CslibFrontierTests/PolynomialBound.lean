@@ -13,7 +13,7 @@ Representative goals from time and size accounting, discharged by `fun_prop` fro
 hypotheses.
 -/
 
-namespace ComplexityTests.PolynomialBound
+namespace CslibFrontierTests.PolynomialBound
 
 open Cslib
 
@@ -47,4 +47,4 @@ example (hf : PolynomiallyBounded f) (hg : PolynomiallyBounded g) :
     PolynomiallyBounded (fun n => if n % 2 = 0 then f n else g n) := by
   fun_prop
 
-end ComplexityTests.PolynomialBound
+end CslibFrontierTests.PolynomialBound

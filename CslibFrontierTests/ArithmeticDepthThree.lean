@@ -18,7 +18,7 @@ forms, and the family corollaries rule out single product gates for the `2 × 2`
 determinant and permanent families.
 -/
 
-namespace ComplexityTests.ArithmeticDepthThree
+namespace CslibFrontierTests.ArithmeticDepthThree
 
 open Cslib.Circuits MvPolynomial
 
@@ -107,4 +107,4 @@ example (t : DepthThree.Term (ZMod 2) (Fin (2 * 2)) 2) :
   rw [show (oneProduct t).program.cost SumOfTerms.termCost = 1 from rfl] at h'
   norm_num at h'
 
-end ComplexityTests.ArithmeticDepthThree
+end CslibFrontierTests.ArithmeticDepthThree

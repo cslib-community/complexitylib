@@ -10,7 +10,7 @@ import Mathlib.Tactic.FinCases
 /-! Buffered counting clients with unequal stopping times, duplicate branches, dirty source
 scratch, a moved real input head, blank consumer scratch and ordered nonempty/empty words. -/
 
-namespace ComplexityTests.CountingComposition
+namespace CslibFrontierTests.CountingComposition
 
 open Cslib Turing MultiTapeCTM MultiTapeMachine
 
@@ -159,4 +159,4 @@ example :
       ¬final.output.length ≤ 0 :=
   ⟨fun final hmem => chooseWord.length_output_of_mem_runList 2 _ final hmem, by decide, by simp⟩
 
-end ComplexityTests.CountingComposition
+end CslibFrontierTests.CountingComposition

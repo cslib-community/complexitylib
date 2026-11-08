@@ -20,7 +20,7 @@ quantitative soundness then gives a multilinear function within `5 + 2 * 5 = 15`
 points.
 -/
 
-namespace ComplexityTests.Code.Multilinearity
+namespace CslibFrontierTests.Code.Multilinearity
 
 open Cslib Cslib.Code Cslib.BitString Finset MvPolynomial
 
@@ -95,4 +95,4 @@ example : ∃ g, IsMultilinear g ∧ hammingDist corrupted g ≤ 15 := by
   rw [Fin.sum_univ_two, card_wrongPoints_corrupted_zero, card_wrongPoints_corrupted_one]
   rfl
 
-end ComplexityTests.Code.Multilinearity
+end CslibFrontierTests.Code.Multilinearity

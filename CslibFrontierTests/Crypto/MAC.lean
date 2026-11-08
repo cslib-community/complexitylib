@@ -18,7 +18,7 @@ and `macToPrfDistinguisher` on concrete inputs.
 signing query and a flipped tag bit; the same forger always loses the fresh-message one-time game.
 -/
 
-namespace ComplexityTests.Crypto.MAC
+namespace CslibFrontierTests.Crypto.MAC
 
 open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 open scoped NNReal
@@ -296,4 +296,4 @@ example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFun
     ((prfMAC family hprf.polyTime).reindex (fun n => 2 * n) computableInPolyTime_double).SUFCMA :=
   hprf.sufCma_prfMAC.reindex computableInPolyTime_double strictMono_double
 
-end ComplexityTests.Crypto.MAC
+end CslibFrontierTests.Crypto.MAC

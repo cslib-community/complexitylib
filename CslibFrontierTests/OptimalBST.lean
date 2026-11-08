@@ -28,7 +28,7 @@ These kernel-checked examples (using no `native_decide`) exercise:
 
 public section
 
-namespace ComplexityTests.OptimalBST
+namespace CslibFrontierTests.OptimalBST
 
 open Cslib.Algorithms.Lean.OptimalBST
 
@@ -169,4 +169,4 @@ example : (plainBST wQI 4).ret.cost = 6 ∧ (knuthBST wQI 4).ret.cost = 7 := by 
 example : ∀ t ∈ allTrees 4 0 4, (plainBST wMono 4).ret.cost ≤ treeCost wMono 0 4 t := by decide
 example : ∀ t ∈ allTrees 4 0 4, (plainBST wQI 4).ret.cost ≤ treeCost wQI 0 4 t := by decide
 
-end ComplexityTests.OptimalBST
+end CslibFrontierTests.OptimalBST

@@ -26,7 +26,7 @@ Behavioral checks for `CslibFrontier.Crypto.Computational.TreeSignature.CoinHybr
    - `exists_negligible_treeGame_coinParam_le` instantiates end-to-end on `seededToy`.
 -/
 
-namespace ComplexityTests.Crypto.TreeCoinHybrid
+namespace CslibFrontierTests.Crypto.TreeCoinHybrid
 
 open Cslib Cslib.Crypto Cslib.Crypto.TreeSignature Cslib.Probability Turing.MultiTapeTM
 
@@ -241,4 +241,4 @@ example {F : List Bool → List Bool → List Bool} (hF : PseudorandomFunction F
   exists_negligible_treeGame_coinParam_le seededToy seededToySeeded (· + 1) hF (by polytime)
     computableInPolyTime_oscBudget isOraclePPT_cheatForger
 
-end ComplexityTests.Crypto.TreeCoinHybrid
+end CslibFrontierTests.Crypto.TreeCoinHybrid

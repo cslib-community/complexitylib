@@ -14,7 +14,7 @@ majority of three bits has bounded-error randomized complexity `1` but determini
 `3`, a hard distribution for it, the disjunction of `n` bits, and matching pennies for the minimax
 theorem. Non-vacuity witnesses for the hypotheses. -/
 
-namespace ComplexityTests.QueryComplexity.Randomized
+namespace CslibFrontierTests.QueryComplexity.Randomized
 
 open Cslib Cslib.BitString Cslib.QueryComplexity Convexity Finset
 
@@ -145,4 +145,4 @@ example {n : ℕ} (ε : ℝ) (f : BooleanFunction n) (x : BitString n) :
     · exact ⟨0, h₀⟩
     · exact ⟨1, by linarith⟩
 
-end ComplexityTests.QueryComplexity.Randomized
+end CslibFrontierTests.QueryComplexity.Randomized

@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Complexity.Problems.CircuitValue.Compilation
 /-! Clients of uniform function-family compilation. Input and output widths may vary with the
 instance, the constructor is certified, and correctness covers every assignment to live inputs. -/
 
-namespace ComplexityTests.UniformCircuits
+namespace CslibFrontierTests.UniformCircuits
 
 open Cslib Cslib.Complexity Cslib.Circuits Cslib.Circuits.Boolean Turing.MultiTapeTM
 
@@ -47,4 +47,4 @@ example : ∃ circuits : (a : List Bool) → Circuit signature a.length 0,
       (encIn := encPair encBits encBits) (encOut := encBits))
   exact ⟨circuits, hc⟩
 
-end ComplexityTests.UniformCircuits
+end CslibFrontierTests.UniformCircuits

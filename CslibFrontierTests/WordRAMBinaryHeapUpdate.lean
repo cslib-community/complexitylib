@@ -12,13 +12,13 @@ import Mathlib.Tactic.IntervalCases
 the count/position writes and an inaccessible dirty cell are observed through the original source
 programs. The tests use shared kernel packing, not hand-stepped algorithm instructions. -/
 
-namespace ComplexityTests.WordRAMBinaryHeapUpdate
+namespace CslibFrontierTests.WordRAMBinaryHeapUpdate
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.Memory
 open Cslib.DataStructure.PriorityQueue
 open Cslib.DataStructure.PriorityQueue.BinaryHeap.Native
-open ComplexityTests.WordRAMRealizationPacking
+open CslibFrontierTests.WordRAMRealizationPacking
 
 private def layout : PriorityQueue.BinaryHeap.Memory.Layout 1 :=
   PriorityQueue.BinaryHeap.Memory.compactLayout 1 0
@@ -146,4 +146,4 @@ example : ∃ y, ExecWithin 4 (realizes_decreaseKey.code (frontier realizes_decr
 
 end
 
-end ComplexityTests.WordRAMBinaryHeapUpdate
+end CslibFrontierTests.WordRAMBinaryHeapUpdate

@@ -22,10 +22,10 @@ reveals the key. These tests keep the two contracts separate.
 
 public section
 
-namespace ComplexityTests.Crypto.KEMFromPKE
+namespace CslibFrontierTests.Crypto.KEMFromPKE
 
 open Cslib Cslib.Crypto Cslib.Crypto.Encryption Cslib.Probability Turing.MultiTapeTM
-open ComplexityTests.Crypto.HybridEncryption
+open CslibFrontierTests.Crypto.HybridEncryption
 open scoped NNReal
 
 /-- The existing length-only encryption fixture has a native certificate. -/
@@ -115,4 +115,4 @@ theorem not_kemINDCPA_encryptKeyEncaps_revealing :
   simp only [advantage_encryptKeyEncaps_revealing] at hneg
   exact not_negligible_const (by positivity) hneg
 
-end ComplexityTests.Crypto.KEMFromPKE
+end CslibFrontierTests.Crypto.KEMFromPKE

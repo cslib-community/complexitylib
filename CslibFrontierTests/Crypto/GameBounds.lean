@@ -10,7 +10,7 @@ import CslibFrontier.Crypto.Game
 
 /-! Clients of pointwise and common-mixture game advantage bounds. -/
 
-namespace ComplexityTests.GameBounds
+namespace CslibFrontierTests.GameBounds
 
 open Cslib Cslib.Crypto
 open scoped NNReal ENNReal
@@ -115,4 +115,4 @@ example :
     Game.succProbability_uniform_bool_xor, Game.succProbability]
   norm_num
 
-end ComplexityTests.GameBounds
+end CslibFrontierTests.GameBounds

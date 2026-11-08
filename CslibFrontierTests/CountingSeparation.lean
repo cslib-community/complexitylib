@@ -16,7 +16,7 @@ time-constructible and at least `max n 2`, the sharper strict containments at ti
 `T n * ⌊√⌊√⌊log₂ (T n)⌋⌋⌋`, and nonvacuity of the new time-bounded counting classes through their
 polynomial-time unions. -/
 
-namespace ComplexityTests.CountingSeparation
+namespace CslibFrontierTests.CountingSeparation
 
 open Cslib.Complexity Cslib.Complexity.CountingSimulation Filter Turing.MultiTapeTM
 
@@ -225,4 +225,4 @@ example {α : Type} {enc : α ↪ List Bool} : ∃ d, (Set.univ : Set α) ∈ Ce
   rw [mem_coNP, Set.compl_univ]
   exact P_subset_NP empty_mem_P
 
-end ComplexityTests.CountingSeparation
+end CslibFrontierTests.CountingSeparation

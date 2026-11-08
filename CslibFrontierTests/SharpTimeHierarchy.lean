@@ -14,7 +14,7 @@ domination holds but eventual clock domination fails. -/
 
 public section
 
-namespace ComplexityTests.SharpTimeHierarchy
+namespace CslibFrontierTests.SharpTimeHierarchy
 
 open Cslib.Complexity Turing.MultiTapeTM Filter
 
@@ -53,4 +53,4 @@ theorem shifted_quadratic_ssubset_cubic :
   rw [DTIME_succ_pow_eq]
   exact DTIME_pow_ssubset_DTIME_pow (by omega) (by omega)
 
-end ComplexityTests.SharpTimeHierarchy
+end CslibFrontierTests.SharpTimeHierarchy

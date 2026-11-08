@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 /-! Clients of deterministic repetition without importing complexity-class definitions or
 amplification theorems. -/
 
-namespace ComplexityTests.RepeatedTrials
+namespace CslibFrontierTests.RepeatedTrials
 
 open Cslib Cslib.Complexity Turing.MultiTapeTM
 
@@ -65,4 +65,4 @@ example {α : Type} {enc : α ↪ List Bool} {V : α × List Bool → Bool}
     ComputableInPolyTime (repeatMajority enc trials width V) (encPair enc encBits) encBool :=
   ⟨computableInPolyTime_repeatAny hV _ _, computableInPolyTime_repeatMajority hV _ _⟩
 
-end ComplexityTests.RepeatedTrials
+end CslibFrontierTests.RepeatedTrials

@@ -18,7 +18,7 @@ the certificate: some root call satisfies `ActiveBounds`.
 
 @[expose] public section
 
-namespace ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.Schedule
+namespace CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.Schedule
 
 open Cslib.Circuits.Frontier.ContractionSchedule
 
@@ -94,4 +94,4 @@ example : ∑ d ∈ Finset.range 2, branchExponent 1 1024 d ≤ 245764 * (1024 /
     (by rw [log_two_1024]; norm_num)
   rwa [log_two_1024] at this
 
-end ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.Schedule
+end CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.Schedule

@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Complexity.Fagin.Converse
 
 /-! # Fagin transfer with explicit ESO semantics and finite-vocabulary serialization -/
 
-namespace ComplexityTests.Abstracts.FaginBridge
+namespace CslibFrontierTests.Abstracts.FaginBridge
 
 /-- Frame each bit as `[true, b]` and terminate the word with `[false]`. -/
 def frame (w : List Bool) : List Bool := w.flatMap (fun b => [true, b]) ++ [false]
@@ -137,4 +137,4 @@ theorem fagin {L : FirstOrder.Language} [L.IsRelational] {count : ℕ}
   exact (Cslib.Logic.ESO.definable_iff_isoClosed_and_queryLanguage_mem_NP
     ⟨count, symbols⟩).trans (and_congr Iff.rfl CookLevinBridge.mem_NP_iff.symm)
 
-end ComplexityTests.Abstracts.FaginBridge
+end CslibFrontierTests.Abstracts.FaginBridge

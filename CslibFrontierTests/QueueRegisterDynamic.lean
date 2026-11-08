@@ -18,7 +18,7 @@ the old hand-written program's literal14/28 instruction claims are not reused.
 
 @[expose] public section
 
-namespace ComplexityTests.QueueRegisterDynamic
+namespace CslibFrontierTests.QueueRegisterDynamic
 
 open Cslib Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.Queue.WordRAM
@@ -80,4 +80,4 @@ example {x : Data registers} (hx : x.Bounded 1) : ∃ ready y traces,
   rw [hrun] at h
   simpa only [List.length_singleton, Nat.one_mul] using h
 
-end ComplexityTests.QueueRegisterDynamic
+end CslibFrontierTests.QueueRegisterDynamic

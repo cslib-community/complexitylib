@@ -12,7 +12,7 @@ three bits, with an explicit violated edge, its exact distance to monotone and e
 probability; a nonvacuous instance of the soundness bound with explicit parameters; one trial
 being too few; and the degenerate cube of dimension `0`. -/
 
-namespace ComplexityTests.PropertyTestingMonotonicity
+namespace CslibFrontierTests.PropertyTestingMonotonicity
 
 open Cslib Cslib.BitString Cslib.PCP Finset Function
 
@@ -129,4 +129,4 @@ example (f : (Fin 0 → Bool) → Bool) : (edgeTest (Fin 0)).acceptProb f = 0 :=
   rw [LocalTest.acceptProb_eq_card_div]
   simp
 
-end ComplexityTests.PropertyTestingMonotonicity
+end CslibFrontierTests.PropertyTestingMonotonicity

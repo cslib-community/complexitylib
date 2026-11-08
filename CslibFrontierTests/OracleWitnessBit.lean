@@ -18,7 +18,7 @@ formulas prepared in exponential time has its witness bits in `E ^ NP`.
 
 @[expose] public section
 
-namespace ComplexityTests.OracleWitnessBit
+namespace CslibFrontierTests.OracleWitnessBit
 
 open Cslib Cslib.Complexity Cslib.Complexity.SAT Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -44,4 +44,4 @@ example : {_x : List Bool | witnessBit (φ, 0) = true} ∈ ENP encBits :=
     ((ComputableInO.const (encIn := encBits) (encMid := encPair encCNF encNat) (φ, 0)).mono_le
       (fun x => by simpa using Nat.lt_two_pow_self.le) (fun _ => le_rfl))
 
-end ComplexityTests.OracleWitnessBit
+end CslibFrontierTests.OracleWitnessBit

@@ -14,7 +14,7 @@ Check actual circuit evaluation on small truth tables, empty input blocks, const
 the finite threshold and the placement of natural division in the replicated bound.
 -/
 
-namespace ComplexityTests.ShannonSynthesis
+namespace CslibFrontierTests.ShannonSynthesis
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Circuits.Boolean.ShannonSynthesis
 
@@ -51,4 +51,4 @@ example (f₁₆ : BooleanFunction 16) (f₁₇ : BooleanFunction 17) (copies : 
     MassProduction.massComplexity_le_shannon (by decide) f₁₇ copies,
     MassProduction.massComplexity_le_shannon (by decide) f₁₆ 0⟩
 
-end ComplexityTests.ShannonSynthesis
+end CslibFrontierTests.ShannonSynthesis

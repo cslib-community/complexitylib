@@ -17,7 +17,7 @@ certificates, actual instruction counts, order and frame guarantees, the empty-r
 the Chan–He controller's unchanged graph.
 -/
 
-namespace ComplexityTests.WordRAMStackRecord
+namespace CslibFrontierTests.WordRAMStackRecord
 
 open Cslib.WordRAM
 open Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal (WordStack.Rep WordStack.pushRecord
@@ -115,4 +115,4 @@ example : popFrame =
 
 end TraversalGraph
 
-end ComplexityTests.WordRAMStackRecord
+end CslibFrontierTests.WordRAMStackRecord

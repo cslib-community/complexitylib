@@ -16,7 +16,7 @@ connectivity in the empty-cut lemma, and the expansion dichotomy on `K₄`, incl
 its two-thirds hypothesis fails.
 -/
 
-namespace ComplexityTests.Foundations.Multigraph.CutSpace
+namespace CslibFrontierTests.Foundations.Multigraph.CutSpace
 
 open Cslib Finset
 
@@ -95,4 +95,4 @@ example : #(Multigraph.edgeCut k4 {0, 1, 2}) < Multigraph.minBalancedCut k4 ∧
     ¬ 3 * #({0, 1, 2} : Finset (Fin 4)) < Fintype.card (Fin 4) :=
   ⟨lt_of_lt_of_le (by decide) four_le_minBalancedCut_k4, by decide⟩
 
-end ComplexityTests.Foundations.Multigraph.CutSpace
+end CslibFrontierTests.Foundations.Multigraph.CutSpace

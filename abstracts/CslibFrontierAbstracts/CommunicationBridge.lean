@@ -16,7 +16,7 @@ The abstract uses the elementary deterministic protocol tree, but defines its ow
 bound and per-input error conditions. No communication-complexity infimum occurs in its statements.
 -/
 
-namespace ComplexityAbstracts.CommunicationBridge
+namespace CslibFrontierAbstracts.CommunicationBridge
 
 open Cslib.Communication
 
@@ -69,4 +69,4 @@ theorem innerProduct {n c : ℕ}
   have hbound : (n : ℕ∞) ≤ 2 * (c : ℕ∞) + 3 := h.trans (by gcongr)
   exact_mod_cast hbound
 
-end ComplexityAbstracts.CommunicationBridge
+end CslibFrontierAbstracts.CommunicationBridge

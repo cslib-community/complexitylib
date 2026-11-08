@@ -30,7 +30,7 @@ These kernel-checked examples (using no `native_decide`) exercise
 
 public section
 
-namespace ComplexityTests.SetCoverGreedy
+namespace CslibFrontierTests.SetCoverGreedy
 
 open Cslib.Algorithms.Lean.SetCover
 
@@ -131,4 +131,4 @@ example : ¬ ∀ a ∈ (Finset.univ : Finset (Fin 3)), ∃ i ∈ greedy T wT [0,
     a ∈ T i := by
   decide +kernel
 
-end ComplexityTests.SetCoverGreedy
+end CslibFrontierTests.SetCoverGreedy

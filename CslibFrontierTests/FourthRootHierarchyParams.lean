@@ -17,7 +17,7 @@ plateau values, use complementary root regularity at a closed row gate, and pass
 parameters into the existing stage API on a nonzero two-vertex transition matrix.
 -/
 
-namespace ComplexityTests.FourthRootHierarchyParams
+namespace CslibFrontierTests.FourthRootHierarchyParams
 
 open Matrix
 open scoped NNReal
@@ -73,4 +73,4 @@ example : ∃ P : FourthRootHierarchyParams 2 1 1 1 0,
   · exact P.toHierarchyParams.next_nonneg (by norm_num) hC
   · exact P.toHierarchyParams.next_mulVec_one_le (by norm_num) hC hC1
 
-end ComplexityTests.FourthRootHierarchyParams
+end CslibFrontierTests.FourthRootHierarchyParams

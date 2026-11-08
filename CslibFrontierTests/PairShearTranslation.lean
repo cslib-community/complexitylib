@@ -16,7 +16,7 @@ inequality, and a client of the pair bound: a function invariant under the moves
 the spectator.
 -/
 
-namespace ComplexityTests.PairShearTranslation
+namespace CslibFrontierTests.PairShearTranslation
 
 open Cslib Cslib.RotationMap Finset Function
 open scoped BigOperators
@@ -63,4 +63,4 @@ example {Y : Type} [Fintype Y] (L : ℕ) [NeZero L] (ρ : Fin 3 → Fin 3 → Eq
     (f q - 𝔼 w, f (q.1, w))).1 (le_antisymm h (expect_nonneg fun _ _ ↦ sq_nonneg _))
   exact sub_eq_zero.1 (pow_eq_zero_iff two_ne_zero |>.1 (congrFun h0 p))
 
-end ComplexityTests.PairShearTranslation
+end CslibFrontierTests.PairShearTranslation

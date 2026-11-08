@@ -34,7 +34,7 @@ Kernel-checked concrete instances and non-vacuity witnesses for `Cslib.CellProbe
 
 public section
 
-namespace ComplexityTests.CellProbe
+namespace CslibFrontierTests.CellProbe
 
 open Cslib Cslib.CellProbe
 open scoped ENNReal
@@ -410,4 +410,4 @@ theorem exists_det_scheme_randomInit_test :
       hstep {seq} GoodWriteRead hcorr (PMF.pure seq)
   exact ⟨D_det, hgood, hcost⟩
 
-end ComplexityTests.CellProbe
+end CslibFrontierTests.CellProbe

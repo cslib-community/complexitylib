@@ -20,7 +20,7 @@ The final examples pass extracted words through the existing canonical block par
 
 public section
 
-namespace ComplexityTests.AssignmentLabels
+namespace CslibFrontierTests.AssignmentLabels
 
 open Cslib Cslib.TreeEval.Ary.Packed Turing.MultiTapeTM
 open Turing.MultiTapePTM.BlockComputation
@@ -49,4 +49,4 @@ example : Encoding.NativeChecked.parse code (1, words.1) = some raw := by decide
 example : (Providers.Labels.combine code
     (1, (fun _ _ => none), words.1, words.2)).isSome = true := by decide
 
-end ComplexityTests.AssignmentLabels
+end CslibFrontierTests.AssignmentLabels

@@ -17,7 +17,7 @@ stateful execution, and the separate nonce/key-generation sampling laws.
 
 noncomputable section
 
-namespace ComplexityTests.Crypto.SchnorrNativeROM
+namespace CslibFrontierTests.Crypto.SchnorrNativeROM
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Protocols SigmaProtocol ROMSignature
 open Turing.MultiTapeTM
@@ -124,4 +124,4 @@ example (F : PrimeOrderGroupFamily) (n : ℕ) (d : F.Desc) :
     CloseTo (F.schnorrIdealKeyGen d) (ProbComp.eval (F.schnorrSigKeyGen n d))
       (1 / 2 ^ n : ℝ≥0) := F.closeTo_schnorrSigKeyGen n d
 
-end ComplexityTests.Crypto.SchnorrNativeROM
+end CslibFrontierTests.Crypto.SchnorrNativeROM

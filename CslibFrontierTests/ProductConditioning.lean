@@ -12,7 +12,7 @@ Conditioning on a certain event leaves every marginal unchanged, and conditionin
 the first being `true` satisfies the bound of Raz's conditioning lemma.
 -/
 
-namespace ComplexityTests.ProductConditioning
+namespace CslibFrontierTests.ProductConditioning
 
 open Cslib.Probability.PMF
 open scoped Cslib.Probability.PMF
@@ -46,4 +46,4 @@ example :
   ⟨by simpa using sq_sum_dist_map_filter_pi_le bits {u | u 0 = true} first_true_mem Finset.univ,
     toOuterMeasure_toReal_le_two_rpow bits _ first_true_mem⟩
 
-end ComplexityTests.ProductConditioning
+end CslibFrontierTests.ProductConditioning

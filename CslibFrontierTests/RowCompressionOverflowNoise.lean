@@ -18,7 +18,7 @@ Noise vanishes on the other draw, so it is correlated with the overflow event. T
 fourth-moment comparison is checked with the existing vertex norm and positive normalization.
 -/
 
-namespace ComplexityTests.RowCompressionOverflowNoise
+namespace CslibFrontierTests.RowCompressionOverflowNoise
 
 open Finset Cslib Cslib.RowCompression
 open scoped BigOperators
@@ -142,4 +142,4 @@ example : vertexNormPow 4 1 1 (fun (_ : Bool) (_ : Fin 1) => True)
 example : (∑ j ∈ range 3, ∑ _i ∈ Ico j 3, (1 : ℝ)) > ∑ _i ∈ range 3, (1 : ℝ) := by
   norm_num [sum_range_succ]
 
-end ComplexityTests.RowCompressionOverflowNoise
+end CslibFrontierTests.RowCompressionOverflowNoise

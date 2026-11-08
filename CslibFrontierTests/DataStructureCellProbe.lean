@@ -41,7 +41,7 @@ Kernel-checked concrete instances and non-vacuity witnesses for `Cslib.DataStruc
 
 public section
 
-namespace ComplexityTests.DataStructureCellProbe
+namespace CslibFrontierTests.DataStructureCellProbe
 
 open Cslib Cslib.CellProbe Cslib.DataStructure
 open Cslib.DataStructure.CellProbe
@@ -810,4 +810,4 @@ example :
     StateTransitionImpl.toRandomized_charge, hip, hcost, Nat.cast_zero, zero_add,
     Nat.cast_ofNat] using hle
 
-end ComplexityTests.DataStructureCellProbe
+end CslibFrontierTests.DataStructureCellProbe

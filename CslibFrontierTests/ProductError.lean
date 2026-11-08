@@ -17,7 +17,7 @@ masks are perfectly correlated. The product-root error has positive fourth power
 while the source normalizations `u = 1/3`, `f = 1` make the release factor three.
 -/
 
-namespace ComplexityTests.ProductError
+namespace CslibFrontierTests.ProductError
 
 open Finset Matrix Cslib
 open scoped BigOperators
@@ -296,4 +296,4 @@ example : scaleCutoff 1 (-2) < 128 := by
     norm_num
   · norm_num [precision]
 
-end ComplexityTests.ProductError
+end CslibFrontierTests.ProductError

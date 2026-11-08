@@ -14,7 +14,7 @@ Poincaré inequality: a function invariant under the four moves is constant on e
 `{x} × (ZMod n × ZMod n)`, for every `n` and every pair of spectator permutations.
 -/
 
-namespace ComplexityTests.RelativeShearTranslation
+namespace CslibFrontierTests.RelativeShearTranslation
 
 open Cslib Cslib.RotationMap Finset
 open scoped BigOperators
@@ -44,4 +44,4 @@ example {X : Type*} [Fintype X] (n : ℕ) [NeZero n] (π₁ π₂ : Equiv.Perm X
     (f q - 𝔼 w, f (q.1, w))).1 (le_antisymm h (expect_nonneg fun _ _ ↦ sq_nonneg _))
   exact sub_eq_zero.1 (pow_eq_zero_iff two_ne_zero |>.1 (congrFun h0 p))
 
-end ComplexityTests.RelativeShearTranslation
+end CslibFrontierTests.RelativeShearTranslation

@@ -10,7 +10,7 @@ import CslibFrontier.Probability.PMF.Bind
 
 /-! Actual native word forgers, shared signing/hash caches, freshness, and off-support tapes. -/
 
-namespace ComplexityTests.Crypto.WordRandomOracle
+namespace CslibFrontierTests.Crypto.WordRandomOracle
 
 open Cslib Cslib.Probability Cslib.Crypto.Protocols.ROMSignature
 open Turing Turing.MultiTapeTM Turing.MultiTapePTM
@@ -158,4 +158,4 @@ example (fresh : Bool) : ∃ (k : ℕ) (Control : Type) (_ : Finite Control)
   exact ⟨k, Control, hfinite, replay, c, d, keyC, keyD, fun n =>
     (hgame n Bool encBool scheme rfl).2⟩
 
-end ComplexityTests.Crypto.WordRandomOracle
+end CslibFrontierTests.Crypto.WordRandomOracle

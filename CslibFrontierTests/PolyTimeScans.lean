@@ -9,7 +9,7 @@ import CslibFrontier.Tactic.PolyTime
 /-! Direct predicate-count and Boolean scans with raw-bit and framed-list input encodings.
 The list and the bit to search for are both runtime inputs; empty lists are permitted. -/
 
-namespace ComplexityTests.PolyTimeScans
+namespace CslibFrontierTests.PolyTimeScans
 
 open Turing.MultiTapeTM ComputableTidilyInPolyTime
 
@@ -62,4 +62,4 @@ example :
   ⟨⟨by polytime, by polytime, by polytime, by polytime, by polytime, by polytime⟩,
    by decide⟩
 
-end ComplexityTests.PolyTimeScans
+end CslibFrontierTests.PolyTimeScans

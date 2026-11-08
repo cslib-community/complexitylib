@@ -8,7 +8,7 @@ import CslibFrontier.Languages.Probabilistic.Notation
 
 /-! The scoped notation `Pr[e]`: its two elaborated forms, `do` blocks, display and API. -/
 
-namespace ComplexityTests.ProbabilityNotation
+namespace CslibFrontierTests.ProbabilityNotation
 
 open Cslib Probability
 
@@ -77,4 +77,4 @@ example : Pr[pure true] = 1 := by
   rw [ProbComp.probability_pure]
   rfl
 
-end ComplexityTests.ProbabilityNotation
+end CslibFrontierTests.ProbabilityNotation

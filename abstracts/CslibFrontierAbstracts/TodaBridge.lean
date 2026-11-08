@@ -12,7 +12,7 @@ import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 
 /-! # Transfer of Toda's theorem with explicit counting, alternation and oracle contracts -/
 
-namespace ComplexityTests.Abstracts.TodaBridge
+namespace CslibFrontierTests.Abstracts.TodaBridge
 
 /-- Frame each bit as `[true, b]` and terminate the word with `[false]`. -/
 def frame (w : List Bool) : List Bool := w.flatMap (fun b => [true, b]) ++ [false]
@@ -154,4 +154,4 @@ theorem toda {α : Type} (enc : α ↪ List Bool) : PH enc ⊆ PWithSharpPOracle
   rw [ph_eq, psharp_eq]
   exact Cslib.Complexity.PH_subset_PWithSharpPOracle
 
-end ComplexityTests.Abstracts.TodaBridge
+end CslibFrontierTests.Abstracts.TodaBridge

@@ -31,7 +31,7 @@ import Mathlib.Tactic.NormNum
 
 public section
 
-namespace ComplexityTests.LocalitySensitiveHash
+namespace CslibFrontierTests.LocalitySensitiveHash
 
 open Cslib.Probability
 
@@ -187,4 +187,4 @@ example : 1 - jaccard ({0} : Finset ℕ) {5} ≤
     (1 - jaccard ({0} : Finset ℕ) {0, 5}) + (1 - jaccard ({0, 5} : Finset ℕ) {5}) :=
   jaccard_triangle _ _ _
 
-end ComplexityTests.LocalitySensitiveHash
+end CslibFrontierTests.LocalitySensitiveHash

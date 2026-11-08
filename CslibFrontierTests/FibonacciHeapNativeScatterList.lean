@@ -23,7 +23,7 @@ The existing `Scattering` invariant supplies the complete loop domain in both ph
 
 public section
 
-namespace ComplexityTests.FibonacciHeapNativeScatterList
+namespace CslibFrontierTests.FibonacciHeapNativeScatterList
 
 open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 open Cslib.WordRAM Cslib.WordRAM.Realization FibonacciHeap FibonacciHeap.Native
@@ -284,4 +284,4 @@ end
 
 end Zero
 
-end ComplexityTests.FibonacciHeapNativeScatterList
+end CslibFrontierTests.FibonacciHeapNativeScatterList

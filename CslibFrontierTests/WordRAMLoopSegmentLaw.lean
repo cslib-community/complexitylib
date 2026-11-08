@@ -18,7 +18,7 @@ The single segment charges the body and two loop instructions; finishing charges
 
 @[expose] public section
 
-namespace ComplexityTests.WordRAMLoopSegmentLaw
+namespace CslibFrontierTests.WordRAMLoopSegmentLaw
 
 open Cslib Cslib.WordRAM
 
@@ -35,4 +35,4 @@ example : ExecRandLaw 1 (.loop (.lt 0 1) (.op (.const 0 1) : Code .standard 2)) 
     (ExecRandLaw.of_execWithin (P := (· = stop)) (f := fun y => y.regs 0) hbody rfl)
   exact hlaw.finish fun y hy => hy ▸ (by decide)
 
-end ComplexityTests.WordRAMLoopSegmentLaw
+end CslibFrontierTests.WordRAMLoopSegmentLaw

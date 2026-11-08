@@ -17,7 +17,7 @@ of dimension five over `ℕ`. Squaring in characteristic two remains the formal 
 `X₀²`. Empty blocks and constant-only formulas check the zero-dimensional boundary cases.
 -/
 
-namespace ComplexityTests.PermanentFormulas
+namespace CslibFrontierTests.PermanentFormulas
 
 open Cslib Cslib.Circuits Cslib.Circuits.Arithmetic MvPolynomial
 
@@ -85,4 +85,4 @@ example : ((!![2, 3; 5, 7] : Matrix (Fin 2) (Fin 2) ℕ).submatrix
   rw [Matrix.permanent_submatrix_equiv_equiv, Matrix.permanent_succ_row_zero, Fin.sum_univ_two]
   decide
 
-end ComplexityTests.PermanentFormulas
+end CslibFrontierTests.PermanentFormulas

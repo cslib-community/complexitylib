@@ -15,7 +15,7 @@ zero copies from unrepresentable positive batches, and exact-cost retention from
 They also check row-major evaluation, input rewiring, padding and the rational copy budget.
 -/
 
-namespace ComplexityTests.MassProduction
+namespace CslibFrontierTests.MassProduction
 
 open Cslib.Circuits Cslib.Circuits.Boolean Cslib.Circuits.Boolean.MassProduction
 
@@ -155,4 +155,4 @@ example (h : MassProducesAt 1 3) : ∃ c, ∀ n, 0 < n →
   simpa only [MassProducesAtAllLengths, MassProductionBound, rationalCopyBudget, one_mul] using
     h.allLengths
 
-end ComplexityTests.MassProduction
+end CslibFrontierTests.MassProduction

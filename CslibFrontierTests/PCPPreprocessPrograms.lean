@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Finite
 
 /-! Preprocessing rotations preserve edge identity, orientation, return labels and runtime costs. -/
 
-namespace ComplexityTests.PreprocessPrograms
+namespace CslibFrontierTests.PreprocessPrograms
 
 open Cslib Cslib.PCP Cslib.PCP.Encoded Turing.MultiTapeTM
 
@@ -123,4 +123,4 @@ example (T : ℕ) : ComputableInPolyTime
   have hrot := isPolyTime_preprocessRotation_finEnum
   fun_prop
 
-end ComplexityTests.PreprocessPrograms
+end CslibFrontierTests.PreprocessPrograms

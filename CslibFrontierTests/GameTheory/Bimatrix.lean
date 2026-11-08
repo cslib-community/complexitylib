@@ -24,7 +24,7 @@ import CslibFrontier.GameTheory.Bimatrix.BestResponsePolytope
   of the Lemke–Howson graph, the starting point of the algorithm.
 -/
 
-namespace ComplexityTests.GameTheory.Bimatrix
+namespace CslibFrontierTests.GameTheory.Bimatrix
 
 open Cslib.GameTheory Cslib.GameTheory.BimatrixGame Matrix
 
@@ -238,4 +238,4 @@ theorem ncard_neighborSet_artificialNode :
     (fun _ => eq_zero_of_matQ_mulVec_nonpos coordPos_A_pos) Fintype.card_sum artificialNode
     (completelyLabeled_iff_forall.2 ⟨fun _ => .inl rfl, fun _ => .inr rfl⟩)
 
-end ComplexityTests.GameTheory.Bimatrix
+end CslibFrontierTests.GameTheory.Bimatrix

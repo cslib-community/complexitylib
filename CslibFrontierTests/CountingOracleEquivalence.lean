@@ -13,7 +13,7 @@ The clients exercise a nonconstant PP problem, zero-coin and tied majority arith
 distinct admissible counting oracles that disagree on a non-code word.
 -/
 
-namespace ComplexityTests.CountingOracleEquivalence
+namespace CslibFrontierTests.CountingOracleEquivalence
 
 open Cslib Cslib.Complexity Turing.MultiTapeTM
 
@@ -59,4 +59,4 @@ example : ([] : List Bool) ∉ bitGraph encBool count := by
   simp only [length_encPair, List.length_nil] at this
   lia
 
-end ComplexityTests.CountingOracleEquivalence
+end CslibFrontierTests.CountingOracleEquivalence

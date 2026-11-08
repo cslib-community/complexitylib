@@ -9,7 +9,7 @@ import CslibFrontier.Computability.QueryComplexity.BernsteinVazirani
 /-! The classical query complexity of Bernstein–Vazirani on concrete instances, and the sharpness of
 the error threshold `1/2` in the randomized lower bound. -/
 
-namespace ComplexityTests.BernsteinVazirani
+namespace CslibFrontierTests.BernsteinVazirani
 
 open Cslib Cslib.QueryComplexity Cslib.BitString Convexity
 
@@ -92,4 +92,4 @@ example : (2 : ℝ) ^ Fintype.card (Fin 1) * (1 - 1 / 2) = 2 ^ guess.depth := by
   rw [depth_guess]
   norm_num
 
-end ComplexityTests.BernsteinVazirani
+end CslibFrontierTests.BernsteinVazirani

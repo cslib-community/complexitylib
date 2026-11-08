@@ -13,7 +13,7 @@ import CslibFrontier.Computability.Complexity.Classes.Promise.Reduction
 completeness still unfold to their `∃` and `∀` forms, uses of the generic hardness lemmas, and axiom
 guards for the core. -/
 
-namespace ComplexityTests.ManyOne
+namespace CslibFrontierTests.ManyOne
 
 open Cslib Cslib.Complexity Turing.MultiTapeTM
 
@@ -222,4 +222,4 @@ info: 'Cslib.Complexity.CompleteUnder.mono' does not depend on any axioms
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.Complexity.CompleteUnder.mono
 
-end ComplexityTests.ManyOne
+end CslibFrontierTests.ManyOne

@@ -29,7 +29,7 @@ decodes, but it computes the constant `true`, which is not an interpolant, since
 `¬x`.
 -/
 
-namespace ComplexityTests.ProofComplexity.InterpolationExtraction
+namespace CslibFrontierTests.ProofComplexity.InterpolationExtraction
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -247,4 +247,4 @@ example : ComputableInPolyTime
     Monotone.encCode :=
   CNF.computableInPolyTime_monotoneInterpolantCode encNat encNat
 
-end ComplexityTests.ProofComplexity.InterpolationExtraction
+end CslibFrontierTests.ProofComplexity.InterpolationExtraction

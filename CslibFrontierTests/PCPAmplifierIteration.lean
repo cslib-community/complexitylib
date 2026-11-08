@@ -8,7 +8,7 @@ import CslibFrontier.Computability.PCP.Amplifier
 
 /-! Shared amplification induction and the initial violated-edge lower bound. -/
 
-namespace ComplexityTests.PCPAmplifierIteration
+namespace CslibFrontierTests.PCPAmplifierIteration
 
 open Cslib.PCP
 
@@ -39,4 +39,4 @@ example : violatedLoop.unsatVal = 1 := by
   simpa only [Fintype.card_unique, Nat.cast_one, one_mul] using
     violatedLoop.one_le_card_mul_unsatVal h
 
-end ComplexityTests.PCPAmplifierIteration
+end CslibFrontierTests.PCPAmplifierIteration

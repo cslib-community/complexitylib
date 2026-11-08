@@ -13,7 +13,7 @@ points; entries of the join matrix that are `1` and `0`; full rank over `ℚ` an
 `Fintype` instance from `Fintype.ofFinite`, also for the empty type; the count `B_4 ≥ 4`; and the
 resulting bound of two bits for joining partitions of four points. -/
 
-namespace ComplexityTests.PartitionJoin
+namespace CslibFrontierTests.PartitionJoin
 
 open Cslib Cslib.SetPartition Cslib.Communication
 
@@ -89,4 +89,4 @@ example : (2 : ℕ∞) ≤ Protocol.ecomplexity
   rw [show 4 = 2 ^ 2 from rfl, Nat.clog_pow 2 2 (by norm_num)] at h
   exact_mod_cast h
 
-end ComplexityTests.PartitionJoin
+end CslibFrontierTests.PartitionJoin

@@ -16,7 +16,7 @@ rate-comparison constant is necessary. The zero-budget and second-moment boundar
 checked separately.
 -/
 
-namespace ComplexityTests.EstimatorPrecision
+namespace CslibFrontierTests.EstimatorPrecision
 
 open Cslib.LogSpaceEstimation
 
@@ -106,4 +106,4 @@ example : binNormCost 4 2 * (2 : ℝ) ^ (1 / 4 : ℝ) * (2 : ℝ) ^ (-5 / 2 : �
         Real.rpow_add (by norm_num : (0 : ℝ) < 2)]
       norm_num
 
-end ComplexityTests.EstimatorPrecision
+end CslibFrontierTests.EstimatorPrecision

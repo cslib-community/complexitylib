@@ -18,7 +18,7 @@ no-overflow hypotheses, and invokes the weighted theorem. Other examples check s
 negative raw first coordinates, and exact targets with zero error.
 -/
 
-namespace ComplexityTests.RowCompressionPreloss
+namespace CslibFrontierTests.RowCompressionPreloss
 
 open Finset Cslib.RowCompression
 
@@ -83,4 +83,4 @@ example :
   norm_num [dyadicFloor, dyadicSlack, uncompressedRow, zeroState, clippedError] at h ⊢
   exact h
 
-end ComplexityTests.RowCompressionPreloss
+end CslibFrontierTests.RowCompressionPreloss

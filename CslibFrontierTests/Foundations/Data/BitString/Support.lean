@@ -11,7 +11,7 @@ public import CslibFrontier.Foundations.Data.BitString.Support
 
 /-! # Unit tests for `Cslib.BitString.supportOfList` -/
 
-namespace ComplexityTests.BitString.Support
+namespace CslibFrontierTests.BitString.Support
 
 open Cslib.BitString
 
@@ -43,4 +43,4 @@ example {w : List Bool} (hw : w.length = 3)
     by rw [card_supportOfList_of_length hw, supportOfList_injective_of_length hw rfl h]; rfl,
     by decide, by decide⟩
 
-end ComplexityTests.BitString.Support
+end CslibFrontierTests.BitString.Support

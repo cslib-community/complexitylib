@@ -19,7 +19,7 @@ Frobenius conjugates) gives the same values. The roots `binaryRoot` satisfy the 
 root-independence theorem, so it applies.
 -/
 
-namespace ComplexityTests.AffineDisperserRuntime
+namespace CslibFrontierTests.AffineDisperserRuntime
 
 open Cslib Cslib.AffineDisperser Cslib.AffineDisperser.Explicit Turing.MultiTapeTM
 
@@ -70,4 +70,4 @@ example (seed : ℕ) :
       explicitDisperser 512 :=
   ⟨explicitDisperserProgram_eq _, traceSymBits_rootBasis_eq_explicitDisperser 512 _ _⟩
 
-end ComplexityTests.AffineDisperserRuntime
+end CslibFrontierTests.AffineDisperserRuntime

@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.PPSZ.General
 it is not uniquely satisfiable, every variable is liquid at the start, and one round of PPSZ with
 `w = 3` still succeeds with probability at least `2^{-(39/70) · 3}`. -/
 
-namespace ComplexityTests.PPSZGeneral
+namespace CslibFrontierTests.PPSZGeneral
 
 open Cslib.Logic.PL Cslib.Complexity.PPSZ Finset
 
@@ -79,4 +79,4 @@ example : ∃ w : ℕ, (2 : ℝ) ^ (-((1 - mu 3 / ((3 : ℕ) - 1 : ℝ) + 1 / 10
   obtain ⟨w, hw⟩ := round_success_limit le_rfl (1 / 100) (by norm_num)
   exact ⟨w, by exact_mod_cast hw 3 ψ ψ_sat ψ_len⟩
 
-end ComplexityTests.PPSZGeneral
+end CslibFrontierTests.PPSZGeneral

@@ -13,7 +13,7 @@ public import CslibFrontier.Computability.Complexity.Reduction
 
 @[expose] public section
 
-namespace ComplexityTests.ReductionClasses
+namespace CslibFrontierTests.ReductionClasses
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -39,4 +39,4 @@ example {β γ : Type} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
 example : (Set.univ : Set (List Bool)) ∈ NP encBits :=
   P_subset_NP ⟨fun _ => true, ComputableInPolyTime.const true, fun _ => by simp⟩
 
-end ComplexityTests.ReductionClasses
+end CslibFrontierTests.ReductionClasses

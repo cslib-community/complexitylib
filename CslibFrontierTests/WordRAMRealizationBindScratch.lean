@@ -16,7 +16,7 @@ The same code is checked on maximum-word, zero-pointer and invalid-history bound
 on aliased original source registers. Empty result vectors share the mandatory extra word.
 -/
 
-namespace ComplexityTests.WordRAMRealizationBindScratch
+namespace CslibFrontierTests.WordRAMRealizationBindScratch
 
 open Cslib.DataStructure Cslib.WordRAM Cslib.WordRAM.Realization
 
@@ -243,4 +243,4 @@ example : ∃ y, ExecWithin 2 (emptyResults.code 0 ![1, 2] (fun _ => 3))
   change y.mem = Function.update (Function.update (fun _ => 1) 1 3) 1 3 at hmem
   simpa only [Function.update_idem] using hmem
 
-end ComplexityTests.WordRAMRealizationBindScratch
+end CslibFrontierTests.WordRAMRealizationBindScratch

@@ -14,7 +14,7 @@ the finite shared-box tradeoff. These tests assert no native execution or final 
 
 set_option linter.hashCommand false
 
-namespace ComplexityTests.SchonhageBoxTradeoff
+namespace CslibFrontierTests.SchonhageBoxTradeoff
 
 open Finset Cslib.Algorithms.MatrixMultiplication.Schonhage
 open Cslib.Algorithms.MatrixMultiplication.Schonhage.BoxTradeoff
@@ -62,4 +62,4 @@ example :
   simpa only [Nat.mul_zero, Nat.zero_add, Nat.cast_one] using
     nativeShape_ninth_blocks 0 1 1 (by decide +kernel) (by decide +kernel)
 
-end ComplexityTests.SchonhageBoxTradeoff
+end CslibFrontierTests.SchonhageBoxTradeoff

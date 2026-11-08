@@ -20,7 +20,7 @@ import CslibFrontier.Algorithms.LatticeReduction.LLL
   basis it returns a shorter first row than `lll`.
 -/
 
-namespace ComplexityTests.Algorithms.LatticeReduction.LLL
+namespace CslibFrontierTests.Algorithms.LatticeReduction.LLL
 
 open Cslib.Algorithms.LatticeReduction
 
@@ -114,4 +114,4 @@ example : ¬ LinearIndependent ℝ (realRows (#v[#v[1, 2], #v[2, 4]] : Vector (V
   rw [linearIndependent_realRows_iff, Matrix.det_fin_two]
   simp [dotProduct, Fin.sum_univ_two]
 
-end ComplexityTests.Algorithms.LatticeReduction.LLL
+end CslibFrontierTests.Algorithms.LatticeReduction.LLL

@@ -20,7 +20,7 @@ imports no complexitylib proof, definition or custom syntax.
 
 @[expose] public section
 
-namespace ComplexityComparator.Basic
+namespace CslibFrontierComparator.Basic
 
 /-- Membership-preserving admissible maps compose when admissibility is closed under composition. -/
 def ManyOneTrans.{u, v, w} : Prop :=
@@ -41,4 +41,4 @@ def NonprojectionNeedsGate.{u, s} : Prop :=
     (∀ i : Fin n, f ≠ fun x => x i) →
     Nat.le 1 (Cslib.Circuits.complexity I (fun x (_ : Fin 1) => f x))
 
-end ComplexityComparator.Basic
+end CslibFrontierComparator.Basic

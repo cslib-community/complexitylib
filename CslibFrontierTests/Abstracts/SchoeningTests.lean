@@ -17,9 +17,9 @@ instantiation of `SchoeningAbstract.schoening3SAT` on a satisfiable 3-CNF with t
 word size `16`.
 -/
 
-namespace ComplexityTests.Abstracts.SchoeningTests
+namespace CslibFrontierTests.Abstracts.SchoeningTests
 
-open ComplexityAbstracts.SchoeningAbstract
+open CslibFrontierAbstracts.SchoeningAbstract
 
 -- Truncated subtraction, and division and remainder by zero.
 example : AluOp.eval .sub 2 5 = 0 := rfl
@@ -42,4 +42,4 @@ example : ∃ p : Program 24, ∃ T, HaltsWithin 16 p (init (3 :: 1 :: encode φ
   obtain ⟨hhalt, -, -, -, hfail⟩ := hp 3 1 16 φ (by decide)
   exact ⟨p, _, hhalt, by simpa using hfail φ_satisfiable (by decide)⟩
 
-end ComplexityTests.Abstracts.SchoeningTests
+end CslibFrontierTests.Abstracts.SchoeningTests

@@ -9,7 +9,7 @@ import CslibFrontier.Languages.Probabilistic.Vector
 
 /-! Joint secret/public-key laws of the actual native randomized key generator. -/
 
-namespace ComplexityTests.Crypto.ModuleKeyGenJoint
+namespace CslibFrontierTests.Crypto.ModuleKeyGenJoint
 
 open Cslib Cslib.Crypto Probability ProbComp Interactive Turing.MultiTapeTM
 open scoped Matrix ENNReal
@@ -270,4 +270,4 @@ example : ∃ generate : (((ℕ × ℕ) × ℕ × ℕ) × ℕ × ℕ) → ProbCo
     apply (ENNReal.toReal_eq_toReal_iff' (by finiteness) (by finiteness)).mp
     norm_num
 
-end ComplexityTests.Crypto.ModuleKeyGenJoint
+end CslibFrontierTests.Crypto.ModuleKeyGenJoint

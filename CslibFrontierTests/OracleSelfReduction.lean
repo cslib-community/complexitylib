@@ -18,7 +18,7 @@ oracle for `SAT` finds a satisfying assignment of a satisfiable formula.
 
 @[expose] public section
 
-namespace ComplexityTests.OracleSelfReduction
+namespace CslibFrontierTests.OracleSelfReduction
 
 open Cslib Cslib.Complexity Cslib.Complexity.SAT Cslib.Logic.PL
 
@@ -50,4 +50,4 @@ example (A : Set (List Bool)) :
     ∃ g : CNF ℕ → List Bool, ComputableInPolyTimeWithOracle A g encCNF Turing.MultiTapeTM.encBits :=
   ⟨_, computableInPolyTimeWithOracle_search A⟩
 
-end ComplexityTests.OracleSelfReduction
+end CslibFrontierTests.OracleSelfReduction

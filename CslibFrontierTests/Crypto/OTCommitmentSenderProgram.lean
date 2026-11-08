@@ -13,7 +13,7 @@ import CslibFrontier.Tactic.PPT
 
 @[expose] public section
 
-namespace ComplexityTests.Crypto.OTCommitmentSenderProgram
+namespace CslibFrontierTests.Crypto.OTCommitmentSenderProgram
 
 open Cslib Cslib.Probability Cslib.Crypto.Protocols.MPC
 open Cslib.Crypto.Protocols.MPC.OTCommitment Cslib.Crypto.Protocols.Commitment
@@ -217,4 +217,4 @@ theorem doubling_excluded : ¬ ∃ growth : ℕ,
   simp only [doubling, encBits_apply, List.length_append, List.length_replicate] at hg
   omega
 
-end ComplexityTests.Crypto.OTCommitmentSenderProgram
+end CslibFrontierTests.Crypto.OTCommitmentSenderProgram

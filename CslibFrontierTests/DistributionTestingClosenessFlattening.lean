@@ -8,7 +8,7 @@ import CslibFrontier.Computability.PropertyTesting.Distribution.ClosenessFlatten
 
 /-! Concrete instances of occurrence counts, split distributions and the flattening tester. -/
 
-namespace ComplexityTests.DistributionTestingClosenessFlattening
+namespace CslibFrontierTests.DistributionTestingClosenessFlattening
 
 open Cslib.Probability.PMF Cslib.DistributionTesting
 
@@ -81,4 +81,4 @@ example : ∃ m k : ℕ, ((m + k : ℕ) : ℝ) ≤
     IsClosenessTester (closenessFlatteningTester (α := Fin 1000) m k (1 / 10)) (1 / 10) :=
   exists_isClosenessTester_closenessFlatteningTester (by norm_num)
 
-end ComplexityTests.DistributionTestingClosenessFlattening
+end CslibFrontierTests.DistributionTestingClosenessFlattening

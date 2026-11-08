@@ -31,7 +31,7 @@ dependencies. The disjointness constants are not optimized.
 * [E. Kushilevitz, N. Nisan, *Communication Complexity*, Chapters 1–4][KushilevitzNisan1997]
 -/
 
-namespace ComplexityAbstracts.CommunicationAbstract
+namespace CslibFrontierAbstracts.CommunicationAbstract
 
 /-- A bit string is a function assigning a Boolean to each of `n` positions. -/
 abbrev Input (n : ℕ) := Fin n → Bool
@@ -94,14 +94,14 @@ theorem innerProduct_lower_bound {n c : ℕ} (μ : RandomizedProtocol n)
   CommunicationBridge.innerProduct μ hc he
 
 /--
-info: 'ComplexityAbstracts.CommunicationAbstract.disjointness_lower_bound' depends on axioms:
+info: 'CslibFrontierAbstracts.CommunicationAbstract.disjointness_lower_bound' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms disjointness_lower_bound
 
 /--
-info: 'ComplexityAbstracts.CommunicationAbstract.innerProduct_lower_bound' depends on axioms:
+info: 'CslibFrontierAbstracts.CommunicationAbstract.innerProduct_lower_bound' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -112,8 +112,8 @@ info: abstract audit passed for `CslibFrontierAbstracts.CommunicationAbstract`: 
 declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.CommunicationAbstract allowing [
+#check_abstract CslibFrontierAbstracts.CommunicationAbstract allowing [
   CslibFrontier.Computability.Communication.Protocol
 ]
 
-end ComplexityAbstracts.CommunicationAbstract
+end CslibFrontierAbstracts.CommunicationAbstract

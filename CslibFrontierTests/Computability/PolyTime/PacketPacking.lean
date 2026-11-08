@@ -8,7 +8,7 @@ import CslibFrontier.Computability.PolyTime.PacketPacking
 
 /-! Regression tests for `CslibFrontier.Computability.PolyTime.PacketPacking`. -/
 
-namespace ComplexityTests.PacketPackingNative
+namespace CslibFrontierTests.PacketPackingNative
 
 open Finset Cslib.PacketPacking Cslib.BalancedSchedules
 
@@ -82,4 +82,4 @@ example (i : Fin 1) (σ : Fin 2) :
   refine Finset.filter_congr fun e _ => ?_
   simp only [List.getD_ofFn, scheduleToWord, Fin.val_inj]
 
-end ComplexityTests.PacketPackingNative
+end CslibFrontierTests.PacketPackingNative

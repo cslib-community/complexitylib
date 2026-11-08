@@ -8,7 +8,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Counting.Oracle.Rep
 
 /-! Actual buffered queries, duplicate occurrences, branch-local state and canonical replay. -/
 
-namespace ComplexityTests.CountingOracle
+namespace CslibFrontierTests.CountingOracle
 
 open Cslib Turing MultiTapeMachine
 
@@ -233,4 +233,4 @@ example {S : Type} (handler : (n : ℕ) → StateT S PMF (MultiTapeCTM.occurrenc
   obtain ⟨result, _⟩ := (handler 0 s).support_nonempty
   exact result.1.elim0
 
-end ComplexityTests.CountingOracle
+end CslibFrontierTests.CountingOracle

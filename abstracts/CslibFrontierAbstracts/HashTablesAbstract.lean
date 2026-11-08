@@ -89,7 +89,7 @@ the formalization proves the intended mathematical claims; Lean verifies the pro
 `CslibFrontierAbstracts.HashTablesBridge`, and `#check_abstract` audits the dependency boundary.
 -/
 
-namespace ComplexityAbstracts.HashTablesAbstract
+namespace CslibFrontierAbstracts.HashTablesAbstract
 
 open scoped ENNReal
 
@@ -402,7 +402,7 @@ def chainedSpace (n_max : ℕ) : ℕ :=
 memory. -/
 theorem chainedSpace_le (n_max : ℕ) :
     chainedSpace n_max ≤ 8 * (n_max + 1) :=
-  ComplexityAbstracts.HashTablesBridge.chainedSpace_le n_max
+  CslibFrontierAbstracts.HashTablesBridge.chainedSpace_le n_max
 
 /-- **Chained Hashing with Multiply-Shift** (`ChainedHash.seq_expected_amortized`):
 For every key universe `U` and capacity `n_max`, there exist 22-register Word-RAM programs `p_init`
@@ -453,19 +453,19 @@ theorem chainedHashing :
                     base (chainedSpace n_max) (emptyDict U) ops
                     μ_init μ_final T_ops ∧
                   (16 : ℝ≥0∞) + T_ops ≤ ((16 + 73 * ops.length : ℕ) : ℝ≥0∞) :=
-  ComplexityAbstracts.HashTablesBridge.chainedHashing
+  CslibFrontierAbstracts.HashTablesBridge.chainedHashing
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
       @AluOp.rec, AluOp.eval,
       Instr, .const, .copy, .alu, .width, .load, .store, .jump,
       .branchEq, .branchLt, .halt, .rand, @Instr.rec,
       Comp, @Comp.pure, @Comp.sample, @Comp.bind, @Comp.eval,
-      ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
+      CslibFrontierAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
       State, .mk, Cfg, .running, .halted, .faulted, @stepRand, @runRand⟩
     (by refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
       simp_all [AluOp.eval, Comp.bind, Comp.eval,
-        ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
+        CslibFrontierAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
     ⟨DictOp, @DictOp.query, @DictOp.insert, @DictOp.rec,
       @stepDict, @validDictOp, @ValidDictHistory,
       RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
@@ -547,7 +547,7 @@ def lpSpace (n_max : ℕ) : ℕ :=
 memory. -/
 theorem linearProbingSpace_le (n_max : ℕ) :
     lpSpace n_max ≤ 209 * (n_max + 1) :=
-  ComplexityAbstracts.HashTablesBridge.linearProbingSpace_le n_max
+  CslibFrontierAbstracts.HashTablesBridge.linearProbingSpace_le n_max
 
 /-- Expected instruction count `3 + (kWiseInitTableSteps n_max U (lpTableLog n_max) + 38)` for
 linear-probing initialization from zeroed memory. -/
@@ -570,7 +570,7 @@ def lpOpChargeBound : ℕ :=
 `n_max` and `U`. -/
 theorem linearProbingCharge_le {U n_max : ℕ} (hU : U ≤ max n_max 4 ^ 4) :
     lpOpCharge U n_max ≤ lpOpChargeBound :=
-  ComplexityAbstracts.HashTablesBridge.linearProbingCharge_le hU
+  CslibFrontierAbstracts.HashTablesBridge.linearProbingCharge_le hU
 
 /-- **Linear Probing with `5`-Wise Independent Hashing** (`LinearProbing.seq_expected_amortized`,
 specialized to `c_exp = 4`):
@@ -630,19 +630,19 @@ theorem linearProbing :
                     ((lpInitSteps U n_max + ops.length * lpOpCharge U n_max : ℕ) : ℝ≥0∞) ∧
                   (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
                     ((lpInitSteps U n_max + ops.length * lpOpChargeBound : ℕ) : ℝ≥0∞) :=
-  ComplexityAbstracts.HashTablesBridge.linearProbing
+  CslibFrontierAbstracts.HashTablesBridge.linearProbing
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
       @AluOp.rec, AluOp.eval,
       Instr, .const, .copy, .alu, .width, .load, .store, .jump,
       .branchEq, .branchLt, .halt, .rand, @Instr.rec,
       Comp, @Comp.pure, @Comp.sample, @Comp.bind, @Comp.eval,
-      ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
+      CslibFrontierAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
       State, .mk, Cfg, .running, .halted, .faulted, @stepRand, @runRand⟩
     (by refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
       simp_all [AluOp.eval, Comp.bind, Comp.eval,
-        ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
+        CslibFrontierAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
     ⟨DictOp, @DictOp.query, @DictOp.insert, @DictOp.rec,
       @stepDict, @validDictOp, @ValidDictHistory,
       RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
@@ -712,7 +712,7 @@ def upSpaceFactor : ℕ :=
 `upSpaceFactor * (n_max + 1) = 19200 * (n_max + 1)` words of memory. -/
 theorem uniformProbingSpace_le (n_max : ℕ) :
     upSpace n_max ≤ upSpaceFactor * (n_max + 1) :=
-  ComplexityAbstracts.HashTablesBridge.uniformProbingSpace_le n_max
+  CslibFrontierAbstracts.HashTablesBridge.uniformProbingSpace_le n_max
 
 /-- Expected instruction count `3 + (2 * doubleTabResampleSteps 8 64 (charBits n_max) + 4)` for
 uniform-probing initialization from zeroed memory at `c_exp = 4`. -/
@@ -803,19 +803,19 @@ theorem uniformProbing :
                   (regimeThreshold ≤ n_max →
                     (upInitSteps n_max : ℝ≥0∞) + T_ops ≤
                       ((upInitSteps n_max + ops.length * upLargeOpCharge : ℕ) : ℝ≥0∞)) :=
-  ComplexityAbstracts.HashTablesBridge.uniformProbing
+  CslibFrontierAbstracts.HashTablesBridge.uniformProbing
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
       @AluOp.rec, AluOp.eval,
       Instr, .const, .copy, .alu, .width, .load, .store, .jump,
       .branchEq, .branchLt, .halt, .rand, @Instr.rec,
       Comp, @Comp.pure, @Comp.sample, @Comp.bind, @Comp.eval,
-      ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
+      CslibFrontierAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
       State, .mk, Cfg, .running, .halted, .faulted, @stepRand, @runRand⟩
     (by refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
       simp_all [AluOp.eval, Comp.bind, Comp.eval,
-        ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
+        CslibFrontierAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
     ⟨DictOp, @DictOp.query, @DictOp.insert, @DictOp.rec,
       @stepDict, @validDictOp, @ValidDictHistory,
       RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
@@ -879,7 +879,7 @@ def cuckooSpaceFactor : ℕ :=
 `cuckooSpaceFactor * (n_max + 1) = 7699050 * (n_max + 1)` words of memory. -/
 theorem cuckooSpace_le (n_max : ℕ) :
     cuckooSpace n_max ≤ cuckooSpaceFactor * (n_max + 1) :=
-  ComplexityAbstracts.HashTablesBridge.cuckooSpace_le
+  CslibFrontierAbstracts.HashTablesBridge.cuckooSpace_le
     regimeThreshold charBits tableBits32 tableSize32 cuckooMaxEvictions cuckooK
     kWiseSpace doubleTabSpace cuckooKBound
     cuckooSingleHashSpace cuckooHashPairSpace cuckooSpace cuckooSpaceFactor
@@ -964,7 +964,7 @@ def cuckooOpCharge {U : ℕ} : DictOp U → ℕ
 /-- For every dictionary operation `o : DictOp U`, `cuckooOpCharge o ≤ cuckooInsertCharge`. -/
 theorem cuckooOpCharge_le {U : ℕ} (o : DictOp U) :
     cuckooOpCharge o ≤ cuckooInsertCharge :=
-  ComplexityAbstracts.HashTablesBridge.cuckooOpCharge_le
+  CslibFrontierAbstracts.HashTablesBridge.cuckooOpCharge_le
     DictOp @DictOp.query @DictOp.insert @DictOp.rec
     cuckooEvalHashBound cuckooQueryStepsBound cuckooQueryCharge
     cuckooEvictIterBound cuckooInsertBaseBound cuckooRehashAmortizedBound
@@ -1040,19 +1040,19 @@ theorem cuckooHashing :
                     ((cuckooInitSteps n_max U + (ops.map cuckooOpCharge).sum : ℕ) : ℝ≥0∞) ∧
                   (cuckooInitSteps n_max U : ℝ≥0∞) + T_ops ≤
                     ((cuckooInitSteps n_max U + ops.length * cuckooInsertCharge : ℕ) : ℝ≥0∞) :=
-  ComplexityAbstracts.HashTablesBridge.cuckooHashing
+  CslibFrontierAbstracts.HashTablesBridge.cuckooHashing
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
       @AluOp.rec, AluOp.eval,
       Instr, .const, .copy, .alu, .width, .load, .store, .jump,
       .branchEq, .branchLt, .halt, .rand, @Instr.rec,
       Comp, @Comp.pure, @Comp.sample, @Comp.bind, @Comp.eval,
-      ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
+      CslibFrontierAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
       State, .mk, Cfg, .running, .halted, .faulted, @stepRand, @runRand⟩
     (by refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
       simp_all [AluOp.eval, Comp.bind, Comp.eval,
-        ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
+        CslibFrontierAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
     ⟨DictOp, @DictOp.query, @DictOp.insert, @DictOp.rec,
       @stepDict, @validDictOp, @ValidDictHistory,
       RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
@@ -1090,6 +1090,6 @@ info: abstract audit passed for `CslibFrontierAbstracts.HashTablesAbstract`: 417
 declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.HashTablesAbstract
+#check_abstract CslibFrontierAbstracts.HashTablesAbstract
 
-end ComplexityAbstracts.HashTablesAbstract
+end CslibFrontierAbstracts.HashTablesAbstract

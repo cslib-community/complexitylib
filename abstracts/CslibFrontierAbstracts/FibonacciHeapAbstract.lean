@@ -57,7 +57,7 @@ mechanically that no definition or theorem statement here depends on implementat
   Algorithms*][CLRS2009], Section 19.1, eq. (19.1), and Sections 19.2–19.4.
 -/
 
-namespace ComplexityAbstracts.FibonacciHeapAbstract
+namespace CslibFrontierAbstracts.FibonacciHeapAbstract
 
 /-! ## Priority queues with handles
 
@@ -405,11 +405,11 @@ theorem fibonacciHeap_amortized :
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr, @AluOp.rec, AluOp.eval,
       Instr, .const, .copy, .alu, .width, .load, .store, .jump, .branchEq, .branchLt, .halt,
       @Instr.rec, State, .mk, Outcome, .next, .halt, .fault, step,
-      ComplexityTests.Abstracts.WordRAMBridge.haltsVia Instr State Outcome step
+      CslibFrontierTests.Abstracts.WordRAMBridge.haltsVia Instr State Outcome step
         fun f g a o => o.rec f g a,
       fun _ _ => True⟩
     (by constructor <;>
-      simp_all [step, ComplexityTests.Abstracts.WordRAMBridge.haltsVia, AluOp.eval])
+      simp_all [step, CslibFrontierTests.Abstracts.WordRAMBridge.haltsVia, AluOp.eval])
     ⟨Op, @OpResult, .isEmpty, .get, .insert, .decreaseKey, .extractMin, @Op.rec, @Op.rec,
       fun b => b, fun _ r => r, fun _ _ r => r, fun _ _ r => r, fun r => r,
       Client, .done, .step, @Client.rec, @Client.rec,
@@ -489,11 +489,11 @@ theorem fibonacciHeap_amortized_reusable :
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr, @AluOp.rec, AluOp.eval,
       Instr, .const, .copy, .alu, .width, .load, .store, .jump, .branchEq, .branchLt, .halt,
       @Instr.rec, State, .mk, Outcome, .next, .halt, .fault, step,
-      ComplexityTests.Abstracts.WordRAMBridge.haltsVia Instr State Outcome step
+      CslibFrontierTests.Abstracts.WordRAMBridge.haltsVia Instr State Outcome step
         fun f g a o => o.rec f g a,
       fun _ _ => True⟩
     (by constructor <;>
-      simp_all [step, ComplexityTests.Abstracts.WordRAMBridge.haltsVia, AluOp.eval])
+      simp_all [step, CslibFrontierTests.Abstracts.WordRAMBridge.haltsVia, AluOp.eval])
     ⟨Op, @OpResult, .isEmpty, .get, .insert, .decreaseKey, .extractMin, @Op.rec, @Op.rec,
       fun b => b, fun _ r => r, fun _ _ r => r, fun _ _ r => r, fun r => r,
       Client, .done, .step, @Client.rec, @Client.rec,
@@ -546,6 +546,6 @@ info: abstract audit passed for `CslibFrontierAbstracts.FibonacciHeapAbstract`: 
 declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.FibonacciHeapAbstract
+#check_abstract CslibFrontierAbstracts.FibonacciHeapAbstract
 
-end ComplexityAbstracts.FibonacciHeapAbstract
+end CslibFrontierAbstracts.FibonacciHeapAbstract

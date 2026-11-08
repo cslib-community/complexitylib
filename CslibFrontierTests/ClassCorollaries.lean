@@ -13,7 +13,7 @@ import CslibFrontier.Computability.Complexity.Classes.ValiantVazirani.Collapse
 /-! Structural corollaries of the class theorems: clients of the collapses on concrete encodings.
 -/
 
-namespace ComplexityTests.ClassCorollaries
+namespace CslibFrontierTests.ClassCorollaries
 
 open Cslib Cslib.Complexity Cslib.Probability Turing.MultiTapeTM
 
@@ -132,4 +132,4 @@ example : (Set.univ : Set (List Bool)) ∈ SPP encBits :=
 example : (Set.univ : Set (List Bool)) ∈ SPP encBits :=
   FewP_subset_SPP univ_mem_FewP_two
 
-end ComplexityTests.ClassCorollaries
+end CslibFrontierTests.ClassCorollaries

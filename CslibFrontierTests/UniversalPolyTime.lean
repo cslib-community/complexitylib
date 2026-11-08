@@ -15,7 +15,7 @@ The automatic rules also compose description decoding and input-symbol conversio
 
 open Turing.MultiTapeTM Turing.MultiTapeTM.Universal
 
-namespace ComplexityTests.UniversalPolyTime
+namespace CslibFrontierTests.UniversalPolyTime
 
 example :
     ComputableInPolyTime (fun x : List Bool => (decodeDesc x, x.map eBit)) encBits
@@ -30,4 +30,4 @@ example :
       [true, true, false, false, true, true, false] :=
   ⟨rfl, rfl⟩
 
-end ComplexityTests.UniversalPolyTime
+end CslibFrontierTests.UniversalPolyTime

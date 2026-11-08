@@ -18,7 +18,7 @@ Verifies concrete instantiations of `PWithOracle` Boolean closure, `UP ∩ coUP`
 
 @[expose] public section
 
-namespace ComplexityTests.OracleLowness
+namespace CslibFrontierTests.OracleLowness
 
 open Cslib Cslib.Complexity Turing.MultiTapeTM
 
@@ -73,4 +73,4 @@ example : {w : List Bool | w.reverse ∈ headTrueᶜ} ∈ NP encBits ∩ coNP en
   PWithOracle_subset_NP_inter_coNP headTrue_mem_NP headTrue_mem_coNP
     reverseComplHeadTrue_mem_PWithOracle
 
-end ComplexityTests.OracleLowness
+end CslibFrontierTests.OracleLowness

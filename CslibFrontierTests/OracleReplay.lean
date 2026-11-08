@@ -13,7 +13,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilisti
 
 @[expose] public section
 
-namespace ComplexityTests.OracleReplay
+namespace CslibFrontierTests.OracleReplay
 
 open Cslib Turing MultiTapeMachine MultiTapeTM
 
@@ -73,4 +73,4 @@ example :
       (encPair (encPair encBits encBits) encUnary) encBits :=
   ⟨by fun_prop, by fun_prop⟩
 
-end ComplexityTests.OracleReplay
+end CslibFrontierTests.OracleReplay

@@ -15,7 +15,7 @@ With `L = 2` slots the grid is `{-2, -1, 0, 1}`, `C'(0) = -2` and `α = 4`. The 
 coordinate `T = 1 + 4 z` it becomes `2`-integral (Lemma D.4).
 -/
 
-namespace ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.IntegralCoordinates
+namespace CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.IntegralCoordinates
 
 open Cslib.Circuits.Frontier Polynomial
 open scoped WithZero
@@ -107,4 +107,4 @@ example :
       simp only [oneEdge]
       split_ifs <;> exact (Rat.padicValuation_le_one_iff.mpr (by decide))
 
-end ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.IntegralCoordinates
+end CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.IntegralCoordinates

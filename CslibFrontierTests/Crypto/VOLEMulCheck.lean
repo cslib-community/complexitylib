@@ -14,7 +14,7 @@ The false gate `0 * 0 = -1`, zero masks and affine claim `delta` accept precisel
 This attains the two-root bound over `ZMod 5` and accepts every key over `ZMod 2`.
 -/
 
-namespace ComplexityTests.Crypto.VOLEMulCheck
+namespace CslibFrontierTests.Crypto.VOLEMulCheck
 
 open Cslib.Crypto.Protocols.VOLE Cslib.Probability
 open scoped ENNReal
@@ -71,4 +71,4 @@ example (delta : ZMod 5) :
     (0 * delta + 0) * (0 * delta + 0) - ((-1) * delta + 0) * delta =
       0 * delta + delta ^ 2 := by ring
 
-end ComplexityTests.Crypto.VOLEMulCheck
+end CslibFrontierTests.Crypto.VOLEMulCheck

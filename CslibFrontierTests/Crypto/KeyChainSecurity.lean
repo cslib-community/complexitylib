@@ -17,7 +17,7 @@ every nonce combination has a concrete support witness. These are simulation and
 regressions; the fixture deliberately offers no encryption security.
 -/
 
-namespace ComplexityTests.Crypto.KeyChainSecurity
+namespace CslibFrontierTests.Crypto.KeyChainSecurity
 
 open Cslib Cslib.Crypto Cslib.Crypto.Homomorphic Cslib.Probability Turing.MultiTapeTM
 
@@ -199,4 +199,4 @@ example : IsPPTOn (encPair encUnary (encPair encBits encBits)) encBool
     (fun p => fixture.guessLink observe p.1 p.2.1 p.2.2) :=
   Scheme.isPPTOn_guessLink encrypt_ppt observe_ppt (by fun_prop) (by fun_prop) (by fun_prop)
 
-end ComplexityTests.Crypto.KeyChainSecurity
+end CslibFrontierTests.Crypto.KeyChainSecurity

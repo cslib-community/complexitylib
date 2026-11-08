@@ -21,7 +21,7 @@ import Mathlib.Tactic.NormNum
   `BSC_0` but not over `BSC_{1/2}`.
 -/
 
-namespace ComplexityTests.BinarySymmetricChannelStrongConverse
+namespace CslibFrontierTests.BinarySymmetricChannelStrongConverse
 
 open Cslib Cslib.BitString Finset Real
 open scoped BigOperators unitInterval
@@ -102,4 +102,4 @@ example : ¬ IsAchievableRate half (1 / 2) :=
 /-- Rate `0` is achievable over every `BSC_p`: one codeword is never misdecoded. -/
 example (p : I) : IsAchievableRate p 0 := isAchievableRate_of_nonpos p le_rfl
 
-end ComplexityTests.BinarySymmetricChannelStrongConverse
+end CslibFrontierTests.BinarySymmetricChannelStrongConverse

@@ -16,7 +16,7 @@ encoded length of `SuccinctMCSP` sub-table queries, leaf-size-`≤ 1` formula pr
 `PartialMCSP` (`MCSP*`) bridge.
 -/
 
-namespace ComplexityTests.FormulaMagnification
+namespace CslibFrontierTests.FormulaMagnification
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Turing.MultiTapeTM
 
@@ -152,4 +152,4 @@ example :
   exists_formula_ofFunction_SuccinctMCSP_of_agrees
     (fun _ => SuccinctMCSP.enc.injective.mem_set_image.symm) 1 Finset.univ 0
 
-end ComplexityTests.FormulaMagnification
+end CslibFrontierTests.FormulaMagnification

@@ -23,7 +23,7 @@ constant-absorption combinators.
 
 @[expose] public section
 
-namespace ComplexityTests.ExhaustiveCountFallback
+namespace CslibFrontierTests.ExhaustiveCountFallback
 
 open Cslib.BitString Cslib.Complexity Cslib.GenericRAM
 open Cslib.GenericRAM.ExhaustiveCountFallback Cslib.Logic.PL Turing.MultiTapeTM
@@ -206,4 +206,4 @@ theorem targetDemo_subexp_absorbed :
       (fun x _ => hT_ex x)
   exact ⟨e, S, hS, hcomp⟩
 
-end ComplexityTests.ExhaustiveCountFallback
+end CslibFrontierTests.ExhaustiveCountFallback

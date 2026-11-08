@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Expli
 /-! The tables of the explicit block-counting networks on numbers: decoded letters, table entries
 of a concrete machine read off the explicit network, and the polynomial-time certificate. -/
 
-namespace ComplexityTests.HPVExplicitTables
+namespace CslibFrontierTests.HPVExplicitTables
 
 open Turing MultiTapeMachine MultiTapePTM MultiTapeNTM.ChoiceTable Cslib.Circuits.Frontier
 
@@ -74,4 +74,4 @@ example : MultiTapeTM.ComputableInPolyTime (fun σ : ℕ =>
     (.const _) (fun _ => two_pos) (.const _) MultiTapeTM.ComputableInPolyTime.id' (.const 4)
     (fun _ => le_refl 4)
 
-end ComplexityTests.HPVExplicitTables
+end CslibFrontierTests.HPVExplicitTables

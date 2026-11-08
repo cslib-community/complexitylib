@@ -14,7 +14,7 @@ conjunction at wire `3`. Its Tseitin formula with the output fixed is satisfiabl
 first input to `false` makes it unsatisfiable, both through `satisfiable_tseitinSatCNF_iff`.
 -/
 
-namespace ComplexityTests.CircuitTseitin
+namespace CslibFrontierTests.CircuitTseitin
 
 open Cslib.Circuits Cslib.Circuits.Boolean Cslib.Logic.PL
 
@@ -55,4 +55,4 @@ example :
     (tseitinCNF 2 gates).eval (fun w => [true, false, false, false].getD w false) = false := by
   decide
 
-end ComplexityTests.CircuitTseitin
+end CslibFrontierTests.CircuitTseitin

@@ -15,7 +15,7 @@ A permuted finite bank writes memory before returning. The caller continues with
 memory, using its preserved destination register. Unused caller words may be arbitrarily dirty.
 -/
 
-namespace ComplexityTests.WordRAMCanonicalCall
+namespace CslibFrontierTests.WordRAMCanonicalCall
 
 open Cslib.WordRAM
 
@@ -89,4 +89,4 @@ example : ∃ x : Data 4, ∃ y : Data 2,
   refine ⟨⟨fun _ => 1000, fun _ => 17⟩, ⟨fun _ => 3, fun _ => 29⟩, ?_, by decide⟩
   wram_simp
 
-end ComplexityTests.WordRAMCanonicalCall
+end CslibFrontierTests.WordRAMCanonicalCall

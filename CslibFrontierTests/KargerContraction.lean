@@ -19,7 +19,7 @@ one-sided error, admissibility and the call counts, so that none of their hypoth
 
 @[expose] public section
 
-namespace ComplexityTests.KargerContraction
+namespace CslibFrontierTests.KargerContraction
 
 open scoped ENNReal
 open Cslib Cslib.WeightedCut Cslib.DataStructure Cslib.Algorithms.Lean.Karger
@@ -64,4 +64,4 @@ example : OracleComp.IsCostBounded (fun q => Sum.elim (fun _ => 1) (fun _ => 0) 
     (contractTimes 1) 1 :=
   isCostBounded_contractTimes (a := 1) (b := 0) (fun _ => le_rfl) (fun _ => le_rfl) 1
 
-end ComplexityTests.KargerContraction
+end CslibFrontierTests.KargerContraction

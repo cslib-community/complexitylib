@@ -20,7 +20,7 @@ The coefficient of the mode `0` in the product of the two row factors is
 
 @[expose] public section
 
-namespace ComplexityTests.TensorNetworkCoeffScheme
+namespace CslibFrontierTests.TensorNetworkCoeffScheme
 
 open Cslib Cslib.Circuits.Frontier Cslib.Circuits.Frontier.CoeffScheme
 
@@ -59,4 +59,4 @@ example (rows : List ℕ) (γ : List ℕ) :
 -- At most `(m + 2) ^ L` nodes.
 example : count 2 2 = 13 ∧ count 2 2 ≤ (2 + 2) ^ 2 := by decide
 
-end ComplexityTests.TensorNetworkCoeffScheme
+end CslibFrontierTests.TensorNetworkCoeffScheme

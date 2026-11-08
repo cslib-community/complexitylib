@@ -16,7 +16,7 @@ challenge messages, exercise rejected coordinates and zero ranges, and enumerate
 two-bit selector tapes for a three-link chain. No encryption-security assumption is used.
 -/
 
-namespace ComplexityTests.Crypto.LeveledCoinTape
+namespace CslibFrontierTests.Crypto.LeveledCoinTape
 
 open Cslib Cslib.Crypto.Homomorphic Cslib.Probability Turing.MultiTapeTM
 
@@ -90,4 +90,4 @@ example : ComputableInPolyTime (fun ((n, pk), tape) =>
     fun_prop
   all_goals fun_prop
 
-end ComplexityTests.Crypto.LeveledCoinTape
+end CslibFrontierTests.Crypto.LeveledCoinTape

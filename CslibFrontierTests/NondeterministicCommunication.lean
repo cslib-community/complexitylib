@@ -15,7 +15,7 @@ subdomain; a relation with several acceptable answers, which is easier than the 
 with its answers exchanged, and one with none, which has no cover; and bounds by deterministic
 protocols, for a function and for a relation. -/
 
-namespace ComplexityTests.NondeterministicCommunication
+namespace CslibFrontierTests.NondeterministicCommunication
 
 open Finset Cslib Cslib.Communication Cslib.Communication.Nondeterministic
 
@@ -149,4 +149,4 @@ example : ecomplexity true promiseEq Set.univ Set.univ = 0 :=
     (Protocol.ecomplexity_le_depth (p := .output true) (R := promiseEq) (A := Set.univ)
       (B := Set.univ) fun _ _ _ _ _ => rfl).trans (by simp)
 
-end ComplexityTests.NondeterministicCommunication
+end CslibFrontierTests.NondeterministicCommunication

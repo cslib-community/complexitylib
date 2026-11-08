@@ -13,7 +13,7 @@ public import CslibFrontier.Computability.WordRAM.Glue
 
 public section
 
-namespace ComplexityTests.WordRAMGlueNamed
+namespace CslibFrontierTests.WordRAMGlueNamed
 
 open Cslib.WordRAM
 
@@ -40,4 +40,4 @@ theorem weighted_three_six : weighted ![3, 6] = 15 := by
   unfold weighted
   decide
 
-end ComplexityTests.WordRAMGlueNamed
+end CslibFrontierTests.WordRAMGlueNamed

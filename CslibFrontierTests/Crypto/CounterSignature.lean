@@ -22,10 +22,10 @@ counter forger's handler forwards a request below the capacity as the indexed re
 counter, and answers the empty word above it.
 -/
 
-namespace ComplexityTests.Crypto.CounterSignature
+namespace CslibFrontierTests.Crypto.CounterSignature
 
 open Cslib Cslib.Crypto Cslib.Crypto.MerkleSignature Cslib.Crypto.IndexedSignatureScheme
-  ComplexityTests.Crypto.MerkleSignature Turing.MultiTapeTM
+  CslibFrontierTests.Crypto.MerkleSignature Turing.MultiTapeTM
 
 /-- The counter signature word of leaf `u` with the secret words `sk`. -/
 def counterSigAt (u : ℕ) (sk : List (List Bool)) : List Bool :=
@@ -110,4 +110,4 @@ example {f : List Bool → List Bool} (hf : OneWay f) {H : List Bool → List Bo
       S.CounterEUFCMA :=
   hf.exists_counterEUFCMA hH hcapClog
 
-end ComplexityTests.Crypto.CounterSignature
+end CslibFrontierTests.Crypto.CounterSignature

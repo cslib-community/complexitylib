@@ -26,7 +26,7 @@ set_option backward.isDefEq.respectTransparency false
 -- This regression module deliberately exports no library API.
 set_option linter.privateModule false
 
-namespace ComplexityTests.HierarchyTasks
+namespace CslibFrontierTests.HierarchyTasks
 
 open Finset Matrix Matrix.HierarchyParams
 open scoped BigOperators
@@ -538,4 +538,4 @@ example (P : HierarchyParams 2 1 1 1 0) (b : Bool) :
   rw [he]
   norm_num [DenseRowRecipe.preparation, atomPrep, rowGate, rawWalk_eq, C, V]
 
-end ComplexityTests.HierarchyTasks
+end CslibFrontierTests.HierarchyTasks

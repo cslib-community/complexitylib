@@ -10,7 +10,7 @@ import CslibFrontier.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.Effic
 
 /-! Canonical upstream arithmetic and its migrated protocol clients. -/
 
-namespace ComplexityTests.ListDotProduct
+namespace CslibFrontierTests.ListDotProduct
 
 open Cslib Turing.MultiTapeTM Mathlib.Tactic.Matrix
 open Cslib.Crypto.Protocols.SigmaProtocol
@@ -58,4 +58,4 @@ example : lyubashevskySignCommitment
   simp only [lyubashevskySignCommitment, ListMatrix.dotProduct_eq_sum_map_range]
   decide
 
-end ComplexityTests.ListDotProduct
+end CslibFrontierTests.ListDotProduct

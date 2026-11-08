@@ -20,7 +20,7 @@ and to resolution refutations with `600`-cliques and `512` colours. At `n = 2 ^ 
 more than `2 ^ 512 / 2` lines.
 -/
 
-namespace ComplexityTests.MonotoneCliqueClosure
+namespace CslibFrontierTests.MonotoneCliqueClosure
 
 open Cslib Cslib.Circuits Cslib.Circuits.Clique Cslib.Logic.PL
 
@@ -86,4 +86,4 @@ example : (∃ s, (CNF.cliqueColoring (2 ^ 40) (2 ^ 20 + 1) (2 ^ 20)).RefutableI
     (by rw [sqrt_two_pow_forty]; norm_num) h
   rwa [sqrt_two_pow_forty, sqrt_two_pow_twenty, show (2 ^ 10 / 2 : ℕ) = 512 by norm_num] at this
 
-end ComplexityTests.MonotoneCliqueClosure
+end CslibFrontierTests.MonotoneCliqueClosure

@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Complexity.Problems.Graph.OrthogonalDrawing
 import CslibFrontier.Computability.Complexity.Problems.SAT.Incidence.Degree
 import CslibFrontier.Logics.Propositional.CNF.ImplicationChain
 
-namespace ComplexityTests.PlanarCompile
+namespace CslibFrontierTests.PlanarCompile
 
 open Cslib.Logic.PL Cslib.Orthogonal Cslib.Complexity
 open SAT.ParsimoniousPlanar
@@ -71,4 +71,4 @@ example : Graph.IsPlanarOrthogonalDrawing ([0, 1], [(0, 1)])
     have : j = 0 := by simpa using hj
     exact (hij (by omega)).elim
 
-end ComplexityTests.PlanarCompile
+end CslibFrontierTests.PlanarCompile

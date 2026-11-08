@@ -22,7 +22,7 @@ Manasse–McGeoch–Sleator lower bound and of the Chrobak–Karloff–Payne–V
 
 @[expose] public section
 
-namespace ComplexityTests.KServer
+namespace CslibFrontierTests.KServer
 
 open Cslib.DataStructure.Online Cslib.DataStructure.KServer
 
@@ -123,4 +123,4 @@ example (A : DetStrategy (problem NatMetric.line 2)) (b : Nat) :
         2 * A.cost ![0, 1] reqs :=
   exists_ratio_violation NatMetric.line (z := 2) (by decide) (by decide) A (by omega) b
 
-end ComplexityTests.KServer
+end CslibFrontierTests.KServer

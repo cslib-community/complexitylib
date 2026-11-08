@@ -67,7 +67,7 @@ the formalization proves the intended mathematical claims; Lean verifies the pro
 boundary.
 -/
 
-namespace ComplexityAbstracts.ApproximateMembershipAbstract
+namespace CslibFrontierAbstracts.ApproximateMembershipAbstract
 
 open scoped ENNReal
 
@@ -495,7 +495,7 @@ theorem qfSpace_le {w w₀ n k : ℕ}
     (hw₀_pos : 0 < w₀) (hw : 2 * w₀ ≤ w) (hb : qfQuotBits w₀ n ≤ w)
     (hn : 1 ≤ n) (hk : 1 ≤ k) :
     qfSpace w w₀ n k ≤ 640 * ((n * k + w - 1) / w + 1) :=
-  ComplexityAbstracts.ApproximateMembershipBridge.qfSpace_le hw₀_pos hw hb hn hk
+  CslibFrontierAbstracts.ApproximateMembershipBridge.qfSpace_le hw₀_pos hw hb hn hk
 
 /-- Across all capacities `n ≥ 1`, false-positive targets `ε : ℝ≥0∞`, key bit-widths `w₀ ≥ 1`, and
 word widths `w ≥ 2 * w₀` with `qfQuotBits w₀ n ≤ w`, the two-stage quotient filter uses at most
@@ -505,7 +505,7 @@ theorem qfSpaceOfEps_le {w w₀ n : ℕ} {ε : ℝ≥0∞}
     (hw₀_pos : 0 < w₀) (hw : 2 * w₀ ≤ w) (hb : qfQuotBits w₀ n ≤ w)
     (hn : 1 ≤ n) :
     qfSpaceOfEps w w₀ n ε ≤ 640 * ((n * epsLog ε + w - 1) / w + 1) :=
-  ComplexityAbstracts.ApproximateMembershipBridge.qfSpaceOfEps_le hw₀_pos hw hb hn
+  CslibFrontierAbstracts.ApproximateMembershipBridge.qfSpaceOfEps_le hw₀_pos hw hb hn
 
 /-- Deterministic instruction budget for initializing the bit-packed Four-Russians multiplication
 table of the two-stage `k`-wise hash. -/
@@ -580,19 +580,19 @@ theorem quotientFilter :
                       μ_init μ_final T_ops ∧
                     FilterContract ε ops (μ_final.map CoupledOutcome.transcript) ∧
                     T_ops ≤ ((ops.length * C_op : ℕ) : ℝ≥0∞) :=
-  ComplexityAbstracts.ApproximateMembershipBridge.quotientFilter
+  CslibFrontierAbstracts.ApproximateMembershipBridge.quotientFilter
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
       @AluOp.rec, AluOp.eval,
       Instr, .const, .copy, .alu, .width, .load, .store, .jump,
       .branchEq, .branchLt, .halt, .rand, @Instr.rec,
       Comp, @Comp.pure, @Comp.sample, @Comp.bind, @Comp.eval,
-      ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
+      CslibFrontierAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
       State, .mk, Cfg, .running, .halted, .faulted, @stepRand, @runRand⟩
     (by refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
       simp_all [AluOp.eval, Comp.bind, Comp.eval,
-        ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
+        CslibFrontierAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
     ⟨FilterOp, @FilterOp.insert, @FilterOp.delete, @FilterOp.query, @FilterOp.rec,
       @FilterOp.key, @FilterOp.tag,
       @stepSet, @activeSetFrom, @ValidFilterOp, @ValidFilterSeqFrom, @FilterContract,
@@ -619,6 +619,6 @@ info: abstract audit passed for `CslibFrontierAbstracts.ApproximateMembershipAbs
 declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.ApproximateMembershipAbstract
+#check_abstract CslibFrontierAbstracts.ApproximateMembershipAbstract
 
-end ComplexityAbstracts.ApproximateMembershipAbstract
+end CslibFrontierAbstracts.ApproximateMembershipAbstract

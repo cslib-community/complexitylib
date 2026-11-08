@@ -25,7 +25,7 @@ import CslibFrontier.Privacy.DifferentialPrivacy.RandomizedResponse
   answer.
 -/
 
-namespace ComplexityTests.Privacy.AdvancedComposition
+namespace CslibFrontierTests.Privacy.AdvancedComposition
 
 open Cslib Cslib.Privacy
 open scoped ENNReal
@@ -177,4 +177,4 @@ example (k : ℕ) {δ' : ℝ} (hδ' : 0 < δ') :
     (Real.log_nonneg (by norm_num)) (fun _ _ => differentiallyPrivate_randomizedResponse)
     (fun _ _ => ⟨trivial, trivial⟩) k hδ'
 
-end ComplexityTests.Privacy.AdvancedComposition
+end CslibFrontierTests.Privacy.AdvancedComposition

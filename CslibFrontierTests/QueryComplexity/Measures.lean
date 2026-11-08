@@ -12,7 +12,7 @@ import CslibFrontier.Computability.QueryComplexity.Relations
 disjunction and conjunction of `n` bits, majority of three bits and the address function with one
 address bit. Non-vacuity witnesses for the induced subgraph theorem. -/
 
-namespace ComplexityTests.QueryComplexity.Measures
+namespace CslibFrontierTests.QueryComplexity.Measures
 
 open Cslib Cslib.BitString Cslib.QueryComplexity Finset
 
@@ -129,4 +129,4 @@ example {n : ℕ} (f : BooleanFunction n) {ι : Type*} [LinearOrder ι] [Fintype
       norm_num
     exact_mod_cast h1.trans_le h
 
-end ComplexityTests.QueryComplexity.Measures
+end CslibFrontierTests.QueryComplexity.Measures

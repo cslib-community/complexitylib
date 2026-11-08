@@ -9,7 +9,7 @@ import CslibFrontier.Tactic.PPT
 
 /-! Finite entropy, dependent alphabets and nonvacuous pseudoentropy sampler contracts. -/
 
-namespace ComplexityTests.EntropyPseudoentropy
+namespace CslibFrontierTests.EntropyPseudoentropy
 
 open Cslib Cslib.Probability Cslib.Probability.PMF Cslib.Crypto Cslib.Crypto.Pseudoentropy
 open Turing.MultiTapeTM
@@ -82,4 +82,4 @@ example {sample : ℕ → ProbComp (List Bool × Bool)}
     IsPPTOn encUnary encBool (fun n => sample n >>= fun pair =>
       adversary n pair.1 >>= fun guess => pure (guess == pair.2)) := by ppt
 
-end ComplexityTests.EntropyPseudoentropy
+end CslibFrontierTests.EntropyPseudoentropy

@@ -18,7 +18,7 @@ pairwise distance two: a binary code of length twenty and minimum distance at le
 distance of two concatenated words is the sum over their blocks.
 -/
 
-namespace ComplexityTests.Code.Concatenation
+namespace CslibFrontierTests.Code.Concatenation
 
 open Cslib Cslib.Code
 
@@ -55,4 +55,4 @@ example (c c' : Fin 5 → ZMod 5) :
       ∑ i, hammingDist (inner (c i)) (inner (c' i)) :=
   hammingDist_concat inner c c'
 
-end ComplexityTests.Code.Concatenation
+end CslibFrontierTests.Code.Concatenation

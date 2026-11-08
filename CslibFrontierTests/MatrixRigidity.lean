@@ -17,7 +17,7 @@ circuit satisfying every hypothesis of `Circuit.Computes.rigidity_le_of_isPolyno
 satisfying the rigidity and size hypotheses of `Circuit.Computes.mul_log_log_lt_size`.
 -/
 
-namespace ComplexityTests.MatrixRigidity
+namespace CslibFrontierTests.MatrixRigidity
 
 open Cslib.Circuits Matrix
 
@@ -121,4 +121,4 @@ example {c : Circuit (affineSignature ℚ) 16 16}
     16 * (Nat.log 2 (Nat.log 2 16) + 1) < 2 * 17 * (Nat.log 2 (2 * 1 * 2) + 1) * c.size :=
   hc.mul_log_log_lt_size one_pos two_pos (by norm_num) ones_hyp.1 ones_hyp.2 hfan hdepth
 
-end ComplexityTests.MatrixRigidity
+end CslibFrontierTests.MatrixRigidity

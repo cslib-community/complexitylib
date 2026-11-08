@@ -21,7 +21,7 @@ collision from the trace. Finally, we check the random-oracle collision probabil
 concrete two-query `OracleComp` program.
 -/
 
-namespace ComplexityTests.Crypto.ROMMerkleExtract
+namespace CslibFrontierTests.Crypto.ROMMerkleExtract
 
 open Cslib Cslib.Crypto Cslib.Probability OracleComp Turing.MultiTapeTM
 open scoped ENNReal
@@ -182,4 +182,4 @@ example (m : ℕ) :
       (2 : ℝ≥0∞) * ((2 : ℝ≥0∞) * ((1 : ℝ≥0∞) / 2 ^ m)) :=
   toOuterMeasure_run_memoize_not_traceCollisionFree_le m isQueryBounded_twoQueryProg
 
-end ComplexityTests.Crypto.ROMMerkleExtract
+end CslibFrontierTests.Crypto.ROMMerkleExtract

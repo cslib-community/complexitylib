@@ -17,7 +17,7 @@ hypothesis without graph search. Its large constant degree is not a claim of pra
 enumeration, and the base certificate below is not a uniform certificate for the tower.
 -/
 
-namespace ComplexityTests.ExplicitExpanders
+namespace CslibFrontierTests.ExplicitExpanders
 
 open Cslib Turing.MultiTapeTM
 
@@ -117,4 +117,4 @@ example {V D W E : Type} (G : RotationMap V D) (H : RotationMap W E)
   fail_if_success (clear hH; fun_prop)
   fun_prop
 
-end ComplexityTests.ExplicitExpanders
+end CslibFrontierTests.ExplicitExpanders

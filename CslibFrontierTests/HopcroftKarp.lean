@@ -32,7 +32,7 @@ Kernel-checked examples (without `native_decide`) for
 
 public section
 
-namespace ComplexityTests.HopcroftKarp
+namespace CslibFrontierTests.HopcroftKarp
 
 open Cslib.Algorithms.Lean
 open Cslib.Algorithms.Lean.MaxFlow
@@ -192,4 +192,4 @@ theorem noPerfGraph_not_hasPerfectMatching :
   rw [← decidePerfectMatchingHKM_eq_true_iff (bipAdjValid_denseBipAdj noPerfGraph)]
   decide
 
-end ComplexityTests.HopcroftKarp
+end CslibFrontierTests.HopcroftKarp

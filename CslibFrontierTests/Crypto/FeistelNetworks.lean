@@ -16,7 +16,7 @@ rounds), and the concrete 1-round CPA, 2-round CPA, 3-round repeated-key CPA, an
 CCA Feistel distinguisher bounds in `CslibFrontier.Crypto.Protocols.Cipher.FeistelNetworks`.
 -/
 
-namespace ComplexityTests.Crypto.FeistelNetworks
+namespace CslibFrontierTests.Crypto.FeistelNetworks
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.SPN Cslib.Crypto.LubyRackoff
 open scoped ENNReal
@@ -116,4 +116,4 @@ example (f₁ f₂ f₃ : ZMod 7 → ZMod 7) :
     (l₀ := (0 : ZMod 7)) (l₁ := 1) 2 (by decide) (by decide)
   simp only [ZMod.card 7, Nat.cast_ofNat] at h; linarith
 
-end ComplexityTests.Crypto.FeistelNetworks
+end CslibFrontierTests.Crypto.FeistelNetworks

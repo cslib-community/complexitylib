@@ -16,7 +16,7 @@ satisfiability of the hypotheses of the expander bounds; and the width bound for
 expander family.
 -/
 
-namespace ComplexityTests.ProofComplexity.Tseitin
+namespace CslibFrontierTests.ProofComplexity.Tseitin
 
 open Cslib Cslib.Logic.PL Finset
 
@@ -97,4 +97,4 @@ example : ∃ m, ∃ φ : CNF (Fin m), ¬ φ.Satisfiable ∧ ∀ w, φ.Refutable
     exact_mod_cast this
   omega
 
-end ComplexityTests.ProofComplexity.Tseitin
+end CslibFrontierTests.ProofComplexity.Tseitin

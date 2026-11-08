@@ -12,7 +12,7 @@ The tests distinguish nonemptiness, one-sided exchange and common parity of eith
 The final clients exercise transport, feasible connectivity and the four-coordinate alternatives.
 -/
 
-namespace ComplexityTests.DeltaMatroid
+namespace CslibFrontierTests.DeltaMatroid
 
 open Cslib Cslib.BitString Finset
 
@@ -114,4 +114,4 @@ example {R : Set (Fin 4 → Bool)} (h : IsEvenDeltaMatroid R) {x : Fin 4 → Boo
   h.mem_pair_or_mem_cross_of_mem_flipOn_four (by decide) (by decide) (by decide)
     (by decide) (by decide) (by decide) hx hf
 
-end ComplexityTests.DeltaMatroid
+end CslibFrontierTests.DeltaMatroid

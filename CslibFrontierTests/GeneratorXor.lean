@@ -11,7 +11,7 @@ import CslibFrontier.Tactic.PPT
 XOR combination with captured programs, arbitrary encodings and complete output distributions.
 -/
 
-namespace ComplexityTests.GeneratorXor
+namespace CslibFrontierTests.GeneratorXor
 
 open Cslib Cslib.BitString Cslib.Probability Cslib.Crypto Turing.MultiTapeTM
 
@@ -110,4 +110,4 @@ example (adversary : List Bool → ProbComp Bool) :
         (fun word => ProbComp.eval (GeneratorXor.test 2 2 3 candidate 1 adversary word))) :=
   GeneratorXor.advantage_eq 2 2 3 candidate ⟨1, by decide⟩ adversary
 
-end ComplexityTests.GeneratorXor
+end CslibFrontierTests.GeneratorXor

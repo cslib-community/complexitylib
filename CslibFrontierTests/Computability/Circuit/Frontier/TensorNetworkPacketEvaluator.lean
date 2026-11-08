@@ -20,7 +20,7 @@ correctness theorem applies to these packets.
 
 @[expose] public section
 
-namespace ComplexityTests.TensorNetworkPacketEvaluator
+namespace CslibFrontierTests.TensorNetworkPacketEvaluator
 
 open Cslib Cslib.Circuits.Frontier Cslib.Circuits.Frontier.NativePacket
   Cslib.Circuits.Frontier.TensorNetwork
@@ -84,4 +84,4 @@ example {S : Type} [CommRing S] (ψ : GaloisRingArith.Ring 3 [1, 1] →+* S) {n 
   map_val_packetEntryList ψ hn κ (by norm_num) (by norm_num) (by simp [mem_cauchyGrid])
     (by norm_num) (by norm_num) 2 true false true β (by simp) (by simp) ζ
 
-end ComplexityTests.TensorNetworkPacketEvaluator
+end CslibFrontierTests.TensorNetworkPacketEvaluator

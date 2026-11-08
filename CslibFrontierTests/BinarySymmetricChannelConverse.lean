@@ -20,7 +20,7 @@ import Mathlib.Tactic.NormNum
   `2`, every long code has error bounded below; so does its maximal error.
 -/
 
-namespace ComplexityTests.BinarySymmetricChannelConverse
+namespace CslibFrontierTests.BinarySymmetricChannelConverse
 
 open Cslib Cslib.BitString Cslib.Probability.PMF Finset Real
 open scoped BigOperators ENNReal unitInterval
@@ -145,4 +145,4 @@ example : ∀ᶠ n : ℕ in Filter.atTop, ∀ (E : Fin (2 ^ ⌈(2 : ℝ) * n⌉�
   obtain ⟨m, -, hm⟩ := Finset.exists_le_of_le_expect ⟨⟨0, by positivity⟩, mem_univ _⟩ this
   exact ⟨m, by linarith⟩
 
-end ComplexityTests.BinarySymmetricChannelConverse
+end CslibFrontierTests.BinarySymmetricChannelConverse

@@ -20,7 +20,7 @@ numeric magnitude from short binary metadata.
 
 public section
 
-namespace ComplexityTests.NodeReply
+namespace CslibFrontierTests.NodeReply
 
 open Turing MultiTapePTM.BlockComputation
 open NativeBlockCodec
@@ -44,4 +44,4 @@ example : NodeReply.reply QueryReplayGate.reader code ((0, 1, [0, 0]), (2 ^ 14, 
 example : NodeReply.reply QueryReplayGate.reader code ((0, 0, []), (1, 2, 1000000000)) =
     (0, []) := by decide
 
-end ComplexityTests.NodeReply
+end CslibFrontierTests.NodeReply

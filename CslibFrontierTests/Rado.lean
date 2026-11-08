@@ -15,7 +15,7 @@ applied to the sentence "there is a triangle", which holds in the Rado graph on 
 universality and self-complementarity theorems applied to concrete graphs.
 -/
 
-namespace ComplexityTests.Rado
+namespace CslibFrontierTests.Rado
 
 open FirstOrder Language Structure Cslib.Logic Cslib.Logic.FO Cslib.Logic.FO.graph
 open SimpleGraph (radoGraph radoGraph_adj)
@@ -93,4 +93,4 @@ example : Nonempty (radoGraphᶜ ≃g radoGraph) := by
   · exact (SimpleGraph.compl_adj _ _ _).2 ⟨fun h => hzB (h ▸ ha), hB a ha⟩
   · exact ((SimpleGraph.compl_adj _ _ _).1 h).2 (hA b hb)
 
-end ComplexityTests.Rado
+end CslibFrontierTests.Rado

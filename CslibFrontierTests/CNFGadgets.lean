@@ -8,7 +8,7 @@ import CslibFrontier.Logics.Propositional.CNF.Gadgets
 
 /-! Concrete shared-variable and private-variable tests of finite gadget assembly. -/
 
-namespace ComplexityTests.CNFGadgets
+namespace CslibFrontierTests.CNFGadgets
 
 open Cslib.Logic.PL
 
@@ -43,4 +43,4 @@ example (b : Bool) :
     simpa [conflict, CNF.eval, Clause.eval, Literal.eval] using h true (by simp)
   exact Bool.false_ne_true (hf.symm.trans ht)
 
-end ComplexityTests.CNFGadgets
+end CslibFrontierTests.CNFGadgets

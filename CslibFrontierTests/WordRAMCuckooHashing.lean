@@ -24,7 +24,7 @@ execution (`cuckoo_seq_expected_amortized`) of
 
 @[expose] public section
 
-namespace ComplexityTests.WordRAMCuckooHashing
+namespace CslibFrontierTests.WordRAMCuckooHashing
 
 open Cslib Cslib.WordRAM Cslib.WordRAM.Randomized
 open Cslib.DataStructure Cslib.DataStructure.Dictionary Cslib.DataStructure.WordRAM
@@ -161,4 +161,4 @@ theorem inst_cuckoo_seq_expected_amortized_nonvacuous :
     ∃ c_exp : ℕ, 16 ≤ max 10 4 ^ c_exp ∧ Fits 64 (0 + space c_exp 10) :=
   ⟨2, by decide, hfit_end_64_2_10⟩
 
-end ComplexityTests.WordRAMCuckooHashing
+end CslibFrontierTests.WordRAMCuckooHashing

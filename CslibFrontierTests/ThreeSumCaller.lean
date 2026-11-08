@@ -10,7 +10,7 @@ import Mathlib.Tactic.IntervalCases
 
 /-! Actual finite callee runs and caller-owned source/workspace regressions. -/
 
-namespace ComplexityTests.ThreeSumCaller
+namespace CslibFrontierTests.ThreeSumCaller
 
 open Cslib.WordRAM Cslib.WordRAM.Signed
 open Cslib.Algorithms.WordRAM.ThreeSum
@@ -89,4 +89,4 @@ example : ∃ y, ExecWithin 64 (Host.bodyAt Host.Slow.callee.code) callerInput y
     (hm 0 (by decide)).trans rfl, (hm 20 (by decide)).trans rfl,
     (hm 40 (by decide)).trans rfl⟩
 
-end ComplexityTests.ThreeSumCaller
+end CslibFrontierTests.ThreeSumCaller

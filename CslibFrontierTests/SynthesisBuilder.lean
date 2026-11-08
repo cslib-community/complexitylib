@@ -14,7 +14,7 @@ import Mathlib.Tactic.FinCases
 Sharing, zero-cost reuse, fixed gate budgets, indexed bundles, and failed availability queries.
 -/
 
-namespace ComplexityTests.SynthesisBuilder
+namespace CslibFrontierTests.SynthesisBuilder
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean
 
@@ -65,4 +65,4 @@ example : Synthesis interpretation (inputs 2)
       (Synthesis.of_mem (f := fun x => x 1) (by synthesis_available)))
   exact S2
 
-end ComplexityTests.SynthesisBuilder
+end CslibFrontierTests.SynthesisBuilder

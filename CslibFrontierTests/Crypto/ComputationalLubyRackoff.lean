@@ -19,7 +19,7 @@ round, its strong oracle decrypts its own ciphertexts, and the four-round theore
 pseudorandom function.
 -/
 
-namespace ComplexityTests.Crypto.ComputationalLubyRackoff
+namespace CslibFrontierTests.Crypto.ComputationalLubyRackoff
 
 open Cslib Cslib.Crypto Turing.MultiTapeTM
 
@@ -100,4 +100,4 @@ example {family : List Bool → List Bool → List Bool} (hfamily : Pseudorandom
       (ProbComp.eval (strongPRPIdealGame (fun n => 2 * n) adversary n)) :=
   hfamily.strongPRP_lubyRackoff4Cipher adversary hadversary
 
-end ComplexityTests.Crypto.ComputationalLubyRackoff
+end CslibFrontierTests.Crypto.ComputationalLubyRackoff

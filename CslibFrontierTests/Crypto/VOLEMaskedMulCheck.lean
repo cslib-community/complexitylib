@@ -14,7 +14,7 @@ satisfying witnesses. Over F3, two is a false witness and its real view can fail
 Without the extra masking correlation, even the two true witnesses give different full views.
 -/
 
-namespace ComplexityTests.Crypto.VOLEMaskedMulCheck
+namespace CslibFrontierTests.Crypto.VOLEMaskedMulCheck
 
 open Cslib Cslib.Probability Cslib.Interactive Cslib.Interactive.Spec
   Cslib.Crypto.Protocols.VOLE
@@ -109,4 +109,4 @@ example : leakedView ∈ (unblinded 0).support ∧ leakedView ∉ (unblinded 1).
   · simp only [unblinded, PMF.mem_support_map_iff, mem_support_voleIdealDist_iff]
     decide
 
-end ComplexityTests.Crypto.VOLEMaskedMulCheck
+end CslibFrontierTests.Crypto.VOLEMaskedMulCheck

@@ -10,7 +10,7 @@ import CslibFrontier.Tactic.PPT
 /-! GGM's evaluator, adaptive games, uniform reduction and conditional security theorem. Concrete
 generators below exercise the certificates without being assumed pseudorandom. -/
 
-namespace ComplexityTests.GGM
+namespace CslibFrontierTests.GGM
 
 open Turing.MultiTapeTM Cslib Cslib.Crypto Cslib.Probability
 
@@ -172,4 +172,4 @@ example {generator : List Bool → List Bool} {length : ℕ → ℕ}
   obtain ⟨family, hprf⟩ := h.exists_pseudorandomFunction
   exact ⟨family, hprf, hprf.polyTime⟩
 
-end ComplexityTests.GGM
+end CslibFrontierTests.GGM

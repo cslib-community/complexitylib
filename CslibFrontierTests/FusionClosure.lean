@@ -16,7 +16,7 @@ The same covers compile to binary cyclic circuits with their exact pair counts, 
 duplicated pairs and an unseeded cycle.
 -/
 
-namespace ComplexityTests.FusionClosure
+namespace CslibFrontierTests.FusionClosure
 
 open Cslib.Circuits Fusion
 
@@ -110,4 +110,4 @@ example : ¬ fullOnly.IsUltra := by
     have := congrArg (fun s : Set ↥((∅ : Set Bool)ᶜ) => (⟨true, by simp⟩ : _) ∈ s) hs
     simp at this
 
-end ComplexityTests.FusionClosure
+end CslibFrontierTests.FusionClosure

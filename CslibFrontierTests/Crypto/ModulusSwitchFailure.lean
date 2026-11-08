@@ -10,7 +10,7 @@ import CslibFrontier.Probability.PMF.Uniform
 
 /-! Actual sampled switching: zero failure, a nonzero CBD tail and a supported failure. -/
 
-namespace ComplexityTests.Crypto.ModulusSwitchFailure
+namespace CslibFrontierTests.Crypto.ModulusSwitchFailure
 
 open Cslib Cslib.Crypto Probability ProbComp
 open scoped Matrix ENNReal
@@ -183,4 +183,4 @@ example : 0 < ((sampledView 2).toOuterMeasure failure).toReal := by
   rw [switched_ciphertext]
   decide
 
-end ComplexityTests.Crypto.ModulusSwitchFailure
+end CslibFrontierTests.Crypto.ModulusSwitchFailure

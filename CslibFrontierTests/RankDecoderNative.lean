@@ -21,7 +21,7 @@ its resource bound are independent of the distribution theorem's assumptions.
 
 open Turing.MultiTapeTM Cslib.GenericRAM Cslib.BitString.RankDecoder
 
-namespace ComplexityTests.RankDecoderNative
+namespace CslibFrontierTests.RankDecoderNative
 
 private def mass (_ : ℕ) (_ : List Bool) : ℕ := 1
 
@@ -80,4 +80,4 @@ example : ∃ d : ℕ, ComputableInO (fun n : ℕ => decode (mass n) n [] (n / 2
     (fun n => 2 ^ n * (n + 1) ^ d) (fun n => (n + 1) ^ d) := by
   simpa only [encUnary_apply, List.length_replicate] using decoder_bound.computableInO
 
-end ComplexityTests.RankDecoderNative
+end CslibFrontierTests.RankDecoderNative

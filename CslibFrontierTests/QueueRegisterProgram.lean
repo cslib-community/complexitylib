@@ -15,7 +15,7 @@ representation and persistent dispatcher certificate remain separate proof oblig
 
 @[expose] public section
 
-namespace ComplexityTests.QueueRegisterProgram
+namespace CslibFrontierTests.QueueRegisterProgram
 
 open Cslib.WordRAM
 open Cslib.DataStructure.Queue.WordRAM
@@ -41,4 +41,4 @@ example : ∃ y, Exec 1 (initializeCode 0 0) rawOne y 6 ∧ y.Bounded 1 ∧
     y.mem = rawOne.mem := by
   exact ⟨initialized 0 0 rawOne, initialize_exec rawOne_bounded (by decide)⟩
 
-end ComplexityTests.QueueRegisterProgram
+end CslibFrontierTests.QueueRegisterProgram

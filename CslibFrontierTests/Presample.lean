@@ -8,7 +8,7 @@ import CslibFrontier.Computability.Probabilistic.Presample
 import CslibFrontier.Crypto.Computational.Hybrid.Sequence
 import CslibFrontier.Tactic.PPT
 
-namespace ComplexityTests.Presample
+namespace CslibFrontierTests.Presample
 
 open Cslib Cslib.Crypto Cslib.ProbComp Cslib.Probability Turing.MultiTapeTM
 
@@ -103,4 +103,4 @@ example (state : List Bool) :
             adaptive).run state) :=
   adaptive_queryBounds.eval_presample (ProbComp.uniform Bool) false respond state
 
-end ComplexityTests.Presample
+end CslibFrontierTests.Presample

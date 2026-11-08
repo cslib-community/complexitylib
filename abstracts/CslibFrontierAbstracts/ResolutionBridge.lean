@@ -17,7 +17,7 @@ with no weakening rule and with input lines counted. The pigeonhole formula is d
 unchanged. The bound concerns proof size, not solver runtime.
 -/
 
-namespace ComplexityTests.Abstracts.ResolutionBridge
+namespace CslibFrontierTests.Abstracts.ResolutionBridge
 
 /-- A resolution proof, listed with the last line first. -/
 def IsProof {V : Type} [DecidableEq V] (φ : List (List (V × Bool))) :
@@ -106,4 +106,4 @@ example : RefutableInSize (pigeonhole 1 0) 1 := by
   change RefutableInSize ([[]] : List (List ((Fin 1 × Fin 0) × Bool))) 1
   exact ⟨[[]], ⟨trivial, Or.inl (by simp)⟩, by simp, by decide⟩
 
-end ComplexityTests.Abstracts.ResolutionBridge
+end CslibFrontierTests.Abstracts.ResolutionBridge

@@ -20,7 +20,7 @@ input and the entry (`specEntryCertificate_le`).
 
 @[expose] public section
 
-namespace ComplexityTests.TensorNetworkTruncatedResources
+namespace CslibFrontierTests.TensorNetworkTruncatedResources
 
 open Cslib Cslib.GenericRAM Cslib.Circuits.Frontier Turing.MultiTapeTM
 
@@ -79,4 +79,4 @@ example : ∃ K : ℕ, ∀ (t : List ℕ) (P ℓ : ℕ) (fl ζ : List ℕ) (bs :
   obtain ⟨K, hK⟩ := specEntryCertificate_le (encT := encList encNat)
   exact ⟨K, fun t P ℓ fl ζ bs => (hK (fun t _ => t) constCert t P ℓ fl ζ bs).1⟩
 
-end ComplexityTests.TensorNetworkTruncatedResources
+end CslibFrontierTests.TensorNetworkTruncatedResources

@@ -21,7 +21,7 @@ symmetric.
 
 public section
 
-namespace ComplexityTests.EditDistance
+namespace CslibFrontierTests.EditDistance
 
 open scoped List
 open Cslib.Algorithms.Lean.EditDistance
@@ -125,4 +125,4 @@ example : ∃ s : EditScript Char, s.IsIndel ∧ s.src = ['a'] ∧ s.tgt = ['b']
   have h := (isLeast_editDist_indel ['a'] ['b']).1
   rwa [show editDist Costs.indel ['a'] ['b'] = 2 by decide] at h
 
-end ComplexityTests.EditDistance
+end CslibFrontierTests.EditDistance

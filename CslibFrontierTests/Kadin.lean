@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 
 /-! Clients for Kadin's polynomial-hierarchy collapse theorem. -/
 
-namespace ComplexityTests.Kadin
+namespace CslibFrontierTests.Kadin
 
 open Cslib.Complexity Turing.MultiTapeTM Polynomial
 
@@ -90,4 +90,4 @@ example (h : SATUNSAT ∈ coDP (encPair encCNF encCNF)) :
     PH encBits = SigmaP 3 encBits :=
   PH_eq_SigmaP_three_of_SATUNSAT_mem_coDP h
 
-end ComplexityTests.Kadin
+end CslibFrontierTests.Kadin

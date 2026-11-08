@@ -21,7 +21,7 @@ rejected operations: a read above the frontier and a write of an oversized value
 
 @[expose] public section
 
-namespace ComplexityTests.DataStructureMemory
+namespace CslibFrontierTests.DataStructureMemory
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.Memory
 
@@ -114,4 +114,4 @@ example : (spec 8).clientResult (State.init [4, 9]) (do
 /-- The list view reads the live prefix of a field. -/
 example : (Block.mk 1 3).entries 2 (fun a => a * 10) = [10, 20] := by decide
 
-end ComplexityTests.DataStructureMemory
+end CslibFrontierTests.DataStructureMemory

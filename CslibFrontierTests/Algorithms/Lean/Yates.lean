@@ -17,7 +17,7 @@ Concrete runs of `CslibFrontier.Algorithms.Lean.Yates`:
 * a run checked against `getElem_ret_zetaM_maskIndex`.
 -/
 
-namespace ComplexityTests.Algorithms.Lean.Yates
+namespace CslibFrontierTests.Algorithms.Lean.Yates
 
 open Cslib.Algorithms.Lean.Yates Cslib.BitString
 
@@ -57,4 +57,4 @@ example : subsetZeta (fun T => (#v[1, 2, 3, 4] : Vector ℕ (2 ^ 2))[(maskIndex 
   rw [← getElem_ret_zetaM_maskIndex]
   decide +kernel
 
-end ComplexityTests.Algorithms.Lean.Yates
+end CslibFrontierTests.Algorithms.Lean.Yates

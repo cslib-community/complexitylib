@@ -29,7 +29,7 @@ Lean checks the proof bridge and audits the abstract's statement dependencies.
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09], Theorem 7.15.
 -/
 
-namespace ComplexityAbstracts.SipserLautemannAbstract
+namespace CslibFrontierAbstracts.SipserLautemannAbstract
 
 /-! ## Bit strings and deterministic polynomial-time tests
 
@@ -98,7 +98,7 @@ theorem sipserLautemann : BPP ⊆ SigmaTwo ∩ PiTwo :=
   SipserLautemannBridge.sipserLautemann
 
 /--
-info: 'ComplexityAbstracts.SipserLautemannAbstract.sipserLautemann' depends on axioms:
+info: 'CslibFrontierAbstracts.SipserLautemannAbstract.sipserLautemann' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -109,6 +109,6 @@ info: abstract audit passed for `CslibFrontierAbstracts.SipserLautemannAbstract`
 declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.SipserLautemannAbstract
+#check_abstract CslibFrontierAbstracts.SipserLautemannAbstract
 
-end ComplexityAbstracts.SipserLautemannAbstract
+end CslibFrontierAbstracts.SipserLautemannAbstract

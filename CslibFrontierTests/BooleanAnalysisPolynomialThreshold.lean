@@ -21,7 +21,7 @@ zeros has the conjunction as its sign, so `IsPTFOn` is narrower than the book's 
 not containing `∅`.
 -/
 
-namespace ComplexityTests.BooleanAnalysisPolynomialThreshold
+namespace CslibFrontierTests.BooleanAnalysisPolynomialThreshold
 
 open Cslib Cslib.BitString Finset
 
@@ -106,4 +106,4 @@ example : ¬ IsPTFOn ({{0}, {1}} : Finset (Finset (Fin 2))) and₂ := by
   norm_num [and₂, chi] at h₁ h₂
   linarith
 
-end ComplexityTests.BooleanAnalysisPolynomialThreshold
+end CslibFrontierTests.BooleanAnalysisPolynomialThreshold

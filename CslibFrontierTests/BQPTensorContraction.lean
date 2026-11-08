@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Complexity.Classes.BQP.TensorContraction
 circuit, the value the simulator computes on small circuits, a member of `BQTIME`, and the class
 containment applied to it. -/
 
-namespace ComplexityTests.BQPTensorContraction
+namespace CslibFrontierTests.BQPTensorContraction
 
 open Cslib Cslib.Quantum Cslib.Quantum.PathNetwork Cslib.Complexity
   Cslib.Complexity.QuantumContraction Turing.MultiTapeTM
@@ -115,4 +115,4 @@ example : ∃ C d : ℕ, DecidableInTimeAndSpace FirstBit encBits
   exists_decidableInTimeAndSpace_of_mem_BQTIME (T := fun n => n + 2)
     (fun n => max_le (by omega) (by omega)) (firstBit_mem_BQTIME _)
 
-end ComplexityTests.BQPTensorContraction
+end CslibFrontierTests.BQPTensorContraction

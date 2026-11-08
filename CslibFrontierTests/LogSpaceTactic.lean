@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace
 
 /-! # Bounded logspace automation and its resource boundary -/
 
-namespace ComplexityTests.LogSpaceTactic
+namespace CslibFrontierTests.LogSpaceTactic
 
 open Turing.MultiTapeTM
 
@@ -93,7 +93,7 @@ example {f : List Bool → Bool} (hf : ComputableInLogSpace f encBits encBool) :
   fail_if_success logspace
   fun_prop
 
-open ComplexityTests.LogSpaceCertificates
+open CslibFrontierTests.LogSpaceCertificates
 
 -- An imported opaque routine has an eager premise requiring the bounded logspace recipe.
 example : ComputableInLogSpace
@@ -151,7 +151,7 @@ example {f : List Bool → List Bool} (_hf : ComputableInLogSpace f encBits encB
   fail_if_success (clear h; logspace)
   exact h
 
-open scoped ComplexityTests.LogSpaceCertificates.Scoped in
+open scoped CslibFrontierTests.LogSpaceCertificates.Scoped in
 example (f : List Bool → List Bool) (hf : ComputableInLogSpace f encBits encBits) :
     ComputableInLogSpace (Scoped.scopedNamed f) encBits encBits := by logspace
 
@@ -162,4 +162,4 @@ example {f : List Bool → List Bool} (_hf : ComputableInLogSpace f encBits encB
   fail_if_success (clear h; logspace)
   exact h
 
-end ComplexityTests.LogSpaceTactic
+end CslibFrontierTests.LogSpaceTactic

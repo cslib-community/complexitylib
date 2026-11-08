@@ -17,7 +17,7 @@ runtime argument of every tag. -/
 open Cslib Cslib.DataStructure Cslib.WordRAM Cslib.WordRAM.Realization
   Cslib.DataStructure.Queue Cslib.DataStructure.Stack.Native
 
-namespace ComplexityTests.WordRAMRealizationBackend
+namespace CslibFrontierTests.WordRAMRealizationBackend
 
 -- A full stack rejects another push, while the largest fitting word remains a valid value.
 example : ¬(Stack.spec 4 2).valid [4, 7] (.push 2) ∧ (Stack.spec 4 2).valid [] (.push 15) := by
@@ -90,4 +90,4 @@ example : UniformComputableInPolyTime .standard (fun n => n + n) (fun _ n => [n]
       have hn : Fits w (n + n) := (fits_of_lt_pow (k := 2) (n := n) (by nlinarith)).mono hw
       exact ⟨le_rfl, h2, hn, trivial, rfl, le_rfl⟩
 
-end ComplexityTests.WordRAMRealizationBackend
+end CslibFrontierTests.WordRAMRealizationBackend

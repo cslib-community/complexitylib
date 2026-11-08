@@ -14,7 +14,7 @@ An edge from `0` to `max` is an ordered query. Swapping the two input vertices c
 truth even though the underlying input structures are isomorphic. The ordered API admits it.
 -/
 
-namespace ComplexityTests.OrderedFagin
+namespace CslibFrontierTests.OrderedFagin
 
 open FirstOrder Language Structure Cslib.Logic Cslib.Logic.FO Cslib.Logic.FO.Ordered
 open Cslib.Complexity Turing.MultiTapeTM
@@ -95,4 +95,4 @@ example : (2, []) ∉ edgeZeroMaxQuery.encodedLanguage graphVocabulary :=
 example : (2, [ [true] ]) ∉ edgeZeroMaxQuery.encodedLanguage graphVocabulary :=
   Query.not_mem_encodedLanguage_of_not_wellFormed _ _ (by decide)
 
-end ComplexityTests.OrderedFagin
+end CslibFrontierTests.OrderedFagin

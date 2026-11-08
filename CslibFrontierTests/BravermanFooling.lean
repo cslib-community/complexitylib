@@ -21,7 +21,7 @@ required independence. The even-parity distribution is shared with the tests of 
 abstract.
 -/
 
-namespace ComplexityTests.BravermanFooling
+namespace CslibFrontierTests.BravermanFooling
 
 open Finset Cslib Cslib.BitString Cslib.Probability Cslib.Circuits Cslib.Circuits.Boolean
   Cslib.Circuits.Boolean.Braverman
@@ -161,4 +161,4 @@ example (K : ℕ) (hK : independence 1 2 ≤ K) :
     (by rw [Circuit.size_oneGate]; norm_num) (Circuit.depth_oneGate _ _).le hK
     (isKWiseIndependent_evenParity K)
 
-end ComplexityTests.BravermanFooling
+end CslibFrontierTests.BravermanFooling

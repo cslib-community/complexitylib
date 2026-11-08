@@ -9,7 +9,7 @@ import CslibFrontier.Crypto.Computational.SIS.Polynomial
 /-! Checked quotient interpretation over integers and composite moduli, including sign wraparound,
 characteristic two, dimension one, and the Module-SIS client. -/
 
-namespace ComplexityTests.Crypto.NegacyclicPolynomial
+namespace CslibFrontierTests.Crypto.NegacyclicPolynomial
 
 open Cslib.Crypto Polynomial
 open scoped Matrix
@@ -74,4 +74,4 @@ example {d k n : ℕ} (hn : n ≠ 0)
     ← negacyclicEquiv_moduleSISMap, LinearEquiv.map_eq_zero_iff]
 
 
-end ComplexityTests.Crypto.NegacyclicPolynomial
+end CslibFrontierTests.Crypto.NegacyclicPolynomial

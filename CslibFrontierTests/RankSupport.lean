@@ -19,7 +19,7 @@ The complete graph on eight vertices supplies a concrete degree-seven spectral c
 and a balanced-cut application.
 -/
 
-namespace ComplexityTests.RankSupport
+namespace CslibFrontierTests.RankSupport
 
 open Finset Matrix
 open scoped BigOperators
@@ -104,4 +104,4 @@ example : 1 ≤ ((⊤ : SimpleGraph (Fin 8)).adjMatrix (ZMod 2)).cutRank
   change 1 ≤ ((⊤ : SimpleGraph (Fin 8)).adjMatrix (ZMod 2)).cutRank (↑S : Set (Fin 8))
   omega
 
-end ComplexityTests.RankSupport
+end CslibFrontierTests.RankSupport

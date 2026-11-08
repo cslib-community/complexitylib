@@ -10,7 +10,7 @@ import Mathlib.Tactic.FinCases
 
 /-! Fixed-language affine tractability, including repeated scopes and constant equations. -/
 
-namespace ComplexityTests.CSPAffine
+namespace CslibFrontierTests.CSPAffine
 
 open Cslib Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -115,4 +115,4 @@ example : PolyTimeReducible (encCSP (encFinite (Fin 5)) encNat) XORSAT.encoding 
     {F | XORSAT.Satisfiable F} :=
   CSPSAT.polyTimeReducible_XORSAT_of_templates (encFinite (Fin 5)) arity sem template templates
 
-end ComplexityTests.CSPAffine
+end CslibFrontierTests.CSPAffine

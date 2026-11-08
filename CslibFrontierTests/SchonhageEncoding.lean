@@ -16,7 +16,7 @@ These clients start with the actual unsigned input convention. The interpreter c
 native arithmetic block, branch, loop and store. They compare observable memory after execution.
 -/
 
-namespace ComplexityTests.SchonhageEncoding
+namespace CslibFrontierTests.SchonhageEncoding
 
 open Cslib.WordRAM Cslib.WordRAM.Signed
 open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Encoding
@@ -139,4 +139,4 @@ example : ∃ y : Data 32, ∃ n, n ≤ 72000 ∧
   · have hmath : encodingL signedLeft (fun _ : Fin 2 => Term.P0) = 0 := by decide +kernel
     simpa only [hmath, show encode 0 = 0 from rfl] using hv (fun _ : Fin 2 => Term.P0)
 
-end ComplexityTests.SchonhageEncoding
+end CslibFrontierTests.SchonhageEncoding

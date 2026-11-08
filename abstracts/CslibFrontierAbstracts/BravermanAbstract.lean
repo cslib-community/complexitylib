@@ -46,7 +46,7 @@ and background libraries.
   learnability*][LinialMansourNisan1993]
 -/
 
-namespace ComplexityAbstracts.BravermanAbstract
+namespace CslibFrontierAbstracts.BravermanAbstract
 
 /-- The elementary unbounded fan-in basis has unary NOT and AND and OR of every arity. Nullary AND
 and OR are the two constants. Its model module is explicitly allowed below. -/
@@ -89,8 +89,8 @@ info: abstract audit passed for `CslibFrontierAbstracts.BravermanAbstract`: 8 ro
 declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.BravermanAbstract allowing [
+#check_abstract CslibFrontierAbstracts.BravermanAbstract allowing [
   CslibFrontier.Computability.Circuit.Boolean.Unbounded
 ]
 
-end ComplexityAbstracts.BravermanAbstract
+end CslibFrontierAbstracts.BravermanAbstract

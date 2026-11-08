@@ -16,7 +16,7 @@ that Holenstein's Lemma 6.5 picks. Regrouped for `IsEmbeddable.trans`, the law o
 is the input of the second.
 -/
 
-namespace ComplexityTests.RepetitionEmbedding
+namespace CslibFrontierTests.RepetitionEmbedding
 
 open Finset
 open Cslib.PCP Cslib.PCP.ParallelRepetition Cslib.Probability.CorrelatedSampling
@@ -94,4 +94,4 @@ example (C : Finset (Fin n)) (hC : ∃ q ∈ G.winsOn ha hb C, q ∈ (G.pow n).q
         _ = _ := by rw [← hsqrt]; ring)
   exact ⟨j, (hemb j).mono hj⟩
 
-end ComplexityTests.RepetitionEmbedding
+end CslibFrontierTests.RepetitionEmbedding

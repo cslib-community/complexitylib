@@ -15,7 +15,7 @@ linear comparison, equality, addition and disjunction certificates instantiated 
 numbers. -/
 
 @[expose] public section
-namespace ComplexityTests.ZipTransducer
+namespace CslibFrontierTests.ZipTransducer
 open Turing.MultiTapeTM
 
 /-- Bitwise disjunction of two words, padding the shorter one with zeros. -/
@@ -121,4 +121,4 @@ example : ∃ (k : ℕ) (Q : Type) (_ : Finite Q) (tm : Turing.MultiTapeTM k Boo
   refine ⟨k, Q, hQ, tm, ?_⟩
   simpa [encNat_apply, bits_five, bits_six, h7, length_frame] using h (5, 6)
 
-end ComplexityTests.ZipTransducer
+end CslibFrontierTests.ZipTransducer

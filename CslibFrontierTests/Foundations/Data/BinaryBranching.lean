@@ -19,7 +19,7 @@ The Fibonacci tree on `ℕ`: the states `n ≤ 1` are leaves, and an inner state
 
 public section
 
-namespace ComplexityTests.BinaryBranching
+namespace CslibFrontierTests.BinaryBranching
 
 open Cslib
 
@@ -65,4 +65,4 @@ example {W : Finset (List Bool)} (hW : ∀ w, w ∈ W ↔ fib.IsLeafWord 4 w) : 
     obtain h | h : fib.walk 4 w = 0 ∨ fib.walk 4 w = 1 := by omega
     all_goals rw [h]; rfl
 
-end ComplexityTests.BinaryBranching
+end CslibFrontierTests.BinaryBranching

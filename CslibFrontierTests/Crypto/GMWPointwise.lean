@@ -10,7 +10,7 @@ import CslibFrontier.Tactic.PPT
 /-! Concrete model clients for the pointwise GMW reduction. These checks assert no security
 property of a toy generator. The formula and witness reuse the zero-knowledge test instance. -/
 
-namespace ComplexityTests.Crypto.GMWPointwise
+namespace CslibFrontierTests.Crypto.GMWPointwise
 
 open Cslib Cslib.Crypto Cslib.Complexity Cslib.Probability Cslib.Logic.PL Turing.MultiTapeTM
 open scoped NNReal
@@ -153,4 +153,4 @@ theorem empty_viewAdvantage_le (n : ℕ) (z : List Bool) :
     exact PMF.bind_const _ _
   simpa only [viewAdvantage, id_eq, hreduce, Game.advantage_self, mul_zero, add_zero] using hbound
 
-end ComplexityTests.Crypto.GMWPointwise
+end CslibFrontierTests.Crypto.GMWPointwise

@@ -14,7 +14,7 @@ allocation. Argument delivery and client control are not charged by this backend
 
 open Cslib Cslib.DataStructure Cslib.WordRAM Cslib.WordRAM.Realization
 
-namespace ComplexityTests.WordRAMMemoryBackend
+namespace CslibFrontierTests.WordRAMMemoryBackend
 
 open MemoryBackend
 
@@ -117,4 +117,4 @@ example : ∃ y n, exec 0 zeroState (.allocDirty 0) 0 y n ∧
 -- The four bodies are invariant under delivered argument values.
 example (a v b u : ℕ) : body (.write a v) = body (.write b u) := body_write_eq a v b u
 
-end ComplexityTests.WordRAMMemoryBackend
+end CslibFrontierTests.WordRAMMemoryBackend

@@ -22,7 +22,7 @@ public import CslibFrontier.DataStructure.PriorityQueue.FibonacciHeap.Basic
 
 @[expose] public section
 
-namespace ComplexityTests.FibonacciHeapRecord
+namespace CslibFrontierTests.FibonacciHeapRecord
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.PriorityQueue
   Cslib.DataStructure.PriorityQueue.FibonacciHeap
@@ -122,4 +122,4 @@ example : heap.ValidHistory empty (heap.clientHistory empty inserts) ∧
     Inv 3 9 (heap.clientState empty inserts) :=
   ⟨((Record.wp_iff _ _ _).mp inserts_spec).1, ((Record.wp_iff _ _ _).mp inserts_spec).2.1⟩
 
-end ComplexityTests.FibonacciHeapRecord
+end CslibFrontierTests.FibonacciHeapRecord

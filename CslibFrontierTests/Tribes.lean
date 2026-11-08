@@ -26,10 +26,10 @@ uniform, so that instance adds nothing beyond `Cslib.BitString.coalitionInfluenc
 only checks that the statement applies.
 -/
 
-namespace ComplexityTests.Tribes
+namespace CslibFrontierTests.Tribes
 
 open Finset Function Cslib Cslib.BitString Cslib.Circuits.Boolean.Braverman
-  ComplexityTests.BravermanFooling
+  CslibFrontierTests.BravermanFooling
 open scoped BigOperators
 
 /-! ### Small cases -/
@@ -109,4 +109,4 @@ example (Q : Finset (Fin (2 ^ 2723 * 2723))) :
   exact isKWiseResilient_tribes (by norm_num) (by norm_num) (by norm_num) ht Q rfl _
     (hK ▸ isKWiseIndependent_evenParity K)
 
-end ComplexityTests.Tribes
+end CslibFrontierTests.Tribes

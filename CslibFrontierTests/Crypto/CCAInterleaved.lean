@@ -25,10 +25,10 @@ Two-sided nonvacuity and behavioral regression tests for
 3. Behavioral test of `OracleComp.limitQueries` enforcing a hard query budget `B`.
 -/
 
-namespace ComplexityTests.Crypto.CCAInterleaved
+namespace CslibFrontierTests.Crypto.CCAInterleaved
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Encryption Turing.MultiTapeTM
-open ComplexityTests.Crypto.CCA
+open CslibFrontierTests.Crypto.CCA
 
 /-! ### 1. Satisfiable and refutable `INDCCA2Interleaved` and `WordINDCCA2Interleaved` instances -/
 
@@ -63,8 +63,8 @@ theorem not_indcca2InterleavedOf_lenEncrypt {Out : Type} (encOut : Out ↪ List 
 /-- The plaintext-leaking scheme from `CslibFrontierTests.Crypto.Encryption` violates
 `INDCCA2Interleaved` for every decryption function. -/
 theorem not_indcca2Interleaved_leaking (decrypt : ℕ → List Bool → List Bool → Option Bool) :
-    ¬ INDCCA2Interleaved ComplexityTests.Crypto.Encryption.keyGen
-        ComplexityTests.Crypto.Encryption.encrypt decrypt :=
+    ¬ INDCCA2Interleaved CslibFrontierTests.Crypto.Encryption.keyGen
+        CslibFrontierTests.Crypto.Encryption.encrypt decrypt :=
   fun hInter => not_indcca2_leaking decrypt hInter.indcca2On
 
 /-! ### 2. Progressive forbidden-set behavior of `interleavedCcaOracle` and `interleavedCca2Game` -/
@@ -143,4 +143,4 @@ theorem limitQueries_one_cuts_off_second :
   dsimp only [OracleComp.limitQueriesHandler, StateT.run]
   simp
 
-end ComplexityTests.Crypto.CCAInterleaved
+end CslibFrontierTests.Crypto.CCAInterleaved

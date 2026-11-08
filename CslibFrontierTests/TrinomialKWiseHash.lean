@@ -30,7 +30,7 @@ Verifies non-vacuity and concrete behavior of:
 
 public section
 
-namespace ComplexityTests.TrinomialKWiseHash
+namespace CslibFrontierTests.TrinomialKWiseHash
 
 open Cslib Cslib.Probability Cslib.WordRAM
 open Cslib.DataStructure Cslib.DataStructure.Dictionary
@@ -176,6 +176,6 @@ theorem multiplyShift_wordram_concrete (d : Data 5) :
         (by simp [MultiplyShift.regX])⟩,
     MultiplyShift.isUniversalHash_evalData (by decide) (by decide) d⟩
 
-end ComplexityTests.TrinomialKWiseHash
+end CslibFrontierTests.TrinomialKWiseHash
 
 end

@@ -8,7 +8,7 @@ import CslibFrontier.Crypto.Protocols.Signature.RandomOracle
 
 /-! # Sums of oracle interfaces -/
 
-namespace ComplexityTests.OracleSpecSum
+namespace CslibFrontierTests.OracleSpecSum
 
 open Cslib
 
@@ -39,4 +39,4 @@ example (program : ProbComp Bool) :
     ProbOracleComp.sample (spec := fun _ : Bool => Bool) program = OracleComp.liftLeft program :=
   ProbOracleComp.sample_eq_liftLeft program
 
-end ComplexityTests.OracleSpecSum
+end CslibFrontierTests.OracleSpecSum

@@ -9,7 +9,7 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! Complete encoding bounds and certificate inference for normalized amplification loops. -/
 
-namespace ComplexityTests.PCPEncodedAmplificationIteration
+namespace CslibFrontierTests.PCPEncodedAmplificationIteration
 
 open Cslib Cslib.PCP Cslib.PCP.Encoded Cslib.PCP.HadamardTester Turing.MultiTapeTM
 
@@ -50,4 +50,4 @@ example (g : Graph Constraint) :
   unfold Graph.amplifyIter
   rfl
 
-end ComplexityTests.PCPEncodedAmplificationIteration
+end CslibFrontierTests.PCPEncodedAmplificationIteration

@@ -16,7 +16,7 @@ Exercises `controlledMap_iterate`, `controlledBits_iterate`, `controlled_circuit
 guards for the headline theorems.
 -/
 
-namespace ComplexityTests.AffineController
+namespace CslibFrontierTests.AffineController
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Circuits.Boolean.Iteration
 open Cslib.BitString.LinearHash
@@ -108,4 +108,4 @@ info: 'Cslib.Circuits.Boolean.Iteration.controlledBits_iterate' depends on axiom
 #guard_msgs (whitespace := lax) in
 #print axioms controlledBits_iterate
 
-end ComplexityTests.AffineController
+end CslibFrontierTests.AffineController

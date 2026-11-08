@@ -23,7 +23,7 @@ admissibility, the invariant of the result and the amortized bound `104`.
 
 @[expose] public section
 
-namespace ComplexityTests.FibonacciHeapDecreaseKey
+namespace CslibFrontierTests.FibonacciHeapDecreaseKey
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.PriorityQueue
   Cslib.DataStructure.PriorityQueue.FibonacciHeap
@@ -107,4 +107,4 @@ example : heap.ValidHistory chain (heap.clientHistory chain lower) ∧
   obtain ⟨hv, -, hI, hc⟩ := (Record.wp_iff _ _ _).mp lower_spec
   exact ⟨hv, hI, hc⟩
 
-end ComplexityTests.FibonacciHeapDecreaseKey
+end CslibFrontierTests.FibonacciHeapDecreaseKey

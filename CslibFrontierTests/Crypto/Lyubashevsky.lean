@@ -19,7 +19,7 @@ witness entries bounded by `η = 1`. The block checks honest answers and an abor
 extractor on two conversations with a common commitment, and evaluates the simulator's law.
 -/
 
-namespace ComplexityTests.Crypto.Lyubashevsky
+namespace CslibFrontierTests.Crypto.Lyubashevsky
 
 open Cslib Cslib.Crypto Cslib.Probability Cslib.Probability.PMF Cslib.Crypto.Protocols
   SigmaProtocol Turing.MultiTapeTM
@@ -224,4 +224,4 @@ example (c : BitString params.k) :
     (lyubashevskyFamily_nonAbortSpecialHVZK (fun _ => 1))
     (by decide : lyubashevskyFamilyRelation (fun _ => 1) params S (A, T)) c
 
-end ComplexityTests.Crypto.Lyubashevsky
+end CslibFrontierTests.Crypto.Lyubashevsky

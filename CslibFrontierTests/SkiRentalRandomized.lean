@@ -21,7 +21,7 @@ competitive and lower-bound predicates for
 
 @[expose] public section
 
-namespace ComplexityTests.SkiRentalRandomized
+namespace CslibFrontierTests.SkiRentalRandomized
 
 open Cslib.DataStructure.Online Cslib.DataStructure.Online.SkiRental
 open scoped ENNReal
@@ -130,4 +130,4 @@ example : ¬ RandStrategy.IsCompetitive (randomRentThenBuy 2) (ENNReal.ofReal (5
   refine not_isCompetitive_of_lt _ ((ENNReal.ofReal_lt_ofReal_iff ?_).mpr ?_) <;>
     rw [randomizedRatio_eq (by norm_num)] <;> norm_num
 
-end ComplexityTests.SkiRentalRandomized
+end CslibFrontierTests.SkiRentalRandomized

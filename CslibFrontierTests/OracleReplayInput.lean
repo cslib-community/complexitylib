@@ -8,7 +8,7 @@ import CslibFrontier.Computability.Probabilistic.Oracle.Replay
 
 /-! Full-input replay and a saved-coin witness for an actual random oracle-aware program. -/
 
-namespace ComplexityTests.OracleReplayInput
+namespace CslibFrontierTests.OracleReplayInput
 
 open Cslib Cslib.Probability Turing Turing.MultiTapeTM Turing.MultiTapePTM
 
@@ -70,4 +70,4 @@ example : ∃ (fuel : ℕ) (replay : List Bool × List Bool → WordOracleComp B
     zero_add, one_pow,
     mul_one, observe] using heq [] ℕ handler s
 
-end ComplexityTests.OracleReplayInput
+end CslibFrontierTests.OracleReplayInput

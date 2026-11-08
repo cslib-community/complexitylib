@@ -18,7 +18,7 @@ frame the setup builds, the round program's specification at word size `8`, and 
 bound for the program's output. The amplified algorithm: its count of rounds computed on the
 machine, and its specification and failure bound on the same formula. -/
 
-namespace ComplexityTests.WordRAMPPSZ
+namespace CslibFrontierTests.WordRAMPPSZ
 
 open Cslib.WordRAM Cslib.Logic.PL Cslib.Complexity.PPSZ Cslib.Algorithms.WordRAM.PPSZ
 open Cslib.Algorithms.WordRAM.PPZ (optCode)
@@ -163,4 +163,4 @@ example : ((evalRand 8 ampProgram (ampTime 3 39 70 5 2 ampInput.length) (.init a
 
 end Amplify
 
-end ComplexityTests.WordRAMPPSZ
+end CslibFrontierTests.WordRAMPPSZ

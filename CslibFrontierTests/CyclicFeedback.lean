@@ -16,7 +16,7 @@ seed. Repeated feedback outputs retain sharing and unused weighted operations; t
 needs no gates. Pure input aliases do not meet the internal-output contract.
 -/
 
-namespace ComplexityTests.CyclicFeedback
+namespace CslibFrontierTests.CyclicFeedback
 
 open Cslib.Circuits
 
@@ -78,4 +78,4 @@ example : ¬ ∀ i, ∃ j, (Circuit.wiring Monotone.signature ![(1 : Fin 2)]).ou
   obtain ⟨j, hj⟩ := h 0
   cases hj
 
-end ComplexityTests.CyclicFeedback
+end CslibFrontierTests.CyclicFeedback

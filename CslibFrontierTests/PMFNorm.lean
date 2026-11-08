@@ -7,7 +7,7 @@ import CslibFrontier.Languages.Probabilistic.Norm
 
 /-! # The simp set `pmf_norm` -/
 
-namespace ComplexityTests.PMFNorm
+namespace CslibFrontierTests.PMFNorm
 
 open Cslib
 
@@ -47,4 +47,4 @@ example (μ : PMF Bool) (q : Bool → PMF Bool) :
   simp only [pmf_norm]
   rw [PMF.bind_apply]
 
-end ComplexityTests.PMFNorm
+end CslibFrontierTests.PMFNorm

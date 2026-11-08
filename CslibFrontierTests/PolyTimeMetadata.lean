@@ -8,7 +8,7 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! Polynomial-time proof search ignores inert goal metadata, including after simplification. -/
 
-namespace ComplexityTests.PolyTimeMetadata
+namespace CslibFrontierTests.PolyTimeMetadata
 
 open Turing.MultiTapeTM
 
@@ -76,4 +76,4 @@ example {α : Type} (encoding : α ↪ List Bool)
     fail_if_success (clear hList; polytime)
     polytime
 
-end ComplexityTests.PolyTimeMetadata
+end CslibFrontierTests.PolyTimeMetadata

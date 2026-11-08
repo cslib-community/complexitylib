@@ -23,7 +23,7 @@ without vertex `0`, by brute force (`decide`).
 
 @[expose] public section
 
-namespace ComplexityTests.KargerMinCutCount
+namespace CslibFrontierTests.KargerMinCutCount
 
 open scoped ENNReal
 open Cslib.WeightedCut Cslib.Algorithms.Lean.Karger
@@ -108,4 +108,4 @@ example : (Finset.univ.filter fun C : Finset (Fin 5) =>
   rw [minCut_C5]
   decide
 
-end ComplexityTests.KargerMinCutCount
+end CslibFrontierTests.KargerMinCutCount

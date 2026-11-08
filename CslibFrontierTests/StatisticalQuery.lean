@@ -11,7 +11,7 @@ import CslibFrontier.MachineLearning.StatisticalQuery.Parity
 constant concepts on a point exactly with tolerance `1/2`, the same learner failing with tolerance
 `1`, and instances of the lower bounds for parities. -/
 
-namespace ComplexityTests.StatisticalQuery
+namespace CslibFrontierTests.StatisticalQuery
 
 open Cslib Cslib.MachineLearning Cslib.MachineLearning.StatisticalQuery Cslib.Probability
 
@@ -139,4 +139,4 @@ example (n : ℕ) (A : Algorithm (Fin n → Bool)) (q : ℕ) (hq : A.IsQueryBoun
   rw [hcard, Nat.cast_pow, Nat.cast_ofNat] at h
   exact h
 
-end ComplexityTests.StatisticalQuery
+end CslibFrontierTests.StatisticalQuery

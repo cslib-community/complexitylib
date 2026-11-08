@@ -17,7 +17,7 @@ Exercises a concrete two-round (`r = 2`), depth-one (`d = 1`) public-coin IOP an
 4. Straight-line knowledge extraction via `bcs_knowledge_or_merkleCollision`.
 -/
 
-namespace ComplexityTests.Crypto.BCSTransform
+namespace CslibFrontierTests.Crypto.BCSTransform
 
 open Cslib.Crypto Cslib.Crypto.Protocols.BCS
 
@@ -170,4 +170,4 @@ example :
   bcs_knowledge_or_merkleCollision encSym_injective (fun _ => rfl) (by decide)
     (fun h => by revert h; decide) 2
 
-end ComplexityTests.Crypto.BCSTransform
+end CslibFrontierTests.Crypto.BCSTransform

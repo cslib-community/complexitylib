@@ -19,7 +19,7 @@ finite bit decoding, and include initialization of the full assignment limit.
 
 @[expose] public section
 
-namespace ComplexityTests.TreeEvalQueryGate
+namespace CslibFrontierTests.TreeEvalQueryGate
 
 open Turing MultiTapeTM Cslib.TreeEval.Ary.Packed
 open Cslib.TreeEval.Ary.Packed.QueryGate
@@ -149,4 +149,4 @@ example (w : List Bool) :
     rw [sumState_counter]
     exact supplier_peak w j i hj hi
 
-end ComplexityTests.TreeEvalQueryGate
+end CslibFrontierTests.TreeEvalQueryGate

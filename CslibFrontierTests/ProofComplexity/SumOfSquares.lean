@@ -18,7 +18,7 @@ every degree. On `K₄`, Schoenebeck's pseudo-expectation of degree `3` exists a
 refutation of degree `3`. Finally, the expander family is instantiated.
 -/
 
-namespace ComplexityTests.ProofComplexity.SumOfSquares
+namespace CslibFrontierTests.ProofComplexity.SumOfSquares
 
 open Cslib Cslib.Logic.PL Cslib.Logic.PL.ParitySystem MvPolynomial Finset
 open scoped symmDiff
@@ -191,4 +191,4 @@ example : ∃ m ≤ 120 * 2, ∃ P : ParitySystem (Fin m),
       SOS.RefutableInDegree (P.toPolys R) d → 2 ≤ 18000 * d :=
   exists_forall_sos_refutableInDegree_le 2 le_rfl
 
-end ComplexityTests.ProofComplexity.SumOfSquares
+end CslibFrontierTests.ProofComplexity.SumOfSquares

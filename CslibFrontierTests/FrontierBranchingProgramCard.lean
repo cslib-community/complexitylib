@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Circuit.Frontier.BranchingProgram
 
 open Cslib.Circuits.Frontier Set
 
-namespace ComplexityTests.FrontierBranchingProgramCard
+namespace CslibFrontierTests.FrontierBranchingProgramCard
 
 /-- One step reads the only coordinate; the edge condition ignores its label. -/
 private def oneStep (U M : Type) (s : M) (edge : M → M → Prop) : ReadOnceNBP Unit U M where
@@ -217,4 +217,4 @@ example : natInputs.SmallSides 2 := by
     rw [natInputs_future_one, encard_singleton]
     norm_num
 
-end ComplexityTests.FrontierBranchingProgramCard
+end CslibFrontierTests.FrontierBranchingProgramCard

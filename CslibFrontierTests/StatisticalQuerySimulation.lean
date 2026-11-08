@@ -14,10 +14,10 @@ simulation as a PAC learner from `40` examples, the uniform realizable family as
 the low-degree algorithm on the parities of at most one of three bits, and the PAC learner it
 gives. -/
 
-namespace ComplexityTests.StatisticalQuerySimulation
+namespace CslibFrontierTests.StatisticalQuerySimulation
 
 open Cslib Cslib.MachineLearning Cslib.MachineLearning.StatisticalQuery Cslib.Probability
-open ComplexityTests.StatisticalQuery Finset
+open CslibFrontierTests.StatisticalQuery Finset
 open scoped NNReal
 
 /-! ### Running a learner on examples -/
@@ -105,4 +105,4 @@ example (m : ℕ) (ε δ : Set.Ioo (0 : ℝ≥0) 1) (hε : (1 / 4 : ℝ) ≤ ε.
   norm_num
   linarith
 
-end ComplexityTests.StatisticalQuerySimulation
+end CslibFrontierTests.StatisticalQuerySimulation

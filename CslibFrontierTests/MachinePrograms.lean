@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic
 
 /-! Nonvacuous machine specializations, shared-state oracle runs, and fair-coin semantics. -/
 
-namespace ComplexityTests.MachinePrograms
+namespace CslibFrontierTests.MachinePrograms
 
 open Cslib Turing
 open Turing.MultiTapeMachine
@@ -132,4 +132,4 @@ example (machine : MultiTapeTM 2 Bool Unit) (fuel : ℕ) (input : List Bool) :
   rw [MultiTapeTM.toMachine_toTM] at h
   exact h
 
-end ComplexityTests.MachinePrograms
+end CslibFrontierTests.MachinePrograms

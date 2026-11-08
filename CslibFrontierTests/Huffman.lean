@@ -18,7 +18,7 @@ import Mathlib.Tactic.NormNum
 -- `treeOfCodebook` implementations directly without requiring `@[expose]` on internal loops.
 set_option linter.hashCommand false
 
-namespace ComplexityTests.Huffman
+namespace CslibFrontierTests.Huffman
 
 open Cslib.Algorithms.Lean.Huffman
 open scoped Cslib.Algorithms.Lean.TimeM
@@ -217,4 +217,4 @@ example :
   exact ⟨T, hT, huffman_optimal_isUniquelyDecodable hne hnodup hw hT hinj
     isUniquelyDecodable_suffixCode⟩
 
-end ComplexityTests.Huffman
+end CslibFrontierTests.Huffman

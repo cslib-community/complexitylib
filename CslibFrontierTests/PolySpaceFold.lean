@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpac
 /-! Binary fold clients: a growing natural accumulator, a captured Boolean input, and zero
 iterations. The iteration count uses `encNat`, so its value can be exponential in input length. -/
 
-namespace ComplexityTests.PolySpaceFold
+namespace CslibFrontierTests.PolySpaceFold
 
 open Turing.MultiTapeTM
 
@@ -43,4 +43,4 @@ example (n : ℕ) (b : Bool) :
     copyFlag (0, b) = false ∧ copyFlag (n + 1, b) = b ∧ n.fold (fun _ _ a => a + 1) 0 = n :=
   ⟨by simp only [copyFlag, Nat.fold_zero], by simp only [copyFlag, Nat.fold_succ], count_spec.2 n⟩
 
-end ComplexityTests.PolySpaceFold
+end CslibFrontierTests.PolySpaceFold

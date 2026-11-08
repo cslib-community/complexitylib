@@ -50,14 +50,11 @@ def prepare(suite: str) -> Path:
         raise ValueError(f"generated source directory must not contain symlinks: {GENERATED}")
     GENERATED.mkdir(parents=True, exist_ok=True)
     name, theorems = SUITES[suite]
-    # The statement modules moved to the `CslibFrontierComparator` root; their declarations
-    # keep the `ComplexityComparator` namespace.  (rename-module-root: keep)
-    namespace = f"ComplexityComparator.{name}"  # rename-module-root: keep
-    package = f"CslibFrontierComparator.{name}"
+    namespace = f"CslibFrontierComparator.{name}"
     challenge = f"CslibFrontierComparatorChallenges.{name}"
     source = HEADER + f"""module
 
-public import {package}.Statements
+public import {namespace}.Statements
 
 public section
 
@@ -69,7 +66,7 @@ universe u v w s
     write_generated(GENERATED / f"{name}.lean", source, lean=True)
     config = {
         "challenge_module": challenge,
-        "solution_module": f"{package}.Solution",
+        "solution_module": f"{namespace}.Solution",
         "theorem_names": [f"{namespace}.{theorem}" for theorem, _ in theorems],
         "permitted_axioms": AXIOMS,
     }
@@ -97,7 +94,7 @@ def negative_control() -> int:
     print(result.stdout, end="", flush=True)
     expected = (
         "Challenge and solution theorem statement do not match: "
-        "'ComplexityComparator.Basic.manyOneTrans'"
+        "'CslibFrontierComparator.Basic.manyOneTrans'"
     )
     if result.returncode == 1 and expected in result.stdout:
         print("Negative control passed: the changed theorem statement was rejected.")

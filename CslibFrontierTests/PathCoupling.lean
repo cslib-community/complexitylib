@@ -27,7 +27,7 @@ import CslibFrontier.Probability.StatisticalDistance.ClosedForm
   within `δ` of uniform after `⌈-2 log δ⌉` steps.
 -/
 
-namespace ComplexityTests.PathCoupling
+namespace CslibFrontierTests.PathCoupling
 
 open Cslib.Probability Cslib.Probability.PMF Cslib.Probability.MarkovChain SimpleGraph
 open scoped Cslib.Probability.PMF
@@ -169,4 +169,4 @@ theorem dist_glauberColoringOn_edge {δ : ℝ} (hδ : 0 < δ) {t : ℕ} (ht : -2
   norm_num
   linarith
 
-end ComplexityTests.PathCoupling
+end CslibFrontierTests.PathCoupling

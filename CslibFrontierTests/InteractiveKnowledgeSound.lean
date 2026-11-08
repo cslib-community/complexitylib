@@ -34,7 +34,7 @@ and what knowledge soundness adds over soundness.
   for a statement with two witnesses.
 -/
 
-namespace ComplexityTests.InteractiveKnowledgeSound
+namespace CslibFrontierTests.InteractiveKnowledgeSound
 
 open Cslib Cslib.Interactive Spec
 open scoped ENNReal
@@ -282,4 +282,4 @@ theorem not_sendWitness_hvzk (Sim : Unit → ProbComp (Transcript (witnessSpec B
   exact absurd (h2.trans_lt (ENNReal.add_lt_add_left ENNReal.one_ne_top hε))
     (by rw [one_add_one_eq_two]; exact lt_irrefl 2)
 
-end ComplexityTests.InteractiveKnowledgeSound
+end CslibFrontierTests.InteractiveKnowledgeSound

@@ -18,7 +18,7 @@ its unsuccessful records collectively receive no additive successful-scan allowa
 kernel proofs do not evaluate the enormous catalogue or encoder through the interpreter.
 -/
 
-namespace ComplexityTests.WordRAMExactTriangleFixedPrimeInput
+namespace CslibFrontierTests.WordRAMExactTriangleFixedPrimeInput
 
 open Cslib.WordRAM Cslib.Matrix Cslib.Algorithms.ExactTriangle
 open Cslib.Algorithms.WordRAM.ExactTriangle
@@ -153,4 +153,4 @@ example :
       y.regs FixedPrime.Reg.found = 0 ∧ y.regs FixedPrime.Reg.scans ≤ F :=
   initialized_one side (by decide)
 
-end ComplexityTests.WordRAMExactTriangleFixedPrimeInput
+end CslibFrontierTests.WordRAMExactTriangleFixedPrimeInput

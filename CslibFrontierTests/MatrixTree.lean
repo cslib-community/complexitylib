@@ -26,7 +26,7 @@ has an outgoing arc) and for the `2`-cycle `1 ⇄ 2`. The `2`-cycle satisfies th
 and the counting theorem shows that reachability of the root is needed.
 -/
 
-namespace ComplexityTests.MatrixTree
+namespace CslibFrontierTests.MatrixTree
 
 open Matrix
 
@@ -207,4 +207,4 @@ example : ¬ twoCycle.IsInArborescence 0 := by
 
 end Directed
 
-end ComplexityTests.MatrixTree
+end CslibFrontierTests.MatrixTree

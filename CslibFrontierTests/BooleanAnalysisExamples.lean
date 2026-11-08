@@ -24,7 +24,7 @@ examples show that the hypotheses of these results are satisfiable and that the 
 compute the values their docstrings describe.
 -/
 
-namespace ComplexityTests.BooleanAnalysisExamples
+namespace CslibFrontierTests.BooleanAnalysisExamples
 
 open Cslib Cslib.BitString Finset
 
@@ -305,4 +305,4 @@ example :
   ⟨by rw [eval_multilinearExtension_and₂]; norm_num,
     by rw [eval_multilinearExtension]; simp [and₂, bitVal]⟩
 
-end ComplexityTests.BooleanAnalysisExamples
+end CslibFrontierTests.BooleanAnalysisExamples

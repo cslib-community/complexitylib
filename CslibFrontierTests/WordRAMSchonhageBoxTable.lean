@@ -14,7 +14,7 @@ not replace the general execution, finite-meaning, frame or resource proofs.
 
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMSchonhageBoxTable
+namespace CslibFrontierTests.WordRAMSchonhageBoxTable
 
 open Cslib.WordRAM Cslib.WordRAM.Signed
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
@@ -199,4 +199,4 @@ example : ∃ y n z,
   exact ⟨y, n, z, hr, by simpa only [hbase] using he, hz, hfound,
     by simpa only [hvalue] using hanswer, hzm⟩
 
-end ComplexityTests.WordRAMSchonhageBoxTable
+end CslibFrontierTests.WordRAMSchonhageBoxTable

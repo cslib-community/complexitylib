@@ -17,7 +17,7 @@ decidability instance; `realize` tests them natively and computes the `0` of `0 
 loop. The cutoff is a ghost bound, never computed. The controls pin the unsupported forms and
 show that a truncating cutoff leaves an unsatisfiable domain. -/
 
-namespace ComplexityTests.WordRAMRealizeWhile
+namespace CslibFrontierTests.WordRAMRealizeWhile
 
 open Cslib.DataStructure Cslib.WordRAM Cslib.WordRAM.Realization MemoryStack
 
@@ -217,4 +217,4 @@ depends on the loop state but is not one of its words
 example : Realizes .exact doubling word word (fun _ _ _ => True) (fun _ _ => 0) := by
   realize
 
-end ComplexityTests.WordRAMRealizeWhile
+end CslibFrontierTests.WordRAMRealizeWhile

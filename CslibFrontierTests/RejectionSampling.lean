@@ -8,7 +8,7 @@ import CslibFrontier.Probability.RejectionSampling
 
 /-! Exact box sampling laws, independent of the protocol client. -/
 
-namespace ComplexityTests.RejectionSampling
+namespace CslibFrontierTests.RejectionSampling
 
 open Cslib.Probability Cslib.Probability.PMF
 open scoped ENNReal
@@ -50,4 +50,4 @@ example : boxReject (Fin 1) 0 0 0 none = 0 := by
   rw [boxReject_apply_none (by omega) (by simp)]
   norm_num
 
-end ComplexityTests.RejectionSampling
+end CslibFrontierTests.RejectionSampling

@@ -10,7 +10,7 @@ import Mathlib.Tactic.FinCases
 
 /-! Fixed AND/OR languages, their native P endpoints and template instantiation edge cases. -/
 
-namespace ComplexityTests.CSPHorn
+namespace CslibFrontierTests.CSPHorn
 
 open Cslib.Complexity Cslib.Logic Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -258,4 +258,4 @@ example : Clause.IsHorn
     (Clause.relabel (fun _ => 7) ([(0, false), (1, false), (2, true)] : Clause ℕ)) := by
   simp [Clause.IsHorn, Clause.relabel]
 
-end ComplexityTests.CSPHorn
+end CslibFrontierTests.CSPHorn

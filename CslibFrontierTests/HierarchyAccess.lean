@@ -11,7 +11,7 @@ import CslibFrontier.Computability.LogSpaceDerandomization.HierarchyAccess
 
 set_option linter.privateModule false
 
-namespace ComplexityTests.HierarchyAccess
+namespace CslibFrontierTests.HierarchyAccess
 
 open Matrix Matrix.HierarchyParams Matrix.HierarchyParams.HierarchyTask
 
@@ -65,4 +65,4 @@ example : rawSample full 2 3 .residual source midpoint endpoint (1 / 8) child 0 
     CorrectionRowTask.Channel.retains,
     full, child, source, midpoint, endpoint, Fin.sum_univ_two]
 
-end ComplexityTests.HierarchyAccess
+end CslibFrontierTests.HierarchyAccess

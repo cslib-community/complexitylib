@@ -11,7 +11,7 @@ short satisfiability by certificates, concrete members and non-members of Ladner
 concrete machine agreeing and disagreeing with it, the padding reduction and the rounds of the
 self-reduction on concrete formulas. -/
 
-namespace ComplexityTests.Ladner
+namespace CslibFrontierTests.Ladner
 
 open Cslib Cslib.Complexity Cslib.Complexity.Ladner Cslib.Logic.PL Turing Turing.MultiTapeTM
 open Turing.MultiTapeTM.Universal
@@ -158,4 +158,4 @@ example :
     (mem_smallSAT (by simp [encCNF])).mpr ⟨fun _ => true, rfl⟩,
     fun h => falseCNF_notMem_SAT ((mem_smallSAT (by decide)).mp h)⟩
 
-end ComplexityTests.Ladner
+end CslibFrontierTests.Ladner

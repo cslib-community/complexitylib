@@ -16,7 +16,7 @@ soundness on a satisfiable CNF; a resolution refutation translated into cutting 
 pigeonhole refutations at small sizes and the separation from resolution.
 -/
 
-namespace ComplexityTests.ProofComplexity.CuttingPlanes
+namespace CslibFrontierTests.ProofComplexity.CuttingPlanes
 
 open Cslib Cslib.Logic.PL Cslib.Logic.PL.Ineq Cslib.Logic.PL.CuttingPlanes
 
@@ -142,4 +142,4 @@ example : ¬ ∃ f : ℕ → ℕ, PolynomiallyBounded f ∧ ∀ n s,
       (CNF.pigeonhole (n + 1) n).RefutableInSize (f s) :=
   not_exists_polynomiallyBounded_refutableInSize_pigeonhole
 
-end ComplexityTests.ProofComplexity.CuttingPlanes
+end CslibFrontierTests.ProofComplexity.CuttingPlanes

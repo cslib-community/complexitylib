@@ -16,7 +16,7 @@ extraction on the one-fold repetition, where the questions embed exactly, bounds
 `chsh.pow 1` by the value of CHSH.
 -/
 
-namespace ComplexityTests.TwoProverGame
+namespace CslibFrontierTests.TwoProverGame
 
 open Cslib.PCP Cslib.PCP.TwoProverGame Cslib.Probability.CorrelatedSampling
 open scoped Cslib.Probability.PMF
@@ -61,4 +61,4 @@ example (ha : (Fin 1 → Bool) → Fin 1 → Bool) (hb : (Fin 1 → Bool) → Fi
   rwa [TwoProverGame.winProbOn_empty, one_mul, add_zero,
     show insert (0 : Fin 1) ∅ = Finset.univ by decide, TwoProverGame.winProbOn_univ] at h
 
-end ComplexityTests.TwoProverGame
+end CslibFrontierTests.TwoProverGame

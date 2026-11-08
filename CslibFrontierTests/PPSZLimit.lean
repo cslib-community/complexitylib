@@ -12,7 +12,7 @@ import Mathlib.Analysis.Complex.ExponentialBounds
 the limit `R3` at sample points, and the headline applied to the uniquely satisfiable 3-CNF formula
 of `CslibFrontierTests.PPSZUnique`. -/
 
-namespace ComplexityTests.PPSZLimit
+namespace CslibFrontierTests.PPSZLimit
 
 open Cslib.Logic.PL Cslib.Complexity.PPSZ
 
@@ -51,4 +51,4 @@ example : ∃ w : ℕ, (2 : ℝ) ^ (-((2 * Real.log 2 - 1 + 1 / 100) * 3)) ≤
   exact_mod_cast hw 3 PPSZUnique.φ (fun _ => true) PPSZUnique.φ_sat PPSZUnique.φ_unique
     PPSZUnique.φ_len
 
-end ComplexityTests.PPSZLimit
+end CslibFrontierTests.PPSZLimit

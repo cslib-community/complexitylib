@@ -9,7 +9,7 @@ import CslibFrontier.Probability.SaksZhou
 /-! The Saks–Zhou rounding and iteration: concrete values, Lemma A.3, the `pow` hypothesis holding
 and failing, and the necessity of `n₁ ≥ 2` in the form `n w 2 ^ (1 - d)` of Lemma A.4. -/
 
-namespace ComplexityTests.SaksZhou
+namespace CslibFrontierTests.SaksZhou
 
 open Cslib.Probability.SaksZhou
 
@@ -141,4 +141,4 @@ example : (1 : ℝ) ^ 3 * (Fintype.card (Fin 1) * (2 / 2 ^ 2)) <
       ((1 : Matrix (Fin 1) (Fin 1) ℝ) ^ 1 ^ 3) 0 j| := by
   norm_num [snapIter_succ, snapMatrix_apply, snap_def, Fin.init, abs_of_nonneg]
 
-end ComplexityTests.SaksZhou
+end CslibFrontierTests.SaksZhou

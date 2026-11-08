@@ -14,7 +14,7 @@ colourings in dimensions `0` to `3`, agreement with the two-dimensional grid of
 colouring of Chen, Deng and Teng, a colouring violating the boundary condition, and the adjacency
 of the triangulation. -/
 
-namespace ComplexityTests.SpernerKuhn
+namespace CslibFrontierTests.SpernerKuhn
 
 open Cslib Cslib.Sperner Cslib.Sperner.KuhnSimplex Finset
 
@@ -122,4 +122,4 @@ example : ∃ p : Fin 3 → ℕ, (∀ i, p i < ![2, 3, 1] i) ∧ ∃ P : Finset 
       Set.InjOn (hypergridBoundaryColor (n := 3)) P :=
   IsValidColoring.exists_panchromatic (fun _ _ _ => rfl) (by decide)
 
-end ComplexityTests.SpernerKuhn
+end CslibFrontierTests.SpernerKuhn

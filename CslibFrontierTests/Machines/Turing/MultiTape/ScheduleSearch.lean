@@ -19,7 +19,7 @@ tests cover the exact first excluded schedule and the zero-horizon boundary.
 
 public section
 
-namespace ComplexityTests.ScheduleSearch
+namespace CslibFrontierTests.ScheduleSearch
 
 open Turing MultiTapeTM MultiTapePTM.BlockComputation
 
@@ -61,4 +61,4 @@ example : (ScheduleSearch.caller 0).halted ((1, 1, 1), 1, some false) = true := 
 example : (ScheduleSearch.caller 0).halted ((1, 1, 1), 3, none) = true := by decide
 example : (ScheduleSearch.caller 0).halted ((1, 1, 1), 2, none) = false := by decide
 
-end ComplexityTests.ScheduleSearch
+end CslibFrontierTests.ScheduleSearch

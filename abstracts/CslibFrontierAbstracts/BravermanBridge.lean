@@ -17,7 +17,7 @@ biases on all nonempty sets of at most `k` coordinates is the same as uniform ma
 of at most `k` coordinates, and restates Braverman's theorem with probabilities and counts.
 -/
 
-namespace ComplexityAbstracts.BravermanBridge
+namespace CslibFrontierAbstracts.BravermanBridge
 
 open Finset Cslib.BitString Cslib.Probability.PMF
 open scoped BigOperators
@@ -77,4 +77,4 @@ theorem braverman {d q : ℕ} (hq : 1 ≤ q)
   · rw [Fintype.expect_eq_sum_div_card, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin]
     simp only [bitVal, sum_boole, Nat.cast_pow, Nat.cast_ofNat]
 
-end ComplexityAbstracts.BravermanBridge
+end CslibFrontierAbstracts.BravermanBridge

@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Complexity.Classes.BQP.Sampling.Seeded
 /-! A runtime family with `n` Hadamards: variable gate count, exactly `n` seed bits, and native
 decoder bounds in the original unary input length rather than the enlarged input/seed pair. -/
 
-namespace ComplexityTests.QuantumSamplingResources
+namespace CslibFrontierTests.QuantumSamplingResources
 
 open Cslib Cslib.Quantum Cslib.BitString Cslib.Complexity.QuantumContraction
 open Turing.MultiTapeTM
@@ -72,4 +72,4 @@ example : decodeOutput (repeatedH zeroSeed.input) [false] zeroSeed.seed = [false
   change decodeOutput [] [false] [] = [false]
   simp
 
-end ComplexityTests.QuantumSamplingResources
+end CslibFrontierTests.QuantumSamplingResources

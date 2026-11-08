@@ -14,7 +14,7 @@ convention; negative inner products check modular wraparound. These tests do not
 shallow circuit or bootstrappability.
 -/
 
-namespace ComplexityTests.GSWDecryption
+namespace CslibFrontierTests.GSWDecryption
 
 open Cslib.Crypto.Homomorphic.GSW
 
@@ -58,4 +58,4 @@ example : ((2 : ZMod (2 ^ 3)).val.testBit 2 ^^ (2 : ZMod (2 ^ 3)).val.testBit 1)
     ((6 : ZMod (2 ^ 3)).val.testBit 2 ^^ (6 : ZMod (2 ^ 3)).val.testBit 1) = false := by
   decide +kernel
 
-end ComplexityTests.GSWDecryption
+end CslibFrontierTests.GSWDecryption

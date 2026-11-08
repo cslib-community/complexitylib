@@ -28,7 +28,7 @@ irreducible polynomial of degree `1`, the monomial basis of `GF(2 ^ 6)`, the sub
 same for all large `N`.
 -/
 
-namespace ComplexityTests.AffineDisperser
+namespace CslibFrontierTests.AffineDisperser
 
 open Cslib Cslib.AffineDisperser Cslib.AffineDisperser.Explicit Module
 
@@ -187,4 +187,4 @@ theorem eventually_exists_explicitDisperser_ne :
   obtain ⟨x, -, y, -, h⟩ := exists_explicitDisperser_ne ⊤ (by rwa [finrank_direction_top])
   exact ⟨x, y, h⟩
 
-end ComplexityTests.AffineDisperser
+end CslibFrontierTests.AffineDisperser

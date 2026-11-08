@@ -22,7 +22,7 @@ written out and subdivided, and a constraint network counted by its indicator te
 
 @[expose] public section
 
-namespace ComplexityTests.Computability.Circuit.Frontier.TensorNetwork
+namespace CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork
 
 open Cslib.Circuits.Frontier
 
@@ -142,4 +142,4 @@ example : (agree.toTensorNetwork ℕ Empty.elim).contraction = 2 := by
     cases α 0 <;> cases α 1 <;> simp
   rw [hsat, Set.ncard_pair (fun h => Bool.false_ne_true (congrFun h 0))]
 
-end ComplexityTests.Computability.Circuit.Frontier.TensorNetwork
+end CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork

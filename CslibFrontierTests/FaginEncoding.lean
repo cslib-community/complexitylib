@@ -19,7 +19,7 @@ nullary relations), that malformed inputs are outside every query language, and 
 language of colorability contains the encoding of an edge for two colors but not for one.
 -/
 
-namespace ComplexityTests.FaginEncoding
+namespace CslibFrontierTests.FaginEncoding
 
 open FirstOrder Language Structure CategoryTheory Cslib.Logic
 
@@ -141,4 +141,4 @@ example (e : Fin 2 ≃ Fin 2) :
   rw [Vocabulary.mem_queryLanguage_encode (Cslib.Logic.ESO.Definable.colorable 2).isoClosed]
   exact ⟨id, fun x y h => h.ne⟩
 
-end ComplexityTests.FaginEncoding
+end CslibFrontierTests.FaginEncoding

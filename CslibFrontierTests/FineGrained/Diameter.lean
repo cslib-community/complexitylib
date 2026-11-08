@@ -15,7 +15,7 @@ orthogonal pair and two on a non-orthogonal pair and on the empty instance; the 
 encoded instance; and the separating set of the corollaries.
 -/
 
-namespace ComplexityTests.FineGrained.Diameter
+namespace CslibFrontierTests.FineGrained.Diameter
 
 open Cslib.Complexity Cslib.Complexity.OV
 
@@ -93,4 +93,4 @@ example (h : OVH) : ¬DecidableInTimeO {G : Graph | G.induced.ediam ≤ 2} encGr
     rw [h] at h₂
     exact absurd h₂ (by decide)
 
-end ComplexityTests.FineGrained.Diameter
+end CslibFrontierTests.FineGrained.Diameter

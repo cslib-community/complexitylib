@@ -23,11 +23,11 @@ This test file exercises the converse direction of Fagin's theorem and the full 
   `Cslib.Logic.ESO.definable_iff_isoClosed_and_queryLanguage_mem_NP`.
 -/
 
-namespace ComplexityTests.Fagin
+namespace CslibFrontierTests.Fagin
 
 open FirstOrder Language Structure CategoryTheory Cslib.Logic Cslib.Logic.ESO Cslib.Complexity
 open Turing.MultiTapeTM
-open ComplexityTests.FaginEncoding ComplexityTests.FaginNP
+open CslibFrontierTests.FaginEncoding CslibFrontierTests.FaginNP
 
 /-! ### Length-checked verifiers -/
 
@@ -177,4 +177,4 @@ theorem nullary_definable_iff_mem_NP {K : Set (Bundled.{0} nullaryLanguage.Struc
     ESO.Definable K ↔ nullaryVocabulary.queryLanguage K ∈ NP encStructure :=
   nullaryVocabulary.definable_iff_queryLanguage_mem_NP hK
 
-end ComplexityTests.Fagin
+end CslibFrontierTests.Fagin

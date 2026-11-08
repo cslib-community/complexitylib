@@ -16,7 +16,7 @@ decider accepts a colorful coloring and rejects a coloring with repeated colors,
 resource consequences: an exponent at least `1`, and `FPT` for a larger parameter.
 -/
 
-namespace ComplexityTests.ColorCoding
+namespace CslibFrontierTests.ColorCoding
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -117,4 +117,4 @@ example (h : IndependentSet ∈ FPT (encPair encGraph encNat) Prod.snd) :
     Clique ∈ FPT (encPair encGraph encNat) Prod.snd :=
   Clique_mem_FPT_iff.2 h
 
-end ComplexityTests.ColorCoding
+end CslibFrontierTests.ColorCoding

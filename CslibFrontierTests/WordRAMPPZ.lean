@@ -15,7 +15,7 @@ on no variables, the round program's specification at word size `8`, and the amp
 its count of rounds computed on the machine, and its specification and failure bound on the same
 formula. -/
 
-namespace ComplexityTests.WordRAMPPZ
+namespace CslibFrontierTests.WordRAMPPZ
 
 open Cslib.WordRAM Cslib.Logic.PL Cslib.Complexity.PPZ Cslib.Algorithms.WordRAM.PPZ
 
@@ -106,4 +106,4 @@ example : ((evalRand 8 ampProgram (ampTime 3 3 5 ampInput.length) (.init ampInpu
   exact_mod_cast ampProgram_failure_le_exp (k := 3) (c := 5) (by decide)
     ⟨![false, true, false], by decide⟩ (by decide) (by decide)
 
-end ComplexityTests.WordRAMPPZ
+end CslibFrontierTests.WordRAMPPZ

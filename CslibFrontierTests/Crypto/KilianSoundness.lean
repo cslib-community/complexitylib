@@ -18,7 +18,7 @@ message, the honest prover's two runs never conflict, and the adversary's fallba
 break binding. A constant prover is strict PPT, so `KilianProver.IsPPT` is not vacuous.
 -/
 
-namespace ComplexityTests.Crypto.KilianSoundness
+namespace CslibFrontierTests.Crypto.KilianSoundness
 
 open Cslib Cslib.Complexity Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 
@@ -87,4 +87,4 @@ example : constantProver.IsPPT encBits where
     unfold constantProver
     ppt
 
-end ComplexityTests.Crypto.KilianSoundness
+end CslibFrontierTests.Crypto.KilianSoundness

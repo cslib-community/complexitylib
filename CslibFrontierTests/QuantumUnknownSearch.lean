@@ -11,7 +11,7 @@ import CslibFrontier.Computability.QueryComplexity.Quantum.Polynomial
 `N = 4` items. Search uses `m = ⌊√4⌋ + 1 = 3` iteration counts and `⌊√4⌋ = 2` queries; the
 decision algorithm uses the range `orRange 4 = 12` and `24` queries. -/
 
-namespace ComplexityTests.QuantumUnknownSearch
+namespace CslibFrontierTests.QuantumUnknownSearch
 
 open Cslib Cslib.Quantum Cslib.BitString Finset Real
 
@@ -141,4 +141,4 @@ example (N : ℕ) (hN : 0 < N) : N ≤ 16 * (orRange N + orRange N) ^ 2 :=
   card_le_sixteen_mul_sq_of_threshold_one_right (orSearch N) (norm_orSearchInit hN) _
     (orAccept N) (abs_measureProb_run_orSearch_sub_le hN)
 
-end ComplexityTests.QuantumUnknownSearch
+end CslibFrontierTests.QuantumUnknownSearch

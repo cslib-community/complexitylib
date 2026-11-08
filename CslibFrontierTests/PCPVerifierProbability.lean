@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Complexity.Classes.PCP
 
 /-! Exact repetition probabilities, boundary cases, and the counted-verifier bridge. -/
 
-namespace ComplexityTests.VerifierProbability
+namespace CslibFrontierTests.VerifierProbability
 
 open Cslib Cslib.Complexity Cslib.BitString Cslib.Probability
 open scoped ENNReal
@@ -78,4 +78,4 @@ example :
   (acceptCount_le_half_iff _ _ _).mpr
     ((acceptCount_le_half_iff firstBit () 1).mp (by rw [firstBit_count]; decide))
 
-end ComplexityTests.VerifierProbability
+end CslibFrontierTests.VerifierProbability

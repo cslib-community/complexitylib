@@ -16,7 +16,7 @@ with their original positions. Compiled tests compare the traced algorithm with 
 sort and independent list sorting. No uniqueness or stability premise is supplied.
 -/
 
-namespace ComplexityTests.BitonicTrace
+namespace CslibFrontierTests.BitonicTrace
 
 open Cslib BitonicSort
 
@@ -96,4 +96,4 @@ private def checkTrace (depth : ℕ) : Bool :=
   let sorted := sort Prod.fst 3 false input
   List.ofFn (unrouteSort 3 flags (fun i => 100 * (sorted i).2))
 
-end ComplexityTests.BitonicTrace
+end CslibFrontierTests.BitonicTrace

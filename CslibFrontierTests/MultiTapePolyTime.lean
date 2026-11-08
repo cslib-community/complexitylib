@@ -21,7 +21,7 @@ Based on Christian Reitwiessner's `CslibTests/MultiTapePolyTime.lean` (branch `c
 for encoding inference, list construction and indexing.
 -/
 
-namespace ComplexityTests.MultiTapePolyTime
+namespace CslibFrontierTests.MultiTapePolyTime
 
 open Turing.MultiTapeTM
 
@@ -198,4 +198,4 @@ example (divisor : ℕ) :
       (encPair encUnary encUnary) (encPair encBool encUnary) :=
   ⟨by fun_prop, by fun_prop, by fun_prop⟩
 
-end ComplexityTests.MultiTapePolyTime
+end CslibFrontierTests.MultiTapePolyTime

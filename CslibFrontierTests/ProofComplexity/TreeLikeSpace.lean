@@ -17,7 +17,7 @@ bound `n + 2` for formulas on `n` variables, attained for `n = 1`; and a tree-li
 for the hard Tseitin family from its clause-space lower bound.
 -/
 
-namespace ComplexityTests.ProofComplexity.TreeLikeSpace
+namespace CslibFrontierTests.ProofComplexity.TreeLikeSpace
 
 open Cslib Cslib.Logic.PL
 open scoped Finset
@@ -108,4 +108,4 @@ example :
   obtain ⟨m, -, φ, -, -, hφ, hs⟩ := CNF.exists_forall_refutableInSpace_le 4392000 le_rfl
   exact ⟨m, φ, hφ, fun d => d.two_pow_le_size_add_one fun h => by have := hs _ h; omega⟩
 
-end ComplexityTests.ProofComplexity.TreeLikeSpace
+end CslibFrontierTests.ProofComplexity.TreeLikeSpace

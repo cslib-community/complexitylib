@@ -18,7 +18,7 @@ undeclared targets and revisits; members and non-members of `TQBFCNF`, including
 free variable, and their images under the reduction to Generalized Geography.
 -/
 
-namespace ComplexityTests.GapGraphsGeography
+namespace CslibFrontierTests.GapGraphsGeography
 
 open Cslib Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -155,4 +155,4 @@ example :
     fun h => notMem_TQBFCNF_all ((GeneralizedGeography.reduce_mem_iff _).1 h),
     fun h => notMem_TQBFCNF_free ((GeneralizedGeography.reduce_mem_iff _).1 h)⟩
 
-end ComplexityTests.GapGraphsGeography
+end CslibFrontierTests.GapGraphsGeography

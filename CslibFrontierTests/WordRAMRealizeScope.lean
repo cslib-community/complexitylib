@@ -19,7 +19,7 @@ outside the Word-RAM scope. Opening either the namespace or its scope activates 
 
 public section
 
-namespace ComplexityTests.WordRAMRealizeScope
+namespace CslibFrontierTests.WordRAMRealizeScope
 
 -- Test the parser directly: an unknown tactic is a parse error, outside `#guard_msgs`' scope.
 run_cmd do
@@ -49,4 +49,4 @@ run_cmd do
   | .error _ => pure ()
   | .ok _ => throwError "a command-local open leaked the `realize` syntax"
 
-end ComplexityTests.WordRAMRealizeScope
+end CslibFrontierTests.WordRAMRealizeScope

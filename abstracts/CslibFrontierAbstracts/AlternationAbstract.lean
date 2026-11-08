@@ -53,7 +53,7 @@ public dependencies.
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 5.3][AroraBarak09]
 -/
 
-namespace ComplexityAbstracts.AlternationAbstract
+namespace CslibFrontierAbstracts.AlternationAbstract
 
 /-! ## Alternating machines -/
 
@@ -176,6 +176,6 @@ info: abstract audit passed for `CslibFrontierAbstracts.AlternationAbstract`:
 30 root declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.AlternationAbstract
+#check_abstract CslibFrontierAbstracts.AlternationAbstract
 
-end ComplexityAbstracts.AlternationAbstract
+end CslibFrontierAbstracts.AlternationAbstract

@@ -18,7 +18,7 @@ introduces the new default four. Both thresholds equal their floors. Reducing th
 from two to one produces an overflow, so the no-overflow hypothesis is not automatic.
 -/
 
-namespace ComplexityTests.RowCompressionIteration
+namespace CslibFrontierTests.RowCompressionIteration
 
 open Finset Cslib.RowCompression
 
@@ -106,4 +106,4 @@ example (y : Fin 1) (ν : Fin 2) :
   norm_num at hy
   exact hy
 
-end ComplexityTests.RowCompressionIteration
+end CslibFrontierTests.RowCompressionIteration

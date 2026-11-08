@@ -17,7 +17,7 @@ six-instruction initializer starts from dirty registers and preserves every memo
 
 @[expose] public section
 
-namespace ComplexityTests.QueueRegisterExecution
+namespace CslibFrontierTests.QueueRegisterExecution
 
 open Cslib.WordRAM Cslib.WordRAM.Realization
 open Cslib.DataStructure.Queue.WordRAM
@@ -103,4 +103,4 @@ example : ∃ ready y n, Exec 1 (initializeCode 0 0) rawOne ready 6 ∧
   funext a
   exact hm a (by simp [footprint, Block.footprint])
 
-end ComplexityTests.QueueRegisterExecution
+end CslibFrontierTests.QueueRegisterExecution

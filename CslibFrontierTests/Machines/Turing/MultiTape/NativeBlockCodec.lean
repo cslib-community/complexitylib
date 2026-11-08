@@ -19,7 +19,7 @@ semantic codec rather than a second label format.
 
 @[expose] public section
 
-namespace ComplexityTests.NativeBlockCodec
+namespace CslibFrontierTests.NativeBlockCodec
 
 open Turing MultiTapeTM MultiTapePTM.BlockComputation
 open MultiTapePTM.BlockComputation.QueryReplay
@@ -65,4 +65,4 @@ example : Encoding.NativeChecked.parse (k := 1) code (1, good) = some raw := by 
 example : Encoding.NativeChecked.parse (k := 1) code (1, good.set 2 true) = none := by decide
 example : Encoding.NativeChecked.parse (k := 1) code (1, good.set 6 true) = none := by decide
 
-end ComplexityTests.NativeBlockCodec
+end CslibFrontierTests.NativeBlockCodec

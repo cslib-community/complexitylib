@@ -16,10 +16,10 @@ These clients use the existing PRF Encrypt-then-MAC cipher, expose the insecure 
 and check both phases, canonical word rejection, changed KEM components, and width zero.
 -/
 
-namespace ComplexityTests.Crypto.HybridDEMCCA
+namespace CslibFrontierTests.Crypto.HybridDEMCCA
 
 open Cslib Cslib.Crypto Cslib.Crypto.Encryption Cslib.Probability Turing.MultiTapeTM
-open ComplexityTests.Crypto.AuthenticatedEncryption
+open CslibFrontierTests.Crypto.AuthenticatedEncryption
 
 def fixedKeyGen (_ : ℕ) : ProbComp (List Bool × List Bool) := pure ([], [])
 def fixedEncaps (_ : ℕ) (_ : List Bool) : ProbComp (List Bool × List Bool) := pure ([], [])
@@ -212,4 +212,4 @@ example (E : SymmetricCipher) (n : ℕ) (k ctK sk msg ct : List Bool)
   rw [hybridDecrypt_encPair]
   simpa using E.decrypt_encrypt n k hk msg hm ct hc
 
-end ComplexityTests.Crypto.HybridDEMCCA
+end CslibFrontierTests.Crypto.HybridDEMCCA

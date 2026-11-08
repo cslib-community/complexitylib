@@ -8,7 +8,7 @@ import CslibFrontier.Languages.Probabilistic.RandomOracle
 
 /-! Adaptive lazy sampling, complete private state, and concrete query/cache bounds. -/
 
-namespace ComplexityTests.RandomOracle
+namespace CslibFrontierTests.RandomOracle
 
 open Cslib Cslib.Probability
 
@@ -83,4 +83,4 @@ example :
     Cslib.RandomOracle.eval_run_interpret_memoize_eq_eager
       (fun _ : Bool => ProbComp.uniform Bool) adaptive
 
-end ComplexityTests.RandomOracle
+end CslibFrontierTests.RandomOracle

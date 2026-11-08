@@ -49,7 +49,7 @@ is by Aviv Bar Natan; this abstract transfers its proved endpoint without adding
   Theorem 1.1 and Section 4.3
 -/
 
-namespace ComplexityAbstracts.MatrixMultiplicationAbstract
+namespace CslibFrontierAbstracts.MatrixMultiplicationAbstract
 
 /-- The entries of a square matrix in row-major order. -/
 def entries {K : Type*} {n : ℕ} (A : Matrix (Fin n) (Fin n) K) (t : Fin (n * n)) : K :=
@@ -91,13 +91,13 @@ theorem exponent_le_nine_quarters (K : Type*) [Field K] [CharZero K] :
     exponent K ≤ 9 / 4 :=
   MatrixMultiplicationBridge.exponent_le_nine_quarters K
 
-end ComplexityAbstracts.MatrixMultiplicationAbstract
+end CslibFrontierAbstracts.MatrixMultiplicationAbstract
 
 /--
 info: abstract audit passed for `CslibFrontierAbstracts.MatrixMultiplicationAbstract`: 6 root
   declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.MatrixMultiplicationAbstract allowing [
+#check_abstract CslibFrontierAbstracts.MatrixMultiplicationAbstract allowing [
   CslibFrontier.Computability.Circuit.Arithmetic
 ]

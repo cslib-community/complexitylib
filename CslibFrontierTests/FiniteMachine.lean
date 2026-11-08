@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic
 
 /-! Finite storage at negative heads, blank gaps, input boundaries, and stateful oracle calls. -/
 
-namespace ComplexityTests.FiniteMachine
+namespace CslibFrontierTests.FiniteMachine
 
 open Cslib Turing Turing.MultiTapeMachine
 open Cslib.Turing
@@ -101,4 +101,4 @@ example : (OracleComp.interpret counter (OracleComp.iterate 3 collect [])).run 7
   rw [OracleComp.run_interpret_iterate]
   rfl
 
-end ComplexityTests.FiniteMachine
+end CslibFrontierTests.FiniteMachine

@@ -10,7 +10,7 @@ import CslibFrontierTests.BooleanAnalysisExamples
 
 /-! Concrete sharpness and probability clients for the one-sided linearity query lower bound. -/
 
-namespace ComplexityTests.PropertyTestingLinearityLowerBound
+namespace CslibFrontierTests.PropertyTestingLinearityLowerBound
 
 open Cslib Cslib.BitString Cslib.Probability BooleanAnalysisExamples
 open scoped ENNReal
@@ -85,4 +85,4 @@ example : 3 ≤ RandomizedDecisionTree.depth (Convexity.StdSimplex.single checkT
   · decide
   · simp [RandomizedDecisionTree.errorProb, checkTree_rejects]
 
-end ComplexityTests.PropertyTestingLinearityLowerBound
+end CslibFrontierTests.PropertyTestingLinearityLowerBound

@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Pla
 on the padded descriptions of concrete accepting and rejecting machines, and the exponential
 certificate. -/
 
-namespace ComplexityTests.TimeHierarchy
+namespace CslibFrontierTests.TimeHierarchy
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM Turing.MultiTapeTM.Universal
 
@@ -103,4 +103,4 @@ example (c d : ℕ) (s : List Bool → ℕ) :
     fun hp => diagonal_notMem_P ⟨diagonal, hp, fun _ => Iff.rfl⟩,
     not_computableInTimeAndSpace_diagonal (.of_forall_le c d fun _ => le_rfl)⟩
 
-end ComplexityTests.TimeHierarchy
+end CslibFrontierTests.TimeHierarchy

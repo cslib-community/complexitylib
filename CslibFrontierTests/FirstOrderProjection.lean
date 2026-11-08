@@ -14,7 +14,7 @@ nullary relations, and the distinction from arbitrary quantifier-free formulas. 
 proves that the conjunction of two independent nullary input relations is not a projection.
 -/
 
-namespace ComplexityTests.FirstOrderProjection
+namespace CslibFrontierTests.FirstOrderProjection
 
 open FirstOrder Language Structure Cslib.Logic.FO
 
@@ -106,4 +106,4 @@ info: 'Cslib.Logic.FO.Projection.modelEquiv' depends on axioms:
 #guard_msgs (whitespace := lax) in
 #print axioms Projection.modelEquiv
 
-end ComplexityTests.FirstOrderProjection
+end CslibFrontierTests.FirstOrderProjection

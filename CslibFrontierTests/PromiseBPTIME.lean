@@ -18,7 +18,7 @@ same linear bound, so both explicit-time hypotheses are satisfiable together. -/
 
 public section
 
-namespace ComplexityTests.PromiseBPTIME
+namespace CslibFrontierTests.PromiseBPTIME
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
@@ -116,4 +116,4 @@ example {A : Set (ULift.{u} (List Bool))} {T₁ T₂ : ℕ → ℕ} (hT : ∀ n,
     PromiseBPTIME_mono hT hmem₁
   exact ⟨hmem₂, PromiseBPTIME_subset_promiseClass_PPTIME hmem₂⟩
 
-end ComplexityTests.PromiseBPTIME
+end CslibFrontierTests.PromiseBPTIME

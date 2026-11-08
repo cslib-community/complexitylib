@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Complexity.Fagin.Verifier
 
 /-! # Native polynomial-time queries produce uniform checked FO(LFP) sentences -/
 
-namespace ComplexityTests.ImmermanVardi
+namespace CslibFrontierTests.ImmermanVardi
 
 open FirstOrder Language Turing Turing.MultiTapeTM
 open Cslib.Logic Cslib.Logic.FO Cslib.Complexity
@@ -85,4 +85,4 @@ example : ¬ (vocabulary.inputSymbol (some true)).Realize ![(0 : Fin 8)] ∧
     vocabulary.realize_inputSymbol wellFormed (by decide)]
   decide
 
-end ComplexityTests.ImmermanVardi
+end CslibFrontierTests.ImmermanVardi

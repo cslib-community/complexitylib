@@ -8,7 +8,7 @@ import CslibFrontier.Computability.QueryComplexity.Quantum.Grover
 
 /-! Grover's algorithm: concrete instances. -/
 
-namespace ComplexityTests.QuantumGrover
+namespace CslibFrontierTests.QuantumGrover
 
 open Cslib.Quantum
 
@@ -46,4 +46,4 @@ example (z : Fin 4) : regProb (run (grover 4) (uniform 4) (marked z) 1) z = 1 :=
     show (2 * ((1 : ℕ) : ℝ) + 1) * (Real.pi / 6) = Real.pi / 2 by push_cast; ring,
     Real.sin_pi_div_two, one_pow]
 
-end ComplexityTests.QuantumGrover
+end CslibFrontierTests.QuantumGrover

@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 which does not clear its tapes, certifies a clean phase through the tidy normal form; plain
 postprocessing, branching conditions and loop counters need no tidy deterministic certificate. -/
 
-namespace ComplexityTests.PlainCleanPhase
+namespace CslibFrontierTests.PlainCleanPhase
 
 open Cslib Cslib.Probability Turing Turing.MultiTapeTM
 
@@ -40,4 +40,4 @@ example : IsTidyOraclePPTOn (Operation := Unit) encBits encBool
     (fun _ _ _ _ _ _ _ => trivial) (size := fun _ => 1) (.const 1)
     (fun _ _ _ _ _ => by simp)).1
 
-end ComplexityTests.PlainCleanPhase
+end CslibFrontierTests.PlainCleanPhase

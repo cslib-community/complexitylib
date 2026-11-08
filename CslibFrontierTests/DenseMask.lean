@@ -13,7 +13,7 @@ import CslibFrontier.Tactic.PPT
 
 /-! Uniform candidate selection, latent laws, label-dependent masks and complete public output. -/
 
-namespace ComplexityTests.DenseMask
+namespace CslibFrontierTests.DenseMask
 
 open Cslib Cslib.Probability Cslib.Probability.PMF Cslib.Crypto Cslib.Crypto.Pseudoentropy
   Cslib.BitString Turing.MultiTapeTM Filter
@@ -247,4 +247,4 @@ example :
   norm_num [hsqrt] at h
   exact h
 
-end ComplexityTests.DenseMask
+end CslibFrontierTests.DenseMask

@@ -9,7 +9,7 @@ import Mathlib.Tactic.NormNum
 
 /-! Actual continuous cell geometry and complete compiled drawing regressions. -/
 
-namespace ComplexityTests.PlanarGeometry
+namespace CslibFrontierTests.PlanarGeometry
 
 open Cslib.Logic.PL Cslib.Orthogonal Cslib.Complexity
 open SAT.ParsimoniousPlanar
@@ -100,4 +100,4 @@ example : ((230.5 : ℝ), (110 : ℝ)) ∈ support (access [] (0, 0) (1, 0) 0) :
     PairedPorts.variablePosition, PairedPorts.boundaryPort, PairedPorts.offset,
     Cslib.Orthogonal.segment, realPoint, mem_horizontal, Set.mem_uIcc]
 
-end ComplexityTests.PlanarGeometry
+end CslibFrontierTests.PlanarGeometry

@@ -32,7 +32,7 @@ Lean checks the transfer through the bridge, and `#check_abstract` audits the pu
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 4.2][AroraBarak09]
 -/
 
-namespace ComplexityTests.Abstracts.SavitchAbstract
+namespace CslibFrontierTests.Abstracts.SavitchAbstract
 
 /-- A Boolean is encoded by a single bit. -/
 def encBool : Bool ↪ List Bool := ⟨fun b => [b], by intro a b h; injection h⟩
@@ -71,10 +71,10 @@ theorem savitch {α : Type} (enc : α ↪ List Bool) : NPSPACE enc = PSPACE enc 
   SavitchBridge.savitch enc
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.SavitchAbstract`:
+info: abstract audit passed for `CslibFrontierTests.Abstracts.SavitchAbstract`:
 7 root declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.SavitchAbstract
+#check_abstract CslibFrontierTests.Abstracts.SavitchAbstract
 
-end ComplexityTests.Abstracts.SavitchAbstract
+end CslibFrontierTests.Abstracts.SavitchAbstract

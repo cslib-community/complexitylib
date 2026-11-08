@@ -21,7 +21,7 @@ step then compares the assembled bounds with the intended ones.
 
 open Turing.MultiTapeTM
 
-namespace ComplexityTests.ComputableInOFunProp
+namespace CslibFrontierTests.ComputableInOFunProp
 
 variable {enc : ℕ ↪ List Bool}
 
@@ -72,4 +72,4 @@ theorem square_inO {g : ℕ → ℕ} (h : ComputableInO g enc enc
     nlinarith
   · omega
 
-end ComplexityTests.ComputableInOFunProp
+end CslibFrontierTests.ComputableInOFunProp

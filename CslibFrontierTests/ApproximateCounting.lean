@@ -13,7 +13,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 
 /-! Concrete approximate-counting witnesses, including boundary and padding cases. -/
 
-namespace ComplexityTests.ApproximateCounting
+namespace CslibFrontierTests.ApproximateCounting
 
 open Cslib Cslib.Complexity Turing.MultiTapeTM
 
@@ -150,4 +150,4 @@ example : {w : List Bool | w.headD false = true} ∩ {w | w.tail.headD false = t
 example : (Set.univ : Set (List Bool)) ∩ {w | w.headD false = true} ∈ SBP encBits :=
   inter_mem_SBP_of_mem_BPP univ_mem_SBP_zero (P_subset_BPP head_mem_P)
 
-end ComplexityTests.ApproximateCounting
+end CslibFrontierTests.ApproximateCounting

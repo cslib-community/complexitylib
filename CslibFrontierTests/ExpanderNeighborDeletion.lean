@@ -17,7 +17,7 @@ loss `1 / 2` for the degree-two cycle on the same range. The pair `{0, 2}` attai
 so the client exercises genuine edge deletion and a nontrivial two-vertex expansion bound.
 -/
 
-namespace ComplexityTests.ExpanderNeighborDeletion
+namespace CslibFrontierTests.ExpanderNeighborDeletion
 
 open Finset
 
@@ -69,4 +69,4 @@ example : (⊤ : SimpleGraph (Fin 4)).Adj 0 2 ∧ ¬fourCycle.Adj 0 2 := by deci
 example : (({0, 2} : Finset (Fin 4)).biUnion (fun v ↦ fourCycle.neighborFinset v)).card = 2 := by
   decide +kernel
 
-end ComplexityTests.ExpanderNeighborDeletion
+end CslibFrontierTests.ExpanderNeighborDeletion

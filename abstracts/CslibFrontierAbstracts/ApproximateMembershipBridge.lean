@@ -25,7 +25,7 @@ in `ApproximateMembershipAbstract.lean` to the library definitions and theorems 
 `Cslib.WordRAM.Basis.exact`.
 -/
 
-namespace ComplexityAbstracts.ApproximateMembershipBridge
+namespace CslibFrontierAbstracts.ApproximateMembershipBridge
 
 open scoped ENNReal BigOperators
 open Finset
@@ -37,9 +37,9 @@ open Cslib.DataStructure.ApproximateMembership.QuotientFilter
 open Cslib.DataStructure.HashFamily.WordRAM
 open Cslib.DataStructure.WordRAM
 open Cslib.DataStructure.WordRAM.Randomized
-open ComplexityAbstracts.RandomizedWordRAMBridge
-open ComplexityAbstracts.HashFamiliesBridge (trinomialStepLoop trinomialStepLoop_eq)
-open ComplexityAbstracts.HashFamiliesBridge.HFPresentation (WordBounded UnchangedOutside)
+open CslibFrontierAbstracts.RandomizedWordRAMBridge
+open CslibFrontierAbstracts.HashFamiliesBridge (trinomialStepLoop trinomialStepLoop_eq)
+open CslibFrontierAbstracts.HashFamiliesBridge.HFPresentation (WordBounded UnchangedOutside)
 
 /-! ## Part 1: Polymorphic Filter Presentation and Execution Transfer -/
 
@@ -1132,4 +1132,4 @@ theorem quotientFilter (S : Presentation) (hS : Laws S)
     · rw [List.length_map]
       exact hcost_abs
 
-end ComplexityAbstracts.ApproximateMembershipBridge
+end CslibFrontierAbstracts.ApproximateMembershipBridge

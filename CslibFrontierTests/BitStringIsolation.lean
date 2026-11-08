@@ -13,7 +13,7 @@ A single string is isolated in every direction, no string of the whole cube is i
 direction, and both extremes meet the isolation inequality with equality.
 -/
 
-namespace ComplexityTests.BitStringIsolation
+namespace CslibFrontierTests.BitStringIsolation
 
 open Cslib.BitString
 
@@ -28,4 +28,4 @@ example (σ : Fin 2 → Bool) :
   ⟨by decide, by simp [isolation], by decide,
     two_pow_le_sum_two_pow_isolation _ ⟨_, Finset.mem_insert_self _ _⟩⟩
 
-end ComplexityTests.BitStringIsolation
+end CslibFrontierTests.BitStringIsolation

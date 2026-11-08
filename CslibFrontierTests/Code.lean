@@ -25,7 +25,7 @@ complete Berlekamp–Welch decoding over `ZMod 7` with two errors, the largest n
 at that length and dimension.
 -/
 
-namespace ComplexityTests.Code
+namespace CslibFrontierTests.Code
 
 open Cslib Cslib.Code Polynomial
 
@@ -158,4 +158,4 @@ example :
   ⟨BerlekampWelch.exists_isSolution degree_lt hammingDist_received,
     berlekampWelch_eq_some points7_injective (by simp) degree_lt hammingDist_received⟩
 
-end ComplexityTests.Code
+end CslibFrontierTests.Code

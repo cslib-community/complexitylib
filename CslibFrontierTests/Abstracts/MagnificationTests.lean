@@ -17,19 +17,19 @@ and `DecidesMCSPSlice` on concrete small circuits and truth tables, and derives 
 (`∃ᶠ n in Filter.atTop`) hardness magnification corollaries from the public theorems.
 -/
 
-namespace ComplexityTests.Abstracts.MagnificationTests
+namespace CslibFrontierTests.Abstracts.MagnificationTests
 
-open ComplexityAbstracts.MagnificationAbstract
+open CslibFrontierAbstracts.MagnificationAbstract
 open Filter
 
 -- The public classes match the library's native classes over `encBits`.
 example : P = Cslib.Complexity.P Turing.MultiTapeTM.encBits := rfl
 
 example : NP = Cslib.Complexity.NP Turing.MultiTapeTM.encBits :=
-  ComplexityAbstracts.MagnificationBridge.np_eq
+  CslibFrontierAbstracts.MagnificationBridge.np_eq
 
 example : PPoly = Cslib.Circuits.Boolean.PPolyOn Turing.MultiTapeTM.encBits :=
-  ComplexityAbstracts.MagnificationBridge.ppoly_eq
+  CslibFrontierAbstracts.MagnificationBridge.ppoly_eq
 
 -- Concrete checks of `tableIndex` at `n = 1` and `n = 2` (coordinate zero least significant).
 example : (tableIndex 1 (fun _ => false)).val = 0 := by decide
@@ -72,4 +72,4 @@ example (k : ℕ)
     P ≠ NP :=
   p_ne_np_of_mcsp_hard k fun c hc => (h c hc).exists
 
-end ComplexityTests.Abstracts.MagnificationTests
+end CslibFrontierTests.Abstracts.MagnificationTests

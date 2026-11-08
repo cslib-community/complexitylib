@@ -19,7 +19,7 @@ deterministic lower bound for `CslibFrontier.DataStructure.Online.SkiRental`.
 
 @[expose] public section
 
-namespace ComplexityTests.SkiRental
+namespace CslibFrontierTests.SkiRental
 
 open Cslib.DataStructure.Online Cslib.DataStructure.Online.SkiRental
 
@@ -87,4 +87,4 @@ example (A : DetStrategy (problem 10)) :
     19 * (problem 10).scheduleCost false reqs states ≤ 10 * A.cost false reqs :=
   exists_witness (by omega) A
 
-end ComplexityTests.SkiRental
+end CslibFrontierTests.SkiRental

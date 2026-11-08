@@ -15,7 +15,7 @@ the field-size hypothesis `2ℓ < |K| - 1` holds, as `4 < 6`, so the correctness
 vacuous. The read machine computes the same value.
 -/
 
-namespace ComplexityTests.TreeEval
+namespace CslibFrontierTests.TreeEval
 
 open Cslib.TreeEval
 
@@ -156,4 +156,4 @@ example : ∃ (t c k : ℕ) (State : Type) (_ : Finite State) (tm : MultiTapeTM 
   rw [hval, hspace] at h
   exact ⟨t sampleNontrivial, c, k, State, hfinite, tm, h⟩
 
-end ComplexityTests.TreeEval
+end CslibFrontierTests.TreeEval

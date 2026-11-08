@@ -20,7 +20,7 @@ sharpness of KKL and the necessity of Friedgut's exponential are instantiated at
 `K = 4`.
 -/
 
-namespace ComplexityTests.TribesInfluence
+namespace CslibFrontierTests.TribesInfluence
 
 open Finset Function Cslib Cslib.BitString
 open scoped BigOperators
@@ -110,4 +110,4 @@ example : ∃ (n : ℕ) (f : BitString n → Bool), totalInfluence (fun x => sig
       (hammingDist f g : ℝ) / 2 ^ n < 1 / 256 → 3 / 16 * (2 : ℝ) ^ ((4 : ℝ) / 2) < #J :=
   exists_totalInfluence_le_lt_card_of_dependsOn le_rfl
 
-end ComplexityTests.TribesInfluence
+end CslibFrontierTests.TribesInfluence

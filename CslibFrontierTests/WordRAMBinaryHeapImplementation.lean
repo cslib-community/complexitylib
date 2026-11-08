@@ -10,7 +10,7 @@ import CslibFrontier.DataStructure.PriorityQueue.BinaryHeap.Native.Implementatio
 starts from the existing, explicitly uncharged prepared-argument convention. These fixtures
 do not claim a charged native controller or allocated-client implementation. -/
 
-namespace ComplexityTests.WordRAMBinaryHeapImplementation
+namespace CslibFrontierTests.WordRAMBinaryHeapImplementation
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.PriorityQueue
@@ -279,4 +279,4 @@ example : ∃ x₀ x₁ x₂ x₃ x₄ N₁ N₂ N₃ N₄,
 
 end
 
-end ComplexityTests.WordRAMBinaryHeapImplementation
+end CslibFrontierTests.WordRAMBinaryHeapImplementation

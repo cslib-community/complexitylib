@@ -21,7 +21,7 @@ The protocol definitions are noncomputable only through their distributions; ver
 extraction evaluate by `decide`.
 -/
 
-namespace ComplexityTests.Crypto.SigmaProtocol
+namespace CslibFrontierTests.Crypto.SigmaProtocol
 
 open Cslib Cslib.Probability Cslib.Crypto.Protocols SigmaProtocol
 
@@ -187,4 +187,4 @@ example : (orProof (schnorr ι (2 : ZMod 11)) (schnorr ι (2 : ZMod 11))
   ⟨orProof_specialHVZK schnorr_specialHVZK schnorr_specialHVZK,
    andProof_complete schnorr_complete chaumPedersen_complete⟩
 
-end ComplexityTests.Crypto.SigmaProtocol
+end CslibFrontierTests.Crypto.SigmaProtocol

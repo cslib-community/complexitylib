@@ -21,7 +21,7 @@ public section
 
 open Cslib Cslib.Probability Turing.MultiTapeTM
 
-namespace ComplexityTests.PPTPlainSource
+namespace CslibFrontierTests.PPTPlainSource
 
 /-- Fixed parameters for the named client programs. -/
 structure Parameters where
@@ -271,4 +271,4 @@ example (test : List Bool × Bool × ℕ → Bool) (list : List Bool × Bool →
   · clear test list _hu _hb _hlu _hlb
     polytime
 
-end ComplexityTests.PPTPlainSource
+end CslibFrontierTests.PPTPlainSource

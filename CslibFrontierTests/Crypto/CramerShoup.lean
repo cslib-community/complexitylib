@@ -22,7 +22,7 @@ theorems, and end-to-end IND-CCA2 theorems (`advantage_cramerShoupGroupCCA2Game_
 `DDH.cramerShoupGroupINDCCA2`, `DDH.indcca2On_cramerShoup`, `DDH.indcca2MultiOn_cramerShoup`).
 -/
 
-namespace ComplexityTests.Crypto.CramerShoup
+namespace CslibFrontierTests.Crypto.CramerShoup
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Encryption
   Cslib.Crypto.PrimeOrderGroupFamily Turing.MultiTapeTM
@@ -474,4 +474,4 @@ example {AD : Type} (encAD : AD ↪ List Bool)
 example : ¬ Negligible (fun _ : ℕ => (1 / 11 : ℝ≥0)) :=
   not_negligible_const (by norm_num)
 
-end ComplexityTests.Crypto.CramerShoup
+end CslibFrontierTests.Crypto.CramerShoup

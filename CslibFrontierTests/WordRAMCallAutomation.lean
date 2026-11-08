@@ -15,7 +15,7 @@ The continuation writes the returned word to memory and preserves the outside re
 The call charges its own instructions; neither a wrong routine nor a smaller total is accepted.
 -/
 
-namespace ComplexityTests.WordRAMCallAutomation
+namespace CslibFrontierTests.WordRAMCallAutomation
 
 open Cslib.WordRAM
 
@@ -106,4 +106,4 @@ example (x : Data 4) :
 /-- Polynomial envelopes and calling conventions do not supply missing exact word fits. -/
 example : ¬ Fits 2 4 := by decide
 
-end ComplexityTests.WordRAMCallAutomation
+end CslibFrontierTests.WordRAMCallAutomation

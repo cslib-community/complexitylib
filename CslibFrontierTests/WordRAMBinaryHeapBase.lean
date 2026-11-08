@@ -10,7 +10,7 @@ import CslibFrontier.DataStructure.PriorityQueue.BinaryHeap.Native.Base
 The dirty control additionally checks every cleared cell, by determinism and the shared
 zeroFillCode execution theorem followed by the existing memory-preserving setup. -/
 
-namespace ComplexityTests.WordRAMBinaryHeapBase
+namespace CslibFrontierTests.WordRAMBinaryHeapBase
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.Memory Cslib.DataStructure.PriorityQueue
@@ -153,4 +153,4 @@ example : dirtyMem 3 ≠ 0 ∧ (Block.mk 3 (space 1)).Owns 3 := by
 
 end
 
-end ComplexityTests.WordRAMBinaryHeapBase
+end CslibFrontierTests.WordRAMBinaryHeapBase

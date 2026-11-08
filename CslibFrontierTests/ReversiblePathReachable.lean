@@ -16,7 +16,7 @@ the per-pebble bound, so the characterization says more than that bound. A remov
 written out by hand, and the bounds of `ReversiblePath.lean` are rederived from the new bound.
 -/
 
-namespace ComplexityTests.ReversiblePathReachable
+namespace CslibFrontierTests.ReversiblePathReachable
 
 open Cslib Cslib.Pebbling
 
@@ -105,4 +105,4 @@ example : pathGreedySolvable 3 3 {3, 5, 6} = true := by decide
 
 example : pathGreedySolvable 3 2 {3, 6} = false := by decide
 
-end ComplexityTests.ReversiblePathReachable
+end CslibFrontierTests.ReversiblePathReachable

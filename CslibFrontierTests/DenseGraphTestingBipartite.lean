@@ -11,7 +11,7 @@ on the empty graph, a graph far from bipartite, a one-sided tester with explicit
 rejects it, a parameter choice that accepts everything, and the numeric query bound at
 `ε = 1/10`. -/
 
-namespace ComplexityTests.DenseGraphTestingBipartite
+namespace CslibFrontierTests.DenseGraphTestingBipartite
 
 open Cslib.DenseGraphTesting SimpleGraph Finset
 
@@ -81,4 +81,4 @@ example : ∃ T : Tester 1000, IsOneSidedTester T (fun G => G.IsBipartite) (1 / 
   convert hT using 1
   norm_num
 
-end ComplexityTests.DenseGraphTestingBipartite
+end CslibFrontierTests.DenseGraphTestingBipartite

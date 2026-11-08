@@ -22,7 +22,7 @@ run_elab do
     if (← Lean.getEnv).contains name then
       throwError "unexpected higher tidy calculus: {name}"
 
-namespace ComplexityTests.Internal.NativeCertificate
+namespace CslibFrontierTests.Internal.NativeCertificate
 
 def word : List Bool ↪ List Bool := Function.Embedding.refl _
 
@@ -61,4 +61,4 @@ example (w : List Bool) (n : ℕ) {α β : Type} {encIn : α ↪ List Bool} {enc
     NativeCertificate.nonempty_iff_isComputable.mpr copy.isComputable,
     NativeCertificate.ofPolyTime_isPolynomial _, rfl, rfl⟩
 
-end ComplexityTests.Internal.NativeCertificate
+end CslibFrontierTests.Internal.NativeCertificate

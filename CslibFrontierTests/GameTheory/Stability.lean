@@ -30,7 +30,7 @@ import CslibFrontierTests.GameTheory.Congestion
   players, everyone sharing is then an equilibrium.
 -/
 
-namespace ComplexityTests.GameTheory.Stability
+namespace CslibFrontierTests.GameTheory.Stability
 
 open Cslib.GameTheory Cslib.GameTheory.CongestionGame
 
@@ -87,7 +87,7 @@ example : ∃ t, Relation.ReflTransGen (flip coord.Improves) (fun _ => true) t �
 
 /-! ### Affine congestion games -/
 
-open ComplexityTests.GameTheory.Congestion
+open CslibFrontierTests.GameTheory.Congestion
 
 theorem twoLinks_rosenthalPotential_zero : twoLinks.rosenthalPotential (fun _ => 0) = 3 := by
   rw [rosenthalPotential_def]
@@ -232,4 +232,4 @@ example : (optOut 2 0).toCostGame.IsPureNash fun _ => false := by
   · rw [hc.2]
   · fin_cases i <;> norm_num
 
-end ComplexityTests.GameTheory.Stability
+end CslibFrontierTests.GameTheory.Stability

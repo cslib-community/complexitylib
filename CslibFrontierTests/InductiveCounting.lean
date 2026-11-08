@@ -14,7 +14,7 @@ They include reflexive reachability, dishonest omissions, count mismatches, inva
 and a guessed nonedge.
 -/
 
-namespace ComplexityTests.InductiveCounting
+namespace CslibFrontierTests.InductiveCounting
 
 open Cslib.InductiveCounting
 
@@ -80,4 +80,4 @@ info: 'Cslib.InductiveCounting.halted_replay_budget' depends on axioms:
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.InductiveCounting.halted_replay_budget
 
-end ComplexityTests.InductiveCounting
+end CslibFrontierTests.InductiveCounting

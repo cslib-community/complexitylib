@@ -18,7 +18,7 @@ and the generator on a grid of side `2` or `4` with the parameters for `n = s = 
 is fed to the finite tests. The finite tests are also run on a hand-built `2 × 2` list.
 -/
 
-namespace ComplexityTests.RationalHitting
+namespace CslibFrontierTests.RationalHitting
 
 open Cslib.Circuits.Rational
 
@@ -303,4 +303,4 @@ example : 2 ≤ (hittingList 2 9).dimension := by
   have : Nonempty (Fin (hittingList 2 9).dimension) := ⟨⟨0, by omega⟩⟩
   exact not_isUnit_zero hu
 
-end ComplexityTests.RationalHitting
+end CslibFrontierTests.RationalHitting

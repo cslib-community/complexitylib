@@ -16,7 +16,7 @@ The verifier rejects inputs without a short description, such as the empty input
 
 public section
 
-namespace ComplexityTests.NondeterministicExponentialTimeHierarchy
+namespace CslibFrontierTests.NondeterministicExponentialTimeHierarchy
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
@@ -48,4 +48,4 @@ example (k : ℕ) (v : List Bool) : ExpLazyDiagonal.verifier k ([], v) = false :
 example (k : ℕ) : [] ∉ expLazyDiagonal k := by
   simp [expLazyDiagonal, ExpLazyDiagonal.verifier, Diagonal.shortDesc, unframe]
 
-end ComplexityTests.NondeterministicExponentialTimeHierarchy
+end CslibFrontierTests.NondeterministicExponentialTimeHierarchy

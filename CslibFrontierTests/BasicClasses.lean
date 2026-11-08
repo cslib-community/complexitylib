@@ -16,7 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 /-! Concrete clients for Boolean closure, exact count preservation, unambiguity, exact counting
 and DP completeness. -/
 
-namespace ComplexityTests.BasicClasses
+namespace CslibFrontierTests.BasicClasses
 
 open Cslib Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 open scoped symmDiff
@@ -94,4 +94,4 @@ example :
    inter_mem_DP SATUNSAT_dpComplete.1 SATUNSAT_dpComplete.1,
    (PolyTimeReducible.refl _ _).mem_DP SATUNSAT_dpComplete.1⟩
 
-end ComplexityTests.BasicClasses
+end CslibFrontierTests.BasicClasses

@@ -21,7 +21,7 @@ theorem and the certificate apply.
 
 @[expose] public section
 
-namespace ComplexityTests.TensorNetworkPacketTerms
+namespace CslibFrontierTests.TensorNetworkPacketTerms
 
 open Cslib Cslib.Circuits.Frontier Cslib.Circuits.Frontier.NativePacket
   Cslib.Circuits.Frontier.TensorNetwork
@@ -79,4 +79,4 @@ theorem val_desc (bs : List Bool) :
     (by simp [desc, ctx, mem_cauchyGrid]) (by norm_num [desc, ctx]) (by norm_num [desc, ctx])
     (by decide)
 
-end ComplexityTests.TensorNetworkPacketTerms
+end CslibFrontierTests.TensorNetworkPacketTerms

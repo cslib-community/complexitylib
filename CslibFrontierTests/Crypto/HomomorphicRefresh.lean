@@ -8,10 +8,10 @@ import CslibFrontierTests.Crypto.HomomorphicExample
 
 /-! Regression checks for homomorphic refresh using the deliberately insecure tagged fixture. -/
 
-namespace ComplexityTests.HomomorphicRefresh
+namespace CslibFrontierTests.HomomorphicRefresh
 
 open Cslib Cslib.Circuits Cslib.Crypto.Homomorphic Cslib.Probability Turing.MultiTapeTM
-open ComplexityTests.HomomorphicExample
+open CslibFrontierTests.HomomorphicExample
 
 -- The functional instance also inhabits every efficiency hypothesis of NAND refresh.
 example : IsPPTOn
@@ -94,4 +94,4 @@ example : ProbComp.eval (do
 -- Empty plaintext words are encrypted without introducing a ciphertext.
 example : ProbComp.eval (tagged.encryptBits 0 [true] []) = PMF.pure [] := rfl
 
-end ComplexityTests.HomomorphicRefresh
+end CslibFrontierTests.HomomorphicRefresh

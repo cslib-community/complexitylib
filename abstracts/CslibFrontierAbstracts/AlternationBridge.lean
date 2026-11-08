@@ -20,9 +20,9 @@ presentations (`exists_eq`), with the same nondeterministic machine (`toNTM_eq`)
 (`accepts_iff`), so the classes `AP` and `APSPACE` stated here are the library's.
 -/
 
-namespace ComplexityAbstracts.AlternationBridge
+namespace CslibFrontierAbstracts.AlternationBridge
 
-open Turing ComplexityTests.Abstracts
+open Turing CslibFrontierTests.Abstracts
 
 /-- The nondeterministic machine of an alternating machine with initial state `start`, moves
 `move` and universal states `universal`: at a running configuration it may take either move. -/
@@ -214,4 +214,4 @@ theorem apspace_eq_exp {α : Type} (enc : α ↪ List Bool) : APSPACE enc = EXP 
   rw [apspace_eq, exp_eq]
   exact Cslib.Complexity.APSPACE_eq_EXP
 
-end ComplexityAbstracts.AlternationBridge
+end CslibFrontierAbstracts.AlternationBridge

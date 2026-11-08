@@ -13,7 +13,7 @@ Both duplicated OT slots, honest transcript/opening correlation, adaptive receiv
 private randomness, post-opening processing, empty executions, and native list encoding.
 -/
 
-namespace ComplexityTests.Crypto.OTCommitmentEquivocation
+namespace CslibFrontierTests.Crypto.OTCommitmentEquivocation
 
 open Cslib.Probability Cslib.Crypto.Protocols.MPC OTCommitment
 open Turing.MultiTapeTM Turing.MultiTapeTM.Encodings
@@ -93,4 +93,4 @@ example : ComputableInPolyTime
     (encPair encBool (encList (encPair (encFinEnum (Fin 4)) encBool)))
     (encList (encPair encBool encBool)) := equivocatePairs_polyTime
 
-end ComplexityTests.Crypto.OTCommitmentEquivocation
+end CslibFrontierTests.Crypto.OTCommitmentEquivocation

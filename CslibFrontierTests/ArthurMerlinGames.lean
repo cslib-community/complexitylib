@@ -12,7 +12,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 verifier that holds in one order of the moves and fails in the other, satisfiable error-exponent
 conditions and the round collapse. -/
 
-namespace ComplexityTests.ArthurMerlinGames
+namespace CslibFrontierTests.ArthurMerlinGames
 
 open Cslib Cslib.Complexity Turing.MultiTapeTM
 
@@ -77,4 +77,4 @@ example {α : Type} (enc : α ↪ List Bool) :
   ⟨AMk_two, AMk_eq_AM (by norm_num), MAk_two, MAk_eq_AM (by norm_num),
     AMGameClass_merlin_arthur_merlin, AMGameClass_subset_AM _⟩
 
-end ComplexityTests.ArthurMerlinGames
+end CslibFrontierTests.ArthurMerlinGames

@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.DescribedLift
 /-! The row-count API works independently of the algorithm's vertex descriptors.
 The edge hypothesis matters: an edgeless network can have a vacuous oversized row prefix. -/
 
-namespace ComplexityTests.DescribedNetworkRows
+namespace CslibFrontierTests.DescribedNetworkRows
 
 open Cslib.Circuits.Frontier
 
@@ -22,4 +22,4 @@ example : 1 ≤ edge.vertices.length :=
 example : (⟨0, []⟩ : DescribedNetwork Unit).IsRowsFirstBipartite 7 := by decide
 example : ¬7 ≤ (⟨0, []⟩ : DescribedNetwork Unit).vertices.length := by decide
 
-end ComplexityTests.DescribedNetworkRows
+end CslibFrontierTests.DescribedNetworkRows

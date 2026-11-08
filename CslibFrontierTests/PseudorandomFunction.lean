@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 import CslibFrontier.Crypto.Computational.PseudorandomFunction.RandomOracle
 import CslibFrontier.Tactic.PPT
 
-namespace ComplexityTests.PseudorandomFunction
+namespace CslibFrontierTests.PseudorandomFunction
 
 open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 
@@ -63,4 +63,4 @@ example : ¬ PseudorandomFunction (fun _ _ => []) := by
   have := h.length_eq [false] [false] rfl
   simp at this
 
-end ComplexityTests.PseudorandomFunction
+end CslibFrontierTests.PseudorandomFunction

@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 /-! Error reduction for `BPP` and `RP` and `RP ⊆ BPP`, with concrete repeated deciders whose error
 is genuinely reduced. -/
 
-namespace ComplexityTests.ResourceClasses3
+namespace CslibFrontierTests.ResourceClasses3
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
@@ -113,4 +113,4 @@ example :
         DecidesWithOneSidedErrorExponent encBits (Polynomial.X + 1) p V Set.univ :=
   mem_RP_iff_forall_decidesWithOneSidedErrorExponent.1 univ_mem_RP (Polynomial.X + 1)
 
-end ComplexityTests.ResourceClasses3
+end CslibFrontierTests.ResourceClasses3

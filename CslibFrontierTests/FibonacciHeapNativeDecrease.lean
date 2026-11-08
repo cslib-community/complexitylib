@@ -20,7 +20,7 @@ heap order at a child (including equal-key handle priority), and cutting followe
 
 public section
 
-namespace ComplexityTests.FibonacciHeapNativeDecrease
+namespace CslibFrontierTests.FibonacciHeapNativeDecrease
 
 open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 open Cslib.WordRAM Cslib.WordRAM.Realization FibonacciHeap FibonacciHeap.Native
@@ -187,4 +187,4 @@ example : ∃ y, ExecWithin 6 (realizes_decreaseKey.code frontier source scratch
 
 end
 
-end ComplexityTests.FibonacciHeapNativeDecrease
+end CslibFrontierTests.FibonacciHeapNativeDecrease

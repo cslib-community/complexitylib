@@ -15,7 +15,7 @@ appended threshold and native length header.
 
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMSchonhageBoxProduct
+namespace CslibFrontierTests.WordRAMSchonhageBoxProduct
 
 open Cslib.WordRAM Cslib.WordRAM.Signed
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
@@ -130,4 +130,4 @@ example : ∃ (y : Data 160) (n : ℕ),
   rw [hf _ (by simp only [List.length_nil]; omega)]
   exact input_threshold false emptyX emptyY []
 
-end ComplexityTests.WordRAMSchonhageBoxProduct
+end CslibFrontierTests.WordRAMSchonhageBoxProduct

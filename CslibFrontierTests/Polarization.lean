@@ -15,7 +15,7 @@ of the XOR identity at `k = 0`, and the constant thresholds `α = 2/3`, `β = 1/
 concrete far pair and a concrete near pair.
 -/
 
-namespace ComplexityTests.Polarization
+namespace CslibFrontierTests.Polarization
 
 open Cslib.Probability.PMF
 open scoped Cslib.Probability.PMF
@@ -127,4 +127,4 @@ example : ∃ lam ell : ℕ,
     norm_num
   · norm_num
 
-end ComplexityTests.Polarization
+end CslibFrontierTests.Polarization

@@ -18,7 +18,7 @@ Exercise `checkpointHull`, `forestMarks`, `forestPath`, `exists_forest_intervals
 graphs.
 -/
 
-namespace ComplexityTests.FunctionalGraph
+namespace CslibFrontierTests.FunctionalGraph
 
 open Cslib Cslib.FunctionalGraph Function
 
@@ -231,4 +231,4 @@ example : (4 : Fin 5) ∉ checkpointHull branchGraph {3} ∧
   · exact hno_prefix hshort
   · exact hno_prefix hverify
 
-end ComplexityTests.FunctionalGraph
+end CslibFrontierTests.FunctionalGraph

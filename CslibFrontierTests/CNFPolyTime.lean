@@ -17,7 +17,7 @@ to the binary encoding of SAT. Exactly-one constraints count distinct variables,
 the input list contains repetitions.
 -/
 
-namespace ComplexityTests.CNFPolyTime
+namespace CslibFrontierTests.CNFPolyTime
 
 open Cslib.Logic.PL Cslib.Complexity Turing.MultiTapeTM
 
@@ -46,4 +46,4 @@ example : (CNF.exactlyOne [7, 7]).eval (fun _ => true) = true := rfl
 
 example : (CNF.exactlyOne [7, 9]).eval (fun _ => true) = false := rfl
 
-end ComplexityTests.CNFPolyTime
+end CslibFrontierTests.CNFPolyTime

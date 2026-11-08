@@ -20,7 +20,7 @@ function or generator is open, so these checks show that the notions are not tri
 indistinguishability notion is not trivially false. They do not separate the nonuniform notions
 from the uniform ones. -/
 
-namespace ComplexityTests.Crypto.Nonuniform
+namespace CslibFrontierTests.Crypto.Nonuniform
 
 open Cslib Cslib.Crypto Probability
 
@@ -407,4 +407,4 @@ example {f : List Bool → List Bool} (hf : NonuniformOneWay f) :
       hzkRel.unboundedAuxiliaryInputZeroKnowledge,
       hzkRel.instanceAuxiliaryInputZeroKnowledge⟩⟩
 
-end ComplexityTests.Crypto.Nonuniform
+end CslibFrontierTests.Crypto.Nonuniform

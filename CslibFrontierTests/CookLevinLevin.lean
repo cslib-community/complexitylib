@@ -19,7 +19,7 @@ recovered from it.
 
 public section
 
-namespace ComplexityTests.CookLevinLevin
+namespace CslibFrontierTests.CookLevinLevin
 
 open Cslib.Complexity Cslib.Logic.PL
 
@@ -61,4 +61,4 @@ example {α : Type} {enc : α ↪ List Bool} (R : NPRelation enc) :
   obtain ⟨c, d, ht⟩ := Cslib.polynomiallyBounded_iff_le.mp ht
   exact ⟨k, State, tm, c, d, hfin, fun a w _ => (htm (a, w)).runFrom_of_le (ht _)⟩
 
-end ComplexityTests.CookLevinLevin
+end CslibFrontierTests.CookLevinLevin

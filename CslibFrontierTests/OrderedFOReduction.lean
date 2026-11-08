@@ -23,7 +23,7 @@ An interpretation whose domain has a single tuple is not admissible, and its enc
 decode.
 -/
 
-namespace ComplexityTests.OrderedFOReduction
+namespace CslibFrontierTests.OrderedFOReduction
 
 open FirstOrder Language Structure Cslib.Logic Cslib.Logic.FO Cslib.Logic.FO.Ordered
 
@@ -243,4 +243,4 @@ example : Cslib.Complexity.LogSpaceReducible encStructure encStructure
     (edgeMaxZero.encodedLanguage graphVocabulary) (edgeZeroMax.encodedLanguage graphVocabulary) :=
   reduces_edgeMaxZero_edgeZeroMax.logSpaceReducible graphVocabulary graphVocabulary
 
-end ComplexityTests.OrderedFOReduction
+end CslibFrontierTests.OrderedFOReduction

@@ -13,9 +13,9 @@ The reused verifier answers the first input bit on the promised singleton words,
 fair coin on the empty word. Majority still solves the promise, with ties rejecting on `[]`.
 -/
 
-namespace ComplexityTests.PromisePP
+namespace CslibFrontierTests.PromisePP
 
-open Cslib.Complexity Turing.MultiTapeTM ComplexityTests.PromiseProbabilistic
+open Cslib.Complexity Turing.MultiTapeTM CslibFrontierTests.PromiseProbabilistic
 
 /-- The fixture's computed fallback can be expressed through an emptiness test and fixed heads. -/
 theorem partialVerifier_polyTime :
@@ -52,4 +52,4 @@ example : ∃ L ∈ PP encBits, [true] ∈ L ∧ [false] ∉ L := by
   intro hm
   exact Set.disjoint_left.mp hno hm rfl
 
-end ComplexityTests.PromisePP
+end CslibFrontierTests.PromisePP

@@ -8,7 +8,7 @@ import CslibFrontier.Computability.QueryComplexity.Quantum.Search
 
 /-! The quantum query model: the oracle and a satisfiable instance of the search hypothesis. -/
 
-namespace ComplexityTests.QuantumSearch
+namespace CslibFrontierTests.QuantumSearch
 
 open Cslib.Quantum
 
@@ -42,4 +42,4 @@ example (ψ : State 3 Unit) :
     (phaseOracle (marked 1) ψ).ofLp (1, (false, ())) = ψ.ofLp (1, (false, ())) := by
   simp
 
-end ComplexityTests.QuantumSearch
+end CslibFrontierTests.QuantumSearch

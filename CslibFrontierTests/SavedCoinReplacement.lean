@@ -15,7 +15,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 
 /-! Varying generated key lengths, stateful oracle replay, and shared-world mixture replacement. -/
 
-namespace ComplexityTests.SavedCoinReplacement
+namespace CslibFrontierTests.SavedCoinReplacement
 
 open Cslib Cslib.Probability Turing Turing.MultiTapeTM Turing.MultiTapePTM
 open Cslib.Crypto.Protocols.ROMSignature
@@ -128,4 +128,4 @@ example (scheme : Scheme Unit Unit Bool Unit Bool Bool) :
     ProbOracleComp.run_interpret_sample, ProbComp.eval_uniform, PMF.monad_bind_eq_bind,
     PMF.bind_map, Function.comp_def]
 
-end ComplexityTests.SavedCoinReplacement
+end CslibFrontierTests.SavedCoinReplacement

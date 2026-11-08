@@ -25,7 +25,7 @@ Checked instances:
   the range proved here and outside the `log² n ≤ r` stated in [Lokam2009], Theorem 2.5.
 -/
 
-namespace ComplexityTests.MatrixRigidityCauchy
+namespace CslibFrontierTests.MatrixRigidityCauchy
 
 open Finset Matrix
 
@@ -121,4 +121,4 @@ example : 438 ≤ (cauchyNat (ZMod 131) 64).rigidity 6 := by
   have : (438 : ℝ) ≤ (cauchyNat (ZMod 131) 64).rigidity 6 := by nlinarith
   exact_mod_cast this
 
-end ComplexityTests.MatrixRigidityCauchy
+end CslibFrontierTests.MatrixRigidityCauchy

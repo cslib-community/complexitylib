@@ -14,7 +14,7 @@ switch, and use the global fourth-root bounds with concrete thresholds. They con
 adaptation in issue #1721, not the pinned preprint's `s = 8` choice.
 -/
 
-namespace ComplexityTests.PolynomialSwitch
+namespace CslibFrontierTests.PolynomialSwitch
 
 open Cslib
 open scoped NNReal
@@ -74,4 +74,4 @@ example : ∃ K : ℝ≥0, ∀ t : ℝ,
     Real.zero_rpow (by norm_num : (4⁻¹ : ℝ) ≠ 0)] at h
   simpa only [Real.dist_eq, sub_zero] using h
 
-end ComplexityTests.PolynomialSwitch
+end CslibFrontierTests.PolynomialSwitch

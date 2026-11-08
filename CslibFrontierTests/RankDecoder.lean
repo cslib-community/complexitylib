@@ -8,7 +8,7 @@ import CslibFrontier.Probability.RankDecoder
 
 /-! Exact rank decoding: unequal leaf masses, empty branches, and no-randomness boundaries. -/
 
-namespace ComplexityTests.RankDecoder
+namespace CslibFrontierTests.RankDecoder
 
 open Cslib Cslib.BitString Cslib.BitString.RankDecoder Cslib.Probability
 
@@ -90,4 +90,4 @@ example : ((Finset.range 0).filter (fun rank =>
   exact card_filter_decode (mass := fun _ => 0) (depth := 3)
     (by simp) 3 [] (by simp) [true, false, true]
 
-end ComplexityTests.RankDecoder
+end CslibFrontierTests.RankDecoder

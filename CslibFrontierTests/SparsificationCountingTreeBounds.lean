@@ -13,7 +13,7 @@ public section
 open Cslib.Logic.PL
 open ClauseSet.Sparsification Finset
 
-namespace ComplexityTests.SparsificationCountingTreeBounds
+namespace CslibFrontierTests.SparsificationCountingTreeBounds
 
 /-! ### 1. Nontautological filtering and `reduce` normalization -/
 
@@ -183,4 +183,4 @@ example :
   obtain ⟨hs, hr, hnt, hk, -⟩ := hleaves L hL
   exact ⟨hs, hr, hnt, hk⟩
 
-end ComplexityTests.SparsificationCountingTreeBounds
+end CslibFrontierTests.SparsificationCountingTreeBounds

@@ -19,7 +19,7 @@ physical-prefix bound. Its fixed template differs from the actual supplied initi
 
 @[expose] public section
 
-namespace ComplexityTests.TreeEvalRawController
+namespace CslibFrontierTests.TreeEvalRawController
 
 open Turing MultiTapeTM Cslib.TreeEval Cslib.TreeEval.Ary.Packed
 open Cslib.TreeEval.Ary.Packed.RawController
@@ -131,4 +131,4 @@ example (w : List Bool) :
   · intro i hi
     simp [encReader, encBool_apply]
 
-end ComplexityTests.TreeEvalRawController
+end CslibFrontierTests.TreeEvalRawController

@@ -21,7 +21,7 @@ machine time.
 
 @[expose] public section
 
-namespace ComplexityTests.DataStructureRetroactive
+namespace CslibFrontierTests.DataStructureRetroactive
 
 open Cslib.DataStructure
 
@@ -129,16 +129,16 @@ info: 'Cslib.DataStructure.Retroactive.realized_bound' depends on axioms:
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.DataStructure.Retroactive.realized_bound
 /--
-info: 'ComplexityTests.DataStructureRetroactive.edits_execute' depends on axioms:
+info: 'CslibFrontierTests.DataStructureRetroactive.edits_execute' depends on axioms:
 [propext]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms ComplexityTests.DataStructureRetroactive.edits_execute
+#print axioms CslibFrontierTests.DataStructureRetroactive.edits_execute
 /--
-info: 'ComplexityTests.DataStructureRetroactive.edits_bound' depends on axioms:
+info: 'CslibFrontierTests.DataStructureRetroactive.edits_bound' depends on axioms:
 [propext]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms ComplexityTests.DataStructureRetroactive.edits_bound
+#print axioms CslibFrontierTests.DataStructureRetroactive.edits_bound
 
-end ComplexityTests.DataStructureRetroactive
+end CslibFrontierTests.DataStructureRetroactive

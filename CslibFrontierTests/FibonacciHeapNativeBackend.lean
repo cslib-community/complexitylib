@@ -21,7 +21,7 @@ Argument installation remains the explicit uncharged method calling convention.
 
 public section
 
-namespace ComplexityTests.FibonacciHeapNativeBackend
+namespace CslibFrontierTests.FibonacciHeapNativeBackend
 
 open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 open Cslib.WordRAM Cslib.WordRAM.Realization FibonacciHeap FibonacciHeap.Native
@@ -69,4 +69,4 @@ example {a : Option (Fin 3 × ℕ)} {y : Data (Backend.registers certificates)} 
 
 end
 
-end ComplexityTests.FibonacciHeapNativeBackend
+end CslibFrontierTests.FibonacciHeapNativeBackend

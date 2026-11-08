@@ -12,7 +12,7 @@ import CslibFrontier.Algorithms.WordRAM.ThreeSum.Weight
 These are checks of a reduction and its one-weight construction kernel, not a fast 3SUM solver.
 -/
 
-namespace ComplexityTests.ThreeSumConvolution
+namespace CslibFrontierTests.ThreeSumConvolution
 
 open Cslib
 open Algorithms.ThreeSum
@@ -133,4 +133,4 @@ example : ∃ y, WordRAM.ExecWithin 8 (Weight.store true) (args 2 (-19)) y 28 �
   · rw [hm]
     rfl
 
-end ComplexityTests.ThreeSumConvolution
+end CslibFrontierTests.ThreeSumConvolution

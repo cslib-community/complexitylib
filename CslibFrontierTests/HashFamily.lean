@@ -22,7 +22,7 @@ matrices and subset sums are Δ-universal; a constant family is not universal fo
 evaluated over `ZMod 5`, and multiply-shift on `4`-bit words, where its collision bound is attained.
 -/
 
-namespace ComplexityTests.HashFamily
+namespace CslibFrontierTests.HashFamily
 
 open Cslib Cslib.Probability Cslib.Probability.PMF
 open scoped ENNReal
@@ -121,4 +121,4 @@ example :
     card_filter_multiplyShift_eq_le (by norm_num) (by norm_num) (by decide),
     isUniversalHash_multiplyShift (by norm_num) (by norm_num)⟩
 
-end ComplexityTests.HashFamily
+end CslibFrontierTests.HashFamily

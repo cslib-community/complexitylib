@@ -61,7 +61,7 @@ Lean checks the proofs via `RandomizedWordRAMBridge` under `propext`, `Classical
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing*][MitzenmacherUpfal2017]
 -/
 
-namespace ComplexityAbstracts.RandomizedWordRAMAbstract
+namespace CslibFrontierAbstracts.RandomizedWordRAMAbstract
 
 /-! ## Words, operations, and instructions
 
@@ -374,6 +374,6 @@ info: abstract audit passed for `CslibFrontierAbstracts.RandomizedWordRAMAbstrac
 declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.RandomizedWordRAMAbstract
+#check_abstract CslibFrontierAbstracts.RandomizedWordRAMAbstract
 
-end ComplexityAbstracts.RandomizedWordRAMAbstract
+end CslibFrontierAbstracts.RandomizedWordRAMAbstract

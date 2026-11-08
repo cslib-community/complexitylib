@@ -20,7 +20,7 @@ import Mathlib.Combinatorics.SimpleGraph.Star
   maximum, because deleting the centre leaves three isolated vertices.
 -/
 
-namespace ComplexityTests.GeneralMatching
+namespace CslibFrontierTests.GeneralMatching
 
 open SimpleGraph SimpleGraph.Subgraph
 
@@ -157,4 +157,4 @@ example : starMatching.IsMaximumMatching := by
   rw [hverts, Set.ncard_singleton, Nat.card_eq_fintype_card, Fintype.card_fin] at hle ⊢
   omega
 
-end ComplexityTests.GeneralMatching
+end CslibFrontierTests.GeneralMatching

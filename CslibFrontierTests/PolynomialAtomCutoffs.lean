@@ -19,7 +19,7 @@ expressions use the new polynomial factors, and the witness's fourth-root variat
 its Lipschitz constant to be positive.
 -/
 
-namespace ComplexityTests.PolynomialAtomCutoffs
+namespace CslibFrontierTests.PolynomialAtomCutoffs
 
 open Cslib Finset Matrix
 
@@ -85,4 +85,4 @@ example : ∃ C : ℝ, 1 / 8 ≤ C ∧ ∀ v r v' r',
   norm_num at h
   exact ⟨C, by linarith, hC⟩
 
-end ComplexityTests.PolynomialAtomCutoffs
+end CslibFrontierTests.PolynomialAtomCutoffs

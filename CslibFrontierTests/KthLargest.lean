@@ -14,7 +14,7 @@ import Mathlib.Tactic.NormNum
 # Tests for the `k`-th largest value
 -/
 
-namespace ComplexityTests.KthLargest
+namespace CslibFrontierTests.KthLargest
 
 open Finset
 
@@ -50,4 +50,4 @@ example : kthLargest 4 univ h = 0 := by
 example (k : ℕ) : kthLargest k univ h ≤ 3 :=
   kthLargest_le (by norm_num) fun x _ => by fin_cases x <;> norm_num [h]
 
-end ComplexityTests.KthLargest
+end CslibFrontierTests.KthLargest

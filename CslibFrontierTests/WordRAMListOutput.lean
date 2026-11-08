@@ -17,7 +17,7 @@ input to a fresh block after it, with its length in front, and returns that bloc
 through an explicit width schedule.
 -/
 
-namespace ComplexityTests.WordRAMListOutput
+namespace CslibFrontierTests.WordRAMListOutput
 
 open Cslib.WordRAM Turing.MultiTapeTM
 
@@ -140,4 +140,4 @@ example : Turing.MultiTapeTM.ComputableInPolyTime (fun l : List ℕ => l) (encLi
 
 end Copy
 
-end ComplexityTests.WordRAMListOutput
+end CslibFrontierTests.WordRAMListOutput

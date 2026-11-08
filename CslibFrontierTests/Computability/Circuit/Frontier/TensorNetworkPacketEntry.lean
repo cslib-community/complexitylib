@@ -23,10 +23,10 @@ edge `1` in slot `1`.
 
 @[expose] public section
 
-namespace ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.PacketEntry
+namespace CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.PacketEntry
 
 open Cslib.Circuits.Frontier TensorNetwork
-open ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.CauchyModes
+open CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.CauchyModes
 
 /-- Coefficient extraction: the coefficient of `m` in `(2 + 3 m) (5 + 7 m)` is `2 · 7 + 3 · 5`. -/
 example : listCoeff (R := ℤ) ({()} : Finset Unit)
@@ -86,4 +86,4 @@ example : ∑ q ∈ (cauchyGrid (2 ^ 1)).erase 1, padicValInt 2 (1 - q) =
     ∑ q ∈ (cauchyGrid (2 ^ 1)).erase 0, padicValInt 2 (0 - q) :=
   sum_padicValInt_sub_eq (by decide)
 
-end ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.PacketEntry
+end CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.PacketEntry

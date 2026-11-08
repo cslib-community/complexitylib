@@ -11,7 +11,7 @@ import CslibFrontier.Foundations.BooleanAnalysis.FourierBitVal
 pairwise independent, fools a degree-`2` polynomial exactly, and does not fool the parity of all
 three bits, which has degree `3`. -/
 
-namespace ComplexityTests.Fooling
+namespace CslibFrontierTests.Fooling
 
 open Finset Cslib Cslib.BitString Cslib.Probability
 open scoped BigOperators
@@ -78,4 +78,4 @@ example : ¬Fools X (1 / 4) fun x => bitVal ℝ (parityOn univ x) := by
   rw [Fools, hX, hU]
   norm_num
 
-end ComplexityTests.Fooling
+end CslibFrontierTests.Fooling

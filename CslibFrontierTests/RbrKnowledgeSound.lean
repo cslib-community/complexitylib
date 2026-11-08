@@ -30,11 +30,11 @@ Concrete instances, composition checks, and nonvacuity separations for
   `Verifier.RbrKnowledgeSound.iterate`.
 -/
 
-namespace ComplexityTests.RbrKnowledgeSound
+namespace CslibFrontierTests.RbrKnowledgeSound
 
 open Cslib Cslib.Interactive Spec Probability Turing.MultiTapeTM
-open ComplexityTests.InteractiveKnowledgeSound
-open ComplexityTests.EfficientSimulators
+open CslibFrontierTests.InteractiveKnowledgeSound
+open CslibFrontierTests.EfficientSimulators
 open scoped ENNReal
 
 /-! ### Witness-sending reduction -/
@@ -269,4 +269,4 @@ theorem sumcheck_iterate_rbrKnowledgeSound (hP : ∀ j, P.degreeOf j ≤ d) :
 
 end Sumcheck
 
-end ComplexityTests.RbrKnowledgeSound
+end CslibFrontierTests.RbrKnowledgeSound

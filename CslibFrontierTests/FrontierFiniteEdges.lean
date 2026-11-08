@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Circuit.Frontier.Layouts.Basic
 
 open Cslib.Circuits.Frontier Set
 
-namespace ComplexityTests.FrontierFiniteEdges
+namespace CslibFrontierTests.FrontierFiniteEdges
 
 /-- Every edge joins the same two vertices. -/
 def parallelEdges (E : Type*) : Multigraph Bool E where
@@ -69,4 +69,4 @@ info: 'Cslib.Multigraph.incidenceSet_toGraph' depends on axioms: [propext, Quot.
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.Multigraph.incidenceSet_toGraph
 
-end ComplexityTests.FrontierFiniteEdges
+end CslibFrontierTests.FrontierFiniteEdges

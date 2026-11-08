@@ -12,7 +12,7 @@ import Mathlib.Algebra.Polynomial.SpecificDegree
 For `f = U ^ 2 + U + 1`, irreducible modulo `2`, Newton inversion inverts every unit of
 `(ℤ / 8)[U] / (f)` (`p = 3`, `fl = [1, 1]`) with no hypothesis on the seed. -/
 
-namespace ComplexityTests.GaloisRingUnits
+namespace CslibFrontierTests.GaloisRingUnits
 
 open Cslib.GaloisRingArith Polynomial
 
@@ -48,4 +48,4 @@ example (y : Ring 3 [1, 1]) (hy : IsUnit y) : ∃ w, y * y ^ (2 ^ 2 - 2) = 1 + 2
 
 example : (monicOf [1, 1]).natDegree = 2 := natDegree_monicOf _
 
-end ComplexityTests.GaloisRingUnits
+end CslibFrontierTests.GaloisRingUnits

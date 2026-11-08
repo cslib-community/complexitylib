@@ -16,7 +16,7 @@ vacuous. A source has price `1`, and a run is written out explicitly as a sanity
 game itself.
 -/
 
-namespace ComplexityTests.Pebbling
+namespace CslibFrontierTests.Pebbling
 
 open Cslib Cslib.Pebbling
 
@@ -73,4 +73,4 @@ example : (blackPebbleGame (pyramid 1) 3).MTr ∅
   · simp only [Finset.mem_insert, PyramidVertex.ext_iff, left, right]
     omega
 
-end ComplexityTests.Pebbling
+end CslibFrontierTests.Pebbling

@@ -12,7 +12,7 @@ import CslibFrontier.Computability.Complexity.Problems.SharpThreeSAT
 A formula with a clause of width six, its count-preserving split into width three, and the
 counter of `ContractionCounting.exists_modelCounter_unboundedWidth` evaluated on it. -/
 
-namespace ComplexityTests.WideClauseCounting
+namespace CslibFrontierTests.WideClauseCounting
 
 open Cslib.Logic.PL Cslib.Complexity Cslib.Complexity.ContractionCounting
 
@@ -53,4 +53,4 @@ def φ₂ : CNF ℕ := [[(0, true)], [(0, true)], [(0, true)]]
 
 example : ¬ φ₂.vars.length ≤ 2 * φ₂.numVars := by decide
 
-end ComplexityTests.WideClauseCounting
+end CslibFrontierTests.WideClauseCounting

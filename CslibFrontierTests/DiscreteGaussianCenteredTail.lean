@@ -12,7 +12,7 @@ open Module ProbabilityTheory MeasureTheory
 
 noncomputable section
 
-namespace ComplexityTests.DiscreteGaussianCenteredTail
+namespace CslibFrontierTests.DiscreteGaussianCenteredTail
 
 private def twoBasis : Basis Unit ℝ ℝ :=
   (Basis.singleton Unit ℝ).isUnitSMul (fun _ => (show (2 : ℝ) ≠ 0 by norm_num).isUnit)
@@ -83,4 +83,4 @@ example (s : ℝ) (hs : 0 < s) :
     simp
   rw [hempty, measure_empty]
 
-end ComplexityTests.DiscreteGaussianCenteredTail
+end CslibFrontierTests.DiscreteGaussianCenteredTail

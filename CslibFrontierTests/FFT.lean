@@ -24,7 +24,7 @@ are checked against counted queries, including under a dishonest oracle, and the
 bound is applied at a concrete length.
 -/
 
-namespace ComplexityTests.FFT
+namespace CslibFrontierTests.FFT
 
 open Cslib Cslib.Query Cslib.Query.FFT ArithQuery Polynomial
 
@@ -159,4 +159,4 @@ example (o : {ι : Type} → ArithQuery (ZMod 17) ι → ι) (a b : Fin (2 ^ (2 
   simp only [Nat.log_pow one_lt_two] at h
   exact h.trans (by norm_num)
 
-end ComplexityTests.FFT
+end CslibFrontierTests.FFT

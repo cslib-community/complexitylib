@@ -18,7 +18,7 @@ multilinear function within one point, and the lemma bounds the distance by
 the theorem applies with `ε = 1 / 800`.
 -/
 
-namespace ComplexityTests.Code.MultilinearitySoundness
+namespace CslibFrontierTests.Code.MultilinearitySoundness
 
 open Cslib Cslib.Code Finset
 
@@ -80,4 +80,4 @@ example : ∃ g, IsMultilinear g ∧ (hammingDist coord g : ℝ) <
     (by simp [ZMod.card]) (by norm_num) fun i => by simp [hW, ZMod.card]
   simpa [ZMod.card] using this
 
-end ComplexityTests.Code.MultilinearitySoundness
+end CslibFrontierTests.Code.MultilinearitySoundness

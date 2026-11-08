@@ -17,7 +17,7 @@ instances of their correctness theorems, and checked instances of the integer-th
 conditions.
 -/
 
-namespace ComplexityTests.WordRAMAKSSearch
+namespace CslibFrontierTests.WordRAMAKSSearch
 
 open Cslib.WordRAM Cslib.Algorithms.WordRAM
 
@@ -100,4 +100,4 @@ example (A : ℕ) : ¬ Cslib.AKS.PassesUpTo 15 3 A := by
   revert this
   decide
 
-end ComplexityTests.WordRAMAKSSearch
+end CslibFrontierTests.WordRAMAKSSearch

@@ -20,7 +20,7 @@ The left blank boundary and the positive-width guard are tested separately.
 
 @[expose] public section
 
-namespace ComplexityTests.QueryReplayGate
+namespace CslibFrontierTests.QueryReplayGate
 
 open Turing MultiTapeTM MultiTapePTM.BlockComputation
 open MultiTapePTM.BlockComputation.QueryReplay
@@ -80,4 +80,4 @@ example : gate.finish (gate.runFrom [true] (start (row .pos .zero)) 1) =
 example : ComputableInSpace gate.finish Gate.encState encBits
     (fun state => (Gate.encState state).length) := Gate.machine_finish_inSpace _ _
 
-end ComplexityTests.QueryReplayGate
+end CslibFrontierTests.QueryReplayGate

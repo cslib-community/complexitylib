@@ -10,7 +10,7 @@ import Mathlib.Data.Fintype.BigOperators
 
 /-! Tests of decision-tree composition on parity of disjoint conjunctions. -/
 
-namespace ComplexityTests.DecisionTreeComposition
+namespace CslibFrontierTests.DecisionTreeComposition
 
 open Cslib Cslib.DecisionTree Finset
 
@@ -160,4 +160,4 @@ private def unreachable : DecisionTree Unit Bool :=
 -- The depth-three structural path asks the same bit for inconsistent answers.
 example : unreachable.depth = 3 ∧ ∀ x : Unit → Bool, unreachable.cost x ≤ 2 := by decide
 
-end ComplexityTests.DecisionTreeComposition
+end CslibFrontierTests.DecisionTreeComposition

@@ -19,11 +19,11 @@ the `2 ^ n`-bit truth-table slice of `MCSP[s]`, and plain native-machine definit
 and `P/poly`) to the theorems in `CslibFrontier.Computability.MCSP.Magnification`.
 -/
 
-namespace ComplexityAbstracts.MagnificationBridge
+namespace CslibFrontierAbstracts.MagnificationBridge
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Complexity Cslib.MCSP
 open Turing.MultiTapeTM
-open ComplexityTests.Abstracts
+open CslibFrontierTests.Abstracts
 
 /-- A single-output Boolean circuit over the standard De Morgan basis (binary AND/OR, unary NOT,
 and Boolean constants). -/
@@ -204,4 +204,4 @@ theorem p_ne_np_of_mcsp_hard (k : ℕ)
   obtain ⟨C, hC, hsize⟩ := complexity_le_iff.mp hle
   exact (lt_irrefl _) ((hlb C (decidesMCSPSlice_iff.mpr hC)).trans_le hsize)
 
-end ComplexityAbstracts.MagnificationBridge
+end CslibFrontierAbstracts.MagnificationBridge

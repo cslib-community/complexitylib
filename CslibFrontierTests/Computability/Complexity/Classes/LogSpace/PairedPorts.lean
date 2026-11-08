@@ -28,7 +28,7 @@ Concrete and non-vacuity checks for:
 
 public section
 
-namespace ComplexityTests.LogSpace.PairedPorts
+namespace CslibFrontierTests.LogSpace.PairedPorts
 
 open Matrix Turing Turing.MultiTapeTM Turing.MultiTapeNTM.ConfigurationGraph
   Turing.MultiTapePTM.ConfigurationGraph Cslib.Complexity
@@ -608,4 +608,4 @@ example :
 
 end ComplexityClassTests
 
-end ComplexityTests.LogSpace.PairedPorts
+end CslibFrontierTests.LogSpace.PairedPorts

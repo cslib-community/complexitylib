@@ -9,7 +9,7 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! Tape programs over infinite and empty alphabets, using the ordinary functional API. -/
 
-namespace ComplexityTests.TapePolyTime
+namespace CslibFrontierTests.TapePolyTime
 
 open Cslib.Turing Turing.MultiTapeTM
 
@@ -49,4 +49,4 @@ example {Symbol : Type} (enc : Symbol ↪ List Bool) (tape : BiTape Bool) :
     by fun_prop, by decide, by decide, length_encBiTape_le encBool tape (bound := 1) (by simp),
     by fun_prop, by fun_prop, by fun_prop, .of_tidy (by polytime), by fun_prop⟩
 
-end ComplexityTests.TapePolyTime
+end CslibFrontierTests.TapePolyTime

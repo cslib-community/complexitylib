@@ -10,7 +10,7 @@ import CslibFrontier.Tactic.PPT
 
 /-! Decoder checks with imperfect and perfect predictors, overlapping masks, and boundary cases. -/
 
-namespace ComplexityTests.GoldreichLevin
+namespace CslibFrontierTests.GoldreichLevin
 
 open Cslib Cslib.Crypto.GoldreichLevin Cslib.Probability
 open Finset
@@ -161,4 +161,4 @@ example : generator id [] = [false] ∧ generator id [true] = [true, false] := b
 example (n : ℕ) : (BitString.uniformList n).map (paddedFunction id) = BitString.uniformList n :=
   paddedFunction_uniform (fun _ => PMF.map_id _) n
 
-end ComplexityTests.GoldreichLevin
+end CslibFrontierTests.GoldreichLevin

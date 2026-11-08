@@ -22,7 +22,7 @@ exponentially long words, through the preprocessing rule.
 
 @[expose] public section
 
-namespace ComplexityTests.ExponentialOracle
+namespace CslibFrontierTests.ExponentialOracle
 
 open Cslib Cslib.Complexity Turing.MultiTapeTM
 
@@ -62,4 +62,4 @@ example (A : Set (List Bool)) :
 /-- `NP` lies inside `E ^ NP`; with `E ⊆ E ^ NP`, both inclusions are available. -/
 example : NP encBits ⊆ ENP encBits := NP_subset_ENP
 
-end ComplexityTests.ExponentialOracle
+end CslibFrontierTests.ExponentialOracle

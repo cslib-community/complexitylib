@@ -21,7 +21,7 @@ certificates instantiate the native composition rules without assuming an input 
 
 @[expose] public section
 
-namespace ComplexityTests.QueryMachineCall
+namespace CslibFrontierTests.QueryMachineCall
 
 open Turing MultiTapeTM
 
@@ -158,4 +158,4 @@ example {α β : Type} (enc : α ↪ List Bool) (encOut : β ↪ List Bool)
     (QueryMachine.withCalls_finish_inSpace caller reader request resume encCaller encCallee
       (ComputableInSpace.of_finite _)) time hhalt hpre hf S hlog hsize
 
-end ComplexityTests.QueryMachineCall
+end CslibFrontierTests.QueryMachineCall

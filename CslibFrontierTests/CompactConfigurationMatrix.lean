@@ -20,7 +20,7 @@ The always-accepting variant also discharges the complete BPL witness hypotheses
 The one-coin replay and halting proof follow the concrete fixture in `RandomizedLogSpace`.
 -/
 
-namespace ComplexityTests.CompactConfigurationMatrix
+namespace CslibFrontierTests.CompactConfigurationMatrix
 
 open Cslib Turing MultiTapeTM Matrix
 open MultiTapeNTM.ConfigurationGraph MultiTapePTM.ConfigurationGraph
@@ -242,4 +242,4 @@ example : ∃ (N : ℕ) (S : Matrix (Fin N) (Fin N) ℝ) (e p : Fin N → ℝ) (
   obtain ⟨hs, _, _, hS, _, _, _, _, hinv, hp, hyes, _⟩ := hM []
   exact ⟨_, _, _, _, _, hS, hinv, hp, hyes trivial⟩
 
-end ComplexityTests.CompactConfigurationMatrix
+end CslibFrontierTests.CompactConfigurationMatrix

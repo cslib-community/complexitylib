@@ -17,7 +17,7 @@ formulas with repeated literals and complementary pairs. The polynomial-time app
 theorems are instantiated at the formula above.
 -/
 
-namespace ComplexityTests.JohnsonMaxSAT
+namespace CslibFrontierTests.JohnsonMaxSAT
 
 open Cslib Cslib.Logic.PL Cslib.Complexity Cslib.PessimisticEstimator Turing.MultiTapeTM
 open scoped BigOperators
@@ -98,4 +98,4 @@ example : ComputableInPolyTime (johnson (V := ℕ)) (encList (encList (encPair e
     (encList encNat) :=
   computableInPolyTime_johnson encNat
 
-end ComplexityTests.JohnsonMaxSAT
+end CslibFrontierTests.JohnsonMaxSAT

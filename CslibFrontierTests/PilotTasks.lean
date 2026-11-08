@@ -18,7 +18,7 @@ schedule. A correction sampler is constructed from actual affine laws and the hi
 detector bound; no incoming-count certificate or mean identity is supplied.
 -/
 
-namespace ComplexityTests.PilotTasks
+namespace CslibFrontierTests.PilotTasks
 
 open Finset Matrix Matrix.HierarchyParams Cslib.Probability Cslib.LogSpaceEstimation
 open scoped BigOperators
@@ -509,4 +509,4 @@ example (M d : ℕ) :
     (by norm_num) (by norm_num [inherited]) (by norm_num [inherited])
   simpa only [midpoint, inherited, Nat.cast_one, mul_one] using h
 
-end ComplexityTests.PilotTasks
+end CslibFrontierTests.PilotTasks

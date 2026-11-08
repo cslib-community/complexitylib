@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 /-! Native construction of actual carry-save codes, including empty words, bit order,
 overflow and a composition with two independently generated three-to-two reducers. -/
 
-namespace ComplexityTests.CarrySaveNative
+namespace CslibFrontierTests.CarrySaveNative
 
 open Cslib.Circuits Cslib.Circuits.Boolean
 open Turing.MultiTapeTM ComputableInPolyTime
@@ -49,4 +49,4 @@ theorem composed_generator : ComputableInPolyTime
       computableInPolyTime_csa3to2)
   simpa only [appendCode_code, compCode_code, twice3to2] using h
 
-end ComplexityTests.CarrySaveNative
+end CslibFrontierTests.CarrySaveNative

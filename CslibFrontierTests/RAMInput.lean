@@ -17,7 +17,7 @@ input, and the boundary before arbitrary appended code. Symbolic clients exercis
 register-state theorem and its charged logarithmic bound.
 -/
 
-namespace ComplexityTests.RAMInput
+namespace CslibFrontierTests.RAMInput
 
 open Cslib Cslib.RAM Cslib.RAM.Input
 
@@ -64,4 +64,4 @@ example (tail : Program) :
   exact time_prepare_append_le (b := 3) (by decide) tail [3, 0, 4, 1, 5]
     (by decide) (by decide)
 
-end ComplexityTests.RAMInput
+end CslibFrontierTests.RAMInput

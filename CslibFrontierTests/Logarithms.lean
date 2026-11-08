@@ -15,7 +15,7 @@ charge unary counters and outputs; a binary input cannot silently provide the sa
 An arbitrary fixed growth factor also supports the size schedules of amplification rounds.
 -/
 
-namespace ComplexityTests.Logarithms
+namespace CslibFrontierTests.Logarithms
 
 open Turing.MultiTapeTM
 
@@ -78,4 +78,4 @@ example : True := by
         encNat encUnary := by fun_prop
   trivial
 
-end ComplexityTests.Logarithms
+end CslibFrontierTests.Logarithms

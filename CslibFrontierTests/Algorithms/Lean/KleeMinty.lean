@@ -30,7 +30,7 @@ Klee–Minty programs `kleeMintyMatrix n`, `kleeMintyRhs n`, `kleeMintyObj n` of
 
 public section
 
-namespace ComplexityTests.Algorithms.Lean.KleeMinty
+namespace CslibFrontierTests.Algorithms.Lean.KleeMinty
 
 open Cslib.Algorithms.Lean.Simplex Dictionary Matrix Finset
 
@@ -95,4 +95,4 @@ example : endpoint ((km 4).run 8) = (false, {0, 3, 5, 6}, 999000) ∧
     endpoint (km 4).simplex = (true, {3, 4, 5, 6}, 1000000) := by
   decide +kernel
 
-end ComplexityTests.Algorithms.Lean.KleeMinty
+end CslibFrontierTests.Algorithms.Lean.KleeMinty

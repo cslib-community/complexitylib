@@ -21,7 +21,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 
 open Turing.MultiTapeTM Cslib.Complexity
 
-namespace ComplexityTests.PPTruthTable
+namespace CslibFrontierTests.PPTruthTable
 
 def headTrue : Set (List Bool) := {w | w.getD 0 false = true}
 
@@ -108,4 +108,4 @@ example : newmanPoly 1 2 = 12 ∧ 2 * |newmanPoly 1 (-2)| ≤ 12 := by
   have hval : newmanPoly 1 2 = 12 := by decide
   exact ⟨hval, hval ▸ two_mul_abs_newmanPoly_neg_le (by omega) (by omega)⟩
 
-end ComplexityTests.PPTruthTable
+end CslibFrontierTests.PPTruthTable

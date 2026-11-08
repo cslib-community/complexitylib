@@ -12,10 +12,10 @@ import CslibFrontierTests.QuantumPolynomial
 parity, and the bounds applied to the exact one-query algorithm `readBit` and to the `OR_N`
 algorithm `orSearch`, so their hypotheses are satisfiable by non-constant functions. -/
 
-namespace ComplexityTests.QuantumAdversary
+namespace CslibFrontierTests.QuantumAdversary
 
 open Cslib Cslib.Quantum Cslib.BitString Cslib.QueryComplexity Finset
-open ComplexityTests.QuantumPolynomial
+open CslibFrontierTests.QuantumPolynomial
 
 /-- Every coordinate is sensitive for parity. -/
 theorem sensitiveCoords_parity {n : ℕ} (x : BitString n) : sensitiveCoords (parity n) x = univ :=
@@ -65,4 +65,4 @@ example (N : ℕ) (hN : 0 < N) : N ≤ 1296 * (orRange N + orRange N) ^ 2 :=
     (degree_le_mul_sq (orSearch N) (norm_orSearchInit hN) _ (orAccept N)
       (abs_measureProb_run_orSearch_sub_le hN))
 
-end ComplexityTests.QuantumAdversary
+end CslibFrontierTests.QuantumAdversary

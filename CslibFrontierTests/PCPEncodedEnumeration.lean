@@ -10,7 +10,7 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! Complete finite enumeration, uniform construction, and functional-expression clients. -/
 
-namespace ComplexityTests.PCPEncodedEnumeration
+namespace CslibFrontierTests.PCPEncodedEnumeration
 
 open Cslib Cslib.PCP Cslib.PCP.Encoded Cslib.PCP.HadamardTester Turing.MultiTapeTM
 open ComputableTidilyInPolyTime
@@ -108,4 +108,4 @@ example : ComputableInPolyTime
 
 end Arbitrary
 
-end ComplexityTests.PCPEncodedEnumeration
+end CslibFrontierTests.PCPEncodedEnumeration

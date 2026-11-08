@@ -13,7 +13,7 @@ Prefix substitution preserves live suffix inputs, including empty prefixes and s
 The empty and full languages inhabit the advice class using actual constant-time deciders.
 -/
 
-namespace ComplexityTests.Advice
+namespace CslibFrontierTests.Advice
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Turing.MultiTapeTM
 
@@ -67,4 +67,4 @@ example (N : Polynomial ℕ) :
         (evalAdvice (S.eval n) (W.eval n) (α n) x = true ↔ x ∈ (⊤ : Language Bool)) :=
   PPoly.exists_evalAdvice PPoly.top_mem N
 
-end ComplexityTests.Advice
+end CslibFrontierTests.Advice

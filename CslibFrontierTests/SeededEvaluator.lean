@@ -10,7 +10,7 @@ import CslibFrontier.Tactic.PPT
 
 /-! Typed saved-coin evaluation, arbitrary seeds, and one shared tape for distinct inputs. -/
 
-namespace ComplexityTests.SeededEvaluator
+namespace CslibFrontierTests.SeededEvaluator
 
 open Cslib Cslib.Probability Turing.MultiTapeTM
 
@@ -75,4 +75,4 @@ example : ∃ (c d : ℕ) (evaluate : List Bool → List Bool → List Bool),
   exact ⟨c, d, evaluate, hefficient, fun a b length ha hb =>
     ⟨(hlaw a length ha).symm, (hlaw b length hb).symm⟩⟩
 
-end ComplexityTests.SeededEvaluator
+end CslibFrontierTests.SeededEvaluator

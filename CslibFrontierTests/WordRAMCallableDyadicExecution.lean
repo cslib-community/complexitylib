@@ -18,7 +18,7 @@ original-input frame use the same final state. These are kernel clients on large
 geometry, not enormous interpreter fixtures or supplied executions.
 -/
 
-namespace ComplexityTests.WordRAMCallableDyadicExecution
+namespace CslibFrontierTests.WordRAMCallableDyadicExecution
 
 open Cslib.WordRAM Cslib.Matrix Cslib.Algorithms.ExactTriangle
 open Cslib.Algorithms.WordRAM.ExactTriangle
@@ -102,4 +102,4 @@ example : TimedConstant 0 1 := by simpa using timed_constant 0 (by decide)
 example : TimedConstant 1 0 := by simpa using timed_constant 1 (by decide)
 example : TimedConstant (-1) 0 := by simpa using timed_constant (-1) (by decide)
 
-end ComplexityTests.WordRAMCallableDyadicExecution
+end CslibFrontierTests.WordRAMCallableDyadicExecution

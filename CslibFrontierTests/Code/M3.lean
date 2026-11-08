@@ -28,7 +28,7 @@ more than half of the directions. A binary Hamming ball, and Justesen codes over
 with `2 ^ (16 * s)` elements, which satisfy the hypotheses of the asymptotic statement.
 -/
 
-namespace ComplexityTests.Code.M3
+namespace CslibFrontierTests.Code.M3
 
 open Cslib Cslib.Code Finset Polynomial
 
@@ -180,4 +180,4 @@ example : ¬ IsAsymptoticallyGood (fun s : ℕ => (Set.univ : Set (Fin (s + 2) �
   rw [Fintype.card_fin, mul_one, Nat.cast_le] at hle
   omega
 
-end ComplexityTests.Code.M3
+end CslibFrontierTests.Code.M3

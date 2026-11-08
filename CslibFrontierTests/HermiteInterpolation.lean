@@ -18,7 +18,7 @@ set_option linter.privateModule false
 /-! Tests for confluent Hermite interpolation: Taylor jets, node-varying multiplicities and the
 Chinese-remainder form. -/
 
-namespace ComplexityTests.HermiteInterpolation
+namespace CslibFrontierTests.HermiteInterpolation
 
 open Polynomial
 
@@ -162,4 +162,4 @@ example (p : ℚ[X]) (hp : p.degree < 3) :
   norm_num
   ring
 
-end ComplexityTests.HermiteInterpolation
+end CslibFrontierTests.HermiteInterpolation

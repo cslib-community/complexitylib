@@ -40,7 +40,7 @@ signs matter: summing the subsets without signs would give `6 V` and `1 + 6 V`.
 
 @[expose] public section
 
-namespace ComplexityTests.TensorNetworkIncidenceEntry
+namespace CslibFrontierTests.TensorNetworkIncidenceEntry
 
 open Cslib.Circuits.Frontier Cslib.Circuits.Frontier.IncidenceNetwork
 
@@ -121,4 +121,4 @@ example : ∃ c : ℕ, ∀ q : Desc × List Bool,
   let ⟨c, h⟩ := exists_incCertificate_le
   ⟨c, fun q => (h q).1⟩
 
-end ComplexityTests.TensorNetworkIncidenceEntry
+end CslibFrontierTests.TensorNetworkIncidenceEntry

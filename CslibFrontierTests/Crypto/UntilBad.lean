@@ -17,7 +17,7 @@ that asks once and returns the answer, the difference lemma is tight: the succes
 are `1 / 2` and `0`, and the flag is raised with probability `1 / 2` under both handlers.
 -/
 
-namespace ComplexityTests.Crypto.UntilBad
+namespace CslibFrontierTests.Crypto.UntilBad
 
 open Cslib Cslib.Probability Cslib.OracleComp
 
@@ -96,4 +96,4 @@ example :
   rw [runFinderOracle_query_inr]
   simp [runFinderOracle_pure]
 
-end ComplexityTests.Crypto.UntilBad
+end CslibFrontierTests.Crypto.UntilBad

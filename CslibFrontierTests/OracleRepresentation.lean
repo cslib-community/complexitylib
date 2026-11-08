@@ -8,7 +8,7 @@ import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 
 /-! Reply and state transport with noninjective representations and adaptive private sampling. -/
 
-namespace ComplexityTests.OracleRepresentation
+namespace CslibFrontierTests.OracleRepresentation
 
 open Cslib
 
@@ -99,4 +99,4 @@ example {result : Bool × Bool × Bool} {final : Bool × Bool}
       simpa using hstate)
     randomized (false, true) (by decide) result final h
 
-end ComplexityTests.OracleRepresentation
+end CslibFrontierTests.OracleRepresentation

@@ -34,7 +34,7 @@ traversal `Cslib.Algorithms.Lean.KCenter.gonzalez`, the k-center optimum
 
 public section
 
-namespace ComplexityTests.KCenter
+namespace CslibFrontierTests.KCenter
 
 open Cslib.Algorithms.Lean.KCenter
 
@@ -202,4 +202,4 @@ example : ∃ S : Finset (Fin 3), S.card = 2 ∧
 example : optRadius (domDist (α := ℕ) (⊥ : SimpleGraph (Fin 2))) 1 = (2 : ℕ) :=
   optRadius_domDist_eq_two Nat.one_pos (by decide)
 
-end ComplexityTests.KCenter
+end CslibFrontierTests.KCenter

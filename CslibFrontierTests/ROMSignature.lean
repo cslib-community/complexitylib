@@ -23,11 +23,11 @@ Verifies the `Interactive.World` execution core and final-message admissibility 
 - `schnorrROMScheme` (`ROMSignature.Scheme` over `ZMod 11`).
 -/
 
-namespace ComplexityTests.ROMSignature
+namespace CslibFrontierTests.ROMSignature
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Protocols
 open Cslib.Crypto.Protocols.ROMSignature Cslib.Crypto.Protocols.SigmaProtocol
-open Turing.MultiTapeTM ComplexityTests.Crypto.Signature
+open Turing.MultiTapeTM CslibFrontierTests.Crypto.Signature
 open scoped NNReal
 
 /-! ## Final-message freshness vs pairwise `Nodup` -/
@@ -154,13 +154,13 @@ example (n : ℕ) :
 
 /-! ## Bridge instantiation 4: `schnorrROMScheme` (`ZMod 11`) -/
 
-open ComplexityTests.Crypto.FiatShamir
+open CslibFrontierTests.Crypto.FiatShamir
 
 /-- `schnorrROMScheme` on `Bool` messages in `ZMod 11` with base `2` equals the Fiat–Shamir
 transform of `schnorr`. -/
 example :
     schnorrROMScheme (M := Bool) ι (2 : ZMod 11) =
-      ComplexityTests.Crypto.FiatShamir.scheme := rfl
+      CslibFrontierTests.Crypto.FiatShamir.scheme := rfl
 
 -- `schnorrROMScheme_correct` establishes unrestricted `ROMSignature.Scheme.Correct`.
 example : (schnorrROMScheme (M := Bool) ι (2 : ZMod 11)).Correct :=
@@ -190,4 +190,4 @@ example :
   eufCmaFinalMsgGame_apply_true_le (fun b => b)
     (schnorrROMScheme (M := Bool) ι (2 : ZMod 11)) knower
 
-end ComplexityTests.ROMSignature
+end CslibFrontierTests.ROMSignature

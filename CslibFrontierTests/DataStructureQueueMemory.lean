@@ -21,7 +21,7 @@ theorems apply: their room and admissibility hypotheses hold here.
 
 @[expose] public section
 
-namespace ComplexityTests.DataStructureQueueMemory
+namespace CslibFrontierTests.DataStructureQueueMemory
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.Memory Cslib.DataStructure.Queue
   Cslib.DataStructure.Queue.Memory
@@ -88,4 +88,4 @@ example : (spec 8).totalCost (fun s o => charge s o + 2) empty
 /-- A memory with too little room: the second stack would end past the 4-bit word range. -/
 example : ¬Fits 4 (empty.frontier + 2 * (7 + 1)) := by decide
 
-end ComplexityTests.DataStructureQueueMemory
+end CslibFrontierTests.DataStructureQueueMemory

@@ -11,7 +11,7 @@ import Mathlib.Tactic.NormNum
 These are source representation and real source-method tests, not a native initialization clock.
 No global zero-above or arbitrary-dirty constant-time clearing is assumed. -/
 
-namespace ComplexityTests.BinaryHeapCompactMemory
+namespace CslibFrontierTests.BinaryHeapCompactMemory
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.Memory
 open Cslib.DataStructure.PriorityQueue Cslib.DataStructure.PriorityQueue.BinaryHeap.Memory
@@ -90,4 +90,4 @@ example : Inv (compactLayout 0 0) zeroState ∧
 example : (Memory.spec 1).clientResult zeroState (isEmpty (compactLayout 0 0)) = true :=
   by decide +kernel
 
-end ComplexityTests.BinaryHeapCompactMemory
+end CslibFrontierTests.BinaryHeapCompactMemory

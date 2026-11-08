@@ -13,7 +13,7 @@ Concrete instances exercising the high-degree rule, active-vertex relabelling, i
 padding for exact-`k` covers, and rejection when `k > n`, `|high| > k`, or `|active| > k (k + 1)`.
 -/
 
-namespace ComplexityTests.VertexCoverKernel
+namespace CslibFrontierTests.VertexCoverKernel
 
 open Cslib.Complexity Cslib.Complexity.VertexCover Cslib.Complexity.VertexCover.Buss
 open Turing.MultiTapeTM
@@ -94,4 +94,4 @@ example {γ : Type} {enc : γ ↪ List Bool} {x : γ → Graph × ℕ} {G : γ �
       ComputableInPolyTime (fun c => degree (G c) (v c)) enc encUnary := by
   refine ⟨?_, ?_⟩ <;> fun_prop
 
-end ComplexityTests.VertexCoverKernel
+end CslibFrontierTests.VertexCoverKernel

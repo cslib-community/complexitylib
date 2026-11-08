@@ -38,7 +38,7 @@ library definitions and theorems over `Cslib.WordRAM.Basis.exact`:
    `(S, P)` satisfying `RandomizedWordRAMBridge.Laws S` and `HFLaws S P`.
 -/
 
-namespace ComplexityAbstracts.HashFamiliesBridge
+namespace CslibFrontierAbstracts.HashFamiliesBridge
 
 open scoped ENNReal BigOperators
 open Cslib
@@ -48,7 +48,7 @@ open Cslib.DataStructure
 open Cslib.DataStructure.WordRAM.Randomized
 open Cslib.DataStructure.HashFamily.WordRAM
 open Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation
-open ComplexityAbstracts.RandomizedWordRAMBridge
+open CslibFrontierAbstracts.RandomizedWordRAMBridge
 
 /-! ## Part 1: Resource functions and failure-probability bounds at `c_exp = 4` -/
 
@@ -2285,4 +2285,4 @@ theorem highIndependenceHashFamily_clear (S : Presentation) (hS : Laws S)
   exact provableImpl_clear_general S hS P hP 4 k n_max U M hU hM
     (provableFailureProb_le_failureProbBound k n_max)
 
-end ComplexityAbstracts.HashFamiliesBridge
+end CslibFrontierAbstracts.HashFamiliesBridge

@@ -16,7 +16,7 @@ open scoped ENNReal NNReal
 
 noncomputable section
 
-namespace ComplexityTests.TotalVariationMixture
+namespace CslibFrontierTests.TotalVariationMixture
 
 private theorem atoms_distance : tvDist (Measure.dirac (0 : ℝ)) (Measure.dirac (1 : ℝ)) = 2 := by
   have h : Measure.dirac (0 : ℝ) ⟂ₘ Measure.dirac (1 : ℝ) :=
@@ -101,4 +101,4 @@ example (p q : PMF (Fin 6)) (μ ν : Fin 6 → Measure ℝ)
       _ = _ := by rw [← Finset.sum_mul, Cslib.Probability.PMF.sum_toReal, one_mul]
   exact add_le_add hc hweights
 
-end ComplexityTests.TotalVariationMixture
+end CslibFrontierTests.TotalVariationMixture

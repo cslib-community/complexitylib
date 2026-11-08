@@ -15,7 +15,7 @@ instances are genuine), and a concrete consequence of the linear depth bound: mo
 for bipartite perfect matching on `2 ^ 20 + 2 ^ 20` vertices have depth at least `126`.
 -/
 
-namespace ComplexityTests.BipartiteMatching
+namespace CslibFrontierTests.BipartiteMatching
 
 open Cslib Cslib.Circuits Cslib.Circuits.BipartiteMatching Cslib.Communication
 
@@ -77,4 +77,4 @@ example :
     have : 2 ^ 20 ≤ 2 ^ 13 * d + 2 ^ 14 := by exact_mod_cast h
     exact_mod_cast (show 126 ≤ d by omega)
 
-end ComplexityTests.BipartiteMatching
+end CslibFrontierTests.BipartiteMatching

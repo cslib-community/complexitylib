@@ -20,7 +20,7 @@ conclusion is reached. The windowed simulation
 
 @[expose] public section
 
-namespace ComplexityTests.DivConq
+namespace CslibFrontierTests.DivConq
 
 open Turing.MultiTapeTM
 
@@ -50,4 +50,4 @@ example : ComputableInO (fun n : ℕ => n) encUnary encUnary
     (fun _ _ => le_rfl) (fun _ _ _ h => absurd h (by simp [trivialDC]))
     (fun _ => .base rfl)
 
-end ComplexityTests.DivConq
+end CslibFrontierTests.DivConq

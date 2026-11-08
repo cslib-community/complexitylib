@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.PPZ
 /-! PPZ for k-SAT: a uniquely satisfiable instance, a formula with several satisfying assignments,
 critical clauses and random orders. -/
 
-namespace ComplexityTests.PPZ
+namespace CslibFrontierTests.PPZ
 
 open Cslib.Logic.PL Cslib.Complexity.PPZ
 
@@ -69,4 +69,4 @@ example : prefixSet (Equiv.swap (π₀ ⟨1, by decide⟩) 1 * π₀) 2 = {1, 2}
   rw [prefixSet_swap (by decide) (by decide)]
   decide
 
-end ComplexityTests.PPZ
+end CslibFrontierTests.PPZ

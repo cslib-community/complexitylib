@@ -17,10 +17,10 @@ both refresh through the full budget and the endpoint selected by the outer tag.
 correctness and runtime tests, with no security claim.
 -/
 
-namespace ComplexityTests.HomomorphicLeveled
+namespace CslibFrontierTests.HomomorphicLeveled
 
 open Cslib Cslib.Circuits Cslib.Crypto.Homomorphic Cslib.Probability Turing.MultiTapeTM
-open ComplexityTests.HomomorphicExample Boolean.Layered
+open CslibFrontierTests.HomomorphicExample Boolean.Layered
 
 private def keys : List (List Bool × List Bool) :=
   [([false], [false]), ([true], [true]), ([true], [true])]
@@ -324,4 +324,4 @@ example : IsPPTOn
 example : PolynomiallyBounded (fun _ : ℕ => 4) ∧ PolynomiallyBounded (fun _ : ℕ => 3) :=
   Leveled.polynomiallyBounded_widths decryptionCircuits circuits_poly
 
-end ComplexityTests.HomomorphicLeveled
+end CslibFrontierTests.HomomorphicLeveled

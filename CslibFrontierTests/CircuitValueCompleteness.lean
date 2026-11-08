@@ -12,7 +12,7 @@ among its wires; its hypothesis `n < 2 T` is met by the time bound of the reduct
 applies to the circuit value problem itself and to its complement; and completeness transfers to
 polynomial-time reductions. -/
 
-namespace ComplexityTests.CircuitValueCompleteness
+namespace CslibFrontierTests.CircuitValueCompleteness
 
 open Cslib Cslib.Complexity Cslib.Circuits Cslib.Circuits.Boolean Turing Turing.MultiTapeTM
 
@@ -89,4 +89,4 @@ example :
   CircuitValue.exists_uniformCircuits (enc := encBits)
     (ComputableInPolyTime.headD (encA := encBool) false)
 
-end ComplexityTests.CircuitValueCompleteness
+end CslibFrontierTests.CircuitValueCompleteness

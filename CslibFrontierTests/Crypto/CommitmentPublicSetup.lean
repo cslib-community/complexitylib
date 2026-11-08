@@ -15,7 +15,7 @@ determine every honest operation. Exposing the setup bit in the XOR construction
 chosen-message adversary recover the challenge bit exactly.
 -/
 
-namespace ComplexityTests.Crypto.CommitmentPublicSetup
+namespace CslibFrontierTests.Crypto.CommitmentPublicSetup
 
 open Cslib Cslib.Probability Cslib.Crypto
 
@@ -80,4 +80,4 @@ example (keyDist : ℕ → PMF Bool) : ¬ xorScheme.StatisticalHiding keyDist :=
   exact not_negligible_const (c := 1) one_ne_zero (by
     simpa [hgame, Game.advantage, Game.succProbability] using h xorAdversary trivial)
 
-end ComplexityTests.Crypto.CommitmentPublicSetup
+end CslibFrontierTests.Crypto.CommitmentPublicSetup

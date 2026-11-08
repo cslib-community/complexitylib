@@ -16,7 +16,7 @@ gap hypothesis discharged, a client deriving that the action is transitive, and 
 two affine walks over unrelated fields.
 -/
 
-namespace ComplexityTests.SliceGap
+namespace CslibFrontierTests.SliceGap
 
 open Cslib Cslib.Probability Cslib.RotationMap Finset Matrix
 open scoped BigOperators
@@ -90,4 +90,4 @@ example (P P' L L' : ℕ) [Fact P.Prime] [Fact P'.Prime] [NeZero L] [NeZero L'] 
     le_min (by linarith) (by linarith)
   linarith
 
-end ComplexityTests.SliceGap
+end CslibFrontierTests.SliceGap

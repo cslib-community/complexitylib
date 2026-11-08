@@ -13,10 +13,10 @@ tails of threshold votes, a Hoeffding bound checked against the exact tail, gaps
 `1 / 2`, the degenerate gap below `0`, lower bounds on distances forced by measurements, and the
 distance between `NOT` and the identity. -/
 
-namespace ComplexityTests.BQPApproximation
+namespace CslibFrontierTests.BQPApproximation
 
 open Cslib Cslib.Quantum Cslib.Complexity Finset Turing.MultiTapeTM
-open ComplexityTests.BQP
+open CslibFrontierTests.BQP
 open scoped Matrix.Norms.L2Operator
 
 /-! ### Threshold votes over two fair coins -/
@@ -128,4 +128,4 @@ example : 1 ≤ ‖(notGate.matrix : Matrix (Fin 1 → Bool) (Fin 1 → Bool) �
     abs_one] at h
   simpa using h
 
-end ComplexityTests.BQPApproximation
+end CslibFrontierTests.BQPApproximation

@@ -23,7 +23,7 @@ applies with final envelope one, covering the range fallback and the absent capa
 The separate `PolynomialAtomRows` regression exercises nonzero preloss with final raw error zero.
 -/
 
-namespace ComplexityTests.PolynomialAtomNoOverflow
+namespace CslibFrontierTests.PolynomialAtomNoOverflow
 
 open Finset Cslib Cslib.RowCompression
 
@@ -199,4 +199,4 @@ example : (1 : ℕ) < 2 ∧
   norm_num [dyadicFloor, dyadicSlack] at h
   simpa only [div_eq_mul_inv, one_mul] using h
 
-end ComplexityTests.PolynomialAtomNoOverflow
+end CslibFrontierTests.PolynomialAtomNoOverflow

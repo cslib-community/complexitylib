@@ -28,7 +28,7 @@ lines, including input-clause lines; it does not measure solver runtime.
 * [S. Jukna, *Boolean Function Complexity*, Chapter 18][Jukna2012]
 -/
 
-namespace ComplexityTests.Abstracts.ResolutionAbstract
+namespace CslibFrontierTests.Abstracts.ResolutionAbstract
 
 /-! ## CNF formulas and resolution certificates
 
@@ -88,17 +88,17 @@ theorem haken {n s : ℕ} (hs : RefutableInSize (pigeonhole (n + 1) n) s) :
     ⟨fun _ => Iff.rfl, fun _ _ _ => Iff.rfl⟩ hs
 
 /--
-info: 'ComplexityTests.Abstracts.ResolutionAbstract.haken' depends on axioms:
+info: 'CslibFrontierTests.Abstracts.ResolutionAbstract.haken' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms haken
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.ResolutionAbstract`: 12 root
+info: abstract audit passed for `CslibFrontierTests.Abstracts.ResolutionAbstract`: 12 root
 declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.ResolutionAbstract
+#check_abstract CslibFrontierTests.Abstracts.ResolutionAbstract
 
-end ComplexityTests.Abstracts.ResolutionAbstract
+end CslibFrontierTests.Abstracts.ResolutionAbstract

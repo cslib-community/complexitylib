@@ -18,7 +18,7 @@ repeated junk word, with the full finite-query theorem applied to its checked bu
 
 noncomputable section
 
-namespace ComplexityTests.Crypto.SchnorrWordROM
+namespace CslibFrontierTests.Crypto.SchnorrWordROM
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Protocols SigmaProtocol ROMSignature
 open Turing.MultiTapeTM
@@ -141,4 +141,4 @@ example :
     schnorrGroups.succProbability_eufCmaGame_schnorrWordROMScheme_le
       d23 challenge_bound forger forger_bound
 
-end ComplexityTests.Crypto.SchnorrWordROM
+end CslibFrontierTests.Crypto.SchnorrWordROM

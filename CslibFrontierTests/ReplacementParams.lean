@@ -18,7 +18,7 @@ biased (`p = 1 / 4`, both signs of `s`, and exact rational `Q = 4` tail mass) in
 control (`n = 20`) and an explicit feasible point `n = 2 ^ (2 ^ 50)` with `rowCost 1 n < 1 / 3`.
 -/
 
-namespace ComplexityTests.ReplacementParams
+namespace CslibFrontierTests.ReplacementParams
 
 open Cslib Cslib.Complexity.SubexponentialSAT Cslib.Complexity.SubexponentialSAT.ReplacementParams
 open Finset
@@ -148,4 +148,4 @@ example : ∃ m n : ℕ, m = 2 ^ 50 ∧ n = 2 ^ m ∧ numGroups n = 13421 ∧
     binomTail_lt := binomTail_lt_tailBudget le_rfl hr hR hRQ le_rfl (by rw [hcl_n]; norm_num)
     rowCost_bound := hrc }, hrc_lt⟩
 
-end ComplexityTests.ReplacementParams
+end CslibFrontierTests.ReplacementParams

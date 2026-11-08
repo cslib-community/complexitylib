@@ -16,7 +16,7 @@ set-multilinear on every set of blocks and computes zero, the case that Claim 16
 separately.
 -/
 
-namespace ComplexityTests.ArithmeticRelativeRankUpper
+namespace CslibFrontierTests.ArithmeticRelativeRankUpper
 
 open Cslib.Circuits Cslib.Circuits.Arithmetic MvPolynomial
 
@@ -84,4 +84,4 @@ example : (SPFormula.zero : SPFormula ℚ 2).polynomial = 0 :=
     |>.card_le_one_or_polynomial_eq_zero SPFormula.productDepth_zero
     |>.resolve_left (by decide)
 
-end ComplexityTests.ArithmeticRelativeRankUpper
+end CslibFrontierTests.ArithmeticRelativeRankUpper

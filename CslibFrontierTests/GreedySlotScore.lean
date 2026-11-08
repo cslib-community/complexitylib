@@ -13,7 +13,7 @@ import Mathlib.Tactic.NormNum
 # Concrete tests for greedy slot-score arithmetic and streaming candidate selection
 -/
 
-namespace ComplexityTests.GreedySlotScore
+namespace CslibFrontierTests.GreedySlotScore
 
 open Finset Cslib.BalancedSchedules Cslib.GenericRAM Turing.MultiTapeTM
 
@@ -107,4 +107,4 @@ example :
    computableInPolySpace_streamBestSlotLabel.comp
      (.of_polyTime (ComputableInPolyTime.fst encStreamSlotIn encNat))⟩
 
-end ComplexityTests.GreedySlotScore
+end CslibFrontierTests.GreedySlotScore

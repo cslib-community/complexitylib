@@ -11,7 +11,7 @@ import CslibFrontier.Algorithms.MatrixMultiplication.Schonhage.MaskTable
 -- These regressions evaluate actual native code; general execution proofs are checked separately.
 set_option linter.hashCommand false
 
-namespace ComplexityTests.SchonhageBandPreparation
+namespace CslibFrontierTests.SchonhageBandPreparation
 
 open Cslib.WordRAM Cslib.WordRAM.Signed
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
@@ -219,4 +219,4 @@ example (m : ℕ) : let M := m + 1
     (by intro i k; decide) (by intro k j; decide) hmag hfit
   exact ⟨w, n, hw, Nat.succ_pos _, hfit, hmag, he, ht⟩
 
-end ComplexityTests.SchonhageBandPreparation
+end CslibFrontierTests.SchonhageBandPreparation

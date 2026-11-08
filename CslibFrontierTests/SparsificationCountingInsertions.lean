@@ -14,7 +14,7 @@ public section
 open Cslib.Logic.PL
 open ClauseSet.Sparsification Finset
 
-namespace ComplexityTests.SparsificationCountingInsertions
+namespace CslibFrontierTests.SparsificationCountingInsertions
 
 /-- A two-petal B-step counts both petal units and the negated-heart unit. -/
 theorem binary_flower_inserts_three_units :
@@ -203,4 +203,4 @@ example : ((tautNodes 1).filter fun C => C ∉ tautNodes 0 ∧ C.card = 2).card 
 example : (∑ m ∈ range 1, ((tautNodes m).filter fun C =>
     C ∉ tautNodes 0 ∧ C.card = 2 ∧ C ∉ tautNodes (m + 1)).card) = 0 := by decide
 
-end ComplexityTests.SparsificationCountingInsertions
+end CslibFrontierTests.SparsificationCountingInsertions

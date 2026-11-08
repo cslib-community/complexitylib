@@ -26,7 +26,7 @@ Kernel-checked instances (no `native_decide`) of the four forms of Menger's theo
 
 public section
 
-namespace ComplexityTests.Menger
+namespace CslibFrontierTests.Menger
 
 open Cslib.Algorithms.Lean.MaxFlow SimpleGraph
 
@@ -157,4 +157,4 @@ example : ¬ ∃ P : Fin 3 → List (Fin 4), (∀ i, IsDipath dg 0 3 (P i)) ∧
     (by decide) (by decide))
   simp at this
 
-end ComplexityTests.Menger
+end CslibFrontierTests.Menger

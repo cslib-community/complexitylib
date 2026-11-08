@@ -29,7 +29,7 @@ Concrete non-vacuity and behavioral tests for `Cslib.WordRAM.expectedTime` and
 
 @[expose] public section
 
-namespace ComplexityTests.WordRAMQuicksort
+namespace CslibFrontierTests.WordRAMQuicksort
 
 open Cslib Cslib.WordRAM Cslib.Algorithms.WordRAM
 open scoped ENNReal
@@ -168,4 +168,4 @@ theorem harmonic_six_bound :
     harmonic 6 = 49 / 20 ∧ harmonic 6 ≤ (Nat.log 2 6 : ℚ) + 1 :=
   ⟨by norm_num [harmonic, Finset.sum_range_succ], harmonic_le_log_add_one 6⟩
 
-end ComplexityTests.WordRAMQuicksort
+end CslibFrontierTests.WordRAMQuicksort

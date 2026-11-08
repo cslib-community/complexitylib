@@ -14,7 +14,7 @@ The constant's numerical bounds and its edge cases, and the triangle `K₃`: thr
 satisfiable and that the guarantee holds with room to spare (`α · 2 < 2`). The bridge to
 `Cslib.Complexity.MaxCut.cutWeight` is checked on a small weighted instance. -/
 
-namespace ComplexityTests.GoemansWilliamsonMaxCut
+namespace CslibFrontierTests.GoemansWilliamsonMaxCut
 
 open MeasureTheory ProbabilityTheory Real Cslib.Algorithms.Lean.MaxCut
 open scoped RealInnerProductSpace
@@ -149,4 +149,4 @@ example : cutValue (fun i : Fin pathL.length => pathL[i].1) (fun i => (pathL[i].
     show Cslib.Complexity.MaxCut.cutWeight pathL (fun n => decide (n = 1)) = 8 by decide]
   norm_num
 
-end ComplexityTests.GoemansWilliamsonMaxCut
+end CslibFrontierTests.GoemansWilliamsonMaxCut

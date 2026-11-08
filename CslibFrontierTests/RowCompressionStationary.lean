@@ -21,7 +21,7 @@ The remaining group preserves a nonzero gated output. A fourth-power ramp exhibi
 positive fourth-root discrepancy and satisfies the weighted comparison theorem's scalar laws.
 -/
 
-namespace ComplexityTests.RowCompressionStationary
+namespace CslibFrontierTests.RowCompressionStationary
 
 open Finset Cslib.RowCompression
 
@@ -327,4 +327,4 @@ example : rankOutput (lowReference.row 0 0) (lowReference.row 0 1)
   rw [heq, rank_output_root, true_rank_zero]
   norm_num [initial, unitCutoff]
 
-end ComplexityTests.RowCompressionStationary
+end CslibFrontierTests.RowCompressionStationary

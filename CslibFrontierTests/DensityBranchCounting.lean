@@ -14,7 +14,7 @@ earlier counters recovered from the single one: its bound on every formula gives
 interpolation-scale counter, and its fixed-density bound gives the shape of the
 tensor-contraction counter. -/
 
-namespace ComplexityTests.DensityBranchCounting
+namespace CslibFrontierTests.DensityBranchCounting
 
 open Cslib.Logic.PL Cslib.Complexity Cslib.Complexity.DensityBranchCounting
   Cslib.Complexity.SubexponentialSAT Turing.MultiTapeTM
@@ -60,4 +60,4 @@ example (k : ℕ) : ∃ (count : CNF ℕ → ℕ) (T S : CNF ℕ → ℕ) (e b :
     (Nat.pow_le_pow_right (by norm_num) (Nat.div_le_div_right (Nat.mul_le_mul_left _
       (Nat.le_succ _)))))⟩
 
-end ComplexityTests.DensityBranchCounting
+end CslibFrontierTests.DensityBranchCounting

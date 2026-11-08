@@ -29,7 +29,7 @@ These kernel-checked examples (using no `native_decide`) exercise:
 
 public section
 
-namespace ComplexityTests.Kruskal
+namespace CslibFrontierTests.Kruskal
 
 open Cslib.Algorithms.Lean.Kruskal
 open Cslib.DataStructure.DisjointSet
@@ -268,4 +268,4 @@ example :
       rfl
     rwa [hcard] at hu
 
-end ComplexityTests.Kruskal
+end CslibFrontierTests.Kruskal

@@ -21,7 +21,7 @@ arbitrary component bounds, and a concrete option client using both input and pa
 
 open Turing.MultiTapeTM
 
-namespace ComplexityTests.NativeProducts
+namespace CslibFrontierTests.NativeProducts
 
 -- Empty dimensions and payload types, repeated gathering indices, stored updates, arbitrary
 -- component bounds, and read-after-update composition.
@@ -107,4 +107,4 @@ example (empty : Empty ↪ List Bool) :
     (ComputableInDegree.id' (enc := encUnary)).inO_one hb
   convert h using 1 <;> funext n <;> simp only [Option.elim_none] <;> omega
 
-end ComplexityTests.NativeProducts
+end CslibFrontierTests.NativeProducts

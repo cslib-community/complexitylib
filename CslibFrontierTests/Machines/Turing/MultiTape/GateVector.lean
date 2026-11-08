@@ -20,7 +20,7 @@ the unsigned field coordinates used by interpolation.
 
 public section
 
-namespace ComplexityTests.GateVector
+namespace CslibFrontierTests.GateVector
 
 open Turing MultiTapeTM MultiTapePTM.BlockComputation
 open MultiTapePTM.BlockComputation.QueryReplay
@@ -65,4 +65,4 @@ example : NormalizePoint.normalize 17 [17, 18, 33] = [0, 1, 16] := by decide
 
 example : NormalizePoint.normalize 17 [34, 0, 52, 100] = [0, 0, 1, 15] := by decide
 
-end ComplexityTests.GateVector
+end CslibFrontierTests.GateVector

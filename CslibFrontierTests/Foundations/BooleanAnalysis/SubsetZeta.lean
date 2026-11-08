@@ -22,7 +22,7 @@ Concrete instances of `CslibFrontier.Foundations.BooleanAnalysis.SubsetZeta`:
 
 @[expose] public section
 
-namespace ComplexityTests.Foundations.BooleanAnalysis.SubsetZeta
+namespace CslibFrontierTests.Foundations.BooleanAnalysis.SubsetZeta
 
 open Cslib.BitString Finset
 
@@ -65,4 +65,4 @@ example : yatesTransform (1 : ℕ) [0, 0] e {0} = 2 ∧ subsetZeta e {0} = 1 := 
 example : yatesTransform (-1 : ℤ) [1, 0] (yatesTransform (1 : ℤ) [0, 1] w) = w := by
   rw [show ([1, 0] : List (Fin 2)) = [0, 1].reverse from rfl, yatesTransform_neg_reverse]
 
-end ComplexityTests.Foundations.BooleanAnalysis.SubsetZeta
+end CslibFrontierTests.Foundations.BooleanAnalysis.SubsetZeta

@@ -19,7 +19,7 @@ vacuous. The extra operations of `Basis.standard` do not enlarge uniform polynom
 At the level of functions, binary addition has a polynomial-time word-RAM program.
 -/
 
-namespace ComplexityTests.WordRAMInvariance
+namespace CslibFrontierTests.WordRAMInvariance
 
 open Cslib Cslib.WordRAM Turing.MultiTapeTM
 
@@ -90,4 +90,4 @@ example : ∃ (r : ℕ) (p : Program .standard r) (T W : ℕ → ℕ), Polynomia
   (turingComputableInPolyTime_iff_exists_computesInTime Basis.additiveHomStandard
     checkedOp_polyTime).1 ComputableInPolyTime.binary_add
 
-end ComplexityTests.WordRAMInvariance
+end CslibFrontierTests.WordRAMInvariance

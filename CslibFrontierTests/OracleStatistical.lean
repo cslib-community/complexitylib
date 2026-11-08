@@ -16,7 +16,7 @@ The state retains both the memoized answers and the repeated signing log. Only s
 error; the shared hash handler may extend the cache even though its cost is zero.
 -/
 
-namespace ComplexityTests.OracleStatistical
+namespace CslibFrontierTests.OracleStatistical
 
 open Cslib Cslib.OracleComp Cslib.Interactive Cslib.Probability
 open scoped ENNReal NNReal Cslib.Probability.PMF
@@ -104,4 +104,4 @@ example : ¬ CloseTo (PMF.pure (true, (1 : ℕ))) (PMF.pure (true, (0 : ℕ))) 0
   have hs := h {(true, 1)}
   simp [PMF.toOuterMeasure_apply_singleton, PMF.pure_apply] at hs
 
-end ComplexityTests.OracleStatistical
+end CslibFrontierTests.OracleStatistical

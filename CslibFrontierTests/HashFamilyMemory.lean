@@ -22,7 +22,7 @@ on the table with `compCoins`, and the stacked law and expected costs are instan
 
 @[expose] public section
 
-namespace ComplexityTests.HashFamilyMemory
+namespace CslibFrontierTests.HashFamilyMemory
 
 open Cslib Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.HashFamily
   Cslib.DataStructure.HashFamily.RandomTable
@@ -166,4 +166,4 @@ example : stacked.ExpectedAmortized (fun _ _ => 1) (fun _ o => budget 2 o + 1) f
   unfold stacked
   simpa using A.compCoins B
 
-end ComplexityTests.HashFamilyMemory
+end CslibFrontierTests.HashFamilyMemory

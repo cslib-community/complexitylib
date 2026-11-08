@@ -9,7 +9,7 @@ import CslibFrontier.Foundations.Data.BitString.Parity.DotProduct
 
 /-! Tests for Tanner codes on small-bias Cayley graphs. -/
 
-namespace ComplexityTests.TannerCode
+namespace CslibFrontierTests.TannerCode
 
 open Finset Cslib Cslib.BitString Cslib.BitString.Tanner Cslib.RotationMap Cslib.Probability.PMF
 open scoped BigOperators
@@ -69,4 +69,4 @@ example (emb : Fin 3 ↪ (Fin 1 → Bool) × Fin 2) (r : Bool × (Fin 1 → Bool
     weight (shortRow ![![false], ![true]] ![![true, true]] emb r) ≤ 2 :=
   weight_shortRow_le _ _ _ _
 
-end ComplexityTests.TannerCode
+end CslibFrontierTests.TannerCode

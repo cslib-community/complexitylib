@@ -21,7 +21,7 @@ An explicit four-register evaluation computes the right value, and three registe
 suffice for any interpretation.
 -/
 
-namespace ComplexityTests.CircuitPebbling
+namespace CslibFrontierTests.CircuitPebbling
 
 open Cslib Cslib.Circuits Cslib.Pebbling
 
@@ -34,9 +34,9 @@ def pyr : Program Boolean.signature 3 3 :=
   ((Program.empty.gate (andLine (.input 0) (.input 1))).gate
     (andLine (.input 1) (.input 2))).gate (andLine (.gate 0) (.gate 1))
 
-end ComplexityTests.CircuitPebbling
+end CslibFrontierTests.CircuitPebbling
 
-namespace ComplexityTests.CircuitPebbling
+namespace CslibFrontierTests.CircuitPebbling
 
 open Cslib Cslib.Circuits Cslib.Pebbling
 
@@ -104,4 +104,4 @@ example : ∃ ms d, (pyr.registerLTS Boolean.interpretation ![true, false, true]
   obtain ⟨ms, d, hd, hw, hv⟩ := h.exists_eq_trace
   exact ⟨ms, d, hd, hw, hv.trans (by decide)⟩
 
-end ComplexityTests.CircuitPebbling
+end CslibFrontierTests.CircuitPebbling

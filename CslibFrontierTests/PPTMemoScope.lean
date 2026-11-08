@@ -15,7 +15,7 @@ public section
 open Turing.MultiTapeTM
 open Lean Elab Tactic
 
-namespace ComplexityTests.PPTMemoScope
+namespace CslibFrontierTests.PPTMemoScope
 
 /-- An opaque routine has only a global construction certificate. -/
 @[irreducible] def rawRoutine (word : List Bool) : List Bool := word.reverse
@@ -63,4 +63,4 @@ example : ComputableInPolyTime rawRoutine encBits encBits := by
     Lean.Elab.Tactic.evalTactic (← `(tactic| fail_if_success polytime))
     Lean.Elab.Tactic.evalTactic (← `(tactic| fun_prop))
 
-end ComplexityTests.PPTMemoScope
+end CslibFrontierTests.PPTMemoScope

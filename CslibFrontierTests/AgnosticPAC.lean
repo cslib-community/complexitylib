@@ -12,10 +12,10 @@ realizes but under which the two constant hypotheses have optimal error `1 / 2`;
 exactly representative and samples that are not; and the agnostic Occam bound for the constants
 with explicit parameters, together with a matching check that zero examples do not suffice. -/
 
-namespace ComplexityTests.AgnosticPAC
+namespace CslibFrontierTests.AgnosticPAC
 
 open Cslib.MachineLearning.PACLearning MeasureTheory
-open ComplexityTests.RealizablePAC (constants card_constants const_mem_constants half
+open CslibFrontierTests.RealizablePAC (constants card_constants const_mem_constants half
   measurableSet_misclassified_constants not_isPACLearnerFor_constants_zero)
 open scoped NNReal ENNReal
 
@@ -118,4 +118,4 @@ label type there are no hypotheses at all, and the empty class is still learnabl
 example : IsPACLearnable ((∅ : Finset (Bool → Empty)) : Set (Bool → Empty)) Set.univ :=
   isPACLearnable_univ_of_finite (by simp)
 
-end ComplexityTests.AgnosticPAC
+end CslibFrontierTests.AgnosticPAC

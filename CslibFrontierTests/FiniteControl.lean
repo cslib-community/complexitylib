@@ -12,7 +12,7 @@ import CslibFrontier.Tactic.PPT
 
 /-! Finite dispatch retains captured data and charges every table entry and selected result. -/
 
-namespace ComplexityTests.FiniteControl
+namespace CslibFrontierTests.FiniteControl
 
 open Turing.MultiTapeTM Cslib Cslib.Probability
 
@@ -147,4 +147,4 @@ example : IsPPTOn encBits (encPair encBits encBits) (fun word => choose word.isE
     unfold choose
     ppt
 
-end ComplexityTests.FiniteControl
+end CslibFrontierTests.FiniteControl

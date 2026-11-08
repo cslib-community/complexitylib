@@ -10,7 +10,7 @@ import CslibFrontier.Computability.QueryComplexity.DeutschJozsa
 problem, two queries), `N = 4` (three queries), the tightness of the bound, and the degenerate case
 `N = 0`. -/
 
-namespace ComplexityTests.DeutschJozsa
+namespace CslibFrontierTests.DeutschJozsa
 
 open Cslib Cslib.QueryComplexity Cslib.BitString
 
@@ -73,4 +73,4 @@ example (F : (Fin 0 → Bool) → Bool) : ¬ SolvesDeutschJozsa F := by
   rw [h₁] at h₂
   exact Bool.true_eq_false.mp h₂ |>.elim
 
-end ComplexityTests.DeutschJozsa
+end CslibFrontierTests.DeutschJozsa

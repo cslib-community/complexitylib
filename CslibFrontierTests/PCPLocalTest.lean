@@ -8,7 +8,7 @@ import CslibFrontier.Computability.PCP.LocalTest.DecisionTree
 
 /-! Concrete regression clients for query padding and rejection of a random test family. -/
 
-namespace ComplexityTests.PCPLocalTest
+namespace CslibFrontierTests.PCPLocalTest
 
 open Cslib.PCP
 open Finset
@@ -129,4 +129,4 @@ example :
       exact ⟨hall true, hall false⟩)
   simpa using h
 
-end ComplexityTests.PCPLocalTest
+end CslibFrontierTests.PCPLocalTest

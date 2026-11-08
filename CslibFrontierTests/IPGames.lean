@@ -12,7 +12,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 difference between private and public coins on one game, a verifier that holds and one that
 fails, `AM[k] ⊆ IP[k]`, and gap amplification by parallel repetition. -/
 
-namespace ComplexityTests.IPGames
+namespace CslibFrontierTests.IPGames
 
 open Cslib Cslib.Complexity Cslib.Complexity.IPGame Turing.MultiTapeTM
 
@@ -82,4 +82,4 @@ example (T : Polynomial ℕ) : ∃ (G : List (IPMove × Polynomial ℕ)) (ρ : P
           3 ^ T.eval a.length * countAt encBits G ρ msg dec a ≤ 2 ^ ρ.eval a.length) :=
   IPGameClass.exists_repeat head_mem_IP2 T
 
-end ComplexityTests.IPGames
+end CslibFrontierTests.IPGames

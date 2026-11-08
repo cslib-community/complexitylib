@@ -19,7 +19,7 @@ the one-time, multi-query counter, nonce-based, randomized, and computational (`
 `MACScheme`) security bounds of `CslibFrontier.Crypto.Protocols.MAC.CarterWegman`.
 -/
 
-namespace ComplexityTests.Crypto.CarterWegman
+namespace CslibFrontierTests.Crypto.CarterWegman
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Protocols.CarterWegman Turing.MultiTapeTM
 open scoped ENNReal
@@ -590,4 +590,4 @@ example {family : List Bool → List Bool → List Bool}
   sufCmaGame_linearHashRandomMAC_toReal_le
     computableInPolyTime_id hfamily (isQueryBounded_twoQueryRandomMACForger n)
 
-end ComplexityTests.Crypto.CarterWegman
+end CslibFrontierTests.Crypto.CarterWegman

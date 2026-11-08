@@ -14,7 +14,7 @@ factor-two loss. The GSW clients use the actual growing parameter family and nat
 their security theorem retains its precise decision-LWE hypothesis.
 -/
 
-namespace ComplexityTests.GSWSecurity
+namespace CslibFrontierTests.GSWSecurity
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Homomorphic.GSW
 open Turing.MultiTapeTM
@@ -135,4 +135,4 @@ example
           adaptiveAdversary true k))) :=
   Parameters.indCPA hLWE adaptiveAdversary adaptiveAdversary_isPPT
 
-end ComplexityTests.GSWSecurity
+end CslibFrontierTests.GSWSecurity

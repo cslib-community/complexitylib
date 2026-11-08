@@ -19,7 +19,7 @@ in-place destination. These are coefficient-array operations, not a matrix/count
 
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMSignedArrayArithmetic
+namespace CslibFrontierTests.WordRAMSignedArrayArithmetic
 
 open Cslib.WordRAM Cslib.WordRAM.Signed Cslib.WordRAM.Signed.ArrayArithmetic
 
@@ -86,4 +86,4 @@ example : InputFits 8 input ∧ ∃ y t, t + 1 ≤ 61 ∧
       (p := (complete false 1 3 1 2).program Reg.output) (Program.Contains.self _).append_left
   · simpa only [State.init, hyout] using hex.executes Reg.output
 
-end ComplexityTests.WordRAMSignedArrayArithmetic
+end CslibFrontierTests.WordRAMSignedArrayArithmetic

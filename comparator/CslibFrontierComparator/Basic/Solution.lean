@@ -15,7 +15,7 @@ import CslibFrontier.Computability.Circuit.Complexity
 
 public section
 
-namespace ComplexityComparator.Basic
+namespace CslibFrontierComparator.Basic
 
 universe u v w s
 
@@ -29,4 +29,4 @@ theorem nonprojectionNeedsGate : NonprojectionNeedsGate.{u, s} := by
   intro σ U I _ n f hf
   exact Cslib.Circuits.one_le_complexity_single (I := I) hf
 
-end ComplexityComparator.Basic
+end CslibFrontierComparator.Basic

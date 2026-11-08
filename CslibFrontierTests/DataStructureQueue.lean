@@ -22,7 +22,7 @@ Recorded events describe operations and sizes; they are not measurements of runn
 
 @[expose] public section
 
-namespace ComplexityTests.DataStructureQueue
+namespace CslibFrontierTests.DataStructureQueue
 
 open Cslib.DataStructure Cslib.DataStructure.Queue
 
@@ -188,29 +188,29 @@ example {α : Type} (p : (queue Nat).Client α)
     omega
 
 /--
-info: 'ComplexityTests.DataStructureQueue.reverseStep_correct' depends on axioms:
+info: 'CslibFrontierTests.DataStructureQueue.reverseStep_correct' depends on axioms:
 [propext, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms ComplexityTests.DataStructureQueue.reverseStep_correct
+#print axioms CslibFrontierTests.DataStructureQueue.reverseStep_correct
 /--
-info: 'ComplexityTests.DataStructureQueue.adaptiveClient_backend' depends on axioms:
+info: 'CslibFrontierTests.DataStructureQueue.adaptiveClient_backend' depends on axioms:
 [propext, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms ComplexityTests.DataStructureQueue.adaptiveClient_backend
+#print axioms CslibFrontierTests.DataStructureQueue.adaptiveClient_backend
 /--
-info: 'ComplexityTests.DataStructureQueue.adaptiveClient_direct' depends on axioms:
+info: 'CslibFrontierTests.DataStructureQueue.adaptiveClient_direct' depends on axioms:
 [propext, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms ComplexityTests.DataStructureQueue.adaptiveClient_direct
+#print axioms CslibFrontierTests.DataStructureQueue.adaptiveClient_direct
 /--
-info: 'ComplexityTests.DataStructureQueue.adaptiveClient_reversed' depends on axioms:
+info: 'CslibFrontierTests.DataStructureQueue.adaptiveClient_reversed' depends on axioms:
 [propext, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms ComplexityTests.DataStructureQueue.adaptiveClient_reversed
+#print axioms CslibFrontierTests.DataStructureQueue.adaptiveClient_reversed
 /--
 info: 'Cslib.DataStructure.StateTransitionImpl.exists_executes' depends on axioms:
 [propext]
@@ -271,4 +271,4 @@ info: 'Cslib.DataStructure.Queue.realized_client_bound' depends on axioms:
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.DataStructure.Queue.realized_client_bound
 
-end ComplexityTests.DataStructureQueue
+end CslibFrontierTests.DataStructureQueue

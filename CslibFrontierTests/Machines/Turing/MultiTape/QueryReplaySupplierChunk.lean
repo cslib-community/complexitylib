@@ -20,7 +20,7 @@ huge padded words. A concrete replay queries the original input before extractin
 
 public section
 
-namespace ComplexityTests.QueryReplaySupplierChunk
+namespace CslibFrontierTests.QueryReplaySupplierChunk
 
 open Turing MultiTapeTM MultiTapePTM.BlockComputation
 open MultiTapePTM.BlockComputation.QueryReplay
@@ -63,4 +63,4 @@ example : SupplierChunk.answer QueryReplayGate.reader code
 example : SupplierChunk.answer QueryReplayGate.reader code
     ((1000000000, 1), .inr (QueryReplayGate.done (QueryReplayGate.row .pos .neg))) = 0 := by decide
 
-end ComplexityTests.QueryReplaySupplierChunk
+end CslibFrontierTests.QueryReplaySupplierChunk

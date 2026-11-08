@@ -27,7 +27,7 @@ These kernel-checked examples (using no `native_decide`) exercise:
 
 public section
 
-namespace ComplexityTests.DisjointSet
+namespace CslibFrontierTests.DisjointSet
 
 open Cslib.DataStructure.DisjointSet
 open Cslib.DataStructure.DisjointSet.UnionFind
@@ -169,4 +169,4 @@ example :
   have hsz : Nat.log 2 unrankedChain.size = 2 := rfl
   omega
 
-end ComplexityTests.DisjointSet
+end CslibFrontierTests.DisjointSet

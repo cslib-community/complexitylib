@@ -23,7 +23,7 @@ every such test, which receives the parameter and one sample, has negligible adv
 advantage multiplied by any fixed power of the parameter tends to zero.
 -/
 
-namespace ComplexityTests.Abstracts.Randomized
+namespace CslibFrontierTests.Abstracts.Randomized
 
 /-- Exactly `n` independent fair bits, as a word of length `n`. -/
 noncomputable def uniformBits (n : ℕ) : PMF (List Bool) :=
@@ -60,13 +60,13 @@ def Indistinguishable (X Y : ℕ → PMF (List Bool)) : Prop :=
       (probability (do let sample ← X n; test n sample))
       (probability (do let sample ← Y n; test n sample)))
 
-end ComplexityTests.Abstracts.Randomized
+end CslibFrontierTests.Abstracts.Randomized
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.Randomized`:
+info: abstract audit passed for `CslibFrontierTests.Abstracts.Randomized`:
 6 root declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.Randomized allowing [
-  ComplexityAbstracts.Encoding, ComplexityAbstracts.Computation
+#check_abstract CslibFrontierTests.Abstracts.Randomized allowing [
+  CslibFrontierAbstracts.Encoding, CslibFrontierAbstracts.Computation
 ]

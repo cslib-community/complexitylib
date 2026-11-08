@@ -21,7 +21,7 @@ therefore gives a nontrivial final-prefix bound, with both prefix and selected-t
 
 public section
 
-namespace ComplexityTests.PolynomialAtomCompression
+namespace CslibFrontierTests.PolynomialAtomCompression
 
 open Finset Cslib Cslib.RowCompression
 
@@ -82,4 +82,4 @@ theorem unit_error_moment_bound : ∃ C A : ℝ, 0 ≤ C ∧ 0 ≤ A ∧
   norm_num [vertexNormPow, Fin.univ_succ, truth] at h ⊢
   nlinarith only [h]
 
-end ComplexityTests.PolynomialAtomCompression
+end CslibFrontierTests.PolynomialAtomCompression

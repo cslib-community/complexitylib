@@ -18,7 +18,7 @@ growth function and VC dimension of threshold concepts on `ℕ` and of all Boole
 that zero examples do not suffice; and the double-sample swap and ghost-sample bounds on concrete
 samples. -/
 
-namespace ComplexityTests.RealizablePAC
+namespace CslibFrontierTests.RealizablePAC
 
 open Cslib.MachineLearning.PACLearning MeasureTheory
 open scoped NNReal ENNReal
@@ -395,4 +395,4 @@ example (ν : Measure (Fin 1 → Bool)) (B : Set (Fin 1 → Bool))
       (hBJ S hS)).ge
   rwa [one_mul] at h
 
-end ComplexityTests.RealizablePAC
+end CslibFrontierTests.RealizablePAC

@@ -10,9 +10,9 @@ import CslibFrontierTests.Foundations.NumberTheory.Padics.AdjoinRootValuation
 /-! Tests for the reductions `O → (ℤ / 2 ^ n)[U] / (U ^ 2 + U + 1)` of the valuation ring of
 `K = ℚ[U] / (U ^ 2 + U + 1)`. -/
 
-namespace ComplexityTests.AdjoinRootReduction
+namespace CslibFrontierTests.AdjoinRootReduction
 
-open Polynomial ComplexityTests.AdjoinRootValuation
+open Polynomial CslibFrontierTests.AdjoinRootValuation
 
 /-- The valuation ring `O` of `K`. -/
 noncomputable abbrev O : Subring K := v.integer
@@ -42,4 +42,4 @@ example : (AdjoinRoot.map (ZMod.castHom (pow_dvd_pow 2 (by norm_num : 1 ≤ 3)) 
       π 1 :=
   AdjoinRoot.castHom_comp_reduction f_monic f_irreducible (by norm_num : 1 ≤ 3)
 
-end ComplexityTests.AdjoinRootReduction
+end CslibFrontierTests.AdjoinRootReduction

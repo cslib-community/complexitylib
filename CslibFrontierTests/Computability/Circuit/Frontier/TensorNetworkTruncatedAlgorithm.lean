@@ -20,7 +20,7 @@ network, and on admissible inputs from the size `4 (C D + 1)` on.
 
 @[expose] public section
 
-namespace ComplexityTests.TensorNetworkTruncatedAlgorithm
+namespace CslibFrontierTests.TensorNetworkTruncatedAlgorithm
 
 open Cslib Cslib.GenericRAM Cslib.Circuits.Frontier Turing.MultiTapeTM
 
@@ -116,4 +116,4 @@ example {C D d s P ℓ r : ℕ} {G : DescribedNetwork (List ℕ)}
 example : (65536 + 1) ^ 4 ≤ 2 ^ (FastContraction.modulus 65536).length :=
   FastContraction.pow_le_card_modulus (by norm_num)
 
-end ComplexityTests.TensorNetworkTruncatedAlgorithm
+end CslibFrontierTests.TensorNetworkTruncatedAlgorithm

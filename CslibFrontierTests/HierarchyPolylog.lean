@@ -10,7 +10,7 @@ import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 /-! Linear-time shortness of descriptions, and the time hierarchy with a polylogarithmic gap on
 concrete bounds. -/
 
-namespace ComplexityTests.HierarchyPolylog
+namespace CslibFrontierTests.HierarchyPolylog
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM Filter
 
@@ -36,4 +36,4 @@ example : ∃ k, DTIME encBits (fun n => (n + 1) ^ 2) ⊂
   exact ⟨k, hk timeConstructible_succ_sq (fun n => by nlinarith)
     (Eventually.of_forall fun _ => le_rfl)⟩
 
-end ComplexityTests.HierarchyPolylog
+end CslibFrontierTests.HierarchyPolylog

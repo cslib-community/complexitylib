@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 obstructions, concrete autoreducible language instances, hierarchy projections, and mitoticity
 implications. -/
 
-namespace ComplexityTests.Autoreducibility
+namespace CslibFrontierTests.Autoreducibility
 
 open Cslib Cslib.Complexity Turing.MultiTapeTM
 
@@ -81,4 +81,4 @@ example :
     not_polyTimeManyOneAutoreducible_singleton [],
     not_logSpaceManyOneAutoreducible_singleton []⟩
 
-end ComplexityTests.Autoreducibility
+end CslibFrontierTests.Autoreducibility

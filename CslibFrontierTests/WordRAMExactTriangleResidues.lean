@@ -9,7 +9,7 @@ import CslibFrontier.Algorithms.WordRAM.ExactTriangle.ResidueClasses
 
 /-! # Signed initialized residue/class preparation clients -/
 
-namespace ComplexityTests.WordRAMExactTriangleResidues
+namespace CslibFrontierTests.WordRAMExactTriangleResidues
 
 open Cslib.WordRAM Cslib.Algorithms.WordRAM.ExactTriangle.ResidueClasses
 
@@ -210,4 +210,4 @@ example : ∃ y t, t ≤ 861 ∧
 
 end CompleteCatalogue
 
-end ComplexityTests.WordRAMExactTriangleResidues
+end CslibFrontierTests.WordRAMExactTriangleResidues

@@ -14,7 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.ResourceFa
 # Tests for the framed encodings
 -/
 
-namespace ComplexityTests.Encodings
+namespace CslibFrontierTests.Encodings
 
 open Turing.MultiTapeTM
 
@@ -57,4 +57,4 @@ example : encNat (4 - 1) = [true, true] ∧ encNat (0 - 1) = [] ∧
 example : encBool (decide ((0 : ℕ) = 0)) = [true] ∧ encBool (decide ((4 : ℕ) = 0)) = [false] := by
   decide
 
-end ComplexityTests.Encodings
+end CslibFrontierTests.Encodings

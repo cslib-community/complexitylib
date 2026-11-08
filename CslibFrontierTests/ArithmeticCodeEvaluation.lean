@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Probabilistic.Sampling.F4
 
 /-! Uniform arithmetic traces, canonical typed agreement and total malformed-code clients. -/
 
-namespace ComplexityTests.ArithmeticCodeEvaluation
+namespace CslibFrontierTests.ArithmeticCodeEvaluation
 
 open Cslib Cslib.Circuits Turing.MultiTapeTM
 
@@ -87,4 +87,4 @@ example (x : Fin 1 → Bool) (c : Circuit Boolean.signature 1 1) :
       (evalCode Boolean.interpretation false (List.ofFn x) c.code.1).getD
         (c.outputs 0).toNat false := c.eval_eq_getD _ _ _ _
 
-end ComplexityTests.ArithmeticCodeEvaluation
+end CslibFrontierTests.ArithmeticCodeEvaluation

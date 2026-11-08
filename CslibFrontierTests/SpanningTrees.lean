@@ -19,7 +19,7 @@ spanning trees of `SimpleGraph`s, Cayley's formula is instantiated at `n = 1, 2,
 polynomial-time certificates are checked.
 -/
 
-namespace ComplexityTests.SpanningTrees
+namespace CslibFrontierTests.SpanningTrees
 
 open Turing.MultiTapeTM Cslib.Complexity
 
@@ -124,4 +124,4 @@ example : ComputableInPolyTime
     encGraph encNat :=
   Graph.computableInPolyTime_natCard_isTree
 
-end ComplexityTests.SpanningTrees
+end CslibFrontierTests.SpanningTrees

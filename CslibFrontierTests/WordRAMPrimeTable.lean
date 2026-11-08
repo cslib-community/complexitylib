@@ -8,7 +8,7 @@ import CslibFrontier.Algorithms.WordRAM.PrimeTable
 
 /-! # Native trial division and prime bitmap regressions -/
 
-namespace ComplexityTests.WordRAMPrimeTable
+namespace CslibFrontierTests.WordRAMPrimeTable
 
 open Cslib.WordRAM
 open Cslib.Algorithms.WordRAM
@@ -60,4 +60,4 @@ example : (Code.eval 8 6 PrimeTable.program
     ((tableInput 5).set PrimeTable.base 253)).map (fun yn => yn.1.regs PrimeTable.count) =
       none := by decide
 
-end ComplexityTests.WordRAMPrimeTable
+end CslibFrontierTests.WordRAMPrimeTable

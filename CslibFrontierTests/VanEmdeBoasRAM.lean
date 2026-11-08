@@ -20,7 +20,7 @@ comes from the execution theorems, not these finite evaluations.
 
 @[expose] public section
 
-namespace ComplexityTests.VanEmdeBoasRAM
+namespace CslibFrontierTests.VanEmdeBoasRAM
 
 open Cslib
 open Cslib.WordRAM
@@ -262,4 +262,4 @@ theorem sampleAdaptiveClient_run_initialized :
       · change 0 < 2 ^ 8; decide
       · change 1 < 2 ^ 8; decide)
 
-end ComplexityTests.VanEmdeBoasRAM
+end CslibFrontierTests.VanEmdeBoasRAM

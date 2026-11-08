@@ -13,7 +13,7 @@ honest native algorithms and exact-family security premise. The tests do not ass
 augmented decryption circuit fits the budget or assume security of an insecure fixture.
 -/
 
-namespace ComplexityTests.GSWDepthParameters
+namespace CslibFrontierTests.GSWDepthParameters
 
 open Cslib Cslib.Crypto Cslib.ProbComp Cslib.Probability Cslib.Crypto.Homomorphic.GSW
 open Turing.MultiTapeTM
@@ -137,4 +137,4 @@ example
           firstBitAdversary true k))) :=
   DepthParameters.indCPA hLWE firstBitAdversary firstBitAdversary_isPPT
 
-end ComplexityTests.GSWDepthParameters
+end CslibFrontierTests.GSWDepthParameters

@@ -58,7 +58,7 @@ Construction provenance is recorded in
 `SubexponentialSATBridge`.
 -/
 
-namespace ComplexityAbstracts.SubexponentialSATAbstract
+namespace CslibFrontierAbstracts.SubexponentialSATAbstract
 
 /-! ## Formulas and model counting
 
@@ -115,9 +115,9 @@ encoded by the empty word. The shared foundation spells out all framing and list
 /-- Encode each literal as a framed binary index followed by its polarity bit; frame the
 literals within clauses and the clauses within the formula. This is the native `encCNF`. -/
 def encCNF : Formula ↪ List Bool :=
-  ComplexityTests.Abstracts.Encoding.encList (ComplexityTests.Abstracts.Encoding.encList
-    (ComplexityTests.Abstracts.Encoding.encPair ComplexityTests.Abstracts.Encoding.encNat
-      ComplexityTests.Abstracts.Encoding.encBool))
+  CslibFrontierTests.Abstracts.Encoding.encList (CslibFrontierTests.Abstracts.Encoding.encList
+    (CslibFrontierTests.Abstracts.Encoding.encPair CslibFrontierTests.Abstracts.Encoding.encNat
+      CslibFrontierTests.Abstracts.Encoding.encBool))
 
 /-! ## Deterministic machine and resource conventions
 
@@ -212,7 +212,7 @@ is the number of variables and `L` the encoding length. -/
 theorem exact_count (k : ℕ) :
     ∃ (count : Formula → ℕ) (A e b : ℕ),
       (∀ φ, HasWidth k φ → count φ = modelCount φ) ∧
-      ComputableInO count encCNF ComplexityTests.Abstracts.Encoding.encNat
+      ComputableInO count encCNF CslibFrontierTests.Abstracts.Encoding.encNat
         (fun φ => ⌈(2 : ℝ) ^ (A * interpolationScale (numVars φ))⌉₊ * ((encCNF φ).length + 1) ^ e)
         (fun φ => ((encCNF φ).length + 1) ^ b) :=
   SubexponentialSATBridge.exact_count k
@@ -236,13 +236,13 @@ equation would also hold if no rate admitted a decider; its content comes from
 theorem satExponent_eq_zero : ∀ k, satExponent k = 0 :=
   SubexponentialSATBridge.satExponent_eq_zero
 
-end ComplexityAbstracts.SubexponentialSATAbstract
+end CslibFrontierAbstracts.SubexponentialSATAbstract
 
 /--
 info: abstract audit passed for `CslibFrontierAbstracts.SubexponentialSATAbstract`:
 28 root declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.SubexponentialSATAbstract allowing [
-  ComplexityAbstracts.Encoding
+#check_abstract CslibFrontierAbstracts.SubexponentialSATAbstract allowing [
+  CslibFrontierAbstracts.Encoding
 ]

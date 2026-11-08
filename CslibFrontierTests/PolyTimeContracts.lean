@@ -13,7 +13,7 @@ Fixed scans need no encoding of their indices. Runtime scans retain joint certif
 loop bounds charge the full framed state on every reachable iteration.
 -/
 
-namespace ComplexityTests.PolyTimeContracts
+namespace CslibFrontierTests.PolyTimeContracts
 
 open Turing.MultiTapeTM
 
@@ -458,4 +458,4 @@ example : ComputableTidilyInPolyTime
     simp [Nat.add_comm]
   polytime
 
-end ComplexityTests.PolyTimeContracts
+end CslibFrontierTests.PolyTimeContracts

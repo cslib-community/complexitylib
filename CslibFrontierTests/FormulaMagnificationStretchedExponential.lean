@@ -17,7 +17,7 @@ estimate's rounding behavior. A concrete polynomial schedule then produces small
 that accept the all-true truth table and reject every approximate-MCSP no-instance.
 -/
 
-namespace ComplexityTests.FormulaMagnificationStretchedExponential
+namespace CslibFrontierTests.FormulaMagnificationStretchedExponential
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Asymptotics Filter
 
@@ -82,4 +82,4 @@ example :
     change complexity interpretation (single fun _ : BitString n => true) ≤ 1
     simp only [complexity_const, le_refl]
 
-end ComplexityTests.FormulaMagnificationStretchedExponential
+end CslibFrontierTests.FormulaMagnificationStretchedExponential

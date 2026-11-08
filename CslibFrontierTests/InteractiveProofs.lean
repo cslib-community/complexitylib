@@ -12,7 +12,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 /-! Interactive proofs: concrete graphs, honest and cheating provers, class inclusions, and the
 polynomial-space evaluation of the optimal prover. -/
 
-namespace ComplexityTests.InteractiveProofs
+namespace CslibFrontierTests.InteractiveProofs
 
 open Cslib Cslib.Complexity Cslib.Probability Turing.MultiTapeTM
 
@@ -225,4 +225,4 @@ example (P : Prover Unit) :
   refine ⟨hval, (Interaction.sum_acceptFrom_le_value isBounded_acceptAll P).trans_eq ?_⟩
   exact_mod_cast hval
 
-end ComplexityTests.InteractiveProofs
+end CslibFrontierTests.InteractiveProofs

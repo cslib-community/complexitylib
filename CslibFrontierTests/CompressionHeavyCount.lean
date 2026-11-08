@@ -24,7 +24,7 @@ At zero scale, its always-retained light endpoint violates the old all-endpoint 
 but does not affect the heavy count; the stronger division-free bound is attained exactly.
 -/
 
-namespace ComplexityTests.CompressionHeavyCount
+namespace CslibFrontierTests.CompressionHeavyCount
 
 open Finset Cslib.Probability
 open scoped BigOperators
@@ -220,4 +220,4 @@ example : (#{σ ∈ (univ : Finset Unit) |
   norm_num at h ⊢
   exact h
 
-end ComplexityTests.CompressionHeavyCount
+end CslibFrontierTests.CompressionHeavyCount

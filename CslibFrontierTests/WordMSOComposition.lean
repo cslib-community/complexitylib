@@ -23,7 +23,7 @@ import Mathlib.Computability.MyhillNerode
 
 open Cslib.Logic.WordMSO
 
-namespace ComplexityTests.WordMSOComposition
+namespace CslibFrontierTests.WordMSOComposition
 
 /-- Rank-`0` equivalence relates every two words: there are no pebbles to compare. -/
 theorem wordDuplicatorWins_zero (u v : List Bool) :
@@ -104,4 +104,4 @@ example (φ : (Cslib.Logic.WordMSO.wordLanguage Bool).Sentence) :
   rintro _ ⟨x, rfl⟩
   exact ⟨Quotient.mk _ (FreeMonoid.ofList x), rfl⟩
 
-end ComplexityTests.WordMSOComposition
+end CslibFrontierTests.WordMSOComposition

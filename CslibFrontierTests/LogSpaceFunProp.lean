@@ -13,7 +13,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace
 Each certificate below is closed by a single `fun_prop`.
 -/
 
-namespace ComplexityTests.LogSpaceFunProp
+namespace CslibFrontierTests.LogSpaceFunProp
 
 open Turing.MultiTapeTM
 
@@ -50,4 +50,4 @@ example (f : List Bool → Bool) (hf : ComputableInLogSpace f encBits encBool) :
       encBool := by
   fun_prop
 
-end ComplexityTests.LogSpaceFunProp
+end CslibFrontierTests.LogSpaceFunProp

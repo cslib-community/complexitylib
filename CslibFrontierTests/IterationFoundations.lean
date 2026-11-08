@@ -17,7 +17,7 @@ checkpoint packing on a finite invariant subset of an infinite type and its `L >
 and circuit iteration and retained orbits over a non-Boolean signature, including zero steps.
 -/
 
-namespace ComplexityTests.IterationFoundations
+namespace CslibFrontierTests.IterationFoundations
 
 open Cslib Cslib.Circuits Cslib.FunctionalGraph Function
 
@@ -119,4 +119,4 @@ info: 'Cslib.Circuits.Circuit.cost_program_iterate' does not depend on any axiom
 #guard_msgs (whitespace := lax) in
 #print axioms Circuit.cost_program_iterate
 
-end ComplexityTests.IterationFoundations
+end CslibFrontierTests.IterationFoundations

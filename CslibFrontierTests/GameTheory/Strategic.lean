@@ -21,7 +21,7 @@ equilibrium. A pure equilibrium played in every round has no regret, so Proposit
 [Roughgarden2013CS364A], Lecture 17, recovers it from its time average.
 -/
 
-namespace ComplexityTests.GameTheory.Strategic
+namespace CslibFrontierTests.GameTheory.Strategic
 
 open Cslib.GameTheory
 
@@ -143,4 +143,4 @@ example (T : ℕ) (hT : 0 < T) (i : Fin 2) (a : Bool) :
     add_zero]
   exact Finset.sum_le_sum fun _ _ => pd_isPureNash_defect j b
 
-end ComplexityTests.GameTheory.Strategic
+end CslibFrontierTests.GameTheory.Strategic

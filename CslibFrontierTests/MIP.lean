@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Complexity.Classes.MIP
 /-! Multiprover interactive proofs (`MIP₂` and `MIP`), non-communicating provers, deterministic
 prover optimality, transcript consistency, and the upper bound `MIP ⊆ NEXP`. -/
 
-namespace ComplexityTests.MIP
+namespace CslibFrontierTests.MIP
 
 open Cslib Cslib.Complexity Cslib.Probability Turing.MultiTapeTM
 
@@ -75,4 +75,4 @@ example :
     IP_subset_MIP₂ _ (PSPACE_subset_IP _ TQBF_pspaceComplete.1),
     MIP₂_subset_NEXP _ (IP_subset_MIP₂ _ (PSPACE_subset_IP _ TQBF_pspaceComplete.1))⟩
 
-end ComplexityTests.MIP
+end CslibFrontierTests.MIP

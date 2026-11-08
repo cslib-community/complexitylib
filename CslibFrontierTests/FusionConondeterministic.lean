@@ -14,7 +14,7 @@ quantification removes the guessed bit. This checks an auxiliary input that affe
 with exactly one AND gate, and a separate zero-auxiliary instance.
 -/
 
-namespace ComplexityTests.FusionConondeterministic
+namespace CslibFrontierTests.FusionConondeterministic
 
 open Cslib Cslib.Circuits Cslib.Circuits.Fusion Cslib.Circuits.Boolean
 
@@ -89,4 +89,4 @@ example : forallGuess noGuess = noGuess ∧
       unfold Circuit.ComputesFrom
       decide)
 
-end ComplexityTests.FusionConondeterministic
+end CslibFrontierTests.FusionConondeterministic

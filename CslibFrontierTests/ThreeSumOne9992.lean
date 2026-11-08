@@ -20,7 +20,7 @@ Semantic clients use the standard decision API at arbitrary admitted wider words
 its input-fit premise from `Admissible`, rather than assuming it separately.
 -/
 
-namespace ComplexityTests.ThreeSumOne9992
+namespace CslibFrontierTests.ThreeSumOne9992
 
 open Cslib.WordRAM
 open Cslib.Algorithms.WordRAM.ThreeSum
@@ -134,4 +134,4 @@ example : ∃ C : ℝ, 0 < C ∧ ∃ N : ℕ, ∃ y : Data 848, ∃ steps : ℕ,
       norm_num at hz
     exact iff_of_false hn (by decide)
 
-end ComplexityTests.ThreeSumOne9992
+end CslibFrontierTests.ThreeSumOne9992

@@ -16,7 +16,7 @@ path length and the position range; and collision extraction from two forged ope
 position, at the leaf level and one level up.
 -/
 
-namespace ComplexityTests.Crypto.MerkleTree
+namespace CslibFrontierTests.Crypto.MerkleTree
 
 open Cslib Cslib.Crypto Turing.MultiTapeTM
 
@@ -94,4 +94,4 @@ example : (extractMerkleCollision truncHash [false, false] [true, false] [true, 
     [[false, false]] [[false, false]]).1 ≠ [true, false] := by
   decide
 
-end ComplexityTests.Crypto.MerkleTree
+end CslibFrontierTests.Crypto.MerkleTree

@@ -9,7 +9,7 @@ import CslibFrontier.Computability.QueryComplexity.Quantum.BernsteinVazirani
 /-! The Bernstein–Vazirani algorithm on concrete inputs with `N = 4` positions, identified with the
 strings `{0,1}^2`. -/
 
-namespace ComplexityTests.QuantumBernsteinVazirani
+namespace CslibFrontierTests.QuantumBernsteinVazirani
 
 open Cslib Cslib.Quantum Cslib.QueryComplexity Cslib.BitString
 
@@ -40,4 +40,4 @@ example : regProb (run (bernsteinVazirani e4) (bernsteinVaziraniInit e4) (fun _ 
   rw [← h]
   exact regProb_run_bernsteinVazirani e4 0
 
-end ComplexityTests.QuantumBernsteinVazirani
+end CslibFrontierTests.QuantumBernsteinVazirani

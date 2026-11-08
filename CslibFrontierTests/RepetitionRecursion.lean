@@ -13,7 +13,7 @@ Holenstein's recursion, so the conclusion applies to it. The exact bound `le_rpo
 with the constant `C = 27 / √2` that the library's Corollary 5.3 leads to.
 -/
 
-namespace ComplexityTests.RepetitionRecursion
+namespace CslibFrontierTests.RepetitionRecursion
 
 open Cslib.PCP.ParallelRepetition
 
@@ -62,4 +62,4 @@ example {v : ℝ} (hv : 0 ≤ v) (hv1 : v ≤ 1) (n : ℕ) :
       exact mul_le_mul_of_nonneg_left (le_add_of_nonneg_right (by positivity))
         (pow_nonneg hv m)
 
-end ComplexityTests.RepetitionRecursion
+end CslibFrontierTests.RepetitionRecursion

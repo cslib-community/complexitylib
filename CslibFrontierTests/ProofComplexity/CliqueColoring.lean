@@ -27,7 +27,7 @@ refutation has more than `2 ^ (2 ⌊√2⌋) / 2 = 2` lines, indeed at least `60
 four vertices separates, so it has at least `C(4, 2) - 1 = 5` gates.
 -/
 
-namespace ComplexityTests.ProofComplexity.CliqueColoring
+namespace CslibFrontierTests.ProofComplexity.CliqueColoring
 
 open Cslib Cslib.Circuits Cslib.Circuits.Clique Cslib.Logic.PL
 
@@ -117,4 +117,4 @@ example : ∃ C : Circuit Monotone.signature (edgeCount 4) 1,
   have hcount : edgeCount 4 = 6 := by rw [edgeCount_eq_choose]; decide
   exact ⟨C, hsep, by omega⟩
 
-end ComplexityTests.ProofComplexity.CliqueColoring
+end CslibFrontierTests.ProofComplexity.CliqueColoring

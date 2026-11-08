@@ -11,12 +11,12 @@ import CslibFrontierTests.WordRAMRealizationPacking
 and a real sift after root removal. Every fixture keeps dirty memory outside the owned block.
 The native execution comes only from the shared realization contract. -/
 
-namespace ComplexityTests.WordRAMBinaryHeapExtract
+namespace CslibFrontierTests.WordRAMBinaryHeapExtract
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.Memory Cslib.DataStructure.PriorityQueue
 open Cslib.DataStructure.PriorityQueue.BinaryHeap.Native
-open ComplexityTests.WordRAMRealizationPacking
+open CslibFrontierTests.WordRAMRealizationPacking
 
 private abbrev raw (d : HeapLayout) :=
   (PriorityQueue.BinaryHeap.Memory.extractMin d.2).map (Option.map fun a => (a.1.val, a.2))
@@ -193,4 +193,4 @@ example : ∃ y, ExecWithin 4 (realizes_extractMin.code (frontier realizes_extra
 
 end
 
-end ComplexityTests.WordRAMBinaryHeapExtract
+end CslibFrontierTests.WordRAMBinaryHeapExtract

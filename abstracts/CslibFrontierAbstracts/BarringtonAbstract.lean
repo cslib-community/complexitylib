@@ -29,7 +29,7 @@ Lean checks the bridge proof and `#check_abstract` audits the statement boundary
 * [D. Barrington, D. Thérien, *Finite monoids and the fine structure of NC¹*][BarringtonTherien1988]
 -/
 
-namespace ComplexityTests.Abstracts.BarringtonAbstract
+namespace CslibFrontierTests.Abstracts.BarringtonAbstract
 
 /-- A nonuniform NC¹ language has a polynomial-size De Morgan circuit at each input length,
 with depth at most a constant times `floor(log₂ n)+1`. Every gate, constants included, costs one.
@@ -59,11 +59,11 @@ circuits if and only if it has polynomial-length permutation programs on five st
 theorem barrington (L : Language Bool) : InNC1 L ↔ HasWidthFivePrograms L :=
   BarringtonBridge.barrington L
 
-/-- info: abstract audit passed for `ComplexityTests.Abstracts.BarringtonAbstract`: 3 root
+/-- info: abstract audit passed for `CslibFrontierTests.Abstracts.BarringtonAbstract`: 3 root
 declarations -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.BarringtonAbstract allowing [
+#check_abstract CslibFrontierTests.Abstracts.BarringtonAbstract allowing [
   CslibFrontier.Computability.BranchingProgram.MonoidProgram
 ]
 
-end ComplexityTests.Abstracts.BarringtonAbstract
+end CslibFrontierTests.Abstracts.BarringtonAbstract

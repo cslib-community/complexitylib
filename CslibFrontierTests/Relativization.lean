@@ -14,7 +14,7 @@ oracle classes, the unary length language, candidate deciders, the diagonal orac
 Baker–Gill–Solovay separation, oracles in polynomial space, the words of `TQBF`, the collapse and
 oracle monotonicity. -/
 
-namespace ComplexityTests.Relativization
+namespace CslibFrontierTests.Relativization
 
 open Cslib Cslib.Complexity Cslib.Logic.PL Turing Turing.MultiTapeTM
 
@@ -203,4 +203,4 @@ example (B : Set (List Bool)) :
 #guard_msgs in
 #print axioms Cslib.OracleComp.interpret_id_congr
 
-end ComplexityTests.Relativization
+end CslibFrontierTests.Relativization

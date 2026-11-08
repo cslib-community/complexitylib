@@ -38,14 +38,14 @@ correspondence in `RandomizedWordRAMBridge`:
    self-contained presentation `S` satisfying `RandomizedWordRAMBridge.Laws S`.
 -/
 
-namespace ComplexityAbstracts.KargerMinCutBridge
+namespace CslibFrontierAbstracts.KargerMinCutBridge
 
 open scoped ENNReal
 open Cslib
 open Cslib.WordRAM
 open Cslib.WeightedCut
 open Cslib.Algorithms.WordRAM.Karger
-open ComplexityAbstracts.RandomizedWordRAMBridge
+open CslibFrontierAbstracts.RandomizedWordRAMBridge
 
 /-! ## Row-major flattening equivalence -/
 
@@ -2651,4 +2651,4 @@ theorem kargerSteinHighProb (S : Presentation) (h : Laws S) :
     rintro cfg' ⟨hnot, -⟩ y rfl
     exact hnot y.regs y.mem rfl
 
-end ComplexityAbstracts.KargerMinCutBridge
+end CslibFrontierAbstracts.KargerMinCutBridge

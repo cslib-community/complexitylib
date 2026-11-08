@@ -15,7 +15,7 @@ and contains an unused term gate. A rational sum of two squares represents the s
 monomial and exercises both the compiler and the existing Waring term-count theorem.
 -/
 
-namespace ComplexityTests.WaringCompilation
+namespace CslibFrontierTests.WaringCompilation
 
 open Cslib.Circuits
 
@@ -126,4 +126,4 @@ example :
   ⟨by rw [Waring.polynomial_compile]; exact squarefree_polynomial,
     Waring.choose_le_cost squarefree 1 0 squarefree_polynomial⟩
 
-end ComplexityTests.WaringCompilation
+end CslibFrontierTests.WaringCompilation

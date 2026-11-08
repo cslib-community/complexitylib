@@ -10,7 +10,7 @@ import CslibFrontier.Languages.Probabilistic.BitString
 /-! Flat traversal tapes preserve separate draws at repeated inputs and need a component
 realization only on actual list members. Empty lists and zero-width blocks are included. -/
 
-namespace ComplexityTests.TraversalCoinTape
+namespace CslibFrontierTests.TraversalCoinTape
 
 open Cslib Cslib.Probability
 
@@ -61,4 +61,4 @@ example (values : List Bool) : ProbComp.eval (values.mapM fun bit => pure (!bit)
   intro bit _
   simp
 
-end ComplexityTests.TraversalCoinTape
+end CslibFrontierTests.TraversalCoinTape

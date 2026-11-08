@@ -12,10 +12,10 @@ strictly between `0` and `1`, exact circuits whose paths interfere, a postselect
 accepts only after postselection, the classes they witness, and the containments applied to them.
 -/
 
-namespace ComplexityTests.QuantumTimeClasses
+namespace CslibFrontierTests.QuantumTimeClasses
 
 open Cslib Cslib.Quantum Cslib.Complexity Cslib.Complexity.QuantumContraction Turing.MultiTapeTM
-  ComplexityTests.BQPTensorContraction
+  CslibFrontierTests.BQPTensorContraction
 
 /-- The encoding of the single instance of `Unit` as the empty word. -/
 def encUnit : Unit ↪ List Bool := ⟨fun _ => [], fun _ _ _ => rfl⟩
@@ -180,4 +180,4 @@ example : (Set.univ : Set Unit) ∈ ⋃ C, DTIME encUnit fun n =>
   PostBQTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two (T := fun n => n + 2)
     (fun n => max_le (by omega) (by omega)) (univ_mem_PostBQTIME _)
 
-end ComplexityTests.QuantumTimeClasses
+end CslibFrontierTests.QuantumTimeClasses

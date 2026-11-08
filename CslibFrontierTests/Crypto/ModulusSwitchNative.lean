@@ -8,7 +8,7 @@ import CslibFrontier.Crypto.Computational.SIS.ModulusSwitch.Native
 
 /-! Integer execution, binary magnitudes, variable row shapes and the existing ciphertext codec. -/
 
-namespace ComplexityTests.Crypto.ModulusSwitchNative
+namespace CslibFrontierTests.Crypto.ModulusSwitchNative
 
 open Cslib.Crypto Turing.MultiTapeTM
 open scoped Matrix
@@ -60,4 +60,4 @@ example : ComputableInPolyTime
   have h := hsecond.comp hfirst
   simpa only [Function.comp_def] using h
 
-end ComplexityTests.Crypto.ModulusSwitchNative
+end CslibFrontierTests.Crypto.ModulusSwitchNative

@@ -11,7 +11,7 @@ import CslibFrontier.Foundations.Probability.Gaussian.Sheppard
 A non-right angle with vectors of unequal norm, orthogonal vectors, opposite vectors, and the
 complementary identity for `v` and `-v`. -/
 
-namespace ComplexityTests.GaussianSheppard
+namespace CslibFrontierTests.GaussianSheppard
 
 open MeasureTheory ProbabilityTheory Real
 open scoped RealInnerProductSpace Interval
@@ -63,4 +63,4 @@ example (u v : EuclideanSpace ℝ (Fin 3)) (hu : u ≠ 0) (hv : v ≠ 0) :
   field_simp
   ring
 
-end ComplexityTests.GaussianSheppard
+end CslibFrontierTests.GaussianSheppard

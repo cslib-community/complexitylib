@@ -21,7 +21,7 @@ Concrete checks over `ZMod 7` with `n = 1`, `m = 2`, `k = 1`, `γ = 2`, `β = 1`
    and signature forking extraction into both relaxed `[A | T]` and homogeneous `A` SIS solutions.
 -/
 
-namespace ComplexityTests.Crypto.LyubashevskySignature
+namespace CslibFrontierTests.Crypto.LyubashevskySignature
 
 open Cslib Cslib.Crypto Cslib.Probability Cslib.Probability.PMF Cslib.Crypto.Protocols
   SigmaProtocol
@@ -136,4 +136,4 @@ example : SIS.IsSolution A 3
   lyubashevskySignatureForkToSIS (γ := 2) (β := 1) (η := 1) (y := (A, T))
     (by decide) (by decide) (by decide) (by decide)
 
-end ComplexityTests.Crypto.LyubashevskySignature
+end CslibFrontierTests.Crypto.LyubashevskySignature

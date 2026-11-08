@@ -26,7 +26,7 @@ the branching coin, the acceptance bound of a trial, and a counter that misses t
 hypothesis. The exact counter is strict PPT, which gives checked instances of
 `isFPAUS_of_isFPRAS`, `mem_FPAUS_of_mem_FPRAS` and `mem_FPAUS_iff_mem_FPRAS`. -/
 
-namespace ComplexityTests.SamplingCounting
+namespace CslibFrontierTests.SamplingCounting
 
 open Cslib Cslib.Complexity Cslib.Probability Turing.MultiTapeTM
 
@@ -418,4 +418,4 @@ example :
   ⟨(ComputableInPolyTime.const (0, 1)).isPPTOn,
     fun h => not_counterAccurate_zero fun y => h.2 y 2 1 (by norm_num)⟩
 
-end ComplexityTests.SamplingCounting
+end CslibFrontierTests.SamplingCounting

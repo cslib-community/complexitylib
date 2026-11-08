@@ -9,7 +9,7 @@ import Mathlib.Tactic.FinCases
 
 /-! Tests for greedy parity tests. -/
 
-namespace ComplexityTests.ParityTests
+namespace CslibFrontierTests.ParityTests
 
 open Finset Cslib.BitString Cslib.Logic.PL
 
@@ -103,4 +103,4 @@ example : numPassing unitFormula.violations (unitRows (3 * Fintype.card (Fin 1))
       exact le_add_of_le_left (by decide))]
   decide
 
-end ComplexityTests.ParityTests
+end CslibFrontierTests.ParityTests

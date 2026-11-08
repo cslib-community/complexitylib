@@ -22,7 +22,7 @@ time-and-space preserving simulations, `Partrec`/`Computable`/`ManyOneReducible`
 and machine-backed Kolmogorov complexity simulations.
 -/
 
-namespace ComplexityTests.PostTuringMachine
+namespace CslibFrontierTests.PostTuringMachine
 
 open Cslib.Turing _root_.Turing Cslib.Kolmogorov.DescriptionMethod
 
@@ -115,4 +115,4 @@ example :
   ⟨ecomplexity_ofMultiTapeTM_ofSingleTapeTM_le haltId [true, false],
    exists_ecomplexity_universal_le_ofSingleTapeTM_bits haltId⟩
 
-end ComplexityTests.PostTuringMachine
+end CslibFrontierTests.PostTuringMachine

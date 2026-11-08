@@ -17,7 +17,7 @@ repeated-variable instances, non-vacuous group-separation kernel witnesses, and 
 polynomial-time pipelines.
 -/
 
-namespace ComplexityTests.CopyPlacementPolyTime
+namespace CslibFrontierTests.CopyPlacementPolyTime
 
 open Cslib.LinearAlgebra.CopyPlacement Turing.MultiTapeTM
 
@@ -176,4 +176,4 @@ example : ComputableInPolyTime
 
 end PolyTimeComposition
 
-end ComplexityTests.CopyPlacementPolyTime
+end CslibFrontierTests.CopyPlacementPolyTime

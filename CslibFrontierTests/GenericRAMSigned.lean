@@ -16,7 +16,7 @@ It is test-only: the public signed machine uses the generic interpreter.
 Concrete checks cover successful signed arithmetic, both sign branches, faults, and cost.
 -/
 
-namespace ComplexityTests.GenericRAMSigned
+namespace CslibFrontierTests.GenericRAMSigned
 
 open Cslib.GenericRAM Cslib.GenericRAM.Signed
 
@@ -124,9 +124,9 @@ example :
     step (M := model) 0 [.jump 0] (state 0) = .next (state 0) :=
   ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
-/-- info: 'ComplexityTests.GenericRAMSigned.step_eq_reference' depends on axioms:
+/-- info: 'CslibFrontierTests.GenericRAMSigned.step_eq_reference' depends on axioms:
 [propext, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms step_eq_reference
 
-end ComplexityTests.GenericRAMSigned
+end CslibFrontierTests.GenericRAMSigned

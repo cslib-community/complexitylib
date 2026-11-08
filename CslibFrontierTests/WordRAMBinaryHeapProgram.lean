@@ -10,7 +10,7 @@ import CslibFrontier.DataStructure.PriorityQueue.BinaryHeap.Native.Program
 These are raw native executions with paid reservation/metadata code. Inaccessible dirty cells
 remain literal memory contents; no global-zero allocator premise or free prepare is used. -/
 
-namespace ComplexityTests.WordRAMBinaryHeapProgram
+namespace CslibFrontierTests.WordRAMBinaryHeapProgram
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.PriorityQueue
@@ -100,4 +100,4 @@ example : ¬∀ a, (Block.mk 3 (PriorityQueue.BinaryHeap.space 1)).Owns a →
 
 end
 
-end ComplexityTests.WordRAMBinaryHeapProgram
+end CslibFrontierTests.WordRAMBinaryHeapProgram

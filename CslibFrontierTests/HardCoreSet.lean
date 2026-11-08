@@ -13,7 +13,7 @@ import CslibFrontier.Foundations.Data.BitString.Parity
 hard-core set, the measure-to-set rounding run end to end on parity with a satisfied counting
 condition, and the parameters of the set form of the lemma. -/
 
-namespace ComplexityTests.HardCoreSet
+namespace CslibFrontierTests.HardCoreSet
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Finset
 
@@ -102,4 +102,4 @@ example {n s : ℕ} (f : BooleanFunction n)
   exists_isHardCoreSet (T := 86) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (by norm_num) (by norm_num) hf hcount
 
-end ComplexityTests.HardCoreSet
+end CslibFrontierTests.HardCoreSet

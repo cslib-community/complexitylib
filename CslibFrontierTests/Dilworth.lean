@@ -38,7 +38,7 @@ and `CslibFrontier.Foundations.Combinatorics.ErdosSzekeres`:
 
 public section
 
-namespace ComplexityTests.Dilworth
+namespace CslibFrontierTests.Dilworth
 
 open Cslib.Algorithms.Lean.MaxFlow
 
@@ -268,4 +268,4 @@ theorem tightSeq_not_strictAntiOn (t : Finset (Fin 4)) (ht : 2 < t.card) :
       ¬ ∀ a ∈ t, ∀ b ∈ t, a < b → tightSeq b < tightSeq a := by decide
   exact fun hm => h t ht fun a ha b hb hab => hm ha hb hab
 
-end ComplexityTests.Dilworth
+end CslibFrontierTests.Dilworth

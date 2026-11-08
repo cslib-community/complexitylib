@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Complexity.Problems.ThreeSAT
 # Tests for splitting clauses into width three
 -/
 
-namespace ComplexityTests.ThreeCNF
+namespace CslibFrontierTests.ThreeCNF
 
 open Cslib.Logic.PL Cslib.Complexity
 
@@ -32,4 +32,4 @@ example : Clause.split3 (fun j => Sum.inr (0, j)) 0
 /-- The reduction to `ThreeSAT` is correct on every formula. -/
 example (φ : CNF ℕ) : toThreeSAT φ ∈ ThreeSAT ↔ φ ∈ SAT := mem_ThreeSAT_toThreeSAT_iff φ
 
-end ComplexityTests.ThreeCNF
+end CslibFrontierTests.ThreeCNF

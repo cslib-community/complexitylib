@@ -17,7 +17,7 @@ contains the empty clause, so the hypothesis `0 < n` of the lower bound is neede
 rank `1` refutes `x ∧ ¬x` in clause space `3`.
 -/
 
-namespace ComplexityTests.ProofComplexity.WidePigeonholeSpace
+namespace CslibFrontierTests.ProofComplexity.WidePigeonholeSpace
 
 open Cslib Cslib.Logic.PL
 
@@ -64,4 +64,4 @@ example : CNF.RefutableInSpace ([[((), true)], [((), false)]] : CNF Unit) 3 := b
     cases h : σ () <;> simp [DecisionTree.eval, h]
   simpa [DecisionTree.rank_node] using ht.refutableInSpace
 
-end ComplexityTests.ProofComplexity.WidePigeonholeSpace
+end CslibFrontierTests.ProofComplexity.WidePigeonholeSpace

@@ -15,7 +15,7 @@ import Cslib.Foundations.Data.PFunctor.Free
 Checks that the cslib base pin exposes the upstream APIs this library builds on.
 -/
 
-namespace ComplexityTests
+namespace CslibFrontierTests
 
 /-- The upstream time-and-space computability predicate. -/
 example := @Turing.MultiTapeTM.ComputableInTimeAndSpace
@@ -30,4 +30,4 @@ example := @PFunctor.FreeM
 example : ((PFunctor.FreeM.pure 2 : PFunctor.FreeM ⟨PUnit, fun _ => PUnit⟩ ℕ) >>= fun n =>
     PFunctor.FreeM.pure (n + 1)) = PFunctor.FreeM.pure 3 := rfl
 
-end ComplexityTests
+end CslibFrontierTests

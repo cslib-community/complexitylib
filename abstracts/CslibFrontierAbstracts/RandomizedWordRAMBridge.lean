@@ -36,7 +36,7 @@ This bridge establishes two facts:
    `RandomizedWordRAMAbstract.lean` with zero project-module allowlisting.
 -/
 
-namespace ComplexityAbstracts.RandomizedWordRAMBridge
+namespace CslibFrontierAbstracts.RandomizedWordRAMBridge
 
 open scoped ENNReal
 open Cslib
@@ -1534,4 +1534,4 @@ theorem quickselect (S : Presentation) (h : Laws S) :
     · rw [Presentation.init, S.expectedTime_eq h, ← hinit]
       exact hExp
 
-end ComplexityAbstracts.RandomizedWordRAMBridge
+end CslibFrontierAbstracts.RandomizedWordRAMBridge

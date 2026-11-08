@@ -112,7 +112,7 @@ memory, including an explicit zero-fill pass) quantify `∀ k n_max U M, … →
   `n_max ≥ 2 ^ 320000` and `2 * codeBound k > 2 ^ (3 * charBits n_max)`).
 -/
 
-namespace ComplexityAbstracts.HashFamiliesAbstract
+namespace CslibFrontierAbstracts.HashFamiliesAbstract
 
 open scoped ENNReal
 
@@ -542,30 +542,30 @@ noncomputable def failureProbBound (k n_max : ℕ) : ℝ≥0∞ :=
 footprint `space k n_max` is `O_k(n_max + 1)` machine words. -/
 theorem space_le (k n_max : ℕ) :
     space k n_max ≤ (k + 9232) * (n_max + 1) :=
-  ComplexityAbstracts.HashFamiliesBridge.space_le k n_max
+  CslibFrontierAbstracts.HashFamiliesBridge.space_le k n_max
 
 /-- Every `.eval u` operation halts within `111230 * k + 6862 = O_k(1)` Word-RAM instructions,
 independently of `n_max`, `U`, and `M`. -/
 theorem evalTimeBound_le (k : ℕ) :
     evalTimeBound k ≤ 111230 * k + 6862 :=
-  ComplexityAbstracts.HashFamiliesBridge.evalTimeBound_le k
+  CslibFrontierAbstracts.HashFamiliesBridge.evalTimeBound_le k
 
 /-- Below `regimeThreshold`, `.resample` halts in `5 * k + 13 = O_k(1)` Word-RAM instructions. -/
 theorem resampleTime_eq_of_lt {k n_max : ℕ} (hlt : n_max < regimeThreshold) :
     resampleTime k n_max = 5 * k + 13 :=
-  ComplexityAbstracts.HashFamiliesBridge.resampleTime_eq_of_lt hlt
+  CslibFrontierAbstracts.HashFamiliesBridge.resampleTime_eq_of_lt hlt
 
 /-- Across all capacities `n_max`, `.resample` halts within `(5 * k + 46096) * (n_max + 1) =
 O_k(n_max + 1)` Word-RAM instructions. -/
 theorem resampleTime_le (k n_max : ℕ) :
     resampleTime k n_max ≤ (5 * k + 46096) * (n_max + 1) :=
-  ComplexityAbstracts.HashFamiliesBridge.resampleTime_le k n_max
+  CslibFrontierAbstracts.HashFamiliesBridge.resampleTime_le k n_max
 
 /-- Below `regimeThreshold = 2 ^ 320000`, the hash family is **exact** `k`-wise independent:
 the per-epoch failure probability is `0` for every `k`. -/
 theorem failureProbBound_eq_zero_of_lt {k n_max : ℕ} (hlt : n_max < regimeThreshold) :
     failureProbBound k n_max = 0 :=
-  ComplexityAbstracts.HashFamiliesBridge.failureProbBound_eq_zero_of_lt hlt
+  CslibFrontierAbstracts.HashFamiliesBridge.failureProbBound_eq_zero_of_lt hlt
 
 /-- In the double-tabulation regime (`n_max ≥ 2 ^ 320000`), whenever `k` satisfies the
 non-triviality condition `2 * codeBound k ≤ 2 ^ (3 * charBits n_max)`, the per-epoch failure
@@ -574,7 +574,7 @@ theorem failureProbBound_eq_of_ge {k n_max : ℕ} (hge : regimeThreshold ≤ n_m
     (hk : 2 * codeBound k ≤ 2 ^ (3 * charBits n_max)) :
     failureProbBound k n_max =
       ((2 * (codeBound k) ^ 2 : ℕ) : ℝ≥0∞) / ((2 ^ (6 * charBits n_max) : ℕ) : ℝ≥0∞) :=
-  ComplexityAbstracts.HashFamiliesBridge.failureProbBound_eq_of_ge hge hk
+  CslibFrontierAbstracts.HashFamiliesBridge.failureProbBound_eq_of_ge hge hk
 
 /-- In the double-tabulation regime (`n_max ≥ 2 ^ 320000`) under
 `2 * codeBound k ≤ 2 ^ (3 * charBits n_max)`, the per-epoch failure probability is at most
@@ -583,7 +583,7 @@ theorem failureProbBound_le_inv_cube_of_ge {k n_max : ℕ} (hge : regimeThreshol
     (hk : 2 * codeBound k ≤ 2 ^ (3 * charBits n_max)) :
     failureProbBound k n_max ≤
       ((2 * (codeBound k) ^ 2 : ℕ) : ℝ≥0∞) / ((max n_max 4 ^ 3 : ℕ) : ℝ≥0∞) :=
-  ComplexityAbstracts.HashFamiliesBridge.failureProbBound_le_inv_cube_of_ge hge hk
+  CslibFrontierAbstracts.HashFamiliesBridge.failureProbBound_le_inv_cube_of_ge hge hk
 
 /-! ## Headline Theorems -/
 
@@ -654,19 +654,19 @@ theorem highIndependenceHashFamily_fresh :
                   (BoundedEpochKeys k ops →
                     WhpKWiseContract (failureProbBound k n_max) ops
                       (ν_final.map SeqState.transcript)) :=
-  ComplexityAbstracts.HashFamiliesBridge.highIndependenceHashFamily_fresh
+  CslibFrontierAbstracts.HashFamiliesBridge.highIndependenceHashFamily_fresh
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
       @AluOp.rec, AluOp.eval,
       Instr, .const, .copy, .alu, .width, .load, .store, .jump,
       .branchEq, .branchLt, .halt, .rand, @Instr.rec,
       Comp, @Comp.pure, @Comp.sample, @Comp.bind, @Comp.eval,
-      ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
+      CslibFrontierAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
       State, .mk, Cfg, .running, .halted, .faulted, @stepRand, @runRand⟩
     (by refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
       simp_all [AluOp.eval, Comp.bind, Comp.eval,
-        ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
+        CslibFrontierAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
     ⟨Op, @Op.resample, @Op.eval, @Op.rec,
       Label, @Label.resample, @Label.eval, @Label.op,
       @epochKeys, @epochCount, @idealTranscriptFrom,
@@ -734,19 +734,19 @@ theorem highIndependenceHashFamily_clear :
                   (BoundedEpochKeys k ops →
                     WhpKWiseContract (failureProbBound k n_max) ops
                       (ν_final.map SeqState.transcript)) :=
-  ComplexityAbstracts.HashFamiliesBridge.highIndependenceHashFamily_clear
+  CslibFrontierAbstracts.HashFamiliesBridge.highIndependenceHashFamily_clear
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
       @AluOp.rec, AluOp.eval,
       Instr, .const, .copy, .alu, .width, .load, .store, .jump,
       .branchEq, .branchLt, .halt, .rand, @Instr.rec,
       Comp, @Comp.pure, @Comp.sample, @Comp.bind, @Comp.eval,
-      ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
+      CslibFrontierAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
       State, .mk, Cfg, .running, .halted, .faulted, @stepRand, @runRand⟩
     (by refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
       simp_all [AluOp.eval, Comp.bind, Comp.eval,
-        ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
+        CslibFrontierAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
     ⟨Op, @Op.resample, @Op.eval, @Op.rec,
       Label, @Label.resample, @Label.eval, @Label.op,
       @epochKeys, @epochCount, @idealTranscriptFrom,
@@ -769,6 +769,6 @@ info: abstract audit passed for `CslibFrontierAbstracts.HashFamiliesAbstract`: 4
 declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.HashFamiliesAbstract
+#check_abstract CslibFrontierAbstracts.HashFamiliesAbstract
 
-end ComplexityAbstracts.HashFamiliesAbstract
+end CslibFrontierAbstracts.HashFamiliesAbstract

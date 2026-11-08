@@ -14,7 +14,7 @@ Concrete evaluations and edge cases for the certified total Module-LWE decryptio
 `exists_computableInPolyTime_moduleLWEDecrypt`.
 -/
 
-namespace ComplexityTests.Crypto.ModuleEncryptionNative
+namespace CslibFrontierTests.Crypto.ModuleEncryptionNative
 
 open Cslib Cslib.Crypto Turing.MultiTapeTM
 open scoped Matrix
@@ -139,4 +139,4 @@ example : decodeIntBin [] = 0 := by decide
 example : decodeIntBin [true] = 0 := by decide
 example : decodeIntBin [true, false, false] = 0 := by decide
 
-end ComplexityTests.Crypto.ModuleEncryptionNative
+end CslibFrontierTests.Crypto.ModuleEncryptionNative

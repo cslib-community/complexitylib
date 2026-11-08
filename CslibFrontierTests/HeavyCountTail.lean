@@ -20,7 +20,7 @@ moment one half: multiplying its moment by rarity again would be false.
 
 public section
 
-namespace ComplexityTests.HeavyCountTail
+namespace CslibFrontierTests.HeavyCountTail
 
 open Finset Cslib Cslib.Probability Cslib.RowCompression
 open scoped BigOperators
@@ -162,4 +162,4 @@ theorem actual_mixed_bound :
 example : vertexNormPow 4 0 1 (fun (_ : Bool) (_ : Unit) => True) actualTail = 0 := by
   simp [vertexNormPow]
 
-end ComplexityTests.HeavyCountTail
+end CslibFrontierTests.HeavyCountTail

@@ -13,7 +13,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Pla
 inclusions between the standard classes, with concrete members witnessing that the classes are
 not vacuous. -/
 
-namespace ComplexityTests.ResourceClasses
+namespace CslibFrontierTests.ResourceClasses
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
@@ -114,4 +114,4 @@ example {B : Set (List Bool × List Bool)} (hB : B ∈ PSPACE (encPair encBits e
     {x | ∃ w : List Bool, w.length = x.length ∧ (x, w) ∈ B} ∈ PSPACE encBits :=
   setOf_exists_mem_PSPACE hB (ComputableInPolyTime.encoding_length encBits)
 
-end ComplexityTests.ResourceClasses
+end CslibFrontierTests.ResourceClasses

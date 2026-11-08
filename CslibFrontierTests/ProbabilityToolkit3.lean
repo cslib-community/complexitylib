@@ -14,7 +14,7 @@ import CslibFrontier.Probability.MinEntropy.LeftoverHash
 /-! Min-entropy, `(k, ε)`-sources, flat decompositions, leftover hashing from sources and
 McDiarmid's inequality: concrete instances and satisfiable hypotheses. -/
 
-namespace ComplexityTests.ProbabilityToolkit3
+namespace CslibFrontierTests.ProbabilityToolkit3
 
 open Cslib Cslib.Probability Cslib.Probability.PMF Finset
 open scoped NNReal Cslib.Probability.PMF
@@ -211,4 +211,4 @@ example {γ : Type*} [Fintype γ] [DecidableEq γ] (n : ℕ) (p : PMF γ) {ε : 
   have h := (hasBoundedDifferences_distinct n).pi_abs_sub_mean_ge (fun _ => p) hε
   rwa [Finset.sum_const, one_pow, card_univ, Fintype.card_fin, nsmul_eq_mul, mul_one] at h
 
-end ComplexityTests.ProbabilityToolkit3
+end CslibFrontierTests.ProbabilityToolkit3

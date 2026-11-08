@@ -28,7 +28,7 @@ Kernel-checked instances for `Cslib.DataStructure.PrefixSums.CellProbe`:
 
 public section
 
-namespace ComplexityTests.CellProbeFredmanSaks
+namespace CslibFrontierTests.CellProbeFredmanSaks
 
 open Cslib Cslib.CellProbe Cslib.DataStructure.PrefixSums.CellProbe Finset
 
@@ -202,4 +202,4 @@ example : ¬ AnswersQueries (zeroScheme 4) := by
   rw [ProbeTree.probes_pure] at h
   omega
 
-end ComplexityTests.CellProbeFredmanSaks
+end CslibFrontierTests.CellProbeFredmanSaks

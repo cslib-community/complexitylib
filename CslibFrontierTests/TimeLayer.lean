@@ -20,7 +20,7 @@ true outputs true and halts. Thus the finite-horizon theorem also applies when n
 halting bound exists. Zero horizons and the actual compact-count reader are checked too.
 -/
 
-namespace ComplexityTests.TimeLayer
+namespace CslibFrontierTests.TimeLayer
 
 open Matrix Finset
 
@@ -182,4 +182,4 @@ example :
   rw [hentry] at h
   exact h.symm
 
-end ComplexityTests.TimeLayer
+end CslibFrontierTests.TimeLayer

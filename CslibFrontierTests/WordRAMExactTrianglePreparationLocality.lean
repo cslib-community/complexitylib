@@ -16,7 +16,7 @@ This small producer-only client distinguishes protected readback from the produc
 external frame. The full thin-solver clients retain their valid positive geometry elsewhere.
 -/
 
-namespace ComplexityTests.WordRAMExactTrianglePreparationLocality
+namespace CslibFrontierTests.WordRAMExactTrianglePreparationLocality
 
 open Cslib.WordRAM
 open Cslib.Algorithms.WordRAM.ExactTriangle
@@ -64,4 +64,4 @@ example : ∃ a z : Data 64,
     rw [dirty, old_zero] at he
     contradiction
 
-end ComplexityTests.WordRAMExactTrianglePreparationLocality
+end CslibFrontierTests.WordRAMExactTrianglePreparationLocality

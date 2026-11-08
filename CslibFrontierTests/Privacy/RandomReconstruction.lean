@@ -23,7 +23,7 @@ import Mathlib.Analysis.Complex.ExponentialBounds
   `(1, 0)`-private mechanism answers exactly on `3 / 4` of them with probability one.
 -/
 
-namespace ComplexityTests.Privacy.RandomReconstruction
+namespace CslibFrontierTests.Privacy.RandomReconstruction
 
 open Cslib Cslib.Privacy
 open scoped ENNReal
@@ -142,4 +142,4 @@ example : ∃ A : Fin 1500 → Fin 60 → Bool, ∀ (M : (Fin 60 → Bool) → P
   norm_num at h
   linarith
 
-end ComplexityTests.Privacy.RandomReconstruction
+end CslibFrontierTests.Privacy.RandomReconstruction

@@ -16,7 +16,7 @@ zero at `ρ = 0` and its influence one at `ρ = 1`. Proposition 2.54 applies to 
 `δ = ε = 1 / 2`.
 -/
 
-namespace ComplexityTests.BooleanAnalysisStableInfluence
+namespace CslibFrontierTests.BooleanAnalysisStableInfluence
 
 open Cslib Cslib.BitString Finset
 open scoped BigOperators
@@ -49,4 +49,4 @@ example : (1 / 2 : ℝ) * (1 / 2) *
       1 :=
   mul_card_filter_le_stableInfluence_signVal_le_one (by norm_num) (by norm_num) _ _
 
-end ComplexityTests.BooleanAnalysisStableInfluence
+end CslibFrontierTests.BooleanAnalysisStableInfluence

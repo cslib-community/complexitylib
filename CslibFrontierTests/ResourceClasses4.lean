@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Complexity.Classes.RP
 /-! Padding: the padded problem of a nondeterministic machine, the translation lemma and
 `P = NP → EXP = NEXP`; and error reduction for deciders of a nontrivial problem. -/
 
-namespace ComplexityTests.ResourceClasses4
+namespace CslibFrontierTests.ResourceClasses4
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
@@ -122,4 +122,4 @@ example (q : Polynomial ℕ) :
 example : startsTrue ∈ RP encBits :=
   ⟨1, andHead, by unfold andHead; fun_prop, decidesWithOneSidedError_andHead⟩
 
-end ComplexityTests.ResourceClasses4
+end CslibFrontierTests.ResourceClasses4

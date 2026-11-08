@@ -19,7 +19,7 @@ machine, derive `Eval` for every node, instantiate the polynomial-time component
 `PolyTime` hypotheses of the native certificate are satisfiable) and check the node-count
 arithmetic. -/
 
-namespace ComplexityTests.StackRecursion
+namespace CslibFrontierTests.StackRecursion
 
 open Cslib.GenericRAM Cslib.GenericRAM.StackRecursion Turing.MultiTapeTM
 
@@ -268,4 +268,4 @@ example : 2 ^ (3 * 16 / Nat.sqrt (Nat.log 2 16)) = 2 ^ 24 := by
   have h2 : Nat.sqrt 4 = 2 := (Nat.eq_sqrt.2 ⟨by norm_num, by norm_num⟩).symm
   rw [h1, h2]
 
-end ComplexityTests.StackRecursion
+end CslibFrontierTests.StackRecursion

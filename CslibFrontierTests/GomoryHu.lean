@@ -16,7 +16,7 @@ every other pair, and the path `0 - 1 - 2 - 3` is a Gomory–Hu tree with sides 
 is not a Gomory–Hu tree of a second graph with a heavy edge `02`.
 -/
 
-namespace ComplexityTests.GomoryHu
+namespace CslibFrontierTests.GomoryHu
 
 open Cslib.WeightedCut Cslib.Algorithms.Lean.GomoryHu
 open SimpleGraph (edgeSide edgeSide_eq_of_forall_adj)
@@ -195,4 +195,4 @@ example (f : Finset (Fin 1) → ℕ) : IsGomoryHuTree f (SimpleGraph.pathGraph 1
 /-- `λ(s, s) = 0`. -/
 example : minCutBetween W 2 2 = 0 := minCutBetween_self W 2
 
-end ComplexityTests.GomoryHu
+end CslibFrontierTests.GomoryHu

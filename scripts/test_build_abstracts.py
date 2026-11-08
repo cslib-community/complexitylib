@@ -17,7 +17,7 @@ SOURCE = """/-! # A checked statement
 
 This is the mathematical introduction.
 -/
-namespace ComplexityTests.Abstracts.ExampleAbstract
+namespace CslibFrontierTests.Abstracts.ExampleAbstract
 /-- A visible definition. -/
 def value : Nat := 0
 
@@ -26,7 +26,7 @@ theorem chosen : value = 0 := rfl
 
 /-- A supporting result that is not selected. -/
 theorem other : True := by trivial
-end ComplexityTests.Abstracts.ExampleAbstract
+end CslibFrontierTests.Abstracts.ExampleAbstract
 """
 
 
@@ -45,8 +45,8 @@ class BuildAbstractsTests(unittest.TestCase):
         self.entry = {"id": "example", "title": "An example", "summary": "The selected result.",
                       "scope": "No algorithmic claim.",
                       "module": "CslibFrontierAbstracts.ExampleAbstract",
-                      "namespace": "ComplexityTests.Abstracts.ExampleAbstract",
-                      "headline_theorems": ["ComplexityTests.Abstracts.ExampleAbstract.chosen"]}
+                      "namespace": "CslibFrontierTests.Abstracts.ExampleAbstract",
+                      "headline_theorems": ["CslibFrontierTests.Abstracts.ExampleAbstract.chosen"]}
         self.manifest = self.root / "catalogue.json"
         self.write_manifest([self.entry])
 
@@ -62,9 +62,9 @@ class BuildAbstractsTests(unittest.TestCase):
             build.module_source_path(module, self.root).write_text(
                 imports + f"/-! # {module.rsplit('.', 1)[-1]} foundation\n"
                 "Exact checked definitions.\n-/\n"
-                f"namespace ComplexityTests.Abstracts.{module.rsplit('.', 1)[-1]}\n"  # rename-module-root: keep
+                f"namespace CslibFrontierTests.Abstracts.{module.rsplit('.', 1)[-1]}\n"
                 f"/-- The foundational definition {name}. -/\ndef {name} : Nat := 0\n"
-                f"end ComplexityTests.Abstracts.{module.rsplit('.', 1)[-1]}\n")  # rename-module-root: keep
+                f"end CslibFrontierTests.Abstracts.{module.rsplit('.', 1)[-1]}\n")
         source = build.module_source_path(self.entry["module"], self.root)
         source.write_text("import CslibFrontierAbstracts.Check\n"
                           "import CslibFrontierAbstracts.ExampleBridge\n"
@@ -123,15 +123,15 @@ class BuildAbstractsTests(unittest.TestCase):
             self.assertIn(record["declarations"][0]["url"], output)
             self.assertEqual(record["source_sha256"],
                              build.digest(build.module_source_path(module, self.root)))
-        self.assertIn("ComplexityTests.Abstracts.Encoding",
+        self.assertIn("CslibFrontierTests.Abstracts.Encoding",
                       build.foundation_record(modules[0], "owner/repo", "a" * 40,
                                               self.root)["namespaces"])
 
     def test_combined_catalogue_includes_shared_foundations_once(self):
         modules = self.add_foundations()
         other = {**self.entry, "id": "second", "module": "CslibFrontierAbstracts.SecondAbstract",
-                 "namespace": "ComplexityTests.Abstracts.SecondAbstract",
-                 "headline_theorems": ["ComplexityTests.Abstracts.SecondAbstract.chosen"]}
+                 "namespace": "CslibFrontierTests.Abstracts.SecondAbstract",
+                 "headline_theorems": ["CslibFrontierTests.Abstracts.SecondAbstract.chosen"]}
         source = build.module_source_path(self.entry["module"], self.root).read_text()
         build.module_source_path(other["module"], self.root).write_text(
             source.replace("ExampleAbstract", "SecondAbstract"))
@@ -199,7 +199,7 @@ class BuildAbstractsTests(unittest.TestCase):
     def test_module_source_path_uses_dedicated_library_root(self):
         self.assertEqual(build.module_source_path(self.entry["module"], self.root),
                          self.root / "abstracts/CslibFrontierAbstracts/ExampleAbstract.lean")
-        for module in ("ComplexityTests.Abstracts.ExampleAbstract", "Other.ExampleAbstract",
+        for module in ("CslibFrontierTests.Abstracts.ExampleAbstract", "Other.ExampleAbstract",
                        "CslibFrontierAbstracts../ExampleAbstract", "CslibFrontierAbstracts.9Abstract"):
             with self.subTest(module=module), self.assertRaisesRegex(ValueError, "module"):
                 build.module_source_path(module, self.root)
@@ -207,7 +207,7 @@ class BuildAbstractsTests(unittest.TestCase):
     def test_module_namespace_is_the_default_when_not_overridden(self):
         self.entry.pop("namespace")
         source = build.module_source_path(self.entry["module"], self.root)
-        source.write_text(SOURCE.replace("ComplexityTests.Abstracts.ExampleAbstract",
+        source.write_text(SOURCE.replace("CslibFrontierTests.Abstracts.ExampleAbstract",
                                          self.entry["module"]))
         self.entry["headline_theorems"] = [self.entry["module"] + ".chosen"]
         self.write_manifest([self.entry])
@@ -242,7 +242,7 @@ class BuildAbstractsTests(unittest.TestCase):
         source.write_text(SOURCE.replace("theorem chosen :", "theorem chosen'a' :")
                           .replace("rfl\n", "rfl\n\ndef quote := 'q'\n", 1))
         entry = {**self.entry,
-                 "headline_theorems": ["ComplexityTests.Abstracts.ExampleAbstract.chosen'a'"]}
+                 "headline_theorems": ["CslibFrontierTests.Abstracts.ExampleAbstract.chosen'a'"]}
         self.write_manifest([entry])
         self.assertEqual(build.load_catalogue(self.manifest, self.root), [entry])
 
@@ -468,10 +468,10 @@ class BuildAbstractsTests(unittest.TestCase):
             "scope": "Classical public-key IND-CPA under exact decision LWE; no LWE hardness, "
                      "circular security, or bootstrappability claim.",
             "module": "CslibFrontierAbstracts.GSWSecurityAbstract",
-            "namespace": "ComplexityTests.Abstracts.GSWSecurityAbstract",
+            "namespace": "CslibFrontierTests.Abstracts.GSWSecurityAbstract",
             "headline_theorems": [
-                "ComplexityTests.Abstracts.GSWSecurityAbstract.native_algorithms",
-                "ComplexityTests.Abstracts.GSWSecurityAbstract.indCPA",
+                "CslibFrontierTests.Abstracts.GSWSecurityAbstract.native_algorithms",
+                "CslibFrontierTests.Abstracts.GSWSecurityAbstract.indCPA",
             ],
             "foundations": [
                 "CslibFrontierAbstracts.Encoding",

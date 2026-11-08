@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Circuit.Boolean.Smolensky
 
 /-! # Bridges for constant-depth parity lower bounds -/
 
-namespace ComplexityTests.Abstracts.ConstantDepthBridge
+namespace CslibFrontierTests.Abstracts.ConstantDepthBridge
 
 /-- Parity is true when an odd number of bits are true. -/
 def parity (n : ℕ) (x : Fin n → Bool) : Bool :=
@@ -72,4 +72,4 @@ by
   subst i
   exact correct x
 
-end ComplexityTests.Abstracts.ConstantDepthBridge
+end CslibFrontierTests.Abstracts.ConstantDepthBridge

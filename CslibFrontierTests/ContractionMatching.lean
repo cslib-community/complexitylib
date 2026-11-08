@@ -14,7 +14,7 @@ empty row, a matrix given by rows of unequal length), perfect matchings of the c
 reversed and loop edges, and the values of the two counters on instances meeting their degree
 promises. -/
 
-namespace ComplexityTests.ContractionMatching
+namespace CslibFrontierTests.ContractionMatching
 
 open Finset Cslib.Logic.PL Cslib.Complexity Cslib.Complexity.ContractionMatching
 
@@ -125,4 +125,4 @@ example : ∃ count : Graph → ℕ, count k₃₃ = 6 := by
     ← Graph.partitionFunction_perfectMatchingInstance]
   decide +kernel
 
-end ComplexityTests.ContractionMatching
+end CslibFrontierTests.ContractionMatching

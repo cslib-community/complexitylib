@@ -18,7 +18,7 @@ native method execution from `Realizes.toStateTransitionImpl`. It does not suppl
 execution proof for the method.
 -/
 
-namespace ComplexityTests.WordRAMRealizationLocal
+namespace CslibFrontierTests.WordRAMRealizationLocal
 
 open Cslib Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 
@@ -244,4 +244,4 @@ example :
     change 100 ∉ (Block.mk 0 1).footprint
     simp [Block.mem_footprint, Block.Owns])⟩
 
-end ComplexityTests.WordRAMRealizationLocal
+end CslibFrontierTests.WordRAMRealizationLocal

@@ -23,7 +23,7 @@ Concrete values of the numberings, weights, parities, thresholds, blocks and lis
 as the most significant one, `ofList` pads with `false`, and blocks are consecutive runs of bits.
 -/
 
-namespace ComplexityTests.BitString
+namespace CslibFrontierTests.BitString
 
 open Cslib Cslib.BitString Finset
 
@@ -92,4 +92,4 @@ example :
     by rw [flipOn_false]; decide,
     flipOn_filter_ne ![true, false, false] ![false, false, true]⟩
 
-end ComplexityTests.BitString
+end CslibFrontierTests.BitString

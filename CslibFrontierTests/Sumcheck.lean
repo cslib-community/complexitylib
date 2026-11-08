@@ -16,7 +16,7 @@ The polynomial `X₀` in one variable over `ZMod 3` has individual degree `1`. I
 theorems apply: sumcheck with the final check is perfectly complete and has soundness error `1 / 3`.
 -/
 
-namespace ComplexityTests.Sumcheck
+namespace CslibFrontierTests.Sumcheck
 
 open Cslib Cslib.Interactive Cslib.Interactive.Sumcheck
 open scoped ENNReal
@@ -54,4 +54,4 @@ example :
       (1 / 3) := by
   simpa using proof_sound 1 P degreeOf_P_le
 
-end ComplexityTests.Sumcheck
+end CslibFrontierTests.Sumcheck

@@ -23,7 +23,7 @@ import Mathlib.Tactic.NormNum
 * `run` agrees with the `ProbComp` program that samples `n` fair bits and reads the tree.
 -/
 
-namespace ComplexityTests.KnuthYao
+namespace CslibFrontierTests.KnuthYao
 
 open scoped ENNReal
 open Cslib Cslib.Probability Cslib.Probability.DDGTree
@@ -190,4 +190,4 @@ example {α : Type} (T : DDGTree α) (n : ℕ) :
     ProbComp.eval (T.output <$> BitString.sampleList n) = T.run n := by
   simp [run]
 
-end ComplexityTests.KnuthYao
+end CslibFrontierTests.KnuthYao

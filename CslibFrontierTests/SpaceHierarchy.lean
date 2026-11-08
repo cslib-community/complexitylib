@@ -12,7 +12,7 @@ concrete machine within an ample budget. The diagonal within space on the padded
 concrete accepting and rejecting machines; and the space hierarchy theorem and its corollaries
 on concrete bounds. -/
 
-namespace ComplexityTests.SpaceHierarchy
+namespace CslibFrontierTests.SpaceHierarchy
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM Turing.MultiTapeTM.Universal Filter
 
@@ -130,4 +130,4 @@ example : DSPACE encBits (· ^ 0) ⊂ DSPACE encBits (· ^ 3) :=
 example : ∃ A ∈ PSPACE encBits, A ∉ L encBits :=
   Set.exists_of_ssubset L_ssubset_PSPACE
 
-end ComplexityTests.SpaceHierarchy
+end CslibFrontierTests.SpaceHierarchy

@@ -18,7 +18,7 @@ largest
 such code has `40` codewords.
 -/
 
-namespace ComplexityTests.Code.EliasBassalygo
+namespace CslibFrontierTests.Code.EliasBassalygo
 
 open Cslib Cslib.Code Finset
 
@@ -42,4 +42,4 @@ example (C : Finset (Fin 10 → Bool)) :
   rw [hV] at hw
   exact ⟨w, hw⟩
 
-end ComplexityTests.Code.EliasBassalygo
+end CslibFrontierTests.Code.EliasBassalygo

@@ -10,7 +10,7 @@ import CslibFrontier.DataStructure.PriorityQueue.BinaryHeap.Native.Certificate
 heap program, after actual compact initialization. Each operation pays its final halt; host
 continuations and external argument delivery retain the existing DynamicProgram convention. -/
 
-namespace ComplexityTests.WordRAMBinaryHeapCertificate
+namespace CslibFrontierTests.WordRAMBinaryHeapCertificate
 
 open Cslib Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.PriorityQueue
@@ -86,4 +86,4 @@ example : ¬(indexedMinPQSpec 4 20).ValidHistory (IndexedMinPQ.empty 4) [.decrea
 
 end
 
-end ComplexityTests.WordRAMBinaryHeapCertificate
+end CslibFrontierTests.WordRAMBinaryHeapCertificate

@@ -13,7 +13,7 @@ import Mathlib.Data.List.OfFn
 
 /-! # Transfer of the Immerman–Szelepcsényi theorem to plain machine definitions -/
 
-namespace ComplexityAbstracts.ImmermanSzelepcsenyiBridge
+namespace CslibFrontierAbstracts.ImmermanSzelepcsenyiBridge
 
 /-- A nondeterministic machine accepts if an actual computation path ends halted with output 1. -/
 def Accepts {k : ℕ} {State : Type} (M : Turing.MultiTapeNTM k Bool State)
@@ -141,4 +141,4 @@ def encInstance : Instance ↪ List Bool := ⟨encode, encode_injective⟩
 theorem stcon_compl_mem_nl : STCONᶜ ∈ NL encInstance :=
   preimage_mem_NL toInternal encode_eq Cslib.Complexity.STCON.compl_mem_NL
 
-end ComplexityAbstracts.ImmermanSzelepcsenyiBridge
+end CslibFrontierAbstracts.ImmermanSzelepcsenyiBridge

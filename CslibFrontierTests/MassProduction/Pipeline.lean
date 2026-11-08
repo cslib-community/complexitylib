@@ -18,7 +18,7 @@ requests share their prefix. The zero-request case and the closed-form overhead 
 checked.
 -/
 
-namespace ComplexityTests.MassProduction.Pipeline
+namespace CslibFrontierTests.MassProduction.Pipeline
 
 open Cslib Cslib.BitString Cslib.LineCode Cslib.Circuits Cslib.Circuits.Boolean
 open Cslib.Circuits.Boolean.MassProduction Cslib.Circuits.Boolean.MassProduction.Pipeline
@@ -167,4 +167,4 @@ example : pipelineOverhead 2 1 1 2 1 1 2 ≤
     1444 * (2 ^ 1 + 2 * (1 + 1) + 2 * (1 + 1) ^ 2) * (1 + 1 + 2 * 1 + Nat.log 2 (2 + 2) + 2) ^ 4 :=
   pipelineOverhead_le rfl (by decide)
 
-end ComplexityTests.MassProduction.Pipeline
+end CslibFrontierTests.MassProduction.Pipeline

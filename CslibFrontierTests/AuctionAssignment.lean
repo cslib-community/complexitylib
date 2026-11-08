@@ -24,7 +24,7 @@ Kernel-checked (`decide +kernel`, no `native_decide`) runs of the auction algori
 4. Boundary cases `n = 0` (no bids) and `n = 1` (one bid, raising the price by `ε`).
 -/
 
-namespace ComplexityTests.AuctionAssignment
+namespace CslibFrontierTests.AuctionAssignment
 
 open Cslib.Algorithms.Lean.Assignment
 
@@ -112,4 +112,4 @@ example : (auction (fun _ : Fin 1 × Fin 1 => 7) 1).bids = 1 ∧
     (auction (fun _ : Fin 1 × Fin 1 => 7) 1).price 0 = 1 := by
   decide +kernel
 
-end ComplexityTests.AuctionAssignment
+end CslibFrontierTests.AuctionAssignment

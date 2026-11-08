@@ -9,7 +9,7 @@ import CslibFrontier.Crypto.Computational.GGM.Evaluation
 
 /-! Ordinary probabilistic programs use `ppt`; deterministic callbacks reuse `polytime`. -/
 
-namespace ComplexityTests.PPTTactic
+namespace CslibFrontierTests.PPTTactic
 
 open Cslib Cslib.Probability Turing.MultiTapeTM
 
@@ -274,4 +274,4 @@ example (_sample : List Bool → ProbComp Bool) : True := by
   fail_if_success have : IsPPTOn encBits encFin3 (fun _ => ProbComp.uniform (Fin 3)) := by ppt
   trivial
 
-end ComplexityTests.PPTTactic
+end CslibFrontierTests.PPTTactic

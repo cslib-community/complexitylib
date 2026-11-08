@@ -22,7 +22,7 @@ that `run_correct` and `run_cost` apply.
 
 @[expose] public section
 
-namespace ComplexityTests.FibonacciHeapMinPQ
+namespace CslibFrontierTests.FibonacciHeapMinPQ
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.PriorityQueue
   Cslib.DataStructure.PriorityQueue.FibonacciHeap.MinPQ
@@ -104,4 +104,4 @@ example : (Memory.spec 7).ValidHistory empty ((Memory.spec 7).clientHistory empt
   have h42 : pq.cost = 42 := by decide
   exact ⟨hv, hres, by rw [h720, h42] at hc; exact hc⟩
 
-end ComplexityTests.FibonacciHeapMinPQ
+end CslibFrontierTests.FibonacciHeapMinPQ

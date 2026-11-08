@@ -9,7 +9,7 @@ import CslibFrontier.Computability.WordRAM.Realization.Primitive
 
 /-! A uniform continuation reads the address returned by allocation, not a statically fixed cell. -/
 
-namespace ComplexityTests.WordRAMRealizationBind
+namespace CslibFrontierTests.WordRAMRealizationBind
 
 open Cslib.DataStructure Cslib.WordRAM Cslib.WordRAM.Realization
 
@@ -58,4 +58,4 @@ example : ((Memory.spec 4).clientState initial (allocatedRead 2)).mem 10 = 7 := 
 example : ¬(Memory.spec 4).ValidHistory initial
     ((Memory.spec 4).clientHistory initial (allocatedRead 0)) := by decide
 
-end ComplexityTests.WordRAMRealizationBind
+end CslibFrontierTests.WordRAMRealizationBind

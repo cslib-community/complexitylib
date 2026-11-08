@@ -22,7 +22,7 @@ forwarding adversary and `askParty` meet the budgets `1`, so the budget hypothes
 `UC.EmulatesWithin` and `UC.Emulates` are satisfiable.
 -/
 
-namespace ComplexityTests.Crypto.UC
+namespace CslibFrontierTests.Crypto.UC
 
 open Cslib Cslib.Crypto Cslib.Crypto.Protocols.UC
 open scoped NNReal
@@ -138,4 +138,4 @@ example : ¬ Emulates (bitFunc true).toProtocol (bitFunc false).toProtocol := by
     (Filter.Eventually.of_forall fun κ => ?_))
   simpa [advantage_bitFunc] using hadv ∅ askParty askParty_polyBounded κ []
 
-end ComplexityTests.Crypto.UC
+end CslibFrontierTests.Crypto.UC

@@ -17,7 +17,7 @@ Connects the sublist-based `SubsetSum` definition and the plain binary encodings
 reduction notions of `CookLevinBridge`.
 -/
 
-namespace ComplexityTests.Abstracts.SubsetSumBridge
+namespace CslibFrontierTests.Abstracts.SubsetSumBridge
 
 open Turing.MultiTapeTM Cslib.Complexity
 
@@ -48,4 +48,4 @@ theorem subsetSum_npComplete :
   exact CookLevinBridge.polyTimeReducible_iff.mpr
     (SubsetSum_npComplete.2 encA A (CookLevinBridge.mem_NP_iff.mp hA))
 
-end ComplexityTests.Abstracts.SubsetSumBridge
+end CslibFrontierTests.Abstracts.SubsetSumBridge

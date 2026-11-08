@@ -8,7 +8,7 @@ import CslibFrontier.Computability.PCP.Composition
 
 /-! Independent direct-tester and compatibility clients for generic composition. -/
 
-namespace ComplexityTests.GenericComposition
+namespace CslibFrontierTests.GenericComposition
 
 open Cslib Cslib.PCP
 
@@ -117,4 +117,4 @@ example : optionalTester.Sound (fun table => (table ()).getD false) 1 := by
   intro C π h
   simp [optionalTester, LocalTest.acceptProb, LocalTest.Passes, h]
 
-end ComplexityTests.GenericComposition
+end CslibFrontierTests.GenericComposition

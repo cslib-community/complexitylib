@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.PPSZ.CriticalTree
 a cut that exists only at depth two, and a tree rooted at one variable for a solution that is not
 isolated, which has no critical clause tree. -/
 
-namespace ComplexityTests.PPSZCriticalTree
+namespace CslibFrontierTests.PPSZCriticalTree
 
 open Cslib.Logic.PL Cslib.BitString Cslib.Complexity Cslib.Complexity.PPSZ
 
@@ -100,4 +100,4 @@ theorem isCriticalTreeAt_χ (h : ℕ) :
     IsCriticalTreeAt χ (fun _ => true) 0 h fun _ => [(0, true)] := fun p hp _ =>
   ⟨by simp [χ], by simp [Clause.eval, flipOn_apply_of_mem (List.mem_toFinset.mpr hp)]⟩
 
-end ComplexityTests.PPSZCriticalTree
+end CslibFrontierTests.PPSZCriticalTree

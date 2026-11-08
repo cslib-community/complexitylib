@@ -18,7 +18,7 @@ targets are allowed: two requests at one point are served by disjoint lines thro
 the scheduler specification and the clean flags of a phase accept.
 -/
 
-namespace ComplexityTests.MassProduction.Scheduler
+namespace CslibFrontierTests.MassProduction.Scheduler
 
 open Cslib Cslib.BitString Cslib.LineCode Cslib.Circuits Cslib.Circuits.Boolean
   Cslib.Circuits.Boolean.MassProduction
@@ -142,4 +142,4 @@ example {K : Type*} [Field K] [Fintype K] [DecidableEq K] {ℓ b s D p a r : ℕ
   obtain ⟨π, dirs, -, htarget, hline, -⟩ := hx
   exact ⟨_, dirs, Scheduler.clean_iff bits scalar menu htarget hline hmenu e i⟩
 
-end ComplexityTests.MassProduction.Scheduler
+end CslibFrontierTests.MassProduction.Scheduler

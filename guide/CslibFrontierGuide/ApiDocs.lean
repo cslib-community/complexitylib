@@ -19,7 +19,7 @@ imports, and Lean's own modules, which doc-gen4 always documents. Declarations f
 the guide itself get no link.
 -/
 
-namespace ComplexityGuide.ApiDocs
+namespace CslibFrontierGuide.ApiDocs
 
 open Lean Verso Code Genre Manual
 
@@ -66,4 +66,4 @@ def linkTargets (env : Environment) (root : String := defaultRoot)
       return #[{ shortDescription := "API", description := s!"API documentation for {name}",
                  href := s!"{base}{page}.html#{name}" }] }
 
-end ComplexityGuide.ApiDocs
+end CslibFrontierGuide.ApiDocs

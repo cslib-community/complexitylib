@@ -22,7 +22,7 @@ span laws, Brent's theorem).
 -- Regression `#guard` checks run the compiled `listSchedule` and `lptSchedule`.
 set_option linter.hashCommand false
 
-namespace ComplexityTests.Scheduling
+namespace CslibFrontierTests.Scheduling
 
 open Cslib.Algorithms.Lean.Scheduling
 
@@ -160,4 +160,4 @@ example : ∃ s, IsGreedy 2 chain3 (fun _ => 1) s ∧ makespan (fun _ => 1) s = 
 
 end Precedence
 
-end ComplexityTests.Scheduling
+end CslibFrontierTests.Scheduling

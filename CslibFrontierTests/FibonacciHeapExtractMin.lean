@@ -26,7 +26,7 @@ Two edge cases: extraction from the empty heap, and from a heap with one handle,
 
 @[expose] public section
 
-namespace ComplexityTests.FibonacciHeapExtractMin
+namespace CslibFrontierTests.FibonacciHeapExtractMin
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.PriorityQueue
   Cslib.DataStructure.PriorityQueue.FibonacciHeap
@@ -156,4 +156,4 @@ example : heap.clientResult single (extractMin 4) = some (3, 2) ∧
 example : Inv 4 9 (heap.clientState single (extractMin 4)) :=
   ((Record.wp_iff _ _ _).mp (wp_extractMin (w := 4) inv_single (by decide))).2.2.1
 
-end ComplexityTests.FibonacciHeapExtractMin
+end CslibFrontierTests.FibonacciHeapExtractMin

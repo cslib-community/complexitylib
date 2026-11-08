@@ -18,7 +18,7 @@ input starting guess and the fixed scanner phase. General semantic proofs cover 
 
 public section
 
-namespace ComplexityTests.OuterSearch
+namespace CslibFrontierTests.OuterSearch
 
 open Turing MultiTapeTM MultiTapePTM.BlockComputation
 
@@ -71,4 +71,4 @@ example : ∃ T, (Driver.machine stop (Equiv.refl _)).halted
   rw [houtput] at hout
   exact ⟨T, hhalt, hout⟩
 
-end ComplexityTests.OuterSearch
+end CslibFrontierTests.OuterSearch

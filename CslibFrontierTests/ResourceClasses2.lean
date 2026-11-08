@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 /-! Collapses of the polynomial hierarchy, with concrete instances of cutting blocks of
 certificates and of peeling off the first quantifier of `Σₖ₊₁`. -/
 
-namespace ComplexityTests.ResourceClasses2
+namespace CslibFrontierTests.ResourceClasses2
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
@@ -113,4 +113,4 @@ example (h : ∀ {β : Type} (encB : β ↪ List Bool), NP encB ⊆ P encB) :
       simpa only [zero_add, SigmaP_one, SigmaP_zero] using h encB
   exact hcol ▸ SigmaP_subset_PH 2 alternatingLang_mem_SigmaP_two
 
-end ComplexityTests.ResourceClasses2
+end CslibFrontierTests.ResourceClasses2

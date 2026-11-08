@@ -11,7 +11,7 @@ sink-of-line, end-of-potential-line and sink-of-potential-line relations on smal
 removed by the potential, the circuit-style violation relations of Fearnley et al., and class
 memberships of a nontrivial uniform family. -/
 
-namespace ComplexityTests.TFNPPotentialLine
+namespace CslibFrontierTests.TFNPPotentialLine
 
 open Cslib Cslib.BitString Cslib.Complexity Turing.MultiTapeTM
 
@@ -178,4 +178,4 @@ example : endOfPotentialLineViolationRel n1 P1 S1 V1 ∈ EOPL encBits :=
   endOfPotentialLineViolationRel_mem_EOPL hn1 hP1 hS1 hV1 (hlen1 P1 fun _ => rfl)
     (hlen1 S1 fun _ => rfl)
 
-end ComplexityTests.TFNPPotentialLine
+end CslibFrontierTests.TFNPPotentialLine

@@ -21,7 +21,7 @@ run_elab do
     if (← Lean.getEnv).contains name then
       throwError "unexpected higher tidy calculus: {name}"
 
-namespace ComplexityTests.Internal.OCombinators
+namespace CslibFrontierTests.Internal.OCombinators
 
 def word : List Bool ↪ List Bool := Function.Embedding.refl _
 
@@ -60,4 +60,4 @@ example {α β γ : Type*} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
   fail_if_success exact ComputableInO.of_bounds h 1 (by simpa using ht) (by simpa using hs)
   exact ComputableInO.of_bounds h 1 (by simpa using ht) (by simpa using hs) (by simpa using hl)
 
-end ComplexityTests.Internal.OCombinators
+end CslibFrontierTests.Internal.OCombinators

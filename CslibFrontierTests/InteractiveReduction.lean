@@ -34,12 +34,12 @@ This test module exercises `CslibFrontier.Computability.Interactive.AuxZK`:
      two-instance `Sumcheck.round` products).
 -/
 
-namespace ComplexityTests.InteractiveReduction
+namespace CslibFrontierTests.InteractiveReduction
 
 open Cslib Cslib.Interactive Spec Probability Turing.MultiTapeTM Crypto
-open ComplexityTests.InteractiveKnowledgeSound
-open ComplexityTests.UnboundedSimulators
-open ComplexityTests.EfficientSimulators
+open CslibFrontierTests.InteractiveKnowledgeSound
+open CslibFrontierTests.UnboundedSimulators
+open CslibFrontierTests.EfficientSimulators
 open scoped ENNReal NNReal
 
 /-! ### Part 1: Auxiliary-input zero knowledge and malicious-verifier ZK -/
@@ -289,4 +289,4 @@ example {Aux : Type} (i : ℕ) :
 
 end SumcheckProduct
 
-end ComplexityTests.InteractiveReduction
+end CslibFrontierTests.InteractiveReduction

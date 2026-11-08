@@ -31,7 +31,7 @@ Kernel-checked examples (without `native_decide`) for
 
 public section
 
-namespace ComplexityTests.Hungarian
+namespace CslibFrontierTests.Hungarian
 
 open Cslib.Algorithms.Lean
 open Cslib.Algorithms.Lean.MaxFlow
@@ -129,4 +129,4 @@ example : matchingCost cost3 (permMatching (Equiv.swap (0 : Fin 3) 2)) = 3 + 0 +
   rw [matchingCost_permMatching]
   decide
 
-end ComplexityTests.Hungarian
+end CslibFrontierTests.Hungarian

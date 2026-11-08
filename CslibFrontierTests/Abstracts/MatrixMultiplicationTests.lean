@@ -14,18 +14,18 @@ import Lean.Util.CollectAxioms
 Check a characteristic-zero instance and the exact input/output convention.
 -/
 
-namespace ComplexityTests.Abstracts.MatrixMultiplicationTests
+namespace CslibFrontierTests.Abstracts.MatrixMultiplicationTests
 
-example : ComplexityAbstracts.MatrixMultiplicationAbstract.exponent ℚ ≤ 9 / 4 :=
-  ComplexityAbstracts.MatrixMultiplicationAbstract.exponent_le_nine_quarters ℚ
+example : CslibFrontierAbstracts.MatrixMultiplicationAbstract.exponent ℚ ≤ 9 / 4 :=
+  CslibFrontierAbstracts.MatrixMultiplicationAbstract.exponent_le_nine_quarters ℚ
 
 example (A : Matrix (Fin 2) (Fin 2) ℚ) :
-    ComplexityAbstracts.MatrixMultiplicationAbstract.entries A
+    CslibFrontierAbstracts.MatrixMultiplicationAbstract.entries A
       (finProdFinEquiv (0, 1)) = A 0 1 := by
-  simp [ComplexityAbstracts.MatrixMultiplicationAbstract.entries]
+  simp [CslibFrontierAbstracts.MatrixMultiplicationAbstract.entries]
 
 /-- Returning the first input for the product fails already at `A = 1`, `B = 0`. -/
-example : ¬ ComplexityAbstracts.MatrixMultiplicationAbstract.ComputesProduct
+example : ¬ CslibFrontierAbstracts.MatrixMultiplicationAbstract.ComputesProduct
     (n := 1) (Cslib.Circuits.Circuit.wiring (Cslib.Circuits.arithSignature ℚ)
       (fun _ => 0)) := by
   intro h
@@ -37,12 +37,12 @@ example : ¬ ComplexityAbstracts.MatrixMultiplicationAbstract.ComputesProduct
 open Lean Elab Command in
 run_cmd do
   let allowed : List Name := [``propext, ``Classical.choice, ``Quot.sound]
-  for name in [``ComplexityAbstracts.MatrixMultiplicationAbstract.circuits_nine_quarters,
-      ``ComplexityAbstracts.MatrixMultiplicationAbstract.exponent_le_nine_quarters] do
+  for name in [``CslibFrontierAbstracts.MatrixMultiplicationAbstract.circuits_nine_quarters,
+      ``CslibFrontierAbstracts.MatrixMultiplicationAbstract.exponent_le_nine_quarters] do
     let axioms ← collectAxioms name
     let disallowed := axioms.filter fun ax =>
       !allowed.contains ax
     unless disallowed.isEmpty do
       throwError "unexpected abstract axioms: {disallowed}"
 
-end ComplexityTests.Abstracts.MatrixMultiplicationTests
+end CslibFrontierTests.Abstracts.MatrixMultiplicationTests

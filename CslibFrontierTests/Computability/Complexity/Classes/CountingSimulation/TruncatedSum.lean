@@ -24,10 +24,10 @@ context `n` satisfies its hypotheses. The loop over two empty networks is `2` mo
 
 @[expose] public section
 
-namespace ComplexityTests.TruncatedSum
+namespace CslibFrontierTests.TruncatedSum
 
 open Cslib Cslib.GenericRAM Cslib.Circuits.Frontier Cslib.Complexity.CountingSimulation
-  Turing.MultiTapeTM Finset ComplexityTests.TensorNetworkTruncatedAlgorithm
+  Turing.MultiTapeTM Finset CslibFrontierTests.TensorNetworkTruncatedAlgorithm
 
 /-- The empty network, at precision and truncation order `n + 1`, for every index. -/
 def build (q : ℕ × ℕ) : ℕ × ℕ × ℕ × DescribedNetwork (List ℕ) :=
@@ -73,4 +73,4 @@ example (n : ℕ) :
   rw [truncSum_eq]
   simp [hterm]
 
-end ComplexityTests.TruncatedSum
+end CslibFrontierTests.TruncatedSum

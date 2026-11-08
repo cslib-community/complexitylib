@@ -8,7 +8,7 @@ import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.Search
 
 /-! # Executed least-prime collision searches -/
 
-namespace ComplexityTests.WordRAMChanHeSearch
+namespace CslibFrontierTests.WordRAMChanHeSearch
 
 open Cslib.WordRAM
 open Cslib.Algorithms.ThreeSum.ChanHe
@@ -128,4 +128,4 @@ example : ∃ y, ExecWithin 8 Search.program laterInput y 1049 ∧ y.regs Search
   convert he using 1
   decide
 
-end ComplexityTests.WordRAMChanHeSearch
+end CslibFrontierTests.WordRAMChanHeSearch

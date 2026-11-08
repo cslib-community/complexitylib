@@ -15,9 +15,9 @@ gate weights on 8 bits, positive improved gate and wire lower bounds for an actu
 32568 bits, and positive top fan-in bounds for an actual three-member majority vote on 521344 bits.
 -/
 
-namespace ComplexityTests.Abstracts.AndreevThresholdTests
+namespace CslibFrontierTests.Abstracts.AndreevThresholdTests
 
-open ComplexityAbstracts.AndreevThresholdAbstract
+open CslibFrontierAbstracts.AndreevThresholdAbstract
 open Cslib.Circuits Cslib.Circuits.Boolean Cslib.Circuits.Boolean.WeightedThreshold Finset
 
 example {n : ℕ} (c : ThrCircuit n) (x : Fin n → Bool) :
@@ -25,11 +25,11 @@ example {n : ℕ} (c : ThrCircuit n) (x : Fin n → Bool) :
   rfl
 
 example {n : ℕ} (c : ThrCircuit n) :
-    ComplexityAbstracts.AndreevThresholdAbstract.wireCount c = c.wireCount :=
+    CslibFrontierAbstracts.AndreevThresholdAbstract.wireCount c = c.wireCount :=
   rfl
 
 example (b m : ℕ) :
-    ComplexityAbstracts.AndreevThresholdAbstract.andreev b m =
+    CslibFrontierAbstracts.AndreevThresholdAbstract.andreev b m =
       Cslib.Circuits.Boolean.andreev b m :=
   rfl
 
@@ -41,8 +41,8 @@ example :
     ∃ c : ThrCircuit 8,
       c.depth ≤ 2 ∧
       c.size = 49 ∧
-      ComplexityAbstracts.AndreevThresholdAbstract.wireCount c ≤ 432 ∧
-      (∀ x, evaluate c x = ComplexityAbstracts.AndreevThresholdAbstract.andreev 2 2 x) ∧
+      CslibFrontierAbstracts.AndreevThresholdAbstract.wireCount c ≤ 432 ∧
+      (∀ x, evaluate c x = CslibFrontierAbstracts.AndreevThresholdAbstract.andreev 2 2 x) ∧
       ∀ gate : Fin c.size,
         ((∀ a, ∃ i, (c.program.lines gate).wires a = Wire.input i) ∧
           ∀ a, ∃ z : ℤ, |z| ≤ 2 ∧ (c.program.lines gate).op.weight a = z) ∨
@@ -54,8 +54,8 @@ example :
 they force at least 12 gates and 69874 active wires (the previous bounds gave 9 and 52405). -/
 example : ∃ c : ThrCircuit (2 ^ 14 + 14 * 1156),
     c.depth ≤ 2 ∧
-    (∀ x, evaluate c x = ComplexityAbstracts.AndreevThresholdAbstract.andreev 14 1156 x) ∧
-    12 ≤ c.size ∧ 69874 ≤ ComplexityAbstracts.AndreevThresholdAbstract.wireCount c := by
+    (∀ x, evaluate c x = CslibFrontierAbstracts.AndreevThresholdAbstract.andreev 14 1156 x) ∧
+    12 ≤ c.size ∧ 69874 ≤ CslibFrontierAbstracts.AndreevThresholdAbstract.wireCount c := by
   have hsqrt14 : Real.sqrt ((2 : ℝ) ^ 14) = 128 :=
     (Real.sqrt_eq_iff_eq_sq (by norm_num) (by norm_num)).mpr (by norm_num)
   have hε : 3 * (((14 : ℕ) : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ 14) ≤ (1 / 2 : ℝ) := by
@@ -71,7 +71,7 @@ example : ∃ c : ThrCircuit (2 ^ 14 + 14 * 1156),
     norm_num at hgate'
     linarith
   have hwire_gt : (69873 : ℝ) <
-      (ComplexityAbstracts.AndreevThresholdAbstract.wireCount c : ℝ) := by
+      (CslibFrontierAbstracts.AndreevThresholdAbstract.wireCount c : ℝ) := by
     have hsqrt_m : Real.sqrt ((1156 : ℕ) : ℝ) = 34 :=
       (Real.sqrt_eq_iff_eq_sq (by norm_num) (by norm_num)).mpr (by norm_num)
     rw [hsqrt_m] at hwire
@@ -85,17 +85,17 @@ bounds force each copy to have at least 51 gates and 4369067 active wires. -/
 example : ∃ C : Fin 3 → ThrCircuit (2 ^ 18 + 18 * 14400),
     (∀ i, (C i).depth ≤ 2) ∧
     (∀ x, 3 < 2 * (Finset.univ.filter fun i =>
-      evaluate (C i) x = ComplexityAbstracts.AndreevThresholdAbstract.andreev 18 14400 x).card) ∧
-    51 ≤ (C 0).size ∧ 4369067 ≤ ComplexityAbstracts.AndreevThresholdAbstract.wireCount (C 0) := by
+      evaluate (C i) x = CslibFrontierAbstracts.AndreevThresholdAbstract.andreev 18 14400 x).card) ∧
+    51 ≤ (C 0).size ∧ 4369067 ≤ CslibFrontierAbstracts.AndreevThresholdAbstract.wireCount (C 0) := by
   have hsqrt18 : Real.sqrt ((2 : ℝ) ^ 18) = 512 :=
     (Real.sqrt_eq_iff_eq_sq (by norm_num) (by norm_num)).mpr (by norm_num)
   have hb : 3 * (((18 : ℕ) : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ 18) ≤ 1 / (2 * ((3 : ℕ) : ℝ)) := by
     rw [hsqrt18]; norm_num
   set c := andreevCircuit 18 14400
   have hvote : ∀ x, 3 < 2 * (Finset.univ.filter fun _ : Fin 3 =>
-      evaluate c x = ComplexityAbstracts.AndreevThresholdAbstract.andreev 18 14400 x).card := by
+      evaluate c x = CslibFrontierAbstracts.AndreevThresholdAbstract.andreev 18 14400 x).card := by
     intro x
-    have hx : evaluate c x = ComplexityAbstracts.AndreevThresholdAbstract.andreev 18 14400 x :=
+    have hx : evaluate c x = CslibFrontierAbstracts.AndreevThresholdAbstract.andreev 18 14400 x :=
       congrFun (computes_andreevCircuit 18 14400 x) 0
     simp [hx]
   have hd : ∀ _ : Fin 3, c.depth ≤ 2 := fun _ => depth_andreevCircuit_le 18 14400
@@ -112,7 +112,7 @@ example : ∃ C : Fin 3 → ThrCircuit (2 ^ 18 + 18 * 14400),
     norm_num at hgate'
     linarith
   have hwire_gt : (4369066 : ℝ) <
-      (ComplexityAbstracts.AndreevThresholdAbstract.wireCount c : ℝ) := by
+      (CslibFrontierAbstracts.AndreevThresholdAbstract.wireCount c : ℝ) := by
     have hsqrt_m : Real.sqrt ((14400 : ℕ) : ℝ) = 120 :=
       (Real.sqrt_eq_iff_eq_sq (by norm_num) (by norm_num)).mpr (by norm_num)
     rw [hsqrt_m] at hwire
@@ -120,4 +120,4 @@ example : ∃ C : Fin 3 → ThrCircuit (2 ^ 18 + 18 * 14400),
     linarith
   exact ⟨fun _ => c, hd, hvote, by exact_mod_cast hsize_gt, by exact_mod_cast hwire_gt⟩
 
-end ComplexityTests.Abstracts.AndreevThresholdTests
+end CslibFrontierTests.Abstracts.AndreevThresholdTests

@@ -13,7 +13,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Lis
 
 open Turing.MultiTapeTM
 
-namespace ComplexityTests.ListHead
+namespace CslibFrontierTests.ListHead
 
 variable {α : Type} [Inhabited α] (enc : α ↪ List Bool)
 
@@ -29,4 +29,4 @@ example (l : List α) :
   (length_enc_getD_le (encC := enc) l.head?).trans
     (Nat.add_le_add_right (length_encOption_head?_le (encB := enc) l) _)
 
-end ComplexityTests.ListHead
+end CslibFrontierTests.ListHead

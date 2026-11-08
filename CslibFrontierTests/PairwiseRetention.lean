@@ -17,7 +17,7 @@ two distinct points are retained jointly at rate `4 / 25`; and all five points h
 on average.
 -/
 
-namespace ComplexityTests.PairwiseRetention
+namespace CslibFrontierTests.PairwiseRetention
 
 open Cslib Cslib.Probability Finset
 open scoped BigOperators
@@ -51,4 +51,4 @@ example : 𝔼 c : Fin 2 → ZMod 5,
   rw [hp.expect_card_filter_apply_mem, show #({0, 1} : Finset (ZMod 5)) = 2 by decide]
   norm_num [ZMod.card]
 
-end ComplexityTests.PairwiseRetention
+end CslibFrontierTests.PairwiseRetention

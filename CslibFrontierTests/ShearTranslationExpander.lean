@@ -17,7 +17,7 @@ and clients of the uniform spectral gap: the Poincaré inequality applied to a c
 and a lower bound on the edges leaving every vertex set, for every `n`.
 -/
 
-namespace ComplexityTests.ShearTranslationExpander
+namespace CslibFrontierTests.ShearTranslationExpander
 
 open Cslib Cslib.RotationMap Finset
 
@@ -62,4 +62,4 @@ example (n : ℕ) [NeZero n] (S : Finset (ZMod n × ZMod n)) :
 example : (shearTranslation 1000).lazy.spectralExpansion < 1 :=
   (spectralExpansion_lazy_shearTranslation_le 1000).trans_lt (by norm_num)
 
-end ComplexityTests.ShearTranslationExpander
+end CslibFrontierTests.ShearTranslationExpander

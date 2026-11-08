@@ -14,7 +14,7 @@ and two bits, the Lipschitz and ball statements on them, and a non-Boolean insta
 generic hypotheses, the full binary basis over `ZMod 3`, where the difference distance is not
 symmetric. -/
 
-namespace ComplexityTests.CircuitMetric
+namespace CslibFrontierTests.CircuitMetric
 
 open Cslib Cslib.Circuits
 
@@ -180,4 +180,4 @@ example (f g h a : (Fin 1 → ZMod 3) → ZMod 3) :
 
 end Full
 
-end ComplexityTests.CircuitMetric
+end CslibFrontierTests.CircuitMetric

@@ -21,7 +21,7 @@ Exercises:
 4. König's theorem recovered from `exists_maxMatching_separatorCover`.
 -/
 
-namespace ComplexityTests.MatroidIntersection
+namespace CslibFrontierTests.MatroidIntersection
 
 open Cslib.Algorithms.Lean.Matroid Cslib.Algorithms.Lean.MaxFlow
 open scoped symmDiff
@@ -180,4 +180,4 @@ example : IsVertexCover gPath (separatorCover (bipartiteEdges gPath) {(0, 0), (0
     (separatorCover (bipartiteEdges gPath) {(0, 0), (0, 1)}).size = 2 :=
   ⟨isVertexCover_separatorCover gPath _, by decide⟩
 
-end ComplexityTests.MatroidIntersection
+end CslibFrontierTests.MatroidIntersection

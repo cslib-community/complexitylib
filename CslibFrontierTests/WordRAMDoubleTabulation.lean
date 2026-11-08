@@ -24,7 +24,7 @@ Verifies:
 
 @[expose] public section
 
-namespace ComplexityTests.WordRAMDoubleTabulation
+namespace CslibFrontierTests.WordRAMDoubleTabulation
 
 open Cslib Cslib.DataStructure Cslib.DataStructure.WordRAM.Randomized
 open Cslib.DataStructure.HashFamily.WordRAM
@@ -185,4 +185,4 @@ theorem provableObliviousSequenceImpl_nonvacuous :
       O.seq_expected ops hx₀ hfr hpar hz hv
     exact ⟨ν₀, ν_final, T_ops, hinit, hsteps, hbdd, hcontract, hcost⟩
 
-end ComplexityTests.WordRAMDoubleTabulation
+end CslibFrontierTests.WordRAMDoubleTabulation

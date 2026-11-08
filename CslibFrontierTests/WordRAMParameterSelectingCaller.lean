@@ -16,7 +16,7 @@ retains any old K outside three aliased source spans. Prefix-resource results se
 the original raw-word bound; they never assert that such arbitrary old words fit every width.
 -/
 
-namespace ComplexityTests.WordRAMParameterSelectingCaller
+namespace CslibFrontierTests.WordRAMParameterSelectingCaller
 
 open Cslib.WordRAM Cslib.Matrix Cslib.Algorithms.ExactTriangle
 open Cslib.Algorithms.WordRAM.ExactTriangle
@@ -87,4 +87,4 @@ example (K : ℕ) :
   refine ⟨y, he, hiff.mpr ⟨0, 0, 0, by norm_num [A, C]⟩, ?_⟩
   exact (frame 0 (by decide)).trans rfl
 
-end ComplexityTests.WordRAMParameterSelectingCaller
+end CslibFrontierTests.WordRAMParameterSelectingCaller

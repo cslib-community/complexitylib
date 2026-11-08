@@ -16,7 +16,7 @@ antisymmetric; and direct applications of the correctness theorems and of the `3
 bound.
 -/
 
-namespace ComplexityTests.QuerySelect
+namespace CslibFrontierTests.QuerySelect
 
 open Cslib Cslib.Query
 
@@ -125,4 +125,4 @@ example (k : ℕ) (oracle : {ι : Type} → LEQuery ℕ ι → ι) (xs : List �
 /-- The median-of-medians counting bound at `n = 1000`: each side has at most `702` elements. -/
 example : selectSideBound 1000 = 702 := by decide
 
-end ComplexityTests.QuerySelect
+end CslibFrontierTests.QuerySelect

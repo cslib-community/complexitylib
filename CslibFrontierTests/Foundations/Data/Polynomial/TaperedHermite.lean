@@ -14,7 +14,7 @@ set_option linter.privateModule false
 
 /-! Tests for the two-adic size of tapered Hermite basis values on the dyadic grid. -/
 
-namespace ComplexityTests.TaperedHermite
+namespace CslibFrontierTests.TaperedHermite
 
 open Finset Polynomial
 
@@ -83,4 +83,4 @@ example : -(6 * (1 : ℤ) * 2 ^ 2) ≤
   have := neg_le_padicValRat_eval_zero_hermiteBasis_taper (a := 2) 2 1 (by decide) one_ne_zero
   rwa [padicValInt.one] at this
 
-end ComplexityTests.TaperedHermite
+end CslibFrontierTests.TaperedHermite

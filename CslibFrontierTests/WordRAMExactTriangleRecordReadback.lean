@@ -18,7 +18,7 @@ outside its span. Numerical width clients need neither initialized product backe
 
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMExactTriangleRecordReadback
+namespace CslibFrontierTests.WordRAMExactTriangleRecordReadback
 
 open Cslib.WordRAM Cslib.Algorithms.WordRAM.ExactTriangle
 
@@ -43,4 +43,4 @@ example {n D g p A κ : ℕ} (hn : 1 ≤ n) (hD : D ≤ n) (hg : g ≤ n)
     2 ^ RecordWitness.admissionWidth n D g p A ≤ (n + 2) ^ (514 * κ + 11818) := by
   exact RecordWitness.wordBound_le_pow hn hD hg hp hA
 
-end ComplexityTests.WordRAMExactTriangleRecordReadback
+end CslibFrontierTests.WordRAMExactTriangleRecordReadback

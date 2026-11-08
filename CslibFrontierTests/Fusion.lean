@@ -19,7 +19,7 @@ cost. With one capacity valid for every dictionary term, unweighted counting on 
 the same witnesses gives a lower bound of at most two.
 -/
 
-namespace ComplexityTests.Fusion
+namespace CslibFrontierTests.Fusion
 
 open Cslib.Circuits SumOfTerms
 
@@ -242,4 +242,4 @@ example {σ : Signature.{u}} (I : Interpretation σ (ULift.{v} Bool)) (weight : 
     (fun _ i => i.elim0)
     (fun t => if ht : t.down then ⟨1, by simp [ht]⟩ else ⟨0, by simp [ht]⟩)
 
-end ComplexityTests.Fusion
+end CslibFrontierTests.Fusion

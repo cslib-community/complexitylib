@@ -18,7 +18,7 @@ The product sample is `2/3` on one of its four conditioning draws and zero on th
 the prescribed positive product `1/6`.
 -/
 
-namespace ComplexityTests.TrueSampleMeans
+namespace CslibFrontierTests.TrueSampleMeans
 
 open Finset Matrix
 open scoped BigOperators
@@ -155,4 +155,4 @@ example : 𝔼 d ∈ (({s | X s 0} : Finset Bool) ×ˢ (univ : Finset Bool)) ×�
   norm_num [sample, correction, dense, left, right, Fin.sum_univ_two] at h ⊢
   exact h
 
-end ComplexityTests.TrueSampleMeans
+end CslibFrontierTests.TrueSampleMeans

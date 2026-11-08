@@ -18,7 +18,7 @@ A one-edge network deformed along a `1 × 1` matrix, checked by hand against the
 
 @[expose] public section
 
-namespace ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.Deformation
+namespace CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.Deformation
 
 open Cslib.Circuits.Frontier Polynomial
 
@@ -54,4 +54,4 @@ example : (cauchyKernel 1 (-1)).eval 1 = 1 ∧ (cauchyKernel 1 0).eval 1 = 2 := 
     Finset.prod_singleton]
   norm_num
 
-end ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.Deformation
+end CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.Deformation

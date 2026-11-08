@@ -10,7 +10,7 @@ import Mathlib.Tactic.NormNum
 /-! Finite-attempt laws retain failure, and both unary boxes and exponentially large binary
 intervals have uniform certificates with runtime-varying budgets. -/
 
-namespace ComplexityTests.BoundedUniform
+namespace CslibFrontierTests.BoundedUniform
 
 open Cslib Cslib.ProbComp Cslib.Probability Turing.MultiTapeTM
 open scoped ENNReal NNReal
@@ -80,4 +80,4 @@ example {out : Option (List ℤ)}
   have := length_enc_sampleIntegerBox h
   omega
 
-end ComplexityTests.BoundedUniform
+end CslibFrontierTests.BoundedUniform

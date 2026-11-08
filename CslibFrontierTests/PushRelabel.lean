@@ -30,7 +30,7 @@ Kernel-checked examples (without `native_decide`) for preflows, push and relabel
 
 public section
 
-namespace ComplexityTests.PushRelabel
+namespace CslibFrontierTests.PushRelabel
 
 open Cslib.Algorithms.Lean.MaxFlow Network.PushRelabel
 
@@ -157,4 +157,4 @@ example : (pushRelabel loopNet).ops = [] ∧ (pushRelabel loopNet).flow.value = 
 
 example (σ : State loopNet) : ¬ σ.Inv := fun h => h.valid.source_ne_sink rfl
 
-end ComplexityTests.PushRelabel
+end CslibFrontierTests.PushRelabel

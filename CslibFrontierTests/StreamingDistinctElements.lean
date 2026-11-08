@@ -32,7 +32,7 @@ Verifies non-vacuity and concrete behavior of:
 
 public section
 
-namespace ComplexityTests.StreamingDistinctElements
+namespace CslibFrontierTests.StreamingDistinctElements
 
 open Cslib Cslib.Probability Cslib.Streaming Finset
 
@@ -145,4 +145,4 @@ example (ω : Fin 1 → Unit) : (kmvSketch fixedHash 0 1 ω).run [0, 1, 0, 2] = 
   simp only [kmvEstimate_of_le_card (Nat.zero_le _), CharP.cast_eq_zero, zero_mul, zero_div,
     median_const]
 
-end ComplexityTests.StreamingDistinctElements
+end CslibFrontierTests.StreamingDistinctElements

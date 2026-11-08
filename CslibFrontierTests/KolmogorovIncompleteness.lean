@@ -14,7 +14,7 @@ the theorem applies to a collection of trivially true statements, and the incomp
 and numbers are immune to the r.e. sets.
 -/
 
-namespace ComplexityTests.KolmogorovIncompleteness
+namespace CslibFrontierTests.KolmogorovIncompleteness
 
 open Cslib Cslib.Kolmogorov Cslib.Kolmogorov.DescriptionMethod Cslib.Complexity Encodable
 
@@ -81,4 +81,4 @@ example : ¬ IsImmune {B | REPred (· ∈ B)}
   Set.infinite_univ (h Set.univ (ComputablePred.to_re ⟨fun _ => isTrue trivial,
     (Computable.const true).of_eq fun _ => rfl⟩ |>.of_eq fun _ => by simp) (fun x _ => by simp))
 
-end ComplexityTests.KolmogorovIncompleteness
+end CslibFrontierTests.KolmogorovIncompleteness

@@ -15,7 +15,7 @@ The verifier rejects inputs without a short description, such as the empty input
 
 public section
 
-namespace ComplexityTests.NondeterministicTimeHierarchy
+namespace CslibFrontierTests.NondeterministicTimeHierarchy
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
@@ -41,4 +41,4 @@ example (d : ℕ) (v : List Bool) : LazyDiagonal.verifier d ([], v) = false := b
 example (d : ℕ) : [] ∉ lazyDiagonal d := by
   simp [lazyDiagonal, LazyDiagonal.verifier, Diagonal.shortDesc, unframe]
 
-end ComplexityTests.NondeterministicTimeHierarchy
+end CslibFrontierTests.NondeterministicTimeHierarchy

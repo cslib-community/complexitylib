@@ -13,7 +13,7 @@ import CslibFrontier.Computability.QueryComplexity.Restriction
 
 /-! Joint upstream imports, native measures, and retained arbitrary-coordinate clients. -/
 
-namespace ComplexityTests.QueryComplexity
+namespace CslibFrontierTests.QueryComplexity
 
 open Cslib Cslib.BitString Cslib.QueryComplexity Finset
 open scoped BigOperators
@@ -135,4 +135,4 @@ example : totalInfluence (fun x => signVal (and₂ x)) ≤ 2 := by
   have hs : sensitivity and₂ = 2 := by decide
   simpa [hs] using totalInfluence_le_sensitivity and₂
 
-end ComplexityTests.QueryComplexity
+end CslibFrontierTests.QueryComplexity

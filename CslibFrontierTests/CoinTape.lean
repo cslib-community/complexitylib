@@ -10,7 +10,7 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! Saved-coin replay with shared state, early halting, cutoff and nontrivial work tapes. -/
 
-namespace ComplexityTests.CoinTape
+namespace CslibFrontierTests.CoinTape
 
 open Cslib Cslib.Probability Turing MultiTapeMachine
 
@@ -178,4 +178,4 @@ example :
     MultiTapePTM.uniformListMachine.runClosedCoins [] [true, false] = [] :=
   ⟨rfl, rfl, rfl⟩
 
-end ComplexityTests.CoinTape
+end CslibFrontierTests.CoinTape

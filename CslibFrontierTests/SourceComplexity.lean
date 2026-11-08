@@ -15,7 +15,7 @@ weighted cost from wiring, and vacuous correctness from existence of a syntactic
 They also exercise a proper support, composition and independent source/carrier universes.
 -/
 
-namespace ComplexityTests.SourceComplexity
+namespace CslibFrontierTests.SourceComplexity
 
 open Cslib.Circuits
 
@@ -108,4 +108,4 @@ example {σ : Signature.{v}} {U : Type u} {X : Type w} (J : Interpretation σ U)
     ecomplexityFrom J cost (fun x => sources x ∘ ![1, 0, 1]) sources = 0 :=
   ecomplexityFrom_wiring sources _
 
-end ComplexityTests.SourceComplexity
+end CslibFrontierTests.SourceComplexity

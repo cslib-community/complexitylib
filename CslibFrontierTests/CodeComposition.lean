@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 /-! Tests of shared-input code append, including original input references, shifted gate
 references, repeated outputs, zero-input constants and empty circuits. -/
 
-namespace ComplexityTests.CodeComposition
+namespace CslibFrontierTests.CodeComposition
 
 open Cslib.Circuits Cslib.Circuits.Boolean
 open Turing.MultiTapeTM ComputableInPolyTime
@@ -151,4 +151,4 @@ example :
 #guard_msgs in
 #print axioms Cslib.Circuits.Boolean.bundleCode_eq_foldl_appendCode
 
-end ComplexityTests.CodeComposition
+end CslibFrontierTests.CodeComposition

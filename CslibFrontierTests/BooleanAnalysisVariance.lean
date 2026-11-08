@@ -15,7 +15,7 @@ constant, so both bounds of O'Donnell's Proposition 1.15 apply with room to spar
 of a nonempty set has covariance one with itself.
 -/
 
-namespace ComplexityTests.BooleanAnalysisVariance
+namespace CslibFrontierTests.BooleanAnalysisVariance
 
 open Cslib Cslib.BitString Finset
 open scoped BigOperators
@@ -56,4 +56,4 @@ example (S : Finset (Fin 3)) (hS : S ≠ ∅) :
   rw [sum_ite_eq]
   simp [hS]
 
-end ComplexityTests.BooleanAnalysisVariance
+end CslibFrontierTests.BooleanAnalysisVariance

@@ -19,7 +19,7 @@ output loop. The native certificate includes the actual output's storage.
 
 @[expose] public section
 
-namespace ComplexityTests.TreeEvalRawOutput
+namespace CslibFrontierTests.TreeEvalRawOutput
 
 open Turing MultiTapeTM Cslib.TreeEval.Ary.Packed.RawController.Output
 
@@ -35,4 +35,4 @@ example : decode ((3, 0, 5, 2, 0), [8, 6]) = [] := by decide
 example : ComputableInSpace decode encArgs (encList encBool)
     (fun q => (encArgs q).length) := decode_inSpace
 
-end ComplexityTests.TreeEvalRawOutput
+end CslibFrontierTests.TreeEvalRawOutput

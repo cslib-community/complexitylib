@@ -16,7 +16,7 @@ Programs stated directly, assembled by `fun_prop`, with their bounds checked onc
 stays linear on a decidable condition, so an `if` on `n = 0` needs no quadratic charge for it.
 -/
 
-namespace ComplexityTests.FunPropLists
+namespace CslibFrontierTests.FunPropLists
 
 open Turing.MultiTapeTM
 
@@ -50,4 +50,4 @@ example : ComputableInO (fun o : Option Bool => o.isNone || o.getD true)
     fun o => (encOption encBool o).length :=
   .mono (by fun_prop) 4 (fun _ => by omega) fun _ => by omega
 
-end ComplexityTests.FunPropLists
+end CslibFrontierTests.FunPropLists

@@ -16,7 +16,7 @@ unsatisfiable exact 3-CNF formula, the empty formula, and the fixed no-instance 
 another width; and the headline results.
 -/
 
-namespace ComplexityTests.MaxTwoSAT
+namespace CslibFrontierTests.MaxTwoSAT
 
 open Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -116,4 +116,4 @@ example : ([[]], 1) ∉ MaxTwoSAT := by
   rintro ⟨-, σ, hσ⟩
   simp at hσ
 
-end ComplexityTests.MaxTwoSAT
+end CslibFrontierTests.MaxTwoSAT

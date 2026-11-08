@@ -13,7 +13,7 @@ These clients execute the actual header loader and class scanner. Empty classes,
 residues, row-major ordering, unused output capacity and an outside sentinel are observable.
 -/
 
-namespace ComplexityTests.WordRAMExactTriangleQueries
+namespace CslibFrontierTests.WordRAMExactTriangleQueries
 
 open Cslib.WordRAM
 open Cslib.Algorithms.WordRAM.ExactTriangle.Classes
@@ -107,4 +107,4 @@ example : ∃ y t, t ≤ 298 ∧
       (congrFun hmem 6)
   · exact hr.bounded_init (by decide : InputFits 8 raw)
 
-end ComplexityTests.WordRAMExactTriangleQueries
+end CslibFrontierTests.WordRAMExactTriangleQueries

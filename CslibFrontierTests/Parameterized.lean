@@ -17,7 +17,7 @@ Boolean closure on concrete problems; kernelizations (`IsKernelization`, `HasKer
 search tree.
 -/
 
-namespace ComplexityTests.Parameterized
+namespace CslibFrontierTests.Parameterized
 
 open Cslib Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -172,4 +172,4 @@ example :
   rw [← VertexCover.search_eq_true_iff]
   decide
 
-end ComplexityTests.Parameterized
+end CslibFrontierTests.Parameterized

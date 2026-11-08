@@ -16,7 +16,7 @@ Concrete instances for the Rayleigh-quotient characterization of
 of `spectralExpansion` and `secondEigenvalue`.
 -/
 
-namespace ComplexityTests.Expander
+namespace CslibFrontierTests.Expander
 
 open Cslib Finset
 open scoped BigOperators
@@ -78,4 +78,4 @@ example :
   rw [spectralExpansion_completeFour, abs_nonpos_iff] at h
   exact h
 
-end ComplexityTests.Expander
+end CslibFrontierTests.Expander

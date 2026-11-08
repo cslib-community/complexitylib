@@ -53,7 +53,7 @@ class LeanRules(unittest.TestCase):
         self.assertIn("meta import all CslibFrontierTests.HousingMarket\n", out)
         self.assertIn("import Cslib.Computability.Complexity\n", out)
 
-    def test_declarations_and_namespaces_keep_their_names(self) -> None:
+    def test_cslib_namespaces_keep_and_sibling_namespaces_follow(self) -> None:
         text = textwrap.dedent("""\
             module
             public import Complexity.Init
@@ -62,10 +62,15 @@ class LeanRules(unittest.TestCase):
             namespace ComplexityTests.HousingMarket
             theorem t : Complexity.P = Cslib.Complexity.P := rfl
             example := ComplexityResults.Registry.entries
+            /-- info: ComplexityTests.HousingMarket.t : True -/
+            #guard_msgs in #check @ComplexityTests.HousingMarket.t
             end ComplexityTests.HousingMarket
+            namespace CommunicationComplexityTests
             """)
         out = rewrite("ComplexityTests/X.lean", text)
-        self.assertEqual(out.split("\n", 2)[2], text.split("\n", 2)[2])
+        self.assertEqual(out, text.replace("ComplexityTests.", "CslibFrontierTests.")
+                         .replace("ComplexityResults.", "CslibFrontierResults.")
+                         .replace("import Complexity.Init", "import CslibFrontier.Init"))
 
     def test_module_name_literals(self) -> None:
         text = textwrap.dedent("""\
@@ -81,11 +86,10 @@ class LeanRules(unittest.TestCase):
         self.assertIn("(`CslibFrontier).isPrefixOf `CslibFrontierTests", out)
         self.assertIn("`CslibFrontier.Foundations.Data.Encoding", out)
         self.assertIn("``Complexity.P", out)
-        self.assertIn("`ComplexityTests.HousingMarket.decl", out)
-        # A module of the main root named in code (an audit allow-list) is renamed; the other
-        # roots are also namespaces and are not.
+        self.assertIn("`CslibFrontierTests.HousingMarket.decl", out)
+        # A module of the main root named in code (an audit allow-list) is renamed.
         self.assertIn("[CslibFrontier.Init]", out)
-        self.assertIn("[ComplexityTests.HousingMarket]", out)
+        self.assertIn("[CslibFrontierTests.HousingMarket]", out)
 
     def test_docstrings_rename_modules_not_declarations(self) -> None:
         text = textwrap.dedent("""\
@@ -99,7 +103,7 @@ class LeanRules(unittest.TestCase):
         out = rewrite("Complexity/X.lean", text)
         for expected in ("`CslibFrontier.Foundations.Data.Encoding`",
                          "`CslibFrontier.Computability` area", "`CslibFrontier.Algorithms.Gone`",
-                         "`Complexity.NP`", "`ComplexityTests.HousingMarket.example1`",
+                         "`Complexity.NP`", "`CslibFrontierTests.HousingMarket.example1`",
                          "imported `CslibFrontier` modules", "`CslibFrontier.` prefix",
                          "`CslibFrontier.*`", "*Computational Complexity*",
                          "(CslibFrontier/Foundations/Data/Encoding.lean)"):
@@ -135,7 +139,7 @@ class LeanRules(unittest.TestCase):
             """)
         out = rewrite("guide/ComplexityGuide.lean", text)
         self.assertIn("import CslibFrontierGuide.FirstSteps", out)
-        self.assertIn("open ComplexityGuide.ApiDocs", out)
+        self.assertIn("open CslibFrontierGuide.ApiDocs", out)
         self.assertIn("{include 1 CslibFrontierGuide.FirstSteps}", out)
         self.assertIn("`import CslibFrontier` imports", out)
         self.assertIn("{module}`CslibFrontier.Init`", out)
@@ -152,6 +156,7 @@ class TextRules(unittest.TestCase):
             [b](../ComplexityTests/HousingMarket.lean) [c](abstracts/ComplexityAbstracts/X.lean)
             [d](https://github.com/cslib-community/complexitylib/blob/main/ComplexityTests/X.lean)
             [e](https://github.com/cslib-community/complexitylib/blob/{SHA}/Complexity/Init.lean)
+            [g](https://github.com/cslib-community/complexitylib/blob/{SHA}/ComplexityTests/A.lean)
             [f](https://www.cslib.io/complexitylib/Complexity/Init.html) Complexity.lean
             under `Complexity/`; nested Computability/Complexity/Classes stays.
             """)
@@ -161,6 +166,7 @@ class TextRules(unittest.TestCase):
         self.assertIn("(abstracts/CslibFrontierAbstracts/X.lean)", out)
         self.assertIn("cslib-frontier/blob/main/CslibFrontierTests/X.lean", out)
         self.assertIn(f"cslib-frontier/blob/{SHA}/Complexity/Init.lean", out)
+        self.assertIn(f"cslib-frontier/blob/{SHA}/ComplexityTests/A.lean", out)
         self.assertIn("www.cslib.io/cslib-frontier/CslibFrontier/Init.html) CslibFrontier.lean", out)
         self.assertIn("`CslibFrontier/`; nested Computability/Complexity/Classes", out)
 
@@ -199,25 +205,20 @@ class TextRules(unittest.TestCase):
         self.assertEqual(rewrite("scripts/x.py", kept),
                          f'x = "Complexity/"  # {r.PRAGMA}\ny = "CslibFrontier/"\n')
 
-    def test_catalogue_entries_keep_their_namespaces(self) -> None:
+    def test_catalogue_namespaces_follow_the_modules(self) -> None:
         import json
         catalogue = {"entries": [
-            {"id": "a", "module": "ComplexityAbstracts.AAbstract", "foundations": ["ComplexityAbstracts.F"]},
+            {"id": "a", "module": "ComplexityAbstracts.AAbstract",
+             "headline_theorems": ["ComplexityAbstracts.AAbstract.main"]},
             {"id": "b", "module": "ComplexityAbstracts.BAbstract",
              "namespace": "ComplexityTests.Abstracts.BAbstract"}]}
         text = json.dumps(catalogue, indent=2, ensure_ascii=False) + "\n"
-        paths = PATHS + ["abstracts/ComplexityAbstracts/AAbstract.lean",
-                         "abstracts/ComplexityAbstracts/BAbstract.lean",
-                         "abstracts/ComplexityAbstracts/F.lean"]
-        rewriter = r.Rewriter(r.Inventory.from_paths(paths))
-        out = rewriter.rewrite("abstracts/catalogue.json", text)
+        out = rewrite("abstracts/catalogue.json", text)
         self.assertEqual(json.loads(out)["entries"], [
             {"id": "a", "module": "CslibFrontierAbstracts.AAbstract",
-             "namespace": "ComplexityAbstracts.AAbstract",
-             "foundations": ["CslibFrontierAbstracts.F"]},
+             "headline_theorems": ["CslibFrontierAbstracts.AAbstract.main"]},
             {"id": "b", "module": "CslibFrontierAbstracts.BAbstract",
-             "namespace": "ComplexityTests.Abstracts.BAbstract"}])
-        self.assertEqual(rewriter.rewrite("abstracts/catalogue.json", out), out)
+             "namespace": "CslibFrontierTests.Abstracts.BAbstract"}])
 
     def test_fixups_apply_once(self) -> None:
         text = "x\n/-- The free monad the program layer is built on. -/\nexample := @PFunctor.FreeM\n"
@@ -240,7 +241,7 @@ class TextRules(unittest.TestCase):
             fixture = "public import CslibFrontier.Fake\n"
             prefix = f"CslibFrontier.{name}" + "CslibFrontier\.lean" + r"\bCslibFrontierAbstracts\b"
             ok = re.fullmatch(r"(?:CslibFrontier|CslibFrontierAbstracts)(?:\.\w+)+", module)
-            namespace = "ComplexityTests.Abstracts.Example"
+            namespace = "CslibFrontierTests.Abstracts.Example"
             text = "# raw\nCslibFrontier/Machines/Raw.lean\n"
             """))
 
@@ -343,7 +344,7 @@ class ApplyMode(GitRepo):
                          lean("CslibFrontier.A", "Mathlib.Logic.Basic",
                               body="/-! Uses `CslibFrontier.A`. -/\n"))
         self.assertEqual((self.repo / "CslibFrontierTests/T.lean").read_text(),
-                         "import CslibFrontier.A\n\nnamespace ComplexityTests.T\n")
+                         "import CslibFrontier.A\n\nnamespace CslibFrontierTests.T\n")
         self.assertIn('name = "cslib-frontier"', (self.repo / "lakefile.toml").read_text())
         self.assertIn('globs = ["CslibFrontierTests.+"]', (self.repo / "lakefile.toml").read_text())
         self.assertFalse((self.repo / "Complexity").exists())

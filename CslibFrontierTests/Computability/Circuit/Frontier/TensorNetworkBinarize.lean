@@ -20,7 +20,7 @@ word reads the original tensor, and the degree doubles.
 
 @[expose] public section
 
-namespace ComplexityTests.Computability.Circuit.Frontier.TensorNetworkBinarize
+namespace CslibFrontierTests.Computability.Circuit.Frontier.TensorNetworkBinarize
 
 open Cslib.Circuits.Frontier
 
@@ -75,4 +75,4 @@ example : (ternary.binarize code).MaxDegreeLE 2 ∧ (ternary.binarize code).IsBi
     ternary.isBipartite_binarize code ⟨fun v => v = 0, fun _ => by simp [ternary]⟩⟩
   exact (Set.ncard_le_card _).trans (by simp)
 
-end ComplexityTests.Computability.Circuit.Frontier.TensorNetworkBinarize
+end CslibFrontierTests.Computability.Circuit.Frontier.TensorNetworkBinarize

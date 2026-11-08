@@ -12,7 +12,7 @@ import Mathlib.Tactic.FinCases
 /-! Native counting execution clients: duplicate endpoints, unequal stopping times, singleton
 deterministic lifting, additive sequencing clocks and the explicit exclusion of stuck choices. -/
 
-namespace ComplexityTests.CountingExecution
+namespace CslibFrontierTests.CountingExecution
 
 open Cslib Turing MultiTapeCTM
 
@@ -139,4 +139,4 @@ example :
       | step hnonempty _ => exact hnonempty rfl,
     rfl, rfl⟩
 
-end ComplexityTests.CountingExecution
+end CslibFrontierTests.CountingExecution

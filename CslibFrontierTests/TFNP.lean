@@ -12,7 +12,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 /-! Concrete clients for `FNP`, `FPSearch`, `TFNP`, `PLS`, `PPP`, `PPAD`, `PPA`, disjoint sums,
 and search reductions. -/
 
-namespace ComplexityTests.TFNP
+namespace CslibFrontierTests.TFNP
 
 open Cslib Cslib.Complexity Turing.MultiTapeTM
 
@@ -241,4 +241,4 @@ example : ∃ n : _ → ℕ, ComputableInPolyTime n encEndOfLine encUnary := by
   obtain ⟨-, n, -, -, hn, -⟩ := mem_PPAD.mp EndOfLine_mem_PPAD
   exact ⟨n, hn⟩
 
-end ComplexityTests.TFNP
+end CslibFrontierTests.TFNP

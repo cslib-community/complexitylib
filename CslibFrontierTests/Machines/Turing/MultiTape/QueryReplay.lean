@@ -19,7 +19,7 @@ control still consumes the subroutine's duration counter.
 
 @[expose] public section
 
-namespace ComplexityTests.QueryReplay
+namespace CslibFrontierTests.QueryReplay
 
 open Turing MultiTapeTM MultiTapePTM.BlockComputation
 open MultiTapePTM.BlockComputation.QueryReplay
@@ -110,4 +110,4 @@ example : (encConfig (state 1)).length ≤ 1024 * (1 + 1) *
       Nat.card MultiTapeNTM.ChoiceTable.OutputTrack + 1) := by
   apply length_encConfig_le <;> decide
 
-end ComplexityTests.QueryReplay
+end CslibFrontierTests.QueryReplay

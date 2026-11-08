@@ -9,7 +9,7 @@ import CslibFrontier.Computability.QueryComplexity.Quantum.Simon
 /-! Simon's problem: promise instances and failures, nonvacuity of the hypotheses of the classical
 lower bound, and Simon's algorithm on concrete inputs with `n = 1`. -/
 
-namespace ComplexityTests.QuantumSimon
+namespace CslibFrontierTests.QuantumSimon
 
 open Cslib Cslib.Quantum Cslib.QueryComplexity Finset
 
@@ -108,4 +108,4 @@ example : ‖(simonInit 0 : State 2 (SimonWork 3 1))‖ = 1 := (simonAlg_spec E1
 
 example : (1 + 2) * 1 ≤ 3 * Nat.log 2 2 ^ 2 := (simon_separation_inputLength E1 0 le_rfl).2.1
 
-end ComplexityTests.QuantumSimon
+end CslibFrontierTests.QuantumSimon

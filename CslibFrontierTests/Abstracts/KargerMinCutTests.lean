@@ -29,9 +29,9 @@ Concrete non-vacuity and behavioral checks on `KargerMinCutAbstract`:
    probability `≥ 1 / 18`, and miss probability `≤ 1 / 16`.
 -/
 
-namespace ComplexityTests.Abstracts.KargerMinCutTests
+namespace CslibFrontierTests.Abstracts.KargerMinCutTests
 
-open ComplexityAbstracts.KargerMinCutAbstract
+open CslibFrontierAbstracts.KargerMinCutAbstract
 
 private theorem isNonTrivialCut_iff_card {n : ℕ} (C : Finset (Fin n)) :
     IsNonTrivialCut C ↔ 0 < C.card ∧ C.card < n := by
@@ -427,4 +427,4 @@ theorem kargerStein_barbell8 :
     rw [show ((2 * 8 : ℕ) : ENNReal) = 16 by norm_num] at hFail'
     exact ⟨q, hH, hC, hFail'⟩
 
-end ComplexityTests.Abstracts.KargerMinCutTests
+end CslibFrontierTests.Abstracts.KargerMinCutTests

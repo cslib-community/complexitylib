@@ -8,7 +8,7 @@ import CslibFrontier.Computability.WordRAM.Realization.Grade
 
 /-! The grading keeps actual replies, changed memory and query-free loop control visible. -/
 
-namespace ComplexityTests.WordRAMRealizationGrade
+namespace CslibFrontierTests.WordRAMRealizationGrade
 
 open Cslib.DataStructure Cslib.WordRAM.Realization
 
@@ -108,4 +108,4 @@ example : ¬∃ C, ∀ n,
   change C + 1 ≤ C * (0 + 1) at hc
   omega
 
-end ComplexityTests.WordRAMRealizationGrade
+end CslibFrontierTests.WordRAMRealizationGrade

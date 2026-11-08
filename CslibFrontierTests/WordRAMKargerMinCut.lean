@@ -29,7 +29,7 @@ Concrete non-vacuity and behavioral tests for `Cslib.Algorithms.WordRAM.Karger`:
 
 @[expose] public section
 
-namespace ComplexityTests.WordRAMKargerMinCut
+namespace CslibFrontierTests.WordRAMKargerMinCut
 
 open Cslib Cslib.WordRAM Cslib.WeightedCut Cslib.Algorithms.WordRAM.Karger
 open scoped ENNReal
@@ -250,4 +250,4 @@ theorem singleProgram_disconnected_and_zero :
   have hcw0 : cutWeight zero3W C = 0 := by simp [cutWeight, zero3W]
   exact ⟨y, hcw0 ▸ hcfg_eq⟩
 
-end ComplexityTests.WordRAMKargerMinCut
+end CslibFrontierTests.WordRAMKargerMinCut

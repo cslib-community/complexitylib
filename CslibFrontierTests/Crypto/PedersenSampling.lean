@@ -22,7 +22,7 @@ sampling followed by verification, with the accuracy parameter and public key ch
 
 @[expose] public section
 
-namespace ComplexityTests.Crypto.PedersenSampling
+namespace CslibFrontierTests.Crypto.PedersenSampling
 
 open Cslib Cslib.Crypto Cslib.Crypto.PrimeOrderGroupFamily Cslib.Probability Turing.MultiTapeTM
 open scoped NNReal
@@ -102,4 +102,4 @@ example : IsPPTOn
     hk hm hco.fst' hco.snd'
   exact schnorrGroups.isPPTOn_pedersenCommitProb.bind_with hv.isPPTOn
 
-end ComplexityTests.Crypto.PedersenSampling
+end CslibFrontierTests.Crypto.PedersenSampling

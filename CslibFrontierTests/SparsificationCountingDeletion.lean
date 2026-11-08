@@ -14,7 +14,7 @@ public section
 open Cslib.Logic.PL
 open ClauseSet.Sparsification Finset
 
-namespace ComplexityTests.SparsificationCountingDeletion
+namespace CslibFrontierTests.SparsificationCountingDeletion
 
 -- A negated-heart unit deletes a clause outside the selected flower.
 theorem negated_unit_deletes_unselected_pair : {(0, false), (1, true)} ∉ countingChild
@@ -207,4 +207,4 @@ example : ((countingChild tautRoot 3 {(0, true)} true).filter
     fun C => C ∉ tautRoot ∧ C.card = 2).card = 3 := by decide
 example : ∃ C ∈ tautRoot, ∃ l ∈ C, Std.Sat.Literal.negate l ∈ C := by decide
 
-end ComplexityTests.SparsificationCountingDeletion
+end CslibFrontierTests.SparsificationCountingDeletion

@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Circuit.Monotone.Clique.LogarithmicPetals
 The first instance improves the exponent from the old public bound's `1024` to `2048`.
 The second supplies a finite minimum complexity at a vertex count below `k ^ 4`. -/
 
-namespace ComplexityTests.MonotoneCliqueParameters
+namespace CslibFrontierTests.MonotoneCliqueParameters
 
 open Cslib Cslib.Circuits Cslib.Circuits.Clique Cslib.Circuits.Monotone
 
@@ -40,4 +40,4 @@ example : ecomplexity interpretation (single (clique widerVertexCount 262145)) â
     (by norm_num) (by norm_num) (by norm_num [widerVertexCount])
   simpa only [show (2 : â„•) ^ 8 = 256 by norm_num] using hbound
 
-end ComplexityTests.MonotoneCliqueParameters
+end CslibFrontierTests.MonotoneCliqueParameters

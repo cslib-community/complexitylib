@@ -16,7 +16,7 @@ proof clients complement the interpreter's dirty-workspace, padding and transpos
 The resource predicates are discharged from original inputs, not assumed as certificates.
 -/
 
-namespace ComplexityTests.WordRAMCountPrimeExecution
+namespace CslibFrontierTests.WordRAMCountPrimeExecution
 
 open Cslib.WordRAM
 open Cslib.Algorithms.WordRAM.ExactTriangle.CountPrime
@@ -148,4 +148,4 @@ example : (281 / 100 : ℝ) < 3 ∧
       (2 + 1 : ℝ) ^ (281 / 100 : ℝ) := by
   exact ⟨by norm_num, cost_le_subcubic 2 2⟩
 
-end ComplexityTests.WordRAMCountPrimeExecution
+end CslibFrontierTests.WordRAMCountPrimeExecution

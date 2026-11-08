@@ -16,7 +16,7 @@ public import CslibFrontier.Logics.Propositional.CNF.SparseDesignCounter
 
 @[expose] public noncomputable section
 
-namespace ComplexityTests.SparseDesignCounter
+namespace CslibFrontierTests.SparseDesignCounter
 
 open Finset Polynomial Cslib.BitString Cslib.BalancedSchedules Cslib.LinearAlgebra Cslib.Logic.PL
 
@@ -471,4 +471,4 @@ theorem exists_design_and_recover_emptyCNF16384 :
     rw [commonZeroCount_empty, Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat]
   exact hrec.trans hcount
 
-end ComplexityTests.SparseDesignCounter
+end CslibFrontierTests.SparseDesignCounter

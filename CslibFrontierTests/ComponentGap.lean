@@ -16,10 +16,10 @@ inequality for every number of bits, and conditional averaging over two channels
 `𝔽₇` with eight-valued free bits, with every hypothesis discharged.
 -/
 
-namespace ComplexityTests.ComponentGap
+namespace CslibFrontierTests.ComponentGap
 
 open Cslib Cslib.Probability Cslib.RotationMap Finset
-open ComplexityTests.BoxProductExpander (flip poincare_flip)
+open CslibFrontierTests.BoxProductExpander (flip poincare_flip)
 open scoped BigOperators
 
 -- A move of the product changes only its component.
@@ -81,4 +81,4 @@ example (y : ∀ j : Fin 2, ZMod (![5, 7] j))
   norm_num at h ⊢
   exact h
 
-end ComplexityTests.ComponentGap
+end CslibFrontierTests.ComponentGap

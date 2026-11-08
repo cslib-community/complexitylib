@@ -9,7 +9,7 @@ import CslibFrontier.Foundations.Geometry.Orthogonal.Simple
 
 /-! Finite checks and continuous geometric consequences, including forbidden overlaps. -/
 
-namespace ComplexityTests.OrthogonalContacts
+namespace CslibFrontierTests.OrthogonalContacts
 
 open Cslib.Orthogonal
 
@@ -69,4 +69,4 @@ example : IsOrthogonal [(4, 0)] :=
 example : IsSimple [(4, 0)] :=
   (show IsSimple horizontal by simp [IsSimple, horizontal, List.consecutivePairs]).of_cons
 
-end ComplexityTests.OrthogonalContacts
+end CslibFrontierTests.OrthogonalContacts

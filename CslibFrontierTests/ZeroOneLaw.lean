@@ -17,7 +17,7 @@ random graph refutes, so its probability tends to `0`; and non-definability of a
 vertices, derived from the even case.
 -/
 
-namespace ComplexityTests.ZeroOneLaw
+namespace CslibFrontierTests.ZeroOneLaw
 
 open FirstOrder Language Structure Cslib.Logic Cslib.Logic.FO Cslib.Logic.FO.graph
 
@@ -89,4 +89,4 @@ example : ¬∃ φ : Language.graph.Sentence, ∀ᶠ n in Filter.atTop,
   refine not_exists_sentence_even_card ⟨φ.not, hφ.mono fun n hn G => ?_⟩
   rw [satisfies_not, hn G, not_not]
 
-end ComplexityTests.ZeroOneLaw
+end CslibFrontierTests.ZeroOneLaw

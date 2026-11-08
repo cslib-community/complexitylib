@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 
 /-! # Bounded-query oracle classes and `P^{NP[O(log n)]}` -/
 
-namespace ComplexityTests.OracleBoundedQuery
+namespace CslibFrontierTests.OracleBoundedQuery
 
 open Cslib Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -53,4 +53,4 @@ example : (Set.univ : Set (List Bool)) ∈ PWithOracleQueries ∅ (fun _ => 0) e
   P_subset_PWithOracleQueries ∅ _ encBits ⟨fun _ => true, ComputableInPolyTime.const true,
     fun _ => by simp⟩
 
-end ComplexityTests.OracleBoundedQuery
+end CslibFrontierTests.OracleBoundedQuery

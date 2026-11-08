@@ -18,7 +18,7 @@ pattern for arithmetic on numeric inputs, and puts evenness in `P`. Element dist
 by the linear-time word-RAM table algorithm, is in `P` together with its complement.
 -/
 
-namespace ComplexityTests.WordRAMTuring
+namespace CslibFrontierTests.WordRAMTuring
 
 open Cslib.WordRAM Turing.MultiTapeTM
 
@@ -167,4 +167,4 @@ example : {l : Input | l.1.Nodup} ∈ Cslib.Complexity.P inputEncoding ∧
     {l : Input | l.1.Nodup}ᶜ ∈ Cslib.Complexity.P inputEncoding :=
   ⟨nodup_mem_P, Cslib.Complexity.compl_mem_P nodup_mem_P⟩
 
-end ComplexityTests.WordRAMTuring
+end CslibFrontierTests.WordRAMTuring

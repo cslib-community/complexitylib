@@ -15,7 +15,7 @@ open scoped FourierTransform RealInnerProductSpace
 
 noncomputable section
 
-namespace ComplexityTests.LatticeFourier
+namespace CslibFrontierTests.LatticeFourier
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
   [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
@@ -124,4 +124,4 @@ example (f : Plane → ℂ) (hf : Integrable f) :
     (show (0 : Plane) ∈ LinearMap.BilinForm.dualSubmodule (innerₗ Plane) skewLattice from
       Submodule.zero_mem _)
 
-end ComplexityTests.LatticeFourier
+end CslibFrontierTests.LatticeFourier

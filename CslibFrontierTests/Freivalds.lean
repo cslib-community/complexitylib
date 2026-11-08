@@ -21,7 +21,7 @@ incorrect product with probability exactly `1/2`, so the `0`/`1` bound is attain
 supports fails there; the `0`/`1` encoding satisfies it.
 -/
 
-namespace ComplexityTests.Freivalds
+namespace CslibFrontierTests.Freivalds
 
 open Cslib Cslib.Algorithms.Lean.Freivalds Cslib.Probability
 open scoped Matrix ENNReal
@@ -125,4 +125,4 @@ example : (Finset.univ.filter fun x : Fin 1 → Bool =>
       (bit ∘ x)).card * Fintype.card Bool ≤ Fintype.card Bool ^ Fintype.card (Fin 1) :=
   card_filter_mulVec_eq_mul_card_le injective_mul_bit (by decide)
 
-end ComplexityTests.Freivalds
+end CslibFrontierTests.Freivalds

@@ -21,7 +21,7 @@ cover the carry-save and modular-to-majority milestones.
 
 @[expose] public section
 
-namespace ComplexityTests.ThresholdNC1
+namespace CslibFrontierTests.ThresholdNC1
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean
 
@@ -78,5 +78,5 @@ example : Language.ofSlices majority ∈ NC 1 := by
   exact ⟨C.mapOp Threshold.ofMajority, hc.mapOp,
     by simpa using hd, by simpa using hs, by simpa using hf⟩
 
-end ComplexityTests.ThresholdNC1
+end CslibFrontierTests.ThresholdNC1
 

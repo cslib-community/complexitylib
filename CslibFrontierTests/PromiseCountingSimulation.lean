@@ -13,10 +13,10 @@ The native machine answers the promised singleton words without error and uses a
 empty word. The deterministic completion retains the caller's explicit quadratic clock.
 -/
 
-namespace ComplexityTests.PromiseCountingSimulation
+namespace CslibFrontierTests.PromiseCountingSimulation
 
 open Cslib Cslib.Complexity Cslib.Complexity.CountingSimulation Turing Turing.MultiTapeTM
-  ComplexityTests.PromiseProbabilistic
+  CslibFrontierTests.PromiseProbabilistic
 
 /-- Read the first input symbol, or a fair coin when there is no symbol, and halt. -/
 private def partialMachine : MultiTapePTM 0 Bool Unit where
@@ -157,4 +157,4 @@ example :
   refine ⟨hmem, by simp [liftedPartialSingletonBit, PromiseProblem.promise],
     ⟨L, hL, hyes rfl, Set.disjoint_right.mp hno rfl⟩⟩
 
-end ComplexityTests.PromiseCountingSimulation
+end CslibFrontierTests.PromiseCountingSimulation

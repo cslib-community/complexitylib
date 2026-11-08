@@ -21,7 +21,7 @@ import CslibFrontier.Algorithms.Lean.IterativeCompression.OddCycleTransversal
   transversal of the right size with a colouring proper off it.
 -/
 
-namespace ComplexityTests.OddCycleTransversal
+namespace CslibFrontierTests.OddCycleTransversal
 
 open SimpleGraph Cslib.Algorithms.Lean.IterativeCompression Cslib.Algorithms.Lean.MaxFlow
 
@@ -206,4 +206,4 @@ private instance : DecidableRel twoTriangles.Adj := fun u v =>
 #guard (octM (cyc 7) 0).ret.isNone
 #guard checkOct (cyc 7) 1
 
-end ComplexityTests.OddCycleTransversal
+end CslibFrontierTests.OddCycleTransversal

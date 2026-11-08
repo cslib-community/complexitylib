@@ -17,7 +17,7 @@ Exercise cycle-spectrum reduction (`iterate_eq_card_add_mod`, `cycleSpectrum_tes
 distinguished-point semantics (`distinguishedPower_correct`) on concrete finite functional graphs.
 -/
 
-namespace ComplexityTests.FunctionalGraphSpectrum
+namespace CslibFrontierTests.FunctionalGraphSpectrum
 
 open Cslib.FunctionalGraph Cslib.FunctionalGraph.ForestDuality Function
 
@@ -134,4 +134,4 @@ info: 'Cslib.FunctionalGraph.walk_run' depends on axioms: [propext, Quot.sound]
 #guard_msgs (whitespace := lax) in
 #print axioms walk_run
 
-end ComplexityTests.FunctionalGraphSpectrum
+end CslibFrontierTests.FunctionalGraphSpectrum

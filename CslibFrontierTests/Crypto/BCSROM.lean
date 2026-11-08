@@ -37,7 +37,7 @@ two-channel BCS random-oracle transform (`CslibFrontier.Crypto.Protocols.BCS.ROM
    soundness and knowledge-soundness error strictly `< 1 / 3 < 1`.
 -/
 
-namespace ComplexityTests.Crypto.BCSROM
+namespace CslibFrontierTests.Crypto.BCSROM
 
 open Cslib Cslib.Crypto Cslib.Crypto.Protocols.BCS Cslib.Probability Cslib.OracleComp
 open Turing.MultiTapeTM
@@ -580,4 +580,4 @@ example :
       isCostBounded_MT_verifier_largeChalCheater)
     largeChal_bound_lt_one_third
 
-end ComplexityTests.Crypto.BCSROM
+end CslibFrontierTests.Crypto.BCSROM

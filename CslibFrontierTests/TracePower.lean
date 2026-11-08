@@ -10,7 +10,7 @@ import CslibFrontier.Foundations.LinearAlgebra.Matrix.ListProd
 /-! Traces of powers: the closed-path expansion on a concrete matrix, and the two trace bounds on
 the identity, where both are attained. -/
 
-namespace ComplexityTests.TracePower
+namespace CslibFrontierTests.TracePower
 
 open Matrix LinearMap Module
 open scoped InnerProductSpace
@@ -51,4 +51,4 @@ example (j : ℕ) :
       ((1 : EuclideanSpace ℂ (Fin 2) →ₗ[ℂ] EuclideanSpace ℂ (Fin 2)) ^ j)) = 2 := by
   simp
 
-end ComplexityTests.TracePower
+end CslibFrontierTests.TracePower

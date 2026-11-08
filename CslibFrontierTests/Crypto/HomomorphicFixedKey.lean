@@ -16,10 +16,10 @@ the compiled computation; generic clients check the stronger encrypted-wire inva
 runtime certificates. No encryption-security claim is made for this fixture.
 -/
 
-namespace ComplexityTests.HomomorphicFixedKey
+namespace CslibFrontierTests.HomomorphicFixedKey
 
 open Cslib Cslib.Circuits Cslib.Crypto.Homomorphic Cslib.Probability Turing.MultiTapeTM
-open ComplexityTests.HomomorphicExample Boolean.Layered
+open CslibFrontierTests.HomomorphicExample Boolean.Layered
 
 private def encryptedKey : List (List Bool) := [[false, false]]
 
@@ -225,4 +225,4 @@ example : ComputableInPolyTime
     (fun n => (⟨_, (FixedKey.decryptionCircuits decryptionCircuits).circuit n⟩ :
       Σ m, Circuit Boolean.signature m 1)) encUnary (Boolean.encCircuit 1) := circuits_poly
 
-end ComplexityTests.HomomorphicFixedKey
+end CslibFrontierTests.HomomorphicFixedKey

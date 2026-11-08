@@ -20,7 +20,7 @@ with `ℓ = 11`, and the four-element field `GaloisField 2 2` with `ℓ = 8`), a
 boundary cases of universality: a single request, repeated targets and an occupied target.
 -/
 
-namespace ComplexityTests.MassProduction.Menu
+namespace CslibFrontierTests.MassProduction.Menu
 
 open Cslib Cslib.LineCode Finset
 
@@ -153,4 +153,4 @@ example {K : Type*} [Field K] [Fintype K] [DecidableEq K] {ℓ g k r : ℕ}
   obtain ⟨e, clean, hcard, hclean⟩ := h.2 lines fun _ => u
   exact ⟨e, clean, hcard, fun i hi j hji => disjoint_puncturedLine_iff.mp ((hclean i hi).2 j hji)⟩
 
-end ComplexityTests.MassProduction.Menu
+end CslibFrontierTests.MassProduction.Menu

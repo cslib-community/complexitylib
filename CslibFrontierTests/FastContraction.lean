@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.FastAlg
 The modulus at `m = 4` edges, the root call of a small network, its guard, and the arithmetic of
 the call data. -/
 
-namespace ComplexityTests.FastContraction
+namespace CslibFrontierTests.FastContraction
 
 open Cslib.Circuits.Frontier Cslib.Circuits.Frontier.FastContraction
   Cslib.Complexity.CountingSimulation
@@ -44,4 +44,4 @@ example : active (root (3, tiny)) = false := by decide
 -- whenever its root is well-formed (`fastValue_eq`).
 example : tiny.2.contraction = 11 := by decide
 
-end ComplexityTests.FastContraction
+end CslibFrontierTests.FastContraction

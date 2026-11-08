@@ -9,7 +9,7 @@ import CslibFrontier.Probability.Extractor.LeftoverHash
 /-! Seeded extractors: concrete instances, a satisfiable entropy hypothesis and seedless failure.
 -/
 
-namespace ComplexityTests.Extractor
+namespace CslibFrontierTests.Extractor
 
 open Cslib Cslib.Probability Cslib.Probability.PMF
 
@@ -49,4 +49,4 @@ example : ¬ IsExtractor (fun (x : BitString 3) (_ : Unit) => x 0) 2 (1 / 4) := 
   norm_num at h
   exact h
 
-end ComplexityTests.Extractor
+end CslibFrontierTests.Extractor

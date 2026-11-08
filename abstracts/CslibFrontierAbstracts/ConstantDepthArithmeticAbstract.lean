@@ -76,7 +76,7 @@ allowed model modules. Lean checks the proofs through `ConstantDepthArithmeticBr
   Corollary 27 (p. 31:14)
 -/
 
-namespace ComplexityAbstracts.ConstantDepthArithmeticAbstract
+namespace CslibFrontierAbstracts.ConstantDepthArithmeticAbstract
 
 /-- An algebraic circuit over `K` with `N` inputs and one output: a straight-line program of sum
 gates with edge constants, product gates of every arity, and constants. -/
@@ -135,9 +135,9 @@ theorem explicit_bound {K : Type*} [Field K] {n d N k Δ : ℕ} [NeZero n]
 /-- info: abstract audit passed for `CslibFrontierAbstracts.ConstantDepthArithmeticAbstract`: 8 root
 declarations -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.ConstantDepthArithmeticAbstract allowing [
+#check_abstract CslibFrontierAbstracts.ConstantDepthArithmeticAbstract allowing [
   CslibFrontier.Computability.Circuit.Arithmetic.SigmaPi,
   CslibFrontier.Computability.Circuit.Depth
 ]
 
-end ComplexityAbstracts.ConstantDepthArithmeticAbstract
+end CslibFrontierAbstracts.ConstantDepthArithmeticAbstract

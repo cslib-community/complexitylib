@@ -8,7 +8,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Block
 
 /-! Time intervals, tape blocks and schedules of a concrete choice-string run. -/
 
-namespace ComplexityTests.HPVBlocks
+namespace CslibFrontierTests.HPVBlocks
 
 open Turing MultiTapeMachine
 
@@ -110,4 +110,4 @@ example : (zigzag.stepCoins [true, false] marked).workTapes 0 5 = some false :=
   zigzag.workTapes_stepCoins_eq_of_notMem_blockWindow two_pos (by simp) marked
     (by simp [Cfg.blockWindow, marked, start])
 
-end ComplexityTests.HPVBlocks
+end CslibFrontierTests.HPVBlocks

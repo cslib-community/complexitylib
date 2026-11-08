@@ -16,7 +16,7 @@ Short words retain false padding, suffixes cannot change existing rows, and zero
 remain empty. The old public crypto name still has its original statement.
 -/
 
-namespace ComplexityTests.BitStringRows
+namespace CslibFrontierTests.BitStringRows
 
 open Cslib
 
@@ -82,4 +82,4 @@ example :
     BitString.toOuterMeasure_uniformList_finset_le 3 {[true, false, true], [false, true, false]},
     BitString.toOuterMeasure_lookup_uniformList_le 3 [([true, false, true], [false])]⟩
 
-end ComplexityTests.BitStringRows
+end CslibFrontierTests.BitStringRows

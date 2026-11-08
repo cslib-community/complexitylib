@@ -8,7 +8,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Seque
 
 /-! Sequencing with random stopping times, shared channels, and stateful coin/query handlers. -/
 
-namespace ComplexityTests.MachineSequential
+namespace CslibFrontierTests.MachineSequential
 
 open Cslib Turing MultiTapeMachine MultiTapeMachine.Sequential
 
@@ -124,4 +124,4 @@ example : (OracleComp.interpret (record true)
   change (([true, true, true], (0, [])) : List Bool × History) ≠ ([true, true], (0, []))
   decide
 
-end ComplexityTests.MachineSequential
+end CslibFrontierTests.MachineSequential

@@ -13,7 +13,7 @@ in the shape of the Solovay–Strassen comparison, and runs of the counted loop 
 including an even modulus and the modulus `0`, checked against `norm_num`'s independent evaluation
 of `jacobiSym`. -/
 
-namespace ComplexityTests.JacobiPolyTime
+namespace CslibFrontierTests.JacobiPolyTime
 
 open NumberTheorySymbols Turing.MultiTapeTM Turing.MultiTapeTM.BinaryJacobi
 
@@ -82,4 +82,4 @@ example : J((1001 : ℤ) | 9907) =
     jacobiReadout (jacobiStep^[jacobiCount (1001, 9907)] (jacobiInit (1001, 9907))) :=
   (jacobiReadout_iterate_jacobiStep (1001, 9907)).symm
 
-end ComplexityTests.JacobiPolyTime
+end CslibFrontierTests.JacobiPolyTime

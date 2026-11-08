@@ -9,7 +9,7 @@ import CslibFrontier.Foundations.NumberTheory.AKS.Criterion
 /-! The AKS identity on a prime and a composite, the binomial divisibility, the AKS tests on a
 prime, and `Passes` as `PassesUpTo` at the paper's bound. -/
 
-namespace ComplexityTests.AKSCriterion
+namespace CslibFrontierTests.AKSCriterion
 
 open Polynomial Cslib.AKS
 
@@ -32,4 +32,4 @@ example (r : ℕ) :
 example (n r A : ℕ) : (Passes n r ↔ PassesUpTo n r (numTests n r)) ∧ PassesUpTo 7 r A :=
   ⟨Iff.rfl, passesUpTo_of_prime (by decide) r A⟩
 
-end ComplexityTests.AKSCriterion
+end CslibFrontierTests.AKSCriterion

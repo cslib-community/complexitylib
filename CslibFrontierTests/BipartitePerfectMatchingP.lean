@@ -17,7 +17,7 @@ membership in the language through `decider_eq_true_iff`. Then the hypothesis of
 bound is met at `n = 2 ^ 320`, and the separation theorem yields a concrete language.
 -/
 
-namespace ComplexityTests.BipartitePerfectMatchingP
+namespace CslibFrontierTests.BipartitePerfectMatchingP
 
 open Cslib Cslib.Complexity Cslib.Complexity.BipartitePerfectMatching Cslib.Circuits
 open Turing.MultiTapeTM (encBits)
@@ -100,4 +100,4 @@ example : ∃ L : Language Bool, (L : Set (List Bool)) ∈ P encBits ∧
   obtain ⟨L, hL, -, h⟩ := exists_monotone_mem_P_superpolynomial_ecomplexity
   exact ⟨L, hL, fun k => (h k).exists⟩
 
-end ComplexityTests.BipartitePerfectMatchingP
+end CslibFrontierTests.BipartitePerfectMatchingP

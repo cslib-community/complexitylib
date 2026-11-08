@@ -14,7 +14,7 @@ succeeds nowhere, a betting p-martingale that succeeds on the universe and fails
 language, the Measure Conservation Theorem, and the measure zero of `P`, of `DTIME (2 ^ (k * n))`
 and of finite sets in `E`. -/
 
-namespace ComplexityTests.ResourceBoundedMeasure
+namespace CslibFrontierTests.ResourceBoundedMeasure
 
 open Cslib Cslib.Complexity Cslib.Complexity.Measure Turing Turing.MultiTapeTM
 
@@ -122,4 +122,4 @@ example : HasPMeasureZero {∅, Set.univ} := by
   · exact P_subset_E (Set.finite_empty.mem_P)
   · exact P_subset_E univ_mem_P
 
-end ComplexityTests.ResourceBoundedMeasure
+end CslibFrontierTests.ResourceBoundedMeasure

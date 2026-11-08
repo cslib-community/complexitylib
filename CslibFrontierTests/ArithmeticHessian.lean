@@ -17,7 +17,7 @@ and supplied affine inputs. A polynomial vanishing as a function over `ZMod 2` h
 Hessian, showing why formal-polynomial computation is essential.
 -/
 
-namespace ComplexityTests.ArithmeticHessian
+namespace CslibFrontierTests.ArithmeticHessian
 
 open Cslib.Circuits MvPolynomial
 
@@ -121,4 +121,4 @@ example (x : Fin 2 → ZMod 2) :
     rw [h, ← hessian_product x]
     exact rank_hessian_product x
 
-end ComplexityTests.ArithmeticHessian
+end CslibFrontierTests.ArithmeticHessian

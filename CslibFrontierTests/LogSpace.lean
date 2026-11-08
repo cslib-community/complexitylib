@@ -14,7 +14,7 @@ reductions and composition, a nondeterministic machine with a branch running for
 bounds at inputs of length zero and one, codes of views without their input, and breadth-first
 search on small graphs. -/
 
-namespace ComplexityTests.LogSpace
+namespace CslibFrontierTests.LogSpace
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
@@ -141,4 +141,4 @@ example :
     Reachability.search (fun _ : ℕ => []) 4 7 = [7] :=
   ⟨by decide, by decide, by decide, by decide⟩
 
-end ComplexityTests.LogSpace
+end CslibFrontierTests.LogSpace

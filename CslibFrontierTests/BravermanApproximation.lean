@@ -18,7 +18,7 @@ none does, the choice of sets against the uniform distribution, and the circuit-
 approximation of the one-gate circuit `AND₃`.
 -/
 
-namespace ComplexityTests.BravermanApproximation
+namespace CslibFrontierTests.BravermanApproximation
 
 open Cslib Cslib.BitString Cslib.Circuits Cslib.Circuits.Boolean Cslib.Circuits.Boolean.Braverman
 
@@ -81,4 +81,4 @@ example (ν : PMF (Fin 3 → Bool)) : ∃ f ∈ lowDegree ℝ (Fin 3) 4,
   rw [hsz, Nat.cast_one, mul_one] at hWν
   exact ⟨f, hf, W, hWd, hWν, fun x hx => (hWf x hx).trans rfl⟩
 
-end ComplexityTests.BravermanApproximation
+end CslibFrontierTests.BravermanApproximation

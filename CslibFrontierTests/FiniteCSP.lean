@@ -26,7 +26,7 @@ open Cslib.Complexity
 open Turing.MultiTapeTM
 open SubexponentialSAT
 
-namespace ComplexityTests.FiniteCSP
+namespace CslibFrontierTests.FiniteCSP
 
 -- Bit width computation
 example : CSP.bitWidth 1 = 1 := by decide
@@ -149,4 +149,4 @@ example :
 example : DecidableInSubexpTime (CSP.KCSP 2 (semNeq 3)) (encCSP encUnit encNat) CSP.numVars :=
   CSP.decidableInSubexpTime_finiteDomainKCSP encUnit encNat 3 2 (semNeq 3)
 
-end ComplexityTests.FiniteCSP
+end CslibFrontierTests.FiniteCSP

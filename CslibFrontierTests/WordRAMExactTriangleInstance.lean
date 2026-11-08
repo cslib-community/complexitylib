@@ -11,7 +11,7 @@ import CslibFrontier.Algorithms.WordRAM.ExactTriangle.PreparationBounds
 
 /-! # Native ET instance-pair records and matrix padding -/
 
-namespace ComplexityTests.WordRAMExactTriangleInstance
+namespace CslibFrontierTests.WordRAMExactTriangleInstance
 
 open Cslib.WordRAM Cslib.Algorithms.WordRAM.ExactTriangle.InstancePair
 
@@ -80,9 +80,9 @@ example : ∃ y, ExecWithin 8 program initial y 438 ∧
   · exact (hf 29 (by decide)).trans (by decide)
   · exact (hf 56 (by decide)).trans (by decide)
 
-end ComplexityTests.WordRAMExactTriangleInstance
+end CslibFrontierTests.WordRAMExactTriangleInstance
 
-namespace ComplexityTests.WordRAMExactTriangleInstances
+namespace CslibFrontierTests.WordRAMExactTriangleInstances
 
 open Cslib.WordRAM Cslib.Algorithms.WordRAM.ExactTriangle
 open Cslib.Algorithms.WordRAM.ExactTriangle.Instances
@@ -271,4 +271,4 @@ example : ∃ y t, t ≤ 2826240 ∧
   · exact hb0
   · exact hb192
 
-end ComplexityTests.WordRAMExactTriangleInstances
+end CslibFrontierTests.WordRAMExactTriangleInstances

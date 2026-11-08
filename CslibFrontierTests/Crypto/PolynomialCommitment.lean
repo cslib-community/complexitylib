@@ -16,7 +16,7 @@ Exercises `PolyCommitScheme`, random-linear-combination evaluation batching (`ba
 `ligeroColumnCheck`, `ligeroEvalCheck`, `LigeroMatrixIOP`) over `ZMod 5` and `ZMod 7`.
 -/
 
-namespace ComplexityTests.Crypto.PolynomialCommitment
+namespace CslibFrontierTests.Crypto.PolynomialCommitment
 
 open Cslib Cslib.Crypto.Protocols Cslib.Interactive Cslib.Probability
 open scoped BigOperators ENNReal Matrix
@@ -150,4 +150,4 @@ example (L : LigeroMatrixIOP (ZMod 7) 2 2 4) :
   have h := L.columnReduction_sound
   simpa [ZMod.card] using h
 
-end ComplexityTests.Crypto.PolynomialCommitment
+end CslibFrontierTests.Crypto.PolynomialCommitment

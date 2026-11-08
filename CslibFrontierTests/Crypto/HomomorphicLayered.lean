@@ -15,10 +15,10 @@ every transition. The sampled keys may repeat: the chain below is `false → tru
 No security property is claimed for either test scheme.
 -/
 
-namespace ComplexityTests.HomomorphicLayered
+namespace CslibFrontierTests.HomomorphicLayered
 
 open Cslib Cslib.Circuits Cslib.Crypto.Homomorphic Cslib.Probability Turing.MultiTapeTM
-open ComplexityTests.HomomorphicExample Boolean.Layered
+open CslibFrontierTests.HomomorphicExample Boolean.Layered
 
 private def keys : List (List Bool × List Bool) :=
   [([false], [false]), ([true], [true]), ([false], [false])]
@@ -150,4 +150,4 @@ example : IsPPTOn
     circuits_poly
   all_goals fun_prop
 
-end ComplexityTests.HomomorphicLayered
+end CslibFrontierTests.HomomorphicLayered

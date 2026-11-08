@@ -13,7 +13,7 @@ Exact rational evaluations exercise the transition and large inputs. The real ex
 proved defect, one-Lipschitz bound and the nontrivial fourth-root rescaling constant.
 -/
 
-namespace ComplexityTests.RationalRamp
+namespace CslibFrontierTests.RationalRamp
 
 open Cslib
 
@@ -62,4 +62,4 @@ example (θ x y : ℝ) :
   norm_num [Real.dist_eq] at h ⊢
   exact h
 
-end ComplexityTests.RationalRamp
+end CslibFrontierTests.RationalRamp

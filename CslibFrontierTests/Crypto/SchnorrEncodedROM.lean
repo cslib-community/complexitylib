@@ -18,7 +18,7 @@ signature-dependent output, cache and message log.
 
 noncomputable section
 
-namespace ComplexityTests.Crypto.SchnorrEncodedROM
+namespace CslibFrontierTests.Crypto.SchnorrEncodedROM
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Protocols SigmaProtocol ROMSignature
 open Turing.MultiTapeTM OracleComp
@@ -160,4 +160,4 @@ example (n : ℕ) :
       ((ProbComp.eval (schnorrGroups.sampleExp n d23)).map Nat.cast)).keyGen =
       ProbComp.eval (schnorrGroups.schnorrSigKeyGen n d23) := rfl
 
-end ComplexityTests.Crypto.SchnorrEncodedROM
+end CslibFrontierTests.Crypto.SchnorrEncodedROM

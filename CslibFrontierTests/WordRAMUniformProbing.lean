@@ -30,7 +30,7 @@ This test file verifies:
 
 public section
 
-namespace ComplexityTests.WordRAMUniformProbing
+namespace CslibFrontierTests.WordRAMUniformProbing
 
 open Cslib
 open Cslib.DataStructure Cslib.DataStructure.Dictionary
@@ -224,4 +224,4 @@ theorem test_wordram_standard_and_collision_bounds :
     norm_num
   rwa [heq] at h
 
-end ComplexityTests.WordRAMUniformProbing
+end CslibFrontierTests.WordRAMUniformProbing

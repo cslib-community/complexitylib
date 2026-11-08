@@ -31,7 +31,7 @@ pseudorandom generators and hard-core predicates are elsewhere.
   word has advantage `1 / 2` at every positive parameter.
 -/
 
-namespace ComplexityTests.Crypto.AssumptionNonvacuity
+namespace CslibFrontierTests.Crypto.AssumptionNonvacuity
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.PrimeOrderGroupFamily Turing.MultiTapeTM
 open scoped NNReal ENNReal
@@ -239,4 +239,4 @@ theorem not_pseudorandomFunction_zeroFamily : ¬ PseudorandomFunction zeroFamily
   norm_num [Game.advantage, Game.succProbability, PMF.uniformOfFintype_apply,
     ENNReal.toNNReal_ofNat]
 
-end ComplexityTests.Crypto.AssumptionNonvacuity
+end CslibFrontierTests.Crypto.AssumptionNonvacuity

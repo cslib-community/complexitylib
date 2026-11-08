@@ -16,7 +16,7 @@ parameters, and the bit-length bounds on concrete inputs and at the generator's 
 `n = s = 0`, so their hypotheses are satisfiable.
 -/
 
-namespace ComplexityTests.RationalHitting.Lift
+namespace CslibFrontierTests.RationalHitting.Lift
 
 open Cslib.Circuits Cslib.Circuits.Rational
 
@@ -164,4 +164,4 @@ example : ComputableInPolyTime
   (ComputableInPolyTime.of_tidy (.length_list (encList (encList encIntBin)))).comp
     (by fun_prop)
 
-end ComplexityTests.RationalHitting.Lift
+end CslibFrontierTests.RationalHitting.Lift

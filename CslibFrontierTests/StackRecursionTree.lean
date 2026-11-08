@@ -15,7 +15,7 @@ with `x` levels is `2 ^ x`. `exists_eval_of_counted` derives its value with at m
 `value_of_run_eq_some` shows that a value tagged `0` returned by the run, with any fuel, is the
 root's. -/
 
-namespace ComplexityTests.StackRecursionTree
+namespace CslibFrontierTests.StackRecursionTree
 
 open Cslib.GenericRAM Cslib.GenericRAM.StackRecursion
 
@@ -76,4 +76,4 @@ example : tree.run (fun _ : Unit => 29) (fun _ => (0, 3)) () = some (0, 8) := by
 -- With too little fuel it may return a child's value, tagged with a positive depth.
 example : tree.run (fun _ : Unit => 28) (fun _ => (0, 3)) () = some (1, 4) := by decide
 
-end ComplexityTests.StackRecursionTree
+end CslibFrontierTests.StackRecursionTree

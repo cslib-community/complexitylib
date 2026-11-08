@@ -20,7 +20,7 @@ rate `1 / 2` (degree `1`). The constant functions have noise sensitivity zero, s
 is nonempty.
 -/
 
-namespace ComplexityTests.BooleanAnalysisConcentration
+namespace CslibFrontierTests.BooleanAnalysisConcentration
 
 open Cslib Cslib.BitString Cslib.MachineLearning.UniformLearning Finset
 
@@ -69,4 +69,4 @@ example (η ε : ℝ) (hε : 0 ≤ ε) :
     Fintype.expect_const]
   linarith
 
-end ComplexityTests.BooleanAnalysisConcentration
+end CslibFrontierTests.BooleanAnalysisConcentration

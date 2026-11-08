@@ -15,10 +15,10 @@ Non-vacuity and concrete evaluation checks for
 `CslibFrontierAbstracts.ApproximateMembershipAbstract`.
 -/
 
-namespace ComplexityTests.Abstracts.ApproximateMembershipTests
+namespace CslibFrontierTests.Abstracts.ApproximateMembershipTests
 
 open scoped NNReal ENNReal
-open ComplexityAbstracts.ApproximateMembershipAbstract
+open CslibFrontierAbstracts.ApproximateMembershipAbstract
 
 /-! ## Concrete Parameter and Space Evaluations (`w = 64, w₀ = 32, n = 16, k = 4`) -/
 
@@ -161,4 +161,4 @@ theorem nonvacuous_quotientFilter :
   exact ⟨r, C_op, hr, p_init, p_op, Seed, μ_init, μ_final, T_ops,
     hsp_le, hinit, hsupp, hops, hcontract, hbound⟩
 
-end ComplexityTests.Abstracts.ApproximateMembershipTests
+end CslibFrontierTests.Abstracts.ApproximateMembershipTests

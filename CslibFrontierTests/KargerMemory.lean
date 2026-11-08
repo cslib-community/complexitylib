@@ -20,7 +20,7 @@ specification, and run a short client through the refinement.
 
 @[expose] public section
 
-namespace ComplexityTests.KargerMemory
+namespace CslibFrontierTests.KargerMemory
 
 open scoped ENNReal
 open Cslib Cslib.WeightedCut Cslib.DataStructure Cslib.Algorithms.Lean.Karger
@@ -98,4 +98,4 @@ example : (DataStructure.Memory.spec 8).totalCost DataStructure.Memory.charge tr
   refine (Nat.le_add_right _ _).trans (h.trans ?_)
   decide
 
-end ComplexityTests.KargerMemory
+end CslibFrontierTests.KargerMemory

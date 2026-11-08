@@ -13,7 +13,7 @@ conditioning lemma; and the side-information form applies to any joint distribut
 first marginal, including two fair bits conditioned on the first bit being `true`.
 -/
 
-namespace ComplexityTests.SideInformation
+namespace CslibFrontierTests.SideInformation
 
 open Cslib.Probability.PMF
 open scoped Cslib.Probability.PMF
@@ -61,4 +61,4 @@ example :
       (fun _ => (pi bits).map (·, ())) (fun _ => by rw [PMF.map_comp]; exact PMF.map_id _)
       {x | x.2 0 = true} first_true_mem_bitsJoint
 
-end ComplexityTests.SideInformation
+end CslibFrontierTests.SideInformation

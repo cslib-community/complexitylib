@@ -20,7 +20,7 @@ theorem applies to the machine on every input it finishes, and the polynomial-ti
 the identity on binary numbers.
 -/
 
-namespace ComplexityTests.WordRAMOfTuring
+namespace CslibFrontierTests.WordRAMOfTuring
 
 open Cslib Cslib.WordRAM Cslib.WordRAM.OfTuring Turing
 
@@ -121,4 +121,4 @@ example : ∃ (r : ℕ) (p : Program .additive r) (T W : ℕ → ℕ), Polynomia
         (fun v w => W (MultiTapeTM.encNat v).length ≤ w) id :=
   (MultiTapeTM.ComputableInPolyTime.id' (encIn := MultiTapeTM.encNat)).exists_wordRAM_nat
 
-end ComplexityTests.WordRAMOfTuring
+end CslibFrontierTests.WordRAMOfTuring

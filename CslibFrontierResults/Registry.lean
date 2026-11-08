@@ -21,7 +21,7 @@ module system an imported theorem and an unexposed proof definition can both app
 in the exported environment. Bibliography keys are validated against `references.bib` by CI.
 -/
 
-namespace ComplexityResults
+namespace CslibFrontierResults
 
 open Lean Elab Command
 
@@ -158,4 +158,4 @@ def Entry.json (entry : Entry) : Json := Json.mkObj [
   ("sources", Json.arr (entry.sources.map Source.json)),
   ("source_review", toJson ("recorded" : String)), ("scope", toJson entry.scope)]
 
-end ComplexityResults
+end CslibFrontierResults

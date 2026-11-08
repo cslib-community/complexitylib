@@ -17,7 +17,7 @@ decoder is checked on a concrete machine through its correctness theorem: the cl
 inputs and the output have explicit literals, which the decoder emits bit by bit.
 -/
 
-namespace ComplexityTests.TableauDecoder
+namespace CslibFrontierTests.TableauDecoder
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Circuits.Boolean.Tableau
 open Cslib.Circuits.Boolean.Tableau.Decoder
@@ -86,4 +86,4 @@ example (x : List Bool) (n T : ℕ) (hn : n < 2 * T) (hx : x.length ≤ n) :
           (clauseAt tm x n T idx).flatMap (litBits (labelBits k State T)) :=
   exists_decoder tm x hn hx
 
-end ComplexityTests.TableauDecoder
+end CslibFrontierTests.TableauDecoder

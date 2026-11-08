@@ -11,7 +11,7 @@ import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableB
 -- VM fixtures check adapters; the symbolic endpoint separately checks admitted geometry.
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMSchonhagePointerBox
+namespace CslibFrontierTests.WordRAMSchonhagePointerBox
 
 open Cslib.WordRAM
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
@@ -107,4 +107,4 @@ private def mixed : Option (List ℕ × Bool) :=
 
 #guard mixed == some ([0, 2, 0], true)
 
-end ComplexityTests.WordRAMSchonhagePointerBox
+end CslibFrontierTests.WordRAMSchonhagePointerBox

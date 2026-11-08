@@ -16,7 +16,7 @@ that accepts every input, so that the hypotheses of the machine-level theorem ar
 the class inclusions `NL ⊆ DSPACE(log² n)` and `RL ⊆ DSPACE(log² n)` on concrete problems.
 -/
 
-namespace ComplexityTests.LogSpaceSavitch
+namespace CslibFrontierTests.LogSpaceSavitch
 
 open Cslib.Turing Turing Turing.MultiTapeTM Cslib.Complexity
 open Turing.MultiTapeNTM.ConfigurationGraph Turing.MultiTapeNTM.LogSquareSavitch
@@ -86,4 +86,4 @@ example {α : Type} {enc : α ↪ List Bool} {A : Set α} (h : A ∈ L enc) :
     A ∈ DSPACE enc fun n => Nat.log2 n ^ 2 :=
   RL_subset_DSPACE_log2_sq (L_subset_RL h)
 
-end ComplexityTests.LogSpaceSavitch
+end CslibFrontierTests.LogSpaceSavitch

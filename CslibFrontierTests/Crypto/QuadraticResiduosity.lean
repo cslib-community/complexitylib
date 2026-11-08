@@ -11,7 +11,7 @@ import Mathlib.Tactic.NormNum.Prime
 # Tests for quadratic residuosity modulo `N = p * q`
 -/
 
-namespace ComplexityTests.Crypto.QuadraticResiduosity
+namespace CslibFrontierTests.Crypto.QuadraticResiduosity
 
 open Cslib Cslib.Crypto
 
@@ -61,4 +61,4 @@ info: 'Cslib.Crypto.card_quadResidueSet_eq_card_positiveNonresidues' depends on 
 #guard_msgs in
 #print axioms Cslib.Crypto.card_quadResidueSet_eq_card_positiveNonresidues
 
-end ComplexityTests.Crypto.QuadraticResiduosity
+end CslibFrontierTests.Crypto.QuadraticResiduosity

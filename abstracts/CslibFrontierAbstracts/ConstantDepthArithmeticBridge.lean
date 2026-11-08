@@ -18,7 +18,7 @@ injectivity of the wires read by each product gate, and `IMM_{n,d}` is the entry
 product of generic matrices.
 -/
 
-namespace ComplexityAbstracts.ConstantDepthArithmeticBridge
+namespace CslibFrontierAbstracts.ConstantDepthArithmeticBridge
 
 open Cslib.Circuits Cslib.Circuits.Arithmetic
 
@@ -57,4 +57,4 @@ theorem superpolynomial (K : Type*) [Field K] (Δ c : ℕ) :
       n ^ c < C.size :=
   SPCircuit.eventually_pow_lt_size_of_imm K Δ c
 
-end ComplexityAbstracts.ConstantDepthArithmeticBridge
+end CslibFrontierAbstracts.ConstantDepthArithmeticBridge

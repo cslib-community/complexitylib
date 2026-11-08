@@ -15,7 +15,7 @@ composition applies to independent parities, and the stretching corollary yields
 for every output length.
 -/
 
-namespace ComplexityTests.PseudorandomObjects
+namespace CslibFrontierTests.PseudorandomObjects
 
 open Cslib Cslib.BitString Cslib.Probability Finset
 open scoped Cslib.Probability.PMF
@@ -86,4 +86,4 @@ example {X : PMF (Fin 3 → Bool)} (hX : IsKWiseSmallBias 1 0 X) (i : Fin 3) :
   refine le_antisymm ?_ dist_nonneg
   simpa using hX.dist_map_restrict_le (T := {i}) (by simp)
 
-end ComplexityTests.PseudorandomObjects
+end CslibFrontierTests.PseudorandomObjects

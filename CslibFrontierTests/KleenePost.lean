@@ -11,7 +11,7 @@ stage-bounded evaluator failing on a short prefix and on a low stage and succeed
 use principle for a concrete computation, computable sets below every oracle, and the Kleene–Post
 sets, which are not computable and lie in distinct Turing degrees. -/
 
-namespace ComplexityTests.KleenePost
+namespace CslibFrontierTests.KleenePost
 
 open Nat.RecursiveIn Nat.RecursiveIn.Code
 open scoped Computability
@@ -111,4 +111,4 @@ example : ∃ d₁ d₂ : TuringDegree, d₁ ≠ d₂ := by
   obtain ⟨d₁, d₂, h, -⟩ := TuringDegree.exists_incomparable
   exact ⟨d₁, d₂, fun e => h (e ▸ le_rfl)⟩
 
-end ComplexityTests.KleenePost
+end CslibFrontierTests.KleenePost

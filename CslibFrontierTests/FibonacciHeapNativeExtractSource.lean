@@ -22,7 +22,7 @@ not a native extraction certificate.
 
 public section
 
-namespace ComplexityTests.FibonacciHeapNativeExtractSource
+namespace CslibFrontierTests.FibonacciHeapNativeExtractSource
 
 open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 open Cslib.WordRAM Cslib.WordRAM.Realization FibonacciHeap FibonacciHeap.Native
@@ -63,4 +63,4 @@ example :
     ((Memory.spec 5).clientState singleton p).mem 1 = 31 ∧
     ((Memory.spec 5).clientState singleton p).frontier = 16 := by decide
 
-end ComplexityTests.FibonacciHeapNativeExtractSource
+end CslibFrontierTests.FibonacciHeapNativeExtractSource

@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Complexity.Classes.Toda.Counting
 /-! Parity-P and the class operators on concrete problems, the Valiant–Vazirani test and the
 counting tests of Toda's theorem on concrete words, and non-vacuity witnesses. -/
 
-namespace ComplexityTests.Toda
+namespace CslibFrontierTests.Toda
 
 open Cslib Cslib.Complexity Cslib.Complexity.Toda Finset Turing.MultiTapeTM
 
@@ -143,4 +143,4 @@ example : NP encBits ⊆ PWithSharpPOracle encBits := NP_subset_PH.trans PH_subs
 example : coNP encBits ⊆ BPOp encBits (ParityP (encPair encBits encBits)) :=
   coNP_subset_PH.trans PH_subset_BPOp_ParityP
 
-end ComplexityTests.Toda
+end CslibFrontierTests.Toda

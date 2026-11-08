@@ -15,7 +15,7 @@ Tables as descriptors, with table lookup as the evaluator: the stack machine on 
 network modulo `2 ^ P` and over coefficient lists of `(ℤ / 4)[U] / (U ^ 2 + U + 1)`, the agreement
 with explicit networks, and one native machine for the contraction with its resource theorem. -/
 
-namespace ComplexityTests.DescribedContraction
+namespace CslibFrontierTests.DescribedContraction
 
 open Cslib.Circuits.Frontier Cslib.Circuits.Frontier.DescribedNetwork Cslib.BitString
   Turing.MultiTapeTM
@@ -111,4 +111,4 @@ example : ∃ K : ℕ, ∀ (q : ℕ × DescribedNetwork (List ℕ)) (E ES Ev : �
 example : SumOps.galois.PolyTime (encPair encUnary (encList encNat)) (encList encNat) :=
   SumOps.galois_polyTime
 
-end ComplexityTests.DescribedContraction
+end CslibFrontierTests.DescribedContraction

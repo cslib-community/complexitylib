@@ -17,7 +17,7 @@ rotation examples exercise both branches, including return labels. Generic certi
 arbitrary encodings, and option elimination also handles unbounded words and empty value types.
 -/
 
-namespace ComplexityTests.ExpanderContraction
+namespace CslibFrontierTests.ExpanderContraction
 
 open Cslib Turing.MultiTapeTM
 
@@ -122,4 +122,4 @@ example : ComputableInPolyTime
   · fun_prop
   · exact .of_finite _
 
-end ComplexityTests.ExpanderContraction
+end CslibFrontierTests.ExpanderContraction

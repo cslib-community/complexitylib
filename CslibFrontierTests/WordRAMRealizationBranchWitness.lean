@@ -18,7 +18,7 @@ These are body executions: argument delivery, host observation and halt are not 
 
 @[expose] public section
 
-namespace ComplexityTests.WordRAMRealizationBranchWitness
+namespace CslibFrontierTests.WordRAMRealizationBranchWitness
 
 open Cslib Cslib.DataStructure Cslib.WordRAM Cslib.WordRAM.Realization
 
@@ -193,4 +193,4 @@ example : ∃ y n, Exec 2 (Backend.code restrictedCertificates ())
       decide)
   exact ⟨y, n, he⟩
 
-end ComplexityTests.WordRAMRealizationBranchWitness
+end CslibFrontierTests.WordRAMRealizationBranchWitness

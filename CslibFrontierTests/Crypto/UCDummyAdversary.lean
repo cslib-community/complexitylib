@@ -20,7 +20,7 @@ into concrete emulation whose simulator for an adversary `A` is `compSim (dummyA
 adversary that relays one environment query as two network queries (`relay`).
 -/
 
-namespace ComplexityTests.Crypto.UCDummyAdversary
+namespace CslibFrontierTests.Crypto.UCDummyAdversary
 
 open Cslib Cslib.Crypto Cslib.Crypto.Protocols.UC
 open scoped NNReal
@@ -134,4 +134,4 @@ example (C : Finset (Fin 1)) (κ : ℕ) (z : List Bool) :
   ⟨absorbAdversary_polyBounded C relay_polyBounded askParty_polyBounded,
     exec_eq_exec_dummy _ _ _ _ _ _⟩
 
-end ComplexityTests.Crypto.UCDummyAdversary
+end CslibFrontierTests.Crypto.UCDummyAdversary

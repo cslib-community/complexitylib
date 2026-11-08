@@ -16,7 +16,7 @@ can strictly decrease even under an injective homomorphism, since image atoms ne
 Further clients retain nonuniform costs, repeated atoms, unused gates and multiple outputs.
 -/
 
-namespace ComplexityTests.FusionHomomorphism
+namespace CslibFrontierTests.FusionHomomorphism
 
 open Cslib.Circuits SumOfTerms Fusion
 
@@ -197,4 +197,4 @@ example {σ : Signature.{u}} {U : Type v} {V : Type w} {W : Type z} {X : Type t}
     (coverComplexity_le_ecomplexityFrom I (fun t => P t ∘ h.map) weight
       target sources x hin hout))
 
-end ComplexityTests.FusionHomomorphism
+end CslibFrontierTests.FusionHomomorphism

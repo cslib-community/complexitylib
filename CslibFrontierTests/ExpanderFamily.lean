@@ -16,7 +16,7 @@ The positive gap, size selection and semantic wrapper have nonvacuous instances.
 certificates retain arbitrary vertex encodings and charge both directions of the equivalence.
 -/
 
-namespace ComplexityTests.ExpanderFamily
+namespace CslibFrontierTests.ExpanderFamily
 
 open Cslib Turing.MultiTapeTM
 
@@ -112,4 +112,4 @@ example (G : RotationMap (Bool × List Bool) Bool)
   simp only [Equiv.prodComm, Equiv.coe_fn_mk, Equiv.coe_fn_symm_mk]
   fun_prop [Prod.swap]
 
-end ComplexityTests.ExpanderFamily
+end CslibFrontierTests.ExpanderFamily

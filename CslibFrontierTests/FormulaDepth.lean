@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Circuit.Boolean.KhrapchenkoDepth
 /-! Clients for Yablonskii's formulas for parity, the formula depth of parity and
 Khrapchenko's bounds for majority. -/
 
-namespace ComplexityTests.FormulaDepth
+namespace CslibFrontierTests.FormulaDepth
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean
 
@@ -65,4 +65,4 @@ example (x : BitString 5) :
         parityOn ({i | 0 + 2 ≤ (i : ℕ) ∧ (i : ℕ) < 0 + 2 + 3} : Finset (Fin 5)) x) :=
   parityOn_consecutive_add 0 2 3 x
 
-end ComplexityTests.FormulaDepth
+end CslibFrontierTests.FormulaDepth

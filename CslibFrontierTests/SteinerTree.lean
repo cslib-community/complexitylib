@@ -42,7 +42,7 @@ These kernel-checked examples (using no `native_decide`) exercise
 
 public section
 
-namespace ComplexityTests.SteinerTree
+namespace CslibFrontierTests.SteinerTree
 
 open Cslib.Algorithms.Lean.SteinerTree Cslib.Algorithms.Lean.Kruskal Cslib.Algorithms.Lean.TSP
 open SimpleGraph
@@ -285,4 +285,4 @@ example (P : ∀ u v : Fin 3, (⊤ : SimpleGraph (Fin 3)).Walk u v)
   have h2 : ({s(0, 2), s(2, 1)} : Finset (Sym2 (Fin 3))).sum triWeight = 2 := by decide
   omega
 
-end ComplexityTests.SteinerTree
+end CslibFrontierTests.SteinerTree

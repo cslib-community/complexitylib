@@ -28,7 +28,7 @@ In the circuit-value game on the tableau of any machine
 claim is lost, and the claims about input wires are decided by the input.
 -/
 
-namespace ComplexityTests.AlternatingSpaceGame
+namespace CslibFrontierTests.AlternatingSpaceGame
 
 open Cslib.Complexity Turing.MultiTapeTM Turing.MultiTapeATM.WordGame
 
@@ -167,4 +167,4 @@ example : {w : List Bool | Wins List.tail w} ∈ EXP encBits := by
     (fun w => ⟨w.length, ends_tail _ w le_rfl⟩)
     (fun _ => Iff.rfl)
 
-end ComplexityTests.AlternatingSpaceGame
+end CslibFrontierTests.AlternatingSpaceGame

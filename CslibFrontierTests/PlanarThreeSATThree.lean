@@ -6,7 +6,7 @@ Authors: Erik Demaine
 
 import CslibFrontier.Computability.Complexity.Problems.PlanarThreeSATThree
 
-namespace ComplexityTests.PlanarThreeSATThree
+namespace CslibFrontierTests.PlanarThreeSATThree
 
 open Cslib.Complexity Cslib.Logic.PL
 
@@ -79,4 +79,4 @@ example : SAT.ParsimoniousPlanar.encVariable ((0, 0), .inl (0, 0)) ≠
 example : (SAT.ParsimoniousPlanar.encPlacedClause
     ([(((0, 0), .inl (0, 0)), true)], (0, 0), [[(0, 0)]])).isEmpty = false := by decide +kernel
 
-end ComplexityTests.PlanarThreeSATThree
+end CslibFrontierTests.PlanarThreeSATThree

@@ -13,7 +13,7 @@ import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevLowe
 
 /-! # Bridges for depth-two threshold circuit bounds on Andreev's function -/
 
-namespace ComplexityAbstracts.AndreevThresholdBridge
+namespace CslibFrontierAbstracts.AndreevThresholdBridge
 
 /-- A single-output real-weighted threshold circuit on `n` Boolean inputs. -/
 abbrev ThrCircuit (n : ℕ) :=
@@ -239,4 +239,4 @@ theorem majority_vote_wire_lower_bound {b m t : ℕ} (hm : 0 < m) (hmN : m ≤ 2
   Cslib.Circuits.Boolean.WeightedThreshold.wireCount_ge_of_majorityVote_andreev_of_le_two_pow hm
     hmN hb C hd hs hvote
 
-end ComplexityAbstracts.AndreevThresholdBridge
+end CslibFrontierAbstracts.AndreevThresholdBridge

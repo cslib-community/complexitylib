@@ -14,7 +14,7 @@ public import CslibFrontier.Foundations.Data.Polynomial.BivariateCoeffNorm1
 # Tests for `CslibFrontier.Foundations.Data.Polynomial.BivariateCoeffNorm1`
 -/
 
-namespace ComplexityTests.BivariateCoeffNorm1
+namespace CslibFrontierTests.BivariateCoeffNorm1
 
 open Polynomial
 
@@ -28,4 +28,4 @@ example :
   rw [bivariateCoeffNorm1_C, coeffNorm1_C]
   rfl
 
-end ComplexityTests.BivariateCoeffNorm1
+end CslibFrontierTests.BivariateCoeffNorm1

@@ -10,7 +10,7 @@ import Mathlib.Data.ZMod.Basic
 
 /-! Strict fair-bit samplers: exact boundary laws and closed compositional certificates. -/
 
-namespace ComplexityTests.UniformNat
+namespace CslibFrontierTests.UniformNat
 
 open Cslib Cslib.ProbComp Cslib.Probability Turing.MultiTapeTM
 
@@ -78,7 +78,7 @@ example : dist ((PMF.uniformOfFintype (Fin 4)).map fun x => (x.val : ZMod 3))
 example : IsPPTOn encUnary encNat (fun n => sampleModNat (n + 8) (2 * n + 3)) :=
   isPPTOn_sampleModNat (by fun_prop) (by fun_prop)
 
-end ComplexityTests.UniformNat
+end CslibFrontierTests.UniformNat
 
 -- An arbitrary plain bound composes with the capped unary dyadic-size provider.
 example {α : Type} {encode : α ↪ List Bool} {bound : α → ℕ}

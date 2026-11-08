@@ -27,7 +27,7 @@ feasibility via `exists_checkScheduleFeasible_eq_true` + round-trip soundness to
 `ReplacementParams.Feasible`, and plain `ComputableInPolyTime` compositions via `fun_prop`.
 -/
 
-namespace ComplexityTests.ParameterCheck
+namespace CslibFrontierTests.ParameterCheck
 
 open Cslib.Complexity.SubexponentialSAT Cslib.Complexity.SubexponentialSAT.ParameterCheck Finset
   Turing.MultiTapeTM
@@ -216,4 +216,4 @@ example : ComputableInPolyTime (fun x : (ℕ × ℕ) × (ℕ × ℕ) =>
       binomTailNumerator Q x.2.1.sqrt 1 (x.2.1.sqrt + 1) + Q.choose x.1.1 + Nat.clog 2 x.2.2)
     (encPair (encPair encUnary encNat) (encPair encNat encNat)) encNat := by fun_prop
 
-end ComplexityTests.ParameterCheck
+end CslibFrontierTests.ParameterCheck

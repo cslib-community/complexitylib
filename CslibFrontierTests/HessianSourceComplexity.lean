@@ -13,7 +13,7 @@ The product of two variables has minimum multiplication cost one when only the v
 supplied. Supplying the product itself makes both its multiplication cost and residual rank zero.
 -/
 
-namespace ComplexityTests.HessianSourceComplexity
+namespace CslibFrontierTests.HessianSourceComplexity
 
 open Cslib.Circuits MvPolynomial
 
@@ -81,4 +81,4 @@ example {K : Type*} [Field K] (point : Fin 2 → K) (target : MvPolynomial (Fin 
         (fun (_ : Unit) (_ : Fin 1) => target) (fun _ => Fin.append X helpers) :=
   hessianResidualRank_le_two_mul_ecomplexityFrom_with_helpers id point target helpers
 
-end ComplexityTests.HessianSourceComplexity
+end CslibFrontierTests.HessianSourceComplexity

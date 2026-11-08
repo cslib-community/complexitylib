@@ -15,7 +15,7 @@ the imbalance bound is attained. Further tests check both sides of the set-multi
 predicate and that the hypotheses of subadditivity and multiplicativity can be met.
 -/
 
-namespace ComplexityTests.ArithmeticRelativeRank
+namespace CslibFrontierTests.ArithmeticRelativeRank
 
 open Cslib.Circuits.Arithmetic MvPolynomial
 
@@ -203,4 +203,4 @@ example : relRank blk3 {0} {1} (X 0 * X 1 : MvPolynomial (Fin 3) ℚ) =
   rw [relRank, hrank, hrows, hcols]
   norm_num [Real.sqrt_div', Real.sqrt_one]
 
-end ComplexityTests.ArithmeticRelativeRank
+end CslibFrontierTests.ArithmeticRelativeRank

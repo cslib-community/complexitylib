@@ -13,7 +13,7 @@ These examples check nonempty witnesses, the zero-bit convention, exact positive
 transport of the semi-ultrafilter subclass.
 -/
 
-namespace ComplexityTests.FusionGraph
+namespace CslibFrontierTests.FusionGraph
 
 open Cslib.Circuits Cslib.Circuits.Fusion Cslib.Circuits.Fusion.Graph
 
@@ -52,4 +52,4 @@ example {n : ℕ} (G : Set ((Fin n → Bool) × (Fin n → Bool))) :
       pairCoverComplexity G (fun i => {x | literals x i = true}) Semifilter.IsUltra :=
   pairCoverComplexity_le_literals G Semifilter.IsUltra
 
-end ComplexityTests.FusionGraph
+end CslibFrontierTests.FusionGraph

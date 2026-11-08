@@ -12,7 +12,7 @@ public section
 
 open Finset Cslib.BitString Cslib.GenericRAM Cslib.Logic.PL Cslib.Logic.PL.CNF Turing.MultiTapeTM
 
-namespace ComplexityTests.CNFGreedyParitySearch
+namespace CslibFrontierTests.CNFGreedyParitySearch
 
 -- Boundary regimes: P = 0 yields 1 empty candidate and an all-false row; m = 0 and n = 0 are total.
 theorem boundary_empty_tuple :
@@ -136,4 +136,4 @@ example :
   simp only [encList_append, List.length_append, encList_cons, encList_nil, List.append_nil,
     length_frame, encBits_apply, length_materializeTestRow]; omega
 
-end ComplexityTests.CNFGreedyParitySearch
+end CslibFrontierTests.CNFGreedyParitySearch

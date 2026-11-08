@@ -17,7 +17,7 @@ instances of
 `CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Unary`.
 -/
 
-namespace ComplexityTests.LogSpaceUnary
+namespace CslibFrontierTests.LogSpaceUnary
 
 open Turing Turing.MultiTapeTM
 
@@ -62,4 +62,4 @@ example : ComputableInLogSpace (fun l : List ℕ => decide (l.length * l.length 
     (encList encUnary) encBool := by
   fun_prop
 
-end ComplexityTests.LogSpaceUnary
+end CslibFrontierTests.LogSpaceUnary

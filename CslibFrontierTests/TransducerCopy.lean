@@ -19,7 +19,7 @@ final-output hypothesis is necessary, including on empty input.
 
 public section
 
-namespace ComplexityTests.TransducerCopy
+namespace CslibFrontierTests.TransducerCopy
 
 open Turing.MultiTapeTM
 
@@ -45,4 +45,4 @@ theorem nonempty_final_suffix :
       (copier [2] (by decide)).run () ([] : List (Fin 3)) ≠ [] := by
   decide
 
-end ComplexityTests.TransducerCopy
+end CslibFrontierTests.TransducerCopy

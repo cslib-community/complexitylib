@@ -16,7 +16,7 @@ two-branch additive decider puts emptiness in an explicit `DTIME` class. Both go
 `Program.ComputesInTime.computableInO_of_width_additive`, whose hypotheses these clients satisfy.
 -/
 
-namespace ComplexityTests.WordRAMTuringOverhead
+namespace CslibFrontierTests.WordRAMTuringOverhead
 
 open Cslib.WordRAM Turing.MultiTapeTM Cslib.Complexity
 
@@ -96,4 +96,4 @@ example : {l : List Bool | l = []} ∈ DTIME encBits
   emptyProgram_decidesInTime.mem_DTIME (encIn := encBits) (T := fun _ => 4) le_rfl
     (const_mem_FTIME 4)
 
-end ComplexityTests.WordRAMTuringOverhead
+end CslibFrontierTests.WordRAMTuringOverhead

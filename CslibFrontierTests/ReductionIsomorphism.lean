@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 
 open Turing.MultiTapeTM Cslib.Complexity
 
-namespace ComplexityTests.ReductionIsomorphism
+namespace CslibFrontierTests.ReductionIsomorphism
 
 /-!
 ### Non-vacuity test: concrete polynomial-time isomorphism
@@ -59,4 +59,4 @@ theorem polyTimeInvertibleLengthIncreasingOneOneReducible_cons_true (A : Set (Li
   · simp
   · simp
 
-end ComplexityTests.ReductionIsomorphism
+end CslibFrontierTests.ReductionIsomorphism

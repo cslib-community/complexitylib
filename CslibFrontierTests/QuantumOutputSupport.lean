@@ -8,7 +8,7 @@ import CslibFrontier.Computability.Circuit.Quantum.OutputSupport
 
 /-! Target-only quantum support and restoration of the complete output register. -/
 
-namespace ComplexityTests.QuantumOutputSupport
+namespace CslibFrontierTests.QuantumOutputSupport
 
 open Cslib Cslib.Quantum Cslib.BitString Cslib.Probability
 
@@ -70,4 +70,4 @@ example (input : List Bool) : restorePositions [] input [] = input := by
 -- Empty registers and empty outputs are included without a positive-width hypothesis.
 example : restorePositions [] [] [] = [] := by decide
 
-end ComplexityTests.QuantumOutputSupport
+end CslibFrontierTests.QuantumOutputSupport

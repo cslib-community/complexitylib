@@ -10,7 +10,7 @@ import CslibFrontier.Foundations.Analysis.Brouwer
 file applies them to concrete maps and gives a translation without fixed points, showing that the
 hypothesis that `f` maps the cube into itself is needed. -/
 
-namespace ComplexityTests.Brouwer
+namespace CslibFrontierTests.Brouwer
 
 open Set Cslib.Brouwer
 
@@ -67,4 +67,4 @@ example : ∀ x, ¬Function.IsFixedPt shift x := fun x h => by
   simp only [shift] at this
   linarith
 
-end ComplexityTests.Brouwer
+end CslibFrontierTests.Brouwer

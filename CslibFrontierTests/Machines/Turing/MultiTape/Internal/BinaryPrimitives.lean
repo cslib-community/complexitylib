@@ -20,7 +20,7 @@ run_elab do
     if (← Lean.getEnv).contains name then
       throwError "unexpected higher tidy calculus: {name}"
 
-namespace ComplexityTests.Internal.BinaryPrimitives
+namespace CslibFrontierTests.Internal.BinaryPrimitives
 
 -- Unbounded carry chains are verified for `NatSucc.incr`, then specialized to long words.
 theorem carryChain (k : ℕ) :
@@ -72,4 +72,4 @@ example (n : ℕ) {f : ℕ → ℕ} {t s T S : ℕ → ℕ}
   · fail_if_success exact ComputableInO.of_bounds h 1 (by simpa using ht) (by simpa using hs)
     exact ComputableInO.of_bounds h 1 (by simpa using ht) (by simpa using hs) (by simpa using hl)
 
-end ComplexityTests.Internal.BinaryPrimitives
+end CslibFrontierTests.Internal.BinaryPrimitives

@@ -16,7 +16,7 @@ same prefix state and charge halt. The symbolic large family satisfies the real 
 it uses the general proved execution instead of evaluating its enormous native run.
 -/
 
-namespace ComplexityTests.WordRAMParameterSelectingInput
+namespace CslibFrontierTests.WordRAMParameterSelectingInput
 
 open Cslib.WordRAM Cslib.Matrix Cslib.Algorithms.ExactTriangle
 open Cslib.Algorithms.WordRAM.ExactTriangle
@@ -146,4 +146,4 @@ example (n : ℕ) (z : ℤ) (hn : 2 ^ 2394 ≤ n) :
       simp [hz, List.getD_eq_getElem?_getD]
   exact ⟨p, y, t, ht, hr, he, hiff.trans triangle, hp hfast⟩
 
-end ComplexityTests.WordRAMParameterSelectingInput
+end CslibFrontierTests.WordRAMParameterSelectingInput

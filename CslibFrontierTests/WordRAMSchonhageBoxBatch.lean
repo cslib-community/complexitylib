@@ -14,7 +14,7 @@ execution theorem. Every VM fixture builds its own real geometry and retained va
 
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMSchonhageBoxBatch
+namespace CslibFrontierTests.WordRAMSchonhageBoxBatch
 
 open Cslib.WordRAM Cslib.WordRAM.Signed
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
@@ -168,4 +168,4 @@ example : ∃ (y : Data registers) (n : ℕ),
   exact ⟨y, n, hp, he, by simpa only [Nat.add_zero, hvalue] using h0,
     by simpa only [hvalue] using h1⟩
 
-end ComplexityTests.WordRAMSchonhageBoxBatch
+end CslibFrontierTests.WordRAMSchonhageBoxBatch

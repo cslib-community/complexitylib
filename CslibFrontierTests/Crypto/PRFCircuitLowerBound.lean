@@ -37,7 +37,7 @@ and
      overwhelming probability under any uniform one-way function.
 -/
 
-namespace ComplexityTests.Crypto.PRFCircuitLowerBound
+namespace CslibFrontierTests.Crypto.PRFCircuitLowerBound
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Crypto Cslib.Probability
 
@@ -203,4 +203,4 @@ theorem exists_prf_with_two_mul_sub_two_lower_bound_of_oneWay {f : List Bool →
   exact ⟨family, hF, hF.negligible_complexity_lt_two_mul_sub_two,
     hF.eventually_exists_key_two_mul_sub_two_le_complexity⟩
 
-end ComplexityTests.Crypto.PRFCircuitLowerBound
+end CslibFrontierTests.Crypto.PRFCircuitLowerBound

@@ -27,7 +27,7 @@ Exercises:
 4. Universe polymorphism: the pure solver and its correctness theorem at `Type 1`.
 -/
 
-namespace ComplexityTests.MatroidIntersectionSolver
+namespace CslibFrontierTests.MatroidIntersectionSolver
 
 open Cslib.Algorithms.Lean.Matroid Cslib.Reachability Cslib.Query
 
@@ -166,4 +166,4 @@ example {α : Type 1} [DecidableEq α] {M₁ M₂ : Matroid α} {indep₁ indep�
     IsMaxCommonIndep M₁ M₂ es.toFinset (maxCommonIndep indep₁ indep₂ es).1 :=
   (maxCommonIndep_spec h₁ h₂ es).1
 
-end ComplexityTests.MatroidIntersectionSolver
+end CslibFrontierTests.MatroidIntersectionSolver

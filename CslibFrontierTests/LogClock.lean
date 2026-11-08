@@ -19,7 +19,7 @@ The zero-clock case checks that the closure rule does not silently require an in
 
 public section
 
-namespace ComplexityTests.LogClock
+namespace CslibFrontierTests.LogClock
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -68,4 +68,4 @@ example : TimeConstructible fun _ => 0 := by
     simpa only [Nat.mul_zero, Nat.zero_add, Function.const_def] using hc
   simpa only [Nat.zero_mul] using hzero.mul_size_succ
 
-end ComplexityTests.LogClock
+end CslibFrontierTests.LogClock

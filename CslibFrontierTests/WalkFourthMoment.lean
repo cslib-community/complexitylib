@@ -16,7 +16,7 @@ fourth-moment decay on the affine-plane expander over `𝔽₅`: two steps shrin
 every function of expectation zero by at least the factor `2 / 5`.
 -/
 
-namespace ComplexityTests.WalkFourthMoment
+namespace CslibFrontierTests.WalkFourthMoment
 
 open Cslib Cslib.RotationMap Finset
 open scoped BigOperators
@@ -59,4 +59,4 @@ example (f : ZMod 5 × ZMod 5 → ℝ) (hf : 𝔼 v, f v = 0) :
   rw [mul_one] at h
   nlinarith
 
-end ComplexityTests.WalkFourthMoment
+end CslibFrontierTests.WalkFourthMoment

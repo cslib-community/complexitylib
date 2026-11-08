@@ -19,7 +19,7 @@ import Mathlib.Tactic.NormNum
 * Row support on every draw, and concrete bin weights.
 -/
 
-namespace ComplexityTests.StochasticAtom
+namespace CslibFrontierTests.StochasticAtom
 
 open Finset Matrix Cslib Cslib.Probability
 open scoped BigOperators
@@ -182,4 +182,4 @@ example {w : ℝ} (hω : binWeight χ b 2 w ≠ 0) : 1 / 8 < w ∧ w < 1 / 2 := 
   norm_num [b] at h
   exact h
 
-end ComplexityTests.StochasticAtom
+end CslibFrontierTests.StochasticAtom

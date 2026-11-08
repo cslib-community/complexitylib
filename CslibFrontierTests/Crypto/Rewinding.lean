@@ -19,7 +19,7 @@ produces distinct challenges. An unreachable state checks that the atom bound is
 on the first-stage support.
 -/
 
-namespace ComplexityTests.Crypto.Rewinding
+namespace CslibFrontierTests.Crypto.Rewinding
 
 open Cslib.Probability
 
@@ -173,4 +173,4 @@ example :
   subst state
   exact biased_atom_le challenge
 
-end ComplexityTests.Crypto.Rewinding
+end CslibFrontierTests.Crypto.Rewinding

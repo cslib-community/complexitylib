@@ -9,7 +9,7 @@ import CslibFrontier.Foundations.BooleanAnalysis.Bonami
 
 /-! Instances and non-vacuity witnesses for hypercontractivity and the Bonami Lemma. -/
 
-namespace ComplexityTests.Hypercontractivity
+namespace CslibFrontierTests.Hypercontractivity
 
 open Cslib Cslib.BitString Finset
 open scoped BigOperators
@@ -100,4 +100,4 @@ example (f : (ι → Bool) → ℝ) :
   ⟨lpNorm_eq_measureTheory_lpNorm_uniformOn two_pos f,
    lpNorm_eq_measureTheory_lpNorm two_pos f⟩
 
-end ComplexityTests.Hypercontractivity
+end CslibFrontierTests.Hypercontractivity

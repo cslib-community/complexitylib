@@ -18,7 +18,7 @@ stateful `Backend.implementation`. The separate metadata feasibility test pays i
 
 @[expose] public section
 
-namespace ComplexityTests.QueueRegisterTransfer
+namespace CslibFrontierTests.QueueRegisterTransfer
 
 open Cslib Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 
@@ -111,4 +111,4 @@ example : ∃ y n, Exec 1 (Backend.code certificates ())
     (by change 0 + 0 ≤ 0 ∧ 0 + 2 * 0 ≤ 0; decide)
   exact ⟨y, n, he, by simpa using hn, hm, h0, h1⟩
 
-end ComplexityTests.QueueRegisterTransfer
+end CslibFrontierTests.QueueRegisterTransfer

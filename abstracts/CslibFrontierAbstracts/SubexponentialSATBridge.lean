@@ -44,7 +44,7 @@ Codex, Claude and Jetski workers; the machine and encoding foundations include C
 Reitwiessner's contributions. These transfer proofs reuse that development.
 -/
 
-namespace ComplexityAbstracts.SubexponentialSATBridge
+namespace CslibFrontierAbstracts.SubexponentialSATBridge
 
 open Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -97,4 +97,4 @@ theorem not_seth : ¬SETH := CountingNativeEndpoint.not_SETH
 theorem satExponent_eq_zero : ∀ k, satExponent k = 0 :=
   CountingNativeEndpoint.satExponent_eq_zero
 
-end ComplexityAbstracts.SubexponentialSATBridge
+end CslibFrontierAbstracts.SubexponentialSATBridge

@@ -21,7 +21,7 @@ three-bit value in two coordinates exercises the same controller with a differen
 
 @[expose] public section
 
-namespace ComplexityTests.TreeEvalIterative
+namespace CslibFrontierTests.TreeEvalIterative
 
 open Cslib.TreeEval Cslib.TreeEval.Ary
 
@@ -134,4 +134,4 @@ theorem packed_root {h : ℕ} (T : Ary.Tree 2 3 h) (S : Ary.State (ZMod 17) 2 2)
     (fun v => Ary.Packed.unpackBits_packBits (r := 2) (m := 2) (by decide) v)
     (by decide) (Finset.nodup_toList _) (fun u => Finset.mem_toList.mpr (Finset.mem_univ u))
 
-end ComplexityTests.TreeEvalIterative
+end CslibFrontierTests.TreeEvalIterative

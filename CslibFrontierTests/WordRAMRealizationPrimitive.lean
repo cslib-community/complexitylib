@@ -14,7 +14,7 @@ and inspect the returned word, frontier and entire resulting memory. Empty zeroe
 also instantiated at word width zero, where the constant `1` cannot be written.
 -/
 
-namespace ComplexityTests.WordRAMRealizationPrimitive
+namespace CslibFrontierTests.WordRAMRealizationPrimitive
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 
@@ -212,4 +212,4 @@ example :
     (fun j h => by have hval := congrArg Fin.val h; change 4 + j.val = 3 at hval; omega)
   refine ⟨n, C, emit f src tmp, y, hy, hf, ?_, ?_, ?_, hl⟩ <;> rw [hm] <;> norm_num
 
-end ComplexityTests.WordRAMRealizationPrimitive
+end CslibFrontierTests.WordRAMRealizationPrimitive

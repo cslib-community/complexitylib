@@ -29,7 +29,7 @@ import Mathlib.Tactic.NormNum
   does.
 -/
 
-namespace ComplexityTests.Crypto.PIR
+namespace CslibFrontierTests.Crypto.PIR
 
 open Cslib Cslib.Crypto.Protocols.PIR Cslib.BitString Cslib.Code Probability
 
@@ -179,4 +179,4 @@ example : HasScheme (Fin 3) 2 8 := by
   have h := hasScheme_hadamard (ι := Fin 3)
   rwa [Fintype.card_fin] at h
 
-end ComplexityTests.Crypto.PIR
+end CslibFrontierTests.Crypto.PIR

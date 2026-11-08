@@ -14,7 +14,7 @@ public import CslibFrontier.Computability.Complexity.Classes.AWPP.OracleWeights
 
 @[expose] public section
 
-namespace ComplexityTests.AWPPLowness
+namespace CslibFrontierTests.AWPPLowness
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -61,4 +61,4 @@ example : ∃ H ∈ GapP (encPair encBits encBits), ∃ R : List Bool → ℕ,
   refine ⟨H, hH, R, hR, fun a w => ⟨(hb a w).1, ?_⟩⟩
   simpa only [pow_zero, one_mul] using (hb a w).2.1 (Set.mem_univ _)
 
-end ComplexityTests.AWPPLowness
+end CslibFrontierTests.AWPPLowness

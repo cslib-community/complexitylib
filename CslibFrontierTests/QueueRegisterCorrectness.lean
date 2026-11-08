@@ -14,7 +14,7 @@ are in `QueueRegisterMethods`; raw initialization and persistent dispatch are se
 
 @[expose] public section
 
-namespace ComplexityTests.QueueRegisterCorrectness
+namespace CslibFrontierTests.QueueRegisterCorrectness
 
 open Cslib Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.Queue.WordRAM.RegisterMetadata
@@ -69,4 +69,4 @@ example : ¬ enqueueDomain 2 ![0, 1, 1, 1, 3] ⟨fun _ => 3, 3⟩ := by unfold e
 example : ¬ enqueueDomain 2 ![0, 0, 1, 1, 4] ⟨fun _ => 3, 3⟩ := by unfold enqueueDomain; decide
 example : transferDomain 1 ![0, 0, 0, 0, 1] ⟨fun _ => 1, 0⟩ := by unfold transferDomain; decide
 
-end ComplexityTests.QueueRegisterCorrectness
+end CslibFrontierTests.QueueRegisterCorrectness

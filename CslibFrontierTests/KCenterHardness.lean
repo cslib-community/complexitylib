@@ -29,7 +29,7 @@ These kernel-checked examples (using no `native_decide`) exercise
 
 public section
 
-namespace ComplexityTests.KCenterHardness
+namespace CslibFrontierTests.KCenterHardness
 
 open Cslib.Complexity Cslib.Complexity.KCenter Cslib.Algorithms.Lean.KCenter
 
@@ -164,4 +164,4 @@ example : (∀ D k, IsInstance D → 0 < k → k ≤ D.length →
     · exact_mod_cast hD.isMetric.symm i i.2 j j.2
     · exact_mod_cast hD.isMetric.triangle i i.2 j j.2 l l.2
 
-end ComplexityTests.KCenterHardness
+end CslibFrontierTests.KCenterHardness

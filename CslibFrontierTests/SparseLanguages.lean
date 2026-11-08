@@ -13,7 +13,7 @@ The unary clients allow an arbitrary set of lengths, without a decidability assu
 Finite slice clients cover an empty truth table and the unique zero-input assignment.
 -/
 
-namespace ComplexityTests.SparseLanguages
+namespace CslibFrontierTests.SparseLanguages
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Finset
 
@@ -57,4 +57,4 @@ example : (0 : Language Bool) ∈ PPoly := by
   simp only [mem_filter, mem_univ, true_and]
   exact fun hx => Language.slice_eq_true_iff.mp hx
 
-end ComplexityTests.SparseLanguages
+end CslibFrontierTests.SparseLanguages

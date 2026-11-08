@@ -15,9 +15,9 @@ Transfer bounded-error computation and two polynomial quantifier blocks to nativ
 Turing-machine bounds. The public abstract states all class semantics explicitly.
 -/
 
-namespace ComplexityAbstracts.SipserLautemannBridge
+namespace CslibFrontierAbstracts.SipserLautemannBridge
 
-open ComplexityTests.Abstracts
+open CslibFrontierTests.Abstracts
 open Turing.MultiTapeTM
 
 /-- The framed encoding of an instance followed by a seed or quantified certificate. -/
@@ -95,4 +95,4 @@ theorem sipserLautemann : BPP ⊆ SigmaTwo ∩ PiTwo := by
   have h := Cslib.Complexity.BPP_subset_SigmaP_two_inter_PiP_two (mem_BPP_iff.mp hA)
   exact ⟨sigmaTwo_of_mem h.1, piTwo_of_mem h.2⟩
 
-end ComplexityAbstracts.SipserLautemannBridge
+end CslibFrontierAbstracts.SipserLautemannBridge

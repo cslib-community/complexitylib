@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.CountingSparsifyContex
 # Tests for the counting-sparsification step with a captured runtime context
 -/
 
-namespace ComplexityTests.CountingSparsifyContext
+namespace CslibFrontierTests.CountingSparsifyContext
 
 open Cslib.Logic.PL Cslib.Logic.PL.CNF.Sparsification Cslib.Complexity
 open Cslib.Complexity.CountingSparsify Turing.MultiTapeTM
@@ -72,4 +72,4 @@ example {g : ℕ × CNF ℕ → ℕ} {t s : ℕ × CNF ℕ → ℕ}
         else 0) :=
   exists_computableInO_stepWith computableInPolyTime_countingThreshold_le_binary K hg
 
-end ComplexityTests.CountingSparsifyContext
+end CslibFrontierTests.CountingSparsifyContext

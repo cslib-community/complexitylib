@@ -14,7 +14,7 @@ The verifier must handle empty formulas and clauses, repeated variables, sparse 
 and certificates of any length. The calculus tests check composition through `fun_prop`.
 -/
 
-namespace ComplexityTests.SATPolyTime
+namespace CslibFrontierTests.SATPolyTime
 
 open Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -50,4 +50,4 @@ example : SAT.verifier ([[(2 ^ 100, true)]], [true, false, false]) = true := by 
 -- A short certificate defaults missing positions to false, including on negative literals.
 example : SAT.verifier ([[(5, true)], [(9, false)]], [true]) = true := rfl
 
-end ComplexityTests.SATPolyTime
+end CslibFrontierTests.SATPolyTime

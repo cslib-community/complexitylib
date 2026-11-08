@@ -15,7 +15,7 @@ import CslibFrontier.Tactic.PPT
 /-! Tests of uniform parameterized programs and the one-way-function experiment, and checks that
 the PPT, pseudorandom-generator and hard-core definitions are not vacuous. -/
 
-namespace ComplexityTests.ComputationalCrypto
+namespace CslibFrontierTests.ComputationalCrypto
 
 open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 open scoped NNReal
@@ -236,4 +236,4 @@ example : ¬ HardCore id (fun w => w.headD false) := by
   intro heq
   norm_num [Game.succProbability, PMF.uniformOfFintype_apply, ENNReal.toNNReal_ofNat] at heq
 
-end ComplexityTests.ComputationalCrypto
+end CslibFrontierTests.ComputationalCrypto

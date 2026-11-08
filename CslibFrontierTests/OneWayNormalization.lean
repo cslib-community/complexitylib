@@ -10,7 +10,7 @@ import CslibFrontier.Tactic.PPT
 
 /-! Padding and normalization tests, including overlong words and wrong-length candidates. -/
 
-namespace ComplexityTests.OneWayNormalization
+namespace CslibFrontierTests.OneWayNormalization
 
 open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 
@@ -76,4 +76,4 @@ example {f : List Bool → List Bool} (hf : OneWay f) :
   obtain ⟨g, length, hg, hlen, hcomp⟩ := hf.exists_fixedOutputLength
   exact ⟨g, length, hg, hg.polyTime, hlen, hcomp⟩
 
-end ComplexityTests.OneWayNormalization
+end CslibFrontierTests.OneWayNormalization

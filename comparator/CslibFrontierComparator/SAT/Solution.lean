@@ -20,7 +20,7 @@ machine and resource conventions, and ETH statement by definitional equality.
 
 public section
 
-namespace ComplexityComparator.SAT
+namespace CslibFrontierComparator.SAT
 
 /-- Reuse the exact native model-counting theorem at every fixed width. -/
 theorem exact_count : ExactCount := fun k =>
@@ -29,4 +29,4 @@ theorem exact_count : ExactCount := fun k =>
 /-- Reuse the library's ETH consequence with the independently stated definition. -/
 theorem not_eth : NotETH := Cslib.Complexity.CountingNativeEndpoint.not_ETH
 
-end ComplexityComparator.SAT
+end CslibFrontierComparator.SAT

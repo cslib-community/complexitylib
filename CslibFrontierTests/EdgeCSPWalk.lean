@@ -9,7 +9,7 @@ import Mathlib.Tactic.FinCases
 
 /-! Concrete edge-CSP augmentations and rejection of final-only validity. -/
 
-namespace ComplexityTests.EdgeCSPWalk
+namespace CslibFrontierTests.EdgeCSPWalk
 
 open Cslib Cslib.BitString Cslib.Logic.PL Cslib.Logic.PL.CSP
 
@@ -202,4 +202,4 @@ example : ¬ shortcutWalk.IsFWalk shortcutSem shortcutLabels := by
     cases h0
   exact hfail hv
 
-end ComplexityTests.EdgeCSPWalk
+end CslibFrontierTests.EdgeCSPWalk

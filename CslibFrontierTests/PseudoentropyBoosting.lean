@@ -15,7 +15,7 @@ learner satisfies the truncated correlation contract and gives a nontrivial fina
 Resource certificates also cover invalid density parameters and different input encodings.
 -/
 
-namespace ComplexityTests.PseudoentropyBoosting
+namespace CslibFrontierTests.PseudoentropyBoosting
 
 open Cslib Cslib.Probability Cslib.Crypto.Pseudoentropy.Boosting Cslib.BitString
   Turing.MultiTapeTM
@@ -109,4 +109,4 @@ example (params : List Bool → Parameters)
   fail_if_success (clear hparams; fun_prop)
   fun_prop
 
-end ComplexityTests.PseudoentropyBoosting
+end CslibFrontierTests.PseudoentropyBoosting

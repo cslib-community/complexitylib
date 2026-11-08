@@ -13,10 +13,10 @@ import CslibFrontierTests.BQP
 reduction, the containments `NP ⊆ QMA` and `BQP ⊆ QMA`, and the amplified verifier on basis
 witnesses. -/
 
-namespace ComplexityTests.QMA
+namespace CslibFrontierTests.QMA
 
 open Cslib Cslib.Quantum Cslib.Complexity Turing.MultiTapeTM
-open ComplexityTests.BQP
+open CslibFrontierTests.BQP
 
 /-! ### A verifier that reads its witness -/
 
@@ -120,4 +120,4 @@ example : (readWitness.amplify (fun _ => 1) (ComputableInPolyTime.const _)).acce
   rw [Circuit.run_ofCodes (by unfold GateCode.IsClassical; decide), measureProb_ket,
     ite_eq_right ((mem_accepting (by norm_num)).not.mpr (by decide))]
 
-end ComplexityTests.QMA
+end CslibFrontierTests.QMA

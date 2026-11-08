@@ -34,7 +34,7 @@ malformed words, the nondeterministic space predicate, the parity of a symmetric
 affine Boolean forms and step sums over `𝔽₂`, set difference via list filtering, block modular sums,
 and logarithmic bounds, with their boundary cases. -/
 
-namespace ComplexityTests.Consolidation
+namespace CslibFrontierTests.Consolidation
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
@@ -270,4 +270,4 @@ example (a b : Orthogonal.Point) :
     Orthogonal.support [a, b] = Orthogonal.segment a b :=
   Orthogonal.support_pair a b
 
-end ComplexityTests.Consolidation
+end CslibFrontierTests.Consolidation

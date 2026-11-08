@@ -20,7 +20,7 @@ nonvacuity of the lower bound for `CslibFrontier.DataStructure.ListUpdate`.
 
 @[expose] public section
 
-namespace ComplexityTests.ListUpdate
+namespace CslibFrontierTests.ListUpdate
 
 open Cslib.DataStructure.Online Cslib.DataStructure.ListUpdate
 
@@ -99,4 +99,4 @@ example (b : Nat) : ∃ reqs states, (problem (Fin 3)).ValidSchedule [0, 1, 2] r
       5 * (mtf (Fin 3)).cost [0, 1, 2] reqs :=
   exists_ratio_violation_of_lt (mtf (Fin 3)) ⟨by decide, by decide⟩ (by simp) b
 
-end ComplexityTests.ListUpdate
+end CslibFrontierTests.ListUpdate

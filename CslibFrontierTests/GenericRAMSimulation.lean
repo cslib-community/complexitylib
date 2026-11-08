@@ -27,7 +27,7 @@ primitive and sparse-memory resource bounds, and end-to-end polynomial-time algo
 
 @[expose] public section
 
-namespace ComplexityTests.GenericRAMSimulation
+namespace CslibFrontierTests.GenericRAMSimulation
 
 open Cslib.GenericRAM Turing.MultiTapeTM
 open BoundedNat
@@ -491,4 +491,4 @@ theorem wordDouble_polyTime :
     wordDoubleInitCert_isPolynomial
     5 (fun _ => le_rfl)
 
-end ComplexityTests.GenericRAMSimulation
+end CslibFrontierTests.GenericRAMSimulation

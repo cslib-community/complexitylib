@@ -22,7 +22,7 @@ Milestone-two clients exercise the reverse coloring reduction, both outcomes of
 the occurrence-graph reduction on a nontrivial universe, and the independent-set ESO sentence.
 -/
 
-namespace ComplexityTests.FirstOrderReductions
+namespace CslibFrontierTests.FirstOrderReductions
 
 open FirstOrder Language Structure CategoryTheory Cslib.Logic Cslib.Logic.FO Cslib.Complexity
 
@@ -309,4 +309,4 @@ example : cnf.vocabulary.queryLanguage cnf.ThreeSAT ∈ NP encStructure :=
       (graph.definable_ThreeColorable.reduces_SAT fun _ _ => graph.colorable_of_isEmpty)
       cnf.isoClosed_SAT)
 
-end ComplexityTests.FirstOrderReductions
+end CslibFrontierTests.FirstOrderReductions

@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Complexity.Problems.SharpDNF
 /-! Concrete checks of the Karp–Luby–Madras FPRAS for #DNF: exact model counts, contradictory
 terms, the zero-count case, the exact trial law, and the relative-error predicate. -/
 
-namespace ComplexityTests.SharpDNF
+namespace CslibFrontierTests.SharpDNF
 
 open Cslib Cslib.Complexity Cslib.Logic.PL Cslib.Complexity.KarpLubyMadras Turing.MultiTapeTM
 
@@ -153,4 +153,4 @@ example (t : ℕ) : 1 - (1 / 2 : ℝ) ^ t ≤ ((ProbComp.eval (estimate unsat 1 
   rw [Set.mem_ofPred_eq, h1] at hout
   exact hout.num_eq_zero
 
-end ComplexityTests.SharpDNF
+end CslibFrontierTests.SharpDNF

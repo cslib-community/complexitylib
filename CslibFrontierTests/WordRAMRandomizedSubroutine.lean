@@ -29,7 +29,7 @@ interface `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl`:
 
 @[expose] public section
 
-namespace ComplexityTests.WordRAMRandomizedSubroutine
+namespace CslibFrontierTests.WordRAMRandomizedSubroutine
 
 open Cslib Cslib.WordRAM Cslib.DataStructure.WordRAM.Randomized
 open Cslib.Probability.PMF (uniformOfFintype uniformOfFintype_apply)
@@ -627,4 +627,4 @@ theorem nondetCoinStateTransitionImpl_caller_rand_frame (w base : ℕ) (hw : 1 �
     have hne : Fin.castSucc i ≠ (5 : Fin 6) := Fin.castSucc_ne_last i
     simp [Data.set, hne]
 
-end ComplexityTests.WordRAMRandomizedSubroutine
+end CslibFrontierTests.WordRAMRandomizedSubroutine

@@ -31,7 +31,7 @@ These kernel-checked examples (using no `native_decide`) exercise
 
 public section
 
-namespace ComplexityTests.BinPackingFirstFitWeight
+namespace CslibFrontierTests.BinPackingFirstFitWeight
 
 open Cslib.Algorithms.Lean.BinPacking
 
@@ -106,4 +106,4 @@ example : (firstFit 120 inst9).length ≤ 16 := by
     norm_num
   omega
 
-end ComplexityTests.BinPackingFirstFitWeight
+end CslibFrontierTests.BinPackingFirstFitWeight

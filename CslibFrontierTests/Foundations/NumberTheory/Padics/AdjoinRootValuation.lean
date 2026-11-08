@@ -13,7 +13,7 @@ import Mathlib.Tactic.FinCases
 /-! Tests for the 2-adic valuation of `K = ℚ[U] / (U ^ 2 + U + 1)`, the case `e = 2` of the
 coefficient field of [OpenAI2026ETH], §D.4.1. -/
 
-namespace ComplexityTests.AdjoinRootValuation
+namespace CslibFrontierTests.AdjoinRootValuation
 
 open Polynomial
 open scoped WithZero
@@ -95,4 +95,4 @@ example : ∃ h : ι (1 + AdjoinRoot.root f) ∈ v.integer, IsUnit (⟨_, h⟩ :
     ((AdjoinRoot.padicValuation_map_eq_one_iff f_monic f_irreducible _).mpr
       one_add_root_ne_zero_mod_two)⟩
 
-end ComplexityTests.AdjoinRootValuation
+end CslibFrontierTests.AdjoinRootValuation

@@ -18,7 +18,7 @@ cases (empty lists, target zero, repeated numbers, large binary numbers), the re
 inputs and compositional `fun_prop` synthesis.
 -/
 
-namespace ComplexityTests.NPCompleteNumbers
+namespace CslibFrontierTests.NPCompleteNumbers
 
 open Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 open scoped List
@@ -216,4 +216,4 @@ example : SubsetSum.toZeroOneIP ([3, 5], 8) ∈ ZeroOneIP :=
 example : SubsetSum.toZeroOneIP ([3, 5], 4) ∉ ZeroOneIP := fun h =>
   absurd (mem_SubsetSum_iff_sublists.1 ((SubsetSum.toZeroOneIP_mem_iff _).1 h)) (by decide)
 
-end ComplexityTests.NPCompleteNumbers
+end CslibFrontierTests.NPCompleteNumbers

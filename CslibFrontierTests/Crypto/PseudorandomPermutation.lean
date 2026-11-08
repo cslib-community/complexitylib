@@ -20,7 +20,7 @@ Fixing the private coins of a program that flips a coin and then queries one of 
 it into the deterministic query selected by the fixed coin, without changing its query budget.
 -/
 
-namespace ComplexityTests.Crypto.PseudorandomPermutation
+namespace CslibFrontierTests.Crypto.PseudorandomPermutation
 
 open Cslib Cslib.Crypto Turing.MultiTapeTM
 
@@ -88,4 +88,4 @@ example (ω : ProbOracleComp.Coins coinThenQuery) :
   simpa using (ProbOracleComp.IsQueryBounded.sample _).bind fun c =>
     ProbOracleComp.IsQueryBounded.query (spec := fun _ : Fin 2 => Bool) (if c = 0 then 0 else 1)
 
-end ComplexityTests.Crypto.PseudorandomPermutation
+end CslibFrontierTests.Crypto.PseudorandomPermutation

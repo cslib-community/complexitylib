@@ -24,7 +24,7 @@ over the identity refinement, and export the linear bound as `CostIsBigO`.
 
 @[expose] public section
 
-namespace ComplexityTests.StateTransitionRefinement
+namespace CslibFrontierTests.StateTransitionRefinement
 
 open Cslib Cslib.DataStructure Cslib.DataStructure.Queue
 
@@ -140,4 +140,4 @@ example : CostIsBigO Filter.atTop (fun m : ℕ => (m : ℝ))
         (bag.validHistory_of_forall_valid (fun _ _ => trivial) _ _)
     omega
 
-end ComplexityTests.StateTransitionRefinement
+end CslibFrontierTests.StateTransitionRefinement

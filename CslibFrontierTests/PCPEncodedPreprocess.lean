@@ -13,7 +13,7 @@ import CslibFrontier.Tactic.PolyTime
 /-! Executable degree reduction and preprocessing, exact interpretations, arithmetic expansion,
 and fixed-alphabet normalization that closes the descriptor type across repeated rounds. -/
 
-namespace ComplexityTests.PCPEncodedPreprocess
+namespace CslibFrontierTests.PCPEncodedPreprocess
 
 open Cslib Cslib.PCP Cslib.PCP.Encoded Turing.MultiTapeTM
 
@@ -184,12 +184,12 @@ example : ((rejectingGraph.preprocess false true rotateReflection [()]).toGraph
   rw [Graph.unsatVal_preprocess _ _ _ _ _ (by intros; rfl), rejecting_reduced_value]
   norm_num
 
-end ComplexityTests.PCPEncodedPreprocess
+end CslibFrontierTests.PCPEncodedPreprocess
 
-namespace ComplexityTests.PCPEncodedArithmetic
+namespace CslibFrontierTests.PCPEncodedArithmetic
 
 open Cslib Cslib.PCP Cslib.PCP.Encoded Cslib.RotationMap Turing.MultiTapeTM
-open ComplexityTests.PCPEncodedPreprocess
+open CslibFrontierTests.PCPEncodedPreprocess
 
 -- These lists enumerate the actual constant label type by arithmetic; no graph search is used.
 -- Its enormous degree makes this an asymptotic instance, not a small runnable example.
@@ -255,9 +255,9 @@ example (g : Graph Bool) (eval : Bool → Bool → Bool → Bool)
     _ spectralExpansion_arithmeticExpander_le
   simpa only [sub_sub_cancel] using h
 
-end ComplexityTests.PCPEncodedArithmetic
+end CslibFrontierTests.PCPEncodedArithmetic
 
-namespace ComplexityTests.PCPEncodedPreprocess
+namespace CslibFrontierTests.PCPEncodedPreprocess
 
 open Cslib Cslib.PCP Cslib.PCP.Encoded Turing.MultiTapeTM
 
@@ -297,4 +297,4 @@ example :
         (Graph.degreeReduceEval (fun table => table))).unsatVal :=
   Graph.unsatVal_mapConstraints _ _ _
 
-end ComplexityTests.PCPEncodedPreprocess
+end CslibFrontierTests.PCPEncodedPreprocess

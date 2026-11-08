@@ -12,7 +12,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.Partrec
 meeting the hypotheses, a class that is not closed under finite variations, and the theorem applied
 to bounded halting and its complement, which are decidable and outside `P`. -/
 
-namespace ComplexityTests.UniformDiagonalization
+namespace CslibFrontierTests.UniformDiagonalization
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
@@ -96,4 +96,4 @@ example : ∃ G ∈ P encBits, G.ite ∅ BoundedHalting ∉ P encBits ∧
     exact (hne i).2 hi.symm
   · simpa only [hset] using (hne 0).1
 
-end ComplexityTests.UniformDiagonalization
+end CslibFrontierTests.UniformDiagonalization

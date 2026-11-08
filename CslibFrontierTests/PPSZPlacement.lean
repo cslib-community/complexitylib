@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.PPZ
 /-! PPSZ placements: values of the depth recursion, Beta integrals, the placement identity for
 three variables, and instances of the Harris inequality and of one recursion step. -/
 
-namespace ComplexityTests.PPSZPlacement
+namespace CslibFrontierTests.PPSZPlacement
 
 open Finset Cslib.Complexity.PPSZ
 
@@ -109,4 +109,4 @@ example {r : ℝ} (hr : r ∈ Set.Icc (0 : ℝ) 1) :
   Q_succ_le_bernoulliProb_forall_or hr (fun i _ => mem_univ _) (fun _ _ _ _ _ h => h)
     (fun _ _ _ => Iff.rfl) (by decide) fun _ _ => by simp
 
-end ComplexityTests.PPSZPlacement
+end CslibFrontierTests.PPSZPlacement

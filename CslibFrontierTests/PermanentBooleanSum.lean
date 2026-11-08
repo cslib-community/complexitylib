@@ -16,7 +16,7 @@ On entries `3,5,7` this is `37`. Both the rational half and the half `2` in `ZMo
 the construction's hypothesis, while no half exists in `ZMod 2`.
 -/
 
-namespace ComplexityTests.PermanentBooleanSum
+namespace CslibFrontierTests.PermanentBooleanSum
 
 open Cslib Cslib.Circuits Cslib.Circuits.Arithmetic MvPolynomial
 
@@ -77,4 +77,4 @@ example : ¬ ∃ half : ZMod 2, 2 * half = 1 := by
   rw [htwo, zero_mul] at hhalf
   exact zero_ne_one hhalf
 
-end ComplexityTests.PermanentBooleanSum
+end CslibFrontierTests.PermanentBooleanSum

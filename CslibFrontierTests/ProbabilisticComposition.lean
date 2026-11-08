@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Outpu
 
 /-! Fresh-input composition with random stopping times, dirty scratch, and empty output. -/
 
-namespace ComplexityTests.ProbabilisticComposition
+namespace CslibFrontierTests.ProbabilisticComposition
 
 open Cslib Turing MultiTapeMachine
 
@@ -108,4 +108,4 @@ example : ProbComp.eval (((MultiTapePTM.ofDeterministic writePrefix).seq readFir
     readFirst, Config.step, Turing.Action.apply, Cfg.inputSymbol, Cfg.workTapeSymbols,
     PMF.map, Function.comp_def]
 
-end ComplexityTests.ProbabilisticComposition
+end CslibFrontierTests.ProbabilisticComposition

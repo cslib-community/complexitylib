@@ -21,7 +21,7 @@ also checks exact tick counts, and that the bundled invariant is not vacuous.
 
 public section
 
-namespace ComplexityTests.CYK
+namespace CslibFrontierTests.CYK
 
 open Cslib Cslib.Algorithms.Lean.CYK ChomskyNormalFormRule
 
@@ -127,4 +127,4 @@ example (G : ChomskyNormalFormGrammar Char) (h : G.nilRule = true) :
 
 example : dyck.nilRule = true := rfl
 
-end ComplexityTests.CYK
+end CslibFrontierTests.CYK

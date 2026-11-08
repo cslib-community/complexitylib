@@ -17,12 +17,12 @@ of two parallel edges between a row vertex and a column vertex, computes `1 + 2 
 which is `2` in `A_3 = (ℤ / 8)[U] / (U ^ 2 + U + 1)`. That network is admissible at size `2` with
 the entry procedure of tables, for some constant (`EntryAdmissible` is not vacuous). An instance of
 `EntryContractionAlgorithm` whose bound applies to that input is
-`ComplexityTests.TensorNetworkEntryAnalysis.tableAlgorithm` (`TensorNetworkEntryAnalysis.lean`).
+`CslibFrontierTests.TensorNetworkEntryAnalysis.tableAlgorithm` (`TensorNetworkEntryAnalysis.lean`).
 -/
 
 @[expose] public section
 
-namespace ComplexityTests.TensorNetworkEntryContraction
+namespace CslibFrontierTests.TensorNetworkEntryContraction
 
 open Cslib Cslib.Circuits.Frontier Cslib.Circuits.Frontier.EntryContraction
 
@@ -78,4 +78,4 @@ example : ∃ C, EntryAdmissible tableEntryCertificate C 2 (1, twoEdges) := by
   simp only [List.mem_cons, List.not_mem_nil, or_false] at hv
   rcases hv with rfl | rfl <;> rfl
 
-end ComplexityTests.TensorNetworkEntryContraction
+end CslibFrontierTests.TensorNetworkEntryContraction

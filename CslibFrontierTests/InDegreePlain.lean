@@ -21,7 +21,7 @@ with concrete input-output checks.
 
 public section
 
-namespace ComplexityTests.InDegreePlain
+namespace CslibFrontierTests.InDegreePlain
 
 open Turing.MultiTapeTM
 
@@ -96,4 +96,4 @@ example : (encNat (doubleTwoPow [false, true])).length = 4 := by
   rw [encNat_two_pow, encNat_two_pow]
   decide
 
-end ComplexityTests.InDegreePlain
+end CslibFrontierTests.InDegreePlain

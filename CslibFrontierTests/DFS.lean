@@ -20,7 +20,7 @@ graph.
 
 public section
 
-namespace ComplexityTests.DFS
+namespace CslibFrontierTests.DFS
 
 open Cslib.Algorithms.Lean.DFS
 
@@ -108,4 +108,4 @@ example (n : ℕ) : (topologicalSortM (fun _ : Fin n => ([] : List (Fin n))) (Li
   rw [time_topologicalSortM List.mem_finRange]
   simp
 
-end ComplexityTests.DFS
+end CslibFrontierTests.DFS

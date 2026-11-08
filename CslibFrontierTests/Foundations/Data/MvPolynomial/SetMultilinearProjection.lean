@@ -19,7 +19,7 @@ for the block weight. Merging `x₀` and `x₁` into one variable is a renaming 
 commutes with the projection on `x₀ x₂ + x₁ x₂`.
 -/
 
-namespace ComplexityTests.SetMultilinearProjection
+namespace CslibFrontierTests.SetMultilinearProjection
 
 open MvPolynomial
 
@@ -113,4 +113,4 @@ example : smProj id Finset.univ (rename blk (X 0 * X 2 + X 1 * X 2 : MvPolynomia
   rw [two_smul]
   rfl
 
-end ComplexityTests.SetMultilinearProjection
+end CslibFrontierTests.SetMultilinearProjection

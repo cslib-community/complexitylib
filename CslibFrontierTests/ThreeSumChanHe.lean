@@ -13,7 +13,7 @@ These tests exercise collisions and failed candidates, light-element arrays and 
 recursion, and the correctness theorem composed with the distinct-position frontend.
 -/
 
-namespace ComplexityTests.ThreeSumChanHe
+namespace CslibFrontierTests.ThreeSumChanHe
 
 open Cslib.Algorithms.ThreeSum Cslib.Algorithms.ThreeSum.ChanHe
 
@@ -89,4 +89,4 @@ example : (instances 3 2 yes).length ≤
 example {y : ℕ → ℤ} (hy : y ∈ instances 3 2 yes) (i : ℕ) : |y i| ≤ 280 := by
   exact abs_instances_le (by decide : 1 ≤ 3) (by decide : ∀ i, |yes i| ≤ (2 : ℤ)) hy i
 
-end ComplexityTests.ThreeSumChanHe
+end CslibFrontierTests.ThreeSumChanHe

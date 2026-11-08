@@ -9,7 +9,7 @@ import Mathlib.Tactic.FinCases
 
 /-! Tests for structural decision-tree paths and affine leaf scores. -/
 
-namespace ComplexityTests.DecisionTree
+namespace CslibFrontierTests.DecisionTree
 
 open Cslib Cslib.DecisionTree
 
@@ -69,4 +69,4 @@ example :
       (by decide) (by norm_num) sampleMargins_min sampleMargins_max
       (by simp [sampleTree]) (by rw [hpath]; decide)
 
-end ComplexityTests.DecisionTree
+end CslibFrontierTests.DecisionTree

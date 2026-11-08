@@ -14,7 +14,7 @@ At positive security, bounded nonzero secrets satisfy the family hypothesis. The
 bound becomes nonvacuous while the implementation's runtime charges the complete input.
 -/
 
-namespace ComplexityTests.Crypto.LyubashevskySigningParameters
+namespace CslibFrontierTests.Crypto.LyubashevskySigningParameters
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Protocols.SigmaProtocol
 open Turing.MultiTapeTM
@@ -81,4 +81,4 @@ example : (1 / 2 : ℝ≥0) ^ (32 + 1) +
   rw [div_le_div_iff₀ (by norm_num) (by norm_num)]
   norm_num
 
-end ComplexityTests.Crypto.LyubashevskySigningParameters
+end CslibFrontierTests.Crypto.LyubashevskySigningParameters

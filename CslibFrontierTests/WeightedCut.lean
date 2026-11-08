@@ -14,7 +14,7 @@ on `Bool` with two parallel edges and a self-loop: the loop is dropped, the para
 twice, and the global minimum cut weight is `2`.
 -/
 
-namespace ComplexityTests.WeightedCut
+namespace CslibFrontierTests.WeightedCut
 
 open Cslib Cslib.WeightedCut Cslib.Multigraph
 
@@ -44,4 +44,4 @@ example : minCut (weightMatrix ends) = 2 := by
     unfold IsNonTrivialCut
     decide
 
-end ComplexityTests.WeightedCut
+end CslibFrontierTests.WeightedCut

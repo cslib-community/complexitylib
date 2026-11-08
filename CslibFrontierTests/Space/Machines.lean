@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Complexity.Classes.Space.Savitch
 twice is not acceptance, a work tape that is actually written is within its space bound, a head
 running right forever is within no space bound, and malformed codes have no edges. -/
 
-namespace ComplexityTests.SpaceMachines
+namespace CslibFrontierTests.SpaceMachines
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM Turing.MultiTapeNTM
 
@@ -191,4 +191,4 @@ example (code next : List Bool) :
     writeAccept.codeEdge (true :: code) next = false :=
   ⟨rfl, rfl⟩
 
-end ComplexityTests.SpaceMachines
+end CslibFrontierTests.SpaceMachines

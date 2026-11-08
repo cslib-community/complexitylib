@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """Rename the Lean module root `Complexity` to `CslibFrontier`, and restack branches across it.
 
-The flag-day rename changes module names and source paths only. Declarations keep their
-namespaces (`Cslib.*`, `Cslib.Complexity.*`, `Turing.*`, and the test and script namespaces
-`ComplexityTests.*`, `ComplexityScripts.*`, ...), so no identifier in Lean code changes.
+The roots other than `Complexity` (`ComplexityTests`, `ComplexityResults`, `ComplexityScripts`,
+`ComplexityAbstracts`, `ComplexityComparator*`, `ComplexityGuide*`) are this project's own names,
+so every occurrence becomes its `CslibFrontier…` counterpart: module names and paths, and also
+namespaces, qualified declaration names, name literals, messages and prose. Only `Complexity`
+itself keeps a distinction between modules and declarations, since `Cslib.Complexity.*` (also
+written `Complexity.*` inside `namespace Cslib`) is a CSLib namespace: for it the rename changes
+module names and source paths only, and no identifier in Lean code.
 
 Apply mode (the default) transforms the checkout in the current directory in place:
 
@@ -13,7 +17,9 @@ Apply mode (the default) transforms the checkout in the current directory in pla
    `CslibFrontier.lean`; likewise `ComplexityTests`, `ComplexityResults`, `ComplexityAbstracts`,
    `ComplexityComparator*` and the guide's `ComplexityGuide*` (each where it exists).
 2. Every tracked text file is rewritten, except `EXCLUDED` and lines carrying the pragma
-   `rename-module-root: keep`. The rules (`Rewriter`) touch only
+   `rename-module-root: keep`. Sibling roots are renamed wherever they occur as whole tokens,
+   except in a path inside a permalink to a fixed commit. For `Complexity`, the rules
+   (`Rewriter`) touch only
    * `import` lines and single-backtick module-name literals in Lean code;
    * module names in comments, strings and non-Lean files that name an existing module, a
      directory of modules or a top-level area of `Complexity/` (`Complexity.Init`,
@@ -25,8 +31,10 @@ Apply mode (the default) transforms the checkout in the current directory in pla
      modules";
    * the GitHub repository and documentation URLs, and the Lake package name in `name = …`,
      manifests, `@complexitylib` targets and `lake update` commands.
-   Python and shell sources are tooling, whose dotted root tokens are module names even when the
-   module does not exist (test fixtures), so they are rewritten too.
+   Python and shell sources are tooling, whose dotted `Complexity.X` tokens are module names even
+   when the module does not exist (test fixtures), so they are rewritten too. Comment lines that
+   the longer names push past 100 columns are re-wrapped, and `FIXUPS` makes the few edits that
+   no rule can.
    `manual/development-history/` and `manual/data/` describe and analyse the pinned historical
    snapshot, so only their URLs change.
 3. The aggregators are regenerated: with `lake exe mk_all` unless `--no-mk-all`, otherwise by the
@@ -101,6 +109,7 @@ ROOTS = (
     ("ComplexityGuideMain", "CslibFrontierGuideMain", "guide"),
     ("ComplexityGuide", "CslibFrontierGuide", "guide"),
     ("ComplexityResults", "CslibFrontierResults", ""),
+    ("ComplexityScripts", "CslibFrontierScripts", "scripts"),  # a namespace only
     ("ComplexityTests", "CslibFrontierTests", ""),
     ("Complexity", "CslibFrontier", ""),
 )
@@ -164,28 +173,7 @@ FIXUPS = (
      "(`CslibFrontierTests).isPrefixOf owner ||\n        (`CslibFrontierAbstracts).isPrefixOf owner",
      "      let isLocalRepo := (`CslibFrontier).isPrefixOf owner ||\n"
      "        (`CslibFrontierTests).isPrefixOf owner || (`CslibFrontierAbstracts).isPrefixOf owner"),
-    # The comparator's statement modules move; their declarations keep their namespace.
-    ("scripts/check_comparator.py", '    namespace = f"CslibFrontierComparator.{name}"\n',
-     "    # The statement modules moved to the `CslibFrontierComparator` root; their declarations\n"
-     "    # keep the `ComplexityComparator` namespace.  (rename-module-root: keep)\n"
-     '    namespace = f"ComplexityComparator.{name}"  # rename-module-root: keep\n'
-     '    package = f"CslibFrontierComparator.{name}"\n'),
-    ("scripts/check_comparator.py", "public import {namespace}.Statements",
-     "public import {package}.Statements"),
-    ("scripts/check_comparator.py", '"solution_module": f"{namespace}.Solution",',
-     '"solution_module": f"{package}.Solution",'),
-    # Test fixtures that name test modules or messages that no rule recognizes.
-    ("scripts/test_audit_queries.py", 'test_refs={"ComplexityTests.A"}),',
-     'test_refs={"CslibFrontierTests.A"}),'),
-    ("scripts/test_audit_queries.py", '"tests ComplexityTests.A",', '"tests CslibFrontierTests.A",'),
-    ("scripts/test_build_abstracts.py",
-     "f\"namespace CslibFrontierTests.Abstracts.{module.rsplit('.', 1)[-1]}\\n\"\n",
-     "f\"namespace ComplexityTests.Abstracts.{module.rsplit('.', 1)[-1]}\\n\"  "
-     "# rename-module-root: keep\n"),
-    ("scripts/test_build_abstracts.py",
-     "f\"end CslibFrontierTests.Abstracts.{module.rsplit('.', 1)[-1]}\\n\")\n",
-     "f\"end ComplexityTests.Abstracts.{module.rsplit('.', 1)[-1]}\\n\")  "
-     "# rename-module-root: keep\n"),
+    # Test fixtures whose messages name the root, which no rule recognizes.
     ("scripts/test_check_docs.py", '"Missing modules in documentation database: Complexity")',
      '"Missing modules in documentation database: CslibFrontier")'),
     ("scripts/test_check_docs.py", '"Missing module in search index: Complexity")',
@@ -194,27 +182,12 @@ FIXUPS = (
      '"Missing module page: CslibFrontier")'),
     ("scripts/test_check_docs.py", "<summary>Complexity (<a href=",
      "<summary>CslibFrontier (<a href="),
-    ("scripts/test_lean_outputs.py",
-     '"ComplexityTests.T": ["CslibFrontier.B"], "CslibFrontier.B": [],\n'
-     '                           "ComplexityTests.Stale": []})\n'
-     '        glob = lambda root: ["ComplexityTests.T"] if root == "CslibFrontierTests" else []\n'
-     '        self.assertEqual(sorted(lo.load_ileans(self.reference, glob=glob)),\n'
-     '                         ["CslibFrontier.B", "ComplexityTests.T"])\n'
-     '        self.assertEqual(lo.root_modules(glob),\n'
-     '                         ["CslibFrontier", "ComplexityTests.T", "CslibFrontierAbstracts"])',
-     '"CslibFrontierTests.T": ["CslibFrontier.B"], "CslibFrontier.B": [],\n'
-     '                           "CslibFrontierTests.Stale": []})\n'
-     '        glob = lambda root: ["CslibFrontierTests.T"] if root == "CslibFrontierTests" else []\n'
-     '        self.assertEqual(sorted(lo.load_ileans(self.reference, glob=glob)),\n'
-     '                         ["CslibFrontier.B", "CslibFrontierTests.T"])\n'
-     '        self.assertEqual(lo.root_modules(glob),\n'
-     '                         ["CslibFrontier", "CslibFrontierTests.T", "CslibFrontierAbstracts"])'),
     ("scripts/test_upstream.py", '"Complexity..Init", "Complexity./Init"',
      '"CslibFrontier..Init", "CslibFrontier./Init"'),
 )
 # Roots that tooling fixtures use for nonexistent modules. The others (`ComplexityTests.*`, ...)
 # are also namespaces of test and abstract declarations, so only existing modules are renamed.
-FIXTURE_ROOTS = ("Complexity", "ComplexityAbstracts", "ComplexityComparatorChallenges")
+FIXTURE_ROOTS = ("Complexity",)
 
 # Module name components; a `'` after a token makes it a Lean identifier, not a module name.
 IDENT = r"[A-Za-z_][A-Za-z0-9_]*"
@@ -406,26 +379,19 @@ def wrap_line(line: str) -> list[str]:
     return lines + [line]
 
 
-def keep_abstract_namespaces(before: str, after: str) -> str:
-    """Keep each catalogue entry's namespace. `build_abstracts.py` takes an entry's namespace from
-    its module when it has none, and modules are renamed while namespaces are not, so an entry
-    whose module is renamed records its old namespace explicitly."""
-    try:
-        old, new = json.loads(before), json.loads(after)
-    except ValueError:
-        return after
-    if json.dumps(old, indent=2, ensure_ascii=False) + "\n" != before:
-        return after  # an unknown layout; leave the text rules' result
-    for old_entry, new_entry in zip(old.get("entries", []), new.get("entries", [])):
-        if "namespace" in old_entry:
-            new_entry["namespace"] = old_entry["namespace"]
-        elif old_entry.get("module") != new_entry.get("module"):
-            items = list(new_entry.items())
-            at = next((i for i, (k, _) in enumerate(items) if k == "foundations"), len(items))
-            items.insert(at, ("namespace", old_entry["module"]))
-            new_entry.clear()
-            new_entry.update(items)
-    return json.dumps(new, indent=2, ensure_ascii=False) + "\n"
+HEX_SEGMENT = re.compile(r"[0-9a-f]{7,40}")
+
+
+def sibling_rule(text: str, s: int, root: str) -> str | None:
+    """The roots other than `Complexity` (`ComplexityTests`, `ComplexityScripts`, ...) are this
+    project's own names, so every occurrence is renamed: module names and paths, and also
+    namespaces, qualified declaration names, name literals and messages. Only a path inside a
+    permalink to a fixed commit keeps the old name."""
+    if s and text[s - 1] == "/":
+        segment = SEGMENT.search(text[max(0, s - 400):s - 1]).group(0)
+        if HEX_SEGMENT.fullmatch(segment):
+            return None
+    return NEW_ROOT[root]
 
 
 class Rewriter:
@@ -514,8 +480,6 @@ class Rewriter:
         new = self.rewrite_lines(text, lambda t: self.rewrite_roots(path, t))
         if path.endswith(".lean") and new != text:
             new = wrap_lengthened_lines(text, new)
-        if path.endswith("abstracts/catalogue.json"):
-            new = keep_abstract_namespaces(text, new)
         for fixup_path, old, replacement in FIXUPS:
             if fixup_path == path and replacement not in new and old in new:
                 new = new.replace(old, replacement, 1)
@@ -564,7 +528,9 @@ class Rewriter:
         for match in matches:
             s, e, root = match.start(), match.end(), match.group(1)
             region = kind(s) if kind else "t"
-            if region == "h":
+            if root != OLD_LIB:
+                new = sibling_rule(text, s, root)
+            elif region == "h":
                 new = NEW_ROOT[root] if text[s - 1:s] != "." else None
             elif region != "c" or s >= prose_from:
                 new = self.text_rule(text, s, e, root, tooling)
@@ -586,6 +552,9 @@ class Rewriter:
             c = text[s - 1] if s else "\n"
             rest = DOTTED_REST.match(text, e).group(0)
             line = text.count("\n", 0, s) + 1
+            if root != OLD_LIB:
+                yield line, "any", "sibling root (a path at a fixed commit)", root + rest
+                continue
             if c == ".":
                 continue  # a namespace component such as `Cslib.Complexity`
             where = "text" if kind is None else \

@@ -21,7 +21,7 @@ public section
 
 open Turing.MultiTapeTM
 
-namespace ComplexityTests.PolyTimePlainSource
+namespace CslibFrontierTests.PolyTimePlainSource
 
 /-- A total step which truncates a routine output to the current state length. -/
 @[expose] def shrinkingStep (routine : List Bool → List Bool) (state : List Bool) (_ : Bool) :
@@ -345,7 +345,7 @@ example (h : ComputableTidilyInPolyTime rawOnlyReverseProbe encBits encBits →
     fail_if_success (clear hc; polytime)
     polytime
 
-end ComplexityTests.PolyTimePlainSource
+end CslibFrontierTests.PolyTimePlainSource
 
 -- A specialized raw Boolean fold does not block the generic direct captured-fold recipe.
 section

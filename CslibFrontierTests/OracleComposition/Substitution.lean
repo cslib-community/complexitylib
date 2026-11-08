@@ -10,7 +10,7 @@ import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 
 /-! Open stateful oracle substitution: a two-level adaptive cache client and failure boundaries. -/
 
-namespace ComplexityTests.OracleSubstitution
+namespace CslibFrontierTests.OracleSubstitution
 
 open Cslib Cslib.Probability Turing Turing.MultiTapeTM
 
@@ -189,4 +189,4 @@ example : ¬ IsOraclePPTOn encUnary (encPair encBits encBits) (fun n =>
   simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate] at hlength
   lia
 
-end ComplexityTests.OracleSubstitution
+end CslibFrontierTests.OracleSubstitution

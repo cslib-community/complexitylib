@@ -15,7 +15,7 @@ equality; a degenerate instance with an impossible event and `x = 0`; an instanc
 hypothesis must fail because every assignment hits some event; and a concrete valid log on a
 fixed table with its witness tree computed by `decide`. -/
 
-namespace ComplexityTests.MoserTardos
+namespace CslibFrontierTests.MoserTardos
 
 open Cslib.Probability.MoserTardos MeasureTheory
 open scoped ENNReal
@@ -246,4 +246,4 @@ example : witness vbl3 0 [2] = {(0, 0)} := by decide
 example : Check vbl3 allTrue {(0, 0), (1, 1), (2, 2)} tbl :=
   witness_tbl ▸ check_witness vbl3 allTrue allTrue_dependsOn 0 [1, 2] tbl isLog_tbl
 
-end ComplexityTests.MoserTardos
+end CslibFrontierTests.MoserTardos

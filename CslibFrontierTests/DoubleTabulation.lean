@@ -32,7 +32,7 @@ and the high-probability conditioning extensions in
 
 public section
 
-namespace ComplexityTests.DoubleTabulation
+namespace CslibFrontierTests.DoubleTabulation
 
 open Cslib.Probability
 open Cslib.DataStructure.Dictionary.CuckooHashing
@@ -146,4 +146,4 @@ example :
   (isCuckooHashPair_provableFamily (c_exp := 4) (n_max := 0) (U := 256) (M := 7)
     (by decide) (by decide)).mono_consts (by decide) (by decide)
 
-end ComplexityTests.DoubleTabulation
+end CslibFrontierTests.DoubleTabulation

@@ -11,7 +11,7 @@ import CslibFrontier.Tactic.PPT
 
 /-! Saved-seed contracts, unused randomness and supported-score concentration. -/
 
-namespace ComplexityTests.PseudoentropySeed
+namespace CslibFrontierTests.PseudoentropySeed
 
 open Cslib Cslib.Probability Cslib.Probability.PMF Cslib.Crypto.Pseudoentropy
 open Turing.MultiTapeTM Filter
@@ -213,4 +213,4 @@ example (seed : List Bool) :
   rw [EntropyGrid.length_combinedGenerate]
   decide
 
-end ComplexityTests.PseudoentropySeed
+end CslibFrontierTests.PseudoentropySeed

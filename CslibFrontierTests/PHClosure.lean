@@ -15,7 +15,7 @@ quantifier polarities. Concrete polynomial-time languages instantiate closure at
 and two.
 -/
 
-namespace ComplexityTests.PHClosure
+namespace CslibFrontierTests.PHClosure
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -55,4 +55,4 @@ example : ({true} ∩ {false} : Set Bool) ∈ PiP 2 encBool :=
     (SigmaP_subset_PiP_succ 1
       (SigmaP_subset_SigmaP_succ 0 (P_subset_SigmaP_zero false_in_P)))
 
-end ComplexityTests.PHClosure
+end CslibFrontierTests.PHClosure

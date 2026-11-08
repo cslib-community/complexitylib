@@ -18,7 +18,7 @@ Concrete evaluations of `modGate` and non-vacuity witnesses for `ACC0` and `SIZE
 
 @[expose] public section
 
-namespace ComplexityTests.Computability.Circuit.Boolean.ACC0
+namespace CslibFrontierTests.Computability.Circuit.Boolean.ACC0
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Complexity Turing.MultiTapeTM
 
@@ -90,4 +90,4 @@ example : ∃ L : Language Bool, (L : Set (List Bool)) ∈ P encBits ∧
   obtain ⟨L, hP, hnot3⟩ := exists_mem_P_notMem_AC0Mod (p := 3) (by decide)
   exact ⟨L, hP, hnot3, fun hAC0 => hnot3 (AC0_subset_AC0Mod 3 hAC0)⟩
 
-end ComplexityTests.Computability.Circuit.Boolean.ACC0
+end CslibFrontierTests.Computability.Circuit.Boolean.ACC0

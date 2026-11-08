@@ -16,7 +16,7 @@ aliased arithmetic, memory reads/writes, and repeated signed quotient/remainder 
 checked source executions transferred by `executes_compile_input`.
 -/
 
-namespace ComplexityTests.WordRAMSignedCompile
+namespace CslibFrontierTests.WordRAMSignedCompile
 
 open Cslib
 open GenericRAM.Signed (model)
@@ -191,4 +191,4 @@ example : GenericRAM.run (M := model) 1 overflowing 8 (GenericRAM.Signed.initial
     WordRAM.run 3 (compile overflowing) 8 (WordRAM.State.init []) = some (2, 8) := by
   decide
 
-end ComplexityTests.WordRAMSignedCompile
+end CslibFrontierTests.WordRAMSignedCompile

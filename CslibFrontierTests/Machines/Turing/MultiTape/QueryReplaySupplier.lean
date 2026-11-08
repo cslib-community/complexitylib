@@ -22,7 +22,7 @@ keeps failed output bounded by actual stored words, even with malformed large bi
 
 public section
 
-namespace ComplexityTests.QueryReplaySupplier
+namespace CslibFrontierTests.QueryReplaySupplier
 
 open Turing MultiTapeTM MultiTapePTM.BlockComputation
 open MultiTapePTM.BlockComputation.QueryReplay
@@ -87,4 +87,4 @@ example : supplier.finish rejected = List.replicate 13 false := by decide
 example : (Supplier.prepare (k := 1) code (0, 1000000000, 0, 0, 1, 0, 14)).elim
     id (fun _ => []) = [false] := by decide
 
-end ComplexityTests.QueryReplaySupplier
+end CslibFrontierTests.QueryReplaySupplier

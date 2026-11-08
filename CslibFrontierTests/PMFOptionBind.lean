@@ -12,7 +12,7 @@ import Mathlib.Tactic.NormNum
 open Cslib.Probability
 open scoped ENNReal
 
-namespace ComplexityTests.PMFOptionBind
+namespace CslibFrontierTests.PMFOptionBind
 
 private theorem half_success (a : Unit) :
     PMF.uniformOfFintype (Option Unit) (some a) =
@@ -46,4 +46,4 @@ example (k : Option Unit → PMF Bool) (b : Bool) :
       (0 : ℝ≥0∞) * ((PMF.pure ()).bind (fun a => k (some a))) b :=
   PMF.bind_option_apply_of_some _ _ 0 (by simp) k b
 
-end ComplexityTests.PMFOptionBind
+end CslibFrontierTests.PMFOptionBind

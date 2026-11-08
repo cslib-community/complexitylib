@@ -21,7 +21,7 @@ decoder corrects one error, by computation and by the general theorem. Two error
 ambiguous: a word at distance `2` from two codewords.
 -/
 
-namespace ComplexityTests.ExpanderCode
+namespace CslibFrontierTests.ExpanderCode
 
 open Finset Cslib Cslib.Bipartite Cslib.BitString Cslib.BitString.ExpanderCode
 
@@ -133,4 +133,4 @@ example : hammingDist ![false, true, true, false, true, false, true] c₁ = 2 �
     hammingDist ![false, true, true, false, true, false, true] c₂ = 2 := by
   decide
 
-end ComplexityTests.ExpanderCode
+end CslibFrontierTests.ExpanderCode

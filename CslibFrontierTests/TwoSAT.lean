@@ -23,7 +23,7 @@ The reduction from the complement of directed connectivity is pinned on two inst
 `1` a satisfiable one.
 -/
 
-namespace ComplexityTests.TwoSAT
+namespace CslibFrontierTests.TwoSAT
 
 open Cslib Cslib.Complexity Cslib.Logic.PL
 
@@ -135,4 +135,4 @@ example : LogSpaceReducible encCNF encSTCON TwoSAT STCON :=
 example : LogSpaceReducible encSTCON encCNF STCON TwoSATᶜ := by
   simpa only [compl_compl] using TwoSAT.logSpaceReducible_compl_STCON.compl
 
-end ComplexityTests.TwoSAT
+end CslibFrontierTests.TwoSAT

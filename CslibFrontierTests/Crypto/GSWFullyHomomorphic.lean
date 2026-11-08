@@ -13,7 +13,7 @@ scheme both evaluate the actual compiled NAND circuit correctly on fresh encrypt
 decision-LWE and circular-security premises remain hypotheses; nothing here instantiates them.
 -/
 
-namespace ComplexityTests.Crypto.GSWFullyHomomorphic
+namespace CslibFrontierTests.Crypto.GSWFullyHomomorphic
 
 open Cslib Cslib.Crypto Cslib.Circuits Cslib.Circuits.Boolean Cslib.Crypto.Homomorphic
 open Cslib.Crypto.Homomorphic.GSW Cslib.Crypto.Homomorphic.GSW.DepthParameters
@@ -102,4 +102,4 @@ example (hLWE : DecisionLWE dimension samples width (fun k => noiseLaw (width k)
     eval_nandCircuit]
   rfl
 
-end ComplexityTests.Crypto.GSWFullyHomomorphic
+end CslibFrontierTests.Crypto.GSWFullyHomomorphic

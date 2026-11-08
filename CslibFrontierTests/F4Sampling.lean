@@ -10,7 +10,7 @@ import Mathlib.Tactic.NormNum
 
 /-! The fixed quadratic field, exact probabilities and variable-size native sampling clients. -/
 
-namespace ComplexityTests.F4Sampling
+namespace CslibFrontierTests.F4Sampling
 
 open Cslib Cslib.Probability Turing.MultiTapeTM
 open scoped ENNReal
@@ -56,4 +56,4 @@ example (n : ℕ) : ProbComp.eval (OracleComp.replicate n F4.sample) =
   rw [ProbComp.eval_replicate]
   simp only [F4.eval_sample, PMF.pi_uniformOfFintype]
 
-end ComplexityTests.F4Sampling
+end CslibFrontierTests.F4Sampling

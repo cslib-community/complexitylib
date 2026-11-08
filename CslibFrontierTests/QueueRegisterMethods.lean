@@ -17,7 +17,7 @@ metadata commit and the final halt; `Backend.install` is explicit here and is no
 
 @[expose] public section
 
-namespace ComplexityTests.QueueRegisterMethods
+namespace CslibFrontierTests.QueueRegisterMethods
 
 open Cslib Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.Queue.WordRAM.RegisterMetadata
@@ -126,4 +126,4 @@ example : ∃ y n, Exec 1 (Backend.code family true)
     (by change 0 + 0 ≤ 0 ∧ 0 + 2 * 0 ≤ 0; decide)
   exact ⟨y, n, he, by simpa using hn, hm, ho 0, ho 1, ho 2, ho 3⟩
 
-end ComplexityTests.QueueRegisterMethods
+end CslibFrontierTests.QueueRegisterMethods

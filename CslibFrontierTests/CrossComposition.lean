@@ -21,7 +21,7 @@ cover is a polynomial compression, and the identity on bit strings is no compres
 parameter is constant.
 -/
 
-namespace ComplexityTests.CrossComposition
+namespace CslibFrontierTests.CrossComposition
 
 open Cslib Cslib.Complexity Turing.MultiTapeTM ComputableInPolyTime
 
@@ -105,4 +105,4 @@ example (A : Set (List Bool)) (h : ℕ → ℕ) :
   have := hK.length_le (List.replicate (h 0 + 1) true)
   simp at this
 
-end ComplexityTests.CrossComposition
+end CslibFrontierTests.CrossComposition

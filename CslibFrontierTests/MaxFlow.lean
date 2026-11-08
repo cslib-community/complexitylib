@@ -34,7 +34,7 @@ Kernel-checked examples and non-vacuity witnesses (without `native_decide`) exer
 
 public section
 
-namespace ComplexityTests.MaxFlow
+namespace CslibFrontierTests.MaxFlow
 
 open Cslib.Algorithms.Lean
 open Cslib.Algorithms.Lean.MaxFlow
@@ -277,4 +277,4 @@ theorem ulift_koenig :
       IsMaxMatching G M ∧ IsMinVertexCover G C ∧ M.card = C.size :=
   exists_maxMatching_eq_minVertexCover _
 
-end ComplexityTests.MaxFlow
+end CslibFrontierTests.MaxFlow

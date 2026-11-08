@@ -9,7 +9,7 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! Compact variable names, exact initial graphs, and complete small constraint tables. -/
 
-namespace ComplexityTests.PCPEncodedThreeSAT
+namespace CslibFrontierTests.PCPEncodedThreeSAT
 
 open Cslib.Logic.PL Cslib.PCP.Encoded Turing.MultiTapeTM
 
@@ -96,4 +96,4 @@ example (algorithm : List Bool → CNF ℕ)
   fail_if_success (clear h; polytime)
   polytime
 
-end ComplexityTests.PCPEncodedThreeSAT
+end CslibFrontierTests.PCPEncodedThreeSAT

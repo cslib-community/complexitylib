@@ -8,7 +8,7 @@ import CslibFrontier.Computability.Complexity.Classes.NP.Witness
 
 /-! The inner-quantifier API needs only the NP witness module. -/
 
-namespace ComplexityTests.NPExistsAppend
+namespace CslibFrontierTests.NPExistsAppend
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -30,4 +30,4 @@ example : {y : List Bool × List Bool | ∃ v : List Bool, v.length = 0 ∧
     (.const true) 0
   simpa only [Polynomial.eval_zero] using h
 
-end ComplexityTests.NPExistsAppend
+end CslibFrontierTests.NPExistsAppend

@@ -14,7 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 concrete infinite problem in `P` and its complement, not being decidable in polynomial time, and
 not being complete or hard for `E` or `EXP`. -/
 
-namespace ComplexityTests.Immune
+namespace CslibFrontierTests.Immune
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
@@ -107,4 +107,4 @@ example {A : Set (List Bool)} (h : PolyTimeComplete @EXP encBits A) :
     ∃ B ∈ P encBits, B.Infinite ∧ B ⊆ Aᶜ :=
   (exists_infinite_subset_mem_P_of_polyTimeComplete_EXP h).2
 
-end ComplexityTests.Immune
+end CslibFrontierTests.Immune

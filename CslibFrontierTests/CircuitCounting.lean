@@ -32,7 +32,7 @@ Exercises `CslibFrontier.Computability.Circuit.Frontier.Compiler.CNF`,
 
 @[expose] public section
 
-namespace ComplexityTests.CircuitCounting
+namespace CslibFrontierTests.CircuitCounting
 
 open Cslib.Circuits Cslib.Circuits.Frontier Cslib.Complexity
 open Cslib.Complexity.CircuitCounting Cslib.Complexity.SubexponentialSAT
@@ -219,4 +219,4 @@ example :
       (Boolean.encCircuit 1) Sigma.fst :=
   ⟨decidableInSubexpTime_CircuitSAT_size, decidableInSubexpTime_linearSizeCircuitSAT 4⟩
 
-end ComplexityTests.CircuitCounting
+end CslibFrontierTests.CircuitCounting

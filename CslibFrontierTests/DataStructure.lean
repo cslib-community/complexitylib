@@ -8,7 +8,7 @@ import CslibFrontier.DataStructure.StateTransition.Hoare
 import CslibFrontier.DataStructure.StateTransition.Amortized
 import CslibFrontier.Computability.WordRAM.Copy
 
-namespace ComplexityTests.DataStructure
+namespace CslibFrontierTests.DataStructure
 
 open Cslib.DataStructure
 
@@ -119,4 +119,4 @@ info: 'Cslib.DataStructure.Amortized.client' depends on axioms:
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.DataStructure.Amortized.client
 
-end ComplexityTests.DataStructure
+end CslibFrontierTests.DataStructure

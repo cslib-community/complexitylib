@@ -22,7 +22,7 @@ Single-bit moves on concrete predicates, rounds of quantifiers on a concrete for
 Savitch's midpoint game on a two-word graph.
 -/
 
-namespace ComplexityTests.Alternation
+namespace CslibFrontierTests.Alternation
 
 open Cslib Cslib.Complexity Cslib.Logic.PL Turing
 open Turing.MultiTapeTM (encBits PolyBounded)
@@ -241,4 +241,4 @@ example : Alternation true ([1] ++ [1, 1]) (fun z => z.take 1 = [true]) :=
   (alternation_append_iff fun z => by
     simp only [List.sum_cons, List.sum_nil, List.take_take]; rfl).mpr ⟨[true], rfl, rfl⟩
 
-end ComplexityTests.Alternation
+end CslibFrontierTests.Alternation

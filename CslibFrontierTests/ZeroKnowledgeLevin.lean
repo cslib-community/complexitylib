@@ -18,7 +18,7 @@ a witness of the original NP relation.
 
 public section
 
-namespace ComplexityTests.ZeroKnowledgeLevin
+namespace CslibFrontierTests.ZeroKnowledgeLevin
 
 open Cslib.Complexity Cslib.Crypto Cslib.Probability
 
@@ -41,4 +41,4 @@ example {generator : List Bool → List Bool} {length : ℕ → ℕ}
   (hG.levinZeroKnowledgeProof hstretch toThreeSATLevinReduction).complete n φ w
     ((hG.isWitness_levinZeroKnowledgeProof hstretch _ φ w).2 hw)
 
-end ComplexityTests.ZeroKnowledgeLevin
+end CslibFrontierTests.ZeroKnowledgeLevin

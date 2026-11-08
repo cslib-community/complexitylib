@@ -39,7 +39,7 @@ in the last section.
   fixed-program decision predicate `Decides` is adapted from its accompanying Lean formalization.
 -/
 
-namespace ComplexityTests.Abstracts.WordRAMAbstract
+namespace CslibFrontierTests.Abstracts.WordRAMAbstract
 
 universe u
 
@@ -280,14 +280,14 @@ theorem decidableInTime_iff {α : Type u} (A : Set α) (encode : α → List ℕ
     (by constructor <;> simp_all [step, Halts, OutcomeAgrees, AluOp.eval]) A encode T bits
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.WordRAMAbstract`: 234 root
+info: abstract audit passed for `CslibFrontierTests.Abstracts.WordRAMAbstract`: 234 root
 declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.WordRAMAbstract allowing [
+#check_abstract CslibFrontierTests.Abstracts.WordRAMAbstract allowing [
   CslibFrontier.Computability.WordRAM.Defs,
   CslibFrontier.Computability.WordRAM.Basis,
   CslibFrontier.Computability.WordRAM.Time
 ]
 
-end ComplexityTests.Abstracts.WordRAMAbstract
+end CslibFrontierTests.Abstracts.WordRAMAbstract

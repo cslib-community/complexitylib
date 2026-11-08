@@ -8,7 +8,7 @@ import CslibFrontier.Foundations.Data.BitString.InitialTests
 
 /-! Tests for the initial parity tests of Lemma 6.1. -/
 
-namespace ComplexityTests.InitialTests
+namespace CslibFrontierTests.InitialTests
 
 open Finset Cslib Cslib.BitString
 
@@ -29,4 +29,4 @@ example : ∃ rows : List (Fin 2 → Bool), rows.length ≤ 6 ∧
   · rw [h, mul_zero] at this; omega
   · exact h
 
-end ComplexityTests.InitialTests
+end CslibFrontierTests.InitialTests

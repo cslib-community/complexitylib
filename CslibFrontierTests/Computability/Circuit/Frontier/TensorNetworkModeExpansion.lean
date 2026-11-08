@@ -22,7 +22,7 @@ contraction as a sum over the three tuples `β` of total weight below two.
 
 @[expose] public section
 
-namespace ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.ModeExpansion
+namespace CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.ModeExpansion
 
 open Cslib.Circuits.Frontier TensorNetwork
 
@@ -100,4 +100,4 @@ example (g : Fin 2) :
   rw [S.card_edges_child]
   fin_cases g <;> decide
 
-end ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.ModeExpansion
+end CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.ModeExpansion

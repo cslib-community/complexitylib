@@ -20,7 +20,7 @@ import CslibFrontier.Algorithms.LatticeReduction.Babai
 * with no rows the output is `0`.
 -/
 
-namespace ComplexityTests.Algorithms.LatticeReduction.Babai
+namespace CslibFrontierTests.Algorithms.LatticeReduction.Babai
 
 open Cslib.Algorithms.LatticeReduction InnerProductSpace
 
@@ -126,4 +126,4 @@ example : IsReduced (3 / 4) ![(1 : ℝ)] ∧ (5 : ℝ) ∈ Submodule.span ℤ (S
   rw [h]
   exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨0, rfl⟩)
 
-end ComplexityTests.Algorithms.LatticeReduction.Babai
+end CslibFrontierTests.Algorithms.LatticeReduction.Babai

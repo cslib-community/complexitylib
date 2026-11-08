@@ -10,7 +10,7 @@ import Mathlib.Tactic.FinCases
 
 /-! Ordered CSP occurrences, local/global semantics, and native multigraph construction. -/
 
-namespace ComplexityTests.CSPOccurrence
+namespace CslibFrontierTests.CSPOccurrence
 
 open Cslib Cslib.Logic.PL Cslib.Complexity Turing.MultiTapeTM
 
@@ -143,4 +143,4 @@ example : ComputableInPolyTime (CSP.occurrences (Rel := Fin 4) (V := ℕ))
     (encCSP (encFinite (Fin 4)) encNat) (encList (CSP.encOccurrenceRecord encNat)) :=
   CSP.computableInPolyTime_occurrences _ _
 
-end ComplexityTests.CSPOccurrence
+end CslibFrontierTests.CSPOccurrence

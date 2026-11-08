@@ -9,7 +9,7 @@ import CslibFrontier.Crypto.Computational.GGM.Evaluation
 
 /-! Uniform runtime-length sampling, its raw machine, and captured GGM evaluation. -/
 
-namespace ComplexityTests.ProbabilisticSampling
+namespace CslibFrontierTests.ProbabilisticSampling
 
 open Cslib Cslib.Probability Turing Turing.MultiTapeTM Turing.MultiTapePTM
 
@@ -80,4 +80,4 @@ example {α : Type} {input : α ↪ List Bool} {count : α → ℕ}
   fail_if_success (clear hcount; ppt)
   ppt
 
-end ComplexityTests.ProbabilisticSampling
+end CslibFrontierTests.ProbabilisticSampling

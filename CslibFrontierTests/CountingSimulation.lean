@@ -20,7 +20,7 @@ is `2 ^ τ`, the number of all choice strings of length `τ`, carried by the fir
 `scheduleCount 1 t` schedules. They exercise the algorithm and its bounds, not the tensor
 networks of the intended instance. -/
 
-namespace ComplexityTests.CountingSimulation
+namespace CslibFrontierTests.CountingSimulation
 
 open Turing.MultiTapeTM Cslib.GenericRAM Cslib.Complexity.CountingSimulation
 
@@ -164,4 +164,4 @@ example : ∃ C d : ℕ, ComputableInO
     max_le_two_pow_two_pow
     le_rfl (rule := fun p => decide (2 ^ p.1 < 2 * p.2)) (by fun_prop)
 
-end ComplexityTests.CountingSimulation
+end CslibFrontierTests.CountingSimulation

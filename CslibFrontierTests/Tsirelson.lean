@@ -16,7 +16,7 @@ Tsirelson's inequality with equality), and the values of CHSH: no quantum strate
 certainty, and the entangled value `1/2 + √2/4` exceeds the classical value `3/4`.
 -/
 
-namespace ComplexityTests.Tsirelson
+namespace CslibFrontierTests.Tsirelson
 
 open Matrix Cslib.Quantum Cslib.PCP Cslib.PCP.TwoProverGame
 open scoped Real
@@ -117,4 +117,4 @@ example : (0.85 : ℝ) < chsh.quantumValue := by
   rw [quantumValue_chsh, cos_sq_pi_div_eight]
   nlinarith [Real.sq_sqrt (zero_le_two : (0 : ℝ) ≤ 2), Real.sqrt_nonneg 2]
 
-end ComplexityTests.Tsirelson
+end CslibFrontierTests.Tsirelson

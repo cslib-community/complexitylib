@@ -15,7 +15,7 @@ hierarchy are instantiated at the quadratic bound `(n + 1) ^ 2`: quadratic word-
 `Basis.additive` is strictly contained in word-RAM time `(n + 1) ^ 10`.
 -/
 
-namespace ComplexityTests.WordRAMTimeHierarchy
+namespace CslibFrontierTests.WordRAMTimeHierarchy
 
 open Cslib Cslib.WordRAM Cslib.Complexity Turing.MultiTapeTM
 
@@ -69,4 +69,4 @@ example : ∃ A : Set (List Bool), A ∈ RAMTIME .standard encBits (fun n => ((n
     (fun n => by nlinarith) (by fun_prop)
   exact ⟨A, RAMTIME_subset_of_hom Basis.additiveHomStandard hA, hA'⟩
 
-end ComplexityTests.WordRAMTimeHierarchy
+end CslibFrontierTests.WordRAMTimeHierarchy

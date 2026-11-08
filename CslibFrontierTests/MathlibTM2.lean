@@ -10,7 +10,7 @@ import Mathlib.Logic.Equiv.Bool
 /-! Regression checks for the public Mathlib TM2 bridge. Source machines adapted from the
 Complexitylib TM2 bridge tests: https://github.com/SamuelSchlesinger/complexitylib/pull/72. -/
 
-namespace ComplexityTests.MathlibTM2
+namespace CslibFrontierTests.MathlibTM2
 
 open Turing Turing.MultiTapeTM
 
@@ -173,4 +173,4 @@ example : ComputableInPolyTime (id : ℕ → ℕ)
   exact computer.computableInPolyTime_encList
     Computability.encodingNatBool.encode_injective Computability.encodingNatBool.encode_injective
 
-end ComplexityTests.MathlibTM2
+end CslibFrontierTests.MathlibTM2

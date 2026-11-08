@@ -18,7 +18,7 @@ of two Boolean seeds. This tests an actual correction and a nonconstant reward s
 the rank bound derived from the regular hierarchy parameters.
 -/
 
-namespace ComplexityTests.HierarchyTaskMeans
+namespace CslibFrontierTests.HierarchyTaskMeans
 
 open Finset Matrix
 open scoped BigOperators
@@ -308,4 +308,4 @@ example (P : HierarchyParams 2 1 1 1 0) :
       P.k x 0 = 0 := htri (by omega)
   simp [HierarchyParams.CorrectionSampling.value, mulVec, dotProduct, he, hw]
 
-end ComplexityTests.HierarchyTaskMeans
+end CslibFrontierTests.HierarchyTaskMeans

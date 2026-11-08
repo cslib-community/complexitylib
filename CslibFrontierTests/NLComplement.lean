@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
 
 /-! Integration tests for input bootstrap, finite binary choices and looping native sources. -/
 
-namespace ComplexityTests.NLComplement
+namespace CslibFrontierTests.NLComplement
 
 open Turing Turing.MultiTapeTM Turing.InductiveCounting
 
@@ -158,4 +158,4 @@ example : ∃ (k : ℕ) (State : Type) (_ : Finite State) (ntm : MultiTapeNTM k 
       fun input => c * (Nat.log2 input.length + 1) :=
   MultiTapeNTM.exists_decidesInSpace_compl recognizes_loopSource fun _ => le_rfl
 
-end ComplexityTests.NLComplement
+end CslibFrontierTests.NLComplement

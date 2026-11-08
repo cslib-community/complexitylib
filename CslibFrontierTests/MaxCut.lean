@@ -14,7 +14,7 @@ verifier on accepted and rejected certificates, Karp's reduction from `Partition
 instances, and compositional `fun_prop` synthesis.
 -/
 
-namespace ComplexityTests.MaxCut
+namespace CslibFrontierTests.MaxCut
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -93,4 +93,4 @@ example : Partition.toMaxCut [] ∈ MaxCut := ⟨∅, le_refl 0⟩
 example : ComputableInPolyTime (fun a : List ℕ => Partition.toMaxCut (a ++ a))
     (encList encNat) encMaxCut := by fun_prop
 
-end ComplexityTests.MaxCut
+end CslibFrontierTests.MaxCut

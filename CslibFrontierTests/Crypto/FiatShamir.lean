@@ -22,7 +22,7 @@ theorem for Schnorr signatures makes the reduction compute discrete logarithms w
 at least `81 / 242`.
 -/
 
-namespace ComplexityTests.Crypto.FiatShamir
+namespace CslibFrontierTests.Crypto.FiatShamir
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Protocols SigmaProtocol ROMSignature
 open scoped NNReal
@@ -231,4 +231,4 @@ example :
   have hprob := congrArg (fun law : PMF ℕ => law 2) h
   norm_num [PMF.pure_apply] at hprob
 
-end ComplexityTests.Crypto.FiatShamir
+end CslibFrontierTests.Crypto.FiatShamir

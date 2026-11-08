@@ -12,7 +12,7 @@ Regression clients for time-bounded Kolmogorov complexity (`K^t`), Levin's `Kt`,
 multi-tape description method `universalTM`, `MINKT`, `MINKTAt ∈ NP`, and `GapMINKT`.
 -/
 
-namespace ComplexityTests.KolmogorovTimeBounded
+namespace CslibFrontierTests.KolmogorovTimeBounded
 
 open Cslib Cslib.Kolmogorov Cslib.Kolmogorov.DescriptionMethod Cslib.Complexity
 open _root_.Turing _root_.Turing.MultiTapeTM _root_.Turing.MultiTapeTM.Universal
@@ -120,4 +120,4 @@ example : MINKTAt (fun n => n + 1) (fun n => n + copyOverhead) ∈ NP encBits :=
   rw [ht, hs]
   exact MINKTAt.mem_NP_polynomial₂ (Polynomial.X + 1) (Polynomial.X + Polynomial.C copyOverhead)
 
-end ComplexityTests.KolmogorovTimeBounded
+end CslibFrontierTests.KolmogorovTimeBounded

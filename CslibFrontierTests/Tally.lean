@@ -16,7 +16,7 @@ problem to a tally problem, of unions and intersections of problems in `P`, of a
 problems in `P`, and of asking a computed list of queries.
 -/
 
-namespace ComplexityTests.Tally
+namespace CslibFrontierTests.Tally
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -76,4 +76,4 @@ example (A : Set ℕ) :
     PolyTimeCTTReducible encBits encUnary {w : List Bool | ∀ n ∈ List.range w.length, n ∈ A} A :=
   (PolyTimeCTTReducible.refl encUnary A).forall_mem (by fun_prop)
 
-end ComplexityTests.Tally
+end CslibFrontierTests.Tally

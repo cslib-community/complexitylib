@@ -34,7 +34,7 @@ formalized.
 
 @[expose] public section
 
-namespace ComplexityTests.GameTheory.SocialChoice
+namespace CslibFrontierTests.GameTheory.SocialChoice
 
 open Cslib.GameTheory.SocialChoice SocialWelfareFunction
 
@@ -279,4 +279,4 @@ example : indifference.IsIIA ∧ ¬ indifference.IsPareto ∧ ¬ indifference.Is
     · exact h (fun _ => r) 1 0 (fun _ => h10) trivial
   exact ⟨fun _ _ _ _ _ => Iff.rfl, hnP, fun ⟨_, hi⟩ => hnP hi.isPareto⟩
 
-end ComplexityTests.GameTheory.SocialChoice
+end CslibFrontierTests.GameTheory.SocialChoice

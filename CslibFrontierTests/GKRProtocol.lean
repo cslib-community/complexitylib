@@ -16,7 +16,7 @@ challenge of error at most `1 / 101`. The output step adds nothing, because the 
 is indexed by zero bits.
 -/
 
-namespace ComplexityTests.GKRProtocol
+namespace CslibFrontierTests.GKRProtocol
 
 open Cslib Cslib.Interactive Cslib.Interactive.GKR
 
@@ -47,4 +47,4 @@ example (x : (Fin (mulTwo.width 0) → Bool) → ZMod 101) :
   rw [h5, ZMod.card] at h
   exact_mod_cast h
 
-end ComplexityTests.GKRProtocol
+end CslibFrontierTests.GKRProtocol

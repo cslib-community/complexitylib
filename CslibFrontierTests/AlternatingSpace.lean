@@ -21,7 +21,7 @@ infinite branch. The recognizer theorems still put `∅` in `P` and `EXP`, and m
 rejects, while marking the existential machine's views accepts.
 -/
 
-namespace ComplexityTests.AlternatingSpace
+namespace CslibFrontierTests.AlternatingSpace
 
 open Cslib Cslib.Complexity Turing
 open Turing.MultiTapeTM (encBits PolyBounded)
@@ -239,4 +239,4 @@ example (input : List Bool) :
   (MultiTapeATM.boundedAccepts_iff (MultiTapeNTM.runsInSpace_zero_tapes _ _ _) le_rfl).mpr
     (accepts_loop input)
 
-end ComplexityTests.AlternatingSpace
+end CslibFrontierTests.AlternatingSpace

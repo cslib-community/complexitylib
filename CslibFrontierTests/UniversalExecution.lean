@@ -19,7 +19,7 @@ symbol zero.
 
 @[expose] public section
 
-namespace ComplexityTests.UniversalExecution
+namespace CslibFrontierTests.UniversalExecution
 
 open Turing.MultiTapeTM.Universal
 
@@ -75,4 +75,4 @@ example :
     by decide, rfl, rfl, by decide, by decide,
     by decide, by decide, by decide, by decide, by decide⟩
 
-end ComplexityTests.UniversalExecution
+end CslibFrontierTests.UniversalExecution

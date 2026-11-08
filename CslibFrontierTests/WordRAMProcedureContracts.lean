@@ -16,7 +16,7 @@ The source values include dirty destination memory and a nonzero accumulator. Th
 only the named memory and total fields, while the outside-bank register keeps its original word.
 -/
 
-namespace ComplexityTests.WordRAMProcedureContracts
+namespace CslibFrontierTests.WordRAMProcedureContracts
 
 open Cslib.WordRAM
 
@@ -43,4 +43,4 @@ example : ∃ y, ExecWithin 8 (ArrayCopySum.program.rename bank) input y 20 ∧
       congrFun post.memory 12
   · exact hframe 8 (by decide)
 
-end ComplexityTests.WordRAMProcedureContracts
+end CslibFrontierTests.WordRAMProcedureContracts

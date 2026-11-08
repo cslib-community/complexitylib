@@ -21,7 +21,7 @@ decrypt a true message correctly: satisfying the security predicate alone does n
 encryption scheme correct.
 -/
 
-namespace ComplexityTests.Crypto.LeveledSecurity
+namespace CslibFrontierTests.Crypto.LeveledSecurity
 
 open Cslib Cslib.Circuits Cslib.Crypto Cslib.Crypto.Homomorphic Cslib.Probability
 open Turing.MultiTapeTM Leveled
@@ -543,4 +543,4 @@ example (bit : Bool) (n : ℕ) :
     exact_mod_cast (show (1 / 4 : ℝ) ≤ 1 by norm_num)
   cases bit <;> norm_num [Game.succProbability, ProbComp.intervalSuccess, hp, NNReal.coe_sub hle]
 
-end ComplexityTests.Crypto.LeveledSecurity
+end CslibFrontierTests.Crypto.LeveledSecurity

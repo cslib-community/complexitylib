@@ -21,7 +21,7 @@ skew-symmetric but not alternating. -/
 
 set_option linter.privateModule false
 
-namespace ComplexityTests.TutteMatching
+namespace CslibFrontierTests.TutteMatching
 
 open Finset Matrix Cslib.Algorithms.Matching
 
@@ -133,4 +133,4 @@ example : (1 : Matrix (Fin 1) (Fin 1) (ZMod 2))ᵀ = -1 ∧
     (1 : Matrix (Fin 1) (Fin 1) (ZMod 2)).det ≠ 0 := by
   refine ⟨by ext i j; fin_cases i; fin_cases j; decide, by simp⟩
 
-end ComplexityTests.TutteMatching
+end CslibFrontierTests.TutteMatching

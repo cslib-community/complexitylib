@@ -14,7 +14,7 @@ Non-vacuity checks for `CslibFrontier.Computability.Circuit.Boolean.AffineDisper
 hypothesis of Theorem 4.1 is satisfiable, and the theorem gives a concrete bound.
 -/
 
-namespace ComplexityTests.AffineDisperserLowerBound
+namespace CslibFrontierTests.AffineDisperserLowerBound
 
 open Cslib Cslib.Circuits Cslib.BitString Cslib.Circuits.Boolean.AffineDisperser
 
@@ -59,4 +59,4 @@ example :
   ⟨initialState_valid (Circuit.wiring_computes _ _), initialState_a _,
     seven_mul_le_two_mul_size_add isAffineDisperser_first _ (Circuit.wiring_computes _ _)⟩
 
-end ComplexityTests.AffineDisperserLowerBound
+end CslibFrontierTests.AffineDisperserLowerBound

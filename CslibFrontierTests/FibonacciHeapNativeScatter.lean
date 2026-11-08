@@ -22,7 +22,7 @@ word accumulator checks that the source maximum is retained without a new arithm
 
 public section
 
-namespace ComplexityTests.FibonacciHeapNativeScatter
+namespace CslibFrontierTests.FibonacciHeapNativeScatter
 
 open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 open Cslib.WordRAM Cslib.WordRAM.Realization FibonacciHeap FibonacciHeap.Native
@@ -230,4 +230,4 @@ example : ∃ y, ExecWithin 6 (realizes_scatter.code frontier source scratch) (l
 
 end
 
-end ComplexityTests.FibonacciHeapNativeScatter
+end CslibFrontierTests.FibonacciHeapNativeScatter

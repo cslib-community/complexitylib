@@ -20,7 +20,7 @@ unchanged. Exhaustive `#eval` checks materialize once and then evaluate thousand
 
 @[expose] public section
 
-namespace ComplexityTests.CircuitMaterialize
+namespace CslibFrontierTests.CircuitMaterialize
 
 open Cslib Cslib.Circuits
 
@@ -52,4 +52,4 @@ def materialize (c : Circuit σ n m) : Circuit σ n m :=
 @[simp] theorem materialize_eq (c : Circuit σ n m) : materialize c = c := by
   simp only [materialize, materializeProgram_eq, get_ofFn]
 
-end ComplexityTests.CircuitMaterialize
+end CslibFrontierTests.CircuitMaterialize

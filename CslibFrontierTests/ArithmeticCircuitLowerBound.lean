@@ -16,7 +16,7 @@ The circuit `(x₀ + x₁) (x₀ - x₁)`, with three gates, is simple, has prod
 three nodes.
 -/
 
-namespace ComplexityTests.ArithmeticCircuitLowerBound
+namespace CslibFrontierTests.ArithmeticCircuitLowerBound
 
 open Cslib.Circuits Cslib.Circuits.Arithmetic MvPolynomial
 
@@ -143,4 +143,4 @@ example : (SPFormula.flatten nested).nodeCount = 3 := by
     Finsupp.support_single_add_single hne two_ne_zero one_ne_zero, Finset.sum_pair hne,
     Formula.nodeCount_input, Formula.nodeCount_input]
 
-end ComplexityTests.ArithmeticCircuitLowerBound
+end CslibFrontierTests.ArithmeticCircuitLowerBound

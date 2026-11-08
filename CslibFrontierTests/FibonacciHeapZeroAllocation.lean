@@ -21,7 +21,7 @@ three-bit boundary, retaining the dirty input cell and establishing the empty-he
 
 public section
 
-namespace ComplexityTests.FibonacciHeapZeroAllocation
+namespace CslibFrontierTests.FibonacciHeapZeroAllocation
 
 open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 open FibonacciHeap
@@ -148,4 +148,4 @@ end
 
 end Native
 
-end ComplexityTests.FibonacciHeapZeroAllocation
+end CslibFrontierTests.FibonacciHeapZeroAllocation

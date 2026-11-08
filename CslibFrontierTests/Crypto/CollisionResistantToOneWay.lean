@@ -15,7 +15,7 @@ Exercises `CslibFrontier/Crypto/Computational/CollisionResistantToOneWay.lean`:
 * the endpoint theorems for hash and compression families.
 -/
 
-namespace ComplexityTests.Crypto.CollisionResistantToOneWay
+namespace CslibFrontierTests.Crypto.CollisionResistantToOneWay
 
 open Cslib.Crypto Cslib.Crypto.CollisionResistantToOneWay
 
@@ -75,4 +75,4 @@ example {h : List Bool → List Bool → List Bool} (hh : CompressionFamily h) :
     (∃ f, OneWay f) ∧ ∃ S : WordSignatureScheme, S.EUFCMA :=
   ⟨hh.exists_oneWay, hh.exists_wordEUFCMA⟩
 
-end ComplexityTests.Crypto.CollisionResistantToOneWay
+end CslibFrontierTests.Crypto.CollisionResistantToOneWay

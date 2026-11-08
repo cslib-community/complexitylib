@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 
 /-! Clients of the Boolean hierarchy's connection to PH. -/
 
-namespace ComplexityTests.BooleanHierarchyPH
+namespace CslibFrontierTests.BooleanHierarchyPH
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -39,4 +39,4 @@ example :
     BooleanHierarchy_subset NP_subset_PH (fun _ hA _ hB => diff_mem_PH hA hB)
       (Set.mem_iUnion.mpr ⟨2, BH_two ▸ head_not_tail_mem_DP⟩)⟩
 
-end ComplexityTests.BooleanHierarchyPH
+end CslibFrontierTests.BooleanHierarchyPH

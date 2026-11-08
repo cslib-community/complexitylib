@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Circuit.Quantum.PathNetwork
 acceptance gaps and other projected gaps of small circuits, computed directly and through
 `contraction_network`. -/
 
-namespace ComplexityTests.QuantumPathNetwork
+namespace CslibFrontierTests.QuantumPathNetwork
 
 open Cslib Cslib.Quantum Cslib.Quantum.PathNetwork Cslib.Circuits.Frontier
 
@@ -87,4 +87,4 @@ example :
 example : (network (-1 : ℤ) [0] [false, false, false] [(false, 2, [0, 1])]).2.numEdges = 12 := by
   decide
 
-end ComplexityTests.QuantumPathNetwork
+end CslibFrontierTests.QuantumPathNetwork

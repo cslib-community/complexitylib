@@ -6,7 +6,7 @@ numeric atoms, nullary tables, and rejection of malformed or undersized inputs. 
 
 open FirstOrder Language Cslib.Logic Cslib.Logic.FO
 
-namespace ComplexityTests.FOLeastFixedPointPolyTime
+namespace CslibFrontierTests.FOLeastFixedPointPolyTime
 
 private abbrev L := Ordered.language Language.empty
 
@@ -112,4 +112,4 @@ example : Turing.MultiTapeTM.ComputableInPolyTime
     (LFP.ModelChecker.modelChecker vocabulary nested) encStructure Turing.MultiTapeTM.encBool := by
   fun_prop
 
-end ComplexityTests.FOLeastFixedPointPolyTime
+end CslibFrontierTests.FOLeastFixedPointPolyTime

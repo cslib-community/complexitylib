@@ -18,7 +18,7 @@ the binary-gate fan-in and threshold-$n-1$ rigidity bridges, `PartialMCSP.verifi
 $6n$-variable reduction (`ilangoGamma` Clauses (1)–(7), `ilangoPosFormula`, and `ilangoReduction`).
 -/
 
-namespace ComplexityTests.PartialMCSP
+namespace CslibFrontierTests.PartialMCSP
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Complexity Turing.MultiTapeTM
 
@@ -275,4 +275,4 @@ example (h : ETH) :
   ⟨h.not_decidableInSubexpTime_PartialMCSP_monotoneReadOnce,
     h.not_decidableInSubexpTime_PartialMCSP_monotoneReadOnce_encBinary⟩
 
-end ComplexityTests.PartialMCSP
+end CslibFrontierTests.PartialMCSP

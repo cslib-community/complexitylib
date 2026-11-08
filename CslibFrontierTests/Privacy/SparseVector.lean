@@ -22,9 +22,9 @@ import CslibFrontierTests.Privacy.DifferentialPrivacy
   with the first far below threshold.
 -/
 
-namespace ComplexityTests.Privacy.SparseVector
+namespace CslibFrontierTests.Privacy.SparseVector
 
-open Cslib Cslib.Privacy ComplexityTests.Privacy.DifferentialPrivacy
+open Cslib Cslib.Privacy CslibFrontierTests.Privacy.DifferentialPrivacy
 open scoped ENNReal
 
 /-! ### The exponential mechanism -/
@@ -150,4 +150,4 @@ example {ε β : ℝ} (hε : 0 < ε) (hβ : 0 < β) (hβ1 : β ≤ 1) (T a : ℝ
       subst hj0
       exact ha
 
-end ComplexityTests.Privacy.SparseVector
+end CslibFrontierTests.Privacy.SparseVector

@@ -15,7 +15,7 @@ bound, and a prime lower bound. The formal examples use minimality and binary-le
 verify the retained channel interface with the new computable side.
 -/
 
-namespace ComplexityTests.HierarchyChannels
+namespace CslibFrontierTests.HierarchyChannels
 
 open Finset Matrix Cslib.Probability
 
@@ -110,4 +110,4 @@ example (P : HierarchyParams (2 ^ (1 + 1)) 1 (2 ^ (1 + 1)) (2 ^ (1 + 1)) 4) : 0 
   norm_num at this ⊢
   linarith
 
-end ComplexityTests.HierarchyChannels
+end CslibFrontierTests.HierarchyChannels

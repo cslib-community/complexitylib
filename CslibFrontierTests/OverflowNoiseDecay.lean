@@ -19,7 +19,7 @@ For two groups the exact weighted tail is 161/256, and its normalized fourth mom
 one group, so the numerical decay condition has substantive content.
 -/
 
-namespace ComplexityTests.OverflowNoiseDecay
+namespace CslibFrontierTests.OverflowNoiseDecay
 
 open Finset Cslib Cslib.RowCompression
 open scoped BigOperators
@@ -121,4 +121,4 @@ example : vertexNormPow 4 1 (1 / 2) active
   norm_num at h ⊢
   exact h
 
-end ComplexityTests.OverflowNoiseDecay
+end CslibFrontierTests.OverflowNoiseDecay

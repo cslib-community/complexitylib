@@ -10,7 +10,7 @@ import Mathlib.Tactic.NormNum.Prime
 
 /-! Regression clients for amplification with actual rotations and arbitrary degree. -/
 
-namespace ComplexityTests.PCPAmplification
+namespace CslibFrontierTests.PCPAmplification
 
 open Cslib.PCP Cslib.RotationMap
 open ConstraintGraph HadamardTester
@@ -81,4 +81,4 @@ example (K : ℕ) : Amplification.denominator 840 K 120 (1 - 1 / 360000) =
   norm_num [Amplification.denominator]
   ring
 
-end ComplexityTests.PCPAmplification
+end CslibFrontierTests.PCPAmplification

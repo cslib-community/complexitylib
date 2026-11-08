@@ -34,7 +34,7 @@ the `n`-bit message-domain guard of `TreeSignature.sign`:
    `OneWay.exists_eufCMA_of_hashFamily`.
 -/
 
-namespace ComplexityTests.Crypto.TreeSignatureSecurity
+namespace CslibFrontierTests.Crypto.TreeSignatureSecurity
 
 open Cslib Cslib.Crypto Cslib.Crypto.TreeSignature Cslib.Probability Turing.MultiTapeTM
 open scoped NNReal
@@ -324,4 +324,4 @@ example {f : List Bool → List Bool} (hf : OneWay f)
   obtain ⟨M, hM⟩ := hf.exists_eufCMA_of_hashFamily hH
   exact ⟨M, hM, hM.oneTimeEUFCMA⟩
 
-end ComplexityTests.Crypto.TreeSignatureSecurity
+end CslibFrontierTests.Crypto.TreeSignatureSecurity

@@ -9,7 +9,7 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! Tagged encodings, empty summands, and captured constructor certificates. -/
 
-namespace ComplexityTests.PolyTimeSum
+namespace CslibFrontierTests.PolyTimeSum
 
 open Turing.MultiTapeTM
 
@@ -33,4 +33,4 @@ example {α β Input : Type} (left : α ↪ List Bool) (right : β ↪ List Bool
   fail_if_success (clear hf; fun_prop)
   fun_prop
 
-end ComplexityTests.PolyTimeSum
+end CslibFrontierTests.PolyTimeSum

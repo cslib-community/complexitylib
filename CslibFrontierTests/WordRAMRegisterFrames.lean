@@ -18,7 +18,7 @@ interval frame to the actual one-instruction execution; dirty caller registers a
 remain unrestricted. Registers inside the bank can change, as the negative control checks.
 -/
 
-namespace ComplexityTests.WordRAMRegisterFrames
+namespace CslibFrontierTests.WordRAMRegisterFrames
 
 open Cslib.WordRAM
 
@@ -45,4 +45,4 @@ private def dirty : Data 6 := (Data.init [999]).set 0 717 |>.set 2 4 |>.set 3 7 
 example : ¬(copy.rename bank).Preserves 2 := by decide
 example : ¬((2 : Fin 6).val < 2 ∨ 4 ≤ (2 : Fin 6).val) := by decide
 
-end ComplexityTests.WordRAMRegisterFrames
+end CslibFrontierTests.WordRAMRegisterFrames

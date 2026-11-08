@@ -29,7 +29,7 @@ components on small rotation maps. This shows that the hypotheses are satisfiabl
 the counting conventions (for instance that `interedges` counts darts).
 -/
 
-namespace ComplexityTests.CombinatoricsExamples
+namespace CslibFrontierTests.CombinatoricsExamples
 
 open Cslib Finset SimpleGraph
 
@@ -246,4 +246,4 @@ example : ¬ twoEdges.toSimpleGraph.Preconnected ∧
   have := twoEdges.mem_of_reachable hS (by simp) (h 0 2)
   simp at this
 
-end ComplexityTests.CombinatoricsExamples
+end CslibFrontierTests.CombinatoricsExamples

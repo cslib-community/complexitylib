@@ -60,7 +60,7 @@ theorem firstTwo_run (s : Finset α) :
 
 end Cslib.DataStructure.OrderedSet
 
-namespace ComplexityTests.OrderedSet
+namespace CslibFrontierTests.OrderedSet
 
 open Cslib.DataStructure.OrderedSet Cslib.DataStructure
 
@@ -124,4 +124,4 @@ example : (bounded 4).valid ∅ (.successor 99) := trivial
 example : (bounded 4).valid ∅ (.delete 99) := trivial
 example : (spec Nat).valid ∅ (.insert 99) := trivial
 
-end ComplexityTests.OrderedSet
+end CslibFrontierTests.OrderedSet

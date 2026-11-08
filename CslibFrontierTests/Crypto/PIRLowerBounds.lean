@@ -22,7 +22,7 @@ import CslibFrontier.Probability.PMF.Uniform
   linear-summation scheme, so the lower bound shows that it is not private.
 -/
 
-namespace ComplexityTests.Crypto.PIRLowerBounds
+namespace CslibFrontierTests.Crypto.PIRLowerBounds
 
 open Cslib Cslib.Crypto.Protocols.PIR Cslib.Communication Probability
 
@@ -129,4 +129,4 @@ example : ¬ directSets.IsPrivate := fun hprivate => by
   rw [Fintype.card_fin] at h
   omega
 
-end ComplexityTests.Crypto.PIRLowerBounds
+end CslibFrontierTests.Crypto.PIRLowerBounds

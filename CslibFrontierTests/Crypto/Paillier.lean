@@ -19,7 +19,7 @@ of key generation. For the IND-CPA reduction, the admissibility predicate is che
 and the reduction distinguisher and the security theorem are applied to a concrete adversary.
 -/
 
-namespace ComplexityTests.Crypto.Paillier
+namespace CslibFrontierTests.Crypto.Paillier
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Paillier BalancedModulus
 open Turing.MultiTapeTM
@@ -205,4 +205,4 @@ info: 'Cslib.Crypto.Paillier.decrypt_addCiphertexts' depends on axioms: [propext
 #guard_msgs in
 #print axioms decrypt_addCiphertexts
 
-end ComplexityTests.Crypto.Paillier
+end CslibFrontierTests.Crypto.Paillier

@@ -19,9 +19,9 @@ product-depth one, and computes `IMM_{n,d}` with its variables in bijection with
 gates on `8` inputs.
 -/
 
-namespace ComplexityTests.Abstracts.ConstantDepthArithmeticTests
+namespace CslibFrontierTests.Abstracts.ConstantDepthArithmeticTests
 
-open ComplexityAbstracts.ConstantDepthArithmeticAbstract
+open CslibFrontierAbstracts.ConstantDepthArithmeticAbstract
 open Cslib.Circuits Cslib.Circuits.Arithmetic
 
 variable {K : Type*} {N : ℕ}
@@ -36,14 +36,14 @@ example (C : ArithCircuit K N) : IsSimple C ↔ SPCircuit.IsSimple C :=
   Iff.rfl
 
 example [CommSemiring K] (n d : ℕ) [NeZero n] :
-    ComplexityAbstracts.ConstantDepthArithmeticAbstract.imm K n d =
+    CslibFrontierAbstracts.ConstantDepthArithmeticAbstract.imm K n d =
       Cslib.Circuits.Arithmetic.imm K n d :=
   rfl
 
 /-- `IMM_{1,1}` is its single variable. -/
-example : ComplexityAbstracts.ConstantDepthArithmeticAbstract.imm ℚ 1 1 =
+example : CslibFrontierAbstracts.ConstantDepthArithmeticAbstract.imm ℚ 1 1 =
     MvPolynomial.X (0, 0, 0) := by
-  simp [ComplexityAbstracts.ConstantDepthArithmeticAbstract.imm]
+  simp [CslibFrontierAbstracts.ConstantDepthArithmeticAbstract.imm]
 
 /-- The hypotheses of the headline are satisfiable at every size: for every `n ≥ 1`, `d` and
 product-depth `Δ ≥ 1`, the circuit of the sum over paths is simple, of product-depth at most `Δ`,
@@ -52,7 +52,7 @@ example (K : Type*) [Field K] (n d Δ : ℕ) [NeZero n] (hΔ : 1 ≤ Δ) :
     ∃ (N : ℕ) (e : Fin N ≃ Fin d × Fin n × Fin n) (C : ArithCircuit K N),
       IsSimple C ∧ productDepth C ≤ Δ ∧
         MvPolynomial.rename e (polynomial C) =
-          ComplexityAbstracts.ConstantDepthArithmeticAbstract.imm K n d := by
+          CslibFrontierAbstracts.ConstantDepthArithmeticAbstract.imm K n d := by
   obtain ⟨C, simple, depth, -, computes⟩ := SPCircuit.exists_isSimple_imm K n d
   exact ⟨_, immVarEquiv n d, C, simple, depth.trans hΔ, computes⟩
 
@@ -60,8 +60,8 @@ example (K : Type*) [Field K] (n d Δ : ℕ) [NeZero n] (hΔ : 1 ≤ Δ) :
 `IMM_{2,2}`. -/
 example : ∃ C : ArithCircuit ℚ 8, IsSimple C ∧ productDepth C ≤ 1 ∧ C.size = 9 ∧
     MvPolynomial.rename (immVarEquiv 2 2) (polynomial C) =
-      ComplexityAbstracts.ConstantDepthArithmeticAbstract.imm ℚ 2 2 := by
+      CslibFrontierAbstracts.ConstantDepthArithmeticAbstract.imm ℚ 2 2 := by
   obtain ⟨C, simple, depth, size, computes⟩ := SPCircuit.exists_isSimple_imm ℚ 2 2
   exact ⟨C, simple, depth, size, computes⟩
 
-end ComplexityTests.Abstracts.ConstantDepthArithmeticTests
+end CslibFrontierTests.Abstracts.ConstantDepthArithmeticTests

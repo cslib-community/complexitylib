@@ -12,7 +12,7 @@ instance with step bound zero, the problem and its complement being nonempty, a 
 diagonal problem, an infinite `P` problem strictly inside bounded halting, and Book's separations
 of `E`. -/
 
-namespace ComplexityTests.BoundedHalting
+namespace CslibFrontierTests.BoundedHalting
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM Turing.MultiTapeTM.Universal Cslib.BitString
 
@@ -63,4 +63,4 @@ example : P encBits ⊂ E encBits ∧ E encBits ⊂ EXP encBits ∧ E encBits �
     E encBits ≠ PSPACE encBits :=
   ⟨P_ssubset_E, E_ssubset_EXP, E_ne_NP, E_ne_PSPACE⟩
 
-end ComplexityTests.BoundedHalting
+end CslibFrontierTests.BoundedHalting

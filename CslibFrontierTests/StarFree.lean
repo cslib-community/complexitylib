@@ -19,7 +19,7 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 * even length is regular but not star-free over a one-letter alphabet (`(aa)*`).
 -/
 
-namespace ComplexityTests.StarFree
+namespace CslibFrontierTests.StarFree
 
 open Cslib.Language Cslib.Language.StarFreeExpression Cslib.Logic.WordMSO
 
@@ -156,4 +156,4 @@ example : ¬ IsStarFree {w : List Unit | Even w.length} := not_isStarFree_even
 
 example : ∃ L : Language Bool, L.IsRegular ∧ ¬ IsStarFree L := exists_isRegular_not_isStarFree
 
-end ComplexityTests.StarFree
+end CslibFrontierTests.StarFree

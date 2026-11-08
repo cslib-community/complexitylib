@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Complexity.Classes.Space.Savitch
 
 /-! # Transfer of Savitch's polynomial-space equality to plain machine definitions -/
 
-namespace ComplexityTests.Abstracts.SavitchBridge
+namespace CslibFrontierTests.Abstracts.SavitchBridge
 
 /-- A Boolean is encoded by a single bit. -/
 def encBool : Bool ↪ List Bool := ⟨fun b => [b], by intro a b h; injection h⟩
@@ -50,4 +50,4 @@ theorem savitch {α : Type} (enc : α ↪ List Bool) : NPSPACE enc = PSPACE enc 
   rw [hn, hp]
   exact Cslib.Complexity.NPSPACE_eq_PSPACE
 
-end ComplexityTests.Abstracts.SavitchBridge
+end CslibFrontierTests.Abstracts.SavitchBridge

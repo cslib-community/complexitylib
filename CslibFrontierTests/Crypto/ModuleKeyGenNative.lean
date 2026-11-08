@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.IntBinary
 
 /-! One certified implementation handles actual structured key-generation inputs and edges. -/
 
-namespace ComplexityTests.Crypto.ModuleKeyGenNative
+namespace CslibFrontierTests.Crypto.ModuleKeyGenNative
 
 open Cslib Cslib.Crypto Turing.MultiTapeTM
 open scoped Matrix
@@ -71,4 +71,4 @@ example : (Decoder.list Decoder.nat).decode [true, true] = [1] := by
   simp only [unframe, dropFrame, frames_nil, List.map_cons, List.map_nil]
   rfl
 
-end ComplexityTests.Crypto.ModuleKeyGenNative
+end CslibFrontierTests.Crypto.ModuleKeyGenNative

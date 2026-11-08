@@ -18,7 +18,7 @@ matrix `M_1` is the `2 × 2` identity, so the least ABP size is exactly `1 + 2 +
 by the construction with a middle layer of width `2`.
 -/
 
-namespace ComplexityTests.ArithmeticNoncommutativeABP
+namespace CslibFrontierTests.ArithmeticNoncommutativeABP
 
 open Cslib.Circuits.Arithmetic FreeAlgebra
 
@@ -159,4 +159,4 @@ example (A : NoncommABP ℚ (Fin 2) 2) (hA : A.polynomial = f01) :
     (nisanMatrix 1 1 f01).rank ≤ A.width 1 :=
   hA ▸ A.rank_nisanMatrix_le_width 1 1 rfl
 
-end ComplexityTests.ArithmeticNoncommutativeABP
+end CslibFrontierTests.ArithmeticNoncommutativeABP

@@ -15,7 +15,7 @@ on both random strings has `2 + 2 + 2 + 2 * 3 = 12` payload bits, which is exact
 `2 * n + n * r + n * (q * (1 + (r + ⌈log₂ q⌉) * n))` of `kilianCommunication_honest_le`.
 -/
 
-namespace ComplexityTests.Crypto.KilianSuccinct
+namespace CslibFrontierTests.Crypto.KilianSuccinct
 
 open Cslib Cslib.Complexity Cslib.Crypto
 
@@ -59,4 +59,4 @@ example : kilianCommunication key (kilianCommit constHash toyVerifier key x [tru
 
 example : 2 * 2 + 2 * 1 + 2 * (1 * (1 + (1 + Nat.clog 2 1) * 2)) = 12 := by decide
 
-end ComplexityTests.Crypto.KilianSuccinct
+end CslibFrontierTests.Crypto.KilianSuccinct

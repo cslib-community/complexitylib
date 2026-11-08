@@ -15,7 +15,7 @@ floor budget and the copy depth, and check the slack and suffix-fraction inequal
 values.
 -/
 
-namespace ComplexityTests.MassProduction.Fine
+namespace CslibFrontierTests.MassProduction.Fine
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Circuits.Boolean.MassProduction
 open Cslib.Circuits.Boolean.MassProduction.Fine Filter
@@ -82,4 +82,4 @@ example (precision : ℕ) :
     exponentialMassProduction 9 10 (by decide) (by decide),
     realFineMassProduction _ (by norm_num) (by norm_num) 1 (by norm_num)⟩
 
-end ComplexityTests.MassProduction.Fine
+end CslibFrontierTests.MassProduction.Fine

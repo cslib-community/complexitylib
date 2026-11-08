@@ -37,7 +37,7 @@ These kernel-checked examples (using no `native_decide`) exercise:
 
 public section
 
-namespace ComplexityTests.SplayTree
+namespace CslibFrontierTests.SplayTree
 
 open Cslib.DataStructure.SplayTree Cslib.DataStructure.OrderedSet Cslib.DataStructure
 open Cslib.DataStructure.SearchTree (elements Ordered Rep searchVisits minimumVisits)
@@ -285,4 +285,4 @@ example : (splaySeqTime alternating rightSpine7 : ℝ) ≤ 60 + 7 * (2 + 2 * Rea
   norm_num [Real.logb_self_eq_one] at h
   linarith
 
-end ComplexityTests.SplayTree
+end CslibFrontierTests.SplayTree

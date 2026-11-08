@@ -12,7 +12,7 @@ losses `y ↦ y`), a sequence that is not an FTRL run, uniqueness and existence,
 the strongly convex, tuned, linearized and lazy-projection regret bounds, showing that their
 hypotheses are satisfiable. -/
 
-namespace ComplexityTests.FTRL
+namespace CslibFrontierTests.FTRL
 
 open Finset Real Set Cslib Cslib.MachineLearning.OnlineLearning.OCO
 open scoped RealInnerProductSpace
@@ -170,4 +170,4 @@ example {u : ℝ} (hu : u ∈ K) {T : ℕ} (hT : 0 < T) :
     (fun _ _ _ => by norm_num) (fun _ x _ y _ => by simp only [real_inner]; linarith) hu
     (by rw [sub_zero, Real.norm_eq_abs, abs_le]; exact ⟨hu.1, hu.2⟩) hT
 
-end ComplexityTests.FTRL
+end CslibFrontierTests.FTRL

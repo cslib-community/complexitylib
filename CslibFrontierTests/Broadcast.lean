@@ -17,7 +17,7 @@ metadata preservation, alternative selectors, empty dimensions and distinct gate
 Exhaustive checks compare every output with an independent interval-based reference.
 -/
 
-namespace ComplexityTests.Broadcast
+namespace CslibFrontierTests.Broadcast
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean
 open broadcastCircuit (header value)
@@ -165,4 +165,4 @@ private def checkAll {h k : ℕ} (key : Fin k → Fin h) (tag : Fin h) (count wi
   checkAll (![2, 2] : Fin 2 → Fin 3) 1 3 1 &&
   checkAll (Fin.elim0 : Fin 0 → Fin 1) 0 3 1
 
-end ComplexityTests.Broadcast
+end CslibFrontierTests.Broadcast

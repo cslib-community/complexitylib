@@ -16,10 +16,10 @@ they do not introduce trusted computational axioms. Exhaustive checks evaluate t
 circuit, which `materialize_eq` proves equal to the original.
 -/
 
-namespace ComplexityTests.BatchLookup
+namespace CslibFrontierTests.BatchLookup
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean
-open bitonicSortTraceCircuit ComplexityTests.CircuitMaterialize
+open bitonicSortTraceCircuit CslibFrontierTests.CircuitMaterialize
 
 example {k v : ℕ} (table : BitString k → BitString v) (requests : ℕ)
     (x : BitString (requests * k)) :
@@ -135,4 +135,4 @@ example (table : BitString 0 → BitString 0) : (batchLookupCircuit table 0).siz
     (substituteCircuit ρ).program.cost cost,
     ((substituteCircuit ρ).evalVector interpretation (fun _ => false)).toArray)
 
-end ComplexityTests.BatchLookup
+end CslibFrontierTests.BatchLookup

@@ -20,7 +20,7 @@ word-level Naor–Reingold evaluation (`naorReingoldWordEval`, `naorReingoldWord
 concrete finite quantitative bounds from `NaorReingold.Security`.
 -/
 
-namespace ComplexityTests.Crypto.NaorReingold
+namespace CslibFrontierTests.Crypto.NaorReingold
 
 open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 open scoped ENNReal NNReal
@@ -204,4 +204,4 @@ example (n : ℕ) :
       exact div_le_div_of_nonneg_left (by positivity) (by positivity)
         (pow_le_pow_right₀ (by norm_num) (Nat.le_add_right _ _)))
 
-end ComplexityTests.Crypto.NaorReingold
+end CslibFrontierTests.Crypto.NaorReingold

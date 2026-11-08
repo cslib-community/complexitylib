@@ -20,7 +20,7 @@ hardness: the clique size bound, `W[1]`-completeness of `Clique` and `Independen
 of `W[1]` reducing to `IndependentSet`, and `Clique` in `FPT` putting every `WCS 1 d` in `FPT`.
 -/
 
-namespace ComplexityTests.WHierarchyClique
+namespace CslibFrontierTests.WHierarchyClique
 
 open Cslib Cslib.Complexity Cslib.Circuits Cslib.Circuits.Boolean Turing.MultiTapeTM WCS
   WCS.ToClique
@@ -164,4 +164,4 @@ example (h : Clique ∈ FPT (encPair encGraph encNat) Prod.snd) (d : ℕ) :
   rw [← W_one_eq_FPT_iff.2 h]
   exact WCS_mem_W 1 d
 
-end ComplexityTests.WHierarchyClique
+end CslibFrontierTests.WHierarchyClique

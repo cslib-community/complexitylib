@@ -10,7 +10,7 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! Executable constraint graphs, boundary cases, interpretation and compositional certificates. -/
 
-namespace ComplexityTests.PCPEncoded
+namespace CslibFrontierTests.PCPEncoded
 
 open Cslib.PCP Cslib.PCP.Encoded
 
@@ -105,10 +105,10 @@ example : ComputableInPolyTime
   unfold Graph.checkEdge equalityOrTrue
   polytime
 
-end ComplexityTests.PCPEncoded
+end CslibFrontierTests.PCPEncoded
 
 
-namespace ComplexityTests.PCPEncodedCloud
+namespace CslibFrontierTests.PCPEncodedCloud
 
 open Cslib Cslib.PCP Cslib.PCP.Encoded Turing.MultiTapeTM
 
@@ -183,4 +183,4 @@ example :
 example : ((cloudGraph.cloudEquiv (fun c (_ _ : Bool) => c) false 1).symm
     ⟨(⟨1, by decide⟩, true), rfl⟩).val = 2 := by decide
 
-end ComplexityTests.PCPEncodedCloud
+end CslibFrontierTests.PCPEncodedCloud

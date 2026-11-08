@@ -21,7 +21,7 @@ valid for depth bound `1`, since its checks lie on the small disjunctions, but n
 bound `0`.
 -/
 
-namespace ComplexityTests.WeftOneCertificate
+namespace CslibFrontierTests.WeftOneCertificate
 
 open Cslib.Circuits.Boolean.Unbounded
 
@@ -70,4 +70,4 @@ example : WeftOne.claimsValid 1 6 andOfOrs 9 [(9, true)] = true := by decide
 
 example : WeftOne.claimsValid 0 6 andOfOrs 9 [(9, true)] = false := by decide
 
-end ComplexityTests.WeftOneCertificate
+end CslibFrontierTests.WeftOneCertificate

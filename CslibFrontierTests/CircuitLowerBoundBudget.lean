@@ -19,7 +19,7 @@ These examples exercise rounding, the explicit starting length, rescaling at inf
 lengths, computability of the size cap, and the existing counter on a concrete circuit.
 -/
 
-namespace ComplexityTests.CircuitLowerBoundBudget
+namespace CslibFrontierTests.CircuitLowerBoundBudget
 
 open Cslib.Circuits Cslib.Circuits.Frontier Cslib.Complexity.ContractionCounting
   Turing.MultiTapeTM Filter
@@ -92,4 +92,4 @@ example : ∃ (count T S : (Σ k, Circuit Boolean.signature k 1) → ℕ) (A e :
       rw [hsize]
       omega
 
-end ComplexityTests.CircuitLowerBoundBudget
+end CslibFrontierTests.CircuitLowerBoundBudget

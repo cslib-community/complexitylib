@@ -18,7 +18,7 @@ graph with and without a negative cycle; and the general theorems instantiated, 
 their hypotheses are satisfiable.
 -/
 
-namespace ComplexityTests.ShortestPaths
+namespace CslibFrontierTests.ShortestPaths
 
 open MinTropical Cslib.Query Cslib.Algorithms.ShortestPaths
 
@@ -99,4 +99,4 @@ example (W : Matrix (Fin 9) (Fin 9) T) :
   rw [cost_apspBySquaring_schoolbook]
   decide
 
-end ComplexityTests.ShortestPaths
+end CslibFrontierTests.ShortestPaths

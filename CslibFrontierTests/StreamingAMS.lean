@@ -31,7 +31,7 @@ Verifies non-vacuity and concrete behavior of:
 
 public section
 
-namespace ComplexityTests.StreamingAMS
+namespace CslibFrontierTests.StreamingAMS
 
 open Cslib Cslib.Probability Cslib.Streaming
 
@@ -151,4 +151,4 @@ example : (amsSketch (fun (_ : Unit) (_ : Fin 2) => (0 : Fin (2 ^ 1))) sgnBit 1 
   have : Nonempty (Fin (2 * 1)) := ⟨⟨0, by norm_num⟩⟩
   simp only [medianOfMeans, hc, Fintype.expect_const, median_const]
 
-end ComplexityTests.StreamingAMS
+end CslibFrontierTests.StreamingAMS

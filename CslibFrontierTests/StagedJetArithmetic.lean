@@ -15,7 +15,7 @@ import Mathlib.Tactic.NormNum
 /-! Tests for truncated bivariate jet tables, staged denominator clearing, and integer Cramer
 recovery (`CslibFrontier.Foundations.Data.Polynomial.StagedJetArithmetic`). -/
 
-namespace ComplexityTests.StagedJetArithmetic
+namespace CslibFrontierTests.StagedJetArithmetic
 
 open Cslib Polynomial
 
@@ -211,4 +211,4 @@ example :
     sum_hermiteCramerNumerator_emod_two_pow_eq (ℓ := 2) hnodes (by decide) (by decide) (by decide)
       ![13, -19] 2 T_int H hdeg hzero hjet (by decide) (by decide) (by decide)⟩
 
-end ComplexityTests.StagedJetArithmetic
+end CslibFrontierTests.StagedJetArithmetic

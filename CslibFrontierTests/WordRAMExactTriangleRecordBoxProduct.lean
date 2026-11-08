@@ -20,7 +20,7 @@ finite charged bound refer to the same pre-halt state and final halt.
 
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMExactTriangleRecordBoxProduct
+namespace CslibFrontierTests.WordRAMExactTriangleRecordBoxProduct
 
 open Cslib.WordRAM Cslib.Algorithms.WordRAM.ExactTriangle
 open Cslib.Algorithms.ExactTriangle Cslib.Algorithms.MatrixMultiplication.Schonhage
@@ -156,4 +156,4 @@ example : ∃ a : Data 64, ∃ idx : InstanceIndex 3, ∃ y : Data 320, ∃ step
           RecordProduct.rightMatrix 9 side 1 3 (fun q => (zeroWeights side).getD q 0) idx)
             (qs.get first).1 (qs.get first).2) := initialized_zero 1 side le_rfl le_rfl
 
-end ComplexityTests.WordRAMExactTriangleRecordBoxProduct
+end CslibFrontierTests.WordRAMExactTriangleRecordBoxProduct

@@ -15,7 +15,7 @@ representation, boundary splits, selected outputs before unused gates, shared te
 zero-feature inputs, nonuniform term weights, and independent coefficient-field universes.
 -/
 
-namespace ComplexityTests.ArithmeticWaring
+namespace CslibFrontierTests.ArithmeticWaring
 
 universe u v
 
@@ -129,4 +129,4 @@ example {K : Type u} [Field K] [CharZero K] {ι : Type v} (indices : Finset ι)
     2 ≤ indices.card :=
   Waring.choose_le_card 1 indices scale a h
 
-end ComplexityTests.ArithmeticWaring
+end CslibFrontierTests.ArithmeticWaring

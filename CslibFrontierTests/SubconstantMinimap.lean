@@ -39,7 +39,7 @@ Exercises:
 
 public section
 
-namespace ComplexityTests.SubconstantMinimap
+namespace CslibFrontierTests.SubconstantMinimap
 
 open Cslib.DataStructure
 open Cslib.DataStructure.Dictionary
@@ -276,4 +276,4 @@ theorem sample_leaf_replace_bounds (s : Dictionary.State 6)
         (by rwa [Minimap.activeSet_encode]),
     Minimap.expect_slotDiff_replace_encode_le s hb hs x_old x_new v_new hv hx_old hx_new⟩
 
-end ComplexityTests.SubconstantMinimap
+end CslibFrontierTests.SubconstantMinimap

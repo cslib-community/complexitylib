@@ -15,7 +15,7 @@ a repetition, perfect completeness, and Holenstein's bound for the repetitions o
 value `1/2`.
 -/
 
-namespace ComplexityTests.LabelCoverRepetition
+namespace CslibFrontierTests.LabelCoverRepetition
 
 open Cslib.PCP Cslib.PCP.Encoded Cslib.Complexity LabelCoverRepetition
 
@@ -87,4 +87,4 @@ example (k : ℕ) : ((pow k negation).toGraph projectionEval).Satisfiable := by
     ⟨fun _ => false, fun _ => true, ?_⟩)
   decide
 
-end ComplexityTests.LabelCoverRepetition
+end CslibFrontierTests.LabelCoverRepetition

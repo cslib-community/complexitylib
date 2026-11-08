@@ -19,7 +19,7 @@ input; Savitch's formula on concrete graphs, true and false, and on words of wid
 of concrete classes to `TQBF`; and the axioms of the headline theorems.
 -/
 
-namespace ComplexityTests.TQBF
+namespace CslibFrontierTests.TQBF
 
 open Cslib Cslib.Complexity Cslib.Logic.PL Cslib.Complexity.TQBF Cslib.Reachability
 open Turing.MultiTapeTM (encBits)
@@ -203,4 +203,4 @@ info: 'Cslib.Logic.PL.QBF.tokens_append_inj' depends on axioms: [propext]
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.Logic.PL.QBF.tokens_append_inj
 
-end ComplexityTests.TQBF
+end CslibFrontierTests.TQBF

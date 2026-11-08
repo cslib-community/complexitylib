@@ -13,7 +13,7 @@ the advice; a nonvacuous instance of `P/poly ⊆ P^TALLY` for a language that ma
 trading a sparse oracle for a tally one through `P/poly`.
 -/
 
-namespace ComplexityTests.SparseMeyer
+namespace CslibFrontierTests.SparseMeyer
 
 open Cslib Cslib.Complexity Cslib.Circuits.Boolean Turing.MultiTapeTM
 
@@ -67,4 +67,4 @@ example {α : Type} (enc : α ↪ List Bool) :
     ⋃ S ∈ SPARSE encBits, PWithOracle S enc = ⋃ T ∈ TALLY, PWithOracle T enc := by
   rw [← PPolyOn_eq_iUnion_PWithOracle_SPARSE, PPolyOn_eq_iUnion_PWithOracle_TALLY]
 
-end ComplexityTests.SparseMeyer
+end CslibFrontierTests.SparseMeyer

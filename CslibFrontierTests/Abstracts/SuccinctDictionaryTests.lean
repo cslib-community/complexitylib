@@ -14,10 +14,10 @@ import CslibFrontierAbstracts.SuccinctDictionaryAbstract
 Non-vacuity and concrete evaluation checks for `CslibFrontierAbstracts.SuccinctDictionaryAbstract`.
 -/
 
-namespace ComplexityTests.Abstracts.SuccinctDictionaryTests
+namespace CslibFrontierTests.Abstracts.SuccinctDictionaryTests
 
 open scoped ENNReal
-open ComplexityAbstracts.SuccinctDictionaryAbstract
+open CslibFrontierAbstracts.SuccinctDictionaryAbstract
 
 /-! ## Concrete Resource Function Evaluations -/
 
@@ -119,4 +119,4 @@ theorem nonvacuous_succinctDynamicDictionary :
   exact ⟨r, C_op, sp, initBudget, hr, p_init, p_op, Seed, μ_init, μ_final, T_ops,
     hinit_le, hsp, hinit, hsupp, hops, hbound⟩
 
-end ComplexityTests.Abstracts.SuccinctDictionaryTests
+end CslibFrontierTests.Abstracts.SuccinctDictionaryTests

@@ -15,7 +15,7 @@ not `(2 / 3) ^ 2`, but within the pair bound `(2 / 3) ^ 2 / q_fr = 2 / 3`. Final
 frame-conditioned channels over `𝔽₅` drive the column detector.
 -/
 
-namespace ComplexityTests.FrameRetention
+namespace CslibFrontierTests.FrameRetention
 
 open Finset Matrix Cslib.Probability
 
@@ -98,4 +98,4 @@ example (G : Matrix (ZMod 5) (ZMod 5) ℝ) (y : ZMod 5) :
   norm_num at this hcard
   linarith
 
-end ComplexityTests.FrameRetention
+end CslibFrontierTests.FrameRetention

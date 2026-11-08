@@ -16,7 +16,7 @@ blocks, and copy depths on both sides of the `d(n) log₂ n = o(n)` boundary. Th
 applies to a superpolynomial number of copies.
 -/
 
-namespace ComplexityTests.MassProduction.Uhlig
+namespace CslibFrontierTests.MassProduction.Uhlig
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Circuits.Boolean.MassProduction
 open Cslib.Circuits.Boolean.MassProduction.Uhlig Cslib.BitString.Uhlig Filter
@@ -123,4 +123,4 @@ example : ∀ᶠ (n : ℕ) in atTop,
 -- Zero copies cost nothing even for the nonconstant parity function.
 example : massComplexity (parity 5) 0 = 0 := massComplexity_zero
 
-end ComplexityTests.MassProduction.Uhlig
+end CslibFrontierTests.MassProduction.Uhlig

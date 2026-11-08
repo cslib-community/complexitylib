@@ -13,7 +13,7 @@ Exercise code selection, logarithmic upper intervals, squared-logarithmic lower 
 width-dependent budgets, schedule asymptotics, and all-input correctness of asymptotic contracts.
 -/
 
-namespace ComplexityTests.WordRAMFamilies
+namespace CslibFrontierTests.WordRAMFamilies
 
 open Cslib.WordRAM
 
@@ -104,4 +104,4 @@ example (T : ℕ → ℕ → ℕ) :
 #guard_msgs in
 #print axioms Cslib.WordRAM.UniformDecidableInO.decidableInO
 
-end ComplexityTests.WordRAMFamilies
+end CslibFrontierTests.WordRAMFamilies

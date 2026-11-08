@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Interactive.GKR.Layered
 A one-layer circuit multiplying its two inputs, its value, and an instance of the GKR identity.
 -/
 
-namespace ComplexityTests.GKRLayered
+namespace CslibFrontierTests.GKRLayered
 
 open Cslib.Interactive.GKR MvPolynomial Cslib.BitString
 
@@ -37,4 +37,4 @@ example (W : (Fin (mulTwo.width 0) → Bool) → ℤ) (z : Fin (mulTwo.width 1) 
             (multilinearExtension (mulTwo.multPred (R := ℤ) 0)) * (W b * W c)) :=
   mulTwo.eval_multilinearExtension_step 0 W z
 
-end ComplexityTests.GKRLayered
+end CslibFrontierTests.GKRLayered

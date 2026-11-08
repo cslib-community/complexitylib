@@ -19,7 +19,7 @@ inhabited. These test the deterministic bridge and the mandatory control depende
 
 @[expose] public section
 
-namespace ComplexityTests.BlockComputation
+namespace CslibFrontierTests.BlockComputation
 
 open Turing MultiTapePTM.BlockComputation
 
@@ -74,4 +74,4 @@ example (σ : MultiTapePTM.Schedule 0 0) :
 example : boundary machine [] 1 (q := 2) 2 = emit.runFrom (Cfg.init () []) 2 :=
   boundary_ofDeterministic [] 1 emit le_rfl
 
-end ComplexityTests.BlockComputation
+end CslibFrontierTests.BlockComputation

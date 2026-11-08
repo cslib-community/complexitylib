@@ -38,7 +38,7 @@ bootstrappability theorem. Decryption and homomorphic correctness are separate r
   for the count-difference noise construction, without identifying this scheme with ML-KEM.
 -/
 
-namespace ComplexityTests.Abstracts.GSWSecurityAbstract
+namespace CslibFrontierTests.Abstracts.GSWSecurityAbstract
 
 /-- The secret dimension and centered-binomial width are positive at every parameter. -/
 def dimension (security : ℕ) : ℕ := security + 1
@@ -129,14 +129,14 @@ strict PPT message-selection and guessing pair, retaining arbitrary saved words.
 theorem indCPA (hLWE : DecisionLWE) : ChosenMessageSecure :=
   GSWSecurityBridge.indCPA hLWE
 
-end ComplexityTests.Abstracts.GSWSecurityAbstract
+end CslibFrontierTests.Abstracts.GSWSecurityAbstract
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.GSWSecurityAbstract`: 13 root
+info: abstract audit passed for `CslibFrontierTests.Abstracts.GSWSecurityAbstract`: 13 root
 declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.GSWSecurityAbstract allowing [
-  ComplexityAbstracts.Encoding, ComplexityAbstracts.Computation, ComplexityAbstracts.Randomized,
-  ComplexityAbstracts.GSW
+#check_abstract CslibFrontierTests.Abstracts.GSWSecurityAbstract allowing [
+  CslibFrontierAbstracts.Encoding, CslibFrontierAbstracts.Computation, CslibFrontierAbstracts.Randomized,
+  CslibFrontierAbstracts.GSW
 ]

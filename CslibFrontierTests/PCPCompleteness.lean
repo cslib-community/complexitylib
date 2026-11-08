@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 
 /-! Public PCP theorem clients for ordinary SAT and framed Boolean words. -/
 
-namespace ComplexityTests.PCPCompleteness
+namespace CslibFrontierTests.PCPCompleteness
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -26,4 +26,4 @@ example : {word : List Bool | word.headD false = true} ∈
   intro word
   simp [Polynomial.eval_zero]
 
-end ComplexityTests.PCPCompleteness
+end CslibFrontierTests.PCPCompleteness

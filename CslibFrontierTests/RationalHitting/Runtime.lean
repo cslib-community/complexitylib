@@ -15,7 +15,7 @@ Concrete checks for `gridPointWords`, `outputWord`, `inputWord`, `parseInput`, a
 specification.
 -/
 
-namespace ComplexityTests.RationalHitting.Runtime
+namespace CslibFrontierTests.RationalHitting.Runtime
 
 open Cslib.Circuits Cslib.Circuits.Rational
 open Turing MultiTapeTM MultiTapeTM.ComputableTidilyInPolyTime
@@ -81,4 +81,4 @@ example :
       Hits 1 (hittingList 1 1) :=
   hittingGenerator_spec.2 1 1 le_rfl le_rfl
 
-end ComplexityTests.RationalHitting.Runtime
+end CslibFrontierTests.RationalHitting.Runtime

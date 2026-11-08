@@ -21,7 +21,7 @@ whose single halting state satisfies the absorption and termination hypotheses o
 theorems.
 -/
 
-namespace ComplexityTests.Iteration.Dynamics
+namespace CslibFrontierTests.Iteration.Dynamics
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Circuits.Boolean.Iteration
 open Cslib.FunctionalGraph
@@ -198,4 +198,4 @@ example (f : Fin 5 → Fin 5) (x : Fin 5) :
     f^[normalizedTime f x 1000] x = f^[1000] x ∧ normalizedTime f x 1000 < 10 :=
   ⟨iterate_normalizedTime f x 1000, by simpa using normalizedTime_lt f x 1000⟩
 
-end ComplexityTests.Iteration.Dynamics
+end CslibFrontierTests.Iteration.Dynamics

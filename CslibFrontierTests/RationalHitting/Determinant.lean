@@ -16,7 +16,7 @@ satisfiable; and the polynomial-time certificate `detRows_polytime` is checked d
 `fun_prop` composition.
 -/
 
-namespace ComplexityTests.RationalHitting.Determinant
+namespace CslibFrontierTests.RationalHitting.Determinant
 
 open Turing MultiTapeTM
 open Cslib.Circuits.Rational
@@ -86,4 +86,4 @@ example : ComputableInPolyTime (List.map detRows)
     (encList (encList (encList encIntBin))) (encList encIntBin) := by
   fun_prop
 
-end ComplexityTests.RationalHitting.Determinant
+end CslibFrontierTests.RationalHitting.Determinant

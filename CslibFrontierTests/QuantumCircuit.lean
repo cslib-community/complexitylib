@@ -8,7 +8,7 @@ import CslibFrontier.Computability.Circuit.Quantum.Basic
 
 /-! Quantum circuits: concrete runs, and objects that fail the definitions. -/
 
-namespace ComplexityTests.QuantumCircuit
+namespace CslibFrontierTests.QuantumCircuit
 
 open Cslib.Quantum Matrix
 
@@ -164,4 +164,4 @@ example : !![(1 : ℂ), 1; 0, 1] ∉ unitaryGroup (Fin 2) ℂ := by
 example : IsEmpty (Fin 2 ↪ Fin 1) :=
   ⟨fun f => absurd (f.injective (Subsingleton.elim (f 0) (f 1))) (by decide)⟩
 
-end ComplexityTests.QuantumCircuit
+end CslibFrontierTests.QuantumCircuit

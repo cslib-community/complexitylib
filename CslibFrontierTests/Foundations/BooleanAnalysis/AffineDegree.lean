@@ -14,7 +14,7 @@ its conclusion on two coordinates, where `2 * deg r < n` does not hold: `(1 - x�
 vanishes on the cube although `x₀ - x₁` has degree one.
 -/
 
-namespace ComplexityTests.AffineDegree
+namespace CslibFrontierTests.AffineDegree
 
 open Finset Cslib.BitString
 
@@ -57,4 +57,4 @@ example : (fun x : Fin 2 → Bool => 1 - ∑ i, 1 * bitVal ℚ (x i)) * diff = 0
   simp only [Pi.mul_apply, Pi.zero_apply, Fin.sum_univ_two, one_mul, diff]
   cases x 0 <;> cases x 1 <;> norm_num
 
-end ComplexityTests.AffineDegree
+end CslibFrontierTests.AffineDegree

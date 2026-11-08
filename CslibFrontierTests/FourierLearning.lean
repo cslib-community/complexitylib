@@ -11,7 +11,7 @@ import CslibFrontier.MachineLearning.UniformLearning.KushilevitzMansour
 /-! Nonvacuity checks for learning from uniform random examples and the low-degree algorithm, and
 for learning with membership queries and the Kushilevitz–Mansour algorithm. -/
 
-namespace ComplexityTests.FourierLearning
+namespace CslibFrontierTests.FourierLearning
 
 open Cslib Cslib.MachineLearning Cslib.MachineLearning.UniformLearning Cslib.BitString
   Cslib.Circuits.Boolean Cslib.Probability
@@ -151,4 +151,4 @@ example (n m L : ℕ) (b : Bool) (θ : ℝ) (F : BitString 3 → ℝ) (S : Finse
   · simpa using kmLearner_learns_decisionTree_and_queriesAtMost (ι := Fin n) hε hδ
       (by simpa using Nat.le_ceil _)
 
-end ComplexityTests.FourierLearning
+end CslibFrontierTests.FourierLearning

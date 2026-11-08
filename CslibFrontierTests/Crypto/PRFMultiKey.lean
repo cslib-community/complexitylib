@@ -15,7 +15,7 @@ multi-key bound sums over no reductions, so the real and ideal multi-key experim
 with one channel the bound is a single PRF advantage.
 -/
 
-namespace ComplexityTests.Crypto.PRFMultiKey
+namespace CslibFrontierTests.Crypto.PRFMultiKey
 
 open Cslib Cslib.Crypto
 
@@ -45,4 +45,4 @@ example {family : List Bool → List Bool → List Bool} (hfamily : Pseudorandom
         (ProbComp.eval (prfIdealGame (prfMultiReduction family 1 0 adversary) n)) := by
   simpa using advantage_prfMultiRealGame_prfMultiIdealGame_le hfamily adversary n
 
-end ComplexityTests.Crypto.PRFMultiKey
+end CslibFrontierTests.Crypto.PRFMultiKey

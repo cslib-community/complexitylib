@@ -12,7 +12,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 /-! Plain/tidy automation boundaries: bounded failure, verifier rules, the SBP
 binary threshold and Toda's input-dependent counting verifier. -/
 
-namespace ComplexityTests.PolyTimeMixes
+namespace CslibFrontierTests.PolyTimeMixes
 
 open Cslib Cslib.Complexity Turing.MultiTapeTM
 variable {α : Type} {enc : α ↪ List Bool}
@@ -50,4 +50,4 @@ example {f : α → ℤ} (hf : ComputableInPolyTime f enc encIntBin)
         (Z.eval (enc x.1).length) x.2) (encPair enc encBits) encBool :=
   ⟨by polytime, by fun_prop, by fun_prop, by fun_prop, by fun_prop, by polytime, by polytime⟩
 
-end ComplexityTests.PolyTimeMixes
+end CslibFrontierTests.PolyTimeMixes

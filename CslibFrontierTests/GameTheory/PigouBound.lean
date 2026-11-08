@@ -22,7 +22,7 @@ Checked instances of the Pigou bound for nonatomic selfish routing:
   does.
 -/
 
-namespace ComplexityTests.GameTheory.PigouBound
+namespace CslibFrontierTests.GameTheory.PigouBound
 
 open Cslib.GameTheory NonatomicCongestionGame
 
@@ -122,4 +122,4 @@ example {β : ℝ} (hβ : β < 4 / 3) : ¬ ∀ (K P E : Type) [Fintype P] [Finit
     pigouBound_polynomialLatencies_one, not_le]
   exact (ENNReal.ofReal_lt_ofReal_iff (by norm_num)).2 hβ
 
-end ComplexityTests.GameTheory.PigouBound
+end CslibFrontierTests.GameTheory.PigouBound

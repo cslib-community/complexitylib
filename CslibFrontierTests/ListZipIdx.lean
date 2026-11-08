@@ -9,7 +9,7 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! Unary indexed enumeration of lists, including empty and repeated entries. -/
 
-namespace ComplexityTests.ListZipIdx
+namespace CslibFrontierTests.ListZipIdx
 
 open Turing.MultiTapeTM
 
@@ -45,4 +45,4 @@ example {α Input : Type} (enc : α ↪ List Bool) (input : Input ↪ List Bool)
   fail_if_success (clear hlist; fun_prop)
   fun_prop
 
-end ComplexityTests.ListZipIdx
+end CslibFrontierTests.ListZipIdx

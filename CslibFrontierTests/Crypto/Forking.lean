@@ -19,7 +19,7 @@ successful fork gives two runs that ask the same query. A program that names a p
 asking any query never forks successfully.
 -/
 
-namespace ComplexityTests.Crypto.Forking
+namespace CslibFrontierTests.Crypto.Forking
 
 open Cslib Cslib.Probability
 
@@ -90,4 +90,4 @@ example : (Forking.fork (PMF.pure ()) (OracleComp.forkingAlgorithm false 1
     nameWithoutAsking)).map Option.isSome true = 0 := by
   simp [Forking.fork, OracleComp.forkingAlgorithm, OracleComp.validIndex, nameWithoutAsking]
 
-end ComplexityTests.Crypto.Forking
+end CslibFrontierTests.Crypto.Forking

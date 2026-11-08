@@ -45,7 +45,7 @@ complexity-class or headline-result allowance:
   [GoldwasserMicaliRackoff1989]
 -/
 
-namespace ComplexityTests.Abstracts.ShamirAbstract
+namespace CslibFrontierTests.Abstracts.ShamirAbstract
 
 /-- A Boolean is encoded by a single bit. -/
 def encBool : Bool ↪ List Bool := ⟨fun b => [b], by intro a b h; injection h⟩
@@ -115,11 +115,11 @@ verifier's output and the final prover state for every initial state and respons
 -/
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.ShamirAbstract`:
+info: abstract audit passed for `CslibFrontierTests.Abstracts.ShamirAbstract`:
 10 root declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.ShamirAbstract allowing [
+#check_abstract CslibFrontierTests.Abstracts.ShamirAbstract allowing [
   CslibFrontier.Computability.Machines.Turing.MultiTape.Machine,
   CslibFrontier.Computability.Machines.Turing.MultiTape.Machine.Program,
   CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic,
@@ -131,4 +131,4 @@ info: abstract audit passed for `ComplexityTests.Abstracts.ShamirAbstract`:
   CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 ]
 
-end ComplexityTests.Abstracts.ShamirAbstract
+end CslibFrontierTests.Abstracts.ShamirAbstract

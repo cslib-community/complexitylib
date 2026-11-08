@@ -15,7 +15,7 @@ Adapted from `CslibTests/ComputationalCryptoPrograms.lean` on the cslib `crypto`
 Programs use ordinary functional code; loop contracts mention values and encoded sizes.
 -/
 
-namespace ComplexityTests.PolyTimeTactic
+namespace CslibFrontierTests.PolyTimeTactic
 
 open Turing.MultiTapeTM
 
@@ -475,4 +475,4 @@ example : ComputableInPolyTime (fun p : List ℕ × ℕ => p.1.length)
     (encPair (encList encNat) encNat) encNat := by
   fun_prop
 
-end ComplexityTests.PolyTimeTactic
+end CslibFrontierTests.PolyTimeTactic

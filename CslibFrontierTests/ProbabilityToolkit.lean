@@ -14,7 +14,7 @@ import Mathlib.Analysis.Complex.ExponentialBounds
 /-! Multiplicative Chernoff bounds, `k`-wise independent hashing and the Lovász Local Lemma:
 concrete instances, satisfiable hypotheses and a boundary case. -/
 
-namespace ComplexityTests.ProbabilityToolkit
+namespace CslibFrontierTests.ProbabilityToolkit
 
 open Cslib Cslib.Probability Finset
 open scoped BigOperators
@@ -189,4 +189,4 @@ example : 0 < ((PMF.pi fun _ : Fin 4 => PMF.uniformOfFintype Bool).toOuterMeasur
     norm_num at this ⊢
     linarith
 
-end ComplexityTests.ProbabilityToolkit
+end CslibFrontierTests.ProbabilityToolkit

@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Complexity.Classes.Sparse.Turing
 
 /-! # Finite-list oracles and sparse Turing-hard sets -/
 
-namespace ComplexityTests.SparseTuring
+namespace CslibFrontierTests.SparseTuring
 
 open Cslib Cslib.BitString Cslib.Complexity Cslib.Circuits.Boolean Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -52,4 +52,4 @@ example (hSAT : SAT ∈ PWithOracle unary encCNF) :
     PH encBits = SigmaP 2 encBits :=
   PH_eq_SigmaP_two_of_SAT_mem_PWithOracle unary_mem_SPARSE hSAT encBits
 
-end ComplexityTests.SparseTuring
+end CslibFrontierTests.SparseTuring

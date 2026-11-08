@@ -16,7 +16,7 @@ non-equilibrium and fixes the equilibrium. A player with no listed strategy gets
 resource indices out of range are ignored, and strings of the wrong length are never solutions.
 -/
 
-namespace ComplexityTests.GameTheory.CongestionPLS
+namespace CslibFrontierTests.GameTheory.CongestionPLS
 
 open Cslib.GameTheory Cslib.GameTheory.CongestionCode
 
@@ -74,4 +74,4 @@ example : degenerate.PureNash (List.replicate degenerate.vertexLength false) := 
 -- Every code has a solution.
 example (c : CongestionCode) : ∃ u, c.PureNash u := pureNash_mem_TFNP.2 c
 
-end ComplexityTests.GameTheory.CongestionPLS
+end CslibFrontierTests.GameTheory.CongestionPLS

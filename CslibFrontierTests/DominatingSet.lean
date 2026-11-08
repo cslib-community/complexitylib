@@ -15,7 +15,7 @@ dropped self-loops and edges to undeclared vertices, and the target `0` for `k` 
 vertices; and the headline results.
 -/
 
-namespace ComplexityTests.DominatingSet
+namespace CslibFrontierTests.DominatingSet
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -129,4 +129,4 @@ example : VertexCover.toDominatingSet (junk, 2) ∉ DominatingSet := by
   revert this
   decide
 
-end ComplexityTests.DominatingSet
+end CslibFrontierTests.DominatingSet

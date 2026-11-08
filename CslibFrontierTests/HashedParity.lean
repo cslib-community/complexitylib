@@ -9,7 +9,7 @@ import CslibFrontier.Tactic.PPT
 
 /-! Complete hashed-parity observations, ordinary program clients and encoded tape budgets. -/
 
-namespace ComplexityTests.HashedParity
+namespace CslibFrontierTests.HashedParity
 
 open Cslib Cslib.BitString Cslib.Probability Cslib.Crypto Cslib.Crypto.Pseudoentropy
 open Cslib.Crypto.Pseudoentropy.HashPair Turing.MultiTapeTM
@@ -88,4 +88,4 @@ example (precision : ℕ) (hp : 0 < precision) :
     (PMF.uniformOfFintype (BitString 1)) (by intros; rfl)
     (fun _ : Unit => fun _ : BitString 0 × Unit => fun _ => false) precision hp
 
-end ComplexityTests.HashedParity
+end CslibFrontierTests.HashedParity

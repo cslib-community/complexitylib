@@ -12,7 +12,7 @@ Concrete products in the Galois ring `(ℤ / 8)[U] / (U ^ 2 + U + 1)` (`p = 3`, 
 correctness statements, and the polynomial-time certificates in closed form, with the precision
 in unary and the coordinates in binary. -/
 
-namespace ComplexityTests.GaloisRingArithmetic
+namespace CslibFrontierTests.GaloisRingArithmetic
 
 open Cslib.GaloisRingArith Turing.MultiTapeTM
 
@@ -93,4 +93,4 @@ example : ComputableInPolyTime
     (encPair (encPair encUnary (encList encNat)) (encList encNat)) (encList encNat) := by
   fun_prop
 
-end ComplexityTests.GaloisRingArithmetic
+end CslibFrontierTests.GaloisRingArithmetic

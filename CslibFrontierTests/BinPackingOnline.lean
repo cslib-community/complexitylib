@@ -35,7 +35,7 @@ These kernel-checked examples (using no `native_decide`) exercise
 
 public section
 
-namespace ComplexityTests.BinPackingOnline
+namespace CslibFrontierTests.BinPackingOnline
 
 open Cslib.Algorithms.Lean.BinPacking
 
@@ -124,4 +124,4 @@ example (A : OnlinePacker 41) (c : ℕ) :
       (∀ Q', IsPacking 41 l Q' → Q.length ≤ Q'.length) ∧ 7 * Q.length + c < 5 * (A.run l).length :=
   A.exists_ratio_violation_of_lt (by decide) c
 
-end ComplexityTests.BinPackingOnline
+end CslibFrontierTests.BinPackingOnline

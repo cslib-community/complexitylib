@@ -33,7 +33,7 @@ public import CslibFrontier.Probability.HashFamily.Uniform
 
 public section
 
-namespace ComplexityTests.PerfectHashing
+namespace CslibFrontierTests.PerfectHashing
 
 open Cslib.DataStructure.Dictionary.PerfectHashing Cslib.OracleComp Cslib.Probability
 open scoped ENNReal
@@ -148,4 +148,4 @@ example : ((uniformFamily 8).seed 8).toOuterMeasure
     {s | ¬ Set.InjOn ((uniformFamily 8).hash 8 s) ({1, 3, 4} : Finset (Fin 8))} ≤ 2⁻¹ :=
   (uniformFamily_isTwoUniversal 8 8).toOuterMeasure_not_injOn_le _ (by simp)
 
-end ComplexityTests.PerfectHashing
+end CslibFrontierTests.PerfectHashing

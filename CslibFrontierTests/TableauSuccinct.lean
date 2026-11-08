@@ -14,7 +14,7 @@ first step gives a satisfiable formula for one step on one input, whatever the i
 A machine that never writes gives an unsatisfiable one. The size results apply to any machine.
 -/
 
-namespace ComplexityTests.TableauSuccinct
+namespace CslibFrontierTests.TableauSuccinct
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Logic.PL Turing Turing.MultiTapeTM
 
@@ -70,4 +70,4 @@ example (x : List Bool) (n T t c : ℕ) (l : Tableau.Loc k State) (j : Fin 3) (h
       Tableau.posClause tm n T t c l j := by
   rw [Tableau.clauseAt_fields tm x n T _ (by omega) (by omega), Tableau.clauseOf_pos tm x j ht hl]
 
-end ComplexityTests.TableauSuccinct
+end CslibFrontierTests.TableauSuccinct

@@ -19,7 +19,7 @@ queries and writes. A dirty cell outside the layout stays untouched.
 
 public section
 
-namespace ComplexityTests.FibonacciHeapNativeSource
+namespace CslibFrontierTests.FibonacciHeapNativeSource
 
 open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 open FibonacciHeap FibonacciHeap.Native
@@ -137,4 +137,4 @@ example : Cslib.WordRAM.Realization.whileSafe
   simp only [Cslib.WordRAM.Realization.whileSafe]
   decide
 
-end ComplexityTests.FibonacciHeapNativeSource
+end CslibFrontierTests.FibonacciHeapNativeSource

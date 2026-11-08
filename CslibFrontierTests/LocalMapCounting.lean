@@ -18,7 +18,7 @@ reductions, preimage counting, and self-reduction preimage finding (Corollary C.
 
 @[expose] public section
 
-namespace ComplexityTests.LocalMapCounting
+namespace CslibFrontierTests.LocalMapCounting
 
 open Cslib.Complexity Cslib.Logic.PL
 
@@ -78,4 +78,4 @@ example :
     map3to2.findPreimage 1 [false, true] = none := by
   decide
 
-end ComplexityTests.LocalMapCounting
+end CslibFrontierTests.LocalMapCounting

@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Inter
 /-! Interval counts of a concrete fair-coin machine on plain data: the count is evaluated, the
 interval tensor follows, and the polynomial-time certificate applies with a satisfiable budget. -/
 
-namespace ComplexityTests.HPVIntervalCount
+namespace CslibFrontierTests.HPVIntervalCount
 
 open Turing MultiTapeMachine MultiTapePTM MultiTapeNTM.ChoiceTable Cslib.Turing
 
@@ -79,4 +79,4 @@ example : MultiTapeTM.ComputableInPolyTime (fun x : List Bool =>
       (.const _) (.const _) (.const _) (.const _) (.const _) (.const _) (.const _))
     (size := fun _ => 20) (Cslib.PolynomiallyBounded.const 20) fun _ => by norm_num
 
-end ComplexityTests.HPVIntervalCount
+end CslibFrontierTests.HPVIntervalCount

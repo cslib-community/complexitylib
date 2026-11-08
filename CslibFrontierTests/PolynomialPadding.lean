@@ -15,7 +15,7 @@ binary-to-unary resource bound. -/
 
 public section
 
-namespace ComplexityTests.PolynomialPadding
+namespace CslibFrontierTests.PolynomialPadding
 
 open Turing.MultiTapeTM
 
@@ -61,4 +61,4 @@ theorem binaryToUnary_bound_and_values :
     encUnary 0 = [] ∧ encUnary 4 = [true, true, true, true] :=
   ⟨ComputableInO.natToUnary, rfl, rfl⟩
 
-end ComplexityTests.PolynomialPadding
+end CslibFrontierTests.PolynomialPadding

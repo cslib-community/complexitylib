@@ -11,7 +11,7 @@ import Mathlib.Tactic.NormNum.Prime
 # Tests for Rabin squaring and factoring equivalence
 -/
 
-namespace ComplexityTests.Crypto.RabinFactoring
+namespace CslibFrontierTests.Crypto.RabinFactoring
 
 open Cslib Cslib.Crypto
 
@@ -45,4 +45,4 @@ example (gen : BlumGen) (h : FactoringHard gen) : RabinOneWay gen :=
 #guard_msgs in
 #print axioms Cslib.Crypto.rabinOneWay_of_factoringHard
 
-end ComplexityTests.Crypto.RabinFactoring
+end CslibFrontierTests.Crypto.RabinFactoring

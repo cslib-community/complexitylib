@@ -19,10 +19,10 @@ closure properties of `L` carry over. A counter program copying its input exerci
 path: it computes the identity in logarithmic space.
 -/
 
-namespace ComplexityTests.FOLogSpace
+namespace CslibFrontierTests.FOLogSpace
 
 open FirstOrder Language Structure CategoryTheory Cslib.Logic Cslib.Complexity
-open ComplexityTests.FaginEncoding
+open CslibFrontierTests.FaginEncoding
 
 /-- Some vertex has a loop. -/
 def hasLoop : Language.graph.Sentence :=
@@ -278,4 +278,4 @@ example : ∃ regs, loopProgram.Reaches (encStructure ((1, [ [true] ]) : Encoded
 
 end Pieces
 
-end ComplexityTests.FOLogSpace
+end CslibFrontierTests.FOLogSpace

@@ -13,7 +13,7 @@ natural scale with the real scale `n / √(log₂ n)` up to constant factors, wh
 `2 ^ O(n / √⌊log₂ n⌋)` the usual `2 ^ O(n / √(log n))`, and the exponent arithmetic on an
 instance. -/
 
-namespace ComplexityTests.SqrtLog
+namespace CslibFrontierTests.SqrtLog
 
 open Nat
 
@@ -118,4 +118,4 @@ example : ∃ C, ∀ T, 2 ≤ T →
 example (T : ℕ) (hT : 2 ≤ T) : 5 * (T + 1) ^ 4 + 9 ≤ T ^ 22 :=
   mul_add_one_pow_add_le_pow hT
 
-end ComplexityTests.SqrtLog
+end CslibFrontierTests.SqrtLog

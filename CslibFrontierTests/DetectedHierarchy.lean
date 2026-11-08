@@ -10,7 +10,7 @@ import Mathlib.Tactic.FinCases
 # Tests for the hierarchy constants and the iterated hierarchy
 -/
 
-namespace ComplexityTests.DetectedHierarchy
+namespace CslibFrontierTests.DetectedHierarchy
 
 open Finset Matrix Cslib.Probability
 
@@ -87,4 +87,4 @@ example (P : HierarchyParams 2 1 1 1 0) :
       exact retentionChannels_all (f := (2 : ℝ)⁻¹ ^ 0) (Cπ := 1) (Cpair := 1) (by norm_num)
         (by norm_num) (by norm_num)
 
-end ComplexityTests.DetectedHierarchy
+end CslibFrontierTests.DetectedHierarchy

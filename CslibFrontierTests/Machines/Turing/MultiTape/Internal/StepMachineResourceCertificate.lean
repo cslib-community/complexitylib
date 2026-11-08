@@ -25,7 +25,7 @@ run_elab do
     if (← Lean.getEnv).contains name then
       throwError "unexpected higher tidy calculus or old bundle: {name}"
 
-namespace ComplexityTests.Internal.StepMachineResourceCertificate
+namespace CslibFrontierTests.Internal.StepMachineResourceCertificate
 
 /-- Copy the input in one rightward pass and stop on its final blank. -/
 def emitter : StepMachine Bool Bool Bool where
@@ -119,4 +119,4 @@ example {σf σg : Type} {f : StepMachine σf Bool Bool} {g : StepMachine σg Bo
     · intros
       exact ⟨le_rfl, le_rfl⟩
 
-end ComplexityTests.Internal.StepMachineResourceCertificate
+end CslibFrontierTests.Internal.StepMachineResourceCertificate

@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Complexity.Classes.BQP
 /-! `BQP`: uniform families that decide a language exactly, interference, closure under
 complement, and a family whose acceptance probability `1 / 2` decides nothing. -/
 
-namespace ComplexityTests.BQP
+namespace CslibFrontierTests.BQP
 
 open Cslib Cslib.Quantum Cslib.Complexity Turing.MultiTapeTM
 
@@ -166,4 +166,4 @@ example (A : Set (List Bool)) : ¬∀ x,
     rw [acceptProb_hadamardOnce] at this
     norm_num at this
 
-end ComplexityTests.BQP
+end CslibFrontierTests.BQP

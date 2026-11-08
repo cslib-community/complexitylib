@@ -18,7 +18,7 @@ symbolic clients discharge the actual `D^18 ≤ n` geometry at positive threshol
 
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMStreamingSlot
+namespace CslibFrontierTests.WordRAMStreamingSlot
 
 open Cslib.WordRAM Cslib.Algorithms.WordRAM.ExactTriangle
 
@@ -83,4 +83,4 @@ private def empty : Option (List ℕ × Bool) :=
 -- The zero-record guard leaves even the would-be slot untouched.
 #guard empty == some ([0, 0, 0, 0, 0, 0, 7], true)
 
-end ComplexityTests.WordRAMStreamingSlot
+end CslibFrontierTests.WordRAMStreamingSlot

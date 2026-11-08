@@ -15,7 +15,7 @@ and the Nisan–Szegedy bounds on concrete instances: Chebyshev polynomials atta
 layer averages of monomials, the disjunction of `n` bits, parity and majority. Non-vacuity
 witnesses for the hypotheses. -/
 
-namespace ComplexityTests.QueryComplexity.Approximate
+namespace CslibFrontierTests.QueryComplexity.Approximate
 
 open Cslib Cslib.BitString Cslib.QueryComplexity Polynomial
 
@@ -110,4 +110,4 @@ example {n : ℕ} (f : BooleanFunction n) :
     norm_num at this ⊢
     linarith
 
-end ComplexityTests.QueryComplexity.Approximate
+end CslibFrontierTests.QueryComplexity.Approximate

@@ -17,9 +17,9 @@ leads from `0` to `2`. The encoding of the path is pinned bit by bit. Combining 
 theorems puts directed reachability itself in `NL`.
 -/
 
-namespace ComplexityTests.Abstracts.ImmermanSzelepcsenyiTests
+namespace CslibFrontierTests.Abstracts.ImmermanSzelepcsenyiTests
 
-open ComplexityAbstracts.ImmermanSzelepcsenyiAbstract
+open CslibFrontierAbstracts.ImmermanSzelepcsenyiAbstract
 
 -- The public classes are the library's native classes.
 example {α : Type} (enc : α ↪ List Bool) : NL enc = Cslib.Complexity.NL enc := rfl
@@ -72,4 +72,4 @@ example : STCON ∈ NL encInstance := by
   rw [nl_eq_conl]
   exact stcon_compl_mem_nl
 
-end ComplexityTests.Abstracts.ImmermanSzelepcsenyiTests
+end CslibFrontierTests.Abstracts.ImmermanSzelepcsenyiTests

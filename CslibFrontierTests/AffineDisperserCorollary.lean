@@ -23,7 +23,7 @@ multiplication is commutative and associative on pseudorandom elements, `a ^ (2 
 a pseudorandom `a ≠ 0` while `a ^ (2 ^ 5 - 1) ≠ 1`, and the trace of `1` is `35 mod 2 = 1`.
 -/
 
-namespace ComplexityTests.AffineDisperserCorollary
+namespace CslibFrontierTests.AffineDisperserCorollary
 
 open Cslib Cslib.AffineDisperser Cslib.AffineDisperser.Explicit Cslib.Circuits Module
   Turing.MultiTapeTM
@@ -143,4 +143,4 @@ def one : List Bool := true :: List.replicate 34 false
     fieldMul tab (fieldMul tab a b) c == fieldMul tab a (fieldMul tab b c),
     powerPred tab a 34 == one, powerPred tab a 4 == one, traceBit (traceVector tab) one)
 
-end ComplexityTests.AffineDisperserCorollary
+end CslibFrontierTests.AffineDisperserCorollary

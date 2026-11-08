@@ -13,7 +13,7 @@ Honest correctness, an explicit double-opening attack and its rejection for the 
 the zero-call boundary, and a receiver whose next query depends on its previous answer.
 -/
 
-namespace ComplexityTests.Crypto.OTCommitment
+namespace CslibFrontierTests.Crypto.OTCommitment
 
 open Cslib.Probability Cslib.Crypto.Protocols.MPC
 open OTCommitment
@@ -83,4 +83,4 @@ example (k : ℕ) : receiverRun adaptiveReceiver false k false =
     receiverRun adaptiveReceiver true k false :=
   perfectHiding adaptiveReceiver false true k false
 
-end ComplexityTests.Crypto.OTCommitment
+end CslibFrontierTests.Crypto.OTCommitment

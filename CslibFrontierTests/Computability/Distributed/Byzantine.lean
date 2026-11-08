@@ -12,7 +12,7 @@ concrete equivocation and rushing runs of `om1` on four processes, instances of 
 and of the single-fault characterization, runs of `OM(2)` on seven processes against two traitors,
 a run in which `OM(1)` fails against two traitors, and the general characterization. -/
 
-namespace ComplexityTests.Distributed.Byzantine
+namespace CslibFrontierTests.Distributed.Byzantine
 
 open Cslib.Distributed.Byzantine
 
@@ -217,4 +217,4 @@ example : ¬ ∃ (S M : Type) (π : Protocol (Fin 6) S M), π.SolvesByzantineAgr
 example (n : ℕ) : ∃ (S M : Type) (π : Protocol (Fin n) S M), π.SolvesByzantineAgreement 0 1 :=
   (exists_solvesByzantineAgreement_iff n 0 le_rfl).2 (by omega)
 
-end ComplexityTests.Distributed.Byzantine
+end CslibFrontierTests.Distributed.Byzantine

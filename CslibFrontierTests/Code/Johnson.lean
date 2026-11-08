@@ -21,7 +21,7 @@ reaches radius three, where the alphabet-free bound says nothing: a Hamming ball
 contains at most sixteen codewords.
 -/
 
-namespace ComplexityTests.Code.Johnson
+namespace CslibFrontierTests.Code.Johnson
 
 open Cslib Cslib.Code Finset Polynomial
 
@@ -92,4 +92,4 @@ example (w : Fin 5 → ZMod 5) :
   simp only [ZMod.card, Fintype.card_fin] at h
   omega
 
-end ComplexityTests.Code.Johnson
+end CslibFrontierTests.Code.Johnson

@@ -13,7 +13,7 @@ Concrete runs of repeated squaring modulo `X^r - 1` and `n` and of the congruenc
 instances of their correctness theorems, including a congruence refuted by running the program.
 -/
 
-namespace ComplexityTests.WordRAMAKSCongruence
+namespace CslibFrontierTests.WordRAMAKSCongruence
 
 open Cslib.WordRAM Cslib.Algorithms.WordRAM
 
@@ -68,4 +68,4 @@ example : ¬ Cslib.AKS.Congruence 4 1 1 := by
   rw [← hiff, hflag]
   decide
 
-end ComplexityTests.WordRAMAKSCongruence
+end CslibFrontierTests.WordRAMAKSCongruence

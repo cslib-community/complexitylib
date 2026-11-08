@@ -13,7 +13,7 @@ instances
 The class containments at the clock `T n = (n + 1) ^ 2 + 1`, which is time-constructible and at
 least `max n 2`. -/
 
-namespace ComplexityTests.FastSimulation
+namespace CslibFrontierTests.FastSimulation
 
 open Cslib.Complexity Cslib.Complexity.CountingSimulation Turing.MultiTapeTM
 
@@ -66,4 +66,4 @@ example {α : Type} {enc : α ↪ List Bool} {L : Set α}
   exists_decidableInTimeAndSpace_two_pow_div_sqrt_log_two_of_mem_PPTIME
     timeConstructible_succ_sq_add_one max_le_succ_sq_add_one hL
 
-end ComplexityTests.FastSimulation
+end CslibFrontierTests.FastSimulation

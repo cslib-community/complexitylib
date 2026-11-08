@@ -30,9 +30,9 @@ import CslibFrontierTests.GameTheory.Stability
   strong Nash equilibrium of social cost `4`, above its Rosenthal potential `3`.
 -/
 
-namespace ComplexityTests.GameTheory.StrongNash
+namespace CslibFrontierTests.GameTheory.StrongNash
 
-open Cslib.GameTheory Cslib.GameTheory.CongestionGame ComplexityTests.GameTheory.Stability
+open Cslib.GameTheory Cslib.GameTheory.CongestionGame CslibFrontierTests.GameTheory.Stability
 
 /-! ### The coordination game -/
 
@@ -205,4 +205,4 @@ example : crowded.toCostGame.IsStrongNash (fun _ => ()) ∧
       crowded_load]
     norm_num [crowded, Finset.sum_range_succ]
 
-end ComplexityTests.GameTheory.StrongNash
+end CslibFrontierTests.GameTheory.StrongNash

@@ -19,7 +19,7 @@ discrete-logarithm extraction from a verified binding collision, unconditional h
 computational binding under `DiscreteLog`.
 -/
 
-namespace ComplexityTests.Crypto.PedersenCommitment
+namespace CslibFrontierTests.Crypto.PedersenCommitment
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.PrimeOrderGroupFamily Turing.MultiTapeTM
 open scoped NNReal
@@ -176,4 +176,4 @@ example : singletonScheme.StatisticalHiding (fun _ => PMF.pure ()) := by
     · simp [hvalid]
   simp [heq, negligible_zero]
 
-end ComplexityTests.Crypto.PedersenCommitment
+end CslibFrontierTests.Crypto.PedersenCommitment

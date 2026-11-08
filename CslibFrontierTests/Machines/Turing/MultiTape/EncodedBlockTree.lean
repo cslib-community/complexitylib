@@ -20,7 +20,7 @@ acceptance theorem. Source padding and invalid paths are checked independently o
 
 @[expose] public section
 
-namespace ComplexityTests.EncodedBlockTree
+namespace CslibFrontierTests.EncodedBlockTree
 
 open Turing MultiTapePTM.BlockComputation Cslib.TreeEval
 open MultiTapeNTM.ChoiceTable
@@ -89,4 +89,4 @@ example : (Ary.Descending.tree source child gates 4 2).nodeAt [1, 0, 1, 0] =
 example : (Ary.Descending.tree source child gates 4 2).nodeAt [1, 0, 1, 0, 0] =
     .none := rfl
 
-end ComplexityTests.EncodedBlockTree
+end CslibFrontierTests.EncodedBlockTree

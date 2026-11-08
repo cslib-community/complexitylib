@@ -16,7 +16,7 @@ instead has deterministic output, so the nonzero premise cannot be dropped. Matr
 also feeds the existing leftover-hash theorem without a new family or entropy definition.
 -/
 
-namespace ComplexityTests.MatrixHash
+namespace CslibFrontierTests.MatrixHash
 
 open Cslib.Probability Cslib.Probability.PMF
 open scoped Matrix ENNReal Cslib.Probability.PMF
@@ -67,4 +67,4 @@ example :
   norm_num at h ⊢
   exact h
 
-end ComplexityTests.MatrixHash
+end CslibFrontierTests.MatrixHash

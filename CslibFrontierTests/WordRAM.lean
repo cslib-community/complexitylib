@@ -16,7 +16,7 @@ distinctness program answers correctly on inputs with and without duplicates wit
 bound.
 -/
 
-namespace ComplexityTests.WordRAM
+namespace CslibFrontierTests.WordRAM
 
 open Cslib.WordRAM
 
@@ -272,4 +272,4 @@ info: 'Cslib.WordRAM.ExecWithin.loop_invariant' depends on axioms:
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.WordRAM.ExecWithin.loop_invariant
 
-end ComplexityTests.WordRAM
+end CslibFrontierTests.WordRAM

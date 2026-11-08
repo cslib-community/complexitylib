@@ -10,7 +10,7 @@ import CslibFrontier.Tactic.PPT
 
 /-! Matrix hashing through ordinary functional programs and arbitrary public-output tests. -/
 
-namespace ComplexityTests.LinearHash
+namespace CslibFrontierTests.LinearHash
 
 open Cslib Cslib.BitString Cslib.BitString.LinearHash Cslib.Probability
 open Cslib.Probability.PMF Turing.MultiTapeTM
@@ -96,7 +96,7 @@ example : ¬ ∃ rows : Fin 0 → BitString 1,
 #eval decide (∀ S : Finset (BitString 2), ∃ rows : Fin 1 → BitString 2,
   2 * (S.offDiag.filter fun p => hash rows p.1 = hash rows p.2).card ≤ S.offDiag.card)
 
-end ComplexityTests.LinearHash
+end CslibFrontierTests.LinearHash
 
 -- Plain callbacks share the entire captured input; no sampler or raw certificate is required.
 example {α : Type} {encode : α ↪ List Bool}

@@ -8,7 +8,7 @@ import CslibFrontier.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceSema
 
 /-! Regression tests for `BoundedIncidenceSemantics`. -/
 
-namespace ComplexityTests.BoundedIncidenceSemantics
+namespace CslibFrontierTests.BoundedIncidenceSemantics
 
 open Cslib Cslib.Complexity Cslib.GenericRAM Cslib.LinearAlgebra
 open Cslib.Complexity.SubexponentialSAT.SparsePolyCounter
@@ -84,4 +84,4 @@ example : evalBoundedIncidenceBranch validSingleVar ≤ 65536 ∧
   ⟨(evalBoundedIncidenceBranch_le_two_pow validSingleVar).trans_eq (by decide +kernel),
    (evalBoundedIncidenceBranch_le_two_pow invalidSmallN).trans_eq (by decide +kernel)⟩
 
-end ComplexityTests.BoundedIncidenceSemantics
+end CslibFrontierTests.BoundedIncidenceSemantics

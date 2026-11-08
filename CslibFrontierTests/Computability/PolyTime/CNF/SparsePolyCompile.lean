@@ -9,7 +9,7 @@ import CslibFrontier.Computability.PolyTime.CNF.SparsePolyCompile
 
 /-! Tests for sparse `𝔽₂` CNF parity-check compilation and heavy-variable restriction. -/
 
-namespace ComplexityTests.SparsePolyCompile
+namespace CslibFrontierTests.SparsePolyCompile
 
 open Cslib.Complexity Cslib.Logic.PL Cslib.BitString Turing.MultiTapeTM
 
@@ -101,4 +101,4 @@ example :
       (encList (encList encNat)) :=
   ⟨by fun_prop, by fun_prop, by fun_prop⟩
 
-end ComplexityTests.SparsePolyCompile
+end CslibFrontierTests.SparsePolyCompile

@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.FastAna
 The derivation invariant and the shape invariant at a small root, the reduced values, the clock
 arithmetic at a concrete size, and the statement of the remaining obligation. -/
 
-namespace ComplexityTests.FastContractionAnalysis
+namespace CslibFrontierTests.FastContractionAnalysis
 
 open Cslib.Circuits.Frontier Cslib.Circuits.Frontier.FastContraction
   Cslib.Complexity.CountingSimulation Cslib.Circuits.Frontier.ContractionSchedule
@@ -67,4 +67,4 @@ example {r a i Δ : ℕ} {D : DescribedNetwork (VertexDesc (List ℕ))} (hD : D.
 example : FastSizes := fastSizes
 example (hL : FastLeaves) : FastAnalysis nativeMk := fastAnalysis_nativeMk hL
 
-end ComplexityTests.FastContractionAnalysis
+end CslibFrontierTests.FastContractionAnalysis

@@ -22,16 +22,16 @@ run_cmd do
   | .error _ => pure ()
   | .ok _ => throwError "the Dijkstra abstract imports activated `realize` outside its scope"
 
-namespace ComplexityTests.Abstracts.DijkstraTests
+namespace CslibFrontierTests.Abstracts.DijkstraTests
 
-open ComplexityAbstracts.DijkstraAbstract
+open CslibFrontierAbstracts.DijkstraAbstract
 
 /-- Concrete 3-vertex graph: `0 → 1` (weights `4`, `5`), `0 → 2` (weight `1`), `2 → 1` (weight `2`).
 -/
 def sampleGraph : Graph 3 := ![[(1, 4), (2, 1), (1, 5)], [], [(1, 2)]]
 
 private theorem dist_source_zero : dist sampleGraph 0 0 = 0 := by
-  unfold ComplexityAbstracts.DijkstraAbstract.dist
+  unfold CslibFrontierAbstracts.DijkstraAbstract.dist
   exact le_antisymm (iInf₂_le [] (show IsWalk sampleGraph 0 [] 0 from rfl)) zero_le
 
 /-- Non-vacuity of `dijkstra_logLinear` on `sampleGraph` at word size `10`. -/
@@ -70,4 +70,4 @@ example :
     rfl
   exact ⟨r, p, K, t, steps, hr, hh, hle, hd0⟩
 
-end ComplexityTests.Abstracts.DijkstraTests
+end CslibFrontierTests.Abstracts.DijkstraTests

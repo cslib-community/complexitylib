@@ -33,7 +33,7 @@ statement's dependency boundary.
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-namespace ComplexityTests.Abstracts.PCPAbstract
+namespace CslibFrontierTests.Abstracts.PCPAbstract
 
 /-! ## Efficient verification
 
@@ -108,12 +108,12 @@ theorem pcp_theorem {α : Type} (enc : α ↪ List Bool) :
   exact PCPBridge.pcp_theorem enc
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.PCPAbstract`:
+info: abstract audit passed for `CslibFrontierTests.Abstracts.PCPAbstract`:
 7 root declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.PCPAbstract allowing [
-  ComplexityAbstracts.Encoding, ComplexityAbstracts.Computation
+#check_abstract CslibFrontierTests.Abstracts.PCPAbstract allowing [
+  CslibFrontierAbstracts.Encoding, CslibFrontierAbstracts.Computation
 ]
 
-end ComplexityTests.Abstracts.PCPAbstract
+end CslibFrontierTests.Abstracts.PCPAbstract

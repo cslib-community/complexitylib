@@ -8,7 +8,7 @@ import CslibFrontier.Crypto.Primitives.PRG.Nisan.Bits
 
 /-! Nisan's generator: block order, read-once tests at widths `1` and `2`, and the bounds. -/
 
-namespace ComplexityTests.NisanGenerator
+namespace CslibFrontierTests.NisanGenerator
 
 open Cslib Cslib.BranchingPrograms Cslib.Crypto.PRG Cslib.Crypto.PRG.Nisan
 
@@ -69,4 +69,4 @@ example : (bitGenerator 24 10).Secure (IsReadOnceTest 2) 2⁻¹ ∧
     rwa [pow_one] at h
   · rw [card_bitSeed]
 
-end ComplexityTests.NisanGenerator
+end CslibFrontierTests.NisanGenerator

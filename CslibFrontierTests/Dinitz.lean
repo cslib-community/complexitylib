@@ -32,7 +32,7 @@ Kernel-checked examples (without `native_decide`) for level networks, blocking f
 
 public section
 
-namespace ComplexityTests.Dinitz
+namespace CslibFrontierTests.Dinitz
 
 open Cslib.Algorithms.Lean.MaxFlow
 /-! ### CLRS network -/
@@ -202,4 +202,4 @@ example : (dinitzDense cutOffNet).phases = 0 ∧ (dinitzDense cutOffNet).flow.va
     (dinitzDense cutOffNet).cut = ({0, 1} : Finset (Fin 3)) := by
   decide
 
-end ComplexityTests.Dinitz
+end CslibFrontierTests.Dinitz

@@ -21,7 +21,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 
 open Turing.MultiTapeTM Cslib.Complexity Cslib.Logic.PL
 
-namespace ComplexityTests.BermanHartmanis
+namespace CslibFrontierTests.BermanHartmanis
 
 /-! ### Cantor–Schröder–Bernstein on a concrete pair of languages -/
 
@@ -156,4 +156,4 @@ example (h : BermanHartmanisConjecture) :
   h _ _ (CookLevin.SAT_npComplete.preimage_decode cnfDecoder)
     (ThreeSAT_npComplete.preimage_decode cnfDecoder)
 
-end ComplexityTests.BermanHartmanis
+end CslibFrontierTests.BermanHartmanis

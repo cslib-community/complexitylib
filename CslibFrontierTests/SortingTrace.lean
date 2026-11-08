@@ -15,7 +15,7 @@ and restoration after changing payload width. Compiled tests exercise the actual
 the public correctness and cost theorems are also instantiated below.
 -/
 
-namespace ComplexityTests.SortingTrace
+namespace CslibFrontierTests.SortingTrace
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean
 open bitonicSortTraceCircuit
@@ -135,4 +135,4 @@ example (d : ℕ) : (bitonicUnsortCircuit 0 d).size = 0 := by
     (List.finRange 24).all (fun i => controls output i 1 == !(controls output i 0)) &&
       ((bitonicUnsortCircuit 0 3).evalVector interpretation output).toArray.isEmpty
 
-end ComplexityTests.SortingTrace
+end CslibFrontierTests.SortingTrace

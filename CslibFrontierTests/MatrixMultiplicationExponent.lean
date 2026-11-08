@@ -13,7 +13,7 @@ exponents is nonempty; every admissible exponent is at least `2`, so `omega ℚ`
 with `2 ≤ omega ℚ ≤ 3`; and the headline gives `omega ℚ ≤ 9 / 4` and circuits of size
 `O(n ^ (9/4 + 1/100))`. -/
 
-namespace ComplexityTests.MatrixMultiplicationExponent
+namespace CslibFrontierTests.MatrixMultiplicationExponent
 
 open Cslib.Circuits.Arithmetic.MatrixMultiplication
 
@@ -51,4 +51,4 @@ example : AdmissibleExponent ℚ (9 / 4 + 1 / 100) :=
 example : omega ℝ ≤ 9 / 4 :=
   omega_le_nine_quarters ℝ
 
-end ComplexityTests.MatrixMultiplicationExponent
+end CslibFrontierTests.MatrixMultiplicationExponent

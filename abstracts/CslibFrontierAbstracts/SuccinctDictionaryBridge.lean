@@ -32,7 +32,7 @@ headline theorems in `SuccinctDictionaryAbstract.lean` to the library definition
 `Cslib.WordRAM.Basis.exact`.
 -/
 
-namespace ComplexityAbstracts.SuccinctDictionaryBridge
+namespace CslibFrontierAbstracts.SuccinctDictionaryBridge
 
 open scoped ENNReal BigOperators
 open Finset
@@ -44,8 +44,8 @@ open Cslib.DataStructure.Dictionary.WordRAM
 open Cslib.DataStructure.HashFamily.WordRAM
 open Cslib.DataStructure.WordRAM
 open Cslib.DataStructure.WordRAM.Randomized
-open ComplexityAbstracts.RandomizedWordRAMBridge
-open ComplexityAbstracts.HashFamiliesBridge.HFPresentation (WordBounded UnchangedOutside)
+open CslibFrontierAbstracts.RandomizedWordRAMBridge
+open CslibFrontierAbstracts.HashFamiliesBridge.HFPresentation (WordBounded UnchangedOutside)
 
 /-! ## Part 1: Polymorphic Dynamic Dictionary Presentation and Execution Transfer -/
 
@@ -641,4 +641,4 @@ theorem succinctDynamicDictionary (S : Presentation) (hS : Laws S)
       rw [List.length_map]
       exact le_trans le_self_add hamort
 
-end ComplexityAbstracts.SuccinctDictionaryBridge
+end CslibFrontierAbstracts.SuccinctDictionaryBridge

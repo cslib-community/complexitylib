@@ -13,7 +13,7 @@ import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
 
 /-! # Bridges for formula balancing and lower bounds -/
 
-namespace ComplexityTests.Abstracts.FormulaBoundsBridge
+namespace CslibFrontierTests.Abstracts.FormulaBoundsBridge
 
 /-- A De Morgan expression is a tree of binary AND/OR, unary NOT, constants, and input leaves.
 Only the elementary tree datatype/evaluator/costs in the explicitly allowed Formula module are
@@ -141,4 +141,4 @@ theorem andreev_lower_bound :
         144 * b ^ 2 * (Nat.log 2 b + 2) ^ 3 * minimumLeaves (andreev b m) ^ 2 :=
   Cslib.Circuits.Boolean.pow_two_mul_pow_three_le_formulaSize_andreev_sq
 
-end ComplexityTests.Abstracts.FormulaBoundsBridge
+end CslibFrontierTests.Abstracts.FormulaBoundsBridge

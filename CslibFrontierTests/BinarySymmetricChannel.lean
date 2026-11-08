@@ -24,7 +24,7 @@ import Mathlib.Tactic.NormNum
   for every `p < 1/2`.
 -/
 
-namespace ComplexityTests.BinarySymmetricChannel
+namespace CslibFrontierTests.BinarySymmetricChannel
 
 open Cslib Cslib.BitString Finset Real
 open scoped unitInterval
@@ -146,4 +146,4 @@ example (p : I) (hp : (p : ℝ) < 1 / 2) :
     exact binEntropy_lt_log_two.mpr (by linarith)
   exact ⟨by linarith, exists_pos_forall_exists_code_decodingError_le_exp p hp (by linarith)⟩
 
-end ComplexityTests.BinarySymmetricChannel
+end CslibFrontierTests.BinarySymmetricChannel

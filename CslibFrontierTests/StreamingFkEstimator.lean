@@ -29,7 +29,7 @@ Verifies non-vacuity and concrete behavior of:
 
 public section
 
-namespace ComplexityTests.StreamingFkEstimator
+namespace CslibFrontierTests.StreamingFkEstimator
 
 open Cslib Cslib.Probability Cslib.Streaming
 open scoped BigOperators
@@ -105,4 +105,4 @@ example : ∃ enc : FkState (Fin 4) 5 1 12 → BitString 180,
     Set.InjOn enc (⋃ ω, (fkSketch 2 5 1 12 ω).reachable 5) :=
   exists_injOn_iUnion_reachable_fkSketch (by norm_num)
 
-end ComplexityTests.StreamingFkEstimator
+end CslibFrontierTests.StreamingFkEstimator

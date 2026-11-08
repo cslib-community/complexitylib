@@ -15,7 +15,7 @@ open scoped RealInnerProductSpace
 
 noncomputable section
 
-namespace ComplexityTests.DiscreteGaussianConvolution
+namespace CslibFrontierTests.DiscreteGaussianConvolution
 
 private def twoBasis : Basis Unit ℝ ℝ :=
   (Basis.singleton Unit ℝ).isUnitSMul (fun _ => (show (2 : ℝ) ≠ 0 by norm_num).isUnit)
@@ -149,4 +149,4 @@ example (r s t : ℝ) (hr : 0 < r) (hs : 0 < s) (ht : 0 < t)
     isProbabilityMeasure_gaussianWeight t ht
   exact tvDist_eq_zero_iff.mp (le_antisymm h tvDist_nonneg)
 
-end ComplexityTests.DiscreteGaussianConvolution
+end CslibFrontierTests.DiscreteGaussianConvolution

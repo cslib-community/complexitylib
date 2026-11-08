@@ -28,7 +28,7 @@ theorems of `Memory.Allocator`, which need no setup proof.
 
 @[expose] public section
 
-namespace ComplexityTests.DataStructureDoubling
+namespace CslibFrontierTests.DataStructureDoubling
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.Memory Cslib.DataStructure.Queue
 
@@ -182,4 +182,4 @@ example : (spec 8).totalCost charge nothing ((spec 8).clientHistory nothing
   Allocator.run_cost_le amortized_growingQueue queueClient
     ⟨trivial, trivial, Finset.disjoint_empty_left _⟩ (by decide) queueClient_valid
 
-end ComplexityTests.DataStructureDoubling
+end CslibFrontierTests.DataStructureDoubling

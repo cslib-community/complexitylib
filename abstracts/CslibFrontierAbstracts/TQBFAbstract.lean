@@ -30,7 +30,7 @@ and machine models; Lean checks the proofs through `TQBFBridge`.
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-namespace ComplexityTests.Abstracts.TQBFAbstract
+namespace CslibFrontierTests.Abstracts.TQBFAbstract
 
 /-! ## Quantified Boolean formulas and semantics
 
@@ -183,12 +183,12 @@ theorem tqbf_pspaceComplete : PSPACEComplete encQBF TQBF :=
     (by constructor <;> intros <;> rfl)
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.TQBFAbstract`:
+info: abstract audit passed for `CslibFrontierTests.Abstracts.TQBFAbstract`:
 81 root declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.TQBFAbstract allowing [
-  ComplexityAbstracts.Encoding, ComplexityAbstracts.Computation
+#check_abstract CslibFrontierTests.Abstracts.TQBFAbstract allowing [
+  CslibFrontierAbstracts.Encoding, CslibFrontierAbstracts.Computation
 ]
 
-end ComplexityTests.Abstracts.TQBFAbstract
+end CslibFrontierTests.Abstracts.TQBFAbstract

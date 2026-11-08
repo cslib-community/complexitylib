@@ -8,7 +8,7 @@ import CslibFrontier.Computability.Complexity.Problems.CSP.Basic
 
 /-! Concrete syntax, satisfiability, and empty/nullary edge cases for fixed Boolean CSPs. -/
 
-namespace ComplexityTests.BooleanCSP
+namespace CslibFrontierTests.BooleanCSP
 
 open Cslib.Complexity Cslib.Logic.PL
 
@@ -71,4 +71,4 @@ example : CSP.HasPolymorphism (fun _ : Unit => 1) (fun _ _ => false)
   intro _ a ha
   exact (Bool.false_ne_true (ha 0)).elim
 
-end ComplexityTests.BooleanCSP
+end CslibFrontierTests.BooleanCSP

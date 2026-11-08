@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.ContractionCircuitCoun
 A De Morgan circuit with fan-out, an unreachable gate and an unread input: its count, the
 density of its compiled formula, and instances of the counters. -/
 
-namespace ComplexityTests.ContractionCircuitCounting
+namespace CslibFrontierTests.ContractionCircuitCounting
 
 open Cslib.Circuits Cslib.Circuits.Frontier Cslib.Complexity Cslib.Complexity.ContractionCounting
   Cslib.Logic.PL Turing.MultiTapeTM
@@ -58,4 +58,4 @@ example : ∃ (count T : (Σ n, Circuit Boolean.signature n 1) → ℕ) (e A : �
   obtain ⟨A, hA⟩ := hT 1
   exact ⟨count, T, e, A, by rw [hspec]; decide, hA ⟨4, sample⟩ (by decide)⟩
 
-end ComplexityTests.ContractionCircuitCounting
+end CslibFrontierTests.ContractionCircuitCounting

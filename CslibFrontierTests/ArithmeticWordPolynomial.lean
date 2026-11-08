@@ -16,7 +16,7 @@ relative rank is `1 / 2`, and the word is `2`-unbiased, so the word polynomial w
 length `2` is a projection of `IMM_{4,3}`.
 -/
 
-namespace ComplexityTests.ArithmeticWordPolynomial
+namespace CslibFrontierTests.ArithmeticWordPolynomial
 
 open Cslib.Circuits.Arithmetic MvPolynomial
 
@@ -82,4 +82,4 @@ private theorem isUnbiased_w₂ : IsUnbiased w₂ 2 := by
 example (τ : ℕ) (hτ : τ < 4) : IsProjection (wordPoly ℚ w₂ τ) (imm ℚ 4 3) :=
   isProjection_wordPoly_imm isUnbiased_w₂ le_rfl (by simpa [w₂, Fin.sum_univ_three] using hτ)
 
-end ComplexityTests.ArithmeticWordPolynomial
+end CslibFrontierTests.ArithmeticWordPolynomial

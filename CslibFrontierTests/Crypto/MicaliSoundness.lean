@@ -29,7 +29,7 @@ import CslibFrontier.Crypto.Computational.Kilian.MicaliSoundness
    `micaliProofBits_micaliProvePure_le` and `exists_micaliCSProof_of_mem_NP`.
 -/
 
-namespace ComplexityTests.Crypto.MicaliSoundness
+namespace CslibFrontierTests.Crypto.MicaliSoundness
 
 open Cslib Cslib.Complexity Cslib.Crypto Cslib.Probability OracleComp
 open scoped ENNReal
@@ -312,4 +312,4 @@ example {enc : List Bool ↪ List Bool} {L : Set (List Bool)} (hL : L ∈ NP enc
           C * (σ + m + 1) ^ 2 * (Nat.log 2 (enc s).length + 1)) :=
   exists_micaliCSProof_of_mem_NP hL
 
-end ComplexityTests.Crypto.MicaliSoundness
+end CslibFrontierTests.Crypto.MicaliSoundness

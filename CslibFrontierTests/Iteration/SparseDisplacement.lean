@@ -14,7 +14,7 @@ Check zero-width words, wraparound cuts, an edited counter, negative powers, and
 identity coordinates. A noninjective example shows why the factor-two theorem needs injectivity.
 -/
 
-namespace ComplexityTests.Iteration.SparseDisplacement
+namespace CslibFrontierTests.Iteration.SparseDisplacement
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Circuits.Boolean.Iteration
 open Cslib.FunctionalGraph
@@ -83,4 +83,4 @@ example :
   · ext x
     simp [mem_disagreement, edit]
 
-end ComplexityTests.Iteration.SparseDisplacement
+end CslibFrontierTests.Iteration.SparseDisplacement

@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Block
 /-! Block-counting networks of concrete fair-coin machines: summed over schedules, their
 contractions are accepting counts computed directly. -/
 
-namespace ComplexityTests.HPVBlockNetwork
+namespace CslibFrontierTests.HPVBlockNetwork
 
 open Turing MultiTapeMachine
 
@@ -52,4 +52,4 @@ example (σ : MultiTapePTM.Schedule 1 2) :
     walk.maxDegreeLE_blockNetwork _ _ σ, walk.loopless_blockNetwork _ _ σ,
     walk.tensor_blockNetwork_le _ _ σ⟩
 
-end ComplexityTests.HPVBlockNetwork
+end CslibFrontierTests.HPVBlockNetwork

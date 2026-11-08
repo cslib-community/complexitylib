@@ -13,7 +13,7 @@ The absent-six hypothesis has a concrete NAE instance. The reference lift is tes
 satisfiable and contradictory formulas, malformed scopes, repeated variables and large labels.
 -/
 
-namespace ComplexityTests.SchaeferHardness
+namespace CslibFrontierTests.SchaeferHardness
 
 open Cslib.Logic Cslib.Logic.PL Cslib.Complexity Turing.MultiTapeTM
 
@@ -54,4 +54,4 @@ example : SelfDualThreeSAT.ofExactThreeSAT [] ∈ SelfDualThreeSAT := by
   rw [SelfDualThreeSAT.ofExactThreeSAT_mem_iff]
   exact ⟨by simp, fun _ => false, rfl⟩
 
-end ComplexityTests.SchaeferHardness
+end CslibFrontierTests.SchaeferHardness

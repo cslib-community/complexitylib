@@ -12,7 +12,7 @@ exactly when it comes before `x₁`, so its guess probability is `1 / 2`, which 
 identity computes and which meets the frozen guess bound `1 - qbar 2 1`. In `¬x₀ ∨ x₁` the variable
 `x₁` is liquid, and becomes frozen once `x₀` is fixed. -/
 
-namespace ComplexityTests.PPSZFrozen
+namespace CslibFrontierTests.PPSZFrozen
 
 open Cslib.Logic.PL Cslib.Complexity Cslib.Complexity.PPSZ Finset
 
@@ -126,4 +126,4 @@ example : guessProb χ 1 {0} σ 1 ≤ 1 - qbar 2 1 :=
 example : ¬SatLit χ (PPZ.restrict σ {0}) 1 false := fun h => by
   simpa [σ] using (satLit_iff_of_frozen (isSatExtension_restrict χ_sat {0}) frozen_χ).1 h
 
-end ComplexityTests.PPSZFrozen
+end CslibFrontierTests.PPSZFrozen

@@ -10,7 +10,7 @@ import CslibFrontier.Tactic.PPT
 
 /-! Nonmonotone schedules, short seeds, exact suffix preservation and uniform calibration. -/
 
-namespace ComplexityTests.GeneratorReindex
+namespace CslibFrontierTests.GeneratorReindex
 
 open Cslib Cslib.Crypto Cslib.BitString Cslib.Probability Turing.MultiTapeTM
 open scoped NNReal
@@ -99,4 +99,4 @@ example : IsPPTOn (encPair encUnary encBits) encBool (fun p =>
       (fun index word => pure (decide (index ≤ word.length))) p.2.reverse) := by
   ppt
 
-end ComplexityTests.GeneratorReindex
+end CslibFrontierTests.GeneratorReindex

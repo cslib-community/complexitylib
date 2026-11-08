@@ -16,7 +16,7 @@ nothing conditioned, `S` carries no information, so the first stage is exact; th
 bounds every strategy's probability of winning the single coordinate by the value of the game.
 -/
 
-namespace ComplexityTests.RepetitionFactorization
+namespace CslibFrontierTests.RepetitionFactorization
 
 open Cslib.PCP Cslib.PCP.ParallelRepetition
 open Cslib.Probability.CorrelatedSampling (IsEmbeddable withKernel condX condY
@@ -92,4 +92,4 @@ example [Nonempty A] [Nonempty B] (ha : (Fin 1 → X) → Fin 1 → A)
     (isEmbeddable_filter_questions_of_shared j hC hstage1)
   simpa using h
 
-end ComplexityTests.RepetitionFactorization
+end CslibFrontierTests.RepetitionFactorization

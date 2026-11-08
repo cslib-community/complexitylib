@@ -18,7 +18,7 @@ leaf and refuses a repeated leaf or one outside the tree. The capacity hypothesi
 depth and for depth `Nat.clog 2 (n + 1)`, whose capacity grows linearly.
 -/
 
-namespace ComplexityTests.Crypto.MerkleSignature
+namespace CslibFrontierTests.Crypto.MerkleSignature
 
 open Cslib Cslib.Crypto Cslib.Crypto.MerkleSignature Turing.MultiTapeTM
 
@@ -144,4 +144,4 @@ example : twoLeaves.indexedSigningOracle 4 (secretKey key keys) (request 2) [] =
     IndexedSignatureScheme.requestDecoder.decode_enc]
   simp [scheme]
 
-end ComplexityTests.Crypto.MerkleSignature
+end CslibFrontierTests.Crypto.MerkleSignature

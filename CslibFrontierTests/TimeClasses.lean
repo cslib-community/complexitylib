@@ -19,7 +19,7 @@ counts zero and one, while two identical accepting occurrences witness count two
 clock leaves that terminal count at two, rather than multiplying it by free choice-bit padding.
 -/
 
-namespace ComplexityTests.TimeClasses
+namespace CslibFrontierTests.TimeClasses
 
 open Cslib.Complexity _root_.Turing _root_.Turing.MultiTapeTM
 
@@ -120,4 +120,4 @@ example (input : List Bool) : ¬ stuck.HaltsWithin 7 (Cfg.init stuck.initial inp
   | halt hhalt => cases hhalt
   | step hnon _ => exact hnon rfl
 
-end ComplexityTests.TimeClasses
+end CslibFrontierTests.TimeClasses

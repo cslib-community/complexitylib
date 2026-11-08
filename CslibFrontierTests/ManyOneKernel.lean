@@ -8,7 +8,7 @@ import CslibFrontier.Computability.Reduction.ManyOne
 
 /-! The admissible-map API works without importing machines or complexity classes. -/
 
-namespace ComplexityTests.ManyOneKernel
+namespace CslibFrontierTests.ManyOneKernel
 
 open Cslib.Complexity
 
@@ -28,4 +28,4 @@ example : ManyOneReducibleBy (fun _ => True) {b : Bool | b = false} {b : Bool | 
     simpa only [hfalse, htrue] using flip.compl
   exact flip.trans (fun _ _ _ _ => trivial) back
 
-end ComplexityTests.ManyOneKernel
+end CslibFrontierTests.ManyOneKernel

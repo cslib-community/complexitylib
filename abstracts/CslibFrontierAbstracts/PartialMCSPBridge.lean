@@ -22,11 +22,11 @@ plain De Morgan circuits, and partial truth-table instances) to the theorems in
 `CslibFrontier.Computability.MCSP.PartialNP`.
 -/
 
-namespace ComplexityAbstracts.PartialMCSPBridge
+namespace CslibFrontierAbstracts.PartialMCSPBridge
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Complexity Cslib.Logic.PL
 open Turing.MultiTapeTM
-open ComplexityTests.Abstracts
+open CslibFrontierTests.Abstracts
 
 /-! ### 3SAT and ETH equivalence -/
 
@@ -301,4 +301,4 @@ theorem partialMCSP_mem_NP_encBinary {Inst : Type} (e : Inst ≃ PartialMCSP.Ins
   mem_np_of_equiv e (fun x => (hA x).trans (mem_partialMCSP_iff (e x))) henc
     PartialMCSP.mem_NP_encBinary
 
-end ComplexityAbstracts.PartialMCSPBridge
+end CslibFrontierAbstracts.PartialMCSPBridge

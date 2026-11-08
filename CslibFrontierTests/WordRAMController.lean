@@ -22,7 +22,7 @@ the polynomial-time automation on the compiled stack controller.
 
 @[expose] public section
 
-namespace ComplexityTests.WordRAMController
+namespace CslibFrontierTests.WordRAMController
 
 open Cslib Cslib.WordRAM WordRAMDynamicTests
 
@@ -419,4 +419,4 @@ example (budget : Unit → Data 1 → ℕ) (code : Code .standard 1) :
 #guard_msgs in
 #print axioms Refines.call
 
-end ComplexityTests.WordRAMController
+end CslibFrontierTests.WordRAMController

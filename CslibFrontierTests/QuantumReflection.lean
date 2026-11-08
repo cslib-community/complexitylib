@@ -12,7 +12,7 @@ controlled `T = H[a] Λ(σ_x)[a, b] H[a]` built from a Toffoli gate (a variant o
 without its final `σ_x` on `b`), the reflection about `|00⟩` negating `|00⟩` and fixing `|10⟩`,
 and the quarter turn of the plane `ℝ²` produced by two reflections at angle `π / 4`. -/
 
-namespace ComplexityTests.QuantumReflection
+namespace CslibFrontierTests.QuantumReflection
 
 open Cslib Cslib.Quantum Cslib.Quantum.GateCode Cslib.Quantum.Circuit
 
@@ -92,4 +92,4 @@ example : reflectDiag (reflectFst (1, 0)) = (0, 1) := by
   have hπ : (0 : ℝ) - 2 * (Real.pi / 4) = -(Real.pi / 2) := by ring
   simpa [hπ] using h
 
-end ComplexityTests.QuantumReflection
+end CslibFrontierTests.QuantumReflection

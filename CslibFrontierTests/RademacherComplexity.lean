@@ -16,7 +16,7 @@ binary classification, the 0-1 loss class of the two constant classifiers on one
 complexity exactly `1 / 2`, a single classifier gives Hoeffding's bound, and the VC and agnostic ERM
 bounds give nontrivial guarantees for all binary classifiers on `Bool` with `65536` examples. -/
 
-namespace ComplexityTests.RademacherComplexity
+namespace CslibFrontierTests.RademacherComplexity
 
 open Cslib.MachineLearning Cslib.BitString Cslib.MachineLearning.PACLearning
 open scoped BigOperators
@@ -294,4 +294,4 @@ example (D : PMF (Bool × Bool)) {A : Learner Bool Bool 65536} (hA : IsERM A Set
 /-- Empirical risk minimizers over all binary classifiers on `Bool` exist. -/
 example : ∃ A : Learner Bool Bool 65536, IsERM A Set.univ := exists_isERM Set.univ_nonempty
 
-end ComplexityTests.RademacherComplexity
+end CslibFrontierTests.RademacherComplexity

@@ -21,7 +21,7 @@ composition and automation, and distinct fault paths in checked scalar/instructi
 
 @[expose] public section
 
-namespace ComplexityTests.GenericRAMNative
+namespace CslibFrontierTests.GenericRAMNative
 
 open Cslib.GenericRAM Turing.MultiTapeTM
 open Turing.MultiTapeTM.ComputableTidilyInPolyTime
@@ -226,4 +226,4 @@ example :
    Cslib.WordRAM.Basis.arithmetic.nativePrimitives_isPolynomial,
    Cslib.WordRAM.Basis.exact.nativePrimitives_isPolynomial⟩
 
-end ComplexityTests.GenericRAMNative
+end CslibFrontierTests.GenericRAMNative

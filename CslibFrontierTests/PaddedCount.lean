@@ -17,9 +17,9 @@ The unary clock of `Cslib.Complexity.TimeConstructible.exists_prepare_unaryClock
 count bridge and the class-level count tests, at the clock `T n = (n + 1) ^ 2 + 1`. The
 always-accepting table gives a nonvacuous instance: its padded count is positive. -/
 
-namespace ComplexityTests.PaddedCount
+namespace CslibFrontierTests.PaddedCount
 
-open Cslib.Complexity Turing ComplexityTests.CountingSeparation
+open Cslib.Complexity Turing CslibFrontierTests.CountingSeparation
 
 /-! ### The clock -/
 
@@ -85,4 +85,4 @@ example {α : Type} {enc : α ↪ List Bool} {A : Set α}
       ∃ g ∈ SharpTIME enc (fun n => (n + 1) ^ 2 + 1), ∀ a, a ∈ A ↔ g a < 2 * f a :=
   exists_mem_SharpTIME_of_mem_BPTIME timeConstructible_succ_sq_add_one hA
 
-end ComplexityTests.PaddedCount
+end CslibFrontierTests.PaddedCount

@@ -13,7 +13,7 @@ The semigroup law on a monomial, evaluated with Fact 11.13 (`U_{1/2} U_{1/2} (x�
 its degenerate cases `ρ₂ = 0` and `ρ₁ = -1`, and `L¹` continuity at
 `ρ = 1` for a coordinate and for the discontinuous indicator of a halfspace. -/
 
-namespace ComplexityTests.GaussianNoiseSemigroup
+namespace CslibFrontierTests.GaussianNoiseSemigroup
 
 open MeasureTheory ProbabilityTheory Filter Topology
 open scoped ENNReal
@@ -62,4 +62,4 @@ example : Tendsto (fun ρ =>
   tendsto_eLpNorm_gaussianNoiseOp_sub
     ((integrable_const 1).indicator (measurableSet_le (by fun_prop) measurable_const))
 
-end ComplexityTests.GaussianNoiseSemigroup
+end CslibFrontierTests.GaussianNoiseSemigroup

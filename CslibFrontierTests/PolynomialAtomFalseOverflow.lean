@@ -19,7 +19,7 @@ one at the first endpoint, while the true output is zero. The masked fourth mome
 `1/2`; the normalized single-group and finite-union bounds apply to that nonzero error.
 -/
 
-namespace ComplexityTests.PolynomialAtomFalseOverflow
+namespace CslibFrontierTests.PolynomialAtomFalseOverflow
 
 open Finset Cslib Cslib.RowCompression Cslib.Probability
 open scoped BigOperators
@@ -243,4 +243,4 @@ example :
     increments (fun _ _ => initial) (fun _ _ _ => 0)
     (by intros; rfl) (by intros; exact le_rfl) (by intros; rfl)
 
-end ComplexityTests.PolynomialAtomFalseOverflow
+end CslibFrontierTests.PolynomialAtomFalseOverflow

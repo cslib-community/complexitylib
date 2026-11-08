@@ -39,7 +39,7 @@ CSLib.
   Algorithms*][CLRS2009], Chapter 19 and Section 24.3 (p. 662).
 -/
 
-namespace ComplexityAbstracts.DijkstraAbstract
+namespace CslibFrontierAbstracts.DijkstraAbstract
 
 variable {n : ℕ}
 
@@ -276,10 +276,10 @@ theorem dijkstra_logLinear :
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr, @AluOp.rec, AluOp.eval,
       Instr, .const, .copy, .alu, .width, .load, .store, .jump, .branchEq, .branchLt, .halt,
       @Instr.rec, State, .mk, Outcome, .next, .halt, .fault, step,
-      ComplexityTests.Abstracts.WordRAMBridge.haltsVia Instr State Outcome step
+      CslibFrontierTests.Abstracts.WordRAMBridge.haltsVia Instr State Outcome step
         fun f g a o => o.rec f g a, fun _ _ => True⟩
     (by constructor <;>
-      simp_all [step, ComplexityTests.Abstracts.WordRAMBridge.haltsVia, AluOp.eval])
+      simp_all [step, CslibFrontierTests.Abstracts.WordRAMBridge.haltsVia, AluOp.eval])
     State.mem (fun _ _ _ => rfl) (W := @IsWalk) ⟨fun _ _ _ => Iff.rfl, fun _ _ _ _ _ => Iff.rfl⟩
 
 /-- **Dijkstra's algorithm (Fibonacci heap).** Some program `p` of the word RAM defined in the
@@ -301,10 +301,10 @@ theorem dijkstra_fibonacci :
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr, @AluOp.rec, AluOp.eval,
       Instr, .const, .copy, .alu, .width, .load, .store, .jump, .branchEq, .branchLt, .halt,
       @Instr.rec, State, .mk, Outcome, .next, .halt, .fault, step,
-      ComplexityTests.Abstracts.WordRAMBridge.haltsVia Instr State Outcome step
+      CslibFrontierTests.Abstracts.WordRAMBridge.haltsVia Instr State Outcome step
         fun f g a o => o.rec f g a, fun _ _ => True⟩
     (by constructor <;>
-      simp_all [step, ComplexityTests.Abstracts.WordRAMBridge.haltsVia, AluOp.eval])
+      simp_all [step, CslibFrontierTests.Abstracts.WordRAMBridge.haltsVia, AluOp.eval])
     State.mem (fun _ _ _ => rfl) (W := @IsWalk) ⟨fun _ _ _ => Iff.rfl, fun _ _ _ _ _ => Iff.rfl⟩
 
 /--
@@ -312,6 +312,6 @@ info: abstract audit passed for `CslibFrontierAbstracts.DijkstraAbstract`: 219 r
 declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.DijkstraAbstract
+#check_abstract CslibFrontierAbstracts.DijkstraAbstract
 
-end ComplexityAbstracts.DijkstraAbstract
+end CslibFrontierAbstracts.DijkstraAbstract

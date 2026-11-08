@@ -22,10 +22,10 @@ rejection. The honest fixture and adversary both have native machine certificate
 
 public section
 
-namespace ComplexityTests.Crypto.KEMFromPKECCA
+namespace CslibFrontierTests.Crypto.KEMFromPKECCA
 
 open Cslib Cslib.Crypto Cslib.Crypto.Encryption Cslib.Probability Turing.MultiTapeTM
-open ComplexityTests.Crypto.HybridEncryption
+open CslibFrontierTests.Crypto.HybridEncryption
 open scoped NNReal
 
 /-- The nonidentity schedule uses the actual CCA assumption and existing security predicates. -/
@@ -245,4 +245,4 @@ example (keyLen : ℕ → ℕ) (n : ℕ) :
   simpa only [kemCCARealGame, kemCCAIdealGame, kemRealGameWith, kemIdealGameWith,
     ProbComp.eval_bind, eval_adaptiveContinuation] using advantage_tag keyLen n
 
-end ComplexityTests.Crypto.KEMFromPKECCA
+end CslibFrontierTests.Crypto.KEMFromPKECCA

@@ -10,7 +10,7 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! Exact verifier behavior, padding, short words, repetition, and nonvacuous PCP contracts. -/
 
-namespace ComplexityTests.PCPEncodedVerifier
+namespace CslibFrontierTests.PCPEncodedVerifier
 
 open Cslib Cslib.PCP Cslib.PCP.Encoded Cslib.Complexity Turing.MultiTapeTM
 
@@ -176,4 +176,4 @@ example : ({true} : Set Bool) ∈ PCP (fun n => Nat.log 2 n + 1) (fun _ => 1) en
 #guard_msgs in
 #eval acceptCount (fun p => repeatCheck.accepts p.1 [] p.2) mixed (repeatCheck.coins mixed)
 
-end ComplexityTests.PCPEncodedVerifier
+end CslibFrontierTests.PCPEncodedVerifier

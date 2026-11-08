@@ -15,7 +15,7 @@ public import CslibFrontier.Algorithms.Lean.MergeSort.Comparator
 
 public section
 
-namespace ComplexityTests.MergeSortComparator
+namespace CslibFrontierTests.MergeSortComparator
 
 open Cslib.Algorithms.Lean Cslib.Algorithms.Lean.TimeM
 open scoped Cslib.Algorithms.Lean.TimeM
@@ -39,4 +39,4 @@ example :
   · simp only [ret_mergeSortM]
     exact List.mergeSort_perm _ _
 
-end ComplexityTests.MergeSortComparator
+end CslibFrontierTests.MergeSortComparator

@@ -13,7 +13,7 @@ The first client checks the full initialization/round/terminal effect order agai
 The second uses distinct role oracles and retains a private coin across the challenge and reply.
 -/
 
-namespace ComplexityTests.InteractiveStrategyEffect
+namespace CslibFrontierTests.InteractiveStrategyEffect
 
 open Cslib Cslib.Interactive Spec Probability
 
@@ -126,4 +126,4 @@ example : roleWorld.eval roleProgram = (PMF.uniformOfFintype Bool).map (fun coin
     StateT.run_bind, hpure,
     OracleComp.run_interpret_lift, hcoin, PMF.map, Function.comp_def]
 
-end ComplexityTests.InteractiveStrategyEffect
+end CslibFrontierTests.InteractiveStrategyEffect

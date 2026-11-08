@@ -8,7 +8,7 @@ import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingProgram
 
 /-! # Executed initialized-input Chan–He preprocessing -/
 
-namespace ComplexityTests.NativeChanHePreprocessing
+namespace CslibFrontierTests.NativeChanHePreprocessing
 
 open Cslib.WordRAM
 open Cslib.Algorithms.WordRAM.ThreeSum.ChanHe
@@ -31,4 +31,4 @@ open Cslib.Algorithms.WordRAM.ThreeSum.ChanHe
 #guard_msgs in
 #eval (Code.eval 1 256 (Preprocessing.program 0) (Data.init [])).isNone
 
-end ComplexityTests.NativeChanHePreprocessing
+end CslibFrontierTests.NativeChanHePreprocessing

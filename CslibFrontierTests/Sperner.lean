@@ -10,7 +10,7 @@ import Mathlib.Tactic.IntervalCases
 /-! Sperner's lemma on concrete colourings, a colouring violating the boundary condition, and
 concrete instances of circuit `2D-SPERNER`. -/
 
-namespace ComplexityTests.Sperner
+namespace CslibFrontierTests.Sperner
 
 open Cslib Cslib.Sperner Cslib.Sperner.GridTriangle Cslib.Complexity Turing.MultiTapeTM
 
@@ -98,4 +98,4 @@ example : searchDomain Sperner2D = Set.univ :=
 example : Sperner2D ∈ PPA encSperner2D :=
   Sperner2D_searchReducible_EndOfLine.mem_PPA Sperner2D_mem_TFNP.1 EndOfLine_mem_PPA
 
-end ComplexityTests.Sperner
+end CslibFrontierTests.Sperner

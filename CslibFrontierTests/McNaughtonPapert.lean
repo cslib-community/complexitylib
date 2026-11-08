@@ -22,7 +22,7 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.McNaughtonPapert
 
 open Cslib.Logic.WordMSO Cslib.Language
 
-namespace ComplexityTests.McNaughtonPapert
+namespace CslibFrontierTests.McNaughtonPapert
 
 /-- Over `Bool`, first-order definable languages are closed under concatenation, through
 star-freeness. -/
@@ -70,4 +70,4 @@ example : wordRankType 1 [true] Fin.elim0 ≠ wordRankType 1 [false] Fin.elim0 :
 example : IsStarFree (⨅ b : Bool, (⊤ * {[b]} * ⊤ : Language Bool)) :=
   IsStarFree.iInf fun b => (IsStarFree.top.mul (.char b)).mul .top
 
-end ComplexityTests.McNaughtonPapert
+end CslibFrontierTests.McNaughtonPapert

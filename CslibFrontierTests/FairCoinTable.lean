@@ -17,7 +17,7 @@ successors coincide. The output index is the ordinary row-major index, not an as
 The empty input and exponent-zero compact box also have actual initialized runs.
 -/
 
-namespace ComplexityTests.FairCoinTable
+namespace CslibFrontierTests.FairCoinTable
 
 open Cslib.Turing Turing MultiTapeTM CounterProgram Instr
 open MultiTapeNTM.ConfigurationGraph MultiTapePTM.ConfigurationGraph
@@ -168,4 +168,4 @@ example : ∃ regs out, (coinTableProgram (machine true) 0).ReachesOut (frame []
 -- The final label is a halt; the entire counted table is emitted before reaching it.
 example (different : Bool) : (coinTableProgram (machine different) 1).instr 22 = halt [] := rfl
 
-end ComplexityTests.FairCoinTable
+end CslibFrontierTests.FairCoinTable

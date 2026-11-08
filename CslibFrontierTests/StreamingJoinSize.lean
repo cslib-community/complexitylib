@@ -31,9 +31,9 @@ Verifies non-vacuity and concrete behavior of:
 
 public section
 
-namespace ComplexityTests.StreamingJoinSize
+namespace CslibFrontierTests.StreamingJoinSize
 
-open Cslib Cslib.Probability Cslib.Streaming ComplexityTests.StreamingAMS
+open Cslib Cslib.Probability Cslib.Streaming CslibFrontierTests.StreamingAMS
 open scoped BigOperators
 
 /-! ## 1. Join sizes -/
@@ -136,4 +136,4 @@ example : (joinSketch (fun (_ : Unit) (_ : Fin 2) => ()) (fun _ => (1 : ℤ)) 1 
   have : Nonempty (Fin (2 * 1)) := ⟨⟨0, by norm_num⟩⟩
   simp [medianOfMeans, median_const]
 
-end ComplexityTests.StreamingJoinSize
+end CslibFrontierTests.StreamingJoinSize

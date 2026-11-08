@@ -14,7 +14,7 @@ public section
 open Cslib.Logic.PL
 open ClauseSet.Sparsification
 
-namespace ComplexityTests.SparsificationCounting
+namespace CslibFrontierTests.SparsificationCounting
 
 -- Avoid choosing an order for toCNF: count its assignments using the existing semantic bridge.
 private theorem count_eq_card {V : Type*} [DecidableEq V]
@@ -154,4 +154,4 @@ example :
   rw [count_eq_card]
   decide
 
-end ComplexityTests.SparsificationCounting
+end CslibFrontierTests.SparsificationCounting

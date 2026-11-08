@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Complexity.Classes.PH.OracleNP
 
 /-! # `P^NP ⊆ Σ₂ ∩ Π₂`: transcript certificates and the projection lemma -/
 
-namespace ComplexityTests.PHOracleNP
+namespace CslibFrontierTests.PHOracleNP
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
@@ -54,4 +54,4 @@ example {A : Set (List Bool)} (hA : A ∈ NP encBits) : Aᶜ ∈ SigmaP 2 encBit
 example {α : Type} (enc : α ↪ List Bool) : PNPLog enc ⊆ PH enc :=
   PNPLog_subset_PH enc
 
-end ComplexityTests.PHOracleNP
+end CslibFrontierTests.PHOracleNP

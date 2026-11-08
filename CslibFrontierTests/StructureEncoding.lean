@@ -8,7 +8,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 
 /-! Tests of `enc_structure`. -/
 
-namespace ComplexityTests.StructureEncoding
+namespace CslibFrontierTests.StructureEncoding
 
 open Turing.MultiTapeTM
 
@@ -34,4 +34,4 @@ example {p q : Point} (h : ePoint p = ePoint q) : p = q := ePoint.injective h
 example : ComputableInDegree (fun p : Point => Point.mk p.x p.y p.z) ePoint ePoint 1 1 := by
   fun_prop (disch := lia)
 
-end ComplexityTests.StructureEncoding
+end CslibFrontierTests.StructureEncoding

@@ -15,7 +15,7 @@ plus torus (`(ZMod 8) ^ 3`) environment, together with `L²` and `L⁴` concentr
 explicit length-`t` validated-word estimator without passing retained identifiers across walk steps.
 -/
 
-namespace ComplexityTests.ProductValidatedWords
+namespace CslibFrontierTests.ProductValidatedWords
 
 open Cslib Cslib.Probability Cslib.RotationMap Finset
 open scoped BigOperators
@@ -138,4 +138,4 @@ example (y : ∀ j : Fin 2, ZMod (![5, 7] j)) (f : ComponentSpace 3 8 ![5, 7] �
   norm_num at h ⊢
   exact h
 
-end ComplexityTests.ProductValidatedWords
+end CslibFrontierTests.ProductValidatedWords

@@ -14,7 +14,7 @@ The original finite-cover import still supplies the exact bound. Empty obligatio
 half-density families retain the sharp `n + 1` test count, including at `n = 0`.
 -/
 
-namespace ComplexityTests.FiniteCover
+namespace CslibFrontierTests.FiniteCover
 
 open Cslib
 
@@ -32,4 +32,4 @@ example : ∃ samples : Fin 2 → Bool, ∀ bit : Bool, ∃ i, samples i = bit :
     (exists_forall_exists_apply_mem (Ω := Bool) (X := Bool) (n := 1)
       (by decide) (fun bit => {bit}) (by decide))
 
-end ComplexityTests.FiniteCover
+end CslibFrontierTests.FiniteCover

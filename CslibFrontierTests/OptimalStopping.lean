@@ -17,7 +17,7 @@ instance; tail quantiles and the unconditional Samuel-Cahn theorem; and the i.i.
 `1 - (1 - 1/n)ⁿ` on two values `fiveOrOne`, where the threshold `1` with a `3/8` tie-breaking coin
 attains it and every deterministic memoryless rule falls short. -/
 
-namespace ComplexityTests.OptimalStopping
+namespace CslibFrontierTests.OptimalStopping
 
 open Cslib.Probability.OptimalStopping
 open scoped ENNReal NNReal
@@ -317,4 +317,4 @@ example : 3 / 4 * (61 / 25 : ℝ≥0∞) ≤
 
 end ProphetIID
 
-end ComplexityTests.OptimalStopping
+end CslibFrontierTests.OptimalStopping

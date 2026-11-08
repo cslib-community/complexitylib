@@ -18,7 +18,7 @@ inputs. Native simulation retains unused gadget gates. Its local criterion needs
 on actual gadget inputs, and its reverse implication detects a bad unused atom.
 -/
 
-namespace ComplexityTests.FusionTransport
+namespace CslibFrontierTests.FusionTransport
 
 open Cslib.Circuits SumOfTerms
 
@@ -135,4 +135,4 @@ example {σ : Signature.{u}} {τ : Signature.{v}} {U : Type w} {n m q : ℕ}
     ∀ j, P (Fusion.programAtoms (c.simulateWithContext q impl).program J (Fin.append ctx x) j) :=
   Fusion.forall_programAtoms_simulateWithContext c q impl J ctx x P h
 
-end ComplexityTests.FusionTransport
+end CslibFrontierTests.FusionTransport

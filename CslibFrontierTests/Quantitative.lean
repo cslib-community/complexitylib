@@ -16,7 +16,7 @@ Resource bounds survive composition, ordinary functional spellings and streaming
 
 open Turing.MultiTapeTM
 
-namespace ComplexityTests.Quantitative
+namespace CslibFrontierTests.Quantitative
 
 -- Quadratic computation with linear output feeds a cubic consumer without a degree-six bound.
 example (f g : List Bool → List Bool)
@@ -336,4 +336,4 @@ example :
 #guard_msgs in
 #print axioms Turing.MultiTapeTM.read_rawFrameReader
 
-end ComplexityTests.Quantitative
+end CslibFrontierTests.Quantitative

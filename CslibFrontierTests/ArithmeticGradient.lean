@@ -18,7 +18,7 @@ are instantiated for `x₀ * x₁ + x₀`, for the power sum `x₀ ^ 2 + x₁ ^ 
 the identity power map) and for the generic `2 × 2` adjugate.
 -/
 
-namespace ComplexityTests.ArithmeticGradient
+namespace CslibFrontierTests.ArithmeticGradient
 
 open Cslib.Circuits Cslib.Circuits.Arithmetic MvPolynomial
 
@@ -133,4 +133,4 @@ example : ∃ d : Circuit (arithSignature ℚ) (2 * 2) (2 * 2), d.size ≤ 262 �
   refine ⟨d, hsize, (hd 0 0).trans ?_⟩
   simp [Matrix.adjugate_fin_two, genericMatrix]
 
-end ComplexityTests.ArithmeticGradient
+end CslibFrontierTests.ArithmeticGradient

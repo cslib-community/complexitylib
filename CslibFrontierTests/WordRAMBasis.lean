@@ -16,7 +16,7 @@ the exact basis faults on subtraction below zero and division by zero, and decis
 along the maps between the named bases.
 -/
 
-namespace ComplexityTests.WordRAMBasis
+namespace CslibFrontierTests.WordRAMBasis
 
 open Cslib.WordRAM
 
@@ -131,4 +131,4 @@ info: 'Cslib.WordRAM.LinearTime.mapOp' depends on axioms: [propext, Quot.sound]
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.WordRAM.LinearTime.mapOp
 
-end ComplexityTests.WordRAMBasis
+end CslibFrontierTests.WordRAMBasis

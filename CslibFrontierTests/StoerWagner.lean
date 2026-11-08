@@ -22,7 +22,7 @@ against brute force over all vertex sets:
 * a disconnected graph and the degenerate sizes `n = 0, 1, 2`.
 -/
 
-namespace ComplexityTests.StoerWagner
+namespace CslibFrontierTests.StoerWagner
 
 open Cslib.WeightedCut Cslib.Algorithms.Lean.StoerWagner
 
@@ -167,4 +167,4 @@ example : (stoerWagnerM G8).time = 509 := by decide
 
 example : (stoerWagnerM G8).time ≤ 768 := time_stoerWagnerM_le G8
 
-end ComplexityTests.StoerWagner
+end CslibFrontierTests.StoerWagner

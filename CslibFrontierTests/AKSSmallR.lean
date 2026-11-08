@@ -8,7 +8,7 @@ import CslibFrontier.Foundations.NumberTheory.AKS.SmallR
 
 /-! A small modulus of large order: instances. -/
 
-namespace ComplexityTests.AKSSmallR
+namespace CslibFrontierTests.AKSSmallR
 
 open Cslib.AKS
 
@@ -22,4 +22,4 @@ example :
   ⟨exists_lt_orderOf (by norm_num), exists_lt_orderOf_logb (by norm_num),
     centralBinom_dvd_of_forall_dvd (by norm_num) fun s hs hs6 => by interval_cases s <;> decide⟩
 
-end ComplexityTests.AKSSmallR
+end CslibFrontierTests.AKSSmallR

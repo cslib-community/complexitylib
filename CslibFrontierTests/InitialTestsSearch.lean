@@ -8,7 +8,7 @@ import CslibFrontier.Computability.PolyTime.BitString.InitialTestsSearch
 
 /-! Tests for deterministic sequential initial-test search and shortened Tanner check matrices. -/
 
-namespace ComplexityTests.InitialTestsSearch
+namespace CslibFrontierTests.InitialTestsSearch
 open Cslib Cslib.BitString Cslib.Complexity.InitialTestsSearch Cslib.Probability.PMF
 open Turing.MultiTapeTM
 -- Base ell = 0 (qG = 1) schedule values, trivial shift search, degenerate empty cases,
@@ -94,4 +94,4 @@ example :
       (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
       fun x => qG_le_two_mul_add_one x.1.1 x.1.2))
 
-end ComplexityTests.InitialTestsSearch
+end CslibFrontierTests.InitialTestsSearch

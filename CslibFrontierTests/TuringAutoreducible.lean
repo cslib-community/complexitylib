@@ -19,7 +19,7 @@ Tests for `PolyTimeTuringAutoreducible`:
 open Cslib.Complexity
 open Turing.MultiTapeTM
 
-namespace ComplexityTests.TuringAutoreducible
+namespace CslibFrontierTests.TuringAutoreducible
 
 /-- The empty and universal languages in `P` are polynomial-time Turing autoreducible. -/
 example :
@@ -71,4 +71,4 @@ example :
     coEmpty_dtt_autoreducible.polyTimeTuringAutoreducible,
     hctt.polyTimeTuringAutoreducible⟩
 
-end ComplexityTests.TuringAutoreducible
+end CslibFrontierTests.TuringAutoreducible

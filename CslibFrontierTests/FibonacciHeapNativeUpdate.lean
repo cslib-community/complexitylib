@@ -21,7 +21,7 @@ source. Native execution keeps the entire source memory state, including the inp
 
 public section
 
-namespace ComplexityTests.FibonacciHeapNativeUpdate
+namespace CslibFrontierTests.FibonacciHeapNativeUpdate
 
 open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 open Cslib.WordRAM Cslib.WordRAM.Realization FibonacciHeap FibonacciHeap.Native
@@ -189,4 +189,4 @@ example : ∃ y, ExecWithin 5 (realizes_insert.code frontier source scratch)
 
 end
 
-end ComplexityTests.FibonacciHeapNativeUpdate
+end CslibFrontierTests.FibonacciHeapNativeUpdate

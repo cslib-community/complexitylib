@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Circuit.Quantum.Basic
 /-! The polynomial method: a one-query algorithm that reads its input bit exactly, so the
 hypotheses of the lower bounds are satisfiable by a non-constant function. -/
 
-namespace ComplexityTests.QuantumPolynomial
+namespace CslibFrontierTests.QuantumPolynomial
 
 open Cslib Cslib.Quantum Cslib.BitString Cslib.QueryComplexity
 
@@ -88,4 +88,4 @@ example (W : Type) [Fintype W] (U : ℕ → State 3 W →ₗᵢ[ℂ] State 3 W) 
     (fun x => measureProb (run U ψ x 2) S) ∈ lowDegree ℝ (Fin 3) 4 :=
   measureProb_run_mem_lowDegree U ψ 2 S
 
-end ComplexityTests.QuantumPolynomial
+end CslibFrontierTests.QuantumPolynomial

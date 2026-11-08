@@ -13,7 +13,7 @@ Feedback arc sets of a directed triangle, a two-cycle and a self-loop, back arcs
 the vertex-splitting reduction from `FeedbackVertexSet`, and the headline results.
 -/
 
-namespace ComplexityTests.FeedbackArcSet
+namespace CslibFrontierTests.FeedbackArcSet
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -105,4 +105,4 @@ example : FeedbackVertexSet.toFeedbackArcSet (tri, 1) ∈ FeedbackArcSet :=
       · decide
       · exact absurd (Finset.mem_singleton_self 0) hv⟩
 
-end ComplexityTests.FeedbackArcSet
+end CslibFrontierTests.FeedbackArcSet

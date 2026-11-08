@@ -20,7 +20,7 @@ efficient adversary breaks position binding at every parameter, so `MerklePositi
 vacuous.
 -/
 
-namespace ComplexityTests.Crypto.MerkleBinding
+namespace CslibFrontierTests.Crypto.MerkleBinding
 
 open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 
@@ -150,4 +150,4 @@ example {h : List Bool → List Bool → List Bool} (hh : CompressionFamily h) :
     isPPT_merkleCollisionFinder hh.hashFamily_merkleDamgard.polyTime
       hh.hashFamily_merkleDamgard.length_eq isPPT_constBreaker⟩
 
-end ComplexityTests.Crypto.MerkleBinding
+end CslibFrontierTests.Crypto.MerkleBinding

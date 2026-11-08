@@ -16,7 +16,7 @@ overflow exclusions (including minimum/`-1` division). A caller with unrelated r
 memory checks the preservation API.
 -/
 
-namespace ComplexityTests.WordRAMSigned
+namespace CslibFrontierTests.WordRAMSigned
 
 open Cslib.WordRAM
 open Cslib.WordRAM.Signed
@@ -169,4 +169,4 @@ example : ∃ n ≤ 14, Executes 6 ((modulo (r := 1)).program result)
     (by decide) (by decide) (inputs (-8) 7) (by rfl) (by rfl)
   exact ⟨n + 1, by omega, hv ▸ he.executes result⟩
 
-end ComplexityTests.WordRAMSigned
+end CslibFrontierTests.WordRAMSigned

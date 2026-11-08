@@ -10,7 +10,7 @@ import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 of the deterministic scan and of the multiword counter, the trial count, and the hypotheses of the
 trial and amplification theorems at small word sizes. -/
 
-namespace ComplexityTests.WordRAMSchoening
+namespace CslibFrontierTests.WordRAMSchoening
 
 open Cslib.WordRAM Cslib.Logic.PL Cslib.Complexity.Schoening Cslib.Algorithms.WordRAM.Schoening
 
@@ -119,4 +119,4 @@ example : ((evalRand 8 ampProgram (ampTime 3 3 1 (3 :: 1 :: encode φ).length)
   have h := ampProgram_failure_le_exp (k := 3) (c := 1) le_rfl φ_satisfiable φ_three hw
   rwa [Nat.cast_one] at h
 
-end ComplexityTests.WordRAMSchoening
+end CslibFrontierTests.WordRAMSchoening

@@ -21,9 +21,9 @@ is checked by the kernel, with no `native_decide`.
 
 @[expose] public section
 
-namespace ComplexityTests.SearchTreeErase
+namespace CslibFrontierTests.SearchTreeErase
 
-open Cslib.DataStructure.SearchTree ComplexityTests.SearchTree
+open Cslib.DataStructure.SearchTree CslibFrontierTests.SearchTree
 
 def medianFirst : BinaryTree Nat := build [4, 2, 6, 1, 3, 5, 7]
 def sortedFirst : BinaryTree Nat := build [1, 2, 3, 4, 5, 6, 7]
@@ -77,4 +77,4 @@ info: 'Cslib.DataStructure.SearchTree.height_erase_le' depends on axioms: [prope
 #guard_msgs in
 #print axioms Cslib.DataStructure.SearchTree.height_erase_le
 
-end ComplexityTests.SearchTreeErase
+end CslibFrontierTests.SearchTreeErase

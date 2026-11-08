@@ -16,7 +16,7 @@ AND gates and discards free constants and unions. Empty witness classes and an i
 cover exercise the zero and infinite boundaries.
 -/
 
-namespace ComplexityTests.FusionSemifilter
+namespace CslibFrontierTests.FusionSemifilter
 
 open Cslib.Circuits Fusion
 
@@ -175,4 +175,4 @@ example : ecomplexityFrom (Monotone.setInterpretation (Fin 3)) Monotone.andCost
     (fun _ : Unit => (Fin.elim0 : Fin 0 → Set (Fin 3)))
     (fun _ : Unit => ![target]) () 0 (fun _ => True)
 
-end ComplexityTests.FusionSemifilter
+end CslibFrontierTests.FusionSemifilter

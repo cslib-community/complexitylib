@@ -40,7 +40,7 @@ Exercises:
 
 @[expose] public section
 
-namespace ComplexityTests.WordRAMSuccinctDictionary
+namespace CslibFrontierTests.WordRAMSuccinctDictionary
 
 open Cslib Cslib.WordRAM Cslib.Probability
 open Cslib.DataStructure Cslib.DataStructure.Memory
@@ -366,4 +366,4 @@ theorem nonvacuous_seq_expected_amortized_multi :
   rcases hmain with ⟨ν₀, ν_final, T_ops, hinit, hsteps, _, hrep, hamort⟩
   exact ⟨ν₀, ν_final, T_ops, hinit, hsteps, hrep, hamort⟩
 
-end ComplexityTests.WordRAMSuccinctDictionary
+end CslibFrontierTests.WordRAMSuccinctDictionary

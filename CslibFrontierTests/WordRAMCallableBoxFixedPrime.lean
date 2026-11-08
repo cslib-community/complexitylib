@@ -19,7 +19,7 @@ its unsuccessful records collectively receive no additive successful-scan allowa
 kernel proofs do not evaluate the enormous catalogue or encoder through the interpreter.
 -/
 
-namespace ComplexityTests.WordRAMCallableBoxFixedPrime
+namespace CslibFrontierTests.WordRAMCallableBoxFixedPrime
 
 open Cslib.WordRAM Cslib.Matrix Cslib.Algorithms.ExactTriangle
 open Cslib.Algorithms.WordRAM.ExactTriangle
@@ -179,4 +179,4 @@ example :
       y.regs CallableFixedPrime.Reg.found = 0 ∧ y.regs CallableFixedPrime.Reg.scans ≤ F :=
   initialized_false_positive side (by decide)
 
-end ComplexityTests.WordRAMCallableBoxFixedPrime
+end CslibFrontierTests.WordRAMCallableBoxFixedPrime

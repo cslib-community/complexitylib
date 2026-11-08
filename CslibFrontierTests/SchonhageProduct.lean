@@ -9,7 +9,7 @@ import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Product
 -- Actual native interpreter regressions supplement the general execution proofs.
 set_option linter.hashCommand false
 
-namespace ComplexityTests.SchonhageProduct
+namespace CslibFrontierTests.SchonhageProduct
 
 open Cslib.WordRAM Cslib.WordRAM.Signed
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
@@ -172,4 +172,4 @@ example {L m N : ℕ} (hm : m ≤ L) (qs : List (Fin N × Fin N)) :
       (Reg.leaves.val, Reg.bands.val, Reg.tiles.val, Reg.output.val) = (103, 104, 105, 112) :=
   ⟨by simp [tiles, pow_two], timeBound_le hm qs, rfl⟩
 
-end ComplexityTests.SchonhageProduct
+end CslibFrontierTests.SchonhageProduct

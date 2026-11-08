@@ -23,7 +23,7 @@ Checks covering:
 4. Non-vacuous applications of the general bounds on `ℕ` and `ℝ`, and the uniform query bound.
 -/
 
-namespace ComplexityTests.SubmodularMatroidGreedy
+namespace CslibFrontierTests.SubmodularMatroidGreedy
 
 open Cslib Cslib.Query Cslib.Algorithms.Lean.Submodular Cslib.Algorithms.Lean.Matroid
 
@@ -183,4 +183,4 @@ example : UpperBound (fun xs : List ℕ => submodularMatroidGreedyQuery (β := �
     List.length (fun m => m * (m + 1)) :=
   submodularMatroidGreedyQuery_upperBound
 
-end ComplexityTests.SubmodularMatroidGreedy
+end CslibFrontierTests.SubmodularMatroidGreedy

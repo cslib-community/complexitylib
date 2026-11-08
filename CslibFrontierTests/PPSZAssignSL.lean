@@ -14,7 +14,7 @@ import Mathlib.Tactic.NormNum
 is not uniform on the solutions, with Observation 13 and a strict instance of Lemma 16 checked on
 it, and the satisfying literals of a formula with a frozen variable. -/
 
-namespace ComplexityTests.PPSZAssignSL
+namespace CslibFrontierTests.PPSZAssignSL
 
 open Cslib.Logic.PL Cslib.Complexity.PPSZ Function
 open Cslib.BitString.PartialAssignment (free free_update)
@@ -128,4 +128,4 @@ example : satLits ψ (fun _ => none) =
     {(0, true), (1, true), (1, false), (2, true), (2, false)} := by
   decide
 
-end ComplexityTests.PPSZAssignSL
+end CslibFrontierTests.PPSZAssignSL

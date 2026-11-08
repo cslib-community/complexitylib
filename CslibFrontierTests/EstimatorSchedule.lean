@@ -14,7 +14,7 @@ empty source slice. Other examples cover signed scale offsets, cutoff equality, 
 a zero last child budget and a nonzero budget-zero sample that must not be dropped.
 -/
 
-namespace ComplexityTests.EstimatorSchedule
+namespace CslibFrontierTests.EstimatorSchedule
 
 open Cslib Cslib.LogSpaceEstimation Finset
 open scoped BigOperators
@@ -119,4 +119,4 @@ example : binNormCost 4 (-4) * (2 : ℝ) ^ (-(15 / 16 : ℝ)) ≤
   norm_num [lastBudget, scaleCutoff] at h
   exact h
 
-end ComplexityTests.EstimatorSchedule
+end CslibFrontierTests.EstimatorSchedule

@@ -9,7 +9,7 @@ import CslibFrontier.Crypto.Computational.SIS.ModulusSwitch
 /-! Canonical lifts, negative half ties, modulus-one boundaries, and an actual Module-LWE phase.
 The explicit carry example includes negacyclic wraparound at degree two. -/
 
-namespace ComplexityTests.Crypto.ModulusSwitch
+namespace CslibFrontierTests.Crypto.ModulusSwitch
 
 open Cslib.Crypto
 open scoped Matrix
@@ -108,4 +108,4 @@ example (ciphertext : ModuleLWECiphertext 1 2 1) : ∃ e' : Fin 2 → ℤ,
     (by decide : 0 < 1) (by decide : 0 < 1) ciphertext secret
   exact ⟨e', he'⟩
 
-end ComplexityTests.Crypto.ModulusSwitch
+end CslibFrontierTests.Crypto.ModulusSwitch

@@ -16,7 +16,7 @@ coordinates, duplicates, empty keys, empty records, and depth zero. Compiled che
 sorted keys and record multisets against independent list sorting.
 -/
 
-namespace ComplexityTests.BitonicSort
+namespace CslibFrontierTests.BitonicSort
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean
 
@@ -114,4 +114,4 @@ example {k r : ℕ} (key : Fin k → Fin r) (depth : ℕ) (x : BitString (Bitoni
         keys output == (if ascending then sortedKeys else sortedKeys.reverse) &&
           (values output).mergeSort == (values input).mergeSort
 
-end ComplexityTests.BitonicSort
+end CslibFrontierTests.BitonicSort

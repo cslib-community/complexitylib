@@ -21,7 +21,7 @@ run. A malformed nonempty child pointer is rejected by the exact-subtraction dom
 
 public section
 
-namespace ComplexityTests.FibonacciHeapNativeLink
+namespace CslibFrontierTests.FibonacciHeapNativeLink
 
 open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 open Cslib.WordRAM Cslib.WordRAM.Realization FibonacciHeap FibonacciHeap.Native
@@ -130,4 +130,4 @@ example : ∃ y, ExecWithin 5 (realizes_link.code frontier source scratch) loade
 
 end
 
-end ComplexityTests.FibonacciHeapNativeLink
+end CslibFrontierTests.FibonacciHeapNativeLink

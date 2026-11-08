@@ -30,7 +30,7 @@ Verifies concrete decidable instances of the cuckoo walk dichotomy (`HasAltPath`
 
 @[expose] public section
 
-namespace ComplexityTests.CuckooGraph
+namespace CslibFrontierTests.CuckooGraph
 
 open Cslib Cslib.Probability
 open Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing
@@ -139,4 +139,4 @@ theorem instTrinomial_16 :
   isCuckooHashPair_trinomialPolyHash (by decide) (by decide) 16 (maxEvictions 16)
     (by decide) (by decide) (le_refl _) (by decide)
 
-end ComplexityTests.CuckooGraph
+end CslibFrontierTests.CuckooGraph

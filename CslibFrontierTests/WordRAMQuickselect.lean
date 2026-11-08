@@ -32,7 +32,7 @@ Concrete non-vacuity and behavioral tests for `Cslib.Algorithms.WordRAM.Quicksel
 
 @[expose] public section
 
-namespace ComplexityTests.WordRAMQuickselect
+namespace CslibFrontierTests.WordRAMQuickselect
 
 open Cslib Cslib.WordRAM Cslib.Algorithms.WordRAM
 open scoped ENNReal
@@ -211,4 +211,4 @@ theorem selectSlice_offset_base :
   simp only [hbase_r, hlen_r, hrk_r, hslice_eq, hsort] at hans hm12 hmod
   exact ⟨hans, hm12, hmod 0 (by simp), hmod 14 (by simp)⟩
 
-end ComplexityTests.WordRAMQuickselect
+end CslibFrontierTests.WordRAMQuickselect

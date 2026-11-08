@@ -19,7 +19,7 @@ theorems instantiated with the schoolbook detector, including the exponent bound
 real weights, which shows that their hypotheses are satisfiable.
 -/
 
-namespace ComplexityTests.NegativeTriangle
+namespace CslibFrontierTests.NegativeTriangle
 
 open MinTropical Cslib Cslib.Query Cslib.Algorithms.ShortestPaths
 
@@ -160,4 +160,4 @@ example (W n : ℕ) (hn : n ≠ 0) (A B : Matrix (Fin n) (Fin n) T) :
   cost_minPlusViaNegTri_le_rpow oracle _ (by norm_num) (by norm_num) (fun m _ => cost_det_le m) W
     hn A B
 
-end ComplexityTests.NegativeTriangle
+end CslibFrontierTests.NegativeTriangle

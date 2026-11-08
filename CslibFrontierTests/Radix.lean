@@ -21,7 +21,7 @@ enumeration is fixed, but no claim about a particular order or native computatio
 assert_not_exists Turing.MultiTapeNTM
 assert_not_exists Turing.MultiTapeTM.ComputableTidilyInSpace
 
-namespace ComplexityTests.Radix
+namespace CslibFrontierTests.Radix
 
 open Cslib.Radix
 
@@ -75,4 +75,4 @@ example : finFunctionFinEquiv (![2, 0] : Fin 2 → Fin 3) < finFunctionFinEquiv 
   (finFunctionFinEquiv_lt_iff ![2, 0] ![0, 1]).2
     ⟨1, by decide, fun j hj => absurd (Fin.le_last j) (not_le_of_gt hj)⟩
 
-end ComplexityTests.Radix
+end CslibFrontierTests.Radix

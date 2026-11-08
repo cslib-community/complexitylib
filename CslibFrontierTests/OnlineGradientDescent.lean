@@ -12,7 +12,7 @@ iterates, maps that are not Pythagorean projections, the first-order convexity b
 and instances of the regret bounds of Hazan Theorems 3.1 and 3.3 and Zinkevich Theorem 1 for
 linear and quadratic losses, showing that their hypotheses are satisfiable. -/
 
-namespace ComplexityTests.OnlineGradientDescent
+namespace CslibFrontierTests.OnlineGradientDescent
 
 open Finset Real Set Cslib Cslib.MachineLearning.OnlineLearning.OCO
 open scoped RealInnerProductSpace
@@ -126,4 +126,4 @@ example (c : ℝ) (hc : c ∈ K) {x y : ℝ} (hx : x ∈ K) (hy : y ∈ K) : ‖
     (fun x hx => K_diam x hx c hc)
     (fun x _ y _ => le_of_eq (by rw [real_inner, Real.norm_eq_abs, sq_abs]; ring)) hx hy
 
-end ComplexityTests.OnlineGradientDescent
+end CslibFrontierTests.OnlineGradientDescent

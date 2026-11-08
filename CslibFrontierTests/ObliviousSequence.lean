@@ -44,7 +44,7 @@ Verifies the state-free oblivious-sequence specification
 
 @[expose] public section
 
-namespace ComplexityTests.ObliviousSequence
+namespace CslibFrontierTests.ObliviousSequence
 
 open Cslib Cslib.DataStructure Cslib.DataStructure.WordRAM.Randomized
 open Cslib.Probability Cslib.WordRAM
@@ -690,4 +690,4 @@ theorem evalOps_decomposition_and_map_equiv_client
   ⟨HashFamily.evalOps_eq_of_afterCurrentEpoch_eq_some seedLaw eval rfl,
     HashFamily.evalOpsFromSeed_map_equiv seedLaw eval e θ [.eval 0, .resample, .eval 0]⟩
 
-end ComplexityTests.ObliviousSequence
+end CslibFrontierTests.ObliviousSequence

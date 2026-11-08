@@ -11,7 +11,7 @@ import Mathlib.Tactic.NormNum.Prime
 # Tests for the RSA trapdoor permutation
 -/
 
-namespace ComplexityTests.Crypto.RSATrapdoor
+namespace CslibFrontierTests.Crypto.RSATrapdoor
 
 open Cslib Cslib.Crypto
 
@@ -37,4 +37,4 @@ example : rsaInvert 33 7 (rsaEval 33 3 5) = 5 := by decide
 #guard_msgs in
 #print axioms Cslib.Crypto.computableInPolyTime_rsaInvert
 
-end ComplexityTests.Crypto.RSATrapdoor
+end CslibFrontierTests.Crypto.RSATrapdoor

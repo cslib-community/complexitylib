@@ -6,7 +6,7 @@ Authors: Erik Demaine
 
 import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PairedBounds
 
-namespace ComplexityTests.PlanarBounds
+namespace CslibFrontierTests.PlanarBounds
 
 open Cslib.Complexity Cslib.Complexity.SAT.ParsimoniousPlanar
 
@@ -33,4 +33,4 @@ example : Graph.drawingWireLength (positions [[(7, true)]], routes [[(7, true)]]
 example : Graph.drawingWireLength (positions [[(7, false)]], routes [[(7, false)]]) = 28230 :=
   by decide +kernel
 
-end ComplexityTests.PlanarBounds
+end CslibFrontierTests.PlanarBounds

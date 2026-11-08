@@ -11,7 +11,7 @@ import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Wi
 open Cslib.WordRAM Cslib.WordRAM.Signed
 open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery
 
-namespace ComplexityTests.SchonhagePrunedInput
+namespace CslibFrontierTests.SchonhagePrunedInput
 
 -- A negative leaf is computed once and reported at both duplicate positions. The length
 -- header, original operands and first outside cell belong to the same actual run witness.
@@ -125,4 +125,4 @@ example : ∃ y n, n ≤ timeBound (L := 2) queries2 ∧
   rw [← hvalue]
   exact hv i
 
-end ComplexityTests.SchonhagePrunedInput
+end CslibFrontierTests.SchonhagePrunedInput

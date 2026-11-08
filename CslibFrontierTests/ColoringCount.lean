@@ -22,10 +22,10 @@ import CslibFrontierTests.PathCoupling
   the values `0` and `1`, so on `K₂` it never lies within relative error `1 / 2` of `1 / 6`.
 -/
 
-namespace ComplexityTests.ColoringCount
+namespace CslibFrontierTests.ColoringCount
 
 open Cslib.Probability Cslib.Probability.PMF Cslib.Probability.MarkovChain SimpleGraph
-open ComplexityTests.PathCoupling
+open CslibFrontierTests.PathCoupling
 
 /-! ### Empirical frequencies -/
 
@@ -106,4 +106,4 @@ theorem toOuterMeasure_coloringCountEstimator_edge_one_sample (t : ℕ) :
     rintro W (rfl | rfl) <;> norm_num
   exact key _ (productEstimate_one_sample _ x) hx
 
-end ComplexityTests.ColoringCount
+end CslibFrontierTests.ColoringCount

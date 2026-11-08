@@ -21,7 +21,7 @@ component walk on a nonconstant free-bit sample.
 
 public section
 
-namespace ComplexityTests.SamplerPrefix
+namespace CslibFrontierTests.SamplerPrefix
 
 open Cslib Cslib.RowCompression Cslib.RotationMap Cslib.Probability Finset
 open scoped BigOperators
@@ -89,4 +89,4 @@ theorem component_noise_budget :
   norm_num at h ⊢
   exact h
 
-end ComplexityTests.SamplerPrefix
+end CslibFrontierTests.SamplerPrefix

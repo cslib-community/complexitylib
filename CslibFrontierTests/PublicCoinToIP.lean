@@ -23,7 +23,7 @@ that rejects malformed bit strings (`length ≠ 1`), proving:
 4. Full `IP` membership (`Reduction.mem_IP`).
 -/
 
-namespace ComplexityTests.PublicCoinToIP
+namespace CslibFrontierTests.PublicCoinToIP
 
 open Cslib Cslib.Interactive Spec World Cslib.Complexity Probability Turing.MultiTapeTM
 open scoped ENNReal
@@ -198,4 +198,4 @@ theorem bitRel_mem_IP : language bitRel ∈ IP encBool := by
     (encs := ()) (codecs := ()) trivial trivial hDecide
     zeroRoundReduction_complete zeroRoundReduction_sound (by norm_num) (by norm_num)
 
-end ComplexityTests.PublicCoinToIP
+end CslibFrontierTests.PublicCoinToIP

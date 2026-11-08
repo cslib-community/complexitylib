@@ -16,7 +16,7 @@ literal makes it free. Set/Boolean transport retains arbitrary costs and shared 
 empty assignment domain still requires a syntactic circuit with the requested output.
 -/
 
-namespace ComplexityTests.FusionBoolean
+namespace CslibFrontierTests.FusionBoolean
 
 open Cslib.Circuits Fusion
 
@@ -225,4 +225,4 @@ example : ecomplexityFrom (Monotone.setInterpretation Empty) (fun _ => 1)
   convert empty_complexity using 1
   congr 1 <;> funext x <;> exact x.elim
 
-end ComplexityTests.FusionBoolean
+end CslibFrontierTests.FusionBoolean

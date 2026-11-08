@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.PPSZ.Basic
 /-! PPSZ with w-implication: a value that is 2-implied but not 1-implied, and the PPZ bound for
 PPSZ on a uniquely satisfiable instance. -/
 
-namespace ComplexityTests.PPSZ
+namespace CslibFrontierTests.PPSZ
 
 open Cslib.Logic.PL Cslib.Complexity.PPSZ
 
@@ -101,4 +101,4 @@ example : (1 : ℝ) ≤ ((round ψ 1).toOuterMeasure
     _ ≤ _ := round_success_of_satisfiable_ppz le_rfl le_rfl ⟨fun _ => true, by decide⟩
       (by decide)
 
-end ComplexityTests.PPSZ
+end CslibFrontierTests.PPSZ

@@ -13,7 +13,7 @@ The input to these local matrix-builder clients is an unsigned residue matrix. T
 frontend must first produce those residues from signed weights and compute the instance catalogue.
 -/
 
-namespace ComplexityTests.WordRAMExactTriangleMatrices
+namespace CslibFrontierTests.WordRAMExactTriangleMatrices
 
 open Cslib.WordRAM
 open Cslib.Algorithms.WordRAM.ExactTriangle.WriteMatrices
@@ -99,4 +99,4 @@ example : ∃ y t, t ≤ 304 ∧
   · exact (hframe 27 (by change ¬(13 ≤ 27 ∧ 27 < 27); omega)).trans (congrFun hbm 27)
   · exact hr.bounded_init (by decide : InputFits 8 leftInput)
 
-end ComplexityTests.WordRAMExactTriangleMatrices
+end CslibFrontierTests.WordRAMExactTriangleMatrices

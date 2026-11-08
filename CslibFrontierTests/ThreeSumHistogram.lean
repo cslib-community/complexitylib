@@ -8,7 +8,7 @@ import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.Count
 
 /-! # Executed histogram and residue-array regressions -/
 
-namespace ComplexityTests.ThreeSumHistogram
+namespace CslibFrontierTests.ThreeSumHistogram
 
 open Cslib.WordRAM Cslib.WordRAM.Signed
 open Cslib.Algorithms.WordRAM
@@ -148,4 +148,4 @@ example : ¬Set.InjOn (fun _ : ℕ => (-1 : ℤ)) (↑(Finset.range 2) : Set ℕ
     (by decide : 1 ∈ (↑(Finset.range 2) : Set ℕ)) rfl
   omega
 
-end ComplexityTests.ThreeSumHistogram
+end CslibFrontierTests.ThreeSumHistogram

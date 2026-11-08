@@ -19,7 +19,7 @@ import Mathlib.Tactic.NormNum
 * Rank stability on concrete values.
 -/
 
-namespace ComplexityTests.CorrectionAtom
+namespace CslibFrontierTests.CorrectionAtom
 
 open Finset Matrix Cslib Cslib.Probability
 open scoped BigOperators
@@ -214,4 +214,4 @@ example : |kthLargest 2 univ (![3, 1, 2, 0] : Fin 4 → ℚ) -
   abs_kthLargest_sub_kthLargest_le (by norm_num) (by norm_num) fun x _ => by
     fin_cases x <;> norm_num
 
-end ComplexityTests.CorrectionAtom
+end CslibFrontierTests.CorrectionAtom

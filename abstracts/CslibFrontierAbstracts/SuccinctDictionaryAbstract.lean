@@ -93,7 +93,7 @@ the formalization proves the intended mathematical claims; Lean verifies the pro
 boundary.
 -/
 
-namespace ComplexityAbstracts.SuccinctDictionaryAbstract
+namespace CslibFrontierAbstracts.SuccinctDictionaryAbstract
 
 open scoped ENNReal
 
@@ -481,19 +481,19 @@ theorem succinctDynamicDictionary :
                       base sp (emptyDict U) ops
                       μ_init μ_final T_ops ∧
                     T_ops ≤ ((ops.length * C_op : ℕ) : ℝ≥0∞) :=
-  ComplexityAbstracts.SuccinctDictionaryBridge.succinctDynamicDictionary
+  CslibFrontierAbstracts.SuccinctDictionaryBridge.succinctDynamicDictionary
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
       @AluOp.rec, AluOp.eval,
       Instr, .const, .copy, .alu, .width, .load, .store, .jump,
       .branchEq, .branchLt, .halt, .rand, @Instr.rec,
       Comp, @Comp.pure, @Comp.sample, @Comp.bind, @Comp.eval,
-      ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
+      CslibFrontierAbstracts.HashFamiliesBridge.compCallsAtMost (@Comp.rec),
       State, .mk, Cfg, .running, .halted, .faulted, @stepRand, @runRand⟩
     (by refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
       simp_all [AluOp.eval, Comp.bind, Comp.eval,
-        ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
+        CslibFrontierAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
     ⟨DynDictOp, @DynDictOp.query, @DynDictOp.insert, @DynDictOp.delete, @DynDictOp.rec,
       @stepDynDict, @validDynDictOp, @ValidDynDictHistory,
       RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
@@ -513,6 +513,6 @@ info: abstract audit passed for `CslibFrontierAbstracts.SuccinctDictionaryAbstra
 declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.SuccinctDictionaryAbstract
+#check_abstract CslibFrontierAbstracts.SuccinctDictionaryAbstract
 
-end ComplexityAbstracts.SuccinctDictionaryAbstract
+end CslibFrontierAbstracts.SuccinctDictionaryAbstract

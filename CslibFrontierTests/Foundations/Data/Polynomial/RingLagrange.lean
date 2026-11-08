@@ -10,7 +10,7 @@ import Mathlib.Tactic.FinCases
 
 /-! Tests for Lagrange interpolation over a commutative ring. -/
 
-namespace ComplexityTests.RingLagrange
+namespace CslibFrontierTests.RingLagrange
 
 open Polynomial Lagrange
 
@@ -51,4 +51,4 @@ example : (C 2 * X : (ZMod 4)[X]).eval 0 = 0 ∧ (C 2 * X : (ZMod 4)[X]).eval 2 
   simp only [coeff_C_mul, coeff_X_one, mul_one, coeff_zero] at this
   exact absurd this (by decide)
 
-end ComplexityTests.RingLagrange
+end CslibFrontierTests.RingLagrange

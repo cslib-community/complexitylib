@@ -21,7 +21,7 @@ tables, has no remaining hypothesis.
 
 @[expose] public section
 
-namespace ComplexityTests.TensorNetworkTruncatedEntry
+namespace CslibFrontierTests.TensorNetworkTruncatedEntry
 
 open Cslib Cslib.Circuits.Frontier Cslib.Circuits.Frontier.EntryContraction
   Cslib.Complexity.CountingSimulation
@@ -101,4 +101,4 @@ example : ∃ K : ℕ,
   simp only [List.length_cons, List.length_nil]
   omega
 
-end ComplexityTests.TensorNetworkTruncatedEntry
+end CslibFrontierTests.TensorNetworkTruncatedEntry

@@ -26,7 +26,7 @@ The asymptotic Plotkin bound applies to the binary repetition codes, of relative
 `δ = 1 / 2` it bounds their rate by `o(1)`.
 -/
 
-namespace ComplexityTests.Code.Plotkin
+namespace CslibFrontierTests.Code.Plotkin
 
 open Cslib Cslib.Code Cslib.BitString Finset
 
@@ -181,4 +181,4 @@ example {ε : ℝ} (hε : 0 < ε) :
       linarith)
     (by simpa using Filter.tendsto_add_atTop_nat 1) hε
 
-end ComplexityTests.Code.Plotkin
+end CslibFrontierTests.Code.Plotkin

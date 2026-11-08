@@ -23,7 +23,7 @@ The same calculation also exercises an error envelope above one. Further example
 gate closure by a large retained rank from persistent closure after the default becomes large.
 -/
 
-namespace ComplexityTests.PolynomialAtomRelative
+namespace CslibFrontierTests.PolynomialAtomRelative
 
 open Finset Cslib Cslib.RowCompression
 
@@ -372,4 +372,4 @@ example : uncompressedRow closingIncrements closingInitial.row 2 0 0 < 0 ∧
       cases kind <;> norm_num [PolynomialAtomRow.gateThreshold]
     exact (hg.trans hmono).trans default_le_firstRank
 
-end ComplexityTests.PolynomialAtomRelative
+end CslibFrontierTests.PolynomialAtomRelative

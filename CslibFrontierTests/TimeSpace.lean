@@ -21,7 +21,7 @@ quadratic deterministic hypothesis. The speedup lemma places parity in `Σ₂TIM
 
 public section
 
-namespace ComplexityTests.TimeSpace
+namespace CslibFrontierTests.TimeSpace
 
 open Cslib.Complexity
 open _root_.Turing _root_.Turing.MultiTapeTM
@@ -99,4 +99,4 @@ example : TISP encBits (fun n => n) (fun n => n) ⊆ SigmaTwoTIME encBits fun n 
   have h₆ : (n + 1) * (3 * (n + 1) ^ 3) = 3 * (n + 1) ^ 4 := by ring
   omega
 
-end ComplexityTests.TimeSpace
+end CslibFrontierTests.TimeSpace

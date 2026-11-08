@@ -26,7 +26,7 @@ run_elab do
     if (← Lean.getEnv).contains name then
       throwError "unexpected higher tidy calculus: {name}"
 
-namespace ComplexityTests.Internal.OLoops
+namespace CslibFrontierTests.Internal.OLoops
 
 -- The input word and number of rounds vary. Only the accumulator and callback domains are fixed.
 theorem parity : ComputableInO (fun w : List Bool => w.foldl Bool.xor false) encBits encBool
@@ -92,4 +92,4 @@ example :
   have := h [false] 1 (by decide)
   simp at this
 
-end ComplexityTests.Internal.OLoops
+end CslibFrontierTests.Internal.OLoops

@@ -8,7 +8,7 @@ import CslibFrontier.Foundations.Data.Nat.ResidueSum
 
 /-! Exact counts from streamed residues: recovery below the modulus, and its failure above. -/
 
-namespace ComplexityTests.ResidueSum
+namespace CslibFrontierTests.ResidueSum
 
 open Nat
 
@@ -29,4 +29,4 @@ example (f : ℕ → ℕ) (n : ℕ) :
       (37 + ∑ i ∈ Finset.range n, f i) % 2 ^ 5 :=
   foldl_range_add_mod f _ 37 n
 
-end ComplexityTests.ResidueSum
+end CslibFrontierTests.ResidueSum

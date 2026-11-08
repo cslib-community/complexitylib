@@ -9,7 +9,7 @@ import CslibFrontier.Computability.LogSpaceDerandomization.CorrectionHierarchy
 # Tests for corrections, copies and reward transport
 -/
 
-namespace ComplexityTests.CorrectionHierarchy
+namespace CslibFrontierTests.CorrectionHierarchy
 
 open Matrix
 
@@ -130,4 +130,4 @@ example : 0 ≤ rewardTransport (V := fun _ => Fin 3) Ps Es 1 *ᵥ e :=
       · simp)
     (fun i => by fin_cases i <;> simp [e]) 1
 
-end ComplexityTests.CorrectionHierarchy
+end CslibFrontierTests.CorrectionHierarchy

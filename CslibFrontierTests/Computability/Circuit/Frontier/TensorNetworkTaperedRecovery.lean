@@ -19,7 +19,7 @@ theorem applies over `K = ℚ` with `B = ℤ_(2)`: its hypotheses are met by exa
 
 @[expose] public section
 
-namespace ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.TaperedRecovery
+namespace CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.TaperedRecovery
 
 open Cslib.Circuits.Frontier Polynomial
 
@@ -47,4 +47,4 @@ theorem exists_taperedRecovery_X (p : ℕ) :
     (by norm_num) (by norm_num) (by rw [natDegree_X]; norm_num) _
     (fun t _ j _ => ⟨0, zero_mem _, by rw [mul_zero, add_zero]⟩)
 
-end ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.TaperedRecovery
+end CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.TaperedRecovery

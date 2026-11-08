@@ -34,7 +34,7 @@ statement boundary.
 * [S. Jukna, *Boolean Function Complexity*][Jukna2012]
 -/
 
-namespace ComplexityTests.Abstracts.FormulaBoundsAbstract
+namespace CslibFrontierTests.Abstracts.FormulaBoundsAbstract
 
 /-- A De Morgan expression is a tree of binary AND/OR, unary NOT, constants, and input leaves.
 Only the elementary tree datatype/evaluator/costs in the explicitly allowed Formula module are
@@ -151,11 +151,11 @@ theorem andreev_lower_bound :
         144 * b ^ 2 * (Nat.log 2 b + 2) ^ 3 * minimumLeaves (andreev b m) ^ 2 :=
   FormulaBoundsBridge.andreev_lower_bound
 
-/-- info: abstract audit passed for `ComplexityTests.Abstracts.FormulaBoundsAbstract`: 21 root
+/-- info: abstract audit passed for `CslibFrontierTests.Abstracts.FormulaBoundsAbstract`: 21 root
 declarations -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.FormulaBoundsAbstract allowing [
+#check_abstract CslibFrontierTests.Abstracts.FormulaBoundsAbstract allowing [
   CslibFrontier.Computability.Circuit.Formula
 ]
 
-end ComplexityTests.Abstracts.FormulaBoundsAbstract
+end CslibFrontierTests.Abstracts.FormulaBoundsAbstract

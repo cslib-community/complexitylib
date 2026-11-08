@@ -29,7 +29,7 @@ These kernel-checked examples (using `decide`, never `native_decide`) exercise
 
 public section
 
-namespace ComplexityTests.TSPHeldKarp
+namespace CslibFrontierTests.TSPHeldKarp
 
 open Cslib.Algorithms.Lean.TSP Cslib.Complexity
 
@@ -100,4 +100,4 @@ example : (([0, 1, 2], [(0, 1), (1, 2)]) : Graph) ∉ HamCycle := fun h => by
   revert this
   decide
 
-end ComplexityTests.TSPHeldKarp
+end CslibFrontierTests.TSPHeldKarp

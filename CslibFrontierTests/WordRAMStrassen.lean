@@ -23,7 +23,7 @@ replace the general execution or resource proof, and do not claim a complete tri
 -- These commands deliberately execute the real standard WordRAM interpreter.
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMStrassen
+namespace CslibFrontierTests.WordRAMStrassen
 
 open Cslib.WordRAM Cslib.WordRAM.Signed
 open Cslib.Algorithms.WordRAM.Strassen
@@ -241,4 +241,4 @@ example : ∃ y t, t + 1 ≤ 2188 ∧
       (p := (complete 1 5 9 13 1 1).program Reg.output) (Program.Contains.self _).append_left
   · simpa only [State.init, result.output_eq] using hex.executes Reg.output
 
-end ComplexityTests.WordRAMStrassen
+end CslibFrontierTests.WordRAMStrassen

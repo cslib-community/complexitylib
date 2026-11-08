@@ -17,7 +17,7 @@ to the uniquely satisfiable 3-CNF formula of `CslibFrontierTests.PPSZUnique` for
 4`.
 -/
 
-namespace ComplexityTests.PPSZGeneralK
+namespace CslibFrontierTests.PPSZGeneralK
 
 open Cslib.Logic.PL Cslib.Complexity.PPSZ
 
@@ -136,4 +136,4 @@ example : ∃ w : ℕ, (2 : ℝ) ^ (-((1 - mu 4 / (((4 : ℕ) : ℝ) - 1) + 1 / 
   exact_mod_cast hw 3 PPSZUnique.φ (fun _ => true) PPSZUnique.φ_sat PPSZUnique.φ_unique
     fun c hc => (PPSZUnique.φ_len c hc).trans (by norm_num)
 
-end ComplexityTests.PPSZGeneralK
+end CslibFrontierTests.PPSZGeneralK

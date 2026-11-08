@@ -20,7 +20,7 @@ of the array stack's push over the memory oracle, and check `wp_iff` against eva
 
 @[expose] public section
 
-namespace ComplexityTests.StateTransitionWP
+namespace CslibFrontierTests.StateTransitionWP
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.StateTransitionSpec
   Cslib.DataStructure.Queue
@@ -49,4 +49,4 @@ example : (Memory.spec 8).wp Memory.charge (Stack.Memory.push ⟨⟨0, 1⟩, ⟨
     (fun _ s t => s.mem 0 = 1 ∧ s.mem 1 = 5 ∧ t = 3) ⟨fun _ => 0, 3⟩ :=
   (wp_iff _ _ _).mpr ⟨by decide, by decide⟩
 
-end ComplexityTests.StateTransitionWP
+end CslibFrontierTests.StateTransitionWP

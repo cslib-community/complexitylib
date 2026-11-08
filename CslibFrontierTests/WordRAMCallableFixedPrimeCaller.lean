@@ -18,7 +18,7 @@ actual final state to the prefix, halt, verdict, global scan bound and protected
 No enormous complete interpreter evaluation or supplied source execution is used.
 -/
 
-namespace ComplexityTests.WordRAMCallableFixedPrimeCaller
+namespace CslibFrontierTests.WordRAMCallableFixedPrimeCaller
 
 open Cslib.WordRAM Cslib.Matrix Cslib.Algorithms.ExactTriangle
 open Cslib.Algorithms.WordRAM.ExactTriangle
@@ -143,4 +143,4 @@ example : ∃ y : Data 640, ∃ t : ℕ,
   obtain ⟨y, t, hr, he, -⟩ := dirty_alias (16 ^ 18) (by decide)
   exact ⟨y, t, hr, he⟩
 
-end ComplexityTests.WordRAMCallableFixedPrimeCaller
+end CslibFrontierTests.WordRAMCallableFixedPrimeCaller

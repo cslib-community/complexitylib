@@ -14,7 +14,7 @@ outer radius 2 and inner radius 1. Tests distinguish accepting and rejected rand
 short native rows, truncated hash outputs, zero attempts and the quantitative two-attempt bound.
 -/
 
-namespace ComplexityTests.Crypto.LyubashevskySigning
+namespace CslibFrontierTests.Crypto.LyubashevskySigning
 
 open Cslib Cslib.Probability Cslib.Crypto.Protocols.SigmaProtocol
 open Turing.MultiTapeTM Cslib.Interactive
@@ -75,4 +75,4 @@ example : CloseTo
   rw [← mul_div_assoc]
   norm_num
 
-end ComplexityTests.Crypto.LyubashevskySigning
+end CslibFrontierTests.Crypto.LyubashevskySigning

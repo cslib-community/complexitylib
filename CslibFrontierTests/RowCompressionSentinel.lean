@@ -18,7 +18,7 @@ while the marked entry's negative second coordinate `-17` is unchanged in both c
 Further cases check zero padding and why changing values exactly at the ceiling is excluded.
 -/
 
-namespace ComplexityTests.RowCompressionSentinel
+namespace CslibFrontierTests.RowCompressionSentinel
 
 open Finset Cslib.RowCompression
 
@@ -128,4 +128,4 @@ example : kthLargest 1 univ (![(5 : ℝ), 4] : Fin 2 → ℝ) = 5 ∧
     kthLargest 1 univ (![(4 : ℝ), 4] : Fin 2 → ℝ) = 4 := by
   norm_num [kthLargest, Fin.univ_succ, filter_insert, filter_singleton]
 
-end ComplexityTests.RowCompressionSentinel
+end CslibFrontierTests.RowCompressionSentinel

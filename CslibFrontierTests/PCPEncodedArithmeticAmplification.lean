@@ -12,7 +12,7 @@ The fixed complete tables are impractical to materialize. The zero-round evaluat
 exercise the program's boundary cases; the semantic tests use its checked whole-program contract.
 -/
 
-namespace ComplexityTests.PCPEncodedArithmeticAmplification
+namespace CslibFrontierTests.PCPEncodedArithmeticAmplification
 
 open Cslib Cslib.PCP Cslib.PCP.Encoded Cslib.PCP.HadamardTester Turing.MultiTapeTM
 open Cslib.PCP.ConstraintGraph.Amplification.Arithmetic
@@ -95,4 +95,4 @@ example : 1 / (2 : ℝ) ^ 61 ≤ (rejectingPair.arithmeticAmplify.toGraph id).un
 example : ¬ (rejectingPair.arithmeticAmplify.toGraph id).Satisfiable :=
   mt (Graph.satisfiable_arithmeticAmplify_iff rejectingPair).mp rejectingPair_unsat
 
-end ComplexityTests.PCPEncodedArithmeticAmplification
+end CslibFrontierTests.PCPEncodedArithmeticAmplification

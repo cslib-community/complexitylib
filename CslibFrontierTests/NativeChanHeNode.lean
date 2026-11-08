@@ -21,7 +21,7 @@ registers. Numeric expectations below are computed from the existing mathematica
 including the two negated-Z copies. The tests do not provide a histogram or a heavy/light oracle.
 -/
 
-namespace ComplexityTests.NativeChanHeNode
+namespace CslibFrontierTests.NativeChanHeNode
 
 open Cslib.WordRAM Cslib.WordRAM.Signed
 open Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.NodePacking
@@ -174,4 +174,4 @@ example : ∃ y, ExecWithin 34 program (input singleton 1 2 1) y 1792 ∧
   obtain ⟨y, he, ho, hp⟩ := hclient
   exact ⟨y, he, ho, hp, ho.packed_square (m := 1) (by decide) (by decide)⟩
 
-end ComplexityTests.NativeChanHeNode
+end CslibFrontierTests.NativeChanHeNode

@@ -19,7 +19,7 @@ import CslibFrontier.Privacy.DifferentialPrivacy.SmallUniverse
   `1 / 2`.
 -/
 
-namespace ComplexityTests.Privacy.SmallUniverse
+namespace CslibFrontierTests.Privacy.SmallUniverse
 
 open Cslib Cslib.Privacy
 open scoped ENNReal
@@ -90,4 +90,4 @@ example : ∃ F : (Fin 36 → Fin 33) → Fin 2 → ℝ,
   refine ⟨j, le_of_eq_of_le ?_ hj⟩
   norm_num
 
-end ComplexityTests.Privacy.SmallUniverse
+end CslibFrontierTests.Privacy.SmallUniverse

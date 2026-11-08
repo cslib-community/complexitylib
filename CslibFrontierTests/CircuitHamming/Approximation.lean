@@ -16,7 +16,7 @@ where no gate errs. The first gives the lower bound of two gates for the exclusi
 counting, Hamming and weighted forms of the lower-bound principle; the second makes the decoded
 output equal to the target. -/
 
-namespace ComplexityTests.CircuitHamming.Approximation
+namespace CslibFrontierTests.CircuitHamming.Approximation
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Circuits.Approximation Finset
 
@@ -120,4 +120,4 @@ example : hammingDist (fun s : BitString 2 => s 0 && s 1)
   Nat.le_zero.1 <| (exactScheme.hammingDist_le_sum_errorCost id andCircuit fun _ => rfl).trans_eq
     (by simp [exactScheme, andCircuit])
 
-end ComplexityTests.CircuitHamming.Approximation
+end CslibFrontierTests.CircuitHamming.Approximation

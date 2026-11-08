@@ -11,7 +11,7 @@ import CslibFrontier.Tactic.PPT
 
 /-! Native clients charge growing lists and retain private coins across cached-share reads. -/
 
-namespace ComplexityTests.Crypto.VOLENative
+namespace CslibFrontierTests.Crypto.VOLENative
 
 open Cslib Cslib.Probability Cslib.Interactive Cslib.Interactive.Spec
   Cslib.Crypto.Protocols.VOLE Cslib.Crypto.Protocols.VOLE.Native Turing.MultiTapeTM
@@ -255,4 +255,4 @@ example (input : Context) (view : View Bool Result)
     a, _, processed, rfl, result, rfl, rfl⟩
   simp [List.append_assoc]
 
-end ComplexityTests.Crypto.VOLENative
+end CslibFrontierTests.Crypto.VOLENative

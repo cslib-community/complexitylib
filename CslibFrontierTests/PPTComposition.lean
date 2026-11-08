@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 
 /-! Functional pipelines use the ordinary monadic interface and existing deterministic proofs. -/
 
-namespace ComplexityTests.PPTComposition
+namespace CslibFrontierTests.PPTComposition
 
 open Cslib Cslib.Probability Turing.MultiTapeTM
 
@@ -84,7 +84,7 @@ example {yes no : List Bool → ProbComp Bool}
     IsPPTOn encBits encBool (fun word => if word = [] then yes word else no word.reverse) := by
   fun_prop
 
-end ComplexityTests.PPTComposition
+end CslibFrontierTests.PPTComposition
 
 -- Plain deterministic postprocessing retains the full arbitrary encoded contract.
 example {α β γ : Type} {input : α ↪ List Bool} {middle : β ↪ List Bool}

@@ -15,7 +15,7 @@ self-adjointness, almost-everywhere additivity on a sum of coordinates, preserva
 instances of the `L²` and `L∞` contraction, and Fact 11.13 on monomials and multilinear
 polynomials, including the form `U_ρ f z = f (ρ z)` and a composite `U_{1/2} U_{1/2}`. -/
 
-namespace ComplexityTests.GaussianNoiseOperator
+namespace CslibFrontierTests.GaussianNoiseOperator
 
 open MeasureTheory ProbabilityTheory
 open scoped ENNReal
@@ -156,4 +156,4 @@ example (z : Fin 2 → ℝ) :
   rw [h, gaussianNoiseOp_const_mul, gaussianNoiseOp_prod, Finset.card_univ, Fintype.card_fin]
   ring
 
-end ComplexityTests.GaussianNoiseOperator
+end CslibFrontierTests.GaussianNoiseOperator

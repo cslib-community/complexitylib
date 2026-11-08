@@ -14,7 +14,7 @@ plain Kolmogorov complexity, the binary words of bounded length, and one-way fun
 pseudorandom generators.
 -/
 
-namespace ComplexityTests.KolmogorovCrypto
+namespace CslibFrontierTests.KolmogorovCrypto
 
 open Cslib Cslib.Kolmogorov Cslib.Kolmogorov.DescriptionMethod Cslib.Crypto Filter Finset
 open scoped NNReal
@@ -119,4 +119,4 @@ example {G : List Bool → List Bool} (hG : PseudorandomGenerator G logSqStretch
    hG.exists_oneWay,
    exists_oneWay_iff_exists_pseudorandomGenerator⟩
 
-end ComplexityTests.KolmogorovCrypto
+end CslibFrontierTests.KolmogorovCrypto

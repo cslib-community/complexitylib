@@ -10,7 +10,7 @@ import CslibFrontier.Computability.PropertyTesting.DenseGraph.TriangleFree
 distance, a far graph, exact acceptance probabilities, a one-sided tester with explicit
 parameters, and a number of trials that is too small. -/
 
-namespace ComplexityTests.DenseGraphTesting
+namespace CslibFrontierTests.DenseGraphTesting
 
 open Cslib.DenseGraphTesting SimpleGraph Finset
 
@@ -82,4 +82,4 @@ example : ∃ T : Tester 1000,
       (3 * ⌈(3 * triangleRemovalBound (1 / 4))⁻¹⌉₊) :=
   oneSidedTestable_iff.mp oneSidedTestable_cliqueFree_three (1 / 4) (by norm_num) 1000
 
-end ComplexityTests.DenseGraphTesting
+end CslibFrontierTests.DenseGraphTesting

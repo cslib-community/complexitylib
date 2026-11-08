@@ -19,9 +19,9 @@ The exhaustive check evaluates the materialized circuit, which `materialize_eq` 
 the original.
 -/
 
-namespace ComplexityTests.KeyedSort
+namespace CslibFrontierTests.KeyedSort
 
-open Cslib Cslib.Circuits Cslib.Circuits.Boolean ComplexityTests.CircuitMaterialize
+open Cslib Cslib.Circuits Cslib.Circuits.Boolean CslibFrontierTests.CircuitMaterialize
 
 private def parityKey : Circuit signature 3 1 :=
   ((Formula.input (0 : Fin 3)).xor (Formula.input 1)).toCircuit
@@ -97,4 +97,4 @@ example : (keyedSortCircuit (Circuit.oneGate (.const true) (Fin.elim0 : Fin 0 â†
       keys output == (if ascending then sortedKeys else sortedKeys.reverse) &&
         (values output).mergeSort == (values input).mergeSort
 
-end ComplexityTests.KeyedSort
+end CslibFrontierTests.KeyedSort

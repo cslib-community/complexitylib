@@ -21,7 +21,7 @@ windows or a tree.
 
 public section
 
-namespace ComplexityTests.ImplicitBlockPath
+namespace CslibFrontierTests.ImplicitBlockPath
 
 open Turing MultiTapePTM.BlockComputation
 open NativeBlockCodec
@@ -53,4 +53,4 @@ example : InitialChunk.chunk QueryReplayGate.reader code (2, 6) = 0 := by decide
 example : InitialChunk.chunk QueryReplayGate.reader code (1000000000, 0) = 3 := by decide
 example : InitialChunk.chunk QueryReplayGate.reader code (1000000000, 1) = 0 := by decide
 
-end ComplexityTests.ImplicitBlockPath
+end CslibFrontierTests.ImplicitBlockPath

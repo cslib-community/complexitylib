@@ -16,7 +16,7 @@ Off-clock pairs and terminal rows give zero. The decoded bits recover the semant
 The ordinary writer is definitionally the same 23-label program after extracting the shared code.
 -/
 
-namespace ComplexityTests.ClockedCoinTable
+namespace CslibFrontierTests.ClockedCoinTable
 
 open Cslib.Turing Turing MultiTapeTM CounterProgram Instr Expr Matrix
 open MultiTapeNTM.ConfigurationGraph MultiTapePTM.ConfigurationGraph
@@ -220,4 +220,4 @@ example {k : ℕ} {State : Type} [Fintype State] (M : MultiTapePTM k Bool State)
             lt (const 1) (reg 3) 20 21, emit true 9, emit false 9, halt []]
         registers := 4 } := rfl
 
-end ComplexityTests.ClockedCoinTable
+end CslibFrontierTests.ClockedCoinTable

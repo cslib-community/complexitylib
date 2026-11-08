@@ -14,7 +14,7 @@ deciders, a nontrivial property of self-applied behavior for Rice's theorem, dec
 reductions, input prefixes built into descriptions, the recursion theorem, and Rice's theorem for
 a nontrivial property of behavior. -/
 
-namespace ComplexityTests.Halting
+namespace CslibFrontierTests.Halting
 
 open Turing Turing.MultiTapeTM Turing.MultiTapeTM.Universal
 
@@ -226,4 +226,4 @@ for partial recursive codes. -/
 example : ¬IsDecidable {w | (decodeDesc w).Halts (([] : List Bool).map eBit)} encBits :=
   not_isDecidable_halts []
 
-end ComplexityTests.Halting
+end CslibFrontierTests.Halting

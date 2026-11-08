@@ -20,7 +20,7 @@ An unmarked endpoint has raw first prefix `-2` but compressed value `2`, so the 
 not globally identical to its uncompressed prefixes.
 -/
 
-namespace ComplexityTests.RowCompressionSentinelIteration
+namespace CslibFrontierTests.RowCompressionSentinelIteration
 
 open Finset Cslib.RowCompression
 
@@ -179,4 +179,4 @@ example : firstRank univ 3 (originalRun 2).defaultValue (originalRun 2).row =
       firstRank univ 3 (modifiedRun 2).defaultValue (modifiedRun 2).row ≤ 2 :=
   (coupling 2 (by norm_num)).2.2 (by norm_num)
 
-end ComplexityTests.RowCompressionSentinelIteration
+end CslibFrontierTests.RowCompressionSentinelIteration

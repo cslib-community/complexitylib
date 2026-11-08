@@ -14,7 +14,7 @@ import Mathlib.Tactic.NormNum.Prime
 * The dense atom identity at two rates for a concrete walk over `𝔽₅`.
 -/
 
-namespace ComplexityTests.AtomChannels
+namespace CslibFrontierTests.AtomChannels
 
 open Finset Cslib.Probability
 open scoped BigOperators
@@ -63,4 +63,4 @@ example : 𝔼 s ∈ ({s | affineRetains 5 2 1 s (id 1)} :
     (fun w => by unfold W; split_ifs <;> norm_num) (row_mass 0) (by norm_num)]
   norm_num [k, W]
 
-end ComplexityTests.AtomChannels
+end CslibFrontierTests.AtomChannels

@@ -17,7 +17,7 @@ with a short path, giving too few openings, or committing to a table that the PC
 are all rejected. The completeness theorem applies to the honest execution.
 -/
 
-namespace ComplexityTests.Crypto.Kilian
+namespace CslibFrontierTests.Crypto.Kilian
 
 open Cslib Cslib.Complexity Cslib.Crypto
 
@@ -97,4 +97,4 @@ example (n : ℕ) :
     ProbComp.eval (kilianHonestGame idHash toyVerifier x [true, true] n) = PMF.pure true :=
   eval_kilianHonestGame idHash toyVerifier (by decide) n
 
-end ComplexityTests.Crypto.Kilian
+end CslibFrontierTests.Crypto.Kilian

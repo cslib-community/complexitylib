@@ -14,7 +14,7 @@ least-significant-bit indexing, input constants, a quantified mixed input/numeri
 and a numeric query through the existing relational interpretation API.
 -/
 
-namespace ComplexityTests.OrderedFirstOrder
+namespace CslibFrontierTests.OrderedFirstOrder
 
 open FirstOrder Language Structure Cslib.Logic FO
 
@@ -110,4 +110,4 @@ example : Fin 3 ⊨
     apply (realize_closeEx _ _).mpr
     exact ⟨fun _ => 2, Formula.realize_equal.mpr rfl⟩)
 
-end ComplexityTests.OrderedFirstOrder
+end CslibFrontierTests.OrderedFirstOrder

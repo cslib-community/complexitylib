@@ -14,7 +14,7 @@ of `PHP^2_1` and its monotone translation pairs; and instances of the recurrence
 lower bounds.
 -/
 
-namespace ComplexityTests.ProofComplexity.Pigeonhole
+namespace CslibFrontierTests.ProofComplexity.Pigeonhole
 
 open Cslib Cslib.Logic.PL Finset
 
@@ -77,4 +77,4 @@ example :
   have := CNF.pow_le_mul_of_refutableInSize_pigeonhole (n := 8) (by decide) hs
   omega
 
-end ComplexityTests.ProofComplexity.Pigeonhole
+end CslibFrontierTests.ProofComplexity.Pigeonhole

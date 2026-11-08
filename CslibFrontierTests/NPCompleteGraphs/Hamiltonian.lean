@@ -15,7 +15,7 @@ Concrete, boundary, and `fun_prop` checks for the verifiers of `DirHamPath`,
 `DirHamCycle`, `HamPath` and `HamCycle`.
 -/
 
-namespace ComplexityTests.NPCompleteGraphs.Hamiltonian
+namespace CslibFrontierTests.NPCompleteGraphs.Hamiltonian
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -266,4 +266,4 @@ example : ([], []) ∉ HamCycle := by
 example : HamCycle.verifier (([0, 1, 2, 0], [(0, 1), (1, 2), (2, 0)]),
     certificate [0, 1, 2, 0] [0, 1, 2]) = true := rfl
 
-end ComplexityTests.NPCompleteGraphs.Hamiltonian
+end CslibFrontierTests.NPCompleteGraphs.Hamiltonian

@@ -17,7 +17,7 @@ classes up to length `n`, and testing whether some entry of a list of bit string
 satisfies the class-wise hypotheses with `t n = 2`, placing the all-`false` strings in `NP/poly`.
 -/
 
-namespace ComplexityTests.Distillation
+namespace CslibFrontierTests.Distillation
 
 open Cslib Cslib.Complexity Turing.MultiTapeTM ComputableInPolyTime Finset
 
@@ -103,4 +103,4 @@ example : {w : List Bool | ∀ b ∈ w, b = false} ∈ NPPoly encBits := by
       exact Bool.noConfusion (h true ht)
   rwa [hcompl] at h
 
-end ComplexityTests.Distillation
+end CslibFrontierTests.Distillation

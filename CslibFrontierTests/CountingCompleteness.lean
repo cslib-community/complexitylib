@@ -18,7 +18,7 @@ the counting problems are nontrivial, and that the parsimonious reduction applie
 nonconstant function in `#P`.
 -/
 
-namespace ComplexityTests.CountingCompleteness
+namespace CslibFrontierTests.CountingCompleteness
 
 open Cslib.Logic.PL Cslib.Complexity Turing.MultiTapeTM
 
@@ -99,4 +99,4 @@ example : SAT ∈ NP encCNF ∧
   refine ⟨hc.1, hc.2 encBits _ ?_⟩
   exact P_subset_NP ⟨fun w => w.headD false, by fun_prop, fun _ => Iff.rfl⟩
 
-end ComplexityTests.CountingCompleteness
+end CslibFrontierTests.CountingCompleteness

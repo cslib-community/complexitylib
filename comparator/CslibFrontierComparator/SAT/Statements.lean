@@ -30,7 +30,7 @@ original source credit; the two proposition definitions at the end specify the c
 
 @[expose] public section
 
-namespace ComplexityComparator.SAT
+namespace CslibFrontierComparator.SAT
 
 /- Binary serialization: tag each bit with true and terminate its frame with false. -/
 def frame (w : List Bool) : List Bool := w.flatMap (fun b => [true, b]) ++ [false]
@@ -134,4 +134,4 @@ def ExactCount : Prop :=
 /-- No positive exponential rate lower-bounds every deterministic 3SAT decider. -/
 def NotETH : Prop := ¬ETH
 
-end ComplexityComparator.SAT
+end CslibFrontierComparator.SAT

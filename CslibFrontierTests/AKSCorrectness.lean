@@ -8,7 +8,7 @@ import CslibFrontier.Foundations.NumberTheory.AKS.Correctness
 
 /-! Correctness of the AKS tests: a satisfiable instance of the order hypothesis. -/
 
-namespace ComplexityTests.AKSCorrectness
+namespace CslibFrontierTests.AKSCorrectness
 
 open Cslib.AKS
 
@@ -32,4 +32,4 @@ theorem logb_sq_lt : Real.logb 2 (31 : ℕ) ^ 2 < orderOf ((31 : ℕ) : ZMod 29)
 example : Passes 31 29 ∧ (Nat.Prime 31 ↔ Passes 31 29) :=
   ⟨passes_of_prime (by decide) 29, prime_iff_passes (by norm_num) logb_sq_lt⟩
 
-end ComplexityTests.AKSCorrectness
+end CslibFrontierTests.AKSCorrectness

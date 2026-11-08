@@ -33,7 +33,7 @@ same output after the same number of instructions (`Presentation.halts_iff_execu
   data-structure bridges (`DijkstraBridge`, `FibonacciHeapBridge`).
 -/
 
-namespace ComplexityTests.Abstracts.WordRAMBridge
+namespace CslibFrontierTests.Abstracts.WordRAMBridge
 
 open Cslib.WordRAM
 
@@ -525,4 +525,4 @@ theorem runs_map {w : ℕ} {q : Program .exact r} {s t : Cslib.WordRAM.State r} 
 
 end Machine
 
-end ComplexityTests.Abstracts.WordRAMBridge
+end CslibFrontierTests.Abstracts.WordRAMBridge

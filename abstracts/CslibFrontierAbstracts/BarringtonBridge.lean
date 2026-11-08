@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 
 /-! # Bridge for the width-five characterization of NC¹ -/
 
-namespace ComplexityTests.Abstracts.BarringtonBridge
+namespace CslibFrontierTests.Abstracts.BarringtonBridge
 
 /-- A nonuniform NC¹ language has a polynomial-size De Morgan circuit at each input length,
 with depth at most a constant times `floor(log₂ n)+1`. Every gate, constants included, costs one.
@@ -43,4 +43,4 @@ theorem barrington (L : Language Bool) : InNC1 L ↔ HasWidthFivePrograms L := b
     Set.mem_ofPred_eq, Cslib.BranchingPrograms.MonoidProgram.Decides, InNC1,
     HasWidthFivePrograms, Cslib.Circuits.single] using h
 
-end ComplexityTests.Abstracts.BarringtonBridge
+end CslibFrontierTests.Abstracts.BarringtonBridge

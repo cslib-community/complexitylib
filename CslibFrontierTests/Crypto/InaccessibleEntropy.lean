@@ -28,7 +28,7 @@ Checks concrete unconditional instances of:
    `OneWay.exists_shrinkingCollisionGrid`).
 -/
 
-namespace ComplexityTests.Crypto.InaccessibleEntropy
+namespace CslibFrontierTests.Crypto.InaccessibleEntropy
 
 open Cslib Cslib.BitString.LinearHash Cslib.Crypto Cslib.Probability Finset Turing.MultiTapeTM
 
@@ -253,4 +253,4 @@ example {f : List Bool → List Bool} (hf : OneWay f) :
     Nonempty InaccessibleEntropyFamily ∧ Nonempty ShrinkingCollisionGrid :=
   ⟨hf.exists_inaccessibleEntropyFamily, hf.exists_shrinkingCollisionGrid⟩
 
-end ComplexityTests.Crypto.InaccessibleEntropy
+end CslibFrontierTests.Crypto.InaccessibleEntropy

@@ -15,7 +15,7 @@ open scoped ENNReal NNReal
 
 noncomputable section
 
-namespace ComplexityTests.TotalVariationMap
+namespace CslibFrontierTests.TotalVariationMap
 
 private theorem atoms_distance : tvDist (Measure.dirac (0 : ℝ)) (Measure.dirac (1 : ℝ)) = 2 := by
   have h : Measure.dirac (0 : ℝ) ⟂ₘ Measure.dirac (1 : ℝ) :=
@@ -61,4 +61,4 @@ example : tvDist ((Measure.dirac (0 : ℝ)).map (fun x : ℝ ↦ (x : UnitAddCir
   exact (tvDist_map_le (Measure.dirac (0 : ℝ)) (Measure.dirac (1 : ℝ))
     (f := fun x : ℝ ↦ (x : UnitAddCircle)) (by fun_prop)).trans_eq atoms_distance
 
-end ComplexityTests.TotalVariationMap
+end CslibFrontierTests.TotalVariationMap

@@ -14,7 +14,7 @@ and the distinction between repeated roots and distinct roots. The zero-polynomi
 shows why root existence needs the nonzero hypothesis.
 -/
 
-namespace ComplexityTests.SignQueries
+namespace CslibFrontierTests.SignQueries
 
 open Cslib.SignQueries Polynomial
 open scoped BigOperators
@@ -77,4 +77,4 @@ example : scaledRootCount 0 (fun _ : Unit => (X : ℝ[X])) (fun _ => .zero) = 0 
       ∀ _ : Unit, SignType.sign ((X : ℝ[X]).eval x) = .zero := by
   exact ⟨scaledRootCount_zero_left _ _, 0, by simp, by simp⟩
 
-end ComplexityTests.SignQueries
+end CslibFrontierTests.SignQueries

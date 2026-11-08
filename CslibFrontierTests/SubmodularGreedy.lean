@@ -18,7 +18,7 @@ Concrete checks covering:
 4. Non-vacuity and composition of `IsSubmodularCardMaxAlg`, `UpperBound`, and `LowerBound` on `ℕ`.
 -/
 
-namespace ComplexityTests.SubmodularGreedy
+namespace CslibFrontierTests.SubmodularGreedy
 
 open Cslib Cslib.Query Cslib.Algorithms.Lean.Submodular
 
@@ -133,4 +133,4 @@ example (n : ℕ) : (if n ≤ 1 then 0 else n) ≤ 1 * n :=
   (submodularGreedyQuery_lowerBound_one (α := ℕ)).le_upperBound
     (submodularGreedyQuery_upperBound 1) n
 
-end ComplexityTests.SubmodularGreedy
+end CslibFrontierTests.SubmodularGreedy

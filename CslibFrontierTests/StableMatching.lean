@@ -26,7 +26,7 @@ Kernel-checked (`decide`, no `native_decide`) examples for deferred acceptance:
    deferred acceptance.
 -/
 
-namespace ComplexityTests.StableMatching
+namespace CslibFrontierTests.StableMatching
 
 open Cslib.Algorithms.Lean.StableMatching
 
@@ -134,4 +134,4 @@ example : ∀ π : Equiv.Perm (Fin 3),
       roth.propRank 1 ((roth.updatePropPref 1 π).deferredAcceptance 1) := by
   decide
 
-end ComplexityTests.StableMatching
+end CslibFrontierTests.StableMatching

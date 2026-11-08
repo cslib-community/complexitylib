@@ -16,7 +16,7 @@ over `ℚ`, and the failure of its conclusion in characteristic two, where the h
 field does not hold.
 -/
 
-namespace ComplexityTests.InclusionMatrix
+namespace CslibFrontierTests.InclusionMatrix
 
 open Finset
 
@@ -47,4 +47,4 @@ example : (∀ B ∈ (univ : Finset (Fin 2)).powersetCard 2,
   · have := h {0} (by decide)
     norm_num at this
 
-end ComplexityTests.InclusionMatrix
+end CslibFrontierTests.InclusionMatrix

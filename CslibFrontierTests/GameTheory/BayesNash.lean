@@ -17,7 +17,7 @@ second-price auction earn `1/3`. With three bidders each bids `2/3` of its value
 earn `1/2`. A lone bidder bids `0`.
 -/
 
-namespace ComplexityTests.GameTheory.BayesNash
+namespace CslibFrontierTests.GameTheory.BayesNash
 
 open MeasureTheory Set Cslib.GameTheory.SingleParameter
 
@@ -119,4 +119,4 @@ example : FirstPrice.mechanism.IsBayesNash (fun _ : Fin 1 => 𝒰) (fun _ => 1) 
   rw [h]
   norm_num
 
-end ComplexityTests.GameTheory.BayesNash
+end CslibFrontierTests.GameTheory.BayesNash

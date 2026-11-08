@@ -19,7 +19,7 @@ thin-product geometry. The complete producer/product/recovery client is a separa
 
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMExactTriangleWitnessScan
+namespace CslibFrontierTests.WordRAMExactTriangleWitnessScan
 
 open Cslib.WordRAM Cslib.Algorithms.WordRAM.ExactTriangle
 
@@ -85,4 +85,4 @@ example : ∃ y, ExecWithin 10 WitnessScan.program (fixture (-5) 0 2) y 101 ∧
     omega
   exact ⟨y, he, hf, hc, hmem⟩
 
-end ComplexityTests.WordRAMExactTriangleWitnessScan
+end CslibFrontierTests.WordRAMExactTriangleWitnessScan

@@ -15,7 +15,7 @@ applied to the identity function), and verifies that `OneTimeEUFCMA` and `EUFCMA
 trivial scheme via an explicit zero-query PPT forger.
 -/
 
-namespace ComplexityTests.Crypto.Signature
+namespace CslibFrontierTests.Crypto.Signature
 
 open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 open scoped NNReal
@@ -116,4 +116,4 @@ theorem not_eufCMA_trivialSignatureScheme :
     ¬ trivialSignatureScheme.EUFCMA :=
   fun h => not_oneTimeEUFCMA_trivialSignatureScheme h.oneTimeEUFCMA
 
-end ComplexityTests.Crypto.Signature
+end CslibFrontierTests.Crypto.Signature

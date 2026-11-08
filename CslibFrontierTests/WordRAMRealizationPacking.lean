@@ -10,7 +10,7 @@ import CslibFrontier.Computability.WordRAM.Realization.Witness
 arguments, scratch and the frontier and applies the existing kernel contract; it performs no
 client instruction execution or algorithm-specific frame proof. -/
 
-namespace ComplexityTests.WordRAMRealizationPacking
+namespace CslibFrontierTests.WordRAMRealizationPacking
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 
@@ -85,4 +85,4 @@ theorem native (h : Realizes .exact p input output safe work) (w : ℕ) (d : δ)
 
 end
 
-end ComplexityTests.WordRAMRealizationPacking
+end CslibFrontierTests.WordRAMRealizationPacking

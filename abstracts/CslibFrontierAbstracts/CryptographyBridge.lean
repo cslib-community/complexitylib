@@ -24,10 +24,10 @@ evaluator fed a polynomial-length uniform coin tape. The saved-coin theorem iden
 semantic interface with the library's strict fair-coin Turing-machine certificates.
 -/
 
-namespace ComplexityTests.Abstracts.CryptographyBridge
+namespace CslibFrontierTests.Abstracts.CryptographyBridge
 
 open Cslib Cslib.Probability Turing.MultiTapeTM
-open ComplexityTests.Abstracts.Randomized
+open CslibFrontierTests.Abstracts.Randomized
 open scoped NNReal
 
 def frame (w : List Bool) : List Bool := w.flatMap (fun b => [true, b]) ++ [false]
@@ -282,4 +282,4 @@ example : OraclePPT (fun _ _ => pure false) := by
 example : ¬ OneWay (fun _ => []) :=
   fun h => Crypto.not_oneWay_const [] (oneWay_iff.mp h)
 
-end ComplexityTests.Abstracts.CryptographyBridge
+end CslibFrontierTests.Abstracts.CryptographyBridge

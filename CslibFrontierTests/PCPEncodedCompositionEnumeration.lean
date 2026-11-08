@@ -10,7 +10,7 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! Complete constructive enumeration, exact graph semantics, and encoding inference clients. -/
 
-namespace ComplexityTests.PCPEncodedCompositionEnumeration
+namespace CslibFrontierTests.PCPEncodedCompositionEnumeration
 
 open Cslib Cslib.PCP Cslib.PCP.Encoded Cslib.PCP.HadamardTester Turing.MultiTapeTM
 
@@ -81,4 +81,4 @@ example : ComputableInPolyTime
 
 end Arbitrary
 
-end ComplexityTests.PCPEncodedCompositionEnumeration
+end CslibFrontierTests.PCPEncodedCompositionEnumeration

@@ -15,7 +15,7 @@ Thus evaluation outputs lie outside every fresh-encryption support.
 The public key reveals the masking bit; no security claim is made for this test scheme.
 -/
 
-namespace ComplexityTests.HomomorphicExample
+namespace CslibFrontierTests.HomomorphicExample
 
 open Cslib Cslib.Circuits Cslib.Crypto.Homomorphic Cslib.Probability Turing.MultiTapeTM
 
@@ -178,4 +178,4 @@ theorem circuits_poly : ComputableInPolyTime
 theorem keyGen_ppt : IsPPTOn encUnary (encPair encBits encBits) tagged.keyGen :=
   (isPPTOn_uniform_bool encUnary).map (ComputableInPolyTime.of_finite _)
 
-end ComplexityTests.HomomorphicExample
+end CslibFrontierTests.HomomorphicExample

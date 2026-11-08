@@ -8,7 +8,7 @@ import CslibFrontier.Computability.PropertyTesting.Distribution.ClosenessCollisi
 
 /-! Concrete instances of the cross-collision moments and the collision tester for closeness. -/
 
-namespace ComplexityTests.DistributionTestingCloseness
+namespace CslibFrontierTests.DistributionTestingCloseness
 
 open Cslib.Probability.PMF Cslib.DistributionTesting
 
@@ -69,4 +69,4 @@ example : acceptProb₂ (closenessTester (α := Bool) 217 (2 * (1 / 2) / Real.sq
   rw [dist_eq]
   norm_num [PMF.pure_apply]
 
-end ComplexityTests.DistributionTestingCloseness
+end CslibFrontierTests.DistributionTestingCloseness

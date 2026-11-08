@@ -8,7 +8,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Repla
 
 /-! Native replay retains saved random branches, query channels, replies, and handler state. -/
 
-namespace ComplexityTests.OracleSavedCoins
+namespace CslibFrontierTests.OracleSavedCoins
 
 open Cslib Turing MultiTapeMachine MultiTapePTM
 
@@ -85,4 +85,4 @@ example (fuel s : ℕ) :
   ReplayWithOracle.run_interpret_coin_independent machine (pure true) query stateful (PMF.pure true)
     (fun _ => by simp) fuel _ s
 
-end ComplexityTests.OracleSavedCoins
+end CslibFrontierTests.OracleSavedCoins

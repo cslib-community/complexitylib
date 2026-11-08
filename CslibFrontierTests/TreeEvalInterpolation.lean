@@ -19,7 +19,7 @@ on its total binary-parameter domain, including the guarded zero-modulus cases.
 
 @[expose] public section
 
-namespace ComplexityTests.TreeEvalInterpolation
+namespace CslibFrontierTests.TreeEvalInterpolation
 
 open Cslib.TreeEval.Ary.Packed Turing.MultiTapeTM
 
@@ -69,4 +69,4 @@ theorem executable_extension_agrees (h : Fin 3 ↪ ZMod 7)
         (fun i => (x.getD i 0 : ZMod 7)) :=
   cast_interpolateGrid (by decide) (by decide) h hh values x
 
-end ComplexityTests.TreeEvalInterpolation
+end CslibFrontierTests.TreeEvalInterpolation

@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Circuit.Boolean.XorLemma
 parameters of the hard-core lemma, the `k`-fold XOR on concrete inputs, and the combinatorial XOR
 lemma on a tight instance. -/
 
-namespace ComplexityTests.HardnessAmplification
+namespace CslibFrontierTests.HardnessAmplification
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Finset
 
@@ -75,4 +75,4 @@ example : (#{t : Fin 2 → Bool | false = ∑ i, id (t i)} : ℝ) ≤
 /-- The bound above is attained: the constant `false` agrees with the XOR on two of four pairs. -/
 example : #{t : Fin 2 → Bool | false = ∑ i, id (t i)} = 2 := by decide
 
-end ComplexityTests.HardnessAmplification
+end CslibFrontierTests.HardnessAmplification

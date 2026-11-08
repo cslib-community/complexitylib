@@ -32,7 +32,7 @@ Probabilities are those of Mathlib's discrete distributions `PMF`, read as real 
 * [S. Vadhan, *Pseudorandomness*, Chapter 6][Vadhan2012]
 -/
 
-namespace ComplexityAbstracts.ChorGoldreichAbstract
+namespace CslibFrontierAbstracts.ChorGoldreichAbstract
 
 /-- A bit string is a function assigning a Boolean to each of `n` positions. -/
 abbrev BitString (n : ℕ) := Fin n → Bool
@@ -83,14 +83,14 @@ theorem orthogonal_sources {n : ℕ} (S : Finset (Fin n)) :
   ChorGoldreichBridge.orthogonal_sources S
 
 /--
-info: 'ComplexityAbstracts.ChorGoldreichAbstract.chor_goldreich' depends on axioms:
+info: 'CslibFrontierAbstracts.ChorGoldreichAbstract.chor_goldreich' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms chor_goldreich
 
 /--
-info: 'ComplexityAbstracts.ChorGoldreichAbstract.chor_goldreich_strong' depends on axioms:
+info: 'CslibFrontierAbstracts.ChorGoldreichAbstract.chor_goldreich_strong' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -101,6 +101,6 @@ info: abstract audit passed for `CslibFrontierAbstracts.ChorGoldreichAbstract`: 
 declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.ChorGoldreichAbstract
+#check_abstract CslibFrontierAbstracts.ChorGoldreichAbstract
 
-end ComplexityAbstracts.ChorGoldreichAbstract
+end CslibFrontierAbstracts.ChorGoldreichAbstract

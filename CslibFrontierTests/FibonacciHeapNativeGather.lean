@@ -21,7 +21,7 @@ its empty table using the unchanged source/domain; all memory and the frontier a
 
 public section
 
-namespace ComplexityTests.FibonacciHeapNativeGather
+namespace CslibFrontierTests.FibonacciHeapNativeGather
 
 open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 open Cslib.WordRAM Cslib.WordRAM.Realization FibonacciHeap FibonacciHeap.Native
@@ -128,4 +128,4 @@ example : ∃ y, ExecWithin 3 (realizes_gather.code frontier source scratch) loa
 
 end
 
-end ComplexityTests.FibonacciHeapNativeGather
+end CslibFrontierTests.FibonacciHeapNativeGather

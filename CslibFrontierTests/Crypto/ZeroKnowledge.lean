@@ -11,7 +11,7 @@ import CslibFrontier.Tactic.PPT
 /-! Tests for Naor's bit commitment scheme and the Goldreich–Micali–Wigderson
 computational zero-knowledge interactive proof system for `NP`. -/
 
-namespace ComplexityTests.Crypto.ZeroKnowledge
+namespace CslibFrontierTests.Crypto.ZeroKnowledge
 
 open Cslib Cslib.Crypto Cslib.Complexity Cslib.Probability Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -364,4 +364,4 @@ example {generator : List Bool → List Bool} {length : ℕ → ℕ}
   exact ⟨hG.negligibleSoundness_zkProofThreeSAT hstretch,
     hzk, hzk.unboundedAuxiliaryInputZeroKnowledge, hzk.instanceAuxiliaryInputZeroKnowledge⟩
 
-end ComplexityTests.Crypto.ZeroKnowledge
+end CslibFrontierTests.Crypto.ZeroKnowledge

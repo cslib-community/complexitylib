@@ -9,7 +9,7 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! Fixed-alphabet tabulation of unbounded executable descriptors and exact graph interpretation. -/
 
-namespace ComplexityTests.PCPEncodedConstraints
+namespace CslibFrontierTests.PCPEncodedConstraints
 
 open Cslib Cslib.PCP Cslib.PCP.Encoded Turing.MultiTapeTM
 
@@ -74,4 +74,4 @@ example : ComputableInPolyTime
     (encPair (encPi (encPi encBool)) (encPair encBool encBool)) encBool := by
   fun_prop
 
-end ComplexityTests.PCPEncodedConstraints
+end CslibFrontierTests.PCPEncodedConstraints

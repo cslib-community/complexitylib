@@ -11,11 +11,11 @@ import CslibFrontierTests.WordRAMRealizationPacking
 maximum fitting key. The shared packing only supplies the kernel's static register ABI;
 no algorithm-specific instruction execution or register-frame proof is used. -/
 
-namespace ComplexityTests.WordRAMBinaryHeapRead
+namespace CslibFrontierTests.WordRAMBinaryHeapRead
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.PriorityQueue.BinaryHeap.Native
-open ComplexityTests.WordRAMRealizationPacking
+open CslibFrontierTests.WordRAMRealizationPacking
 
 noncomputable section
 
@@ -116,4 +116,4 @@ example (present : Bool) :
 
 end
 
-end ComplexityTests.WordRAMBinaryHeapRead
+end CslibFrontierTests.WordRAMBinaryHeapRead

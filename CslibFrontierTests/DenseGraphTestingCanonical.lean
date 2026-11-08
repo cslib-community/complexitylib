@@ -15,10 +15,10 @@ decision properties that are too small or large enough for perfect completeness,
 too small for soundness, and a labelled property that is not closed under relabelling, for which
 the canonical construction fails. -/
 
-namespace ComplexityTests.DenseGraphTestingCanonical
+namespace CslibFrontierTests.DenseGraphTestingCanonical
 
 open Cslib.DenseGraphTesting SimpleGraph Finset
-open ComplexityTests.DenseGraphTesting (top_not_cliqueFree isFar_top)
+open CslibFrontierTests.DenseGraphTesting (top_not_cliqueFree isFar_top)
 
 -- Triangle-freeness is closed under relabelling the vertices.
 theorem isInvariant_cliqueFree_three (n : ℕ) :
@@ -197,4 +197,4 @@ example :
   rw [h₂] at h₁
   norm_num at h₁
 
-end ComplexityTests.DenseGraphTestingCanonical
+end CslibFrontierTests.DenseGraphTestingCanonical

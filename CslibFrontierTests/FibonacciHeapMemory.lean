@@ -26,7 +26,7 @@ apply: `simulates_client` gives the answers and admissibility, and `Amortized.cl
 
 @[expose] public section
 
-namespace ComplexityTests.FibonacciHeapMemory
+namespace CslibFrontierTests.FibonacciHeapMemory
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.PriorityQueue
   Cslib.DataStructure.PriorityQueue.FibonacciHeap
@@ -135,4 +135,4 @@ example : (Memory.spec 6).totalCost Memory.charge mem
   rw [hcharge, hΦ] at h
   exact (Nat.le_add_right _ _).trans h
 
-end ComplexityTests.FibonacciHeapMemory
+end CslibFrontierTests.FibonacciHeapMemory

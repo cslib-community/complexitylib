@@ -20,7 +20,7 @@ Goldreich-Levin definitions or tactics. A machine and its bounds are fixed befor
 
 @[expose] public section
 
-namespace ComplexityComparator.Automation
+namespace CslibFrontierComparator.Automation
 
 /-- A word is represented by its own bits. -/
 def wordEncoding : List Bool ↪ List Bool := Function.Embedding.refl _
@@ -54,4 +54,4 @@ def DotProductHalves : Prop :=
       ((seed.take half).zipWith Bool.and ((seed.drop half).take half)).foldl Bool.xor false)
     wordEncoding bitEncoding
 
-end ComplexityComparator.Automation
+end CslibFrontierComparator.Automation

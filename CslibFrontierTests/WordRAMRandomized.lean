@@ -28,7 +28,7 @@ measures:
 
 @[expose] public section
 
-namespace ComplexityTests.WordRAMRandomized
+namespace CslibFrontierTests.WordRAMRandomized
 
 open Cslib Cslib.WordRAM
 open Cslib.Probability.PMF (uniformOfFintype uniformOfFintype_apply uniformOfFintype_map_equiv)
@@ -480,6 +480,6 @@ theorem detAdd_agrees :
   exact ⟨hex_d,
     (exists_data_runRand_eq_pure_halted_iff_executes_of_isRandFree detAdd_isRandFree).mp hex_d⟩
 
-end ComplexityTests.WordRAMRandomized
+end CslibFrontierTests.WordRAMRandomized
 
 end

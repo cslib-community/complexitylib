@@ -13,7 +13,7 @@ public import CslibFrontier.Tactic.PPT
 public section
 open Cslib Cslib.Probability Turing.MultiTapeTM
 
-namespace ComplexityTests.PPTProgramShapes
+namespace CslibFrontierTests.PPTProgramShapes
 
 noncomputable abbrev branch (word : List Bool) : ProbComp Bool :=
   if word.isEmpty then ProbComp.uniform Bool else pure false
@@ -76,4 +76,4 @@ example (sample : List Bool → ProbComp ℕ)
       pure ((List.range n).foldl (fun parity _ => !parity) true)) := by
   ppt
 
-end ComplexityTests.PPTProgramShapes
+end CslibFrontierTests.PPTProgramShapes

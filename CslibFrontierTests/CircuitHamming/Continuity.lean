@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Circuit.Complexity
 complexity of a projection, the modulus vanishes at zero and is subadditive, the square-root upper
 bounds instantiated, and the lower bound `2 ^ 4 ≤ 16 ω_{8,1}(2 ^ 4)`. -/
 
-namespace ComplexityTests.CircuitHamming.Continuity
+namespace CslibFrontierTests.CircuitHamming.Continuity
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean
 
@@ -58,4 +58,4 @@ example :
   have h := two_pow_le_sixteen_mul_complexityModulus (p := 4) le_rfl
   exact Nat.one_le_iff_ne_zero.2 fun h0 => by rw [h0] at h; exact absurd h (by norm_num)
 
-end ComplexityTests.CircuitHamming.Continuity
+end CslibFrontierTests.CircuitHamming.Continuity

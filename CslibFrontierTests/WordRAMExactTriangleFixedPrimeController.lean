@@ -19,7 +19,7 @@ The initialized valid-geometry solver clients are checked in their separate test
 
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMExactTriangleFixedPrimeController
+namespace CslibFrontierTests.WordRAMExactTriangleFixedPrimeController
 
 open Cslib.WordRAM
 open Cslib.Algorithms.WordRAM.ExactTriangle
@@ -64,4 +64,4 @@ private def pending : Option (Data 416 × ℕ) := do
 example : 20 + 2 + (11 + 7 * (5 + 1 - 1)) ≤ 8 + 11 + 7 * (1 + 5 + 1) :=
   FixedPrime.pay_return (by decide) (by decide : 2 ≤ 1 + 1) (by decide)
 
-end ComplexityTests.WordRAMExactTriangleFixedPrimeController
+end CslibFrontierTests.WordRAMExactTriangleFixedPrimeController

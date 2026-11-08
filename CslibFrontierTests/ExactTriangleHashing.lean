@@ -13,7 +13,7 @@ Concrete zeros, false positives, coefficient wraparound, minimum selection, the 
 boundary and an admitted instance of the universal bound. These assert no native running time.
 -/
 
-namespace ComplexityTests.ExactTriangleHashing
+namespace CslibFrontierTests.ExactTriangleHashing
 
 open Cslib Cslib.Algorithms.ExactTriangle
 
@@ -112,4 +112,4 @@ example : (falsePositiveCount (fun _ _ : Fin 16 => 0) (fun _ _ => 0) (fun _ _ =>
     intro q _
     simp [countZeroMod, weightSum]
 
-end ComplexityTests.ExactTriangleHashing
+end CslibFrontierTests.ExactTriangleHashing

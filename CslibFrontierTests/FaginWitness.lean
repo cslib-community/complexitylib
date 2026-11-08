@@ -15,10 +15,10 @@ preservation and exact encoded lengths. Its layout deliberately leaves a block u
 tests also cover empty families, short and excessive certificates, and malformed source inputs.
 -/
 
-namespace ComplexityTests.FaginWitness
+namespace CslibFrontierTests.FaginWitness
 
 open FirstOrder Language Cslib.Logic Cslib.Logic.ESO
-open ComplexityTests.FaginEncoding
+open CslibFrontierTests.FaginEncoding
 
 /-- No input relation tables are present, so the universe size alone determines input length. -/
 private def emptyVocabulary : Vocabulary Language.empty where
@@ -168,4 +168,4 @@ example : noWitnessLayout.witnessInput (Equiv.refl _) (edge, [true, false]) = ed
   rw [Sentence.Layout.eval_polynomial]
   decide +kernel
 
-end ComplexityTests.FaginWitness
+end CslibFrontierTests.FaginWitness

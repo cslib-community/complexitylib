@@ -14,7 +14,7 @@ start at different nonzero positions; surrounding cells, the input cursor and ea
 must survive both copying and source erasure. Counter marks need not have the same value.
 -/
 
-namespace ComplexityTests.CopyBlock
+namespace CslibFrontierTests.CopyBlock
 
 open Turing Turing.MultiTapeTM
 
@@ -103,4 +103,4 @@ example :
   exact Turing.MultiTapeTM.CopyBlock.space_copyBlock_le true initial 3 rfl
     counter_nonblank (by decide)
 
-end ComplexityTests.CopyBlock
+end CslibFrontierTests.CopyBlock

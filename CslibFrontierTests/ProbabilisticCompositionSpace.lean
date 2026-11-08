@@ -12,7 +12,7 @@ import CslibFrontier.Probability.PMF.Bind
 
 /-! Actual sampler-to-native-consumer composition, including a consumer that never halts. -/
 
-namespace ComplexityTests.ProbabilisticCompositionSpace
+namespace CslibFrontierTests.ProbabilisticCompositionSpace
 
 open Cslib Turing MultiTapeMachine MultiTapePTM MultiTapeTM
 
@@ -127,4 +127,4 @@ example : ((ofDeterministic (MultiTapeTM.copyInput (Symbol := Bool))).comp
       rw [eval_uniformListMachine] at hword
       exact (BitString.length_of_mem_support_uniformList hword).le) (fun _ _ => by simp)
 
-end ComplexityTests.ProbabilisticCompositionSpace
+end CslibFrontierTests.ProbabilisticCompositionSpace

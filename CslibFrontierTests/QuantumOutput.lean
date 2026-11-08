@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Complexity.Classes.BQP.Sampling
 /-! Output patterns: exact coin and Bell probabilities, destructive interference, invalid
 patterns, and terminal NOTs that preserve untouched wires. -/
 
-namespace ComplexityTests.QuantumOutput
+namespace CslibFrontierTests.QuantumOutput
 
 open Cslib Cslib.Quantum Cslib.Complexity.QuantumContraction
 
@@ -164,4 +164,4 @@ example : ProbComp.eval (sampleOutput [(true, 0, [])] (List.replicate 19 false +
   rw [hpattern, ENNReal.ofReal_div_of_pos (by norm_num)]
   norm_num
 
-end ComplexityTests.QuantumOutput
+end CslibFrontierTests.QuantumOutput

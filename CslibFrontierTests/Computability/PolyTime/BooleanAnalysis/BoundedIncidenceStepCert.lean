@@ -9,7 +9,7 @@ import CslibFrontier.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceStep
 /-! Regression tests for
 `CslibFrontier.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceStepCert`. -/
 
-namespace ComplexityTests.BoundedIncidenceStepCert
+namespace CslibFrontierTests.BoundedIncidenceStepCert
 
 open Cslib Cslib.BitString Cslib.LinearAlgebra Turing.MultiTapeTM
 open Cslib.Complexity.SubexponentialSAT.SparsePolyCounter
@@ -72,4 +72,4 @@ example : ∃ P : List ℤ × MeasStepCtx → ℕ,
         (wc.2.1.2.1 * (2 ^ maxGroupDim wc.2.1.1 wc.2.1.2.1 wc.2.2.2.2.1.1 + 1) + 1) * P wc) P :=
   exists_computableInO_measPayload
 
-end ComplexityTests.BoundedIncidenceStepCert
+end CslibFrontierTests.BoundedIncidenceStepCert

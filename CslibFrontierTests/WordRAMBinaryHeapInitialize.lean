@@ -10,7 +10,7 @@ import CslibFrontier.DataStructure.PriorityQueue.BinaryHeap.Native.Initialize
 actually preserves dirty outside memory; local zero then supplies the existing compact Inv.
 The metadata primitive really computes its result and frames both original input words. -/
 
-namespace ComplexityTests.WordRAMBinaryHeapInitialize
+namespace CslibFrontierTests.WordRAMBinaryHeapInitialize
 
 open Cslib.WordRAM Cslib.WordRAM.Realization
 open Cslib.DataStructure Cslib.DataStructure.Memory Cslib.DataStructure.PriorityQueue
@@ -357,4 +357,4 @@ end CanonicalAllocator
 
 end
 
-end ComplexityTests.WordRAMBinaryHeapInitialize
+end CslibFrontierTests.WordRAMBinaryHeapInitialize

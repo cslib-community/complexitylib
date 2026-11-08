@@ -27,7 +27,7 @@ has the same two-group result, while its preceding raw prefix has large error. T
 the local comparison starts after adding the first overflow group's input.
 -/
 
-namespace ComplexityTests.RowCompressionSentinelRelative
+namespace CslibFrontierTests.RowCompressionSentinelRelative
 
 open Finset Cslib.RowCompression
 open scoped BigOperators
@@ -200,4 +200,4 @@ example : ¬ #{y : Fin 2 | (1 : ℝ) < (![1000, 1000] : Fin 2 → ℝ) y} < 2 :=
 example : clippedError 0 0 ![2, 0] = 1 ∧ ¬ |(2 : ℝ) - 0| ≤ (1 + 0) * 1 := by
   norm_num [clippedError]
 
-end ComplexityTests.RowCompressionSentinelRelative
+end CslibFrontierTests.RowCompressionSentinelRelative

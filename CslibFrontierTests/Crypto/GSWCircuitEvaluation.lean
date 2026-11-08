@@ -13,7 +13,7 @@ logarithmic-depth family is then used as the base of Gentry's generic refresh, a
 native evaluator is composed with varying dimensions.
 -/
 
-namespace ComplexityTests.Crypto.GSWCircuitEvaluation
+namespace CslibFrontierTests.Crypto.GSWCircuitEvaluation
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Crypto.Homomorphic
 open Cslib.Crypto.Homomorphic.GSW Cslib.Crypto.Homomorphic.GSW.DepthParameters
@@ -101,4 +101,4 @@ example : ComputableInPolyTime (fun p : ℕ × List (List Bool) =>
     (encPair encUnary (encList encBits)) encBits := by
   apply computableInPolyTime_evaluateCircuit <;> fun_prop
 
-end ComplexityTests.Crypto.GSWCircuitEvaluation
+end CslibFrontierTests.Crypto.GSWCircuitEvaluation

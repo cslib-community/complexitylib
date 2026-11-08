@@ -13,7 +13,7 @@ import Mathlib.Tactic.NormNum
 
 /-! Public output binding, linear-only rejection, repeated wires and role-local stateful clients. -/
 
-namespace ComplexityTests.Crypto.VOLECircuit
+namespace CslibFrontierTests.Crypto.VOLECircuit
 
 open Cslib Cslib.Circuits Cslib.Probability Cslib.Interactive Cslib.Interactive.Spec
   Cslib.Crypto.Protocols.VOLE
@@ -259,4 +259,4 @@ example : circuitReceiverView (square F) ((fun _ => 1), (fun _ => 0))
         falseView.1.1 + falseView.2.1.1.2 (.inr (.inr 0)) := by decide
   exact hfalse hlinear
 
-end ComplexityTests.Crypto.VOLECircuit
+end CslibFrontierTests.Crypto.VOLECircuit

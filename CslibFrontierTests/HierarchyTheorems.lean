@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Time
 short description, the time hierarchy theorem for polynomial and exponential bounds, and the
 separation of polynomial from exponential time. -/
 
-namespace ComplexityTests.HierarchyTheorems
+namespace CslibFrontierTests.HierarchyTheorems
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM Turing.MultiTapeTM.Universal Filter
 
@@ -111,4 +111,4 @@ time exponent. -/
 example : ∃ k, (Set.univ : Set (List Bool)) ∈ DTIME encBits (· ^ k) :=
   mem_P_iff_exists_mem_DTIME.mp ⟨fun _ => true, .const true, fun _ => by simp⟩
 
-end ComplexityTests.HierarchyTheorems
+end CslibFrontierTests.HierarchyTheorems

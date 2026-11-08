@@ -16,7 +16,7 @@ concrete clients. Certificate tests vary the spelling and encoding of the same v
 and exercise captured parameters in the complete masked-sequence predictor.
 -/
 
-namespace ComplexityTests.PseudoentropyMasking
+namespace CslibFrontierTests.PseudoentropyMasking
 
 open Cslib Cslib.ProbComp Cslib.Probability Cslib.Probability.PMF Cslib.Crypto
   Cslib.Crypto.Pseudoentropy Cslib.Crypto.Pseudoentropy.Boosting Cslib.BitString Turing.MultiTapeTM
@@ -147,4 +147,4 @@ example : IsPPTOn (encPair encUnary encBool) encBool (fun input : ℕ × Bool =>
       input.1 (fun samples => pure (samples.any fun pair => pair.1 ^^ pair.2)) input.2) := by
   ppt
 
-end ComplexityTests.PseudoentropyMasking
+end CslibFrontierTests.PseudoentropyMasking

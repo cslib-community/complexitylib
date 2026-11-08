@@ -9,7 +9,7 @@ import CslibFrontier.Tactic.PPT
 
 /-! Finite/list security agreement, honest sampling programs, and hard-core prediction tests. -/
 
-namespace ComplexityTests.HardCore
+namespace CslibFrontierTests.HardCore
 
 open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 open scoped NNReal
@@ -80,4 +80,4 @@ example {f : List Bool → List Bool} {predicate : List Bool → Bool}
   have hp := h.polyTime
   fun_prop
 
-end ComplexityTests.HardCore
+end CslibFrontierTests.HardCore

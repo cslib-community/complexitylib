@@ -40,10 +40,10 @@ sides.
   for any error below `1`, `not_efficientHVZK_sendWitnessDL` for `ε + δ ≤ 1/2`).
 -/
 
-namespace ComplexityTests.EfficientSimulators
+namespace CslibFrontierTests.EfficientSimulators
 
 open Cslib Cslib.Crypto Cslib.Crypto.Protocols Cslib.Crypto.Protocols.SigmaProtocol
-  Cslib.Interactive Probability Turing.MultiTapeTM ComplexityTests.UnboundedSimulators.Sigma
+  Cslib.Interactive Probability Turing.MultiTapeTM CslibFrontierTests.UnboundedSimulators.Sigma
   Interactive.Spec
 open scoped ENNReal NNReal
 
@@ -213,7 +213,7 @@ def messageEncoding {W : Type} (enc : W ↪ List Bool) :
 
 section SendWitness
 
-open ComplexityTests.InteractiveKnowledgeSound
+open CslibFrontierTests.InteractiveKnowledgeSound
 
 /-- The honest transcript of sending the witness is the witness. -/
 theorem sendWitness_transcript {X W : Type} (rel : X → W → Prop) [∀ x w, Decidable (rel x w)]
@@ -258,7 +258,7 @@ end SendWitness
 
 section DiscreteLog
 
-open ComplexityTests.InteractiveKnowledgeSound
+open CslibFrontierTests.InteractiveKnowledgeSound
 
 /-- The discrete-logarithm relation with the statement first, as interactive reductions take
 it. -/
@@ -337,8 +337,8 @@ def sendWitnessDLEncoding (F : PrimeOrderGroupFamily) :
 statement has exactly one witness. -/
 theorem hvzk_sendWitnessDL (i : ℕ × F.Desc) :
     (sendWitnessDL F i).HVZK (dlStmtRel F i)
-      (ComplexityTests.UnboundedSimulators.choiceSim (sendWitnessDL F i) (dlStmtRel F i)) 0 :=
-  ComplexityTests.UnboundedSimulators.hvzk_of_unique _ fun _ _ _ h h' => dlRel_unique i h h'
+      (CslibFrontierTests.UnboundedSimulators.choiceSim (sendWitnessDL F i) (dlStmtRel F i)) 0 :=
+  CslibFrontierTests.UnboundedSimulators.hvzk_of_unique _ fun _ _ _ h h' => dlRel_unique i h h'
 
 /-- **Sending the witness is not efficiently HVZK** under the discrete-logarithm assumption, with
 any simulator and errors with `ε + δ ≤ 1/2`: the realizing program outputs the discrete
@@ -366,4 +366,4 @@ theorem not_efficientHVZK_sendWitnessDL (hDL : F.DiscreteLog setup)
 
 end DiscreteLog
 
-end ComplexityTests.EfficientSimulators
+end CslibFrontierTests.EfficientSimulators

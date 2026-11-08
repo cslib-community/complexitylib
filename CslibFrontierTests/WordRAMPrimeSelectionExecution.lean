@@ -21,7 +21,7 @@ the entire actual counter, complementing the separate controller-score tests.
 
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMPrimeSelectionExecution
+namespace CslibFrontierTests.WordRAMPrimeSelectionExecution
 
 open Cslib.WordRAM
 open Cslib.Algorithms.WordRAM.ExactTriangle
@@ -116,4 +116,4 @@ example : ∃ y t,
   · exact Cslib.Algorithms.ExactTriangle.falsePositiveCount_le_const_mul
       (by decide) (by decide) (by norm_num) _ _ _ weights hp0
 
-end ComplexityTests.WordRAMPrimeSelectionExecution
+end CslibFrontierTests.WordRAMPrimeSelectionExecution

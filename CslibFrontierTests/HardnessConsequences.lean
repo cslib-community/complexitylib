@@ -14,7 +14,7 @@ Tests for doubly-exponential constructibility, exponential padding into `NEXP` a
 `EXP ⊆ P/poly`) and Theorem 1.6 (`EXP ⊈ NP ∩ P/poly` from `NP`-hardness of `MCSP`).
 -/
 
-namespace ComplexityTests.HardnessConsequences
+namespace CslibFrontierTests.HardnessConsequences
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Complexity
 open _root_.Turing _root_.Turing.MultiTapeTM
@@ -47,4 +47,4 @@ example : 1 ≤ complexity interpretation (single (MCSP.tableFunction 1 [true, f
     decide
   omega
 
-end ComplexityTests.HardnessConsequences
+end CslibFrontierTests.HardnessConsequences

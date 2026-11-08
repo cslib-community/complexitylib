@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Pla
 /-! Timed deterministic reductions use the time-class API without importing padding.
 The exponential-time client uses the diagonal language, which is outside `P`. -/
 
-namespace ComplexityTests.TimeReductions
+namespace CslibFrontierTests.TimeReductions
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
@@ -37,4 +37,4 @@ example : (fun n : ℕ => List.replicate n true) ⁻¹' {x | diagonal x = true} 
         (Nat.le_add_right _ _)
   omega
 
-end ComplexityTests.TimeReductions
+end CslibFrontierTests.TimeReductions

@@ -13,7 +13,7 @@ Topological numberings of an acyclic relation on a finite set, including the bou
 of elements, a relation with a cycle that has none, and simple cycles inside closed walks.
 -/
 
-namespace ComplexityTests.RelationAcyclic
+namespace CslibFrontierTests.RelationAcyclic
 
 open Relation
 
@@ -69,4 +69,4 @@ example : ∃ c : List ℕ, 1 ∈ c ∧ (c : Cycle ℕ).Chain rot :=
 example : TransGen rot 1 1 :=
   transGen_of_cycle_chain (c := [0, 1, 2]) (by rw [Cycle.chain_coe_cons]; simp [rot]) (by simp)
 
-end ComplexityTests.RelationAcyclic
+end CslibFrontierTests.RelationAcyclic

@@ -10,7 +10,7 @@ import CslibFrontier.Computability.WordRAM.Realization.Program.Standard
 already installed arguments and an actually charged native list-input prefix. The former
 includes width zero; the latter explicitly checks frontier overflow and the empty-input case. -/
 
-namespace ComplexityTests.WordRAMRealizationProgram
+namespace CslibFrontierTests.WordRAMRealizationProgram
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 
@@ -263,4 +263,4 @@ example : (inputPrefix (r := 2) 0 1 (Fin.elim0 : Fin 0 → Fin 2)).eval 0 20
     (Data.init []) = none := by
   decide
 
-end ComplexityTests.WordRAMRealizationProgram
+end CslibFrontierTests.WordRAMRealizationProgram

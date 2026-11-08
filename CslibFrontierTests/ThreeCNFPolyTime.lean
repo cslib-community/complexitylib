@@ -10,7 +10,7 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! Efficient exact clause splitting with captured fresh variables and arbitrary encodings. -/
 
-namespace ComplexityTests.ThreeCNFPolyTime
+namespace CslibFrontierTests.ThreeCNFPolyTime
 
 open Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -74,4 +74,4 @@ example {V Input : Type} (enc : V ↪ List Bool) (input : Input ↪ List Bool)
 
 example (φ : CNF ℕ) : φ.to3CNF.Satisfiable ↔ φ.Satisfiable := CNF.satisfiable_to3CNF φ
 
-end ComplexityTests.ThreeCNFPolyTime
+end CslibFrontierTests.ThreeCNFPolyTime

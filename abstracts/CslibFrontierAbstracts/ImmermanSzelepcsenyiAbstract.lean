@@ -40,7 +40,7 @@ construction.
 * [M. Sipser, *Introduction to the Theory of Computation*, Section 8.6][Sipser2013]
 -/
 
-namespace ComplexityAbstracts.ImmermanSzelepcsenyiAbstract
+namespace CslibFrontierAbstracts.ImmermanSzelepcsenyiAbstract
 
 /-! ## Nondeterministic space -/
 
@@ -142,6 +142,6 @@ info: abstract audit passed for `CslibFrontierAbstracts.ImmermanSzelepcsenyiAbst
 18 root declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.ImmermanSzelepcsenyiAbstract
+#check_abstract CslibFrontierAbstracts.ImmermanSzelepcsenyiAbstract
 
-end ComplexityAbstracts.ImmermanSzelepcsenyiAbstract
+end CslibFrontierAbstracts.ImmermanSzelepcsenyiAbstract

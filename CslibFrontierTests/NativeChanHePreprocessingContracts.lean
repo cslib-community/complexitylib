@@ -20,7 +20,7 @@ execution and memory witness. In particular, the negative two-position case stil
 instance; it is never replaced by an empty output as a shortcut.
 -/
 
-namespace ComplexityTests.NativeChanHePreprocessingContracts
+namespace CslibFrontierTests.NativeChanHePreprocessingContracts
 
 open Cslib.WordRAM
 open Cslib.Algorithms.ThreeSum
@@ -162,4 +162,4 @@ example : ∃ (out : List (ℕ × Node)) (y : Data 128) (steps : ℕ),
   unfold HasSolution
   decide
 
-end ComplexityTests.NativeChanHePreprocessingContracts
+end CslibFrontierTests.NativeChanHePreprocessingContracts

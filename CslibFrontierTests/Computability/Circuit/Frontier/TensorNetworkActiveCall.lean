@@ -23,7 +23,7 @@ public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.ActiveC
 
 @[expose] public section
 
-namespace ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.ActiveCall
+namespace CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.ActiveCall
 
 open Cslib.Circuits.Frontier TensorNetwork
 
@@ -106,4 +106,4 @@ example (p : ℕ) : ∃ b ∈ ℤ₍₂₎,
     (by simp) ζ hζ (by simp) _ fun t _ _ k =>
       mk_eval_localDeformation net₁ _ _ 0 t _ _ _ (ζ k)
 
-end ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.ActiveCall
+end CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.ActiveCall

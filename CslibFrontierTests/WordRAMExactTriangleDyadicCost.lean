@@ -18,7 +18,7 @@ an execution/time certificate. This is a cost client, not a huge interpreter eva
 an already composed ET/3SUM solver.
 -/
 
-namespace ComplexityTests.WordRAMExactTriangleDyadicCost
+namespace CslibFrontierTests.WordRAMExactTriangleDyadicCost
 
 open Cslib.Matrix Cslib.Algorithms.ExactTriangle
 open Cslib.Algorithms.WordRAM.ExactTriangle
@@ -93,4 +93,4 @@ example (k : ℕ) : (family k : ℝ) ^ 3 / groups (family k) ≤
     16 * (family k : ℝ) ^ (3 - 2 / 1197 : ℝ) :=
   cubic_div_groups_le (pos_of_blocks_pos (family_fast k))
 
-end ComplexityTests.WordRAMExactTriangleDyadicCost
+end CslibFrontierTests.WordRAMExactTriangleDyadicCost

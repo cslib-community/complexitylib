@@ -15,7 +15,7 @@ feedback component computes an intersection and shares its outputs, while an unu
 still contributes its AND cost. Explicit semifilter witnesses give a positive minimum-cost bound.
 -/
 
-namespace ComplexityTests.FusionCyclic
+namespace CslibFrontierTests.FusionCyclic
 
 open Cslib.Circuits Fusion
 
@@ -216,4 +216,4 @@ private theorem bool_mono (op : Monotone.Op) : Monotone (Monotone.interpretation
   let x : Fin 2 → Bool := ![i.val / 2 == 1, i.val % 2 == 1]
   List.ofFn ((feedback.step Monotone.interpretation bool_mono x)^[3] (fun _ => false)))
 
-end ComplexityTests.FusionCyclic
+end CslibFrontierTests.FusionCyclic

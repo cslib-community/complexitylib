@@ -23,7 +23,7 @@ import CslibFrontier.Crypto.Computational.Kilian.Micali
    malformed paths, missing repetitions, and commitments to a rejected table `[true, false]`.
 -/
 
-namespace ComplexityTests.Crypto.Micali
+namespace CslibFrontierTests.Crypto.Micali
 
 open Cslib Cslib.Complexity Cslib.Crypto
 
@@ -141,4 +141,4 @@ example (σ m : ℕ) :
     micaliHonestGame toyVerifier x [true, true] σ m = PMF.pure true :=
   micaliHonestGame_eq_pure_true toyVerifier (by decide) σ m
 
-end ComplexityTests.Crypto.Micali
+end CslibFrontierTests.Crypto.Micali

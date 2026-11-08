@@ -12,7 +12,7 @@ import CslibFrontier.Computability.Circuit.Boolean.Hierarchy
 functions, both satisfied and violated; greedy designs, their size bound and their generator on
 concrete masks; and the decider on a verifier that ignores its random string. -/
 
-namespace ComplexityTests.Derandomization
+namespace CslibFrontierTests.Derandomization
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Crypto.PRG.NisanWigderson Finset
 
@@ -108,4 +108,4 @@ example : Complexity.nwDecider (fun _ : Unit × List Bool => false) (fun _ => fa
     (fun _ => 2) (fun _ => 1) (fun _ => 0) (fun _ => 2) () = false := by
   decide
 
-end ComplexityTests.Derandomization
+end CslibFrontierTests.Derandomization

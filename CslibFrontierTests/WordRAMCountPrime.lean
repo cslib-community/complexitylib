@@ -21,7 +21,7 @@ These interpreter examples do not supply the general native correctness or resou
 -- Deliberately execute the real native interpreter for complete counter examples.
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMCountPrime
+namespace CslibFrontierTests.WordRAMCountPrime
 
 open Cslib.WordRAM Cslib.WordRAM.Signed
 open Cslib.Algorithms.WordRAM.ExactTriangle.CountPrime
@@ -85,4 +85,4 @@ example : Nat.Morton.index 1 2 = 6 ∧ Nat.Morton.index 2 1 = 9 ∧
   | some (y, _) => y.regs Reg.result == 0 && y.mem 259 == 777
   | none => false
 
-end ComplexityTests.WordRAMCountPrime
+end CslibFrontierTests.WordRAMCountPrime

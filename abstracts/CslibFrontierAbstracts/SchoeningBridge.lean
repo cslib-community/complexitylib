@@ -37,10 +37,10 @@ three facts.
    (`ampTime_le`), and transports the result to every presentation satisfying `StdLaws`.
 -/
 
-namespace ComplexityAbstracts.SchoeningBridge
+namespace CslibFrontierAbstracts.SchoeningBridge
 
 open Cslib Cslib.WordRAM Cslib.Logic.PL
-open ComplexityAbstracts.RandomizedWordRAMBridge (Presentation)
+open CslibFrontierAbstracts.RandomizedWordRAMBridge (Presentation)
 
 /-! ## Part 1: presentations of the standard randomized word RAM -/
 
@@ -530,4 +530,4 @@ theorem schoening (S : Presentation) (h : StdLaws S) :
     rw [hfail]
     exact ampProgram_failure_le_exp le_rfl hsat hlen hfit
 
-end ComplexityAbstracts.SchoeningBridge
+end CslibFrontierAbstracts.SchoeningBridge

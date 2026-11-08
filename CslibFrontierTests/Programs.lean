@@ -10,7 +10,7 @@ import CslibFrontier.Languages.Probabilistic.Simulation
 private state, including state retained across substituted calls and a change of representation.
 The basic examples are adapted from cslib PR #1129. -/
 
-namespace ComplexityTests.Programs
+namespace CslibFrontierTests.Programs
 
 open Cslib
 
@@ -76,4 +76,4 @@ example {α : Type} (program : OracleComp (fun _ : Unit => ℕ) α)
 example : ProbComp.eval (ProbComp.uniform Bool) = Probability.PMF.uniformOfFintype Bool := by
   simp
 
-end ComplexityTests.Programs
+end CslibFrontierTests.Programs

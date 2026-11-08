@@ -18,7 +18,7 @@ unused copy of the term. Three outputs select the original term, its double and 
 term again. Compilation must preserve all outputs and charge both term gadgets exactly once.
 -/
 
-namespace ComplexityTests.ContextualPower
+namespace CslibFrontierTests.ContextualPower
 
 open Cslib.Circuits
 
@@ -183,4 +183,4 @@ example {σ : Signature.{u}} {τ : Signature.{v}} {R : Type w} {n m q : ℕ}
       c.eval (fun op args => (impl op).eval J (Fin.append ctx args) 0) x :=
   c.eval_simulateWithContext q impl J ctx x
 
-end ComplexityTests.ContextualPower
+end CslibFrontierTests.ContextualPower

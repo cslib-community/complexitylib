@@ -19,7 +19,7 @@ outputs `Nat.pair 1 1 = 3`, so `3 ≤ bbOutput 16`. The halting characterization
 primitive recursive, to `n ↦ n` (so `bbOutput` is unbounded), and to bit-length indexing.
 -/
 
-namespace ComplexityTests.BusyBeaver
+namespace CslibFrontierTests.BusyBeaver
 
 open Cslib.BusyBeaver Cslib.BlumComplexity Encodable Nat.Partrec Filter
 
@@ -101,4 +101,4 @@ example : ¬ Computable bbFuel := fun h => not_exists_computable_bbFuel_le ⟨_,
 example : ¬ Computable bbOutput := fun h =>
   not_exists_computable_bbOutput_le ⟨_, h, fun _ => le_rfl⟩
 
-end ComplexityTests.BusyBeaver
+end CslibFrontierTests.BusyBeaver

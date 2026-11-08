@@ -16,19 +16,19 @@ positive and negative instances test the ordered semantics, while the new charac
 supplies native NP membership without any verifier or complexity assumption.
 -/
 
-namespace ComplexityTests.OrderedFaginVerifier
+namespace CslibFrontierTests.OrderedFaginVerifier
 
 open FirstOrder Language Structure Cslib.Logic Cslib.Logic.FO Cslib.Logic.FO.Ordered
 open Cslib.Complexity Turing.MultiTapeTM
-open ComplexityTests.OrderedFagin (graphVocabulary oneEdge)
+open CslibFrontierTests.OrderedFagin (graphVocabulary oneEdge)
 
 /-- The new forward direction accepts the existing query whose truth changes under a swap of
 the two input vertices, so it requires no invariance under unordered input isomorphisms. -/
-example : ComplexityTests.OrderedFagin.edgeZeroMaxQuery.encodedLanguage graphVocabulary ∈
+example : CslibFrontierTests.OrderedFagin.edgeZeroMaxQuery.encodedLanguage graphVocabulary ∈
     NP encStructure :=
   ESODefinable.encodedLanguage_mem_NP graphVocabulary
-    (show Ordered.Definable ComplexityTests.OrderedFagin.edgeZeroMaxQuery from
-      ⟨ComplexityTests.OrderedFagin.edgeZeroMax, fun _ => Iff.rfl⟩).esoDefinable
+    (show Ordered.Definable CslibFrontierTests.OrderedFagin.edgeZeroMaxQuery from
+      ⟨CslibFrontierTests.OrderedFagin.edgeZeroMax, fun _ => Iff.rfl⟩).esoDefinable
 
 private abbrev witnessLanguage (L : Language) :=
   (language L).sum (ESO.varLanguage fun _ : Fin 1 => 1)
@@ -255,4 +255,4 @@ example : (0, [ [] ]) ∉ always.encodedLanguage graphVocabulary ∧
   ⟨Query.not_mem_encodedLanguage_of_lt_two _ _ (by decide),
     Query.not_mem_encodedLanguage_of_lt_two _ _ (by decide)⟩
 
-end ComplexityTests.OrderedFaginVerifier
+end CslibFrontierTests.OrderedFaginVerifier

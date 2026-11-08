@@ -17,7 +17,7 @@ open scoped ENNReal
 
 noncomputable section
 
-namespace ComplexityTests.QuotientDensity
+namespace CslibFrontierTests.QuotientDensity
 
 private theorem bottomDomain {G : Type*} [AddGroup G] [MeasurableSpace G] (μ : Measure G) :
     IsAddFundamentalDomain (⊥ : AddSubgroup G).op Set.univ μ := by
@@ -108,4 +108,4 @@ example {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   have : Countable L.toAddSubgroup := inferInstanceAs (Countable L)
   exact measurable_automorphize hf
 
-end ComplexityTests.QuotientDensity
+end CslibFrontierTests.QuotientDensity

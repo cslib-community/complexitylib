@@ -20,7 +20,7 @@ and check the shape of the binary-precision certificate.
 
 @[expose] public section
 
-namespace ComplexityTests.Computability.Circuit.Frontier.DirectContraction
+namespace CslibFrontierTests.Computability.Circuit.Frontier.DirectContraction
 
 open Cslib.Circuits.Frontier ExplicitTensorNetwork
 
@@ -83,4 +83,4 @@ noncomputable example : Cslib.GenericRAM.NativeCertificate
     Turing.MultiTapeTM.encNat :=
   directContractionBinaryCertificate
 
-end ComplexityTests.Computability.Circuit.Frontier.DirectContraction
+end CslibFrontierTests.Computability.Circuit.Frontier.DirectContraction

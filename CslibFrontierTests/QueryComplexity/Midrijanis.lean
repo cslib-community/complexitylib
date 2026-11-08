@@ -16,7 +16,7 @@ cubic degree corollary gives `D ≤ 16`, below both the input-length bound `100`
 sixth-power degree bound `512`. Constant functions exercise the zero-degree case.
 -/
 
-namespace ComplexityTests.QueryComplexity.Midrijanis
+namespace CslibFrontierTests.QueryComplexity.Midrijanis
 
 open Cslib Cslib.BitString Cslib.QueryComplexity Finset
 
@@ -70,4 +70,4 @@ example (n : ℕ) (b : Bool) :
     have h := DecisionTree.complexity_le_two_mul_degree_pow_three (fun _ : BitString n => b)
     exact Nat.eq_zero_of_le_zero (by simpa [hdeg] using h)
 
-end ComplexityTests.QueryComplexity.Midrijanis
+end CslibFrontierTests.QueryComplexity.Midrijanis

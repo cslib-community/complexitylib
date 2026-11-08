@@ -18,7 +18,7 @@ crossings, also with nonempty crossing sequences, the explicit `n log n` bound a
 time), the hard palindrome inputs, and failing instances of both palindrome decision notions.
 -/
 
-namespace ComplexityTests.SingleTapeCrossing
+namespace CslibFrontierTests.SingleTapeCrossing
 
 open Cslib Cslib.Turing SingleTapeTM Relation
 
@@ -178,4 +178,4 @@ example : ¬ stayer.DecidesByHeadInTime id {w : List Bool | w.Palindrome} true
     fun n => 5 * (n + 1) :=
   not_decidesByHeadInTime_palindromes_linear id true 5
 
-end ComplexityTests.SingleTapeCrossing
+end CslibFrontierTests.SingleTapeCrossing

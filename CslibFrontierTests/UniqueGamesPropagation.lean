@@ -27,7 +27,7 @@ Kernel-checked runs (no `native_decide`) of `Cslib.Complexity.UniqueGames.Propag
 
 public section
 
-namespace ComplexityTests.UniqueGamesPropagation
+namespace CslibFrontierTests.UniqueGamesPropagation
 
 open Cslib.Complexity Cslib.Complexity.UniqueGames.Propagation Cslib.PCP Cslib.PCP.Encoded
 
@@ -163,4 +163,4 @@ example : (solveM (List.finRange 3) cyc).time = 130 := by decide
 example : (solveM (List.finRange 3) cyc).time ≤ 154 :=
   solveM_time_le (List.finRange 3) cyc
 
-end ComplexityTests.UniqueGamesPropagation
+end CslibFrontierTests.UniqueGamesPropagation

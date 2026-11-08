@@ -13,7 +13,7 @@ algorithm and the perceptron, the gap between VC and Littlestone dimension for t
 optimal mistake bound of all Boolean functions on three points, and the margin hypotheses of
 Novikoff's theorem. -/
 
-namespace ComplexityTests.MistakeBound
+namespace CslibFrontierTests.MistakeBound
 
 open Cslib.MachineLearning Cslib.MachineLearning.OnlineLearning.MistakeBound
 open PACLearning (ConceptClass vcDim)
@@ -121,4 +121,4 @@ example : ∃ (S : List (ℝ × Bool)) (u γ R : ℝ),
   refine ⟨[(1, true)], 0, -1, 1, by simp, by simp, ?_⟩
   simp [mistakes, mistakesFrom_cons, perceptron, perceptronWeight]
 
-end ComplexityTests.MistakeBound
+end CslibFrontierTests.MistakeBound

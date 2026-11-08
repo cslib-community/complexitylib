@@ -16,7 +16,7 @@ proof; instances of the hypotheses of the size–width theorems; and the axioms 
 theorems.
 -/
 
-namespace ComplexityTests.ProofComplexity.Resolution
+namespace CslibFrontierTests.ProofComplexity.Resolution
 
 open Cslib Cslib.Logic Cslib.Logic.InferenceSystem Cslib.Logic.PL
 
@@ -181,4 +181,4 @@ info: 'Cslib.Logic.PL.CNF.derives_iff_derivable' does not depend on any axioms
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.Logic.PL.CNF.derives_iff_derivable
 
-end ComplexityTests.ProofComplexity.Resolution
+end CslibFrontierTests.ProofComplexity.Resolution

@@ -17,7 +17,7 @@ recurrence (case 1, `O(n ^ log₂ 7)`), a binary-search recurrence (case 2 with 
 base-`3` recurrence (case 3). A function that violates the hypothesis shows it is not vacuous.
 -/
 
-namespace ComplexityTests.MasterTheorem
+namespace CslibFrontierTests.MasterTheorem
 
 open Nat
 
@@ -177,4 +177,4 @@ example : ¬ DivideConquerBound (fun n => n ^ 2) 1 2 1 1 fun n => 0 * n ^ 0 := b
 
 example : (clog 3 9 : ℝ) ≤ 2 * Real.logb 3 9 := clog_le_two_mul_logb (by norm_num) (by norm_num)
 
-end ComplexityTests.MasterTheorem
+end CslibFrontierTests.MasterTheorem

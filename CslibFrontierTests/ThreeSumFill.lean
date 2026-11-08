@@ -8,7 +8,7 @@ import CslibFrontier.Algorithms.WordRAM.ThreeSum.Fill
 
 /-! # Executed matrix-builder regressions -/
 
-namespace ComplexityTests.ThreeSumFill
+namespace CslibFrontierTests.ThreeSumFill
 
 open Cslib
 open WordRAM WordRAM.Signed
@@ -81,4 +81,4 @@ example : layout.filled input.mem 4 (20 + 0 * 2 + 1) =
 example : (Code.eval 10 0 Fill.program (input.set Cell.side 0)).map
     (fun yn => (yn.1.regs Cell.cell, yn.2)) = some (0, 5) := by decide
 
-end ComplexityTests.ThreeSumFill
+end CslibFrontierTests.ThreeSumFill

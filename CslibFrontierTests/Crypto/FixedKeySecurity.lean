@@ -15,7 +15,7 @@ reveals it. A message-discarding algorithm inhabits the security and native hypo
 explicitly fails correctness; it is not a secure cryptosystem example.
 -/
 
-namespace ComplexityTests.Crypto.FixedKeySecurity
+namespace CslibFrontierTests.Crypto.FixedKeySecurity
 
 open Cslib Cslib.Circuits Cslib.Crypto Cslib.Crypto.Homomorphic Cslib.Probability
 open Turing.MultiTapeTM
@@ -188,4 +188,4 @@ example (bit : Bool) (n : ℕ) :
   simp [Encryption.circularPublicKey, FixedKey.publicKeyGame, forgetful, keyGen, stateful,
     FixedKey.encPublicKey, Encryption.encCircularPublicKey, encPair, encBits, encList, frame]
 
-end ComplexityTests.Crypto.FixedKeySecurity
+end CslibFrontierTests.Crypto.FixedKeySecurity

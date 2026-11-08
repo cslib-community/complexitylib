@@ -14,7 +14,7 @@ Pattern A: the product predicate and admissible-exponent set are unfolded to the
 circuit/evaluation quantifiers. Only proofs refer to the implementation's exponent definitions.
 -/
 
-namespace ComplexityAbstracts.MatrixMultiplicationBridge
+namespace CslibFrontierAbstracts.MatrixMultiplicationBridge
 
 open Cslib.Circuits
 
@@ -50,4 +50,4 @@ theorem exponent_le_nine_quarters (K : Type*) [Field K] [CharZero K] :
         (C.size : ℝ) ≤ c * (n : ℝ) ^ (τ + ε)} ≤ 9 / 4 :=
   Arithmetic.MatrixMultiplication.omega_le_nine_quarters K
 
-end ComplexityAbstracts.MatrixMultiplicationBridge
+end CslibFrontierAbstracts.MatrixMultiplicationBridge

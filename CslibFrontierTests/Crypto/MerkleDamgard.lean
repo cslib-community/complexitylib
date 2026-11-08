@@ -16,7 +16,7 @@ compression function, and verifies that `CollisionResistant` rejects a trivial c
 compression function via an explicit zero-coin PPT collision finder.
 -/
 
-namespace ComplexityTests.Crypto.MerkleDamgard
+namespace CslibFrontierTests.Crypto.MerkleDamgard
 
 open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 open scoped NNReal
@@ -126,4 +126,4 @@ theorem not_collisionResistant_constHash : ¬ CollisionResistant constHash := by
       ProbComp.eval_pure, PMF.bind_const]
   rw [Game.succProbability, heval, PMF.pure_apply_self, ENNReal.toNNReal_one]
 
-end ComplexityTests.Crypto.MerkleDamgard
+end CslibFrontierTests.Crypto.MerkleDamgard

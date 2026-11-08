@@ -11,7 +11,7 @@ import CslibFrontier.Computability.WordRAM.Compile
 
 /-! # Native ET chunk-boundary and parameter clients -/
 
-namespace ComplexityTests.WordRAMExactTriangleChunks
+namespace CslibFrontierTests.WordRAMExactTriangleChunks
 
 open Cslib.WordRAM
 
@@ -242,4 +242,4 @@ example : ∃ y t, t ≤ 65 ∧
 
 end Params
 
-end ComplexityTests.WordRAMExactTriangleChunks
+end CslibFrontierTests.WordRAMExactTriangleChunks

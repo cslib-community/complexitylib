@@ -19,7 +19,7 @@ malformed raw widths, while checked label loading rejects malformed and noncanon
 
 @[expose] public section
 
-namespace ComplexityTests.QueryReplayLoad
+namespace CslibFrontierTests.QueryReplayLoad
 
 open Turing MultiTapeTM MultiTapePTM.BlockComputation
 open MultiTapePTM.BlockComputation.QueryReplay QueryReplay.Load
@@ -58,4 +58,4 @@ example : ComputableInSpace (Label.load (k := 1) NativeBlockCodec.code)
     Label.encArgs (encOption encConfig) (fun a => (Label.encArgs a).length) :=
   Label.load_inSpace _
 
-end ComplexityTests.QueryReplayLoad
+end CslibFrontierTests.QueryReplayLoad

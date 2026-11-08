@@ -14,7 +14,7 @@ zero widths, singleton tournaments, and a three-record tournament. The generic b
 also has an explicit empty-list client.
 -/
 
-namespace ComplexityTests.ComparisonCircuits
+namespace CslibFrontierTests.ComparisonCircuits
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.BitString
 
@@ -83,4 +83,4 @@ example : (packedTournamentCircuit 0 0 2).eval interpretation Fin.elim0 = Fin.el
 example : Circuit.balanced (keyedMinCircuit 1 1) (Circuit.id signature 2) [] =
     Circuit.id signature 2 := by simp [Circuit.balanced]
 
-end ComplexityTests.ComparisonCircuits
+end CslibFrontierTests.ComparisonCircuits

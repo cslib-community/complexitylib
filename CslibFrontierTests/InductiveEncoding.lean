@@ -8,7 +8,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Inductive
 
 /-! Tests of `enc_inductive`. -/
 
-namespace ComplexityTests.InductiveEncoding
+namespace CslibFrontierTests.InductiveEncoding
 
 open Turing.MultiTapeTM
 
@@ -101,4 +101,4 @@ example : ComputableInO (fun p : Unit × Wrap => eWrap_elim p.2 fun q => q.1)
       eWrap_elim p.2 fun q => (encPair encUnit (encPair encUnary encBool) (p.1, q)).length :=
   eWrap_elim_inO ((ComputableInDegree.snd encUnit (encPair encUnary encBool)).fst').inO_one
 
-end ComplexityTests.InductiveEncoding
+end CslibFrontierTests.InductiveEncoding

@@ -16,7 +16,7 @@ of the queried concept on a negative answer; and the parities on `n` bits, whose
 least `2 ^ n`, so that by the characterization they are not weakly learnable from polynomially
 many statistical queries of inverse-polynomial tolerance with inverse-polynomial advantage. -/
 
-namespace ComplexityTests.StatisticalQueryDimension
+namespace CslibFrontierTests.StatisticalQueryDimension
 
 open Cslib Cslib.MachineLearning Cslib.MachineLearning.StatisticalQuery Cslib.Probability
 open Filter Finset
@@ -177,4 +177,4 @@ theorem not_weakly_learnable_parities :
       sqDim (PMF.uniformOfFintype (Fin n → Bool)) (parities n) := (hT.out 4 1).1 h
   exact not_polynomiallyBounded_two_pow (hdim.mono_of_le two_pow_le_sqDim_parities)
 
-end ComplexityTests.StatisticalQueryDimension
+end CslibFrontierTests.StatisticalQueryDimension

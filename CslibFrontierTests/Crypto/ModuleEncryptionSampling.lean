@@ -9,7 +9,7 @@ import CslibFrontier.Probability.PMF.Uniform
 
 /-! Sampling compatibility, small-secret support, native boundaries and a uniform-law failure. -/
 
-namespace ComplexityTests.Crypto.ModuleEncryptionSampling
+namespace CslibFrontierTests.Crypto.ModuleEncryptionSampling
 
 open Cslib Cslib.Crypto Probability ProbComp Turing.MultiTapeTM
 open scoped Matrix ENNReal
@@ -149,4 +149,4 @@ example (a : ZMod 16) : (do
   rw [hcard]
   norm_num [div_eq_mul_inv]
 
-end ComplexityTests.Crypto.ModuleEncryptionSampling
+end CslibFrontierTests.Crypto.ModuleEncryptionSampling

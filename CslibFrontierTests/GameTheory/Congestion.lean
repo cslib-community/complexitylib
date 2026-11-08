@@ -21,7 +21,7 @@ optimal, and a feasible flow that is not a Wardrop equilibrium. Hedge dynamics o
 uniform, and the price-of-anarchy bound for Hedge dynamics applies to it for every horizon.
 -/
 
-namespace ComplexityTests.GameTheory.Congestion
+namespace CslibFrontierTests.GameTheory.Congestion
 
 open Cslib.GameTheory
 
@@ -198,4 +198,4 @@ example (c : ℝ) (hc : c < 4 / 3) : ¬ ∀ (G : NonatomicCongestionGame Unit (F
   have := h G f g hG hf hg
   nlinarith
 
-end ComplexityTests.GameTheory.Congestion
+end CslibFrontierTests.GameTheory.Congestion

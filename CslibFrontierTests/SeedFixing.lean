@@ -13,7 +13,7 @@ A relation-valued two-output example has one bad seed per input but common good 
 The boundary example shows why a non-strict counting bound would be insufficient.
 -/
 
-namespace ComplexityTests.SeedFixing
+namespace CslibFrontierTests.SeedFixing
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Finset
 
@@ -60,4 +60,4 @@ example : (∀ x : BitString 1,
       ¬∃ r : BitString 1, ∀ x : BitString 1, r 0 = x 0 := by
   decide
 
-end ComplexityTests.SeedFixing
+end CslibFrontierTests.SeedFixing

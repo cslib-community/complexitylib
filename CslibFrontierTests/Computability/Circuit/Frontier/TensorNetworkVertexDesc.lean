@@ -24,7 +24,7 @@ list come out in order. Reducing an element of `O` to `A_n` and mapping back alo
 
 @[expose] public section
 
-namespace ComplexityTests.TensorNetworkVertexDesc
+namespace CslibFrontierTests.TensorNetworkVertexDesc
 
 open Cslib Cslib.Circuits.Frontier Cslib.Circuits.Frontier.NativePacket
 open Turing.MultiTapeTM (encList encNat encPair encBits)
@@ -111,4 +111,4 @@ example {f : Polynomial ℤ} (hf : f.Monic)
     reductionLift hf hirr n (AdjoinRoot.reduction hf hirr n x) = Ideal.Quotient.mk _ x :=
   reductionLift_reduction hf hirr n x
 
-end ComplexityTests.TensorNetworkVertexDesc
+end CslibFrontierTests.TensorNetworkVertexDesc

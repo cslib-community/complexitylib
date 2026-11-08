@@ -36,7 +36,7 @@ Exercises the HHK17 modular Fujisaki–Okamoto transforms (`T`, `FO^⊥`, `FO-no
 
 public section
 
-namespace ComplexityTests.Crypto.FujisakiOkamoto
+namespace CslibFrontierTests.Crypto.FujisakiOkamoto
 
 open Cslib Cslib.Crypto Cslib.Crypto.Protocols Cslib.Crypto.Protocols.FujisakiOkamoto
 open Cslib.Probability
@@ -227,4 +227,4 @@ info: 'Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.decapsNotBot_encT_eq' depen
 #guard_msgs in
 #print axioms Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.decapsNotBot_encT_eq
 
-end ComplexityTests.Crypto.FujisakiOkamoto
+end CslibFrontierTests.Crypto.FujisakiOkamoto

@@ -21,7 +21,7 @@ import Mathlib.Tactic.NormNum
 * The row norm and the uniform bound on a concrete table.
 -/
 
-namespace ComplexityTests.RootMetric
+namespace CslibFrontierTests.RootMetric
 
 open Finset Matrix Cslib Real
 open scoped BigOperators
@@ -157,4 +157,4 @@ example : rowNormPow 4 2 1 (fun (_ : Unit) (_ : Fin 2) => True) (fun _ _ => True
   norm_num at h
   exact h
 
-end ComplexityTests.RootMetric
+end CslibFrontierTests.RootMetric

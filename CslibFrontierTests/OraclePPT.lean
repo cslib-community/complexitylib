@@ -15,7 +15,7 @@ import CslibFrontier.Tactic.PPT
 
 /-! Private coins, adaptive queries, and non-vacuous strict oracle-PPT certificates. -/
 
-namespace ComplexityTests.OraclePPT
+namespace CslibFrontierTests.OraclePPT
 
 open Cslib Cslib.Probability Turing Turing.MultiTapeTM
 
@@ -311,4 +311,4 @@ example : IsPPTOn (encPair encBits (encList encBits))
   simp only [encBits_apply, List.length_append, List.length_take]
   lia
 
-end ComplexityTests.OraclePPT
+end CslibFrontierTests.OraclePPT

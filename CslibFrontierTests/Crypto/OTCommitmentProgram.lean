@@ -14,7 +14,7 @@ excluded by the necessary iteration-growth contract. -/
 
 @[expose] public section
 
-namespace ComplexityTests.Crypto.OTCommitmentProgram
+namespace CslibFrontierTests.Crypto.OTCommitmentProgram
 
 open Cslib Cslib.Probability Cslib.Crypto.Protocols.MPC
 open Cslib.Crypto.Protocols.MPC.OTCommitment Cslib.Crypto.Protocols.Commitment
@@ -160,4 +160,4 @@ theorem doubling_has_no_additive_bound :
   simp only [encBits_apply, List.length_append, List.length_replicate] at h
   omega
 
-end ComplexityTests.Crypto.OTCommitmentProgram
+end CslibFrontierTests.Crypto.OTCommitmentProgram

@@ -18,7 +18,7 @@ metadata then drives a complete initialized height-zero evaluation without a sup
 
 public section
 
-namespace ComplexityTests.InitializedEvaluator
+namespace CslibFrontierTests.InitializedEvaluator
 
 open Turing MultiTapeTM MultiTapePTM.BlockComputation
 open Cslib.TreeEval.Ary.Packed
@@ -80,4 +80,4 @@ example : (InitializedEvaluator.machine control code).halted
 example : RawController.Output.decode ((6, 3, 17, 2, 0), [20] ++ List.replicate 3 17) =
     [true, true] ++ List.replicate 4 false := by decide
 
-end ComplexityTests.InitializedEvaluator
+end CslibFrontierTests.InitializedEvaluator

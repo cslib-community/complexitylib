@@ -22,7 +22,7 @@ recovery on concrete nonvacuous instances and boundary cases.
 
 @[expose] public section
 
-namespace ComplexityTests.ReplacementCounting
+namespace CslibFrontierTests.ReplacementCounting
 
 open Finset Cslib Cslib.ReplacementCounting
 open scoped BigOperators
@@ -319,4 +319,4 @@ example :
       {0} (fun _ _ => 0) (fun _ => MvPolynomial.X ()) :=
   eval_zero_targetPolynomial _ _ _ _ fun _ _ _ _ => Subsingleton.elim _ _
 
-end ComplexityTests.ReplacementCounting
+end CslibFrontierTests.ReplacementCounting

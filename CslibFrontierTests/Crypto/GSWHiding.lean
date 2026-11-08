@@ -12,7 +12,7 @@ bounds, empty inputs and outputs, repeated coin rows, and the failure of whole-m
 These are unconditional finite-distribution results, not decision-LWE or native-runtime proofs.
 -/
 
-namespace ComplexityTests.GSWHiding
+namespace CslibFrontierTests.GSWHiding
 
 open Cslib.Probability Cslib.Probability.PMF Cslib.Crypto.Homomorphic.GSW
 open Cslib.BitString.SubsetSum
@@ -221,4 +221,4 @@ example (bit : Bool) : uniformPublicGame emptyChoose emptyGuess bit = PMF.pure b
   cases bit <;> simp [uniformPublicGame, emptyChoose, emptyGuess, PMF.monad_bind_eq_bind,
     PMF.monad_pure_eq_pure, empty_ciphertext_bit, PMF.bind_const]
 
-end ComplexityTests.GSWHiding
+end CslibFrontierTests.GSWHiding

@@ -42,7 +42,7 @@ Concrete verification over `ZMod 5` of
    `4 / 5`, strictly exceeding the statement-bound `H(y, t)` soundness cap `(1 + 1) / 5 = 2 / 5`.
 -/
 
-namespace ComplexityTests.Crypto.FiatShamirNIZK
+namespace CslibFrontierTests.Crypto.FiatShamirNIZK
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Protocols SigmaProtocol
 open OracleComp ROMSignature
@@ -603,4 +603,4 @@ theorem statementBound_falseStmt_soundness_cap
   · rw [succProbability_unstatedFalseStmtGame]
     norm_num
 
-end ComplexityTests.Crypto.FiatShamirNIZK
+end CslibFrontierTests.Crypto.FiatShamirNIZK

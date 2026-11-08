@@ -23,7 +23,7 @@ Bellare–Neven EUF-CMA bound. Strict-PPT identification is tested separately in
 forking reduction remains a separate obligation.
 -/
 
-namespace ComplexityTests.Crypto.SchnorrSignature
+namespace CslibFrontierTests.Crypto.SchnorrSignature
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Protocols SigmaProtocol ROMSignature
 open Turing.MultiTapeTM
@@ -184,4 +184,4 @@ example (F : PrimeOrderGroupFamily) (d : F.Desc) (hm : 2 ^ 3 ≤ F.order d) :
     StateT.run_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.pure_bind]
   simp [handler, StateT.run, PMF.bind_bind]
 
-end ComplexityTests.Crypto.SchnorrSignature
+end CslibFrontierTests.Crypto.SchnorrSignature

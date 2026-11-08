@@ -21,7 +21,7 @@ The fine-domain ordinary error is `1/12`. The comparison is sharp:
 Omitting the inverse terminal-density factor would give a false bound in this example.
 -/
 
-namespace ComplexityTests.FineProductMean
+namespace CslibFrontierTests.FineProductMean
 
 open Finset Cslib
 open scoped BigOperators
@@ -290,4 +290,4 @@ example : (2 : ℝ) ^ (1 / 2 - (64 : ℝ) / 2) ≤
       (by decide) (by norm_num) (by decide) (by norm_num) (by norm_num)
       (by norm_num) (by norm_num) (by norm_num [precision])
 
-end ComplexityTests.FineProductMean
+end CslibFrontierTests.FineProductMean

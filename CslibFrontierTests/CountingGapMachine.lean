@@ -17,7 +17,7 @@ zero cancellation, different witness lengths, dirty selector tapes and first-hal
 
 @[expose] public section
 
-namespace ComplexityTests.CountingGapMachine
+namespace CslibFrontierTests.CountingGapMachine
 
 open Cslib Turing Turing.MultiTapeTM Turing.MultiTapeMachine Turing.MultiTapeCTM
 
@@ -202,4 +202,4 @@ example : ∃ (k : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapeCT
     exists_verifier_difference_machine encBits 0 (Polynomial.C 2) (fun _ => false) (fun _ => false)
       (.const false) (.const false)
 
-end ComplexityTests.CountingGapMachine
+end CslibFrontierTests.CountingGapMachine

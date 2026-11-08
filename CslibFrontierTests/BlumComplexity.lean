@@ -39,7 +39,7 @@ is honest for `g n y = n + 1`, and for every computable `g` some `0`/`1`-valued 
 `g`-honest.
 -/
 
-namespace ComplexityTests.BlumComplexity
+namespace CslibFrontierTests.BlumComplexity
 
 open Cslib.BlumComplexity Cslib.BlumComplexity.BlumMeasure Nat.Partrec Filter
 
@@ -316,4 +316,4 @@ example {g : ℕ → ℕ → ℕ} (hg : Computable₂ g) :
     exacts [le_max_left _ _, le_max_right _ _]
   omega
 
-end ComplexityTests.BlumComplexity
+end CslibFrontierTests.BlumComplexity

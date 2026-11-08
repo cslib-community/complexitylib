@@ -8,7 +8,7 @@ import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.Query
 
 /-! # Executed native three-set collision queries -/
 
-namespace ComplexityTests.WordRAMChanHeQuery
+namespace CslibFrontierTests.WordRAMChanHeQuery
 
 open Cslib.WordRAM Cslib.WordRAM.Signed
 open Cslib.Algorithms.WordRAM.ThreeSum.ChanHe
@@ -52,4 +52,4 @@ example : (Code.eval 8 3 Query.program
     (input.set (CollisionTest.threshold 1) 5)).map (fun yn => yn.1.regs CollisionTest.good) =
       some 0 := by decide +kernel
 
-end ComplexityTests.WordRAMChanHeQuery
+end CslibFrontierTests.WordRAMChanHeQuery

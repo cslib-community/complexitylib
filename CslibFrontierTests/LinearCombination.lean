@@ -14,7 +14,7 @@ The difference of two independent uniform elements of `ZMod 5` is uniform, using
 probability module rather than the polynomial-commitment or interactive-protocol modules.
 -/
 
-namespace ComplexityTests.LinearCombination
+namespace CslibFrontierTests.LinearCombination
 
 open Cslib.Probability
 
@@ -25,4 +25,4 @@ example : (PMF.uniformOfFintype (Fin 2 → ZMod 5)).map (fun r => r 0 - r 1) =
   have hd : (![1, -1] : Fin 2 → ZMod 5) 0 ≠ 0 := by decide
   simpa [Fin.sum_univ_two, sub_eq_add_neg] using uniformOfFintype_map_linearComb hd
 
-end ComplexityTests.LinearCombination
+end CslibFrontierTests.LinearCombination

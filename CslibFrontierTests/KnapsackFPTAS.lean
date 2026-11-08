@@ -23,7 +23,7 @@ These kernel-checked examples (using no `native_decide`) exercise:
 
 public section
 
-namespace ComplexityTests.KnapsackFPTAS
+namespace CslibFrontierTests.KnapsackFPTAS
 
 open Cslib.Algorithms.Lean.Knapsack Cslib.Complexity
 
@@ -78,4 +78,4 @@ example : ([(2, 3), (3, 4), (4, 5), (5, 6)], 5, 8) ∉ Knapsack := fun h => by
   revert this
   decide
 
-end ComplexityTests.KnapsackFPTAS
+end CslibFrontierTests.KnapsackFPTAS

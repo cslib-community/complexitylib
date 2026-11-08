@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.Schoening
 /-! Schöning's random walk: a concrete satisfiable instance, the biased walk and the binomial
 bound. -/
 
-namespace ComplexityTests.Schoening
+namespace CslibFrontierTests.Schoening
 
 open Cslib.Logic.PL Cslib.Complexity.Schoening
 
@@ -49,4 +49,4 @@ example : (3 / 4 : ℝ) * (2 / 3) ^ 4 / 13 ≤ succeedProb ψ (trial ψ) := by
   norm_num at h ⊢
   linarith
 
-end ComplexityTests.Schoening
+end CslibFrontierTests.Schoening

@@ -16,7 +16,7 @@ certificates, and verifies that `TargetCollisionResistantOn` rejects insecure fa
 two-stage PPT adversaries.
 -/
 
-namespace ComplexityTests.Crypto.TargetCollisionResistant
+namespace CslibFrontierTests.Crypto.TargetCollisionResistant
 
 open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 open scoped NNReal
@@ -206,4 +206,4 @@ example {h : List Bool → List Bool → List Bool} (hh : CompressionFamily h) :
   KeyedCompressionFamily.targetCollisionResistant_treeHash
     hh.targetCollisionResistant_toKeyedCompressionFamily
 
-end ComplexityTests.Crypto.TargetCollisionResistant
+end CslibFrontierTests.Crypto.TargetCollisionResistant

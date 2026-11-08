@@ -24,7 +24,7 @@ Verifies `Cslib.DataStructure.Dictionary.WordRAM.ChainedHash`:
 
 @[expose] public section
 
-namespace ComplexityTests.WordRAMChainedHash
+namespace CslibFrontierTests.WordRAMChainedHash
 
 open Cslib Cslib.WordRAM
 open Cslib.DataStructure Cslib.DataStructure.Dictionary
@@ -283,4 +283,4 @@ theorem test_call_rename
         simp [Data.comap_regs, Data.set_regs]
       exact ⟨htag.trans h1.1, hargU.trans h1.2⟩
 
-end ComplexityTests.WordRAMChainedHash
+end CslibFrontierTests.WordRAMChainedHash

@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Circuit.Boolean.Layered.Compile.Size
 
 /-! Total raw-input decryption, decoder ties, modular wraparound and uniform native generators. -/
 
-namespace ComplexityTests.Crypto.GSWDecryptionCircuit
+namespace CslibFrontierTests.Crypto.GSWDecryptionCircuit
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Crypto.Homomorphic
 open Cslib.Crypto.Homomorphic.GSW
@@ -131,4 +131,4 @@ example :
   by simpa only [one_mul] using
     Layered.length_encCompiled_compile_le (augmentNand (DecryptionCircuit.circuit 1 2))
 
-end ComplexityTests.Crypto.GSWDecryptionCircuit
+end CslibFrontierTests.Crypto.GSWDecryptionCircuit

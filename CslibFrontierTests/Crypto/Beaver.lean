@@ -22,7 +22,7 @@ Non-vacuous concrete evaluations and end-to-end protocol instantiations over `ZM
    advantage against a constant blind guess.
 -/
 
-namespace ComplexityTests.Crypto.Beaver
+namespace CslibFrontierTests.Crypto.Beaver
 
 open Cslib Cslib.Probability Cslib.ProbComp Cslib.Crypto
 open Cslib.Crypto.Protocols.MPC Cslib.Crypto.Protocols.MPC.Beaver
@@ -132,4 +132,4 @@ example :
         (tamperedOpeningIdealBitGame 5 (pure (0 : ZMod 5))) :=
   le_advantage_tamperedOpeningBitGame (by decide) (pure 0)
 
-end ComplexityTests.Crypto.Beaver
+end CslibFrontierTests.Crypto.Beaver

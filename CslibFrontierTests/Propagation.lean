@@ -18,7 +18,7 @@ and distinct operation weights. Exhaustive circuit checks use the connected-sour
 characterization independently of the functional recurrence.
 -/
 
-namespace ComplexityTests.Propagation
+namespace CslibFrontierTests.Propagation
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean
 
@@ -113,4 +113,4 @@ example : (propagateCircuit 0).program.cost (fun _ => 11) = 11 := rfl
               !(decide (start < i ∧ i ≤ j)) || input (Fin.natAdd n i)
         output j == expected
 
-end ComplexityTests.Propagation
+end CslibFrontierTests.Propagation

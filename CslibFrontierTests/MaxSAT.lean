@@ -13,7 +13,7 @@ last clause. It checks threshold multiplicities and free declared variables, inc
 clauses, zero variables, an impossible cutoff, and an invalid reference's documented default.
 -/
 
-namespace ComplexityTests.MaxSAT
+namespace CslibFrontierTests.MaxSAT
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Complexity Cslib.Complexity.MaxSAT
   Turing.MultiTapeTM
@@ -59,4 +59,4 @@ example : ∃ (count : Query → ℕ) (A e b : ℕ), count (sample, 3) = 6 ∧
   rw [hspec]
   decide
 
-end ComplexityTests.MaxSAT
+end CslibFrontierTests.MaxSAT

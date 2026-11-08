@@ -15,7 +15,7 @@ loses its terminator. The coins of the toy family that XORs key and input have t
 and are the padded input masked by the key.
 -/
 
-namespace ComplexityTests.Crypto.PRFCoins
+namespace CslibFrontierTests.Crypto.PRFCoins
 
 open Cslib Cslib.Crypto
 
@@ -47,4 +47,4 @@ example {F : List Bool → List Bool → List Bool} (hF : PseudorandomFunction F
       (Probability.IsOraclePPT Turing.MultiTapeTM.encBool) :=
   hF.coinIndistinguishable
 
-end ComplexityTests.Crypto.PRFCoins
+end CslibFrontierTests.Crypto.PRFCoins

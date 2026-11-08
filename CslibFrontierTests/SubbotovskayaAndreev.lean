@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
 /-! Clients and non-vacuity checks for formula restrictions, Subbotovskaya's shrinkage lemma, and
 Andreev's formula lower bound. -/
 
-namespace ComplexityTests.SubbotovskayaAndreev
+namespace CslibFrontierTests.SubbotovskayaAndreev
 
 open Cslib Cslib.BitString Cslib.Circuits Cslib.Circuits.Boolean Cslib.Circuits.Formula
 
@@ -72,4 +72,4 @@ example :
         144 * b ^ 2 * (Nat.log 2 b + 2) ^ 3 * formulaSize (andreev b (2 ^ b)) ^ 2 :=
   two_pow_five_mul_le_formulaSize_andreev_sq
 
-end ComplexityTests.SubbotovskayaAndreev
+end CslibFrontierTests.SubbotovskayaAndreev

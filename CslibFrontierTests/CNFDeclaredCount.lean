@@ -13,7 +13,7 @@ public section
 
 open Cslib.Logic.PL
 
-namespace ComplexityTests.CNFDeclaredCount
+namespace CslibFrontierTests.CNFDeclaredCount
 
 -- The ambient variable type and the declared set can both be empty.
 theorem empty_declared_count : CNF.modelCountOn ([] : CNF Empty) ∅ = 1 := by decide
@@ -61,4 +61,4 @@ example {V : Type u} [DecidableEq V] (φ : CNF V) :
     (φ.relabel φ.distinctVars.idxOf).map List.length = φ.map List.length := by
   simp [CNF.relabel, Clause.relabel]
 
-end ComplexityTests.CNFDeclaredCount
+end CslibFrontierTests.CNFDeclaredCount

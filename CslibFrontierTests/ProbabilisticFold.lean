@@ -10,7 +10,7 @@ import CslibFrontier.Tactic.PPT
 
 /-! Ordinary list folds preserve order, omit empty-list effects and retain external state. -/
 
-namespace ComplexityTests.ProbabilisticFold
+namespace CslibFrontierTests.ProbabilisticFold
 
 open Cslib Cslib.Probability Turing.MultiTapeTM
 
@@ -98,4 +98,4 @@ theorem adaptive_oracle_fold_run :
   simp [List.foldlM_cons, adaptiveQueryStep, queryStep, ProbOracleComp.runWith_bind,
     ProbOracleComp.runWith_map, ProbOracleComp.runWith_query, historyOracle]
 
-end ComplexityTests.ProbabilisticFold
+end CslibFrontierTests.ProbabilisticFold

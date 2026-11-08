@@ -14,7 +14,7 @@ These examples check multiplicities, finite frontend enumeration and array tags.
 machine running time for the frontend.
 -/
 
-namespace ComplexityTests.ThreeSumFrontend
+namespace CslibFrontierTests.ThreeSumFrontend
 
 open Cslib.Algorithms.ThreeSum
 open Finset
@@ -90,4 +90,4 @@ example : ¬Convolution 4 (oneArray 1 (fun _ => 1) (fun _ => 1) (fun _ => 1)) �
   · rintro ⟨i, j, h, _⟩
     omega
 
-end ComplexityTests.ThreeSumFrontend
+end CslibFrontierTests.ThreeSumFrontend

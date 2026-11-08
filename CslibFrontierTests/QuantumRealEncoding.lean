@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Complexity.Classes.BQP.PhaseGates
 gate moving an amplitude into the imaginary part, and a family with a phase gate deciding a
 language in `BQP`. -/
 
-namespace ComplexityTests.QuantumRealEncoding
+namespace CslibFrontierTests.QuantumRealEncoding
 
 open Cslib Cslib.Quantum Cslib.Complexity Turing.MultiTapeTM
 
@@ -111,4 +111,4 @@ example (x : List Bool) : phaseFirst.realify.acceptProb x = if x.headD false the
   rw [UniformPhaseCircuitFamily.acceptProb_realify, acceptProb_phaseFirst]
 example (n : ℕ) : (phaseFirst.realify.gates n).length = 4 := rfl
 
-end ComplexityTests.QuantumRealEncoding
+end CslibFrontierTests.QuantumRealEncoding

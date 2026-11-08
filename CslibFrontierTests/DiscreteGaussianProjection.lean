@@ -21,7 +21,7 @@ open scoped RealInnerProductSpace
 
 noncomputable section
 
-namespace ComplexityTests.DiscreteGaussianProjection
+namespace CslibFrontierTests.DiscreteGaussianProjection
 
 def twoBasis : Basis Unit ℝ ℝ :=
   (Basis.singleton Unit ℝ).isUnitSMul (fun _ => (show (2 : ℝ) ≠ 0 by norm_num).isUnit)
@@ -149,4 +149,4 @@ example (r α : ℝ) (hr : 0 < r) (u z : Point) :
   have hz : z = 0 := Subsingleton.elim _ _
   simp [hz]
 
-end ComplexityTests.DiscreteGaussianProjection
+end CslibFrontierTests.DiscreteGaussianProjection

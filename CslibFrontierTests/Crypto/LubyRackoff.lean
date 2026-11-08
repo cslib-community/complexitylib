@@ -18,7 +18,7 @@ theorem, and audits the axiom dependencies of the headline theorems in
 `CslibFrontier.Crypto.Protocols.Cipher.LubyRackoff`.
 -/
 
-namespace ComplexityTests.Crypto.LubyRackoff
+namespace CslibFrontierTests.Crypto.LubyRackoff
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.LubyRackoff
 open scoped ENNReal
@@ -293,4 +293,4 @@ axioms: [propext, Quot.sound]
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.Crypto.LubyRackoff.prodComm_trans_feistelNetwork_reverse_trans_prodComm
 
-end ComplexityTests.Crypto.LubyRackoff
+end CslibFrontierTests.Crypto.LubyRackoff

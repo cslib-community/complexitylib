@@ -10,9 +10,9 @@ import CslibFrontierTests.BQP
 /-! `BQP ⊆ AWPP ⊆ PP`: concrete path counts, interference in the counts, and the inclusions
 applied to a language in `BQP`. -/
 
-namespace ComplexityTests.BQPCounting
+namespace CslibFrontierTests.BQPCounting
 
-open Cslib Cslib.Quantum Cslib.Complexity Turing.MultiTapeTM ComplexityTests.BQP
+open Cslib Cslib.Quantum Cslib.Complexity Turing.MultiTapeTM CslibFrontierTests.BQP
 
 /-! ### Path simulation -/
 
@@ -64,4 +64,4 @@ example : onesPairGap [] [(true, 0, [])] [false] [true] = 0 := by decide
 example : FirstBit ∈ AWPP encBits := BQP_subset_AWPP firstBit_mem_BQP
 example : FirstBitᶜ ∈ PP encBits := BQP_subset_PP (compl_mem_BQP firstBit_mem_BQP)
 
-end ComplexityTests.BQPCounting
+end CslibFrontierTests.BQPCounting

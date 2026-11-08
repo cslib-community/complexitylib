@@ -23,7 +23,7 @@ frontier and the original unshifted three-word optional-pair encoding.
 
 public section
 
-namespace ComplexityTests.FibonacciHeapNativeExtract
+namespace CslibFrontierTests.FibonacciHeapNativeExtract
 
 open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 open Cslib.WordRAM Cslib.WordRAM.Realization FibonacciHeap FibonacciHeap.Native
@@ -195,4 +195,4 @@ example : ∃ y, ExecWithin 6 (realizes_extractRaw.code frontier source scratch)
 
 end
 
-end ComplexityTests.FibonacciHeapNativeExtract
+end CslibFrontierTests.FibonacciHeapNativeExtract

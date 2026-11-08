@@ -31,7 +31,7 @@ Kernel-checked examples and theorems (without `native_decide`) exercising:
 
 public section
 
-namespace ComplexityTests.FenwickTree
+namespace CslibFrontierTests.FenwickTree
 
 open Cslib.DataStructure Cslib.DataStructure.FenwickTree
 
@@ -269,4 +269,4 @@ example : ¬ Valid (⟨#[3, 4, 4, 8]⟩ : FenwickTree ℕ) [3, 1, 4, 1] := by
   rw [hlhs, hrhs] at h4
   omega
 
-end ComplexityTests.FenwickTree
+end CslibFrontierTests.FenwickTree

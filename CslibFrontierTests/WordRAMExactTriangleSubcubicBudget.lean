@@ -17,7 +17,7 @@ selected-prime premise beyond a genuine threshold. Both zero and nonzero signed 
 are covered. These are budget clients, not executions of an assembled solver.
 -/
 
-namespace ComplexityTests.WordRAMExactTriangleSubcubicBudget
+namespace CslibFrontierTests.WordRAMExactTriangleSubcubicBudget
 
 open Cslib.Matrix Cslib.Algorithms.ExactTriangle
 open Cslib.Algorithms.WordRAM.ExactTriangle
@@ -98,4 +98,4 @@ example : ConstantBudget 0 := constant_budget 0 (by norm_num)
 example : ConstantBudget 1 := constant_budget 1 (by norm_num)
 example : ConstantBudget (-1) := constant_budget (-1) (by norm_num)
 
-end ComplexityTests.WordRAMExactTriangleSubcubicBudget
+end CslibFrontierTests.WordRAMExactTriangleSubcubicBudget

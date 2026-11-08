@@ -11,7 +11,7 @@ public import CslibFrontier.Foundations.Data.BitString.HalfSplit
 
 /-! # Unit tests for `Cslib.BitString.halfSplitEquiv` -/
 
-namespace ComplexityTests.BitString.HalfSplit
+namespace CslibFrontierTests.BitString.HalfSplit
 
 open Cslib Cslib.BitString
 
@@ -27,4 +27,4 @@ example (x : BitString 4) :
   ⟨by refine Prod.ext ?_ ?_ <;> funext i <;> revert i <;> decide,
     (halfSplitEquiv 4).symm_apply_apply x⟩
 
-end ComplexityTests.BitString.HalfSplit
+end CslibFrontierTests.BitString.HalfSplit

@@ -12,7 +12,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 
 /-! Actual structured expansion, exact sampling and conditional native key generation. -/
 
-namespace ComplexityTests.Crypto.ModuleMatrixSampling
+namespace CslibFrontierTests.Crypto.ModuleMatrixSampling
 
 open Cslib Cslib.Crypto Probability ProbComp Turing.MultiTapeTM
 open scoped Matrix
@@ -155,4 +155,4 @@ example : ∃ sample run,
     funext A
     exact hrun 1 2 4 (by decide) A (![![-1, 2]]) (![![1, -1]])
 
-end ComplexityTests.Crypto.ModuleMatrixSampling
+end CslibFrontierTests.Crypto.ModuleMatrixSampling

@@ -18,7 +18,7 @@ point, so `SOS.Psatz.PseudoExpectation` is inhabited for an unsatisfiable system
 refutations without inequality factors.
 -/
 
-namespace ComplexityTests.ProofComplexity.Positivstellensatz
+namespace CslibFrontierTests.ProofComplexity.Positivstellensatz
 
 open Cslib Cslib.Logic.PL Cslib.Logic.PL.CNF Cslib.Logic.PL.SOS.Psatz MvPolynomial Finset
 
@@ -114,4 +114,4 @@ example : RefutableInDegree (∅ : Set (MvPolynomial (Fin 1) ℤ)) {g | g ∈ [1
   rw [refutableInDegree_empty_iff]
   exact SOS.RefutableInDegree.of_list [(-1, 1)] (by simp) [] (by simp) (by simp) (by simp)
 
-end ComplexityTests.ProofComplexity.Positivstellensatz
+end CslibFrontierTests.ProofComplexity.Positivstellensatz

@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.Guarded
 The hypotheses of `ContractionAlgorithm.ofGuarded` are satisfiable: with a guard that always
 fails, direct summation alone is a contraction algorithm for networks of bounded size `s`. -/
 
-namespace ComplexityTests.GuardedContraction
+namespace CslibFrontierTests.GuardedContraction
 
 open Cslib.Complexity.CountingSimulation Cslib.Circuits.Frontier
   Cslib.Circuits.Frontier.ExplicitTensorNetwork Turing.MultiTapeTM
@@ -27,4 +27,4 @@ noncomputable example :
     (fun _ _ => ⟨0, fun _ _ _ _ _ _ _ h => absurd h (by simp)⟩)
     (fun _ _ _ h => h.1) (fun C => ⟨C, fun _ _ h _ => h.2⟩)
 
-end ComplexityTests.GuardedContraction
+end CslibFrontierTests.GuardedContraction

@@ -10,7 +10,7 @@ import CslibFrontier.Computability.QueryComplexity.Randomized.DeutschJozsa
 probability `1/2` (de Wolf's remark), three err with probability `1/4 < 1/3`, against three
 deterministic queries. -/
 
-namespace ComplexityTests.RandomizedDeutschJozsa
+namespace CslibFrontierTests.RandomizedDeutschJozsa
 
 open Cslib Cslib.QueryComplexity Cslib.BitString Finset
 
@@ -54,4 +54,4 @@ example : #{l : Fin 3 → Fin 4 | (deutschJozsaTree (List.ofFn l)).eval x0110 = 
   rw [card_filter_eval_deutschJozsaTree (by norm_num) isBalanced_x0110]
   decide
 
-end ComplexityTests.RandomizedDeutschJozsa
+end CslibFrontierTests.RandomizedDeutschJozsa

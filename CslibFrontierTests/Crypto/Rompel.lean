@@ -25,7 +25,7 @@ widths for `rompelHash`, behavioral separation between `WordSignatureScheme.EUFC
 `exists_oneWay_iff_exists_wordSignature`, `exists_oneTimeSignature_iff_exists_wordSignature`).
 -/
 
-namespace ComplexityTests.Crypto.Rompel
+namespace CslibFrontierTests.Crypto.Rompel
 
 open Cslib Cslib.Crypto Cslib.Probability
 open _root_.Turing _root_.Turing.MultiTapeMachine _root_.Turing.MultiTapePTM
@@ -447,4 +447,4 @@ theorem not_exists_wordEUFCMA_of_forall_not_oneWay (hno : ∀ f, ¬ OneWay f)
   obtain ⟨f, hf⟩ := exists_oneWay_iff_exists_wordSignature.mpr ⟨W, hW⟩
   exact hno f hf
 
-end ComplexityTests.Crypto.Rompel
+end CslibFrontierTests.Crypto.Rompel

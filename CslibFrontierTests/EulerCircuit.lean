@@ -28,7 +28,7 @@ These kernel-checked examples (using no `native_decide`) exercise
 
 public section
 
-namespace ComplexityTests.EulerCircuit
+namespace CslibFrontierTests.EulerCircuit
 
 open Cslib.Algorithms.Lean.Euler
 
@@ -92,4 +92,4 @@ example : eulerCircuit ([] : List (Fin 2 × Fin 2)) 1 = [1] := by decide
 
 example : IsEulerCircuit ([] : List (Fin 2 × Fin 2)) 1 [1] := ⟨rfl, rfl, by decide⟩
 
-end ComplexityTests.EulerCircuit
+end CslibFrontierTests.EulerCircuit

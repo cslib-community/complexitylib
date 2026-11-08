@@ -20,7 +20,7 @@ Two-dimensional witnesses in `EuclideanSpace ℝ (Fin 2)` with unit vectors `e�
   and the potential drops from `4` to `2 < (3/4) · 4`.
 -/
 
-namespace ComplexityTests.Algorithms.LatticeReduction
+namespace CslibFrontierTests.Algorithms.LatticeReduction
 
 open InnerProductSpace Cslib.Algorithms.LatticeReduction
 
@@ -155,4 +155,4 @@ example : potential (bSwap ∘ Equiv.swap 0 1) < 3 / 4 * potential bSwap := by
   rw [potential_bSwap, potential_bSwap_swap]
   norm_num
 
-end ComplexityTests.Algorithms.LatticeReduction
+end CslibFrontierTests.Algorithms.LatticeReduction

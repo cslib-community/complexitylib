@@ -19,7 +19,7 @@ Every provider label is checked even when all ports are absent.
 
 public section
 
-namespace ComplexityTests.QueryReplayProviders
+namespace CslibFrontierTests.QueryReplayProviders
 
 open Turing.MultiTapePTM.BlockComputation.QueryReplay
 open Providers
@@ -54,4 +54,4 @@ example : Labels.combine code (1, absent, good,
 example : Labels.combine code (1, absent, good,
     fun _ d => if d = 1 then noncanonicalBlank else good) = none := by decide
 
-end ComplexityTests.QueryReplayProviders
+end CslibFrontierTests.QueryReplayProviders

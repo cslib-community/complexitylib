@@ -13,7 +13,7 @@ import Mathlib.Tactic.FinCases
 precision `3` of the base coefficient ring `O / (2 ^ 3)` of [OpenAI2026ETH], §D.4.1, which is the
 manuscript's `A_3` when `ℓ = 1`. -/
 
-namespace ComplexityTests.GaloisRing
+namespace CslibFrontierTests.GaloisRing
 
 open Polynomial IsLocalRing
 
@@ -109,4 +109,4 @@ example (P : A[X]) (hP : P.natDegree ≤ 3) :
   rw [Finset.card_univ, Fintype.card_fun, ZMod.card, Fintype.card_fin, f_natDegree]
   exact_mod_cast (show P.natDegree < 2 ^ 2 by omega)
 
-end ComplexityTests.GaloisRing
+end CslibFrontierTests.GaloisRing

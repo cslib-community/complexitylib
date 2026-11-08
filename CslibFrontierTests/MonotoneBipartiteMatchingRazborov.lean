@@ -19,7 +19,7 @@ satisfiable, and at `⌊log₂ n⌋ = 320` an actual monotone circuit computing 
 formula of `Cslib.Circuits.Monotone.exists_computes_of_monotone`, has more than `2 ^ 400` gates.
 -/
 
-namespace ComplexityTests.MonotoneBipartiteMatchingRazborov
+namespace CslibFrontierTests.MonotoneBipartiteMatchingRazborov
 
 open Cslib Cslib.Circuits Cslib.Circuits.BipartiteMatching
 
@@ -68,4 +68,4 @@ example {n : ℕ} (hn : Nat.log 2 n = 320) : ∃ C : Circuit Monotone.signature 
   simpa [hn] using Monotone.two_pow_sq_lt_size_of_computes_bipartitePerfectMatching hn.ge
     hF.toCircuit
 
-end ComplexityTests.MonotoneBipartiteMatchingRazborov
+end CslibFrontierTests.MonotoneBipartiteMatchingRazborov

@@ -31,7 +31,7 @@ Verifies non-vacuity and concrete behavior of:
 
 public section
 
-namespace ComplexityTests.StreamingHeavyHitters
+namespace CslibFrontierTests.StreamingHeavyHitters
 
 open Cslib Cslib.Probability Cslib.Streaming
 
@@ -133,4 +133,4 @@ example : (countSketch (fun (_ : Unit) (_ : Fin 2) => (0 : Fin 1))
   simp only [median_const]
   norm_num [sgnBit]
 
-end ComplexityTests.StreamingHeavyHitters
+end CslibFrontierTests.StreamingHeavyHitters

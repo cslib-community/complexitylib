@@ -14,7 +14,7 @@ agreeing NP language, with no unproved formula upper bound, and checks that the 
 output certifies NO and its true output is an unknown mask of the required density.
 -/
 
-namespace ComplexityTests.FormulaMagnificationAverageCase
+namespace CslibFrontierTests.FormulaMagnificationAverageCase
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Filter
 
@@ -58,4 +58,4 @@ example {L : Language Bool} (hag : ∀ x, x ∈ SuccinctMCSP ↔ SuccinctMCSP.en
     ((SubexponentiallyBounded.id.pow 2).add (.const 1)) SubexponentiallyBounded.id
     hag hL 2 (by decide)
 
-end ComplexityTests.FormulaMagnificationAverageCase
+end CslibFrontierTests.FormulaMagnificationAverageCase

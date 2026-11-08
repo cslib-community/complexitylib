@@ -21,7 +21,7 @@ set_option linter.hashCommand false
 open Cslib.WordRAM Cslib.WordRAM.Signed
 open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery
 
-namespace ComplexityTests.SchonhagePruned
+namespace CslibFrontierTests.SchonhagePruned
 
 private def leafData : Data registers where
   regs i := match i.val with
@@ -178,4 +178,4 @@ private def answers (w L fuel : ℕ) (a b : Fin (10 ^ L) → ℤ) (qs : List (Fi
 -- run witnesses in SchonhagePrunedInput and SchonhagePrunedKernel, respectively. The shallow
 -- interpreter checks above remain independent executable sanity checks of the code.
 
-end ComplexityTests.SchonhagePruned
+end CslibFrontierTests.SchonhagePruned

@@ -11,7 +11,7 @@ including its ambiguous branch, Simon's algorithm on concrete inputs with `n = 1
 of the hypotheses of the classical search lower bounds, with a total function separating the
 problem with `s ≠ 0` from the variant that also requires the output `0` when `s = 0`. -/
 
-namespace ComplexityTests.QuantumSimonSearch
+namespace CslibFrontierTests.QuantumSimonSearch
 
 open Cslib Cslib.Quantum Cslib.QueryComplexity Finset
 
@@ -157,4 +157,4 @@ example {N n : ℕ} (E : Fin N ≃ (Fin n → Bool) × Fin n) (hn : 1 ≤ n) :
   exact simon_search_ne_zero_two_pow_le_sq E μ _ (hiddenStringOrOnes_spec E)
     (fun X _ _ _ => hμ X) hn
 
-end ComplexityTests.QuantumSimonSearch
+end CslibFrontierTests.QuantumSimonSearch

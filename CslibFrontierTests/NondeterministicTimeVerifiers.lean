@@ -18,7 +18,7 @@ same linear bound. The sampler's output distribution is checked on a small input
 
 public section
 
-namespace ComplexityTests.NondeterministicTimeVerifiers
+namespace CslibFrontierTests.NondeterministicTimeVerifiers
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
@@ -82,4 +82,4 @@ example : ProbComp.eval (MultiTapePTM.pairSampler.runClosed 6 (frame [true] ++ [
     (BitString.uniformList 2).map (frame [true] ++ ·) := by
   simpa using MultiTapePTM.eval_pairSampler [true] [false, false]
 
-end ComplexityTests.NondeterministicTimeVerifiers
+end CslibFrontierTests.NondeterministicTimeVerifiers

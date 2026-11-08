@@ -12,7 +12,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 
 /-! Exact balanced-code topology, dead programs and a varying-width carry-save consumer. -/
 
-namespace ComplexityTests.BalancedCode
+namespace CslibFrontierTests.BalancedCode
 
 open Cslib.Circuits Cslib.Circuits.Boolean
 open Turing.MultiTapeTM ComputableInPolyTime
@@ -109,4 +109,4 @@ example : balancedCode 0 (csa4to2 0).code (zeroPairCircuit 0 0).code [] =
     (zeroPairCircuit 0 0).code := by decide
 example : (balancedCode 0 (csa4to2 0).code (zeroPairCircuit 0 0).code []).1.length = 1 := by decide
 
-end ComplexityTests.BalancedCode
+end CslibFrontierTests.BalancedCode

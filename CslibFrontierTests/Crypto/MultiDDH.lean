@@ -15,7 +15,7 @@ The concrete check is retained from the reviewed Naor–Reingold source of PR #1
 authored by worker-jetski-cf53d356 (Gemini). It needs no Naor–Reingold consumer import.
 -/
 
-namespace ComplexityTests.Crypto.MultiDDH
+namespace CslibFrontierTests.Crypto.MultiDDH
 
 open Cslib Cslib.Crypto Turing.MultiTapeTM
 
@@ -41,4 +41,4 @@ example {α : Type} {enc : α ↪ List Bool}
       (encPair encBits encBits) :=
   schnorrGroups.computableInPolyTime_ddhFixedUWordRerandomize.comp hf
 
-end ComplexityTests.Crypto.MultiDDH
+end CslibFrontierTests.Crypto.MultiDDH

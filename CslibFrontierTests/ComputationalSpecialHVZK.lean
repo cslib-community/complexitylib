@@ -47,11 +47,11 @@ Attack Game 20.4 and Definition 20.6, p. 840) on concrete instances and two-side
   `not_statistical_hvzk_prgWitnessSigma`, `exists_computationalSpecialHVZK_and_not_specialHVZK`).
 -/
 
-namespace ComplexityTests.ComputationalSpecialHVZK
+namespace CslibFrontierTests.ComputationalSpecialHVZK
 
 open Cslib Cslib.Crypto Cslib.Crypto.Protocols Cslib.Crypto.Protocols.SigmaProtocol
   Cslib.Interactive Probability Turing.MultiTapeTM
-  ComplexityTests.UnboundedSimulators.Sigma ComplexityTests.EfficientSimulators
+  CslibFrontierTests.UnboundedSimulators.Sigma CslibFrontierTests.EfficientSimulators
 open scoped ENNReal NNReal
 
 /-! ### `Game.advantage` and `CloseTo` bridges -/
@@ -719,4 +719,4 @@ theorem exists_computationalSpecialHVZK_and_not_specialHVZK
 
 end PRGSeparation
 
-end ComplexityTests.ComputationalSpecialHVZK
+end CslibFrontierTests.ComputationalSpecialHVZK

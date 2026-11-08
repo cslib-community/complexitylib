@@ -13,7 +13,7 @@ open scoped FourierTransform RealInnerProductSpace
 
 noncomputable section
 
-namespace ComplexityTests.LatticePoisson
+namespace CslibFrontierTests.LatticePoisson
 
 private abbrev Plane := EuclideanSpace ℝ (Fin 2)
 
@@ -218,4 +218,4 @@ example (s : ℝ) (hs : 0 < s) : (ZLattice.gaussianMass pointLattice s 0 : ℂ) 
   rw [ht] at h
   simpa [covolume_point] using h
 
-end ComplexityTests.LatticePoisson
+end CslibFrontierTests.LatticePoisson

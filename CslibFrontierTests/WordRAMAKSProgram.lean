@@ -13,7 +13,7 @@ Concrete runs of the top-level AKS program on small inputs, through each early e
 its correctness theorem on a prime and on a composite, and the membership of the primes in `P`.
 -/
 
-namespace ComplexityTests.WordRAMAKSProgram
+namespace CslibFrontierTests.WordRAMAKSProgram
 
 open Cslib.WordRAM Cslib.Algorithms.WordRAM
 
@@ -51,4 +51,4 @@ example : ∃ y, ExecWithin 64 AKS.program (.init [91]) y (AKS.time (Nat.size 91
 example : {n : ℕ | n.Prime} ∈ Cslib.Complexity.P Turing.MultiTapeTM.encNat :=
   Cslib.Complexity.primes_mem_P
 
-end ComplexityTests.WordRAMAKSProgram
+end CslibFrontierTests.WordRAMAKSProgram

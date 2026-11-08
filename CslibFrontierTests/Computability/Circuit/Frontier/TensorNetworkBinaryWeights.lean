@@ -20,7 +20,7 @@ even though the asymptotic resource theorem starts at two edges.
 
 public section
 
-namespace ComplexityTests.TensorNetworkBinaryWeights
+namespace CslibFrontierTests.TensorNetworkBinaryWeights
 
 open Cslib.Circuits.Frontier Turing.MultiTapeTM
 
@@ -53,4 +53,4 @@ example : Polynomial.evalCoeffList 2
     (by simp : ∀ v ∈ ([] : List (List ℕ × List ℕ)), ∀ n ∈ v.2, n.size ≤ 1)]
   simp [ExplicitTensorNetwork.contraction]
 
-end ComplexityTests.TensorNetworkBinaryWeights
+end CslibFrontierTests.TensorNetworkBinaryWeights

@@ -14,7 +14,7 @@ public section
 
 open Finset Cslib.BitString Cslib.GenericRAM Cslib.Logic.PL Cslib.Logic.PL.CNF Turing.MultiTapeTM
 
-namespace ComplexityTests.CNFGreedyParityContext
+namespace CslibFrontierTests.CNFGreedyParityContext
 
 -- The first context component chooses a unit clause or a tautology; the remaining bits are
 -- retained runtime data. The same native counter handles both choices and all payload lengths.
@@ -147,4 +147,4 @@ example :
         #{σ : Fin 0 → Bool | φ.eval σ = true} = 0) := by
   decide
 
-end ComplexityTests.CNFGreedyParityContext
+end CslibFrontierTests.CNFGreedyParityContext

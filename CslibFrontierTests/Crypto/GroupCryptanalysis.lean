@@ -25,7 +25,7 @@ Concrete evaluation and non-vacuity checks for:
 3. Pollard's rho tortoise-and-hare loop (`rhoFactorLoop`) on `N = 15 = 3 * 5`.
 -/
 
-namespace ComplexityTests.Crypto.GroupCryptanalysis
+namespace CslibFrontierTests.Crypto.GroupCryptanalysis
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.PrimeOrderGroupFamily Turing.MultiTapeTM
 open scoped NNReal
@@ -188,4 +188,4 @@ example : 3 = 3 ∨ 3 = 5 :=
   eq_prime_of_rhoFactorLoop_eq_some (p := 3) (q := 5) (B := 4) (F := walk15) (x := 1) (y := 1)
     (by norm_num) (by norm_num) rfl
 
-end ComplexityTests.Crypto.GroupCryptanalysis
+end CslibFrontierTests.Crypto.GroupCryptanalysis

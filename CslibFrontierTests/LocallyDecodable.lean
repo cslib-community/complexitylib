@@ -19,7 +19,7 @@ a `(1, 1, 1/2)` smooth code, and no binary code of a hundred message bits is a `
 locally decodable code, whatever its length.
 -/
 
-namespace ComplexityTests.LocallyDecodable
+namespace CslibFrontierTests.LocallyDecodable
 
 open Cslib Cslib.Code Cslib.BitString Probability
 
@@ -136,4 +136,4 @@ example {P : Type} [Fintype P] (C : (Fin 100 → Bool) → P → Bool) :
   have h := hA.four_mul_sq_mul_card_mul_sq_le (by norm_num) (by norm_num)
   norm_num at h
 
-end ComplexityTests.LocallyDecodable
+end CslibFrontierTests.LocallyDecodable

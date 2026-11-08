@@ -21,7 +21,7 @@ storage rather than the exponentially many assignments.
 
 public section
 
-namespace ComplexityTests.Williams
+namespace CslibFrontierTests.Williams
 
 open Cslib.Complexity
 open _root_.Turing.MultiTapeTM
@@ -64,4 +64,4 @@ example : (((2 ^ chunkWidth 3 17) ^ (3 * chunkCount 3 17)) : ℕ).size = 55 := b
 example : BalancedParameters.blockWidth 1024 + BalancedParameters.horizon 1024 *
     ((BalancedParameters.blockWidth 1024).size + 1) = 200 := by decide
 
-end ComplexityTests.Williams
+end CslibFrontierTests.Williams

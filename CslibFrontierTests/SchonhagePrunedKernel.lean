@@ -11,7 +11,7 @@ import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Ke
 open Cslib.WordRAM Cslib.WordRAM.Signed
 open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery
 
-namespace ComplexityTests.SchonhagePrunedKernel
+namespace CslibFrontierTests.SchonhagePrunedKernel
 
 private def caller : Data registers where
   regs i := match i.val with
@@ -67,4 +67,4 @@ example : ∃ y, ExecWithin 13 kernel caller y
   · exact (hf 3 (by decide) (by decide)).trans rfl
   · exact (hf 1000 (by decide) (by decide)).trans rfl
 
-end ComplexityTests.SchonhagePrunedKernel
+end CslibFrontierTests.SchonhagePrunedKernel

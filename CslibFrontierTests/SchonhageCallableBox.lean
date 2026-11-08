@@ -13,7 +13,7 @@ import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableB
 -- Positive-depth thin bounds are established by the general execution/resource theorems.
 set_option linter.hashCommand false
 
-namespace ComplexityTests.SchonhageCallableBox
+namespace CslibFrontierTests.SchonhageCallableBox
 
 open Cslib.WordRAM
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
@@ -114,4 +114,4 @@ example : Fits 387 (4 + 4 * CallableProduct.windowSize 1 1 + 1024) ∧
     ¬Fits 386 (4 + 4 * CallableProduct.windowSize 1 1 + 1024) := by decide +kernel
 example : ¬D 0 ^ 18 ≤ 0 := by decide +kernel
 
-end ComplexityTests.SchonhageCallableBox
+end CslibFrontierTests.SchonhageCallableBox

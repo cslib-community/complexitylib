@@ -18,7 +18,7 @@ The proofs use its real table encoding, not a separately asserted abstract stora
 
 @[expose] public section
 
-namespace ComplexityTests.TreeEvalIterativeEncoding
+namespace CslibFrontierTests.TreeEvalIterativeEncoding
 
 open Cslib.TreeEval Cslib.TreeEval.Ary Cslib.TreeEval.Ary.Iter
 
@@ -62,4 +62,4 @@ example : (encIndex 1024 ⟨1023, by decide⟩).length = 10 := by
   rw [length_encIndex]
   decide
 
-end ComplexityTests.TreeEvalIterativeEncoding
+end CslibFrontierTests.TreeEvalIterativeEncoding

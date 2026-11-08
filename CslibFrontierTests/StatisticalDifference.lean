@@ -17,7 +17,7 @@ no-set of `SD^{2/3,1/3}`, a near instance (two equal circuits, at distance `0`) 
 the Polarization Lemma on instances applied to both.
 -/
 
-namespace ComplexityTests.StatisticalDifference
+namespace CslibFrontierTests.StatisticalDifference
 
 open Cslib Cslib.BitString Cslib.Circuits Cslib.Circuits.Boolean Cslib.Complexity
 open Cslib.Probability.PMF
@@ -155,4 +155,4 @@ example : ∃ lam ell : ℕ,
   · rw [mem_no_statisticalDifference (by norm_num), near_distance]
     norm_num
 
-end ComplexityTests.StatisticalDifference
+end CslibFrontierTests.StatisticalDifference

@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.ScheduleCount
 The node bound of a recursion with the schedule's branching factors is `2 ^ O(s / √⌊log₂ s⌋)`,
 for every constant `C` and every depth up to `⌊log₂ s⌋`. -/
 
-namespace ComplexityTests.ScheduleCount
+namespace CslibFrontierTests.ScheduleCount
 
 open Cslib.Circuits.Frontier.ContractionSchedule
 
@@ -25,4 +25,4 @@ example (C : ℕ) : ∀ D ≤ Nat.log 2 16,
 -- The constant is linear in `C`: at `C = 1` it is `245797`.
 example : 245760 * 1 + 37 = 245797 := by norm_num
 
-end ComplexityTests.ScheduleCount
+end CslibFrontierTests.ScheduleCount

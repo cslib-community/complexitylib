@@ -17,9 +17,9 @@ BPP definition, and the public containment supplies both alternating description
 version also checks the boundary convention that zero random bits means one possible seed.
 -/
 
-namespace ComplexityTests.Abstracts.SipserLautemannTests
+namespace CslibFrontierTests.Abstracts.SipserLautemannTests
 
-open ComplexityAbstracts.SipserLautemannAbstract
+open CslibFrontierAbstracts.SipserLautemannAbstract
 open Cslib.Complexity.Tests.SipserLautemann
   (noisyHeadVerifier noisyHeadVerifier_polyTime noisyHeadVerifier_decides)
 
@@ -70,4 +70,4 @@ example : HeadLanguage ∈ BPP := by
   cases h : x.headD false <;>
     simp only [HeadLanguage, Set.mem_ofPred_eq, headVerifier, Polynomial.eval_zero, h] <;> simp
 
-end ComplexityTests.Abstracts.SipserLautemannTests
+end CslibFrontierTests.Abstracts.SipserLautemannTests

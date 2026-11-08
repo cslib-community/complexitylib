@@ -14,7 +14,7 @@ public section
 open Cslib.Logic.PL
 open ClauseSet.Sparsification
 
-namespace ComplexityTests.SparsificationCountingTree
+namespace CslibFrontierTests.SparsificationCountingTree
 
 private theorem count_eq_card {V : Type*} [DecidableEq V]
     (ψ : ClauseSet V) (s : Finset V) :
@@ -291,4 +291,4 @@ example : ∃! i : Fin (countingLeaves (2 ^ ·) multiRoot).length,
 example : ∃! L, L ∈ countingLeaves (2 ^ ·) multiRoot ∧ L.Sat witnessAssign :=
   (sat_iff_existsUnique_mem_countingLeaves (2 ^ ·) multiRoot witnessAssign).mp (by decide)
 
-end ComplexityTests.SparsificationCountingTree
+end CslibFrontierTests.SparsificationCountingTree

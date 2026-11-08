@@ -14,7 +14,7 @@ itself needs a spare bit. Native execution distinguishes these endpoints. Width 
 admits word zero, so neither sufficient admission rule is claimed to be necessary.
 -/
 
-namespace ComplexityTests.WordRAMAdmission
+namespace CslibFrontierTests.WordRAMAdmission
 
 open Cslib.WordRAM
 
@@ -41,4 +41,4 @@ example : ¬Fits 0 1 := by decide
 example : Nat.clog 2 0 = 0 ∧ Fits 1 0 := ⟨by decide, fits_of_clog_lt (by decide)⟩
 example : Fits 0 0 ∧ ¬Nat.clog 2 0 < 0 := ⟨fits_zero _, by decide⟩
 
-end ComplexityTests.WordRAMAdmission
+end CslibFrontierTests.WordRAMAdmission

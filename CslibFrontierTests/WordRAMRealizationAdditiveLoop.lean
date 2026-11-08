@@ -21,7 +21,7 @@ halt are separate; both the full memory/frontier and the live-register frame are
 
 @[expose] public section
 
-namespace ComplexityTests.WordRAMRealizationAdditiveLoop
+namespace CslibFrontierTests.WordRAMRealizationAdditiveLoop
 
 open Cslib.DataStructure Cslib.WordRAM Cslib.WordRAM.Realization
   Cslib.WordRAM.Realization.Tests
@@ -148,4 +148,4 @@ example : ∃ y, ExecWithin 0 (Backend.code certificates ()) (initial zero 0 0) 
       (∀ j, Backend.tmp certificates () j ≠ i) → y.regs i = (initial zero 0 0).regs i :=
   identity_native 0 0 zero ⟨fits_zero 0, fun _ => fits_zero 0⟩ (fits_zero 0) (fits_zero 0)
 
-end ComplexityTests.WordRAMRealizationAdditiveLoop
+end CslibFrontierTests.WordRAMRealizationAdditiveLoop

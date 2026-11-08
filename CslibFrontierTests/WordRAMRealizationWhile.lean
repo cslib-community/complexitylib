@@ -22,7 +22,7 @@ the false guard. Arbitrary bounded old memory and an unrelated caller register a
 
 public section
 
-namespace ComplexityTests.WordRAMRealizationWhile
+namespace CslibFrontierTests.WordRAMRealizationWhile
 
 open Cslib Cslib.DataStructure Cslib.WordRAM Cslib.WordRAM.Realization
 
@@ -293,4 +293,4 @@ example : ∃ n C : ℕ, ∃ code : Code .exact (2 + (1 + n + 1) + 2),
   · simpa using h₀
   · exact h₁₅
 
-end ComplexityTests.WordRAMRealizationWhile
+end CslibFrontierTests.WordRAMRealizationWhile

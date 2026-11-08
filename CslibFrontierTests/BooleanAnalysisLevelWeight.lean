@@ -15,7 +15,7 @@ spectral sample is empty with probability `1 / 4`. A character's degree part is 
 degree and zero at every other.
 -/
 
-namespace ComplexityTests.BooleanAnalysisLevelWeight
+namespace CslibFrontierTests.BooleanAnalysisLevelWeight
 
 open Cslib Cslib.BitString Finset
 
@@ -51,4 +51,4 @@ example (S : Finset (Fin 3)) (T : Finset (Fin 3)) :
   · rw [fourierCoeff_levelPart, fourierCoeff_chi]
     split_ifs with h₁ h₂ <;> simp_all
 
-end ComplexityTests.BooleanAnalysisLevelWeight
+end CslibFrontierTests.BooleanAnalysisLevelWeight

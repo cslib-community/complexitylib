@@ -15,7 +15,7 @@ import CslibFrontier.Computability.Complexity.Problems.SAT
 # Tests for propositional normal forms, quantified Boolean formulas and SAT
 -/
 
-namespace ComplexityTests.CNF
+namespace CslibFrontierTests.CNF
 
 open Cslib.Logic Cslib.Logic.PL Cslib.Complexity
 
@@ -103,4 +103,4 @@ example :
     (⋀([⊤, ¬⊥, ⊥ → ⊤] : List (QBF ℕ))).eval (fun _ => false) = true :=
   ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, QBF.conj_eq_finiteAnd [θ, ⊤], rfl, rfl⟩
 
-end ComplexityTests.CNF
+end CslibFrontierTests.CNF

@@ -8,7 +8,7 @@ import CslibFrontier.Computability.Complexity.Classes.Sparse.Kadin
 
 /-! # Kadin's theorem: census, binary search and the collapse -/
 
-namespace ComplexityTests.SparseKadin
+namespace CslibFrontierTests.SparseKadin
 
 open Cslib Cslib.BitString Cslib.Complexity Turing.MultiTapeTM
 
@@ -99,4 +99,4 @@ example (h : SAT ∈ P encCNF) : PH encBits = PNPLog encBits :=
   PH_eq_PNPLog_of_sparse Set.finite_empty.mem_SPARSE empty_mem_NP
     (P_subset_PWithOracle ∅ encCNF h) encBits
 
-end ComplexityTests.SparseKadin
+end CslibFrontierTests.SparseKadin

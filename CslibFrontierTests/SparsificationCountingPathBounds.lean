@@ -14,7 +14,7 @@ public section
 open Cslib.Logic.PL
 open ClauseSet.Sparsification Finset
 
-namespace ComplexityTests.SparsificationCountingPathBounds
+namespace CslibFrontierTests.SparsificationCountingPathBounds
 
 -- Reuse the full-Choice, two-step concrete fixture from the insertion-count tests. Its first
 -- B-step inserts four pairs; its second step is selectable as A or B. The source/tests stay frozen.
@@ -138,4 +138,4 @@ example (N : ℕ) (ψ : ℕ → ClauseSet Empty) (c : ℕ → ℕ)
     (k := 0) (by rw [hroot]; simp) ∅ (by rw [hroot]; simp) (n := 0) (by simp)
   simpa using Nat.eq_zero_of_le_zero hbound.1
 
-end ComplexityTests.SparsificationCountingPathBounds
+end CslibFrontierTests.SparsificationCountingPathBounds

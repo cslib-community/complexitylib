@@ -20,7 +20,7 @@ The query count is the same under a dishonest oracle, and the packaged query bou
 at a concrete length.
 -/
 
-namespace ComplexityTests.Karatsuba
+namespace CslibFrontierTests.Karatsuba
 
 open Cslib Cslib.Query Cslib.Query.Karatsuba ArithQuery Polynomial
 
@@ -115,4 +115,4 @@ upper bound; at `n = 4` this is `9 + 28 ≤ 81`. -/
 example : mulCount 4 + addCount 4 ≤ 9 * 3 ^ Nat.clog 2 4 :=
   LowerBound.le_upperBound (karatsuba_lowerBound (α := ℤ)) karatsuba_upperBound 4
 
-end ComplexityTests.Karatsuba
+end CslibFrontierTests.Karatsuba

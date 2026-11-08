@@ -22,7 +22,7 @@ import CslibFrontier.Computability.Complexity.Problems.ExactThreeSAT
 `coRP` and `ZPP` applied to concrete problems, and non-vacuity witnesses for the new conditions.
 -/
 
-namespace ComplexityTests.ClassClosure
+namespace CslibFrontierTests.ClassClosure
 
 open Cslib Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -170,4 +170,4 @@ example : toExactThreeSAT [[(0, true)], [(0, false)]] ∉ ExactThreeSAT := by
   rintro ⟨-, σ, h⟩
   cases hσ : σ 0 <;> simp [hσ] at h
 
-end ComplexityTests.ClassClosure
+end CslibFrontierTests.ClassClosure

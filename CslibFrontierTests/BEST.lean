@@ -25,7 +25,7 @@ arborescence, so the hypothesis that every vertex has an outgoing arc is needed.
 `0 → 1` is unbalanced and has no Eulerian circuit.
 -/
 
-namespace ComplexityTests.BEST
+namespace CslibFrontierTests.BEST
 
 open Cslib.Multidigraph Matrix
 
@@ -209,4 +209,4 @@ def tgtArc : Fin 1 → Fin 2 := fun _ => 1
 example (l : List (Fin 1)) : ¬ IsEulerianCircuit srcArc tgtArc 0 l := fun hl =>
   absurd (hl.card_filter_src_eq 0) (by decide)
 
-end ComplexityTests.BEST
+end CslibFrontierTests.BEST

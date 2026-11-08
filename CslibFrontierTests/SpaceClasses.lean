@@ -14,7 +14,7 @@ import Cslib.Computability.Machines.Turing.MultiTape.Combinators.AlmostConstant
 The concrete zero-space instances (every word, and the words with an odd number of ones) and
 constructible bounds exercise satisfiable hypotheses. -/
 
-namespace ComplexityTests.SpaceClasses
+namespace CslibFrontierTests.SpaceClasses
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
@@ -75,4 +75,4 @@ example : (Set.univ : Set (List Bool)) ∈ DSPACE encBits Nat.log2 ∧
    mem_PSPACE_iff_exists_mem_DSPACE.mp
      (DSPACE_subset_PSPACE (by fun_prop) setOf_oddOnes_mem_DSPACE)⟩
 
-end ComplexityTests.SpaceClasses
+end CslibFrontierTests.SpaceClasses

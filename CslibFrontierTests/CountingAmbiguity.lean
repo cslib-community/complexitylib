@@ -19,7 +19,7 @@ claim that its language lies outside UP.
 
 @[expose] public section
 
-namespace ComplexityTests.CountingAmbiguity
+namespace CslibFrontierTests.CountingAmbiguity
 
 open Cslib Turing Turing.MultiTapeTM Turing.MultiTapeCTM
 
@@ -123,4 +123,4 @@ example : (∅ : Set (List Bool)) ∈ Complexity.FewP encBits := by
   simp only [Polynomial.eval_one, Polynomial.eval_zero, encBits_apply]
   refine ⟨haltsWithin_one 0 input, ?_, ?_⟩ <;> rw [accepting_count] <;> simp
 
-end ComplexityTests.CountingAmbiguity
+end CslibFrontierTests.CountingAmbiguity

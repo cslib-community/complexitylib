@@ -13,7 +13,7 @@ Regression clients for the trace lower bound on spectral expansion, the Erdős�
 for the sunflower lemma, and the discrete Loomis–Whitney inequality.
 -/
 
-namespace ComplexityTests.CombinatorialBounds
+namespace CslibFrontierTests.CombinatorialBounds
 
 open Cslib Finset
 
@@ -68,4 +68,4 @@ example (A : Finset (Fin 3 → Bool)) :
     (by simp) A
   rwa [Fintype.card_fin] at h
 
-end ComplexityTests.CombinatorialBounds
+end CslibFrontierTests.CombinatorialBounds

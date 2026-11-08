@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Complexity.Classes.SharpP.Characterization
 /-! Native guess-and-verify clients: exact framing, retained input, output collisions, zero-length
 witnesses, first-halting clock padding, and instantiated finite/nonblocking machine contracts. -/
 
-namespace ComplexityTests.CountingVerifier
+namespace CslibFrontierTests.CountingVerifier
 
 open Cslib Turing MultiTapeCTM MultiTapeMachine
 
@@ -155,4 +155,4 @@ example : ∃ (k : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapeCT
     exists_verifier_counting_machine MultiTapeTM.encBits 0 (fun _ => false)
     (.const false)
 
-end ComplexityTests.CountingVerifier
+end CslibFrontierTests.CountingVerifier

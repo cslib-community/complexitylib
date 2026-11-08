@@ -14,7 +14,7 @@ layer and has degree at most two in every variable. Bundling the identity reduct
 complete.
 -/
 
-namespace ComplexityTests.GKRSummand
+namespace CslibFrontierTests.GKRSummand
 
 open Cslib Cslib.Interactive Cslib.Interactive.GKR MvPolynomial Cslib.BitString
 
@@ -50,4 +50,4 @@ example : (Reduction.bundle (s := []) () fun _ : Bool =>
   Verifier.RbrSound.bundle (L₁ := fun _ => {0}) (L₂ := fun _ => {0}) (fun _ => rfl)
     fun _ => Reduction.id_rbrSound _
 
-end ComplexityTests.GKRSummand
+end CslibFrontierTests.GKRSummand

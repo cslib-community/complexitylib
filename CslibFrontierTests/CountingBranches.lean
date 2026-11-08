@@ -9,7 +9,7 @@ import Mathlib.Tactic.FinCases
 
 /-! Adversarial clients for occurrence multiplicity, early halting and certificate validity. -/
 
-namespace ComplexityTests.CountingBranches
+namespace CslibFrontierTests.CountingBranches
 
 open Turing MultiTapeCTM
 
@@ -135,4 +135,4 @@ example (fuel : ℕ) :
   | halt h => cases h
   | step h _ => exact h rfl
 
-end ComplexityTests.CountingBranches
+end CslibFrontierTests.CountingBranches

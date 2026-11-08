@@ -18,7 +18,7 @@ geometry, and no complete solver execution at those dimensions is claimed.
 
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMCallableFixedPrime
+namespace CslibFrontierTests.WordRAMCallableFixedPrime
 
 open Cslib.WordRAM
 open Cslib.Algorithms.WordRAM.ExactTriangle
@@ -78,4 +78,4 @@ private def initialized : Option (List ℕ × ℕ) :=
 
 #guard initialized == some ([1, 16, 1, 3, 5, 6, 7, 8, 0, 0, 2, 8, 0], 14)
 
-end ComplexityTests.WordRAMCallableFixedPrime
+end CslibFrontierTests.WordRAMCallableFixedPrime

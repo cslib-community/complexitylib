@@ -27,7 +27,7 @@ and machine models; Lean checks the proofs through `SubsetSumBridge`.
 * [M. Sipser, *Introduction to the Theory of Computation*][Sipser2013]
 -/
 
-namespace ComplexityTests.Abstracts.SubsetSumAbstract
+namespace CslibFrontierTests.Abstracts.SubsetSumAbstract
 
 /-! ## Subset Sum -/
 
@@ -95,12 +95,12 @@ theorem subsetSum_npComplete : NPComplete encSubsetSum SubsetSum :=
   SubsetSumBridge.subsetSum_npComplete
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.SubsetSumAbstract`:
+info: abstract audit passed for `CslibFrontierTests.Abstracts.SubsetSumAbstract`:
 7 root declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.SubsetSumAbstract allowing [
-  ComplexityAbstracts.Encoding, ComplexityAbstracts.Computation
+#check_abstract CslibFrontierTests.Abstracts.SubsetSumAbstract allowing [
+  CslibFrontierAbstracts.Encoding, CslibFrontierAbstracts.Computation
 ]
 
-end ComplexityTests.Abstracts.SubsetSumAbstract
+end CslibFrontierTests.Abstracts.SubsetSumAbstract

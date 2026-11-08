@@ -22,7 +22,7 @@ Concrete runs of `CslibFrontier.Algorithms.Lean.LubyMIS`:
   Vegas statement), and an instance of the high-probability bound.
 -/
 
-namespace ComplexityTests.Algorithms.Lean.LubyMIS
+namespace CslibFrontierTests.Algorithms.Lean.LubyMIS
 
 open Cslib Cslib.Algorithms.Lean.LubyMIS SimpleGraph
 open scoped ENNReal
@@ -112,4 +112,4 @@ example : 1 - (2 ^ 1 : ℝ≥0∞)⁻¹ ≤
       {S | Maximal (⊤ : SimpleGraph (Fin 3)).IsIndepSet (S : Set (Fin 3))} :=
   one_sub_le_toOuterMeasure_maximal_lubyMIS (⊤ : SimpleGraph (Fin 3)) (m := 2) (by decide) 1
 
-end ComplexityTests.Algorithms.Lean.LubyMIS
+end CslibFrontierTests.Algorithms.Lean.LubyMIS

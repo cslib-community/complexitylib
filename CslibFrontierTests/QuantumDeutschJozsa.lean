@@ -9,7 +9,7 @@ import CslibFrontier.Computability.QueryComplexity.Quantum.DeutschJozsa
 /-! The Deutsch–Jozsa algorithm on concrete inputs: `n = 1` (Deutsch's problem, `N = 2`) and
 `n = 2` (`N = 4`), with positions identified with `{0,1}^n`. -/
 
-namespace ComplexityTests.QuantumDeutschJozsa
+namespace CslibFrontierTests.QuantumDeutschJozsa
 
 open Cslib Cslib.Quantum Cslib.QueryComplexity Cslib.BitString
 
@@ -66,4 +66,4 @@ example (F : (Fin 4 → Bool) → Bool) (hF : SolvesDeutschJozsa F) :
   obtain ⟨-, hq, hd⟩ := deutschJozsa_separation e4 (by simp)
   exact ⟨hq F hF _ (Or.inr (by decide)), by simpa using hd F hF⟩
 
-end ComplexityTests.QuantumDeutschJozsa
+end CslibFrontierTests.QuantumDeutschJozsa

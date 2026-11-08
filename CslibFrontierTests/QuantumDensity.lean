@@ -11,7 +11,7 @@ import CslibFrontier.Foundations.Quantum.Pauli
 /-! Density matrices, the partial trace, no-signalling and the quantum one-time pad: concrete
 instances and edge cases. -/
 
-namespace ComplexityTests.QuantumDensity
+namespace CslibFrontierTests.QuantumDensity
 
 open Cslib.Quantum Cslib.Crypto.Protocols.Quantum.OneTimePad Matrix Finset
 open scoped Kronecker
@@ -135,4 +135,4 @@ example : averageCiphertextWith (pureState (maxEntangled (Unit → Bool))) =
   rw [averageCiphertextWith_eq, partialTraceLeft_pureState_maxEntangled]
   norm_num
 
-end ComplexityTests.QuantumDensity
+end CslibFrontierTests.QuantumDensity

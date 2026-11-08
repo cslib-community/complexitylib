@@ -19,7 +19,7 @@ verifier on concrete formulas; `TQBF ∈ IP`, `IP = PSPACE` and its corollaries;
 the headline theorems.
 -/
 
-namespace ComplexityTests.QBFProtocol
+namespace CslibFrontierTests.QBFProtocol
 
 open Cslib Cslib.Complexity Cslib.Logic.PL Cslib.Complexity.QBFProtocol
 open Cslib.ProbOracleComp (acceptProbWith)
@@ -140,4 +140,4 @@ info: 'Cslib.Logic.PL.QBF.degBound_arithmetize_le' depends on axioms: [propext, 
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.Logic.PL.QBF.degBound_arithmetize_le
 
-end ComplexityTests.QBFProtocol
+end CslibFrontierTests.QBFProtocol

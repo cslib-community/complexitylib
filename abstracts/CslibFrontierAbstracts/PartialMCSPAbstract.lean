@@ -52,7 +52,7 @@ upstream mathematics.
   [ImpagliazzoPaturi2001]
 -/
 
-namespace ComplexityAbstracts.PartialMCSPAbstract
+namespace CslibFrontierAbstracts.PartialMCSPAbstract
 
 /-! ## 3SAT and the Exponential Time Hypothesis
 
@@ -98,9 +98,9 @@ encoded as the empty word `[]` and `some b` encoded as `[true, b]`. We provide b
 
 /-- Encode a CNF formula as a framed list of clauses of `(Nat.bits v, [b])` literals. -/
 def encodeCNF : Formula → List Bool :=
-  ComplexityTests.Abstracts.Encoding.encodeList
-    (ComplexityTests.Abstracts.Encoding.encodeList
-      (ComplexityTests.Abstracts.Encoding.encodePair Nat.bits (fun b => [b])))
+  CslibFrontierTests.Abstracts.Encoding.encodeList
+    (CslibFrontierTests.Abstracts.Encoding.encodeList
+      (CslibFrontierTests.Abstracts.Encoding.encodePair Nat.bits (fun b => [b])))
 
 theorem encodeCNF_injective : Function.Injective encodeCNF :=
   PartialMCSPBridge.encodeCNF_injective
@@ -124,8 +124,8 @@ structure Instance where
 /-- Encode a `PartialMCSP` instance as the framed list of its `2 ^ arity` truth-table entries
 followed by `threshold` in unary (`List.replicate x.threshold true`). -/
 def encodeInstance (x : Instance) : List Bool :=
-  ComplexityTests.Abstracts.Encoding.encodePair
-    (ComplexityTests.Abstracts.Encoding.encodeList encodeOptionBool)
+  CslibFrontierTests.Abstracts.Encoding.encodePair
+    (CslibFrontierTests.Abstracts.Encoding.encodeList encodeOptionBool)
     (fun s => List.replicate s true)
     (List.ofFn x.table, x.threshold)
 
@@ -141,8 +141,8 @@ def encInstance : Instance ↪ List Bool :=
 /-- Encode a `PartialMCSP` instance as the framed list of its `2 ^ arity` truth-table entries
 followed by `threshold` in binary (`Nat.bits x.threshold`). -/
 def encodeInstanceBinary (x : Instance) : List Bool :=
-  ComplexityTests.Abstracts.Encoding.encodePair
-    (ComplexityTests.Abstracts.Encoding.encodeList encodeOptionBool)
+  CslibFrontierTests.Abstracts.Encoding.encodePair
+    (CslibFrontierTests.Abstracts.Encoding.encodeList encodeOptionBool)
     Nat.bits
     (List.ofFn x.table, x.threshold)
 
@@ -254,7 +254,7 @@ def IsVerifier {α : Type} (enc : α ↪ List Bool) (p : Polynomial ℕ)
 polynomial time by a deterministic multi-tape Turing machine. -/
 def NP {α : Type} (enc : α ↪ List Bool) : Set (Set α) :=
   {A | ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
-    ComplexityTests.Abstracts.Computation.PolyTimeVerifier enc V ∧ IsVerifier enc p V A}
+    CslibFrontierTests.Abstracts.Computation.PolyTimeVerifier enc V ∧ IsVerifier enc p V A}
 
 /-! ## Main results -/
 
@@ -330,8 +330,8 @@ info: abstract audit passed for `CslibFrontierAbstracts.PartialMCSPAbstract`:
 60 root declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.PartialMCSPAbstract allowing [
-  ComplexityAbstracts.Encoding, ComplexityAbstracts.Computation
+#check_abstract CslibFrontierAbstracts.PartialMCSPAbstract allowing [
+  CslibFrontierAbstracts.Encoding, CslibFrontierAbstracts.Computation
 ]
 
-end ComplexityAbstracts.PartialMCSPAbstract
+end CslibFrontierAbstracts.PartialMCSPAbstract

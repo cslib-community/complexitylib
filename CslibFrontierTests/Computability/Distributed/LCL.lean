@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Distributed.OrientedCycle.MIS
 `Θ(log* n)`), 2-colouring (no flexible state, `Θ(n)`), a problem with a loop, the
 node-edge-checkable bridge, and concrete anchors and fillings. -/
 
-namespace ComplexityTests.Distributed.OrientedCycle.LCL
+namespace CslibFrontierTests.Distributed.OrientedCycle.LCL
 
 open Cslib Cslib.Distributed.OrientedCycle Cslib.Distributed.OrientedCycle.LCL
 
@@ -204,4 +204,4 @@ example : (List.finRange 6).map
     (fun v => (fillRule (fun g d => if d = g then 0 else d) 1).apply
       ((anchorRule 1).apply col6) v) = [0, 1, 0, 1, 0, 1] := by decide
 
-end ComplexityTests.Distributed.OrientedCycle.LCL
+end CslibFrontierTests.Distributed.OrientedCycle.LCL

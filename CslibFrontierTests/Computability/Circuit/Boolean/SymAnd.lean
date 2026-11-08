@@ -21,7 +21,7 @@ concrete tower whose output slot is neither constantly true nor constantly false
 
 @[expose] public section
 
-namespace ComplexityTests.Computability.Circuit.Boolean.SymAnd
+namespace CslibFrontierTests.Computability.Circuit.Boolean.SymAnd
 
 open Cslib Cslib.BitString Cslib.Circuits.Boolean Polynomial
 
@@ -139,4 +139,4 @@ example : ∃ C' : SymAnd (Fin 3), ∀ v, C'.eval v = parity3.eval (top.step v) 
     top_q_mem_lowDegree (k := 2) (by decide)
   exact ⟨C', hC'⟩
 
-end ComplexityTests.Computability.Circuit.Boolean.SymAnd
+end CslibFrontierTests.Computability.Circuit.Boolean.SymAnd

@@ -21,7 +21,7 @@ as `[1,31]`, within its native instruction bound, retaining the input cell and f
 
 public section
 
-namespace ComplexityTests.FibonacciHeapNativeRead
+namespace CslibFrontierTests.FibonacciHeapNativeRead
 
 open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
 open Cslib.WordRAM Cslib.WordRAM.Realization FibonacciHeap FibonacciHeap.Native
@@ -132,4 +132,4 @@ example : ∃ y, ExecWithin 5 (realizes_getKey.code frontier source scratch) loa
 
 end
 
-end ComplexityTests.FibonacciHeapNativeRead
+end CslibFrontierTests.FibonacciHeapNativeRead

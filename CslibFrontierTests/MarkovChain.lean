@@ -26,7 +26,7 @@ import Mathlib.Analysis.Complex.ExponentialBounds
   of [LevinPeres2017], (5.6), as printed without a ceiling, is too small.
 -/
 
-namespace ComplexityTests.MarkovChain
+namespace CslibFrontierTests.MarkovChain
 
 open Cslib.Probability Cslib.Probability.PMF Cslib.Probability.MarkovChain Cslib.BitString
 open scoped Cslib.Probability.PMF
@@ -209,4 +209,4 @@ example : (Fintype.card Unit : ℝ) * Real.log (Fintype.card Unit) +
   norm_num
   exact log_five_halves_lt_one
 
-end ComplexityTests.MarkovChain
+end CslibFrontierTests.MarkovChain

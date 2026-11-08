@@ -18,7 +18,7 @@ hypothesis `k ≤ 3` cannot be dropped. An empty clause defeats the `1 / 2` boun
 hypothesis. The polynomial-time theorems are instantiated at these formulas.
 -/
 
-namespace ComplexityTests.ParitySearchMaxSAT
+namespace CslibFrontierTests.ParitySearchMaxSAT
 
 open Cslib Cslib.Logic.PL Cslib.Complexity Cslib.Probability Turing.MultiTapeTM
 
@@ -116,4 +116,4 @@ example : ∃ S : List ℕ → List (List ℕ),
 example : ComputableInPolyTime (paritySearch (V := ℕ)) encCNF (encList encNat) :=
   computableInPolyTime_paritySearch_encCNF
 
-end ComplexityTests.ParitySearchMaxSAT
+end CslibFrontierTests.ParitySearchMaxSAT

@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Complexity.Classes.IP.Shamir
 
 /-! # Transfer of Shamir's theorem with full native oracle and prover quantifiers -/
 
-namespace ComplexityTests.Abstracts.ShamirBridge
+namespace CslibFrontierTests.Abstracts.ShamirBridge
 
 /-- A Boolean is encoded by a single bit. -/
 def encBool : Bool ↪ List Bool := ⟨fun b => [b], by intro a b h; injection h⟩
@@ -87,4 +87,4 @@ theorem ip_eq_pspace {α : Type} (enc : α ↪ List Bool) : IP enc = PSPACE enc 
   rw [ip_eq]
   exact (Cslib.Complexity.IP_eq_PSPACE enc).trans (Set.ext fun _ => TQBFBridge.mem_PSPACE_iff.symm)
 
-end ComplexityTests.Abstracts.ShamirBridge
+end CslibFrontierTests.Abstracts.ShamirBridge

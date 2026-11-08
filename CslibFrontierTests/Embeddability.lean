@@ -18,7 +18,7 @@ parties can forget the intermediate outputs; and shared randomness may come from
 higher universe.
 -/
 
-namespace ComplexityTests.Embeddability
+namespace CslibFrontierTests.Embeddability
 
 open Cslib.Probability.CorrelatedSampling
 open scoped Cslib.Probability.PMF
@@ -127,4 +127,4 @@ example : IsEmbeddable (PMF.pure ((), ()))
         PMF.map_comp]
       rfl))
 
-end ComplexityTests.Embeddability
+end CslibFrontierTests.Embeddability

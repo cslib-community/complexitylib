@@ -50,7 +50,7 @@ The typed oracle-program syntax follows VCVio, by Devon Tuma, Quang Dao and coll
 as credited in `CslibFrontier.Languages.Probabilistic.Basic`.
 -/
 
-namespace ComplexityTests.Abstracts.CryptographyAbstract
+namespace CslibFrontierTests.Abstracts.CryptographyAbstract
 
 /-- A polynomial-time function is one-way if every strict PPT inverter, given unary `n` and
 `f(x)` for a uniform `n`-bit `x`, finds any preimage only with negligible probability.
@@ -195,11 +195,11 @@ abbrev OracleResponse : Sum ℕ (Unit × List Bool) → Type :=
   Cslib.probOracleSpec (fun _ : Unit × List Bool => List Bool)
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.CryptographyAbstract`: 15 root declarations
+info: abstract audit passed for `CslibFrontierTests.Abstracts.CryptographyAbstract`: 15 root declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.CryptographyAbstract allowing [
-  ComplexityAbstracts.Encoding, ComplexityAbstracts.Computation, ComplexityAbstracts.Randomized,
+#check_abstract CslibFrontierTests.Abstracts.CryptographyAbstract allowing [
+  CslibFrontierAbstracts.Encoding, CslibFrontierAbstracts.Computation, CslibFrontierAbstracts.Randomized,
   CslibFrontier.Languages.Probabilistic.Basic,
   CslibFrontier.Languages.Probabilistic.Oracle,
   CslibFrontier.Languages.Probabilistic.Sum,
@@ -212,17 +212,17 @@ info: abstract audit passed for `ComplexityTests.Abstracts.CryptographyAbstract`
 ]
 
 /--
-info: 'ComplexityTests.Abstracts.CryptographyAbstract.hill' depends on axioms:
+info: 'CslibFrontierTests.Abstracts.CryptographyAbstract.hill' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms ComplexityTests.Abstracts.CryptographyAbstract.hill
+#print axioms CslibFrontierTests.Abstracts.CryptographyAbstract.hill
 
 /--
-info: 'ComplexityTests.Abstracts.CryptographyAbstract.adaptive_functions' depends on axioms:
+info: 'CslibFrontierTests.Abstracts.CryptographyAbstract.adaptive_functions' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms ComplexityTests.Abstracts.CryptographyAbstract.adaptive_functions
+#print axioms CslibFrontierTests.Abstracts.CryptographyAbstract.adaptive_functions
 
-end ComplexityTests.Abstracts.CryptographyAbstract
+end CslibFrontierTests.Abstracts.CryptographyAbstract

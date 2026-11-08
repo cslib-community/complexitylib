@@ -20,7 +20,7 @@ A timestamped matrix-query list retains its membership interpretation through a 
 its unoccupied list cells and old timestamps remain dirty.
 -/
 
-namespace ComplexityTests.WordRAMMemoryViews
+namespace CslibFrontierTests.WordRAMMemoryViews
 
 open Cslib.WordRAM
 open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery
@@ -103,4 +103,4 @@ example : ¬ScanMemory (Function.update singletonScan 21 41) 10 20 42 3 {1} := b
   have hv := (h.marked 1 (by decide)).mpr (by simp)
   norm_num at hv
 
-end ComplexityTests.WordRAMMemoryViews
+end CslibFrontierTests.WordRAMMemoryViews

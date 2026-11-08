@@ -14,7 +14,7 @@ effect on the combinatorial bounds. The native reduction witness is exercised on
 NAE language and on the zero-size input; malformed inputs are also covered.
 -/
 
-namespace ComplexityTests.SchaeferSize
+namespace CslibFrontierTests.SchaeferSize
 
 open Cslib.Logic Cslib.Logic.PL Cslib.Complexity Turing.MultiTapeTM
 
@@ -98,4 +98,4 @@ example : ∃ (f : CNF ℕ → CSP Unit ℕ),
   simp only [List.length_nil, Nat.mul_zero] at h
   omega
 
-end ComplexityTests.SchaeferSize
+end CslibFrontierTests.SchaeferSize

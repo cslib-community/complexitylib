@@ -14,7 +14,7 @@ fan-in four, of product-depth zero and five nodes, and set-multilinearity holdin
 `x₀ * (2 x₁ + 3 x₂)` and the formula `0`, and failing for the square `x₀ * x₀`.
 -/
 
-namespace ComplexityTests.ArithmeticSigmaPi
+namespace CslibFrontierTests.ArithmeticSigmaPi
 
 open Cslib.Circuits Cslib.Circuits.Arithmetic MvPolynomial
 
@@ -102,4 +102,4 @@ example : (SPFormula.zero : SPFormula ℚ 3).nodeCount = 1 ∧
   ⟨SPFormula.nodeCount_zero, SPFormula.productDepth_zero, SPFormula.polynomial_zero,
     SPFormula.isSetMultilinear_zero _⟩
 
-end ComplexityTests.ArithmeticSigmaPi
+end CslibFrontierTests.ArithmeticSigmaPi

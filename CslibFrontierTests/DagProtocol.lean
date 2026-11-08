@@ -25,7 +25,7 @@ them.
   the extracted De Morgan circuit has at most two gates.
 -/
 
-namespace ComplexityTests.DagProtocol
+namespace CslibFrontierTests.DagProtocol
 
 open Cslib Cslib.Communication Cslib.Circuits
 
@@ -125,4 +125,4 @@ example : ∃ C : Circuit Boolean.signature 2 1, C.size ≤ 2 ∧
   have hd : zeroProtocol.depth = 0 := by decide
   simpa [hd] using h.exists_circuit
 
-end ComplexityTests.DagProtocol
+end CslibFrontierTests.DagProtocol

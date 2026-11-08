@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.NativeRecovery
 Computations over `(ℤ / 2 ^ N)[U] / (U ^ 2 + U + 1)` (`fl = [1, 1]`) with `L = 2` slots
 (`a = 1`), and the correctness statements of the components. -/
 
-namespace ComplexityTests.TensorNetworkNativeRecovery
+namespace CslibFrontierTests.TensorNetworkNativeRecovery
 
 open Cslib.GaloisRingArith Cslib.Circuits.Frontier Cslib.Circuits.Frontier.NativeRecovery
 
@@ -71,4 +71,4 @@ example (y : Ring 5 [1, 1]) (hw : val 3 [1, 1] [5, 0] = reduce (by norm_num) [1,
     ∃ c, val 5 [1, 1] [5, 0] = y + 2 ^ 3 * c :=
   exists_val_eq_add_of_val_eq _ hw
 
-end ComplexityTests.TensorNetworkNativeRecovery
+end CslibFrontierTests.TensorNetworkNativeRecovery

@@ -23,7 +23,7 @@ import Mathlib.Analysis.Complex.ExponentialBounds
   two-sided tail at `1` is `2/3 = 1 - 1/3`, consistent with the mass of `0`.
 -/
 
-namespace ComplexityTests.Privacy.DifferentialPrivacy
+namespace CslibFrontierTests.Privacy.DifferentialPrivacy
 
 open Cslib Cslib.Privacy
 open scoped ENNReal
@@ -144,4 +144,4 @@ example :
       ENNReal.ofReal (2 / 3) := by
   rw [show (0 : ℤ) = ((0 : ℕ) : ℤ) from rfl, twoSidedGeometric_toOuterMeasure_Ici]; norm_num
 
-end ComplexityTests.Privacy.DifferentialPrivacy
+end CslibFrontierTests.Privacy.DifferentialPrivacy

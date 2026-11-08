@@ -34,7 +34,7 @@ and
    family is refuted by `not_collisionResistantForOn_of_le_succProbability`.
 -/
 
-namespace ComplexityTests.Crypto.CCA
+namespace CslibFrontierTests.Crypto.CCA
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Encryption Turing.MultiTapeTM
 open scoped NNReal
@@ -172,20 +172,20 @@ example :
 /-- The plaintext-leaking scheme from `CslibFrontierTests.Crypto.Encryption` violates `INDCCA2` for
 every decryption function, by `INDCCA2.indcpa` and `not_indCPA`. -/
 theorem not_indcca2_leaking (decrypt : ℕ → List Bool → List Bool → Option Bool) :
-    ¬ INDCCA2 ComplexityTests.Crypto.Encryption.keyGen
-        ComplexityTests.Crypto.Encryption.encrypt decrypt :=
-  fun hCCA => ComplexityTests.Crypto.Encryption.not_indCPA hCCA.indcpa
+    ¬ INDCCA2 CslibFrontierTests.Crypto.Encryption.keyGen
+        CslibFrontierTests.Crypto.Encryption.encrypt decrypt :=
+  fun hCCA => CslibFrontierTests.Crypto.Encryption.not_indCPA hCCA.indcpa
 
 /-- By `INDCCA2Multi.indcca2`, the plaintext-leaking scheme also violates multi-challenge
 `INDCCA2Multi` for every decryption function. -/
 theorem not_indcca2Multi_leaking (decrypt : ℕ → List Bool → List Bool → Option Bool) :
-    ¬ INDCCA2Multi ComplexityTests.Crypto.Encryption.keyGen
-        ComplexityTests.Crypto.Encryption.encrypt decrypt :=
+    ¬ INDCCA2Multi CslibFrontierTests.Crypto.Encryption.keyGen
+        CslibFrontierTests.Crypto.Encryption.encrypt decrypt :=
   fun hMulti => not_indcca2_leaking decrypt hMulti.indcca2
 
 /-- Concrete witness for `CCA2Adversary.IsPPT` via `CCA2Adversary.isPPT_ofCPA`. -/
-example : (CCA2Adversary.ofCPA ComplexityTests.Crypto.Encryption.adversary).IsPPT :=
-  CCA2Adversary.isPPT_ofCPA ComplexityTests.Crypto.Encryption.adversary_ppt
+example : (CCA2Adversary.ofCPA CslibFrontierTests.Crypto.Encryption.adversary).IsPPT :=
+  CCA2Adversary.isPPT_ofCPA CslibFrontierTests.Crypto.Encryption.adversary_ppt
 
 /-! ### 3. Concrete `cca2Phase2Oracle` behavior and live Phase-2 decryption-oracle test -/
 
@@ -324,4 +324,4 @@ theorem not_collisionResistantFor_constZModHash :
     rfl
   simp [heval, Game.succProbability]
 
-end ComplexityTests.Crypto.CCA
+end CslibFrontierTests.Crypto.CCA

@@ -17,7 +17,7 @@ that `H.TargetCollisionResistant` is essential even when `S` is `OneTimeEUFCMA`)
 public security endpoints through `OneWayPermutation.exists_eufCMA`.
 -/
 
-namespace ComplexityTests.Crypto.TCRSignature
+namespace CslibFrontierTests.Crypto.TCRSignature
 
 open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 open scoped NNReal
@@ -400,4 +400,4 @@ example {f : List Bool → List Bool} (hf : OneWayPermutation f) :
     ∃ M : SignatureScheme, M.EUFCMA :=
   hf.exists_eufCMA
 
-end ComplexityTests.Crypto.TCRSignature
+end CslibFrontierTests.Crypto.TCRSignature

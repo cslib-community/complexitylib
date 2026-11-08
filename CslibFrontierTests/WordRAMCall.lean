@@ -16,7 +16,7 @@ all other memory cells. Unused registers and memory may exceed the word bound. A
 instructions are included in the budget.
 -/
 
-namespace ComplexityTests.WordRAMCall
+namespace CslibFrontierTests.WordRAMCall
 
 open Cslib.WordRAM
 
@@ -72,4 +72,4 @@ example :
       exec_caller (w := 4) ⟨![5, 99, 99, 99], fun p => 16 + p⟩ (by decide)
     exact ⟨y, hy, hr, hc, hm, hframe 2 (by decide)⟩
 
-end ComplexityTests.WordRAMCall
+end CslibFrontierTests.WordRAMCall

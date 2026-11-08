@@ -19,7 +19,7 @@ modular triangle counters; the concrete-counter clients are in `WordRAMPrimeSele
 
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMPrimeSelection
+namespace CslibFrontierTests.WordRAMPrimeSelection
 
 open Cslib.WordRAM
 open Cslib.Algorithms.WordRAM.ExactTriangle.PrimeSelection
@@ -113,4 +113,4 @@ example : ∃ y t, t + 1 ≤ 287 ∧
       (p := admittedEntry.program Reg.best) (Program.Contains.self _).append_left
   · simpa only [State.init] using hr.executes Reg.best
 
-end ComplexityTests.WordRAMPrimeSelection
+end CslibFrontierTests.WordRAMPrimeSelection

@@ -22,7 +22,7 @@ admissible input, the network of two parallel edges at size `2`, so the interfac
 
 @[expose] public section
 
-namespace ComplexityTests.TensorNetworkEntryAnalysis
+namespace CslibFrontierTests.TensorNetworkEntryAnalysis
 
 open Cslib Cslib.Circuits.Frontier Cslib.Circuits.Frontier.EntryContraction
   Cslib.Complexity.CountingSimulation
@@ -139,4 +139,4 @@ example : ∃ C K : ℕ, EntryAdmissible tableEntryCertificate C 2 (1, twoEdges)
   obtain ⟨K, hK⟩ := tableAlgorithm.bound_logPrecision C 1
   exact ⟨C, K, hC, hK 2 4 1 twoEdges le_rfl (by norm_num) (by decide) hC⟩
 
-end ComplexityTests.TensorNetworkEntryAnalysis
+end CslibFrontierTests.TensorNetworkEntryAnalysis

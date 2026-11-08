@@ -11,7 +11,7 @@ import CslibFrontier.Computability.LogSpaceDerandomization.HierarchyRankEnvironm
 
 set_option linter.privateModule false
 
-namespace ComplexityTests.HierarchyRankEnvironment
+namespace CslibFrontierTests.HierarchyRankEnvironment
 
 open Finset Matrix Matrix.HierarchyParams Cslib Cslib.Probability RotationMap
 open H4RankEnvironment
@@ -71,4 +71,4 @@ example :
   norm_num [rate]
   rfl
 
-end ComplexityTests.HierarchyRankEnvironment
+end CslibFrontierTests.HierarchyRankEnvironment

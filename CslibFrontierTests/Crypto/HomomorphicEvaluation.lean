@@ -15,10 +15,10 @@ Depth-zero wiring permutes and duplicates ciphertexts under the unchanged initia
 The fixture is explicitly insecure; these are correctness and runtime tests only.
 -/
 
-namespace ComplexityTests.HomomorphicEvaluation
+namespace CslibFrontierTests.HomomorphicEvaluation
 
 open Cslib Cslib.Circuits Cslib.Crypto.Homomorphic Cslib.Probability Turing.MultiTapeTM
-open ComplexityTests.HomomorphicExample Boolean.Layered
+open CslibFrontierTests.HomomorphicExample Boolean.Layered
 
 private def orCircuit : Circuit Boolean.signature 2 1 := Circuit.oneGate .or id
 
@@ -116,4 +116,4 @@ example : IsPPTOn
     circuits_poly
   all_goals fun_prop
 
-end ComplexityTests.HomomorphicEvaluation
+end CslibFrontierTests.HomomorphicEvaluation

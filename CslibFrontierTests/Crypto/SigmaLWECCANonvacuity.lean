@@ -39,7 +39,7 @@ candidate.
   below `1 / 2`.
 -/
 
-namespace ComplexityTests.Crypto.SigmaLWECCANonvacuity
+namespace CslibFrontierTests.Crypto.SigmaLWECCANonvacuity
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Protocols Turing.MultiTapeTM
 open scoped NNReal ENNReal
@@ -375,4 +375,4 @@ theorem not_unpredictable_constFalse {δ : ℝ≥0} (hδ : δ < 1 / 2) :
   have hδ' : (δ : ℝ) < 1 / 2 := by exact_mod_cast hδ
   linarith
 
-end ComplexityTests.Crypto.SigmaLWECCANonvacuity
+end CslibFrontierTests.Crypto.SigmaLWECCANonvacuity

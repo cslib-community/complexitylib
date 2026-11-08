@@ -14,7 +14,7 @@ Covers of small graphs by cliques on yes and no instances, Karp's reduction from
 results.
 -/
 
-namespace ComplexityTests.CliqueCover
+namespace CslibFrontierTests.CliqueCover
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -75,4 +75,4 @@ example : (⊤ : SimpleGraph (Fin 3))ᶜ.Colorable 1 :=
   SimpleGraph.exists_cliqueCover_iff_colorable_compl.1
     ⟨{Finset.univ}, by simp, by simp [SimpleGraph.isClique_iff], by simp⟩
 
-end ComplexityTests.CliqueCover
+end CslibFrontierTests.CliqueCover

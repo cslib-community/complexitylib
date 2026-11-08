@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Probabilistic.Sampling
 
 /-! End-to-end clock compilation from blank tapes, with genuinely nonhalting sources. -/
 
-namespace ComplexityTests.PolynomialClock
+namespace CslibFrontierTests.PolynomialClock
 
 open Cslib Turing MultiTapeMachine MultiTapePTM.PolynomialClock
 
@@ -90,4 +90,4 @@ example : ∃ (k : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapePT
   (show Probability.IsPPTOn MultiTapeTM.encBool MultiTapeTM.encBool
     (fun _ => ProbComp.uniform Bool) by fun_prop).exists_halting_machine
 
-end ComplexityTests.PolynomialClock
+end CslibFrontierTests.PolynomialClock

@@ -21,7 +21,7 @@ breaks `OneTimeCiphertextIntegrity`. The one-time CPA game refuses the second qu
 two-query attack `detCPAAdversary`, which therefore has no advantage there.
 -/
 
-namespace ComplexityTests.Crypto.AuthenticatedEncryption
+namespace CslibFrontierTests.Crypto.AuthenticatedEncryption
 
 open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 open scoped NNReal
@@ -482,4 +482,4 @@ example (n : ℕ) :
     echoCipher.advantage_ccaOneTimeGame_le_two_mul id (fun _ => 0) zeroCCAAdversary n
       (isQueryBounded_zeroCCAAdversary n) hct
 
-end ComplexityTests.Crypto.AuthenticatedEncryption
+end CslibFrontierTests.Crypto.AuthenticatedEncryption

@@ -13,7 +13,7 @@ Tests for `SuccinctMCSP`, the sparse sample-set complexity bound, certificate ga
 canonical sample enumeration, and `NP` membership under unary and binary thresholds.
 -/
 
-namespace ComplexityTests.SuccinctMCSP
+namespace CslibFrontierTests.SuccinctMCSP
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Complexity Turing.MultiTapeTM
 
@@ -86,4 +86,4 @@ example : (⟨1, notSamples, 0⟩ : SuccinctMCSP.Instance) ∉ SuccinctMCSP := b
   · have := hV []; revert this; cases b <;> decide
   · simp [certLength, MCSP.sampleBudget] at hu
 
-end ComplexityTests.SuccinctMCSP
+end CslibFrontierTests.SuccinctMCSP

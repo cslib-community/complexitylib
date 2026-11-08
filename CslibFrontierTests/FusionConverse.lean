@@ -14,7 +14,7 @@ rejection on an empty carrier, a rejected self-pair, simultaneous acceptance of 
 sets, and a nonconstant XOR function with a one-pair cover and a five-AND universal verifier.
 -/
 
-namespace ComplexityTests.FusionConverse
+namespace CslibFrontierTests.FusionConverse
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Circuits.Fusion PairCertificate
 
@@ -94,4 +94,4 @@ example : ∃ a, ∃ g : BooleanFunction (2 + a),
 example : econondeterministicAndComplexity (fun x : BitString 2 => x 0 ^^ x 1) ≤ 1 := by
   exact econondeterministicAndComplexity_le_cost xorVerifier (by decide) xorCircuit xor_computes
 
-end ComplexityTests.FusionConverse
+end CslibFrontierTests.FusionConverse

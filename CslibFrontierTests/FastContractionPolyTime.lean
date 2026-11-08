@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.FastAlg
 The caps on the rows and the exponents, the schedule's quantities on a call that is not active,
 and the instance of the contraction interface from the resource analysis alone. -/
 
-namespace ComplexityTests.FastContractionPolyTime
+namespace CslibFrontierTests.FastContractionPolyTime
 
 open Turing.MultiTapeTM Cslib.Circuits.Frontier Cslib.Circuits.Frontier.FastContraction
   Cslib.Circuits.Frontier.ContractionSchedule Cslib.Complexity.CountingSimulation
@@ -51,4 +51,4 @@ noncomputable example (hana : FastAnalysis nativeMk) :
       (fun G => G.2.contraction) ExplicitAdmissible :=
   contractionAlgorithmOfNative hana
 
-end ComplexityTests.FastContractionPolyTime
+end CslibFrontierTests.FastContractionPolyTime

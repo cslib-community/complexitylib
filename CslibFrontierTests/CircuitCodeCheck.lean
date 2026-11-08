@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Probabilistic.Sampling.F4
 
 /-! Generic binary-arity validation and its arithmetic/Boolean consumers. -/
 
-namespace ComplexityTests.CircuitCodeCheck
+namespace CslibFrontierTests.CircuitCodeCheck
 
 open Cslib Cslib.Circuits Turing.MultiTapeTM
 
@@ -70,4 +70,4 @@ example : ComputableInPolyTime
     (encPair encUnary (encList Boolean.encGate)) encBool :=
   Boolean.computableInPolyTime_codeCheck (.fst _ _) (.snd _ _)
 
-end ComplexityTests.CircuitCodeCheck
+end CslibFrontierTests.CircuitCodeCheck

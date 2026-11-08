@@ -19,7 +19,7 @@ is halted; runtime metadata and bank are supplied explicitly.
 
 public section
 
-namespace ComplexityTests.ConcreteEvaluator
+namespace CslibFrontierTests.ConcreteEvaluator
 
 open Turing MultiTapeTM MultiTapePTM.BlockComputation
 open Cslib.TreeEval.Ary.Packed
@@ -53,4 +53,4 @@ example : (ConcreteEvaluator.machine control code).halted
 example : RawController.Output.decode ((13, 1, 17, 13, 0), [18, 18] ++ List.replicate 24 17) =
     [true, true] ++ List.replicate 11 false := by decide
 
-end ComplexityTests.ConcreteEvaluator
+end CslibFrontierTests.ConcreteEvaluator

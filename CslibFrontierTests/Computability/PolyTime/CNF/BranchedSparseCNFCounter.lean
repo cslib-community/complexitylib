@@ -14,7 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 
 @[expose] public section
 
-namespace ComplexityTests.Computability.PolyTime.CNF.BranchedSparseCNFCounter
+namespace CslibFrontierTests.Computability.PolyTime.CNF.BranchedSparseCNFCounter
 
 open Cslib.Complexity Cslib.Complexity.BranchedSparseCNFCounter Cslib.GenericRAM
 open Cslib.Complexity.SparseCNFLeafCounter Cslib.Complexity.SubexponentialSAT
@@ -142,5 +142,5 @@ example : ComputableInPolyTime (fun p : Unit × ℕ => leafDensityRatio 3 p.2)
     polyBounded_branchedSparseCNFLeafCertificate_space 3 2 2 2 _ _ polyBounded_exhBranchCert_space,
     cDeclTest.computes, cLeafTest.computes⟩
 
-end ComplexityTests.Computability.PolyTime.CNF.BranchedSparseCNFCounter
+end CslibFrontierTests.Computability.PolyTime.CNF.BranchedSparseCNFCounter
 end

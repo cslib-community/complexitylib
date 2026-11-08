@@ -19,7 +19,7 @@ neither a prepared query list nor a layout certificate is supplied as input.
 
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMExactTriangleQueryValues
+namespace CslibFrontierTests.WordRAMExactTriangleQueryValues
 
 open Cslib.WordRAM Cslib.Matrix Cslib.Algorithms.ExactTriangle
 open Cslib.Algorithms.WordRAM.ExactTriangle
@@ -83,4 +83,4 @@ example : ∃ T : ℕ, ∃ y : Data 64,
     simpa [hcap, hclass] using (hget ⟨i.val, by
       simpa [RecordProduct.decodedQueries_length, hcap, hclass] using i.isLt⟩).2
 
-end ComplexityTests.WordRAMExactTriangleQueryValues
+end CslibFrontierTests.WordRAMExactTriangleQueryValues

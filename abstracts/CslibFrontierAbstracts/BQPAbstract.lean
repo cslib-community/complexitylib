@@ -55,7 +55,7 @@ Lean, Mathlib and upstream CSLib.
 * [D. Aharonov, *A simple proof that Toffoli and Hadamard are quantum universal*][Aharonov2003]
 -/
 
-namespace ComplexityAbstracts.BQPAbstract
+namespace CslibFrontierAbstracts.BQPAbstract
 
 /-! ## Quantum circuits on amplitudes
 
@@ -130,9 +130,9 @@ is polynomial in the input length.
 
 /-- The encoding of a gate code `(h, t, cs)`: the bit `h`, then `t` and the list `cs` in unary. -/
 abbrev encGateCode : GateCode ↪ List Bool :=
-  ComplexityTests.Abstracts.Encoding.encPair ComplexityTests.Abstracts.Encoding.encBool
-    (ComplexityTests.Abstracts.Encoding.encPair ComplexityTests.Abstracts.Encoding.encUnary
-      (ComplexityTests.Abstracts.Encoding.encList ComplexityTests.Abstracts.Encoding.encUnary))
+  CslibFrontierTests.Abstracts.Encoding.encPair CslibFrontierTests.Abstracts.Encoding.encBool
+    (CslibFrontierTests.Abstracts.Encoding.encPair CslibFrontierTests.Abstracts.Encoding.encUnary
+      (CslibFrontierTests.Abstracts.Encoding.encList CslibFrontierTests.Abstracts.Encoding.encUnary))
 
 /-! ## Uniform families and the classes
 
@@ -146,11 +146,11 @@ and the input fits into it, so it has at least `n`.
 polynomial time from `n` in unary. The register for inputs of length `n` has at least `n` qubits
 and at least one, and every gate code of `gates n` is well formed on it. -/
 def Uniform (width : ℕ → ℕ) (gates : ℕ → List GateCode) : Prop :=
-  ComplexityTests.Abstracts.Computation.PolyTime width
-      ComplexityTests.Abstracts.Encoding.encUnary ComplexityTests.Abstracts.Encoding.encUnary ∧
-    ComplexityTests.Abstracts.Computation.PolyTime gates
-      ComplexityTests.Abstracts.Encoding.encUnary
-      (ComplexityTests.Abstracts.Encoding.encList encGateCode) ∧
+  CslibFrontierTests.Abstracts.Computation.PolyTime width
+      CslibFrontierTests.Abstracts.Encoding.encUnary CslibFrontierTests.Abstracts.Encoding.encUnary ∧
+    CslibFrontierTests.Abstracts.Computation.PolyTime gates
+      CslibFrontierTests.Abstracts.Encoding.encUnary
+      (CslibFrontierTests.Abstracts.Encoding.encList encGateCode) ∧
     ∀ n, n ≤ width n ∧ 0 < width n ∧ ∀ g ∈ gates n, WellFormed (width n) g
 
 /-- **Bounded-error quantum polynomial time** [Bernstein, Vazirani][BernsteinVazirani1997]. A
@@ -171,7 +171,7 @@ total polynomial-time verifier `V` and one polynomial `p` exist with the followi
 `p(|enc a|)` give `V (a, r) = true`. -/
 def PP {α : Type} (enc : α ↪ List Bool) : Set (Set α) :=
   {A | ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
-    ComplexityTests.Abstracts.Computation.PolyTimeVerifier enc V ∧
+    CslibFrontierTests.Abstracts.Computation.PolyTimeVerifier enc V ∧
     ∀ a, a ∈ A ↔ 2 ^ p.eval (enc a).length < 2 * acceptCount V a (p.eval (enc a).length)}
 
 /-! ## Main result -/
@@ -193,8 +193,8 @@ info: abstract audit passed for `CslibFrontierAbstracts.BQPAbstract`: 22 root
 declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.BQPAbstract allowing [
-  ComplexityAbstracts.Encoding, ComplexityAbstracts.Computation
+#check_abstract CslibFrontierAbstracts.BQPAbstract allowing [
+  CslibFrontierAbstracts.Encoding, CslibFrontierAbstracts.Computation
 ]
 
-end ComplexityAbstracts.BQPAbstract
+end CslibFrontierAbstracts.BQPAbstract

@@ -8,7 +8,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Exten
 
 /-! Nontrivial tape embeddings retain scratch data, channels, and stateful coin effects. -/
 
-namespace ComplexityTests.MachineExtendTapes
+namespace CslibFrontierTests.MachineExtendTapes
 
 open Cslib Turing MultiTapeMachine
 
@@ -51,4 +51,4 @@ example : (OracleComp.interpret countCoins
     extraTapes, extraPos, initial, Config.step, Turing.Action.apply,
     initialConfig, Cfg.init]
 
-end ComplexityTests.MachineExtendTapes
+end CslibFrontierTests.MachineExtendTapes

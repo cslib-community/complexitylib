@@ -117,7 +117,7 @@ statements in this namespace reference no imported project declarations.
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing*][MitzenmacherUpfal2017]
 -/
 
-namespace ComplexityAbstracts.KargerMinCutAbstract
+namespace CslibFrontierAbstracts.KargerMinCutAbstract
 
 /-! ## Words, operations, and instructions
 
@@ -558,6 +558,6 @@ theorem kargerSteinHighProb :
 abstract audit passed for `CslibFrontierAbstracts.KargerMinCutAbstract`: 288 root declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.KargerMinCutAbstract
+#check_abstract CslibFrontierAbstracts.KargerMinCutAbstract
 
-end ComplexityAbstracts.KargerMinCutAbstract
+end CslibFrontierAbstracts.KargerMinCutAbstract

@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.FastLea
 A guarded input whose root is reached, well-formed and has the packet shape; the edge bound on
 reached calls; and the resource analysis. -/
 
-namespace ComplexityTests.FastLeaves
+namespace CslibFrontierTests.FastLeaves
 
 open Cslib.Circuits.Frontier Cslib.Circuits.Frontier.FastContraction
   Cslib.Complexity.CountingSimulation
@@ -41,4 +41,4 @@ noncomputable example : ContractionAlgorithm (Turing.MultiTapeTM.encPair Turing.
     ExplicitTensorNetwork.encExplicitNetwork) (fun G => G.2.contraction) ExplicitAdmissible :=
   fastContractionAlgorithm
 
-end ComplexityTests.FastLeaves
+end CslibFrontierTests.FastLeaves

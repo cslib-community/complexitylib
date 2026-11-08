@@ -25,7 +25,7 @@ supplies an instance of each such hypothesis, so that the theorems are known to 
   and its conversion `IndistinguishableWithError.indistinguishable` applies.
 -/
 
-namespace ComplexityTests.HypothesisWitnesses
+namespace CslibFrontierTests.HypothesisWitnesses
 
 open Turing Turing.MultiTapeTM Cslib Cslib.Complexity Cslib.Logic.PL
 
@@ -71,4 +71,4 @@ example {Adversary : Type} (game : Adversary → ℕ → Crypto.Game)
     (Admissible : Adversary → Prop) : Crypto.Game.Indistinguishable game game Admissible :=
   (indistinguishableWithError_self game Admissible).indistinguishable Crypto.negligible_zero
 
-end ComplexityTests.HypothesisWitnesses
+end CslibFrontierTests.HypothesisWitnesses

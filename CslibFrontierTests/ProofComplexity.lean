@@ -15,7 +15,7 @@ on accepted and rejected certificates; total decoding of a malformed word; and t
 polynomially bounded proof system for `SAT`.
 -/
 
-namespace ComplexityTests.ProofComplexity
+namespace CslibFrontierTests.ProofComplexity
 
 open Cslib Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -115,4 +115,4 @@ example : decodedWordsProofSystem [] ≠ [true] := by
   rw [decodedWordsProofSystem_nil]
   decide
 
-end ComplexityTests.ProofComplexity
+end CslibFrontierTests.ProofComplexity

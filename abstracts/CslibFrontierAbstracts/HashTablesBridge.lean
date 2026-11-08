@@ -28,7 +28,7 @@ relations (`ExecProgramDist`, `ExecDictOps`), resource functions, and headline t
 `HashTablesAbstract.lean` to the library definitions and theorems over `Cslib.WordRAM.Basis.exact`.
 -/
 
-namespace ComplexityAbstracts.HashTablesBridge
+namespace CslibFrontierAbstracts.HashTablesBridge
 
 open scoped ENNReal BigOperators
 open Cslib
@@ -37,8 +37,8 @@ open Cslib.WordRAM.Randomized
 open Cslib.DataStructure Cslib.DataStructure.Dictionary Cslib.DataStructure.Dictionary.WordRAM
 open Cslib.DataStructure.HashFamily.WordRAM Cslib.DataStructure.WordRAM
 open Cslib.DataStructure.WordRAM.Randomized
-open ComplexityAbstracts.RandomizedWordRAMBridge
-open ComplexityAbstracts.HashFamiliesBridge.HFPresentation (WordBounded UnchangedOutside)
+open CslibFrontierAbstracts.RandomizedWordRAMBridge
+open CslibFrontierAbstracts.HashFamiliesBridge.HFPresentation (WordBounded UnchangedOutside)
 
 /-! ## Part 1: Polymorphic Dictionary Presentation and Execution Transfer -/
 
@@ -576,7 +576,7 @@ theorem chainedHashing (S : Presentation) (hS : Laws S)
 
 /-! ## Part 3: Linear Probing with `5`-Wise Independent Hashing (`LinearProbing.lean`) -/
 
-open ComplexityAbstracts.HashFamiliesBridge
+open CslibFrontierAbstracts.HashFamiliesBridge
   (chunkBits chunkBits_eq trinomialStepLoop trinomialStep trinomialStep_eq
    trinomialDeg trinomialDeg_eq)
 
@@ -831,7 +831,7 @@ theorem linearProbing (S : Presentation) (hS : Laws S)
 
 /-! ## Part 4: Uniform Probing via Odd-Stride Double Hashing (`UniformProbing.lean`) -/
 
-open ComplexityAbstracts.HashFamiliesBridge
+open CslibFrontierAbstracts.HashFamiliesBridge
   (regimeThreshold regimeThreshold_eq charBits)
 
 /-- Log₂ of the power-of-2 table size `⌈log₂(32 * max n_max 4)⌉` (`≥ 32 * max n_max 4`). -/
@@ -1714,4 +1714,4 @@ theorem cuckooHashing (S : Presentation) (hS : Laws S)
       exact Nat.cast_le.mpr (Nat.add_le_add_left
         (sum_map_cuckooOpCharge_le P K hK cuckooOpCharge hQuery hIns _) _)
 
-end ComplexityAbstracts.HashTablesBridge
+end CslibFrontierAbstracts.HashTablesBridge

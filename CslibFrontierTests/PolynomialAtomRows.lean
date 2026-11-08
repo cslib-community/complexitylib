@@ -26,7 +26,7 @@ Increasing the size capacity to three gives a second completion with no overflow
 final raw error is zero and the same positive witness error is paid entirely by weighted preloss.
 -/
 
-namespace ComplexityTests.PolynomialAtomRows
+namespace CslibFrontierTests.PolynomialAtomRows
 
 open Finset Cslib Cslib.RowCompression
 
@@ -502,4 +502,4 @@ example : ∃ C : ℝ, 0 ≤ C ∧
   norm_num [sum_range_succ, floor_zero] at h
   simpa only [div_eq_mul_inv, one_mul, spaciousRun] using h
 
-end ComplexityTests.PolynomialAtomRows
+end CslibFrontierTests.PolynomialAtomRows

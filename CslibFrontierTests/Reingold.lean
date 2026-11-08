@@ -30,7 +30,7 @@ both log-space and polynomial-time reductions), and `Cslib.Complexity.SL_eq_L` i
 pinned bit by bit: the header `11 0 0 1 0`, then the matrix `0110`.
 -/
 
-namespace ComplexityTests.Reingold
+namespace CslibFrontierTests.Reingold
 
 open Cslib Cslib.RotationMap Cslib.Reachability.Reingold
 
@@ -123,4 +123,4 @@ example {m : ℕ} {l : List Bool} (hne : m ≠ 2) :
     List.replicate m true ++ false :: l ≠ [true, true, false, true] :=
   fun h => hne (List.replicate_true_append_false_inj (m' := 2) (l' := [true]) h).1
 
-end ComplexityTests.Reingold
+end CslibFrontierTests.Reingold

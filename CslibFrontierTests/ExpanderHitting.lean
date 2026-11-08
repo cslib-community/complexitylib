@@ -17,7 +17,7 @@ corollary controls avoidance of a fixed singleton. Empty vertices and full targe
 the boundary conventions.
 -/
 
-namespace ComplexityTests.ExpanderHitting
+namespace CslibFrontierTests.ExpanderHitting
 
 open Cslib Finset
 open scoped BigOperators
@@ -89,4 +89,4 @@ example (t : ℕ) :
   simpa [spectralExpansion_completeTwo] using completeTwo.sq_expect_mul_walk_pow_sub_le
     (t + 1) (fun v => if v = 0 then 1 else 0) (fun v => if v = 0 then 1 else 0)
 
-end ComplexityTests.ExpanderHitting
+end CslibFrontierTests.ExpanderHitting

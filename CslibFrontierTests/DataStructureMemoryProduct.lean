@@ -22,7 +22,7 @@ worst-case `Module.ChargeBound`.
 
 @[expose] public section
 
-namespace ComplexityTests.DataStructureMemoryProduct
+namespace CslibFrontierTests.DataStructureMemoryProduct
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.Memory Cslib.DataStructure.Queue
 
@@ -192,4 +192,4 @@ example : (spec 8).totalCost charge nothing ((spec 8).clientHistory nothing
   Allocator.run_cost_le amortized_allocated client' (pre_allocated _) (by decide)
     client'_valid
 
-end ComplexityTests.DataStructureMemoryProduct
+end CslibFrontierTests.DataStructureMemoryProduct

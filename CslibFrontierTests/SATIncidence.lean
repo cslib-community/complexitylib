@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Complexity.Problems.Graph.OrthogonalLayout
 
 /-! Concrete incidence records, including parallel literal incidences and isolated clauses. -/
 
-namespace ComplexityTests.SATIncidence
+namespace CslibFrontierTests.SATIncidence
 
 open Cslib.Complexity Cslib.Logic.PL
 
@@ -62,4 +62,4 @@ example : Graph.portAt boundedGraph.canonicalPorts 0 false ≠
     (by decide) false false
   exact fun hp => h (Prod.ext (by decide) hp)
 
-end ComplexityTests.SATIncidence
+end CslibFrontierTests.SATIncidence

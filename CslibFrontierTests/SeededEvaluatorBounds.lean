@@ -16,7 +16,7 @@ replay on longer tapes and valid length even on an empty tape; zero-length input
 the empty word. Both Boolean outcomes remain possible at length one.
 -/
 
-namespace ComplexityTests.SeededEvaluatorBounds
+namespace CslibFrontierTests.SeededEvaluatorBounds
 
 open Cslib Cslib.Probability Turing.MultiTapeTM
 
@@ -66,4 +66,4 @@ example : ∃ (c d : ℕ) (evaluate : List Bool → List Bool → List Bool),
     apply hlength word word
     simp only [program, BitString.eval_sampleList, BitString.mem_support_uniformList_iff]
 
-end ComplexityTests.SeededEvaluatorBounds
+end CslibFrontierTests.SeededEvaluatorBounds

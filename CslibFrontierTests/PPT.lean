@@ -11,7 +11,7 @@ import CslibFrontier.Tactic.PPT
 
 /-! PPT certificates reuse deterministic automation and require explicit sampling certificates. -/
 
-namespace ComplexityTests.PPT
+namespace CslibFrontierTests.PPT
 
 open Cslib Cslib.Probability Turing.MultiTapeTM
 
@@ -64,4 +64,4 @@ example {input : List Bool} (machine : Turing.MultiTapeTM 0 Bool Unit) (fuel : â
   intro state
   simp
 
-end ComplexityTests.PPT
+end CslibFrontierTests.PPT

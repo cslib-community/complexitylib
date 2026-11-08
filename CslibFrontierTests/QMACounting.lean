@@ -10,10 +10,10 @@ import CslibFrontierTests.QMA
 /-! `QMA ⊆ PP`: the trace gap of a concrete verifier, its acceptance operator on basis witnesses,
 and the containments applied to a language in `QMA`. -/
 
-namespace ComplexityTests.QMACounting
+namespace CslibFrontierTests.QMACounting
 
 open Cslib Cslib.Quantum Cslib.Complexity Turing.MultiTapeTM
-open ComplexityTests.QMA
+open CslibFrontierTests.QMA
 
 /-! ### The trace gap of `readWitness` -/
 
@@ -88,4 +88,4 @@ example : PromiseProblem.ofSet HeadOrEmpty ∈ promiseClass (PP encBits) :=
     (fun n => sub_nonneg.2 (div_le_one_of_le₀ (by linarith) (by positivity)))
     headOrEmpty_mem_PromiseQMA)
 
-end ComplexityTests.QMACounting
+end CslibFrontierTests.QMACounting

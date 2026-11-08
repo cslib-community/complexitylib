@@ -23,7 +23,7 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
   for Mathlib sentences, while over the empty alphabet it is (by `⊤`), so nonemptiness is needed.
 -/
 
-namespace ComplexityTests.WordMSO
+namespace CslibFrontierTests.WordMSO
 
 open Cslib.Logic.WordMSO Cslib.Logic.WordMSO.Formula
 
@@ -197,4 +197,4 @@ example : FODefinable {w : List Empty | Even w.length} := by
   match w with
   | [] => exact iff_of_true realize_top ⟨0, rfl⟩
 
-end ComplexityTests.WordMSO
+end CslibFrontierTests.WordMSO

@@ -16,7 +16,7 @@ fan-in-`2` procedure over `ZMod 7` computes it, and on it the fan-in-`2` procedu
 procedure.
 -/
 
-namespace ComplexityTests.TreeEvalAry
+namespace CslibFrontierTests.TreeEvalAry
 
 open Cslib.TreeEval Cslib.TreeEval.Ary
 
@@ -75,4 +75,4 @@ example (c : ZMod 7) (t : Fin 3) (S : Cslib.TreeEval.State (ZMod 7) 2) :
       Cslib.TreeEval.proc (Finset.univ : Finset (ZMod 7)ˣ).toList binarySample c t S := by
   rw [Ary.proc_ofBinary]
 
-end ComplexityTests.TreeEvalAry
+end CslibFrontierTests.TreeEvalAry

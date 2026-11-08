@@ -15,7 +15,7 @@ conversely its word-RAM program gives back a Turing machine. The value bound tha
 assumes holds for every such word-RAM function.
 -/
 
-namespace ComplexityTests.WordRAMFunctionInvariance
+namespace CslibFrontierTests.WordRAMFunctionInvariance
 
 open Cslib Cslib.WordRAM Turing.MultiTapeTM
 
@@ -50,4 +50,4 @@ example {α : Type} {encIn : α ↪ List Bool} {f : α → ℕ}
   ⟨(turingComputableInPolyTime_iff_uniformComputableInPolyTime Basis.additiveHomStandard
     checkedOp_polyTime h.polyBounded).2 h, h.polyBounded⟩
 
-end ComplexityTests.WordRAMFunctionInvariance
+end CslibFrontierTests.WordRAMFunctionInvariance

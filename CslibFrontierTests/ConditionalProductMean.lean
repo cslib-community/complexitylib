@@ -21,7 +21,7 @@ Further examples identify the true mean of concrete correction and dense atoms t
 `TrueSampleMeans`, and check empty slices and an empty environment.
 -/
 
-namespace ComplexityTests.ConditionalProductMean
+namespace CslibFrontierTests.ConditionalProductMean
 
 open Finset Matrix Cslib
 open scoped BigOperators
@@ -183,4 +183,4 @@ example (T : Empty → Fin 3 → Fin 3 → ℝ) (x y : Fin 3) :
     conditionalTableMean (fun _ _ => True) (fun _ _ => True) T x y = 0 := by
   simp [conditionalTableMean]
 
-end ComplexityTests.ConditionalProductMean
+end CslibFrontierTests.ConditionalProductMean

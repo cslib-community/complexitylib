@@ -19,7 +19,7 @@ These tests cover:
 * the general bound for one resolution step on wide clauses.
 -/
 
-namespace ComplexityTests.ProofComplexity.Frege
+namespace CslibFrontierTests.ProofComplexity.Frege
 
 open Cslib Cslib.Logic.PL Cslib.Logic.PL.Frege Cslib.Logic.PL.Frege.Formula
 
@@ -90,4 +90,4 @@ example : DerivableInSize [Clause.toFormula ((0 : ℕ) :: (List.range' 1 9) |>.m
   refine (derivableInSize_toFormula_resolvent _ _ 0).mono (stepBound_mono ?_)
   decide
 
-end ComplexityTests.ProofComplexity.Frege
+end CslibFrontierTests.ProofComplexity.Frege

@@ -10,7 +10,7 @@ import CslibFrontier.DataStructure.PriorityQueue.BinaryHeap.Native.Backend
 The operation executes its actual selected body from the documented prepared calling convention;
 argument installation and initialization are not counted as native instructions here. -/
 
-namespace ComplexityTests.WordRAMBinaryHeapBackend
+namespace CslibFrontierTests.WordRAMBinaryHeapBackend
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.Memory Cslib.DataStructure.PriorityQueue
@@ -70,4 +70,4 @@ example {y : Data (Backend.registers certificates)} {a : Option (Fin 0 × ℕ)} 
 
 end
 
-end ComplexityTests.WordRAMBinaryHeapBackend
+end CslibFrontierTests.WordRAMBinaryHeapBackend

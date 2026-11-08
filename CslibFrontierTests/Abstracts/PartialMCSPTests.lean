@@ -17,19 +17,19 @@ that separates `PartialMCSP` (all-gates size `0`) from `PartialMCSPBinaryGate` (
 `0`).
 -/
 
-namespace ComplexityTests.Abstracts.PartialMCSPTests
+namespace CslibFrontierTests.Abstracts.PartialMCSPTests
 
-open ComplexityAbstracts.PartialMCSPAbstract
+open CslibFrontierAbstracts.PartialMCSPAbstract
 
 -- The public 3SAT, variable-count, and ETH definitions match the library's native definitions.
 example : ThreeSAT = Cslib.Complexity.ThreeSAT :=
-  ComplexityAbstracts.PartialMCSPBridge.threeSAT_eq
+  CslibFrontierAbstracts.PartialMCSPBridge.threeSAT_eq
 
 example : numVars = Cslib.Logic.PL.CNF.numVars (V := ℕ) :=
   rfl
 
 example : ETH ↔ Cslib.Complexity.ETH :=
-  ComplexityAbstracts.PartialMCSPBridge.eth_iff
+  CslibFrontierAbstracts.PartialMCSPBridge.eth_iff
 
 -- Concrete checks of `numVars` and `ThreeSAT` on a 2-clause 3-CNF formula `(x₀ ∨ ¬x₁) ∧ (x₁ ∨ x₂)`.
 def sampleFormula : Formula :=
@@ -96,4 +96,4 @@ example : negationInstance 0 ∈ PartialMCSPBinaryGate :=
 example : negationInstance 1 ∈ PartialMCSP :=
   ⟨notCircuit, le_rfl, agreesWith_negationInstance 1⟩
 
-end ComplexityTests.Abstracts.PartialMCSPTests
+end CslibFrontierTests.Abstracts.PartialMCSPTests

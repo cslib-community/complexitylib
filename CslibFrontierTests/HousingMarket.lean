@@ -27,7 +27,7 @@ Gale's top trading cycles algorithm (TTC):
    mechanism that trades only when agent `0` ranks its own house first is not strategy-proof.
 -/
 
-namespace ComplexityTests.HousingMarket
+namespace CslibFrontierTests.HousingMarket
 
 open Cslib.Algorithms.Lean.HousingMarket
 open Cslib.Algorithms.Lean.StableMatching (permOfInjective)
@@ -129,4 +129,4 @@ choice, but by reporting that it prefers its own house (the list `1`, the identi
 house `1`, its first choice. -/
 example : ¬ swapIfFirst.IsStrategyProof := fun h => absurd (h exSwap 0 1) (by decide)
 
-end ComplexityTests.HousingMarket
+end CslibFrontierTests.HousingMarket

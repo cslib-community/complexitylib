@@ -16,7 +16,7 @@ empty sides; the split-and-list reduction on concrete formulas, against satisfia
 non-vacuity of the time bounds and exponents.
 -/
 
-namespace ComplexityTests.FineGrained
+namespace CslibFrontierTests.FineGrained
 
 open Cslib Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -123,4 +123,4 @@ example (h : ETH) : 0 < satExponent 4 :=
 example (h : Filter.Tendsto satExponent Filter.atTop (nhds 1)) : OVH :=
   OVH_of_SETH (SETH_iff_tendsto.mpr h)
 
-end ComplexityTests.FineGrained
+end CslibFrontierTests.FineGrained

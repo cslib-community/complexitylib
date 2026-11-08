@@ -30,7 +30,7 @@ cluster analysis in `CslibFrontier.DataStructure.Dictionary.WordRAM.LinearProbin
 
 @[expose] public section
 
-namespace ComplexityTests.WordRAMLinearProbing
+namespace CslibFrontierTests.WordRAMLinearProbing
 
 open Cslib Cslib.WordRAM Cslib.Probability
 open Cslib.DataStructure Cslib.DataStructure.Dictionary
@@ -334,4 +334,4 @@ theorem opCode_update_hit_miss_from_rep (θ : Seed 16 3) (x : Data rLP)
     ⟨n2, by dsimp only [B]; omega, hex_hit⟩, hdec_hit,
     ⟨n3, by dsimp only [B]; omega, hex_miss⟩, hdec_miss⟩
 
-end ComplexityTests.WordRAMLinearProbing
+end CslibFrontierTests.WordRAMLinearProbing

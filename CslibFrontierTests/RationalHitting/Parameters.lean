@@ -15,7 +15,7 @@ certifiable forms of the ambient dimension and the cyclotomic degree, the parame
 certificates from unary `(n, s)`, and their use by `fun_prop` on shifted inputs.
 -/
 
-namespace ComplexityTests.RationalHitting.Parameters
+namespace CslibFrontierTests.RationalHitting.Parameters
 
 open Turing MultiTapeTM
 open Cslib.Circuits.Rational Cslib.Circuits.Rational
@@ -89,4 +89,4 @@ example : ComputableInPolyTime
     apply computableInPolyTime_degree <;> fun_prop
   fun_prop
 
-end ComplexityTests.RationalHitting.Parameters
+end CslibFrontierTests.RationalHitting.Parameters

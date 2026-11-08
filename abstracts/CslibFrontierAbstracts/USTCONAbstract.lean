@@ -31,7 +31,7 @@ public dependency boundary.
 * [H. R. Lewis, C. H. Papadimitriou, *Symmetric space-bounded computation*][LewisPapadimitriou1982]
 -/
 
-namespace ComplexityTests.Abstracts.USTCONAbstract
+namespace CslibFrontierTests.Abstracts.USTCONAbstract
 
 /-- A Boolean is encoded as one bit. -/
 def encBool : Bool ↪ List Bool := ⟨fun b => [b], by intro a b h; injection h⟩
@@ -94,10 +94,10 @@ def L {α : Type} (enc : α ↪ List Bool) : Set (Set α) :=
 theorem ustcon_mem_l : USTCON ∈ L encInstance := USTCONBridge.ustcon_mem_l
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.USTCONAbstract`:
+info: abstract audit passed for `CslibFrontierTests.Abstracts.USTCONAbstract`:
 18 root declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.USTCONAbstract
+#check_abstract CslibFrontierTests.Abstracts.USTCONAbstract
 
-end ComplexityTests.Abstracts.USTCONAbstract
+end CslibFrontierTests.Abstracts.USTCONAbstract

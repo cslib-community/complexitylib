@@ -28,7 +28,7 @@ Concrete runs of `CslibFrontier.Algorithms.Lean.LempelZiv`:
 
 public section
 
-namespace ComplexityTests.Algorithms.Lean.LempelZiv
+namespace CslibFrontierTests.Algorithms.Lean.LempelZiv
 
 open Cslib.Algorithms.Lean.LempelZiv Cslib.Algorithms.Lean.LempelZiv.LZ78
 open Cslib.Algorithms.Lean.LempelZiv.DistinctParsing (epsilon epsilon_def)
@@ -139,4 +139,4 @@ example : epsilon 2 256 < 1 := by
   rw [epsilon_def, Nat.cast_ofNat, h8, h3]
   norm_num
 
-end ComplexityTests.Algorithms.Lean.LempelZiv
+end CslibFrontierTests.Algorithms.Lean.LempelZiv

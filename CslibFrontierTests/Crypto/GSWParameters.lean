@@ -15,7 +15,7 @@ and to the real-valued statistical bound. Positive signed errors occur at every 
 checks supply no decision-LWE hardness or bootstrappability claim.
 -/
 
-namespace ComplexityTests.GSWParameters
+namespace CslibFrontierTests.GSWParameters
 
 open Cslib Cslib.Crypto Cslib.ProbComp Cslib.Probability Cslib.Crypto.Homomorphic.GSW
 open Turing.MultiTapeTM
@@ -139,4 +139,4 @@ example {State : ℕ → Type}
     NNReal.coe_ofNat, Parameters.rows, Nat.mul_comm] using
       uniformPublicGame_advantage_le (choose n) (guess n)
 
-end ComplexityTests.GSWParameters
+end CslibFrontierTests.GSWParameters

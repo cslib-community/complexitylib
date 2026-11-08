@@ -11,10 +11,10 @@ import CslibFrontierTests.BQP
 acceptance probability of a majority vote over two fair coins, and exponentially small error for a
 language in `BQP`. -/
 
-namespace ComplexityTests.BQPAmplification
+namespace CslibFrontierTests.BQPAmplification
 
 open Cslib Cslib.Quantum Cslib.Complexity Finset Turing.MultiTapeTM
-open ComplexityTests.BQP
+open CslibFrontierTests.BQP
 
 /-! ### The counter -/
 
@@ -52,4 +52,4 @@ example (q : Polynomial ℕ) : ∃ F : UniformCircuitFamily, ∀ x,
     (x ∉ FirstBit → F.acceptProb (encBits x) ≤ ((2 : ℝ) ^ q.eval (encBits x).length)⁻¹) :=
   mem_BQP_iff_forall_errorExponent.mp firstBit_mem_BQP q
 
-end ComplexityTests.BQPAmplification
+end CslibFrontierTests.BQPAmplification

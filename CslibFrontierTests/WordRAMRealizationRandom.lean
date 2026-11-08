@@ -16,7 +16,7 @@ fixed bound and makes at most one `rand` call. It chooses an input position unif
 repeated values (`sample_program`). Repeated in a loop (`RealizesRand.iterate`), every path takes
 `6` units of time and at most one `rand` call per iteration. -/
 
-namespace ComplexityTests.WordRAMRealizationRandom
+namespace CslibFrontierTests.WordRAMRealizationRandom
 
 open Cslib Cslib.DataStructure Cslib.WordRAM Cslib.WordRAM.Realization
 
@@ -278,4 +278,4 @@ theorem realizesRand_storeSample :
   intro w d s _ _ h
   exact ⟨⟨h, fun _ _ _ => ⟨trivial, le_rfl, le_rfl⟩⟩, le_rfl, le_rfl⟩
 
-end ComplexityTests.WordRAMRealizationRandom
+end CslibFrontierTests.WordRAMRealizationRandom

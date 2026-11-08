@@ -19,7 +19,7 @@ or depth mismatch is rejected. The generic seeded algorithms `IndexedSignatureSc
 packaged `TreeSignature.scheme` are instantiated.
 -/
 
-namespace ComplexityTests.Crypto.TreeSignature
+namespace CslibFrontierTests.Crypto.TreeSignature
 
 open Cslib Cslib.Crypto Cslib.Crypto.TreeSignature Cslib.Probability Turing.MultiTapeTM
 
@@ -114,4 +114,4 @@ example : echoTree.verify pk msg (signWithLeaf echo echoSeeded zeroCoins 2 key l
 
 noncomputable example (S : IndexedSignatureScheme) : S.Seeded := S.seeded
 
-end ComplexityTests.Crypto.TreeSignature
+end CslibFrontierTests.Crypto.TreeSignature

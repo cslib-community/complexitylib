@@ -19,7 +19,7 @@ canonical cell codes instantiate the all-clock bounds before and after replay ha
 
 @[expose] public section
 
-namespace ComplexityTests.QueryReplayBounds
+namespace CslibFrontierTests.QueryReplayBounds
 
 open Turing MultiTapeTM MultiTapePTM.BlockComputation
 open MultiTapePTM.BlockComputation.QueryReplay
@@ -51,4 +51,4 @@ example : (machine QueryReplay.reader).runFrom [true] (loadView 1 2 origin view)
     (machine QueryReplay.reader).runFrom [true] (loadView 1 2 origin view) 2 := by
   exact runFrom_loadView_min QueryReplay.reader [true] 2 origin view 100
 
-end ComplexityTests.QueryReplayBounds
+end CslibFrontierTests.QueryReplayBounds

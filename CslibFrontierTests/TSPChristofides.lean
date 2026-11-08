@@ -31,7 +31,7 @@ These kernel-checked examples (using no `native_decide`) exercise
 
 public section
 
-namespace ComplexityTests.TSPChristofides
+namespace CslibFrontierTests.TSPChristofides
 
 open Cslib.Complexity Cslib.Complexity.TSP Cslib.Algorithms.Lean.TSP Cslib.Algorithms.Lean.Kruskal
   Cslib.Algorithms.Lean.Euler Cslib.Algorithms.Lean.VertexCover
@@ -139,4 +139,4 @@ example : christofidesTour [[5]] = [0] ∧ tourLength [[5]] (christofidesTour [[
   rw [h]
   exact ⟨rfl, by decide +kernel⟩
 
-end ComplexityTests.TSPChristofides
+end CslibFrontierTests.TSPChristofides

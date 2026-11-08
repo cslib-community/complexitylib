@@ -21,7 +21,7 @@ the deformed contraction along the Cauchy matrix at `T = 1 + 4 ζ`.
 
 @[expose] public section
 
-namespace ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.LocalDeformation
+namespace CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.LocalDeformation
 
 open Cslib.Circuits.Frontier TensorNetwork Polynomial
 
@@ -65,4 +65,4 @@ example (ζ : ZMod (2 ^ 2)) :
         (cauchyValueMatrix (Rat.padicIntegerToZModPow 2 2) ζ 1 1 (fun _ => ()) slot) :=
   eval₂_localDeformation net side (RingHom.id _) _ ζ 1 1 _ slot
 
-end ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.LocalDeformation
+end CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.LocalDeformation

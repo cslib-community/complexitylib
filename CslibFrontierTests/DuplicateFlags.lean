@@ -17,9 +17,9 @@ exhaustive check evaluates the materialized circuit, which `materialize_eq` prov
 original.
 -/
 
-namespace ComplexityTests.DuplicateFlags
+namespace CslibFrontierTests.DuplicateFlags
 
-open Cslib Cslib.Circuits Cslib.Circuits.Boolean ComplexityTests.CircuitMaterialize
+open Cslib Cslib.Circuits Cslib.Circuits.Boolean CslibFrontierTests.CircuitMaterialize
 
 example {r k : ℕ} (key : Fin k → Fin r) (d : ℕ)
     (x : BitString (BitonicSort.arity d * r)) (i : Fin (BitonicSort.arity d)) :
@@ -89,4 +89,4 @@ example : (duplicateFlagsCircuit (![2, 0] : Fin 2 → Fin 3) 2).size = 272 := by
   let c := duplicateFlagsCircuit (![2, 0] : Fin 2 → Fin 3) 2
   (c.size, c.program.cost cost)
 
-end ComplexityTests.DuplicateFlags
+end CslibFrontierTests.DuplicateFlags

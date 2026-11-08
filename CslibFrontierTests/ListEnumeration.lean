@@ -8,7 +8,7 @@ import CslibFrontier.Foundations.Data.List.Equiv
 
 /-! Ordered occurrences survive products, noninjective maps, appends and reindexing. -/
 
-namespace ComplexityTests.ListEnumeration
+namespace CslibFrontierTests.ListEnumeration
 
 private def reversedBits : List.Enumeration [true, false] (id : Bool → Bool) :=
   .ofNodup _ (by decide) (by intro b; cases b <;> simp)
@@ -52,4 +52,4 @@ example : ((List.Enumeration.range 0).append (List.Enumeration.singleton 9)).equ
 example : ((List.Enumeration.singleton 9).append (List.Enumeration.range 0)).equiv ⟨0, by decide⟩ =
     Sum.inl () := by decide
 
-end ComplexityTests.ListEnumeration
+end CslibFrontierTests.ListEnumeration

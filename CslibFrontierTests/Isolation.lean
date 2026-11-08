@@ -11,7 +11,7 @@ import CslibFrontier.Probability.Isolation
 /-! Unique satisfiability, the Valiant–Vazirani reduction on concrete formulas, `RP` relative to
 an oracle, asking lists of words, the isolation lemma on a concrete family, and axiom guards. -/
 
-namespace ComplexityTests.Isolation
+namespace CslibFrontierTests.Isolation
 
 open Cslib Cslib.Complexity Cslib.Logic.PL Cslib.Probability Turing.MultiTapeTM
 
@@ -161,4 +161,4 @@ info: 'Cslib.Complexity.ValiantVazirani.reduce_mem_UNSAT' depends on axioms: [pr
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.Complexity.ValiantVazirani.reduce_mem_UNSAT
 
-end ComplexityTests.Isolation
+end CslibFrontierTests.Isolation

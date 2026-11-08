@@ -10,7 +10,7 @@ import Mathlib.Tactic.FinCases
 /-! Actual binary-checker clients: variable branching, equal-action multiplicity, first halting,
 invalid-code exclusion for both verdicts, and the forward #P/GapP endpoints. -/
 
-namespace ComplexityTests.CountingMachine
+namespace CslibFrontierTests.CountingMachine
 
 open Cslib Turing MultiTapeCTM MultiTapeTM
 
@@ -88,4 +88,4 @@ example :
    by simpa only [Polynomial.eval_C, encBits_apply] using
      mixed.gapCount_mem_GapP encBits (Polynomial.C 2)⟩
 
-end ComplexityTests.CountingMachine
+end CslibFrontierTests.CountingMachine

@@ -19,7 +19,7 @@ import CslibFrontier.Computability.Circuit.Arithmetic.Noncommutative.Palindrome
   vertices.
 -/
 
-namespace ComplexityTests.ArithmeticNoncommutativePalindrome
+namespace CslibFrontierTests.ArithmeticNoncommutativePalindrome
 
 open Cslib.Circuits Cslib.Circuits.Arithmetic FreeAlgebra
 
@@ -74,4 +74,4 @@ example : (∃ c : Circuit (arithSignature ℚ) 10 1, c.size = 311 ∧
       10 ^ 10 ≤ A.size :=
   palindrome_separation 10 10
 
-end ComplexityTests.ArithmeticNoncommutativePalindrome
+end CslibFrontierTests.ArithmeticNoncommutativePalindrome

@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialL
 from two single-edge families, its edges, its ends and their decoding, and a relation placed in
 `EOPL` through `SOPL_inter_PPAD_subset_EOPL`. -/
 
-namespace ComplexityTests.TFNPPotentialLineCollapse
+namespace CslibFrontierTests.TFNPPotentialLineCollapse
 
 open Cslib Cslib.BitString Cslib.Complexity Turing.MultiTapeTM
 
@@ -121,4 +121,4 @@ private theorem ppad1 : sinkOfPotentialLineRel m1 Q1 T1 W1 ∈ PPAD encBits := b
 example : sinkOfPotentialLineRel m1 Q1 T1 W1 ∈ EOPL encBits :=
   SOPL_inter_PPAD_subset_EOPL ⟨sopl1, ppad1⟩
 
-end ComplexityTests.TFNPPotentialLineCollapse
+end CslibFrontierTests.TFNPPotentialLineCollapse

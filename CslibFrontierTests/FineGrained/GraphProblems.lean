@@ -20,7 +20,7 @@ the non-vacuity of the subexponential time predicate; the lower bound for the nu
 vertices of a clique instance, by changing the measure; and the axioms of the headline theorems.
 -/
 
-namespace ComplexityTests.FineGrained.GraphProblems
+namespace CslibFrontierTests.FineGrained.GraphProblems
 
 open Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
@@ -141,4 +141,4 @@ example (h : ETH) :
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.Complexity.SAT.toDirHamPath_eq
 
-end ComplexityTests.FineGrained.GraphProblems
+end CslibFrontierTests.FineGrained.GraphProblems

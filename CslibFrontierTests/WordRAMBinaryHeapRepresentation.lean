@@ -10,7 +10,7 @@ import CslibFrontier.DataStructure.PriorityQueue.BinaryHeap.Native.Representatio
 width boundaries. Cells outside its 3n+1 block may be dirty and may subsequently change; the
 persistent layout words are necessary even when all memory is unchanged. -/
 
-namespace ComplexityTests.WordRAMBinaryHeapRepresentation
+namespace CslibFrontierTests.WordRAMBinaryHeapRepresentation
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.Memory Cslib.DataStructure.PriorityQueue
@@ -135,4 +135,4 @@ example (y : Data Program.registers) :
 
 end
 
-end ComplexityTests.WordRAMBinaryHeapRepresentation
+end CslibFrontierTests.WordRAMBinaryHeapRepresentation

@@ -15,7 +15,7 @@ hypothesis `Fintype.card U = 2 m + 1` holds for `Fin 3` and `m = 1`, and `48 r �
 `2 ^ 20`-bit strings with error `1 / 3` takes at least `16` bits, with public or private coins.
 -/
 
-namespace ComplexityTests.RandomizedDisjointness
+namespace CslibFrontierTests.RandomizedDisjointness
 
 open Cslib Cslib.Communication Cslib.Communication.Disjointness Finset
 
@@ -86,4 +86,4 @@ example (f : Bool → Bool → Bool) (μ : PMF ℕ) (v : Fin 2 → ℕ)
       have : 2 ^ 20 ≤ 2 ^ 16 * c + 2 ^ 12 := by exact_mod_cast h
       exact_mod_cast (show 16 ≤ c by omega)
 
-end ComplexityTests.RandomizedDisjointness
+end CslibFrontierTests.RandomizedDisjointness

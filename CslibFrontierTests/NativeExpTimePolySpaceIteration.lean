@@ -20,7 +20,7 @@ odd- and even-length examples also check that the callback is actually iterated.
 
 open Turing.MultiTapeTM Cslib.GenericRAM
 
-namespace ComplexityTests.NativeExpTimePolySpaceIteration
+namespace CslibFrontierTests.NativeExpTimePolySpaceIteration
 
 private def countCertificate : NativeCertificate List.length encBits encNat where
   time w := (w.length + 1) ^ 2
@@ -93,4 +93,4 @@ example : ∃ e : ℕ, ComputableInO (fun w : List Bool => List.reverse^[w.lengt
     (fun w => 2 ^ w.length * (w.length + 1) ^ e) (fun w => (w.length + 1) ^ e) :=
   iteration_bound.computableInO
 
-end ComplexityTests.NativeExpTimePolySpaceIteration
+end CslibFrontierTests.NativeExpTimePolySpaceIteration

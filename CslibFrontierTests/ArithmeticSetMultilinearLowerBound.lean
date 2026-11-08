@@ -17,7 +17,7 @@ reads `2 ^ (11 / 2) ≤ F.nodeCount`, so every syntactically set-multilinear for
 product-depth one computing `IMM_{2 ^ 110, 11}` has more than `45` nodes.
 -/
 
-namespace ComplexityTests.ArithmeticSetMultilinearLowerBound
+namespace CslibFrontierTests.ArithmeticSetMultilinearLowerBound
 
 open Cslib.Circuits Cslib.Circuits.Arithmetic MvPolynomial
 
@@ -115,4 +115,4 @@ example : (2 : ℝ) ^ (11 / 2 : ℝ) ≤ (immFormula ℚ (2 ^ 110) 11).nodeCount
   two_rpow_le_nodeCount (isSetMultilinear_immFormula _) (productDepth_immFormula_le _)
     (rename_polynomial_immFormula _)
 
-end ComplexityTests.ArithmeticSetMultilinearLowerBound
+end CslibFrontierTests.ArithmeticSetMultilinearLowerBound

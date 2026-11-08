@@ -18,10 +18,10 @@ its two ranks and full output are checked explicitly. Definable graph queries in
 reduction theorem and both class-closure corollaries.
 -/
 
-namespace ComplexityTests.FOLogSpaceReduction
+namespace CslibFrontierTests.FOLogSpaceReduction
 
 open FirstOrder Language Structure CategoryTheory Cslib.Logic Cslib.Complexity
-open FO FO.Interpretation ComplexityTests.FaginEncoding ComplexityTests.FOLogSpace
+open FO FO.Interpretation CslibFrontierTests.FaginEncoding CslibFrontierTests.FOLogSpace
 
 /-- An interpretation with no elements but a true nullary relation. -/
 def emptyDomain : Interpretation Language.graph nullaryLanguage (Fin 1) where
@@ -213,4 +213,4 @@ example : LogSpaceReducible encStructure encStructure
 
 end DistinctPairs
 
-end ComplexityTests.FOLogSpaceReduction
+end CslibFrontierTests.FOLogSpaceReduction

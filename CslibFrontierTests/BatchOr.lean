@@ -17,9 +17,9 @@ actual circuits. Exhaustive compiled examples supplement the general correctness
 original.
 -/
 
-namespace ComplexityTests.BatchOr
+namespace CslibFrontierTests.BatchOr
 
-open Cslib Cslib.Circuits Cslib.Circuits.Boolean ComplexityTests.CircuitMaterialize
+open Cslib Cslib.Circuits Cslib.Circuits.Boolean CslibFrontierTests.CircuitMaterialize
 
 -- Two one-bit source keys, two two-bit values, and three one-bit queries: all 512 inputs.
 /-- info: true -/
@@ -80,4 +80,4 @@ open Cslib Cslib.Circuits Cslib.Circuits.Boolean ComplexityTests.CircuitMaterial
   ((noRequests.evalVector interpretation Fin.elim0).toArray.isEmpty,
     (noValues.evalVector interpretation Fin.elim0).toArray.isEmpty, empty.size)
 
-end ComplexityTests.BatchOr
+end CslibFrontierTests.BatchOr

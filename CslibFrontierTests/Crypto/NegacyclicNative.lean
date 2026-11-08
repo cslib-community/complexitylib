@@ -9,7 +9,7 @@ import CslibFrontier.Crypto.Computational.SIS.ModuleEncryption
 
 /-! Native negacyclic coefficients, total input edges, and the actual key-generation client. -/
 
-namespace ComplexityTests.NegacyclicNative
+namespace CslibFrontierTests.NegacyclicNative
 
 open Cslib Cslib.Crypto Turing.MultiTapeTM
 
@@ -60,4 +60,4 @@ example {n q : ℕ} (hq : 0 < q) (a s : Fin n → ZMod q) :
 example : ((moduleLWEKeyGen ![![![0, 1]]] ![![0, 1]] 0 :
     ModuleLWEPublicKey 1 2 6).2 0 0).val = 5 := by decide
 
-end ComplexityTests.NegacyclicNative
+end CslibFrontierTests.NegacyclicNative

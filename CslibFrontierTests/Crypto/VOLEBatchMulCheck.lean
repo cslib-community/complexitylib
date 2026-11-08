@@ -14,7 +14,7 @@ with the adaptive reply `(r 0 - r 1, 0)` attain the mixture bound `13 / 25` over
 The same reply always passes over `ZMod 2`. The empty-batch bad event has probability zero.
 -/
 
-namespace ComplexityTests.Crypto.VOLEBatchMulCheck
+namespace CslibFrontierTests.Crypto.VOLEBatchMulCheck
 
 open Cslib.Probability Cslib.Crypto.Protocols.VOLE
 open scoped BigOperators ENNReal
@@ -127,4 +127,4 @@ example (reply : (Fin 0 → ZMod 5) → PMF (ZMod 5 × ZMod 5)) :
           ab.1 * delta + ab.2)).toOuterMeasure {true} = 0 := by
   simp
 
-end ComplexityTests.Crypto.VOLEBatchMulCheck
+end CslibFrontierTests.Crypto.VOLEBatchMulCheck

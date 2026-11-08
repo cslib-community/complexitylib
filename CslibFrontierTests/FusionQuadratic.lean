@@ -13,7 +13,7 @@ A two-intersection cover compiles with cost four, including over infinite carrie
 pair lists and empty input families exercise the free-constant boundary of the construction.
 -/
 
-namespace ComplexityTests.FusionQuadratic
+namespace CslibFrontierTests.FusionQuadratic
 
 open Cslib.Circuits Fusion
 
@@ -60,4 +60,4 @@ example {U : Type*} : (fullCover (U := U)).toCircuit.program.cost Monotone.andCo
 example {U : Type*} : (fullCover (U := U)).toCircuit.eval (Monotone.setInterpretation U)
     Fin.elim0 = fun _ => Set.univ := PairCover.eval_toCircuit _
 
-end ComplexityTests.FusionQuadratic
+end CslibFrontierTests.FusionQuadratic

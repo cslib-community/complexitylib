@@ -53,7 +53,7 @@ Concrete tests for `CslibFrontier.Languages.Probabilistic.Sharing` and
    where each party outputs its own independent random coin, refuted at `I = ∅`.
 -/
 
-namespace ComplexityTests.Crypto.MPC
+namespace CslibFrontierTests.Crypto.MPC
 
 open Cslib Cslib.Probability Cslib.ProbComp Cslib.Circuits Cslib.Crypto.Protocols.MPC
 
@@ -884,4 +884,4 @@ example :
         (Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
           Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encBits)))
 
-end ComplexityTests.Crypto.MPC
+end CslibFrontierTests.Crypto.MPC

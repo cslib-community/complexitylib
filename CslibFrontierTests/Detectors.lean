@@ -12,7 +12,7 @@ import Mathlib.Tactic.FinCases
 # Tests for the pilot, the column detectors and a detected stage
 -/
 
-namespace ComplexityTests.Detectors
+namespace CslibFrontierTests.Detectors
 
 open Finset Matrix Cslib.Probability
 
@@ -212,4 +212,4 @@ example :
     (by linarith [factorial_bound]) (up_nonneg _) (up_le_one _) (fun t ht => up_of_le ht)
     (fun t ht => up_of_lt (by linarith)) (by norm_num) (by norm_num)
 
-end ComplexityTests.Detectors
+end CslibFrontierTests.Detectors

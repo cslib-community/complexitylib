@@ -14,7 +14,7 @@ and control labels are not checked against the word width. These tests exercise 
 in addition to a nonempty-input computation and the general exact-count equivalence.
 -/
 
-namespace ComplexityTests.WordRAMGeneric
+namespace CslibFrontierTests.WordRAMGeneric
 
 open Cslib WordRAM
 
@@ -76,4 +76,4 @@ example (v n : ℕ) :
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.WordRAM.Executes.unique
 
-end ComplexityTests.WordRAMGeneric
+end CslibFrontierTests.WordRAMGeneric

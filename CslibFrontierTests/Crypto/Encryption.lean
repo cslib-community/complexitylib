@@ -17,7 +17,7 @@ the regression exercises both stages and their state transfer, not merely a cons
 The native runtime test varies both the security parameter and the experiment selector.
 -/
 
-namespace ComplexityTests.Crypto.Encryption
+namespace CslibFrontierTests.Crypto.Encryption
 
 open Cslib Cslib.Crypto Cslib.Crypto.Encryption Cslib.Probability Turing.MultiTapeTM
 open scoped NNReal
@@ -79,4 +79,4 @@ theorem not_indCPA : ¬ INDCPA keyGen encrypt := by
   rw [hone] at hnegligible
   exact not_negligible_const one_ne_zero hnegligible
 
-end ComplexityTests.Crypto.Encryption
+end CslibFrontierTests.Crypto.Encryption

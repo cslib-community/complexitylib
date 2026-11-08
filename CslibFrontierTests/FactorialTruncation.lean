@@ -9,7 +9,7 @@ import CslibFrontier.Computability.LogSpaceDerandomization.FactorialTruncation
 # Tests for factorial truncation of cutoff corrections
 -/
 
-namespace ComplexityTests.FactorialTruncation
+namespace CslibFrontierTests.FactorialTruncation
 
 open Matrix
 
@@ -91,4 +91,4 @@ example (k : ℕ) (x y : Fin 3) :
 example : ∃ k : ℕ, Real.exp (1 / (1 / 4)) * (1 / (1 / 4)) ^ k / k.factorial ≤ 1 / 100 :=
   exists_factorial_bound_le _ _ (by norm_num)
 
-end ComplexityTests.FactorialTruncation
+end CslibFrontierTests.FactorialTruncation

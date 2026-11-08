@@ -12,10 +12,10 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! Tests for exact gadget enumeration, numbering, soundness, and composition certificates. -/
 
-namespace ComplexityTests.PCPEncodedComposition
+namespace CslibFrontierTests.PCPEncodedComposition
 
 open Cslib Cslib.PCP Cslib.PCP.HadamardTester Cslib.PCP.Encoded Turing.MultiTapeTM
-open ComplexityTests.PCPNumbering
+open CslibFrontierTests.PCPNumbering
 
 attribute [local instance] HadamardTester.instFinEnumBool Rand.finEnum
 
@@ -121,4 +121,4 @@ example {Input : Type} (input : Input ↪ List Bool) (graph : Input → Graph (B
   fail_if_success (clear hgraph; polytime)
   polytime
 
-end ComplexityTests.PCPEncodedComposition
+end CslibFrontierTests.PCPEncodedComposition

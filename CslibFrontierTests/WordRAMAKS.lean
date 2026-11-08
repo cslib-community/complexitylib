@@ -17,7 +17,7 @@ multiplication modulo `X^r - 1` and `n`, and writing and comparing coefficient a
 instances of their correctness theorems.
 -/
 
-namespace ComplexityTests.WordRAMAKS
+namespace CslibFrontierTests.WordRAMAKS
 
 open Cslib.WordRAM Cslib.Algorithms.WordRAM
 
@@ -143,4 +143,4 @@ example : (Code.eval 16 4 AKS.Compare.program cmpInput).map (·.1.regs AKS.Compa
       (·.1.regs AKS.Compare.flag) = some 1 := by
   decide
 
-end ComplexityTests.WordRAMAKS
+end CslibFrontierTests.WordRAMAKS

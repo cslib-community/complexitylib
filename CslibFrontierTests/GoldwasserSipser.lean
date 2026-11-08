@@ -12,7 +12,7 @@ move pattern of the emulation, the public-coin verifier on a small game with an 
 inflated claim, revealing the coins of a private-coin verifier, and `IP[k] ⊆ AM[k + 2]` and
 `IP[k] = AM`. -/
 
-namespace ComplexityTests.GoldwasserSipser
+namespace CslibFrontierTests.GoldwasserSipser
 
 open Cslib Cslib.Complexity Cslib.Complexity.IPGame Cslib.Complexity.Emulation Turing.MultiTapeTM
 
@@ -77,4 +77,4 @@ example : {w : List Bool | w.headD false = true} ∈
 /-- `IP[3] = AM`. -/
 example {α : Type} (enc : α ↪ List Bool) : IPk enc 3 = AM enc := IPk_eq_AM (by norm_num)
 
-end ComplexityTests.GoldwasserSipser
+end CslibFrontierTests.GoldwasserSipser

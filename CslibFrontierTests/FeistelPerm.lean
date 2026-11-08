@@ -38,7 +38,7 @@ and `CslibFrontier.Probability.KWiseIndependent.Concentration`:
 
 public section
 
-namespace ComplexityTests.FeistelPerm
+namespace CslibFrontierTests.FeistelPerm
 
 open Cslib.DataStructure.Dictionary Cslib.DataStructure.Dictionary.FeistelPerm
 open Cslib.Probability Finset
@@ -366,4 +366,4 @@ theorem round_hash_bridge (c q b s T : ℕ) (θ_ch : ChildRouterSeed c q b s)
   simp only [childRouterPerm_apply, feistelPair, feistelHead, childRouterRound_apply,
     idCompressorHead_apply, idCompressorPerm_apply, idCompressorRound_apply, and_self]
 
-end ComplexityTests.FeistelPerm
+end CslibFrontierTests.FeistelPerm

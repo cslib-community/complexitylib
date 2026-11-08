@@ -15,7 +15,7 @@ rejecting exponential growth. The stretched-exponential schedule is then used in
 MCSP query-length and formula-construction APIs.
 -/
 
-namespace ComplexityTests.FormulaMagnificationSubexponential
+namespace CslibFrontierTests.FormulaMagnificationSubexponential
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Filter
 
@@ -76,4 +76,4 @@ example (hmem : SuccinctMCSP ∈ FormulaPolyOn SuccinctMCSP.enc) :
     (fun _ => le_rfl) (fun _ => Nat.one_le_two_pow) sqrtRate_subexp sqrtRate_subexp
     hmem (by norm_num)
 
-end ComplexityTests.FormulaMagnificationSubexponential
+end CslibFrontierTests.FormulaMagnificationSubexponential

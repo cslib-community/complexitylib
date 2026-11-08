@@ -18,10 +18,10 @@ header preservation and restoration-key ordering against the original input. The
 materialized circuit, which `materialize_eq` proves equal to the original.
 -/
 
-namespace ComplexityTests.Routing
+namespace CslibFrontierTests.Routing
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean broadcastCircuit Finset
-open ComplexityTests.CircuitMaterialize
+open CslibFrontierTests.CircuitMaterialize
 
 private def key : Fin 1 → Fin 3 := ![0]
 private def order : Circuit signature 3 2 :=
@@ -144,5 +144,5 @@ private def checkAll {h k o : ℕ} (key : Fin k → Fin h) (tag : Fin h)
   checkAll (Fin.elim0 : Fin 0 → Fin 1) 0
     (Circuit.wiring signature Fin.elim0 : Circuit signature 1 0) 0 1
 
-end ComplexityTests.Routing
+end CslibFrontierTests.Routing
 

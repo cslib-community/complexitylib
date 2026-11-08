@@ -31,7 +31,7 @@ Verifies non-vacuity and concrete behavior of:
 
 public section
 
-namespace ComplexityTests.JohnsonLindenstrauss
+namespace CslibFrontierTests.JohnsonLindenstrauss
 
 open Cslib Cslib.BitString Cslib.Probability Real
 open scoped BigOperators
@@ -117,4 +117,4 @@ example (p : Fin 1 → EuclideanSpace ℝ (Fin 5)) :
       Set.Icc ((1 - 1 / 2) * ‖p i - p j‖ ^ 2) ((1 + 1 / 2) * ‖p i - p j‖ ^ 2) :=
   exists_signProjection_forall_norm_sq_mem_Icc p (by norm_num) (by norm_num) (by simp)
 
-end ComplexityTests.JohnsonLindenstrauss
+end CslibFrontierTests.JohnsonLindenstrauss

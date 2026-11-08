@@ -15,7 +15,7 @@ colors far beyond the number of vertices and the boundary `k = 0`, reading color
 the bridge to `SimpleGraph.chromaticNumber`, and the headline results.
 -/
 
-namespace ComplexityTests.ChromaticNumber
+namespace CslibFrontierTests.ChromaticNumber
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -83,4 +83,4 @@ example : ComputableInPolyTime (fun p : (Graph × List ℕ) × ℕ => colorOf p.
     (encPair (encPair encGraph (encList encNat)) encNat) encNat := by
   fun_prop
 
-end ComplexityTests.ChromaticNumber
+end CslibFrontierTests.ChromaticNumber

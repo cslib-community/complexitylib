@@ -16,7 +16,7 @@ order, and the lower bounds applied: to the two algorithms (where they meet the 
 to algorithms that make no comparisons (which the bounds rule out as correct).
 -/
 
-namespace ComplexityTests.QueryMinMax
+namespace CslibFrontierTests.QueryMinMax
 
 open Cslib Cslib.Query
 
@@ -128,4 +128,4 @@ example : ¬ IsMinMaxAlg headPairAlg := fun h => by
   obtain ⟨f, -, hf⟩ := h.exists_le_countQueries (xs := [1, 0]) (by decide)
   simp [headPairAlg] at hf
 
-end ComplexityTests.QueryMinMax
+end CslibFrontierTests.QueryMinMax

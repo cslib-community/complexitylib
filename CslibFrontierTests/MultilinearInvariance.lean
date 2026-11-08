@@ -18,7 +18,7 @@ instantiates the `C³` form. A polynomial of degree `0` is constant, so both sid
 and the bound `C / 12 · 9 ^ 0 · ∑ Inf ^ 2 = 0` is tight.
 -/
 
-namespace ComplexityTests.MultilinearInvariance
+namespace CslibFrontierTests.MultilinearInvariance
 
 open MeasureTheory ProbabilityTheory Cslib Cslib.BitString Finset
 open scoped BigOperators ENNReal
@@ -119,4 +119,4 @@ example (c : Finset (Fin 3) → ℝ) (hc : ∀ S, 0 < #S → c S = 0) :
   norm_num at h
   exact sub_eq_zero.1 h
 
-end ComplexityTests.MultilinearInvariance
+end CslibFrontierTests.MultilinearInvariance

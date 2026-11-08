@@ -9,7 +9,7 @@ import CslibFrontier.Foundations.LinearAlgebra.Matrix.CoinStep
 # Tests for transition matrices of coin-driven maps
 -/
 
-namespace ComplexityTests.CoinStepMatrix
+namespace CslibFrontierTests.CoinStepMatrix
 
 open Matrix
 
@@ -55,4 +55,4 @@ example : (1 - (liveCoinStepMatrix next Finset.univ (· = 0) : Matrix _ _ ℚ))�
   rw [inv_one_sub_eq_sum_pow live_sq, Finset.sum_range_succ, Finset.sum_range_one, pow_zero,
     pow_one]
 
-end ComplexityTests.CoinStepMatrix
+end CslibFrontierTests.CoinStepMatrix

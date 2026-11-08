@@ -21,7 +21,7 @@ machine computability) to `Cslib.Complexity.CookLevin.SAT_npComplete`, `UNSAT_co
 `ExactThreeSAT_npComplete`.
 -/
 
-namespace ComplexityTests.Abstracts.CookLevinBridge
+namespace CslibFrontierTests.Abstracts.CookLevinBridge
 
 open Turing Turing.MultiTapeTM Cslib.Logic.PL Cslib.Complexity
 
@@ -159,4 +159,4 @@ theorem exactThreeSAT_npComplete :
   refine ⟨mem_NP_iff.mpr ExactThreeSAT_npComplete.1, fun α encA A hA => ?_⟩
   exact polyTimeReducible_iff.mpr (ExactThreeSAT_npComplete.2 encA A (mem_NP_iff.mp hA))
 
-end ComplexityTests.Abstracts.CookLevinBridge
+end CslibFrontierTests.Abstracts.CookLevinBridge

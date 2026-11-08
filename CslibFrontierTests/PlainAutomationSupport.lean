@@ -15,7 +15,7 @@ plain operation cannot be hidden by the legacy tidy-to-plain transition. -/
 
 open Turing.MultiTapeTM
 
-namespace ComplexityTests.PlainAutomationSupport
+namespace CslibFrontierTests.PlainAutomationSupport
 
 example : ComputableInPolyTime (fun values : List Bool => values.headD false)
     encBits encBool := by
@@ -159,4 +159,4 @@ example {α : Type} (item : α ↪ List Bool) :
       simp only [encBits_apply, List.length_append]
       omega
 
-end ComplexityTests.PlainAutomationSupport
+end CslibFrontierTests.PlainAutomationSupport

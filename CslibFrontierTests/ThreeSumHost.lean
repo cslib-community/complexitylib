@@ -14,7 +14,7 @@ below only for the empty input and the listed singleton inputs. It is not a gene
 Triangle solver. These clients check that the host's conditional execution theorem is usable.
 -/
 
-namespace ComplexityTests.ThreeSumHost
+namespace CslibFrontierTests.ThreeSumHost
 
 open Cslib WordRAM WordRAM.Signed
 open Algorithms.WordRAM.ThreeSum
@@ -139,4 +139,4 @@ example : ((Host.body 0 probe).eval 127 10 (.init [])).map
 
 end Interpreter
 
-end ComplexityTests.ThreeSumHost
+end CslibFrontierTests.ThreeSumHost

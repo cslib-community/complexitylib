@@ -20,7 +20,7 @@ checked separately by the library execution theorem.
 
 set_option linter.hashCommand false
 
-namespace ComplexityTests.WordRAMExactTriangleRecordProduct
+namespace CslibFrontierTests.WordRAMExactTriangleRecordProduct
 
 open Cslib.WordRAM Cslib.Algorithms.WordRAM.ExactTriangle
 open Cslib.Algorithms.ExactTriangle Cslib.Algorithms.MatrixMultiplication.Schonhage
@@ -132,4 +132,4 @@ example : ∃ a : Data 64, ∃ idx : InstanceIndex 3, ∃ y : Data 320, ∃ step
           RecordProduct.rightMatrix 2 side 1 3 (fun q => (zeroWeights side).getD q 0) idx)
             (qs.get first).1 (qs.get first).2) := initialized_zero side le_rfl
 
-end ComplexityTests.WordRAMExactTriangleRecordProduct
+end CslibFrontierTests.WordRAMExactTriangleRecordProduct

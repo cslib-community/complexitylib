@@ -12,7 +12,7 @@ import CslibFrontier.Computability.Complexity.Problems.ThreeSAT
 # Tests for NP and coNP closure under truth-table reduction variants
 -/
 
-namespace ComplexityTests.NPTruthTable
+namespace CslibFrontierTests.NPTruthTable
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -87,4 +87,4 @@ example (B : Set (List Bool)) (hB : B ∈ NP encBits) :
     {w | w ∈ B ∧ w.reverse ∈ B} ∈ NP encBits :=
   (polyTimeCTTReducible_and_reverse B).polyTimePTTReducible.mem_NP hB
 
-end ComplexityTests.NPTruthTable
+end CslibFrontierTests.NPTruthTable

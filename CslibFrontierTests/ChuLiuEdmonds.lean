@@ -24,7 +24,7 @@ Exercise `Cslib.Algorithms.Lean.Arborescence.edmonds` on the digraph on `Fin 4` 
   a single vertex.
 -/
 
-namespace ComplexityTests.ChuLiuEdmonds
+namespace CslibFrontierTests.ChuLiuEdmonds
 
 open Cslib.Algorithms.Lean.Arborescence
 
@@ -107,4 +107,4 @@ example : ∀ t, ¬ IsInArborescenceParent H.Adj 0 t :=
 /-- A single vertex: the empty arborescence. -/
 example : edmonds (⊥ : Digraph (Fin 1)) (fun _ _ => (0 : ℕ)) 0 = some id := by decide
 
-end ComplexityTests.ChuLiuEdmonds
+end CslibFrontierTests.ChuLiuEdmonds

@@ -23,7 +23,7 @@ Exercises `CslibFrontier/Crypto/Computational/EvenMansour.lean`:
 * concrete word-oracle (`EvenMansourDistinguisher`) instantiations and axiom-footprint guards.
 -/
 
-namespace ComplexityTests.Crypto.ComputationalEvenMansour
+namespace CslibFrontierTests.Crypto.ComputationalEvenMansour
 
 open Cslib Cslib.Crypto Cslib.Crypto.EvenMansour Cslib.Probability Turing.MultiTapeTM
 
@@ -258,4 +258,4 @@ info: 'Cslib.Crypto.indistinguishable_evenMansourWordRealGame_evenMansourWordIde
 #guard_msgs in
 #print axioms indistinguishable_evenMansourWordRealGame_evenMansourWordIdealGame
 
-end ComplexityTests.Crypto.ComputationalEvenMansour
+end CslibFrontierTests.Crypto.ComputationalEvenMansour

@@ -19,7 +19,7 @@ zero widths and a padded chunk. The native certificate is uniform in both runtim
 
 public section
 
-namespace ComplexityTests.TreeEvalParameters
+namespace CslibFrontierTests.TreeEvalParameters
 
 open Turing MultiTapeTM ComputableInSpace Cslib.TreeEval.Ary.Packed
 
@@ -56,4 +56,4 @@ example : ComputableInSpace (fun q : ℕ × ℕ => parameters q.1 q.2)
     (encPair encNat encNat) encParameters (fun q => (encPair encNat encNat q).length) :=
   parameters_inSpace
 
-end ComplexityTests.TreeEvalParameters
+end CslibFrontierTests.TreeEvalParameters

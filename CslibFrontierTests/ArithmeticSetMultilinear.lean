@@ -14,7 +14,7 @@ The formula `x₀ x₂ - x₁ x₂`, a sum of two products that is set-multiline
 applies to `x₀ * x₁ * x₂` with one variable per block.
 -/
 
-namespace ComplexityTests.ArithmeticSetMultilinear
+namespace CslibFrontierTests.ArithmeticSetMultilinear
 
 open Cslib.Circuits Cslib.Circuits.Arithmetic MvPolynomial
 
@@ -56,4 +56,4 @@ example : (∏ i : Fin 3, X i : MvPolynomial (Fin 3) ℚ).IsSetMultilinear id Fi
     fun i _ => isSetMultilinear_X id i
   rwa [Finset.biUnion_singleton_eq_self] at h
 
-end ComplexityTests.ArithmeticSetMultilinear
+end CslibFrontierTests.ArithmeticSetMultilinear

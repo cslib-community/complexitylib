@@ -15,7 +15,7 @@ Clients exercise both predictor orientations, rejected validation, malformed des
 complete training, alternative encodings, and statistical tests of the full public output.
 -/
 
-namespace ComplexityTests.PseudoentropyLearning
+namespace CslibFrontierTests.PseudoentropyLearning
 
 open Cslib Cslib.Probability Cslib.Probability.PMF Cslib.Crypto
   Cslib.Crypto.Pseudoentropy Cslib.Crypto.Pseudoentropy.Boosting Cslib.BitString
@@ -147,4 +147,4 @@ example : ComputableInPolyTime
       ExtractionSchedule.slack word.length (word.length + 1) 2))
     (encList encBool) (encPair encUnary encUnary) := by fun_prop
 
-end ComplexityTests.PseudoentropyLearning
+end CslibFrontierTests.PseudoentropyLearning

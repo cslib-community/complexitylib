@@ -49,7 +49,7 @@ run_meta do
 
 open Turing.MultiTapeTM Cslib.Complexity Cslib.Logic.PL
 
-namespace ComplexityTests.PrivateFunProp
+namespace CslibFrontierTests.PrivateFunProp
 
 /-- The public padding certificate remains usable in composed plain polynomial-time goals. -/
 public theorem padMajority_composition :
@@ -63,4 +63,4 @@ public theorem searchBits_composition : ComputableInPolyTime
     encUnary encUnary := by
   fun_prop
 
-end ComplexityTests.PrivateFunProp
+end CslibFrontierTests.PrivateFunProp

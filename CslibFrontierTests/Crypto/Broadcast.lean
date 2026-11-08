@@ -18,7 +18,7 @@ Direct client tests of `CslibFrontier.Crypto.Protocols.MPC.Broadcast` (without i
 2. Concrete evaluation of `evalWith_broadcastSteps` in `MultiOracleWorld.empty`.
 -/
 
-namespace ComplexityTests.Crypto.Broadcast
+namespace CslibFrontierTests.Crypto.Broadcast
 
 open Cslib Cslib.Probability Cslib.Crypto.Protocols.MPC
 
@@ -55,4 +55,4 @@ example :
   rw [outputAt_broadcastSteps]
   decide
 
-end ComplexityTests.Crypto.Broadcast
+end CslibFrontierTests.Crypto.Broadcast

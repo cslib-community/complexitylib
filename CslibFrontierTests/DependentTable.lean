@@ -8,7 +8,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 
 /-! Dependent finite tables with unbounded words, an empty alphabet, and no indices. -/
 
-namespace ComplexityTests.DependentTable
+namespace CslibFrontierTests.DependentTable
 
 open Turing.MultiTapeTM ComputableInPolyTime
 
@@ -60,4 +60,4 @@ example : encDPi (fun i : Empty => i.elim) (Empty.elim : Empty → Empty) = [] :
   rw [length_encDPi]
   simp
 
-end ComplexityTests.DependentTable
+end CslibFrontierTests.DependentTable

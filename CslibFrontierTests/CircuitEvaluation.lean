@@ -15,7 +15,7 @@ Compiled evaluations exercise the compiler replacements; kernel proofs separatel
 the mathematical API is unchanged. Synthesis imports the evaluator through its minterm client.
 -/
 
-namespace ComplexityTests.CircuitEvaluation
+namespace CslibFrontierTests.CircuitEvaluation
 
 universe v u
 
@@ -126,4 +126,4 @@ example {σ : Signature.{v}} {U : Type u} {n m : Nat} (c : Circuit σ n m)
   rw [← Circuit.eval_eq_evalImpl]
   simp
 
-end ComplexityTests.CircuitEvaluation
+end CslibFrontierTests.CircuitEvaluation

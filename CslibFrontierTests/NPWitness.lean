@@ -21,7 +21,7 @@ malformed and boundary certificates, the verifier of `VertexCover` as a subset v
 blocks, and closure under reductions.
 -/
 
-namespace ComplexityTests.NPWitness
+namespace CslibFrontierTests.NPWitness
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -190,4 +190,4 @@ example : SAT ∈ NP encCNF := polyTimeReducible_SAT_ThreeSAT.mem_NP ThreeSAT.me
 example : IndependentSet ∈ NP (encPair encGraph encNat) :=
   polyTimeReducible_IndependentSet_Clique.mem_NP Clique.mem_NP
 
-end ComplexityTests.NPWitness
+end CslibFrontierTests.NPWitness

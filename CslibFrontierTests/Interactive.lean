@@ -17,7 +17,7 @@ and is round-by-round sound with error `1 / 2`, since a false claim survives onl
 and iteration theorems are applied to satisfiable hypotheses.
 -/
 
-namespace ComplexityTests.Interactive
+namespace CslibFrontierTests.Interactive
 
 open Cslib Cslib.Interactive Spec
 open scoped ENNReal
@@ -88,4 +88,4 @@ example (k : ℕ) :
   simpa using Reduction.Complete.iterate (rel := fun _ => rel) (ε := fun _ => 0) k
     fun _ _ => coinStep_complete
 
-end ComplexityTests.Interactive
+end CslibFrontierTests.Interactive

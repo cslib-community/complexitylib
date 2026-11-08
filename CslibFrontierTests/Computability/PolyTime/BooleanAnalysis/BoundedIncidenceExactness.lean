@@ -8,7 +8,7 @@ import CslibFrontier.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceExac
 
 /-! Regression tests for `BoundedIncidenceExactness`. -/
 
-namespace ComplexityTests.BoundedIncidenceExactness
+namespace CslibFrontierTests.BoundedIncidenceExactness
 
 open Cslib Cslib.Complexity Cslib.GenericRAM Cslib.LinearAlgebra
 open Cslib.Complexity.SubexponentialSAT.SparsePolyCounter
@@ -125,4 +125,4 @@ example : ∃ n' : ℕ, 20 ≤ n' ∧
   exact ⟨N₁, h20, hfeas0, evalBoundedIncidenceBranch_eq_rootCount hfeas0,
     hfeas1, evalBoundedIncidenceBranch_eq_rootCount hfeas1⟩
 
-end ComplexityTests.BoundedIncidenceExactness
+end CslibFrontierTests.BoundedIncidenceExactness

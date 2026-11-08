@@ -26,7 +26,7 @@ Concrete evaluations and nonvacuity checks for:
    `advantage_realEncryptionView_msg_le`).
 -/
 
-namespace ComplexityTests.Crypto.ModuleEncryption
+namespace CslibFrontierTests.Crypto.ModuleEncryption
 
 open Cslib Cslib.Crypto Cslib.Probability
 open scoped _root_.Matrix ENNReal NNReal
@@ -171,4 +171,4 @@ example {k n q : ℕ} [NeZero q] (noise : PMF (Fin n → ZMod q))
       ((uniformEncryptionView k n q).bind D) :=
   advantage_realEncryptionView_msg_le noise m₀ m₁ D
 
-end ComplexityTests.Crypto.ModuleEncryption
+end CslibFrontierTests.Crypto.ModuleEncryption

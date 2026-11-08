@@ -17,7 +17,7 @@ matching, equal weights make the determinant vanish, and the success probability
 
 set_option linter.privateModule false
 
-namespace ComplexityTests.MVVMatching
+namespace CslibFrontierTests.MVVMatching
 
 open Finset Matrix Equiv Cslib.Algorithms.Matching Cslib.Circuits.BipartiteMatching
 
@@ -97,4 +97,4 @@ example : 1 / 2 ≤ dens (univ.filter fun v : Edges complete → Fin 8 =>
     MVVSucceeds complete (extendWeight v)) :=
   half_le_dens_mvv hasPerfectMatching_complete (by rw [card_edges])
 
-end ComplexityTests.MVVMatching
+end CslibFrontierTests.MVVMatching

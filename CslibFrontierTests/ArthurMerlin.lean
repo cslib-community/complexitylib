@@ -18,7 +18,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 /-! Concrete clients for the Arthur–Merlin classes: nonempty classes, satisfiable error-exponent
 conditions and reductions. -/
 
-namespace ComplexityTests.ArthurMerlin
+namespace CslibFrontierTests.ArthurMerlin
 
 open Cslib Cslib.Complexity Turing.MultiTapeTM
 
@@ -119,4 +119,4 @@ example (e : Polynomial ℕ) : ∃ (p q : Polynomial ℕ) (V : _ × List Bool �
     mem_AM_iff_forall_errorExponent.mp (NP_subset_AM SAT.mem_NP) e
   exact ⟨p, q, V, hV, isArthurMerlinVerifierWithErrorExponent_iff_decidesWithErrorExponent.mp hAM⟩
 
-end ComplexityTests.ArthurMerlin
+end CslibFrontierTests.ArthurMerlin

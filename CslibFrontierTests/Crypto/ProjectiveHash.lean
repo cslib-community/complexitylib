@@ -18,7 +18,7 @@ triples, Lemma 12.5 (`1 / q ^ 2`) and Lemma 12.7 (`1 / q ^ 4`) point-mass formul
 single-tuple (`1 / q`) and finite-list (`Q / q`) union-bound ingredients of Lemma 12.8.
 -/
 
-namespace ComplexityTests.Crypto.ProjectiveHash
+namespace CslibFrontierTests.Crypto.ProjectiveHash
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.ProjectiveHash
 open scoped ENNReal
@@ -137,4 +137,4 @@ example [DecidableEq (schnorrGroups.Carrier d23)] (δ₁ δ₂ ξ : ZMod (schnor
       · rcases List.mem_singleton.mp hq with rfl
         dsimp only; decide)
 
-end ComplexityTests.Crypto.ProjectiveHash
+end CslibFrontierTests.Crypto.ProjectiveHash

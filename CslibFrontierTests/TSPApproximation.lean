@@ -30,7 +30,7 @@ checked by `decide +kernel`.
 
 public section
 
-namespace ComplexityTests.TSPApproximation
+namespace CslibFrontierTests.TSPApproximation
 
 open Cslib.Complexity Cslib.Complexity.TSP Cslib.Algorithms.Lean.TSP Cslib.Algorithms.Lean.Kruskal
 
@@ -119,4 +119,4 @@ example : approxTour [[5]] = [0] ∧ tourLength [[5]] (approxTour [[5]]) = 5 := 
   rw [h]
   exact ⟨rfl, by decide +kernel⟩
 
-end ComplexityTests.TSPApproximation
+end CslibFrontierTests.TSPApproximation

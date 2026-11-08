@@ -18,7 +18,7 @@ the set. The full square shows that the hypothesis `|S| ≤ |X| ^ n / 2` cannot 
 its own closure.
 -/
 
-namespace ComplexityTests.HammingExpansion
+namespace CslibFrontierTests.HammingExpansion
 
 open Cslib Finset
 
@@ -53,4 +53,4 @@ example : ¬#(univ : Finset (Fin 2 → Bool)) ≤
     2 * 2 * #(lineClosure (univ : Finset (Fin 2 → Bool)) \ univ) := by
   decide
 
-end ComplexityTests.HammingExpansion
+end CslibFrontierTests.HammingExpansion

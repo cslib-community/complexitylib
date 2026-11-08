@@ -22,7 +22,7 @@ modes `(packet, tile, b)`: the tiles are `y₀ ∈ {0, 1}` and `b < 2`, of weigh
 
 @[expose] public section
 
-namespace ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.CauchyModes
+namespace CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.CauchyModes
 
 open Cslib.Circuits.Frontier TensorNetwork
 
@@ -88,4 +88,4 @@ example (ζ : ZMod (2 ^ 2)) :
   two_pow_dvd_cauchyModeCoeff (fun e => by fin_cases e <;> decide) (by decide) κ ζ (by decide)
     (by decide) (by decide) 0 ((), 0, 1)
 
-end ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.CauchyModes
+end CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.CauchyModes

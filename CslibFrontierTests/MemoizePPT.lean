@@ -8,7 +8,7 @@ import CslibFrontier.Tactic.PPT
 
 /-! Memoization composes through functional programs, with no default inhabitants. -/
 
-namespace ComplexityTests.MemoizePPT
+namespace CslibFrontierTests.MemoizePPT
 
 open Cslib Cslib.Probability Turing.MultiTapeTM
 
@@ -107,4 +107,4 @@ example : ProbComp.eval (memoize (fun key : List Bool => BitString.sampleList ke
     [] [([], [true, true, true])]) = PMF.pure ([true, true, true], [([], [true, true, true])]) := by
   simp [memoize]
 
-end ComplexityTests.MemoizePPT
+end CslibFrontierTests.MemoizePPT

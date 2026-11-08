@@ -10,7 +10,7 @@ import CslibFrontier.Tactic.PPT
 
 /-! Empirical probability tests: functional certificates, independent trials and boundary laws. -/
 
-namespace ComplexityTests.EmpiricalProbability
+namespace CslibFrontierTests.EmpiricalProbability
 
 open Cslib Cslib.Probability Turing.MultiTapeTM
 
@@ -91,4 +91,4 @@ example : True := by
         (fun count => OracleComp.countTrue count (ProbComp.uniform Bool)) := by ppt
   trivial
 
-end ComplexityTests.EmpiricalProbability
+end CslibFrontierTests.EmpiricalProbability

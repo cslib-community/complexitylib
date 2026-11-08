@@ -14,7 +14,7 @@ cover and remains exactly decodable after padding. The probability theorem gives
 failure bound at its smallest permitted vertex count.
 -/
 
-namespace ComplexityTests.FusionRandom
+namespace CslibFrontierTests.FusionRandom
 
 open Cslib.Circuits.Fusion
 
@@ -46,4 +46,4 @@ example : Graph.smallCoverProbability 16 1 ≤ (1 / 65536 : ℝ) := by
   norm_num at h ⊢
   exact h
 
-end ComplexityTests.FusionRandom
+end CslibFrontierTests.FusionRandom

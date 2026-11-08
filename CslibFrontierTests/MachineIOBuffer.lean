@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.PrepareInp
 
 /-! Buffering retains stateful effects and correctly clamps both ends of an empty virtual input. -/
 
-namespace ComplexityTests.MachineIOBuffer
+namespace CslibFrontierTests.MachineIOBuffer
 
 open Cslib Turing MultiTapeMachine
 
@@ -65,4 +65,4 @@ example : (OracleComp.interpret countCoins (observeOutput <$>
   rw [MultiTapePTM.runConfigFrom_outputToTape]
   rfl
 
-end ComplexityTests.MachineIOBuffer
+end CslibFrontierTests.MachineIOBuffer

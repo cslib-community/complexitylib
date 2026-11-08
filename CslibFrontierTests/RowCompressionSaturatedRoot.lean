@@ -23,7 +23,7 @@ bounded common loss premise makes the scalar cap estimate false. No hierarchy en
 imported. This is a test output, not a normalized estimator.
 -/
 
-namespace ComplexityTests.RowCompressionSaturatedRoot
+namespace CslibFrontierTests.RowCompressionSaturatedRoot
 
 open Cslib Cslib.RowCompression Finset
 
@@ -145,4 +145,4 @@ example (D : ℝ) (hD : 8 < D) :
     simp only [div_eq_mul_inv] at hsmall
     linarith
 
-end ComplexityTests.RowCompressionSaturatedRoot
+end CslibFrontierTests.RowCompressionSaturatedRoot

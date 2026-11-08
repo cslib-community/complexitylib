@@ -100,7 +100,7 @@ recursion are the two allowed model modules.
 * [S. Jukna, *Boolean Function Complexity: Advances and Frontiers*][Jukna2012]
 -/
 
-namespace ComplexityAbstracts.AndreevThresholdAbstract
+namespace CslibFrontierAbstracts.AndreevThresholdAbstract
 
 /-- A single-output real-weighted threshold circuit on `n` Boolean inputs. -/
 abbrev ThrCircuit (n : ℕ) :=
@@ -304,9 +304,9 @@ theorem majority_vote_wire_lower_bound {b m t : ℕ} (hm : 0 < m) (hmN : m ≤ 2
 /-- info: abstract audit passed for `CslibFrontierAbstracts.AndreevThresholdAbstract`: 22 root
 declarations -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityAbstracts.AndreevThresholdAbstract allowing [
+#check_abstract CslibFrontierAbstracts.AndreevThresholdAbstract allowing [
   CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold,
   CslibFrontier.Computability.Circuit.Depth
 ]
 
-end ComplexityAbstracts.AndreevThresholdAbstract
+end CslibFrontierAbstracts.AndreevThresholdAbstract

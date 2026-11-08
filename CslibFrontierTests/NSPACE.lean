@@ -17,7 +17,7 @@ space, none of which needs a constructibility hypothesis. The classes are nonvac
 `NSPACE(log₂ n)`, and `NL = coNL` remains its special case.
 -/
 
-namespace ComplexityTests.NSPACE
+namespace CslibFrontierTests.NSPACE
 
 open Cslib Cslib.Complexity
 
@@ -47,4 +47,4 @@ example : STCONᶜ ∈ NSPACE encSTCON id := compl_mem_NSPACE Nat.log2_le_self s
 example : STCON ∈ coNSPACE encSTCON id :=
   (NSPACE_eq_coNSPACE (s := id) Nat.log2_le_self) ▸ stcon_mem_linear
 
-end ComplexityTests.NSPACE
+end CslibFrontierTests.NSPACE

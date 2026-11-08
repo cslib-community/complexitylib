@@ -13,7 +13,7 @@ import CslibFrontier.Probability.PMF.Uniform
 
 /-! Growing sampled switching: the smallest parameter has supported positive failure. -/
 
-namespace ComplexityTests.Crypto.ModulusSwitchCenteredBinomial
+namespace CslibFrontierTests.Crypto.ModulusSwitchCenteredBinomial
 
 open Cslib Cslib.Crypto Probability ProbComp
 open scoped Matrix ENNReal
@@ -168,4 +168,4 @@ example : 0 < ((sampledView 8).toOuterMeasure failure).toReal := by
   rw [switched_ciphertext]
   decide
 
-end ComplexityTests.Crypto.ModulusSwitchCenteredBinomial
+end CslibFrontierTests.Crypto.ModulusSwitchCenteredBinomial

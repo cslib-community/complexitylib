@@ -14,7 +14,7 @@ Crowns of a star, a triangle and two disjoint edges, decided through Hall's crit
 crown reduction rule; the crown lemma applied to a star; and the `2k` bound for the triangle.
 -/
 
-namespace ComplexityTests.VertexCoverCrown
+namespace CslibFrontierTests.VertexCoverCrown
 
 open SimpleGraph
 
@@ -99,4 +99,4 @@ example : twoEdges.IsCrown {0} {1} ∧ twoEdges.IsCrown {0, 2} {1, 3} ∧
     ¬ twoEdges.IsCrown {0, 1} {0, 1} := by
   decide
 
-end ComplexityTests.VertexCoverCrown
+end CslibFrontierTests.VertexCoverCrown

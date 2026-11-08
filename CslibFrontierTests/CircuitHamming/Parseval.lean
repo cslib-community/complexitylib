@@ -11,7 +11,7 @@ import Mathlib.Tactic.NormNum
 of their sets; the relative Hamming distance of the constants; separation failing at `ρ = 0`; and
 the metric `√D_ρ` at `ρ = 1`. -/
 
-namespace ComplexityTests.CircuitHamming.Parseval
+namespace CslibFrontierTests.CircuitHamming.Parseval
 
 open Cslib Cslib.BitString Finset
 
@@ -63,4 +63,4 @@ example (ρ : ℝ) :
     norm_num
   rw [noiseMetricSpace_dist, noiseDist_one, Fintype.card_fin, h, Real.sqrt_one]
 
-end ComplexityTests.CircuitHamming.Parseval
+end CslibFrontierTests.CircuitHamming.Parseval

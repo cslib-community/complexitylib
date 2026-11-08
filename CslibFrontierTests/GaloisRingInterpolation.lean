@@ -12,7 +12,7 @@ Concrete evaluation and interpolation in the Galois ring `(ℤ / 8)[U] / (U ^ 2 
 nodes `0, 1, U`, whose differences `1, U, U - 1` are units; the correctness statements; and the
 polynomial-time certificate of interpolation in closed form. -/
 
-namespace ComplexityTests.GaloisRingInterpolation
+namespace CslibFrontierTests.GaloisRingInterpolation
 
 open Cslib.GaloisRingArith Turing.MultiTapeTM
 
@@ -52,4 +52,4 @@ example : ComputableInPolyTime
     (encList (encList encNat)) := by
   fun_prop
 
-end ComplexityTests.GaloisRingInterpolation
+end CslibFrontierTests.GaloisRingInterpolation

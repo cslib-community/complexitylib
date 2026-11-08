@@ -33,7 +33,7 @@ Lean checks the explicit logical and computational correspondence through the br
 * [N. Immerman, *Descriptive Complexity*][Immerman1999]
 -/
 
-namespace ComplexityTests.Abstracts.FaginAbstract
+namespace CslibFrontierTests.Abstracts.FaginAbstract
 
 /-- Relation variables with prescribed arities, used for existential second-order quantifiers.
 There are no function symbols; a relation symbol is its index together with its arity equation. -/
@@ -126,12 +126,12 @@ theorem fagin {L : FirstOrder.Language} [L.IsRelational] {count : ℕ}
   FaginBridge.fagin symbols K
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.FaginAbstract`:
+info: abstract audit passed for `CslibFrontierTests.Abstracts.FaginAbstract`:
 12 root declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.FaginAbstract allowing [
-  ComplexityAbstracts.Encoding, ComplexityAbstracts.Computation
+#check_abstract CslibFrontierTests.Abstracts.FaginAbstract allowing [
+  CslibFrontierAbstracts.Encoding, CslibFrontierAbstracts.Computation
 ]
 
-end ComplexityTests.Abstracts.FaginAbstract
+end CslibFrontierTests.Abstracts.FaginAbstract

@@ -13,7 +13,7 @@ public section
 open Cslib.Logic.PL
 open ClauseSet.Sparsification Finset
 
-namespace ComplexityTests.SparsificationCountingUnits
+namespace CslibFrontierTests.SparsificationCountingUnits
 
 -- The no-empty-clause hypothesis is essential for immediate survival.
 theorem empty_clause_drops_new_unit :
@@ -108,4 +108,4 @@ example : countingUnitInsertions ({{(0, true), (0, false)}} : ClauseSet (Fin 1))
 example : ¬ (countingUnitInsertions ({{(0, true), (0, false)}} : ClauseSet (Fin 1))
     2 {(0, true)} false).card ≤ 2 * (∅ : Finset (Fin 1)).card := by decide
 
-end ComplexityTests.SparsificationCountingUnits
+end CslibFrontierTests.SparsificationCountingUnits

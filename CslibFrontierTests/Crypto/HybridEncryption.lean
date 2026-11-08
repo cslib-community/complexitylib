@@ -41,7 +41,7 @@ Exercises the KEM, DEM, and KEM–DEM hybrid encryption API in
 
 @[expose] public section
 
-namespace ComplexityTests.Crypto.HybridEncryption
+namespace CslibFrontierTests.Crypto.HybridEncryption
 
 open Cslib Cslib.Crypto Cslib.Crypto.Encryption Cslib.Probability Turing.MultiTapeTM
 open scoped NNReal
@@ -590,4 +590,4 @@ theorem not_indcpaOf_lengthOnly : ¬ INDCPAOf encBits toyKeyGen lengthOnlyEncryp
   rw [hone] at hneg
   exact not_negligible_const one_ne_zero hneg
 
-end ComplexityTests.Crypto.HybridEncryption
+end CslibFrontierTests.Crypto.HybridEncryption

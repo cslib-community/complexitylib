@@ -19,7 +19,7 @@ in `TQBFAbstract.lean`. Because `toFormula` is surjective and preserves the bina
 bitstrings.
 -/
 
-namespace ComplexityTests.Abstracts.TQBFBridge
+namespace CslibFrontierTests.Abstracts.TQBFBridge
 
 open Turing Turing.MultiTapeTM Cslib.Logic.PL Cslib.Complexity
 
@@ -236,4 +236,4 @@ theorem tqbf_pspaceComplete (S : Presentation) (h : Laws S) :
           {p : S.Formula | S.freeVars p = ∅ ∧ S.eval (fun _ => false) p = true} :=
   ⟨tqbf_mem_PSPACE S h, tqbf_pspaceHard S h⟩
 
-end ComplexityTests.Abstracts.TQBFBridge
+end CslibFrontierTests.Abstracts.TQBFBridge

@@ -39,7 +39,7 @@ Verifies both concrete `Cslib.WordRAM.Code.eval` execution and theorem-level non
 
 @[expose] public section
 
-namespace ComplexityTests.WordRAMKWiseHash
+namespace CslibFrontierTests.WordRAMKWiseHash
 
 open Cslib Cslib.Probability Cslib.WordRAM
 open Cslib.DataStructure Cslib.DataStructure.HashFamily.WordRAM
@@ -423,6 +423,6 @@ theorem tabulatedOddStride_wordram_nonvacuous (x : Data 9)
     omega
   exact TabulatedOddStride.evalCode_execWithin hrep hy0 hy1 hfit_sp hfit_2powM hfit_d hfit_u
 
-end ComplexityTests.WordRAMKWiseHash
+end CslibFrontierTests.WordRAMKWiseHash
 
 end

@@ -17,11 +17,11 @@ The common decryption witnesses precede the quantifier over all budgets and cove
 words of the prescribed lengths.
 -/
 
-namespace ComplexityTests.Bootstrapping
+namespace CslibFrontierTests.Bootstrapping
 
 open Cslib Cslib.Circuits Cslib.Crypto Cslib.Crypto.Homomorphic Cslib.Probability
   Turing.MultiTapeTM
-open ComplexityTests.HomomorphicExample
+open CslibFrontierTests.HomomorphicExample
 
 open scoped Classical in
 private noncomputable def predicateDepth (P : ℕ → Prop) (n : ℕ) : ℕ :=
@@ -185,4 +185,4 @@ example : ∃ circuits : ℕ → Circuit Boolean.signature 7 1,
       (by fun_prop)
   exact ⟨circuits, hgen, hsize, fun budget n => hcorrect budget n _ _ rfl rfl⟩
 
-end ComplexityTests.Bootstrapping
+end CslibFrontierTests.Bootstrapping

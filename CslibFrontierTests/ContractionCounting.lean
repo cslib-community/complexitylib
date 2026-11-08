@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.ContractionCounting
 The clause network of a small formula with a repeated variable, its bipartition, admissibility
 and contraction, and the fixed-density counter of Theorem 1.1. -/
 
-namespace ComplexityTests.ContractionCounting
+namespace CslibFrontierTests.ContractionCounting
 
 open Cslib.Logic.PL Cslib.Circuits.Frontier Cslib.Circuits.Frontier.ClauseNetwork
   Cslib.Complexity Cslib.Complexity.ContractionCounting Cslib.Complexity.CountingSimulation
@@ -62,4 +62,4 @@ example : ∃ (count : CNF ℕ → ℕ) (A e b : ℕ),
 -- `φ₀` meets the density bound `m ≤ 1 · n` of the fixed-density statement.
 example : φ₀.length ≤ 1 * φ₀.numVars := by decide
 
-end ComplexityTests.ContractionCounting
+end CslibFrontierTests.ContractionCounting

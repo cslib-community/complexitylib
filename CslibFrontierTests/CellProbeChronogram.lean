@@ -32,7 +32,7 @@ last-touched sets record the last probe, not the last write. The checks cover
 
 public section
 
-namespace ComplexityTests.CellProbeChronogram
+namespace CslibFrontierTests.CellProbeChronogram
 
 open Cslib Cslib.CellProbe Finset
 
@@ -180,4 +180,4 @@ example :
     #{m' : Mem 2 1 | hammingDist (zeroMem 2 1) m' ≤ 1} ≤ (2 * (2 ^ 1 - 1) + 1) ^ 1 :=
   card_filter_hammingDist_le_le_pow _ 1
 
-end ComplexityTests.CellProbeChronogram
+end CslibFrontierTests.CellProbeChronogram

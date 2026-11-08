@@ -13,7 +13,7 @@ Substituting `2 y + 1` over `𝔽₃` swaps the identifiers `0` and `1` and leav
 law unchanged. The constant substitution `α = 0` changes that law, so `α ≠ 0` is needed.
 -/
 
-namespace ComplexityTests.FrameSubstitution
+namespace CslibFrontierTests.FrameSubstitution
 
 open Finset Cslib.Probability
 
@@ -60,4 +60,4 @@ example : #{A : FrameChannel 3 1 1 | Both fun y ↦ A.eval (2 * y + 1)} = 2 := b
 -- substitution `y ↦ 1` changes the law.
 example : #{A : FrameChannel 3 1 1 | Both fun y ↦ A.eval (0 * y + 1)} = 4 := by decide
 
-end ComplexityTests.FrameSubstitution
+end CslibFrontierTests.FrameSubstitution

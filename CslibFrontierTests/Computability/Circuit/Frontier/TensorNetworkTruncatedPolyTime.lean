@@ -20,7 +20,7 @@ the first `j` digit points.
 
 @[expose] public section
 
-namespace ComplexityTests.TensorNetworkTruncatedPolyTime
+namespace CslibFrontierTests.TensorNetworkTruncatedPolyTime
 
 open Cslib Cslib.GenericRAM Cslib.Circuits.Frontier Turing.MultiTapeTM
 
@@ -53,4 +53,4 @@ example (core : ℕ × List ℕ × ℕ × DescribedNetwork (SpecDesc (List ℕ))
 -- `FastContraction.modulus n` has at least `n` residues.
 example : 100 ≤ 2 ^ (FastContraction.modulus 100).length := le_two_pow_length_modulus 100
 
-end ComplexityTests.TensorNetworkTruncatedPolyTime
+end CslibFrontierTests.TensorNetworkTruncatedPolyTime

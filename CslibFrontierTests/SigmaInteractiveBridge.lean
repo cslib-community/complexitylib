@@ -31,7 +31,7 @@ Exercises `CslibFrontier.Crypto.Protocols.SigmaProtocol.Interactive` on:
 
 @[expose] public section
 
-namespace ComplexityTests.SigmaInteractiveBridge
+namespace CslibFrontierTests.SigmaInteractiveBridge
 
 open Cslib Cslib.Probability Cslib.Interactive Cslib.Interactive.Spec
 open Cslib.Crypto Cslib.Crypto.Protocols Cslib.Crypto.Protocols.SigmaProtocol
@@ -298,4 +298,4 @@ theorem orProof_interactive_hvzk
 
 end Or
 
-end ComplexityTests.SigmaInteractiveBridge
+end CslibFrontierTests.SigmaInteractiveBridge

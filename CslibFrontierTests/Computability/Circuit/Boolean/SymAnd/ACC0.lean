@@ -33,7 +33,7 @@ Concrete instances of the ingredients of `CslibFrontier.Computability.Circuit.Bo
 
 @[expose] public section
 
-namespace ComplexityTests.Computability.Circuit.Boolean.SymAnd.ACC0
+namespace CslibFrontierTests.Computability.Circuit.Boolean.SymAnd.ACC0
 
 open Cslib Cslib.BitString Cslib.Circuits Cslib.Circuits.Boolean Finset
 
@@ -153,4 +153,4 @@ example : ∃ c, ∀ n, ∃ C' : SymAnd (Fin n), C'.eval = (Language.ofSlices (m
     C'.fanIn ≤ (c * (Nat.log 2 n + 1)) ^ c ∧ C'.size ≤ 2 ^ (c * (Nat.log 2 n + 1)) ^ c :=
   exists_symAnd_of_mem_ACC0 (modGate_mem_ACC0 6)
 
-end ComplexityTests.Computability.Circuit.Boolean.SymAnd.ACC0
+end CslibFrontierTests.Computability.Circuit.Boolean.SymAnd.ACC0

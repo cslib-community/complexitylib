@@ -17,7 +17,7 @@ import Lean.Elab.Command
 
 open Turing.MultiTapeTM
 
-namespace ComplexityTests.Internal.DegreePrimitives
+namespace CslibFrontierTests.Internal.DegreePrimitives
 
 open Lean Elab Command in
 run_cmd do
@@ -63,4 +63,4 @@ example (n : ℕ) {α β γ : Type*} {input : α ↪ List Bool} {middle : β ↪
     zeroDegree.of_enc_eq fun _ => rfl, zeroDegree.of_encIn_eq ULift.down fun _ => rfl,
     hf.of_enc_eq h⟩
 
-end ComplexityTests.Internal.DegreePrimitives
+end CslibFrontierTests.Internal.DegreePrimitives

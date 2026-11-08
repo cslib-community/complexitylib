@@ -15,7 +15,7 @@ lower bounds are not vacuous. The reversible rule is checked against the black r
 move.
 -/
 
-namespace ComplexityTests.ReversiblePebbling
+namespace CslibFrontierTests.ReversiblePebbling
 
 open Cslib Cslib.Pebbling
 
@@ -96,4 +96,4 @@ example : persistentReversiblePebblingPrice pathDigraph 0 = 1 := by
 
 example : blackPebblingPrice pathDigraph 0 = 1 := blackPebblingPrice_pathDigraph_zero
 
-end ComplexityTests.ReversiblePebbling
+end CslibFrontierTests.ReversiblePebbling

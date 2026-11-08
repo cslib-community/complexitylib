@@ -14,7 +14,7 @@ satisfiable collapse; and the shifted and conventional length conventions can be
 
 public section
 
-namespace ComplexityTests.NondeterministicPolynomialHierarchy
+namespace CslibFrontierTests.NondeterministicPolynomialHierarchy
 
 open Cslib.Complexity Turing.MultiTapeTM
 
@@ -42,4 +42,4 @@ example : NTIME encBits (fun n => (n + 1) ^ 2) ⊂ NTIME encBits (fun n => n ^ 3
   rw [NTIME_succ_pow_eq]
   exact NTIME_pow_ssubset_NTIME_pow (by omega) (by omega)
 
-end ComplexityTests.NondeterministicPolynomialHierarchy
+end CslibFrontierTests.NondeterministicPolynomialHierarchy

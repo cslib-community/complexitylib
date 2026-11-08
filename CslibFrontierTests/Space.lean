@@ -13,7 +13,7 @@ import CslibFrontier.Computability.Complexity.Classes.Space.Savitch
 inhabitants, a branch running forever, a stuck branch, repeated output, empty inputs, malformed
 codes, and the codes of views. -/
 
-namespace ComplexityTests.Space
+namespace CslibFrontierTests.Space
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
@@ -259,4 +259,4 @@ example : ∃ t s, PolyBounded (fun word : List Bool => (encBits word).length) s
       encBits encBool t s :=
   loopOrAccept.exists_polyBounded_space_savitchDecide encBits 0 0
 
-end ComplexityTests.Space
+end CslibFrontierTests.Space

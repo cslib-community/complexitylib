@@ -19,7 +19,7 @@ programs with nothing to execute, fail with an explanation. The simplification p
 proves the fitting conditions it can.
 -/
 
-namespace ComplexityTests.WordRAMSymbolicExec
+namespace CslibFrontierTests.WordRAMSymbolicExec
 
 open Cslib.WordRAM
 
@@ -196,4 +196,4 @@ example (x : Data 4) : (x.set c 7).regs c = 7 := by
 example (x : Data 4) : ∃ y, ExecWithin 8 straight x y 6 ∧ y.mem 5 = 7 := by
   wram_exec +decide
 
-end ComplexityTests.WordRAMSymbolicExec
+end CslibFrontierTests.WordRAMSymbolicExec

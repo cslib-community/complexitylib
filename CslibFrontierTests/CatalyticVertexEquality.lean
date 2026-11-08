@@ -17,7 +17,7 @@ client exercising `catalyticVertexEq_eq` inside an endpoint callback on the same
 and concrete checks of the local-frame and linear catalytic bit-budget bounds.
 -/
 
-namespace ComplexityTests.CatalyticVertexEquality
+namespace CslibFrontierTests.CatalyticVertexEquality
 
 open Cslib.Catalytic
 
@@ -135,4 +135,4 @@ example {B n : ℕ} (hn : n ≤ B) :
   have hc : vertexCatLinearConst 1 = 160 := by decide
   rwa [hc] at h
 
-end ComplexityTests.CatalyticVertexEquality
+end CslibFrontierTests.CatalyticVertexEquality

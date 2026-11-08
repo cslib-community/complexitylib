@@ -21,7 +21,7 @@ Complete-game clients also inspect all selector branches, the message swap, modu
 and the zero-range fallback, which still calls the adversary.
 -/
 
-namespace ComplexityTests.Crypto.LeveledGuessCoinTape
+namespace CslibFrontierTests.Crypto.LeveledGuessCoinTape
 
 open Cslib Cslib.Crypto Cslib.Crypto.Homomorphic Cslib.Probability Turing.MultiTapeTM
 
@@ -353,4 +353,4 @@ example (n : ℕ) (pk : List Bool) :
         (Leveled.zeroLinkAdversary fixture (fun _ => 0) fallbackProbe).choose n pk := by
   simp [Leveled.flatLeveledChoice]
 
-end ComplexityTests.Crypto.LeveledGuessCoinTape
+end CslibFrontierTests.Crypto.LeveledGuessCoinTape

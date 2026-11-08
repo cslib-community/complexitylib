@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Complexity.Classes.Space.TM2
 /-! Regression checks for the Mathlib TM2 polynomial-space bridge. Source certificates in this
 file supply termination, without supplying polynomial runtime certificates. -/
 
-namespace ComplexityTests.MathlibTM2Space
+namespace CslibFrontierTests.MathlibTM2Space
 
 open Computability Turing Turing.MultiTapeTM
 
@@ -314,4 +314,4 @@ example :
     intro xs i k
     simpa only [Equiv.refl_symm, Equiv.coe_refl, id_eq, List.map_id] using empty_bound xs i k
 
-end ComplexityTests.MathlibTM2Space
+end CslibFrontierTests.MathlibTM2Space

@@ -16,7 +16,7 @@ public import CslibFrontier.Logics.Propositional.CNF.SparseParityCounter
 
 @[expose] public noncomputable section
 
-namespace ComplexityTests.SparseParityCounter
+namespace CslibFrontierTests.SparseParityCounter
 
 open Finset Cslib.BitString Cslib.Logic.PL
 
@@ -170,4 +170,4 @@ example :
   rw [← hrec, hcount]
   rfl
 
-end ComplexityTests.SparseParityCounter
+end CslibFrontierTests.SparseParityCounter

@@ -21,7 +21,7 @@ also checks that `LevinHard` can be introduced and transported by downstream mod
 
 public section
 
-namespace ComplexityTests.LevinReduction
+namespace CslibFrontierTests.LevinReduction
 
 open Cslib.Complexity Cslib.Logic.PL
 
@@ -77,4 +77,4 @@ of `ThreeSAT`. -/
 example (h : LevinHard SAT.npRelation) : NPHard encCNF ThreeSAT :=
   ThreeSAT.language_npRelation ▸ (h.trans toThreeSATLevinReduction).npHard
 
-end ComplexityTests.LevinReduction
+end CslibFrontierTests.LevinReduction

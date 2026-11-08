@@ -8,7 +8,7 @@ import CslibFrontier.Logics.Propositional.CNF.ExactTests
 
 /-! Tests for exact parity tests of sparse CNF formulas. -/
 
-namespace ComplexityTests.ExactTests
+namespace CslibFrontierTests.ExactTests
 
 open Finset Cslib.BitString Cslib.Logic.PL
 
@@ -29,4 +29,4 @@ example : ∃ A₀ : List (Fin andFormula.length → Bool), A₀.length ≤ 6 �
     exact absurd this (by decide)
   · exact h
 
-end ComplexityTests.ExactTests
+end CslibFrontierTests.ExactTests

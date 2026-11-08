@@ -23,7 +23,7 @@ computation per non-root vertex) on the weighted graph on `Fin 4` with edges `01
 * edge cases: one vertex, and an edgeless graph with empty adjacency lists.
 -/
 
-namespace ComplexityTests.GomoryHuConstruction
+namespace CslibFrontierTests.GomoryHuConstruction
 
 open Cslib.WeightedCut Cslib.Algorithms.Lean Cslib.Algorithms.Lean.MaxFlow
   Cslib.Algorithms.Lean.GomoryHu
@@ -169,4 +169,4 @@ example : IsGomoryHuTree (cutWeight fun _ _ : Fin 3 => 0)
     (parentGraph (vget (gomoryHuM (fun _ _ => 0) (fun _ => []) (0 : Fin 3)).ret)) :=
   isGomoryHuTree_gomoryHuM ⟨fun _ _ => rfl, fun _ => rfl⟩ (fun _ _ _ h => absurd h (by decide)) 0
 
-end ComplexityTests.GomoryHuConstruction
+end CslibFrontierTests.GomoryHuConstruction

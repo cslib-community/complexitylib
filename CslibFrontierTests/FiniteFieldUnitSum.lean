@@ -15,7 +15,7 @@ variables over `ZMod 7` has total degree `2 < 6`. This is the shape used by Tree
 a gate's multilinear extension is evaluated at masked copies of its children's values.
 -/
 
-namespace ComplexityTests.FiniteFieldUnitSum
+namespace CslibFrontierTests.FiniteFieldUnitSum
 
 open MvPolynomial
 
@@ -45,4 +45,4 @@ example (a b : ZMod 7) :
     exact (max_le (Polynomial.natDegree_C_mul_X_pow_le a 5) (Nat.zero_le _)).trans_lt (by decide)
   simpa using FiniteField.sum_units_eval hdeg
 
-end ComplexityTests.FiniteFieldUnitSum
+end CslibFrontierTests.FiniteFieldUnitSum

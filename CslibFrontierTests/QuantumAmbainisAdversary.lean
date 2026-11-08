@@ -16,10 +16,10 @@ weight-layer (Nayak–Wu) bounds applied to the exact one-query algorithm `readB
 `OR_N` algorithm `orSearch`. This shows that their hypotheses are satisfiable by non-constant
 functions. -/
 
-namespace ComplexityTests.QuantumAmbainisAdversary
+namespace CslibFrontierTests.QuantumAmbainisAdversary
 
 open Cslib Cslib.Quantum Cslib.BitString Finset
-open ComplexityTests.QuantumPolynomial
+open CslibFrontierTests.QuantumPolynomial
 
 /-! ### The core bound on a concrete relation
 
@@ -174,4 +174,4 @@ example (N : ℕ) (hN : 2 ≤ N) :
     rw [threshold_apply, decide_eq_false (by omega), bitVal_false] at this
     linarith
 
-end ComplexityTests.QuantumAmbainisAdversary
+end CslibFrontierTests.QuantumAmbainisAdversary

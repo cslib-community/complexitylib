@@ -16,7 +16,7 @@ client combining validated words with the `L²` gap: the validated estimator, co
 referring to the identifier except through the wrap tests, concentrates at the conditional mean.
 -/
 
-namespace ComplexityTests.SliceMoments
+namespace CslibFrontierTests.SliceMoments
 
 open Cslib Cslib.Probability Cslib.RotationMap Finset
 open scoped BigOperators
@@ -67,4 +67,4 @@ example {P L H : ℕ} [Fact P.Prime] [NeZero L] [NeZero H] (hH : 3 ≤ H) (hL : 
   simp only [walk_pow_sliceGraph_lazy_affineMove_eq] at h
   exact h
 
-end ComplexityTests.SliceMoments
+end CslibFrontierTests.SliceMoments

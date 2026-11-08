@@ -16,7 +16,7 @@ open scoped ENNReal RealInnerProductSpace
 
 noncomputable section
 
-namespace ComplexityTests.DiscreteGaussianShiftBounds
+namespace CslibFrontierTests.DiscreteGaussianShiftBounds
 
 private def twoBasis : Basis Unit ℝ ℝ :=
   (Basis.singleton Unit ℝ).isUnitSMul (fun _ => (show (2 : ℝ) ≠ 0 by norm_num).isUnit)
@@ -258,4 +258,4 @@ example {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
           Measure.map (QuotientAddGroup.mk : E → E ⧸ M.toAddSubgroup) (volume.restrict F)) ≤ ε :=
   (ZLattice.eventually_tvDist_gaussian_quotient_le M hF ε hε).exists
 
-end ComplexityTests.DiscreteGaussianShiftBounds
+end CslibFrontierTests.DiscreteGaussianShiftBounds

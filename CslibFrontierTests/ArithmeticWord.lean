@@ -14,7 +14,7 @@ word over `{7, -10}` is computed, `7, -10, 7`, and is `10`-unbiased; the greedy 
 is `0`-unbiased.
 -/
 
-namespace ComplexityTests.ArithmeticWord
+namespace CslibFrontierTests.ArithmeticWord
 
 open Cslib.Circuits.Arithmetic
 
@@ -44,4 +44,4 @@ example (d : ℕ) : IsUnbiased (greedyWord 7 (10 : ℕ) d) 10 :=
 example (d : ℕ) : IsUnbiased (greedyWord 0 (0 : ℕ) d) 0 :=
   isUnbiased_greedyWord le_rfl (by decide)
 
-end ComplexityTests.ArithmeticWord
+end CslibFrontierTests.ArithmeticWord

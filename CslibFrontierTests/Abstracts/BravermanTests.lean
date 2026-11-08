@@ -22,9 +22,9 @@ that `AND` of its first three bits is true. The even-parity distribution and the
 with `CslibFrontierTests.BravermanFooling`.
 -/
 
-namespace ComplexityTests.Abstracts.BravermanTests
+namespace CslibFrontierTests.Abstracts.BravermanTests
 
-open ComplexityAbstracts.BravermanAbstract ComplexityTests.BravermanFooling
+open CslibFrontierAbstracts.BravermanAbstract CslibFrontierTests.BravermanFooling
 open Finset Cslib Cslib.BitString Cslib.Probability Cslib.Circuits Cslib.Circuits.Boolean
 open scoped BigOperators
 
@@ -32,23 +32,23 @@ example : meaning = Unbounded.interpretation :=
   rfl
 
 example {n k : ℕ} (X : PMF (Fin n → Bool)) : KWiseIndependent k X ↔ IsKWiseIndependent k X :=
-  ComplexityAbstracts.BravermanBridge.isKWiseIndependent_iff_map_restrict.symm
+  CslibFrontierAbstracts.BravermanBridge.isKWiseIndependent_iff_map_restrict.symm
 
 -- The uniform distribution is `k`-wise independent for every `k`.
 example {n : ℕ} (k : ℕ) : KWiseIndependent k (PMF.uniformOfFintype (Fin n → Bool)) :=
-  ComplexityAbstracts.BravermanBridge.isKWiseIndependent_iff_map_restrict.1
+  CslibFrontierAbstracts.BravermanBridge.isKWiseIndependent_iff_map_restrict.1
     (isKWiseIndependent_uniformOfFintype k)
 
 /-- The even-parity distribution on `K + 1` bits is `K`-wise independent: any `K` of its bits are
 uniform. -/
 theorem kWiseIndependent_evenParity (K : ℕ) : KWiseIndependent K (evenParity (K + 1)) :=
-  ComplexityAbstracts.BravermanBridge.isKWiseIndependent_iff_map_restrict.1
+  CslibFrontierAbstracts.BravermanBridge.isKWiseIndependent_iff_map_restrict.1
     (isKWiseIndependent_evenParity K)
 
 -- It is not `(K + 1)`-wise independent: every sample has even parity.
 example (K : ℕ) : ¬KWiseIndependent (K + 1) (evenParity (K + 1)) := fun h =>
   not_isKWiseIndependent_evenParity K
-    (ComplexityAbstracts.BravermanBridge.isKWiseIndependent_iff_map_restrict.2 h)
+    (CslibFrontierAbstracts.BravermanBridge.isKWiseIndependent_iff_map_restrict.2 h)
 
 -- The headline applies to `AND` of the first three of `K + 1` bits, with `q = 2` and depth `1`,
 -- under the even-parity distribution for every
@@ -68,4 +68,4 @@ example : fractionTrue (and3 (le_refl 3)) = 1 / 8 := by
     (and3 (le_refl 3)).eval meaning x 0 = true).card = 1 by decide]
   norm_num
 
-end ComplexityTests.Abstracts.BravermanTests
+end CslibFrontierTests.Abstracts.BravermanTests

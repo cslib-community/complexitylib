@@ -15,7 +15,7 @@ Exact gate counts, the product on concrete inputs, a direct application of the s
 with satisfiable hypotheses, and the complexity bound at concrete widths.
 -/
 
-namespace ComplexityTests.KaratsubaCircuit
+namespace CslibFrontierTests.KaratsubaCircuit
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean
 
@@ -80,4 +80,4 @@ example : complexity interpretation (mulBits 2) ≤ 408 :=
 example : complexity interpretation (mulBits 0) ≤ 1 := by
   simpa using complexity_mulBits_le 0
 
-end ComplexityTests.KaratsubaCircuit
+end CslibFrontierTests.KaratsubaCircuit

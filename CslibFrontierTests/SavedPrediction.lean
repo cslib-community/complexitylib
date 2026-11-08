@@ -14,7 +14,7 @@ Clients exercise total decoding, exact replay of a concrete label test, zero-coo
 source-independent description bounds, and complete prediction with alternative input encodings.
 -/
 
-namespace ComplexityTests.SavedPrediction
+namespace CslibFrontierTests.SavedPrediction
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Pseudoentropy
   Cslib.Crypto.Pseudoentropy.Boosting Cslib.BitString Turing.MultiTapeTM
@@ -169,4 +169,4 @@ example {Param : Type} (input : Param ↪ List Bool) :
   simpa only [map_pure] using hrealize a (pure ()) (fun _ => []) (fun _ => true)
     3 observation.length params state observation le_rfl
 
-end ComplexityTests.SavedPrediction
+end CslibFrontierTests.SavedPrediction

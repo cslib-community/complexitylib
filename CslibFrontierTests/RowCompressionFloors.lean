@@ -18,7 +18,7 @@ compression execution with zero raw increments acquires a positive default; its 
 property is checked directly, then the floor sum controls its actual compression loss.
 -/
 
-namespace ComplexityTests.RowCompressionFloors
+namespace CslibFrontierTests.RowCompressionFloors
 
 open Finset Cslib.RowCompression
 
@@ -84,4 +84,4 @@ example : dyadicSlack 4 1 = 4 ∧ (28 : ℝ) ^ (4 - 1) ≤ 28 * (4 + 1) ^ 5 := b
   · norm_num [dyadicSlack]
   · simpa [dyadicSlack] using propagation_le_dyadicSlack (m := 4) (i := 1) (by norm_num)
 
-end ComplexityTests.RowCompressionFloors
+end CslibFrontierTests.RowCompressionFloors

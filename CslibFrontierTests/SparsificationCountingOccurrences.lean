@@ -13,7 +13,7 @@ public section
 open Cslib.Logic.PL
 open ClauseSet.Sparsification Finset
 
-namespace ComplexityTests.SparsificationCountingOccurrences
+namespace CslibFrontierTests.SparsificationCountingOccurrences
 
 -- The added unit is real payload data, rather than silently omitted in the occurrence proof.
 theorem negated_unit_remains_in_payload : {(0, false)} ∈ countingIntro
@@ -158,4 +158,4 @@ example : ¬ Choice (fun _ => 1) minFirst 3 {(0, true), (3, true)} := by
 example : ¬ (minSecond.filter fun C => C ∉ minRoot ∧ C.card = 2 ∧ {(0, true)} ⊆ C).card < 2 := by
   decide
 
-end ComplexityTests.SparsificationCountingOccurrences
+end CslibFrontierTests.SparsificationCountingOccurrences

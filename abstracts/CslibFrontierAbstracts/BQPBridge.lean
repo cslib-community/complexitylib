@@ -19,20 +19,20 @@ on amplitude functions `(Fin m → Bool) → ℂ`. This module repeats those for
 they agree with the library's circuits:
 
 * a well-formed gate code acts on amplitudes as its formula says
-  (`ComplexityAbstracts.BQPBridge.ofLp_eval_toPlacedGate`), from the library's action on basis
+  (`CslibFrontierAbstracts.BQPBridge.ofLp_eval_toPlacedGate`), from the library's action on basis
   states (`Cslib.Quantum.GateCode.eval_toPlacedGate_ket`,
   `Cslib.Quantum.GateCode.eval_toPlacedGate_hadamard_ket`);
 * hence a run of well-formed codes is `Cslib.Quantum.Circuit.run ∘ Cslib.Quantum.Circuit.ofCodes`
-  (`ComplexityAbstracts.BQPBridge.ofLp_eval_ofCodes`), and the explicit acceptance probability is
-  `Cslib.Quantum.acceptProb` (`ComplexityAbstracts.BQPBridge.acceptProb_eq`);
-* the restated class is `Cslib.Complexity.BQP` (`ComplexityAbstracts.BQPBridge.mem_BQP_iff`), and
+  (`CslibFrontierAbstracts.BQPBridge.ofLp_eval_ofCodes`), and the explicit acceptance probability is
+  `Cslib.Quantum.acceptProb` (`CslibFrontierAbstracts.BQPBridge.acceptProb_eq`);
+* the restated class is `Cslib.Complexity.BQP` (`CslibFrontierAbstracts.BQPBridge.mem_BQP_iff`), and
   the restated `PP` is `Cslib.Complexity.PP` by unfolding, so `Cslib.Complexity.BQP_subset_PP`
-  gives the headline (`ComplexityAbstracts.BQPBridge.BQP_subset_PP`).
+  gives the headline (`CslibFrontierAbstracts.BQPBridge.BQP_subset_PP`).
 -/
 
-namespace ComplexityAbstracts.BQPBridge
+namespace CslibFrontierAbstracts.BQPBridge
 
-open ComplexityTests.Abstracts Cslib.Quantum Finset
+open CslibFrontierTests.Abstracts Cslib.Quantum Finset
 
 /-! ### The explicit model, as in the abstract -/
 
@@ -248,4 +248,4 @@ theorem PP_eq : PP enc = Cslib.Complexity.PP enc := rfl
 theorem BQP_subset_PP (enc : α ↪ List Bool) : BQP enc ⊆ PP enc := fun _ hA =>
   Cslib.Complexity.BQP_subset_PP (mem_BQP_iff.mp hA)
 
-end ComplexityAbstracts.BQPBridge
+end CslibFrontierAbstracts.BQPBridge

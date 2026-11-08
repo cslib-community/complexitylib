@@ -11,7 +11,7 @@ import CslibFrontier.Tactic.PolyTime
 
 /-! Fixed walks carry runtime graph data and preserve exact return labels and kill signals. -/
 
-namespace ComplexityTests.RotationWalk
+namespace CslibFrontierTests.RotationWalk
 
 open Cslib Turing.MultiTapeTM
 open ComputableInPolyTime
@@ -131,4 +131,4 @@ example {P V D : Type} (input : P ↪ List Bool) (vertex : V ↪ List Bool)
   fail_if_success clear hstep; fun_prop
   fun_prop
 
-end ComplexityTests.RotationWalk
+end CslibFrontierTests.RotationWalk

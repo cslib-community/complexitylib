@@ -15,7 +15,7 @@ non-power-of-two propagation chain, and finish an existing carry-save reduction.
 generate complete binary circuit codes at growing widths and at arbitrary binary scan distances.
 -/
 
-namespace ComplexityTests.CarryLookahead
+namespace CslibFrontierTests.CarryLookahead
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean
 open Turing.MultiTapeTM ComputableInPolyTime
@@ -118,4 +118,4 @@ theorem arbitraryDistance_polynomialTime :
   Cslib.Circuits.Boolean.CarryLookahead.computableInPolyTime_stepCode
     (fst _ _) (snd _ _)
 
-end ComplexityTests.CarryLookahead
+end CslibFrontierTests.CarryLookahead

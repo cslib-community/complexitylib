@@ -23,7 +23,7 @@ import CslibFrontier.Privacy.DifferentialPrivacy.RandomizedResponse
   guessed correctly with probability `3 / 4 = (exp ε + δ) / (1 + exp ε)`.
 -/
 
-namespace ComplexityTests.Privacy.LowerBounds
+namespace CslibFrontierTests.Privacy.LowerBounds
 
 open Cslib Cslib.Privacy
 open scoped ENNReal
@@ -132,4 +132,4 @@ example :
   rw [ENNReal.div_eq_inv_mul, ENNReal.div_eq_inv_mul, h4, ← mul_assoc, ← mul_assoc,
     ENNReal.mul_inv_cancel two_ne_zero ENNReal.ofNat_ne_top, one_mul]
 
-end ComplexityTests.Privacy.LowerBounds
+end CslibFrontierTests.Privacy.LowerBounds

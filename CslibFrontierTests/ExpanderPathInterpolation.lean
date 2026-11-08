@@ -17,7 +17,7 @@ affine path, and give a finite perturbation budget. The final example constructs
 Dirichlet mode at a resonant angle, checking that the nonresonance hypothesis matters.
 -/
 
-namespace ComplexityTests.ExpanderPathInterpolation
+namespace CslibFrontierTests.ExpanderPathInterpolation
 
 open Cslib.ExpanderPath
 
@@ -72,4 +72,4 @@ example : ∃ x : ℕ → ℝ,
   · have hangle : (2 : ℝ) * (Real.pi / 2) = Real.pi := by ring
     rw [hangle, Real.sin_pi]
 
-end ComplexityTests.ExpanderPathInterpolation
+end CslibFrontierTests.ExpanderPathInterpolation

@@ -10,7 +10,7 @@ import CslibFrontier.Logics.Propositional.ClauseSet.Sparsification.CountingPolyT
 # Tests for sparsification certificates with runtime thresholds
 -/
 
-namespace ComplexityTests.SparsificationRuntimeThresholds
+namespace CslibFrontierTests.SparsificationRuntimeThresholds
 
 open Cslib.Logic.PL Cslib.Logic.PL.CNF.Sparsification Turing.MultiTapeTM
 
@@ -63,4 +63,4 @@ example : ComputableInPolyTime
   refine computableInPolyTime_isSparseWith encNat (θ := fun (p : ℕ × ℕ) j => p.1 ^ j + p.2) ?_ 2
   fun_prop
 
-end ComplexityTests.SparsificationRuntimeThresholds
+end CslibFrontierTests.SparsificationRuntimeThresholds

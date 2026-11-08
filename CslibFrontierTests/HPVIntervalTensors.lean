@@ -9,7 +9,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Inter
 /-! Views, embeddings and interval steps of a concrete choice-string run, with blocks of
 length `2`. -/
 
-namespace ComplexityTests.HPVIntervalTensors
+namespace CslibFrontierTests.HPVIntervalTensors
 
 open Turing MultiTapeMachine
 
@@ -103,4 +103,4 @@ example (y : Fin (2 * 2) → Bool) :
       zigzag.stepCoins [y 2, y 3] (zigzag.intervalStart 2 (List.ofFn y) start 1) := by
   exact zigzag.intervalStart_succ_ofFn y start 1
 
-end ComplexityTests.HPVIntervalTensors
+end CslibFrontierTests.HPVIntervalTensors

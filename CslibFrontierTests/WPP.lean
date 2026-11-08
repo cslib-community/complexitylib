@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 unary-indexed target normalization, many-one reduction closure, Boolean closures, and
 `intBin_prod`. -/
 
-namespace ComplexityTests.WPP
+namespace CslibFrontierTests.WPP
 
 open Cslib Cslib.Complexity Turing.MultiTapeTM
 open scoped symmDiff
@@ -115,4 +115,4 @@ example : {w : List Bool | w.headD false = true} ∈ WPP encBits := by
       · exact ⟨fun _ => ⟨false, Finset.mem_univ _, rfl⟩, fun _ => rfl⟩
       · exact ⟨fun _ => ⟨true, Finset.mem_univ _, rfl⟩, fun _ => rfl⟩
 
-end ComplexityTests.WPP
+end CslibFrontierTests.WPP

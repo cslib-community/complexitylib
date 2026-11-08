@@ -22,7 +22,7 @@ input-supplied default. The examples also instantiate distinct address and value
 
 @[expose] public section
 
-namespace ComplexityTests.SparseMemory
+namespace CslibFrontierTests.SparseMemory
 
 open Cslib.GenericRAM Cslib.GenericRAM.SparseMemory Turing.MultiTapeTM
 
@@ -94,4 +94,4 @@ info: 'Cslib.GenericRAM.SparseMemory.read_insert' depends on axioms:
 #guard_msgs (whitespace := lax) in
 #print axioms Cslib.GenericRAM.SparseMemory.read_insert
 
-end ComplexityTests.SparseMemory
+end CslibFrontierTests.SparseMemory

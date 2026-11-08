@@ -13,7 +13,7 @@ import Mathlib.Analysis.Complex.ExponentialBounds
 recovered tape, its description for the Kolmogorov bridge, instances of the Local Lemma hypotheses
 (constructive and existential), and instances where they fail. -/
 
-namespace ComplexityTests.Moser
+namespace CslibFrontierTests.Moser
 
 open Cslib.Logic.PL Cslib.Logic.PL.Moser Cslib.BitString MeasureTheory
 open scoped ENNReal
@@ -175,4 +175,4 @@ example : ¬Real.exp 1 * (7 + 1) ≤ 2 ^ 3 := by
   intro h
   linarith
 
-end ComplexityTests.Moser
+end CslibFrontierTests.Moser

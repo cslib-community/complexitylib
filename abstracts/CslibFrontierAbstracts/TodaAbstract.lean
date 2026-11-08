@@ -45,7 +45,7 @@ machine modules, with no complexity-class or Toda-theorem allowance:
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-namespace ComplexityTests.Abstracts.TodaAbstract
+namespace CslibFrontierTests.Abstracts.TodaAbstract
 
 /-- Count the accepted binary strings of exactly `n` bits. -/
 def acceptCount {α : Type} (V : α × List Bool → Bool) (a : α) (n : ℕ) : ℕ :=
@@ -156,12 +156,12 @@ The output and final oracle state must agree for every handler, not just for the
 -/
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.TodaAbstract`:
+info: abstract audit passed for `CslibFrontierTests.Abstracts.TodaAbstract`:
 15 root declarations
 -/
 #guard_msgs (whitespace := lax) in
-#check_abstract ComplexityTests.Abstracts.TodaAbstract allowing [
-  ComplexityAbstracts.Encoding, ComplexityAbstracts.Computation,
+#check_abstract CslibFrontierTests.Abstracts.TodaAbstract allowing [
+  CslibFrontierAbstracts.Encoding, CslibFrontierAbstracts.Computation,
   CslibFrontier.Computability.Machines.Turing.MultiTape.Machine,
   CslibFrontier.Computability.Machines.Turing.MultiTape.Machine.Program,
   CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic,
@@ -173,4 +173,4 @@ info: abstract audit passed for `ComplexityTests.Abstracts.TodaAbstract`:
   CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 ]
 
-end ComplexityTests.Abstracts.TodaAbstract
+end CslibFrontierTests.Abstracts.TodaAbstract

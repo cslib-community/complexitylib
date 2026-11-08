@@ -38,7 +38,7 @@ without that layer, so that the scope is checked rather than only documented.
 A meaningful instance of any of these notions needs an efficient simulator or extractor.
 -/
 
-namespace ComplexityTests.UnboundedSimulators
+namespace CslibFrontierTests.UnboundedSimulators
 
 open Cslib Cslib.Interactive Spec Probability
 open scoped ENNReal
@@ -222,4 +222,4 @@ example : (sendWitnessSigma fun (x y : ZMod 5) => x = 2 * y).SpecialHVZK
 
 end Sigma
 
-end ComplexityTests.UnboundedSimulators
+end CslibFrontierTests.UnboundedSimulators

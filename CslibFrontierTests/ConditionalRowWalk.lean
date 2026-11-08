@@ -21,7 +21,7 @@ actual two-step averaging reduces it to `3/8`. No output-moment hypothesis is su
 
 public section
 
-namespace ComplexityTests.ConditionalRowWalk
+namespace CslibFrontierTests.ConditionalRowWalk
 
 open Cslib Cslib.RotationMap Cslib.Probability Finset
 open scoped BigOperators
@@ -179,4 +179,4 @@ example : rowNormPow 4 0 1 source target (fun σ x y =>
       rowSliceMean source target sample x y) = 0 := by
   simp [rowNormPow]
 
-end ComplexityTests.ConditionalRowWalk
+end CslibFrontierTests.ConditionalRowWalk

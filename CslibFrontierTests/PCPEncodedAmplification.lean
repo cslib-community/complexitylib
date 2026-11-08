@@ -12,7 +12,7 @@ import Mathlib.Tactic.FinCases
 
 /-! Complete small walk enumeration, nontrivial constraints, exact interpretation and cost. -/
 
-namespace ComplexityTests.PCPEncodedPower
+namespace CslibFrontierTests.PCPEncodedPower
 
 open Cslib Cslib.PCP Cslib.PCP.Encoded Turing.MultiTapeTM
 
@@ -172,7 +172,7 @@ example {Input : Type} {input : Input ↪ List Bool} {graph : Input → Graph Bo
   polytime
 
 
-open Cslib.PCP.HadamardTester ComplexityTests.PCPNumbering
+open Cslib.PCP.HadamardTester CslibFrontierTests.PCPNumbering
 
 private def unitEval (constraint : Bool) (_ _ : Unit) : Bool := constraint
 
@@ -358,4 +358,4 @@ example (g : Graph Bool) :
         _ RotationMap.spectralExpansion_arithmeticExpander_le (by norm_num) (by decide)
         (by simp)
 
-end ComplexityTests.PCPEncodedPower
+end CslibFrontierTests.PCPEncodedPower

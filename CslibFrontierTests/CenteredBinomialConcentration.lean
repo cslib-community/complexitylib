@@ -10,7 +10,7 @@ import CslibFrontier.Probability.PMF.Event
 
 /-! Actual CBD sampler tails: endpoint atoms, width zero, and a growing native program. -/
 
-namespace ComplexityTests.CenteredBinomialConcentration
+namespace CslibFrontierTests.CenteredBinomialConcentration
 
 open Cslib ProbComp Probability Turing.MultiTapeTM
 
@@ -82,4 +82,4 @@ example (l : ℕ) :
     ring
   simpa only [Nat.cast_mul, Nat.cast_add, Nat.cast_ofNat, Nat.cast_one, he] using h
 
-end ComplexityTests.CenteredBinomialConcentration
+end CslibFrontierTests.CenteredBinomialConcentration

@@ -19,7 +19,7 @@ circuit. Finally the class-level consequences: `Clique` is in `W[2]`, and a `W[1
 `FPT` would put `Clique` in `FPT`.
 -/
 
-namespace ComplexityTests.WHierarchy
+namespace CslibFrontierTests.WHierarchy
 
 open Cslib Cslib.Complexity Cslib.Circuits Cslib.Circuits.Boolean Turing.MultiTapeTM
 
@@ -114,4 +114,4 @@ example {β : Type} {enc : β ↪ List Bool} {κ : β → ℕ} {B : Set β} (hB 
     (hFPT : B ∈ FPT enc κ) : Clique ∈ FPT (encPair encGraph encNat) Prod.snd :=
   hB.subset_FPT hFPT Clique_mem_W
 
-end ComplexityTests.WHierarchy
+end CslibFrontierTests.WHierarchy

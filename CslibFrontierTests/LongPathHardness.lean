@@ -17,7 +17,7 @@ all-`false` certificate names `[1, 1]`, which is not an ordering, and is rejecte
 and `NP`-completeness are instantiated.
 -/
 
-namespace ComplexityTests.LongPathHardness
+namespace CslibFrontierTests.LongPathHardness
 
 open Cslib Cslib.Complexity Turing.MultiTapeTM
 
@@ -51,4 +51,4 @@ example : NPHard (encPair encGraph encNat) LongPath := LongPath_npHard
 /-- k-Path is `NP`-complete. -/
 example : NPComplete (encPair encGraph encNat) LongPath := LongPath_npComplete
 
-end ComplexityTests.LongPathHardness
+end CslibFrontierTests.LongPathHardness

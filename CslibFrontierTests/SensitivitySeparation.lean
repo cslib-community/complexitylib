@@ -9,7 +9,7 @@ import CslibFrontier.Computability.QueryComplexity.SensitivitySeparation.Interna
 
 /-! Clients for the superquadratic sensitivity separation. -/
 
-namespace ComplexityTests.SensitivitySeparation
+namespace CslibFrontierTests.SensitivitySeparation
 
 open Cslib Cslib.BitString Cslib.QueryComplexity
 
@@ -33,4 +33,4 @@ example {n : ℕ} (f : BooleanFunction n) :
 example {n : ℕ} (S : Finset (Fin n)) (x : BitString n) : flipOn S x = flipBlock S x :=
   flipOn_eq_flipBlock S x
 
-end ComplexityTests.SensitivitySeparation
+end CslibFrontierTests.SensitivitySeparation

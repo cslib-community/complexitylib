@@ -14,7 +14,7 @@ open scoped ENNReal Pointwise
 
 noncomputable section
 
-namespace ComplexityTests.DiscreteGaussianCoefficientFiber
+namespace CslibFrontierTests.DiscreteGaussianCoefficientFiber
 
 private def twoBasis : Basis Unit ℝ ℝ :=
   (Basis.singleton Unit ℝ).isUnitSMul (fun _ ↦ (show (2 : ℝ) ≠ 0 by norm_num).isUnit)
@@ -124,4 +124,4 @@ example (r : ℝ) (hr : 0 < r) :
         Function.const _ (fun i ↦ nomatch i) := Subsingleton.elim _ _
   rw [hf, PMF.map_const]
 
-end ComplexityTests.DiscreteGaussianCoefficientFiber
+end CslibFrontierTests.DiscreteGaussianCoefficientFiber

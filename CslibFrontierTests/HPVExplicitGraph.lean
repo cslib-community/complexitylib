@@ -10,7 +10,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Expli
 and ports for concrete machines, compared with the explicit networks, and the polynomial-time
 certificate. -/
 
-namespace ComplexityTests.HPVExplicitGraph
+namespace CslibFrontierTests.HPVExplicitGraph
 
 open Turing MultiTapeMachine MultiTapePTM Cslib.Circuits.Frontier
 
@@ -95,4 +95,4 @@ example : MultiTapeTM.ComputableInPolyTime (fun p : ℕ × ℕ => explicitPortsN
   computableInPolyTime_explicitPortsNum (.const _) (.const _)
     (MultiTapeTM.ComputableInPolyTime.fst _ _) (MultiTapeTM.ComputableInPolyTime.snd _ _)
 
-end ComplexityTests.HPVExplicitGraph
+end CslibFrontierTests.HPVExplicitGraph

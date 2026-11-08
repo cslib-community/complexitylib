@@ -14,7 +14,7 @@ weighted majority with a perfect expert, a failure of the mistake bound without 
 weighted-majority hypothesis, the range of the quadratic `exp` estimate, the value of matching
 pennies, the algorithmic minimax theorem on it, and the conditions of the tuned regret bounds. -/
 
-namespace ComplexityTests.OnlineLearning
+namespace CslibFrontierTests.OnlineLearning
 
 open Finset Real Cslib.MachineLearning.OnlineLearning.Experts Cslib.Probability Convexity
 
@@ -128,4 +128,4 @@ example (ℓ : ℕ → Bool → ℝ) (hℓ : ∀ s < 1, ∀ i, |ℓ s i| ≤ 1) 
       simp only [Fintype.card_bool, Nat.cast_ofNat, Nat.cast_one]
       linarith) hℓ i
 
-end ComplexityTests.OnlineLearning
+end CslibFrontierTests.OnlineLearning

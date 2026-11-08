@@ -20,7 +20,7 @@ zero digit breaks line parity, and the packing bounds are checked at exact multi
 their positivity hypotheses fail.
 -/
 
-namespace ComplexityTests.MassProduction.HighRate
+namespace CslibFrontierTests.MassProduction.HighRate
 
 open Cslib Cslib.LineCode Cslib.LineCode.HighRate
 
@@ -109,4 +109,4 @@ example :
     nonempty_addEquiv_bitString (card_galoisField (by norm_num)),
     exists_field_card_eq_two_pow (by norm_num)⟩
 
-end ComplexityTests.MassProduction.HighRate
+end CslibFrontierTests.MassProduction.HighRate

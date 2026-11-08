@@ -12,7 +12,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 
 /-! Actual prime-modulus bias and native conditional key generation with one sampled matrix. -/
 
-namespace ComplexityTests.Crypto.ModuleMatrixApproximation
+namespace CslibFrontierTests.Crypto.ModuleMatrixApproximation
 
 open Cslib Cslib.Crypto Probability ProbComp Interactive Turing.MultiTapeTM
 open scoped Matrix ENNReal
@@ -235,4 +235,4 @@ example : ∃ sample,
       (encList (encList encNat) [[], []]) using 1
     congr 1
 
-end ComplexityTests.Crypto.ModuleMatrixApproximation
+end CslibFrontierTests.Crypto.ModuleMatrixApproximation

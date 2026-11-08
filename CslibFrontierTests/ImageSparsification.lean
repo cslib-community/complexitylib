@@ -16,7 +16,7 @@ input spaces are zero but the output space contains constants.
 
 open Cslib.ImageSparsification Module Finset
 
-namespace ComplexityTests.ImageSparsification
+namespace CslibFrontierTests.ImageSparsification
 
 private def constantMap (_ : Unit) (_ : Fin 3) : Fin 3 := 0
 
@@ -70,4 +70,4 @@ example : ¬ HasSliceDecomposition (fun (_ : Unit) (_ : Unit) ↦ ())
   have := congrFun (congrFun hmem ()) ()
   norm_num at this
 
-end ComplexityTests.ImageSparsification
+end CslibFrontierTests.ImageSparsification

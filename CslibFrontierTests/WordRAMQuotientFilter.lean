@@ -33,7 +33,7 @@ Exercises:
 
 @[expose] public section
 
-namespace ComplexityTests.WordRAMQuotientFilter
+namespace CslibFrontierTests.WordRAMQuotientFilter
 
 open Cslib Cslib.WordRAM Cslib.Probability
 open Cslib.DataStructure Cslib.DataStructure.ApproximateMembership
@@ -277,4 +277,4 @@ theorem nonvacuous_sampleQFImplOfEps_steps
   simpa only [sampleQFImplOfEps, implOfEps, implOfLe, Nat.cast_zero, zero_add,
     List.map_const', List.sum_replicate, smul_eq_mul] using hcost
 
-end ComplexityTests.WordRAMQuotientFilter
+end CslibFrontierTests.WordRAMQuotientFilter

@@ -15,7 +15,7 @@ The examples check the double-counting bound, a sharp `f / u = 2` cost with an e
 dependent relation and error, and source release through a nonzero concrete correction atom.
 -/
 
-namespace ComplexityTests.SourceRelease
+namespace CslibFrontierTests.SourceRelease
 
 open Finset Matrix Cslib
 open scoped BigOperators
@@ -135,4 +135,4 @@ example : (2 * (1 / 2) : ℝ)⁻¹ * 𝔼 σ : Fin 2, ∑ x : Fin 2,
   simp only [atom_eq]
   norm_num [error, G, expect_eq_sum_div_card, sum_filter, Fin.sum_univ_two, filter_eq']
 
-end ComplexityTests.SourceRelease
+end CslibFrontierTests.SourceRelease

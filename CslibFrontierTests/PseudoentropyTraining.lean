@@ -16,7 +16,7 @@ The complete training contract has a concrete learner and a nontrivial predictio
 Composed programs use captured inputs and alternative encodings without exposing machines.
 -/
 
-namespace ComplexityTests.PseudoentropyTraining
+namespace CslibFrontierTests.PseudoentropyTraining
 
 open Cslib Cslib.Probability Cslib.Crypto.Pseudoentropy.Boosting Cslib.BitString
   Turing.MultiTapeTM
@@ -132,10 +132,10 @@ example (evaluate : List Bool → List Bool → Bool)
   fail_if_success (clear hevaluate; ppt)
   ppt
 
-end ComplexityTests.PseudoentropyTraining
+end CslibFrontierTests.PseudoentropyTraining
 
 
-namespace ComplexityTests.PseudoentropyTraining
+namespace CslibFrontierTests.PseudoentropyTraining
 open Cslib Cslib.Probability Turing.MultiTapeTM
 
 -- Selection retains arbitrary caller/output encodings and every supplied callback contract.
@@ -152,4 +152,4 @@ example {α β : Type} {input : α ↪ List Bool} {output : β ↪ List Bool}
   fail_if_success (clear ht; ppt)
   ppt
 
-end ComplexityTests.PseudoentropyTraining
+end CslibFrontierTests.PseudoentropyTraining

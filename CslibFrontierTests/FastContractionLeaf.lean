@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.FastContractio
 The packet shape on a root and on a call with a packet vertex, the row ports and target modes it
 bounds, and an input meeting every hypothesis of the leaf bound. -/
 
-namespace ComplexityTests.FastContractionLeaf
+namespace CslibFrontierTests.FastContractionLeaf
 
 open Cslib.Circuits.Frontier Cslib.Circuits.Frontier.FastContraction
   Cslib.Circuits.Frontier.NativePacket Cslib.Circuits.Frontier.ContractionSchedule
@@ -83,4 +83,4 @@ example (s : ℕ) (hs : 32768 ≤ Nat.log 2 s) :
   change 1 ≤ Nat.log 2 s / 32768
   omega
 
-end ComplexityTests.FastContractionLeaf
+end CslibFrontierTests.FastContractionLeaf

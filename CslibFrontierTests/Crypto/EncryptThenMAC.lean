@@ -17,7 +17,7 @@ Boneh–Shoup Theorem 5.2 (`PRF ⇒ INDCPA` for `prfCipher`) and Theorem 9.2 (`E
 `echoPrfCipher`, `echoPrfMAC`, and `echoPrfEtM`.
 -/
 
-namespace ComplexityTests.Crypto.EncryptThenMAC
+namespace CslibFrontierTests.Crypto.EncryptThenMAC
 
 open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 open scoped NNReal
@@ -296,4 +296,4 @@ example (n : ℕ) :
     (prfCipher_ciphertext_length echoFamily echoFamily_polyTime echoFamily_length)
     zeroCPAAdversary n⟩
 
-end ComplexityTests.Crypto.EncryptThenMAC
+end CslibFrontierTests.Crypto.EncryptThenMAC

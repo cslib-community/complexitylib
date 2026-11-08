@@ -10,7 +10,7 @@ import Mathlib.Algebra.Field.ZMod
 
 /-! Public-seed extraction, nonuniform seeds, empty digests and preimage isolation. -/
 
-namespace ComplexityTests.UniversalHash
+namespace CslibFrontierTests.UniversalHash
 
 open Cslib.Probability Cslib.Probability.PMF
 open scoped ENNReal
@@ -115,4 +115,4 @@ example (source : PMF (ZMod 5 × ZMod 5)) :
   have hne : (2 / 5 : ℝ≥0∞) ≠ ⊤ := ENNReal.div_ne_top (by norm_num) (by norm_num)
   simpa [ENNReal.toReal_div] using hpoly.leftover_hash hne source
 
-end ComplexityTests.UniversalHash
+end CslibFrontierTests.UniversalHash

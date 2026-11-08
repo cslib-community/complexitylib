@@ -17,7 +17,7 @@ family-directed search, and their implementations remain opaque to compositional
 
 public section
 
-namespace ComplexityTests.LogSpaceCertificates
+namespace CslibFrontierTests.LogSpaceCertificates
 
 open Turing.MultiTapeTM
 
@@ -66,4 +66,4 @@ theorem scopedNamed_logspace (f : List Bool → List Bool)
   exact hf
 
 end Scoped
-end ComplexityTests.LogSpaceCertificates
+end CslibFrontierTests.LogSpaceCertificates

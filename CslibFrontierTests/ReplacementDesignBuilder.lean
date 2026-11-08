@@ -22,7 +22,7 @@ Computational (`rfl` / `decide`), specification-bridge, and `fun_prop` synthesis
 
 @[expose] public section
 
-namespace ComplexityTests.ReplacementDesignBuilder
+namespace CslibFrontierTests.ReplacementDesignBuilder
 
 open Finset Polynomial Cslib.BitString Cslib.LinearAlgebra Turing.MultiTapeTM
 
@@ -124,4 +124,4 @@ example : True := by
       encNat encReplacementDesignData := by fun_prop (config := { maxSteps := 32 })
   trivial
 
-end ComplexityTests.ReplacementDesignBuilder
+end CslibFrontierTests.ReplacementDesignBuilder

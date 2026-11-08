@@ -11,7 +11,7 @@ import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 
 /-! Compositional strict oracle PPT: adaptive branches, stateful oracles, loops and boundaries. -/
 
-namespace ComplexityTests.OracleComposition
+namespace CslibFrontierTests.OracleComposition
 
 open Cslib Cslib.Probability Turing Turing.MultiTapeTM
 
@@ -142,4 +142,4 @@ example : ¬ IsOraclePPTOn (Operation := Unit) encUnary encBits
     at hlength
   lia
 
-end ComplexityTests.OracleComposition
+end CslibFrontierTests.OracleComposition

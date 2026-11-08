@@ -12,7 +12,7 @@ import CslibFrontier.Tactic.PPT
 Entropy budgets, captured programs, exact seed accounting, and executable three-source clients.
 -/
 
-namespace ComplexityTests.PseudoentropyThreeSource
+namespace CslibFrontierTests.PseudoentropyThreeSource
 
 open Cslib Cslib.Probability Cslib.BitString Cslib.Crypto.Pseudoentropy Turing.MultiTapeTM
 
@@ -114,4 +114,4 @@ example : ThreeSource.generate 1 2 1 1 1 1 evaluate [] = [false, false, false] :
 
 example : ThreeSource.generate 1 2 1 0 0 0 evaluate [true, false] = [] := by decide
 
-end ComplexityTests.PseudoentropyThreeSource
+end CslibFrontierTests.PseudoentropyThreeSource

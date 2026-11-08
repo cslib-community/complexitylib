@@ -8,7 +8,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Counting.Guess
 
 /-! Clients for exact binary guessing, its clock, and its shared FreeM interpretation. -/
 
-namespace ComplexityTests.CountingGuess
+namespace CslibFrontierTests.CountingGuess
 
 open Cslib Turing MultiTapeCTM GuessMachine
 
@@ -78,4 +78,4 @@ info: 'Turing.MultiTapeCTM.interpret_chooseOccurrence' depends on axioms: [prope
 #guard_msgs (whitespace := lax) in
 #print axioms Turing.MultiTapeCTM.interpret_chooseOccurrence
 
-end ComplexityTests.CountingGuess
+end CslibFrontierTests.CountingGuess

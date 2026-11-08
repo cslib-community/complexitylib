@@ -8,7 +8,7 @@ import CslibFrontier.Foundations.Data.Nat.LogStar
 
 /-! Values of the tower of twos and the iterated logarithm at the tower boundaries. -/
 
-namespace ComplexityTests.LogStar
+namespace CslibFrontierTests.LogStar
 
 open Nat
 
@@ -39,4 +39,4 @@ example : (2 ^ ·)^[3] 3 ≤ twoTower 5 := by
   have h := iterate_two_pow_le_twoTower 3 3
   rwa [show logStar 3 = 2 by decide] at h
 
-end ComplexityTests.LogStar
+end CslibFrontierTests.LogStar

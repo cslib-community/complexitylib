@@ -13,7 +13,7 @@ A one-gate AND circuit garbled with one-bit keys, evaluated on every input; the 
 garbled table; a topology that is not ordered; the identity PRF with zero advantage; and the
 privacy bound instantiated with injective tweaks. -/
 
-namespace ComplexityTests.Garbling
+namespace CslibFrontierTests.Garbling
 
 open Cslib Cslib.Circuits Cslib.Crypto Cslib.Crypto.Garbling
 
@@ -81,4 +81,4 @@ example (D : View andC.topology Bool → ProbComp Bool) (x : Fin 2 → Bool) :
         PRF.advantage toyF (reduction andC Boolean.interpretation toyF id x D j) :=
   advantage_realGame_simGame_le andC Boolean.interpretation toyF id Function.injective_id x D
 
-end ComplexityTests.Garbling
+end CslibFrontierTests.Garbling
