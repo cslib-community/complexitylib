@@ -724,6 +724,16 @@ Import `Complexity.Foundations.LinearAlgebra.Matrix.LinearProgramming` ([LinearP
 
 The [checked examples](../../ComplexityTests/Foundations/LinearAlgebra/Matrix/LinearProgramming.lean) give an infeasible system with its certificate, a feasible system with no certificate, an empty system, programs with values `3` and `22 / 5`, and an unbounded program with infeasible dual. Not formalized: bit-size bounds on solutions and certificates, membership of rational LP feasibility in NP ∩ coNP, and any polynomial-time LP algorithm ([ROADMAP](../../ROADMAP.md#optimization-and-duality)).
 
+## LLL-reduced bases and lattice basis reduction
+
+Import `Complexity.Algorithms.LatticeReduction.Potential` ([Reduced.lean](../../Complexity/Algorithms/LatticeReduction/Reduced.lean), [Potential.lean](../../Complexity/Algorithms/LatticeReduction/Potential.lean)). This is mathematics with no machine model or running time, following [Lenstra, Lenstra and Lovász, §1][lll82]. A family `b : Fin n → E` lives in an arbitrary real inner product space (for example `EuclideanSpace ℝ (Fin m)`). Its Gram–Schmidt vectors are Mathlib's `gramSchmidt ℝ b`, and its coefficients are `gramSchmidtCoeff ℝ b i j = ⟪b*ⱼ, bᵢ⟫ / ‖b*ⱼ‖²` ([GramSchmidtOrtho.lean](../../Complexity/Foundations/Analysis/InnerProductSpace/GramSchmidtOrtho.lean), a Mathlib candidate). The lattice is `Submodule.span ℤ (Set.range b)`.
+
+- **Reduced bases and Proposition (1.11):** `IsReduced δ b` is size reduction (1.4) together with the exchange condition (1.5), where the constant `3/4` is replaced by `δ`. `IsReduced.norm_sq_le` proves `‖b₀‖² ≤ (4/(4δ-1))ⁿ ‖x‖²` for `b : Fin (n + 1) → E`, `1/4 < δ ≤ 1` and every nonzero lattice vector `x`. `IsReduced.norm_le_sqrt_two_pow_mul` is the case `δ = 3/4`, `‖b₀‖ ≤ (√2)ⁿ ‖x‖`. Neither statement assumes linear independence.
+- **Steps:** `IsSizeStep` (`bᵢ ← bᵢ - r bⱼ`, `j < i`, `r ∈ ℤ`) keeps the lattice and every Gram–Schmidt vector. `abs_gramSchmidtCoeff_round_le` shows that rounding `μᵢⱼ` gives `|μᵢⱼ| ≤ 1/2`. `IsSwapStep δ` swaps `bᵢ, bᵢ₊₁` when (1.5) fails, and `gramSchmidt_swap_self` is the swap formula (1.22).
+- **Potential:** `gramPrefixDet b k = ∏_{j<k} ‖b*ⱼ‖²` equals the Gram determinant of the first `k` vectors (`gramPrefixDet_eq_det`, via `det_gram_eq_prod_norm_gramSchmidt_sq`). `potential b` is their product `D`. `IsSwapStep.potential_lt` proves `D' < δ D`. For linearly independent `b` with integral inner products (`HasIntegralGram`, e.g. `bᵢ ∈ ℤᵐ`) and `‖bᵢ‖² ≤ B`, `one_le_potential` and `potential_le` give `1 ≤ D ≤ B^{n(n-1)/2}`. Along any run of `IsStep`s, `inv_pow_swapCount_le` and `swapCount_le` bound the number of exchange steps by `(n(n-1)/2) log B / log (1/δ)`.
+
+The [checked examples](../../ComplexityTests/Algorithms/LatticeReduction.lean) show that the standard basis of `ℤ²` is `3/4`-reduced and apply the SVP bound to it. They also show that `(e₀, e₀ + e₁)` is not size reduced, and that swapping `(2 e₀, e₀ + e₁)` is an exchange step taking the potential from `4` to `2 < (3/4) · 4`. Not formalized: an executable LLL algorithm, the count of size-reduction steps, the arithmetic and bit-size bounds of (1.26), and a polynomial-time statement ([ROADMAP](../../ROADMAP.md#optimization-and-duality)).
+
 ## Freivalds' matrix-product verification
 
 Import `Complexity.Algorithms.Lean.Freivalds` ([Complexity/Algorithms/Lean/Freivalds.lean](../../Complexity/Algorithms/Lean/Freivalds.lean)). It checks a claimed product `A * B = C` of rectangular matrices `l × m`, `m × n` and `l × n` over any ring with decidable equality, following [Freivalds][freivalds79]. The deterministic check `checkM A B C x` computes `A *ᵥ (B *ᵥ x)` and `C *ᵥ x` in `TimeM` and compares them. The cost model charges `2` per dot-product entry (one multiplication, one addition) and `1` per compared entry; reads, sampling and the vector encoding are free, and ring operations have unit cost whatever the operand size. Under it, `time_checkM` is exactly `2 * (m * n + l * m + l * n) + l`, independent of `x`, and `time_checkAllM_square` gives `k * (6 * n ^ 2 + n)` for `k` checks of square matrices.
@@ -747,6 +757,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [clrs09]: ../sources.md#clrs09
 [floyd62]: ../sources.md#floyd62
 [freivalds79]: ../sources.md#freivalds79
+[lll82]: ../sources.md#lll82
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
 [vww18]: ../sources.md#vww18
 [thorup13]: ../sources.md#thorup13

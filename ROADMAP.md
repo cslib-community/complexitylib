@@ -1227,6 +1227,15 @@ each statement against the numbered result. Organize modules by subject, not cha
   certificates (Cramer's rule with the Hadamard bound), giving LP feasibility in NP ∩ coNP with
   machine-checked certificate verifiers; and a polynomial-time LP algorithm (ellipsoid or
   interior point) with bit complexity and intermediate precision accounted for.
+- **Lattice basis reduction** ([#3235](https://github.com/cslib-community/complexitylib/issues/3235)):
+  `δ`-reduced bases, the LLL approximation `‖b₁‖² ≤ (4/(4δ-1))^{n-1} ‖x‖²` to the shortest
+  vector (Lenstra–Lenstra–Lovász Proposition (1.11)) and the potential argument bounding the
+  number of exchange steps by `O(n² log B)` for integral Gram matrices are in
+  `Algorithms/LatticeReduction`, over Gram–Schmidt facts in
+  `Foundations/Analysis/InnerProductSpace/GramSchmidtOrtho`. Remaining: an executable LLL on
+  integer bases with correctness and termination, the `O(n⁴ log B)` arithmetic and `O(n log B)`
+  bit-size bounds of (1.26), and a `ComputableInPolyTime` statement; then applications
+  (simultaneous Diophantine approximation, polynomial factorization over `ℚ`).
 - **Separation and optimization:** a precise oracle interface and a separation–optimization
   equivalence with its representation, accuracy and well-boundedness hypotheses. Extend to
   convex optimization through explicit oracle and numerical-error contracts.
