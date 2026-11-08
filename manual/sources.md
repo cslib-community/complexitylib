@@ -241,6 +241,11 @@ Sanjoy Dasgupta, Anupam Gupta. “An Elementary Proof of a Theorem of Johnson an
 
 Irit Dinur. “The PCP Theorem by Gap Amplification.” *Journal of the ACM* 54(3), Article 12 (2007). DOI: https://doi.org/10.1145/1236457.1236459. Author copy dated 2007-02-13 inspected: https://www.wisdom.weizmann.ac.il/~dinuri/mypapers/combpcp.pdf (opening definition and Theorem 1.1).
 
+<a id="dosasgall2013"></a>
+## dosasgall2013
+
+György Dósa and Jiří Sgall. "First Fit bin packing: A tight analysis." *30th International Symposium on Theoretical Aspects of Computer Science (STACS 2013)*, LIPIcs 20, 538–549, 2013. https://doi.org/10.4230/LIPIcs.STACS.2013.538 . Worker w156-ff read the open-access LIPIcs PDF on 2026-11-08 UTC and checked these parts: the weight function of Section 1.2 (scaled size `6/5 · a` plus a bonus); the observation there that every bin weighs at most `1.7`; Lemma 1.1, the amortization step; and the Section 1.1 history of the additive constants. [FirstFitWeight](../Complexity/Algorithms/Lean/BinPacking/FirstFitWeight.lean) cites these locators. The constant `+0.9` is credited there to Garey, Graham, Johnson and Yao (ref. [4]), and `+0.7` to Xia and Tan (ref. [15]); both attributions are reported only via this paper. The absolute bound `FF ≤ 1.7 · Opt` (Theorem 3.13) and the lower bounds of Section 4 (Lemma 4.1, Theorem 4.2) were read but are not formalized. The small instances for `Opt ≤ 9` at the end of the proof of Theorem 4.2 (`i` items each of sizes `1/6 - 2δ`, `1/3 + δ` and `1/2 + δ`) are checked for `i = 3` and `i = 9` in [BinPackingFirstFitWeight](../ComplexityTests/BinPackingFirstFitWeight.lean).
+
 <a id="dworkroth14"></a>
 ## dworkroth14
 
