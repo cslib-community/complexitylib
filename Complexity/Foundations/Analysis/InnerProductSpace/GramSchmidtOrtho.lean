@@ -176,6 +176,12 @@ theorem gramSchmidtCoeff_self {f : ι → E} {i : ι} (h : gramSchmidt 𝕜 f i 
   simpa using h
 
 variable (𝕜) in
+/-- The coefficients above the diagonal vanish: `μⱼₗ = 0` for `j < l`. -/
+theorem gramSchmidtCoeff_eq_zero_of_lt (f : ι → E) {j l : ι} (hjl : j < l) :
+    gramSchmidtCoeff 𝕜 f j l = 0 := by
+  rw [gramSchmidtCoeff, gramSchmidt_inv_triangular 𝕜 f hjl, zero_div]
+
+variable (𝕜) in
 /-- Orthogonalization does not increase lengths: `‖f*ᵢ‖ ≤ ‖fᵢ‖`. -/
 theorem norm_gramSchmidt_le (f : ι → E) (i : ι) : ‖gramSchmidt 𝕜 f i‖ ≤ ‖f i‖ := by
   have horth := gramSchmidt_mem_orthogonal_span_Iio 𝕜 f i

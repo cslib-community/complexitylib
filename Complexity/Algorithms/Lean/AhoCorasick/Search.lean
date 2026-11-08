@@ -39,18 +39,21 @@ the transition bounds of `[AhoCorasick1975]`, Theorems 2 and 4.
 * **Charged (`1` `TimeM` tick):** every goto transition (including the start state's self-loop),
   every failure transition, and every reported pair `(i, y)`.
 * **Uncharged:** the goto test `IsNode P (u ++ [a])`, reads and writes of the failure and output
-  tables, and list construction (the constant-time table operations of `[AhoCorasick1975]`).
+  tables, and list construction (constant-time operations in the integer-state machine of
+  `[AhoCorasick1975]`).
 * **Uncharged and not linear:** the per-round bookkeeping of `buildM`, which scans all of `P` at
-  each depth for the keywords longer than that depth. This is `|P| * maxLength P` keyword visits,
-  which can be quadratic in the total keyword length (one keyword of length `40` and `40`
-  one-letter keywords give `1599` visits against total length `80`). So `time_buildM_le` bounds
-  the goto and failure transitions counted in the proof of `[AhoCorasick1975]`, Theorem 4, not
-  the total construction time. Moreover, Algorithm 3 visits each state once, while `buildM`
-  recomputes the failure state of a prefix shared by several keywords once per keyword (with the
-  same result), so its transition bound is per keyword.
+  each of the depths `1, …, maxLength P - 1` for the keywords longer than that depth. This is
+  `|P| * (maxLength P - 1)` keyword visits, which can be quadratic in the total keyword length
+  (one keyword of length `40` and `40` one-letter keywords give `1599` visits against total
+  length `80`). So `time_buildM_le` bounds the goto and failure transitions counted in the proof
+  of `[AhoCorasick1975]`, Theorem 4, not the total construction time. Moreover, Algorithm 3
+  visits each state once, while `buildM` recomputes the failure state of a prefix shared by
+  several keywords once per keyword (with the same result), so its transition bound is per
+  keyword.
 * **Guarded failure loop:** `stepM` stops at the start state if a failure transition does not
   shorten the state. This never happens with a valid table; it makes the scan terminate, and its
-  cost bounds hold, for an arbitrary failure table.
+  cost bounds hold, for an arbitrary failure table. The guard's length comparison and the abort
+  are uncharged.
 
 Using the potential "length of the current state", one operating cycle satisfies
 `(stepM P f u a).time + (stepM P f u a).ret.length ≤ u.length + 2` (`time_stepM_le`), for any
@@ -275,7 +278,8 @@ private theorem ret_scanLoopM_silent (P : List (List α)) (f : List α → List 
 /-- `[AhoCorasick1975]`, Theorem 2: on a nonempty text of length `n`, Algorithm 1 makes fewer than
 `2n` goto and failure transitions. This holds for any failure table, because the failure loop of
 `stepM` is guarded (a failure transition that does not shorten the state stops at the start
-state; with a valid table the guard never fires). -/
+state; with a valid table the guard never fires). The guard's comparison and abort are
+uncharged. -/
 theorem time_scanM_silent_lt (P : List (List α)) (f : List α → List α) {t : List α}
     (ht : t ≠ []) : (scanM P ⟨f, fun _ => []⟩ t).time < 2 * t.length := by
   have h := time_scanM_lt P ⟨f, fun _ => []⟩ ht
@@ -334,7 +338,7 @@ theorem length_le_maxLength {P : List (List α)} {p : List α} (hp : p ∈ P) :
 
 /-- Algorithm 3 of `[AhoCorasick1975]`: the failure and output functions, built level by level.
 Only goto and failure transitions are charged; the per-depth scan of all of `P`
-(`|P| * maxLength P` keyword visits) is not. -/
+(`|P| * (maxLength P - 1)` keyword visits) is not. -/
 def buildM (P : List (List α)) : TimeM ℕ (Machine α) :=
   buildLoopM P (maxLength P - 1) 1 (initMachine P)
 
