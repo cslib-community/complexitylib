@@ -168,6 +168,32 @@ asserted. See the [checked size clients](../../ComplexityTests/SchaeferSize.lean
 
 The result is the Boolean dichotomy; symmetric and larger-domain dichotomies are outside its scope.
 
+## Planar Boolean CSP prerequisites
+
+`Complexity.Foundations.Data.BitString.CyclicDifference` defines ordered cyclic differences:
+`cyclicDifference x i` is `x i ^^ x (finRotate n i)`. Its image is exactly the even-parity
+tuples, and `cyclicIntegral` constructs an inverse by prefix parity. The fiber theorem
+`cyclicDifference_eq_iff` says that two tuples have the same differences precisely when they
+are equal or complementary. Consequently, `mem_cyclicDifferenceRelation_iff` recovers any
+`IsSelfComplementary` relation from its difference relation. Empty and nullary relations are
+included. These are the tuple and relation transformations of Kazda–Kolmogorov–Rolínek,
+arXiv:1602.03124v6, Definitions 13–14, printed p. 0:6.
+
+Import `Complexity.Foundations.Data.BitString.DeltaMatroid.Operations` for relational
+`BitString.IsDeltaMatroid` and `BitString.IsEvenDeltaMatroid`. The exchange axiom is one-sided:
+for feasible `x,y` disagreeing at `i`, some disagreeing coordinate `j` makes
+`flipOn {i,j} x` feasible. A delta-matroid is nonempty. Evenness means that all feasible tuples
+have the same parity, which may be odd; it forces `j ≠ i`. Twists and coordinate equivalences
+preserve these properties, and feasible tuples are connected by feasible two-coordinate flips.
+The four-coordinate lemmas isolate local exchange consequences used by the paper's blossom
+proof; they do not prove its forest or contraction invariants.
+
+[Difference tests](../../ComplexityTests/CyclicDifference.lean) show that ternary NAE maps to
+an even delta-matroid of three weight-two tuples. [Exchange tests](../../ComplexityTests/DeltaMatroid.lean)
+include odd exactly-one relations, the empty-coordinate case, and failures of exchange/evenness.
+These mathematical prerequisites provide no planar embedding algorithm, edge-CSP solver or
+planar complexity dichotomy yet. The full remaining objective is [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+
 ## Three resolution representations
 
 | Representation | What it supplies | Cost |
