@@ -12,6 +12,7 @@ public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 public import Mathlib.Probability.Moments.Basic
 import Complexity.Foundations.Analysis.SpecialFunctions.ExpBounds
 import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.ToReal
 import Mathlib.Analysis.Convex.SpecificFunctions.Basic
 import Mathlib.Probability.ProbabilityMassFunction.Integrals
 
@@ -212,10 +213,8 @@ theorem pi_sum_le_one_sub_mul (p : ∀ i, PMF (α i)) (score : ∀ i, α i → �
     ((pi p).toOuterMeasure {outcome | ∑ i, score i (outcome i) ≤ (1 - δ) * μ}).toReal ≤
       Real.exp (-(δ ^ 2 * μ / 2)) := by
   rcases lt_or_ge μ 0 with hμ0 | hμ0
-  · refine (ENNReal.toReal_le_of_le_ofReal zero_le_one ?_).trans
+  · exact (toOuterMeasure_toReal_le_one _ _).trans
       (Real.one_le_exp (by nlinarith [sq_nonneg δ]))
-    rw [ENNReal.ofReal_one]
-    exact toOuterMeasure_le_one _ _
   refine (pi_sum_le_le_exp p score hscore (neg_nonpos.mpr hδ) _).trans (Real.exp_le_exp.mpr ?_)
   have hexp : Real.exp (-δ) - 1 ≤ 0 := by
     rw [sub_nonpos, Real.exp_le_one_iff]
