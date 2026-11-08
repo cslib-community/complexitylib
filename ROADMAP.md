@@ -727,8 +727,11 @@ index links to canonical definitions rather than keeping a second set.
   query machines are proved, with arbitrary saved outer state/output continuations and an additive
   native space bound. Generic extraction from existing native machines and ordinary logspace
   word-function certificates is proved, with streaming output and workspace-derived saved-state
-  bounds. Preparing supplied headers from live query generators, regenerating answer words and
-  the resource-certified suffix loop remain open;
+  bounds. Runtime frames can now be generated from ordinary tail/compact-metadata programs and
+  consumed through actual recomputation composition, with caller-input header/virtual-length
+  bounds. Live local-query suffix extraction uses the existing counter-program API; a certified
+  general ceiling-logarithmic cut computation is still required. Unbounded answer-stream
+  generation (including its native oracle contract) and the resource-certified suffix loop remain open;
   bounded and many-one self-reducibility specializations; concrete complete self-reducible
   problems (Theorem 3.5); Section 4
   bounded/logarithmic-query results and
