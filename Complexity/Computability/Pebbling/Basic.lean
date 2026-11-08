@@ -250,6 +250,12 @@ theorem blackPebblable_iff_blackPebblingPrice_le {s : ℕ} {v : V} (h : ∃ s, B
   obtain ⟨s₀, h₀⟩ := h
   exact ⟨blackPebblingPrice_le, fun hs => (blackPebblable_blackPebblingPrice h₀).mono hs⟩
 
+/-- A vertex that no budget pebbles has price `0`. -/
+theorem blackPebblingPrice_eq_zero_of_forall_not {v : V} (h : ∀ s, ¬ BlackPebblable G s v) :
+    blackPebblingPrice G v = 0 := by
+  rw [blackPebblingPrice, Set.eq_empty_of_forall_notMem (s := {s | BlackPebblable G s v}) h,
+    Nat.sInf_empty]
+
 /-- The price is `n` when `n` pebbles suffice and every successful budget is at least `n`. -/
 theorem blackPebblingPrice_eq {n : ℕ} {v : V} (h : BlackPebblable G n v)
     (hle : ∀ s, BlackPebblable G s v → n ≤ s) : blackPebblingPrice G v = n :=
