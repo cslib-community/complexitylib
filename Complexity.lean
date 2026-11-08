@@ -3644,6 +3644,8 @@ public import Complexity.DataStructure.Dictionary.DoubleHashing
 public import Complexity.DataStructure.Dictionary.Dynamic.Spec
 public import Complexity.DataStructure.Dictionary.FeistelQuotient
 public import Complexity.DataStructure.Dictionary.Memory
+public import Complexity.DataStructure.Dictionary.PerfectHashing.Construction
+public import Complexity.DataStructure.Dictionary.PerfectHashing.Table
 public import Complexity.DataStructure.Dictionary.Spec
 public import Complexity.DataStructure.Dictionary.SuccinctBucket
 public import Complexity.DataStructure.Dictionary.UniformProbing
@@ -4656,6 +4658,7 @@ public import Complexity.Languages.Probabilistic.RandomOracle.Probabilistic
 public import Complexity.Languages.Probabilistic.RandomPermutation
 public import Complexity.Languages.Probabilistic.RandomPermutation.ExtPermsCard
 public import Complexity.Languages.Probabilistic.Repeat
+public import Complexity.Languages.Probabilistic.Retry
 public import Complexity.Languages.Probabilistic.Sampling.F4
 public import Complexity.Languages.Probabilistic.Selection
 public import Complexity.Languages.Probabilistic.Semantics
@@ -5020,6 +5023,7 @@ public import Complexity.Probability.Freivalds
 public import Complexity.Probability.Guessing
 public import Complexity.Probability.Guessing.Leakage
 public import Complexity.Probability.HashFamily
+public import Complexity.Probability.HashFamily.Collisions
 public import Complexity.Probability.HashFamily.IntegerBox
 public import Complexity.Probability.HashFamily.Matrix
 public import Complexity.Probability.HashFamily.MultiplyShift
