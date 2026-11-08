@@ -461,6 +461,19 @@ class RestackTests(unittest.TestCase):
         self.assertIn("could not be fetched", out)
 
 
+class EnvironmentTests(unittest.TestCase):
+    def test_history_and_config_redirections_are_removed(self) -> None:
+        hostile = {"GIT_TEST_COMMIT_GRAPH": "1", "GIT_TEST_ANYTHING": "x", "GIT_CONFIG": "f",
+                   "GIT_SHALLOW_FILE": "s", "GIT_ATTR_SOURCE": "t", "GIT_GRAFT_FILE": "g"}
+        with mock.patch.dict(os.environ, hostile):
+            env = check_restack.environment()
+        self.assertFalse(any(key.startswith("GIT_TEST_") for key in env))
+        for key in ("GIT_CONFIG", "GIT_SHALLOW_FILE", "GIT_ATTR_SOURCE"):
+            self.assertNotIn(key, env)
+        self.assertEqual(env["GIT_GRAFT_FILE"], os.devnull)
+        self.assertEqual(env["GIT_NO_REPLACE_OBJECTS"], "1")
+
+
 class AggregateListTests(unittest.TestCase):
     def test_listed_aggregates_exist(self) -> None:
         for path in check_restack.AGGREGATES:

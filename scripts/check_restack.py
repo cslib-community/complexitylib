@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Check whether a restacked pull request still makes exactly the change that was approved.
 
-Usage: python3 scripts/check_restack.py APPROVED [NEW] [--base REF] [--approved-base REF]
+Usage: python3 scripts/check_restack.py APPROVED NEW [--base REF] [--approved-base REF]
 
 A restack (merging `main` into a branch, or rebasing it) gives the PR a new head, and approvals
 name heads. This script replays the approved change, from its base to APPROVED, onto the `main`
-commit that NEW (default `HEAD`) is based on, using `git merge-tree`. That replay is what the merge
+commit that NEW is based on, using `git merge-tree`. That replay is what the merge
 queue would build from the approved head on that `main`. NEW passes when its tree equals the replay
 exactly: every path, mode and byte. The only exceptions are the `mk_all` aggregates (`AGGREGATES`).
 Their merges can order lines differently, so they pass when they contain the same lines in any
@@ -26,10 +26,12 @@ anything. It pins the merge settings, including the rename limit. It runs the tr
 driver of `references.bib` as this checkout's `scripts/resolve_bib_conflict.py`, makes every other
 configured merge driver report a conflict, and refuses a configured driver that would shadow a
 built-in one (`text`, `binary`, `union`). History is read without replace refs, grafts or the
-commit-graph file, and a shallow repository is refused. Local Git configuration and repository
-state therefore cannot change the result. A `references.bib` merge written by
-`scripts/resolve_bib_conflict.py`, with nothing else changed, passes. Run the script from an
-up-to-date `main` checkout, not from the PR, since the replay runs this checkout's code.
+commit-graph file, `GIT_TEST_*` variables are dropped, and a shallow repository is refused.
+Local Git configuration and history-rewriting state therefore cannot change the result. The script
+still trusts the object store and the refs it is given, so the non-author who queues reruns it in
+their own clone after `git fetch origin`. Run it from a checkout of current `origin/main`, not of
+the PR, since the replay runs this checkout's code. A `references.bib` merge written by
+`scripts/resolve_bib_conflict.py`, with nothing else changed, passes.
 
 Exit status: 0 when NEW is the replayed approved change; 1 when it differs (the differing paths
 and diffs are printed); 2 on a usage or Git error, including an approved change that is empty
@@ -65,6 +67,8 @@ MERGE_CONFIG = ("-c", "merge.conflictStyle=merge", "-c", "merge.renames=true",
 BUILTIN_DRIVERS = frozenset({"text", "binary", "union"})
 # Removed from the environment: `GIT_CONFIG` redirects only `git config`, so it would hide
 # configured drivers from `driver_config` while `merge-tree` still ran them.
+# `GIT_TEST_*` variables are dropped too: `GIT_TEST_COMMIT_GRAPH`, for one, loads the commit-graph
+# file whatever `core.commitGraph` says.
 UNSET_VARIABLES = ("GIT_ATTR_SOURCE", "GIT_CONFIG", "GIT_SHALLOW_FILE")
 # The driver that `.gitattributes` names for `references.bib`, and this checkout's implementation.
 BIB_DRIVER = "bibkeys"
@@ -78,7 +82,8 @@ class GitError(Exception):
 
 def environment() -> dict[str, str]:
     """The caller's environment without system attributes, replace refs or grafts."""
-    env = {key: value for key, value in os.environ.items() if key not in UNSET_VARIABLES}
+    env = {key: value for key, value in os.environ.items()
+           if key not in UNSET_VARIABLES and not key.startswith("GIT_TEST_")}
     env.update(GIT_ATTR_NOSYSTEM="1", GIT_NO_REPLACE_OBJECTS="1", GIT_GRAFT_FILE=os.devnull)
     return env
 
@@ -200,7 +205,7 @@ def show(root: Path, replayed: str, new: str, path: str) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("approved", help="the approved head commit")
-    parser.add_argument("new", nargs="?", default="HEAD", help="the new head (default HEAD)")
+    parser.add_argument("new", help="the new head")
     parser.add_argument("--base", default="origin/main",
                         help="the branch both heads target (default origin/main)")
     parser.add_argument("--approved-base",
@@ -209,13 +214,14 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     root = args.root
     try:
-        if out(root, "rev-parse", "--is-shallow-repository") == "true":
-            raise GitError("the repository is shallow, so merge bases may be wrong; "
-                           "run `git fetch --unshallow origin` first")
         approved = resolve(root, args.approved)
         new = resolve(root, args.new)
         base = resolve(root, args.base)
-        approved_base = merge_base(root, resolve(root, args.approved_base or args.base), approved)
+        approved_ref = resolve(root, args.approved_base) if args.approved_base else base
+        if out(root, "rev-parse", "--is-shallow-repository") == "true":
+            raise GitError("the repository is shallow, so merge bases may be wrong; "
+                           "run `git fetch --unshallow origin` first")
+        approved_base = merge_base(root, approved_ref, approved)
         new_base = merge_base(root, base, new)
         if tree(root, approved_base) == tree(root, approved):
             raise GitError(f"the approved head {approved[:12]} makes no change relative to "
