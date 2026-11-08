@@ -218,7 +218,7 @@ private theorem readBit_classicalRun_moveOutCodes {n p W k N : ℕ} (hW : n + k 
   have := readBit_classicalRun_of_mem (fun g hg => by
       obtain ⟨j, hj, i, hi, rfl⟩ := mem_moveOutCodes.mp hg
       have := add_mul_lt hj hi
-      show i + p * j + n < N
+      dsimp only
       omega) nodup_moveOutCodes (moveOutCodes_read hW) Y
       (mem_moveOutCodes.mpr ⟨j, hj, i, hi, rfl⟩)
   simpa only [List.all_cons, List.all_nil, Bool.and_true] using this
