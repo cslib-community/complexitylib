@@ -50,8 +50,10 @@ With `n = xs.toFinset.card` distinct ground elements and greedy output `G`:
   exact independence-query counts.
 * `countInl_submodularMatroidGreedyQuery`, `countInl_le_countInr_submodularMatroidGreedyQuery`:
   exact value-query count and comparison.
-* `countInr_submodularMatroidGreedyQuery_le`, `countInl_submodularMatroidGreedyQuery_le`,
-  `submodularMatroidGreedyQuery_upperBound`: quadratic upper bounds.
+* `two_mul_countInr_submodularMatroidGreedyQuery_le`,
+  `two_mul_countInl_submodularMatroidGreedyQuery_le`,
+  `countQueries_submodularMatroidGreedyQuery_le`, `submodularMatroidGreedyQuery_upperBound`:
+  quadratic upper bounds.
 * `half_le_eval_submodularMatroidGreedyQuery`,
   `div_card_succ_le_eval_submodularMatroidGreedyQuery`: the `1/2` (matroid) and `1/(k+1)`
   (intersection of `k` matroids) guarantees for the query program.
