@@ -40,6 +40,9 @@ completeness, and soundness holds for every witness state, entangled or not, sin
 values at most `1 / 3` is at most `1 / 3`. With no proof (`q = 0`), the same verifier is a `BQP`
 family for a `BPP` verifier.
 
+The containment is stated for decision problems only, since the library has no promise version of
+`MA`; the verifier and its acceptance probability do not depend on a promise.
+
 ## Main definitions
 
 * `Cslib.Quantum.UniformVerifierFamily.ofMA`: the quantum verifier of a Merlin–Arthur verifier.
@@ -116,21 +119,6 @@ noncomputable def ofMA (F : UniformCircuitFamily) (q p : Polynomial ℕ) : Unifo
     rw [Polynomial.eval_add] at this
     change n + q.eval n ≤ NPVerifier.width F (q + p) n
     omega
-
-/-- The NP verifier's circuit, run on the word `x ++ w` for a proof `w` of the right length,
-accepts as `F` does on `frame x ++ w`. -/
-theorem measureProb_ofNP_inputState (F : UniformCircuitFamily) (p : Polynomial ℕ) (x w : List Bool)
-    (hw : w.length = p.eval x.length) :
-    measureProb (Circuit.eval (Circuit.ofCodes (NPVerifier.width F p x.length)
-      (NPVerifier.gates F p x.length)) (ket (inputState _ (x ++ w))))
-      (accepting (NPVerifier.width F p x.length)) = F.acceptProb (frame x ++ w) := by
-  have hofFn : List.ofFn (fun i : Fin ((ofNP F p).witnessLength x.length) => w.getD i false) =
-      w := by
-    refine List.ext_getElem (by rw [List.length_ofFn, hw]; rfl) fun i h₁ h₂ => ?_
-    simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem h₂]
-  have := acceptProb_ofNP_ket F p x fun i => w.getD i false
-  rw [acceptProb_ket, hofFn] at this
-  exact this
 
 /-- **The acceptance probability of the Merlin–Arthur verifier.** When `F` decides `f` exactly on
 the words `frame x ++ w`, the verifier accepts the witness state `ψ = ∑_y ψ_y |y⟩` with probability
