@@ -1180,6 +1180,16 @@ Import `Complexity.Algorithms.Lean.Simplex.LinearProgram` ([source](../../Comple
 
 Phase I is not formalized: the method needs a feasible starting dictionary, so a program `A *ᵥ x ≤ b` with some `b i < 0` is outside the scope of `simplex_slackDictionary_spec`. The [checked examples](../../ComplexityTests/Algorithms/Lean/Simplex.lean) run Chvátal's introductory program (optimum `13` after two pivots, with `slackDual` evaluating to the dual optimum `(1, 0, 1)`) and his cycling example. On the cycling example, Dantzig's largest-coefficient rule returns to the initial basis after six degenerate pivots, so the anti-cycling theorem is not vacuous; Bland's rule reaches the optimum `1` after seven pivots. The examples also cover an unbounded program, an already-optimal start and an infeasible slack dictionary. The Klee–Minty lower bound for Dantzig's rule, smoothed analysis and polynomial-time LP algorithms remain open ([ROADMAP](../../ROADMAP.md#optimization-and-duality)).
 
+## Extended formulations and Yannakakis's factorization theorem
+
+Import `Complexity.Foundations.Analysis.Convex.ExtendedFormulation` ([ExtendedFormulation.lean](../../Complexity/Foundations/Analysis/Convex/ExtendedFormulation.lean)). As with the LP section, this is mathematics over a linearly ordered field with no machine model. A polytope is given twice, as `P = {x | A *ᵥ x ≤ b}` and as `P = convexHull K (Set.range V)` for finitely many points `V`, and both descriptions are hypotheses. Its slack matrix is `Matrix.slackMatrix A b V`, with entries `b i - A i ⬝ᵥ V j`. An extended formulation (`IsExtendedFormulation`) is a system `E *ᵥ x + F *ᵥ y ≤ g`, `E' *ᵥ x + F' *ᵥ y = g'` whose projection onto `x` is `P`. Its size is the number of inequalities, and equations cost nothing. This is definition (1) of Fiorini, Massar, Pokutta, Tiwary and de Wolf [fmptw15][fmptw15]. `extensionComplexity P : ℕ∞` is the least size.
+
+- **Nonnegative rank:** `Matrix.nonnegRank` ([NonnegRank.lean](../../Complexity/Foundations/LinearAlgebra/Matrix/NonnegRank.lean)) is the least inner dimension of a factorization `M = T * U` with `T, U ≥ 0`, and `⊤` if there is none. It is finite exactly for nonnegative matrices (`nonnegRank_ne_top_iff`), and is at most the number of rows and of columns. It is at least the rank (`rank_le_nonnegRank`), invariant under transposition, and monotone under submatrices.
+- **Yannakakis's theorem:** `extensionComplexity_eq_nonnegRank_slackMatrix` proves `xc P = rank₊ S` for `P.Nontrivial`, which is FMPTW's `dim P ≥ 1` (their Theorem 3, (i) ⇔ (iii); the theorem is due to Yannakakis [yannakakis91][yannakakis91], cited here through FMPTW). The direction `xc P ≤ rank₊ S` needs no dimension hypothesis. The converse uses the affine Farkas lemma (`IsExtendedFormulation.exists_nonneg_dotProduct_eq`, FMPTW Lemma 2). The module documentation gives two counterexamples. The point `{0}` with a redundant inequality has `xc = 0 < 1 = rank₊ S`. A segment shows that equations must be free. FMPTW state the equivalence for a positive number `r` of inequalities. In that form, `extensionComplexity_le_iff_nonnegRank_slackMatrix_le` proves `xc P ≤ r ↔ rank₊ S ≤ r` for every `r > 0` with no dimension hypothesis, because a slack matrix of a set with at most one point has nonnegative rank at most `1` (`nonnegRank_slackMatrix_le_one`). The point counterexample fails only at `r = 0`.
+- **Communication bound:** see [query and communication complexity](../circuits-logic-and-other-models/query-and-communication.md#major-communication-bridges-and-bounds) for the rectangle covering bound and `N¹`.
+
+The [checked examples](../../ComplexityTests/Foundations/Analysis/Convex/ExtendedFormulation.lean) prove that the triangle has extension complexity `3` and the unit square `4`. For the square, the slack matrix has rank `3`. Both lower bounds come from fooling sets on the slack matrix. The hexagon with vertices `(±2, 0)`, `(±1, ±1)` has six facets, but an explicit nonnegative factorization of inner dimension `5` and an extended formulation with five inequalities give `xc ≤ 5`. The point counterexample is also checked. Not formalized: the facet form of the theorem (FMPTW Theorem 3 (ii)), and the exponential lower bounds for the correlation, cut, stable-set and TSP polytopes ([ROADMAP](../../ROADMAP.md#optimization-and-duality)).
+
 ## LLL-reduced bases, lattice basis reduction and Babai's nearest-plane algorithm
 
 Import `Complexity.Algorithms.LatticeReduction.Potential` ([Reduced.lean](../../Complexity/Algorithms/LatticeReduction/Reduced.lean), [Potential.lean](../../Complexity/Algorithms/LatticeReduction/Potential.lean)). This is mathematics with no machine model or running time, following [Lenstra, Lenstra and Lovász, §1][lll82]. A family `b : Fin n → E` lives in an arbitrary real inner product space (for example `EuclideanSpace ℝ (Fin m)`). Its Gram–Schmidt vectors are Mathlib's `gramSchmidt ℝ b`, and its coefficients are `gramSchmidtCoeff ℝ b i j = ⟪b*ⱼ, bᵢ⟫ / ‖b*ⱼ‖²` ([GramSchmidtOrtho.lean](../../Complexity/Foundations/Analysis/InnerProductSpace/GramSchmidtOrtho.lean), a Mathlib candidate). The lattice is `Submodule.span ℤ (Set.range b)`.
@@ -1374,6 +1384,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [edmonds67b]: ../sources.md#edmonds67b
 [fks84]: ../sources.md#fks84
 [floyd62]: ../sources.md#floyd62
+[fmptw15]: ../sources.md#fmptw15
 [fnw78]: ../sources.md#fnw78
 [freivalds79]: ../sources.md#freivalds79
 [gilbertpollak68]: ../sources.md#gilbertpollak68
@@ -1422,6 +1433,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [wagnerfischer74]: ../sources.md#wagnerfischer74
 [wattenhofer16]: ../sources.md#wattenhofer16
 [williamsonshmoys11]: ../sources.md#williamsonshmoys11
+[yannakakis91]: ../sources.md#yannakakis91
 [yao80b]: ../sources.md#yao80b
 [younger67]: ../sources.md#younger67
 [zivlempel77]: ../sources.md#zivlempel77

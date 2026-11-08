@@ -1576,6 +1576,8 @@ public import Complexity.Computability.Communication.NOF.Randomized
 public import Complexity.Computability.Communication.NOF.TwoParty
 public import Complexity.Computability.Communication.Newman
 public import Complexity.Computability.Communication.Nondeterministic.Basic
+public import Complexity.Computability.Communication.Nondeterministic.CoverNumber
+public import Complexity.Computability.Communication.Nondeterministic.ExtensionComplexity
 public import Complexity.Computability.Communication.Nondeterministic.Functions
 public import Complexity.Computability.Communication.Operations
 public import Complexity.Computability.Communication.PartitionJoin
@@ -4118,6 +4120,7 @@ public import Complexity.Foundations.Analysis.Asymptotics.Exponential
 public import Complexity.Foundations.Analysis.BernoulliInequality
 public import Complexity.Foundations.Analysis.Brouwer
 public import Complexity.Foundations.Analysis.Calculus.Taylor
+public import Complexity.Foundations.Analysis.Convex.ExtendedFormulation
 public import Complexity.Foundations.Analysis.Convex.FirstOrder
 public import Complexity.Foundations.Analysis.Convex.Strong
 public import Complexity.Foundations.Analysis.ENNRealFraction
@@ -4751,6 +4754,7 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.Lindsey
 public import Complexity.Foundations.LinearAlgebra.Matrix.LinearProgramming
 public import Complexity.Foundations.LinearAlgebra.Matrix.ListProd
 public import Complexity.Foundations.LinearAlgebra.Matrix.Moore
+public import Complexity.Foundations.LinearAlgebra.Matrix.NonnegRank
 public import Complexity.Foundations.LinearAlgebra.Matrix.PairedPorts
 public import Complexity.Foundations.LinearAlgebra.Matrix.PartialDerivatives
 public import Complexity.Foundations.LinearAlgebra.Matrix.PilotCorrection

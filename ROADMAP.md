@@ -1775,6 +1775,16 @@ each statement against the numbered result. Organize modules by subject, not cha
   simplex method: Phase I (an initial feasible dictionary or an infeasibility certificate); the
   Klee–Minty cube on which Dantzig's rule makes `2ⁿ - 1` pivots; smoothed analysis (Spielman–Teng);
   strongly polynomial special cases; and a costed implementation.
+- **Extension complexity** ([#3258](https://github.com/cslib-community/complexitylib/issues/3258)):
+  nonnegative rank, slack matrices, extended formulations with free equations, Yannakakis's
+  factorization theorem `xc P = rank₊ S` for nontrivial polytopes, and the rectangle covering bound
+  `N¹(supp M) ≤ ⌈log₂ rank₊ M⌉` are in `Foundations/LinearAlgebra/Matrix/NonnegRank`,
+  `Foundations/Analysis/Convex/ExtendedFormulation` and
+  `Communication/Nondeterministic/{CoverNumber,ExtensionComplexity}`. Remaining: the facet
+  form of the theorem (an extension with `r` facets); exponential lower bounds for the
+  correlation, cut, stable-set and TSP polytopes (Fiorini–Massar–Pokutta–Tiwary–de Wolf), for
+  instance through Kaibel–Weltge's `(3/2)^n` rectangle-cover bound for unique disjointness;
+  semidefinite and conic extensions; and Rothvoß's lower bound for the perfect matching polytope.
 - **Lattice basis reduction** ([#3235](https://github.com/cslib-community/complexitylib/issues/3235)):
   `δ`-reduced bases, the LLL approximation `‖b₁‖² ≤ (4/(4δ-1))^{n-1} ‖x‖²` (paper indexing,
   `n` vectors) to the shortest vector (Lenstra–Lenstra–Lovász Proposition (1.11)), the potential

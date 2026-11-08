@@ -426,6 +426,11 @@ Robert W. Floyd. "Algorithm 97: Shortest Path." *Communications of the ACM* 5(6)
 
 Zhiyuan Fan, Jiatu Li, and Tianqi Yang. *The Exact Complexity of Pseudorandom Functions and the Black-Box Natural Proof Barrier for Bootstrapping Results in Computational Complexity*. Electronic Colloquium on Computational Complexity (ECCC), Report TR21-125, Revision 1 (12 June 2022), https://eccc.weizmann.ac.il/report/2021/125/ ; conference version in *Proceedings of the 54th Annual ACM SIGACT Symposium on Theory of Computing (STOC 2022)*, 962–975, https://doi.org/10.1145/3519935.3520010 . Inspected ECCC TR21-125 Revision 1 PDF directly: Section 4.1 (pp. 24–26), Section 4.2, Definitions 4.3–4.5 (pp. 26–27), Section 4.4, Definition 4.9 (p. 28), Section 7.1, Definition 7.1, Lemmas 7.2–7.4, and Theorem 7.5 (pp. 39–41), and Section 7.2 (pp. 41–42).
 
+<a id="fmptw15"></a>
+## fmptw15
+
+Samuel Fiorini, Serge Massar, Sebastian Pokutta, Hans Raj Tiwary and Ronald de Wolf. *Exponential Lower Bounds for Polytopes in Combinatorial Optimization*. Journal of the ACM 62(2), 1–23, 2015. https://doi.org/10.1145/2716307 . Bibliographic metadata checked against the Crossref record on 2026-11-08 UTC. Locators checked against arXiv:1111.0837v4 (23 Dec 2013), https://arxiv.org/abs/1111.0837 , on 2026-11-08 UTC: definition (1) of an extended formulation (EF) and its size (Section 1), the slack matrix and extension complexity (Section 3), Lemma 2, Theorem 3 (the factorization theorem, `dim P ≥ 1`) and Theorem 4 (the rectangle covering bound, attributed to [yannakakis91](#yannakakis91)) in Section 3.1. The journal version's numbering was not checked.
+
 <a id="fnw78"></a>
 ## fnw78
 
@@ -1206,6 +1211,11 @@ F. Frances Yao. "Efficient Dynamic Programming Using Quadrangle Inequalities." *
 ## yekhanin12
 
 Sergey Yekhanin. *Locally Decodable Codes*. Foundations and Trends in Theoretical Computer Science 6(3), 139–255, 2012. https://doi.org/10.1561/0400000030 . Definition 6.1 and Lemma 6.2 (§6.1.1, private information retrieval from perfectly smooth codes) were checked on 2026-11-08 against the author's draft at https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/LDC_now.pdf ; the numbering of the published monograph was not checked.
+
+<a id="yannakakis91"></a>
+## yannakakis91
+
+Mihalis Yannakakis. *Expressing Combinatorial Optimization Problems by Linear Programs*. Journal of Computer and System Sciences 43(3), 441–466, 1991. https://doi.org/10.1016/0022-0000(91)90024-Y . Bibliographic metadata checked against the Crossref record on 2026-11-08 UTC. The publisher page returned HTTP 403 and the primary text was not inspected. No theorem number is claimed; the factorization theorem and the rectangle covering bound are attributed to this paper as reported by [fmptw15](#fmptw15), Section 1 and Theorems 3 and 4.
 
 <a id="yao86"></a>
 ## yao86
