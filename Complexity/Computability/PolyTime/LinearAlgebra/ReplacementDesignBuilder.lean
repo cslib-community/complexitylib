@@ -53,8 +53,8 @@ scopes normalized to `List.replicate Q 0`; auxiliary tables cap at `min D_cap (r
   `Cslib.LinearAlgebra.ReplacementDesignData.lookupReplacementRow`,
   `Cslib.LinearAlgebra.constructedReplacementDesign`,
   `Cslib.LinearAlgebra.ReplacementDesignData.Refines`.
-* `Cslib.LinearAlgebra.encVarSets`, `Cslib.LinearAlgebra.encSchedules`: the encodings of lists of
-  variable sets, such as scopes, and of schedule words, with binary entries.
+* `Cslib.LinearAlgebra.encVarSets`: the encoding of lists of variable sets, such as scopes, with
+  binary entries. Schedule words use `Cslib.LinearAlgebra.encSchedules` from `CopyPlacement`.
 
 ## Main results
 
@@ -527,14 +527,18 @@ def ReplacementDesignData.equivTuple : ReplacementDesignData ≃ ReplacementDesi
   left_inv d := by cases d; rfl
   right_inv _ := rfl
 
+/-- Lists of variable sets with indices in binary, such as factor scopes or the groups of a
+partition: the concatenation of the framed sets, each set the concatenation of its framed variable
+indices, each encoded by `encNat`. This is the layout `encList (encList encNat)` of
+`encSchedules` and `Cslib.Complexity.encSparseEquation`; the name records the role. -/
+abbrev encVarSets : List (List ℕ) ↪ List Bool :=
+  encList (encList encNat)
+
 /-- Standard multi-tape Turing machine encoding of `ReplacementDesignTuple`. -/
 def encReplacementDesignTuple : ReplacementDesignTuple ↪ List Bool :=
-  encPair (encPair (encList (encList (encList encNat)))
-      (encPair (encList (encList encNat)) (encList (encPair encNat encNat))))
-    (encPair (encPair encNat (encPair (encList (encPair encNat encNat))
-        (encList (encList encIntBin))))
-      (encPair (encList (encList (encList (encList encIntBin))))
-        (encPair encIntBin (encList (encList (encList encIntBin))))))
+  encPair (encPair (encList encVarSets) (encPair encSchedules (encList (encPair encNat encNat))))
+    (encPair (encPair encNat (encPair encCopyPlacements encIntTable))
+      (encPair (encList (encList encIntTable)) (encPair encIntBin (encList encIntTable))))
 
 /-- Standard multi-tape Turing machine encoding of `ReplacementDesignData`. -/
 def encReplacementDesignData : ReplacementDesignData ↪ List Bool :=
@@ -571,17 +575,6 @@ section PolyTime
 open ComputableInPolyTime
 attribute [local irreducible] ComputableInPolyTime
 variable {Input : Type} {encIn : Input ↪ List Bool}
-
-/-- Lists of variable sets with indices in binary, such as factor scopes or the groups of a
-partition: the concatenation of the framed sets, each set the concatenation of its framed variable
-indices, each encoded by `encNat`. -/
-abbrev encVarSets : List (List ℕ) ↪ List Bool :=
-  encList (encList encNat)
-
-/-- Schedules with labels in binary, one word per variable or factor: the concatenation of the
-framed words, each word the concatenation of its framed group labels, each encoded by `encNat`. -/
-abbrev encSchedules : List (List ℕ) ↪ List Bool :=
-  encList (encList encNat)
 
 private theorem rdb_two_mul_unary :
     ComputableInPolyTime (fun n : ℕ => 2 * n) encUnary encUnary := by fun_prop

@@ -133,7 +133,31 @@ The programs are generic in the entry type, so they combine weights only through
 | `Cslib.Query.apspBySquaring`, `isShortestDistances_apspBySquaring`, `cost_apspBySquaring_le` | APSP from any product subroutine `mp` with `⌈log₂(n−1)⌉` calls, so cost `⌈log₂(n−1)⌉·t` when each call costs at most `t` |
 | `Cslib.Query.minPlusViaAPSP`, `eval_minPlusViaAPSP`, `cost_minPlusViaAPSP` | the (min,+) product from one call of any APSP subroutine that is correct on `3n`-vertex graphs without negative cycles, at exactly the cost of that call |
 
-The two reductions are in [MinPlus.lean](../../Complexity/Algorithms/Lean/Query/ShortestPaths/MinPlus.lean), and the [tests](../../ComplexityTests/ShortestPaths.lean) run all programs on a graph with a negative edge. Together they show that a cost-`T(n)` algorithm for either problem gives one for the other with cost `⌈log₂(n−1)⌉·T(n)` or `T(3n)`. This is the starting point of the APSP class of [Vassilevska Williams and Williams][vww18]. The negative-triangle equivalence and the other problems in that class are not formalized. Neither is a word-RAM realization with bit-length costs, so no statement here concerns subcubic running time.
+The two reductions are in [MinPlus.lean](../../Complexity/Algorithms/Lean/Query/ShortestPaths/MinPlus.lean), and the [tests](../../ComplexityTests/ShortestPaths.lean) run all programs on a graph with a negative edge. Together they show that a cost-`T(n)` algorithm for either problem gives one for the other with cost `⌈log₂(n−1)⌉·T(n)` or `T(3n)`. This is the starting point of the APSP class of [Vassilevska Williams and Williams][vww18].
+
+#### Negative triangles and the (min,+) product
+
+Import `Complexity.Algorithms.Lean.Query.ShortestPaths.NegTriangleSubcubic` for the reduction from the (min,+) product to negative triangle detection. Its three steps are in [NegTriangleFinding.lean](../../Complexity/Algorithms/Lean/Query/ShortestPaths/NegTriangleFinding.lean) and [MinPlusViaNegTriangle.lean](../../Complexity/Algorithms/Lean/Query/ShortestPaths/MinPlusViaNegTriangle.lean). The last of these also has the converse.
+
+The pure [NegativeTriangle.lean](../../Complexity/Algorithms/ShortestPaths/NegativeTriangle.lean) states the problems on a tripartite graph with parts `I`, `J`, `K` and weight matrices `A : Matrix I K`, `B : Matrix K J`, `C : Matrix I J` over `MinTropical R`. `IsNegTriangle A B C i j k` means `A i k + B k j + C i j < 0`. `OnNegTriangle` asks for some `k`, and `HasNegTriangle` asks for some `i, j, k`. A finder answer `IsNegTriangleAnswer` is `none` exactly when there is no negative triangle. `onNegTriangle_iff` says the pair `(i, j)` lies on a negative triangle iff `(A * B) i j + C i j < 0`. `FiniteEntriesBounded A W` says the finite entries lie in `[-W, W]`, and `⊤` entries are allowed.
+
+The reductions call subroutines. Finding and blocking are generic in the weights: they pass sub-matrices on and mask an edge by writing the no-edge weight `0`. The binary search and the converse are not generic. The binary search builds weights `-mid` and is specific to `MinTropical (WithTop ℤ)`, that is `ℤ ∪ {∞}`, and the converse compares the entries of the product. Unlike the APSP reductions above, these programs therefore build and compare weights in pure code. Correctness assumes that the subroutine is correct under the oracle. Cost theorems hold under every oracle and weight, given nonnegative per-call bounds. `FreeM` charges only subroutine calls. Building sub-instances, padding, loops, removed-edge bookkeeping, binary-search intervals and the converse's `n²` final comparisons are pure code and are free. So the cost theorems transfer the reduction's pattern of detector calls and are not intrinsic bounds on either problem. A detector that decides in pure code, issuing no queries, satisfies the exponent hypothesis with `c = 0`.
+
+| Declaration | Statement |
+|---|---|
+| `Cslib.Query.findNegTri`, `isNegTriangleAnswer_findNegTri`, `cost_findNegTri_le` | finding a negative triangle on parts of size `2^L` by halving with a detector `det`: `8` calls per level and one at the bottom. The cost is at most `findNegTriCost τ L = τ 1 + ∑_{l<L} 8 τ(2^l)` when `det m` costs at most `τ m` for `m ≠ 0` [VWW Lemma 4.1][vww18] |
+| `Cslib.Query.findNegTriCost_rpow_le` | Lemma 4.1 for polynomial costs: for `τ m = c·m^e` with `c ≥ 0` and `e ≥ 1`, `findNegTriCost τ L ≤ 8·c·(2^L)^e` |
+| `Cslib.Query.allPairsNegTri`, `allPairsNegTri_eval`, `cost_allPairsNegTri_le` | all pairs on negative triangles, with parts split into `t` blocks of size `\|κ\|`. Each block triple is drained with a finder, and each triangle found has its `I`–`J` edge removed. This makes at most `t³ + (t\|κ\|)²` finder calls. It is the pairs form of [VWW Lemma 4.2][vww18]: the lemma outputs a maximal set of negative triangles with distinct `I`–`J` pairs, and the pairs on negative triangles are the consequence the paper states after it |
+| `Cslib.Query.minPlusViaAPNT`, `eval_minPlusViaAPNT`, `cost_minPlusViaAPNT_le` | the (min,+) product by simultaneous binary search with an all-pairs subroutine: exactly `⌈log₂(2W+2)⌉` calls when the finite entries of `A * B` lie in `[-W, W]` [VWW Theorem 4.2][vww18] |
+| `Cslib.Query.minPlusViaNegTri`, `eval_minPlusViaNegTri`, `cost_minPlusViaNegTri_le` | the composition, with blocks of size `s = 2^⌊⌊log₂ n⌋/3⌋` and `t = ⌊n/s⌋ + 1` blocks (padding with isolated vertices). The cost is at most `⌈log₂(2W+2)⌉·(t³ + (ts)²)·(τ 1 + ∑_{l<L} 8 τ(2^l))` |
+| `Cslib.Query.cost_minPlusViaNegTri_le_rpow` | the exponent. If `det m` costs at most `c·m^(3−δ)` for `m ≠ 0`, with `c ≥ 0` and `δ ≤ 2`, the product costs at most `544·c·⌈log₂(2W+2)⌉·n^(3−δ/3)` for `n ≥ 1`. So truly subcubic detection gives a truly subcubic product with `δ' = δ/3`, matching the `O(n²·T(n^{1/3})·log W)` of Theorem 4.2 |
+| `Cslib.Query.negTriViaMinPlus`, `eval_negTriViaMinPlus`, `cost_negTriViaMinPlus` | the converse in its one-product form: one call of a (min,+) product subroutine decides negative triangle at exactly the cost of that call. With `schoolbookMatMul` this is a cubic detector. It is weaker than [VWW Theorem 4.1][vww18], which reduces negative triangle detection to (min,+) product verification; that reduction is not formalized |
+
+The [tests](../../ComplexityTests/NegativeTriangle.lean) run every step with the honest oracle and check the query counts. They also show that the binary search fails when the bound `W` is too small. Finally, they instantiate the exponent bound with the schoolbook detector, `δ = 0` and real weights via `Cslib.FreeM.map_cost`.
+
+Helpers specific to this reduction (`halves`, `octant`, `block`, `maskedBlock`, `markPair`, `blockTriples` and the binary-search steps `bsMid`, `bsQuery`, `bsRounds`, `bsDecode`) live in the namespace `Cslib.Query.NegTri`.
+
+Scope relative to the paper: the weights are `ℤ ∪ {∞}`, with no `−∞` and no general (min,⊙) structure. The paper's `W` is the largest finite weight of the structure, which bounds the inputs, and its product saturates outside `[−W, W]` (footnote 6). Here weights are added without saturation, and `W` bounds the finite entries of the product `A * B`. By `eval_minPlusViaNegTri_of_bounded`, inputs with finite entries in `[−M, M]` give `W = 2M`. The binary search queries the detector with `I`–`J` weights in `[−(W+1), W]`. The output-sensitive listing bound (Theorem 4.3) and the other problems in the class (minimum-weight cycle, replacement paths, metricity, product verification) are not formalized. Neither is a word-RAM realization with bit-length costs, so no statement here concerns subcubic running time on a machine. The statements concern subcubic query cost relative to a detector.
 
 ## Depth-first search, topological sort and Bellman–Ford
 
@@ -153,6 +177,18 @@ Like Bellman–Ford, this is a pure Lean function with a `TimeM` cost model, not
 - **CYK.** Import `Complexity.Algorithms.Lean.CYK.Basic` ([source](../../Complexity/Algorithms/Lean/CYK/Basic.lean)). `cyk G w` fills the table of nonterminals deriving each subword, level by level, following [Kasami][kasami65], [Younger][younger67] and [Hopcroft, Motwani and Ullman, Section 7.4.4][hmu06]. `mem_table_iff` says that each cell lists exactly the nonterminals deriving its subword. `cyk_eq_true_iff` says that `cyk G w = true` iff `w ∈ G.toCFG.language`, and `decidableMemLanguage` makes membership decidable. `time_cykM` gives the exact cost `(|R| + 1) (n + C(n + 1, 3))` for `|R|` rules and a word of length `n`, and `time_cykM_le` bounds it by `(|R| + 1) (n + 1)³`. One unit is charged per rule examined in each scan, and per split point (or letter) read. Table reads and writes, cell membership tests and insertions are constant-time steps, as on a RAM holding an array of nonterminal sets. Insertion skips nonterminals already present, and `nodup_table_and_length_le` shows that every cell is a list without repetitions of at most `|R|` nonterminals. The pure `cyk` is a specification for proofs and `decide`, not a fast executable (its table is a chain of function updates); the cost statements concern `cykM`.
 
 The [CYK examples](../../ComplexityTests/Algorithms/Lean/CYK.lean) decide accepted and rejected words, including the empty word, for `{aⁿbⁿ}` and for balanced parentheses with `S → ε`, using `decide`, and check exact tick counts. This is the algorithm of [Sipser, Theorem 7.16][sipser13] (every context-free language is in P) **only for grammars already in Chomsky normal form**. Conversion of arbitrary grammars, a machine-level `ComputableInPolyTime` decider, Valiant's subcubic parsing, the pumping lemma, and CFG emptiness and universality are not formalized ([ROADMAP](../../ROADMAP.md#structure-time-and-space), [#3303](https://github.com/cslib-community/complexitylib/issues/3303)).
+
+## Edit distance and longest common subsequence
+
+Like CYK, these are pure Lean functions with a `TimeM` cost model, not machine programs.
+
+- **Tables over pairs of suffixes.** Import `Complexity.Algorithms.Lean.EditDistance.Grid` ([source](../../Complexity/Algorithms/Lean/EditDistance/Grid.lean)). A `GridDP` holds the four rules of a table indexed by pairs of suffixes of two words: the corner, the two borders, and the interior entry from its three neighbours. `GridDP.value` fills the table row by row, and the row of `a :: x` is computed from the row of `x` alone. The textbook tables are indexed by prefixes. Indexing by suffixes is the same program run on the reversed words. `value_cons_cons` and the border lemmas restate the rules. `ret_valueM` and `time_valueM` show that the `TimeM` version returns `value` and costs exactly `(|x| + 1) (|y| + 1)`. One unit is charged per entry, and an entry is one rule application to neighbours at the heads of the current and previous rows. `TimeM` does not track space, so the two-row space bound is only a property of the definition.
+- **Edit distance (Wagner–Fischer).** Import `Complexity.Algorithms.Lean.EditDistance.Basic` ([source](../../Complexity/Algorithms/Lean/EditDistance/Basic.lean)). `Costs α` gives arbitrary natural-number costs `del`, `ins` and `sub`. `Costs.unit` gives the Levenshtein distance. `Costs.indel` charges `1` per insertion or deletion and `2` per replacement by a different letter; such replacements are allowed, and `optScript Costs.indel` may return them. An `EditScript` is a list of operations `del a`, `ins b`, `sub a b`, with `src`, `tgt` and `cost`. This is an alignment, or a trace in the sense of [Wagner and Fischer][wagnerfischer74]. `editDist C x y` is the table entry, with the recurrence `editDist_cons_cons` (see also [CLRS, Problem 15-5][clrs09] and [Kleinberg and Tardos, Section 6.6][kleinbergtardos06]). `isLeast_editDist` says that `editDist C x y` is the least cost of a script from `x` to `y`. The lower bound is `editDist_le_cost`. `optScript` reads an optimal script off the table (`src_optScript`, `tgt_optScript`, `cost_optScript`). `ret_editDistM` and `time_editDistM` show that the algorithm costs exactly `(|x| + 1) (|y| + 1)`.
+- **Longest common subsequence.** Import `Complexity.Algorithms.Lean.EditDistance.LCS` ([source](../../Complexity/Algorithms/Lean/EditDistance/LCS.lean)). `lcsLength x y` is the table of [CLRS, Section 15.4][clrs09], whose recurrence is `lcsLength_cons_cons` (Theorem 15.1). Subsequences are `List.Sublist`. `isGreatest_lcsLength` says that `lcsLength x y` is the greatest length of a common subsequence. The upper bound is `length_le_lcsLength`, and `lcs` reads a witness off the table (`lcs_spec`). `editDist_indel_add_two_mul` is the duality `editDist Costs.indel x y + 2 · lcsLength x y = |x| + |y|`. `isLeast_editDist_indel` shows that replacements gain nothing under `Costs.indel`: `splitSubs` turns each into a deletion and an insertion at the same cost, so `editDist Costs.indel x y` is also the least cost of a script without them (`EditScript.IsIndel`), the insertion–deletion distance. `ret_lcsLengthM` and `time_lcsLengthM` give the exact cost `(|x| + 1) (|y| + 1)`.
+
+The [examples](../../ComplexityTests/Algorithms/Lean/EditDistance.lean) use `decide`. They check kitten/sitting (`3`, with its traceback), flaw/lawn (`2`), and empty words. They check costs that are neither unit nor symmetric, where a replacement beats a deletion plus an insertion but a swap does not. They check the strings of the running example of CLRS Section 15.4 (`lcsLength = 4`), a replacement returned by `optScript Costs.indel` next to an equal-cost script without it, and the exact tick counts.
+
+**Scope.** Costs are arbitrary: no triangle inequality or symmetry is assumed. The theorem is the trace (alignment) form of Wagner–Fischer. The equivalence with sequences of edit operations applied at arbitrary positions, which Wagner and Fischer prove under their cost conditions, is not formalized. For unit costs, neither the metric properties nor the characterization as the least number of single-letter edits is formalized. Also not formalized: Hirschberg's linear-space recovery of an optimal alignment, a machine-level `ComputableInPolyTime` statement, and the `OV` hardness of edit distance and LCS ([#3472](https://github.com/cslib-community/complexitylib/issues/3472), [#3037](https://github.com/cslib-community/complexitylib/issues/3037)).
 
 ## Hash families and dictionaries
 
@@ -221,6 +257,24 @@ The specification `ApproximateMembership.spec U n ε` enforces strict set validi
 [abstracts/ComplexityAbstracts/KargerMinCutAbstract.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/KargerMinCutAbstract.lean) treats weighted undirected multigraphs, `n≥2`, fitted total doubled edge weight and word widths sufficient for workspace/trial counters. A single contraction trial is one fixed 16-register program: `42*n²+12*n+21` worst-case instructions and at most `n-2` random calls, always returning a genuine nontrivial cut value. When minimum cut is positive, it succeeds with probability at least `2/(n*(n-1))`.
 
 The Karger–Stein endpoint uses one fixed 24-register program, `O(n² log n)` worst-case steps and `O(n²)` matrix scratch per tree, with success at least `1/(floorlog₂(n)+15)`. Repetition gives minimum-cut **value** with failure at most `1/(2n)` in `O(n² log³ n)`. It does not enumerate all minimum cuts or attain the source's sparse-space formulation. The threshold is an integer inequality rather than a literal square-root expression; the abstract labels the implementation and proof adaptations.
+
+### Each minimum cut, and the number of minimum cuts
+
+Import `Complexity.Algorithms.Lean.Karger.MinCutCount` ([MinCutCount.lean](../../Complexity/Algorithms/Lean/Karger/MinCutCount.lean)). The contraction structure `Karger.spec` keeps only the weight matrix, so `karger` answers a weight, not a cut. Following [Karger and Stein, Section 2][kargerstein96], `trackedSpec n` also keeps the block of original vertices merged into each supervertex (`TrackedGraph`). Blocks are contracted by `Cslib.WeightedCut.contractBlocks` ([Blocks.lean](../../Complexity/Foundations/Combinatorics/WeightedCut/Blocks.lean)), which agrees with `contractPart` on the fibres of a supervertex map (`contractBlocks_pullbackCut`).
+
+- **Bookkeeping:** `map_run_trackedSpec` shows that forgetting the blocks maps every run over `trackedSpec n` to the run of the same client over `spec`. It is an instance of `Cslib.ProbOracleComp.run_interpret_map_state` with `TrackedGraph.toGraph` as the state representation. Statements about the answers and the weight matrices of `spec` therefore transfer to `trackedSpec n`. Statements about the blocks, such as the survival bound `trackedSurvives_contractTimes`, need their own proofs.
+- **Output cut:** one run of `karger` also outputs the block of supervertex `1` of the last two (`TrackedGraph.side`); `cutLaw W₀` is its law. On a multigraph (`IsMultigraph W₀`) with `n ≥ 2` vertices, `answer_eq_cutWeight_side` shows the output cut is non-trivial and the answer is its weight; `answerLaw_eq_map_cutLaw` states this as `answerLaw ⟨n, W₀⟩ = (cutLaw W₀).map (cutWeight W₀)`.
+- **Per-cut bound** (Theorem 2.2 of the source): `two_div_le_cutLaw`. If also `0 < minCut W₀`, each fixed minimum cut `{C, Cᶜ}` (with `C` non-trivial, which forces `n ≥ 2`) is output with probability at least `2 / (n (n - 1)) = 1 / C(n, 2)`. The proof reruns the survival induction over the blocks (`trackedSurvives_contractTimes`): a cut that survives to two supervertices is the output cut, up to complement.
+- **Count:** `card_minCuts_le_choose_two`. Each run outputs one cut, so the events for distinct minimum cuts are disjoint and their probabilities sum to at most `1`. A connected multigraph therefore has at most `n.choose 2` minimum cuts, counted by the side `C` with `x₀ ∉ C` and `cutWeight W₀ C = minCut W₀`. The bound is due to Dinitz, Karzanov and Lomonosov (1976); the proof is the one in [Karger and Stein][kargerstein96].
+
+The [checked examples](../../ComplexityTests/KargerMinCutCount.lean) count by brute force the `C(4, 2) = 6` minimum cuts of the unit 4-cycle, where the bound is tight, and the `C(5, 2) = 10` minimum cuts of the unit 5-cycle. They also instantiate both theorems on the 4-cycle. The empty graph on four vertices has `7` non-trivial minimum cuts. The filter, which then also contains `∅`, has `8 > C(4, 2)` elements, so `0 < minCut W₀` is needed.
+
+Not formalized:
+- the `O((2n)^(2α))` bound on `α`-minimal cuts (Theorem 8.4 of the source);
+- the enumeration and the cactus representation of all minimum cuts;
+- the per-cut bound for the recursive Karger–Stein algorithm.
+
+The tracked development duplicates part of `Karger/Contraction.lean`; [#3539](https://github.com/cslib-community/complexitylib/issues/3539) tracks deriving the untracked theorems from it.
 
 ### Deterministic minimum cut: Stoer–Wagner
 
@@ -313,6 +367,39 @@ Import `Complexity.Algorithms.Lean.MaxFlow.Preflow` ([Complexity/Algorithms/Lean
 `pushRelabelWith N vs norm` scans the vertex list `vs` for the first active vertex and pushes along its first admissible arc, or relabels it. `pushRelabelWith_correct` assumes that `vs` lists every vertex, that `norm` is the identity (`∀ σ, norm σ = σ`) and that `s ≠ t`. Under these hypotheses it shows that the function performs a run of at most `maxOps N` operations and returns a maximum flow and a minimum cut of equal value. `pushRelabel` on `Fin n` takes `vs = List.finRange n` and `norm = tabulate`, which stores the state as a matrix and a vector after every operation, so the kernel can evaluate it. `pushRelabel_correct` then needs only `s ≠ t`. The [checked client](../../ComplexityTests/PushRelabel.lean) evaluates it by `decide +kernel` on the CLRS six-vertex network (value `23`, `29` operations). It evaluates it by `decide` on edge cases: antiparallel arcs, an unreachable sink, a single arc `s → t`, and `s = t`.
 
 Limitations: the bounds count operations and do not charge the selection of an operation, so there is no `TimeM` running-time bound. The FIFO, relabel-to-front and highest-label rules, the gap and global-relabelling heuristics and dynamic trees are not formalized ([#3373](https://github.com/cslib-community/complexitylib/issues/3373)).
+
+## Menger's theorem
+
+Import `Complexity.Algorithms.Lean.MaxFlow.Menger` ([source](../../Complexity/Algorithms/Lean/MaxFlow/Menger.lean)). The declarations live in `Cslib.Algorithms.Lean.MaxFlow`. This is a theorem-level development: there is no algorithm and no running time. Every form of [Menger's theorem][menger27] is derived from the integral max-flow min-cut theorem `Network.exists_maxFlow_eq_minCut` together with a flow decomposition, and each comes in two versions: an `iff` against all cuts, and an existence statement whose cut has exactly as many elements as there are paths. Graphs are finite and have two terminals. Directed paths are duplicate-free vertex lists (`IsDipath`). Undirected paths are Mathlib `Walk`s with `IsPath`.
+
+| Form | Source | `iff` version | Matching-cut version |
+|---|---|---|---|
+| directed, arc-disjoint | [Schrijver 2017][schrijver17], Corollary 4.1b | `exists_arcDisjoint_iff_forall_isArcCut` | `exists_arcDisjoint_eq_outArcs` |
+| directed, internally disjoint | [Schrijver 2017][schrijver17], Corollary 4.1a | `exists_internallyDisjoint_iff_forall_isVertexCut` | `exists_internallyDisjoint_eq_isVertexCut` |
+| undirected, edge-disjoint | [Diestel 2025][diestel25], Corollary 3.3.5 (ii) | `isEdgeReachable_iff_exists_edgeDisjoint` | `exists_edgeDisjoint_eq_not_reachable` |
+| undirected, internally disjoint | [Diestel 2025][diestel25], Corollary 3.3.5 (i) | `exists_internallyDisjoint_iff_forall_isVertexSeparator` | `exists_internallyDisjoint_eq_isVertexSeparator` |
+
+- **Directed, arc-disjoint.** For `s ≠ t`, the matching-cut version gives `(outArcs G S).card` pairwise arc-disjoint `s`–`t` paths for some `S` with `s ∈ S` and `t ∉ S`. Here `outArcs G S` is Schrijver's `δ^out(S)`.
+- **Directed, internally disjoint.** For `s ≠ t` not adjacent, the matching-cut version gives internally disjoint paths and an `s`–`t` vertex cut (`IsVertexCut`) of the same size. The proof splits each vertex, as in the derivation after Corollary 4.1b.
+- **Undirected, edge-disjoint.** The `iff` version characterizes Mathlib's `SimpleGraph.IsEdgeReachable k u v` by `k` pairwise edge-disjoint `u`–`v` paths. Antiparallel flow is cancelled (`Network.Flow.cancel`), so the paths share no undirected edge in either direction.
+- **Undirected, internally disjoint.** Separators are `IsVertexSeparator` (Diestel §1.4).
+
+The `iff` versions also hold in the degenerate cases: `s = t`, and for the vertex forms adjacent `s`, `t`. In those cases no cut exists and both sides are true for every `k`.
+
+Each form has a weak-duality lemma: `card_le_card_of_arcDisjoint_of_isArcCut`, `card_le_card_of_internallyDisjoint_of_isVertexCut`, `le_encard_of_edgeDisjoint_of_not_reachable` and `card_le_card_of_internallyDisjoint_of_isVertexSeparator`. Four closed-set certificates turn a vertex set `S` with `s ∈ S` and `t ∉ S` into a decidable cut check: `isArcCut_outArcs`, `isVertexCut_of_forall_adj`, `not_reachable_deleteEdges_of_forall_adj` and `isVertexSeparator_of_forall_adj`.
+
+The reusable flow layer is [Decomposition.lean](../../Complexity/Algorithms/Lean/MaxFlow/Decomposition.lean). `Network.Flow.exists_flowPaths` decomposes an integral flow of value `k` into `k` simple paths along positive-flow arcs, with each arc `(u, v)` on at most `f u v` of them. `Network.Flow.cancel` removes antiparallel flow and keeps the value.
+
+The [tests](../../ComplexityTests/Menger.lean) check two examples. In the 3-cube, between antipodal vertices, the edge and vertex connectivity are both `3`: they give three explicit paths, show `IsEdgeReachable 3`, refute `IsEdgeReachable 4` with the three edges at `0`, and refute four internally disjoint paths with the separator `{1, 2, 4}`. One test applies `exists_internallyDisjoint_eq_isVertexSeparator` as stated and pins its common size `m` to `3` by weak duality. They also check a small digraph with arc and vertex connectivity `2`.
+
+Limitations:
+
+- Only finite graphs with two terminals are covered. Directed graphs are Mathlib `Digraph`s, which have no parallel arcs, so the arc form covers simple digraphs and not the directed multigraphs allowed by Schrijver.
+- The `A`–`B` set version ([Schrijver 2017][schrijver17], Theorem 4.1; [Diestel 2025][diestel25], Theorem 3.3.1) is not formalized, and neither is the global `k`-connectivity form ([Diestel 2025][diestel25], Theorem 3.3.6).
+- Infinite graphs and the Erdős–Menger conjecture (Aharoni–Berger) are not formalized.
+- No algorithm or running time is given for computing local connectivity.
+
+[#3409](https://github.com/cslib-community/complexitylib/issues/3409) tracks the remaining work.
 
 ## Bipartite matching and Hopcroft–Karp
 
@@ -1034,6 +1121,17 @@ Import `Complexity.Algorithms.Lean.KCenter.Gonzalez` ([source](../../Complexity/
 
 The [k-center examples](../../ComplexityTests/KCenter.lean) run Gonzalez on three points of a line at `0, 1, 2` with one center. It picks the endpoint and has radius `2`, while the middle point has radius `1`, so the factor `2` is attained. The same tight instance appears on the path `0 - 1 - 2` with `domDist`, where Gonzalez's center does not dominate, so the gap needs `ρ < 2`. A symmetric distance violating the triangle inequality makes Gonzalez pay `100` against an optimum of `1`. A distance vanishing between distinct points makes it repeat a center. The Hochbaum–Shmoys threshold algorithm, k-supplier and k-median are open ([ROADMAP](../../ROADMAP.md#combinatorial-optimization)).
 
+## Lovász theta and Shannon capacity
+
+These are graph invariants with no algorithm attached yet. They are the mathematical side of the semidefinite route to perfect-graph optimization ([ROADMAP](../../ROADMAP.md#optimization-and-duality)). Modules under `Complexity/Foundations/Combinatorics/SimpleGraph/` build them on Mathlib's `SimpleGraph.indepNum`, `chromaticNumber` and `cycleGraph`; [IndepNum.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/IndepNum.lean) adds the general facts about `indepNum` they need (monotonicity under embeddings, invariance under isomorphism, `α(G) ≤ |V|`). `import Complexity.Foundations.Combinatorics.SimpleGraph.Pentagon` brings in all of them, and the notation `⊠` needs `open SimpleGraph`:
+
+- [StrongProduct.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/StrongProduct.lean) defines `G ⊠ H` (scoped notation in `SimpleGraph`) and the powers `G.strongPow k` on `Fin k → V`. It proves supermultiplicativity `α(G) α(H) ≤ α(G ⊠ H)` and `α(Gᵏ) ≤ |V|ᵏ`. Mathlib has no strong product at the pin; mathlib4#43170 proposes one.
+- [ShannonCapacity.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/ShannonCapacity.lean) defines `shannonCapacity G` as the supremum over `k ≥ 1` of `α(Gᵏ)^(1/k)`. `tendsto_shannonCapacity` shows that the sequence converges to it (Fekete's lemma); for an empty vertex type both sides are `0`.
+- [LovaszTheta.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/LovaszTheta.lean) defines `IsOrthonormalRepresentation` (unit vectors, orthogonal on *nonadjacent* distinct pairs, as in [Lovász][lovasz1979]) and `lovaszTheta G`. The latter is the infimum over representations `u` in some `ℝᵈ` and unit handles `c` of `max_v 1/⟪c, u v⟫²`; `lovaszTheta_le_of_rep` accepts representations in any real inner product space. It proves the sandwich `indepNum_le_lovaszTheta` and `lovaszTheta_le_chromaticNumber_compl`, that is `α(G) ≤ ϑ(G) ≤ χ(Gᶜ)` for finite `G` (`lovaszTheta_le_of_cliqueCover` states the upper half for a cover by cliques), together with `lovaszTheta_strongProd_le` and `shannonCapacity_le_lovaszTheta`. The [Knuth][knuth1994] locators in the module docstring give the sandwich and product lemmas.
+- [Pentagon.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/Pentagon.lean) gives Shannon's five-word code in `C₅ ⊠ C₅` [Shannon][shannon1956] and Lovász's umbrella in `ℝ³`. Together they prove `shannonCapacity_cycleGraph_five` and `lovaszTheta_cycleGraph_five` (both `√5`) and `indepNum_cycleGraph_five`.
+
+The theta function is a real infimum without a computational interface. Its SDP and eigenvalue characterizations, polynomial-time approximation (Grötschel–Lovász–Schrijver) and the resulting perfect-graph algorithms are open ([#2998](https://github.com/cslib-community/complexitylib/issues/2998)). The [checked examples](../../ComplexityTests/Foundations/Combinatorics/SimpleGraph/LovaszTheta.lean) compute `ϑ` for empty, complete and edgeless graphs and `Θ` for empty and edgeless graphs. They separate `α(C₅) = 2` from `Θ(C₅) = √5`, and restate the Shannon-capacity statement of the pentagon from first principles.
+
 ## Linear-programming duality over ordered fields
 
 Import `Complexity.Foundations.LinearAlgebra.Matrix.LinearProgramming` ([LinearProgramming.lean](../../Complexity/Foundations/LinearAlgebra/Matrix/LinearProgramming.lean)). This is mathematics with no machine model or running time. For a matrix `A : Matrix ι κ K` over any linearly ordered field `K` (so `ℚ` is included), the primal program maximizes `c ⬝ᵥ x` subject to `A *ᵥ x ≤ b` and the dual minimizes `y ⬝ᵥ b` subject to `0 ≤ y` and `y ᵥ* A = c`. Programs are plain matrix data; there is no bundled LP structure and no encoding.
@@ -1186,6 +1284,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [chvatal83]: ../sources.md#chvatal83
 [clrs09]: ../sources.md#clrs09
 [coverthomas06]: ../sources.md#coverthomas06
+[diestel25]: ../sources.md#diestel25
 [dilworth1950]: ../sources.md#dilworth1950
 [dinic70]: ../sources.md#dinic70
 [edmonds65]: ../sources.md#edmonds65
@@ -1202,14 +1301,19 @@ The numeric values above are transcriptions of checked source statements, not re
 [gusfield90]: ../sources.md#gusfield90
 [hierholzer73]: ../sources.md#hierholzer73
 [hmu06]: ../sources.md#hmu06
+[kargerstein96]: ../sources.md#kargerstein96
 [kasai01]: ../sources.md#kasai01
 [kasami65]: ../sources.md#kasami65
+[kleinbergtardos06]: ../sources.md#kleinbergtardos06
 [kmb81]: ../sources.md#kmb81
 [kortevygen18]: ../sources.md#kortevygen18
 [lll82]: ../sources.md#lll82
 [manbermyers93]: ../sources.md#manbermyers93
+[menger27]: ../sources.md#menger27
 [mirsky1971]: ../sources.md#mirsky1971
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
+[knuth1994]: ../sources.md#knuth1994
+[lovasz1979]: ../sources.md#lovasz1979
 [nagamochiibaraki92]: ../sources.md#nagamochiibaraki92
 [roth82]: ../sources.md#roth82
 [rothpostlewaite77]: ../sources.md#rothpostlewaite77
@@ -1218,11 +1322,13 @@ The numeric values above are transcriptions of checked source statements, not re
 [schrijver03]: ../sources.md#schrijver03
 [schrijver17]: ../sources.md#schrijver17
 [schummervohra07]: ../sources.md#schummervohra07
+[shannon1956]: ../sources.md#shannon1956
 [shapleyscarf74]: ../sources.md#shapleyscarf74
 [sipser13]: ../sources.md#sipser13
 [stoerwagner97]: ../sources.md#stoerwagner97
 [vww18]: ../sources.md#vww18
 [thorup13]: ../sources.md#thorup13
+[wagnerfischer74]: ../sources.md#wagnerfischer74
 [wattenhofer16]: ../sources.md#wattenhofer16
 [williamsonshmoys11]: ../sources.md#williamsonshmoys11
 [younger67]: ../sources.md#younger67
