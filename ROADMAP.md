@@ -467,13 +467,16 @@ index links to canonical definitions rather than keeping a second set.
   `Nat.Partrec.Code`, with the `evaln` fuel instance, Borodin's gap theorem for the
   almost-everywhere classes (also with a two-argument stretch), recursive relatedness, Blum's
   speedup theorem, arbitrarily complex functions with the resulting strict hierarchy of
-  classes, and the McCreight–Meyer union theorem, are in `Computability/BlumComplexity`.
+  classes, the McCreight–Meyer union theorem, and the naming and honesty theorems (a measured
+  family naming every class `C_t`, and one computable `g` giving every `C_t` a `g`-honest name;
+  [#3234](https://github.com/cslib-community/complexitylib/issues/3234)), are in
+  `Computability/BlumComplexity`.
   Remaining: Blum's compression theorem in its running-time form (a single computable `h` such
   that every total `φ_i` has `C_{Φ_i} ⊂ C_{n ↦ h n (Φ_i n)}`; the value form with `φ_i` in place
-  of `Φ_i` is false, by the gap theorem); the McCreight–Meyer honesty and naming theorems
-  ([#3234](https://github.com/cslib-community/complexitylib/issues/3234): every `C_t` equals
-  `C_{t'}` for an `h`-honest `t'`, with one computable `h` for all `t`, or for the cost `Φ_e` of a
-  total program); effective forms of speedup such as Blum's pseudo-speedup, which computes a
+  of `Φ_i` is false, by the gap theorem); `g`-honesty for partial functions and the related
+  exercises on honest and measured sets (Odifreddi, *Classical Recursion Theory* II, Exercises
+  VII.2.14b–d); effective forms of speedup such as Blum's
+  pseudo-speedup, which computes a
   faster program for a finite variant of `f` (M. Blum, *On effective procedures for speeding up
   algorithms*, J. ACM 18(2), 1971), and Blum measures for
   native multitape time and space through a Gödel-numbering bridge from native descriptions.
