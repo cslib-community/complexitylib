@@ -37,7 +37,6 @@ polynomials of bounded total degree, provided `S` is large enough.
 
 * `Rational.CyclotomicRing.root_primitive`: the adjoined root is a primitive root of unity of
   order `2 ^ (e + 1)`.
-* `Rational.FiniteGrid.det_totalDegree_le`: total degree of a polynomial determinant.
 * `Rational.FiniteGrid.simultaneous`: a grid avoiding all zeros of a list of polynomials.
 
 ## References
@@ -173,21 +172,6 @@ theorem exists_eval_ne_zero (p : MvPolynomial (Fin k) K) (hp : p ≠ 0)
   have hlt : (p.totalDegree : ℚ≥0) / S.card < 1 :=
     (div_lt_one hpos').mpr (by exact_mod_cast hS)
   exact (not_lt_of_ge hh) hlt
-
-/-- A determinant of polynomials of total degree at most `d` has total degree at most
-`|ι| * d`. -/
-lemma det_totalDegree_le {ι : Type*} [Fintype ι] [DecidableEq ι]
-    (A : Matrix ι ι (MvPolynomial (Fin k) K)) (d : ℕ)
-    (hA : ∀ i j, (A i j).totalDegree ≤ d) :
-    A.det.totalDegree ≤ Fintype.card ι * d := by
-  rw [Matrix.det_apply]
-  apply totalDegree_finsetSum_le
-  intro σ _
-  apply (totalDegree_smul_le _ _).trans
-  apply (totalDegree_finsetProd _ _).trans
-  calc
-    ∑ i : ι, (A (σ i) i).totalDegree ≤ ∑ _i : ι, d := Finset.sum_le_sum (fun i _ => hA _ _)
-    _ = Fintype.card ι * d := by simp
 
 /-- The common grid specializes a list of determinant conditions
 simultaneously, rather than one formula gate at a time. -/
