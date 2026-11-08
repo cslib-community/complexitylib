@@ -1722,6 +1722,7 @@ public import Complexity.Computability.Complexity.Classes.Measure.Conservation
 public import Complexity.Computability.Complexity.Classes.Measure.DTIME
 public import Complexity.Computability.Complexity.Classes.ModP
 public import Complexity.Computability.Complexity.Classes.ModP.GapP
+public import Complexity.Computability.Complexity.Classes.ModP.PrimePower
 public import Complexity.Computability.Complexity.Classes.ModP.Time
 public import Complexity.Computability.Complexity.Classes.NP
 public import Complexity.Computability.Complexity.Classes.NP.Advice
@@ -1812,6 +1813,7 @@ public import Complexity.Computability.Complexity.Classes.Selective.Selman
 public import Complexity.Computability.Complexity.Classes.SharpP
 public import Complexity.Computability.Complexity.Classes.SharpP.Aggregation
 public import Complexity.Computability.Complexity.Classes.SharpP.Characterization
+public import Complexity.Computability.Complexity.Classes.SharpP.Choose
 public import Complexity.Computability.Complexity.Classes.SharpP.Closure
 public import Complexity.Computability.Complexity.Classes.SharpP.Combinators
 public import Complexity.Computability.Complexity.Classes.SharpP.Completeness
