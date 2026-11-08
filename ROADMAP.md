@@ -519,8 +519,11 @@ index links to canonical definitions rather than keeping a second set.
   separately: their broader collapse is conditional on the explicit circuit-hardness assumption,
   with resetting-error and time regimes distinguished from KMPS's unconditional results.
 - **Randomized logspace** ([#459], [#474]): two-sided `BPL` amplification, the random-walk proof
-  of `USTCON ∈ RL` (membership already follows from `L_subset_RL` and `USTCON_mem_L`), Nisan's
-  generator, `BPL ⊆ L²` and Saks–Zhou. The preprint route to native `RL = L` remains open in
+  of `USTCON ∈ RL` (membership already follows from `L_subset_RL` and `USTCON_mem_L`), the
+  space-efficient computability of Nisan's generator and the bridge from configuration graphs to
+  read-once programs (its fooling theorem for read-once branching programs is
+  [#3187](https://github.com/cslib-community/complexitylib/issues/3187)), `BPL ⊆ L²` and
+  Saks–Zhou. The preprint route to native `RL = L` remains open in
   [#1444](https://github.com/cslib-community/complexitylib/issues/1444). Its estimator work in
   [#1721](https://github.com/cslib-community/complexitylib/issues/1721) has an integer-grid slack
   schedule with endpointwise telescoping and summable available-scale precision payments.
@@ -607,9 +610,9 @@ index links to canonical definitions rather than keeping a second set.
   not charged to the space bound, and their transitivity; the rest of the inclusion hierarchy of
   Ladner, Lynch and Selman, and its separations.
 - **Sparse and tally sets:** after Kadin's
-  `PH ⊆ P^{NP[O(log n)]}` (`Classes/Sparse/Kadin.lean`, [#2062]): `P^{NP[O(log n)]} ⊆ Σ₂ᴾ ∩ Π₂ᴾ`,
-  hence `PH = Θ₂ᴾ` under his hypothesis; his stronger form with a sparse `S ∈ NP` and
-  `coNP ⊆ NP^S`; and `P^{NP[O(log n)]} = P^NP_tt` (Hemachandra).
+  `PH = P^{NP[O(log n)]}` (`Classes/Sparse/Kadin.lean`, [#2062],
+  [#3155](https://github.com/cslib-community/complexitylib/issues/3155)): his stronger form with a
+  sparse `S ∈ NP` and `coNP ⊆ NP^S`; and `P^{NP[O(log n)]} = P^NP_tt` (Hemachandra).
 - **Berman–Hartmanis:** paddability of the standard NP-complete graph, number and set problems,
   hence their p-isomorphism to SAT; every many-one complete set for EXP is complete under one-one,
   length-increasing reductions (Berman); and the isomorphism theorem for sets complete under AC⁰
@@ -817,6 +820,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 ### Search, parameterized and fine-grained complexity
 
 - **TFNP:** CLS, further local search, fixed-point and equilibrium problems.
+- **Potential-line classes** ([#3206](https://github.com/cslib-community/complexitylib/issues/3206)):
+  `PPADS`, `EOPL` and `SOPL` with their easy inclusions are in place. Next: `SOPL ∩ PPAD ⊆ EOPL`,
+  then `PLS ∩ PPADS ⊆ SOPL` (Göös et al. 2022, Lemmas 2–4), giving `SOPL = PLS ∩ PPADS` and
+  `EOPL = PLS ∩ PPAD`; also `UEOPL`.
 - **Sperner's lemma** ([#2999](https://github.com/cslib-community/complexitylib/issues/2999)):
   the parity form on the triangulated square grid by door-following, and circuit `Sperner2D` in
   `PPAD` as the end-of-line relation of its door graph. Remaining
@@ -835,8 +842,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **W-hierarchy** ([#2966](https://github.com/cslib-community/complexitylib/issues/2966)):
   `W[t]` by fpt-reduction to weighted satisfiability of circuits of weft at most `t` and bounded
   depth, with `FPT ⊆ W[t] ⊆ W[t+1]`; `IndependentSet` and `Clique` are in `W[1]`. Remaining: the
-  W[1]-hardness of `Clique` (fpt-reduction from `WCS 1 d`), then `W[t] ⊆ XP`, W[2]-completeness of
-  Dominating Set, short Turing machine acceptance, `W[P]` and the A-hierarchy.
+  W[1]-hardness of `Clique` (fpt-reduction from `WCS 1 d`; Kleene evaluation and the weft-one
+  certificates are in place; remaining is the graph construction, which encodes the exact-weight
+  constraint problem left after fixing the claims, each check reading at most `2 ^ d` inputs, as a
+  `Clique` instance), then `W[t] ⊆ XP`,
+  W[2]-completeness of Dominating Set, short Turing machine acceptance, `W[P]` and the A-hierarchy.
 - **Exponential-time SAT** ([#894]): Schöning, PPZ and PPSZ run on the randomized word RAM with
   exact laws, amplification and time bounds (PPSZ's round count takes an input bound
   `a / b ≥ 1 - qbar k h`); Schöning has a curated abstract. Optional remainder: PPZ and PPSZ
@@ -1130,6 +1140,13 @@ each statement against the numbered result. Organize modules by subject, not cha
   integer leaves) results.
 - Multiparty protocols, discrepancy and information complexity, direct-sum and direct-product
   results, and reductions to streaming, sketching and cell-probe lower bounds.
+- **Dynamic cell-probe lower bounds**
+  ([#3207](https://github.com/cslib-community/complexitylib/issues/3207)): the problem-independent
+  chronogram bookkeeping is in `Complexity.Computability.CellProbe.Chronogram`. Remaining: the
+  Fredman–Saks bound for dynamic prefix parity, `t_q = Ω(log n / log(t_u (w + 1)))` for
+  deterministic schemes with worst-case update depth `t_u` and `S ≤ 2 ^ w` cells (milestone 2
+  of the issue); amortized updates; Las Vegas randomization through the cell-probe Yao averaging;
+  and Pătraşcu–Demaine's `Ω(log n)` information-transfer bound.
 - **Streaming and sketching:** native time and space bounds for Count-Min, including hash-seed
   storage and evaluation; the AMS sketch for `F₀`, the AMS `F_k` estimator for streams of unknown
   length (reservoir sampling), and the `n^{Ω(1)}` lower bounds for `F_k` with `k ≥ 6`; `ProbComp`
@@ -1186,12 +1203,18 @@ each statement against the numbered result. Organize modules by subject, not cha
   ([#3122](https://github.com/cslib-community/complexitylib/issues/3122)). In the dense graph
   (adjacency-matrix) model, triangle-freeness has a one-sided tester whose query bound depends
   only on `ε`, through Mathlib's triangle removal lemma
-  ([#3036](https://github.com/cslib-community/complexitylib/issues/3036)). Remaining: the matching
-  `Ω(n^{2/3} ε^{-4/3} + √n ε^{-2})` closeness lower bound, further access models, the odd-domain
-  lower bound, instance-optimal identity testing, tolerant and structured-property distribution
-  testing; in the dense graph model, `H`-freeness for general `H` (it needs a general removal
-  lemma), bipartiteness and `k`-colourability with `poly(1/ε)` queries, and canonical
-  (non-adaptive sampling) testers; further query and sample lower bounds.
+  ([#3036](https://github.com/cslib-community/complexitylib/issues/3036)). Every one-sided tester
+  with `q` queries for a property closed under relabelling becomes a canonical one-sided tester
+  that samples at most `2q` vertices and decides on the induced subgraph (Goldreich–Trevisan,
+  one-sided half; [#3180](https://github.com/cslib-community/complexitylib/issues/3180)).
+  Remaining: the matching `Ω(n^{2/3} ε^{-4/3} + √n ε^{-2})` closeness lower bound, further access
+  models, the odd-domain lower bound, instance-optimal identity testing, tolerant and
+  structured-property distribution testing; in the dense graph model, `H`-freeness for general `H`
+  (it needs a general removal lemma), bipartiteness and `k`-colourability with `poly(1/ε)`
+  queries, the two-sided half of Goldreich–Trevisan (canonical testers with `O(q)` sample vertices
+  and `O(q²)` queries), and deciding by the property itself when it is closed under induced
+  subgraphs (their Proposition D.2, due to Alon) or is a graph partition property (Corollary 5.9);
+  further query and sample lower bounds.
 - **Kolmogorov complexity and metacomplexity** ([#798], [#884]): the near-linear threshold regime
   of Liu–Pass Theorem 3.1 (c), hardness for every polynomial `t(n) ≥ (1 + ε)n` rather than above a
   polynomial threshold, which needs a rate-1 efficient conditional EP-PRG running in `n + O(n^c)`
