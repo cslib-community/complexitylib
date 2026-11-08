@@ -1,0 +1,75 @@
+/-
+Copyright (c) 2026 OpenAI. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: OpenAI
+-/
+
+-- upstream: candidate
+
+import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.VertexMergeGenus
+import Complexity.Foundations.GroupTheory.Perm.InvariantPredicate
+
+/-! Active transpositions, nonconstant selections and literal vertex-identification tables. -/
+
+namespace ComplexityTests.VertexIdentification
+
+open Cslib.Complexity Graph.RotationSystem Graph.RotationSystem.CornerFaces
+
+-- The swapped elements are distinct and both satisfy a genuinely nonconstant predicate.
+example (x : Fin 4) : (Equiv.swap (0 : Fin 4) 1 x).val < 2 ↔ x.val < 2 :=
+  Equiv.predicate_swap (fun x : Fin 4 => x.val < 2) 0 1 (by decide) x
+
+example : Equiv.swap (0 : Fin 4) 1 0 = 1 ∧ ¬ (2 : Fin 4).val < 2 := by decide
+
+example : Nat.card (OrbitOn (Equiv.swap (0 : Fin 4) 1 * Equiv.swap 0 1)
+      (fun x : Fin 4 => x.val < 2)) =
+    Nat.card (OrbitOn (Equiv.swap (0 : Fin 4) 1) (fun x : Fin 4 => x.val < 2)) + 1 := by
+  simpa using card_orbitOn_swap_mul (Equiv.swap (0 : Fin 4) 1) (fun x => x.val < 2)
+    (by decide +kernel) 0 1 (by decide) (by decide +kernel)
+
+private abbrev edge : Graph := ([0, 1, 8], [(0, 1)])
+
+private def edgeRotation : Graph.RotationSystem edge where
+  rotate := Equiv.refl _
+  sameCycle_iff := by decide +kernel
+
+example : Graph.RotationCertificate.ofRotation
+    (edgeRotation.mergeVertices (0, false) (0, true) (by decide)) = ⟨[1, 0]⟩ := by decide +kernel
+
+example : Graph.RotationCertificate.verifyGenusZero
+    (mergeGraph (G := edge) (0, false) (0, true)) ⟨[1, 0]⟩ = true := by decide
+
+example : Nat.card (ComponentFace
+      (edgeRotation.mergeVertices (0, false) (0, true) (by decide)) 0) =
+    Nat.card (ComponentFace edgeRotation 0) + 1 := by
+  have hself : Graph.RotationCertificate.SameComponent edge 0 0 := .refl (by decide)
+  simpa [mergeDartEquiv, mergeGraph, Graph.Dart.vertex, Graph.edgeEndpoint, hself] using
+    card_componentFace_mergeVertices edgeRotation (by decide) (0, false) (0, true)
+      (by decide) (by decide +kernel) (0, false)
+
+-- The generic genus proof retains the separately declared point at 8.
+example : (edgeRotation.mergeVertices (0, false) (0, true) (by decide)).NumericalGenusZero := by
+  have hG : ∀ v ∈ edge.incidenceVertices, v ∈ edge.1 := by decide
+  have hr : edgeRotation.NumericalGenusZero := by
+    have h := (Graph.RotationCertificate.verifyEuler_eq_true_iff
+      (Graph.RotationCertificate.verifyRotation_ofRotation edgeRotation hG)).mp (by decide)
+    exact Graph.RotationCertificate.decode_ofRotation edgeRotation hG ▸ h
+  exact edgeRotation.numericalGenusZero_mergeVertices hG hr (0, false) (0, true)
+    (by decide) (by decide +kernel)
+
+private abbrev bigon : Graph := ([0, 1], [(0, 1), (0, 1)])
+
+private def bigonRotation : Graph.RotationSystem bigon where
+  rotate := Equiv.swap (0, false) (1, false) * Equiv.swap (0, true) (1, true)
+  sameCycle_iff := by decide +kernel
+
+-- These distinct vertices are in the same component but the chosen corners lie on
+-- different faces. The computed identification is valid as a rotation and has positive genus.
+example : Graph.RotationCertificate.ofRotation
+    (bigonRotation.mergeVertices (0, false) (0, true) (by decide)) =
+      ⟨[3, 2, 0, 1]⟩ := by decide +kernel
+
+example : Graph.RotationCertificate.verifyGenusZero
+    (mergeGraph (G := bigon) (0, false) (0, true)) ⟨[3, 2, 0, 1]⟩ = false := by decide
+
+end ComplexityTests.VertexIdentification

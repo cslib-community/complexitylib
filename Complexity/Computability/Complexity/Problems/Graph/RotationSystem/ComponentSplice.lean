@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.CornerFaces
+import Complexity.Foundations.GroupTheory.Perm.InvariantPredicate
 
 /-!
 # Localizing face surgery to invariant dart sets
@@ -54,14 +55,6 @@ noncomputable def subtypeOrbitEquiv (f : Perm α) (p : α → Prop)
   | some none => newPoints
   | some (some a) => p a
 
-private theorem predicate_swap [DecidableEq α] (p : α → Prop) (a b : α)
-    (hab : p a ↔ p b) (x : α) : p (swap a b x) ↔ p x := by
-  by_cases hxa : x = a
-  · subst x; simpa only [swap_apply_left] using hab.symm
-  · by_cases hxb : x = b
-    · subst x; simpa only [swap_apply_right] using hab
-    · rw [swap_apply_of_ne_of_ne hxa hxb]
-
 /-- A splice retains an invariant dart selection when its two corners agree on membership. -/
 theorem splice_preserves [DecidableEq α] (f : Perm α) (p : α → Prop)
     (hp : ∀ a, p (f a) ↔ p a) (h k : α) (q : Prop)
@@ -77,9 +70,9 @@ theorem splice_preserves [DecidableEq α] (f : Perm α) (p : α → Prop)
   change extendedPredicate p q
     (swap (some (some k)) none (swap (some (some h)) (some none)
       (f.optionCongr.optionCongr (swap (some none) none z)))) ↔ _
-  rw [predicate_swap (extendedPredicate p q) (some (some k)) none hk,
-    predicate_swap (extendedPredicate p q) (some (some h)) (some none) hh, hf,
-    predicate_swap (extendedPredicate p q) (some none) none Iff.rfl]
+  rw [Equiv.predicate_swap (extendedPredicate p q) (some (some k)) none hk,
+    Equiv.predicate_swap (extendedPredicate p q) (some (some h)) (some none) hh, hf,
+    Equiv.predicate_swap (extendedPredicate p q) (some none) none Iff.rfl]
 
 /-- When both new points are selected, the selected dart type is literally the old selected
 set with two indexed ends adjoined. -/

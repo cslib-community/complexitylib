@@ -12,6 +12,7 @@ public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.
 public import Complexity.Foundations.Data.BitString.ZModTwo
 import Complexity.Foundations.LinearAlgebra.Matrix.EndpointIncidence
 import Mathlib.Algebra.CharP.Two
+import Mathlib.LinearAlgebra.Matrix.Rank
 
 /-!
 # Lifting face-even edge labels to vertex spins
@@ -30,6 +31,8 @@ oracles, and a finite natural-number universe are not assumed.
 
 ## Main results
 
+* `Cslib.Complexity.Graph.RotationSystem.component_euler_le`: the matrix Euler bound for an
+  incident component, without a numerical genus hypothesis.
 * `Cslib.Complexity.Graph.RotationSystem.exists_vertexSpins_of_faceEven`: disconnected lifting.
 * `Cslib.Complexity.Graph.RotationSystem.faceEven_iff_exists_vertexSpins`: the exact parity test.
 -/
@@ -222,6 +225,23 @@ private theorem matrix_product_zero {G : Graph} (r : RotationSystem G)
     (by simpa only [vertex_dualDartEquiv] using ha)]
   rw [r.faceEven_edgeGradient]
   rfl
+
+/-- The actual vertices and face cycles of an incident component satisfy the Euler bound.
+This elementary consequence of the primal and dual incidence ranks needs neither numerical
+genus zero nor global connectedness. The supplied dart selects an incident component; this
+statement does not apply to isolated points or assert a geometric realization. -/
+theorem component_euler_le {G : Graph} (r : RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (d : Dart G) :
+    (G.componentVertexSet d.vertex).card + (r.componentFaceIndices d.vertex).card ≤
+      (G.componentEdgeSet d.vertex).card + 2 := by
+  classical
+  have h := Matrix.rank_add_rank_le_card_of_mul_eq_zero (matrix_product_zero r hG d)
+  rw [Matrix.rank_transpose] at h
+  have hp := rank_primalMatrix G hG d
+  have hd := rank_dualMatrix r hG d
+  rw [r.card_component_faces_eq_dual_vertices hG]
+  simp only [Vertex, Edge, Fintype.card_coe] at h hp hd
+  omega
 
 /-- Every face-even assignment lifts on each edge component, with all rank and dimension
 ingredients discharged internally from existing reachability and componentwise Euler. -/

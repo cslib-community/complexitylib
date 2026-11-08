@@ -128,6 +128,21 @@ theorem removeNone_mul_swap (f : Perm (Option α)) (a b : α) :
       intro x
       cases x <;> rfl
 
+omit [DecidableEq α] [Finite α] in
+/-- Deleting the extra point commutes with postcomposition by a permutation of the
+retained points. The extra point need not be fixed by the first permutation. -/
+theorem removeNone_mul_optionCongr (f : Perm (Option α)) (g : Perm α) :
+    removeNone (f * g.optionCongr) = removeNone f * g := by
+  classical
+  apply Equiv.optionCongr_injective
+  have hm : (removeNone f * g).optionCongr =
+      (removeNone f).optionCongr * g.optionCongr := by
+    ext x
+    cases x <;> rfl
+  rw [hm, map_equiv_removeNone, map_equiv_removeNone]
+  have hn : (f * g.optionCongr) none = f none := rfl
+  rw [hn, mul_assoc]
+
 omit [DecidableEq α] in
 /-- Transporting a permutation retains its complete orbit count. -/
 theorem card_orbits_permCongr {β : Type} [Finite β] (e : α ≃ β) (f : Perm α) :
@@ -148,6 +163,21 @@ theorem card_orbits_removeNone_add (f : Perm (Option α)) :
   by_cases hn : f none = none
   · simpa only [hn, ite_true] using card_orbits_removeNone_fixed f hn
   · simpa only [hn, ite_false, Nat.add_zero] using (card_orbits_removeNone f hn).symm
+
+omit [DecidableEq α] in
+/-- A permutation of retained points does not affect the number of singleton orbits lost
+by deleting the extra point. All counts use the full orbit quotient. -/
+theorem card_orbits_removeNone_balance (f : Perm (Option α)) (g : Perm α) :
+    Nat.card (Quotient (Perm.SameCycle.setoid (f * g.optionCongr))) +
+        Nat.card (Quotient (Perm.SameCycle.setoid (removeNone f))) =
+      Nat.card (Quotient (Perm.SameCycle.setoid f)) +
+        Nat.card (Quotient (Perm.SameCycle.setoid (removeNone (f * g.optionCongr)))) := by
+  classical
+  have h₁ := card_orbits_removeNone_add (f * g.optionCongr)
+  have h₂ := card_orbits_removeNone_add f
+  have hn : (f * g.optionCongr) none = f none := rfl
+  rw [hn] at h₁
+  omega
 
 private theorem card_orbits_twoPoints (f : Perm α) (a b : α) (hab : a ≠ b)
     (cover : ∀ x, x = a ∨ x = b) :
