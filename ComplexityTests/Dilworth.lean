@@ -30,8 +30,9 @@ and `Complexity.Foundations.Combinatorics.ErdosSzekeres`:
 3. **Solver runs:** complete runs of `minChainCoverM` on divisibility on `{1, …, 6}` (labels into
    `3` chains, the antichain `{4, 5, 6}`, a matching of size `3`) and on the Boolean lattice of
    rank `3` encoded as bitmasks of `Fin 8` (`3` chains, an antichain of size `3`). The
-   certificate lemma `card_le_card_antichain_of_isAntichain` then bounds every antichain, and
-   `minChainCoverM_time_le` is instantiated.
+   certificate lemmas `card_le_minChainCoverM_antichain_card` and `minChainCoverM_numChains_le`
+   then bound every antichain and every chain cover, and `minChainCoverM_time_le` is
+   instantiated.
 4. **Erdős–Szekeres:** a positive instance and the tight sequence `2, 1, 4, 3`, which has
    `n = r * s = 4` terms and neither a monotone nor a strictly decreasing subsequence of `3` terms.
 -/
@@ -196,8 +197,14 @@ example : (minChainCoverM div6Enum).ret.matching.card = 3 := by decide
 /-- Every antichain of divisibility on `{1, …, 6}` has at most `3` elements, from the solver's
 certificate. -/
 example (A : Finset (DivPos 6)) (hA : IsAntichain (· ≤ ·) (A : Set (DivPos 6))) : A.card ≤ 3 := by
-  have h := card_le_card_antichain_of_isAntichain div6Enum hA
+  have h := card_le_minChainCoverM_antichain_card div6Enum hA
   rwa [show (minChainCoverM div6Enum).ret.antichain.card = 3 by decide] at h
+
+/-- Every covering of divisibility on `{1, …, 6}` by `k` chains has `k ≥ 3`, from the solver's
+certificate. -/
+example {k : ℕ} (f : DivPos 6 → Fin k) (hf : ∀ i, IsChain (· ≤ ·) (f ⁻¹' {i})) : 3 ≤ k := by
+  have h := minChainCoverM_numChains_le div6Enum hf
+  rwa [show (minChainCoverM div6Enum).ret.numChains = 3 by decide] at h
 
 example : (minChainCoverM div6Enum).time ≤
     (2 * Nat.sqrt 6 + 1) * (10 * 6 + 1 + 4 * (6 * 6)) + 2 * (6 * 6) + 6 * 6 :=
@@ -238,7 +245,7 @@ example : (minChainCoverM bitEnum).ret.antichain.card = 3 := by decide
 /-- The solver's certificate: every antichain of the Boolean lattice of rank `3` has at most `3`
 elements. -/
 example (A : Finset BitPos) (hA : IsAntichain (· ≤ ·) (A : Set BitPos)) : A.card ≤ 3 := by
-  have h := card_le_card_antichain_of_isAntichain bitEnum hA
+  have h := card_le_minChainCoverM_antichain_card bitEnum hA
   rwa [show (minChainCoverM bitEnum).ret.antichain.card = 3 by decide] at h
 
 /-! ### 4. Erdős–Szekeres -/

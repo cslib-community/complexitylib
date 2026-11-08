@@ -212,7 +212,7 @@ variable [DecidableEq α]
 
 /-- The elements whose left and right copies are both missed by a vertex cover of a graph on
 `α × α`. -/
-@[expose] def VertexCover.uncovered (C : VertexCover α α) : Finset α :=
+def VertexCover.uncovered (C : VertexCover α α) : Finset α :=
   Finset.univ.filter fun x => x ∉ C.left ∧ x ∉ C.right
 
 omit [PartialOrder α] in

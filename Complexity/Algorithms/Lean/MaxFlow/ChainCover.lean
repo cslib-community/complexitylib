@@ -27,8 +27,8 @@ given as an enumeration `e : Fin n ≃ α` with decidable `<`. It runs Fulkerson
 
 `minChainCoverM_correct` proves that the label fibres are chains, the returned index set is an
 antichain, and the number of labels equals the size of the antichain, `n - |M|`. With weak
-duality this certifies both as optimal (`card_le_card_antichain_of_isAntichain`,
-`card_antichain_le_of_isChain_fibre`), which is the algorithmic content of Dilworth's theorem.
+duality this certifies both as optimal (`card_le_minChainCoverM_antichain_card`,
+`minChainCoverM_numChains_le`), which is the algorithmic content of Dilworth's theorem.
 
 ## Cost model and limitations
 
@@ -54,7 +54,7 @@ duality this certifies both as optimal (`card_le_card_antichain_of_isAntichain`,
 ## Main results
 
 * `minChainCoverM_correct`: chain fibres, an antichain, and equal sizes `n - |M|`.
-* `card_le_card_antichain_of_isAntichain`, `card_antichain_le_of_isChain_fibre`: the output is a
+* `card_le_minChainCoverM_antichain_card`, `minChainCoverM_numChains_le`: the output is a
   maximum antichain and the labels form a minimum chain cover.
 * `minChainCoverM_time_le`: `O(n^{5/2})` charged steps.
 
@@ -123,7 +123,7 @@ merging along its edges, and a maximum antichain read off the König cover. -/
   pure ⟨labels, antichain, hk.matching⟩
 
 /-- The chain label of `x : α` in an output `out` for the enumeration `e`. -/
-@[expose] def ChainCoverOutput.label (e : Fin n ≃ α) (out : ChainCoverOutput n) (x : α) : Fin n :=
+def ChainCoverOutput.label (e : Fin n ≃ α) (out : ChainCoverOutput n) (x : α) : Fin n :=
   vget out.labels (e.symm x)
 
 /-- The number of chains of an output: the number of distinct labels in the table. -/
@@ -242,8 +242,8 @@ variable [PartialOrder α] [DecidableLT α]
 /-- **Correctness of `minChainCoverM`.** The label fibres are chains, the returned indices form an
 antichain, and the number of labels equals the size of the antichain, namely `n - |M|` for the
 maximum matching `M` found by Hopcroft–Karp. By weak duality the antichain is maximum and the
-chain cover minimum (`card_le_card_antichain_of_isAntichain`,
-`card_antichain_le_of_isChain_fibre`). -/
+chain cover minimum (`card_le_minChainCoverM_antichain_card`,
+`minChainCoverM_numChains_le`). -/
 theorem minChainCoverM_correct (e : Fin n ≃ α) :
     (∀ c, IsChain (· ≤ ·) ((minChainCoverM e).ret.label e ⁻¹' {c})) ∧
       IsAntichain (· ≤ ·) (e '' (minChainCoverM e).ret.antichain) ∧
@@ -321,8 +321,9 @@ theorem minChainCoverM_correct (e : Fin n ≃ α) :
 
 variable (e : Fin n ≃ α)
 
-/-- The antichain returned by `minChainCoverM` is maximum. -/
-theorem card_le_card_antichain_of_isAntichain {A : Finset α}
+/-- The antichain returned by `minChainCoverM` is maximum: every antichain of `α` has at most
+as many elements. -/
+theorem card_le_minChainCoverM_antichain_card {A : Finset α}
     (hA : IsAntichain (· ≤ ·) (A : Set α)) : A.card ≤ (minChainCoverM e).ret.antichain.card := by
   obtain ⟨hchain, -, hnum, -⟩ := minChainCoverM_correct e
   rw [← hnum]
@@ -333,13 +334,13 @@ theorem card_le_card_antichain_of_isAntichain {A : Finset α}
         exact Finset.mem_image_of_mem _ (Finset.mem_univ _)
 
 /-- The chain cover returned by `minChainCoverM` is minimum: every covering of `α` by `k` chains
-has `k` at least the number of its labels. -/
-theorem card_antichain_le_of_isChain_fibre {k : ℕ} {f : α → Fin k}
-    (hf : ∀ i, IsChain (· ≤ ·) (f ⁻¹' {i})) : (minChainCoverM e).ret.antichain.card ≤ k := by
-  obtain ⟨-, hanti, -, -⟩ := minChainCoverM_correct e
+has at least as many chains as the output's labels (`numChains`). -/
+theorem minChainCoverM_numChains_le {k : ℕ} {f : α → Fin k}
+    (hf : ∀ i, IsChain (· ≤ ·) (f ⁻¹' {i})) : (minChainCoverM e).ret.numChains ≤ k := by
+  obtain ⟨-, hanti, hnum, -⟩ := minChainCoverM_correct e
   have h := IsAntichain.card_le_of_isChain_fibre (t := (minChainCoverM e).ret.antichain.map
     e.toEmbedding) (by rwa [Finset.coe_map, Equiv.coe_toEmbedding]) hf
-  rwa [Finset.card_map, Fintype.card_fin] at h
+  rwa [Finset.card_map, Fintype.card_fin, ← hnum] at h
 
 end Proofs
 

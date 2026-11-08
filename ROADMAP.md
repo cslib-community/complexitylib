@@ -1517,7 +1517,9 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   Greene–Kleitman theorem on `k`-chain and `k`-antichain families, Dilworth's theorem for infinite
   posets of finite width (compactness), the perfect-graph view (comparability graphs and their
   complements are perfect), weighted versions, a sparse entry point that charges building the
-  comparability lists, and a RAM-model or Turing-machine realization of the chain-cover solver.
+  comparability lists, a RAM-model or Turing-machine realization of the chain-cover solver, and
+  moving Dilworth's theorem to a Foundations order module once König's theorem has a
+  non-algorithmic home.
 - **Gomory–Hu trees** ([#3320](https://github.com/cslib-community/complexitylib/issues/3320)):
   remaining after the existence theorem for cut-equivalent trees of symmetric submodular set
   functions and weighted undirected graphs, with flow-equivalence, the minimum-cut triangle

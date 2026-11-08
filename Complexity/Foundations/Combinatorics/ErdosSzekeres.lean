@@ -5,10 +5,13 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate (Mathlib; the archive has the injective case)
+-- upstream: candidate (Mathlib; Mathlib's `Archive`, not the library, has the injective case)
 
-public import Complexity.Foundations.Order.Mirsky
+public import Complexity.Init
+public import Mathlib.Data.Finset.Card
+public import Mathlib.Order.Fin.Basic
 public import Mathlib.Order.Monotone.Basic
+import Complexity.Foundations.Order.Mirsky
 import Mathlib.Combinatorics.Pigeonhole
 
 /-!
@@ -26,8 +29,9 @@ decreasing subsequences. If every chain has at most `r` elements, Mirsky's theor
 (`exists_antichain_coloring_iff`) covers the `n > r * s` positions by `r` antichains, and the
 pigeonhole principle puts more than `s` of them in one antichain.
 
-Subsequences are `Finset (Fin n)`s of positions. Mathlib's archive has the injective case as
-`Theorems100.erdos_szekeres`, which cannot be imported.
+Subsequences are `Finset (Fin n)`s of positions. Mathlib's `Archive` has the injective case as
+`Theorems100.erdos_szekeres`, but the `Archive` is not part of the Mathlib library. Mathlib proper
+has only the infinitary form `exists_increasing_or_nonincreasing_subseq`.
 
 ## Main results
 
