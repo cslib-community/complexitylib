@@ -528,6 +528,16 @@ index links to canonical definitions rather than keeping a second set.
   (`S(5) = 47,176,870`, verified by the bbchallenge Coq proof) as a cross-check;
   independence of busy beaver values from ZFC (Aaronson–Yedidia); and the connection to Chaitin's
   `Ω`.
+- **Post's correspondence problem** ([#3387](https://github.com/cslib-community/complexitylib/issues/3387)):
+  PCP and MPCP are undecidable over `Bool` and over every alphabet with two distinct letters,
+  as `¬ComputablePred` predicates on `Primcodable` instances
+  (`Computability/PostCorrespondence`). The proof reduces `ComputablePred.halting_problem` through
+  a universal `TM0` machine, Sipser's computation-history MPCP instance, and MPCP → PCP with a
+  start marker. Remaining: decidability of unary PCP and of PCP with two dominoes
+  (Ehrenfeucht–Karhumäki–Rozenberg, 1982); undecidability with a bounded number of dominoes (five,
+  Neary, 2015); a reduction from the acceptance problem of an arbitrary machine as in Sipser; and
+  consumers: ambiguity of context-free grammars, emptiness of the intersection of two context-free
+  languages, CFG universality, and mortality of 3×3 integer matrices (Paterson, 1970).
 - **Degrees of unsolvability** ([#3379](https://github.com/cslib-community/complexitylib/issues/3379)):
   oracle codes for Mathlib's `RecursiveIn` with stage-bounded evaluation, the use principle and
   the equivalence `f ≤ᵀ g ↔ ∃ c, Code.eval g c = f`, and the incomparability part of the
