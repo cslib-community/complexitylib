@@ -15,6 +15,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Foundations.Data.List.Blocks
 import Mathlib.Data.List.GetD
 
 /-!
@@ -191,11 +192,6 @@ theorem mem_NP : MaxCut ∈ NP encMaxCut :=
 
 end MaxCut
 
-/-- A list is read off from its positions. -/
-private theorem map_getD_range (a : List ℕ) : (List.range a.length).map (a.getD · 0) = a := by
-  refine List.ext_getElem (by simp) fun i h₁ h₂ => ?_
-  simp [List.getElem?_eq_getElem h₂]
-
 /-- A partition is a set of positions holding half of the total sum. -/
 theorem mem_Partition_iff_exists_side {a : List ℕ} :
     a ∈ Partition ↔ ∃ side : ℕ → Bool,
@@ -213,7 +209,7 @@ theorem mem_Partition_iff_exists_side {a : List ℕ} :
     exact ⟨fun i => w.getD i false, by rwa [← hmask]⟩
   · rintro ⟨side, hside⟩
     refine ⟨_, ?_, hside⟩
-    conv_rhs => rw [← map_getD_range a]
+    conv_rhs => rw [← List.map_getD_range a 0]
     exact List.filter_sublist.map _
 
 namespace Partition
@@ -283,7 +279,7 @@ theorem toMaxCut_mem_iff (a : List ℕ) : toMaxCut a ∈ MaxCut ↔ a ∈ Partit
   have hsplit (side : ℕ → Bool) :
       (((List.range a.length).filter side).map (a.getD · 0)).sum +
         (((List.range a.length).filter fun i => !side i).map (a.getD · 0)).sum = a.sum := by
-    conv_rhs => rw [← map_getD_range a]
+    conv_rhs => rw [← List.map_getD_range a 0]
     simpa using List.sum_map_filter_add_sum_map_filter_not (fun i => side i = true) (a.getD · 0)
       (List.range a.length)
   rw [mem_Partition_iff_exists_side]

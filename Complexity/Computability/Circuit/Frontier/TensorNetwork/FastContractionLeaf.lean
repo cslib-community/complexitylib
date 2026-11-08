@@ -13,6 +13,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
 import Complexity.Tactic.EncLen
 import Mathlib.Data.List.GetD
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Complexity.Foundations.Data.List.Blocks
 
 /-!
 # The leaves of the fast contraction algorithm
@@ -525,10 +526,7 @@ theorem packetShape_child {x : Call T} (hx : WF x) (ha : active x = true) (hs : 
 /-- The positions of a list satisfying a test are as many as its elements satisfying it. -/
 private theorem length_filter_range_getD {α : Type} (l : List α) (d : α) (p : α → Bool) :
     ((List.range l.length).filter fun j => p (l.getD j d)).length = (l.filter p).length := by
-  have hl : (List.range l.length).map (fun j => l.getD j d) = l := by
-    refine List.ext_getElem (by simp) fun j h₁ h₂ => ?_
-    simp only [List.getElem_map, List.getElem_range, List.getD_eq_getElem _ _ h₂]
-  conv_rhs => rw [← hl]
+  conv_rhs => rw [← List.map_getD_range l d]
   rw [List.filter_map, List.length_map]
   rfl
 
