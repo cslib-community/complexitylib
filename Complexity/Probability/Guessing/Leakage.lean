@@ -19,6 +19,8 @@ observations. The guessing strategy may be randomized and its output type may be
 ## Main results
 
 * `Cslib.Probability.PMF.bind_le_card_mul_of_fiber_subsingleton`: the finite-leakage bound.
+* `Cslib.Probability.PMF.tsum_mul_apply_le_card_mul`: guessing a sample from a hint with finitely
+  many values, for sources on any type.
 * `Cslib.Probability.PMF.uniform_bind_le_div_of_coordinate_subsingleton`: its independent
   uniform-coordinate specialization.
 -/
@@ -81,6 +83,21 @@ theorem bind_le_card_mul_of_fiber_subsingleton {X Y Z : Type*} [Finite X] [Finty
       gcongr with y
       exact hrow y
     _ = Fintype.card Y * mass := by simp [mul_comm]
+
+/-- A guess that depends on a sample only through a hint taking values in a finite set `T` equals
+the sample with probability at most `T.card` times the largest source mass. Unlike
+`bind_le_card_mul_of_fiber_subsingleton`, the source may live on an infinite type. -/
+theorem tsum_mul_apply_le_card_mul {X : Type*} (source : PMF X) {mass : ℝ≥0∞}
+    (hmass : ∀ x, source x ≤ mass) {Y : Type*} (hint : X → Y) (T : Finset Y)
+    (hT : ∀ x, hint x ∈ T) (guess : Y → PMF X) :
+    ∑' x, source x * guess (hint x) x ≤ T.card * mass := by
+  calc ∑' x, source x * guess (hint x) x
+      ≤ ∑' x, mass * ∑ t ∈ T, guess t x :=
+        tsum_le_tsum fun x => mul_le_mul' (hmass x)
+          (Finset.single_le_sum (f := fun t => guess t x) (fun _ _ => zero_le) (hT x))
+    _ = T.card * mass := by
+        rw [ENNReal.tsum_mul_left, Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable]
+        simp only [PMF.tsum_coe, Finset.sum_const, nsmul_eq_mul, mul_one, mul_comm]
 
 /-- A coordinate of independent uniform inputs cannot be predicted from their coordinatewise
 finite observations except with probability `|Y| / |X|`. The successful event may depend on all

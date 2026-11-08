@@ -1811,18 +1811,6 @@ private theorem sum_bool_agreement_eq {k : ℕ} (evalBit : BitString k → Bool 
   rw [Finset.sum_sub_distrib, ← Finset.mul_sum, PMF.sum_toReal, h2]
   ring
 
-private theorem uniformOfFintype_bind_bind_update_row {c2 k : ℕ} {γ : Type*}
-    (idx : Fin c2) (f : (Fin c2 → BitString k) → PMF γ) :
-    ((PMF.uniformOfFintype (BitString k)).bind fun query =>
-      (PMF.uniformOfFintype (Fin c2 → BitString k)).bind fun rows =>
-        f (Function.update rows idx query)) =
-      (PMF.uniformOfFintype (Fin c2 → BitString k)).bind f :=
-  PMF.uniformOfFintype_bind_bind_fst_equiv
-    { toFun := fun p => (Function.update p.2 idx p.1, p.2 idx)
-      invFun := fun q => (q.1 idx, Function.update q.1 idx q.2)
-      left_inv := fun p => by simp
-      right_inv := fun q => by simp } f
-
 private theorem cond_xor_eq (b r_bit pol : Bool) :
     ((if b then r_bit else !r_bit) ^^ pol) = (if (b ^^ pol) then r_bit else !r_bit) := by
   cases b <;> cases r_bit <;> cases pol <;> rfl
@@ -1898,7 +1886,7 @@ private theorem fiber_step_diff_le {k imgLen_k : ℕ}
           (PMF.uniformOfFintype (BitString k)).map fun query =>
             evalBit rows x.val query (x.val ⬝ᵥ query) := by
     dsimp only [p_succ]
-    rw [← uniformOfFintype_bind_bind_update_row idx, PMF.bind_comm]
+    rw [PMF.bind_uniformOfFintype_update idx, PMF.bind_comm]
     congr 1; funext rows; simp only [PMF.map, Function.comp_def]; rw [PMF.bind_comm]
     congr 1; funext x; congr 1; funext query
     simp only [evalBit, wordChallenge, h1_upd, h2_upd, Function.update_self]
@@ -1908,7 +1896,7 @@ private theorem fiber_step_diff_le {k imgLen_k : ℕ}
           (PMF.uniformOfFintype (BitString k)).bind fun query =>
             (PMF.uniformOfFintype Bool).map (evalBit rows x.val query) := by
     dsimp only [p_curr]
-    rw [← uniformOfFintype_bind_bind_update_row idx, PMF.bind_comm]
+    rw [PMF.bind_uniformOfFintype_update idx, PMF.bind_comm]
     congr 1; funext rows; rw [PMF.bind_comm]
     congr 1; funext x; congr 1; funext query
     simp only [evalBit, wordChallenge, h1_upd, h2_upd]
