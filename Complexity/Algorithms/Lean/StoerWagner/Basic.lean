@@ -41,7 +41,8 @@ slot.
 
 ## Main results
 
-* `Cslib.Algorithms.Lean.StoerWagner.minCut_eq_min_contractMatrix`: the phase recursion.
+* `Cslib.Algorithms.Lean.StoerWagner.minCut_eq_min_contractMatrix`,
+  `Cslib.Algorithms.Lean.StoerWagner.minCut_eq_min_minCutBetween`: the phase recursion.
 * `Cslib.Algorithms.Lean.StoerWagner.minCut_eq_min_of_isMAOrdering`: one phase.
 * `Cslib.Algorithms.Lean.StoerWagner.stoerWagner_spec`: the algorithm answers a non-trivial cut of
   minimum weight, and its weight.
@@ -190,6 +191,21 @@ theorem minCut_eq_min_contractMatrix {k : ℕ} {W : Fin (k + 3) → Fin (k + 3) 
       isNonTrivialCut_of_pullbackCut _ (hpull ▸ hCnt)
     refine (min_le_right _ _).trans ((minCut_le_cutWeight _ hBnt).trans (le_of_eq ?_))
     exact cutWeight_contractCut hW hst hsame
+
+/-- **The phase recursion** in terms of the minimum `s`–`t` cut weight `λ(s, t)`
+(`Cslib.WeightedCut.minCutBetween`): for distinct `s` and `t`, the global minimum cut weight is
+`min (λ(s, t)) (minCut (contractMatrix W s t))`. -/
+theorem minCut_eq_min_minCutBetween {k : ℕ} {W : Fin (k + 3) → Fin (k + 3) → ℕ}
+    (hW : IsMultigraph W) {s t : Fin (k + 3)} (hst : s ≠ t) :
+    minCut W = min (minCutBetween W s t) (minCut (contractMatrix W s t)) := by
+  obtain ⟨X, hs, ht, hX⟩ := exists_cutWeight_eq_minCutBetween W hst
+  rw [← hX]
+  refine minCut_eq_min_contractMatrix hW hst (by tauto) fun Y hY => ?_
+  rw [hX]
+  by_cases hsY : s ∈ Y
+  · exact minCutBetween_le_cutWeight W hsY (hY.mp hsY)
+  · rw [minCutBetween_comm hW]
+    exact minCutBetween_le_cutWeight W (by tauto) hsY
 
 /-- **One phase**: for the last two vertices `s, t` of a maximum adjacency ordering, the global
 minimum cut weight is the smaller of the weight of the cut of the phase `{t}` and the global

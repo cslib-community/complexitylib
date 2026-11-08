@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Combinatorics.WeightedCut
+public import Complexity.Foundations.Combinatorics.WeightedCut.MinCutBetween
 public import Mathlib.Data.List.MinMax
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
@@ -46,6 +46,8 @@ vertices, phrased as an invariant of the prefixes.
 ## Main results
 
 * `Cslib.WeightedCut.cutWeight_singleton_le_of_isMAOrdering`: the MA-ordering lemma.
+* `Cslib.WeightedCut.cutWeight_singleton_eq_minCutBetween_of_isMAOrdering`: the same, as
+  `cutWeight W {t} = minCutBetween W s t`.
 * `Cslib.WeightedCut.maSearch_spec`: maximum adjacency search lists its candidates in a maximum
   adjacency ordering.
 
@@ -282,6 +284,17 @@ theorem cutWeight_singleton_le_of_isMAOrdering {W : V → V → ℕ} (hW : IsMul
   unfold cutWeight attachWeight
   rw [Finset.sum_singleton, ← hAt]
   exact Finset.sum_congr rfl fun a _ => hW.1 t a
+
+/-- The MA-ordering lemma in terms of the minimum `s`–`t` cut weight `λ(s, t)`
+(`Cslib.WeightedCut.minCutBetween`): if `s, t` are the last two vertices of a maximum adjacency
+ordering, the cut `{t}` weighs exactly `λ(s, t)`. -/
+theorem cutWeight_singleton_eq_minCutBetween_of_isMAOrdering {W : V → V → ℕ}
+    (hW : IsMultigraph W) {p : List V} {s t : V} (hl : IsMAOrdering W (p ++ [s, t])) :
+    cutWeight W {t} = minCutBetween W s t := by
+  have hst : s ≠ t := by simpa using (List.nodup_append.mp hl.nodup).2.1
+  rw [minCutBetween_comm hW]
+  exact (cutWeight_eq_minCutBetween_iff W (Finset.mem_singleton_self t) (by simpa using hst)).mpr
+    fun Y htY hsY => cutWeight_singleton_le_of_isMAOrdering hW hl (by tauto)
 
 omit [Fintype V]
 

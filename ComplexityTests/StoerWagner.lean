@@ -94,6 +94,11 @@ example (C : Finset (Fin 8)) (hC : 4 ∈ C ↔ 0 ∉ C) : cutWeight G8 {0} ≤ c
   cutWeight_singleton_le_of_isMAOrdering isMultigraph_G8 (p := [1, 2, 3, 6, 7, 5])
     (by decide) hC
 
+/-- The same lemma as a value: the minimum `4`–`0` cut weight `λ(4, 0)` is `5`. -/
+example : minCutBetween G8 4 0 = 5 :=
+  (cutWeight_singleton_eq_minCutBetween_of_isMAOrdering isMultigraph_G8
+    (p := [1, 2, 3, 6, 7, 5]) (by decide)).symm.trans (by decide)
+
 /-- Brute force for the same statement, and it is tight: `{0}` is not heavier than needed. -/
 example : ∀ C : Finset (Fin 8), (4 ∈ C ↔ 0 ∉ C) → 5 ≤ cutWeight G8 C := by
   decide +kernel
