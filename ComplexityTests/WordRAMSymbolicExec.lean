@@ -174,6 +174,57 @@ example (w p : ℕ) (x : Data 4) (hx : x.Bounded w) (hp : Fits w p) :
     (((x.set a (x.regs b)).write p (x.mem 3)).set c p).Bounded w := by
   wram_bounded
 
+/-! ## Exact instruction counts -/
+
+/-- The exact count of six instructions, and the data reached, from `Exec`. -/
+example (x : Data 4) :
+    Exec 8 straight x (((((x.set b 5).set c 7).set c 12).set c 7).write 5 7) 6 := by
+  unfold straight
+  wram_exec
+
+/-- The exact count with a property of the data reached. -/
+example (x : Data 4) : ∃ y, Exec 8 straight x y 6 ∧ y.mem 5 = 7 ∧ y.regs c = 7 := by
+  unfold straight
+  wram_exec
+  wram_simp
+
+/-- A wrong exact count remains as a goal: the program takes six instructions, not seven. -/
+example (x : Data 4) (h : (6 : ℕ) = 7) : ∃ y, Exec 8 straight x y 7 ∧ y.mem 5 = 7 := by
+  unfold straight
+  wram_exec
+  exact ⟨h, by wram_simp⟩
+
+/-- Both alternatives of a conditional, with their own exact counts; side conditions with free
+variables go to the discharger. -/
+example (w p : ℕ) (x : Data 4) (ha : x.regs a = p) (hb : x.regs b = 1) (hfit : Fits w (p + 1))
+    (hv : Fits w (x.mem p)) :
+    ∃ y, Exec w shiftDecrement x y (if x.mem p < 1 then 6 else 7) ∧
+      y.mem (p + 1) = x.mem p := by
+  unfold shiftDecrement
+  wram_exec (disch := first | omega | exact hv.of_le (by omega)) [ha, hb, hfit]
+  case pos => exact ⟨by simp [hc], by wram_simp⟩
+  case neg => exact ⟨by simp [hc], by wram_simp⟩
+
+/-- An exact specification of the subprogram. -/
+theorem double_exec {w : ℕ} {x : Data 4} (h : Fits w (x.regs a + x.regs a)) :
+    Exec w double x (x.set b (x.regs a + x.regs a)) 1 :=
+  Exec.bin h
+
+/-- Execution stops at the subprogram, continues from its exact specification, and resumes. -/
+example (x : Data 4) : ∃ y, Exec 8 callDouble x y 3 ∧ y.regs c = 6 := by
+  unfold callDouble
+  wram_exec
+  refine WP.Exact.of_exec (double_exec (by wram_simp; decide)) ?_
+  wram_exec
+  wram_simp
+
+/-- An exact count is a bound: `WP.Exact.toWP` turns an exact goal into a bounded one. -/
+example (x : Data 4) : ∃ y, ExecWithin 8 straight x y 6 ∧ y.mem 5 = 7 :=
+  WP.exists_execWithin <| WP.Exact.toWP <| by
+    unfold straight
+    wram_exec
+    wram_simp
+
 /-! ## Failures -/
 
 /-- error: wram_exec: nothing to execute in
@@ -185,7 +236,8 @@ example (x : Data 4) : ∃ y, ExecWithin 8 callDouble x y 3 ∧ y.regs c = 6 := 
   wram_exec
 
 /-- error: wram_exec: expected a goal `WP w c x Q`, `∃ y, ExecWithin w c x y T ∧ P y`,
-`ExecWithin w c x y T` or `∃ y T, ExecWithin w c x y T ∧ Q y T`, got
+`ExecWithin w c x y T` or `∃ y T, ExecWithin w c x y T ∧ Q y T`, or one of these with `Exec`
+and `WP.Exact`, got
   (x.set c 7).regs c = 7 -/
 #guard_msgs (whitespace := lax) in
 example (x : Data 4) : (x.set c 7).regs c = 7 := by
