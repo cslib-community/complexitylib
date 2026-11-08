@@ -11,9 +11,11 @@ public import Complexity.Init
 public import Mathlib.Dynamics.PeriodicPts.Lemmas
 
 /-!
-# Periodic points under perturbation and monotone quantities on cycles
+# Periodic points: perturbation and monotone quantities
 
-Two facts about the periodic points of an endomap `f`:
+Two facts about the periodic points (`Function.periodicPts`) of an endomap `f` of an arbitrary
+type, complementing the finite-orbit API of `Complexity.Foundations.Combinatorics.FunctionalGraph`
+and `Complexity.Foundations.Combinatorics.FunctionalGraph.Cycle`:
 
 * if `g` agrees with `f` at the first `m` points of the orbit of `x`, the `m`-th iterates agree
   (`iterate_eq_of_forall_lt`); consequently, if `g` agrees with `f` at every periodic point of

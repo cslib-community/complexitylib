@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.Lean.HousingMarket.TopTradingCycles
-import Complexity.Foundations.Combinatorics.FunctionalGraph.Perturbation
+import Complexity.Foundations.Combinatorics.FunctionalGraph.PeriodicPts
 
 /-!
 # Strategy-proofness of top trading cycles
@@ -34,12 +34,12 @@ which one run removes `i`:
 ## Main definitions
 
 * `Instance.updatePref`: agent `i` reports the list `π` and the others report truthfully.
-* `Cslib.Algorithms.Lean.HousingMarket.Mechanism`, `Mechanism.IsStrategyProof`.
-* `Mechanism.topTradingCycles`: the TTC mechanism.
+* `Cslib.Algorithms.Lean.HousingMarket.HousingMechanism`, `HousingMechanism.IsStrategyProof`.
+* `HousingMechanism.topTradingCycles`: the TTC mechanism.
 
 ## Main results
 
-* `Mechanism.isStrategyProof_topTradingCycles`: TTC is strategy-proof.
+* `HousingMechanism.isStrategyProof_topTradingCycles`: TTC is strategy-proof.
 * `Instance.rank_ttc_le_updatePref`: the same statement for the allocation `Instance.ttc`.
 
 ## References
@@ -137,27 +137,27 @@ end Instance
 
 /-- A direct housing mechanism maps a reported preference profile to an allocation. There are no
 payments. -/
-abbrev Mechanism (n : ℕ) := Instance n → Allocation n
+abbrev HousingMechanism (n : ℕ) := Instance n → Allocation n
 
-namespace Mechanism
+namespace HousingMechanism
 
 variable {n : ℕ}
 
 /-- A mechanism is strategy-proof when, whatever the profile `I`, no agent `i` obtains, by
 reporting a list `π` instead of its list in `I`, a house that it strictly prefers according to its
 list in `I`. -/
-@[expose] def IsStrategyProof (M : Mechanism n) : Prop :=
+@[expose] def IsStrategyProof (M : HousingMechanism n) : Prop :=
   ∀ (I : Instance n) (i : Fin n) (π : Equiv.Perm (Fin n)),
     I.rank i (M I i) ≤ I.rank i (M (I.updatePref i π) i)
 
 /-- The top trading cycles mechanism. -/
-@[expose] def topTradingCycles : Mechanism n := fun I => I.ttc
+@[expose] def topTradingCycles : HousingMechanism n := fun I => I.ttc
 
 /-- The top trading cycles mechanism is strategy-proof ([Roth1982Indivisible];
 [SchummerVohra2007], Theorem 10.7; [Roughgarden2013CS364A], Lecture 9, Theorem 3.1). -/
 theorem isStrategyProof_topTradingCycles : (topTradingCycles (n := n)).IsStrategyProof :=
   fun I i π => I.rank_ttc_le_updatePref i π
 
-end Mechanism
+end HousingMechanism
 
 end Cslib.Algorithms.Lean.HousingMarket

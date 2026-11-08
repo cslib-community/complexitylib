@@ -4059,7 +4059,7 @@ public import Complexity.Foundations.Combinatorics.FunctionalGraph.ForestInterva
 public import Complexity.Foundations.Combinatorics.FunctionalGraph.ForestNavigation
 public import Complexity.Foundations.Combinatorics.FunctionalGraph.ForestSegments
 public import Complexity.Foundations.Combinatorics.FunctionalGraph.HittingTime
-public import Complexity.Foundations.Combinatorics.FunctionalGraph.Perturbation
+public import Complexity.Foundations.Combinatorics.FunctionalGraph.PeriodicPts
 public import Complexity.Foundations.Combinatorics.FunctionalGraph.Powers
 public import Complexity.Foundations.Combinatorics.FunctionalGraph.Projection
 public import Complexity.Foundations.Combinatorics.FunctionalGraph.Spectrum

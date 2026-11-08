@@ -10,7 +10,7 @@ module
 public import Complexity.Init
 public import Mathlib.Data.Fintype.Perm
 public import Mathlib.Data.Fintype.Powerset
-import Complexity.Foundations.Combinatorics.FunctionalGraph.Perturbation
+import Complexity.Foundations.Combinatorics.FunctionalGraph.PeriodicPts
 
 /-!
 # Shapley–Scarf housing markets
@@ -32,6 +32,10 @@ Two cooperative solution concepts are distinguished, following [RothPostlewaite1
 * `S` *weakly blocks* `μ` when some reallocation within `S` makes every member weakly better off
   and some member strictly better off; the **strict core** consists of the allocations no
   coalition weakly blocks. [SchummerVohra2007], §10.3, calls this set the core.
+
+[SchummerVohra2007], p. 255, asserts that the core and the strict core coincide when preferences
+are strict. With the definitions here they do not: a weakly blocking coalition may contain a member
+who keeps the house `μ` gave it, which need not be its own house, so it cannot always be dropped.
 
 With strict preferences the strict core is a single allocation, computed by top trading cycles
 (`Cslib.Algorithms.Lean.HousingMarket.Instance.inStrictCore_iff`). The core can be strictly

@@ -16,11 +16,13 @@ Gale's top trading cycles algorithm (TTC):
 1. Boundary cases `n = 0` and `n = 1`.
 2. A three-agent market in which TTC closes a single three-cycle in its first round. The
    allocation is in the strict core, individually rational and Pareto efficient, the endowment is
-   blocked, and TTC is the only strict-core allocation; no agent gains by any misreport.
+   blocked, and TTC is the only strict-core allocation; no agent gains by any misreport (each
+   already receives its favourite house).
 3. A three-agent market in which TTC trades a two-cycle in the first round and leaves a fixed
    point (an agent keeping its own house) for the second round. Here the core is strictly larger
    than the strict core: the allocation `![2, 0, 1]` is in the core but some coalition weakly
-   blocks it, and it is not competitive at any prices. The TTC prices are `![3, 3, 1]`.
+   blocks it, and it is not competitive at any prices. The TTC prices are `![3, 3, 1]`. Agent `2`
+   receives its last choice, and no agent gains by any misreport.
 4. Mechanisms: keeping the endowment is strategy-proof but not Pareto efficient, and a two-agent
    mechanism that trades only when agent `0` ranks its own house first is not strategy-proof.
 -/
@@ -90,6 +92,11 @@ swapping houses, which helps agent `0` and leaves agent `1` with its favourite h
 example : exCore.InCore (pref ![2, 0, 1]) ∧ ¬ exCore.InStrictCore (pref ![2, 0, 1]) ∧
     exCore.WeaklyBlocks (pref ![2, 0, 1]) {0, 1} := by decide
 
+/-- No agent obtains a house it prefers by any misreport. Agent `2` receives its last choice, so
+this is not settled by agents already holding their favourite houses. -/
+example : exCore.rank 2 (exCore.ttc 2) = 2 ∧ ∀ (i : Fin 3) (π : Equiv.Perm (Fin 3)),
+    exCore.rank i (exCore.ttc i) ≤ exCore.rank i ((exCore.updatePref i π).ttc i) := by decide
+
 /-- The core allocation `![2, 0, 1]` is not competitive at any prices. -/
 example : ¬ ∃ p : Fin 3 → ℕ, exCore.IsCompetitive (pref ![2, 0, 1]) p := by
   rw [Instance.exists_isCompetitive_iff]
@@ -103,7 +110,7 @@ example : exCore.IsCompetitive exCore.ttc ![5, 5, 2] ∧
 /-! ### 4. Mechanisms -/
 
 /-- The mechanism that always returns the endowment. -/
-def keepEndowment : Mechanism 3 := fun _ => 1
+def keepEndowment : HousingMechanism 3 := fun _ => 1
 
 /-- Keeping the endowment is strategy-proof, but it is not Pareto efficient on `ex3`. -/
 example : keepEndowment.IsStrategyProof ∧ ¬ ex3.IsParetoEfficient (keepEndowment ex3) :=
@@ -111,7 +118,8 @@ example : keepEndowment.IsStrategyProof ∧ ¬ ex3.IsParetoEfficient (keepEndowm
 
 /-- A two-agent mechanism that swaps the two houses exactly when agent `0` ranks its own house
 first. -/
-def swapIfFirst : Mechanism 2 := fun I => if I.rank 0 0 = 0 then Equiv.swap 0 1 else 1
+def swapIfFirst : HousingMechanism 2 := fun I =>
+  if I.rank 0 0 = 0 then Equiv.swap 0 1 else 1
 
 /-- A two-agent market in which agent `0` prefers house `1` to its own house. -/
 def exSwap : Instance 2 := ⟨fun _ => Equiv.swap 0 1⟩

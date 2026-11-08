@@ -20,8 +20,13 @@ import Mathlib.Data.Set.Finite.Basic
 This module implements Gale's top trading cycles algorithm (TTC) for the Shapley–Scarf housing
 market ([ShapleyScarf1974], where it is credited to David Gale) as a total, `decide`-evaluable
 Lean function, and proves that its allocation is the unique allocation in the strict core
-([RothPostlewaite1977]; [SchummerVohra2007], Theorem 10.6; [Roughgarden2013CS364A], Lecture 9,
-Theorem 3.2) and the unique competitive allocation.
+([RothPostlewaite1977]; [SchummerVohra2007], Theorem 10.6, whose core is defined by weak blocking)
+and the unique competitive allocation.
+
+[Roughgarden2013CS364A], Lecture 9, Theorem 3.2, states that TTC is the unique core allocation for
+a core defined by strict blocking (`Instance.InCore`). Only the existence half holds for that
+notion (`inCore_ttc`): the test module `ComplexityTests.HousingMarket` exhibits a three-agent
+market with a second allocation in the core, so uniqueness is stated for the strict core only.
 
 While agents remain, every remaining agent points to the owner of its favourite remaining house,
 `topChoice R i`. Each agent has one outgoing pointer, so the pointer graph has a cycle; the
@@ -329,8 +334,9 @@ theorem inStrictCore_ttc : I.InStrictCore I.ttc := by
   rw [ttc_apply, h] at hlt
   exact lt_irrefl _ hlt
 
-/-- The TTC allocation is in the core ([ShapleyScarf1974]; [Roughgarden2013CS364A], Lecture 9,
-Theorem 3.2). -/
+/-- The TTC allocation is in the core ([ShapleyScarf1974]; the existence half of
+[Roughgarden2013CS364A], Lecture 9, Theorem 3.2). That theorem also claims uniqueness for this
+strict-blocking core, which fails: see `ComplexityTests.HousingMarket`. -/
 theorem inCore_ttc : I.InCore I.ttc := I.inStrictCore_ttc.inCore
 
 /-- The TTC allocation is individually rational. -/
