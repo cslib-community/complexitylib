@@ -60,8 +60,6 @@ Section 26.4) on the integral networks of `Complexity.Algorithms.Lean.MaxFlow.Ba
 * `Preflow.IsValidLabeling.isMaxFlow_toFlow`: a preflow with a valid labeling and no active vertex
   is a maximum flow ([CLRS2009], Theorem 26.18); `Preflow.IsValidLabeling.isMinCut_gapCut`: its gap
   cut is then a minimum cut of the same value.
-* `Network.Flow.value_eq_cutCapacity_of_resCap_eq_zero`: a flow with no residual capacity leaving a
-  cut has the cut's capacity as value.
 
 ## References
 
@@ -78,30 +76,6 @@ namespace Cslib.Algorithms.Lean.MaxFlow
 namespace Network
 
 variable {V : Type*} [Fintype V]
-
-/-! ### Zero residual capacity across a cut -/
-
-/-- A flow with no residual capacity from `S` to its complement saturates every arc leaving `S` and
-carries nothing into `S`, so its value is `N.cutCapacity S`. -/
-theorem Flow.value_eq_cutCapacity_of_resCap_eq_zero [DecidableEq V] {N : Network V} (f : N.Flow)
-    {S : Finset V} (hS : N.IsCut S) (h0 : ∀ u ∈ S, ∀ v ∈ Finset.univ \ S, f.resCap u v = 0) :
-    f.value = (N.cutCapacity S : ℤ) := by
-  rw [f.value_eq_netFlow_across_cut hS]
-  have hsat : ∀ u ∈ S, ∀ v ∈ Finset.univ \ S, f u v = N.cap u v ∧ f v u = 0 := by
-    intro u hu v hv
-    have hz := h0 u hu v hv
-    unfold Flow.resCap at hz
-    have hle := f.le_cap u v
-    omega
-  have hfwd : (∑ u ∈ S, ∑ v ∈ Finset.univ \ S, (f u v : ℤ)) =
-      ∑ u ∈ S, ∑ v ∈ Finset.univ \ S, (N.cap u v : ℤ) :=
-    Finset.sum_congr rfl fun u hu => Finset.sum_congr rfl fun v hv => by
-      rw [(hsat u hu v hv).1]
-  have hbwd : (∑ u ∈ S, ∑ v ∈ Finset.univ \ S, (f v u : ℤ)) = 0 :=
-    Finset.sum_eq_zero fun u hu => Finset.sum_eq_zero fun v hv => by
-      simp [(hsat u hu v hv).2]
-  rw [hfwd, hbwd, sub_zero]
-  simp only [cutCapacity, Nat.cast_sum]
 
 variable (N : Network V)
 
@@ -203,7 +177,7 @@ instance (f : N.Preflow) (h : V → ℕ) : Decidable (f.IsValidLabeling h) :=
 
 /-- Along a walk whose steps lower `h` by at most one, every height between the endpoints is taken
 by some vertex, so the walk descends by fewer than `|V|` levels. -/
-theorem le_add_card_of_reflTransGen {r : V → V → Prop} {h : V → ℕ}
+private theorem le_add_card_of_reflTransGen {r : V → V → Prop} {h : V → ℕ}
     (hr : ∀ u v, r u v → h u ≤ h v + 1) {u w : V} (huw : Relation.ReflTransGen r u w) :
     h u + 1 ≤ h w + Fintype.card V := by
   classical
