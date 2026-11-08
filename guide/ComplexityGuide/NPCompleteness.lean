@@ -46,6 +46,7 @@ import Complexity.Logics.Propositional.CSP.Edge.Walk.Operations
 import Complexity.Logics.Propositional.CSP.Table.DeltaMatroid
 import Complexity.Logics.Propositional.CSP.Planar.Crossover
 import Complexity.Logics.Propositional.CSP.Planar.Normalization
+import Complexity.Logics.Propositional.CSP.Planar.OneInThree.Gadget
 import Complexity.Foundations.Data.BitString.CyclicDifference
 import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
 import Complexity.Tactic.PolyTime
@@ -83,6 +84,7 @@ import Complexity.Logics.Propositional.CSP.Edge.Walk.Operations
 import Complexity.Logics.Propositional.CSP.Table.DeltaMatroid
 import Complexity.Logics.Propositional.CSP.Planar.Crossover
 import Complexity.Logics.Propositional.CSP.Planar.Normalization
+import Complexity.Logics.Propositional.CSP.Planar.OneInThree.Gadget
 import Complexity.Foundations.Data.BitString.CyclicDifference
 import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
 import Complexity.Tactic.PolyTime
@@ -971,3 +973,45 @@ This is an original combinatorial reconstruction of the omitted argument behind
 Dvořák–Kupec Lemma 6, not its full planar-expressibility conclusion. Geometric
 realization and the full planar theorem remain open. Complete nonvacuous clients
 are in `ComplexityTests/PlanarNormalization.lean`.
+
+
+# Original-Language Nonselfdual Gadgets
+
+{name}`Cslib.Logic.PL.CSP.NonSelfDual.exists_oneHotGadget` constructs an actual
+one-in-three gadget over the original language. It requires absence of all six
+common Schaefer polymorphisms and of unary complement. Pins and disequality are
+derived internally, and the language relations may have arbitrary arity:
+
+```lean
+open Cslib.BitString Cslib.Logic.PL.CSP in
+example {Rel : Type} (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
+    (h : ¬HasSchaeferPolymorphism arity sem)
+    (hn : ¬HasPolymorphism arity sem (fun a : Fin 1 → Bool => !(a 0))) :
+    Nonempty (PPGadget arity sem (oneHotRelation (Fin 3))) :=
+  NonSelfDual.exists_oneHotGadget h hn
+```
+
+Disequality needs only the first hypothesis, including when unary complement
+preserves the language:
+
+```lean
+open Cslib.Logic.PL.CSP in
+example {Rel : Type} (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
+    (h : ¬HasSchaeferPolymorphism arity sem) :
+    Nonempty (PPGadget arity sem RelationMinor.disequality) :=
+  RelationMinor.exists_disequalityGadget h
+```
+
+{name}`Cslib.Logic.PL.CSP.RelationMinor.Construction.gadget` interprets each finite
+ordered construction tree on actual original-language bodies. The final triangle
+appends a ternary body and three NAND bodies on `(0,1)`, `(1,2)`, `(2,0)`; each use
+receives fresh auxiliaries. Projection retains survivor order, and cyclic rotation
+retains orientation. The arbitrary-arity parity and majority minor arguments are
+original reconstructions of the proof omitted from Dvořák–Kupec Lemma 4, printed
+pp. 438–439. The constants descent follows Lemma 3, pp. 437–438.
+
+This proves finite primitive-positive semantics. Witness selection is fixed-language
+data, without a uniform preprocessing bound. Geometric realization, ordered planar
+substitution, native hardness transfer and the full dichotomy remain open. Complete
+clients, including a one-symbol language without primitive pins or disequality,
+are in `ComplexityTests/PlanarConstructionGadget.lean`.

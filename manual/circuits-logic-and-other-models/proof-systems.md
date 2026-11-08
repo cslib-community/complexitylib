@@ -403,6 +403,43 @@ are fixed-relation data; no uniform native runtime or binary encoded-size bound 
 Geometric realization of the recorded operations, ordered planar substitution, hardness and
 completion of the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
 
+## Original-language gadgets for the nonselfdual branch
+
+Import `Complexity.Logics.Propositional.CSP.Planar.OneInThree.Gadget`.
+`NonSelfDual.exists_oneHotGadget` gives an actual `PPGadget arity sem
+(BitString.oneHotRelation (Fin 3))` when the language has none of the six common Schaefer
+polymorphisms and unary complement is also not a common polymorphism. Different language
+relations may witness these failures; their arities are unrestricted. Pins and disequality
+are constructed internally, rather than added to the alphabet.
+`RelationMinor.exists_disequalityGadget` needs only absence of the six Schaefer operations,
+so it also applies to self-complementary languages.
+
+`RelationMinor.Construction` records finite ordered recipes. Its atom, projection, adjacent
+equality/disequality deletion, cofactor, single-coordinate flip, cyclic rotation and binary
+intersection constructors retain their intermediate relations and enabling constructions.
+`Construction.gadget` executes this tree over the original alphabet. The reusable
+`PPGadget.atom`, `conj`, `retarget` and port operations preserve exact scope widths and
+existential semantics. Conjunction appends bodies with disjoint auxiliary blocks, including
+when the same gadget is used several times. `NonSelfDual.triangleGadget` appends the ternary
+body and three NAND bodies on ports `(0,1)`, `(1,2)`, `(2,0)`, with fresh auxiliaries for
+each occurrence. Survivor order is retained by projection; a cyclic rotation changes only
+the starting port.
+
+The constants descent follows Dvořák–Kupec, ICALP 2015, §2, printed pp. 437–438, Lemma 3.
+The arbitrary-arity parity and majority minor proofs reconstruct the argument omitted from
+Lemma 4, printed pp. 438–439; they are identified as original reconstructions. Unary pin
+relations are distinct from unary constant operations. The [minor and triangle tests](../../ComplexityTests/PlanarNonSelfDual.lean),
+[rotation tests](../../ComplexityTests/PlanarNonSelfDualRotation.lean) and
+[interpreter tests](../../ComplexityTests/PlanarConstructionGadget.lean) cover actual witnesses,
+rejection, fresh auxiliaries, nullary atoms and malformed widths. In particular, the interpreter
+tests derive the gadgets from a single one-in-three symbol without primitive pins or disequality.
+
+These results prove finite primitive-positive semantics. The selected witnesses are fixed-language
+data; no uniform preprocessing cost is asserted. The recorded recipes and concrete bodies support
+subsequent geometric proofs, but do not establish ordered planar substitution, a native reduction
+or planar hardness. Those obligations and the full solver/dichotomy remain open under
+[#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+
 ## Three resolution representations
 
 | Representation | What it supplies | Cost |

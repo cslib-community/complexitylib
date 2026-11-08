@@ -4655,9 +4655,17 @@ public import Complexity.Logics.Propositional.CSP.Occurrence
 public import Complexity.Logics.Propositional.CSP.Occurrence.Enumeration
 public import Complexity.Logics.Propositional.CSP.PartitionFunction
 public import Complexity.Logics.Propositional.CSP.Permanent
+public import Complexity.Logics.Propositional.CSP.Planar.Constants
+public import Complexity.Logics.Propositional.CSP.Planar.Construction
+public import Complexity.Logics.Propositional.CSP.Planar.Construction.Gadget
 public import Complexity.Logics.Propositional.CSP.Planar.Crossover
+public import Complexity.Logics.Propositional.CSP.Planar.NonSelfDual
 public import Complexity.Logics.Propositional.CSP.Planar.Normalization
+public import Complexity.Logics.Propositional.CSP.Planar.OneInThree
+public import Complexity.Logics.Propositional.CSP.Planar.OneInThree.Gadget
+public import Complexity.Logics.Propositional.CSP.Planar.RelationMinor
 public import Complexity.Logics.Propositional.CSP.PrimitivePositive
+public import Complexity.Logics.Propositional.CSP.PrimitivePositive.Composition
 public import Complexity.Logics.Propositional.CSP.PrimitivePositive.Operations
 public import Complexity.Logics.Propositional.CSP.Table
 public import Complexity.Logics.Propositional.CSP.Table.DeltaMatroid

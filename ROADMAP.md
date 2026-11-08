@@ -461,6 +461,9 @@ index links to canonical definitions rather than keeping a second set.
   Arbitrary-arity cyclic-obstruction normalization now supplies an ordered finite recipe,
   its actual primitive-positive gadget and combinatorial size bounds; geometric realization
   of those operations and the planar hardness/solver assembly remain outstanding.
+  The nonselfdual branch also supplies arbitrary-arity minor constructions and their actual
+  original-language one-in-three gadget; disequality needs only absence of the six Schaefer
+  operations. Their geometric realization and native hardness transfer remain unproved.
 
 - **Boolean Schaefer dichotomy** ([#2822](https://github.com/cslib-community/complexitylib/issues/2822)):
   the stack proves native polynomial-time tractability for all six common-polymorphism cases
