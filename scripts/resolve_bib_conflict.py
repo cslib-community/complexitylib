@@ -167,7 +167,7 @@ def neutral_config(cwd: pathlib.Path) -> tuple[str, ...]:
                       "move them aside and retry")
     empty = out(git(cwd, "hash-object", "-t", "tree", "--stdin", "-w", stdin=b""))
     config = (f"attr.tree={empty}", f"core.attributesFile={os.devnull}", *MERGE_CONFIG)
-    attrs = git(cwd, "check-attr", "-a", "-z", "--", BIB, "Complexity.lean", config=config)
+    attrs = git(cwd, "check-attr", "-a", "-z", "--", BIB, "CslibFrontier.lean", config=config)
     if attrs.stdout:
         raise Refusal("this git still reads tracked attributes under `attr.tree`: "
                       + attrs.stdout.decode("utf-8", "replace").replace("\0", " ").strip())

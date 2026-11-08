@@ -81,7 +81,7 @@ the imported modules read.
 -/
 open Lean
 
-namespace ComplexityScripts.ParallelDefs
+namespace CslibFrontierScripts.ParallelDefs
 
 /-- Last name components of the definitions that Lean generates for a declaration. -/
 def generatedSuffixes : List String :=
@@ -659,10 +659,10 @@ unsafe def run (libDir : System.FilePath) (minSize maxShared : Nat) : IO Unit :=
   let req ← readRequests
   if req.theorems then runTheorems req libDir else runDefs req libDir minSize maxShared
 
-end ComplexityScripts.ParallelDefs
+end CslibFrontierScripts.ParallelDefs
 
 unsafe def main (args : List String) : IO Unit := do
   let libDir := args.headD ".lake/build/lib/lean"
   let minSize := (args[1]?.bind String.toNat?).getD 300
   let maxShared := (args[2]?.bind String.toNat?).getD 8
-  ComplexityScripts.ParallelDefs.run libDir minSize maxShared
+  CslibFrontierScripts.ParallelDefs.run libDir minSize maxShared
