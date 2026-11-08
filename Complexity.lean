@@ -125,7 +125,9 @@ public import Complexity.Algorithms.Lean.TSP.MSTTour
 public import Complexity.Algorithms.Lean.TSP.PerfectMatching
 public import Complexity.Algorithms.Lean.TSP.Shortcut
 public import Complexity.Algorithms.Lean.TimeM.Loops
+public import Complexity.Algorithms.Lean.TreeDecomposition.BagMask
 public import Complexity.Algorithms.Lean.TreeDecomposition.IndependentSet
+public import Complexity.Algorithms.Lean.TreeDecomposition.IndependentSetFPT
 public import Complexity.Algorithms.Lean.VertexCover.Matching
 public import Complexity.Algorithms.Lean.Yates
 public import Complexity.Algorithms.Matching.Edmonds

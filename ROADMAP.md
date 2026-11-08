@@ -1798,14 +1798,11 @@ pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
   ([#2927](https://github.com/cslib-community/complexitylib/issues/2927)): a reusable evaluator
   over a supplied rooted decomposition
   (`Foundations/Combinatorics/SimpleGraph/TreeDecomposition`), with state-space, transition, join
-  and runtime bounds, generalizing the independent-set program; an executable FPT `TimeM`
-  independent-set program whose ticks track the operations it performs, with materialized
-  mask-indexed tables, replacing the declared per-node cost of `time_mwisM_le`
-  ([#3295](https://github.com/cslib-community/complexitylib/issues/3295)); coloring and
-  SAT/CSP decision and counting clients that specify the graph whose width is measured;
-  normalizing the node count so runtimes are stated in the number of vertices; and an encoded
-  treewidth parameter connected to `FPT`. Also: nice decompositions, treewidth under minors, and
-  its grid and separator characterizations.
+  and runtime bounds, generalizing the mask-indexed tables and charged loops of the executable
+  independent-set program `mwisFPT`; coloring and SAT/CSP decision and counting clients that
+  specify the graph whose width is measured; normalizing the node count so runtimes are stated in
+  the number of vertices; and an encoded treewidth parameter connected to `FPT`. Also: nice
+  decompositions, treewidth under minors, and its grid and separator characterizations.
 - **Algorithmic metatheorems:** MSO-to-automata/evaluator compilation and a Courcelle-style
   theorem with computable parameter dependence on width and formula size. Keep the supplied
   decomposition and its encoding explicit; certify decomposition finding separately. Connect

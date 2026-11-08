@@ -21,7 +21,9 @@ independent set of `G`. The charged version `mwisM R w` returns the same value. 
 most `k`, its declared cost is at most `(n + 1) · 2 ^ (k + 1) · (2 (k + 1) ^ 2 + 2 (k + 1) + 6)`
 ticks, where `n + 1` is the number of decomposition nodes, not the number of vertices. These ticks
 are a declared per-node cost function, not a count of the operations the Lean program performs;
-see "Cost model and limitations" below.
+see "Cost model and limitations" below. The executable program `mwisFPT` of
+`Complexity.Algorithms.Lean.TreeDecomposition.IndependentSetFPT` materializes the tables, charges
+its ticks inside the loops that do the work, and has the bound `time_mwisFPT_le`.
 
 The program processes the nodes in decreasing order, so every child is handled before its
 parent. Node `i` keeps a table indexed by the subsets `S` of its bag. Once all children of `i`
@@ -77,8 +79,9 @@ are not that array implementation, and it is not proved that the array implement
 the same values or performs the charged number of operations. In particular, the tables are
 closures and are never materialized, so `forget` re-evaluates the child closures, and evaluating
 `mwisM` or `mwisValue` as written takes time exponential in the depth of the decomposition. It is
-not an FPT computation. An executable program whose ticks track the operations it performs is
-remaining work ([#3295](https://github.com/cslib-community/complexitylib/issues/3295)).
+not an FPT computation. The executable program whose ticks track the operations it performs is
+`mwisFPT` in `Complexity.Algorithms.Lean.TreeDecomposition.IndependentSetFPT`: its value is
+`mwisValue` (`ret_mwisFPT`) and its tick bound is `time_mwisFPT_le`.
 
 The node count `n + 1` is a parameter of the decomposition and is not bounded in terms of
 `card V` here. The decomposition is supplied by the caller; computing one is a separate problem.
@@ -544,7 +547,9 @@ section Charged
 variable {V : Type} {G : SimpleGraph V} {n : ℕ} [DecidableEq V] [DecidableRel G.Adj]
 
 /-- `tables` in `TimeM ℕ`, charging the declared lump cost `stepCost` per processed node. The
-tick is not a count of the operations performed by `step`. -/
+tick is not a count of the operations performed by `step`. For the executable table pass whose
+ticks are charged inside its loops, see `tablesFPT` in
+`Complexity.Algorithms.Lean.TreeDecomposition.IndependentSetFPT`. -/
 @[expose] def tablesM (R : G.RootedTreeDecomposition n) (w : V → ℕ) :
     ℕ → TimeM ℕ (Fin (n + 1) → Finset V → ℕ)
   | 0 => pure fun _ _ => 0
@@ -554,7 +559,9 @@ tick is not a count of the operations performed by `step`. -/
     TimeM.tick (stepCost (R.bag j).card (R.bag (R.parent j)).card)
     pure (step R w acc j)
 
-/-- The dynamic program in `TimeM ℕ`, with the declared per-node cost of the module docstring. -/
+/-- The dynamic program in `TimeM ℕ`, with the declared per-node cost of the module docstring.
+The executable program with materialized tables is `mwisFPT` in
+`Complexity.Algorithms.Lean.TreeDecomposition.IndependentSetFPT`. -/
 @[expose] def mwisM (R : G.RootedTreeDecomposition n) (w : V → ℕ) : TimeM ℕ ℕ := do
   let acc ← tablesM R w n
   TimeM.tick (rootCost (R.bag 0).card)
@@ -588,7 +595,9 @@ vertices of `G`) and width at most `k`, the declared cost of `mwisM` is at most
 `(n + 1) · 2 ^ (k + 1) · (2 (k + 1) ^ 2 + 2 (k + 1) + 6)` ticks: linear in the number of nodes and
 `2 ^ k · poly(k)` per node. The ticks are the declared per-node cost function of the module
 docstring for an unformalized array implementation; they do not count the operations of `mwisM`
-itself, whose evaluation as written is not FPT. -/
+itself, whose evaluation as written is not FPT. The executable bound, with ticks charged inside the
+loops of a program that materializes the tables, is `time_mwisFPT_le` in
+`Complexity.Algorithms.Lean.TreeDecomposition.IndependentSetFPT`. -/
 theorem time_mwisM_le (R : G.RootedTreeDecomposition n) (w : V → ℕ) {k : ℕ}
     (hk : R.width ≤ k) : (mwisM R w).time ≤ (n + 1) * nodeCost (k + 1) := by
   simp only [mwisM, TimeM.time_bind, TimeM.time_tick, TimeM.time_pure, add_zero]
