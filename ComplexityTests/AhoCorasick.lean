@@ -55,9 +55,9 @@ private def ushers : List Char := "ushers".toList
 #guard (searchM kw ushers).time ≤
   (kw.map fun p => 2 * (p.length - 1)).sum + 2 * ushers.length + (occurrences kw ushers).length
 
--- A failure table that always fails to the start state misses `he` and `hers`.
-#guard (scanM kw ⟨fun _ => [], fun u => if u ∈ kw then [u] else []⟩ ushers).ret =
-  [(4, "she".toList)]
+-- With the constructed output table, a failure table that always fails to the start state
+-- misses `hers`.
+#guard (scanM kw ⟨fun _ => [], (build kw).out⟩ ushers).ret = [(4, "she".toList), (4, "he".toList)]
 
 /-! ## Edge cases -/
 

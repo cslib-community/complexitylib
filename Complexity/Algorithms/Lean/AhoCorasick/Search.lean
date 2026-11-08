@@ -39,11 +39,18 @@ the transition bounds of `[AhoCorasick1975]`, Theorems 2 and 4.
 * **Charged (`1` `TimeM` tick):** every goto transition (including the start state's self-loop),
   every failure transition, and every reported pair `(i, y)`.
 * **Uncharged:** the goto test `IsNode P (u ++ [a])`, reads and writes of the failure and output
-  tables, list construction, and the per-round bookkeeping of `buildM` (scanning `P` for the
-  keywords longer than the current depth). These are the constant-time table operations of
-  `[AhoCorasick1975]`, or (for the bookkeeping) the queue management of Algorithm 3. Algorithm 3
-  visits each state once; `buildM` recomputes the failure state of a prefix shared by several
-  keywords once per keyword (with the same result), and its charged bound is per keyword.
+  tables, and list construction (the constant-time table operations of `[AhoCorasick1975]`).
+* **Uncharged and not linear:** the per-round bookkeeping of `buildM`, which scans all of `P` at
+  each depth for the keywords longer than that depth. This is `|P| * maxLength P` keyword visits,
+  which can be quadratic in the total keyword length (one keyword of length `40` and `40`
+  one-letter keywords give `1599` visits against total length `80`). So `time_buildM_le` bounds
+  the goto and failure transitions counted in the proof of `[AhoCorasick1975]`, Theorem 4, not
+  the total construction time. Moreover, Algorithm 3 visits each state once, while `buildM`
+  recomputes the failure state of a prefix shared by several keywords once per keyword (with the
+  same result), so its transition bound is per keyword.
+* **Guarded failure loop:** `stepM` stops at the start state if a failure transition does not
+  shorten the state. This never happens with a valid table; it makes the scan terminate, and its
+  cost bounds hold, for an arbitrary failure table.
 
 Using the potential "length of the current state", one operating cycle satisfies
 `(stepM P f u a).time + (stepM P f u a).ret.length ≤ u.length + 2` (`time_stepM_le`), for any
@@ -64,12 +71,14 @@ failure table `f`.
 * `Cslib.Algorithms.Lean.AhoCorasick.ret_scanM`: with valid tables, the scan reports exactly
   `occurrences P t` (`[AhoCorasick1975]`, Theorem 1 for Algorithm 1).
 * `Cslib.Algorithms.Lean.AhoCorasick.time_scanM_silent_lt`: on a nonempty text of length `n`,
-  Algorithm 1 makes fewer than `2n` goto and failure transitions, for any failure table
-  (`[AhoCorasick1975]`, Theorem 2); `time_scanM_lt` adds one tick per reported pair.
+  the guarded Algorithm 1 makes fewer than `2n` goto and failure transitions, for any failure
+  table (`[AhoCorasick1975]`, Theorem 2); `time_scanM_lt` adds one tick per reported pair, and
+  `time_scanM_eq` splits the cost into transitions and reported pairs.
 * `Cslib.Algorithms.Lean.AhoCorasick.isValid_build`: Algorithm 3 computes valid tables
   (`[AhoCorasick1975]`, Theorem 1 for Algorithm 3).
 * `Cslib.Algorithms.Lean.AhoCorasick.time_buildM_le`: Algorithm 3 makes at most
-  `2 * (p.length - 1)` transitions per keyword `p` (`[AhoCorasick1975]`, Theorem 4).
+  `2 * (p.length - 1)` goto and failure transitions per keyword `p` (the transitions counted in
+  `[AhoCorasick1975]`, Theorem 4; the level bookkeeping is not charged).
 * `Cslib.Algorithms.Lean.AhoCorasick.search_eq`, `mem_search_iff` and `time_searchM_le`.
 
 ## References
@@ -99,7 +108,8 @@ structure Machine (α : Type*) where
   M.fail u = failure P u ∧ M.out u = output P u
 
 /-- `M` has the failure function and output function of `P` (`[AhoCorasick1975]`, Lemmas 1 and 2)
-on every goto-graph state. -/
+on every goto-graph state. This is stronger than the paper's (behavioural) validity, which only
+asks that Algorithm 1 report the right occurrences: it fixes the tables on every state. -/
 @[expose] def Machine.IsValid (P : List (List α)) (M : Machine α) : Prop :=
   ∀ u, IsNode P u → M.AgreesAt P u
 
@@ -248,6 +258,13 @@ theorem time_scanLoopM_eq (P : List (List α)) (M : Machine α) (t : List α) (i
       TimeM.ret_pure, List.length_append, List.length_map, List.map_nil, List.length_nil, ih]
     omega
 
+/-- The scan's cost is its number of goto and failure transitions (the cost with emission
+suppressed) plus the number of reported pairs. -/
+theorem time_scanM_eq (P : List (List α)) (M : Machine α) (t : List α) :
+    (scanM P M t).time = (scanM P ⟨M.fail, fun _ => []⟩ t).time + (scanM P M t).ret.length := by
+  unfold scanM
+  exact time_scanLoopM_eq P M t 0 []
+
 private theorem ret_scanLoopM_silent (P : List (List α)) (f : List α → List α) (t : List α)
     (i : ℕ) (u : List α) : (scanLoopM P ⟨f, fun _ => []⟩ t i u).ret = [] := by
   induction t generalizing i u with
@@ -256,7 +273,9 @@ private theorem ret_scanLoopM_silent (P : List (List α)) (f : List α → List 
     simp only [scanLoopM, TimeM.ret_bind, TimeM.ret_pure, List.map_nil, List.nil_append, ih]
 
 /-- `[AhoCorasick1975]`, Theorem 2: on a nonempty text of length `n`, Algorithm 1 makes fewer than
-`2n` goto and failure transitions, for any failure table. -/
+`2n` goto and failure transitions. This holds for any failure table, because the failure loop of
+`stepM` is guarded (a failure transition that does not shorten the state stops at the start
+state; with a valid table the guard never fires). -/
 theorem time_scanM_silent_lt (P : List (List α)) (f : List α → List α) {t : List α}
     (ht : t ≠ []) : (scanM P ⟨f, fun _ => []⟩ t).time < 2 * t.length := by
   have h := time_scanM_lt P ⟨f, fun _ => []⟩ ht
@@ -280,7 +299,8 @@ def initMachine (P : List (List α)) : Machine α where
 /-- One round of Algorithm 3 of `[AhoCorasick1975]` (depth `d` to depth `d + 1`): for each keyword
 `p` longer than `d`, compute the failure state of `p.take (d + 1)` by one operating cycle from the
 failure state of `p.take d`, charging the transitions. Shared prefixes are recomputed with the
-same result. -/
+same result. The scan of the keyword list itself (including keywords not longer than `d`) is not
+charged. -/
 def levelM (P : List (List α)) (d : ℕ) : List (List α) → Machine α → TimeM ℕ (Machine α)
   | [], M => return M
   | p :: ps, M =>
@@ -312,7 +332,9 @@ theorem length_le_maxLength {P : List (List α)} {p : List α} (hp : p ∈ P) :
     · exact Nat.le_max_left _ _
     · exact Nat.le_trans (ih hp) (Nat.le_max_right _ _)
 
-/-- Algorithm 3 of `[AhoCorasick1975]`: the failure and output functions, built level by level. -/
+/-- Algorithm 3 of `[AhoCorasick1975]`: the failure and output functions, built level by level.
+Only goto and failure transitions are charged; the per-depth scan of all of `P`
+(`|P| * maxLength P` keyword visits) is not. -/
 def buildM (P : List (List α)) : TimeM ℕ (Machine α) :=
   buildLoopM P (maxLength P - 1) 1 (initMachine P)
 
@@ -501,8 +523,10 @@ private theorem time_buildLoopM_le {P : List (List α)} :
     have h2 := ih (d + 1) _ (by omega) (agreesUpTo_levelM hd hM)
     omega
 
-/-- `[AhoCorasick1975]`, Theorem 4: Algorithm 3 makes at most `2 * (|p| - 1)` goto and failure
-transitions per keyword `p`. -/
+/-- The transition bound of `[AhoCorasick1975]`, Theorem 4: Algorithm 3 makes at most
+`2 * (|p| - 1)` goto and failure transitions per keyword `p`. This bounds the charged transitions
+only, not total construction time: the per-depth scan of `P` in `buildM` is uncharged and can be
+quadratic in the total keyword length. -/
 theorem time_buildM_le (P : List (List α)) :
     (buildM P).time ≤ (P.map fun p => 2 * (p.length - 1)).sum := by
   have h := time_buildLoopM_le (P := P) (maxLength P - 1) 1 (initMachine P) (Nat.le_refl 1)
@@ -523,9 +547,10 @@ theorem mem_search_iff {P : List (List α)} {t : List α} {i : ℕ} {y : List α
     (i, y) ∈ search P t ↔ IsOccurrence P t i y := by
   rw [search_eq, mem_occurrences_iff]
 
-/-- Cost of the Aho–Corasick algorithm: at most `2 * (|p| - 1)` transitions per keyword `p` to
-build the machine (`[AhoCorasick1975]`, Theorem 4), at most `2 * |t|` transitions to scan
-(Theorem 2), and one tick per reported occurrence. -/
+/-- Charged cost of the Aho–Corasick algorithm: at most `2 * (|p| - 1)` goto and failure
+transitions per keyword `p` to build the machine (the transitions of `[AhoCorasick1975]`,
+Theorem 4; the construction's level bookkeeping is not charged), at most `2 * |t|` transitions
+to scan (Theorem 2), and one tick per reported occurrence. -/
 theorem time_searchM_le (P : List (List α)) (t : List α) :
     (searchM P t).time ≤
       (P.map fun p => 2 * (p.length - 1)).sum + 2 * t.length + (occurrences P t).length := by

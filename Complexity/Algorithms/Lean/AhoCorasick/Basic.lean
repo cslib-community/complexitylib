@@ -405,7 +405,7 @@ theorem occurrences_append_singleton (P : List (List α)) (w : List α) (a : α)
       occurrences P w ++ (output P (w ++ [a])).map fun y => (w.length + 1, y) := by
   rw [occurrences, List.length_append, List.length_singleton, List.range_succ, List.flatMap_append,
     List.flatMap_singleton, occurrences,
-    List.take_of_length_le (by rw [List.length_append, List.length_singleton]; exact Nat.le_refl _)]
+    List.take_of_length_le (Nat.le_of_eq (by rw [List.length_append, List.length_singleton]))]
   congr 1
   refine List.flatMap_congr fun i hi => ?_
   rw [List.take_append_of_le_length (by have := List.mem_range.mp hi; omega)]
