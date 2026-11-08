@@ -551,6 +551,12 @@ index links to canonical definitions rather than keeping a second set.
   mean-prefix bound remain open; range/true means do not establish root
   regularity or the error recurrence. Paired raw differences, full-coordinate conditional walks, summed noise, compression, strong recursive
   induction and native logarithmic workspace/class equality remain required.
+  The Saks–Zhou iteration as pure mathematics (random-shift rounding, Lemmas A.3 and A.4 of
+  Chattopadhyay–Liao in exact density form) is
+  [#3247](https://github.com/cslib-community/complexitylib/issues/3247). It is a milestone of
+  [#474](https://github.com/cslib-community/complexitylib/issues/474). Still open: instantiating
+  its offline power with Nisan's generator, and the space-bounded realization giving
+  `BPL ⊆ L^{3/2}`.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a
   logspace reduction.
 - **Williams's `TIME[t] ⊆ SPACE[√(t log t)]`** ([#888]): the native implicit
