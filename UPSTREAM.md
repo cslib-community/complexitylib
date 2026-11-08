@@ -780,6 +780,19 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   that a clique lies in a bag (an alternative to Helly), `minDegree_le_treewidth`,
   `treewidth_le_one_iff` and `treewidth_cycleGraph`. Renaming to match an unmerged PR is not
   required.
+* **Oracle codes.** `Foundations/Computability/RecursiveInCode` overlaps the open Mathlib PR
+  [mathlib4#38973](https://github.com/leanprover-community/mathlib4/pull/38973) (hyeoniuwu,
+  co-authored by Tanner Duve; `Mathlib/Computability/SingleOracle/*`), which proposes oracle codes
+  `Oracle.Single.Code` with an `oracle` constructor, `eval`, a relativized `evaln` with
+  `evaln_bound`, `evaln_mono`, `evaln_sound`, `evaln_complete` and `eval_eq_rfindOpt`, codes for
+  `evaln` and `eval`, the jump (`K0_eq_K`, `not_jump_le`) and a bridge to `RecursiveIn`. Nothing
+  was ported from it. The designs differ: the local `Nat.RecursiveIn.Code` builds on merged
+  Mathlib's `Nat.RecursiveIn` with partial oracles (`exists_code`), and its `evaln` runs against a
+  finite prefix `List ℕ` (`evaln_take`, `exists_use`), whereas #38973 uses total oracles, its own
+  reducibility and an `evaln` relative to the whole oracle. Upstreaming must reconcile with
+  #38973 rather than compete with it; the prefix-based `evaln`, the use principle and
+  `KleenePost` are the parts it lacks. Its oracle `evaln` code and jump are a possible route to
+  the Kleene–Post bound `A, B ≤ᵀ ∅′` ([#3379](https://github.com/cslib-community/complexitylib/issues/3379)).
 
 These are coordination references, not a second record of live PR status. Check the relevant
 upstream discussion before starting or submitting overlapping work.

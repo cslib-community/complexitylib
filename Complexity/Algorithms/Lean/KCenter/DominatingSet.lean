@@ -36,9 +36,11 @@ ordered strict semiring `α` such as `ℕ` or `ℝ`. A `ρ`-approximate set of c
 
 ## Limitations
 
-This module proves the combinatorial reduction and the gap only. The NP-hardness statement of
-Theorem 2.4 additionally needs NP-hardness of dominating set on the library's encoded graphs and
-a polynomial-time certificate for the graph-to-distance-matrix map; neither is formalized yet.
+This module proves the combinatorial reduction and the gap only. NP-hardness of dominating set on
+the library's encoded graphs is `Cslib.Complexity.DominatingSet_npComplete`
+(`Complexity.Computability.Complexity.Problems.DominatingSet`). The NP-hardness statement of
+Theorem 2.4 additionally needs a polynomial-time certificate for the graph-to-distance-matrix map,
+which is not formalized yet.
 
 ## Main definitions
 
