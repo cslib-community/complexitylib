@@ -43,6 +43,7 @@ import Complexity.Logics.Propositional.CNF.Majority
 import Complexity.Computability.Complexity.Problems.CSP.Incidence
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
 import Complexity.Computability.PolyTime.CSP.Table
+import Complexity.Logics.Propositional.CSP.Edge.Augmenting
 import Complexity.Logics.Propositional.CSP.Table.DeltaMatroid
 import Complexity.Foundations.Data.BitString.CyclicDifference
 import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
@@ -73,6 +74,7 @@ import Complexity.Computability.Complexity.Problems.Clique
 import Complexity.Computability.Complexity.Problems.CSP.Incidence
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
 import Complexity.Computability.PolyTime.CSP.Table
+import Complexity.Logics.Propositional.CSP.Edge.Augmenting
 import Complexity.Logics.Propositional.CSP.Table.DeltaMatroid
 import Complexity.Foundations.Data.BitString.CyclicDifference
 import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
@@ -768,3 +770,42 @@ example {table : Table} {reference : List Bool} {positions : List ℕ}
 The new connector's exactly-one relation is even for every nonempty scope,
 with odd common parity. Empty scopes are excluded. These local mathematical
 closures do not prove whole-blossom lifting, the edge solver, or its native cost.
+
+
+# Prefix-Valid Edge-CSP Augmentation
+
+{name}`Cslib.Logic.PL.CSP.defects` counts distinct inconsistent variables.
+{name}`Cslib.Logic.PL.CSP.Walk.IsFWalk` requires distinct endpoints, consistent
+internal variables, and validity after every variable-ended prefix. An
+augmenting walk removes exactly two defects:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP in
+example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
+    (h : EdgeInstance F) {sem : Rel → List Bool → Bool}
+    {f : OccurrenceLabeling F Bool} {w : Walk F}
+    (hw : w.IsAugmenting sem f) :
+    (defects (w.flip f)).card + 2 = (defects f).card :=
+  hw.card_defects_flip_add_two h
+```
+
+For even delta-matroid constraints,
+{name}`Cslib.Logic.PL.CSP.EdgeInstance.augmentingWalk` is a total deterministic
+two-phase routine. Its correctness requires an improving valid comparison
+labeling as input; it does not search for that labeling. The combined exchange
+count is bounded by half the initial occurrence Hamming distance. No native
+machine-runtime bound is claimed yet.
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP in
+example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
+    (h : EdgeInstance F) {sem : Rel → List Bool → Bool}
+    (hM : EdgeInstance.EvenConstraints sem F)
+    {f : OccurrenceLabeling F Bool} :
+    IsOptimalLabeling sem f ↔ ValidLabeling sem f ∧
+      ¬ ∃ w : Walk F, w.IsAugmenting sem f :=
+  h.isOptimalLabeling_iff_no_augmentingWalk hM
+```
+
+The test module also rejects final-only validity. A complete solver still needs
+DAG/forest/blossom search and the native runtime certificate.

@@ -27,17 +27,6 @@
  "Complexity/Computability/Circuit/Rational/Runtime/Determinant.lean": {
   "encList (encList encIntBin)": 8
  },
- "Complexity/Computability/Circuit/Rational/Runtime/HermiteCramer.lean": {
-  "encList (encList encIntBin)": 9,
-  "encPair (encList encIntBin) encUnary": 3
- },
- "Complexity/Computability/Circuit/Rational/Runtime/Lift.lean": {
-  "encList (encList encIntBin)": 12
- },
- "Complexity/Computability/Circuit/Rational/Runtime/Point.lean": {
-  "encList (encList (encList encIntBin))": 5,
-  "encList (encList encIntBin)": 3
- },
  "Complexity/Computability/Complexity/Classes/IP/TQBF/Words.lean": {
   "encList (encPair encNat encUnary)": 3
  },
@@ -70,17 +59,6 @@
  },
  "Complexity/Computability/Complexity/Problems/SubsetSum.lean": {
   "encPair (encList encNat) encNat": 7
- },
- "Complexity/Computability/GenericRAM/Native/BooleanFold.lean": {
-  "encPair (encPair encUnary encBits) ?1": 6,
-  "encPair encNat (encPair encUnary ?1)": 4
- },
- "Complexity/Computability/GenericRAM/Native/MeasurementFold.lean": {
-  "encPair (encPair (encPair encUnary encNat) (encList encIntBin)) ?1": 5,
-  "encPair encNat (encPair (encPair encUnary encNat) ?1)": 4
- },
- "Complexity/Computability/GenericRAM/Native/SubsetPairFold.lean": {
-  "encList (encList encNat)": 3
  },
  "Complexity/Computability/Interactive/AuxZK.lean": {
   "encPair ?1.index (encPair encBits encBits)": 5
