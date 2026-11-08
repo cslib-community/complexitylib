@@ -1,0 +1,42 @@
+[
+  {
+    "id": "deterministic-compose",
+    "document": "workflows/deterministic-workflows.md",
+    "source_path": "ComplexityTests/PolyTimePlainDriver.lean",
+    "snapshot_start_line": 26,
+    "snapshot_end_line": 29
+  },
+  {
+    "id": "deterministic-logspace",
+    "document": "workflows/deterministic-workflows.md",
+    "source_path": "ComplexityTests/LogSpaceFunProp.lean",
+    "snapshot_start_line": 41,
+    "snapshot_end_line": 45
+  },
+  {
+    "id": "deterministic-p",
+    "document": "workflows/deterministic-workflows.md",
+    "source_path": "ComplexityTests/NPCompleteness.lean",
+    "snapshot_start_line": 24,
+    "snapshot_end_line": 30
+  },
+  {
+    "id": "deterministic-np",
+    "document": "workflows/deterministic-workflows.md",
+    "source_path": "ComplexityTests/NPCompleteness.lean",
+    "snapshot_start_line": 32,
+    "snapshot_end_line": 35
+  },
+  {
+    "id": "deterministic-reduction",
+    "document": "workflows/deterministic-workflows.md",
+    "source_path": "ComplexityTests/NPCompleteness.lean",
+    "snapshot_start_line": 47,
+    "snapshot_end_line": 56
+  },
+  {
+    "id": "first-client-negative-guard",
+    "document": "workflows/getting-started.md",
+    "source_path": "ComplexityTests/PolyTimePlainDriver.lean"
+  }
+]

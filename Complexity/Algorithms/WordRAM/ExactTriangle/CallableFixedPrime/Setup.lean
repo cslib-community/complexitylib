@@ -7,6 +7,8 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
+import Complexity.Computability.WordRAM.Power.Rename
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Properties
 
 /-!
@@ -110,12 +112,8 @@ theorem exec_setup {W : ℕ} (x : Data 640)
   have hl' : ExecWithin W (NatClog.program.rename clogBank) s l
       (5 * Nat.clog 2 S + 5) := by simpa only [sval] using hl
   have lc : l.regs (clogBank 1) = Nat.clog 2 S := by simpa only [sval] using lval
-  have lb : l.regs Reg.base = b := (hl.regs_eq (by
-    apply Code.preserves_rename_of_forall_ne
-    intro i he
-    have hv := congrArg Fin.val he
-    change 620 + i.val = 607 at hv
-    omega)).trans sbase
+  have lb : l.regs Reg.base = b := (hl.regs_eq
+    (Code.preserves_rename_of_offset _ clogBank (fun _ => rfl) _ (Or.inl (by decide)))).trans sbase
   let a := ((l.set (powerBank 2) 6166).set (powerBank 3)
     (Nat.clog 2 S * 6166)).set (powerBank 2) 2
   have ha : ExecWithin W powerArguments l a 3 := by
@@ -136,21 +134,13 @@ theorem exec_setup {W : ℕ} (x : Data 640)
     exact hconst.seq (hmul.seq (ExecWithin.const h2))
   have ab : a.regs Reg.base = b := by
     simpa [a, powerBank, Reg.base, Function.update_apply] using lb
-  obtain ⟨v, hv, vv, -, -, vm, -, -⟩ := Power.exec (w := W) 2
-    (sourceWidth n D g p total) (by decide) (a.comap powerBank)
+  obtain ⟨z, hz, zv, -, -, vm, -, -, -⟩ := Power.exec_rename powerBank powerBank_injective
+    (w := W) 2 (sourceWidth n D g p total) (by decide) a
     (by simp [a, powerBank, Power.base])
     (by simp [a, powerBank, Power.exponent, sourceWidth, S, Nat.mul_comm]) hpfit
-  let z := v.extend powerBank a
-  have hz : ExecWithin W (Power.program.rename powerBank) a z
-      (4 * sourceWidth n D g p total + 5) := hv.rename powerBank_injective
-  have zv : z.regs (powerBank 0) = windowSize n D g p total :=
-    (powerBank_injective.extend_apply _ _ _).trans vv
-  have zb : z.regs Reg.base = b := (hz.regs_eq (by
-    apply Code.preserves_rename_of_forall_ne
-    intro i he
-    have hval := congrArg Fin.val he
-    change 620 + i.val = 607 at hval
-    omega)).trans ab
+  change z.regs (powerBank 0) = windowSize n D g p total at zv
+  have zb : z.regs Reg.base = b := (hz.regs_eq
+    (Code.preserves_rename_of_offset _ powerBank (fun _ => rfl) _ (Or.inl (by decide)))).trans ab
   let c := (z.set (sourceBank MemoryWindow.Reg.base) b).set
     (sourceBank MemoryWindow.Reg.modulus) (windowSize n D g p total)
   have hc' : ExecWithin W windowArguments z c 2 := by
@@ -176,23 +166,19 @@ theorem exec_setup {W : ℕ} (x : Data 640)
     simp +decide [c, sourceBank, MemoryWindow.Reg.base, MemoryWindow.Reg.modulus]
   have cM : c.regs (sourceBank MemoryWindow.Reg.modulus) = windowSize n D g p total := by
     simp [c]
-  obtain ⟨v', hv', v'mem, v'match, v'bound, -⟩ := MemoryWindow.exec_normalizeRegisters
-    (w := sourceWidth n D g p total) (W := W) (b := b) (c.comap sourceBank) cb cM hw
-  let y := v'.extend sourceBank c
-  have hy : ExecWithin W ((MemoryWindow.normalizeRegisters 416).rename sourceBank) c y 417 :=
-    hv'.rename sourceBank_injective
+  obtain ⟨y, hy, ⟨v'mem, v'match, v'bound, -⟩, -⟩ :=
+    ExecWithin.rename_post sourceBank_injective (MemoryWindow.exec_normalizeRegisters
+      (w := sourceWidth n D g p total) (W := W) (b := b) (c.comap sourceBank) cb cM hw)
   have he : ExecWithin W setup x y (24669 * Nat.clog 2 S + 439) := by
     apply (hs.seq (hl'.seq (ha.seq (hz.seq (hc'.seq hy))))).mono
     dsimp only [sourceWidth, S]
     exact le_of_eq (by ring)
   refine ⟨y, he, ?_, ?_, ?_, ?_, ?_⟩
   · exact v'mem.trans (vm.trans (lmem.trans smem))
-  · exact (sourceBank_injective.extend_apply _ _ _).trans v'match.base_eq
-  · exact (sourceBank_injective.extend_apply _ _ _).trans v'match.modulus_eq
+  · exact v'match.base_eq
+  · exact v'match.modulus_eq
   · intro i
     change Fits (sourceWidth n D g p total) (y.regs (sourceBank (i.castAdd 3)))
-    rw [show y.regs (sourceBank (i.castAdd 3)) = v'.regs (i.castAdd 3) from
-      sourceBank_injective.extend_apply _ _ _]
     exact v'bound.1 i
   · intro j hj
     obtain ⟨-, hj', -, -⟩ := program_preserves j hj

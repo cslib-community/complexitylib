@@ -28,6 +28,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListP
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptionPrimitives
 import Complexity.Foundations.Data.List.FilterMap
+import Complexity.Tactic.OptionMatch
 
 /-!
 # The network of a circuit in polynomial time
@@ -73,14 +74,6 @@ private theorem gatePorts_eq (gs : List GateCode) (c i : ℕ) :
   obtain ⟨w, hw⟩ := Option.isSome_iff_exists.mp (List.mem_filter.mp hj).2
   rw [hw]
   rfl
-
-private theorem inBit_eq (X : List Bool) (gs : List GateCode) (c i idx : ℕ) :
-    inBit X gs c i idx = fun j => (lastOcc (occurrences gs) j (base gs i)).elim (X.getD j false)
-      fun w => idx.testBit ((gatePorts gs c i).idxOf
-        (2 * (c * (occurrences gs).length + w) + 1)) := by
-  funext j
-  unfold inBit inPort
-  cases lastOcc (occurrences gs) j (base gs i) <;> rfl
 
 private theorem scalarVertex_eq (S : List ℕ) (X : List Bool) (gs : List GateCode) :
     (scalarVertex S X gs : List ℕ × List ℕ) =
@@ -173,7 +166,9 @@ theorem computableInPolyTime_gateVertex {neg : α → ℕ} {X : α → List Bool
   -- the bits entering the qubits of the gate
   have hins : ComputableInPolyTime (fun a => (qubits ((gs a).getD (i a) default)).map
       (inBit (X a) (gs a) (c a) (i a) idx)) inp (encList encBool) := by
-    simp only [inBit_eq]
+    unfold inBit inPort
+    option_match_to_elim
+    simp only [Option.elim_map]
     refine mapWithInput hq (optionElimWithInput
       (computableInPolyTime_lastOcc (computableInPolyTime_occurrences (hgs.comp (fst _ _)))
         (snd _ _) (hb.comp (fst _ _)))

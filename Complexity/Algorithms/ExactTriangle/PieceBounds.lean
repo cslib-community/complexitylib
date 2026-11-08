@@ -21,6 +21,13 @@ public section
 
 namespace Cslib.Algorithms.ExactTriangle
 
+/-- Every enumerated piece begins at an original vertex, before the truncation endpoint. -/
+theorem piece_start_lt {n D g k : ℕ} (hD : 16 ≤ D) (hg : 1 ≤ g)
+    (hk : k < numPieces n D g) : k * pieceSize D g < n := by
+  by_contra hh
+  have hc : numPieces n D g ≤ k := (Nat.ceilDiv_le_iff (pieceSize_pos hD hg)).mpr (by omega)
+  omega
+
 /-- The active piece/label rectangle fits in the source middle dimension. -/
 theorem pieceLength_mul_le_of_mem_sqrtPrimeWindow {D g p n k : ℕ} (hg : 1 ≤ g)
     (hp : p ∈ Nat.sqrtPrimeWindow D) :

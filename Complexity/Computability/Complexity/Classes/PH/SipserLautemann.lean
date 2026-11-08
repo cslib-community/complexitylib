@@ -209,9 +209,9 @@ theorem exists_shifts_majorityAccepts {m : ℕ} {P : (Fin m → Bool) → Bool}
   have hS : 9 ^ halfRuns m * #Sᶜ ≤ 8 ^ halfRuns m * N := by
     refine (nine_pow_mul_card_filter_le hP).trans_eq' (congrArg (9 ^ halfRuns m * ·) ?_)
     rw [hSdef, compl_filter]
-    congr 1
-    ext ω
-    simp [majorityAccepts, not_lt]
+    exact congrArg Finset.card
+      (Finset.filter_congr fun ω _ => by
+        simp only [majorityAccepts, not_lt, mem_filter, mem_univ, true_and])
   have hN : N * 8 ^ (halfRuns m * shifts m) < 9 ^ (halfRuns m * shifts m) := by
     rw [hNdef, card_seed_eq, pow_mul, pow_mul]
     change (2 ^ m) ^ shifts m * (8 ^ halfRuns m) ^ shifts m < (9 ^ halfRuns m) ^ shifts m

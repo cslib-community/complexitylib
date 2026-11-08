@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Count
+import Complexity.Computability.WordRAM.Call
 import Mathlib.Tactic.FinCases
 
 /-!
@@ -33,12 +34,10 @@ namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.CountCall
 open Cslib.WordRAM Cslib.WordRAM.Signed
 
 /-- Counting workspace in a larger, fixed register file. -/
-def registers (i : Fin 28) : Fin 64 := ⟨i.val, by omega⟩
+def registers (i : Fin 28) : Fin 64 := i.castAdd 36
 
-private theorem registers_injective : Function.Injective registers := by
-  intro i j h
-  apply Fin.ext
-  exact congrArg (fun i : Fin 64 => i.val) h
+private theorem registers_injective : Function.Injective registers :=
+  Fin.castAdd_injective _ _
 
 /-- Length register for the selected set. -/
 def length (j : Fin 3) : Fin 64 := ⟨28 + 2 * j.val, by omega⟩
@@ -76,15 +75,6 @@ def prepare (j : Fin 3) : Code .standard 64 :=
 /-- A complete native count call, including argument and result copies. -/
 def program (j : Fin 3) : Code .standard 64 :=
   .seq (prepare j) (.seq (Count.program.rename registers) (.op (.copy (result j) countTotal)))
-
-private theorem extend_outside (a : Data 28) (x : Data 64) (i : Fin 64) (hi : 28 ≤ i.val) :
-    (a.extend registers x).regs i = x.regs i := by
-  change Function.extend registers a.regs x.regs i = x.regs i
-  apply Function.extend_apply'
-  rintro ⟨j, hj⟩
-  have := congrArg Fin.val hj
-  dsimp [registers] at this
-  omega
 
 /-- A native count call costs `34n+5M+24`, including five argument copies and one result copy.
 The mathematical input is an injective array enumeration, as required by the existing set-based
@@ -141,7 +131,7 @@ theorem exec {w M : ℕ} (j : Fin 3) (x : Data 64) (values : ℕ → ℤ) (hM : 
   have hqm : (q.comap registers).regs Count.modulus = x.regs modulus := by
     simp +decide [q, registers, countSource, countScratch, countLength, countModulus,
       countHistogram, Count.src, Count.scratch, Count.len, Count.modulus, Count.dst]
-  obtain ⟨a, ha, ham, hav, _⟩ := Count.exec_coll (q.comap registers) values hM hmod
+  have hcall := Count.exec_coll (q.comap registers) values hM hmod
     (hqm.trans hmodreg) (by simpa only [hqn] using hfit)
     (by simpa only [hqs, hqn] using hs) (by simpa only [hqk, hqn] using hk)
     (by simpa only [hqd] using hd) (by simpa only [hqn] using ht)
@@ -152,21 +142,19 @@ theorem exec {w M : ℕ} (j : Fin 3) (x : Data 64) (values : ℕ → ℤ) (hM : 
         x.mem ((q.comap registers).regs Count.src + i) = encode (values i)
       simpa only [hqn, hqs] using hinput)
     (by simpa only [hqn] using hinj)
-  let y := a.extend registers q
-  have hy : ExecWithin (w + 2) (Count.program.rename registers) q y
-      (34 * x.regs (length j) + 5 * M + 18) := by
-    simpa only [hqn] using ha.rename registers_injective
-  have hyt : y.regs countTotal = a.regs Count.total := by
-    change Function.extend registers a.regs q.regs (registers Count.total) = _
-    exact registers_injective.extend_apply _ _ _
-  refine ⟨y.set (result j) (y.regs countTotal), ?_, ?_, ?_, ?_⟩
-  · exact (hprep.seq (hy.seq ExecWithin.copy)).mono (by omega)
-  · change a.mem = _
-    have hqmem : q.mem = x.mem := rfl
-    simpa only [Data.comap_mem, hqmem, hqn, hqk, hqd] using ham
-  · simp only [Data.set_regs, Function.update_self, hyt]
-    simpa only [hqn] using hav
+  have hqmem : q.mem = x.mem := rfl
+  simp only [hqn, hqk, hqd, Data.comap_mem, hqmem] at hcall
+  unfold program
+  rw [show 34 * x.regs (length j) + 5 * M + 24 =
+    5 + (34 * x.regs (length j) + 5 * M + 18) + 1 by omega]
+  refine ExecWithin.call registers_injective hprep hcall ?_
+  intro y ⟨ham, hav, _⟩ hframe
+  refine ⟨y.set (result j) (y.regs countTotal), ExecWithin.copy, ham, ?_, ?_⟩
+  · simpa only [Data.set_regs, Function.update_self, Data.comap_regs, countTotal] using hav
   · intro i hi hne
-    rw [Data.set_regs, Function.update_of_ne hne, extend_outside a q i hi, hq i hi]
+    rw [Data.set_regs, Function.update_of_ne hne, hframe i, hq i hi]
+    intro k
+    exact Fin.ne_of_val_ne (by simpa only [registers, Fin.val_castAdd] using
+      (show k.val ≠ i.val by omega))
 
 end Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.CountCall

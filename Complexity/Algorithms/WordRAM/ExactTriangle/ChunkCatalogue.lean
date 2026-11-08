@@ -7,6 +7,7 @@ Authors: Anthropic, PBC, Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.ExactTriangle.Chunks
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
@@ -224,20 +225,17 @@ private theorem exec_body {w : ℕ} (x : Data 32) (C : ℕ) (hread : x.mem
       Function.update_of_ne hne]
   have hCcap : C ⌈/⌉ x.regs capacity ≤ C :=
     (Nat.ceilDiv_le_iff hcap).mpr (Nat.le_mul_of_pos_right C hcap)
-  obtain ⟨v, hv, hvc, -, hcells, hframe⟩ := Chunks.exec (a.comap bank)
-    (by simpa +decide [a, bank, Chunks.capacity] using hcap)
-    (by simpa +decide [a, bank, Chunks.dst, Chunks.total] using hheap)
-    (by simpa +decide [a, bank, Chunks.queries, Chunks.total, Nat.add_comm] using hquery)
-  let b := v.extend bank a
+  obtain ⟨b, hv, ⟨hvc, -, hcells, hframe⟩, -⟩ :=
+    ExecWithin.rename_post bank_injective (Chunks.exec (a.comap bank)
+      (by simpa +decide [a, bank, Chunks.capacity] using hcap)
+      (by simpa +decide [a, bank, Chunks.dst, Chunks.total] using hheap)
+      (by simpa +decide [a, bank, Chunks.queries, Chunks.total, Nat.add_comm] using hquery))
   have he : ExecWithin w chunks a b (17 * C + 7) := by
-    simpa +decide [chunks, b, a, bank, Chunks.total] using hv.rename bank_injective
+    simpa +decide [chunks, a, bank, Chunks.total] using hv
   have hb (i : Fin 32) (hi : 14 ≤ i.val) (hne : i ≠ addr) : b.regs i = x.regs i :=
     (he.regs_eq (chunks_preserves i hi)).trans (ha i hi hne)
   have hc : b.regs 6 = C ⌈/⌉ x.regs capacity := by
-    change (v.extend bank a).regs (bank Chunks.count) = _
-    change Function.extend bank v.regs a.regs (bank Chunks.count) = _
-    rw [bank_injective.extend_apply]
-    simpa +decide [a, bank, Chunks.total, Chunks.capacity] using hvc
+    simpa +decide [a, bank, Chunks.total, Chunks.capacity, Chunks.count] using hvc
   let z := b.set temp ((C ⌈/⌉ x.regs capacity) * 3)
     |>.set heap (x.regs heap + (C ⌈/⌉ x.regs capacity) * 3)
     |>.set written (x.regs written + C ⌈/⌉ x.regs capacity)
@@ -257,10 +255,10 @@ private theorem exec_body {w : ℕ} (x : Data 32) (C : ℕ) (hread : x.mem
   · simp +decide [z, cursor]
   · simp +decide [z, written, cursor]
   · simp +decide [z, heap, written, cursor]
-  · simpa +decide [z, b, a, bank, Chunks.dst, Chunks.queries, Chunks.residue,
-      Chunks.capacity, Chunks.count, Chunks.total, Data.extend, hvc, Nat.add_comm] using hcells
-  · simpa +decide [z, b, a, bank, Chunks.dst, Chunks.count, Chunks.total,
-      Chunks.capacity, hvc, Data.extend, Nat.mul_comm] using hframe
+  · simpa +decide [z, a, bank, Chunks.dst, Chunks.queries, Chunks.residue,
+      Chunks.capacity, Chunks.count, Chunks.total, Data.comap_mem, hc, Nat.add_comm] using hcells
+  · simpa +decide [z, a, bank, Chunks.dst, Chunks.count, Chunks.total,
+      Chunks.capacity, hc, Data.comap_mem, Nat.mul_comm] using hframe
 
 /-- Read the actual count table and concatenate every class's nonempty chunks. The controller
 receives no prefix sums. Both source blocks lie before `dst`; all other memory is preserved.

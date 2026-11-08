@@ -20,6 +20,7 @@ bounds are compared with the existing estimates at `n+2`.
 
 * `mPar_mono_input`: candidate bounds are monotone in input length.
 * `mPar_shifted_pow_le`: square-root times squared-logarithm bound for the actual native modulus.
+* `shifted_count_bound_le`: degree-seven bound on the native count allowance.
 * `length_instances_shifted_pow_le`: degree-seven logarithmic instance count at every length.
 * `packed_length_shifted_pow_le`: linear times fourth-logarithm common packed length.
 
@@ -44,22 +45,26 @@ theorem mPar_shifted_pow_le (n κ : ℕ) :
         (Nat.log 2 (n + 2) + 1) ^ 2 :=
   (mPar_mono_input (show n ≤ n + 2 by omega) _).trans (mPar_pow_le (n + 2) κ)
 
-/-- The unchanged actual finite instance list has a logarithmic count even at lengths zero/one. -/
-theorem length_instances_shifted_pow_le (n κ : ℕ) (x : Fin n → ℤ) :
-    (instances n ((n + 2) ^ κ) x).length ≤ numBound κ (n + 2) := by
+/-- The explicit native count allowance itself is bounded, independently of any list. -/
+theorem shifted_count_bound_le (n κ : ℕ) :
+    (2 * labelBits (2 * (n + 2) ^ κ) ^ 2 + 2) * (2 * Nat.log 2 n + 2) ^ 5 ≤
+      numBound κ (n + 2) := by
   have hlog : 1 ≤ Nat.log 2 (n + 2) := Nat.log_pos (by decide) (by omega)
   have hΛ : labelBits (2 * (n + 2) ^ κ) ≤ (κ + 2) * (Nat.log 2 (n + 2) + 1) :=
     (labelBits_pow_le (n + 2) κ).trans (by rw [add_mul]; omega)
   have hone : 1 ≤ ((κ + 2) * (Nat.log 2 (n + 2) + 1)) ^ 2 :=
     Nat.one_le_pow _ _ (by positivity)
   have hn : Nat.log 2 n ≤ Nat.log 2 (n + 2) := Nat.log_mono_right (by omega)
-  calc (instances n ((n + 2) ^ κ) x).length
-      ≤ (2 * labelBits (2 * (n + 2) ^ κ) ^ 2 + 2) * (2 * Nat.log 2 n + 2) ^ 5 :=
-        length_instances_le ..
-    _ ≤ (2 * ((κ + 2) * (Nat.log 2 (n + 2) + 1)) ^ 2 +
+  calc (2 * labelBits (2 * (n + 2) ^ κ) ^ 2 + 2) * (2 * Nat.log 2 n + 2) ^ 5
+      ≤ (2 * ((κ + 2) * (Nat.log 2 (n + 2) + 1)) ^ 2 +
         2 * ((κ + 2) * (Nat.log 2 (n + 2) + 1)) ^ 2) *
           (2 * Nat.log 2 (n + 2) + 2) ^ 5 := by gcongr; omega
     _ = numBound κ (n + 2) := by unfold numBound; ring
+
+/-- The unchanged actual finite instance list has a logarithmic count even at lengths zero/one. -/
+theorem length_instances_shifted_pow_le (n κ : ℕ) (x : Fin n → ℤ) :
+    (instances n ((n + 2) ^ κ) x).length ≤ numBound κ (n + 2) :=
+  (length_instances_le ..).trans (shifted_count_bound_le n κ)
 
 /-- The unchanged common packed length is bounded by the old estimate evaluated at `n+2`. -/
 theorem packed_length_shifted_pow_le (κ n : ℕ) :

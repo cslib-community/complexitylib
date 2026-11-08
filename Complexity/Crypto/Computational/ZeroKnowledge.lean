@@ -54,12 +54,15 @@ entries.
 * **General auxiliary-input zero-knowledge (`AuxiliaryInputZeroKnowledge`,
   `ZeroKnowledgeProof.AuxiliaryInputZeroKnowledge`).**
   Quantifies over the same uniform strict oracle PPT malicious verifiers `Vstar` and chooses one
-  efficient witness-free simulator `S` per `Vstar` before the choice of families, then ranges over
-  arbitrary polynomially bounded families of instances `a : ℕ → α`, valid witnesses
-  `w : ℕ → List Bool`, and auxiliary inputs `z : ℕ → List Bool` (`PolynomiallyBounded`), against
-  all full-input uniform strict PPT distinguishers `adversary` charged for the complete encoded
-  input `((1^n, (a n, z n)), view)`. Every system satisfying `AuxiliaryInputZeroKnowledge`
-  satisfies `GenerableZeroKnowledge` (`AuxiliaryInputZeroKnowledge.generableZeroKnowledge`).
+  efficient witness-free simulator `S` per `Vstar` before the choice of families, and then ranges
+  over arbitrary polynomially bounded families of instances `a : ℕ → α`, valid witnesses
+  `w : ℕ → List Bool`, verifier auxiliary inputs `z : ℕ → List Bool`, and distinguisher auxiliary
+  inputs `z' : ℕ → List Bool` (`PolynomiallyBounded`), against all full-input uniform strict PPT
+  distinguishers `adversary` charged for the complete encoded input `((1^n, (a n, z' n)), view)`.
+  Every system satisfying `AuxiliaryInputZeroKnowledge` satisfies `GenerableZeroKnowledge`
+  (`AuxiliaryInputZeroKnowledge.generableZeroKnowledge`), and lifts via the prefix-clock bridge in
+  `Complexity.Crypto.Computational.ZeroKnowledge.AuxClock` to unbounded auxiliary input
+  (`UnboundedAuxiliaryInputZeroKnowledge`, `InstanceAuxiliaryInputZeroKnowledge`).
   Under the explicit advice-PRG premise `GMW.AdvicePRG`
   (from `GMW.gmwView_negligible_of_advice_prg`), the GMW proof systems satisfy
   `ZeroKnowledgeProof.AuxiliaryInputZeroKnowledge`
@@ -142,11 +145,9 @@ def GenerableZeroKnowledge {α : Type} (enc : α ↪ List Bool)
     (prover : ℕ → α → List Bool → Prover Unit)
     (isWitness : α → List Bool → Bool) : Prop :=
   ∀ Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool),
-    IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun ⟨n, a, z⟩ => Vstar n a z) →
+    IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun ⟨n, a, z⟩ => Vstar n a z) →
     ∃ S : ℕ → α → List Bool → ProbComp (List Bool),
-      IsPPTOn (encPair encUnary (encPair enc encBits)) encBits
-        (fun ⟨n, a, z⟩ => S n a z) ∧
+      IsPPTOn (encInstanceAuxInput enc) encBits (fun ⟨n, a, z⟩ => S n a z) ∧
       ∀ (a : ℕ → α) (w z : ℕ → List Bool),
         ComputableInPolyTime a encUnary enc →
         ComputableInPolyTime w encUnary encBits →
@@ -161,37 +162,37 @@ def GenerableZeroKnowledge {α : Type} (enc : α ↪ List Bool)
 valid families.**
 For every uniform strict oracle PPT malicious verifier `Vstar` (charged for its complete encoded
 input `(1^n, (a, z))`), there exists a single uniform strict PPT witness-free simulator `S`
-(chosen before the families and distinguisher, and charged for `(1^n, (a, z))`) such that for all
+(chosen before the families and distinguisher, charged for `(1^n, (a, z))`) such that for all
 arbitrary polynomially bounded families of instances `a : ℕ → α`, valid witnesses
-`w : ℕ → List Bool` (`∀ n, isWitness (a n) (w n) = true`), and auxiliary inputs
-`z : ℕ → List Bool`, and for every uniform strict PPT distinguisher `adversary` (charged for its
-complete encoded input `((1^n, (a, z)), view)`), the distinguishing advantage between the real
-interaction view and the simulated view is negligible. -/
+`w : ℕ → List Bool` (`∀ n, isWitness (a n) (w n) = true`), verifier auxiliary inputs
+`z : ℕ → List Bool`, and distinguisher auxiliary inputs `z' : ℕ → List Bool`, and for every
+uniform strict PPT distinguisher `adversary` (charged for its complete encoded input
+`((1^n, (a, z')), view)`), the distinguishing advantage between the real interaction view and the
+simulated view is negligible. -/
 def AuxiliaryInputZeroKnowledge {α : Type} (enc : α ↪ List Bool)
     (prover : ℕ → α → List Bool → Prover Unit)
     (isWitness : α → List Bool → Bool) : Prop :=
   ∀ Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool),
-    IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun ⟨n, a, z⟩ => Vstar n a z) →
+    IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun ⟨n, a, z⟩ => Vstar n a z) →
     ∃ S : ℕ → α → List Bool → ProbComp (List Bool),
-      IsPPTOn (encPair encUnary (encPair enc encBits)) encBits
-        (fun ⟨n, a, z⟩ => S n a z) ∧
-      ∀ (a : ℕ → α) (w z : ℕ → List Bool),
+      IsPPTOn (encInstanceAuxInput enc) encBits (fun ⟨n, a, z⟩ => S n a z) ∧
+      ∀ (a : ℕ → α) (w z z' : ℕ → List Bool),
         PolynomiallyBounded (fun n => (enc (a n)).length) →
         PolynomiallyBounded (fun n => (w n).length) →
         PolynomiallyBounded (fun n => (z n).length) →
+        PolynomiallyBounded (fun n => (z' n).length) →
         (∀ n, isWitness (a n) (w n) = true) →
         ∀ adversary : ℕ → α → List Bool → List Bool → ProbComp Bool,
-          IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
-            (fun ⟨⟨n, a, z⟩, view⟩ => adversary n a z view) →
+          IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
+            (fun ⟨⟨n, a, z'⟩, view⟩ => adversary n a z' view) →
           Negligible (fun n => Game.advantage
             (distinguishingGame
               (((prover n (a n) (w n)).run (Vstar n (a n) (z n))
                 (prover n (a n) (w n)).init).map Prod.fst)
-              (adversary n (a n) (z n)))
+              (adversary n (a n) (z' n)))
             (distinguishingGame
               (ProbComp.eval (S n (a n) (z n)))
-              (adversary n (a n) (z n))))
+              (adversary n (a n) (z' n))))
 
 /-- **General auxiliary-input zero-knowledge implies poly-time-generable zero-knowledge.**
 Every deterministic polynomial-time-generable family has polynomially bounded encoded output length,
@@ -213,7 +214,8 @@ theorem AuxiliaryInputZeroKnowledge.generableZeroKnowledge {α : Type} {enc : α
   have htest : IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
       (fun p => adversary p.1.1 p.2) :=
     hadversary.preprocess (by fun_prop) (by fun_prop)
-  exact hS_zk a w z ha_poly hw_poly hz_poly hw_sat (fun n _ _ view => adversary n view) htest
+  exact hS_zk a w z z ha_poly hw_poly hz_poly hz_poly hw_sat
+    (fun n _ _ view => adversary n view) htest
 
 /-- Under `GenerableZeroKnowledge`, any full-input uniform strict PPT distinguisher
 `adversary n (a n) (z n)` also has negligible distinguishing advantage on deterministic
@@ -222,18 +224,16 @@ theorem GenerableZeroKnowledge.advantage_negligible {α : Type} {enc : α ↪ Li
     {prover : ℕ → α → List Bool → Prover Unit} {isWitness : α → List Bool → Bool}
     (h : GenerableZeroKnowledge enc prover isWitness)
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun ⟨n, a, z⟩ => Vstar n a z)) :
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun ⟨n, a, z⟩ => Vstar n a z)) :
     ∃ S : ℕ → α → List Bool → ProbComp (List Bool),
-      IsPPTOn (encPair encUnary (encPair enc encBits)) encBits
-        (fun ⟨n, a, z⟩ => S n a z) ∧
+      IsPPTOn (encInstanceAuxInput enc) encBits (fun ⟨n, a, z⟩ => S n a z) ∧
       ∀ (a : ℕ → α) (w z : ℕ → List Bool),
         ComputableInPolyTime a encUnary enc →
         ComputableInPolyTime w encUnary encBits →
         ComputableInPolyTime z encUnary encBits →
         (∀ n, isWitness (a n) (w n) = true) →
         ∀ adversary : ℕ → α → List Bool → List Bool → ProbComp Bool,
-          IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
+          IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
             (fun ⟨⟨n, a, z⟩, view⟩ => adversary n a z view) →
           Negligible (fun n => Game.advantage
             (distinguishingGame
@@ -308,9 +308,8 @@ structure ZeroKnowledgeProof {α : Type} (enc : α ↪ List Bool) (A : Set α) w
   PPT in `(1^n, a, w, z)`. -/
   isPPT_interact :
     ∀ Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool),
-      IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-        (fun ⟨n, a, z⟩ => Vstar n a z) →
-      IsPPTOn (encPair encUnary (encPair enc (encPair encBits encBits))) encBits
+      IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun ⟨n, a, z⟩ => Vstar n a z) →
+      IsPPTOn (encInstanceWitnessAuxInput enc) encBits
         (fun ⟨n, a, w, z⟩ =>
           interact n a w (Vstar n a z))
   /-- Perfect completeness: for every valid witness `w` of `a`, the honest prover convinces the
@@ -333,11 +332,10 @@ private theorem ZeroKnowledgeProof.polyTime_isWitness_tidy {α : Type} {enc : α
 private theorem ZeroKnowledgeProof.zero_knowledge_tidy {α : Type} {enc : α ↪ List Bool}
     {A : Set α} (h : ZeroKnowledgeProof enc A) :
     ∀ Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool),
-      IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
+      IsOraclePPTOn (encInstanceAuxInput enc) encBits
         (fun p : ℕ × α × List Bool => Vstar p.1 p.2.1 p.2.2) →
       ∃ S : ℕ → α → List Bool → ProbComp (List Bool),
-        IsPPTOn (encPair encUnary (encPair enc encBits)) encBits
-          (fun p : ℕ × α × List Bool => S p.1 p.2.1 p.2.2) ∧
+        IsPPTOn (encInstanceAuxInput enc) encBits (fun p : ℕ × α × List Bool => S p.1 p.2.1 p.2.2) ∧
         ∀ (a : ℕ → α) (w z : ℕ → List Bool),
           ComputableTidilyInPolyTime a encUnary enc →
           ComputableTidilyInPolyTime w encUnary encBits →
@@ -380,16 +378,14 @@ every full-input uniform strict PPT distinguisher. -/
 theorem AuxiliaryInputZeroKnowledge.zero_knowledge_const {zk : ZeroKnowledgeProof enc A}
     (h : zk.AuxiliaryInputZeroKnowledge)
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun ⟨n, a, z⟩ => Vstar n a z)) :
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun ⟨n, a, z⟩ => Vstar n a z)) :
     ∃ S : ℕ → α → List Bool → ProbComp (List Bool),
-      IsPPTOn (encPair encUnary (encPair enc encBits)) encBits
-        (fun ⟨n, a, z⟩ => S n a z) ∧
+      IsPPTOn (encInstanceAuxInput enc) encBits (fun ⟨n, a, z⟩ => S n a z) ∧
       ∀ a w (z : ℕ → List Bool),
         zk.isWitness a w = true →
         PolynomiallyBounded (fun n => (z n).length) →
         ∀ adversary : ℕ → α → List Bool → List Bool → ProbComp Bool,
-          IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
+          IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
             (fun ⟨⟨n, a, z⟩, view⟩ => adversary n a z view) →
           Negligible (fun n => Game.advantage
             (distinguishingGame
@@ -401,7 +397,7 @@ theorem AuxiliaryInputZeroKnowledge.zero_knowledge_const {zk : ZeroKnowledgeProo
               (adversary n a (z n)))) := by
   obtain ⟨S, hS_ppt, hS_zk⟩ := h Vstar hV
   exact ⟨S, hS_ppt, fun a w z hw hz adversary hadv =>
-    hS_zk (fun _ => a) (fun _ => w) z (.const _) (.const _) hz (fun _ => hw) adversary hadv⟩
+    hS_zk (fun _ => a) (fun _ => w) z z (.const _) (.const _) hz hz (fun _ => hw) adversary hadv⟩
 
 /-- At every security parameter `n`, the honest verifier of a zero-knowledge proof system is an
 interactive proof for `A` with completeness `2 / 3` and soundness `1 / 3`. -/
@@ -425,11 +421,9 @@ theorem mem_IP (zk : ZeroKnowledgeProof enc A) : A ∈ IP enc := by
 the real interaction output and simulator output are computationally indistinguishable. -/
 theorem zero_knowledge_const (zk : ZeroKnowledgeProof enc A)
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun ⟨n, a, z⟩ => Vstar n a z)) :
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun ⟨n, a, z⟩ => Vstar n a z)) :
     ∃ S : ℕ → α → List Bool → ProbComp (List Bool),
-      IsPPTOn (encPair encUnary (encPair enc encBits)) encBits
-        (fun ⟨n, a, z⟩ => S n a z) ∧
+      IsPPTOn (encInstanceAuxInput enc) encBits (fun ⟨n, a, z⟩ => S n a z) ∧
       ∀ a w (z : ℕ → List Bool),
         zk.isWitness a w = true →
         ComputableInPolyTime z encUnary encBits →
@@ -502,8 +496,8 @@ theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_zeroKnowledgeProofOfRe
   intro Vstar hV
   exact ⟨GMW.gmwSimulator generator length f Vstar,
     GMW.isPPTOn_gmwSimulator hG.polyTime hG.length_eq hf hV,
-    fun _ _ _ ha hw hz hw_sat _ hadv =>
-      hAdv.gmwView_negligible hf hV hadv ha hw hz hw_sat⟩
+    fun _ _ _ _ ha hw hz hz' hw_sat _ hadv =>
+      hAdv.gmwView_negligible hf hV hadv ha hw hz hz' hw_sat⟩
 
 /-- The Goldreich–Micali–Wigderson computational zero-knowledge proof system for `ThreeSAT`, built
 from any pseudorandom generator with stretch at least `3 * k + 1` via the 3-copy masked-3SAT

@@ -20,7 +20,7 @@ import Complexity.Probability.PMF.Expect
 # Self-Contained Open-Addressed Permutation-Probing Dictionary on the Word-RAM
 
 This file implements a self-contained open-addressed permutation-probing dictionary realizing
-`Cslib.DataStructure.Dictionary.spec U V n_max` (`get` and `insert` up to `n_max` distinct keys)
+`Cslib.DataStructure.Dictionary.spec U V n_max` (`query` and `insert` up to `n_max` distinct keys)
 on the Word-RAM (`Cslib.WordRAM.Basis.exact` and `Cslib.WordRAM.Basis.standard`), combining the
 power-of-two odd-stride double-hashing construction of
 [Cormen, Leiserson, Rivest, and Stein, *Introduction to Algorithms*, third edition (MIT Press,
@@ -51,12 +51,14 @@ Because `2 * h₂(u) + 1` is always odd and therefore coprime to `2 ^ M`, `probe
 bijection on `Fin (2 ^ M)` for **every** seed `θ` and key `u`
 (`DoubleHashing.bijective_oddStrideSeq`).
 We maintain `DoubleHashing.OrderedTableRep (probePerm θ)` on the concrete Word-RAM slot arrays and
-discharge the expected probe count unconditionally across **all** capacities `n_max : ℕ` via
-`DoubleHashing.expect_probeCount_oddStride_unconditional_le` (at most `3` probes above
-`doubleTabThreshold c_exp` and at most `doubleTabThreshold c_exp` across all `n_max : ℕ`), yielding
-an assumption-free `O_{c_exp}(1)` expected operation charge `expectedOpCharge c_exp` independent of
-`n_max` and `U`, and `space c_exp n_max ≤ spaceFactor c_exp * (n_max + 1) = O_{c_exp}(n_max + 1)`
-words of memory.
+bound the expected probe count by `probeBound c_exp n_max` across **all** capacities `n_max : ℕ`:
+at most `3` probes once `doubleTabThreshold c_exp ≤ n_max`
+(`DoubleHashing.expect_probeCount_oddStride_doubleTab_le`) and at most `doubleTabThreshold c_exp`
+below it (`DoubleHashing.expect_probeCount_oddStride_unconditional_le`). This yields an
+assumption-free expected operation charge `charge c_exp n_max`, which is at most the
+`O_{c_exp}(1)` bound `expectedOpCharge c_exp` independent of `n_max` and `U`, and equals the
+threshold-free `hashEvalSteps c_exp + 47` above the threshold, together with
+`space c_exp n_max ≤ spaceFactor c_exp * (n_max + 1) = O_{c_exp}(n_max + 1)` words of memory.
 
 ## Main definitions
 
@@ -85,6 +87,8 @@ words of memory.
   `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.initSetup`,
   `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.opCode`,
   `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.subroutineCode`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.probeBound`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.charge`,
   `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.expectedOpCharge`,
   `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.impl`,
   `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.implStandard`: structured Word-RAM
@@ -97,13 +101,17 @@ words of memory.
   `space c_exp n_max ≤ spaceFactor c_exp * (n_max + 1) = O_{c_exp}(n_max + 1)` across all `n_max`.
 * `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.setup_exec_spec`: randomized seed and table
   initialization in `setupSteps c_exp n_max = O_{c_exp}(n_max + 1)` instructions.
-* `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.opCode_execWithin`: every `get` or `insert`
-  operation on key `u` executes in at most
+* `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.opCode_execWithin`: every `query` or
+  `insert` operation on key `u` executes in at most
   `opPathSteps c_exp θ T u = 13 * probeCount T u (probePerm θ u) + hashEvalSteps c_exp + 8`
   instructions.
 * `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.seq_expected_amortized`: assumption-free
-  `O_{c_exp}(1)` expected operation time (`expectedOpCharge c_exp`) across any admissible sequence
+  expected operation time `charge c_exp n_max` across any admissible sequence
   `ops : List (Dictionary.Op U)` whenever `U ≤ max n_max 4 ^ c_exp`.
+* `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.charge_le_expectedOpCharge`,
+  `Cslib.DataStructure.Dictionary.WordRAM.UniformProbing.charge_of_le`: the charge is at most the
+  `O_{c_exp}(1)` bound `expectedOpCharge c_exp` for every `n_max`, and equals
+  `hashEvalSteps c_exp + 47` (at most `3` expected probes) once `doubleTabThreshold c_exp ≤ n_max`.
 
 ## References
 
@@ -545,7 +553,7 @@ abbrev regM : Fin 16 := 7
 /-- Register `8`: constant `0` during probing / general scratch. -/
 abbrev regZero : Fin 16 := 8
 
-/-- Register `12` (`output`): operation tag (`0` for `get`, `1` for `insert`) on input; decoded
+/-- Register `12` (`output`): operation tag (`0` for `query`, `1` for `insert`) on input; decoded
 return value (`0` for `none`/`()`, `v + 1` for `some v`) on output. -/
 abbrev regOp : Fin 16 := 12
 
@@ -1504,10 +1512,10 @@ theorem opEvalHashesCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_
     by simp +decide [s17, s16, s15, s14, s13, s12, s11, s10, s9, s8, s7, hs6_u],
     by simp +decide [s17, s16, s15, s14, s13, s12, s11, s10, s9, s8, s7, hs6_v]⟩
 
-/-- Lookup completion program `finishGetCode` (`≤ 9` instructions): inspects `used[regSlot]`;
+/-- Lookup completion program `finishQueryCode` (`≤ 9` instructions): inspects `used[regSlot]`;
 if `0`, writes `0` (`none`) into `regOp`, and if `1`, loads `val[regSlot]` and writes
 `val[regSlot] + 1` (`some v`) into `regOp`. -/
-def finishGetCode : Code .exact 16 :=
+def finishQueryCode : Code .exact 16 :=
   .seq (.op (.exactBin .add regAddr regSlotBase regSlot))
   (.seq (.op (.load regCond regAddr))
         (.branch (.eq regCond regZero)
@@ -1518,7 +1526,7 @@ def finishGetCode : Code .exact 16 :=
           (.seq (.op (.const regCond 1))
                 (.op (.exactBin .add regOp regOp regCond))))))))
 
-theorem finishGetCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_exp n_max}
+theorem finishQueryCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_exp n_max}
     {s : Dictionary.State U} {x d : Data 16}
     (hS : Fits w (base + space c_exp n_max)) (hV : Fits w V)
     (hrep : Rep w base c_exp U V n_max θ s x)
@@ -1532,7 +1540,7 @@ theorem finishGetCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_exp
     (hm : d.regs regM = numBuckets n_max)
     (hzero : d.regs regZero = 0) :
     ∃ y : Data 16,
-      ExecWithin w finishGetCode d y 9 ∧
+      ExecWithin w finishQueryCode d y 9 ∧
       y.mem = x.mem ∧
       y.regs regBase = base ∧
       y.regs regOp = (match s u with | none => 0 | some v => v + 1) := by
@@ -1794,12 +1802,12 @@ theorem finishInsertCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_
     by simp +decide [s8],
     hprim, hstr, hwf, htrep, hdom_le, hvals, hmod⟩
 
-/-- Complete operation body `opCode c_exp n_max` for both `get` and `insert`. -/
+/-- Complete operation body `opCode c_exp n_max` for both `query` and `insert`. -/
 def opCode (c_exp n_max : ℕ) : Code .exact 16 :=
   .seq (opEvalHashesCode c_exp n_max)
   (.seq probeCheckCode
   (.seq probeLoop
-        (.branch (.eq regOp regZero) finishGetCode finishInsertCode)))
+        (.branch (.eq regOp regZero) finishQueryCode finishInsertCode)))
 
 /-- Exact pathwise instruction budget
 `13 * probeCount T u (probePerm θ u) + hashEvalSteps c_exp + 8` for `opCode c_exp n_max` on table
@@ -1823,17 +1831,17 @@ theorem opPathSteps_le_opSteps {c_exp U n_max : ℕ} (θ : Seed c_exp n_max)
 
 /-- Key extracted from a `Dictionary.Op U`. -/
 def opKey {U : ℕ} : Dictionary.Op U → Fin U
-  | .get u => u
+  | .query u => u
   | .insert u _ => u
 
-/-- Operation tag (`0` for `get`, `1` for `insert`). -/
+/-- Operation tag (`0` for `query`, `1` for `insert`). -/
 def opTag {U : ℕ} : Dictionary.Op U → ℕ
-  | .get _ => 0
+  | .query _ => 0
   | .insert _ _ => 1
 
 /-- Encoded output word in `regOp` after executing `op` from state `s`. -/
 def opOutWord {U : ℕ} (s : Dictionary.State U) : Dictionary.Op U → ℕ
-  | .get u => match s u with | none => 0 | some v => v + 1
+  | .query u => match s u with | none => 0 | some v => v + 1
   | .insert _ _ => 0
 
 /-- **Pathwise correctness and complexity of `opCode c_exp n_max`**: for any seed `θ`, dictionary
@@ -1912,12 +1920,13 @@ theorem opCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_exp n_max}
     rw [hd3_regs regV (by decide) (by decide) (by decide),
       hd2_regs regV (by decide) (by decide), hd1_v]
   cases op with
-  | get u₀ =>
+  | query u₀ =>
     have hc : (Cond.eq regOp regZero).Holds d3 := by
       simp [Cond.Holds, hd3_op, hd3_zero, opTag]
     obtain ⟨y, eFin, hy_mem, hy_base, hy_op⟩ :=
-      finishGetCode_execWithin hS hV hrep u₀ hO hd3_mem hd3_base hd3_sbase hd3_slot hd3_m hd3_zero
-    have eBr : ExecWithin w (.branch (.eq regOp regZero) finishGetCode finishInsertCode) d3 y 10 :=
+      finishQueryCode_execWithin hS hV hrep u₀ hO hd3_mem hd3_base hd3_sbase hd3_slot hd3_m hd3_zero
+    have eBr :
+        ExecWithin w (.branch (.eq regOp regZero) finishQueryCode finishInsertCode) d3 y 10 :=
       ExecWithin.branch_pos hc eFin
     have eTot : ExecWithin w (opCode c_exp n_max) x y
         (opPathSteps c_exp U n_max θ (extractSlots base c_exp U n_max x.mem) u₀) := by
@@ -1938,7 +1947,8 @@ theorem opCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_exp n_max}
     obtain ⟨y, eFin, hy_base, hy_op, hy_prim, hy_str, hy_wf, hy_trep, hy_dom, hy_vals, hy_mod⟩ :=
       finishInsertCode_execWithin hS hrep u₀ v₀ hvalid hO
         hd3_mem hd3_base hd3_sbase hd3_slot hd3_m hd3_u hd3_v₀
-    have eBr : ExecWithin w (.branch (.eq regOp regZero) finishGetCode finishInsertCode) d3 y 10 :=
+    have eBr :
+        ExecWithin w (.branch (.eq regOp regZero) finishQueryCode finishInsertCode) d3 y 10 :=
       ExecWithin.branch_neg hc eFin
     have eTot : ExecWithin w (opCode c_exp n_max) x y
         (opPathSteps c_exp U n_max θ (extractSlots base c_exp U n_max x.mem) u₀) := by
@@ -1970,7 +1980,7 @@ def subroutineCode (c_exp n_max : ℕ) : SubroutineCode .exact 16 0 where
 
 /-- Standalone argument encoder for `Dictionary.Op U` on `16` registers. -/
 def encodeOp {U : ℕ} : Dictionary.Op U → Fin 16 → ℕ
-  | .get u, i =>
+  | .query u, i =>
       if i = regOp then 0
       else if i = regU then u.val
       else 0
@@ -1989,14 +1999,14 @@ def argMatch {U : ℕ} (op : Dictionary.Op U) (regs : Fin 16 → ℕ) : Prop :=
 /-- Output decoder reading typed operation observations from final registers. -/
 def decodeOp {U V n_max : ℕ} : (op : Dictionary.Op U) → (Fin 16 → ℕ) →
     Option ((Dictionary.spec U V n_max).Result op)
-  | .get _, regs => some (if regs regOp = 0 then none else some (regs regOp - 1))
+  | .query _, regs => some (if regs regOp = 0 then none else some (regs regOp - 1))
   | .insert _ _, _ => some ()
 
 theorem encode_matches {c_exp U n_max : ℕ} (op : Dictionary.Op U) (regs : Fin 16 → ℕ) :
     argMatch op
       (fun i => if (subroutineCode c_exp n_max).input i then encodeOp op i else regs i) := by
   cases op with
-  | get u =>
+  | query u =>
     refine ⟨rfl, ?_, fun _ _ h => by nomatch h⟩
     simp +decide [subroutineCode, encodeOp, opKey]
   | insert u v =>
@@ -2016,7 +2026,7 @@ theorem arguments_fit {w base c_exp U V n_max : ℕ}
   have hfit0 : Fits w 0 := fits_zero w
   have hfit1 : Fits w 1 := (fits_of_space hS).2.2.2.2.2.2.2.2
   cases op with
-  | get u =>
+  | query u =>
     dsimp only [encodeOp]
     split_ifs
     · exact hfit0
@@ -2036,7 +2046,7 @@ theorem decodeOp_eq_step {U V n_max : ℕ} {s : Dictionary.State U}
     decodeOp (V := V) (n_max := n_max) op regs =
       some ((Dictionary.spec U V n_max).stepFn s op).2 := by
   cases op with
-  | get u =>
+  | query u =>
     dsimp only [decodeOp, Dictionary.spec, Dictionary.step, StateTransitionSpec.stepFn,
       opOutWord] at h ⊢
     rw [h]
@@ -2047,10 +2057,43 @@ theorem decodeOp_eq_step {U V n_max : ℕ} {s : Dictionary.State U}
     rfl
 
 /-- Expected per-operation instruction charge
-`13 * doubleTabThreshold c_exp + hashEvalSteps c_exp + 8 = O_{c_exp}(1)` for both `get` and `insert`
-(independent of `n_max` and `U`). -/
+`13 * doubleTabThreshold c_exp + hashEvalSteps c_exp + 8 = O_{c_exp}(1)` for both `query` and
+`insert` (independent of `n_max` and `U`). It bounds `charge c_exp n_max` at every capacity
+(`charge_le_expectedOpCharge`). -/
 def expectedOpCharge (c_exp : ℕ) : ℕ :=
   13 * doubleTabThreshold c_exp + hashEvalSteps c_exp + 8
+
+/-- Expected probe-count bound at capacity `n_max`: `3` once `doubleTabThreshold c_exp ≤ n_max`
+(`DoubleHashing.expect_probeCount_oddStride_doubleTab_le`), and below the threshold the cap
+`doubleTabThreshold c_exp` on the deterministic probe count `n_max + 1`. -/
+def probeBound (c_exp n_max : ℕ) : ℕ :=
+  if doubleTabThreshold c_exp ≤ n_max then 3 else doubleTabThreshold c_exp
+
+/-- Expected per-operation instruction charge
+`13 * probeBound c_exp n_max + hashEvalSteps c_exp + 8` at capacity `n_max`, for both `query` and
+`insert`. It is at most `expectedOpCharge c_exp` for every `n_max`, and equals the threshold-free
+`hashEvalSteps c_exp + 47` once `doubleTabThreshold c_exp ≤ n_max` (`charge_of_le`). -/
+def charge (c_exp n_max : ℕ) : ℕ :=
+  13 * probeBound c_exp n_max + hashEvalSteps c_exp + 8
+
+theorem probeBound_le_doubleTabThreshold (c_exp n_max : ℕ) :
+    probeBound c_exp n_max ≤ doubleTabThreshold c_exp := by
+  have h4 := four_le_doubleTabThreshold c_exp
+  dsimp only [probeBound]
+  split_ifs <;> omega
+
+theorem charge_le_expectedOpCharge (c_exp n_max : ℕ) :
+    charge c_exp n_max ≤ expectedOpCharge c_exp := by
+  have h := probeBound_le_doubleTabThreshold c_exp n_max
+  dsimp only [charge, expectedOpCharge]
+  omega
+
+/-- Above the Double Tabulation threshold the per-operation charge is
+`13 * 3 + hashEvalSteps c_exp + 8`, independent of `doubleTabThreshold c_exp`. -/
+theorem charge_of_le {c_exp n_max : ℕ} (hge : doubleTabThreshold c_exp ≤ n_max) :
+    charge c_exp n_max = hashEvalSteps c_exp + 47 := by
+  simp only [charge, probeBound, hge, ↓reduceIte]
+  omega
 
 private noncomputable instance instDecidableExistsOrderedTableProbe {U n_max : ℕ}
     (π : Fin U → Equiv.Perm (Fin (numBuckets n_max)))
@@ -2123,7 +2166,7 @@ private theorem tsum_probeCount_le {α : Type*} {c_exp U n_max : ℕ}
       ∃ T : UniformProbing.Table U (numBuckets n_max),
         DoubleHashing.OrderedTableRep (probePerm p.1) s T ∧
         T_probe p ≤ probeCount T u (probePerm p.1 u)) :
-    (∑' p, ν p * (T_probe p : ℝ≥0∞)) ≤ (doubleTabThreshold c_exp : ℝ≥0∞) := by
+    (∑' p, ν p * (T_probe p : ℝ≥0∞)) ≤ (probeBound c_exp n_max : ℝ≥0∞) := by
   obtain ⟨p₀, hp₀⟩ := ν.support_nonempty
   have hdom : (Dictionary.dom s).card ≤ n_max := (hT p₀ hp₀).1
   let T_max : Seed c_exp n_max → UniformProbing.Table U (numBuckets n_max) :=
@@ -2137,14 +2180,23 @@ private theorem tsum_probeCount_le {α : Type*} {c_exp U n_max : ℕ}
       gcongr
       exact hle.trans hle_max
     · rw [(PMF.apply_eq_zero_iff _ _).mpr hp, zero_mul, zero_mul]
-  have hbound_unif := DoubleHashing.expect_probeCount_oddStride_unconditional_le
-    hU (thirtyTwo_mul_max_le_numBuckets n_max)
-    (fun θ => orderedTableRep_maxOrderedTable (probePerm θ) s hdom u) hdom u
-  have hmax_eq : max (doubleTabThreshold c_exp : ℝ≥0∞) 3 = (doubleTabThreshold c_exp : ℝ≥0∞) := by
-    apply max_eq_left
-    have h4 := four_le_doubleTabThreshold c_exp
-    exact_mod_cast (by omega : 3 ≤ doubleTabThreshold c_exp)
-  rw [hmax_eq] at hbound_unif
+  have hrep_max := fun θ : Seed c_exp n_max =>
+    orderedTableRep_maxOrderedTable (probePerm θ) s hdom u
+  have hbound :
+      (∑' θ, seedLaw c_exp n_max θ * (probeCount (T_max θ) u (probePerm θ u) : ℝ≥0∞)) ≤
+        (probeBound c_exp n_max : ℝ≥0∞) := by
+    dsimp only [probeBound]
+    split_ifs with hge
+    · exact_mod_cast DoubleHashing.expect_probeCount_oddStride_doubleTab_le
+        hge hU (thirtyTwo_mul_max_le_numBuckets n_max) hrep_max hdom u
+    · have hmax_eq :
+          max (doubleTabThreshold c_exp : ℝ≥0∞) 3 = (doubleTabThreshold c_exp : ℝ≥0∞) := by
+        apply max_eq_left
+        have h4 := four_le_doubleTabThreshold c_exp
+        exact_mod_cast (by omega : 3 ≤ doubleTabThreshold c_exp)
+      rw [← hmax_eq]
+      exact DoubleHashing.expect_probeCount_oddStride_unconditional_le
+        hU (thirtyTwo_mul_max_le_numBuckets n_max) hrep_max hdom u
   calc (∑' p, ν p * (T_probe p : ℝ≥0∞))
       ≤ ∑' p, ν p * (probeCount (T_max p.1) u (probePerm p.1 u) : ℝ≥0∞) :=
         tsum_le_tsum hpt
@@ -2153,7 +2205,7 @@ private theorem tsum_probeCount_le {α : Type*} {c_exp U n_max : ℕ}
           (fun θ => (probeCount (T_max θ) u (probePerm θ u) : ℝ≥0∞))).symm
     _ ≤ ∑' θ, seedLaw c_exp n_max θ * (probeCount (T_max θ) u (probePerm θ u) : ℝ≥0∞) :=
         tsum_le_tsum (fun θ => mul_le_mul_of_nonneg_right (hseed θ) zero_le)
-    _ ≤ (doubleTabThreshold c_exp : ℝ≥0∞) := hbound_unif
+    _ ≤ (probeBound c_exp n_max : ℝ≥0∞) := hbound
 
 theorem step_exec_spec {w base c_exp U V n_max : ℕ}
     (hS : Fits w (base + space c_exp n_max))
@@ -2175,7 +2227,7 @@ theorem step_exec_spec {w base c_exp U V n_max : ℕ}
           Modifies (Block.mk base (space c_exp n_max)).footprint p.2.mem q.2.mem) ∧
       (∀ θ', ((ν.bind μ_step).map Prod.fst) θ' ≤ 1 * seedLaw c_exp n_max θ') ∧
       (∑' p, ν p * (T_step p + ∑' q, μ_step p q * ((0 : ℕ) : ℝ≥0∞))) ≤
-        (expectedOpCharge c_exp : ℝ≥0∞) + ∑' p, ν p * ((0 : ℕ) : ℝ≥0∞) := by
+        (charge c_exp n_max : ℝ≥0∞) + ∑' p, ν p * ((0 : ℕ) : ℝ≥0∞) := by
   classical
   let T_probe : Seed c_exp n_max × Data 16 → ℕ := fun p =>
     if p ∈ ν.support then
@@ -2222,7 +2274,7 @@ theorem step_exec_spec {w base c_exp U V n_max : ℕ}
     have hseed' : ∀ θ, (ν.map Prod.fst) θ ≤ seedLaw c_exp n_max θ := by
       intro θ
       simpa only [one_mul] using hseed θ
-    have hprobe_le : (∑' p, ν p * (T_probe p : ℝ≥0∞)) ≤ (doubleTabThreshold c_exp : ℝ≥0∞) := by
+    have hprobe_le : (∑' p, ν p * (T_probe p : ℝ≥0∞)) ≤ (probeBound c_exp n_max : ℝ≥0∞) := by
       refine tsum_probeCount_le (s := s) hU (opKey o) ν hseed' T_probe ?_
       intro p hp
       obtain ⟨hrep, _⟩ := hsupp p hp
@@ -2238,16 +2290,17 @@ theorem step_exec_spec {w base c_exp U V n_max : ℕ}
     simp_rw [hterm]
     rw [tsum_add, ENNReal.tsum_mul_left, ENNReal.tsum_mul_right, ν.tsum_coe, one_mul]
     calc 13 * (∑' p, ν p * (T_probe p : ℝ≥0∞)) + (hashEvalSteps c_exp + 8 : ℝ≥0∞)
-        ≤ 13 * (doubleTabThreshold c_exp : ℝ≥0∞) + (hashEvalSteps c_exp + 8 : ℝ≥0∞) := by
+        ≤ 13 * (probeBound c_exp n_max : ℝ≥0∞) + (hashEvalSteps c_exp + 8 : ℝ≥0∞) := by
           gcongr
-      _ = (expectedOpCharge c_exp : ℝ≥0∞) := by
-          dsimp only [expectedOpCharge]
+      _ = (charge c_exp n_max : ℝ≥0∞) := by
+          dsimp only [charge]
           push_cast
           ring
 
 /-- **Composable randomized Word-RAM `StateTransitionImpl` certificate over `Basis.exact`** for the
 open-addressed odd-stride double-hashing dictionary realizing `Dictionary.spec U V n_max` with
-$O_{c_{\exp}}(1)$ expected operation time (`expectedOpCharge c_exp`) and
+$O_{c_{\exp}}(1)$ expected operation time (`charge c_exp n_max ≤ expectedOpCharge c_exp`, and
+`hashEvalSteps c_exp + 47` once `doubleTabThreshold c_exp ≤ n_max`) and
 $O_{c_{\exp}}(n_{\max} + 1)$ space (`space c_exp n_max`) for every `n_max : ℕ` whenever
 `U ≤ max n_max 4 ^ c_exp`. -/
 noncomputable abbrev impl {w base c_exp U V n_max : ℕ}
@@ -2264,7 +2317,7 @@ noncomputable abbrev impl {w base c_exp U V n_max : ℕ}
     (spanTime := 3)
     (setupTime := (setupSteps c_exp n_max : ℝ≥0∞))
     (initPotential := 0)
-    (charge := fun _ _ => expectedOpCharge c_exp)
+    (charge := fun _ _ => charge c_exp n_max)
     (rep := Rep w base c_exp U V n_max)
     (potential := fun _ _ => 0)
     (encode := encodeOp)
@@ -2308,9 +2361,10 @@ from fresh zeroed memory `[base, base + space c_exp n_max)`, initializing the od
 double-hashing dictionary (`initFresh`) and executing the subroutine operation bodies
 (`ExecStepsOfFn`) across any admissible operation history `ops : List (Dictionary.Op U)` fixed
 independently of the sampled seed (oblivious adversary) takes at most
-`3 + setupSteps c_exp n_max + ops.length * expectedOpCharge c_exp` expected Word-RAM instructions
-(charging the $O_{c_{\exp}}(1)$ expected bound `expectedOpCharge c_exp` per operation for every
-`n_max : ℕ` whenever `U ≤ max n_max 4 ^ c_exp`). -/
+`3 + setupSteps c_exp n_max + ops.length * charge c_exp n_max` expected Word-RAM instructions
+whenever `U ≤ max n_max 4 ^ c_exp`. The per-operation charge is at most the $O_{c_{\exp}}(1)$ bound
+`expectedOpCharge c_exp` for every `n_max : ℕ` (`charge_le_expectedOpCharge`) and equals
+`hashEvalSteps c_exp + 47` once `doubleTabThreshold c_exp ≤ n_max` (`charge_of_le`). -/
 theorem seq_expected_amortized {w base c_exp U V n_max : ℕ}
     (hS : Fits w (base + space c_exp n_max))
     (hU_fit : ∀ u : Fin U, Fits w u.val) (hV : Fits w V)
@@ -2330,7 +2384,7 @@ theorem seq_expected_amortized {w base c_exp U V n_max : ℕ}
           ((Dictionary.spec U V n_max).run (Dictionary.empty U) ops).1 p.2) ∧
       (impl (V := V) hS hU_fit hV hU).initTime + T_ops ≤
         (3 + setupSteps c_exp n_max : ℝ≥0∞) +
-          ((Dictionary.spec U V n_max).totalCost (fun _ _ => expectedOpCharge c_exp)
+          ((Dictionary.spec U V n_max).totalCost (fun _ _ => charge c_exp n_max)
             (Dictionary.empty U) ops : ℝ≥0∞) := by
   obtain ⟨ν₀, ν_final, T_ops, he_init, hex_steps, hseed_final, hrep_final, hbound⟩ :=
     (impl (V := V) hS hU_fit hV hU).seq_expected_amortized_ofFn ops hx hfr
@@ -2345,7 +2399,7 @@ theorem seq_expected_amortized {w base c_exp U V n_max : ℕ}
     have h2 : (3 + (setupSteps c_exp n_max : ℝ≥0∞)) + T_ops +
         ∑' q : Seed c_exp n_max × Data 16, ν_final q * ((0 : ℕ) : ℝ≥0∞) ≤
         (3 + (setupSteps c_exp n_max : ℝ≥0∞)) + ((0 : ℕ) : ℝ≥0∞) +
-          ((Dictionary.spec U V n_max).totalCost (fun _ _ => expectedOpCharge c_exp)
+          ((Dictionary.spec U V n_max).totalCost (fun _ _ => charge c_exp n_max)
             (Dictionary.empty U) ops : ℝ≥0∞) := hbound
     simpa only [Nat.cast_zero, mul_zero, tsum_zero, add_zero, Nat.cast_add, Nat.cast_ofNat] using h2
 

@@ -158,6 +158,50 @@ class QuickCheckTests(unittest.TestCase):
                 else:
                     self.write(path, old)
 
+    def test_encoding_baseline_change_runs_its_lint_instead_of_falling_back(self):
+        baseline = "scripts/encoding_readability_baseline.json"
+        self.write(baseline, "{}\n")
+        self.commit()
+        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
+        base = self.git("rev-parse", "HEAD")
+        lint = ("encoding readability ratchet",
+                [sys.executable, "-B", "scripts/check_encoding_readability.py", "--base", base])
+        self.write(baseline, '{"Demo/Base.lean": {}}\n')
+        plan = self.plan()
+        self.assertEqual((plan.targets, plan.checks), ([], [lint]))
+        self.write("Demo/Base.lean", "def value : Nat := 2\n")
+        plan = self.plan()
+        self.assertEqual(plan.checks, [lint])
+        self.assertIn("DemoTests.Client", plan.targets)
+        # Code under `scripts/`, other data files and a deleted baseline still fall back.
+        for path in ("scripts/check_encoding_readability.py", "scripts/tidy_surface_baseline.json"):
+            with self.subTest(path=path):
+                self.write(path, "changed\n")
+                with self.assertRaisesRegex(quick.FullCheck, "non-Lean change"):
+                    self.plan()
+                (self.root / path).unlink()
+        (self.root / baseline).unlink()
+        with self.assertRaisesRegex(quick.FullCheck, "deleted"):
+            self.plan()
+
+    def test_data_checks_run_before_the_build_and_stop_it_on_failure(self):
+        plan = quick.Plan("base", ["Demo.Base"], [("lint", ["lint", "--base", "base"])])
+        for lint_status, expected in ((0, [["lint", "--base", "base"],
+                                           ["lake", "build", "--wfail", "--iofail", "Demo.Base"],
+                                           ["lake", "exe", "mk_all", "--check"]]),
+                                      (3, [["lint", "--base", "base"]])):
+            with self.subTest(lint_status=lint_status):
+                calls = []
+
+                def run(root, command, label):
+                    calls.append(command)
+                    return lint_status if command[0] == "lint" else 0
+
+                with patch.object(quick, "make_plan", return_value=plan), \
+                     patch.object(quick, "run_check", side_effect=run):
+                    self.assertEqual(quick.main([], self.root), lint_status)
+                self.assertEqual(calls, expected)
+
     def test_deleted_or_renamed_module_falls_back(self):
         (self.root / "Demo/Base.lean").rename(self.root / "Demo/Renamed.lean")
         with self.assertRaises(quick.FullCheck):
@@ -327,30 +371,6 @@ class QuickCheckTests(unittest.TestCase):
             self.assertEqual(quick.main([], self.root), 7)
             self.assertEqual(run.call_args.args[0], [str(self.root / "scripts/check.sh")])
 
-    def test_default_command_keeps_six_gate_order_and_rejects_unknown_args(self):
-        self.write("scripts/check.sh", (REPO / "scripts/check.sh").read_text())
-        self.write("scripts/cache/ensure.sh", "#!/usr/bin/env bash\nexit 0\n")
-        (self.root / "scripts/cache/ensure.sh").chmod(0o755)
-        self.write("bin/lake", '#!/usr/bin/env python3\nimport json,os,sys\n'
-                   'with open(os.environ["QUICK_COMMAND_LOG"], "a") as f:\n'
-                   ' f.write(json.dumps(sys.argv[1:])+"\\n")\n')
-        (self.root / "bin/lake").chmod(0o755)
-        log = self.root / "commands.jsonl"
-        env = {**os.environ, "PATH": str(self.root / "bin") + os.pathsep + os.environ["PATH"],
-               "QUICK_COMMAND_LOG": str(log)}
-        command = ["bash", str(self.root / "scripts/check.sh")]
-        result = subprocess.run(command, cwd=self.root, env=env, capture_output=True, text=True)
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual([json.loads(x) for x in log.read_text().splitlines()], [
-            ["build", "--wfail", "--iofail"], ["exe", "mk_all", "--check"],
-            ["test", "--wfail", "--iofail"], ["lint"], ["exe", "lint-style"],
-            ["exe", "checkInitImports"]])
-        log.unlink()
-        bad = subprocess.run([*command, "--not-an-option"], cwd=self.root, env=env,
-                             capture_output=True, text=True)
-        self.assertEqual(bad.returncode, 2)
-        self.assertFalse(log.exists())
-
     def test_quick_failure_from_importing_client_is_not_dropped(self):
         self.write("Demo/Base.lean", "def value : Bool := true\n")
         original = quick.make_plan
@@ -365,6 +385,88 @@ class QuickCheckTests(unittest.TestCase):
             self.assertEqual(quick.main([], self.root), 1)
         self.assertIn("DemoTests.Client", calls[0])
         self.assertEqual(calls[0][1:4], ["build", "--wfail", "--iofail"])
+
+
+class LocalManualGateTests(unittest.TestCase):
+    """Exercise the shell entry point with a real checker and no Lean or publishing tools."""
+
+    write = QuickCheckTests.write
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix="complexitylib-manual-gates-")
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        for source in ("scripts/check.sh", "scripts/check_operator_manual.py", "manual/data/visuals.py"):
+            self.write(source, (REPO / source).read_text())
+        self.write("manual/README.md", "# Manual\n\n[Drivers](AGENT_OPERATORS.md)\n"
+                   "[Example](workflows/example.md)\n")
+        self.write("manual/AGENT_OPERATORS.md", "# Directing agents\n")
+        self.write("Client.lean", "example : True := .intro\n")
+        self.write("manual/workflows/example.md", "# First client\n\n[Source](../../Client.lean)\n\n"
+                   "<!-- excerpt: first -->\n```lean\nexample : True := .intro\n```\n")
+        self.write("manual/workflows/data/test-excerpts.json", json.dumps([{
+            "id": "first", "document": "workflows/example.md", "source_path": "Client.lean"}]))
+        # The production controls run separately in this suite. This small test script lets us
+        # force their nonzero status and check that the shell does not discard it.
+        self.write("scripts/test_operator_manual.py", "import os, unittest\n"
+                   "class Controls(unittest.TestCase):\n"
+                   " def test_control(self):\n"
+                   "  self.assertNotEqual(os.environ.get('MANUAL_TEST_FAILURE'), '1')\n"
+                   "unittest.main()\n")
+        recorder = ('#!/usr/bin/env python3\nimport json,os,sys\n'
+                    'with open(os.environ["QUICK_COMMAND_LOG"], "a") as f:\n'
+                    ' f.write(json.dumps([sys.argv[0].split("/")[-1], *sys.argv[1:]])+"\\n")\n')
+        for path in ("bin/lake", "scripts/cache/ensure.sh", "scripts/quick_check.py"):
+            self.write(path, recorder)
+            (self.root / path).chmod(0o755)
+        self.log = self.root / "commands.jsonl"
+        self.env = {**os.environ, "PATH": str(self.root / "bin") + os.pathsep + os.environ["PATH"],
+                    "TMPDIR": str(self.root), "QUICK_COMMAND_LOG": str(self.log)}
+        self.env.pop("COMPLEXITYLIB_CACHE_CHECK_STARTED", None)
+        self.env.pop("MANUAL_TEST_FAILURE", None)
+
+    def run_gate(self, *args):
+        return subprocess.run(["bash", str(self.root / "scripts/check.sh"), *args],
+                              cwd=self.root, env=self.env, capture_output=True, text=True)
+
+    def test_full_and_quick_routes_run_manual_checks_before_lean(self):
+        for args in ((), ("--quick", "--base", "example-base")):
+            with self.subTest(args=args):
+                result = self.run_gate(*args)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertIn("ok    operator manual links and excerpts", result.stdout)
+                self.assertIn("ok    operator manual tooling tests", result.stdout)
+                commands = [json.loads(x) for x in self.log.read_text().splitlines()]
+                self.assertEqual(commands[0], ["ensure.sh"])
+                expected = [["quick_check.py", "--base", "example-base"]] if args else [
+                    ["lake", "build", "--wfail", "--iofail"], ["lake", "exe", "mk_all", "--check"],
+                    ["lake", "test", "--wfail", "--iofail"], ["lake", "lint"],
+                    ["lake", "exe", "lint-style"], ["lake", "exe", "checkInitImports"]]
+                self.assertEqual(commands[1:], expected)
+                self.assertFalse(list(self.root.glob("complexitylib-check.*")))
+                self.log.unlink()
+        bad = self.run_gate("--not-an-option")
+        self.assertEqual(bad.returncode, 2)
+        self.assertFalse(self.log.exists())
+
+    def test_broken_link_blocks_full_and_quick_routes_before_cache(self):
+        with (self.root / "manual/README.md").open("a") as stream:
+            stream.write("\n[Missing](missing.md)\n")
+        for args in ((), ("--quick",)):
+            with self.subTest(args=args):
+                result = self.run_gate(*args)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("missing local link: missing.md", result.stdout)
+                self.assertFalse(self.log.exists())
+
+    def test_failed_controls_block_full_and_quick_routes_before_cache(self):
+        self.env["MANUAL_TEST_FAILURE"] = "1"
+        for args in ((), ("--quick",)):
+            with self.subTest(args=args):
+                result = self.run_gate(*args)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("FAIL  operator manual tooling tests", result.stdout)
+                self.assertFalse(self.log.exists())
 
 
 class RepositoryLayoutTests(unittest.TestCase):

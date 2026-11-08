@@ -7,41 +7,33 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Prefix
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.SourceBounds
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.TimeBound
 
 /-!
-# Caller-safe complete fixed-prime ExactTriangle solver
+# Complete caller-safe box-backed fixed-prime Exact Triangle
 
-The fixed 640-register standard program consumes runtime n,D,g,p, canonical-signed original
-matrix pointers and a dirty workspace base. It preserves the selector's entire low 160-register
-bank, its argument bank and original memory outside its computed working interval. It copies
-only the original three arrays, computes its own virtual word modulus, and invokes the actual
-one-time producer and all-record product/witness controller through the memory-window compiler.
-No catalogue, layout, solver, witness, execution or time certificate is an algorithm input.
+`CallableFixedPrime.exec_at` runs the actual box controller from raw original signed
+arrays and a dirty caller window. It retains the existing `CallableFixedPrime` ABI: eight
+arguments600–607, raw verdict/witness/scans632–636, and the protected low160 selector bank.
+The genuine array copy/sum and virtual-width setup are unchanged; `solve` really compiles
+`StreamingFixedPrime.program`, constructing and consuming one physical slot per logical
+record before a charged heap reset. There is no clean-workspace or supplied solver/execution
+premise.
 
-## Main definitions
+`runs_input` delivers original headers and arrays, and returns the same prehalt state and
+charged halt, original-weight verdict, original-coordinate witness and one global failure
+scan bound. `bounded_reachable_caller` and `bounded_reachable_input` use the existing numerical
+admissions and polynomial envelopes for this actual new code at every wider admitted width.
+The fixed program has640 registers and at most400014 flat slots including initialized setup
+and halt; it never reads physical width.
 
-* `CallableFixedPrime.program`: caller code; arguments 600–607, raw verdict/witness/scans 632–636.
-* `CallableFixedPrime.entryProgram`: initialized original-input header delivery and caller code.
-* `CallableFixedPrime.admissionWidth`: original-caller threshold including raw dirty words
-  before remainder instructions.
-
-## Main results
-
-* `CallableFixedPrime.exec`: complete caller execution, exact original positive/negative decision,
-  witness coordinates, caller frames and the single global scan bound S ≤ F(p) + returnedFlag.
-* `CallableFixedPrime.runs_input`: actual initialized same-state prefix and charged halt.
-* `CallableFixedPrime.timeBound_le`: aggregate charged source work plus real adaptation overhead.
-* `CallableFixedPrime.bounded_reachable_caller`: width-independent word/support envelope from
-  original caller words, including arbitrary original outside memory.
-* `CallableFixedPrime.inputWidth_le_log`, `CallableFixedPrime.prefixBound_le_pow`: positive
-  logarithmic initialized admission and polynomial envelope for every wider native prefix.
-
-Correctness requires D=4^m ≥16, g≥1, p in the stated prime window and n≥D^18. Width bounds also
-state original scalar, weight, placement and raw-word hypotheses explicitly. The initialized
-clients use the original producer input encoding. The wrapper/compiler work is original;
-underlying finite source identities and the concrete source solver retain their own credit.
-Global parameter/prime choice, the outer ordinary-input host and the complete subquadratic 3SUM
-bound remain separate. This module is not a complete solution to that broader objective.
+For `m=9k`, `timeBound_le` adds actual copy/setup/return/halt costs and at most three times the
+complete finite box-controller ledger, including preparation, the `D^(-8/125)` aggregate
+product term, root/query/controller overhead and one global `F(p)+1` scan reserve.
+Parameters and the prime are explicit inputs of this component. The canonical
+`ParameterSelecting.callee` computes them and calls this program, with complete actual time
+`Oκ(n^(3-33/20000))`. The ordinary endpoint is `ThreeSum.Decision.exists_one9992_runs`;
+this component's finite bound keeps its explicit geometry and selected-prime premises.
 -/

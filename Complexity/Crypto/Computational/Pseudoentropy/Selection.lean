@@ -30,7 +30,8 @@ security parameter; that choice is never supplied to the algorithm.
 
 * `selectPredictor_error_le`: compare with every candidate, charging validation error.
 * `isPPTOn_selectPredictor`: empirical selection is strict PPT.
-* `SamplablePair.HasGap.eventually_indexed_error_ge`: one threshold for all candidate indices.
+* `SamplablePair.HasGapWithAdvice.eventually_indexed_error_ge`,
+  `SamplablePair.HasGap.eventually_indexed_error_ge`: one threshold for all candidate indices.
 
 ## References
 
@@ -117,34 +118,39 @@ theorem selectPredictor_error_le (sample : ℕ → ProbComp (List Bool × Bool))
 
 namespace SamplablePair
 
-/-- A pseudoentropy gap bounds every member of a uniformly efficient polynomial-size family
-at once, allowing any efficient inverse-polynomial slack. No computable choice of index is
-assumed, and the eventual threshold is common to all indices at each parameter. -/
-theorem HasGap.eventually_indexed_error_ge {pair : SamplablePair} {gap : ℕ → ℝ}
-    (hgap : pair.HasGap gap) (predict : ℕ → ℕ → List Bool → ProbComp Bool)
+/-- A pseudoentropy gap relative to fixed advice bounds every member of a uniformly efficient
+polynomial-size family at once, allowing any efficient inverse-polynomial slack. No computable
+choice of index is assumed, and the eventual threshold is common to all indices at each
+parameter. -/
+theorem HasGapWithAdvice.eventually_indexed_error_ge {pair : SamplablePair} {gap : ℕ → ℝ}
+    {advice : ℕ → List Bool} (hgap : pair.HasGapWithAdvice gap advice)
+    (predict : ℕ × List Bool → ℕ → List Bool → ProbComp Bool)
     (hpredict : IsPPTOn
-      (encPair (encPair encUnary encUnary) encBits) encBool
-      (fun x => predict x.1.1 x.1.2 x.2))
+      (encPair (encPair (encPair encUnary encBits) encUnary) encBits) encBool
+      (fun ((a, i), word) => predict a i word))
     {count inverseTolerance : ℕ → ℕ}
     (hcount : ComputableInPolyTime count encUnary encUnary)
     (htolerance : ComputableInPolyTime inverseTolerance encUnary encUnary)
     (hpos : ∀ n, 0 < inverseTolerance n) :
     ∀ᶠ n in atTop, ∀ i < count n,
       (PMF.conditionalEntropy (pair.joint n) + gap n) / 2 ≤
-        (ProbComp.eval (predictionGame pair.sample (fun n => predict n i) n) false).toReal +
+        (ProbComp.eval
+          (predictionGame pair.sample (fun n => predict (n, advice n) i) n) false).toReal +
           1 / inverseTolerance n := by
   have hcount := hcount.tidy
   have htolerance := htolerance.tidy
   have hsource := pair.efficient
-  have hefficient : IsPPT encBool (fun n => selectPredictor (count n)
-      ((n + 1) * (4 * inverseTolerance n) ^ 2) (pair.sample n) (predict n)) := by
-    unfold IsPPT
+  have hefficient : IsPPTOn (encPair (encPair encUnary encBits) encBits) encBool
+      (fun ((n, word), observation) => selectPredictor (count n)
+        ((n + 1) * (4 * inverseTolerance n) ^ 2) (pair.sample n)
+        (predict (n, word)) observation) := by
     apply isPPTOn_selectPredictor
     · fun_prop
     · fun_prop
-    · ppt
+    · exact hsource.preprocess (by fun_prop)
     · apply hpredict.preprocess
-        (prepare := fun x : ((ℕ × List Bool) × ℕ) × List Bool => ((x.1.1.1, x.1.2), x.2))
+        (prepare := fun x : (((ℕ × List Bool) × List Bool) × ℕ) × List Bool =>
+          ((x.1.1.1, x.1.2), x.2))
       fun_prop
     · fun_prop
   have hselected := hgap.eventually_error_ge _ hefficient
@@ -156,7 +162,7 @@ theorem HasGap.eventually_indexed_error_ge {pair : SamplablePair} {gap : ℕ →
     (fun n => Nat.mul_pos (by decide) (hpos n))
   filter_upwards [hselected, hsmall] with n hn hsmall
   intro i hi
-  have herror := selectPredictor_error_le pair.sample predict count id
+  have herror := selectPredictor_error_le pair.sample (fun n => predict (n, advice n)) count id
     (fun n => 4 * inverseTolerance n) n i hi (by have := hpos n; positivity)
   simp only [NNReal.coe_mul, NNReal.coe_natCast, NNReal.coe_pow, NNReal.coe_div,
     NNReal.coe_one, NNReal.coe_ofNat, Nat.cast_mul, Nat.cast_ofNat] at hsmall herror
@@ -164,6 +170,31 @@ theorem HasGap.eventually_indexed_error_ge {pair : SamplablePair} {gap : ℕ →
       1 / (2 * inverseTolerance n) = 1 / inverseTolerance n := by ring
   dsimp only [id_eq] at herror
   linarith
+
+/-- A pseudoentropy gap bounds every member of a uniformly efficient polynomial-size family
+at once, allowing any efficient inverse-polynomial slack. No computable choice of index is
+assumed, and the eventual threshold is common to all indices at each parameter. -/
+theorem HasGap.eventually_indexed_error_ge {pair : SamplablePair} {gap : ℕ → ℝ}
+    (hgap : pair.HasGap gap) (predict : ℕ → ℕ → List Bool → ProbComp Bool)
+    (hpredict : IsPPTOn
+      (encPair (encPair encUnary encUnary) encBits) encBool
+      (fun ((n, i), word) => predict n i word))
+    {count inverseTolerance : ℕ → ℕ}
+    (hcount : ComputableInPolyTime count encUnary encUnary)
+    (htolerance : ComputableInPolyTime inverseTolerance encUnary encUnary)
+    (hpos : ∀ n, 0 < inverseTolerance n) :
+    ∀ᶠ n in atTop, ∀ i < count n,
+      (PMF.conditionalEntropy (pair.joint n) + gap n) / 2 ≤
+        (ProbComp.eval (predictionGame pair.sample (fun n => predict n i) n) false).toReal +
+          1 / inverseTolerance n := by
+  have hprepare : ComputableInPolyTime
+      (fun (((n, _), i), word) => ((n, i), word) :
+        ((ℕ × List Bool) × ℕ) × List Bool → (ℕ × ℕ) × List Bool)
+      (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
+      (encPair (encPair encUnary encUnary) encBits) := by fun_prop
+  exact (hasGap_iff_hasGapWithAdvice_nil.mp hgap).eventually_indexed_error_ge
+    (fun (n, _) i word => predict n i word) (hpredict.preprocess hprepare)
+    hcount htolerance hpos
 
 end SamplablePair
 

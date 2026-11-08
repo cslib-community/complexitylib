@@ -9,7 +9,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.ResourceBound
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Decode
-public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Compose
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bit
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -40,6 +40,7 @@ single bit, independently of hierarchy theorems and Ladner's language.
 
 * `Turing.MultiTapeTM.Universal.computableTidilyInDegree_map_eBit`: input symbols in linear time
   and output size.
+* `Turing.MultiTapeTM.Universal.computableInO_map_eBit`: its plain linear certificate.
 * `Turing.MultiTapeTM.Universal.computableTidilyInPolyTime_map_eBit`,
   `Turing.MultiTapeTM.Universal.computableTidilyInPolyTime_eBit`,
   `Turing.MultiTapeTM.Universal.computableInPolyTime_decodeDesc`,
@@ -225,6 +226,12 @@ theorem computableInPolyTime_decodeDesc :
     ComputableInPolyTime decodeDesc encBits eDesc :=
   let ⟨_, _, h⟩ := exists_computableInDegree_decodeDesc
   h.computableInPolyTime
+
+/-- Plain linear certificate for coding a bit string as unary symbol numbers. -/
+theorem computableInO_map_eBit :
+    ComputableInO (fun w : List Bool => w.map eBit) encBits (encList encUnary)
+      (fun w => (encBits w).length) (fun w => (encBits w).length) :=
+  .of_tidy (ComputableTidilyInDegree.inO_one computableTidilyInDegree_map_eBit)
 
 /-- Plain polynomial-time certificate for coding a bit string as unary symbol numbers. -/
 @[fun_prop]

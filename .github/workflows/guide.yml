@@ -22,6 +22,13 @@ on:
 permissions:
   contents: read
 
+env:
+  CACHE_RECOVERY_GENERATION: ${{ vars.CACHE_RECOVERY_GENERATION || '0' }}
+  DISABLE_CACHE_RESTORE: ${{ vars.DISABLE_CACHE_RESTORE }}
+  COMPLEXITYLIB_CACHE_URLS: ${{ vars.COMPLEXITYLIB_CACHE_URLS }}
+  LAKE_NO_CACHE: ${{ vars.DISABLE_CACHE_RESTORE == 'true' || vars.DISABLE_CACHE_RESTORE == '1' }}
+  MATHLIB_NO_CACHE_ON_UPDATE: ${{ (vars.DISABLE_CACHE_RESTORE == 'true' || vars.DISABLE_CACHE_RESTORE == '1') && '1' || '0' }}
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -32,7 +39,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # scripts/cache/get.sh looks for the nearest ancestor whose outputs `main` CI uploaded.
+          # scripts/cache/get-missing.sh looks for the nearest ancestor whose outputs `main` CI
+          # uploaded.
           fetch-depth: 100
       - name: Select rendered guide build
         id: changes
@@ -53,19 +61,28 @@ jobs:
             fi
           fi
           echo "render=$render" >> "$GITHUB_OUTPUT"
+      # Restore the `.lake` entry that Lean CI saves on `main` (lean_action_ci.yml). Without it,
+      # every run downloaded a complete set of outputs (about 200 MB) from the public bucket.
+      # This workflow only reads the entry; Lean CI remains its only writer.
+      - name: Restore .lake from the Actions cache
+        if: vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1'
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ./.lake
+          key: lake-${{ env.CACHE_RECOVERY_GENERATION }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}-${{ github.sha }}
+          restore-keys: lake-${{ env.CACHE_RECOVERY_GENERATION }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}
       # Restores or installs the toolchain with retries (.github/actions/install-lean, #1426).
       - uses: ./.github/actions/install-lean
-      # Only installs Lean; the guide does not use the `.lake` Actions cache, which Lean CI fills.
-      - uses: leanprover/lean-action@v1
-        with:
-          auto-config: "false"
-          build: "false"
-          test: "false"
-          lint: "false"
-          use-github-cache: "false"
-          use-mathlib-cache: "false"
-      - name: Download build outputs
-        run: scripts/cache/get.sh
+      # Without `--lean-action`, as scripts/cache/get.sh ran it before.
+      - name: Restore Mathlib cache with retries
+        continue-on-error: true
+        timeout-minutes: 10
+        run: python3 -B scripts/cache/get_mathlib.py
+      # Download only the outputs that the restored `.lake` lacks (scripts/cache/README.md).
+      - name: Restore missing Complexitylib build outputs
+        continue-on-error: true
+        timeout-minutes: 10
+        run: scripts/cache/get-missing.sh
       - name: Check documentation pins
         run: python3 scripts/check_docs.py --config-only
       - name: Compile guide examples

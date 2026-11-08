@@ -15,7 +15,7 @@ public import Complexity.DataStructure.StateTransition.Resource
 # Stateful ordered-set realization by height-balanced AVL trees
 
 This module realizes the shared `Cslib.DataStructure.OrderedSet.spec α` interface (`contains`,
-`insert`, `erase`, `minimum`, `successor`) using height-cached AVL trees in the same
+`insert`, `delete`, `minimum`, `successor`) using height-cached AVL trees in the same
 internal-node-visit cost model as
 `Cslib.DataStructure.SearchTree`, upgrading `SearchTree.nodeVisitBound`'s worst-case linear
 `s.card` bound to the representation-independent logarithmic bound
@@ -71,7 +71,7 @@ internal-node-visit count. -/
   match o with
   | .contains x => (t, contains x t, searchVisits x t)
   | .insert x => (insert x t, (), searchVisits x t)
-  | .erase x => (erase x t, (), eraseVisits x t)
+  | .delete x => (erase x t, (), eraseVisits x t)
   | .minimum => (t, minimum t, minimumVisits t)
   | .successor x => (t, successor x t, successorVisits x t)
 
@@ -112,7 +112,7 @@ theorem rep_empty : Rep (∅ : Finset α) .nil :=
       | insert x =>
         cases he
         exact ⟨rfl, valid_insert ht x, elements_insert x t⟩
-      | erase x =>
+      | delete x =>
         cases he
         exact ⟨rfl, valid_erase ht x, elements_erase ht.ordered x⟩
       | minimum =>
@@ -133,7 +133,7 @@ theorem exec_visits_le_cachedHeight {t t' : AVLTree α} {o : Op α}
   cases o with
   | contains x => cases he; exact searchVisits_le_cachedHeight hc x
   | insert x => cases he; exact searchVisits_le_cachedHeight hc x
-  | erase x => cases he; exact eraseVisits_le_cachedHeight hc x
+  | delete x => cases he; exact eraseVisits_le_cachedHeight hc x
   | minimum => cases he; exact minimumVisits_le_cachedHeight hc
   | successor x => cases he; exact successorVisits_le_cachedHeight hc x
 

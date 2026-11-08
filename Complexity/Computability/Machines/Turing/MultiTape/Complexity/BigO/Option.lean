@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunProp
 
 /-!
 # Parameterized option elimination with retained input
@@ -17,7 +17,8 @@ the tag and, on the `some` branch, computes the option again to extract its payl
 explicitly charge both computations, input retention, and the selected handler. Linear native
 tag extraction, payload extraction, and pairing costs are absorbed by the native calculus.
 The bounds are asymptotic expressions with existential machine constants, not exact step counts.
-No inhabitance assumption is imposed on the payload type.
+No inhabitance assumption is imposed on the payload type. The rule is available to `fun_prop`, and
+`option_match_to_elim` brings a `match` on an option into its form.
 
 ## Main results
 
@@ -37,6 +38,7 @@ namespace Turing.MultiTapeTM.ComputableInO
 
 /-- Eliminate an option while retaining the input. The conservative bound charges two option
 computations even on the `none` branch; it charges only the selected handler. -/
+@[fun_prop]
 theorem optionElimWithInput {α β γ : Type}
     {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
     {value : α → Option β} {fallback : α → γ} {body : α → β → γ}

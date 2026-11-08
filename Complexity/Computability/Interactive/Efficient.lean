@@ -36,9 +36,16 @@ on the index, so the algorithms are certified on words, through the encodings co
 Both variants contain the exact property at every index with the same extractor or simulator, so
 every theorem about `KnowledgeSound` and `HVZK` applies to them; the realizing program of an
 efficient simulator is `ε i + δ i`-close to honest transcripts
-(`SimulatorRealizedBy.closeTo_run`). Extraction here is straight-line, from the transcript, as for
-interactive oracle proofs; rewinding extractors in the sense of Bellare and Goldreich are a
-different notion, as are malicious-verifier zero knowledge and computational zero knowledge.
+(`SimulatorRealizedBy.closeTo_run`). Note that `ε` and `δ` are explicit, unconstrained parameters
+of these predicates rather than bundled `Negligible` obligations: when `ε i ≥ 1` or `δ i ≥ 1`
+(since event probabilities are at most `1`), `KnowledgeSound` or `SimulatorRealizedBy` holds
+vacuously (`not_efficientKnowledgeSound_dlTrustMe` and `not_efficientHVZK_sendWitnessDL` in
+`ComplexityTests.EfficientSimulators` require `ε i < 1` and `ε i + δ i ≤ 1 / 2`). Computational
+theorems and security claims built on these predicates must therefore pair them with an explicit
+error bound (such as `Negligible`) across the setup distribution. Extraction here is straight-line,
+from the transcript, as for interactive oracle proofs; rewinding extractors in the sense of Bellare
+and Goldreich are a different notion, as are malicious-verifier zero knowledge and computational
+zero knowledge.
 
 ## Main definitions
 

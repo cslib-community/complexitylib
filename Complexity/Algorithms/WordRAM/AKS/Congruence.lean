@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.AKS.PolyArray
 public import Complexity.Algorithms.WordRAM.AKS.PolyPow
 
@@ -129,12 +130,9 @@ private theorem cmp_exec {w : ℕ} (x : Data 25) {a b r : ℕ} (ha : x.regs pa =
     ∃ y, ExecWithin w cmp x y (11 * r + 5) ∧ y.regs flag ≤ 1 ∧
       (y.regs flag = 1 ↔ ∀ k' < r, x.mem (a + k') = x.mem (b + k')) ∧
       (∀ j, Keep j → y.regs j = x.regs j) := by
-  obtain ⟨y, hy, hle, hiff, -⟩ := Compare.exec (x.comap cmpMap) ha hb hr hfa hfb h1
-  have hy' := hy.rename cmpMap_injective
-  have hfl : (y.extend cmpMap x).regs flag = y.regs Compare.flag :=
-    cmpMap_injective.extend_apply _ _ Compare.flag
-  exact ⟨_, hy', by rw [hfl]; exact hle, by rw [hfl]; exact hiff,
-    fun j hj => hy'.regs_eq (cmp_preserves j hj)⟩
+  obtain ⟨y, hy, ⟨hle, hiff, -⟩, -⟩ :=
+    ExecWithin.rename_post cmpMap_injective (Compare.exec (x.comap cmpMap) ha hb hr hfa hfb h1)
+  exact ⟨y, hy, hle, hiff, fun j hj => hy.regs_eq (cmp_preserves j hj)⟩
 
 private theorem pow_exec {w : ℕ} (x : Data 25) {a b t r n : ℕ} (ha : x.regs R = a)
     (hb : x.regs B = b) (ht : x.regs T = t) (hr : x.regs rr = r) (hn : x.regs nn = n)

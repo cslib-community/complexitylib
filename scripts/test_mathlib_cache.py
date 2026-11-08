@@ -6,17 +6,20 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 
 REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO / "scripts/cache"))
 spec = importlib.util.spec_from_file_location("get_mathlib", REPO / "scripts/cache/get_mathlib.py")
 cache = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(cache)
 
 FAKE_LAKE = r'''#!/usr/bin/env python3
-import json, os, pathlib, sys, time
+import json, os, pathlib, signal, subprocess, sys, time
 args = sys.argv[1:]
 artifacts = pathlib.Path(os.environ["MATHLIB_TEST_CACHE"])
 artifacts.mkdir(exist_ok=True)
@@ -33,6 +36,29 @@ if args == ["exe", "cache", "get"]:
         (artifacts / "second.ltar").write_text("completed second archive")
     elif mode == "fail":
         sys.exit(17)
+    elif mode in ("cleanup", "stubborn", "early-exit"):
+        lock = artifacts / "owned.lock"
+        if (artifacts / "cleaned").exists():
+            assert not lock.exists(), "retry overlapped descendant cleanup"
+            sys.exit(0)
+        child = subprocess.Popen([sys.executable, "-c", r"""
+import os, pathlib, signal, sys, time
+root = pathlib.Path(sys.argv[1])
+def cleanup(*_):
+    time.sleep(.2)
+    (root / 'owned.lock').unlink()
+    (root / 'cleaned').touch()
+    sys.exit(0)
+signal.signal(signal.SIGTERM, cleanup if sys.argv[2] != 'stubborn' else signal.SIG_IGN)
+(root / 'owned.lock').touch()
+(root / 'ready').touch()
+while True:
+    (root / "heartbeat").write_text(str(time.monotonic()))
+    time.sleep(.02)
+""", str(artifacts), mode])
+        # Keep the parent alive to reap the child; group shutdown must wait for both.
+        signal.signal(signal.SIGTERM, signal.SIG_DFL if mode == "early-exit" else signal.SIG_IGN)
+        child.wait()
     elif mode == "hang":
         time.sleep(30)
 elif args[:1] == ["build"]:
@@ -112,21 +138,74 @@ class MathlibCacheTests(unittest.TestCase):
         self.assertEqual(Path(self.events()[-1]["cwd"]), self.root)
 
     def test_timeout_stops_each_owned_process_before_retrying(self):
-        created = []
-        original = subprocess.Popen
-        def start(*args, **kwargs):
-            process = original(*args, **kwargs)
-            created.append(process)
-            return process
-        with patch.object(cache, "ATTEMPT_SECONDS", .1), patch.object(cache.subprocess, "Popen", side_effect=start):
+        calls = []
+        original = cache.run
+        def attempt(*args, **kwargs):
+            result = original(*args, **kwargs)
+            calls.append(result)
+            return result
+        with patch.object(cache, "ATTEMPT_SECONDS", .1), patch.object(cache, "run", side_effect=attempt):
             self.assertFalse(self.restore(MATHLIB_TEST_MODE="hang"))
-        self.assertEqual(len(created), 3)
-        self.assertTrue(all(p.poll() is not None for p in created))
+        self.assertEqual(len(calls), 3)
+        self.assertTrue(all(result.returncode == 124 for result in calls))
+
+    def test_cancellation_and_unsafe_shutdown_never_start_another_attempt(self):
+        for error in (KeyboardInterrupt(), cache.UnsafeShutdown("shutdown unconfirmed")):
+            with (self.subTest(error=type(error).__name__),
+                  patch.object(cache, "run", side_effect=error) as attempt):
+                with self.assertRaises(type(error)):
+                    self.restore()
+                attempt.assert_called_once()
+
+    def test_start_errors_are_optional_and_bounded(self):
+        with patch.object(cache, "run", side_effect=OSError("cannot start downloader")) as attempt:
+            self.assertFalse(self.restore())
+        self.assertEqual(attempt.call_count, 3)
+
+    @unittest.skipIf(sys.platform == "cygwin", "Windows jobs terminate the complete tree without POSIX cleanup handlers")
+    def test_descendant_cleanup_finishes_before_retry(self):
+        with patch.object(cache, "ATTEMPT_SECONDS", .5), \
+                patch.object(cache, "SHUTDOWN_SECONDS", 1):
+            self.assertTrue(self.restore(MATHLIB_TEST_MODE="cleanup"))
+        self.assertEqual(len(self.events()), 2)
+        self.assertTrue((self.artifacts / "cleaned").exists())
+        self.assertFalse((self.artifacts / "owned.lock").exists())
+
+    @unittest.skipIf(sys.platform == "cygwin", "Windows jobs terminate the complete tree without POSIX cleanup handlers")
+    def test_parent_exit_does_not_skip_descendant_cleanup(self):
+        with patch.object(cache, "ATTEMPT_SECONDS", .5), \
+                patch.object(cache, "SHUTDOWN_SECONDS", .5):
+            try:
+                result = self.restore(MATHLIB_TEST_MODE="early-exit")
+            except cache.UnsafeShutdown:
+                result = False
+        self.assertTrue((self.artifacts / "cleaned").exists())
+        self.assertFalse((self.artifacts / "owned.lock").exists())
+        # Hosts that do not promptly reap orphan zombies conservatively stop retries.
+        self.assertEqual(len(self.events()), 2 if result else 1)
+
+    def test_unresponsive_descendants_are_forced_with_bounded_wait(self):
+        started = time.monotonic()
+        with patch.object(cache, "ATTEMPT_SECONDS", .5), \
+                patch.object(cache, "SHUTDOWN_SECONDS", .3):
+            try:
+                self.assertFalse(self.restore(MATHLIB_TEST_MODE="stubborn"))
+            except cache.UnsafeShutdown:
+                pass
+        self.assertLess(time.monotonic() - started, 5)
+        self.assertTrue((self.artifacts / "ready").exists())
+        # SIGKILL cannot run cleanup. The helper must not delete even its fixture lock.
+        self.assertTrue((self.artifacts / "owned.lock").exists())
+        self.assertFalse((self.artifacts / "cleaned").exists())
+        heartbeat = (self.artifacts / "heartbeat").read_text()
+        time.sleep(.1)
+        self.assertEqual((self.artifacts / "heartbeat").read_text(), heartbeat)
 
     @unittest.skipUnless(shutil.which("git"), "git is required for the real build wrapper")
     def test_cache_failure_still_runs_and_preserves_the_strict_build_failure(self):
         for name in ("scripts/build.sh", "scripts/cache/ensure.sh", "scripts/cache/get.sh",
-                     "scripts/cache/get_mathlib.py"):
+                     "scripts/cache/get_mathlib.py", "scripts/cache/bounded.py", "scripts/cache/restore.py",
+                     "scripts/cache/windows_job.py"):
             target = self.root / name
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(REPO / name, target)
@@ -150,9 +229,21 @@ class WorkflowWiringTests(unittest.TestCase):
         for name in ("lean_action_ci.yml", "docs.yml", "comparator.yml"):
             with self.subTest(workflow=name):
                 text = (REPO / ".github/workflows" / name).read_text()
-                action = text.split("      - uses: leanprover/lean-action@v1\n", 1)[1].split("      - ", 1)[0]
-                self.assertRegex(action, r"use-mathlib-cache: [\"']false[\"']")
-                self.assertNotIn("continue-on-error", action)
+                install = "      - uses: ./.github/actions/install-lean\n"
+                self.assertIn(install, text)
+                self.assertNotIn("continue-on-error", text.split(install, 1)[1].split("      - ", 1)[0])
+                self.assertLess(text.index(install),
+                                text.index("      - name: Restore Mathlib cache with retries"))
+                if name == "docs.yml":
+                    # API docs still use lean-action, for its GitHub cache restore.
+                    marker = next(line for line in text.splitlines(keepends=True)
+                                  if line.startswith("      - uses: leanprover/lean-action@"))
+                    action = text.split(marker, 1)[1].split("      - ", 1)[0]
+                    self.assertRegex(action, r"use-mathlib-cache: [\"']false[\"']")
+                    self.assertNotIn("continue-on-error", action)
+                else:
+                    # A release outage must not fail CI: elan comes only from install-lean.
+                    self.assertNotIn("leanprover/lean-action", text)
                 step = text.split("      - name: Restore Mathlib cache with retries\n", 1)[1].split("      - ", 1)[0]
                 self.assertIn("continue-on-error: true", step)
                 self.assertIn("timeout-minutes: 10", step)
@@ -168,7 +259,7 @@ class WorkflowWiringTests(unittest.TestCase):
 
     def test_comparator_restores_before_strict_contracts_and_is_manual_only(self):
         text = (REPO / ".github/workflows/comparator.yml").read_text()
-        self.assertLess(text.index("      - uses: leanprover/lean-action@v1"),
+        self.assertLess(text.index("      - uses: ./.github/actions/install-lean"),
                         text.index("      - name: Restore Mathlib cache with retries"))
         self.assertLess(text.index("      - name: Restore Mathlib cache with retries"),
                         text.index("run: scripts/cache/get-missing.sh"))

@@ -12,7 +12,7 @@ public import Complexity.Logics.SecondOrder.Existential
 public import Complexity.Computability.Complexity.Classes.NP
 public import Mathlib.SetTheory.Cardinal.NatCard
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 
 /-!
 # Existential second-order definable classes are in NP
@@ -379,14 +379,6 @@ open ComputableInPolyTime
 
 variable {v} {γ : Type} {encIn : γ ↪ List Bool}
 
-private theorem unary_beq_plain {left right : γ → ℕ}
-    (hleft : ComputableInPolyTime left encIn encUnary)
-    (hright : ComputableInPolyTime right encIn encUnary) :
-    ComputableInPolyTime (fun a => left a == right a) encIn encBool :=
-  (bool_and' (unary_le' hleft hright) (unary_le' hright hleft)).of_enc_eq fun _ => by
-    rw [encBool.injective.eq_iff, Bool.eq_iff_iff]
-    simp [Nat.le_antisymm_iff]
-
 omit [L.IsRelational] in
 /-- Reading a table of the input is polynomial-time. -/
 @[fun_prop]
@@ -407,8 +399,8 @@ omit [L.IsRelational] in
 theorem _root_.Cslib.Logic.Vocabulary.computableInPolyTime_checkShape :
     ComputableInPolyTime v.checkShape encStructure encBool := by
   unfold Vocabulary.checkShape
-  refine bool_and' (unary_beq_plain ((length_list encBits).comp (snd encUnary (encList encBits)))
-    (const v.count)) (allConst _ fun i _ => unary_beq_plain ?_ ?_)
+  refine bool_and' (unary_beq' ((length_list encBits).comp (snd encUnary (encList encBits)))
+    (const v.count)) (allConst _ fun i _ => unary_beq' ?_ ?_)
   · exact length_bits_comp (listGetDWithInput (snd encUnary (encList encBits))
       (const (i : ℕ)) [])
   · exact (unary_pow _).comp (computableInPolyTime_card id')
@@ -459,7 +451,7 @@ theorem computableInPolyTime_eval {k : ℕ}
   induction φ generalizing γ with
   | falsum => exact const false
   | equal t₁ t₂ =>
-    exact unary_beq_plain (computableInPolyTime_termValue hσ t₁)
+    exact unary_beq' (computableInPolyTime_termValue hσ t₁)
       (computableInPolyTime_termValue hσ t₂)
   | rel R ts =>
     exact ℓ.computableInPolyTime_relBit R ha hN hw

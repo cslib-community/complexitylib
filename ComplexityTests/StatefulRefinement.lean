@@ -80,9 +80,9 @@ theorem cell_bound : cellModule.ChargeBound storageCharge cellCharge :=
     cases o <;> exact Nat.le_refl _
 
 /-- Read the counter and increment it only when its value is zero. -/
-def ensurePositive : counter.Client Nat :=
-  (.liftBind false (fun n => .pure n) : counter.Client Nat).bind fun n =>
-    if n = 0 then .liftBind true (fun m => .pure m) else .pure n
+def ensurePositive : counter.Client Nat := do
+  let n ← counter.call false
+  if n = 0 then counter.call true else .pure n
 
 theorem read_contract : counter.CostHoare counterCharge (fun _ => True)
     (.liftBind false fun n => .pure n) (fun n s => n = s) (fun s => counterCharge s false) := by
@@ -177,8 +177,9 @@ example : counter.CostHoare counterCharge (fun _ => True)
 
 -- State-dependent charges must use the changed state for the second call.
 example (n : Nat) : counter.CostHoare (fun s _ => s + 1) (fun s => s = n)
-    ((.liftBind true (fun a => .pure a) : counter.Client Nat).bind fun _ =>
-      .liftBind false fun a => .pure a)
+    (do
+      let _ ← counter.call true
+      counter.call false)
     (fun a s => a = s ∧ s = n + 1) (fun s => 2 * s + 3) := by
   apply StateTransitionSpec.CostHoare.bind (mid := fun a s => a = s ∧ s = n + 1)
     (first := fun s => s + 1) (next := fun _ s => s + 1)
@@ -332,7 +333,7 @@ def firstFitExec : Execution TwoSlotAlloc (Bool × Bool) ℕ
     n = 1 ∧ c' = (if i = 0 then (false, c.2) else (c.1, false))
 
 /-- Angelic realization of `TwoSlotAlloc` by `firstFitExec`. -/
-def firstFitRealization : StateTransitionImpl TwoSlotAlloc firstFitExec where
+def firstFitImpl : StateTransitionImpl TwoSlotAlloc firstFitExec where
   rep s c := s = c
   total {s c} o hr _ := by
     subst hr
@@ -361,26 +362,26 @@ def firstFitRealization : StateTransitionImpl TwoSlotAlloc firstFitExec where
       cases a
       exact ⟨if i = 0 then (false, s.2) else (s.1, false), rfl, rfl⟩
 
-/-- Per-operation worst-case bound for `firstFitRealization`. -/
+/-- Per-operation worst-case bound for `firstFitImpl`. -/
 theorem firstFitBound :
-    Bound firstFitRealization id (fun _ _ => 1) := by
+    Bound firstFitImpl id (fun _ _ => 1) := by
   intro s c o a c' n _ _ he
   cases o with
   | alloc => exact Nat.le_of_eq he.1
   | free _ => exact Nat.le_of_eq he.1
 
-/-- Amortized certificate for `firstFitRealization` with zero potential. -/
+/-- Amortized certificate for `firstFitImpl` with zero potential. -/
 theorem firstFitAmortized :
-    Amortized firstFitRealization id (fun _ _ => 0) (fun _ _ => 1) :=
+    Amortized firstFitImpl id (fun _ _ => 0) (fun _ _ => 1) :=
   Amortized.of_worstCase firstFitBound
 
-/-- End-to-end execution of `allocTwoAndFreeFirst` on `firstFitRealization` via
+/-- End-to-end execution of `allocTwoAndFreeFirst` on `firstFitImpl` via
 `Amortized.exists_demonic` and `StateTransitionSpec.CostHoare.realize_amortized`. -/
 theorem firstFit_allocTwoAndFreeFirst_executes :
     ∃ v c' traces s' tr,
       Executes firstFitExec allocTwoAndFreeFirst (false, false) v c' traces ∧
       TwoSlotAlloc.ClientRun (false, false) allocTwoAndFreeFirst v s' tr ∧
-      firstFitRealization.rep s' c' ∧
+      firstFitImpl.rep s' c' ∧
       (v.1 ≠ v.2 ∧ (if v.1 = 0 then s'.1 = false else s'.2 = false)) ∧
       total id traces ≤ 3 := by
   obtain ⟨v, c', traces, _, _, he, _, _, _, _⟩ :=

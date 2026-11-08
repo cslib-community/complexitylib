@@ -22,18 +22,18 @@ def counterExec : Execution counter Nat Nat :=
   fun s n a s' trace => s' = s + n ∧ a = s' ∧ trace = n
 
 /-- The counter has a concrete, inhabited realization independent of resource interpretation. -/
-def counterRealization : StateTransitionImpl counter counterExec :=
+def counterImpl : StateTransitionImpl counter counterExec :=
   StateTransitionImpl.ofFn Eq (fun n hr _ => by subst hr; exact ⟨_, _, n, rfl, rfl, rfl⟩)
     (fun hr _ he => by
       subst hr
       exact ⟨he.2.1.trans he.1, he.1.symm⟩)
 
 /-- Charge by increment magnitude. -/
-theorem magnitude_bound : Bound counterRealization id (fun _ n => n) :=
+theorem magnitude_bound : Bound counterImpl id (fun _ n => n) :=
   fun _ _ he => he.2.2.le
 
 /-- The same realization also admits a call-count interpretation. -/
-theorem call_bound : Bound counterRealization (fun _ => 1) (fun _ _ => 1) :=
+theorem call_bound : Bound counterImpl (fun _ => 1) (fun _ _ => 1) :=
   fun _ _ _ => le_rfl
 
 /-- Native execution supports client results above the operation-answer universe. -/
@@ -42,21 +42,21 @@ example : Executes counterExec (.pure (ULift.up 7 : ULift.{1} Nat)) 0
 
 example : ∃ c' traces,
     Executes counterExec (.pure (ULift.up 7 : ULift.{1} Nat)) 0 (ULift.up 7) c' traces ∧
-    counterRealization.rep 0 c' :=
-  counterRealization.exists_executes (.pure (ULift.up 7 : ULift.{1} Nat)) rfl trivial
+    counterImpl.rep 0 c' :=
+  counterImpl.exists_executes (.pure (ULift.up 7 : ULift.{1} Nat)) rfl trivial
 
 /-- Nonzero concrete-state credit is retained across future calls. -/
 theorem counter_amortized :
-    Amortized counterRealization id (fun _ c => c) (fun _ n => 2 * n) :=
+    Amortized counterImpl id (fun _ c => c) (fun _ n => 2 * n) :=
   Amortized.ofFn fun _ _ he => by
     obtain ⟨hs, ha, ht⟩ := he
     dsimp only [id, counter, StateTransitionSpec.stepFn]
     omega
 
 /-- The second increment depends on the first answer. -/
-def adaptive : counter.Client Nat :=
-  ((.liftBind (1 : Nat) fun n => .pure n) : counter.Client Nat).bind fun n =>
-    .liftBind n fun a => .pure a
+def adaptive : counter.Client Nat := do
+  let n ← counter.call 1
+  counter.call n
 
 /-- A client contract can be proved compositionally, without exposing any backend. -/
 example : counter.Hoare (fun s => s = 0) adaptive (fun a s => a = 2 ∧ s = 2) := by

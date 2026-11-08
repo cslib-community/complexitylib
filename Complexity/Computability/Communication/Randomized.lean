@@ -12,6 +12,7 @@ public import Cslib.Foundations.Data.BitString
 public import Cslib.Probability.PMF
 public import Mathlib.Basic.Real.Basic
 import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.ToReal
 import Complexity.Probability.Minimax
 import Complexity.Probability.PMF
 import Mathlib.Order.SuccPred.ENat
@@ -28,8 +29,8 @@ sent from each player's input and random bits (`PrivateCoin`)
 
 A randomized protocol solves a relation `R` on `A × B` with error `ε` when, on every pair of inputs
 from `A × B`, its output is not related to the inputs with probability at most `ε`
-(`PublicCoin.Solves`, `PrivateCoin.Solves`). Its cost is the number of bits sent in the worst case
-over the inputs and the random bits (`PublicCoin.depth`, `Protocol.depth`). The public- and
+(`PublicCoin.Solves`, `PrivateCoin.Solves`). Cost bounds the tree depth over the random choices,
+including branches unreachable by any input (`PublicCoin.depth`, `Protocol.depth`). The public- and
 private-coin communication complexities are the least costs (`PublicCoin.ecomplexity`,
 `PrivateCoin.ecomplexity`).
 
@@ -92,8 +93,8 @@ noncomputable def Protocol.distributionalError (p : Protocol X Y Z) (ν : PMF (X
 
 namespace PublicCoin
 
-/-- The number of bits sent in the worst case over the inputs and the random bits: the largest
-depth of a protocol that can be drawn. -/
+/-- The supremum of the tree depths of protocols in the support, or `⊤` if these depths are
+unbounded. Each tree's depth counts even branches unreachable by any input. -/
 noncomputable def depth (μ : PublicCoin X Y Z) : ℕ∞ :=
   ⨆ p ∈ μ.support, (p.depth : ℕ∞)
 
@@ -133,8 +134,8 @@ theorem depth_le_depth (hp : p ∈ μ.support) : (p.depth : ℕ∞) ≤ μ.depth
 theorem errorProb_nonneg : 0 ≤ μ.errorProb R x y :=
   ENNReal.toReal_nonneg
 
-theorem errorProb_le_one : μ.errorProb R x y ≤ 1 := by
-  simpa [errorProb] using ENNReal.toReal_mono ENNReal.one_ne_top (PMF.toOuterMeasure_le_one μ _)
+theorem errorProb_le_one : μ.errorProb R x y ≤ 1 :=
+  PMF.toOuterMeasure_toReal_le_one μ _
 
 open Classical in
 theorem errorProb_pure (p : Protocol X Y Z) (R : X → Y → Z → Prop) (x : X) (y : Y) :

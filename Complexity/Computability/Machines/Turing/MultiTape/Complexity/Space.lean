@@ -19,6 +19,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Tactic.OptionMatch
 
 /-!
 # Views and their codes in polynomial time
@@ -192,12 +193,13 @@ open scoped Classical in
 /-- **The edge test of codes.** A code of a view `finite` has an edge to every code with tag one
 if `finite` has halted with output `[true]`, and to the code of every view `finite` steps to. -/
 noncomputable def codeEdge (code next : List Bool) : Bool :=
-  match decodeView code, next with
-  | none, _ => false
-  | some finite, true :: _ => decide (finite.state = none) && decide (finite.output = [true])
-  | some finite, next => match decodeView next with
-    | none => false
-    | some next => ntm.viewStepB (finite, next)
+  match decodeView code with
+  | none => false
+  | some finite =>
+    if next.headD false then decide (finite.state = none) && decide (finite.output = [true])
+    else match decodeView next with
+      | none => false
+      | some next => ntm.viewStepB (finite, next)
 
 /-- The edges between codes of `2 * width + 2` bits. -/
 def CodeStep (width : ℕ) (code next : List Bool) : Prop :=
@@ -230,8 +232,8 @@ output `[true]`. -/
 theorem codeEdge_acceptCode {width : ℕ} {finite : FiniteCfg k Bool State} :
     ntm.codeEdge (viewCode width finite) (acceptCode width) = true ↔
       finite.state = none ∧ finite.output = [true] := by
-  simp only [codeEdge, decodeView_viewCode, acceptCode, List.replicate_succ, Bool.and_eq_true,
-    decide_eq_true_eq]
+  simp only [codeEdge, decodeView_viewCode, acceptCode, List.replicate_succ, List.headD_cons,
+    ↓reduceIte, Bool.and_eq_true, decide_eq_true_eq]
 
 /-- **Acceptance is reachability of the accepting code**, along the edges between codes of a
 width at least the length of the encoding of every reachable view. -/
@@ -273,12 +275,12 @@ theorem accepts_iff_reflTransGen_codeStep {input : List Bool} {width : ℕ}
         · rw [hfinite] at hedge
           rcases next with _ | ⟨_ | _, next⟩
           · simp [decodeView] at hedge
-          · simp only at hedge
+          · simp only [List.headD_cons, Bool.false_eq_true, ↓reduceIte] at hedge
             rcases hview : decodeView (false :: next) with _ | view
             · simp [hview] at hedge
             · simp only [hview, viewStepB_iff] at hedge
               exact .inl ⟨view, rfl, hreach.tail hedge⟩
-          · simp only [Bool.and_eq_true, decide_eq_true_eq] at hedge
+          · simp only [List.headD_cons, ↓reduceIte, Bool.and_eq_true, decide_eq_true_eq] at hedge
             exact .inr ⟨rfl, finite, hreach, hedge⟩
         · rcases code with _ | ⟨_ | _, code⟩
           · simp at hhead
@@ -318,28 +320,14 @@ theorem computableInPolyTime_decodeView {code : α → List Bool}
       (encOption encFiniteCfg) :=
   (computableTidilyInPolyTime_decodeView hcode.tidy).computableInPolyTime
 
-/-- The edge test by cases on the decoded views and the tag of the second code. -/
-theorem codeEdge_eq (code next : List Bool) : ntm.codeEdge code next =
-    (decodeView code).elim false fun finite =>
-      if next.headD false then
-        decide (finite.state = none) && decide (finite.output = [true])
-      else (decodeView next).elim false fun view => ntm.viewStepB (finite, view) := by
-  unfold codeEdge
-  rcases decodeView code with _ | finite
-  · rfl
-  · rcases next with _ | ⟨_ | _, next⟩
-    · rfl
-    · simp only [List.headD_cons, Bool.false_eq_true, ite_false]
-      cases decodeView (k := k) (State := State) (false :: next) <;> rfl
-    · rfl
-
 /-- **The edge test of codes is polynomial-time.** -/
 private theorem computableTidilyInPolyTime_codeEdge
     {code next : α → List Bool} (hcode : ComputableTidilyInPolyTime code encA encBits)
     (hnext : ComputableTidilyInPolyTime next encA encBits) :
     ComputableTidilyInPolyTime (fun a => ntm.codeEdge (code a) (next a)) encA encBool := by
   classical
-  simp only [codeEdge_eq]
+  unfold codeEdge
+  option_match_to_elim
   have hfst := ComputableTidilyInPolyTime.fst encA (encFiniteCfg (k := k) (State := State))
   have hsnd := ComputableTidilyInPolyTime.snd encA (encFiniteCfg (k := k) (State := State))
   refine (computableTidilyInPolyTime_decodeView hcode).optionElimWithInput (.const false) ?_

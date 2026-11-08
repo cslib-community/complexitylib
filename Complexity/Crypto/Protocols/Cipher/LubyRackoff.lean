@@ -2216,125 +2216,6 @@ private theorem feistel4StrongRandomRoundsGame_eq_bind_fixed
     (funext fun f₂ => PMF.bind_comm _ _ _)).trans ?_
   exact PMF.bind_comm _ _ _
 
-/-- One step of bidirectional query deduplication over a partial-permutation cache `qc`. -/
-private def bidirDedupStep (q : RandomPermutation.PermQuery (G × G)) :
-    StateT (RandomPermutation.Cache (G × G))
-      (OracleComp (RandomPermutation.PermOracleSpec (G × G))) (G × G) := fun qc =>
-  match q with
-  | .forward p =>
-    match qc.lookup p with
-    | some wz => pure (wz, qc)
-    | none => do
-      let wz ← OracleComp.query (spec := RandomPermutation.PermOracleSpec (G × G)) (.forward p)
-      pure (wz, (p, wz) :: qc)
-  | .inverse wz =>
-    match RandomPermutation.invLookup qc wz with
-    | some p => pure (p, qc)
-    | none => do
-      let p ← OracleComp.query (spec := RandomPermutation.PermOracleSpec (G × G)) (.inverse wz)
-      pure (p, (p, wz) :: qc)
-
-omit [AddGroup G] [Fintype G] [Nonempty G] in
-private theorem bidirDedupStep_forward_of_some {p wz : G × G}
-    {qc : RandomPermutation.Cache (G × G)} (h : qc.lookup p = some wz) :
-    bidirDedupStep (.forward p) qc = pure (wz, qc) := by
-  simp [bidirDedupStep, h]
-
-omit [AddGroup G] [Fintype G] [Nonempty G] in
-private theorem bidirDedupStep_forward_of_none {p : G × G}
-    {qc : RandomPermutation.Cache (G × G)} (h : qc.lookup p = none) :
-    bidirDedupStep (.forward p) qc = (do
-      let wz ← OracleComp.query (spec := RandomPermutation.PermOracleSpec (G × G)) (.forward p)
-      pure (wz, (p, wz) :: qc)) := by
-  simp [bidirDedupStep, h]
-
-omit [AddGroup G] [Fintype G] [Nonempty G] in
-private theorem bidirDedupStep_inverse_of_some {wz p : G × G}
-    {qc : RandomPermutation.Cache (G × G)} (h : RandomPermutation.invLookup qc wz = some p) :
-    bidirDedupStep (.inverse wz) qc = pure (p, qc) := by
-  simp [bidirDedupStep, h]
-
-omit [AddGroup G] [Fintype G] [Nonempty G] in
-private theorem bidirDedupStep_inverse_of_none {wz : G × G}
-    {qc : RandomPermutation.Cache (G × G)} (h : RandomPermutation.invLookup qc wz = none) :
-    bidirDedupStep (.inverse wz) qc = (do
-      let p ← OracleComp.query (spec := RandomPermutation.PermOracleSpec (G × G)) (.inverse wz)
-      pure (p, (p, wz) :: qc)) := by
-  simp [bidirDedupStep, h]
-
-/-- Deduplicate a bidirectional permutation program so that forward queries in `dom(qc)` and
-inverse queries in `ran(qc)` are answered from `qc` without calling the underlying oracle. -/
-private def bidirDedup {α : Type}
-    (program : OracleComp (RandomPermutation.PermOracleSpec (G × G)) α) :
-    OracleComp (RandomPermutation.PermOracleSpec (G × G))
-      (α × RandomPermutation.Cache (G × G)) :=
-  (OracleComp.interpret bidirDedupStep program).run []
-
-omit [AddGroup G] [Fintype G] [Nonempty G] in
-private theorem map_fst_interpret_bidirDedupStep_evalPerm {α : Type} (π : Equiv.Perm (G × G))
-    (program : OracleComp (RandomPermutation.PermOracleSpec (G × G)) α)
-    {qc : RandomPermutation.Cache (G × G)} (hqc : RandomPermutation.AgreesWith qc π) :
-    (OracleComp.interpret (fun q => PMF.pure (RandomPermutation.evalPerm π q))
-      ((OracleComp.interpret bidirDedupStep program).run qc)).map Prod.fst =
-    OracleComp.interpret (fun q => PMF.pure (RandomPermutation.evalPerm π q)) program := by
-  induction program using PFunctor.FreeM.induction generalizing qc with
-  | pure a =>
-    simp [PMF.pure_map]
-  | lift_bind q cont ih =>
-    change (OracleComp.interpret (fun q => PMF.pure (RandomPermutation.evalPerm π q))
-      ((OracleComp.interpret bidirDedupStep (OracleComp.query q >>= cont)).run qc)).map
-        Prod.fst =
-      OracleComp.interpret (fun q => PMF.pure (RandomPermutation.evalPerm π q))
-        (OracleComp.query q >>= cont)
-    simp only [OracleComp.interpret_bind, OracleComp.interpret_query, StateT.run_bind,
-      Probability.PMF.monad_bind_eq_bind, PMF.pure_bind]
-    change (((OracleComp.interpret (fun q => PMF.pure (RandomPermutation.evalPerm π q))
-      (bidirDedupStep q qc)).bind fun p_1 =>
-        OracleComp.interpret (fun q => PMF.pure (RandomPermutation.evalPerm π q))
-          ((OracleComp.interpret bidirDedupStep (cont p_1.1)).run p_1.2)).map Prod.fst) =
-      OracleComp.interpret (fun q => PMF.pure (RandomPermutation.evalPerm π q))
-        (cont (RandomPermutation.evalPerm π q))
-    cases q with
-    | forward p =>
-      cases h : qc.lookup p with
-      | some wz =>
-        rw [bidirDedupStep_forward_of_some h]
-        simp only [OracleComp.interpret_pure, Probability.PMF.monad_pure_eq_pure,
-          PMF.pure_bind, RandomPermutation.evalPerm_forward,
-          hqc.apply_of_lookup_eq_some h]
-        exact ih wz hqc
-      | none =>
-        rw [bidirDedupStep_forward_of_none h]
-        simp only [OracleComp.interpret_bind, OracleComp.interpret_query,
-          OracleComp.interpret_pure, Probability.PMF.monad_bind_eq_bind,
-          Probability.PMF.monad_pure_eq_pure, PMF.pure_bind,
-          RandomPermutation.evalPerm_forward]
-        exact ih (π p) ((RandomPermutation.agreesWith_cons _ _ _).mpr ⟨rfl, hqc⟩)
-    | inverse wz =>
-      cases h : RandomPermutation.invLookup qc wz with
-      | some p =>
-        rw [bidirDedupStep_inverse_of_some h]
-        simp only [OracleComp.interpret_pure, Probability.PMF.monad_pure_eq_pure,
-          PMF.pure_bind, RandomPermutation.evalPerm_inverse,
-          hqc.symm_apply_of_invLookup_eq_some h]
-        exact ih p hqc
-      | none =>
-        rw [bidirDedupStep_inverse_of_none h]
-        simp only [OracleComp.interpret_bind, OracleComp.interpret_query,
-          OracleComp.interpret_pure, Probability.PMF.monad_bind_eq_bind,
-          Probability.PMF.monad_pure_eq_pure, PMF.pure_bind,
-          RandomPermutation.evalPerm_inverse]
-        exact ih (π.symm wz)
-          ((RandomPermutation.agreesWith_cons _ _ _).mpr ⟨Equiv.apply_symm_apply π wz, hqc⟩)
-
-omit [AddGroup G] [Fintype G] [Nonempty G] in
-private theorem map_fst_interpret_bidirDedup_evalPerm {α : Type} (π : Equiv.Perm (G × G))
-    (program : OracleComp (RandomPermutation.PermOracleSpec (G × G)) α) :
-    (OracleComp.interpret (fun q => PMF.pure (RandomPermutation.evalPerm π q))
-      (bidirDedup program)).map Prod.fst =
-    OracleComp.interpret (fun q => PMF.pure (RandomPermutation.evalPerm π q)) program :=
-  map_fst_interpret_bidirDedupStep_evalPerm π program (RandomPermutation.agreesWith_nil π)
-
 /-- Express one bidirectional 4-round Feistel call with fixed outer round functions `f₁, f₄` as a
 two-query program to the combined Round-2/Round-3 oracle `Bool × G → G`. -/
 private def feistel4Query (f₁ f₄ : G → G) :
@@ -2409,22 +2290,22 @@ private theorem feistel4StrongFixedGame_eq_realRoundHandler4 (f₁ f₄ : G → 
     (program : OracleComp (fun _ : Bool × (G × G) => G × G) Bool) :
     feistel4StrongFixedGame f₁ f₄ program =
       (((OracleComp.interpret (realRoundHandler4 f₁ f₄)
-        (bidirDedup (RandomPermutation.liftBoolProd program))).run ([], false)).map
-          fun x => x.1.1) := by
+        (RandomPermutation.bidirDedup (RandomPermutation.liftBoolProd program))).run
+          ([], false)).map fun x => x.1.1) := by
   set prog := RandomPermutation.liftBoolProd program
   have hdrop := OracleComp.run_interpret_map_state (realRoundHandler4 f₁ f₄)
-    (lazyRoundHandler4 f₁ f₄) Prod.fst (realRoundHandler4_map_fst f₁ f₄) (bidirDedup prog)
-    ([], false)
+    (lazyRoundHandler4 f₁ f₄) Prod.fst (realRoundHandler4_map_fst f₁ f₄)
+    (RandomPermutation.bidirDedup prog) ([], false)
   have hdrop' := congrArg (PMF.map fun x => x.1.1) hdrop
   simp only [PMF.map_comp, Function.comp_def] at hdrop'
   rw [hdrop']
   have hlazy := RandomOracle.interpret_eq_memoize (fun _ : Bool × G => PMF.uniformOfFintype G)
-    (OracleComp.interpret (feistel4Query f₁ f₄) (bidirDedup prog))
+    (OracleComp.interpret (feistel4Query f₁ f₄) (RandomPermutation.bidirDedup prog))
   rw [Probability.PMF.pi_uniformOfFintype] at hlazy
   have hcomp :
       OracleComp.interpret (memoize (fun _ : Bool × G => PMF.uniformOfFintype G))
-        (OracleComp.interpret (feistel4Query f₁ f₄) (bidirDedup prog)) =
-      OracleComp.interpret (lazyRoundHandler4 f₁ f₄) (bidirDedup prog) :=
+        (OracleComp.interpret (feistel4Query f₁ f₄) (RandomPermutation.bidirDedup prog)) =
+      OracleComp.interpret (lazyRoundHandler4 f₁ f₄) (RandomPermutation.bidirDedup prog) :=
     OracleComp.interpret_interpret _ _ _
   rw [hcomp] at hlazy
   have hlazy' := congrArg (PMF.map Prod.fst) hlazy.symm
@@ -2433,7 +2314,8 @@ private theorem feistel4StrongFixedGame_eq_realRoundHandler4 (f₁ f₄ : G → 
   rw [hlazy']
   have htable (table : Bool × G → G) :
       (OracleComp.interpret (fun q => PMF.pure (table q))
-        (OracleComp.interpret (feistel4Query f₁ f₄) (bidirDedup prog))).map Prod.fst =
+        (OracleComp.interpret (feistel4Query f₁ f₄)
+          (RandomPermutation.bidirDedup prog))).map Prod.fst =
       OracleComp.interpret
         (feistelStrongOracle
           (feistel4 f₁ (fun u => table (false, u)) (fun v => table (true, v)) f₄))
@@ -2447,7 +2329,7 @@ private theorem feistel4StrongFixedGame_eq_realRoundHandler4 (f₁ f₄ : G → 
       cases q <;>
         simp [feistel4Query, feistel4_apply, feistel4_symm_apply, feistelRound, feistelInvRound,
           feistel3_apply, feistel3_symm_apply]
-    rw [hstep, map_fst_interpret_bidirDedup_evalPerm,
+    rw [hstep, RandomPermutation.map_fst_interpret_bidirDedup_evalPerm,
       ← interpret_feistelStrongOracle_eq_liftBoolProd]
   simp only [htable]
   have hunif :
@@ -2909,55 +2791,26 @@ private theorem SimInv4.inverse {f₁ f₄ : G → G} {qc : RandomPermutation.Ca
       hasVCollision4, swapCache, List.map_cons, Prod.swap, sub_eq_add_neg]
     ac_rfl
 
-omit [AddGroup G] in
-private theorem forgetfulAnswer_forward_of_some {p wz : G × G}
-    {qc : RandomPermutation.Cache (G × G)} (h : qc.lookup p = some wz) :
-    RandomPermutation.forgetfulAnswer (.forward p) qc = PMF.pure (wz, qc) := by
-  simp [RandomPermutation.forgetfulAnswer, h]
-
-omit [AddGroup G] in
-private theorem forgetfulAnswer_forward_of_none {p : G × G}
-    {qc : RandomPermutation.Cache (G × G)} (h : qc.lookup p = none) :
-    RandomPermutation.forgetfulAnswer (.forward p) qc =
-      (PMF.uniformOfFintype (G × G)).map fun wz => (wz, (p, wz) :: qc) := by
-  simp [RandomPermutation.forgetfulAnswer, h]
-
-omit [AddGroup G] in
-private theorem forgetfulAnswer_inverse_of_some {wz p : G × G}
-    {qc : RandomPermutation.Cache (G × G)} (h : RandomPermutation.invLookup qc wz = some p) :
-    RandomPermutation.forgetfulAnswer (.inverse wz) qc = PMF.pure (p, qc) := by
-  simp [RandomPermutation.forgetfulAnswer, h]
-
-omit [AddGroup G] in
-private theorem forgetfulAnswer_inverse_of_none {wz : G × G}
-    {qc : RandomPermutation.Cache (G × G)} (h : RandomPermutation.invLookup qc wz = none) :
-    RandomPermutation.forgetfulAnswer (.inverse wz) qc =
-      (PMF.uniformOfFintype (G × G)).map fun p => (p, (p, wz) :: qc) := by
-  simp [RandomPermutation.forgetfulAnswer, h]
-
 private theorem map_run_idealRoundHandler4_bidirDedupStep {α : Type} (f₁ f₄ : G → G)
     (program : OracleComp (RandomPermutation.PermOracleSpec (G × G)) α)
     {qc : RandomPermutation.Cache (G × G)} {st : List ((Bool × G) × G) × Bool}
     (hst : SimInv4 f₁ f₄ qc st) :
     (((OracleComp.interpret (idealRoundHandler4 f₁ f₄)
-      ((OracleComp.interpret bidirDedupStep program).run qc)).run st).map
+      ((OracleComp.interpret RandomPermutation.bidirDedupStep program).run qc)).run st).map
         fun ((a, qc'), st') => ((a, qc'), st'.2)) =
       ((OracleComp.interpret RandomPermutation.forgetfulAnswer program).run qc).map
         (fun (a, qc') => ((a, qc'), hasCollision4 f₁ f₄ qc')) := by
-  induction program using PFunctor.FreeM.induction generalizing qc st with
+  induction program using OracleComp.induction generalizing qc st with
   | pure a =>
     simp [PMF.pure_map, hst.bad_eq]
-  | lift_bind q cont ih =>
-    change (((OracleComp.interpret (idealRoundHandler4 f₁ f₄)
-      ((OracleComp.interpret bidirDedupStep (OracleComp.query q >>= cont)).run qc)).run st).map
-        fun ((a, qc'), st') => ((a, qc'), st'.2)) =
-      ((OracleComp.interpret RandomPermutation.forgetfulAnswer
-        (OracleComp.query q >>= cont)).run qc).map _
+  | query_bind q cont ih =>
     simp only [OracleComp.interpret_bind, OracleComp.interpret_query, StateT.run_bind]
-    change ((((OracleComp.interpret (idealRoundHandler4 f₁ f₄) (bidirDedupStep q qc)).run st).bind
+    change ((((OracleComp.interpret (idealRoundHandler4 f₁ f₄)
+      (RandomPermutation.bidirDedupStep q qc)).run st).bind
       fun p_1 =>
         (OracleComp.interpret (idealRoundHandler4 f₁ f₄)
-          ((OracleComp.interpret bidirDedupStep (cont p_1.1.1)).run p_1.1.2)).run p_1.2).map
+          ((OracleComp.interpret RandomPermutation.bidirDedupStep (cont p_1.1.1)).run
+            p_1.1.2)).run p_1.2).map
         fun ((a, qc'), st') => ((a, qc'), st'.2)) =
       (((RandomPermutation.forgetfulAnswer q qc).bind fun p =>
         (OracleComp.interpret RandomPermutation.forgetfulAnswer (cont p.1)).run p.2).map
@@ -2966,12 +2819,14 @@ private theorem map_run_idealRoundHandler4_bidirDedupStep {α : Type} (f₁ f₄
     | forward p =>
       cases h : qc.lookup p with
       | some wz =>
-        rw [bidirDedupStep_forward_of_some h, forgetfulAnswer_forward_of_some h]
+        rw [RandomPermutation.bidirDedupStep_forward_of_some h,
+          RandomPermutation.forgetfulAnswer_forward_of_some h]
         simp only [OracleComp.interpret_pure, StateT.run_pure,
           Probability.PMF.monad_pure_eq_pure, PMF.pure_bind]
         exact ih wz hst
       | none =>
-        rw [bidirDedupStep_forward_of_none h, forgetfulAnswer_forward_of_none h]
+        rw [RandomPermutation.bidirDedupStep_forward_of_none h,
+          RandomPermutation.forgetfulAnswer_forward_of_none h]
         simp only [OracleComp.interpret_bind, OracleComp.interpret_query,
           OracleComp.interpret_pure, StateT.run_bind, StateT.run_pure,
           Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
@@ -2982,12 +2837,14 @@ private theorem map_run_idealRoundHandler4_bidirDedupStep {α : Type} (f₁ f₄
     | inverse wz =>
       cases h : RandomPermutation.invLookup qc wz with
       | some p =>
-        rw [bidirDedupStep_inverse_of_some h, forgetfulAnswer_inverse_of_some h]
+        rw [RandomPermutation.bidirDedupStep_inverse_of_some h,
+          RandomPermutation.forgetfulAnswer_inverse_of_some h]
         simp only [OracleComp.interpret_pure, StateT.run_pure,
           Probability.PMF.monad_pure_eq_pure, PMF.pure_bind]
         exact ih p hst
       | none =>
-        rw [bidirDedupStep_inverse_of_none h, forgetfulAnswer_inverse_of_none h]
+        rw [RandomPermutation.bidirDedupStep_inverse_of_none h,
+          RandomPermutation.forgetfulAnswer_inverse_of_none h]
         simp only [OracleComp.interpret_bind, OracleComp.interpret_query,
           OracleComp.interpret_pure, StateT.run_bind, StateT.run_pure,
           Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
@@ -2998,20 +2855,20 @@ private theorem map_run_idealRoundHandler4_bidirDedupStep {α : Type} (f₁ f₄
 
 private theorem map_fst_run_idealRoundHandler4 (f₁ f₄ : G → G)
     (program : OracleComp (RandomPermutation.PermOracleSpec (G × G)) Bool) :
-    (((OracleComp.interpret (idealRoundHandler4 f₁ f₄) (bidirDedup program)).run
-      ([], false)).map fun x => x.1.1) =
+    (((OracleComp.interpret (idealRoundHandler4 f₁ f₄)
+      (RandomPermutation.bidirDedup program)).run ([], false)).map fun x => x.1.1) =
     ((OracleComp.interpret RandomPermutation.forgetfulAnswer program).run []).map Prod.fst := by
   have h := congrArg (PMF.map fun x => x.1.1)
     (map_run_idealRoundHandler4_bidirDedupStep f₁ f₄ program (simInv4_nil f₁ f₄))
-  simpa only [bidirDedup, PMF.map_comp, Function.comp_def] using h
+  simpa only [RandomPermutation.bidirDedup, PMF.map_comp, Function.comp_def] using h
 
 private theorem toOuterMeasure_bad_idealRoundHandler4 (f₁ f₄ : G → G)
     (program : OracleComp (RandomPermutation.PermOracleSpec (G × G)) Bool) :
-    ((OracleComp.interpret (idealRoundHandler4 f₁ f₄) (bidirDedup program)).run
-      ([], false)).toOuterMeasure {x | x.2.2 = true} =
+    ((OracleComp.interpret (idealRoundHandler4 f₁ f₄)
+      (RandomPermutation.bidirDedup program)).run ([], false)).toOuterMeasure {x | x.2.2 = true} =
     ((OracleComp.interpret RandomPermutation.forgetfulAnswer program).run []).toOuterMeasure
       {x | hasCollision4 f₁ f₄ x.2 = true} := by
-  rw [bidirDedup]
+  rw [RandomPermutation.bidirDedup]
   have h := congrArg (fun d => PMF.toOuterMeasure d {x | x.2 = true})
     (map_run_idealRoundHandler4_bidirDedupStep f₁ f₄ program (simInv4_nil f₁ f₄))
   rw [PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_map_apply] at h
@@ -3193,7 +3050,7 @@ private theorem feistel4StrongFixedGame_apply_le (f₁ f₄ : G → G)
         (RandomPermutation.liftBoolProd program)).run []).toOuterMeasure
           {x | hasCollision4 f₁ f₄ x.2 = true} := by
   have h := (identicalUntilBad_roundHandler4 f₁ f₄).bind_apply_le
-    (bidirDedup (RandomPermutation.liftBoolProd program)) ([], false)
+    (RandomPermutation.bidirDedup (RandomPermutation.liftBoolProd program)) ([], false)
     (fun x => PMF.pure x.1.1) b
   rw [(identicalUntilBad_roundHandler4 f₁ f₄).bad_eq,
     toOuterMeasure_bad_idealRoundHandler4] at h
@@ -3209,7 +3066,7 @@ private theorem forgetfulAnswer_apply_le_feistel4StrongFixedGame (f₁ f₄ : G 
         (RandomPermutation.liftBoolProd program)).run []).toOuterMeasure
           {x | hasCollision4 f₁ f₄ x.2 = true} := by
   have h := (identicalUntilBad_roundHandler4 f₁ f₄).symm.bind_apply_le
-    (bidirDedup (RandomPermutation.liftBoolProd program)) ([], false)
+    (RandomPermutation.bidirDedup (RandomPermutation.liftBoolProd program)) ([], false)
     (fun x => PMF.pure x.1.1) b
   rw [toOuterMeasure_bad_idealRoundHandler4] at h
   rw [feistel4StrongFixedGame_eq_realRoundHandler4, ← map_fst_run_idealRoundHandler4 f₁ f₄]

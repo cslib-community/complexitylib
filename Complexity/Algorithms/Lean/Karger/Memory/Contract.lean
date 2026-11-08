@@ -29,8 +29,9 @@ The matrix in memory part-way through each loop is a pure function of the matrix
 (`mergedTo`, `compactedTo`), and the matrix after both is `contractMatrix`
 (`mergedTo_eq_contractMatrix`, `compactedTo_mergedTo_eq_contractMatrix`). These are the only
 intermediate invariants, and they are stated on matrices, not on memory. The degree and total
-updates are the identities of `Karger.Graph` (`rowDeg_mergePair_u`, `rowDeg_mergePair_other`,
-`rowDeg_contractMatrix`, `totalDoubledWeight_contractMatrix`), used unchanged.
+updates are the identities of `WeightedCut.Contraction` (`rowDeg_mergePair_u`,
+`rowDeg_mergePair_other`, `rowDeg_contractMatrix`, `totalDoubledWeight_contractMatrix`), used
+unchanged.
 
 A contraction of `k` supervertices costs at most `7 k + 7` memory units (`wp_contract`). The
 machine-level counterparts are `phaseADegrees_exec`, `mergeLoop_exec`, `compactPhase_exec` and

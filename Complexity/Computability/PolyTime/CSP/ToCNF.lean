@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Logics.Propositional.CSP.ToCNF
+public import Complexity.Logics.Propositional.CNF.Encoding
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -57,44 +58,6 @@ variable {Rel V : Type}
 
 open Cslib.Logic.PL.CSP ComputableInPolyTime
 
-/-- Zip framed lists in polynomial time. -/
-@[local fun_prop]
-theorem computableInPolyTime_zip {α β : Type}
-    (encA : α ↪ List Bool) (encB : β ↪ List Bool) :
-    ComputableInPolyTime (fun p : List α × List β => p.1.zip p.2)
-      (encPair (encList encA) (encList encB)) (encList (encPair encA encB)) := by
-  rcases isEmpty_or_nonempty α with h | h
-  · have heq : (fun p : List α × List β => p.1.zip p.2) = fun _ => [] := by
-      funext p
-      cases p.1 with
-      | nil => rfl
-      | cons a _ => exact isEmptyElim a
-    rw [heq]
-    exact const []
-  rcases isEmpty_or_nonempty β with h' | h'
-  · have heq : (fun p : List α × List β => p.1.zip p.2) = fun _ => [] := by
-      funext p
-      cases p.2 with
-      | nil => simp
-      | cons b _ => exact isEmptyElim b
-    rw [heq]
-    exact const []
-  obtain ⟨a⟩ := h
-  obtain ⟨b⟩ := h'
-  have heq (p : List α × List β) : p.1.zip p.2 =
-      (List.range (p.1.length - (p.1.length - p.2.length))).map
-        (fun i => (p.1.getD i a, p.2.getD i b)) := by
-    have hmin : p.1.length - (p.1.length - p.2.length) = min p.1.length p.2.length := by omega
-    rw [hmin]
-    apply List.ext_getElem (by simp)
-    intro i hi hi'
-    have hleft : i < p.1.length := (Nat.lt_min.mp (by simpa only [List.length_zip] using hi)).1
-    have hright : i < p.2.length := (Nat.lt_min.mp (by simpa only [List.length_zip] using hi)).2
-    simp only [List.getElem_zip, List.getElem_map, List.getElem_range,
-      List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hleft,
-      List.getElem?_eq_getElem hright, Option.getD_some]
-  simp_rw [heq]
-  fun_prop
 
 private theorem computableInPolyTime_mapFilterConst {α ι γ : Type} {encIn : α ↪ List Bool}
     {encC : γ ↪ List Bool} (items : List ι) {test : α → ι → Bool} {f : α → ι → γ}
@@ -178,8 +141,7 @@ theorem computableInPolyTime_toCNFBounded_of_forall (encRel : Rel ↪ List Bool)
     (hsem : ∀ w : List Bool, w.length ≤ k →
       ComputableInPolyTime (fun R : Rel => sem R w) encRel encBool) :
     ComputableInPolyTime (CSP.toCNFBounded k sem)
-      (encCSP encRel encV)
-      (encList (encList (encPair encV encBool))) := by
+      (encCSP encRel encV) (encCNFOver encV) := by
   have hc := computableInPolyTime_constraintToCNFBounded encRel encV k sem hsem
   exact flatMapWithInput (id' (encIn := encCSP encRel encV))
     (hc.comp (snd (encCSP encRel encV) (encConstraint encRel encV)))
@@ -192,8 +154,7 @@ theorem computableInPolyTime_toCNFBounded (encRel : Rel ↪ List Bool)
     (hsem : ComputableInPolyTime (fun p : Rel × List Bool => sem p.1 p.2)
       (encPair encRel encBits) encBool) :
     ComputableInPolyTime (CSP.toCNFBounded k sem)
-      (encCSP encRel encV)
-      (encList (encList (encPair encV encBool))) :=
+      (encCSP encRel encV) (encCNFOver encV) :=
   computableInPolyTime_toCNFBounded_of_forall encRel encV k sem fun w _ =>
     hsem.comp (id'.prod (const w))
 
@@ -202,8 +163,7 @@ polynomial time for any finite relation alphabet `Rel`. -/
 theorem computableInPolyTime_toCNFBounded_of_finite [Finite Rel] (encRel : Rel ↪ List Bool)
     (encV : V ↪ List Bool) (k : ℕ) (sem : Rel → List Bool → Bool) :
     ComputableInPolyTime (CSP.toCNFBounded k sem)
-      (encCSP encRel encV)
-      (encList (encList (encPair encV encBool))) :=
+      (encCSP encRel encV) (encCNFOver encV) :=
   computableInPolyTime_toCNFBounded_of_forall encRel encV k sem fun _ _ => of_finite _
 
 end CSP

@@ -10,6 +10,8 @@ module
 public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Callee
 import Batteries.Data.Fin.Lemmas
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # A finite exhaustive native Exact Triangle callee
 
@@ -198,7 +200,7 @@ private theorem load_preserves : ∀ i : Fin 24, i.val < 12 → loadTriple.Prese
 private theorem exec_loadTriple {w t F abp bcp acp free v₀ v₁ v₂ : ℕ}
     (x : Data 24) (h : Control t abp bcp acp x) (q : Fin (t * (t * t)))
     (hq : x.regs current = q.val)
-    (hbc : abp + t * t ≤ bcp) (hac : bcp + t * t ≤ acp) (hf : acp + t * t ≤ free)
+    (hbc : abp + t * t ≤ free) (hac : bcp + t * t ≤ free) (hf : acp + t * t ≤ free)
     (hfit : Fits w (free + t * (t * t) + 6 * F + 10))
     (hv₀ : x.mem (abp + q.divNat.val * t + q.modNat.divNat.val) = v₀)
     (hv₁ : x.mem (bcp + q.modNat.divNat.val * t + q.modNat.modNat.val) = v₁)
@@ -273,7 +275,7 @@ private theorem exec_finish {w q : ℕ} (x : Data 24)
 private theorem exec_body {w t F abp bcp acp free : ℕ}
     (A B C : Fin t → Fin t → ℤ) (x : Data 24) (h : Control t abp bcp acp x)
     (q : Fin (t * (t * t))) (hq : x.regs current = q.val) (hbool : x.regs out ≤ 1)
-    (hbc : abp + t * t ≤ bcp) (hac : bcp + t * t ≤ acp) (hf : acp + t * t ≤ free)
+    (hbc : abp + t * t ≤ free) (hac : bcp + t * t ≤ free) (hf : acp + t * t ≤ free)
     (hfit : Fits w (free + t * (t * t) + 6 * F + 10))
     (hmA : ∀ i j, x.mem (abp + i.val * t + j.val) = encode (A i j))
     (hmB : ∀ i j, x.mem (bcp + i.val * t + j.val) = encode (B i j))
@@ -352,7 +354,7 @@ private theorem exec_scan {w t F abp bcp acp free : ℕ}
     (A B C : Fin t → Fin t → ℤ) (x : Data 24)
     (ht : x.regs side = t) (hab : x.regs ab = abp)
     (hbc : x.regs bc = bcp) (hac : x.regs ac = acp)
-    (hABBC : abp + t * t ≤ bcp) (hBCAC : bcp + t * t ≤ acp)
+    (hABBC : abp + t * t ≤ free) (hBCAC : bcp + t * t ≤ free)
     (hfree : acp + t * t ≤ free)
     (hfit : Fits w (free + t * (t * t) + 6 * F + 10))
     (hmA : ∀ i j, x.mem (abp + i.val * t + j.val) = encode (A i j))
@@ -376,46 +378,35 @@ private theorem exec_scan {w t F abp bcp acp free : ℕ}
   have hpa : Control t abp bcp acp a := by
     constructor <;> simp +decide [a, side, ab, bc, ac, current, area, stop,
       one, two, zero, out, ht, hab, hbc, hac]
-  let I (y : Data 24) : Prop := Control t abp bcp acp y ∧
-    y.regs current ≤ t * (t * t) ∧ y.regs out ≤ 1 ∧
-    (y.regs out = 1 ↔ ∃ q : Fin (t * (t * t)), q.val < y.regs current ∧ triangleAt A B C q) ∧
+  let P (j : ℕ) (y : Data 24) : Prop := Control t abp bcp acp y ∧ y.regs out ≤ 1 ∧
+    (y.regs out = 1 ↔ ∃ q : Fin (t * (t * t)), q.val < j ∧ triangleAt A B C q) ∧
     y.mem = x.mem
-  have hbody (y : Data 24) (hy : I y) (hc : (Cond.lt current stop).Holds y) :
-      ∃ z, ExecWithin w body y z 37 ∧ I z ∧
-        t * (t * t) - z.regs current < t * (t * t) - y.regs current := by
-    obtain ⟨hyp, hyq, hyb, hyo, hym⟩ := hy
-    have hlt : y.regs current < t * (t * t) := by
-      change y.regs current < y.regs stop at hc
-      exact hc.trans_eq hyp.stop
+  have hbody (y : Data 24) (hy : P (y.regs current) y) (hlt : y.regs current < t * (t * t)) :
+      ∃ z, ExecWithin w body y z 37 ∧ P (y.regs current + 1) z ∧
+        z.regs current = y.regs current + 1 := by
+    obtain ⟨hyp, hyb, hyo, hym⟩ := hy
     let q : Fin (t * (t * t)) := ⟨y.regs current, hlt⟩
     obtain ⟨z, hz, hzp, hzq, hzb, hzo, hzm⟩ := exec_body A B C y hyp q rfl hyb
       hABBC hBCAC hfree hfit (by simpa only [hym] using hmA)
       (by simpa only [hym] using hmB) (by simpa only [hym] using hmC) hA hB hC
-    refine ⟨z, hz, ⟨hzp, by dsimp only [q] at hzq; omega, hzb, ?_, hzm.trans hym⟩, ?_⟩
-    · rw [hzo, hyo, hzq]
+    refine ⟨z, hz, ⟨hzp, hzb, ?_, hzm.trans hym⟩, hzq⟩
+    · rw [hzo, hyo]
       constructor
       · rintro (⟨p, hp, hh⟩ | hh)
-        · exact ⟨p, by dsimp only [q]; omega, hh⟩
-        · exact ⟨q, by omega, hh⟩
+        · exact ⟨p, by omega, hh⟩
+        · exact ⟨q, by dsimp only [q]; omega, hh⟩
       · rintro ⟨p, hp, hh⟩
         by_cases h : p.val < y.regs current
         · exact Or.inl ⟨p, h, hh⟩
         · have heq : p = q := Fin.ext (by dsimp only [q] at *; omega)
           exact Or.inr (heq ▸ hh)
-    · dsimp only [q] at hzq
-      omega
-  have hx : I a := by
-    refine ⟨hpa, ?_, ?_, ?_, rfl⟩
+  have hx : P (a.regs current) a := by
+    refine ⟨hpa, ?_, ?_, rfl⟩
     · simp +decide [a, current, area, stop, one, two, zero, out]
     · simp +decide [a, current, area, stop, one, two, zero, out]
-    · simp +decide [a, current, area, stop, one, two, zero, out]
-  obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I
-    (fun y => t * (t * t) - y.regs current) hbody hx
-  obtain ⟨hyp, hyq, hyb, hyo, hym⟩ := hy
-  have hend : y.regs current = t * (t * t) := by
-    change ¬y.regs current < y.regs stop at hc
-    have := hyp.stop
-    omega
+  obtain ⟨y, he, ⟨_, hyb, hyo, hym⟩, _⟩ := ExecWithin.loop_count P
+    (fun _ hy => hy.1.stop) hbody
+    (by simp +decide [a, current, area, stop, one, two, zero, out]) hx
   refine ⟨y, (ha.seq he).mono ?_, hyb, ?_, hym⟩
   · simp +decide only [a, Data.set_regs, Function.update_apply, current, area, stop,
       one, two, zero, out, ↓reduceIte, Nat.sub_zero, Nat.reduceAdd]
@@ -425,7 +416,27 @@ private theorem exec_scan {w t F abp bcp acp free : ℕ}
     · rintro ⟨q, _, hq⟩
       exact ⟨q, hq⟩
     · rintro ⟨q, hq⟩
-      exact ⟨q, by rw [hend]; exact q.isLt, hq⟩
+      exact ⟨q, q.isLt, hq⟩
+
+/-- Execute the real exhaustive block from arbitrary old registers and memory. Source spans
+may alias: each only needs to end below the supplied address bound. Every memory cell survives,
+including dirty scratch. Empty input returns zero through the actual zero-iteration loop. -/
+theorem exec_at {w t F abp bcp acp free : ℕ}
+    (A B C : Fin t → Fin t → ℤ) (x : Data 24)
+    (ht : x.regs side = t) (hab : x.regs ab = abp)
+    (hbc : x.regs bc = bcp) (hac : x.regs ac = acp)
+    (hAB : abp + t * t ≤ free) (hBC : bcp + t * t ≤ free)
+    (hAC : acp + t * t ≤ free)
+    (hfit : Fits w (free + t * (t * t) + 6 * F + 10))
+    (hmA : ∀ i j, x.mem (abp + i.val * t + j.val) = encode (A i j))
+    (hmB : ∀ i j, x.mem (bcp + i.val * t + j.val) = encode (B i j))
+    (hmC : ∀ i j, x.mem (acp + i.val * t + j.val) = encode (C i j))
+    (hA : ∀ i j, |A i j| ≤ (F : ℤ)) (hB : ∀ i j, |B i j| ≤ (F : ℤ))
+    (hC : ∀ i j, |C i j| ≤ (F : ℤ)) :
+    ∃ y, ExecWithin w program x y (39 * (t * (t * t)) + 9) ∧ y.regs out ≤ 1 ∧
+      (y.regs out = 1 ↔ Cslib.Algorithms.ExactTriangle.HasZeroTriangle A B C) ∧
+      y.mem = x.mem :=
+  exec_scan A B C x ht hab hbc hac hAB hBC hAC hfit hmA hmB hmC hA hB hC
 
 private theorem fits_budget {w t F abp bcp acp free : ℕ}
     (ht : 0 < t) (hF : 0 < F)
@@ -471,8 +482,8 @@ def callee : Callee 17 where
     intro w t F abp bcp acp free x A B C ht hF hABBC hBCAC hfree hw
       hside _ hab hbc hac _ hmA hmB hmC hA hB hC
     have hfit := fits_budget ht hF hABBC hBCAC hfree hw
-    obtain ⟨y, he, hb, hans, hm⟩ := exec_scan A B C x hside hab hbc hac
-      hABBC hBCAC hfree hfit hmA hmB hmC hA hB hC
+    obtain ⟨y, he, hb, hans, hm⟩ := exec_at A B C x hside hab hbc hac
+      (by omega) (by omega) hfree hfit hmA hmB hmC hA hB hC
     exact ⟨y, he.mono (by omega), hb, hans, fun a _ => congrFun hm a⟩
 
 end Cslib.Algorithms.WordRAM.ThreeSum.Host.Slow

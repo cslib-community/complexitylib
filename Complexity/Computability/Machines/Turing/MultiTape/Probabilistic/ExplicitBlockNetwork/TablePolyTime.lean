@@ -171,16 +171,10 @@ theorem computableInPolyTime_lastBeforeNum {σ c i δ : α → ℕ}
     (hi : ComputableInPolyTime i inp encUnary) (hδ : ComputableInPolyTime δ inp encUnary) :
     ComputableInPolyTime (fun a => lastBeforeNum k (σ a) (c a) (i a) (δ a)) inp
       (encOption encUnary) := by
-  have heq : ∀ a, lastBeforeNum k (σ a) (c a) (i a) (δ a) =
-      ((List.range (i a)).find? fun j => inWindowNum k (σ a) (c a) (i a) (δ a) (i a - 1 - j)).elim
-        none fun j => some (i a - 1 - j) := fun a => by
-    unfold lastBeforeNum
-    cases (List.range (i a)).find? _ <;> rfl
-  simp only [heq]
+  unfold lastBeforeNum
   have hi1 : ComputableInPolyTime (fun p : α × ℕ => i p.1 - 1 - p.2) (encPair inp encUnary)
       encUnary := unary_sub' (unary_sub' (hi.comp (fst _ _)) (const 1)) (snd _ _)
-  refine optionElimWithInput (findWithInput (range.comp hi) ?_) (const none)
-    ((optionSome encUnary).comp hi1)
+  refine optionMapWithInput (findWithInput (range.comp hi) ?_) hi1
   exact computableInPolyTime_inWindowNum (hσ.comp (fst _ _)) (hc.comp (fst _ _))
     (hi.comp (fst _ _)) (hδ.comp (fst _ _)) hi1
 

@@ -51,12 +51,14 @@ instructions only), switching at the explicit capacity threshold `regimeThreshol
    `Σ = Fin (2 ^ b)` of size `O(n_max ^ (1 / 2))`, top position count `c = 8`, intermediate position
    count `d = 64`, counting parameter `q = 4` (`d = 2 * q * c`), and `576 * 2 ^ b` words of table
    storage (`(c + 1) * d * |Σ|`, which is `O(n_max ^ (1 / 2))` words).
-   Each `.eval u` performs `c + d` table lookups in `evalTimeBound k` executed instructions
-   (`O_k(1)`), and `.resample` refreshes all `576 * 2 ^ b` table entries in `2880 * 2 ^ b + 16`
-   executed instructions (`O(n_max ^ (1 / 2))`). Whereas `[Thorup2013]` Theorem 1(a), with input and
-   intermediate alphabets both `Σ`, states failure probability `o(|Σ| ^ 2 / |Σ| ^ (d / (2 * c)))`
-   for `k = |Σ| ^ (1 / (5 * c))`, the library's fixed-`k` proof adaptation bounds each resampling
-   epoch's failure probability by `failureProbBound k n_max`: whenever the non-triviality condition
+   Each `.eval u` runs the double-tabulation evaluation code, `(12 * c + 11) * d + 10 = 6858`
+   instructions whatever `k` is, so it halts within `doubleTabEvalTime = 6862` executed
+   instructions (`O(1)`, independent of `k`); `.resample` refreshes all `576 * 2 ^ b` table entries
+   in `2880 * 2 ^ b + 16` executed instructions (`O(n_max ^ (1 / 2))`). Whereas
+   `[Thorup2013]` Theorem 1(a), with input and intermediate alphabets both `Σ`, states failure
+   probability `o(|Σ| ^ 2 / |Σ| ^ (d / (2 * c)))` for `k = |Σ| ^ (1 / (5 * c))`, the library's
+   fixed-`k` proof adaptation bounds each resampling epoch's failure probability by
+   `failureProbBound k n_max`: whenever the non-triviality condition
    `2 * codeBound k ≤ 2 ^ (3 * b)` holds (where `codeBound k = 8 * ((8 * k) ^ 16 * 64) ^ 4 =
    2 ^ 219 * k ^ 64` from Section 2, Eqs. (6)–(7), p. 11 at `c = 8, d = 64, q = 4`, satisfied for
    `k` up to roughly `n_max ^ (3 / 128)`), `failureProbBound k n_max =
@@ -68,6 +70,15 @@ Across all `n_max : ℕ`, the memory footprint satisfies `space k n_max ≤ (k +
 words (`space_le`), `.eval u` halts within `evalTimeBound k ≤ 111230 * k + 6862` executed
 instructions (`evalTimeBound_le`), and `.resample` halts within
 `resampleTime k n_max ≤ (5 * k + 46096) * (n_max + 1)` executed instructions (`resampleTime_le`).
+
+**Scope note on evaluation time.** Two evaluation-time bounds are stated. The all-capacity budget
+`evalTimeBound k = max (111230 * k + 19) 6858 + 4` grows linearly in `k`, because below
+`regimeThreshold` evaluation is a degree-`(k - 1)` polynomial. For `n_max ≥ regimeThreshold`, both
+headline theorems also bound the same run by the `k`-independent budget `doubleTabEvalTime = 6862`
+per `.eval u` (their `regimeThreshold ≤ n_max → RunsOps …` conjunct). This is the
+high-independence property: constant evaluation time together with a coupling bound that is
+nontrivial for `k` up to roughly `n_max ^ (3 / 128)`. Below the threshold the family is exactly
+`k`-wise independent, with evaluation time linear in `k`.
 
 ## Multi-Operation Execution and High-Probability `k`-Wise Independence Contract
 
@@ -88,7 +99,8 @@ memory, including an explicit zero-fill pass) quantify `∀ k n_max U M, … →
   halts within `evalTimeBound k` executed steps on each `.eval u` (deterministically and without
   modifying memory) and within `resampleTime k n_max` executed steps on each `.resample` (modifying
   memory only inside `[base, base + space k n_max)`), producing a final state distribution
-  `ν_final`.
+  `ν_final`. When `n_max ≥ 2 ^ 320000`, the same execution also satisfies `RunsOps` with the
+  `k`-independent evaluation budget `doubleTabEvalTime = 6862`.
 - **High-probability `k`-wise independence (`WhpKWiseContract`)**: whenever every resampling epoch
   in `ops` queries at most `k` distinct keys (`BoundedEpochKeys k ops`), the transcript marginal
   `ν_final.map SeqState.transcript` matches `ops` (`TranscriptMatches`) and is coupled
@@ -278,17 +290,17 @@ noncomputable def idealTranscriptFrom {U m : ℕ} [NeZero m] (f : Fin U → Fin 
   | [] => PMF.pure []
   | .eval u :: ops =>
       (idealTranscriptFrom f ops).map fun rest => .eval u (f u) :: rest
-  | .resample :: ops =>
-      (Cslib.Probability.PMF.uniformOfFintype (Fin U → Fin m)).bind fun f' =>
-        (idealTranscriptFrom f' ops).map fun rest => .resample :: rest
+  | .resample :: ops => do
+    let f' ← Cslib.Probability.PMF.uniformOfFintype (Fin U → Fin m)
+    (idealTranscriptFrom f' ops).map fun rest => .resample :: rest
 
 /-- Ideal multi-epoch uniform random-function transcript distribution on `ops`: draws an initial
 uniform random function `f₀ ← PMF.uniformOfFintype (Fin U → Fin m)` and evaluates `ops` via
 `idealTranscriptFrom`. -/
 noncomputable def idealTranscriptPMF {U m : ℕ} [NeZero m] (ops : List (Op U)) :
-    PMF (List (Label U m)) :=
-  (Cslib.Probability.PMF.uniformOfFintype (Fin U → Fin m)).bind fun f₀ =>
-    idealTranscriptFrom f₀ ops
+    PMF (List (Label U m)) := do
+  let f₀ ← Cslib.Probability.PMF.uniformOfFintype (Fin U → Fin m)
+  idealTranscriptFrom f₀ ops
 
 /-- Every transcript entry in `tr` records the corresponding operation in `ops`. -/
 def TranscriptMatches {U m : ℕ} (ops : List (Op U)) (tr : List (Label U m)) : Prop :=
@@ -459,6 +471,14 @@ key universes `U ≤ max n_max 4 ^ 4`, and output bit-widths `M ≤ 4 * Nat.clog
 def evalTimeBound (k : ℕ) : ℕ :=
   max (111230 * k + 19) 6858 + 4
 
+/-- Worst-case instruction budget `(12 * 8 + 11) * 64 + 10 + 4 = 6862` for `.eval u` in the
+large-capacity regime `n_max ≥ 2 ^ 320000`, independent of `k`: the double-tabulation evaluation
+code takes `(12 * c + 11) * d + 10 = 6858` instructions at `c = 8` and `d = 64` (one inner loop of
+`c` top-table lookups for each of the `d` output positions, then a bottom-table lookup), and the
+remaining `4` cover subroutine dispatch and the final `halt` instruction. -/
+def doubleTabEvalTime : ℕ :=
+  (12 * 8 + 11) * 64 + 10 + 4
+
 /-- Worst-case instruction budget for `.resample` (including subroutine dispatch and the final
 `halt` instruction):
 - `5 * k + 13` instructions (`O_k(1)`) when `n_max < 2 ^ 320000`;
@@ -583,9 +603,11 @@ state `(reg₀, mem₀)` with `reg₀ 22 = base`, `reg₀ 1 = n_max`, `reg₀ 2 
 2. **Multi-operation execution and `k`-wise independence**: for every oblivious operation sequence
    `ops : List (Op U)`, `p_op` executes `ops` sequentially from `ν₀` (`RunsOps`) within
    `evalTimeBound k = O_k(1)` executed instructions per `.eval u` (deterministically and without
-   modifying memory) and `resampleTime k n_max` executed instructions per `.resample`, and whenever
-   every resampling epoch in `ops` queries at most `k` distinct keys (`BoundedEpochKeys k ops`), the
-   resulting transcript distribution satisfies `WhpKWiseContract (failureProbBound k n_max) ops`.
+   modifying memory) and `resampleTime k n_max` executed instructions per `.resample`; when
+   `n_max ≥ 2 ^ 320000` the same run also stays within `doubleTabEvalTime = 6862` executed
+   instructions per `.eval u`, independently of `k`. Whenever every resampling epoch in `ops`
+   queries at most `k` distinct keys (`BoundedEpochKeys k ops`), the resulting transcript
+   distribution satisfies `WhpKWiseContract (failureProbBound k n_max) ops`.
    In the large-capacity regime (`n_max ≥ 2 ^ 320000`), non-vacuous `k`-wise independence requires
    `2 * codeBound k ≤ 2 ^ (3 * charBits n_max)` (which holds for `k` up to roughly
    `n_max ^ (3 / 128)`); when `2 * codeBound k > 2 ^ (3 * charBits n_max)`,
@@ -625,6 +647,9 @@ theorem highIndependenceHashFamily_fresh :
                 ∃ ν_final : PMF (SeqState U (2 ^ M)),
                   RunsOps w p_op base (space k n_max) (evalTimeBound k) (resampleTime k n_max)
                     ops ν₀ ν_final ∧
+                  (regimeThreshold ≤ n_max →
+                    RunsOps w p_op base (space k n_max) doubleTabEvalTime (resampleTime k n_max)
+                      ops ν₀ ν_final) ∧
                   (BoundedEpochKeys k ops →
                     WhpKWiseContract (failureProbBound k n_max) ops
                       (ν_final.map SeqState.transcript)) :=
@@ -664,7 +689,9 @@ which first zeroes `[base, base + space k n_max)` in `4 * space k n_max + 6` exe
 (`initClearTime`) and therefore requires no zeroed-memory precondition on `mem₀`. As in
 `highIndependenceHashFamily_fresh`, `p_initClear` and `p_op` are chosen per instance
 `(k, n_max, U, M)` (independently of `w` and `base`) with no static code-size bound, all time
-bounds count executed instructions only, and for `n_max ≥ 2 ^ 320000` non-vacuous `k`-wise
+bounds count executed instructions only, each `.eval u` stays within the `k`-independent
+`doubleTabEvalTime = 6862` instructions when `n_max ≥ 2 ^ 320000`, and for
+`n_max ≥ 2 ^ 320000` non-vacuous `k`-wise
 independence requires `2 * codeBound k ≤ 2 ^ (3 * charBits n_max)` (otherwise
 `failureProbBound k n_max = 1` and only `TranscriptMatches` holds). -/
 theorem highIndependenceHashFamily_clear :
@@ -700,6 +727,9 @@ theorem highIndependenceHashFamily_clear :
                 ∃ ν_final : PMF (SeqState U (2 ^ M)),
                   RunsOps w p_op base (space k n_max) (evalTimeBound k) (resampleTime k n_max)
                     ops ν₀ ν_final ∧
+                  (regimeThreshold ≤ n_max →
+                    RunsOps w p_op base (space k n_max) doubleTabEvalTime (resampleTime k n_max)
+                      ops ν₀ ν_final) ∧
                   (BoundedEpochKeys k ops →
                     WhpKWiseContract (failureProbBound k n_max) ops
                       (ν_final.map SeqState.transcript)) :=
@@ -734,7 +764,7 @@ theorem highIndependenceHashFamily_clear :
       @RunsOps.nil, @RunsOps.cons⟩
 
 /--
-info: abstract audit passed for `ComplexityAbstracts.HashFamiliesAbstract`: 413 root
+info: abstract audit passed for `ComplexityAbstracts.HashFamiliesAbstract`: 414 root
 declarations
 -/
 #guard_msgs (whitespace := lax) in

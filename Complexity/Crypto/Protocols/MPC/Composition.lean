@@ -429,16 +429,18 @@ first state component. -/
     .message (sender := parties s₀) (receiver := parties r₀)
       (fun st_sender => send (st_sender.2 s₀ rfl))
       ((Steps.embed parties Outer next).mapState fun _ st_i =>
-        (st_i.1.1, fun s hs =>
-          (st_i.1.2 s hs,
-            pullRoundReceived parties (.message s₀ r₀ Msg) hs st_i.2)))
+        let ((outer_i, st_k_i), recv_i) := st_i
+        (outer_i, fun s hs =>
+          (st_k_i s hs,
+            pullRoundReceived parties (.message s₀ r₀ Msg) hs recv_i)))
   | .oracle (op := op) (parties := subParties) query next =>
     .oracle (op := op) (parties := subParties.trans parties)
       (fun t st_party => query t (st_party.2 (subParties t) rfl))
       ((Steps.embed parties Outer next).mapState fun _ st_i =>
-        (st_i.1.1, fun s hs =>
-          (st_i.1.2 s hs,
-            pullRoundReceived parties (.oracle op subParties) hs st_i.2)))
+        let ((outer_i, st_k_i), recv_i) := st_i
+        (outer_i, fun s hs =>
+          (st_k_i s hs,
+            pullRoundReceived parties (.oracle op subParties) hs recv_i)))
 
 @[simp] private theorem outputAt_embed {k m : ℕ} {spec : MultiOracleSpec}
     (parties : Fin k ↪ Fin m) (Outer : Fin m → Type)
@@ -515,16 +517,19 @@ execution of `(Sub op).steps` along `parties`. -/
     .message (sender := s₀) (receiver := r₀)
       (fun st_sender => send st_sender.1)
       ((Steps.compose Sub next).mapState fun _ st_i =>
-        ((st_i.1.1, st_i.2), st_i.1.2))
+        let ((state_i, coins_i), recv_i) := st_i
+        ((state_i, recv_i), coins_i))
   | .oracle (op := op) (parties := parties) (sc := rest) query next =>
     (((Steps.embed parties (fun i => State i × Schedule.SubCoins Coins₂ rest i)
         (Sub op).steps).mapState
       (fun i st_i =>
-        ((st_i.1, st_i.2.2),
+        let (state_i, slotCoins_i, restCoins_i) := st_i
+        ((state_i, restCoins_i),
           fun (s : Fin (spec₁.arity op)) (hs : parties s = i) =>
-            (query s (hs.symm ▸ st_i.1), st_i.2.1 s hs)))).append
+            (query s (hs.symm ▸ state_i), slotCoins_i s hs)))).append
       ((Steps.compose Sub next).mapState fun _ st_i =>
-        ((st_i.1.1, st_i.2), st_i.1.2)))
+        let ((state_i, restCoins_i), subOut_i) := st_i
+        ((state_i, subOut_i), restCoins_i)))
 
 /-- Expand a simulated outer execution along `steps : Steps State Out sc₁` by invoking the inner
 simulator `S₂ op (subCoalition parties I)` at every `.oracle op parties` round (Goldreich Theorem

@@ -9,7 +9,6 @@ module
 
 public import Complexity.Crypto.Computational.GeneratorXor
 public import Complexity.Crypto.Computational.Pseudoentropy.ThreeSource.Amplification
-import Complexity.Tactic.PolyTime
 
 /-!
 # Combining the entropy-grid candidates
@@ -26,7 +25,9 @@ the program itself never chooses or estimates an entropy.
 
 * `isPolyTime_combinedGenerate`: one uniform implementation of the complete grid.
 * `length_combinedGenerate`: output length is one bit beyond the grid's total seed cost.
-* `combinedGenerate_indistinguishable`: security against every efficient test of the full output.
+* `combinedGenerate_indistinguishableWithAdvice`, `combinedGenerate_indistinguishable`: security
+  against every efficient test of the full output, relative to fixed advice and in the uniform
+  case.
 
 ## References
 
@@ -64,23 +65,14 @@ theorem isPolyTime_combinedGenerate {pair : SamplablePair} (saved : pair.SeedRea
       combinedGenerate input.1 (saved.length input.1) (observationBound input.1)
         (densityBound input.1) (common input.1) (saved.evaluate input.1) input.2)
       (encPair encUnary encBits) encBits := by
-  have hobservation := hobservation.tidy
-  have hdensity := hdensity.tidy
-  have hcommon := hcommon.tidy
-  refine .of_tidy ?_
-  have hlength := saved.length_isPolyTime.tidy
-  have hsize := (isPolyTime_size saved.length_isPolyTime (.of_tidy hdensity)).tidy
-  have houtput : ComputableTidilyInPolyTime
-      (fun n => size (saved.length n) (densityBound n) * common n + 1) encUnary encUnary := by
-    fun_prop
-  unfold combinedGenerate
-  refine (GeneratorXor.isPolyTime_generate (.of_tidy (by polytime)) (.of_tidy (by polytime))
-    (.of_tidy (houtput.comp (ComputableTidilyInPolyTime.fst encUnary encBits)))
-    (.of_tidy ?_) (.of_tidy (by polytime))).tidy
-  have hgenerate := (isPolyTime_amplifiedGenerate saved (.of_tidy hobservation) (.of_tidy
-    hdensity) (.of_tidy hcommon)).tidy
-  exact hgenerate.comp (g := fun input : ((ℕ × List Bool) × ℕ) × List Bool =>
-    ((input.1.1.1, input.1.2), input.2)) (by fun_prop)
+  have hsize := isPolyTime_size saved.length_isPolyTime hdensity
+  have houtput := (hsize.unary_mul' hcommon).unary_add' (.const 1)
+  have h1 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary) encBits
+  have hgen := ((h1.fst'.fst'.prod h1.snd').prod (.snd _ encBits)).trans
+    (isPolyTime_amplifiedGenerate saved hobservation hdensity hcommon)
+  exact GeneratorXor.isPolyTime_generate (hsize.comp (.fst encUnary encBits))
+    (hcommon.comp (.fst encUnary encBits)) (houtput.comp (.fst encUnary encBits))
+    hgen (.snd encUnary encBits)
 
 /-- The output is one bit longer than the total cost of all the independent seed blocks. -/
 theorem length_combinedGenerate (n sourceBits observationBound densityBound commonBits : ℕ)
@@ -88,6 +80,31 @@ theorem length_combinedGenerate (n sourceBits observationBound densityBound comm
     (combinedGenerate n sourceBits observationBound densityBound commonBits evaluate seed).length =
       size sourceBits densityBound * commonBits + 1 := by
   simp only [combinedGenerate, GeneratorXor.length_generate]
+
+/-- One entropy-valid choice suffices for security of the complete, explicitly computed grid
+relative to fixed advice. -/
+theorem combinedGenerate_indistinguishableWithAdvice {pair : SamplablePair} {gap : ℕ → ℝ}
+    {advice : ℕ → List Bool} (hpair : pair.HasGapWithAdvice gap advice)
+    (saved : pair.SeedRealization)
+    {observationBound densityBound common : ℕ → ℕ}
+    (bounds : PaddingBounds saved observationBound densityBound common)
+    (hgap : ∀ᶠ n in atTop, 4 / (dyadicSize (densityBound n) : ℝ) ≤ gap n) :
+    IndistinguishableWithAdvice advice
+      (fun n => (uniformList (size (saved.length n) (densityBound n) * common n)).map
+        (combinedGenerate n (saved.length n) (observationBound n) (densityBound n) (common n)
+          (saved.evaluate n)))
+      (fun n => uniformList (size (saved.length n) (densityBound n) * common n + 1)) := by
+  obtain ⟨choose, hchoose, hsecure⟩ :=
+    exists_secure_amplified_choice_withAdvice hpair saved bounds hgap
+  obtain ⟨hobservation, hdensity, hcommon, _, _⟩ := bounds
+  have hsize := isPolyTime_size saved.length_isPolyTime hdensity
+  exact GeneratorXor.indistinguishableWithAdvice (choose := choose)
+    (count := fun n => size (saved.length n) (densityBound n)) (seedBits := common)
+    (outputBits := fun n => size (saved.length n) (densityBound n) * common n + 1)
+    (generator := fun n index => amplifiedGenerate n (saved.length n) (observationBound n)
+      (densityBound n) (common n) index (saved.evaluate n))
+    hsize hcommon ((hsize.unary_mul' hcommon).unary_add' (.const 1))
+    (isPolyTime_amplifiedGenerate saved hobservation hdensity hcommon) hchoose hsecure
 
 /-- One entropy-valid choice suffices for security of the complete, explicitly computed grid. -/
 theorem combinedGenerate_indistinguishable {pair : SamplablePair} {gap : ℕ → ℝ}
@@ -99,23 +116,9 @@ theorem combinedGenerate_indistinguishable {pair : SamplablePair} {gap : ℕ →
       (fun n => (uniformList (size (saved.length n) (densityBound n) * common n)).map
         (combinedGenerate n (saved.length n) (observationBound n) (densityBound n) (common n)
           (saved.evaluate n)))
-      (fun n => uniformList (size (saved.length n) (densityBound n) * common n + 1)) := by
-  obtain ⟨choose, hchoose, hsecure⟩ := exists_secure_amplified_choice hpair saved bounds hgap
-  obtain ⟨hobservationPlain, hdensityPlain, hcommonPlain, _, _⟩ := bounds
-  have hobservation := hobservationPlain.tidy
-  have hdensity := hdensityPlain.tidy
-  have hcommon := hcommonPlain.tidy
-  have hlength := saved.length_isPolyTime.tidy
-  have hsize := (isPolyTime_size saved.length_isPolyTime (.of_tidy hdensity)).tidy
-  unfold combinedGenerate
-  refine GeneratorXor.indistinguishable (choose := choose)
-    (count := fun n => size (saved.length n) (densityBound n)) (seedBits := common)
-    (outputBits := fun n => size (saved.length n) (densityBound n) * common n + 1)
-    (generator := fun n index => amplifiedGenerate n (saved.length n) (observationBound n)
-      (densityBound n) (common n) index (saved.evaluate n))
-    (.of_tidy (by polytime)) (.of_tidy hcommon) (.of_tidy (by polytime)) (.of_tidy ?_) hchoose
-      hsecure
-  exact (isPolyTime_amplifiedGenerate saved (.of_tidy hobservation) (.of_tidy hdensity) (.of_tidy
-    hcommon)).tidy
+      (fun n => uniformList (size (saved.length n) (densityBound n) * common n + 1)) :=
+  computationallyIndistinguishable_iff_indistinguishableWithAdvice_nil.mpr
+    (combinedGenerate_indistinguishableWithAdvice
+      (SamplablePair.hasGap_iff_hasGapWithAdvice_nil.mp hpair) saved bounds hgap)
 
 end Cslib.Crypto.Pseudoentropy.EntropyGrid

@@ -116,11 +116,11 @@ hit lookups, in-place value overwrite, and absent-key miss lookup at capacity `n
 def sampleOps : List (Dictionary.Op 16) :=
   [ .insert ⟨3, by decide⟩ 42,
     .insert ⟨11, by decide⟩ 17,
-    .get ⟨3, by decide⟩,
-    .get ⟨11, by decide⟩,
+    .query ⟨3, by decide⟩,
+    .query ⟨11, by decide⟩,
     .insert ⟨3, by decide⟩ 99,
-    .get ⟨3, by decide⟩,
-    .get ⟨7, by decide⟩ ]
+    .query ⟨3, by decide⟩,
+    .query ⟨7, by decide⟩ ]
 
 theorem sampleOps_validHistory :
     (Dictionary.spec 16 256 10).ValidHistory (Dictionary.empty 16) sampleOps := by

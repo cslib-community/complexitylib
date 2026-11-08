@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Flat
 public import Mathlib.Data.Nat.Log
+import Complexity.Computability.WordRAM.Admission
 
 /-!
 # Sufficient physical width from original pruned-query inputs
@@ -49,17 +50,14 @@ theorem admissionWidth_pos (L Q A B : ℕ) : 0 < admissionWidth L Q A B := by
 envelope, retaining the two extra bits charged by the existing signed arithmetic kernels. -/
 theorem admission_bounds {W L Q A B : ℕ} (hW : admissionWidth L Q A B ≤ W) :
     0 < W - 2 ∧ magnitudeBound L A B < 2 ^ ((W - 2) - 1) ∧ Fits W (addressBound L Q) := by
-  have hlog := Nat.le_pow_clog (by decide : 1 < (2 : ℕ))
-    (magnitudeBound L A B + addressBound L Q + 1)
   have hs : Nat.clog 2 (magnitudeBound L A B + addressBound L Q + 1) ≤ (W - 2) - 1 := by
     unfold admissionWidth at hW
     omega
-  have hpower := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) hs
-  refine ⟨by unfold admissionWidth at hW; omega, by omega, ?_⟩
-  change addressBound L Q < 2 ^ W
-  have hpower' := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) (by omega :
-    Nat.clog 2 (magnitudeBound L A B + addressBound L Q + 1) ≤ W)
-  omega
+  refine ⟨by unfold admissionWidth at hW; omega, ?_, ?_⟩
+  · exact fits_of_lt_clog_le
+      (by omega : magnitudeBound L A B < magnitudeBound L A B + addressBound L Q + 1) hs
+  · exact fits_of_lt_clog_le
+      (by omega : addressBound L Q < magnitudeBound L A B + addressBound L Q + 1) (by omega)
 
 /-- A complete initialized run at every sufficiently wide physical width, with guaranteed input
 fit, a shared pre-halt memory witness, charged halt, all output values and outside preservation. -/

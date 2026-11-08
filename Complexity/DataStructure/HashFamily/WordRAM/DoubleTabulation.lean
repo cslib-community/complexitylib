@@ -88,6 +88,9 @@ and lifts it to `Cslib.WordRAM.Basis.standard`:
   `Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.provableSpace_le`: uniform
   `O_{c_exp, k}(1)` evaluation time and `O_{c_exp, k}(n_max + 1)` space bounds across all
   `n_max : ℕ`.
+* `Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.provableImpl_evalSteps_of_le`:
+  `k`-independent evaluation time `evalSteps (provableC c_exp) (provableD c_exp)` once
+  `doubleTabThreshold c_exp ≤ n_max`.
 
 ## References
 
@@ -101,7 +104,7 @@ namespace Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation
 
 open Cslib.WordRAM Cslib.Probability
 open Cslib.DataStructure Cslib.DataStructure.WordRAM.Randomized
-open Cslib.Algorithms.WordRAM.ExactLog
+open Cslib.WordRAM.ExactLog
 open scoped ENNReal BigOperators
 
 /-! ## Section 1: Flat memory layout, seed representations, and slice equivalences -/
@@ -1819,6 +1822,23 @@ theorem provableImpl_evalSteps_le {c_exp k n_max U M w base : ℕ}
         provableLimbBound c_exp := limbCount_le_provableLimbBound hU hM
     gcongr
   · exact le_max_right _ _
+
+/-- **`k`-independent evaluation time above the threshold**: once
+`doubleTabThreshold c_exp ≤ n_max`, `provableImpl` evaluates by Double Tabulation in exactly
+`evalSteps (provableC c_exp) (provableD c_exp)` instructions, whatever the independence parameter
+`k`, capacity `n_max`, universe `U` and output width `M`. -/
+theorem provableImpl_evalSteps_of_le {c_exp k n_max U M w base : ℕ}
+    (hge : doubleTabThreshold c_exp ≤ n_max)
+    (hw : 2 * trinomialDeg U M ≤ w)
+    (hfit_space : Fits w (base + provableSpace c_exp k n_max))
+    (hfit_n : Fits w (max n_max 2))
+    (hfit_U : Fits w (max U 2 + 1)) :
+    (provableImpl c_exp k n_max U M hw hfit_space hfit_n hfit_U).evalSteps =
+      evalSteps (provableC c_exp) (provableD c_exp) := by
+  dsimp only [provableImpl]
+  split_ifs with h
+  · exact absurd hge (not_le.mpr h)
+  · rfl
 
 end Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation
 

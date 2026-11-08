@@ -224,7 +224,7 @@ theorem rpReducible_iff_exists_seeded :
   constructor
   · rintro ⟨R, hR, hyes, hno⟩
     obtain ⟨c, d, evalR, hevalR, hsupp, hlaw⟩ := hR.exists_total_seeded_evaluator
-    refine ⟨Polynomial.C c * (Polynomial.X + 1) ^ d, fun x => evalR x.1 x.2, .of_tidy hevalR,
+    refine ⟨Polynomial.C c * (Polynomial.X + 1) ^ d, fun x => evalR x.1 x.2, hevalR,
       fun a ha r => hyes a ha _ (hsupp a (List.ofFn r)), fun a ha => ?_⟩
     have hp : (Polynomial.C c * (Polynomial.X + 1) ^ d).eval (encA a).length =
         c * ((encA a).length + 1) ^ d := by simp

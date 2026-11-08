@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.WordRAM.Notation
 public import Complexity.Foundations.NumberTheory.AKS.Coefficients
+import Complexity.Computability.WordRAM.CountingLoop
 
 /-!
 # Writing and comparing coefficient arrays on the word RAM
@@ -78,32 +79,31 @@ def program : Code .standard 10 :=
   .seq (ram[ one ← #1; zero ← #0; i ← #0 ]) (.seq (.loop (.lt i rr) clearBody) finish)
 
 private theorem clear_step {w b r : ℕ} {m : ℕ → ℕ} (hfb : Fits w (b + r)) (y : Data 10)
-    (hy : y.regs base = b ∧ y.regs rr = r ∧ y.regs one = 1 ∧ y.regs zero = 0 ∧ y.regs i ≤ r ∧
+    (hy : y.regs base = b ∧ y.regs rr = r ∧ y.regs one = 1 ∧ y.regs zero = 0 ∧
       ∀ a', y.mem a' = if b ≤ a' ∧ a' < b + y.regs i then 0 else m a')
-    (hc : (Cond.lt i rr).Holds y) :
+    (hc : y.regs i < r) :
     ∃ z, ExecWithin w clearBody y z 3 ∧
-      (z.regs base = b ∧ z.regs rr = r ∧ z.regs one = 1 ∧ z.regs zero = 0 ∧ z.regs i ≤ r ∧
-        ∀ a', z.mem a' = if b ≤ a' ∧ a' < b + z.regs i then 0 else m a') ∧
-      r - z.regs i < r - y.regs i := by
-  obtain ⟨hyb, hyr, hyo, hyz, hyi, hym⟩ := hy
+      (z.regs base = b ∧ z.regs rr = r ∧ z.regs one = 1 ∧ z.regs zero = 0 ∧
+        ∀ a', z.mem a' = if b ≤ a' ∧ a' < b + (y.regs i + 1) then 0 else m a') ∧
+      z.regs i = y.regs i + 1 := by
+  obtain ⟨hyb, hyr, hyo, hyz, hym⟩ := hy
   obtain ⟨I, hI⟩ : ∃ I, y.regs i = I := ⟨_, rfl⟩
-  have hlt : I < r := by simpa only [Cond.holds_lt, hyr, hI] using hc
+  have hlt : I < r := by simpa only [hI] using hc
   have hf₁ : Fits w (b + I) := hfb.of_le (by omega)
   have hf₂ : Fits w (I + 1) := hfb.of_le (by omega)
   let z := ((y.set addr (b + I)).write (b + I) 0).set i (I + 1)
   have hrun : ExecWithin (B := .standard) w clearBody y z 3 := by
     ram_eval [clearBody, z, hyb, hI, hyo, hyz, hf₁, hf₂]
-  refine ⟨z, hrun, ⟨?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩
+  refine ⟨z, hrun, ⟨?_, ?_, ?_, ?_, ?_⟩, ?_⟩
   · simp +decide [z, hyb]
   · simp +decide [z, hyr]
   · simp +decide [z, hyo]
   · simp +decide [z, hyz]
-  · simp only [z, Data.set_regs, Function.update_self]; omega
   · intro a'
-    simp only [z, Data.set_mem, Data.write_mem, Data.set_regs, Function.update_self,
+    simp only [z, Data.set_mem, Data.write_mem,
       Function.update_apply, hym, hI]
     split_ifs <;> first | rfl | omega
-  · simp only [z, Data.set_regs, Function.update_self, hI]; omega
+  · simp only [z, Data.set_regs, Function.update_self, hI]
 
 /-- **Writing `X^e + a`.** For `r ≥ 1` and `n ≥ 1`, with `e mod r` in `er` and the block end,
 `a`, `n` and `n + 1` fitting a word, the block `[b, b + r)` receives the coefficients
@@ -119,20 +119,19 @@ theorem exec {w : ℕ} (x : Data 10) {b r n e a : ℕ} (hb : x.regs base = b) (h
   let x₀ := ((x.set one 1).set zero 0).set i 0
   have hrun₀ : ExecWithin (B := .standard) w (ram[ one ← #1; zero ← #0; i ← #0 ]) x x₀ 3 := by
     ram_eval [x₀, h1]
-  have hx₀ : x₀.regs base = b ∧ x₀.regs rr = r ∧ x₀.regs one = 1 ∧ x₀.regs zero = 0 ∧
-      x₀.regs i ≤ r ∧ ∀ a', x₀.mem a' = if b ≤ a' ∧ a' < b + x₀.regs i then 0 else x.mem a' := by
-    refine ⟨?_, ?_, ?_, ?_, ?_, fun a' => ?_⟩
+  let P (j : ℕ) (y : Data 10) : Prop :=
+    y.regs base = b ∧ y.regs rr = r ∧ y.regs one = 1 ∧ y.regs zero = 0 ∧
+      ∀ a', y.mem a' = if b ≤ a' ∧ a' < b + j then 0 else x.mem a'
+  have hx₀ : P (x₀.regs i) x₀ := by
+    refine ⟨?_, ?_, ?_, ?_, fun a' => ?_⟩
     · simp +decide [x₀, hb]
     · simp +decide [x₀, hr]
     · simp +decide [x₀]
     · simp +decide [x₀]
-    · simp +decide [x₀]
     · simp only [x₀, Data.set_mem, Data.set_regs, Function.update_self]
       split_ifs <;> first | rfl | omega
-  obtain ⟨y, hrun₁, ⟨hyb, hyr, hyo, -, hyi, hym⟩, hc⟩ := ExecWithin.loop_invariant _
-    (fun y => r - y.regs i) (clear_step hfb) hx₀
-  have hir : y.regs i = r := by simp only [Cond.holds_lt, hyr] at hc; omega
-  rw [hir] at hym
+  obtain ⟨y, hrun₁, ⟨hyb, hyr, hyo, -, hym⟩, _⟩ := ExecWithin.loop_count P
+    (fun _ hy => hy.2.1) (clear_step hfb) (by simp [x₀]) hx₀
   -- The two nonzero coefficients.
   have hyn : y.regs nn = n := by
     rw [hrun₁.regs_eq (by decide), show x₀.regs nn = x.regs nn by simp +decide [x₀], hn]
@@ -229,17 +228,17 @@ def program : Code .standard 9 :=
 
 private theorem step {w a b r : ℕ} {m : ℕ → ℕ} (hfa : Fits w (a + r)) (hfb : Fits w (b + r))
     (y : Data 9)
-    (hy : y.regs p = a ∧ y.regs q = b ∧ y.regs rr = r ∧ y.regs one = 1 ∧ y.regs k ≤ r ∧
+    (hy : y.regs p = a ∧ y.regs q = b ∧ y.regs rr = r ∧ y.regs one = 1 ∧
       y.mem = m ∧ (y.regs flag = if ∀ k' < y.regs k, m (a + k') = m (b + k') then 1 else 0))
-    (hc : (Cond.lt k rr).Holds y) :
+    (hc : y.regs k < r) :
     ∃ z, ExecWithin w body y z 9 ∧
-      (z.regs p = a ∧ z.regs q = b ∧ z.regs rr = r ∧ z.regs one = 1 ∧ z.regs k ≤ r ∧
-        z.mem = m ∧ (z.regs flag = if ∀ k' < z.regs k, m (a + k') = m (b + k') then 1 else 0)) ∧
-      r - z.regs k < r - y.regs k := by
+      (z.regs p = a ∧ z.regs q = b ∧ z.regs rr = r ∧ z.regs one = 1 ∧
+        z.mem = m ∧ (z.regs flag = if ∀ k' < y.regs k + 1, m (a + k') = m (b + k') then 1 else 0)) ∧
+      z.regs k = y.regs k + 1 := by
   classical
-  obtain ⟨hya, hyb, hyr, hyo, hyk, hym, hyf⟩ := hy
+  obtain ⟨hya, hyb, hyr, hyo, hym, hyf⟩ := hy
   obtain ⟨K, hK⟩ : ∃ K, y.regs k = K := ⟨_, rfl⟩
-  have hlt : K < r := by simpa only [Cond.holds_lt, hyr, hK] using hc
+  have hlt : K < r := by simpa only [hK] using hc
   rw [hK] at hyf
   have hf₁ : Fits w (a + K) := hfa.of_le (by omega)
   have hf₂ : Fits w (b + K) := hfb.of_le (by omega)
@@ -260,18 +259,17 @@ private theorem step {w a b r : ℕ} {m : ℕ → ℕ} (hfa : Fits w (a + r)) (h
     · refine ExecWithin.mono (T := 8) ?_ (by omega)
       ram_eval [body, z, f, hya, hyb, hK, hyo, hym, heq, hf₁, hf₂, hf₃]
     · ram_eval [body, z, f, hya, hyb, hK, hyo, hym, heq, hf₁, hf₂, hf₃]
-  refine ⟨z, hrun, ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩
+  refine ⟨z, hrun, ⟨?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩
   · simp +decide [z, hya]
   · simp +decide [z, hyb]
   · simp +decide [z, hyr]
   · simp +decide [z, hyo]
-  · simp +decide [z]; omega
   · simp +decide [z, hym]
-  · simp only [z, f, Data.set_regs, Function.update_self]
+  · simp only [z, f, Data.set_regs, hK]
     rw [Function.update_of_ne (by decide), Function.update_self]
     simp only [hiff]
     by_cases heq : m (a + K) = m (b + K) <;> simp [heq, hyf]
-  · simp +decide [z, hK]; omega
+  · simp only [z, Data.set_regs, Function.update_self, hK]
 
 /-- **Comparing blocks.** With both block ends fitting a word, the program leaves `1` in `flag`
 exactly when the blocks `[a, a + r)` and `[b, b + r)` agree, and `0` otherwise, within
@@ -284,14 +282,13 @@ theorem exec {w : ℕ} (x : Data 9) {a b r : ℕ} (ha : x.regs p = a) (hb : x.re
   let x₀ := ((x.set flag 1).set one 1).set k 0
   have hrun₀ : ExecWithin (B := .standard) w (ram[ flag ← #1; one ← #1; k ← #0 ]) x x₀ 3 := by
     ram_eval [x₀, h1]
-  have hx₀ : x₀.regs p = a ∧ x₀.regs q = b ∧ x₀.regs rr = r ∧ x₀.regs one = 1 ∧
-      x₀.regs k ≤ r ∧ x₀.mem = x.mem ∧
-      (x₀.regs flag = if ∀ k' < x₀.regs k, x.mem (a + k') = x.mem (b + k') then 1 else 0) := by
-    refine ⟨?_, ?_, ?_, ?_, ?_, rfl, ?_⟩ <;> simp +decide [x₀, ha, hb, hr]
-  obtain ⟨y, hrun₁, ⟨-, -, hyr, -, hyk, hym, hyf⟩, hc⟩ := ExecWithin.loop_invariant _
-    (fun y => r - y.regs k) (step hfa hfb) hx₀
-  have hkr : y.regs k = r := by simp only [Cond.holds_lt, hyr] at hc; omega
-  rw [hkr] at hyf
+  let P (j : ℕ) (y : Data 9) : Prop :=
+    y.regs p = a ∧ y.regs q = b ∧ y.regs rr = r ∧ y.regs one = 1 ∧ y.mem = x.mem ∧
+      (y.regs flag = if ∀ k' < j, x.mem (a + k') = x.mem (b + k') then 1 else 0)
+  have hx₀ : P (x₀.regs k) x₀ := by
+    refine ⟨?_, ?_, ?_, ?_, rfl, ?_⟩ <;> simp +decide [x₀, ha, hb, hr]
+  obtain ⟨y, hrun₁, ⟨-, -, -, -, hym, hyf⟩, _⟩ := ExecWithin.loop_count P
+    (fun _ ⟨_, _, hrr, _⟩ => hrr) (step hfa hfb) (by simp [x₀]) hx₀
   refine ⟨y, (hrun₀.seq hrun₁).mono ?_, ?_, ?_, hym⟩
   · have : x₀.regs k = 0 := by simp +decide [x₀]
     rw [this]; omega

@@ -491,7 +491,7 @@ theorem exists_familyInverter_inversion_le {m : ℕ → ℕ} {core : ℕ → Lis
           Game.succProbability (ProbComp.eval (familyInversionGame m core familyAdv
             (GeneratorReindex.parameter m M))) := by
   obtain ⟨c, d, evaluate, heval, _, hlaw⟩ := hPPT.on.exists_total_seeded_evaluator
-  refine ⟨familyInverter m core c d evaluate, isPPT_familyInverter hm.tidy hcore.tidy heval,
+  refine ⟨familyInverter m core c d evaluate, isPPT_familyInverter hm.tidy hcore.tidy heval.tidy,
     fun {M} hM0 => ?_⟩
   let n := GeneratorReindex.parameter m M
   have hfits : m n ≤ M := GeneratorReindex.parameter_fits hM0
