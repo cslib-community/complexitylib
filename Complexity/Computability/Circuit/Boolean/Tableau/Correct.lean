@@ -38,6 +38,8 @@ the feature.
 
 ## Main results
 
+* `Cslib.Circuits.Boolean.Tableau.val_add`, `Cslib.Circuits.Boolean.Tableau.val_input`: the values
+  of gates and of input wires.
 * `Cslib.Circuits.Boolean.Tableau.invariant_le`: the features at every time `t ≤ T`.
 * `Cslib.Circuits.Boolean.Tableau.evalOutput_gates`: the output wire carries the answer.
 * `Cslib.Circuits.Boolean.Tableau.eval_circuit`: the tableau circuit outputs the answer.
@@ -72,14 +74,14 @@ noncomputable def val (T : ℕ) (x : List Bool) (w : ℕ) : Bool :=
 variable {T : ℕ} {x : List Bool}
 
 /-- The value of a numbered gate is its operation applied to the values of its arguments. -/
-private theorem val_add {g : ℕ} (hg : g < numGates k State T) :
+theorem val_add {g : ℕ} (hg : g < numGates k State T) :
     val tm T x (x.length + g) = interpretation (gateCode tm x.length T g).1
       fun a => (gateCode tm x.length T g).2[a.val]?.elim false (val tm T x) := by
   exact getD_evalCode interpretation false x (isCodeFrom_gates tm x.length T)
     (by simp [gates, hg])
 
 /-- The input wires carry the input. -/
-private theorem val_input {i : ℕ} (hi : i < x.length) : val tm T x i = x[i] := by
+theorem val_input {i : ℕ} (hi : i < x.length) : val tm T x i = x[i] := by
   rw [val, List.getD_eq_getElem?_getD,
     List.getElem?_eq_getElem (by simp only [length_evalCode]; omega)]
   have hpre := prefix_evalCode interpretation false x (gates tm x.length T)
