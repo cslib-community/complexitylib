@@ -229,11 +229,21 @@ class WorkflowWiringTests(unittest.TestCase):
         for name in ("lean_action_ci.yml", "docs.yml", "comparator.yml"):
             with self.subTest(workflow=name):
                 text = (REPO / ".github/workflows" / name).read_text()
-                marker = next(line for line in text.splitlines(keepends=True)
-                              if line.startswith("      - uses: leanprover/lean-action@"))
-                action = text.split(marker, 1)[1].split("      - ", 1)[0]
-                self.assertRegex(action, r"use-mathlib-cache: [\"']false[\"']")
-                self.assertNotIn("continue-on-error", action)
+                install = "      - uses: ./.github/actions/install-lean\n"
+                self.assertIn(install, text)
+                self.assertNotIn("continue-on-error", text.split(install, 1)[1].split("      - ", 1)[0])
+                self.assertLess(text.index(install),
+                                text.index("      - name: Restore Mathlib cache with retries"))
+                if name == "docs.yml":
+                    # API docs still use lean-action, for its GitHub cache restore.
+                    marker = next(line for line in text.splitlines(keepends=True)
+                                  if line.startswith("      - uses: leanprover/lean-action@"))
+                    action = text.split(marker, 1)[1].split("      - ", 1)[0]
+                    self.assertRegex(action, r"use-mathlib-cache: [\"']false[\"']")
+                    self.assertNotIn("continue-on-error", action)
+                else:
+                    # A release outage must not fail CI: elan comes only from install-lean.
+                    self.assertNotIn("leanprover/lean-action", text)
                 step = text.split("      - name: Restore Mathlib cache with retries\n", 1)[1].split("      - ", 1)[0]
                 self.assertIn("continue-on-error: true", step)
                 self.assertIn("timeout-minutes: 10", step)
@@ -249,7 +259,7 @@ class WorkflowWiringTests(unittest.TestCase):
 
     def test_comparator_restores_before_strict_contracts_and_is_manual_only(self):
         text = (REPO / ".github/workflows/comparator.yml").read_text()
-        self.assertLess(text.index("      - uses: leanprover/lean-action@v1"),
+        self.assertLess(text.index("      - uses: ./.github/actions/install-lean"),
                         text.index("      - name: Restore Mathlib cache with retries"))
         self.assertLess(text.index("      - name: Restore Mathlib cache with retries"),
                         text.index("run: scripts/cache/get-missing.sh"))

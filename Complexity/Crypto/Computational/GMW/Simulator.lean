@@ -849,8 +849,7 @@ theorem isPPTOn_gmwRealWithPads {α Param : Type} {enc : α ↪ List Bool}
     {n s m : Param → ℕ} {a : Param → α} {z w : Param → List Bool}
     {φ : Param → CNF ℕ} {pads : Param → List (List Bool)}
     (hg : ComputableInPolyTime generator encBits encBits)
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z))
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
     (hn : ComputableInPolyTime n input encUnary)
     (hs : ComputableInPolyTime s input encUnary)
     (hm : ComputableInPolyTime m input encUnary)
@@ -903,9 +902,8 @@ private theorem isPPTOn_gmwViewReduction_aux {α γ : Type} {enc : α ↪ List B
     (hg : ComputableInPolyTime generator encBits encBits)
     (hlen : ∀ s, (generator s).length = length s.length)
     (hf : ComputableInPolyTime f enc encCNF)
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z))
-    (hadv : IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
+    (hadv : IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
       (fun ((n, a, z'), view) => adversary n a z' view))
     (hz : ComputableInPolyTime z encAux encBits)
     (hz' : ComputableInPolyTime z' encAux encBits) :
@@ -1003,12 +1001,11 @@ theorem isPPTOn_gmwViewReduction {α : Type} {enc : α ↪ List Bool}
     (hg : ComputableInPolyTime generator encBits encBits)
     (hlen : ∀ s, (generator s).length = length s.length)
     (hf : ComputableInPolyTime f enc encCNF)
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z))
-    (hadv : IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
+    (hadv : IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
       (fun ((n, a, z), view) => adversary n a z view)) :
     IsPPTOn
-      (encPair (encPair encUnary (encPair enc (encPair encBits encBits))) encBits) encBool
+      (encPair (encInstanceWitnessAuxInput enc) encBits) encBool
       (fun ((n, a, w, z), challenge) =>
         gmwViewReduction generator length f Vstar adversary n a w z challenge) := by
   have h := isPPTOn_gmwViewReduction_aux hg hlen hf hV hadv
@@ -1031,13 +1028,12 @@ theorem gmwView_negligible_of_advice_prg {α : Type} {enc : α ↪ List Bool}
     (hg : ComputableInPolyTime generator encBits encBits)
     (hlen : ∀ s, (generator s).length = length s.length)
     (hf : ComputableInPolyTime f enc encCNF)
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z))
-    (hadv : IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
+    (hadv : IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
       (fun ((n, a, z), view) => adversary n a z view))
     (hPRG : ∀ test : (ℕ × (α × (List Bool × List Bool))) × List Bool → ProbComp Bool,
       IsPPTOn
-        (encPair (encPair encUnary (encPair enc (encPair encBits encBits))) encBits)
+        (encPair (encInstanceWitnessAuxInput enc) encBits)
         encBool test →
       ∀ (a : ℕ → α) (w z : ℕ → List Bool),
         PolynomiallyBounded (fun n => (enc (a n)).length) →
@@ -1093,7 +1089,7 @@ def AdvicePRG {α : Type} (enc : α ↪ List Bool) (generator : List Bool → Li
   (∀ s, (generator s).length = length s.length) ∧
   ∀ test : (ℕ × (α × (List Bool × List Bool))) × List Bool → ProbComp Bool,
     IsPPTOn
-      (encPair (encPair encUnary (encPair enc (encPair encBits encBits))) encBits)
+      (encPair (encInstanceWitnessAuxInput enc) encBits)
       encBool test →
     ∀ (a : ℕ → α) (w z : ℕ → List Bool),
       PolynomiallyBounded (fun n => (enc (a n)).length) →
@@ -1150,9 +1146,8 @@ private theorem isPPTOn_gmwViewReduction_pair {α : Type} {enc : α ↪ List Boo
     (hg : ComputableInPolyTime generator encBits encBits)
     (hlen : ∀ s, (generator s).length = length s.length)
     (hf : ComputableInPolyTime f enc encCNF)
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z))
-    (hadv : IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
+    (hadv : IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
       (fun ((n, a, z'), view) => adversary n a z' view)) :
     IsPPTOn
       (encPair (encPair encUnary (encPair enc (encPair encBits (encPair encBits encBits)))) encBits)
@@ -1172,9 +1167,8 @@ theorem AdvicePRG.gmwView_negligible {α : Type} {enc : α ↪ List Bool}
     {adversary : ℕ → α → List Bool → List Bool → ProbComp Bool}
     (hAdv : AdvicePRG enc generator length)
     (hf : ComputableInPolyTime f enc encCNF)
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z))
-    (hadv : IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
+    (hadv : IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
       (fun ((n, a, z'), view) => adversary n a z' view))
     {a : ℕ → α} {w z z' : ℕ → List Bool}
     (ha : PolynomiallyBounded (fun n => (enc (a n)).length))
@@ -1218,8 +1212,7 @@ theorem gmwView_indistinguishable_gmwSimulator {α : Type} {enc : α ↪ List Bo
     (hG : PseudorandomGenerator generator length)
     {f : α → CNF ℕ} (hf : ComputableInPolyTime f enc encCNF)
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
-    (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun (n, a, z) => Vstar n a z))
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
     {a : ℕ → α} {w z : ℕ → List Bool}
     (ha : ComputableInPolyTime a encUnary enc)
     (hw_comp : ComputableInPolyTime w encUnary encBits)
