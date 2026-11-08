@@ -10,9 +10,10 @@ module
 public import Complexity.Init
 public import Complexity.Computability.Complexity.Classes.IP.Games.Emulation
 public import Complexity.Computability.Complexity.Classes.IP.Games.Repetition
-public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Advice
+public import Complexity.Computability.Complexity.Classes.NP.Advice
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.RoundCollapse
 
+import Complexity.Computability.Complexity.Classes.ArthurMerlin.Advice
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat

@@ -7,12 +7,13 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Advice
+public import Complexity.Computability.Complexity.Classes.NP.Advice
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound
 public import Complexity.Computability.Complexity.Problems.GraphIsomorphism
 public import Complexity.Foundations.Data.BitString.Block
 public import Mathlib.Data.Nat.Factorial.Basic
 
+import Complexity.Computability.Complexity.Classes.ArthurMerlin.Advice
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
