@@ -9,7 +9,6 @@ module
 
 public import Complexity.Computability.Circuit.Quantum.RealEncoding
 public import Complexity.Computability.Circuit.Quantum.Uniform
-import Complexity.Computability.Circuit.Quantum.Parallel
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 
@@ -72,8 +71,7 @@ constructed as a placed gate.
 ## Main results
 
 * `Cslib.Quantum.PlacedGate.eval_ctrlPhase_ket`: a controlled phase gate on a basis state.
-* `Cslib.Quantum.GateCode.toPlacedGate?_succ`, `Cslib.Quantum.GateCode.im_toPlacedGate?_gate`: gate
-  codes on one more qubit, and the reality of their gates.
+* `Cslib.Quantum.GateCode.im_toPlacedGate?_gate`: the gates of gate codes are real.
 * `Cslib.Quantum.PhaseGateCode.realSimulates_phaseCodes`: four Hadamard and classical gates
   simulate a controlled phase gate.
 * `Cslib.Quantum.PhaseGateCode.realSimulates_toRealCodes`: the real translation simulates the
@@ -173,48 +171,6 @@ theorem PlacedGate.eval_ctrlPhase_ket (inv : Bool) {k : ℕ} (e : Fin k ↪ Fin 
 
 namespace GateCode
 
-/-- **A gate code on one more qubit** denotes the same gate, placed on the first qubits. -/
-theorem toPlacedGate?_succ {g : GateCode} (hg : g.WellFormed m) :
-    toPlacedGate? (m + 1) g = (toPlacedGate? m g).map PlacedGate.castSucc := by
-  have hemb {k : ℕ} {U : Gate k} {e e' : Fin k ↪ Fin (m + 1)} (h : ∀ i, e i = e' i) :
-      (⟨k, U, e⟩ : PlacedGate (m + 1)) = ⟨k, U, e'⟩ := by
-    rw [Function.Embedding.ext h]
-  match g, hg with
-  | (true, t, []), hg =>
-    have ht : t < m := hg.1
-    simp only [toPlacedGate?, ht, Nat.lt_succ_of_lt ht, ↓reduceDIte, Option.map_some,
-      PlacedGate.castSucc, Option.some.injEq]
-    exact hemb fun i => by fin_cases i; rfl
-  | (true, t, _ :: _), hg => exact absurd hg.2 (List.cons_ne_nil _ _)
-  | (false, t, []), hg =>
-    have ht : t < m := hg.2.2 t (List.mem_cons_self ..)
-    simp only [toPlacedGate?, ht, Nat.lt_succ_of_lt ht, ↓reduceDIte, Option.map_some,
-      PlacedGate.castSucc, Option.some.injEq]
-    exact hemb fun i => by fin_cases i; rfl
-  | (false, t, [c]), hg =>
-    obtain ⟨-, hnd, hlt⟩ := hg
-    have hct : c ≠ t := fun h => by simp [h] at hnd
-    have h₁ : c < m ∧ t < m ∧ c ≠ t := ⟨hlt c (by simp), hlt t (by simp), hct⟩
-    have h₂ : c < m + 1 ∧ t < m + 1 ∧ c ≠ t := ⟨by omega, by omega, hct⟩
-    simp only [toPlacedGate?]
-    rw [dite_eq_left h₂, dite_eq_left h₁, Option.map_some]
-    simp only [PlacedGate.castSucc, Option.some.injEq]
-    exact hemb fun i => by fin_cases i <;> rfl
-  | (false, t, [c₁, c₂]), hg =>
-    obtain ⟨-, hnd, hlt⟩ := hg
-    have h12 : c₁ ≠ c₂ := fun h => by simp [h] at hnd
-    have h1t : c₁ ≠ t := fun h => by simp [h] at hnd
-    have h2t : c₂ ≠ t := fun h => by simp [h] at hnd
-    have h₁ : c₁ < m ∧ c₂ < m ∧ t < m ∧ c₁ ≠ c₂ ∧ c₁ ≠ t ∧ c₂ ≠ t :=
-      ⟨hlt c₁ (by simp), hlt c₂ (by simp), hlt t (by simp), h12, h1t, h2t⟩
-    have h₂ : c₁ < m + 1 ∧ c₂ < m + 1 ∧ t < m + 1 ∧ c₁ ≠ c₂ ∧ c₁ ≠ t ∧ c₂ ≠ t :=
-      ⟨by omega, by omega, by omega, h12, h1t, h2t⟩
-    simp only [toPlacedGate?]
-    rw [dite_eq_left h₂, dite_eq_left h₁, Option.map_some]
-    simp only [PlacedGate.castSucc, Option.some.injEq]
-    exact hemb fun i => by fin_cases i <;> rfl
-  | (false, t, _ :: _ :: _ :: _), hg => exact absurd hg.1 (by simp)
-
 /-- **The gates of gate codes are real**: the Hadamard gate and the classical reversible gates
 have real entries. -/
 theorem im_toPlacedGate?_gate {g : GateCode} {p : PlacedGate m}
@@ -254,21 +210,16 @@ theorem im_toPlacedGate?_gate {g : GateCode} {p : PlacedGate m}
     exact hperm _ y x
   | (false, t, _ :: _ :: _ :: _), hp => simp [toPlacedGate?] at hp
 
-/-- A gate code well formed on `m` qubits is well formed on more qubits. -/
-theorem WellFormed.mono {g : GateCode} {m' : ℕ} (hg : g.WellFormed m) (hm : m ≤ m') :
-    g.WellFormed m' := by
-  match g, hg with
-  | (true, _, _), hg => exact ⟨by have := hg.1; omega, hg.2⟩
-  | (false, _, _), hg => exact ⟨hg.1, hg.2.1, fun i hi => by have := hg.2.2 i hi; omega⟩
-
 /-- **A gate code simulates itself** through the real encoding, on one more qubit. -/
 theorem realSimulates_ofCodes {g : GateCode} (hg : g.WellFormed m) :
     (Circuit.ofCodes (m + 1) [g]).RealSimulates (Circuit.ofCodes m [g]) := by
   obtain ⟨p, hp⟩ := Option.isSome_iff_exists.mp (isSome_toPlacedGate?_iff.mpr hg)
-  have hp' : toPlacedGate? (m + 1) g = some p.castSucc := by
-    rw [toPlacedGate?_succ hg, hp, Option.map_some]
+  have hp' : toPlacedGate? (m + 1) g = some (p.mapWires Fin.castSuccEmb) := by
+    have h := toPlacedGate?_shift (o := 0) (N := m + 1) (by omega) hg
+    rw [shift_zero, hp, Option.map_some] at h
+    exact h
   simp only [Circuit.ofCodes, List.filterMap_cons, hp, hp', List.filterMap_nil]
-  exact p.realSimulates_castSucc (im_toPlacedGate?_gate hp)
+  exact p.realSimulates_mapWires_castSuccEmb (im_toPlacedGate?_gate hp)
 
 end GateCode
 
@@ -503,7 +454,8 @@ theorem wellFormed_toRealCodes {gs : List PhaseGateCode} (hgs : ∀ c ∈ gs, c.
   match c, hwf, hg with
   | (false, g'), hwf, hg =>
     rw [show realCodes m (false, g') = [g'] from rfl, List.mem_singleton] at hg
-    exact hg ▸ hwf.mono (Nat.le_succ m)
+    subst hg
+    simpa using GateCode.WellFormed.shift (o := 0) (N := m + 1) (by omega) hwf
   | (true, inv, t, cs), hwf, hg =>
     have hH : GateCode.WellFormed (m + 1) (true, m, []) := ⟨by omega, rfl⟩
     have hX := wellFormed_ctrlCode hwf
@@ -588,9 +540,9 @@ abbrev encPhaseGateCode : PhaseGateCode ↪ List Bool := encPair encBool encGate
 
 /-- A **polynomial-time uniform family of quantum circuits with phase gates**: as
 `Cslib.Quantum.UniformCircuitFamily`, over the Hadamard, NOT, CNOT and Toffoli gates and the phase
-gates `S` and `S⁻¹`. On inputs of length `n` it uses a register of `width n` qubits, at least `n`
-and at least one, and the well-formed codes `gates n`; both are computed from `n` in unary in
-polynomial time. -/
+gates `S`, `Λ(S)` and their inverses. On inputs of length `n` it uses a register of `width n`
+qubits, at least `n` and at least one, and the well-formed codes `gates n`; both are computed from
+`n` in unary in polynomial time. -/
 structure UniformPhaseCircuitFamily where
   /-- The number of qubits used on inputs of length `n`. -/
   width : ℕ → ℕ
@@ -610,7 +562,7 @@ noncomputable def acceptProb (F : UniformPhaseCircuitFamily) (x : List Bool) : �
   PhaseGateCode.acceptProb (F.width x.length) (F.gates x.length) x
 
 /-- **The real simulation of a family with phase gates**: one more qubit, the encoding qubit, and
-each phase gate replaced by four Hadamard and CNOT gates
+each controlled phase gate replaced by four Hadamard and CNOT or Toffoli gates
 (`Cslib.Quantum.PhaseGateCode.realCodes`). -/
 @[expose] def realify (F : UniformPhaseCircuitFamily) : UniformCircuitFamily where
   width n := F.width n + 1

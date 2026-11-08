@@ -153,7 +153,7 @@ This is the reduction step in Aharonov's proof that Toffoli and Hadamard are com
 To place a language in `BQP` with phase gates:
 
 1. Define a `UniformPhaseCircuitFamily`.
-2. Compute its acceptance probability, using `PlacedGate.eval_ctrlPhase_ket` for the phase gates.
+2. Compute its acceptance probability. `PhaseGateCode.exists_toPlacedGate?_eq_ctrlPhase` decodes a well-formed phase code into a `PlacedGate.ctrlPhase`, and `PlacedGate.eval_ctrlPhase_ket` applies it to a basis state.
 3. Apply `mem_BQP_iff_phase.mpr`.
 
 The [checked client](../../ComplexityTests/QuantumRealEncoding.lean) does this for the first-bit language. It also checks that the real simulation maps `|1 0⟩` to `|1 1⟩`, which records `S|1⟩ = i|1⟩`. Build it with `lake build ComplexityTests.QuantumRealEncoding`.

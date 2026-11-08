@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Circuit.Quantum.Basic
+public import Complexity.Computability.Circuit.Quantum.Parallel
 
 /-!
 # The real encoding of quantum circuits
@@ -31,17 +31,17 @@ preserves the probability of every measurement of the first `m` qubits, since
 `(Re a)² + (Im a)² = |a|²` (`Cslib.Quantum.measureProb_realEncode`).
 
 A gate with real entries simulates itself: placed on the same qubits of the larger register, away
-from the encoding qubit, it acts on the real and the imaginary parts separately
-(`Cslib.Quantum.PlacedGate.realSimulates_castSucc`). The Hadamard, NOT, CNOT and Toffoli gates are
-real, and `Complexity/Computability/Circuit/Quantum/PhaseCode.lean` simulates the controlled phase
-gates by four of them.
+from the encoding qubit (`Cslib.Quantum.PlacedGate.mapWires` along `Fin.castSuccEmb`), it acts on
+the real and the imaginary parts separately
+(`Cslib.Quantum.PlacedGate.realSimulates_mapWires_castSuccEmb`). The Hadamard, NOT, CNOT and
+Toffoli gates are real, and `Complexity/Computability/Circuit/Quantum/PhaseCode.lean` simulates the
+controlled phase gates by four of them.
 
 ## Main definitions
 
 * `Cslib.Quantum.realEncode`: the real encoding of a state, on one more qubit.
 * `Cslib.Quantum.realEntry`: the real block of a complex matrix entry.
 * `Cslib.Quantum.Circuit.RealSimulates`: simulation of a circuit through the real encoding.
-* `Cslib.Quantum.PlacedGate.castSucc`: a placed gate on the first `m` of `m + 1` qubits.
 
 ## Main results
 
@@ -55,7 +55,8 @@ gates by four of them.
 * `Cslib.Quantum.Circuit.RealSimulates.append`,
   `Cslib.Quantum.Circuit.RealSimulates.run_snoc_false`: simulation of sequences, and of runs from
   basis states.
-* `Cslib.Quantum.PlacedGate.realSimulates_castSucc`: a gate with real entries simulates itself.
+* `Cslib.Quantum.PlacedGate.realSimulates_mapWires_castSuccEmb`: a gate with real entries
+  simulates itself.
 
 ## References
 
@@ -228,39 +229,25 @@ end Circuit
 
 namespace PlacedGate
 
-/-- The placed gate `g` on the first `m` qubits of an `(m + 1)`-qubit register. -/
-@[expose] def castSucc (g : PlacedGate m) : PlacedGate (m + 1) :=
-  ⟨g.arity, g.gate, g.wires.trans Fin.castSuccEmb⟩
-
 /-- The entries of a gate placed on the first `m` of `m + 1` qubits: it leaves the last qubit
 alone. -/
-theorem castSucc_matrix_apply (g : PlacedGate m) (z z' : Fin (m + 1) → Bool) :
-    (g.castSucc.matrix : Matrix _ _ ℂ) z z' =
+theorem matrix_mapWires_castSuccEmb (g : PlacedGate m) (z z' : Fin (m + 1) → Bool) :
+    ((g.mapWires Fin.castSuccEmb).matrix : Matrix _ _ ℂ) z z' =
       if z (Fin.last m) = z' (Fin.last m) then (g.matrix : Matrix _ _ ℂ) (Fin.init z) (Fin.init z')
       else 0 := by
-  rw [matrix_apply, matrix_apply]
-  have hcond : (∀ j, (¬∃ i, g.castSucc.wires i = j) → z j = z' j) ↔
-      z (Fin.last m) = z' (Fin.last m) ∧
-        ∀ j, (¬∃ i, g.wires i = j) → Fin.init z j = Fin.init z' j := by
-    rw [Fin.forall_fin_succ', and_comm]
-    refine and_congr ?_ (forall_congr' fun j => ?_)
-    · have : ¬∃ i, g.castSucc.wires i = Fin.last m := fun ⟨i, hi⟩ =>
-        Fin.castSucc_ne_last (g.wires i) hi
-      simp [this]
-    · have : (∃ i, g.castSucc.wires i = Fin.castSucc j) ↔ ∃ i, g.wires i = j :=
-        exists_congr fun i => Fin.castSucc_inj
-      rw [this]
-      rfl
-  by_cases hl : z (Fin.last m) = z' (Fin.last m)
-  · simp only [hcond, hl, true_and, ite_true]
-    rfl
-  · rw [ite_eq_right (fun h => hl (hcond.mp h).1), ite_eq_right hl]
+  have h : AgreeOff Fin.castSuccEmb z z' ↔ z (Fin.last m) = z' (Fin.last m) := by
+    refine ⟨fun h => h _ fun i => Fin.castSucc_ne_last i, fun h j hj => ?_⟩
+    obtain ⟨j, rfl⟩ | rfl := Fin.eq_castSucc_or_eq_last j
+    · exact absurd rfl (hj j)
+    · exact h
+  rw [matrix_mapWires, if_congr h rfl rfl]
+  rfl
 
 /-- **A gate with real entries simulates itself** through the real encoding, placed on the same
 qubits away from the encoding qubit. -/
-theorem realSimulates_castSucc (g : PlacedGate m)
+theorem realSimulates_mapWires_castSuccEmb (g : PlacedGate m)
     (hg : ∀ y x, ((g.gate : Matrix (Fin g.arity → Bool) (Fin g.arity → Bool) ℂ) y x).im = 0) :
-    Circuit.RealSimulates [g.castSucc] [g] := by
+    Circuit.RealSimulates [g.mapWires Fin.castSuccEmb] [g] := by
   have hreal (y x : Fin m → Bool) : ((g.matrix : Matrix _ _ ℂ) y x).im = 0 := by
     rw [matrix_apply]
     split_ifs
@@ -268,7 +255,7 @@ theorem realSimulates_castSucc (g : PlacedGate m)
     · rfl
   refine Circuit.realSimulates_of_matrix fun z z' => ?_
   simp only [Circuit.matrix_cons, Circuit.matrix_nil, one_mul]
-  rw [castSucc_matrix_apply, realEntry_of_im_eq_zero (hreal _ _)]
+  rw [matrix_mapWires_castSuccEmb, realEntry_of_im_eq_zero (hreal _ _)]
 
 end PlacedGate
 
