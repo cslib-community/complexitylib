@@ -22,10 +22,12 @@ import ComplexityTests.GameTheory.Congestion
 * A two-player VHS-or-Betamax fair cost-sharing game ([Roughgarden2013CS364A], Lecture #15,
   Section 1.3, with `k = 2` and `ε = 1/2`): both "all Betamax" (cost `3/2`) and "all VHS"
   (cost `2`) are pure Nash equilibria, and the `H 2` price-of-stability bound applies.
-* The opt-out game with three players and `ε = 1/10`: everyone sharing is not an equilibrium,
-  everyone opting out is, at social cost `H 3 = 11/6` against `11/10`; the tightness theorem
-  rules out the factor `9/5 < H 3`. With `ε = 0` the hypothesis `0 < ε` of `isPureNash_optOut_iff`
-  is needed: for two players, everyone sharing is then an equilibrium.
+* The opt-out game with three players. With `ε = 1/10`, everyone sharing is not an equilibrium
+  and everyone opting out is, at social cost `H 3 = 11/6` against `11/10`, a ratio of `5/3`.
+  Separately, with `ε = 1/108` every equilibrium costs more than `9/5` times the optimum, so the
+  factor `9/5 < H 3` fails; `exists_forall_isPureNash_optOut_mul_lt` gives this for every
+  `r < H 3`. With `ε = 0` the hypothesis `0 < ε` of `isPureNash_optOut_iff` is needed: for two
+  players, everyone sharing is then an equilibrium.
 -/
 
 namespace ComplexityTests.GameTheory.Stability
@@ -200,7 +202,16 @@ example : (optOut 3 (1 / 10)).toCostGame.socialCost (fun _ => true) = 11 / 6 ∧
   rw [socialCost_optOut_true, harmonic_three, socialCost_optOut_false (by norm_num)]
   norm_num
 
-/-- The factor `9/5 < H 3` fails for some three-player opt-out game. -/
+/-- With `ε = 1/108`, every pure Nash equilibrium of the three-player opt-out game costs more than
+`9/5` times the profile in which everyone shares: `9/5 * 109/108 < 11/6`. -/
+example (s : Fin 3 → Bool) (hs : (optOut 3 (1 / 108)).toCostGame.IsPureNash s) :
+    9 / 5 * (optOut 3 (1 / 108)).toCostGame.socialCost (fun _ => false)
+      < (optOut 3 (1 / 108)).toCostGame.socialCost s := by
+  rw [(isPureNash_optOut_iff (by norm_num) s).1 hs, socialCost_optOut_true, harmonic_three,
+    socialCost_optOut_false (by norm_num)]
+  norm_num
+
+/-- The tightness theorem: the factor `9/5 < H 3` fails for some three-player opt-out game. -/
 example : ∃ ε > 0, ∀ s, (optOut 3 ε).toCostGame.IsPureNash s →
     9 / 5 * (optOut 3 ε).toCostGame.socialCost (fun _ => false)
       < (optOut 3 ε).toCostGame.socialCost s :=

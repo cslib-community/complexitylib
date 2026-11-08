@@ -137,8 +137,9 @@ with `0 ≤ A`, and there are finitely many profiles. The source assumes an exac
 
 - `IsGeneralizedOrdinalPotential.exists_isPureNash_socialCost_le`: a global minimizer of `Φ` is a
   pure Nash equilibrium within `A * B` of the optimum.
-- `exists_reflTransGen_isPureNash_socialCost_le`: better-response dynamics from any `s₀` reach a
-  pure Nash equilibrium of social cost at most `A * B * socialCost s₀`.
+- `IsGeneralizedOrdinalPotential.exists_reflTransGen_isPureNash_socialCost_le`: better-response
+  dynamics from any `s₀` reach a pure Nash equilibrium of social cost at most
+  `A * B * socialCost s₀`.
 
 The method has two applications to atomic congestion games:
 

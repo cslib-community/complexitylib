@@ -65,9 +65,9 @@ zero-cost edges from each source to the meeting point; they change no player's c
 * `Cslib.GameTheory.CongestionGame.exists_isPureNash_fairCostSharing_socialCost_le_harmonic_mul`
   ([AnshelevichDKTWR2008]; [TardosWexler2007], Theorem 19.10; [Roughgarden2013CS364A], Lecture #15,
   Theorem 2.1): **the price of stability is at most `H k`**.
-* `Cslib.GameTheory.CongestionGame.exists_reflTransGen_isPureNash_fairCostSharing_socialCost_le`:
-  better-response dynamics from any profile `s₀` reach a pure Nash equilibrium of social cost at
-  most `H k * socialCost s₀`.
+* `exists_reflTransGen_isPureNash_fairCostSharing_socialCost_le_harmonic_mul` (in
+  `Cslib.GameTheory.CongestionGame`): better-response dynamics from any profile `s₀` reach a pure
+  Nash equilibrium of social cost at most `H k * socialCost s₀`.
 * `Cslib.GameTheory.CongestionGame.isPureNash_optOut_iff`: for `ε > 0` the unique pure Nash
   equilibrium of the opt-out game is that every player opts out.
 * `Cslib.GameTheory.CongestionGame.socialCost_optOut_true`,
@@ -110,22 +110,6 @@ theorem fairCostSharing_latency (resources : ∀ i, S i → Finset E) (c : E →
     (fairCostSharing resources c).latency e k = c e / k := by
   rw [fairCostSharing]
 
-/-- The harmonic number `H n` in `ℝ` is `∑ i < n, 1 / (i + 1)`. -/
-private theorem harmonic_cast_eq (n : ℕ) :
-    (harmonic n : ℝ) = ∑ i ∈ Finset.range n, ((i : ℝ) + 1)⁻¹ := by
-  unfold harmonic
-  push_cast
-  rfl
-
-/-- `1 ≤ H n` for `n ≥ 1`. -/
-private theorem one_le_harmonic_cast {n : ℕ} (hn : n ≠ 0) : (1 : ℝ) ≤ harmonic n := by
-  have h : harmonic 1 ≤ harmonic n := harmonic_mono (Nat.one_le_iff_ne_zero.2 hn)
-  have h1 : harmonic 1 = 1 := by
-    rw [harmonic_succ, harmonic_zero]
-    norm_num
-  rw [h1] at h
-  exact_mod_cast h
-
 variable [Fintype ι] [DecidableEq E] (resources : ∀ i, S i → Finset E) (c : E → ℝ)
 
 /-- The social cost of a fair cost-sharing game is **the total cost of the resources in use**,
@@ -150,7 +134,7 @@ theorem rosenthalPotential_fairCostSharing [Fintype E] (s : ∀ i, S i) :
       = ∑ e, c e * harmonic ((fairCostSharing resources c).load s e) := by
   rw [rosenthalPotential_def]
   refine Finset.sum_congr rfl fun e _ => ?_
-  rw [harmonic_cast_eq, Finset.mul_sum]
+  rw [cast_harmonic, Finset.mul_sum]
   refine Finset.sum_congr rfl fun k _ => ?_
   rw [fairCostSharing_latency, div_eq_mul_inv, Nat.cast_add, Nat.cast_one]
 
@@ -163,7 +147,7 @@ theorem socialCost_le_rosenthalPotential_fairCostSharing [Fintype E] (hc : ∀ e
   rw [socialCost_fairCostSharing, rosenthalPotential_fairCostSharing, Finset.sum_filter]
   refine Finset.sum_le_sum fun e _ => ?_
   split_ifs with h
-  · exact le_mul_of_one_le_right (hc e) (one_le_harmonic_cast h.ne')
+  · exact le_mul_of_one_le_right (hc e) (by exact_mod_cast one_le_harmonic h.ne')
   · exact mul_nonneg (hc e) (by exact_mod_cast harmonic_nonneg _)
 
 /-- **The potential overestimates the social cost by at most `H k`** ([TardosWexler2007],
@@ -209,8 +193,8 @@ theorem exists_isPureNash_fairCostSharing_socialCost_le_harmonic_mul [∀ i, Non
 games: from every profile `s₀`, a finite sequence of improving unilateral deviations reaches a pure
 Nash equilibrium `t` with `socialCost t ≤ H k * socialCost s₀`, where `k = Fintype.card ι`. Started
 at a socially optimal profile, this reaches an equilibrium within the price-of-stability bound. -/
-theorem exists_reflTransGen_isPureNash_fairCostSharing_socialCost_le (hc : ∀ e, 0 ≤ c e)
-    (s₀ : ∀ i, S i) :
+theorem exists_reflTransGen_isPureNash_fairCostSharing_socialCost_le_harmonic_mul
+    (hc : ∀ e, 0 ≤ c e) (s₀ : ∀ i, S i) :
     ∃ t, Relation.ReflTransGen (flip (fairCostSharing resources c).toCostGame.Improves) s₀ t ∧
       (fairCostSharing resources c).toCostGame.IsPureNash t ∧
       (fairCostSharing resources c).toCostGame.socialCost t
@@ -355,7 +339,7 @@ theorem socialCost_optOut_true :
     simp
   unfold CostGame.socialCost
   rw [Finset.sum_congr rfl fun i _ => h i,
-    Fin.sum_univ_eq_sum_range (fun i : ℕ => 1 / ((i : ℝ) + 1)), harmonic_cast_eq]
+    Fin.sum_univ_eq_sum_range (fun i : ℕ => 1 / ((i : ℝ) + 1)), cast_harmonic]
   simp only [one_div]
 
 /-- In the opt-out game with `k ≥ 1` players, the profile in which every player shares has social
