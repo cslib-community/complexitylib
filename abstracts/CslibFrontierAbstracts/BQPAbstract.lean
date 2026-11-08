@@ -131,8 +131,10 @@ is polynomial in the input length.
 /-- The encoding of a gate code `(h, t, cs)`: the bit `h`, then `t` and the list `cs` in unary. -/
 abbrev encGateCode : GateCode ↪ List Bool :=
   CslibFrontierTests.Abstracts.Encoding.encPair CslibFrontierTests.Abstracts.Encoding.encBool
-    (CslibFrontierTests.Abstracts.Encoding.encPair CslibFrontierTests.Abstracts.Encoding.encUnary
-      (CslibFrontierTests.Abstracts.Encoding.encList CslibFrontierTests.Abstracts.Encoding.encUnary))
+    (CslibFrontierTests.Abstracts.Encoding.encPair
+      CslibFrontierTests.Abstracts.Encoding.encUnary
+      (CslibFrontierTests.Abstracts.Encoding.encList
+        CslibFrontierTests.Abstracts.Encoding.encUnary))
 
 /-! ## Uniform families and the classes
 
@@ -147,7 +149,8 @@ polynomial time from `n` in unary. The register for inputs of length `n` has at 
 and at least one, and every gate code of `gates n` is well formed on it. -/
 def Uniform (width : ℕ → ℕ) (gates : ℕ → List GateCode) : Prop :=
   CslibFrontierTests.Abstracts.Computation.PolyTime width
-      CslibFrontierTests.Abstracts.Encoding.encUnary CslibFrontierTests.Abstracts.Encoding.encUnary ∧
+      CslibFrontierTests.Abstracts.Encoding.encUnary
+      CslibFrontierTests.Abstracts.Encoding.encUnary ∧
     CslibFrontierTests.Abstracts.Computation.PolyTime gates
       CslibFrontierTests.Abstracts.Encoding.encUnary
       (CslibFrontierTests.Abstracts.Encoding.encList encGateCode) ∧

@@ -173,6 +173,35 @@ FIXUPS = (
      "(`CslibFrontierTests).isPrefixOf owner ||\n        (`CslibFrontierAbstracts).isPrefixOf owner",
      "      let isLocalRepo := (`CslibFrontier).isPrefixOf owner ||\n"
      "        (`CslibFrontierTests).isPrefixOf owner || (`CslibFrontierAbstracts).isPrefixOf owner"),
+    # Abstract code lines that the longer sibling-root names push past 100 columns.
+    ("CslibFrontierTests/Abstracts/AndreevThresholdTests.lean",
+     "    51 ≤ (C 0).size ∧ 4369067 ≤ CslibFrontierAbstracts.AndreevThresholdAbstract.wireCount "
+     "(C 0) := by",
+     "    51 ≤ (C 0).size ∧\n"
+     "      4369067 ≤ CslibFrontierAbstracts.AndreevThresholdAbstract.wireCount (C 0) := by"),
+    ("abstracts/CslibFrontierAbstracts/BQPAbstract.lean",
+     "    (CslibFrontierTests.Abstracts.Encoding.encPair CslibFrontierTests.Abstracts.Encoding.encUnary\n"
+     "      (CslibFrontierTests.Abstracts.Encoding.encList "
+     "CslibFrontierTests.Abstracts.Encoding.encUnary))",
+     "    (CslibFrontierTests.Abstracts.Encoding.encPair\n"
+     "      CslibFrontierTests.Abstracts.Encoding.encUnary\n"
+     "      (CslibFrontierTests.Abstracts.Encoding.encList\n"
+     "        CslibFrontierTests.Abstracts.Encoding.encUnary))"),
+    ("abstracts/CslibFrontierAbstracts/BQPAbstract.lean",
+     "      CslibFrontierTests.Abstracts.Encoding.encUnary "
+     "CslibFrontierTests.Abstracts.Encoding.encUnary ∧",
+     "      CslibFrontierTests.Abstracts.Encoding.encUnary\n"
+     "      CslibFrontierTests.Abstracts.Encoding.encUnary ∧"),
+    ("abstracts/CslibFrontierAbstracts/CryptographyAbstract.lean",
+     "  CslibFrontierAbstracts.Encoding, CslibFrontierAbstracts.Computation, "
+     "CslibFrontierAbstracts.Randomized,\n",
+     "  CslibFrontierAbstracts.Encoding, CslibFrontierAbstracts.Computation,\n"
+     "  CslibFrontierAbstracts.Randomized,\n"),
+    ("abstracts/CslibFrontierAbstracts/GSWSecurityAbstract.lean",
+     "  CslibFrontierAbstracts.Encoding, CslibFrontierAbstracts.Computation, "
+     "CslibFrontierAbstracts.Randomized,\n",
+     "  CslibFrontierAbstracts.Encoding, CslibFrontierAbstracts.Computation,\n"
+     "  CslibFrontierAbstracts.Randomized,\n"),
     # Test fixtures whose messages name the root, which no rule recognizes.
     ("scripts/test_check_docs.py", '"Missing modules in documentation database: Complexity")',
      '"Missing modules in documentation database: CslibFrontier")'),

@@ -86,7 +86,8 @@ example : ∃ C : Fin 3 → ThrCircuit (2 ^ 18 + 18 * 14400),
     (∀ i, (C i).depth ≤ 2) ∧
     (∀ x, 3 < 2 * (Finset.univ.filter fun i =>
       evaluate (C i) x = CslibFrontierAbstracts.AndreevThresholdAbstract.andreev 18 14400 x).card) ∧
-    51 ≤ (C 0).size ∧ 4369067 ≤ CslibFrontierAbstracts.AndreevThresholdAbstract.wireCount (C 0) := by
+    51 ≤ (C 0).size ∧
+      4369067 ≤ CslibFrontierAbstracts.AndreevThresholdAbstract.wireCount (C 0) := by
   have hsqrt18 : Real.sqrt ((2 : ℝ) ^ 18) = 512 :=
     (Real.sqrt_eq_iff_eq_sq (by norm_num) (by norm_num)).mpr (by norm_num)
   have hb : 3 * (((18 : ℕ) : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ 18) ≤ 1 / (2 * ((3 : ℕ) : ℝ)) := by

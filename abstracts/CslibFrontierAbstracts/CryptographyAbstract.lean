@@ -199,7 +199,8 @@ info: abstract audit passed for `CslibFrontierTests.Abstracts.CryptographyAbstra
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract CslibFrontierTests.Abstracts.CryptographyAbstract allowing [
-  CslibFrontierAbstracts.Encoding, CslibFrontierAbstracts.Computation, CslibFrontierAbstracts.Randomized,
+  CslibFrontierAbstracts.Encoding, CslibFrontierAbstracts.Computation,
+  CslibFrontierAbstracts.Randomized,
   CslibFrontier.Languages.Probabilistic.Basic,
   CslibFrontier.Languages.Probabilistic.Oracle,
   CslibFrontier.Languages.Probabilistic.Sum,

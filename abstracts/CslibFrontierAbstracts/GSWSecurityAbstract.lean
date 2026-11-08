@@ -137,6 +137,7 @@ declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract CslibFrontierTests.Abstracts.GSWSecurityAbstract allowing [
-  CslibFrontierAbstracts.Encoding, CslibFrontierAbstracts.Computation, CslibFrontierAbstracts.Randomized,
+  CslibFrontierAbstracts.Encoding, CslibFrontierAbstracts.Computation,
+  CslibFrontierAbstracts.Randomized,
   CslibFrontierAbstracts.GSW
 ]
