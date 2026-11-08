@@ -24,7 +24,7 @@ length map `m` and a polynomial `p`, every word `y` satisfies
 `Pr_{x ~ D_n}[f x = y] ≤ p(n) · D'_{m(n)}(y)`.
 
 The source imposes the domination inequality only on the support of `D'_{m(n)}`. Here it is
-required at every word. By `Cslib.Complexity.DistReduction.forall_map_apply_le_mul_iff`, this is
+required at every word. By `Cslib.Probability.PMF.forall_map_apply_le_mul_iff`, this is
 exactly the source's condition together with `f (Supp D_n) ⊆ Supp D'_{m(n)}`
 (`Cslib.Complexity.DistReduction.mem_support`). The source's proof of closure (Lemma 18) uses
 that inclusion when it applies the correctness of the target algorithm to `f x`, and without it
@@ -54,8 +54,6 @@ parameter `p(n) · (k + 1)` composed with `f` is a scheme for the source with co
 ## Main results
 
 * `Cslib.Complexity.DistReduction.toOuterMeasure_preimage_le`: domination of events.
-* `Cslib.Complexity.DistReduction.forall_map_apply_le_mul_iff`: domination at every word is the
-  source's domination plus support preservation.
 * `Cslib.Complexity.DistReduction.mem_support`: reductions preserve supports.
 * `Cslib.Complexity.DistReduction.exists_m_le`: the length map is polynomially bounded.
 * `Cslib.Complexity.DistReduction.mem_AvgP`, `Cslib.Complexity.DistReduction.mem_HeurP`:
@@ -84,7 +82,7 @@ open Turing.MultiTapeTM
 [Bogdanov and Trevisan, Definition 17][BogdanovTrevisan2006]: a polynomial-time map `f`, correct
 on the support of the source ensemble, whose image of `L.ens.dist n` is dominated by `p(n)` times
 `L'.ens.dist (m n)` at every word. Domination at every word is the source's condition plus support
-preservation (`Cslib.Complexity.DistReduction.forall_map_apply_le_mul_iff`), which closure under
+preservation (`Cslib.Probability.PMF.forall_map_apply_le_mul_iff`), which closure under
 reductions needs; see the module documentation. -/
 structure DistReduction (L L' : DistProblem) where
   /-- The reduction map on instances. -/
@@ -119,34 +117,10 @@ theorem toOuterMeasure_preimage_le (R : DistReduction L L') (n : ℕ) (S : Set (
     exact R.dominates n y
   · simp only [Set.indicator_of_notMem hy, mul_zero, le_refl]
 
-/-- Domination at every word is domination on the support of the target together with
-preservation of supports. -/
-theorem forall_map_apply_le_mul_iff {D D' : PMF (List Bool)} {f : List Bool → List Bool}
-    {c : ℝ≥0∞} :
-    (∀ y, D.map f y ≤ c * D' y) ↔
-      (∀ y ∈ D'.support, D.map f y ≤ c * D' y) ∧ ∀ x ∈ D.support, f x ∈ D'.support := by
-  constructor
-  · intro h
-    refine ⟨fun y _ => h y, fun x hx => ?_⟩
-    rw [PMF.mem_support_iff] at hx ⊢
-    intro h0
-    have h2 := h (f x)
-    rw [h0, mul_zero] at h2
-    exact hx (le_antisymm ((Probability.PMF.le_map_apply D f x).trans h2) zero_le)
-  · rintro ⟨h, hsupp⟩ y
-    by_cases hy : y ∈ D'.support
-    · exact h y hy
-    · have hmap : D.map f y = 0 := by
-        rw [PMF.apply_eq_zero_iff, PMF.support_map]
-        rintro ⟨x, hx, rfl⟩
-        exact hy (hsupp x hx)
-      rw [hmap]
-      exact zero_le
-
 /-- A reduction maps the support of the source ensemble into the support of the target. -/
 theorem mem_support (R : DistReduction L L') {n : ℕ} {x : List Bool}
     (hx : x ∈ (L.ens.dist n).support) : R.f x ∈ (L'.ens.dist (R.m n)).support :=
-  (forall_map_apply_le_mul_iff.mp (R.dominates n)).2 x hx
+  (Probability.PMF.forall_map_apply_le_mul_iff.mp (R.dominates n)).2 x hx
 
 /-- The length map of a reduction is polynomially bounded. -/
 theorem exists_m_le (R : DistReduction L L') : ∃ c d : ℕ, ∀ n, R.m n ≤ c * (n + 1) ^ d := by
