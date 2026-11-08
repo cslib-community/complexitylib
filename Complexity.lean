@@ -4039,6 +4039,11 @@ public import Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFil
 public import Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.SlotArray
 public import Complexity.DataStructure.BTree.Basic
 public import Complexity.DataStructure.BTree.Height
+public import Complexity.DataStructure.BTree.Lookup
+public import Complexity.DataStructure.BTree.MinMax
+public import Complexity.DataStructure.BTree.PredSucc
+public import Complexity.DataStructure.BTree.Range
+public import Complexity.DataStructure.BTree.Rank
 public import Complexity.DataStructure.CellProbe.Randomized.ObliviousSequence
 public import Complexity.DataStructure.CellProbe.Randomized.StateTransition
 public import Complexity.DataStructure.CellProbe.StateTransition
