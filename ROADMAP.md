@@ -948,7 +948,8 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   VNP-hardness remain open); formula and branching-program models (proved in
   [`Arithmetic/Noncommutative`](Complexity/Computability/Circuit/Arithmetic/Noncommutative/):
   Nisan's exact size formula for homogeneous layered non-commutative ABPs, the `n ^ m` lower bound
-  for the palindrome and the double, and the exponential separation from non-commutative circuits
+  for the palindrome and the double, and the separation from non-commutative circuits, exponential
+  for `n ≥ 2`
   ([#3198](https://github.com/cslib-community/complexitylib/issues/3198)); open there: the
   reduction from general non-commutative ABPs, non-commutative formula lower bounds for the
   determinant and permanent, and ROABPs), identity testing, hitting sets, and tensor and rank

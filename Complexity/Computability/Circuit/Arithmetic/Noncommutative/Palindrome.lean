@@ -26,7 +26,8 @@ identity matrix with its rows permuted by `σ` (`nisanMatrix_pairedWordPoly`). F
 `σ` its rank is therefore `|X| ^ m` (`rank_nisanMatrix_pairedWordPoly`).
 
 * **Nisan's lower bound** ([Nisan1991NonCommutative], Theorem 4 (2), for the two-variable
-  palindrome; [Saptharishi2026Survey], Theorem 11.4). Every homogeneous layered ABP computing
+  palindrome; [Saptharishi2026Survey], Theorem 11.4, for `Pal` and `Doub` over `n` variables, by
+  Nisan's rank method). Every homogeneous layered ABP computing
   `Pal_{2m}` or `Doub_{2m}` over `n` variables has at least `n ^ m` vertices in its middle layer
   (`NoncommABP.pow_le_width_of_polynomial_eq_palindrome`,
   `NoncommABP.pow_le_width_of_polynomial_eq_doubled`), hence size at least `n ^ m`.
@@ -36,8 +37,9 @@ identity matrix with its rows permuted by `σ` (`nisanMatrix_pairedWordPoly`). F
   `Pal_{2m+2} = ∑_x x · Pal_{2m} · x` (`palindrome_succ`), gives an arithmetic circuit
   `palCircuit K n m` with exactly `(3n + 1) m + 1` gates (`size_palCircuit`). Its non-commutative
   polynomial is `Pal_{2m}` (`noncommPolynomial_palCircuit`).
-* **Separation** (`palindrome_separation`). Non-commutative circuits are exponentially more
-  powerful than homogeneous layered non-commutative ABPs: `O(nm)` gates against `n ^ m` vertices.
+* **Separation** (`palindrome_separation`). For `n ≥ 2` variables, non-commutative circuits are
+  exponentially more powerful than homogeneous layered non-commutative ABPs: `O(nm)` gates
+  against `n ^ m` vertices.
 
 **Scope.** The ABP lower bound concerns the homogeneous layered model `NoncommABP`. The reduction
 from general non-commutative ABPs ([Saptharishi2026Survey], Exercise 11.1) is not formalized.
@@ -52,6 +54,10 @@ The survey states the bound as `n^Ω(d)` for `d = 2m`. Here it is the explicit m
 
 ## Main results
 
+* `Cslib.Circuits.Arithmetic.palindrome_eq_pairedWordPoly`,
+  `Cslib.Circuits.Arithmetic.doubled_eq_pairedWordPoly`: the defining equations, with the
+  corollaries `coeff_palindrome`, `isHomogeneous_palindrome`, `palindrome_ne_zero` and their
+  `doubled` versions.
 * `Cslib.Circuits.Arithmetic.rank_nisanMatrix_pairedWordPoly`: the middle rank is `|X| ^ m`.
 * `Cslib.Circuits.Arithmetic.NoncommABP.pow_le_width_of_polynomial_eq_palindrome`: Theorem 11.4.
 * `Cslib.Circuits.Arithmetic.size_palCircuit`, `noncommPolynomial_palCircuit`: the circuit.
@@ -92,6 +98,16 @@ variable (K X) in
 noncomputable def doubled (m : ℕ) : FreeAlgebra K X :=
   pairedWordPoly fun u : Fin m → X => u
 
+/-- `Pal_{2m}` is `∑_u u · σ(u)` for `σ` the reversal of `m`-tuples. -/
+theorem palindrome_eq_pairedWordPoly (m : ℕ) :
+    palindrome K X m = pairedWordPoly fun u : Fin m → X => u ∘ Fin.rev := by
+  rw [palindrome]
+
+/-- `Doub_{2m}` is `∑_u u · σ(u)` for `σ` the identity. -/
+theorem doubled_eq_pairedWordPoly (m : ℕ) :
+    doubled K X m = pairedWordPoly fun u : Fin m → X => u := by
+  rw [doubled]
+
 /-- The coefficient of `a b` in `∑_u u · σ(u)` is `1` if `σ a = b` and `0` otherwise. -/
 theorem coeff_pairedWordPoly [DecidableEq X] (σ : (Fin m → X) → (Fin m → X)) (a b : Fin m → X) :
     coeff (FreeMonoid.ofFn a * FreeMonoid.ofFn b) (pairedWordPoly (K := K) σ) =
@@ -122,6 +138,38 @@ theorem pairedWordPoly_ne_zero [Nontrivial K] [Nonempty X] (σ : (Fin m → X) �
     (σ fun _ => Classical.arbitrary X)
   simp [h] at this
 
+/-- The coefficient of `a b` in `Pal_{2m}` is `1` if `b` is the reverse of `a` and `0`
+otherwise. -/
+theorem coeff_palindrome [DecidableEq X] (a b : Fin m → X) :
+    coeff (FreeMonoid.ofFn a * FreeMonoid.ofFn b) (palindrome K X m) =
+      if a ∘ Fin.rev = b then 1 else 0 := by
+  rw [palindrome_eq_pairedWordPoly, coeff_pairedWordPoly]
+
+/-- The coefficient of `a b` in `Doub_{2m}` is `1` if `a = b` and `0` otherwise. -/
+theorem coeff_doubled [DecidableEq X] (a b : Fin m → X) :
+    coeff (FreeMonoid.ofFn a * FreeMonoid.ofFn b) (doubled K X m) = if a = b then 1 else 0 := by
+  rw [doubled_eq_pairedWordPoly, coeff_pairedWordPoly]
+
+/-- `Pal_{2m}` is homogeneous of degree `2m`. -/
+theorem isHomogeneous_palindrome : (palindrome K X m).IsHomogeneous (m + m) := by
+  rw [palindrome_eq_pairedWordPoly]
+  exact isHomogeneous_pairedWordPoly _
+
+/-- `Doub_{2m}` is homogeneous of degree `2m`. -/
+theorem isHomogeneous_doubled : (doubled K X m).IsHomogeneous (m + m) := by
+  rw [doubled_eq_pairedWordPoly]
+  exact isHomogeneous_pairedWordPoly _
+
+/-- Over a nonempty alphabet, `Pal_{2m}` is nonzero. -/
+theorem palindrome_ne_zero [Nontrivial K] [Nonempty X] : palindrome K X m ≠ 0 := by
+  rw [palindrome_eq_pairedWordPoly]
+  exact pairedWordPoly_ne_zero _
+
+/-- Over a nonempty alphabet, `Doub_{2m}` is nonzero. -/
+theorem doubled_ne_zero [Nontrivial K] [Nonempty X] : doubled K X m ≠ 0 := by
+  rw [doubled_eq_pairedWordPoly]
+  exact pairedWordPoly_ne_zero _
+
 /-- The middle Nisan matrix of `∑_u u · σ(u)` is the identity with its rows permuted by `σ`. -/
 theorem nisanMatrix_pairedWordPoly [DecidableEq X] (σ : (Fin m → X) → (Fin m → X)) :
     nisanMatrix m m (pairedWordPoly (K := K) σ) =
@@ -138,7 +186,8 @@ theorem palindrome_zero : palindrome K X 0 = 1 := by
 `f_d = x₀ f_{d-1} x₀ + x₁ f_{d-1} x₁` ([Nisan1991NonCommutative], proof of Theorem 4) over `X`. -/
 theorem palindrome_succ (m : ℕ) :
     palindrome K X (m + 1) = ∑ x, ι K x * palindrome K X m * ι K x := by
-  unfold palindrome pairedWordPoly
+  rw [palindrome_eq_pairedWordPoly, palindrome_eq_pairedWordPoly, pairedWordPoly,
+    pairedWordPoly]
   rw [← (Fin.consEquiv fun _ => X).sum_comp, Fintype.sum_prod_type]
   refine Finset.sum_congr rfl fun x _ => ?_
   rw [Finset.mul_sum, Finset.sum_mul]
@@ -168,13 +217,15 @@ private theorem involutive_comp_rev :
 
 /-- `rank M_m(Pal_{2m}) = |X| ^ m`. -/
 theorem rank_nisanMatrix_palindrome :
-    (nisanMatrix m m (palindrome K X m)).rank = Fintype.card X ^ m :=
-  rank_nisanMatrix_pairedWordPoly (Function.Involutive.toPerm _ involutive_comp_rev)
+    (nisanMatrix m m (palindrome K X m)).rank = Fintype.card X ^ m := by
+  rw [palindrome_eq_pairedWordPoly]
+  exact rank_nisanMatrix_pairedWordPoly (Function.Involutive.toPerm _ involutive_comp_rev)
 
 /-- `rank M_m(Doub_{2m}) = |X| ^ m`. -/
 theorem rank_nisanMatrix_doubled :
-    (nisanMatrix m m (doubled K X m)).rank = Fintype.card X ^ m :=
-  rank_nisanMatrix_pairedWordPoly (Equiv.refl _)
+    (nisanMatrix m m (doubled K X m)).rank = Fintype.card X ^ m := by
+  rw [doubled_eq_pairedWordPoly]
+  exact rank_nisanMatrix_pairedWordPoly (Equiv.refl _)
 
 /-- **Nisan's lower bound for the palindrome** ([Nisan1991NonCommutative], Theorem 4;
 [Saptharishi2026Survey], Theorem 11.4). The middle layer of a homogeneous layered ABP computing
@@ -184,9 +235,9 @@ theorem NoncommABP.pow_le_width_of_polynomial_eq_palindrome (A : NoncommABP K X 
   have h := A.rank_nisanMatrix_le_width m m rfl
   rwa [hA, rank_nisanMatrix_palindrome] at h
 
-/-- **Nisan's lower bound for the double** ([Nisan1991NonCommutative]; [Saptharishi2026Survey],
-Theorem 11.4). The middle layer of a homogeneous layered ABP computing `Doub_{2m}` has at least
-`|X| ^ m` vertices. -/
+/-- **Lower bound for the double** ([Saptharishi2026Survey], Theorem 11.4, by Nisan's rank method
+[Nisan1991NonCommutative]). The middle layer of a homogeneous layered ABP computing `Doub_{2m}`
+has at least `|X| ^ m` vertices. -/
 theorem NoncommABP.pow_le_width_of_polynomial_eq_doubled (A : NoncommABP K X (m + m))
     (hA : A.polynomial = doubled K X m) : Fintype.card X ^ m ≤ A.width m := by
   have h := A.rank_nisanMatrix_le_width m m rfl
@@ -201,14 +252,15 @@ variable {K : Type*} [CommSemiring K]
 /-- One step of the palindrome circuit, on the inputs `P, x₀, …, x_{n-1}`, the first one being
 `P`: the formula `∑_{i < k} (x_{sel i} · P) · x_{sel i}`, accumulated from the left starting at
 the constant `0`. -/
-def palStepFormula (n : ℕ) : {k : ℕ} → (Fin k → Fin n) → Formula (arithSignature K) (1 + n)
+private def palStepFormula (n : ℕ) :
+    {k : ℕ} → (Fin k → Fin n) → Formula (arithSignature K) (1 + n)
   | 0, _ => .gate (.const 0) Fin.elim0
   | k + 1, sel => .gate₂ .add rfl (palStepFormula n (sel ∘ Fin.castSucc))
       (.gate₂ .mul rfl (.gate₂ .mul rfl (.input (Fin.natAdd 1 (sel (Fin.last k))))
         (.input (Fin.castAdd n 0))) (.input (Fin.natAdd 1 (sel (Fin.last k)))))
 
-theorem eval_palStepFormula {R : Type*} [Semiring R] (c : K → R) (hc : c 0 = 0) (n : ℕ) {k : ℕ}
-    (sel : Fin k → Fin n) (y : Fin (1 + n) → R) :
+private theorem eval_palStepFormula {R : Type*} [Semiring R] (c : K → R) (hc : c 0 = 0)
+    (n : ℕ) {k : ℕ} (sel : Fin k → Fin n) (y : Fin (1 + n) → R) :
     (palStepFormula n sel).eval (arithInterpretationWith K c) y =
       ∑ i, y (Fin.natAdd 1 (sel i)) * y (Fin.castAdd n 0) * y (Fin.natAdd 1 (sel i)) := by
   induction k with
@@ -218,7 +270,7 @@ theorem eval_palStepFormula {R : Type*} [Semiring R] (c : K → R) (hc : c 0 = 0
       Fin.sum_univ_castSucc]
     simp [arithInterpretationWith, ih, Function.comp_def]
 
-theorem size_palStepFormula (n : ℕ) {k : ℕ} (sel : Fin k → Fin n) :
+private theorem size_palStepFormula (n : ℕ) {k : ℕ} (sel : Fin k → Fin n) :
     (palStepFormula (K := K) n sel).size = 3 * k + 1 := by
   induction k with
   | zero => simp [palStepFormula]
@@ -267,7 +319,8 @@ end Circuit
 /-- **Non-commutative ABPs versus circuits** ([Nisan1991NonCommutative], Theorem 4;
 [Saptharishi2026Survey], Theorem 11.4 and the remark after it). Over `n` variables, `Pal_{2m}`
 is computed by a non-commutative arithmetic circuit with `(3n + 1) m + 1` gates, while every
-homogeneous layered non-commutative ABP computing it has at least `n ^ m` vertices. -/
+homogeneous layered non-commutative ABP computing it has at least `n ^ m` vertices. For `n ≥ 2`
+this is an exponential separation in `m`. -/
 theorem palindrome_separation {K : Type*} [Field K] (n m : ℕ) :
     (∃ c : Circuit (arithSignature K) n 1, c.size = (3 * n + 1) * m + 1 ∧
         c.noncommPolynomial 0 = palindrome K (Fin n) m) ∧

@@ -30,14 +30,14 @@ example : palindrome ℚ (Fin 2) 1 = ι ℚ 0 * ι ℚ 0 + ι ℚ 1 * ι ℚ 1 :
 /-- `x₀ x₁ x₁ x₀` occurs in `Pal_4` ... -/
 example : coeff (FreeMonoid.ofFn ![0, 1] * FreeMonoid.ofFn ![1, 0])
     (palindrome ℚ (Fin 2) 2) = 1 := by
-  rw [palindrome, coeff_pairedWordPoly, ite_eq_left_iff.mpr]
+  rw [coeff_palindrome, ite_eq_left_iff.mpr]
   intro h
   exact absurd (funext fun i => by fin_cases i <;> rfl) h
 
 /-- ... but not in `Doub_4`. -/
 example : coeff (FreeMonoid.ofFn ![0, 1] * FreeMonoid.ofFn ![1, 0])
     (doubled ℚ (Fin 2) 2) = 0 := by
-  rw [doubled, coeff_pairedWordPoly, ite_eq_right_iff.mpr]
+  rw [coeff_doubled, ite_eq_right_iff.mpr]
   intro h
   have := congrFun h 0
   simp at this
@@ -47,27 +47,16 @@ example : (nisanMatrix 2 2 (palindrome ℚ (Fin 3) 2)).rank = 9 := by
   rw [rank_nisanMatrix_palindrome, Fintype.card_fin]
   norm_num
 
-/-- The outer Nisan matrices of a nonzero polynomial homogeneous of degree `d` have rank `1`. -/
-private theorem rank_nisanMatrix_zero_left {f : FreeAlgebra ℚ (Fin 2)} {d : ℕ}
-    (hf : f.IsHomogeneous (0 + d)) (hf0 : f ≠ 0) : (nisanMatrix 0 d f).rank = 1 :=
-  le_antisymm ((Matrix.rank_le_card_height _).trans (by simp))
-    (one_le_rank_nisanMatrix hf hf0)
-
-private theorem rank_nisanMatrix_zero_right {f : FreeAlgebra ℚ (Fin 2)} {d : ℕ}
-    (hf : f.IsHomogeneous (d + 0)) (hf0 : f ≠ 0) : (nisanMatrix d 0 f).rank = 1 :=
-  le_antisymm ((Matrix.rank_le_card_width _).trans (by simp))
-    (one_le_rank_nisanMatrix hf hf0)
-
 /-- The least ABP size for `Pal_2` over two variables is `1 + 2 + 1 = 4`. -/
 example : IsLeast {s | ∃ A : NoncommABP ℚ (Fin 2) (1 + 1),
     A.polynomial = palindrome ℚ (Fin 2) 1 ∧ A.size = s} 4 := by
-  have hf := isHomogeneous_pairedWordPoly (K := ℚ) fun u : Fin 1 → Fin 2 => u ∘ Fin.rev
-  have hf0 := pairedWordPoly_ne_zero (K := ℚ) fun u : Fin 1 → Fin 2 => u ∘ Fin.rev
+  have hf := isHomogeneous_palindrome (K := ℚ) (X := Fin 2) (m := 1)
+  have hf0 := palindrome_ne_zero (K := ℚ) (X := Fin 2) (m := 1)
   have h := NoncommABP.isLeast_size hf hf0 two_ne_zero
   simp only [Finset.sum_range_succ, Finset.sum_range_zero] at h
   rw [rank_nisanMatrix_zero_left hf hf0, rank_nisanMatrix_zero_right hf hf0] at h
   have h1 := rank_nisanMatrix_palindrome (K := ℚ) (X := Fin 2) (m := 1)
-  rw [palindrome, Fintype.card_fin] at h1
+  rw [Fintype.card_fin] at h1
   rwa [show 1 + 1 - 1 = 1 from rfl, h1] at h
 
 /-- The palindrome circuit has `7 · 1 + 1 = 8` gates for `n = 2`, `m = 1`. -/
