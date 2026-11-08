@@ -4334,6 +4334,8 @@ public import Complexity.Foundations.Data.Nat.Log
 public import Complexity.Foundations.Data.Nat.LogRpow
 public import Complexity.Foundations.Data.Nat.LogStar
 public import Complexity.Foundations.Data.Nat.LogTwoRpow
+public import Complexity.Foundations.Data.Nat.MasterTheorem
+public import Complexity.Foundations.Data.Nat.MasterTheoremAsymptotics
 public import Complexity.Foundations.Data.Nat.Morton
 public import Complexity.Foundations.Data.Nat.OddMulMod
 public import Complexity.Foundations.Data.Nat.OfDigits
