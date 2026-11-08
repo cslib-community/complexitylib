@@ -34,9 +34,9 @@ Colours are `Fin (n + 1)`; colour `0` is the colour `d + 1` of Chen, Deng and Te
 (`IsHypergridSperner`) when a point with `p i = 0` has a colour in `{i + 1, …, n}` and a point with
 `p i = N i` does not have colour `i + 1`. Every *valid colouring* of Chen, Deng and Teng
 (`IsValidColoring`, agreeing on the boundary with `hypergridBoundaryColor`: colour `i + 1` for the
-largest `i` with `p i = 0`, colour `0` if there is none) satisfies it, as does every colouring that
-agrees with such a colouring away from the faces `p i = 0` with `i < n - 1`, where the condition
-allows several colours.
+largest `i` with `p i = 0`, colour `0` if there is none) satisfies it. The converse fails: the
+condition restricts the boundary colours without fixing them, as the classical Sperner condition
+on a simplex does.
 
 The proof is by induction on `n` and counts *doors*: facets carrying every colour except `0`
 (`KuhnSimplex.IsDoor`). A simplex has an odd number of doors exactly when it is panchromatic
