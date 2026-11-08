@@ -796,6 +796,14 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `a / b ≥ 1 - qbar k h`); Schöning has a curated abstract. Optional remainder: PPZ and PPSZ
   abstracts, and the uniform `o(n)` forms of the PPSZ bounds with `w` growing in `n`.
   Further fine-grained reductions and consequences of ETH, SETH and other named hypotheses.
+- **Reductions from orthogonal vectors**
+  ([#3037](https://github.com/cslib-community/complexitylib/issues/3037)): diameter two versus
+  three is done for general `m` (`FineGrained.Diameter`, the `OV` form of Roditty–Vassilevska
+  Williams Theorem 9). Remaining: the `(3/2 - ε)`-approximation corollary for diameter; the
+  sparse-graph `m ^ (2 - ε)` statement, which needs the low-dimension form of `OVH` (dimension
+  `c log N`, from `SETH` with sparsification); the quadratic dynamic programs for longest common
+  subsequence and edit distance, and their `OV` hardness by alignment gadgets (Backurs–Indyk;
+  Abboud–Backurs–Vassilevska Williams; Bringmann–Künnemann).
 
 ### Approximation and PCP
 
