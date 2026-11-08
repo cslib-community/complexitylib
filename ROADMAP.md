@@ -2051,8 +2051,9 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   networks for latency classes without the constant functions (parallel links and unions of paths)
   and the M/M/1 and M/G/1 delay bounds (Roughgarden 2003, Theorems 4.5 and 4.9 and Section 5); the
   tight price of stability of affine congestion games, below the potential-method bound `2`;
-  strong Nash equilibria of fair cost-sharing games and their price of anarchy; price-of-stability
-  bounds for undirected and weighted network design; Braess's paradox; weighted and mixed-strategy
+  existence of strong Nash equilibria of fair cost-sharing games in special network classes
+  (Epstein–Feldman–Mansour 2009) and a network without one; price-of-stability bounds for
+  undirected and weighted network design; Braess's paradox; weighted and mixed-strategy
   atomic congestion games; the Monderer–Shapley characterization of potential games as congestion
   games.
 
