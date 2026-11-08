@@ -2121,6 +2121,7 @@ public import Complexity.Computability.Complexity.Problems.IntegerProgramming
 public import Complexity.Computability.Complexity.Problems.JobSequencing
 public import Complexity.Computability.Complexity.Problems.Knapsack
 public import Complexity.Computability.Complexity.Problems.Knapsack.Unary
+public import Complexity.Computability.Complexity.Problems.LinearProgramming
 public import Complexity.Computability.Complexity.Problems.LongPath
 public import Complexity.Computability.Complexity.Problems.MaxCut
 public import Complexity.Computability.Complexity.Problems.MaxTwoSAT
@@ -3092,6 +3093,7 @@ public import Complexity.Computability.PolyTime.GaloisRingSeries
 public import Complexity.Computability.PolyTime.GaloisRingUnits
 public import Complexity.Computability.PolyTime.GreedyLabelSchedule
 public import Complexity.Computability.PolyTime.GreedySlotScore
+public import Complexity.Computability.PolyTime.Int.Compare
 public import Complexity.Computability.PolyTime.Int.DotProduct
 public import Complexity.Computability.PolyTime.Int.ExactDiv
 public import Complexity.Computability.PolyTime.Int.Jet
@@ -4710,6 +4712,7 @@ public import Complexity.Foundations.LinearAlgebra.FreeAlgebra
 public import Complexity.Foundations.LinearAlgebra.ImageSparsification
 public import Complexity.Foundations.LinearAlgebra.Interpolation
 public import Complexity.Foundations.LinearAlgebra.KernelVector
+public import Complexity.Foundations.LinearAlgebra.Matrix.BasicSolution
 public import Complexity.Foundations.LinearAlgebra.Matrix.BranchingProgramDeterminant
 public import Complexity.Foundations.LinearAlgebra.Matrix.CauchyBinet
 public import Complexity.Foundations.LinearAlgebra.Matrix.ClosedSubmatrix

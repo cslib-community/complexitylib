@@ -1737,20 +1737,20 @@ each statement against the numbered result. Organize modules by subject, not cha
 ### Optimization and duality
 
 - **Linear programming** ([#2976](https://github.com/cslib-community/complexitylib/issues/2976)):
-  Fourier–Motzkin elimination, Farkas' lemma, weak and strong duality, the unbounded and
-  infeasible outcomes and complementary slackness over any linearly ordered field are in
-  `Foundations/LinearAlgebra/Matrix/{FourierMotzkin,Farkas,LinearProgramming}`. The simplex
-  method on dictionaries with Bland's rule, its no-cycling theorem, termination within
-  `N.choose m - 1` pivots, the optimality and unboundedness certificates and an optimal dual
-  solution read off the final dictionary are in `Algorithms/Lean/Simplex`
-  ([#3370](https://github.com/cslib-community/complexitylib/issues/3370)). Remaining:
-  rational input and output encodings; bit-size bounds on basic solutions and Farkas
-  certificates (Cramer's rule with the Hadamard bound), giving LP feasibility in NP ∩ coNP with
-  machine-checked certificate verifiers; and a polynomial-time LP algorithm (ellipsoid or
-  interior point) with bit complexity and intermediate precision accounted for. For the simplex
-  method: Phase I (an initial feasible dictionary or an infeasibility certificate); the
-  Klee–Minty cube on which Dantzig's rule makes `2ⁿ - 1` pivots; smoothed analysis
-  (Spielman–Teng); strongly polynomial special cases; and a costed implementation.
+  Fourier–Motzkin elimination, Farkas' lemma, weak and strong duality, the unbounded and infeasible
+  outcomes and complementary slackness over any linearly ordered field are in
+  `Foundations/LinearAlgebra/Matrix/{FourierMotzkin,Farkas,LinearProgramming}`. Basic solutions and
+  their size bounds are in `Foundations/LinearAlgebra/Matrix/BasicSolution`, and LP feasibility for
+  integer data (rational solutions) is in NP ∩ coNP with polynomial-time certificate checks in
+  `Problems/LinearProgramming`. The simplex method on dictionaries with Bland's rule, its no-cycling
+  theorem, termination within `N.choose m - 1` pivots, the optimality and unboundedness certificates
+  and an optimal dual solution read off the final dictionary are in `Algorithms/Lean/Simplex`
+  ([#3370](https://github.com/cslib-community/complexitylib/issues/3370)). Remaining: a
+  polynomial-time LP algorithm (ellipsoid or interior point) with bit complexity and intermediate
+  precision accounted for; and LP optimization as a search problem with rational outputs. For the
+  simplex method: Phase I (an initial feasible dictionary or an infeasibility certificate); the
+  Klee–Minty cube on which Dantzig's rule makes `2ⁿ - 1` pivots; smoothed analysis (Spielman–Teng);
+  strongly polynomial special cases; and a costed implementation.
 - **Lattice basis reduction** ([#3235](https://github.com/cslib-community/complexitylib/issues/3235)):
   `δ`-reduced bases, the LLL approximation `‖b₁‖² ≤ (4/(4δ-1))^{n-1} ‖x‖²` (paper indexing,
   `n` vectors) to the shortest vector (Lenstra–Lenstra–Lovász Proposition (1.11)), the potential
