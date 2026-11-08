@@ -1193,12 +1193,16 @@ each statement against the numbered result. Organize modules by subject, not cha
   `Quantum/UnknownSearch.lean`, `Quantum/Polynomial.lean` and `Quantum/Adversary.lean`. Natural
   later targets are Forrelation and other optimal quantum–classical query separations.
 
-- **Shor's algorithm:** bounded-error polynomial-time integer factoring and discrete logarithms
+- **Shor's algorithm** ([#3252](https://github.com/cslib-community/complexitylib/issues/3252)):
+  bounded-error polynomial-time integer factoring and discrete logarithms
   in the native uniform quantum-circuit model, with explicit input/output encodings, success
-  probabilities and gate-approximation costs. Develop quantum period/order finding and phase
-  estimation, the quantum Fourier transform, reversible modular exponentiation, continued-fraction
-  recovery and the classical reductions; certify uniform circuit generation and polynomial gate
-  bounds alongside correctness.
+  probabilities and gate-approximation costs. The quantum Fourier transform over `ZMod N` (as a
+  unitary matrix) and the exact period-finding measurement for periods `r ∣ N`, with `gcd`
+  recovery succeeding with probability `φ(r)/r`, are available at the state level. Remaining:
+  the general case `r ∤ N` with continued-fraction recovery, the `Ω(1 / log log r)` totient
+  bound, phase estimation, QFT circuits with gate and approximation costs, reversible modular
+  exponentiation, and the classical reductions from factoring and discrete logarithms;
+  certify uniform circuit generation and polynomial gate bounds alongside correctness.
 
 ### Differential privacy and adaptive data analysis
 

@@ -157,6 +157,28 @@ lake build Complexity.Computability.QueryComplexity.Quantum.Simon \
   ComplexityTests.BernsteinVazirani
 ```
 
+## Quantum Fourier transform and exact period finding
+
+This is the quantum core of Shor's algorithm in the case where the period divides the register size. It works at the level of states and unitary matrices, using `unitaryEquiv`, `ket` and `measure`; it is not phrased in the query model of the previous section or in the uniform circuits of `BQP`.
+
+[Fourier.lean](../../Complexity/Foundations/Quantum/Fourier.lean) defines `Cslib.Quantum.qft N : unitaryGroup (ZMod N) ℂ`, the matrix `F_N(j, k) = ω^{jk}/√N` with `ω = e^{2πi/N}`, for `[NeZero N]`. `qft_apply` gives its entries as `ZMod.stdAddChar (j * k) / √N` and `qft_apply_eq_exp` as `exp(2πi · j.val · k.val / N) / √N`. `qft_mulVec` identifies its action on amplitude vectors with `√N • 𝓕⁻`, Mathlib's inverse DFT `ZMod.dft.symm`, so the sign convention is Shor's eq. (4.1) and Mathlib's inverse transform. Unitarity is character orthogonality (`AddChar.sum_mulShift`). For a register pair `ι × κ`, [Register.lean](../../Complexity/Foundations/Quantum/Register.lean) gives `onFirst U = U ⊗ I` (`onFirst_apply`).
+
+[PeriodFinding.lean](../../Complexity/Algorithms/Quantum/PeriodFinding.lean) states the promise `HasExactPeriod f r` for `f : ZMod N → S`: `r ∣ N`, and `f x = f x' ↔ x.val ≡ x'.val [MOD r]`. Order finding is the main instance: `hasExactPeriod_pow` gives `a ↦ x ^ a.val` exact period `orderOf x` in any left-cancellative monoid when `orderOf x ∣ N`, for example `(ZMod M)ˣ`. The algorithm has three steps:
+
+- **State preparation.** `unitaryEquiv_oracle_qft_ket_zero` takes any unitary `U` with `U|x, s₀⟩ = |x, f x⟩`. Applying `onFirst (qft N)` and then `U` to `|0, s₀⟩` gives `oracleState f = N^{-1/2} ∑_x |x⟩|f x⟩`. `addOracle f`, the permutation unitary `|x, s⟩ ↦ |x, s + f x⟩` for an additive group `S`, is one such oracle (`unitaryEquiv_addOracle_qft_ket_zero`).
+- **Fourier transform.** `periodState f` applies `onFirst (qft N)` to `oracleState f`. Under the promise, the amplitude of `|y, f x₀⟩` is `ω^{x₀ y}/r` when `N / r ∣ y.val` and `0` otherwise (`HasExactPeriod.periodState_apply`). The proof uses orthogonality over the subgroup of multiples of `r` (`ZMod.sum_dvd_val_stdAddChar_mul` in [ZModMultiples.lean](../../Complexity/Foundations/Analysis/Fourier/ZModMultiples.lean)).
+- **Measurement.** `periodFindingOutcome f` is the first-register marginal of measuring both registers. `HasExactPeriod.periodFindingOutcome_apply` gives probability `1/r` on each multiple of `N / r` and `0` elsewhere. `HasExactPeriod.periodFindingOutcome_eq` states this as equality with `Cslib.Probability.PMF.uniformOfFinset` on `{y | N / r ∣ y.val}`.
+
+Classical recovery takes the reduced denominator `N / gcd(N, y.val)` of `y / N`. Since `y = c · N / r`, this is `r` exactly when `gcd(c, r) = 1`, equivalently when `addOrderOf y = r` (`ZMod.addOrderOf_eq_div_gcd_val`). `HasExactPeriod.periodFindingOutcome_recover` gives success probability exactly `φ(r) / r`. The elementary bound `Nat.le_totient_mul_log_add_one` ([Totient.lean](../../Complexity/Foundations/Data/Nat/Totient.lean)), `n ≤ φ(n) (log₂ n + 1)`, gives at least `1 / (log₂ r + 1)` (`HasExactPeriod.inv_log_add_one_le_periodFindingOutcome_recover`). The sharper `Ω(1 / log log r)` of Shor and de Wolf rests on Hardy–Wright, Theorem 328, and is not formalized.
+
+Complete client: [QuantumPeriodFinding.lean](../../ComplexityTests/QuantumPeriodFinding.lean). It checks the promise for reduction modulo `3` on `ZMod 6` and fails it for periods `2` and `6`. It checks order finding for the unit `2` of order `4` in `(ZMod 5)ˣ` on `ZMod 8`, and that `qft 2` is the Hadamard matrix. It computes outcome probabilities and recovery probabilities `2/3` and `1/2`, and checks that the totient bound is tight at `n = 2`. Build it with
+
+```bash
+lake build Complexity.Algorithms.Quantum.PeriodFinding ComplexityTests.QuantumPeriodFinding
+```
+
+**Not certified here.** These are statements about unitary matrices, not gate-level circuits. There is no QFT circuit, no reversible modular exponentiation and no gate count, uniformity or approximation cost. Shor's general case `r ∤ N` with continued-fraction recovery, phase estimation, the reductions from factoring and discrete logarithm to order finding, and factoring in `BQP` are open. See the Shor's algorithm entry in [ROADMAP.md](../../ROADMAP.md) and [#3252](https://github.com/cslib-community/complexitylib/issues/3252).
+
 ## Known Limitations
 
 The selected definitions and headline statements have been source-inspected; the full algebraic hitting, contraction, and quantum proof chains have not been independently rederived or rebuilt in this worker pass. In particular, arbitrary field/real/unitary parameters are not finite encodings, semantic operations are not native instructions, a query upper bound is not a gate or bit-time upper bound, and a tensor rank or field-circuit gate bound is not an integer bit-cost bound.
