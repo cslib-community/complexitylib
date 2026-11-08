@@ -11,6 +11,8 @@ import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.Initialize
 import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.LeafStep
 import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.Exec
 import Mathlib.Tactic.IntervalCases
+-- Compiled `Code.eval` runs below use the fast interpreter.
+import Complexity.Computability.WordRAM.Structured.FastEval
 
 /-!
 # Native explicit-stack Strassen execution regressions

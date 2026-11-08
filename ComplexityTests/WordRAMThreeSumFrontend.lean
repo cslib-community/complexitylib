@@ -8,6 +8,8 @@ module
 -- upstream: candidate
 
 meta import Complexity.Algorithms.WordRAM.ThreeSum.Frontend.Program
+-- Compiled `Code.eval` runs below use the fast interpreter.
+meta import Complexity.Computability.WordRAM.Structured.FastEval
 
 /-!
 # Executed initialized-input frontend boundary cases

@@ -8,6 +8,8 @@ Authors: Erik Demaine
 
 import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters
 import Complexity.Algorithms.ExactTriangle.ParameterChoice.CostGeometry
+-- Compiled `Code.eval` runs below use the fast interpreter.
+import Complexity.Computability.WordRAM.Structured.FastEval
 
 /-!
 # Actual parameter boundary and caller regressions

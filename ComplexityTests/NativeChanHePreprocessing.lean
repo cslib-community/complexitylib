@@ -5,6 +5,8 @@ Authors: Erik Demaine
 -/
 
 import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingProgram
+-- Compiled `Code.eval` runs below use the fast interpreter.
+import Complexity.Computability.WordRAM.Structured.FastEval
 
 /-! # Executed initialized-input Chan–He preprocessing -/
 

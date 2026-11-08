@@ -7,6 +7,8 @@ Authors: Erik Demaine
 -- upstream: local-only (tests)
 
 import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Program
+-- Compiled `Code.eval` runs below use the fast interpreter.
+import Complexity.Computability.WordRAM.Structured.FastEval
 
 /-!
 # Concrete slot reuse with dirty memory

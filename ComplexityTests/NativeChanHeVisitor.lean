@@ -7,6 +7,8 @@ Authors: Erik Demaine
 import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalLocalDelivery
 import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Program
 import Complexity.Algorithms.WordRAM.ThreeSum.Host.Slow
+-- Compiled `Code.eval` runs below use the fast interpreter.
+import Complexity.Computability.WordRAM.Structured.FastEval
 
 open Cslib.WordRAM
 open Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal

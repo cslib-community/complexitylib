@@ -3602,6 +3602,7 @@ public import Complexity.Computability.WordRAM.Signed.Input
 public import Complexity.Computability.WordRAM.Signed.Operations
 public import Complexity.Computability.WordRAM.Signed.State
 public import Complexity.Computability.WordRAM.Structured
+public import Complexity.Computability.WordRAM.Structured.FastEval
 public import Complexity.Computability.WordRAM.Subroutine
 public import Complexity.Computability.WordRAM.SymbolicExec
 public import Complexity.Computability.WordRAM.SymbolicExec.Call
