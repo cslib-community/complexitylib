@@ -9,6 +9,11 @@ The private-transcript sources are described in [the extraction methods](develop
 
 Scott Aaronson. *The Busy Beaver Frontier*. ACM SIGACT News 51(3), 32–54, 2020. https://doi.org/10.1145/3427361.3427369 ; author's version https://www.scottaaronson.com/papers/bb.pdf . Read in the author's version on 2026-11-08: Proposition 1 (oracle access to any upper bound on the shift function solves the halting problem, hence no such bound is computable; the library proves the unrelativized corollary) and Proposition 2 (the shift function eventually exceeds every computable function). Both are stated for Turing machines; Section 2 notes that they hold in any universal model of computation. Section 1 defines `BB_L` for a programming language `L` with bit-string programs (and a variant through Kolmogorov complexity), the closest analogue of the library's code-size version. Journal pagination was taken from the bibliographic record.
 
+<a id="achlioptas03"></a>
+## achlioptas03
+
+Dimitris Achlioptas. “Database-Friendly Random Projections: Johnson–Lindenstrauss with Binary Coins.” *Journal of Computer and System Sciences* 66(4), 671–687, 2003. https://doi.org/10.1016/S0022-0000(03)00025-4 . Author-hosted copy of the typeset journal version: https://cgi.di.uoa.gr/~optas/papers/jl.pdf . Checked against that copy on 2026-11-07 UTC: Theorem 1.1 on p. 673 (squared distances within `1 ± ε` with probability at least `1 - n^(-β)` for `k ≥ k₀ = (4 + 2β) log n / (ε²/2 - ε³/3)`, stated for all `ε, β > 0`; the `±1` distribution is (1)). Also checked: Lemma 4.1 on p. 679 (Gaussian entries), Lemma 5.1 on p. 679 (the per-vector tails), and Lemma 5.2 on p. 680, eqs. (6)–(7) (the bounds on `𝔼 exp (h Q²)` and `𝔼 Q⁴`).
+
 <a id="alonmatiasszegedy99"></a>
 ## alonmatiasszegedy99
 
@@ -48,6 +53,11 @@ Charles H. Bennett. *Time/Space Trade-Offs for Reversible Computation*. SIAM Jou
 ## bermanhartmanis75
 
 Leonard Berman and Juris Hartmanis. *On Isomorphisms and Density of NP and Other Complete Sets*. Technical Report TR75-260, Department of Computer Science, Cornell University, October 1975. https://hdl.handle.net/1813/7101 . The open eCommons PDF is an image scan without a text layer. An independent agent review checked these locators against it on 2026-11-08 UTC: §I, printed p. 2 (the isomorphism conjecture and its `P ≠ NP` consequence); §III, Theorem 1, printed pp. 7–10 (PDF pp. 10–13; isomorphism from invertible, length-increasing one-one reductions); Lemmas 3 and 5, printed pp. 10–12 (length growth and the two-argument padding and read-back condition); and Theorem 7 with its CNF construction, printed pp. 13–14. The journal version (*SIAM Journal on Computing* 6(2), 305–322, 1977, https://doi.org/10.1137/0206023) was not checked, and its numbering is not claimed to match.
+
+<a id="bfprt73"></a>
+## bfprt73
+
+Manuel Blum, Robert W. Floyd, Vaughan Pratt, Ronald L. Rivest and Robert E. Tarjan. *Time Bounds for Selection*. Journal of Computer and System Sciences 7(4), 448–461, 1973. https://doi.org/10.1016/S0022-0000(73)80033-9 . Bibliographic metadata and the abstract's `5.4305 n` comparison bound for `PICK` were checked through secondary search results on 2026-11-08; the paper's text was not read. The manual attributes to this paper only the median-of-medians selection algorithm and that constant. The groups-of-five accounting in the Lean files follows the presentation in [clrs09](#clrs09), Section 9.3, which was not checked against the printed book.
 
 <a id="blum67"></a>
 ## blum67
@@ -122,7 +132,7 @@ Clément L. Canonne, Gautam Kamath and Thomas Steinke. *The Discrete Gaussian fo
 <a id="clrs09"></a>
 ## clrs09
 
-Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest and Clifford Stein. *Introduction to Algorithms*, third edition. MIT Press, 2009. ISBN 978-0-262-03384-8. Section 35.1, procedure `APPROX-VERTEX-COVER` and Theorem 35.1 (it is a polynomial-time 2-approximation algorithm). The locator 35.1 was checked against secondary course material, not the printed book. Sections 22.3–22.4 (depth-first search; Lemma 22.11, acyclic if and only if no back edges; Theorem 22.12, correctness of `TOPOLOGICAL-SORT`) and Section 24.1 (Bellman–Ford; Lemma 24.2, estimates equal shortest-path weights after `|V| - 1` passes when no negative cycle is reachable; Theorem 24.4, correctness of `BELLMAN-FORD`) were likewise checked against secondary course material. Sections 25.1 ("Shortest paths and matrix multiplication": repeated (min,+) squaring) and 25.2 ("The Floyd–Warshall algorithm") are the all-pairs shortest-path locators. They were checked against the edition's published table of contents only.
+Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest and Clifford Stein. *Introduction to Algorithms*, third edition. MIT Press, 2009. ISBN 978-0-262-03384-8. Section 35.1, procedure `APPROX-VERTEX-COVER` and Theorem 35.1 (it is a polynomial-time 2-approximation algorithm). The locator 35.1 was checked against secondary course material, not the printed book. Sections 22.3–22.4 (depth-first search; Lemma 22.11, acyclic if and only if no back edges; Theorem 22.12, correctness of `TOPOLOGICAL-SORT`) and Section 24.1 (Bellman–Ford; Lemma 24.2, estimates equal shortest-path weights after `|V| - 1` passes when no negative cycle is reachable; Theorem 24.4, correctness of `BELLMAN-FORD`) were likewise checked against secondary course material. Sections 25.1 ("Shortest paths and matrix multiplication": repeated (min,+) squaring) and 25.2 ("The Floyd–Warshall algorithm") are the all-pairs shortest-path locators. They were checked against the edition's published table of contents only. Section 9.3 ("Selection in worst-case linear time") is the locator for the groups-of-five median-of-medians algorithm and its counting step; it was not checked against the printed book.
 
 <a id="complexitylib"></a>
 ## complexitylib
@@ -163,6 +173,11 @@ CSLib contributors. *CSLib*, pinned dependency snapshot `254e30e6d4299c51323aaea
 ## cygan2015
 
 Marek Cygan, Fedor V. Fomin, Łukasz Kowalik, Daniel Lokshtanov, Dániel Marx, Marcin Pilipczuk, Michał Pilipczuk, and Saket Saurabh. *Parameterized Algorithms*. Springer, 2015. [DOI](https://doi.org/10.1007/978-3-319-21275-3). Inspected the authors' companion PDF dated 2016-05-30: Definitions 1.2–1.3 (p. 13), Definition 2.1 (pp. 18–19), Lemma 2.2 (p. 20), and Section 2.2.1 (pp. 21–22); accessed 2026-11-02. The color-coding locators Section 5.2 and Lemma 5.5, and the fpt-reduction locator Section 13.1, used in [parameterized complexity](machines-and-classes/parameterized-complexity.md), were not re-inspected.
+
+<a id="dasguptagupta03"></a>
+## dasguptagupta03
+
+Sanjoy Dasgupta, Anupam Gupta. “An Elementary Proof of a Theorem of Johnson and Lindenstrauss.” *Random Structures & Algorithms* 22(1), 60–65, 2003. https://doi.org/10.1002/rsa.10073 . Author-hosted copy: https://cseweb.ucsd.edu/~dasgupta/papers/jl.pdf . Checked against that copy on 2026-11-07 UTC: Theorem 2.1 on p. 61 (`0 < ε < 1` and `k ≥ 4 (ε²/2 - ε³/3)⁻¹ ln n`), and Lemma 2.2 on p. 62 (tails for the projection of a random unit vector onto `k` coordinates, proved with `𝔼 exp (sX²) = (1 - 2s)^(-1/2)` for a standard Gaussian `X`).
 
 <a id="dinur2007"></a>
 ## dinur2007
@@ -224,6 +239,11 @@ Craig Gentry. “Fully Homomorphic Encryption Using Ideal Lattices.” *STOC 200
 
 Oded Goldreich, Shafi Goldwasser, Silvio Micali. “How to Construct Random Functions.” *Journal of the ACM* 33(4), 792–807, 1986. Author-hosted version of record: https://www.wisdom.weizmann.ac.il/~oded/X/ggm-jacm.pdf . Adaptive function-test definition consulted.
 
+<a id="gglrs00"></a>
+## gglrs00
+
+Oded Goldreich, Shafi Goldwasser, Eric Lehman, Dana Ron and Alex Samorodnitsky. *Testing Monotonicity*. Combinatorica 20(3), 301–337, 2000. https://doi.org/10.1007/s004930070011 . Bibliographic metadata checked against the Crossref record on 2026-11-08. The journal version is paywalled, and the author-hosted pages could not be reached (connection reset), so the text was not inspected and no theorem locator is claimed. The manual attributes the edge tester for Boolean functions on the hypercube to this paper, as [roughgarden15cc](#roughgarden15cc) does.
+
 <a id="gkr15"></a>
 ## gkr15
 
@@ -258,6 +278,11 @@ Arpita Ghosh, Tim Roughgarden and Mukund Sundararajan. *Universally Utility-Maxi
 ## gsw13
 
 Craig Gentry, Amit Sahai, Brent Waters. “Homomorphic Encryption from Learning with Errors: Conceptually-Simpler, Asymptotically-Faster, Attribute-Based.” *CRYPTO 2013*, LNCS 8042, 75–92. https://doi.org/10.1007/978-3-642-40041-4_5 ; authors' full-version record https://eprint.iacr.org/2013/340 . Metadata/abstract checked; PDF fetch was blocked in this source pass.
+
+<a id="gupta23"></a>
+## gupta23
+
+Anupam Gupta. “Dimension Reduction and the JL Lemma.” Chapter 11 of the lecture notes for CMU 15-850 *Advanced Algorithms*; PDF dated 2023-02-17. https://www.cs.cmu.edu/~15850/notes/lec12.pdf . Checked on 2026-11-07 UTC: §11.6.2, Lemma 11.9 bounds `𝔼 exp (tV²)` for a symmetric σ-sub-Gaussian `V` by the corresponding Gaussian moment generating function. The proof linearizes the square with an independent Gaussian, exchanges the averages and applies the sub-Gaussian bound. The notes apply the lemma to Rademacher projection matrices.
 
 <a id="gusfield90"></a>
 ## gusfield90
@@ -343,6 +368,11 @@ Russell Impagliazzo and Avi Wigderson. *P = BPP if E Requires Exponential Circui
 ## irani91
 
 Sandy Irani. "Two Results on the List Update Problem." *Information Processing Letters* 38(6), 301–306, 1991. https://doi.org/10.1016/0020-0190(91)90086-W . Crossref metadata checked on 2026-11-07; the full text was not inspected in this pass. The manual uses it only as the place where secondary sources say the deterministic `2n/(n+1)` list-update lower bound of Karp and Raghavan is reported.
+
+<a id="johnsonlindenstrauss84"></a>
+## johnsonlindenstrauss84
+
+William B. Johnson, Joram Lindenstrauss. “Extensions of Lipschitz Mappings into a Hilbert Space.” In *Conference in Modern Analysis and Probability (New Haven, Conn., 1982)*, Contemporary Mathematics 26, 189–206. American Mathematical Society, 1984. https://doi.org/10.1090/conm/026/737400 . Bibliographic data from the DOI record; the manual attributes only the existence of low-distortion linear embeddings of `n` points into `O(log n / ε²)` dimensions to this paper.
 
 <a id="karlin88"></a>
 ## karlin88
@@ -528,6 +558,11 @@ Tim Roughgarden. *CS364A: Algorithmic Game Theory*, lecture notes, Stanford Univ
 ## roughgarden15
 
 Tim Roughgarden. *Intrinsic Robustness of the Price of Anarchy*. Journal of the ACM 62(5), Article 32, 2015. https://doi.org/10.1145/2806883 . The author's version of 14 July 2015 was consulted on 2026-11-07 for Definition 2.1, derivation (3)–(5), Example 2.5, (15) and Theorems 3.2–3.3; locators follow that version.
+
+<a id="roughgarden15cc"></a>
+## roughgarden15cc
+
+Tim Roughgarden. *Communication Complexity (for Algorithm Designers)*. Lecture notes, arXiv:1509.06257v1, 2015; published in Foundations and Trends in Theoretical Computer Science 11(3–4), 217–404, 2016. https://arxiv.org/abs/1509.06257v1 . arXiv version 1 was consulted on 2026-11-08 for §8.3.1 (pp. 125–129): the edge tester, display (8.2), the Key Claim and Theorem 8.2, which the notes attribute to [gglrs00](#gglrs00). The monotonicity-testing modules follow this proof, and their locators follow version 1. Theorem 8.2 takes `t = Θ(n / ε)` trials. The library proves the upper bound with explicit constants and claims nothing about fewer trials.
 
 <a id="roughgardentardos02"></a>
 ## roughgardentardos02
