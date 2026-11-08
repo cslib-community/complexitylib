@@ -9,6 +9,7 @@ module
 
 public import Complexity.Privacy.DifferentialPrivacy.Composition
 public import Complexity.Privacy.DifferentialPrivacy.PrivacyLoss
+import Complexity.Foundations.Analysis.SpecialFunctions.Hyperbolic
 
 /-!
 # Advanced composition
@@ -23,10 +24,13 @@ The source proves the theorem through the KL divergence bound `ε (e^ε - 1)` an
 inequality. Here the proof bounds the moment generating function of the privacy loss in each
 round (`lossMoment_le_exp`), multiplies the bounds along the transcript
 (`lossMoment_transcriptWeight_le`) and applies Markov's inequality
-(`tsum_indicator_le_lossMoment`). The per-round bound gives the known sharper term
-`k ε tanh (ε / 2)` in place of `k ε (e^ε - 1)` (`DifferentiallyPrivate.advancedComposition_sqrt`).
+(`tsum_indicator_le_lossMoment`). The per-round bound gives the sharper linear term
+`k ε tanh (ε / 2) = k ε (e^ε - 1) / (e^ε + 1)` in place of `k ε (e^ε - 1)`
+(`DifferentiallyPrivate.advancedComposition_sqrt`), the third bound of
+[KairouzOhViswanath2017, Theorem 3.4]. Their proof also bounds a moment generating function, after
+reducing to an extremal pair of four-point distributions.
 For `δ > 0`, each round is replaced by `ε`-close sub-probability kernels that keep all but `δ` of
-the mass (`exists_subKernel`); `k` rounds then lose at most `k δ` of the mass
+the mass (`exists_le_of_tsum_tsub_le`); `k` rounds then lose at most `k δ` of the mass
 (`one_le_tsum_transcriptWeight_add`).
 
 The adaptive adversary of the source's composition experiment [DworkRoth2014, Definition 3.7],
@@ -44,7 +48,8 @@ The source states the theorem for all `δ' ≥ 0`, reading `ln (1/0) = ∞`. Lea
 ## Main results
 
 * `Cslib.Privacy.DifferentiallyPrivate.advancedComposition`: [DworkRoth2014, Theorem 3.20].
-* `Cslib.Privacy.DifferentiallyPrivate.advancedComposition_sqrt`: the `tanh` refinement.
+* `Cslib.Privacy.DifferentiallyPrivate.advancedComposition_sqrt`: the `tanh` refinement
+  [KairouzOhViswanath2017, Theorem 3.4].
 * `Cslib.Privacy.DifferentiallyPrivate.advancedComposition_tanh`: the form with a free slack
   parameter `a`, privacy `(k ε tanh (ε / 2) + a ε, exp (-a² / (2k)) + k δ)`.
 * `Cslib.Privacy.DifferentiallyPrivate.advancedComposition_experiment`: the composition
@@ -56,6 +61,7 @@ The source states the theorem for all `δ' ≥ 0`, reading `ln (1/0) = ∞`. Lea
 ## References
 
 * [DworkRoth2014]
+* [KairouzOhViswanath2017]
 -/
 
 open scoped ENNReal
@@ -290,7 +296,7 @@ theorem adaptiveComposition_toOuterMeasure_le {M : List R → D → PMF R} {x y 
   have hc : 1 ≤ ENNReal.ofReal (Real.exp ε) := by
     rw [← ENNReal.ofReal_one]
     exact ENNReal.ofReal_le_ofReal (Real.one_le_exp hε)
-  choose K L hKP hLQ hKL hLK hsum hmass using fun h => exists_subKernel (M h x) (M h y) hc
+  choose K L hKP hLQ hKL hLK hsum hmass using fun h => exists_le_of_tsum_tsub_le (M h x) (M h y) hc
     (hxy h) (hyx h)
   have hL1 : ∀ h, ∑' r, L h r ≤ 1 := fun h =>
     (tsum_le_tsum (hLQ h)).trans (M h y).tsum_coe.le
@@ -353,8 +359,11 @@ theorem DifferentiallyPrivate.advancedComposition_tanh {Adj : D → D → Prop}
     (fun hist => DifferentiallyPrivate.iff_tsum_tsub_le.mp (h hist) (hAdj hxy)) k ha S
 
 /-- Advanced composition with `tanh`: `k` adaptive rounds of `(ε, δ)`-private mechanisms are
-`(√(2k ln (1/δ')) ε + k ε tanh (ε / 2), k δ + δ')`-private for every `δ' > 0`. Since
-`tanh (ε / 2) ≤ e^ε - 1`, this sharpens [DworkRoth2014, Theorem 3.20]. -/
+`(√(2k ln (1/δ')) ε + k ε tanh (ε / 2), k δ + δ')`-private for every `δ' > 0`. This is the third
+bound of [KairouzOhViswanath2017, Theorem 3.4], whose linear term is
+`k ε (e^ε - 1) / (e^ε + 1) = k ε tanh (ε / 2)`, with the failure probability
+`1 - (1 - δ)^k (1 - δ')` weakened to `k δ + δ'`. Since `tanh (ε / 2) ≤ e^ε - 1`, it sharpens
+[DworkRoth2014, Theorem 3.20]. -/
 theorem DifferentiallyPrivate.advancedComposition_sqrt {Adj : D → D → Prop}
     (hAdj : ∀ ⦃x y⦄, Adj x y → Adj y x) {M : List R → D → PMF R} {ε : ℝ} {δ : ℝ≥0∞}
     (hε : 0 ≤ ε) (h : ∀ history, DifferentiallyPrivate Adj (M history) ε δ) (k : ℕ) {δ' : ℝ}
@@ -399,7 +408,7 @@ theorem DifferentiallyPrivate.advancedComposition {Adj : D → D → Prop}
       (k * δ + ENNReal.ofReal δ') := by
   refine (DifferentiallyPrivate.advancedComposition_sqrt hAdj hε h k hδ').mono ?_ le_rfl
   gcongr
-  exact Real.tanh_div_two_le_exp_sub_one hε
+  exact Real.tanh_half_le_exp_sub_one hε
 
 /-- **Advanced composition against an adaptive adversary** [DworkRoth2014, Definition 3.7 and
 Theorem 3.20]. In round `i` the adversary, knowing its coins `ω` and the outputs `history` of
@@ -453,10 +462,13 @@ theorem DifferentiallyPrivate.advancedComposition_experiment {D' : Type*} {Ω R 
 
 /-- The per-round privacy parameter of [DworkRoth2014, Corollary 3.21]: if every round is
 `(ε₀ / (2 √(2k ln (1/δ'))), δ)`-private, `k` adaptive rounds are `(ε₀, k δ + δ')`-private.
-The source assumes `0 < ε₀ < 1`; its proof writes the linear term `k ε (e^ε - 1)` as `k ε²`, an
-approximation for small `ε`, and needs `δ'` small compared with `ε₀`. Here the linear term is
-`k ε tanh (ε / 2) ≤ k ε² / 2` (`DifferentiallyPrivate.advancedComposition_sqrt`), and the
-hypothesis is `ε₀ ≤ 8 ln (1/δ')`, which holds whenever `ε₀ ≤ 1` and `δ' ≤ e^{-1/8}`. -/
+The source assumes only `0 < ε₀ < 1`. Its proof writes the linear term `k ε (e^ε - 1)` as
+`k ε²`, an approximation for small `ε`, and the step `k ε² ≤ ε₀ / 2` needs `ε₀ ≤ 4 ln (1/δ')`.
+Without such a condition the corollary fails: for `k = 1`, `ε₀ = 0.9`, `δ' = 0.999` the
+prescribed per-round parameter is `ε ≈ 10.06`, and randomized response reporting the true bit
+with probability `e^ε / (1 + e^ε)` is `(ε, 0)`-private but not `(0.9, 0.999)`-private. Here the
+linear term is `k ε tanh (ε / 2) ≤ k ε² / 2` (`DifferentiallyPrivate.advancedComposition_sqrt`),
+and the hypothesis is `ε₀ ≤ 8 ln (1/δ')`, which holds whenever `ε₀ ≤ 1` and `δ' ≤ e^{-1/8}`. -/
 theorem DifferentiallyPrivate.advancedComposition_of_target {Adj : D → D → Prop}
     (hAdj : ∀ ⦃x y⦄, Adj x y → Adj y x) {M : List R → D → PMF R} {ε₀ : ℝ} {δ : ℝ≥0∞} (k : ℕ)
     {δ' : ℝ} (hε₀ : 0 ≤ ε₀) (hδ' : 0 < δ') (hε₀δ' : ε₀ ≤ 8 * Real.log (1 / δ'))

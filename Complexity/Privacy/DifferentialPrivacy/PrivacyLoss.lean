@@ -7,9 +7,10 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Analysis.SpecialFunctions.Hyperbolic
 public import Complexity.Privacy.DifferentialPrivacy.Basic
 public import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Series
+import Complexity.Foundations.Analysis.SpecialFunctions.Hyperbolic
 import Mathlib.Analysis.Convex.SpecificFunctions.Basic
 
 /-!
@@ -21,10 +22,12 @@ Markov's inequality turns a moment bound into an event bound
 (`tsum_indicator_le_lossMoment`). When the likelihood ratio lies in `[e^{-ε}, e^ε]`, convexity
 of `x ↦ x ^ (1 + t)` bounds the moment by `cosh (ε t) + tanh (ε / 2) · sinh (ε t)` per unit of
 mass (`lossMoment_le_of_le_mul`), hence by `exp (tanh (ε / 2) · ε t + (ε t)² / 2)`
-(`lossMoment_le_exp`). This is the per-round step of the proof of advanced composition.
+(`lossMoment_le_exp`). The last step is Hoeffding's lemma for the two-point law on `±ε t`
+(`Real.cosh_add_mul_sinh_le_exp`; compare `Cslib.one_sub_mul_exp_add_mul_exp_le`). This is the
+per-round step of the proof of advanced composition.
 
-For approximate differential privacy, `exists_subKernel` splits an `(ε, δ)`-close pair of
-distributions into sub-probability parts that are `ε`-close in both directions and keep all but
+For approximate differential privacy, `exists_le_of_tsum_tsub_le` splits an `(ε, δ)`-close pair
+of distributions into sub-probability parts that are `ε`-close in both directions and keep all but
 `δ` of the mass.
 
 ## Main definitions
@@ -36,7 +39,8 @@ distributions into sub-probability parts that are `ε`-close in both directions 
 * `Cslib.Privacy.tsum_indicator_le_lossMoment`: Markov's inequality for the privacy loss.
 * `Cslib.Privacy.lossMoment_le_of_le_mul`, `Cslib.Privacy.lossMoment_le_exp`: the moment bound
   for an `ε`-close pair.
-* `Cslib.Privacy.exists_subKernel`: `ε`-close sub-probability parts of an `(ε, δ)`-close pair.
+* `Cslib.Privacy.exists_le_of_tsum_tsub_le`: `ε`-close sub-probability parts of an
+  `(ε, δ)`-close pair.
 
 ## References
 
@@ -166,7 +170,7 @@ theorem lossMoment_le_of_le_mul {p q : α → ℝ≥0∞} {ε t : ℝ} (hε : 0 
     (hsum : ∑' a, p a ≤ ∑' a, q a) (hfin : ∑' a, q a ≠ ⊤) :
     lossMoment t p q ≤ ENNReal.ofReal (Real.cosh (ε * t) +
       Real.tanh (ε / 2) * Real.sinh (ε * t)) * ∑' a, p a := by
-  rw [Real.tanh_div_two_eq]
+  rw [Real.tanh_half_eq_exp_sub_one_div]
   have hq : ∀ a, q a ≠ ⊤ := ne_top_of_tsum_ne_top hfin
   have hp : ∀ a, p a ≠ ⊤ := fun a => ne_top_of_le_ne_top
     (ENNReal.mul_ne_top ENNReal.ofReal_ne_top (hq a)) (hpq a)
@@ -248,7 +252,7 @@ theorem lossMoment_le_exp {p q : α → ℝ≥0∞} {ε t : ℝ} (hε : 0 ≤ ε
       ENNReal.ofReal (Real.exp (Real.tanh (ε / 2) * (ε * t) + (ε * t) ^ 2 / 2)) * ∑' a, p a := by
   refine (lossMoment_le_of_le_mul hε ht hpq hqp hsum hfin).trans (mul_le_mul' ?_ le_rfl)
   refine ENNReal.ofReal_le_ofReal (Real.cosh_add_mul_sinh_le_exp ?_ (mul_nonneg hε ht))
-  exact Real.tanh_nonneg (by linarith)
+  exact Real.tanh_nonneg_iff.mpr (by linarith)
 
 end SingleRound
 
@@ -331,7 +335,7 @@ private theorem exists_mix {P : α → ℝ≥0∞} {c : ℝ≥0∞} (hc : 1 ≤ 
 bounded by `c` in both directions, with `∑ p ≤ ∑ q` and `∑ p ≥ 1 - δ`. The construction takes
 `min P (c Q)` and `min Q (c P)`, mixing the former with `min (min P (c Q)) (min Q (c P))` when it
 carries more mass. -/
-theorem exists_subKernel (P Q : PMF α) {c : ℝ≥0∞} (hc : 1 ≤ c) {δ : ℝ≥0∞}
+theorem exists_le_of_tsum_tsub_le (P Q : PMF α) {c : ℝ≥0∞} (hc : 1 ≤ c) {δ : ℝ≥0∞}
     (hPQ : ∑' a, (P a - c * Q a) ≤ δ) (hQP : ∑' a, (Q a - c * P a) ≤ δ) :
     ∃ p q : α → ℝ≥0∞, (∀ a, p a ≤ P a) ∧ (∀ a, q a ≤ Q a) ∧ (∀ a, p a ≤ c * q a) ∧
       (∀ a, q a ≤ c * p a) ∧ ∑' a, p a ≤ ∑' a, q a ∧ 1 ≤ ∑' a, p a + δ := by

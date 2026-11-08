@@ -20,10 +20,11 @@ power series term by term.
 
 * `Real.sinh_le_mul_exp_half_sq`: `sinh x ≤ x · exp (x² / 2)` for `x ≥ 0`.
 * `Real.cosh_add_mul_sinh_le_exp`: `cosh s + m · sinh s ≤ exp (m s + s² / 2)` for `m, s ≥ 0`.
-* `Real.sinh_le_mul_cosh`, `Real.tanh_nonneg`, `Real.tanh_le_self`: `sinh x ≤ x · cosh x` and
-  `0 ≤ tanh x ≤ x` for `x ≥ 0`.
-* `Real.tanh_div_two_eq`: `tanh (x / 2) = (exp x - 1) / (exp x + 1)`.
-* `Real.tanh_div_two_le_exp_sub_one`: `tanh (x / 2) ≤ exp x - 1` for `x ≥ 0`.
+* `Real.tanh_nonneg_iff`: `0 ≤ tanh x ↔ 0 ≤ x`.
+* `Real.sinh_le_mul_cosh`, `Real.tanh_le_self`: `sinh x ≤ x · cosh x` and `tanh x ≤ x` for
+  `x ≥ 0`.
+* `Real.tanh_half_eq_exp_sub_one_div`: `tanh (x / 2) = (exp x - 1) / (exp x + 1)`.
+* `Real.tanh_half_le_exp_sub_one`: `tanh (x / 2) ≤ exp x - 1` for `x ≥ 0`.
 -/
 
 public section
@@ -71,11 +72,11 @@ theorem sinh_le_mul_cosh {x : ℝ} (hx : 0 ≤ x) : sinh x ≤ x * cosh x := by
   rw [pow_succ, mul_div_assoc', mul_comm x]
   gcongr
 
-/-- `0 ≤ tanh x` for `x ≥ 0`. -/
-theorem tanh_nonneg {x : ℝ} (hx : 0 ≤ x) : 0 ≤ tanh x := by
-  rw [tanh_eq_sinh_div_cosh, sinh_eq]
-  exact div_nonneg (div_nonneg (sub_nonneg.mpr (exp_le_exp.mpr (by linarith))) zero_le_two)
-    (cosh_pos x).le
+/-- `tanh x` is nonnegative exactly when `x` is. -/
+theorem tanh_nonneg_iff {x : ℝ} : 0 ≤ tanh x ↔ 0 ≤ x := by
+  rw [tanh_eq_sinh_div_cosh, le_div_iff₀ (cosh_pos x), zero_mul, sinh_eq, le_div_iff₀ two_pos,
+    zero_mul, sub_nonneg, exp_le_exp]
+  constructor <;> intro h <;> linarith
 
 /-- `tanh x ≤ x` for `x ≥ 0`. -/
 theorem tanh_le_self {x : ℝ} (hx : 0 ≤ x) : tanh x ≤ x := by
@@ -83,7 +84,7 @@ theorem tanh_le_self {x : ℝ} (hx : 0 ≤ x) : tanh x ≤ x := by
   exact sinh_le_mul_cosh hx
 
 /-- `tanh (x / 2) = (exp x - 1) / (exp x + 1)`. -/
-theorem tanh_div_two_eq (x : ℝ) : tanh (x / 2) = (exp x - 1) / (exp x + 1) := by
+theorem tanh_half_eq_exp_sub_one_div (x : ℝ) : tanh (x / 2) = (exp x - 1) / (exp x + 1) := by
   have h : exp x = exp (x / 2) * exp (x / 2) := by
     rw [← exp_add]; ring_nf
   have h0 : 0 < exp (x / 2) := exp_pos _
@@ -91,8 +92,8 @@ theorem tanh_div_two_eq (x : ℝ) : tanh (x / 2) = (exp x - 1) / (exp x + 1) := 
   field_simp
 
 /-- `tanh (x / 2) ≤ exp x - 1` for `x ≥ 0`. -/
-theorem tanh_div_two_le_exp_sub_one {x : ℝ} (hx : 0 ≤ x) : tanh (x / 2) ≤ exp x - 1 := by
-  rw [tanh_div_two_eq]
+theorem tanh_half_le_exp_sub_one {x : ℝ} (hx : 0 ≤ x) : tanh (x / 2) ≤ exp x - 1 := by
+  rw [tanh_half_eq_exp_sub_one_div]
   exact div_le_self (by linarith [one_le_exp hx]) (by linarith [exp_pos x])
 
 end Real
