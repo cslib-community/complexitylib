@@ -31,39 +31,44 @@ seen so far:
 the source's `x_{t+1}` and `ℓ_{t+1}`, and the regularizer is constant over time (the source's
 `ψ_t = ψ`). Minimizers need not be unique, so `IsFTRL` describes a family of runs. They exist
 when `K` is compact and nonempty and `ψ` and the losses are continuous on `K`
-(`exists_isFTRL`), and the run is unique when `ψ` is strongly convex and the losses are convex
-(`IsFTRL.unique`). `IsFTRL` constrains the realized sequence pointwise, and `x t` depends only on
-`ℓ 0, …, ℓ (t - 1)`, so every bound below also holds when an adaptive adversary chooses `ℓ t`
-after seeing `x 0, …, x t`. `lazyOGD` constructs such a run explicitly for adaptively chosen
-gradients.
+(`exists_isFTRL`), and the run is unique when `ψ` is `μ`-strongly convex with `μ > 0` and the losses
+are convex (`IsFTRL.unique`). `IsFTRL` constrains the realized sequence pointwise, and `x t`
+depends only on `ℓ 0, …, ℓ (t - 1)`, so every bound below also holds when an adaptive adversary
+chooses `ℓ t` after seeing `x 0, …, x t`. `lazyOGD` constructs such a run explicitly for adaptively
+chosen gradients.
 
 The analysis follows [Orabona2019, §7]. The regret equality `ftrl_regret_eq`
 [Orabona2019, Lemma 7.1] holds for every sequence. With the minimality of `x T` it gives the
 "be the leader" bound `IsFTRL.regret_le_add_sum_sub` [Hazan2022, Lemma 5.3], which bounds the
 regret by `ψ u - ψ (x 0)` plus the per-round *stability* terms `ℓ t (x t) - ℓ t (x (t + 1))`.
-When `ψ` is `μ`-strongly convex (Mathlib's `StrongConvexOn`, for the ambient norm) and the losses
+When `ψ` is `μ`-strongly convex on `K` with `μ > 0` (Mathlib's `StrongConvexOn`, for the ambient
+norm; `StrongConvexOn K 0 ψ` is plain convexity, and the bound fails for `μ = 0`) and the losses
 are convex with `ℓ t (x t) - ℓ t y ≤ L t * ‖x t - y‖` on `K`, the stability bound for strongly
 convex minimizers (`StrongConvexOn.sub_le_of_isMinOn`, the argument of
-[Orabona2019, Lemma 7.8]) gives `IsFTRL.regret_le`:
+[Orabona2019, Lemma 7.8]) gives `IsFTRL.regret_le`: for every `u ∈ K`,
 
   `∑ t < T, (ℓ t (x t) - ℓ t u) ≤ ψ u - ψ (x 0) + ∑ t < T, L t ^ 2 / (2 μ)`.
 
 The norm is the ambient one, so the same statement covers strong convexity with respect to `ℓ¹`,
 `ℓ²` or any other norm; `L t` plays the role of the dual norm `‖g t‖⋆` of a subgradient. With
-`ψ = R / η` for a `σ`-strongly convex `R` this is the constant-learning-rate case of
-[Orabona2019, Corollary 7.9] (`IsFTRL.regret_le_div`), and tuning `η` gives `D L √(2T / σ)`
+`ψ = R / η` for a `σ`-strongly convex `R` (`σ, η > 0`) this is the constant-learning-rate case of
+[Orabona2019, Corollary 7.9] (`IsFTRL.regret_le_div`). If moreover `σ, D, L > 0`, `T ≥ 1`,
+`R y - R z ≤ D ^ 2` on `K` and `L t = L`, tuning `η` gives `D L √(2T / σ)`
 (`IsFTRL.regret_le_sqrt`). *FTRL with linearized losses* [Orabona2019, §7.3] runs FTRL on the
 linear losses `y ↦ g t y` given by subgradients `g t` of convex losses `f t` at `x t`; its regret
 on `f` obeys the same bound with `L t = ‖g t‖` (`IsFTRL.regret_le_of_subgradient`, and
 `IsFTRL.regret_le_of_hasFDerivWithinAt` for differentiable losses).
 
-In a real Hilbert space, with the Euclidean regularizer `‖y - x₀‖ ^ 2 / (2 η)` and linear losses
-`y ↦ ⟪g t, y⟫`, the FTRL iterate is the metric projection of `x₀ - η ∑ s < t, g s` onto `K`
-(`isFTRL_euclidean_iff`). This is lazy projected online gradient descent, or dual averaging
-[Hazan2022, §5.4.1]. `lazyOGD` runs it with gradients `grad t (x t)` chosen at the played points,
-and `lazyOGD_regret_le` bounds its regret by `‖u - x₀‖ ^ 2 / (2 η) + η / 2 ∑ t < T, ‖g t‖ ^ 2`.
-With `η = D / (G √T)` this is `G D √T` (`lazyOGD_regret_le_fixed`), the bound of
-`ogd_regret_le_fixed` for the agile (greedy-projection) variant.
+In a real inner product space, for a nonempty complete convex `K` and `η > 0`, with the Euclidean
+regularizer `‖y - x₀‖ ^ 2 / (2 η)` and linear losses `y ↦ ⟪g t, y⟫`, the FTRL iterate is the
+metric projection of `x₀ - η ∑ s < t, g s` onto `K` (`isFTRL_euclidean_iff`). This is lazy
+projected online gradient descent, or dual averaging [Hazan2022, §5.4.1]. `lazyOGD` runs it with
+gradients `grad t (x t)` chosen at the played points. If they satisfy the subgradient inequality
+`f t x + ⟪grad t x, y - x⟫ ≤ f t y` on `K`, `lazyOGD_regret_le` bounds its regret by
+`‖u - x₀‖ ^ 2 / (2 η) + η / 2 ∑ t < T, ‖grad t (x t)‖ ^ 2`. If moreover `D, G > 0`,
+`‖grad t x‖ ≤ G` on `K`, `‖u - x₀‖ ≤ D` and `T ≥ 1`, then `η = D / (G √T)` gives `G D √T`
+(`lazyOGD_regret_le_fixed`), the bound of `ogd_regret_le_fixed` for the agile (greedy-projection)
+variant.
 
 ## Main definitions
 
@@ -210,7 +215,7 @@ theorem strongConvexOn_ftrlObjective (hψ : StrongConvexOn K μ ψ)
     funext y
     rw [ftrlObjective_succ, Pi.add_apply]
 
-/-- With a strongly convex regularizer and convex losses, the FTRL run is unique. -/
+/-- With a `μ`-strongly convex regularizer (`μ > 0`) and convex losses, the FTRL run is unique. -/
 theorem IsFTRL.unique {x' : ℕ → E} (h : IsFTRL K ψ ℓ x) (h' : IsFTRL K ψ ℓ x')
     (hψ : StrongConvexOn K μ ψ) (hμ : 0 < μ) (hℓ : ∀ t, ConvexOn ℝ K (ℓ t)) : x = x' :=
   funext fun t => ((strongConvexOn_ftrlObjective hψ hℓ t).strictConvexOn hμ).eq_of_isMinOn
@@ -247,7 +252,7 @@ theorem IsFTRL.regret_le (h : IsFTRL K ψ ℓ x) (hψ : StrongConvexOn K μ ψ) 
   linarith
 
 /-- **Constant learning rate** ([Orabona2019, Corollary 7.9] with `η_t = η`): FTRL with the
-regularizer `R / η`, for a `σ`-strongly convex `R`, has regret at most
+regularizer `R / η`, for a `σ`-strongly convex `R` with `σ, η > 0`, has regret at most
 `(R u - R (x 0)) / η + η / (2 σ) ∑ t < T, L t ^ 2` against every `u ∈ K`. Since `x 0` minimizes
 `R` on `K`, `R u - R (x 0) = R u - min_K R`. -/
 theorem IsFTRL.regret_le_div {R : E → ℝ} {η σ : ℝ} (h : IsFTRL K (fun y => R y / η) ℓ x)
@@ -257,9 +262,9 @@ theorem IsFTRL.regret_le_div {R : E → ℝ} {η σ : ℝ} (h : IsFTRL K (fun y 
     ∑ t ∈ range T, (ℓ t (x t) - ℓ t u) ≤
       (R u - R (x 0)) / η + η / (2 * σ) * ∑ t ∈ range T, L t ^ 2 := by
   have hscale : StrongConvexOn K (η⁻¹ * σ) fun y => R y / η := by
-    convert hR.const_smul (inv_nonneg.mpr hη.le) using 1
+    convert hR.smul (inv_nonneg.mpr hη.le) using 1
     funext y
-    rw [Pi.smul_apply, smul_eq_mul, div_eq_inv_mul]
+    rw [smul_eq_mul, div_eq_inv_mul]
   have hb := h.regret_le hscale (mul_pos (inv_pos.mpr hη) hσ) hℓ hL hu T
   have e : ∑ t ∈ range T, L t ^ 2 / (2 * (η⁻¹ * σ)) = η / (2 * σ) * ∑ t ∈ range T, L t ^ 2 := by
     rw [mul_sum]
@@ -342,11 +347,6 @@ section Euclidean
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] {K : Set E} {η : ℝ}
   {x₀ : E}
-
-/-- The linear function `y ↦ ⟪g, y⟫` is convex. -/
-private theorem convexOn_inner (hK : Convex ℝ K) (g : E) : ConvexOn ℝ K fun y => ⟪g, y⟫ :=
-  ⟨hK, fun _ _ _ _ _ _ _ _ _ => by
-    simp only [inner_add_right, inner_smul_right, smul_eq_mul, le_refl]⟩
 
 /-- The Euclidean FTRL objective with linear losses is, up to a constant, a scaled squared
 distance to `x₀ - η ∑ s < t, g s`. -/
@@ -450,7 +450,7 @@ theorem lazyOGD_regret_le {f : ℕ → E → ℝ} (hne : K.Nonempty) (hc : IsCom
     funext y
     field_simp
   have hb := (isFTRL_lazyOGD (grad := grad) (x₀ := x₀) hne hc hK hη).regret_le hψ
-    (inv_pos.mpr hη) (fun t => convexOn_inner hK _) (L := fun t => ‖grad t (x t)‖)
+    (inv_pos.mpr hη) (fun t => (innerₛₗ ℝ _).convexOn hK) (L := fun t => ‖grad t (x t)‖)
     (fun t y _ => by
       rw [← inner_sub_right]
       exact real_inner_le_norm _ _) hu T
@@ -467,9 +467,10 @@ theorem lazyOGD_regret_le {f : ℕ → E → ℝ} (hne : K.Nonempty) (hc : IsCom
     rw [e]
     linarith
 
-/-- **Tuned lazy projected online gradient descent**: if `‖u - x₀‖ ≤ D` and the gradients have
-norm at most `G` on `K`, the constant step size `η = D / (G √T)` gives regret at most `G D √T`
-over `T ≥ 1` rounds (compare the `2 G D √T` of [Hazan2022, §5.4.1], and `ogd_regret_le_fixed` for
+/-- **Tuned lazy projected online gradient descent**: if the gradients satisfy the subgradient
+inequality `f t x + ⟪grad t x, y - x⟫ ≤ f t y` and have norm at most `G` on `K`, `‖u - x₀‖ ≤ D`
+and `D, G > 0`, the constant step size `η = D / (G √T)` gives regret at most `G D √T` over
+`T ≥ 1` rounds (compare the `2 G D √T` of [Hazan2022, §5.4.1], and `ogd_regret_le_fixed` for
 the agile variant). -/
 theorem lazyOGD_regret_le_fixed {f : ℕ → E → ℝ} (hne : K.Nonempty) (hc : IsComplete K)
     (hK : Convex ℝ K) {D G : ℝ} (hD0 : 0 < D) (hG0 : 0 < G) (hG : ∀ t, ∀ x ∈ K, ‖grad t x‖ ≤ G)

@@ -40,7 +40,7 @@ bound `L d - m / 2 d ² ≤ L ² / (2 m)`.
 
 ## Main results
 
-* `StrongConvexOn.const_smul`, `StrongConvexOn.add_convexOn`: closure properties.
+* `StrongConvexOn.smul`, `StrongConvexOn.add_convexOn`: closure properties.
 * `StrongConvexOn.add_le_of_isMinOn`: quadratic growth at a minimizer.
 * `StrongConvexOn.sub_le_of_isMinOn`: the stability bound.
 * `strongConvexOn_mul_norm_sub_sq`: strong convexity of the squared Euclidean distance.
@@ -58,11 +58,11 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {s : Set E} {f g
   {m : ℝ}
 
 /-- Scaling an `m`-strongly convex function by `c ≥ 0` gives a `c * m`-strongly convex function. -/
-theorem StrongConvexOn.const_smul (hf : StrongConvexOn s m f) {c : ℝ} (hc : 0 ≤ c) :
-    StrongConvexOn s (c * m) (c • f) := by
+theorem StrongConvexOn.smul {c : ℝ} (hc : 0 ≤ c) (hf : StrongConvexOn s m f) :
+    StrongConvexOn s (c * m) fun x => c • f x := by
   refine ⟨hf.1, fun x hx y hy a b ha hb hab => ?_⟩
   have h := mul_le_mul_of_nonneg_left (hf.2 hx hy ha hb hab) hc
-  simp only [Pi.smul_apply, smul_eq_mul] at h ⊢
+  simp only [smul_eq_mul] at h ⊢
   linarith
 
 /-- Adding a convex function to an `m`-strongly convex function keeps it `m`-strongly convex. -/
