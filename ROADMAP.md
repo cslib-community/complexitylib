@@ -1437,8 +1437,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   `Ω(ε⁻²)` and `Ω(log n)` lower bounds for approximate `F₀`; the AMS `F_k` estimator for
   streams of unknown
   length (reservoir sampling), and the `n^{Ω(1)}` lower bounds for `F_k` with `k ≥ 6`; `ProbComp`
-  samplers and native realizations of the AMS sketches; CountSketch, turnstile updates, and
-  heavy-hitter recovery; multi-pass communication-to-streaming transfers with pass counts.
+  samplers and native realizations of the AMS sketches and the Count-Sketch; turnstile updates as
+  stream items (the Count-Sketch row analysis already allows real weights), merging of Misra–Gries
+  summaries, heavy-hitter recovery over the whole universe (dyadic or group-testing schemes) and
+  space lower bounds for heavy hitters; multi-pass communication-to-streaming transfers with pass
+  counts.
 - **Locality-sensitive hashing**
   ([#3361](https://github.com/cslib-community/complexitylib/issues/3361)): the following are in
   place: Broder's MinHash theorem, sensitive families, exact AND/OR/banding collision laws, the

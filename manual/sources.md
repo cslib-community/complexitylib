@@ -179,10 +179,20 @@ Benny Chor, Oded Goldreich, Eyal Kushilevitz and Madhu Sudan. *Private Informati
 
 Gregory J. Chaitin. *Information-Theoretic Limitations of Formal Systems*. Journal of the ACM 21(3), 403–424, 1974. https://doi.org/10.1145/321832.321839 . Bibliographic metadata checked on 2026-11-08; the paper is behind the ACM paywall and was not inspected. The manual attributes the incompleteness theorem for program-size complexity to it, following the customary attribution; its theorem numbers and the exact form of its bound are unverified. The Lean docstrings also cite the textbook treatment in Li and Vitányi, *An Introduction to Kolmogorov Complexity and Its Applications*, 4th edition (Springer, 2019), Chapter 2; the section and theorem locator within that chapter was not checked.
 
+<a id="chakrabarti25"></a>
+## chakrabarti25
+
+Amit Chakrabarti. *Data Stream Algorithms: Lecture Notes*. Dartmouth College, latest update July 1, 2025. https://www.cs.dartmouth.edu/~ac/Teach/data-streams-lecnotes.pdf . Locators checked against that PDF on 2026-11-07 UTC: Unit 1 (Section 1.1 for the MAJORITY and FREQUENT problems, Algorithm 1 and Theorem 1.3.1 for Misra–Gries, Exercise 1-1 for the `(m − m̂)/k` sharpening), Section 2.4 (the median trick) and Section 5.3 (Algorithms 7–8 and equations (5.1)–(5.7) for the Count-Sketch).
+
 <a id="charikar02"></a>
 ## charikar02
 
 Moses S. Charikar. “Similarity Estimation Techniques from Rounding Algorithms.” *Proceedings of the 34th Annual ACM Symposium on Theory of Computing* (STOC 2002), 380–388. https://doi.org/10.1145/509907.509965 . DOI and metadata as reported by search indexes; the DOI was not resolved in this pass. The locator Lemma 1 (for a similarity admitting a locality-sensitive hashing scheme, `1 − sim` satisfies the triangle inequality) was not checked against the full text in this pass.
+
+<a id="charikar04"></a>
+## charikar04
+
+Moses Charikar, Kevin Chen, Martin Farach-Colton. “Finding Frequent Items in Data Streams.” *Theoretical Computer Science* 312(1), 3–15, 2004; preliminary version in ICALP 2002. https://doi.org/10.1016/S0304-3975(03)00400-6 . Bibliographic data from search summaries of the DOI record; the Count-Sketch statements formalized here follow the presentation of [chakrabarti25](#chakrabarti25), Section 5.3. The journal text was not inspected in this pass.
 
 <a id="chattopadhyayliao20"></a>
 ## chattopadhyayliao20
@@ -640,6 +650,11 @@ Edward M. McCreight and Albert R. Meyer. *Classes of Computable Functions Define
 ## mignonressayre04
 
 Thierry Mignon and Nicolas Ressayre. *A quadratic bound for the determinant and permanent problem*. International Mathematics Research Notices 2004(79), 4241–4253, 2004. https://doi.org/10.1155/S1073792804142566 . Bibliographic metadata checked on 2026-11-08; the publisher copy was not inspected, so no theorem number is claimed. The statement (`dc(perm_n) ≥ n²/2` in characteristic zero), the point `X₀` (all ones with `1 - n` in one corner), and the two Hessian lemmas were checked against R. Saptharishi, *A survey of lower bounds in arithmetic circuit complexity*, chapter "Determinantal Complexity Lower Bounds" (Theorem `thm:Mignon-Ressayre-mainthm`, Lemmas `lem:MR-det-ub` and `lem:MR-perm-lb`), at GitHub revision `af95c539`. The full rank of the Hessian at `X₀` is proved in the library by its own sandwich-identity argument, not by the survey's eigenvalue or block-matrix computation.
+
+<a id="misragries82"></a>
+## misragries82
+
+Jayadev Misra, David Gries. “Finding Repeated Elements.” *Science of Computer Programming* 2(2), 143–152, 1982. https://doi.org/10.1016/0167-6423(82)90012-0 . Bibliographic data from search summaries of the DOI record; the Misra–Gries statements formalized here follow the presentation of [chakrabarti25](#chakrabarti25), Unit 1. The journal text was not inspected in this pass.
 
 <a id="mitzenmacherupfal17"></a>
 ## mitzenmacherupfal17
