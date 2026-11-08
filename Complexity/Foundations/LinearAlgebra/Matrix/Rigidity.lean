@@ -60,9 +60,11 @@ variable {m n K α : Type*}
 /-- The number of entries where the matrices `A` and `B` differ.
 
 When `m` is infinite (only `n` is required to be finite below), this counts with `Set.ncard`,
-which is `0` on infinite sets: then some matrix of rank at most one differs from `A` in infinitely
-many entries, and the rigidity collapses to the junk value `0`. The results relating rigidity to
-rank (`Matrix.rigidity_eq_zero_iff` and below) therefore assume `[Finite m]`. -/
+which is `0` on infinite sets. Then, at every target rank `r ≥ 1`, some matrix of rank at most one
+differs from `A` in infinitely many entries, and the rigidity collapses to the junk value `0`; at
+`r = 0` the rigidity is `diffCount A 0` (`Matrix.rigidity_zero`), which can be genuine. The results
+relating rigidity to rank (`Matrix.rigidity_eq_zero_iff` and below) therefore assume
+`[Finite m]`. -/
 noncomputable def diffCount (A B : Matrix m n α) : ℕ :=
   {p : m × n | A p.1 p.2 ≠ B p.1 p.2}.ncard
 
@@ -159,8 +161,7 @@ theorem rigidity_eq_zero_iff {A : Matrix m n K} {r : ℕ} : A.rigidity r = 0 ↔
     exact (Set.eq_empty_iff_forall_notMem.1 hAB) (i, j) hij
   exact this ▸ hB
 
-/-- The rank of a matrix is at most the number of its nonzero entries. This is a fact about rank
-alone, stated with `diffCount`; it is an upstream candidate for Mathlib together with the module. -/
+/-- The rank of a matrix is at most the number of its nonzero entries. -/
 theorem rank_le_diffCount_zero (C : Matrix m n K) : C.rank ≤ diffCount C 0 := by
   classical
   have := Fintype.ofFinite m

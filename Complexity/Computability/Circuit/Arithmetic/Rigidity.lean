@@ -57,9 +57,9 @@ circuits, so the lower bounds below are at least as strong.
 The coefficient of input `j` at wire `w` is the trace at `Pi.single j 1` minus the trace at `0`.
 The depths of the gates, capped below `2 ^ D`, grade the at most `2 * c.size` wires read by gates
 with `2 ^ D` levels. By Valiant's depth reduction (`Cslib.IsGrading.exists_sdiff`, [Lokam2009],
-Lemma 2.2, which [Lokam2009] credits to Erdős, Graham and Szemerédi), removing some `t / D` of
-these wires leaves wires graded with `2 ^ (D - t)` levels. Let `T` be the set of tails of the
-removed wires, so `|T| ≤ 2 * t * c.size / D`. By induction over the program, each output's
+Lemma 2.2, which [Lokam2009] credits to Erdős, Graham and Szemerédi), removing at most a `t / D`
+fraction of these wires leaves wires graded with `2 ^ (D - t)` levels. Let `T` be the set of tails
+of the removed wires, so `|T| ≤ 2 * t * c.size / D`. By induction over the program, each output's
 coefficients, outside at most `2 ^ (2 ^ (D - t))` inputs, are a fixed linear combination of the
 coefficients at `T`. This is a matrix of rank at most `|T|` differing from `A` in at most
 `m * 2 ^ (2 ^ (D - t))` entries.
@@ -211,10 +211,10 @@ Let `c` be a circuit of affine gates of fan-in at most `2` over a field `K` comp
 `2 * t * c.size / D` by changing at most `m * 2 ^ (2 ^ (D - t))` entries.
 
 The depths of the gates grade the at most `2 * c.size` wires read by gates with `2 ^ D` levels.
-Valiant's depth reduction (`Cslib.IsGrading.exists_sdiff`) removes some `t / D` of these wires so
-that the rest are graded with `2 ^ (D - t)` levels. The gates reading the removed wires are cut:
-every output is then a linear combination of the removed wires' tails plus a function of at most
-`2 ^ (2 ^ (D - t))` inputs. -/
+Valiant's depth reduction (`Cslib.IsGrading.exists_sdiff`) removes at most a `t / D` fraction of
+these wires so that the rest are graded with `2 ^ (D - t)` levels. The gates reading the removed
+wires are cut: every output is then a linear combination of the removed wires' tails plus a
+function of at most `2 ^ (2 ^ (D - t))` inputs. -/
 theorem Computes.rigidity_le {c : Circuit (affineSignature K) n m}
     {A : Matrix (Fin m) (Fin n) K} (hc : c.Computes (affineInterpretation K) (A *ᵥ ·))
     (hfan : c.FanInAtMost 2) {D t : ℕ} (hdepth : c.depth < 2 ^ D) (htD : t ≤ D) :
