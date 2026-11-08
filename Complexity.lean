@@ -2606,6 +2606,7 @@ public import Complexity.Computability.Probabilistic.CoinTape
 public import Complexity.Computability.Probabilistic.Finite
 public import Complexity.Computability.Probabilistic.LinearHash
 public import Complexity.Computability.Probabilistic.Memoize
+public import Complexity.Computability.Probabilistic.NativeInterface
 public import Complexity.Computability.Probabilistic.NativeOneTurn
 public import Complexity.Computability.Probabilistic.NativeOpenExecution
 public import Complexity.Computability.Probabilistic.NativeOpenSelection

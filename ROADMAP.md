@@ -115,12 +115,20 @@ behavioral stopped observations have identical joint laws, including successful
 output provenance, query history, accumulated bill and external duration. A real
 native geometric waiting loop proves almost-sure termination, positive live mass
 at every finite clock, expected bill 4 and duration 7/2; a sure-divergence client
-checks that nontermination is not a halted failure. This covers arbitrary discrete
-unbounded stopped execution, still indexed by native instructions. Source
+checks that nontermination is not a halted failure. `NativeInterface` now connects
+actual native transition tables, fair saved-coin replay and selected-before-response
+interfaces to this unbounded stopped law. Preparing a request never samples its
+response; dispatch retains the full native/oracle state and records the same raw
+reply and charges. Derived selected-signal posteriors preserve the full joint law,
+and two interface ticks equal one original instruction. Cofinal clocks identify
+complete stopped interface/native/behavioral laws, including divergence and
+successful-output provenance. A complete client reuses the actual correlated
+work-tape and unbounded waiting machines and checks a positive-probability query
+posterior before its response. Silent instructions remain explicit. Source
 next-query/halting epoch extraction, oracle-turn/deadline quantitative-policy
-transfer, nonterminating-path resource semantics, general measurable laws, native
-batch/query/output encoding and upper realization remain missing. Unrestricted
-Theorems 5/6 and ALL-main remain incomplete.
+transfer, nonterminating-path resource semantics, general measurable laws, external
+PTM/batch/query/output encoding and native upper realization remain missing.
+Unrestricted Theorems 5/6 and ALL-main remain incomplete.
 Theorem 4's native resource/asymptotic/hardness claims also remain open. Neither the
 policy LP nor the binary-input two-batch savings FPTAS supplies those missing claims.
 

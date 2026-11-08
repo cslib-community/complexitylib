@@ -1094,6 +1094,66 @@ construct or audit an infinite native trajectory with nonterminating-path bills.
 The source's exact local-termination convention must be made explicit when
 admitting machines to a quantitative turn/deadline theorem.
 
+### Connecting actual native instructions and the response interface
+
+Import `Complexity.Computability.Probabilistic.NativeInterface` to expose the
+query selected by the actual open native transition table before sampling its
+response. The complete [interface client](../../ComplexityTests/NativeInterface.lean)
+reuses the preceding actual native machines, including the work-tape bit shared
+across correlated calls and the unbounded fair-coin waiting loop.
+
+`instruction machine world bit` reads the current control and scanned input,
+work-tape and answer symbols, then applies the actual transition table. Its
+result is an already halted world, a local action, or a chosen channel with its
+saved native world and continuation. `prepare` samples only the machine's
+private fair bit. `dispatch` runs the external environment only for a query,
+submits that world's actual query buffer, installs the exact raw reply, and
+records the jointly sampled reply/bill/duration and oracle private state.
+`prepare_dispatch` proves that composition is the original native step.
+
+For random-tape semantics, `replay` interprets the original open native program
+with saved private coins while retaining the same stateful external handler.
+`execute_coins` proves that averaging a fair coin prefix of clock length gives
+the actual complete native world law. `terminal_coins` connects these original
+program executions directly to the unbounded stopped interface masses through
+their clock limits. No uniformly sufficient tape length is required. These are
+finite-prefix replay and stopped-limit laws; they do not construct a new
+probability measure on infinite private tapes or a native replay compiler.
+
+Use `signal` to observe a selected raw query, channel and previous actual
+response/resource history without exporting private tapes or oracle state.
+`selectedResponse` records this signal before dispatch, jointly with the actual
+next hidden world. `conditionalResponse` is derived from the hidden selected
+instruction posterior. `selectedResponse_disintegration` proves the complete
+selected-signal/next-world law, with harmless prior completion on null signals;
+`selectedResponse_native` recovers the actual native next-state law. The client
+checks a query selected with probability $1/2$, derives its posterior, and
+identifies its actual conditional raw reply and correlated resource law.
+
+`Phase.ready` is an original instruction boundary; `Phase.pending` retains the
+selected but unanswered instruction. `two_ticks` and `even_ticks` prove that
+two interface ticks implement one original native instruction, preserving all
+hidden state and observations. These ticks are mathematical bookkeeping, not
+oracle turns or physical-time charges. Cofinality of the even clocks proves
+`terminal_native`, equality of complete optional stopped interface and original
+native world laws, including divergence. `worldOf` is for terminal readback;
+a pending local instruction may carry a prospective halted configuration, so
+this projection is not an acceptance observer for partial interface executions.
+`terminal_behavioral` then identifies
+the constructed unbounded behavioral stopped view, and `terminal_outcome`
+preserves the actual joint path, halting, success, bill and duration under
+successful-output-only provenance. The client checks the full correlated native
+law, unbounded waiting, expected bill $4$ and sure divergence.
+
+This connection uses the library's typed `MultiTapePTM` model; it does not decode
+an arbitrary externally encoded PTM or prove a compiler/resource theorem for
+that encoding. The raw interface is a channel plus a bit-string request. To use
+the source's oracle-turn quantitative theorems, a further proof must compress
+silent local instructions into actual next-query/halting epochs, identify batch
+records and enforce source call opportunities, simultaneous preformed batches,
+turn bounds, deadlines and accrued cancellation charges. The finite behavioral
+Theorem 5/6 APIs cannot yet be applied directly to these raw instruction ticks.
+
 The remaining source bridge must extract actual next-query/halting epochs,
 collapse silent local computation and connect source turn/deadline constraints
 to the existing Theorem 5/6 policy accounting. General measurable laws, source
