@@ -65,8 +65,8 @@ Achievability of the capacity `1 - h₂(p)` by random codes is in
 * `Cslib.BitString.exists_isNearestDecoder`: nearest-codeword decoders exist.
 * `Cslib.BitString.bsc_apply_toReal_le_of_isNearestDecoder`: nearest-codeword decoding is
   maximum-likelihood decoding for `p ≤ 1 / 2`.
-* `Cslib.BitString.decodingError_eq_bernoulliAverage`: the error probability as an average over the
-  noise.
+* `Cslib.BitString.decodingError_def`, `Cslib.BitString.decodingError_eq_bernoulliAverage`: the
+  error probability as a probability of the channel output and as an average over the noise.
 * `Cslib.BitString.decodingError_zero_eq_zero`, `Cslib.BitString.IsNearestDecoder.leftInverse`:
   a noiseless channel never confuses the messages of an injective code.
 * `Cslib.BitString.bscNoise_toOuterMeasure_lt_weight_toReal`,
@@ -196,7 +196,7 @@ noncomputable def decodingError (p : I) (E : M → ι → Bool) (D : (ι → Boo
 
 /-- The error probability is the probability, under the channel output on `E m`, that `D` does not
 return `m`. -/
-theorem decodingError_eq (p : I) (E : M → ι → Bool) (D : (ι → Bool) → M) (m : M) :
+theorem decodingError_def (p : I) (E : M → ι → Bool) (D : (ι → Bool) → M) (m : M) :
     decodingError p E D m = ((bsc p (E m)).toOuterMeasure {y | D y ≠ m}).toReal := by
   rw [decodingError]
 
