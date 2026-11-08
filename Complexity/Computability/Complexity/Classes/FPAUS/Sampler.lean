@@ -14,6 +14,7 @@ import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Map
 import Mathlib.Data.Nat.Size
+import Complexity.Probability.PMF.EventBind
 
 /-!
 # Approximate counting gives almost uniform sampling for self-reducible families
