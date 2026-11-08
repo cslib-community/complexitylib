@@ -83,9 +83,18 @@ retaining witness, bounds the infimum over all admissible policies, and proves t
 matching-envelope `1/eta` ratio. Correlated, randomized halt/output and uncertified
 buffering clients check that this is a broader policy class. These are fixed finite-
 alphabet behavioral semantics; encoded PTM realization, general measurable-alphabet
-coverage and native machine resources remain open; Theorem 6 needs the actual dual-certified residual
-construction, universal one/two-turn optimum and adaptivity ratio. These are remaining main
-claims, not supplied by the policy LP or the binary-input two-batch savings FPTAS.
+coverage and native machine resources remain open. For Theorem 6, `ResidualCover` now
+constructs arbitrary disjoint promised X3C blocks with the source triple/fallback weights,
+derives dual/integral optima one, recovers the block partition from incidence and the
+missing block from the actual residual, and verifies both local certificates.
+`ResidualPolicy` derives exact attained one/two-turn costs and their adaptivity ratio
+over all finite behavioral policies, including mixed first batches and randomized
+conditional selection/extraction. An overlapping-triple, five-block client checks the
+strict ratio 5/3 and universal competitor bounds. These are the source's general finite
+construction and behavioral numerical endpoints; an encoded-PTM representation/realization
+bridge is still missing, so unrestricted source Theorem 6 and ALL-main are not complete.
+Theorem 4's native resource/asymptotic/hardness claims also remain open. Neither the
+policy LP nor the binary-input two-batch savings FPTAS supplies those missing claims.
 
 ### Landmark theorems, in priority order
 

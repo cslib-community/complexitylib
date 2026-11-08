@@ -814,8 +814,70 @@ outside the constructive retention algorithm.
 Theorem 5 remains incomplete at unrestricted source scope: these are finite-alphabet
 behavioral kernels, without a realization/representation theorem for every encoded
 selection-only PTM or general measurable alphabets. Native encoded machine resources
-also remain open. Theorem 4's native runtime/hardness and
-Theorem 6's residual construction and universal optimum remain open. None of these
-components or clients changes the curated abstract catalogue. The Agent Operator's
-Manual requires no edit: ownership, review, validation and human direction are
-unchanged.
+also remain open. Theorem 4's native runtime/asymptotic/hardness claims remain open.
+
+### Submission 191: actual Theorem 6 residual construction and policy optima
+
+The source setup (1)–(3), PDF pages 12–13, and Theorem 6/proof, PDF page 13, are
+implemented in `Complexity.Probability.StochasticOracle.ResidualCover` and
+`Complexity.Probability.StochasticOracle.ResidualPolicy`. Start with any $z\ge3$
+nonempty promised X3C yes-inputs (`Block`). Each has an arbitrary family of triples
+on `Fin (3*r)` and a disjoint exact-cover witness. That witness fixes the hidden
+oracle answers; it is not a dual certificate, optimum value or input to the
+residual-guided selector. Canonical labels represent finite disjoint universes.
+`coverInstance` computes the triple weights $1/(zr_j)$, fallback weights $2/z$
+and element duals $1/(3zr_j)$. `universe_card` gives $n=3\sum_jr_j$.
+
+`dual_objective`, `primal_optimum` and `dual_optimum` derive objective one, an
+actual weight-one full cover, the universal integral lower bound and the universal
+feasible-dual upper bound. `same_block_iff_common_candidate` recovers the block
+partition from incidence alone: fallbacks connect every pair in a block, and no
+candidate crosses blocks. `near_specialist_properties` checks that neither answer
+alone covers the instance and that their union does. `near_residual` computes the
+actual uncovered subuniverse, `decode_near_residual` recovers its index, and
+`responses_certified` proves both sequential local dual tests at $\rho=1$.
+
+For the source's exactly-once opportunities, `Parameters` accepts arbitrary
+positive costs and any positive full-support near-cover law. `OnePolicy` and
+`TwoPolicy` range over arbitrary finite behavioral kernels for the first batch,
+conditional second batch and final extraction. All near/specialist mixtures are
+included. `Admissible` imposes only selection-only provenance from actual received
+candidate indices and no opportunity reuse on supported branches. `run` constructs
+the response/output law; `success` tests actual optimal coverage and `cost` charges
+every issued call. `optimalOutput_eq_one_iff` identifies the success test with
+actual minimum weight among all integral covers, using the derived primal optimum.
+No coverage, optimum or lower-bound conclusion is part of admissibility. The source's probability-one optimal-output requirement is the
+separate success premise of the universal lower bounds.
+
+`one_turn_optimum` and `two_turn_optimum` exhibit admissible successful policies
+and compare them with every admissible successful behavioral competitor. Their
+costs are $\sum_jc_j$ and $\min\{\sum_jc_j,c_0+\sum_jp_jc_j\}$, respectively.
+The proof derives coverage on every supported branch from actual probability-one
+success. If the near call is delayed until turn two, its response cannot guide
+another simultaneous call, so every specialist is necessary. If it is issued
+first alongside any specialist subset, each still-missing positive-probability
+residual forces its specialist in turn two. Averaging covers randomized policies.
+
+`attained_ratio` compares these actual universally optimal policies: when all
+$c_j=c>0$ and $c_0=\alpha c$, the ratio is
+$z/\min\{z,\alpha+1\}$. The scalar $c$ may be any positive $c(n)$ evaluated at
+`universe_card`; `attained_linear_ratio` gives $z/(\alpha+1)$ when $z>\alpha+1$.
+The source specializes to $\alpha>1$. `batchLatency` charges one physical turn
+for each nonempty concurrent batch; `unit_deadlines` gives the one/two-turn
+bounds at $D=2$. `adaptiveTwo_residual` identifies the actual follow-up batch
+with computation from the received near-cover residual.
+
+The [complete residual client](../../ComplexityTests/StochasticOracleResidualCover.lean)
+constructs five six-point X3C blocks with an overlapping unused triple. It derives
+the dual/primal and residual/certificate claims, checks universal randomized
+competitor bounds of five and three, constructs successful policies attaining
+both, and obtains the strict ratio $5/3$ with the physical turn counts.
+
+This proves the arbitrary finite X3C construction and universal behavioral
+numerical endpoints, rather than only a singleton or supplied-certificate model.
+The encoded-PTM representation and realization bridge is still unproved; neither
+unrestricted source Theorem 6 nor ALL-main is claimed complete. Theorem 5's
+representation/general-alphabet gaps and Theorem 4's resource/hardness gaps above
+remain material. No curated abstract changes: these modules are outside the
+selected headline dependencies. The Agent Operator's Manual requires no edit:
+ownership, review, validation and human direction are unchanged.

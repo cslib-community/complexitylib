@@ -4382,6 +4382,8 @@ public import Complexity.Probability.StochasticOracle.PartialCoverThreshold
 public import Complexity.Probability.StochasticOracle.Programs
 public import Complexity.Probability.StochasticOracle.RandomCost
 public import Complexity.Probability.StochasticOracle.RationalFullCover
+public import Complexity.Probability.StochasticOracle.ResidualCover
+public import Complexity.Probability.StochasticOracle.ResidualPolicy
 public import Complexity.Probability.StochasticOracle.SelectionDeadline
 public import Complexity.Probability.StochasticOracle.SelectionLowerBound
 public import Complexity.Probability.StochasticOracle.SelectionOptimum
