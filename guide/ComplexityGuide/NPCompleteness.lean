@@ -1112,7 +1112,8 @@ example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
 ```
 
 A blossom result certifies the data actually computed by the extractor. Preparation
-preserves validity and defect count, and its cycle is a source-strength blossom:
+preserves validity and defect count. Its cycle has distinct copied steps, and
+the actual timestamps are distinct:
 
 ```lean
 open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Logic.PL.CSP.Forest in
@@ -1122,14 +1123,21 @@ example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
     (hM : EdgeInstance.EvenConstraints sem F) {m : Meeting F}
     (hr : search sem f = .blossom m) :
     ∃ b, m.blossomData = some b ∧ b.cycle.IsBlossom sem (b.prepare.flip f) ∧
-      ValidLabeling sem (b.prepare.flip f) ∧
-      (defects (b.prepare.flip f)).card = (defects f).card :=
-  search_blossom_correct sem f hF hf hM hr
+      b.times.Nodup ∧ ValidLabeling sem (b.prepare.flip f) ∧
+      (defects (b.prepare.flip f)).card = (defects f).card := by
+  obtain ⟨b, hb, hbl, hv, hd⟩ := search_blossom_correct sem f hF hf hM hr
+  have ht := search_trace sem f hF
+  rw [hr] at ht
+  exact ⟨b, hb, hbl, ht.blossom_times_nodup hb, hv, hd⟩
 ```
 
 No supplied forest/event invariant or finite universe of variable names is needed.
-Both variable and constraint least-common-ancestor cases are proved. The cycle
-certificate retains copied-constraint times, pivot, feasibility and no shortcuts;
+Both variable and constraint least-common-ancestor cases are proved.
+{name}`Cslib.Logic.PL.CSP.Walk.DistinctCopies` forbids sharing a copied node
+between cycle steps; original constraints may recur at different timestamps.
+The graph union alone admits an invalid-prefix counterexample, checked in
+`ComplexityTests/EdgeCSPBlossomCopies.lean`. The cycle certificate also retains
+the pivot, feasibility and no shortcuts;
 its validity does not follow from reversing an arbitrary f-walk. Exhaustion uses
 an alternative exchange-counting proof of KKR Lemma 45. The preparation proof uses
 chronological prefix transfer and Lemma 37 rerooting.
