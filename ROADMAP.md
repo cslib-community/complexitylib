@@ -1393,8 +1393,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   max-flow/min-cut, a `TimeM` Edmonds–Karp solver and Hopcroft–Karp bipartite matching are in
   `Algorithms/Lean/MaxFlow`); then minimum-cost flow and weighted bipartite matching through common
   residual-network and duality machinery. Remaining matching directions: the decomposition of
-  `M ⊕ M*` into vertex-disjoint augmenting paths, general (non-bipartite) matching with blossoms,
-  and a sparse Hopcroft–Karp entry point that also charges construction of the adjacency lists.
+  `M ⊕ M*` into vertex-disjoint augmenting paths, and a sparse Hopcroft–Karp entry point that also
+  charges construction of the adjacency lists. General (non-bipartite) matching
+  ([#3337](https://github.com/cslib-community/complexitylib/issues/3337)): Berge's lemma and the
+  Tutte–Berge formula are proved in `Foundations/Combinatorics/SimpleGraph/{Berge,TutteBerge}`.
+  Still open are Edmonds' blossom-contraction lemma, an executable blossom algorithm with its
+  `O(|V|²|E|)` bound, and the Gallai–Edmonds decomposition.
 - **Algebraic matching** ([#3052](https://github.com/cslib-community/complexitylib/issues/3052)):
   remaining after Edmonds' determinant criterion and Lovász's randomized test for bipartite
   graphs (`Algorithms/Matching/Edmonds`), the bipartite Mulmuley–Vazirani–Vazirani core

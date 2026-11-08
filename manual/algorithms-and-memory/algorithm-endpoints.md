@@ -166,6 +166,33 @@ Outputs use the same `IsMatching`/`VertexCover` vocabulary as the Edmonds–Karp
 
 The combinatorial layer is [Complexity/Algorithms/Lean/MaxFlow/AugmentingPath.lean](../../Complexity/Algorithms/Lean/MaxFlow/AugmentingPath.lean). It contains Berge's theorem (`isMaxMatching_iff_forall_not_isAugmentingPath`), the phase lemma (`IsMaximalLayeredAugmentation.noShortAug_augment`) and the phase bound (`IsPhaseRun.le_two_mul_sqrt`). These proofs use a layered counting lemma, `card_mul_le_of_noShortAug`, instead of decomposing `M ⊕ M*` into disjoint augmenting paths; that decomposition is not formalized.
 
+## General matching: Berge's lemma and the Tutte–Berge formula
+
+These results are about matchings in arbitrary finite graphs, not necessarily bipartite. They are stated on Mathlib's `SimpleGraph` and `SimpleGraph.Subgraph.IsMatching`, not on the bipartite `L × R → Bool` model above, and there is no executable algorithm yet.
+
+[Complexity/Foundations/Combinatorics/SimpleGraph/Berge.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/Berge.lean) defines:
+- `Subgraph.IsAugmentingPath M p`: a path between distinct uncovered vertices that alternates in Mathlib's `IsAlternating` sense;
+- `Subgraph.augment M p`: `M ∆ E(p)`;
+- `Subgraph.IsMaximumMatching`: a matching with at least as many edges, counted by `Set.encard`, as every matching.
+
+`IsAugmentingPath.isMatching_augment` and `ncard_verts_augment` show that augmenting gives a matching covering two more vertices. `IsMatching.isMaximumMatching_iff_forall_not_isAugmentingPath` is Berge's lemma for finite graphs ([Berge1957], Theorem 1; [Schrijver2017], Theorem 3.2). It is proved from `IsMatching.exists_isAugmentingPath_of_ncard_lt`, using the odd-degree vertices of a component of `M ∆ M'`. `exists_isMaximumMatching` gives a maximum matching of a finite graph, and `IsPerfectMatching.isMaximumMatching` shows that perfect matchings are maximum. The bipartite Berge theorem in `MaxFlow/AugmentingPath` is a separate statement in its own model; neither is derived from the other.
+
+[Complexity/Foundations/Combinatorics/SimpleGraph/TutteBerge.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/TutteBerge.lean) proves the Tutte–Berge formula ([Berge1958]; [Schrijver2017], Theorem 5.1) with vertex counts, writing `o(G - U)` as `((⊤ : G.Subgraph).deleteVerts U).coe.oddComponents.ncard`:
+- `IsMatching.ncard_verts_add_ncard_oddComponents_le` (weak duality): `|V(M)| + o(G - U) ≤ |V| + |U|`.
+- `exists_isMatching_ncard_verts_add_ncard_oddComponents_eq` (strong duality) is derived from Mathlib's `SimpleGraph.tutte` by adjoining `d` universal vertices, where `d` is the maximum deficiency.
+- `IsMatching.isMaximumMatching_iff_exists_ncard_verts_add_ncard_oddComponents_eq`: a single `U` certifies that a matching is maximum.
+- `IsMaximumMatching.isLeast_two_mul_ncard_edgeSet`: `2ν(G)` is the least value of `|V| + |U| - o(G - U)`.
+
+The [checked instances](../../ComplexityTests/GeneralMatching.lean) cover three graphs:
+- On the path `0 - 1 - 2 - 3`, an explicit walk is an augmenting path for `{12}`.
+- On the `5`-cycle, `U = ∅` certifies the matching `{01, 23}`.
+- On the star `K_{1,3}`, `U = {0}` certifies the matching `{01}`.
+
+Still open ([#3337](https://github.com/cslib-community/complexitylib/issues/3337)):
+- Edmonds' blossom-contraction lemma ([Schrijver2017], Theorem 5.2);
+- an executable blossom algorithm with its `O(|V|²|E|)` bound;
+- the Gallai–Edmonds decomposition.
+
 ## Matroid intersection
 
 Import `Complexity.Algorithms.Lean.Matroid.Intersection` ([Complexity/Algorithms/Lean/Matroid/Intersection.lean](../../Complexity/Algorithms/Lean/Matroid/Intersection.lean)). It proves Edmonds' matroid intersection theorem for Mathlib matroids `M₁ M₂ : Matroid α` relative to a finite candidate set `E : Finset α`, following the augmenting-path proof of [Schrijver's lecture notes][schrijver17], Section 10.5. The matroids' ground sets need not equal `E`: elements outside `Mᵢ.E` behave as loops. `iSup_card_eq_iInf_eRk_add_eRk` states that the maximum of `I.card` over common independent `I ⊆ E` equals the minimum of `M₁.eRk U + M₂.eRk (E \ U)` over `U ⊆ E`. `iSup_encard_eq_iInf_eRk_add_eRk` gives the same equality for a finite `X : Set α`. Taking `X` to be the common ground set gives the source's Theorem 10.9. `exists_commonIndep_card_eq_eRk_add_eRk` and its `ℕ`-valued companion give a maximum common independent set together with an optimal `U`. Weak duality (`encard_le_eRk_add_eRk`) needs no finiteness.
