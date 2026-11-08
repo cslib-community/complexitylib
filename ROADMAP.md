@@ -957,7 +957,7 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   matching ([#2063]) and bipartite perfect matching in `Complexity.P encBits` now give a monotone
   language in P whose monotone circuit complexity is superpolynomial
   ([#3147](https://github.com/cslib-community/complexitylib/issues/3147)). An exponential gap
-  (Tardos's function) remains open.
+  (É. Tardos 1988) remains open.
 - **An explicit frontier extractor:** port v1's sumset-extractor construction with an explicit
   family in `Complexity.P encBits` that discharges the frontier lower bounds' hypotheses. It would
   exceed the library's unconditional `3.5 N - o(N)` bound in P, so it needs an independent
