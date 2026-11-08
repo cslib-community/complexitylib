@@ -198,14 +198,30 @@ without supplied simulation or semantic conclusions. Input framing is bounded by
 $4q(2m+1)+4$ bits. The generic reusable `Program.clockedListCertificate` exposes
 charged initialization, simulator and reader profiles; physical state bounds use
 the derived width and $q+1+j$ stored cells after $j$ steps, including zero bindings.
-This is a fixed-parameter family: quarter lengths, endpoints and widths remain
-fixed in the finite program/machine, with parameter-dependent constants. A runtime
-header decoder, charged uniform encoded program/immediate construction and
-validation remain open. Core sparse RAM access is not source multitape bit
-access: association-list scans and retained zero bindings mean these concrete
-bit profiles do not preserve the source sharp time or computed-balance live-space
-bounds. Source sorted-list lookup, compact reuse and sharp bit-machine realization
-remain open. No source global bit asymptotic is claimed. Small-operand resources,
+That original bit simulator remains a fixed-parameter family. The new
+`ProgramGeneration` and `GeneratedRunInput` stages now uniformly compute and emit
+the actual native executable, physical width, binary clock and initialized sparse
+state from original input words. Quarter lengths come from the arrays. A fixed
+303-expression literal template is proved equal to the native literals for every
+runtime metadata input; filling the reused graph produces exactly the reviewed
+1,109-instruction program. A concrete row encoding/parser has program roundtrip,
+injective binary wire and at most five fields per instruction. The complete
+`packetCertificate` has polynomial bit time, simultaneous workspace and encoded
+packet size in original input length, with constants independent of runtime
+metadata. Powers use unary size exponents and binary values/clock, so preparation
+does not materialize exponentially long unary numbers. `packet_original` and
+`original_correct` connect the real computed program/configuration/state to the
+actual native run and exhaustive absence or original witness, without executable
+or semantic correctness premises.
+Uniform execution remains open: one multitape machine must realize
+`GeneratedRunInput.run` over generated packets, through runtime dispatch or a fixed
+symbolic graph with proved runtime-literal refinement. The fixed-program simulator's
+constants cannot be silently reused as uniform constants. The total metadata
+reader's default/extra-field behavior is not full malformed-input validation.
+Association-list scans and retained zero bindings also prevent transferring the
+native computed-balance live-space and sharp time bounds to source bit resources.
+Source sorted-list lookup, compact reuse and sharp bit-machine realization remain
+open. No source global bit asymptotic is claimed. Small-operand resources,
 reduction multiplicity and
 sparsification refinements, and repaired ideal-model bounds remain open as well.
 These components do not close Lemma 8/Theorem 7 or 733 ALL-main. Earlier component

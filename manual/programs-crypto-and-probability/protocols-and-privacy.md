@@ -1095,8 +1095,9 @@ three; the Lean bounds also admit larger remainders. These are resource componen
 of [WangLvShenZhang2027], Lemma 8/Theorem 7, PDF pp. 21–22, for the actual fixed
 native program. Input placement is the RAM convention, and scalar lengths, seeds
 and layout/width values remain program parameters. A header decoder, encoded
-program/immediate-bit accounting and the core source multitape bit model remain
-open. Native variable-length output and a concrete bit-output codec are now
+program/immediate-bit accounting are not supplied by this native endpoint.
+The uniform preparation endpoint below supplies those stages; a uniform runtime
+program interpreter and the sharp source multitape bounds remain open. Native variable-length output and a concrete bit-output codec are now
 supplied by the following endpoint. Four packed witness words also remain in
 the charged register bank. This does not complete Lemma 8/Theorem 7
 or 733 ALL-main.
@@ -1156,8 +1157,9 @@ its own actual returned array. Input/output tapes are not counted as work tapes.
 
 This standalone bit stage starts from the already encoded output array. Reading RAM memory
 into that machine input is not charged by the codec theorem. Original input still
-uses the reversed-suffix RAM calling convention; scalar header decoding and
-uniform encoded program construction remain open. The core uses sparse full-state
+uses the reversed-suffix RAM calling convention; this standalone codec does not
+decode scalar headers or construct encoded programs. The later uniform preparation
+endpoint supplies those stages. The core uses sparse full-state
 addresses and unit-cost word operations, whereas the source conventions (PDF p. 6)
 count deterministic multitape bit operations. The existing association-list
 simulator scans stored bindings and retains bindings written to zero; its generic
@@ -1208,8 +1210,9 @@ is absorbed using the producer's proved output-length charge.
 
 This is a **fixed-parameter machine family**. Widths, quarter lengths and endpoints
 are fixed in the program and in the finite machine; implementation constants can
-depend on them. No encoded program is accepted at runtime, and header-to-program
-construction, scalar validation and uniform immediate-bit costs are still open.
+depend on them. This simulator family accepts no encoded program at runtime.
+The uniform preparation endpoint below computes headers, code and immediates;
+runtime dispatch and malformed-input validation are separate obligations.
 For the actual prepared operands, `original_encoding_bound` bounds every simulated
 outcome by `stateBound 40 (labelBound P.parkHalts.toGeneric) W (q+1+j)` after $j$
 steps, with the proved physical width $W=globalWidth$ and clock
@@ -1228,8 +1231,89 @@ readback, an actual overflow fault, unequal-quarter strict inverse/collision and
 nonempty forward clients, and empty hit/miss bit encodings. For a failed physical
 fit, use the derived `globalWidth` and valid full-width operands; do not replace
 it with the operand width $m$. For a variable input header or a source asymptotic,
-the fixed-parameter theorem is insufficient: prove the remaining uniform compiler
-and stronger simulation first.
+the fixed-parameter theorem is insufficient: use the uniform preparer below,
+then prove runtime-program dispatch and the stronger source simulation.
+
+For **uniform encoded program generation and complete simulation-input preparation**,
+import `Complexity.Cryptanalysis.AddXNORGeneratedRunInput`. Construct a
+`ProgramGeneration.Source`: unary width/class parameters $(m,p)$, binary endpoints
+$(s,t)$, and four original-order operand lists. `sourceEncoding` frames the two
+parameter pairs and quarter lists explicitly. Lengths are computed from the actual
+lists, including zero operands and repeated values; no quarter-length advice or
+executable is supplied. `originalSource p as bs cs ds s t` constructs this input
+from full-width operands. To match the paper's source convention, take its first
+operand as $s$ and target zero as $t$; the API also admits arbitrary endpoints.
+
+`ProgramTemplate.literalTemplate` has 303 expressions. Unary size expressions
+supply powers-of-two exponents; endpoint words and generated values stay binary.
+The actual multitape arithmetic implementations compute the literals in polynomial
+metadata bit time and workspace, without exponentially long unary intermediates.
+`literals_exact` checks every value against the native definitions for all metadata,
+and `graph_exact` checks that erasure gives one fixed graph. `generate` fills this
+graph; `generate_exact` proves equality to the actual reviewed executable, not just
+equality of program sizes. The original 1,109-instruction graph is reused directly
+rather than copied or expanded by the runtime class range.
+
+`ProgramLiterals.record` encodes opcodes, operations, register indices, control
+labels and literals as rows of at most five natural fields. The whole program wire
+is `encList (encList encNat)` of its 1,109 rows. For example, the row
+`[2,7,0,1,2]` is XOR into register zero from registers one and two; `[0,1,0]` writes
+literal zero. `deserialize` is a concrete **row-level** parser with proved program
+roundtrip and invalid-tag/register rejection. The wire encoding is injective.
+This does not supply a runtime bit-program interpreter. `generationCertificate`
+and `rawGenerationCertificate` are actual uniform code-emitting machines;
+`sourceGenerationCertificate` additionally computes lengths from the original input.
+The external metadata ABI has six unary sizes `[m,p,a,b,c,d]` and two binary
+endpoints `[s,t]`. The total `readMetadata` conversion defaults missing entries to
+zero and ignores excess entries; it is not a malformed-input recognizer.
+
+`GeneratedRunInput.configurationCertificate` computes the physical width
+`globalWidth` in unary and `globalTime + outputTime + 1` in binary. Computing this
+large binary clock is polynomial preparation work; executing its many steps is a
+separate cost. `packetCertificate` materializes the generated program, computed
+width/clock and the actual finite initial memory. Initialization includes the
+length header, input addresses and zero-valued cells. Source-order suffix reversal
+is computed by the existing bit input machine. `packet_resources` proves that one
+polynomial in the original encoded input length bounds this machine's time,
+simultaneous workspace and entire encoded output packet, with constants independent
+of runtime metadata. These are polynomial bounds on an implementing machine, up
+to constants, without a claimed explicit degree or exact step count. For an original
+input with $q$ operands, `original_input_length` bounds its encoding by
+$14m+4p+4q(2m+1)+13$ bits. `original_packet_resources` bounds preparation time,
+workspace and emitted packet size by $C(14m+4p+4q(2m+1)+14)^d$, with uniform
+constants $C,d$; this does not bound the subsequent search.
+
+`packet_original` identifies every generated packet field with the proved native
+execution. `GeneratedRunInput.run` consumes that packet's actual program and state
+using the concrete clocked finite RAM evaluator, then reads and decodes its output.
+`original_correct` proves an exhaustive miss or a correctly sized original-chain
+witness for arbitrary quarter lengths and $p≤m$, without supplied compiler,
+execution, query, dictionary or witness conclusions. Runtime width/clock, original
+input materialization and executable generation are all derived, not advice.
+
+The remaining uniform execution gap is precise: there is no certificate here for
+one multitape machine implementing `GeneratedRunInput.run` uniformly over generated
+packets. It could dispatch the packet or use a fixed graph with a proved runtime
+literal refinement. The earlier concrete bit simulator fixes its program;
+its parameter-dependent constants cannot be treated as uniform across these
+packets. Native computed-balance bounds remain intact. The existing sparse-store
+simulator also retains zero bindings and scans them, so its stored-entry/prefix
+profiles can grow with elapsed instructions instead of native live support.
+Uniform dispatch, sharp sorted-list lookup/reuse and source bit-time/peak-space
+bounds remain open; polynomial preparation does not complete Lemma 8/Theorem 7
+or 733 ALL-main. Full malformed-input validation is not asserted.
+
+From the repository root build
+`lake build Complexity.Cryptanalysis.AddXNORGeneratedRunInput`, then run
+`lake env lean ComplexityTests/AddXNORProgramGeneration.lean`. The
+[complete client](../../ComplexityTests/AddXNORProgramGeneration.lean) checks concrete
+metadata/literal values, instruction roundtrip/rejection, general generation
+certificates, physical width/clock and stored input cells, strict inverse/collision
+and nonempty forward runs, and empty hit/miss outputs. A native-code change that
+breaks `literals_exact` or `graph_exact` requires updating and rechecking the literal
+template against the actual definitions; do not replace these checks by assumed
+code equality. A uniform runtime or source resource claim needs its remaining
+interpreter and resource proofs rather than an application of `packet_resources`.
 
 From the repository root, run
 `lake build Complexity.Cryptanalysis.AddXNORNativeClassSearch` followed by

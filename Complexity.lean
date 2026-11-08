@@ -2809,6 +2809,9 @@ public import Complexity.Computability.WordRAM.OutputLowerBound
 public import Complexity.Computability.WordRAM.PackedCount
 public import Complexity.Computability.WordRAM.Power
 public import Complexity.Computability.WordRAM.Power.Rename
+public import Complexity.Computability.WordRAM.ProgramLiterals
+public import Complexity.Computability.WordRAM.ProgramLiterals.Encoding
+public import Complexity.Computability.WordRAM.ProgramLiterals.Expressions
 public import Complexity.Computability.WordRAM.RAM
 public import Complexity.Computability.WordRAM.RAMInput
 public import Complexity.Computability.WordRAM.Randomized.Defs
@@ -2887,6 +2890,7 @@ public import Complexity.Cryptanalysis.AddXNORDecision
 public import Complexity.Cryptanalysis.AddXNORDifference
 public import Complexity.Cryptanalysis.AddXNORDissection
 public import Complexity.Cryptanalysis.AddXNORFlipWeight
+public import Complexity.Cryptanalysis.AddXNORGeneratedRunInput
 public import Complexity.Cryptanalysis.AddXNORGuard
 public import Complexity.Cryptanalysis.AddXNORGuardedChain
 public import Complexity.Cryptanalysis.AddXNORNPComplete
@@ -2940,6 +2944,8 @@ public import Complexity.Cryptanalysis.AddXNORNativeSelectedClass
 public import Complexity.Cryptanalysis.AddXNORNativeSelectedProbe
 public import Complexity.Cryptanalysis.AddXNOROutputCodec
 public import Complexity.Cryptanalysis.AddXNORParity
+public import Complexity.Cryptanalysis.AddXNORProgramGeneration
+public import Complexity.Cryptanalysis.AddXNORProgramTemplate
 public import Complexity.Cryptanalysis.AddXNORReachability
 public import Complexity.Cryptanalysis.AddXNORRuns
 public import Complexity.Cryptanalysis.AddXNORSearch

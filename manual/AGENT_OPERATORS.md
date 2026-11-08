@@ -116,6 +116,9 @@ A concrete fixed-program simulator may charge input conversion and memory extrac
 while its machine and constants still depend on scalar parameters. Check whether
 programs/headers are runtime encoded inputs or fixed parameters, and keep sparse
 stored bindings distinct from live nonzero support before transferring resource bounds.
+A uniform code/width/clock/input-state generator does not itself supply one bit machine
+that dispatches the generated program at runtime. Ask for both the generation certificate
+and the runtime execution certificate before reporting a uniform algorithm.
 
 ## Correct course and hand work over
 
