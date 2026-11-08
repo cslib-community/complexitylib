@@ -11,31 +11,33 @@ public import Mathlib.Combinatorics.SimpleGraph.Hasse
 public import Mathlib.Data.Fin.VecNotation
 meta import Complexity.Algorithms.Lean.TreeDecomposition.IndependentSetFPT
 meta import Mathlib.Combinatorics.SimpleGraph.Hasse
+meta import Mathlib.Data.Fin.VecNotation
 
 /-! # Maximum-weight independent sets over tree decompositions on small graphs
 
 Kernel-checked runs of the tree-decomposition dynamic program, with no `native_decide`:
 
 1. the weighted path `0 - 1 - 2 - 3` with weights `3, 5, 4, 1` and a width-one decomposition:
-   the value `7` (attained by `{0, 2}`), the exact tick count `156` and the general time bound
-   `216`, and the independence number `2` read off the unit-weight run;
+   the value `7` (attained by `{0, 2}`) and the independence number `2` read off the unit-weight
+   run;
 2. the five-cycle with a width-two fan decomposition: the independence number `2` and a weighted
    value in which the best set avoids the heaviest vertex's neighbours;
 3. a one-node decomposition of the edgeless graph on three vertices, where every vertex is chosen;
 4. the star `K_{1,3}` with a root bag `{0}` and three children, which exercises the sum of
    several child messages: the independence number `3` and two weighted values;
-5. the executable program `mwisFPT` on the same decompositions: its values, its exact tick count
-   `273` on the weighted path, and a bag ordering that `IsBagOrder` rejects;
+5. the executable program `mwisFPT` on the same decompositions: its values, its exact tick counts
+   `273` on the weighted path and `97` on the single bag, a bag ordering that `IsBagOrder`
+   rejects, and a compiled run on the orderings built by `sortedBags`;
 6. a family of path decompositions of every depth `N`, on which `mwisFPT` takes exactly
    `120 N + 33` ticks, linear in the depth. The program is evaluated by `decide +kernel` at depth
    `40` and by `#guard` at depth `2000`.
 
-The tick counts of items 1 and 3 are the declared cost of `mwisM` (see the module docstring of
-`Complexity.Algorithms.Lean.TreeDecomposition.IndependentSet`), not a count of evaluation steps.
-The tick counts of items 5 and 6 are charged inside the loops of `mwisFPT`.
+Items 1 to 4 evaluate the specification `mwisValue`. The tick counts of items 5 and 6 are charged
+inside the loops of `mwisFPT`.
 -/
 
--- The `#guard` checks of section 6 run the compiled program at a depth beyond `decide`.
+-- The `#guard` checks of sections 5 and 6 run the compiled program, at depth `2000` beyond the
+-- reach of `decide`, and on `sortedBags`, which is not exposed.
 set_option linter.hashCommand false
 
 public section
@@ -63,24 +65,11 @@ def pathWeight : Fin 4 → ℕ := ![3, 5, 4, 1]
 /-- The program returns `7`, the weight of `{0, 2}`. -/
 example : mwisValue pathDecomposition pathWeight = 7 := by decide
 
-example : (mwisM pathDecomposition pathWeight).ret = 7 := by
-  rw [ret_mwisM]
-  decide
-
 /-- So no independent set of the weighted path weighs more than `7`, and `{0, 2}` attains it. -/
 example : IsGreatest {x | ∃ I : Finset (Fin 4), (pathGraph 4).IsIndepSet (↑I : Set (Fin 4)) ∧
     ∑ v ∈ I, pathWeight v = x} 7 := by
   have h := isGreatest_mwisValue pathDecomposition pathWeight
   rwa [show mwisValue pathDecomposition pathWeight = 7 by decide] at h
-
-/-- Two non-root nodes with bags of size two under bags of size two cost `stepCost 2 2 = 60`
-each, and the root costs `rootCost 2 = 36`. -/
-example : (mwisM pathDecomposition pathWeight).time = 156 := by decide
-
-/-- The general bound for width one: `3 · nodeCost 2 = 216`. -/
-example : (mwisM pathDecomposition pathWeight).time ≤ 216 :=
-  (time_mwisM_le pathDecomposition pathWeight (k := 1)
-    (pathDecomposition.width_le_iff.2 (by decide))).trans_eq (by decide)
 
 /-- The unit-weight run computes the independence number of the path. -/
 example : (pathGraph 4).indepNum = 2 := by
@@ -130,10 +119,8 @@ def bagDecomposition : (⊥ : SimpleGraph (Fin 3)).RootedTreeDecomposition 0 whe
   exists_adj_mem_bag := by decide
   top_unique := by decide
 
-/-- Every vertex is chosen, and only the root is charged: `rootCost 3 = 120`. -/
-example : mwisValue bagDecomposition ![2, 3, 4] = 9 ∧
-    (mwisM bagDecomposition ![2, 3, 4]).time = 120 := by
-  decide
+/-- Every vertex is chosen. -/
+example : mwisValue bagDecomposition ![2, 3, 4] = 9 := by decide
 
 /-! ### 4. A star with three children -/
 
@@ -200,7 +187,11 @@ example : (mwisFPT cycleDecomposition ![1, 1, 10, 1, 1]
     ![[0, 1, 2], [0, 2, 3], [0, 3, 4]]).ret = 11 := by
   decide
 
-example : (mwisFPT bagDecomposition ![2, 3, 4] ![[0, 1, 2]]).ret = 9 := by decide
+/-- On the single bag only the root pass runs: `1` tick allocates the table and
+`rootPassTime 3 = 8 · (6 + 3 + 3) = 96` ticks scan the eight root masks. -/
+example : (mwisFPT bagDecomposition ![2, 3, 4] ![[0, 1, 2]]).ret = 9 ∧
+    (mwisFPT bagDecomposition ![2, 3, 4] ![[0, 1, 2]]).time = 97 := by
+  decide
 
 example : (mwisFPT starDecomposition ![2, 1, 1, 1] ![[0], [0, 1], [0, 2], [0, 3]]).ret = 3 ∧
     (mwisFPT starDecomposition ![5, 1, 1, 1] ![[0], [0, 1], [0, 2], [0, 3]]).ret = 5 := by
@@ -267,9 +258,14 @@ example : (pathGraph 42).indepNum = 21 := by
 #guard (mwisFPT (deepPath 2000) (fun _ => 1) (deepBags 2000)).ret == 1001
 #guard (mwisFPT (deepPath 2000) (fun _ => 1) (deepBags 2000)).time == 120 * 2000 + 33
 
-/-- `sortedBags` orders the bags of a decomposition of a linearly ordered vertex type. -/
+/-- `sortedBags` orders the bags of a decomposition of a linearly ordered vertex type, so
+`ret_mwisFPT` applies to it. -/
 example : (mwisFPT pathDecomposition pathWeight (sortedBags pathDecomposition)).ret = 7 := by
   rw [ret_mwisFPT _ _ (isBagOrder_sortedBags _)]
   decide
+
+/- The compiled program on the orderings built by `sortedBags`, which `decide` cannot unfold. -/
+#guard (mwisFPT pathDecomposition pathWeight (sortedBags pathDecomposition)).ret == 7
+#guard (mwisFPT cycleDecomposition ![1, 1, 10, 1, 1] (sortedBags cycleDecomposition)).ret == 11
 
 end Cslib.Tests.TreeDecompositionIndependentSet

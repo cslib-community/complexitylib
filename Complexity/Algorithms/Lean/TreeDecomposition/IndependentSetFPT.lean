@@ -51,20 +51,27 @@ step is that the child pass computes `forget` (`getD_childPassM_eq_forget`).
 ## Cost model
 
 The ticks count the operations of a unit-cost RAM with an adjacency matrix: an adjacency query
-`G.Adj u v`, an equality test of vertices, a weight lookup `w v`, and arithmetic on masks and
-weights cost one unit each. Every step of a scan of a bag list costs one tick, which covers its
+`G.Adj u v`, an equality test of vertices, a weight lookup `w v`, an array read or write, and
+arithmetic and comparisons on masks and weights cost one unit each. Each tick pays for a constant
+number of these operations. Every step of a scan of a bag list costs one tick, which covers its
 equality test or adjacency query, its bit extraction and its accumulator update (`memM`,
 `selMemM`, `noAdjM`, `keyM`, `restrictM`, `forgetWeightM`, `indepM`). Each child mask costs `4`
-further ticks for the table read, comparison, write and loop step; each parent mask and each root
-mask costs `3`. A zero array of size `c` costs `c` ticks, the `n + 1` initial empty tables cost
-`n + 1`, and the bookkeeping of a node costs `3`. All loops are oblivious: their iteration counts
-depend only on the bag sizes, so the tick count is the closed form `time_mwisFPT`.
+further ticks, for the two table reads, the addition, the comparison, the write and the loop
+step. Each parent mask costs `3`, for the two reads, the addition, the append and the loop step,
+and each root mask costs `3`, for the read, the addition, the comparison and the loop step. A
+zero array of size `c` costs `c` ticks and the `n + 1` initial empty tables cost `n + 1`. The
+bookkeeping of a node costs `3`, which treats the bag lengths and the powers `2 ^ |L i|` as
+available in unit time, as when each bag is stored with its length. All loops are oblivious:
+their iteration counts depend only on the bag sizes, so the tick count is the closed form
+`time_mwisFPT`.
 
 Membership is tested by linear scans of the bag lists rather than with precomputed index maps, so
 a child mask costs `O(k ^ 2)` ticks rather than `O(k)`. The bound is still of the form
-`2 ^ k · poly(k)` per node. The ticks model in-place updates of the arrays. They do not charge any
-copying that Lean's evaluation of the persistent `Vector` and `Array` values may perform when an
-array is shared.
+`2 ^ k · poly(k)` per node. The ticks model in-place updates of the arrays. The program uses its
+arrays linearly: the scratch array `best` and the vector of tables are threaded through the
+loops, and the tables of a node and of its parent are read before the parent's table is
+replaced. So the compiled code can update them in place, and the compiled run at depth `2000` in
+the tests is fast. This is not proved, and the ticks do not charge any copying of a shared array.
 
 ## Limitations
 
@@ -92,12 +99,16 @@ array is shared.
 
 ## References
 
-[CyganEtAl2015, Section 7.3.1] solves weighted independent set by dynamic programming over a nice
-tree decomposition of width `k` in time `2 ^ k · k ^ O(1) · n`, for `n` the number of nodes. This
-program uses the arbitrary rooted decompositions of
+[CyganEtAl2015, Section 7.3.1] solves weighted independent set on an `n`-vertex graph, given a
+tree decomposition of width at most `k`, in time `2 ^ k · k ^ O(1) · n`. There `n` is the number
+of vertices: the given decomposition is first turned into a nice tree decomposition with
+`O(k · n)` nodes, and the dynamic program over it spends `2 ^ k · k ^ O(1)` time per node. This
+program instead uses the arbitrary rooted decompositions of
 `Complexity.Algorithms.Lean.TreeDecomposition.IndependentSet`: each nonroot node sends its parent a
 message indexed by the subsets of the parent's bag, and a parent adds the messages of its
-children. It needs no nice decomposition, and its bound has the same form.
+children, so it needs no nice decomposition. It matches the per-node form `2 ^ k · k ^ O(1)` of
+the source and is linear in the number `n + 1` of decomposition nodes. Relating that number to
+the number of vertices, which the source's bound in `n` requires, is not done here.
 
 * [M. Cygan et al., *Parameterized Algorithms*, Section 7.3.1][CyganEtAl2015]
 -/
@@ -453,12 +464,6 @@ theorem time_mwisFPT (R : G.RootedTreeDecomposition n) (w : V → ℕ) (L : Fin 
   simp only [mwisFPT, TimeM.time_bind, time_tablesFPT, time_rootPassM, rootPassTime,
     sum_range_ofNat_sub (fun i => processTime (L i).length (L (R.parent i)).length)]
 
-theorem indepCost_mono {a b : ℕ} (h : a ≤ b) : indepCost a ≤ indepCost b :=
-  Nat.div_le_div_right (Nat.mul_le_mul h (Nat.add_le_add_right h 1))
-
-theorem indepCost_le (b : ℕ) : indepCost b ≤ b * b :=
-  Nat.div_le_of_le_mul (by nlinarith)
-
 theorem processTime_mono {b b' q q' : ℕ} (hb : b ≤ b') (hq : q ≤ q') :
     processTime b q ≤ processTime b' q' := by
   unfold processTime
@@ -490,7 +495,9 @@ theorem rootPassTime_add_one_le (m : ℕ) : rootPassTime m + 1 ≤ fptNodeBound 
 /-- **FPT running time.** On a rooted decomposition with `n + 1` nodes (decomposition nodes, not
 vertices of `G`) and width at most `k`, the program takes at most
 `(n + 1) · 2 ^ (k + 1) · (4 (k + 1) ^ 2 + 3 (k + 1) + 12)` ticks: linear in the number of nodes and
-`2 ^ k · poly(k)` per node, the form of [CyganEtAl2015, Section 7.3.1]. -/
+`2 ^ k · poly(k)` per node. This is the per-node form of [CyganEtAl2015, Section 7.3.1]; the
+source's bound is linear in the number of vertices, and the node count `n + 1` is not bounded in
+terms of `card V` here. -/
 theorem time_mwisFPT_le (R : G.RootedTreeDecomposition n) (w : V → ℕ) {L : Fin (n + 1) → List V}
     (hL : IsBagOrder R L) {k : ℕ} (hk : R.width ≤ k) :
     (mwisFPT R w L).time ≤ (n + 1) * fptNodeBound (k + 1) := by

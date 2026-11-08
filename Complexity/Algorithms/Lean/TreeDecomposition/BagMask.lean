@@ -11,6 +11,7 @@ public import Complexity.Init
 public import Complexity.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Rooted
 public import Cslib.Algorithms.Lean.TimeM
 public import Mathlib.Data.Finset.Sort
+import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
 /-!
@@ -19,15 +20,19 @@ import Mathlib.Tactic.Ring
 Executable dynamic programs over a tree decomposition index the subsets of a bag by bit masks.
 Given an ordering `L : List V` of a bag, `ofMask L m` is the subset whose `i`-th entry is selected
 by bit `i` of `m`, and `toMask L S` is the mask of `S`. When `L` has no repetitions these are
-inverse bijections between `Finset.range (2 ^ L.length)` and the subsets of `L.toFinset`
-(`ofMask_toMask`, `toMask_ofMask`, `powerset_toFinset_eq_image`).
+inverse bijections between `Finset.range (2 ^ L.length)` and the subsets of `L.toFinset`.
+
+The library has other mask encodings: `Cslib.Algorithms.Lean.Yates.maskSet` and
+`Cslib.Algorithms.MatrixMultiplication.Schonhage.MaskTable.maskSet` for subsets of `Fin n`,
+`Cslib.Complexity.maskSelect` for a list of Boolean selectors, and Mathlib's `Nat.bitIndices`.
+None of them maps numeric masks to subsets of an arbitrary list of vertices by the recursion on
+its head that the scan loops below follow, so the encoding is defined here.
 
 The module also provides the `TimeM ℕ` loops that such programs run on masks: membership by a
 linear scan of a bag, the parent-bag mask of a child subset, its restriction, the weight of the
 entries that are forgotten, and an independence test. Each loop ticks once per scanned entry, so
-its tick count depends only on the lengths of the bag lists (`time_memM`, `time_keyM`,
-`time_indepM`, …), and its return value is specified on `ofMask`/`toMask` (`ret_keyM`,
-`ret_restrictM`, `ret_forgetWeightM`, `ret_indepM`, …).
+its tick count depends only on the lengths of the bag lists, and its return value is specified on
+`ofMask`/`toMask`.
 
 `SimpleGraph.RootedTreeDecomposition` stores its bags as `Finset`s, which have no executable
 order. `IsBagOrder R L` states that `L i` lists the vertices of `R.bag i` without repetition, and
@@ -37,10 +42,26 @@ order. `IsBagOrder R L` states that `L i` lists the vertices of `R.bag i` withou
 
 * `Cslib.Algorithms.Lean.TreeDecomposition.ofMask`: the subset of a bag list selected by a mask.
 * `Cslib.Algorithms.Lean.TreeDecomposition.toMask`: the mask of a subset.
-* `Cslib.Algorithms.Lean.TreeDecomposition.keyM`, `restrictM`, `forgetWeightM`, `indepM`: timed
-  loops on masks.
+* `Cslib.Algorithms.Lean.TreeDecomposition.memM`, `selMemM`, `keyM`, `restrictM`,
+  `forgetWeightM`, `noAdjM`, `indepM`, `zerosM`: timed loops on masks.
+* `Cslib.Algorithms.Lean.TreeDecomposition.indepCost`: the ticks `b (b + 1) / 2` of the
+  independence test on a bag of `b` vertices.
 * `Cslib.Algorithms.Lean.TreeDecomposition.IsBagOrder`: an ordering of the bags of a rooted
   decomposition.
+* `Cslib.Algorithms.Lean.TreeDecomposition.sortedBags`: the sorted ordering of the bags.
+
+## Main results
+
+* `Cslib.Algorithms.Lean.TreeDecomposition.ofMask_toMask`,
+  `Cslib.Algorithms.Lean.TreeDecomposition.toMask_ofMask`,
+  `Cslib.Algorithms.Lean.TreeDecomposition.powerset_toFinset_eq_image`: the bijection between
+  masks and subsets.
+* `Cslib.Algorithms.Lean.TreeDecomposition.ret_keyM`, `ret_restrictM`, `ret_forgetWeightM`,
+  `ret_indepM`: the values of the loops.
+* `Cslib.Algorithms.Lean.TreeDecomposition.time_keyM`, `time_restrictM`, `time_forgetWeightM`,
+  `time_indepM`: their exact tick counts.
+* `Cslib.Algorithms.Lean.TreeDecomposition.isBagOrder_sortedBags`: `sortedBags` is an ordering of
+  the bags.
 -/
 
 public section
@@ -448,6 +469,12 @@ theorem indepCost_succ (b : ℕ) : indepCost (b + 1) = indepCost b + (b + 1) := 
   unfold indepCost
   have h : (b + 1) * (b + 1 + 1) = b * (b + 1) + 2 * (b + 1) := by ring
   rw [h, Nat.add_mul_div_left _ _ (by norm_num)]
+
+theorem indepCost_mono {a b : ℕ} (h : a ≤ b) : indepCost a ≤ indepCost b :=
+  Nat.div_le_div_right (Nat.mul_le_mul h (Nat.add_le_add_right h 1))
+
+theorem indepCost_le (b : ℕ) : indepCost b ≤ b * b :=
+  Nat.div_le_of_le_mul (by nlinarith)
 
 omit [DecidableEq V] in
 theorem time_indepM (G : SimpleGraph V) [DecidableRel G.Adj] (L : List V) (m : ℕ) :
