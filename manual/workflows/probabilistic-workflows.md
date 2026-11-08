@@ -1009,6 +1009,16 @@ The source's mod-one Gaussian sampling law is represented by its actual measure 
 its periodic-density series, the joint LWE sample law in Lemma 3.11, efficient sampling,
 finite precision and the quantum reduction remain separate work.
 
+## Normalize the law of a program
+
+To compute with `ProbComp.eval` of a `do` block, import
+[Norm.lean](../../Complexity/Languages/Probabilistic/Norm.lean) in the proof and call
+`simp only [pmf_norm]`. It rewrites the law into right-nested `PMF.bind`s, with returned values
+substituted and maps pushed into the continuations: the shape that `PMF.bind_congr_on_support`,
+`PMF.bind_apply` and the support lemmas expect. The set is curated, so later steps may rely on its
+normal form; it does not unfold support membership or probability masses. The checked examples in
+[PMFNorm.lean](../../ComplexityTests/PMFNorm.lean) show the normal form of each kind of term.
+
 ## Certify a closed randomized routine
 
 Use `IsPPTOn input output program` when the required conclusion is a uniform, strict polynomial-time implementation on encoded types. The encodings are embeddings into bit lists. One finite-control fair-coin machine and one polynomial clock must work for every input, with exact equality of encoded output laws. Output writing is charged. This is the contract to request before proving a probabilistic routine efficient.
