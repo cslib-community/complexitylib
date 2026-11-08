@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Logics.SecondOrder.WordMSO.Composition
+import Mathlib.Computability.MyhillNerode
 
 /-!
 # Tests: Ehrenfeucht–Fraïssé games on concatenations of words
@@ -16,7 +17,8 @@ import Complexity.Logics.SecondOrder.WordMSO.Composition
 * composition (`WordDuplicatorWins.append_elim0`) gives `ba ≡₁ bba`, and the pebbled form
   (`WordDuplicatorWins.append_cons`) gives `b·a·b ≡₁ bb·a·bb` with a pebble on the inserted `a`;
 * the congruence `wordCon` relates the products, has finite index over `Bool`, and the language of
-  a sentence is a union of its classes.
+  a sentence is a union of its classes;
+* by Myhill–Nerode, the finite index makes the language of every sentence over `Bool` regular.
 -/
 
 open Cslib.Logic.WordMSO
@@ -87,5 +89,19 @@ example (φ : (Cslib.Logic.WordMSO.wordLanguage Bool).Sentence)
     (hφ : Cslib.Logic.FO.quantifierRank φ ≤ 1) :
     [true] ∈ WordFO.language φ ↔ [true, true] ∈ WordFO.language φ :=
   b_equiv₁_bb.mem_language_iff hφ
+
+/-- The language of every sentence over `Bool` is regular, by Myhill–Nerode: the left quotient by
+a word depends only on its rank class, and there are finitely many classes. -/
+example (φ : (Cslib.Logic.WordMSO.wordLanguage Bool).Sentence) :
+    (WordFO.language φ).IsRegular := by
+  let c := wordCon Bool (Cslib.Logic.FO.quantifierRank φ)
+  let g : c.Quotient → Language Bool :=
+    Quotient.lift (fun x : FreeMonoid Bool => (WordFO.language φ).leftQuotient x.toList)
+      fun x x' h => by
+        ext y
+        exact mem_language_iff_of_wordCon (c.mul (show c x x' from h) (c.refl (.ofList y))) le_rfl
+  refine Language.isRegular_iff_finite_range_leftQuotient.2 ((Set.finite_range g).subset ?_)
+  rintro _ ⟨x, rfl⟩
+  exact ⟨Quotient.mk _ (FreeMonoid.ofList x), rfl⟩
 
 end ComplexityTests.WordMSOComposition
