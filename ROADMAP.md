@@ -950,3 +950,18 @@ Executable finite-input correctness does not complete the source's resource
 theorem: encoded ragged original-input normalization, whole-pipeline binary time
 and peak space, advertised counting runtime, full table frontend and graph
 endpoints remain open. No ALL-main completion or issue closure follows.
+
+
+The binary original-occurrence normalizer/backend stage now has composed plain
+multitape polynomial-time/space certificates on framed unary-index/width and
+binary integer-weight/target inputs. Actual aggregation, interval rejection,
+complementation, capping, affine matrix/RHS writing, computed Gram selection,
+consistency and full-rank candidate testing are certified. The serialized stage
+is proved equal to the actual original-input normalized/capped tables and
+dispatcher diagnostics. Uncapped aggregation-prefix bit widths and post-cap
+Gram/Bird/Cramer widths are derived; output storage follows the runtime proof.
+This is a stage certificate: small-variable counting, tagged direct answers,
+selected-row/query encoding and bounded enumeration/writing still need resource
+composition into the complete counting plan. Whole-endpoint peak space, sharper
+counting runtime, full table frontend and graph endpoints remain open; no
+Theorem 7.1 or ALL-main completion is claimed.

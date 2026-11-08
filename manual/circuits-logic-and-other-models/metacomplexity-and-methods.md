@@ -621,7 +621,51 @@ small emitted queries; it is not used by the dispatcher.
 This is an executable finite-input algorithm with correctness and output budgets,
 not a composed multitape binary time/peak-space theorem. The common occurrence
 length representation has no encoded ragged-input adapter here. Binary encoding
-and resource certification for original normalization, whole-pipeline resource
-composition, advertised counting runtime,
+and resource certification for original normalization and backend analysis are
+provided below. Whole-pipeline resource composition, advertised counting runtime,
 full table frontend and graph endpoints remain open. Theorem 7.1 and ALL-main
 therefore remain incomplete.
+
+
+Import `Complexity.Computability.PolyTime.CNF.WeightedNormalization` for the
+certified binary normalizer/backend stage in namespace
+`Cslib.Logic.PL.WeightedRow.BinaryNormalization`. `Input` stores an explicit list
+of `(variable, sign, integer weight)` occurrences and a signed integer target.
+`encInput` frames unary variable indices and binary integer weights/targets;
+the outer input uses unary declared width and a framed list of rows.
+`ofOccurrences` serializes the reviewed positive-weight finite input directly.
+The total raw program also runs on malformed lists; semantic correspondence is
+proved for serialized `Occurrences`, not for an unvalidated parser.
+
+`materialize n rows` computes normalization/capping and writes the retained
+affine matrix and RHS. `analyze n rows` additionally emits the separate rejection
+flag, computed original-row basis indices, consistency and full-rank candidate
+Booleanity. The last flag is false at deficient rank and does not decide
+feasibility there. Rejection must be respected even if the matrix after deleting
+invalid rows is consistent. `materialize_ofOccurrences` and
+`analyze_ofOccurrences` prove exact correspondence with the actual normalized
+tables and solver tests used by the executable dispatcher.
+
+`materialize_polytime` and `analyze_polytime` compose plain multitape binary
+polynomial-time certificates, including actual list writing, binary sums,
+comparisons, Gram/Bird selection and rectangular recovery. These certificates
+also supply polynomial space for this stage through the library's independent
+time/space predicate. They are uniform in width, row count and binary weight
+magnitudes; normalization alone needs no fixed-demand assumption.
+`aggregate_prefix_bits` bounds uncapped partial sums by actual input length.
+The post-cap entry/RHS bounds, `original_gram_stage_bits` and
+`original_certificate_bits` derive the backend widths from demand and declared
+width without supplied coefficient-growth advice.
+`materialize_output_polyBounded` derives storage from the proved runtime, not
+runtime from output size.
+
+From the repository root run `scripts/build.sh ComplexityTests.WeightedBinaryNormalization`.
+The [complete client](../../ComplexityTests/WeightedBinaryNormalization.lean) checks
+repeated opposite signs, a `2^80` coefficient, deleted true rows, rejection,
+inconsistency, unused variables and Boolean/fractional full-rank recovery.
+This certifies the normalizer/backend stage, not the entire original-input
+counting plan: small-dimension counting, tagged direct-answer emission, selected
+row/query serialization, bounded subset enumeration/deduplication/query writing
+and their composed machine resources remain to connect. Whole-endpoint peak
+space, advertised counting runtime, full table frontend and graph endpoints
+remain open. Theorem 7.1 and ALL-main remain incomplete.
