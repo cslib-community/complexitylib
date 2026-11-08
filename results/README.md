@@ -8,9 +8,11 @@ Initial collection: Christian Reitwiessner, with Codex assistance.
 
 The collection includes the headline results that the curated formal abstracts selected until
 they were retired on 2026-11-08, registered against the library theorems that the abstracts'
-bridges applied. Their bibliography keys come from the library modules' citations; their source
-theorem numbers and locators are left `unverified`. The bibliography remains
-[references.bib](../references.bib); it is not copied into another authored manifest.
+bridges applied, except the depth-two threshold bounds for Andreev's function: they are original
+results, which wait for a representation (see "Remaining collection work"). Their bibliography
+keys come from the library modules' citations; their source theorem numbers and locators are left
+`unverified`. The bibliography remains [references.bib](../references.bib); it is not copied
+into another authored manifest.
 
 ## Authoring
 
