@@ -11,8 +11,8 @@ import Complexity.Logics.Propositional.Resolution.TseitinSpace
 
 Refutations of `x ∧ ¬x` in clause space `3`, and none in space `2`; a refutation that erases
 clauses to stay in space `3` although it has five lines; the Atserias–Dalmau inequality on it, and
-its use for the width of a refutation of a formula with a clause of width `3`; space lower bounds
-for Tseitin formulas; and the axioms of the headline theorems.
+its use for the width of a refutation of a formula with a clause of width `3`; and space lower
+bounds for Tseitin formulas.
 -/
 
 namespace ComplexityTests.ProofComplexity.Space
@@ -144,21 +144,5 @@ example (n : ℕ) [Nontrivial (Fin n)] {χ : Fin n → Bool} {s : ℕ}
 example : ∃ m, ∃ φ : CNF (Fin m), ¬ φ.Satisfiable ∧ ∀ s, φ.RefutableInSpace s → 122 ≤ s := by
   obtain ⟨m, -, φ, -, -, hφ, hs⟩ := CNF.exists_forall_refutableInSpace_le 4392000 le_rfl
   exact ⟨m, φ, hφ, fun s h => by have := hs s h; omega⟩
-
-/-! ### Axioms -/
-
-/--
-info: 'Cslib.Logic.PL.CNF.RefutableInSpace.refutableInWidth' depends on axioms: [propext,
-Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Cslib.Logic.PL.CNF.RefutableInSpace.refutableInWidth
-
-/--
-info: 'Cslib.Logic.PL.CNF.exists_forall_refutableInSpace_le' depends on axioms: [propext,
-Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Cslib.Logic.PL.CNF.exists_forall_refutableInSpace_le
 
 end ComplexityTests.ProofComplexity.Space

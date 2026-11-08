@@ -27,11 +27,13 @@ with `O(n)` variables and clauses of constant width whose resolution refutations
 
 Clause-space lower bounds for Tseitin formulas on expanders were first proved by Alekhnovich,
 Ben-Sasson, Razborov and Wigderson [AlekhnovichBenSassonRazborovWigderson2002] and by Esteban and
-Torán [EstebanToran2001], with slightly better parameters than here, as remarked in [Filmus, Lauria,
-Mikša, Nordström and Vinyals, Section 4][FilmusLauriaMiksaNordstromVinyals2014]; those two papers
-were not inspected for this formalization. Atserias and Dalmau observe that space lower bounds
-follow from width lower bounds [Atserias and Dalmau, Section 4][AtseriasDalmau2008], and we derive
-them that way, from the width bound of Ben-Sasson and Wigderson [BenSassonWigderson2001].
+Torán [EstebanToran2001], as remarked in [Filmus, Lauria, Mikša, Nordström and Vinyals,
+Section 4][FilmusLauriaMiksaNordstromVinyals2014]; those two papers were not inspected for this
+formalization. Atserias and Dalmau observe, after their Theorem 3, that space lower bounds follow
+from width lower bounds [Atserias and Dalmau, Section 4][AtseriasDalmau2008], and we derive them
+that way, from the width bound of Ben-Sasson and Wigderson [BenSassonWigderson2001], using the
+constant `s + k - 3` of [Filmus, Lauria, Mikša, Nordström and Vinyals,
+Theorem 1][FilmusLauriaMiksaNordstromVinyals2014].
 
 ## Main results
 
@@ -117,6 +119,7 @@ namespace CNF
 
 /-- **Unsatisfiable formulas with `O(n)` variables and clauses of constant width need resolution
 refutations in clause space `Ω(n)`** [Atserias and Dalmau, Section 4][AtseriasDalmau2008]
+[Filmus, Lauria, Mikša, Nordström and Vinyals, Theorem 1][FilmusLauriaMiksaNordstromVinyals2014]
 [Ben-Sasson and Wigderson][BenSassonWigderson2001]. For every `n ≥ 4392000` there is an
 unsatisfiable formula with at most `120 n` variables and at most `2 ^ 120 · n` clauses, of width at
 most `120`, whose resolution refutations in clause space `s` all have `n ≤ 36000 s`. It is the

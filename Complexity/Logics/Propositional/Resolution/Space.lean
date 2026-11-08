@@ -28,7 +28,10 @@ with one containing the empty clause. Its *clause space* is the largest number o
 at once, and `φ` is refutable in clause space `s` (`Cslib.Logic.PL.CNF.RefutableInSpace`) if it has
 a refutation in which every configuration has at most `s` clauses. The derivation steps are those of
 `Cslib.Logic.PL.CNF.IsProof`; in particular there is no weakening rule. Configurations are sets of
-clauses, so the space of a configuration counts distinct clauses.
+clauses, so the space of a configuration counts distinct clauses. Clauses are lists, so two
+orderings of the same literals count as two clauses; this does not change the least space of a
+refutation compared with the convention of clauses as sets, since mapping each clause to its set of
+literals never increases space, and a refutation on sets lifts by fixing one list for each set.
 
 Clause space is the resolution analogue of the number of pebbles in the black pebble game
 (`Cslib.Pebbling.blackPebbleGame`): a download places a pebble on a source of the graph of a proof,

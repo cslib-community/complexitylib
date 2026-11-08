@@ -12,10 +12,11 @@ public import Complexity.Logics.Propositional.Resolution.Space
 /-!
 # Clause space bounds width
 
-**Atserias and Dalmau's inequality** [Atserias and Dalmau, Section 4][AtseriasDalmau2008]: a
+**Atserias and Dalmau's inequality** [Atserias and Dalmau, Theorem 3][AtseriasDalmau2008]: a
 formula of clauses of width at most `k` that is refutable in clause space `s` is refutable in width
-`s + k - 3` (`Cslib.Logic.PL.CNF.RefutableInSpace.refutableInWidth`). We follow the statement of
-[Filmus, Lauria, Mikša, Nordström and Vinyals, Theorem 1][FilmusLauriaMiksaNordstromVinyals2014]:
+`s + k - 3` (`Cslib.Logic.PL.CNF.RefutableInSpace.refutableInWidth`). The exact constant
+`s + k - 3` is that of [Filmus, Lauria, Mikša, Nordström and Vinyals,
+Theorem 1][FilmusLauriaMiksaNordstromVinyals2014], whose statement we follow:
 
 > Let F be a k-CNF formula and let π : F ⊢ ⊥ be a resolution refutation in space Sp(π) = s. Then
 > there is a resolution refutation π′ of F in width W(π′) ≤ s + k − 3.
@@ -41,8 +42,8 @@ satisfy the parents of `R` instead, which together satisfy `R`; and keep only on
 variable per clause (the Locality Lemma, [Atserias and Dalmau, Lemma 4][AtseriasDalmau2008]).
 Applied to the set of the empty clause, this is a contradiction. Atserias and Dalmau (Lemma 5)
 keep one assignment satisfying the whole configuration; asking only for sets of fewer than `s`
-clauses saves one in the width bound and gives the constant of Filmus et al. The exact constant
-stated by Atserias and Dalmau is not quoted here.
+clauses saves one in the width bound and gives the constant of Filmus et al. The constant stated in
+Atserias and Dalmau's Theorem 3 may be weaker and is not quoted or claimed here.
 
 ## Main results
 
@@ -322,10 +323,10 @@ private theorem refutableInWidth_zero_of_nil_mem (hφ : [] ∈ φ) : φ.Refutabl
 
 namespace RefutableInSpace
 
-/-- **Clause space bounds width** [Atserias and Dalmau, Section 4][AtseriasDalmau2008]
+/-- **Clause space bounds width** [Atserias and Dalmau, Theorem 3][AtseriasDalmau2008]
 [Filmus, Lauria, Mikša, Nordström and Vinyals, Theorem 1][FilmusLauriaMiksaNordstromVinyals2014]: a
 formula of clauses of width at most `k` that is refutable in clause space `s` is refutable in width
-`s + k - 3`. -/
+`s + k - 3`. The exact constant `s + k - 3` is that of Filmus et al., Theorem 1. -/
 theorem refutableInWidth {k s : ℕ} (hk : ∀ c ∈ φ, c.width ≤ k) (h : φ.RefutableInSpace s) :
     φ.RefutableInWidth (s + k - 3) := by
   by_cases hφ : [] ∈ φ
