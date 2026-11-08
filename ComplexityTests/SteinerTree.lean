@@ -242,8 +242,27 @@ theorem kmbEdges_star (P : ∀ u v : Fin 4, starGraph.Walk u v) :
 example (P : ∀ u v : Fin 4, starGraph.Walk u v)
     (hP : IsShortestWalkOracle unitWeight starGraph P) :
     (kmbEdges unitWeight P [1, 2, 3]).sum unitWeight ≤ 2 * 3 := by
-  have := sum_kmbEdges_le_two_mul_graphSteinerOpt hP (R := [1, 2, 3]) (by decide)
+  have := sum_kmbEdges_le_two_mul_graphSteinerOpt hP [1, 2, 3]
   rwa [graphSteinerOpt_star] at this
+
+/-- Repeated terminals on a graph: with `R = [1, 1, 2, 3]`, the bound holds without `Nodup`. -/
+example (P : ∀ u v : Fin 4, starGraph.Walk u v)
+    (hP : IsShortestWalkOracle unitWeight starGraph P) :
+    (kmbEdges unitWeight P [1, 1, 2, 3]).sum unitWeight ≤ 2 * 3 := by
+  have hconn : IsSteinerSubgraph starGraph [1, 1, 2, 3] starEdges := by
+    refine ⟨edgeSet_starGraph.symm.subset, fun a ha b hb => ?_⟩
+    rw [← starGraph]
+    exact starGraph_preconnected a b
+  have := sum_kmbEdges_le_two_mul hP [1, 1, 2, 3] hconn
+  calc (kmbEdges unitWeight P [1, 1, 2, 3]).sum unitWeight ≤ 2 * starEdges.sum unitWeight := this
+    _ = 2 * 3 := by decide
+
+/-- A single repeated terminal on a graph gives zero cost: `kmbEdges` pays nothing. -/
+example (P : ∀ u v : Fin 4, starGraph.Walk u v)
+    (hP : IsShortestWalkOracle unitWeight starGraph P) :
+    (kmbEdges unitWeight P [1, 1]).sum unitWeight ≤
+      2 * graphSteinerOpt unitWeight starGraph [1, 1] :=
+  sum_kmbEdges_le_two_mul_graphSteinerOpt hP [1, 1]
 
 /-- A triangle whose edge `0 - 1` weighs `10` and whose other edges weigh `1`. -/
 def triWeight (e : Sym2 (Fin 3)) : ℕ := if e = s(0, 1) then 10 else 1
@@ -277,7 +296,7 @@ most `2 · 2 = 4 < 10`. -/
 example (P : ∀ u v : Fin 3, (⊤ : SimpleGraph (Fin 3)).Walk u v)
     (hP : IsShortestWalkOracle triWeight ⊤ P) : s(0, 1) ∉ kmbEdges triWeight P [0, 1] := by
   intro h
-  have hle := sum_kmbEdges_le_two_mul hP (R := [0, 1]) (by decide) isSteinerSubgraph_tri
+  have hle := sum_kmbEdges_le_two_mul hP [0, 1] isSteinerSubgraph_tri
   have : triWeight s(0, 1) ≤ (kmbEdges triWeight P [0, 1]).sum triWeight :=
     Finset.single_le_sum (fun _ _ => Nat.zero_le _) h
   have h10 : triWeight s(0, 1) = 10 := by decide
