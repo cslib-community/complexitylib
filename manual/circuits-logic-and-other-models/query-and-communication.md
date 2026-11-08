@@ -220,8 +220,9 @@ algorithm on general finite graphs, without messages, is described in
 ## Byzantine agreement
 
 Import `Complexity.Computability.Distributed.Byzantine.NodeBound` for the impossibility theorems,
-or `Complexity.Computability.Distributed.Byzantine.OralMessages` for these together with the
-single-fault protocol. Both build on
+`Complexity.Computability.Distributed.Byzantine.OralMessages` for these together with the
+single-fault protocol, or `Complexity.Computability.Distributed.Byzantine.RecursiveOralMessages`
+for all of these together with the protocol for any number of faults. All build on
 [Byzantine/Basic.lean](../../Complexity/Computability/Distributed/Byzantine/Basic.lean), the model
 of deterministic synchronous message passing on the complete graph of a process type `P`. A
 `Protocol P State Msg` gives every process an initial state from its input bit (`init`), a message
@@ -281,16 +282,57 @@ Lamport, Shostak and Pease (TOPLAS 1982, Theorem 1).
 `exists_solvesByzantineAgreement_one_iff` combines the bounds: for `R ≥ 2`, `n` processes can
 tolerate one fault exactly when `n ≤ 1` or `n ≥ 4`. The statement quantifies over `S M : Type`.
 
+[Byzantine/RecursiveOralMessages.lean](../../Complexity/Computability/Distributed/Byzantine/RecursiveOralMessages.lean)
+gives the upper bound for any number of faults: the oral messages algorithm `OM(m)` of Lamport,
+Shostak and Pease (TOPLAS 1982, §3) [Lamport–Shostak–Pease][lamportshostakpease1982], run by
+every process as commander. A recursive instance is
+named by its relay path `σ`, a list of processes whose head is the commander of the instance and
+whose lieutenants are the processes not on `σ`. `omResolve i val m σ` is the value that process
+`i`, holding the tree `val : List P → Bool` of relayed values, obtains by `OM(m)` in that instance:
+the entry `val σ` when `m = 0`, and otherwise the strict majority (ties `false`, Lamport, Shostak
+and Pease's default order RETREAT) over the lieutenants `l` of `val σ` if `l = i` and of the value
+of `OM(m - 1)` at `l :: σ` otherwise. The protocol `om P t` gathers the trees: every process
+sends its whole tree every round, and in round `r + 1` writes, at every path `j :: τ` of length
+`r + 1`, the entry at `τ` of the tree received from `j`. Entries never change once written
+(`om_state_freeze`, `om_state_cons`). The decision is the strict majority over commanders `c` of
+`omResolve i s t [c]`. Messages are whole trees, so message size and message count are not
+measured. `omValue F adv x m R i c` is the value `i` obtains for the input of `c` by `OM(m)` after
+`R` rounds of `om P m`.
+
+Lemma 1 and Theorem 1 of the paper are proved first for any *faithful* family of trees, in which a
+correct `i` holds at `j :: τ` the entry at `τ` of a correct `j`, and then for runs.
+`omResolve_eq_of_notMem` and `omValue_eq_of_notMem` are Lemma 1 (IC2): with at most `k` faults
+among more than `2k + m` processes, every correct process obtains the input of a correct commander
+by `OM(m)` after `R ≥ m + 1` rounds. `omResolve_eq_omResolve` and `omValue_eq_omValue` are
+Theorem 1 (IC1): with at most `m` faults among more than `3m` processes, all correct processes
+obtain the same value for every commander. In the recursive statements the counts are over the
+processes off the tail `τ` of the relay path, the generals of the subinstance.
+`solvesByzantineAgreement_om` concludes that `om P t` solves Byzantine agreement against `t`
+faults among `n > 3t` processes in any `R ≥ t + 1` rounds, and `om_decision_eq_decision_succ` that
+its decision does not change after round `t + 1`. `exists_solvesByzantineAgreement_iff` combines
+this with the node bound: for `R ≥ t + 1`, Byzantine agreement against `t` faults is solvable on
+`n` processes exactly when `n ≤ 1` or `n > 3t`. Whether fewer than `t + 1` rounds suffice is the
+open round lower bound. `om1_decision_eq_om_decision` shows that `om1` is the case `t = 1`: at
+every correct process and for `R ≥ 2`, it decides as `om P 1` against the replayed faulty messages
+`om1Adv adv`.
+
+The majority facts these proofs use, `BitString.strictMajorityOn_congr` and
+`BitString.strictMajorityOn_eq_of_forall_notMem` (a strict majority of correct voters determines a
+majority vote), are in
+[BitString/MajorityVote.lean](../../Complexity/Foundations/Data/BitString/MajorityVote.lean).
+
 [Checked examples](../../ComplexityTests/Computability/Distributed/Byzantine.lean) show a leader
 protocol that solves the fault-free problem and fails against a faulty leader that tells different
 processes different things. They also run `om1` on four processes against an equivocating process,
 with mixed and with unanimous inputs, and against a rushing process, and instantiate the node bound
-at `n = 2` and `n = 6`.
+at `n = 2` and `n = 6`. They run `om (Fin 7) 2` against two lying traitors, checking with `decide`
+the values of all commanders (IC1 and IC2) and the decisions, and show that `om (Fin 7) 1` fails
+against two traitors: the depth `t` of the recursion is needed, although `7 > 3 · 2`.
 
 Only static faults on the complete graph with Boolean inputs are covered. The connectivity bound
-`κ ≥ 2t + 1` (Fischer, Lynch and Merritt, §3.2), the general upper bound for `n > 3t` (`OM(t)` or
-exponential information gathering), the `t + 1` round lower bound, authenticated agreement and
-randomized agreement remain open; see `ROADMAP.md`. The asynchronous impossibility of Fischer,
+`κ ≥ 2t + 1` (Fischer, Lynch and Merritt, §3.2), the `t + 1` round lower bound, authenticated
+(signed-message) agreement, protocols with polynomially many messages, and randomized agreement
+remain open; see `ROADMAP.md`. The asynchronous impossibility of Fischer,
 Lynch and Paterson is upstream in CSLib (`Cslib/Computability/Distributed/FLP`), in a separate
 asynchronous crash-fault model.
 
@@ -336,3 +378,4 @@ The surveyed lower bounds concern total Boolean functions or explicitly stated r
 
 [complexitylib]: ../sources.md#complexitylib
 [coverthomas06]: ../sources.md#coverthomas06
+[lamportshostakpease1982]: ../sources.md#lamportshostakpease1982

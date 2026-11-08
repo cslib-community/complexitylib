@@ -496,6 +496,11 @@ Bernhard Korte and Jens Vygen. *Combinatorial Optimization: Theory and Algorithm
 
 Peter Kairouz, Sewoong Oh and Pramod Viswanath. *The Composition Theorem for Differential Privacy*. IEEE Transactions on Information Theory 63(6), 4037–4049, 2017. https://doi.org/10.1109/TIT.2017.2685505 ; theorem numbering cited from arXiv:1311.0776v4, 2015. Theorem 3.4 (equation (7)) was checked against the arXiv v4 PDF on 2026-11-07; the journal metadata was checked against Crossref.
 
+<a id="lamportshostakpease1982"></a>
+## lamportshostakpease1982
+
+Leslie Lamport, Robert Shostak and Marshall Pease. "The Byzantine Generals Problem." *ACM Transactions on Programming Languages and Systems* 4(3), 382–401, July 1982. https://doi.org/10.1145/357172.357176 ; author-hosted copy of the typeset article: https://lamport.azurewebsites.net/pubs/byz.pdf . Checked against that copy on 2026-11-08 UTC by worker w169-omt: §1, pp. 383–384 (conditions 1′ and 2 on the values `v(i)`, the interactive consistency conditions IC1 and IC2, and the reduction in which each general sends its value by a solution to the commander problem); §3, pp. 387–388 (the oral-message assumptions A1–A3, the default order RETREAT, the definition of `OM(m)` and of `majority`, and the remark that values are prefixed by the sequence of relaying lieutenants); p. 390 (Lemma 1: `OM(m)` satisfies IC2 with more than `2k + m` generals and at most `k` traitors; Theorem 1: `OM(m)` satisfies IC1 and IC2 with more than `3m` generals and at most `m` traitors); §7, pp. 400–401 (message paths of length up to `m + 1`, and up to `(n − 1)(n − 2)⋯(n − m − 1)` messages).
+
 <a id="lean-validation"></a>
 ## lean-validation
 
