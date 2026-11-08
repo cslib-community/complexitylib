@@ -159,7 +159,10 @@ its color, and with `t` and `a` as in (14.21) it is within relative error `ε` o
 product estimator of [Product/Estimator.lean](../../Complexity/Probability/Product/Estimator.lean):
 `le_toOuterMeasure_productEstimate` needs each stage probability within relative error
 `ε / (6 n)` of a target `r k ≥ b > 0` and `48 n ≤ 5 η ε² a b`, and proves it from the exact
-mean and second moment of independent empirical frequencies by Chebyshev's inequality.
+mean and second moment of independent empirical frequencies by Chebyshev's inequality. Both
+results concern only the law of `W`. The `n t a` Glauber updates are not charged in any cost
+model, so this is not yet the fully polynomial randomized approximation scheme of Levin and Peres,
+Remark 14.15.
 
 The [checked clients](../../ComplexityTests/MarkovChain.lean) compute `d(t) = (2/3)(1/4)^t` and
 `t_mix(1/4) = 1` exactly for a two-state chain with non-uniform stationary law, show that the flip

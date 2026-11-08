@@ -1296,8 +1296,8 @@ densities (expected revenue equals expected virtual welfare; Vickrey with a rese
   (`Probability/MarkovChain/Coloring/Count`, with the generic product estimator in
   `Probability/Product/Estimator`) is in place as a distributional statement; charge its
   `n t a` Glauber updates in a cost model to obtain an FPRAS. Implement Metropolis sampling for
-  encoded rational target weights, charging initialization, arithmetic and every transition, with support and
-  mixing hypotheses explicit.
+  encoded rational target weights, charging initialization, arithmetic and every transition, with
+  support and mixing hypotheses explicit.
 - **FPRAS and almost-uniform sampling:** an almost-uniform sampling (FPAUS) interface with
   explicit output-distribution error alongside the FPRAS interface, and sampling/counting
   reductions for suitably self-reducible relations, with the sampling and counting oracle

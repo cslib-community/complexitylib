@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Probability.Product
+import Complexity.Foundations.Combinatorics.Janson
 import Complexity.Probability.PMF.Chebyshev
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Expect
@@ -228,30 +229,6 @@ theorem sum_pi_mul_productEstimate_sq (μ : κ → PMF S) (A : κ → Set S)
 
 end ProductEstimate
 
-/-- `(1 + y) ^ n ≤ 1 + 2 n y` when `0 ≤ y` and `n y ≤ 1 / 2`. -/
-private theorem one_add_pow_le_one_add_two_mul {y : ℝ} (hy : 0 ≤ y) {n : ℕ}
-    (hny : n * y ≤ 1 / 2) : (1 + y) ^ n ≤ 1 + 2 * n * y := by
-  have key : ∀ m : ℕ, m * y ≤ 1 → (1 + y) ^ m * (1 - m * y) ≤ 1 := by
-    intro m
-    induction m with
-    | zero => intro _; simp
-    | succ m ih =>
-      intro hm
-      push_cast at hm ⊢
-      have hm' : (m : ℝ) * y ≤ 1 := by nlinarith
-      have h := ih hm'
-      have hp : 0 ≤ (1 + y) ^ m := by positivity
-      calc (1 + y) ^ (m + 1) * (1 - (m + 1) * y)
-          = (1 + y) ^ m * ((1 + y) * (1 - (m + 1) * y)) := by ring
-        _ ≤ (1 + y) ^ m * (1 - m * y) := by
-            refine mul_le_mul_of_nonneg_left ?_ hp
-            nlinarith [mul_nonneg (Nat.cast_nonneg m) (mul_nonneg hy hy)]
-        _ ≤ 1 := h
-  have h := key n (by linarith)
-  have hP : 0 ≤ (1 + y) ^ n := by positivity
-  have hz : 0 ≤ (n : ℝ) * y := mul_nonneg (Nat.cast_nonneg n) hy
-  nlinarith [mul_nonneg hP (mul_nonneg hz (by linarith : (0 : ℝ) ≤ 1 / 2 - n * y))]
-
 section Concentration
 
 variable {κ S : Type*} [Fintype κ] [Finite S]
@@ -347,7 +324,7 @@ theorem le_toOuterMeasure_productEstimate (μ : κ → PMF S) (A : κ → Set S)
             fun k _ => hplo k
   have hm_hi : m ≤ (1 + ε / 3) * R := by
     have h1 : (1 + δ) ^ n ≤ 1 + ε / 3 := by
-      have := one_add_pow_le_one_add_two_mul hδ0 (n := n) (by linarith)
+      have := Cslib.one_add_pow_le_one_add_two_mul hδ0 (N := n) (by linarith)
       linarith
     calc m ≤ ∏ k, (1 + δ) * r k := by
           rw [hm]
@@ -396,8 +373,9 @@ theorem le_toOuterMeasure_productEstimate (μ : κ → PMF S) (A : κ → Set S)
       _ = (1 + y) ^ n * m ^ 2 := by
           rw [Finset.prod_mul_distrib, Finset.prod_const, Finset.card_univ, hn, Finset.prod_pow,
             hm]
-      _ ≤ (1 + 2 * n * y) * m ^ 2 :=
-          mul_le_mul_of_nonneg_right (one_add_pow_le_one_add_two_mul hy0 hny) (sq_nonneg _)
+      _ ≤ (1 + 2 * n * y) * m ^ 2 := by
+          have h := Cslib.one_add_pow_le_one_add_two_mul hy0 (N := n) (by linarith)
+          exact mul_le_mul_of_nonneg_right (by linarith) (sq_nonneg _)
   have hvar : ∑ x, (P x).toReal * (productEstimate A x - m) ^ 2 =
       ∑ x, (P x).toReal * productEstimate A x ^ 2 -
         2 * m * ∑ x, (P x).toReal * productEstimate A x + m ^ 2 := by

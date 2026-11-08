@@ -228,6 +228,7 @@ theorem inv_exp_mul_le_card_frozenColorings_erase_div (hq : 2 * G.maxDegree < q)
   have hq0 : (0 : ℝ) < q := Nat.cast_pos.2 (by omega)
   have h := mul_card_frozenColorings_le_card_erase (by omega) hb hv
   have hexp : Real.exp (-1) ≤ (1 - 1 / ((q - G.maxDegree : ℕ) : ℝ)) ^ G.maxDegree := by
+    rw [one_div]
     refine Real.exp_neg_one_le_one_sub_inv_pow ?_
     exact_mod_cast (by omega : G.maxDegree + 1 ≤ q - G.maxDegree)
   rw [le_div_iff₀ hX]
