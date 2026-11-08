@@ -149,4 +149,11 @@ example : PolyTimeIsomorphic encCNF encBits SAT (cnfDecoder.decode ⁻¹' SAT) :
 example (h : BermanHartmanisConjecture) : NAEThreeSAT ∉ P encCNF := fun hN =>
   h.SAT_notMem_P (polyTimeIsomorphic_SAT_NAEThreeSAT.mem_P_iff.2 hN)
 
+/-- The conjecture hypothesis applies directly to particular `NP`-complete word languages. -/
+example (h : BermanHartmanisConjecture) :
+    PolyTimeIsomorphic encBits encBits (cnfDecoder.decode ⁻¹' SAT)
+      (cnfDecoder.decode ⁻¹' ThreeSAT) :=
+  h _ _ (CookLevin.SAT_npComplete.preimage_decode cnfDecoder)
+    (ThreeSAT_npComplete.preimage_decode cnfDecoder)
+
 end ComplexityTests.BermanHartmanis

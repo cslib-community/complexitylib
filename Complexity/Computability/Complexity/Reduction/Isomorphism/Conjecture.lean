@@ -20,10 +20,11 @@ The Berman–Hartmanis conjecture says that all `NP`-complete languages are poly
 isomorphic [Berman and Hartmanis][BermanHartmanis1975]. It is stated here, as a hypothesis, for
 languages of bit strings: `Cslib.Complexity.BermanHartmanisConjecture`.
 
-The string model is essential. Over instance types other than bit strings, a statement for all
-`NP`-complete languages fails trivially when `P = NP`, because every nontrivial language in `P`
-is then `NP`-complete, including languages over finite types, which cannot be in bijection with
-an infinite type.
+Following the source, the conjecture is stated for languages of strings, here bit strings.
+Quantifying instead over `NP`-complete languages of arbitrary instance types gives a different
+statement, which is refuted rather than equivalent if `P = NP`: every nontrivial language in `P`
+is then `NP`-complete, including languages over finite types, which are not in bijection with
+infinite ones.
 
 ## Source and adaptations
 
@@ -69,8 +70,9 @@ open Cslib.Logic.PL Turing.MultiTapeTM
 
 /-- **The Berman–Hartmanis isomorphism conjecture**, as a hypothesis: any two `NP`-complete
 languages of bit strings are polynomial-time isomorphic
-([Berman and Hartmanis][BermanHartmanis1975], §I, for languages of strings). -/
-def BermanHartmanisConjecture : Prop :=
+([Berman and Hartmanis][BermanHartmanis1975], §I, for languages of strings). The body is exposed
+so that clients can apply the hypothesis to particular languages. -/
+@[expose] def BermanHartmanisConjecture : Prop :=
   ∀ A B : Set (List Bool), NPComplete encBits A → NPComplete encBits B →
     PolyTimeIsomorphic encBits encBits A B
 
