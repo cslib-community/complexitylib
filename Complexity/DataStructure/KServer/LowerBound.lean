@@ -117,7 +117,6 @@ theorem moveCost_lazyNext_add_le (c a a' : Fin k → α) (r : α) (ha : ∃ j, a
 
 /-- Lazy normalization of an online strategy: simulate `A` and move at most one server per
 request, only when the request is uncovered. -/
-@[expose]
 noncomputable def lazify (A : DetStrategy (problem M k)) : DetStrategy (problem M k) where
   Mem := A.Mem × (Fin k → α)
   ValidMem x := A.ValidMem x.1
@@ -128,7 +127,7 @@ noncomputable def lazify (A : DetStrategy (problem M k)) : DetStrategy (problem 
   valid_step r hm := ⟨(A.valid_step r hm).1,
     (lazyNext_spec _ _ r (A.valid_step r hm).2).1⟩
 
-theorem costFrom_lazify_le (A : DetStrategy (problem M k)) (m : A.Mem) (hm : A.ValidMem m)
+private theorem costFrom_lazify_le (A : DetStrategy (problem M k)) (m : A.Mem) (hm : A.ValidMem m)
     (c : Fin k → α) (reqs : List α) :
     (lazify M A).costFrom (m, c) reqs ≤ A.costFrom m reqs + moveCost M c (A.project m) := by
   induction reqs generalizing m c with

@@ -21,7 +21,9 @@ This file proves the theorem of [Chrobak, Karloff, Payne and Vishwanathan, *New 
 problems*][ChrobakKarloffPayneVishwanathan1991]: the Double Coverage algorithm for `k` servers on
 the line is `k`-competitive. Together with the general lower bound
 (`Complexity.DataStructure.KServer.LowerBound`) this settles the deterministic competitive ratio
-of the `k`-server problem on the line: it is exactly `k`. The proof is the standard
+of the `k`-server problem on the line: from any start with distinct servers it is exactly `k`,
+with an additive constant depending on the start. Double Coverage is not competitive with one
+additive constant for all starts (`IsCompetitive`). The proof is the standard
 potential-function argument for this algorithm (see also [Borodin and El-Yaniv, *Online
 Computation and Competitive Analysis*, Chapter 10][BorodinElYaniv1998]). The line is usually taken
 to be the real line; here the points are integers, which keeps distances natural numbers.
@@ -368,7 +370,7 @@ private theorem dcSorted_step {n : Nat} {t : Fin (n + 1) → Int} (ht : Monotone
     spread_update_mid ht hab hd0 (by omega)]
   have h1' : |t a - (t a + d)| = d := by rw [abs_of_nonpos (by omega)]; ring
   have h2' : |t b - (t b - d)| = d := by rw [abs_of_nonneg (by omega)]; ring
-  push_cast
+  simp only [Nat.cast_add, Int.natCast_natAbs]
   rw [h1', h2']
   have hm' : (matchCost NatMetric.line
       (Function.update (Function.update t a (t a + d)) b (t b - d)) o : Int) ≤
@@ -401,7 +403,7 @@ theorem exists_dcSorted_eq {n : Nat} (t : Fin (n + 1) → Int) (r : Int) :
 private theorem spread_eq_pairSum {k : Nat} (s : Fin k → Int) :
     spread s = (pairSum NatMetric.line s : Int) := by
   unfold spread pairSum
-  push_cast
+  simp only [Nat.cast_sum]
   refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => ?_
   change |s i - s j| = ((s i - s j).natAbs : Int)
   rw [Int.natCast_natAbs]
