@@ -9,6 +9,7 @@ module
 
 public import Complexity.DataStructure.PriorityQueue.Spec
 import Complexity.Computability.WordRAM.Call
+import Complexity.Computability.WordRAM.SymbolicExec
 public import Complexity.Computability.WordRAM.ExactNotation
 public import Complexity.Computability.WordRAM.Subroutine
 public import Complexity.DataStructure.WordRAM.StateTransition
@@ -284,16 +285,6 @@ def callDecreaseKey (P : PQCode B r_pq) (f : Fin r_pq → Fin r_caller)
              (.op (.copy (f P.argK) kReg_c)))
        (P.code.rename f)
 
-private theorem copy_from_val {B : Basis} {r w : ℕ} {x : Data r} {dst src : Fin r} {v : ℕ}
-    (h : x.regs src = v) :
-    ExecWithin (B := B) w (.op (.copy dst src)) x (x.set dst v) 1 := by
-  rw [← h]
-  exact ExecWithin.copy
-
-private theorem set_regs_out {r₁ r₂ : ℕ} {f : Fin r₁ → Fin r₂} (x : Data r₂) (d : Fin r₁)
-    (v : ℕ) {j : Fin r₂} (hj : j ∉ Set.range f) : (x.set (f d) v).regs j = x.regs j :=
-  Function.update_of_ne (fun h => hj ⟨d, h.symm⟩) _ _
-
 /-- Inline execution of `P.callIsEmpty`: preserves abstract state `s`, sets `z.regs (f P.outFlag)`
 so `z.regs (f P.outFlag) = 0 ↔ IndexedMinPQ.dom s ≠ ∅`, and charges `3 + C.charge s .isEmpty`. -/
 theorem callIsEmpty_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
@@ -311,19 +302,15 @@ theorem callIsEmpty_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
       (∀ j ∉ Set.range f, z.regs j = x.regs j) ∧
       t + C.potential (z.comap f) ≤ 3 + C.charge s .isEmpty + C.potential (x.comap f) := by
   obtain ⟨h21, h20, _, _, h10, _, _, _, _, _⟩ := P.nodup_dests
-  let x₁ := x.set (f P.tag2) 0
-  let x₂ := x₁.set (f P.tag1) 0
-  let x₃ := x₂.set (f P.tag0) 0
-  have hz1 : x₁.regs zeroReg_c = 0 := (set_regs_out x P.tag2 0 hz_out).trans hz0
-  have hz2 : x₂.regs zeroReg_c = 0 := (set_regs_out x₁ P.tag1 0 hz_out).trans hz1
+  let x₃ := ((x.set (f P.tag2) 0).set (f P.tag1) 0).set (f P.tag0) 0
   have hprep : ExecWithin (B := B) w
       (.seq (.op (.copy (f P.tag2) zeroReg_c))
-        (.seq (.op (.copy (f P.tag1) zeroReg_c)) (.op (.copy (f P.tag0) zeroReg_c)))) x x₃ 3 :=
-    (copy_from_val hz0).seq ((copy_from_val hz1).seq (copy_from_val hz2))
+        (.seq (.op (.copy (f P.tag1) zeroReg_c)) (.op (.copy (f P.tag0) zeroReg_c)))) x x₃ 3 := by
+    wram_exec [hz0]
   have hx_bnd := C.bounded hr
   have hfit0 : Fits w 0 := (hx_bnd.1 P.baseReg).of_le (Nat.zero_le _)
   have hcomap : x₃.comap f = (((x.comap f).set P.tag2 0).set P.tag1 0).set P.tag0 0 := by
-    simp only [x₃, x₂, x₁, Data.comap_set hf]
+    simp only [x₃, Data.comap_set hf]
   have hb3 : (x₃.comap f).Bounded w := by
     rw [hcomap]
     exact Data.Bounded.set (Data.Bounded.set (Data.Bounded.set hx_bnd hfit0) hfit0) hfit0
@@ -334,18 +321,13 @@ theorem callIsEmpty_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
     have ni0 : i ≠ P.tag0 := fun h => by rw [h, P.tag0_input] at hi; cases hi
     have ni1 : i ≠ P.tag1 := fun h => by rw [h, P.tag1_input] at hi; cases hi
     have ni2 : i ≠ P.tag2 := fun h => by rw [h, P.tag2_input] at hi; cases hi
-    simp only [Data.set_regs, Function.update_of_ne ni0, Function.update_of_ne ni1,
-      Function.update_of_ne ni2]
+    wram_simp
   have harg : C.argMatch .isEmpty (x₃.comap f).regs := by
     rw [harg_eq, hcomap]
-    simp only [argMatch, Data.set_regs, Function.update_self,
-      Function.update_of_ne h20, Function.update_of_ne h21, Function.update_of_ne h10]
-    trivial
+    wram_simp [argMatch]
   obtain ⟨z, t, he, hdec, hrep_z, hmod, hregs_z, hpot⟩ :=
     C.call_rename_ofFn hf .isEmpty hr trivial hprep hb3 hreg (fun _ _ => rfl) harg
-  have hx3_out : ∀ j ∉ Set.range f, x₃.regs j = x.regs j := fun j hj =>
-    (set_regs_out x₂ P.tag0 0 hj).trans
-      ((set_regs_out x₁ P.tag1 0 hj).trans (set_regs_out x P.tag2 0 hj))
+  have hx3_out : ∀ j ∉ Set.range f, x₃.regs j = x.regs j := fun j hj => by wram_simp [x₃]
   rw [hdec_eq] at hdec
   simp only [decode, indexedMinPQSpec, IndexedMinPQ.step, StateTransitionSpec.stepFn,
     Option.some.injEq, decide_eq_decide] at hdec
@@ -374,8 +356,8 @@ theorem callExtractMin_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
       (∀ j ∉ Set.range f, z.regs j = x.regs j) ∧
       t + C.potential (z.comap f) ≤ 1 + C.charge s .extractMin + C.potential (x.comap f) := by
   let x₁ := x.set (f P.tag2) 1
-  have hprep : ExecWithin (B := B) w (.op (.copy (f P.tag2) oneReg_c)) x x₁ 1 :=
-    copy_from_val ho1
+  have hprep : ExecWithin (B := B) w (.op (.copy (f P.tag2) oneReg_c)) x x₁ 1 := by
+    wram_exec [ho1]
   have hx_bnd := C.bounded hr
   have hfit1 : Fits w 1 := hS.of_le (by omega)
   have hcomap : x₁.comap f = (x.comap f).set P.tag2 1 := Data.comap_set hf x P.tag2 1
@@ -387,15 +369,14 @@ theorem callExtractMin_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
     change (x₁.comap f).regs i = (x.comap f).regs i
     rw [hcomap]
     have ni2 : i ≠ P.tag2 := fun h => by rw [h, P.tag2_input] at hi; cases hi
-    simp only [Data.set_regs, Function.update_of_ne ni2]
+    wram_simp
   have harg : C.argMatch .extractMin (x₁.comap f).regs := by
     rw [harg_eq, hcomap]
-    simp only [argMatch, Data.set_regs, Function.update_self, ne_eq, one_ne_zero, not_false_eq_true]
+    wram_simp [argMatch, ne_eq]
   obtain ⟨z, t, he, hdec, hrep_z, hmod, hregs_z, hpot⟩ :=
     C.call_rename_ofFn hf .extractMin hr trivial hprep hb1 hreg (fun _ _ => rfl) harg
   rw [hdec_eq] at hdec
-  have hx1_out : ∀ j ∉ Set.range f, x₁.regs j = x.regs j :=
-    fun j hj => set_regs_out x P.tag2 1 hj
+  have hx1_out : ∀ j ∉ Set.range f, x₁.regs j = x.regs j := fun j hj => by wram_simp [x₁]
   exact ⟨z, t, he, hdec, hrep_z, hmod, fun j hj => (hregs_z j hj).trans (hx1_out j hj), hpot⟩
 
 /-- Inline execution of `P.callInsert`: inserts `(v, k)` and charges
@@ -424,26 +405,13 @@ theorem callInsert_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
   let x₃ := x₂.set (f P.tag0) 0
   let x₄ := x₃.set (f P.argV) v.val
   let x₅ := x₄.set (f P.argK) k
-  have hout1 : ∀ j ∉ Set.range f, x₁.regs j = x.regs j := fun _ hj => set_regs_out x _ _ hj
-  have hout2 : ∀ j ∉ Set.range f, x₂.regs j = x.regs j := fun j hj =>
-    (set_regs_out x₁ _ _ hj).trans (hout1 j hj)
-  have hout3 : ∀ j ∉ Set.range f, x₃.regs j = x.regs j := fun j hj =>
-    (set_regs_out x₂ _ _ hj).trans (hout2 j hj)
-  have hout4 : ∀ j ∉ Set.range f, x₄.regs j = x.regs j := fun j hj =>
-    (set_regs_out x₃ _ _ hj).trans (hout3 j hj)
-  have hout5 : ∀ j ∉ Set.range f, x₅.regs j = x.regs j := fun j hj =>
-    (set_regs_out x₄ _ _ hj).trans (hout4 j hj)
   have hprep : ExecWithin (B := B) w
       (.seq (.op (.copy (f P.tag2) zeroReg_c)) <|
        .seq (.op (.copy (f P.tag1) oneReg_c)) <|
        .seq (.op (.copy (f P.tag0) zeroReg_c)) <|
        .seq (.op (.copy (f P.argV) vReg_c)) <|
-            (.op (.copy (f P.argK) kReg_c))) x x₅ 5 :=
-    (copy_from_val hz0).seq <|
-    (copy_from_val ((hout1 _ ho_out).trans ho1)).seq <|
-    (copy_from_val ((hout2 _ hz_out).trans hz0)).seq <|
-    (copy_from_val ((hout3 _ hv_out).trans hvv)).seq <|
-    copy_from_val ((hout4 _ hk_out).trans hvk)
+            (.op (.copy (f P.argK) kReg_c))) x x₅ 5 := by
+    wram_exec [hz0, ho1, hvv, hvk]
   have hx_bnd := C.bounded hr
   have hcomap : x₅.comap f =
       (((((x.comap f).set P.tag2 0).set P.tag1 1).set P.tag0 0).set P.argV v.val).set P.argK k := by
@@ -465,19 +433,14 @@ theorem callInsert_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
     have ni0 : i ≠ P.tag0 := fun h => by rw [h, P.tag0_input] at hi; cases hi
     have ni1 : i ≠ P.tag1 := fun h => by rw [h, P.tag1_input] at hi; cases hi
     have ni2 : i ≠ P.tag2 := fun h => by rw [h, P.tag2_input] at hi; cases hi
-    simp only [Data.set_regs, Function.update_of_ne niK, Function.update_of_ne niV,
-      Function.update_of_ne ni0, Function.update_of_ne ni1, Function.update_of_ne ni2]
+    wram_simp
   have harg : C.argMatch (.insert v k) (x₅.comap f).regs := by
     rw [harg_eq, hcomap]
-    simp only [argMatch, Data.set_regs, Function.update_self,
-      Function.update_of_ne h2k, Function.update_of_ne h2v, Function.update_of_ne h20,
-      Function.update_of_ne h21, Function.update_of_ne h1k, Function.update_of_ne h1v,
-      Function.update_of_ne h10, Function.update_of_ne h0k, Function.update_of_ne h0v,
-      Function.update_of_ne hvk_ne, ne_eq, one_ne_zero, not_false_eq_true]
-    trivial
+    wram_simp [argMatch, ne_eq]
   obtain ⟨z, t, he, _, hrep_z, hmod, hregs_z, hpot⟩ :=
     C.call_rename_ofFn hf (.insert v k) hr hval hprep hb5 hreg (fun _ _ => rfl) harg
-  exact ⟨z, t, he, hrep_z, hmod, fun j hj => (hregs_z j hj).trans (hout5 j hj), hpot⟩
+  exact ⟨z, t, he, hrep_z, hmod, fun j hj => (hregs_z j hj).trans
+    (by wram_simp [x₅, x₄, x₃, x₂, x₁]), hpot⟩
 
 /-- Inline execution of `P.callDecreaseKey`: lowers `v`'s key to `k` and charges
 `5 + C.charge s (.decreaseKey v k)`. -/
@@ -506,26 +469,13 @@ theorem callDecreaseKey_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
   let x₃ := x₂.set (f P.tag0) 1
   let x₄ := x₃.set (f P.argV) v.val
   let x₅ := x₄.set (f P.argK) k
-  have hout1 : ∀ j ∉ Set.range f, x₁.regs j = x.regs j := fun _ hj => set_regs_out x _ _ hj
-  have hout2 : ∀ j ∉ Set.range f, x₂.regs j = x.regs j := fun j hj =>
-    (set_regs_out x₁ _ _ hj).trans (hout1 j hj)
-  have hout3 : ∀ j ∉ Set.range f, x₃.regs j = x.regs j := fun j hj =>
-    (set_regs_out x₂ _ _ hj).trans (hout2 j hj)
-  have hout4 : ∀ j ∉ Set.range f, x₄.regs j = x.regs j := fun j hj =>
-    (set_regs_out x₃ _ _ hj).trans (hout3 j hj)
-  have hout5 : ∀ j ∉ Set.range f, x₅.regs j = x.regs j := fun j hj =>
-    (set_regs_out x₄ _ _ hj).trans (hout4 j hj)
   have hprep : ExecWithin (B := B) w
       (.seq (.op (.copy (f P.tag2) zeroReg_c)) <|
        .seq (.op (.copy (f P.tag1) oneReg_c)) <|
        .seq (.op (.copy (f P.tag0) oneReg_c)) <|
        .seq (.op (.copy (f P.argV) vReg_c)) <|
-            (.op (.copy (f P.argK) kReg_c))) x x₅ 5 :=
-    (copy_from_val hz0).seq <|
-    (copy_from_val ((hout1 _ ho_out).trans ho1)).seq <|
-    (copy_from_val ((hout2 _ ho_out).trans ho1)).seq <|
-    (copy_from_val ((hout3 _ hv_out).trans hvv)).seq <|
-    copy_from_val ((hout4 _ hk_out).trans hvk)
+            (.op (.copy (f P.argK) kReg_c))) x x₅ 5 := by
+    wram_exec [hz0, ho1, hvv, hvk]
   have hx_bnd := C.bounded hr
   have hcomap : x₅.comap f =
       (((((x.comap f).set P.tag2 0).set P.tag1 1).set P.tag0 1).set P.argV v.val).set P.argK k := by
@@ -547,19 +497,14 @@ theorem callDecreaseKey_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
     have ni0 : i ≠ P.tag0 := fun h => by rw [h, P.tag0_input] at hi; cases hi
     have ni1 : i ≠ P.tag1 := fun h => by rw [h, P.tag1_input] at hi; cases hi
     have ni2 : i ≠ P.tag2 := fun h => by rw [h, P.tag2_input] at hi; cases hi
-    simp only [Data.set_regs, Function.update_of_ne niK, Function.update_of_ne niV,
-      Function.update_of_ne ni0, Function.update_of_ne ni1, Function.update_of_ne ni2]
+    wram_simp
   have harg : C.argMatch (.decreaseKey v k) (x₅.comap f).regs := by
     rw [harg_eq, hcomap]
-    simp only [argMatch, Data.set_regs, Function.update_self,
-      Function.update_of_ne h2k, Function.update_of_ne h2v, Function.update_of_ne h20,
-      Function.update_of_ne h21, Function.update_of_ne h1k, Function.update_of_ne h1v,
-      Function.update_of_ne h10, Function.update_of_ne h0k, Function.update_of_ne h0v,
-      Function.update_of_ne hvk_ne, ne_eq, one_ne_zero, not_false_eq_true]
-    trivial
+    wram_simp [argMatch, ne_eq]
   obtain ⟨z, t, he, _, hrep_z, hmod, hregs_z, hpot⟩ :=
     C.call_rename_ofFn hf (.decreaseKey v k) hr hval hprep hb5 hreg (fun _ _ => rfl) harg
-  exact ⟨z, t, he, hrep_z, hmod, fun j hj => (hregs_z j hj).trans (hout5 j hj), hpot⟩
+  exact ⟨z, t, he, hrep_z, hmod, fun j hj => (hregs_z j hj).trans
+    (by wram_simp [x₅, x₄, x₃, x₂, x₁]), hpot⟩
 
 /-- Inline execution of `P.callGetKey`: queries `s v` and charges `4 + C.charge s (.getKey v)`. -/
 theorem callGetKey_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
@@ -585,22 +530,12 @@ theorem callGetKey_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
   let x₂ := x₁.set (f P.tag1) 0
   let x₃ := x₂.set (f P.tag0) 1
   let x₄ := x₃.set (f P.argV) v.val
-  have hout1 : ∀ j ∉ Set.range f, x₁.regs j = x.regs j := fun _ hj => set_regs_out x _ _ hj
-  have hout2 : ∀ j ∉ Set.range f, x₂.regs j = x.regs j := fun j hj =>
-    (set_regs_out x₁ _ _ hj).trans (hout1 j hj)
-  have hout3 : ∀ j ∉ Set.range f, x₃.regs j = x.regs j := fun j hj =>
-    (set_regs_out x₂ _ _ hj).trans (hout2 j hj)
-  have hout4 : ∀ j ∉ Set.range f, x₄.regs j = x.regs j := fun j hj =>
-    (set_regs_out x₃ _ _ hj).trans (hout3 j hj)
   have hprep : ExecWithin (B := B) w
       (.seq (.op (.copy (f P.tag2) zeroReg_c)) <|
        .seq (.op (.copy (f P.tag1) zeroReg_c)) <|
        .seq (.op (.copy (f P.tag0) oneReg_c)) <|
-            (.op (.copy (f P.argV) vReg_c))) x x₄ 4 :=
-    (copy_from_val hz0).seq <|
-    (copy_from_val ((hout1 _ hz_out).trans hz0)).seq <|
-    (copy_from_val ((hout2 _ ho_out).trans ho1)).seq <|
-    copy_from_val ((hout3 _ hv_out).trans hvv)
+            (.op (.copy (f P.argV) vReg_c))) x x₄ 4 := by
+    wram_exec [hz0, ho1, hvv]
   have hx_bnd := C.bounded hr
   have hcomap : x₄.comap f =
       ((((x.comap f).set P.tag2 0).set P.tag1 0).set P.tag0 1).set P.argV v.val := by
@@ -620,19 +555,15 @@ theorem callGetKey_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
     have ni0 : i ≠ P.tag0 := fun h => by rw [h, P.tag0_input] at hi; cases hi
     have ni1 : i ≠ P.tag1 := fun h => by rw [h, P.tag1_input] at hi; cases hi
     have ni2 : i ≠ P.tag2 := fun h => by rw [h, P.tag2_input] at hi; cases hi
-    simp only [Data.set_regs, Function.update_of_ne niV, Function.update_of_ne ni0,
-      Function.update_of_ne ni1, Function.update_of_ne ni2]
+    wram_simp
   have harg : C.argMatch (.getKey v) (x₄.comap f).regs := by
     rw [harg_eq, hcomap]
-    simp only [argMatch, Data.set_regs, Function.update_self,
-      Function.update_of_ne h2v, Function.update_of_ne h20, Function.update_of_ne h21,
-      Function.update_of_ne h1v, Function.update_of_ne h10, Function.update_of_ne h0v,
-      ne_eq, one_ne_zero, not_false_eq_true]
-    trivial
+    wram_simp [argMatch, ne_eq]
   obtain ⟨z, t, he, hdec, hrep_z, hmod, hregs_z, hpot⟩ :=
     C.call_rename_ofFn hf (.getKey v) hr trivial hprep hb4 hreg (fun _ _ => rfl) harg
   rw [hdec_eq] at hdec
-  exact ⟨z, t, he, hdec, hrep_z, hmod, fun j hj => (hregs_z j hj).trans (hout4 j hj), hpot⟩
+  exact ⟨z, t, he, hdec, hrep_z, hmod, fun j hj => (hregs_z j hj).trans
+    (by wram_simp [x₄, x₃, x₂, x₁]), hpot⟩
 
 end PQCode
 
