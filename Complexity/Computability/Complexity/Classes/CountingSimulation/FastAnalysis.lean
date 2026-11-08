@@ -167,7 +167,8 @@ theorem numEdges_lt_length_encInput (P : ℕ) (G : ℕ × ExplicitTensorNetwork 
     G.2.numEdges < (FastContraction.encInput (P, G)).length := by
   simp only [FastContraction.encInput, length_encPair, ExplicitTensorNetwork.encExplicitNetwork,
     encOfEquiv, Function.Embedding.trans_apply, Equiv.coe_toEmbedding]
-  enc_len [DescribedNetwork.equivProd, Equiv.coe_fn_mk]
+  simp only [DescribedNetwork.equivProd, Equiv.coe_fn_mk, encUnary_apply, List.length_replicate]
+  omega
 
 /-! ### The analysis from the sizes and the leaves -/
 

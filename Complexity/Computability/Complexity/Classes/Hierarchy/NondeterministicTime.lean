@@ -184,7 +184,8 @@ theorem lazyDiagonal_notMem_NTIME (d : ℕ) :
       accepts d code y v = V (y, v) := by
     have hclock : c₂ * ((encPair encBits encBits (y, v)).length + 1) ≤ clock d y.length := by
       have := (hM y.length hy).2
-      enc_len [encPair_apply, hv]
+      simp only [encPair_apply, encBits_apply, List.length_append, length_frame, hv]
+      omega
     obtain ⟨hhalt, hout⟩ := (htm (y, v)).runFrom_of_le hclock
     simp only [encPair_apply, encBits_apply, encBool_apply] at hhalt hout
     rw [accepts, hcode, decodeDesc_eDesc, universal_desc, hout]
@@ -206,7 +207,7 @@ theorem lazyDiagonal_notMem_NTIME (d : ℕ) :
   have hMP : M ≤ P := by
     have := hwlen; generalize 2 ^ code.length = e at this; omega
   have hxlen (m : ℕ) (hm : P ≤ m) : (x m).length = m := by
-    enc_len [x]
+    simp only [x, List.length_append, length_frame, List.length_replicate]; omega
   have hshort : Diagonal.shortDesc w = true := by
     rw [Diagonal.shortDesc, decide_eq_true_eq, unframe_frame_append, hwlen]; omega
   have hverifier (m : ℕ) (hm : P ≤ m) (v : List Bool) : verifier d (x m, v) =
@@ -317,7 +318,9 @@ private theorem exists_computableInO_accepts (d : ℕ) : ∃ D, ComputableInO
     refine le_trans ?_ (Nat.mul_le_mul_left K (Nat.le_succ _))
     rw [e]
     have ⟨h₁, h₂⟩ := hbounds q
-    enc_len [Function.comp_apply, enc, hb] at h₁ h₂ ⊢
+    simp only [Function.comp_apply, encBits_apply, enc, length_encPair, List.length_append,
+      length_frame, hb] at h₁ h₂ ⊢
+    omega
 
 attribute [local fun_prop] ComputableInPolyTime.fst' ComputableInPolyTime.snd' in
 /-- The brute force at the end of an interval runs within time exponential in the description,

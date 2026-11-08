@@ -23,7 +23,6 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import Mathlib.Data.Nat.Size
-import Complexity.Tactic.EncLen
 
 /-!
 # Algorithmic counting sparsification on native machines
@@ -625,7 +624,8 @@ private theorem exists_computableInO_step (M K : ℕ) {g : CNF ℕ → ℕ} {t u
         4 ^ D * ((encState s).length + (encNat c).length + 1) ^ D := by
     rw [← mul_pow]
     refine Nat.pow_le_pow_left ?_ D
-    enc_len
+    simp only [length_encPair]
+    omega
   refine ⟨D, h.mono (4 ^ D + 5) (fun s => ?_) (fun s => ?_)⟩ <;>
   · simp only [Function.comp_apply]
     have hp := hpair_le s (g (s.2.1.headD []))
@@ -696,7 +696,8 @@ theorem length_encState_le {stk : List {ψ : CNF ℕ // CountingNormalized K ψ}
   have hlist' := hlist.trans (Nat.mul_le_mul_right _ hstk)
   have hacc' := length_encNat_le_of_le_two_pow hacc
   have hn := CNF.length_distinctVars φ
-  enc_len [encState, hn, stateBound]
+  simp only [encState, length_encPair, encUnary_apply, List.length_replicate, hn, stateBound]
+  omega
 
 end Sizes
 
