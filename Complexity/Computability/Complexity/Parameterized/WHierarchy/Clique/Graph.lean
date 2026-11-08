@@ -161,11 +161,11 @@ theorem mem_brackets {d n kk : ℕ} {P : List (ℕ × ℕ)} :
     P ∈ brackets d n kk ↔ P.length ≤ 2 ^ (d + 1) ∧ ∀ p ∈ P, p.1 < kk ∧ p.2 < n := by
   simp only [brackets, List.mem_listsUpTo, mem_pairs]
 
-theorem mem_classes {d kk : ℕ} {C : List ℕ} :
+theorem mem_indexLists {d kk : ℕ} {C : List ℕ} :
     C ∈ indexLists d kk ↔ C.length ≤ 2 ^ (d + 1) ∧ ∀ j ∈ C, j < kk := by
   simp only [indexLists, List.mem_listsUpTo, List.mem_range]
 
-theorem nodup_classes (d kk : ℕ) : (indexLists d kk).Nodup :=
+theorem nodup_indexLists (d kk : ℕ) : (indexLists d kk).Nodup :=
   List.nodup_listsUpTo List.nodup_range _
 
 theorem mem_vertices {d n kk : ℕ} {gates : List (Unbounded.Op × List ℕ)} {o : ℕ} {v : Vertex} :
@@ -310,14 +310,14 @@ theorem mem_Clique_of_eval {d n : ℕ} (c : Circuit Unbounded.signature n 1) (hw
     exact List.map_id C
   have hB : ∀ C ∈ indexLists d k, B C ∈ brackets d n k := by
     intro C hC
-    obtain ⟨hlen, hlt'⟩ := mem_classes.1 hC
+    obtain ⟨hlen, hlt'⟩ := mem_indexLists.1 hC
     refine mem_brackets.2 ⟨by simpa [B] using hlen, fun p hp => ?_⟩
     obtain ⟨j, hj, rfl⟩ := List.mem_map.1 hp
     exact ⟨hlt' j hj, hun j (hlt' j hj)⟩
   have hxlen : (List.ofFn x).length = n := List.length_ofFn
   have hnoref : ∀ C ∈ indexLists d k, refutes n k c.code.1 cl (B C) = false := by
     intro C hC
-    have hCk := (mem_classes.1 hC).2
+    have hCk := (mem_indexLists.1 hC).2
     refine refutes_eq_false c.isCodeFrom_code (forall₂_knowList hxlen ?_)
       (WeftOne.checks_correct c.isCodeFrom_code hxlen fun e he => (hclcorr e he).2)
     intro s hs b hb
@@ -340,7 +340,7 @@ theorem mem_Clique_of_eval {d n : ℕ} (c : Circuit Unbounded.signature n 1) (hw
   refine ⟨insert (true, cl, []) ((indexLists d k).toFinset.image fun C => (false, [], B C)),
     ?_, ?_, ?_⟩
   · rw [Finset.card_insert_of_notMem (by simp), Finset.card_image_of_injective,
-      List.toFinset_card_of_nodup (nodup_classes d k)]
+      List.toFinset_card_of_nodup (nodup_indexLists d k)]
     intro C C' h
     simp only [Prod.mk.injEq, true_and] at h
     rw [← hBfst C, ← hBfst C', h]
@@ -362,8 +362,8 @@ theorem mem_Clique_of_eval {d n : ℕ} (c : Circuit Unbounded.signature n 1) (hw
       refine ⟨hCC, consistent_iff.2 fun p hp q hq => ?_⟩
       obtain ⟨i, hi, rfl⟩ := List.mem_map.1 hp
       obtain ⟨j, hj, rfl⟩ := List.mem_map.1 hq
-      have hik := (mem_classes.1 hC).2 i hi
-      have hjk := (mem_classes.1 hC').2 j hj
+      have hik := (mem_indexLists.1 hC).2 i hi
+      have hjk := (mem_indexLists.1 hC').2 j hj
       rw [pairOk_iff]
       exact ⟨(hinj hik hjk).symm, (hlt hik hjk).symm⟩
 
@@ -414,18 +414,18 @@ theorem satisfiableWithWeight_of_mem_Clique {d n : ℕ} (c : Circuit Unbounded.s
     obtain ⟨v, hv, rfl⟩ := Finset.mem_image.1 hC
     obtain ⟨-, -, hP⟩ := hBsv v hv
     obtain ⟨hlen, hlt⟩ := mem_brackets.1 hP
-    refine List.mem_toFinset.2 (mem_classes.2 ⟨by simpa using hlen, fun j hj => ?_⟩)
+    refine List.mem_toFinset.2 (mem_indexLists.2 ⟨by simpa using hlen, fun j hj => ?_⟩)
     obtain ⟨p, hp, rfl⟩ := List.mem_map.1 hj
     exact (hlt p hp).1
   have hsplit := Finset.card_filter_add_card_filter_not (s := T) fun v => v.1 = true
   rw [← hCs, ← hBs, hTcard] at hsplit
   have hBle : Bs.card ≤ (indexLists d kk).length := by
-    rw [← Finset.card_image_of_injOn hBinj, ← List.toFinset_card_of_nodup (nodup_classes d kk)]
+    rw [← Finset.card_image_of_injOn hBinj, ← List.toFinset_card_of_nodup (nodup_indexLists d kk)]
     exact Finset.card_le_card hBsub
   have hCs1' : Cs.card = 1 := by omega
   have hBimg : Bs.image (fun v : Vertex => v.2.2.map Prod.fst) = (indexLists d kk).toFinset := by
     refine Finset.eq_of_subset_of_card_le hBsub ?_
-    rw [Finset.card_image_of_injOn hBinj, List.toFinset_card_of_nodup (nodup_classes d kk)]
+    rw [Finset.card_image_of_injOn hBinj, List.toFinset_card_of_nodup (nodup_indexLists d kk)]
     omega
   have hcover : ∀ C ∈ indexLists d kk, ∃ P, (false, [], P) ∈ T ∧ P ∈ brackets d n kk ∧
       P.map Prod.fst = C := by
@@ -458,7 +458,7 @@ theorem satisfiableWithWeight_of_mem_Clique {d n : ℕ} (c : Circuit Unbounded.s
   have hsing : ∀ j < kk, ∃ s, ((false, [], [(j, s)]) : Vertex) ∈ T ∧ s < n := by
     intro j hj
     obtain ⟨P, hPT, hP, hPC⟩ := hcover [j]
-      (mem_classes.2 ⟨by simp [Nat.one_le_two_pow], by simpa using hj⟩)
+      (mem_indexLists.2 ⟨by simp [Nat.one_le_two_pow], by simpa using hj⟩)
     obtain ⟨⟨j', s⟩, rfl, hp⟩ := List.map_eq_singleton_iff.1 hPC
     simp only at hp
     subst hp
@@ -532,7 +532,7 @@ theorem satisfiableWithWeight_of_mem_Clique {d n : ℕ} (c : Circuit Unbounded.s
       rw [Finset.length_toList, pow_succ, mul_comm]
       exact hJcard.trans (Nat.mul_le_mul_left 2 hScard)
     obtain ⟨P, hPT, -, hPC⟩ := hcover J.toList
-      (mem_classes.2 ⟨hJlen, fun j hj => hJlt j (Finset.mem_toList.1 hj)⟩)
+      (mem_indexLists.2 ⟨hJlen, fun j hj => hJlt j (Finset.mem_toList.1 hj)⟩)
     have hPu := hpairs P hPT
     have hJP : ∀ j ∈ J, (j, u j) ∈ P := by
       intro j hj
