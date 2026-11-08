@@ -124,6 +124,11 @@ Stephen A. Cook, Robert A. Reckhow. “The Relative Efficiency of Propositional 
 
 Graham Cormode, S. Muthukrishnan. “An Improved Data Stream Summary: The Count-Min Sketch and its Applications.” *Journal of Algorithms* 55(1), 58–75, 2005. https://doi.org/10.1016/j.jalgor.2003.12.001 ; author PDF https://www.cs.ox.ac.uk/people/graham.cormode/pubs/papers/cm-full.pdf . Sections 3–4.1 and fixed point-query guarantee consulted.
 
+<a id="coverthomas06"></a>
+## coverthomas06
+
+Thomas M. Cover and Joy A. Thomas. *Elements of Information Theory*, second edition. Wiley-Interscience, 2006. https://doi.org/10.1002/047174882X . Section 5.11, "Generation of discrete distributions from fair coins": Theorem 5.11.1 (`H(X) ≤ E[T]` for every generating tree), Theorem 5.11.2 (equality for dyadic distributions) and Theorem 5.11.3 (`H(X) ≤ E[T] < H(X) + 2` for the optimal tree). The theorem numbers and statements were taken from secondary summaries and course notes on 2026-11-08; the printed book was not inspected.
+
 <a id="cslib"></a>
 ## cslib
 
@@ -293,6 +298,11 @@ Anna R. Karlin, Mark S. Manasse, Larry Rudolph, Daniel D. Sleator. "Competitive 
 ## katzlindell20
 
 Jonathan Katz and Yehuda Lindell. *Introduction to Modern Cryptography*, 3rd edition. CRC Press, 2020. Bibliographic metadata and section titles checked against the authors' 3rd-edition table of contents and preface: https://www.cs.umd.edu/~jkatz/imc/toc-preface-3rd.pdf (Sections 9.2.3–9.2.4 on the factoring and RSA assumptions; Section 15.1.1 on trapdoor permutations; Section 15.2 on Paillier encryption; Sections 15.4.1–15.4.3 on quadratic residues and the quadratic residuosity assumption; and Sections 15.5.1–15.5.2 on modular square roots and the Rabin trapdoor permutation). Detailed numbered locators (Definitions, Claims, Propositions, Lemmas, Constructions, Examples, Exercises, and Theorems) remain attributed to the Lean source docstrings, as the textbook body was not independently audited; the Lean modules adapt the parameter generators, RSA challenge domain, Rabin sampling distribution, and the Paillier encryption-randomness sampler (dyadic sampling with `unitOrOne` in place of uniform `ℤ_N^*`) as documented in their module docstrings and implementation notes.
+
+<a id="knuthyao76"></a>
+## knuthyao76
+
+Donald E. Knuth and Andrew C. Yao. "The Complexity of Nonuniform Random Number Generation." In J. F. Traub (ed.), *Algorithms and Complexity: New Directions and Recent Results*, Academic Press, 1976, pp. 357–428. Cited for DDG trees, the optimal tree built from binary expansions, and the entropy bounds `H ≤ E[T] < H + 2`. These attributions follow Cover–Thomas §5.11 and secondary literature (Saad, Freer, Rinard and Mansinghka, POPL 2020). The 1976 text was not inspected, so no theorem number is cited.
 
 <a id="kobayashi1985"></a>
 ## kobayashi1985
