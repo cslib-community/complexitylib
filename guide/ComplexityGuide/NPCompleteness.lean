@@ -10,6 +10,7 @@ import Complexity.Computability.Complexity.Problems.ChromaticNumber
 import Complexity.Computability.Complexity.Problems.Clique
 import Complexity.Computability.Complexity.Problems.CliqueCover
 import Complexity.Computability.Complexity.Problems.Coloring
+import Complexity.Computability.Complexity.Problems.DominatingSet
 import Complexity.Computability.Complexity.Problems.ExactThreeSAT
 import Complexity.Computability.Complexity.Problems.FeedbackArcSet
 import Complexity.Computability.Complexity.Problems.FeedbackVertexSet
@@ -339,6 +340,9 @@ Here is the tree, with the reduction for each edge and the completeness theorem 
   {name}`FeedbackVertexSet_npComplete`), which reduces to feedback arc set by splitting every
   vertex into an arc ({name}`polyTimeReducible_FeedbackVertexSet_FeedbackArcSet`,
   {name}`FeedbackArcSet_npComplete`).
+* Vertex cover reduces to dominating set through a hub adjacent to a copy of every vertex, a
+  pendant on the hub, and a vertex for every edge adjacent to the copies of its endpoints
+  ({name}`polyTimeReducible_VertexCover_DominatingSet`, {name}`DominatingSet_npComplete`).
 * SAT reduces to three-colorability ({name}`polyTimeReducible_SAT_ThreeColoring`,
   {name}`ThreeColoring_npComplete`) and to `k`-colorability for every `k ≥ 3`
   ({name}`polyTimeReducible_SAT_KColoring`, {name}`KColoring_npComplete`). Fixed colorability
