@@ -466,6 +466,11 @@ index links to canonical definitions rather than keeping a second set.
   Two edge-disjoint closed passage systems have even total local intersection parity,
   allowing multiple visits and arbitrary pairings. These finite numerical-map proofs
   leave drawing operations and the weak/unified Hanani–Tutte arguments unproved.
+  Actual indexed rotation operations now preserve numerical genus zero under cofacial
+  corner insertion/vertex identification, arbitrary last-edge deletion and arbitrary
+  nonloop last-edge contraction. Directed blocks, duplicate declarations, splitting
+  components and isolated-point conventions are explicit; face-even extension premises
+  are discharged internally. These operations assert no geometric or runtime endpoint.
   The actual ordered incidence-to-polygon bridge now preserves every face and component
   and proves the numerical Euler equivalence under positive actual scopes. Its abstract
   rotation maps still need native and geometric compilation.

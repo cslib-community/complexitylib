@@ -40,6 +40,10 @@ import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
 import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.IntersectionParity
+import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.CornerGenus
+import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.VertexMergeGenus
+import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.EdgeContractionGenus
+import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Declarations
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler
 import Complexity.Computability.PolyTime.CSP.Table
 import Complexity.Computability.PolyTime.CSP.CyclicDifference.Size
@@ -88,6 +92,10 @@ import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
 import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.IntersectionParity
+import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.CornerGenus
+import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.VertexMergeGenus
+import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.EdgeContractionGenus
+import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Declarations
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler
 import Complexity.Computability.PolyTime.CSP.Table
 import Complexity.Computability.PolyTime.CSP.Edge.Augmenting
@@ -887,6 +895,73 @@ rotation intervals and closed passages. No intersection theorem is assumed.
 disconnected and empty cases, plus an interlaced two-loop torus with odd parity.
 These original finite-map results leave drawing operations, geometric realization,
 Hanani–Tutte, recognition and the full planar dichotomy open.
+
+# Indexed Rotation Surgery
+
+The ordinary imports above expose actual indexed rotation operations in
+`Cslib.Complexity.Graph.RotationSystem`. Inserting an edge at two cofacial
+dart corners preserves componentwise numerical genus zero, even when the
+corners or their vertices coincide:
+
+```lean
+open Cslib.Complexity in
+example {G : Graph} (r : Graph.RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (hr : r.NumericalGenusZero)
+    (h k : Graph.Dart G) (hf : r.faceNext.SameCycle h k) :
+    (r.insertEdge h k).NumericalGenusZero :=
+  r.numericalGenusZero_insertEdge hG hr h k hf
+```
+
+`VertexMergeGenus` also identifies distinct cofacial vertices, preserving
+the directed port blocks and retaining listed edge positions. Its cofacial
+hypothesis is essential to that theorem. Arbitrary edge deletion uses an
+internally proved face-even extension instead, including splitting bridges,
+loops and new isolated points:
+
+```lean
+open Cslib.Complexity Graph.RotationSystem in
+example {G : Graph} {u v : ℕ}
+    (r : Graph.RotationSystem (lastEdgeGraph G u v))
+    (hH : ∀ w ∈ (lastEdgeGraph G u v).incidenceVertices,
+      w ∈ (lastEdgeGraph G u v).1) (hr : r.NumericalGenusZero) :
+    r.deleteLastEdge.NumericalGenusZero :=
+  r.numericalGenusZero_deleteLastEdge hH hr
+```
+
+Contracting an actual nonloop edge needs neither a bridge nor cofaciality
+nor connectedness. It removes the last edge, splices the directed blocks
+without reflection, and updates every remaining endpoint named `u` to `v`:
+
+```lean
+open Cslib.Complexity Graph.RotationSystem in
+example {G : Graph} {u v : ℕ}
+    (r : Graph.RotationSystem (lastEdgeGraph G u v)) (huv : u ≠ v)
+    (hH : ∀ w ∈ (lastEdgeGraph G u v).incidenceVertices,
+      w ∈ (lastEdgeGraph G u v).1) (hr : r.NumericalGenusZero) :
+    (r.contractLastEdge huv).NumericalGenusZero :=
+  r.numericalGenusZero_contractLastEdge huv hH hr
+```
+
+The target is exactly `G.relabel (Function.update id u v)`, including its
+mapped declaration list. Repeated declarations can then be removed while
+retaining every edge, dart and rotation successor:
+
+```lean
+open Cslib.Complexity Graph.RotationSystem in
+example {vertices : List ℕ} {edges : List (ℕ × ℕ)} {v : ℕ}
+    (hv : v ∈ vertices)
+    (r : Graph.RotationSystem (vertices ++ [v], edges)) :
+    (redeclare r vertices).NumericalGenusZero ↔ r.NumericalGenusZero :=
+  numericalGenusZero_append_duplicate_iff hv r
+```
+
+The complete regression clients are `RotationCornerFaces`,
+`VertexIdentification`, `RotationDeletionComponents`, `RotationContraction`
+and `RotationLiftingConverse` under `ComplexityTests/`. They check actual
+tables and numerical certificates, nonbridge and empty-block cases, and
+reflected-order rejection. The proofs are original finite permutation and
+algebraic arguments. No native runtime, geometric realization, full recipe
+closure, recognition or Hanani–Tutte theorem is asserted here.
 
 # Ordered Incidence-to-Polygon Rotations
 

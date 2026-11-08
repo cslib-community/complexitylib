@@ -289,6 +289,59 @@ they do not establish drawing operations, geometric realization, Hanani–Tutte,
 or the full planar dichotomy. The checked guide's “Face Boundaries and Intersection Parity”
 section gives complete generic applications.
 
+## Indexed rotation surgery
+
+The modules at `Complexity.Computability.Complexity.Problems.Graph.RotationSystem` construct
+actual indexed rotations and prove preservation of the existing componentwise numerical
+genus predicate. Import `CornerGenus` for corner insertion, `VertexMergeGenus` for cofacial
+vertex identification, `EdgeDeletionGenus` for deletion, `EdgeContractionGenus` for contraction,
+and `Declarations` for changing only declared vertex lists. Their namespace is
+`Cslib.Complexity.Graph.RotationSystem`. The guide's “Indexed Rotation Surgery” section gives
+complete generic clients.
+
+Given existing dart corners `h` and `k`, `r.insertEdge h k` appends one listed edge between
+their vertices. `numericalGenusZero_insertEdge r hG hr h k hf` requires declared endpoints,
+source numerical genus zero and `hf : r.faceNext.SameCycle h k`. Corners and vertices may
+coincide. In the selected component, the edge and face counts each increase by one.
+`numericalGenusZero_mergeVertices` additionally requires distinct selected vertices and the
+same-face premise; its actual name update retains indexed edges and directed port order.
+Arbitrary noninjective relabeling alone is not a genus-preservation result.
+
+For `r : RotationSystem (lastEdgeGraph G u v)`, `r.deleteLastEdge` removes exactly the final
+listed edge and retains the original graph `G`. `numericalGenusZero_deleteLastEdge r hH hr`
+requires declared source endpoints and source numerical genus zero. It covers splitting
+bridges, loops, pendant edges that create isolated points and disconnected mixtures.
+For `huv : u ≠ v`, `r.contractLastEdge huv` instead targets
+`G.relabel (Function.update id u v)`. `numericalGenusZero_contractLastEdge r huv hH hr`
+requires neither a bridge nor cofaciality nor connectedness. The selected directed blocks
+are spliced without reflection; retained edge and end positions stay explicit.
+
+Contraction maps the declared vertex list pointwise and can leave duplicate declarations.
+`redeclare r W` changes that list while retaining all edges, darts and successors.
+`numericalGenusZero_redeclare_iff hm r` requires equal old/new declared membership;
+`numericalGenusZero_append_duplicate_iff hv r` removes a repeated already declared name.
+These transports justify cleanup; the duplicated and cleaned graph pairs need not be equal.
+
+The `Lifting` module's `component_euler_le` bounds `V + F ≤ E + 2` for an incident component
+under the endpoint guard, without a genus premise. `numericalGenusZero_of_faceEven_lifts`
+proves the converse algebraic characterization of numerical genus zero. The deletion and
+contraction proofs discharge its lifting hypothesis internally by extending face-even edge
+labels. `FacePotential` concerns differences along the face permutation, on any rotation;
+it is not a vertex-spin or genus-zero assumption. Isolated components retain the separate
+conventional face; no nonexistent dart is introduced.
+
+The [corner](../../ComplexityTests/RotationCornerFaces.lean),
+[vertex identification](../../ComplexityTests/VertexIdentification.lean),
+[general deletion](../../ComplexityTests/RotationDeletionComponents.lean),
+[contraction](../../ComplexityTests/RotationContraction.lean) and
+[algebraic converse](../../ComplexityTests/RotationLiftingConverse.lean) clients check actual
+successor tables, nonbridge connectors, loops at both endpoints, empty residual blocks,
+reflected-order rejection and untouched point/edge components. Arbitrary-degree star
+rotations are supplied by `Star.starRotation` and `numericalGenusZero_starRotation`.
+These are original permutation/algebraic proofs, with no native runtime or geometric
+realization claim. Full gadget-recipe realization, recognition, Hanani–Tutte and the planar
+dichotomy remain open under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+
 ## Ordered incidence-to-polygon rotations
 
 Import `Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler`.
