@@ -77,8 +77,8 @@ namespace LongPath
 (`Graph.decodeVertexList`), check that it lists every declared vertex exactly once, and check that
 its first `k` entries are `k` vertices with consecutive ones adjacent. -/
 def verifier : (Graph × ℕ) × List Bool → Bool :=
-  Graph.verifyOrdering (fun x => x.1.1) fun x p =>
-    decide ((p.take x.2).length = x.2) && Graph.chainBool x.1.adjBool (p.take x.2)
+  Graph.verifyOrdering (fun (G, _) => G.1) fun (G, k) p =>
+    decide ((p.take k).length = k) && Graph.chainBool G.adjBool (p.take k)
 
 /-- A path on `k` vertices extends to an enumeration of the declared vertices. -/
 private theorem exists_enum_of_isVertexPath {G : Graph} {q : List ℕ} (hq : G.IsVertexPath q) :
