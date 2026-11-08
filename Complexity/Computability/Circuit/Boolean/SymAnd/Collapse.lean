@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Circuit.Boolean.SymAnd
+public import Complexity.Computability.Circuit.Boolean.SymAnd.Mobius
 import Complexity.Foundations.BooleanAnalysis.LowDegree.Polynomial
 import Complexity.Foundations.Data.Polynomial.ModulusAmplifier
 import Mathlib.Data.ZMod.Basic
@@ -25,18 +26,20 @@ of Beigel and Tarui [BeigelTarui1994, Section 2.2], with every slot evaluated at
 single `SYM ∘ AND` circuit (`SymAnd.exists_eval_eq_eval_step`). With `M = p ^ k` above the size of
 the top circuit, the modulus-amplified bits `h_t = 1 - p_k(q_t ^ (p - 1))` agree with the layer's
 outputs modulo `M` (`Polynomial.one_sub_parityAmplifier_eval_pow_modEq`). Hence
-`∑_{S ∈ gates} ∏_{t ∈ S} h_t` is a low-degree integer function congruent modulo `M` to the number of
-satisfied gates, which is below `M`. That function is an AND count modulo `M`
-(`SymAnd.exists_countP_modEq_of_mem_lowDegree`), and the new symmetric gate reads its argument
-modulo `M`. This is the inductive step of [BeigelTarui1994, Lemma 2.8] with their Fact 2.7
-(Section 2.4).
+`∑_{S ∈ gates} ∏_{t ∈ S} h_t` is a low-degree integer function congruent modulo `M` to the
+number of satisfied gates, which is below `M` (`SymAnd.amplifiedCount_modEq`). The canonical
+circuit of that function modulo `M` (`SymAnd.ofLowDegree`, with AND multiplicities its subset
+Möbius coefficients) is the collapsed circuit (`SymAnd.collapseStep`), and its symmetric gate reads
+its argument modulo `M`. This is the inductive step of [BeigelTarui1994, Lemma 2.8] with their
+Fact 2.7 (Section 2.4).
 
 Iterating over `L` layers whose primes, slot-polynomial degrees and `log₂(|T| + 1)` are at most
 `B`, starting from a circuit of fan-in at most `B` and size at most `2 ^ B`, gives a
 `SYM ∘ AND` circuit of fan-in at most `(2B) ^ (5 ^ L)` and size at most `2 ^ ((2B) ^ (5 ^ L))`
-(`SymAnd.exists_eval_eq_eval_run`). Reading one slot of the tower is the special case
-`SymAnd.exists_eval_eq_run_apply`. For a fixed number of layers and `B` polylogarithmic, this is
-the quasi-polynomial size and polylogarithmic fan-in of [BeigelTarui1994, Theorem 1.1].
+(`SymAnd.collapseRun`, `SymAnd.exists_eval_eq_eval_run`). Reading one slot of the tower is the
+special case `SymAnd.exists_eval_eq_run_apply`. For a fixed number of layers and `B`
+polylogarithmic, this is the quasi-polynomial size and polylogarithmic fan-in of
+[BeigelTarui1994, Theorem 1.1].
 
 The source states the collapse for one arbitrary modulus `m` per level, requiring each level
 polynomial to be `0` or `1` modulo `m`. Here each level has a prime modulus, and Fermat's little
@@ -51,9 +54,13 @@ that meet them (`SymAnd.restrict`) gives a circuit over the inputs alone.
 
 * `Cslib.Circuits.Boolean.ModPolyLayer`: a layer of modular polynomial gates.
 * `Cslib.Circuits.Boolean.ModPolyLayer.step`, `ModPolyLayer.run`.
+* `Cslib.Circuits.Boolean.SymAnd.collapseStep`, `SymAnd.collapseRun`: the explicit collapse of one
+  layer and of a tower.
 
 ## Main results
 
+* `Cslib.Circuits.Boolean.SymAnd.eval_collapseStep`, `SymAnd.eval_collapseRun`: what the explicit
+  collapses compute, with their fan-in and size bounds.
 * `Cslib.Circuits.Boolean.SymAnd.exists_eval_eq_eval_step`: one layer collapses into the
   `SYM ∘ AND` circuit above it.
 * `Cslib.Circuits.Boolean.SymAnd.exists_eval_eq_eval_run`: a tower of layers collapses, with
@@ -129,47 +136,83 @@ private theorem sum_prod_mem_lowDegree {G : Multiset (Finset T)} {F E : ℕ}
     simp only [Multiset.map_cons, Multiset.sum_cons]
     exact Submodule.add_mem _ hS hrest
 
+/-- The modulus-amplified count of `C` after the layer `L`: the sum over the gates `S` of `C` of
+`∏_{t ∈ S} (1 - p_k(q_t ^ (p - 1)))`. Modulo `p ^ k` it is the number of gates of `C` satisfied
+after `L` (`SymAnd.amplifiedCount_modEq`). -/
+noncomputable def amplifiedCount (C : SymAnd T) (L : ModPolyLayer T) (k : ℕ) (v : T → Bool) : ℤ :=
+  (C.gates.map fun S => ∏ t ∈ S, (1 - (parityAmplifier k).eval (L.q t v ^ (L.p - 1)))).sum
+
+/-- The amplified count has degree at most `C.fanIn * (2k - 1)(p - 1)D` when the slot polynomials
+have degree at most `D`. -/
+theorem amplifiedCount_mem_lowDegree (C : SymAnd T) (L : ModPolyLayer T) {D : ℕ}
+    (hq : ∀ t, L.q t ∈ lowDegree ℤ T D) (k : ℕ) :
+    amplifiedCount C L k ∈ lowDegree ℤ T (C.fanIn * ((2 * k - 1) * ((L.p - 1) * D))) := by
+  refine sum_prod_mem_lowDegree (fun S hS => card_le_fanIn hS) fun t => ?_
+  have h1 : (fun v => L.q t v ^ (L.p - 1)) ∈ lowDegree ℤ T ((L.p - 1) * D) :=
+    pow_mem_lowDegree (hq t) _
+  exact one_sub_mem_lowDegree (polynomial_eval_mem_lowDegree h1 (natDegree_parityAmplifier_le k))
+
+/-- For a prime modulus, the amplified count is the number of gates of `C` satisfied after `L`,
+modulo `p ^ k` [BeigelTarui1994, Fact 2.7]. -/
+theorem amplifiedCount_modEq (C : SymAnd T) (L : ModPolyLayer T) (hp : L.p.Prime) (k : ℕ)
+    (v : T → Bool) :
+    amplifiedCount C L k v ≡ C.count (L.step v) [ZMOD ((L.p ^ k : ℕ) : ℤ)] := by
+  rw [natCast_count_eq_sum, ← ZMod.intCast_eq_intCast_iff]
+  simp only [amplifiedCount, Int.cast_multiset_sum, Multiset.map_map, Function.comp_def,
+    Int.cast_prod, BitString.monomial]
+  congr 1
+  refine Multiset.map_congr rfl fun S _ => Finset.prod_congr rfl fun t _ => ?_
+  refine (ZMod.intCast_eq_intCast_iff _ _ _).2 ?_
+  have := one_sub_parityAmplifier_eval_pow_modEq hp k (L.q t v)
+  simp only [ModPolyLayer.step, bitVal, decide_eq_true_eq, Nat.cast_pow]
+  exact this
+
+/-- **One explicit collapse step** [BeigelTarui1994, Lemma 2.8]: the canonical circuit
+(`SymAnd.ofLowDegree`) of the amplified count `amplifiedCount C L k` modulo `p ^ k`, up to its
+degree bound `C.fanIn * (2k - 1)(p - 1)D`, below the symmetric gate of `C`. -/
+noncomputable def collapseStep [Fintype T] [DecidableEq T] (C : SymAnd T) (L : ModPolyLayer T)
+    (k D : ℕ) : SymAnd T :=
+  ofLowDegree (C.fanIn * ((2 * k - 1) * ((L.p - 1) * D))) (L.p ^ k) (amplifiedCount C L k) C.out
+
+/-- **What the collapse step computes**: `C` after `L`, when `p` is prime, the slot polynomials have
+degree at most `D` and `C.size < p ^ k`. -/
+theorem eval_collapseStep [Fintype T] [DecidableEq T] (C : SymAnd T) (L : ModPolyLayer T)
+    (hp : L.p.Prime) {D : ℕ} (hq : ∀ t, L.q t ∈ lowDegree ℤ T D) {k : ℕ} (hk : C.size < L.p ^ k)
+    (v : T → Bool) : (collapseStep C L k D).eval v = C.eval (L.step v) := by
+  rw [collapseStep, eval_ofLowDegree (amplifiedCount_mem_lowDegree C L hq k) (pow_pos hp.pos k)]
+  have h1 : amplifiedCount C L k v % ((L.p ^ k : ℕ) : ℤ) =
+      ((C.count (L.step v) : ℕ) : ℤ) % ((L.p ^ k : ℕ) : ℤ) := amplifiedCount_modEq C L hp k v
+  rw [h1, ← Int.natCast_mod, Nat.mod_eq_of_lt ((C.count_le_size _).trans_lt hk),
+    Int.toNat_natCast]
+  rfl
+
+/-- The collapse step has fan-in at most `C.fanIn * (2k - 1)(p - 1)D`. -/
+theorem fanIn_collapseStep_le [Fintype T] [DecidableEq T] (C : SymAnd T) (L : ModPolyLayer T)
+    (k D : ℕ) : (collapseStep C L k D).fanIn ≤ C.fanIn * ((2 * k - 1) * ((L.p - 1) * D)) :=
+  fanIn_ofLowDegree_le _ _ _ _
+
+/-- The collapse step has at most `p ^ k * (|T| + 1) ^ F` AND gates, where
+`F = C.fanIn * (2k - 1)(p - 1)D` is its fan-in bound. -/
+theorem size_collapseStep_le [Fintype T] [DecidableEq T] (C : SymAnd T) (L : ModPolyLayer T)
+    (hp : 0 < L.p) (k D : ℕ) :
+    (collapseStep C L k D).size ≤
+      L.p ^ k * (Fintype.card T + 1) ^ (C.fanIn * ((2 * k - 1) * ((L.p - 1) * D))) :=
+  size_ofLowDegree_le _ (pow_pos hp k) _ _
+
 /-- **Collapsing one modular layer** [BeigelTarui1994, Lemma 2.8]. Let `C` be a `SYM ∘ AND`
 circuit on slots `T` and `L` a layer with prime modulus `p` whose slot polynomials have degree at
 most `D`. If `C.size < p ^ k`, then some `SYM ∘ AND` circuit computes `C` after `L`, with fan-in at
 most `F = C.fanIn * (2k - 1)(p - 1)D` and at most `p ^ k * (|T| + 1) ^ F` AND gates, where the
-exponent `F` is this new fan-in bound. -/
+exponent `F` is this new fan-in bound. The circuit is `SymAnd.collapseStep C L k D`. -/
 theorem exists_eval_eq_eval_step [Fintype T] (C : SymAnd T) (L : ModPolyLayer T)
     (hp : L.p.Prime) {D : ℕ} (hq : ∀ t, L.q t ∈ lowDegree ℤ T D) {k : ℕ}
     (hk : C.size < L.p ^ k) :
     ∃ C' : SymAnd T, (∀ v, C'.eval v = C.eval (L.step v)) ∧
       C'.fanIn ≤ C.fanIn * ((2 * k - 1) * ((L.p - 1) * D)) ∧
       C'.size ≤ L.p ^ k * (Fintype.card T + 1) ^ (C.fanIn * ((2 * k - 1) * ((L.p - 1) * D))) := by
-  set E := (2 * k - 1) * ((L.p - 1) * D) with hE
-  -- the modulus-amplified output of each slot
-  let h : T → (T → Bool) → ℤ := fun t v => 1 - (parityAmplifier k).eval (L.q t v ^ (L.p - 1))
-  have hdeg : ∀ t, h t ∈ lowDegree ℤ T E := fun t => by
-    have h1 : (fun v => L.q t v ^ (L.p - 1)) ∈ lowDegree ℤ T ((L.p - 1) * D) :=
-      pow_mem_lowDegree (hq t) _
-    exact one_sub_mem_lowDegree (polynomial_eval_mem_lowDegree h1 (natDegree_parityAmplifier_le k))
-  have hval : ∀ t v, h t v ≡ bitVal ℤ (L.step v t) [ZMOD ((L.p ^ k : ℕ) : ℤ)] := fun t v => by
-    have := one_sub_parityAmplifier_eval_pow_modEq hp k (L.q t v)
-    simp only [ModPolyLayer.step, bitVal, decide_eq_true_eq, Nat.cast_pow]
-    exact this
-  -- the amplified count of satisfied gates
-  let c : (T → Bool) → ℤ := fun v => (C.gates.map fun S => ∏ t ∈ S, h t v).sum
-  have hc : c ∈ lowDegree ℤ T (C.fanIn * E) :=
-    sum_prod_mem_lowDegree (fun S hS => card_le_fanIn hS) hdeg
-  have hcv : ∀ v, c v ≡ C.count (L.step v) [ZMOD ((L.p ^ k : ℕ) : ℤ)] := fun v => by
-    rw [natCast_count_eq_sum, ← ZMod.intCast_eq_intCast_iff]
-    simp only [c, Int.cast_multiset_sum, Multiset.map_map, Function.comp_def, Int.cast_prod,
-      BitString.monomial]
-    congr 1
-    refine Multiset.map_congr rfl fun S _ => Finset.prod_congr rfl fun t _ => ?_
-    exact (ZMod.intCast_eq_intCast_iff _ _ _).2 (hval t v)
-  obtain ⟨G, hG, hcard, hGc⟩ := exists_countP_modEq_of_mem_lowDegree hc (pow_pos hp.pos k)
-  refine ⟨⟨G, fun z => C.out (z % L.p ^ k)⟩, fun v => ?_, fanIn_le_iff.2 hG, hcard⟩
-  have hmod : G.countP (fun S => ∀ i ∈ S, v i = true) % L.p ^ k = C.count (L.step v) := by
-    have h1 := Int.natCast_modEq_iff.1 ((hGc v).trans (hcv v))
-    rw [show _ % _ = _ % _ from h1]
-    exact Nat.mod_eq_of_lt ((C.count_le_size _).trans_lt hk)
-  simp only [eval, count] at hmod ⊢
-  rw [hmod]
+  classical
+  exact ⟨collapseStep C L k D, eval_collapseStep C L hp hq hk, fanIn_collapseStep_le C L k D,
+    size_collapseStep_le C L hp.pos k D⟩
 
 private theorem tower_fanIn_le {B F p : ℕ} (hF : F ≤ B) (hp : p ≤ B) :
     F * ((2 * (B + 1) - 1) * ((p - 1) * B)) ≤ 3 * B ^ 4 := by
@@ -199,22 +242,27 @@ private theorem tower_size_le {B B' p N e : ℕ} (hpB : p ≤ 2 ^ B) (hN : N ≤
     _ = 2 ^ (B * (B + 1) + B * e) := by rw [← pow_mul, ← pow_mul, ← pow_add]
     _ ≤ 2 ^ B' := Nat.pow_le_pow_right (by norm_num) hle
 
-/-- **Collapsing a tower of modular layers** [BeigelTarui1994, Lemma 2.8]. Let every layer of
-`Ls` have a prime modulus at most `B` and slot polynomials of degree at most `B`, with
-`|T| + 1 ≤ 2 ^ B`. A `SYM ∘ AND` circuit of fan-in at most `B` and size at most `2 ^ B`, applied
-after running `Ls`, is computed by a single `SYM ∘ AND` circuit of fan-in at most
-`(2B) ^ (5 ^ L)` and size at most `2 ^ ((2B) ^ (5 ^ L))`, where `L` is the number of layers. -/
-theorem exists_eval_eq_eval_run [Fintype T] (C : SymAnd T) (Ls : List (ModPolyLayer T)) {B : ℕ}
+/-- **The explicit collapse of a tower**: collapse the layers of `Ls` one at a time from the
+outermost, with `k = B + 1` and degree bound `B` at the first layer and `5 B ^ 5` in place of `B`
+afterwards. -/
+noncomputable def collapseRun [Fintype T] [DecidableEq T] (C : SymAnd T) :
+    List (ModPolyLayer T) → ℕ → SymAnd T
+  | [], _ => C
+  | L :: Ls, B => collapseRun (collapseStep C L (B + 1) B) Ls (5 * B ^ 5)
+
+private theorem collapseRun_spec [Fintype T] [DecidableEq T] (C : SymAnd T)
+    (Ls : List (ModPolyLayer T)) {B : ℕ}
     (hLs : ∀ L ∈ Ls, L.p.Prime ∧ L.p ≤ B ∧ ∀ t, L.q t ∈ lowDegree ℤ T B)
     (hT : Fintype.card T + 1 ≤ 2 ^ B) (hf : C.fanIn ≤ B) (hs : C.size ≤ 2 ^ B) :
-    ∃ C' : SymAnd T, (∀ v, C'.eval v = C.eval (ModPolyLayer.run Ls v)) ∧
-      C'.fanIn ≤ (2 * B) ^ 5 ^ Ls.length ∧ C'.size ≤ 2 ^ (2 * B) ^ 5 ^ Ls.length := by
+    (∀ v, (collapseRun C Ls B).eval v = C.eval (ModPolyLayer.run Ls v)) ∧
+      (collapseRun C Ls B).fanIn ≤ (2 * B) ^ 5 ^ Ls.length ∧
+      (collapseRun C Ls B).size ≤ 2 ^ (2 * B) ^ 5 ^ Ls.length := by
   induction Ls generalizing C B with
   | nil =>
-    refine ⟨C, fun v => rfl, ?_, ?_⟩
-    · simp only [List.length_nil, pow_zero, pow_one]
+    refine ⟨fun v => rfl, ?_, ?_⟩
+    · simp only [collapseRun, List.length_nil, pow_zero, pow_one]
       omega
-    · simp only [List.length_nil, pow_zero, pow_one]
+    · simp only [collapseRun, List.length_nil, pow_zero, pow_one]
       exact hs.trans (Nat.pow_le_pow_right (by norm_num) (by omega))
   | cons L Ls ih =>
     obtain ⟨hp, hpB, hq⟩ := hLs L List.mem_cons_self
@@ -223,7 +271,6 @@ theorem exists_eval_eq_eval_run [Fintype T] (C : SymAnd T) (Ls : List (ModPolyLa
       calc C.size ≤ 2 ^ B := hs
         _ < 2 ^ (B + 1) := Nat.pow_lt_pow_right (by norm_num) (Nat.lt_succ_self B)
         _ ≤ L.p ^ (B + 1) := Nat.pow_le_pow_left hp.two_le _
-    obtain ⟨C₁, hC₁, hf₁, hs₁⟩ := exists_eval_eq_eval_step C L hp hq hk
     have he := tower_fanIn_le hf hpB
     have h45 : 3 * B ^ 4 ≤ 5 * B ^ 5 :=
       Nat.mul_le_mul (by norm_num) (Nat.pow_le_pow_right hB (by norm_num))
@@ -231,13 +278,14 @@ theorem exists_eval_eq_eval_run [Fintype T] (C : SymAnd T) (Ls : List (ModPolyLa
       have : B ^ 1 ≤ B ^ 5 := Nat.pow_le_pow_right hB (by norm_num)
       rw [pow_one] at this
       omega
-    obtain ⟨C', hC', hf', hs'⟩ := ih C₁ (B := 5 * B ^ 5)
+    obtain ⟨hC', hf', hs'⟩ := ih (collapseStep C L (B + 1) B) (B := 5 * B ^ 5)
       (fun L' hL' =>
         have h := hLs L' (List.mem_cons_of_mem L hL')
         ⟨h.1, h.2.1.trans hB₁, fun t => lowDegree_mono hB₁ (h.2.2 t)⟩)
-      (hT.trans (Nat.pow_le_pow_right (by norm_num) hB₁)) (hf₁.trans (he.trans h45))
-      (hs₁.trans (tower_size_le (hpB.trans Nat.lt_two_pow_self.le) hT
-        (tower_log_size_le hB he)))
+      (hT.trans (Nat.pow_le_pow_right (by norm_num) hB₁))
+      ((fanIn_collapseStep_le C L (B + 1) B).trans (he.trans h45))
+      ((size_collapseStep_le C L hp.pos (B + 1) B).trans
+        (tower_size_le (hpB.trans Nat.lt_two_pow_self.le) hT (tower_log_size_le hB he)))
     have hbase : 2 * (5 * B ^ 5) ≤ (2 * B) ^ 5 :=
       calc 2 * (5 * B ^ 5) = 10 * B ^ 5 := by ring
         _ ≤ 32 * B ^ 5 := Nat.mul_le_mul_right _ (by norm_num)
@@ -247,8 +295,48 @@ theorem exists_eval_eq_eval_run [Fintype T] (C : SymAnd T) (Ls : List (ModPolyLa
         rw [List.length_cons, pow_succ']
       rw [h5, pow_mul]
       exact Nat.pow_le_pow_left hbase _
-    refine ⟨C', fun v => by rw [hC', ModPolyLayer.run_cons, hC₁], hf'.trans hexp,
+    refine ⟨fun v => by rw [collapseRun, hC', ModPolyLayer.run_cons,
+      eval_collapseStep C L hp hq hk], hf'.trans hexp,
       hs'.trans (Nat.pow_le_pow_right (by norm_num) hexp)⟩
+
+/-- **What the explicit tower collapse computes**: under the hypotheses of
+`SymAnd.exists_eval_eq_eval_run`, `collapseRun C Ls B` computes `C` after running `Ls`. -/
+theorem eval_collapseRun [Fintype T] [DecidableEq T] (C : SymAnd T) (Ls : List (ModPolyLayer T))
+    {B : ℕ} (hLs : ∀ L ∈ Ls, L.p.Prime ∧ L.p ≤ B ∧ ∀ t, L.q t ∈ lowDegree ℤ T B)
+    (hT : Fintype.card T + 1 ≤ 2 ^ B) (hf : C.fanIn ≤ B) (hs : C.size ≤ 2 ^ B) (v : T → Bool) :
+    (collapseRun C Ls B).eval v = C.eval (ModPolyLayer.run Ls v) :=
+  (collapseRun_spec C Ls hLs hT hf hs).1 v
+
+/-- The explicit tower collapse has fan-in at most `(2B) ^ (5 ^ L)`. -/
+theorem fanIn_collapseRun_le [Fintype T] [DecidableEq T] (C : SymAnd T)
+    (Ls : List (ModPolyLayer T)) {B : ℕ}
+    (hLs : ∀ L ∈ Ls, L.p.Prime ∧ L.p ≤ B ∧ ∀ t, L.q t ∈ lowDegree ℤ T B)
+    (hT : Fintype.card T + 1 ≤ 2 ^ B) (hf : C.fanIn ≤ B) (hs : C.size ≤ 2 ^ B) :
+    (collapseRun C Ls B).fanIn ≤ (2 * B) ^ 5 ^ Ls.length :=
+  (collapseRun_spec C Ls hLs hT hf hs).2.1
+
+/-- The explicit tower collapse has at most `2 ^ ((2B) ^ (5 ^ L))` AND gates. -/
+theorem size_collapseRun_le [Fintype T] [DecidableEq T] (C : SymAnd T)
+    (Ls : List (ModPolyLayer T)) {B : ℕ}
+    (hLs : ∀ L ∈ Ls, L.p.Prime ∧ L.p ≤ B ∧ ∀ t, L.q t ∈ lowDegree ℤ T B)
+    (hT : Fintype.card T + 1 ≤ 2 ^ B) (hf : C.fanIn ≤ B) (hs : C.size ≤ 2 ^ B) :
+    (collapseRun C Ls B).size ≤ 2 ^ (2 * B) ^ 5 ^ Ls.length :=
+  (collapseRun_spec C Ls hLs hT hf hs).2.2
+
+/-- **Collapsing a tower of modular layers** [BeigelTarui1994, Lemma 2.8]. Let every layer of
+`Ls` have a prime modulus at most `B` and slot polynomials of degree at most `B`, with
+`|T| + 1 ≤ 2 ^ B`. A `SYM ∘ AND` circuit of fan-in at most `B` and size at most `2 ^ B`, applied
+after running `Ls`, is computed by a single `SYM ∘ AND` circuit of fan-in at most
+`(2B) ^ (5 ^ L)` and size at most `2 ^ ((2B) ^ (5 ^ L))`, where `L` is the number of layers. The
+circuit is `SymAnd.collapseRun C Ls B`. -/
+theorem exists_eval_eq_eval_run [Fintype T] (C : SymAnd T) (Ls : List (ModPolyLayer T)) {B : ℕ}
+    (hLs : ∀ L ∈ Ls, L.p.Prime ∧ L.p ≤ B ∧ ∀ t, L.q t ∈ lowDegree ℤ T B)
+    (hT : Fintype.card T + 1 ≤ 2 ^ B) (hf : C.fanIn ≤ B) (hs : C.size ≤ 2 ^ B) :
+    ∃ C' : SymAnd T, (∀ v, C'.eval v = C.eval (ModPolyLayer.run Ls v)) ∧
+      C'.fanIn ≤ (2 * B) ^ 5 ^ Ls.length ∧ C'.size ≤ 2 ^ (2 * B) ^ 5 ^ Ls.length := by
+  classical
+  exact ⟨collapseRun C Ls B, eval_collapseRun C Ls hLs hT hf hs,
+    fanIn_collapseRun_le C Ls hLs hT hf hs, size_collapseRun_le C Ls hLs hT hf hs⟩
 
 /-- **Every slot of a tower is a `SYM ∘ AND` circuit.** Under the hypotheses of
 `exists_eval_eq_eval_run`, slot `t` after running `Ls` is computed by a `SYM ∘ AND` circuit of
