@@ -1,13 +1,14 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Erik Demaine. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Erik Demaine
 -/
 
 module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space.Reachability
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BoundedSearch
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -21,12 +22,10 @@ import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
 
 A test `f` that is computable in polynomial time can be tried on every word of length `ℓ x`,
 for `ℓ` computable in polynomial time, within time `2 ^ O(|x| + ℓ x)`
-(`Cslib.Complexity.exists_computableInO_any_enumList`). The candidates are enumerated in place:
-the existential is reachability within two steps from the all-zero word to the all-one word of
-width `ℓ x + 1`, along an edge to `true :: w` for each accepted `w` and from every word starting
-with `true` to the all-one word (`Cslib.Complexity.boundedExistsEdge`). Savitch's algorithm
-decides it at depth `1` (`Cslib.Reachability.computableInO_savitch`). Every polynomial in the
-cost is absorbed by the exponential, so the exponent is linear in `|x| + ℓ x`, with a constant
+(`Cslib.Complexity.exists_computableInO_any_enumList`). The candidates are streamed in place by
+`Turing.MultiTapeTM.ComputableInO.exists_bits`, with independent time and space bounds.
+Every polynomial in the cost is absorbed by the exponential, so the exponent is linear in
+`|x| + ℓ x`, with a constant
 that depends on the test.
 
 The same edges give the closure of `PSPACE` under bounded existential quantification
@@ -92,8 +91,8 @@ attribute [local fun_prop] ComputableInPolyTime.fst' ComputableInPolyTime.snd'
 /-- **Bounded existential quantification in exponential time.** If a test `f` is computable within
 time and space polynomial in its encoded input, and `ℓ` is computable in unary in polynomial time,
 then whether some word of length `ℓ x` passes `f` with `x` is computable within time and space
-`2 ^ (K * ((encB x).length + ℓ x))` for a constant `K`. Savitch's algorithm decides it at depth `1`
-on the edges of `Cslib.Complexity.boundedExistsEdge`. -/
+`2 ^ (K * ((encB x).length + ℓ x))` for a constant `K`. The native bounded search reuses workspace
+and visits every candidate once. -/
 theorem exists_computableInO_any_enumList {β : Type} {encB : β ↪ List Bool}
     {f : β × List Bool → Bool} {Tf Sf : β × List Bool → ℕ}
     (hf : ComputableInO f (encPair encB encBits) encBool Tf Sf)
@@ -103,113 +102,65 @@ theorem exists_computableInO_any_enumList {β : Type} {encB : β ↪ List Bool}
     ∃ K, ComputableInO (fun x => (Cslib.BitString.enumList (ℓ x)).any fun w => f (x, w)) encB
       encBool (fun x => 2 ^ (K * ((encB x).length + ℓ x)))
       (fun x => 2 ^ (K * ((encB x).length + ℓ x))) := by
-  set encQ := encPair encB (encPair encBits encBits)
-  -- the edge test: polynomial-time tests around one call of `f`
-  have hg : ComputableInPolyTime (fun q : β × List Bool × List Bool => (q.1, q.2.2.tail))
-      encQ (encPair encB encBits) := by fun_prop
-  have hc : ComputableInPolyTime
-      (fun q : β × List Bool × List Bool => !(q.2.1.any fun b => b) && q.2.2.headD false)
-      encQ encBool := by fun_prop
-  have he : ComputableInPolyTime
-      (fun q : β × List Bool × List Bool => q.2.1.headD false && !(q.2.2.any fun b => !b))
-      encQ encBool := by fun_prop
-  obtain ⟨Tg, Sg, hTg, hSg, hgO⟩ := hg.exists_computableInO
-  obtain ⟨Tc, Sc, hTc, hSc, hcO⟩ := hc.exists_computableInO
-  obtain ⟨Te, Se, hTe, hSe, heO⟩ := he.exists_computableInO
-  have hedge := hcO.ite (hf.comp hgO) heO
-  -- the arguments of Savitch's algorithm
-  have hin : ComputableInPolyTime
-      (fun x => (x, ℓ x + 1, 1, List.replicate (ℓ x + 1) false, List.replicate (ℓ x + 1) true))
-      encB (Cslib.Reachability.encArgs encB) := by
-    unfold Cslib.Reachability.encArgs
-    fun_prop
-  obtain ⟨Ti, Si, hTi, hSi, hinO⟩ := hin.exists_computableInO
-  have h := Cslib.Reachability.computableInO_savitch (edge := boundedExistsEdge f) (par := id)
-    hedge hinO (fun _ => List.length_replicate ..) fun _ => List.length_replicate ..
-  -- every polynomial is within a constant multiple of an exponential
-  have hpoly (T₁ T₂ T₃ : β × List Bool × List Bool → ℕ) (T : β × List Bool → ℕ)
-      (h₁ : PolyBounded (fun q => (encQ q).length) T₁)
-      (h₂ : PolyBounded (fun q => (encQ q).length) T₂)
-      (h₃ : PolyBounded (fun q => (encQ q).length) T₃)
-      (hT : PolyBounded (fun q => (encPair encB encBits q).length) T) :
-      ∃ C, ∀ q, (T₁ q + if !(q.2.1.any fun b => b) && q.2.2.headD false then
-        T₂ q + T (q.1, q.2.2.tail) else T₃ q) ≤ C * 2 ^ (encQ q).length := by
-    have hcomp : PolyBounded (fun q => (encQ q).length) fun q => T (q.1, q.2.2.tail) :=
-      hT.comp hg.polyBounded_length
-    refine PolyBounded.exists_le_mul_two_pow
-      ((h₁.add ((h₂.add hcomp).add h₃)).mono fun q => ?_)
-    split_ifs <;> omega
-  obtain ⟨CT, hCT⟩ := hpoly Tc Tg Te Tf hTc hTg hTe hTf
-  obtain ⟨CS, hCS⟩ := hpoly Sc Sg Se Sf hSc hSg hSe hSf
+  let size := fun p : β × ℕ => (encPair encB encUnary p).length
+  obtain ⟨a, b, ht⟩ := hTf.exists_le
+  obtain ⟨c, d, hs⟩ := hSf.exists_le
+  let T := fun p : β × ℕ => a * (size p + 1) ^ b
+  let S := fun p : β × ℕ => c * (size p + 1) ^ d
+  have hT : PolyBounded size T := PolyBounded.of_forall_le a b fun _ => le_rfl
+  have hS : PolyBounded size S := PolyBounded.of_forall_le c d fun _ => le_rfl
+  obtain ⟨overhead, ho, h⟩ := hf.exists_bits (T := T) (S := S)
+    (fun p w hw => by
+      apply (ht (p.1, w)).trans_eq
+      simp only [T, size, length_encPair, encBits_apply, encUnary_apply,
+        List.length_replicate, hw])
+    (fun p w hw => by
+      apply (hs (p.1, w)).trans_eq
+      simp only [S, size, length_encPair, encBits_apply, encUnary_apply,
+        List.length_replicate, hw])
+  obtain ⟨C, hC⟩ := PolyBounded.exists_le_mul_two_pow ((ho.add hT).add hS)
+  have hin : ComputableInPolyTime (fun x => (x, ℓ x)) encB (encPair encB encUnary) :=
+    ComputableInPolyTime.id'.prod hℓ
+  obtain ⟨Ti, Si, hTi, hSi, hi⟩ := hin.exists_computableInO
   obtain ⟨CI, hCI⟩ := PolyBounded.exists_le_mul_two_pow hTi
   obtain ⟨CJ, hCJ⟩ := PolyBounded.exists_le_mul_two_pow hSi
-  -- the edge queries on words of width `ℓ x + 1`
-  have hq (x : β) {u v : List Bool} (hu : u ∈ Cslib.BitString.enumList (ℓ x + 1))
-      (hv : v ∈ Cslib.BitString.enumList (ℓ x + 1)) :
-      (encQ (x, u, v)).length = 2 * (encB x).length + 3 * ℓ x + 5 := by
-    simp only [encQ, length_encPair, encBits_apply, Cslib.BitString.mem_enumList.mp hu,
-      Cslib.BitString.mem_enumList.mp hv]
-    ring
-  refine ⟨12, (h.mono ((CI + CJ + CT + CS + 1) * 2 ^ 26) (fun x => ?_) fun x => ?_).of_enc_eq
-    fun x => ?_⟩
-  · -- time
+  refine ⟨3, (h.comp hi).mono (8 * (CI + CJ + C + 1)) (fun x => ?_) (fun x => ?_)⟩
+  all_goals
     set n := (encB x).length
     set L := ℓ x
-    have hmax := listMax_le (f := fun u => listMax (fun v => (Tc (x, u, v) +
-        if !(u.any fun b => b) && v.headD false then Tg (x, u, v) + Tf (x, v.tail)
-        else Te (x, u, v))) (Cslib.BitString.enumList (L + 1)))
-      (l := Cslib.BitString.enumList (L + 1)) (b := CT * 2 ^ (2 * n + 3 * L + 5))
-      fun u hu => listMax_le fun v hv => (hCT (x, u, v)).trans_eq (by rw [hq x hu hv])
-    change Ti x + 2 ^ ((L + 1 + 2) * (1 + 1)) * (((1 + 1) * (1 + (L + 1) + 1) + n + 1) ^ 2 +
-      Cslib.Reachability.edgeMax _ x (L + 1)) ≤ _
-    unfold Cslib.Reachability.edgeMax
-    have hTi := hCI x
-    have hsq : ((1 + 1) * (1 + (L + 1) + 1) + n + 1) ^ 2 ≤ 2 ^ (2 * (2 * L + n + 7)) :=
-      calc _ ≤ (2 * L + n + 7) ^ 2 := Nat.pow_le_pow_left (by omega) 2
-        _ ≤ (2 ^ (2 * L + n + 7)) ^ 2 := Nat.pow_le_pow_left Nat.lt_two_pow_self.le 2
-        _ = _ := by rw [← pow_mul, mul_comm]
-    have hE : 2 ^ ((L + 1 + 2) * (1 + 1)) * (2 ^ (2 * (2 * L + n + 7)) +
-        CT * 2 ^ (2 * n + 3 * L + 5)) ≤ (CT + 1) * 2 ^ (12 * (n + L)) * 2 ^ 26 := by
-      have h₁ : 2 ^ ((L + 1 + 2) * (1 + 1)) * 2 ^ (2 * (2 * L + n + 7)) ≤
-          2 ^ (12 * (n + L)) * 2 ^ 26 := by
-        rw [← pow_add, ← pow_add]
-        exact Nat.pow_le_pow_right (by norm_num) (by ring_nf; omega)
-      have h₂ : 2 ^ ((L + 1 + 2) * (1 + 1)) * 2 ^ (2 * n + 3 * L + 5) ≤
-          2 ^ (12 * (n + L)) * 2 ^ 26 := by
-        rw [← pow_add, ← pow_add]
-        exact Nat.pow_le_pow_right (by norm_num) (by ring_nf; omega)
-      have := Nat.mul_le_mul_left CT h₂
+    have hcost := hC (x, L)
+    simp only [length_encPair, encUnary_apply, List.length_replicate] at hcost
+    change overhead (x, L) + T (x, L) + S (x, L) ≤ C * 2 ^ (2 * n + 1 + L) at hcost
+    have hI : 2 ^ n ≤ 2 ^ (3 * (n + L)) :=
+      Nat.pow_le_pow_right (by norm_num) (by omega)
+    have hprod : 2 ^ L * 2 ^ (2 * n + 1 + L) ≤ 2 * 2 ^ (3 * (n + L)) := by
+      calc
+        _ = 2 ^ (2 * (n + L) + 1) := by rw [← pow_add]; congr 1; omega
+        _ ≤ 2 ^ (3 * (n + L) + 1) := Nat.pow_le_pow_right (by norm_num) (by omega)
+        _ = _ := by rw [pow_succ, Nat.mul_comm]
+    have hcount : 1 ≤ 2 ^ L := Nat.one_le_two_pow
+    have hsingle : 2 ^ (2 * n + 1 + L) ≤ 2 * 2 ^ (3 * (n + L)) := by
+      have := Nat.mul_le_mul_right (2 ^ (2 * n + 1 + L)) hcount
       nlinarith
-    have hI : 2 ^ n ≤ 2 ^ (12 * (n + L)) := Nat.pow_le_pow_right (by norm_num) (by omega)
-    have hmono := Nat.mul_le_mul_left (2 ^ ((L + 1 + 2) * (1 + 1)))
-      (Nat.add_le_add hsq hmax)
-    have hX : 1 ≤ 2 ^ (12 * (n + L)) := Nat.one_le_two_pow
-    calc _ ≤ CI * 2 ^ n + (CT + 1) * 2 ^ (12 * (n + L)) * 2 ^ 26 :=
-          Nat.add_le_add hTi (hmono.trans hE)
-      _ ≤ _ := by nlinarith
-  · -- space
-    set n := (encB x).length
-    set L := ℓ x
-    have hmax := listMax_le (f := fun u => listMax (fun v => (Sc (x, u, v) +
-        if !(u.any fun b => b) && v.headD false then Sg (x, u, v) + Sf (x, v.tail)
-        else Se (x, u, v))) (Cslib.BitString.enumList (L + 1)))
-      (l := Cslib.BitString.enumList (L + 1)) (b := CS * 2 ^ (2 * n + 3 * L + 5))
-      fun u hu => listMax_le fun v hv => (hCS (x, u, v)).trans_eq (by rw [hq x hu hv])
-    change Si x + (1 + 1) * (1 + (L + 1) + 1) + n + Cslib.Reachability.edgeMax _ x (L + 1) ≤ _
-    unfold Cslib.Reachability.edgeMax
-    have hSi := hCJ x
-    have hX : 2 ^ (2 * n + 3 * L + 5) ≤ 2 ^ (12 * (n + L)) * 2 ^ 5 := by
-      rw [← pow_add]
-      exact Nat.pow_le_pow_right (by norm_num) (by omega)
-    have hI : 2 ^ n ≤ 2 ^ (12 * (n + L)) := Nat.pow_le_pow_right (by norm_num) (by omega)
-    have hL : (1 + 1) * (1 + (L + 1) + 1) + n ≤ 6 * 2 ^ (12 * (n + L)) := by
-      have : n + L < 2 ^ (n + L) := Nat.lt_two_pow_self
-      have : 2 ^ (n + L) ≤ 2 ^ (12 * (n + L)) := Nat.pow_le_pow_right (by norm_num) (by omega)
-      omega
-    have := Nat.mul_le_mul_left CS hX
+    have hdouble : (2 ^ L + 1) * 2 ^ (2 * n + 1 + L) ≤
+        4 * 2 ^ (3 * (n + L)) := by nlinarith
+    have hnonzero : 1 ≤ 2 ^ (3 * (n + L)) := Nat.one_le_two_pow
+  · change Ti x + (2 ^ L + 1) * (overhead (x, L) + T (x, L)) ≤
+      8 * (CI + CJ + C + 1) * (2 ^ (3 * (n + L)) + 1)
+    have hiT := hCI x
+    change Ti x ≤ CI * 2 ^ n at hiT
+    have htest : overhead (x, L) + T (x, L) ≤ C * 2 ^ (2 * n + 1 + L) := by omega
+    have hscaled := Nat.mul_le_mul_left (2 ^ L + 1) htest
+    have hexp := Nat.mul_le_mul_left C hdouble
+    have hi' := Nat.mul_le_mul_left CI hI
     nlinarith
-  · congr 1
-    rw [Bool.eq_iff_iff, id, savitch_boundedExistsEdge f x (ℓ x)]
-    simp only [List.any_eq_true, Cslib.BitString.mem_enumList]
+  · change Si x + (overhead (x, L) + S (x, L)) ≤
+      8 * (CI + CJ + C + 1) * (2 ^ (3 * (n + L)) + 1)
+    have hiS := hCJ x
+    change Si x ≤ CJ * 2 ^ n at hiS
+    have htest : overhead (x, L) + S (x, L) ≤ C * 2 ^ (2 * n + 1 + L) := by omega
+    have hexp := Nat.mul_le_mul_left C hsingle
+    have hi' := Nat.mul_le_mul_left CJ hI
+    nlinarith
 
 end Cslib.Complexity
