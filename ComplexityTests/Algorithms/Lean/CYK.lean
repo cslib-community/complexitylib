@@ -105,6 +105,12 @@ example : ['(', ')', ')', '('] ∉ dyck.toCFG.language := by decide
 example : ['('] ∉ dyck.toCFG.language := by decide
 example : [')', '('] ∉ dyck.toCFG.language := by decide
 
+/-- Insertion skips repeats: the cell of `()()` holds `S` and `Z` once each, although each is
+found at two split points. (`S` is given type `dyck.NT` so that `decide` finds the
+`DecidableEq dyck.NT` instance.) -/
+example : table dyck ['(', ')', '(', ')'] 4 0 4 = [show dyck.NT from D.S, dyck.initial] := by
+  decide
+
 /-- The empty word is free; on `()()` the cost is `(9 + 1) (4 + C(5, 3)) = 140`. -/
 example : (cykM dyck []).time = 0 := rfl
 example : (cykM dyck ['(', ')', '(', ')']).time = 140 := by

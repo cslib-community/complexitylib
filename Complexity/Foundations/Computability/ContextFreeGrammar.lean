@@ -20,10 +20,16 @@ from `v`, the basic fact behind parse trees and the CYK algorithm. It also descr
 derivations from a terminal word (there are none but the trivial one) and from a single
 nonterminal (the trivial one, or a first step by a rule).
 
+Splitting lemmas of this kind appear in unmerged Mathlib work: `DerivesIn.append_split`, for
+derivations of bounded length, in Loitzl and Dvořák's leanprover-community/mathlib4#19943
+(closed), and the private special case `head_tail_split` (for `s :: ss`) in Mündler-Sasahara's
+open leanprover-community/mathlib4#33601.
+
 ## Main results
 
 * `ContextFreeGrammar.derives_append_iff`: `u ++ v` derives `w` iff `w = x ++ y` with `u`
-  deriving `x` and `v` deriving `y`; `Derives.append_split` is the forward direction.
+  deriving `x` and `v` deriving `y`; `Derives.append_split` is the forward direction and
+  `Derives.append` the converse.
 * `ContextFreeGrammar.derives_map_terminal_iff`: a word of terminals derives only itself.
 * `ContextFreeGrammar.produces_nonterminal_iff`, `ContextFreeGrammar.derives_nonterminal_iff`:
   one-step rewrites and derivations from a single nonterminal.

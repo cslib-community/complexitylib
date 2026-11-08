@@ -12,16 +12,16 @@ public import Complexity.Foundations.Computability.ContextFreeGrammar
 /-!
 # Grammars in Chomsky normal form
 
-A context-free grammar is in Chomsky normal form when every rule has the form `A → B C` or
-`A → a`, except that the start symbol `S` may have the rule `S → ε`
-[Sipser, Definition 2.8][Sipser2013]. `Cslib.ChomskyNormalFormGrammar` bundles such a grammar:
-its rules form a list, so that algorithms can iterate over them, and a Boolean flag records the
-rule `S → ε`. When that flag is set, `S` may not occur on the right-hand side of a rule; this is
-what keeps `ε` out of the languages of all the other nonterminals. Without the rule `S → ε`, the
-start symbol may occur on right-hand sides, as in Hopcroft, Motwani and Ullman's normal form
-[Hopcroft2006], which has no `ε`-rule at all. `ChomskyNormalFormGrammar.toCFG` reads the grammar
-as a Mathlib `ContextFreeGrammar`, and every statement about derivations and languages is made
-through it.
+In Sipser's definition [Sipser, Definition 2.8][Sipser2013], a context-free grammar is in
+Chomsky normal form when every rule has the form `A → B C` or `A → a`, where `B` and `C` are not
+the start symbol `S`, except that the rule `S → ε` is permitted. Hopcroft, Motwani and Ullman's
+normal form [Hopcroft2006] has no `ε`-rule and allows `S` on right-hand sides.
+`Cslib.ChomskyNormalFormGrammar` covers both: its rules form a list, so that algorithms can
+iterate over them, and a Boolean flag records the rule `S → ε`. Only when that flag is set must
+`S` occur on no right-hand side; this is what keeps `ε` out of the languages of all the other
+nonterminals. Sipser's form is the case in which `S` occurs on no right-hand side regardless.
+`ChomskyNormalFormGrammar.toCFG` reads the grammar as a Mathlib `ContextFreeGrammar`, and every
+statement about derivations and languages is made through it.
 
 The design (rule constructors `leaf` and `node`, the field names `NT`, `initial` and `rules`, and
 the embedding `toCFG`) follows Loitzl and Dvořák's Mathlib pull request

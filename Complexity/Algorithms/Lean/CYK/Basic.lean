@@ -47,6 +47,8 @@ machine-level polynomial-time decider; the cost below is in the `TimeM` model.
 * `Cslib.Algorithms.Lean.CYK.cyk_eq_true_iff`: CYK accepts exactly the words of the language.
 * `Cslib.Algorithms.Lean.CYK.decidableMemLanguage`: membership in the language of a grammar in
   Chomsky normal form is decidable.
+* `Cslib.Algorithms.Lean.CYK.nodup_table_and_length_le`: every cell is a list without repetitions
+  of at most `|R|` nonterminals.
 * `Cslib.Algorithms.Lean.CYK.ret_cykM`: `cykM` returns `cyk`.
 * `Cslib.Algorithms.Lean.CYK.time_cykM`: the cost is exactly `(|R| + 1) (n + C(n + 1, 3))` on a
   word of length `n ≥ 1` with `|R|` rules (and `0` on the empty word), so
@@ -60,8 +62,15 @@ list. A cell of length one costs one unit to read its letter and one scan. A cel
 `l ≥ 2` costs, for each of its `l - 1` split points, one unit to read the two subcells and one
 scan. Reading and writing a table cell, testing membership of a nonterminal in a cell and adding
 a nonterminal to a cell are counted as constant-time steps, as on a random-access machine holding
-the table as an array of sets of nonterminals (for a fixed grammar, cells have constant size). The
-final lookup of the start symbol and the test for the empty word are not charged.
+the table as an array of sets of nonterminals. The cells are lists without repetitions of at most
+`|R|` nonterminals (`Cslib.Algorithms.Lean.CYK.nodup_table_and_length_le`), so for a fixed grammar
+these operations act on sets of bounded size. The final lookup of the start symbol and the test
+for the empty word are not charged.
+
+The pure `Cslib.Algorithms.Lean.CYK.cyk` is a specification of the algorithm, convenient for
+proofs and for `decide` on small inputs, not a fast executable: its table is a function built by
+a chain of updates, so evaluating a cell recomputes earlier cells. The cost statements are about
+`Cslib.Algorithms.Lean.CYK.cykM` in the `TimeM` model above.
 
 ## References
 
@@ -91,10 +100,11 @@ variable {T : Type*} [DecidableEq T] (G : ChomskyNormalFormGrammar T) [Decidable
   | leaf .. => none
   | node A B C => if B ∈ L ∧ C ∈ R then some A else none
 
-/-- Scan the rules once, adding the nonterminal of every match to `acc`. -/
+/-- Scan the rules once, adding the nonterminal of every match to `acc` unless it is already there
+(`List.insert`). -/
 @[expose] def scan (f : ChomskyNormalFormRule T G.NT → Option G.NT) (acc : List G.NT) :
     List G.NT :=
-  G.rules.foldl (fun acc r => (f r).elim acc (· :: acc)) acc
+  G.rules.foldl (fun acc r => (f r).elim acc (acc.insert ·)) acc
 
 /-- A CYK table: `tbl i l` lists nonterminals for the subword of length `l` starting at `i`. -/
 abbrev Table (G : ChomskyNormalFormGrammar T) := ℕ → ℕ → List G.NT
@@ -138,8 +148,8 @@ nonempty word when the start symbol is in the cell of the whole word. -/
 variable {G w}
 
 omit [DecidableEq T] [DecidableEq G.NT] in
-private theorem mem_foldl_elim {α β : Type*} (f : α → Option β) (l : List α) (acc : List β)
-    (b : β) : b ∈ l.foldl (fun acc r => (f r).elim acc (· :: acc)) acc ↔
+private theorem mem_foldl_elim {α β : Type*} [DecidableEq β] (f : α → Option β) (l : List α)
+    (acc : List β) (b : β) : b ∈ l.foldl (fun acc r => (f r).elim acc (acc.insert ·)) acc ↔
       b ∈ acc ∨ ∃ r ∈ l, f r = some b := by
   induction l generalizing acc with
   | nil => simp
@@ -147,15 +157,33 @@ private theorem mem_foldl_elim {α β : Type*} (f : α → Option β) (l : List 
     rw [List.foldl_cons, ih]
     cases h : f r with
     | none => simp [h]
-    | some c => simp only [Option.elim_some, List.mem_cons]; grind
+    | some c => simp only [Option.elim_some, List.mem_insert_iff]; grind
 
 omit [DecidableEq T] [DecidableEq G.NT] in
+private theorem nodup_foldl_elim {α β : Type*} [DecidableEq β] (f : α → Option β) (l : List α)
+    {acc : List β} (h : acc.Nodup) :
+    (l.foldl (fun acc r => (f r).elim acc (acc.insert ·)) acc).Nodup := by
+  induction l generalizing acc with
+  | nil => exact h
+  | cons r l ih =>
+    rw [List.foldl_cons]
+    refine ih ?_
+    cases f r with
+    | none => exact h
+    | some c => exact h.insert
+
+omit [DecidableEq T] in
 /-- A scan adds exactly the matches of the rules. -/
 theorem mem_scan {f : ChomskyNormalFormRule T G.NT → Option G.NT} {acc : List G.NT} {A : G.NT} :
     A ∈ scan G f acc ↔ A ∈ acc ∨ ∃ r ∈ G.rules, f r = some A :=
   mem_foldl_elim f G.rules acc A
 
-omit [DecidableEq G.NT] in
+omit [DecidableEq T] in
+/-- A scan adds no repetitions. -/
+theorem nodup_scan {f : ChomskyNormalFormRule T G.NT → Option G.NT} {acc : List G.NT}
+    (h : acc.Nodup) : (scan G f acc).Nodup :=
+  nodup_foldl_elim f G.rules h
+
 theorem mem_leafCell {i : ℕ} {A : G.NT} :
     A ∈ leafCell G w i ↔ ∃ a, w[i]? = some a ∧ leaf A a ∈ G.rules := by
   rw [leafCell, mem_scan]
@@ -334,6 +362,49 @@ theorem cyk_eq_true_iff : cyk G w = true ↔ w ∈ G.toCFG.language := by
 instance decidableMemLanguage : DecidablePred (· ∈ G.toCFG.language) :=
   fun w => decidable_of_iff _ (cyk_eq_true_iff (G := G) (w := w))
 
+/-! ### Size of the cells -/
+
+/-- Every nonterminal in a cell is the left-hand side of a rule. -/
+theorem exists_rule_of_mem_cell {tbl : Table G} {i l : ℕ} {A : G.NT}
+    (h : A ∈ cell G w tbl i l) : ∃ r ∈ G.rules, r.input = A := by
+  unfold cell at h
+  split_ifs at h
+  · obtain ⟨a, -, hr⟩ := mem_leafCell.mp h
+    exact ⟨_, hr, rfl⟩
+  · obtain ⟨k, -, B, C, hr, -⟩ := mem_nodeCell.mp h
+    exact ⟨_, hr, rfl⟩
+
+theorem nodup_cell (tbl : Table G) (i l : ℕ) : (cell G w tbl i l).Nodup := by
+  unfold cell nodeCell leafCell
+  split_ifs
+  · exact nodup_scan List.nodup_nil
+  · suffices ∀ (ks : List ℕ) (acc : List G.NT), acc.Nodup → (ks.foldl (fun acc k =>
+        scan G (nodeMatch G (tbl i (k + 1)) (tbl (i + k + 1) (l - k - 1))) acc) acc).Nodup from
+      this _ _ List.nodup_nil
+    intro ks
+    induction ks with
+    | nil => exact fun _ h => h
+    | cons k ks ih => exact fun acc h => ih _ (nodup_scan h)
+
+/-- A cell has at most one entry per rule. -/
+theorem length_cell_le (tbl : Table G) (i l : ℕ) : (cell G w tbl i l).length ≤ G.rules.length := by
+  have hsub : cell G w tbl i l ⊆ G.rules.map ChomskyNormalFormRule.input := fun A hA => by
+    obtain ⟨r, hr, rfl⟩ := exists_rule_of_mem_cell hA
+    exact List.mem_map_of_mem hr
+  simpa using ((nodup_cell tbl i l).subperm hsub).length_le
+
+/-- Every cell of the table is a list without repetitions of at most `|R|` nonterminals, for a
+grammar with `|R|` rules. -/
+theorem nodup_table_and_length_le (L i l : ℕ) :
+    (table G w L i l).Nodup ∧ (table G w L i l).length ≤ G.rules.length := by
+  induction L generalizing i l with
+  | zero => simp [table]
+  | succ L ih =>
+    rw [table, level_apply]
+    split_ifs
+    · exact ⟨nodup_cell _ _ _, length_cell_le _ _ _⟩
+    · exact ih i l
+
 /-! ### Cost -/
 
 open TimeM
@@ -343,7 +414,7 @@ variable (G w)
 /-- `scan` in `TimeM`, charging one unit per rule examined. -/
 @[expose] def scanM (f : ChomskyNormalFormRule T G.NT → Option G.NT) (acc : List G.NT) :
     TimeM ℕ (List G.NT) :=
-  G.rules.foldlM (fun acc r => do ✓ return (f r).elim acc (· :: acc)) acc
+  G.rules.foldlM (fun acc r => do ✓ return (f r).elim acc (acc.insert ·)) acc
 
 /-- `leafCell` in `TimeM`: one unit to read the letter, and one scan. -/
 @[expose] def leafCellM (i : ℕ) : TimeM ℕ (List G.NT) := do
@@ -379,15 +450,15 @@ scan. -/
     return G.initial ∈ tbl 0 w.length
 
 /-- The charge for one cell of length `l`. -/
-@[expose] def cellCost (l : ℕ) : ℕ :=
+def cellCost (l : ℕ) : ℕ :=
   if l = 1 then G.rules.length + 1 else (l - 1) * (G.rules.length + 1)
 
-omit [DecidableEq T] [DecidableEq G.NT] in
+omit [DecidableEq T] in
 @[simp] theorem ret_scanM (f) (acc) : (scanM G f acc).ret = scan G f acc := by
   rw [scanM, ret_foldlM]
   rfl
 
-omit [DecidableEq T] [DecidableEq G.NT] in
+omit [DecidableEq T] in
 @[simp] theorem time_scanM (f) (acc) : (scanM G f acc).time = G.rules.length := by
   rw [scanM, time_foldlM_of_time_eq _ _ _ (c := 1) (fun _ _ => rfl), mul_one]
 
