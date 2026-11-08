@@ -18,16 +18,19 @@ import Mathlib.LinearAlgebra.Dimension.RankNullity
 # The no-cloning theorem
 
 No physical process copies an unknown pure quantum state [Wootters, Zurek][WoottersZurek1982],
-[Dieks][Dieks1982]; [de Wolf][deWolf2019], Chapter 1, Exercise 12. Formally, for pure states
-in a Hilbert space `E` and a fixed blank state `e`:
+[Dieks][Dieks1982]. This file proves the **ancilla-free** form, as in [de Wolf][deWolf2019],
+Chapter 1, Exercise 12: the copying map acts on the two registers `E ⊗ E` alone, input and
+blank. For pure states in a Hilbert space `E` and a fixed blank state `e`:
 
-* **Inner-product dichotomy.** If an isometry (in particular a unitary) `U` of `E ⊗ E` copies two
-  unit states, `U(ψ ⊗ e) = ψ ⊗ ψ` and `U(φ ⊗ e) = φ ⊗ φ`, then `⟪ψ, φ⟫ = ⟪ψ, φ⟫²` because `U`
-  preserves inner products, so `ψ` and `φ` are orthogonal or equal
-  (`Cslib.Quantum.inner_eq_zero_or_eq_of_clone`). Copying is possible only for a set of mutually
-  orthogonal states, such as a computational basis.
-* **No linear cloner.** If `dim E ≥ 2`, no linear map `L` of `E ⊗ E` copies every unit state, even
-  up to a nonzero factor: `L(ψ ⊗ e) = c_ψ (ψ ⊗ ψ)` with `c_ψ ≠ 0` fails for some unit `ψ`
+* **Inner-product dichotomy** (the standard inner-product argument). If an isometry (in
+  particular a unitary) `U` of `E ⊗ E` copies two unit states, `U(ψ ⊗ e) = ψ ⊗ ψ` and
+  `U(φ ⊗ e) = φ ⊗ φ`, then `⟪ψ, φ⟫ = ⟪ψ, φ⟫²` because `U` preserves inner products. So `ψ` and `φ`
+  are orthogonal or equal (`Cslib.Quantum.inner_eq_zero_or_eq_of_clone`). Copying is possible
+  only for a set of mutually orthogonal states, such as a computational basis.
+* **No linear cloner** (the linearity and superposition argument of Wootters–Zurek and Dieks, and
+  of the hint to de Wolf's Exercise 12: basis states, then a superposition). If `dim E ≥ 2`, no
+  linear map `L` of `E ⊗ E` copies every unit state, even up to a nonzero factor:
+  `L(ψ ⊗ e) = c_ψ (ψ ⊗ ψ)` with `c_ψ ≠ 0` fails for some unit `ψ`
   (`Cslib.Quantum.not_exists_linearMap_clone_smul`). For orthonormal `u, v` and
   `w = (u + v)/√2`, linearity makes `L(w ⊗ e)` a combination of `u ⊗ u` and `v ⊗ v`, orthogonal
   to `u ⊗ v`, while `c_w (w ⊗ w)` has component `c_w/2 ≠ 0` along `u ⊗ v`.
@@ -35,8 +38,12 @@ in a Hilbert space `E` and a fixed blank state `e`:
 Both are stated for Mathlib's tensor product `E ⊗[ℂ] E` of inner product spaces and in
 coordinates, for matrices acting on product states `ψ ⊗ φ ∈ ℂ^{ι × ι}`
 (`Cslib.Quantum.prodState`). The coordinate impossibility needs no unitarity: it holds for every
-matrix, in particular every unitary. All statements are about pure states; no-cloning for mixed
-states (no-broadcasting) is not formalized here.
+matrix, in particular every unitary.
+
+Scope: all statements are about pure states. The copying map has no auxiliary apparatus or
+environment register. Wootters and Zurek also allow an apparatus whose final state depends on the
+input, `|ψ⟩|e⟩|A⟩ ↦ |ψ⟩|ψ⟩|A_ψ⟩`; that form is not formalized here, and neither is no-cloning for
+mixed states (no-broadcasting).
 
 ## Main results
 
@@ -70,16 +77,13 @@ section Core
 variable {E G : Type*} [NormedAddCommGroup E] [InnerProductSpace ℂ E]
   [NormedAddCommGroup G] [InnerProductSpace ℂ G]
 
-private theorem inner_self_eq_one {x : E} (hx : ‖x‖ = 1) : ⟪x, x⟫_ℂ = 1 := by
-  rw [inner_self_eq_norm_sq_to_K, hx]; simp
-
 /-- The no-cloning dichotomy for a pairing `T` with `⟪T x y, T x' y'⟫ = ⟪x, x'⟫ ⟪y, y'⟫`. -/
 private theorem inner_eq_zero_or_eq_of_clone_core (T : E → E → G)
     (hT : ∀ x y x' y', ⟪T x y, T x' y'⟫_ℂ = ⟪x, x'⟫_ℂ * ⟪y, y'⟫_ℂ)
     (U : G →ₗᵢ[ℂ] G) {ψ φ e : E} (hψ₁ : ‖ψ‖ = 1) (hφ₁ : ‖φ‖ = 1) (he : ‖e‖ = 1)
     (hψ : U (T ψ e) = T ψ ψ) (hφ : U (T φ e) = T φ φ) : ⟪ψ, φ⟫_ℂ = 0 ∨ ψ = φ := by
   have h := U.inner_map_map (T ψ e) (T φ e)
-  rw [hψ, hφ, hT, hT, inner_self_eq_one he, mul_one] at h
+  rw [hψ, hφ, hT, hT, inner_self_eq_one_of_norm_eq_one he, mul_one] at h
   rcases eq_zero_or_one_of_sq_eq_self (by rw [sq]; exact h : ⟪ψ, φ⟫_ℂ ^ 2 = ⟪ψ, φ⟫_ℂ) with h0 | h1
   · exact Or.inl h0
   · exact Or.inr ((inner_eq_one_iff_of_norm_eq_one hψ₁ hφ₁).mp h1)
@@ -94,8 +98,8 @@ private theorem not_clone_core (T : E → E → G)
     (e : E) (L : G →ₗ[ℂ] G) (c : E → ℂ) (hc : ∀ ψ, ‖ψ‖ = 1 → c ψ ≠ 0)
     (hL : ∀ ψ, ‖ψ‖ = 1 → L (T ψ e) = c ψ • T ψ ψ) : False := by
   have hvu : ⟪v, u⟫_ℂ = 0 := inner_eq_zero_symm.mp huv
-  have huu := inner_self_eq_one hu
-  have hvv := inner_self_eq_one hv
+  have huu : ⟪u, u⟫_ℂ = 1 := inner_self_eq_one_of_norm_eq_one hu
+  have hvv : ⟪v, v⟫_ℂ = 1 := inner_self_eq_one_of_norm_eq_one hv
   set s : ℂ := (((Real.sqrt 2)⁻¹ : ℝ) : ℂ) with hs_def
   have hs : starRingEnd ℂ s * s = 1 / 2 := by
     rw [hs_def, Complex.conj_ofReal, ← Complex.ofReal_mul, ← mul_inv,
@@ -135,18 +139,19 @@ section TensorProduct
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℂ E]
 
-/-- **No-cloning, inner-product form** [Wootters, Zurek][WoottersZurek1982],
-[Dieks][Dieks1982]: if an isometry `U` of `E ⊗ E` (in particular a unitary) copies two unit
-states `ψ` and `φ` onto a unit blank state `e`, then `ψ` and `φ` are orthogonal or equal. -/
+/-- **No-cloning, inner-product form**, ancilla-free: if an isometry `U` of `E ⊗ E` (in particular
+a unitary) copies two unit states `ψ` and `φ` onto a unit blank state `e`, then `ψ` and `φ` are
+orthogonal or equal. -/
 theorem inner_eq_zero_or_eq_of_clone (U : E ⊗[ℂ] E →ₗᵢ[ℂ] E ⊗[ℂ] E) {ψ φ e : E}
     (hψ : ‖ψ‖ = 1) (hφ : ‖φ‖ = 1) (he : ‖e‖ = 1)
     (hUψ : U (ψ ⊗ₜ e) = ψ ⊗ₜ ψ) (hUφ : U (φ ⊗ₜ e) = φ ⊗ₜ φ) : ⟪ψ, φ⟫_ℂ = 0 ∨ ψ = φ :=
   inner_eq_zero_or_eq_of_clone_core (fun x y => x ⊗ₜ[ℂ] y)
     (fun _ _ _ _ => TensorProduct.inner_tmul ℂ _ _ _ _) U hψ hφ he hUψ hUφ
 
-/-- **No-cloning** [Wootters, Zurek][WoottersZurek1982], [Dieks][Dieks1982], up to nonzero
-factors: if `dim E ≥ 2`, no linear map `L` of `E ⊗ E` maps `ψ ⊗ e` to a nonzero multiple of
-`ψ ⊗ ψ` for every unit state `ψ`, whatever the blank state `e`. -/
+/-- **No-cloning** [Wootters, Zurek][WoottersZurek1982], [Dieks][Dieks1982], ancilla-free and up
+to nonzero factors: if `dim E ≥ 2`, no linear map `L` of `E ⊗ E` maps `ψ ⊗ e` to a nonzero
+multiple of `ψ ⊗ ψ` for every unit state `ψ`, whatever the blank state `e`. In dimension `1` such
+a map exists, so the hypothesis `1 < Module.rank ℂ E` is needed. -/
 theorem not_exists_linearMap_clone_smul (h : 1 < Module.rank ℂ E) (e : E) :
     ¬ ∃ (L : E ⊗[ℂ] E →ₗ[ℂ] E ⊗[ℂ] E) (c : E → ℂ),
       ∀ ψ : E, ‖ψ‖ = 1 → c ψ ≠ 0 ∧ L (ψ ⊗ₜ e) = c ψ • ψ ⊗ₜ ψ := by
@@ -157,9 +162,9 @@ theorem not_exists_linearMap_clone_smul (h : 1 < Module.rank ℂ E) (e : E) :
     (fun c x y => (TensorProduct.smul_tmul' c x y).symm)
     hu hv huv e L c (fun ψ hψ => (hL ψ hψ).1) (fun ψ hψ => (hL ψ hψ).2)
 
-/-- **No-cloning** [Wootters, Zurek][WoottersZurek1982], [Dieks][Dieks1982]: if `dim E ≥ 2`, no
-linear map of `E ⊗ E` (in particular no unitary) maps `ψ ⊗ e` to `ψ ⊗ ψ` for every unit state
-`ψ`. -/
+/-- **No-cloning** [Wootters, Zurek][WoottersZurek1982], [Dieks][Dieks1982], ancilla-free: if
+`dim E ≥ 2`, no linear map of `E ⊗ E` (in particular no unitary) maps `ψ ⊗ e` to `ψ ⊗ ψ` for every
+unit state `ψ`. -/
 theorem not_exists_linearMap_clone (h : 1 < Module.rank ℂ E) (e : E) :
     ¬ ∃ L : E ⊗[ℂ] E →ₗ[ℂ] E ⊗[ℂ] E, ∀ ψ : E, ‖ψ‖ = 1 → L (ψ ⊗ₜ e) = ψ ⊗ₜ ψ := by
   rintro ⟨L, hL⟩
@@ -174,9 +179,9 @@ section Coordinates
 
 variable {ι : Type*} [Fintype ι]
 
-/-- **No-cloning, inner-product form**, for a unitary matrix `U` on `ℂ^{ι × ι}`: if `U` copies two
-unit states `ψ` and `φ` of `ℂ^ι` onto a unit blank state `e`, then `ψ` and `φ` are orthogonal
-or equal. -/
+/-- **No-cloning, inner-product form**, ancilla-free, for a unitary matrix `U` on `ℂ^{ι × ι}`: if
+`U` copies two unit states `ψ` and `φ` of `ℂ^ι` onto a unit blank state `e`, then `ψ` and `φ` are
+orthogonal or equal. -/
 theorem inner_eq_zero_or_eq_of_unitary_clone [DecidableEq ι] {U : Matrix (ι × ι) (ι × ι) ℂ}
     (hU : U ∈ unitaryGroup (ι × ι) ℂ) {ψ φ e : EuclideanSpace ℂ ι}
     (hψ : ‖ψ‖ = 1) (hφ : ‖φ‖ = 1) (he : ‖e‖ = 1)
@@ -189,9 +194,9 @@ theorem inner_eq_zero_or_eq_of_unitary_clone [DecidableEq ι] {U : Matrix (ι ×
     V.toLinearIsometry hψ hφ he (WithLp.ofLp_injective 2 ((hV _).trans hUψ))
     (WithLp.ofLp_injective 2 ((hV _).trans hUφ))
 
-/-- **No-cloning** in coordinates, up to nonzero factors: if `|ι| ≥ 2`, no matrix `U` on
-`ℂ^{ι × ι}` maps `ψ ⊗ e` to a nonzero multiple of `ψ ⊗ ψ` for every unit state `ψ` of `ℂ^ι`,
-whatever the blank state `e`. -/
+/-- **No-cloning** in coordinates, ancilla-free and up to nonzero factors: if `|ι| ≥ 2`, no
+matrix `U` on `ℂ^{ι × ι}` maps `ψ ⊗ e` to a nonzero multiple of `ψ ⊗ ψ` for every unit state `ψ`
+of `ℂ^ι`, whatever the blank state `e`. -/
 theorem not_exists_matrix_clone_smul [Nontrivial ι] (e : EuclideanSpace ℂ ι) :
     ¬ ∃ (U : Matrix (ι × ι) (ι × ι) ℂ) (c : EuclideanSpace ℂ ι → ℂ),
       ∀ ψ : EuclideanSpace ℂ ι, ‖ψ‖ = 1 →
@@ -214,8 +219,9 @@ theorem not_exists_matrix_clone_smul [Nontrivial ι] (e : EuclideanSpace ℂ ι)
     (norm_ket i) (norm_ket j) hij' e L c (fun ψ hψ => (hU ψ hψ).1) hL'
 
 /-- **No-cloning** in coordinates [Wootters, Zurek][WoottersZurek1982], [Dieks][Dieks1982];
-[de Wolf][deWolf2019], Chapter 1, Exercise 12: if `|ι| ≥ 2`, no matrix (in particular no unitary)
-`U` on `ℂ^{ι × ι}` maps `ψ ⊗ e` to `ψ ⊗ ψ` for every unit state `ψ` of `ℂ^ι`. -/
+[de Wolf][deWolf2019], Chapter 1, Exercise 12, ancilla-free: if `|ι| ≥ 2`, no matrix (in
+particular no unitary) `U` on `ℂ^{ι × ι}` maps `ψ ⊗ e` to `ψ ⊗ ψ` for every unit state `ψ` of
+`ℂ^ι`. -/
 theorem not_exists_matrix_clone [Nontrivial ι] (e : EuclideanSpace ℂ ι) :
     ¬ ∃ U : Matrix (ι × ι) (ι × ι) ℂ, ∀ ψ : EuclideanSpace ℂ ι, ‖ψ‖ = 1 →
       U *ᵥ (prodState ψ e).ofLp = (prodState ψ ψ).ofLp := by

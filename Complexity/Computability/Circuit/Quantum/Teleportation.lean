@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Circuit.Quantum.GateMatrix
 public import Complexity.Foundations.Quantum.Bell
 public import Complexity.Foundations.Quantum.Bipartite
+public import Complexity.Foundations.Quantum.Register
 public import Cslib.Probability.PMF
 
 /-!
@@ -21,7 +22,7 @@ public import Cslib.Probability.PMF
 Alice's input qubit and her half of the Bell state, then Bob's half. The protocol:
 
 1. Alice applies a CNOT to her two qubits (her input is the control), then a Hadamard to her input
-   qubit (`Cslib.Quantum.teleportCircuit`). The joint state is
+   qubit (`Cslib.Quantum.teleportUnitary`). The joint state is
    `½ ∑_{a,b} |a, b⟩ ⊗ X^b Z^a ψ` (`Cslib.Quantum.teleportState_apply`).
 2. Alice measures her two qubits in the computational basis. Each outcome `(a, b)` has probability
    `1/4`, whatever `ψ` is (`Cslib.Quantum.measure_teleportState_map_fst`), and leaves Bob's qubit in
@@ -41,7 +42,7 @@ system. Teleportation of one half of an entangled state is not formalized here.
 ## Main definitions
 
 * `Cslib.Quantum.teleportInput`: the initial state `ψ ⊗ Φ⁺`.
-* `Cslib.Quantum.teleportCircuit`: Alice's unitary, the CNOT and then the Hadamard.
+* `Cslib.Quantum.teleportUnitary`: Alice's unitary, the CNOT and then the Hadamard.
 * `Cslib.Quantum.teleportState`: the joint state before Alice's measurement.
 * `Cslib.Quantum.teleportCorrection`: Bob's correction `Z^a X^b`.
 
@@ -82,16 +83,14 @@ theorem norm_teleportInput (ψ : EuclideanSpace ℂ Bool) : ‖teleportInput ψ�
 
 /-- Alice's unitary in teleportation: a CNOT on her two qubits, controlled by her input qubit,
 followed by a Hadamard on her input qubit. -/
-noncomputable def teleportCircuit : unitaryGroup ((Bool × Bool) × Bool) ℂ :=
-  ⟨((hadamardMatrix ⊗ₖ 1) ⊗ₖ 1) * (cnotMatrix ⊗ₖ 1),
-    mul_mem (kronecker_mem_unitary
-        (kronecker_mem_unitary hadamardMatrix_mem_unitaryGroup (one_mem _)) (one_mem _))
-      (kronecker_mem_unitary cnotMatrix_mem_unitaryGroup (one_mem _))⟩
+noncomputable def teleportUnitary : unitaryGroup ((Bool × Bool) × Bool) ℂ :=
+  onFirst (onFirst ⟨hadamardMatrix, hadamardMatrix_mem_unitaryGroup⟩) *
+    onFirst ⟨cnotMatrix, cnotMatrix_mem_unitaryGroup⟩
 
 /-- The joint state of teleportation before Alice's measurement. -/
 noncomputable def teleportState (ψ : EuclideanSpace ℂ Bool) :
     EuclideanSpace ℂ ((Bool × Bool) × Bool) :=
-  unitaryEquiv teleportCircuit (teleportInput ψ)
+  unitaryEquiv teleportUnitary (teleportInput ψ)
 
 theorem norm_teleportState (ψ : EuclideanSpace ℂ Bool) : ‖teleportState ψ‖ = ‖ψ‖ := by
   rw [teleportState, LinearIsometryEquiv.norm_map, norm_teleportInput]
@@ -105,9 +104,9 @@ theorem teleportState_apply (ψ : EuclideanSpace ℂ Bool) (a b c : Bool) :
     rw [← Complex.ofReal_mul, ← mul_inv, Real.mul_self_sqrt (by norm_num)]
     norm_num
   rw [← hs]
-  simp only [teleportState, teleportCircuit, unitaryEquiv_apply, ← mulVec_mulVec,
-    kronecker_one_mulVec, hadamardMatrix_mulVec, cnotMatrix_mulVec, teleportInput_apply,
-    bell_apply]
+  simp only [teleportState, teleportUnitary, unitaryEquiv_apply, Submonoid.coe_mul, coe_onFirst,
+    ← mulVec_mulVec, kronecker_one_mulVec, hadamardMatrix_mulVec, cnotMatrix_mulVec,
+    teleportInput_apply, bell_apply]
   cases a <;> cases b <;> cases c <;> simp <;> ring
 
 /-- Bob's correction `Z^a X^b` in teleportation: first `X` if `b = 1`, then `Z` if `a = 1`. -/

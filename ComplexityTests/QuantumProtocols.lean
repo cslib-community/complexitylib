@@ -121,6 +121,28 @@ example : ¬ ∃ U : Matrix (Bool × Bool) (Bool × Bool) ℂ, ∀ ψ : Euclidea
     U *ᵥ (prodState ψ (ket false)).ofLp = (prodState ψ ψ).ofLp :=
   not_exists_matrix_clone (ket false)
 
+-- Not even up to a nonzero state-dependent factor.
+example : ¬ ∃ (U : Matrix (Bool × Bool) (Bool × Bool) ℂ) (c : EuclideanSpace ℂ Bool → ℂ),
+    ∀ ψ : EuclideanSpace ℂ Bool, ‖ψ‖ = 1 →
+      c ψ ≠ 0 ∧ U *ᵥ (prodState ψ (ket false)).ofLp = c ψ • (prodState ψ ψ).ofLp :=
+  not_exists_matrix_clone_smul (ket false)
+
+-- The hypothesis `Nontrivial ι` of `not_exists_matrix_clone_smul` is needed: in dimension 1 the
+-- identity clones every unit state up to the nonzero factor `1/ψ`.
+example : ∃ (U : Matrix (Unit × Unit) (Unit × Unit) ℂ) (c : EuclideanSpace ℂ Unit → ℂ),
+    ∀ ψ : EuclideanSpace ℂ Unit, ‖ψ‖ = 1 →
+      c ψ ≠ 0 ∧ U *ᵥ (prodState ψ (ket ())).ofLp = c ψ • (prodState ψ ψ).ofLp := by
+  refine ⟨1, fun ψ => (ψ.ofLp ())⁻¹, fun ψ hψ => ?_⟩
+  have h0 : ψ.ofLp () ≠ 0 := by
+    intro h
+    have : ψ = 0 := by ext u; cases u; simpa using h
+    simp [this] at hψ
+  refine ⟨inv_ne_zero h0, ?_⟩
+  ext ⟨⟨⟩, ⟨⟩⟩
+  simp only [one_mulVec, prodState_apply, ket_apply, ite_true, mul_one, Pi.smul_apply,
+    smul_eq_mul]
+  field_simp
+
 -- No linear map on `ℂ² ⊗ ℂ²` clones every unit vector of `ℂ²`.
 example : ¬ ∃ L : EuclideanSpace ℂ (Fin 2) ⊗[ℂ] EuclideanSpace ℂ (Fin 2) →ₗ[ℂ]
       EuclideanSpace ℂ (Fin 2) ⊗[ℂ] EuclideanSpace ℂ (Fin 2),
