@@ -4941,6 +4941,7 @@ public import Complexity.GameTheory.Congestion.Basic
 public import Complexity.GameTheory.Congestion.CostSharing
 public import Complexity.GameTheory.Congestion.Hedge
 public import Complexity.GameTheory.Congestion.Nonatomic
+public import Complexity.GameTheory.Congestion.PLS
 public import Complexity.GameTheory.Congestion.PigouBound
 public import Complexity.GameTheory.Congestion.Stability
 public import Complexity.GameTheory.Mechanism.Bayesian
