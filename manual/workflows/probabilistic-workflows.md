@@ -131,7 +131,7 @@ uniform inputs, defined in
   For De Morgan circuits `C₀ C₁ : Circuit signature n m`, `xorMixCircuit C₀ C₁ j c` reads `j`
   selector bits and then `j + 1` data blocks. It samples
   `xorMix (C₀.outputDist _) (C₁.outputDist _) (j + 1) c` (`outputDist_xorMixCircuit`). The selector
-  is completed to parity `c` by `parityComplete`, from
+  is completed to parity `c` by `BitString.parityComplete`, from
   [XORSampling.lean](../../Complexity/Probability/StatisticalDistance/XORSampling.lean).
   `polarizeCircuit C₀ C₁ lam ell k c` samples `polarize … (lam + 1) ell (k + 1) c`
   (`outputDist_polarizeCircuit`). Note that the coordinate counts are passed as predecessors.
@@ -141,8 +141,9 @@ uniform inputs, defined in
   An `SDInstance` is a pair of De Morgan circuits with common input and output counts, and
   `StatisticalDifference α β` is `PromiseProblem.gapMax` of `SDInstance.distance`.
   `SDInstance.exists_polarize` is the Polarization Lemma on instances, for constant thresholds
-  `0 ≤ β < α² ≤ 1`. Its inner count is `m (⌊log₂ (k + 1)⌋ + 1) - 1`, its copy count is
-  `2 ^ (b (⌊log₂ (k + 1)⌋ + 1))` and its outer count is `k`.
+  `0 ≤ β < α² ≤ 1`. It passes `m (⌊log₂ (k + 1)⌋ + 1) - 1` as `lam`, so there are
+  `m (⌊log₂ (k + 1)⌋ + 1)` inner coordinates. It passes `2 ^ (b (⌊log₂ (k + 1)⌋ + 1))` as `ell`,
+  the number of copies, and `k` as the outer argument, so there are `k + 1` outer coordinates.
   `StatisticalDifference.exists_mapsTo_polarize` states the result as `Set.MapsTo` into
   `StatisticalDifference (1 - (1/2)^(k+1)) ((1/2)^(k+1))`, for `k ≠ 0`.
 
