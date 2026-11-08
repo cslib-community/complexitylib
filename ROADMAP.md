@@ -1667,6 +1667,12 @@ pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
   rational matrices through explicit mixing and reduction theorems. Reuse the coupling and
   expander APIs and connect to the separate Stockmeyer oracle-counting track where their
   hypotheses agree.
+- **Permanent bounds** ([#3377](https://github.com/cslib-community/complexitylib/issues/3377)):
+  Brégman's upper bound for 0/1 matrices and bipartite perfect matchings, with its equality case,
+  is in `Foundations/Combinatorics/Bregman`. Remaining: Brégman's bound for nonnegative real
+  matrices, the van der Waerden lower bound for doubly stochastic matrices (Egorychev–Falikman,
+  or Gurvits's capacity proof), the Kahn–Lovász bound for perfect matchings of general graphs,
+  and their use in approximate-counting analyses.
 
 ### Constructive probabilistic methods
 
