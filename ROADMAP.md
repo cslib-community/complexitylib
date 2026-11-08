@@ -805,6 +805,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   bound, First Fit Decreasing's `11/9` bound and Lawler's faster knapsack FPTAS, building on the
   knapsack FPTAS and Next Fit and First Fit (`Algorithms/Lean/{Knapsack,BinPacking}`) and the
   `3/2` bin-packing hardness (`PCP/Approximation/BinPacking`).
+- **Scheduling:** beyond Graham's list-scheduling, LPT and precedence bounds in
+  `Algorithms/Lean/Scheduling`: real-valued processing times with precedences, Graham's anomaly
+  instances as checked examples, a general tight family for LPT, the Hochbaum–Shmoys PTAS for
+  `P || C_max`, and runtime bounds for `listSchedule` and `lptSchedule`
+  ([#2909](https://github.com/cslib-community/complexitylib/issues/2909)).
 - **A practical PCP construction:** a reasonably runnable construction and its cost on complete
   reductions; rotation certificates polynomial in the bit length of a vertex name; machine-level
   error reduction and extractors from expander walks, with certified seed and evaluation costs.
@@ -1427,9 +1432,11 @@ densities (expected revenue equals expected virtual welfare; Vickrey with a rese
 
 ### Parallel, external-memory and distributed models
 
-- **Parallel algorithms:** work–span semantics and a processor-scheduling or simulation theorem,
-  followed by prefix scan, sorting and graph primitives with both work and span bounds. State
-  processor access, synchronization and scheduling overhead explicitly.
+- **Parallel algorithms:** work–span semantics for a parallel language or PRAM model whose
+  computation DAGs feed the unit-time DAG scheduling bounds (work and span laws, greedy bound and
+  Brent's lemma are in `Algorithms/Lean/Scheduling/Brent.lean`), followed by prefix scan, sorting
+  and graph primitives with both work and span bounds. State processor access, synchronization and
+  scheduling overhead explicitly, including work stealing (Blumofe–Leiserson).
 - **Memory hierarchies:** external-memory and ideal-cache models with explicit capacity and
   block-size parameters; scanning, B-tree operations, blocked matrix multiplication and
   cache-oblivious sorting as clients. Connect arithmetic-step, memory-access and cache-miss

@@ -63,6 +63,10 @@ public import Complexity.Algorithms.Lean.Query.Matroid.LowerBound
 public import Complexity.Algorithms.Lean.Query.Submodular.Greedy
 public import Complexity.Algorithms.Lean.Query.Submodular.LowerBound
 public import Complexity.Algorithms.Lean.Query.Submodular.ValueQuery
+public import Complexity.Algorithms.Lean.Scheduling.Brent
+public import Complexity.Algorithms.Lean.Scheduling.IdenticalMachines
+public import Complexity.Algorithms.Lean.Scheduling.LPT
+public import Complexity.Algorithms.Lean.Scheduling.Precedence
 public import Complexity.Algorithms.Lean.SetCover.Greedy
 public import Complexity.Algorithms.Lean.Sort.Bitonic.Basic
 public import Complexity.Algorithms.Lean.Sort.Bitonic.Correctness
