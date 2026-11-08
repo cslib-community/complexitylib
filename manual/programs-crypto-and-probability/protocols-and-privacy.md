@@ -464,7 +464,9 @@ allocating all $2^W$ possible addresses. Input memory is supplied under the
 existing `Data.init` convention; all program reads and initialization stores are
 charged. For a projected instance, this certificate begins with the already
 projected input. For original-input projection and backward preprocessing, use
-the following interface; integration with native class streaming remains open.
+the following interface. The later `Driver.dissection_exec` endpoint composes
+original-array counters with native selected-class search; its simultaneous
+compiled-space resource theorem remains open.
 
 Import [AddXNORNativeProjection.lean](../../Complexity/Cryptanalysis/AddXNORNativeProjection.lean)
 for native projection and both counter directions from the original-width input.
@@ -613,11 +615,11 @@ that fits only the state is insufficient. These are instruction and occupied-bit
 bounds for this RAM model, not a multitape bit-time simulation.
 
 The native full-class iterator and original-input decision/witness run for one
-selected class are now proved by `AddXNORNativeClassSearch`, described below.
-Counter-selected orientation, joint counter/balance execution and a decision run
-across all classes remain unproved. In particular,
-no theorem yet composes the per-bucket lifetimes across all classes or derives
-the global peak bound from the computed $\mu_p$. The native components do not
+selected class are proved by `AddXNORNativeClassSearch`, described below.
+Counter-selected orientation and an unrolled all-class decision run are now
+composed by `Driver.dissection_exec`, described below. In particular,
+the unrolled all-class composition below releases each class, but no theorem yet
+derives the global peak bound from the computed $\mu_p$. The native components do not
 complete Lemma 8 or Theorem 7. A compact sorted-list/arena realization or a
 justified sparse-memory simulation is still needed for the source bit model.
 
@@ -701,9 +703,10 @@ For four quarters of length $k$ this sum is
 $4k2^{p+k}+2k2^{2k}$. Each quarter index has at most $(p+1)2^k$ trie nodes.
 These statements separate counted chain calls, inspected dictionary nodes and
 retained dictionary size. The dictionary is now bound before its consumer fold.
-The separate native projection, both counter directions and balance traversal
-certificates do not yet compose with this streaming implementation. The fixed-class native endpoint below now derives key/list construction with
-explicit address-fit hypotheses. Word-bit simulation, global allocation and compiled
+The native endpoint below now composes projection, both counter directions and
+balance with selected-class construction and an unrolled all-class search, under
+explicit address-fit hypotheses. This is separate from the functional trie
+implementation here. Word-bit simulation, global allocation and compiled
 peak storage remain unproved. Thus this streaming implementation is functionally certified,
 while the paper's full runtime/space endpoint remains open. The existing
 per-class means still give no bound on expected maximum balance.
@@ -972,6 +975,64 @@ The endpoint also charges projection, both preparations, register transfers,
 initialization and bound computation. These are standard WordRAM instructions,
 not bit operations or a derived global word-width theorem.
 
+For counter-selected search across all classes, import
+`Complexity.Cryptanalysis.AddXNORNativeDissection` and use `Driver.dissection_exec`.
+The `SearchLayout` record admits either orientation and states only raw address
+separation and physical word capacity. `CounterLayout` places two projection
+buffers and two reusable counter-buffer pairs before the class workspaces. Supply
+the four original quarter arrays, an original contiguous forward-half array and a
+reversed original suffix array; these may alias the quarter arrays when arranged
+contiguously. Original input ends before counter scratch; class scratch follows
+both counter-buffer pairs. Dictionary cells at and above `D` are initially zero.
+No counter values, balance, orientation, projected query, dictionary, traversal,
+termination or witness correctness is a premise.
+
+`Driver.prepare_exec` projects the raw halves and executes both native counter
+kernels. It saves their actual result pointers in a separate high register bank,
+then scans the actual arrays before any full class is stored. The backward array
+uses complemented low-bit indices. The returned balance equals `computedBalance`;
+`computedBalance_eq_classBalance` identifies it with the existing manuscript
+`classBalance`. At each key, `selectedClass` loads both actual counter cells and
+retains the smaller side, choosing forward on ties. Inverse retention runs the
+proved class kernel on reversed quarters with complemented start, target and
+class. Reversing the decoded operator words reconstructs the original witness;
+`packedClassSolution_reverse_iff` proves that both orientations decide the same
+original class. This avoids interpreting inverse continuation records as an
+original forward dictionary.
+
+Every `orientedCycle` releases the physical dictionary even on a successful hit.
+It saves and restores the witness register used by release. Its proof derives the
+release chain and key bounds from construction, frames original arrays and leaves
+all dictionary cells zero for the next class. The outer `searchClasses` composition
+visits all $2^p$ keys in order unless a valid hit exits early. `dissection_exec`
+proves a nonzero tag exactly when some original class has a solution, a zero tag
+exactly when none does, original-chain witness soundness, the actual computed
+balance and reusable empty dictionary memory. Use `Driver.witness` to decode the
+returned words according to the preserved orientation bit.
+
+`prepareTime + allTime` charges both counter projections/constructions, balance,
+all quarter setup, dictionary release, loads, comparisons and early-exit control.
+`allTime_eq_sum` expresses the conservative full-interval bound as the sum of
+`selectedTime` budgets plus two control instructions per class and a final write.
+The outer code is currently generated by unrolling the class interval; its code
+size is linear in $2^p$. A fixed-size outer while program is still needed for a
+uniform-code resource endpoint. `selected_count_le_balance` bounds the multiplicity
+selected by the actual comparison, but it is not a simultaneous compiled-prefix
+memory bound. Global asymptotic time, peak occupied storage in terms of computed
+balance, derived global word/address fit and the source sorted-list multitape bit
+model remain open. This does not complete Lemma 8/Theorem 7 or 733 ALL-main.
+
+From the repository root build
+`lake build Complexity.Cryptanalysis.AddXNORNativeDissection`, then run
+`lake env lean ComplexityTests/AddXNORNativeDissection.lean`.
+The complete client instantiates all raw premises with unequal quarters,
+non-self-inverse addition, dirty scratch and low-key collisions. It checks native
+strict inverse and forward selection, tie/forward zero-width collisions, exhausted
+empty-quarter misses, actual balance and dictionary release. If physical premises
+fail, move counter buffers before class scratch or increase word capacity; do not
+supply desired counter values or an orientation flag as an oracle.
+
+
 From the repository root, run
 `lake build Complexity.Cryptanalysis.AddXNORNativeClassSearch` followed by
 `lake env lean ComplexityTests/AddXNORNativeClassSearch.lean`.
@@ -984,11 +1045,12 @@ when fit/separation fails; dictionary cells must actually start at zero. The sca
 and retention contracts expose their returned increment register, and the scan also
 exposes its restored packed word, so outer loops reuse proved register facts.
 
-This searches one class and always retains the forward side. Actual counter-table
-reads, smaller-side orientation, iteration/release across classes and global
-computed-balance time/peak storage remain open. A local miss is not a global
-no-instance conclusion. The following backward-record consumer cannot substitute
-for the forward retained dictionary.
+This older API searches one class and always retains the forward side. The
+`Driver.dissection_exec` endpoint above supplies actual counter-table selection
+and unrolled iteration/release across classes; its global asymptotic time and
+compiled peak-storage theorem remain open. A local miss from the older API is
+not a global no-instance conclusion. The following backward-record consumer
+cannot substitute for the forward retained dictionary.
 
 For consecutive backward preparation and native forward retention, import
 `Complexity.Cryptanalysis.AddXNORNativeBackwardRetain` and apply

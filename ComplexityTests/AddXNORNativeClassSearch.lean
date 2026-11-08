@@ -60,7 +60,7 @@ private theorem checked (t : BitVec 3) (g : BitVec 2) :
       ∃ keys, Dictionary.Valid y.mem 64 (y.regs Dictionary.top) keys ∧
         keys.length ≤ (classEntries middle g
           (fun k : BitVec 2 => Forward.records first 1#3 2 k.toNat) 0 2).length := by
-  obtain ⟨y, he, hh, hm, hw, hb, keys, hk, hl⟩ := searchClass_exec
+  obtain ⟨y, he, hh, hm, hw, hb, keys, hk, hl, _⟩ := searchClass_exec
     (W := 12) (b := 5) (c := 8) (b₃ := 10) (b₄ := 12) (q₂ := 16) (q₃ := 17)
     (h := 20) (f := 24) (h₄ := 52) (f₄ := 56) (D := 64) (by decide)
     first middle middle middle 1#3 t g input

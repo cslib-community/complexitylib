@@ -110,7 +110,8 @@ quarters: native projection/reversal and inverse/forward query evaluation feed
 saved addresses into retention and scanning. The generic original-input
 `projectedProbe_exec` proves hit soundness with every setup/projection/query stage
 charged. Native forward/complemented backward counter indices are also computed;
-actual counter-table reads and orientation are not yet composed. Checked clients
+this bounded API does not read counter contents or choose orientation; the new
+composed endpoint below does. Checked clients
 include non-self-inverse addition, colliding full-state low keys, multiword
 projection order, nonzero counter indices and whole-program zero-width/local-miss
 runs. The older bounded API fixes the middle-quarter words; the new full-class
@@ -135,14 +136,26 @@ The arbitrary-width query and zero-width collision clients are checked.
 The bounded projected preparation/query/probe and original-chain reconstruction
 connection is now supplied by `projectedProbe_exec` above; these older components
 do not by themselves provide whole-class completeness.
-The new class endpoint always retains the forward class. Counter-table reads,
-smaller-side orientation, release/reuse and iteration across all classes, and a
-single global counter/balance/decision/witness execution remain unproved, as do
-global width and simultaneous computed-balance peak-space composition. This is a
-sparse WordRAM implementation, not the source's sorted lists, compact arena or
-multitape bit model. These components do not close Lemma 8 or Theorem 7;
-per-bucket space bounds must not be summed or reused as an unproved global peak
-certificate.
+The new `Driver.dissection_exec` milestone constructs both native projected counter
+tables, computes their actual balance before retaining classes, and selects the
+smaller retained side by loading those table cells. Inverse retention uses the
+reversed/complemented chain with a proved original-class/witness correspondence;
+it does not use the older backward helper as a forward dictionary substitute.
+Both directions release their actual dictionary chains, restore witness registers,
+and frame original input and counter tables. A general unrolled outer composition
+covers all low-bit classes unless an actual valid hit exits early. Its raw-input
+endpoint proves global hit/miss equivalence, original witness soundness and exact
+computed balance, with a conservative charged finite instruction bound.
+The complete client checks strict inverse and forward selection, empty-quarter
+exhaustion, zero-width multiplicity collisions and actual release. This completes
+the computed-orientation/unrolled all-class functional composition milestone.
+A fixed-size outer while program remains open: the current code family has size
+linear in the number of low-bit classes. The selected multiplicity is bounded by
+the computed balance, but simultaneous compiled-prefix occupied storage in terms
+of that balance, global asymptotic time composition, derived global width/address
+fit and the source sorted-list/compact-arena multitape bit model remain unproved.
+These components do not close Lemma 8/Theorem 7 or 733 ALL-main; per-class final
+memory or release bounds must not be promoted to a global peak-space certificate.
 The pointer/Boolean and counter-operation
 models do not replace native bit-runtime or peak-space certificates. The actual fixed
 WordRAM reachable-state array program now has an unrestricted standard-input-to-halt

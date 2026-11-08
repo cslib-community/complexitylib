@@ -148,7 +148,10 @@ theorem searchClass_exec {W m p b c b₃ b₄ q₂ q₃ h f h₄ f₄ D : ℕ}
       (y.regs operand ≠ 0 → y.regs operand - 1 < 2 ^ as.length ∧
         y.regs bits < 2 ^ bs.length ∧ y.regs operators < 2 ^ cs.length ∧
         y.regs firstOperators < 2 ^ ds.length) ∧
-      ∃ keys, Dictionary.Valid y.mem D (y.regs Dictionary.top) keys ∧ keys.length ≤ es.length := by
+      ∃ keys, Dictionary.Valid y.mem D (y.regs Dictionary.top) keys ∧ keys.length ≤ es.length ∧
+        (∀ a, a < q₂ → y.mem a = x.mem a) ∧
+        (∀ a, D ≤ a → Dictionary.erasedMemory y.mem D keys a = 0) ∧
+        (∀ k ∈ keys, k < 2 ^ m) ∧ y.regs Dictionary.table = D := by
   dsimp only
   have hA := Nat.two_pow_pos as.length
   have hB := Nat.two_pow_pos bs.length
@@ -182,7 +185,7 @@ theorem searchClass_exec {W m p b c b₃ b₄ q₂ q₃ h f h₄ f₄ D : ℕ}
   have layout := classLayout_exec c q₂ bs.length (2 ^ m) (2 ^ p) g.toNat h D u
     (hfit.of_le (by have := g.isLt; omega))
   have empty (a : ℕ) (ha : D ≤ a) : r.mem a = 0 := (original a (Or.inr ha)).trans (hzero a ha)
-  obtain ⟨v, hv, vm, vt, _, keys, vk, vlen, _⟩ := retainClass_exec
+  obtain ⟨v, hv, vm, vt, _, keys, vk, vlen, vrestore⟩ := retainClass_exec
     (W := W) (a := as.length) (b := c) (q := q₂) (h := h) (D := D)
     (boundary := f + 3 * 2 ^ as.length) bs g fs r
     (by simp +decide [r, fullBase, projectedBase, count, fullModulus, projectedModulus,
@@ -256,7 +259,7 @@ theorem searchClass_exec {W m p b c b₃ b₄ q₂ q₃ h f h₄ f₄ D : ℕ}
     exact nativeClassHit_iff hp as bs cs ds s t g D r.mem
       (fun q => empty _ (by simp only [Dictionary.slot]; omega))
   refine ⟨y, hz.seq (hu.seq (layout.seq (hv.seq (layout₃.seq (limit.seq hy))))),
-    tag, ?_, ?_, ?_, keys, ?_, vlen⟩
+    tag, ?_, ?_, ?_, keys, ?_, vlen, ?_, ?_, ?_, ?_⟩
   · constructor
     · intro hz hs; exact (tag.mpr hs) hz
     · intro hn; by_contra hz; exact hn (tag.mp hz)
@@ -289,5 +292,26 @@ theorem searchClass_exec {W m p b c b₃ b₄ q₂ q₃ h f h₄ f₄ D : ℕ}
         simp only [Code.Preserves, Op.dest, ne_eq, Option.some.injEq]
         decide))
     simpa only [yt, ym, start, ready, Data.set_mem] using vk
+  · intro a ha
+    rw [ym]
+    change v.mem a = x.mem a
+    rw [frame _ (by omega), original _ (Or.inl ha)]
+  · intro a ha
+    have hmem : y.mem = v.mem := by simpa only [start, ready, Data.set_mem] using ym
+    rw [hmem, vrestore]
+    exact empty a ha
+  · intro k hk
+    have hpresent := vk.present k |>.mpr hk
+    rw [vm, Dictionary.filledMemory_present_iff D es r.mem 0 k
+      (empty _ (by simp only [Dictionary.slot]; omega))] at hpresent
+    obtain ⟨e, he, heq⟩ := hpresent
+    have hh := (mem_forwardClass hp as bs s g e).mp he
+    rw [← heq, hh.2.2.1]
+    exact (eval (((decode as.length e.first).zip as) ++
+      ((decode bs.length e.second).zip bs)) s).isLt
+  · have ht := (limit.seq hy).regs_eq (by decide :
+      (Code.seq (ram[ one ← #1; stop ← one <<< count ]) probeClass).Preserves Dictionary.table)
+    simpa +decide [start, ready, Dictionary.table, one, stop] using ht
+
 
 end Cslib.Cryptanalysis.AddXNOR.Native.Quarter
