@@ -3,7 +3,7 @@ Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
-import Complexity.Foundations.Probability.DetectedStage
+import Complexity.Computability.LogSpaceDerandomization.DetectedStage
 import Mathlib.Analysis.SpecialFunctions.Exponential
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Tactic.FinCases
