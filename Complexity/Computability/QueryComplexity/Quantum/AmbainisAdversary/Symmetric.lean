@@ -36,8 +36,10 @@ behind them.
   (`Cslib.Quantum.one_sub_mul_card_le_four_mul_of_majority`), and `N ≤ 72 T` at error `1/3`
   (`Cslib.Quantum.card_le_seventy_two_mul_of_majority`).
 
-For total functions the parity and threshold bounds also follow from the spectral-sensitivity
-bound `Cslib.Quantum.one_sub_mul_spectralSensitivity_le`. The layer bound
+For total functions the parity and threshold bounds would also follow from the
+spectral-sensitivity bound `Cslib.Quantum.one_sub_mul_spectralSensitivity_le`, since
+`λ(PARITY_N) = N` and `λ(Th^N_k) = √(k (N - k + 1))`; the library does not prove these values.
+The layer bound
 `one_sub_mul_sqrt_le_two_mul_of_weight` constrains the algorithm only on two weight layers. The
 constants are those of this proof. The source states `Ω(N)` bounds.
 

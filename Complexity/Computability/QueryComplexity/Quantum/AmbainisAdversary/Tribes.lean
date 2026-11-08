@@ -21,12 +21,13 @@ Tribes (`Cslib.BitString.tribes`, an `OR` of `AND`s) is true when some block is 
 two functions are De Morgan duals.
 
 [Ambainis2002], Theorem 4, shows that the `AND` of `√N` `OR`s of `√N` bits takes `Ω(√N)` quantum
-queries, whereas block sensitivity and the polynomial method give only `Ω(N^{1/4})` for it. The
-relation is that of single bit flips between the inputs with exactly one true bit in every block
-and those with one all-false block and exactly one true bit in every other block. An input of the
-first kind has `w` neighbors of the second, and an input of the second kind has `s` neighbors of
-the first (`Cslib.Quantum.one_sub_mul_sqrt_le_two_mul_of_neighbors`). So an algorithm computing the
-`AND` of `OR`s with error `ε ≤ 1/2` has `(1 - 2√(ε(1-ε))) √(w s) ≤ 2T`
+queries, whereas the `√bs(f)` lower bounds of the hybrid and polynomial methods give only
+`Ω(N^{1/4})` for it, since its block sensitivity is `Θ(√N)`. The relation is that of single bit
+flips between the inputs with exactly one true bit in every block and those with one all-false
+block and exactly one true bit in every other block. An input of the first kind has `w` neighbors
+of the second, and an input of the second kind has `s` neighbors of the first
+(`Cslib.Quantum.one_sub_mul_sqrt_le_two_mul_of_neighbors`). So an algorithm computing the `AND` of
+`OR`s with error `ε ≤ 1/2` has `(1 - 2√(ε(1-ε))) √(w s) ≤ 2T`
 (`Cslib.Quantum.one_sub_mul_sqrt_le_two_mul_of_forall_exists`), which is Theorem 4 when
 `w = s = √N`. The same bound holds for Tribes
 (`Cslib.Quantum.one_sub_mul_sqrt_le_two_mul_of_tribes`). At error `1/3` both give

@@ -431,20 +431,18 @@ theorem one_sub_mul_sqrt_le_two_mul_of_neighbors {ψ₀ : State N W} (hψ₀ : �
   classical
   rcases Nat.eq_zero_or_pos m with h0 | hpos
   · simp [h0]
-  set R := (A ×ˢ B).filter fun p => hammingDist p.1 p.2 = 1 with hRdef
-  have hmemR {x y : BitString N} : (x, y) ∈ R ↔ x ∈ A ∧ y ∈ B ∧ hammingDist x y = 1 := by
-    simp [hRdef, and_assoc]
+  set R := hammingEdges A B
   have hflip (x : BitString N) (i : Fin N) : hammingDist x (update x i (!x i)) = 1 :=
     hammingDist_update_of_ne (by cases x i <;> simp)
   -- `R` is nonempty: some input of `A` has a neighbor in `B`
   have hR : R.Nonempty := by
     obtain ⟨x, hx⟩ := hA
     obtain ⟨i, hi⟩ := card_pos.1 (lt_of_lt_of_le hpos (hm x hx))
-    exact ⟨(x, update x i (!x i)), hmemR.2 ⟨hx, (mem_filter.1 hi).2, hflip x i⟩⟩
+    exact ⟨(x, update x i (!x i)), mem_hammingEdges.2 ⟨hx, (mem_filter.1 hi).2, hflip x i⟩⟩
   -- the overlap on every related pair is at most `δ`
   have hδR : ∀ p ∈ R, ‖inner ℂ (run U ψ₀ p.1 T) (run U ψ₀ p.2 T)‖ ≤ δ := by
     intro p hp
-    obtain ⟨hpA, hpB, hd⟩ := hmemR.1 hp
+    obtain ⟨hpA, hpB, hd⟩ := mem_hammingEdges.1 hp
     obtain ⟨i, hi, -⟩ := hammingDist_eq_one_iff.1 hd
     have hp2 := eq_update_of_hammingDist_eq_one hd hi
     rw [hp2] at hpB ⊢
@@ -455,8 +453,8 @@ theorem one_sub_mul_sqrt_le_two_mul_of_neighbors {ψ₀ : State N W} (hψ₀ : �
     refine card_le_one.2 fun q hq r hr => ?_
     obtain ⟨hqR, hqi, hq1⟩ := mem_filter.1 hq
     obtain ⟨hrR, hri, hr1⟩ := mem_filter.1 hr
-    have hq2 := eq_update_of_hammingDist_eq_one (hmemR.1 hqR).2.2 hqi
-    have hr2 := eq_update_of_hammingDist_eq_one (hmemR.1 hrR).2.2 hri
+    have hq2 := eq_update_of_hammingDist_eq_one (mem_hammingEdges.1 hqR).2.2 hqi
+    have hr2 := eq_update_of_hammingDist_eq_one (mem_hammingEdges.1 hrR).2.2 hri
     exact Prod.ext (hq1.trans hr1.symm) (by rw [hq2, hr2, hq1, hr1])
   have hl' : ∀ p ∈ R, ∀ i, #{q ∈ R | q.1 i ≠ q.2 i ∧ q.2 = p.2} ≤ 1 := by
     intro p _ i
@@ -464,23 +462,25 @@ theorem one_sub_mul_sqrt_le_two_mul_of_neighbors {ψ₀ : State N W} (hψ₀ : �
     obtain ⟨hqR, hqi, hq2⟩ := mem_filter.1 hq
     obtain ⟨hrR, hri, hr2⟩ := mem_filter.1 hr
     have hq1 := eq_update_of_hammingDist_eq_one
-      ((hammingDist_comm _ _).trans (hmemR.1 hqR).2.2) (Ne.symm hqi)
+      ((hammingDist_comm _ _).trans (mem_hammingEdges.1 hqR).2.2) (Ne.symm hqi)
     have hr1 := eq_update_of_hammingDist_eq_one
-      ((hammingDist_comm _ _).trans (hmemR.1 hrR).2.2) (Ne.symm hri)
+      ((hammingDist_comm _ _).trans (mem_hammingEdges.1 hrR).2.2) (Ne.symm hri)
     exact Prod.ext (by rw [hq1, hr1, hq2, hr2]) (hq2.trans hr2.symm)
   -- every input has its neighbors as partners
   have hdeg : ∀ p ∈ R, m ≤ #{q ∈ R | q.1 = p.1} := by
     intro p hp
-    refine (hm p.1 (hmemR.1 hp).1).trans (card_le_card_of_injOn
+    refine (hm p.1 (mem_hammingEdges.1 hp).1).trans (card_le_card_of_injOn
       (fun i => (p.1, update p.1 i (!p.1 i))) (fun i hi => ?_) ?_)
-    · exact mem_filter.2 ⟨hmemR.2 ⟨(hmemR.1 hp).1, (mem_filter.1 hi).2, hflip _ i⟩, rfl⟩
+    · exact mem_filter.2
+        ⟨mem_hammingEdges.2 ⟨(mem_hammingEdges.1 hp).1, (mem_filter.1 hi).2, hflip _ i⟩, rfl⟩
     · intro i _ j _ hij
       exact BitString.update_not_injective p.1 (congrArg Prod.snd hij)
   have hdeg' : ∀ p ∈ R, m' ≤ #{q ∈ R | q.2 = p.2} := by
     intro p hp
-    refine (hm' p.2 (hmemR.1 hp).2.1).trans (card_le_card_of_injOn
+    refine (hm' p.2 (mem_hammingEdges.1 hp).2.1).trans (card_le_card_of_injOn
       (fun i => (update p.2 i (!p.2 i), p.2)) (fun i hi => ?_) ?_)
-    · refine mem_filter.2 ⟨hmemR.2 ⟨(mem_filter.1 hi).2, (hmemR.1 hp).2.1, ?_⟩, rfl⟩
+    · refine mem_filter.2
+        ⟨mem_hammingEdges.2 ⟨(mem_filter.1 hi).2, (mem_hammingEdges.1 hp).2.1, ?_⟩, rfl⟩
       rw [hammingDist_comm]
       exact hflip _ i
     · intro i _ j _ hij
