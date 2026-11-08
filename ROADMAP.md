@@ -985,9 +985,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   variables. `ExistentialPebble.lean` and `PigeonholeSpace.lean`
   ([#3321](https://github.com/cslib-community/complexitylib/issues/3321)) add Duplicator
   strategies (Atserias–Dalmau Lemma 3) and width and clause space at least `n` for the extended
-  `3`-CNF pigeonhole formula with `n` holes. Next:
+  `3`-CNF pigeonhole formula with `n` holes. The converse, Atserias–Dalmau Lemma 2
+  ([#3375](https://github.com/cslib-community/complexitylib/issues/3375)), gives their Theorem 2
+  for formulas of narrow clauses, and the space–width inequality is proved from any Duplicator
+  strategy. Next:
   - space lower bounds for the wide pigeonhole formula and random `k`-CNFs;
-  - the converse direction, Atserias–Dalmau Lemma 2, as a public `DuplicatorStrategy`;
   - total and variable space;
   - time–space trade-offs for pebbling formulas, building on `Complexity/Computability/Pebbling`;
   - degree versus space in polynomial calculus.
@@ -1305,6 +1307,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   length (reservoir sampling), and the `n^{Ω(1)}` lower bounds for `F_k` with `k ≥ 6`; `ProbComp`
   samplers and native realizations of the AMS sketches; CountSketch, turnstile updates, and
   heavy-hitter recovery; multi-pass communication-to-streaming transfers with pass counts.
+- **Dimension reduction** ([#2996](https://github.com/cslib-community/complexitylib/issues/2996)):
+  extend the Johnson–Lindenstrauss lemma for dense `±1` sign matrices to Achlioptas's sparse
+  `{-√3, 0, √3}` distribution, Gaussian and spherical projections, and fast and sparse JL
+  transforms; prove the Larsen–Nelson lower bound `k = Ω(ε⁻² log n)`; give JL maps as streaming
+  sketches with `ProbComp` samplers and native costs for applying the projection.
 - **Learning:** machine-certified running times for the LMN and Kushilevitz–Mansour learners;
   distributional problems and reductions, samplability, average-to-worst-case connections,
   PAC/agnostic learning, learning lower bounds, compression and refutation. For realizable
@@ -1411,6 +1418,16 @@ each statement against the numbered result. Organize modules by subject, not cha
   [quantum adversary models](#concurrent-and-quantum-security) needed by cryptographic
   reductions.
 
+- **Quantum information primitives**
+  ([#3329](https://github.com/cslib-community/complexitylib/issues/3329)): beyond pure-state,
+  ancilla-free no-cloning, single-qubit teleportation and superdense coding, prove the
+  Wootters–Zurek form of no-cloning with an input-dependent apparatus register (by the same
+  linearity argument) and teleportation of one half of an entangled state, as in entanglement
+  swapping (a pure-state statement). Prove Holevo's bound (in particular, superdense coding is
+  optimal) and Nayak's bound for quantum random access codes; both need density matrices, von
+  Neumann entropy and mutual information. With channel semantics, prove no-cloning for mixed
+  states and no-broadcasting.
+
 - **Quantum query separations**
   ([#2991](https://github.com/cslib-community/complexitylib/issues/2991)): beyond the decision
   and search versions of Simon's problem, give the search version polynomial-time
@@ -1489,14 +1506,16 @@ each statement against the numbered result. Organize modules by subject, not cha
   machine-checked certificate verifiers; and a polynomial-time LP algorithm (ellipsoid or
   interior point) with bit complexity and intermediate precision accounted for.
 - **Lattice basis reduction** ([#3235](https://github.com/cslib-community/complexitylib/issues/3235)):
-  `δ`-reduced bases, the LLL approximation `‖b₁‖² ≤ (4/(4δ-1))^{n-1} ‖x‖²` to the shortest
-  vector (Lenstra–Lenstra–Lovász Proposition (1.11)) and the potential argument bounding the
-  number of exchange steps by `O(n² log B)` for integral Gram matrices are in
-  `Algorithms/LatticeReduction`, over Gram–Schmidt facts in
-  `Foundations/Analysis/InnerProductSpace/GramSchmidtOrtho`. Remaining: an executable LLL on
-  integer bases with correctness and termination, the `O(n⁴ log B)` arithmetic and `O(n log B)`
-  bit-size bounds of (1.26), and a `ComputableInPolyTime` statement; then applications
-  (simultaneous Diophantine approximation, polynomial factorization over `ℚ`).
+  `δ`-reduced bases, the LLL approximation `‖b₁‖² ≤ (4/(4δ-1))^{n-1} ‖x‖²` (paper indexing,
+  `n` vectors) to the shortest vector (Lenstra–Lenstra–Lovász Proposition (1.11)), the potential
+  argument bounding the number of exchange steps by `O(n² log B)` for integral Gram matrices, and
+  an executable LLL (`δ = 3/4`, exact rational Gram–Schmidt) on integer bases whose output is
+  reduced and spans the same lattice are in `Algorithms/LatticeReduction`, over Gram–Schmidt
+  facts in `Foundations/Analysis/InnerProductSpace/GramSchmidtOrtho`. Remaining: a cost model for
+  the executable LLL with the `O(n⁴ log B)` arithmetic-operation bound (the current version
+  recomputes Gram–Schmidt every round) and the `O(n log B)` bit-size bound of (1.26), then a
+  `ComputableInPolyTime` statement; then applications (simultaneous Diophantine approximation,
+  polynomial factorization over `ℚ`).
 - **Separation and optimization:** a precise oracle interface and a separation–optimization
   equivalence with its representation, accuracy and well-boundedness hypotheses. Extend to
   convex optimization through explicit oracle and numerical-error contracts.
@@ -1527,9 +1546,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   `Algorithms/Lean/MaxFlow`); then minimum-cost flow on the residual network, reusing the
   potential, weak-duality and complementary-slackness lemmas of `WeightedMatching`. Remaining
   matching directions: the decomposition of `M ⊕ M*` into vertex-disjoint augmenting paths,
-  rectangular and sparse weighted bipartite matching, general (non-bipartite) matching with
-  blossoms (weighted and unweighted), and a sparse Hopcroft–Karp entry point that also charges
-  construction of the adjacency lists.
+  rectangular and sparse weighted bipartite matching, and a sparse Hopcroft–Karp entry point that
+  also charges construction of the adjacency lists. General (non-bipartite) matching with
+  blossoms (weighted and unweighted;
+  [#3337](https://github.com/cslib-community/complexitylib/issues/3337)): Berge's lemma and the
+  Tutte–Berge formula are proved in `Foundations/Combinatorics/SimpleGraph/{Berge,TutteBerge}`;
+  still open are Edmonds' blossom-contraction lemma, an executable blossom algorithm with its
+  `O(|V|²|E|)` bound, weighted general matching, and the Gallai–Edmonds decomposition.
 - **Gomory–Hu trees** ([#3320](https://github.com/cslib-community/complexitylib/issues/3320)):
   remaining after the existence theorem for cut-equivalent trees of symmetric submodular set
   functions and weighted undirected graphs, with flow-equivalence, the minimum-cut triangle
@@ -1551,6 +1574,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   (`Algorithms/Matching/MVV`), and Tutte's determinant criterion with the same test for general
   graphs (`Algorithms/Matching/Tutte`): MVV for general graphs (its Pfaffian form), a machine-level
   running-time certificate for the determinant test, and an RNC implementation.
+- **Auction algorithms** ([#3317](https://github.com/cslib-community/complexitylib/issues/3317)):
+  remaining after Bertsekas's Gauss–Seidel auction for square, complete integer assignment
+  instances (`Algorithms/Lean/Assignment`: `ε`-complementary slackness, termination within
+  `n (C + ε) / ε + 1` bids, `n ε`-optimality and exact optimality after scaling by `n + 1`):
+  `ε`-scaling and its `O(n A log (n C))` bound, a charged `TimeM` implementation, the Jacobi,
+  reverse and asymmetric auctions, sparse and rectangular instances, a bridge to the Hungarian
+  method's potentials, and `ε`-relaxation for minimum-cost flow.
 - **Graph search and shortest paths** ([#3053](https://github.com/cslib-community/complexitylib/issues/3053)):
   after `TimeM` depth-first search, topological sort and Bellman–Ford
   (`Algorithms/Lean/{DFS,BellmanFord}`), strongly connected components in linear time with the
@@ -1592,6 +1622,14 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   `3/2`, and possibly the Karlin–Klein–Oveis Gharan `3/2 - 10^{-36}` improvement as a long-range
   target. LP-based and primal–dual analyses of the same problems belong to the primal–dual
   approximation direction under Optimization and duality.
+- **Metric k-center** ([#3281](https://github.com/cslib-community/complexitylib/issues/3281)):
+  remaining after Gonzalez's farthest-first 2-approximation and the combinatorial dominating-set
+  gap behind the hardness of beating `2` (`Algorithms/Lean/KCenter`): NP-hardness of dominating
+  set on the encoded `Graph` problems (for example from vertex cover), a polynomial-time
+  certificate for the map from graphs to `{1, 2}` distance matrices, and the resulting statement
+  that a polynomial-time `(2 - ε)`-approximation implies `P = NP`; a machine-level running time
+  for Gonzalez's algorithm; the Hochbaum–Shmoys threshold algorithm; and k-supplier and
+  k-median.
 
 ### Sorting and selection
 
@@ -1742,6 +1780,15 @@ pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
   Output/count validation and complete native circuit-bound VOLE execution (#2765; #643;
   prerequisite #2738), growing extension-field arithmetic, raw-bit adversarial transport (#2744)
   and fresh-session amplification remain separate endpoints.
+- **Entropy-optimal sampling from fair coins:** `Probability/DDGTree` and
+  `Probability/DDGTree/KnuthYao` prove the Knuth–Yao bound `H(p) ≤ E[T]` for every DDG tree
+  generating `p`, and `E[T] < H(p) + 2` with optimality for the Knuth–Yao tree. They also prove
+  the dyadic equality characterization, all for distributions on a finite type
+  ([#3360](https://github.com/cslib-community/complexitylib/issues/3360)). Extend to countable
+  support and infinite entropy. For rational `p`, implement the Knuth–Yao sampler as a native
+  fair-coin program whose output law and expected time are certified (an `IsPPTOn`-style
+  certificate in expected time), as in Saad–Freer–Rinard–Mansinghka's finite-precision
+  entropy-optimal samplers.
 - **Markov-chain sampling:** `Probability/MarkovChain/*` provides discrete kernels,
   stationarity, reversibility, total-variation mixing times, Markovian couplings, reversible
   Metropolis chains and path coupling, with the lazy hypercube walk
@@ -1762,6 +1809,12 @@ pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
   rational matrices through explicit mixing and reduction theorems. Reuse the coupling and
   expander APIs and connect to the separate Stockmeyer oracle-counting track where their
   hypotheses agree.
+- **Permanent bounds** ([#3377](https://github.com/cslib-community/complexitylib/issues/3377)):
+  Brégman's upper bound for 0/1 matrices and bipartite perfect matchings, with its equality case,
+  is in `Foundations/Combinatorics/Bregman`. Remaining: Brégman's bound for nonnegative real
+  matrices, the van der Waerden lower bound for doubly stochastic matrices (Egorychev–Falikman,
+  or Gurvits's capacity proof), the Kahn–Lovász bound for perfect matchings of general graphs,
+  and their use in approximate-counting analyses.
 
 ### Constructive probabilistic methods
 
