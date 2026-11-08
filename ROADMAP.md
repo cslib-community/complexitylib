@@ -987,13 +987,17 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **APSP class** ([#3076](https://github.com/cslib-community/complexitylib/issues/3076)): APSP and
   the (min,+) product reduce to each other in the query model (repeated squaring costs
   `⌈log₂ (n - 1)⌉` products, the tripartite graph one APSP call on `3 n` vertices), with
-  Floyd–Warshall and schoolbook products as instances. Remaining: the negative-triangle
-  equivalence and the other APSP-equivalent problems of Vassilevska Williams and Williams
-  (minimum-weight cycle, replacement paths, metricity, (min,+) product verification); the
-  radius and median equivalences of Abboud, Grandoni and Vassilevska Williams (SODA 2015); a
-  bridge from vertex-list walks to `Quiver.Path` weights; word-RAM realizations with bit-length
-  costs; Kerr's `Ω(n³)` bound for (min,+) straight-line programs. Bellman–Ford with
-  negative-cycle reporting is [#3053](https://github.com/cslib-community/complexitylib/issues/3053).
+  Floyd–Warshall and schoolbook products as instances. The (min,+) product reduces to negative
+  triangle detection (Vassilevska Williams–Williams Lemma 4.1, Lemma 4.2 in its pairs form and
+  Theorem 4.2, weights `ℤ ∪ {∞}`): an `n ^ (3 - δ)` detector gives an `n ^ (3 - δ / 3) log W`
+  product, and one product decides negative triangle. Remaining: `-∞` weights and general (min,⊙) structures; the
+  output-sensitive listing bound (Theorem 4.3); the other APSP-equivalent problems of Vassilevska
+  Williams and Williams (minimum-weight cycle, replacement paths, metricity, (min,+) product
+  verification); the radius and median equivalences of Abboud, Grandoni and Vassilevska Williams
+  (SODA 2015); a bridge from vertex-list walks to `Quiver.Path` weights; word-RAM realizations
+  with bit-length costs; Kerr's `Ω(n³)` bound for (min,+) straight-line programs. Bellman–Ford
+  with negative-cycle reporting is
+  [#3053](https://github.com/cslib-community/complexitylib/issues/3053).
 - **Reductions from orthogonal vectors**
   ([#3037](https://github.com/cslib-community/complexitylib/issues/3037)): diameter two versus
   three is done for general `m` (`FineGrained.Diameter`, the `OV` form of Roditty–Vassilevska
