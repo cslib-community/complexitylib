@@ -1883,6 +1883,7 @@ public import Complexity.Computability.Complexity.Parameterized.Kernelization
 public import Complexity.Computability.Complexity.Parameterized.VertexCover
 public import Complexity.Computability.Complexity.Parameterized.VertexCover.BussKernel
 public import Complexity.Computability.Complexity.Parameterized.WHierarchy
+public import Complexity.Computability.Complexity.Parameterized.WHierarchy.Clique
 public import Complexity.Computability.Complexity.Parameterized.WHierarchy.Clique.Bracket
 public import Complexity.Computability.Complexity.Parameterized.WHierarchy.Clique.Graph
 public import Complexity.Computability.Complexity.Parameterized.WHierarchy.IndependentSet
