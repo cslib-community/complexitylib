@@ -87,7 +87,7 @@ polynomial-time prime-order group family `desc : ℕ → F.Desc`:
 ## References
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*,
-  Version 0.6][BonehShoup2023], Section 4.11 (Exercise 4.18, p. 172) and Section 10.11
+  Version 0.6][BonehShoup2023], Section 4.10 (Exercise 4.18, p. 172) and Section 10.11
   (Exercises 10.4, 10.8, and 10.11, pp. 424–426).
 * [O. Goldreich, S. Goldwasser, S. Micali, *How to Construct Random Functions*][GGM1986].
 * [M. Naor, O. Reingold, *Number-Theoretic Constructions of Efficient Pseudo-Random

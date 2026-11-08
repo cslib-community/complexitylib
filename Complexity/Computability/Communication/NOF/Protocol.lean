@@ -48,6 +48,7 @@ announces the value (`NOF.Protocol.ecomplexityFun_le_succ`).
   `Cslib.Communication.NOF.Protocol.ecomplexityFun`: solving relations and communication
   complexity.
 * `Cslib.Communication.NOF.Protocol.sendBits`: a player writes a bit string.
+* `Cslib.Communication.NOF.Protocol.sendEach`: several players write one bit each.
 
 ## Main results
 
@@ -239,6 +240,39 @@ theorem depth_sendBits_le {i : ι} {n d : ℕ} {msg : View X i → BitString n}
       fun m => h _
     have h₁ := ih (cont := fun m => cont (Fin.cons true m)) (msg := fun v => Fin.tail (msg v))
       fun m => h _
+    omega
+
+/-- Players `who 0, …, who (m - 1)` write one bit each, in this order, player `who t` writing
+`bit t` of what they see, after which the protocol continues with `cont` of the bits written. -/
+def sendEach : (m : ℕ) → (who : Fin m → ι) → (bit : ∀ t, View X (who t) → Bool) →
+    (BitString m → Protocol X Z) → Protocol X Z
+  | 0, _, _, cont => cont Fin.elim0
+  | m + 1, who, bit, cont => speak (who 0) (bit 0)
+      (sendEach m (fun t => who t.succ) (fun t => bit t.succ) fun b => cont (Fin.cons false b))
+      (sendEach m (fun t => who t.succ) (fun t => bit t.succ) fun b => cont (Fin.cons true b))
+
+@[simp] theorem run_sendEach (m : ℕ) (who : Fin m → ι) (bit : ∀ t, View X (who t) → Bool)
+    (cont : BitString m → Protocol X Z) (x : ∀ i, X i) :
+    (sendEach m who bit cont).run x = (cont fun t => bit t (view (who t) x)).run x := by
+  induction m with
+  | zero => rw [sendEach, Subsingleton.elim (fun t => bit t (view (who t) x)) Fin.elim0]
+  | succ m ih =>
+    simp only [sendEach, run_speak, ih]
+    conv_rhs => rw [← Fin.cons_self_tail (fun t => bit t (view (who t) x))]
+    cases bit 0 (view (who 0) x) <;> rfl
+
+/-- `m` players writing a bit each add at most `m` to the depth. -/
+theorem depth_sendEach_le {m d : ℕ} {who : Fin m → ι} {bit : ∀ t, View X (who t) → Bool}
+    {cont : BitString m → Protocol X Z} (h : ∀ b, (cont b).depth ≤ d) :
+    (sendEach m who bit cont).depth ≤ m + d := by
+  induction m generalizing d with
+  | zero => simpa [sendEach] using h _
+  | succ m ih =>
+    simp only [sendEach, depth_speak]
+    have h₀ := ih (who := fun t => who t.succ) (bit := fun t => bit t.succ)
+      (cont := fun b => cont (Fin.cons false b)) fun b => h _
+    have h₁ := ih (who := fun t => who t.succ) (bit := fun t => bit t.succ)
+      (cont := fun b => cont (Fin.cons true b)) fun b => h _
     omega
 
 /-- **The trivial protocol.** If player `i`'s input is recovered by `decode` from `n` bits
