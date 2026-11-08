@@ -1972,13 +1972,15 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Comparison selection** ([#3279](https://github.com/cslib-community/complexitylib/issues/3279)):
   groups-of-five median-of-medians selection in cslib's comparison-query model, correct for
   total preorders and making at most `37 n` comparisons under every oracle, is in
-  `Algorithms/Lean/Query/Select`. Remaining: sharper constants for the same algorithm (a
-  six-comparison median of five, and reusing the group comparisons in the partition); the
-  `5.4305 n` bound of Blum, Floyd, Pratt, Rivest and Tarjan for their refined `PICK` and Dor and
-  Zwick's `2.95 n` median bound; group-size variants such as groups of three or seven;
-  comparison lower bounds (`n − 1` for the minimum, `⌈3n/2⌉ − 2` for the minimum and maximum
-  together, and lower bounds for the median); and a word-RAM implementation with charged
-  instruction counts.
+  `Algorithms/Lean/Query/Select`. The comparison lower bounds `n − 1` for the minimum and
+  `⌈3n/2⌉ − 2` for the minimum and maximum together (Pohl's adversary), with matching algorithms,
+  are in `Algorithms/Lean/Query/Select/MinMax`. Remaining: sharper constants for the same
+  algorithm (a six-comparison median of five, and reusing the group comparisons in the
+  partition); the `5.4305 n` bound of Blum, Floyd, Pratt, Rivest and Tarjan for their refined
+  `PICK` and Dor and Zwick's `2.95 n` median bound; group-size variants such as groups of three
+  or seven; further comparison lower bounds (Kislitsyn's `n + ⌈log₂ n⌉ − 2` for the second
+  smallest, and lower bounds for the median and for general ranks, such as the `2n − o(n)` of
+  Bent and John); and a word-RAM implementation with charged instruction counts.
 
 ### Online algorithms and competitive analysis
 

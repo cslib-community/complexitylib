@@ -129,10 +129,14 @@ public import Complexity.Algorithms.Lean.Query.Matroid.LowerBound
 public import Complexity.Algorithms.Lean.Query.Select.Correctness
 public import Complexity.Algorithms.Lean.Query.Select.Cost
 public import Complexity.Algorithms.Lean.Query.Select.Defs
+public import Complexity.Algorithms.Lean.Query.Select.MinMax.Basic
+public import Complexity.Algorithms.Lean.Query.Select.MinMax.LowerBound
 public import Complexity.Algorithms.Lean.Query.ShortestPaths.MinPlus
 public import Complexity.Algorithms.Lean.Query.ShortestPaths.MinPlusViaNegTriangle
 public import Complexity.Algorithms.Lean.Query.ShortestPaths.NegTriangleFinding
 public import Complexity.Algorithms.Lean.Query.ShortestPaths.NegTriangleSubcubic
+public import Complexity.Algorithms.Lean.Query.Sort.LEQuery.Fooling
+public import Complexity.Algorithms.Lean.Query.Sort.LEQuery.QueriedPairs
 public import Complexity.Algorithms.Lean.Query.Sort.Merge.CountBound
 public import Complexity.Algorithms.Lean.Query.Submodular.Greedy
 public import Complexity.Algorithms.Lean.Query.Submodular.LowerBound
