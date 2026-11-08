@@ -72,10 +72,10 @@ namespace PrivateCoin
 
 variable {a b : ℕ}
 
-open Classical in
 /-- The error probability of a private-coin protocol is the fraction of the `2 ^ a * 2 ^ b` pairs
 of random strings on which its output is not related to the inputs. -/
-theorem errorProb_eq_card (P : PrivateCoin a b X Y Z) (R : X → Y → Z → Prop) (x : X) (y : Y) :
+theorem errorProb_eq_card (P : PrivateCoin a b X Y Z) (R : X → Y → Z → Prop) (x : X) (y : Y)
+    [DecidablePred (R x y)] :
     P.errorProb R x y =
       (#{r : BitString a × BitString b | ¬R x y (P.run (x, r.1) (y, r.2))} : ℝ) /
         (2 ^ a * 2 ^ b) := by
