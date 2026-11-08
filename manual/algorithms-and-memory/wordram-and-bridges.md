@@ -51,6 +51,16 @@ proof. Open the complete ordinary-import
 [call examples](../../ComplexityTests/WordRAMCallAutomation.lean), including a dirty caller,
 its actual continuation, a variable allowance and rejected wrong-code/insufficient-time cases.
 
+`wram_exec` and `wram_simp` read a register past `Data.set` when both names are literals, and
+also when names with free variables are distinct by the context: a hypothesis `j ≠ i` either way
+round, `j ∉ Set.range f` against a renamed register `f a`, `Function.Injective f` for `f b` and
+`f a`, or names such as `i.castAdd 3` and `⟨i + 9, _⟩` whose values the discharger separates.
+Other names stay unread. Memory passed whole to a definition, as in `swapMem y.mem i j`, becomes
+`Function.update`; reads at an address still go through the discharger. `Data.set_set` drops an
+overwritten register. The
+[symbolic-execution examples](../../ComplexityTests/WordRAMSymbolicExec.lean) check each case,
+including names left unread.
+
 When a continuation would otherwise rebuild many caller-register equalities, import
 [`SymbolicExec.CanonicalCall`](../../Complexity/Computability/WordRAM/SymbolicExec/CanonicalCall.lean)
 and use `wram_call routine_spec canonical bank_injective with small post` at the same call

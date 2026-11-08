@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.WordRAM.Structured
+import Complexity.Computability.WordRAM.SymbolicExec
 
 /-!
 # Native programs in a caller-owned memory window
@@ -175,12 +176,6 @@ private theorem Matches.write {w b : ℕ} {x : Data r} {y : Data (r + 3)}
     Matches w b (x.write a v) (y.write (b + a) v) :=
   ⟨by rw [view_write _ _ _ _ _ hv, h.view_eq], h.base_eq, h.modulus_eq⟩
 
-private theorem set_overwrite (x : Data r) (i : Fin r) (u v : ℕ) :
-    (x.set i u).set i v = x.set i v := by
-  ext j
-  · simp only [Data.set_regs, Function.update_idem]
-  · rfl
-
 /-- A translated source instruction has actual native execution within three instructions.
 All source addresses fit the bounded source word, so the only writes are inside the runtime
 window. Dirty words are normalized by the translated load itself. -/
@@ -242,7 +237,7 @@ theorem exec_compileOp {w W b : ℕ} {o : Op .standard r} {x x' : Data r}
     refine ⟨z'.set (d.castAdd 3) (x.mem (x.regs a)), ?_, ?_, fun _ _ => rfl⟩
     · exact h1.seq (h2.seq h3)
     · change Matches w b (x.set d _) ((z.set (d.castAdd 3) _).set (d.castAdd 3) _)
-      rw [set_overwrite]
+      rw [Data.set_set]
       exact hz.set d _
   | store a s =>
     simp only [Op.eval, Option.some.injEq] at he
