@@ -34,8 +34,9 @@ threshold.
 ## Model
 
 An instance is a matrix `D` of natural distances, given as a list of rows, and a number `k` of
-centers, both in binary (`encPair (encList (encList encNat)) encNat`, the encoding `encTSP` of
-`Complexity.Computability.Complexity.Problems.TSP`). The points are the row indices. The metric
+centers, both in binary: `KCenter.encKCenter` pairs the matrix encoding `KCenter.encDistMatrix`
+(a framed list of framed lists of binary entries) with `encNat`. The points are the row
+indices. The metric
 instances (`KCenter.IsInstance`) are the square matrices with zero diagonal, symmetric and
 satisfying the triangle inequality: the model of Section 2.2 of [WilliamsonShmoys2011], with
 natural distances. The algorithm `A` returns a list of point indices; `KCenter.centers D l` is
@@ -93,6 +94,13 @@ open Turing.MultiTapeTM ComputableInPolyTime Cslib.Algorithms.Lean.KCenter
 
 namespace KCenter
 
+/-- A distance matrix: a framed list of rows, each a framed list of binary natural entries. -/
+abbrev encDistMatrix : List (List ℕ) ↪ List Bool := encList (encList encNat)
+
+/-- A k-center instance: the distance matrix (`encDistMatrix`) paired with the binary number `k`
+of centers. -/
+abbrev encKCenter : List (List ℕ) × ℕ ↪ List Bool := encPair encDistMatrix encNat
+
 /-- A **metric k-center instance**: a square matrix of natural distances, with rows indexed by the
 points `0, …, D.length - 1`, zero on the diagonal, symmetric and satisfying the triangle
 inequality ([WilliamsonShmoys2011], Section 2.2). -/
@@ -106,15 +114,20 @@ structure IsInstance (D : List (List ℕ)) : Prop where
 
 /-- The centers chosen by a list `l` of indices: the points `i` of `D` with `i ∈ l`. Indices out of
 range are ignored. -/
-@[expose] def centers (D : List (List ℕ)) (l : List ℕ) : Finset (Fin D.length) :=
+def centers (D : List (List ℕ)) (l : List ℕ) : Finset (Fin D.length) :=
   Finset.univ.filter fun i => (i : ℕ) ∈ l
+
+@[simp]
+theorem mem_centers {D : List (List ℕ)} {l : List ℕ} {i : Fin D.length} :
+    i ∈ centers D l ↔ (i : ℕ) ∈ l := by
+  simp only [centers, Finset.mem_filter, Finset.mem_univ, true_and]
 
 /-- A list of indices names at most as many centers as its length. -/
 theorem card_centers_le (D : List (List ℕ)) (l : List ℕ) : (centers D l).card ≤ l.length := by
   refine (Finset.card_le_card_of_injOn (t := l.toFinset) (fun i : Fin D.length => (i : ℕ))
     (fun i hi => ?_) (fun _ _ _ _ h => Fin.val_injective h)).trans (List.toFinset_card_le l)
-  rw [Finset.mem_coe, centers, Finset.mem_filter] at hi
-  exact Finset.mem_coe.2 (List.mem_toFinset.2 hi.2)
+  rw [Finset.mem_coe, mem_centers] at hi
+  exact Finset.mem_coe.2 (List.mem_toFinset.2 hi)
 
 /-- The **`{0, 1, 2}` distance matrix of a graph** ([WilliamsonShmoys2011], Theorem 2.4): the
 points are the distinct declared vertices, at distance `0` from themselves, `1` from adjacent
@@ -195,8 +208,7 @@ private theorem cast_finDist_domMatrix (G : Graph) [DecidableRel (indexGraph G).
 private theorem mem_centerLabels {A : List (List ℕ) × ℕ → List ℕ} {G : Graph} {k v : ℕ} :
     v ∈ centerLabels A G k ↔ ∃ i ∈ centers (domMatrix G) (A (domMatrix G, k)),
       G.distinctVertices.getD i 0 = v := by
-  simp only [centerLabels, centers, List.mem_map, List.mem_filter, decide_eq_true_eq,
-    Finset.mem_filter, Finset.mem_univ, true_and]
+  simp only [centerLabels, mem_centers, List.mem_map, List.mem_filter, decide_eq_true_eq]
   constructor
   · rintro ⟨i, ⟨hi, hlt⟩, rfl⟩
     exact ⟨⟨i, by simpa using hlt⟩, hi, rfl⟩
@@ -300,7 +312,7 @@ theorem decideDominatingSet_iff {A : List (List ℕ) × ℕ → List ℕ} {ρ : 
 
 /-- The distance matrix of a graph is computable in polynomial time, with binary entries. -/
 theorem computableInPolyTime_domMatrix :
-    ComputableInPolyTime domMatrix encGraph (encList (encList encNat)) := by
+    ComputableInPolyTime domMatrix encGraph encDistMatrix := by
   have hV : ComputableInPolyTime Graph.distinctVertices encGraph (encList encNat) :=
     Graph.computableInPolyTime_distinctVertices
   have hentry : ComputableInPolyTime
@@ -318,7 +330,7 @@ theorem computableInPolyTime_domMatrix :
 
 /-- The decider built from a polynomial-time k-center algorithm is polynomial-time. -/
 theorem computableInPolyTime_decideDominatingSet {A : List (List ℕ) × ℕ → List ℕ}
-    (hA : ComputableInPolyTime A (encPair (encList (encList encNat)) encNat) (encList encNat)) :
+    (hA : ComputableInPolyTime A encKCenter (encList encNat)) :
     ComputableInPolyTime (decideDominatingSet A) (encPair encGraph encNat) encBool := by
   have hV : ComputableInPolyTime (fun x : Graph × ℕ => x.1.distinctVertices)
       (encPair encGraph encNat) (encList encNat) :=
@@ -350,7 +362,7 @@ radius is at most `ρ` times every bound on the optimal radius, with `ρ < 2`. T
 Distances are natural numbers in binary; see the module docstring for why the restrictions only
 strengthen the statement. -/
 theorem P_eq_NP_of_kCenter_approx {A : List (List ℕ) × ℕ → List ℕ} {ρ : ℝ} (hρ : ρ < 2)
-    (hA : ComputableInPolyTime A (encPair (encList (encList encNat)) encNat) (encList encNat))
+    (hA : ComputableInPolyTime A KCenter.encKCenter (encList encNat))
     (hcard : ∀ D k, KCenter.IsInstance D → 0 < k → k ≤ D.length →
       (KCenter.centers D (A (D, k))).card ≤ k)
     (hratio : ∀ D k [NeZero D.length], KCenter.IsInstance D → 0 < k → k ≤ D.length →

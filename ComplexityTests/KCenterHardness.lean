@@ -22,7 +22,8 @@ These kernel-checked examples (using no `native_decide`) exercise
    not, so a `2`-approximate answer (radius `2` against an optimum of `1`) is not enough. The
    decider handles `k = 0`, `k` above the number of vertices and out-of-range indices.
 3. The hypotheses of the theorem: an exact, not necessarily polynomial-time, algorithm satisfies
-   them with `ρ = 1`, and Gonzalez's algorithm satisfies them with `ρ = 2`, the threshold. A
+   them with `ρ = 1`, and Gonzalez's algorithm, whose running time is not certified, satisfies
+   them with `ρ = 2`, the threshold. A
    polynomial-time algorithm with `ρ < 2` gives `P = NP`, so no unconditional witness is expected.
 -/
 
@@ -107,8 +108,7 @@ noncomputable def exactCenters (x : List (List ℕ) × ℕ) : List ℕ :=
 private theorem centers_map_val (D : List (List ℕ)) (S : Finset (Fin D.length)) :
     centers D (S.toList.map Fin.val) = S := by
   ext i
-  simp only [centers, Finset.mem_filter, Finset.mem_univ, true_and, List.mem_map,
-    Finset.mem_toList]
+  simp only [mem_centers, List.mem_map, Finset.mem_toList]
   exact ⟨fun ⟨j, hj, hji⟩ => Fin.val_injective hji ▸ hj, fun hi => ⟨i, hi, rfl⟩⟩
 
 /-- The exact algorithm satisfies the hypotheses of `Cslib.Complexity.P_eq_NP_of_kCenter_approx`
@@ -144,13 +144,12 @@ private theorem centers_gonzalezCenters (D : List (List ℕ)) (k : ℕ) :
     centers D (gonzalezCenters (D, k)) =
       (gonzalez (fun i j => (TSP.finDist D i j : ℝ)) (List.finRange D.length) k).toFinset := by
   ext i
-  simp only [centers, gonzalezCenters, Finset.mem_filter, Finset.mem_univ, true_and,
-    List.mem_map, List.mem_toFinset]
+  simp only [mem_centers, gonzalezCenters, List.mem_map, List.mem_toFinset]
   exact ⟨fun ⟨j, hj, hji⟩ => Fin.val_injective hji ▸ hj, fun hi => ⟨i, hi, rfl⟩⟩
 
 /-- Gonzalez's algorithm satisfies the hypotheses of `Cslib.Complexity.P_eq_NP_of_kCenter_approx`
-with `ρ = 2` ([WilliamsonShmoys2011], Theorem 2.3), so the threshold `ρ < 2` cannot be relaxed to
-`ρ ≤ 2`. Its running time is not certified here. -/
+other than running time with `ρ = 2` ([WilliamsonShmoys2011], Theorem 2.3). So the threshold
+`ρ < 2` is sharp, up to certifying Gonzalez's polynomial running time, which is not done here. -/
 example : (∀ D k, IsInstance D → 0 < k → k ≤ D.length →
       (centers D (gonzalezCenters (D, k))).card ≤ k) ∧
     ∀ D k [NeZero D.length], IsInstance D → 0 < k → k ≤ D.length → ∀ r : ℝ,
