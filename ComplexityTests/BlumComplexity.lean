@@ -7,8 +7,11 @@ Authors: Samuel Schlesinger
 import Complexity.Computability.BlumComplexity.Fuel
 import Complexity.Computability.BlumComplexity.Gap
 import Complexity.Computability.BlumComplexity.Hierarchy
+import Complexity.Computability.BlumComplexity.Honesty
+import Complexity.Computability.BlumComplexity.Naming
 import Complexity.Computability.BlumComplexity.RecursiveRelatedness
 import Complexity.Computability.BlumComplexity.Speedup
+import Complexity.Computability.BlumComplexity.Union
 
 /-!
 # Blum complexity measure clients
@@ -25,7 +28,15 @@ resulting function has a program, so the universally quantified conclusion is no
 is also hard: it lies outside the class of the bound `n + 1`. The speedup can be applied twice.
 The arbitrarily complex function for the bound `2 ^ n` has a program, every program for it needs
 fuel above `2 ^ n` almost everywhere, and the fuel class of `2 ^ n` is strictly contained in the
-fuel class of a larger computable bound.
+fuel class of a larger computable bound. The union theorem is instantiated for the polynomial
+bounds `(n + 1) ^ i`: the resulting class contains the constant-zero function, which is not in the
+class of the constant bound `1`, and it is not the class of all computable functions. The
+almost-everywhere form handles `n ^ i`, which does not increase pointwise at `n = 0`, and the
+pointwise form bounds the union bound by the diagonal `(n + 1) ^ n`. The naming theorem is
+instantiated for the program `Code.succ`: its name is total and names the inhabited class of
+`n + 1`. The honesty theorem gives the class of `2 ^ n` an honest name. The constant-zero function
+is honest for `g n y = n + 1`, and for every computable `g` some `0`/`1`-valued function is not
+`g`-honest.
 -/
 
 namespace ComplexityTests.BlumComplexity
@@ -198,5 +209,111 @@ example : ∃ t' : ℕ → ℕ, Computable t' ∧ (∀ n, 2 ^ n ≤ t' n) ∧
     fuelMeasure.complexityClass (fun n => 2 ^ n) ⊂ fuelMeasure.complexityClass t' :=
   fuelMeasure.exists_complexityClass_ssubset
     (primrec_pow.comp (Primrec.const 2) Primrec.id).to_comp
+
+private theorem computable_succ_pow : Computable₂ fun i n : ℕ => (n + 1) ^ i :=
+  (primrec_pow.comp (Primrec.succ.comp Primrec.snd) Primrec.fst).to_comp
+
+/-- The union theorem for the polynomial bounds `(n + 1) ^ i` and the fuel measure: one computable
+bound `t` has the union of the polynomial fuel classes as its class. That class contains the
+constant-zero function, which needs fuel `n + 1` and so is not in the class of `(n + 1) ^ 0 = 1`.
+It is not the class of all computable functions. -/
+example : ∃ t : ℕ → ℕ, Computable t ∧
+    fuelMeasure.complexityClass t = ⋃ i, fuelMeasure.complexityClass (fun n => (n + 1) ^ i) ∧
+    (fun _ => 0) ∈ fuelMeasure.complexityClass t ∧
+    (fun _ => 0) ∉ fuelMeasure.complexityClass (fun n => (n + 1) ^ 0) ∧
+    ¬∀ f : ℕ → ℕ, Computable f → f ∈ fuelMeasure.complexityClass t := by
+  obtain ⟨t, ht, -, heq⟩ := fuelMeasure.union_theorem computable_succ_pow
+    fun i n => Nat.pow_le_pow_right (Nat.succ_pos n) (Nat.le_succ i)
+  refine ⟨t, ht, heq, ?_, fun hmem => ?_, fuelMeasure.not_forall_mem_complexityClass ht⟩
+  · refine heq ▸ Set.mem_iUnion.2 ⟨1, mem_complexityClass.2 ⟨Code.zero, mem_eval_zero,
+      Eventually.of_forall fun n m hm => ?_⟩⟩
+    rw [fuelMeasure_cost, evalnFuel_zero, Part.mem_some_iff] at hm
+    rw [hm, pow_one]
+  · obtain ⟨c, hc, hev⟩ := mem_complexityClass.1 hmem
+    obtain ⟨n, hn, hn1⟩ := (hev.and (eventually_ge_atTop 1)).exists
+    obtain ⟨k, hk⟩ := Part.dom_iff_mem.1 (fuelMeasure.dom_cost_of_total hc n)
+    have h1 := hn k hk
+    rw [fuelMeasure_cost] at hk
+    have h2 := lt_of_mem_evalnFuel hk
+    rw [pow_zero] at h1
+    omega
+
+/-- The almost-everywhere form of the union theorem applies to `n ^ i`, which does not increase
+pointwise in `i` (at `n = 0`, `0 ^ 0 = 1 > 0 = 0 ^ 1`). -/
+example : ∃ t : ℕ → ℕ, Computable t ∧
+    fuelMeasure.complexityClass t = ⋃ i, fuelMeasure.complexityClass (fun n => n ^ i) := by
+  refine fuelMeasure.union_theorem_of_eventuallyLE
+    (primrec_pow.comp Primrec.snd Primrec.fst).to_comp fun i => ?_
+  filter_upwards [eventually_ge_atTop 1] with n hn
+  exact Nat.pow_le_pow_right hn (Nat.le_succ i)
+
+/-- The pointwise union bound: a program that halts within `t` almost everywhere, even one that
+diverges at finitely many inputs, halts within a single polynomial almost everywhere; and `t`
+dominates every polynomial almost everywhere while staying below the diagonal `(n + 1) ^ n`. -/
+example : ∃ t : ℕ → ℕ, Computable t ∧ (∀ n, t n ≤ (n + 1) ^ n) ∧
+    (∀ i, ∀ᶠ n in atTop, (n + 1) ^ i ≤ t n) ∧
+    ∀ c : Code, (∀ᶠ n in atTop, ∃ m ∈ evalnFuel c n, m ≤ t n) →
+      ∃ i, ∀ᶠ n in atTop, ∃ m ∈ evalnFuel c n, m ≤ (n + 1) ^ i := by
+  obtain ⟨t, ht, hdiag, hle, hcls⟩ := fuelMeasure.exists_union_bound computable_succ_pow
+    fun i n => Nat.pow_le_pow_right (Nat.succ_pos n) (Nat.le_succ i)
+  refine ⟨t, ht, fun n => ?_, hle, hcls⟩
+  obtain ⟨i, hi, he⟩ := hdiag n
+  rw [he]
+  exact Nat.pow_le_pow_right (Nat.succ_pos n) hi
+
+private theorem mem_eval_succ (n : ℕ) : n + 1 ∈ Code.succ.eval n := by
+  rw [Code.eval]
+  exact Part.mem_some _
+
+/-- The naming theorem for the fuel measure and the program `Code.succ`, which computes `n + 1`:
+the name `t'` of `Code.succ` is total and names the class of `n + 1`, which contains the
+constant-zero function. -/
+example : ∃ t' : ℕ → ℕ, (∀ n, t' n ∈ fuelMeasure.name Code.succ n) ∧
+    fuelMeasure.complexityClass t' = fuelMeasure.complexityClass (· + 1) ∧
+    (fun _ => 0) ∈ fuelMeasure.complexityClass t' := by
+  obtain ⟨t', ht'⟩ := fuelMeasure.exists_name_total mem_eval_succ
+  have hcls := complexityClass_name mem_eval_succ ht'
+  refine ⟨t', ht', hcls, hcls ▸ mem_complexityClass.2 ⟨Code.zero, mem_eval_zero,
+    Eventually.of_forall fun n m hm => ?_⟩⟩
+  rw [fuelMeasure_cost, evalnFuel_zero, Part.mem_some_iff] at hm
+  exact hm.le
+
+/-- The graph of the names is decidable, uniformly in the program. -/
+example : ComputablePred fun q : Code × ℕ × ℕ => q.2.2 ∈ fuelMeasure.name q.1 q.2.1 :=
+  fuelMeasure.computablePred_mem_name
+
+/-- The honesty theorem for the fuel measure and the bound `2 ^ n`: one computable `g`, which does
+not depend on the bound, gives the class of `2 ^ n` a computable `g`-honest name. -/
+example : ∃ g : ℕ → ℕ → ℕ, Computable₂ g ∧ ∃ t' : ℕ → ℕ, Computable t' ∧
+    fuelMeasure.IsHonest g t' ∧
+    fuelMeasure.complexityClass t' = fuelMeasure.complexityClass (fun n => 2 ^ n) := by
+  obtain ⟨g, hg, hhon⟩ := fuelMeasure.honesty_theorem
+  exact ⟨g, hg, hhon _ (primrec_pow.comp (Primrec.const 2) Primrec.id).to_comp⟩
+
+/-- An honest function: the constant-zero function is `g`-honest for `g n y = n + 1`, witnessed by
+the program `Code.zero`, which needs fuel exactly `n + 1`. -/
+example : fuelMeasure.IsHonest (fun n _ => n + 1) fun _ => 0 := by
+  refine isHonest_iff.2 ⟨Code.zero, mem_eval_zero, Eventually.of_forall fun n m hm => ?_⟩
+  rw [fuelMeasure_cost, evalnFuel_zero, Part.mem_some_iff] at hm
+  exact hm.le
+
+/-- A function that is not honest: for every computable `g` some computable `0`/`1`-valued `f` is
+not `g`-honest. Take the arbitrarily complex function for the bound `max (g n 0) (g n 1)`. -/
+example {g : ℕ → ℕ → ℕ} (hg : Computable₂ g) :
+    ∃ f : ℕ → ℕ, Computable f ∧ (∀ n, f n ≤ 1) ∧ ¬fuelMeasure.IsHonest g f := by
+  obtain ⟨f, hf, hf1, hc⟩ := fuelMeasure.exists_arbitrarilyComplex
+    (t := fun n => max (g n 0) (g n 1))
+    (Primrec.nat_max.to_comp.comp (hg.comp Computable.id (Computable.const 0))
+      (hg.comp Computable.id (Computable.const 1)))
+  refine ⟨f, hf, hf1, fun hhon => ?_⟩
+  obtain ⟨c, hcf, hev⟩ := isHonest_iff.1 hhon
+  obtain ⟨n, hn, hn'⟩ := ((hc c hcf).and hev).exists
+  obtain ⟨m, hm⟩ := Part.dom_iff_mem.1 (fuelMeasure.dom_cost_of_total hcf n)
+  have h1 := hn m hm
+  have h2 := hn' m hm
+  have h3 : g n (f n) ≤ max (g n 0) (g n 1) := by
+    rcases Nat.le_one_iff_eq_zero_or_eq_one.1 (hf1 n) with h | h <;> rw [h]
+    exacts [le_max_left _ _, le_max_right _ _]
+  omega
 
 end ComplexityTests.BlumComplexity
