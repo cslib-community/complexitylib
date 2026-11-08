@@ -1906,6 +1906,7 @@ public import Complexity.Computability.GenericRAM.Simulation.Turing
 public import Complexity.Computability.GenericRAM.SparseMemory.Basic
 public import Complexity.Computability.GenericRAM.SparseMemory.Compact
 public import Complexity.Computability.GenericRAM.SparseMemory.CompactTuring
+public import Complexity.Computability.GenericRAM.SparseMemory.StreamingCompact
 public import Complexity.Computability.GenericRAM.SparseMemory.Turing
 public import Complexity.Computability.Geometry.Orthogonal.Encoding
 public import Complexity.Computability.Geometry.Orthogonal.Subdivision
@@ -1959,6 +1960,8 @@ public import Complexity.Computability.Machines.ReadMachine.Tidy
 public import Complexity.Computability.Machines.ReadMachine.VirtualWord
 public import Complexity.Computability.Machines.ReadMachine.VirtualWord.Evaluator
 public import Complexity.Computability.Machines.ReadMachine.VirtualWord.Runtime
+public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.RadixPartition
+public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.RadixSort
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Game
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.GuessVerify
@@ -2221,6 +2224,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Spac
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space.Savitch
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.SpaceInTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Streaming
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.StreamingFilter
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Translate
 public import Complexity.Computability.Machines.Turing.MultiTape.Configuration
 public import Complexity.Computability.Machines.Turing.MultiTape.Counting
@@ -2960,6 +2964,7 @@ public import Complexity.Cryptanalysis.AddXNORProgramTemplate
 public import Complexity.Cryptanalysis.AddXNORReachability
 public import Complexity.Cryptanalysis.AddXNORRuns
 public import Complexity.Cryptanalysis.AddXNORSearch
+public import Complexity.Cryptanalysis.AddXNORSortedRecords
 public import Complexity.Cryptanalysis.AddXNORSource
 public import Complexity.Cryptanalysis.AddXNORSpectrum
 public import Complexity.Cryptanalysis.AddXNORStripping

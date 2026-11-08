@@ -1351,6 +1351,43 @@ derived prefix encoding bound. Correctness is stated for a nonempty typed word
 list; empty/malformed raw input validation is not asserted. This completes the
 source operand/seed/target/cut convention bridge, not Theorem 7's sharp resources.
 
+`RadixSort.computable` supplies a separate **uniform deterministic multitape sorter**
+for runtime unary key width $w$ and binary key/packed-payload records. One loop
+performs stable streaming radix partitions. For encoded input length $I$, record
+count $n$ and $B=w+\max_r|\mathrm{enc}(r)|+1$, a fixed monotone polynomial $Q$
+bounds time by $O((w+1)(I+(n+1)Q(B)))$ and charged peak space by $O(I+Q(B))$.
+The proof derives permutation, low-bit sortedness and the maxima over every loop
+prefix. It charges clock conversion, partition buffers, materialized lists and
+output; no growing output accumulator is copied on each record. `wire_bounds`
+charges payload width separately from key width. Thus sorting a bounded-width
+materialized list costs its record count times polynomial width overhead.
+
+`AddXNORSortedRecords.projectedQuarter_correct` connects these sorted keys to every
+admissible packed original-quarter index. `retainedClass_correct` connects sorted
+full-state records to the actual forward insertion stream and original two-quarter
+witnesses. Both preserve collisions and multiplicity; `unpack_payload` recovers
+both packed indices, including leading zero operators. `projectedQuarter_wires`
+and `retainedClass_wires` derive physical record widths from those constructions.
+Their calling boundary is an **already materialized list**. Quarter/class
+generation, counting, selected-class access/reuse and the full source execution
+are not charged by these sorting theorems. The source convention remains the
+computed seed/zero-target/cut described above.
+
+`SparseMemory.compact_streaming` is also an actual alternative filter: time is
+$O(I+(n+1)P(B))$ and charged peak space is $O(I+P(B))$, for a fixed polynomial $P$
+in default/maximum-binding width. It computes precisely the existing compaction,
+including nonzero defaults. It is **not installed in `CompactExecution`**; that
+path's cubic filter and general interpreter overhead remain charged. These new
+components do not prove the source's global sharp time or peak-space bounds.
+
+From the repository root, build
+`lake build Complexity.Cryptanalysis.AddXNORSortedRecords`, then run
+`lake env lean ComplexityTests/AddXNORSortedRecords.lean`. The
+[sorting client](../../ComplexityTests/AddXNORSortedRecords.lean) checks arbitrary-width
+machine bounds, stable duplicate payloads, empty/zero-width lists, an excluded
+nonfitting key, non-self-inverse addition/XNOR collisions, witness unpacking,
+nonzero-default deletion and a residual source quarter cut.
+
 From the repository root, build `lake build Complexity.Cryptanalysis.AddXNORSource`,
 then run `lake env lean ComplexityTests/AddXNORCompactExecution.lean`. The
 [complete compact/source client](../../ComplexityTests/AddXNORCompactExecution.lean)

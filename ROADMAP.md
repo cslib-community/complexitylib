@@ -239,11 +239,25 @@ implementation, not a live-support bound asserted for the old sparse execution.
 absence or an original-order witness; admitted depths make the cap inert, and all
 quarter remainders are handled. `compact_trajectory_bound` connects its actual
 prepared packet to the retained-prefix bound.
+A separate uniform deterministic multitape radix sorter now implements stable
+key-bit filtering and a runtime-width loop. Its time is
+`O((w+1)(I+(n+1)Q(B)))` and charged simultaneous space is `O(I+Q(B))`,
+where `B` includes actual maximum record/payload width and `Q` is a fixed
+monotone polynomial. Every prefix's record volume and workspace are bounded.
+`AddXNORSortedRecords` derives original projected-quarter and forward retained-class
+membership, packed-witness recovery and physical widths, preserving collisions.
+This sorts already materialized lists; charged source quarter/class generation,
+counting, lookup/merge access, smaller-side composition and arena reuse remain
+open. A real streaming default filter also removes whole-list accumulator copying,
+with `O(I+(n+1)P(B))` time and `O(I+P(B))` charged space. It is an alternative
+component, not installed in the existing cubic-filter uniform execution. Those
+old charges must remain in any composed execution bound.
 The total metadata reader's defaults and empty/malformed raw input handling are
 not a full source-input validator. Association-list scan time and polynomial
 internal interpreter workspace remain; filtering and a retained encoding bound
-do not prove sharp source bit time/peak space. Specialized sorted-list or otherwise
-resource-faithful access, transient/output workspace bounds and sharp bit resources
+do not prove sharp source bit time/peak space. Composition of the sorted-list
+components with resource-faithful access, transient/output workspace bounds and
+sharp global bit resources
 remain open. No source global bit asymptotic is claimed. Small-operand resources,
 reduction multiplicity and
 sparsification refinements, and repaired ideal-model bounds remain open as well.

@@ -128,7 +128,14 @@ bindings and derives a prefix encoding bound; that still does not bound internal
 interpreter/scan workspace sharply. Check the executed normalization and transient
 workspace, not just the retained wire. `AddXNORSource` computes the source's single
 operand list cut, seed and zero target, with explicit projection caps. Keep sharp
-bit time/peak space and the other remaining objectives visible in handoffs.
+bit time/peak space and the other remaining objectives visible in handoffs. The separate
+`RadixSort.computable` now certifies uniform streaming radix sorting with time
+linear in materialized record count times polynomial width overhead and peak
+space charging complete lists and per-record buffers. Its source record bridge
+preserves packed witnesses and collisions, but does not charge generation,
+counting, class access or reuse. The alternative streaming compactor is not wired
+into `CompactExecution`; preserve that path's cubic filter charge. A sorted-list
+component is progress toward the source model, not its global resource theorem.
 
 ## Correct course and hand work over
 
