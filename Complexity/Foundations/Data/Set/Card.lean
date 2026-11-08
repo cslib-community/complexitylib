@@ -27,6 +27,8 @@ import Mathlib.Algebra.Order.BigOperators.Group.Finset
   `f` takes at most as many values on `s` as `g`.
 * `Set.encard_lt_coe_iff_finite_ncard_lt`: `encard` and `ncard` agree below a natural number
   (`Set.encard_le_coe_iff_finite_ncard_le`).
+* `Set.finite_setOf_le_ncard_fiber`, `Set.mul_ncard_setOf_le_ncard_fiber_le`: a finite set has
+  finitely many fibers with at least `n ≠ 0` elements, and at most `s.ncard / n` of them.
 -/
 
 @[expose] public section
@@ -82,5 +84,38 @@ theorem ncard_image_le_ncard_image_of_factorsThrough {s : Set α} (hs : s.Finite
     refine image_congr fun a ha => ?_
     exact (h _ (Function.invFunOn_mem ⟨a, ha, rfl⟩) a ha (Function.invFunOn_eq ⟨a, ha, rfl⟩)).symm
   exact hfg ▸ ncard_image_le (hs.image g)
+
+/-- Over a finite set, the points whose fiber under `f` has at least `n ≠ 0` elements form a finite
+set. -/
+theorem finite_setOf_le_ncard_fiber {s : Set α} (hs : s.Finite) (f : α → β) {n : ℕ} (hn : n ≠ 0) :
+    {b | n ≤ {a ∈ s | f a = b}.ncard}.Finite := by
+  refine (hs.image f).subset fun b hb => ?_
+  have hb : n ≤ {a ∈ s | f a = b}.ncard := hb
+  obtain ⟨a, ha, hab⟩ := nonempty_of_ncard_ne_zero (by omega : {a ∈ s | f a = b}.ncard ≠ 0)
+  exact ⟨a, ha, hab⟩
+
+/-- **Heavy fibers are few.** A finite set has at most `s.ncard / n` points whose fiber under `f`
+has at least `n` elements. -/
+theorem mul_ncard_setOf_le_ncard_fiber_le {s : Set α} (hs : s.Finite) (f : α → β) (n : ℕ) :
+    n * {b | n ≤ {a ∈ s | f a = b}.ncard}.ncard ≤ s.ncard := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp
+  set B := {b | n ≤ {a ∈ s | f a = b}.ncard}
+  have hB : B.Finite := finite_setOf_le_ncard_fiber hs f hn.ne'
+  have hsub : {a ∈ s | f a ∈ B}.Finite := hs.subset fun a ha => ha.1
+  calc n * B.ncard = ∑ _b ∈ hB.toFinset, n := by
+        rw [Finset.sum_const_nat fun _ _ => rfl, mul_comm, ncard_eq_toFinset_card _ hB]
+    _ ≤ ∑ b ∈ hB.toFinset, {a ∈ {a ∈ s | f a ∈ B} | f a = b}.ncard := by
+        refine Finset.sum_le_sum fun b hb => ?_
+        have hb' : n ≤ {a ∈ s | f a = b}.ncard := hB.mem_toFinset.mp hb
+        refine hb'.trans_eq (congrArg ncard (Set.ext fun a => ?_))
+        constructor
+        · rintro ⟨ha, rfl⟩
+          exact ⟨⟨ha, hB.mem_toFinset.mp hb⟩, rfl⟩
+        · rintro ⟨⟨ha, -⟩, h⟩
+          exact ⟨ha, h⟩
+    _ = {a ∈ s | f a ∈ B}.ncard :=
+        (ncard_eq_sum_ncard_fiberwise hsub fun a ha => hB.mem_toFinset.mpr ha.2).symm
+    _ ≤ s.ncard := ncard_le_ncard (fun a ha => ha.1) hs
 
 end Set
