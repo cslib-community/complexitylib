@@ -182,6 +182,78 @@ theorem actual_ae_completion :
     simp [productive_eq, StochasticOracleAdaptiveComparisonTests.law, hh,
       Cslib.Optimization.OneConstraint.pair_mean]; norm_num
 
+/-- Response-dependent positive charges: success costs two, failure costs one;
+completion stops all further billing. The law still depends on full history. -/
+@[expose] def responseBill : List Bool → Bool → ℝ :=
+  stoppedBill toy 1 proposals (fun _ x => if x then 2 else 1)
+
+/-- The actual correlated infinite total is finite almost surely, integrable as a
+real random variable, and bounded in expectation by eight. -/
+theorem actual_total_bill :
+    (∀ᵐ ω ∂responseMeasure StochasticOracleAdaptiveComparisonTests.law,
+      totalBill responseBill ω < ⊤) ∧
+    MeasureTheory.Integrable (fun ω => (totalBill responseBill ω).toReal)
+      (responseMeasure StochasticOracleAdaptiveComparisonTests.law) ∧
+    (∫ ω, (totalBill responseBill ω).toReal
+      ∂responseMeasure StochasticOracleAdaptiveComparisonTests.law) ≤ (8 : ℝ) := by
+  have h := totalBill_integrable_le toy 1 proposals
+    StochasticOracleAdaptiveComparisonTests.law 1 1 (by norm_num [toy])
+    ⟨1 / 4, by norm_num, by norm_num⟩ (by norm_num) (by
+      intro h
+      by_cases hh : true ∈ h <;>
+        simp [productive_eq, StochasticOracleAdaptiveComparisonTests.law, hh,
+          Cslib.Optimization.OneConstraint.pair_mean]; norm_num)
+    responseBill 2 (by norm_num) (by
+      intro h x
+      simp only [responseBill, stoppedBill]
+      split_ifs <;> norm_num) (by
+      intro h
+      by_cases hc : toy.covered (selected toy 1 proposals h) = toy.ground
+      · simp [responseBill, Cslib.Optimization.OneConstraint.Distribution.mean,
+          stoppedBill, hc]
+      · simp only [responseBill, Cslib.Optimization.OneConstraint.Distribution.mean,
+          stoppedBill, hc, ite_false]
+        by_cases hh : true ∈ h <;>
+          norm_num [StochasticOracleAdaptiveComparisonTests.law, hh,
+            Cslib.Optimization.OneConstraint.Distribution.mean, stoppedBill, hc,
+            Cslib.Optimization.OneConstraint.pair])
+  norm_num at h
+  exact h
+
+/-- Empty ground and certain productivity: no turn is billed, even with positive
+raw charges. This checks the zero threshold and `p=1` endpoint together. -/
+theorem empty_total_bill (law : List Bool →
+    Cslib.Optimization.OneConstraint.Distribution Bool ℝ) :
+    let I : Instance Unit Unit :=
+      { toy with
+        ground := ∅
+        sets := fun _ => ∅
+        sets_subset := by simp
+        dual_feasible := by simp [toy] }
+    let bill := stoppedBill I 1 proposals (fun _ _ => 7)
+    MeasureTheory.Integrable (fun ω => (totalBill bill ω).toReal) (responseMeasure law) ∧
+      (∫ ω, (totalBill bill ω).toReal ∂responseMeasure law) ≤ 0 := by
+  dsimp only
+  let I : Instance Unit Unit :=
+    { toy with
+        ground := ∅
+        sets := fun _ => ∅
+        sets_subset := by simp
+        dual_feasible := by simp [toy] }
+  have hcov (h : List Bool) : I.covered (selected I 1 proposals h) = I.ground := by
+    ext e
+    simp [Instance.covered, I]
+  have h := totalBill_integrable_le I 1 proposals law 1 0 (by simp [I])
+    ⟨1, by norm_num, by norm_num⟩ (by norm_num) (by
+      intro h
+      simp [productive, AdaptiveSelection.residual, hcov,
+        Cslib.Optimization.OneConstraint.Distribution.mean_const])
+    (stoppedBill I 1 proposals (fun _ _ => 7)) 7 (by norm_num)
+    (by intro h x; simp [stoppedBill, hcov])
+    (by intro h; simp [Cslib.Optimization.OneConstraint.Distribution.mean,
+      stoppedBill, hcov])
+  simpa using h.2
+
 end StochasticOracleAdaptiveSelectionTests
 
 -- Chronology and a genuine infinite probability law, including full-history conditioning.

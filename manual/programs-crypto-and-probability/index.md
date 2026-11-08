@@ -688,9 +688,16 @@ hypotheses are needed for this exact identification. `measurable_responseHistory
 to the actual response measure and applies Borel–Cantelli: almost every trajectory
 has a complete retained cover at every sufficiently late turn. Its positive
 productivity bound is still required at every history. The complete correlated
-Boolean client checks this conclusion without a termination premise. Construction
-and integrability of the total bill remain open; finite uniform bounds alone
-are not yet connected to that random variable.
+Boolean client checks this conclusion without a termination premise. `stoppedBill` makes a raw response-dependent charge zero after retained completion.
+`accruedBill_responseHistory` identifies each finite accrued bill with the partial
+sum of actual pre-response-history charges. `totalBill` is the extended nonnegative
+supremum of these accrued bills, retaining infinity on divergent trajectories.
+`totalBill_integrable_le` uses monotone convergence and the finite cylinder bounds
+to derive almost-sure finiteness, integrability of its real conversion, and
+expectation at most `c*r/p`. Its inputs explicitly require nonnegative charges
+and the all-history conditional mean envelope; no total-bill bound, integrability
+or termination is assumed. The complete client checks response-dependent costs
+under the correlated law and the empty-ground, `p=1` endpoint.
 Selected-batch disintegration, physical latency, deadline/certification composition
 and the universal selection-only policy theorem remain open. The
 pathwise dual certificate is proved, but its joint stopped resource event is not.

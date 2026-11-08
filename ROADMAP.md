@@ -56,8 +56,11 @@ nonnegative marginal expected bills are summable. An infinite full-history respo
 constructed in `AdaptivePath` using Ionescu–Tulcea. Its finite cylinder expectations
 are now identified with the finite accounting recursion by `integral_responseHistory`,
 including a correlated actual-bill client. Almost-sure eventual retained completion is proved via cylinder expectations and
-Borel–Cantelli under the stronger all-history productivity envelope. The total-cost
-integrability bridge remains unproved.
+Borel–Cantelli under the stronger all-history productivity envelope. The actual nonnegative total bill is now defined as the supremum of accrued bills;
+monotone convergence proves almost-sure finiteness, real integrability and expectation
+at most `c*r/p` from explicit nonnegativity and conditional cost bounds.
+Response-dependent correlated billing and empty-ground/certain-productivity clients
+exercise the bridge.
 Selected-batch disintegration, joint latency/certification and universal policy/resource
 composition remain open; Theorem 6 needs the actual dual-certified residual
 construction, universal one/two-turn optimum and adaptivity ratio. These are remaining main
