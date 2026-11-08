@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandMeaning
+import Complexity.Tactic.Fits
 
 /-!
 # Charged native splitting of tensor-string digits
@@ -91,18 +92,18 @@ theorem exec_splitBody {w : ℕ} (L a : ℕ) (x : Data 96) (hx : SplitProgress L
   have hmp : x.regs maskPower ≤ 10 ^ L := by rw [hx.mask_power]; exact hpow 2 (by decide)
   have hop : x.regs outerPower ≤ 10 ^ L := hx.outer_power.trans (hpow 3 (by decide))
   have hip : x.regs innerPower ≤ 10 ^ L := hx.inner_power.trans (hpow 4 (by decide))
-  have hdFit : Fits w (x.regs residue % 7) := hfit.of_le (by omega)
+  have hdFit : Fits w (x.regs residue % 7) := by fits
   have hrFit : Fits w (x.regs residue / 7) :=
     hfit.of_le ((Nat.div_le_self _ _).trans (by have := hx.residue_le; omega))
-  have hmFit : Fits w (x.regs maskPower * 2) := hfit.of_le (by omega)
-  have hjFit : Fits w (x.regs level + 1) := hfit.of_le (by omega)
+  have hmFit : Fits w (x.regs maskPower * 2) := by fits
+  have hjFit : Fits w (x.regs level + 1) := by fits
   have hrest : L - x.regs level = L - (x.regs level + 1) + 1 := by omega
   by_cases houter : x.regs residue % 7 < 3
   · have hmul : Fits w (x.regs residue % 7 * x.regs outerPower) :=
       hfit.of_le (by nlinarith)
     have hadd : Fits w (x.regs outerAcc + x.regs residue % 7 * x.regs outerPower) :=
       hfit.of_le (by have := hx.outer_acc; nlinarith)
-    have hpower : Fits w (x.regs outerPower * 3) := hfit.of_le (by omega)
+    have hpower : Fits w (x.regs outerPower * 3) := by fits
     let y := (((((((x.set digit (x.regs residue % 7)).set residue (x.regs residue / 7)).set
       temporary (x.regs residue % 7 * x.regs outerPower)).set outerAcc
       (x.regs outerAcc + x.regs residue % 7 * x.regs outerPower)).set outerPower
@@ -143,13 +144,13 @@ theorem exec_splitBody {w : ℕ} (L a : ℕ) (x : Data 96) (hx : SplitProgress L
     · have hyl : y.regs level = x.regs level + 1 := by simp [y]
       rw [hyl]
       omega
-  · have hsub : Fits w (x.regs residue % 7 - 3) := hfit.of_le (by omega)
+  · have hsub : Fits w (x.regs residue % 7 - 3) := by fits
     have hsuble : x.regs residue % 7 - 3 < 4 := by omega
     have hmul : Fits w ((x.regs residue % 7 - 3) * x.regs innerPower) :=
       hfit.of_le (by nlinarith only [hip, hsuble])
     have hadd : Fits w (x.regs innerAcc + (x.regs residue % 7 - 3) * x.regs innerPower) :=
       hfit.of_le (by nlinarith only [hx.inner_acc, hip, hsuble])
-    have hpower : Fits w (x.regs innerPower * 4) := hfit.of_le (by omega)
+    have hpower : Fits w (x.regs innerPower * 4) := by fits
     have hmask : Fits w (x.regs maskAcc + x.regs maskPower) :=
       hfit.of_le (by have := hx.mask_acc; omega)
     let y := (((((((((x.set digit (x.regs residue % 7)).set residue (x.regs residue / 7)).set
@@ -201,8 +202,8 @@ theorem exec_split {w : ℕ} (L a : ℕ) (x : Data 96) (hx : SplitParameters L x
     ∃ y, ExecWithin w splitCode x y (13 * L + 10) ∧ SplitParameters L y ∧
       y.regs maskAcc = (parts L a).mask ∧ y.regs outerAcc = (parts L a).outer ∧
       y.regs innerAcc = (parts L a).inner ∧ y.mem = x.mem := by
-  have h0 : Fits w 0 := hfit.of_le (Nat.zero_le _)
-  have h1 : Fits w 1 := hfit.of_le (by omega)
+  have h0 : Fits w 0 := by fits
+  have h1 : Fits w 1 := by fits
   let start := ((((((((x.set residue a).set maskAcc 0).set outerAcc 0).set innerAcc 0).set
     maskPower 1).set outerPower 1).set innerPower 1).set level 0)
   have hs : ExecWithin w splitHead x start 8 := by

@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Kernel
+import Complexity.Tactic.Fits
 
 /-!
 # Actual record selection and depth recovery
@@ -47,7 +48,7 @@ theorem exec_logarithm {W m : ℕ} (x : Data 320)
   have harg : x.regs (logBank NatLog.arg) = 4 ^ m := hD
   obtain ⟨y, hy, hr, hm, -, -⟩ := NatLog.exec_rename logBank logBank_injective x
     (hfit.of_le (by omega)) (by rw [harg]; exact hfit.of_le (by omega))
-    (by rw [harg, log_two_four_pow]; exact hfit.of_le (by omega))
+    (by rw [harg, log_two_four_pow]; fits)
   refine ⟨y, ?_, ?_, hm, fun i hi => hy.regs_eq (log_preserves i hi)⟩
   · have he : 4 * Nat.log 2 (x.regs (logBank NatLog.arg)) + 5 = 8 * m + 5 := by
       rw [harg, log_two_four_pow]; omega
@@ -74,23 +75,23 @@ theorem exec_readRecord {W n D i out b : ℕ} (x : Data 320) (v : Fin 6 → ℕ)
   let r := out + i * (n * D + n * D + 6)
   have hmul : n * D + n * D + 6 = 6 + 2 * (n * D) := by omega
   have hrec' : r + 6 ≤ b := by simpa only [r, hmul] using hrec
-  have h1 : Fits W 1 := hfit.of_le (by omega)
-  have h2 : Fits W 2 := hfit.of_le (by omega)
-  have h3 : Fits W 3 := hfit.of_le (by omega)
-  have h4 : Fits W 4 := hfit.of_le (by omega)
-  have h6 : Fits W 6 := hfit.of_le (by omega)
-  have h19 : Fits W 19 := hfit.of_le (by omega)
-  have hA : Fits W (n * D) := hfit.of_le (by omega)
-  have hAA : Fits W (n * D + n * D) := hfit.of_le (by omega)
-  have hstride : Fits W (n * D + n * D + 6) := hfit.of_le (by omega)
+  have h1 : Fits W 1 := by fits
+  have h2 : Fits W 2 := by fits
+  have h3 : Fits W 3 := by fits
+  have h4 : Fits W 4 := by fits
+  have h6 : Fits W 6 := by fits
+  have h19 : Fits W 19 := by fits
+  have hA : Fits W (n * D) := by fits
+  have hAA : Fits W (n * D + n * D) := by fits
+  have hstride : Fits W (n * D + n * D + 6) := by fits
   have his : Fits W (i * (n * D + n * D + 6)) := by
-    rw [hmul]; exact hfit.of_le (by omega)
-  have hr : Fits W r := hfit.of_le (by dsimp only [r]; omega)
-  have hr1 : Fits W (r + 1) := hfit.of_le (by dsimp only [r]; omega)
-  have hr2 : Fits W (r + 1 + 1) := hfit.of_le (by dsimp only [r]; omega)
-  have hr3 : Fits W (r + 1 + 1 + 1) := hfit.of_le (by dsimp only [r]; omega)
-  have hr4 : Fits W (r + 1 + 1 + 1 + 1) := hfit.of_le (by dsimp only [r]; omega)
-  have hr5 : Fits W (r + 1 + 1 + 1 + 1 + 1) := hfit.of_le (by dsimp only [r]; omega)
+    rw [hmul]; fits
+  have hr : Fits W r := by fits
+  have hr1 : Fits W (r + 1) := by fits
+  have hr2 : Fits W (r + 1 + 1) := by fits
+  have hr3 : Fits W (r + 1 + 1 + 1) := by fits
+  have hr4 : Fits W (r + 1 + 1 + 1 + 1) := by fits
+  have hr5 : Fits W (r + 1 + 1 + 1 + 1 + 1) := by fits
   have hv0 : x.mem r = v 0 := by simpa only [r, hmul, Fin.val_zero, Nat.add_zero] using hv 0
   have hv1 : x.mem (r + 1) = v 1 := by simpa +decide [r, hmul] using hv ⟨1, by decide⟩
   have hv2 : x.mem (r + 1 + 1) = v 2 := by

@@ -14,6 +14,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Run
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Bits
 public import Complexity.Foundations.Data.BitString.Counter
+import Complexity.Tactic.Fits
 
 /-!
 # Word RAMs simulate multi-tape Turing machines
@@ -506,7 +507,7 @@ private theorem dispatch_spec {reg : Fin (regs k)} (hreg : reg ≠ rTmp)
       ExecWithin w (dispatch reg body N) x y (T + 3 * N)
   | 0, _, _, hvN, _, _ => absurd hvN (Nat.not_lt_zero v)
   | N + 1, x, hv, hvN, hN, hbody => by
-    have hfit : Fits w N := by unfold Fits; omega
+    have hfit : Fits w N := by fits
     by_cases h : v = N
     · subst h
       refine ((execWithin_const hfit).seq (ExecWithin.branch_pos ?_ hbody)).mono (by omega)
@@ -677,7 +678,7 @@ private theorem tapeCode_spec {x : Data (regs k)} {T : Fin k → ℤ → Option 
       ∀ b, b ≤ n → y.mem b = x.mem b := by
   obtain ⟨y₁, h₁, hT₁, hr₁, hm₁⟩ := writeCode_spec hT i a.1 h2
   have hc₁ : Consts n m y₁ := hc.of_eq fun d _ _ _ h _ _ _ => hr₁ d h
-  obtain ⟨y, h₂, hT₂, hr₂, hm₂⟩ := moveCode_spec hT₁ hc₁ i a.2 hfit (h2.of_le (by norm_num))
+  obtain ⟨y, h₂, hT₂, hr₂, hm₂⟩ := moveCode_spec hT₁ hc₁ i a.2 hfit (by fits)
   exact ⟨y, h₁.seq h₂, hT₂, fun d hs ha ht => (hr₂ d hs ha).trans (hr₁ d ht),
     fun b hb => by rw [hm₂, hm₁ b hb]⟩
 
@@ -808,13 +809,12 @@ private theorem actionCode_spec (act : Action k Bool Q) {inp : List Bool} {c : C
     (hfit : ∀ i, Fits w (tapeAddr k inp.length i ((act.apply c).workTapePos i)))
     (hbound : inp.length + 2 * k + m + 2 < 2 ^ w) (hout : (act.apply c).output.length < w) :
     ∃ y, ExecWithin w (actionCode e act) x y (8 * k + 7) ∧ Sim e y (act.apply c) := by
-  have h2 : Fits w 2 := by unfold Fits; omega
   obtain ⟨y₁, h₁, hT₁, hr₁, hm₁⟩ := tapesCode_spec (n := inp.length) act (List.finRange k)
-    (List.nodup_finRange k) hx.tapes hx.consts h2 (fun i _ => hfit i)
+    (List.nodup_finRange k) hx.tapes hx.consts (by fits) (fun i _ => hfit i)
   simp only [List.mem_finRange, ite_true] at hT₁
   have hc₁ : Consts inp.length m y₁ := hx.consts.of_eq fun d hd _ _ ht _ _ _ => hr₁ d hd ht
   obtain ⟨y₂, h₂, hh₂, hr₂, hm₂⟩ := headCode_spec (w := w) hc₁ (p := c.inputPos)
-    (by rw [hr₁ _ (by simp) (by reg_ne)]; exact hx.head) act.inputTape (by unfold Fits; omega)
+    (by rw [hr₁ _ (by simp) (by reg_ne)]; exact hx.head) act.inputTape (by fits)
   have hc₂ : Consts inp.length m y₂ := hc₁.of_eq fun d _ _ hh _ _ _ _ => hr₂ d hh
   obtain ⟨y₃, h₃, hv₃, hp₃, hr₃, hm₃⟩ := outCode_spec (x := y₂) (l := c.output)
     (by rw [hr₂ _ (by reg_ne), hr₁ _ (by simp) (by reg_ne)]; exact hx.val)
@@ -974,14 +974,13 @@ private theorem setupTapes_spec : ∀ (L : List (Fin k)), L.Nodup → ∀ {x : D
   | i :: L, hL, x, hx, hb => by
     obtain ⟨hiL, hL⟩ := List.nodup_cons.1 hL
     have hi := i.isLt
-    have h₁ : Fits w (2 * i) := by unfold Fits; omega
     have h₂ : Fits w ((x.set rTmp (2 * i)).regs rEnd + (x.set rTmp (2 * i)).regs rTmp) := by
       unfold Fits; reg_simp; omega
     obtain ⟨y, hy, ha, hr, hm⟩ := setupTapes_spec L hL
       (x := (x.set rTmp (2 * i)).set (rAdr i)
         ((x.set rTmp (2 * i)).regs rEnd + (x.set rTmp (2 * i)).regs rTmp))
       (by reg_simp; exact hx) hb
-    refine ⟨y, ((execWithin_const h₁).seq ((execWithin_add h₂).seq hy)).mono
+    refine ⟨y, ((execWithin_const (by fits)).seq ((execWithin_add h₂).seq hy)).mono
       (by simp only [List.length_cons]; omega), fun j => ?_, fun d hd ht => ?_, ?_⟩
     · rw [ha j]
       by_cases hj : j ∈ L
@@ -1001,7 +1000,7 @@ theorem setupCode_spec (q₀ : Q) (inp : List Bool) (hbound : inp.length + 2 * k
   have hr₀ : ∀ d, x₀.regs d = 0 := fun _ => rfl
   have hm₀ : x₀.mem 0 = n := by simp [x₀, n]
   have hq := (e q₀).isLt
-  have f1 : Fits w 1 := by unfold Fits; omega
+  have f1 : Fits w 1 := by fits
   set x₁ := x₀.set rEnd (x₀.mem (x₀.regs rZero))
   set x₂ := x₁.set rOne 1
   set x₃ := x₂.set rEnd (x₂.regs rEnd + x₂.regs rOne)
@@ -1021,10 +1020,10 @@ theorem setupCode_spec (q₀ : Q) (inp : List Bool) (hbound : inp.length + 2 * k
       ((execWithin_const ?_).seq ((execWithin_const ?_).seq ((execWithin_const f1).seq
       hy))))))))).mono (by simp only [List.length_finRange]; omega)
     · unfold Fits; reg_simp; rw [hr₀, hm₀]; omega
-    · unfold Fits; omega
+    · fits
     · unfold Fits; reg_simp; rw [hr₀, hm₀]; omega
-    · unfold Fits; omega
-    · unfold Fits; omega
+    · fits
+    · fits
   have hy : ∀ d : Fin (regs k), (∀ i, d ≠ rAdr i) → d ≠ rTmp → y.regs d = x₉.regs d := hr
   refine ⟨y, hexec, ?_⟩
   exact

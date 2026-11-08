@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.WordRAM.Notation
 import Complexity.Computability.WordRAM.CountingLoop
 public import Mathlib.Data.Nat.Prime.Defs
+import Complexity.Tactic.Fits
 
 /-!
 # Charged native trial division
@@ -88,7 +89,7 @@ theorem exec {w : ℕ} (x : Data 6) (hp : 2 ≤ x.regs arg)
       have := Nat.mod_le p (y.regs divisor)
       change p % y.regs divisor ≤ p + 2
       omega)
-    have hinc : Fits w (y.regs divisor + 1) := hfit.of_le (by change _ ≤ p + 2; omega)
+    have hinc : Fits w (y.regs divisor + 1) := by fits
     let z := ((y.set remainder (p % y.regs divisor)).set flag
       (if p % y.regs divisor = 0 then 0 else y.regs flag)).set divisor (y.regs divisor + 1)
     have he : ExecWithin w body y z 5 := by
@@ -124,8 +125,8 @@ theorem exec {w : ℕ} (x : Data 6) (hp : 2 ≤ x.regs arg)
       exact h d hd hdp (Nat.mod_eq_zero_of_dvd hdiv)
     · rintro ⟨_, h⟩ d hd hdp hzero
       exact h d hd hdp (Nat.dvd_of_mod_eq_zero hzero)
-  have h1 : Fits w 1 := hfit.of_le (by omega)
-  have h2 : Fits w 2 := hfit.of_le (by omega)
+  have h1 : Fits w 1 := by fits
+  have h2 : Fits w 2 := by fits
   have hinit : ExecWithin (B := .standard) w
       (ram[ divisor ← #2; flag ← #1; one ← #1; zero ← #0 ]) x x₀ 4 := by
     ram_eval [x₀, h1, h2]

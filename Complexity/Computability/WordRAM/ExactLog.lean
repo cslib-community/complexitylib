@@ -11,6 +11,7 @@ public import Complexity.Init
 public import Complexity.Computability.WordRAM.Structured
 public import Mathlib.Data.Nat.Log
 import Mathlib.Tactic.FinCases
+import Complexity.Tactic.Fits
 
 /-!
 # Exact-basis Word-RAM binary logarithms and arithmetic helpers
@@ -114,14 +115,13 @@ theorem log2Loop_exec {w : ℕ} (rem : ℕ) {acc : ℕ} {x : Data 3}
         rw [Nat.shiftRight_eq_div_pow]
       have hlog : Nat.log 2 rem = Nat.log 2 (rem / 2) + 1 :=
         Nat.log_of_one_lt_of_le (by decide) (by omega)
-      have hfit_div : Fits w (rem / 2) := hfit_rem.of_le (Nat.div_le_self rem 2)
-      have hfit_acc1 : Fits w (acc + 1) := hfit_acc.of_le (by omega)
+      have hfit_div : Fits w (rem / 2) := by fits
       set d1 := x.set 0 (rem / 2)
       have s1 : Exec w (.op (.exactBin .shiftRight 0 0 2) : Code .exact 3) x d1 1 :=
         exec_exactBin (by simp [hrem, hone, hshr]) hfit_div
       set d2 := d1.set 1 (acc + 1)
       have s2 : Exec w (.op (.exactBin .add 1 1 2) : Code .exact 3) d1 d2 1 :=
-        exec_exactBin (by simp +decide [d1, hacc, hone]) hfit_acc1
+        exec_exactBin (by simp +decide [d1, hacc, hone]) (by fits)
       have hdiv_lt : rem / 2 < rem := Nat.div_lt_self (by omega) (by decide)
       have hrec := ih (rem / 2) hdiv_lt (acc := acc + 1) (x := d2)
         (by simp +decide [d2, d1])
@@ -189,23 +189,20 @@ theorem clog2Loop_exec {w : ℕ} (rem : ℕ) {acc : ℕ} {x : Data 3}
       have hclog : Nat.clog 2 rem = Nat.clog 2 ((rem + 1) / 2) + 1 :=
         Nat.clog_of_one_lt (by decide) hlt
       have hdiv_lt : (rem + 1) / 2 < rem := by omega
-      have hfit_div1 : Fits w ((rem + 1) / 2 + 1) := hfit_rem1.of_le (by omega)
-      have hfit_div : Fits w ((rem + 1) / 2) := hfit_div1.of_le (by omega)
-      have hfit_acc1 : Fits w (acc + 1) := hfit_acc.of_le (by omega)
       set d1 := x.set 0 (rem + 1)
       have s1 : Exec w (.op (.exactBin .add 0 0 2) : Code .exact 3) x d1 1 :=
         exec_exactBin (by simp [hrem, hone]) hfit_rem1
       set d2 := d1.set 0 ((rem + 1) / 2)
       have s2 : Exec w (.op (.exactBin .shiftRight 0 0 2) : Code .exact 3) d1 d2 1 :=
-        exec_exactBin (by simp +decide [d1, hone, hshr]) hfit_div
+        exec_exactBin (by simp +decide [d1, hone, hshr]) (by fits)
       set d3 := d2.set 1 (acc + 1)
       have s3 : Exec w (.op (.exactBin .add 1 1 2) : Code .exact 3) d2 d3 1 :=
-        exec_exactBin (by simp +decide [d2, d1, hacc, hone]) hfit_acc1
+        exec_exactBin (by simp +decide [d2, d1, hacc, hone]) (by fits)
       have hrec := ih ((rem + 1) / 2) hdiv_lt (acc := acc + 1) (x := d3)
         (by simp +decide [d3, d2])
         (by simp +decide [d3])
         (by simp +decide [d3, d2, d1, hone])
-        hfit_div1
+        (by fits)
         (by rwa [show acc + 1 + Nat.clog 2 ((rem + 1) / 2) = acc + Nat.clog 2 rem by omega])
       have hd : clog2LoopData ((rem + 1) / 2) (acc + 1) d3 = clog2LoopData rem acc x := by
         have hdiv_ne : (rem + 1) / 2 ≠ 0 := by omega

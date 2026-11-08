@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Add
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.ScanStep
+import Complexity.Tactic.Fits
 
 /-!
 # Actual native selection and accumulation of one query
@@ -106,8 +107,7 @@ theorem exec_accumulateStep {w : ℕ} {a b : ℤ}
         Function.update x.mem (x.regs valueBase + q) (encode (a + b)) else x.mem) ∧
       (∀ i, ¬AccumulateStepLocal i → y.regs i = x.regs i) := by
   let z := ((x.set address (x.regs listBase + x.regs index)).set query q).set digit (q % 10)
-  have hmod : Fits (w + 2) (q % 10) :=
-    h10fit.of_le (Nat.le_of_lt (Nat.mod_lt _ (by decide)))
+  have hmod : Fits (w + 2) (q % 10) := by fits
   have hload : ExecWithin (w + 2) scanLoad x z 3 := by
     ram_eval [scanLoad, z, hq, h10, hr, hmod, address, listBase, index, query, digit, ten,
       Fin.mk.injEq]

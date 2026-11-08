@@ -13,6 +13,7 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTa
 import Mathlib.Algebra.BigOperators.Fin
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Complete native compact box-value table
@@ -113,7 +114,7 @@ theorem exec_tileValue {w L H D V AA BB A B s : ℕ} (x : Data registers)
       exact (Nat.mul_le_mul (ha _) (hb _)).trans (hAB.trans (by omega))
     obtain ⟨y, hy, hyr, hym, _⟩ := exec_leafProduct ha0 hb0 hp0 x
       (by simpa only [hAA, hc] using hleft) (by simpa only [hBB, hc] using hright)
-      (hfit.of_le (by rw [hAA, hc]; omega)) (hfit.of_le (by rw [hBB, hc]; omega))
+      (by fits) (by fits)
     have hy' : ExecWithin (w + 2) tileValue x y 316 :=
       (hy.branch_pos (by simp [Cond.holds_eq, he, h0, he0])).mono (by decide)
     refine ⟨y, hy', ?_, hym, fun i hi => hy'.regs_eq (tileValue_preserves i hi)⟩
@@ -132,7 +133,7 @@ theorem exec_tileValue {w L H D V AA BB A B s : ℕ} (x : Data registers)
         _ = 10 ^ recordStars L s * (A * B) := by rw [Nat.sub_add_cancel hepos]
         _ ≤ _ := Nat.mul_le_mul_right _ (Nat.pow_le_pow_right (by decide) heL)
     let u := (x.set Reg.accumulator 0).set Reg.term 0
-    have hf0 : Fits (w + 2) 0 := hfit.of_le (Nat.zero_le _)
+    have hf0 : Fits (w + 2) 0 := by fits
     have hstart : ExecWithin (w + 2) childrenStart x u 2 := by
       ram_eval [childrenStart, u, hf0, Reg.accumulator, Reg.term, Fin.mk.injEq]
     have uf (i : Fin registers) (hi : i ≠ Reg.accumulator) (ht : i ≠ Reg.term) :
@@ -226,15 +227,15 @@ theorem exec_tileStep {w L H D R V AA BB A B s : ℕ} (x : Data registers)
     (by simpa only [um] using hleft) (by simpa only [um] using hright)
     (fun he d => by simpa only [um] using hrank he d)
     (fun he d => by simpa only [um] using hvalue he d)
-    (hfit.of_le (by omega)) hsigned
+    (by fits) hsigned
   have vV : v.regs Reg.values = V :=
     (vf _ (by decide)).trans ((uf _ (by decide)).trans hV)
   have vj : v.regs Reg.current = Nat.count (Eligible L H) s :=
     (vf _ (by decide)).trans ((uf _ (by decide)).trans hj)
   have v1 : v.regs Reg.one = 1 :=
     (vf _ (by decide)).trans ((uf _ (by decide)).trans hx.one)
-  have haddr : Fits (w + 2) (V + Nat.count (Eligible L H) s) := hfit.of_le (by omega)
-  have hinc : Fits (w + 2) (Nat.count (Eligible L H) s + 1) := hfit.of_le (by omega)
+  have haddr : Fits (w + 2) (V + Nat.count (Eligible L H) s) := by fits
+  have hinc : Fits (w + 2) (Nat.count (Eligible L H) s + 1) := by fits
   let y := ((v.set Reg.address (V + Nat.count (Eligible L H) s)).write
     (V + Nat.count (Eligible L H) s) (Signed.encode (slotValue a b s))).set
       Reg.current (Nat.count (Eligible L H) s + 1)
@@ -366,7 +367,7 @@ theorem exec_tile {w L H D R V AA BB A B : ℕ} {μ : ℕ → ℕ} (x : Data reg
         y.mem q = x.mem q) ∧ (∀ i, ¬TileLocal i → y.regs i = x.regs i) := by
   obtain ⟨u, hu, u0, u1, u10, u9, u3, um, uf⟩ := exec_constants x
     (hfit.of_le (by omega))
-  have hf0 : Fits (w + 2) 0 := hfit.of_le (Nat.zero_le _)
+  have hf0 : Fits (w + 2) 0 := by fits
   let v := u.set Reg.current 0
   have hv : ExecWithin (B := .standard) (w + 2) (ram[ Reg.current ← #0 ]) u v 1 := by
     ram_eval [v, hf0]

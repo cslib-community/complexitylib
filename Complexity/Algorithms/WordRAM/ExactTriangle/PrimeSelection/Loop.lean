@@ -12,6 +12,7 @@ public import Complexity.Foundations.NumberTheory.SqrtPrimeWindow
 import all Complexity.Algorithms.WordRAM.ExactTriangle.PrimeSelection.Minimum
 import all Complexity.Algorithms.WordRAM.ExactTriangle.PrimeSelection.Step
 import Mathlib.Data.Nat.Sqrt
+import Complexity.Tactic.Fits
 
 /-!
 # Native selection loop composed with a finite counting call
@@ -137,9 +138,9 @@ theorem exec_of_count {w D T : ℕ} (counter : Code .standard 128) (score : ℕ 
     · rw [hzk']; omega
   let x₀ := (((((((x.set Reg.one 1).set Reg.zero 0).set Reg.four 4).set Reg.cursor 2).set
     Reg.square 4).set Reg.best 0).set Reg.bestCount 0).set Reg.found 0
-  have h1 : Fits w 1 := hfit.of_le (by omega)
-  have h2 : Fits w 2 := hfit.of_le (by omega)
-  have h4 : Fits w 4 := hfit.of_le (by omega)
+  have h1 : Fits w 1 := by fits
+  have h2 : Fits w 2 := by fits
+  have h4 : Fits w 4 := by fits
   have hinit : ExecWithin w setup x x₀ 8 := by
     ram_eval [setup, x₀, h1, h2, h4, Reg.one, Reg.zero, Reg.four, Reg.cursor,
       Reg.square, Reg.best, Reg.bestCount, Reg.found, Fin.mk.injEq]

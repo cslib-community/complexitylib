@@ -11,6 +11,7 @@ public import Complexity.DataStructure.Memory.Alloc
 public import Complexity.DataStructure.Memory.Copy
 public import Complexity.DataStructure.Memory.Field
 public import Complexity.DataStructure.Stack.Spec
+import Complexity.Tactic.Fits
 
 /-!
 # A stack in a doubling array over the memory oracle
@@ -204,7 +205,7 @@ theorem validHistory_grow (n : ℕ) (s : State) (hh : hdr + 3 ≤ s.frontier)
     (show s.frontier + n ≤ s.frontier + 2 * n by omega) hitems, ?_⟩
   change (hdr + 2 < s.frontier + 2 * n ∧ Fits w s.frontier) ∧
     (hdr + 1 < s.frontier + 2 * n ∧ Fits w (2 * n)) ∧ True
-  exact ⟨⟨by omega, hfit.of_le (by omega)⟩, ⟨by omega, hfit.of_le (by omega)⟩, trivial⟩
+  exact ⟨⟨by omega, by fits⟩, ⟨by omega, by fits⟩, trivial⟩
 
 /-- Appending reads the base, writes the item and the new count. -/
 theorem runClient_append (n v : ℕ) (s : State) :
@@ -378,7 +379,7 @@ theorem validHistory_push_full {s : State} (hs : Inv hdr w C s)
     (s.frontier + count hdr s < s.frontier + 2 * count hdr s ∧ Fits w v) ∧
     (hdr < s.frontier + 2 * count hdr s ∧ Fits w (count hdr s + 1)) ∧ True
   simp only [base, capacity, count] at hb hi h1 h ⊢
-  exact ⟨by omega, ⟨by omega, hv⟩, ⟨by omega, hfit.of_le (by omega)⟩, trivial⟩
+  exact ⟨by omega, ⟨by omega, hv⟩, ⟨by omega, by fits⟩, trivial⟩
 
 /-- A pop from a nonempty stack decrements the count and keeps the rest. -/
 theorem pop_of_ne_zero {s : State} (h : count hdr s ≠ 0) :
@@ -431,7 +432,7 @@ def refinement (hdr w C : ℕ) : Refinement (Stack.spec w C) (Memory.spec w) :=
         · simp only [methods, StateTransitionSpec.clientHistory,
             runClient_push_not_full hdr v s heq, StateTransitionSpec.validHistory_cons,
             StateTransitionSpec.stepFn, step_read, step_write, valid_read, valid_write]
-          exact ⟨by omega, by omega, by omega, ⟨by omega, hfit⟩, ⟨by omega, hf.of_le (by omega)⟩,
+          exact ⟨by omega, by omega, by omega, ⟨by omega, hfit⟩, ⟨by omega, by fits⟩,
             trivial⟩
       | pop =>
         by_cases h0 : count hdr s = 0
@@ -441,7 +442,7 @@ def refinement (hdr w C : ℕ) : Refinement (Stack.spec w C) (Memory.spec w) :=
         · simp only [methods, StateTransitionSpec.clientHistory,
             runClient_pop_of_ne_zero hdr s h0, StateTransitionSpec.validHistory_cons,
             StateTransitionSpec.stepFn, step_read, step_write, valid_read, valid_write]
-          exact ⟨by omega, by omega, by omega, ⟨by omega, hf.of_le (by omega)⟩, trivial⟩
+          exact ⟨by omega, by omega, by omega, ⟨by omega, by fits⟩, trivial⟩
       | size =>
         simp only [methods, StateTransitionSpec.clientHistory, runClient_size,
           StateTransitionSpec.validHistory_cons, valid_read]
@@ -700,8 +701,8 @@ def allocator (w C : ℕ) : Allocator (Stack.spec w C) w where
     · simp only [StateTransitionSpec.clientHistory, runClient_create,
         StateTransitionSpec.validHistory_cons, StateTransitionSpec.stepFn, step_alloc,
         step_allocDirty, step_write, valid_alloc, valid_allocDirty, valid_write]
-      exact ⟨hroom.of_le (by omega), hroom.of_le (by omega), ⟨by omega, hroom.of_le (by omega)⟩,
-        ⟨by omega, hroom.of_le (by omega)⟩, trivial⟩
+      exact ⟨by fits, by fits, ⟨by omega, by fits⟩,
+        ⟨by omega, by fits⟩, trivial⟩
     · simp [StateTransitionSpec.clientHistory, runClient_create]
     · intro a ha
       simp only [StateTransitionSpec.clientState, runClient_create]

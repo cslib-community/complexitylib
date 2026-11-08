@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.Deduplicate.Count
 import Complexity.Computability.WordRAM.MemoryView
+import Complexity.Tactic.Fits
 
 /-!
 # Complete native adjacent deduplication and multiplicity arrays
@@ -125,10 +126,10 @@ theorem exec {w s base : ℕ} (xs : List ℕ) (x : Data 16)
     have hinit : ExecWithin (B := .standard) w
         (ram[ addr ← src + idx; key ← *addr; count ← #0; active ← #1 ]) y y₀ 4 := by
       have had : Fits w (y.regs src + y.regs idx) := by
-        rw [hys]; exact hfit.of_le (by omega)
+        rw [hys]; fits
       have hread : y.mem (y.regs src + y.regs idx) = xs[y.regs idx] := by
         rw [hys]; exact hym.get _ hi
-      have had' : Fits w (s + y.regs idx) := hfit.of_le (by omega)
+      have had' : Fits w (s + y.regs idx) := by fits
       have hread' : y.mem (s + y.regs idx) = xs[y.regs idx] := hym.get _ hi
       ram_eval [y₀, had, had', hread, hread', hys, h1]
     obtain ⟨u, hu, hui, huc, hum⟩ := Count.exec (k := xs[y.regs idx]) y₀
@@ -171,8 +172,8 @@ theorem exec {w s base : ℕ} (xs : List ℕ) (x : Data 16)
       exact hh
     obtain ⟨z, hz, hzout, hzm⟩ := flush_exec u huo
       (by rw [huk, huout]; exact hfit.of_le (by omega))
-      (by rw [hucb, huout]; exact hfit.of_le (by omega))
-      (by rw [huout]; exact hfit.of_le (by omega))
+      (by rw [hucb, huout]; fits)
+      (by rw [huout]; fits)
     have hzmem : z.mem = Function.update
         (Function.update y.mem (base + rs.length) xs[y.regs idx]) (base + n + rs.length) c := by
       simpa only [huk, hucb, huout, hukey, huc', hum, y₀, Data.set_mem] using hzm

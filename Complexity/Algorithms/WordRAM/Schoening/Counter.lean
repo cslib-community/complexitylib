@@ -9,6 +9,7 @@ module
 
 public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.Schoening.Scan
+import Complexity.Tactic.Fits
 
 /-!
 # A multiword counter on the word RAM
@@ -385,12 +386,12 @@ theorem mulAddLoop_spec {a Bd : ℕ} (haB : a ≤ Bd) (hf : Fits w (2 * Bd)) :
     rw [hB] at hh hfit ⊢
     have hmem : x.mem (B + pre.length) = d := by simpa using hh.get pre.length (by simp)
     obtain ⟨v, hv⟩ : ∃ v, d * a + cy = v := ⟨_, rfl⟩
-    have hf1 : Fits w (B + pre.length) := hfit.of_le (by omega)
-    have hf2 : Fits w (d * a) := hf.of_le (by omega)
-    have hf3 : Fits w v := hf.of_le (by omega)
-    have hf4 : Fits w (v >>> 1) := hf3.of_le (by rw [Nat.shiftRight_eq_div_pow]; omega)
+    have hf1 : Fits w (B + pre.length) := by fits
+    have hf2 : Fits w (d * a) := by fits
+    have hf3 : Fits w v := by fits
+    have hf4 : Fits w (v >>> 1) := by fits
     have hf5 : Fits w (v &&& 1) := hf3.of_le (by rw [Nat.and_one_is_mod]; omega)
-    have hf6 : Fits w (pre.length + 1) := hfit.of_le (by omega)
+    have hf6 : Fits w (pre.length + 1) := by fits
     let y₁ : Data 24 := ((((((((x.set addr (B + pre.length)).set val d).set val (d * a)).set val
       v).set carry (v >>> 1)).set val (v &&& 1)).write (B + pre.length) (v &&& 1)).set idx
       (pre.length + 1))
@@ -443,10 +444,10 @@ theorem carryLoop_spec : ∀ (cy : ℕ) (ds : List ℕ) (x : Data 24),
       have hc' : (Cond.lt zero carry).Holds x := by simp [Cond.holds_lt, hz, hc, hpos]
       obtain ⟨B, hB⟩ : ∃ B, x.regs bBase = B := ⟨_, rfl⟩
       rw [hB] at hh hfit ⊢
-      have hf1 : Fits w (B + ds.length) := hfit.of_le (by omega)
+      have hf1 : Fits w (B + ds.length) := by fits
       have hf2 : Fits w (cy &&& 1) := hfc.of_le (by rw [Nat.and_one_is_mod]; omega)
-      have hf3 : Fits w (cy >>> 1) := hfc.of_le (by rw [Nat.shiftRight_eq_div_pow]; omega)
-      have hf4 : Fits w (ds.length + 1) := hfit.of_le (by omega)
+      have hf3 : Fits w (cy >>> 1) := by fits
+      have hf4 : Fits w (ds.length + 1) := by fits
       let y₁ : Data 24 := ((((x.set addr (B + ds.length)).set val (cy &&& 1)).write
         (B + ds.length) (cy &&& 1)).set carry (cy >>> 1)).set bLen (ds.length + 1)
       have hbody : ExecWithin w carryBody x y₁ 5 := by
@@ -544,10 +545,10 @@ theorem divLoop_spec {d : ℕ} (hd : 0 < d) (hfd : Fits w (2 * d)) :
     rw [hB] at hh hfit ⊢
     have hmem : x.mem (B + pre.length) = b := by simpa using hh.get pre.length (by simp)
     obtain ⟨t, ht⟩ : ∃ t, r + r + b = t := ⟨_, rfl⟩
-    have hf1 : Fits w pre.length := hfit.of_le (by omega)
-    have hf2 : Fits w (B + pre.length) := hfit.of_le (by omega)
-    have hf3 : Fits w (r + r) := hfd.of_le (by omega)
-    have hf4 : Fits w t := hfd.of_le (by omega)
+    have hf1 : Fits w pre.length := by fits
+    have hf2 : Fits w (B + pre.length) := by fits
+    have hf3 : Fits w (r + r) := by fits
+    have hf4 : Fits w t := by fits
     have hf5 : Fits w (t / d) := hf4.of_le (Nat.div_le_self _ _)
     have hf6 : Fits w (t % d) := hf4.of_le (Nat.mod_le _ _)
     let y₁ : Data 24 := (((((((x.set idx pre.length).set addr (B + pre.length)).set val b).set tmp
@@ -637,10 +638,10 @@ theorem decLoop_spec : ∀ (ds pre : List ℕ) (x : Data 24),
     obtain ⟨B, hB⟩ : ∃ B, x.regs bBase = B := ⟨_, rfl⟩
     rw [hB] at hh hfit ⊢
     have hmem : x.mem (B + pre.length) = d := by simpa using hh.get pre.length (by simp)
-    have hf1 : Fits w (B + pre.length) := hfit.of_le (by omega)
+    have hf1 : Fits w (B + pre.length) := by fits
     by_cases h0 : d = 0
     · subst h0
-      have hf2 : Fits w (pre.length + 1) := hfit.of_le (by omega)
+      have hf2 : Fits w (pre.length + 1) := by fits
       let y₁ : Data 24 := (((x.set addr (B + pre.length)).set val 0).write (B + pre.length)
         1).set idx (pre.length + 1)
       have hbody : ExecWithin w decBody x y₁ 5 := by
@@ -662,8 +663,8 @@ theorem decLoop_spec : ∀ (ds pre : List ℕ) (x : Data 24),
       · rw [hyb, hyB]
       · intro b hb
         rw [hym b (by rw [hyB]; exact hb), hy₁m, Function.update_of_ne (by omega)]
-    · have hf2 : Fits w (pre.length + (ds.length + 1)) := hfit.of_le (by omega)
-      have hf3 : Fits w 1 := hfit.of_le (by omega)
+    · have hf2 : Fits w (pre.length + (ds.length + 1)) := by fits
+      have hf3 : Fits w 1 := by fits
       let y₁ : Data 24 := ((((x.set addr (B + pre.length)).set val d).write (B + pre.length)
         0).set found 1).set idx (pre.length + (ds.length + 1))
       have hbody : ExecWithin w decBody x y₁ 7 := by

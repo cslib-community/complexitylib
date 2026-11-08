@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.WordRAM.Notation
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Native natural powers
@@ -56,8 +57,8 @@ theorem exec {w : ℕ} (b n : ℕ) (hb : 1 ≤ b) (x : Data 5)
     (hx : x.regs base = b) (hn : x.regs exponent = n) (hfit : Fits w (b ^ n + n + 2)) :
     ∃ y, ExecWithin w program x y (4 * n + 5) ∧ Post b n x y := by
   unfold Post
-  have h0 : Fits w 0 := hfit.of_le (Nat.zero_le _)
-  have h1 : Fits w 1 := hfit.of_le (by omega)
+  have h0 : Fits w 0 := by fits
+  have h1 : Fits w 1 := by fits
   let start := ((x.set value 1).set counter 0).set one 1
   have hs : ExecWithin (B := .standard) w
       (ram[ value ← #1; counter ← #0; one ← #1 ]) x start 3 := by
@@ -72,8 +73,8 @@ theorem exec {w : ℕ} (b n : ℕ) (hb : 1 ≤ b) (x : Data 5)
         z.regs counter = y.regs counter + 1 := by
     obtain ⟨hbv, hnv, ho, hv, hm⟩ := hy
     have hpn : b ^ (y.regs counter + 1) ≤ b ^ n := Nat.pow_le_pow_right hb (by omega)
-    have hp : Fits w (b ^ (y.regs counter + 1)) := hfit.of_le (hpn.trans (by omega))
-    have hj : Fits w (y.regs counter + 1) := hfit.of_le (by omega)
+    have hp : Fits w (b ^ (y.regs counter + 1)) := by fits
+    have hj : Fits w (y.regs counter + 1) := by fits
     let z := (y.set value (b ^ (y.regs counter + 1))).set counter (y.regs counter + 1)
     have he : ExecWithin w body y z 2 := by
       ram_eval [body, z, hbv, ho, hv, ← pow_succ, hp, hj,

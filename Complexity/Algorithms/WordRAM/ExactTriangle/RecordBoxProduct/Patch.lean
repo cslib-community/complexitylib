@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Prepare
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Product.InputLevel
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Program
+import Complexity.Tactic.Fits
 
 /-!
 # Actual threshold-aware patch of a prepared record's original input
@@ -57,16 +58,16 @@ theorem exec_patchInput {W b m I : ℕ} (x : Data 320)
         b I) (b + I) (m / 9) ∧
       y.regs Reg.base = b ∧
       ∀ j : Fin 320, j.val < 65 → y.regs j = x.regs j := by
-  have h1 : Fits W 1 := hfit.of_le (by omega)
-  have h2 : Fits W 2 := hfit.of_le (by omega)
-  have h9 : Fits W 9 := hfit.of_le (by omega)
-  have h21 : Fits W 21 := hfit.of_le (by omega)
-  have hb2 : Fits W (b + 2) := hfit.of_le (by omega)
-  have hb1 : Fits W (b + 1) := hfit.of_le (by omega)
-  have hL : Fits W (m * 21) := hfit.of_le (by omega)
-  have hIF : Fits W I := hfit.of_le (by omega)
-  have hbI : Fits W (b + I) := hfit.of_le (by omega)
-  have hquot : Fits W (m / 9) := hfit.of_le (by omega)
+  have h1 : Fits W 1 := by fits
+  have h2 : Fits W 2 := by fits
+  have h9 : Fits W 9 := by fits
+  have h21 : Fits W 21 := by fits
+  have hb2 : Fits W (b + 2) := by fits
+  have hb1 : Fits W (b + 1) := by fits
+  have hL : Fits W (m * 21) := by fits
+  have hIF : Fits W I := by fits
+  have hbI : Fits W (b + I) := by fits
+  have hquot : Fits W (m / 9) := by fits
   have hsucc : I - 1 + 1 = I := by omega
   have hne : b ≠ b + 1 := by omega
   let y := x.set Reg.one 1 |>.set Reg.two 2 |>.set PatchReg.divisor 9

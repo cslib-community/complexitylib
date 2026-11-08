@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters.Program
 import Complexity.Computability.WordRAM.RegisterFrame
+import Complexity.Tactic.Fits
 
 /-!
 # Actual native parameter computation from the original dimension
@@ -59,7 +60,7 @@ private theorem exec_finish {w n : ℕ} (x : Data 16)
       ∀ i, i ≠ Reg.window → i ≠ Reg.fast → y.regs i = x.regs i := by
   let y := (x.set Reg.window (ParameterChoice.window n)).set Reg.fast
     (if 0 < ParameterChoice.blocks n then 1 else 0)
-  have h0 : Fits w 0 := hf.of_le (Nat.zero_le _)
+  have h0 : Fits w 0 := by fits
   have h1 : Fits w 1 := hf.of_le (by unfold wordBudget; omega)
   let start := (x.set Reg.window (ParameterChoice.window n)).set Reg.fast 0
   have pre : ExecWithin (B := .standard) w
@@ -109,9 +110,9 @@ theorem exec {w n : ℕ} (x : Data 16) (hn : x.regs Reg.side = n)
   have hD := (ParameterChoice.powers_le n).2
   have hlog := Nat.log_le_self 2 n
   have h2394 : Fits w 2394 := hfit.of_le (by unfold wordBudget; omega)
-  have h63 : Fits w 63 := hfit.of_le (by unfold wordBudget; omega)
-  have h21 : Fits w 21 := hfit.of_le (by unfold wordBudget; omega)
-  have h4 : Fits w 4 := hfit.of_le (by unfold wordBudget; omega)
+  have h63 : Fits w 63 := by fits
+  have h21 : Fits w 21 := by fits
+  have h4 : Fits w 4 := by fits
   have hblocks : Fits w (ParameterChoice.blocks n) := hfit.of_le (by unfold wordBudget; omega)
   have hlevel : Fits w (ParameterChoice.level n) := hfit.of_le (by unfold wordBudget; omega)
   have hlength : Fits w (ParameterChoice.tensorDepth n) :=

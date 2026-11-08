@@ -10,6 +10,7 @@ module
 import Complexity.Computability.WordRAM.Call
 import Complexity.Computability.WordRAM.Power.Rename
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Properties
+import Complexity.Tactic.Fits
 
 /-!
 # Computed modulus and normalized source bank
@@ -77,13 +78,13 @@ theorem exec_setup {W : ℕ} (x : Data 640)
   let S := n + D + g + p + total + 4
   have fit : Fits W (b + 4 * windowSize n D g p total + 1024) := hfit
   obtain ⟨hw, hS, hwidth, h6166⟩ := setup_fits fit
-  have h2 : Fits W 2 := fit.of_le (by omega)
-  have h4 : Fits W 4 := fit.of_le (by omega)
-  have hc : Fits W 6166 := fit.of_le (by omega)
-  have hsize : Fits W S := fit.of_le (by omega)
-  have hsize' : Fits W (S + 1) := fit.of_le (by omega)
+  have h2 : Fits W 2 := by fits
+  have h4 : Fits W 4 := by fits
+  have hc : Fits W 6166 := by fits
+  have hsize : Fits W S := by fits
+  have hsize' : Fits W (S + 1) := by fits
   have hlog : Nat.clog 2 S ≤ sourceWidth n D g p total := by dsimp only [sourceWidth, S]; omega
-  have hlog' : Fits W (Nat.clog 2 S + 1) := fit.of_le (by omega)
+  have hlog' : Fits W (Nat.clog 2 S + 1) := by fits
   have hexp : Fits W (Nat.clog 2 S * 6166) := fit.of_le (by
     have he : Nat.clog 2 S * 6166 = sourceWidth n D g p total := by
       dsimp only [sourceWidth, S]
@@ -92,10 +93,10 @@ theorem exec_setup {W : ℕ} (x : Data 640)
     omega)
   have hpfit : Fits W (2 ^ sourceWidth n D g p total + sourceWidth n D g p total + 2) :=
     fit.of_le (by change windowSize n D g p total + _ + 2 ≤ _; omega)
-  have hND : Fits W (n + D) := hsize.of_le (by dsimp only [S]; omega)
-  have hNDg : Fits W (n + D + g) := hsize.of_le (by dsimp only [S]; omega)
-  have hNDgp : Fits W (n + D + g + p) := hsize.of_le (by dsimp only [S]; omega)
-  have hNDgpt : Fits W (n + D + g + p + total) := hsize.of_le (by dsimp only [S]; omega)
+  have hND : Fits W (n + D) := by fits
+  have hNDg : Fits W (n + D + g) := by fits
+  have hNDgp : Fits W (n + D + g + p) := by fits
+  have hNDgpt : Fits W (n + D + g + p + total) := by fits
   obtain ⟨s, hs, sval, smem, sbase⟩ :
       ∃ s, ExecWithin W sizeArgument x s 7 ∧ s.regs (clogBank 0) = S ∧
         s.mem = x.mem ∧ s.regs Reg.base = b := by

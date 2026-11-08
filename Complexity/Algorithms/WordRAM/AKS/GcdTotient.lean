@@ -13,6 +13,7 @@ public import Mathlib.Data.Nat.Totient
 import Mathlib.Tactic.FinCases
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Step 3 of the AKS algorithm and Euler's totient on the word RAM
@@ -125,8 +126,8 @@ private theorem body_step {w N R : ℕ} (hfN : Fits w N) (hfR : Fits w (R + 1)) 
   obtain ⟨A, hA⟩ : ∃ A, y.regs a = A := ⟨_, rfl⟩
   have hAR : A ≤ R := by rw [hA] at hc; omega
   rw [hA] at hyiff hyphi
-  have hfA : Fits w A := hfR.of_le (by omega)
-  have h1f : Fits w 1 := hfR.of_le (by omega)
+  have hfA : Fits w A := by fits
+  have h1f : Fits w 1 := by fits
   -- `gcd(n, a)`.
   let y₁ := (y.set ga N).set gb A
   have hrun₁ : ExecWithin (B := .standard) w (ram[ ga ← n; gb ← a ]) y y₁ 2 := by
@@ -158,7 +159,7 @@ private theorem body_step {w N R : ℕ} (hfN : Fits w N) (hfR : Fits w (R + 1)) 
       · ram_eval [y₃, o, hg₂, hg1, hgN, hy₂1, hy₂n, hy₂r, hy₂a]
   -- `gcd(r, a)`.
   obtain ⟨y₄, hrun₄, hg₄, hy₄⟩ := gcd_exec (w := w) y₃ (u := R) (v := A) (by simp +decide [y₃])
-    (by simp +decide [y₃]) (hfR.of_le (by omega)) hfA
+    (by simp +decide [y₃]) (by fits) hfA
   have hy₄' (j : Fin 11) (hj : j.val < 7) (hjo : j ≠ ok) : y₄.regs j = y.regs j := by
     rw [hy₄ j hj]
     have h9 : j ≠ ga ∧ j ≠ gb := by constructor <;> (intro h; subst h; simp at hj)
@@ -174,8 +175,8 @@ private theorem body_step {w N R : ℕ} (hfN : Fits w N) (hfR : Fits w (R + 1)) 
     (Finset.card_filter_le _ _).trans (Finset.card_range A).le
   let ph := if Nat.gcd R A = 1 then y.regs phi + 1 else y.regs phi
   let z := (y₄.set phi ph).set a (A + 1)
-  have hfph : Fits w (y.regs phi + 1) := hfR.of_le (by omega)
-  have hfA1 : Fits w (A + 1) := hfR.of_le (by omega)
+  have hfph : Fits w (y.regs phi + 1) := by fits
+  have hfA1 : Fits w (A + 1) := by fits
   have hrun₅ : ExecWithin (B := .standard) w
       (ram[ if ga = one then [ phi ← phi + one ] else [ phi ← phi ]; a ← a + one ]) y₄ z 4 := by
     by_cases hg1 : Nat.gcd R A = 1
@@ -224,7 +225,7 @@ theorem exec {w : ℕ} (x : Data 11) {N R : ℕ} (hn : x.regs n = N) (hr : x.reg
     ∃ y, ExecWithin w program x y (time R) ∧ y.regs ok ≤ 1 ∧
       (y.regs ok = 1 ↔ ∀ b, 1 ≤ b → b ≤ R → b.gcd N = 1 ∨ b.gcd N = N) ∧
       y.regs phi = Nat.totient R ∧ y.regs n = N ∧ y.regs r = R := by
-  have h1f : Fits w 1 := hfR.of_le (by omega)
+  have h1f : Fits w 1 := by fits
   let x₀ := ((((x.set one 1).set lim (R + 1)).set a 0).set ok 1).set phi 0
   have hrun₀ : ExecWithin (B := .standard) w
       (ram[ one ← #1; lim ← r + one; a ← #0; ok ← #1; phi ← #0 ]) x x₀ 5 := by

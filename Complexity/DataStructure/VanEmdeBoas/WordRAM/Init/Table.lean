@@ -11,6 +11,7 @@ public import Complexity.DataStructure.VanEmdeBoas.WordRAM.Model
 public import Complexity.DataStructure.VanEmdeBoas.WordRAM.Program
 public import Complexity.Computability.WordRAM.Compile
 import Mathlib.Tactic.Linarith
+import Complexity.Tactic.Fits
 
 /-!
 # Van Emde Boas initializer program and Phase 1–2 lookup-table construction
@@ -169,12 +170,12 @@ private theorem sizeBody_exec {w d k : ℕ} {s : Data 32} (hk : k < d) (hspan : 
     have := two_le_universeSize k; rw [universeSize_succ]; nlinarith
   have h_prod_le : (universeSize k + 1) * span k + 5 = span (k + 1) := by
     rw [span_succ]; omega
-  have hf1 : Fits w (universeSize k + 1) := hspan.of_le (by omega)
-  have hf2 : Fits w ((universeSize k + 1) * span k) := hspan.of_le (by omega)
-  have hf3 : Fits w ((universeSize k + 1) * span k + 5) := hspan.of_le (by omega)
+  have hf1 : Fits w (universeSize k + 1) := by fits
+  have hf2 : Fits w ((universeSize k + 1) * span k) := by fits
+  have hf3 : Fits w ((universeSize k + 1) * span k + 5) := by fits
   have hf4 : Fits w (universeSize k * universeSize k) :=
     hspan.of_le (by rw [← universeSize_succ]; omega)
-  have hf5 : Fits w (k + 1) := hd.of_le (by omega)
+  have hf5 : Fits w (k + 1) := by fits
   ram_eval [sizeBody, sizeBodyData, h1, h5, hq, ht, hhigh, hf1, hf2, hf3, hf4, hf5]
 
 /-- `sizeLoop` advances `(q, t, high)` from `(universeSize k, span k, k)` to
@@ -237,9 +238,9 @@ theorem tableSetup_exec {w base d : ℕ} {s : Data 32} (ha : Fits w (base + span
     (h0 : s.regs zero = 0) (h1 : s.regs one = 1) (h2 : s.regs two = 2) (h5 : s.regs five = 5)
     (hroot : s.regs root = base) (ht : s.regs t = span d) :
     Exec w tableSetup s (tableSetupData s base d) 11 := by
-  have hf_tbl : Fits w (base + span d) := ha.of_le (by omega)
-  have hf_tbl1 : Fits w (base + span d + 1) := ha.of_le (by omega)
-  have hf_tbl2 : Fits w (base + span d + 1 + 1) := ha.of_le (by omega)
+  have hf_tbl : Fits w (base + span d) := by fits
+  have hf_tbl1 : Fits w (base + span d + 1) := by fits
+  have hf_tbl2 : Fits w (base + span d + 1 + 1) := by fits
   ram_eval [tableSetup, tableSetupData, h0, h1, h2, h5, hroot, ht, hf_tbl, hf_tbl1, hf_tbl2]
 
 /-- State after one iteration of `tableBody` at depth `k` and pointer `sp₀`. -/
@@ -261,14 +262,14 @@ private theorem tableBody_exec {w base d k : ℕ} {s : Data 32} (hk : k < d)
     have := two_le_universeSize k; rw [universeSize_succ]; nlinarith
   have h_prod_le : (universeSize k + 1) * span k + 5 = span (k + 1) := by
     rw [span_succ]; omega
-  have hf_sp1 : Fits w (base + span d + 2 * (k + 1) + 1) := ha.of_le (by omega)
-  have hf_sp2 : Fits w (base + span d + 2 * (k + 1) + 1 + 1) := ha.of_le (by omega)
-  have hf1 : Fits w (universeSize k + 1) := ha.of_le (by omega)
-  have hf2 : Fits w ((universeSize k + 1) * span k) := ha.of_le (by omega)
-  have hf3 : Fits w ((universeSize k + 1) * span k + 5) := ha.of_le (by omega)
+  have hf_sp1 : Fits w (base + span d + 2 * (k + 1) + 1) := by fits
+  have hf_sp2 : Fits w (base + span d + 2 * (k + 1) + 1 + 1) := by fits
+  have hf1 : Fits w (universeSize k + 1) := by fits
+  have hf2 : Fits w ((universeSize k + 1) * span k) := by fits
+  have hf3 : Fits w ((universeSize k + 1) * span k + 5) := by fits
   have hf4 : Fits w (universeSize k * universeSize k) :=
     ha.of_le (by rw [← universeSize_succ]; omega)
-  have hf5 : Fits w (k + 1) := ha.of_le (by omega)
+  have hf5 : Fits w (k + 1) := by fits
   ram_eval [tableBody, tableBodyData, h1, h5, hsp, hq, ht, hhigh,
     hf_sp1, hf_sp2, hf1, hf2, hf3, hf4, hf5]
 

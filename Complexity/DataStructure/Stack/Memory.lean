@@ -10,6 +10,7 @@ module
 public import Complexity.DataStructure.Memory.Field
 public import Complexity.DataStructure.Memory.Alloc
 public import Complexity.DataStructure.Stack.Spec
+import Complexity.Tactic.Fits
 
 /-!
 # An array stack over the memory oracle
@@ -405,7 +406,7 @@ def allocator (w C : ℕ) : Allocator (Stack.spec w C) w where
   init := []
   room := C + 1
   cost := 3
-  framed s _ hroom := framed (valid_allocLayout (f := s.frontier) (hroom.of_le (by omega)))
+  framed s _ hroom := framed (valid_allocLayout (f := s.frontier) (by fits))
   allocates s _ hroom := by
     obtain ⟨hinv, habs⟩ := inv_allocLayout (C := C) s
     refine
@@ -415,7 +416,7 @@ def allocator (w C : ℕ) : Allocator (Stack.spec w C) w where
         runClient_allocLayout]
     · simp only [StateTransitionSpec.validHistory_cons, StateTransitionSpec.stepFn, step_alloc,
         valid_alloc, valid_allocDirty]
-      exact ⟨hroom.of_le (by omega), hroom.of_le (by omega), trivial⟩
+      exact ⟨by fits, by fits, trivial⟩
     · simp
     · exact fun a ha => clear_of_not_owns (by simp only [Block.Owns]; omega)
     · exact hinv

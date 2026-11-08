@@ -12,6 +12,7 @@ public import Complexity.DataStructure.Memory.Triple
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Order
 public import Complexity.DataStructure.StateTransition.Refinement
 public import Mathlib.Data.Nat.Log
+import Complexity.Tactic.Fits
 
 /-!
 # An indexed binary heap over the memory oracle
@@ -344,10 +345,10 @@ theorem swap_bind {α : Type} {s : Memory.State} {a b va vb c : ℕ} {k : Unit �
     (h : Triple w ⟨swapMem n L.base s.mem a b va vb, s.frontier⟩ (k ()) c Q) :
     Triple w s (swap L a b va vb >>= k) (c + 4) Q := by
   simp only [swap, bind_assoc]
-  exact Triple.write_bind (heap_lt hA ha) (hn.of_le hvb.le) <|
-    Triple.write_bind (heap_lt hA hb) (hn.of_le hva.le) <|
-    Triple.write_bind (pos_lt hA hvb) (hn.of_le ha) <|
-    Triple.write_bind (pos_lt hA hva) (hn.of_le hb) h
+  exact Triple.write_bind (heap_lt hA ha) (by fits) <|
+    Triple.write_bind (heap_lt hA hb) (by fits) <|
+    Triple.write_bind (pos_lt hA hvb) (by fits) <|
+    Triple.write_bind (pos_lt hA hva) (by fits) h
 
 /-- **Sift-up** repairs an upward defect at heap position `k` within `8 ⌊log₂ k⌋ + 4` memory
 units. -/
@@ -866,7 +867,7 @@ theorem allocLayout_bind {α : Type} {s : Memory.State} {c : ℕ} {next : Layout
     (h : Triple w ⟨s.mem, s.frontier + 1 + space n⟩ (next (allocated n s.frontier)) c Q) :
     Triple w s (allocLayout n >>= next) (c + 2) Q := by
   simp only [allocLayout, bind_assoc]
-  exact Triple.allocBlockDirty_bind (hfit.of_le (by omega)) <|
+  exact Triple.allocBlockDirty_bind (by fits) <|
     Triple.allocBlockDirty_bind hfit (by simpa only [pure_bind] using h)
 
 /-- The allocated layout is well formed when `n` and the largest key fit a word. -/

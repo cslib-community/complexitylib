@@ -9,6 +9,7 @@ module
 
 import Complexity.Computability.WordRAM.Power.Rename
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandProgram
+import Complexity.Tactic.Fits
 
 /-!
 # Actual header loads, native powers and concrete band addresses
@@ -183,7 +184,7 @@ theorem exec_header {w L m N : ℕ} (hm : m ≤ L) (x : Data 96)
     (hfit : Fits w (wordBudget L m N)) :
     ∃ y, ExecWithin w header x y (16 * L + 49) ∧ HeaderPost L m N y ∧ y.mem = x.mem := by
   have h256 : 256 ≤ wordBudget L m N := Nat.le_mul_of_pos_right _ (Nat.succ_pos _)
-  have hsmall (v : ℕ) (hv : v ≤ 256) : Fits w v := hfit.of_le (hv.trans h256)
+  have hsmall (v : ℕ) (hv : v ≤ 256) : Fits w v := by fits
   let x0 := (((((((((((((x.set address 1).set levels L).set address 2).set inner m).set
     address 3).set rows N).set zero 0).set one 1).set two 2).set three 3).set four 4).set
     seven 7).set ten 10)
@@ -208,16 +209,16 @@ theorem exec_header {w L m N : ℕ} (hm : m ≤ L) (x : Data 96)
   let I := S + B
   let T := I + 2 ^ L
   let C := T + 2 ^ L
-  have hnd : Fits w (N * D m) := hlocal.of_le (by omega)
-  have hnd2 : Fits w (N * D m * 2) := hlocal.of_le (by omega)
-  have hB : Fits w B := hlocal.of_le (by dsimp [B]; omega)
-  have ht2 : Fits w (10 ^ L * 2) := hlocal.of_le (by omega)
-  have hts : Fits w (10 ^ L * 2 + 7 ^ L) := hlocal.of_le (by omega)
-  have hts2 : Fits w (10 ^ L * 2 + 7 ^ L + 2) := hlocal.of_le (by omega)
-  have hS : Fits w S := hlocal.of_le (by dsimp [S, B]; omega)
-  have hI : Fits w I := hlocal.of_le (by dsimp [I, S, B]; omega)
-  have hT : Fits w T := hlocal.of_le (by dsimp [T, I, S, B]; omega)
-  have hC : Fits w C := hlocal.of_le (by dsimp [C, T, I, S, B]; omega)
+  have hnd : Fits w (N * D m) := by fits
+  have hnd2 : Fits w (N * D m * 2) := by fits
+  have hB : Fits w B := by fits
+  have ht2 : Fits w (10 ^ L * 2) := by fits
+  have hts : Fits w (10 ^ L * 2 + 7 ^ L) := by fits
+  have hts2 : Fits w (10 ^ L * 2 + 7 ^ L + 2) := by fits
+  have hS : Fits w S := by fits
+  have hI : Fits w I := by fits
+  have hT : Fits w T := by fits
+  have hC : Fits w C := by fits
   let y := ((((((((((z.set prefixSize (N * D m)).set prefixSize (N * D m * 2)).set
     prefixSize B).set snapshot (10 ^ L * 2)).set snapshot (10 ^ L * 2 + 7 ^ L)).set
     snapshot (10 ^ L * 2 + 7 ^ L + 2)).set snapshot S).set inverse I).set table T).set catalogue C)

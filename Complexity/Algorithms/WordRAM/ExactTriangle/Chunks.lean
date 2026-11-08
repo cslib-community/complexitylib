@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.WordRAM.Notation
 public import Complexity.Foundations.Data.Nat.CeilDiv
+import Complexity.Tactic.Fits
 
 /-!
 # Native query-chunk descriptors
@@ -97,16 +98,16 @@ private theorem exec_body {w : ℕ} (x : Data 14) (ho : x.regs one = 1)
               (min (x.regs capacity) (x.regs total - x.regs pos)) := by
   let L := min (x.regs capacity) (x.regs total - x.regs pos)
   have hL : L ≤ x.regs total - x.regs pos := min_le_right ..
-  have hsub : Fits w (x.regs total - x.regs pos) := hfit.of_le (by omega)
-  have hlen : Fits w L := hsub.of_le hL
-  have htriple : Fits w (x.regs count * 3) := hfit.of_le (by omega)
-  have haddr : Fits w (x.regs count * 3 + x.regs dst) := hfit.of_le (by omega)
-  have haddr1 : Fits w (x.regs count * 3 + x.regs dst + 1) := hfit.of_le (by omega)
-  have haddr2 : Fits w (x.regs count * 3 + x.regs dst + 1 + 1) := hfit.of_le (by omega)
-  have hptr1 : Fits w (x.regs ptr + L) := hquery.of_le (by omega)
-  have hptr2 : Fits w (x.regs ptr + L + L) := hquery.of_le (by omega)
-  have hpos : Fits w (x.regs pos + L) := hfit.of_le (by omega)
-  have hcount : Fits w (x.regs count + 1) := hfit.of_le (by omega)
+  have hsub : Fits w (x.regs total - x.regs pos) := by fits
+  have hlen : Fits w L := by fits
+  have htriple : Fits w (x.regs count * 3) := by fits
+  have haddr : Fits w (x.regs count * 3 + x.regs dst) := by fits
+  have haddr1 : Fits w (x.regs count * 3 + x.regs dst + 1) := by fits
+  have haddr2 : Fits w (x.regs count * 3 + x.regs dst + 1 + 1) := by fits
+  have hptr1 : Fits w (x.regs ptr + L) := by fits
+  have hptr2 : Fits w (x.regs ptr + L + L) := by fits
+  have hpos : Fits w (x.regs pos + L) := by fits
+  have hcount : Fits w (x.regs count + 1) := by fits
   let a := x.set length (x.regs total - x.regs pos) |>.set length L
     |>.set addr (x.regs count * 3) |>.set addr (x.regs count * 3 + x.regs dst)
     |>.write (x.regs count * 3 + x.regs dst) (x.regs residue)
@@ -249,8 +250,8 @@ theorem exec {w : ℕ} (x : Data 14) (hcap : 0 < x.regs capacity)
       rfl
   have hinit : ExecWithin (B := .standard) w
       (ram[ one ← #1; three ← #3; pos ← #0; count ← #0; ptr ← queries ]) x x₀ 5 := by
-    have h1 : Fits w 1 := hfit.of_le (by omega)
-    have h3 : Fits w 3 := hfit.of_le (by omega)
+    have h1 : Fits w 1 := by fits
+    have h3 : Fits w 3 := by fits
     ram_eval [x₀, b, h1, h3, one, three, pos, count, ptr, queries, Fin.mk.injEq]
   obtain ⟨y, hy, hI, hc⟩ := ExecWithin.loop_invariant I
     (fun y => N - y.regs pos) hbody hx₀

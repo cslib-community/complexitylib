@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.ScanInsert
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Complete charged native query scans
@@ -64,7 +65,7 @@ theorem exec_scan {w N capacity : ℕ} (child : Bool) (x : Data registers) (inpu
   let E := x.regs epoch + 1
   let x0 := ((x.set epoch E).set childCount 0).set index 0
   have h0 : Fits w 0 := fits_zero w
-  have hE : Fits w E := hwidth.of_le (by dsimp [E]; omega)
+  have hE : Fits w E := by fits
   have hsetup : ExecWithin w scanSetup x x0 3 := by
     ram_eval [scanSetup, x0, E, h1, hE, h0]
   let P (j : ℕ) (y : Data registers) : Prop :=
@@ -105,22 +106,15 @@ theorem exec_scan {w N capacity : ℕ} (child : Bool) (x : Data registers) (inpu
     have hy9 := (hfixed nine (by decide) (by decide)).trans h9
     have hq := hcodes (y.regs index) hk
     have hcap := htable.card_le
-    have hw10 : Fits w 10 := hwidth.of_le (by omega)
-    have hwread : Fits w (y.regs listBase + y.regs index) :=
-      hwidth.of_le (by rw [hyb]; omega)
-    have hwstamp : Fits w (y.regs stamps + shortened child (input (y.regs index))) :=
-      hwidth.of_le (by rw [hys]; omega)
-    have hwout : Fits w (y.regs childList + y.regs childCount) :=
-      hwidth.of_le (by rw [hyo, hcount]; omega)
-    have hwcount : Fits w (y.regs childCount + 1) :=
-      hwidth.of_le (by rw [hcount]; omega)
-    have hwindex : Fits w (y.regs index + 1) := hwidth.of_le (by omega)
+    have hwout : Fits w (y.regs childList + y.regs childCount) := by fits
+    have hwcount : Fits w (y.regs childCount + 1) := by fits
+    have hwindex : Fits w (y.regs index + 1) := by fits
     obtain ⟨z, hz, hidx, hcz, htz, hmf, hrf⟩ := exec_scanInsert child y
       (scanSet child (x.regs term) input (y.regs index)) (input (y.regs index))
       (by rw [hyb]; exact hread _ hk) hcount
       (by simpa only [hyo, hys, hye] using htable) hq
       (by simpa only [hyo, hys] using hsep) hy1 hy10 hy9
-      hw10 hwread hwstamp hwout hwcount hwindex
+      (by fits) (by fits) (by fits) hwout hwcount hwindex
     have hsource (i : ℕ) (hi : i < N) : z.mem (x.regs listBase + i) = input i := by
       rw [hmf]
       · exact hread i hi

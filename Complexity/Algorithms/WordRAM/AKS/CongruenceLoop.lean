@@ -11,6 +11,7 @@ import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.AKS.Congruence
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Step 5 of the AKS algorithm on the word RAM
@@ -117,7 +118,7 @@ theorem exec {w : ℕ} (x : Data 29) {a b t r n A₀ : ℕ} (ha : x.regs R = a) 
       (y.regs ok = 1 ↔ ∀ v, 1 ≤ v → v ≤ A₀ → Congruence n r v) ∧
       y.regs R = a ∧ y.regs B = b ∧ y.regs T = t ∧ y.regs rr = r ∧ y.regs nn = n := by
   classical
-  have h1 : Fits w 1 := hfA.of_le (by omega)
+  have h1 : Fits w 1 := by fits
   let P (j : ℕ) (y : Data 29) : Prop := y.regs R = a ∧ y.regs B = b ∧ y.regs T = t ∧ y.regs rr = r ∧
     y.regs nn = n ∧ y.regs lim = A₀ + 1 ∧ y.regs c1 = 1 ∧ 1 ≤ j ∧ y.regs ok ≤ 1 ∧
     (y.regs ok = 1 ↔ ∀ v, 1 ≤ v → v < j → Congruence n r v)
@@ -129,14 +130,14 @@ theorem exec {w : ℕ} (x : Data 29) {a b t r n A₀ : ℕ} (ha : x.regs R = a) 
     have hVA : V ≤ A₀ := by rw [hV] at hc; omega
     rw [hV] at hv1 hyiff
     obtain ⟨y₁, hrun₁, hle, hiff, hkeep⟩ := cong_exec (w := w) y hyR hyB hyT hyr hyn hV hr0 hn0
-      hab hta htb hfa hfb hft hf2 hfn (hfA.of_le (by omega))
+      hab hta htb hfa hfb hft hf2 hfn (by fits)
     have hk (j : Fin 29) (hj : Keep j) : y₁.regs j = y.regs j := hkeep j hj
     let o := if Congruence n r V then y.regs ok else 0
     let z := (y₁.set ok o).set av (V + 1)
     have hy₁1 : y₁.regs c1 = 1 := by rw [hk c1 (by simp [Keep]), hy1]
     have hy₁ok : y₁.regs ok = y.regs ok := hk ok (by simp [Keep])
     have hy₁v : y₁.regs av = V := by rw [hk av (by simp [Keep]), hV]
-    have hfV : Fits w (V + 1) := hfA.of_le (by omega)
+    have hfV : Fits w (V + 1) := by fits
     have hrun₂ : ExecWithin (B := .standard) w
         (ram[ if flag = c1 then [ ok ← ok ] else [ ok ← #0 ]; av ← av + c1 ]) y₁ z 4 := by
       by_cases hC : Congruence n r V

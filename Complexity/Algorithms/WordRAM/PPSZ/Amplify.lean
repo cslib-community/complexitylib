@@ -11,6 +11,7 @@ public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.PPSZ.Round
 public import Complexity.Algorithms.WordRAM.PPZ.Amplify
 public import Complexity.Computability.Complexity.FineGrained.PPSZ.General
+import Complexity.Tactic.Fits
 
 /-!
 # The PPSZ algorithm on the randomized word RAM
@@ -217,24 +218,21 @@ theorem ampSetup_exec (s a b c : ℕ) (φ : CNF (Fin n)) {w : ℕ}
       RoundFrame φ 6 ((s :: a :: b :: c :: encode φ).length + 1) (ampSetupData s a b c φ).mem
         (ampSetupData s a b c φ) := by
   have hL : 5 ≤ (s :: a :: b :: c :: encode φ).length := by simp [encode]
-  have hf1 : Fits w 1 := hw.of_le (by omega)
-  have hf2 : Fits w 2 := hw.of_le (by omega)
-  have hf3 : Fits w 3 := hw.of_le (by omega)
-  have hf4 : Fits w 4 := hw.of_le (by omega)
-  have hf5 : Fits w 5 := hw.of_le (by omega)
-  have hf6 : Fits w 6 := hw.of_le (by omega)
-  have hf7 : Fits w ((s :: a :: b :: c :: encode φ).length + 1) := hw.of_le (by omega)
-  have hf8 : Fits w ((s :: a :: b :: c :: encode φ).length + 1 + n) := hw.of_le (by omega)
-  have hf9 : Fits w ((s :: a :: b :: c :: encode φ).length + 1 + n + n) := hw.of_le (by omega)
-  have hf10 : Fits w ((s :: a :: b :: c :: encode φ).length + 1 + n + n + 1) :=
-    hw.of_le (by omega)
-  have hf11 : Fits w ((s :: a :: b :: c :: encode φ).length + 1 + n + n + 1 + s) :=
-    hw.of_le (by omega)
-  have hf12 : Fits w ((s :: a :: b :: c :: encode φ).length + 1 + n + n + 1 + s + s) :=
-    hw.of_le (by omega)
-  have hf13 : Fits w (a * n) := hw.of_le (by omega)
-  have hf14 : Fits w (a * n + b) := hw.of_le (by omega)
-  have hf15 : Fits w (a * n + b - 1) := hw.of_le (by omega)
+  have hf1 : Fits w 1 := by fits
+  have hf2 : Fits w 2 := by fits
+  have hf3 : Fits w 3 := by fits
+  have hf4 : Fits w 4 := by fits
+  have hf5 : Fits w 5 := by fits
+  have hf6 : Fits w 6 := by fits
+  have hf7 : Fits w ((s :: a :: b :: c :: encode φ).length + 1) := by fits
+  have hf8 : Fits w ((s :: a :: b :: c :: encode φ).length + 1 + n) := by fits
+  have hf9 : Fits w ((s :: a :: b :: c :: encode φ).length + 1 + n + n) := by fits
+  have hf10 : Fits w ((s :: a :: b :: c :: encode φ).length + 1 + n + n + 1) := by fits
+  have hf11 : Fits w ((s :: a :: b :: c :: encode φ).length + 1 + n + n + 1 + s) := by fits
+  have hf12 : Fits w ((s :: a :: b :: c :: encode φ).length + 1 + n + n + 1 + s + s) := by fits
+  have hf13 : Fits w (a * n) := by fits
+  have hf14 : Fits w (a * n + b) := by fits
+  have hf15 : Fits w (a * n + b - 1) := by fits
   have hf16 : Fits w ((a * n + b - 1) / b) := hw.of_le (by
     have := Nat.div_le_self (a * n + b - 1) b; omega)
   have hm0 : (Data.init (s :: a :: b :: c :: encode φ) : Data 32).mem 0 =
@@ -348,7 +346,7 @@ theorem ampProgram_spec (s a b c : ℕ) (φ : CNF (Fin n)) {w : ℕ}
       out_eq := by simp +decide [ho₁] }
   -- the rounds
   have hloop := ampLoopWith_law (roundCore_isRoundCore (φ := φ) (C := 6) (Tb := L + 1) (s := s)
-    (hw.of_le (by omega))) (hw.of_le (by omega)) (by omega) (ppszRounds a b n c)
+    (by fits)) (by fits) (by omega) (ppszRounds a b n c)
     (ppszDigits a b n c) (y₁.set flag 1) hstate (ofDigits_ppszDigits a b n c)
     (hw.of_le (by simp only [List.length_cons, List.length_replicate, ppszDigits, ← he,
       ppszCounterLen] at hlen ⊢; omega))

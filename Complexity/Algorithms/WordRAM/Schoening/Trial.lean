@@ -13,6 +13,7 @@ public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.Schoening.Scan
 public import Complexity.Computability.WordRAM.Randomized.Law
 import Complexity.Probability.Product
+import Complexity.Tactic.Fits
 
 /-!
 # One trial of Schöning's algorithm on the randomized word RAM
@@ -226,8 +227,8 @@ private theorem initLoop_law {φ : CNF (Fin n)} {C A w : ℕ} {M : ℕ → ℕ}
     rw [hj] at hd hbits ⊢
     have hjn : j < n := by omega
     have hc : (Cond.lt cnt nReg).Holds x := by simp [Cond.holds_lt, hx.nReg_eq, hj]; omega
-    have hf1 : Fits w (A + j) := hw.of_le (by omega)
-    have hf2 : Fits w (j + 1) := hw.of_le (by omega)
+    have hf1 : Fits w (A + j) := by fits
+    have hf2 : Fits w (j + 1) := by fits
     let Y : ℕ → Data 24 := fun k =>
       (((x.set val k).set addr (A + j)).write (A + j) k).set cnt (j + 1)
     have hrest : ∀ k : Fin (x.regs one + 1),
@@ -238,7 +239,7 @@ private theorem initLoop_law {φ : CNF (Fin n)} {C A w : ℕ} {M : ℕ → ℕ}
       ram_eval [Y, hx.aBase_eq, hx.one_eq, hj, hf1, hf2]
     have hbody := ExecRandLaw.rand_seq (w := w) (f := fun y => assignmentAt y.mem A n)
       (P := fun y => ∃ k ≤ 1, y = Y k) (y := fun k => Y k.val)
-      (by rw [hx.one_eq]; exact hw.of_le (by omega)) hrest
+      (by rw [hx.one_eq]; fits) hrest
       (fun k => ⟨k.val, by have := k.isLt; have h1 := hx.one_eq; omega, rfl⟩)
     have hlaw := ExecRandLaw.loop_iter (κ := fun σ' =>
         (Probability.PMF.uniformOfFintype (Fin n → Bool)).map fun τ i =>
@@ -364,7 +365,7 @@ theorem flip_law {φ : CNF (Fin n)} {C A w : ℕ} {M : ℕ → ℕ} (hw : Fits w
   · -- a nonempty clause: a uniform literal occurrence
     have hc : (Cond.lt zero len).Holds (x.set len c.length) := by
       simp +decide [Cond.holds_lt, hℓ, hx.zero_eq]
-    have hf0 : Fits w ℓ := hw.of_le (by omega)
+    have hf0 : Fits w ℓ := by fits
     let F : ℕ → (Fin n → Bool) := fun k =>
       if hk : k < c.length then flipOn {(c.get ⟨k, hk⟩).1} σ else σ
     let x₂ := (x.set len c.length).set len ℓ
@@ -383,11 +384,11 @@ theorem flip_law {φ : CNF (Fin n)} {C A w : ℕ} {M : ℕ → ℕ} (hw : Fits w
         rw [show x.regs cPtr + 1 + k.val = x.regs cPtr + (k.val + 1) by omega, h, hl,
           List.get_eq_getElem]
       have hv : x.mem (A + l.1.val) = (σ l.1).toNat := hσ l.1
-      have hf1 : Fits w (x.regs cPtr + 1) := hw.of_le (by omega)
-      have hf2 : Fits w (x.regs cPtr + 1 + k.val) := hw.of_le (by omega)
-      have hf3 : Fits w l.1.val := hw.of_le (by omega)
-      have hf4 : Fits w (A + l.1.val) := hw.of_le (by omega)
-      have hf5 : Fits w (1 - (σ l.1).toNat) := hw.of_le (by omega)
+      have hf1 : Fits w (x.regs cPtr + 1) := by fits
+      have hf2 : Fits w (x.regs cPtr + 1 + k.val) := by fits
+      have hf3 : Fits w l.1.val := by fits
+      have hf4 : Fits w (A + l.1.val) := by fits
+      have hf5 : Fits w (1 - (σ l.1).toNat) := by fits
       let Y := (((((((((x₂.set var k.val).set addr (x.regs cPtr + 1)).set addr
         (x.regs cPtr + 1 + k.val)).set lit (litCode l)).set var l.1.val).set addr
         (A + l.1.val)).set val (σ l.1).toNat).set val (1 - (σ l.1).toNat)).write
@@ -475,7 +476,7 @@ theorem stepBody_law {φ : CNF (Fin n)} {C A w : ℕ} {M : ℕ → ℕ}
   have hσ : AssignAt x.mem A σ := assignAt_assignmentAt hbits
   obtain ⟨y₁, hy₁, hm₁, hr₁⟩ := scan_spec (w := w) σ φ x hx.zero_eq hx.one_eq
     (by rw [hx.cBeg_eq]; exact hx.clauses) (by rw [hx.cBeg_eq, hx.aBase_eq]; exact hx.span)
-    (by rw [hx.aBase_eq]; exact hσ) (by rw [hx.aBase_eq]; exact hw.of_le (by omega))
+    (by rw [hx.aBase_eq]; exact hσ) (by rw [hx.aBase_eq]; fits)
     (by rw [hx.aBase_eq]; omega)
   have hpf : PreservesFrame scan := by decide
   have hx₁ : Frame φ C A M y₁ := hx.of_execWithin hpf hy₁ fun a _ => by rw [hm₁]
@@ -542,7 +543,7 @@ theorem walkLoop_law {φ : CNF (Fin n)} {C A w : ℕ} {M : ℕ → ℕ}
     exact (ExecRandLaw.loop_exit hc ⟨hx, hbits⟩).mono (fun _ h => h) (by omega) le_rfl
   | t + 1, x, hx, hbits, ht, hfs => by
     have hc : (Cond.lt cnt steps).Holds x := by simp [Cond.holds_lt, ← ht]
-    have hb := stepBody_law (φ := φ) hw hA hx hbits (hfs.of_le (by omega))
+    have hb := stepBody_law (φ := φ) hw hA hx hbits (by fits)
     have h := ExecRandLaw.loop_iter (κ := walk φ t) hc hb fun y ⟨⟨hy, hyb⟩, hyc, hys⟩ =>
       walkLoop_law hw hA t y hy hyb (by omega) (by rw [hys]; exact hfs)
     rw [walk_succ_eq_bind]
@@ -576,8 +577,8 @@ theorem trialCore_law {φ : CNF (Fin n)} {C A w : ℕ} {M : ℕ → ℕ}
   have h := ExecRandLaw.seq (κ := walk φ (3 * n)) (R₂ := 3 * n)
     (T₂ := 3 + (3 * n * (12 * (encodeClauses φ).length + 20) + 2 +
       (12 * (encodeClauses φ).length + 5))) hinit fun y ⟨hy, hyb⟩ => by
-    have hf2 : Fits w (n + n) := hw.of_le (by omega)
-    have hf3 : Fits w (n + n + n) := hw.of_le (by omega)
+    have hf2 : Fits w (n + n) := by fits
+    have hf3 : Fits w (n + n + n) := by fits
     let y₃ := ((y.set steps (n + n)).set steps (n + n + n)).set cnt 0
     have hpre : ExecWithin w (ram[ steps ← nReg + nReg; steps ← steps + nReg; cnt ← zero ]) y y₃
         3 := by
@@ -599,7 +600,7 @@ theorem trialCore_law {φ : CNF (Fin n)} {C A w : ℕ} {M : ℕ → ℕ}
       obtain ⟨z₁, hz₁, hm₁, hr₁⟩ := scan_spec (w := w) (assignmentAt z.mem A n) φ z hz.zero_eq
         hz.one_eq (by rw [hz.cBeg_eq]; exact hz.clauses)
         (by rw [hz.cBeg_eq, hz.aBase_eq]; exact hz.span) (by rw [hz.aBase_eq]; exact hσ)
-        (by rw [hz.aBase_eq]; exact hw.of_le (by omega)) (by rw [hz.aBase_eq]; omega)
+        (by rw [hz.aBase_eq]; fits) (by rw [hz.aBase_eq]; omega)
       have hzf₁ : Frame φ C A M z₁ := hz.of_execWithin (by decide) hz₁ fun a _ => by rw [hm₁]
       have hfnd : z₁.regs found = if φ.eval (assignmentAt z.mem A n) then 0 else 1 := by
         unfold ScanResult at hr₁
@@ -613,7 +614,7 @@ theorem trialCore_law {φ : CNF (Fin n)} {C A w : ℕ} {M : ℕ → ℕ}
             · rfl
             · rw [← firstUnsat_eq_none_iff] at h; rw [h] at hfu; cases hfu
           rw [hr₁.1, this]; rfl
-      have hfo : Fits w (1 - z₁.regs found) := hw.of_le (by omega)
+      have hfo : Fits w (1 - z₁.regs found) := by fits
       have hout := ExecWithin.bin (w := w) (f := .sub) (d := out) (i := one) (j := found)
         (x := z₁) (by rw [hzf₁.one_eq]; exact hfo)
       refine ⟨_, hz₁.seq hout, ⟨⟨hzf₁.congr (by simp +decide) (by simp +decide)
@@ -664,8 +665,8 @@ def setupData (φ : CNF (Fin n)) : Data 24 :=
 theorem trialSetup_exec (φ : CNF (Fin n)) {w : ℕ} (hw : Fits w ((encode φ).length + 3 * n + 1)) :
     ExecWithin w trialSetup (Data.init (encode φ)) (setupData φ) 5 ∧
       Frame φ 2 ((encode φ).length + 1) (setupData φ).mem (setupData φ) := by
-  have hf1 : Fits w 1 := hw.of_le (by omega)
-  have hf2 : Fits w ((encode φ).length + 1) := hw.of_le (by omega)
+  have hf1 : Fits w 1 := by fits
+  have hf2 : Fits w ((encode φ).length + 1) := by fits
   have hf3 : Fits w 2 := hw.of_le (by simp [encode]; omega)
   have hm0 : (Data.init (encode φ) : Data 24).mem 0 = (encode φ).length := rfl
   have hm1 : (Data.init (encode φ) : Data 24).mem 1 = n := rfl
@@ -700,8 +701,7 @@ theorem trialProgram_spec (φ : CNF (Fin n)) {w : ℕ}
   set A := (encode φ).length + 1
   obtain ⟨hy, hfr⟩ := trialSetup_exec φ hw
   have hA : 1 ≤ A := by omega
-  have hw' : Fits w (A + 3 * n) := hw.of_le (by omega)
-  have hcore := ExecRandLaw.seq_det hy (trialCore_law (φ := φ) hw' hA hfr)
+  have hcore := ExecRandLaw.seq_det hy (trialCore_law (φ := φ) (by fits) hA hfr)
   obtain ⟨hhalt, hcalls, hpost, hlaw⟩ := hcore.program out (T' := trialTime n (encode φ).length)
     (by simp only [trialCoreTime, trialTime, length_encode]; nlinarith)
     (cfgAssignment A n) fun _ _ => rfl

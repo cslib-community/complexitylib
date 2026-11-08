@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxQuery.StackMemory
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxQuery.Parameters
+import Complexity.Tactic.Fits
 
 /-!
 # Actual root-task initialization
@@ -41,10 +42,10 @@ theorem exec_setup {w L t Q AA BB D V K : ℕ} (x : Data registers) (η : OutStr
     (uf _ (by decide) (by decide) (by decide) (by decide) (by decide)).trans hV
   have uK : u.regs BoxTable.Reg.count = K :=
     (uf _ (by decide) (by decide) (by decide) (by decide) (by decide)).trans hK
-  have hf0 : Fits w 0 := hfit.of_le (Nat.zero_le _)
-  have hf1 : Fits w 1 := hfit.of_le (by omega)
-  have hf5 : Fits w 5 := hfit.of_le (by omega)
-  have hfF : Fits w (V + K) := hfit.of_le (by omega)
+  have hf0 : Fits w 0 := by fits
+  have hf1 : Fits w 1 := by fits
+  have hf5 : Fits w 5 := by fits
+  have hfF : Fits w (V + K) := by fits
   let v0 := ((u.set Reg.five 5).set Reg.answer 0).set Reg.stack (V + K)
   let v1 := ((v0.set Reg.top 0).set Reg.depth 0).set Reg.childCode 0
   let v := ((v1.set Reg.childUsed 0).set Reg.childStars 0).set Reg.childPower 1

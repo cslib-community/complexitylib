@@ -9,6 +9,7 @@ module
 
 public import Complexity.DataStructure.Memory.Frame
 public import Complexity.Foundations.Analysis.Asymptotics.CostBound
+import Complexity.Tactic.Fits
 
 /-!
 # Allocating data structures over the memory oracle
@@ -348,14 +349,14 @@ theorem room_after {s : State} (hs₁ : A₁.Pre s) {r : ℕ}
     (hroom : Fits w (s.frontier + (A₁.room + r))) :
     Fits w (((spec w).clientState s A₁.alloc).frontier + r) :=
   hroom.of_le (by
-    have := (A₁.allocates s hs₁ (hroom.of_le (by omega))).room_le
+    have := (A₁.allocates s hs₁ (by fits)).room_le
     omega)
 
 /-- After allocating the first structure, the second one's precondition still holds. -/
 theorem pre_after {s : State} (hs₁ : A₁.Pre s)
     (hroom : Fits w (s.frontier + (A₁.room + A₂.room))) (hs₂ : A₂.Pre s) :
     A₂.Pre ((spec w).clientState s A₁.alloc) :=
-  have h₁ := A₁.allocates s hs₁ (hroom.of_le (by omega))
+  have h₁ := A₁.allocates s hs₁ (by fits)
   A₂.pre_fresh hs₂ h₁.mem_eq (fun _ => mem_clientState_of_frontier_le s _ h₁.validHistory)
     (frontier_le_clientState s _) (room_after hs₁ hroom)
 
@@ -363,7 +364,7 @@ theorem pre_after {s : State} (hs₁ : A₁.Pre s)
 theorem owned_after {s : State} (hs₁ : A₁.Pre s)
     (hroom : Fits w (s.frontier + (A₁.room + A₂.room))) (hs₂ : A₂.Pre s) :
     A₂.owned ((spec w).clientState s A₁.alloc) = A₂.owned s :=
-  have h₁ := A₁.allocates s hs₁ (hroom.of_le (by omega))
+  have h₁ := A₁.allocates s hs₁ (by fits)
   A₂.owned_fresh hs₂ h₁.mem_eq (fun _ => mem_clientState_of_frontier_le s _ h₁.validHistory)
     (frontier_le_clientState s _) (room_after hs₁ hroom)
 
@@ -402,17 +403,17 @@ def prod : Allocator (product D₁ D₂) w where
         exact hs.disjoint }
   owned_fresh hs hmem habove hf hr := by
     rw [A₁.owned_fresh hs.left hmem habove hf
-        (hr.of_le (Nat.add_le_add_left (Nat.le_add_right A₁.room A₂.room) _)),
+        (by fits),
       A₂.owned_fresh hs.right hmem habove hf
-        (hr.of_le (Nat.add_le_add_left (Nat.le_add_left A₂.room A₁.room) _))]
+        (by fits)]
   framed s hs hroom :=
-    (A₁.framed s hs.left (hroom.of_le (by omega))).prod
+    (A₁.framed s hs.left (by fits)).prod
       (A₂.framed ((spec w).clientState s A₁.alloc) (pre_after A₂ hs.left hroom hs.right)
         (room_after hs.left hroom))
   allocates s hs hroom := by
     -- The two allocations, from `s` to `s₁` and from `s₁` to `s₂`.
     obtain ⟨hs₁, hs₂, hd⟩ := hs
-    have hroom₁ : Fits w (s.frontier + A₁.room) := hroom.of_le (by omega)
+    have hroom₁ : Fits w (s.frontier + A₁.room) := by fits
     have h₁ := A₁.allocates s hs₁ hroom₁
     have h₂ := A₂.allocates _ (pre_after A₂ hs₁ hroom hs₂) (room_after hs₁ hroom)
     have ho₂ := owned_after A₂ hs₁ hroom hs₂
@@ -432,7 +433,7 @@ def prod : Allocator (product D₁ D₂) w where
           · exact Finset.disjoint_left.mp hd ha ha'
           · omega
         · omega)
-      (hroom.of_le (by omega))
+      (by fits)
     refine
       { validHistory := ?_, cost_le := ?_, mem_eq := ?_, methods_eq := ?_, inv := ?_,
         abs_eq := ?_, of_mem_footprint := ?_, room_le := ?_ }
@@ -533,11 +534,11 @@ def resident : Allocator D w where
   owned_lt hs ha := M.lt_frontier hs.1 ha
   pre_fresh {s _} hs hmem _ hf hr := by
     obtain ⟨hinv, habs, hle⟩ := hs
-    obtain ⟨hinv', habs', -, hroom'⟩ := M.of_fresh hinv hmem hf (hr.of_le (by omega))
+    obtain ⟨hinv', habs', -, hroom'⟩ := M.of_fresh hinv hmem hf (by fits)
     exact ⟨hinv', habs'.trans habs, hroom' ▸ hle⟩
   owned_fresh {s _} hs hmem _ hf hr := by
     obtain ⟨hinv, -, hle⟩ := hs
-    obtain ⟨-, -, hfp, -⟩ := M.of_fresh hinv hmem hf (hr.of_le (by omega))
+    obtain ⟨-, -, hfp, -⟩ := M.of_fresh hinv hmem hf (by fits)
     exact hfp
   framed _ _ _ := M
   allocates s hs _ := by

@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Decode
+import Complexity.Tactic.Fits
 
 /-!
 # Original callee header stores
@@ -35,15 +36,15 @@ theorem exec_writeHeader {W b m n A Q : ℕ} (x : Data 320)
       (Block.mk b 5).Realizes y.mem ![4 + 2 * A + 2 * Q, 19 * m, m, n, Q] ∧
       (∀ a, a < b ∨ b + 5 ≤ a → y.mem a = x.mem a) ∧
       ∀ i : Fin 320, i.val < 78 → y.regs i = x.regs i := by
-  have hdepth : Fits W m := hfit.of_le (by omega)
-  have hlevel : Fits W (m * 19) := hfit.of_le (by omega)
-  have hAQ : Fits W (2 * A + Q) := hfit.of_le (by omega)
-  have hAQQ : Fits W (2 * A + Q + Q) := hfit.of_le (by omega)
-  have hlen : Fits W (2 * A + Q + Q + 4) := hfit.of_le (by omega)
-  have hb1 : Fits W (b + 1) := hfit.of_le (by omega)
-  have hb2 : Fits W (b + 1 + 1) := hfit.of_le (by omega)
-  have hb3 : Fits W (b + 1 + 1 + 1) := hfit.of_le (by omega)
-  have hb4 : Fits W (b + 1 + 1 + 1 + 1) := hfit.of_le (by omega)
+  have hdepth : Fits W m := by fits
+  have hlevel : Fits W (m * 19) := by fits
+  have hAQ : Fits W (2 * A + Q) := by fits
+  have hAQQ : Fits W (2 * A + Q + Q) := by fits
+  have hlen : Fits W (2 * A + Q + Q + 4) := by fits
+  have hb1 : Fits W (b + 1) := by fits
+  have hb2 : Fits W (b + 1 + 1) := by fits
+  have hb3 : Fits W (b + 1 + 1 + 1) := by fits
+  have hb4 : Fits W (b + 1 + 1 + 1 + 1) := by fits
   have hquot : 2 * m / 2 = m := by omega
   let y := x.set Reg.depth m |>.set Reg.level (m * 19)
     |>.set Reg.payloadLength (2 * A + Q) |>.set Reg.payloadLength (2 * A + Q + Q)

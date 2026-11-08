@@ -9,6 +9,7 @@ module
 
 import Complexity.Computability.WordRAM.SymbolicExec.Call
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.Quadrant
+import Complexity.Tactic.Fits
 
 /-!
 # Actual single-quadrant Strassen operand forms
@@ -39,7 +40,7 @@ theorem exec_copyForm {w q t : ℕ} (base dst : Fin 64) (x : Data 64)
       ∀ i, 32 ≤ i.val → i ≠ Reg.temporary → y.regs i = x.regs i := by
   have hqfit : Fits w (x.regs base + 4 * x.regs Reg.quarter + 4) := by
     rw [hq]
-    exact hw.of_le (by omega)
+    fits
   apply WP.exists_execWithin
   simp only [form, ite_true]
   apply WP.seq
@@ -63,9 +64,9 @@ theorem exec_copyForm {w q t : ℕ} (base dst : Fin 64) (x : Data 64)
     have hmul := Nat.mul_le_mul_right q (Nat.succ_le_of_lt ht)
     simpa only [Nat.succ_mul] using hmul
   wram_call (ArrayCopy.exec_of_separated_or_eq (z.comap f)
-      (hw.of_le (by omega))
-      (by rw [hzs, hzl]; exact hw.of_le (by omega))
-      (by rw [hzd, hzl]; exact hw.of_le (by omega))
+      (by fits)
+      (by rw [hzs, hzl]; fits)
+      (by rw [hzd, hzl]; fits)
       (by
         rw [hzs, hzd, hzl]
         rcases hsep with h | h

@@ -11,6 +11,7 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTa
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTable.Digits
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Execution of the box-geometry digit scan
@@ -63,9 +64,8 @@ theorem exec_countDigit {w L c e k : ℕ} (x : Data registers) (hk : k < L)
     ((Nat.le_add_left (10 ^ L) c).trans (Nat.le_add_right _ L)).trans
       (Nat.le_add_right _ 12)
   have h12Bound : 12 ≤ c + 10 ^ L + L + 12 := Nat.le_add_left _ _
-  have hfpop : Fits w (population c k + 1) :=
-    hfit.of_le ((Nat.succ_le_of_lt (hp0.trans_lt hk)).trans hLBound)
-  have hfk : Fits w (k + 1) := hfit.of_le ((Nat.succ_le_of_lt hk).trans hLBound)
+  have hfpop : Fits w (population c k + 1) := by fits
+  have hfk : Fits w (k + 1) := by fits
   have hfd : Fits w (digitAt c k) := hfit.of_le
     ((Nat.le_of_lt (Nat.mod_lt _ (by decide : 0 < 10))).trans
       ((by decide : 10 ≤ 12).trans h12Bound))
@@ -89,7 +89,7 @@ theorem exec_countDigit {w L c e k : ℕ} (x : Data registers) (hk : k < L)
     dsimp only [digitAt] at hfd
     by_cases hd : c / 10 ^ k % 10 = 9 <;> by_cases hm : population c k + 1 = e
     all_goals
-      have hf9 : Fits w 9 := hfit.of_le ((by decide : 9 ≤ 12).trans h12Bound)
+      have hf9 : Fits w 9 := by fits
       have hfn := hfpop
       try rw [hm] at hfn
       ram_eval [countDigit, y, changed, base, hd, hm, h10, h9, h1, he, hl, hq, hp,
@@ -131,11 +131,11 @@ theorem exec_inspect {w L s : ℕ} (x : Data registers)
   have he : e ≤ s := Nat.div_le_self _ _
   have hscalar : s ≤ s + 10 ^ L + L + 12 :=
     ((Nat.le_add_right _ _).trans (Nat.le_add_right _ _)).trans (Nat.le_add_right _ _)
-  have hfe : Fits w e := hfit.of_le (he.trans hscalar)
-  have hfc : Fits w c := hfit.of_le (hc.trans hscalar)
+  have hfe : Fits w e := by fits
+  have hfc : Fits w c := by fits
   have hfitc : Fits w (c + 10 ^ L + L + 12) := hfit.of_le
     (Nat.add_le_add_right (Nat.add_le_add_right (Nat.add_le_add_right hc _) _) _)
-  have hf1 : Fits w 1 := hfit.of_le ((by decide : 1 ≤ 12).trans (Nat.le_add_left _ _))
+  have hf1 : Fits w 1 := by fits
   let start := ((((((x.set Reg.stars e).set Reg.completion c).set Reg.suffix c).set
     Reg.level 0).set Reg.population 0).set Reg.power 1).set Reg.starPower 0
   have hs : ExecWithin w (ram[

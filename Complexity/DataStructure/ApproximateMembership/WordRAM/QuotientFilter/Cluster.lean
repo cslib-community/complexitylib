@@ -12,6 +12,7 @@ public import Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFil
 public import Complexity.Computability.WordRAM.Realization.WhileAbsorb
 public import Complexity.Computability.WordRAM.Realization.Witness
 import Complexity.Tactic.Realize
+import Complexity.Tactic.Fits
 
 /-!
 # Memory-Program Realization of Quotient-Filter Cluster Operations
@@ -697,7 +698,7 @@ theorem realizes_backLen :
   rintro ⟨cnt, rem⟩ t hinv hg _
   have h2w := h.two_cap_lt
   have hd0 := h.q_lt
-  refine ⟨⟨⟨by dsimp only; omega, by dsimp only [Fits]; omega⟩, h, ?_⟩, ?_, ?_⟩
+  refine ⟨⟨⟨by dsimp only; omega, by fits⟩, h, ?_⟩, ?_, ?_⟩
   · split_ifs
     refine ⟨by dsimp only at *; omega, by dsimp only [Fits] at *; omega⟩
   · rw [clientResult_backLenStep]
@@ -3660,8 +3661,6 @@ theorem remEvalCode_exec {base w U w₀ n k : ℕ}
       y.regs (qfReg 0) = base ∧
       y.regs (qfReg 3) = (remHash U w₀ k γ u).val ∧
       ∀ j : Fin rQF, 240 ≤ j.val → y.regs j = x.regs j := by
-  have hfit_base : Fits w base :=
-    hfit_space.of_le (by dsimp only [space]; omega)
   have hfit_off : Fits w (remSeedOff w w₀ n) :=
     hfit_space.of_le (by dsimp only [remSeedOff, space]; omega)
   have hfit_addr : Fits w (remSeedAddr base w w₀ n) :=
@@ -3707,7 +3706,7 @@ theorem remEvalCode_exec {base w U w₀ n k : ℕ}
   set s5 := s4.set (qfReg 0) base
   have e5 : Exec w (.op (.exactBin .sub (qfReg 0) (qfReg 0) (qfReg 30)) : Code .exact rQF)
       s4 s5 1 :=
-    exec_exactBin (by simp +decide [s4, hs3_0, remSeedAddr, remSeedOff]) hfit_base
+    exec_exactBin (by simp +decide [s4, hs3_0, remSeedAddr, remSeedOff]) (by fits)
   have hfit_sh : Fits w (w₀ - remBits w₀ k) := by
     have : w₀ - remBits w₀ k ≤ w := (Nat.sub_le _ _).trans hw₀
     exact this.trans_lt Nat.lt_two_pow_self
@@ -3746,9 +3745,8 @@ theorem remEvalCode_exec {base w U w₀ n k : ℕ}
 theorem loadOffCode_exec {base w off : ℕ} {d : Fin 248} (hd : d ≠ 0)
     (hfit : Fits w (base + off)) {x : Data rQF} (h0 : x.regs (qfReg 0) = base) :
     Exec w (loadOffCode d off) x (x.set (qfReg d) (base + off)) 2 := by
-  have hfit_off : Fits w off := hfit.of_le (Nat.le_add_left _ _)
   have e1 : Exec w (.op (.const (qfReg d) off) : Code .exact rQF) x (x.set (qfReg d) off) 1 :=
-    Exec.const hfit_off
+    Exec.const (by fits)
   have e2 : Exec w (.op (.exactBin .add (qfReg d) (qfReg 0) (qfReg d)) : Code .exact rQF)
       (x.set (qfReg d) off) ((x.set (qfReg d) off).set (qfReg d) (base + off)) 1 := by
     apply exec_exactBin _ hfit

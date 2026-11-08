@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Header
+import Complexity.Tactic.Fits
 
 /-!
 # Three charged original-input copies
@@ -37,11 +38,11 @@ theorem exec_copyInputs {W b A Q s t q : ℕ} (x : Data 320)
       (∀ a < 2 * Q, y.mem (b + 5 + 2 * A + a) = x.mem (q + a)) ∧
       (∀ a, a < b + 5 ∨ b + 5 + 2 * A + 2 * Q ≤ a → y.mem a = x.mem a) ∧
       ∀ i : Fin 320, i.val < 96 → i ≠ Reg.address → y.regs i = x.regs i := by
-  have h5 : Fits W 5 := hfit.of_le (by omega)
-  have hb5 : Fits W (b + 5) := hfit.of_le (by omega)
-  have hbA : Fits W (b + 5 + A) := hfit.of_le (by omega)
-  have hbAA : Fits W (b + 5 + A + A) := hfit.of_le (by omega)
-  have hQQ : Fits W (Q + Q) := hfit.of_le (by omega)
+  have h5 : Fits W 5 := by fits
+  have hb5 : Fits W (b + 5) := by fits
+  have hbA : Fits W (b + 5 + A) := by fits
+  have hbAA : Fits W (b + 5 + A + A) := by fits
+  have hQQ : Fits W (Q + Q) := by fits
   let l := x.set Reg.source s |>.set Reg.address 5 |>.set Reg.destination (b + 5)
     |>.set Reg.length A
   have hl : ExecWithin W deliverLeft x l 4 := by

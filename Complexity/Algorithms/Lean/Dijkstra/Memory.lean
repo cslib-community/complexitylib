@@ -12,6 +12,7 @@ public import Complexity.DataStructure.AdjacencyList.Memory
 public import Complexity.DataStructure.Dictionary.Memory
 public import Complexity.DataStructure.PriorityQueue.BinaryHeap.Memory
 import Complexity.Algorithms.WordRAM.Dijkstra.ListEncode
+import Complexity.Tactic.Fits
 
 /-!
 # Dijkstra's algorithm with a binary heap, over the memory oracle
@@ -271,7 +272,6 @@ theorem run_triple (G : ListInstance) {w : ℕ}
   set K := G.n * G.maxWeight with hK
   have hW : 2 ≤ G.maxWeight + 2 := by omega
   have hbig : 2 * (G.n + G.m + 2) ≤ 8 * (G.n + G.m + 2) * (G.maxWeight + 2) := by nlinarith
-  have hn : Fits w G.n := hfit.of_le (by nlinarith)
   have hKf : Fits w K := hfit.of_le (by nlinarith)
   have hVf : Fits w (K + 1) := hfit.of_le (by nlinarith)
   -- The rate of each kind of operation.
@@ -291,7 +291,7 @@ theorem run_triple (G : ListInstance) {w : ℕ}
   rw [hn1, hsrc]
   refine Triple.read_bind (by omega) ?_
   rw [hm]
-  refine Triple.allocBlockDirty_bind (hfit.of_le (by nlinarith)) ?_
+  refine Triple.allocBlockDirty_bind (by fits) ?_
   refine BinaryHeap.Memory.allocLayout_bind
     (hfit.of_le (by simp only [PriorityQueue.BinaryHeap.space]; nlinarith)) ?_
   rw [dite_eq_left G.source.isLt]
@@ -299,7 +299,7 @@ theorem run_triple (G : ListInstance) {w : ℕ}
   -- The three structures, at the bounds `K` and `K + 1`, on the memory after allocation.
   set f := s₀.frontier with hf
   have hH : (BinaryHeap.Memory.allocated G.n (f + G.n)).Valid w K :=
-    BinaryHeap.Memory.valid_allocated hn hKf
+    BinaryHeap.Memory.valid_allocated (by fits) hKf
   have hT : Dictionary.Memory.Valid ⟨f, G.n⟩ w G.n (K + 1) := ⟨rfl, hVf⟩
   have hA : (inputGraph G.n G.m).Valid G.n := ⟨rfl⟩
   set M := framed hH hT hA G.adj with hM

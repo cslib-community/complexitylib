@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Forms
 import Mathlib.Tactic.Ring
+import Complexity.Tactic.Fits
 
 /-!
 # A native mixed-radix encoding cell
@@ -74,8 +75,8 @@ theorem exec_cell {w : ℕ} (hw : 0 < w) (side : Bool) (x : Data 32)
   have hpfit : Fits (w + 2) p := haddr.of_le (by nlinarith only [hp, hn1])
   have hdiv : i / n ≤ i := Nat.div_le_self _ _
   have hdivfit : Fits (w + 2) (i / n) := haddr.of_le (by nlinarith only [hdiv, hi])
-  have htfit : Fits (w + 2) t.val := haddr.of_le (by have := t.isLt; omega)
-  have hrfit : Fits (w + 2) r := haddr.of_le (by nlinarith only [hr, hPn])
+  have htfit : Fits (w + 2) t.val := by fits
+  have hrfit : Fits (w + 2) r := by fits
   have hp7 : Fits (w + 2) (p * 7) := haddr.of_le (by nlinarith only [hp, hn1])
   have hp7n : Fits (w + 2) (p * 7 * n) := haddr.of_le (by nlinarith only [hmul])
   have hp7nr : Fits (w + 2) (p * 7 * n + r) :=
@@ -102,7 +103,7 @@ theorem exec_cell {w : ℕ} (hw : 0 < w) (side : Bool) (x : Data 32)
     haddr.of_le (by nlinarith only [hmul, hr, hPn])
   obtain ⟨u, hu, huacc, humem, hureg⟩ := exec_dispatch hw side (List.finRange 10) t
     (List.mem_finRange _) z B (s + (p * 7 * n + r)) n v hzterm hzgroup hzn hzmem
-    hB hv hval hspan (haddr.of_le (by omega))
+    hB hv hval hspan (by fits)
   have zucell : u.regs cell = i := by
     rw [hureg cell (by decide) (by decide) (by decide) (by decide)]
     simpa [z, temporary, block, term, suffix, group, cell, Fin.mk.injEq] using hcell

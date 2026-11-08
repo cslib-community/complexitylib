@@ -12,6 +12,7 @@ public import Complexity.Algorithms.WordRAM.PrimeTrial
 public import Mathlib.NumberTheory.PrimeCounting
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Native prime tables
@@ -161,8 +162,8 @@ theorem exec {w : ℕ} (x : Data 15)
       (hzr count (by decide)).trans hcount
     have hzo : z.regs one = 1 := (hzr one (by decide)).trans ho
     have hzf_le : z.regs flag ≤ 1 := by rw [hzf]; split_ifs <;> omega
-    have ha : Fits w (z.regs base + z.regs cursor) := haddr.of_le (by rw [hzb, hzi]; omega)
-    have hn : Fits w (z.regs cursor + 1) := hfit.of_le (by rw [hzi]; change _ ≤ m + 3; omega)
+    have ha : Fits w (z.regs base + z.regs cursor) := by fits
+    have hn : Fits w (z.regs cursor + 1) := by fits
     have hct : Fits w (z.regs count + z.regs flag) := hfit.of_le (by
       rw [hzc]
       have hle : Nat.primeCounting' (y.regs cursor) ≤ y.regs cursor :=
@@ -198,9 +199,9 @@ theorem exec {w : ℕ} (x : Data 15)
       Nat.primeCounting', Nat.count_zero, memory_zero]
   obtain ⟨y, he, ⟨hl, hb, _, _, _, _, hcount, hm⟩, _⟩ := ExecWithin.loop_count P
     (fun _ ⟨_, _, hstop, _⟩ => hstop) hbody (by simp +decide [x₀, cursor, count, stop]) hx₀
-  have h1 : Fits w 1 := hfit.of_le (by omega)
-  have h2 : Fits w 2 := hfit.of_le (by omega)
-  have hstop : Fits w (x.regs limit + 1) := hfit.of_le (by omega)
+  have h1 : Fits w 1 := by fits
+  have h2 : Fits w 2 := by fits
+  have hstop : Fits w (x.regs limit + 1) := by fits
   have hinit : ExecWithin (B := .standard) w
       (ram[ one ← #1; zero ← #0; two ← #2; cursor ← #0; count ← #0;
         stop ← limit + one ]) x x₀ 6 := by

@@ -11,6 +11,7 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandH
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandCount
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandRoot
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.BandBounds
+import Complexity.Tactic.Fits
 
 /-!
 # Complete computed scalar parameters for native bands
@@ -119,8 +120,7 @@ theorem exec_countCode {w L m N : ℕ} (x : Data 96)
   have hnfit : Fits w (N + bandSize L m) := hl.of_le (by
     nlinarith only [hB, h7, Nat.zero_le L, Nat.zero_le N,
       Nat.zero_le (N * D m), Nat.zero_le (2 ^ L), Nat.zero_le (10 ^ L)])
-  have hnsubfit : Fits w (N + bandSize L m - 1) :=
-    hnfit.of_le (Nat.sub_le _ _)
+  have hnsubfit : Fits w (N + bandSize L m - 1) := by fits
   have hdivfit : Fits w ((N + bandSize L m - 1) / bandSize L m) :=
     hnsubfit.of_le (Nat.div_le_self _ _)
   let y := (((r.set temporary (bandSize L m)).set bands (N + bandSize L m)).set

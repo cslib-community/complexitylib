@@ -14,6 +14,7 @@ import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Expect
 import Complexity.Probability.PMF.Map
+import Complexity.Tactic.Fits
 
 /-!
 # Word-RAM Implementation of the Two-Stage Quotient Filter
@@ -293,12 +294,11 @@ theorem allocSpan_execWithin {base w w₀ n k : ℕ}
       x₁.mem = x.mem ∧
       x₁.regs (qfReg 0) = base ∧
       x₁.regs (qfReg 240) = base + space w w₀ n k := by
-  have hfit_sp : Fits w (space w w₀ n k) := hfit_space.of_le (Nat.le_add_left _ _)
   set s1 := x.set (qfReg 0) (x.regs (qfReg 240))
   have e1 : Exec w (.op (.copy (qfReg 0) (qfReg 240)) : Code .exact rQF) x s1 1 := Exec.copy
   set s2 := s1.set (qfReg 30) (space w w₀ n k)
   have e2 : Exec w (.op (.const (qfReg 30) (space w w₀ n k)) : Code .exact rQF) s1 s2 1 :=
-    Exec.const hfit_sp
+    Exec.const (by fits)
   set s3 := s2.set (qfReg 240) (base + space w w₀ n k)
   have e3 : Exec w (.op (.exactBin .add (qfReg 240) (qfReg 0) (qfReg 30)) : Code .exact rQF)
       s2 s3 1 := by

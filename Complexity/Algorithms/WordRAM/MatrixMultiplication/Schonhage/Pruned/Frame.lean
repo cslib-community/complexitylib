@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Memory
+import Complexity.Tactic.Fits
 
 /-!
 # Native stack layout and frame loading
@@ -56,9 +57,9 @@ theorem exec_locate {w : ℕ} (x : Data registers) (h1 : x.regs one = 1)
   let s := v + d * x.regs span
   let y := (((((((x.set frames (x.regs scratch)).set temporary d).set temporary₂ (4 * d)).set
     lists b).set temporary₂ (d * x.regs span)).set values v).set stamps s)
-  have hd : Fits w d := hw.of_le (by dsimp [d]; omega)
-  have harea : Fits w (4 * d) := hw.of_le (by dsimp [d]; omega)
-  have hb : Fits w b := hw.of_le (by dsimp [b, d]; omega)
+  have hd : Fits w d := by fits
+  have harea : Fits w (4 * d) := by fits
+  have hb : Fits w b := by fits
   have hds : Fits w (d * x.regs span) := hw.of_le (by dsimp [d]; nlinarith)
   have hv : Fits w v := hw.of_le (by dsimp [v, b, d]; nlinarith)
   have hs : Fits w s := hw.of_le (by dsimp [s, v, b, d]; nlinarith)
@@ -113,17 +114,17 @@ theorem exec_loadFrame {w : ℕ} (x : Data registers) (h1 : x.regs one = 1)
     valueBase (x.regs values + x.regs level * x.regs span)).set nextLevel j).set
     temporary (j * x.regs span)).set childList (x.regs lists + j * x.regs span)).set
     childValues (x.regs values + j * x.regs span))
-  have hlev : Fits w (x.regs level * 4) := hw.of_le (by omega)
-  have hf (k : ℕ) (hk : k ≤ 3) : Fits w (f + k) := hw.of_le (by dsimp [f]; omega)
+  have hlev : Fits w (x.regs level * 4) := by fits
+  have hf (k : ℕ) (hk : k ≤ 3) : Fits w (f + k) := by fits
   have hf0 : Fits w (x.regs frames + x.regs level * 4) := by
     simpa only [f, Nat.add_zero] using hf 0 (by decide)
-  have hj : Fits w (x.regs level + 1) := hw.of_le (by omega)
+  have hj : Fits w (x.regs level + 1) := by fits
   have hprod : Fits w (x.regs level * x.regs span) := hw.of_le (by nlinarith)
-  have hnextprod : Fits w ((x.regs level + 1) * x.regs span) := hw.of_le (by nlinarith)
+  have hnextprod : Fits w ((x.regs level + 1) * x.regs span) := by fits
   have hl : Fits w (x.regs lists + x.regs level * x.regs span) := hw.of_le (by nlinarith)
   have hv : Fits w (x.regs values + x.regs level * x.regs span) := hw.of_le (by nlinarith)
-  have hcl : Fits w (x.regs lists + (x.regs level + 1) * x.regs span) := hw.of_le (by nlinarith)
-  have hcv : Fits w (x.regs values + (x.regs level + 1) * x.regs span) := hw.of_le (by nlinarith)
+  have hcl : Fits w (x.regs lists + (x.regs level + 1) * x.regs span) := by fits
+  have hcv : Fits w (x.regs values + (x.regs level + 1) * x.regs span) := by fits
   have hexact : Exec w loadFrame x y 17 := by
     ram_eval [loadFrame, y, f, j, h1, h4, hlev, hf0, hf 1 (by decide),
       hf 2 (by decide), hf 3 (by decide), hj, hprod, hnextprod, hl, hv, hcl, hcv,

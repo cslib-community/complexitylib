@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Pair
+import Complexity.Tactic.Fits
 
 /-!
 # Charged query-controller steps
@@ -74,7 +75,7 @@ theorem exec_step_scan {w U n first length out queries count i scans a b : ℕ}
     (by simpa +decide [d, Reg.address, Reg.answer, Reg.scans] using hs)
     (by simpa +decide [d, Reg.address, Reg.answer, Reg.found] using hf)
     haWord hbWord ha hb hc hmem hmag hU
-    (hfit.of_le (by omega))
+    (by fits)
   have hb : ExecWithin (w + 2)
       (.branch (.eq Reg.found Reg.zero)
         (.seq (ram[ Reg.address ← Reg.output + Reg.index; Reg.answer ← *Reg.address ])
@@ -117,8 +118,8 @@ theorem exec_step_skip {W n first length out queries count i : ℕ} (x : Data 40
       (x.set Reg.address (out + i) |>.set Reg.answer 0 |>.set Reg.answer 0)
         |>.set Reg.index (i + 1)
     else (x.set Reg.answer (x.regs Reg.answer)).set Reg.index (i + 1)
-  have ha : Fits W (out + i) := hfit.of_le (by omega)
-  have ht : Fits W (i + 1) := hfit.of_le (by omega)
+  have ha : Fits W (out + i) := by fits
+  have ht : Fits W (i + 1) := by fits
   have he : ExecWithin W step x y 6 := by
     by_cases hf : x.regs Reg.found = 0
     · have hz : x.mem (out + i) = 0 := hskip.resolve_left (not_not_intro hf)

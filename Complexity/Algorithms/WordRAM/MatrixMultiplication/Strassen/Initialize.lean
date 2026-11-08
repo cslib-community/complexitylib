@@ -10,6 +10,7 @@ module
 import Complexity.Computability.WordRAM.Power.Rename
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.Frame
 import Mathlib.Tactic.FinCases
+import Complexity.Tactic.Fits
 
 /-!
 # Actual initialized Strassen root and power call
@@ -46,9 +47,9 @@ theorem exec_setup {w : ℕ} (x : Data 64)
       (∀ j : Fin 7, y.mem (y.regs Reg.frame + j.val) = y.regs (field j)) ∧
       ∀ a, a < y.regs Reg.frame ∨ y.regs Reg.frame + 7 ≤ a → y.mem a = x.mem a := by
   have hpow : 0 < 4 ^ x.regs Reg.depth := by positivity
-  have h7 : Fits w 7 := hw.of_le (by omega)
-  have h4 : Fits w 4 := hw.of_le (by omega)
-  have h1 : Fits w 1 := hw.of_le (by omega)
+  have h7 : Fits w 7 := by fits
+  have h4 : Fits w 4 := by fits
+  have h1 : Fits w 1 := by fits
   let r := (((((x.set Reg.zero 0).set Reg.one 1).set Reg.four 4).set Reg.frameWidth 7).set
     Reg.powerBase 4).set Reg.powerExponent (x.regs Reg.depth)
   have hr : ExecWithin w powerArguments x r 6 := by
@@ -76,10 +77,10 @@ theorem exec_setup {w : ℕ} (x : Data 64)
   have hsmem : s.mem = x.mem := htm
   have hsize : Fits w (4 ^ x.regs Reg.depth * x.regs Reg.modulus) := by
     rw [Nat.mul_comm]
-    exact hw.of_le (by omega)
+    fits
   have hframe : Fits w (x.regs Reg.scratch + 4 ^ x.regs Reg.depth * x.regs Reg.modulus) := by
     rw [Nat.mul_comm (4 ^ x.regs Reg.depth)]
-    exact hw.of_le (by omega)
+    fits
   let root := x.regs Reg.scratch + 4 ^ x.regs Reg.depth * x.regs Reg.modulus
   let u := ((((s.set Reg.size (4 ^ x.regs Reg.depth * x.regs Reg.modulus)).set Reg.frames
     root).set Reg.frame root).set Reg.phase 0).set Reg.active 1

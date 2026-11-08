@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend.Select
 import Complexity.Computability.WordRAM.CountingLoop
 import Complexity.Computability.WordRAM.MemoryView
+import Complexity.Tactic.Fits
 
 /-!
 # Compact native frontend scans
@@ -187,8 +188,8 @@ theorem exec {w : ℕ} (rs : List (ℕ × ℕ)) (x : Data 48)
       ((hr zero (by decide)).trans hz) ((hr one (by decide)).trans h1)
       ((hr two (by decide)).trans h2) ((hr three (by decide)).trans h3)
       ((hr four (by decide)).trans h4) ((hr five (by decide)).trans h5) hsmall
-      (hka.of_le (by rw [hys]; omega)) (hca.of_le (by rw [hyc]; omega))
-      (hda.of_le (by rw [hyd]; omega)) (hka.of_le (by omega)) (hda.of_le (by omega))
+      (by fits) (by fits)
+      (by fits) (by fits) (by fits)
       (by rw [hgetk]; exact hkey _ (List.getElem_mem hi))
       (by rw [hgetk, hyU]; exact habs _ (List.getElem_mem hi))
       (by simpa only [hyU] using hfit)

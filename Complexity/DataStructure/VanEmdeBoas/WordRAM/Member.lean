@@ -9,6 +9,7 @@ module
 
 public import Complexity.DataStructure.VanEmdeBoas.WordRAM.Model
 public import Complexity.DataStructure.VanEmdeBoas.WordRAM.Program
+import Complexity.Tactic.Fits
 
 /-!
 # Native van Emde Boas membership descent
@@ -141,9 +142,9 @@ theorem memberBody_exec {d w base query : ℕ} {tree : Tree d} {s : Data 32}
             have hi := hsafe.1
             have hu := universeSize_le_span d
             have hu' := span_le_succ d
-            have hhi : Fits w (query / universeSize d) := ha.of_le (by omega)
-            have hlo : Fits w (query % universeSize d) := ha.of_le (by omega)
-            have hnext : Fits w (query / universeSize d + 1) := ha.of_le (by omega)
+            have hhi : Fits w (query / universeSize d) := by fits
+            have hlo : Fits w (query % universeSize d) := by fits
+            have hnext : Fits w (query / universeSize d + 1) := by fits
             have hprod : Fits w ((query / universeSize d + 1) * span d) := by
               apply ha.of_le
               dsimp only [clusterOffset] at hsafe

@@ -17,6 +17,7 @@ public import Complexity.Computability.WordRAM.Realization.Witness
 public import Complexity.DataStructure.Dictionary.WordRAM.SuccinctSlotInv
 import Complexity.Computability.WordRAM.Width
 import Complexity.Tactic.Realize
+import Complexity.Tactic.Fits
 
 /-!
 # `Memory.Prog` Bit-Packed Array Primitives and Slot Resolution via `realize`
@@ -254,7 +255,7 @@ theorem realizes_readPackedGen :
         ExecWithin (B := .exact) w (.op (.exactBin .add (tmp 2) (src 0) (src 1))) x x₁ 1 := by
       apply ExecWithin.op
       rw [Op.eval_exactBin, hsrc0, hsrc1]
-      exact Data.put_of_fits (hfit.of_le (by omega))
+      exact Data.put_of_fits (by fits)
     have hc2 : ExecWithin (B := .exact) w (.op (.copy (tmp 1) (src 4))) x₁ x₂ 1 := ExecWithin.copy
     have hc3 : ExecWithin (B := .exact) w (.op (.copy (tmp 8) (src 3))) x₂ x₃ 1 := ExecWithin.copy
     have hc4 : ExecWithin (B := .exact) w (.op (.copy (tmp 9) (src 2))) x₃ x₄ 1 := ExecWithin.copy
@@ -362,7 +363,7 @@ theorem realizes_writePackedGen :
         ExecWithin (B := .exact) w (.op (.exactBin .add (tmp 0) (src 0) (src 1))) x x₁ 1 := by
       apply ExecWithin.op
       rw [Op.eval_exactBin, hsrc0, hsrc1]
-      exact Data.put_of_fits (hfit.of_le (by omega))
+      exact Data.put_of_fits (by fits)
     have hc2 : ExecWithin (B := .exact) w (.op (.copy (tmp 1) (src 4))) x₁ x₂ 1 := ExecWithin.copy
     have hc3 : ExecWithin (B := .exact) w (.op (.copy (tmp 2) (src 5))) x₂ x₃ 1 := ExecWithin.copy
     have hc4 : ExecWithin (B := .exact) w (.op (.copy (tmp 8) (src 3))) x₃ x₄ 1 := ExecWithin.copy
@@ -952,7 +953,7 @@ theorem fits_of_le_globalMetaLen {U V w₀ n_max h_space w base x : ℕ}
   rcases h.env with ⟨rfl, _⟩
   have hmax := max_n_one_lt_two_pow_w hw hnU hU
   have hlen := globalMetaLen_le_of_bucketBits_pos hb_pos
-  exact hmax.of_le (by omega)
+  fits
 
 theorem fits_of_le_max_n_one {U V w₀ n_max h_space w base x : ℕ}
     (h : DictEnvGen w (mkDictParams U V w₀ n_max h_space) base)

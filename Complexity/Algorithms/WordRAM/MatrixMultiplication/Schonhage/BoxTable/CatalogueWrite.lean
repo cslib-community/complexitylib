@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTable.DigitScan
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTable.CatalogueState
+import Complexity.Tactic.Fits
 
 /-!
 # Charged native stores of box geometry
@@ -52,13 +53,13 @@ theorem exec_writeSlot {w L H D R s : ℕ} (x : Data registers)
       (∀ i, ¬WriteLocal i → y.regs i = x.regs i) := by
   let r := Nat.count (Eligible L H) s
   have hrc : r ≤ s := Nat.count_le _
-  have hfds : Fits w (D + s) := hfit.of_le (by omega)
-  have hfr : Fits w (r + 1) := hfit.of_le (by omega)
-  have hf3r : Fits w (r * 3) := hfit.of_le (by omega)
-  have hfra : Fits w (R + r * 3) := hfit.of_le (by omega)
-  have hfra1 : Fits w (R + r * 3 + 1) := hfit.of_le (by omega)
-  have hfra2 : Fits w (R + r * 3 + 1 + 1) := hfit.of_le (by omega)
-  have hfs : Fits w (s + 1) := hfit.of_le (by omega)
+  have hfds : Fits w (D + s) := by fits
+  have hfr : Fits w (r + 1) := by fits
+  have hf3r : Fits w (r * 3) := by fits
+  have hfra : Fits w (R + r * 3) := by fits
+  have hfra1 : Fits w (R + r * 3 + 1) := by fits
+  have hfra2 : Fits w (R + r * 3 + 1 + 1) := by fits
+  have hfs : Fits w (s + 1) := by fits
   let bad := (((x.set Reg.address (D + s)).write (D + s) 0).set
     Reg.temporary (x.regs Reg.temporary)).set Reg.slot (s + 1)
   let good := ((((((((((((x.set Reg.address (D + s)).write (D + s) 0).set

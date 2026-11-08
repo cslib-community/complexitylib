@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandPopulation
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Charged materialization of the subset tables
@@ -111,10 +112,10 @@ theorem exec_tableWrite {w : ℕ} (L m inv tab t : ℕ) (x : Data 96)
       y.regs mask = t + 1 ∧ y.regs rank = prefixCount L m (t + 1) ∧
       (∀ i, i ≠ address → i ≠ temporary → i ≠ mask → i ≠ rank → y.regs i = x.regs i) := by
   have hbound := prefixCount_le L m t
-  have ha : Fits w (inv + t) := hfit.of_le (by omega)
-  have htaddr : Fits w (tab + prefixCount L m t) := hfit.of_le (by omega)
-  have hr : Fits w (prefixCount L m t + 1) := hfit.of_le (by omega)
-  have ht1 : Fits w (t + 1) := hfit.of_le (by omega)
+  have ha : Fits w (inv + t) := by fits
+  have htaddr : Fits w (tab + prefixCount L m t) := by fits
+  have hr : Fits w (prefixCount L m t + 1) := by fits
+  have ht1 : Fits w (t + 1) := by fits
   by_cases hp : MaskTable.population L t = m
   · by_cases hselected : prefixCount L m t < K0 L m * K0 L m
     · let y := (((((((x.set address (inv + t)).write (inv + t) 0).set temporary
@@ -206,7 +207,7 @@ theorem exec_tables {w : ℕ} (L m inv tab : ℕ) (x : Data 96)
         y.mem (tab + (pairRank gh).val) = (selectedMask gh).val) ∧
       (∀ a, ¬(inv ≤ a ∧ a < inv + 2 ^ L) → ¬(tab ≤ a ∧ a < tab + 2 ^ L) →
         y.mem a = x.mem a) := by
-  have h0 : Fits w 0 := hfit.of_le (Nat.zero_le _)
+  have h0 : Fits w 0 := by fits
   let start := (x.set mask 0).set rank 0
   have hs : ExecWithin (B := .standard) w (ram[ mask ← #0; rank ← #0 ]) x start 2 := by
     ram_eval [start, h0, mask, rank, Fin.mk.injEq]

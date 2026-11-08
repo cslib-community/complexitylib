@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxBatch.InputLayout
+import Complexity.Tactic.Fits
 
 /-!
 # Shared native construction before a query batch
@@ -61,17 +62,17 @@ private theorem exec_initializeCursors {w L N V K : ℕ} (x : Data registers)
       y.regs Reg.output = V + K + 5 * BoxQuery.stackCapacity L ∧ y.mem = x.mem := by
   have hp : 0 < 10 ^ L := Nat.pow_pos (by decide)
   have hT0 : 10 ^ L ≤ (L + 1) * 10 ^ L := Nat.le_mul_of_pos_left _ (by omega)
-  have fQ : Fits w (5 + 10 ^ L + 10 ^ L) := hfit.of_le (by omega)
-  have fN : Fits w (5 + 10 ^ L + 10 ^ L + N) := hfit.of_le (by omega)
-  have fL : Fits w (L + 1) := hfit.of_le (by omega)
-  have fT : Fits w ((L + 1) * 10 ^ L) := hfit.of_le (by omega)
-  have fC : Fits w ((L + 1) * 10 ^ L + 10) := hfit.of_le (by omega)
-  have f1 : Fits w 1 := hfit.of_le (by omega)
-  have f10 : Fits w 10 := hfit.of_le (by omega)
-  have f5 : Fits w 5 := hfit.of_le (by omega)
-  have fS : Fits w (((L + 1) * 10 ^ L + 10) * 5) := hfit.of_le (by omega)
-  have fV : Fits w (((L + 1) * 10 ^ L + 10) * 5 + V) := hfit.of_le (by omega)
-  have fK : Fits w (((L + 1) * 10 ^ L + 10) * 5 + V + K) := hfit.of_le (by omega)
+  have fQ : Fits w (5 + 10 ^ L + 10 ^ L) := by fits
+  have fN : Fits w (5 + 10 ^ L + 10 ^ L + N) := by fits
+  have fL : Fits w (L + 1) := by fits
+  have fT : Fits w ((L + 1) * 10 ^ L) := by fits
+  have fC : Fits w ((L + 1) * 10 ^ L + 10) := by fits
+  have f1 : Fits w 1 := by fits
+  have f10 : Fits w 10 := by fits
+  have f5 : Fits w 5 := by fits
+  have fS : Fits w (((L + 1) * 10 ^ L + 10) * 5) := by fits
+  have fV : Fits w (((L + 1) * 10 ^ L + 10) * 5 + V) := by fits
+  have fK : Fits w (((L + 1) * 10 ^ L + 10) * 5 + V + K) := by fits
   let y₀ := ((x.set Reg.next (5 + 10 ^ L + 10 ^ L)).set Reg.stop
     (5 + 10 ^ L + 10 ^ L + N)).set BoxTable.Reg.temporary 1
   let y₁ := (y₀.set Reg.output (L + 1)).set Reg.output ((L + 1) * 10 ^ L)

@@ -11,6 +11,7 @@ public import Complexity.Init
 public import Complexity.Computability.Complexity.FineGrained.Schoening
 public import Complexity.Computability.WordRAM.ListArray
 public import Complexity.Computability.WordRAM.Notation
+import Complexity.Tactic.Fits
 
 /-!
 # Finding the first falsified clause on the word RAM
@@ -266,12 +267,12 @@ theorem litLoop_spec (σ : Fin n → Bool) (ls : Clause (Fin n)) (x : Data 24) (
         (by simpa using hl)
       simpa using this.2
     have hval : x.mem (x.regs aBase + l.1.val) = (σ l.1).toNat := hσ l.1
-    have hf1 : Fits w l.1.val := hw.of_le (by omega)
+    have hf1 : Fits w l.1.val := by fits
     have hf2 : Fits w l.2.toNat := hw.of_le (by have := Bool.toNat_le l.2; omega)
-    have hf3 : Fits w (x.regs aBase + l.1.val) := hw.of_le (by omega)
+    have hf3 : Fits w (x.regs aBase + l.1.val) := by fits
     have hf4 : Fits w ((σ l.1).toNat ^^^ l.2.toNat) := hw.of_le (by
       have := toNat_xor_le_one (σ l.1) l.2; omega)
-    have hf5 : Fits w (1 - ((σ l.1).toNat ^^^ l.2.toNat)) := hw.of_le (by omega)
+    have hf5 : Fits w (1 - ((σ l.1).toNat ^^^ l.2.toNat)) := by fits
     have hf6 : Fits w (s.toNat ||| (1 - ((σ l.1).toNat ^^^ l.2.toNat))) := hw.of_le (by
       rw [toNat_eq_iff_beq, toNat_or]; have := Bool.toNat_le (s || (σ l.1 == l.2)); omega)
     have hf7 : Fits w (x.regs lptr + 1) := hw.of_le (by simp only [List.length_cons] at hend; omega)
@@ -329,8 +330,8 @@ theorem clauseLoop_spec (σ : Fin n → Bool) (ψ : CNF (Fin n)) (x : Data 24)
         (by simpa [encodeClause] using hpc)
       simpa using this.2
     have hc : (Cond.lt ptr aBase).Holds x := by simp only [Cond.holds_lt]; omega
-    have hf1 : Fits w (x.regs ptr + 1) := hw.of_le (by omega)
-    have hf2 : Fits w (x.regs ptr + 1 + c.length) := hw.of_le (by omega)
+    have hf1 : Fits w (x.regs ptr + 1) := by fits
+    have hf2 : Fits w (x.regs ptr + 1 + c.length) := by fits
     have hinit : ExecWithin w clauseInit x
         ((((x.set len c.length).set lptr (x.regs ptr + 1)).set lend
           (x.regs ptr + 1 + c.length)).set sat 0) 4 := by
@@ -356,7 +357,7 @@ theorem clauseLoop_spec (σ : Fin n → Bool) (ψ : CNF (Fin n)) (x : Data 24)
     | false =>
       have hdone : ExecWithin w clauseDone x₂
           (((x₂.set found 1).set cPtr (x.regs ptr)).set ptr (x.regs aBase)) 4 := by
-        have hfit : Fits w 1 := hw.of_le hpos
+        have hfit : Fits w 1 := by fits
         ram_eval [clauseDone, hs₂, hce, hz₂, ho₂, hptr₂, ha₂, hfit]
       refine ⟨_, (ExecWithin.loop_iter hc (hinit.seq (hlit.seq hdone))
         (ExecWithin.loop_exit ?_)).mono ?_, ?_, ?_⟩

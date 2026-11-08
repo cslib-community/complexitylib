@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.WordRAM.Notation
 public import Complexity.Foundations.NumberTheory.AKS.Coefficients
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Writing and comparing coefficient arrays on the word RAM
@@ -89,8 +90,8 @@ private theorem clear_step {w b r : ℕ} {m : ℕ → ℕ} (hfb : Fits w (b + r)
   obtain ⟨hyb, hyr, hyo, hyz, hym⟩ := hy
   obtain ⟨I, hI⟩ : ∃ I, y.regs i = I := ⟨_, rfl⟩
   have hlt : I < r := by simpa only [hI] using hc
-  have hf₁ : Fits w (b + I) := hfb.of_le (by omega)
-  have hf₂ : Fits w (I + 1) := hfb.of_le (by omega)
+  have hf₁ : Fits w (b + I) := by fits
+  have hf₂ : Fits w (I + 1) := by fits
   let z := ((y.set addr (b + I)).write (b + I) 0).set i (I + 1)
   have hrun : ExecWithin (B := .standard) w clearBody y z 3 := by
     ram_eval [clearBody, z, hyb, hI, hyo, hyz, hf₁, hf₂]
@@ -240,9 +241,9 @@ private theorem step {w a b r : ℕ} {m : ℕ → ℕ} (hfa : Fits w (a + r)) (h
   obtain ⟨K, hK⟩ : ∃ K, y.regs k = K := ⟨_, rfl⟩
   have hlt : K < r := by simpa only [hK] using hc
   rw [hK] at hyf
-  have hf₁ : Fits w (a + K) := hfa.of_le (by omega)
-  have hf₂ : Fits w (b + K) := hfb.of_le (by omega)
-  have hf₃ : Fits w (K + 1) := hfa.of_le (by omega)
+  have hf₁ : Fits w (a + K) := by fits
+  have hf₂ : Fits w (b + K) := by fits
+  have hf₃ : Fits w (K + 1) := by fits
   have hiff : (∀ k' < K + 1, m (a + k') = m (b + k')) ↔
       (∀ k' < K, m (a + k') = m (b + k')) ∧ m (a + K) = m (b + K) := by
     constructor

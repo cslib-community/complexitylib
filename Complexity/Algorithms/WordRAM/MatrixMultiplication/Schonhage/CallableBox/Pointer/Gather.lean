@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Pointer.Program
 import Complexity.Computability.WordRAM.Call
+import Complexity.Tactic.Fits
 
 /-!
 # Charged physical gathering into the product snapshot
@@ -44,9 +45,9 @@ theorem exec_copy {W s d k : ℕ} (x : Data 173)
   obtain ⟨y, he, ⟨ym, ys, yd, yk⟩, yf⟩ := ExecWithin.rename_post copyBank_injective
     (ArrayCopy.exec (x.comap copyBank) (hfit.of_le (by omega))
       (by change Fits W (x.regs Reg.source + x.regs Reg.length)
-          rw [hs, hk]; exact hfit.of_le (by omega))
+          rw [hs, hk]; fits)
       (by change Fits W (x.regs Reg.destination + x.regs Reg.length)
-          rw [hd, hk]; exact hfit.of_le (by omega))
+          rw [hd, hk]; fits)
       (by change x.regs Reg.source + x.regs Reg.length ≤ x.regs Reg.destination; omega))
   change y.regs Reg.source = _ at ys
   change y.regs Reg.destination = _ at yd
@@ -95,12 +96,12 @@ theorem exec_gather {W b S A Q s t q : ℕ} (x : Data 173)
     ∃ y, ExecWithin W gather x y (gatherTime A Q) ∧
       y.mem = gatherMemory x.mem b S A Q s t q ∧
       ∀ i : Fin 173, i.val < 166 → y.regs i = x.regs i := by
-  have hfH : Fits W (b + S) := hfit.of_le (by omega)
-  have hfL : Fits W (b + S + 5) := hfit.of_le (by omega)
-  have hfA : Fits W A := hfit.of_le (by omega)
-  have hfR : Fits W (b + S + 5 + A) := hfit.of_le (by omega)
-  have hfQ : Fits W (b + S + 5 + A + A) := hfit.of_le (by omega)
-  have hfQQ : Fits W (Q * 2) := hfit.of_le (by omega)
+  have hfH : Fits W (b + S) := by fits
+  have hfL : Fits W (b + S + 5) := by fits
+  have hfA : Fits W A := by fits
+  have hfR : Fits W (b + S + 5 + A) := by fits
+  have hfQ : Fits W (b + S + 5 + A + A) := by fits
+  have hfQQ : Fits W (Q * 2) := by fits
   let h := x.set Reg.source b |>.set Reg.destination (b + S) |>.set Reg.length 5
   have hh : ExecWithin W headerArguments x h 3 := by
     ram_eval [headerArguments, h, hb, hS, h5, hfH, Reg.source, Reg.destination, Reg.length]

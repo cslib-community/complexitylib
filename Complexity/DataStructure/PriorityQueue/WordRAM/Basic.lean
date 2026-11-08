@@ -12,6 +12,7 @@ import Complexity.Computability.WordRAM.Call
 public import Complexity.Computability.WordRAM.ExactNotation
 public import Complexity.Computability.WordRAM.Subroutine
 public import Complexity.DataStructure.WordRAM.StateTransition
+import Complexity.Tactic.Fits
 
 /-!
 # Word-RAM interface for indexed min-priority queues
@@ -188,8 +189,8 @@ theorem arguments_fit (P : PQCode B r_pq) {n K_max w base space : ℕ}
     {s : IndexedMinPQ.State n} (o : IndexedMinPQ.Op n)
     (hv : (indexedMinPQSpec n K_max).valid s o) (i : Fin r_pq) :
     Fits w (P.encode o i) := by
-  have h0 : Fits w 0 := hS.of_le (Nat.zero_le _)
-  have h1 : Fits w 1 := hS.of_le (by omega)
+  have h0 : Fits w 0 := by fits
+  have h1 : Fits w 1 := by fits
   cases o with
   | isEmpty => exact h0
   | getKey v =>
@@ -321,7 +322,7 @@ theorem callIsEmpty_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
         (.seq (.op (.copy (f P.tag1) zeroReg_c)) (.op (.copy (f P.tag0) zeroReg_c)))) x x₃ 3 :=
     (copy_from_val hz0).seq ((copy_from_val hz1).seq (copy_from_val hz2))
   have hx_bnd := C.bounded hr
-  have hfit0 : Fits w 0 := (hx_bnd.1 P.baseReg).of_le (Nat.zero_le _)
+  have hfit0 : Fits w 0 := by fits
   have hcomap : x₃.comap f = (((x.comap f).set P.tag2 0).set P.tag1 0).set P.tag0 0 := by
     simp only [x₃, x₂, x₁, Data.comap_set hf]
   have hb3 : (x₃.comap f).Bounded w := by
@@ -377,11 +378,10 @@ theorem callExtractMin_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
   have hprep : ExecWithin (B := B) w (.op (.copy (f P.tag2) oneReg_c)) x x₁ 1 :=
     copy_from_val ho1
   have hx_bnd := C.bounded hr
-  have hfit1 : Fits w 1 := hS.of_le (by omega)
   have hcomap : x₁.comap f = (x.comap f).set P.tag2 1 := Data.comap_set hf x P.tag2 1
   have hb1 : (x₁.comap f).Bounded w := by
     rw [hcomap]
-    exact Data.Bounded.set hx_bnd hfit1
+    exact Data.Bounded.set hx_bnd (by fits)
   have hreg : ∀ i, P.input i = false → x₁.regs (f i) = x.regs (f i) := by
     intro i hi
     change (x₁.comap f).regs i = (x.comap f).regs i
@@ -451,11 +451,11 @@ theorem callInsert_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
   have hb5 : (x₅.comap f).Bounded w := by
     rw [hcomap]
     exact Data.Bounded.set (Data.Bounded.set (Data.Bounded.set (Data.Bounded.set
-      (Data.Bounded.set hx_bnd (hS.of_le (Nat.zero_le _)))
-      (hS.of_le (by omega)))
-      (hS.of_le (Nat.zero_le _)))
-      (hS.of_le (by have := v.isLt; omega)))
-      (hK.of_le hval.2)
+      (Data.Bounded.set hx_bnd (by fits))
+      (by fits))
+      (by fits))
+      (by fits))
+      (by fits)
   have hreg : ∀ i, P.input i = false → x₅.regs (f i) = x.regs (f i) := by
     intro i hi
     change (x₅.comap f).regs i = (x.comap f).regs i
@@ -533,11 +533,11 @@ theorem callDecreaseKey_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
   have hb5 : (x₅.comap f).Bounded w := by
     rw [hcomap]
     exact Data.Bounded.set (Data.Bounded.set (Data.Bounded.set (Data.Bounded.set
-      (Data.Bounded.set hx_bnd (hS.of_le (Nat.zero_le _)))
-      (hS.of_le (by omega)))
-      (hS.of_le (by omega)))
-      (hS.of_le (by have := v.isLt; omega)))
-      (hK.of_le hval.2)
+      (Data.Bounded.set hx_bnd (by fits))
+      (by fits))
+      (by fits))
+      (by fits))
+      (by fits)
   have hreg : ∀ i, P.input i = false → x₅.regs (f i) = x.regs (f i) := by
     intro i hi
     change (x₅.comap f).regs i = (x.comap f).regs i
@@ -608,10 +608,10 @@ theorem callGetKey_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
   have hb4 : (x₄.comap f).Bounded w := by
     rw [hcomap]
     exact Data.Bounded.set (Data.Bounded.set (Data.Bounded.set
-      (Data.Bounded.set hx_bnd (hS.of_le (Nat.zero_le _)))
-      (hS.of_le (Nat.zero_le _)))
-      (hS.of_le (by omega)))
-      (hS.of_le (by have := v.isLt; omega))
+      (Data.Bounded.set hx_bnd (by fits))
+      (by fits))
+      (by fits))
+      (by fits)
   have hreg : ∀ i, P.input i = false → x₄.regs (f i) = x.regs (f i) := by
     intro i hi
     change (x₄.comap f).regs i = (x.comap f).regs i

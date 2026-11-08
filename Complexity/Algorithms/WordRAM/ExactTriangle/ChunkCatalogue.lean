@@ -11,6 +11,7 @@ import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.ExactTriangle.Chunks
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
+import Complexity.Tactic.Fits
 
 /-!
 # Native enumeration of all query chunks
@@ -209,9 +210,8 @@ private theorem exec_body {w : ℕ} (x : Data 32) (C : ℕ) (hread : x.mem
     |>.set 0 (x.regs cursor * x.regs stride)
     |>.set 0 (x.regs cursor * x.regs stride + x.regs queries)
     |>.set 1 (x.regs heap) |>.set 3 (x.regs capacity) |>.set 4 (x.regs cursor)
-  have hq0 : Fits w (x.regs cursor * x.regs stride) := hquery.of_le (by omega)
-  have hq1 : Fits w (x.regs cursor * x.regs stride + x.regs queries) :=
-    hquery.of_le (by omega)
+  have hq0 : Fits w (x.regs cursor * x.regs stride) := by fits
+  have hq1 : Fits w (x.regs cursor * x.regs stride + x.regs queries) := by fits
   have hd : ExecWithin w deliver x a 7 := by
     ram_eval [deliver, a, hcount, hread, hq0, hq1, counts, cursor, addr, stride,
       queries, heap, capacity, chunkTotal, chunkQueries, chunkDst, chunkCapacity,
@@ -240,9 +240,9 @@ private theorem exec_body {w : ℕ} (x : Data 32) (C : ℕ) (hread : x.mem
     |>.set heap (x.regs heap + (C ⌈/⌉ x.regs capacity) * 3)
     |>.set written (x.regs written + C ⌈/⌉ x.regs capacity)
     |>.set cursor (x.regs cursor + 1)
-  have hm : Fits w (C ⌈/⌉ x.regs capacity * 3) := hheap.of_le (by omega)
-  have hh : Fits w (x.regs heap + C ⌈/⌉ x.regs capacity * 3) := hheap.of_le (by omega)
-  have hw : Fits w (x.regs written + C ⌈/⌉ x.regs capacity) := hwritten.of_le (by omega)
+  have hm : Fits w (C ⌈/⌉ x.regs capacity * 3) := by fits
+  have hh : Fits w (x.regs heap + C ⌈/⌉ x.regs capacity * 3) := by fits
+  have hw : Fits w (x.regs written + C ⌈/⌉ x.regs capacity) := by fits
   have hf : ExecWithin w advance b z 4 := by
     have bho := hb one (by decide) (by decide)
     have bht := hb three (by decide) (by decide)
@@ -339,8 +339,8 @@ theorem exec {w : ℕ} (x : Data 32) (C : ℕ → ℕ)
         have := Nat.mul_le_mul_right (2 * N) (Nat.succ_le_of_lt hlt)
         rw [Nat.succ_mul] at this
         nlinarith only [this, hnew]))
-      (hfit.of_le (by rw [hyc]; omega))
-      (hfit.of_le (by omega))
+      (by fits)
+      (by fits)
       (hfit.of_le (by rw [hyw]; nlinarith only [hstep]))
     rw [hyQ] at hzw hzh hzcells hzframe
     have hpres (i : Fin 32)
@@ -404,11 +404,10 @@ theorem exec {w : ℕ} (x : Data 32) (C : ℕ → ℕ)
   have hinit : ExecWithin (B := .standard) w
       (ram[ one ← #1; three ← #3; cursor ← #0; written ← #0; heap ← dst;
         stride ← size * size; stride ← stride + stride ]) x a 7 := by
-    have h1 : Fits w 1 := hfit.of_le (by omega)
-    have h3 : Fits w 3 := hfit.of_le (by omega)
-    have hN : Fits w (x.regs size * x.regs size) := hfit.of_le (by dsimp [N]; omega)
-    have h2N : Fits w (x.regs size * x.regs size + x.regs size * x.regs size) :=
-      hfit.of_le (by dsimp [N]; omega)
+    have h1 : Fits w 1 := by fits
+    have h3 : Fits w 3 := by fits
+    have hN : Fits w (x.regs size * x.regs size) := by fits
+    have h2N : Fits w (x.regs size * x.regs size + x.regs size * x.regs size) := by fits
     ram_eval [a, d, N, h1, h3, hN, h2N, one, three, cursor, written, heap, stride, size, dst,
       Fin.mk.injEq, two_mul]
   obtain ⟨y, he, hy, hend⟩ := ExecWithin.loop_invariant I

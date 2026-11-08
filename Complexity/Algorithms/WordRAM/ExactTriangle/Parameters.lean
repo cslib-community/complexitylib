@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.NatSqrt
 public import Complexity.Algorithms.ExactTriangle.Splitting
+import Complexity.Tactic.Fits
 
 /-!
 # Native ExactTriangle splitting parameters
@@ -113,10 +114,10 @@ theorem exec {w : ℕ} (x : Data 15)
   change Fits w (4 * ((n * n) * (n * n)) + 4) at hN
   change Fits w (S + g) at hB
   change Fits w (n + B) at hH
-  have h1 : Fits w 1 := hD.of_le (by omega)
+  have h1 : Fits w 1 := by fits
   let a := x.set one 1 |>.set arg D
   have hstart : ExecWithin (B := .standard) w (ram[ one ← #1; arg ← dimension ]) x a 2 := by
-    have hfit : Fits w D := hD.of_le (by dsimp [D]; omega)
+    have hfit : Fits w D := by fits
     ram_eval [a, D, h1, hfit, one, arg, dimension, Fin.mk.injEq]
   have haD : a.regs arg = D := by simp [a]
   obtain ⟨b, hb, hbroot, -, hbm, -⟩ := NatSqrt.exec_rename sqrtReg sqrtReg_injective a
@@ -139,8 +140,8 @@ theorem exec {w : ℕ} (x : Data 15)
     by_cases h : n * n = 0
     · simp [h]
     · exact Nat.le_mul_of_pos_right _ (by omega)
-  have hafit : Fits w (n * n) := hN.of_le (by omega)
-  have hn4 : Fits w ((n * n) * (n * n)) := hN.of_le (by omega)
+  have hafit : Fits w (n * n) := by fits
+  have hn4 : Fits w ((n * n) * (n * n)) := by fits
   have hquot : Fits w ((n * n) * (n * n) / D) := hn4.of_le (Nat.div_le_self ..)
   let c := b.set middleRoot S |>.set area (n * n)
     |>.set arg ((n * n) * (n * n)) |>.set arg ((n * n) * (n * n) / D)
@@ -173,9 +174,9 @@ theorem exec {w : ℕ} (x : Data 15)
   let y := d.set capacity Q |>.set pieceLength (S + g) |>.set pieceLength (S + g - 1)
     |>.set pieceLength B |>.set pieces (n + B) |>.set pieces (n + B - 1) |>.set pieces H
   have hfinish : ExecWithin w finish d y 7 := by
-    have hsubB : Fits w (S + g - 1) := hB.of_le (Nat.sub_le ..)
+    have hsubB : Fits w (S + g - 1) := by fits
     have hdivB : Fits w ((S + g - 1) / g) := hsubB.of_le (Nat.div_le_self ..)
-    have hsubH : Fits w (n + B - 1) := hH.of_le (Nat.sub_le ..)
+    have hsubH : Fits w (n + B - 1) := by fits
     have hdivH : Fits w ((n + B - 1) / B) := hsubH.of_le (Nat.div_le_self ..)
     simp only [B, pieceSize, Nat.ceilDiv_eq_add_pred_div, S, sOf]
       at hB hH hsubB hdivB hsubH hdivH

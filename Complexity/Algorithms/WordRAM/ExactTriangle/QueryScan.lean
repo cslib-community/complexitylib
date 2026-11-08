@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.WordRAM.Notation
 public import Mathlib.Data.Nat.Count
+import Complexity.Tactic.Fits
 
 /-!
 # Native row-major residue-class queries
@@ -98,15 +99,15 @@ private theorem exec_body {w : ℕ} (x : Data 12) (R : ℕ → ℕ)
   let c := x.regs count
   let n := x.regs size
   let d := x.regs dst
-  have hread : Fits w (x.regs src + q) := hsrc.of_le (by dsimp [q]; omega)
-  have hqfit : Fits w q := hsrc.of_le (by dsimp [q]; omega)
+  have hread : Fits w (x.regs src + q) := by fits
+  have hqfit : Fits w q := by fits
   have hdiv : Fits w (q / n) := hqfit.of_le (Nat.div_le_self ..)
   have hmod : Fits w (q % n) := hqfit.of_le (Nat.mod_le ..)
-  have hdouble : Fits w (c + c) := hdst.of_le (by dsimp [c] at *; omega)
-  have hdest : Fits w (c + c + d) := hdst.of_le (by dsimp [c, d] at *; omega)
-  have hnext : Fits w (c + c + d + 1) := hdst.of_le (by dsimp [c, d] at *; omega)
-  have hcount : Fits w (c + 1) := hdst.of_le (by dsimp [c] at *; omega)
-  have hidx : Fits w (q + 1) := hsrc.of_le (by dsimp [q]; omega)
+  have hdouble : Fits w (c + c) := by fits
+  have hdest : Fits w (c + c + d) := by fits
+  have hnext : Fits w (c + c + d + 1) := by fits
+  have hcount : Fits w (c + 1) := by fits
+  have hidx : Fits w (q + 1) := by fits
   let a := x.set addr (x.regs src + q) |>.set key (R q)
   let b := if R q = x.regs residue then
       a.set row (q / n) |>.set col (q % n) |>.set addr (c + c)

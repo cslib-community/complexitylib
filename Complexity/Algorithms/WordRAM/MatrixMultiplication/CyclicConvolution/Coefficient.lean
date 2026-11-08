@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.CyclicConvolution.Term
 public import Complexity.Computability.WordRAM.Signed.Fits
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # A complete native cyclic-convolution coefficient
@@ -105,16 +106,16 @@ theorem exec_coefficient {w p r A B : ℕ} (x : Data 32) (u v : ℕ → ℤ)
     have hyb := hregs Reg.inputB (by decide)
     have hwrap : Fits (w + 2) (y.regs Reg.coefficient + y.regs Reg.length) := by
       rw [hr', hl]
-      exact h2p.of_le (by omega)
+      fits
     have haddrA : Fits (w + 2) (y.regs Reg.inputA + i) := by
       rw [hya]
-      exact ha.of_le (by omega)
+      fits
     have haddrB : Fits (w + 2) (y.regs Reg.inputB + j) := by
       rw [hyb]
-      exact hb.of_le (by omega)
+      fits
     obtain ⟨z, hz, hzacc, hzi, hzmem, hzregs⟩ :=
       exec_term y (u i) (v j) (partialConvolution p u v r i) huf hvf hpf hsf hwrap haddrA
-        (by simpa only [hl, hr'] using haddrB) (h2p.of_le (by omega))
+        (by simpa only [hl, hr'] using haddrB) (by fits)
         (by rw [hmem, hya]; exact hA i hlt)
         (by simpa only [hl, hr', hmem, hyb] using hB j hj) hacc
         ((hregs Reg.one (by decide)).trans hone)
@@ -139,7 +140,7 @@ theorem exec_coefficient {w p r A B : ℕ} (x : Data 32) (u v : ℕ → ℤ)
     simpa only [convolution] using hzacc
   let y := ((z.set Reg.address (x.regs Reg.output + r)).write
     (x.regs Reg.output + r) (encode (convolution p u v r))).set Reg.coefficient (r + 1)
-  have hnextrow : Fits (w + 2) (r + 1) := h2p.of_le (by omega)
+  have hnextrow : Fits (w + 2) (r + 1) := by fits
   have hstore : ExecWithin (w + 2)
       (ram[ Reg.address ← Reg.output + Reg.coefficient; *Reg.address ← Reg.accumulator;
         Reg.coefficient ← Reg.coefficient + Reg.one ]) z y 3 := by

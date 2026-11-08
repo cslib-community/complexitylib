@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Exec
+import Complexity.Tactic.Fits
 
 /-!
 # Actual initialized entry for the callable fixed-prime solver
@@ -81,15 +82,15 @@ theorem exec_entryHeader {W n D g p : ℕ} (values : List ℤ)
       x.regs Reg.groups = g ∧ x.regs Reg.prime = p ∧ x.regs Reg.ab = 5 ∧
       x.regs Reg.bc = 5 + n * n ∧ x.regs Reg.ac = 5 + n * n + n * n ∧
       x.regs Reg.base = workspaceBase n := by
-  have h1 : Fits W 1 := hfit.of_le (by omega)
-  have h2 : Fits W 2 := hfit.of_le (by omega)
-  have h3 : Fits W 3 := hfit.of_le (by omega)
-  have h4 : Fits W 4 := hfit.of_le (by omega)
-  have h5 : Fits W 5 := hfit.of_le (by omega)
-  have ha : Fits W (n * n) := hfit.of_le (by omega)
-  have hab : Fits W (5 + n * n) := hfit.of_le (by omega)
-  have hac : Fits W (5 + n * n + n * n) := hfit.of_le (by omega)
-  have hb : Fits W (5 + n * n + n * n + n * n) := hfit.of_le (by omega)
+  have h1 : Fits W 1 := by fits
+  have h2 : Fits W 2 := by fits
+  have h3 : Fits W 3 := by fits
+  have h4 : Fits W 4 := by fits
+  have h5 : Fits W 5 := by fits
+  have ha : Fits W (n * n) := by fits
+  have hab : Fits W (5 + n * n) := by fits
+  have hac : Fits W (5 + n * n + n * n) := by fits
+  have hb : Fits W (5 + n * n + n * n + n * n) := by fits
   generalize hstart : (Data.init (PreparationInput.input n D g p values) : Data 640) = initial
   have hDread : initial.mem 1 = D := by rw [← hstart]; simp [Data.init, PreparationInput.input]
   have hgread : initial.mem 2 = g := by rw [← hstart]; simp [Data.init, PreparationInput.input]

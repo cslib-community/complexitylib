@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.WordRAM.Copy
 public import Complexity.Computability.WordRAM.Dynamic
 public import Complexity.DataStructure.StateTransition.Amortized
+import Complexity.Tactic.Fits
 
 /-!
 # Doubling arrays on the word RAM
@@ -196,8 +197,8 @@ theorem grow_exec {w : ℕ} (x : Data 12) (h1 : Fits w 1)
   have haf : a.regs frontier = x.regs frontier + 2 * x.regs cap := by
     simp +decide [a, b]
   obtain ⟨z, hz, hzm⟩ := copy_exec a h1
-    (hw.of_le (by rw [has, hal]; omega))
-    (hw.of_le (by rw [had, hal]; omega)) (by rw [has, hal, had]; exact hp)
+    (by fits)
+    (by fits) (by rw [has, hal, had]; exact hp)
   have hzd : z.regs dest = x.regs frontier :=
     (hz.regs_eq (by decide)).trans had
   have hzc : z.regs count = 2 * x.regs cap :=
@@ -278,7 +279,7 @@ theorem append_exec {w : ℕ} {vs : List ℕ} {x : Data 12} (hr : Rep vs x)
   have hcap_le := hr.capacity_le
   have hptr_eq := hr.pointer_eq
   have hfront_eq := hr.frontier_eq
-  have h1 : Fits w 1 := hw.of_le (by omega)
+  have h1 : Fits w 1 := by fits
   by_cases hc : (Cond.eq len cap).Holds x
   · have hfull : x.regs len = x.regs cap := hc
     have hp : x.regs ptr + x.regs len ≤ x.regs frontier := by omega
@@ -288,12 +289,10 @@ theorem append_exec {w : ℕ} {vs : List ℕ} {x : Data 12} (hr : Rep vs x)
     have hz_arg : z.regs arg = x.regs arg := hz.regs_eq (by decide)
     have hif : ExecWithin w (ram[if len = cap then [ ⟪grow⟫ ] else [ temp ← temp ]])
         x z (15 * x.regs cap + 15) := hz.branch_pos hc
-    have haddr : Fits w (z.regs ptr + z.regs len) := hw.of_le (by omega)
-    have hlen : Fits w (z.regs len + 1) := hw.of_le (by omega)
     let y := (((z.set one 1).set addr (z.regs ptr + z.regs len)).write
       (z.regs ptr + z.regs len) (z.regs arg)).set len (z.regs len + 1)
     have htail : Exec w (ram[one ← #1; ⟪writeAt addr ptr len arg⟫; len ← len + one]) z y 4 :=
-      appendTail_exec z h1 haddr hlen
+      appendTail_exec z h1 (by fits) (by fits)
     obtain ⟨n, hn, he⟩ := hif.seq htail.within
     have hy_len : y.regs len = vs.length + 1 := by
       simp +decide [y, Data.set, Data.write, hz_len, hlen_eq]
@@ -350,12 +349,10 @@ theorem append_exec {w : ℕ} {vs : List ℕ} {x : Data 12} (hr : Rep vs x)
       simpa [Data.set] using (Exec.copy (w := w) (x := x) (d := temp) (s := temp))
     have hif : Exec w (ram[if len = cap then [ ⟪grow⟫ ] else [ temp ← temp ]]) x x 3 :=
       Exec.branch_neg hc hcopy_temp
-    have haddr : Fits w (x.regs ptr + x.regs len) := hw.of_le (by omega)
-    have hlen : Fits w (x.regs len + 1) := hw.of_le (by omega)
     let y := (((x.set one 1).set addr (x.regs ptr + x.regs len)).write
       (x.regs ptr + x.regs len) (x.regs arg)).set len (x.regs len + 1)
     have htail : Exec w (ram[one ← #1; ⟪writeAt addr ptr len arg⟫; len ← len + one]) x y 4 :=
-      appendTail_exec x h1 haddr hlen
+      appendTail_exec x h1 (by fits) (by fits)
     have he : Exec w program x y 7 := hif.seq htail
     have hy_len : y.regs len = vs.length + 1 := by
       simp +decide [y, Data.set, Data.write, hlen_eq]
@@ -412,8 +409,7 @@ theorem get_exec {w : ℕ} {vs : List ℕ} {x : Data 12} (hr : Rep vs x)
   have hlen_le := hr.length_le
   have hptr_eq := hr.pointer_eq
   have hfront_eq := hr.frontier_eq
-  have haddr : Fits w (x.regs ptr + x.regs arg) := hw.of_le (by omega)
-  have he : Exec w getProgram x y 2 := readAt_exec haddr
+  have he : Exec w getProgram x y 2 := readAt_exec (by fits)
   refine ⟨y, he, ?_, ?_, rfl, ?_⟩
   · have hmem := hr.contents ⟨x.regs arg, hi⟩
     simpa +decide [y, Data.set, List.getD_eq_getElem?_getD, hi] using hmem
@@ -738,7 +734,7 @@ theorem validHistory_appendAll {w : ℕ} {vs us : List ℕ}
   | cons v us ih =>
     simp only [appendAll, DataStructure.StateTransitionSpec.runClient_liftBind,
       DataStructure.StateTransitionSpec.validHistory_cons, spec]
-    refine ⟨⟨hvals v (List.mem_cons_self ..), hlen.of_le (by simp)⟩, ?_⟩
+    refine ⟨⟨hvals v (List.mem_cons_self ..), by fits⟩, ?_⟩
     exact ih (fun u hu => hvals u (List.mem_cons_of_mem v hu))
       (hlen.of_le (by simp only [List.length_append, List.length_cons, List.length_nil]; omega))
 

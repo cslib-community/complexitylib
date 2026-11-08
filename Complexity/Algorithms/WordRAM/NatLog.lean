@@ -10,6 +10,7 @@ module
 import Complexity.Computability.WordRAM.Call
 public import Complexity.Computability.WordRAM.Notation
 public import Mathlib.Data.Nat.Log
+import Complexity.Tactic.Fits
 
 /-!
 # A charged native binary logarithm
@@ -61,8 +62,8 @@ theorem exec {w : ℕ} (x : Data 4) (h2 : Fits w 2) (hn : Fits w (x.regs arg))
     obtain ⟨ho, ht, harg, hsum, hm⟩ := hy
     have hgt : 1 < y.regs arg := by simpa only [Cond.holds_lt, ho] using hc
     have hpos : 0 < Nat.log 2 (y.regs arg) := Nat.log_pos (by decide) (by omega)
-    have hdiv : Fits w (y.regs arg / 2) := hn.of_le ((Nat.div_le_self _ _).trans harg)
-    have hinc : Fits w (y.regs result + 1) := hout.of_le (by omega)
+    have hdiv : Fits w (y.regs arg / 2) := by fits
+    have hinc : Fits w (y.regs result + 1) := by fits
     refine ⟨?z, ?run, ?inv, ?decrease⟩
     case run => ram_eval [body, ho, ht, hdiv, hinc, arg, result, one, two, Fin.mk.injEq]
     case inv =>
@@ -87,7 +88,7 @@ theorem exec {w : ℕ} (x : Data 4) (h2 : Fits w 2) (hn : Fits w (x.regs arg))
     have hle : y.regs arg ≤ 1 := by simpa only [Cond.holds_lt, ho, not_lt] using hc
     exact Nat.log_eq_zero_iff.mpr (Or.inl (by omega))
   refine ⟨y, ?_, by omega, hm, ho, ht⟩
-  have h1 : Fits w 1 := h2.of_le (by decide)
+  have h1 : Fits w 1 := by fits
   have hinit : ExecWithin (B := .standard) w (ram[ result ← #0; one ← #1; two ← #2 ]) x x₀ 3 := by
     ram_eval [x₀, h1, h2]
   convert hinit.seq he using 1

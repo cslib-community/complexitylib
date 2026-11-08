@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTable.LookupLoop
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTable.Values
+import Complexity.Tactic.Fits
 
 /-!
 # Native lookup in the computed compact box table
@@ -48,10 +49,10 @@ private theorem exec_lookupSetup {w L C : ℕ} (x : Data registers)
       y.regs Reg.stars = 0 ∧ y.regs Reg.population = 0 ∧
       y.regs Reg.fixedSeen = 0 ∧ y.regs Reg.invalid = 0 ∧
       (∀ i, ¬LookupWholeLocal i → y.regs i = x.regs i) := by
-  have hf0 : Fits w 0 := hfit.of_le (by decide)
-  have hf1 : Fits w 1 := hfit.of_le (by decide)
-  have hf3 : Fits w 3 := hfit.of_le (by decide)
-  have hf9 : Fits w 9 := hfit.of_le (by decide)
+  have hf0 : Fits w 0 := by fits
+  have hf1 : Fits w 1 := by fits
+  have hf3 : Fits w 3 := by fits
+  have hf9 : Fits w 9 := by fits
   let y := ((((((((((((((x.set Reg.nil 0).set Reg.one 1).set Reg.ten 10).set Reg.nine 9).set
     Reg.three 3).set Reg.level 0).set Reg.stars 0).set Reg.population 0).set
     Reg.fixedSeen 0).set Reg.invalid 0).set Reg.completion 0).set Reg.power 1).set
@@ -109,12 +110,12 @@ theorem exec_lookup {w L m t C D V : ℕ} (x : Data registers) (π : Cube L)
   have hvalue : z.mem (V + r) = Signed.encode (slotValue a b s) := by
     rw [hmem]
     exact hvalues s hs hv
-  have hfprod : Fits w (π.starLevels.card * 10 ^ L) := hfit.of_le (by omega)
-  have hfs : Fits w s := hfit.of_le (by omega)
-  have hfD : Fits w (D + s) := hfit.of_le (by omega)
-  have hfr : Fits w r := hfit.of_le (by omega)
-  have hfV : Fits w (V + r) := hfit.of_le (by omega)
-  have hf1 : Fits w 1 := hfit.of_le (by omega)
+  have hfprod : Fits w (π.starLevels.card * 10 ^ L) := by fits
+  have hfs : Fits w s := by fits
+  have hfD : Fits w (D + s) := by fits
+  have hfr : Fits w r := by fits
+  have hfV : Fits w (V + r) := by fits
+  have hf1 : Fits w 1 := by fits
   have hnH : ¬m - t < π.starLevels.card + π.P0Levels.card := not_lt.mpr hπ.1
   have hnr : ¬r + 1 = 0 := by omega
   let z' := z.set Reg.temporary (z.regs Reg.temporary)

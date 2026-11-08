@@ -11,6 +11,7 @@ import Complexity.Computability.WordRAM.Call
 public import Complexity.Computability.WordRAM.Notation
 public import Mathlib.Data.Nat.Sqrt
 import Mathlib.Tactic.Linarith
+import Complexity.Tactic.Fits
 
 /-!
 # A charged native integer square root
@@ -73,7 +74,7 @@ theorem exec {w : ℕ} (x : Data 6) (hfit : Fits w (4 * x.regs arg + 4)) :
     have hnext : y.regs next ≤ Nat.sqrt n := Nat.le_sqrt.mpr hsmall
     have hsl := Nat.sqrt_le n
     have hsle := Nat.sqrt_le_self n
-    have hstep : Fits w (y.regs next + 1) := hfit.of_le (by dsimp [n] at *; omega)
+    have hstep : Fits w (y.regs next + 1) := by fits
     have hsquare : Fits w ((y.regs next + 1) * (y.regs next + 1)) := hfit.of_le (by
       change (y.regs next + 1) * (y.regs next + 1) ≤ 4 * n + 4
       have hnn : y.regs next ≤ n := hnext.trans hsle
@@ -103,8 +104,8 @@ theorem exec {w : ℕ} (x : Data 6) (hfit : Fits w (4 * x.regs arg + 4)) :
   have hout : y.regs root = Nat.sqrt n := by
     have h := Nat.sqrt_lt.mpr hlarge
     omega
-  have h1 : Fits w 1 := hfit.of_le (by omega)
-  have hbfit : Fits w (x.regs arg + 1) := hfit.of_le (by omega)
+  have h1 : Fits w 1 := by fits
+  have hbfit : Fits w (x.regs arg + 1) := by fits
   have hinit : ExecWithin (B := .standard) w
       (ram[ root ← #0; next ← #1; square ← #1; one ← #1; bound ← arg + one ]) x x₀ 5 := by
     ram_eval [x₀, n, h1, hbfit, root, next, square, one, bound, arg, Fin.mk.injEq]

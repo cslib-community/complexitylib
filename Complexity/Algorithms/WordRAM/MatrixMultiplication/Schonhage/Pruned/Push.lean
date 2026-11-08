@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Control
 public import Complexity.Computability.WordRAM.Heap
+import Complexity.Tactic.Fits
 
 /-!
 # Computed child-frame writes
@@ -64,13 +65,13 @@ theorem exec_push {w : ℕ} (x : Data registers) (h0 : x.regs nil = 0)
     address f).write f (x.regs childCount)).set address (f + 1)).write (f + 1) p).set
     address (f + 2)).write (f + 2) s).set address (f + 3)).write (f + 3) 0).set
     level (x.regs nextLevel)).set mode 0)
-  have hprod : Fits w (x.regs nextLevel * 4) := hw.of_le (by omega)
+  have hprod : Fits w (x.regs nextLevel * 4) := by fits
   have hf (k : ℕ) (hk : k ≤ 3) : Fits w (x.regs frames + x.regs nextLevel * 4 + k) :=
     hw.of_le (by omega)
-  have hf0 : Fits w (x.regs frames + x.regs nextLevel * 4) := hw.of_le (by omega)
-  have ht : Fits w (x.regs term * x.regs stride) := hw.of_le (by omega)
-  have hp : Fits w (x.regs leafPrefix + x.regs term * x.regs stride) := hw.of_le (by omega)
-  have hs : Fits w (x.regs stride * 10) := hw.of_le (by omega)
+  have hf0 : Fits w (x.regs frames + x.regs nextLevel * 4) := by fits
+  have ht : Fits w (x.regs term * x.regs stride) := by fits
+  have hp : Fits w (x.regs leafPrefix + x.regs term * x.regs stride) := by fits
+  have hs : Fits w (x.regs stride * 10) := by fits
   have hexact : Exec w push x y 15 := by
     ram_eval [push, y, f, p, s, h0, h1, h4, h10, hprod, hf0,
       hf 1 (by decide), hf 2 (by decide), hf 3 (by decide), ht, hp, hs,

@@ -9,6 +9,7 @@ module
 
 public import Complexity.DataStructure.PrefixSums.WordRAM.Query
 public import Complexity.Computability.WordRAM.Dynamic
+import Complexity.Tactic.Fits
 
 /-!
 # Stateful prefix sums implemented by one fixed Word-RAM program
@@ -120,24 +121,22 @@ theorem Rep.length {s : List ℕ} (hx : Rep h b w s x) : s.length = 2 ^ h := by
 theorem arguments_fit (ha : Fits w (b + 2 * 2 ^ h)) {s : List ℕ} (o : Operation)
     (ho : (spec h w).valid s o) (j : Fin 14) : Fits w ((program h w).encode o j) := by
   have hp := Nat.two_pow_pos h
-  have h1 : Fits w 1 := ha.of_le (by omega)
   cases o with
   | add i δ =>
     obtain ⟨hi, hv⟩ := ho
-    have hi' : Fits w i := ha.of_le (by omega)
-    have hd : Fits w δ := hv.of_le (by omega)
+    have hi' : Fits w i := by fits
+    have hd : Fits w δ := by fits
     simp only [program]
     split
     · exact fits_zero w
     · split <;> assumption
   | sum i =>
-    have hi' : Fits w i := ha.of_le (by exact le_trans ho (by omega))
     simp only [program]
     split
-    · exact h1
+    · fits
     · split
       · exact fits_zero w
-      · exact hi'
+      · fits
 
 /-- Every operation uses the same dispatcher, restores the list representation and returns
 the specified result within `13 (h + 1) + 11` structured instructions. All memory outside the
@@ -148,7 +147,7 @@ theorem dispatch_spec (ha : Fits w (b + 2 * 2 ^ h)) {s : List ℕ} (o : Operatio
       y.regs ans = ((spec h w).stepFn s o).2 ∧ Rep h b w ((spec h w).stepFn s o).1 y ∧
       (∀ a, a < b ∨ b + Tree.words h ≤ a → y.mem a = x.mem a) := by
   have hp := Nat.two_pow_pos h
-  have h2 : Fits w 2 := ha.of_le (by omega)
+  have h2 : Fits w 2 := by fits
   obtain ⟨t, ht, hrep⟩ := hx.tree
   have hbounded := (program h w).prepare_bounded hx.bounded
     (fun j _ => arguments_fit ha o ho j)
@@ -260,15 +259,13 @@ def zeroData (h b : ℕ) : Data 14 where
 /-- The representation assumptions are inhabited at every fitting size and root pointer. -/
 theorem rep_zeroData (ha : Fits w (b + 2 * 2 ^ h)) :
     Rep h b w (Tree.zero h).leaves (zeroData h b) := by
-  have hb : Fits w b := ha.of_le (by omega)
-  have hn : Fits w (2 ^ h) := ha.of_le (by omega)
   refine ⟨⟨?_, fun _ => fits_zero w⟩, ?_, ?_, Tree.zero h, rfl, Tree.rep_zero h b⟩
   · intro j
     simp only [zeroData]
     split
-    · exact hb
+    · fits
     · split
-      · exact hn
+      · fits
       · exact fits_zero w
   · simp +decide [zeroData]
   · simp +decide [zeroData]

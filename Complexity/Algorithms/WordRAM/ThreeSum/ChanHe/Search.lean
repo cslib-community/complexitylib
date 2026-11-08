@@ -13,6 +13,7 @@ import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.NormNum
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Native least-prime collision searches
@@ -229,7 +230,7 @@ private theorem exec_driver {w T : ℕ} (x : Data 64) (A : ℕ → Prop) [Decida
             if (y.regs cursor).Prime then 1 else 0 := by
           rw [hpr, hstable.2 (x.regs primes + y.regs cursor) (by omega)]
           exact hbitmap _ (by change y.regs cursor ≤ m; omega)
-        have had : Fits w (y.regs primes + y.regs cursor) := haddr.of_le (by rw [hpr]; omega)
+        have had : Fits w (y.regs primes + y.regs cursor) := by fits
         let u := (y.set addr (y.regs primes + y.regs cursor)).set bit
           (if (y.regs cursor).Prime then 1 else 0)
         have hload : ExecWithin w load y u 2 := by
@@ -307,8 +308,7 @@ private theorem exec_driver {w T : ℕ} (x : Data 64) (A : ℕ → Prop) [Decida
           hstable, hstop, ho, hz, ht, rfl, ?_⟩
         exact status_extend (Or.inr hsome) (fun h0 => by rw [hsome.1] at h0; omega)
     obtain ⟨z, he, hs, hsp, hzo, hzz, hzt, hzi, hstat⟩ := hinner
-    have hinc : Fits w (z.regs cursor + z.regs one) :=
-      hfit.of_le (by rw [hzi, hzo]; change _ ≤ m + 3; omega)
+    have hinc : Fits w (z.regs cursor + z.regs one) := by fits
     have hstep : ExecWithin w (Code.op (.bin .add cursor cursor one)) z
         (z.set cursor (z.regs cursor + 1)) 1 := by
       simpa only [BinOp.eval, hzo] using (ExecWithin.bin (f := .add) (d := cursor) (i := cursor)
@@ -328,10 +328,10 @@ private theorem exec_driver {w T : ℕ} (x : Data 64) (A : ℕ → Prop) [Decida
   have hinit : ExecWithin w (ram[
       one ← #1; zero ← #0; two ← #2; cursor ← #0; stop ← limit + one;
       answer ← one; found ← zero]) x x₀ 7 := by
-    have h1 : Fits w 1 := hfit.of_le (by omega)
-    have h2 : Fits w 2 := hfit.of_le (by omega)
-    have h0 : Fits w 0 := hfit.of_le (by omega)
-    have hm : Fits w (m + 1) := hfit.of_le (by change m + 1 ≤ m + 3; omega)
+    have h1 : Fits w 1 := by fits
+    have h2 : Fits w 2 := by fits
+    have h0 : Fits w 0 := by fits
+    have hm : Fits w (m + 1) := by fits
     ram_eval [x₀, m, one, zero, two, cursor, stop, limit, answer, found,
       h1, h2, h0, hm, Fin.mk.injEq]
   have hi : P (x₀.regs cursor) x₀ := by
@@ -416,7 +416,7 @@ theorem exec {w : ℕ} (x : Data 64) (values : Fin 3 → ℕ → ℤ)
     have hencoded : Fits (w + 2) (2 * M) := by
       rw [← henc]
       exact (encode_fits hMf).mono (by omega)
-    have hraw : Fits (w + 2) M := hencoded.of_le (by omega)
+    have hraw : Fits (w + 2) M := by fits
     have hyf : y.regs factor = x.regs factor := hy.1 _ (by decide)
     let u := (y.set rawModulus M).set modulus (2 * M)
     have hprep : ExecWithin (w + 2)
@@ -452,7 +452,7 @@ theorem exec {w : ℕ} (x : Data 64) (values : Fin 3 → ℕ → ℤ)
     obtain ⟨z, he, hgood, hreg, hmem⟩ := Query.exec u values hM hMf hmodreg
       (by simpa only [hlen] using hvalues) (by simpa only [hsrc, hlen] using hs)
       (by simpa only [hscratch, hlen] using hk)
-      (by rw [hhist]; exact hd.of_le (Nat.add_le_add_left hMle _))
+      (by rw [hhist]; fits)
       (by simpa only [hlen] using ht) (by simpa only [hlen, hcard] using hproduct)
       ((huc zero (by decide)).trans hz)
       (by simpa only [hsrc, hlen, hscratch] using hsk)
