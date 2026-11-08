@@ -423,14 +423,13 @@ with `scripts/build.sh ComplexityTests.PaperEndpoints.ExactOneBinary ComplexityT
 The former executes all 256 ordered pairs of two-bit signed equations against
 an independent source count, plus direct, no-equation and 40-bit cases.
 
-This is a functional composition with a binary-certified elimination backend.
-A uniform encoded binary runtime theorem for the whole composition is still
-missing: closure/separator listing, equation materialization, candidate checking,
-control and query construction all need resource composition. In particular,
-interpreting the certificate by rational division in `checkCandidate` has not
-received a binary runtime proof. Full-pipeline peak space, the sharper counting
-runtime, bounded-demand and graph endpoints remain open. The rational kernel's
-own coefficient-growth theorem is not implied by the binary backend.
+This is a functional composition with a binary-certified elimination backend. Its complete
+table-to-direct/two-query binary runtime theorem remains open. The new `BinaryFrontend`
+continuation below certifies local listing, separator/equation writing, global side deduplication,
+shared-column materialization, basis and consistency. Candidate validation against the side
+formula, final dispatch, query writing and whole counting-machine composition remain separate.
+The rational kernel's own coefficient-growth theorem is not implied by the binary backend.
+The weighted-row endpoint later in this chapter is already certified; graph endpoints remain open.
 
 The listing resource bound is promise-restricted. Without `DimensionOne`, take
 one width-$w$ table containing the all-zero tuple, all-one tuple and all $w$
@@ -438,9 +437,9 @@ unit vectors. For distinct coordinates these rows realize all four patterns;
 for a repeated coordinate both values occur. Consequently every tuple passes
 the pair tests and `listedClosure` contains $2^w$ tuples, although the input has
 at most $w+2$ rows. The unconditional query syntax budget does not bound this
-intermediate computation. A total polynomial-time wrapper must check the VC-one
-promise before listing (testing whether any coordinate pair realizes all four
-patterns suffices), or its resource theorem must explicitly restrict inputs.
+intermediate computation. The new capped list implementation below bounds all intermediate frontiers even outside the
+promise. Its equality with the semantic closure still requires `DimensionOne`; it does not use
+the uncapped function as a polynomial-time subroutine.
 
 The same import provides `tablePayload w scope R`, which retains the global
 declaration count, local widths, lexicographically listed Boolean rows and
@@ -462,13 +461,55 @@ with the rectangular solver on unary declared width and framed binary literals.
 original signed equations, retaining separate rows and shared signed columns.
 The complete client checks conflicting signs, empty equations, unused columns
 and the no-equation case. This certifies the equation-to-consistency stage.
-A promise-restricted
-polynomial binary-machine realization of the constructors is still required. The existing rectangular certificate
-is now composed with signed literal materialization. The missing machine proofs
-must account for prefix storage/comparison, separator deletion, candidate validation, query construction and output writing.
-A polynomial space conclusion must concern that composed machine, not just the
-number of clauses in its final output. These are unfinished implementation and
-proof obligations, not an obstruction to the promised source theorem.
+
+Import `Complexity.Computability.PolyTime.CNF.VCOneFrontend` for the resource-certified
+preprocessing path, in namespaces `VCOne.BinaryClosure`, `VCOne.BinarySeparator` and
+`VCOne.BinaryFrontend` under `Cslib.Logic.PL`. `BinaryClosure.enumerate` takes a unary local
+width and explicit bit rows. It extends full-width prefixes in reverse coordinate order, scans
+all unary/binary projections, deduplicates and caps every frontier at $w+1$. The polynomial
+machine proof charges each scan, comparison, copy, delimiter and loop step and bounds every
+intermediate state; it does not infer runtime from final output size. `enumerate_rows` proves
+that the cap removes nothing on VC-one tables. `missing_rows` extracts exactly the unwanted
+closure tuples, and `missing_length` proves the sharp deficit $w+1-|R|$.
+
+`BinarySeparator.equations` computes those missing tuples and greedily deletes coordinates by
+scanning the original table before writing each signed equation. `equation_rows_perm` and
+`equation_separator` connect the actual lists to the reviewed signed exact-one separator;
+`equations_polytime` charges the complete computation. `BinaryFrontend.side` constructs the
+actual quadratic syntax universe and keeps exactly the unary/binary restrictions valid on the
+listed rows. `side_rows`, `side_width`, `side_length` and `representation` give Theorem 1.3's
+pointwise representation and quantitative budgets for these actual writers, including empty
+relations and width zero.
+
+`BinaryFrontend.payload` consumes the existing `encTablePayload`: unary global declaration
+and local widths, explicit bit rows and binary scope columns. It writes separate signed equations
+in the original shared columns, and deduplicates the side CNF globally. `payload_tables` proves
+pointwise correspondence on `tablePayload w scope R`, with arbitrary table counts/arities and
+arbitrary overlap, assuming only locally VC-one relations and injective individual scopes.
+`payload_count` transfers the exact count on all declared original bits, including unused bits.
+`payload_side_length` bounds the actual side output by $1+2r+4r^2$, independent of table count.
+The semantic encoding here uses the existing canonical explicit relation rows (`Finset` images
+sorted as lists) and declared injective scopes; no correctness/admission theorem for other table
+file formats or malformed tuple/scope lengths is claimed. All raw payloads nevertheless have
+polynomial computation resources, even outside the VC-one promise.
+
+`payload_polytime`, `basis_polytime` and `consistent_polytime` compose all local construction and
+overlap-writing costs through actual signed integer materialization and the binary backend.
+The computed `basis` consists of original equation indices and has length at most the declared
+width. `consistent` checks the affine equations only: an empty allowed table may yield a false
+side clause and no equations, so linear consistency does not assert table satisfiability.
+The final all-cases table dispatcher must also enforce the side CNF. Its direct answers and
+at-most-two counting calls have existing semantic proofs, but their binary resource composition
+with this new payload remains open. In particular, this is not yet Theorem 6.3's sharp complete
+counting time/polynomial-space endpoint. Generic Theorem 1.1 resource transfer, graph applications
+and ALL-main remain open where not separately covered.
+
+From the repository root run
+`scripts/build.sh ComplexityTests.PaperEndpoints.VCOneResources`.
+The [complete client](../../ComplexityTests/PaperEndpoints/VCOneResources.lean) executes missing
+point/separator extraction, width-zero empty/tautological relations, a 32-coordinate two-row
+closure, a capped non-VC-one relation, shared columns with opposite signs, a contradictory
+shared-scope system and original assignment count 4 with an unused bit.
 
 ## Known Limitations
 
