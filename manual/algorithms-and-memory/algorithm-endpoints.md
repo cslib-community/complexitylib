@@ -26,7 +26,20 @@ Import `Complexity.Algorithms.Lean.Query.Select.Correctness` and `Complexity.Alg
 
 The cost proof solves `T(n) ≤ 8n/5 + T(⌈n/5⌉) + 2n + T(selectSideBound n)` by strong induction. Sorting the groups costs `8n/5` (`medians_countQueries_le`), the partition costs `2n` (`partition3_countQueries_le`), and the base case costs `n⌈log₂ n⌉ ≤ 10n`. The group cost uses [CountBound.lean](../../Complexity/Algorithms/Lean/Query/Sort/Merge/CountBound.lean), which sharpens cslib's merge bound: a merge makes at most `|xs| + |ys| − 1` comparisons (`merge_countQueries_le_sub_one`), so `mergeSort` sorts five elements with at most `8` (`mergeSortCountBound_five`). Ranks are stated with `List.IsOrderStatistic` in [OrderStatistic.lean](../../Complexity/Foundations/Data/List/OrderStatistic.lean): at most `k` elements lie strictly below `y` and more than `k` lie at or below it. `List.isOrderStatistic_iff_mergeSort` identifies the rank-`k` element of a linear order with `xs.mergeSort[k]`. The [tests](../../ComplexityTests/QuerySelect.lean) run lists longer than the cutoff, duplicates, out-of-range ranks, a preorder with ties and a dishonest oracle.
 
-The constant `37` comes from this simple accounting. Blum, Floyd, Pratt, Rivest and Tarjan refine the algorithm (`PICK`) to at most `5.4305 n` comparisons [BFPRT 1973][bfprt73]; that constant is not formalized. Group sizes other than five, the comparison lower bounds (`n − 1` for the minimum, `⌈3n/2⌉ − 2` for the minimum and maximum together, and the selection lower bounds) and a word-RAM implementation also remain open; see `ROADMAP.md`.
+The constant `37` comes from this simple accounting. Blum, Floyd, Pratt, Rivest and Tarjan refine the algorithm (`PICK`) to at most `5.4305 n` comparisons [BFPRT 1973][bfprt73]; that constant is not formalized. Group sizes other than five, lower bounds for the median and for general ranks, the second-smallest bound `n + ⌈log₂ n⌉ − 2` and a word-RAM implementation also remain open; see `ROADMAP.md`.
+
+### Comparison lower bounds for the minimum and the maximum
+
+Import `Complexity.Algorithms.Lean.Query.Select.MinMax.LowerBound`. In the same model, [Basic.lean](../../Complexity/Algorithms/Lean/Query/Select/MinMax/Basic.lean) states what a correct algorithm is. `Cslib.Query.IsMinAlg alg` asks that, under every oracle implementing a linear order, `alg xs` returns a least element of every nonempty `xs`. `Cslib.Query.IsMinMaxAlg alg` asks the same for a pair consisting of a least and a greatest element. Requiring correctness only for linear orders makes the lower bounds stronger. The file also gives the matching algorithms, which are correct for every total preorder. `findMin` is the linear scan. `findMinMax` compares the elements in pairs and then compares the smaller of each pair with the current minimum and the larger with the current maximum [CLRS 9.1][clrs09].
+
+| Declaration | Statement |
+|---|---|
+| `countQueries_findMin`, `findMin_upperBound`, `findMin_isMinAlg` | `findMin` makes exactly `n − 1` comparisons under every oracle and is correct |
+| `countQueries_findMinMax`, `findMinMax_upperBound`, `findMinMax_isMinMaxAlg` | `findMinMax` makes exactly `(3n + 1)/2 − 2 = ⌈3n/2⌉ − 2` comparisons under every oracle and is correct |
+| `IsMinAlg.length_sub_one_le_countQueries`, `IsMinAlg.lowerBound_infinite`, `IsMinAlg.countQueries_findMin_le` | a correct algorithm for the minimum makes at least `n − 1` comparisons on every list of `n` distinct elements, against every oracle implementing a linear order; hence `findMin` is optimal on every input |
+| `IsMinMaxAlg.exists_le_countQueries`, `IsMinMaxAlg.lowerBound_infinite`, `IsMinMaxAlg.exists_countQueries_findMinMax_le` | for a correct algorithm for the minimum and maximum and a list of `n` distinct elements, some oracle implementing a linear order forces at least `⌈3n/2⌉ − 2` comparisons; hence `findMinMax` is optimal on every input |
+
+The proofs use the fooling relations of [Fooling.lean](../../Complexity/Algorithms/Lean/Query/Sort/LEQuery/Fooling.lean), along the comparisons recorded by `LEQuery.queriedPairs` ([QueriedPairs.lean](../../Complexity/Algorithms/Lean/Query/Sort/LEQuery/QueriedPairs.lean)). An element is *found above* (`FoundAbove`) if some comparison with distinct sides put it on the strictly larger side. Moving an element that was never found above to the bottom of the order (`moveToBot`) keeps every answer, so a correct algorithm cannot tell the two orders apart (`eval_moveToBot_eq`). Hence every element except the reported minimum is found above, and each comparison finds at most one element above. For the minimum and maximum, the adversary keeps a linear order and before each comparison moves one of its two elements to the top or the bottom. An element that has only been found above moves to the top, one that has only been found below moves to the bottom, and earlier answers are preserved. The potential that weighs an element `1`, `2` or `4` according to how many of the two facts hold grows by at most `2` per comparison, from `n` to at least `4n − 4` (Pohl's argument; [Pohl 1972][pohl72], [Knuth 5.3.3][knuth98], [CLRS 9.1][clrs09]). The upper-bound counts are exact. The lower bound for the minimum holds against every linear oracle. The lower bound for the minimum and maximum holds against an oracle chosen by the adversary, given as a Boolean comparator that implements a linear order. The [tests](../../ComplexityTests/QueryMinMax.lean) run both algorithms on concrete lists, tabulate the bound, and show that algorithms which make no comparisons are rejected by the lower bounds.
 
 ## Shortest paths and priority queues
 
@@ -1115,11 +1128,13 @@ The numeric values above are transcriptions of checked source statements, not re
 [hmu06]: ../sources.md#hmu06
 [kasai01]: ../sources.md#kasai01
 [kasami65]: ../sources.md#kasami65
+[knuth98]: ../sources.md#knuth98
 [kortevygen18]: ../sources.md#kortevygen18
 [lll82]: ../sources.md#lll82
 [manbermyers93]: ../sources.md#manbermyers93
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
 [nagamochiibaraki92]: ../sources.md#nagamochiibaraki92
+[pohl72]: ../sources.md#pohl72
 [roth82]: ../sources.md#roth82
 [rothpostlewaite77]: ../sources.md#rothpostlewaite77
 [roughgarden13cs364a]: ../sources.md#roughgarden13cs364a
