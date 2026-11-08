@@ -70,6 +70,20 @@ Each seed `r` of `𝔽_{2^κ}`, with `κ = 2⌊log₂(n+s)⌋ + 4`, runs `d` rou
 
 [Instruction](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/BranchingProgram/MonoidProgram.lean#L83) gives another sequential syntax: each instruction queries one input position and selects a monoid element; evaluation is the product of selected elements. Barrington's theorem is proved as an equality between NC1 and polynomial-length programs over five-element permutations, with related A5 and finite-transformation formulations. The formula-to-program construction has length at most four to the formula's AND/OR depth. The zero-input slice is represented by an empty program and a chosen accepting set. This handles all input lengths without a hidden nonempty-input assumption. The equality is nonuniform and carries no native synthesis-runtime claim. See [Barrington class correspondence](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/BarringtonClass.lean).
 
+## Integer multiplication circuits
+
+[Karatsuba.lean](../../Complexity/Computability/Circuit/Boolean/Karatsuba.lean) bounds the De Morgan circuit complexity of the full `2w`-bit product of two `w`-bit numbers by `O(w ^ log₂ 3)`, charging every gate. `mulBits w` outputs the bits of the product of the two input halves, and `val_equivFin_mulBits` identifies its value with `Nat` multiplication. `complexity_mulBits_le` bounds the complexity by `Karatsuba.gates w + 1`. Here `gates w = 3 gates ⌈w/2⌉ + 26 ⌈w/2⌉ + 172 w + 34` for `w ≥ 2`, and the extra gate is the `false` constant. The halving recurrence gives `gates w ≤ 419 · 3 ^ ⌈log₂ w⌉ ≤ 1257 w ^ log₂ 3` (`gates_le_pow_clog`, `gates_le_rpow`, `complexity_mulBits_le_rpow`).
+
+The construction is the synthesis bound `Synthesis.word_mul_karatsuba`. It applies to any available words, so a client can call it on intermediate results. The three recursive products all have width exactly `⌈w/2⌉`: each `(⌈w/2⌉ + 1)`-bit middle sum is split into a remainder and a carry, and the carry terms are masked words, one conjunction per bit. Additions and subtractions are the ripple-carry word operations of [Word.lean](../../Complexity/Computability/Circuit/Boolean/Word.lean). Shifts, truncations and one-bit words are free rewiring ([Word/Rewire.lean](../../Complexity/Computability/Circuit/Boolean/Word/Rewire.lean)).
+
+Compare with [Modular/Multiply.lean](../../Complexity/Computability/Circuit/Boolean/Modular/Multiply.lean). Its schoolbook multiplier has at most `63 (w + 1)²` gates but computes only the product modulo `2 ^ w`, the low half of `mulBits`. Karatsuba's constants are larger: `gates 3 + 1` exceeds `63 · 4²`, while `gates 1024 + 1 < 63 · 1025²` (both checked by `decide +kernel` in the tests). Numerically, the inequality holds for every `w ≥ 525`; that threshold is not formalized.
+
+Not covered: depth (ripple carries make it linear), uniform generation of the circuits, and a native or word-RAM implementation. The coefficient-list program of [Karatsuba polynomial multiplication](algebraic-and-quantum.md#karatsuba-polynomial-multiplication) counts ring operations in a query model; it is a separate development. Complete client: [KaratsubaCircuit.lean](../../ComplexityTests/KaratsubaCircuit.lean). It checks exact gate counts, products on concrete inputs, the synthesis bound applied to the input halves, and the complexity bound at widths `2` and `0`. Build it with
+
+```bash
+lake build Complexity.Computability.Circuit.Boolean.Karatsuba ComplexityTests.KaratsubaCircuit
+```
+
 ## Major endpoint map
 
 The following are headline statements inspected in the curated abstracts and their bridges. Source credit below follows the implementation's citations; it is not a claim of a fresh line-by-line audit of every original paper.
