@@ -101,6 +101,25 @@ With `t = ⌈6/ε²⌉` and `c = 2r = O(log(1/δ))`, this is the `O(ε⁻² log(
 
 The [test file](../../ComplexityTests/StreamingDistinctElements.lean) runs the sketch with a fixed hash on a concrete stream. It applies the error bound to the affine maps over `ZMod 31`, a pairwise independent family with a 10-bit seed, and instantiates the memory bounds with 240 and 260 bits. It also shows two failure cases: a constant hash overestimates `F₀` by a factor `2`, and `t = 0` always answers `0`.
 
+## MinHash and locality-sensitive hashing
+
+[Probability/LocalitySensitiveHash.lean](../../Complexity/Probability/LocalitySensitiveHash.lean) works with keyed families `hash : ι → X → Y` with seed law `seed : PMF ι`, as for universal hashing. `collisionProb seed hash x x'` is the real probability that `x` and `x'` collide. It differs from `PMF.collisionProbability`, the probability that two independent samples of one law agree. `IsLocalitySensitive prob near far p₁ p₂` says that near pairs collide with probability at least `p₁` and far pairs with probability at most `p₂`. With `near := d ≤ r₁` and `far := r₂ ≤ d` this is the `(r₁, r₂, p₁, p₂)`-sensitive family of Indyk and Motwani [indykmotwani98][indykmotwani98] [harpeledindykmotwani12][harpeledindykmotwani12]. Every `ε`-universal family with `ε ≠ ⊤` is `(=, ≠, 1, ε)`-sensitive (`IsUniversalHash.isLocalitySensitive`). Independent repetitions use `PMF.iid`, and the collision laws are exact:
+
+- the AND construction `andHash` (concatenate `k` independently keyed hashes) collides with probability `p^k` (`collisionProb_andHash`);
+- the OR construction (some one of `L` independent hashes collides) collides with probability `1 − (1 − p)^L` (`orCollisionProb_eq`);
+- `L` bands of `k` rows give the S-curve `sCurve k L p = 1 − (1 − p^k)^L` (`orCollisionProb_andHash`).
+
+The general event laws behind these, `Pr[∀ j, s j ∈ E] = μ(E)^k` and `Pr[∃ j, s j ∈ E] = 1 − (1 − μ(E))^k` under `PMF.iid μ k`, are in [IID/Event.lean](../../Complexity/Probability/IID/Event.lean). `IsLocalitySensitive.and`, `.or` and `.banded` transport sensitivity. For `0 ≤ p₂ < p₁ ≤ 1`, `δ > 0` and `δ' > 0`, `exists_sCurve_gap` and `IsLocalitySensitive.exists_banded` choose `k` and `L = ⌈log(1/δ)/p₁^k⌉₊` so that near pairs collide with probability at least `1 − δ` and far pairs with probability at most `δ'`. The explicit bounds are `le_sCurve` (`1 − δ ≤ sCurve k L p` once `log(1/δ) ≤ L p₁^k`) and `sCurve_le` (`sCurve k L p ≤ L p₂^k`, Bernoulli's inequality). `collisionProb_triangle` is Charikar's Lemma 1 [charikar02][charikar02]: `1 − collisionProb` satisfies the triangle inequality.
+
+[LocalitySensitiveHash/MinHash.lean](../../Complexity/Probability/LocalitySensitiveHash/MinHash.lean) proves Broder's theorem [broder97][broder97]. On a finite linear order, `minHash σ A` is the least rank `min σ(A)` (`⊤` for `∅`). Under a uniform `σ : Equiv.Perm α`, `collisionProb_minHash` gives `Pr[minHash σ A = minHash σ B] = jaccard A B = |A ∩ B|/|A ∪ B|`, with `jaccard ∅ ∅ = 1`. Consequences: `isLocalitySensitive_minHash` (MinHash is `(d₁, d₂, 1 − d₁, 1 − d₂)`-sensitive for the Jaccard distance `1 − J`), `orCollisionProb_andHash_minHash` (the banding curve `1 − (1 − J^r)^b` of [leskovecrajaramanullman20][leskovecrajaramanullman20], Section 3.4.2), and `jaccard_triangle` (the triangle inequality for the Jaccard distance on finite subsets of any type with decidable equality). With `jaccard_comm` and `jaccard_eq_one_iff` (`J(A, B) = 1 ↔ A = B`), it makes `1 − J` a metric. [LocalitySensitiveHash/BitSampling.lean](../../Complexity/Probability/LocalitySensitiveHash/BitSampling.lean) proves the bit-sampling law `collisionProb_bitSampling`: a uniform coordinate of `x, y : n → β` agrees with probability `1 − d_H(x, y)/|n|`. It follows that bit sampling is `(r₁, r₂, 1 − r₁/|n|, 1 − r₂/|n|)`-sensitive (`isLocalitySensitive_bitSampling`).
+
+The [test file](../../ComplexityTests/LocalitySensitiveHash.lean) contains:
+
+- Jaccard values and exact MinHash collision probabilities on `Fin 4`;
+- banding numerics for `r = 5`, `b = 20` (`sCurve 5 20 0.8 > 0.9996`, `sCurve 5 20 0.2 < 0.007`);
+- a bit-sampling family on `Fin 8 → Bool`, banded to `(0.9965, 0.48)` and amplified with `exists_banded`;
+- a negative example: the same family is not `(7/8, 1/4)`-sensitive.
+
 ## Native streaming folds
 
 [Complexity/Computability/Machines/Turing/MultiTape/Complexity/Streaming.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Complexity/Streaming.lean) gives actual machine-backed scans of raw bit strings through Christian Reitwiessner's streaming backend. A round holds an encoded accumulator and one input bit instead of copying the remaining input list. Time sums the round computation, old/new state encoding sizes and control; workspace takes a peak bound and charges retained accumulators. Read-only input and write-only output are excluded from work-tape space.
@@ -139,6 +158,13 @@ The k-minimum-values sketch for `F₀` has no `ProbComp` sampler or machine real
 
 No automatic native realization of the Count-Min sketch was identified in its four source modules.
 
+The locality-sensitive hashing modules prove information-theoretic statements only. The following are not formalized:
+
+- the `(c, r)`-approximate near-neighbour data structure with query time `n^ρ`, where `ρ = log(1/p₁)/log(1/p₂)`;
+- the cost of evaluating or storing the hashes;
+- SimHash, p-stable LSH, and LSH lower bounds;
+- MinHash over smaller min-wise independent families: it uses a uniform permutation of the whole universe.
+
 The Johnson–Lindenstrauss development covers only dense `±1` matrices: the sparse `{-√3, 0, √3}` distribution of Achlioptas, Gaussian and spherical projections, fast and sparse JL transforms, the optimal Larsen–Nelson lower bound, a `ProbComp` sampler and any native cost for applying the projection are not formalized.
 
 The online interface surveyed is deterministic; randomized competitive analysis would need additional adversary/expectation definitions, so the randomized ski-rental bound `e/(e-1)` and randomized list update (BIT, COMB) are open. List update covers access requests only; insertions and deletions are not modelled.
@@ -154,14 +180,19 @@ Online bin packing is modelled by `OnlinePacker`, not through `Problem`/`DetStra
 [baloghbekesidosaepsteinlevin18]: ../sources.md#baloghbekesidosaepsteinlevin18
 [bjkst02]: ../sources.md#bjkst02
 [borodinelyaniv98]: ../sources.md#borodinelyaniv98
+[broder97]: ../sources.md#broder97
+[charikar02]: ../sources.md#charikar02
 [chrobakkarloffpaynevishwanathan91]: ../sources.md#chrobakkarloffpaynevishwanathan91
 [complexitylib]: ../sources.md#complexitylib
 [cormode05]: ../sources.md#cormode05
 [dasguptagupta03]: ../sources.md#dasguptagupta03
 [gupta23]: ../sources.md#gupta23
+[harpeledindykmotwani12]: ../sources.md#harpeledindykmotwani12
+[indykmotwani98]: ../sources.md#indykmotwani98
 [irani91]: ../sources.md#irani91
 [johnsonlindenstrauss84]: ../sources.md#johnsonlindenstrauss84
 [karlin88]: ../sources.md#karlin88
+[leskovecrajaramanullman20]: ../sources.md#leskovecrajaramanullman20
 [manassemcgeochsleator90]: ../sources.md#manassemcgeochsleator90
 [sleatortarjan85]: ../sources.md#sleatortarjan85
 [yao80]: ../sources.md#yao80

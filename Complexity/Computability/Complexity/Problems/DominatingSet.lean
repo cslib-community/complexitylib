@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Complexity.Problems.VertexCover.Approximation
+public import Complexity.Computability.Complexity.Problems.VertexCover
 public import Complexity.Foundations.Combinatorics.SimpleGraph.DominatingSet
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -54,7 +54,8 @@ and a vertex cover of `k` vertices with the hub is a dominating set of `k + 1` v
 `VertexCover` asks for exactly `k` vertices, instances with `k > n` are sent to the target `0`. No
 dominating set of `0` vertices dominates the hub.
 
-Garey and Johnson cite a transformation from VERTEX COVER for GT2. The common textbook version
+Garey and Johnson cite a transformation from VERTEX COVER for GT2 (locator from secondary
+sources). The common textbook version
 keeps the edges of `G`, adds a vertex for every edge and keeps `k`, but it must account separately
 for isolated vertices of `G`: they impose nothing on a cover and must be chosen in a dominating set.
 The hub and pendant used here dominate every copy, including isolated ones, at a fixed cost of one
