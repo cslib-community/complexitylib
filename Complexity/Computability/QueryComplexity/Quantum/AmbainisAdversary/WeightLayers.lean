@@ -66,6 +66,22 @@ open Finset Function BitString
 
 variable {N : ℕ} {W : Type*} [Fintype W]
 
+/-- Rescaling an adversary bound: if `l A = m D` and `l' B = m' D` with `l l' > 0`, then the bound
+`c √(m m') ≤ t √(l l')` becomes `c √(A B) ≤ t D`. -/
+private theorem mul_sqrt_le_mul_of_mul_eq {A B D l l' m m' c t : ℝ} (hA : 0 ≤ A) (hB : 0 ≤ B)
+    (hD : 0 ≤ D) (hl : 0 < l * l') (h : l * A = m * D) (h' : l' * B = m' * D)
+    (hcore : c * √(m * m') ≤ t * √(l * l')) :
+    c * √(A * B) ≤ t * D := by
+  have hsq : √(A * B) * √(l * l') = √(m * m') * D := by
+    have hkey : A * B * (l * l') = m * m' * (D * D) := by
+      linear_combination (l' * B) * h + (m * D) * h'
+    rw [← Real.sqrt_mul (mul_nonneg hA hB), hkey, Real.sqrt_mul' _ (mul_self_nonneg D),
+      Real.sqrt_mul_self hD]
+  refine le_of_mul_le_mul_right ?_ (Real.sqrt_pos.2 hl)
+  calc c * √(A * B) * √(l * l') = c * √(m * m') * D := by rw [mul_assoc, hsq, ← mul_assoc]
+    _ ≤ t * √(l * l') * D := mul_le_mul_of_nonneg_right hcore hD
+    _ = t * D * √(l * l') := by ring
+
 variable (U : ℕ → State N W →ₗᵢ[ℂ] State N W)
 
 /-- **Telling weight `a` from weight `b`**, the δ-form: let `a < b ≤ N`, and let a `T`-query
@@ -126,12 +142,8 @@ theorem one_sub_mul_sqrt_le_two_mul_mul_sub_of_le {ψ₀ : State N W} (hψ₀ : 
       · obtain ⟨hqR, hqi, hq1⟩ := mem_filter.1 hq
         obtain ⟨-, hq2, hq12⟩ := hmemR.1 hqR
         obtain ⟨-, hqi2⟩ := Bool.lt_iff.1 (lt_of_le_of_ne (hq12 i) hqi)
-        refine mem_filter.2 ⟨mem_univ _, fun j => ?_, hq2⟩
-        by_cases hj : j = i
-        · subst hj
-          simp [hqi2]
-        · rw [update_of_ne hj, ← hq1]
-          exact hq12 j
+        exact mem_filter.2 ⟨mem_univ _,
+          update_le_iff.2 ⟨hqi2.ge, fun j _ => (congrFun hq1 j).ge.trans (hq12 j)⟩, hq2⟩
       · obtain ⟨-, -, hq1⟩ := mem_filter.1 hq
         obtain ⟨-, -, hr1⟩ := mem_filter.1 hr
         exact Prod.ext (hq1.trans hr1.symm) h
@@ -144,56 +156,26 @@ theorem one_sub_mul_sqrt_le_two_mul_mul_sub_of_le {ψ₀ : State N W} (hψ₀ : 
       · obtain ⟨hqR, hqi, hq2⟩ := mem_filter.1 hq
         obtain ⟨hq1, -, hq12⟩ := hmemR.1 hqR
         obtain ⟨hqi1, -⟩ := Bool.lt_iff.1 (lt_of_le_of_ne (hq12 i) hqi)
-        refine mem_filter.2 ⟨mem_univ _, fun j => ?_, hq1⟩
-        by_cases hj : j = i
-        · subst hj
-          simp [hqi1]
-        · rw [update_of_ne hj, ← hq2]
-          exact hq12 j
+        exact mem_filter.2 ⟨mem_univ _,
+          le_update_iff.2 ⟨hqi1.le, fun j _ => (hq12 j).trans (congrFun hq2 j).le⟩, hq1⟩
       · obtain ⟨-, -, hq2⟩ := mem_filter.1 hq
         obtain ⟨-, -, hr2⟩ := mem_filter.1 hr
         exact Prod.ext h (hq2.trans hr2.symm)
   have hcore := one_sub_mul_sqrt_le_two_mul_mul_sqrt U hψ₀ T hR hδR hm hm' hL
+  rw [Nat.cast_mul] at hcore
   -- the binomial identities `l (N - a) = m (b - a)` and `l' b = m' (b - a)`
   have hx := Nat.choose_mul_succ_eq (N - a - 1) (N - b)
   rw [show N - a - 1 + 1 = N - a by omega, show N - a - (N - b) = b - a by omega] at hx
   have hy := Nat.choose_mul_succ_eq (b - 1) a
   rw [show b - 1 + 1 = b by omega] at hy
-  have hl : 0 < (N - a - 1).choose (N - b) := Nat.choose_pos (by omega)
-  have hl' : 0 < (b - 1).choose a := Nat.choose_pos (by omega)
-  set m := (N - a).choose (N - b)
-  set m' := b.choose a
-  set l := (N - a - 1).choose (N - b)
-  set l' := (b - 1).choose a
-  have hkey : (N - a) * b * (l * l') = (b - a) * (b - a) * (m * m') := by
-    calc (N - a) * b * (l * l') = (l * (N - a)) * (l' * b) := by ring
-      _ = (m * (b - a)) * (m' * (b - a)) := by rw [hx, hy]
-      _ = (b - a) * (b - a) * (m * m') := by ring
-  have hkeyR : ((N : ℝ) - a) * b * ((l : ℝ) * l') = ((b : ℝ) - a) * (b - a) * (m * m') := by
-    have := congrArg (Nat.cast : ℕ → ℝ) hkey
-    push_cast [Nat.cast_sub hab.le, Nat.cast_sub (hab.trans_le hbN).le] at this
-    exact this
-  rw [Nat.cast_mul] at hcore
-  have habR : (a : ℝ) < b := by exact_mod_cast hab
-  have hbNR : (b : ℝ) ≤ N := by exact_mod_cast hbN
-  have hba : (0 : ℝ) ≤ b - a := by linarith
-  rcases le_or_gt 1 δ with h1 | h1
-  · have : (1 - δ) * √((N - a) * b) ≤ 0 :=
-      mul_nonpos_of_nonpos_of_nonneg (by linarith) (Real.sqrt_nonneg _)
-    exact this.trans (mul_nonneg (by positivity) hba)
-  have hLpos : (0 : ℝ) < √((l : ℝ) * l') :=
-    Real.sqrt_pos.2 (mul_pos (by exact_mod_cast hl) (by exact_mod_cast hl'))
-  have h0 : (0 : ℝ) ≤ (N - a) * b := mul_nonneg (by linarith) (Nat.cast_nonneg b)
-  have hsq : √(((N : ℝ) - a) * b) * √((l : ℝ) * l') = √((m : ℝ) * m') * (b - a) := by
-    rw [← Real.sqrt_mul h0, hkeyR, Real.sqrt_mul (mul_self_nonneg _), Real.sqrt_mul_self hba,
-      mul_comm]
-  have key : (1 - δ) * √(((N : ℝ) - a) * b) * √((l : ℝ) * l') ≤
-      2 * T * (b - a) * √((l : ℝ) * l') := by
-    calc (1 - δ) * √(((N : ℝ) - a) * b) * √((l : ℝ) * l')
-        = (1 - δ) * √((m : ℝ) * m') * (b - a) := by rw [mul_assoc, hsq, ← mul_assoc]
-      _ ≤ 2 * T * √((l : ℝ) * l') * (b - a) := mul_le_mul_of_nonneg_right hcore hba
-      _ = 2 * T * (b - a) * √((l : ℝ) * l') := by ring
-  exact le_of_mul_le_mul_right key hLpos
+  have hl : (0 : ℝ) < (N - a - 1).choose (N - b) * (b - 1).choose a := by
+    exact_mod_cast Nat.mul_pos (Nat.choose_pos (by omega)) (Nat.choose_pos (by omega))
+  refine mul_sqrt_le_mul_of_mul_eq (sub_nonneg.2 (by exact_mod_cast (hab.trans_le hbN).le))
+    (Nat.cast_nonneg b) (sub_nonneg.2 (by exact_mod_cast hab.le)) hl ?_ ?_ hcore
+  · rw [← Nat.cast_sub hab.le, ← Nat.cast_sub (hab.trans_le hbN).le]
+    exact_mod_cast hx
+  · rw [← Nat.cast_sub hab.le]
+    exact_mod_cast hy
 
 /-- **Telling weight `k` from weight `k'`** [Ambainis2002], Theorem 5, for general weights: if a
 `T`-query algorithm with a unit initial state accepts, by an outcome in `S`, every input of weight
