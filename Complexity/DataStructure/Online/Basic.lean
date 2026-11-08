@@ -40,8 +40,9 @@ definitions:
 
 This module covers deterministic strategies (for which step-by-step adaptive request generation
 produces an ordinary request list whose oblivious replay induces the identical execution).
-Randomized strategies and expected-cost distinctions between oblivious and adaptive adversaries
-are separate.
+Randomized strategies against an oblivious adversary, as distributions over deterministic
+strategies, are in `Complexity.DataStructure.Online.Randomized`; adaptive adversaries against
+randomized strategies are not modelled.
 
 ## Main definitions
 

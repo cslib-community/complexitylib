@@ -55,7 +55,10 @@ comparisons in total (`kasaiM_time_le`).
 
 * `Cslib.Algorithms.Lean.SuffixArray.getElem!_rankArray`: `rankArray n sa` inverts `sa`.
 * `Cslib.Algorithms.Lean.SuffixArray.ret_extendM`: `extendM w j i h` returns
-  `h + lcpLen (w.drop (j + h)) (w.drop (i + h))`.
+  `h + List.lcpLen (w.drop (j + h)) (w.drop (i + h))`.
+* `Cslib.Algorithms.Lean.SuffixArray.extendM_time_add_le`: one comparison per matched character
+  plus at most one mismatch, and none when the extension reaches the end of the text
+  (`extendM_time_add_le_of_size_le`).
 * `Cslib.Algorithms.Lean.SuffixArray.ret_kasaiM` and `kasai_eq_lcpArray`: on a suffix array the
   algorithm returns the LCP array.
 * `Cslib.Algorithms.Lean.SuffixArray.kasaiM_time_le`: at most `2 * |w|` character comparisons.
@@ -202,16 +205,39 @@ theorem extendM_time_add_le (w : Array α) (j i h : ℕ) :
     · simp only [TimeM.time_pure, TimeM.ret_pure]
       omega
 
+/-- An extension that reaches the end of the suffix at `i` makes no mismatch comparison:
+one comparison per matched character. -/
+theorem extendM_time_add_le_of_size_le (w : Array α) (j i h : ℕ)
+    (hend : w.size ≤ i + (extendM w j i h).ret) :
+    (extendM w j i h).time + h ≤ (extendM w j i h).ret := by
+  generalize hk : w.size - (i + h) = k
+  induction k generalizing h with
+  | zero =>
+    rw [extendM] at hend ⊢
+    simp only [show ¬(j + h < w.size ∧ i + h < w.size) by omega, ↓reduceDIte, TimeM.time_pure,
+      TimeM.ret_pure] at hend ⊢
+    omega
+  | succ k ih =>
+    rw [extendM] at hend ⊢
+    split_ifs at hend ⊢ with hlt heq
+    · simp only [TimeM.time_bind, TimeM.time_tick, TimeM.ret_bind] at hend ⊢
+      have := ih (h + 1) hend (by omega)
+      omega
+    · simp only [TimeM.ret_bind, TimeM.ret_pure] at hend
+      omega
+    · simp only [TimeM.time_pure, TimeM.ret_pure]
+      omega
+
 /-- Extending the common prefix of the suffixes at `j` and `i` from `h` yields
-`h + lcpLen (w.drop (j + h)) (w.drop (i + h))`. -/
+`h + List.lcpLen (w.drop (j + h)) (w.drop (i + h))`. -/
 theorem ret_extendM (w : Array α) (j i h : ℕ) :
-    (extendM w j i h).ret = h + lcpLen (w.toList.drop (j + h)) (w.toList.drop (i + h)) := by
+    (extendM w j i h).ret = h + List.lcpLen (w.toList.drop (j + h)) (w.toList.drop (i + h)) := by
   generalize hk : w.size - (i + h) = k
   induction k generalizing h with
   | zero =>
     rw [extendM]
     simp only [show ¬(j + h < w.size ∧ i + h < w.size) by omega, ↓reduceDIte, TimeM.ret_pure]
-    have := lcpLen_le_length_right (w.toList.drop (j + h)) (w.toList.drop (i + h))
+    have := List.lcpLen_le_length_right (w.toList.drop (j + h)) (w.toList.drop (i + h))
     simp only [List.length_drop, Array.length_toList] at this
     omega
   | succ k ih =>
@@ -221,18 +247,18 @@ theorem ret_extendM (w : Array α) (j i h : ℕ) :
       rw [ih (h + 1) (by omega),
         List.drop_eq_getElem_cons (i := j + h) (l := w.toList) (by simpa using hlt.1),
         List.drop_eq_getElem_cons (i := i + h) (l := w.toList) (by simpa using hlt.2),
-        Array.getElem_toList, Array.getElem_toList, heq, lcpLen_cons_cons_self,
+        Array.getElem_toList, Array.getElem_toList, heq, List.lcpLen_cons_cons_self,
         show j + (h + 1) = j + h + 1 by omega, show i + (h + 1) = i + h + 1 by omega]
       omega
     · simp only [TimeM.ret_bind, TimeM.ret_pure]
       rw [List.drop_eq_getElem_cons (i := j + h) (l := w.toList) (by simpa using hlt.1),
         List.drop_eq_getElem_cons (i := i + h) (l := w.toList) (by simpa using hlt.2),
-        Array.getElem_toList, Array.getElem_toList, lcpLen_cons_cons]
+        Array.getElem_toList, Array.getElem_toList, List.lcpLen_cons_cons]
       simp only [heq, ↓reduceIte]
       omega
     · simp only [TimeM.ret_pure]
-      have h1 := lcpLen_le_length_left (w.toList.drop (j + h)) (w.toList.drop (i + h))
-      have h2 := lcpLen_le_length_right (w.toList.drop (j + h)) (w.toList.drop (i + h))
+      have h1 := List.lcpLen_le_length_left (w.toList.drop (j + h)) (w.toList.drop (i + h))
+      have h2 := List.lcpLen_le_length_right (w.toList.drop (j + h)) (w.toList.drop (i + h))
       simp only [List.length_drop, Array.length_toList] at h1 h2
       omega
 
@@ -240,7 +266,7 @@ theorem ret_extendM (w : Array α) (j i h : ℕ) :
 theorem ret_extendM_le (w : Array α) (j i h : ℕ) :
     (extendM w j i h).ret ≤ max h (w.size - i) := by
   rw [ret_extendM]
-  have := lcpLen_le_length_right (w.toList.drop (j + h)) (w.toList.drop (i + h))
+  have := List.lcpLen_le_length_right (w.toList.drop (j + h)) (w.toList.drop (i + h))
   simp only [List.length_drop, Array.length_toList] at this
   omega
 
@@ -342,14 +368,14 @@ private theorem kasaiLoopM_spec {w : Array α} {sa rk : Array ℕ}
       rw [getElem!_pos sa (r - 1) hr1]
       obtain ⟨j, hj⟩ : ∃ j, sa[r - 1] = j := ⟨_, rfl⟩
       have hlcpr : (lcpArray w.toList sa.toList)[r]'(by simpa using hr) =
-          lcpLen (w.toList.drop j) (w.toList.drop i) := by
+          List.lcpLen (w.toList.drop j) (w.toList.drop i) := by
         rw [getElem_lcpArray_of_pos _ _ _ (Nat.pos_of_ne_zero hr0)]
         simp only [Array.getElem_toList, hj, hri]
       have hhr := hh r hr hri
       rw [hlcpr] at hhr
       have hext : (extendM w sa[r - 1] i h).ret = (lcpArray w.toList sa.toList)[r]'(by
           simpa using hr) := by
-        rw [hj, ret_extendM, hlcpr, lcpLen_eq_add_lcpLen_drop hhr, List.drop_drop,
+        rw [hj, ret_extendM, hlcpr, List.lcpLen_eq_add_lcpLen_drop hhr, List.drop_drop,
           List.drop_drop]
       rw [hext]
       have hsize' : (lcp.set! r ((lcpArray w.toList sa.toList)[r]'(by simpa using hr))).size =

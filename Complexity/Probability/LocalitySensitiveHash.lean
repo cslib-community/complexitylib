@@ -50,9 +50,10 @@ inequality is `collisionProb_triangle`.
 
 Probabilities are real numbers, the `toReal` of `PMF.toOuterMeasure`, so that the S-curve can be
 manipulated by ordinary real analysis. No finiteness of the seed space is assumed; independent
-draws use `Cslib.Probability.PMF.iid`. These are information-theoretic statements: the
-`(c, r)`-approximate near-neighbour data structure built from them, its `n ^ ρ` query time and the
-cost of evaluating the hashes are not formalized here.
+draws use `Cslib.Probability.PMF.iid`. These are information-theoretic statements. The
+`(c, r)`-approximate near-neighbour structure built from them, with its failure bound and
+parameters, is in `Complexity.DataStructure.NearNeighbor.LSH`; its `n ^ ρ` query time and the
+cost of evaluating the hashes are not formalized.
 
 ## Main definitions
 
@@ -169,6 +170,13 @@ theorem IsUniversalHash.isLocalitySensitive {seed : PMF ι} {hash : ι → X →
     IsLocalitySensitive (collisionProb seed hash) (· = ·) (· ≠ ·) 1 ε.toReal where
   le_of_near x x' h := by rw [h, collisionProb_self]
   le_of_far x x' h := ENNReal.toReal_mono hε (hh x x' h)
+
+/-- A near pair is not far when `p₂ < p₁`. -/
+theorem IsLocalitySensitive.not_far {prob : X → X → ℝ} {near far : X → X → Prop} {p₁ p₂ : ℝ}
+    (h : IsLocalitySensitive prob near far p₁ p₂) (hp : p₂ < p₁) {x x' : X} (hx : near x x') :
+    ¬ far x x' := fun hf => by
+  have := (h.le_of_near x x' hx).trans (h.le_of_far x x' hf)
+  linarith
 
 /-! ### The AND construction -/
 
