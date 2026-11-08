@@ -103,6 +103,107 @@ example (value : ℕ) : ∃ final,
   simpa [NativeOutputBuffer.world, NativeQueryAll.finish, NativeQueryAll.finishFrom,
     NativeQueryAll.start, Memory.record, tokenBill, NativeBatchMetadata.start] using ht
 
+private def metadataReceipt (value : ℕ) : Exchange 3 :=
+  observe ComplexityTests.ConcurrentBatch.limits 8 ComplexityTests.NativeBatchPolicy.first
+    (NativeBatchMetadata.metadataPaths value)
+
+private theorem metadata_report (value : ℕ) : (metadataReceipt value).report =
+    ![some (some [true], value + 1), some (some [true], value + 1), none] := by
+  funext i
+  fin_cases i <;> norm_num [metadataReceipt, observe, NativeBatchMetadata.metadataPaths,
+    ComplexityTests.NativeBatchPolicy.first, ComplexityTests.ConcurrentBatch.limits,
+    CallTrace.report, CallTrace.response, CallTrace.stop]
+
+private theorem metadata_word_length (value : ℕ) :
+    Nat.size (value + 1) ≤ (replyOf (metadataReceipt value)).word.length := by
+  change Nat.size (value + 1) ≤ (encodeReport (metadataReceipt value).report).length
+  rw [metadata_report]
+  simp only [encodeReport, encodeSlots, Matrix.cons_val_zero, Option.map_some, encodeCall,
+    List.length_cons, List.length_append, Kolmogorov.length_selfDelimitingCode]
+  simp [← Nat.size_eq_bits_len]
+  omega
+
+private theorem metadata_supported (value : ℕ) :
+    (replyOf (metadataReceipt value),
+      commit NativeBatchMetadata.start.memory.privateState (metadataReceipt value) value) ∈
+      (environment ComplexityTests.ConcurrentBatch.limits NativeBatchMetadata.sample
+        ((), encodeBatch ComplexityTests.NativeBatchPolicy.first)
+        NativeBatchMetadata.start.memory).support := by
+  have ha : admit ComplexityTests.ConcurrentBatch.limits
+      NativeBatchMetadata.start.memory.privateState
+      (encodeBatch ComplexityTests.NativeBatchPolicy.first) =
+        some ComplexityTests.NativeBatchPolicy.first := by
+    simp [admit, decodeBatch_encode, NativeBatchMetadata.start,
+      ConcurrentBatch.initial, ComplexityTests.ConcurrentBatch.limits]
+  change _ ∈ (serve _ _ _ _).support
+  rw [serve_accepted _ _ _ _ _ ha]
+  simp only [NativeBatchMetadata.sample, NativeBatchMetadata.start,
+    ConcurrentBatch.initial, ite_true, PMF.map_comp]
+  refine (PMF.mem_support_map_iff _ _ _).mpr
+    ⟨value, NativeBatchMetadata.metadata_support value, ?_⟩
+  simp only [Function.comp_apply, tsub_zero]
+  rfl
+
+/-- A single fixed actual guarded source has positively supported concurrent
+invoice packets beyond every proposed output-copying clock. This does not deny
+that a query instruction installs the complete word on its answer channel. -/
+theorem source_unbounded_reply (fuel : ℕ) :
+    ∃ reply privateState,
+      (reply, privateState) ∈
+        (environment ComplexityTests.ConcurrentBatch.limits NativeBatchMetadata.sample
+          ((), encodeBatch ComplexityTests.NativeBatchPolicy.first)
+          NativeBatchMetadata.start.memory).support ∧ fuel < reply.word.length := by
+  refine ⟨_, _, metadata_supported (2 ^ fuel), ?_⟩
+  have hs := Nat.size_le_size (Nat.le_add_right (2 ^ fuel) 1)
+  rw [Nat.size_pow] at hs
+  have hl := metadata_word_length (2 ^ fuel)
+  omega
+
+/-- Unbounded invoice packets still contain the actual full-cover proposals;
+the obstruction does not come from invalid masks or a vacuous success model. -/
+example (value : ℕ) :
+    NativeRetention.Packets.families 3 1 (replyOf (metadataReceipt value)).word = [[0], [0]] := by
+  change NativeRetention.Packets.families 3 1 (encodeReport (metadataReceipt value).report) = _
+  rw [NativeRetention.Packets.families_report, metadata_report]
+  norm_num [proposals, decodeFamily, NativeRetention.sourceIndices, List.ofFn_succ]
+  decide
+
+/-- The existing actual unbounded native reader realizes supported reports beyond
+each proposed finite clock, together with their original oracle memory. -/
+example (fuel : ℕ) : ∃ final,
+    some final ∈ (NativeUnboundedExecution.terminal (NativeQueryAll.machine () 0)
+      (environment ComplexityTests.ConcurrentBatch.limits NativeBatchMetadata.sample)
+      (NativeQueryAll.start () 0 (encodeBatch ComplexityTests.NativeBatchPolicy.first)
+        NativeBatchMetadata.start.memory)).support ∧ fuel < final.config.tapes.output.length := by
+  obtain ⟨reply, privateState, hs, hl⟩ := source_unbounded_reply fuel
+  rw [NativeQueryAll.terminal_query]
+  exact ⟨_, (PMF.mem_support_map_iff _ _ _).mpr ⟨(reply, privateState), hs, rfl⟩, hl⟩
+
+/-- No native competitor emits this exact *joint source word/memory law* at a fixed clock,
+even though the existing actual full-reply reader terminates with that law in the
+unbounded semantics. This is the concrete obstruction to the clocked loop route. -/
+example {tapes : ℕ} {Controls : Type} (competitor : MultiTapePTM tapes Bool Controls Unit)
+    (fuel : ℕ) :
+    ((OracleComp.interpret
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
+        (handler (environment ComplexityTests.ConcurrentBatch.limits NativeBatchMetadata.sample)))
+      (competitor.runOracle fuel (encodeBatch ComplexityTests.NativeBatchPolicy.first))).run
+      NativeBatchMetadata.start.memory) ≠
+        handler (environment ComplexityTests.ConcurrentBatch.limits NativeBatchMetadata.sample)
+          ((), encodeBatch ComplexityTests.NativeBatchPolicy.first)
+          NativeBatchMetadata.start.memory := by
+  obtain ⟨reply, privateState, hs, hl⟩ := source_unbounded_reply fuel
+  exact NativeQueryAll.clocked_ne_query () _ competitor _ _ _ fuel reply privateState hs hl
+
+/-- The full reader phase cannot supply the `ComputesTidily` premise required by
+existing tidy composition and iteration, at any input-only instruction clock. -/
+example {tapes : ℕ} {Controls : Type} (competitor : MultiTapePTM tapes Bool Controls Unit)
+    (input : Word) (fuel : ℕ) :
+    ¬ competitor.ComputesTidily input fuel
+      (ProbOracleComp.query (spec := fun _ : Unit × Word => Word)
+        ((), encodeBatch ComplexityTests.NativeBatchPolicy.first)) := by
+  exact NativeQueryAll.not_computesTidily_query () competitor input _ fuel
+
 /-- A terminating native continuation that leaves the whole copied packet alone. -/
 def stop : MultiTapePTM 0 Bool Unit Unit where
   initial := ()

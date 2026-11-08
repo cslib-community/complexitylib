@@ -222,7 +222,18 @@ realization and the repeated adaptive query/stop/output loop still need concrete
 composition. The raw-program/native-local joint-law composition is not a theorem
 that one native online machine implements that composition.
 The strict oracle-PPT compiler's input-only clock and bounded-prefix query do not
-supply that realization. Native productive continuation, quantitative upper bounds
+supply that realization. This obstruction is now proved on one fixed actual
+geometric-invoice source: for every instruction budget there is a positively
+supported full report longer than that budget. No native competitor has the exact
+joint query word/memory law as its ordinary output at that clock, and no
+`ComputesTidily` full-query
+specification exists at any finite clock. Thus the existing clocked tidy
+composition/`iterateWhile` obligations cannot be discharged by the full reader;
+assuming a common bound would strengthen the source model. This does not rule out
+an unbounded native loop. It requires response-dependent stopped-law composition
+with actual prepared-buffer, cursor, private-state and workspace invariants.
+The arbitrary pointwise `Selector.Scheduler` function is also not itself a uniform
+native scheduler code witness. Native productive continuation, quantitative upper bounds
 and a successful output from that same compiled selector remain to be assembled.
 Native optimum/envelope comparison through a uniformly
 realized successful upper selector, source

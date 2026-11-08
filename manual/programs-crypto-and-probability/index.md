@@ -1680,6 +1680,28 @@ proposals, rejection and empty ground. From the same warm starting point, run:
 scripts/build.sh ComplexityTests.NativeRetentionSelector
 ```
 
+There is a proved obstruction to applying the current clocked tidy-loop API here.
+`NativeQueryAll.clocked_ne_query` uses the existing one-output-bit-per-instruction
+bound: a genuinely supported response longer than `fuel` prevents **any** native
+machine at that clock from emitting the exact joint raw query word/memory law.
+This does not deny atomic installation of that word on a native answer channel;
+the obstruction concerns copying the full word to ordinary output.
+`not_computesTidily_query` rules out the unrestricted full-query `ComputesTidily`
+premise at every finite clock: that predicate quantifies all handlers. The complete native source client derives such responses for every `fuel` from
+one fixed geometric-invoice oracle, not from a family of oracles chosen after the
+clock. The actual guarded source still emits valid cover proposals.
+
+Consequently `ComputesTidily.comp_of_le` and `ComputesTidily.iterateWhile` cannot
+compose this full reader using one uniform finite local clock. Finite external
+latency or a finite turn budget does not bound local packet-reading work; local
+instructions are excluded from the source deadline. The existing unbounded reader
+law remains valid. This is an obstruction to that clocked API route, not a theorem
+that the native selector cannot be implemented. A stopped-law loop must establish
+its actual word-buffer/cursor/workspace invariants at each restart without a common
+clock. Also, `Selector.Scheduler` is an arbitrary input/history-to-closed-program
+function: pointwise closed syntax does not supply uniform native scheduler code.
+Do not infer such code from that type alone.
+
 These native computations start with `encWork` on the input tape. The continuation
 must still rewind/frame the live reader buffer and prepare that ABI. The full
 native scheduler and adaptive stop/output loop are not realized by these theorems. Consequently they do

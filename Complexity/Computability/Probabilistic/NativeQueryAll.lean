@@ -10,7 +10,7 @@ module
 public import Complexity.Computability.Probabilistic.NativeOutputBuffer
 public import Complexity.Computability.Probabilistic.NativeSequential
 public import Complexity.Probability.PMF.StoppedProcess.Boundary
-import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.RunsWords
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.RunsWords
 import Mathlib.Tactic
 
 /-!
@@ -34,6 +34,8 @@ parser or compile the complete adaptive retention program.
 ## Main results
 
 * `terminal_query`: exact native full-reply/shared-memory law, without a response bound.
+* `clocked_ne_query`: a long reply obstructs full-output query realization at a fixed clock.
+* `not_computesTidily_query`: the corresponding clocked tidy-loop obligation is false.
 -/
 
 public section
@@ -383,6 +385,49 @@ theorem finish_resources (world : World k Control Operation Private input)
       elapsed (finishFrom op world reply privateState).memory.events =
         reply.duration + elapsed world.memory.events := by
   simp [finishFrom, Memory.record, tokenBill, elapsed]
+
+/-- One actually supported long response prevents *any* native machine from
+emitting the full raw query result with its exact joint output/memory law within
+this fixed instruction clock. The source handler records the same resources.
+A reply can still be installed atomically on the answer channel; copying that
+word to ordinary output is the obligation obstructed here.
+It does not prohibit response-dependent unbounded native execution. -/
+theorem clocked_ne_query {Controls : Type} (competitor : MultiTapePTM k Bool Controls Operation)
+    (input request : List Bool) (memory : Memory Operation Private) (fuel : ℕ)
+    (reply : Reply) (privateState : Private)
+    (hs : (reply, privateState) ∈ (env (op, request) memory).support)
+    (hl : fuel < reply.word.length) :
+    ((OracleComp.interpret
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (handler env))
+      (competitor.runOracle fuel input)).run memory) ≠ handler env (op, request) memory := by
+  intro he
+  have hm : (reply.word, memory.record (op, request) reply privateState) ∈
+      (handler env (op, request) memory).support :=
+    (PMF.mem_support_map_iff _ _ _).mpr ⟨(reply, privateState), hs, rfl⟩
+  rw [← he] at hm
+  exact (Nat.not_lt_of_ge (competitor.length_output_runOracle_le
+    (handler env) fuel input reply.word memory _ hm)) hl
+
+/-- An unrestricted full query has no uniform `ComputesTidily` specification at
+any finite instruction clock: that predicate quantifies every word handler,
+including a constant response longer than the clock. This does not prohibit
+response-dependent unbounded native execution under a fixed source. -/
+theorem not_computesTidily_query {Controls : Type}
+    (competitor : MultiTapePTM k Bool Controls Operation) (input request : List Bool) (fuel : ℕ) :
+    ¬ competitor.ComputesTidily input fuel
+      (ProbOracleComp.query (spec := fun _ : Operation × List Bool => List Bool)
+        (op, request)) := by
+  intro hc
+  let answer := List.replicate (fuel + 1) false
+  let oracle : Operation × List Bool → StateT Unit PMF (List Bool) :=
+    fun _ state => PMF.pure (answer, state)
+  have hm : (answer, ()) ∈ ((OracleComp.interpret
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (ProbOracleComp.query (spec := fun _ : Operation × List Bool => List Bool)
+        (op, request))).run ()).support := by
+    simp [ProbOracleComp.interpret_query, StateT.run, oracle]
+  have hb := hc.length_output_le oracle () hm
+  simp [answer] at hb
 
 end
 end Cslib.Probability.NativeQueryAll
