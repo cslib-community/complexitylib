@@ -168,6 +168,24 @@ example (value : ℕ) :
   norm_num [proposals, decodeFamily, NativeRetention.sourceIndices, List.ofFn_succ]
   decide
 
+/-- On explicit nonempty rational incidence/certificate data, those same raw
+packets really compute a completed retained cover, rather than only valid masks. -/
+example (value : ℕ) : NativeRetention.Packets.decision
+    ⟨⟨[[0]], [1], [1], 1, []⟩, 3, [(replyOf (metadataReceipt value)).word]⟩ = (true, [true]) := by
+  have hf : NativeRetention.Packets.families 3 1 (replyOf (metadataReceipt value)).word =
+      [[0], [0]] := by
+    change NativeRetention.Packets.families 3 1 (encodeReport (metadataReceipt value).report) = _
+    rw [NativeRetention.Packets.families_report, metadata_report]
+    norm_num [proposals, decodeFamily, NativeRetention.sourceIndices, List.ofFn_succ]
+    decide
+  simp only [NativeRetention.Packets.decision, NativeRetention.Packets.assemble,
+    List.reverse_cons, List.reverse_nil, List.nil_append, List.flatMap_cons,
+    List.flatMap_nil, List.append_nil, List.length_cons, List.length_nil, hf]
+  norm_num [NativeRetention.complete, NativeRetention.output, NativeRetention.retain,
+    NativeRetention.step, NativeRetention.certified, NativeRetention.newly,
+    NativeRetention.covered, NativeRetention.normalize, NativeRetention.population,
+    NativeRetention.ground, NativeRetention.cost, NativeRetention.price, List.range_succ]
+
 /-- The existing actual unbounded native reader realizes supported reports beyond
 each proposed finite clock, together with their original oracle memory. -/
 example (fuel : ℕ) : ∃ final,
