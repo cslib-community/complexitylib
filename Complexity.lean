@@ -4881,9 +4881,11 @@ public import Complexity.GameTheory.Bimatrix.BestResponsePolytope
 public import Complexity.GameTheory.Bimatrix.LemkeHowson
 public import Complexity.GameTheory.Congestion.Affine
 public import Complexity.GameTheory.Congestion.Basic
+public import Complexity.GameTheory.Congestion.CostSharing
 public import Complexity.GameTheory.Congestion.Hedge
 public import Complexity.GameTheory.Congestion.Nonatomic
 public import Complexity.GameTheory.Congestion.PigouBound
+public import Complexity.GameTheory.Congestion.Stability
 public import Complexity.GameTheory.Mechanism.Bayesian
 public import Complexity.GameTheory.Mechanism.CriticalBid
 public import Complexity.GameTheory.Mechanism.FirstPrice
@@ -4902,6 +4904,7 @@ public import Complexity.GameTheory.Strategic.Mixed
 public import Complexity.GameTheory.Strategic.NoRegret
 public import Complexity.GameTheory.Strategic.Potential
 public import Complexity.GameTheory.Strategic.Smooth
+public import Complexity.GameTheory.Strategic.Stability
 public import Complexity.Init
 public import Complexity.Languages.Probabilistic.Basic
 public import Complexity.Languages.Probabilistic.BitString
