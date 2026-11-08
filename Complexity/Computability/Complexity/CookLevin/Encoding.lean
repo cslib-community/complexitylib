@@ -89,19 +89,19 @@ theorem computableInPolyTime_inPos :
 /-- Construct a work-head feature on a fixed tape from a signed unary position. -/
 @[fun_prop]
 theorem computableInPolyTime_head (i : Fin k) :
-    ComputableInPolyTime (Feature.head (State := State) i) encInt encFeature := by
+    ComputableInPolyTime (Feature.head (State := State) i) encIntUnary encFeature := by
   have h : ComputableInPolyTime (fun z => Nat.pair 2 (Nat.pair i (Equiv.intEquivNat z)))
-      encInt encUnary := by fun_prop
+      encIntUnary encUnary := by fun_prop
   exact h.of_enc_eq fun _ => rfl
 
 /-- Construct a cell feature for a fixed tape and symbol from a signed unary position. -/
 @[fun_prop]
 theorem computableInPolyTime_cell (i : Fin k) (s : Option Bool) :
     ComputableInPolyTime (fun z => Feature.cell (State := State) i z s)
-      encInt encFeature := by
+      encIntUnary encFeature := by
   have h : ComputableInPolyTime
       (fun z => Nat.pair 3 (Nat.pair i (Nat.pair (Equiv.intEquivNat z) (Encodable.encode s))))
-      encInt encUnary := by fun_prop
+      encIntUnary encUnary := by fun_prop
   exact h.of_enc_eq fun _ => rfl
 
 /-- Attach a unary time to an encoded feature. -/
