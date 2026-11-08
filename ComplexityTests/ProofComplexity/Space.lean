@@ -11,9 +11,10 @@ import Complexity.Logics.Propositional.Resolution.TseitinSpace
 
 Refutations of `x ∧ ¬x` in clause space `3`, and none in space `2`; a refutation that erases
 clauses to stay in space `3` although it has five lines; the Atserias–Dalmau inequality on it, and
-its use for the width of a refutation of a formula with a clause of width `3`; a Spoiler win
-showing that Atserias and Dalmau's Lemma 2 needs its hypothesis on the width of the clauses; and
-space lower bounds for Tseitin formulas.
+its use for the width of a refutation of a formula with a clause of width `3`; a Duplicator
+strategy from Atserias and Dalmau's Lemma 2 despite a wide clause, and a Spoiler win showing that
+the lemma needs its hypothesis on the width of the clauses; and space lower bounds for Tseitin
+formulas.
 -/
 
 namespace ComplexityTests.ProofComplexity.Space
@@ -129,9 +130,17 @@ example {s : ℕ} (h : χ.RefutableInSpace s) : 3 ≤ s := by
   have := h.add_four_le (k := 3) (by decide) not_refutableInWidth_χ
   omega
 
-/-- The width hypothesis of Atserias and Dalmau's Lemma 2 cannot be dropped: `χ` has no refutation
-of width `2`, but Spoiler wins the existential `3`-pebble game by pebbling `x₀`, `x₁` and `x₂`. The
-unit clauses force all three to be false, and then the long clause is falsified. -/
+/-- Clauses wider than `w + 1` do not obstruct Atserias and Dalmau's Lemma 2: `χ` has a clause of
+width `3` but none of width `2`, and no refutation of width `1`, so Duplicator wins with `2`
+pebbles. -/
+example : Nonempty (CNF.DuplicatorStrategy χ 2) :=
+  ⟨CNF.DuplicatorStrategy.ofNotRefutableInWidth (w := 1) (by decide)
+    fun h => not_refutableInWidth_χ (h.mono (by decide))⟩
+
+/-- The width hypothesis of Atserias and Dalmau's Lemma 2 cannot be dropped: `χ` has a clause of
+width `3` and no refutation of width `2`, but Spoiler wins the existential `3`-pebble game by
+pebbling `x₀`, `x₁` and `x₂`. The unit clauses force all three to be false, and then the long
+clause is falsified. -/
 example : ¬ χ.RefutableInWidth 2 ∧ IsEmpty (CNF.DuplicatorStrategy χ 3) := by
   refine ⟨not_refutableInWidth_χ, ⟨fun S => ?_⟩⟩
   obtain ⟨σ, d, h⟩ := S.nonempty
