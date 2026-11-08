@@ -27,9 +27,9 @@ for `k ≥ 1`,
 
 `dist (xorMix p₀ p₁ k false) (xorMix p₀ p₁ k true) = dist p₀ p₁ ^ k` (`dist_xorMix`).
 
-This is the XOR Lemma of Sahai and Vadhan [SahaiVadhan2003, §3]. The construction pushes small
-distances towards `0`. The proof writes the difference of the two masses at `x` as
-a signed sum over selectors and factors it as `∏ i, (p₀ (x i) - p₁ (x i)) / 2 ^ (k - 1)`
+This is the XOR Lemma of Sahai and Vadhan [SahaiVadhan2003, Lemma 3.5]. The construction pushes
+small distances towards `0`. The proof writes the difference of the two masses at `x` as a signed
+sum over selectors and factors it as `∏ i, (p₀ (x i) - p₁ (x i)) / 2 ^ (k - 1)`
 (`toReal_xorMix_sub`); summing absolute values factors again over the coordinates.
 
 When `k = 0` there are no selectors of parity `true`, and `xorMix` returns the product of copies of
@@ -58,7 +58,7 @@ open Finset
 
 variable {α : Type*} [Fintype α]
 
-/-- The XOR construction [SahaiVadhan2003, §3]: draw selector bits `b` of `k` coordinates
+/-- The XOR construction [SahaiVadhan2003, Lemma 3.5]: draw selector bits `b` of `k` coordinates
 uniformly among those of parity `c`, then draw coordinate `i` from `p₀` or `p₁` according to
 `b i`, independently. With no selector of parity `c` (only when `k = 0` and `c = true`), it draws
 from `p₀` in every coordinate. -/
@@ -143,8 +143,8 @@ theorem toReal_xorMix_sub (p₀ p₁ : PMF α) {k : ℕ} (hk : k ≠ 0) (x : Fin
   rw [Finset.prod_mul_distrib, prod_sign]
   cases parity k b <;> simp
 
-/-- **XOR Lemma** [SahaiVadhan2003, §3]: for `k ≥ 1` coordinates, the XOR construction raises the
-statistical distance to the `k`-th power. -/
+/-- **XOR Lemma** [SahaiVadhan2003, Lemma 3.5]: for `k ≥ 1` coordinates, the XOR construction raises
+the statistical distance to the `k`-th power. -/
 theorem dist_xorMix (p₀ p₁ : PMF α) {k : ℕ} (hk : k ≠ 0) :
     dist (xorMix p₀ p₁ k false) (xorMix p₀ p₁ k true) = dist p₀ p₁ ^ k := by
   classical

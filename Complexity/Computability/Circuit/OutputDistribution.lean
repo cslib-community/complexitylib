@@ -14,12 +14,12 @@ import Complexity.Probability.PMF
 /-!
 # Output distributions of circuits
 
-A circuit with `n` inputs and `m` outputs is a **sampler**: evaluated on uniformly random inputs,
-it produces a distribution on `BitString m`, its output distribution (`Circuit.outputDist`). This
-is how circuits encode distributions in the Statistical Difference problem [SahaiVadhan2003, §3].
-Running the circuit on the outputs of another samples the image of the first output distribution
-(`Circuit.outputDist_comp`), and `k` independent copies on disjoint input blocks sample `k`
-independent outputs, laid out in consecutive blocks (`Circuit.outputDist_replicate`).
+A circuit with `n` inputs and `m` outputs is a **sampler**: evaluated on uniformly random inputs, it
+produces a distribution on `BitString m`, its output distribution (`Circuit.outputDist`). This is
+how circuits encode distributions in the Statistical Difference problem [SahaiVadhan2003, §2.2 and
+§3.1]. Running the circuit on the outputs of another samples the image of the first output
+distribution (`Circuit.outputDist_comp`), and `k` independent copies on disjoint input blocks sample
+`k` independent outputs, laid out in consecutive blocks (`Circuit.outputDist_replicate`).
 
 ## Main definitions
 
