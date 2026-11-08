@@ -570,7 +570,9 @@ noncomputable def cauchyModeSplitting (side : V → Bool) (hsrc : ∀ e, side (N
     unfold cauchyModeForm at h
     obtain ⟨hq, -, hy⟩ := not_not.mp fun hc => h (ite_eq_right hc)
     refine ⟨hq.symm, ?_⟩
-    have hb : (slot e).testBit i = (Z.2.1 : ℕ).testBit i := by grind
+    have hb : (slot e).testBit i = (Z.2.1 : ℕ).testBit i := by
+      rw [← hy, Nat.testBit_mod_two_pow]
+      simp
     rw [group_tgt_eq horient e, hb, hq]
 
 section Fields
