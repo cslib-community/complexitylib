@@ -935,8 +935,7 @@ only bounded-length sublists of canonical finite supports. Exact binomial
 candidate counts, fixed-bound polynomial domination, literal widths, global
 list deduplication, pointwise correspondence to `globalQuery` and exact counting
 are proved. The separate executable all-cases continuation is described below;
-encoded normalization/materialization, composed binary runtime/space and graph endpoints
-remain open.
+whole-pipeline encoded resource composition and graph endpoints remain open.
 This continuation does not complete Theorem 7.1 or ALL-main.
 
 
@@ -947,7 +946,7 @@ query variables, width `d+2` and the sharp fixed-demand polynomial clause budget
 Canonical signed-list key injectivity supplies that budget for actual global
 deduplication. Concrete clients inspect computed constructors and counts.
 Executable finite-input correctness does not complete the source's resource
-theorem: encoded ragged original-input normalization, whole-pipeline binary time
+theorem: complete encoded plan/query serialization, whole-pipeline binary time
 and peak space, advertised counting runtime, full table frontend and graph
 endpoints remain open. No ALL-main completion or issue closure follows.
 
