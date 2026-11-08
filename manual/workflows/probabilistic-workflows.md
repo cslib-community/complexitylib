@@ -108,7 +108,7 @@ entropy bounds ([Knuth–Yao 1976](../sources.md#knuthyao76);
 
 To compute the optimal cost for a concrete `p`, rewrite with `expectedFlips_knuthYao` to
 `∑ₐ knuthYaoCost (p a).toReal`. Then use `knuthYaoCost_inv_two_pow` for dyadic masses, or sum the
-truncation errors `truncErr` directly. To build a tree from a leaf profile, use `ofCounts t`. In
+truncation errors `truncErr` directly. To build a tree from a count profile, use `ofCounts t`. In
 that tree, `t k a` of the `2 ^ k` depth-`k` positions lie at or below a leaf labelled `a`; a leaf at
 depth `j ≤ k` counts `2 ^ (k - j)` times. Equivalently, `t k a / 2 ^ k` is the probability of having
 output `a` within `k` flips (`run_ofCounts`). The profile must be inherited,
