@@ -907,7 +907,8 @@ attribute [local irreducible] ComputableInPolyTime
 
 /-- Sparse `𝔽₂` equations with variable indices in binary: the concatenation of the framed
 monomials, each monomial the concatenation of its framed variable indices, each encoded by
-`encNat`. -/
+`encNat`. This is the layout `encList (encList encNat)` of `Cslib.LinearAlgebra.encVarSets` and
+`Cslib.LinearAlgebra.encSchedules`; the name records the role. -/
 abbrev encSparseEquation : List (List ℕ) ↪ List Bool :=
   encList (encList encNat)
 
