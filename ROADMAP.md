@@ -1313,6 +1313,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   length (reservoir sampling), and the `n^{Ω(1)}` lower bounds for `F_k` with `k ≥ 6`; `ProbComp`
   samplers and native realizations of the AMS sketches; CountSketch, turnstile updates, and
   heavy-hitter recovery; multi-pass communication-to-streaming transfers with pass counts.
+- **Dimension reduction** ([#2996](https://github.com/cslib-community/complexitylib/issues/2996)):
+  extend the Johnson–Lindenstrauss lemma for dense `±1` sign matrices to Achlioptas's sparse
+  `{-√3, 0, √3}` distribution, Gaussian and spherical projections, and fast and sparse JL
+  transforms; prove the Larsen–Nelson lower bound `k = Ω(ε⁻² log n)`; give JL maps as streaming
+  sketches with `ProbComp` samplers and native costs for applying the projection.
 - **Learning:** machine-certified running times for the LMN and Kushilevitz–Mansour learners;
   distributional problems and reductions, samplability, average-to-worst-case connections,
   PAC/agnostic learning, learning lower bounds, compression and refutation. For realizable
@@ -1545,9 +1550,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   `Algorithms/Lean/MaxFlow`); then minimum-cost flow on the residual network, reusing the
   potential, weak-duality and complementary-slackness lemmas of `WeightedMatching`. Remaining
   matching directions: the decomposition of `M ⊕ M*` into vertex-disjoint augmenting paths,
-  rectangular and sparse weighted bipartite matching, general (non-bipartite) matching with
-  blossoms (weighted and unweighted), and a sparse Hopcroft–Karp entry point that also charges
-  construction of the adjacency lists.
+  rectangular and sparse weighted bipartite matching, and a sparse Hopcroft–Karp entry point that
+  also charges construction of the adjacency lists. General (non-bipartite) matching with
+  blossoms (weighted and unweighted;
+  [#3337](https://github.com/cslib-community/complexitylib/issues/3337)): Berge's lemma and the
+  Tutte–Berge formula are proved in `Foundations/Combinatorics/SimpleGraph/{Berge,TutteBerge}`;
+  still open are Edmonds' blossom-contraction lemma, an executable blossom algorithm with its
+  `O(|V|²|E|)` bound, weighted general matching, and the Gallai–Edmonds decomposition.
 - **Gomory–Hu trees** ([#3320](https://github.com/cslib-community/complexitylib/issues/3320)):
   remaining after the existence theorem for cut-equivalent trees of symmetric submodular set
   functions and weighted undirected graphs, with flow-equivalence, the minimum-cut triangle

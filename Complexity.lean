@@ -4012,6 +4012,7 @@ public import Complexity.Foundations.Analysis.SignedDigitStream.Elementary
 public import Complexity.Foundations.Analysis.SignedDigitStream.Multiplication
 public import Complexity.Foundations.Analysis.SignedDigitStream.Reciprocal
 public import Complexity.Foundations.Analysis.SpecialFunctions.Arccos
+public import Complexity.Foundations.Analysis.SpecialFunctions.ExpBounds
 public import Complexity.Foundations.Analysis.SpecialFunctions.ExpLogQuadratic
 public import Complexity.Foundations.Analysis.SpecialFunctions.ExpOneSubInvPow
 public import Complexity.Foundations.Analysis.SpecialFunctions.GoemansWilliamson
@@ -4208,6 +4209,7 @@ public import Complexity.Foundations.Combinatorics.SetPartition.JoinMatrix
 public import Complexity.Foundations.Combinatorics.SharedSummaries
 public import Complexity.Foundations.Combinatorics.ShiftColoring
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Acyclic
+public import Complexity.Foundations.Combinatorics.SimpleGraph.Berge
 public import Complexity.Foundations.Combinatorics.SimpleGraph.CliqueCover
 public import Complexity.Foundations.Combinatorics.SimpleGraph.ColorRefinement
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Crown
@@ -4227,6 +4229,7 @@ public import Complexity.Foundations.Combinatorics.SimpleGraph.TreeDecomposition
 public import Complexity.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Bounds
 public import Complexity.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Rooted
 public import Complexity.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Subtree
+public import Complexity.Foundations.Combinatorics.SimpleGraph.TutteBerge
 public import Complexity.Foundations.Combinatorics.SmallSubsets
 public import Complexity.Foundations.Combinatorics.Sperner
 public import Complexity.Foundations.Combinatorics.SubsetPairCount
@@ -4636,6 +4639,7 @@ public import Complexity.Foundations.Probability.Gaussian.Convolution
 public import Complexity.Foundations.Probability.Gaussian.Correlated
 public import Complexity.Foundations.Probability.Gaussian.Discrete
 public import Complexity.Foundations.Probability.Gaussian.DiscreteTail
+public import Complexity.Foundations.Probability.Gaussian.ExpSq
 public import Complexity.Foundations.Probability.Gaussian.Fourier
 public import Complexity.Foundations.Probability.Gaussian.MassBounds
 public import Complexity.Foundations.Probability.Gaussian.Measure
@@ -5169,6 +5173,7 @@ public import Complexity.Probability.BitString.LinearHash.Collisions
 public import Complexity.Probability.BitString.List
 public import Complexity.Probability.BitString.List.All
 public import Complexity.Probability.BitString.List.Vote
+public import Complexity.Probability.BitString.Rademacher
 public import Complexity.Probability.BitString.SubsetSum
 public import Complexity.Probability.BitString.SubsetSum.Matrix
 public import Complexity.Probability.BitString.ToeplitzHash
@@ -5209,6 +5214,7 @@ public import Complexity.Probability.IID.CollisionCount
 public import Complexity.Probability.IID.CrossCollisionCount
 public import Complexity.Probability.IID.Occurrence
 public import Complexity.Probability.Isolation
+public import Complexity.Probability.JohnsonLindenstrauss
 public import Complexity.Probability.KWiseIndependent
 public import Complexity.Probability.KWiseIndependent.Coupling
 public import Complexity.Probability.KWiseIndependent.DoubleTabulation
