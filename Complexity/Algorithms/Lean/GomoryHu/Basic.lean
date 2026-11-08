@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.Lean.Submodular.Basic
-public import Mathlib.Combinatorics.SimpleGraph.Acyclic
+public import Complexity.Foundations.Combinatorics.SimpleGraph.EdgeSide
 import Mathlib.Data.Fintype.Powerset
 
 /-!
@@ -21,17 +21,17 @@ weights `w` is the motivating example; it is symmetric (`f Xᶜ = f X`) and subm
 
 A **Gomory–Hu tree** (cut-equivalent tree) of `f` ([GomoryHu1961]; [Schrijver2003],
 Section 15.4) is a spanning tree `T` on `V` such that for every tree edge `uv`, the side of `T - uv`
-containing `u` is a minimum `u`–`v` cut of `f`. This module defines Gomory–Hu trees, the sides of
-tree edges (`edgeSide`), and proves that for every two distinct vertices `s, t`, some edge on the
-`s`–`t` path of a Gomory–Hu tree has a side that is a minimum `s`–`t` cut. Existence of Gomory–Hu
-trees for symmetric submodular functions is in `Complexity.Algorithms.Lean.GomoryHu.Existence`, and
-the weighted-graph instance in `Complexity.Algorithms.Lean.GomoryHu.WeightedCut`.
+containing `u` is a minimum `u`–`v` cut of `f`. This module defines Gomory–Hu trees, using the
+sides of tree edges `SimpleGraph.edgeSide`
+(`Complexity.Foundations.Combinatorics.SimpleGraph.EdgeSide`), and proves that for every two
+distinct vertices `s, t`, some edge on the `s`–`t` path of a Gomory–Hu tree has a side that is a
+minimum `s`–`t` cut. Existence of Gomory–Hu trees for symmetric submodular functions is in
+`Complexity.Algorithms.Lean.GomoryHu.Existence`, and the weighted-graph instance in
+`Complexity.Algorithms.Lean.GomoryHu.WeightedCut`.
 
 ## Main definitions
 
 * `Cslib.Algorithms.Lean.GomoryHu.IsMinCutBetween`: `X` is a minimum `s`–`t` cut of `f`.
-* `Cslib.Algorithms.Lean.GomoryHu.edgeSide`: the vertices reachable from `u` in `T` after deleting
-  the edge `uv`.
 * `Cslib.Algorithms.Lean.GomoryHu.IsGomoryHuTree`: a spanning tree whose edge sides are minimum
   cuts between the edge's endpoints.
 
@@ -39,12 +39,10 @@ the weighted-graph instance in `Complexity.Algorithms.Lean.GomoryHu.WeightedCut`
 
 * `Cslib.Algorithms.Lean.GomoryHu.exists_isMinCutBetween`: minimum cuts exist between distinct
   elements, for values in a linear order.
-* `Cslib.Algorithms.Lean.GomoryHu.IsMinCutBetween.inter`: uncrossing of minimum cuts for a
+* `Cslib.Algorithms.Lean.GomoryHu.IsMinCutBetween.inter`,
+  `Cslib.Algorithms.Lean.GomoryHu.IsMinCutBetween.union`,
+  `Cslib.Algorithms.Lean.GomoryHu.IsMinCutBetween.sdiff`: uncrossing of minimum cuts for a
   submodular function.
-* `Cslib.Algorithms.Lean.GomoryHu.mem_edgeSide_of_mem_darts`: along a path in a forest, the start
-  and the end of the path lie on opposite sides of each edge of the path.
-* `Cslib.Algorithms.Lean.GomoryHu.edgeSide_eq_of_forall_adj`: a criterion that identifies the side
-  of a tree edge, used to check candidate Gomory–Hu trees.
 * `Cslib.Algorithms.Lean.GomoryHu.IsGomoryHuTree.exists_isMinCutBetween_of_isPath`: some edge of
   the `s`–`t` path of a Gomory–Hu tree has a side that is a minimum `s`–`t` cut.
 
@@ -59,6 +57,7 @@ public section
 namespace Cslib.Algorithms.Lean.GomoryHu
 
 open Cslib.Algorithms.Lean.Submodular
+open SimpleGraph (edgeSide mem_edgeSide_of_mem_darts)
 
 variable {V : Type*} {β : Type*}
 
@@ -135,129 +134,33 @@ theorem IsMinCutBetween.inter [AddCommMonoid β] [LinearOrder β] [IsOrderedCanc
       _ ≤ f X + f U := hsub X U
   exact (le_of_add_le_add_right h3).trans (hX.le ha hb)
 
-/-! ### Sides of tree edges -/
+/-- **Uncrossing by union.** For a submodular `f`, if `U` is a minimum `s`–`t` cut, `A` is a
+minimum `a`–`t` cut and `a ∈ U`, then `U ∪ A` is a minimum `s`–`t` cut too. -/
+theorem IsMinCutBetween.union [AddCommMonoid β] [LinearOrder β] [IsOrderedCancelAddMonoid β]
+    [DecidableEq V] {f : Finset V → β} {s t a : V} {U A : Finset V} (hsub : IsSubmodular f)
+    (hU : IsMinCutBetween f s t U) (hA : IsMinCutBetween f a t A) (haU : a ∈ U) :
+    IsMinCutBetween f s t (U ∪ A) := by
+  have htU : t ∉ U ∪ A := by
+    simp only [Finset.mem_union, not_or]
+    exact ⟨hU.right_notMem, hA.right_notMem⟩
+  refine ⟨Finset.mem_union_left _ hU.left_mem, htU, fun Y hs ht => ?_⟩
+  have h1 : f A ≤ f (U ∩ A) :=
+    hA.le (Finset.mem_inter.mpr ⟨haU, hA.left_mem⟩)
+      (fun h => hA.right_notMem (Finset.mem_inter.mp h).2)
+  have h2 : f (U ∪ A) + f (U ∩ A) ≤ f U + f (U ∩ A) :=
+    (hsub U A).trans (add_le_add le_rfl h1)
+  exact (le_of_add_le_add_right h2).trans (hU.le hs ht)
 
-/-- The side of the edge `uv` containing `u` in a graph `T`: the vertices reachable from `u` once
-the edge `s(u, v)` is deleted. For an edge `uv` of a tree, this is the component of `u` in
-`T - uv`. -/
-noncomputable def edgeSide [Fintype V] (T : SimpleGraph V) (u v : V) : Finset V :=
-  haveI := Classical.decPred fun x => (T.deleteEdges {s(u, v)}).Reachable u x
-  Finset.univ.filter fun x => (T.deleteEdges {s(u, v)}).Reachable u x
-
-section Tree
-
-variable [Fintype V] {T : SimpleGraph V}
-
-theorem mem_edgeSide {u v x : V} :
-    x ∈ edgeSide T u v ↔ (T.deleteEdges {s(u, v)}).Reachable u x := by
-  unfold edgeSide
-  simp
-
-theorem mem_edgeSide_self (u v : V) : u ∈ edgeSide T u v :=
-  mem_edgeSide.mpr (SimpleGraph.Reachable.refl u)
-
-theorem notMem_edgeSide_of_isAcyclic (hT : T.IsAcyclic) {u v : V} (huv : T.Adj u v) :
-    v ∉ edgeSide T u v := fun h =>
-  (SimpleGraph.isAcyclic_iff_forall_adj_isBridge.mp hT huv) (mem_edgeSide.mp h)
-
-/-- In a tree, the two sides of an edge partition the vertices. -/
-theorem mem_edgeSide_swap (hT : T.IsTree) {u v : V} (huv : T.Adj u v) (x : V) :
-    x ∈ edgeSide T v u ↔ x ∉ edgeSide T u v := by
-  rw [mem_edgeSide, mem_edgeSide, Sym2.eq_swap]
-  have hbr := SimpleGraph.isAcyclic_iff_forall_adj_isBridge.mp hT.isAcyclic huv
-  rw [SimpleGraph.isBridge_iff] at hbr
-  constructor
-  · intro hv hu
-    exact hbr (hu.trans hv.symm)
-  · intro hu
-    -- Every vertex reaches `u` or `v` in `T - uv`.
-    have key : ∀ a b (q : T.Walk a b), ((T.deleteEdges {s(u, v)}).Reachable u b ∨
-        (T.deleteEdges {s(u, v)}).Reachable v b) →
-        ((T.deleteEdges {s(u, v)}).Reachable u a ∨ (T.deleteEdges {s(u, v)}).Reachable v a) := by
-      intro a b q
-      induction q with
-      | nil => exact id
-      | @cons a c b hac q ih =>
-        intro hb
-        by_cases he : s(a, c) = s(u, v)
-        · rcases Sym2.eq_iff.mp he with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
-          · exact Or.inl (SimpleGraph.Reachable.refl _)
-          · exact Or.inr (SimpleGraph.Reachable.refl _)
-        · have hadj : (T.deleteEdges {s(u, v)}).Adj c a := by
-            rw [SimpleGraph.deleteEdges_adj, Set.mem_singleton_iff, Sym2.eq_swap]
-            exact ⟨hac.symm, he⟩
-          exact (ih hb).imp (fun h => h.trans hadj.reachable) (fun h => h.trans hadj.reachable)
-    obtain ⟨q⟩ := hT.connected.preconnected x u
-    exact (key x u q (Or.inl (SimpleGraph.Reachable.refl u))).resolve_left hu
-
-/-- In a tree, the side of `vu` containing `v` is the complement of the side of `uv` containing
-`u`. -/
-theorem edgeSide_swap [DecidableEq V] (hT : T.IsTree) {u v : V} (huv : T.Adj u v) :
-    edgeSide T v u = (edgeSide T u v)ᶜ := by
-  ext x
-  rw [Finset.mem_compl]
-  exact mem_edgeSide_swap hT huv x
-
-/-- Along a path in a forest, the start and the end of the path lie on the two sides of each of
-its darts. -/
-theorem mem_edgeSide_of_mem_darts (hT : T.IsAcyclic) {s t : V} {p : T.Walk s t}
-    (hp : p.IsPath) {d : T.Dart} (hd : d ∈ p.darts) :
-    s ∈ edgeSide T d.fst d.snd ∧ t ∉ edgeSide T d.fst d.snd := by
-  have hbr := SimpleGraph.isAcyclic_iff_forall_adj_isBridge.mp hT d.adj
-  rw [SimpleGraph.isBridge_iff] at hbr
-  have key : ∀ a b (q : T.Walk a b), q.IsPath → ∀ d ∈ q.darts,
-      (T.deleteEdges {s(d.fst, d.snd)}).Reachable d.fst a ∧
-        (T.deleteEdges {s(d.fst, d.snd)}).Reachable d.snd b := by
-    intro a b q
-    induction q with
-    | nil => intro _ d hd; simp at hd
-    | @cons a a' b haa' q ih =>
-      intro hp d hd
-      rw [SimpleGraph.Walk.cons_isPath_iff] at hp
-      rw [SimpleGraph.Walk.darts_cons, List.mem_cons] at hd
-      rcases hd with rfl | hd
-      · refine ⟨SimpleGraph.Reachable.refl _, ?_⟩
-        rw [SimpleGraph.reachable_deleteEdges_iff_exists_walk]
-        exact ⟨q, fun h => hp.2 (q.fst_mem_support_of_mem_edges h)⟩
-      · obtain ⟨h1, h2⟩ := ih hp.1 d hd
-        refine ⟨?_, h2⟩
-        have hne : s(a, a') ≠ s(d.fst, d.snd) := by
-          intro h
-          rcases Sym2.eq_iff.mp h with ⟨h', _⟩ | ⟨h', _⟩
-          · exact hp.2 (h' ▸ q.dart_fst_mem_support_of_mem_darts hd)
-          · exact hp.2 (h' ▸ q.dart_snd_mem_support_of_mem_darts hd)
-        have hadj : (T.deleteEdges {s(d.fst, d.snd)}).Adj a' a := by
-          rw [SimpleGraph.deleteEdges_adj, Set.mem_singleton_iff, Sym2.eq_swap]
-          exact ⟨haa'.symm, hne⟩
-        exact h1.trans hadj.reachable
-  obtain ⟨h1, h2⟩ := key s t p hp d hd
-  exact ⟨mem_edgeSide.mpr h1, fun h => hbr ((mem_edgeSide.mp h).trans h2.symm)⟩
-
-/-- A criterion for the side of a tree edge: if `S` contains `u`, misses `v`, and no other edge of
-the tree `T` crosses `S`, then `S` is the side of `uv` containing `u`. -/
-theorem edgeSide_eq_of_forall_adj (hT : T.IsTree) {u v : V} (huv : T.Adj u v) {S : Finset V}
-    (hu : u ∈ S) (hv : v ∉ S)
-    (hS : ∀ ⦃x y : V⦄, T.Adj x y → s(x, y) ≠ s(u, v) → (x ∈ S ↔ y ∈ S)) :
-    edgeSide T u v = S := by
-  have inv : ∀ a b, (T.deleteEdges {s(u, v)}).Reachable a b → (a ∈ S ↔ b ∈ S) := by
-    intro a b h
-    rw [SimpleGraph.reachable_iff_reflTransGen] at h
-    induction h with
-    | refl => exact Iff.rfl
-    | tail _ hbc ih =>
-      rw [SimpleGraph.deleteEdges_adj, Set.mem_singleton_iff] at hbc
-      exact ih.trans (hS hbc.1 hbc.2)
-  ext x
-  constructor
-  · intro hx
-    exact (inv u x (mem_edgeSide.mp hx)).mp hu
-  · intro hx
-    by_contra hx'
-    have h := (mem_edgeSide_swap hT huv x).mpr hx'
-    rw [mem_edgeSide, Sym2.eq_swap] at h
-    exact hv ((inv v x h).mpr hx)
-
-end Tree
+/-- **Uncrossing by difference.** For a symmetric submodular `f`, if `U` is a minimum `s`–`t`
+cut, `A` is a minimum `a`–`t` cut, `a ∉ U` and `s ∉ A`, then `U \ A` is a minimum `s`–`t` cut
+too. -/
+theorem IsMinCutBetween.sdiff [Fintype V] [AddCommMonoid β] [LinearOrder β]
+    [IsOrderedCancelAddMonoid β] [DecidableEq V] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
+    (hsub : IsSubmodular f) {s t a : V} {U A : Finset V} (hU : IsMinCutBetween f s t U)
+    (hA : IsMinCutBetween f a t A) (haU : a ∉ U) (hsA : s ∉ A) :
+    IsMinCutBetween f s t (U \ A) := by
+  rw [Finset.sdiff_eq_inter_compl]
+  exact hU.inter hsub (hA.compl hsym) (Finset.mem_compl.mpr hsA) haU
 
 /-! ### Gomory–Hu trees -/
 
