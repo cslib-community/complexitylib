@@ -1735,13 +1735,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   Nagamochi–Ibaraki sparse certificates for `k`-edge-connectivity,
   Karger's near-linear minimum cut algorithm, and Queyranne's minimization of symmetric submodular
   functions (which generalizes the maximum adjacency argument to hypergraph cuts).
-- **Gomory–Hu trees** ([#3320](https://github.com/cslib-community/complexitylib/issues/3320)):
-  remaining after the existence theorem for cut-equivalent trees of symmetric submodular set
-  functions and weighted undirected graphs, with flow-equivalence, the minimum-cut triangle
-  inequality and the `n - 1` bound on distinct minimum cut values (`Algorithms/Lean/GomoryHu`,
-  [#3285](https://github.com/cslib-community/complexitylib/issues/3285)): the Gomory–Hu or
-  Gusfield construction with `n - 1` maximum-flow calls as a `TimeM` program over Edmonds–Karp,
-  with its running-time bound, and real-valued capacities.
+- **Gomory–Hu trees** ([#3422](https://github.com/cslib-community/complexitylib/issues/3422)):
+  remaining after the existence theorem for cut-equivalent trees, flow-equivalence, the
+  minimum-cut triangle inequality, the `n - 1` bound on distinct minimum cut values, and Gusfield's
+  construction with `n - 1` Edmonds–Karp calls and its `TimeM` bound (`Algorithms/Lean/GomoryHu`,
+  [#3285](https://github.com/cslib-community/complexitylib/issues/3285),
+  [#3320](https://github.com/cslib-community/complexitylib/issues/3320)): returning the tree's
+  edge weights from the maximum flow values, and real-valued capacities.
 - **Push–relabel maximum flow** ([#3373](https://github.com/cslib-community/complexitylib/issues/3373)):
   remaining after preflows, valid labelings, optimality at termination with a gap minimum cut, the
   operation bounds of the generic Goldberg–Tarjan algorithm and a verified executable scheduler

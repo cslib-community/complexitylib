@@ -255,7 +255,7 @@ Import `Complexity.Algorithms.Lean.MaxFlow.LevelGraph` ([Complexity/Algorithms/L
 
 ## Gomory–Hu trees
 
-Import `Complexity.Algorithms.Lean.GomoryHu.WeightedCut` ([source](../../Complexity/Algorithms/Lean/GomoryHu/WeightedCut.lean)). The declarations live in `Cslib.Algorithms.Lean.GomoryHu` and `Cslib.WeightedCut`. This is a theorem-level development: there is no algorithm and no running time. For a weighted multigraph `W : V → V → ℕ` with `IsMultigraph W`, `minCutBetween W s t` is the minimum `s`–`t` cut weight `λ(s, t)` ([source](../../Complexity/Foundations/Combinatorics/WeightedCut/MinCutBetween.lean)). `Network.Flow.IsMaxFlow.value_eq_minCutBetween` identifies it with the value of a maximum `s`–`t` flow in the network with capacities `W`, using the existing max-flow min-cut theorem. [MinCutBetween.lean](../../Complexity/Foundations/Combinatorics/WeightedCut/MinCutBetween.lean) also proves:
+Import `Complexity.Algorithms.Lean.GomoryHu.WeightedCut` ([source](../../Complexity/Algorithms/Lean/GomoryHu/WeightedCut.lean)) for the structure theory and `Complexity.Algorithms.Lean.GomoryHu.Construction` for the algorithm. The declarations live in `Cslib.Algorithms.Lean.GomoryHu` and `Cslib.WeightedCut`. For a weighted multigraph `W : V → V → ℕ` with `IsMultigraph W`, `minCutBetween W s t` is the minimum `s`–`t` cut weight `λ(s, t)` ([source](../../Complexity/Foundations/Combinatorics/WeightedCut/MinCutBetween.lean)). `Network.Flow.IsMaxFlow.value_eq_minCutBetween` identifies it with the value of a maximum `s`–`t` flow in the network with capacities `W`, using the existing max-flow min-cut theorem. [MinCutBetween.lean](../../Complexity/Foundations/Combinatorics/WeightedCut/MinCutBetween.lean) also proves:
 
 - the triangle inequality `min_le_minCutBetween`: `min (λ(u, v)) (λ(v, w)) ≤ λ(u, w)` for `u ≠ w`;
 - its consequence `minCutBetween_eq_of_lt`;
@@ -265,7 +265,7 @@ Import `Complexity.Algorithms.Lean.GomoryHu.WeightedCut` ([source](../../Complex
 The general theory, in [Basic.lean](../../Complexity/Algorithms/Lean/GomoryHu/Basic.lean) and [Existence.lean](../../Complexity/Algorithms/Lean/GomoryHu/Existence.lean), works for any set function `f : Finset V → β` with values in a linearly ordered cancellative commutative monoid. Three definitions carry it:
 
 - `IsMinCutBetween f s t X`: `X` contains `s`, misses `t` and minimizes `f`.
-- `edgeSide T u v`: the vertices reachable from `u` in `T` once the edge `uv` is deleted.
+- `SimpleGraph.edgeSide T u v`: the vertices reachable from `u` in `T` once the edge `uv` is deleted. This and its lemmas live in [EdgeSide.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/EdgeSide.lean), since they are plain tree facts.
 - `IsGomoryHuTree f T`: `T` is a spanning tree and, for every tree edge `uv`, `edgeSide T u v` is a minimum `u`–`v` cut. This is the cut-equivalent tree of [Gomory and Hu][gomoryhu61] ([Schrijver 2003][schrijver03], Section 15.4).
 
 `exists_isGomoryHuTree` proves existence for every symmetric (`f Xᶜ = f X`) submodular `f` on a nonempty finite `V`, and `exists_isGomoryHuTree_cutWeight` is the graph case. Gomory and Hu treat graphs only; the symmetric submodular form is the standard abstraction of their proof, which uses only these two properties. The proof follows Gomory and Hu's recursion without contracting vertices. It splits the terminals along a minimum cut, uses `IsMinCutBetween.inter` to uncross the minimum cuts on each side into that side, and joins the two partial trees built recursively with one edge. Three consequences follow:
@@ -276,13 +276,26 @@ The general theory, in [Basic.lean](../../Complexity/Algorithms/Lean/GomoryHu/Ba
 
 To check a candidate tree, first compute its edge sides with `edgeSide_eq_of_forall_adj`: if `S` contains `u`, misses `v` and no other tree edge crosses `S`, then `edgeSide T u v = S`. Then decide the minimum-cut conditions. The [tests](../../ComplexityTests/GomoryHu.lean) do this for the path `0 - 1 - 2 - 3` on a five-edge graph. They also refute a star, and a path for another graph, as Gomory–Hu trees.
 
+### Gusfield's construction
+
+[Gusfield][gusfield90]'s algorithm computes the tree with `n - 1` minimum cut computations in the original graph, without contraction. [Gusfield.lean](../../Complexity/Algorithms/Lean/GomoryHu/Gusfield.lean) states it on parent functions `p : V → V` with an arbitrary cut oracle `C : V → V → Finset V`. Every vertex starts below the root `r`. Each other vertex `s` is processed once, with `t = p s` and `X = C s t`: the other vertices whose parent is `t` and which lie in `X` are re-hung below `s`, and if `p t ∈ X`, `s` takes the place of `t`. `gusfieldParent C r l` runs this over a list `l` of vertices. `SimpleGraph.parentGraph p`, the graph of a parent function on any vertex type, is in [Acyclic.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/Acyclic.lean), next to the parent arrays `parentTree` on `Fin (n + 1)`. `parentTree_eq_parentGraph` identifies the two when `p 0 = 0`. `isGomoryHuTree_gusfieldParent` proves the result is a Gomory–Hu tree for every symmetric submodular `f`, whenever `C s t` is a minimum `s`–`t` cut for all `s ≠ t` and `l` is duplicate-free and contains every vertex other than `r`. The oracle may return any minimum cut. The proof uncrosses each oracle cut with the sides of the existing tree edges at `t`, using `IsMinCutBetween.union` and `IsMinCutBetween.sdiff` from [Basic.lean](../../Complexity/Algorithms/Lean/GomoryHu/Basic.lean).
+
+[Construction.lean](../../Complexity/Algorithms/Lean/GomoryHu/Construction.lean) makes the algorithm executable. `gomoryHuM W adj r` is a `TimeM ℕ` program over `Fin n`. It returns the parent array as a `Vector (Fin n) n`, and uses the minimum cut of the Edmonds–Karp solver `edmondsKarpM` (`ekCut`) as the oracle, once per non-root vertex. `vget_gomoryHuM` identifies the output with `gusfieldParent (ekCut W adj) r (List.finRange n)`. So `isGomoryHuTree_gomoryHuM` gives a Gomory–Hu tree of `cutWeight W` for every multigraph `W` and adjacency lists `adj` covering its edges (the `AdjValid` condition of Edmonds–Karp). The time bounds:
+
+- `gomoryHuM_time_le_of_forall`: at most `2 n + (n - 1) (B + n + 2)` charged steps, when every Edmonds–Karp call costs at most `B`;
+- `gomoryHuM_time_le`: the same with `edmondsKarpM_time_le` substituted, which is `O(n m²)` per call for `m` edges;
+- `gomoryHuM_time_le_dense`: `O(n⁶)` for dense adjacency lists.
+
+The cost model is the Edmonds–Karp one, extended with `Finset` membership on the returned cut as a free primitive. One tick is charged per parent-array slot allocated, per vertex for the loop test, per parent read and per vertex scanned when re-hanging. One more tick per non-root vertex covers the final swap test and its two writes. Vector reads and writes, `Finset` membership tests on the returned cut and `Fin n` comparisons are free primitives inside those steps. The [tests](../../ComplexityTests/GomoryHuConstruction.lean) run `gomoryHuM` by `decide` on the five-edge graph of the structure tests. From roots `0` and `3` they obtain the path `0 - 1 - 2 - 3`; the run from `3` takes the swap branch. The tests also instantiate the time bounds, and refute the output of `gusfieldParent` with a non-minimum oracle as a Gomory–Hu tree.
+
 Limitations:
 
 - Weights are natural numbers.
-- The construction with `n - 1` maximum-flow calls is not formalized, whether in Gomory and Hu's form or in [Gusfield][gusfield90]'s variant without contraction; neither is its running time.
+- `gomoryHuM` returns the tree without its edge weights `λ(u, p u)`.
+- Only Edmonds–Karp is available as the maximum flow oracle; `gomoryHuM_time_le_of_forall` takes any per-call bound.
 - Minimum cuts are not enumerated.
 
-[#3320](https://github.com/cslib-community/complexitylib/issues/3320) tracks the remaining work.
+[#3422](https://github.com/cslib-community/complexitylib/issues/3422) tracks the remaining work.
 
 ## Maximum flow: generic push–relabel
 
