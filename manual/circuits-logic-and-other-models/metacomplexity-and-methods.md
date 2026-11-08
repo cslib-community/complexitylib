@@ -760,5 +760,42 @@ binary `2^80` direct answer. Exhaustive counting appears only in tiny test oracl
 This completes binary time/space certification of tagged plan construction,
 including simultaneous intermediate workspace and actual output writes. It does
 not run the external counting oracle. The source's advertised sharper counting
-time, whole counting-algorithm space, full table frontend and graph endpoint
-remain open. Theorem 7.1 and ALL-main remain incomplete.
+time, full table frontend and graph endpoint remain open. The counting
+continuation below supplies whole-algorithm polynomial space. Theorem 7.1 and
+ALL-main remain incomplete.
+
+
+Import `Complexity.Computability.Complexity.FineGrained.WeightedCountingPlan`
+for whole-algorithm polynomial-space counting in the same `BinaryPlan` namespace.
+`counterInput beta p` reads the actual tagged output and selects its declaration
+and formula; its certificate includes conversion from the writer's unary indices
+to the native CNF counter's binary indices. `execute counter p` reads the tag,
+returns a direct answer without counting, or evaluates both declared queries and
+subtracts their answers in binary. `queryCount_eq_modelCountOn` connects the
+finite declared-assignment semantics to the native counter, including unused bits.
+`counterInput_valid` derives the width/index guard from the plan's actual budget.
+
+`exists_count_polySpace d` obtains a native fixed-width counter from the proved
+library endpoint, then composes the actual original-input compiler, query calls
+and reconstruction. Its conclusion is an existential exact counter in plain
+`ComputableInPolySpace`, not a caller-supplied counting oracle. Workspace charges
+include retained queries, both answers, binary reconstruction and output. The
+same positive-occurrence and bounded normalized-demand hypotheses govern exact
+counting; they do not serve as rank, basis, output or resource advice. All direct
+and query branches are covered by the previously proved original-plan equality.
+
+From the repository root run `scripts/build.sh ComplexityTests.WeightedCountingPlan`.
+The [complete client](../../ComplexityTests/WeightedCountingPlan.lean) checks tag
+selection, large direct answers, unused declared bits, both boundary counts,
+contradictory rows and a nonzero instance of the existential native machine.
+The tiny exhaustive counter in this client is test-only.
+
+This supplies whole counting-algorithm polynomial space. The sharper source time
+remains open: Lemma 3.2 (PDF p. 11) and Proposition 4.2 (p. 14) of
+[1575](https://github.com/sigact-stoc/stoc2027/releases/download/papers-2/1575.pdf)
+use $\eta(N)=N\log\log N/\sqrt{\log N}$, whereas the proved native counter uses
+`interpolationScale`, asymptotically $N(\log\log N)^2/\sqrt{\log N}$.
+Polynomial-space composition does not remove that extra factor. No theorem here
+claims the advertised $L^{O_d(1)}2^{O_d(\eta(r))}$ time. Refining the core counter,
+then composing and rescaling its sharper rate through both calls, remains work;
+table frontend and graph endpoints also remain open.

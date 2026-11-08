@@ -962,7 +962,7 @@ dispatcher diagnostics. Uncapped aggregation-prefix bit widths and post-cap
 Gram/Bird/Cramer widths are derived; output storage follows the runtime proof.
 The separate selected-query continuation below resolves its query branch.
 The complete tagged construction continuation below composes small-variable
-counting and direct/query output resources. Whole counting-algorithm space,
+counting and direct/query output resources. The counting continuation below resolves whole-algorithm space;
 sharper counting runtime, full table frontend and graph endpoints remain open; no
 Theorem 7.1 or ALL-main completion is claimed.
 
@@ -989,7 +989,30 @@ or exponential assignment enumeration is used. Construction output storage
 follows the machine proof, rather than supplying its runtime bound.
 
 Remaining: compose external CNF counting with this tagged construction at the
-source's advertised sharper counting rate, establish whole counting-algorithm
-space, and complete the table frontend and graph endpoints. Raw malformed-list
-parser correctness is not proved. This construction milestone does not complete
+source's advertised sharper counting rate, and complete the table frontend
+and graph endpoints. The continuation below resolves counting-algorithm space.
+Raw malformed-list parser correctness is not proved. This construction milestone does not complete
 Theorem 7.1 or ALL-main; #1575 and the broader objective remain open.
+
+
+The actual tagged plan now composes with the proved native declared CNF counter
+and binary answer reconstruction in polynomial space. `counterInput_polytime`
+charges reading the tag/declaration and converting emitted unary indices to the
+native counter's binary CNF encoding. `execute_polySpace` charges both sequential
+calls, retained queries and answers, binary subtraction and output. The final
+`exists_count_polySpace` derives the counter and its workspace from the proved
+library machine theorem, with no supplied oracle or resource contract, and
+recovers the original positive-occurrence equation count on all declared bits.
+The direct branches avoid counter calls entirely. Tiny reconstruction clients
+and a nonzero instance of the existential native machine are checked.
+
+The source's sharper time is still missing: 1575 Lemma 3.2 (PDF p. 11),
+Proposition 4.2 (p. 14) and Theorem 7.1 (pp. 23–24) use
+`eta(N) = N log log N / sqrt(log N)`. The proved native endpoint instead uses
+`interpolationScale(N) = N (log log (N+16))^2 / sqrt(log (N+16))`.
+Its Proposition 6.4 interpolation route does not establish the sharper
+Theorem 1.1/Appendix D rate. Removing the extra log-log factor requires a core
+counter refinement, followed by time composition and variable rescaling; it is
+not a consequence of polynomial-space closure or output-size bounds. No weaker
+exponent is substituted for the source claim. Full malformed-input parsing,
+table frontend, graph endpoints, Theorem 7.1 and ALL-main remain open.
