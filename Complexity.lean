@@ -4634,6 +4634,7 @@ public import Complexity.Foundations.LinearAlgebra.FreeAlgebra
 public import Complexity.Foundations.LinearAlgebra.ImageSparsification
 public import Complexity.Foundations.LinearAlgebra.Interpolation
 public import Complexity.Foundations.LinearAlgebra.KernelVector
+public import Complexity.Foundations.LinearAlgebra.Matrix.BranchingProgramDeterminant
 public import Complexity.Foundations.LinearAlgebra.Matrix.CauchyBinet
 public import Complexity.Foundations.LinearAlgebra.Matrix.ClosedSubmatrix
 public import Complexity.Foundations.LinearAlgebra.Matrix.CoinStep
@@ -4644,6 +4645,7 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.Derivation
 public import Complexity.Foundations.LinearAlgebra.Matrix.FactorialTruncation
 public import Complexity.Foundations.LinearAlgebra.Matrix.Farkas
 public import Complexity.Foundations.LinearAlgebra.Matrix.FourierMotzkin
+public import Complexity.Foundations.LinearAlgebra.Matrix.GrenetPermanent
 public import Complexity.Foundations.LinearAlgebra.Matrix.HessianDeterminant
 public import Complexity.Foundations.LinearAlgebra.Matrix.HessianPermanent
 public import Complexity.Foundations.LinearAlgebra.Matrix.IsotropicPosition

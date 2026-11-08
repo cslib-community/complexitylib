@@ -386,6 +386,11 @@ Oded Goldreich. *Foundations of Cryptography, Volume 2: Basic Applications*. Cam
 
 Ralph E. Gomory and T. C. Hu. “Multi-Terminal Network Flows.” *Journal of the Society for Industrial and Applied Mathematics* 9(4), 551–570, 1961. https://doi.org/10.1137/0109047 . Bibliographic metadata checked through the publisher record; the article body was not inspected in this pass. The manual cites it for cut-equivalent (Gomory–Hu) trees and the triangle inequality for minimum cut values, as described in [Schrijver 2003](#schrijver03), Section 15.4.
 
+<a id="grenet11"></a>
+## grenet11
+
+Bruno Grenet. *An upper bound for the permanent versus determinant problem*. Manuscript, 2011 (the PDF is dated May 25, 2012). https://www-verimag.imag.fr/~grenetb/publis/Gre11.pdf . Checked against the author's PDF on 2026-11-08. Its unnumbered Lemma (an algebraic branching program of size `2ⁿ` on the subsets of `{1, …, n}` computes the permanent) and unnumbered Theorem (a `(2ⁿ - 1) × (2ⁿ - 1)` matrix with entries in `{x_ij} ∪ {-1, 0, 1}` has the permanent as determinant) are `Matrix.permanent_eq_det_grenetMatrix` and `Cslib.Circuits.Arithmetic.isProjection_permanent_det_two_pow_sub_one`. Grenet works over fields of characteristic other than two; the library proves the identity over every commutative ring. The library uses Grenet's construction with a different sign normalization: `-1` on the diagonal at every vertex other than the merged source and sink, rather than loops of weight `1` with weight `-1` on the first layer for even `n`. It proves the determinant identity through the adjugate rather than through cycle covers.
+
 <a id="grigoriev01"></a>
 ## grigoriev01
 
