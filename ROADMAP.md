@@ -1108,7 +1108,6 @@ each statement against the numbered result. Organize modules by subject, not cha
   incompatible models, and a bridge between the query and circuit models; complete problems for
   BQP; for QMA ([#2876](https://github.com/cslib-community/complexitylib/issues/2876)), error
   reduction from an inverse-polynomial gap, strong error reduction that keeps the witness length,
-  `PromiseQMA(c, s) ⊆ PP` for non-constant `c(n), s(n)` with an inverse-polynomial gap,
   `QMA ⊆ A₀PP`, `MA ⊆ QMA`, mixed witnesses, QCMA and the local Hamiltonian problem; related query,
   communication and interactive classes, with amplification, containments and complete problems.
   Supply the
