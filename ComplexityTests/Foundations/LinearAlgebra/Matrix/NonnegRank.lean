@@ -11,6 +11,7 @@ public import Complexity.Init
 public import Complexity.Computability.Communication.Nondeterministic.ExtensionComplexity
 import Mathlib.Algebra.Order.Field.Rat
 import Mathlib.LinearAlgebra.Matrix.Notation
+import Mathlib.LinearAlgebra.Matrix.Rank
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.NormNum
 
@@ -57,8 +58,13 @@ theorem nonnegRank_cyc : cyc.nonnegRank = 3 := by
       fin_cases i <;> fin_cases j <;> norm_num
   · simpa using card_le_nonnegRank_of_isFoolingSet cyc_isFoolingSet
 
-/-- The rank is `3` too, consistent with `rank ≤ rank₊`. -/
+/-- `rank ≤ rank₊` gives the upper bound `3` on the rank. -/
 example : (cyc.rank : ℕ∞) ≤ 3 := nonnegRank_cyc ▸ rank_le_nonnegRank
+
+/-- The rank is `3` too: `cyc` has determinant `1`. -/
+example : cyc.rank = 3 := by
+  rw [rank_of_isUnit cyc ((isUnit_iff_isUnit_det cyc).2 (isUnit_iff_ne_zero.2 (by
+    norm_num [det_fin_three]))), Fintype.card_fin]
 
 /-- The `1`-cover number of the support of the cyclic permutation matrix is `3`. -/
 theorem coverNumberFun_cyc :

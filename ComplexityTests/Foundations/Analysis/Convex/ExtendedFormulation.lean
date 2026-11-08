@@ -27,6 +27,10 @@ Concrete polytopes over `ℚ`.
 * The unit square `conv {0, e₀, e₁, e₀ + e₁} = {x | 0 ≤ x₀ ≤ 1, 0 ≤ x₁ ≤ 1}` has a slack matrix of
   rank `3` (its last row is a signed combination of the others) but of nonnegative rank `4`,
   witnessed by a fooling set of four `1`-entries; so its extension complexity is `4`.
+* The hexagon with vertices `(±2, 0)`, `(±1, ±1)`, an affine image of the regular hexagon, has six
+  facets, but its slack matrix has an explicit nonnegative factorization of inner dimension `5`,
+  and it has an extended formulation with five inequalities and one extra variable. So its
+  extension complexity is at most `5`, below the number of facets.
 * The point `{0} ⊆ ℚ`, described by `x ≤ 0`, `-x ≤ 0` and the redundant `x ≤ 1`, has extension
   complexity `0` (the extended formulation `x = 0` has no inequalities), while its slack matrix has
   nonnegative rank `1`. This is why Yannakakis's theorem
@@ -202,6 +206,116 @@ example : ((sqA.slackMatrix sqb sqV).rank : ℕ∞) < (sqA.slackMatrix sqb sqV).
     extensionComplexity_square]
   rw [rank_slackMatrix_square]
   norm_num
+
+/-! ### The hexagon: fewer inequalities than facets -/
+
+/-- The six facet inequalities `x₀ + x₁ ≤ 2`, `x₁ ≤ 1`, `-x₀ + x₁ ≤ 2`, `-x₀ - x₁ ≤ 2`, `-x₁ ≤ 1`,
+`x₀ - x₁ ≤ 2` of the hexagon with vertices `(2, 0)`, `(1, 1)`, `(-1, 1)`, `(-2, 0)`, `(-1, -1)`,
+`(1, -1)`, an affine image of the regular hexagon. -/
+abbrev hexA : Matrix (Fin 6) (Fin 2) ℚ := !![1, 1; 0, 1; -1, 1; -1, -1; 0, -1; 1, -1]
+
+/-- The right-hand side of the hexagon's inequalities. -/
+abbrev hexb : Fin 6 → ℚ := ![2, 1, 2, 2, 1, 2]
+
+/-- The vertices of the hexagon, in cyclic order. -/
+abbrev hexV : Fin 6 → Fin 2 → ℚ := ![![2, 0], ![1, 1], ![-1, 1], ![-2, 0], ![-1, -1], ![1, -1]]
+
+/-- The hexagon `|x₁| + max (-x₀ - 1) 0 (x₀ - 1) ≤ 1`. -/
+abbrev hexagon : Set (Fin 2 → ℚ) := {x | hexA *ᵥ x ≤ hexb}
+
+/-- The slack matrix of the hexagon. -/
+theorem slackMatrix_hexagon :
+    hexA.slackMatrix hexb hexV =
+      !![0, 0, 2, 4, 4, 2; 1, 0, 0, 1, 2, 2; 4, 2, 0, 0, 2, 4;
+        4, 4, 2, 0, 0, 2; 1, 2, 2, 1, 0, 0; 0, 2, 4, 4, 2, 0] :=
+  Matrix.ext fun i j => by
+    fin_cases i <;> fin_cases j <;> norm_num [dotProduct, Fin.sum_univ_two]
+
+/-- **A nonnegative factorization of inner dimension `5`** of the hexagon's slack matrix, which has
+six rows: each facet slack is the sum of two of the five slacks of the extended formulation
+`hexEF`, evaluated at lifts of the vertices. -/
+theorem slackMatrix_hexagon_eq_mul :
+    hexA.slackMatrix hexb hexV =
+      !![(1 : ℚ), 0, 0, 0, 1; 1, 0, 0, 1, 0; 1, 0, 1, 0, 0;
+        0, 1, 1, 0, 0; 0, 1, 0, 1, 0; 0, 1, 0, 0, 1] *
+      !![(0 : ℚ), 0, 0, 0, 2, 2; 0, 2, 2, 0, 0, 0; 4, 2, 0, 0, 0, 2;
+        1, 0, 0, 1, 0, 0; 0, 0, 2, 4, 2, 0] := by
+  rw [slackMatrix_hexagon]
+  refine Matrix.ext fun i j => ?_
+  fin_cases i <;> fin_cases j <;> norm_num [Matrix.mul_apply, Fin.sum_univ_five]
+
+/-- So the slack matrix of the hexagon has nonnegative rank at most `5`, below its six rows. -/
+theorem nonnegRank_slackMatrix_hexagon_le : (hexA.slackMatrix hexb hexV).nonnegRank ≤ 5 := by
+  have h := HasNonnegFactorization.nonnegRank_le (M := hexA.slackMatrix hexb hexV)
+    ⟨_, _, fun i k => by fin_cases i <;> fin_cases k <;> norm_num,
+      fun k j => by fin_cases k <;> fin_cases j <;> norm_num, slackMatrix_hexagon_eq_mul.symm⟩
+  simpa only [Fintype.card_fin, Nat.cast_ofNat] using h
+
+/-- The inequalities `x₁ + z ≤ 1`, `-x₁ + z ≤ 1`, `-x₀ - z ≤ 1`, `-z ≤ 0`, `x₀ - z ≤ 1` in the
+variables `x` and one extra variable `z`: the hexagon is `|x₁| + z ≤ 1` with
+`z ≥ max (-x₀ - 1) 0 (x₀ - 1)`. -/
+abbrev hexE : Matrix (Fin 5) (Fin 2) ℚ := !![0, 1; 0, -1; -1, 0; 0, 0; 1, 0]
+
+/-- The coefficients of the extra variable `z` in `hexE`. -/
+abbrev hexF : Matrix (Fin 5) (Fin 1) ℚ := !![1; 1; -1; -1; -1]
+
+/-- The right-hand side of the extended formulation of the hexagon. -/
+abbrev hexg : Fin 5 → ℚ := ![1, 1, 1, 0, 1]
+
+/-- **The hexagon has an extended formulation with five inequalities** and one extra variable,
+although it has six facets. -/
+theorem isExtendedFormulation_hexagon :
+    IsExtendedFormulation hexagon hexE hexF hexg (0 : Matrix (Fin 0) (Fin 2) ℚ)
+      (0 : Matrix (Fin 0) (Fin 1) ℚ) 0 := by
+  intro x
+  constructor
+  · intro hx
+    have h0 : x 0 + x 1 ≤ 2 := by simpa [mulVec, dotProduct, Fin.sum_univ_two] using hx 0
+    have h1 : x 1 ≤ 1 := by simpa [mulVec, dotProduct, Fin.sum_univ_two] using hx 1
+    have h2 : -x 0 + x 1 ≤ 2 := by simpa [mulVec, dotProduct, Fin.sum_univ_two] using hx 2
+    have h3 : -x 0 - x 1 ≤ 2 := by simpa [mulVec, dotProduct, Fin.sum_univ_two] using hx 3
+    have h4 : -x 1 ≤ 1 := by simpa [mulVec, dotProduct, Fin.sum_univ_two] using hx 4
+    have h5 : x 0 - x 1 ≤ 2 := by simpa [mulVec, dotProduct, Fin.sum_univ_two] using hx 5
+    have ha : -x 0 - 1 ≤ max (-x 0 - 1) (max 0 (x 0 - 1)) := le_max_left _ _
+    have hb : 0 ≤ max (-x 0 - 1) (max 0 (x 0 - 1)) := le_max_of_le_right (le_max_left _ _)
+    have hc : x 0 - 1 ≤ max (-x 0 - 1) (max 0 (x 0 - 1)) :=
+      le_max_of_le_right (le_max_right _ _)
+    have hd : x 1 + max (-x 0 - 1) (max 0 (x 0 - 1)) ≤ 1 := by
+      rcases le_total (-x 0 - 1) (max 0 (x 0 - 1)) with h | h
+      · rw [max_eq_right h]
+        rcases le_total 0 (x 0 - 1) with h' | h'
+        · rw [max_eq_right h']
+          linarith
+        · rw [max_eq_left h']
+          linarith
+      · rw [max_eq_left h]
+        linarith
+    have he : -x 1 + max (-x 0 - 1) (max 0 (x 0 - 1)) ≤ 1 := by
+      rcases le_total (-x 0 - 1) (max 0 (x 0 - 1)) with h | h
+      · rw [max_eq_right h]
+        rcases le_total 0 (x 0 - 1) with h' | h'
+        · rw [max_eq_right h']
+          linarith
+        · rw [max_eq_left h']
+          linarith
+      · rw [max_eq_left h]
+        linarith
+    generalize max (-x 0 - 1) (max 0 (x 0 - 1)) = z at ha hb hc hd he
+    refine ⟨fun _ => z, fun i => ?_, Subsingleton.elim _ _⟩
+    fin_cases i <;> simp [dotProduct, Fin.sum_univ_two] <;> linarith
+  · rintro ⟨y, hy, -⟩
+    have r0 : x 1 + y 0 ≤ 1 := by simpa [mulVec, dotProduct, Fin.sum_univ_two] using hy 0
+    have r1 : -x 1 + y 0 ≤ 1 := by simpa [mulVec, dotProduct, Fin.sum_univ_two] using hy 1
+    have r2 : -x 0 - y 0 ≤ 1 := by simpa [mulVec, dotProduct, Fin.sum_univ_two] using hy 2
+    have r3 : -y 0 ≤ 0 := by simpa [mulVec, dotProduct, Fin.sum_univ_two] using hy 3
+    have r4 : x 0 - y 0 ≤ 1 := by simpa [mulVec, dotProduct, Fin.sum_univ_two] using hy 4
+    intro i
+    fin_cases i <;> simp [mulVec, dotProduct, Fin.sum_univ_two] <;> linarith
+
+/-- So the hexagon has extension complexity at most `5`, one less than its number of facets. -/
+theorem extensionComplexity_hexagon_le : extensionComplexity hexagon ≤ 5 := by
+  simpa only [Fintype.card_fin, Nat.cast_ofNat] using
+    isExtendedFormulation_hexagon.extensionComplexity_le
 
 /-! ### The point: why `P.Nontrivial` is needed -/
 

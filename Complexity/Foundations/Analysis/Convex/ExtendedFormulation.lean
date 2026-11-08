@@ -55,10 +55,13 @@ polytope is the nonnegative rank of its slack matrix: `xc P = rank₊ S`
 
 Both conventions matter. Equations must be free: the segment `P = conv {0, e₀} ⊆ K ^ 2` has a
 slack matrix of nonnegative rank `2` (an EF `x₁ = 0`, `0 ≤ x₀`, `x₀ ≤ 1`), but no system of only
-two inequalities in `x` and extra variables projects onto a bounded set that is not full
-dimensional. And the dimension hypothesis is needed: for the point `P = {0} ⊆ K` described by
-`x ≤ 0`, `-x ≤ 0` and the redundant `x ≤ 1`, the slack matrix has nonnegative rank `1`, while the
-EF `x = 0` has no inequalities, so `xc P = 0`.
+two inequalities and no equations in `x` and extra variables projects onto a nonempty bounded
+subset of `K ^ 2`. And the dimension hypothesis is needed for the equality in `ℕ∞`: for the point
+`P = {0} ⊆ K` described by `x ≤ 0`, `-x ≤ 0` and the redundant `x ≤ 1`, the slack matrix has
+nonnegative rank `1`, while the EF `x = 0` has no inequalities, so `xc P = 0`. FMPTW state the
+equivalence for a positive number `r` of inequalities, and in that form it needs no dimension
+hypothesis, since the slack matrix of a set with at most one point has nonnegative rank at most `1`
+(`extensionComplexity_le_iff_nonnegRank_slackMatrix_le`); the point example fails only at `r = 0`.
 
 ## Main definitions
 
@@ -71,6 +74,8 @@ EF `x = 0` has no inequalities, so `xc P = 0`.
 ## Main results
 
 * `extensionComplexity_eq_nonnegRank_slackMatrix`: **Yannakakis's factorization theorem**.
+* `extensionComplexity_le_iff_nonnegRank_slackMatrix_le`: the same for a positive number of
+  inequalities, with no dimension hypothesis (using `nonnegRank_slackMatrix_le_one`).
 * `isExtendedFormulation_of_mul_eq_slackMatrix`,
   `extensionComplexity_le_nonnegRank_slackMatrix`: nonnegative factorizations give EFs.
 * `IsExtendedFormulation.hasNonnegFactorization_slackMatrix`,
@@ -101,7 +106,7 @@ variable {K : Type*} {ι μ ν σ κ τ : Type*}
 /-- The **slack matrix** of the system `A *ᵥ x ≤ b` with respect to the points `V j`: the entry at
 `i` and `j` is the slack `b i - A i ⬝ᵥ V j` of the `i`-th inequality at the `j`-th point
 [FioriniMassarPokuttaTiwaryDeWolf2015, Section 3]. -/
-@[expose] def Matrix.slackMatrix [Ring K] [Fintype ι] (A : Matrix μ ι K) (b : μ → K)
+def Matrix.slackMatrix [Ring K] [Fintype ι] (A : Matrix μ ι K) (b : μ → K)
     (V : ν → ι → K) : Matrix μ ν K :=
   of fun i j => b i - A i ⬝ᵥ V j
 
@@ -129,8 +134,8 @@ noncomputable def extensionComplexity [Semiring K] [PartialOrder K] [Fintype ι]
   ⨅ r : {r : ℕ // HasExtendedFormulation P r}, (r.1 : ℕ∞)
 
 @[simp] theorem Matrix.slackMatrix_apply [Ring K] [Fintype ι] (A : Matrix μ ι K) (b : μ → K)
-    (V : ν → ι → K) (i : μ) (j : ν) : A.slackMatrix b V i j = b i - A i ⬝ᵥ V j :=
-  rfl
+    (V : ν → ι → K) (i : μ) (j : ν) : A.slackMatrix b V i j = b i - A i ⬝ᵥ V j := by
+  rw [Matrix.slackMatrix, of_apply]
 
 /-- The slack matrix is nonnegative when the points satisfy the inequalities. -/
 theorem Matrix.slackMatrix_nonneg [Ring K] [PartialOrder K] [IsOrderedAddMonoid K] [Fintype ι]
@@ -424,12 +429,46 @@ theorem nonnegRank_slackMatrix_le_extensionComplexity [Finite ν]
 `P = {x | A *ᵥ x ≤ b} = conv (range V)`, with finitely many inequalities and points, is the
 nonnegative rank of its slack matrix [Yannakakis1991];
 [FioriniMassarPokuttaTiwaryDeWolf2015, Theorem 3, (i) ⇔ (iii)]. The hypothesis
-`P.Nontrivial` is their `dim P ≥ 1`; see the module docstring for why it cannot be dropped. -/
+`P.Nontrivial` is their `dim P ≥ 1`. FMPTW quantify over a positive number `r` of inequalities;
+this equality also covers `r = 0`, where the hypothesis cannot be dropped (see the module
+docstring). For positive `r` and any `P`, see
+`extensionComplexity_le_iff_nonnegRank_slackMatrix_le`. -/
 theorem extensionComplexity_eq_nonnegRank_slackMatrix [Finite μ] [Finite ν]
     (hA : P = {x | A *ᵥ x ≤ b}) (hV : P = convexHull K (Set.range V)) (hP : P.Nontrivial) :
     extensionComplexity P = (A.slackMatrix b V).nonnegRank :=
   le_antisymm (extensionComplexity_le_nonnegRank_slackMatrix hA hV)
     (nonnegRank_slackMatrix_le_extensionComplexity hA hV hP)
+
+/-- The slack matrix of a set `P = {x | A *ᵥ x ≤ b} = conv (range V)` with at most one point has
+nonnegative rank at most `1`: all its columns are equal and nonnegative. -/
+theorem nonnegRank_slackMatrix_le_one (hA : P = {x | A *ᵥ x ≤ b})
+    (hV : P = convexHull K (Set.range V)) (hP : P.Subsingleton) :
+    (A.slackMatrix b V).nonnegRank ≤ 1 := by
+  have hmem : ∀ j, V j ∈ P := fun j => hV ▸ subset_convexHull K _ ⟨j, rfl⟩
+  rcases isEmpty_or_nonempty ν with hν | ⟨⟨j₀⟩⟩
+  · rw [show A.slackMatrix b V = 0 from Matrix.ext fun _ j => hν.elim j, nonnegRank_zero]
+    exact zero_le_one
+  · have hS := slackMatrix_nonneg (A := A) (b := b) (V := V) fun j => (hA ▸ hmem j :)
+    simpa using HasNonnegFactorization.nonnegRank_le (ρ := Unit)
+      ⟨of fun i _ => A.slackMatrix b V i j₀, of fun _ _ => 1, fun i _ => hS i j₀,
+        fun _ _ => zero_le_one, Matrix.ext fun i j => by
+          rw [Matrix.mul_apply, slackMatrix_apply, hP (hmem j) (hmem j₀)]
+          simp⟩
+
+/-- **Yannakakis's factorization theorem, for a positive number of inequalities.** A polytope
+`P = {x | A *ᵥ x ≤ b} = conv (range V)`, with finitely many inequalities and points, has an extended
+formulation with at most `r > 0` inequalities exactly when its slack matrix has nonnegative rank at
+most `r` [Yannakakis1991]; [FioriniMassarPokuttaTiwaryDeWolf2015, Theorem 3, (i) ⇔ (iii)]. Unlike
+`extensionComplexity_eq_nonnegRank_slackMatrix`, this needs no dimension hypothesis: when `P` has
+at most one point, both sides hold (`nonnegRank_slackMatrix_le_one`). -/
+theorem extensionComplexity_le_iff_nonnegRank_slackMatrix_le [Finite μ] [Finite ν]
+    (hA : P = {x | A *ᵥ x ≤ b}) (hV : P = convexHull K (Set.range V)) {r : ℕ} (hr : 0 < r) :
+    extensionComplexity P ≤ r ↔ (A.slackMatrix b V).nonnegRank ≤ r := by
+  rcases P.subsingleton_or_nontrivial with hP | hP
+  · refine ⟨fun _ => (nonnegRank_slackMatrix_le_one hA hV hP).trans ?_, fun h =>
+      (extensionComplexity_le_nonnegRank_slackMatrix hA hV).trans h⟩
+    exact_mod_cast hr
+  · rw [extensionComplexity_eq_nonnegRank_slackMatrix hA hV hP]
 
 /-- The extension complexity of `P = {x | A *ᵥ x ≤ b} = conv (range V)` is at most the number of
 points `V j`. -/
