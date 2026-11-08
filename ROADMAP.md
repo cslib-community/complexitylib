@@ -1218,6 +1218,13 @@ each statement against the numbered result. Organize modules by subject, not cha
   family; a machine-model linear-time implementation of the decoder; Spielman's linear-time
   encodable codes; and Zémor's decoding of Tanner codes on spectral expanders, building on the
   Tanner-code distance bound in `Complexity/Foundations/Combinatorics/Expander/TannerCode.lean`.
+- **Channel coding** ([#3304](https://github.com/cslib-community/complexitylib/issues/3304)):
+  achievability for the binary symmetric channel (random codes with nearest codeword decoding at
+  every rate below `1 - h₂(p)`, maximal error `≤ 10 exp (-δ n)`) is in place. Remaining: the
+  converse (weak, via Fano, and strong: every code of rate above capacity has error bounded
+  away from zero), general discrete memoryless channels with mutual-information capacity,
+  explicit and efficiently decodable capacity-achieving codes (Forney concatenation, polar
+  codes), and the link to list decoding.
 - **Locally decodable codes** ([#2929](https://github.com/cslib-community/complexitylib/issues/2929)):
   query-bounded decoders, the Hadamard code, Katz–Trevisan smoothing for oblivious-read decoders
   and the one-query bound are in place. Remaining: the adaptive-to-non-adaptive reduction (so that
