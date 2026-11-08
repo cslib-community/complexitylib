@@ -26,10 +26,12 @@ least `1 / 6000` (`Cslib.RotationMap.le_edgeExpansion_expander`). Their Tseitin 
 single charged vertex form **a family, with explicit constants, of unsatisfiable formulas with
 `O(n)` variables and clauses of constant length whose polynomial calculus refutations over every
 field of characteristic other than `2` have degree `Ω(n)`**
-(`Cslib.Logic.PL.CNF.exists_forall_pc_refutableInDegree_le`)
-[Buss, Grigoriev, Impagliazzo and Pitassi][BussGrigorievImpagliazzoPitassi2001]. The expanders,
-and so the formulas, are obtained non-constructively, from a counting argument
-(`Cslib.RotationMap.exists_spectralExpansion_le`).
+(`Cslib.Logic.PL.CNF.exists_forall_pc_refutableInDegree_le`). That Tseitin formulas on expanders
+need polynomial calculus refutations of linear degree over these fields is due to
+[Buss, Grigoriev, Impagliazzo and Pitassi][BussGrigorievImpagliazzoPitassi2001], and is recorded
+qualitatively in [Buss and Nordström, §7.5.4][BussNordstrom2021]; the constants are those of this
+formalization. The expanders, and so the formulas, are obtained non-constructively, from a
+counting argument (`Cslib.RotationMap.exists_spectralExpansion_le`).
 
 ## Main results
 
@@ -51,6 +53,8 @@ public section
 
 namespace Cslib.Logic.PL
 
+universe u
+
 open Finset Cslib.Logic.PL.Algebraic
 
 namespace Tseitin
@@ -58,10 +62,11 @@ namespace Tseitin
 variable {V D : Type*} [Fintype V] [DecidableEq V] [Fintype D] [DecidableEq D]
   (G : RotationMap V D)
 
-/-- **The polynomial calculus degree lower bound for Tseitin formulas on rotation maps**
-[Buss, Grigoriev, Impagliazzo and Pitassi][BussGrigorievImpagliazzoPitassi2001]: over a field of
-characteristic other than `2`, if `h(G) > 0`, every polynomial calculus refutation of a Tseitin
-formula on `G` has degree at least `h(G) |V| / 6`. -/
+/-- **The polynomial calculus degree lower bound for Tseitin formulas on rotation maps**: over a
+field of characteristic other than `2`, if `h(G) > 0`, every polynomial calculus refutation of a
+Tseitin formula on `G` has degree at least `h(G) |V| / 6`. The qualitative result is due to
+[Buss, Grigoriev, Impagliazzo and Pitassi][BussGrigorievImpagliazzoPitassi2001]; the constant is
+that of this formalization. -/
 theorem edgeExpansion_mul_card_div_six_le_of_pc_refutableInDegree {K : Type*} [Field K]
     (h2 : (2 : K) ≠ 0) (hG : 0 < G.edgeExpansion) {χ : V → Bool} {d : ℕ}
     (h : PC.RefutableInDegree
@@ -85,14 +90,15 @@ calculus refutations of degree `Ω(n)`**
 [Buss, Grigoriev, Impagliazzo and Pitassi][BussGrigorievImpagliazzoPitassi2001]. For every `n ≥ 2`
 there is an unsatisfiable formula with at most `120 n` variables and at most `2 ^ 120 · n` clauses,
 of at most `120` literals each, whose polynomial calculus refutations over every field of
-characteristic other than `2` have degree at least `n / 36000`. It is the Tseitin formula, with a
-single charged vertex, of an expander with `120` labels on `n` vertices
-(`Cslib.RotationMap.expander`), whose existence is proved non-constructively. The same bound holds
-for Nullstellensatz refutations (`Cslib.Logic.PL.PC.RefutableInDegree.of_ns`). -/
+characteristic other than `2` have degree at least `n / 36000`; the constants are those of this
+formalization. It is the Tseitin formula, with a single charged vertex, of an expander with `120`
+labels on `n` vertices (`Cslib.RotationMap.expander`), whose existence is proved
+non-constructively. The same bound holds for Nullstellensatz refutations
+(`Cslib.Logic.PL.PC.RefutableInDegree.of_ns`). -/
 theorem exists_forall_pc_refutableInDegree_le :
     ∀ n ≥ 2, ∃ m ≤ 120 * n, ∃ φ : CNF (Fin m),
       φ.length ≤ 2 ^ 120 * n ∧ (∀ c ∈ φ, c.length ≤ 120) ∧ ¬ φ.Satisfiable ∧
-      ∀ (K : Type) [Field K], (2 : K) ≠ 0 → ∀ d,
+      ∀ (K : Type u) [Field K], (2 : K) ≠ 0 → ∀ d,
         PC.RefutableInDegree (φ.toBoolPolys K ++ boolAxioms (Fin m) K) d → n ≤ 36000 * d := by
   intro n hn
   have : NeZero n := ⟨by omega⟩

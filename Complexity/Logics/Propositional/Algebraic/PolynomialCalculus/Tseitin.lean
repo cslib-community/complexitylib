@@ -12,6 +12,7 @@ public import Complexity.Logics.Propositional.Algebraic.CNF.Boolean
 public import Complexity.Logics.Propositional.Algebraic.PolynomialCalculus.Invariant
 public import Complexity.Logics.Propositional.Algebraic.PolynomialCalculus.Nullstellensatz
 public import Complexity.Logics.Propositional.Tseitin
+import Complexity.Foundations.Data.Finset.SymmDiff
 import Complexity.Foundations.Data.MvPolynomial.Substitution
 import Complexity.Logics.Propositional.Algebraic.CNF.Parity
 import Mathlib.Algebra.MvPolynomial.NoZeroDivisors
@@ -27,15 +28,21 @@ field `K` with `2 ≠ 0`, every polynomial calculus refutation of the Tseitin fo
 degree at least `e(G) / 2`. Here `e(G)` (`Cslib.Multigraph.minBalancedCut`) is the expansion of
 [Ben-Sasson and Wigderson][BenSassonWigderson2001], the least number of edges leaving a set of
 between a third and two thirds of the vertices
-(`Cslib.Logic.PL.Tseitin.minBalancedCut_le_two_mul_of_pc_refutableInDegree`). This is the
-polynomial calculus degree lower bound for Tseitin formulas of
-[Buss, Grigoriev, Impagliazzo and Pitassi][BussGrigorievImpagliazzoPitassi2001], in the form
-stated in [Buss and Nordström, §7.5.4][BussNordstrom2021]. Since a Nullstellensatz refutation of
-degree `d` gives a polynomial calculus refutation of degree `d`, the same bound holds for the
-Nullstellensatz [Grigoriev][Grigoriev1998]
+(`Cslib.Logic.PL.Tseitin.minBalancedCut_le_two_mul_of_pc_refutableInDegree`). Since a
+Nullstellensatz refutation of degree `d` gives a polynomial calculus refutation of degree `d`, the
+same bound holds for the Nullstellensatz
 (`Cslib.Logic.PL.Tseitin.minBalancedCut_le_two_mul_of_ns_refutableInDegree`). On expanders the
 bound is linear in the number of vertices
 (`Complexity.Logics.Propositional.Algebraic.PolynomialCalculus.TseitinExpander`).
+
+**Sources.** That Tseitin formulas are hard for polynomial calculus over fields of characteristic
+other than `2` is due to
+[Buss, Grigoriev, Impagliazzo and Pitassi][BussGrigorievImpagliazzoPitassi2001], and, for the
+Nullstellensatz, to [Grigoriev][Grigoriev1998]. [Buss and Nordström, §7.5.4][BussNordstrom2021]
+record this hardness qualitatively, citing the former, and describe the `R`-operator method for
+degree lower bounds. The quantitative form `e(G) ≤ 2 d`, with the expansion of Ben-Sasson and
+Wigderson, is the form proved here; it is not taken from a checked source statement. The theorem
+numbers and constants of the two original papers have not been checked against a copy.
 
 Both hypotheses are needed. In characteristic `2` the clause polynomials add up to `1`, which is a
 refutation of degree the largest number of edges at a vertex
@@ -106,10 +113,6 @@ private theorem prod_boolSign (B : Finset E) (y : E → Bool) :
   induction B using Finset.induction_on with
   | empty => simp [boolSign]
   | insert i B hi ih => rw [prod_insert hi, ih, parityOn_insert hi, boolSign_xor]
-
-private theorem card_symmDiff_le {α : Type*} [DecidableEq α] (s t : Finset α) :
-    #(s ∆ t) ≤ #s + #t :=
-  (card_le_card symmDiff_subset_union).trans (card_union_le _ _)
 
 /-! ### Signs of small cuts -/
 
@@ -466,11 +469,13 @@ end Functional
 variable [Fintype V] [DecidableEq V] [Fintype E] [DecidableEq E] {ends : E → Sym2 V}
   {χ : V → Bool}
 
-/-- **The polynomial calculus degree lower bound for Tseitin formulas**
-[Buss, Grigoriev, Impagliazzo and Pitassi][BussGrigorievImpagliazzoPitassi2001]
-[Buss and Nordström, §7.5.4][BussNordstrom2021]. Over a field of characteristic other than `2`, on
-a connected multigraph, every polynomial calculus refutation of a Tseitin formula has degree at
-least half the expansion `e(G)`. -/
+/-- **The polynomial calculus degree lower bound for Tseitin formulas.** Over a field of
+characteristic other than `2`, on a connected multigraph, every polynomial calculus refutation of a
+Tseitin formula has degree at least half the expansion `e(G)`. That such formulas are hard over
+these fields is due to
+[Buss, Grigoriev, Impagliazzo and Pitassi][BussGrigorievImpagliazzoPitassi2001], and is recorded
+qualitatively in [Buss and Nordström, §7.5.4][BussNordstrom2021]; the quantitative form
+`e(G) ≤ 2 d` is the one proved here, not a checked source statement. -/
 theorem minBalancedCut_le_two_mul_of_pc_refutableInDegree (h2 : (2 : K) ≠ 0)
     (hG : (Multigraph.toSimpleGraph ends).Connected) {d : ℕ}
     (h : PC.RefutableInDegree ((CNF.tseitinFormula ends χ).toBoolPolys K ++ boolAxioms E K) d) :
@@ -515,10 +520,12 @@ theorem minBalancedCut_le_two_mul_of_pc_refutableInDegree (h2 : (2 : K) ≠ 0)
   rw [map_one, signFunctional_one, cutSign_of_isSmallCut hG hsmall, parityOn_empty] at h0
   exact one_ne_zero h0
 
-/-- **The Nullstellensatz degree lower bound for Tseitin formulas** [Grigoriev][Grigoriev1998]
-[Buss, Grigoriev, Impagliazzo and Pitassi][BussGrigorievImpagliazzoPitassi2001]. Over a field of
-characteristic other than `2`, on a connected multigraph, every Nullstellensatz refutation of a
-Tseitin formula has degree at least half the expansion `e(G)`. -/
+/-- **The Nullstellensatz degree lower bound for Tseitin formulas.** Over a field of characteristic
+other than `2`, on a connected multigraph, every Nullstellensatz refutation of a Tseitin formula
+has degree at least half the expansion `e(G)`. Linear Nullstellensatz degree lower bounds for
+Tseitin formulas are due to [Grigoriev][Grigoriev1998]; only the title and venue of that paper
+have been checked, not its constant, and the quantitative form `e(G) ≤ 2 d` is the one proved
+here. -/
 theorem minBalancedCut_le_two_mul_of_ns_refutableInDegree (h2 : (2 : K) ≠ 0)
     (hG : (Multigraph.toSimpleGraph ends).Connected) {d : ℕ}
     (h : NS.RefutableInDegree ((CNF.tseitinFormula ends χ).toBoolPolys K ++ boolAxioms E K) d) :

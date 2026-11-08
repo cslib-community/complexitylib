@@ -16,9 +16,9 @@ import Mathlib.Algebra.Field.ZMod
 The polynomial calculus degree lower bound for Tseitin formulas on the triangle over `ℚ`; the
 refutation of degree `2` in characteristic `2` on the same triangle; a disconnected multigraph
 whose Tseitin formula contains the empty clause although `e(G) = 2`, which shows that the lower
-bound needs connectivity; an expander whose Tseitin formula has a refutation of degree `120` over
-`ZMod 2` although `e(G) > 240`, which shows that the lower bound needs `2 ≠ 0`; and the hard
-formulas of linear degree over `ZMod 3`.
+bound needs connectivity; an expander with `e(G) > 240` whose Tseitin formula has a refutation of
+degree `120` over `ZMod 2` but none over `ZMod 3`, which shows that the lower bound needs
+`2 ≠ 0`; and the hard formulas of linear degree over `ZMod 3`.
 -/
 
 namespace ComplexityTests.ProofComplexity.AlgebraicTseitin
@@ -148,6 +148,16 @@ example : PC.RefutableInDegree
   refine CNF.ns_refutableInDegree_tseitinFormula_of_charP_two (fun v => ?_) ?_
   · simpa using bigExpander.card_incidence_edgeEnds_le v
   · exact parityOn_univ_decide_eq_zero 5000000
+
+/-- Over `ZMod 3`, the same formula has no polynomial calculus refutation of degree `120`: the
+bound gives `e(G) ≤ 240`. -/
+example : ¬ PC.RefutableInDegree
+    ((CNF.tseitinFormula bigExpander.edgeEnds fun v => decide (v = 0)).toBoolPolys (ZMod 3) ++
+      boolAxioms bigExpander.edges (ZMod 3)) 120 := fun h => by
+  have := Tseitin.minBalancedCut_le_two_mul_of_pc_refutableInDegree (by decide)
+    connected_bigExpander h
+  have := lt_minBalancedCut_bigExpander
+  omega
 
 /-! ### Hard formulas -/
 

@@ -224,15 +224,19 @@ the Boolean axioms, forces `e(G) ≤ 2 d`
 (`Tseitin.minBalancedCut_le_two_mul_of_pc_refutableInDegree`). Here `e(G)` is
 `Multigraph.minBalancedCut`, the same expansion used in the width bound. The Nullstellensatz form
 follows through `PC.RefutableInDegree.of_ns`
-(`Tseitin.minBalancedCut_le_two_mul_of_ns_refutableInDegree`). The statement is the
-characteristic-`≠ 2` degree bound of Buss, Grigoriev, Impagliazzo and Pitassi (JCSS 2001), as
-stated in Buss and Nordström, Handbook of Satisfiability, §7.5.4. The theorem number in the
-original paper has not been checked against a copy. The proof uses the invariant method with
-the change of variables `x ↦ (1 - y) / 2`. The invariant is the common kernel of linear
-functionals indexed by sets `T` of at most `d` edges. Each functional sends a monomial to the
-sign `(-1) ^ χ(U)` of the unique set `U` of fewer than `|V| / 3` vertices whose edge cut is `T`
-plus the odd-degree variables of the monomial, or to `0` if there is no such `U`. The terms of a
-clause polynomial cancel in pairs, and `2 ≠ 0` turns `2 S = 0` into `S = 0`.
+(`Tseitin.minBalancedCut_le_two_mul_of_ns_refutableInDegree`). That Tseitin formulas are hard for
+polynomial calculus over fields of characteristic `≠ 2` is due to Buss, Grigoriev, Impagliazzo
+and Pitassi (JCSS 2001), and for the Nullstellensatz to Grigoriev (FOCS 1998). Buss and
+Nordström, Handbook of Satisfiability, §7.5.4, record this hardness qualitatively and describe the
+`R`-operator method. The quantitative form `e(G) ≤ 2 d`, with the Ben-Sasson–Wigderson expansion,
+is the form proved here; it is not taken from a checked source statement. The theorem numbers and
+constants of the two original papers have not been checked against a copy. The proof uses the
+invariant method with the change of variables `x ↦ (1 - y) / 2`. The invariant is the common
+kernel of linear functionals indexed by sets `T` of at most `d` edges. Each functional sends a
+monomial to the sign `(-1) ^ χ(U)` of the unique set `U` of fewer than `|V| / 3` vertices whose
+edge cut is the symmetric difference of `T` and the set of odd-degree variables of the monomial,
+or to `0` if there is no such `U`. The terms of a clause polynomial cancel in pairs, and `2 ≠ 0`
+turns `2 S = 0` into `S = 0`.
 
 [The expander corollary](../../Complexity/Logics/Propositional/Algebraic/PolynomialCalculus/TseitinExpander.lean)
 turns this into `h(G) |V| / 6 ≤ d` on rotation maps with edge expansion `h(G) > 0`. With
@@ -245,7 +249,7 @@ a counting argument, so the formulas exist but have no explicit generator.
 [The characteristic-2 upper bound](../../Complexity/Logics/Propositional/Algebraic/Nullstellensatz/Tseitin.lean)
 shows that `2 ≠ 0` cannot be dropped. In characteristic `2`, the clause polynomials of the parity
 constraint at a vertex add up to the charge plus the sum of the incident variables
-(`CNF.sum_toBoolPoly_parityOnEq`). By the handshake argument the clause polynomials of the whole
+(`CNF.sum_toBoolPolys_parityOnEq`). By the handshake argument the clause polynomials of the whole
 formula add up to `1`, so `CNF.ns_refutableInDegree_tseitinFormula_of_charP_two` gives a
 Nullstellensatz refutation whose degree is the largest number of edges at a vertex. The
 [tests](../../ComplexityTests/ProofComplexity/AlgebraicTseitin.lean) check the following instances:
@@ -254,8 +258,8 @@ Nullstellensatz refutation whose degree is the largest number of edges at a vert
   the formula has a refutation of degree `2`.
 - A triangle with an isolated charged vertex has `e(G) = 2` but a refutation of degree `0`, so
   connectivity is needed.
-- An expander on `5000000` vertices has `e(G) > 240` but a refutation of degree `120` over
-  `ZMod 2`, so `2 ≠ 0` is needed.
+- An expander on `5000000` vertices has `e(G) > 240`. Its Tseitin formula has a refutation of
+  degree `120` over `ZMod 2` but none over `ZMod 3`, so `2 ≠ 0` is needed.
 - The hard formulas, instantiated over `ZMod 3`.
 
 Run `scripts/build.sh ComplexityTests.ProofComplexity.AlgebraicTseitin` to check them. Not yet

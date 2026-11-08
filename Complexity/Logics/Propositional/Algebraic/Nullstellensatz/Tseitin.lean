@@ -20,11 +20,12 @@ import Mathlib.Tactic.LinearCombination
 # Tseitin formulas are easy for the Nullstellensatz in characteristic `2`
 
 Over a ring of characteristic `2`, the clause polynomials of the Tseitin formula of a multigraph
-with odd total charge add up to `1` (`Cslib.Logic.PL.CNF.sum_toBoolPoly_parityOnEq` at each vertex,
-then the handshake argument). So if every vertex has at most `k` edges other than self-loops, the
-formula has a Nullstellensatz refutation of degree `k`, with every multiplier `1` and without the
-Boolean axioms (`Cslib.Logic.PL.CNF.ns_refutableInDegree_tseitinFormula_of_charP_two`). No
-connectivity is needed.
+with odd total charge add up to `1` (`Cslib.Logic.PL.CNF.sum_toBoolPolys_parityOnEq` at each
+vertex, then the handshake argument). So if every vertex has at most `k` edges other than
+self-loops, the formula has a Nullstellensatz refutation of degree `k`, with every multiplier `1`
+and without the Boolean axioms
+(`Cslib.Logic.PL.CNF.ns_refutableInDegree_tseitinFormula_of_charP_two`). No connectivity is
+needed.
 
 This is the easy side of the gap between characteristics of
 [Buss, Grigoriev, Impagliazzo and Pitassi][BussGrigorievImpagliazzoPitassi2001]. In characteristic
@@ -102,7 +103,7 @@ theorem ns_refutableInDegree_tseitinFormula_of_charP_two {k : ℕ}
       linear_combination X e * h2
   have h1 : ∑ p ∈ s, f p * 1 = 1 := by
     simp only [mul_one, s, f]
-    rw [sum_sigma, sum_congr rfl fun v _ => sum_toBoolPoly_parityOnEq (R := R)
+    rw [sum_sigma, sum_congr rfl fun v _ => sum_toBoolPoly_exclude_parityOn_ne (R := R)
       (Multigraph.incidence ends v) (χ v), sum_add_distrib, hcharge, hhand, add_zero]
   exact ⟨P, Eq.trans hP h1, hPd⟩
 

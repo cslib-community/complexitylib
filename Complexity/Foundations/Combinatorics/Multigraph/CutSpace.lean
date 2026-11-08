@@ -13,12 +13,14 @@ public import Mathlib.Order.SymmDiff
 /-!
 # The cut space of a multigraph
 
-Taking edge cuts turns symmetric differences of sets of vertices into symmetric differences of
-sets of edges (`Cslib.Multigraph.edgeCut_symmDiff`): an edge leaves `S ∆ T` exactly when it leaves
-one of `S` and `T` but not both. The edge cut of a single vertex consists of the edges at it other
-than self-loops (`Cslib.Multigraph.edgeCut_singleton`). So the edge cuts form an `𝔽₂`-vector space,
-the *cut space*, spanned by the sets of edges at the vertices. On a connected multigraph the only
-sets with no edge leaving them are `∅` and the set of all vertices
+Taking edge cuts turns symmetric differences of sets of vertices into symmetric differences of sets
+of edges (`Cslib.Multigraph.edgeCut_symmDiff`): an edge leaves `S ∆ T` exactly when it leaves one of
+`S` and `T` but not both. This and `Cslib.Multigraph.mem_edgeCut_of_ends_eq` are the `Finset` forms
+of Mathlib's `Graph.edgeCut_symmDiff` and `Graph.IsLink.mem_edgeCut_iff`, through
+`Cslib.Multigraph.coe_edgeCut_eq_toGraph_edgeCut`. The edge cut of a single vertex consists of the
+edges at it other than self-loops (`Cslib.Multigraph.edgeCut_singleton`). So the edge cuts form an
+`𝔽₂`-vector space, the *cut space*, spanned by the sets of edges at the vertices. On a connected
+multigraph the only sets with no edge leaving them are `∅` and the set of all vertices
 (`Cslib.Multigraph.eq_empty_or_eq_univ_of_edgeCut_eq_empty`).
 
 A set `S` that fewer than `e(G)` edges leave (`Cslib.Multigraph.minBalancedCut`) is not balanced,
@@ -58,28 +60,18 @@ variable {ends} in
 is not. -/
 theorem mem_edgeCut_of_ends_eq {S : Finset V} {e : E} {a b : V} (h : ends e = s(a, b)) :
     e ∈ edgeCut ends S ↔ (a ∈ S ↔ b ∉ S) := by
-  rw [mem_edgeCut]
-  constructor
-  · rintro ⟨v, hv, w, hw, hvw⟩
-    rw [h, Sym2.eq_iff] at hvw
-    rw [mem_compl] at hw
-    rcases hvw with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;> tauto
-  · intro hab
-    by_cases ha : a ∈ S
-    · exact ⟨a, ha, b, mem_compl.2 (hab.1 ha), h⟩
-    · have hb : b ∈ S := by by_contra hb; exact ha (hab.2 hb)
-      exact ⟨b, hb, a, mem_compl.2 ha, h.trans Sym2.eq_swap⟩
+  rw [← Finset.mem_coe, coe_edgeCut_eq_toGraph_edgeCut,
+    (show (toGraph ends).IsLink e a b from h).mem_edgeCut_iff]
+  simp only [Finset.mem_coe]
+  tauto
 
 /-- **Edge cuts turn symmetric differences into symmetric differences**: an edge leaves `S ∆ T`
 exactly when it leaves one of `S` and `T` but not both. -/
 theorem edgeCut_symmDiff [DecidableEq E] (S T : Finset V) :
     edgeCut ends (symmDiff S T) = symmDiff (edgeCut ends S) (edgeCut ends T) := by
-  ext e
-  obtain ⟨a, b, hab⟩ : ∃ a b, ends e = s(a, b) :=
-    Sym2.ind (f := fun z => ∃ a b, z = s(a, b)) (fun a b => ⟨a, b, rfl⟩) (ends e)
-  rw [Finset.mem_symmDiff, mem_edgeCut_of_ends_eq hab, mem_edgeCut_of_ends_eq hab,
-    mem_edgeCut_of_ends_eq hab, Finset.mem_symmDiff, Finset.mem_symmDiff]
-  tauto
+  apply Finset.coe_injective
+  rw [Finset.coe_symmDiff, coe_edgeCut_eq_toGraph_edgeCut, coe_edgeCut_eq_toGraph_edgeCut,
+    coe_edgeCut_eq_toGraph_edgeCut, Finset.coe_symmDiff, Graph.edgeCut_symmDiff]
 
 /-- No edge leaves the empty set. -/
 @[simp] theorem edgeCut_empty : edgeCut ends (∅ : Finset V) = ∅ := by

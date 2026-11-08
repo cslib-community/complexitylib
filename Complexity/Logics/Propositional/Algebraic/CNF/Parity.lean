@@ -25,7 +25,7 @@ polynomial `∏_{i ∈ B} [x_i = y_i]`, where `[x_i = 1]` is `X i` and `[x_i = 0
 
 Over a ring of characteristic `2`, the clause polynomials of the parity constraint
 `Cslib.Logic.PL.CNF.parityOnEq B c` add up to `[c = 1] + ∑_{i ∈ B} X i`
-(`Cslib.Logic.PL.CNF.sum_toBoolPoly_parityOnEq`): both sides are the indicator of
+(`Cslib.Logic.PL.CNF.sum_toBoolPolys_parityOnEq`): both sides are the indicator of
 `parityOn B x ≠ c` on the Boolean cube. This is the identity behind the degree-`Δ` Nullstellensatz
 refutations of Tseitin formulas in characteristic `2`.
 
@@ -34,8 +34,10 @@ refutations of Tseitin formulas in characteristic `2`.
 * `Cslib.Logic.PL.Clause.toBoolPoly_exclude`,
   `Cslib.Logic.PL.Clause.totalDegree_toBoolPoly_exclude`: the polynomial of the clause excluding
   the values of `y` on `B`, and its degree.
-* `Cslib.Logic.PL.CNF.sum_toBoolPoly_parityOnEq`: in characteristic `2`, the clause polynomials of a
-  parity constraint add up to `[c = 1] + ∑_{i ∈ B} X i`.
+* `Cslib.Logic.PL.CNF.sum_toBoolPolys_parityOnEq`: in characteristic `2`, the clause polynomials of
+  a parity constraint add up to `[c = 1] + ∑_{i ∈ B} X i`
+  (`Cslib.Logic.PL.CNF.sum_toBoolPoly_exclude_parityOn_ne`: the same sum, over the excluded
+  assignments).
 -/
 
 public section
@@ -147,10 +149,11 @@ private theorem parityClauseSum_eq [CommRing R] [CharP R 2] (B : Finset ι) (c :
     · simp only [ite_true, Bool.not_true, Bool.false_eq_true, ite_false]
       linear_combination (-X j) * h2
 
-/-- In characteristic `2`, **the clause polynomials of a parity constraint add up to
-`[c = 1] + ∑_{i ∈ B} X i`**: both sides are the indicator of `parityOn B x ≠ c` on the Boolean
-cube. -/
-theorem CNF.sum_toBoolPoly_parityOnEq [CommRing R] [CharP R 2] (B : Finset ι) (c : Bool) :
+/-- In characteristic `2`, the polynomials of the clauses excluding the assignments to `B` of
+parity other than `c` add up to `[c = 1] + ∑_{i ∈ B} X i`: both sides are the indicator of
+`parityOn B x ≠ c` on the Boolean cube. This is `Cslib.Logic.PL.CNF.sum_toBoolPolys_parityOnEq`
+written as a sum over the excluded assignments. -/
+theorem CNF.sum_toBoolPoly_exclude_parityOn_ne [CommRing R] [CharP R 2] (B : Finset ι) (c : Bool) :
     ∑ A ∈ B.powerset with parityOn B (fun i => decide (i ∈ A)) ≠ c,
         (Clause.exclude B fun i => decide (i ∈ A)).toBoolPoly R =
       (if c then 1 else 0) + ∑ i ∈ B, X i := by
@@ -158,5 +161,13 @@ theorem CNF.sum_toBoolPoly_parityOnEq [CommRing R] [CharP R 2] (B : Finset ι) (
   refine sum_congr rfl fun A _ => ?_
   rw [Clause.toBoolPoly_exclude]
   exact prod_congr rfl fun i _ => by simp only [decide_eq_true_eq]
+
+/-- In characteristic `2`, **the clause polynomials of the parity constraint
+`Cslib.Logic.PL.CNF.parityOnEq B c` add up to `[c = 1] + ∑_{i ∈ B} X i`**: both sides are the
+indicator of `parityOn B x ≠ c` on the Boolean cube. -/
+theorem CNF.sum_toBoolPolys_parityOnEq [CommRing R] [CharP R 2] (B : Finset ι) (c : Bool) :
+    ((CNF.parityOnEq B c).toBoolPolys R).sum = (if c then 1 else 0) + ∑ i ∈ B, X i := by
+  rw [CNF.toBoolPolys, CNF.parityOnEq, List.map_map, sum_map_toList]
+  exact CNF.sum_toBoolPoly_exclude_parityOn_ne B c
 
 end Cslib.Logic.PL
