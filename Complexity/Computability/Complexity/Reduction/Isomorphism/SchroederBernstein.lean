@@ -17,7 +17,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 # Polynomial-time Cantor–Schröder–Bernstein
 
 Berman and Hartmanis proved a polynomial-time analogue of the Cantor–Schröder–Bernstein theorem
-[Berman and Hartmanis][BermanHartmanis1977]: if `A ≤ B` and `B ≤ A` via one-one,
+[Berman and Hartmanis][BermanHartmanis1975]: if `A ≤ B` and `B ≤ A` via one-one,
 length-increasing reductions with polynomial-time left inverses, then `A` and `B` are
 polynomial-time isomorphic.
 
@@ -33,9 +33,21 @@ to `f a`, otherwise to `g' a`. The walk runs in polynomial time via the library'
 combinator, and the resulting map is a bijection whose inverse is the same construction with the
 roles of the two sides exchanged.
 
-Compared with the source, which works over strings, the statement here holds for arbitrary
-types `α`, `β` with injective encodings into `List Bool`. Only left inverses are assumed: the
-injectivity of `f` and `g` follows from them.
+## Source and adaptations
+
+The source version is the 1975 Cornell technical report
+[Berman and Hartmanis][BermanHartmanis1975], §III, Theorem 1 (printed pp. 7–10). Locators in this
+file refer to that report; the numbering of the 1977 journal version
+[Berman and Hartmanis][BermanHartmanis1977] has not been checked.
+
+The report works with languages of strings, and an invertible reduction there has a
+polynomial-time computable partial inverse, defined on the range of the reduction. Here instances
+are elements of arbitrary types `α`, `β` with injective encodings into `List Bool`, length means
+encoded length, and each reduction has a *total* polynomial-time left inverse. The construction
+combines the left inverse with the forward-image test `g (g' x) = x` (resp. `f (f' y) = y`): on the
+range of `g` the left inverse computes the preimage, and the test decides whether the input lies in
+that range. Together they do the work of the report's partial inverse. Injectivity of `f` and `g`
+is not assumed separately; it follows from the left inverses.
 
 ## Main results
 
@@ -48,7 +60,9 @@ injectivity of `f` and `g` follows from them.
 ## References
 
 * [L. Berman, J. Hartmanis, *On isomorphisms and density of NP and other complete
-  sets*][BermanHartmanis1977]
+  sets*][BermanHartmanis1975], Cornell TR75-260 (1975), §III, Theorem 1
+* [L. Berman, J. Hartmanis, *On isomorphisms and density of NP and other complete
+  sets*][BermanHartmanis1977], journal version (numbering not checked)
 -/
 
 public section
@@ -341,13 +355,15 @@ end PolyTime
 end PolyTimeSchroederBernstein
 
 open PolyTimeSchroederBernstein in
-/-- **Polynomial-time Cantor–Schröder–Bernstein** [Berman and Hartmanis][BermanHartmanis1977].
+/-- **Polynomial-time Cantor–Schröder–Bernstein**, the bijection behind
+[Berman and Hartmanis][BermanHartmanis1975], §III, Theorem 1, stated without reference to languages.
 
 If `f : α → β` and `g : β → α` are polynomial-time computable, strictly increase encoded length,
 and have polynomial-time left inverses `f'` and `g'`, then there is an equivalence `e : α ≃ β`
 such that `e` and `e.symm` are polynomial-time computable and every `e a` is either `f a` or a
 `g`-preimage of `a`. The bijection is decided by walking the alternating chain of preimages
-backwards; length-increase bounds the walk by the input length. -/
+backwards; length-increase bounds the walk by the input length. The total left inverses and the
+forward-image tests replace the report's partial inverses (see the module docstring). -/
 theorem polyTime_schroeder_bernstein {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
     {f : α → β} {f' : β → α} {g : β → α} {g' : α → β}
     (pf : ComputableInPolyTime f encA encB) (pf' : ComputableInPolyTime f' encB encA)
@@ -369,9 +385,9 @@ theorem polyTime_schroeder_bernstein {α β : Type} {encA : α ↪ List Bool} {e
       g_g'_of_stop_eq_false (f' := f') hf hg h)
   · exact Or.inl (by simp only [↓reduceIte])
 
-/-- **Berman–Hartmanis isomorphism theorem** [Berman and Hartmanis][BermanHartmanis1977]: if
-`A ≤₁,ᵢₗ B` and `B ≤₁,ᵢₗ A`, that is, each reduces to the other by a length-increasing one-one
-reduction with a polynomial-time left inverse, then `A ≅ᵖ B`. -/
+/-- **Berman–Hartmanis isomorphism theorem** ([Berman and Hartmanis][BermanHartmanis1975], §III,
+Theorem 1): if `A ≤₁,ᵢₗ B` and `B ≤₁,ᵢₗ A`, that is, each reduces to the other by a
+length-increasing one-one reduction with a polynomial-time left inverse, then `A ≅ᵖ B`. -/
 theorem PolyTimeInvertibleLengthIncreasingOneOneReducible.polyTimeIsomorphic
     {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {A : Set α} {B : Set β}
     (hAB : PolyTimeInvertibleLengthIncreasingOneOneReducible encA encB A B)

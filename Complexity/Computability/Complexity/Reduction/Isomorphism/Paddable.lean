@@ -19,7 +19,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 
 A language `A` is *paddable* when arbitrary bit strings `y` can be appended to an instance `a` by a
 polynomial-time map `pad a y` that preserves membership in `A` and from which `y` can be recovered
-in polynomial time [Berman and Hartmanis][BermanHartmanis1977]. Paddability turns any
+in polynomial time [Berman and Hartmanis][BermanHartmanis1975]. Paddability turns any
 polynomial-time many-one reduction into a one-one, length-increasing reduction with a
 polynomial-time left inverse: pad the reduct with a self-delimiting copy of the original instance,
 followed by enough filler to exceed its length. Together with the polynomial-time
@@ -32,6 +32,26 @@ The library's languages are sets of typed instances with injective encodings, ra
 strings. Inverting the padded reduction must decode a bit string back into an instance of the
 source type, so the reduction theorems assume a total polynomial-time `Decoder` for the source
 encoding. Every standard encoding built from bits, naturals, pairs, options and lists has one.
+
+## Source and adaptations
+
+The source version is the 1975 Cornell technical report
+[Berman and Hartmanis][BermanHartmanis1975]. Locators in this file refer to that report; the
+numbering of the 1977 journal version [Berman and Hartmanis][BermanHartmanis1977] has not been
+checked. The padding lemma below corresponds to Lemmas 3 and 5 (printed pp. 10–12), which give
+length growth and the two-argument padding and read-back condition, and the isomorphism results
+combine them with §III, Theorem 1 (printed pp. 7–10), formalized in
+`Cslib.Complexity.PolyTimeInvertibleLengthIncreasingOneOneReducible.polyTimeIsomorphic`.
+
+The report pads strings. Here `pad : α → List Bool → α` acts on typed instances, the read-back
+`unpad : α → List Bool` is total, and only `unpad (pad a y) = y` is required of it. The padded
+reduction is given a total left inverse rather than the report's partial inverse on its range; as
+in the Schröder–Bernstein module, the forward-image test recovers that range. The padding carries
+an encoding of the source instance. Over strings that encoding is the instance itself, while here
+it must be decoded back into a typed instance, which is what the `Decoder` hypothesis supplies.
+For bit-string sources (`encBits`, with `Turing.MultiTapeTM.Decoder.bits`) the hypothesis is met,
+and `Cslib.Complexity.Paddable.polyTimeIsomorphic_preimage_decode` shows that a paddable typed
+language is `≅ᵖ` to its language of words.
 
 ## Main definitions
 
@@ -53,7 +73,9 @@ encoding. Every standard encoding built from bits, naturals, pairs, options and 
 ## References
 
 * [L. Berman, J. Hartmanis, *On isomorphisms and density of NP and other complete
-  sets*][BermanHartmanis1977]
+  sets*][BermanHartmanis1975], Cornell TR75-260 (1975), §III, Theorem 1 and Lemmas 3 and 5
+* [L. Berman, J. Hartmanis, *On isomorphisms and density of NP and other complete
+  sets*][BermanHartmanis1977], journal version (numbering not checked)
 -/
 
 public section
@@ -66,9 +88,10 @@ variable {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {A :
 
 /-- A language `A` is *paddable* under the encoding `encA` when there are a polynomial-time padding
 function `pad : α → List Bool → α` and a polynomial-time decoding function
-`unpad : α → List Bool` with `unpad (pad a y) = y` and `pad a y ∈ A ↔ a ∈ A`
-[Berman and Hartmanis][BermanHartmanis1977]. Recovering the padding makes `pad a` injective;
-nothing is required of `unpad` off the range of `pad`. -/
+`unpad : α → List Bool` with `unpad (pad a y) = y` and `pad a y ∈ A ↔ a ∈ A`. This is the
+typed form of the two-argument padding and read-back condition of
+[Berman and Hartmanis][BermanHartmanis1975], Lemmas 3 and 5. Recovering the padding makes `pad a`
+injective; nothing is required of `unpad` off the range of `pad`. -/
 @[expose] def Paddable (encA : α ↪ List Bool) (A : Set α) : Prop :=
   ∃ pad : α → List Bool → α, ∃ unpad : α → List Bool,
     ComputableInPolyTime (fun p : α × List Bool => pad p.1 p.2) (encPair encA encBits) encA ∧
@@ -91,9 +114,11 @@ theorem infinite (h : Paddable encA A) (hA : A.Nonempty) : A.Infinite := by
     fun y => (hmem a y).2 ha
   rw [← hdec a y, hy, hdec a y']
 
-/-- **Padding lemma.** A polynomial-time many-one reduction from `B` to a paddable language `A`
-upgrades to a length-increasing one-one reduction with a polynomial-time left inverse, given a
-total polynomial-time decoder for the instances of `B`.
+/-- **Padding lemma** ([Berman and Hartmanis][BermanHartmanis1975], Lemmas 3 and 5). A
+polynomial-time many-one reduction from `B` to a paddable language `A` upgrades to a
+length-increasing one-one reduction with a polynomial-time left inverse, given a total
+polynomial-time decoder for the instances of `B`. The decoder hypothesis is the typed-model
+addition described in the module docstring.
 
 The new reduction pads `r b` with the framed encoding of `b`, followed by more filler than any
 polynomial bound on the decoded padding allows from an encoding no longer than `encB b`. -/
@@ -138,7 +163,8 @@ theorem polyTimeInvertibleLengthIncreasingOneOneReducible (hA : Paddable encA A)
 
 /-- **Berman–Hartmanis, paddable form.** Two paddable languages that are polynomial-time many-one
 interreducible are polynomial-time isomorphic, given total polynomial-time decoders for both
-instance encodings [Berman and Hartmanis][BermanHartmanis1977]. -/
+instance encodings: [Berman and Hartmanis][BermanHartmanis1975], §III, Theorem 1 combined with
+Lemmas 3 and 5. -/
 theorem polyTimeIsomorphic (hA : Paddable encA A) (hB : Paddable encB B) (DA : Decoder encA)
     (DB : Decoder encB) (hAB : PolyTimeReducible encA encB A B)
     (hBA : PolyTimeReducible encB encA B A) : PolyTimeIsomorphic encA encB A B :=
@@ -166,15 +192,15 @@ theorem PolyTimeIsomorphic.paddable_iff (h : PolyTimeIsomorphic encA encB A B) :
   ⟨h.symm.paddable, h.paddable⟩
 
 /-- **Paddable `NP`-complete languages are polynomial-time isomorphic**
-[Berman and Hartmanis][BermanHartmanis1977], for instance types with total polynomial-time
-decoders. -/
+([Berman and Hartmanis][BermanHartmanis1975], §III, Theorem 1 combined with Lemmas 3 and 5), for
+instance types with total polynomial-time decoders. -/
 theorem NPComplete.polyTimeIsomorphic_of_paddable (hA : NPComplete encA A)
     (hB : NPComplete encB B) (hpA : Paddable encA A) (hpB : Paddable encB B) (DA : Decoder encA)
     (DB : Decoder encB) : PolyTimeIsomorphic encA encB A B :=
   hpA.polyTimeIsomorphic hpB DA DB (hB.2 encA A hA.1) (hA.2 encB B hB.1)
 
 /-- For a paddable `NP`-complete language `B`, an `NP`-complete language is polynomial-time
-isomorphic to `B` exactly when it is paddable [Berman and Hartmanis][BermanHartmanis1977]. With
+isomorphic to `B` exactly when it is paddable [Berman and Hartmanis][BermanHartmanis1975]. With
 `B = SAT`, the Berman–Hartmanis conjecture says that every `NP`-complete language is paddable. -/
 theorem NPComplete.polyTimeIsomorphic_iff_paddable (hA : NPComplete encA A)
     (hB : NPComplete encB B) (hpB : Paddable encB B) (DA : Decoder encA) (DB : Decoder encB) :
