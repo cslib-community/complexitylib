@@ -1,3 +1,9 @@
+/-
+Copyright (c) 2026 OpenAI. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: OpenAI
+-/
+
 import Complexity.Logics.Propositional.CSP.Planar.Normalization
 
 /-!
@@ -227,3 +233,7 @@ example : IsEvenDeltaMatroid (cyclicDifferenceRelation (Set.univ : Set (Fin 0 �
   rw [he]
   exact isEvenDeltaMatroid_singleton _
 example : ¬(∅ : Set (Fin 0 → Bool)).Nonempty := Set.not_nonempty_empty
+
+-- The fixed symbol interpretation rejects malformed original and disequality scopes.
+example : sem cross .relation [false, true, false] = false := by simp [sem]
+example : sem cross .disequality [false] = false := by simp [sem]

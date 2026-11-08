@@ -3974,6 +3974,7 @@ public import Complexity.Foundations.Data.BitString.Convolution
 public import Complexity.Foundations.Data.BitString.Counter
 public import Complexity.Foundations.Data.BitString.CoverCoding
 public import Complexity.Foundations.Data.BitString.CyclicDifference
+public import Complexity.Foundations.Data.BitString.CyclicDifference.Boundary
 public import Complexity.Foundations.Data.BitString.DeltaMatroid.Basic
 public import Complexity.Foundations.Data.BitString.DeltaMatroid.Composition
 public import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
@@ -4655,7 +4656,9 @@ public import Complexity.Logics.Propositional.CSP.Occurrence.Enumeration
 public import Complexity.Logics.Propositional.CSP.PartitionFunction
 public import Complexity.Logics.Propositional.CSP.Permanent
 public import Complexity.Logics.Propositional.CSP.Planar.Crossover
+public import Complexity.Logics.Propositional.CSP.Planar.Normalization
 public import Complexity.Logics.Propositional.CSP.PrimitivePositive
+public import Complexity.Logics.Propositional.CSP.PrimitivePositive.Operations
 public import Complexity.Logics.Propositional.CSP.Table
 public import Complexity.Logics.Propositional.CSP.Table.DeltaMatroid
 public import Complexity.Logics.Propositional.CSP.ToBoolean

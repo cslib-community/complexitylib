@@ -28,7 +28,7 @@ specific two-difference cap. Its execution changes actual CSP scopes, starting w
 of the input relation and one or two disequality spokes per port. There are no Boolean constants.
 This module does not declare a planar expressibility relation or prove a geometric realization,
 planar substitution, hardness reduction, or running-time bound. Realizing each recorded operation
-in the existing geometric model remains separate work.
+remains separate work.
 
 ## Main definitions
 
