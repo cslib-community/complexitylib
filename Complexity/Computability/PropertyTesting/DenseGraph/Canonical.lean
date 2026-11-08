@@ -506,8 +506,7 @@ private theorem answer_bind_complete [Nonempty (Fin n)] (q : PermQuery (Fin n)) 
   simpa [Function.comp_def, PMF.map_comp, hid] using h
 
 private theorem mem_support_complete {c : Cache (Fin n)} (hc : IsPartialBijection c)
-    [Nonempty (Fin n)] {π : Equiv.Perm (Fin n)} (h : π ∈ (complete c).support) :
-    AgreesWith c π := by
+    {π : Equiv.Perm (Fin n)} (h : π ∈ (complete c).support) : AgreesWith c π := by
   have hne : (extPerms c).Nonempty := extPerms_nonempty_iff.mpr hc
   rw [complete, dite_eq_left hne, PMF.mem_support_uniformOfFinset_iff, mem_extPerms_iff] at h
   exact h
