@@ -3759,7 +3759,9 @@ public import Complexity.Crypto.Protocols.Cipher.LubyRackoff
 public import Complexity.Crypto.Protocols.Commitment.World
 public import Complexity.Crypto.Protocols.KEM.FujisakiOkamoto
 public import Complexity.Crypto.Protocols.MAC.CarterWegman
+public import Complexity.Crypto.Protocols.MPC.Advantage
 public import Complexity.Crypto.Protocols.MPC.Basic
+public import Complexity.Crypto.Protocols.MPC.BatchOT
 public import Complexity.Crypto.Protocols.MPC.Beaver
 public import Complexity.Crypto.Protocols.MPC.Broadcast
 public import Complexity.Crypto.Protocols.MPC.CircuitEval
@@ -3783,6 +3785,7 @@ public import Complexity.Crypto.Protocols.MPC.OTCommitment.Session
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.World
 public import Complexity.Crypto.Protocols.MPC.PolyTime
 public import Complexity.Crypto.Protocols.MPC.SharedMul
+public import Complexity.Crypto.Protocols.MPC.Yao
 public import Complexity.Crypto.Protocols.PIR.Basic
 public import Complexity.Crypto.Protocols.PIR.CoveringCode
 public import Complexity.Crypto.Protocols.PIR.Cube
