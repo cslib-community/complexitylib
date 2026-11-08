@@ -19,7 +19,8 @@ The cache publisher and reader protocol stay unchanged.
   remove records, so the page exposes coverage and describes the statistics as observations,
   not exact accounting. Recent deliberate benchmark downloads also appear in the totals.
 - Storage sharing compares the sum of compressed artifacts referenced by every retained build
-  with the unique artifacts actually stored. It does not estimate uncompressed build size or
+  with the unique artifacts actually stored. The prominent sharing factor is the former
+  divided by the latter; saved bytes appear beside it. It does not estimate uncompressed build size or
   compilation time saved. Disk usage includes staging and upload buffers as well as artifacts.
 - GC counts and removed bytes come from successful applied collections. Bytes cover removed
   artifact/mapping payloads, excluding directory metadata and abandoned staging directories.

@@ -204,8 +204,8 @@
     text("sharing-label", finite(store.mapping_count) && finite(store.artifact_count) ? count(store.mapping_count) + " retained builds sharing " + count(store.artifact_count) + " artifact files" : "The storage snapshot will appear when the cache is idle.");
     text("retained-count", count(store.mapping_count) + " builds");
     text("storage-freshness", store.stale ? (date(store.snapshot_at) === null ? "Waiting for first snapshot" : "Storage snapshot is stale") : "");
-    text("saved-bytes", bytes(store.saved_bytes));
-    text("dedup-ratio", finite(store.dedup_ratio) && store.dedup_ratio > 1 ? decimal(store.dedup_ratio, 1) + "× reuse" : "No overlap yet");
+    text("saved-bytes", bytes(store.saved_bytes) + " saved");
+    text("dedup-ratio", finite(store.dedup_ratio) ? decimal(store.dedup_ratio, 1) + "×" : "—");
     text("physical-bytes", bytes(store.artifact_bytes) + " actual");
     text("logical-bytes", bytes(store.logical_retained_bytes) + " separate copies");
     const svg = byId("reuse-chart");

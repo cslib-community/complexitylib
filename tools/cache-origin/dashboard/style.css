@@ -164,11 +164,6 @@ strong {
 .live-dot.stale {
   background:var(--amber)
 }
-.intro-copy {
-  font-size:16px;
-  color:var(--muted);
-  margin-top:12px
-}
 .latest-summary {
   text-align:right;
   padding-bottom:3px
