@@ -34,9 +34,11 @@ most `n + (α - 1) θ u - θ v` and stays nonnegative (Lemma 3), each weight sta
 
 The source's specializations are `mistakes_winnow_two_le` (`α = 2`, `θ = n`: at most
 `2 k (log₂ n + 1) + 1`) and `mistakes_winnow_le_div` (`θ = n / α`: at most `α k log_α n + α`).
-`mistakes_winnow_two_div_card_le` takes `α = 2` and `θ = n / k`, giving `2 k log₂ (n / k) + 3 k`,
-which matches Littlestone's lower bound `k ⌊log₂ (n / k)⌋` (in `MonotoneDisjunctions`) up to a
-constant factor. `mistakeBound_winnow_le` restates Theorem 7 over the class
+For a target of `1 ≤ k ≤ n` variables, `mistakes_winnow_two_div_card_le` takes `α = 2` and
+`θ = n / k`, giving `2 k log₂ (n / k) + 3 k`. For `2 k ≤ n` this matches Littlestone's lower bound
+`k ⌊log₂ (n / k)⌋` (in `MonotoneDisjunctions`) up to a constant factor. The hypothesis `1 ≤ k`
+is needed: for `k = 0` the threshold `n / k` is `0`. `mistakeBound_winnow_le` restates Theorem 7
+over the class
 `monotoneDisjunctions n k` of disjunctions of exactly `k` variables.
 
 The weights are real numbers, so WINNOW1 is a mathematical specification here: no bit cost or

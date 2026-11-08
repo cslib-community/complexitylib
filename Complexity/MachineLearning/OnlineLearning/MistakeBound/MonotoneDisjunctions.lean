@@ -27,10 +27,13 @@ The construction splits `k 2^r ≤ n` of the variables into `k` groups indexed b
 containing `t`. For a set `U` of instances, the disjunction that takes from each group `j` the
 variable indexed by `{t | (j, t) ∈ U}` is `1` exactly on `U`.
 
-Together with WINNOW1's upper bound (`mistakes_winnow_two_div_card_le`), the optimal mistake bound
-of `k`-literal monotone disjunctions lies between `k ⌊log₂ (n / k)⌋` and `2 k log₂ (n / k) + 3 k`
-(`optimalMistakeBound_monotoneDisjunctions_le`). For `n ≥ 2 k` both are `Θ(k log (n / k))`, so
-WINNOW1 with `α = 2`, `θ = n / k` is optimal up to a constant factor. The source
+Together with WINNOW1's upper bound (`mistakes_winnow_two_div_card_le`), for `1 ≤ k ≤ n` the
+optimal mistake bound of `k`-literal monotone disjunctions lies between `k ⌊log₂ (n / k)⌋` and
+`2 k log₂ (n / k) + 3 k` (`optimalMistakeBound_monotoneDisjunctions_le`). For `1 ≤ k` and
+`2 k ≤ n` both are `Θ(k log (n / k))`, so WINNOW1 with `α = 2`, `θ = n / k` is optimal up to a
+constant factor. The upper bound needs `1 ≤ k`: for `k = 0` the threshold `n / k` is `0`, and
+WINNOW1 can err on the constant-false target although `2 k log₂ (n / k) + 3 k = 0`. For
+`k > n` the class is empty and both bounds hold trivially. The source
 also states a second lower bound in terms of `k (1 + log₂ (n / k))`; it is not formalized here.
 
 ## Main results
@@ -42,7 +45,7 @@ also states a second lower bound in terms of `k (1 + log₂ (n / k))`; it is not
 * `Cslib.MachineLearning.OnlineLearning.MistakeBound.le_optimalMistakeBound_monotoneDisjunctions`:
   `k ⌊log₂ (n / k)⌋ ≤ opt(C_k)`.
 * `Cslib.MachineLearning.OnlineLearning.MistakeBound.optimalMistakeBound_monotoneDisjunctions_le`:
-  `opt(C_k) ≤ 2 k log₂ (n / k) + 3 k`, attained by WINNOW1.
+  `opt(C_k) ≤ 2 k log₂ (n / k) + 3 k` for `1 ≤ k`, attained by WINNOW1.
 
 ## References
 
@@ -159,7 +162,7 @@ theorem le_optimalMistakeBound_monotoneDisjunctions (n k : ℕ) :
 /-- The matching upper bound: WINNOW1 with `α = 2` and `θ = n / k` makes at most
 `2 k log₂ (n / k) + 3 k` mistakes on the disjunctions of exactly `1 ≤ k` variables. With the lower
 bound `le_optimalMistakeBound_monotoneDisjunctions`, the optimal mistake bound is
-`Θ(k log (n / k))` for `n ≥ 2 k`. -/
+`Θ(k log (n / k))` for `1 ≤ k` and `2 k ≤ n`. For `k > n` the class is empty. -/
 theorem optimalMistakeBound_monotoneDisjunctions_le {k : ℕ} (hk : 1 ≤ k) (tie : Bool) :
     optimalMistakeBound (monotoneDisjunctions n k) ≤
       mistakeBound (winnow 2 (n / k) tie) (monotoneDisjunctions n k) ∧
