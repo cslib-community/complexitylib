@@ -16,8 +16,8 @@ import Complexity.Probability.PMF.Map
 # Two-player number-on-forehead protocols
 
 With two players, the player with `x 0` on their forehead sees exactly `x 1` and the other player
-sees exactly `x 0`, so the number-on-forehead model with players `Fin 2` is the two-party model of
-`Cslib.Communication.Protocol`, with player `1` as Alice, who holds `x 0`, and player `0` as Bob.
+sees exactly `x 0`, so a two-party protocol (`Cslib.Communication.Protocol`) can be played by
+players `Fin 2`, with player `1` as Alice, who holds `x 0`, and player `0` as Bob.
 A two-party protocol runs as a two-player NOF protocol with the same depth
 (`NOF.Protocol.ofTwoParty`), so two-party upper bounds are NOF upper bounds
 (`NOF.Protocol.ecomplexityFun_le_twoParty`). Cylinder intersections for two players are rectangles,
@@ -115,8 +115,8 @@ variable [∀ i, Fintype (X i)]
 /-- The signed sum over the rectangle `A × B` under `ν` is the signed sum over the cylinder
 intersection of the tests `φ`, when the tests of players `1` and `0` accept exactly `A` and
 `B`. -/
-theorem sum_cylinderIntersection_eq (ν : PMF (∀ i, X i)) (f : (∀ i, X i) → Bool)
-    (φ : ∀ i, View X i → Bool) (A : Finset (X 0)) (B : Finset (X 1))
+private theorem sum_cylinderIntersection_eq_sum_rectangle (ν : PMF (∀ i, X i))
+    (f : (∀ i, X i) → Bool) (φ : ∀ i, View X i → Bool) (A : Finset (X 0)) (B : Finset (X 1))
     (hφ : ∀ x, x ∈ cylinderIntersection φ ↔ x 0 ∈ A ∧ x 1 ∈ B) :
     ∑ x with x ∈ cylinderIntersection φ, (ν x).toReal * signVal (f x) =
       ∑ a ∈ A, ∑ b ∈ B, ((ν.map (piFinTwoEquiv X)) (a, b)).toReal *
@@ -154,7 +154,7 @@ theorem discrepancy_fin_two (ν : PMF (∀ i, X i)) (f : (∀ i, X i) → Bool) 
       refine ⟨fun ⟨h0, h1⟩ => ⟨⟨x, rfl, h1⟩, ⟨x, rfl, h0⟩⟩, ?_⟩
       rintro ⟨⟨y, hy, h1⟩, ⟨z, hz, h0⟩⟩
       exact ⟨view_zero_eq_iff.mpr hz ▸ h0, view_one_eq_iff.mpr hy ▸ h1⟩
-    rw [← hφD, sum_cylinderIntersection_eq ν f φ A B hφ]
+    rw [← hφD, sum_cylinderIntersection_eq_sum_rectangle ν f φ A B hφ]
     exact Communication.abs_sum_le_discrepancy _ _ A B
   · -- A rectangle is the cylinder intersection of the tests `x 1 ∈ S.2` and `x 0 ∈ S.1`.
     obtain ⟨A, B, hAB⟩ := Communication.exists_abs_sum_eq_discrepancy
@@ -163,7 +163,8 @@ theorem discrepancy_fin_two (ν : PMF (∀ i, X i)) (f : (∀ i, X i) → Bool) 
       ⟨fun i => {x | i = 0 → x 1 ∈ B} ∩ {x | i = 1 → x 0 ∈ A},
         fun i x a => by fin_cases i <;> simp, by ext x; simp [Fin.forall_fin_two, and_comm]⟩
     obtain ⟨φ, hφ⟩ := isCylinderIntersection_iff.mp hC
-    rw [← hAB, ← sum_cylinderIntersection_eq ν f φ A B fun x => (Set.ext_iff.mp hφ x).symm]
+    rw [← hAB, ← sum_cylinderIntersection_eq_sum_rectangle ν f φ A B
+      fun x => (Set.ext_iff.mp hφ x).symm]
     exact abs_sum_le_discrepancy ν f φ
 
 end Cslib.Communication.NOF

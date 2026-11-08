@@ -16,10 +16,11 @@ public import Mathlib.Logic.Function.Basic
 # Number-on-forehead protocols
 
 In the *number-on-forehead* (NOF) model of multiparty communication, introduced by Chandra, Furst
-and Lipton, players indexed by `ι` jointly hold an input `x : ∀ i, X i`, and player `i` sees every
-part of the input except their own part `x i`, which is written on their forehead
-[Jukna, Section 5.4, p. 140][Jukna2012]. What player `i` sees is `NOF.view i x : NOF.View X i`, the
-input restricted to the other players. The players write bits on a shared blackboard.
+and Lipton [ChandraFurstLipton1983], players indexed by `ι` jointly hold an input `x : ∀ i, X i`,
+and player `i` sees every part of the input except their own part `x i`, which is written on their
+forehead [Jukna, Section 5.4, p. 140][Jukna2012]. What player `i` sees is
+`NOF.view i x : NOF.View X i`, the input restricted to the other players. The players write bits
+on a shared blackboard.
 
 A deterministic NOF protocol (`NOF.Protocol`) is a binary tree whose inner nodes are owned by a
 player `i`, who writes a bit computed from what they see (a function of `NOF.View X i`), and whose
@@ -29,9 +30,9 @@ tree bounds the number of bits written on any input. A protocol *solves* a relat
 of inputs when its output on every input of `A` is related to it (`NOF.Protocol.Solves`); the
 communication complexity of `R` on `A` is the least depth of a protocol solving it, or `⊤` if there
 is none (`NOF.Protocol.ecomplexity`), and the communication complexity of computing `f` is that of
-the relation `f x = z` on all inputs (`NOF.Protocol.ecomplexityFun`). With two players the model is
-the two-party model of `Cslib.Communication.Protocol`, since each player then sees exactly the other
-player's input.
+the relation `f x = z` on all inputs (`NOF.Protocol.ecomplexityFun`). With two players each player
+sees exactly the other player's input, so two-party protocols (`Cslib.Communication.Protocol`) run
+as two-player NOF protocols of the same depth.
 
 Player `i` can write `n` bits computed from what they see (`NOF.Protocol.sendBits`). So when player
 `i`'s input is determined by `n` bits that another player `j ≠ i` sees, every Boolean function has
@@ -59,6 +60,7 @@ announces the value (`NOF.Protocol.ecomplexityFun_le_succ`).
 
 ## References
 
+* [A. K. Chandra, M. L. Furst and R. J. Lipton, *Multi-party protocols*][ChandraFurstLipton1983]
 * [S. Jukna, *Boolean Function Complexity: Advances and Frontiers*][Jukna2012]
 -/
 

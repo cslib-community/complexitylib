@@ -265,9 +265,10 @@ theorem sum_mul_signVal_eq (p : Protocol X Bool) (ν : PMF (∀ i, X i)) (f : (�
   · simp only [h, ite_false, Set.mem_ofPred_eq, not_false_eq_true, ite_true]
     ring
 
-/-- **The discrepancy bound** for deterministic protocols [Jukna, Section 5.5, p. 143][Jukna2012]:
-a protocol erring with probability at most `1 / 2 - γ` on inputs drawn from `ν` has
-`2 γ ≤ 2 ^ depth · disc_ν(f)`. -/
+/-- **The discrepancy bound** for deterministic protocols, generalising
+[Jukna, Section 5.5, p. 143][Jukna2012] (stated there for the uniform distribution and exact
+protocols) to any distribution and advantage, as in [BabaiNisanSzegedy1992]: a protocol erring
+with probability at most `1 / 2 - γ` on inputs drawn from `ν` has `2 γ ≤ 2 ^ depth · disc_ν(f)`. -/
 theorem two_mul_le_two_pow_mul_discrepancy (p : Protocol X Bool) {γ : ℝ}
     (hp : p.distributionalError ν (fun x b => f x = b) ≤ 1 / 2 - γ) :
     2 * γ ≤ 2 ^ p.depth * discrepancy ν f := by
@@ -312,7 +313,8 @@ theorem Solves.two_mul_le_two_pow_mul_discrepancy {μ : PublicCoin X Bool} {γ :
   exact (p.two_mul_le_two_pow_mul_discrepancy herr).trans
     (mul_le_mul_of_nonneg_right (pow_le_pow_right₀ one_le_two hd) discrepancy_nonneg)
 
-/-- **The discrepancy bound** [Jukna, Section 5.5, p. 143][Jukna2012]: if `f` has public-coin
+/-- **The discrepancy bound**, generalising [Jukna, Section 5.5, p. 143][Jukna2012] (stated there
+for the uniform distribution) [BabaiNisanSzegedy1992]: if `f` has public-coin
 communication complexity at most `c` with error `1 / 2 - γ`, then `2 γ ≤ 2 ^ c · disc_ν(f)` for
 every distribution `ν`. -/
 theorem two_mul_le_two_pow_mul_discrepancy {γ : ℝ} {c : ℕ}
