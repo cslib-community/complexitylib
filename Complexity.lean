@@ -3740,6 +3740,7 @@ public import Complexity.Foundations.Analysis.Asymptotics.CostBound
 public import Complexity.Foundations.Analysis.Asymptotics.Exponential
 public import Complexity.Foundations.Analysis.BernoulliInequality
 public import Complexity.Foundations.Analysis.Convex.FirstOrder
+public import Complexity.Foundations.Analysis.Convex.Strong
 public import Complexity.Foundations.Analysis.ENNRealFraction
 public import Complexity.Foundations.Analysis.ENNRealTsum
 public import Complexity.Foundations.Analysis.Fourier.ZModProd
@@ -4760,6 +4761,7 @@ public import Complexity.Logics.SecondOrder.Reduction
 public import Complexity.Logics.SecondOrder.WordMSO.Basic
 public import Complexity.Logics.SecondOrder.WordMSO.OfRegular
 public import Complexity.Logics.SecondOrder.WordMSO.ToRegular
+public import Complexity.MachineLearning.OnlineLearning.FTRL
 public import Complexity.MachineLearning.OnlineLearning.Hedge
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Basic
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Halving
