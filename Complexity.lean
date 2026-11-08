@@ -4249,6 +4249,7 @@ public import Complexity.Foundations.Combinatorics.SimpleGraph.Acyclic
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Berge
 public import Complexity.Foundations.Combinatorics.SimpleGraph.CliqueCover
 public import Complexity.Foundations.Combinatorics.SimpleGraph.ColorRefinement
+public import Complexity.Foundations.Combinatorics.SimpleGraph.Crown
 public import Complexity.Foundations.Combinatorics.SimpleGraph.DominatingSet
 public import Complexity.Foundations.Combinatorics.SimpleGraph.EvenEdges
 public import Complexity.Foundations.Combinatorics.SimpleGraph.GreedyColoring
