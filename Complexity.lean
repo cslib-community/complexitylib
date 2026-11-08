@@ -1893,9 +1893,11 @@ public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Certificate
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.ComponentCounts
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Components
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.CycleSpace
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Differences
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Dual
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.FaceCounts
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.IntersectionParity
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
 public import Complexity.Computability.Complexity.Problems.Graph.VertexColors
 public import Complexity.Computability.Complexity.Problems.GraphIsomorphism

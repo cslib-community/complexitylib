@@ -39,6 +39,7 @@ import Complexity.Computability.Complexity.Problems.CSP.Incidence
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
+import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.IntersectionParity
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler
 import Complexity.Computability.PolyTime.CSP.Table
 import Complexity.Computability.PolyTime.CSP.CyclicDifference.Size
@@ -86,6 +87,7 @@ import Complexity.Computability.Complexity.Problems.CSP.Incidence
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
+import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.IntersectionParity
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler
 import Complexity.Computability.PolyTime.CSP.Table
 import Complexity.Computability.PolyTime.CSP.Edge.Augmenting
@@ -846,6 +848,44 @@ results. The checked compiler below provides the native supplied-certificate
 CSP reduction, followed by the complete native edge solver below. Geometric
 realization, bare recognition and final planar assembly remain open.
 
+
+# Face Boundaries and Intersection Parity
+
+Import `Complexity.Computability.Complexity.Problems.Graph.RotationSystem.IntersectionParity`.
+Vertex parity sums indexed dart incidences; the two ends of a loop cancel.
+On a componentwise numerically genus-zero rotation, every vertex-even edge
+labeling is the boundary of colors on its actual face orbits:
+
+```lean
+open Cslib.Complexity in
+example {G : Graph} (r : Graph.RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (hgenus : r.NumericalGenusZero) (x : Fin G.2.length → Bool) :
+    G.VertexEven x ↔ ∃ q : r.Face → Bool, r.faceBoundary q = x :=
+  r.vertexEven_iff_exists_faceColors hG hgenus x
+```
+
+`ClosedPassages` pairs every dart in an edge support exactly once, with distinct
+ports at the same vertex. It permits multiple visits and arbitrary local pairings.
+Literal cyclic intervals determine whether two passages alternate. Two closed
+systems with disjoint edge supports have even total local intersection parity:
+
+```lean
+open Cslib.Complexity in
+example {G : Graph} (r : Graph.RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (hgenus : r.NumericalGenusZero)
+    {x y : Fin G.2.length → Bool} (P : Graph.ClosedPassages G x)
+    (Q : Graph.ClosedPassages G y) (hdisj : ∀ e, x e = true → y e = true → False) :
+    r.intersectionParity P Q = false :=
+  r.intersectionParity_eq_false hG hgenus P Q hdisj
+```
+
+The proof reuses lifting on the actual dual, then telescopes face colors along
+rotation intervals and closed passages. No intersection theorem is assumed.
+`ComplexityTests/RotationIntersection.lean` includes high-degree, repeated-visit,
+disconnected and empty cases, plus an interlaced two-loop torus with odd parity.
+These original finite-map results leave drawing operations, geometric realization,
+Hanani–Tutte, recognition and the full planar dichotomy open.
 
 # Ordered Incidence-to-Polygon Rotations
 

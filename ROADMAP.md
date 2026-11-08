@@ -462,6 +462,10 @@ index links to canonical definitions rather than keeping a second set.
   together with arbitrary-size face-parity lifting to vertex spins under the numerical
   genus-zero and declared-endpoint guards. Geometric realization and native compilation
   of these graph transformations remain open.
+  Vertex-even indexed edge labels are now exactly boundaries of actual face colors.
+  Two edge-disjoint closed passage systems have even total local intersection parity,
+  allowing multiple visits and arbitrary pairings. These finite numerical-map proofs
+  leave drawing operations and the weak/unified Hanani–Tutte arguments unproved.
   The actual ordered incidence-to-polygon bridge now preserves every face and component
   and proves the numerical Euler equivalence under positive actual scopes. Its abstract
   rotation maps still need native and geometric compilation.
