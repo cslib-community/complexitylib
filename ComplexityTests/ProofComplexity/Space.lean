@@ -11,8 +11,9 @@ import Complexity.Logics.Propositional.Resolution.TseitinSpace
 
 Refutations of `x ∧ ¬x` in clause space `3`, and none in space `2`; a refutation that erases
 clauses to stay in space `3` although it has five lines; the Atserias–Dalmau inequality on it, and
-its use for the width of a refutation of a formula with a clause of width `3`; and space lower
-bounds for Tseitin formulas.
+its use for the width of a refutation of a formula with a clause of width `3`; a Spoiler win
+showing that Atserias and Dalmau's Lemma 2 needs its hypothesis on the width of the clauses; and
+space lower bounds for Tseitin formulas.
 -/
 
 namespace ComplexityTests.ProofComplexity.Space
@@ -127,6 +128,28 @@ example : χ.RefutableInWidth 3 ∧ ¬ χ.RefutableInWidth 2 :=
 example {s : ℕ} (h : χ.RefutableInSpace s) : 3 ≤ s := by
   have := h.add_four_le (k := 3) (by decide) not_refutableInWidth_χ
   omega
+
+/-- The width hypothesis of Atserias and Dalmau's Lemma 2 cannot be dropped: `χ` has no refutation
+of width `2`, but Spoiler wins the existential `3`-pebble game by pebbling `x₀`, `x₁` and `x₂`. The
+unit clauses force all three to be false, and then the long clause is falsified. -/
+example : ¬ χ.RefutableInWidth 2 ∧ IsEmpty (CNF.DuplicatorStrategy χ 3) := by
+  refine ⟨not_refutableInWidth_χ, ⟨fun S => ?_⟩⟩
+  obtain ⟨σ, d, h⟩ := S.nonempty
+  obtain ⟨τ₀, -, h₀⟩ := S.extend (S.restrict h (Finset.empty_subset d)) (by decide) 0
+  obtain ⟨τ₁, -, h₁⟩ := S.extend h₀ (by decide) 1
+  obtain ⟨τ, -, h₂⟩ := S.extend h₁ (by decide) 2
+  have hf (i : ℕ) (hi : i ∈ insert 2 (insert 1 (insert 0 (∅ : Finset ℕ))))
+      (hc : [(i, false)] ∈ χ) : τ i = false := by
+    by_contra hne
+    refine S.not_falsifies h₂ _ hc fun l hl => ?_
+    rw [List.mem_singleton.1 hl]
+    exact ⟨hi, hne⟩
+  refine S.not_falsifies h₂ [(0, true), (1, true), (2, true)] (by decide) fun l hl => ?_
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at hl
+  rcases hl with rfl | rfl | rfl
+  · exact ⟨by decide, by simp [hf 0 (by decide) (by decide)]⟩
+  · exact ⟨by decide, by simp [hf 1 (by decide) (by decide)]⟩
+  · exact ⟨by decide, by simp [hf 2 (by decide) (by decide)]⟩
 
 /-! ### Tseitin formulas -/
 

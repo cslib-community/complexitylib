@@ -7,8 +7,10 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Circuit.Boolean.Polarization.PolyTime
+public import Complexity.Computability.Circuit.Boolean.Encoding
 public import Complexity.Computability.Complexity.Problems.StatisticalDifference
+public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
+import Complexity.Computability.Circuit.Boolean.Polarization.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
@@ -18,17 +20,18 @@ import Mathlib.Tactic.NormNum
 /-!
 # Polynomial-time polarization of Statistical Difference
 
-The efficiency half of the Sahai–Vadhan Polarization Lemma [SahaiVadhan2003, §3]. Instances of
-Statistical Difference are encoded by their common input and output counts in unary, followed by
-the binary codes of the two circuits (`encSDInstance`). On this encoding, polarization is
-polynomial-time whenever the instance and its parameters are computed in polynomial time, with
-the parameters in unary (`SDInstance.computableInPolyTime_polarize_comp`). The parameters of
-`SDInstance.exists_polarize` are logarithmic in the number `k + 1` of outer coordinates
+The efficiency half of the Sahai–Vadhan Polarization Lemma [SahaiVadhan2003, Lemma 3.3].
+Instances of Statistical Difference are encoded by their common input and output counts in unary,
+followed by the binary codes of the two circuits (`encSDInstance`). On this encoding,
+polarization is polynomial-time whenever the instance and its parameters are computed in
+polynomial time, with the parameters in unary (`SDInstance.computableInPolyTime_polarize_comp`).
+Of the parameters of `SDInstance.exists_polarize`, the number `λ` of inner coordinates is
+logarithmic and the number `ℓ` of copies is polynomial in the number `k + 1` of outer coordinates
 (`SDInstance.computableInPolyTime_polarize_log`). Polarization to error `2⁻⁽ᵏ⁺¹⁾` is therefore
 polynomial-time with `k` a separate input in unary, as in the source
 (`SDInstance.exists_computableInPolyTime_polarize_unary`), and with `k = K x` for every
 polynomial-time unary function `K` of the instance
-(`SDInstance.exists_polarize_computableInPolyTime`).
+(`SDInstance.exists_computableInPolyTime_polarize`).
 
 Two instances of `K` give the usual consequences, for constant thresholds `0 ≤ β < α² ≤ 1`:
 
@@ -55,7 +58,7 @@ outputs, as in `SDInstance`.
   `SDInstance.exists_polarize` is polynomial-time.
 * `Cslib.Complexity.SDInstance.exists_computableInPolyTime_polarize_unary`: the Polarization Lemma
   with a polynomial-time map and the error parameter in unary.
-* `Cslib.Complexity.SDInstance.exists_polarize_computableInPolyTime`: the Polarization Lemma with
+* `Cslib.Complexity.SDInstance.exists_computableInPolyTime_polarize`: the Polarization Lemma with
   a polynomial-time map and error `2⁻⁽ᴷ⁽ˣ⁾⁺¹⁾`.
 * `Cslib.Complexity.SDInstance.exists_computableInPolyTime_polarize_length`: error exponentially
   small in the instance length.
@@ -66,7 +69,7 @@ outputs, as in `SDInstance`.
 * [A. Sahai, S. Vadhan, *A complete problem for statistical zero knowledge*][SahaiVadhan2003]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
@@ -88,7 +91,7 @@ def encSDInstance : SDInstance ↪ List Bool :=
 
 theorem encSDInstance_apply (x : SDInstance) :
     encSDInstance x = encPair (encPair encUnary encUnary) (encPair encCode encCode)
-      ((x.inputs, x.outputs), (x.left.code, x.right.code)) :=
+      ((x.inputs, x.outputs), (x.left.code, x.right.code)) := by
   rfl
 
 namespace SDInstance
@@ -162,18 +165,18 @@ theorem computableInPolyTime_polarize_log {α : Type} {enc : α ↪ List Bool} (
   simpa only [log_two_add_one_add_one, ← pow_mul] using
     computableInPolyTime_polarize_comp hx hlam hell hK
 
-/-- **The Polarization Lemma with a polynomial-time map** [SahaiVadhan2003, §3], for constant
-thresholds `0 ≤ β < α² ≤ 1`. There are constants `m ≥ 1` and `b` such that, for every
-polynomial-time unary parameter `K`, polarization with `λ = m (⌊log₂ (K x + 1)⌋ + 1)` inner
-coordinates, `ℓ = 2 ^ (b (⌊log₂ (K x + 1)⌋ + 1))` copies and `K x + 1` outer coordinates is
-polynomial-time on encoded instances, sends instances at distance at least `α` to distance at
-least `1 - 2⁻⁽ᴷ⁽ˣ⁾⁺¹⁾`, and sends instances at distance at most `β` to distance at most
-`2⁻⁽ᴷ⁽ˣ⁾⁺¹⁾`.
+/-- **The Polarization Lemma with a polynomial-time map** [SahaiVadhan2003, Lemma 3.3 and the
+remark after its proof], for constant thresholds `0 ≤ β < α² ≤ 1`. There are constants `m ≥ 1`
+and `b` such that, for every polynomial-time unary parameter `K`, polarization with
+`λ = m (⌊log₂ (K x + 1)⌋ + 1)` inner coordinates, `ℓ = 2 ^ (b (⌊log₂ (K x + 1)⌋ + 1))` copies and
+`K x + 1` outer coordinates is polynomial-time on encoded instances, sends instances at distance
+at least `α` to distance at least `1 - 2⁻⁽ᴷ⁽ˣ⁾⁺¹⁾`, and sends instances at distance at most `β` to
+distance at most `2⁻⁽ᴷ⁽ˣ⁾⁺¹⁾`.
 
 Here the error parameter `K x` is a polynomial-time function of the instance alone. In the source
 the error parameter is a separate input in unary; that form is
 `SDInstance.exists_computableInPolyTime_polarize_unary`. -/
-theorem exists_polarize_computableInPolyTime {α β : ℝ} (hβ : 0 ≤ β) (hβα : β < α ^ 2)
+theorem exists_computableInPolyTime_polarize {α β : ℝ} (hβ : 0 ≤ β) (hβα : β < α ^ 2)
     (hα : 0 ≤ α) (hα1 : α ≤ 1) :
     ∃ m b : ℕ, m ≠ 0 ∧ ∀ K : SDInstance → ℕ, ComputableInPolyTime K encSDInstance encUnary →
       ComputableInPolyTime
@@ -191,11 +194,15 @@ theorem exists_polarize_computableInPolyTime {α β : ℝ} (hβ : 0 ≤ β) (hβ
   exact ⟨m, b, hm, fun K hK =>
     ⟨computableInPolyTime_polarize_log m b id' hK, fun x => h x (K x)⟩⟩
 
-/-- **The Polarization Lemma with the error parameter in unary** [SahaiVadhan2003, §3], for
-constant thresholds `0 ≤ β < α² ≤ 1`: a polynomial-time map on pairs of an encoded instance and
-`k` in unary sends `(x, k)` with `x` at distance at least `α` to an instance at distance at least
-`1 - 2⁻⁽ᵏ⁺¹⁾`, and `(x, k)` with `x` at distance at most `β` to an instance at distance at most
-`2⁻⁽ᵏ⁺¹⁾`. -/
+/-- **The Polarization Lemma with the error parameter in unary** [SahaiVadhan2003, Lemma 3.3 and
+the remark after its proof], for constant thresholds `0 ≤ β < α² ≤ 1`: a polynomial-time map on
+pairs of an encoded instance and `k` in unary sends `(x, k)` with `x` at distance at least `α` to an
+instance at distance at least `1 - 2⁻⁽ᵏ⁺¹⁾`, and `(x, k)` with `x` at distance at most `β` to an
+instance at distance at most `2⁻⁽ᵏ⁺¹⁾`.
+
+The source states Lemma 3.3 for the thresholds `2/3` and `1/3`, with strict inequalities and error
+`2⁻ᵏ`, and extends it to thresholds `α² > β` in the remark after its proof. Here the thresholds are
+non-strict and the error is `2⁻⁽ᵏ⁺¹⁾`. -/
 theorem exists_computableInPolyTime_polarize_unary {α β : ℝ} (hβ : 0 ≤ β) (hβα : β < α ^ 2)
     (hα : 0 ≤ α) (hα1 : α ≤ 1) :
     ∃ f : SDInstance × ℕ → SDInstance,
@@ -206,30 +213,32 @@ theorem exists_computableInPolyTime_polarize_unary {α β : ℝ} (hβ : 0 ≤ β
   obtain ⟨m, b, -, -, -, h⟩ := exists_polarize hβ hβα hα hα1
   exact ⟨_, computableInPolyTime_polarize_log m b (fst _ _) (snd _ _), fun x k => h x k⟩
 
-/-- **Polarization to error exponentially small in the instance length** [SahaiVadhan2003, §3],
-for constant thresholds `0 ≤ β < α² ≤ 1`: a polynomial-time map on encoded instances sends
-instances at distance at least `α` to distance at least `1 - 2⁻⁽ⁿ⁺¹⁾`, and instances at distance at
-most `β` to distance at most `2⁻⁽ⁿ⁺¹⁾`, where `n` is the length of the encoded input instance. -/
+/-- **Polarization to error exponentially small in the instance length** [SahaiVadhan2003,
+Lemma 3.3 and the remark after its proof], for constant thresholds `0 ≤ β < α² ≤ 1`: a
+polynomial-time map on encoded instances sends instances at distance at least `α` to distance at
+least `1 - 2⁻⁽ⁿ⁺¹⁾`, and instances at distance at most `β` to distance at most `2⁻⁽ⁿ⁺¹⁾`, where `n`
+is the length of the encoded input instance. -/
 theorem exists_computableInPolyTime_polarize_length {α β : ℝ} (hβ : 0 ≤ β) (hβα : β < α ^ 2)
     (hα : 0 ≤ α) (hα1 : α ≤ 1) :
     ∃ f : SDInstance → SDInstance, ComputableInPolyTime f encSDInstance encSDInstance ∧
       ∀ x : SDInstance,
         (α ≤ x.distance → 1 - (1 / 2) ^ ((encSDInstance x).length + 1) ≤ (f x).distance) ∧
         (x.distance ≤ β → (f x).distance ≤ (1 / 2) ^ ((encSDInstance x).length + 1)) := by
-  obtain ⟨m, b, -, h⟩ := exists_polarize_computableInPolyTime hβ hβα hα hα1
+  obtain ⟨m, b, -, h⟩ := exists_computableInPolyTime_polarize hβ hβα hα hα1
   obtain ⟨hf, hdist⟩ := h _ (encoding_length encSDInstance)
   exact ⟨_, hf, hdist⟩
 
 end SDInstance
 
-/-- **Statistical Difference reduces to each of its gap versions** [SahaiVadhan2003, §3]: for
-constant thresholds `0 ≤ β < α² ≤ 1` and `0 < β' < α' < 1`, `SD^{α,β}` reduces to `SD^{α',β'}` in
-polynomial time, by polarization with a constant number of outer coordinates. -/
+/-- **Statistical Difference reduces to each of its gap versions** [SahaiVadhan2003, Lemma 3.3, the
+remark after its proof, and p. 234]: for constant thresholds `0 ≤ β < α² ≤ 1` and `0 < β' < α' < 1`,
+`SD^{α,β}` reduces to `SD^{α',β'}` in polynomial time, by polarization with a constant number of
+outer coordinates. -/
 theorem StatisticalDifference.polyTimeReducible {α β α' β' : ℝ} (hβ : 0 ≤ β) (hβα : β < α ^ 2)
     (hα : 0 ≤ α) (hα1 : α ≤ 1) (hβ' : 0 < β') (hβα' : β' < α') (hα' : α' < 1) :
     PromiseProblem.PolyTimeReducible encSDInstance encSDInstance (StatisticalDifference α β)
       (StatisticalDifference α' β') := by
-  obtain ⟨m, b, -, h⟩ := SDInstance.exists_polarize_computableInPolyTime hβ hβα hα hα1
+  obtain ⟨m, b, -, h⟩ := SDInstance.exists_computableInPolyTime_polarize hβ hβα hα hα1
   obtain ⟨k, hk⟩ := exists_pow_lt_of_lt_one (lt_min hβ' (sub_pos.2 hα'))
     (by norm_num : (1 / 2 : ℝ) < 1)
   have hk' : (1 / 2 : ℝ) ^ (k + 1) < min β' (1 - α') :=
