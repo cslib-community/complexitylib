@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.WordRAM.Structured
 public import Complexity.Computability.WordRAM.SymbolicExec.Init
+public import Complexity.Tactic.Fits
 
 /-!
 # Symbolic execution of structured word-RAM code
@@ -46,7 +47,8 @@ or `hb`.
 Every side condition goes through the same steps (`Cslib.WordRAM.WP.Exec.discharge`): a
 proposition without free variables, such as a comparison of register names, is decided by
 evaluation and is never passed on when it is false; a hypothesis of the same statement proves it;
-only then does the discharger run, `omega` by default. The search for a hypothesis compares
+only then does the discharger run. By default it is `fits` on a word-size bound, which uses the
+`Fits` facts in context, and `omega` on anything else. The search for a hypothesis compares
 statements syntactically, because unifying arithmetic with every hypothesis of a long proof costs
 more than the discharger.
 
@@ -878,7 +880,8 @@ exact specification `h` at a stop.
 
 * `wram_exec [h₁, h₂]` adds simp lemmas for the values read, typically the contents of the
   registers of `x`, such as `x.regs zeroP = 0`, and the memory cells it reads.
-* `wram_exec (disch := tac)` sets the discharger, `omega` by default. It proves side conditions
+* `wram_exec (disch := tac)` sets the discharger, by default `fits` on a word-size bound and
+  `omega` on anything else. It proves side conditions
   (`Fits w v`, `b ≤ a` for an exact subtraction, a nonzero divisor), decides conditions of
   branches, and decides whether two memory addresses are equal. Register names, and side
   conditions without free variables, are decided by evaluation, and a side condition that is a
@@ -896,7 +899,8 @@ syntax (name := wramExec) "wram_exec" Lean.Parser.Tactic.optConfig (Lean.Parser.
 
 /-- `wram_simp [h₁, h₂]` simplifies reads of registers and memory after `Data.set` and
 `Data.write` with the simp set of `wram_exec`, typically in the postcondition `wram_exec` leaves.
-`wram_simp (disch := tac)` sets the discharger, `omega` by default, and `wram_simp at h` works on
+`wram_simp (disch := tac)` sets the discharger, by default `fits` on a word-size bound and `omega`
+on anything else, and `wram_simp at h` works on
 hypotheses. -/
 syntax (name := wramSimp) "wram_simp" (Lean.Parser.Tactic.discharger)?
   (" [" (Lean.Parser.Tactic.simpStar <|> Lean.Parser.Tactic.simpErase <|>
@@ -912,12 +916,13 @@ elab_rules : tactic
   | `(tactic| wram_bounded) => liftMetaTactic WP.Exec.boundedGoals
 
 open Lean in
-/-- The discharger of a `wram_exec` or `wram_simp` call. -/
+/-- The discharger of a `wram_exec` or `wram_simp` call: the given one, or by default `fits` on
+a word-size bound and `omega` on anything else. -/
 meta def WP.Exec.dischOf (d? : Option (TSyntax ``Lean.Parser.Tactic.discharger)) :
     MacroM (TSyntax ``Lean.Parser.Tactic.tacticSeq) :=
   match d? with
   | some d => pure ⟨d.raw[3]⟩
-  | none => `(Lean.Parser.Tactic.tacticSeq| omega)
+  | none => `(Lean.Parser.Tactic.tacticSeq| first | fits | omega)
 
 open Lean Meta Elab Tactic in
 elab_rules : tactic
