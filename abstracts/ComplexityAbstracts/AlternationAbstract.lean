@@ -48,7 +48,8 @@ public dependencies.
 
 * [A. K. Chandra, D. C. Kozen, L. J. Stockmeyer, *Alternation*,
   Section 3][ChandraKozenStockmeyer1981]
-* [M. Sipser, *Introduction to the Theory of Computation*, Section 10.3][Sipser2013]
+* [M. Sipser, *Introduction to the Theory of Computation*, Section 10.3; Theorem 10.21 for
+  `AP = PSPACE`][Sipser2013]
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 5.3][AroraBarak09]
 -/
 
@@ -148,7 +149,8 @@ def EXP {α : Type} (enc : α ↪ List Bool) : Set (Set α) :=
 /-! ## Main results -/
 
 /-- **Theorem (Chandra–Kozen–Stockmeyer):** alternating polynomial time is polynomial space, for
-every injective binary encoding of instances. -/
+every injective binary encoding of instances ([Sipser, Theorem 10.21][Sipser2013] for polynomial
+bounds). -/
 theorem ap_eq_pspace {α : Type} (enc : α ↪ List Bool) : AP enc = PSPACE enc := by
   refine Eq.trans ?_ (AlternationBridge.ap_eq_pspace enc)
   ext A

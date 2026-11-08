@@ -18,8 +18,8 @@ over the alphabet `α` extended by markers. Writing `⋆u` for `⋆u₁⋆u₂�
 `⋆t / ⋆b⋆`, and the end domino `⋆◇ / ◇` is added. A match must then begin with the start domino,
 whose top and bottom alone begin with the same letter.
 
-As stated, the construction is unsound when a domino of the instance has an empty bottom, since
-`⋆t / ε` may then come first. For the start domino `a / ba` and the single domino `b / ε`, the
+As stated, the construction can be unsound when a domino of the instance has an empty bottom,
+since `⋆t / ε` may then come first. For the start domino `a / ba` and the single domino `b / ε`, the
 MPCP instance has no match (its top begins with `a` and its bottom with `b`), but
 `⋆b / ε`, `⋆a / ⋆b⋆a⋆`, `⋆◇ / ◇` is a match of the PCP instance (checked in the test module
 `ComplexityTests.PostCorrespondence`). The reduction here therefore prefixes the start
@@ -29,7 +29,8 @@ MPCP match. The domino `ε / ε`, which would be a PCP match by itself, is dropp
 
 Sipser's machine instances contain no domino with an empty bottom, so his proof is unaffected. The
 instances of `Complexity.Computability.PostCorrespondence.OfTM0` do: the rule `OfTM0.Rule.finish`
-erases the final word `⊢ halt ⊣`, so the marker is needed in this chain. Empty tops are harmless.
+erases the final word `⊢ halt ⊣`. So Sipser's argument does not apply to them as written, while
+the marked reduction needs no instance-specific argument. Empty tops are harmless.
 
 ## Main definitions
 
