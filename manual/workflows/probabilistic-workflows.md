@@ -80,10 +80,64 @@ The [checked clients](../../ComplexityTests/PMFConditioning.lean) condition two 
 rectangles, split off one of two fair bits, and relabel two point masses injectively. Run
 `scripts/build.sh ComplexityTests.PMFConditioning`.
 
+Real-valued probabilities lie in `[0, 1]`. The lower bound is `ENNReal.toReal_nonneg`; for the
+upper bound, import [PMF/ToReal.lean](../../Complexity/Probability/PMF/ToReal.lean) and use
+`PMF.toReal_apply_le_one μ a` for an outcome or `PMF.toOuterMeasure_toReal_le_one μ s` for an
+event (these short names need `open Cslib.Probability`), rather than converting `μ a ≤ 1` through
+`ENNReal.toReal` by hand. The `Pr[e]` notation module re-exports this file, so `Pr[e] ≤ 1` is
+`PMF.toReal_apply_le_one _ true`; the
+[checked examples](../../ComplexityTests/ProbabilityNotation.lean) bound a program and a set event.
+Run `scripts/build.sh ComplexityTests.ProbabilityNotation`.
+
+## Count the fair coins used by an exact sampler
+
+Import [DDGTree.lean](../../Complexity/Probability/DDGTree.lean) to describe an exact sampler as
+a discrete distribution generating tree. Such a tree reads fair bits and stops at an
+outcome-labelled leaf, and it may be infinite. A `DDGTree α` is given by its prefix labelling
+`output : List Bool → Option α`, with leaves absorbing. `T.run n` is the law of the outcome after
+`n` fair bits, where `none` means "still running". `T.Generates p` states that the eventual output
+has law `p`. `T.expectedFlips` is the tail sum `∑ₙ P(T > n)`. For trees that halt almost surely,
+`expectedFlips_eq_tsum_mul` converts it to `∑ₖ (k + 1) P(T = k + 1)`, and
+`tendsto_run_none_of_generates` shows that every generator of a finite distribution halts almost
+surely. A tree that fails to halt with positive probability has `expectedFlips = ⊤`
+(`expectedFlips_eq_top`). `T.output <$> BitString.sampleList n` is the same experiment written as a
+`ProbComp`; its `eval` is `T.run n`.
+
+Import [DDGTree/KnuthYao.lean](../../Complexity/Probability/DDGTree/KnuthYao.lean) for the
+entropy bounds ([Knuth–Yao 1976](../sources.md#knuthyao76);
+[Cover–Thomas §5.11](../sources.md#coverthomas06)), stated for distributions on a finite type:
+
+- `entropy_le_expectedFlips hT : ENNReal.ofReal (PMF.entropy p) ≤ T.expectedFlips` for every
+  `hT : T.Generates p`;
+- `knuthYao p` generates `p` (`knuthYao_generates`), has the least expected cost
+  (`isLeast_expectedFlips_knuthYao`; pointwise `run_knuthYao_none_le`), and satisfies
+  `expectedFlips_knuthYao_lt : (knuthYao p).expectedFlips < ENNReal.ofReal (PMF.entropy p + 2)`;
+- `exists_generates_expectedFlips_eq_entropy_iff`: some tree attains `H(p)` exactly when every
+  positive `p a` is a power of `1/2`.
+
+To compute the optimal cost for a concrete `p`, rewrite with `expectedFlips_knuthYao` to
+`∑ₐ knuthYaoCost (p a).toReal`. Then use `knuthYaoCost_inv_two_pow` for dyadic masses, or sum the
+truncation errors `truncErr` directly. To build a tree from a count profile, use `ofCounts t`. In
+that tree, `t k a` of the `2 ^ k` depth-`k` positions lie at or below a leaf labelled `a`; a leaf at
+depth `j ≤ k` counts `2 ^ (k - j)` times. Equivalently, `t k a / 2 ^ k` is the probability of having
+output `a` within `k` flips (`run_ofCounts`). The profile must be inherited,
+`2 * t k a ≤ t (k + 1) a`, and must satisfy the Kraft-type budget `∑ₐ t k a ≤ 2 ^ k`.
+
+The [checked clients](../../ComplexityTests/KnuthYao.lean) cover the fair coin (`1` flip), the
+dyadic `(1/2, 1/4, 1/4)` (`3/2` flips, equal to the entropy) and `(2/3, 1/3)`. For the last, the
+optimal cost is exactly `2`, no generating tree does better, and the entropy is strictly smaller.
+They also cover a non-halting tree that generates nothing and has infinite cost. Run
+`scripts/build.sh ComplexityTests.KnuthYao`. The model counts coin flips only; it does not certify
+that `knuthYao p` is computable from an encoding of `p`, or bound its running time.
+
 ## Polarize statistical distance
 
-Sahai and Vadhan's polarization of statistical distance (Sahai–Vadhan 2003, §3) is formalized on
-explicit distributions over finite types, with the half-L1 `dist` above.
+Sahai and Vadhan's polarization of statistical distance is formalized on explicit distributions
+over finite types, with the half-L1 `dist` above. The source is Sahai–Vadhan 2003, §3.2: the
+Polarization Lemma is Lemma 3.3, extended to thresholds `α² > β` in the remark after its proof; the
+Direct Product Lemma is Lemma 3.4 and the XOR Lemma is Lemma 3.5. Statistical Difference is defined
+in §3.1 with the strict thresholds `2/3` and `1/3`; the variant `SD^{α,β}` with non-strict
+thresholds, used below, is defined on p. 234.
 
 - **XOR construction.** Import
   [StatisticalDistance/XOR.lean](../../Complexity/Probability/StatisticalDistance/XOR.lean).
@@ -146,19 +200,59 @@ uniform inputs, defined in
   the number of copies, and `k` as the outer argument, so there are `k + 1` outer coordinates.
   `StatisticalDifference.exists_mapsTo_polarize` states the result as `Set.MapsTo` into
   `StatisticalDifference (1 - (1/2)^(k+1)) ((1/2)^(k+1))`, for `k ≠ 0`.
+- **Polynomial-time polarization.** Import
+  [Problems/StatisticalDifference/PolyTime.lean](../../Complexity/Computability/Complexity/Problems/StatisticalDifference/PolyTime.lean).
+  `encSDInstance` encodes the input and output counts in unary, followed by both circuit codes.
+  `SDInstance.computableInPolyTime_polarize` makes `x.polarize (lam x) (ell x) (k x)`
+  polynomial-time whenever the three parameters are polynomial-time with unary output.
+  `SDInstance.computableInPolyTime_polarize_comp` is the general form. There the instance and the
+  parameters are polynomial-time functions of any encoded input; `computableInPolyTime_polarize_log`
+  specializes it to the parameters of `SDInstance.exists_polarize`.
+  `SDInstance.exists_computableInPolyTime_polarize_unary` is the source's form, with the error
+  parameter `k` a separate unary input: one map on `encPair encSDInstance encUnary` with error
+  `(1/2)^(k + 1)`.
+  `SDInstance.exists_computableInPolyTime_polarize` instead takes `k = K x` for a function `K` of
+  the instance. Use
+  `obtain ⟨m, b, hm, h⟩ := …`, then `h K hK` for any polynomial-time unary `K`. It returns the
+  polynomial-time certificate and the two distance bounds with error `(1/2)^(K x + 1)`.
+  Two corollaries cover the common cases. With `K x` the encoded length,
+  `SDInstance.exists_computableInPolyTime_polarize_length` gives error `(1/2)^(|x| + 1)`. With `K`
+  constant, `StatisticalDifference.polyTimeReducible` is a `PromiseProblem.PolyTimeReducible`
+  from `SD^{α,β}` to `SD^{α',β'}`, for all constants `0 < β' < α' < 1`.
+  The raw code generators behind the certificate are in
+  [Circuit/Boolean/Polarization/PolyTime.lean](../../Complexity/Computability/Circuit/Boolean/Polarization/PolyTime.lean).
+  Import that module directly to use them; `StatisticalDifference/PolyTime.lean` does not
+  re-export it. Each generator has a `_code` lemma stating exact agreement with the typed circuit.
+  `polarizeCode` builds on `replicateCode`, from
+  [CodeReplication.lean](../../Complexity/Computability/Circuit/Boolean/CodeReplication.lean),
+  and on `muxCode`, from
+  [Comparison/PolyTime.lean](../../Complexity/Computability/Circuit/Boolean/Comparison/PolyTime.lean).
 
-This is the semantic half of the reduction only. Polynomial-time computability of the
-polarization map on encoded instances, with `k` growing with the instance length, is not formalized
-yet. Neither is SZK. [Issue #3205](https://github.com/cslib-community/complexitylib/issues/3205)
-tracks both. The checked clients in
-[StatisticalDifference.lean](../../ComplexityTests/StatisticalDifference.lean) cover:
+The thresholds are constants with `0 ≤ β < α² ≤ 1`, and the circuits are De Morgan circuits with
+common input and output counts. SZK itself is not formalized yet;
+[issue #3205](https://github.com/cslib-community/complexitylib/issues/3205) tracks it. The checked
+clients in [StatisticalDifference.lean](../../ComplexityTests/StatisticalDifference.lean) cover:
 
 - parity completion;
 - the XOR circuit on two constant circuits;
 - a far instance and a near instance against `SD^{2/3,1/3}`;
 - both instances pushed through the Polarization Lemma.
 
-Run `scripts/build.sh ComplexityTests.StatisticalDifference`.
+The clients in
+[StatisticalDifferencePolyTime.lean](../../ComplexityTests/StatisticalDifferencePolyTime.lean)
+cover:
+
+- a concrete replicated code and its typed agreement;
+- the multiplexer gate count;
+- a polynomial-time polarization map with fixed parameters;
+- the reduction from `SD^{2/3,1/3}` to `SD^{9/10,1/10}` on the far and the near instance;
+- the length-indexed polarization on the same instances;
+- the polarization with the error parameter `k` in unary on the same instances, for every `k`;
+- `SDInstance.computableInPolyTime_polarize_comp` on `p ↦ p.1.polarize 1 2 p.2` over
+  `encPair encSDInstance encUnary`.
+
+Run `scripts/build.sh ComplexityTests.StatisticalDifference` and
+`scripts/build.sh ComplexityTests.StatisticalDifferencePolyTime`.
 
 ## Bound the mixing time of a finite Markov chain
 
@@ -528,8 +622,8 @@ recursion accepts any constant up to `21`. The final bound has Holenstein's cons
 
 To use the bound for concrete answer types, compute the exponent: rewrite the product of the
 cardinalities as a power of two and apply `Real.logb_rpow`. For CHSH, `|A| |B| = 4` and the
-exponent is `n / 2`. The [CHSH client](../../ComplexityTests/TwoProverGame.lean) proves that
-CHSH has value `3/4`, and the [parallel repetition clients](../../ComplexityTests/ParallelRepetition.lean)
+exponent is `n / 2`. [CHSH.lean](../../Complexity/Computability/PCP/TwoProverGame/CHSH.lean)
+proves that CHSH has value `3/4` (`TwoProverGame.value_chsh`), and the [parallel repetition clients](../../ComplexityTests/ParallelRepetition.lean)
 derive `(3/4)^n ≤ v(CHSHⁿ) ≤ (1 - (1/4)³ / 6000)^{n / 2}`. They also show that the value of the
 repetition tends to zero for every game of value below one, and apply Lemma 6.5 with nothing
 conditioned, which gives a coordinate won with probability at most `G.value`. Run
@@ -1870,3 +1964,101 @@ from the repository root to check them; the monomial clients are in
 `ComplexityTests.GaussianNoiseOperator`.
 
 Smoothness of `U_ρ f` for `|ρ| < 1` (Proposition 11.16) is not formalized.
+
+## Compare bits with Gaussians by the invariance principle
+
+Import
+[`Complexity.Foundations.BooleanAnalysis.Invariance`](../../Complexity/Foundations/BooleanAnalysis/Invariance.lean)
+for functions on the cube, or
+[`Complexity.Foundations.Probability.Multilinear.Invariance`](../../Complexity/Foundations/Probability/Multilinear/Invariance.lean)
+for formal multilinear polynomials. Open `ProbabilityTheory` (and `Cslib.BitString` for the cube).
+A formal multilinear polynomial is its coefficient function `c : Finset ι → ℝ`;
+`multilinearEval c z = ∑ S, c S * ∏ i ∈ S, z i` and `multilinearInfluence c i = ∑ S ∋ i, c S ^ 2`.
+Degree at most `k` is the hypothesis `∀ S, k < #S → c S = 0`. The variables are independent with
+laws `μ i : Measure ℝ`, through `Measure.pi μ`, and `HasInvarianceMoments (μ i)` is O'Donnell's
+Hypothesis 11.65: mean `0`, second moment `1`, third moment `0` and fourth moment at most `9`. Its
+first field, `memLp_four : MemLp id 4 μ`, also requires the fourth moment to be finite, so that the
+moment integrals are meaningful. The structure does not include `IsProbabilityMeasure`; the
+theorems take `[∀ i, IsProbabilityMeasure (μ i)]` as a separate instance argument.
+`hasInvarianceMoments_gaussianReal` and `hasInvarianceMoments_rademacher` supply it for standard
+Gaussians and uniform random signs.
+
+- `abs_integral_comp_multilinearEval_sub_le` is the Basic Invariance Principle (O'Donnell, §11.6,
+  eq. (11.29)): for `ψ` that is `C⁴` with `|iteratedDeriv 4 ψ| ≤ C`, the expectations of
+  `ψ (multilinearEval c ·)` under `Measure.pi μ` and `Measure.pi ν` differ by at most
+  `C / 12 * 9 ^ k * ∑ t, multilinearInfluence c t ^ 2`.
+- `abs_integral_comp_multilinearEval_sub_le_of_influence_le` is Corollary 11.67. It assumes
+  `∑ S with S ≠ ∅, c S ^ 2 ≤ 1` (variance at most one) and `multilinearInfluence c t ≤ ε` for every
+  `t`, together with `0 ≤ ε`, and bounds the difference by `C / 12 * k * 9 ^ k * ε`.
+- `abs_integral_comp_multilinearEval_sub_le_of_contDiff_three` is the `C³` form
+  `C / 3 * 3 ^ k * ∑ t, multilinearInfluence c t ^ ((3 : ℝ) / 2)`. It is the analogue, under
+  Hypothesis 11.65, of Remark 11.66, whose hypothesis is `(2, 3, ρ)`-hypercontractivity instead.
+- On the cube, `abs_expect_comp_sub_integral_comp_multilinearEval_le` and its `_of_influence_le` and
+  `_of_contDiff_three` forms compare `𝔼 x, ψ (f x)` at uniform bits with
+  `∫ y, ψ (multilinearEval (fourierCoeff f) y) ∂Measure.pi μ`. They assume `totalDegree f ≤ k`
+  and use `influence i f` and the variance `𝔼 x, (f x - 𝔼 y, f y) ^ 2`. The translation goes
+  through `integral_pi_rademacher`, `multilinearEval_fourierCoeff_signVal` and
+  `multilinearInfluence_fourierCoeff`.
+
+The proof is the replacement method. `MeasureTheory.abs_integral_pi_sub_le_sum` in
+[`PiUpdate`](../../Complexity/Foundations/MeasureTheory/Integral/PiUpdate.lean) telescopes over the
+hybrids `Measure.pi (s.piecewise ν μ)` and applies to any integrand. The Bonami Lemma for these
+variables, `integral_multilinearEval_pow_four_le`, is in
+[`Multilinear/Bonami`](../../Complexity/Foundations/Probability/Multilinear/Bonami.lean). It covers
+only the case `B ≤ 9` with variance `1` of Corollary 9.6. Cauchy–Schwarz for real integrals,
+`MeasureTheory.sq_integral_mul_le`, needs no sign condition. It is in
+[`Integral/CauchySchwarz`](../../Complexity/Foundations/MeasureTheory/Integral/CauchySchwarz.lean)
+with `MeasureTheory.integrable_pow_of_memLp` and `MeasureTheory.integrable_abs_pow_of_memLp`, which
+give integrability of the moments of order `j ≤ n` of a variable in `Lⁿ`.
+
+The checked [`MultilinearInvariance.lean` clients](../../ComplexityTests/MultilinearInvariance.lean)
+cover Hypothesis 11.65 for Gaussians and signs and its failure for a point mass, and bits versus
+Gaussians for any function of two bits with `ψ = cos` (`C⁴`) and `ψ = sin` (`C³`). They also show
+that a degree-`0` polynomial has exactly equal expectations. Run
+`scripts/build.sh ComplexityTests.MultilinearInvariance` from the repository root to check them.
+
+The test function must be smooth. The following are not formalized: the Lipschitz form
+(Corollary 11.68) and the Lévy-distance form (Corollary 11.70); the forms for functions with small
+high-degree tails, including noise-stable functions (Corollary 11.69), and cdf-closeness through
+the Carbery–Wright theorem (Theorem 11.71); the general Invariance Principle with
+hypercontractive ensembles; and Majority Is Stablest.
+
+## Evaluate a multi-component conditional walk via validated words
+
+Import
+[`Complexity.Probability.PairwiseIndependentHash.ProductValidatedWords`](../../Complexity/Probability/PairwiseIndependentHash/ProductValidatedWords.lean)
+and open `Cslib.Probability` to express `t` steps of the lazy conditional product walk over `J`
+retention slices and a free-bit torus `(ZMod M)^H` on the ambient space
+`ComponentSpace H M P = (∀ j, FrameChannel (P j) H 1) × (Fin H → ZMod M)` (Section 6.1, Lemma 6.3,
+items 1–4 of [OpenAI's logspace preprint](../sources.md#openai-logspace26)).
+The results on the slice `ComponentSlice H M P L y` (`componentWordWrap_mem`,
+`componentWordPerm_wrap_eq` and the two walk identities below) need the instances
+`[∀ j, Fact (P j).Prime]` and `[∀ j, NeZero (L j)]` and a proof `hL : ∀ j, L j ≤ P j`, which also
+fixes the reindexing `componentEquiv M hL y` in their statements; the checked clients below show
+how to discharge them for concrete `P` and `L`.
+
+- Each step label `ComponentLazyStep H J` has `4 * (J + 1) * H^2` choices (`card_componentLazyStep`),
+  and each candidate wrap vector lies in `affineWrapBox H = {-3, …, 3}^H` of size `7^H`
+  (`card_affineWrapBox`), independently of `P`, `L`, `M`, `y` and `t`.
+- Every length-`t` word permutation `componentWordPerm L w z` is a bijection of
+  `ComponentSpace H M P` independent of the retained identifiers `y` and preserves uniform
+  expectations (`expect_componentWordPerm`).
+- Retained identifiers `y` enter only through the endpoint wrap test `IsValidComponentWord`: on
+  `ComponentSlice H M P L y`, a unique wrap word in `(affineWrapBox H)^t` survives
+  (`existsUnique_isValidComponentWord`, `componentWordWrap_mem`). It reaches the endpoint
+  `(G.pow t).neighbor A w` of the walk along `w` (`componentWordPerm_wrap_eq`), where
+  `G = (ofPerms (componentMove H M P L)).lazy.reindex (componentEquiv M hL y).symm` is the
+  reindexed lazy product multigraph and `G.pow t` is its `t`-th power from
+  [`Expander/Power.lean`](../../Complexity/Foundations/Combinatorics/Expander/Power.lean). So
+  averaging over move words `w` and summing over wrap words `z` without dividing by `(7^H)^t`
+  equals `walk^t` (`walk_pow_componentMove_eq_expect_word`, and iteratively
+  `walk_pow_componentMove_eq_iterate`).
+
+The checked [`ProductValidatedWords.lean` clients](../../ComplexityTests/ProductValidatedWords.lean)
+verify concrete alphabet sizes and step wraps on two channels, over `ZMod 5` and `ZMod 7`, plus the
+torus `(ZMod 8)^3`. They check that a one-step word reaches the one-step neighbor, and combine
+`walk_pow_componentMove_eq_expect_word` with `ComponentGap` and `SliceFourthMoment` to bound the
+`L²` and `L⁴` central moments of the explicit validated-word estimator. Run
+`scripts/build.sh ComplexityTests.ProductValidatedWords` from the repository root to check them.
+This module covers items 1–4 (distributional and combinatorial word identities); explicit machine
+or streaming space realization (the post-item space bound of Lemma 6.3) is separate.

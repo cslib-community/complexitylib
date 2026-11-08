@@ -22,7 +22,8 @@ This is a bijection between `BitString (k - 1)` and the selectors of parity `c`
 (`uniformOfFintype_map_parityComplete`). When `p₀` and `p₁` are themselves images of uniform seeds
 under `f₀` and `f₁`, the whole construction is the image of uniform selector bits and seeds
 (`xorMix_map_uniform`). This is the form in which a circuit computes the XOR construction of two
-samplers [SahaiVadhan2003, §3]. The XOR construction also commutes with images (`xorMix_map`).
+samplers [SahaiVadhan2003, Lemma 3.5]. The XOR construction also commutes with images
+(`xorMix_map`).
 
 ## Main definitions
 

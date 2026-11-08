@@ -52,6 +52,9 @@ routines (`fiberRanks`, `flatPlacement`, `varGroupList`, `pullbackMeasurementRow
   `Cslib.LinearAlgebra.CopyPlacement.pullbackMeasurementMatrix`,
   `Cslib.LinearAlgebra.CopyPlacement.restrictGroupColumns`,
   `Cslib.LinearAlgebra.CopyPlacement.pullbackReplacementRow`.
+* `Cslib.LinearAlgebra.CopyPlacement.encCopyPlacements`: the encoding of the copy placements
+  `(c_e, u_e)`, both in binary.
+* `Cslib.LinearAlgebra.encSchedules`: the encoding of schedule words, with labels in binary.
 
 ## Main results
 
@@ -1124,6 +1127,18 @@ section PolyTime
 
 open ComputableInPolyTime
 
+/-- Copy placements as a list of pairs `(c, u)` of a copy index and an auxiliary block label,
+both in binary: the concatenation of the framed pairs, each pair the framed `c` followed by `u`. -/
+abbrev encCopyPlacements : List (ℕ × ℕ) ↪ List Bool :=
+  encList (encPair encNat encNat)
+
+/-- Schedules with labels in binary, one word per variable or factor: the concatenation of the
+framed words, each word the concatenation of its framed group labels, each encoded by `encNat`.
+This is the layout `encList (encList encNat)` of `Cslib.LinearAlgebra.encVarSets` and
+`Cslib.Complexity.encSparseEquation`; the name records the role. -/
+abbrev _root_.Cslib.LinearAlgebra.encSchedules : List (List ℕ) ↪ List Bool :=
+  encList (encList encNat)
+
 private theorem cp_take : ComputableInPolyTime (fun p : List ℕ × ℕ => p.1.take p.2)
     (encPair (encList encNat) encUnary) (encList encNat) := by fun_prop
 
@@ -1169,7 +1184,7 @@ private theorem cp_intBin_sum : ComputableInPolyTime List.sum (encList encIntBin
 /-- Compositional plain polynomial-time certificate for `varGroupList`. -/
 @[fun_prop] theorem computableInPolyTime_varGroupListWithInput {Input : Type}
     {encIn : Input ↪ List Bool} {varSchedules : Input → List (List ℕ)} {t g : Input → ℕ}
-    (hsched : ComputableInPolyTime varSchedules encIn (encList (encList encNat)))
+    (hsched : ComputableInPolyTime varSchedules encIn encSchedules)
     (ht : ComputableInPolyTime t encIn encNat) (hg : ComputableInPolyTime g encIn encNat) :
     ComputableInPolyTime (fun x => varGroupList (varSchedules x) (t x) (g x))
       encIn (encList encNat) := by
@@ -1188,7 +1203,7 @@ private theorem cp_intBin_sum : ComputableInPolyTime List.sum (encList encIntBin
 @[fun_prop] theorem computableInPolyTime_varGroupList :
     ComputableInPolyTime
       (fun ((varSchedules, t, g) : List (List ℕ) × (ℕ × ℕ)) => varGroupList varSchedules t g)
-      (encPair (encList (encList encNat)) (encPair encNat encNat)) (encList encNat) := by fun_prop
+      (encPair encSchedules (encPair encNat encNat)) (encList encNat) := by fun_prop
 
 private theorem ite_eq_and_intBin {Q : Type} {encQ : Q ↪ List Bool} {a₁ a₂ b₁ b₂ : Q → ℕ}
     {val : Q → ℤ} (ha₁ : ComputableInPolyTime a₁ encQ encNat)
@@ -1208,7 +1223,7 @@ private theorem ite_eq_and_intBin {Q : Type} {encQ : Q ↪ List Bool} {a₁ a₂
     {encIn : Input ↪ List Bool} {n : Input → ℕ} {placements : Input → List (ℕ × ℕ)}
     {incVars : Input → List ℕ} {copyIdx : Input → ℕ} {auxRow : Input → List ℤ}
     (hn : ComputableInPolyTime n encIn encUnary)
-    (hpl : ComputableInPolyTime placements encIn (encList (encPair encNat encNat)))
+    (hpl : ComputableInPolyTime placements encIn encCopyPlacements)
     (hinc : ComputableInPolyTime incVars encIn (encList encNat))
     (hcopy : ComputableInPolyTime copyIdx encIn encNat)
     (haux : ComputableInPolyTime auxRow encIn (encList encIntBin)) :
@@ -1232,8 +1247,8 @@ private theorem ite_eq_and_intBin {Q : Type} {encQ : Q ↪ List Bool} {a₁ a₂
       (fun ((n, placements, incVars, copyIdx, auxRow) :
           ℕ × (List (ℕ × ℕ) × (List ℕ × (ℕ × List ℤ)))) =>
         pullbackMeasurementRow n placements incVars copyIdx auxRow)
-      (encPair encUnary (encPair (encList (encPair encNat encNat))
-        (encPair (encList encNat) (encPair encNat (encList encIntBin)))))
+      (encPair encUnary
+        (encPair encCopyPlacements (encPair (encList encNat) (encPair encNat (encList encIntBin)))))
       (encList encIntBin) := by fun_prop
 
 /-- Compositional plain polynomial-time certificate for `pullbackMeasurementMatrix` (`(n, h)` in
@@ -1242,12 +1257,12 @@ unary). -/
     {encIn : Input ↪ List Bool} {n h : Input → ℕ} {placements : Input → List (ℕ × ℕ)}
     {incVars : Input → List ℕ} {blockMeas : Input → List (List ℤ)}
     (hn : ComputableInPolyTime n encIn encUnary) (hh : ComputableInPolyTime h encIn encUnary)
-    (hpl : ComputableInPolyTime placements encIn (encList (encPair encNat encNat)))
+    (hpl : ComputableInPolyTime placements encIn encCopyPlacements)
     (hinc : ComputableInPolyTime incVars encIn (encList encNat))
-    (hmeas : ComputableInPolyTime blockMeas encIn (encList (encList encIntBin))) :
+    (hmeas : ComputableInPolyTime blockMeas encIn encIntTable) :
     ComputableInPolyTime
       (fun x => pullbackMeasurementMatrix (n x) (h x) (placements x) (incVars x) (blockMeas x))
-      encIn (encList (encList encIntBin)) := by
+      encIn encIntTable := by
   unfold pullbackMeasurementMatrix; apply flatMapWithInput (range.comp hh)
   apply mapWithInput (hmeas.comp (fst encIn encUnary))
   exact computableInPolyTime_pullbackMeasurementRowWithInput
@@ -1263,17 +1278,17 @@ unary). -/
       (fun (((n, h), placements, incVars, blockMeas) :
           (ℕ × ℕ) × (List (ℕ × ℕ) × (List ℕ × List (List ℤ)))) =>
         pullbackMeasurementMatrix n h placements incVars blockMeas)
-      (encPair (encPair encUnary encUnary) (encPair (encList (encPair encNat encNat))
-        (encPair (encList encNat) (encList (encList encIntBin)))))
-      (encList (encList encIntBin)) := by fun_prop
+      (encPair (encPair encUnary encUnary)
+        (encPair encCopyPlacements (encPair (encList encNat) encIntTable)))
+      encIntTable := by fun_prop
 
 /-- Compositional plain polynomial-time certificate for `restrictGroupColumns`. -/
 @[fun_prop] theorem computableInPolyTime_restrictGroupColumnsWithInput {Input : Type}
     {encIn : Input ↪ List Bool} {groupVars : Input → List ℕ} {mat : Input → List (List ℤ)}
     (hgroup : ComputableInPolyTime groupVars encIn (encList encNat))
-    (hmat : ComputableInPolyTime mat encIn (encList (encList encIntBin))) :
+    (hmat : ComputableInPolyTime mat encIn encIntTable) :
     ComputableInPolyTime (fun x => restrictGroupColumns (groupVars x) (mat x))
-      encIn (encList (encList encIntBin)) := by
+      encIn encIntTable := by
   unfold restrictGroupColumns; apply mapWithInput hmat
   apply mapWithInput (hgroup.comp (fst encIn (encList encIntBin)))
   exact listGetD_binary 0 ((snd encIn (encList encIntBin)).comp (fst _ _)) (snd _ _)
@@ -1281,8 +1296,7 @@ unary). -/
 /-- `restrictGroupColumns` is computable in polynomial time. -/
 @[fun_prop] theorem computableInPolyTime_restrictGroupColumns :
     ComputableInPolyTime (fun p : List ℕ × List (List ℤ) => restrictGroupColumns p.1 p.2)
-      (encPair (encList encNat) (encList (encList encIntBin)))
-      (encList (encList encIntBin)) := by fun_prop
+      (encPair (encList encNat) encIntTable) encIntTable := by fun_prop
 
 /-- Compositional plain polynomial-time certificate for `pullbackReplacementRow` (`(n, R)` in
 unary). -/
@@ -1290,13 +1304,13 @@ unary). -/
     {encIn : Input ↪ List Bool} {n R : Input → ℕ} {placements : Input → List (ℕ × ℕ)}
     {incVars : Input → List ℕ} {e : Input → ℕ} {blockRepl : Input → List (List (List ℤ))}
     (hn : ComputableInPolyTime n encIn encUnary) (hR : ComputableInPolyTime R encIn encUnary)
-    (hpl : ComputableInPolyTime placements encIn (encList (encPair encNat encNat)))
+    (hpl : ComputableInPolyTime placements encIn encCopyPlacements)
     (hinc : ComputableInPolyTime incVars encIn (encList encNat))
     (he : ComputableInPolyTime e encIn encNat)
-    (hrepl : ComputableInPolyTime blockRepl encIn (encList (encList (encList encIntBin)))) :
+    (hrepl : ComputableInPolyTime blockRepl encIn (encList encIntTable)) :
     ComputableInPolyTime
       (fun x => pullbackReplacementRow (n x) (R x) (placements x) (incVars x) (e x) (blockRepl x))
-      encIn (encList (encList encIntBin)) := by
+      encIn encIntTable := by
   unfold pullbackReplacementRow
   refine Cslib.computableInPolyTime_tabulateTable hn hR ?_
   dsimp only [Cslib.rowEntry]
@@ -1325,9 +1339,9 @@ unary). -/
       (fun (((n, R), placements, incVars, e, blockRepl) :
           (ℕ × ℕ) × (List (ℕ × ℕ) × (List ℕ × (ℕ × List (List (List ℤ)))))) =>
         pullbackReplacementRow n R placements incVars e blockRepl)
-      (encPair (encPair encUnary encUnary) (encPair (encList (encPair encNat encNat))
-        (encPair (encList encNat) (encPair encNat (encList (encList (encList encIntBin)))))))
-      (encList (encList encIntBin)) := by fun_prop
+      (encPair (encPair encUnary encUnary) (encPair encCopyPlacements
+        (encPair (encList encNat) (encPair encNat (encList encIntTable)))))
+      encIntTable := by fun_prop
 
 end PolyTime
 

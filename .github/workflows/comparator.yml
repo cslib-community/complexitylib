@@ -38,14 +38,6 @@ jobs:
           key: lake-${{ env.CACHE_RECOVERY_GENERATION }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}-${{ github.sha }}
           restore-keys: lake-${{ env.CACHE_RECOVERY_GENERATION }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}
       - uses: ./.github/actions/install-lean
-      - uses: leanprover/lean-action@v1
-        with:
-          auto-config: 'false'
-          build: 'false'
-          test: 'false'
-          lint: 'false'
-          use-github-cache: 'false'
-          use-mathlib-cache: 'false'
       - name: Restore Mathlib cache with retries
         continue-on-error: true
         timeout-minutes: 10

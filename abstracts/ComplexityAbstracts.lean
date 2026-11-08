@@ -1,3 +1,5 @@
+import ComplexityAbstracts.AlternationAbstract
+import ComplexityAbstracts.AlternationBridge
 import ComplexityAbstracts.AndreevThresholdAbstract
 import ComplexityAbstracts.AndreevThresholdBridge
 import ComplexityAbstracts.ApproximateMembershipAbstract
