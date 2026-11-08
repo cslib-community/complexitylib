@@ -45,7 +45,9 @@ the form `mutualInfo (ν.map fun ω => (A ω, B ω))`. In this form:
 ## Main results
 
 * `Cslib.Probability.PMF.mutualInfo_nonneg`, `Cslib.Probability.PMF.condMutualInfo_nonneg`,
-  `Cslib.Probability.PMF.mutualInfo_le_entropy_map_snd`: basic bounds.
+  `Cslib.Probability.PMF.mutualInfo_le_entropy_map_snd`,
+  `Cslib.Probability.PMF.condMutualInfo_le_conditionalEntropy_fst`,
+  `Cslib.Probability.PMF.condMutualInfo_le_conditionalEntropy_snd`: basic bounds.
 * `Cslib.Probability.PMF.mutualInfo_map_prodMk_eq_add`,
   `Cslib.Probability.PMF.condMutualInfo_map_eq_add_sum`,
   `Cslib.Probability.PMF.mutualInfo_map_eq_add_sum`: chain rules.
@@ -128,6 +130,24 @@ theorem condMutualInfo_nonneg [Finite γ] [Finite α] [Finite β] (joint : PMF (
   simp only [conditionalEntropy, PMF.map_comp, Function.comp_def, e1] at h
   change 0 ≤ entropy (joint.map fun x => (x.1, x.2.1)) + entropy (joint.map fun x => (x.1, x.2.2)) -
     entropy joint - entropy (joint.map fun x => x.1)
+  linarith
+
+/-- `I(A; B | C) ≤ H(A | C)`. -/
+theorem condMutualInfo_le_conditionalEntropy_fst [Finite γ] [Finite α] [Finite β]
+    (joint : PMF (γ × α × β)) :
+    condMutualInfo joint ≤ conditionalEntropy (joint.map (Prod.map id Prod.fst)) := by
+  have h := entropy_map_le joint (Prod.map id Prod.snd)
+  rw [condMutualInfo, conditionalEntropy, PMF.map_comp]
+  change _ ≤ _ - entropy (joint.map Prod.fst)
+  linarith
+
+/-- `I(A; B | C) ≤ H(B | C)`. -/
+theorem condMutualInfo_le_conditionalEntropy_snd [Finite γ] [Finite α] [Finite β]
+    (joint : PMF (γ × α × β)) :
+    condMutualInfo joint ≤ conditionalEntropy (joint.map (Prod.map id Prod.snd)) := by
+  have h := entropy_map_le joint (Prod.map id Prod.fst)
+  rw [condMutualInfo, conditionalEntropy, PMF.map_comp]
+  change _ ≤ _ - entropy (joint.map Prod.fst)
   linarith
 
 /-- Revealing `B`, the joint entropy of `(B, F)` splits into that of `B` and the average entropy
