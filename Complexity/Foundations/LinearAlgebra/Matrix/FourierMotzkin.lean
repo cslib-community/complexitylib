@@ -194,79 +194,97 @@ private theorem mulVec_option {α : Type*} [Fintype α] (A : Matrix ι (Option �
 
 universe u v w
 
-omit [DecidableEq ι] [Fintype ι] in
-private theorem exists_projection_aux {μ : Type w} [Fintype μ] (κ : Type v) [Fintype κ] :
-    ∀ (ι : Type u) [Fintype ι] (A : Matrix ι κ K) (B : Matrix ι μ K) (b : ι → K),
-      ∃ (ρ : Type u) (_ : Fintype ρ) (T : Matrix ρ ι K), (∀ r i, 0 ≤ T r i) ∧ T * A = 0 ∧
-        ∀ z, (∃ y, A *ᵥ y + B *ᵥ z ≤ b) ↔ (T * B) *ᵥ z ≤ T *ᵥ b := by
+/-- The block of variables `κ` can be eliminated from every finite system over `K` with `μ`
+further variables whose rows lie in universe `u`: for each `A *ᵥ y + B *ᵥ z ≤ b` there is an
+entrywise nonnegative `T` with `T * A = 0` whose projected system `(T * B) *ᵥ z ≤ T *ᵥ b` is
+solvable exactly when the original one is solvable for some `y`. This is the induction motive of
+`exists_projection`. -/
+private def Eliminable (K : Type*) [Field K] [LinearOrder K] (μ : Type w) [Fintype μ]
+    (κ : Type v) [Fintype κ] : Prop :=
+  ∀ (ι : Type u) [Fintype ι] (A : Matrix ι κ K) (B : Matrix ι μ K) (b : ι → K),
+    ∃ (ρ : Type u) (_ : Fintype ρ) (T : Matrix ρ ι K), (∀ r i, 0 ≤ T r i) ∧ T * A = 0 ∧
+      ∀ z, (∃ y, A *ᵥ y + B *ᵥ z ≤ b) ↔ (T * B) *ᵥ z ≤ T *ᵥ b
+
+variable {μ : Type w} [Fintype μ]
+
+omit [IsStrictOrderedRing K] in
+/-- Eliminability is invariant under renaming the eliminated variables. -/
+private theorem Eliminable.of_equiv {α β : Type v} [Fintype α] [Fintype β] (e : α ≃ β)
+    (h : Eliminable.{u} K μ α) : Eliminable.{u} K μ β := by
+  intro ι _ A B b
+  obtain ⟨ρ, _, T, hT, hTA, hiff⟩ := h ι (A.submatrix id e) B b
+  refine ⟨ρ, inferInstance, T, hT, ?_, fun z => ?_⟩
+  · ext r j
+    have h := congr_fun (congr_fun hTA r) (e.symm j)
+    rw [Matrix.mul_apply] at h ⊢
+    simp only [submatrix_apply, id, Equiv.apply_symm_apply] at h
+    exact h
+  · rw [← hiff z]
+    constructor
+    · rintro ⟨y, hy⟩
+      refine ⟨y ∘ e, ?_⟩
+      rwa [submatrix_mulVec_equiv, Function.comp_assoc, e.self_comp_symm, Function.comp_id,
+        Function.comp_id]
+    · rintro ⟨y, hy⟩
+      refine ⟨y ∘ e.symm, ?_⟩
+      rwa [submatrix_mulVec_equiv, Function.comp_id] at hy
+
+/-- With no variables to eliminate, the system itself (`T = 1`) is its own projection. -/
+private theorem eliminable_pEmpty : Eliminable.{u} K μ PEmpty.{v + 1} := by
   classical
-  refine Fintype.induction_empty_option (P := fun κ _ => ∀ (ι : Type u) [Fintype ι]
-    (A : Matrix ι κ K) (B : Matrix ι μ K) (b : ι → K),
-      ∃ (ρ : Type u) (_ : Fintype ρ) (T : Matrix ρ ι K), (∀ r i, 0 ≤ T r i) ∧ T * A = 0 ∧
-        ∀ z, (∃ y, A *ᵥ y + B *ᵥ z ≤ b) ↔ (T * B) *ᵥ z ≤ T *ᵥ b) ?_ ?_ ?_ κ
-  · intro α β _ e ih ι _ A B b
-    let : Fintype α := Fintype.ofEquiv β e.symm
-    obtain ⟨ρ, _, T, hT, hTA, hiff⟩ := ih ι (A.submatrix id e) B b
-    refine ⟨ρ, inferInstance, T, hT, ?_, fun z => ?_⟩
-    · ext r j
-      have h := congr_fun (congr_fun hTA r) (e.symm j)
-      rw [Matrix.mul_apply] at h ⊢
-      simp only [submatrix_apply, id, Equiv.apply_symm_apply] at h
-      exact h
-    · rw [← hiff z]
-      constructor
-      · rintro ⟨y, hy⟩
-        refine ⟨y ∘ e, ?_⟩
-        rwa [submatrix_mulVec_equiv, Function.comp_assoc, e.self_comp_symm, Function.comp_id,
-          Function.comp_id]
-      · rintro ⟨y, hy⟩
-        refine ⟨y ∘ e.symm, ?_⟩
-        rwa [submatrix_mulVec_equiv, Function.comp_id] at hy
-  · intro ι _ A B b
-    refine ⟨ι, inferInstance, (1 : Matrix ι ι K), fun r i => ?_, ?_, fun z => ?_⟩
-    · rw [Matrix.one_apply]
-      split_ifs <;> norm_num
-    · ext _ j
-      exact j.elim
-    · rw [Matrix.one_mul, one_mulVec]
-      have h0 : ∀ y : PEmpty → K, A *ᵥ y = 0 := fun y => by
-        funext i
-        simp [mulVec, dotProduct]
-      constructor
-      · rintro ⟨y, hy⟩
-        rwa [h0, zero_add] at hy
-      · intro hz
-        exact ⟨fun j => j.elim, by rwa [h0, zero_add]⟩
-  · intro α _ ih ι _ A B b
-    set a : ι → K := fun i => A i none
-    set A₀ : Matrix ι α K := A.submatrix id some
-    obtain ⟨ρ, _, T, hT, hTA, hiff⟩ :=
-      ih (Row a) (combination a * A₀) (combination a * B) (combination a *ᵥ b)
-    refine ⟨ρ, inferInstance, T * combination a, fun r i => ?_, ?_, fun z => ?_⟩
-    · exact Finset.sum_nonneg fun s _ => mul_nonneg (hT r s) (combination_nonneg a s i)
-    · ext r j
-      cases j with
-      | none =>
-        change ((T * combination a) *ᵥ a) r = 0
-        rw [← mulVec_mulVec, combination_mulVec_self, mulVec_zero, Pi.zero_apply]
-      | some k =>
-        change (T * combination a * A₀) r k = 0
-        rw [Matrix.mul_assoc, hTA]
-        rfl
-    · rw [mulVec_mulVec] at hiff
-      rw [Matrix.mul_assoc, ← hiff z]
-      constructor
-      · rintro ⟨y, hy⟩
-        refine ⟨y ∘ some, ?_⟩
-        rw [← mulVec_mulVec, ← mulVec_mulVec, ← mulVec_add, ← exists_smul_add_le_iff]
-        refine ⟨y none, ?_⟩
-        rwa [← add_assoc, ← mulVec_option]
-      · rintro ⟨y₀, hy₀⟩
-        rw [← mulVec_mulVec, ← mulVec_mulVec, ← mulVec_add, ← exists_smul_add_le_iff] at hy₀
-        obtain ⟨t, ht⟩ := hy₀
-        refine ⟨fun j => j.elim t y₀, ?_⟩
-        rw [mulVec_option, add_assoc]
-        exact ht
+  intro ι _ A B b
+  refine ⟨ι, inferInstance, (1 : Matrix ι ι K), fun r i => ?_, ?_, fun z => ?_⟩
+  · rw [Matrix.one_apply]
+    split_ifs <;> norm_num
+  · ext _ j
+    exact j.elim
+  · rw [Matrix.one_mul, one_mulVec]
+    have h0 : ∀ y : PEmpty → K, A *ᵥ y = 0 := fun y => by
+      funext i
+      simp [mulVec, dotProduct]
+    constructor
+    · rintro ⟨y, hy⟩
+      rwa [h0, zero_add] at hy
+    · intro hz
+      exact ⟨fun j => j.elim, by rwa [h0, zero_add]⟩
+
+/-- **One more variable.** If `α` can be eliminated, so can `Option α`: one Fourier–Motzkin step
+(`exists_smul_add_le_iff`) removes the variable `none`, and the remaining variables are then
+eliminated from the combined system `combination a * A₀ *ᵥ y + combination a * B *ᵥ z ≤
+combination a *ᵥ b`. -/
+private theorem Eliminable.option {α : Type v} [Fintype α]
+    (h : Eliminable.{u} K μ α) : Eliminable.{u} K μ (Option α) := by
+  classical
+  intro ι _ A B b
+  set a : ι → K := fun i => A i none
+  set A₀ : Matrix ι α K := A.submatrix id some
+  obtain ⟨ρ, _, T, hT, hTA, hiff⟩ :=
+    h (Row a) (combination a * A₀) (combination a * B) (combination a *ᵥ b)
+  refine ⟨ρ, inferInstance, T * combination a, fun r i => ?_, ?_, fun z => ?_⟩
+  · exact Finset.sum_nonneg fun s _ => mul_nonneg (hT r s) (combination_nonneg a s i)
+  · ext r j
+    cases j with
+    | none =>
+      change ((T * combination a) *ᵥ a) r = 0
+      rw [← mulVec_mulVec, combination_mulVec_self, mulVec_zero, Pi.zero_apply]
+    | some k =>
+      change (T * combination a * A₀) r k = 0
+      rw [Matrix.mul_assoc, hTA]
+      rfl
+  · rw [mulVec_mulVec] at hiff
+    rw [Matrix.mul_assoc, ← hiff z]
+    constructor
+    · rintro ⟨y, hy⟩
+      refine ⟨y ∘ some, ?_⟩
+      rw [← mulVec_mulVec, ← mulVec_mulVec, ← mulVec_add, ← exists_smul_add_le_iff]
+      refine ⟨y none, ?_⟩
+      rwa [← add_assoc, ← mulVec_option]
+    · rintro ⟨y₀, hy₀⟩
+      rw [← mulVec_mulVec, ← mulVec_mulVec, ← mulVec_add, ← exists_smul_add_le_iff] at hy₀
+      obtain ⟨t, ht⟩ := hy₀
+      refine ⟨fun j => j.elim t y₀, ?_⟩
+      rw [mulVec_option, add_assoc]
+      exact ht
 
 /-- **Fourier–Motzkin projection.** Eliminating a finite block of variables `y` from the system
 `A *ᵥ y + B *ᵥ z ≤ b` yields a finite system `(T * B) *ᵥ z ≤ T *ᵥ b` in the remaining variables
@@ -275,7 +293,15 @@ private theorem exists_projection_aux {μ : Type w} [Fintype μ] (κ : Type v) [
 theorem exists_projection {ι : Type u} [Fintype ι] {κ : Type v} [Fintype κ] {μ : Type w}
     [Fintype μ] (A : Matrix ι κ K) (B : Matrix ι μ K) (b : ι → K) :
     ∃ (ρ : Type u) (_ : Fintype ρ) (T : Matrix ρ ι K), (∀ r i, 0 ≤ T r i) ∧ T * A = 0 ∧
-      ∀ z, (∃ y, A *ᵥ y + B *ᵥ z ≤ b) ↔ (T * B) *ᵥ z ≤ T *ᵥ b :=
-  exists_projection_aux κ ι A B b
+      ∀ z, (∃ y, A *ᵥ y + B *ᵥ z ≤ b) ↔ (T * B) *ᵥ z ≤ T *ᵥ b := by
+  classical
+  -- Induction on the eliminated block `κ`: empty, `Option`, and transport along equivalences.
+  have : Eliminable.{u} K μ κ :=
+    Fintype.induction_empty_option (P := fun κ _ => Eliminable.{u} K μ κ)
+      (fun _ _ _ e h => by
+        let : Fintype _ := Fintype.ofEquiv _ e.symm
+        exact h.of_equiv e)
+      eliminable_pEmpty (fun _ _ h => h.option) κ
+  exact this ι A B b
 
 end Matrix.FourierMotzkin
