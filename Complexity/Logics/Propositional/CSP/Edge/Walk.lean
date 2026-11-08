@@ -45,7 +45,9 @@ variable {Rel V : Type*} {F : CSP Rel V} [DecidableEq V]
 /-- A variable-to-variable trail is represented by its starting variable and its sequence of
 incidence pairs. `IsWalk` checks incidence adjacency and absence of repeated incidences. -/
 structure Walk (F : CSP Rel V) where
+  /-- Starting variable, also the endpoint of a length-zero trail. -/
   start : V
+  /-- Ordered variable-to-variable steps, each represented by its two incidences. -/
   steps : List (Occurrence F × Occurrence F)
 
 namespace Walk
