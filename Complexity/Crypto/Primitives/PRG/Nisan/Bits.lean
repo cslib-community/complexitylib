@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Crypto.Primitives.PRG.Nisan
+public import Complexity.Foundations.Data.BitString.Block
 public import Complexity.Probability.BitString.ToeplitzHash
 public import Cslib.Foundations.Data.BitString
 import Complexity.Crypto.Primitives.PRG.NisanWigderson.Sampling
@@ -20,16 +21,17 @@ With the blocks the bit strings of length `n` and the Toeplitz hash family over 
 (`Cslib.BitString.isPairwiseIndependentHash_toeplitzHash_bool`), Nisan's generator
 `Cslib.Crypto.PRG.Nisan.bitGenerator n k` stretches a seed of `n + k (3 n - 1)` bits
 (`Cslib.Crypto.PRG.Nisan.card_bitSeed`) into `2 ^ k n` bits, the `2 ^ k` blocks of
-`Cslib.Crypto.PRG.Nisan.blocks` concatenated in order. A read-once branching program on `2 ^ k n`
-bits regroups into a program on `2 ^ k` blocks of `n` bits with the same states
-(`Cslib.BranchingPrograms.ReadOnceProgram.blocks`), so the generator fools read-once branching
-programs of width `w` on bits with error `(2 ^ k - 1) w / (2 √(2 ^ n))`
+`Cslib.Crypto.PRG.Nisan.blocks` concatenated in order by `Cslib.BitString.blocksEquiv.symm`. A
+read-once branching program on `2 ^ k n` bits regroups into a program on `2 ^ k` blocks of `n` bits
+with the same states (`Cslib.BranchingPrograms.ReadOnceProgram.blocks`), so the generator fools
+read-once branching programs of width `w` on bits with error `(2 ^ k - 1) w / (2 √(2 ^ n))`
 (`Cslib.Crypto.PRG.Nisan.secure_bitGenerator`). For `n = 2 (k + a + d)` this is at most `2 ^ (-d)`
 for width up to `2 ^ a` (`Cslib.Crypto.PRG.Nisan.secure_bitGenerator_of_le`): `O((k + a + d) k)`
 seed bits fool programs of length `2 ^ k n`, width `2 ^ a` and error `2 ^ (-d)`. For width `w`,
 length `R` and error `ε`, this is the seed length `O(log (w R / ε) log R)` of Nisan's generator
 [Nisan1992], [Arora and Barak, Theorem 16.48][AroraBarak07], [Vadhan, Section 8.2.1][Vadhan2012],
-[Hatami and Hoza, Section 3.2][HatamiHoza2024].
+the parametrized seed length of [Hatami and Hoza, Theorem 3.8][HatamiHoza2024], which the remark
+after that theorem attributes to Nisan as well.
 
 ## Main definitions
 
@@ -74,10 +76,10 @@ theorem card_bitSeed (n k : ℕ) : Fintype.card (BitSeed n k) = 2 ^ (n + k * (3 
 /-- **Nisan's generator on bit strings**: the `2 ^ k` blocks of `n` bits of Nisan's generator with
 the Toeplitz hash family over `Bool`, concatenated in order. -/
 def bitGenerator (n k : ℕ) : Generator (BitSeed n k) (BitString (2 ^ k * n)) :=
-  ⟨fun z => ReadOnceProgram.flatten (blocks toeplitzHash k z.1 z.2)⟩
+  ⟨fun z => blocksEquiv.symm (blocks toeplitzHash k z.1 z.2)⟩
 
 @[simp] theorem bitGenerator_apply (n k : ℕ) (z : BitSeed n k) :
-    bitGenerator n k z = ReadOnceProgram.flatten (blocks toeplitzHash k z.1 z.2) :=
+    bitGenerator n k z = blocksEquiv.symm (blocks toeplitzHash k z.1 z.2) :=
   rfl
 
 /-- **Nisan's generator on bit strings fools read-once branching programs** [Nisan1992]: no
@@ -93,8 +95,8 @@ theorem secure_bitGenerator (n k w : ℕ) :
   have huni : (dens {y : BitString (2 ^ k * n) | P.eval y = true} : ℝ) =
       dens {u : Fin (2 ^ k) → BitString n | P.blocks.eval u = true} := by
     simp only [← Fintype.expect_boole, ReadOnceProgram.eval_blocks]
-    exact (Fintype.expect_equiv (ReadOnceProgram.flattenEquiv (2 ^ k) n)
-      (fun u => if P.eval (ReadOnceProgram.flatten u) = true then (1 : ℝ) else 0)
+    exact (Fintype.expect_equiv blocksEquiv.symm
+      (fun u => if P.eval (blocksEquiv.symm u) = true then (1 : ℝ) else 0)
       (fun y => if P.eval y = true then (1 : ℝ) else 0) fun _ => rfl).symm
   have hgen : (dens {z : BitSeed n k | P.eval (bitGenerator n k z) = true} : ℝ) =
       dens {z : BitSeed n k | P.blocks.eval (blocks toeplitzHash k z.1 z.2) = true} := by

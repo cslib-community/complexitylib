@@ -9,8 +9,9 @@ module
 
 public import Complexity.Init
 public import Complexity.Computability.BranchingProgram.MonoidProgram
-public import Mathlib.Logic.Equiv.Fin.Basic
+public import Complexity.Foundations.Data.BitString.Block
 public import Mathlib.Algebra.Group.End
+import Complexity.Foundations.Data.List.FoldlIdx
 import Batteries.Data.Fin.Fold
 import Mathlib.Data.List.OfFn
 
@@ -27,11 +28,13 @@ the tests fooled by Nisan's generator. These are the standard-order read-once br
 of [Hatami and Hoza, Definition 1.5][HatamiHoza2024], the oblivious read-once branching programs of
 [Vadhan, Section 8.2.1][Vadhan2012] (with layers of states `S` and edges labelled by letters). A
 program of length `m * n` over `X` regroups into a program of length `m` over the blocks
-`Fin n → X` with the same states (`ReadOnceProgram.blocks`, `ReadOnceProgram.eval_blocks`).
+`Fin n → X` with the same states (`ReadOnceProgram.blocks`, `ReadOnceProgram.eval_blocks`); the
+words of length `m * n` are the blocks concatenated by `Cslib.BitString.blocksEquiv.symm`.
 
-The run of a time-dependent transition function `δ : ℕ → S → X → S` on a list of letters, starting
-at time `t` in state `s`, is `runFrom δ t s` (`runFrom_append` splits runs). A program runs its
-transition function extended by the identity after time `L` (`ReadOnceProgram.finalState_eq`).
+The run of a time-dependent transition function `δ : ℕ → S → X → S` on a list of letters `l`,
+starting at time `t` in state `s`, is the indexed fold `l.foldlIdx δ s t` (`List.foldlIdx_append`
+splits runs). A program runs its transition function extended by the identity after time `L`
+(`ReadOnceProgram.finalState_eq`).
 
 Read-once branching programs are a sequential form of monoid programs
 (`Cslib.BranchingPrograms.MonoidProgram`) over the transformation monoid `Function.End S`. That
@@ -46,10 +49,9 @@ nondeterministic transitions.
 
 ## Main definitions
 
-* `Cslib.BranchingPrograms.runFrom`: the run of a time-dependent transition function on a list.
 * `Cslib.BranchingPrograms.ReadOnceProgram`: a read-once branching program in standard order.
 * `Cslib.BranchingPrograms.ReadOnceProgram.eval`: its output on a word.
-* `Cslib.BranchingPrograms.ReadOnceProgram.flattenEquiv`: blocks of letters as words.
+* `Cslib.BranchingPrograms.ReadOnceProgram.stepAt`: its transition function extended to all times.
 * `Cslib.BranchingPrograms.ReadOnceProgram.blocks`: the program on blocks of `n` letters.
 * `Cslib.BranchingPrograms.ReadOnceProgram.toMonoidProgram`: the program as a monoid program over
   `Function.End S`.
@@ -72,61 +74,9 @@ nondeterministic transitions.
 
 namespace Cslib.BranchingPrograms
 
+open Cslib.BitString
+
 variable {S X : Type*}
-
-/-! ### Runs of time-dependent transition functions -/
-
-/-- The run of the time-dependent transition function `δ` on a list of letters, starting at time
-`t` in state `s`: at time `t + i` it reads the `i`-th letter. -/
-def runFrom (δ : ℕ → S → X → S) : ℕ → S → List X → S
-  | _, s, [] => s
-  | t, s, a :: l => runFrom δ (t + 1) (δ t s a) l
-
-@[simp] theorem runFrom_nil (δ : ℕ → S → X → S) (t : ℕ) (s : S) : runFrom δ t s [] = s :=
-  rfl
-
-@[simp] theorem runFrom_cons (δ : ℕ → S → X → S) (t : ℕ) (s : S) (a : X) (l : List X) :
-    runFrom δ t s (a :: l) = runFrom δ (t + 1) (δ t s a) l :=
-  rfl
-
-/-- **Splitting a run**: the run on `l₁ ++ l₂` is the run on `l₂`, started at the time and state
-where the run on `l₁` ends. -/
-theorem runFrom_append (δ : ℕ → S → X → S) (t : ℕ) (s : S) (l₁ l₂ : List X) :
-    runFrom δ t s (l₁ ++ l₂) = runFrom δ (t + l₁.length) (runFrom δ t s l₁) l₂ := by
-  induction l₁ generalizing t s with
-  | nil => rfl
-  | cons a l ih =>
-    rw [List.cons_append, runFrom_cons, ih, runFrom_cons, List.length_cons, Nat.add_assoc,
-      Nat.add_comm 1]
-
-/-- Runs on mapped letters are runs of the transition function precomposed with the map. -/
-theorem runFrom_map {Y : Type*} (δ : ℕ → S → X → S) (f : Y → X) (t : ℕ) (s : S) (l : List Y) :
-    runFrom δ t s (l.map f) = runFrom (fun t s a => δ t s (f a)) t s l := by
-  induction l generalizing t s with
-  | nil => rfl
-  | cons a l ih => exact ih _ _
-
-/-- **Runs on blocks**: if every block of the list `L` has length `n`, the run on the concatenated
-blocks is the run on the list of blocks, reading a whole block at each time. -/
-theorem runFrom_flatten (δ : ℕ → S → X → S) {n : ℕ} (L : List (List X))
-    (hL : ∀ l ∈ L, l.length = n) (t : ℕ) (s : S) :
-    runFrom δ (n * t) s L.flatten = runFrom (fun t s l => runFrom δ (n * t) s l) t s L := by
-  induction L generalizing t s with
-  | nil => rfl
-  | cons l L ih =>
-    rw [List.flatten_cons, runFrom_append, hL l List.mem_cons_self, runFrom_cons, ← Nat.mul_succ,
-      ih (fun l' hl' => hL l' (List.mem_cons_of_mem _ hl'))]
-
-/-- Folding a time-shifted transition function over the positions of a word is its run. -/
-theorem foldl_eq_runFrom (δ : ℕ → S → X → S) (t : ℕ) {m : ℕ} (x : Fin m → X) (s : S) :
-    Fin.foldl m (fun s i => δ (t + i) s (x i)) s = runFrom δ t s (List.ofFn x) := by
-  induction m generalizing t s with
-  | zero => rfl
-  | succ m ih =>
-    rw [Fin.foldl_succ, List.ofFn_succ, runFrom_cons, ← ih (t + 1)]
-    simp only [Fin.val_zero, Nat.add_zero, Fin.val_succ, Nat.add_assoc, Nat.add_comm 1]
-
-/-! ### Read-once branching programs -/
 
 /-- A *read-once branching program* in standard order, of length `L` over the alphabet `X` with
 states `S`: from the state `start`, at time `i` it moves from state `s` to `step i s a` on reading
@@ -158,62 +108,34 @@ def stepAt (t : ℕ) (s : S) (a : X) : S :=
 
 /-- The final state is the run of the extended transition function `stepAt` on the word. -/
 theorem finalState_eq (x : Fin L → X) :
-    P.finalState x = runFrom P.stepAt 0 P.start (List.ofFn x) := by
-  rw [← foldl_eq_runFrom]
+    P.finalState x = (List.ofFn x).foldlIdx P.stepAt P.start := by
+  rw [List.foldlIdx_ofFn]
   simp only [finalState, stepAt, Nat.zero_add, Fin.is_lt, dite_true]
 
 /-! ### Blocks -/
-
-/-- The word of `m * n` letters whose `i`-th block of `n` letters is `x i`, in order. -/
-def flatten {m n : ℕ} (x : Fin m → Fin n → X) : Fin (m * n) → X :=
-  fun k => x (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2
-
-@[simp] theorem flatten_apply {m n : ℕ} (x : Fin m → Fin n → X) (i : Fin m) (j : Fin n) :
-    flatten x (finProdFinEquiv (i, j)) = x i j := by
-  simp only [flatten, Equiv.symm_apply_apply]
-
-/-- Flattening is a bijection between `m` blocks of `n` letters and words of `m * n` letters. -/
-def flattenEquiv (m n : ℕ) : (Fin m → Fin n → X) ≃ (Fin (m * n) → X) :=
-  (Equiv.curry (Fin m) (Fin n) X).symm.trans (finProdFinEquiv.arrowCongr (Equiv.refl X))
-
-@[simp] theorem flattenEquiv_apply {m n : ℕ} (x : Fin m → Fin n → X) :
-    flattenEquiv m n x = flatten x :=
-  rfl
-
-/-- Concatenating the blocks of a word as lists. -/
-theorem ofFn_flatten {m n : ℕ} (x : Fin m → Fin n → X) :
-    List.ofFn (flatten x) = (List.ofFn fun i => List.ofFn (x i)).flatten := by
-  rw [List.ofFn_mul]
-  congr 1
-  refine List.ofFn_inj.2 (funext fun i => List.ofFn_inj.2 (funext fun j => ?_))
-  rw [← flatten_apply x i j]
-  congr 1
-  ext
-  simp only [finProdFinEquiv_apply_val]
-  rw [Nat.add_comm, Nat.mul_comm]
 
 /-- The program of length `m` on blocks of `n` letters: at time `i` it runs `P` on the `i`-th
 block, from time `n * i`. It has the same states, hence the same width. -/
 def blocks {m n : ℕ} (P : ReadOnceProgram (m * n) S X) : ReadOnceProgram m S (Fin n → X) where
   start := P.start
-  step i s y := runFrom P.stepAt (n * i) s (List.ofFn y)
+  step i s y := (List.ofFn y).foldlIdx P.stepAt s (n * i)
   accept := P.accept
 
 /-- **Regrouping into blocks** preserves final states. -/
 theorem finalState_blocks {m n : ℕ} (P : ReadOnceProgram (m * n) S X) (x : Fin m → Fin n → X) :
-    P.blocks.finalState x = P.finalState (flatten x) := by
-  have hrun := runFrom_flatten P.stepAt (List.ofFn fun i => List.ofFn (x i))
+    P.blocks.finalState x = P.finalState (blocksEquiv.symm x) := by
+  have hrun := List.foldlIdx_flatten P.stepAt (List.ofFn fun i => List.ofFn (x i))
     (fun l hl => by
       obtain ⟨i, rfl⟩ := List.mem_ofFn.1 hl
-      exact List.length_ofFn) 0 P.start
-  rw [Nat.mul_zero, ← ofFn_flatten, ← finalState_eq, List.ofFn_comp', runFrom_map,
-    ← foldl_eq_runFrom] at hrun
+      exact List.length_ofFn) P.start 0
+  rw [Nat.mul_zero, ← ofFn_blocksEquiv_symm, ← finalState_eq, List.ofFn_comp', List.foldlIdx_map,
+    List.foldlIdx_ofFn] at hrun
   rw [hrun]
   simp only [finalState, Nat.zero_add, blocks]
 
 /-- **Regrouping into blocks** preserves outputs. -/
 theorem eval_blocks {m n : ℕ} (P : ReadOnceProgram (m * n) S X) (x : Fin m → Fin n → X) :
-    P.blocks.eval x = P.eval (flatten x) := by
+    P.blocks.eval x = P.eval (blocksEquiv.symm x) := by
   rw [eval, finalState_blocks]
   rfl
 

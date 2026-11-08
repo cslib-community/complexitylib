@@ -60,9 +60,13 @@ example : Fintype.card (BitSeed 4 4) = 2 ^ 48 ∧ 2 ^ 4 * 4 = 64 := by
   rw [card_bitSeed]
   decide
 
--- The parameters of Nisan's theorem: width up to `2 ^ 3` and error `1 / 4` with `n = 14`.
-example : (bitGenerator 14 2).Secure (IsReadOnceTest 8) 4⁻¹ := by
-  have h := secure_bitGenerator_of_le 2 3 2 8 (by norm_num)
-  rwa [show ((2 : NNReal) ^ 2)⁻¹ = 4⁻¹ by norm_num] at h
+-- The parameters of Nisan's theorem: width up to `2 ^ 1` and error `1 / 2` with `k = 10` and
+-- `n = 2 (10 + 1 + 1) = 24`. The generator stretches `734` seed bits into `24576` output bits.
+example : (bitGenerator 24 10).Secure (IsReadOnceTest 2) 2⁻¹ ∧
+    Fintype.card (BitSeed 24 10) = 2 ^ 734 ∧ 2 ^ 10 * 24 = 24576 := by
+  refine ⟨?_, ?_, by norm_num⟩
+  · have h := secure_bitGenerator_of_le 10 1 1 2 (by norm_num)
+    rwa [pow_one] at h
+  · rw [card_bitSeed]
 
 end ComplexityTests.NisanGenerator

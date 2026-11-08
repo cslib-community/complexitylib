@@ -36,7 +36,7 @@ surjectivity of `a ↦ toeplitz a *ᵥ d` for `d ≠ 0` transfers from `ZMod 2` 
 * [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*, Section 4.6][KatzLindell2020]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

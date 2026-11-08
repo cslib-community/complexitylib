@@ -14,6 +14,7 @@ public import Cslib.Crypto.Primitives.PRG.Defs
 public import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
 import Complexity.Crypto.Primitives.PRG.NisanWigderson.Sampling
 import Complexity.Foundations.Data.Finset.Expect
+import Complexity.Foundations.Data.List.FoldlIdx
 import Complexity.Probability.PairwiseIndependentHash.Mixing
 import Mathlib.Algebra.Order.BigOperators.Expect
 
@@ -27,19 +28,24 @@ Nisan's generator [Nisan1992] stretches a seed consisting of a block `x : X` and
 `G₀(x) = x`, `G_{k+1}(x; h₁, …, h_{k+1}) = G_k(x; h₂, …, h_{k+1}) ++ G_k(h₁ x; h₂, …, h_{k+1})`.
 
 So block `b = (b₁ … b_k)` in binary is `h_k^{b_k} (⋯ (h₂^{b₂} (h₁^{b₁} x)))`, the first seed
-choosing the most significant bit and acting first. For every read-once branching program of
-width `w` and length `2 ^ k` over the alphabet `X`, its acceptance probabilities on the output of
-the generator, for a uniform seed, and on uniform words differ by at most `(2 ^ k - 1) w / (2 √|X|)`
-(`Cslib.Crypto.PRG.Nisan.abs_dens_eval_blocks_sub_le`), and the same holds for every time-dependent
-transition function with `w` states (`Cslib.Crypto.PRG.Nisan.abs_dens_runFrom_blocks_sub_le`).
+choosing the most significant bit and acting first. The recursion peels off the first hash seed;
+presentations that peel off the last one, `G_k(x; h₁, …, h_k) = G_{k-1}(x; h₁, …, h_{k-1}) ++
+G_{k-1}(h_k x; h₁, …, h_{k-1})`, define the same generator on the reversed tuple of hash seeds
+`(h_k, …, h₁)`, which is uniform exactly when `(h₁, …, h_k)` is. For every read-once branching
+program of width `w` and length `2 ^ k` over the alphabet `X`, its acceptance probabilities on the
+output of the generator, for a uniform seed, and on uniform words differ by at most
+`(2 ^ k - 1) w / (2 √|X|)` (`Cslib.Crypto.PRG.Nisan.abs_dens_eval_blocks_sub_le`), and the same
+holds for every time-dependent transition function `δ` with `w` states, run as the indexed fold
+`List.foldlIdx δ` (`Cslib.Crypto.PRG.Nisan.abs_dens_foldlIdx_blocks_sub_le`).
 As a generator (`Cslib.Crypto.PRG.Nisan.generator`), it is secure against the tests computed by
 read-once branching programs of width `w` (`Cslib.Crypto.PRG.IsReadOnceTest`) with that error
 (`Cslib.Crypto.PRG.Nisan.secure_generator`). With `X` the bit strings of length `n` and the
 Toeplitz hash family, seeds of `O(n k)` bits fool programs on `2 ^ k n` bits
 (`Complexity.Crypto.Primitives.PRG.Nisan.Bits`): for width `w`, length `R` and error `ε` this is
 the seed length `O(log (w R / ε) log R)` of Nisan's theorem [Arora and Barak, Theorem
-16.48][AroraBarak07], [Vadhan, Section 8.2.1][Vadhan2012], [Hatami and Hoza, Section
-3.2][HatamiHoza2024].
+16.48][AroraBarak07], [Vadhan, Section 8.2.1][Vadhan2012]; in this parametrized form it is the
+seed length of [Hatami and Hoza, Theorem 3.8][HatamiHoza2024], which the remark after that theorem
+attributes to Nisan as well.
 
 ## Proof
 
@@ -70,7 +76,7 @@ the same hash seeds, so the induction runs over all start distributions with the
 
 ## Main results
 
-* `Cslib.Crypto.PRG.Nisan.abs_dens_runFrom_blocks_sub_le`: Nisan's generator fools time-dependent
+* `Cslib.Crypto.PRG.Nisan.abs_dens_foldlIdx_blocks_sub_le`: Nisan's generator fools time-dependent
   transition functions with `w` states.
 * `Cslib.Crypto.PRG.Nisan.abs_dens_eval_blocks_sub_le`: Nisan's generator fools read-once branching
   programs of width `w`.
@@ -172,25 +178,25 @@ private theorem sum_prob {Ω : Type*} [Fintype Ω] [Nonempty Ω] (r : Ω → S) 
 
 /-- The probability that `n` uniform letters move `s` to `s'` from time `t`. -/
 private noncomputable def uniP [Fintype X] (δ : ℕ → S → X → S) (t n : ℕ) (s s' : S) : ℝ :=
-  prob (fun u : Fin n → X => runFrom δ t s (List.ofFn u)) s'
+  prob (fun u : Fin n → X => (List.ofFn u).foldlIdx δ s t) s'
 
 /-- The probability that the blocks of Nisan's generator, with the hash seeds `hs` and a uniform
 block, move `s` to `s'` from time `t`. -/
 private noncomputable def genP [Fintype X] (h : ι → X → X) (δ : ℕ → S → X → S) (t k : ℕ)
     (hs : Fin k → ι) (s s' : S) : ℝ :=
-  prob (fun x : X => runFrom δ t s (List.ofFn (blocks h k x hs))) s'
+  prob (fun x : X => (List.ofFn (blocks h k x hs)).foldlIdx δ s t) s'
 
 /-- **Chapman–Kolmogorov**: `a + b` uniform letters are `a` uniform letters followed by `b`
 independent uniform letters. -/
 private theorem uniP_add [Fintype X] (δ : ℕ → S → X → S) (t a b : ℕ) (s s'' : S) :
     uniP δ t (a + b) s s'' = ∑ s', uniP δ t a s s' * uniP δ (t + a) b s' s'' := by
   rw [uniP, prob_eq_expect, ← Fintype.expect_equiv (Fin.appendEquiv a b)
-    (fun p => if runFrom δ t s (List.ofFn (Fin.append p.1 p.2)) = s'' then (1 : ℝ) else 0) _
+    (fun p => if (List.ofFn (Fin.append p.1 p.2)).foldlIdx δ s t = s'' then (1 : ℝ) else 0) _
     fun _ => rfl, Fintype.expect_prod_type]
-  simp only [List.ofFn_fin_append, runFrom_append, List.length_ofFn]
-  rw [expect_comp_eq_sum (fun u₁ : Fin a → X => runFrom δ t s (List.ofFn u₁))
+  simp only [List.ofFn_fin_append, List.foldlIdx_append, List.length_ofFn]
+  rw [expect_comp_eq_sum (fun u₁ : Fin a → X => (List.ofFn u₁).foldlIdx δ s t)
     (fun s' => 𝔼 u₂ : Fin b → X,
-      if runFrom δ (t + a) s' (List.ofFn u₂) = s'' then (1 : ℝ) else 0)]
+      if (List.ofFn u₂).foldlIdx δ s' (t + a) = s'' then (1 : ℝ) else 0)]
   simp only [uniP, prob_eq_expect]
 
 private theorem uniP_two_pow_succ [Fintype X] (δ : ℕ → S → X → S) (t k : ℕ) (s s'' : S) :
@@ -225,12 +231,12 @@ run on the blocks for `h i x`. -/
 private theorem genP_succ [Fintype X] (h : ι → X → X) (δ : ℕ → S → X → S) (t k : ℕ) (i : ι)
     (hs : Fin k → ι) (s s'' : S) :
     genP h δ t (k + 1) (Fin.cons i hs) s s'' =
-      ∑ s', (dens {x | runFrom δ t s (List.ofFn (blocks h k x hs)) = s' ∧
-        runFrom δ (t + 2 ^ k) s' (List.ofFn (blocks h k (h i x) hs)) = s''} : ℝ) := by
+      ∑ s', (dens {x | (List.ofFn (blocks h k x hs)).foldlIdx δ s t = s' ∧
+        (List.ofFn (blocks h k (h i x) hs)).foldlIdx δ s' (t + 2 ^ k) = s''} : ℝ) := by
   rw [genP, prob]
-  simp only [ofFn_blocks_succ, Fin.tail_cons, Fin.cons_zero, runFrom_append, List.length_ofFn]
-  exact dens_filter_comp (fun x => runFrom δ t s (List.ofFn (blocks h k x hs)))
-    (fun s' x => runFrom δ (t + 2 ^ k) s' (List.ofFn (blocks h k (h i x) hs)) = s'')
+  simp only [ofFn_blocks_succ, Fin.tail_cons, Fin.cons_zero, List.foldlIdx_append, List.length_ofFn]
+  exact dens_filter_comp (fun x => (List.ofFn (blocks h k x hs)).foldlIdx δ s t)
+    (fun s' x => (List.ofFn (blocks h k (h i x) hs)).foldlIdx δ s' (t + 2 ^ k) = s'')
 
 /-! ### The junction bound -/
 
@@ -372,8 +378,8 @@ private theorem expect_sum_abs_succ_le [Fintype ι] [Fintype X] [Nonempty X] [De
   have ih₁ := ih t π hπ hπ1
   have ih₂ := ih (t + 2 ^ k) (fun s' => ∑ s, π s * uniP δ t (2 ^ k) s s') hρ hρ1
   have hJ (hs : Fin k → ι) := expect_junction_le hh
-    (fun s x => runFrom δ t s (List.ofFn (blocks h k x hs)))
-    (fun s' y => runFrom δ (t + 2 ^ k) s' (List.ofFn (blocks h k y hs))) π hπ hπ1
+    (fun s x => (List.ofFn (blocks h k x hs)).foldlIdx δ s t)
+    (fun s' y => (List.ofFn (blocks h k y hs)).foldlIdx δ s' (t + 2 ^ k)) π hπ hπ1
   rw [Fin.expect_univ_cons, expect_comm]
   calc 𝔼 hs : Fin k → ι, 𝔼 i, ∑ s'', |∑ s, π s *
         (genP h δ t (k + 1) (Fin.cons i hs) s s'' - uniP δ t (2 ^ (k + 1)) s s'')|
@@ -382,23 +388,23 @@ private theorem expect_sum_abs_succ_le [Fintype ι] [Fintype X] [Nonempty X] [De
             ∑ s'', |∑ s', (∑ s, π s * uniP δ t (2 ^ k) s s') *
               (genP h δ (t + 2 ^ k) k hs s' s'' - uniP δ (t + 2 ^ k) (2 ^ k) s' s'')| +
             ∑ s'', |∑ s, π s * ∑ s',
-              ((dens {x | runFrom δ t s (List.ofFn (blocks h k x hs)) = s' ∧
-                  runFrom δ (t + 2 ^ k) s' (List.ofFn (blocks h k (h i x) hs)) = s''} : ℝ) -
+              ((dens {x | (List.ofFn (blocks h k x hs)).foldlIdx δ s t = s' ∧
+                  (List.ofFn (blocks h k (h i x) hs)).foldlIdx δ s' (t + 2 ^ k) = s''} : ℝ) -
                 genP h δ t k hs s s' * genP h δ (t + 2 ^ k) k hs s' s'')|) := by
         refine expect_le_expect fun hs _ => expect_le_expect fun i _ => ?_
         simp only [genP_succ, uniP_two_pow_succ]
         exact sum_abs_step_le π (genP h δ t k hs) (uniP δ t (2 ^ k))
           (genP h δ (t + 2 ^ k) k hs) (uniP δ (t + 2 ^ k) (2 ^ k))
-          (fun s s' s'' => (dens {x | runFrom δ t s (List.ofFn (blocks h k x hs)) = s' ∧
-            runFrom δ (t + 2 ^ k) s' (List.ofFn (blocks h k (h i x) hs)) = s''} : ℝ))
+          (fun s s' s'' => (dens {x | (List.ofFn (blocks h k x hs)).foldlIdx δ s t = s' ∧
+            (List.ofFn (blocks h k (h i x) hs)).foldlIdx δ s' (t + 2 ^ k) = s''} : ℝ))
           (fun _ _ => prob_nonneg _ _) fun _ => sum_prob _
     _ = 𝔼 hs : Fin k → ι,
             ∑ s', |∑ s, π s * (genP h δ t k hs s s' - uniP δ t (2 ^ k) s s')| +
           𝔼 hs : Fin k → ι, ∑ s'', |∑ s', (∑ s, π s * uniP δ t (2 ^ k) s s') *
             (genP h δ (t + 2 ^ k) k hs s' s'' - uniP δ (t + 2 ^ k) (2 ^ k) s' s'')| +
           𝔼 hs : Fin k → ι, 𝔼 i, ∑ s'', |∑ s, π s * ∑ s',
-            ((dens {x | runFrom δ t s (List.ofFn (blocks h k x hs)) = s' ∧
-                runFrom δ (t + 2 ^ k) s' (List.ofFn (blocks h k (h i x) hs)) = s''} : ℝ) -
+            ((dens {x | (List.ofFn (blocks h k x hs)).foldlIdx δ s t = s' ∧
+                (List.ofFn (blocks h k (h i x) hs)).foldlIdx δ s' (t + 2 ^ k) = s''} : ℝ) -
               genP h δ t k hs s s' * genP h δ (t + 2 ^ k) k hs s' s'')| := by
         simp only [expect_add_distrib, Fintype.expect_const]
     _ ≤ (2 ^ k - 1) * (Fintype.card S / √(Fintype.card X)) +
@@ -447,11 +453,11 @@ independent family `h i : X → X`, every transition function `δ` with states `
 and accepting states `F`, the probability that the run on the `2 ^ k` blocks of Nisan's generator
 with a uniform seed accepts differs from the probability that the run on `2 ^ k` uniform letters
 accepts by at most `(2 ^ k - 1) |S| / (2 √|X|)`. -/
-theorem abs_dens_runFrom_blocks_sub_le [Fintype ι] [Fintype X] [DecidableEq X] [Fintype S]
+theorem abs_dens_foldlIdx_blocks_sub_le [Fintype ι] [Fintype X] [DecidableEq X] [Fintype S]
     {h : ι → X → X} (hh : IsPairwiseIndependentHash h) (δ : ℕ → S → X → S) (s₀ : S)
     (F : S → Bool) (k : ℕ) :
-    |(dens {z : X × (Fin k → ι) | F (runFrom δ 0 s₀ (List.ofFn (blocks h k z.1 z.2))) = true} :
-        ℝ) - dens {u : Fin (2 ^ k) → X | F (runFrom δ 0 s₀ (List.ofFn u)) = true}| ≤
+    |(dens {z : X × (Fin k → ι) | F ((List.ofFn (blocks h k z.1 z.2)).foldlIdx δ s₀) = true} :
+        ℝ) - dens {u : Fin (2 ^ k) → X | F ((List.ofFn u).foldlIdx δ s₀) = true}| ≤
       (2 ^ k - 1) * Fintype.card S / (2 * √(Fintype.card X)) := by
   classical
   rcases isEmpty_or_nonempty X with hX | hX
@@ -466,16 +472,16 @@ theorem abs_dens_runFrom_blocks_sub_le [Fintype ι] [Fintype X] [DecidableEq X] 
   have hbound := expect_sum_abs_le hh δ k 0 _ hπ hπ1
   simp only [boole_mul, sum_ite_eq, mem_univ, ite_true] at hbound
   have hgen : (dens {z : X × (Fin k → ι) |
-      F (runFrom δ 0 s₀ (List.ofFn (blocks h k z.1 z.2))) = true} : ℝ) =
+      F ((List.ofFn (blocks h k z.1 z.2)).foldlIdx δ s₀) = true} : ℝ) =
       𝔼 hs : Fin k → ι, ∑ s', genP h δ 0 k hs s₀ s' * (if F s' = true then 1 else 0) := by
     rw [← Fintype.expect_boole, Fintype.expect_prod_type, expect_comm]
     refine expect_congr rfl fun hs _ => ?_
-    exact expect_comp_eq_sum (fun x => runFrom δ 0 s₀ (List.ofFn (blocks h k x hs)))
+    exact expect_comp_eq_sum (fun x => (List.ofFn (blocks h k x hs)).foldlIdx δ s₀)
       fun s' => if F s' = true then 1 else 0
-  have huni : (dens {u : Fin (2 ^ k) → X | F (runFrom δ 0 s₀ (List.ofFn u)) = true} : ℝ) =
+  have huni : (dens {u : Fin (2 ^ k) → X | F ((List.ofFn u).foldlIdx δ s₀) = true} : ℝ) =
       𝔼 _hs : Fin k → ι, ∑ s', uniP δ 0 (2 ^ k) s₀ s' * (if F s' = true then 1 else 0) := by
     rw [Fintype.expect_const, ← Fintype.expect_boole]
-    exact expect_comp_eq_sum (fun u : Fin (2 ^ k) → X => runFrom δ 0 s₀ (List.ofFn u))
+    exact expect_comp_eq_sum (fun u : Fin (2 ^ k) → X => (List.ofFn u).foldlIdx δ s₀)
       fun s' => if F s' = true then 1 else 0
   rw [hgen, huni, ← expect_sub_distrib]
   calc |𝔼 hs : Fin k → ι, (∑ s', genP h δ 0 k hs s₀ s' * (if F s' = true then 1 else 0) -
@@ -504,7 +510,7 @@ theorem abs_dens_eval_blocks_sub_le [Fintype ι] [Fintype X] [DecidableEq X] [Fi
         dens {u : Fin (2 ^ k) → X | P.eval u = true}| ≤
       (2 ^ k - 1) * Fintype.card S / (2 * √(Fintype.card X)) := by
   simp only [ReadOnceProgram.eval, ReadOnceProgram.finalState_eq]
-  exact abs_dens_runFrom_blocks_sub_le hh P.stepAt P.start P.accept k
+  exact abs_dens_foldlIdx_blocks_sub_le hh P.stepAt P.start P.accept k
 
 /-- **Nisan's generator is secure against read-once branching programs** [Nisan1992]: for a
 pairwise independent family `h i : X → X`, no read-once branching program of width `w` and length
