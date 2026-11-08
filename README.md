@@ -184,12 +184,12 @@ pull requests that change the guide and uploads the pages as a `guide` artifact.
 This repository was the canonical CSLib-based Complexitylib until 2026-11-08, when it was renamed
 from complexitylib to cslib-frontier and its scope widened from computational complexity theory to
 computer science generally ([#3675](https://github.com/cslib-community/cslib-frontier/issues/3675)).
-The renamed historical
-[pre-CSLib implementation](https://github.com/SamuelSchlesinger/complexitylib-v1) remains available
-with archival pending; it has a different API, and some developments remain to be ported. The temporary
-repository and package name `complexitylib2` was retired when this repository moved to CSLib
-Community. Downstream projects using that package name should change it to `complexitylib`; Lean
-imports remain unchanged.
+The renamed historical [pre-CSLib
+implementation](https://github.com/SamuelSchlesinger/complexitylib-v1) remains available with
+archival pending; it has a different API, and some developments remain to be ported. The
+temporary repository and package name `complexitylib2` was retired when this repository moved to
+CSLib Community. Downstream projects using that package name should change it to `complexitylib`;
+Lean imports remain unchanged.
 
 Modules follow CSLib's APIs, paths, namespaces, and contribution standards so they can move
 upstream with the import prefix changed from `Complexity.` to `Cslib.`. Acceptance requires

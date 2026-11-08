@@ -307,9 +307,8 @@ requirement above; documentation-only checks need not invoke quick mode.
    ```
    In a new file, `<authors>` names (a) the originator(s) of the issue or proposal the file
    implements: the person named in the issue's "Originated by" field when someone wrote the issue
-   on their behalf, and otherwise the issue's author; and (b) the person who contributed the
-   inference for the implementation, meaning the human whose agents did the work, named as a
-   person rather than as a fleet or bot account. The rule applies going forward, not
+   on their behalf, and otherwise the issue's author; and (b) the person whose agents did the
+   implementation (the human, not a fleet or bot account). The rule applies going forward, not
    retroactively: existing headers stay unless someone asks for a correction. A port still keeps
    the original authors (rule 3).
 3. **Upstream marker** values: `candidate`, `submitted #N @SHA` (a copy of an open cslib pull

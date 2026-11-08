@@ -26,12 +26,11 @@ PR to record ownership and handoffs; do not create duplicate task records. Prior
 landing open PRs when review or integration is the bottleneck.
 
 A new file's `Copyright` and `Authors:` lines name the originator(s) of the issue or proposal it
-implements and the person who contributed the inference for the implementation; the
-[file rules](AGENTS.md#file-rules) give the details. The originator is the person named in the
-issue's "Originated by" field when present, and otherwise the issue's author. The inference contributor
-is the human whose agents did the work, named as a person, not a fleet or bot account. The rule
-applies going forward: existing headers stay unless someone asks for a correction, and ports keep
-their original authors.
+implements and the person whose agents did the implementation (the human, not a fleet or bot
+account); the [file rules](AGENTS.md#file-rules) give the details. The originator is the person
+named in the issue's "Originated by" field when present, and otherwise the issue's author. The
+rule applies going forward: existing headers stay unless someone asks for a correction, and ports
+keep their original authors.
 
 Keep a pull request small enough to review as one mathematical or engineering change. Batch
 related mechanical fixes when they share a contract and validation; split at independently useful
@@ -278,7 +277,7 @@ findings without requiring a duplicate local run.
 
 Keep each fact in one maintained location. The README explains the purpose and points to useful
 entry points; module docstrings explain the mathematics and API; checked Lean examples show usage.
-ROADMAP lists open directions only, grouped by area.
+ROADMAP lists accepted directions only, grouped by area.
 Each entry states one direction's scope in a few sentences, one sentence per line, with its issue
 linked inline as `[#N](https://github.com/cslib-community/cslib-frontier/issues/N)`.
 Status and progress live on issues and PRs, so a PR edits ROADMAP only when it opens or closes a
