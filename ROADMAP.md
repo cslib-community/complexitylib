@@ -287,7 +287,17 @@ still copies captured retained/buffer state, and insertion copies growing buffer
 Those costs, repeated class/count scans, efficient projected-quarter joins and
 persistent-tape producer/access composition remain open before sharp global time
 and simultaneous peak space can be concluded. Earlier implementations and all
-their costs are unchanged. A real
+their costs are unchanged.
+`GroupedQuarter.run` now composes the real original-input first-quarter generator
+and sorter with a one-pass nested-frame equal-key writer. The machine retains
+only a previous key; a large colliding group is output without a growing-group
+state or repeated group copying. Exact grouped wire/order/occurrence semantics
+and a uniform quarter-scale time/charged-peak-space bound are proved, including
+physical record widths and callback/framing temporaries. These quarter buckets
+are not the complete two-quarter classes. Inverse queries, output-sensitive group
+pair emission/full-state reconstruction, actual class counts and fused bounded
+writing/persistent retained tapes remain open before the global source resources
+can be concluded. Older class/batch counter implementations are unchanged. A real
 streaming default filter also removes whole-list accumulator copying,
 with `O(I+(n+1)P(B))` time and `O(I+P(B))` charged space. It is an alternative
 component, not installed in the existing cubic-filter uniform execution. Those

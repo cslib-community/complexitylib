@@ -179,6 +179,17 @@ lookup. Repeated class/count scans and the simultaneous global bit-resource proo
 also remain open. Preserve these charges when requesting producer/consumer fusion
 or persistent retained tapes; the old implementations have not changed.
 
+`GroupedQuarter.run` now executes original-input quarter preparation/generation,
+sorting and one-pass equal-key grouping. The group writer holds only a previous
+key and emits nested frames directly; its actual prefix/callback bounds avoid a
+growing-group accumulator. Its input/output quarter volume is still charged,
+with a proved quarter-scale uniform time/space bound. Do not equate first-quarter
+buckets with complete two-quarter classes or their maximum balance. The inverse
+producer, equal-key pair consumer, DP/counting integration and fused bounded
+writing/persistent retained-tape execution remain open; previous all-class counter
+copying costs are unchanged. Reuse the checked grouped-quarter client when building
+the next consumer, and keep global resource claims separate from this stage.
+
 ## Correct course and hand work over
 
 When an agent drifts, name the mismatch: the theorem became conditional, the model changed, the

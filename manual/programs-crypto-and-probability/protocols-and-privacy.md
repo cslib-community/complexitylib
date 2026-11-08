@@ -1504,6 +1504,49 @@ retained tapes across batches, and the final simultaneous resource proof remain
 open. This is an original batching refinement of the source's membership stage;
 the older ClassStreaming/SortedMeet/CompactExecution routes remain unchanged.
 
+`GroupedQuarter.run` adds a **one-pass equal-key writer** after the actual
+original-input quarter generator and radix sorter. It computes Core's
+`List.splitBy` consecutive runs, but its realizing bit machine does not build a
+growing group in the loop state. It retains only the previous binary key and
+writes each record directly into the nested framed output, closing a group when
+the key changes and at the end. The exact wire theorem proves those emitted
+bytes encode the same grouped records; no grouping decoder is supplied as advice.
+
+For $n$ input records, encoded input length $I$ and maximum record wire $B$,
+`KeyGrouping.run_computable` proves time $O(I+(n+1)P(B+1))$ and charged peak space
+$O(I+P(B+1))$ for a fixed monotone polynomial $P$. Every logical stream prefix has
+a derived previous-key wire bound, and the machine theorem includes the reader,
+framing, callback and finalization temporaries. Nested grouped output has exactly
+$2I+b$ bits, where $b$ is the number of groups, and is at most $3I$. Input/output quarters are
+therefore still charged; this is not a constant-total-space claim. A single
+large collision group does not cause quadratic copying of a growing group.
+
+`GroupedQuarter.run_computable` composes original source preparation, packed
+index generation, projected evaluation, sorting and grouping into one uniform
+bit computation with time and peak space $(2^k+1)Q(I_0+1)$, for fixed monotone
+polynomial $Q$, computed $k=(N-1)/4$ and original source wire $I_0$.
+The physical key and packed-index widths are derived from the actual prepared
+operands. `flatten_run` preserves the exact sorted quarter sequence, while
+`original_correct` preserves its original full-width packed-witness semantics
+under the admitted depth conditions. Duplicate keys and payload occurrences
+are not discarded, including zero-width quarters.
+
+These are **first-quarter buckets**, not the full two-quarter classes $F_g,B_g$,
+and they do not compute $mu_p$. The inverse-query producer, output-sensitive
+group join, full-state reconstruction per emitted pair, class counting and fused
+bounded writer with persistent retained tapes remain to be implemented/composed.
+The previous class/batch counter routes are unchanged and still pay their repeated
+scans and state-copying costs. No sharp global dissection or whole-paper result
+follows from the grouped-quarter bound.
+
+From the repository root, build
+`lake build Complexity.Cryptanalysis.AddXNORGroupedQuarter`, then run
+`lake env lean ComplexityTests/AddXNORGroupedQuarter.lean`. The
+[grouped-quarter client](../../ComplexityTests/AddXNORGroupedQuarter.lean) executes
+large single groups, duplicate payloads, key changes, original-operand generation,
+width/depth capping, zero/empty inputs and exact nested encoding, and instantiates
+the arbitrary-input time/space theorems.
+
 From the repository root, build
 `lake build Complexity.Cryptanalysis.AddXNORBatchedAccess`, then run
 `lake env lean ComplexityTests/AddXNORBatchedAccess.lean`. The
