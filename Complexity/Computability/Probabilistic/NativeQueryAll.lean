@@ -35,7 +35,6 @@ parser or compile the complete adaptive retention program.
 
 * `terminal_query`: exact native full-reply/shared-memory law, without a response bound.
 * `clocked_ne_query`: a long reply obstructs full-output query realization at a fixed clock.
-* `not_computesTidily_query`: the corresponding clocked tidy-loop obligation is false.
 -/
 
 public section
@@ -408,26 +407,6 @@ theorem clocked_ne_query {Controls : Type} (competitor : MultiTapePTM k Bool Con
   exact (Nat.not_lt_of_ge (competitor.length_output_runOracle_le
     (handler env) fuel input reply.word memory _ hm)) hl
 
-/-- An unrestricted full query has no uniform `ComputesTidily` specification at
-any finite instruction clock: that predicate quantifies every word handler,
-including a constant response longer than the clock. This does not prohibit
-response-dependent unbounded native execution under a fixed source. -/
-theorem not_computesTidily_query {Controls : Type}
-    (competitor : MultiTapePTM k Bool Controls Operation) (input request : List Bool) (fuel : ℕ) :
-    ¬ competitor.ComputesTidily input fuel
-      (ProbOracleComp.query (spec := fun _ : Operation × List Bool => List Bool)
-        (op, request)) := by
-  intro hc
-  let answer := List.replicate (fuel + 1) false
-  let oracle : Operation × List Bool → StateT Unit PMF (List Bool) :=
-    fun _ state => PMF.pure (answer, state)
-  have hm : (answer, ()) ∈ ((OracleComp.interpret
-      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-      (ProbOracleComp.query (spec := fun _ : Operation × List Bool => List Bool)
-        (op, request))).run ()).support := by
-    simp [ProbOracleComp.interpret_query, StateT.run, oracle]
-  have hb := hc.length_output_le oracle () hm
-  simp [answer] at hb
 
 end
 end Cslib.Probability.NativeQueryAll

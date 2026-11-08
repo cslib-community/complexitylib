@@ -220,7 +220,17 @@ example {tapes : ℕ} {Controls : Type} (competitor : MultiTapePTM tapes Bool Co
     ¬ competitor.ComputesTidily input fuel
       (ProbOracleComp.query (spec := fun _ : Unit × Word => Word)
         ((), encodeBatch ComplexityTests.NativeBatchPolicy.first)) := by
-  exact NativeQueryAll.not_computesTidily_query () competitor input _ fuel
+  intro hc
+  let answer := List.replicate (fuel + 1) false
+  let oracle : Unit × Word → StateT Unit PMF Word :=
+    fun _ state => PMF.pure (answer, state)
+  have hm : (answer, ()) ∈ ((OracleComp.interpret
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      (ProbOracleComp.query (spec := fun _ : Unit × Word => Word)
+        ((), encodeBatch ComplexityTests.NativeBatchPolicy.first))).run ()).support := by
+    simp [ProbOracleComp.interpret_query, StateT.run, oracle]
+  have hb := hc.length_output_le oracle () hm
+  simp [answer] at hb
 
 /-- A terminating native continuation that leaves the whole copied packet alone. -/
 def stop : MultiTapePTM 0 Bool Unit Unit where

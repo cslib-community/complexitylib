@@ -1686,7 +1686,7 @@ bound: a genuinely supported response longer than `fuel` prevents **any** native
 machine at that clock from emitting the exact joint raw query word/memory law.
 This does not deny atomic installation of that word on a native answer channel;
 the obstruction concerns copying the full word to ordinary output.
-`not_computesTidily_query` rules out the unrestricted full-query `ComputesTidily`
+The test-local full-query obstruction rules out the unrestricted `ComputesTidily`
 premise at every finite clock: that predicate quantifies all handlers. The complete native source client derives such responses for every `fuel` from
 one fixed geometric-invoice oracle, not from a family of oracles chosen after the
 clock. The actual guarded source still emits valid cover proposals.
