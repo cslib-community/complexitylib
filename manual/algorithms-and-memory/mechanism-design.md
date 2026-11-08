@@ -135,20 +135,25 @@ itself still holds, since it does not assume regularity. The checked examples pr
 
 ## Bayes–Nash equilibrium, revenue equivalence and the first-price auction
 
-Import `Complexity.GameTheory.Mechanism.Bayesian` (Hartline, *Mechanism Design and
-Approximation*, Chapter 2, version of 20 September 2021 [hartline21]). Bidder `i`'s valuation is drawn from
-`μ i`, supported on `[0, h i]`, and bidder `i` bids `β i v` on valuation `v`. The interim rules
-`M.interimAllocation μ β i z` and `M.interimPayment μ β i z` are the expected allocation and
-payment of bid `z`, an integral over `Measure.pi μ` in which coordinate `i` is overwritten by
-`z`. Hartline's interim rules indexed by values are their compositions with `β i`.
+Import `Complexity.GameTheory.Mechanism.Bayesian` (Hartline, *Mechanism Design and Approximation*,
+Chapter 2, version of 20 September 2021 [hartline21]). Bidder `i`'s valuation is drawn from `μ i`,
+supported on `[0, h i]`, and bidder `i` bids `β i v` on valuation `v`. The interim rules
+`M.interimAllocation μ β i z` and `M.interimPayment μ β i z` are the expected allocation and payment
+of bid `z`, an integral over `Measure.pi μ` in which coordinate `i` is overwritten by `z`.
+Hartline's interim rules indexed by values are their compositions with `β i`.
 
 - `M.IsBayesNash μ h β` requires, for every bidder and *every* type `v ∈ [0, h i]` (not almost
   every), a legal bid `0 ≤ β i v` that no legal bid `z ≥ 0` beats in interim utility. Bids
-  outside the range of `β i` count as deviations.
-- `IsTruthfulOn X P s` is one-dimensional incentive compatibility of a curve pair. On `[0, h]`
-  it is equivalent to monotonicity of `X` plus `P v = P 0 + (v X v - ∫₀ᵛ X)`
-  (`IsTruthfulOn.monotoneOn`, `IsTruthfulOn.payment_eq`, `isTruthfulOn_of_payment_eq`). The proof
-  reuses Myerson's DSIC lemmas through a private one-bidder mechanism, so nothing is re-derived.
+  outside the range of `β i` count as deviations. The definition does not link `h` to `μ`: `h i`
+  is meant to be the support bound and `μ i` a probability measure, which the revenue results
+  assume; otherwise it can hold vacuously (`h i < 0`, or some `μ j = 0`).
+- `IsTruthfulOn X P s` (in `SingleParameter`) is one-dimensional incentive compatibility of a
+  curve pair; `IsTruthfulOn.monotoneOn` is the swap argument, and DSIC along one bidder's own bid
+  is `IsTruthfulOn` on `[0, ∞)` (`Mechanism.IsDSIC.isTruthfulOn`), which Myerson's Lemma uses. On
+  `[0, h]` it is equivalent to monotonicity of `X` plus `P v = P 0 + (v X v - ∫₀ᵛ X)`
+  (`IsTruthfulOn.payment_eq`, `isTruthfulOn_of_payment_eq`). The proof reuses Myerson's DSIC
+  lemmas through a private one-bidder mechanism on the bid projected to `[0, h]`
+  (`Set.projIcc`), so nothing is re-derived.
 - `IsBayesNash.monotoneOn` and `IsBayesNash.interimPayment_eq` are Theorem 2.5.1. The converse,
   `isBayesNash_iff`, replaces Hartline's assumption of onto strategies by the condition that every
   legal bid is weakly dominated by the bid of some type in the support. Onto strategies meet it
@@ -157,19 +162,24 @@ payment of bid `z`, an integral over `Measure.pi μ` in which coordinate `i` is 
 - `IsBayesNash.integral_sum_payment_eq` is the Bayes–Nash revenue formula: the zero types' interim
   payments plus the expected virtual welfare of the equilibrium allocation. It needs probability
   measures with `HasValueDensity`, integrable payments and measurable, bounded allocations.
-  `IsBayesNash.integral_sum_payment_eq_of_allocation_ae_eq` is revenue equivalence
-  (Corollary 2.7.1, with equal rather than zero payments of the zero types), and
-  `IsBayesNash.interimPayment_eq_of_interimAllocation_eq` is its bidder-by-bidder form.
+  `IsBayesNash.integral_payment_eq_integral_interimAllocation` is the per-bidder interim form
+  `pᵢ(0) + E[φᵢ(vᵢ) xᵢ(vᵢ)]`, which needs no measurability of the ex post allocation.
+- Revenue equivalence (Corollary 2.7.1, with equal rather than zero payments of the zero types):
+  `IsBayesNash.integral_sum_payment_eq_of_interimAllocation_ae_eq` assumes interim allocation
+  rules equal for almost every type, Hartline's "same BNE allocation";
+  `IsBayesNash.integral_sum_payment_eq_of_allocation_ae_eq` assumes the stronger almost sure
+  equality of ex post allocations; `IsBayesNash.interimPayment_eq_of_interimAllocation_eq` is the
+  type-by-type form.
 
 `Complexity.GameTheory.Mechanism.FirstPrice` defines the first-price auction
-(`FirstPrice.mechanism`, Vickrey's winner, who pays its bid) and the strategy `uniformBid n v = (n - 1) v / n`.
-`isBayesNash_uniformBid` proves that for `n` bidders with values uniform on `[0, 1]` this is a
-Bayes–Nash equilibrium. Its expected revenue is `(n - 1) / (n + 1)`
+(`FirstPrice.mechanism`, Vickrey's winner, who pays its bid) and the strategy
+`uniformBid n v = (n - 1) v / n`. `isBayesNash_uniformBid` proves that for `n` bidders with values
+uniform on `[0, 1]` this is a Bayes–Nash equilibrium. Its expected revenue is `(n - 1) / (n + 1)`
 (`integral_sum_payment_uniformBid`), equal to the second-price auction's
 (`integral_sum_payment_uniformBid_eq_vickrey`, Corollary 2.7.2 for the uniform distribution;
 `integral_sum_payment_vickrey`). `not_isBayesNash_id` shows that truthful bidding is not an
-equilibrium with two or more bidders. Hartline proves the two-bidder case (§2.3, Example 2.8.1);
-the `n`-bidder formula is the standard generalization, derived here by the same method rather than
+equilibrium with two or more bidders. Hartline proves the two-bidder case (§2.3, Example 2.8.1); the
+`n`-bidder formula is the standard generalization, derived here by the same method rather than
 quoted.
 
 To verify a candidate equilibrium of another auction, compute the interim allocation

@@ -35,7 +35,7 @@ The survey baseline is `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. Definitions a
 | Restoring operations | Arbitrary borrowed vector registers or key tables | Exact restoration; native realization not bundled |
 | Tree-evaluation problem family | Binary/fan-in-d gate trees and packed controllers | Explicit input encoding; native Cook–Mertz workspace distinct from algebraic correctness |
 | History transformation | Timeline editing by reset and replay | Explicit edit/reset/replay calls; no automatic rollback or constant-time list copying |
-| Incentive model | Single-parameter and general sealed-bid mechanisms | None: allocation and payment rules are arbitrary real functions; DSIC/IR over nonnegative bids; Bayes–Nash equilibrium over independent priors with densities |
+| Incentive model | Single-parameter and general sealed-bid mechanisms | None: allocation and payment rules are arbitrary real functions; DSIC/IR over nonnegative bids; Bayes–Nash equilibrium over independent priors (revenue results assume densities) |
 
 ## Major bridge statements
 

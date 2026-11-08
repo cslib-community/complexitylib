@@ -8,7 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.GameTheory.Mechanism.Bayesian
-public import Complexity.GameTheory.Mechanism.OptimalAuction
+public import Complexity.GameTheory.Mechanism.Vickrey
+import Complexity.GameTheory.Mechanism.OptimalAuction
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
@@ -295,8 +296,9 @@ theorem isBayesNash_uniformBid :
       linarith
 
 /-- **Bid shading.** With at least two bidders whose values are uniform on `[0, 1]`, truthful
-bidding is not a Bayes–Nash equilibrium of the first-price auction: the type `1` gains utility
-`2^(1 − n) > 0` by bidding `1/2` instead of its value, which leaves it nothing. -/
+bidding is not a Bayes–Nash equilibrium of the first-price auction: by bidding `1/2` instead of
+its value, which leaves it nothing, the type `1` wins with probability `2^(1 − n)` and gains
+utility `(1 − 1/2) · 2^(1 − n) = 2^(−n) > 0`. -/
 theorem not_isBayesNash_id (hn : 1 < Fintype.card ι) :
     ¬ mechanism.IsBayesNash (fun _ : ι => volume.restrict (Icc (0 : ℝ) 1)) (fun _ => 1)
       (fun _ v => v) := by

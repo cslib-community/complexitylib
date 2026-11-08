@@ -42,20 +42,19 @@ integrals over the product prior `Measure.pi μ` in which coordinate `i` is over
 
 ## Main definitions
 
-* `SingleParameter.IsTruthfulOn X P s`: the one-dimensional incentive constraints
-  `v X(w) − P(w) ≤ v X(v) − P(v)` for all `v, w ∈ s`.
 * `SingleParameter.Mechanism.interimAllocation`, `SingleParameter.Mechanism.interimPayment`: the
   interim rules `x̃ᵢ(z)`, `p̃ᵢ(z)` at bid `z`.
 * `SingleParameter.Mechanism.IsBayesNash M μ h β`: `β` is a Bayes–Nash equilibrium
-  ([Hartline2021], Definition 2.3.2, in the form of Proposition 2.4.1).
+  ([Hartline2021], Definition 2.3.2).
 
 ## Main results
 
-* `SingleParameter.IsTruthfulOn.monotoneOn`, `SingleParameter.IsTruthfulOn.payment_eq`,
-  `SingleParameter.isTruthfulOn_of_payment_eq`: on an interval `[0, h]`, the incentive constraints
-  hold if and only if `X` is monotone and `P(v) = P(0) + v X(v) − ∫₀ᵛ X`. This is Myerson's lemma
-  for one interim curve; the proof reuses the DSIC machinery of
-  `Complexity.GameTheory.Mechanism.Myerson` through a one-bidder mechanism.
+* `SingleParameter.IsTruthfulOn.payment_eq`, `SingleParameter.isTruthfulOn_of_payment_eq`: on an
+  interval `[0, h]`, the one-dimensional incentive constraints `SingleParameter.IsTruthfulOn` hold
+  if and only if `X` is monotone and `P(v) = P(0) + v X(v) − ∫₀ᵛ X` (monotonicity is
+  `SingleParameter.IsTruthfulOn.monotoneOn`). This is Myerson's lemma for one interim curve; the
+  proof reuses the DSIC machinery of `Complexity.GameTheory.Mechanism.Myerson` through a one-bidder
+  mechanism.
 * `SingleParameter.Mechanism.IsBayesNash.monotoneOn`,
   `SingleParameter.Mechanism.IsBayesNash.interimPayment_eq`: **characterization of Bayes–Nash
   equilibrium** ([Hartline2021], Theorem 2.5.1, "only if"): each interim allocation rule
@@ -65,13 +64,17 @@ integrals over the product prior `Measure.pi μ` in which coordinate `i` is over
   dominated, for each type, by the bid of some type in the support. Onto strategies satisfy this
   with equality, and it also covers strategies that are not onto, such as the first-price
   equilibrium (compare [Hartline2021], Example 2.8.1 (v)(b)).
-* `SingleParameter.Mechanism.IsBayesNash.integral_sum_payment_eq`: in a Bayes–Nash equilibrium the
-  expected revenue is `∑ᵢ pᵢ(0) + E[∑ᵢ φᵢ(vᵢ) xᵢ(β(v))]`, where `φᵢ` is the virtual valuation
-  ([Myerson1981]; the Bayes–Nash form of [Roughgarden2013CS364A], Lecture 5, eq. (6)).
-* `SingleParameter.Mechanism.IsBayesNash.integral_sum_payment_eq_of_allocation_ae_eq`: **revenue
-  equivalence** ([Hartline2021], Corollary 2.7.1): two Bayes–Nash equilibria, of possibly
-  different mechanisms, with almost everywhere equal ex post allocations and equal payments of
-  the zero type have the same expected revenue.
+* `SingleParameter.Mechanism.IsBayesNash.integral_payment_eq_integral_interimAllocation`,
+  `SingleParameter.Mechanism.IsBayesNash.integral_sum_payment_eq`: in a Bayes–Nash equilibrium
+  bidder `i`'s expected payment is `pᵢ(0) + E[φᵢ(vᵢ) xᵢ(vᵢ)]` for its interim allocation rule `xᵢ`,
+  and the expected revenue is `∑ᵢ pᵢ(0) + E[∑ᵢ φᵢ(vᵢ) xᵢ(β(v))]`, where `φᵢ` is the virtual
+  valuation ([Myerson1981]; the Bayes–Nash form of [Roughgarden2013CS364A], Lecture 5, eq. (6)).
+* `SingleParameter.Mechanism.IsBayesNash.integral_sum_payment_eq_of_interimAllocation_ae_eq`:
+  **revenue equivalence** ([Hartline2021], Corollary 2.7.1): two Bayes–Nash equilibria, of possibly
+  different mechanisms, with almost everywhere equal interim allocation rules and equal payments
+  of the zero types have the same expected revenue.
+  `SingleParameter.Mechanism.IsBayesNash.integral_sum_payment_eq_of_allocation_ae_eq` is the ex
+  post form, assuming almost surely equal ex post allocations.
 * `SingleParameter.Mechanism.IsBayesNash.interimPayment_eq_of_interimAllocation_eq`: the interim
   form, bidder by bidder (§2.7: "each agent has the same expected payment").
 
@@ -91,60 +94,27 @@ public section
 
 namespace Cslib.GameTheory.SingleParameter
 
-/-- One-dimensional incentive compatibility on `s`: a type `v ∈ s` facing the allocation curve `X`
-and payment curve `P` prefers its own outcome to that of any other type `w ∈ s`,
-`v X(w) − P(w) ≤ v X(v) − P(v)`. This is the condition of [Hartline2021], Proposition 2.4.1, for
-interim rules, and the DSIC condition along one bidder's own bid. -/
-@[expose] def IsTruthfulOn (X P : ℝ → ℝ) (s : Set ℝ) : Prop :=
-  ∀ v ∈ s, ∀ w ∈ s, v * X w - P w ≤ v * X v - P v
+/-- The value of `Set.projIcc 0 h hh z` at a point `z ∈ [0, h]` is `z`. -/
+private theorem coe_projIcc_of_mem {h : ℝ} (hh : 0 ≤ h) {z : ℝ} (hz : z ∈ Icc 0 h) :
+    (projIcc 0 h hh z : ℝ) = z := by
+  rw [projIcc_of_mem hh hz]
 
-/-- Incentive-compatible allocation curves are monotone: adding the constraints for `v` and `w`
-gives `(v − w)(X(v) − X(w)) ≥ 0`. -/
-theorem IsTruthfulOn.monotoneOn {X P : ℝ → ℝ} {s : Set ℝ} (hT : IsTruthfulOn X P s) :
-    MonotoneOn X s := by
-  intro w hw v hv hwv
-  have h1 := hT v hv w hw
-  have h2 := hT w hw v hv
-  by_contra hlt'
-  have hlt := not_le.1 hlt'
-  rcases hwv.lt_or_eq with hwv' | rfl
-  · nlinarith
-  · exact lt_irrefl _ hlt
-
-/-- Clamp `z` into `[0, h]`. -/
-private noncomputable def clampIcc (h z : ℝ) : ℝ := max 0 (min z h)
-
-private theorem clampIcc_mem {h : ℝ} (hh : 0 ≤ h) (z : ℝ) : clampIcc h z ∈ Icc 0 h :=
-  ⟨le_max_left _ _, max_le hh (min_le_right _ _)⟩
-
-private theorem clampIcc_of_mem {h z : ℝ} (hz : z ∈ Icc 0 h) : clampIcc h z = z := by
-  rw [clampIcc, min_eq_left hz.2, max_eq_right hz.1]
-
-private theorem monotone_clampIcc (h : ℝ) : Monotone (clampIcc h) :=
-  fun _ _ hab => max_le_max le_rfl (min_le_min_right _ hab)
-
-private theorem monotone_comp_clampIcc {X : ℝ → ℝ} {h : ℝ} (hh : 0 ≤ h)
-    (hX : MonotoneOn X (Icc 0 h)) : Monotone (fun z => X (clampIcc h z)) :=
-  fun _ _ hab => hX (clampIcc_mem hh _) (clampIcc_mem hh _) (monotone_clampIcc h hab)
-
-/-- The one-bidder mechanism that runs the curves `X`, `P` on the clamped bid. Above `h` it is
-constant, so a type `v > h` behaves like the type `h`. -/
-private noncomputable def clampMechanism (X P : ℝ → ℝ) (h : ℝ) : Mechanism Unit :=
-  ⟨fun b _ => X (clampIcc h (b ())), fun b _ => P (clampIcc h (b ()))⟩
+/-- The one-bidder mechanism that runs the curves `X`, `P` on the bid projected to `[0, h]`. Above
+`h` it is constant, so a type `v > h` behaves like the type `h`. -/
+private noncomputable def clampMechanism (X P : ℝ → ℝ) {h : ℝ} (hh : 0 ≤ h) : Mechanism Unit :=
+  ⟨fun b _ => X (projIcc 0 h hh (b ())), fun b _ => P (projIcc 0 h hh (b ()))⟩
 
 private theorem clampMechanism_isDSIC {X P : ℝ → ℝ} {h : ℝ} (hh : 0 ≤ h)
-    (hT : IsTruthfulOn X P (Icc 0 h)) : (clampMechanism X P h).IsDSIC := by
+    (hT : IsTruthfulOn X P (Icc 0 h)) : (clampMechanism X P hh).IsDSIC := by
   intro i b v _ hv
   simp only [Mechanism.utility, clampMechanism, Function.update_self]
-  set w := clampIcc h (b ())
-  have hw : w ∈ Icc 0 h := clampIcc_mem hh _
+  have hw : (projIcc 0 h hh (b ()) : ℝ) ∈ Icc 0 h := Subtype.prop _
   by_cases hvh : v ≤ h
-  · rw [clampIcc_of_mem ⟨hv, hvh⟩]
-    exact hT v ⟨hv, hvh⟩ w hw
+  · rw [coe_projIcc_of_mem hh ⟨hv, hvh⟩]
+    exact hT v ⟨hv, hvh⟩ _ hw
   · have hhv : h ≤ v := le_of_not_ge hvh
-    have hc : clampIcc h v = h := by rw [clampIcc, min_eq_right hhv, max_eq_right hh]
-    rw [hc]
-    have h1 := hT h ⟨hh, le_rfl⟩ w hw
+    rw [projIcc_of_right_le hh hhv]
+    have h1 := hT h ⟨hh, le_rfl⟩ _ hw
     have h2 := hT.monotoneOn hw ⟨hh, le_rfl⟩ hw.2
     nlinarith
 
@@ -156,12 +126,12 @@ theorem IsTruthfulOn.payment_eq {X P : ℝ → ℝ} {h : ℝ} (hT : IsTruthfulOn
   have hh : 0 ≤ h := hv.1.trans hv.2
   have := (clampMechanism_isDSIC hh hT).payment_eq () (b := fun _ => v) (fun _ => hv.1)
   simp only [clampMechanism, myersonPayment, Function.update_self] at this
-  rw [clampIcc_of_mem hv, clampIcc_of_mem ⟨le_rfl, hh⟩] at this
+  rw [coe_projIcc_of_mem hh hv, coe_projIcc_of_mem hh ⟨le_rfl, hh⟩] at this
   rw [this]
   congr 2
   refine intervalIntegral.integral_congr fun z hz => ?_
   rw [uIcc_of_le hv.1] at hz
-  rw [clampIcc_of_mem ⟨hz.1, hz.2.trans hv.2⟩]
+  rw [coe_projIcc_of_mem hh ⟨hz.1, hz.2.trans hv.2⟩]
 
 /-- **Sufficiency on an interval.** A monotone allocation curve on `[0, h]` with the payments of the
 payment identity is incentive compatible on `[0, h]`. -/
@@ -170,8 +140,9 @@ theorem isTruthfulOn_of_payment_eq {X P : ℝ → ℝ} {h : ℝ} (hX : MonotoneO
     IsTruthfulOn X P (Icc 0 h) := by
   intro v hv w hw
   have hh : 0 ≤ h := hv.1.trans hv.2
-  set g := fun z => X (clampIcc h z)
-  have hg : Monotone g := monotone_comp_clampIcc hh hX
+  set g := fun z => X (projIcc 0 h hh z)
+  have hg : Monotone g := fun a b hab =>
+    hX (Subtype.prop _) (Subtype.prop _) (monotone_projIcc hh hab)
   have hD := myerson_isDSIC (x := fun b (_ : Unit) => g (b ()))
     (fun _ b _ => hg.monotoneOn _) () (fun _ => w) v (fun _ => hw.1) hv.1
   simp only [Mechanism.utility, myerson, myersonPayment, Function.update_self] at hD
@@ -180,8 +151,8 @@ theorem isTruthfulOn_of_payment_eq {X P : ℝ → ℝ} {h : ℝ} (hX : MonotoneO
     refine intervalIntegral.integral_congr fun z hz => ?_
     rw [uIcc_of_le hu.1] at hz
     simp only [g]
-    rw [clampIcc_of_mem ⟨hz.1, hz.2.trans hu.2⟩]
-  simp only [g, clampIcc_of_mem hv, clampIcc_of_mem hw, hint v hv, hint w hw] at hD
+    rw [coe_projIcc_of_mem hh ⟨hz.1, hz.2.trans hu.2⟩]
+  simp only [g, coe_projIcc_of_mem hh hv, coe_projIcc_of_mem hh hw, hint v hv, hint w hw] at hD
   rw [hP v hv, hP w hw]
   linarith
 
@@ -206,10 +177,16 @@ payment of `i` when it bids `z` and every other bidder `j` bids `β j (v j)` wit
   ∫ v, M.payment (Function.update (fun j => β j (v j)) i z) i ∂Measure.pi μ
 
 /-- The strategy profile `β` is a **Bayes–Nash equilibrium** of `M` for the independent prior
-`μ` with supports `[0, h i]` ([Hartline2021], Definition 2.3.2, stated through the interim rules
-as in Proposition 2.4.1). For every bidder `i` and every type `v ∈ [0, h i]`: the prescribed bid
-`β i v` is legal (nonnegative), and no legal bid `z ≥ 0` gives `v` a higher interim utility
-`v x̃ᵢ(z) − p̃ᵢ(z)`. Deviations to bids outside the range of `β i` are allowed. -/
+`μ` with supports `[0, h i]` ([Hartline2021], Definition 2.3.2, for independent
+single-dimensional games and stated through the interim rules of §2.4). For every bidder `i` and
+every type `v ∈ [0, h i]`: the prescribed bid `β i v` is legal (nonnegative), and no legal bid
+`z ≥ 0` gives `v` a higher interim utility `v x̃ᵢ(z) − p̃ᵢ(z)`. Deviations to bids outside the range
+of `β i` are allowed.
+
+The definition does not itself tie `h i` to `μ i`: `h i` is meant to be the support bound of `μ i`,
+and the `μ i` are meant to be probability measures, as the revenue results assume
+(`HasValueDensity`). Otherwise the condition can be vacuous: if `h i < 0` it constrains no type of
+`i`, and if `μ j = 0` for some `j` all interim rules are `0`. -/
 @[expose] def IsBayesNash (M : Mechanism ι) (μ : ι → Measure ℝ) (h : ι → ℝ) (β : ι → ℝ → ℝ) :
     Prop :=
   ∀ i, ∀ v ∈ Icc 0 (h i), 0 ≤ β i v ∧ ∀ z, 0 ≤ z →
@@ -326,27 +303,26 @@ private theorem integrable_virtualValue_mul_comp (hμ : ∀ i, HasValueDensity (
   rw [norm_mul]
   exact mul_le_mul_of_nonneg_left (hB _ fun j => hM.nonneg (hv j)) (norm_nonneg _)
 
-/-- **Expected payment in a Bayes–Nash equilibrium.** Bidder `i`'s expected payment is the payment
-`pᵢ(0)` of its zero type plus its expected virtual surplus `E[φᵢ(vᵢ) xᵢ(β(v))]`. This is the
-payment identity integrated against the prior, followed by the one-dimensional revenue identity
-`HasValueDensity.integral_payment_eq_integral_virtualValue_mul`. -/
-theorem IsBayesNash.integral_payment_eq (hμ : ∀ i, HasValueDensity (μ i) (f i) (h i))
-    (hM : M.IsBayesNash μ h β) (i : ι)
-    (hp : Integrable (fun v => M.payment (fun j => β j (v j)) i) (Measure.pi μ))
-    (hx : Measurable fun v : ι → ℝ => M.allocation (fun j => β j (v j)) i) {B : ℝ}
+/-- **Expected payment in a Bayes–Nash equilibrium, interim form.** Bidder `i`'s expected payment is
+the payment `pᵢ(0)` of its zero type plus `E[φᵢ(vᵢ) xᵢ(vᵢ)]`, where `xᵢ(v) = x̃ᵢ(βᵢ(v))` is its
+interim allocation rule. This is the payment identity integrated against the prior, followed by the
+one-dimensional revenue identity `HasValueDensity.integral_payment_eq_integral_virtualValue_mul`. -/
+theorem IsBayesNash.integral_payment_eq_integral_interimAllocation
+    (hμ : ∀ i, HasValueDensity (μ i) (f i) (h i)) (hM : M.IsBayesNash μ h β) (i : ι)
+    (hp : Integrable (fun v => M.payment (fun j => β j (v j)) i) (Measure.pi μ)) {B : ℝ}
     (hB : ∀ b, 0 ≤ b → |M.allocation b i| ≤ B) :
     ∫ v, M.payment (fun j => β j (v j)) i ∂Measure.pi μ =
       M.interimPayment μ β i (β i 0) +
-        ∫ v, virtualValue (μ i) (f i) (v i) * M.allocation (fun j => β j (v j)) i
-          ∂Measure.pi μ := by
+        ∫ z, virtualValue (μ i) (f i) z * M.interimAllocation μ β i (β i z) ∂μ i := by
   have hh : 0 ≤ h i := by
     obtain ⟨v, hv⟩ := ((hμ i).ae_mem).exists
     exact hv.1.trans hv.2
-  set g := fun z => M.interimAllocation μ β i (β i (clampIcc (h i) z)) with hgdef
-  have hg : Monotone g := monotone_comp_clampIcc hh (hM.monotoneOn i)
+  set g := fun z => M.interimAllocation μ β i (β i (projIcc 0 (h i) hh z)) with hgdef
+  have hg : Monotone g := fun a b hab =>
+    hM.monotoneOn i (Subtype.prop _) (Subtype.prop _) (monotone_projIcc hh hab)
   have hgB : ∀ z ∈ Icc 0 (h i), |g z| ≤ B := by
     intro z _
-    have hc := clampIcc_mem hh z
+    have hc : (projIcc 0 (h i) hh z : ℝ) ∈ Icc 0 (h i) := Subtype.prop _
     simp only [hgdef, interimAllocation]
     rw [← Real.norm_eq_abs]
     refine (norm_integral_le_of_norm_le_const ?_).trans_eq (by rw [probReal_univ, mul_one])
@@ -363,14 +339,14 @@ theorem IsBayesNash.integral_payment_eq (hμ : ∀ i, HasValueDensity (μ i) (f 
     intro z hz
     refine intervalIntegral.integral_congr fun t ht => ?_
     rw [uIcc_of_le hz.1] at ht
-    simp only [hgdef, clampIcc_of_mem ⟨ht.1, ht.2.trans hz.2⟩]
+    simp only [hgdef, coe_projIcc_of_mem hh ⟨ht.1, ht.2.trans hz.2⟩]
   have key := (hμ i).integral_payment_eq_integral_virtualValue_mul hg.measurable hgB
   have hPint := integrable_interimPayment M β i hp
   have hPae : (fun z => M.interimPayment μ β i (β i z)) =ᵐ[μ i]
       fun z => M.interimPayment μ β i (β i 0) + (z * g z - ∫ t in (0 : ℝ)..z, g t) := by
     filter_upwards [(hμ i).ae_mem] with z hz
     rw [hM.interimPayment_eq hz, hgI z hz]
-    simp only [hgdef, clampIcc_of_mem hz]
+    simp only [hgdef, coe_projIcc_of_mem hh hz]
   have hQint : Integrable (fun z => z * g z - ∫ t in (0 : ℝ)..z, g t) (μ i) := by
     refine (hPint.sub (integrable_const (M.interimPayment μ β i (β i 0)))).congr ?_
     filter_upwards [hPae] with z hz
@@ -378,10 +354,27 @@ theorem IsBayesNash.integral_payment_eq (hμ : ∀ i, HasValueDensity (μ i) (f 
   rw [integral_payment_eq_integral_interimPayment M β i hp, integral_congr_ae hPae,
     integral_add (integrable_const _) hQint, integral_const, probReal_univ, one_smul, key]
   congr 1
-  rw [← integral_integral_update_swap μ (integrable_virtualValue_mul_comp hμ hM i hx hB) i]
   refine integral_congr_ae ?_
   filter_upwards [(hμ i).ae_mem] with z hz
-  simp only [Function.update_self, update_comp, hgdef, clampIcc_of_mem hz, interimAllocation]
+  simp only [hgdef, coe_projIcc_of_mem hh hz]
+
+/-- **Expected payment in a Bayes–Nash equilibrium.** Bidder `i`'s expected payment is the payment
+`pᵢ(0)` of its zero type plus its expected virtual surplus `E[φᵢ(vᵢ) xᵢ(β(v))]` under the ex post
+allocation. -/
+theorem IsBayesNash.integral_payment_eq (hμ : ∀ i, HasValueDensity (μ i) (f i) (h i))
+    (hM : M.IsBayesNash μ h β) (i : ι)
+    (hp : Integrable (fun v => M.payment (fun j => β j (v j)) i) (Measure.pi μ))
+    (hx : Measurable fun v : ι → ℝ => M.allocation (fun j => β j (v j)) i) {B : ℝ}
+    (hB : ∀ b, 0 ≤ b → |M.allocation b i| ≤ B) :
+    ∫ v, M.payment (fun j => β j (v j)) i ∂Measure.pi μ =
+      M.interimPayment μ β i (β i 0) +
+        ∫ v, virtualValue (μ i) (f i) (v i) * M.allocation (fun j => β j (v j)) i
+          ∂Measure.pi μ := by
+  rw [hM.integral_payment_eq_integral_interimAllocation hμ i hp hB,
+    ← integral_integral_update_swap μ (integrable_virtualValue_mul_comp hμ hM i hx hB) i]
+  congr 1
+  refine integral_congr_ae (Filter.Eventually.of_forall fun z => ?_)
+  simp only [Function.update_self, update_comp, interimAllocation]
   rw [integral_const_mul]
 
 /-- **Expected revenue in a Bayes–Nash equilibrium** ([Myerson1981]; compare
@@ -402,10 +395,12 @@ theorem IsBayesNash.integral_sum_payment_eq (hμ : ∀ i, HasValueDensity (μ i)
   exact Finset.sum_congr rfl fun i _ => hM.integral_payment_eq hμ i (hp i) (hx i)
     fun b hb => hB b hb i
 
-/-- **Revenue equivalence** ([Hartline2021], Corollary 2.7.1). Two Bayes–Nash equilibria, possibly
-of different mechanisms, whose ex post allocations agree almost surely and whose zero types make
-the same interim payments, have the same expected revenue. Hartline states it for zero types paying
-zero. -/
+/-- **Revenue equivalence, ex post form** ([Hartline2021], Corollary 2.7.1). Two Bayes–Nash
+equilibria, possibly of different mechanisms, whose ex post allocations agree almost surely and
+whose zero types make the same interim payments, have the same expected revenue. Hartline states
+it for zero types paying zero. Almost sure equality of the ex post allocations is stronger than
+Hartline's "same BNE allocation", which is about interim allocation rules; that reading is
+`IsBayesNash.integral_sum_payment_eq_of_interimAllocation_ae_eq`. -/
 theorem IsBayesNash.integral_sum_payment_eq_of_allocation_ae_eq {M' : Mechanism ι}
     {β' : ι → ℝ → ℝ} (hμ : ∀ i, HasValueDensity (μ i) (f i) (h i))
     (hM : M.IsBayesNash μ h β) (hM' : M'.IsBayesNash μ h β')
@@ -426,6 +421,33 @@ theorem IsBayesNash.integral_sum_payment_eq_of_allocation_ae_eq {M' : Mechanism 
   refine integral_congr_ae ?_
   filter_upwards [hxx] with v hv
   exact Finset.sum_congr rfl fun i _ => by rw [hv i]
+
+/-- **Revenue equivalence** ([Hartline2021], Corollary 2.7.1). Two Bayes–Nash equilibria, possibly
+of different mechanisms, whose interim allocation rules `xᵢ(v) = x̃ᵢ(βᵢ(v))` agree for almost every
+type of every bidder and whose zero types make the same interim payments have the same expected
+revenue. Hartline states it for zero types paying zero. Unlike the ex post form
+`IsBayesNash.integral_sum_payment_eq_of_allocation_ae_eq`, it needs no measurability of the ex post
+allocations. -/
+theorem IsBayesNash.integral_sum_payment_eq_of_interimAllocation_ae_eq {M' : Mechanism ι}
+    {β' : ι → ℝ → ℝ} (hμ : ∀ i, HasValueDensity (μ i) (f i) (h i))
+    (hM : M.IsBayesNash μ h β) (hM' : M'.IsBayesNash μ h β')
+    (hp : ∀ i, Integrable (fun v => M.payment (fun j => β j (v j)) i) (Measure.pi μ))
+    (hp' : ∀ i, Integrable (fun v => M'.payment (fun j => β' j (v j)) i) (Measure.pi μ))
+    {B B' : ℝ} (hB : ∀ b, 0 ≤ b → ∀ i, |M.allocation b i| ≤ B)
+    (hB' : ∀ b, 0 ≤ b → ∀ i, |M'.allocation b i| ≤ B')
+    (hxx : ∀ i, ∀ᵐ z ∂μ i,
+      M.interimAllocation μ β i (β i z) = M'.interimAllocation μ β' i (β' i z))
+    (h0 : ∀ i, M.interimPayment μ β i (β i 0) = M'.interimPayment μ β' i (β' i 0)) :
+    ∫ v, ∑ i, M.payment (fun j => β j (v j)) i ∂Measure.pi μ =
+      ∫ v, ∑ i, M'.payment (fun j => β' j (v j)) i ∂Measure.pi μ := by
+  rw [integral_finsetSum _ fun i _ => hp i, integral_finsetSum _ fun i _ => hp' i]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [hM.integral_payment_eq_integral_interimAllocation hμ i (hp i) fun b hb => hB b hb i,
+    hM'.integral_payment_eq_integral_interimAllocation hμ i (hp' i) fun b hb => hB' b hb i, h0 i]
+  congr 1
+  refine integral_congr_ae ?_
+  filter_upwards [hxx i] with z hz
+  rw [hz]
 
 omit [∀ i, IsProbabilityMeasure (μ i)] in
 /-- **Interim revenue equivalence** ([Hartline2021], §2.7): in two Bayes–Nash equilibria with the
