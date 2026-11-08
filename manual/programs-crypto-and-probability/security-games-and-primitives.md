@@ -479,15 +479,17 @@ eager/lazy equivalence (`Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`,
 `Scheme.indCcaRomAdvantage_eq_eager`), and the keyless simulator `Scheme.simHandler` and IND-CPA
 reduction `Scheme.romCpaReduction` (`Scheme.simHitProb`, `Scheme.indCpaAdvantage_romCpaReduction`,
 the query-count row bound `Scheme.sum_simHitProb_le`, and the OW-to-CPA averaging bound
-`Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`). Multi-hop game transitions from
-`eagerIndCcaGame` to `simHitProb` via fallback-seed decoupling and `δ`-correctness bad-event
+`Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`). No IND-CCA bound for `FO-notbot` is
+proved in this module; multi-hop game transitions relating `indCcaRomAdvantage` / `eagerIndCcaGame`
+to `simHitProb` via fallback-seed decoupling, simulator consistency, and `δ`-correctness bad-event
 bounds remain separate objectives. Checked clients in
 [`ComplexityTests/Crypto/FujisakiOkamoto.lean`](../../ComplexityTests/Crypto/FujisakiOkamoto.lean)
 exercise honest `T`/`FO^⊥`/`FO-notbot` recovery and non-canonical-coin rejection on
 `maskedShiftPKE`, zero-error and non-zero tight/non-tight `DeltaCorrect` witnesses (`noisyCoinPKE`
 with failure probability `1 / 2`), positive and negative `GammaSpread` and `indCpaAdvantage`
-witnesses on `identityPKE`, and `ROQueryBounds`, `simHitProb`, `romCpaReduction`, and
-eager/lazy/averaging witnesses on `identityScheme` and `maskedShiftScheme`.
+witnesses on `identityPKE`, and `ROQueryBounds`, `simHitProb`, `romCpaReduction`, positive
+`indCcaRomAdvantage`, and eager/lazy/averaging witnesses on `identityScheme`,
+`identityUnifKeyScheme`, and `maskedShiftScheme`.
 
 For multi-block symmetric modes of operation over `BitString n`, import
 [`BlockCipher/Modes.lean`](../../Complexity/Crypto/Primitives/BlockCipher/Modes.lean)

@@ -244,7 +244,7 @@ theorem identityScheme_simHitProb_diag (m : Fin 4) :
     identityScheme, identityPKE, ExplicitCoinPKE.indCpaGame, ExplicitCoinPKE.encrypt,
     Scheme.simHandler, simHashG, OracleComp.interpret_bind, OracleComp.interpret_query,
     OracleComp.interpret_pure]
-  simp [-_root_.PMF.bind_apply, StateT.run, Scheme.eval_zoomStateT_memoize,
+  simp [-_root_.PMF.bind_apply, StateT.run, RandomOracle.zoomStateT,
     memoize_of_none _ m [] rfl]
 
 /-- Negative hit-probability witness: when `m₀ = 0` and `m₁ = 1`, `queryCiphertextGAdv` queries
@@ -256,7 +256,7 @@ theorem identityScheme_simHitProb_zero_one :
     identityScheme, identityPKE, ExplicitCoinPKE.indCpaGame, ExplicitCoinPKE.encrypt,
     Scheme.simHandler, simHashG, OracleComp.interpret_bind, OracleComp.interpret_query,
     OracleComp.interpret_pure]
-  simp [-_root_.PMF.bind_apply, StateT.run, Scheme.eval_zoomStateT_memoize,
+  simp [-_root_.PMF.bind_apply, StateT.run, RandomOracle.zoomStateT,
     memoize_of_none _ (0 : Fin 4) [] rfl]
 
 /-- The HHK17 CPA reduction `romCpaReduction` built from `queryCiphertextGAdv` achieves
@@ -268,6 +268,44 @@ theorem identityScheme_indCpaAdvantage_romCpaReduction_eq_one :
     (identityScheme.romCpaReduction queryCiphertextGAdv 0 1) : ℝ) = 1
   rw [identityScheme.indCpaAdvantage_romCpaReduction,
     identityScheme_simHitProb_zero_one, identityScheme_simHitProb_diag]
+  norm_num
+
+/-- Variant of `identityScheme` with `sampleMsg := pure 0` and uniform `Fin 2` keys
+(`ProbComp.unifFin 1`), used to witness positive `indCcaRomAdvantage`. -/
+def identityUnifKeyScheme : Scheme Unit Unit (Fin 4) Unit (Fin 4) (Fin 2) where
+  pke := identityPKE
+  sampleMsg := pure 0
+  sampleKey := ProbComp.unifFin 1
+
+/-- ROM adversary that queries `H(false, cStar, cStar)` and checks whether the returned key equals
+the challenge key `kStar`. -/
+def checkKeyHAdv : ROAdversary Unit (Fin 4) Unit (Fin 4) (Fin 2) :=
+  fun (_, cStar, kStar) => do
+    let k ← OracleComp.query (ROQuery.H (false, cStar, cStar))
+    return decide (k = kStar)
+
+/-- Positive-advantage witness for `indCcaRomAdvantage`: `checkKeyHAdv` distinguishes real from
+random keys in `identityUnifKeyScheme` with advantage `1 / 2`. -/
+theorem identityUnifKeyScheme_indCcaRomAdvantage_eq_half :
+    (identityUnifKeyScheme.indCcaRomAdvantage checkKeyHAdv : ℝ) = 1 / 2 := by
+  have hgame (b : Bool) :
+      identityUnifKeyScheme.roIndCcaGame checkKeyHAdv b =
+        (do
+          let kReal ← ProbComp.unifFin 1
+          let kRand ← ProbComp.unifFin 1
+          return decide (kReal = if b then kRand else kReal)) := by
+    simp [-bind_pure_comp, Scheme.roIndCcaGame, Scheme.keyGenNotBot,
+      identityUnifKeyScheme, identityPKE, checkKeyHAdv, Scheme.roHandler, roHashH,
+      OracleComp.interpret_bind, OracleComp.interpret_query, OracleComp.interpret_pure]
+    simp [StateT.run, RandomOracle.zoomStateT,
+      memoize_of_some _ (false, (0 : Fin 4), (0 : Fin 4)) [((false, 0, 0), _)] _ rfl]
+  rw [Scheme.indCcaRomAdvantage, hgame false, hgame true, Game.coe_advantage,
+    Game.coe_succProbability, Game.coe_succProbability]
+  simp only [Bool.false_eq_true, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
+    PMF.bind_apply_toReal_tsum, tsum_fintype, ProbComp.eval_unifFin,
+    PMF.uniformOfFintype_apply, Fintype.card_fin, _root_.PMF.pure_apply]
+  rw [Fin.sum_univ_two]
+  simp [Fin.sum_univ_two]
   norm_num
 
 /-- Instantiating eager/lazy ROM IND-CCA equivalence and the OW-to-CPA averaging bound on

@@ -166,6 +166,25 @@ theorem run_interpret_simulation
   run_interpret_simulation_of_invariant oracle oracle' relate (fun _ => True)
     (by simp) (fun q s _ => step q s) program s trivial
 
+/-- Marginalizing `run_interpret_simulation` to the output value discards the simulated final
+state. -/
+theorem run_interpret_simulation_fst
+    (oracle : (q : ι) → StateT State PMF (spec q))
+    (oracle' : (q : ι) → StateT State' PMF (spec q))
+    (relate : State → PMF State')
+    (step : ∀ q s, (oracle q s).bind (fun (a, s') => (relate s').map (a, ·)) =
+      (relate s).bind (oracle' q))
+    (program : OracleComp spec α) (s : State) :
+    ((interpret oracle program).run s).map Prod.fst =
+      (relate s).bind (fun t => ((interpret oracle' program).run t).map Prod.fst) := by
+  have h := congrArg (PMF.map Prod.fst)
+    (run_interpret_simulation oracle oracle' relate step program s)
+  simp only [PMF.map_bind, PMF.map_comp, Function.comp_def] at h
+  change (((interpret oracle program).run s).bind fun a =>
+      (relate a.snd).map (Function.const _ a.fst)) = _ at h
+  simp only [PMF.map_const] at h
+  exact h
+
 /-- Re-encoding private state preserves adaptive execution when calls agree on invariant states. -/
 theorem run_interpret_map_state_of_invariant
     (oracle : (q : ι) → StateT State PMF (spec q))
