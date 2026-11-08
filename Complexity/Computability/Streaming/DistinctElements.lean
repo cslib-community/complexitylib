@@ -210,6 +210,7 @@ theorem run_kmvSketch (ω : Fin c → ι) (s : List α) :
       median fun i => kmvEstimate M t (lowest t (s.toFinset.image (kmvKey h (ω i)))) := by
   rw [Algorithm.run, state_kmvSketch, output_kmvSketch]
 
+/-- Distinct items have distinct keys, so a set of `d` items has `d` keys. -/
 theorem card_image_kmvKey (θ : ι) (D : Finset α) : (D.image (kmvKey h θ)).card = D.card :=
   card_image_of_injective _ (kmvKey_injective h θ)
 
@@ -418,9 +419,9 @@ private theorem dens_kmvEstimate_lt_le (hh : IsPairwiseIndependentHash h) {ε : 
       nlinarith [mul_pos h1 h2,
         mul_le_mul_of_nonneg_right h3 (by positivity : (0 : ℝ) ≤ t * ε ^ 2)]
 
-/-- **One copy estimates `F₀`** [BarYossefJayramKumarSivakumarTrevisan2002, Theorem 1]: for a
-pairwise independent family `h θ : α → Fin M`, a set `D` of `d ≤ M` items, `0 < ε ≤ 1` and `t > 0`,
-the estimate from the `t` lowest keys of `D` misses `d` by more than `ε d` for at most a
+/-- **One copy estimates `F₀`** [BarYossefJayramKumarSivakumarTrevisan2002, proof of Theorem 1]:
+for a pairwise independent family `h θ : α → Fin M`, a set `D` of `d ≤ M` items, `0 < ε ≤ 1` and
+`t > 0`, the estimate from the `t` lowest keys of `D` misses `d` by more than `ε d` for at most a
 `2 / (t ε²)` fraction of the seeds. The source proves `1 / 6 + 1 / 6` for `t = ⌈96 / ε²⌉`, plus a
 `1 / m` term for hash collisions, which the tie-breaking keys avoid. -/
 theorem dens_abs_kmvEstimate_sub_gt_le (hh : IsPairwiseIndependentHash h) {ε : ℝ} (hε : 0 < ε)
@@ -490,7 +491,7 @@ theorem errorProb_kmv [Fintype ι] [Nonempty ι] (R : List α → ℝ → Prop) 
 /-! ### Memory -/
 
 /-- The `t` lowest keys of a set of items are the keys of at most `t` of them. -/
-theorem exists_card_le_image_eq_lowest (θ : ι) (D : Finset α) :
+private theorem exists_card_le_image_eq_lowest (θ : ι) (D : Finset α) :
     ∃ E : Finset α, E.card ≤ t ∧ E.image (kmvKey h θ) = lowest t (D.image (kmvKey h θ)) := by
   classical
   refine ⟨D.filter fun a => kmvKey h θ a ∈ lowest t (D.image (kmvKey h θ)), ?_, ?_⟩

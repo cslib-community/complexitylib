@@ -83,8 +83,8 @@ Ties between hash values are broken by the item, so the source's `1/m` collision
 
 For fixed seeds, the reachable states of a copy are determined by the at most `t` items behind its keys. The memory bounds therefore depend neither on the stream length nor on `M`:
 
-- `spaceLE_kmv` charges `(n+1)^(ct) ≤ 2^b` bits under the public-coin convention, for a universe of `n` items;
-- `exists_injOn_iUnion_reachable_kmvSketch` stores the seeds as well, with `(|ι|(n+1)^t)^c ≤ 2^b`.
+- under the public-coin convention, `spaceLE_kmv` shows that every drawn sketch uses `b` bits whenever `(n+1)^(ct) ≤ 2^b`, for a universe of `n` items;
+- `exists_injOn_iUnion_reachable_kmvSketch` gives one `b`-bit encoding with the seeds stored as well, whenever `(|ι|(n+1)^t)^c ≤ 2^b`.
 
 With `t = ⌈6/ε²⌉` and `c = 2r = O(log(1/δ))`, this is the `O(ε⁻² log(1/δ) log n)` memory of Theorem 1. The bound complements the `Ω(n)` lower bounds for exact and for deterministic approximate `F₀` (`le_of_solves_freqMoment`, `Algorithm.le_of_approx_freqMoment` with `k = 0`). The matching `Ω(ε⁻²)` lower bound is not formalized.
 

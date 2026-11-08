@@ -130,8 +130,8 @@ example : (kmvSketch (fun (_ : Unit) (_ : Fin 8) => (0 : Fin 8)) 2 1 fun _ => ()
   simp only [hlow, kmvEstimate_of_le_card hcard.ge, hmax, median_const]
   norm_num
 
-/-- With `t = 0` the sketch keeps no key and always answers `0`, so the hypothesis `0 < t` of
-`Cslib.Streaming.dens_abs_kmvEstimate_sub_gt_le` cannot be dropped. -/
+/-- With `t = 0` the sketch keeps no key and always answers `0`, missing `F₀ = 3` for every seed.
+The hypothesis `0 < t` of `Cslib.Streaming.dens_abs_kmvEstimate_sub_gt_le` excludes this case. -/
 example (ω : Fin 1 → Unit) : (kmvSketch fixedHash 0 1 ω).run [0, 1, 0, 2] = 0 := by
   rw [run_kmvSketch]
   simp only [kmvEstimate_of_le_card (Nat.zero_le _), CharP.cast_eq_zero, zero_mul, zero_div,
