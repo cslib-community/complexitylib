@@ -1962,6 +1962,7 @@ public import Complexity.Computability.Machines.ReadMachine.VirtualWord.Evaluato
 public import Complexity.Computability.Machines.ReadMachine.VirtualWord.Runtime
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.RadixPartition
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.RadixSort
+public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.SortedMatch
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Game
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.GuessVerify
@@ -2965,6 +2966,7 @@ public import Complexity.Cryptanalysis.AddXNORProgramTemplate
 public import Complexity.Cryptanalysis.AddXNORReachability
 public import Complexity.Cryptanalysis.AddXNORRuns
 public import Complexity.Cryptanalysis.AddXNORSearch
+public import Complexity.Cryptanalysis.AddXNORSortedMeet
 public import Complexity.Cryptanalysis.AddXNORSortedQuarterMachine
 public import Complexity.Cryptanalysis.AddXNORSortedRecords
 public import Complexity.Cryptanalysis.AddXNORSource

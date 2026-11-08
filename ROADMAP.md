@@ -253,9 +253,18 @@ has time and charged prefix-peak space `(2^k+1)Q(I+1)` for fixed polynomial `Q`,
 original input bit length `I` and computed `k=(N-1)/4`. Original packed-witness
 correctness and an input-wire bound polynomial in `N,m` are derived. This route
 bypasses sparse RAM interpretation/cubic compaction for the quarter stages.
-Charged inverse-quarter generation, full class enumeration/counting/matching,
-sorted access/probing, smaller-side retained lists and arena reuse/release still
-remain open; the complete old uniform execution keeps its old costs. A real
+`SortedMeet.run` now composes actual original-input half generation in both
+directions, tagged full-state radix matching, one-record streaming scan and
+original-order packed-witness decoding. Its one uniform multitape machine proves
+exhaustive miss and sound witnesses, without assuming a dictionary or supplied
+simulation. The inverse route actually reverses operands and complements states;
+addition is not treated as self-inverse. The composed certificate charges both
+materialized half lists and every intermediate phase/output, not only the scan's
+retained state. These general profiles have not been reduced to a global source
+asymptotic. This full-state fallback does not use projection depth for smaller
+classes and does not supply the desired smaller-class peak space. Projected class
+enumeration/counting, computed orientation, bounded-batch access and arena
+reuse/release remain open; the complete old uniform execution keeps its old costs. A real
 streaming default filter also removes whole-list accumulator copying,
 with `O(I+(n+1)P(B))` time and `O(I+P(B))` charged space. It is an alternative
 component, not installed in the existing cubic-filter uniform execution. Those

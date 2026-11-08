@@ -143,6 +143,18 @@ charges every generated prefix and bit-machine temporary. It supplies a sharp
 quarter component, not full class enumeration or a whole-instance witness/miss
 endpoint. Keep inverse generation, class counts/matching, smaller-side retention,
 reuse/release and global computed-balance bit resources explicit in the next handoff.
+`SortedMeet.original_machine` now supplies an interpreter-free full-state
+whole-input witness/miss route using actual forward generation and reversed,
+complemented inverse generation. Its sorted tagged matcher preserves packed
+witnesses through collisions and proves exhaustive misses. Inspect
+`sourceCertificate` for the composed preparation, arrays, tagging/sort/scan,
+callback temporaries and decoded output charges. Both half lists are materialized;
+the projection parameter does not choose smaller retained classes in this route.
+Do not report its general composed profiles as sharp global source bounds or
+as the class-count/orientation/deletion/reuse algorithm. Reuse this actual
+matching stage when integrating bounded class batches; keep simultaneous full
+state/payload storage and transient workspace charged. The old compacting
+interpreter's cubic filter has not changed.
 
 ## Correct course and hand work over
 

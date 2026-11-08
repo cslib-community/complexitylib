@@ -1407,6 +1407,43 @@ need the charged sorted-list composition. The existing complete `CompactExecutio
 path and all its cubic filter/interpreter costs remain unchanged. Neither global
 source resource bound nor 733 ALL-main is concluded here.
 
+`SortedMeet.run` adds a separate **whole-input full-state batch route**. It
+uses the same actual index/chain generator for both halves of the computed
+consecutive cut. Inverse execution reverses the actual suffix operands and
+complements the target/state; decoded suffix operators are restored to original
+order. This handles modular addition as an inverse operation, not as a
+self-inverse step. `SortedMatch.run` tags the packed witnesses by side, radix
+sorts their actual full-state keys and streams adjacent records. Equal keys from
+opposite sides have an adjacent boundary even with collisions and duplicates.
+The scan keeps one previous record and the first hit, while continuing through
+the batch. Its monotone-polynomial time/charged-space bound is
+$O(I+(n+1)P(B+1))$, where $I$ is the encoded record list length and $B$ its
+maximum record wire length. Tagging, sorting and scanning have separate actual
+machine certificates; no semantic dictionary or assumed traversal is supplied.
+
+`SortedMeet.original_machine` composes preparation, both generated arrays,
+inverse input/output transforms, matching and original-order witness readback
+into one finite deterministic multitape machine before all original widths,
+depths and operand lists. It proves exhaustive miss and returned-witness
+soundness from the original single-list input, including residual quarters.
+`sourceCertificate.time` and `.space` are the composed phase bounds: they charge
+all intermediate input/output tapes and callback temporaries, including
+simultaneously materialized half lists. These profiles are **not yet reduced to
+a global source asymptotic**. This route does not use the projection depth to
+select smaller retained classes and does not provide the target
+$O^*(2^{q/4}+\mu_p)$ peak space. Actual projected class counts, orientation,
+batching and deletion/reuse remain to be integrated. It bypasses the old sparse
+interpreter only for this separate route; the old interpreter/compactor costs
+remain unchanged. Sharp source time/space and the broader 733 results stay open.
+
+From the repository root, build
+`lake build Complexity.Cryptanalysis.AddXNORSortedMeet`, then run
+`lake env lean ComplexityTests/AddXNORSortedMeet.lean`. The
+[matching client](../../ComplexityTests/AddXNORSortedMeet.lean) executes forward
+and inverse original-input generation, non-self-inverse addition, full-state
+collisions, empty/zero-width inputs and misses, and instantiates the arbitrary
+input correctness and actual uniform machine certificates.
+
 From the repository root, build
 `lake build Complexity.Cryptanalysis.AddXNORSourceQuarter`, then run
 `lake env lean ComplexityTests/AddXNORSortedQuarterMachine.lean`. The
