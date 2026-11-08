@@ -29,6 +29,7 @@ public import Complexity.Algorithms.Lean.Dijkstra.Native.Fibonacci.Memory
 public import Complexity.Algorithms.Lean.Dijkstra.Native.Source
 public import Complexity.Algorithms.Lean.Dijkstra.Native.Word
 public import Complexity.Algorithms.Lean.Euler.Circuit
+public import Complexity.Algorithms.Lean.Euler.Handshake
 public import Complexity.Algorithms.Lean.Freivalds
 public import Complexity.Algorithms.Lean.HousingMarket.Basic
 public import Complexity.Algorithms.Lean.HousingMarket.Incentives
@@ -94,7 +95,10 @@ public import Complexity.Algorithms.Lean.StableMatching.Incentives
 public import Complexity.Algorithms.Lean.StableMatching.Lattice
 public import Complexity.Algorithms.Lean.Submodular.Basic
 public import Complexity.Algorithms.Lean.Submodular.Greedy
+public import Complexity.Algorithms.Lean.TSP.Christofides
 public import Complexity.Algorithms.Lean.TSP.MSTTour
+public import Complexity.Algorithms.Lean.TSP.PerfectMatching
+public import Complexity.Algorithms.Lean.TSP.Shortcut
 public import Complexity.Algorithms.Lean.TimeM.Loops
 public import Complexity.Algorithms.Lean.TreeDecomposition.IndependentSet
 public import Complexity.Algorithms.Lean.VertexCover.Matching
@@ -2092,6 +2096,7 @@ public import Complexity.Computability.Complexity.Problems.TQBF
 public import Complexity.Computability.Complexity.Problems.TQBF.Closed
 public import Complexity.Computability.Complexity.Problems.TSP
 public import Complexity.Computability.Complexity.Problems.TSP.Approximation
+public import Complexity.Computability.Complexity.Problems.TSP.Christofides
 public import Complexity.Computability.Complexity.Problems.ThreeSAT
 public import Complexity.Computability.Complexity.Problems.ThreeSAT.Levin
 public import Complexity.Computability.Complexity.Problems.ThreeSATThree

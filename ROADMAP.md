@@ -1484,12 +1484,16 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   Pareto efficiency and strategy-proofness, group strategy-proofness, indifferences (top trading
   absorbing sets), and a charged implementation of TTC in `O(n^2)` time.
 - **Classical approximation algorithms** ([#2869](https://github.com/cslib-community/complexitylib/issues/2869)):
-  remaining after greedy set cover, maximal-matching vertex cover and the MST tour for metric
-  TSP (`Algorithms/Lean/{SetCover,VertexCover,TSP}`): machine-level polynomial-time
-  certificates for greedy set cover and for Kruskal-based TSP tours on encoded matrices, and
-  stronger guarantees such as Christofides' `3/2` for metric TSP. LP-based and primal–dual
-  analyses of the same problems belong to the primal–dual approximation direction under
-  Optimization and duality.
+  remaining after greedy set cover, maximal-matching vertex cover, the MST tour and Christofides'
+  `3/2` bound for metric TSP (`Algorithms/Lean/{SetCover,VertexCover,TSP}`): machine-level
+  polynomial-time certificates for greedy set cover and for Kruskal-based TSP tours on encoded
+  matrices. Christofides' algorithm
+  ([#3055](https://github.com/cslib-community/complexitylib/issues/3055)) currently matches by
+  exhaustive search; it still needs a polynomial-time minimum-weight perfect matching (Edmonds'
+  blossom algorithm) for an end-to-end polynomial-time statement, a tightness family approaching
+  `3/2`, and possibly the Karlin–Klein–Oveis Gharan `3/2 - 10^{-36}` improvement as a long-range
+  target. LP-based and primal–dual analyses of the same problems belong to the primal–dual
+  approximation direction under Optimization and duality.
 
 ### Online algorithms and competitive analysis
 
