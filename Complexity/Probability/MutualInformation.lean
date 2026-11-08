@@ -97,6 +97,13 @@ theorem mutualInfo_nonneg [Finite α] [Finite β] (joint : PMF (α × β)) :
   rw [mutualInfo]
   linarith
 
+/-- `I(A; B) = H(B) - H(B | A)`: the mutual information is the entropy of `B` that `A` removes. -/
+theorem mutualInfo_eq_entropy_map_snd_sub_conditionalEntropy [Finite α] [Finite β]
+    (joint : PMF (α × β)) :
+    mutualInfo joint = entropy (joint.map Prod.snd) - conditionalEntropy joint := by
+  rw [mutualInfo, conditionalEntropy]
+  ring
+
 theorem mutualInfo_le_entropy_map_snd [Finite α] [Finite β] (joint : PMF (α × β)) :
     mutualInfo joint ≤ entropy (joint.map Prod.snd) := by
   have := entropy_map_le joint Prod.fst
