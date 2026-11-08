@@ -46,11 +46,12 @@ is a strongly explicit graph on `Θ(k ^ 3)` vertices with no `k`-clique and no `
 [Nagy1972] [Jukna2011, §13.7]. Erdős's bound is exponential in `k`.
 
 The gap is the derandomization problem. Frankl and Wilson's explicit graphs reach
-`k ^ Θ(log k / log log k)` vertices [FranklWilson1981]; two-source dispersers and extractors give
-explicit graphs on `2 ^ ((log k) ^ c)` vertices for every constant `c` [Cohen2016]
+`k ^ Θ(log k / log log k)` vertices [FranklWilson1981]; their bound and strongly explicit names are
+in `Complexity.Computability.Complexity.ExplicitRamsey.FranklWilson`. Two-source dispersers and
+extractors give explicit graphs on `2 ^ ((log k) ^ c)` vertices for every constant `c` [Cohen2016]
 [ChattopadhyayZuckerman2019] and on `2 ^ (k ^ c)` vertices for a constant `c > 0` [Li2023]. An
 explicit graph on `2 ^ (Ω(k))` vertices, matching Erdős's bound up to the constant in the
-exponent, is open. None of these later constructions is formalized here.
+exponent, is open. The disperser and extractor constructions are not formalized here.
 
 ## Main definitions
 
