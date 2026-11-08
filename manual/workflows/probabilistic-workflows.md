@@ -82,8 +82,11 @@ rectangles, split off one of two fair bits, and relabel two point masses injecti
 
 ## Polarize statistical distance
 
-Sahai and Vadhan's polarization of statistical distance (Sahai–Vadhan 2003, §3) is formalized on
-explicit distributions over finite types, with the half-L1 `dist` above.
+Sahai and Vadhan's polarization of statistical distance is formalized on explicit distributions
+over finite types, with the half-L1 `dist` above. The source is Sahai–Vadhan 2003, §3.2: the
+Polarization Lemma is Lemma 3.3, extended to thresholds `α² > β` in the remark after its proof; the
+Direct Product Lemma is Lemma 3.4 and the XOR Lemma is Lemma 3.5. Statistical Difference is defined
+in §3.1.
 
 - **XOR construction.** Import
   [StatisticalDistance/XOR.lean](../../Complexity/Probability/StatisticalDistance/XOR.lean).
@@ -157,7 +160,7 @@ uniform inputs, defined in
   `SDInstance.exists_computableInPolyTime_polarize_unary` is the source's form, with the error
   parameter `k` a separate unary input: one map on `encPair encSDInstance encUnary` with error
   `(1/2)^(k + 1)`.
-  `SDInstance.exists_polarize_computableInPolyTime` instead takes `k = K x` for a function `K` of
+  `SDInstance.exists_computableInPolyTime_polarize` instead takes `k = K x` for a function `K` of
   the instance. Use
   `obtain ⟨m, b, hm, h⟩ := …`, then `h K hK` for any polynomial-time unary `K`. It returns the
   polynomial-time certificate and the two distance bounds with error `(1/2)^(K x + 1)`.
@@ -189,8 +192,12 @@ cover:
 
 - a concrete replicated code and its typed agreement;
 - the multiplexer gate count;
+- a polynomial-time polarization map with fixed parameters;
 - the reduction from `SD^{2/3,1/3}` to `SD^{9/10,1/10}` on the far and the near instance;
-- the length-indexed polarization on the same instances.
+- the length-indexed polarization on the same instances;
+- the polarization with the error parameter `k` in unary on the same instances, for every `k`;
+- `SDInstance.computableInPolyTime_polarize_comp` on `p ↦ p.1.polarize 1 2 p.2` over
+  `encPair encSDInstance encUnary`.
 
 Run `scripts/build.sh ComplexityTests.StatisticalDifference` and
 `scripts/build.sh ComplexityTests.StatisticalDifferencePolyTime`.
