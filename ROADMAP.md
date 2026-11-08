@@ -733,9 +733,9 @@ index links to canonical definitions rather than keeping a second set.
 
 - **MIP = NEXP** ([#892]): `NEXP ⊆ MIP₂` through the BFL multilinearity test and arithmetization
   of exponential-time tableaux; an efficient GKR verifier under log-space uniformity.
-- **Goldwasser–Sipser** ([#2981](https://github.com/cslib-community/complexitylib/issues/2981)):
-  `IP[k] ⊆ AM[k + 2]` for the private-coin games `IPk`, by the set lower bound protocol on the
-  gap-amplified game (`IPGameClass.exists_repeat`).
+- **Oracle-model `IP[k]`**: oracle-PPT `IP` verifiers with at most `k` queries give exactly the
+  count-based `IPk` (coin fixing and padding to `k` rounds), which carries `IPk_eq_AM` to the
+  oracle model; `IP[k(n)] ⊆ AM[k(n) + 2]` for patterns that depend on the input length.
 - The Babai–Moran speedup `AM[2 t(n)] = AM[t(n)]` for polynomially many rounds (patterns that
   depend on the input length), interactive-machine characterizations of Arthur–Merlin classes, and
   statistical and perfect zero knowledge.

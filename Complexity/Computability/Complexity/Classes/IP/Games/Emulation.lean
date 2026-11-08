@@ -20,12 +20,13 @@ import Complexity.Foundations.Data.BitString.WordCount
 /-!
 # Public coins emulate a count over private coins
 
-The emulation of private coins by public coins of [Goldwasser and Sipser][GoldwasserSipser1986],
-[Arora and Barak, Section 8.2][AroraBarak09], for an arbitrary `0`/`1` payoff. Let `g` be a
-private-coin game shape (`Cslib.Complexity.IPMove`) and `V : List Bool → Bool` a payoff on complete
-transcripts. The count `Cslib.Complexity.IPGame.count g V` sums over the verifier's messages and
-maximises over the prover's. A public-coin game of shape `Emulation.shape B Z g` lets Merlin prove
-lower bounds on this count to Arthur.
+The emulation of private coins by public coins of [Goldwasser and Sipser][GoldwasserSipser1986]
+([Arora and Barak][AroraBarak09], Theorem 8.8 of the January 2007 draft), for an arbitrary `0`/`1`
+payoff. Let `g` be a private-coin game shape (`Cslib.Complexity.IPMove`) and
+`V : List Bool → Bool` a payoff on complete transcripts. The count
+`Cslib.Complexity.IPGame.count g V` sums over the verifier's messages and maximises over the
+prover's. A public-coin game of shape `Emulation.shape B Z g` lets Merlin prove lower bounds on this
+count to Arthur.
 
 At a verifier move of `n` bits, Arthur sends the seed of an affine hash to `B` bits of strings of
 `n + Z` bits (`Cslib.Complexity.SetLowerBound.hashZero`). Merlin answers with a claim, the number
