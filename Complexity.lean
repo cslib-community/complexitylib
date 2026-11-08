@@ -2002,6 +2002,7 @@ public import Complexity.Computability.Complexity.Problems.Clique.OfAdj
 public import Complexity.Computability.Complexity.Problems.CliqueCover
 public import Complexity.Computability.Complexity.Problems.Coloring
 public import Complexity.Computability.Complexity.Problems.CountingSAT
+public import Complexity.Computability.Complexity.Problems.DominatingSet
 public import Complexity.Computability.Complexity.Problems.EUThreeSAT
 public import Complexity.Computability.Complexity.Problems.ElementDistinctness
 public import Complexity.Computability.Complexity.Problems.ExactThreeSAT
