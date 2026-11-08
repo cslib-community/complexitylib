@@ -19,24 +19,26 @@ import Mathlib.Tactic.Ring
 /-!
 # Pătrașcu Power-of-Two Spillover Representation
 
-This file formalizes the power-of-two spillover encoding of Mihai Pătrașcu, *Succincter* (FOCS
-2008, Lemma 3), as used in Tianxiao Li, Jingxun Liang, Huacheng Yu, and Renfei Zhou, *Dynamic
-Dictionary with Subconstant Wasted Bits per Key* (SODA 2024,
-[arXiv:2310.20536](https://arxiv.org/abs/2310.20536), Section 3.4, Lemma 3.8 and Footnote 4).
+This file formalizes the power-of-two spillover encoding of Mihai Pătrașcu, *Succincter*
+([Patrascu2008, Lemma 3]), as specialized in Tianxiao Li, Jingxun Liang, Huacheng Yu, and Renfei
+Zhou, *Dynamic Dictionary with Subconstant Wasted Bits per Key* ([LiLiangYuZhou2024, Section 3.4,
+Lemma 3.8 and Footnote 4]; [arXiv:2310.20536v1](https://arxiv.org/abs/2310.20536v1), PDF p. 12 /
+printed p. 11).
 
 Given a finite payload universe `Fin X` (`1 ≤ X`) and spillover parameter `r_sp ≥ 1`, we set
 `M := memBits X r_sp` (`0` when `X ≤ r_sp`, and `⌊log₂(X / r_sp)⌋` otherwise) and
 `K := spillUniv X r_sp := ⌈X / 2 ^ M⌉`. Because the memory-bit modulus `2 ^ M` is an exact power of
-two, `encode` splits `x < X` into `(x / 2 ^ M, x % 2 ^ M) ∈ Fin K × Fin (2 ^ M)` via a single bit
-shift and bit mask, `decodeVal` reconstructs `k * 2 ^ M + m` with exact round-trip identity,
-`K ≤ 2 * r_sp`, and the bit-redundancy `M + log₂ K - log₂ X` is at most `2 / r_sp` bits (with
-multiplicative `ℕ`, `ℚ`, and `Nat.clog 2` batch forms for `n` independent payloads at `r_sp = n`).
+two, `encode` splits `x < X` into `(x / 2 ^ M, x % 2 ^ M) ∈ Fin K × Fin (2 ^ M)`, `decodeVal`
+reconstructs `k * 2 ^ M + m` with exact round-trip identity, `K ≤ 2 * r_sp`, and the bit-redundancy
+`M + log₂ K - log₂ X` is at most `2 / r_sp` bits (with multiplicative `ℕ`, `ℚ`, and `Nat.clog 2`
+batch forms for `n` independent payloads at `r_sp = n`).
 
 ## Scope note
 
-This module is part 1 of the large-parameter-regime dynamic dictionary of Li, Liang,
-Yu, and Zhou (SODA 2024, Section 5). Variable-length adapter trees, strong history independence,
-dynamic resizing, and super-polynomial key universes are out of scope.
+This module is part 1 of the large-parameter-regime dynamic dictionary of [LiLiangYuZhou2024,
+Section 5]. Word-RAM `O(1)` bit-shift and bit-mask evaluation is deferred to the follow-up Word-RAM
+realization milestone; variable-length adapter trees, strong history independence, dynamic resizing,
+and super-polynomial key universes are out of scope.
 
 ## Main definitions
 
@@ -54,6 +56,12 @@ dynamic resizing, and super-polynomial key universes are out of scope.
 * `mul_spillUniv_mul_two_pow_le`, `spillUniv_mul_two_pow_div_le_rat`,
   `memBits_add_logb_spillUniv_le`, `pow_spillUniv_mul_two_pow_le_three_mul`,
   `clog_mul_spillUniv_pow_add_le`: bit-redundancy bounds in `ℕ`, `ℚ`, `ℝ`, and `Nat.clog 2`.
+
+## References
+
+* [M. Pătrașcu, *Succincter*][Patrascu2008]
+* [T. Li, J. Liang, H. Yu, and R. Zhou,
+  *Dynamic Dictionary with Subconstant Wasted Bits per Key*][LiLiangYuZhou2024]
 -/
 
 public section
@@ -61,7 +69,7 @@ public section
 namespace Cslib.DataStructure.Dictionary.Spillover
 
 /-- Number of raw memory bits `M = ⌊log₂(X / r_sp)⌋` in the power-of-two spillover split of
-`Fin X` with parameter `r_sp` (equals `0` when `X ≤ r_sp`, Footnote 4 of Li–Liang–Yu–Zhou 2024). -/
+`Fin X` with parameter `r_sp` (equals `0` when `X ≤ r_sp`, [LiLiangYuZhou2024, Footnote 4]). -/
 @[expose]
 def memBits (X r_sp : ℕ) : ℕ :=
   Nat.log 2 (X / r_sp)
@@ -191,13 +199,23 @@ theorem decode?_eq_some_iff {X : ℕ} (r_sp : ℕ)
     exact decode?_encode r_sp x
 
 /-- Exact bijection between `Fin X` and valid spillover pairs `{km // decodeVal km < X}`. -/
-@[expose]
 def equiv (X r_sp : ℕ) :
     Fin X ≃ { km : Fin (spillUniv X r_sp) × Fin (2 ^ memBits X r_sp) // decodeVal km < X } where
   toFun x := ⟨encode r_sp x, by simp [x.isLt]⟩
   invFun km := ⟨decodeVal km.1, km.2⟩
   left_inv x := Fin.ext (decodeVal_encode r_sp x)
   right_inv km := Subtype.ext (encode_decodeVal km.1 km.2)
+
+@[simp]
+theorem coe_equiv {X r_sp : ℕ} (x : Fin X) :
+    (equiv X r_sp x).1 = encode r_sp x :=
+  rfl
+
+@[simp]
+theorem val_equiv_symm {X r_sp : ℕ}
+    (km : { km : Fin (spillUniv X r_sp) × Fin (2 ^ memBits X r_sp) // decodeVal km < X }) :
+    ((equiv X r_sp).symm km).val = decodeVal km.1 :=
+  rfl
 
 /-! ### Spillover universe and bit-redundancy bounds (Lemma 3.8) -/
 
@@ -217,7 +235,7 @@ theorem le_spillUniv_of_le {X r_sp : ℕ} (hrX : r_sp ≤ X) :
   have h2 := le_spillUniv_mul_two_pow X r_sp
   exact Nat.le_of_mul_le_mul_right (h1.trans h2) (Nat.two_pow_pos _)
 
-/-- When `r_sp * 2 ^ M < X` (i.e. `X` is not an exact power-of-two multiple `r_sp * 2 ^ M`),
+/-- When `r_sp * 2 ^ M < X` (for `r_sp ≤ X`, i.e. when `X ≠ r_sp * 2 ^ M`),
 `r_sp < spillUniv X r_sp`. -/
 theorem lt_spillUniv_of_mul_two_pow_lt {X r_sp : ℕ} (h : r_sp * 2 ^ memBits X r_sp < X) :
     r_sp < spillUniv X r_sp := by

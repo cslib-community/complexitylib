@@ -12,7 +12,6 @@ public import Complexity.DataStructure.Dictionary.Dynamic.Spec
 public import Complexity.DataStructure.Dictionary.DynamicMatching
 public import Complexity.DataStructure.Dictionary.Spillover
 public import Complexity.Foundations.Data.BitString.Combination
-public import Complexity.Foundations.Data.BitString.Support
 public import Mathlib.Algebra.BigOperators.Fin
 public import Mathlib.Data.Finset.Sort
 public import Mathlib.Logic.Equiv.Fin.Basic
@@ -24,22 +23,25 @@ import Mathlib.Tactic.Ring
 # Fixed-Capacity Leaf Minimap
 
 This file formalizes the pure fixed-capacity minimap representation of Tianxiao Li, Jingxun Liang,
-Huacheng Yu, and Renfei Zhou, *Dynamic Dictionary with Subconstant Wasted Bits per Key* (SODA 2024,
-[arXiv:2310.20536](https://arxiv.org/abs/2310.20536), Section 3.4, Lemma 3.7 at `r = 1`, and
-Section 5.2 leaf-node specialization).
+Huacheng Yu, and Renfei Zhou, *Dynamic Dictionary with Subconstant Wasted Bits per Key*
+([LiLiangYuZhou2024, Section 3.4, Lemma 3.7 at `r = 1`, and Section 5.2];
+[arXiv:2310.20536v1](https://arxiv.org/abs/2310.20536v1), PDF pp. 11–12 / printed pp. 10–11 and PDF
+pp. 27–28 / printed pp. 26–27).
 
 Given key-ID universe `Fin U'`, slot capacity `n'` (`1 ≤ n' ≤ U'`), and payload universe `Fin X`
 (`1 ≤ X`), a minimap represents a map of `m ≤ n'` active keys (`m = n'` at fixed leaf capacity in
 Section 5.2) by separating **metadata** (`header`) from **payload slots** (`slots`):
-1. Each payload `v < X` is split via `Spillover.encode n'` (`r_sp = n'`, `Lemma 3.8`) into a
-   spillover key `k ∈ Fin K` (`K = Spillover.spillUniv X n' ≤ 2 * n'`) and an `M`-bit slot word
-   `mem ∈ Fin (2 ^ M)` (`M = Spillover.memBits X n'`).
-2. The active key set `S ⊆ Fin U'` (`S.card = m`) together with the sorted tuple of spillover keys
-   `Fin m → Fin K` is bijected computably onto a single metadata index
-   `header : Fin (U'.choose m * K ^ m)` via `Cslib.BitString.unrankCombination`, `rankCombination`,
+1. Each payload `v < X` is split via `Spillover.encode n'` (`r_sp = n'`, [Patrascu2008, Lemma 3];
+   [LiLiangYuZhou2024, Lemma 3.8]) into a spillover value `k ∈ Fin K`
+   (`K = Spillover.spillUniv X n' ≤ 2 * n'`) and an `M`-bit slot word `mem ∈ Fin (2 ^ M)`
+   (`M = Spillover.memBits X n'`).
+2. The active key set `S ⊆ Fin U'` (`S.card = m`) together with the tuple of spillover values
+   `Fin m → Fin K` listed in increasing order of key in `S` is bijected computably onto a single
+   metadata index `header : Fin (U'.choose m * K ^ m)` via `Cslib.BitString.subsetEquiv`,
    `finFunctionFinEquiv`, and `finProdFinEquiv`.
-3. Under a dynamic matching scheme `h : DynamicMatching.Scheme U' n'` (`Lemma 3.2`), each active key
-   `u ∈ S` stores its `M`-bit word `mem` in slot `matching h S hm ⟨u, hu⟩ : Fin n'`.
+3. Under a dynamic matching scheme `h : DynamicMatching.Scheme U' n'`
+   ([LiLiangYuZhou2024, Lemma 3.2]), each active key `u ∈ S` stores its `M`-bit word `mem` in slot
+   `matching h S hm ⟨u, hu⟩ : Fin n'`.
 
 At fixed leaf capacity `m = n'` (`FixedEncoded U' n' X`), `bitWidth_le_infoBits_add_two` proves that
 the total fixed bit budget `⌈log₂(C(U', n') * K ^ n')⌉ + n' * M` exceeds the information-theoretic
@@ -50,27 +52,28 @@ metadata-only lookup table of size `U' * C(U', n') * K ^ n' ≤ U' * C(U', n') *
 
 ## Scope note
 
-This module is part 1 of the large-parameter-regime dynamic dictionary of Li, Liang,
-Yu, and Zhou (SODA 2024, Section 5). Variable-length `r > 1` outer-spillover minimaps inside
-adapter trees (Section 4), strong history independence, dynamic resizing, and super-polynomial key
-universes are out of scope.
+This module is part 1 of the large-parameter-regime dynamic dictionary of [LiLiangYuZhou2024,
+Section 5]. Word-RAM precomputed lookup-table and bit-packed `M`-bit slot realization are deferred
+to the follow-up Word-RAM realization milestone; variable-length `r > 1` outer-spillover minimaps
+inside adapter trees (Section 4), strong history independence, dynamic resizing, and
+super-polynomial key universes are out of scope.
 
 ## Main definitions
 
-* `Cslib.DataStructure.Dictionary.Minimap.rankCombination`, `subsetEquiv`, `headerEquiv`:
-  computable combination ranking and header bijection onto `Fin (U'.choose m * K ^ m)`.
+* `Cslib.DataStructure.Dictionary.Minimap.headerEquiv`: computable header bijection onto
+  `Fin (U'.choose m * K ^ m)` via `Cslib.BitString.subsetEquiv`.
 * `Cslib.DataStructure.Dictionary.Minimap.headerUniv`, `headerBits`, `bitWidth`, `infoBits`:
   bit-budget and universe parameters.
 * `Cslib.DataStructure.Dictionary.Minimap.Encoded`, `FixedEncoded`, `BoundedEncoded`: size-indexed,
   fixed-capacity leaf, and bounded-capacity (`0 ≤ m ≤ n'`) minimap states.
-* `Cslib.DataStructure.Dictionary.Minimap.lookupHeader`, `queryFin`, `query`, `decode`, `encode`,
-  `insertNew`, `overwrite`, `deleteMem`, `replace`, `slotDiff`: metadata lookup, encoding, updates,
-  and slot-relocation distance.
+* `Cslib.DataStructure.Dictionary.Minimap.activeSet`, `lookupHeader`, `queryFin`, `query`, `decode`,
+  `encode`, `empty`, `insertNew`, `overwrite`, `deleteMem`, `replace`, `slotDiff`: active-key set,
+  metadata lookup, encoding, updates, and slot-relocation distance.
 
 ## Main results
 
 * `bitWidth_le_infoBits_add_two`, `queryTableSize_le`: fixed leaf bit-redundancy (`≤ 2` bits) and
-  shared lookup-table size bound (`Lemma 3.7`).
+  shared lookup-table size bound ([LiLiangYuZhou2024, Lemma 3.7]).
 * `query_encode`, `decode_encode`, `query_insertNew`, `query_overwrite`, `query_deleteMem`,
   `query_replace`, `BoundedEncoded.query_insert`, `BoundedEncoded.query_delete`,
   `BoundedEncoded.activeSet_delete`: exact lookup, active-set, and update semantics.
@@ -84,6 +87,12 @@ universes are out of scope.
   `expect_slotDiff_deleteMem_le`, `expect_slotDiff_deleteMem_encode_le`,
   `expect_slotDiff_replace_le`, `expect_slotDiff_replace_encode_le`:
   deterministic `O(T)` and expected `O(log (max n' 2))` slot-relocation bounds.
+
+## References
+
+* [T. Li, J. Liang, H. Yu, and R. Zhou,
+  *Dynamic Dictionary with Subconstant Wasted Bits per Key*][LiLiangYuZhou2024]
+* [M. Pătrașcu, *Succincter*][Patrascu2008]
 -/
 
 public section
@@ -93,89 +102,13 @@ namespace Cslib.DataStructure.Dictionary.Minimap
 open Finset
 open scoped BigOperators
 
-/-! ### Computable combination ranking and header bijection -/
-
-/-- Inverse of `Cslib.BitString.unrankCombination`: ranks a Boolean indicator `bs` among all
-indicators of length `bs.length` and weight `bs.count true` in lexicographic order (`false` before
-`true`). -/
-@[expose]
-def rankCombination : List Bool → ℕ
-  | [] => 0
-  | false :: xs => rankCombination xs
-  | true :: xs => xs.length.choose (xs.count true + 1) + rankCombination xs
-
-theorem rankCombination_lt_choose :
-    ∀ bs : List Bool, rankCombination bs < bs.length.choose (bs.count true)
-  | [] => by simp [rankCombination]
-  | false :: xs =>
-    lt_of_lt_of_le (rankCombination_lt_choose xs) (Nat.choose_le_succ xs.length (xs.count true))
-  | true :: xs => by
-    have ih := rankCombination_lt_choose xs
-    simp only [rankCombination, List.length_cons, List.count_cons_self]
-    rw [Nat.choose_succ_succ, Nat.succ_eq_add_one]
-    omega
-
-@[simp]
-theorem unrankCombination_rankCombination :
-    ∀ bs : List Bool,
-      Cslib.BitString.unrankCombination bs.length (bs.count true) (rankCombination bs) = bs
-  | [] => rfl
-  | false :: xs => by
-    have hlt := rankCombination_lt_choose xs
-    simp [rankCombination, Cslib.BitString.unrankCombination, hlt,
-      unrankCombination_rankCombination xs]
-  | true :: xs => by
-    have hnot : ¬ (xs.length.choose (xs.count true + 1) + rankCombination xs <
-        xs.length.choose (xs.count true + 1)) := by omega
-    simp [rankCombination, Cslib.BitString.unrankCombination, hnot,
-      unrankCombination_rankCombination xs]
-
-@[simp]
-theorem rankCombination_unrankCombination {U' m r : ℕ} (hr : r < U'.choose m) :
-    rankCombination (Cslib.BitString.unrankCombination U' m r) = r := by
-  set bs := Cslib.BitString.unrankCombination U' m r
-  have hlen : bs.length = U' := Cslib.BitString.length_unrankCombination U' m r
-  have hcnt : bs.count true = m := Cslib.BitString.count_true_unrankCombination hr
-  have hr' : rankCombination bs < U'.choose m := by
-    simpa [hlen, hcnt] using rankCombination_lt_choose bs
-  refine Cslib.BitString.unrankCombination_injective hr' hr ?_
-  simpa [hlen, hcnt] using unrankCombination_rankCombination bs
-
-/-- Computable bijection between `m`-element subsets of `Fin U'` and `Fin (U'.choose m)`. -/
-@[expose]
-def subsetEquiv (U' m : ℕ) : { S : Finset (Fin U') // S.card = m } ≃ Fin (U'.choose m) where
-  toFun S := ⟨rankCombination (List.ofFn fun u : Fin U' => decide (u ∈ S.1)), by
-    have hlen : (List.ofFn fun u : Fin U' => decide (u ∈ S.1)).length = U' := List.length_ofFn
-    have hcnt : (List.ofFn fun u : Fin U' => decide (u ∈ S.1)).count true = m := by
-      rw [← Cslib.BitString.card_supportOfList_of_length hlen,
-        Cslib.BitString.supportOfList_ofFn_decide, S.2]
-    have hlt := rankCombination_lt_choose (List.ofFn fun u : Fin U' => decide (u ∈ S.1))
-    rwa [hlen, hcnt] at hlt⟩
-  invFun r := ⟨Cslib.BitString.supportOfList U' (Cslib.BitString.unrankCombination U' m r.val), by
-    rw [Cslib.BitString.card_supportOfList_of_length
-      (Cslib.BitString.length_unrankCombination U' m r.val)]
-    exact Cslib.BitString.count_true_unrankCombination r.isLt⟩
-  left_inv S := Subtype.ext <| by
-    dsimp only
-    have hlen : (List.ofFn fun u : Fin U' => decide (u ∈ S.1)).length = U' := List.length_ofFn
-    have hcnt : (List.ofFn fun u : Fin U' => decide (u ∈ S.1)).count true = m := by
-      rw [← Cslib.BitString.card_supportOfList_of_length hlen,
-        Cslib.BitString.supportOfList_ofFn_decide, S.2]
-    have hunr := unrankCombination_rankCombination (List.ofFn fun u : Fin U' => decide (u ∈ S.1))
-    rw [hlen, hcnt] at hunr
-    rw [hunr, Cslib.BitString.supportOfList_ofFn_decide]
-  right_inv r := Fin.ext <| by
-    dsimp only
-    rw [Cslib.BitString.ofFn_decide_mem_supportOfList
-      (Cslib.BitString.length_unrankCombination U' m r.val)]
-    exact rankCombination_unrankCombination r.isLt
+/-! ### Header bijection, bit-budget parameters, and minimap state -/
 
 /-- Computable bijection packing an `m`-subset `S ⊆ Fin U'` and its `m` spillover values
-`Fin m → Fin K` (ordered by increasing key in `S`) into `Fin (U'.choose m * K ^ m)`. -/
-@[expose]
+`Fin m → Fin K` (listed in increasing order of key in `S`) into `Fin (U'.choose m * K ^ m)`. -/
 def headerEquiv (U' m K : ℕ) :
     ({ S : Finset (Fin U') // S.card = m } × (Fin m → Fin K)) ≃ Fin (U'.choose m * K ^ m) :=
-  (Equiv.prodCongr (subsetEquiv U' m) finFunctionFinEquiv).trans finProdFinEquiv
+  (Equiv.prodCongr (Cslib.BitString.subsetEquiv U' m) finFunctionFinEquiv).trans finProdFinEquiv
 
 /-! ### Bit-budget parameters, minimap state, and shared lookup table -/
 
@@ -205,7 +138,7 @@ theorem bitWidth_le_infoBits_add_two {U' n' X : ℕ} (hn1 : 1 ≤ n') (hnU : n' 
     bitWidth U' n' X ≤ infoBits U' n' X + 2 :=
   Spillover.clog_mul_spillUniv_pow_add_le (Nat.choose_pos hnU) hX hn1
 
-/-- Size bound on the shared metadata lookup table (`Lemma 3.7`, `arXiv:2310.20536`, Section 3.4):
+/-- Size bound on the shared metadata lookup table ([LiLiangYuZhou2024, Section 3.4, Lemma 3.7]):
 `U' * headerUniv U' n' X n' ≤ U' * C(U', n') * (2 * n') ^ n'`. -/
 theorem queryTableSize_le {U' n' X : ℕ} (hn1 : 1 ≤ n') :
     U' * headerUniv U' n' X n' ≤ U' * U'.choose n' * (2 * n') ^ n' := by
@@ -234,12 +167,11 @@ structure BoundedEncoded (U' n' X : ℕ) where
   deriving DecidableEq
 
 /-- Decoded `m`-subset subtype of active keys stored in `e.header`. -/
-@[expose]
-def activeSub {U' n' X m : ℕ} (e : Encoded U' n' X m) : { S : Finset (Fin U') // S.card = m } :=
+private def activeSub {U' n' X m : ℕ} (e : Encoded U' n' X m) :
+    { S : Finset (Fin U') // S.card = m } :=
   ((headerEquiv U' m (Spillover.spillUniv X n')).symm e.header).1
 
 /-- Active key set `S ⊆ Fin U'` stored in `e.header`. -/
-@[expose]
 def activeSet {U' n' X m : ℕ} (e : Encoded U' n' X m) : Finset (Fin U') :=
   (activeSub e).1
 
@@ -247,20 +179,18 @@ def activeSet {U' n' X m : ℕ} (e : Encoded U' n' X m) : Finset (Fin U') :=
 theorem card_activeSet {U' n' X m : ℕ} (e : Encoded U' n' X m) : (activeSet e).card = m :=
   (activeSub e).2
 
-/-- Sorted spillover tuple `Fin m → Fin K` stored in `e.header`. -/
-@[expose]
-def spillVec {U' n' X m : ℕ} (e : Encoded U' n' X m) : Fin m → Fin (Spillover.spillUniv X n') :=
+/-- Spillover tuple `Fin m → Fin K` (in increasing order of key in `activeSet e`) in `e.header`. -/
+private def spillVec {U' n' X m : ℕ} (e : Encoded U' n' X m) :
+    Fin m → Fin (Spillover.spillUniv X n') :=
   ((headerEquiv U' m (Spillover.spillUniv X n')).symm e.header).2
 
 /-- Spillover value `k_u : Fin K` of an active key `u ∈ activeSet e`. -/
-@[expose]
-def spillOfMem {U' n' X m : ℕ} (e : Encoded U' n' X m) {u : Fin U'} (hu : u ∈ activeSet e) :
+private def spillOfMem {U' n' X m : ℕ} (e : Encoded U' n' X m) {u : Fin U'} (hu : u ∈ activeSet e) :
     Fin (Spillover.spillUniv X n') :=
   spillVec e (((activeSet e).orderIsoOfFin (card_activeSet e)).symm ⟨u, hu⟩)
 
 /-- Lookup helper operating on a decoded `(subset, spillVec)` header pair. -/
-@[expose]
-def lookupDecoded {U' n' X m : ℕ} (h : DynamicMatching.Scheme U' n') :
+private def lookupDecoded {U' n' X m : ℕ} (h : DynamicMatching.Scheme U' n') :
     { S : Finset (Fin U') // S.card = m } × (Fin m → Fin (Spillover.spillUniv X n')) →
       Fin U' → Option (Fin (Spillover.spillUniv X n') × Fin n')
   | (⟨S, hS⟩, sv), u =>
@@ -273,7 +203,6 @@ def lookupDecoded {U' n' X m : ℕ} (h : DynamicMatching.Scheme U' n') :
 /-- Shared metadata-only lookup function (`Lemma 3.7` first lookup table, `Section 5.6` metadata
 probe): given scheme `h`, header `hdr`, and queried key `u`, returns `some (k_u, slotIdx)` if `u`
 is active and matched, or `none` otherwise, without inspecting any payload slots. -/
-@[expose]
 def lookupHeader {U' n' X m : ℕ} (h : DynamicMatching.Scheme U' n')
     (hdr : Fin (headerUniv U' n' X m)) (u : Fin U') :
     Option (Fin (Spillover.spillUniv X n') × Fin n') :=
@@ -307,7 +236,6 @@ def slotDiff {U' n' X m₁ m₂ : ℕ} (e₁ : Encoded U' n' X m₁) (e₂ : Enc
 
 /-- Well-formedness of an encoded minimap state: every active key's `(spillover, slot)` pair lies in
 the valid range `< X` of `Spillover.decodeVal`. -/
-@[expose]
 def WellFormed {U' n' X m : ℕ} (hm : m ≤ n') (h : DynamicMatching.Scheme U' n')
     (e : Encoded U' n' X m) : Prop :=
   ∀ u (hu : u ∈ activeSet e),
@@ -348,7 +276,7 @@ private theorem lookupByInj_of_forall_ne {m n' : ℕ} {α : Type*} (f : Fin m �
 /-- Pack an `m`-subset `S ⊆ Fin U'` and per-key `(spillover, slotWord)` pairs into `Encoded`,
 placing each active key's slot word at its `DynamicMatching.matching` slot and `0` in unused
 slots. -/
-def packPairs {U' n' X m : ℕ} (hm : m ≤ n')
+private def packPairs {U' n' X m : ℕ} (hm : m ≤ n')
     (h : DynamicMatching.Scheme U' n') (S : Finset (Fin U')) (hS : S.card = m)
     (pairs : (a : Fin U') → a ∈ S →
       Fin (Spillover.spillUniv X n') × Fin (2 ^ Spillover.memBits X n')) :
@@ -362,41 +290,26 @@ def packPairs {U' n' X m : ℕ} (hm : m ≤ n')
     ⟨0, Nat.two_pow_pos _⟩
 
 @[simp]
-theorem activeSet_packPairs {U' n' X m : ℕ} (hm : m ≤ n')
+private theorem activeSet_packPairs {U' n' X m : ℕ} (hm : m ≤ n')
     (h : DynamicMatching.Scheme U' n') (S : Finset (Fin U')) (hS : S.card = m)
     (pairs : (a : Fin U') → a ∈ S →
       Fin (Spillover.spillUniv X n') × Fin (2 ^ Spillover.memBits X n')) :
     activeSet (packPairs hm h S hS pairs) = S := by
   simp [activeSet, activeSub, packPairs]
 
-theorem packPairs_congr {U' n' X m : ℕ} (hm : m ≤ n')
-    (h : DynamicMatching.Scheme U' n') {S₁ S₂ : Finset (Fin U')}
-    (hS₁ : S₁.card = m) (hS₂ : S₂.card = m)
-    {pairs₁ : (a : Fin U') → a ∈ S₁ →
-      Fin (Spillover.spillUniv X n') × Fin (2 ^ Spillover.memBits X n')}
-    {pairs₂ : (a : Fin U') → a ∈ S₂ →
-      Fin (Spillover.spillUniv X n') × Fin (2 ^ Spillover.memBits X n')}
-    (hSeq : S₁ = S₂)
-    (hp : ∀ a (ha₁ : a ∈ S₁) (ha₂ : a ∈ S₂), pairs₁ a ha₁ = pairs₂ a ha₂) :
-    packPairs hm h S₁ hS₁ pairs₁ = packPairs hm h S₂ hS₂ pairs₂ := by
-  subst hSeq
-  have hsub : hS₁ = hS₂ := Subsingleton.elim _ _
-  subst hsub
-  have hfn : pairs₁ = pairs₂ := funext fun a => funext fun ha => hp a ha ha
-  rw [hfn]
 
 /-- Read `(spillover, slotWord)` of key `u` from `e` via `lookupHeader` and one slot access. -/
-def unpackPair? {U' n' X m : ℕ} (h : DynamicMatching.Scheme U' n') (e : Encoded U' n' X m)
+private def unpackPair? {U' n' X m : ℕ} (h : DynamicMatching.Scheme U' n') (e : Encoded U' n' X m)
     (u : Fin U') : Option (Fin (Spillover.spillUniv X n') × Fin (2 ^ Spillover.memBits X n')) :=
   (lookupHeader h e.header u).map fun kb => (kb.1, e.slots kb.2)
 
-theorem queryFin_eq_unpackPair?_bind {U' n' X m : ℕ} (h : DynamicMatching.Scheme U' n')
+private theorem queryFin_eq_unpackPair?_bind {U' n' X m : ℕ} (h : DynamicMatching.Scheme U' n')
     (e : Encoded U' n' X m) (u : Fin U') :
     queryFin h e u = (unpackPair? h e u).bind (Spillover.decode? n') := by
   dsimp only [queryFin, unpackPair?]
   cases lookupHeader h e.header u <;> rfl
 
-theorem unpackPair?_of_notMem {U' n' X m : ℕ} (h : DynamicMatching.Scheme U' n')
+private theorem unpackPair?_of_notMem {U' n' X m : ℕ} (h : DynamicMatching.Scheme U' n')
     (e : Encoded U' n' X m) {u : Fin U'} (hu : u ∉ activeSet e) :
     unpackPair? h e u = none := by
   dsimp only [unpackPair?, lookupHeader]
@@ -411,7 +324,7 @@ theorem queryFin_of_notMem {U' n' X m : ℕ} (h : DynamicMatching.Scheme U' n')
     queryFin h e u = none := by
   rw [queryFin_eq_unpackPair?_bind, unpackPair?_of_notMem h e hu]; rfl
 
-theorem unpackPair?_isSome {U' n' X m : ℕ} (hm : m ≤ n')
+private theorem unpackPair?_isSome {U' n' X m : ℕ} (hm : m ≤ n')
     (h : DynamicMatching.Scheme U' n') (e : Encoded U' n' X m) {u : Fin U'}
     (hu : u ∈ activeSet e) : (unpackPair? h e u).isSome = true := by
   dsimp only [unpackPair?, lookupHeader]
@@ -426,12 +339,12 @@ theorem unpackPair?_isSome {U' n' X m : ℕ} (hm : m ≤ n')
   exact (DynamicMatching.matchOptOn_isSome_iff h hB u).mpr hu
 
 /-- Total extraction of `(spillover, slotWord)` for an active key `a ∈ activeSet e`. -/
-def unpackPair {U' n' X m : ℕ} (hm : m ≤ n')
+private def unpackPair {U' n' X m : ℕ} (hm : m ≤ n')
     (h : DynamicMatching.Scheme U' n') (e : Encoded U' n' X m) {a : Fin U'}
     (ha : a ∈ activeSet e) : Fin (Spillover.spillUniv X n') × Fin (2 ^ Spillover.memBits X n') :=
   (unpackPair? h e a).get (unpackPair?_isSome hm h e ha)
 
-theorem unpackPair_eq {U' n' X m : ℕ} (hm : m ≤ n')
+private theorem unpackPair_eq {U' n' X m : ℕ} (hm : m ≤ n')
     (h : DynamicMatching.Scheme U' n') (e : Encoded U' n' X m) {a : Fin U'}
     (ha : a ∈ activeSet e) :
     unpackPair hm h e ha =
@@ -453,7 +366,7 @@ theorem unpackPair_eq {U' n' X m : ℕ} (hm : m ≤ n')
   exact hgen ((headerEquiv U' m (Spillover.spillUniv X n')).symm e.header) ha
 
 @[simp]
-theorem decode?_unpackPair {U' n' X m : ℕ} (hm : m ≤ n')
+private theorem decode?_unpackPair {U' n' X m : ℕ} (hm : m ≤ n')
     (h : DynamicMatching.Scheme U' n') (e : Encoded U' n' X m) {a : Fin U'}
     (ha : a ∈ activeSet e) :
     Spillover.decode? n' (unpackPair hm h e ha) = queryFin h e a := by
@@ -461,7 +374,7 @@ theorem decode?_unpackPair {U' n' X m : ℕ} (hm : m ≤ n')
   rw [queryFin_eq_unpackPair?_bind, ← hget]
   rfl
 
-theorem unpackPair?_packPairs {U' n' X m : ℕ} (hm : m ≤ n')
+private theorem unpackPair?_packPairs {U' n' X m : ℕ} (hm : m ≤ n')
     (h : DynamicMatching.Scheme U' n') (S : Finset (Fin U')) (hS : S.card = m)
     (pairs : (a : Fin U') → a ∈ S →
       Fin (Spillover.spillUniv X n') × Fin (2 ^ Spillover.memBits X n'))
@@ -504,7 +417,7 @@ theorem unpackPair?_packPairs {U' n' X m : ℕ} (hm : m ≤ n')
   · simp [hu]
 
 @[simp]
-theorem unpackPair_packPairs {U' n' X m : ℕ} (hm : m ≤ n')
+private theorem unpackPair_packPairs {U' n' X m : ℕ} (hm : m ≤ n')
     (h : DynamicMatching.Scheme U' n') (S : Finset (Fin U')) (hS : S.card = m)
     (pairs : (a : Fin U') → a ∈ S →
       Fin (Spillover.spillUniv X n') × Fin (2 ^ Spillover.memBits X n'))
@@ -516,7 +429,7 @@ theorem unpackPair_packPairs {U' n' X m : ℕ} (hm : m ≤ n')
   rw [hget, unpackPair?_packPairs]
   simp [ha]
 
-theorem queryFin_packPairs {U' n' X m : ℕ} (hm : m ≤ n')
+private theorem queryFin_packPairs {U' n' X m : ℕ} (hm : m ≤ n')
     (h : DynamicMatching.Scheme U' n') (S : Finset (Fin U')) (hS : S.card = m)
     (pairs : (a : Fin U') → a ∈ S →
       Fin (Spillover.spillUniv X n') × Fin (2 ^ Spillover.memBits X n'))
@@ -549,7 +462,6 @@ def encode {U' n' X m : ℕ} (hm : m ≤ n') (h : DynamicMatching.Scheme U' n')
   packPairs hm h (Dictionary.dom s) hs fun _ ha => Spillover.encode n' (valFin s hb ha)
 
 /-- Empty `0`-key minimap on `n'` slots. -/
-@[expose]
 def empty (U' n' X : ℕ) : Encoded U' n' X 0 where
   header := ⟨0, by simp [headerUniv]⟩
   slots := fun _ => ⟨0, Nat.two_pow_pos _⟩
@@ -745,12 +657,10 @@ theorem query_replace {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
 namespace BoundedEncoded
 
 /-- Empty bounded-capacity minimap (`0` active keys). -/
-@[expose]
 def empty (U' n' X : ℕ) : BoundedEncoded U' n' X :=
   ⟨⟨0, Nat.zero_lt_succ n'⟩, Minimap.empty U' n' X⟩
 
 /-- Encode an abstract `Dictionary.State U'` of size `≤ n'` with values `< X`. -/
-@[expose]
 def encode {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
     (s : Dictionary.State U') (hb : Dictionary.ValuesBounded X s)
     (hs : (Dictionary.dom s).card ≤ n') : BoundedEncoded U' n' X :=
@@ -939,8 +849,9 @@ end BoundedEncoded
 /-! ### Canonical slot invariant, `encode` commutativity, and slot-relocation bounds -/
 
 /-- Invariant stating that every slot `b : Fin n'` not matched to an active key holds `0`. Holds
-automatically for `empty`, `encode`, and all update outputs, and holds unconditionally for every
-full-capacity leaf state `e : FixedEncoded U' n' X` (`unusedSlotsZero_fixed`). -/
+automatically for `empty`, `encode`, `insertNew`, `overwrite`, `deleteMem`, and `replace`, is
+preserved by `BoundedEncoded.delete`, and holds unconditionally for every full-capacity leaf state
+`e : FixedEncoded U' n' X` (`unusedSlotsZero_fixed`). -/
 @[expose]
 def UnusedSlotsZero {U' n' X m : ℕ} (h : DynamicMatching.Scheme U' n')
     (e : Encoded U' n' X m) : Prop :=
@@ -999,7 +910,7 @@ private theorem slots_packPairs_of_forall_ne {U' n' X m : ℕ} (hm : m ≤ n')
   rw [heq] at hm_eq
   exact hnone _ hmem hm_eq
 
-theorem unusedSlotsZero_packPairs {U' n' X m : ℕ} (hm : m ≤ n')
+private theorem unusedSlotsZero_packPairs {U' n' X m : ℕ} (hm : m ≤ n')
     (h : DynamicMatching.Scheme U' n') (S : Finset (Fin U')) (hS : S.card = m)
     (pairs : (a : Fin U') → a ∈ S →
       Fin (Spillover.spillUniv X n') × Fin (2 ^ Spillover.memBits X n')) :

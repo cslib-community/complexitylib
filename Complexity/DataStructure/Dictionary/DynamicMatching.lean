@@ -14,7 +14,6 @@ public import Mathlib.Data.Finset.Max
 public import Mathlib.Data.Finset.SymmDiff
 public import Mathlib.Data.Fintype.Perm
 public import Mathlib.Data.Nat.Log
-import Complexity.Foundations.Data.Finset.SymmDiff
 import Mathlib.GroupTheory.Perm.Basic
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.NormNum
@@ -26,9 +25,10 @@ import Mathlib.Tactic.Ring
 
 This file formalizes the multi-round consistent-hashing dynamic matching scheme of Tianxiao Li,
 Jingxun Liang, Huacheng Yu, and Renfei Zhou, *Dynamic Dictionary with Subconstant Wasted Bits per
-Key* (SODA 2024, [arXiv:2310.20536](https://arxiv.org/abs/2310.20536), Section 3.1, Problem 3.1,
-Algorithm 1, Lemma 3.2, and Claims 3.3–3.4; inspired by Karger, Lehman, Leighton, Panigrahy,
-Levine, and Lewin, STOC 1997, and Bender, Kuszmaul, Bertrand, and Young, 2022).
+Key* ([LiLiangYuZhou2024, Section 3.1, Problem 3.1, Algorithm 1, Lemma 3.2, and Claims 3.3–3.4];
+[arXiv:2310.20536v1](https://arxiv.org/abs/2310.20536v1), PDF pp. 6–9 / printed pp. 5–8), building
+on consistent hashing on the unit circle ([KargerLehmanLeightonPanigrahyLevineLewin1997]) and
+memoryless worker-task assignment ([BergerKuszmaulPolakTidorWein2022]).
 
 Given a key-ID (ball) universe `Fin U'` and a slot (bin) universe `Fin n'` (`n' ≤ U'`), a matching
 scheme `h : Scheme U' n'` consists of `U'` permutations on `Fin (U' + n')` (matching the
@@ -40,23 +40,23 @@ to a bin `b ∈ B_i` is matched to `b`, and both `a` and `b` are removed before 
 Because `h` is fixed in advance, the resulting assignment `matching h A` (for `B = Finset.univ` of
 all `n'` slots, or more generally `matchOptOn h A B` for any `B` with `A.card ≤ B.card`) depends
 solely on `h` and the current active set `A`. Under uniform independent permutations (`schemePMF`),
-the expected number of rounds `T` is at most `⌈log₂ |A|⌉ + 2 = O(log (max |A| 2))` (`Claim 3.3`),
-any single insertion or deletion changes at most `2 * (T + 1)` ball assignments (`Claim 3.4`), and
-an atomic replacement `(A.erase x) ∪ {y}` changes at most `4 * T + 6` assignments (`Lemma 3.2`).
+the expected number of rounds `T` is at most `⌈log₂ |A|⌉ + 2 = O(log (max |A| 2))`
+([LiLiangYuZhou2024, Claim 3.3]), any single insertion or deletion changes at most `2 * (T + 1)`
+ball assignments ([LiLiangYuZhou2024, Claim 3.4]), and an atomic replacement `(A.erase x) ∪ {y}`
+changes at most `4 * T + 6` assignments ([LiLiangYuZhou2024, Lemma 3.2]).
 
 ## Scope note
 
-This module is part 1 of the large-parameter-regime dynamic dictionary of Li, Liang,
-Yu, and Zhou (SODA 2024, Section 5). Variable-length `B`-way word/bit adapters (Section 3.3),
-adapter trees (Section 4), strong history independence, dynamic resizing, and super-polynomial key
-universes are out of scope.
+This module is part 1 of the large-parameter-regime dynamic dictionary of [LiLiangYuZhou2024,
+Section 5]. Word-RAM Fisher–Yates permutation sampling and precomputed lookup-table realization are
+deferred to the follow-up Word-RAM realization milestone; variable-length `B`-way word/bit adapters
+(Section 3.3), adapter trees (Section 4), strong history independence, dynamic resizing, and
+super-polynomial key universes are out of scope.
 
 ## Main definitions
 
 * `Cslib.DataStructure.Dictionary.DynamicMatching.RoundPerm`, `Scheme`, `schemePMF`: single-round
   permutation on `Fin (U' + n')`, `U'`-round matching scheme, and uniform distribution on schemes.
-* `Cslib.DataStructure.Dictionary.DynamicMatching.clockwiseNextPos`, `nextItem`: clockwise
-  successor on a finite subset of `Fin M` and induced item successor under `RoundPerm`.
 * `Cslib.DataStructure.Dictionary.DynamicMatching.roundMatchOpt`, `roundStep`, `stateAt`,
   `roundsOn`, `rounds`, `matchOptOn`, `matchOpt`, `matching`, `relocDist`: Algorithm 1 round
   transition, round count `T`, partial assignment `Fin U' → Option (Fin n')`, canonical injection
@@ -64,19 +64,26 @@ universes are out of scope.
 
 ## Main results
 
-* `clockwiseNextPos_mem`, `clockwiseNextPos_injective`, `exists_insert_clockwiseNextPos`: circle
-  bijection and single-point insertion locality.
-* `card_balls_roundStep_lt`, `stateAt_balls_eq_empty`, `matchOptOn_isSome_iff`,
-  `matchOptOn_injective`, `matching_apply`: termination within `A.card` rounds and canonical
-  injection properties.
-* `two_mul_sum_card_balls_roundStep_le`, `expect_card_balls_stateAt_le`, `expect_roundsOn_le`,
-  `expect_rounds_le`: Claim 3.3 expected round bound
-  `𝔼[T] ≤ ⌈log₂ |A|⌉ + 2 ≤ 3 * ⌈log₂ (max |A| 2)⌉`.
-* `pairDiff_roundStep_le_one`, `roundsOn_le_succ_of_pairDiff_le_one`,
-  `relocDist_le_of_pairDiff_le_one`, `relocDist_insert_le`, `relocDist_delete_le`,
-  `relocDist_replace_le`, `expect_relocDist_insert_le`, `expect_relocDist_delete_le`,
-  `expect_relocDist_replace_le`: Claim 3.4 and Lemma 3.2 deterministic `O(T)` and expected
-  `O(log (max |A| 2))` relocation bounds.
+* `card_balls_roundStep_lt`, `stateAt_balls_eq_empty`, `roundsOn_le_card`, `rounds_le_card`,
+  `matchOptOn_isSome_iff`, `matchOptOn_injective`, `matchOpt_isSome_iff`, `matchOpt_injective`,
+  `matching_apply`: termination within `A.card` rounds and canonical injection properties.
+* `expect_roundsOn_le`, `expect_rounds_le`: expected round bound
+  `𝔼[T] ≤ ⌈log₂ |A|⌉ + 2 ≤ 3 * ⌈log₂ (max |A| 2)⌉` ([LiLiangYuZhou2024, Claim 3.3]).
+* `relocDist_insert_le`, `relocDist_delete_le`, `relocDist_replace_le`,
+  `expect_relocDist_insert_le`, `expect_relocDist_delete_le`, `expect_relocDist_replace_le`:
+  deterministic `O(T)` and expected `O(log (max |A| 2))` relocation bounds
+  ([LiLiangYuZhou2024, Claim 3.4 and Lemma 3.2]).
+
+## References
+
+* [T. Li, J. Liang, H. Yu, and R. Zhou,
+  *Dynamic Dictionary with Subconstant Wasted Bits per Key*][LiLiangYuZhou2024]
+* [D. R. Karger, E. Lehman, F. T. Leighton, R. Panigrahy, M. S. Levine, and D. Lewin,
+  *Consistent Hashing and Random Trees: Distributed Caching Protocols for Relieving Hot Spots on
+  the World Wide Web*][KargerLehmanLeightonPanigrahyLevineLewin1997]
+* [A. Berger, W. Kuszmaul, A. Polak, J. Tidor, and N. Wein,
+  *Memoryless Worker-Task Assignment with Polylogarithmic Switching
+  Cost*][BergerKuszmaulPolakTidorWein2022]
 -/
 
 public section
@@ -103,36 +110,33 @@ theorem schemePMF_eq_uniformOfFintype (U' n' : ℕ) :
   rfl
 
 /-- Embed ball `a : Fin U'` into the combined item space `Fin (U' + n')`. -/
-@[expose]
-def ballItem {U' : ℕ} (n' : ℕ) (a : Fin U') : Fin (U' + n') :=
+private def ballItem {U' : ℕ} (n' : ℕ) (a : Fin U') : Fin (U' + n') :=
   Fin.castAdd n' a
 
 /-- Embed bin `b : Fin n'` into the combined item space `Fin (U' + n')`. -/
-@[expose]
-def binItem (U' : ℕ) {n' : ℕ} (b : Fin n') : Fin (U' + n') :=
+private def binItem (U' : ℕ) {n' : ℕ} (b : Fin n') : Fin (U' + n') :=
   Fin.natAdd U' b
 
-theorem ballItem_injective (U' n' : ℕ) : Function.Injective (ballItem (U' := U') n') :=
+private theorem ballItem_injective (U' n' : ℕ) : Function.Injective (ballItem (U' := U') n') :=
   fun _ _ h => Fin.ext (by simpa [ballItem] using congrArg Fin.val h)
 
-theorem binItem_injective (U' n' : ℕ) : Function.Injective (binItem U' (n' := n')) :=
+private theorem binItem_injective (U' n' : ℕ) : Function.Injective (binItem U' (n' := n')) :=
   fun _ _ h => Fin.ext (by simpa [binItem] using congrArg Fin.val h)
 
 /-- Test whether a combined item `z : Fin (U' + n')` is a bin `binItem U' b`. -/
-@[expose]
 def asBin? {U' n' : ℕ} (z : Fin (U' + n')) : Option (Fin n') :=
   if h : U' ≤ z.val then some ⟨z.val - U', by omega⟩ else none
 
 @[simp]
-theorem asBin?_ballItem {U' n' : ℕ} (a : Fin U') : asBin? (ballItem n' a) = none := by
+private theorem asBin?_ballItem {U' n' : ℕ} (a : Fin U') : asBin? (ballItem n' a) = none := by
   simp [asBin?, ballItem, Nat.not_le_of_gt a.isLt]
 
 @[simp]
-theorem asBin?_binItem {U' n' : ℕ} (b : Fin n') : asBin? (binItem U' b) = some b := by
+private theorem asBin?_binItem {U' n' : ℕ} (b : Fin n') : asBin? (binItem U' b) = some b := by
   ext
   simp [asBin?, binItem]
 
-theorem asBin?_eq_some_iff {U' n' : ℕ} {z : Fin (U' + n')} {b : Fin n'} :
+private theorem asBin?_eq_some_iff {U' n' : ℕ} {z : Fin (U' + n')} {b : Fin n'} :
     asBin? z = some b ↔ z = binItem U' b := by
   constructor
   · intro h
@@ -145,7 +149,7 @@ theorem asBin?_eq_some_iff {U' n' : ℕ} {z : Fin (U' + n')} {b : Fin n'} :
   · rintro rfl
     exact asBin?_binItem b
 
-theorem asBin?_eq_none_iff {U' n' : ℕ} {z : Fin (U' + n')} :
+private theorem asBin?_eq_none_iff {U' n' : ℕ} {z : Fin (U' + n')} :
     asBin? z = none ↔ ∃ a : Fin U', z = ballItem n' a := by
   constructor
   · intro h
@@ -157,13 +161,12 @@ theorem asBin?_eq_none_iff {U' n' : ℕ} {z : Fin (U' + n')} :
     exact asBin?_ballItem a
 
 /-- Combined active item set `A ⊕ B` inside `Fin (U' + n')`. -/
-@[expose]
-def activeItems {U' n' : ℕ} (A : Finset (Fin U')) (B : Finset (Fin n')) :
+private def activeItems {U' n' : ℕ} (A : Finset (Fin U')) (B : Finset (Fin n')) :
     Finset (Fin (U' + n')) :=
   A.map ⟨ballItem n', ballItem_injective U' n'⟩ ∪ B.map ⟨binItem U', binItem_injective U' n'⟩
 
 @[simp]
-theorem ballItem_mem_activeItems {U' n' : ℕ} {A : Finset (Fin U')} {B : Finset (Fin n')}
+private theorem ballItem_mem_activeItems {U' n' : ℕ} {A : Finset (Fin U')} {B : Finset (Fin n')}
     {a : Fin U'} : ballItem n' a ∈ activeItems A B ↔ a ∈ A := by
   simp only [activeItems, mem_union, mem_map, Function.Embedding.coeFn_mk]
   constructor
@@ -176,7 +179,7 @@ theorem ballItem_mem_activeItems {U' n' : ℕ} {A : Finset (Fin U')} {B : Finset
   · intro ha; exact Or.inl ⟨a, ha, rfl⟩
 
 @[simp]
-theorem binItem_mem_activeItems {U' n' : ℕ} {A : Finset (Fin U')} {B : Finset (Fin n')}
+private theorem binItem_mem_activeItems {U' n' : ℕ} {A : Finset (Fin U')} {B : Finset (Fin n')}
     {b : Fin n'} : binItem U' b ∈ activeItems A B ↔ b ∈ B := by
   simp only [activeItems, mem_union, mem_map, Function.Embedding.coeFn_mk]
   constructor
@@ -188,14 +191,14 @@ theorem binItem_mem_activeItems {U' n' : ℕ} {A : Finset (Fin U')} {B : Finset 
     · exact binItem_injective U' n' heq ▸ hb'
   · intro hb; exact Or.inr ⟨b, hb, rfl⟩
 
-theorem mem_activeItems_iff {U' n' : ℕ} {A : Finset (Fin U')} {B : Finset (Fin n')}
+private theorem mem_activeItems_iff {U' n' : ℕ} {A : Finset (Fin U')} {B : Finset (Fin n')}
     {z : Fin (U' + n')} :
     z ∈ activeItems A B ↔
       (∃ a ∈ A, z = ballItem n' a) ∨ (∃ b ∈ B, z = binItem U' b) := by
   simp only [activeItems, mem_union, mem_map, Function.Embedding.coeFn_mk]
   simp only [eq_comm]
 
-theorem card_activeItems {U' n' : ℕ} (A : Finset (Fin U')) (B : Finset (Fin n')) :
+private theorem card_activeItems {U' n' : ℕ} (A : Finset (Fin U')) (B : Finset (Fin n')) :
     (activeItems A B).card = A.card + B.card := by
   rw [activeItems, card_union_of_disjoint, card_map, card_map]
   rw [disjoint_left]
@@ -210,21 +213,20 @@ theorem card_activeItems {U' n' : ℕ} (A : Finset (Fin U')) (B : Finset (Fin n'
 
 /-- Clockwise successor of `p` inside `P : Finset (Fin M)`: the smallest element of `P` strictly
 greater than `p`, wrapping around to `P.min'` when `p` is at or above all elements of `P`. -/
-@[expose]
-def clockwiseNextPos {M : ℕ} (P : Finset (Fin M)) (p : Fin M) : Fin M :=
+private def clockwiseNextPos {M : ℕ} (P : Finset (Fin M)) (p : Fin M) : Fin M :=
   let gt := P.filter (p < ·)
   if hgt : gt.Nonempty then gt.min' hgt
   else if hP : P.Nonempty then P.min' hP
   else p
 
-theorem clockwiseNextPos_mem {M : ℕ} {P : Finset (Fin M)} (hP : P.Nonempty) (p : Fin M) :
+private theorem clockwiseNextPos_mem {M : ℕ} {P : Finset (Fin M)} (hP : P.Nonempty) (p : Fin M) :
     clockwiseNextPos P p ∈ P := by
   dsimp only [clockwiseNextPos]
   split_ifs with hgt
   · exact (mem_filter.mp (min'_mem _ hgt)).1
   · exact min'_mem P hP
 
-theorem clockwiseNextPos_injective {M : ℕ} (P : Finset (Fin M)) :
+private theorem clockwiseNextPos_injective {M : ℕ} (P : Finset (Fin M)) :
     Set.InjOn (clockwiseNextPos P) (P : Set (Fin M)) := by
   intro p₁ hp₁ p₂ hp₂ heq
   have hP : P.Nonempty := ⟨p₁, hp₁⟩
@@ -257,7 +259,7 @@ theorem clockwiseNextPos_injective {M : ℕ} (P : Finset (Fin M)) :
     exact le_antisymm (hmax₂ p₁ hp₁) (hmax₁ p₂ hp₂)
 
 private theorem exists_clockwiseNextPos_notMem {M : ℕ} {P Q : Finset (Fin M)}
-    (_hQP : Q ⊆ P) (hQ : Q.Nonempty) (hdiff : (P \ Q).Nonempty) :
+    (hQ : Q.Nonempty) (hdiff : (P \ Q).Nonempty) :
     ∃ q ∈ Q, clockwiseNextPos P q ∉ Q := by
   by_contra hclosed
   push Not at hclosed
@@ -313,7 +315,7 @@ private theorem exists_clockwiseNextPos_notMem {M : ℕ} {P Q : Finset (Fin M)}
 /-- Inserting one new point `pStar ∉ P` into a nonempty circle subset `P` splices `pStar`
 immediately after a unique predecessor `x₀ ∈ P`, leaving `clockwiseNextPos` unchanged on every
 `x ∈ P \ {x₀}`. -/
-theorem exists_insert_clockwiseNextPos {M : ℕ} {P : Finset (Fin M)} (hP : P.Nonempty)
+private theorem exists_insert_clockwiseNextPos {M : ℕ} {P : Finset (Fin M)} (hP : P.Nonempty)
     {pStar : Fin M} (hp : pStar ∉ P) :
     ∃ x₀ ∈ P,
       clockwiseNextPos (insert pStar P) x₀ = pStar ∧
@@ -455,11 +457,10 @@ theorem exists_insert_clockwiseNextPos {M : ℕ} {P : Finset (Fin M)} (hP : P.No
 
 /-- Clockwise next active item in `S : Finset (Fin (U' + n'))` after `z`, ordered along the circle
 by permutation `π`. -/
-@[expose]
-def nextItem {M : ℕ} (π : Equiv.Perm (Fin M)) (S : Finset (Fin M)) (z : Fin M) : Fin M :=
+private def nextItem {M : ℕ} (π : Equiv.Perm (Fin M)) (S : Finset (Fin M)) (z : Fin M) : Fin M :=
   π.symm (clockwiseNextPos (S.map π.toEmbedding) (π z))
 
-theorem nextItem_mem {M : ℕ} (π : Equiv.Perm (Fin M)) {S : Finset (Fin M)} (hS : S.Nonempty)
+private theorem nextItem_mem {M : ℕ} (π : Equiv.Perm (Fin M)) {S : Finset (Fin M)} (hS : S.Nonempty)
     (z : Fin M) : nextItem π S z ∈ S := by
   have hP : (S.map π.toEmbedding).Nonempty := Finset.map_nonempty.mpr hS
   have hmem := clockwiseNextPos_mem hP (π z)
@@ -468,7 +469,7 @@ theorem nextItem_mem {M : ℕ} (π : Equiv.Perm (Fin M)) {S : Finset (Fin M)} (h
   rw [← heq]
   simpa using hw
 
-theorem nextItem_injective {M : ℕ} (π : Equiv.Perm (Fin M)) (S : Finset (Fin M)) :
+private theorem nextItem_injective {M : ℕ} (π : Equiv.Perm (Fin M)) (S : Finset (Fin M)) :
     Set.InjOn (nextItem π S) (S : Set (Fin M)) := by
   intro z₁ hz₁ z₂ hz₂ heq
   dsimp only [nextItem] at heq
@@ -478,11 +479,10 @@ theorem nextItem_injective {M : ℕ} (π : Equiv.Perm (Fin M)) (S : Finset (Fin 
   exact π.injective (clockwiseNextPos_injective _ hp₁ hp₂ heq')
 
 private theorem exists_nextItem_notMem {M : ℕ} (π : Equiv.Perm (Fin M)) {S Q : Finset (Fin M)}
-    (hQS : Q ⊆ S) (hQ : Q.Nonempty) (hdiff : (S \ Q).Nonempty) :
+    (hQ : Q.Nonempty) (hdiff : (S \ Q).Nonempty) :
     ∃ q ∈ Q, nextItem π S q ∉ Q := by
   set P := S.map π.toEmbedding
   set QP := Q.map π.toEmbedding
-  have hQPP : QP ⊆ P := map_subset_map.mpr hQS
   have hQP_ne : QP.Nonempty := Finset.map_nonempty.mpr hQ
   have hdiffP : (P \ QP).Nonempty := by
     rcases hdiff with ⟨b, hb⟩
@@ -490,13 +490,13 @@ private theorem exists_nextItem_notMem {M : ℕ} (π : Equiv.Perm (Fin M)) {S Q 
     rintro hmem
     rcases mem_map.mp hmem with ⟨q, hq, heq⟩
     exact (mem_sdiff.mp hb).2 (π.injective heq ▸ hq)
-  rcases exists_clockwiseNextPos_notMem hQPP hQP_ne hdiffP with ⟨p, hpQP, hpnot⟩
+  rcases exists_clockwiseNextPos_notMem hQP_ne hdiffP with ⟨p, hpQP, hpnot⟩
   rcases mem_map.mp hpQP with ⟨q, hq, rfl⟩
   refine ⟨q, hq, fun hnextQ => hpnot ?_⟩
   refine mem_map.mpr ⟨nextItem π S q, hnextQ, ?_⟩
   simp [nextItem, P]
 
-theorem exists_insert_nextItem {M : ℕ} (π : Equiv.Perm (Fin M)) {S : Finset (Fin M)}
+private theorem exists_insert_nextItem {M : ℕ} (π : Equiv.Perm (Fin M)) {S : Finset (Fin M)}
     (hS : S.Nonempty) {zStar : Fin M} (hz : zStar ∉ S) :
     ∃ x₀ ∈ S,
       nextItem π (insert zStar S) x₀ = zStar ∧
@@ -550,14 +550,12 @@ private theorem nextItem_mul_swap {M : ℕ} [DecidableEq (Fin M)] (π : Equiv.Pe
 
 /-- Single-round match attempt (`Algorithm 1`, lines 7–9): ball `a` matches to bin `b` iff `a ∈ A`
 and the clockwise-next active item in `activeItems A B` under `π` is `binItem U' b`. -/
-@[expose]
 def roundMatchOpt {U' n' : ℕ} (π : RoundPerm U' n') (A : Finset (Fin U')) (B : Finset (Fin n'))
     (a : Fin U') : Option (Fin n') :=
   if a ∈ A then asBin? (nextItem π (activeItems A B) (ballItem n' a)) else none
 
 /-- Single-round state update (`Algorithm 1`, lines 5–10): remove matched balls from `A` and
 matched bins from `B`. -/
-@[expose]
 def roundStep {U' n' : ℕ} (π : RoundPerm U' n') (AB : Finset (Fin U') × Finset (Fin n')) :
     Finset (Fin U') × Finset (Fin n') :=
   let A := AB.1
@@ -566,7 +564,7 @@ def roundStep {U' n' : ℕ} (π : RoundPerm U' n') (AB : Finset (Fin U') × Fins
   let matchedBins := B.filter fun b => ∃ a ∈ A, roundMatchOpt π A B a = some b
   (A \ matchedBalls, B \ matchedBins)
 
-theorem roundMatchOpt_mem_bins {U' n' : ℕ} {π : RoundPerm U' n'} {A : Finset (Fin U')}
+private theorem roundMatchOpt_mem_bins {U' n' : ℕ} {π : RoundPerm U' n'} {A : Finset (Fin U')}
     {B : Finset (Fin n')} {a : Fin U'} {b : Fin n'} (hm : roundMatchOpt π A B a = some b) :
     a ∈ A ∧ b ∈ B := by
   dsimp only [roundMatchOpt] at hm
@@ -577,7 +575,7 @@ theorem roundMatchOpt_mem_bins {U' n' : ℕ} {π : RoundPerm U' n'} {A : Finset 
   have hmem := hnext_eq ▸ nextItem_mem π hS (ballItem n' a)
   exact ⟨ha, binItem_mem_activeItems.mp hmem⟩
 
-theorem roundMatchOpt_injective {U' n' : ℕ} (π : RoundPerm U' n') (A : Finset (Fin U'))
+private theorem roundMatchOpt_injective {U' n' : ℕ} (π : RoundPerm U' n') (A : Finset (Fin U'))
     (B : Finset (Fin n')) {a₁ a₂ : Fin U'} {b : Fin n'}
     (h₁ : roundMatchOpt π A B a₁ = some b) (h₂ : roundMatchOpt π A B a₂ = some b) :
     a₁ = a₂ := by
@@ -593,7 +591,7 @@ theorem roundMatchOpt_injective {U' n' : ℕ} (π : RoundPerm U' n') (A : Finset
     (ballItem_mem_activeItems.mpr ha₁) (ballItem_mem_activeItems.mpr ha₂) heq
   exact ballItem_injective U' n' hinj
 
-theorem card_balls_le_card_bins_roundStep {U' n' : ℕ} (π : RoundPerm U' n')
+private theorem card_balls_le_card_bins_roundStep {U' n' : ℕ} (π : RoundPerm U' n')
     {A : Finset (Fin U')} {B : Finset (Fin n')} (hle : A.card ≤ B.card) :
     (roundStep π (A, B)).1.card ≤ (roundStep π (A, B)).2.card := by
   set mA := A.filter fun a => (roundMatchOpt π A B a).isSome
@@ -626,7 +624,7 @@ theorem card_balls_le_card_bins_roundStep {U' n' : ℕ} (π : RoundPerm U' n')
   exact Nat.sub_le_sub_right hle mB.card
 
 /-- Every round with `A.Nonempty` and `B.Nonempty` matches at least one ball (`Algorithm 1`
-termination property, `arXiv:2310.20536`, Section 3.1). -/
+termination property, [LiLiangYuZhou2024, Section 3.1]). -/
 theorem card_balls_roundStep_lt {U' n' : ℕ} (π : RoundPerm U' n')
     {A : Finset (Fin U')} {B : Finset (Fin n')} (hA : A.Nonempty) (hB : B.Nonempty) :
     (roundStep π (A, B)).1.card < A.card := by
@@ -642,7 +640,7 @@ theorem card_balls_roundStep_lt {U' n' : ℕ} (π : RoundPerm U' n')
     have hval : (ballItem n' a).val = (binItem U' b).val := congrArg Fin.val heq
     simp only [ballItem, binItem, Fin.val_castAdd, Fin.val_natAdd] at hval
     omega
-  rcases exists_nextItem_notMem π hQS hQ hdiff with ⟨q, hqQ, hnext_notQ⟩
+  rcases exists_nextItem_notMem π hQ hdiff with ⟨q, hqQ, hnext_notQ⟩
   rcases mem_map.mp hqQ with ⟨a, haA, rfl⟩
   have hnext_S : nextItem π S (ballItem n' a) ∈ S :=
     nextItem_mem π (hQ.mono hQS) (ballItem n' a)
@@ -659,7 +657,6 @@ theorem card_balls_roundStep_lt {U' n' : ℕ} (π : RoundPerm U' n')
 
 /-- Remaining `(A_i, B_i)` state just before round `i` (0-indexed) when running `Algorithm 1` on
 `(A, B)` under scheme `h`. -/
-@[expose]
 def stateAt {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U')) (B : Finset (Fin n')) :
     ℕ → Finset (Fin U') × Finset (Fin n')
   | 0 => (A, B)
@@ -667,8 +664,7 @@ def stateAt {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U')) (B : Finset (
     if hi : i < U' then roundStep (h ⟨i, hi⟩) (stateAt h A B i) else stateAt h A B i
 
 /-- Partial matching accumulated during the first `k` rounds of `Algorithm 1`. -/
-@[expose]
-def matchAux {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U')) (B : Finset (Fin n')) :
+private def matchAux {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U')) (B : Finset (Fin n')) :
     ℕ → Fin U' → Option (Fin n')
   | 0, _ => none
   | i + 1, a =>
@@ -680,28 +676,24 @@ def matchAux {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U')) (B : Finset 
 
 /-- Partial matching `σ_{A, B} : Fin U' → Option (Fin n')` after all `U'` rounds of `Algorithm 1`
 on `(A, B)`. -/
-@[expose]
 def matchOptOn {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U')) (B : Finset (Fin n')) :
     Fin U' → Option (Fin n') :=
   matchAux h A B U'
 
 /-- Partial matching `σ_A : Fin U' → Option (Fin n')` against all `n'` slots (`B = Finset.univ`). -/
-@[expose]
 def matchOpt {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U')) : Fin U' → Option (Fin n') :=
   matchOptOn h A Finset.univ
 
 /-- Number of active rounds `T` executed by `Algorithm 1` on `(A, B)`. -/
-@[expose]
 def roundsOn {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U')) (B : Finset (Fin n')) : ℕ :=
   ((Finset.range U').filter fun i => (stateAt h A B i).1.Nonempty).card
 
 /-- Number of active rounds `T` executed by `Algorithm 1` on `(A, Finset.univ)`. -/
-@[expose]
 def rounds {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U')) : ℕ :=
   roundsOn h A Finset.univ
 
 /-- Ball-relocation distance `Δ(σ, σ') = #{a : Fin U' | σ a ≠ σ' a}` (`Problem 3.1`,
-`arXiv:2310.20536`, Section 3.1). -/
+[LiLiangYuZhou2024, Section 3.1]). -/
 @[expose]
 def relocDist {U' n' : ℕ} (σ σ' : Fin U' → Option (Fin n')) : ℕ :=
   (Finset.univ.filter fun a => σ a ≠ σ' a).card
@@ -726,7 +718,7 @@ theorem relocDist_triangle {U' n' : ℕ} (σ₁ σ₂ σ₃ : Fin U' → Option 
   push Not at h
   exact ha (h.1.trans h.2)
 
-theorem stateAt_balls_subset {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U'))
+private theorem stateAt_balls_subset {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U'))
     (B : Finset (Fin n')) (i : ℕ) : (stateAt h A B i).1 ⊆ A := by
   induction i with
   | zero => exact Subset.rfl
@@ -736,14 +728,14 @@ theorem stateAt_balls_subset {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U
     · exact sdiff_subset.trans ih
     · exact ih
 
-theorem stateAt_balls_succ_subset {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U'))
+private theorem stateAt_balls_succ_subset {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U'))
     (B : Finset (Fin n')) (i : ℕ) : (stateAt h A B (i + 1)).1 ⊆ (stateAt h A B i).1 := by
   dsimp only [stateAt]
   split_ifs with hi
   · exact sdiff_subset
   · exact Subset.rfl
 
-theorem stateAt_balls_mono {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U'))
+private theorem stateAt_balls_mono {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U'))
     (B : Finset (Fin n')) {i j : ℕ} (hij : i ≤ j) :
     (stateAt h A B j).1 ⊆ (stateAt h A B i).1 := by
   induction j with
@@ -755,7 +747,7 @@ theorem stateAt_balls_mono {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U')
     · exact Subset.rfl
     · exact (stateAt_balls_succ_subset h A B j).trans (ih (Nat.lt_succ_iff.mp hlt))
 
-theorem card_balls_le_card_bins_stateAt {U' n' : ℕ} (h : Scheme U' n')
+private theorem card_balls_le_card_bins_stateAt {U' n' : ℕ} (h : Scheme U' n')
     {A : Finset (Fin U')} {B : Finset (Fin n')} (hle : A.card ≤ B.card) (i : ℕ) :
     (stateAt h A B i).1.card ≤ (stateAt h A B i).2.card := by
   induction i with
@@ -766,7 +758,7 @@ theorem card_balls_le_card_bins_stateAt {U' n' : ℕ} (h : Scheme U' n')
     · exact card_balls_le_card_bins_roundStep (h ⟨i, hi⟩) ih
     · exact ih
 
-theorem card_stateAt_balls_le_sub {U' n' : ℕ} (h : Scheme U' n')
+private theorem card_stateAt_balls_le_sub {U' n' : ℕ} (h : Scheme U' n')
     {A : Finset (Fin U')} {B : Finset (Fin n')} (hle : A.card ≤ B.card) {i : ℕ} (hi : i ≤ U') :
     (stateAt h A B i).1.card ≤ A.card - i := by
   induction i with
@@ -917,9 +909,22 @@ theorem matchOptOn_injective {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U
     (h₁ : matchOptOn h A B a₁ = some b) (h₂ : matchOptOn h A B a₂ = some b) : a₁ = a₂ :=
   (matchAux_spec h A B U').2.2 a₁ a₂ b h₁ h₂
 
+theorem matchOpt_isSome_iff {U' n' : ℕ} (h : Scheme U' n')
+    {A : Finset (Fin U')} (hA : A.card ≤ n') (a : Fin U') :
+    (matchOpt h A a).isSome ↔ a ∈ A :=
+  matchOptOn_isSome_iff h (by simpa using hA) a
+
+theorem matchOpt_injective {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U'))
+    {a₁ a₂ : Fin U'} {b : Fin n'}
+    (h₁ : matchOpt h A a₁ = some b) (h₂ : matchOpt h A a₂ = some b) : a₁ = a₂ :=
+  matchOptOn_injective h A Finset.univ h₁ h₂
+
+theorem rounds_le_card {U' n' : ℕ} (h : Scheme U' n')
+    {A : Finset (Fin U')} (hA : A.card ≤ n') : rounds h A ≤ A.card :=
+  roundsOn_le_card h (by simpa using hA)
+
 /-- Canonical history-independent dynamic matching `σ_A : A ↪ Fin n'` (`Problem 3.1`,
 `Algorithm 1`) for any active ball set `A ⊆ Fin U'` of size `A.card ≤ n'`. -/
-@[expose]
 def matching {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U'))
     (hA : A.card ≤ n') : A ↪ Fin n' where
   toFun a := (matchOpt h A a.1).get <|
@@ -962,7 +967,7 @@ private theorem nextItem_mem_erase {M : ℕ} (π : Equiv.Perm (Fin M)) {S : Fins
 /-- Single-round symmetry bound (`Claim 3.3` core): over a uniform permutation `π`, the expected
 number of balls remaining unmatched after one round is at most `A.card / 2`. Stated in exact `ℕ`
 counting form without division. -/
-theorem two_mul_sum_card_balls_roundStep_le {U' n' : ℕ} {A : Finset (Fin U')}
+private theorem two_mul_sum_card_balls_roundStep_le {U' n' : ℕ} {A : Finset (Fin U')}
     {B : Finset (Fin n')} (hle : A.card ≤ B.card) :
     2 * ∑ π : RoundPerm U' n', (roundStep π (A, B)).1.card ≤
       A.card * Fintype.card (RoundPerm U' n') := by
@@ -1085,7 +1090,7 @@ private theorem stateAt_congr {U' n' : ℕ} {h₁ h₂ : Scheme U' n'} (A : Fins
 
 /-- Multi-round geometric contraction in `ℕ`: after `k ≤ U'` rounds, the sum of `(stateAt h A B k)`
 ball counts across all `h : Scheme U' n'`, multiplied by `2 ^ k`, is at most `A.card * |Scheme|`. -/
-theorem two_pow_mul_sum_card_stateAt_le {U' n' : ℕ} {A : Finset (Fin U')}
+private theorem two_pow_mul_sum_card_stateAt_le {U' n' : ℕ} {A : Finset (Fin U')}
     {B : Finset (Fin n')} (hle : A.card ≤ B.card) {k : ℕ} (hk : k ≤ U') :
     2 ^ k * ∑ h : Scheme U' n', (stateAt h A B k).1.card ≤
       A.card * Fintype.card (Scheme U' n') := by
@@ -1132,7 +1137,7 @@ theorem two_pow_mul_sum_card_stateAt_le {U' n' : ℕ} {A : Finset (Fin U')}
 
 /-- Real-valued expectation of remaining balls after `k ≤ U'` rounds under `schemePMF`:
 `𝔼_h[|A_k|] ≤ |A| / 2 ^ k`. -/
-theorem expect_card_balls_stateAt_le {U' n' : ℕ} {A : Finset (Fin U')}
+private theorem expect_card_balls_stateAt_le {U' n' : ℕ} {A : Finset (Fin U')}
     {B : Finset (Fin n')} (hle : A.card ≤ B.card) {k : ℕ} (hk : k ≤ U') :
     (∑ h : Scheme U' n', ((schemePMF U' n' h).toReal * ((stateAt h A B k).1.card : ℝ))) ≤
       (A.card : ℝ) / (2 : ℝ) ^ k := by
@@ -1149,7 +1154,7 @@ theorem expect_card_balls_stateAt_le {U' n' : ℕ} {A : Finset (Fin U')}
   rw [inv_mul_le_iff₀ hSpos, ← mul_div_assoc, le_div_iff₀ h2pos]
   linarith
 
-/-- **Claim 3.3** (`arXiv:2310.20536`, Section 3.1): for any `A ⊆ Fin U'`
+/-- **Claim 3.3** ([LiLiangYuZhou2024, Section 3.1]): for any `A ⊆ Fin U'`
 and `B ⊆ Fin n'` with `A.card ≤ B.card`, the expected number of rounds `T = roundsOn h A B` under
 uniform independent permutations is at most `⌈log₂ |A|⌉ + 2`. -/
 theorem expect_roundsOn_le {U' n' : ℕ} {A : Finset (Fin U')} {B : Finset (Fin n')}
@@ -1273,15 +1278,14 @@ theorem expect_rounds_le {U' n' : ℕ} {A : Finset (Fin U')} (hA : A.card ≤ n'
 /-! ### Single-operation relocation bounds (`Claim 3.4` and `Lemma 3.2`) -/
 
 /-- Total symmetric-difference size `|A ∆ A'| + |B ∆ B'|` between two `(balls, bins)` states. -/
-@[expose]
-def pairDiff {U' n' : ℕ} (AB AB' : Finset (Fin U') × Finset (Fin n')) : ℕ :=
+private def pairDiff {U' n' : ℕ} (AB AB' : Finset (Fin U') × Finset (Fin n')) : ℕ :=
   (AB.1 ∆ AB'.1).card + (AB.2 ∆ AB'.2).card
 
-theorem pairDiff_self {U' n' : ℕ} (AB : Finset (Fin U') × Finset (Fin n')) :
+private theorem pairDiff_self {U' n' : ℕ} (AB : Finset (Fin U') × Finset (Fin n')) :
     pairDiff AB AB = 0 := by
   simp [pairDiff]
 
-theorem pairDiff_comm {U' n' : ℕ} (AB AB' : Finset (Fin U') × Finset (Fin n')) :
+private theorem pairDiff_comm {U' n' : ℕ} (AB AB' : Finset (Fin U') × Finset (Fin n')) :
     pairDiff AB AB' = pairDiff AB' AB := by
   simp [pairDiff, symmDiff_comm]
 
@@ -1302,8 +1306,8 @@ private theorem mem_sdiff_filter {α : Type*} [DecidableEq α] (s : Finset α) (
   simp only [mem_sdiff, mem_filter]; tauto
 
 /-- Inserting a single bin `bStar ∉ B` preserves `pairDiff ≤ 1` across `roundStep` and changes
-at most `1` ball's single-round match (`Claim 3.4` bin-insertion case, `arXiv:2310.20536`,
-Section 3.1). -/
+at most `1` ball's single-round match (`Claim 3.4` bin-insertion case,
+[LiLiangYuZhou2024, Section 3.1]). -/
 private theorem roundStep_insert_bin {U' n' : ℕ} (π : RoundPerm U' n') (A : Finset (Fin U'))
     {B : Finset (Fin n')} {bStar : Fin n'} (hbStar : bStar ∉ B) :
     pairDiff (roundStep π (A, B)) (roundStep π (A, insert bStar B)) ≤ 1 ∧
@@ -1709,7 +1713,7 @@ private theorem symmDiff_card_eq_one_cases {α : Type*} [DecidableEq α] {s t : 
 
 /-- Single-round invariant of **Claim 3.4**: whenever `pairDiff AB AB' ≤ 1`, `roundStep π`
 preserves `pairDiff ≤ 1` and alters at most `2` balls' single-round match assignments. -/
-theorem pairDiff_roundStep_le_one {U' n' : ℕ} (π : RoundPerm U' n')
+private theorem pairDiff_roundStep_le_one {U' n' : ℕ} (π : RoundPerm U' n')
     {AB AB' : Finset (Fin U') × Finset (Fin n')} (hp : pairDiff AB AB' ≤ 1) :
     pairDiff (roundStep π AB) (roundStep π AB') ≤ 1 ∧
       (Finset.univ.filter fun a =>
@@ -1752,7 +1756,7 @@ theorem pairDiff_roundStep_le_one {U' n' : ℕ} (π : RoundPerm U' n')
           congr 1; ext a; simp [ne_comm]
         exact ⟨hpd, by omega⟩
 
-theorem pairDiff_stateAt_le_one {U' n' : ℕ} (h : Scheme U' n')
+private theorem pairDiff_stateAt_le_one {U' n' : ℕ} (h : Scheme U' n')
     {A A' : Finset (Fin U')} {B B' : Finset (Fin n')}
     (hp : pairDiff (A, B) (A', B') ≤ 1) (i : ℕ) :
     pairDiff (stateAt h A B i) (stateAt h A' B' i) ≤ 1 := by
@@ -1783,9 +1787,9 @@ private theorem stateAt_balls_eq_empty_of_roundsOn_le {U' n' : ℕ} (h : Scheme 
     omega
   · exact stateAt_balls_eq_empty h hle (hAU.trans (Nat.le_of_not_lt hiU))
 
-/-- **Claim 3.4** round-count stability (`arXiv:2310.20536`, Section 3.1): under a single-element
+/-- **Claim 3.4** round-count stability ([LiLiangYuZhou2024, Section 3.1]): under a single-element
 change `pairDiff (A, B) (A', B') ≤ 1`, `roundsOn h A' B' ≤ roundsOn h A B + 1`. -/
-theorem roundsOn_le_succ_of_pairDiff_le_one {U' n' : ℕ} (h : Scheme U' n')
+private theorem roundsOn_le_succ_of_pairDiff_le_one {U' n' : ℕ} (h : Scheme U' n')
     {A A' : Finset (Fin U')} {B B' : Finset (Fin n')}
     (hle : A.card ≤ B.card) (hle' : A'.card ≤ B'.card) (hp : pairDiff (A, B) (A', B') ≤ 1) :
     roundsOn h A' B' ≤ roundsOn h A B + 1 := by
@@ -1824,10 +1828,10 @@ theorem roundsOn_le_succ_of_pairDiff_le_one {U' n' : ℕ} (h : Scheme U' n')
       (card_le_card (filter_subset _ _)).trans (by simp)
     omega
 
-/-- **Claim 3.4** relocation bound (`arXiv:2310.20536`, Section 3.1): under
+/-- **Claim 3.4** relocation bound ([LiLiangYuZhou2024, Section 3.1]): under
 `pairDiff (A, B) (A', B') ≤ 1`, at most `2 * (roundsOn h A B + 1)` balls change their assigned bin
 (including any inserted or deleted ball). -/
-theorem relocDist_le_of_pairDiff_le_one {U' n' : ℕ} (h : Scheme U' n')
+private theorem relocDist_le_of_pairDiff_le_one {U' n' : ℕ} (h : Scheme U' n')
     {A A' : Finset (Fin U')} {B B' : Finset (Fin n')}
     (hle : A.card ≤ B.card) (hle' : A'.card ≤ B'.card)
     (hp : pairDiff (A, B) (A', B') ≤ 1) :
@@ -1953,7 +1957,7 @@ theorem relocDist_replace_le {U' n' : ℕ} (h : Scheme U' n')
     (matchOpt h (insert y (A.erase x)))
   omega
 
-/-- **Lemma 3.2** (`arXiv:2310.20536`, Section 3.1) for ball insertion:
+/-- **Lemma 3.2** ([LiLiangYuZhou2024, Section 3.1]) for ball insertion:
 expected relocation cost is `O(log (max |A| 2))`. -/
 theorem expect_relocDist_insert_le {U' n' : ℕ} {A : Finset (Fin U')} (x : Fin U')
     (hins : (insert x A).card ≤ n') :

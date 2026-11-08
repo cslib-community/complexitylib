@@ -9,6 +9,7 @@ module
 
 public import Complexity.Init
 public import Complexity.DataStructure.Dictionary.Minimap
+public meta import Complexity.Foundations.Data.BitString.Combination
 public meta import Complexity.DataStructure.Dictionary.Spillover
 public meta import Complexity.DataStructure.Dictionary.DynamicMatching
 public meta import Complexity.DataStructure.Dictionary.Minimap
@@ -26,14 +27,14 @@ Exercises:
    - concrete multi-round cyclic matching on `U' = 6, n' = 3` requiring `2` rounds due to round-`0`
      ball-before-bin collisions, relocation distance `relocDist` under insertion, deletion, and
      atomic replacement, and instantiations of expected round / relocation bounds;
-3. `Cslib.DataStructure.Dictionary.Minimap` (`Lemma 3.7` at `r = 1` & `Section 5.2`):
-   - concrete `rankCombination` / `subsetEquiv` round-trips, comparison of `bitWidth` (`28` bits)
-     against `infoBits` (`27` bits) and naive per-key ceiling `Dynamic.optBits` (`31` bits) on
-     `(U', n', X) = (8, 4, 33)`, end-to-end `#eval` trace of `BoundedEncoded` (`empty`, `insert`,
-     in-place overwrite, `query`, `delete`) and `FixedEncoded` (`replace`, `lookupHeader`,
-     `slotDiff`), and instantiations of `bitWidth_le_infoBits_add_two`,
-     `queryTableSize_le`, `slotDiff_replace_le`, and
-     `expect_slotDiff_replace_encode_le`.
+3. `Cslib.BitString` (`rankCombination`, `subsetEquiv`) &
+   `Cslib.DataStructure.Dictionary.Minimap` (`Lemma 3.7` at `r = 1` & `Section 5.2`):
+   - concrete `BitString.rankCombination` / `BitString.subsetEquiv` round-trips, comparison of
+     `bitWidth` (`28` bits) against `infoBits` (`27` bits) and naive per-key ceiling
+     `Dynamic.optBits` (`31` bits) on `(U', n', X) = (8, 4, 33)`, end-to-end `#eval` trace of
+     `BoundedEncoded` (`empty`, `insert`, in-place overwrite, `query`, `delete`) and `FixedEncoded`
+     (`replace`, `lookupHeader`, `slotDiff`), and instantiations of `bitWidth_le_infoBits_add_two`,
+     `queryTableSize_le`, `slotDiff_replace_le`, and `expect_slotDiff_replace_encode_le`.
 -/
 
 public section
@@ -76,17 +77,20 @@ example : Spillover.spillUniv 100 6 = 7 := by decide
 theorem spillover_bounds_100_6 :
     6 < Spillover.spillUniv 100 6 ∧ Spillover.spillUniv 100 6 ≤ 2 * 6 ∧
       (Spillover.memBits 100 6 : ℝ) + Real.logb 2 (Spillover.spillUniv 100 6) ≤
-        Real.logb 2 100 + 2 / (6 : ℝ) := by
+        Real.logb 2 100 + 2 / (6 : ℝ) ∧
+      Nat.clog 2 (15 * (Spillover.spillUniv 100 6) ^ 6) + 6 * Spillover.memBits 100 6 ≤
+        Nat.clog 2 (15 * 100 ^ 6) + 2 := by
   refine ⟨Spillover.lt_spillUniv_of_mul_two_pow_lt (by decide),
     Spillover.spillUniv_le_two_mul (by decide),
-    Spillover.memBits_add_logb_spillUniv_le (by decide) (by decide)⟩
+    Spillover.memBits_add_logb_spillUniv_le (by decide) (by decide),
+    Spillover.clog_mul_spillUniv_pow_add_le (by decide) (by decide) (by decide)⟩
 
 /-! ## 2. Multi-Round Unit-Circle Dynamic Matching (`DynamicMatching`, Lemma 3.2) -/
 
 /-- Concrete deterministic scheme on `U' = 6, n' = 3` (`U' + n' = 9`):
 in round `0`, identity order puts balls `0, 1, 2, 3, 4, 5` before bins `6, 7, 8`, so among active
 balls `{0, 2, 5}` only ball `5` precedes bin `6` (`round 0`), while balls `0` and `2` remain for
-subsequent rounds under rotated permutations. -/
+subsequent rounds under the transpositions `swap 1 7` (round 1) and `swap 3 8` (later rounds). -/
 meta def sampleSchemeMeta : DynamicMatching.Scheme 6 3 := fun r =>
   if r.val = 0 then Equiv.refl (Fin 9)
   else if r.val = 1 then
@@ -147,6 +151,19 @@ example : Minimap.bitWidth 8 4 33 ≤ Minimap.infoBits 8 4 33 + 2 :=
 example : 8 * Minimap.headerUniv 8 4 33 4 ≤ 8 * (8).choose 4 * (2 * 4) ^ 4 :=
   Minimap.queryTableSize_le (by decide)
 
+-- Concrete `BitString.rankCombination` and `BitString.subsetEquiv` round-trip checks on `Fin 6`.
+example : Cslib.BitString.rankCombination (Cslib.BitString.unrankCombination 6 3 11) = 11 := by
+  decide
+
+/-- info: (true, true) -/
+#guard_msgs in
+#eval
+  let S : { S : Finset (Fin 6) // S.card = 3 } :=
+    ⟨{⟨0, by decide⟩, ⟨2, by decide⟩, ⟨5, by decide⟩}, by decide⟩
+  let r := Cslib.BitString.subsetEquiv 6 3 S
+  let S' := (Cslib.BitString.subsetEquiv 6 3).symm r
+  (decide (S' = S), decide (Cslib.BitString.subsetEquiv 6 3 S' = r))
+
 -- End-to-end concrete evaluation of `BoundedEncoded` (`empty`, `insert`, overwrite, `query`,
 -- `delete`, and fresh `insert` after `delete` from full capacity) on `U' = 6, n' = 3, X = 50`.
 /-- info: ([41, 99, 17, 99, 99, 49], [99, 99, 33, 99, 12, 49]) -/
@@ -154,7 +171,7 @@ example : 8 * Minimap.headerUniv 8 4 33 4 ≤ 8 * (8).choose 4 * (2 * 4) ^ 4 :=
 #eval
   let b0 := Minimap.BoundedEncoded.empty 6 3 50
   have he0 : Minimap.activeSet b0.encoded = ∅ := Minimap.BoundedEncoded.activeSet_empty 6 3 50
-  have hs0 : b0.size.val = 0 := rfl
+  have hs0 : b0.size.val = 0 := Minimap.BoundedEncoded.size_empty 6 3 50
   let b1 := Minimap.BoundedEncoded.insert sampleSchemeMeta b0 ⟨0, by decide⟩ 41 (by decide)
     (.inl (by omega))
   have hs1 : b1.size.val = 1 := by
