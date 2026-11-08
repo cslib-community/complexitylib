@@ -11,6 +11,7 @@ public import Complexity.Crypto.Game.CloseTo
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.RandomOracle
 import Complexity.Crypto.Game.CloseTo.UntilBad
 import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Commitment
+import Complexity.Languages.Probabilistic.Norm
 
 /-!
 # Programming every bounded signing attempt
@@ -92,11 +93,10 @@ private theorem closeTo_attempt_program {Ω M : Type} [DecidableEq M]
       | some c => exact False.elim (hgood (by
           simp only [Set.mem_ofPred_eq, hit, hq, Option.isSome_some]))
     dsimp only [real, programmed]
-    simp only [interpret_map, interpret_query,
-      StateT.run_map, PMF.monad_map_eq_map, PMF.map_comp, Function.comp_def]
+    simp only [pmf_norm, interpret_map, interpret_query, StateT.run_map]
     change ((oracle (BitString k) (msg a.2.1, a.2.2.1) (cache a.2.1)).map _) = _
     rw [oracle, memoize_of_none _ _ _ hlookup]
-    simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map]
+    simp only [pmf_norm]
     rfl)
   have hb := lyubashevsky_commit_lookup_le n m k q γ β Q hγ H S T msg cache hcache
   have hevent : src.toOuterMeasure {a | hit a} = (src.map hit) true := by
@@ -106,10 +106,8 @@ private theorem closeTo_attempt_program {Ω M : Type} [DecidableEq M]
       Q / (q : ℝ≥0∞) ^ n +
         ENNReal.ofReal (Real.sqrt ((q : ℝ) ^ n / ((2 * γ + 1 : ℕ) : ℝ) ^ m) / 2) := by
     rw [hevent]
-    simpa only [src, hit, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-      PMF.map_bind, PMF.pure_map] using hb
-  simpa only [src, real, programmed, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-    PMF.bind_bind, PMF.pure_bind, PMF.map, Function.comp_def] using hc.mono hbound
+    simpa only [pmf_norm, src, hit] using hb
+  simpa only [pmf_norm, src, real, programmed, PMF.map] using hc.mono hbound
 
 /-- Replacing all `K` memoized challenge reads by fresh programming changes the joint signature
 and full cache law by the finite sum of prior-cache collision bounds. Every attempt executes,
@@ -145,8 +143,7 @@ theorem closeTo_lyubashevskySign_program {Ω M : Type} [DecidableEq M]
   classical
   induction K generalizing Ω Q with
   | zero =>
-    simp only [iid, fiatShamirAbortSign, run_interpret_pure,
-      PMF.monad_pure_eq_pure, PMF.monad_bind_eq_bind, PMF.pure_bind, Finset.range_zero,
+    simp only [pmf_norm, iid, fiatShamirAbortSign, run_interpret_pure, Finset.range_zero,
       Finset.sum_empty]
     exact CloseTo.refl _
   | succ K ih =>
@@ -180,16 +177,11 @@ theorem closeTo_lyubashevskySign_program {Ω M : Type} [DecidableEq M]
           (fiatShamirAbortSign (lyubashevsky n m k q γ β)
             (S out.2.1, (out.1, T out.1 out.2.1)) (msg out.2.1) K coins)).run out.2.2.2).map
               (fun later => combine out.1 (out.2.1, out.2.2) later))
-    simp only [history, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-      PMF.bind_bind, PMF.pure_bind, PMF.map,
-      Function.comp_def] at htail hhead
+    simp only [pmf_norm, history, PMF.map] at htail hhead
     have hboth := hhead.trans htail
-    simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-      fiatShamirAbortSign_run_succ, PMF.bind_bind, PMF.pure_bind,
-      PMF.map, Function.comp_def]
-    simp only [interpret_map, interpret_query,
-      StateT.run_map, PMF.monad_map_eq_map, PMF.map, PMF.bind_bind, PMF.pure_bind,
-      Function.comp_def, combine] at hboth ⊢
+    simp only [pmf_norm, fiatShamirAbortSign_run_succ, PMF.map]
+    simp only [pmf_norm, interpret_map, interpret_query, StateT.run_map, PMF.map,
+      combine] at hboth ⊢
     simp only [StateT.run, PMF.bind_bind, PMF.pure_bind] at hboth ⊢
     simpa only [Finset.sum_range_succ', Nat.add_zero, add_assoc,
       add_left_comm, add_comm] using hboth

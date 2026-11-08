@@ -10,6 +10,7 @@ module
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.World
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.PolyTime
 public import Complexity.Languages.Probabilistic.Oracle.QueryCount
+import Complexity.Languages.Probabilistic.Norm
 
 /-!
 # Programs for the delayed-opening receiver simulation
@@ -70,10 +71,8 @@ theorem eval_receiverCommitProgram
   induction k generalizing st with
   | zero => rfl
   | succ k ih =>
-    simp only [receiverCommitProgram, receiverCommitWith, ProbComp.eval_bind,
-      ProbComp.eval_uniform, ProbComp.eval_pure, receiverCommit_succ,
-      Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-      receiverOfPrograms, transfer]
+    simp only [pmf_norm, receiverCommitProgram, receiverCommitWith, ProbComp.eval_uniform,
+      receiverCommit_succ, receiverOfPrograms, transfer]
     exact congrArg ((ProbComp.eval (choose k st)).bind) (funext fun js =>
       congrArg ((PMF.uniformOfFintype Bool).bind) (funext fun r =>
         congrArg ((transfer (table b r) js.1).bind) (funext fun answers =>
@@ -216,13 +215,11 @@ theorem eval_receiverClosedProgram
         (fun ((received, observed, transcript, final, later, out), _) =>
           (received, observed, List.ofFn transcript, final, later, out)) := by
   rw [receiverClosedProgram_eq]
-  simp only [ProbComp.eval_bind, ProbComp.eval_pure, eval_receiverViewProgram,
-    PMF.bind_map]
+  simp only [pmf_norm, eval_receiverViewProgram]
   change _ = PMF.map _ ((receiverIdeal _ _ _ _ _ _).run .idle)
   simp only [receiverIdeal, receiverPrefix, StateT.run_bind, StateT.run_pure]
-  simp only [StateT.lift, StateT.run, Probability.PMF.monad_bind_eq_bind,
-    Probability.PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind, PMF.map_bind,
-    Phased.handler, OracleComp.sumHandler, Phased.advance, Phased.observe]
+  simp only [pmf_norm, StateT.lift, StateT.run, Phased.handler, OracleComp.sumHandler,
+    Phased.advance, Phased.observe]
   apply congrArg ((receiverRun (receiverOfPrograms choose receive) false k st).bind)
   apply funext
   rintro ⟨transcript, final⟩
@@ -271,13 +268,10 @@ theorem receiverIdealProgram_schedule
       (receiverIdealProgram choose receive b k st plan finish) (.idle, [])).support) :
     ∃ release : Bool, log.map Sigma.fst =
       [.inr (), .inl (if release then .open else .abort), .inr (), .inl (.commit b)] := by
-  simp only [receiverIdealProgram, receiverPrefixProgram,
-    ProbOracleComp.runWith_bind, ProbOracleComp.runWith_query,
-    ProbOracleComp.runWith_sample, ProbOracleComp.runWith_pure,
-    OracleComp.withTranscript, Phased.handler, OracleComp.sumHandler,
-    Phased.advance, Phased.observe,
-    Probability.PMF.monad_pure_eq_pure, PMF.pure_map, PMF.pure_bind,
-    PMF.bind_map, PMF.bind_bind, Function.comp_def] at h
+  simp only [pmf_norm, receiverIdealProgram, receiverPrefixProgram, ProbOracleComp.runWith_bind,
+    ProbOracleComp.runWith_query, ProbOracleComp.runWith_sample, ProbOracleComp.runWith_pure,
+    OracleComp.withTranscript, Phased.handler, OracleComp.sumHandler, Phased.advance,
+    Phased.observe] at h
   simp only [PMF.mem_support_bind_iff] at h
   obtain ⟨⟨transcript, final⟩, _, ⟨release, later⟩, _, h⟩ := h
   refine ⟨release, ?_⟩

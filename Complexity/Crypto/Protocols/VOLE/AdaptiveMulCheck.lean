@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Crypto.Protocols.VOLE.MaskedMulCheck
 public import Complexity.Computability.Interactive.StrategyEffect
+import Complexity.Languages.Probabilistic.Norm
 import Complexity.Languages.Probabilistic.Oracle.Simulation
 
 /-!
@@ -90,8 +91,7 @@ private theorem uniform_maskedPrefix {α : Type} (w : Fin n → F) (delta : F)
       f uv.1 uv.2) := by
   have h := congrArg (fun p => p.bind (fun uv => f uv.1 uv.2))
     (PMF.uniformOfFintype_map_equiv (maskedPrefixEquiv w delta).symm)
-  simpa only [← PMF.uniformOfFintype_prod, PMF.bind_map, PMF.bind_bind,
-    PMF.monad_bind_eq_bind, Function.comp_def] using h.symm
+  simpa only [pmf_norm, ← PMF.uniformOfFintype_prod] using h.symm
 
 omit [DecidableEq F] [DecidableEq ι] in
 private theorem uniform_maskedReply {α : Type} (left right output : ι → Fin n)
@@ -134,8 +134,7 @@ private theorem uniform_maskedReply {α : Type} (left right output : ι → Fin 
   have he := congrArg
     (fun p => p.bind fun a => f (a, maskedMulCheckValue left right output delta q d r - a * delta))
     (PMF.uniformOfFintype_map_equiv (Equiv.addLeft cross))
-  simpa only [PMF.bind_map, Function.comp_def, Equiv.coe_addLeft,
-    PMF.monad_bind_eq_bind, hreply] using he
+  simpa only [pmf_norm, Equiv.coe_addLeft, hreply] using he
 
 /-- The full receiver view in one actual interaction. Receiver initialization runs after its
 setup share has been cached and before prover initialization; later effects run in protocol order.
@@ -226,8 +225,7 @@ private theorem maskedMulCheckReceiverView_eq (left right output : ι → Fin n)
     dsimp only [Function.comp_def]
     erw [voleWorld_cached_run (F := F) (n := n + 1) c]
   dsimp only [voleWorld]
-  simp only [PMF.map_comp,
-    Function.comp_def, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+  simp only [pmf_norm]
   congr 1
   funext c
   simp [OracleComp.interpret_bind, OracleComp.interpret_pure, interpret_liftVerifier,
@@ -277,8 +275,7 @@ theorem maskedMulCheckReceiverView_eq_simulate (left right output : ι → Fin n
     maskedMulCheckReceiverView left right output V w z =
       ProbComp.eval (maskedMulCheckReceiverSimulate left right output V z) := by
   rw [maskedMulCheckReceiverView_eq, maskedMulCheckReceiverSimulate_eq]
-  simp only [voleIdealDist, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-    PMF.bind_bind, PMF.pure_bind]
+  simp only [pmf_norm, voleIdealDist]
   conv_lhs =>
     arg 2
     ext u

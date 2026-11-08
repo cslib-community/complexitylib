@@ -13,6 +13,7 @@ public import Complexity.Languages.Probabilistic.QueryCount
 public import Complexity.Languages.Probabilistic.RandomPermutation
 public import Complexity.Languages.Probabilistic.Sum
 public import Mathlib.Data.Fintype.Perm
+import Complexity.Languages.Probabilistic.Norm
 import Complexity.Languages.Probabilistic.Simulation
 import Complexity.Probability.BitString
 import Complexity.Probability.PMF.Bind
@@ -566,33 +567,26 @@ theorem evenMansourIdealGame_eq_lazy (program : OracleComp (EvenMansourSpec G) B
         (fun m : PMF (G × Equiv.Perm G) =>
           m.bind fun (y, E) => (RandomPermutation.complete c_π).map fun π => (y, (E, π)))
         (RandomPermutation.answer_complete qe c_e he)
-      simpa only [idealLazyHandler, sim, readH, sumHandler, PMF.monad_bind_eq_bind,
-        PMF.monad_map_eq_map, PMF.monad_pure_eq_pure, PMF.bind_map, PMF.map_bind,
-        PMF.bind_bind, PMF.pure_map, PMF.pure_bind, PMF.map_comp, PMF.map,
-        Function.comp_def] using h1
+      simpa only [pmf_norm, idealLazyHandler, sim, readH, sumHandler, PMF.map] using h1
     · have h2 := congrArg
         (fun m : PMF (G × Equiv.Perm G) =>
           (RandomPermutation.complete c_e).bind fun E =>
             m.map fun (v, π) => (v, (E, π)))
         (RandomPermutation.answer_complete qπ c_π hπ)
-      simp only [idealLazyHandler, sim, readH, sumHandler, PMF.monad_bind_eq_bind,
-        PMF.monad_map_eq_map, PMF.bind_bind, PMF.pure_bind, PMF.map, Function.comp_def] at h2 ⊢
+      simp only [pmf_norm, idealLazyHandler, sim, readH, sumHandler, PMF.map] at h2 ⊢
       rw [PMF.bind_comm]
       exact h2
   have hsim := OracleComp.run_interpret_simulation_of_invariant idealLazyHandler
     (fun q p => (·, p) <$> readH q p) sim inv hpres hstep program ([], [])
     ⟨RandomPermutation.isPartialBijection_nil, RandomPermutation.isPartialBijection_nil⟩
   have hsim' := congrArg (PMF.map Prod.fst) hsim
-  simp only [sim, RandomPermutation.complete_nil, PMF.monad_map_eq_map,
-    PMF.map, Function.comp_def, PMF.bind_bind,
-    PMF.pure_bind, PMF.bind_const] at hsim'
+  simp only [pmf_norm, sim, RandomPermutation.complete_nil, PMF.map, PMF.bind_const] at hsim'
   refine Eq.trans ?_ hsim'.symm
   simp only [evenMansourIdealGame, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   refine congrArg ((PMF.uniformOfFintype (Equiv.Perm G)).bind) (funext fun E => ?_)
   refine congrArg ((PMF.uniformOfFintype (Equiv.Perm G)).bind) (funext fun π => ?_)
   rw [pure_evalTwoPerms]
-  simpa only [readH, PMF.monad_map_eq_map, PMF.map_comp, PMF.map, Function.comp_def,
-    PMF.bind_bind, PMF.pure_bind, PMF.bind_pure] using
+  simpa only [pmf_norm, readH, PMF.map] using
     (congrArg (PMF.map Prod.fst) (OracleComp.run_interpret_readOnly readH program (E, π))).symm
 
 /-- For any adversary `program` that queries only the cipher oracle (`liftLeft program`), the real
@@ -1712,8 +1706,7 @@ theorem run_idealLazyHandler_good_le_realLazyHandler {α : Type}
         exact ih y hrel
       | none =>
         have hne_e := hrel.partial_e.unusedRange_nonempty hx
-        simp only [dite_eq_left hne_e, PMF.map_comp, Function.comp_def, PMF.bind_map,
-          toOuterMeasure_uniformOfFinset_bind]
+        simp only [pmf_norm, dite_eq_left hne_e, toOuterMeasure_uniformOfFinset_bind]
         by_cases hxc : c.lookup (x + k.1) = none
         · have hne_c := hrel.partial_c.unusedRange_nonempty hxc
           simp only [hxc, dite_eq_left hne_c, Function.comp_def, PMF.bind_map,
@@ -1740,8 +1733,7 @@ theorem run_idealLazyHandler_good_le_realLazyHandler {α : Type}
         exact ih x hrel
       | none =>
         have hne_e := hrel.partial_e.unusedDomain_nonempty hy
-        simp only [dite_eq_left hne_e, PMF.map_comp, Function.comp_def, PMF.bind_map,
-          toOuterMeasure_uniformOfFinset_bind]
+        simp only [pmf_norm, dite_eq_left hne_e, toOuterMeasure_uniformOfFinset_bind]
         by_cases hyc : invLookup c (y - k.2) = none
         · have hne_c := hrel.partial_c.unusedDomain_nonempty hyc
           simp only [hyc, dite_eq_left hne_c, Function.comp_def, PMF.bind_map,
@@ -1768,8 +1760,7 @@ theorem run_idealLazyHandler_good_le_realLazyHandler {α : Type}
         exact ih v hrel
       | none =>
         have hne_π := hrel.partial_π.unusedRange_nonempty hu
-        simp only [dite_eq_left hne_π, PMF.map_comp, Function.comp_def, PMF.bind_map,
-          toOuterMeasure_uniformOfFinset_bind]
+        simp only [pmf_norm, dite_eq_left hne_π, toOuterMeasure_uniformOfFinset_bind]
         by_cases huc : c.lookup u = none
         · have hne_c := hrel.partial_c.unusedRange_nonempty huc
           simp only [huc, dite_eq_left hne_c, Function.comp_def, PMF.bind_map,
@@ -1795,8 +1786,7 @@ theorem run_idealLazyHandler_good_le_realLazyHandler {α : Type}
         exact ih u hrel
       | none =>
         have hne_π := hrel.partial_π.unusedDomain_nonempty hv
-        simp only [dite_eq_left hne_π, PMF.map_comp, Function.comp_def, PMF.bind_map,
-          toOuterMeasure_uniformOfFinset_bind]
+        simp only [pmf_norm, dite_eq_left hne_π, toOuterMeasure_uniformOfFinset_bind]
         by_cases hvc : invLookup c v = none
         · have hne_c := hrel.partial_c.unusedDomain_nonempty hvc
           simp only [hvc, dite_eq_left hne_c, Function.comp_def, PMF.bind_map,
@@ -2054,8 +2044,7 @@ theorem advantage_singleKeyEvenMansourRealGame_evenMansourIdealGame_le
   have hgame : ((PMF.uniformOfFintype (Equiv.Perm G)).bind fun π =>
       keyDist.bind fun k => PMF.pure (evalEvenMansour π k.1 k.2 program)) =
       singleKeyEvenMansourRealGame program := by
-    simp only [keyDist, singleKeyEvenMansourRealGame, PMF.monad_bind_eq_bind,
-      PMF.monad_pure_eq_pure, PMF.bind_map, Function.comp_def]
+    simp only [pmf_norm, keyDist, singleKeyEvenMansourRealGame]
   have hle (b : Bool) :
       evenMansourIdealGame program b ≤ singleKeyEvenMansourRealGame program b + ε := by
     rw [← hgame]

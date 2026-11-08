@@ -9,6 +9,7 @@ module
 
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.Serial
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.Program
+import Complexity.Languages.Probabilistic.Norm
 
 /-!
 # Honest sender and corrupted receiver in the serial world
@@ -92,12 +93,11 @@ private theorem run_exchange (k : ℕ) (s : Store) (values : Fin 4 → Bool) (in
           session := { s.session with tables := s.session.tables ++ [values] }
           pending := none
           receipts := s.receipts ++ [(index, values index)] }) := by
-  simp only [Nat.reduceAdd, world, handler, OracleComp.sumHandler, Store.send, Session.advance,
-    Bool.or_eq_true, ot14World, Fin.isValue, bind_pure_comp, map_pure, ot14Answer, exchange,
-    Interactive.liftProver, ProbOracleComp.interpret_query, Interactive.liftVerifier,
-    ProbOracleComp.runWith_bind, ProbOracleComp.runWith_query, hstop, Bool.false_eq_true,
-    ite_false, hseal, hpending, hlen, ite_true, ProbComp.eval_pure, ProbOracleComp.runWith_map,
-    PMF.pure_bind, or_self, PMF.pure_map, Prod.map_apply, id_eq, PMF.monad_pure_eq_pure]
+  simp only [pmf_norm, Nat.reduceAdd, world, handler, OracleComp.sumHandler, Store.send,
+    Session.advance, Bool.or_eq_true, ot14World, Fin.isValue, bind_pure_comp, map_pure, ot14Answer,
+    exchange, Interactive.liftProver, ProbOracleComp.interpret_query, Interactive.liftVerifier,
+    ProbOracleComp.runWith_bind, ProbOracleComp.runWith_query, hstop, Bool.false_eq_true, ite_false,
+    hseal, hpending, hlen, ite_true, ProbOracleComp.runWith_map, or_self, Prod.map_apply, id_eq]
   rfl
 
 private def extendStore {n : ℕ} (s : Store) (b : Bool) (masks : Fin n → Bool)
@@ -127,11 +127,9 @@ private theorem run_receiverCommitAdapter {State : Type}
       simp_all
   | succ n ih =>
       have hbudget : s.session.tables.length < k := by omega
-      simp only [receiverCommitAdapter, receiverCommitWith, receiverCommitProgram,
-        ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample,
-        ProbOracleComp.runWith_pure, ProbComp.eval_bind, ProbComp.eval_pure,
-        ProbComp.eval_uniform, PMF.bind_map, PMF.map_bind, PMF.pure_map,
-        ot14World, PMF.pure_bind, Function.comp_def]
+      simp only [pmf_norm, receiverCommitAdapter, receiverCommitWith, receiverCommitProgram,
+        ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample, ProbOracleComp.runWith_pure,
+        ProbComp.eval_uniform, ot14World]
       apply congrArg ((ProbComp.eval (choose n st)).bind)
       funext chosen
       rcases chosen with ⟨index, next⟩
@@ -215,11 +213,10 @@ theorem eval_receiverAdapter {State Later Output : Type}
       some b := by
     rw [openPairs_decodeOpening, decodeOpening_openingWord]
     simp [openResult, ha]
-  simp only [Function.comp_def, ProbOracleComp.runWith_bind, ProbOracleComp.runWith_pure,
+  simp only [pmf_norm, ProbOracleComp.runWith_bind, ProbOracleComp.runWith_pure,
     Interactive.liftProver, Interactive.liftVerifier, ProbOracleComp.interpret_query,
-    ProbOracleComp.runWith_query, ProbOracleComp.runWith_sample,
-    world, handler, OracleComp.sumHandler, ProbComp.eval_pure,
-    PMF.pure_bind, PMF.map_bind, PMF.pure_map, PMF.bind_map]
+    ProbOracleComp.runWith_query, ProbOracleComp.runWith_sample, world, handler,
+    OracleComp.sumHandler]
   simp only [extendStore, Session.initial, List.nil_append, Store.send, Session.advance,
     Bool.false_eq_true, ite_false, ite_true, List.length_ofFn,
     Store.observations, Session.receipt, Session.observation]

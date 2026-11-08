@@ -11,6 +11,7 @@ public import Complexity.Crypto.Protocols.VOLE.MaskedMulCheck
 public import Complexity.Computability.Circuit.Arithmetic
 public import Complexity.Computability.Circuit.Program
 public import Mathlib.Data.Matrix.Mul
+import Complexity.Languages.Probabilistic.Norm
 import Complexity.Probability.PMF.Bind
 
 /-!
@@ -327,17 +328,15 @@ theorem circuitCheck_complete :
             (fun i => circuitMulInput C i 1) (circuitMulOutput C)
             (circuitTrace C x w) c.u c.v r, ()))), some (), ((), ()))) := by
     simp only [World.eval, Reduction.run, Verifier.execute, circuitCheck_output]
-    simp only [circuitCheck, liftProver, runStrategy, circuitCheckSpec, SigmaProtocol.sigmaSpec,
-      ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query,
-      OracleComp.interpret_bind, OracleComp.interpret_pure, voleWorld,
-      ProbOracleComp.runWith_bind, ProbOracleComp.runWith_query, ProbOracleComp.runWith_pure,
-      PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind,
-      PMF.map_bind, PMF.pure_map, pure_bind, VOLECorrelation.senderView]
+    simp only [pmf_norm, circuitCheck, liftProver, runStrategy, circuitCheckSpec,
+      SigmaProtocol.sigmaSpec, ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query,
+      OracleComp.interpret_bind, OracleComp.interpret_pure, voleWorld, ProbOracleComp.runWith_bind,
+      ProbOracleComp.runWith_query, ProbOracleComp.runWith_pure, pure_bind,
+      VOLECorrelation.senderView]
     apply PMF.bind_congr_on_support
     intro c hc
     rw [← ProbOracleComp.sample]
-    simp only [ProbOracleComp.runWith_sample, ProbComp.eval_uniform, PMF.bind_map,
-      Function.comp_def, PMF.pure_bind]
+    simp only [pmf_norm, ProbOracleComp.runWith_sample, ProbComp.eval_uniform]
     congr 1
     funext r
     simp only [circuitVerify_correct C x w y hy c (valid_of_mem_support_voleIdealDist hc) r,

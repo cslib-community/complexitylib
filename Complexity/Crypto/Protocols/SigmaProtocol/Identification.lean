@@ -10,6 +10,7 @@ module
 public import Complexity.Crypto.Game
 public import Complexity.Crypto.Protocols.SigmaProtocol.Basic
 public import Complexity.Probability.IID
+import Complexity.Languages.Probabilistic.Norm
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF
 import Complexity.Probability.Rewinding
@@ -151,8 +152,7 @@ private theorem directAttack_eq_once (P : SigmaProtocol X Y T C Z) (keyGen : PMF
     P.directAttack keyGen A = Rewinding.once (directFirst keyGen A)
       (fun _ => PMF.uniformOfFintype C)
       (fun s c => A.respond s.2.2 c) fun s c z => P.verify s.1 s.2.1 c z := by
-  simp only [directAttack, Rewinding.once, directFirst, Probability.PMF.monad_bind_eq_bind,
-    Probability.PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+  simp only [pmf_norm, directAttack, Rewinding.once, directFirst]
 
 variable {P : SigmaProtocol X Y T C Z} {R : X → Y → Prop}
   [∀ x y, Decidable (R x y)] {extract : Y → T → C → Z → C → Z → X}
@@ -178,9 +178,7 @@ private theorem twice_le_oneWayGame [DecidableEq C] {keyGen : PMF (X × Y)}
         (fun s c => A.respond s.2.2 c)
         (fun s c z => P.verify s.1 s.2.1 c z) true ≤
       oneWayGame keyGen R (A.rewind extract) true := by
-  simp only [Rewinding.twice, oneWayGame, Impersonator.rewind, directFirst,
-    Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure, PMF.bind_bind,
-    PMF.pure_bind]
+  simp only [pmf_norm, Rewinding.twice, oneWayGame, Impersonator.rewind, directFirst]
   refine Probability.PMF.bind_apply_mono_on_support _ _ fun key hkey => ?_
   refine Probability.PMF.bind_apply_mono_on_support _ _ fun ts _ => ?_
   refine Probability.PMF.bind_apply_mono_on_support _ _ fun c _ => ?_
@@ -253,8 +251,7 @@ theorem eavesdropAttack_eq_directAttack {simulate : Y → C → PMF (T × Z)}
     (hkey : ∀ key ∈ keyGen.support, R key.1 key.2) {Q : ℕ}
     (A : Impersonator (Y × (Fin Q → T × C × Z)) T C Z) :
     P.eavesdropAttack keyGen Q A = P.directAttack keyGen (A.withSimulatedViews simulate) := by
-  simp only [eavesdropAttack, directAttack, Impersonator.withSimulatedViews,
-    Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure, PMF.bind_bind]
+  simp only [pmf_norm, eavesdropAttack, directAttack, Impersonator.withSimulatedViews]
   refine Probability.PMF.bind_congr_on_support _ _ _ fun key hk => ?_
   rw [hP.conversation_eq (hkey key hk)]
   rfl
