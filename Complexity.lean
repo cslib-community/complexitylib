@@ -2791,7 +2791,10 @@ public import Complexity.Computability.PCP.TwoProverGame
 public import Complexity.Computability.Pebbling.Basic
 public import Complexity.Computability.Pebbling.BinaryTree
 public import Complexity.Computability.Pebbling.Blocking
+public import Complexity.Computability.Pebbling.Path
 public import Complexity.Computability.Pebbling.Pyramid
+public import Complexity.Computability.Pebbling.Reversible
+public import Complexity.Computability.Pebbling.ReversiblePath
 public import Complexity.Computability.PolyTime.BitString.InitialTestsSearch
 public import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceCounter
 public import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceExactness
