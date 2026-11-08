@@ -606,11 +606,10 @@ index links to canonical definitions rather than keeping a second set.
   `PH = P^{NP[O(log n)]}` (`Classes/Sparse/Kadin.lean`, [#2062],
   [#3155](https://github.com/cslib-community/complexitylib/issues/3155)): his stronger form with a
   sparse `S ∈ NP` and `coNP ⊆ NP^S`; and `P^{NP[O(log n)]} = P^NP_tt` (Hemachandra).
-- **Berman–Hartmanis:** p-isomorphism and paddability; paddable NP-complete sets are p-isomorphic,
-  so the standard NP-complete problems are all p-isomorphic to SAT; the isomorphism conjecture as a
-  hypothesis; every many-one complete set for EXP is complete under one-one, length-increasing
-  reductions (Berman); and the isomorphism theorem for sets complete under AC⁰ reductions (Agrawal,
-  Allender and Rudich).
+- **Berman–Hartmanis:** paddability of the standard NP-complete graph, number and set problems,
+  hence their p-isomorphism to SAT; every many-one complete set for EXP is complete under one-one,
+  length-increasing reductions (Berman); and the isomorphism theorem for sets complete under AC⁰
+  reductions (Agrawal, Allender and Rudich).
 - **Autoreducibility and mitoticity:** for nontrivial sets, `m`-autoreducible equals `m`-mitotic, so
   every NP-complete set splits into two NP-complete sets (Glaßer, Pavan, Selman and Zhang);
   separations of complexity classes by autoreducibility (Buhrman, Fortnow, van Melkebeek and
@@ -687,6 +686,12 @@ index links to canonical definitions rather than keeping a second set.
 - Counting reductions and further oracle results preserving exact multiplicities; permanent
   #P-completeness; modular and counting hierarchies; the oracle-algorithm form of Stockmeyer's
   approximate counting.
+- **Exact counting by determinants**
+  ([#3081](https://github.com/cslib-community/complexitylib/issues/3081)): beyond polynomial-time
+  spanning-tree counting through Kirchhoff's matrix-tree theorem, the weighted and directed
+  (arborescence) matrix-tree theorems, the BEST theorem for Eulerian circuits, and Kasteleyn's
+  Pfaffian method for perfect matchings of planar graphs, in contrast with permanent
+  #P-completeness.
 - For composite moduli: the prime-power collapse `Mod_{p^e}P = Mod_pP` and union closure.
   Complement closure for moduli that are not prime powers is open, and relativizing proofs
   cannot give it (Barrington–Beigel–Rudich), so it is not a library direction.
@@ -814,6 +819,16 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `a / b ≥ 1 - qbar k h`); Schöning has a curated abstract. Optional remainder: PPZ and PPSZ
   abstracts, and the uniform `o(n)` forms of the PPSZ bounds with `w` growing in `n`.
   Further fine-grained reductions and consequences of ETH, SETH and other named hypotheses.
+- **APSP class** ([#3076](https://github.com/cslib-community/complexitylib/issues/3076)): APSP and
+  the (min,+) product reduce to each other in the query model (repeated squaring costs
+  `⌈log₂ (n - 1)⌉` products, the tripartite graph one APSP call on `3 n` vertices), with
+  Floyd–Warshall and schoolbook products as instances. Remaining: the negative-triangle
+  equivalence and the other APSP-equivalent problems of Vassilevska Williams and Williams
+  (minimum-weight cycle, replacement paths, metricity, (min,+) product verification); the
+  radius and median equivalences of Abboud, Grandoni and Vassilevska Williams (SODA 2015); a
+  bridge from vertex-list walks to `Quiver.Path` weights; word-RAM realizations with bit-length
+  costs; Kerr's `Ω(n³)` bound for (min,+) straight-line programs. Bellman–Ford with
+  negative-cycle reporting is [#3053](https://github.com/cslib-community/complexitylib/issues/3053).
 - **Reductions from orthogonal vectors**
   ([#3037](https://github.com/cslib-community/complexitylib/issues/3037)): diameter two versus
   three is done for general `m` (`FineGrained.Diameter`, the `OV` form of Roditty–Vassilevska
@@ -856,8 +871,12 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 ### Proof complexity
 
-- Proof-space lower bounds, Frege, polynomial calculus and sum-of-squares, and certified DPLL
-  solver runtimes.
+- Proof-space lower bounds, polynomial calculus and sum-of-squares, and certified DPLL solver
+  runtimes.
+- **Frege** ([#3069](https://github.com/cslib-community/complexitylib/issues/3069)): implicational
+  completeness of the Hilbert-style system (Kalmár); formula-size measures; the simulation of
+  resolution as a p-simulation of Cook–Reckhow proof systems, with encodings and translation
+  time; the mutual p-simulation of Frege systems; and Extended Frege.
 - **Cutting planes:** the clique–colouring lower bound for cutting planes with bounded
   coefficients from Krajíček's feasible interpolation, Corollary 7.3
   ([#2019](https://github.com/cslib-community/complexitylib/issues/2019), M4b), and the
@@ -1046,14 +1065,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   smoothing covers every adaptive decoder), the matching/XOR normal form and the Katz–Trevisan bound
   `n ≥ Ω(k^{q/(q-1)})` with explicit `(δ, ε, q)` dependence, and the Goldreich–Karloff–Schulman–
   Trevisan and Kerenidis–de Wolf exponential bounds for two-query codes.
-- **Boolean analysis:** hypercontractivity beyond `p ≤ 2 ≤ q` and its applications; coverage of
-  O'Donnell's *Analysis of Boolean Functions*
-  ([#2131](https://github.com/cslib-community/complexitylib/issues/2131)), including the book-form
-  statements of its Chapter 9 (the KKL edge-isoperimetric theorem, and Friedgut's junta theorem
-  with its spectral concentration) and the low-degree consequences of hypercontractivity beyond
-  the FKN Theorem ([#3054](https://github.com/cslib-community/complexitylib/issues/3054)): the
-  `L¹`–`L²` comparison for low-degree functions, the low-degree tail bound, and the Gotsman–Linial
-  lower bound on the low-degree weight of polynomial threshold functions.
+- **Boolean analysis:** hypercontractivity beyond `p ≤ 2 ≤ q` and its further applications
+  (small-set expansion, the Level-k inequalities); coverage of O'Donnell's *Analysis of Boolean
+  Functions* ([#2131](https://github.com/cslib-community/complexitylib/issues/2131)), including the
+  book-form statements of its Chapter 9 (the KKL edge-isoperimetric theorem, and Friedgut's junta
+  theorem with its spectral concentration).
 - **Resource-bounded measure and dimension:** martingales and gales with explicit computation
   budgets, their success sets, and measure and dimension within complexity classes; connect
   quantitative randomness to the Kolmogorov-complexity development. State the resource bounds
@@ -1083,7 +1099,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   PAC/agnostic learning, learning lower bounds, compression and refutation. For realizable
   PAC learning ([#2868](https://github.com/cslib-community/complexitylib/issues/2868)), extend
   the countable-domain VC ε-net upper bound `O((d log (1/ε) + log (1/δ))/ε)` to general
-  well-behaved classes over measurable domains. Statistical queries
+  well-behaved classes over measurable domains. Agnostic PAC learning of finite classes by ERM is
+  in place. For infinite classes
+  ([#3005](https://github.com/cslib-community/complexitylib/issues/3005)), prove uniform
+  convergence from the growth function by symmetrization, then agnostic learnability of finite
+  VC classes, first on countable domains, then at the sharp `O((d + log (1/δ))/ε²)` rate.
+  Statistical queries
   ([#2910](https://github.com/cslib-community/complexitylib/issues/2910)): the deterministic SQ
   model has correlational and SQ-dimension query lower bounds, including parities, the
   noise-free block simulation from random examples with a fixed-distribution PAC corollary, and
@@ -1145,7 +1166,6 @@ each statement against the numbered result. Organize modules by subject, not cha
   incompatible models, and a bridge between the query and circuit models; complete problems for
   BQP; for QMA ([#2876](https://github.com/cslib-community/complexitylib/issues/2876)), error
   reduction from an inverse-polynomial gap, strong error reduction that keeps the witness length,
-  `PromiseQMA(c, s) ⊆ PP` for non-constant `c(n), s(n)` with an inverse-polynomial gap,
   `QMA ⊆ A₀PP`, `MA ⊆ QMA`, mixed witnesses, QCMA and the local Hamiltonian problem; related query,
   communication and interactive classes, with amplification, containments and complete problems.
   Supply the
