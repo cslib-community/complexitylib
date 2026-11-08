@@ -2968,6 +2968,9 @@ public import Complexity.Computability.PCP.RegularConstraintGraph
 public import Complexity.Computability.PCP.SelectedComposition
 public import Complexity.Computability.PCP.ThreeSAT
 public import Complexity.Computability.PCP.TwoProverGame
+public import Complexity.Computability.PCP.TwoProverGame.CHSH
+public import Complexity.Computability.PCP.TwoProverGame.Quantum
+public import Complexity.Computability.PCP.TwoProverGame.Tsirelson
 public import Complexity.Computability.Pebbling.Basic
 public import Complexity.Computability.Pebbling.BinaryTree
 public import Complexity.Computability.Pebbling.Blocking
@@ -4797,6 +4800,7 @@ public import Complexity.Foundations.Quantum.Measurement
 public import Complexity.Foundations.Quantum.Measurement.Overlap
 public import Complexity.Foundations.Quantum.Measurement.Restrict
 public import Complexity.Foundations.Quantum.NoCloning
+public import Complexity.Foundations.Quantum.POVM
 public import Complexity.Foundations.Quantum.Pauli
 public import Complexity.Foundations.Quantum.Register
 public import Complexity.Foundations.Quantum.TensorPower
