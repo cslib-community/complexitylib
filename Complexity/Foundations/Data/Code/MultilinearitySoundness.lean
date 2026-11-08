@@ -179,6 +179,59 @@ private theorem sum_sum_card_wrongPoints_le (f : (Fin (n + 1) → F) → F) :
   simp only [← card_wrongPoints_succ]
   exact Nat.le_add_left _ _
 
+/-- A function within a fraction `c ≤ 1 / 2` of `g` is within half of the points. -/
+private theorem two_mul_hammingDist_le {k : ℕ} {f g : (Fin k → F) → F} {c : ℝ} (hc : 2 * c ≤ 1)
+    (h : (hammingDist f g : ℝ) ≤ c * (Fintype.card F : ℝ) ^ k) :
+    2 * hammingDist f g ≤ Fintype.card F ^ k := by
+  have hqpow : 0 ≤ (Fintype.card F : ℝ) ^ k := by positivity
+  have : ((2 * hammingDist f g : ℕ) : ℝ) ≤ ((Fintype.card F ^ k : ℕ) : ℝ) := by
+    push_cast
+    nlinarith
+  exact_mod_cast this
+
+/-- **Self-improvement over the reals**: a multilinear `g` within a fraction `c ≤ 1 / 2` of `f`
+is within `(2 k + 1) ∑ᵢ |Wᵢ| + 2 k ^ 2 |F| ^ (k - 1)` of `f`
+(`IsMultilinear.hammingDist_le_of_two_mul_le`). -/
+private theorem IsMultilinear.hammingDist_le_of_le_mul {k : ℕ} {f g : (Fin k → F) → F}
+    (hg : IsMultilinear g) {c : ℝ} (hc : 2 * c ≤ 1)
+    (h : (hammingDist f g : ℝ) ≤ c * (Fintype.card F : ℝ) ^ k) :
+    (hammingDist f g : ℝ) ≤ (2 * (k : ℝ) + 1) * (∑ i, (#(wrongPoints f i) : ℝ)) +
+      2 * (k : ℝ) ^ 2 * (Fintype.card F : ℝ) ^ (k - 1) := by
+  exact_mod_cast hg.hammingDist_le_of_two_mul_le (two_mul_hammingDist_le hc h)
+
+/-- **Two good slices.** If the wrong points of `f` number fewer than `(|F| - 1) θ`, then at least
+two slices `x 0 = t` have fewer than `θ` wrong points: by `sum_sum_card_wrongPoints_le`, the bad
+slices, each with at least `θ`, number fewer than `|F| - 1`. -/
+private theorem exists_two_slices_sum_card_wrongPoints_lt {k : ℕ} (f : (Fin (k + 1) → F) → F)
+    {θ : ℝ} (hT : (∑ i, (#(wrongPoints f i) : ℝ)) < ((Fintype.card F : ℝ) - 1) * θ) :
+    ∃ t₁ t₂, t₁ ≠ t₂ ∧
+      (∑ j, (#(wrongPoints (fun y => f (Fin.cons t₁ y)) j) : ℝ)) < θ ∧
+      (∑ j, (#(wrongPoints (fun y => f (Fin.cons t₂ y)) j) : ℝ)) < θ := by
+  have hθpos : 0 < θ := by
+    have h0 : (0 : ℝ) ≤ ∑ i, (#(wrongPoints f i) : ℝ) := by positivity
+    have : 0 < ((Fintype.card F : ℝ) - 1) * θ := h0.trans_lt hT
+    have hq : (1 : ℝ) < Fintype.card F := by exact_mod_cast Fintype.one_lt_card
+    exact pos_of_mul_pos_right this (by linarith)
+  let good : Finset F := {t | (∑ j, (#(wrongPoints (fun y => f (Fin.cons t y)) j) : ℝ)) < θ}
+  have hbad : (#goodᶜ : ℝ) * θ < ((Fintype.card F : ℝ) - 1) * θ := by
+    calc (#goodᶜ : ℝ) * θ = ∑ _t ∈ goodᶜ, θ := by rw [sum_const, nsmul_eq_mul]
+      _ ≤ ∑ t ∈ goodᶜ, (∑ j, (#(wrongPoints (fun y => f (Fin.cons t y)) j) : ℝ)) := by
+          refine sum_le_sum fun t ht => ?_
+          simp only [good, mem_compl, mem_filter, mem_univ, true_and, not_lt] at ht
+          exact ht
+      _ ≤ ∑ t, (∑ j, (#(wrongPoints (fun y => f (Fin.cons t y)) j) : ℝ)) :=
+          sum_le_sum_of_subset_of_nonneg (subset_univ _) fun _ _ _ => by positivity
+      _ ≤ ∑ i, (#(wrongPoints f i) : ℝ) := by exact_mod_cast sum_sum_card_wrongPoints_le f
+      _ < _ := hT
+  have hlt : (#goodᶜ : ℝ) < Fintype.card F - 1 := lt_of_mul_lt_mul_right hbad hθpos.le
+  have hlt' : #goodᶜ + 1 < Fintype.card F := by
+    have : ((#goodᶜ + 1 : ℕ) : ℝ) < Fintype.card F := by push_cast; linarith
+    exact_mod_cast this
+  have hcard : #good + #goodᶜ = Fintype.card F := card_add_card_compl good
+  obtain ⟨t₁, ht₁, t₂, ht₂, h12⟩ := one_lt_card.mp (by omega : 1 < #good)
+  simp only [good, mem_filter, mem_univ, true_and] at ht₁ ht₂
+  exact ⟨t₁, t₂, h12, ht₁, ht₂⟩
+
 /-- The induction on the dimension: with thresholds decreasing by a factor `1 - 1 / |F|` per
 dimension, a function with few wrong points is within `γ` of a multilinear function. -/
 private theorem exists_isMultilinear_hammingDist_le_mul {ε₀ γ : ℝ} (hε₀ : 0 ≤ ε₀)
@@ -207,38 +260,13 @@ private theorem exists_isMultilinear_hammingDist_le_mul {ε₀ γ : ℝ} (hε₀
       refine le_trans ?_ hk
       push_cast
       gcongr <;> nlinarith
-    -- The threshold of the slices.
-    obtain ⟨θ, hθ⟩ : ∃ θ : ℝ,
-        θ = (1 - 1 / (Fintype.card F : ℝ)) ^ k * ε₀ * (Fintype.card F : ℝ) ^ k := ⟨_, rfl⟩
-    rw [← hθ] at ih
+    -- Two slices are below the threshold `θ` of dimension `k`; interpolate their approximations.
+    set θ := (1 - 1 / (Fintype.card F : ℝ)) ^ k * ε₀ * (Fintype.card F : ℝ) ^ k
     have hT : (∑ i, (#(wrongPoints f i) : ℝ)) < ((Fintype.card F : ℝ) - 1) * θ := by
       calc _ < _ := hf
-        _ = ((1 - 1 / (Fintype.card F : ℝ)) * Fintype.card F) *
-            ((1 - 1 / (Fintype.card F : ℝ)) ^ k * ε₀ * (Fintype.card F : ℝ) ^ k) := by ring
-        _ = _ := by rw [key, hθ]
-    have hθpos : 0 < θ := by
-      have h0 : (0 : ℝ) ≤ ∑ i, (#(wrongPoints f i) : ℝ) := by positivity
-      have : 0 < ((Fintype.card F : ℝ) - 1) * θ := h0.trans_lt hT
-      exact pos_of_mul_pos_right this (by linarith)
-    -- At least two slices have fewer than `θ` wrong points.
-    let good : Finset F := {t | (∑ j, (#(wrongPoints (fun y => f (Fin.cons t y)) j) : ℝ)) < θ}
-    have hbad : (#goodᶜ : ℝ) * θ < ((Fintype.card F : ℝ) - 1) * θ := by
-      calc (#goodᶜ : ℝ) * θ = ∑ _t ∈ goodᶜ, θ := by rw [sum_const, nsmul_eq_mul]
-        _ ≤ ∑ t ∈ goodᶜ, (∑ j, (#(wrongPoints (fun y => f (Fin.cons t y)) j) : ℝ)) := by
-            refine sum_le_sum fun t ht => ?_
-            simp only [good, mem_compl, mem_filter, mem_univ, true_and, not_lt] at ht
-            exact ht
-        _ ≤ ∑ t, (∑ j, (#(wrongPoints (fun y => f (Fin.cons t y)) j) : ℝ)) :=
-            sum_le_sum_of_subset_of_nonneg (subset_univ _) fun _ _ _ => by positivity
-        _ ≤ ∑ i, (#(wrongPoints f i) : ℝ) := by exact_mod_cast sum_sum_card_wrongPoints_le f
-        _ < _ := hT
-    have hlt : (#goodᶜ : ℝ) < Fintype.card F - 1 := lt_of_mul_lt_mul_right hbad hθpos.le
-    have hlt' : #goodᶜ + 1 < Fintype.card F := by
-      have : ((#goodᶜ + 1 : ℕ) : ℝ) < Fintype.card F := by push_cast; linarith
-      exact_mod_cast this
-    have hcard : #good + #goodᶜ = Fintype.card F := card_add_card_compl good
-    obtain ⟨t₁, ht₁, t₂, ht₂, h12⟩ := one_lt_card.mp (by omega : 1 < #good)
-    simp only [good, mem_filter, mem_univ, true_and] at ht₁ ht₂
+        _ = ((1 - 1 / (Fintype.card F : ℝ)) * Fintype.card F) * θ := by ring
+        _ = _ := by rw [key]
+    obtain ⟨t₁, t₂, h12, ht₁, ht₂⟩ := exists_two_slices_sum_card_wrongPoints_lt f hT
     obtain ⟨g₁, hg₁, hd₁⟩ := ih hk' _ ht₁
     obtain ⟨g₂, hg₂, hd₂⟩ := ih hk' _ ht₂
     obtain ⟨g, hg, hfg⟩ := exists_isMultilinear_hammingDist_le_of_slices f h12 hg₁ hg₂
@@ -267,19 +295,10 @@ private theorem exists_isMultilinear_hammingDist_le_mul {ε₀ γ : ℝ} (hε₀
             gcongr
             linarith
         _ = (ε₀ + 2 * γ) * (Fintype.card F : ℝ) ^ (k + 1) := by ring
-    have h2 : 2 * hammingDist f g ≤ Fintype.card F ^ (k + 1) := by
-      have hqpow : 0 ≤ (Fintype.card F : ℝ) ^ (k + 1) := by positivity
-      have : ((2 * hammingDist f g : ℕ) : ℝ) ≤ ((Fintype.card F ^ (k + 1) : ℕ) : ℝ) := by
-        push_cast
-        nlinarith
-      exact_mod_cast this
     -- Self-improvement brings it within `γ`.
-    have hself := hg.hammingDist_le_of_two_mul_le h2
+    have hself := hg.hammingDist_le_of_le_mul (by linarith) hhalf
     rw [Nat.add_sub_cancel] at hself
-    have hself' : (hammingDist f g : ℝ) ≤ (2 * ((k + 1 : ℕ) : ℝ) + 1) *
-        (∑ i, (#(wrongPoints f i) : ℝ)) + 2 * ((k + 1 : ℕ) : ℝ) ^ 2 * (Fintype.card F : ℝ) ^ k := by
-      exact_mod_cast hself
-    calc (hammingDist f g : ℝ) ≤ _ := hself'
+    calc (hammingDist f g : ℝ) ≤ _ := hself
       _ ≤ (2 * ((k + 1 : ℕ) : ℝ) + 1) * (ε₀ * (Fintype.card F : ℝ) ^ (k + 1)) +
             2 * ((k + 1 : ℕ) : ℝ) ^ 2 * (Fintype.card F : ℝ) ^ k := by gcongr
       _ = ((2 * ((k + 1 : ℕ) : ℝ) + 1) * ε₀ + 2 * ((k + 1 : ℕ) : ℝ) ^ 2 / Fintype.card F) *
@@ -337,16 +356,7 @@ theorem exists_isMultilinear_hammingDist_lt (f : (Fin n → F) → F) {ε : ℝ}
         _ ≤ (1 - 1 / (Fintype.card F : ℝ)) ^ n * (2 * n * ε) * (Fintype.card F : ℝ) ^ n := by
           gcongr)
   refine ⟨g, hg, ?_⟩
-  have h2 : 2 * hammingDist f g ≤ Fintype.card F ^ n := by
-    have hqpow : 0 ≤ (Fintype.card F : ℝ) ^ n := by positivity
-    have : ((2 * hammingDist f g : ℕ) : ℝ) ≤ ((Fintype.card F ^ n : ℕ) : ℝ) := by
-      push_cast
-      nlinarith
-    exact_mod_cast this
-  have hself := hg.hammingDist_le_of_two_mul_le h2
-  have hself' : (hammingDist f g : ℝ) ≤ (2 * (n : ℝ) + 1) * (∑ i, (#(wrongPoints f i) : ℝ)) +
-      2 * (n : ℝ) ^ 2 * (Fintype.card F : ℝ) ^ (n - 1) := by
-    exact_mod_cast hself
+  have hself' := hg.hammingDist_le_of_le_mul (by norm_num) hfg
   have hqn1 : (Fintype.card F : ℝ) ^ (n - 1) * Fintype.card F = (Fintype.card F : ℝ) ^ n := by
     rw [← pow_succ, Nat.sub_add_cancel hn]
   have hqpow : 0 ≤ (Fintype.card F : ℝ) ^ (n - 1) := by positivity
