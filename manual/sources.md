@@ -304,6 +304,11 @@ Adi Shamir. “IP = PSPACE.” *Journal of the ACM* 39(4), 869–877 (1992). DOI
 
 Daniel D. Sleator, Robert E. Tarjan. “Amortized Efficiency of List Update and Paging Rules.” *Communications of the ACM* 28(2), 202–208, 1985. https://doi.org/10.1145/2786.2793 ; author PDF https://www.cs.cmu.edu/~sleator/papers/amortized-efficiency.pdf . Paging scope and equal-capacity specialization checked against source and local mapping.
 
+<a id="sleatortarjan85b"></a>
+## sleatortarjan85b
+
+Daniel Dominic Sleator, Robert Endre Tarjan. “Self-Adjusting Binary Search Trees.” *Journal of the ACM* 32(3), 652–686, 1985. https://doi.org/10.1145/3828.3835 ; author PDF https://www.cs.cmu.edu/~sleator/papers/self-adjusting.pdf . The author PDF was consulted on 2026-11-08 for Section 2 (Lemma 1, Theorems 1–4, pp. 658–660) and Section 3, Lemma 2 (pp. 663–664).
+
 <a id="sudantrevisanvadhan01"></a>
 ## sudantrevisanvadhan01
 

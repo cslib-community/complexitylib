@@ -14,6 +14,24 @@
 
 The metric is number of page faults. The recency-list Lean implementation is not claimed to take constant RAM time per request. This is competitive resource analysis over a state-transition model.
 
+## Adaptive search trees: splay trees
+
+[SplayTree/Basic](../../Complexity/DataStructure/SplayTree/Basic.lean) implements bottom-up splaying on Mathlib's `BinaryTree` with no stored balance data. Each result records the exact number of edge rotations. [SplayTree/AccessLemma](../../Complexity/DataStructure/SplayTree/AccessLemma.lean) proves the Access Lemma for arbitrary positive weights. The weights are analysis parameters only: the tree never stores them. One splay costs `splayTime = max rotations 1`, and `splaySeqTime xs t` sums this cost over the access sequence `xs`, splaying each tree in turn. The module also proves:
+
+- the Balance Theorem `(3m + n) log₂ n + m`, which also covers absent keys;
+- Static Optimality `m + 4 ∑ q(y) log₂(m / q(y))`;
+- a general fixed-weight bound `splaySeqTime_le_fixed_weights`;
+- unit-weight update bounds.
+
+[SplayTree/Impl](../../Complexity/DataStructure/SplayTree/Impl.lean) packages these as a self-adjusting `OrderedSet` with an amortized rotation bound [sleatortarjan85b][sleatortarjan85b].
+
+[SplayTree/WorkingSet](../../Complexity/DataStructure/SplayTree/WorkingSet.lean) proves two locality bounds with explicit constants. Both apply to `m` accesses to keys of an `Ordered` tree with `n` keys:
+
+- **Static Finger** (Theorem 3): `splaySeqTime_le_static_finger` bounds the cost by `7m + 6 ∑ log₂(d(xⱼ) + 1) + n(2 + 2 log₂ n)` for a fixed finger key `f` in the tree. Here `d = fingerDist (elements t) f` counts the stored keys strictly between `f` and `xⱼ`, plus `xⱼ` itself when it is stored. On keys `1, …, n` this is `|xⱼ − f|`, and it is defined for any linear order.
+- **Working Set** (Theorem 4): `splaySeqTime_le_working_set` bounds the cost by `4m + 6 ∑ log₂(t(j) + 1) + n(1 + 2 log₂ n)`. Here `workingSetNumbers` computes `t(j)`, the number of distinct keys accessed since the previous access of the same key, or since the start of the sequence for a first access.
+
+The working-set proof follows the source. It assigns the weights `1, 1/4, …, 1/n²` in move-to-front order and reassigns them after every access. The reassignment changes the potential explicitly, and `potential_reweight_root_le` accounts for that change. The accessed key is at the root, so its subtree size is unchanged, while every other key's weight can only decrease, so the potential does not increase. [Checked instances](../../ComplexityTests/SplayTree.lean) compute working-set numbers and finger distances and apply both theorems to a degenerate seven-key spine [sleatortarjan85b][sleatortarjan85b].
+
 ## Count-Min: a stored streaming sketch
 
 [Complexity/DataStructure/CountMin/Basic.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/DataStructure/CountMin/Basic.lean) models a weighted insertion stream `List (X × Nat)`. Each update increments one bucket in each row of a vector-of-vectors counter table; a query takes the minimum row counter. The exact bucket invariant proves no underestimation, each counter's bound by total mass, and entrywise merge agreement with stream concatenation.
@@ -60,9 +78,10 @@ These are compositional native resource theorems on the [machine model](../machi
 
 ## Known Limitations
 
-The four meanings of “streaming” here should not be conflated: an input-list fold, an accurate stored probabilistic sketch, the abstract one-pass memory model with communication lower bounds, and a native machine scan with measured workspace. The abstract model counts reachable memory states and imposes no uniformity or time bound on updates. Its randomized lower bounds are for error at most `1/2` with public randomness that is not charged to the memory, and the AMS sketch has no `ProbComp` sampler or machine realization. Multi-pass algorithms, turnstile updates, `F_k` for `k > 2`, the deterministic-approximation and randomized-exact `F_k` lower bounds (Alon–Matias–Szegedy, Propositions 3.7–3.8) and CountSketch are not formalized. No automatic native realization of the Count-Min sketch was identified in its four source modules. The online interface surveyed is deterministic; randomized competitive analysis would need additional adversary/expectation definitions. The optimal-stopping modules are semantic probability statements over deterministic rules: they do not charge the rules' computation and are not phrased through the online `Problem` interface.
+The four meanings of “streaming” here should not be conflated: an input-list fold, an accurate stored probabilistic sketch, the abstract one-pass memory model with communication lower bounds, and a native machine scan with measured workspace. The abstract model counts reachable memory states and imposes no uniformity or time bound on updates. Its randomized lower bounds are for error at most `1/2` with public randomness that is not charged to the memory, and the AMS sketch has no `ProbComp` sampler or machine realization. Multi-pass algorithms, turnstile updates, `F_k` for `k > 2`, the deterministic-approximation and randomized-exact `F_k` lower bounds (Alon–Matias–Szegedy, Propositions 3.7–3.8) and CountSketch are not formalized. No automatic native realization of the Count-Min sketch was identified in its four source modules. The online interface surveyed is deterministic; randomized competitive analysis would need additional adversary/expectation definitions. The optimal-stopping modules are semantic probability statements over deterministic rules: they do not charge the rules' computation and are not phrased through the online `Problem` interface. The splay-tree cost is a rotation count, not a RAM or Turing-machine time. The Static Finger and Working Set theorems cover only accesses to keys present in the tree. Sleator–Tarjan's Unified Theorem, Cole's Dynamic Finger theorem, BST access-and-rotation lower bounds (Wilber-style) and dynamic optimality are not formalized.
 
 [alonmatiasszegedy99]: ../sources.md#alonmatiasszegedy99
 [complexitylib]: ../sources.md#complexitylib
 [cormode05]: ../sources.md#cormode05
 [sleatortarjan85]: ../sources.md#sleatortarjan85
+[sleatortarjan85b]: ../sources.md#sleatortarjan85b
