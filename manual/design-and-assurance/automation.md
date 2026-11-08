@@ -153,6 +153,28 @@ inspect its bounds, supply missing arithmetic facts or name a local encoding lem
 lemma reports the underlying name-resolution error; check its spelling, namespace and import.
 The tactic neither invents a growth bound nor searches for an encoding definition to unfold.
 
+## Close word-size bounds
+
+Word-RAM instructions need a fitting condition `Fits w v`, which unfolds to `v < 2 ^ w`, for
+each value they write. Import `Complexity.Tactic.Fits` and prove such a condition with `fits`
+instead of choosing a larger fact `h` and writing `h.of_le (by omega)`. The tactic unfolds `Fits`
+in the goal and in the hypotheses that mention it, adds that each power of two `2 ^ e` among them
+is positive, and runs `omega`. It finds the hypotheses by their statements, so it does not depend
+on their names, and the goal may also be written `v < 2 ^ w`. The
+[checked clients](../../ComplexityTests/FitsTactic.lean) cover offsets, constants, masks, shifts,
+a wider word, conjunctions and negations of fitting facts, a product bound and both diagnostics.
+To check them, run `lake build ComplexityTests.FitsTactic --wfail --iofail` from the repository
+root after [setup](../workflows/getting-started.md).
+
+A side condition used once can be proved where it is used, as the argument `(by fits)`. Products
+are atoms for `omega`: give a bound on one as a term, as in
+`fits [Nat.mul_le_mul_right b hc]`. A hypothesis about a different word width is related to `w`
+only when `omega` can see it, as for `w + 1`; otherwise weaken it first with `Fits.mono`.
+
+If neither the goal nor a hypothesis mentions `Fits`, the diagnostic recommends plain `omega`.
+If `omega` fails, the diagnostic shows the unfolded goal with the facts it was given; supply the
+missing bound, for instance on a product or on a value read from memory.
+
 ## Proof style as interface maintenance
 
 The project asks for nonterminal `simp only` where later steps depend on the resulting normal form, forbids global simplification attributes on machine transitions, and requires comments and reviewed allowlisting for unusually large heartbeat bounds. These policies address predictable search explosions and fragile proofs. They complement semantic lemmas and named certificates; they do not prove maintainability by themselves. [Proof hygiene](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/AGENTS.md#proof-hygiene)
