@@ -109,7 +109,9 @@ an unchecked box or a passing build is not a usability review. When reviewing
 resource results, inspect what is counted: a simultaneous bound at every actual
 execution prefix, total historical allocation and a class-average estimate have
 different meanings. Preserve the stated machine model when reporting a milestone;
-a native RAM word bound alone does not supply a multitape bit-time theorem.
+a native RAM word bound alone does not supply a multitape bit-time theorem. A separately proved
+bit codec also needs a charged connection to its producing machine; an already
+serialized codec input is a material calling convention, not a full simulation.
 
 ## Correct course and hand work over
 

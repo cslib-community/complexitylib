@@ -1095,9 +1095,10 @@ three; the Lean bounds also admit larger remainders. These are resource componen
 of [WangLvShenZhang2027], Lemma 8/Theorem 7, PDF pp. 21–22, for the actual fixed
 native program. Input placement is the RAM convention, and scalar lengths, seeds
 and layout/width values remain program parameters. A header decoder, encoded
-program/immediate-bit accounting, variable-length witness serialization and the
-source sorted-list multitape bit model remain open. Four packed witness words
-already reside in the charged register bank. This does not complete Lemma 8/Theorem 7
+program/immediate-bit accounting and the core source multitape bit model remain
+open. Native variable-length output and a concrete bit-output codec are now
+supplied by the following endpoint. Four packed witness words also remain in
+the charged register bank. This does not complete Lemma 8/Theorem 7
 or 733 ALL-main.
 
 From the repository root build
@@ -1115,6 +1116,64 @@ index/bound. The generic size client checks the fixed instruction count. If phys
 fail, move counter buffers before class scratch or increase word capacity; do not
 supply desired counter values or an orientation flag as an oracle.
 
+
+For a materialized output array, import
+`Complexity.Cryptanalysis.AddXNORNativeOutputResources` and apply
+`Driver.original_output_resources hp as bs cs ds s t`. The actual program is
+`dissectionOutput`: the proved core followed by `Output.program`. It returns an
+address of a length-prefixed array using the standard `ExecutesList` convention.
+The payload is `[0]` for a miss and `1 :: ops.map Bool.toNat` for a hit. A successful
+empty witness is `[1]`, so it remains distinguishable from a miss. The theorem
+derives absence or a list of exactly $q=a+b+c+d$ original operators solving the
+original input; no output correctness conclusion is a premise.
+
+`OutputBits.program` emits one word per packed bit, including leading zero
+operators, in $7n+5$ native instructions. Its inverse-order version moves the
+actual destination cursor backwards; it does not reverse a host output list.
+`Output.program` loads the actual orientation flag, copies all four packed words,
+subtracts the presence tag, writes the status/length and runs four fixed loops.
+It preserves the packed source registers, computed balance and memory below the
+output region. The complete serializer costs at most $7q+53$ instructions and
+has exactly 148 instructions in its graph, independent of quarter lengths. The
+composed block has 1,108 instructions, or 1,109 with halt. Its global time allowance
+is the prior `globalTime` plus $7q+53$, then one final halt. At every compiled
+prefix, occupied memory is bounded by the prior `peakCells` plus $7q+53$ cells;
+the same forty registers and derived `globalWidth` suffice. The added linear
+allowance conservatively charges all serializer stores, not an assumed output
+footprint. `compact_output_fits` proves the complete output interval fits the
+original physical width. The computed balance is unchanged.
+
+`OutputCodec.decoder` is an actual six-state multitape transducer with zero work
+tapes. Its input is `encList encNat` of the represented word array; each zero word
+has the one-symbol frame `[false]` and each one word has the three-symbol frame
+`[true,true,false]`. The machine emits `encOption encBits`: the empty word for a
+miss or `true :: ops` for a hit. `decoder_run` proves this exact format connection,
+including zeros and empty witnesses; `wire_injective` distinguishes the outcomes.
+`decoder_computes_linear` charges at most $6q+9$ Turing steps for an output of at
+most $q$ operators, including status and halt, with zero work-tape space. The final
+native resource theorem includes this machine certificate for the encoding of
+its own actual returned array. Input/output tapes are not counted as work tapes.
+
+This bit stage starts from the already encoded output array. Reading RAM memory
+into that machine input is not charged by the codec theorem. Original input still
+uses the reversed-suffix RAM calling convention; scalar header decoding and
+uniform encoded program construction remain open. The core uses sparse full-state
+addresses and unit-cost word operations, whereas the source conventions (PDF p. 6)
+count deterministic multitape bit operations. The existing association-list
+simulator scans stored bindings and retains bindings written to zero; its generic
+bounds depend on historical storage and may add factors exponential in $q$.
+Neither it nor the output codec supplies the source sorted-list membership and
+memory-reuse algorithm. No source global bit-time or peak-space asymptotic is
+claimed from this output milestone.
+
+From the repository root build
+`lake build Complexity.Cryptanalysis.AddXNORNativeOutputResources`, then run
+`lake env lean ComplexityTests/AddXNORNativeOutput.lean`. The complete original-input
+client includes unequal quarters, non-self-inverse addition, colliding low keys,
+computed balance, actual output validity and all-prefix space. Consecutive native
+executions check both bit orders, leading zeros and dirty outside memory. Empty
+original-input hits and exhaustive misses check both status formats; the same
+client checks the concrete bit decoder and fixed graph size.
 
 From the repository root, run
 `lake build Complexity.Cryptanalysis.AddXNORNativeClassSearch` followed by

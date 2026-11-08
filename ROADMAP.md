@@ -177,10 +177,28 @@ $\mu$ is the actual computed balance, not a class mean. Every compiled prefix is
 word-bounded; multiplying occupied words and registers by the derived width
 accounts for stored word contents. Checked clients include strict inverse
 selection, non-self-inverse addition, collisions, empty misses and zero width.
-Layout/width/seed immediates remain scalar program parameters. A fully encoded
-header decoder, program/immediate-bit accounting, native variable-length witness
-serialization and the source sorted-list/compact-arena multitape bit model remain
-open. Four packed witness words are already in the charged register bank.
+The new `original_output_resources` appends an actual native output serializer.
+It writes a length-prefixed status/operator array, derives an ordinary original
+witness or exhaustive miss, and preserves the computed balance. Both orientations
+emit all bits, including leading zeros; inverse output moves native destination
+cursors backwards. The added time is at most $7q+53$ native instructions, plus
+the final halt, and every compiled prefix adds the same conservative linear
+allowance to the prior occupied-cell bound. Forty registers and the original
+derived physical width suffice. The complete block has 1,108 instructions (1,109
+with halt), independent of quarter lengths. The six-state `OutputCodec.decoder`
+is also an actual deterministic multitape machine: it converts the encoded
+represented word array to an optional raw bit witness in at most $6q+9$ steps
+and zero work-tape space. Empty hits and misses have distinct encodings.
+This codec begins with the output array already encoded; extracting RAM memory
+into that machine input is not charged. Original input reversal remains the RAM
+calling convention, and scalar header decoding and uniform encoded program
+construction remain open. Core sparse RAM access is not source multitape bit
+access: the generic association-list simulator scans stored bindings and retains
+bindings written to zero, so its current overhead does not preserve the source
+sharp time or computed-balance live-space bounds. The source sorted-list lookup,
+compact reuse and bit-machine realization remain open. No source global bit
+asymptotic is claimed. Small-operand resources, reduction multiplicity and
+sparsification refinements, and repaired ideal-model bounds remain open as well.
 These components do not close Lemma 8/Theorem 7 or 733 ALL-main. Earlier component
 contracts above are not individually the global resource endpoint.
 The pointer/Boolean and counter-operation

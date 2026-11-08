@@ -2918,6 +2918,9 @@ public import Complexity.Cryptanalysis.AddXNORNativeGlobalTime
 public import Complexity.Cryptanalysis.AddXNORNativeOppositeQuery
 public import Complexity.Cryptanalysis.AddXNORNativeOrientation
 public import Complexity.Cryptanalysis.AddXNORNativeOrientedSearch
+public import Complexity.Cryptanalysis.AddXNORNativeOutput
+public import Complexity.Cryptanalysis.AddXNORNativeOutputBits
+public import Complexity.Cryptanalysis.AddXNORNativeOutputResources
 public import Complexity.Cryptanalysis.AddXNORNativeProbe
 public import Complexity.Cryptanalysis.AddXNORNativeProjectFrom
 public import Complexity.Cryptanalysis.AddXNORNativeProjectedProbe
@@ -2932,6 +2935,7 @@ public import Complexity.Cryptanalysis.AddXNORNativeReverse
 public import Complexity.Cryptanalysis.AddXNORNativeRun
 public import Complexity.Cryptanalysis.AddXNORNativeSelectedClass
 public import Complexity.Cryptanalysis.AddXNORNativeSelectedProbe
+public import Complexity.Cryptanalysis.AddXNOROutputCodec
 public import Complexity.Cryptanalysis.AddXNORParity
 public import Complexity.Cryptanalysis.AddXNORReachability
 public import Complexity.Cryptanalysis.AddXNORRuns
