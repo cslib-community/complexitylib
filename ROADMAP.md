@@ -1200,8 +1200,9 @@ each statement against the numbered result. Organize modules by subject, not cha
   and Pătraşcu–Demaine's `Ω(log n)` information-transfer bound.
 - **Streaming and sketching:** native time and space bounds for Count-Min, including hash-seed
   storage and evaluation; for distinct elements
-  ([#3340](https://github.com/cslib-community/complexitylib/issues/3340)), the space-optimal `F₀`
-  estimators (Bar-Yossef et al. Theorems 2–3, Kane–Nelson–Woodruff `O(ε⁻² + log n)`) and the
+  ([#3340](https://github.com/cslib-community/complexitylib/issues/3340)), the median amplification
+  and `Solves` statement for the k-minimum-values sketch, the space-optimal `F₀` estimators
+  (Bar-Yossef et al. Theorems 2–3, Kane–Nelson–Woodruff `O(ε⁻² + log n)`) and the
   `Ω(ε⁻²)` and `Ω(log n)` lower bounds for approximate `F₀`; the AMS `F_k` estimator for
   streams of unknown
   length (reservoir sampling), and the `n^{Ω(1)}` lower bounds for `F_k` with `k ≥ 6`; `ProbComp`

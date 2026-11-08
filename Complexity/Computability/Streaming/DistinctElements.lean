@@ -53,7 +53,9 @@ has mean `d K / M` and variance at most its mean
 Chebyshev's inequality bounds each side. For `0 < ε ≤ 1` and `d ≤ M`, one copy misses `d` by more
 than `ε d` for at most a `2 / (t ε²)` fraction of seeds
 (`Cslib.Streaming.dens_abs_kmvEstimate_sub_gt_le`). The two tails contribute `(1 + ε) / (t ε²)` and
-`(1 - ε) / (t ε²)`; the source bounds each by `1 / 6` with `t = ⌈96 / ε²⌉`.
+`(1 - ε) / (t ε²)`; the source bounds each by `1 / 6` with `t = ⌈96 / ε²⌉`. For `6 ≤ t ε²` one
+copy thus fails with probability at most `1 / 3`. The amplified bound for the median of the copies
+is not proved here.
 
 **Memory.** For fixed seeds, the reachable states are determined by the at most `t` items behind
 each copy's keys. Their number is at most `(n + 1) ^ t` for a universe of `n` items. Under the

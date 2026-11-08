@@ -69,7 +69,7 @@ While a copy holds fewer than `t` keys, it reports their number, which is exactl
 
 The error analysis uses `Finset.forall_mem_lowest_iff`: the `t` lowest hash values of `d ≥ t` items are all below `K` exactly when at least `t` items hash below `K`. The number of such items has variance at most its mean, so Chebyshev's inequality bounds each tail. `dens_abs_kmvEstimate_sub_gt_le` gives a per-copy failure probability `Pr[|estimate − d| > εd] ≤ 2/(tε²)` for `0 < ε ≤ 1` and `d ≤ M`: the upper tail contributes `(1+ε)/(tε²)` and the lower tail `(1−ε)/(tε²)`. The source instead bounds each tail by `1/6` with `t = ⌈96/ε²⌉`.
 
-The median trick of [MedianOfMeans.lean](../../Complexity/Probability/MedianOfMeans.lean) turns the per-copy bound into the guarantees for the whole sketch. With `2r` copies and `6 ≤ tε²`, `dens_kmvSketch_error_le` and `solves_kmv` give error `(8/9)^r` for the relation `|Y − F₀| ≤ εF₀` on streams of at most `m ≤ M` items.
+With `6 ≤ tε²` one copy fails with probability at most `1/3`. The amplified bound for the median of `2r` copies (the median trick) and the `Solves` statement for the relation `|Y − F₀| ≤ εF₀` are not yet formalized ([#3340](https://github.com/cslib-community/complexitylib/issues/3340)).
 
 Ties between hash values are broken by the item, so the source's `1/m` collision term and its requirement `M = m³` disappear; only `d ≤ M` is needed.
 
@@ -110,7 +110,7 @@ The four meanings of “streaming” here should not be conflated: an input-list
 
 The abstract model counts reachable memory states and imposes no uniformity or time bound on updates. Its randomized lower bounds are for error at most `1/2` with public randomness that is not charged to the memory, and the AMS sketches have no `ProbComp` sampler or machine realization. The `F_k` estimator assumes that the stream length is known in advance; the source's reservoir-sampling variant for unknown lengths is not formalized. Multi-pass algorithms, turnstile updates and CountSketch are not formalized. The Proposition 3.7 bound is stated for streams of at most `N/8` items rather than the source's `n/2`, and the Proposition 3.8 bound for a universe of `3n` items (`Fin n × Fin 3`) rather than `n`, so that the threshold `2n` does not depend on the inputs.
 
-The k-minimum-values sketch for `F₀` has no `ProbComp` sampler or machine realization either. Its error analysis needs a pairwise independent family into `Fin M` with at least as many values as distinct items. The space-optimal estimators for `F₀` (Bar-Yossef et al., Theorems 2–3; Kane–Nelson–Woodruff's `O(ε⁻² + log n)`) are not formalized, and neither are the `Ω(ε⁻²)` and `Ω(log n)` lower bounds for approximate `F₀`.
+The k-minimum-values sketch for `F₀` has no `ProbComp` sampler or machine realization either, and its error is bounded only for a single copy: the median amplification and the `Solves` statement are open. Its error analysis needs a pairwise independent family into `Fin M` with at least as many values as distinct items. The space-optimal estimators for `F₀` (Bar-Yossef et al., Theorems 2–3; Kane–Nelson–Woodruff's `O(ε⁻² + log n)`) are not formalized, and neither are the `Ω(ε⁻²)` and `Ω(log n)` lower bounds for approximate `F₀`.
 
 No automatic native realization of the Count-Min sketch was identified in its four source modules.
 
