@@ -20,9 +20,10 @@ import Mathlib.Order.Preorder.Finite
 
 A finite-set independence system `indep : Finset α → Prop` is a **`p`-system** if it contains `∅`,
 is closed under subsets, and for every finite `Y`, any two maximal independent subsets `A, B` of
-`Y` satisfy `|A| ≤ p * |B|` ([CalinescuChekuriPalVondrak2011], Section 1, following
-[Jenkyns1976] and Korte–Hausmann). Matroids are exactly the `1`-systems among these, and the
-intersection of `k ≥ 1` matroids is a `k`-system. `p`-systems are the constraint families for which
+`Y` satisfy `|A| ≤ p * |B|` ([CalinescuChekuriPalVondrak2011], Section 1, which follows
+[Jenkyns1976] and Korte and Hausmann (1978), cited there as [28]). Every matroid is a `1`-system,
+and the intersection of `k ≥ 1` matroids is a `k`-system. (The converse, that every `1`-system is
+a matroid, holds but is not formalized here.) `p`-systems are the constraint families for which
 the Fisher–Nemhauser–Wolsey greedy algorithm achieves a `1/(p+1)` approximation for monotone
 submodular maximization ([FisherNemhauserWolsey1978]; see
 `Complexity.Algorithms.Lean.Submodular.MatroidGreedy`).
@@ -33,6 +34,7 @@ submodular maximization ([FisherNemhauserWolsey1978]; see
 
 ## Main results
 
+* `IsPSystem.of_iff`: transport along a pointwise equivalence of independence predicates.
 * `IsPSystem.card_le_mul_card_of_blocked`: the blocking form used by greedy analyses. If `S` and
   `T` are independent and every `t ∈ T \ S` is blocked (`¬ indep (insert t S)`), then
   `|T| ≤ p * |S|`.
@@ -47,7 +49,8 @@ submodular maximization ([FisherNemhauserWolsey1978]; see
 * [CalinescuChekuriPalVondrak2011] Gruia Calinescu, Chandra Chekuri, Martin Pál, and Jan Vondrák,
   *Maximizing a Monotone Submodular Function Subject to a Matroid Constraint*, 2011.
 * [FisherNemhauserWolsey1978] Marshall L. Fisher, George L. Nemhauser, and Laurence A. Wolsey,
-  *An Analysis of Approximations for Maximizing Submodular Set Functions—II*, 1978.
+  *An Analysis of Approximations for Maximizing Submodular Set Functions—II*, 1978. Attributed via
+  [CalinescuChekuriPalVondrak2011]; not inspected (paywalled).
 * [Jenkyns1976] Thomas A. Jenkyns, *The Efficacy of the "Greedy" Algorithm*, 1976.
 -/
 
@@ -71,6 +74,13 @@ structure IsPSystem (indep : Finset α → Prop) (p : ℕ) : Prop where
       A.card ≤ p * B.card
 
 namespace IsPSystem
+
+/-- Transport the `p`-system property along a pointwise equivalence of independence predicates,
+e.g. from a Boolean independence test to the `Indep` predicate of a matroid it implements. -/
+theorem of_iff {indep indep' : Finset α → Prop} {p : ℕ} (h : IsPSystem indep p)
+    (hiff : ∀ S, indep' S ↔ indep S) : IsPSystem indep' p := by
+  have heq : indep' = indep := funext fun S => propext (hiff S)
+  exact heq ▸ h
 
 variable [DecidableEq α] {indep : Finset α → Prop} {p : ℕ}
 
@@ -122,8 +132,8 @@ theorem isPSystem_matroid (M : Matroid α) :
 
 /-- The intersection of a nonempty finite family of matroids `M : ι → Matroid α` is a
 `Fintype.card ι`-system on finite sets ([FisherNemhauserWolsey1978];
-[CalinescuChekuriPalVondrak2011], Section 1). Nonemptiness is necessary: the empty intersection
-makes every set independent, which is not a `0`-system. -/
+[CalinescuChekuriPalVondrak2011], Section 1). Nonemptiness of `ι` is necessary when `α` is
+nonempty: the empty intersection makes every set independent, which is then not a `0`-system. -/
 theorem isPSystem_iInter_matroid {ι : Type*} [Fintype ι] [Nonempty ι]
     (M : ι → Matroid α) :
     IsPSystem (fun S : Finset α => ∀ i, (M i).Indep (S : Set α)) (Fintype.card ι) := by

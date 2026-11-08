@@ -25,7 +25,10 @@ This module runs the Fisher–Nemhauser–Wolsey greedy algorithm `submodularMat
 independence-oracle queries (`indep S`) are charged separately by `SumQuery.countInl` and
 `SumQuery.countInr` ([FisherNemhauserWolsey1978]; [CalinescuChekuriPalVondrak2011], Appendix B).
 
-With `n = xs.toFinset.card` distinct ground elements and greedy output `G`:
+With `n = xs.toFinset.card` distinct ground elements and greedy output `G`, the exact counts below
+describe this implementation, which re-tests every remaining element in each round. They are not
+claimed optimal: in a hereditary system an element found infeasible stays infeasible, so a variant
+that drops such elements would make fewer independence queries.
 
 1. Round `t` (current set of size `t`) makes exactly `n - t` independence queries, one per
    remaining element, and the algorithm runs rounds `t = 0, …, |G|` (the last one finds no
@@ -61,7 +64,8 @@ With `n = xs.toFinset.card` distinct ground elements and greedy output `G`:
 ## References
 
 * [FisherNemhauserWolsey1978] Marshall L. Fisher, George L. Nemhauser, and Laurence A. Wolsey,
-  *An Analysis of Approximations for Maximizing Submodular Set Functions—II*, 1978.
+  *An Analysis of Approximations for Maximizing Submodular Set Functions—II*, 1978. Attributed via
+  [CalinescuChekuriPalVondrak2011]; not inspected (paywalled).
 * [CalinescuChekuriPalVondrak2011] Gruia Calinescu, Chandra Chekuri, Martin Pál, and Jan Vondrák,
   *Maximizing a Monotone Submodular Function Subject to a Matroid Constraint*, 2011.
 -/

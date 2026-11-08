@@ -72,7 +72,8 @@ stops when no feasible element remains.
 ## References
 
 * [FisherNemhauserWolsey1978] Marshall L. Fisher, George L. Nemhauser, and Laurence A. Wolsey,
-  *An Analysis of Approximations for Maximizing Submodular Set Functions—II*, 1978.
+  *An Analysis of Approximations for Maximizing Submodular Set Functions—II*, 1978. Attributed via
+  [CalinescuChekuriPalVondrak2011], Section 1 and Appendix B; not inspected (paywalled).
 * [CalinescuChekuriPalVondrak2011] Gruia Calinescu, Chandra Chekuri, Martin Pál, and Jan Vondrák,
   *Maximizing a Monotone Submodular Function Subject to a Matroid Constraint*, 2011.
 * [Jenkyns1976] Thomas A. Jenkyns, *The Efficacy of the "Greedy" Algorithm*, 1976.
@@ -722,26 +723,19 @@ theorem div_succ_le_submodularMatroidGreedy {β : Type*} [Field β] [LinearOrder
 omit [DecidableEq α] in
 private theorem isPSystem_of_matroid {M : Matroid α} {indep : Finset α → Bool}
     (hM : ∀ S : Finset α, indep S = true ↔ M.Indep (S : Set α)) :
-    IsPSystem (fun S => indep S = true) 1 := by
-  have h : (fun S : Finset α => indep S = true) = fun S : Finset α => M.Indep (S : Set α) :=
-    funext fun S => propext (hM S)
-  rw [h]
-  exact isPSystem_matroid M
+    IsPSystem (fun S => indep S = true) 1 :=
+  (isPSystem_matroid M).of_iff hM
 
 omit [DecidableEq α] in
 private theorem isPSystem_of_iInter_matroid {ι : Type*} [Fintype ι] [Nonempty ι]
     {M : ι → Matroid α} {indep : Finset α → Bool}
     (hM : ∀ S : Finset α, indep S = true ↔ ∀ i, (M i).Indep (S : Set α)) :
-    IsPSystem (fun S => indep S = true) (Fintype.card ι) := by
-  have h : (fun S : Finset α => indep S = true) =
-      fun S : Finset α => ∀ i, (M i).Indep (S : Set α) :=
-    funext fun S => propext (hM S)
-  rw [h]
-  exact isPSystem_iInter_matroid M
+    IsPSystem (fun S => indep S = true) (Fintype.card ι) :=
+  (isPSystem_iInter_matroid M).of_iff hM
 
-/-- **`1/2`-approximation over a matroid** ([FisherNemhauserWolsey1978]): under an independence
-test implementing `M : Matroid α`, `f O + f ∅ ≤ 2 • f G` for every independent `O ⊆ xs.toFinset`.
--/
+/-- **`1/2`-approximation over a matroid** ([FisherNemhauserWolsey1978];
+[CalinescuChekuriPalVondrak2011], Section 1, the case `p = 1`): under an independence test
+implementing `M : Matroid α`, `f O + f ∅ ≤ 2 • f G` for every independent `O ⊆ xs.toFinset`. -/
 theorem add_le_two_nsmul_submodularMatroidGreedy_of_matroid {β : Type*} [AddCommGroup β]
     [LinearOrder β] [IsOrderedAddMonoid β] {f : Finset α → β} (hf : IsSubmodular f)
     (hmono : Monotone f) {M : Matroid α} {indep : Finset α → Bool}
@@ -764,7 +758,7 @@ theorem half_le_submodularMatroidGreedy_of_matroid {β : Type*} [Field β] [Line
   rwa [Nat.cast_one, one_add_one_eq_two] at h
 
 /-- **`1/(k+1)`-approximation over an intersection of `k ≥ 1` matroids**
-([FisherNemhauserWolsey1978]), ordered-group form:
+([FisherNemhauserWolsey1978]; [CalinescuChekuriPalVondrak2011], Section 1), ordered-group form:
 `f O + k • f ∅ ≤ (k + 1) • f G` with `k = Fintype.card ι`. -/
 theorem add_card_nsmul_le_submodularMatroidGreedy_of_iInter_matroid {β : Type*}
     [AddCommGroup β] [LinearOrder β] [IsOrderedAddMonoid β] {f : Finset α → β}
@@ -778,7 +772,8 @@ theorem add_card_nsmul_le_submodularMatroidGreedy_of_iInter_matroid {β : Type*}
     ((hM O).mpr hO) hOxs
 
 /-- **`1/(k+1)`-approximation over an intersection of `k ≥ 1` matroids**
-([FisherNemhauserWolsey1978]), ordered-field form: `f O / (k + 1) ≤ f G` when `0 ≤ f ∅`. -/
+([FisherNemhauserWolsey1978]; [CalinescuChekuriPalVondrak2011], Section 1), ordered-field form:
+`f O / (k + 1) ≤ f G` when `0 ≤ f ∅`. -/
 theorem div_card_succ_le_submodularMatroidGreedy_of_iInter_matroid {β : Type*} [Field β]
     [LinearOrder β] [IsStrictOrderedRing β] {f : Finset α → β} (hf : IsSubmodular f)
     (hmono : Monotone f) (hf0 : 0 ≤ f ∅) {ι : Type*} [Fintype ι] [Nonempty ι]
@@ -815,7 +810,9 @@ theorem sum_le_nsmul_sum_submodularMatroidGreedy {β : Type*} [AddCommGroup β] 
 
 /-- **Greedy is optimal for nonnegative modular objectives on a matroid** (the `p = 1` case of
 `sum_le_nsmul_sum_submodularMatroidGreedy`): `∑ O w ≤ ∑ G w` for every independent
-`O ⊆ xs.toFinset`. -/
+`O ⊆ xs.toFinset`. Compare the Rado–Edmonds weight-sorted greedy
+`Cslib.Algorithms.Lean.Matroid.sum_le_greedyMaxBasis_of_indep`, which reaches the same optimum by
+scanning elements in decreasing weight order instead of re-evaluating marginal gains. -/
 theorem sum_le_sum_submodularMatroidGreedy_of_matroid {β : Type*} [AddCommGroup β]
     [LinearOrder β] [IsOrderedAddMonoid β] {w : α → β} (hw : ∀ x, 0 ≤ w x) {M : Matroid α}
     {indep : Finset α → Bool} (hM : ∀ S : Finset α, indep S = true ↔ M.Indep (S : Set α))
@@ -879,7 +876,9 @@ theorem submodularMatroidGreedy_matroidTight :
     submodularMatroidGreedy matroidTightObjective matroidTightIndep [0, 1, 2] = {0, 2} := by
   decide
 
-/-- **Tightness of the `1/2` bound** ([FisherNemhauserWolsey1978]): a monotone submodular
+/-- **Tightness of the `1/2` bound** ([FisherNemhauserWolsey1978];
+[CalinescuChekuriPalVondrak2011], Section 1, which states that the greedy ratios are tight for
+all `p`): a monotone submodular
 coverage objective with `f ∅ = 0` and a partition matroid on three elements for which the greedy
 value is exactly half the value of an independent set. -/
 theorem exists_tight_submodularMatroidGreedy :

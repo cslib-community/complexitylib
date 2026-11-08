@@ -1195,8 +1195,9 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   cardinality-constrained `1 - 1/e` greedy and the Fisher–Nemhauser–Wolsey `1/(p+1)` greedy over
   `p`-systems (`1/2` over a matroid, with separately charged value and independence queries;
   [#3145](https://github.com/cslib-community/complexitylib/issues/3145)): the continuous greedy
-  with pipage rounding for `1 - 1/e` over a matroid, knapsack constraints and non-monotone
-  objectives, charging value-oracle calls separately from their concrete realizations.
+  with pipage rounding for `1 - 1/e` over a matroid, the `α/(p+α)` bound for greedy with an
+  `α`-approximate marginal-gain oracle, knapsack constraints and non-monotone objectives, charging
+  value-oracle calls separately from their concrete realizations.
 - **Classical approximation algorithms** ([#2869](https://github.com/cslib-community/complexitylib/issues/2869)):
   remaining after greedy set cover, maximal-matching vertex cover and the MST tour for metric
   TSP (`Algorithms/Lean/{SetCover,VertexCover,TSP}`): machine-level polynomial-time

@@ -89,12 +89,7 @@ private theorem pathIndep_not_isPSystem_one : ¬ IsPSystem (fun S => pathIndep S
 
 /-- Hence path matchings are not the finite independent sets of any matroid. -/
 example : ¬ ∃ M : Matroid (Fin 3), ∀ S : Finset (Fin 3), pathIndep S = true ↔ M.Indep (S : Set _) :=
-  fun ⟨M, hM⟩ => pathIndep_not_isPSystem_one <| by
-    have h : (fun S : Finset (Fin 3) => pathIndep S = true) =
-        fun S : Finset (Fin 3) => M.Indep (S : Set (Fin 3)) :=
-      funext fun S => propext (hM S)
-    rw [h]
-    exact isPSystem_matroid M
+  fun ⟨M, hM⟩ => pathIndep_not_isPSystem_one ((isPSystem_matroid M).of_iff hM)
 
 /-- Second partition matroid of the bipartition `{a, c} ∪ {b, d}`: edges `1 = bc` and `2 = cd` share
 the vertex `c`, edge `0 = ab` is alone. (The first one, edges `0` and `1` sharing `b`, is
@@ -125,12 +120,8 @@ private theorem pathIndep_iff (S : Finset (Fin 3)) :
   rfl
 
 /-- Path matchings form a `2`-system, as the intersection of two matroids. -/
-private theorem pathIndep_isPSystem_two : IsPSystem (fun S => pathIndep S = true) 2 := by
-  have h : (fun S : Finset (Fin 3) => pathIndep S = true) =
-      fun S : Finset (Fin 3) => ∀ i, (pathMatroids i).Indep (S : Set (Fin 3)) :=
-    funext fun S => propext (pathIndep_iff S)
-  rw [h]
-  exact isPSystem_iInter_matroid pathMatroids
+private theorem pathIndep_isPSystem_two : IsPSystem (fun S => pathIndep S = true) 2 :=
+  (isPSystem_iInter_matroid pathMatroids).of_iff pathIndep_iff
 
 /-- The blocking form of the `2`-system bound on a concrete pair: `{0, 2}` is blocked by `{1}`, so
 `|{0, 2}| ≤ 2 * |{1}|`. -/
