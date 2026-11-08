@@ -917,11 +917,11 @@ universe size, not supplied as unverified input tables. In dependency order:
 - **Logic and automata on words**, after Büchi–Elgot–Trakhtenbrot for finite words (MSO =
   regular), FO[<] ⊊ MSO via EVEN
   ([#2885](https://github.com/cslib-community/complexitylib/issues/2885)) and star-free ⇒ FO[<]
-  ([#3075](https://github.com/cslib-community/complexitylib/issues/3075)): the converse FO[<] ⇒
-  star-free over a finite alphabet (McNaughton–Papert,
-  [#3469](https://github.com/cslib-community/complexitylib/issues/3469)), by composition of
-  rank-k types, and star-free = aperiodic (Schützenberger), from cslib's syntactic monoid, with
-  decidability of first-order definability for regular languages;
+  ([#3075](https://github.com/cslib-community/complexitylib/issues/3075)), with the converse over a
+  finite alphabet (McNaughton–Papert,
+  [#3469](https://github.com/cslib-community/complexitylib/issues/3469)): star-free = aperiodic
+  (Schützenberger), from cslib's syntactic monoid, with decidability of first-order definability
+  for regular languages;
   closure of regular languages under homomorphic images, upstream to cslib; the non-elementary
   lower bound on formula-to-automaton translation; Büchi's theorem for ω-words (S1S) over
   cslib's ω-regular languages; and MSO on trees: finite trees and tree automata
@@ -1355,9 +1355,12 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Random graph connectivity** ([#3485](https://github.com/cslib-community/complexitylib/issues/3485)):
   for Mathlib's binomial random graph `G(n, p)`, connectivity with high probability when
   `n p - log n → ∞` (union bound over cuts, explicit bound `35 n exp (-(n p))`) is in
-  `Foundations/Probability/Combinatorics/BinomialRandomGraph/Connectivity.lean`. Remaining: the
-  lower half (`n p - log n → -∞`, isolated vertices by the second moment), the limit
-  `e ^ (-e ^ (-c))` at `p = (log n + c) / n`, and the hitting-time theorem.
+  `Foundations/Probability/Combinatorics/BinomialRandomGraph/Connectivity.lean`. The lower half
+  (`n p - log n → -∞`, through the sharp threshold for isolated vertices by the first and second
+  moments, [#3560](https://github.com/cslib-community/complexitylib/issues/3560)) is in
+  `BinomialRandomGraph/IsolatedVertices.lean`. Remaining: the limit `e ^ (-e ^ (-c))` at
+  `p = (log n + c) / n` (the Poisson limit of the number of isolated vertices), the hitting-time
+  theorem, and the translation to `G(n, m)`.
 - **Explicit Ramsey graphs** ([#3041](https://github.com/cslib-community/complexitylib/issues/3041)):
   strongly explicit graphs with no `k`-clique and no `k`-independent set, on more vertices than
   Frankl–Wilson's `k ^ Θ(log k / log log k)`, toward Erdős's existential `2 ^ (k / 2)`: the
@@ -1737,20 +1740,20 @@ each statement against the numbered result. Organize modules by subject, not cha
 ### Optimization and duality
 
 - **Linear programming** ([#2976](https://github.com/cslib-community/complexitylib/issues/2976)):
-  Fourier–Motzkin elimination, Farkas' lemma, weak and strong duality, the unbounded and
-  infeasible outcomes and complementary slackness over any linearly ordered field are in
-  `Foundations/LinearAlgebra/Matrix/{FourierMotzkin,Farkas,LinearProgramming}`. The simplex
-  method on dictionaries with Bland's rule, its no-cycling theorem, termination within
-  `N.choose m - 1` pivots, the optimality and unboundedness certificates and an optimal dual
-  solution read off the final dictionary are in `Algorithms/Lean/Simplex`
-  ([#3370](https://github.com/cslib-community/complexitylib/issues/3370)). Remaining:
-  rational input and output encodings; bit-size bounds on basic solutions and Farkas
-  certificates (Cramer's rule with the Hadamard bound), giving LP feasibility in NP ∩ coNP with
-  machine-checked certificate verifiers; and a polynomial-time LP algorithm (ellipsoid or
-  interior point) with bit complexity and intermediate precision accounted for. For the simplex
-  method: Phase I (an initial feasible dictionary or an infeasibility certificate); the
-  Klee–Minty cube on which Dantzig's rule makes `2ⁿ - 1` pivots; smoothed analysis
-  (Spielman–Teng); strongly polynomial special cases; and a costed implementation.
+  Fourier–Motzkin elimination, Farkas' lemma, weak and strong duality, the unbounded and infeasible
+  outcomes and complementary slackness over any linearly ordered field are in
+  `Foundations/LinearAlgebra/Matrix/{FourierMotzkin,Farkas,LinearProgramming}`. Basic solutions and
+  their size bounds are in `Foundations/LinearAlgebra/Matrix/BasicSolution`, and LP feasibility for
+  integer data (rational solutions) is in NP ∩ coNP with polynomial-time certificate checks in
+  `Problems/LinearProgramming`. The simplex method on dictionaries with Bland's rule, its no-cycling
+  theorem, termination within `N.choose m - 1` pivots, the optimality and unboundedness certificates
+  and an optimal dual solution read off the final dictionary are in `Algorithms/Lean/Simplex`
+  ([#3370](https://github.com/cslib-community/complexitylib/issues/3370)). Remaining: a
+  polynomial-time LP algorithm (ellipsoid or interior point) with bit complexity and intermediate
+  precision accounted for; and LP optimization as a search problem with rational outputs. For the
+  simplex method: Phase I (an initial feasible dictionary or an infeasibility certificate); the
+  Klee–Minty cube on which Dantzig's rule makes `2ⁿ - 1` pivots; smoothed analysis (Spielman–Teng);
+  strongly polynomial special cases; and a costed implementation.
 - **Lattice basis reduction** ([#3235](https://github.com/cslib-community/complexitylib/issues/3235)):
   `δ`-reduced bases, the LLL approximation `‖b₁‖² ≤ (4/(4δ-1))^{n-1} ‖x‖²` (paper indexing,
   `n` vectors) to the shortest vector (Lenstra–Lenstra–Lovász Proposition (1.11)), the potential
@@ -1916,6 +1919,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   you-request-my-house-I-get-your-turn), Ma's characterization of TTC by individual rationality,
   Pareto efficiency and strategy-proofness, group strategy-proofness, indifferences (top trading
   absorbing sets), and a charged implementation of TTC in `O(n^2)` time.
+- **Interval dynamic programming** ([#3357](https://github.com/cslib-community/complexitylib/issues/3357)):
+  after optimal binary search trees, Yao's quadrangle-inequality lemma, root monotonicity and
+  Knuth's quadratic algorithm with candidate-scan counts in `TimeM` (`Algorithms/Lean/OptimalBST`):
+  the Hu–Tucker and Garsia–Wachs `O(n log n)` algorithms for alphabetic trees; matrix-chain
+  multiplication and optimal polygon triangulation as further instances of the generic interval
+  recurrence (which in general do not satisfy the quadrangle-inequality hypotheses); Knuth's sharper
+  candidate count; the SMAWK algorithm and Monge-matrix speedups; and a Word-RAM realization.
 - **Classical approximation algorithms** ([#2869](https://github.com/cslib-community/complexitylib/issues/2869)):
   remaining after greedy set cover, maximal-matching vertex cover, the MST tour and Christofides'
   `3/2` bound for metric TSP (`Algorithms/Lean/{SetCover,VertexCover,TSP}`): machine-level
@@ -2153,10 +2163,10 @@ Arrow's theorem). Remaining directions:
 - **FPRAS and almost-uniform sampling:** `Classes/FPRAS` and `Classes/FPAUS` give the two
   interfaces, and `Classes/FPAUS/FPRAS` proves FPAUS ⇒ FPRAS for one-bit self-reducible
   witness families ([#3039](https://github.com/cslib-community/complexitylib/issues/3039)).
-  `Classes/FPAUS/Sampler` proves the output-law half of the converse: the Jerrum–Valiant–Vazirani
-  sampler built from an approximate counter is within statistical distance `2 ^ (-q)` of uniform.
-  Certify that sampler as strict PPT when the counter is an FPRAS, giving the class inclusion
-  FPRAS ⇒ FPAUS. Allow self-reductions fixing several symbols per step, and instantiate both
+  `Classes/FPAUS/Sampler` and `Classes/FPAUS/OfFPRAS` prove the converse FPRAS ⇒ FPAUS (the
+  Jerrum–Valiant–Vazirani sampler, with its output law and strict PPT certificate), so the two
+  classes agree on these families. Allow self-reductions fixing several symbols per step,
+  formalize Sinclair and Jerrum's reduction from polynomial-error counting, and instantiate both
   directions for concrete relations such as DNF assignments.
 - Extend to randomized approximate counting for matchings and permanents of nonnegative
   rational matrices through explicit mixing and reduction theorems. Reuse the coupling and
