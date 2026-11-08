@@ -1690,6 +1690,7 @@ public import Complexity.Computability.Complexity.FineGrained.CountingSparsifyCo
 public import Complexity.Computability.Complexity.FineGrained.CountingTreeBound
 public import Complexity.Computability.Complexity.FineGrained.DensityBranchCounting
 public import Complexity.Computability.Complexity.FineGrained.DigraphKernel
+public import Complexity.Computability.Complexity.FineGrained.DominatingInducedMatching
 public import Complexity.Computability.Complexity.FineGrained.ExactOneCountingResources
 public import Complexity.Computability.Complexity.FineGrained.ExhaustiveSearch
 public import Complexity.Computability.Complexity.FineGrained.Exponents
@@ -2608,6 +2609,7 @@ public import Complexity.Computability.PolyTime.BudgetTuples
 public import Complexity.Computability.PolyTime.CNF.BranchedSparseCNFCounter
 public import Complexity.Computability.PolyTime.CNF.CardinalityInterval
 public import Complexity.Computability.PolyTime.CNF.DigraphKernel
+public import Complexity.Computability.PolyTime.CNF.DominatingInducedMatching
 public import Complexity.Computability.PolyTime.CNF.ExactOnePlan
 public import Complexity.Computability.PolyTime.CNF.GreedyParityContext
 public import Complexity.Computability.PolyTime.CNF.GreedyParitySearch
@@ -3599,6 +3601,7 @@ public import Complexity.Foundations.Combinatorics.PowersetTail
 public import Complexity.Foundations.Combinatorics.ReplacementCounting
 public import Complexity.Foundations.Combinatorics.ReplacementDesignBridge
 public import Complexity.Foundations.Combinatorics.SharedSummaries
+public import Complexity.Foundations.Combinatorics.SimpleGraph.DominatingInducedMatching
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
 public import Complexity.Foundations.Combinatorics.SimpleGraph.PerfectMatchingCut
 public import Complexity.Foundations.Combinatorics.SmallSubsets

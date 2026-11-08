@@ -428,8 +428,8 @@ The `BinaryFrontend.compile` continuation below now supplies the complete actual
 constructor and sharp counting resource endpoint for the explicit promised table encoding.
 The rational kernel's own coefficient-growth theorem is not implied by the binary backend.
 The weighted-row endpoint later in this chapter is also certified; the independent-domination
-frontends below cover independent domination, directed kernels and perfect matching cuts; other
-graph endpoints remain open.
+frontends below cover independent domination, kernels, perfect matching cuts and efficient edge
+domination; other graph endpoints remain open.
 
 The listing resource bound is promise-restricted. Without `DimensionOne`, take
 one width-$w$ table containing the all-zero tuple, all-one tuple and all $w$
@@ -698,8 +698,8 @@ Tiny exhaustive query oracles are tests only; production certificates use the pr
 
 The general Corollary 7.2 degree rules and Theorem 7.3 labeled partitions remain open. Of the six
 Corollary 7.4 predicates, independent-domination counting with size bounds and kernel counting/
-decision are covered here. The continuation below covers Perfect Matching Cut; maximum induced
-matching, upper domination and dominating induced matching remain open.
+decision are covered here. The continuations below cover Perfect Matching Cut and Dominating
+Induced Matching; maximum induced matching and upper domination remain open.
 Complete witness/optimum extraction is still separate. Corollary 7.5 needs the induced-matching
 bijection and distribution iterator/resources; Proposition 7.6 needs its actual set–marking versus
 set-count constructions. These graph milestones do not complete ALL-main.
@@ -756,10 +756,68 @@ production certificates instantiate the proved sharp counter.
 Corollary 7.2's general sigma-rho rules and Theorem 7.3's fixed labeled degree matrices/per-class
 bounds remain open. Of the six Corollary 7.4 predicates, independent-domination counting with size
 bounds, kernel counting/decision and labeled perfect-matching-cut counting/decision are covered.
-Maximum induced matching, upper domination, dominating induced matching, complete witness/optimum
-recovery, Corollary 7.5's bijection/distribution iterator and Proposition 7.6's marking/set-count
-constructions remain open. This concrete bipartition endpoint does not complete the general
-partition theorem or ALL-main.
+The continuation below covers dominating induced matching. Maximum induced matching, upper
+domination, complete witness/optimum recovery, Corollary 7.5's unrestricted bijection/distribution
+iterator and Proposition 7.6's marking/set-count constructions remain open. This concrete bipartition
+endpoint does not complete the general partition theorem or ALL-main.
+
+### Dominating induced matchings with exact edge-domination counts
+
+Import `Complexity.Computability.Complexity.FineGrained.DominatingInducedMatching` and open
+`Cslib.Logic.PL.DominatingInducedMatching`. Reuse `IndependentDomination.Input`, `encInput` and
+`ofGraph G` for the canonical explicit simple-undirected Boolean matrix, with unary vertex
+declaration and framed cells. `upper` writes a negative triple for each vertex and distinct
+neighbor pair; `conditions` permits an unselected vertex or requires a selected neighbor.
+`cover` reuses the original edge-exclusion traversal with flipped literal polarities, requiring
+at least one selected endpoint of every edge. `build_polytime` certifies actual traversal,
+binary-index writing and all constructed clauses/terms, without enumerating matchings or supports.
+
+The source problem is **efficient edge domination**: a matching edge dominates itself and each
+edge sharing either endpoint, and every original edge is dominated exactly once.
+`SimpleGraph.Subgraph.IsDominatingInducedMatching` states this directly for a conventional Mathlib
+matching and unordered `Sym2` edges. Its proved characterization derives inducedness and edge-cover
+support from exact edge domination, and proves the converse. The count bijection
+`SimpleGraph.card_dominatingMatching_supports_eq` identifies each valid Boolean support with one
+actual matching subgraph. No orientation, label or private certificate is counted. The finite
+cardinalities are correctness statements, not enumerations used by the production algorithm.
+
+`regular_semantics` proves that selected vertices induce a Mathlib matching; `finite_semantics`
+adds edge cover. `plan_count` connects the **actual written queries** to the number of matching
+objects satisfying exact edge domination. For $v\ge1$, `query_count` gives two ordinary queries;
+`query_budget` gives $N=2v-1$, width three and at most $v^3+3v^2+2v$ clauses each.
+`query_cubic_budget` bounds this by $6v^3$. There are exactly $v$ conditions, with at most
+$v(v+1)$ terms in total, and no extra matching-edge variables. The empty graph uses the single
+zero-variable empty query and counts the empty matching once. Edgeless graphs likewise have only
+the empty matching; isolates must be unselected and add no free-bit multiplicity.
+
+`exists_count_sharp_certificate` composes actual construction, the proved unrestricted-density
+counter, sequential query calls/subtraction and reconstruction with global polynomial workspace
+and $L^{O(1)}2^{O(\eta(v))}$ native time. Its count is of actual matching subgraphs, including
+empty inputs. The decision certificate additionally charges binary positivity using the count's
+proved output/space bound. The real-eta versions use
+$\eta(v)=v\log\log v/\sqrt{\log v}$ for $v\ge16$; the rounded versions cover all smaller
+sizes. Fixed-linear rescaling from $2v$ retains a single loglog. This is Corollary D.4
+(PDF p. 36) and its Corollary 7.4 specialization (p. 26). Certificates use the existing native
+word/resource model, not a fresh bit-transition simulation. Raw construction/global space are
+total; graph correctness/sharp time use canonical simple matrices. Arbitrary-byte admission,
+succinct declarations and matching witness extraction are separate.
+
+From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.DominatingInducedMatching`.
+The [complete checked client](../../ComplexityTests/PaperEndpoints/DominatingInducedMatching.lean)
+executes empty, isolated, edge, path, disjoint-edge, triangle, star, cycle and dense cases, with
+original support selections and actual query metadata. A single edge has one matching, not two
+orientations. On a four-vertex path only the middle edge works; two outer edges double-dominate
+the middle edge. Actual matching/nonmatching examples check the original predicate. Construction
+at 32 vertices writes queries without support enumeration. Exhaustive tiny query oracles are tests
+only; production uses the instantiated proved sharp counter.
+
+Corollary 7.2's general sigma-rho rules and Theorem 7.3's fixed degree-matrix frontend remain open.
+For Corollary 7.4, independent-domination counting with size bounds is covered, as are count/
+decision for kernels, perfect matching cuts and dominating induced matchings.
+Maximum induced matching, upper domination and complete witness/optimum composition remain open.
+Corollary 7.5 still needs the **unrestricted** induced-matching bijection, total counts and full
+edge-size distribution; the efficiently dominating subfamily is not a substitute. Proposition 7.6
+still needs its distinct set–marking versus original-set constructions. ALL-main remains open.
 
 ## Known Limitations
 

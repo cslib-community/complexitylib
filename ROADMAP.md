@@ -1278,6 +1278,18 @@ composes the real writer, sequential counting/reconstruction and binary positivi
 polynomial workspace and original-vertex single-loglog time. Labeled side swaps count separately;
 no unordered quotient, graph-byte admission or witness extraction is asserted.
 
+`DominatingInducedMatching` now supplies Corollary D.4's actual graph reduction, exact matching
+counts and complete decision resources. A low-level bijection connects Boolean supports to
+conventional Mathlib matching subgraphs whose unordered edges dominate every original edge exactly
+once. The inducedness and edge-cover characterization is proved, not assumed. The actual matrix
+writer combines selected-degree-at-most-one clauses, selected-neighbor predicates and positive
+edge-cover clauses; it introduces no matching-edge or witness variables. Positive graphs emit two
+width-three queries on `2v-1` variables, with at most `6v³` clauses each. Empty/edgeless graphs
+count the empty matching once, and declared isolates are fixed unselected. Complete native
+count/decision certificates charge construction, sequential counting/reconstruction and binary
+positivity, with global polynomial workspace and original-vertex single-loglog time. This covers
+efficient edge domination, not unrestricted induced-matching counts or witness extraction.
+
 Remaining STOC1575 objectives, keeping the original inventory open:
 
 - Theorems 1.1–1.2: actual generic bounded-term DNF constructor/count/resource transfer and the
@@ -1294,11 +1306,11 @@ Remaining STOC1575 objectives, keeping the original inventory open:
 - Theorem 7.3: fixed q,D labeled degree matrices and optional per-class input cardinality tests
   still need their actual class/neighbor-threshold construction and complete resource/count proof.
 - Corollary 7.4: independent-domination counting with input size bounds, outgoing-absorbing
-  digraph-kernel counting/decision, and labeled perfect-matching-cut counting/decision are covered
-  for the stated explicit encodings. Maximum induced matching, upper domination and dominating
-  induced matching remain open. Complete witness extraction and optimum-threshold recovery are
-  not yet composed, including for the covered decision predicates.
-- Corollary 7.5: the induced-matching endpoint-set bijection, total counts and full edge-size
+  kernel counting/decision, labeled perfect-matching-cut counting/decision and actual dominating-
+  induced-matching counting/decision are covered for the stated explicit encodings. Maximum
+  induced matching and upper domination remain open. Complete witness extraction and optimum-
+  threshold recovery are not yet composed, including for the covered decision predicates.
+- Corollary 7.5: the unrestricted induced-matching endpoint-set bijection, total counts and edge-size
   distribution iterator/resources remain open; a functional size test alone does not supply them.
 - Proposition 7.6: upper domination's actual width-three set–marking-pair construction/count
   (`4v+a-1` variables), and the alternative width-four original-set count (`5v+a-1` variables),
@@ -1306,7 +1318,8 @@ Remaining STOC1575 objectives, keeping the original inventory open:
   empty graphs and polynomially many distribution/self-reduction calls.
 
 Remaining graph/general-rule and other-paper/ALL-main endpoints remain open; generic DNF,
-independent-domination, directed-kernel and perfect-matching-cut milestones do not complete ALL-main.
+independent-domination, kernel, perfect-matching-cut and efficient-edge-domination milestones do not
+complete ALL-main.
 
 The older interpolation counter is unchanged; its extra loglog and nu²-denominator schedule are
 not relabeled. Graph endpoints and other-paper objectives remain open.
