@@ -103,6 +103,23 @@ executor is removed, while Model/Trees/Forest, PQCode and the execution core sti
 MinPQ/FibonacciHeapBridge remain. F2, its abstract-space decision and general whole-client
 transfer remain open; the selected abstract statements are unchanged.
 
+### All-pairs shortest paths and the (min,+) product
+
+Import `Complexity.Algorithms.Lean.Query.ShortestPaths.MinPlus` for the two reductions and `Complexity.Algorithms.Lean.Query.Arith.FloydWarshall` for Floyd–Warshall; both import the pure walk and matrix-power theory in `Complexity.Algorithms.ShortestPaths`.
+
+These results use the query model `FreeM`, not the word RAM. A weighted digraph on `Fin n` is a matrix over `MinTropical R`, where `R` is any `LinearOrderedAddCommMonoidWithTop`, for example `WithTop ℤ` with negative weights. The tropical `0 = ⊤` means no edge, `*` adds weights and `+` takes minima, so the matrix product is the (min,+) product. [Walk.lean](../../Complexity/Algorithms/ShortestPaths/Walk.lean) defines `walkWeight`, `NoNegCycle` (every closed walk has weight at least `0`) and `IsShortestDistances W D` (each `D i j` is the greatest lower bound of the weights of the walks from `i` to `j`). [Power.lean](../../Complexity/Algorithms/ShortestPaths/Power.lean) proves `isShortestDistances_one_add_pow`: `(1 + W) ^ k` is the distance matrix for every `k ≥ n - 1` when there are no negative cycles. It also proves the negative-cycle test `noNegCycle_iff_one_le_one_add_pow_diag`, which makes `NoNegCycle` decidable [CLRS 25.1][clrs09].
+
+The programs are generic in the entry type, so they combine weights only through `ArithQuery` queries: `.mul` adds weights and `.add` compares them. Correctness theorems assume an oracle that answers `.add` and `.mul` honestly. Cost theorems hold under every oracle. Indexing, `withOneDiag` and building the tripartite matrix are pure code, which `FreeM` does not charge.
+
+| Declaration | Statement |
+|---|---|
+| `Cslib.Query.floydWarshall`, `cost_floydWarshall`, `isShortestDistances_floydWarshall` | Floyd–Warshall with pivots `0, …, n−1` makes exactly `n³` additions and `n³` multiplications and returns the distance matrix [Floyd 1962][floyd62], [CLRS 25.2][clrs09]. The pure lemma `Cslib.Algorithms.ShortestPaths.isShortestDistances_foldl_fwStep` proves the relaxation correct for every pivot list that contains each vertex, in any order |
+| `Cslib.Query.schoolbookMatMul`, `cost_schoolbookMatMul` | the (min,+) product with `n²·(n·cMul + (n−1)·cAdd)` cost |
+| `Cslib.Query.apspBySquaring`, `isShortestDistances_apspBySquaring`, `cost_apspBySquaring_le` | APSP from any product subroutine `mp` with `⌈log₂(n−1)⌉` calls, so cost `⌈log₂(n−1)⌉·t` when each call costs at most `t` |
+| `Cslib.Query.minPlusViaAPSP`, `eval_minPlusViaAPSP`, `cost_minPlusViaAPSP` | the (min,+) product from one call of any APSP subroutine that is correct on `3n`-vertex graphs without negative cycles, at exactly the cost of that call |
+
+The two reductions are in [MinPlus.lean](../../Complexity/Algorithms/Lean/Query/ShortestPaths/MinPlus.lean), and the [tests](../../ComplexityTests/ShortestPaths.lean) run all programs on a graph with a negative edge. Together they show that a cost-`T(n)` algorithm for either problem gives one for the other with cost `⌈log₂(n−1)⌉·T(n)` or `T(3n)`. This is the starting point of the APSP class of [Vassilevska Williams and Williams][vww18]. The negative-triangle equivalence and the other problems in that class are not formalized. Neither is a word-RAM realization with bit-length costs, so no statement here concerns subcubic running time.
+
 ## Depth-first search, topological sort and Bellman–Ford
 
 These are pure Lean functions on adjacency lists, with `TimeM` cost models (as for Kruskal and Edmonds–Karp), not machine programs.
@@ -148,6 +165,12 @@ Import `Complexity.Algorithms.Lean.MaxFlow.HopcroftKarp` ([Complexity/Algorithms
 Outputs use the same `IsMatching`/`VertexCover` vocabulary as the Edmonds–Karp reduction `bipartiteMatchingM`. `card_hopcroftKarpM_matching` shows the two solvers return matchings of the same size, so a client can switch solvers without changing its statements. `decidePerfectMatchingHKM_eq_true_iff` gives the same characterisation of `HasPerfectMatching` as `decidePerfectMatchingM`.
 
 The combinatorial layer is [Complexity/Algorithms/Lean/MaxFlow/AugmentingPath.lean](../../Complexity/Algorithms/Lean/MaxFlow/AugmentingPath.lean). It contains Berge's theorem (`isMaxMatching_iff_forall_not_isAugmentingPath`), the phase lemma (`IsMaximalLayeredAugmentation.noShortAug_augment`) and the phase bound (`IsPhaseRun.le_two_mul_sqrt`). These proofs use a layered counting lemma, `card_mul_le_of_noShortAug`, instead of decomposing `M ⊕ M*` into disjoint augmenting paths; that decomposition is not formalized.
+
+## Stable matching
+
+Import `Complexity.Algorithms.Lean.StableMatching.Incentives` (which also brings in `Basic`, `DeferredAcceptance` and `Blocking`) and `Complexity.Algorithms.Lean.StableMatching.Lattice`; the declarations live in the namespace `Cslib.Algorithms.Lean.StableMatching`. This is a pure Lean development, not a RAM client. An `Instance n` has `n` proposers and `n` receivers with strict complete preference lists (`Fin n → Equiv.Perm (Fin n)`, rank `0` most preferred); a `Matching n` is a permutation, and `IsStable` means no blocking pair. `Instance.deferredAcceptance` is a total, `decide`-evaluable implementation of proposer-proposing deferred acceptance whose state is the vector of rejection counts. The modules prove stability of the output, the bound `proposals_le : I.proposals ≤ n ^ 2 - n + 1`, proposer-optimality and receiver-pessimality, the distributive lattice `Instance.Stable I` with deferred acceptance as `⊤` and its receiver-proposing dual as `⊥`, the blocking lemma `exists_isBlockingPair_of_lt`, weak Pareto optimality, and coalitional strategy-proofness for proposers (`not_forall_mem_propRank_lt_of_isStable`). Roth's impossibility theorem `MatchingMechanism.not_isStable_and_strategyProof` is proved for three agents on each side (`MatchingMechanism 3`), with the checked witness `MatchingMechanism.rothInstance`. That suffices for the existential impossibility; the statement for every `n ≥ 3` is not formalized.
+
+The cost measure is the number of proposals, a property of the algorithm's trace rather than of a machine model; no Word-RAM or Turing implementation is certified. Incomplete lists, ties, unequal sides and many-to-one markets are not modeled; [#2990](https://github.com/cslib-community/complexitylib/issues/2990) tracks these directions. [ComplexityTests/StableMatching.lean](../../ComplexityTests/StableMatching.lean) contains the checked instances.
 
 ## Scheduling bounds
 
@@ -678,7 +701,7 @@ Import `Complexity.Algorithms.Lean.SetCover.Greedy` ([Complexity/Algorithms/Lean
 
 - **Feasibility:** `greedy_covers` needs every element of `U` to lie in some candidate set; `ComplexityTests/SetCoverGreedy.lean` shows the loop stopping with an incomplete cover when that fails. `nodup_greedy` and `length_greedy_le` bound the output by `U.card` distinct candidates.
 - **Ratio, stated against any cover:** `sum_greedy_le_harmonic_mul` proves `cost ≤ H d · w(C)` for every cover `C` drawn from `J` whose sets meet `U` in at most `d` elements, given nonnegative candidate weights. Instantiating `C` with an optimal cover gives Chvátal's `H d` ratio. `sum_greedy_le_harmonic_card_mul` takes `d = |U|`, and `sum_greedy_le_one_add_log_mul` gives `(1 + log d) · w(C)` over `ℝ`.
-- **Fractional form:** `sum_greedy_le_harmonic_mul_fractional` compares with every nonnegative fractional cover `x` instead. This is Theorem 1.12 of [Williamson and Shmoys][williamsonshmoys11] without a linear-programming API: the dual-fitting step and weak duality are merged into one inequality. The library has no LP optimum to instantiate here, so the caller supplies the fractional cover.
+- **Fractional form:** `sum_greedy_le_harmonic_mul_fractional` compares with every nonnegative fractional cover `x` instead. This is Theorem 1.12 of [Williamson and Shmoys][williamsonshmoys11] stated without the linear-programming API: the dual-fitting step and weak duality are merged into one inequality, and the caller supplies the fractional cover. Instantiating it with an LP optimum would go through the [duality theorems below](#linear-programming-duality-over-ordered-fields); no set-cover LP is stated yet.
 
 The [checked examples](../../ComplexityTests/SetCoverGreedy.lean) include an instance where greedy pays `11/6` against an optimum of `11/10`, inside the bound `121/60`. They also show a fractional cover strictly cheaper than every integral cover. Machine-level running time is open ([ROADMAP](../../ROADMAP.md#combinatorial-optimization)).
 
@@ -690,6 +713,16 @@ Two more classical approximation algorithms are stated as plain inequalities aga
 - **Metric TSP through a minimum spanning tree.** Import `Complexity.Computability.Complexity.Problems.TSP.Approximation` ([source](../../Complexity/Computability/Complexity/Problems/TSP/Approximation.lean)); the generic algorithm is in `Complexity/Algorithms/Lean/TSP/MSTTour.lean`. `mstTour δ` computes Kruskal's minimum spanning tree of the complete graph on `Fin n` and grows a tour from vertex `0`: while some tree edge has exactly one endpoint on the tour, it inserts the other endpoint right after that one. `totalWeight_kruskalEdges_le_cycleCost` is Lemma 2.10 of [Williamson and Shmoys][williamsonshmoys11] (the tree costs at most any tour). `cycleCost_insertAfter_le` is the insertion step of their Theorem 2.11, which they prove for the nearest-addition algorithm on Prim's tree; here it is applied to Kruskal's tree. Together they give `cycleCost_mstTour_le_two_mul`. On `TSP` instances, `TSP.approxTour D` visits every city exactly once (`approxTour_perm`), and when `TSP.IsMetric D` holds, `tourLength_approxTour_le_two_mul` bounds its length by twice every tour's. `IsMetric` asks only for symmetry and the triangle inequality among cities. The triangle inequality covers all triples, including `i = k`, so each diagonal entry is at most twice any distance from its city; diagonal entries need not be zero (Williamson and Shmoys assume they are).
 
 The [vertex-cover examples](../../ComplexityTests/VertexCoverApproximation.lean) pin the optimum of a path and a star exactly, so the factor `2` is attained. The [TSP examples](../../ComplexityTests/TSPApproximation.lean) include a matrix violating the triangle inequality where the tour costs `202` against a tour of cost `4`, so the metric hypothesis cannot be dropped. Concrete TSP runs first pin the sorted edge list with `simp [sortEdges_cons_cons]`, because `List.mergeSort` does not reduce in the kernel. No machine running time is certified for the TSP tour yet; that needs a polynomial-time certificate for Kruskal's algorithm on encoded matrices.
+
+## Linear-programming duality over ordered fields
+
+Import `Complexity.Foundations.LinearAlgebra.Matrix.LinearProgramming` ([LinearProgramming.lean](../../Complexity/Foundations/LinearAlgebra/Matrix/LinearProgramming.lean)). This is mathematics with no machine model or running time. For a matrix `A : Matrix ι κ K` over any linearly ordered field `K` (so `ℚ` is included), the primal program maximizes `c ⬝ᵥ x` subject to `A *ᵥ x ≤ b` and the dual minimizes `y ⬝ᵥ b` subject to `0 ≤ y` and `y ᵥ* A = c`. Programs are plain matrix data; there is no bundled LP structure and no encoding.
+
+- **Fourier–Motzkin elimination:** `Matrix.FourierMotzkin.exists_projection` ([FourierMotzkin.lean](../../Complexity/Foundations/LinearAlgebra/Matrix/FourierMotzkin.lean)) eliminates a finite block of variables `y` from `A *ᵥ y + B *ᵥ z ≤ b`. It returns an entrywise nonnegative `T` with `T * A = 0` and the same solvability in `z`. One step is `exists_smul_add_le_iff`.
+- **Farkas' lemma:** `Matrix.not_exists_mulVec_le_iff` ([Farkas.lean](../../Complexity/Foundations/LinearAlgebra/Matrix/Farkas.lean)) shows that `A *ᵥ x ≤ b` is infeasible iff some `y ≥ 0` has `y ᵥ* A = 0` and `y ⬝ᵥ b < 0`. `exists_nonneg_mulVec_eq_iff` is the equality form with `x ≥ 0`. Mathlib's `ProperCone.hyperplane_separation` covers only closed cones in real locally convex spaces.
+- **Duality:** weak duality is `dotProduct_le_dotProduct_of_mulVec_le`. Strong duality, `exists_isGreatest_isLeast_dotProduct`, says that when both programs are feasible both optima are attained and equal. `bddAbove_image_dotProduct_iff` and `bddBelow_image_dotProduct_iff` give the unbounded outcomes: a feasible program is bounded iff the other program is feasible. `exists_isGreatest_of_bddAbove` gives attainment, `dotProduct_eq_dotProduct_iff_of_mulVec_le` complementary slackness, and `exists_dual_le_of_forall_le` the affine Farkas lemma. `exists_isGreatest_isLeast_dotProduct_of_nonneg` covers the canonical pair `max {c ⬝ᵥ x | A *ᵥ x ≤ b, 0 ≤ x}` and `min {y ⬝ᵥ b | c ≤ y ᵥ* A, 0 ≤ y}`.
+
+The [checked examples](../../ComplexityTests/Foundations/LinearAlgebra/Matrix/LinearProgramming.lean) give an infeasible system with its certificate, a feasible system with no certificate, an empty system, programs with values `3` and `22 / 5`, and an unbounded program with infeasible dual. Not formalized: bit-size bounds on solutions and certificates, membership of rational LP feasibility in NP ∩ coNP, and any polynomial-time LP algorithm ([ROADMAP](../../ROADMAP.md#optimization-and-duality)).
 
 ## Freivalds' matrix-product verification
 
@@ -712,7 +745,9 @@ The numeric values above are transcriptions of checked source statements, not re
 
 [complexitylib]: ../sources.md#complexitylib
 [clrs09]: ../sources.md#clrs09
+[floyd62]: ../sources.md#floyd62
 [freivalds79]: ../sources.md#freivalds79
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
+[vww18]: ../sources.md#vww18
 [thorup13]: ../sources.md#thorup13
 [williamsonshmoys11]: ../sources.md#williamsonshmoys11

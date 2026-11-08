@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Classes.Immune.Complete
+public import Complexity.Computability.Complexity.Classes.Immune.PolyTimeCore
 public import Complexity.Computability.Complexity.Classes.Ladner.Basic
 import Complexity.Computability.Complexity.Classes.Ladner.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
@@ -58,6 +59,10 @@ By Berman's theorem (`Complexity.Computability.Complexity.Classes.Immune.Complet
 not complete for `E` or `EXP` (`Cslib.Complexity.BiImmune.not_polyTimeComplete_E_language`,
 `Cslib.Complexity.BiImmune.not_polyTimeComplete_EXP_language`).
 
+The problem is decidable, so every machine deciding it runs in superpolynomial time on almost every
+instance (`Cslib.Complexity.BiImmune.isPolyTimeCore_univ_language`): the universe is a polynomial
+complexity core (`Complexity.Computability.Complexity.Classes.Immune.PolyTimeCore`).
+
 ## Main definitions
 
 * `Cslib.Complexity.BiImmune.accepts`: the machine of a requirement accepts at a stage.
@@ -79,6 +84,9 @@ not complete for `E` or `EXP` (`Cslib.Complexity.BiImmune.not_polyTimeComplete_E
 * `Cslib.Complexity.BiImmune.not_polyTimeComplete_E_language`,
   `Cslib.Complexity.BiImmune.not_polyTimeComplete_EXP_language`: the problem is not complete for
   `E` or `EXP` under polynomial-time many-one reductions.
+* `Cslib.Complexity.BiImmune.isPolyTimeCore_univ_language`,
+  `Cslib.Complexity.BiImmune.exists_mem_E_isPolyTimeCore_univ`: every machine deciding the problem
+  runs in superpolynomial time almost everywhere.
 
 ## References
 
@@ -381,5 +389,23 @@ theorem not_polyTimeComplete_EXP_language : ¬ PolyTimeComplete @EXP encBits lan
 /-- **The problem is not hard for `EXP`** under polynomial-time many-one reductions. -/
 theorem not_polyTimeHard_EXP_language : ¬ PolyTimeHard @EXP encBits language :=
   fun h => not_polyTimeComplete_EXP_language ⟨language_mem_EXP, h⟩
+
+/-! ### Every decider is slow almost everywhere -/
+
+/-- The problem is decidable: it is decided within time `c₁ 2 ^ (k n) + c₂`. -/
+theorem isDecidable_language : IsDecidable language encBits :=
+  let ⟨_, _, _, _, h⟩ := mem_E_iff.mp language_mem_E
+  ⟨_, _, h⟩
+
+/-- **Every machine deciding the problem runs in superpolynomial time almost everywhere**: for every
+polynomially bounded `p`, it halts within `p |x|` steps on only finitely many `x`. -/
+theorem isPolyTimeCore_univ_language : IsPolyTimeCore encBits language Set.univ :=
+  isBiImmune_language.isPolyTimeCore_univ
+
+/-- **`E` contains a decidable problem on which every decider runs in superpolynomial time almost
+everywhere** [Balcázar and Schöning][BalcazarSchoening1985]. -/
+theorem exists_mem_E_isPolyTimeCore_univ :
+    ∃ A ∈ E encBits, IsDecidable A encBits ∧ IsPolyTimeCore encBits A Set.univ :=
+  ⟨language, language_mem_E, isDecidable_language, isPolyTimeCore_univ_language⟩
 
 end Cslib.Complexity.BiImmune

@@ -36,7 +36,10 @@ bits and Bob announces the value, this gives the other trivial upper bounds
 (`Protocol.ecomplexityFun_le_min_succ`), and `⌈log₂ |X|⌉ + 1` bits when Alice's input ranges over
 a finite type `X`, which she encodes in `⌈log₂ |X|⌉` bits
 (`Protocol.ecomplexityFun_le_clog_card_succ`, and `Protocol.ecomplexityFun_le_clog_card_succ_right`
-for Bob).
+for Bob). More generally, if Bob's answer depends on Alice's input only through a value in a finite
+set `s`, she sends that value in `⌈log₂ |s|⌉` bits
+(`Protocol.ecomplexityFun_le_clog_card_finset_succ`). A protocol computing the indicator of a
+predicate decides it (`Protocol.ecomplexity_decides_le`).
 
 ## Main definitions
 
@@ -57,7 +60,8 @@ for Bob).
 * `Cslib.Communication.Protocol.ecomplexityFun_le_succ_right`,
   `Cslib.Communication.Protocol.ecomplexityFun_le_min_succ`,
   `Cslib.Communication.Protocol.ecomplexityFun_le_clog_card_succ`,
-  `Cslib.Communication.Protocol.ecomplexityFun_le_clog_card_succ_right`: trivial upper bounds.
+  `Cslib.Communication.Protocol.ecomplexityFun_le_clog_card_succ_right`,
+  `Cslib.Communication.Protocol.ecomplexityFun_le_clog_card_finset_succ`: trivial upper bounds.
 
 ## References
 
@@ -285,6 +289,27 @@ theorem ecomplexityFun_le_clog_card_succ [Fintype X] (f : X → Y → Bool) :
 theorem ecomplexityFun_le_clog_card_succ_right [Fintype Y] (f : X → Y → Bool) :
     ecomplexityFun f ≤ Nat.clog 2 (Fintype.card Y) + 1 :=
   (ecomplexityFun_swap f).symm.trans_le (ecomplexityFun_le_clog_card_succ _)
+
+/-- **Sending a value from a finite set.** If Bob's answer depends on Alice's input `x` only through
+a value `m x` in a finite set `s`, there is a protocol with `⌈log₂ |s|⌉ + 1` bits: Alice sends an
+encoding of `m x` and Bob announces the value. -/
+theorem ecomplexityFun_le_clog_card_finset_succ {α : Type*} (s : Finset α) (m : X → α)
+    (hm : ∀ x, m x ∈ s) (g : α → Y → Bool) :
+    ecomplexityFun (fun x y => g (m x) y) ≤ Nat.clog 2 s.card + 1 := by
+  have h := ecomplexityFun_comap_le (fun (w : s) y => g w y) (fun x => ⟨m x, hm x⟩) id
+  refine h.trans ((ecomplexityFun_le_clog_card_succ _).trans ?_)
+  simp
+
+/-- A protocol computing the indicator of a predicate `P` decides `P`: its Boolean output is
+`true` exactly when `P` holds. -/
+theorem ecomplexity_decides_le {P : X → Y → Prop} [∀ x y, Decidable (P x y)] {A : Set X}
+    {B : Set Y} :
+    ecomplexity (fun x y (z : Bool) => z = true ↔ P x y) A B ≤
+      ecomplexityFun (fun x y => decide (P x y)) := by
+  refine (ecomplexity_mono (Set.subset_univ _) (Set.subset_univ _)).trans ?_
+  refine le_iInf fun p => iInf_le_of_le ⟨p.1, fun x _ y _ => ?_⟩ le_rfl
+  rw [← p.2 x trivial y trivial]
+  exact decide_eq_true_iff
 
 end Protocol
 
