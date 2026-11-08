@@ -42,8 +42,9 @@ The mathematical symbols of the available copy of Atserias and Dalmau's paper do
 neither the exact clauses of their encoding nor the exact number of pebbles in their Lemma 6 is
 quoted; the encoding, the strategy and the constants here are ours. Alekhnovich, Ben-Sasson,
 Razborov and Wigderson [AlekhnovichBenSassonRazborovWigderson2002] proved clause-space lower bounds
-for pigeonhole formulas directly; that paper was not inspected for this formalization, and the
-clause space of the wide formula `PHP^m_n` itself is not treated here.
+for pigeonhole formulas directly; that paper was not inspected for this formalization. The exact
+clause space `n + 2` of the wide formula `PHP^m_n` itself, after Torán, is in
+`Complexity.Logics.Propositional.Resolution.WidePigeonholeSpace`.
 
 ## Main definitions
 

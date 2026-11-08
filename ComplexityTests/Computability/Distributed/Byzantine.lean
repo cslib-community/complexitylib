@@ -4,12 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Computability.Distributed.Byzantine.OralMessages
+import Complexity.Computability.Distributed.Byzantine.RecursiveOralMessages
 
 /-! Byzantine agreement: a leader protocol that solves the fault-free case and fails against one
 equivocating fault, the trivial one-process protocol, the covering lemma for the trivial cover,
-concrete equivocation and rushing runs of `om1` on four processes, and instances of the node bound
-and of the single-fault characterization. -/
+concrete equivocation and rushing runs of `om1` on four processes, instances of the node bound
+and of the single-fault characterization, runs of `OM(2)` on seven processes against two traitors,
+a run in which `OM(1)` fails against two traitors, and the general characterization. -/
 
 namespace ComplexityTests.Distributed.Byzantine
 
@@ -137,5 +138,83 @@ example : ¬ ∃ (S M : Type) (π : Protocol (Fin 3) S M), π.SolvesByzantineAgr
 
 example : ∃ (S M : Type) (π : Protocol (Fin 7) S M), π.SolvesByzantineAgreement 1 5 :=
   (exists_solvesByzantineAgreement_one_iff 7 (by omega)).2 (Or.inr (by omega))
+
+/-! ### `OM(2)` on seven processes against two traitors -/
+
+/-- The traitors {5, 6}. -/
+def traitors : Finset (Fin 7) := {5, 6}
+
+/-- Traitors that lie depending on the round, the sender, the recipient and the relay path. -/
+def parityLiar : ℕ → Fin 7 → Fin 7 → List (Fin 7) → Bool :=
+  fun r j i τ => decide ((i.val + τ.length + r + j.val) % 2 = 0)
+
+/-- Mixed inputs: the correct processes `0, …, 4` have inputs `1, 0, 1, 0, 1`. -/
+def mixed : Fin 7 → Bool := ![true, false, true, false, true, false, false]
+
+-- Unanimous correct inputs `true`: every correct process decides `true` after three rounds.
+example : ∀ i : Fin 5, (om (Fin 7) 2).decision traitors parityLiar (fun _ => true) 3
+    (Fin.castLE (by omega) i) = true := by
+  decide
+
+-- Mixed inputs: every correct process obtains the correct inputs `1, 0, 1, 0, 1` of the loyal
+-- commanders (IC2), the same value `false` for the traitorous commanders `5` and `6` (IC1), and
+-- decides `false`.
+example : ∀ i : Fin 5, (∀ c : Fin 5, omValue traitors parityLiar mixed 2 3 (Fin.castLE (by omega) i)
+    (Fin.castLE (by omega) c) = mixed (Fin.castLE (by omega) c)) ∧
+    omValue traitors parityLiar mixed 2 3 (Fin.castLE (by omega) i) 5 = false ∧
+    omValue traitors parityLiar mixed 2 3 (Fin.castLE (by omega) i) 6 = false ∧
+    (om (Fin 7) 2).decision traitors parityLiar mixed 3 (Fin.castLE (by omega) i) = false := by
+  decide
+
+example : (om (Fin 7) 2).SolvesByzantineAgreement 2 3 :=
+  solvesByzantineAgreement_om (by simp) le_rfl
+
+/-! ### `OM(1)` against two traitors -/
+
+/-- Traitor `5` tells processes `0, 1, 2` that its input is `true` and the others `false`; traitor
+`6` sends `true` to even and `false` to odd processes. -/
+def splitTraitors : ℕ → Fin 7 → Fin 7 → List (Fin 7) → Bool :=
+  fun _ j i _ => if j = 5 then decide (i.val < 3) else decide (i.val % 2 = 0)
+
+-- `OM(1)` violates IC1 against two traitors: processes `0` and `1` disagree on the value of the
+-- traitorous commander `5`, and with inputs `1, 1, 1, 0, 0` the correct processes `0` and `3`
+-- decide differently. So `om (Fin 7) 1` does not tolerate two faults, though `7 > 3 · 2`; the
+-- depth `t` of the recursion is needed.
+example : omValue traitors splitTraitors (fun _ => true) 1 2 0 5 = true ∧
+    omValue traitors splitTraitors (fun _ => true) 1 2 1 5 = false := by
+  decide
+
+example : ¬ (om (Fin 7) 1).SolvesByzantineAgreement 2 2 := fun h => by
+  have := h.agreement traitors (by decide) splitTraitors
+    ![true, true, true, false, false, false, false] 0 (by decide) 3 (by decide)
+  revert this
+  decide
+
+/-! ### `om1` is `OM(1)` -/
+
+-- The run of `om1` against `equivocate` is the run of `om (Fin 4) 1` against the replayed
+-- messages, which decides `false` on mixed inputs.
+example : ∀ i : Fin 3, (om (Fin 4) 1).decision {3} (om1Adv equivocate) ![true, false, true, false]
+    2 i.castSucc = false := by
+  decide
+
+example (i : Fin 3) : (om1 (Fin 4)).decision {3} equivocate ![true, false, true, false] 2
+    i.castSucc = (om (Fin 4) 1).decision {3} (om1Adv equivocate) ![true, false, true, false] 2
+      i.castSucc :=
+  om1_decision_eq_om_decision _ _ _ le_rfl (by revert i; decide)
+
+/-! ### The general characterization -/
+
+-- Seven processes tolerate two faults in three rounds; six processes do not.
+example : ∃ (S M : Type) (π : Protocol (Fin 7) S M), π.SolvesByzantineAgreement 2 3 :=
+  (exists_solvesByzantineAgreement_iff 7 2 le_rfl).2 (Or.inr (by omega))
+
+example : ¬ ∃ (S M : Type) (π : Protocol (Fin 6) S M), π.SolvesByzantineAgreement 2 3 := by
+  rw [exists_solvesByzantineAgreement_iff 6 2 le_rfl]
+  omega
+
+-- Without faults one round suffices on any number of processes.
+example (n : ℕ) : ∃ (S M : Type) (π : Protocol (Fin n) S M), π.SolvesByzantineAgreement 0 1 :=
+  (exists_solvesByzantineAgreement_iff n 0 le_rfl).2 (by omega)
 
 end ComplexityTests.Distributed.Byzantine

@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate (Mathlib `LinearAlgebra/Matrix/Permanent.lean`)
+-- upstream: candidate (Mathlib, new `Mathlib/LinearAlgebra/Matrix/Permanent/Grenet.lean`)
 
 public import Complexity.Init
 public import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
@@ -194,7 +194,7 @@ private theorem pathSum_univ_fin {n : ℕ} (A : Matrix (Fin n) (Fin n) R) :
   simp [weight]
 
 /-- The colex order on `Finset (Fin n)` is finite. -/
-local instance instFintypeColex (n : ℕ) : Fintype (Colex (Finset (Fin n))) :=
+private local instance instFintypeColex (n : ℕ) : Fintype (Colex (Finset (Fin n))) :=
   Fintype.ofEquiv _ toColex
 
 /-- There are `2ⁿ` subsets of `Fin n`, written `2ⁿ - 1 + 1` to delete one row and column. -/

@@ -187,6 +187,17 @@ otherwise. Vertex `0` is the upper corner `base + 1` and vertex `n` is the lower
 def vertex (s : KuhnSimplex n) (k : Fin (n + 1)) (i : Fin n) : ℕ :=
   s.base i + if k ≤ (s.rank i).castSucc then 1 else 0
 
+/-- The vertices of a Kuhn simplex lie above its lower corner. -/
+theorem base_le_vertex (s : KuhnSimplex n) (k : Fin (n + 1)) (i : Fin n) :
+    s.base i ≤ s.vertex k i :=
+  Nat.le_add_right _ _
+
+/-- The vertices of a Kuhn simplex lie below its upper corner. -/
+theorem vertex_le_base_add_one (s : KuhnSimplex n) (k : Fin (n + 1)) (i : Fin n) :
+    s.vertex k i ≤ s.base i + 1 := by
+  unfold vertex
+  split_ifs <;> omega
+
 /-- Kuhn simplices are pairs of a lower corner and a permutation. -/
 def equivProd : KuhnSimplex n ≃ (Fin n → ℕ) × Equiv.Perm (Fin n) where
   toFun s := (s.base, s.rank)
