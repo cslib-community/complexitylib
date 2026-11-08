@@ -1103,6 +1103,13 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Codes:** Guruswami–Sudan list decoding and local decoding, keeping interpolation,
   list-size/agreement guarantees and decoding runtime as separate obligations; concrete
   list-decodable codes for Nisan–Wigderson.
+- **Expander codes** ([#3278](https://github.com/cslib-community/complexitylib/issues/3278)):
+  Sipser–Spielman codes of bipartite vertex expanders already have rate, distance and flip
+  decoding (correctness, with the number of flips bounded by the violated checks). Still missing:
+  lossless expanders themselves, either by the probabilistic method or explicitly
+  (Capalbo–Reingold–Vadhan–Wigderson), so that expander codes become an `IsAsymptoticallyGood`
+  family; a machine-model linear-time implementation of the decoder; Spielman's linear-time
+  encodable codes; and Zémor's decoding of Tanner codes on spectral expanders.
 - **Locally decodable codes** ([#2929](https://github.com/cslib-community/complexitylib/issues/2929)):
   query-bounded decoders, the Hadamard code, Katz–Trevisan smoothing for oblivious-read decoders
   and the one-query bound are in place. Remaining: the adaptive-to-non-adaptive reduction (so that
