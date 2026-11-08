@@ -129,15 +129,16 @@ tooling.
   reason that no edit is needed. Make this part of reviewing and integrating each change.
   Check affected `ROADMAP.md`, `abstracts/catalogue.json`, `UPSTREAM.md` and other documentation.
   Preserve source credit and the distinction between a completed milestone and its open objective.
-- Merge only with maintainer authority, required validation and independent review of the current
-  revision. Shepherding approved PRs through the merge queue and keeping the queue moving is a
-  coordinator responsibility: do not treat a PR as done when it is merely queued. Monitor queued
-  batches until they land on `main`, rebase or re-queue PRs ejected by conflicts or transient
-  failures, sequence broad tree-wide refactors so they do not stall smaller PRs behind cold cache
-  rebuilds, and diagnose and fix merge-queue or CI bottlenecks when the queue jams. The queue
-  squash-merges: a stacked PR that edits lines a lower PR introduces conflicts with that PR's
-  squashed commit and is ejected, so queue it once the lower PRs land and it has merged `main`.
-  Close completed issues and link any remaining work once the change lands.
+- Merge only with required validation and independent review of the current revision. Reviewers
+  queue the heads they approve ([Approve and queue](#approve-and-queue)); coordinators queue any
+  approved head still waiting and keep the queue moving: do not treat a PR as done when it is
+  merely queued. Monitor queued batches until they land on `main`, merge `main` into or re-queue
+  PRs ejected by conflicts or transient failures, sequence broad tree-wide refactors so they do
+  not stall smaller PRs behind cold cache rebuilds, and diagnose and fix merge-queue or CI
+  bottlenecks when the queue jams. The queue squash-merges: a stacked PR that edits lines a lower
+  PR introduces conflicts with that PR's squashed commit and is ejected, so queue it once the
+  lower PRs land (GitHub then retargets it to `main`) and it has merged `main`. Close completed
+  issues and link any remaining work once the change lands.
 - For your own implementation, follow the worker rules and obtain non-author review under
   [Review cycle](#review-cycle). Changing roles does not make self-review independent.
 
@@ -422,8 +423,9 @@ independent.
 
 Existing independent approval can carry across a mechanical delta when the coordinator verifies
 that it preserves meaning, exported availability, attributes, imports and automation behavior,
-and checks affected clients. Record that limited carry-forward decision. A clean rebase or typo
-fix may qualify; a proof repair, privatization, changed test coverage or conflict resolution is
+and checks affected clients. Record that limited carry-forward decision. A typo fix may qualify,
+and [Restacks](#restacks) gives a mechanical check for merging `main` or rebasing; a proof repair,
+privatization, changed test coverage or a conflict resolution that changes the PR's own lines is
 not automatically mechanical. Changed reasoning, API, source claims, security claims or abstracts,
 and uncertain cases, need fresh non-author review of the affected delta.
 
@@ -442,6 +444,48 @@ reviewed revision, meaningful findings and resolutions once in the PR, following
 CSLib examples: [focused fixes and replies](https://github.com/leanprover/cslib/pull/1145),
 [an architectural suggestion kept separate from approval](https://github.com/leanprover/cslib/pull/1120),
 and [API review with explicit nonblocking nits](https://github.com/leanprover/cslib/pull/923#pullrequestreview-5560941186).
+
+### Approve and queue
+
+Approving a PR's exact current head and queueing it are one step. A non-authoring reviewer with
+write access who approves runs `python3 scripts/queue_pr.py <PR> <approved head>`, which queues
+exactly that head once the required check has passed there; `--wait 30` waits up to 30 minutes
+for a check that is still running. Write access is sufficient authority to queue a head approved
+under this cycle. Approve without queueing, and say why in the approval, when:
+
+- human review has been requested in the PR, its comments or a linked issue; queueing is then left
+  to that human or to whomever they name;
+- the approval names a hold, such as an unlanded lower PR, a migration or an upstream dependency;
+  queue once the hold clears.
+
+The script refuses a head other than the approved one, a draft, a PR not based on `main`, a
+conflicting PR and failed checks. When the reviewer cannot queue, any other non-author agent with
+write access may run the same command for the approved head; coordinators sweep for approved heads
+still waiting. Authors do not queue their own PRs.
+
+### Restacks
+
+Merge `main` into a PR only when it conflicts with `main`, needs a change on `main` to pass CI, or a
+lower stacked PR has landed. The merge queue tests every PR on top of the current `main`, and `main`
+does not require branches to be up to date, so refreshing an approved PR only replaces the approved
+head.
+
+A restack keeps its approval when `python3 scripts/check_restack.py <approved head> <new head>`
+passes and CI passes at the new head. The script replays the approved change onto the `main` that
+the new head is based on, which is what the merge queue would have built from the approved head,
+and passes only when the new head's tree is exactly that replay. The one exception is that the
+`mk_all` import aggregates may order their lines differently, since CI's `mk_all --check` pins the
+order. A conflict in the replay, and any other difference, fails it. The replay merges
+`references.bib` entry by entry, as `scripts/resolve_bib_conflict.py` does, so a bibliography
+merge written by that script, with nothing else changed, passes. After `git fetch origin`, run the
+script from a checkout of current `origin/main`, not of the PR's branch, which could change it.
+An approval given while a PR is based on another branch also names that branch's head, and the
+check then needs `--approved-base <that head>`. Without it, the lower branch's changes, which this
+review did not cover, would carry the approval if the lower PR never landed. Anyone, including
+the author, may post the script's result line, which names both heads and the exact command. The
+non-author who queues the new head runs that command again rather than relying on the posted line.
+When the script reports differences, review the paths and diffs it prints as a delta, under the
+carry-forward rule above.
 
 ## New statements and definitions
 
