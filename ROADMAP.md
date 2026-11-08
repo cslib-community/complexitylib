@@ -1649,13 +1649,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   beyond Karger's and Karger–Stein's randomized algorithms (`Algorithms/WordRAM/Karger`) and the
   deterministic Stoer–Wagner algorithm with the maximum adjacency ordering lemma and an `O(n³)`
   `TimeM` bound on natural-number weights (`Algorithms/Lean/StoerWagner`,
-  `WeightedCut/MAOrdering`): the `O(n m + n² log n)` priority-queue version, real weights,
+  `WeightedCut/MAOrdering`), both built on the probability-free contraction API of
+  `WeightedCut/Contraction`: the `O(n m + n² log n)` priority-queue version, real weights,
   Nagamochi–Ibaraki sparse certificates for `k`-edge-connectivity,
   Karger's near-linear minimum cut algorithm, and Queyranne's minimization of symmetric submodular
-  functions (which generalizes the maximum adjacency argument to hypergraph cuts). Moving the
-  contraction API (`contractMatrix`, `contractPart`, `contractCut`) from `WordRAM/Karger` into
-  `WeightedCut` ([#3403](https://github.com/cslib-community/complexitylib/issues/3403)) would let
-  both algorithms share one foundation.
+  functions (which generalizes the maximum adjacency argument to hypergraph cuts).
 - **Gomory–Hu trees** ([#3320](https://github.com/cslib-community/complexitylib/issues/3320)):
   remaining after the existence theorem for cut-equivalent trees of symmetric submodular set
   functions and weighted undirected graphs, with flow-equivalence, the minimum-cut triangle
