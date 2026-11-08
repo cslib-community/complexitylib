@@ -1801,14 +1801,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   certificate for the heuristic with an executable shortest-path oracle.
 - **Metric k-center** ([#3281](https://github.com/cslib-community/complexitylib/issues/3281)):
   remaining after Gonzalez's farthest-first 2-approximation, the combinatorial dominating-set
-  gap behind the hardness of beating `2` (`Algorithms/Lean/KCenter`), and NP-completeness of
-  dominating set on the encoded `Graph` problems
-  ([#3416](https://github.com/cslib-community/complexitylib/issues/3416),
-  `Problems/DominatingSet`): a polynomial-time certificate for the map from graphs to `{1, 2}`
-  distance matrices, and the resulting statement
-  that a polynomial-time `(2 - ε)`-approximation implies `P = NP`; a machine-level running time
-  for Gonzalez's algorithm; the Hochbaum–Shmoys threshold algorithm; and k-supplier and
-  k-median.
+  gap (`Algorithms/Lean/KCenter`), NP-completeness of dominating set on the encoded `Graph`
+  problems ([#3416](https://github.com/cslib-community/complexitylib/issues/3416),
+  `Problems/DominatingSet`) and Theorem 2.4, that a polynomial-time `ρ`-approximation with
+  `ρ < 2` implies `P = NP`
+  ([#3515](https://github.com/cslib-community/complexitylib/issues/3515),
+  `PCP/Approximation/KCenter`): a machine-level running time for Gonzalez's algorithm; the
+  Hochbaum–Shmoys threshold algorithm; and k-supplier and k-median.
 
 ### Sorting and selection
 
