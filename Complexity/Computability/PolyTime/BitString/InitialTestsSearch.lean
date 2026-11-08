@@ -43,6 +43,7 @@ operations and `poly(n, m, B)` working space via `Cslib.GenericRAM.IndexFold.run
 * `checkSmallBiasShifts`, `checkLocalCodeDistance`, `findSmallBiasShifts`, `findLocalCheckMatrix`:
   streaming `IndexFold.run` checkers and sequential searchers.
 * `buildShortenedTannerRows`, `initialTestsRows`: shortened Tanner check-matrix assembly.
+* `encLocalCodeParams`: the encoding of local check-matrix parameters `(c, d, minDist)` in unary.
 
 ## Main results
 
@@ -635,8 +636,11 @@ theorem checkSmallBiasShifts_polyTime_of_two_pow_le {α : Type} {encIn : α ↪ 
     ((((PolyBounded.const 2).mul (polyBounded hm)).add (.const 1)).mono hle)
 private abbrev LocalHdr := ℕ × ℕ × ℕ
 private abbrev LocalQ := LocalHdr × List (List Bool)
-private abbrev encLocalHdr : LocalHdr ↪ List Bool := encPair encUnary (encPair encUnary encUnary)
-private abbrev encLocalQ : LocalQ ↪ List Bool := encPair encLocalHdr (encList encBits)
+/-- Parameters `(c, d, minDist)` of a local check matrix, all in unary: the row count `c`, the row
+length `d` and the required minimum distance `minDist`. The unary `c` is framed, then the unary `d`
+is framed, then the unary `minDist` follows. -/
+abbrev encLocalCodeParams : ℕ × ℕ × ℕ ↪ List Bool := encPair encUnary (encPair encUnary encUnary)
+private abbrev encLocalQ : LocalQ ↪ List Bool := encPair encLocalCodeParams (encList encBits)
 /-- Streaming local-code distance checker ([OpenAI2026ETH], Lemma 6.1) via `IndexFold.run`:
 checks that `H0` has `c` rows of length `d` and every nonzero `w ∈ {0, 1} ^ d \ {0}` in its
 `GF(2)` kernel has Hamming weight at least `minDist`, returning `false` on any violation. -/
@@ -685,7 +689,8 @@ theorem checkLocalCodeDistance_eq_true_iff (c d minDist : ℕ) (H0 : List (List 
 private theorem checkLocalCodeDistance_cert_aux :
     HasKPolyCert (fun q : LocalQ => checkLocalCodeDistance q.1.1 q.1.2.1 q.1.2.2 q.2)
       encLocalQ encBool (fun q => 2 ^ q.1.2.1 + 1) := by
-  have hq1 := fst encLocalHdr (encList encBits); have hq2 := snd encLocalHdr (encList encBits)
+  have hq1 := fst encLocalCodeParams (encList encBits)
+  have hq2 := snd encLocalCodeParams (encList encBits)
   have hdQ := hq1.snd'.fst'
   have hshape := checkMatrixShape_polyTime (encIn := encLocalQ) (fun q => q.1.1)
     (fun q => q.1.2.1) (fun q => q.2) hq1.fst' hdQ hq2
@@ -706,7 +711,7 @@ private theorem checkLocalCodeDistance_cert_aux :
 /-- Native `ComputableInO` certificate for `checkLocalCodeDistance`. -/
 theorem checkLocalCodeDistance_computableInO :
     ∃ pT pS : ℕ → ℕ, Cslib.PolynomiallyBounded pT ∧ Cslib.PolynomiallyBounded pS ∧
-      let encQ := encPair (encPair encUnary (encPair encUnary encUnary)) (encList encBits)
+      let encQ := encPair encLocalCodeParams (encList encBits)
       ComputableInO (fun ((c, d, minDist), H0) =>
           checkLocalCodeDistance c d minDist H0) encQ encBool
         (fun q => let ((_, d, _), _) := q; (2 ^ d + 1) * pT (encQ q).length)
@@ -812,15 +817,16 @@ private theorem findLocalCheckMatrix_cert_aux {α : Type} {encIn : α ↪ List B
 /-- Native `ComputableInO` certificate for `findLocalCheckMatrix`. -/
 theorem findLocalCheckMatrix_computableInO :
     ∃ pT pS : ℕ → ℕ, Cslib.PolynomiallyBounded pT ∧ Cslib.PolynomiallyBounded pS ∧
-      let encH := encPair encUnary (encPair encUnary encUnary)
+      let encH := encLocalCodeParams
       ComputableInO (fun (c, d, minDist) => findLocalCheckMatrix c d minDist)
         encH (encList encBits)
         (fun p => let (c, d, _) := p; (2 ^ (c * d) + 1) * (2 ^ d + 1) * pT (encH p).length)
         (fun p => pS (encH p).length) := by
   have hp2 := snd encUnary (encPair encUnary encUnary)
-  obtain ⟨cert, pT, pS, hpT, hpS, hT, hS⟩ := findLocalCheckMatrix_cert_aux (encIn := encLocalHdr)
-    (fun p => p.1) (fun p => p.2.1) (fun p => p.2.2)
-    (fst encUnary (encPair encUnary encUnary)) hp2.fst' hp2.snd'
+  obtain ⟨cert, pT, pS, hpT, hpS, hT, hS⟩ :=
+    findLocalCheckMatrix_cert_aux (encIn := encLocalCodeParams)
+      (fun p => p.1) (fun p => p.2.1) (fun p => p.2.2)
+      (fst encUnary (encPair encUnary encUnary)) hp2.fst' hp2.snd'
   exact ⟨pT, pS, hpT, hpS, cert.computes.mono_le hT hS⟩
 
 /-! ### Shortened Tanner parity-check matrix builder -/
