@@ -59,7 +59,7 @@ variable {π : Type} (d : Desc) (look : π × ℕ → Option ℕ)
 
 /-- A step of the machine described by `d`, asking the oracle `look p` for the symbol under the
 input head at position `c.1.inputPos`, and appending the emitted symbol to the output `c.2`. -/
-@[expose] def lookStep (p : π) (c : SCfg × List ℕ) : SCfg × List ℕ :=
+def lookStep (p : π) (c : SCfg × List ℕ) : SCfg × List ℕ :=
   ((stepWith d c.1 (look (p, c.1.inputPos))).1,
     c.2 ++ (stepWith d c.1 (look (p, c.1.inputPos))).2.toList)
 
@@ -145,10 +145,6 @@ private lemma iterate_step_eq (p : π) (c : SCfg × List ℕ) (k : ℕ) :
   induction k with
   | zero => rfl
   | succ k ih => rw [Function.iterate_succ_apply', ih, Function.iterate_succ_apply']
-
-private lemma length_encNat_ofBits_le (w : List Bool) : (encNat (ofBits w)).length ≤ w.length := by
-  rw [encNat_apply, bits_ofBits]
-  exact (List.rdropWhile_prefix _ _).length_le
 
 /-- **The cost of a run from a configuration.** If the oracle is computable within the time `TL`
 and the space `SL`, and along the run from `c` for `ofBits w` steps every step is within the time

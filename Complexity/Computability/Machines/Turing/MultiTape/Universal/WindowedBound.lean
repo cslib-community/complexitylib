@@ -125,16 +125,11 @@ theorem WInv.extract {D B h L : ℕ} {w : Win} (hw : WInv D B h L w) (r : ℕ) :
     simp only [cut, List.mem_append] at ho
     exact hw.val t ht o (List.mem_append.mpr (ho.imp List.mem_of_mem_take List.mem_of_mem_take))
 
-private lemma q₀_le' (d : Desc) : d.q₀ ≤ descLen d := by
-  simp only [descLen, eDesc_apply, length_encPair, encUnary_apply, List.length_replicate]; omega
-
-private lemma tapes_le' (d : Desc) : d.tapes ≤ descLen d := by
-  simp only [descLen, eDesc_apply, length_encPair, encUnary_apply, List.length_replicate]; omega
-
 /-- The windows of the initial configuration. -/
 theorem winv_initWin (d : Desc) (x : List ℕ) :
     WInv (descLen d) (descLen d + listMax id x + 1) 0 (x.length + 1) (initWin d x) := by
-  refine ⟨by simpa [initWin] using q₀_le' d, by simpa [initWin] using tapes_le' d, ?_, ?_, ?_⟩ <;>
+  refine ⟨by simpa [initWin] using Universal.q₀_le d, by simpa [initWin] using Universal.tapes_le d,
+    ?_, ?_, ?_⟩ <;>
     simp only [initWin, List.mem_cons, List.mem_replicate] <;> rintro t (rfl | ⟨-, rfl⟩)
   · simp
   · simp

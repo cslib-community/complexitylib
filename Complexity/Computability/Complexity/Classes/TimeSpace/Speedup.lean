@@ -16,6 +16,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPro
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinarySizeFacts
+import Complexity.Computability.Machines.Turing.MultiTape.BlockTrace
 import Complexity.Computability.Machines.Turing.MultiTape.Run
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.Input
@@ -30,7 +31,8 @@ universal machine (`Turing.MultiTapeTM.Universal`), at distance `b` steps from o
 universal player picks one block, and the verifier recomputes that block of `b` steps and compares
 the result with the next guessed configuration (`Cslib.Complexity.mem_SigmaTwoTIME_of_chain`).
 
-This is the speedup lemma of Kannan, in the form of Arora and Barak ([AroraBarak09], §5.4) and of
+This is the speedup lemma of [Kannan][Kannan1984], in the form of Arora and Barak ([AroraBarak09],
+§5.4) and of
 [Fortnow, Lipton, van Melkebeek and Viglas, Lemma 3.1][FortnowLiptonVanMelkebeekViglas2005].
 
 **The bound is weaker than the textbook one.** The textbook bound is `TISP(t, s) ⊆ Σ₂TIME(√(t s))`.
@@ -89,17 +91,6 @@ private lemma length_eSym_inputSymbol_le (y : List Bool) (q : ℕ) :
       cases b <;> simp only [encOption_some, List.length_cons, encUnary_apply,
         List.length_replicate] <;> decide
 
-/-- The number of work tapes of a description is within its length. -/
-private lemma tapes_le_descLen (d : Desc) : d.tapes ≤ descLen d := by
-  simp only [descLen, eDesc_apply, length_encPair, encUnary_apply, List.length_replicate]
-  omega
-
-/-- The number of transitions of a description is within its length. -/
-private lemma table_le_descLen (d : Desc) : d.table.length ≤ descLen d := by
-  have := length_le_length_encList (encPair eKey eAct) d.table
-  simp only [descLen, eDesc_apply, length_encPair] at this ⊢
-  omega
-
 /-- **Honest configurations.** Along the simulation of the description of a machine within the
 space `s`, the configuration is encoded within `O(s + log n)` bits, at most one symbol is
 emitted while the machine computes a single bit, and the input head stays on the input. -/
@@ -119,7 +110,7 @@ private lemma honest_bounds {y : List Bool} {b : Bool} {T s : ℕ}
     have hσ : simSpace d (y.map eBit) j ≤ s :=
       (simSpace_desc eS eBit M y j).trans_le (space_le_of_runsInSpace hM.2.2 j)
     have hE := ComputableTidilyInO.length_encNat_add_le y.length 1
-    have hk := tapes_le_descLen d
+    have hk := tapes_le d
     simp only [List.length_map] at hc
     change (eCfg (run d (y.map eBit) j)).length ≤ _
     nlinarith
@@ -133,7 +124,7 @@ private lemma wTime_le (d : Desc) (c : SCfg) (o : Option ℕ) (ho : (eSym o).len
     (hk : c.workTapes.length ≤ descLen d) :
     wTime ((d, c), o) ≤ (2 * descLen d + 1) * (descLen d + 1) *
       (4 * descLen d + 2 * (eCfg c).length + 12) + ((encNat c.inputPos).length + 1) ^ 2 := by
-  have ht := table_le_descLen d
+  have ht := table_le d
   have hl : (eWCtx ((d, c), o)).length + 1 ≤ 4 * descLen d + 2 * (eCfg c).length + 12 := by
     simp only [eWCtx, length_encPair, descLen]
     omega
@@ -176,7 +167,7 @@ private lemma honest_cost {π : Type} {encP : π ↪ List Bool} {look : π × �
     rw [hlook _ hpos]; exact length_eSym_inputSymbol_le y _
   have hw := wTime_le d c.1 _ hsym htapes
   have hposE : (encNat c.1.inputPos).length ≤ (encNat y.length).length + 1 :=
-    (ComputableTidilyInO.length_encNat_mono hpos).trans
+    (length_encNat_mono hpos).trans
       (ComputableTidilyInO.length_encNat_add_le y.length 1)
   have hL' := hL _ hpos
   have hlist : (encList encUnary c.2).length ≤ 2 * descLen d + 1 := by
@@ -281,8 +272,10 @@ variable {α : Type} {enc : α ↪ List Bool}
 the time `T a` and the work space `S a`, and let the input be available through an oracle `look`
 on a linear parameter `P a`, faithful on the positions the input head reaches and within the
 cost `L a`. Then `{a | g a}` is in `Σ₂TIME(τ)` for every `τ` with
-`(√T + 1) · (S + |P| + L + (log n)² + (log T)²) = O(τ)`: the existential player writes `√T`
-configurations at distance `√T` steps, and the universal player checks one block of `√T` steps. -/
+`(√T + 1) · (S + |P| + L + (log |ι a|)² + (log T)²) = O(τ)`: the existential player writes `√T`
+configurations at distance `√T` steps, and the universal player checks one block of `√T` steps.
+The logarithm is of the length `|ι a|` of the simulated input, not of the length `n = |enc a|` of
+the instance; for a virtually padded input `|ι a|` is much larger than `n`. -/
 theorem mem_SigmaTwoTIME_of_virtualRun {π : Type} [Inhabited π] {eP : π ↪ List Bool} {k : ℕ}
     {State : Type} [Finite State] {M : MultiTapeTM k Bool State} {ι : α → List Bool}
     {g : α → Bool} {T S : α → ℕ} (hM : ∀ a, M.ComputesInTimeAndSpace (ι a) [g a] (T a) (S a))
@@ -403,7 +396,7 @@ theorem mem_SigmaTwoTIME_of_virtualRun {π : Type} [Inhabited π] {eP : π ↪ L
     have hz : (b.bits.length + 1) ^ 2 ≤ 4 * W := by
       have hbT : b ≤ T a + 1 := by have := Nat.sqrt_le_self (T a); omega
       have h₂ : (encNat b).length ≤ (encNat (T a)).length + 1 :=
-        (ComputableTidilyInO.length_encNat_mono hbT).trans
+        (length_encNat_mono hbT).trans
           (ComputableTidilyInO.length_encNat_add_le (T a) 1)
       rw [length_encNat_eq_size (T a)] at h₂
       have h₅ : b.bits.length = (encNat b).length := rfl
@@ -507,9 +500,7 @@ theorem TISP_subset_SigmaTwoTIME {t s τ : ℕ → ℕ}
   rw [hset]
   have hP : ComputableInO (fun a => (enc a).map eBit) enc (encList encUnary)
       (fun a => (enc a).length) (fun a => (enc a).length) :=
-    (ComputableInO.of_tidy
-      (ComputableTidilyInDegree.inO_one computableTidilyInDegree_map_eBit)).comp_linear
-        (ComputableInO.of_eq (encMid := encBits) fun _ => rfl)
+    computableInO_map_eBit.comp_linear (ComputableInO.of_eq (encMid := encBits) fun _ => rfl)
   have hPlen : ∀ a, (encList encUnary ((enc a).map eBit)).length ≤ 3 * (enc a).length :=
     fun a => by
       have := length_encList_le encUnary ((enc a).map eBit) (b := 1) fun x hx => by
@@ -526,7 +517,7 @@ theorem TISP_subset_SigmaTwoTIME {t s τ : ℕ → ℕ}
   · -- the cost of the input oracle
     have he := hPlen a
     have hm : (encNat q).length ≤ (enc a).length.size + 1 := by
-      have := (ComputableTidilyInO.length_encNat_mono hq).trans
+      have := (length_encNat_mono hq).trans
         (ComputableTidilyInO.length_encNat_add_le (enc a).length 1)
       rwa [length_encNat_eq_size (enc a).length] at this
     simp only [length_encPair]

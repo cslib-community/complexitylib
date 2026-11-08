@@ -38,14 +38,10 @@ replay and the single-position comparison are linear, so the verifier is linear 
 clock is the existential certificate itself, so an honest replay finishes once the certificates
 are long enough, and a dishonest certificate cannot make the replay longer.
 
-This is the configuration-guessing step of the time–space speedup of Kannan and of
+This is the configuration-guessing step of the time–space speedup of [Kannan][Kannan1984] and of
 [Fortnow, Lipton, van Melkebeek and Viglas, Lemma 3.1][FortnowLiptonVanMelkebeekViglas2005], stated
 for an arbitrary iterated step so that it serves both the simulation of a machine on its own input
 and on a virtually padded input.
-
-## Main definitions
-
-* `Cslib.Complexity.chainCheck`: the verifier.
 
 ## Main results
 
@@ -54,6 +50,7 @@ and on a virtually padded input.
 
 ## References
 
+* [R. Kannan, *Towards Separating Nondeterminism from Determinism*][Kannan1984]
 * [L. Fortnow, R. Lipton, D. van Melkebeek, A. Viglas, *Time-Space Lower Bounds for
   Satisfiability*][FortnowLiptonVanMelkebeekViglas2005]
 -/
@@ -61,25 +58,6 @@ and on a virtually padded input.
 public section
 
 open _root_.Turing _root_.Turing.MultiTapeTM
-
-/-! ### Replay outputs are prefixes -/
-
-namespace Turing.MultiTapeTM
-
-variable {k : ℕ} {Symbol State : Type} {tm : MultiTapeTM k Symbol State}
-
-/-- A machine computing `out` within time `t` has, after any number of steps, written a prefix of
-`out`, and all of `out` from `t` steps on. -/
-theorem ComputesInTimeAndSpace.output_runFrom_prefix {x out : List Symbol} {t s : ℕ}
-    (h : tm.ComputesInTimeAndSpace x out t s) (J : ℕ) :
-    (tm.runFrom (tm.initCfg x) J).output <+: out := by
-  rcases le_total t J with htJ | hJt
-  · rw [(h.runFrom_of_le htJ).2]
-  · obtain ⟨e, he, -⟩ := tm.exists_output_suffix (tm.runFrom (tm.initCfg x) J) (t - J)
-    rw [← MultiTapeTM.runFrom_add, Nat.add_sub_cancel' hJt, (h.runFrom_of_le le_rfl).2] at he
-    exact ⟨e, he.symm⟩
-
-end Turing.MultiTapeTM
 
 namespace Cslib.Complexity
 
@@ -175,7 +153,7 @@ word `w` it accepts when the replay `rG u (frame pb ++ w)` of the goal test begi
 at a word `w` followed by `w'` it accepts when the replay `rF u (frame pb ++ frame w ++ bw)` of the
 step agrees at position `j` with `frame w' ++ [true]`. Here `bw` is the parameter framed at the
 start of `u`, and `i` and `j` are read off `v` by `cvPos` and `leadingTrues`. -/
-def chainCheck (rF rG : List Bool × List Bool → List Bool) (pb w₀ u v : List Bool) : Bool :=
+private def chainCheck (rF rG : List Bool × List Bool → List Bool) (pb w₀ u v : List Bool) : Bool :=
   (cvRest w₀ u v).isEmpty ||
     ((cvRest w₀ u v).tail.isEmpty &&
       decide (((rG (u, frame pb ++ (cvRest w₀ u v).headD [])).take 2) = [true])) ||
