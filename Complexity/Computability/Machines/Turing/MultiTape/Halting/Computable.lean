@@ -31,7 +31,7 @@ machines compose. Functions computable within bounds in the senses of
 `Turing.MultiTapeTM.ComputableInTimeAndSpace`, `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace`,
 `Turing.MultiTapeTM.ComputableTidilyInDegree` and
 `Turing.MultiTapeTM.ComputableTidilyInPolyTime` are computable (their `.isComputable` lemmas), and
-decidable sets are closed under complement.
+decidable sets are closed under complement, intersection and union.
 
 These are the decidable sets of [Sipser, Definition 3.6][Sipser2013], for the library's native
 multi-tape machines. Mathlib's `ComputablePred` is the analogous notion for its partial recursive
@@ -51,7 +51,8 @@ models.
 * `Turing.MultiTapeTM.IsComputable.comp`, `.prod`, `Turing.MultiTapeTM.isComputable_id`,
   `Turing.MultiTapeTM.IsComputable.of_finite`: closure properties.
 * `Turing.MultiTapeTM.isDecidable_iff`: decidability through any computable Boolean function.
-* `Turing.MultiTapeTM.IsDecidable.compl`: decidable sets are closed under complement.
+* `Turing.MultiTapeTM.IsDecidable.compl`, `.inter`, `.union`: decidable sets are closed under
+  complement, intersection and union.
 
 ## References
 
@@ -160,5 +161,20 @@ theorem IsDecidable.compl (h : IsDecidable L enc) : IsDecidable Lᶜ enc :=
 @[simp]
 theorem isDecidable_compl_iff : IsDecidable Lᶜ enc ↔ IsDecidable L enc :=
   ⟨fun h => compl_compl L ▸ h.compl, IsDecidable.compl⟩
+
+/-- **Decidable sets are closed under intersection**: run both deciders and take the conjunction.
+The carrier lives in `Type`, as `Turing.MultiTapeTM.IsComputable.prod` pairs into `Bool × Bool`. -/
+theorem IsDecidable.inter {α : Type} {L L' : Set α} {enc : α ↪ List Bool} (h : IsDecidable L enc)
+    (h' : IsDecidable L' enc) : IsDecidable (L ∩ L') enc :=
+  let ⟨f, hf, hL⟩ := h.exists_isComputable
+  let ⟨g, hg, hL'⟩ := h'.exists_isComputable
+  isDecidable_iff.mpr ⟨fun a => f a && g a,
+    (IsComputable.of_finite (encIn := encPair encBool encBool) (encMid := encBool)
+      fun p : Bool × Bool => p.1 && p.2).comp (hf.prod hg), fun a => by simp [hL a, hL' a]⟩
+
+/-- **Decidable sets are closed under union.** -/
+theorem IsDecidable.union {α : Type} {L L' : Set α} {enc : α ↪ List Bool} (h : IsDecidable L enc)
+    (h' : IsDecidable L' enc) : IsDecidable (L ∪ L') enc := by
+  simpa only [Set.compl_inter, compl_compl] using (h.compl.inter h'.compl).compl
 
 end Turing.MultiTapeTM
