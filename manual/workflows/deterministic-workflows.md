@@ -218,11 +218,14 @@ of the piecewise weight closes with `split_ifs <;> omega`. Bound the weight of o
 its rule: for First Fit, every item of a later bin overflows every earlier bin
 (`pairwise_forall_lt_sum_add_firstFit`), which is stronger than pairwise overfull bins. The
 result `ten_mul_length_firstFit_le` gives `10 * FF ≤ 17 * OPT + 8` against every packing, and
-`length_firstFit_le_ceil` gives `FF ≤ ⌈17/10 * OPT⌉`. Dósa and Sgall's absolute bound
-`FF ≤ ⌊17/10 * OPT⌋` is not formalized. The
+`length_firstFit_le_ceil` gives `FF ≤ ⌈17/10 * OPT⌉`. The absolute bound
+`FF ≤ ⌊17/10 * OPT⌋` of [Dósa and Sgall][dosasgall2013] is not formalized. The
 [BinPackingFirstFitWeight client](../../ComplexityTests/BinPackingFirstFitWeight.lean) checks a bin
 attaining the weight bound and an instance with `OPT = 9` where First Fit uses `15` bins; check it
-with `scripts/build.sh ComplexityTests.BinPackingFirstFitWeight`.
+with `scripts/build.sh ComplexityTests.BinPackingFirstFitWeight`. If a case of the weight bounds
+does not close under `omega`, check the scaling and whether each breakpoint of the weight is open
+or closed as in the source; if the lower bound fails, check that it uses the algorithm's rule, not
+only pairwise overfull bins.
 
 **When it fails:** if the `foldl'` states-bound premise fails, bound the encoded table through the
 invariant (its length and the subsequence property of every entry), not by the number of steps.
@@ -328,3 +331,4 @@ theorem clique_npComplete : NPComplete (encPair encGraph encNat) Clique :=
 `PolyTimeReducible.mem_P` instead transports a target's P algorithm backward to the source. Use the [reduction reference](../machines-and-classes/reductions.md) when the desired reduction is stronger than polynomial-time many-one reducibility.
 
 [complexitylib]: ../sources.md#complexitylib
+[dosasgall2013]: ../sources.md#dosasgall2013
