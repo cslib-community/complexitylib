@@ -187,6 +187,10 @@ example {r s : ℕ} (x : Data s) (f : Fin r → Fin s) (hf : f.Injective) (i j :
       (((x.set k 3).set (f i) 1).set (f j) 2).regs k = 3 := by
   wram_simp
 
+/-- A hypothesis `¬i = j`, as `by_cases` gives it, separates names too. -/
+example {r : ℕ} (x : Data r) (i j : Fin r) (h : ¬i = j) : (x.set j 1).regs i = x.regs i := by
+  wram_simp
+
 /-- Renamed registers of an injective `f` whose arguments are literals. -/
 example {s : ℕ} (x : Data s) (f : Fin 3 → Fin s) (hf : f.Injective) :
     ((x.set (f 0) 1).set (f 1) 2).regs (f 2) = x.regs (f 2) := by

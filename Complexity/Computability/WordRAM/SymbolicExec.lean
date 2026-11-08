@@ -347,15 +347,18 @@ meta def injective? (f : Expr) : MetaM (Option Expr) := do
     return if f' == f then some d.toExpr else none
 
 /-- A proof that the register names `j` and `i` differ, for names that need not evaluate to
-literals: by evaluation if they have no free variables; by a hypothesis `j ≠ i` or `i ≠ j`; by a
-hypothesis `j ∉ Set.range f` when `i` is `f a`, or symmetrically; by a hypothesis
-`Function.Injective f` when they are `f b` and `f a` with `b` and `a` different; and otherwise by
-the discharger on their values, when one of them unfolds to a constructor `⟨k, _⟩` (`finVal`). -/
+literals: by evaluation if they have no free variables; by a hypothesis `j ≠ i` or `i ≠ j`, also
+stated as `¬j = i` as `by_cases` gives it; by a hypothesis `j ∉ Set.range f` when `i` is `f a`, or
+symmetrically; by a hypothesis `Function.Injective f` when they are `f b` and `f a` with `b` and `a`
+different; and otherwise by the discharger on their values, when one of them unfolds to a
+constructor `⟨k, _⟩` (`finVal`). -/
 meta partial def regNe? (j i : Expr) : SimpM (Option Expr) := do
   let p ← mkAppM ``Ne #[j, i]
   if let some r ← decideClosed? p then return r
-  if let some h ← assumption? p then return some h
-  if let some h ← assumption? (← mkAppM ``Ne #[i, j]) then return some (← mkAppM ``Ne.symm #[h])
+  for q in [p, mkNot (← mkEq j i)] do
+    if let some h ← assumption? q then return some h
+  for q in [← mkAppM ``Ne #[i, j], mkNot (← mkEq i j)] do
+    if let some h ← assumption? q then return some (← mkAppM ``Ne.symm #[h])
   if let some h ← outsideRange? j i then return some h
   if let some h ← outsideRange? i j then return some (← mkAppM ``Ne.symm #[h])
   if let (.app f b, .app f' a) := (j, i) then
