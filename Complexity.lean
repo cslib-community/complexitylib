@@ -1129,6 +1129,8 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContra
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionShape
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionSize
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionStep
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceArraySum
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceArrays
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntry
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryBounds
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryCertificate
@@ -1136,6 +1138,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceE
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryPolyTime
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetwork
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetworkBounds
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetworkPolyTime
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetworkSize
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceSelections
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IntegralCoordinates
@@ -3713,6 +3716,7 @@ public import Complexity.Foundations.Data.Nat.Bitwise.SumTree
 public import Complexity.Foundations.Data.Nat.Card
 public import Complexity.Foundations.Data.Nat.CeilDiv
 public import Complexity.Foundations.Data.Nat.CeilQuarter
+public import Complexity.Foundations.Data.Nat.CeilQuarterSqrt
 public import Complexity.Foundations.Data.Nat.Choose
 public import Complexity.Foundations.Data.Nat.Choose.Central
 public import Complexity.Foundations.Data.Nat.Choose.Real

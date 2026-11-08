@@ -1058,11 +1058,35 @@ The native entry program and its already proved resource bounds are unchanged.
 The old extra factor is algorithmic: `ReplacementParams.numGroups` uses
 `floor(sqrt(lambda)/nu^2)`, so its division/interpolation charges retain `nu^2`.
 The sharper route replaces that evaluator by truncated incidence networks at
-size `n*nu`. Remaining concrete next stage: executable degree-array enumeration
-and network writing, followed by exact decomposition of the incidence sum into
+size `n*nu`. The actual degree-array traversal and network writer are now certified below.
+The next semantic stage is exact decomposition of the incidence sum into
 the streamed contractions. Then assemble high-incidence branching, every greedy
 parity query, sharper sparsification and final weighted time composition.
 No single-log-log bound for the complete counting algorithm is claimed. Weighted
 correctness/space still assumes positive serialized rows with a common occurrence
 count `m`; arbitrary variable-length raw rows, table/graph endpoints, full
 Theorem 7.1 and ALL-main remain open.
+
+
+The computed degree-array traversal is now native-certified. `IncidenceArrays`
+decodes one radix array from a binary index with unique bounded-array coverage,
+including empty arrays/radix one, and proves the actual quarter-root traversal
+bound `2^(4*sqrt(n)*(clog₂(k(c+2)+1)+clog₂(n)))`. `IncidenceNetworkPolyTime`
+charges actual incidence discovery, binomial widths, port/descriptor writing and
+padding. `IncidenceArraySum.buildArray_polytime` computes all parameters from the
+original sparse system and index, including the source cap `k*(a+2*n)` and
+quarter-root groups. `exists_sumArrays_certificate` composes this writer with the
+proved native truncated contraction and modular accumulator, one network at a
+time: actual array count times `poly(L)*2^O(s/sqrt(log₂ s))` time and polynomial
+original-input peak workspace, where `s=n*clog₂(clog₂ n)`. Entry admissibility is
+derived from `IsSparseBranch`, not supplied as an oracle or runtime budget.
+
+This is a concrete algorithm/resource milestone, not the full sharper counter:
+`sumArrays_eq` proves exactly the modular sum of constructed contractions, but
+its equality with the sparse-system count remains unproved. Dead arrays/invalid
+ranks must be covered in that reconstruction. High-incidence branches, parity
+queries, sharper sparsification and weighted time rescaling remain to compose.
+No new eta-time bound is claimed for the old end-to-end interpolation program;
+its extra log-log factor has not been removed. Common-occurrence positive
+serialized rows, arbitrary variable-length raw rows, tables and graphs retain
+the limitations above. Full Theorem 7.1 and ALL-main remain open.

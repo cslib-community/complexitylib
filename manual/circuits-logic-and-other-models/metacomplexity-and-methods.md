@@ -884,8 +884,68 @@ The extra factor in the old counter comes from its replacement group schedule
 `nu=ceil(log₂ lambda)`; its division and interpolation charges retain `nu^2`.
 The sharper route uses truncated incidence-network contraction at size `n*nu`.
 This entry-correctness milestone does not change the old end-to-end algorithm.
-Actual degree-array enumeration, network construction, exact array/contraction
-summation, high-incidence branches and parity-query composition still need to be
-connected before the source eta-time bound can be claimed. The common occurrence
+The actual degree-array traversal and native contraction sum are now connected
+as described below. Exact reconstruction of the sparse-system count, high-incidence
+branches and parity-query composition still need to be connected before the source
+eta-time bound can be claimed. The common occurrence
 count restriction on weighted rows, variable-length raw rows, tables and graphs
 remain material limitations.
+
+
+### Stream the computed degree arrays and their native contractions
+
+Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceArraySum`
+and open `Cslib.Circuits.Frontier.IncidenceNetwork`. `ArrayInput` contains the
+unary declared variable count `n` and the actual equation list, with binary
+monomial indices. `degreeCap k` computes $K=k(a+2n)$ from its equation count $a$;
+`Nat.ceilQuarter` computes $J=\lceil n^{1/4}\rceil$. The checked square-root
+identity `Nat.ceilQuarter_eq_sqrt` supplies a polynomial-time implementation of
+the search-defined root, including zero.
+
+`arrayCount K J` is the binary number $(K+1)^{J^2}$, rather than an allocated
+list of arrays. `arrayAt K J i` writes one length-$J^2$ radix array. The decoder
+has unique coverage of all arrays with entries at most $K$, including radix one
+and zero width; `selected_degrees_coverage` derives those coordinate bounds from
+the total selected degree. `arrayCount_polytime` and `arrayAt_polytime` charge the
+actual binary arithmetic, digit traversal and unary coordinate writes.
+`degreeCount_le` bounds the computed number of visited indices by
+$2^{4\sqrt n(\operatorname{clog}_2(k(c+2)+1)+\operatorname{clog}_2 n)}$
+when $a\le cn$ and $n\ge1$.
+
+`network_polytime` charges actual incidence discovery/deduplication, binomial
+index widths, ports, descriptors and padding, without expanding tensor tables.
+`buildArray_polytime` discharges all its parameter computations from the
+original input and binary index, including precision and truncation $n+1$.
+`sumArrays k` specifies the native loop's modular contraction sum;
+`sumArrays_eq` identifies it with the sum over exactly those computed indices.
+Although this mathematical specification is noncomputable, its
+`exists_sumArrays_certificate` gives a proved native binary machine constructing,
+contracting and accumulating one network at a time. Its time is bounded by
+
+$$
+(\mathrm{degreeCount}+1)A(L+1)^A
+  2^{A s/\lfloor\sqrt{\lfloor\log_2 s\rfloor}\rfloor},
+\qquad s=n\operatorname{clog}_2(\operatorname{clog}_2 n),
+$$
+
+and its peak workspace by $A(L+1)^A$ in the original encoded input length $L$.
+For fixed $k\ge1,c$, the certificate derives admissibility for every sufficiently
+large `IsSparseBranch k c n sys`; no network, rank, answer, entry budget or
+contraction oracle is supplied. The array-count multiplier remains explicit.
+This is a source-algorithm stage from OpenAI2026ETH, Appendix D.3, Lemma D.2,
+PDF pp. 55–57, toward 1575 Lemma 3.2/Proposition 4.2, rather than a new bound for the
+old interpolation counter.
+
+From the repository root run
+`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceArrays`.
+The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceArrays.lean)
+checks radix-one/empty arrays, unique selected-degree coverage, quarter-root
+boundaries, a fully computed network and a nonvacuous family of native certificates.
+
+The outstanding semantic step is equality of this modular contraction sum with
+the sparse-system solution count, including dead arrays and invalid local ranks.
+Then high-incidence branching, greedy parity queries, sharper sparsification and
+weighted reconstruction/time rescaling must be assembled. The old end-to-end
+counter still has its squared-log-log overhead. Common-occurrence positive
+serialized rows remain a frontend restriction; arbitrary variable-length rows,
+table and graph endpoints, full Theorem 7.1 and ALL-main remain open.
