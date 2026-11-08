@@ -87,7 +87,7 @@ open scoped symmDiff
 
 namespace UniformDiagonalization
 
-open Ladner (word index word_index index_word two_pow_length_word_le index_add_two_le)
+open Ladner (word index word_index index_word length_word_lt index_add_two_le)
 
 /-! ### The construction -/
 
@@ -196,9 +196,6 @@ def D (A : Bool → Set (List Bool)) : Set (List Bool) :=
   {w | w ∈ A (side (stage dA dF w.length))}
 
 variable {dA dF}
-
-private theorem length_word_lt (j : ℕ) : (word j).length < j + 1 :=
-  Nat.lt_two_pow_self.trans_le (two_pow_length_word_le j)
 
 /-- **A witness separates.** -/
 theorem witness_sound (hS : Spec dA dF A F) {n k : ℕ} (h : witness dA dF (table dA dF n) k = true) :
