@@ -82,4 +82,47 @@ theorem getD_restrictPrefix_three (c : Graph.RotationCertificate) (darts i : ℕ
     Function.iterate_succ_apply'] using hu)]
   rfl
 
+/-- An intermediate restriction does not change first returns that reach the smaller
+prefix in at most two steps. Both scans use their literal list-funded clocks; the raw table
+may be malformed away from the stated prefix. This applies to distinct boundary markers. -/
+theorem restrictPrefix_restrictPrefix_of_short_returns (c : Graph.RotationCertificate)
+    (m n : ℕ) (hmn : m ≤ n) (hc : 2 ≤ c.successor.length)
+    (hshort : ∀ i < m, c.successor.getD i 0 < m ∨
+      c.successor.getD (c.successor.getD i 0) 0 < m) :
+    restrictPrefix m (restrictPrefix n c) = restrictPrefix m c := by
+  apply congrArg Graph.RotationCertificate.mk
+  refine List.ext_getElem (by
+    change (restrictPrefix m (restrictPrefix n c)).successor.length =
+      (restrictPrefix m c).successor.length
+    rw [length_restrictPrefix, length_restrictPrefix]) ?_
+  intro i hi hj
+  change i < (restrictPrefix m (restrictPrefix n c)).successor.length at hi
+  change i < (restrictPrefix m c).successor.length at hj
+  change (restrictPrefix m (restrictPrefix n c)).successor[i] = (restrictPrefix m c).successor[i]
+  rw [← List.getD_eq_getElem (restrictPrefix m (restrictPrefix n c)).successor 0 hi,
+    ← List.getD_eq_getElem (restrictPrefix m c).successor 0 hj]
+  have him : i < m := by rwa [length_restrictPrefix] at hi
+  have hin : i < n := by omega
+  have hclock : 0 < (restrictPrefix n c).successor.length := by
+    rw [length_restrictPrefix]
+    omega
+  by_cases hs : c.successor.getD i 0 < m
+  · have hn : (restrictPrefix n c).successor.getD i 0 = c.successor.getD i 0 :=
+      getD_restrictPrefix_one c n i hin (by omega) (by omega)
+    rw [getD_restrictPrefix_one (restrictPrefix n c) m i him hclock (by rw [hn]; exact hs),
+      hn, getD_restrictPrefix_one c m i him (by omega) hs]
+  · have ht : c.successor.getD (c.successor.getD i 0) 0 < m := (hshort i him).resolve_left hs
+    have hold := getD_restrictPrefix_two c m i him hc (by omega) ht
+    by_cases hn : c.successor.getD i 0 < n
+    · have h₁ := getD_restrictPrefix_one c n i hin (by omega) hn
+      have h₂ := getD_restrictPrefix_one c n (c.successor.getD i 0) hn (by omega) (by omega)
+      have hfund : 2 ≤ (restrictPrefix n c).successor.length := by
+        rw [length_restrictPrefix]
+        omega
+      rw [getD_restrictPrefix_two (restrictPrefix n c) m i him hfund (by rw [h₁]; omega)
+        (by rw [h₁, h₂]; exact ht), h₁, h₂, hold]
+    · have h₁ := getD_restrictPrefix_two c n i hin hc (by omega) (by omega)
+      rw [getD_restrictPrefix_one (restrictPrefix n c) m i him hclock (by rw [h₁]; exact ht),
+        h₁, hold]
+
 end Cslib.Complexity.CSP.OrderedBoundary

@@ -93,4 +93,24 @@ example : Equiv.removeNone (Equiv.removeNone
 -- index is followed with fallback lookup; the clock remains the supplied four entries.
 example : (restrictPrefix 2 ⟨[2 ^ 250, 1, 0, 0]⟩).successor = [0, 1] := by decide +kernel
 
+-- The actual binary atom/probe table has one marker per free variable. Removing the last
+-- marker first retains exactly the same final body table. One variable's return loses a
+-- marker, the other's marker is retained in the intermediate prefix, and odd ends return
+-- immediately. These are all three branches of the short-return composition proof.
+example : restrictPrefix 4 (restrictPrefix 6 ⟨[6, 3, 4, 1, 2, 7, 0, 5]⟩) =
+    restrictPrefix 4 ⟨[6, 3, 4, 1, 2, 7, 0, 5]⟩ := by
+  apply restrictPrefix_restrictPrefix_of_short_returns _ _ _ (by decide) (by decide)
+  intro i hi
+  interval_cases i <;> decide +kernel
+
+example : (restrictPrefix 4 (restrictPrefix 6 ⟨[6, 3, 4, 1, 2, 7, 0, 5]⟩)).successor =
+    [0, 3, 2, 1] := by decide +kernel
+
+-- The composition identity also has honest fallback behavior on raw malformed tables.
+example : restrictPrefix 2 (restrictPrefix 4 ⟨[2 ^ 250, 1, 0, 0]⟩) =
+    restrictPrefix 2 ⟨[2 ^ 250, 1, 0, 0]⟩ := by
+  apply restrictPrefix_restrictPrefix_of_short_returns _ _ _ (by decide) (by decide)
+  intro i hi
+  interval_cases i <;> decide +kernel
+
 end ComplexityTests.PlanarBoundaryRestriction
