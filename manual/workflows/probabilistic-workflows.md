@@ -908,6 +908,8 @@ provides it for every seed, while the simple split map needs real keys of length
 The clients also distinguish failed decapsulation from accepted empty keys, detect omitted
 postprocessing on forwarded replies, and exhibit a failed real hop without KEM correctness.
 
+When the KEM instead derandomizes an explicit-coin public-key encryption scheme `encDet : PK → M → R → CT` with a mandatory re-encryption check (`T[PKE, G]`, `FO^⊥`, and domain-separated implicit-rejection `FO-notbot`), import [`FujisakiOkamoto.lean`](../../Complexity/Crypto/Protocols/KEM/FujisakiOkamoto.lean) rather than `KEMFromPKE.lean`. That module supplies `ExplicitCoinPKE` (`DeltaCorrect`, `GammaSpread`, `indCpaGame`) together with the deterministic recovery and re-encryption rigidity lemmas (`decT_encT_eq_some`, `encT_of_decT_eq_some`, `Scheme.decapsBot_encT_eq_some`, `Scheme.decapsBot_eq_none_of_reencrypt_ne`, `Scheme.decapsNotBot_encT_eq`, `Scheme.decapsNotBot_of_reencrypt_ne`; checked clients in [`ComplexityTests/Crypto/FujisakiOkamoto.lean`](../../ComplexityTests/Crypto/FujisakiOkamoto.lean)); random-oracle IND-CCA security games and reductions are not included in this module.
+
 ## Certify a list accumulator
 
 Import `Complexity.Computability.Probabilistic.Fold` for

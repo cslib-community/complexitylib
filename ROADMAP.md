@@ -496,11 +496,13 @@ index links to canonical definitions rather than keeping a second set.
 - **Randomized primality tests**
   ([#2917](https://github.com/cslib-community/complexitylib/issues/2917)): the Euler-liar
   (Solovay–Strassen) and strong-liar (Miller–Rabin) bounds `2 · #liars ≤ φ(n)` for odd composite
-  `n` are in `Foundations/NumberTheory/Primality`, and an explicit Miller–Rabin verifier puts the
-  primes in `coRP` independently of AKS (`Problems/Primes/MillerRabin`). Remaining
-  ([#2958](https://github.com/cslib-community/complexitylib/issues/2958)): the Rabin–Monier bound
-  `#strong liars ≤ φ(n) / 4`, a polynomial-time Jacobi symbol, and the Solovay–Strassen verifier
-  stated as a `coRP` membership (with its gcd step, since non-units can satisfy Euler's congruence).
+  `n` are in `Foundations/NumberTheory/Primality`, together with the Rabin–Monier bound
+  `4 · #strong liars ≤ φ(n)` for odd composite `n ≠ 9` (`Primality/RabinMonier`), and an explicit
+  Miller–Rabin verifier puts the primes in `coRP` independently of AKS
+  (`Problems/Primes/MillerRabin`). Remaining
+  ([#2958](https://github.com/cslib-community/complexitylib/issues/2958)): a polynomial-time Jacobi
+  symbol, and the Solovay–Strassen verifier stated as a `coRP` membership (with its gcd step, since
+  non-units can satisfy Euler's congruence).
 - The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
   its input.
 - **Space:** Savitch bounds for general space-constructible functions.
@@ -751,13 +753,14 @@ universe size, not supplied as unverified input tables. In dependency order:
   vocabularies and the nondefinability of
   [connectivity](Complexity/Logics/FirstOrder/EhrenfeuchtFraisse/Connectivity.lean),
   [bipartiteness and acyclicity](Complexity/Logics/FirstOrder/EhrenfeuchtFraisse/GraphProperties.lean)
-  by interpretation from finite linear orders, add Hanf and Gaifman locality
-  ([locality track](https://github.com/cslib-community/complexitylib/issues/3015)) and use it for
-  further graph nondefinability results, such as planarity, Hamiltonicity and `k`-colorability
-  for `k ≥ 3`. Then add games for vocabularies with constants, pebble games with their
-  finite-variable equivalence theorems, and counting and fixed-point expressiveness, including
-  Cai–Fürer–Immerman-style separations. Connect the methods to the ordered capture theorems,
-  where FO(≤, BIT) defines EVEN.
+  by interpretation from finite linear orders, and on [Hanf and Gaifman locality](Complexity/Logics/FirstOrder/Locality/Hanf.lean)
+  ([locality track](https://github.com/cslib-community/complexitylib/issues/3015)), add Gaifman's
+  normal form theorem, nondefinability applications of locality (Libkin's balanced binary trees
+  and transitive closure, then planarity, Hamiltonicity and `k`-colorability for `k ≥ 3`), games
+  for vocabularies with constants, and pebble games with their finite-variable equivalence
+  theorems; then
+  counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Connect
+  the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
 - **Undecidability in the finite:** Trakhtenbrot's theorem holds for raw relational sentences
   over any vocabulary with a binary relation symbol (Libkin, Theorem 9.2,
   [Binary](Complexity/Logics/FirstOrder/Trakhtenbrot/Binary.lean)). Next, add a computable
@@ -1073,10 +1076,10 @@ each statement against the numbered result. Organize modules by subject, not cha
 - Multiparty protocols, discrepancy and information complexity, direct-sum and direct-product
   results, and reductions to streaming, sketching and cell-probe lower bounds.
 - **Streaming and sketching:** native time and space bounds for Count-Min, including hash-seed
-  storage and evaluation; the AMS sketches for `F₀` and `F_k` with `k > 2` and the `n^{Ω(1)}`
-  lower bounds for `F_k` with `k ≥ 6`; `ProbComp` samplers and native realizations of the AMS `F₂`
-  sketch; CountSketch, turnstile updates, and heavy-hitter recovery; multi-pass
-  communication-to-streaming transfers with pass counts.
+  storage and evaluation; the AMS sketch for `F₀`, the AMS `F_k` estimator for streams of unknown
+  length (reservoir sampling), and the `n^{Ω(1)}` lower bounds for `F_k` with `k ≥ 6`; `ProbComp`
+  samplers and native realizations of the AMS sketches; CountSketch, turnstile updates, and
+  heavy-hitter recovery; multi-pass communication-to-streaming transfers with pass counts.
 - **Learning:** machine-certified running times for the LMN and Kushilevitz–Mansour learners;
   distributional problems and reductions, samplability, average-to-worst-case connections,
   PAC/agnostic learning, learning lower bounds, compression and refutation. For realizable
@@ -1095,13 +1098,17 @@ each statement against the numbered result. Organize modules by subject, not cha
   ([#2908](https://github.com/cslib-community/complexitylib/issues/2908)): the realizable model,
   the halving algorithm, the Littlestone dimension with the standard optimal algorithm (optimal
   mistake bound equals Littlestone dimension), the VC comparison with the threshold gap,
-  Novikoff's perceptron bound, and WINNOW1 for monotone disjunctions with Littlestone's matching
-  `k ⌊log₂ (n / k)⌋` lower bound are in `MachineLearning/OnlineLearning/MistakeBound`. Remaining:
-  WINNOW2 for linearly separable Boolean functions with separation `δ` and Littlestone's
-  attribute transformations (Littlestone 1988, Theorems 9 and 10); randomized learners and the
-  agnostic setting, with Littlestone-dimension regret bounds (Ben-David–Pál–Shalev-Shwartz 2009);
-  multiclass and real-valued analogues; online-to-batch conversion into the PAC framework; and
-  running-time bounds, since the standard optimal algorithm is a noncomputable specification.
+  Novikoff's perceptron bound, WINNOW1 for monotone disjunctions with Littlestone's matching
+  `k ⌊log₂ (n / k)⌋` lower bound, and the agnostic upper bound (expected regret
+  `2 √(T d log (T + 1))` for Littlestone dimension `d`, Hedge over SOA experts,
+  Ben-David–Pál–Shalev-Shwartz 2009, [#3120](https://github.com/cslib-community/complexitylib/issues/3120))
+  with Cover's linear lower bound for deterministic learners are in
+  `MachineLearning/OnlineLearning/MistakeBound`. Remaining: WINNOW2 for linearly separable Boolean
+  functions with separation `δ` and Littlestone's attribute transformations (Littlestone 1988,
+  Theorems 9 and 10); the agnostic lower bound `Ω(√(Ldim(C) T))`, adaptive adversaries against
+  randomized learners, an unknown horizon (the doubling trick) and the optimal `Θ(√(Ldim(C) T))`
+  regret; multiclass and real-valued analogues; online-to-batch conversion into the PAC framework;
+  and running-time bounds, since the standard optimal algorithm is a noncomputable specification.
 - **Property and distribution testing:** independent repetition of Boolean local tests and BLR
   linearity testing have explicit decision-tree query bounds. Uniformity testing has matching
   `Θ(√n / ε²)` sample bounds for `ε ≤ 1/2` on even domains: the collision tester and Paninski's
