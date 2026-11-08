@@ -37,6 +37,8 @@ import Complexity.Computability.Complexity.Problems.XORSAT
 import Complexity.Computability.PolyTime.CSP.Gadget
 import Complexity.Logics.Polymorphism.BooleanClone
 import Complexity.Logics.Propositional.CNF.Majority
+import Complexity.Foundations.Data.BitString.CyclicDifference
+import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
 import Complexity.Tactic.PolyTime
 
 open Verso.Genre Manual
@@ -61,6 +63,8 @@ development imports the problems it uses. The first examples need only these:
 ```
 import Complexity.Computability.Complexity.CookLevin.Completeness
 import Complexity.Computability.Complexity.Problems.Clique
+import Complexity.Foundations.Data.BitString.CyclicDifference
+import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
 import Complexity.Tactic.PolyTime
 
 open Cslib.Complexity Turing.MultiTapeTM
@@ -627,3 +631,38 @@ A new problem follows the same outline. Define it with its encoding, give a veri
 {name}`IsVerifier`, certify the verifier, give a reduction map from a problem in the catalogue and
 prove it correct, certify the map, and combine. Put it in its own module under
 `Complexity/Computability/Complexity/Problems/`, next to the problems it reduces from.
+
+
+# Planar Boolean CSP Prerequisites
+
+Ordered cyclic differences are defined by
+{name}`Cslib.BitString.cyclicDifference`. They determine a tuple up to simultaneous
+complementation and have exactly the even-parity tuples as their image.
+{name}`Cslib.BitString.cyclicIntegral` supplies a prefix-parity inverse:
+
+```lean
+open Cslib Cslib.BitString in
+example {n : ℕ} (d : Fin n → Bool)
+    (hd : parityOn Finset.univ d = false) :
+    cyclicDifference (cyclicIntegral d) = d :=
+  cyclicDifference_cyclicIntegral d hd
+```
+
+{name}`Cslib.BitString.IsDeltaMatroid` requires nonemptiness and one-sided
+symmetric exchange. {name}`Cslib.BitString.IsEvenDeltaMatroid` adds common parity,
+which may be odd. It forces exchange to flip two distinct coordinates:
+
+```lean
+open Cslib.BitString in
+example {ι : Type} [Fintype ι] [DecidableEq ι]
+    {R : Set (ι → Bool)} (hR : IsEvenDeltaMatroid R)
+    {x y : ι → Bool} (hx : x ∈ R) (hy : y ∈ R)
+    {i : ι} (hi : x i ≠ y i) :
+    ∃ j, j ≠ i ∧ x j ≠ y j ∧ flipOn {i, j} x ∈ R :=
+  hR.exchange hx hy hi
+```
+
+Twists, coordinate transport and feasible two-bit connectivity are also proved.
+The difference tests show that ternary NAE has an even delta-matroid difference
+relation. These are mathematical prerequisites; a planar embedding algorithm,
+general edge-CSP solver and full planar dichotomy remain to be formalized.

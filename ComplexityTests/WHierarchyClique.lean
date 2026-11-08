@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Computability.Complexity.Parameterized.WHierarchy.Clique.Graph
+import Complexity.Computability.Complexity.Parameterized.WHierarchy.Clique
 
 /-!
 # Tests: the graph of a circuit of weft one
@@ -13,12 +13,17 @@ The short lists over a list, what a bracket knows about a position, consistency 
 cliques of a graph given by a Boolean adjacency, evaluated by `decide`. Then the correctness of
 the graph construction on small instances: the graph of the fixed yes-instance of `WCS 1 1` has a
 clique of the size and that of the fixed no-instance has none, and the graph of the conjunction of
-three inputs has a clique of the size for weight `3` and none for weight `2`.
+three inputs has a clique of the size for weight `3` and none for weight `2`. The graph of the
+first of two inputs is computed for weights `0` and `1`: for weight `0` it has no edge, so the
+refutation of a certificate by a bracket is exercised. Finally the
+hardness: the clique size bound, `W[1]`-completeness of `Clique` and `IndependentSet`, a problem
+of `W[1]` reducing to `IndependentSet`, and `Clique` in `FPT` putting every `WCS 1 d` in `FPT`.
 -/
 
 namespace ComplexityTests.WHierarchyClique
 
-open Cslib Cslib.Complexity Cslib.Circuits Cslib.Circuits.Boolean WCS WCS.ToClique
+open Cslib Cslib.Complexity Cslib.Circuits Cslib.Circuits.Boolean Turing.MultiTapeTM WCS
+  WCS.ToClique
 
 /-! ### Short lists -/
 
@@ -107,5 +112,56 @@ example : toClique (and3, 2) ∉ Clique := by
 -- The clique size: one certificate and one bracket for each list of at most `2 ^ (d + 1)`
 -- indices.
 example : size 0 3 1 = 4 ∧ size 0 3 5 = 22 := by decide
+
+/-- The first of two inputs, as a circuit of weft and depth `0`. -/
+def fst2 : WeftCircuit 1 0 :=
+  ⟨⟨2, ⟨Program.empty, fun _ => .input 0⟩⟩, by decide⟩
+
+-- The graph itself, computed by `decide`. For weight `0` it has two vertices, the certificate and
+-- the empty bracket, and no edge: the empty bracket says that input `0` is not selected, which
+-- refutes the certificate. The clique size is `2`, so there is no clique of the size.
+example : (toClique (fst2, 0)).1.1.length = 2 ∧ (toClique (fst2, 0)).1.2 = [] ∧
+    (toClique (fst2, 0)).2 = 2 := by decide
+
+-- For weight `1` the graph has eight vertices and clique size `4`.
+example : (toClique (fst2, 1)).1.1.length = 8 ∧ (toClique (fst2, 1)).2 = 4 := by decide
+
+example : toClique (fst2, 0) ∉ Clique := by
+  rw [toClique_mem_Clique_iff]
+  rintro ⟨x, hk, hx⟩
+  revert hk hx
+  revert x
+  unfold BitString.weight
+  decide
+
+example : toClique (fst2, 1) ∈ Clique :=
+  (toClique_mem_Clique_iff _).2 ⟨fun i => decide (i.1 = 0), by decide, by decide⟩
+
+/-! ### Hardness -/
+
+-- The clique size against its bound `(k + 1) ^ 2 ^ (d + 1) + 1`.
+example : size 0 3 5 = 22 ∧ 22 ≤ (5 + 1) ^ 2 ^ (0 + 1) + 1 := by decide
+
+example : size 0 3 5 ≤ (5 + 1) ^ 2 ^ (0 + 1) + 1 := size_le 0 3 5
+
+-- `Clique` and `IndependentSet` are `W[1]`-complete.
+example : Clique ∈ W 1 (encPair encGraph encNat) Prod.snd ∧
+    WHard 1 (encPair encGraph encNat) Prod.snd Clique :=
+  ⟨Clique_mem_W, Clique_wHard⟩
+
+example : IndependentSet ∈ W 1 (encPair encGraph encNat) Prod.snd ∧
+    WHard 1 (encPair encGraph encNat) Prod.snd IndependentSet :=
+  ⟨IndependentSet_mem_W, IndependentSet_wHard⟩
+
+-- A problem of `W[1]` fpt-reduces to `IndependentSet`.
+example : FPTReducible (encWCS 1 5) (encPair encGraph encNat) Prod.snd Prod.snd (WCS 1 5)
+    IndependentSet :=
+  IndependentSet_wHard _ _ _ (WCS_mem_W 1 5)
+
+-- If `Clique` is in `FPT`, so is weighted satisfiability of every class of weft-one circuits.
+example (h : Clique ∈ FPT (encPair encGraph encNat) Prod.snd) (d : ℕ) :
+    WCS 1 d ∈ FPT (encWCS 1 d) Prod.snd := by
+  rw [← W_one_eq_FPT_iff.2 h]
+  exact WCS_mem_W 1 d
 
 end ComplexityTests.WHierarchyClique
