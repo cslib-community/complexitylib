@@ -430,8 +430,10 @@ In order:
   with the rows transformation, the covering-code schemes for balanced covers (CGKS Section 3.3,
   [#3451](https://github.com/cslib-community/complexitylib/issues/3451)), and schemes from
   perfectly smooth decoders. Next targets are variable-length answers for unbalanced covers, the
-  multi-round single-server bound, `t`-private schemes against coalitions, block retrieval, the converse
-  from schemes to smooth codes (Katz–Trevisan), and two-server lower bounds.
+  remaining parts of CGKS Section 3.3 (radius-`2` covering codes, the other dimensions of Figure 1,
+  the asymptotic lower estimate and server time), the multi-round single-server bound, `t`-private
+  schemes against coalitions, block retrieval, the converse from schemes to smooth codes
+  (Katz–Trevisan), and two-server lower bounds.
 
 ### Concurrent and quantum security
 

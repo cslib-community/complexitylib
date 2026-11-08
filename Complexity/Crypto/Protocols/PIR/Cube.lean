@@ -221,10 +221,12 @@ theorem communication_cube :
     ← pow_mul, Nat.clog_pow 2 _ (by norm_num), Nat.clog_eq_one le_rfl le_rfl,
     Nat.mul_comm (Fintype.card ι)]
 
+/-- The server `σ` of the subcube scheme answers with the sum of the database over its subcube. -/
 theorem answer_cube (σ : D → Bool) (x : (D → ι) → Bool) (a : D → ι → Bool) :
     (cube D ι).answer σ x a = ∑ j : D → ι, x j * ∏ l, a l (j l) := by
   rfl
 
+/-- The user of the subcube scheme adds the answers of all `2 ^ d` servers. -/
 theorem reconstruct_cube (i : D → ι) (r : Unit) (a : (D → Bool) → Bool) :
     (cube D ι).reconstruct i r a = ∑ σ, a σ := by
   rfl

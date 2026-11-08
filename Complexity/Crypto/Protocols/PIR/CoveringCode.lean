@@ -9,6 +9,7 @@ module
 
 public import Complexity.Crypto.Protocols.PIR.Cube
 public import Mathlib.InformationTheory.Hamming
+import Complexity.Foundations.Data.Hamming
 
 /-!
 # Covering-code schemes for private information retrieval
@@ -39,12 +40,18 @@ The volume bound `2 ^ d ≤ |S| (|M| + 1)` follows (`PIR.RadiusOneCover.two_pow_
 neighbours. The scheme communicates `k ((d + m) ℓ + 1)` bits, where `k = |S|` and `m = |M|`
 (`PIR.RadiusOneCover.communication_scheme`). The source counts `k + (2 ^ d - k) ℓ` answer bits
 instead, emulating each non-codeword once with possibly different answer lengths. The two counts
-agree when the cover is balanced, `k (m + 1) = 2 ^ d`
-(`PIR.RadiusOneCover.communication_scheme_of_balanced`): this is the bound
-`k + (2 ^ d + (d - 1) k) ℓ` of Theorem 1. Variable-length answers are not formalized, so
-Theorem 1 is covered for balanced covers only. Every radius-`1` covering code gives a cover with
-`M = D`, emulating all neighbours (`PIR.RadiusOneCover.ofHammingDist`), with `k (2 d ℓ + 1)` bits;
-this is the bound of Theorem 1 exactly when the code is perfect.
+agree when the cover is *balanced*, `k (m + 1) = 2 ^ d`
+(`PIR.RadiusOneCover.communication_scheme_of_balanced`): `cover` is then a bijection, so every
+server emulates `m` distinct neighbours and no word is produced twice. The count is then the bound
+`k + (2 ^ d + (d - 1) k) ℓ` of Theorem 1. Balance is a property of the cover; the source's
+"balancing" (end of Section 3.2, Section 3.4) refers instead to the split of communication between
+the user and the servers. Variable-length answers are not formalized, so Theorem 1 is covered for
+balanced covers only. Every radius-`1` covering code gives a cover with `M = D`, emulating all
+neighbours (`PIR.RadiusOneCover.ofHammingDist`), with `k (2 d ℓ + 1)` bits; this is the bound of
+Theorem 1 exactly when the code is perfect.
+
+A new cover of a concrete cube `Fin d → Bool` can be supplied by discharging `coveredWord_cover`
+with `decide`, as for `PIR.RadiusOneCover.cubeThree` and `PIR.RadiusOneCover.cubeFour`.
 
 Both cases of Corollary 2 use balanced covers:
 * two servers, the repetition code `{000, 111}` (`PIR.RadiusOneCover.cubeThree`), with `12 ℓ + 2`
@@ -89,8 +96,9 @@ namespace Cslib.Crypto.Protocols.PIR
 open Probability
 
 /-- The word produced by the server `s` and an optional direction `r`: the codeword `code s`, or
-the codeword with the coordinate `dir s r` flipped. -/
-def RadiusOneCover.coveredWord {S D M : Type} [DecidableEq D] (code : S → D → Bool)
+the codeword with the coordinate `dir s r` flipped. Exposed so that downstream modules can check
+the obligation `coveredWord_cover` of a concrete cover by `decide`. -/
+@[expose] def RadiusOneCover.coveredWord {S D M : Type} [DecidableEq D] (code : S → D → Bool)
     (dir : S → M → D) : S × Option M → D → Bool
   | (s, none) => code s
   | (s, some r) => Function.update (code s) (dir s r) (!code s (dir s r))
@@ -110,6 +118,17 @@ structure RadiusOneCover (S D M : Type) [DecidableEq D] where
   coveredWord_cover : ∀ w, RadiusOneCover.coveredWord code dir (cover w) = w
 
 namespace RadiusOneCover
+
+@[simp]
+theorem coveredWord_none {S D M : Type} [DecidableEq D] (code : S → D → Bool) (dir : S → M → D)
+    (s : S) : coveredWord code dir (s, none) = code s :=
+  rfl
+
+@[simp]
+theorem coveredWord_some {S D M : Type} [DecidableEq D] (code : S → D → Bool) (dir : S → M → D)
+    (s : S) (r : M) :
+    coveredWord code dir (s, some r) = Function.update (code s) (dir s r) (!code s (dir s r)) :=
+  rfl
 
 variable {S D M : Type} [DecidableEq D] (K : RadiusOneCover S D M)
 
@@ -133,7 +152,7 @@ variable [Fintype D] {ι : Type} [Fintype ι] [DecidableEq ι]
 /-- The answer of the `2 ^ d`-server scheme that the user reads for the word produced by the
 server `s` and the optional direction `r`: the answer bit of `s` itself, or the emulated answer
 for the position `j` of the flipped coordinate. -/
-def readAnswer (j : D → ι) : S × Option M → (S → Bool × (M → ι → Bool)) → Bool
+private def readAnswer (j : D → ι) : S × Option M → (S → Bool × (M → ι → Bool)) → Bool
   | (s, none), a => (a s).1
   | (s, some r), a => (a s).2 r (j (K.dir s r))
 
@@ -210,7 +229,8 @@ theorem communication_scheme [Fintype S] [Fintype M] [DecidableEq M] :
 
 /-- **Theorem 1's count for balanced covers** [CGKS, Theorem 1][ChorGoldreichKushilevitzSudan1998]:
 when the `k` servers and their `m` emulated neighbours each produce exactly the `2 ^ d` words,
-`k (m + 1) = 2 ^ d`, the scheme communicates `k + (2 ^ d + (d - 1) k) ℓ` bits. -/
+`k (m + 1) = 2 ^ d`, the scheme communicates `k + (2 ^ d + (d - 1) k) ℓ` bits. (*Balanced* is a
+property of the cover, not the source's balancing of user and server communication.) -/
 theorem communication_scheme_of_balanced [Fintype S] [Fintype M] [DecidableEq M]
     (hD : 0 < Fintype.card D)
     (hbal : Fintype.card S * (Fintype.card M + 1) = 2 ^ Fintype.card D) :
@@ -247,22 +267,6 @@ section HammingDist
 
 variable [Fintype D]
 
-/-- Two words at Hamming distance at most `1` that differ at `l` differ only at `l`. -/
-private theorem update_eq_of_hammingDist_le_one {u w : D → Bool} (h : hammingDist u w ≤ 1) {l : D}
-    (hl : u l ≠ w l) : Function.update u l (!u l) = w := by
-  classical
-  funext l'
-  by_cases hl' : l' = l
-  · subst hl'
-    rw [Function.update_self]
-    revert hl
-    cases u l' <;> cases w l' <;> decide
-  · rw [Function.update_of_ne hl']
-    by_contra hne
-    have hmem (a : D) (ha : u a ≠ w a) : a ∈ Finset.univ.filter fun a => u a ≠ w a :=
-      Finset.mem_filter.mpr ⟨Finset.mem_univ a, ha⟩
-    exact hl' (Finset.card_le_one.mp h l' (hmem l' hne) l (hmem l hl))
-
 /-- The cover of a radius-`1` covering code `c : S → D → Bool` in which every server emulates all
 its neighbours: each word is assigned a codeword within distance `1` and the coordinate where
 they differ, if any. -/
@@ -278,7 +282,7 @@ noncomputable def ofHammingDist (c : S → D → Bool) (hc : ∀ w, ∃ s, hammi
     dsimp only
     split_ifs with h
     · exact h.symm
-    · exact update_eq_of_hammingDist_le_one (Classical.choose_spec (hc w))
+    · exact update_not_eq_of_hammingDist_le_one (Classical.choose_spec (hc w))
         (Classical.choose_spec (Function.ne_iff.mp (Ne.symm h)))
 
 omit [DecidableEq D] in
