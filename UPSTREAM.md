@@ -746,14 +746,15 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   #871–#875 requested composition above configuration level; use `TransformsTapes`-style specs.
 * **Realizable PAC learning.** `MachineLearning/PACLearning/Realizable` copies Shaopeng Zhu's
   #858 unchanged; drop the copy once #858 lands. The local `RealizableSample`, `ERM`,
-  `FiniteClass` and `GrowthFunction` modules build on it and on the pinned
-  `PACLearning.{Defs, VersionSpace, VCDimension}`. Samuel Schlesinger's lower-bound stack
+  `FiniteClass`, `GrowthFunction`, `EpsilonNet` and `VCUpperBound` modules build on it and on the
+  pinned `PACLearning.{Defs, VersionSpace, VCDimension}`. Samuel Schlesinger's lower-bound stack
   (#950, #961 merged; headline on `SamuelSchlesinger/cslib:feat/pac-learning-ehkv-headline`)
   proves the EHKV `Ω(d/ε)` bound, so it is not duplicated here; that branch's
   `error_realizable_self_eq_zero` and `optimalError_realizable_eq_zero` overlap
   `isRealizableBy_map_graph` and `IsRealizableBy.optimalError_eq_zero`, so reconcile names
   before submission. #966 would make `sampleComplexity` and `vcDim` `ℕ∞`-valued;
-  `sampleComplexity_realizableDistributions_le_of_finite` and
+  `sampleComplexity_realizableDistributions_le_of_finite`,
+  `sampleComplexity_realizableDistributions_le_of_hasFiniteVCDim` and
   `growthFunction_le_sum_choose_vcDim` will need restating if it lands.
 
 These are coordination references, not a second record of live PR status. Check the relevant
@@ -805,6 +806,7 @@ agreement during upstream review.
 | `Foundations/Data/Finset/OrderGlue` | #1545 resolves the generic naming follow-up from #1496 after native bands stabilized in #1536: order-embedding/subset/complement terminology, Mathlib's `orderEmbOfFin_mem`/`range_orderEmbOfFin` and ordinary substitution in place of five redundant wrappers, and migration of finite tensor clients with checked native band clients. Retain this focused topic module. |
 | `Foundations/Data/Matrix/Permanent` | Mathlib candidate: Laplace expansion of the permanent along row and column 0, beside `LinearAlgebra/Matrix/Permanent` (mirroring `Matrix.det_succ_row_zero`). |
 | `Foundations/LinearAlgebra/{Rank,Matrix/CutRank,Matrix/Lindsey}` | Mathlib candidates: `LinearAlgebra/Dimension/LinearMap` and `LinearAlgebra/Matrix/Rank`; placement of Lindsey's lemma needs agreement. |
+| `Foundations/LinearAlgebra/Matrix/{FourierMotzkin,Farkas,LinearProgramming}` | Mathlib candidates: polyhedral Farkas' lemma and LP duality over any linearly ordered field, proved by Fourier–Motzkin elimination. Mathlib's `ProperCone.hyperplane_separation` is topological (closed cones in real locally convex spaces, so not `ℚ`), and at the current pin `PointedCone.dual`/`DualFG` have no Farkas or Minkowski–Weyl theorem. Upstream review should decide whether to restate these as `PointedCone.DualFG`/`FG` duality. The 2023–24 LP pull requests `leanprover-community/mathlib4` 7386, 9693, 10026 and 10159 (all closed) and Dvořák–Kolmogorov's `duality` repository (`DvorakKolmogorov2024`, cited in the modules) take different approaches; nothing was vendored. |
 | `Probability/PairwiseIndependentHash/Shift` | Consider integration into `PairwiseIndependentHash`. |
 | `Probability/PairwiseIndependentHash/Toeplitz` | Move `Matrix.toeplitz` to Mathlib beside `LinearAlgebra/Matrix/Circulant`. |
 | `Probability/ApproximateCounting/Relative` | Extract the natural-number root lemmas to Mathlib. |

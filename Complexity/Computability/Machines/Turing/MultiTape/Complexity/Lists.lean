@@ -264,21 +264,21 @@ public theorem unary_min :
   simp only [Function.comp_apply]
   omega
 
-lemma int_head : ComputableTidilyInDegree (fun z : ℤ => ((encInt z).take 1).headD false)
-    encInt encBool 1 1 :=
+lemma int_head : ComputableTidilyInDegree (fun z : ℤ => ((encIntUnary z).take 1).headD false)
+    encIntUnary encBool 1 1 :=
   ((headD (enc₁ := encBool) false).comp
-    (of_linear (.of_take_one (f := fun z : ℤ => (encInt z).take 1) (encOut := encBits)
+    (of_linear (.of_take_one (f := fun z : ℤ => (encIntUnary z).take 1) (encOut := encBits)
       fun _ => rfl))).mono
 
-lemma int_tailEmpty : ComputableTidilyInDegree (fun z : ℤ => (encInt z).tail.isEmpty)
-    encInt encBool 1 1 :=
+lemma int_tailEmpty : ComputableTidilyInDegree (fun z : ℤ => (encIntUnary z).tail.isEmpty)
+    encIntUnary encBool 1 1 :=
   ((isEmpty (enc₁ := encBool)).comp
-    (of_linear (.of_tail (f := fun z : ℤ => (encInt z).tail) (encOut := encBits)
+    (of_linear (.of_tail (f := fun z : ℤ => (encIntUnary z).tail) (encOut := encBits)
       fun _ => rfl))).mono
 
 /-- Whether an integer is positive. -/
 public theorem int_pos :
-    ComputableTidilyInDegree (fun z : ℤ => decide (0 < z)) encInt encBool 1 0 := by
+    ComputableTidilyInDegree (fun z : ℤ => decide (0 < z)) encIntUnary encBool 1 0 := by
   convert ((of_finite (encIn := encPair encBool encBool) (encMid := encBool)
     (fun t : Bool × Bool => !t.1 && !t.2)).comp (int_head.prod int_tailEmpty)).mono
       (d' := 1) (e' := 0) using 1
@@ -287,7 +287,7 @@ public theorem int_pos :
 
 /-- Whether an integer is negative. -/
 public theorem int_neg :
-    ComputableTidilyInDegree (fun z : ℤ => decide (z < 0)) encInt encBool 1 1 := by
+    ComputableTidilyInDegree (fun z : ℤ => decide (z < 0)) encIntUnary encBool 1 1 := by
   convert int_head using 1
   funext z
   rcases z with n | n <;> simp

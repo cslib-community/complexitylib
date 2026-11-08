@@ -23,7 +23,6 @@ terms and a conjunction of clauses of width at most `t`.
 
 ## Main definitions
 
-* `Cslib.DecisionTree.map`: relabel the leaves of a decision tree.
 * `Cslib.DecisionTree.toDNF`, `Cslib.DecisionTree.toCNF`: the normal forms of a decision tree.
 
 ## Main results
@@ -43,25 +42,7 @@ namespace Cslib.DecisionTree
 
 open Cslib.Logic.PL
 
-variable {ι β γ : Type*}
-
-/-- Relabel the leaves of a decision tree. -/
-def map (f : β → γ) : DecisionTree ι β → DecisionTree ι γ
-  | leaf b => leaf (f b)
-  | node i t₀ t₁ => node i (t₀.map f) (t₁.map f)
-
-@[simp] theorem eval_map (f : β → γ) (t : DecisionTree ι β) (x : ι → Bool) :
-    (t.map f).eval x = f (t.eval x) := by
-  induction t with
-  | leaf b => rfl
-  | node i t₀ t₁ ih₀ ih₁ => cases h : x i <;> simp [map, h, ih₀, ih₁]
-
-@[simp] theorem depth_map (f : β → γ) (t : DecisionTree ι β) : (t.map f).depth = t.depth := by
-  induction t with
-  | leaf b => rfl
-  | node i t₀ t₁ ih₀ ih₁ => simp [map, ih₀, ih₁]
-
-variable [DecidableEq ι]
+variable {ι : Type*} [DecidableEq ι]
 
 /-- The terms of the paths of a decision tree to leaves labelled `true`, each extending the term
 `p` of the path so far; a variable already in `p` is not read again. -/

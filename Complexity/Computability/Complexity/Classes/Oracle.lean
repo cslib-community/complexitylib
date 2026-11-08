@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.Classes.NP
 public import Complexity.Computability.Complexity.Classes.P
 public import Complexity.Computability.Probabilistic.Oracle
+public import Complexity.Languages.Probabilistic.QueriesWith
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
@@ -44,13 +45,12 @@ promise problem or an encoded class of oracles (`PWithSharpPOracle`, `PWithPPOra
 polynomial-time oracle program whose function against every admissible oracle language satisfies a
 given specification.
 
-For a deterministic program and an answer function, `OracleComp.queriesWith` lists the requests
-made. Only their answers matter (`OracleComp.interpret_id_congr`), which is the locality on which
-oracle constructions rest.
+For a deterministic program and an answer function, `OracleComp.queriesWith`
+(`Complexity/Languages/Probabilistic/QueriesWith.lean`) lists the requests made. Only their answers
+matter (`OracleComp.interpret_id_congr`), which is the locality on which oracle constructions rest.
 
 ## Main definitions
 
-* `Cslib.OracleComp.queriesWith`: the requests a deterministic program makes under given answers.
 * `Cslib.Complexity.WordQueryComp`: deterministic programs making word requests.
 * `Cslib.Complexity.languageOracle`: the replies of an oracle language.
 * `Cslib.Complexity.ComputableInPolyTimeWithOracle`: polynomial time relative to an oracle.
@@ -61,7 +61,6 @@ oracle constructions rest.
 
 ## Main results
 
-* `Cslib.OracleComp.interpret_id_congr`: answers to requests that are not made do not matter.
 * `Turing.MultiTapeTM.ComputableInPolyTime.computableInPolyTimeWithOracle`: polynomial time
   is polynomial time relative to every oracle.
 * `Cslib.Complexity.PolyTimeOracleProgram.of_polyTime`,
@@ -77,67 +76,6 @@ oracle constructions rest.
 @[expose] public section
 
 namespace Cslib
-
-namespace OracleComp
-
-variable {ι α β : Type} {spec : OracleSpec.{0, 0} ι}
-
-/-- The requests made by `program`, in order, when every call `q` is answered by `answer q`. -/
-def queriesWith (answer : (q : ι) → spec q) : OracleComp spec α → List ι
-  | .pure _ => []
-  | .liftBind q next => q :: queriesWith answer (next (answer q))
-
-@[simp] theorem queriesWith_pure (answer : (q : ι) → spec q) (a : α) :
-    queriesWith answer (pure a : OracleComp spec α) = [] := rfl
-
-@[simp] theorem queriesWith_query (answer : (q : ι) → spec q) (q : ι) :
-    queriesWith answer (query q) = [q] := rfl
-
-@[simp] theorem queriesWith_query_bind (answer : (q : ι) → spec q) (q : ι)
-    (next : spec q → OracleComp spec α) :
-    queriesWith answer (query q >>= next) = q :: queriesWith answer (next (answer q)) := rfl
-
-/-- Answering the first call and continuing. -/
-@[simp] theorem interpret_id_query_bind (answer : (q : ι) → spec q) (q : ι)
-    (next : spec q → OracleComp spec α) :
-    interpret (m := Id) answer (query q >>= next) = interpret (m := Id) answer (next (answer q)) :=
-  rfl
-
-/-- A sequence makes the requests of its first part, then those of the continuation selected by
-the first result. -/
-theorem queriesWith_bind (answer : (q : ι) → spec q) (program : OracleComp spec α)
-    (next : α → OracleComp spec β) :
-    queriesWith answer (program >>= next) = queriesWith answer program ++
-      queriesWith answer (next (interpret (m := Id) answer program)) := by
-  induction program using PFunctor.FreeM.induction with
-  | pure a => rfl
-  | lift_bind q cont ih =>
-    exact congrArg (q :: ·) (ih (answer q))
-
-/-- Postprocessing the result makes no request. -/
-@[simp] theorem queriesWith_map (answer : (q : ι) → spec q) (f : α → β)
-    (program : OracleComp spec α) :
-    queriesWith answer (f <$> program) = queriesWith answer program := by
-  rw [← bind_pure_comp, queriesWith_bind, queriesWith_pure, List.append_nil]
-
-/-- **Locality.** Answer functions that agree on the requests made under one of them give the
-same result and the same requests. -/
-theorem interpret_id_congr (answer answer' : (q : ι) → spec q) (program : OracleComp spec α)
-    (h : ∀ q ∈ queriesWith answer program, answer' q = answer q) :
-    interpret (m := Id) answer' program = interpret (m := Id) answer program ∧
-      queriesWith answer' program = queriesWith answer program := by
-  induction program using PFunctor.FreeM.induction with
-  | pure a => exact ⟨rfl, rfl⟩
-  | lift_bind q cont ih =>
-    have hq : answer' q = answer q := h q (List.mem_cons_self ..)
-    have hrest := ih (answer q) fun q' hq' => h q' (List.mem_cons_of_mem _ hq')
-    change interpret (m := Id) answer' (cont (answer' q)) =
-        interpret (m := Id) answer (cont (answer q)) ∧
-      q :: queriesWith answer' (cont (answer' q)) = q :: queriesWith answer (cont (answer q))
-    rw [hq]
-    exact ⟨hrest.1, congrArg (q :: ·) hrest.2⟩
-
-end OracleComp
 
 namespace Complexity
 
