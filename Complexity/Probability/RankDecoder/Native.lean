@@ -219,9 +219,7 @@ theorem nativeCertificate_expTimePolySpace {enc : α ↪ List Bool}
   obtain ⟨C, d, hround⟩ := stepCertificate_expTimePolySpace hd cm hm
   let B a := (stateEncoding enc (a, ([] : List Bool), rank a)).length + 2 * depth a
   have hinitial := (initial_polyTime hr).polyBounded_length
-  have hB : PolyBounded (fun a => (enc a).length) B := by
-    dsimp only [B]
-    growth_poly
+  have hB : PolyBounded (fun a => (enc a).length) B := by growth_poly
   have hfactor : PolyBounded (fun a => (enc a).length) (fun a => C * (B a + 1) ^ d) := by
     growth_poly
   have hstate (a : α) (j : ℕ) (hj : j ≤ depth a) :

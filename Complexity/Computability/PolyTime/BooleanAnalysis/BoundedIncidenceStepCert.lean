@@ -21,6 +21,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import Mathlib.Data.List.GetD
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Native Step and Measurement-Payload Certificates for Bounded-Incidence Branch Evaluation
@@ -645,17 +646,12 @@ private theorem exists_computableInO_mapRange {ι γ δ : Type} {encIn : ι ↪ 
   have hm_pb := hm.polyBounded
   have hctx_pb := hctx.polyBounded_length
   let L_el : ι → ℕ := fun x => 2 * (encC (ctx x)).length + 2 * m x + 1
-  have hLel_pb : PolyBounded (fun x => (encIn x).length) L_el :=
-    (((PolyBounded.const 2).mul hctx_pb).add ((PolyBounded.const 2).mul hm_pb)).add (.const 1)
+  have hLel_pb : PolyBounded (fun x => (encIn x).length) L_el := by growth_poly
   let E_el : ι → ℕ := fun x => ce * (L_el x + 1) ^ de
   have hEel_pb := NativeCertificate.polyBounded_pow_of_polyBounded hLel_pb ce de
   let B_acc : ι → ℕ := fun x =>
     2 * (2 * m x + 2 * (encC (ctx x)).length + 1) + 1 + m x * (2 * E_el x + 1)
-  have hBacc_pb : PolyBounded (fun x => (encIn x).length) B_acc :=
-    (((PolyBounded.const 2).mul
-      ((((PolyBounded.const 2).mul hm_pb).add
-        ((PolyBounded.const 2).mul hctx_pb)).add (.const 1))).add (.const 1)).add
-      (hm_pb.mul (((PolyBounded.const 2).mul hEel_pb).add (.const 1)))
+  have hBacc_pb : PolyBounded (fun x => (encIn x).length) B_acc := by growth_poly
   have hB : ∀ x j, j ≤ m x →
       (encAcc (IndexFold.run (mapRangeStep f) j ((m x, ctx x), [])).2).length ≤ B_acc x := by
     intro x j hj
@@ -866,8 +862,7 @@ theorem exists_computableInO_measPayload :
         _ ≤ (2 ^ maxGroupDim wc.2.numVars wc.2.numGroups wc.2.varGroups + 1) * Ps1 wc :=
             Nat.mul_le_mul_left _ (by dsimp only [cPrepS, Ps1] at hov ⊢; omega)
   let P_pass1 : List ℤ × MeasStepCtx → ℕ := fun wc => 2 * (Ps1 wc + Pm1 wc)
-  have hPpass1_pb : PolyBounded (fun wc => (eWC wc).length) P_pass1 :=
-    (PolyBounded.const 2).mul (hPs1_pb.add hPm1_pb)
+  have hPpass1_pb : PolyBounded (fun wc => (eWC wc).length) P_pass1 := by growth_poly
   let cPass1 : NativeCertificate _ eWC (encList (encOption encBits)) :=
     ⟨fun wc =>
         (wc.2.numGroups * (2 ^ maxGroupDim wc.2.numVars wc.2.numGroups wc.2.varGroups + 1) + 1) *

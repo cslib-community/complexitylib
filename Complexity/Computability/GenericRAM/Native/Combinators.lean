@@ -14,6 +14,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCount
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreeOptionPrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Sum
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Compositional combinators for native resource certificates
@@ -386,9 +387,7 @@ def iterate {n : α → ℕ} {init : α → β} {step : β → β}
 /-! ### Polynomiality preservation across certificate combinators -/
 
 theorem polyBounded_pow_of_polyBounded {size u : α → ℕ} (hu : PolyBounded size u) (c d : ℕ) :
-    PolyBounded size (fun a => c * (u a + 1) ^ d) :=
-  (PolyBounded.of_forall_le (size := id) (u := fun x => c * (x + 1) ^ d)
-    c d fun _ => le_rfl).comp hu
+    PolyBounded size (fun a => c * (u a + 1) ^ d) := by growth_poly
 
 theorem linear_isPolynomial {f : α → β}
     (h : ComputableInO f ei eb (fun a => (ei a).length) (fun a => (ei a).length)) :
@@ -461,8 +460,7 @@ theorem option_isPolynomial {value : α → Option β} {fallback : α → γ} {b
   obtain ⟨ct, dt, hyt⟩ := hyes.1.exists_le
   obtain ⟨cs, ds, hys⟩ := hyes.2.exists_le
   have hlen : PolyBounded (fun a => (ei a).length)
-      (fun a => 2 * (ei a).length + (encOption eb (value a)).length) :=
-    ((PolyBounded.const 2).mul .self).add (c.polyTime hc).polyBounded_length
+      (fun a => 2 * (ei a).length + (encOption eb (value a)).length) := by growth_poly
   have hbodyT : PolyBounded (fun a => (ei a).length)
       (fun a => ct * (2 * (ei a).length + (encOption eb (value a)).length + 1) ^ dt) :=
     polyBounded_pow_of_polyBounded hlen ct dt
@@ -510,12 +508,9 @@ theorem iterate_isPolynomial {n : α → ℕ} {init : α → β} {step : β → 
   have hlenN : PolyBounded (fun a => (ei a).length) (fun a => (encNat (n a)).length) :=
     (cn.polyTime hcn).polyBounded_length
   have hlenN2 : PolyBounded (fun a => (ei a).length)
-      (fun a => 1 * ((encNat (n a)).length + 1) ^ 2) :=
-    polyBounded_pow_of_polyBounded hlenN 1 2
-  have hRT : PolyBounded (fun a => (ei a).length) (fun a => ct * (B a + 1) ^ dt) :=
-    polyBounded_pow_of_polyBounded hB ct dt
-  have hRS : PolyBounded (fun a => (ei a).length) (fun a => cs * (B a + 1) ^ ds) :=
-    polyBounded_pow_of_polyBounded hB cs ds
+      (fun a => 1 * ((encNat (n a)).length + 1) ^ 2) := by growth_poly
+  have hRT : PolyBounded (fun a => (ei a).length) (fun a => ct * (B a + 1) ^ dt) := by growth_poly
+  have hRS : PolyBounded (fun a => (ei a).length) (fun a => cs * (B a + 1) ^ ds) := by growth_poly
   have hmaxB : ∀ a, maxStateLength eb step (n a) (init a) ≤ B a :=
     fun a => maxStateLength_le eb step (n a) (init a) (hstate a)
   have hmaxT : ∀ a, maxRoundTime cstep (n a) (init a) ≤ ct * (B a + 1) ^ dt :=

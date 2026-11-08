@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.GenericRAM.Native.ExpTimePolySpace
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Polynomially many exponential-time calls in polynomial space
@@ -53,11 +54,8 @@ theorem iterate_of_bounds (cn : NativeCertificate count enc encNat)
   let timeFactor a := cn.time a + ci.time a +
     (count a + 1) * (R a + B a + ((encNat (count a)).length + 1) ^ 2)
   let spaceFactor a := cn.space a + ci.space a + Q a + B a + (encNat (count a)).length
-  have htimeFactor : PolyBounded (fun a => (enc a).length) timeFactor :=
-    (hcn.1.add hci.1).add
-      ((hcount.add (.const 1)).mul ((hR.add hB).add ((hclock.add (.const 1)).pow 2)))
-  have hspaceFactor : PolyBounded (fun a => (enc a).length) spaceFactor :=
-    (((hcn.2.add hci.2).add hQ).add hB).add hclock
+  have htimeFactor : PolyBounded (fun a => (enc a).length) timeFactor := by growth_poly
+  have hspaceFactor : PolyBounded (fun a => (enc a).length) spaceFactor := by growth_poly
   have htime (a : α) : (NativeCertificate.iterate cn ci cs).time a ≤ timeFactor a * 2 ^ E a := by
     have hmaxT := maxRoundTime_le cs (count a) (init a) (ht a)
     have hmaxB := maxStateLength_le encState step (count a) (init a) (hb a)

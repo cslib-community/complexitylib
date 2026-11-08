@@ -24,6 +24,7 @@ import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
 import Complexity.Languages.Probabilistic.Norm
 import Complexity.Logics.Propositional.CNF.PolyTime
 import Complexity.Probability.PMF.Bind
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Multi-session zero-knowledge simulator and PRG reduction for sequentially amplified GMW
@@ -490,13 +491,11 @@ theorem isPPTOn_iterate_simSessionStep_finishSessionRun {α Param : Type}
   have hp2 := ComputableInPolyTime.snd input encSt
   have hstep := isPPTOn_simSessionStep machine hg hlen hf
     (hn.comp' hp1) (hT.comp' hp1) (hatt.comp' hp1) (ha.comp' hp1) hp2
-  have hTPoly : PolyBounded (fun p => (input p).length) T := by
-    simpa only [encUnary_apply, List.length_replicate] using hT.polyBounded_length
+  have hTPoly : PolyBounded (fun p => (input p).length) T := by growth_poly
   have hwordPoly : PolyBounded (fun p => (input p).length) (fun p => (word p).length) := by
     simpa only [encBits_apply] using hword.polyBounded_length
   have hsizePoly : PolyBounded (fun p => (input p).length)
-      (fun p => (2 * cf + 3) * ((word p).length + T p + 1)) :=
-    (PolyBounded.const (2 * cf + 3)).mul ((hwordPoly.add hTPoly).add (.const 1))
+      (fun p => (2 * cf + 3) * ((word p).length + T p + 1)) := by growth_poly
   have hinit := hT.tidy.prod
     (ComputableTidilyInPolyTime.finiteConfig_init (k := tapes) (Oracle := Unit)
       hword.tidy machine.initial)
@@ -666,18 +665,14 @@ theorem isPPTOn_sessionWithPadsStep_and_support {α Param : Type}
   have hstep := isPPTOn_attemptWithPadsStep machine hg hf
     (hn.comp' hp1) (hs.comp' hp1) (hm.comp' hp1) (hlimit.comp' hp1)
     (ha.comp' hp1) (hw.comp' hp1) (hstate.comp' hp1).fst' hp2
-  have hlimPoly : PolyBounded (fun p => (input p).length) limit := by
-    simpa only [encUnary_apply, List.length_replicate] using hlimit.polyBounded_length
+  have hlimPoly : PolyBounded (fun p => (input p).length) limit := by growth_poly
   have hstPoly : PolyBounded (fun p => (input p).length)
       (fun p => (encSt (state p).1).length) := (hstate.fst').polyBounded_length
   have hpadsPoly : PolyBounded (fun p => (input p).length)
       (fun p => (encList encBits (state p).2).length) := (hstate.snd').polyBounded_length
   have hsizePoly : PolyBounded (fun p => (input p).length)
       (fun p => 2 * (C * (limit p + (encSt (state p).1).length + 1) + 1) +
-        (encList encBits (state p).2).length) :=
-    ((PolyBounded.const 2).mul
-      (((PolyBounded.const C).mul ((hlimPoly.add hstPoly).add (.const 1))).add (.const 1))).add
-      hpadsPoly
+        (encList encBits (state p).2).length) := by growth_poly
   have hinit := ((ComputableInPolyTime.const (encOut := encOption encSt)
     (none : Option (ℕ × FiniteConfig tapes Bool Control Unit))).prod hstate.snd').tidy
   have hiter := IsPPTOn.iterateWith_spec (input := input) (stateEncoding := encLoop)
@@ -768,18 +763,14 @@ theorem isPPTOn_runAllSessionsWithPads {α Param : Type}
     · exact ⟨hst_eq ▸ hcur.1, hst_eq ▸ hcur.2.1, h2.trans hcur.2.2⟩
     · obtain ⟨hrem, hsb⟩ := mem_support_sessionStep machine (T p) 2 hcur.1 hcur.2.1 hmem
       exact ⟨hrem, hsb, h2.trans hcur.2.2⟩
-  have hTPoly : PolyBounded (fun p => (input p).length) T := by
-    simpa only [encUnary_apply, List.length_replicate] using hT.polyBounded_length
+  have hTPoly : PolyBounded (fun p => (input p).length) T := by growth_poly
   have hwordPoly : PolyBounded (fun p => (input p).length) (fun p => (word p).length) := by
     simpa only [encBits_apply] using hword.polyBounded_length
   have hpadsPoly : PolyBounded (fun p => (input p).length)
       (fun p => (encList encBits (pads p)).length) := hpads.polyBounded_length
   have hsizePoly : PolyBounded (fun p => (input p).length)
       (fun p => 2 * ((2 * cf + 3) * ((word p).length + T p + 1)) + 1 +
-        (encList encBits (pads p)).length) :=
-    (((PolyBounded.const 2).mul
-      ((PolyBounded.const (2 * cf + 3)).mul ((hwordPoly.add hTPoly).add (.const 1)))).add
-      (.const 1)).add hpadsPoly
+        (encList encBits (pads p)).length) := by growth_poly
   have hinit := (hT.tidy.prod
     (ComputableTidilyInPolyTime.finiteConfig_init (k := tapes) (Oracle := Unit)
       hword.tidy machine.initial)).prod

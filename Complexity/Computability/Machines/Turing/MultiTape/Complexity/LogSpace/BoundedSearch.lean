@@ -12,6 +12,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Ba
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Truncated breadth-first search through the views
@@ -149,9 +150,7 @@ theorem computableInPolyTime_boundedSearch {α : Type} {enc : α ↪ List Bool} 
       fun x => (enc x.1).length :=
     (ComputableInPolyTime.fst enc encUnary).polyBounded_length
   have hbound : PolyBounded (fun x : α × ℕ => (encPair enc encUnary x).length) fun x =>
-      (x.2 + 1) * (2 * viewLengthBound k State (enc x.1).length (s x.1) + 1) := by
-    refine (hN.polyBounded.add (.const 1)).mul (((PolyBounded.const 2).mul ?_).add (.const 1))
-    exact (PolyBounded.const _).mul ((hlen.add (hpoly.comp hlen)).add (.const 1))
+      (x.2 + 1) * (2 * viewLengthBound k State (enc x.1).length (s x.1) + 1) := by growth_poly
   refine ComputableInPolyTime.iterateWith (step := fun N found =>
     (Cslib.Reachability.expand ntm.viewSucc found).take N) hN hN
     (ComputableInPolyTime.cons' hinit (ComputableInPolyTime.const [])) hstep hbound ?_

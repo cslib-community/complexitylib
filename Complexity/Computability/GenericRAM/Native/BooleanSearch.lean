@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.GenericRAM.Native.BooleanFold
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Streaming first-match search on Boolean words
@@ -325,8 +326,7 @@ theorem exists_computableInO_of_visit_bounds {test : C × List Bool → Bool}
   have hn : PolyBounded size (fun p : C × ℕ => p.2) := PolyBounded.self.mono fun p => by
     simp only [size, length_encPair, encUnary_apply, List.length_replicate]
     omega
-  have hB : PolyBounded size B := (PolyBounded.const 10).mul
-    (PolyBounded.self.add (PolyBounded.const 1))
+  have hB : PolyBounded size B := by growth_poly
   have hci : ci.IsPolynomial := NativeCertificate.prod_isPolynomial _ _
     (NativeCertificate.linear_isPolynomial _)
     (NativeCertificate.prod_isPolynomial _ _ (NativeCertificate.linear_isPolynomial _)
@@ -336,19 +336,10 @@ theorem exists_computableInO_of_visit_bounds {test : C × List Bool → Bool}
     apply NativeCertificate.comp_isPolynomial
     · exact ⟨PolyBounded.self, PolyBounded.self⟩
     · exact NativeCertificate.linear_isPolynomial _
-  have hstateSize : PolyBounded size stateSize :=
-    (((PolyBounded.const 2).mul (hn.add (PolyBounded.const 1))).add
-      (PolyBounded.const 1)).add hB
-  have hsq : PolyBounded size (fun p : C × ℕ => (p.2 + 2) ^ 2) := by
-    simpa only [one_mul, Nat.add_assoc] using
-      NativeCertificate.polyBounded_pow_of_polyBounded (hn.add (PolyBounded.const 1)) 1 2
-  have htime : PolyBounded size overhead :=
-    ((((hcn.1.add (PolyBounded.self.add hci.1)).add
-      (hstateSize.add hsq)).add hstateSize).add hsq)
-  have hspace : PolyBounded size workspace :=
-    ((((hcn.2.add (PolyBounded.self.add hci.2)).add
-      (hstateSize.add (hn.add (PolyBounded.const 2)))).add hstateSize).add
-      (hn.add (PolyBounded.const 1)))
+  have hstateSize : PolyBounded size stateSize := by growth_poly
+  have hsq : PolyBounded size (fun p : C × ℕ => (p.2 + 2) ^ 2) := by growth_poly
+  have htime : PolyBounded size overhead := by growth_poly
+  have hspace : PolyBounded size workspace := by growth_poly
   refine ⟨fun p => overhead p + workspace p, htime.add hspace, hfinal.mono_le ?_ ?_⟩
   · intro p
     simp only [Function.comp_apply, BooleanFold.length_clock]
@@ -388,12 +379,8 @@ theorem exists_computableInO_of_bounds {test : C × List Bool → Bool}
   let glueS := fun p => (encState p).length + cp.space p +
     4 * (encCallback encC (prepare p)).length +
       2 * (wordCertificate (encC := encC)).space (prepare p)
-  have hgT : PolyBounded (fun p => (encState p).length) glueT :=
-    ((PolyBounded.self.add hp.1).add ((PolyBounded.const 4).mul hlen)).add
-      ((PolyBounded.const 2).mul (hw.1.comp hlen))
-  have hgS : PolyBounded (fun p => (encState p).length) glueS :=
-    ((PolyBounded.self.add hp.2).add ((PolyBounded.const 4).mul hlen)).add
-      ((PolyBounded.const 2).mul (hw.2.comp hlen))
+  have hgT : PolyBounded (fun p => (encState p).length) glueT := by growth_poly
+  have hgS : PolyBounded (fun p => (encState p).length) glueS := by growth_poly
   obtain ⟨a, b, ht⟩ := hgT.exists_le
   obtain ⟨c, d, hs⟩ := hgS.exists_le
   let size := fun p : C × ℕ => (encPair encC encUnary p).length

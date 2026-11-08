@@ -22,6 +22,7 @@ import Complexity.Foundations.Data.List.OfFn
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Algebra.Order.BigOperators.Group.List
 import Mathlib.Data.List.GetD
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Streaming group-sum and outer Taylor-jet accumulators with Cramer recovery
@@ -427,10 +428,7 @@ theorem size_natAbs_rowEntry_prodJet_le {J ℓ b : ℕ} {factors : List JetRows}
   let B : α → ℕ := fun x => J x * (2 * (ℓ x * (2 * (1 + Lf x * (Lf x + J x * ℓ x)) + 3)) + 1)
   have hJ_pb := hJ.polyBounded; have hℓ_pb := hℓ.polyBounded
   have hLf_pb := hfactors.polyBounded_length
-  have hB : PolyBounded (fun x => (encIn x).length) B :=
-    hJ_pb.mul (((PolyBounded.const 2).mul (hℓ_pb.mul (((PolyBounded.const 2).mul
-      ((PolyBounded.const 1).add (hLf_pb.mul (hLf_pb.add (hJ_pb.mul hℓ_pb))))).add
-        (.const 3)))).add (.const 1))
+  have hB : PolyBounded (fun x => (encIn x).length) B := by growth_poly
   refine ComputableInPolyTime.foldlWith
     (par := fun x => (J x, ℓ x)) (step := fun p acc A => convJet p.1 p.2 acc A)
     (hJ.prod hℓ) hfactors (computableInPolyTime_constJet hJ hℓ (.const 1)) convJet_polytime hB
@@ -558,14 +556,11 @@ private theorem computableInPolySpace_of_inO {α β : Type} {ei : α ↪ List Bo
     fun x => (hl x).trans (hk x)⟩
 private theorem pb_aff {ι : Type} {sz f g : ι → ℕ} (a b c : ℕ)
     (hf : PolyBounded sz f) (hg : PolyBounded sz g) :
-    PolyBounded sz (fun x => a * f x + b * g x + c) :=
-  (((PolyBounded.const a).mul hf).add ((PolyBounded.const b).mul hg)).add (.const c)
+    PolyBounded sz (fun x => a * f x + b * g x + c) := by growth_poly
 private theorem polyBounded_jetEncBound {ι : Type} {sz J ℓ K M : ι → ℕ}
     (hJ : PolyBounded sz J) (hℓ : PolyBounded sz ℓ) (hK : PolyBounded sz K)
     (hM : PolyBounded sz M) :
-    PolyBounded sz (fun x => J x * (2 * (ℓ x * (2 * (K x + M x) + 3)) + 1)) :=
-  hJ.mul (((PolyBounded.const 2).mul (hℓ.mul
-    (((PolyBounded.const 2).mul (hK.add hM)).add (.const 3)))).add (.const 1))
+    PolyBounded sz (fun x => J x * (2 * (ℓ x * (2 * (K x + M x) + 3)) + 1)) := by growth_poly
 theorem exists_natAbs_rowEntry_le_two_pow {ι γ : Type} {sz : ι → ℕ}
     {encΓ : γ ↪ List Bool} {f : γ → JetRows} {L : ι → ℕ}
     (hf : PolyBounded (fun y => (encΓ y).length) (fun y => (encIntTable (f y)).length))
@@ -610,10 +605,7 @@ theorem computableInO_snd_indexFold {ι β : Type} {encIn : ι ↪ List Bool}
   let P : ι → ℕ := fun x => cn.time x + cn.space x + (encIn x).length + ci.time x + ci.space x +
     2 * S_st x + 2 * (1 * ((encNat (count x)).length + 1) ^ 2) + P_cb x + Q x +
     2 * (encNat (count x)).length + 1
-  have hP_pb : PolyBounded (fun x => (encIn x).length) P :=
-    ((((((((((hcn.1.add hcn.2).add .self).add hci.1).add hci.2).add
-      ((PolyBounded.const 2).mul hSst_pb)).add ((PolyBounded.const 2).mul hsq_pb)).add
-      hP_cb).add hQ_pb).add ((PolyBounded.const 2).mul hcnt_pb)).add (.const 1))
+  have hP_pb : PolyBounded (fun x => (encIn x).length) P := by growth_poly
   refine ⟨P, hP_pb, (NativeCertificate.snd cLoop).computes.mono_le (fun x => ?_) (fun x => ?_)⟩
   · refine (Nat.add_le_add (Nat.le_mul_of_pos_left _ (Nat.succ_pos (count x))) le_rfl).trans ?_
     rw [← Nat.mul_add]; exact Nat.mul_le_mul_left (count x + 1) (by dsimp only [S_st, P]; omega)
@@ -868,8 +860,7 @@ private theorem groupJetSum_run_inO {J ℓ d : ι → ℕ} {ctx : ι → α}
   have hBacc_pb := polyBounded_jetEncBound hJ_pb hℓ_pb (hd_pb.add (.const 1)) (hM_pb.add (.const 1))
   let B_inner : ι → ℕ := fun x =>
     (10 * d x + 8 * J x + 0) + (4 * ℓ x + 2 * (encCtx (ctx x)).length + 8) + B_acc x
-  have hBinner_pb : PolyBounded (fun x => (encIn x).length) B_inner :=
-    ((pb_aff 10 8 0 hd_pb hJ_pb).add (pb_aff 4 2 8 hℓ_pb hctx_pb)).add hBacc_pb
+  have hBinner_pb : PolyBounded (fun x => (encIn x).length) B_inner := by growth_poly
   have hB : ∀ x j, j ≤ 2 ^ d x → (encPair encUnary (encJetAccum encCtx)
       (BooleanFold.runPrefix (groupSumBody evalGroupProd) (d x) j
         (((J x, ℓ x), ctx x), zeroJet (J x) (ℓ x))).2).length ≤ B_inner x := fun x j hj => by

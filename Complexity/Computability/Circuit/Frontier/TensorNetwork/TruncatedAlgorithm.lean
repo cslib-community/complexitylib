@@ -13,6 +13,7 @@ import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionPo
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Polynomial truncation order from a contraction over `A_P`
@@ -321,24 +322,12 @@ noncomputable def TruncatedContractionAlgorithm.ofCore {entry : T → List Bool 
     let F2 : ℕ → ℕ := fun n =>
       Kd * (n + Ef n + 1) ^ Kd * 2 ^ (C * s₀) * (Ef n * 2 ^ (Ke * s₀) + 1)
     let F : ℕ → ℕ := fun n => pg n + F1 n + F2 n
-    have hYp : PolyBounded id Yf :=
-      (PolyBounded.const cY).mul ((PolyBounded.self.add (PolyBounded.const 1)).pow dY)
-    have hQp : PolyBounded id Qf :=
-      (PolyBounded.const K₀).mul (((PolyBounded.const 9).mul ((hYp.add
-        (PolyBounded.const 1)).pow 2)).add (PolyBounded.const 1) |>.pow K₀)
-    have hEp : PolyBounded id Ef :=
-      (PolyBounded.const Ke).mul ((PolyBounded.self.add (PolyBounded.const 1)).pow Ke)
+    have hYp : PolyBounded id Yf := by growth_poly
+    have hQp : PolyBounded id Qf := by growth_poly
+    have hEp : PolyBounded id Ef := by growth_poly
     have qg := PolyBounded.of_polynomiallyBounded id hpg
     have qM := PolyBounded.of_polynomiallyBounded id hpM
-    have hFp : PolyBounded id F :=
-      ((qg.comp PolyBounded.self).add
-        ((qM.comp PolyBounded.self).add (((hYp.mul hYp).add
-          (PolyBounded.const 2)).mul (((PolyBounded.const KE).mul (((hYp.add
-            ((PolyBounded.const cO).mul (hQp.add (PolyBounded.const 1)))).add
-              (PolyBounded.const 1)).pow KE)).add hQp)))).add
-        ((((PolyBounded.const Kd).mul (((PolyBounded.self.add hEp).add
-          (PolyBounded.const 1)).pow Kd)).mul (PolyBounded.const (2 ^ (C * s₀)))).mul
-          ((hEp.mul (PolyBounded.const (2 ^ (Ke * s₀)))).add (PolyBounded.const 1)))
+    have hFp : PolyBounded id F := by growth_poly
     obtain ⟨a, d, had⟩ := hFp.exists_le
     refine ⟨a + d + K₀, fun s P ℓ r G hs hP hPD hℓ hℓD hA => ?_⟩
     obtain ⟨hsm, hmC, hkC⟩ := hshape C s r G hA

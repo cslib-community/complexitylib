@@ -31,6 +31,7 @@ import Complexity.Foundations.Data.List.OfFn
 import Complexity.Foundations.Data.Nat.BinarySize
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Matrix.Basic
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Polynomial-time construction of auxiliary exchange matrices and replacement rows
@@ -1167,9 +1168,7 @@ private theorem er_fallingOrbitWeights {m A₀ j : α → ℕ}
             (listGetDWithInput hf1 (unary_add' hp2 (.const 1)) 0)) (.const 0)))
   have pm := hm.polyBounded; have pA := hA₀.polyBounded; have pj := hj.polyBounded
   have hB : PolyBounded (fun a => (input a).length)
-      (fun a => (m a + 1) * (2 * (j a * (2 * (m a + A₀ a + j a)) + 2) + 1)) :=
-    (pm.add (.const 1)).mul (((PolyBounded.const 2).mul
-      ((pj.mul ((PolyBounded.const 2).mul ((pm.add pA).add pj))).add (.const 2))).add (.const 1))
+      (fun a => (m a + 1) * (2 * (j a * (2 * (m a + A₀ a + j a)) + 2) + 1)) := by growth_poly
   have hrep : CPT (fun a => List.replicate (m a) (0 : ℤ)) input (encList encIntBin) := by
     simpa only [Function.comp_def, List.map_const', List.length_range] using
       er_map (unary_range' hm) (.const (0 : ℤ))
@@ -1238,9 +1237,7 @@ private theorem er_mismatchAnnihilatorCoeffsDigits {Q : α → ℕ}
             (listGetDWithInput (hp.comp' hk1) (unary_sub' hk2 (.const 1)) 0) (.const 0))))
   have pQ := hQ.polyBounded
   have hB : PolyBounded (fun a => (input a).length)
-      (fun a => (Q a + 1) * (2 * (Q a * Q a + Q a + 3) + 1)) :=
-    (pQ.add (.const 1)).mul
-      (((PolyBounded.const 2).mul (((pQ.mul pQ).add pQ).add (.const 3))).add (.const 1))
+      (fun a => (Q a + 1) * (2 * (Q a * Q a + Q a + 3) + 1)) := by growth_poly
   refine foldlWith (encP := encPair encAuxDigits encAuxDigits) (encA := encUnary)
     (encL := encList encUnary) (encB := encList encIntBin) (step := stepFn) (hu.prod hy)
     (range.comp hQ) (init := fun _ => [1]) (const [1]) hstep hB fun a i _ => ?_

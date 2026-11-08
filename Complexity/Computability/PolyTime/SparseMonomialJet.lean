@@ -26,6 +26,7 @@ import Mathlib.Algebra.Polynomial.Div
 import Mathlib.Data.List.GetD
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Stage-1 sparse monomial $z$-jet substitution and node-$t$ Taylor shift
@@ -985,9 +986,8 @@ private lemma polyNorm1_truncZJet_getD_le_two_pow (J : ℕ) (varJets : List (Lis
   let bound (n Lt Lc : ℕ) : ℕ := n * (2 * bElem Lt Lc + 1)
   have hLt := ht.polyBounded_length; have hLc := hcoeffs.polyBounded_length
   have hpb : PolyBounded (fun x => (encIn x).length)
-      (fun x => bound (J x) (encIntBin (t x)).length (encList encIntBin (coeffs x)).length) :=
-    hJ.polyBounded.mul (((PolyBounded.const 2).mul
-      ((((PolyBounded.const 2).mul hLc).add (hLc.mul hLt)).add (.const 2))).add (.const 1))
+      (fun x => bound (J x) (encIntBin (t x)).length (encList encIntBin (coeffs x)).length) := by
+    growth_poly
   refine foldlWith (par := fun x => (J x, t x))
     (step := fun par acc c => SparseMonomialJet.hornerShiftStep par.1 par.2 acc c)
     (hJ.prod ht) hrev hinit hstep hpb fun x i _ => ?_
@@ -1135,9 +1135,7 @@ private theorem prodMonomialJet_polytime {J : α → ℕ} {varJets : α → List
   have hLv := hvarJets.polyBounded_length; have hLm := hmon.polyBounded_length
   have hpb : PolyBounded (fun x => (encIn x).length)
       (fun x => bound (J x) (encList (encList encIntBin) (varJets x)).length
-        (encList encNat (mon x)).length) :=
-    hJ.polyBounded.mul (((PolyBounded.const 2).mul
-      ((((PolyBounded.const 2).mul hLv).mul hLm).add (.const 2))).add (.const 1))
+        (encList encNat (mon x)).length) := by growth_poly
   refine foldlWith (par := fun x => (J x, varJets x)) (step := stepFn)
     (hJ.prod hvarJets) hmon hinit hstep hpb fun x i _ => ?_
   set Lv := (encList (encList encIntBin) (varJets x)).length
@@ -1202,13 +1200,11 @@ private theorem prodMonomialJet_polytime {J : α → ℕ} {varJets : α → List
   have hpb_elem : PolyBounded (fun x => (encIn x).length)
       (fun x => bElem (k x) (encIntBin (dDen x)).length
         (encList (encList encIntBin) (varJets x)).length
-        (encList (encList encNat) (eq x)).length) :=
-    ((hLe.add (hK.mul hLd)).add (((PolyBounded.const 2).mul hLv).mul hLe)).add (.const 2)
+        (encList (encList encNat) (eq x)).length) := by growth_poly
   have hpb : PolyBounded (fun x => (encIn x).length)
       (fun x => bound (J x) (k x) (encIntBin (dDen x)).length
         (encList (encList encIntBin) (varJets x)).length
-        (encList (encList encNat) (eq x)).length) :=
-    hJ.polyBounded.mul (((PolyBounded.const 2).mul hpb_elem).add (.const 1))
+        (encList (encList encNat) (eq x)).length) := by growth_poly
   refine foldlWith (par := fun x => ((J x, k x), (dDen x, varJets x))) (step := stepFn)
     ((hJ.prod hk).prod (hdDen.prod hvarJets)) heq hinit hstep hpb fun x i _ => ?_
   set K := k x; set Ld := (encIntBin (dDen x)).length

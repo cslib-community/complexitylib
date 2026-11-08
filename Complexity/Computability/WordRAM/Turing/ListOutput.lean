@@ -228,14 +228,11 @@ theorem parkedOutputCertificate_isPolynomial (L : ℕ)
     (parkedOutputCertificate L c).IsPolynomial := by
   have hv := parkedRegisterCertificate_isPolynomial L c hc (List.finRange r)
   have hS : PolyBounded (fun a => (encIn a).length)
-      (fun a => (FiniteState.encoding B.encoding (s a)).length) :=
-    (c.polyTime hc).polyBounded_length
+      (fun a => (FiniteState.encoding B.encoding (s a)).length) := by growth_poly
   let bound : α → ℕ := fun a =>
     6 * (FiniteState.encoding B.encoding (s a)).length + 2 * W a + 4 +
       (parkedOutput L (s a)).length * (2 * W a + 1)
-  have hB : PolyBounded (fun a => (encIn a).length) bound := by
-    dsimp only [bound]
-    growth_poly
+  have hB : PolyBounded (fun a => (encIn a).length) bound := by growth_poly
   refine congr_isPolynomial _ _ (snd_isPolynomial _ (snd_isPolynomial _
     (iterate_isPolynomial _ _ _ (readCertificate_isPolynomial _ c _ hc hv)
       (prod_isPolynomial _ _ (prod_isPolynomial _ _ hc hc)
@@ -413,7 +410,6 @@ theorem Program.ComputesListInTime.turingComputableInPolyTime
       (fun a w => logWidth k (size a) ≤ w) f) :
     Turing.MultiTapeTM.ComputableInPolyTime f encIn (encList encNat) := by
   have hlog : PolyBounded (fun a => (encIn a).length) (fun a => logWidth k (size a)) := by
-    unfold logWidth
     growth_poly
   obtain ⟨width, hwidth, hge⟩ := exists_unary_majorant
     (hlog.add (hencode.polyBounded_length (encMid := encList encNat)))

@@ -25,6 +25,7 @@ import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Nat.Choose.Sum
 import Mathlib.Data.Nat.Size
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Combinatorial subset-pair unranking and streaming folds
@@ -1225,15 +1226,7 @@ theorem polyBounded_space_of_polyBounded {encIn : α ↪ List Bool} {dim deg : �
     (hQ : PolyBounded (fun a => (encIn a).length) Q) :
     PolyBounded (fun a => (encIn a).length)
       (fun a => (encIn a).length + cn.space a + cq.space a + ci.space a +
-        decodeOverhead (dim a + deg a) + B a + Q a) := by
-  have hdim : PolyBounded (fun a => (encIn a).length) dim := by
-    simpa only [encUnary_apply, List.length_replicate] using (cn.polyTime hcn).polyBounded_length
-  have hdeg : PolyBounded (fun a => (encIn a).length) deg := by
-    simpa only [encUnary_apply, List.length_replicate] using (cq.polyTime hcq).polyBounded_length
-  have hdec : PolyBounded (fun a => (encIn a).length) (fun a => decodeOverhead (dim a + deg a)) :=
-    (PolyBounded.of_polynomiallyBounded id polynomiallyBounded_decodeOverhead).comp
-      (hdim.add hdeg)
-  exact ((((((PolyBounded.self.add hcn.2).add hcq.2).add hci.2).add hdec).add hB).add hQ)
+        decodeOverhead (dim a + deg a) + B a + Q a) := by growth_poly
 
 end OverheadAndBounds
 

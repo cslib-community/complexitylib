@@ -15,6 +15,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListM
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListToBits
 import Mathlib.Data.Nat.Size
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Streaming local Boolean assignments
@@ -298,13 +299,10 @@ theorem certificate_bounds {α : Type} {encIn : α ↪ List Bool}
     IndexFold.roundCertificate_isPolynomial _ (visitCertificate_isPolynomial cb hcb)
   obtain ⟨ct, dt, hct⟩ := hcstep.1.exists_le
   obtain ⟨cs, ds, hcs⟩ := hcstep.2.exists_le
-  have hdim : PolyBounded (fun a => (encIn a).length) dimension := by
-    simpa only [encUnary_apply, List.length_replicate] using
-      (cn.polyTime hcn).polyBounded_length
+  have hdim : PolyBounded (fun a => (encIn a).length) dimension := by growth_poly
   -- Every live state: the binary index, the unary width and the accumulator.
   let S := fun a => 4 * dimension a + 4 + B a
-  have hS : PolyBounded (fun a => (encIn a).length) S :=
-    (((PolyBounded.const 4).mul hdim).add (.const 4)).add hB
+  have hS : PolyBounded (fun a => (encIn a).length) S := by growth_poly
   have hstateS (a : α) (j : ℕ) (hj : j ≤ 2 ^ dimension a) :
       (encPair encNat (encPair encUnary encB)
         ((IndexFold.step (visit body))^[j] (0, (dimension a, initial a)))).length ≤ S a :=
