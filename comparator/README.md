@@ -94,9 +94,9 @@ The optional `ComplexityComparator` library builds the committed statements and 
 The generated-challenge library has no roots and no default build facets; Lake resolves its
 modules only when comparator explicitly requests one. Neither a normal build nor
 `lake build @complexitylib` needs generated files or builds admitted challenge stubs. Both
-comparator libraries use `roots = []`, so `mk_all` never generates aggregates importing their
-children. The default `Complexity` target and test driver are unchanged. To compile just the
-committed checks:
+comparator libraries use `roots = []`, so `scripts/mk_all.py` never generates aggregates
+importing their children. The default `Complexity` target and test driver are unchanged. To
+compile just the committed checks:
 
 ```sh
 lake build ComplexityComparator

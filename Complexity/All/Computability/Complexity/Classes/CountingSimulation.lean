@@ -1,0 +1,22 @@
+module  -- shake: keep-all --deprecated_module: ignore
+-- upstream: local-only (project scaffolding)
+
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.Accumulate
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.Admissible
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.Assembly
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.BlockNetworks
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.Containments
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.Count
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.CountingClasses
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.EntryAnalysis
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastAlgorithm
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastAnalysis
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastLeaves
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastSimulation
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.Guarded
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.Interfaces
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.Promise
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.Separation
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.TruncatedBoundedDegree
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.TruncatedEntry
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.TruncatedSum

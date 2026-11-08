@@ -53,13 +53,22 @@ if [ "${COMPLEXITYLIB_CACHE_CHECK_STARTED-}" != "1" ]; then
 fi
 if ((quick)); then
   finish
-  exec python3 scripts/quick_check.py "$@"
+  exec python3 -B scripts/quick_check.py "$@"
 fi
+# `lint-style` lints the modules that the modules it is given import directly, by default those of
+# the root aggregators, which import directory shards rather than every module (scripts/mk_all.py).
+lint_style() {
+  local modules
+  modules=$(python3 -B scripts/mk_all.py --aggregates) || return
+  # One module name per line: word splitting is intended.
+  # shellcheck disable=SC2086
+  lake exe lint-style $modules
+}
 run "build --wfail --iofail" lake build --wfail --iofail
-run "mk_all --check" lake exe mk_all --check
+run "mk_all --check" python3 -B scripts/mk_all.py --check
 run "test --wfail --iofail" lake test --wfail --iofail
 run "lint" lake lint
-run "lint-style" lake exe lint-style
+run "lint-style" lint_style
 run "checkInitImports" lake exe checkInitImports
 finish
 exit $status

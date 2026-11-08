@@ -1,0 +1,5 @@
+module  -- shake: keep-all --deprecated_module: ignore
+-- upstream: local-only (project scaffolding)
+
+public import Complexity.Computability.Probabilistic.Realization.OpenOracleSimulation
+public import Complexity.Computability.Probabilistic.Realization.OracleSimulation

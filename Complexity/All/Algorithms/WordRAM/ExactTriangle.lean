@@ -1,0 +1,44 @@
+module  -- shake: keep-all --deprecated_module: ignore
+-- upstream: local-only (project scaffolding)
+
+public import Complexity.All.Algorithms.WordRAM.ExactTriangle.BoxRecordWitness
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime
+public import Complexity.All.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime
+public import Complexity.Algorithms.WordRAM.ExactTriangle.Catalogue
+public import Complexity.Algorithms.WordRAM.ExactTriangle.ChunkCatalogue
+public import Complexity.Algorithms.WordRAM.ExactTriangle.Chunks
+public import Complexity.Algorithms.WordRAM.ExactTriangle.Classes
+public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime
+public import Complexity.All.Algorithms.WordRAM.ExactTriangle.CountPrime
+public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicCost
+public import Complexity.All.Algorithms.WordRAM.ExactTriangle.DyadicCost
+public import Complexity.Algorithms.WordRAM.ExactTriangle.DyadicParameters
+public import Complexity.All.Algorithms.WordRAM.ExactTriangle.DyadicParameters
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime
+public import Complexity.All.Algorithms.WordRAM.ExactTriangle.FixedPrime
+public import Complexity.Algorithms.WordRAM.ExactTriangle.InstancePair
+public import Complexity.Algorithms.WordRAM.ExactTriangle.Instances
+public import Complexity.Algorithms.WordRAM.ExactTriangle.MatrixSpec
+public import Complexity.Algorithms.WordRAM.ExactTriangle.ParameterSelecting
+public import Complexity.All.Algorithms.WordRAM.ExactTriangle.ParameterSelecting
+public import Complexity.Algorithms.WordRAM.ExactTriangle.Parameters
+public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationAdjacency
+public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationBounds
+public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationInput
+public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationLocality
+public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationSpec
+public import Complexity.Algorithms.WordRAM.ExactTriangle.PrimeSelection
+public import Complexity.All.Algorithms.WordRAM.ExactTriangle.PrimeSelection
+public import Complexity.Algorithms.WordRAM.ExactTriangle.QueryScan
+public import Complexity.Algorithms.WordRAM.ExactTriangle.QuerySpec
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct
+public import Complexity.All.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct
+public import Complexity.All.Algorithms.WordRAM.ExactTriangle.RecordProduct
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness
+public import Complexity.All.Algorithms.WordRAM.ExactTriangle.RecordWitness
+public import Complexity.Algorithms.WordRAM.ExactTriangle.ResidueClasses
+public import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime
+public import Complexity.All.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime
+public import Complexity.All.Algorithms.WordRAM.ExactTriangle.WitnessScan
+public import Complexity.Algorithms.WordRAM.ExactTriangle.WriteMatrices

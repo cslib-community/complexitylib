@@ -15,6 +15,9 @@ import sys
 import tempfile
 import tomllib
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import mk_all  # noqa: E402
+
 
 class FullCheck(Exception):
     """The change cannot safely use the bounded quick-check path."""
@@ -145,6 +148,9 @@ def source_modules(root: Path) -> tuple[dict[str, str], set[str], set[str], set[
             modules[module] = path.relative_to(root).as_posix()
             if on_demand_library:
                 on_demand.add(module)
+            # The directory shards of `scripts/mk_all.py` are generated aggregates too.
+            if not globbed and path.is_relative_to(directory / mk_all.SHARD_DIR):
+                aggregates.add(module)
     return modules, aggregates, roots, on_demand
 
 
@@ -298,7 +304,7 @@ def main(argv: list[str] | None = None, root: Path | None = None) -> int:
         status = run_check(root, ["lake", "build", "--wfail", "--iofail", *batch], "affected modules and clients")
         if status:
             return status
-    return run_check(root, ["lake", "exe", "mk_all", "--check"], "mk_all --check")
+    return run_check(root, [sys.executable, "-B", "scripts/mk_all.py", "--check"], "mk_all --check")
 
 
 if __name__ == "__main__":

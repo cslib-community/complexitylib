@@ -1,0 +1,40 @@
+module  -- shake: keep-all --deprecated_module: ignore
+-- upstream: local-only (project scaffolding)
+
+public import Complexity.Languages.Probabilistic.Basic
+public import Complexity.Languages.Probabilistic.BitString
+public import Complexity.Languages.Probabilistic.BoundedUniform
+public import Complexity.Languages.Probabilistic.CenteredBinomial
+public import Complexity.All.Languages.Probabilistic.CenteredBinomial
+public import Complexity.Languages.Probabilistic.Concentration
+public import Complexity.Languages.Probabilistic.Expect
+public import Complexity.Languages.Probabilistic.Forking
+public import Complexity.Languages.Probabilistic.Iteration
+public import Complexity.Languages.Probabilistic.LinearHash
+public import Complexity.Languages.Probabilistic.Memoize
+public import Complexity.Languages.Probabilistic.Notation
+public import Complexity.Languages.Probabilistic.Oracle
+public import Complexity.All.Languages.Probabilistic.Oracle
+public import Complexity.Languages.Probabilistic.Presample
+public import Complexity.Languages.Probabilistic.QueriesWith
+public import Complexity.Languages.Probabilistic.QueryCount
+public import Complexity.All.Languages.Probabilistic.QueryCount
+public import Complexity.Languages.Probabilistic.RandomOracle
+public import Complexity.All.Languages.Probabilistic.RandomOracle
+public import Complexity.Languages.Probabilistic.RandomPermutation
+public import Complexity.All.Languages.Probabilistic.RandomPermutation
+public import Complexity.Languages.Probabilistic.Repeat
+public import Complexity.All.Languages.Probabilistic.Sampling
+public import Complexity.Languages.Probabilistic.Selection
+public import Complexity.Languages.Probabilistic.Semantics
+public import Complexity.Languages.Probabilistic.Sharing
+public import Complexity.Languages.Probabilistic.Simulation
+public import Complexity.Languages.Probabilistic.Sum
+public import Complexity.Languages.Probabilistic.Transcript
+public import Complexity.Languages.Probabilistic.Traverse
+public import Complexity.All.Languages.Probabilistic.Traverse
+public import Complexity.Languages.Probabilistic.UniformNat
+public import Complexity.All.Languages.Probabilistic.UniformNat
+public import Complexity.Languages.Probabilistic.UntilBad
+public import Complexity.All.Languages.Probabilistic.UntilBad
+public import Complexity.Languages.Probabilistic.Vector

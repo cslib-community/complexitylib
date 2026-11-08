@@ -8,7 +8,8 @@ The authoritative records are:
   [lean-toolchain](lean-toolchain) for pinned versions;
 * each module's `-- upstream:` markers for candidate, submitted, vendored or local-only status,
   including PR numbers and copied revisions; markers can also identify blocks within a module;
-* [Complexity.lean](Complexity.lean) for the module inventory.
+* [Complexity.lean](Complexity.lean) and the directory shards under `Complexity/All/` for the
+  module inventory.
 
 Use `python3 scripts/upstream_sync.py --offline` to list copied dependencies, and
 `python3 scripts/upstream_sync.py` to compare recorded revisions and the base pin with upstream.

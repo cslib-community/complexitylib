@@ -42,10 +42,8 @@ class AggregateMergeTests(unittest.TestCase):
         target.write_text(content)
 
     def aggregate(self):
-        modules = sorted(".".join(p.relative_to(self.repo).with_suffix("").parts)
-                         for p in (self.repo / "Complexity").rglob("*.lean"))
-        self.write("Complexity.lean", verifier.MODULE_HEADER.decode() +
-                   "".join(f"public import {name}\n" for name in modules))
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(verifier.mk_all.main([], root=self.repo), 0)
 
     def commit(self, message):
         self.git("add", ".")
@@ -91,6 +89,25 @@ class AggregateMergeTests(unittest.TestCase):
         self.assertEqual(report["canonical_import_count"], 4)
         self.assertTrue(report["isolation"]["no_shared_object_inodes"])
         self.assertEqual(before, self.snapshot(), "verifier mutated inspected repository")
+
+    def test_adjacent_additions_in_a_directory_shard(self):
+        self.write(".gitattributes", "Complexity.lean merge=union\nComplexity/All/** merge=union\n")
+        self.write("Complexity/Area/Init.lean", "-- fixture\n")
+        self.aggregate()
+        self.base = self.commit("area base")
+        prefix, source = self.additions("Area/Able", "Area/Beta")
+        status, report = self.report(prefix, source)
+        self.assertEqual(status, 0, report)
+        self.assertEqual(report["conflicts"], ["Complexity/All/Area.lean"])
+        self.assertEqual(report["candidate_tree"], report["default_merge_tree"])
+        self.assertEqual(report["canonical_import_count"], 5)
+        self.assertEqual(report["canonical_aggregate_files"], 2)
+        # A shard that does not match its directory is not canonical.
+        self.git("switch", "--quiet", "--detach", source)
+        self.write("Complexity/All/Area.lean", (self.repo / "Complexity/All/Area.lean")
+                   .read_text().replace("public import Complexity.Area.Beta\n", ""))
+        _, report = self.report(prefix, self.commit("stale shard"))
+        self.assertIn("aggregate is not canonical", report["reason"])
 
     def test_actual_temporary_git_storage_is_independent(self):
         prefix, source = self.additions()
