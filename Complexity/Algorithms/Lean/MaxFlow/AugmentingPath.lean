@@ -413,6 +413,21 @@ theorem card_augment (hM : IsMatching G M) (hN : IsMatching G N) :
   rw [augment, Finset.card_union_of_disjoint hdisj, ← card_matchedLeft hN]
   omega
 
+/-- The left vertices covered by an augmentation are those covered by `N` or by `M`. -/
+theorem matchedLeft_augment : matchedLeft (augment M N) = matchedLeft N ∪ matchedLeft M := by
+  ext u
+  simp only [Finset.mem_union, mem_matchedLeft, mem_augment]
+  constructor
+  · rintro ⟨v, h | ⟨h, _⟩⟩
+    · exact .inl ⟨v, h⟩
+    · exact .inr ⟨v, h⟩
+  · rintro (⟨v, h⟩ | ⟨v, h⟩)
+    · exact ⟨v, .inl h⟩
+    · by_cases hN : ∃ w, (u, w) ∈ N
+      · obtain ⟨w, hw⟩ := hN
+        exact ⟨w, .inl hw⟩
+      · exact ⟨v, .inr ⟨h, hN⟩⟩
+
 end Augment
 
 section AugmentingPath
@@ -472,6 +487,46 @@ theorem IsAugmentingPath.compat {p : List (L × R)} (hp : IsAugmentingPath G M p
   · exact absurd (mem_matchedRight.mpr ⟨u, hv' ▸ huv⟩) (hp.last_free e' he')
   · obtain ⟨e, he, rfl⟩ := List.mem_map.mp hu
     exact mem_matchedLeft.mpr ⟨e.2, List.mem_toFinset.mpr he⟩
+
+omit [DecidableEq L] [DecidableEq R] in
+private theorem isChain_fst_mem {p : List (L × R)} (hc : p.IsChain fun a b => (b.1, a.2) ∈ M)
+    {e : L × R} (he : e ∈ p) : (∃ h ∈ p.head?, h = e) ∨ ∃ a ∈ p, (e.1, a.2) ∈ M := by
+  induction hc with
+  | nil => simp at he
+  | singleton a =>
+    rw [List.mem_singleton] at he
+    exact .inl ⟨a, rfl, he.symm⟩
+  | @cons_cons a b l hab _ ih =>
+    rcases List.mem_cons.mp he with rfl | he
+    · exact .inl ⟨e, rfl, rfl⟩
+    · rcases ih he with ⟨h, hh, rfl⟩ | ⟨a', ha', hM'⟩
+      · simp only [List.head?_cons, Option.mem_def, Option.some.injEq] at hh
+        subst hh
+        exact .inr ⟨a, List.mem_cons_self, hab⟩
+      · exact .inr ⟨a', List.mem_cons_of_mem _ ha', hM'⟩
+
+/-- Every left vertex of an augmenting path other than its first is already matched. -/
+theorem IsAugmentingPath.matchedLeft_toFinset_subset {p : List (L × R)}
+    (hp : IsAugmentingPath G M p) :
+    ∀ u ∈ matchedLeft p.toFinset, (∃ h ∈ p.head?, h.1 = u) ∨ u ∈ matchedLeft M := by
+  intro u hu
+  obtain ⟨v, hv⟩ := mem_matchedLeft.mp hu
+  rcases isChain_fst_mem hp.chain (List.mem_toFinset.mp hv) with ⟨h, hh, rfl⟩ | ⟨a, _, hM'⟩
+  · exact .inl ⟨_, hh, rfl⟩
+  · exact .inr (mem_matchedLeft.mpr ⟨a.2, hM'⟩)
+
+/-- An augmenting path covers a matched left vertex iff it covers its mate. -/
+theorem IsAugmentingPath.compat_iff {p : List (L × R)} (hp : IsAugmentingPath G M p)
+    (hM : IsMatching G M) :
+    ∀ u v, (u, v) ∈ M → (u ∈ matchedLeft p.toFinset ↔ v ∈ matchedRight p.toFinset) := by
+  intro u v huv
+  refine ⟨fun hu => ?_, hp.compat hM u v huv⟩
+  obtain ⟨v', hv'⟩ := mem_matchedLeft.mp hu
+  rcases isChain_fst_mem hp.chain (List.mem_toFinset.mp hv') with ⟨h, hh, hhe⟩ | ⟨a, ha, hM'⟩
+  · subst hhe
+    exact absurd (mem_matchedLeft.mpr ⟨v, huv⟩) (hp.head_free _ hh)
+  · rw [hM.2.1 u v a.2 huv hM']
+    exact mem_matchedRight.mpr ⟨a.1, List.mem_toFinset.mpr ha⟩
 
 /-- Augmenting along an augmenting path gives a matching. -/
 theorem IsAugmentingPath.isMatching_augment {p : List (L × R)} (hp : IsAugmentingPath G M p)
