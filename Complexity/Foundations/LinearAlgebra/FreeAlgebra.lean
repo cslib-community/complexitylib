@@ -24,7 +24,8 @@ coefficients multiply: `coeff (u v) (a b) = coeff u a * coeff v b`
 (`FreeAlgebra.coeff_mul_mul_of_isHomogeneous`).
 
 `FreeMonoid.ofFn u` is the word `u 0 u 1 ⋯ u (k - 1)` of a tuple `u : Fin k → X`; every word of
-length `k` has this form (`FreeMonoid.exists_ofFn_eq`).
+length `k` has this form (`FreeMonoid.exists_ofFn_eq`), and the product of the words of a
+`k`-tuple and an `m`-tuple determines both tuples (`FreeMonoid.ofFn_mul_ofFn_injective`).
 
 ## Main definitions
 
@@ -71,6 +72,29 @@ theorem exists_ofFn_eq {k : ℕ} (w : FreeMonoid X) (h : w.length = k) :
   subst h
   exact ⟨w.toList.get,
     (congrArg ofList (List.ofFn_get w.toList)).trans (ofList_toList w)⟩
+
+/-- Prepending a letter to a tuple prepends it to the word. -/
+theorem ofFn_cons {k : ℕ} (x : X) (u : Fin k → X) :
+    ofFn (Fin.cons x u : Fin (k + 1) → X) = of x * ofFn u := by
+  simp [ofFn, List.ofFn_succ]
+
+/-- Reversing a tuple with a prepended letter appends the letter to the reversed word. -/
+theorem ofFn_cons_comp_rev {k : ℕ} (x : X) (u : Fin k → X) :
+    ofFn ((Fin.cons x u : Fin (k + 1) → X) ∘ Fin.rev) = ofFn (u ∘ Fin.rev) * of x := by
+  rw [← ofFn_snoc]
+  congr 1
+  funext i
+  refine Fin.lastCases ?_ (fun j => ?_) i
+  · simp
+  · simp [Fin.rev_castSucc]
+
+/-- A product of the words of a `k`-tuple and an `m`-tuple determines both tuples. -/
+theorem ofFn_mul_ofFn_injective {k m : ℕ} {a a' : Fin k → X} {b b' : Fin m → X}
+    (h : ofFn a * ofFn b = ofFn a' * ofFn b') : a = a' ∧ b = b' := by
+  have h' := congrArg toList h
+  simp only [toList_mul, ofFn, toList_ofList] at h'
+  obtain ⟨h1, h2⟩ := List.append_inj h' (by simp)
+  exact ⟨List.ofFn_injective h1, List.ofFn_injective h2⟩
 
 end FreeMonoid
 
@@ -213,6 +237,14 @@ theorem isHomogeneous_ι (x : X) : (ι R x).IsHomogeneous 1 := by
   rw [coeff_ι] at hw
   by_contra hne
   exact hw (Finsupp.single_eq_of_ne (fun h => hne (by rw [h]; rfl)))
+
+/-- The monomial of a word `w` is homogeneous of degree `|w|`. -/
+theorem isHomogeneous_lift_ι (w : FreeMonoid X) :
+    (FreeMonoid.lift (ι R) w : FreeAlgebra R X).IsHomogeneous w.length := by
+  intro w' hw'
+  rw [coeff_lift_ι] at hw'
+  by_contra hne
+  exact hw' (Finsupp.single_eq_of_ne fun h => hne (by rw [h]))
 
 /-- Multiplicativity of coefficients against a homogeneous left factor. -/
 theorem coeff_mul_mul_of_isHomogeneous {a : FreeAlgebra R X} (b : FreeAlgebra R X)
