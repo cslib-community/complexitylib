@@ -1388,6 +1388,13 @@ each statement against the numbered result. Organize modules by subject, not cha
   `BinomialRandomGraph/IsolatedVertices.lean`. Remaining: the limit `e ^ (-e ^ (-c))` at
   `p = (log n + c) / n` (the Poisson limit of the number of isolated vertices), the hitting-time
   theorem, and the translation to `G(n, m)`.
+- **Random graph thresholds** ([#3275](https://github.com/cslib-community/complexitylib/issues/3275)):
+  for Mathlib's binomial random graph `G(n, p)`, the first-moment `0`-statement for every fixed
+  subgraph and the triangle threshold `p = 1 / n` (both moments, explicit bounds) are in
+  `Foundations/Probability/Combinatorics/BinomialRandomGraph`. Remaining: the second-moment
+  `1`-statement for balanced graphs at `n ^ (-v / e)` and Bollobás's general threshold
+  `n ^ (-1 / m(H))`, Janson's inequality and the Poisson limit at the threshold. The connectivity
+  threshold `log n / n` is the item above.
 - **Explicit Ramsey graphs** ([#3041](https://github.com/cslib-community/complexitylib/issues/3041)):
   strongly explicit graphs with no `k`-clique and no `k`-independent set, on more vertices than
   Frankl–Wilson's `k ^ Θ(log k / log log k)`, toward Erdős's existential `2 ^ (k / 2)`: the

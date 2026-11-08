@@ -4970,6 +4970,8 @@ public import Complexity.Foundations.Order.Changes
 public import Complexity.Foundations.Order.FiniteFixedPoint
 public import Complexity.Foundations.Order.Mirsky
 public import Complexity.Foundations.Order.UpperLower
+public import Complexity.Foundations.Probability.Combinatorics.BinomialRandomGraph.Basic
+public import Complexity.Foundations.Probability.Combinatorics.BinomialRandomGraph.Clique
 public import Complexity.Foundations.Probability.Combinatorics.BinomialRandomGraph.Connectivity
 public import Complexity.Foundations.Probability.Combinatorics.BinomialRandomGraph.IsolatedVertices
 public import Complexity.Foundations.Probability.CoordinateExpectation
