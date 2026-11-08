@@ -36,7 +36,7 @@ example : (reversiblePebbleGame pathDigraph 3).MTr ∅ (bennettMoves 0 2) {3} :=
 example : (bennettMoves 5 4).length = 81 := by simp
 
 /-- Bennett's budget is optimal: vertex `7 = 2 ^ 3 - 1` needs exactly `4` pebbles in both forms,
-and `exists_mTr_bennett` reaches it in `27` moves. -/
+and `exists_mTr_bennett_pathDigraph` reaches it in `27` moves. -/
 example : persistentReversiblePebblingPrice pathDigraph 7 = 4 :=
   persistentReversiblePebblingPrice_pathDigraph_two_pow_sub_one 3
 
@@ -45,7 +45,7 @@ example : reversiblePebblingPrice pathDigraph 7 = 4 :=
 
 example : ∃ ms : List (Move ℕ), ms.length = 27 ∧
     (reversiblePebbleGame pathDigraph 4).MTr ∅ ms {7} :=
-  exists_mTr_bennett 3
+  exists_mTr_bennett_pathDigraph 3
 
 /-- Removing a pebble whose predecessor is unpebbled is a black move but not a reversible one. -/
 example : BlackStep pathDigraph {1} (.remove 1) ∅ := by

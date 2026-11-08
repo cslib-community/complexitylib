@@ -580,9 +580,12 @@ index links to canonical definitions rather than keeping a second set.
   complete binary tree and the pyramid (Cook) are in `Complexity/Computability/Pebbling`, and
   `Complexity/Computability/Circuit/Pebbling.lean` identifies `s`-register evaluation of
   `Cslib.Circuits.Program` straight-line programs with `s`-pebble black pebbling. Bennett's
-  reversible game and its exact prices `⌈log₂ (v + 2)⌉` on the path are in
-  `Pebbling/ReversiblePath.lean` ([#3163](https://github.com/cslib-community/complexitylib/issues/3163)).
-  Next: black-white pebbling; reversible time–space and erasure trade-offs (Li–Tromp–Vitányi);
+  reversible game and its exact prices on the path, `⌈log₂ (v + 2)⌉` (visiting) and
+  `⌈log₂ (v + 1)⌉ + 1` (persistent), are in `Pebbling/ReversiblePath.lean`
+  ([#3163](https://github.com/cslib-community/complexitylib/issues/3163)). Next: black-white
+  pebbling; the full reachable-configuration characterization and the reversible time–space and
+  erasure trade-offs of Li–Tromp–Vitányi
+  ([#3199](https://github.com/cslib-community/complexitylib/issues/3199));
   the Hopcroft–Paul–Valiant `O(n / log n)` pebbling of bounded-indegree DAGs and the matching
   Paul–Tarjan–Celoni `Ω(n / log n)` family; Gilbert–Tarjan and Lengauer–Tarjan time–space
   trade-offs, including for register evaluation.

@@ -25,19 +25,21 @@ So the reversible pebbling price of `v` is `⌈log₂ (v + 2)⌉` and its persis
 (`blackPebblingPrice_pathDigraph_succ`).
 
 **Bennett's strategy.** `bennettMoves a k` pebbles the block `a, …, a + 2 ^ k - 1` of the path,
-given a pebble on `a - 1` (or `a = 0`), and leaves only `a + 2 ^ k - 1` pebbled. It first runs
-`bennettMoves a k` to pebble the midpoint `a + 2 ^ k - 1` of the block of length `2 ^ (k + 1)`,
-then `bennettMoves (a + 2 ^ k) k` to pebble the end, then plays the first run backwards to remove
-the midpoint. It uses `k + 1` extra pebbles and `3 ^ k` moves (`bennettMoves_mTr`,
-`length_bennettMoves`). In particular `k + 1` pebbles reversibly pebble a path of `2 ^ k` vertices
-in `3 ^ k` moves, ending with only the last vertex pebbled (`exists_mTr_bennett`). These are the
-procedures `pebble(s, n)` and `unpebble(s, n)` of [LiTrompVitanyi1998], Section 7, in the form
-that ends with a single pebble.
+given a pebble on `a - 1` (or `a = 0`), and leaves only `a + 2 ^ k - 1` pebbled. For `k = 0` it
+places a pebble on `a`. For the block of length `2 ^ (k + 1)`, `bennettMoves a (k + 1)` first runs
+`bennettMoves a k` to pebble the midpoint `a + 2 ^ k - 1`, then `bennettMoves (a + 2 ^ k) k` to
+pebble the end, then plays the first run backwards to remove the midpoint. So `bennettMoves a k`
+uses `k + 1` extra pebbles and `3 ^ k` moves (`bennettMoves_mTr`, `length_bennettMoves`). In
+particular `k + 1` pebbles reversibly pebble a path of `2 ^ k` vertices in `3 ^ k` moves, ending
+with only the last vertex pebbled (`exists_mTr_bennett_pathDigraph`). These are the procedures
+`pebble(s, n)` and `unpebble(s, n)` of [LiTrompVitanyi1998], Section 7, in the form that ends
+with a single pebble.
 
 **The lower bound.** Write `R_k` for the configurations reachable with `k` pebbles. We prove by
 induction on `k` that every `x` in a configuration of `R_k` has `x + 2 ≤ 2 ^ k`
-(`add_two_le_of_reversiblePebbleGame_mTr`), together with the bound `2 * (c + 1) ≤ 2 ^ k` on its
-least element `c` (`two_mul_min_add_one_le_of_reversiblePebbleGame_mTr`).
+(`add_two_le_of_reversiblePebbleGame_pathDigraph_mTr`), together with the bound
+`2 * (c + 1) ≤ 2 ^ k` on its least element `c`
+(`two_mul_min_add_one_le_of_reversiblePebbleGame_pathDigraph_mTr`).
 
 * For the least element `c + 1`, play the run backwards from the configuration to `∅` and
   restrict it to the vertices below `c + 1`. The restricted run uses at most `k - 1` pebbles while
@@ -62,10 +64,10 @@ is `2 ^ n - 1`, is `reversiblePebblable_pathDigraph_iff`.
 
 * `Cslib.Pebbling.bennettMoves_mTr`, `Cslib.Pebbling.length_bennettMoves`: Bennett's strategy
   uses `k + 1` extra pebbles and `3 ^ k` moves.
-* `Cslib.Pebbling.exists_mTr_bennett`: `k + 1` pebbles reversibly pebble a path of `2 ^ k`
-  vertices in `3 ^ k` moves.
-* `Cslib.Pebbling.add_two_le_of_reversiblePebbleGame_mTr`: every pebble reachable with `k`
-  pebbles is at a vertex `v` with `v + 2 ≤ 2 ^ k`.
+* `Cslib.Pebbling.exists_mTr_bennett_pathDigraph`: `k + 1` pebbles reversibly pebble a path of
+  `2 ^ k` vertices in `3 ^ k` moves.
+* `Cslib.Pebbling.add_two_le_of_reversiblePebbleGame_pathDigraph_mTr`: every pebble reachable
+  with `k` pebbles is at a vertex `v` with `v + 2 ≤ 2 ^ k`.
 * `Cslib.Pebbling.reversiblePebblable_pathDigraph_iff`,
   `Cslib.Pebbling.persistentReversiblePebblable_pathDigraph_iff`: the exact characterizations.
 * `Cslib.Pebbling.reversiblePebblingPrice_pathDigraph`,
@@ -157,7 +159,7 @@ theorem bennettMoves_mTr (k : ℕ) {a : ℕ} {C : Finset ℕ} (hC : ∀ x ∈ C,
 
 /-- **Bennett's theorem on paths.** `k + 1` pebbles reversibly pebble the path of `2 ^ k`
 vertices `0, …, 2 ^ k - 1` in `3 ^ k` moves, ending with only the last vertex pebbled. -/
-theorem exists_mTr_bennett (k : ℕ) : ∃ ms : List (Move ℕ), ms.length = 3 ^ k ∧
+theorem exists_mTr_bennett_pathDigraph (k : ℕ) : ∃ ms : List (Move ℕ), ms.length = 3 ^ k ∧
     (reversiblePebbleGame pathDigraph (k + 1)).MTr ∅ ms {2 ^ k - 1} := by
   refine ⟨bennettMoves 0 k, length_bennettMoves 0 k, ?_⟩
   have h := bennettMoves_mTr k (a := 0) (C := ∅) (by simp) fun _ hu => absurd hu pathDigraph_source
@@ -406,7 +408,8 @@ private theorem maxBound_succ {k : ℕ}
 
 /-- **The lower bound.** Every pebble of a configuration reachable with `k` pebbles on the
 directed path lies at a vertex `v` with `v + 2 ≤ 2 ^ k` ([LiTrompVitanyi1998], Corollary 2). -/
-theorem add_two_le_of_reversiblePebbleGame_mTr {k : ℕ} {ms : List (Move ℕ)} {C : Finset ℕ}
+theorem add_two_le_of_reversiblePebbleGame_pathDigraph_mTr {k : ℕ} {ms : List (Move ℕ)}
+    {C : Finset ℕ}
     (h : (reversiblePebbleGame pathDigraph k).MTr ∅ ms C) {v : ℕ} (hv : v ∈ C) :
     v + 2 ≤ 2 ^ k := by
   induction k generalizing ms C v with
@@ -417,7 +420,7 @@ theorem add_two_le_of_reversiblePebbleGame_mTr {k : ℕ} {ms : List (Move ℕ)} 
 
 /-- The least pebble of a nonempty configuration reachable with `k` pebbles on the directed path
 lies at a vertex `c` with `2 * (c + 1) ≤ 2 ^ k`. -/
-theorem two_mul_min_add_one_le_of_reversiblePebbleGame_mTr {k : ℕ} {ms : List (Move ℕ)}
+theorem two_mul_min_add_one_le_of_reversiblePebbleGame_pathDigraph_mTr {k : ℕ} {ms : List (Move ℕ)}
     {C : Finset ℕ} (h : (reversiblePebbleGame pathDigraph k).MTr ∅ ms C) (hne : C.Nonempty) :
     2 * (C.min' hne + 1) ≤ 2 ^ k := by
   cases k with
@@ -425,7 +428,8 @@ theorem two_mul_min_add_one_le_of_reversiblePebbleGame_mTr {k : ℕ} {ms : List 
     have := card_le_of_reversiblePebbleGame_mTr h (by simp)
     exact absurd (Finset.card_pos.2 hne) (by omega)
   | succ k =>
-    exact minBound_succ (fun _ _ _ h hx => add_two_le_of_reversiblePebbleGame_mTr h hx) h hne
+    exact minBound_succ
+      (fun _ _ _ h hx => add_two_le_of_reversiblePebbleGame_pathDigraph_mTr h hx) h hne
 
 /-! ## Exact prices -/
 
@@ -433,7 +437,7 @@ theorem two_mul_min_add_one_le_of_reversiblePebbleGame_mTr {k : ℕ} {ms : List 
 reachable iff `v + 2 ≤ 2 ^ k`. -/
 theorem reversiblePebblable_pathDigraph_iff {k v : ℕ} :
     ReversiblePebblable pathDigraph k v ↔ v + 2 ≤ 2 ^ k :=
-  ⟨fun ⟨_, _, h, hv⟩ => add_two_le_of_reversiblePebbleGame_mTr h hv,
+  ⟨fun ⟨_, _, h, hv⟩ => add_two_le_of_reversiblePebbleGame_pathDigraph_mTr h hv,
     reversiblePebblable_pathDigraph⟩
 
 /-- **Persistent reversible pebbling of the path.** With `k` pebbles, the configuration `{v}` is
@@ -441,7 +445,8 @@ reachable iff `2 * (v + 1) ≤ 2 ^ k`. -/
 theorem persistentReversiblePebblable_pathDigraph_iff {k v : ℕ} :
     PersistentReversiblePebblable pathDigraph k v ↔ 2 * (v + 1) ≤ 2 ^ k := by
   refine ⟨fun ⟨_, h⟩ => ?_, persistentReversiblePebblable_pathDigraph⟩
-  have := two_mul_min_add_one_le_of_reversiblePebbleGame_mTr h (Finset.singleton_nonempty v)
+  have := two_mul_min_add_one_le_of_reversiblePebbleGame_pathDigraph_mTr h
+    (Finset.singleton_nonempty v)
   rwa [Finset.min'_singleton] at this
 
 /-- The reversible pebbling price of vertex `v` of the directed path is `⌈log₂ (v + 2)⌉`. -/
@@ -481,7 +486,8 @@ theorem reversiblePebblingPrice_pathDigraph_two_pow_sub_one (k : ℕ) :
     omega
 
 /-- **Optimality of Bennett's strategy.** Ending with only the last vertex `2 ^ k - 1` of a path of
-`2 ^ k` vertices pebbled costs exactly `k + 1` pebbles, the budget of `exists_mTr_bennett`. -/
+`2 ^ k` vertices pebbled costs exactly `k + 1` pebbles, the budget of
+`exists_mTr_bennett_pathDigraph`. -/
 theorem persistentReversiblePebblingPrice_pathDigraph_two_pow_sub_one (k : ℕ) :
     persistentReversiblePebblingPrice pathDigraph (2 ^ k - 1) = k + 1 := by
   have hpos : 0 < 2 ^ k := Nat.two_pow_pos k
