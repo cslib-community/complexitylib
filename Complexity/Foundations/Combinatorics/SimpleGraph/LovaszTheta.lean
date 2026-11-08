@@ -339,7 +339,7 @@ theorem shannonCapacity_le_lovaszTheta [Finite V] : G.shannonCapacity ≤ G.lova
 
 /-- A lower bound on every feasible value of the infimum defining `ϑ(G)` is a lower bound on
 `ϑ(G)`. -/
-theorem le_lovaszTheta_of_forall [Finite V] [Nonempty V] {s : ℝ}
+theorem le_lovaszTheta_of_forall [Finite V] {s : ℝ}
     (h : ∀ t : ℝ, 0 < t → ∀ (d : ℕ) (u : V → EuclideanSpace ℝ (Fin d))
       (c : EuclideanSpace ℝ (Fin d)), G.IsOrthonormalRepresentation u → ‖c‖ = 1 →
       (∀ v, 1 ≤ t * ⟪c, u v⟫ ^ 2) → s ≤ t) :
