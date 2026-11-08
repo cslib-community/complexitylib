@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Logics.Propositional.Resolution.ExistentialPebble
 public import Complexity.Logics.Propositional.Resolution.Space
 
 /-!
@@ -27,16 +28,13 @@ it is refutable in width `0`. Clauses there are sets, and weakening is optional;
 width refutation uses weakening. Lower bounds on width thus give lower bounds on clause space
 (`Cslib.Logic.PL.CNF.RefutableInSpace.add_four_le`).
 
-The proof follows Atserias and Dalmau, with their Duplicator strategy for the existential pebble
-game written out as a set of partial assignments. Fix `w = s + k - 3` and suppose `φ` has no
-refutation of width `w`. Call a partial assignment *good* if it falsifies no clause derivable within
-width `w`. The empty assignment is good, and a good assignment on at most `w` variables extends to
-any further variable: if both extensions falsified derivable clauses, their resolvent would be a
-derivable clause falsified by the original assignment, of width at most `w` [Atserias and Dalmau,
-Lemma 2][AtseriasDalmau2008]. Repeating this, a good assignment on at most `w + 1 - k` variables
-extends to a good assignment satisfying any given clause of `φ`, which it cannot falsify. Then,
+The proof follows Atserias and Dalmau, and works for any winning strategy `S` for Duplicator in
+the existential `p`-pebble game (`Cslib.Logic.PL.CNF.DuplicatorStrategy`): if `φ` has clauses of
+width at most `k` and is refutable in space `s`, then `p + 3 ≤ s + k`
+(`Cslib.Logic.PL.CNF.DuplicatorStrategy.add_three_le`). A position of `S` on at most `p - k`
+variables extends to a position satisfying any given clause of `φ`, which it cannot falsify. Then,
 along a refutation in space `s`, every set `N` of fewer than `s` clauses of the current
-configuration is satisfied by some good assignment on at most `|N|` variables: after a download of
+configuration is satisfied by a position of `S` on at most `|N|` variables: after a download of
 `A ∈ N`, satisfy the other clauses of `N` and extend to satisfy `A`; after an inference of `R ∈ N`,
 satisfy the parents of `R` instead, which together satisfy `R`; and keep only one satisfying
 variable per clause (the Locality Lemma, [Atserias and Dalmau, Lemma 4][AtseriasDalmau2008]).
@@ -45,8 +43,15 @@ keep one assignment satisfying the whole configuration; asking only for sets of 
 clauses saves one in the width bound and gives the constant of Filmus et al. The constant stated in
 Atserias and Dalmau's Theorem 3 may be weaker and is not quoted or claimed here.
 
+If `φ` has no refutation of width `w` and its clauses have width at most `w`, Duplicator wins with
+`w + 1` pebbles [Atserias and Dalmau, Lemma 2][AtseriasDalmau2008]
+(`Cslib.Logic.PL.CNF.DuplicatorStrategy.ofNotRefutableInWidth`), which gives `add_four_le`; if some
+clause is wider than `w`, then `w < k` and the bound `3 ≤ s` suffices.
+
 ## Main results
 
+* `Cslib.Logic.PL.CNF.DuplicatorStrategy.add_three_le`: a clause-space lower bound from a
+  Duplicator strategy.
 * `Cslib.Logic.PL.CNF.RefutableInSpace.refutableInWidth`: **the Atserias–Dalmau inequality**.
 * `Cslib.Logic.PL.CNF.RefutableInSpace.add_four_le`: its contrapositive, a clause-space lower bound
   from a width lower bound.
@@ -67,136 +72,50 @@ namespace CNF
 
 variable {V : Type*} [DecidableEq V] {φ : CNF V} {w : ℕ}
 
-/-! ### Good partial assignments
+/-! ### Satisfying partial assignments
 
-A partial assignment is a total assignment `σ` read only on a finite set `d` of variables. -/
-
-/-- `c` is a line of some proof from `φ` whose lines have width at most `w`. -/
-private def WDerives (φ : CNF V) (w : ℕ) (c : Clause V) : Prop :=
-  ∃ ls, φ.IsProof ls ∧ c ∈ ls ∧ ∀ c' ∈ ls, c'.width ≤ w
-
-/-- The assignment `σ`, read on `d`, falsifies `c`: every literal of `c` is on a variable of `d`
-and false under `σ`. -/
-private def Falsifies (σ : V → Bool) (d : Finset V) (c : Clause V) : Prop :=
-  ∀ l ∈ c, l.1 ∈ d ∧ σ l.1 ≠ l.2
+A partial assignment is a total assignment `σ` read only on a finite set `d` of variables;
+`Cslib.Logic.PL.CNF.Falsifies σ d c` says that it falsifies `c`. -/
 
 /-- The assignment `σ`, read on `d`, satisfies `c`: some literal of `c` is on a variable of `d`
 and true under `σ`. -/
 private def Satisfies (σ : V → Bool) (d : Finset V) (c : Clause V) : Prop :=
   ∃ l ∈ c, l.1 ∈ d ∧ σ l.1 = l.2
 
-/-- The assignment `σ`, read on `d`, is **good**: it falsifies no clause derivable within width
-`w`. -/
-private def Good (φ : CNF V) (w : ℕ) (σ : V → Bool) (d : Finset V) : Prop :=
-  ∀ c, WDerives φ w c → ¬ Falsifies σ d c
-
-/-- A clause falsified on `d` has width at most `|d|`. -/
-private theorem width_le_of_falsifies {σ : V → Bool} {d : Finset V} {c : Clause V}
-    (h : Falsifies σ d c) : c.width ≤ d.card := by
-  refine Finset.card_le_card_of_injOn Prod.fst (fun l hl => (h l (List.mem_toFinset.1 hl)).1) ?_
-  intro l₁ hl₁ l₂ hl₂ he
-  have h₁ := (h l₁ (List.mem_toFinset.1 hl₁)).2
-  have h₂ := (h l₂ (List.mem_toFinset.1 hl₂)).2
-  rcases l₁ with ⟨v₁, b₁⟩
-  rcases l₂ with ⟨v₂, b₂⟩
-  simp only at he h₁ h₂
-  subst he
-  cases hσ : σ v₁ <;> cases b₁ <;> cases b₂ <;> simp_all
-
-/-- If `φ` has no refutation of width `w`, the empty assignment is good. -/
-private theorem good_empty (h : ¬ φ.RefutableInWidth w) (σ : V → Bool) : Good φ w σ ∅ := by
-  rintro c ⟨ls, hp, hc, hw⟩ hf
-  have : c = [] := List.eq_nil_iff_forall_not_mem.2 fun l hl => by simpa using (hf l hl).1
-  exact h ⟨ls, hp, this ▸ hc, hw⟩
-
-/-- Goodness passes to a smaller domain, and to an assignment agreeing on it. -/
-private theorem Good.mono {σ σ' : V → Bool} {d d' : Finset V} (h : Good φ w σ d) (hd : d' ⊆ d)
-    (hσ : ∀ x ∈ d', σ' x = σ x) : Good φ w σ' d' :=
-  fun c hc hf => h c hc fun l hl => ⟨hd (hf l hl).1, hσ _ (hf l hl).1 ▸ (hf l hl).2⟩
-
-/-- A literal, other than `(x, !b)`, of a clause falsified by `σ` updated at `x` to `b` and read on
-`insert x d`, is falsified by `σ` read on `d`. -/
-private theorem falsifies_update {σ : V → Bool} {d : Finset V} {x : V} {b : Bool} {c : Clause V}
-    (h : Falsifies (Function.update σ x b) (insert x d) c) {l : Literal V} (hl : l ∈ c)
-    (hlx : l ≠ (x, !b)) : l.1 ∈ d ∧ σ l.1 ≠ l.2 := by
-  obtain ⟨h₁, h₂⟩ := h l hl
-  rcases l with ⟨v, b'⟩
-  by_cases hv : v = x
-  · subst hv
-    simp only [Function.update_self] at h₂
-    cases b <;> cases b' <;> simp_all
-  · rw [Function.update_of_ne hv] at h₂
-    exact ⟨(Finset.mem_insert.1 h₁).resolve_left hv, h₂⟩
-
-/-- **One-variable extension**: a good assignment on at most `w` variables extends to a good
-assignment on one more variable [Atserias and Dalmau, Lemma 2][AtseriasDalmau2008]. -/
-private theorem Good.extend {σ : V → Bool} {d : Finset V} (h : Good φ w σ d) (hd : d.card ≤ w)
-    (x : V) : ∃ b, Good φ w (Function.update σ x b) (insert x d) := by
-  by_contra hne
-  have hb (b : Bool) : ∃ c, WDerives φ w c ∧ Falsifies (Function.update σ x b) (insert x d) c := by
-    by_contra hc
-    exact hne ⟨b, fun c hw hf => hc ⟨c, hw, hf⟩⟩
-  obtain ⟨c₀, ⟨ls₀, hp₀, hc₀, hw₀⟩, hf₀⟩ := hb false
-  obtain ⟨c₁, ⟨ls₁, hp₁, hc₁, hw₁⟩, hf₁⟩ := hb true
-  -- each clause contains the literal of `x` that its extension falsifies
-  have hx₀ : (x, true) ∈ c₀ := by
-    by_contra hx₀
-    exact h c₀ ⟨ls₀, hp₀, hc₀, hw₀⟩ fun l hl =>
-      falsifies_update hf₀ hl fun he => hx₀ (he ▸ hl)
-  have hx₁ : (x, false) ∈ c₁ := by
-    by_contra hx₁
-    exact h c₁ ⟨ls₁, hp₁, hc₁, hw₁⟩ fun l hl =>
-      falsifies_update hf₁ hl fun he => hx₁ (he ▸ hl)
-  -- so their resolvent is a derivable clause falsified by `σ` on `d`
-  have hf : Falsifies σ d (c₀.resolvent c₁ x) := by
-    intro l hl
-    rcases Clause.mem_resolvent.1 hl with ⟨hl, hne⟩ | ⟨hl, hne⟩
-    exacts [falsifies_update hf₀ hl hne, falsifies_update hf₁ hl hne]
-  refine h _ ⟨_, (hp₀.append hp₁).resolvent x (List.mem_append_left _ hc₀)
-    (List.mem_append_right _ hc₁) hx₀ hx₁, List.mem_cons_self, fun c hc => ?_⟩ hf
-  rcases List.mem_cons.1 hc with rfl | hc
-  · exact (width_le_of_falsifies hf).trans hd
-  · rcases List.mem_append.1 hc with hc | hc
-    exacts [hw₀ c hc, hw₁ c hc]
-
-/-- **Extension to a set of variables**: a good assignment on `d` extends to a good assignment on
-`d ∪ e` agreeing with it on `d`, provided `|d| + |e| ≤ w + 1`. -/
-private theorem Good.extendSet {σ : V → Bool} {d : Finset V} (h : Good φ w σ d) (e : Finset V)
-    (hde : d.card + e.card ≤ w + 1) :
-    ∃ σ', Good φ w σ' (d ∪ e) ∧ ∀ x ∈ d, σ' x = σ x := by
+/-- **Extension to a set of variables**: a position of a `p`-pebble strategy on `d` extends to a
+position on `d ∪ e` agreeing with it on `d`, provided `|d| + |e| ≤ p`. -/
+private theorem DuplicatorStrategy.extendSet {p : ℕ} (S : DuplicatorStrategy φ p) {σ : V → Bool}
+    {d : Finset V} (hσ : S.Mem σ d) (e : Finset V) (hde : d.card + e.card ≤ p) :
+    ∃ σ', S.Mem σ' (d ∪ e) ∧ ∀ x ∈ d, σ' x = σ x := by
   induction e using Finset.induction_on with
-  | empty => exact ⟨σ, by simpa using h, fun _ _ => rfl⟩
+  | empty => exact ⟨σ, by simpa using hσ, fun _ _ => rfl⟩
   | @insert x e hxe ih =>
     rw [Finset.card_insert_of_notMem hxe] at hde
     obtain ⟨σ', hσ', hag⟩ := ih (by omega)
     by_cases hx : x ∈ d ∪ e
     · refine ⟨σ', ?_, hag⟩
       rwa [Finset.union_insert, Finset.insert_eq_of_mem hx]
-    · have hcard : (d ∪ e).card ≤ w :=
-        (Finset.card_union_le _ _).trans (by omega)
-      obtain ⟨b, hb⟩ := hσ'.extend hcard x
-      refine ⟨_, by rwa [Finset.union_insert], fun y hy => ?_⟩
-      have hyx : y ≠ x := by
-        rintro rfl
-        exact hx (Finset.mem_union_left _ hy)
-      rw [Function.update_of_ne hyx]
-      exact hag y hy
+    · have hcard : (d ∪ e).card < p :=
+        lt_of_le_of_lt (Finset.card_union_le _ _) (by omega)
+      obtain ⟨τ, hτ, hτm⟩ := S.extend hσ' hcard x
+      exact ⟨τ, by rwa [Finset.union_insert], fun y hy =>
+        (hτ y (Finset.mem_union_left _ hy)).trans (hag y hy)⟩
 
-/-- **Satisfying a clause of the formula**: a good assignment on `d` extends to a good assignment
-satisfying a clause `A ∈ φ` and agreeing with it on `d`, provided `|d| + width A ≤ w + 1`. -/
-private theorem Good.exists_satisfies {σ : V → Bool} {d : Finset V} (h : Good φ w σ d)
-    {A : Clause V} (hA : A ∈ φ) (hAw : A.width ≤ w) (hdA : d.card + A.width ≤ w + 1) :
-    ∃ σ' d', Good φ w σ' d' ∧ d ⊆ d' ∧ (∀ x ∈ d, σ' x = σ x) ∧ Satisfies σ' d' A := by
-  obtain ⟨σ', hσ', hag⟩ := h.extendSet (A.toFinset.image Prod.fst)
+/-- **Satisfying a clause of the formula**: a position of a `p`-pebble strategy on `d` extends to
+a position satisfying a clause `A ∈ φ` and agreeing with it on `d`, provided
+`|d| + width A ≤ p`. -/
+private theorem DuplicatorStrategy.exists_satisfies {p : ℕ} (S : DuplicatorStrategy φ p)
+    {σ : V → Bool} {d : Finset V} (hσ : S.Mem σ d) {A : Clause V} (hA : A ∈ φ)
+    (hdA : d.card + A.width ≤ p) :
+    ∃ σ' d', S.Mem σ' d' ∧ d ⊆ d' ∧ (∀ x ∈ d, σ' x = σ x) ∧ Satisfies σ' d' A := by
+  obtain ⟨σ', hσ', hag⟩ := S.extendSet hσ (A.toFinset.image Prod.fst)
     ((Nat.add_le_add_left Finset.card_image_le _).trans hdA)
   refine ⟨σ', _, hσ', Finset.subset_union_left, hag, ?_⟩
   by_contra hns
-  refine hσ' A ⟨[A], IsProof.nil.mem hA, List.mem_singleton_self _, fun c hc => ?_⟩ fun l hl => ?_
-  · rw [List.mem_singleton.1 hc]
-    exact hAw
-  · refine ⟨Finset.mem_union_right _ (Finset.mem_image_of_mem _ (List.mem_toFinset.2 hl)), ?_⟩
-    exact fun he => hns ⟨l, hl, Finset.mem_union_right _
-      (Finset.mem_image_of_mem _ (List.mem_toFinset.2 hl)), he⟩
+  refine S.not_falsifies hσ' A hA fun l hl => ?_
+  refine ⟨Finset.mem_union_right _ (Finset.mem_image_of_mem _ (List.mem_toFinset.2 hl)), ?_⟩
+  exact fun he => hns ⟨l, hl, Finset.mem_union_right _
+    (Finset.mem_image_of_mem _ (List.mem_toFinset.2 hl)), he⟩
 
 omit [DecidableEq V] in
 /-- Satisfaction survives enlarging the domain, keeping the assignment on it. -/
@@ -238,22 +157,25 @@ private theorem exists_subset_satisfies {σ : V → Bool} {d : Finset V} (N : Fi
 
 /-! ### The invariant -/
 
-/-- The invariant along a refutation in space `s`: every set `N` of fewer than `s` clauses of the
-configuration `M` is satisfied by a good assignment on at most `|N|` variables. -/
-private def Inv (φ : CNF V) (w s : ℕ) (M : Finset (Clause V)) : Prop :=
+/-- The invariant along a refutation in space `s`, for a Duplicator strategy `S`: every set `N` of
+fewer than `s` clauses of the configuration `M` is satisfied by a position of `S` on at most `|N|`
+variables. -/
+private def Inv {p : ℕ} (S : DuplicatorStrategy φ p) (s : ℕ) (M : Finset (Clause V)) : Prop :=
   ∀ N ⊆ M, N.card + 1 ≤ s →
-    ∃ σ d, Good φ w σ d ∧ d.card ≤ N.card ∧ ∀ c ∈ N, Satisfies σ d c
+    ∃ σ d, S.Mem σ d ∧ d.card ≤ N.card ∧ ∀ c ∈ N, Satisfies σ d c
 
-/-- If `φ` has no refutation of width `w`, the invariant holds for the empty configuration. -/
-private theorem inv_empty (h : ¬ φ.RefutableInWidth w) (s : ℕ) : Inv φ w s ∅ := by
+/-- The invariant holds for the empty configuration. -/
+private theorem inv_empty {p : ℕ} (S : DuplicatorStrategy φ p) (s : ℕ) : Inv S s ∅ := by
   intro N hN _
   rw [Finset.subset_empty.1 hN]
-  exact ⟨fun _ => false, ∅, good_empty h _, by simp, by simp⟩
+  obtain ⟨σ, d, hσ⟩ := S.nonempty
+  exact ⟨σ, ∅, S.restrict hσ (Finset.empty_subset _), by simp, by simp⟩
 
-/-- The invariant survives one step of a refutation in space `s`, with `w = s + k - 3`. -/
-private theorem Inv.step {k s : ℕ} (hk : ∀ c ∈ φ, c.width ≤ k) (hs : 3 ≤ s)
-    {M M' : Finset (Clause V)} {m : ConfigMove V} (h : Inv φ (s + k - 3) s M)
-    (hstep : (φ.configLTS s).Tr M m M') : Inv φ (s + k - 3) s M' := by
+/-- The invariant survives one step of a refutation in space `s`, for a `p`-pebble strategy with
+`s + k ≤ p + 2`. -/
+private theorem Inv.step {k p s : ℕ} {S : DuplicatorStrategy φ p} (hk : ∀ c ∈ φ, c.width ≤ k)
+    (hp : s + k ≤ p + 2) {M M' : Finset (Clause V)} {m : ConfigMove V} (h : Inv S s M)
+    (hstep : (φ.configLTS s).Tr M m M') : Inv S s M' := by
   obtain ⟨hstep, hcard⟩ := hstep
   intro N hN hNs
   cases hstep with
@@ -266,13 +188,13 @@ private theorem Inv.step {k s : ℕ} (hk : ∀ c ∈ φ, c.width ≤ k) (hs : 3 
       have hcard₀ := Finset.card_erase_add_one hAN
       obtain ⟨σ, d, hσ, hd, hsat⟩ := h _ hN₀ (by omega)
       have hAk := hk A hA
-      obtain ⟨σ', d', hσ', hdd', hag, hA'⟩ := hσ.exists_satisfies hA (by omega) (by omega)
+      obtain ⟨σ', d', hσ', hdd', hag, hA'⟩ := S.exists_satisfies hσ hA (by omega)
       have hsat' : ∀ c ∈ N, Satisfies σ' d' c := fun c hc => by
         by_cases hcA : c = A
         · exact hcA ▸ hA'
         · exact (hsat c (Finset.mem_erase.2 ⟨hcA, hc⟩)).mono hdd' hag
       obtain ⟨d'', hd'', hcard'', hsat''⟩ := exists_subset_satisfies N hsat'
-      exact ⟨σ', d'', hσ'.mono hd'' fun _ _ => rfl, hcard'', hsat''⟩
+      exact ⟨σ', d'', S.restrict hσ' hd'', hcard'', hsat''⟩
     · refine h N (fun c hc => ?_) hNs
       rcases Finset.mem_insert.1 (hN hc) with rfl | hc'
       exacts [absurd hc hAN, hc']
@@ -299,7 +221,7 @@ private theorem Inv.step {k s : ℕ} (hk : ∀ c ∈ φ, c.width ≤ k) (hs : 3 
         · exact hsat c (Finset.mem_insert_of_mem (Finset.mem_insert_of_mem
             (Finset.mem_erase.2 ⟨hcR, hc⟩)))
       obtain ⟨d', hd', hcard', hsat''⟩ := exists_subset_satisfies N hsat'
-      exact ⟨σ, d', hσ.mono hd' fun _ _ => rfl, hcard', hsat''⟩
+      exact ⟨σ, d', S.restrict hσ hd', hcard', hsat''⟩
     · refine h N (fun c hc => ?_) hNs
       rcases Finset.mem_insert.1 (hN hc) with rfl | hc'
       · by_contra hcM
@@ -307,15 +229,35 @@ private theorem Inv.step {k s : ℕ} (hk : ∀ c ∈ φ, c.width ≤ k) (hs : 3 
       · exact hc'
   | erase c => exact h N (hN.trans (Finset.erase_subset _ _)) hNs
 
-/-- The invariant survives a run of a refutation in space `s`, with `w = s + k - 3`. -/
-private theorem Inv.mTr {k s : ℕ} (hk : ∀ c ∈ φ, c.width ≤ k) (hs : 3 ≤ s)
-    {M M' : Finset (Clause V)} {ms : List (ConfigMove V)} (h : Inv φ (s + k - 3) s M)
-    (hM : (φ.configLTS s).MTr M ms M') : Inv φ (s + k - 3) s M' := by
+/-- The invariant survives a run of a refutation in space `s`, for a `p`-pebble strategy with
+`s + k ≤ p + 2`. -/
+private theorem Inv.mTr {k p s : ℕ} {S : DuplicatorStrategy φ p} (hk : ∀ c ∈ φ, c.width ≤ k)
+    (hp : s + k ≤ p + 2) {M M' : Finset (Clause V)} {ms : List (ConfigMove V)} (h : Inv S s M)
+    (hM : (φ.configLTS s).MTr M ms M') : Inv S s M' := by
   induction hM with
   | refl => exact h
-  | stepL hstep _ ih => exact ih (h.step hk hs hstep)
+  | stepL hstep _ ih => exact ih (h.step hk hp hstep)
 
 /-! ### The inequality -/
+
+/-- **Duplicator strategies give clause-space lower bounds** [Atserias and Dalmau,
+Lemma 5][AtseriasDalmau2008]: if Duplicator wins the existential `p`-pebble game on a formula of
+clauses of width at most `k`, its refutations need clause space at least `p + 3 - k`. The constant
+is the one that gives that of [Filmus, Lauria, Mikša, Nordström and Vinyals,
+Theorem 1][FilmusLauriaMiksaNordstromVinyals2014] with `p = w + 1`; the constant of Atserias and
+Dalmau's Lemma 5 is not quoted. -/
+theorem DuplicatorStrategy.add_three_le {k p s : ℕ} (S : DuplicatorStrategy φ p)
+    (hk : ∀ c ∈ φ, c.width ≤ k) (h : φ.RefutableInSpace s) : p + 3 ≤ s + k := by
+  have hφ : [] ∉ φ := fun hφ => by
+    obtain ⟨σ, d, hσ⟩ := S.nonempty
+    exact S.not_falsifies hσ [] hφ (falsifies_nil σ d)
+  have hs := h.three_le hφ
+  by_contra hlt
+  obtain ⟨ms, M, hM, hnil⟩ := h
+  obtain ⟨σ, d, -, -, hsat⟩ := (inv_empty S s).mTr hk (by omega) hM {[]}
+    (Finset.singleton_subset_iff.2 hnil) (by rw [Finset.card_singleton]; omega)
+  obtain ⟨l, hl, -⟩ := hsat [] (Finset.mem_singleton_self _)
+  simp at hl
 
 /-- A formula containing the empty clause is refutable in width `0`. -/
 private theorem refutableInWidth_zero_of_nil_mem (hφ : [] ∈ φ) : φ.RefutableInWidth 0 :=
@@ -323,31 +265,29 @@ private theorem refutableInWidth_zero_of_nil_mem (hφ : [] ∈ φ) : φ.Refutabl
 
 namespace RefutableInSpace
 
+/-- **Width lower bounds give clause-space lower bounds**: if a formula of clauses of width at most
+`k` has no refutation of width `w`, its refutations need clause space at least `w + 4 - k`. -/
+theorem add_four_le {k s : ℕ} (hk : ∀ c ∈ φ, c.width ≤ k) (hw : ¬ φ.RefutableInWidth w)
+    (h : φ.RefutableInSpace s) : w + 4 ≤ s + k := by
+  by_cases hkw : ∀ c ∈ φ, c.width ≤ w
+  · exact (DuplicatorStrategy.ofNotRefutableInWidth hkw hw).add_three_le hk h
+  -- otherwise some clause is wider than `w`, so `w < k`
+  push Not at hkw
+  obtain ⟨c, hc, hcw⟩ := hkw
+  have hφ : [] ∉ φ := fun hφ => hw ((refutableInWidth_zero_of_nil_mem hφ).mono (Nat.zero_le _))
+  have := h.three_le hφ
+  have := hk c hc
+  omega
+
 /-- **Clause space bounds width** [Atserias and Dalmau, Theorem 3][AtseriasDalmau2008]
 [Filmus, Lauria, Mikša, Nordström and Vinyals, Theorem 1][FilmusLauriaMiksaNordstromVinyals2014]: a
 formula of clauses of width at most `k` that is refutable in clause space `s` is refutable in width
 `s + k - 3`. The exact constant `s + k - 3` is that of Filmus et al., Theorem 1. -/
 theorem refutableInWidth {k s : ℕ} (hk : ∀ c ∈ φ, c.width ≤ k) (h : φ.RefutableInSpace s) :
     φ.RefutableInWidth (s + k - 3) := by
-  by_cases hφ : [] ∈ φ
-  · exact (refutableInWidth_zero_of_nil_mem hφ).mono (Nat.zero_le _)
-  have hs := h.three_le hφ
   by_contra hw
-  obtain ⟨ms, M, hM, hnil⟩ := h
-  obtain ⟨σ, d, -, -, hsat⟩ := (inv_empty hw s).mTr hk hs hM {[]}
-    (Finset.singleton_subset_iff.2 hnil) (by rw [Finset.card_singleton]; omega)
-  obtain ⟨l, hl, -⟩ := hsat [] (Finset.mem_singleton_self _)
-  simp at hl
-
-/-- **Width lower bounds give clause-space lower bounds**: if a formula of clauses of width at most
-`k` has no refutation of width `w`, its refutations need clause space at least `w + 4 - k`. -/
-theorem add_four_le {k s : ℕ} (hk : ∀ c ∈ φ, c.width ≤ k) (hw : ¬ φ.RefutableInWidth w)
-    (h : φ.RefutableInSpace s) : w + 4 ≤ s + k := by
-  by_cases hφ : [] ∈ φ
-  · exact absurd ((refutableInWidth_zero_of_nil_mem hφ).mono (Nat.zero_le _)) hw
-  have hs := h.three_le hφ
-  by_contra hlt
-  exact hw ((h.refutableInWidth hk).mono (by omega))
+  have := h.add_four_le hk hw
+  omega
 
 end RefutableInSpace
 

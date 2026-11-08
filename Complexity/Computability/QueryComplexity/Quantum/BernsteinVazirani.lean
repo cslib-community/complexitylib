@@ -42,6 +42,11 @@ same Hadamard transforms.
 
 ## Main results
 
+* `Cslib.Quantum.norm_bernsteinVaziraniInit`: the initial state is a unit vector.
+* `Cslib.Quantum.run_bernsteinVazirani_apply`: on an arbitrary input the final amplitudes are the
+  Walsh–Hadamard coefficients of `(-1)^x`; the Deutsch–Jozsa algorithm
+  (`Complexity/Computability/QueryComplexity/Quantum/DeutschJozsa.lean`) reads off the coefficient
+  at `0`.
 * `Cslib.Quantum.run_bernsteinVazirani`: after one query the state is `|s, 1⟩`.
 * `Cslib.Quantum.regProb_run_bernsteinVazirani`: measuring the query register gives `s` with
   certainty.
@@ -72,9 +77,39 @@ zero string and the control bit is `1`. -/
 noncomputable def bernsteinVaziraniInit (e : Fin N ≃ (K → Bool)) : State N Unit :=
   ket (e.symm 0, true, ())
 
+omit [Fintype K] [DecidableEq K] in
+/-- The initial state `|0, 1⟩` is a unit vector. -/
+theorem norm_bernsteinVaziraniInit (e : Fin N ≃ (K → Bool)) : ‖bernsteinVaziraniInit e‖ = 1 :=
+  norm_ket _
+
 private theorem ite_neg_one_one (b : Bool) :
     (if b then (-1 : ℂ) else 1) = ((signVal b : ℝ) : ℂ) := by
   cases b <;> simp
+
+/-- **The final amplitudes on any input**: after one query on an arbitrary input `x`, the amplitude
+of `|z, 1⟩` is `2^{-n} ∑_a (-1)^{x_{e⁻¹ a}} (-1)^{a ⬝ z}`, the Walsh–Hadamard coefficient of
+`(-1)^x` at `z = e i`, and the amplitude of every `|z, 0⟩` is `0`. -/
+theorem run_bernsteinVazirani_apply (e : Fin N ≃ (K → Bool)) (x : Fin N → Bool) (i : Fin N)
+    (b : Bool) :
+    (run (bernsteinVazirani e) (bernsteinVaziraniInit e) x 1).ofLp (i, b, ()) =
+      if b then ((((2 : ℝ) ^ Fintype.card K)⁻¹ *
+        ∑ a : K → Bool, signVal (x (e.symm a)) * signVal (a ⬝ᵥ e i) : ℝ) : ℂ) else 0 := by
+  have h2 : (((Real.sqrt (2 ^ Fintype.card K))⁻¹ : ℝ) : ℂ) *
+      (((Real.sqrt (2 ^ Fintype.card K))⁻¹ : ℝ) : ℂ) = (((2 : ℝ) ^ Fintype.card K)⁻¹ : ℝ) := by
+    rw [← Complex.ofReal_mul, ← mul_inv, Real.mul_self_sqrt (by positivity)]
+  simp only [run, bernsteinVazirani, bernsteinVaziraniInit, hadamardTransform_apply,
+    phaseOracle_apply, ket_apply, Equiv.prodCongr_apply, Equiv.prodCongr_symm, Prod.map,
+    Equiv.refl_apply, Equiv.refl_symm, Equiv.apply_symm_apply]
+  cases b
+  · simp
+  · simp only [Bool.true_and, ite_neg_one_one, Prod.mk.injEq, and_true,
+      EmbeddingLike.apply_eq_iff_eq, mul_ite, mul_one, mul_zero, sum_ite_eq', mem_univ, ite_true,
+      zero_dotProduct, Bool.zero_eq_false, signVal_false, Complex.ofReal_one]
+    rw [mul_sum, mul_sum, Complex.ofReal_sum]
+    refine sum_congr rfl fun a _ => ?_
+    simp only [Complex.ofReal_mul]
+    rw [← h2]
+    ring
 
 /-- **One query recovers `s`**: after one query on the truth table of `a ↦ s ⬝ᵥ a`, the
 Bernstein–Vazirani algorithm is in the basis state `|s, 1⟩`. -/
