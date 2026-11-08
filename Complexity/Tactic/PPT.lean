@@ -178,6 +178,8 @@ replaces local encoding `let`s by their values and adds the certificates stored 
 structures (`S.encrypt_ppt`, `hA.guess`, …) as local facts. -/
 syntax (name := pptTactic) "ppt" (" [" ident,* "]")? : tactic
 
+/-- Elaborate `ppt`: prepare the goal, then compose an oracle goal with `fun_prop` or search a
+closed goal with the `PPT` and `PolyTime` Aesop rule sets. -/
 @[tactic pptTactic] meta def evalPPT : Tactic := fun stx => do
   let hints := match stx with
     | `(tactic| ppt [$hints,*]) => hints.getElems

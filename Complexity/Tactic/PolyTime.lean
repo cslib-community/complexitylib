@@ -1050,6 +1050,7 @@ scheme `S` or `h.guess` for an admissibility hypothesis `h`, as local facts. -/
 syntax (name := polytimeTactic) "polytime" (" [" ident,* "]")? : tactic
 
 open Lean Elab Tactic in
+/-- Elaborate `polytime`: prepare the goal, then search with the `PolyTime` Aesop rule set. -/
 @[tactic polytimeTactic] meta def evalPolytime : Tactic := fun stx => do
   let hints := match stx with
     | `(tactic| polytime [$hints,*]) => hints.getElems
