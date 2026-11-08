@@ -49,11 +49,11 @@ uniform independent permutations (`schemePMF`), the expected round count is at m
 
 ## Scope note
 
-This module is part 1 of the large-parameter-regime dynamic dictionary of [LiLiangYuZhou2024,
-Section 5]. Word-RAM Fisher–Yates permutation sampling and precomputed lookup-table realization are
-deferred to the follow-up Word-RAM realization milestone; variable-length `B`-way word/bit adapters
-(Section 3.3), adapter trees (Section 4), strong history independence, dynamic resizing, and
-super-polynomial key universes are out of scope.
+This module supplies the pure mathematical dynamic-matching primitive for the
+large-parameter-regime dynamic dictionary of [LiLiangYuZhou2024, Section 5]. Word-RAM Fisher–Yates
+permutation sampling, precomputed lookup-table evaluation, variable-length `B`-way word/bit
+adapters (Section 3.3), adapter trees (Section 4), strong history independence, dynamic resizing,
+and super-polynomial key universes are not formalized here.
 
 ## Main definitions
 

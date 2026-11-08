@@ -52,11 +52,11 @@ metadata-only lookup table of size `U' * C(U', n') * K ^ n' ≤ U' * C(U', n') *
 
 ## Scope note
 
-This module is part 1 of the large-parameter-regime dynamic dictionary of [LiLiangYuZhou2024,
-Section 5]. Word-RAM precomputed lookup-table and bit-packed `M`-bit slot realization are deferred
-to the follow-up Word-RAM realization milestone; variable-length `r > 1` outer-spillover minimaps
-inside adapter trees (Section 4), strong history independence, dynamic resizing, and
-super-polynomial key universes are out of scope.
+This module supplies the pure mathematical leaf-minimap specification for the
+large-parameter-regime dynamic dictionary of [LiLiangYuZhou2024, Section 5]. Word-RAM precomputed
+lookup-table and bit-packed `M`-bit slot evaluation, variable-length `r > 1` outer-spillover
+minimaps inside adapter trees (Section 4), strong history independence, dynamic resizing, and
+super-polynomial key universes are not formalized here.
 
 ## Main definitions
 

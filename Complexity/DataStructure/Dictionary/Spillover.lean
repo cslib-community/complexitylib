@@ -35,10 +35,10 @@ batch forms for `n` independent payloads at `r_sp = n`).
 
 ## Scope note
 
-This module is part 1 of the large-parameter-regime dynamic dictionary of [LiLiangYuZhou2024,
-Section 5]. Word-RAM `O(1)` bit-shift and bit-mask evaluation is deferred to the follow-up Word-RAM
-realization milestone; variable-length adapter trees, strong history independence, dynamic resizing,
-and super-polynomial key universes are out of scope.
+This module supplies the pure mathematical spillover primitive for the large-parameter-regime
+dynamic dictionary of [LiLiangYuZhou2024, Section 5]. Word-RAM `O(1)` bit-shift and bit-mask
+evaluation, variable-length adapter trees, strong history independence, dynamic resizing, and
+super-polynomial key universes are not formalized here.
 
 ## Main definitions
 
