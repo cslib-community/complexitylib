@@ -1345,16 +1345,85 @@ It proves a per-issued expected cost lower envelope $1$ for every admitted nativ
 competitor against that fixed oracle. A genuine silent-loop suffix preserves an
 already charged first receipt rather than turning its previous bill into zero.
 
-This is a whole-policy discrete native resource transfer, not unrestricted source
-Theorems 5/6. The source completion/revealed-progress/binomial/deadline comparisons,
-success-level lower cost and native optimum/envelope ratio still need generalized
-applications. Uniform native upper selectors with local certification/source stopping,
-source WSC subinstance/role and residual-label codecs, and external PTM encodings
-remain open. A latent scenario is never assumed publicly visible. Fixed finite call
-opportunities and external nonnegative real clocks remain interface conventions;
-compiled physical timers and general measurable/nonatomic laws are not established.
-The trace preserves divergent mass and its earlier receipts, but equality with a
-cofinal infinite-instruction path-cost law and real integrability are separate
+### Native revealed progress, coverage and stopped costs
+
+Start with `Complexity.Computability.Probabilistic.NativeBatch.Retained`. The complete
+[correlated native progress client](../../ComplexityTests/NativeBatchProgress.lean)
+and [successful selection-only machine](../../ComplexityTests/NativeBatchSuccess.lean)
+include their imports, concrete code, instances and envelope proofs. From a warm
+checkout, build them with:
+
+```bash
+scripts/build.sh ComplexityTests.NativeBatchProgress ComplexityTests.NativeBatchSuccess
+```
+
+This is targeted development validation, not the full six integration gates. Each
+example uses actual source packets and receipts.
+
+`History.conditional_records` proves that responses at positive-probability selected
+observations extend the entire observed receipt history. `History.expected_sum`
+handles nonnegative rewards depending on that history, rather than only static
+invoice scores. `ProgressComparison.count_upper` and `count_lower` compare all
+nonnegative increasing count payoffs with independent Bernoulli comparison trials.
+Only the exact Boolean progress indicator is pushed forward; the response law,
+private storage and actual response correlations are preserved. Envelopes are needed
+only at reached selected observations, including a harmless kernel completion at
+null histories. `History.final_not_issued` and `final_records_mean` prove that the
+extra silent completion epoch appends no issued receipt and preserves earlier
+receipt resources and progress.
+
+For a set-cover instance with candidate indices `Fin m`, `Coverage.proposal` decodes
+all completed response proposals. `revealed_source` identifies its actual revealed
+coverage with the provenance ledger. Use `revealed_card_bound` with a new-coverage
+cap on positive selected-response supports; no cap on impossible histories is needed.
+`success_count` then derives the number of revealed-progress epochs required by an
+actually decoded native accepted output, using the original SelectionOnly admission.
+Supply an acceptance predicate that counts only covers; it may additionally require
+the source weight certificate. Admission is required only on that predicate, not on
+covering outputs which fail the requested certificate.
+`success_law` identifies that event with the original unbounded native terminal law.
+
+`Coverage.success_cost_lower` proves
+$\eta r_b c/p \le \mathbb E[\mathrm{bill}]$, where $\eta$ is the actual native
+accepted-cover probability, including any requested weight certificate. Its inputs
+are the local coverage cap, the per-issued
+selected progress upper envelope, the per-issued conditional invoice lower envelope,
+a positive finite $p$, and the original native admission. The required progress count
+and cost lower conclusion are proved, not premises. `revealed_envelope` derives zero
+progress on halt/divergence padding. `success_binomial` bounds actual native output
+success by the binomial tail for `limits.turns`, with no extra trial for completion.
+The physical latency lower envelope still needs to replace that budget by
+$\min(u,\lfloor D/\ell\rfloor)$; this exact deadline conclusion is not yet proved here.
+
+`Retained.completion` uses the existing local dual retention test and residual-count
+proof to obtain actual retained-cover probability at least the binomial upper tail.
+`failure` gives its survival complement. `cost_tail_sum` uses the operational
+stop-at-retained-cover contract and selected invoice upper envelope to bound the
+actual accrued bill by $c$ times the binomial survival sum. `cost_mean` derives the
+bound $c r_a/p$ from the proved finite tail-sum estimate. `complete_cost_mean`
+transfers that bound to the complete actual receipt ledger, requiring envelopes for
+only the issued-turn budget; `History.final_expected_static` removes the final silent
+completion epoch. These results assume neither
+an expected stopping mean nor an integrable/bounded total bill. The productivity
+envelope includes no-call decisions: a native machine that halts or diverges before
+completion generally fails it. Proving that envelope and actual certified output
+for a uniform selector remains an implementation obligation.
+
+The progress client derives its posterior envelope from a real concurrent batch,
+with nonempty coverage probability $1/2$, shared private randomness, cancellation
+charges and computed conditional mean cost. The success client writes its packet,
+issues one opportunity, writes a covering output and halts. It proves its original
+SelectionOnly admission for every finite clock and instantiates both positive cost
+bounds and the single-trial native binomial bound at $p=1$. These clients establish
+nonvacuity; they do not implement the source's uniform upper policy on all instances.
+
+The source native optimum/envelope comparison still needs that uniformly successful
+upper realization, along with source WSC subinstance/role and residual-label codecs
+and external PTM encodings. A latent scenario is never assumed publicly visible.
+Fixed finite call opportunities and external nonnegative real clocks remain interface
+conventions; compiled physical timers and general measurable/nonatomic laws are not
+established. The trace preserves divergent mass and its earlier receipts, but equality
+with a cofinal infinite-instruction path-cost law and real integrability are separate
 obligations. Divergence has no native terminal-world bill.
 
 Theorem 4's native resource/asymptotic/hardness gaps remain. Neither unrestricted

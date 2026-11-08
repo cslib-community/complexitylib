@@ -2607,7 +2607,11 @@ public import Complexity.Computability.Probabilistic.Finite
 public import Complexity.Computability.Probabilistic.LinearHash
 public import Complexity.Computability.Probabilistic.Memoize
 public import Complexity.Computability.Probabilistic.NativeBatch
+public import Complexity.Computability.Probabilistic.NativeBatch.Coverage
+public import Complexity.Computability.Probabilistic.NativeBatch.History
+public import Complexity.Computability.Probabilistic.NativeBatch.ProgressComparison
 public import Complexity.Computability.Probabilistic.NativeBatch.Quantitative
+public import Complexity.Computability.Probabilistic.NativeBatch.Retained
 public import Complexity.Computability.Probabilistic.NativeBatch.Trace
 public import Complexity.Computability.Probabilistic.NativeEpoch
 public import Complexity.Computability.Probabilistic.NativeInterface
@@ -4393,6 +4397,7 @@ public import Complexity.Probability.StochasticOracle.ConcurrentBatch.FiniteOrac
 public import Complexity.Probability.StochasticOracle.ConcurrentBatch.Protocol
 public import Complexity.Probability.StochasticOracle.ConcurrentBatch.Resources
 public import Complexity.Probability.StochasticOracle.CutoffFamilies
+public import Complexity.Probability.StochasticOracle.DiscreteComparison
 public import Complexity.Probability.StochasticOracle.ExecutionFeasibility
 public import Complexity.Probability.StochasticOracle.FullCover
 public import Complexity.Probability.StochasticOracle.NativeResidualOneTurn

@@ -163,14 +163,28 @@ finite-control admitted native competitor. A real two-batch packet-writing PTM h
 issued count two, expected bill 13 and latency 8. A geometric-metadata client proves
 unbounded positive-mass invoices, excludes a lossless finite invoice alphabet, and
 discharges a nonzero universal per-issued cost envelope for every native competitor.
-This does not transfer the source completion/revealed-progress/binomial/deadline
-bounds, the full success-level lower comparison or native optimum/envelope ratio.
-Those generalized quantitative applications, native uniform upper selectors and local
-certification, source subinstance/role/residual/external-machine encodings and exact
-source stopping conventions remain open. The retained divergent-prefix ledger is
-not yet a cofinal infinite-instruction path-cost or real-integrability theorem;
-general measurable/nonatomic laws and compiled physical-clock semantics remain open.
-Unrestricted Theorems 5/6 and ALL-main remain incomplete.
+General discrete native history rewards now transfer revealed progress and retained
+productivity without a finite response alphabet. Reached selected-response coverage
+caps and original SelectionOnly output provenance derive the actual native success
+lower bound `η*r_b*c/p`, without an integrability or lower-optimum premise. The extra
+silent completion epoch provably issues no batch; native covering-output probability
+is bounded by the binomial tail at the actual source turn budget. Actual locally
+retained receipts satisfy the reverse binomial coverage bound and stopped invoice
+survival-sum bound, hence `c*r_a/p`, under the conditional productivity and stop-at-cover
+contracts. A correlated concurrent native batch has nonempty certified retained
+coverage probability 1/2 and a computed conditional invoice envelope. A concrete
+packet-writing/output machine proves original native SelectionOnly admission and
+success probability one, instantiates positive lower and upper cost bounds, and
+checks that silent halting adds no binomial trial.
+The exact physical deadline reduction `min(u, floor(D/ℓ))`, native optimum/envelope
+comparison through a uniformly realized successful upper selector, source
+subinstance/role/residual/external-machine encodings and exact source stopping
+conventions remain open. In particular, the upper productivity contract excludes
+premature silent divergence; it is not yet established for a uniform native selector.
+The retained divergent-prefix ledger is not yet a cofinal infinite-instruction
+path-cost or real-integrability theorem; general measurable/nonatomic laws and
+compiled physical-clock semantics remain open. Unrestricted Theorems 5/6 and ALL-main
+remain incomplete.
 Theorem 4's native resource/asymptotic/hardness claims also remain open. Neither the
 policy LP nor the binary-input two-batch savings FPTAS supplies those missing claims.
 

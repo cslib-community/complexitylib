@@ -169,7 +169,8 @@ private theorem first_trace_step : Trace.step limits sample machine (Trace.initi
     Trace.respond, respondSource, phaseStep, first_dispatch, PMF.map_comp]
   rfl
 
-private theorem first_resources (u : Bool) :
+/-- Actual first-batch resources, reusable by quantitative source clients. -/
+theorem first_resources (u : Bool) :
     (firstReceipt u).duration = 5 ∧ (firstReceipt u).tokens = (if u then 11 else 3) := by
   have ha : active first.slots = {0, 1} := by decide
   dsimp only [firstReceipt, Exchange.duration, Exchange.tokens]
