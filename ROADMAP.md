@@ -1139,6 +1139,13 @@ each statement against the numbered result. Organize modules by subject, not cha
   smoothing covers every adaptive decoder), the matching/XOR normal form and the Katz–Trevisan bound
   `n ≥ Ω(k^{q/(q-1)})` with explicit `(δ, ε, q)` dependence, and the Goldreich–Karloff–Schulman–
   Trevisan and Kerenidis–de Wolf exponential bounds for two-query codes.
+- **Lempel–Ziv compression** ([#3312](https://github.com/cslib-community/complexitylib/issues/3312)):
+  LZ78 incremental parsing, its lossless pair and bit codes, the distinct-parsing bound and the
+  worst-case length `⌈log₂ k⌉ n (1 + o(1))` are in `Algorithms/Lean/LempelZiv`. Remaining:
+  asymptotic optimality for stationary ergodic sources (Ziv's inequality, compression ratio tending
+  to the entropy rate, which needs stationary-process infrastructure), LZ77 and sliding-window
+  variants, and the links to Kolmogorov complexity and finite-state compressibility (Lempel–Ziv
+  complexity). Machine-level or `TimeM` costs of the parser are a separate endpoint.
 - **Boolean analysis:** hypercontractivity beyond `p ≤ 2 ≤ q` and its further applications
   (small-set expansion, the Level-k inequalities); coverage of O'Donnell's *Analysis of Boolean
   Functions* ([#2131](https://github.com/cslib-community/complexitylib/issues/2131)), including the
