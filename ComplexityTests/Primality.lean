@@ -6,12 +6,14 @@ Authors: Samuel Schlesinger
 
 import Complexity.Computability.Complexity.Problems.Primes.MillerRabin
 import Complexity.Foundations.NumberTheory.Primality.EulerLiars
+import Complexity.Foundations.NumberTheory.Primality.RabinMonier
 import Mathlib.Tactic.NormNum.LegendreSymbol
 import Mathlib.Tactic.NormNum.Prime
 
-/-! Checked instances for the Euler-liar and strong-liar bounds and for the Miller–Rabin verifier:
-witnesses and liars for small composites, including the Carmichael number `561` and the strong
-pseudoprime `2047` to base `2`, and the verifier accepting and rejecting concrete random words. -/
+/-! Checked instances for the Euler-liar, strong-liar and Rabin–Monier bounds and for the
+Miller–Rabin verifier: witnesses and liars for small composites, including the Carmichael number
+`561` and the strong pseudoprime `2047` to base `2`, moduli where the Rabin–Monier bound is attained
+or fails, and the verifier accepting and rejecting concrete random words. -/
 
 namespace ComplexityTests.Primality
 
@@ -75,6 +77,38 @@ example : ZMod.unitOfCoprime 2 (by norm_num : Nat.Coprime 2 9) ∉ ZMod.eulerLia
   rw [ZMod.mem_eulerLiars, ZMod.coe_unitOfCoprime,
     show ((2 : ℕ) : ZMod 9).val = 2 from rfl]
   norm_num
+  decide
+
+/-! ### The Rabin–Monier bound -/
+
+/-- Strong liars modulo `m + 1` are the residues that pass a Miller–Rabin round, so that counts of
+strong liars can be computed. -/
+theorem isStrongLiar_iff_passes {m : ℕ} (hm : 0 < m) (a : ZMod (m + 1)) :
+    ZMod.IsStrongLiar (m + 1) a ↔ MillerRabin.passes m a.val = true := by
+  rw [MillerRabin.passes_eq_true_iff hm, ZMod.natCast_zmod_val]
+
+-- The bound applies to `15 = 3 * 5`.
+example : 4 * (Finset.univ.filter (ZMod.IsStrongLiar 15)).card ≤ Nat.totient 15 :=
+  ZMod.four_mul_card_isStrongLiar_le (by decide) (by norm_num) (by norm_num) (by norm_num)
+
+-- It is attained there: `14 = 2 * 7`, the strong liars are `±1`, and `φ(15) = 8`. The bases `4` and
+-- `11` have `a ^ 14 = 1` but `a ^ 7 = a`, so they are Fermat liars and not strong liars.
+example : (Finset.univ.filter (ZMod.IsStrongLiar 15)).card = 2 ∧ Nat.totient 15 = 8 := by
+  rw [Finset.filter_congr fun a _ => isStrongLiar_iff_passes (m := 14) (by norm_num) a]
+  decide
+
+example : ¬ ZMod.IsStrongLiar 15 4 ∧ (4 : ZMod 15) ^ 14 = 1 := by
+  rw [isStrongLiar_iff_passes (m := 14) (by norm_num)]
+  decide
+
+-- It is attained by `91 = 7 * 13` as well: `18` strong liars and `φ(91) = 72`.
+example : (Finset.univ.filter (ZMod.IsStrongLiar 91)).card = 18 ∧ Nat.totient 91 = 72 := by
+  rw [Finset.filter_congr fun a _ => isStrongLiar_iff_passes (m := 90) (by norm_num) a]
+  decide +kernel
+
+-- The hypothesis `n ≠ 9` is needed: modulo `9` the strong liars are `±1`, and `4 * 2 > φ(9) = 6`.
+example : ¬ 4 * (Finset.univ.filter (ZMod.IsStrongLiar 9)).card ≤ Nat.totient 9 := by
+  rw [Finset.filter_congr fun a _ => isStrongLiar_iff_passes (m := 8) (by norm_num) a]
   decide
 
 /-! ### The verifier -/
