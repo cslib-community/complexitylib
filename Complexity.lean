@@ -120,6 +120,7 @@ public import Complexity.Algorithms.MatrixMultiplication.Strassen.Coefficients
 public import Complexity.Algorithms.MatrixMultiplication.Strassen.Correctness
 public import Complexity.Algorithms.MatrixMultiplication.Strassen.Defs
 public import Complexity.Algorithms.MatrixMultiplication.Strassen.Phases
+public import Complexity.Algorithms.Quantum.PeriodFinding
 public import Complexity.Algorithms.Reachability.BreadthFirst
 public import Complexity.Algorithms.Reachability.InductiveCounting
 public import Complexity.Algorithms.Reachability.InductiveCounting.Bounds
@@ -3840,6 +3841,7 @@ public import Complexity.Foundations.Analysis.BernoulliInequality
 public import Complexity.Foundations.Analysis.Convex.FirstOrder
 public import Complexity.Foundations.Analysis.ENNRealFraction
 public import Complexity.Foundations.Analysis.ENNRealTsum
+public import Complexity.Foundations.Analysis.Fourier.ZModMultiples
 public import Complexity.Foundations.Analysis.Fourier.ZModProd
 public import Complexity.Foundations.Analysis.HarmonicMean
 public import Complexity.Foundations.Analysis.InnerProductSpace.Basic
@@ -4299,6 +4301,7 @@ public import Complexity.Foundations.Data.Nat.SqrtLog.Shifted
 public import Complexity.Foundations.Data.Nat.SqrtRatio
 public import Complexity.Foundations.Data.Nat.Subexponential
 public import Complexity.Foundations.Data.Nat.SummationByParts
+public import Complexity.Foundations.Data.Nat.Totient
 public import Complexity.Foundations.Data.Option
 public import Complexity.Foundations.Data.Polynomial.BinaryDigits
 public import Complexity.Foundations.Data.Polynomial.BivariateCoeffNorm1
@@ -4321,6 +4324,7 @@ public import Complexity.Foundations.Data.StackTape
 public import Complexity.Foundations.Data.ZMod.Basic
 public import Complexity.Foundations.Data.ZMod.DotProduct
 public import Complexity.Foundations.Data.ZMod.ModulusSwitch
+public import Complexity.Foundations.Data.ZMod.Multiples
 public import Complexity.Foundations.FieldTheory.Finite.Basic
 public import Complexity.Foundations.FieldTheory.Finite.BinaryField
 public import Complexity.Foundations.FieldTheory.Finite.LinearizedPolynomial
@@ -4565,10 +4569,12 @@ public import Complexity.Foundations.Probability.SourceRelease
 public import Complexity.Foundations.Probability.SpectralPayment
 public import Complexity.Foundations.Probability.StochasticAtom
 public import Complexity.Foundations.Probability.TrueSampleMeans
+public import Complexity.Foundations.Quantum.Fourier
 public import Complexity.Foundations.Quantum.HadamardTransform
 public import Complexity.Foundations.Quantum.Measurement
 public import Complexity.Foundations.Quantum.Measurement.Overlap
 public import Complexity.Foundations.Quantum.Measurement.Restrict
+public import Complexity.Foundations.Quantum.Register
 public import Complexity.Foundations.Quantum.TensorPower
 public import Complexity.Foundations.Relation.Acyclic
 public import Complexity.Foundations.Relation.InductiveCounting
