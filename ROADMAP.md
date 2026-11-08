@@ -1103,6 +1103,12 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Codes:** Guruswami–Sudan list decoding and local decoding, keeping interpolation,
   list-size/agreement guarantees and decoding runtime as separate obligations; concrete
   list-decodable codes for Nisan–Wigderson.
+- **Upper bounds on code size** ([#3280](https://github.com/cslib-community/complexitylib/issues/3280)):
+  the Singleton, Hamming, Plotkin (with its asymptotic form), alphabet-free and q-ary Johnson,
+  and finite Elias–Bassalygo bounds are in place. Remaining: the asymptotic Elias–Bassalygo bound
+  `R ≤ 1 - H_q(J_q(δ)) + o(1)`, which needs the lower bound `q ^ (H_q(e / n) n - o(n))` on the
+  volume of a q-ary Hamming ball, and the McEliece–Rodemich–Rumsey–Welch linear-programming bound
+  (Delsarte's linear program and Krawtchouk polynomials).
 - **Locally decodable codes** ([#2929](https://github.com/cslib-community/complexitylib/issues/2929)):
   query-bounded decoders, the Hadamard code, Katz–Trevisan smoothing for oblivious-read decoders
   and the one-query bound are in place. Remaining: the adaptive-to-non-adaptive reduction (so that
