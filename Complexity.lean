@@ -23,6 +23,8 @@ public import Complexity.Algorithms.Lean.BinPacking.Basic
 public import Complexity.Algorithms.Lean.BinPacking.FirstFit
 public import Complexity.Algorithms.Lean.BinPacking.FirstFitWeight
 public import Complexity.Algorithms.Lean.BinPacking.NextFit
+public import Complexity.Algorithms.Lean.BinPacking.Online
+public import Complexity.Algorithms.Lean.BinPacking.OnlineLowerBound
 public import Complexity.Algorithms.Lean.BinarySearch
 public import Complexity.Algorithms.Lean.CYK.Basic
 public import Complexity.Algorithms.Lean.DFS.Basic

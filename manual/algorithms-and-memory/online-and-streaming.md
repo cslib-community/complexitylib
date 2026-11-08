@@ -32,6 +32,17 @@ The metric is number of page faults. The recency-list Lean implementation is not
 
 [KServer/DoubleCoverage](../../Complexity/DataStructure/KServer/DoubleCoverage.lean) defines Double Coverage on the integer line. `dcStep` sorts the configuration, moves the outer server for an outer request or the two neighbouring servers toward an inner request, and restores the labels. The potential is `k·matchCost + Σ_{i<j}|s_i - s_j|` (doubled as `2k·matchCost + pairSum`, since `pairSum` counts ordered pairs). `dcStep_amortized_offline` is the step inequality `2·cost_DC + Δ(2Φ) ≤ 2k·cost_OPT`. `doubleCoverage_cost_le` bounds the cost by `k·OPT + k·matchCost s₀ s_off + Σ_{i<j}|s₀ i - s₀ j|` against offline schedules from any start, and `doubleCoverage_isCompetitiveFrom` gives ratio `k` from every initial configuration with that additive spread. This is the Chrobak–Karloff–Payne–Vishwanathan theorem [chrobakkarloffpaynevishwanathan91][chrobakkarloffpaynevishwanathan91], restricted to integer points. With the lower bound, the deterministic ratio on the line is exactly `k` from any start with distinct servers, with a per-start additive constant. Double Coverage is not competitive with one additive constant for every start: from `0, 10` the requests `5, 0` cost it `15` against an offline `5`, and scaling the instance defeats any fixed constant. The [test file](../../ComplexityTests/KServer.lean) computes a three-server Double Coverage run, an offline schedule and the additive constant. It also checks the uniform-metric lower bound, that Double Coverage from `0, 1, …, k-1` is not `(k-1)`-competitive, and the two-server instance above.
 
+## Online bin packing
+
+[BinPacking/Online](../../Complexity/Algorithms/Lean/BinPacking/Online.lean) models deterministic online bin packing outside the `Problem` interface. An `OnlinePacker C` chooses a bin for the next item from the items seen so far and the current bins. If the chosen bin has no room, or none is chosen, the item opens a new last bin (`onlineInsert`), so every rule gives a valid packing (`OnlinePacker.isPacking_run`). Two facts drive lower bounds against all online packers. First, the packing of `l₁ ++ l₂` continues that of `l₁` (`OnlinePacker.run_append`). Second, items failing a predicate leave the number of bins with an item satisfying it unchanged (`OnlinePacker.countP_any_runFrom`). `run_firstFitPacker` identifies First Fit as an online packer.
+
+[BinPacking/OnlineLowerBound](../../Complexity/Algorithms/Lean/BinPacking/OnlineLowerBound.lean) proves Yao's lower bound `3/2` for deterministic online bin packing [yao80][yao80], with the construction as reported in [baloghbekesidosaepsteinlevin18][baloghbekesidosaepsteinlevin18].
+- The input has capacity `41` and three phases of `6m` items of sizes `6`, `14` and `21`. These sizes give the same 20 feasible bin patterns as `1/7 + ε`, `1/3 + ε` and `1/2 + ε` with capacity `1`.
+- `OnlinePacker.yao_lower_bound`: after one of the phases, every online packer uses at least `3/2` times the optimum, exactly. The optima are `m`, `3m` and `6m` (`isPacking_yao₁`, `le_length_of_isPacking_yao₁`, and so on).
+- The proof is an explicit LP dual certificate: the weights `1`, `2`, `2` (`yaoWeight`) and the per-bin inequality `weight b ≤ 2 + 2·[b has a 6] + 2·[b has a 6 or a 14]` (`sum_map_yaoWeight_le`), which `omega` checks against all 20 feasible patterns.
+- `exists_optimal_three_mul_le` and `exists_ratio_violation_of_lt` state the bound against an optimal packing, for every rational ratio below `3/2` and every additive constant. `four_thirds_lower_bound` is the two-phase `4/3`.
+- The [test file](../../ComplexityTests/BinPackingOnline.lean) enumerates the 20 patterns and runs First Fit on the input. It also checks an online packer that follows the LP optimum and attains `3/2` after every phase for `m = 8`, so the constant is the best this input gives.
+
 ## Count-Min: a stored streaming sketch
 
 [Complexity/DataStructure/CountMin/Basic.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/DataStructure/CountMin/Basic.lean) models a weighted insertion stream `List (X × Nat)`. Each update increments one bucket in each row of a vector-of-vectors counter table; a query takes the minimum row counter. The exact bucket invariant proves no underestimation, each counter's bound by total mass, and entrywise merge agreement with stream concatenation.
@@ -136,8 +147,11 @@ The optimal-stopping modules are semantic probability statements over determinis
 
 The `k`-server modules use natural-number distances, so Double Coverage is proved on the integer line rather than the real line. Double Coverage on trees, the work-function algorithm's `2k-1` bound, the `k`-server conjecture, randomized `k`-server and an algorithm computing the offline optimum are not formalized, and the Lean step functions carry no time bounds.
 
+Online bin packing is modelled by `OnlinePacker`, not through `Problem`/`DetStrategy`, and only deterministic packers are covered. The stronger lower bounds (Brown–Liang `1.536`, van Vliet `1.5401`, Balogh–Békési–Galambos `248/161`, and the fully adaptive constructions) are not formalized. Neither are upper bounds for online algorithms such as Harmonic, or randomized lower bounds.
+
 [achlioptas03]: ../sources.md#achlioptas03
 [alonmatiasszegedy99]: ../sources.md#alonmatiasszegedy99
+[baloghbekesidosaepsteinlevin18]: ../sources.md#baloghbekesidosaepsteinlevin18
 [bjkst02]: ../sources.md#bjkst02
 [borodinelyaniv98]: ../sources.md#borodinelyaniv98
 [chrobakkarloffpaynevishwanathan91]: ../sources.md#chrobakkarloffpaynevishwanathan91
@@ -150,3 +164,4 @@ The `k`-server modules use natural-number distances, so Double Coverage is prove
 [karlin88]: ../sources.md#karlin88
 [manassemcgeochsleator90]: ../sources.md#manassemcgeochsleator90
 [sleatortarjan85]: ../sources.md#sleatortarjan85
+[yao80]: ../sources.md#yao80
