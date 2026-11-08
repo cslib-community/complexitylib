@@ -423,13 +423,11 @@ with `scripts/build.sh ComplexityTests.PaperEndpoints.ExactOneBinary ComplexityT
 The former executes all 256 ordered pairs of two-bit signed equations against
 an independent source count, plus direct, no-equation and 40-bit cases.
 
-This is a functional composition with a binary-certified elimination backend. Its complete
-table-to-direct/two-query binary runtime theorem remains open. The new `BinaryFrontend`
-continuation below certifies local listing, separator/equation writing, global side deduplication,
-shared-column materialization, basis and consistency. Candidate validation against the side
-formula, final dispatch, query writing and whole counting-machine composition remain separate.
+This interface is a functional composition with a binary-certified elimination backend.
+The `BinaryFrontend.compile` continuation below now supplies the complete actual binary
+constructor and sharp counting resource endpoint for the explicit promised table encoding.
 The rational kernel's own coefficient-growth theorem is not implied by the binary backend.
-The weighted-row endpoint later in this chapter is already certified; graph endpoints remain open.
+The weighted-row endpoint later in this chapter is also certified; graph endpoints remain open.
 
 The listing resource bound is promise-restricted. Without `DimensionOne`, take
 one width-$w$ table containing the all-zero tuple, all-one tuple and all $w$
@@ -498,11 +496,9 @@ overlap-writing costs through actual signed integer materialization and the bina
 The computed `basis` consists of original equation indices and has length at most the declared
 width. `consistent` checks the affine equations only: an empty allowed table may yield a false
 side clause and no equations, so linear consistency does not assert table satisfiability.
-The final all-cases table dispatcher must also enforce the side CNF. Its direct answers and
-at-most-two counting calls have existing semantic proofs, but their binary resource composition
-with this new payload remains open. In particular, this is not yet Theorem 6.3's sharp complete
-counting time/polynomial-space endpoint. Generic Theorem 1.1 resource transfer, graph applications
-and ALL-main remain open where not separately covered.
+The actual all-cases table dispatcher and its complete counting resource composition are now
+available as follows. Generic Theorem 1.1 resource transfer, graph applications and ALL-main remain
+open where not separately covered.
 
 From the repository root run
 `scripts/build.sh ComplexityTests.PaperEndpoints.VCOneResources`.
@@ -510,6 +506,45 @@ The [complete client](../../ComplexityTests/PaperEndpoints/VCOneResources.lean) 
 point/separator extraction, width-zero empty/tautological relations, a 32-coordinate two-row
 closure, a capped non-VC-one relation, shared columns with opposite signs, a contradictory
 shared-scope system and original assignment count 4 with an unused bit.
+
+### Complete original-table dispatch and sharp counting resources
+
+From the checkout root, import
+`Complexity.Computability.Complexity.FineGrained.VCOneCountingResources` and open
+`Cslib.Logic.PL.VCOne`. Pass the original `tablePayload w scope R` to
+`BinaryFrontend.compile`. Its tagged result is a binary direct answer or two explicit CNFs with
+a unary declaration. It computes the side/equation payload, consistency and an original-row basis.
+Small declarations, false side clauses, no constraints, inconsistent equations and full rank take
+direct branches. Full rank checks the computed integer candidate against the side formula and all
+original rows. Rank zero retains the side formula; positive deficient rank writes both path queries
+from computed original rows. It never requests a basis or enumerates the declared assignment cube.
+
+`BinaryFrontend.compile_polytime` certifies all construction stages with binary arithmetic,
+including the direct $2^r$ answer and actual query writes. `compile_count` identifies the count
+of the actual result with `Satisfies w scope R` on all declared bits. `compile_withinBudget`
+bounds declarations by $2r-2$, width by three and clause lists by
+`WeightedRow.countingBudget r 1` (a uniform quadratic independent of table count).
+`payload_presentation` transports local row permutations and signs through each scope embedding;
+its proof witnesses are never inputs to the executable compiler.
+
+`BinaryFrontend.exists_count_sharp_certificate` supplies one actual counting algorithm and its
+`NativeCertificate`: global polynomial peak workspace and
+$L^{O(1)}2^{O(\eta(r))}$ time on the canonical promised table inputs, where $L$ is the complete
+`encTablePayload` bit length. It composes the actual constructor, sequential general-density
+width-three counting and binary subtraction; direct tags bypass the counter.
+`exists_count_realEta_certificate` states the real exponent
+$\eta(r)=r\log\log r/\sqrt{\log r}$ for $r\ge16$. The rounded theorem includes all smaller cases.
+Constants are uniform over table count, arity and overlap. The native word-certificate convention
+and unary global/local declarations are material; no succinct binary-declaration or alternative
+raw-table parser/admission theorem is asserted. Polynomial space holds for all raw payloads;
+correctness and sharp time use locally VC-one tables with injective individual scopes.
+
+Run `scripts/build.sh ComplexityTests.PaperEndpoints.VCOneDispatch` from the repository root.
+The [complete checked client](../../ComplexityTests/PaperEndpoints/VCOneDispatch.lean) checks
+zero/one declarations, empty and zero-width tables, the binary 256-bit free answer, inconsistent
+and fractional/full-rank candidates, rank-zero side constraints, deficient-rank queries and
+original overlapping tables with unused bits. Its exhaustive small counter is a test oracle only;
+the resource theorem instantiates the proved native sharp counter.
 
 ## Known Limitations
 

@@ -1688,6 +1688,7 @@ public import Complexity.Computability.Complexity.FineGrained.CountingSparsifica
 public import Complexity.Computability.Complexity.FineGrained.CountingSparsifyContext
 public import Complexity.Computability.Complexity.FineGrained.CountingTreeBound
 public import Complexity.Computability.Complexity.FineGrained.DensityBranchCounting
+public import Complexity.Computability.Complexity.FineGrained.ExactOneCountingResources
 public import Complexity.Computability.Complexity.FineGrained.ExhaustiveSearch
 public import Complexity.Computability.Complexity.FineGrained.Exponents
 public import Complexity.Computability.Complexity.FineGrained.GeneralCNFBranchSchedule
@@ -1722,10 +1723,11 @@ public import Complexity.Computability.Complexity.FineGrained.SparseCountingScal
 public import Complexity.Computability.Complexity.FineGrained.SparseParitySchedule
 public import Complexity.Computability.Complexity.FineGrained.Sparsification
 public import Complexity.Computability.Complexity.FineGrained.ThreeOccurrenceReduction
-public import Complexity.Computability.Complexity.FineGrained.WeightedCountingResources
-public import Complexity.Computability.Complexity.FineGrained.WideClauseCounting
+public import Complexity.Computability.Complexity.FineGrained.VCOneCountingResources
 public import Complexity.Computability.Complexity.FineGrained.WeightedCountingPlan
+public import Complexity.Computability.Complexity.FineGrained.WeightedCountingResources
 public import Complexity.Computability.Complexity.FineGrained.WeightedRaggedResources
+public import Complexity.Computability.Complexity.FineGrained.WideClauseCounting
 public import Complexity.Computability.Complexity.HardnessEncoding.PolyTime
 public import Complexity.Computability.Complexity.HardnessEncoding.Program
 public import Complexity.Computability.Complexity.ImmermanVardi
@@ -2598,11 +2600,13 @@ public import Complexity.Computability.PolyTime.BooleanAnalysis.IncidenceBranchi
 public import Complexity.Computability.PolyTime.BooleanAnalysis.SparsePolyCounter
 public import Complexity.Computability.PolyTime.BudgetTuples
 public import Complexity.Computability.PolyTime.CNF.BranchedSparseCNFCounter
+public import Complexity.Computability.PolyTime.CNF.ExactOnePlan
 public import Complexity.Computability.PolyTime.CNF.GreedyParityContext
 public import Complexity.Computability.PolyTime.CNF.GreedyParitySearch
 public import Complexity.Computability.PolyTime.CNF.SparseCNFLeafCounter
 public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
 public import Complexity.Computability.PolyTime.CNF.VCOneClosure
+public import Complexity.Computability.PolyTime.CNF.VCOneDispatch
 public import Complexity.Computability.PolyTime.CNF.VCOneFrontend
 public import Complexity.Computability.PolyTime.CNF.VCOneSeparator
 public import Complexity.Computability.PolyTime.CNF.WeightedNormalization
@@ -4144,6 +4148,7 @@ public import Complexity.Logics.Propositional.CNF.ExactOne.Positive
 public import Complexity.Logics.Propositional.CNF.ExactOneBinary
 public import Complexity.Logics.Propositional.CNF.ExactOneCounting
 public import Complexity.Logics.Propositional.CNF.ExactOneElimination
+public import Complexity.Logics.Propositional.CNF.ExactOnePathPlan
 public import Complexity.Logics.Propositional.CNF.ExactTests
 public import Complexity.Logics.Propositional.CNF.ExactlyOne
 public import Complexity.Logics.Propositional.CNF.Gadgets
@@ -4173,6 +4178,11 @@ public import Complexity.Logics.Propositional.CNF.ThreeCNF.PolyTime
 public import Complexity.Logics.Propositional.CNF.ThreeOccurrence
 public import Complexity.Logics.Propositional.CNF.ThreeOccurrence.PolyTime
 public import Complexity.Logics.Propositional.CNF.TwoBoundary
+public import Complexity.Logics.Propositional.CNF.TwoCNF
+public import Complexity.Logics.Propositional.CNF.UnsatVal
+public import Complexity.Logics.Propositional.CNF.VCOne
+public import Complexity.Logics.Propositional.CNF.VCOneElimination
+public import Complexity.Logics.Propositional.CNF.VCOneTables
 public import Complexity.Logics.Propositional.CNF.WeightedAffine
 public import Complexity.Logics.Propositional.CNF.WeightedCounting
 public import Complexity.Logics.Propositional.CNF.WeightedExecutable
@@ -4180,11 +4190,6 @@ public import Complexity.Logics.Propositional.CNF.WeightedExecution
 public import Complexity.Logics.Propositional.CNF.WeightedGlobal
 public import Complexity.Logics.Propositional.CNF.WeightedNormalization
 public import Complexity.Logics.Propositional.CNF.WeightedRow
-public import Complexity.Logics.Propositional.CNF.TwoCNF
-public import Complexity.Logics.Propositional.CNF.UnsatVal
-public import Complexity.Logics.Propositional.CNF.VCOne
-public import Complexity.Logics.Propositional.CNF.VCOneElimination
-public import Complexity.Logics.Propositional.CNF.VCOneTables
 public import Complexity.Logics.Propositional.CSP
 public import Complexity.Logics.Propositional.CSP.BinaryDigits
 public import Complexity.Logics.Propositional.CSP.ExactlyOne

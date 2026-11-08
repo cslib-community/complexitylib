@@ -1221,27 +1221,30 @@ lists; no succinct binary declaration resource claim is made. Native word certif
 all parsing/construction/counting/output operations, with single-loglog eta and no counter advice.
 `ComplexityTests.WeightedRagged` supplies mixed-length/empty/contradictory/large-weight clients.
 
-The concrete table preprocessing resource gap is now partly closed by `VCOneClosure`,
-`VCOneSeparator` and `VCOneFrontend`: globally polynomial capped prefix traversal, exact promised
-closure/missing-point correspondence, greedy signed separator extraction, actual quadratic side
-CNF writing, shared-column equation output/global side deduplication, signed matrix/RHS writing
-and computed binary basis/consistency. Theorem 1.3's actual local representation and sharp equation
-count are proved for the existing canonical explicit relation-row encoding. Arbitrary table
-counts, widths and inter-table overlaps are retained; the declaration and local widths are unary,
-rows literal bits and scope columns binary. Runtime/space proofs charge actual scans/loops/writes;
-no cube, supplied separator, rank, output or runtime contract is used. Invalid/non-VC-one raw
-payloads remain polynomial via capping, without a correctness/admission claim for those inputs.
+The concrete table endpoint is now composed in `ExactOnePlan`/`ExactOnePathPlan`,
+`VCOneDispatch`, `ExactOneCountingResources` and `VCOneCountingResources`, reusing the approved
+`VCOneClosure`/`VCOneSeparator`/`VCOneFrontend` constructors. Actual side-CNF/direct/rank/candidate
+branches, selected-row query writing and original assignment counts are proved, including empty
+and overlapping tables and unused declared bits. The actual general-density native counter and
+binary reconstruction give single-loglog sharp time and global polynomial peak space. Query
+declarations are at most `2r-2`, widths at most three, and actual clause budgets are quadratic,
+independent of input table count. This is the Theorem 6.3 table endpoint on the existing canonical
+explicit relation-row encoding: unary declarations/local widths, literal bit rows and binary scope
+columns, with individually injective scopes and local VC dimension at most one. Full binary
+construction has polynomial resources for every raw input; correctness/sharp counting time use
+the promise. Other table formats and parser/admission transfers remain separate. Certificates use
+the existing native word/resource calculus, rather than a fresh bit-transition machine simulation.
 
 Remaining STOC1575 objectives, keeping the original inventory open:
 
 - Theorems 1.1–1.2: preserve the reviewed two-boundary/counting mathematics and reduced query
   budgets; finish source-wide executable resource bridges where the existing specialized weighted
-  endpoint does not already supply them (notably arbitrary side 2-CNF constraints).
-- Theorem 1.3 / 6.3 tables: compose the new actual payload with binary all-cases candidate/side-CNF
-  validation, selected-row query writing and sharp native counting, preserving the `2r-2`, width-3
-  and quadratic-clause budgets. Existing `binaryTablePlan` semantics and budgets are preserved;
-  the new constructor's polynomial preprocessing alone is not the complete counting resource
-  theorem. Other raw table formats/parser/admission transfers remain separate.
+  endpoint does not already supply them. Arbitrary side 2-CNF with distinct-variable signed
+  equations is now covered by the actual `ExactOnePlan` dispatcher and sharp native composition;
+  arbitrary bounded-term DNF constructor/resource transfer remains open.
+- Theorem 1.3 / 6.3 tables: actual representation and complete original-count/sharp-time/global
+  polynomial-space composition are covered under the explicit canonical promise/encoding above.
+  Alternative raw table formats/parser/admission transfers remain separate.
 - Theorem 7.1: the parsed ragged weighted-row counting/reduction is covered for the explicit
   nonsuccinct unary-declaration input encoding, with actual sharp time/polynomial space.
 - Corollary 7.2 / Theorem 7.3: fixed finite/cofinite degree rules and fixed labeled partition
@@ -1252,7 +1255,8 @@ Remaining STOC1575 objectives, keeping the original inventory open:
   pairs, not original sets. Query budgets, directed/undirected promises, empty graphs and
   polynomially many distribution/threshold queries must be retained.
 
-Table/graph and other-paper/ALL-main endpoints remain open; no completion increment is claimed.
+Graph, generic bounded-term DNF and other-paper/ALL-main endpoints remain open; this table
+milestone does not complete the original ALL-main objective.
 
 The older interpolation counter is unchanged; its extra loglog and nu²-denominator schedule are
-not relabeled. Table/graph endpoints and other-paper objectives remain open.
+not relabeled. Graph endpoints and other-paper objectives remain open.
