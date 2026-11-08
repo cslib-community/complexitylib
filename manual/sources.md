@@ -594,6 +594,11 @@ Seinosuke Toda. “PP Is as Hard as the Polynomial-Time Hierarchy.” *SIAM Jour
 
 Virginia Vassilevska Williams and R. Ryan Williams. "Subcubic Equivalences Between Path, Matrix, and Triangle Problems." *Journal of the ACM* 65(5), 27:1–27:38, 2018; preliminary version in FOCS 2010. https://doi.org/10.1145/3186893 . Bibliographic metadata checked on 2026-11-07; the manual cites it only as the standard reference for the APSP class and the negative-triangle equivalence, without a theorem locator.
 
+<a id="wattenhofer16"></a>
+## wattenhofer16
+
+Roger Wattenhofer. *Principles of Distributed Computing*, lecture notes, ETH Zürich, Chapter 7 "Maximal Independent Set". https://disco.ethz.ch/courses/podc_allstars/lecture/chapter7.pdf (PDF dated 2016-08-23). Inspected 2026-11-08: Algorithm 7.12 ("Fast MIS 2"), Lemma 7.14 (edge removal), Theorem 7.15, Corollary 7.18 and the chapter notes, which attribute the algorithm to Métivier, Robson, Saheb-Djahromi and Zemmari (Distributed Computing 23(5–6), 2011) as a simplification of Luby (SIAM J. Comput. 15(4), 1986). Those two papers were not inspected.
+
 <a id="williams25"></a>
 ## williams25
 

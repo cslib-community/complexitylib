@@ -53,6 +53,7 @@ public import Complexity.Algorithms.Lean.Knapsack.PolyTime
 public import Complexity.Algorithms.Lean.Knapsack.ProfitDP
 public import Complexity.Algorithms.Lean.Kruskal.Basic
 public import Complexity.Algorithms.Lean.Kruskal.SimpleGraph
+public import Complexity.Algorithms.Lean.LubyMIS
 public import Complexity.Algorithms.Lean.Matroid.Greedy
 public import Complexity.Algorithms.Lean.Matroid.Intersection
 public import Complexity.Algorithms.Lean.Matroid.Intersection.Konig
