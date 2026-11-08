@@ -49,20 +49,6 @@ variable {N : ℕ}
 /-- Hadamard gate codes on the qubits `o, …, o + p - 1`. -/
 def hadamardCodes (o p : ℕ) : List GateCode := (List.range p).map fun j => (true, o + j, [])
 
-/-- The bits of `glue (blockEmb o h) r X`: those of `r` on the block `o, …, o + m - 1` and those
-of `X` elsewhere. -/
-theorem glue_blockEmb_apply {m o : ℕ} (h : o + m ≤ N) (r : Fin m → Bool) (X : Fin N → Bool)
-    (i : Fin N) :
-    glue (blockEmb o h) r X i =
-      if h' : o ≤ i ∧ (i : ℕ) < o + m then r ⟨i - o, by omega⟩ else X i := by
-  split_ifs with h'
-  · have : i = blockEmb o h ⟨i - o, by omega⟩ := Fin.ext (by simp; omega)
-    conv_lhs => rw [this]
-    rw [glue_apply_emb]
-  · refine glue_of_not _ _ _ fun j hj => h' ?_
-    rw [← hj, blockEmb_apply_val]
-    omega
-
 /-- **A layer of Hadamard gates on zero qubits** prepares the uniform superposition: on a basis
 state `|X⟩` whose qubits `o, …, o + p - 1` are zero, it gives `2^{-p/2} ∑_r |X with r on them⟩`. -/
 theorem eval_hadamardCodes_ket {o p : ℕ} (h : o + p ≤ N) (X : Fin N → Bool)
