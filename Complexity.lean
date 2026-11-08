@@ -4961,6 +4961,9 @@ public import Complexity.MachineLearning.PACLearning.RealizableSample
 public import Complexity.MachineLearning.PACLearning.UniformConvergence
 public import Complexity.MachineLearning.PACLearning.VCDimension
 public import Complexity.MachineLearning.PACLearning.VCUpperBound
+public import Complexity.MachineLearning.Rademacher.Basic
+public import Complexity.MachineLearning.Rademacher.Generalization
+public import Complexity.MachineLearning.Rademacher.GrowthFunction
 public import Complexity.MachineLearning.StatisticalQuery.Basic
 public import Complexity.MachineLearning.StatisticalQuery.LowDegree
 public import Complexity.MachineLearning.StatisticalQuery.LowerBound
@@ -4995,6 +4998,7 @@ public import Complexity.Probability.BitString.LinearHash.Collisions
 public import Complexity.Probability.BitString.List
 public import Complexity.Probability.BitString.List.All
 public import Complexity.Probability.BitString.List.Vote
+public import Complexity.Probability.BitString.Massart
 public import Complexity.Probability.BitString.Rademacher
 public import Complexity.Probability.BitString.SubsetSum
 public import Complexity.Probability.BitString.SubsetSum.Matrix
