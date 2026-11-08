@@ -1585,6 +1585,14 @@ densities (expected revenue equals expected virtual welfare; Vickrey with a rese
   algorithms such as Luby's MIS, and closing the additive gaps between the
   `⌈(log* n) / 2⌉ + 3` and `(log* n) / 2 - 1` round bounds for 3-colouring cycles and between
   `⌈(log* n) / 2⌉ + 5` and `(log* n) / 2 - 2` for MIS on cycles.
+- **Fault-tolerant agreement:** synchronous Byzantine agreement on the complete graph, the
+  `n ≤ 3t` impossibility and the single-fault protocol exist
+  (`Complexity/Computability/Distributed/Byzantine/`,
+  [#3261](https://github.com/cslib-community/complexitylib/issues/3261)). Open: the connectivity
+  bound `κ ≥ 2t + 1` on general graphs (Fischer–Lynch–Merritt §3.2), the upper bound for all
+  `n > 3t` (`OM(t)` or exponential information gathering), the `t + 1` round lower bound
+  (Fischer–Lynch), authenticated (signed-message) agreement for any `n > t`, weak agreement,
+  approximate agreement and clock synchronization bounds, and randomized agreement.
 
 ## Coverage and reuse
 

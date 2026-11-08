@@ -2104,6 +2104,9 @@ public import Complexity.Computability.DecisionTree.Separable
 public import Complexity.Computability.DecisionTree.SpectralNorm
 public import Complexity.Computability.DecisionTree.Switching
 public import Complexity.Computability.DecisionTree.Symmetric
+public import Complexity.Computability.Distributed.Byzantine.Basic
+public import Complexity.Computability.Distributed.Byzantine.NodeBound
+public import Complexity.Computability.Distributed.Byzantine.OralMessages
 public import Complexity.Computability.Distributed.OrientedCycle.Basic
 public import Complexity.Computability.Distributed.OrientedCycle.ColeVishkin
 public import Complexity.Computability.Distributed.OrientedCycle.Graph
