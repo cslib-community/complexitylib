@@ -17,8 +17,10 @@ import Mathlib.Analysis.PSeries
 This module proves two locality bounds of Sleator and Tarjan for sequences of accesses to keys
 present in a splay tree, with explicit constants and the cost measure `splaySeqTime` (each access
 costs `splayTime = max rotations 1`, [SleatorTarjan1985b], Section 2, p. 658). Both follow from the
-Access Lemma with weights proportional to `1/k²`, whose total is at most `2 ∑ₖ 1/k² ≤ 3` or
-`∑ₖ 1/k² ≤ 2`.
+Access Lemma with inverse-square weights. The static finger weights `1/(d + 1)²` total at most
+`2 + 1 = 3`: the keys at or below `f` have distinct distances `d ≥ 0` and contribute at most
+`∑_{k ≥ 1} 1/k² ≤ 2`, and the keys above `f` have distinct distances `d ≥ 1` and contribute at most
+`∑_{k ≥ 2} 1/k² ≤ 1`. The working-set weights `1/(t + 1)²` total at most `∑_{k ≥ 1} 1/k² ≤ 2`.
 
 ## Main definitions
 

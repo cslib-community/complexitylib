@@ -19,7 +19,7 @@ The metric is number of page faults. The recency-list Lean implementation is not
 [SplayTree/Basic](../../Complexity/DataStructure/SplayTree/Basic.lean) implements bottom-up splaying on Mathlib's `BinaryTree` with no stored balance data. Each result records the exact number of edge rotations. [SplayTree/AccessLemma](../../Complexity/DataStructure/SplayTree/AccessLemma.lean) proves the Access Lemma for arbitrary positive weights. The weights are analysis parameters only: the tree never stores them. One splay costs `splayTime = max rotations 1`, and `splaySeqTime xs t` sums this cost over the access sequence `xs`, splaying each tree in turn. The module also proves:
 
 - the Balance Theorem `(3m + n) log₂ n + m`, which also covers absent keys;
-- Static Optimality `m + 4 ∑ q(y) log₂(m / q(y))`;
+- Static Optimality `m + 4 ∑ q(y) log₂(m / q(y))`, where `q(y)` is the access frequency of `y`, for accesses to stored keys when every stored key is accessed at least once (`q(y) ≥ 1`; the bound fails without this hypothesis);
 - a general fixed-weight bound `splaySeqTime_le_fixed_weights`;
 - unit-weight update bounds.
 
@@ -27,7 +27,7 @@ The metric is number of page faults. The recency-list Lean implementation is not
 
 [SplayTree/WorkingSet](../../Complexity/DataStructure/SplayTree/WorkingSet.lean) proves two locality bounds with explicit constants. Both apply to `m` accesses to keys of an `Ordered` tree with `n` keys:
 
-- **Static Finger** (Theorem 3): `splaySeqTime_le_static_finger` bounds the cost by `7m + 6 ∑ log₂(d(xⱼ) + 1) + n(2 + 2 log₂ n)` for a fixed finger key `f` in the tree. Here `d = fingerDist (elements t) f` counts the stored keys strictly between `f` and `xⱼ`, plus `xⱼ` itself when it is stored. On keys `1, …, n` this is `|xⱼ − f|`, and it is defined for any linear order.
+- **Static Finger** (Theorem 3): `splaySeqTime_le_static_finger` bounds the cost by `7m + 6 ∑ log₂(d(xⱼ) + 1) + n(2 + 2 log₂ n)` for a fixed finger key `f` in the tree. Here `d = fingerDist (elements t) f` counts the stored keys in the half-open interval from `f` (exclusive) to `xⱼ` (inclusive), so `d(f) = 0`. On keys `1, …, n` this is `|xⱼ − f|`, and it is defined for any linear order.
 - **Working Set** (Theorem 4): `splaySeqTime_le_working_set` bounds the cost by `4m + 6 ∑ log₂(t(j) + 1) + n(1 + 2 log₂ n)`. Here `workingSetNumbers` computes `t(j)`, the number of distinct keys accessed since the previous access of the same key, or since the start of the sequence for a first access.
 
 The working-set proof follows the source. It assigns the weights `1, 1/4, …, 1/n²` in move-to-front order and reassigns them after every access. The reassignment changes the potential explicitly, and `potential_reweight_root_le` accounts for that change. The accessed key is at the root, so its subtree size is unchanged, while every other key's weight can only decrease, so the potential does not increase. [Checked instances](../../ComplexityTests/SplayTree.lean) compute working-set numbers and finger distances and apply both theorems to a degenerate seven-key spine [sleatortarjan85b][sleatortarjan85b].
