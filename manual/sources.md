@@ -459,6 +459,11 @@ Peter Kairouz, Sewoong Oh and Pramod Viswanath. *The Composition Theorem for Dif
 
 Lean development team. *Validating a Lean Proof*, The Lean Language Reference, accessed 2026-11-02 UTC. https://lean-lang.org/doc/reference/latest/ValidatingProofs/ . The page was inspected live; the requested version-specific URL was unavailable, and no verified archival snapshot was obtained. Version-specific library assertions in this dossier instead rely on pinned repository sources.
 
+<a id="lemkehowson64"></a>
+## lemkehowson64
+
+Carlton E. Lemke and Joseph T. Howson, Jr. "Equilibrium Points of Bimatrix Games." *Journal of the Society for Industrial and Applied Mathematics* 12(2), 413–423, 1964. https://doi.org/10.1137/0112033 . Bibliographic data from the DOI record and secondary summaries; the paper's text was not consulted. It is cited only as the origin of the algorithm. Locators for the formalized statements follow [vonstengel07](#vonstengel07).
+
 <a id="lev86"></a>
 ## lev86
 
@@ -698,6 +703,11 @@ Mikkel Thorup. “Simple Tabulation, Fast Expanders, Double Tabulation, and High
 ## toda1991
 
 Seinosuke Toda. “PP Is as Hard as the Polynomial-Time Hierarchy.” *SIAM Journal on Computing* 20(5), 865–877 (1991). Publisher abstract inspected 2026-11-01: https://doi.org/10.1137/0220053.
+
+<a id="vonstengel07"></a>
+## vonstengel07
+
+Bernhard von Stengel. "Equilibrium Computation for Two-Player Games in Strategic and Extensive Form." Chapter 3 of N. Nisan, T. Roughgarden, É. Tardos and V. V. Vazirani (eds.), *Algorithmic Game Theory*, Cambridge University Press, 2007, pp. 53–78. https://doi.org/10.1017/CBO9780511800481.005 . The author's preprint https://www.maths.lse.ac.uk/Personal/stengel/TEXTE/agt-stengel.pdf was consulted on 2026-11-08 for Proposition 3.1, the example (3.3), Definition 3.2, Proposition 3.3, (3.5)–(3.6), the polytope form of nondegeneracy in §3.3, §3.4 and Corollary 3.7. Statement and equation numbers follow that preprint; its page numbers differ from the book's.
 
 <a id="vww18"></a>
 ## vww18
