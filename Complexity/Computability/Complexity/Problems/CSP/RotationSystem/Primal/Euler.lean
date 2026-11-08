@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Components
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.FaceCounts
 import Mathlib.Data.Finset.Card
 import Mathlib.Logic.Equiv.Sum
 
@@ -30,75 +31,9 @@ public section
 
 namespace Cslib.Complexity.CSP
 
-open Cslib.Logic.PL Graph.RotationCertificate
+open Cslib.Logic.PL Graph.RotationCertificate Graph.RotationSystem
 
 variable {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
-
-private abbrev ComponentFace {G : Graph} (r : Graph.RotationSystem G) (root : ℕ) :=
-  {f : r.Face // ∃ d : Graph.Dart G, SameComponent G root d.vertex ∧ Quotient.mk _ d = f}
-
-private theorem componentFace_mk_iff {G : Graph} (r : Graph.RotationSystem G)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (root : ℕ) (d : Graph.Dart G) :
-    (∃ e : Graph.Dart G, SameComponent G root e.vertex ∧
-      (Quotient.mk _ e : r.Face) = Quotient.mk _ d) ↔ SameComponent G root d.vertex := by
-  constructor
-  · rintro ⟨e, he, heq⟩
-    exact he.trans (r.sameComponent_of_sameFace hG (Quotient.exact heq))
-  · exact fun h => ⟨d, h, rfl⟩
-
-private theorem representative_card {G : Graph} (r : Graph.RotationSystem G)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (root : ℕ) :
-    Nat.card {d : Graph.Dart G // SameComponent G root d.vertex ∧ r.IsFaceRepresentative d} =
-      Nat.card (ComponentFace r root) := by
-  let f : {d : Graph.Dart G // SameComponent G root d.vertex ∧ r.IsFaceRepresentative d} →
-      ComponentFace r root := fun d => ⟨Quotient.mk _ d.val, d.val, d.property.1, rfl⟩
-  apply Nat.card_congr (Equiv.ofBijective f ?_)
-  constructor
-  · intro d e h
-    apply Subtype.ext
-    have hde : r.faceNext.SameCycle d.val e.val := Quotient.exact (congrArg Subtype.val h)
-    exact (r.existsUnique_faceRepresentative d.val).unique
-      ⟨.rfl, d.property.2⟩ ⟨hde, e.property.2⟩
-  · rintro ⟨face, d, hd, rfl⟩
-    obtain ⟨e, he, -⟩ := r.existsUnique_faceRepresentative d
-    refine ⟨⟨e, hd.trans (r.sameComponent_of_sameFace hG he.1), he.2⟩, ?_⟩
-    apply Subtype.ext
-    exact Quotient.sound he.1.symm
-
-open Classical in
-private theorem face_count_card {G : Graph} (r : Graph.RotationSystem G)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (root : ℕ) :
-    ((List.finRange (2 * G.2.length)).countP fun i =>
-      decide (SameComponent G root ((Graph.Dart.indexEquiv G).symm i).vertex ∧
-        r.IsFaceRepresentative ((Graph.Dart.indexEquiv G).symm i))) =
-      Nat.card (ComponentFace r root) := by
-  classical
-  let P (d : Graph.Dart G) := SameComponent G root d.vertex ∧ r.IsFaceRepresentative d
-  calc
-    _ = Fintype.card {i : Fin (2 * G.2.length) // P ((Graph.Dart.indexEquiv G).symm i)} := by
-      rw [Fintype.card_subtype]
-      have h := (List.nodup_finRange (2 * G.2.length)).card_eq_countP
-        (P := fun i => P ((Graph.Dart.indexEquiv G).symm i))
-      have hl : (List.finRange (2 * G.2.length)).toFinset = Finset.univ := by ext; simp
-      rw [hl] at h
-      exact h.symm
-    _ = Nat.card {d : Graph.Dart G // P d} := by
-      rw [← Nat.card_eq_fintype_card]
-      exact Nat.card_congr ((Graph.Dart.indexEquiv G).symm.subtypeEquiv (by intro i; rfl))
-    _ = _ := representative_card r hG root
-
-open Classical in
-private theorem vertex_count_card (G : Graph) (root : ℕ) :
-    G.distinctVertices.countP (fun v => decide (SameComponent G root v)) =
-      Nat.card {v : ℕ // v ∈ G.1 ∧ SameComponent G root v} := by
-  classical
-  let s := G.distinctVertices.toFinset.filter (SameComponent G root)
-  calc
-    _ = s.card := (Graph.nodup_distinctVertices G).card_eq_countP.symm
-    _ = Nat.card {v // v ∈ s} := by simp
-    _ = _ := Nat.card_congr (Equiv.subtypeEquivRight (by
-      intro v
-      simp only [s, Finset.mem_filter, List.mem_toFinset, Graph.mem_distinctVertices]))
 
 /-- In a component rooted at a dense variable, polygon faces are exactly its constraint
 positions together with its original incidence faces. All face orbits are counted. -/
@@ -155,19 +90,6 @@ theorem polygon_component_face_card (r : Graph.RotationSystem (incidenceGraph F)
     _ = _ := rfl
 
 open Classical in
-private theorem range_vertex_count_card (G : Graph) (n : ℕ) (hG : G.1 = List.range n)
-    (root : ℕ) :
-    G.distinctVertices.countP (fun v => decide (SameComponent G root v)) =
-      Nat.card {v : Fin n // SameComponent G root v.val} := by
-  rw [vertex_count_card]
-  apply Nat.card_congr
-  exact
-    { toFun := fun v => ⟨⟨v.val, List.mem_range.mp (hG ▸ v.property.1)⟩, v.property.2⟩
-      invFun := fun v => ⟨v.val.val, hG ▸ List.mem_range.mpr v.val.isLt, v.property⟩
-      left_inv := fun _ => rfl
-      right_inv := fun _ => rfl }
-
-open Classical in
 /-- The incidence component has the polygon's variable vertices plus its indexed positive
 constraint vertices. Vertex names are counted once, while constraint positions stay distinct. -/
 theorem polygon_component_vertex_count (root : ℕ) (hr : root < F.numVars) :
@@ -177,8 +99,8 @@ theorem polygon_component_vertex_count (root : ℕ) (hr : root < F.numVars) :
       (fun v => decide (SameComponent (polygonGraph F) root v)) +
       Nat.card {i : Fin F.length // SameComponent (incidenceGraph F) root (F.numVars + i.val)} := by
   classical
-  rw [range_vertex_count_card _ _ (incidenceGraph_vertices F),
-    range_vertex_count_card _ F.numVars rfl]
+  rw [Graph.countP_vertices_range _ _ (incidenceGraph_vertices F),
+    Graph.countP_vertices_range _ F.numVars rfl]
   have h := Nat.card_congr
     (finSumFinEquiv.subtypeEquivOfSubtype
       (p := fun v : Fin (F.numVars + F.length) => SameComponent (incidenceGraph F) root v.val))
@@ -227,8 +149,8 @@ theorem numericalGenusZero_polygon_iff (r : Graph.RotationSystem (incidenceGraph
   have hEuler (root : ℕ) (hr : root < F.numVars) :
       Euler (polygonGraph F) (polygonRotation r) root ↔ Euler (incidenceGraph F) r root := by
     dsimp only [Euler]
-    rw [face_count_card _ polygon_endpoints_declared,
-      face_count_card _ (incidenceVertices_declared F)]
+    rw [count_faceRepresentatives_eq_card_componentFace _ polygon_endpoints_declared,
+      count_faceRepresentatives_eq_card_componentFace _ (incidenceVertices_declared F)]
     have hV := polygon_component_vertex_count root hr
     have hF := polygon_component_face_card r hOrder hPos root hr
     have hE := polygon_component_edge_count root hr

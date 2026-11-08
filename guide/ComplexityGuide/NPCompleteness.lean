@@ -39,6 +39,7 @@ import Complexity.Computability.Complexity.Problems.CSP.Incidence
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
+import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler
 import Complexity.Computability.PolyTime.CSP.Table
 import Complexity.Computability.PolyTime.CSP.Edge.Augmenting
 import Complexity.Logics.Propositional.CSP.Edge.Augmenting
@@ -81,6 +82,7 @@ import Complexity.Computability.Complexity.Problems.CSP.Incidence
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
+import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler
 import Complexity.Computability.PolyTime.CSP.Table
 import Complexity.Computability.PolyTime.CSP.Edge.Augmenting
 import Complexity.Logics.Propositional.CSP.Edge.Augmenting
@@ -838,6 +840,49 @@ example {G : Graph} (r : Graph.RotationSystem G) (spin : ℕ → Bool) :
 torus and disconnected sparse-name cases. These are finite combinatorial
 results. Geometric realization, bare recognition, native compilation, the
 whole cyclic-difference CSP reduction and recursive solver remain open.
+
+
+# Ordered Incidence-to-Polygon Rotations
+
+Import `Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler`.
+The actual `polygonGraph` puts one edge between successive variables of each
+cyclic scope, retaining occurrence positions and dense variable names. Unary
+scopes become loops; repeated names and identical constraints stay distinct.
+Given an incidence rotation respecting the original argument order, every
+polygon face is an indexed constraint face or an original incidence face:
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity Cslib.Complexity.CSP in
+noncomputable example {Rel V : Type} [DecidableEq V] (F : CSP Rel V)
+    (r : Graph.RotationSystem (incidenceGraph F))
+    (hOrder : RespectsArgumentOrder r)
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) :
+    (polygonRotation r).Face ≃ Fin F.length ⊕ r.Face :=
+  polygonFaceEquiv r hOrder hPos
+```
+
+Singleton face orbits are included. With positive actual scopes, components
+correspond and the exact per-component counts preserve numerical genus zero:
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity Cslib.Complexity.CSP in
+example {Rel V : Type} [DecidableEq V] (F : CSP Rel V)
+    (r : Graph.RotationSystem (incidenceGraph F))
+    (hOrder : RespectsArgumentOrder r)
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) :
+    (polygonRotation r).NumericalGenusZero ↔ r.NumericalGenusZero :=
+  numericalGenusZero_polygon_iff r hOrder hPos
+```
+
+The graph has exactly one edge per occurrence and at most that many variable
+vertices. The bridge covers empty/disconnected bodies and sparse names;
+positivity is about actual scopes and assumes no relation semantics or arity
+contract. Nullary constraints require separate handling.
+`ComplexityTests/CSPPrimalRotation.lean` checks loops, repeated positions,
+identical constraints, malformed arity, the positivity guard and a toroidal
+rotation. The finite graph is explicit; abstract rotation inverses and face
+bijections are proof data. Native compilation, geometric realization and bare
+recognition remain open, along with the complete planar CSP reduction/solver.
 
 
 # Delta-Matroid Closure for Local Contraction

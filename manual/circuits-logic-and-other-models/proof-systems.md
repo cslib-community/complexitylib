@@ -259,6 +259,43 @@ Dvořák–Kupec, §3, printed p. 439. Geometric realization, bare rotation reco
 compilation, the full cyclic-difference CSP reduction and recursive edge solving remain open
 under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
 
+## Ordered incidence-to-polygon rotations
+
+Import `Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler`.
+In `Cslib.Complexity.CSP`, `polygonGraph F` has one listed edge per actual argument occurrence,
+from its variable to the next variable in the same cyclic scope. Variable names are replaced by
+the existing dense occurrence names. Unary scopes give loops; repeated variables and identical
+constraints retain their separate edge and constraint positions. With `M` occurrences, there
+are exactly `M` edges and at most `M` variable vertices.
+
+Given an incidence rotation `r`, `polygonRotation r` constructs the corresponding abstract
+polygon rotation. `RespectsArgumentOrder r` records the original cyclic scope order. If every
+actual scope is positive, `polygonFaceEquiv r hOrder hPos` identifies all polygon faces with
+`Fin F.length ⊕ r.Face`: one indexed black face per constraint, plus every original incidence
+face as a white face. Singleton faces are included, and the two sides of every polygon edge
+belong to distinct faces. The positivity guard concerns actual scopes, independently of any
+relation arity or semantics. Nullary constraints require separate treatment.
+
+`polygonComponentEquiv F hPos` gives the complete component correspondence. Per component,
+`V_incidence = V_polygon + constraintCount`, `E_incidence = E_polygon`, and
+`F_polygon = constraintCount + F_incidence`. These actual counts prove
+`numericalGenusZero_polygon_iff r hOrder hPos` for the existing componentwise numerical
+predicate. Empty and disconnected instances are included, without a finite universe or
+magnitude bound on variable names.
+
+The [primal rotation tests](../../ComplexityTests/CSPPrimalRotation.lean) cover unary loops,
+repeated arguments and identical constraints, sparse `2^100` labels, disconnected/empty bodies,
+malformed declared arity, the nullary guard, and an ordered toroidal example where both
+numerical predicates fail. General face-quotient cardinality facts are in
+`Complexity.Computability.Complexity.Problems.Graph.RotationSystem.FaceCounts`; dense vertex
+counts reuse the existing component-vertex set API. Incidence endpoint declaration now lives
+at its source in `Problems.CSP.Incidence`, with its name and certificate clients preserved.
+
+This reconstructs the finite maps behind Dvořák–Kupec's ordered face model, printed p. 434.
+`polygonGraph` is an explicit list construction; abstract rotation/equivalence inverses are
+proof data. Native compilation, geometric realization, bare recognition and the complete
+planar CSP reduction/solver remain open under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+
 ## Delta-matroid composition and local contraction closure
 
 `Complexity.Foundations.Data.BitString.DeltaMatroid.Composition` proves direct products,

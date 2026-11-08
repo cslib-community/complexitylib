@@ -1841,6 +1841,11 @@ public import Complexity.Computability.Complexity.Problems.CSP.Incidence
 public import Complexity.Computability.Complexity.Problems.CSP.Majority
 public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
 public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
+public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Components
+public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler
+public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Faces
+public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Graph
+public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Rotation
 public import Complexity.Computability.Complexity.Problems.CSP.Schaefer
 public import Complexity.Computability.Complexity.Problems.CSP.SelfDualThreeSAT
 public import Complexity.Computability.Complexity.Problems.ChromaticNumber
@@ -1872,6 +1877,7 @@ public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Components
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Differences
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Dual
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.FaceCounts
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
 public import Complexity.Computability.Complexity.Problems.Graph.VertexColors
 public import Complexity.Computability.Complexity.Problems.GraphIsomorphism
