@@ -1439,6 +1439,7 @@ public import Complexity.Computability.Circuit.Pi
 public import Complexity.Computability.Circuit.Pointwise
 public import Complexity.Computability.Circuit.Program
 public import Complexity.Computability.Circuit.Quantum.AcceptOperator
+public import Complexity.Computability.Circuit.Quantum.Approximation
 public import Complexity.Computability.Circuit.Quantum.Basic
 public import Complexity.Computability.Circuit.Quantum.Classical
 public import Complexity.Computability.Circuit.Quantum.Code
@@ -1513,6 +1514,7 @@ public import Complexity.Computability.Communication.Disjointness
 public import Complexity.Computability.Communication.Distributional
 public import Complexity.Computability.Communication.Equality
 public import Complexity.Computability.Communication.FoolingSet
+public import Complexity.Computability.Communication.Forster
 public import Complexity.Computability.Communication.Functions
 public import Complexity.Computability.Communication.Inclusion
 public import Complexity.Computability.Communication.Information
@@ -1598,6 +1600,7 @@ public import Complexity.Computability.Complexity.Classes.BPPpath
 public import Complexity.Computability.Complexity.Classes.BQP
 public import Complexity.Computability.Complexity.Classes.BQP.Amplification
 public import Complexity.Computability.Complexity.Classes.BQP.Classical
+public import Complexity.Computability.Complexity.Classes.BQP.ConstantGap
 public import Complexity.Computability.Complexity.Classes.BQP.Counting
 public import Complexity.Computability.Complexity.Classes.BQP.OutputGap
 public import Complexity.Computability.Complexity.Classes.BQP.Sampling
@@ -1645,6 +1648,7 @@ public import Complexity.Computability.Complexity.Classes.EXP.Separation
 public import Complexity.Computability.Complexity.Classes.FPAUS
 public import Complexity.Computability.Complexity.Classes.FPAUS.Counting
 public import Complexity.Computability.Complexity.Classes.FPAUS.FPRAS
+public import Complexity.Computability.Complexity.Classes.FPAUS.Sampler
 public import Complexity.Computability.Complexity.Classes.FPAUS.SelfReducible
 public import Complexity.Computability.Complexity.Classes.FPRAS
 public import Complexity.Computability.Complexity.Classes.FewP
@@ -3742,6 +3746,7 @@ public import Complexity.Crypto.Protocols.MPC.OTCommitment.World
 public import Complexity.Crypto.Protocols.MPC.PolyTime
 public import Complexity.Crypto.Protocols.MPC.SharedMul
 public import Complexity.Crypto.Protocols.PIR.Basic
+public import Complexity.Crypto.Protocols.PIR.CoveringCode
 public import Complexity.Crypto.Protocols.PIR.Cube
 public import Complexity.Crypto.Protocols.PIR.Interactive
 public import Complexity.Crypto.Protocols.PIR.LinearSummation
@@ -4292,6 +4297,7 @@ public import Complexity.Foundations.Combinatorics.SetPartition.JoinMatrix
 public import Complexity.Foundations.Combinatorics.SharedSummaries
 public import Complexity.Foundations.Combinatorics.ShiftColoring
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Acyclic
+public import Complexity.Foundations.Combinatorics.SimpleGraph.BallPath
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Berge
 public import Complexity.Foundations.Combinatorics.SimpleGraph.CliqueCover
 public import Complexity.Foundations.Combinatorics.SimpleGraph.ColorRefinement
@@ -4643,6 +4649,7 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.Farkas
 public import Complexity.Foundations.LinearAlgebra.Matrix.FourierMotzkin
 public import Complexity.Foundations.LinearAlgebra.Matrix.HessianDeterminant
 public import Complexity.Foundations.LinearAlgebra.Matrix.HessianPermanent
+public import Complexity.Foundations.LinearAlgebra.Matrix.IsotropicPosition
 public import Complexity.Foundations.LinearAlgebra.Matrix.Kronecker
 public import Complexity.Foundations.LinearAlgebra.Matrix.Laplacian
 public import Complexity.Foundations.LinearAlgebra.Matrix.Lindsey
@@ -4690,6 +4697,7 @@ public import Complexity.Foundations.MeasureTheory.Integral.PiUpdate
 public import Complexity.Foundations.MeasureTheory.Measure.TotalVariation.Map
 public import Complexity.Foundations.MeasureTheory.Measure.TotalVariation.Mixture
 public import Complexity.Foundations.ModelTheory.Basic
+public import Complexity.Foundations.ModelTheory.Graph
 public import Complexity.Foundations.NumberTheory.AKS.Coefficients
 public import Complexity.Foundations.NumberTheory.AKS.Correctness
 public import Complexity.Foundations.NumberTheory.AKS.Criterion
@@ -4880,9 +4888,11 @@ public import Complexity.GameTheory.Bimatrix.BestResponsePolytope
 public import Complexity.GameTheory.Bimatrix.LemkeHowson
 public import Complexity.GameTheory.Congestion.Affine
 public import Complexity.GameTheory.Congestion.Basic
+public import Complexity.GameTheory.Congestion.CostSharing
 public import Complexity.GameTheory.Congestion.Hedge
 public import Complexity.GameTheory.Congestion.Nonatomic
 public import Complexity.GameTheory.Congestion.PigouBound
+public import Complexity.GameTheory.Congestion.Stability
 public import Complexity.GameTheory.Mechanism.Bayesian
 public import Complexity.GameTheory.Mechanism.CriticalBid
 public import Complexity.GameTheory.Mechanism.FirstPrice
@@ -4901,6 +4911,7 @@ public import Complexity.GameTheory.Strategic.Mixed
 public import Complexity.GameTheory.Strategic.NoRegret
 public import Complexity.GameTheory.Strategic.Potential
 public import Complexity.GameTheory.Strategic.Smooth
+public import Complexity.GameTheory.Strategic.Stability
 public import Complexity.Init
 public import Complexity.Languages.Probabilistic.Basic
 public import Complexity.Languages.Probabilistic.BitString
@@ -4966,6 +4977,7 @@ public import Complexity.Logics.FirstOrder.Interpretation.Tagged
 public import Complexity.Logics.FirstOrder.Interpretation.Tuple
 public import Complexity.Logics.FirstOrder.Interpretation.Unit
 public import Complexity.Logics.FirstOrder.Locality.Gaifman
+public import Complexity.Logics.FirstOrder.Locality.GraphProperties
 public import Complexity.Logics.FirstOrder.Locality.Hanf
 public import Complexity.Logics.FirstOrder.Operator.Basic
 public import Complexity.Logics.FirstOrder.Operator.Definability
@@ -5059,7 +5071,10 @@ public import Complexity.Logics.FirstOrder.ZeroOneLaw.UniformStructure
 public import Complexity.Logics.Polymorphism
 public import Complexity.Logics.Polymorphism.BooleanClone
 public import Complexity.Logics.Propositional.Algebraic.SumOfSquares.Basic
+public import Complexity.Logics.Propositional.Algebraic.SumOfSquares.CNF
 public import Complexity.Logics.Propositional.Algebraic.SumOfSquares.Parity
+public import Complexity.Logics.Propositional.Algebraic.SumOfSquares.Pigeonhole
+public import Complexity.Logics.Propositional.Algebraic.SumOfSquares.Positivstellensatz
 public import Complexity.Logics.Propositional.Algebraic.SumOfSquares.Tseitin
 public import Complexity.Logics.Propositional.Algebraic.SumOfSquares.TseitinExpander
 public import Complexity.Logics.Propositional.CNF
