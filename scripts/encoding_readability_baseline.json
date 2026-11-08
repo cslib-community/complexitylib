@@ -376,30 +376,5 @@
  "Complexity/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Signature/Efficient.lean": {
   "encOption (encPair encBits encBits)": 3,
   "encPair encLyubashevskySignInput (encList encIntBin)": 3
- },
- "Complexity/Logics/Propositional/CNF/ExactOne/PolyTime.lean": {
-  "encList (encList (encPair (encVariable ?1) encBool))": 4,
-  "encList (encList (encPair ?1 encBool))": 7,
-  "encList (encPair ?1 encBool)": 3
- },
- "Complexity/Logics/Propositional/CNF/Johnson/PolyTime.lean": {
-  "encList (encList (encPair ?1 encBool))": 7
- },
- "Complexity/Logics/Propositional/CNF/PolyTime.lean": {
-  "encList (encList (encPair ?1 encBool))": 12,
-  "encList (encPair ?1 encBool)": 4
- },
- "Complexity/Logics/Propositional/CNF/ThreeCNF/Exact/PolyTime.lean": {
-  "encList (encList (encPair ?1 encBool))": 3
- },
- "Complexity/Logics/Propositional/CNF/ThreeCNF/PolyTime.lean": {
-  "encList (encList (encPair ?1 encBool))": 3
- },
- "Complexity/Logics/Propositional/CNF/ThreeOccurrence/PolyTime.lean": {
-  "encList (encList (encPair ?1 encBool))": 3
- },
- "Complexity/Logics/Propositional/ClauseSet/Sparsification/PolyTime.lean": {
-  "encPair ?1 (encPair encUnary encUnary)": 4,
-  "encPair encF (encPair encUnary encC)": 3
  }
 }

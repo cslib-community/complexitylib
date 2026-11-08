@@ -252,11 +252,40 @@ Undecidability of some left cut is not formalized, because no count of machines 
 open: self-reducible P-selective sets lie in `P`, and P-selective sets are not truth-table-hard for
 `NP` unless `P = NP`.
 
+## Sparse and tally oracles
+
+Meyer's theorem `P/poly = P^SPARSE` is in two modules. The oracle is a word language
+`S : Set (List Bool)`, sparse for `encBits` (`SPARSE encBits`) or tally (`TALLY`, all letters
+`true`). The decided problem `A : Set α` is in `PPolyOn enc` for an arbitrary instance encoding
+`enc`.
+[`Sparse.Turing`](../../Complexity/Computability/Complexity/Classes/Sparse/Turing.lean) proves
+`PWithOracle_subset_PPolyOn`: the advice lists the short members of `S`.
+[`Sparse.Meyer`](../../Complexity/Computability/Complexity/Classes/Sparse/Meyer.lean) proves the
+converse with a tally oracle. For `exists_polyTimeTruthTableReducible_adviceTally`,
+`PPoly.exists_evalAdvice` provides advice `α` of polynomial length. Its oracle `adviceTally α` contains the unary word of
+`Nat.pair n i` exactly when bit `i` of `α n` is `true` (`encUnary_pair_mem_adviceTally`). The
+reduction is nonadaptive. On an input of length `n` it asks all `|α n|` bit queries and then
+evaluates the listed circuits. `PolyTimeTruthTableReducible.polyTimeTuringReducible` turns it into
+`PWithOracle` membership.
+
+Use `mem_PPolyOn_iff_exists_mem_SPARSE_mem_PWithOracle` or
+`mem_PPolyOn_iff_exists_mem_TALLY_mem_PWithOracle` to move between circuits and oracles. For example,
+`P^S ⊆ P^T` for some tally `T` when `S` is sparse. The class equalities are
+`PPolyOn_eq_iUnion_PWithOracle_SPARSE` and `PPolyOn_eq_iUnion_PWithOracle_TALLY`, and
+`mem_PPolyOn_iff_exists_mem_TALLY_polyTimeTruthTableReducible` gives `P/poly = R_tt(TALLY)`. The
+oracle languages exist but need not be decidable, as for `P/poly` itself. The
+[checked client](../../ComplexityTests/SparseMeyer.lean) shows members and non-members of a
+concrete `adviceTally` and applies the theorem to every length-defined language, including
+undecidable ones. Kadin's `P^{NP[O(log n)]}` consequences and Hemachandra's `P^NP_tt`
+characterization remain open (see `ROADMAP.md`).
+
 ## Parameter-sensitive transfer rules
 
 [FPT reductions and kernels](parameterized-complexity.md) separately bound the target parameter by a function of the source parameter. Fine-grained transfer uses more quantitative contracts without defining a new reduction datatype. [`DecidableInExpTime.of_reduction`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/FineGrained/Reduction.lean#L117) takes a native polynomial-time membership-preserving map with `μB(f(a)) ≤ c μA(a)+c`. A target time rate `2^(δ μB)` yields source rate `2^(cδ μA)`, up to encoded-length polynomial factors, for `δ ≥ 0`. [`DecidableInSubexpTime.of_reduction`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/FineGrained/Reduction.lean#L181) transfers the predicate that permits a decider for each positive rate.
 
 [`DecidableInSubexpTime.of_expReduction`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/FineGrained/Reduction.lean#L252) permits the map itself to cost `2^(C m(a)) (L+1)^D`, under `ComputableInO` with that time and output-charged space bound. If the output parameter is at most `c m(a) floor(log₂(m(a))) + c`, target subexponential time implies source subexponential time in `m floor(log₂ m)`. The smaller exponential preprocessing cost is absorbed at each positive target rate. Neither rule introduces an oracle reduction or an unrestricted subexponential-reduction-family notion. ETH-based lower-bound transport in this module remains an implication from its displayed ETH premise; the snapshot's independent [native counting endpoints](native-counting.md) must be considered when interpreting that premise.
+
+Polynomial-rate transfer from orthogonal vectors is a direct composition rather than a reduction datatype. `Complexity.Computability.Complexity.FineGrained.Diameter` formalizes the orthogonal vectors form of Roditty and Vassilevska Williams's diameter two-versus-three construction (Section 4, Theorem 9, stated there from CNF-SAT for graphs with `m` edges). Partial assignments become vectors and clauses become coordinates; the clique on clause vertices and hubs is replaced by hub–coordinate edges, and two padding vertices are added. The graph `OV.toDiameter` has diameter three on instances with an orthogonal pair and two otherwise (`OV.ediam_toDiameter`). Its vertex and edge lists are written by two one-pass streams with binary counters, paired under `ComputableInO` within time `L (log L) ^ D` in the encoded instance length (`OV.exists_computableInO_toDiameter`). `DecidableInTimeO.decidableInTimeO_OV_of_diameter` then turns any procedure separating the two diameters within time `L ^ (2 - ε)` on encoded graphs into an `OV` decider within time `N ^ (2 - min ε 1 / 2) (d + 1) ^ 2`. This transfer is unconditional. The lower bounds are implications from `OVH`. `not_decidableInTimeO_diameter_of_OVH` states them in the encoded length `L`. `not_decidableInTimeO_diameter_size_of_OVH` uses `(n + m) ^ (2 - ε) + L`; the `L` term is needed, because a bound in the number of listed vertices and edges alone cannot read unbounded labels and would hold vacuously. The reduced graphs have `Θ(N d)` edges with unrestricted dimension, so the sparse-graph statement needs the low-dimension form of `OVH` and is not covered. The library neither proves nor refutes `OVH`; it refutes `SETH`, so hardness from `SETH` through `OVH_of_SETH` is vacuous.
 
 ## Source examples and evidence
 
