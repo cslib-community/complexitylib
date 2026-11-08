@@ -1071,11 +1071,14 @@ Coordinate native graph-algorithm work with [CSLib's graph-algorithm directions]
 reusing graph and matroid foundations and the shared data-structure interfaces.
 
 - **Flows and matching:** a native augmenting-path algorithm with charged runtime (integral
-  max-flow/min-cut, a `TimeM` Edmonds–Karp solver and Hopcroft–Karp bipartite matching are in
-  `Algorithms/Lean/MaxFlow`); then minimum-cost flow and weighted bipartite matching through common
-  residual-network and duality machinery. Remaining matching directions: the decomposition of
-  `M ⊕ M*` into vertex-disjoint augmenting paths, general (non-bipartite) matching with blossoms,
-  and a sparse Hopcroft–Karp entry point that also charges construction of the adjacency lists.
+  max-flow/min-cut, a `TimeM` Edmonds–Karp solver, Hopcroft–Karp bipartite matching and the
+  `O(n³)` Hungarian method with Egerváry duality for the assignment problem are in
+  `Algorithms/Lean/MaxFlow`); then minimum-cost flow on the residual network, reusing the
+  potential, weak-duality and complementary-slackness lemmas of `WeightedMatching`. Remaining
+  matching directions: the decomposition of `M ⊕ M*` into vertex-disjoint augmenting paths,
+  rectangular and sparse weighted bipartite matching, general (non-bipartite) matching with
+  blossoms (weighted and unweighted), and a sparse Hopcroft–Karp entry point that also charges
+  construction of the adjacency lists.
 - **Matroids:** matroid intersection with explicit oracle and implementation costs, beyond the
   weighted greedy algorithm and its independence-oracle interface.
 - **Submodular optimization:** further constraints and approximation bounds beyond the
