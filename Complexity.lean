@@ -5197,6 +5197,8 @@ public import Complexity.Probability.Conditioning
 public import Complexity.Probability.CorrelatedSampling
 public import Complexity.Probability.CorrelatedSampling.Embeddability
 public import Complexity.Probability.CorrelatedSampling.Embedding
+public import Complexity.Probability.DDGTree
+public import Complexity.Probability.DDGTree.KnuthYao
 public import Complexity.Probability.Divergence
 public import Complexity.Probability.Entropy
 public import Complexity.Probability.Entropy.BitString

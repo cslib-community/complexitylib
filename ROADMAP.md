@@ -1772,6 +1772,15 @@ pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
   Output/count validation and complete native circuit-bound VOLE execution (#2765; #643;
   prerequisite #2738), growing extension-field arithmetic, raw-bit adversarial transport (#2744)
   and fresh-session amplification remain separate endpoints.
+- **Entropy-optimal sampling from fair coins:** `Probability/DDGTree` and
+  `Probability/DDGTree/KnuthYao` prove the Knuth–Yao bound `H(p) ≤ E[T]` for every DDG tree
+  generating `p`, and `E[T] < H(p) + 2` with optimality for the Knuth–Yao tree. They also prove
+  the dyadic equality characterization, all for distributions on a finite type
+  ([#3360](https://github.com/cslib-community/complexitylib/issues/3360)). Extend to countable
+  support and infinite entropy. For rational `p`, implement the Knuth–Yao sampler as a native
+  fair-coin program whose output law and expected time are certified (an `IsPPTOn`-style
+  certificate in expected time), as in Saad–Freer–Rinard–Mansinghka's finite-precision
+  entropy-optimal samplers.
 - **Markov-chain sampling:** `Probability/MarkovChain/*` provides discrete kernels,
   stationarity, reversibility, total-variation mixing times, Markovian couplings, reversible
   Metropolis chains and path coupling, with the lazy hypercube walk
