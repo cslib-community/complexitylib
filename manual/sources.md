@@ -199,6 +199,11 @@ Dan Boneh and Victor Shoup. *A Graduate Course in Applied Cryptography*, version
 
 Andrej Bogdanov and Luca Trevisan. *Average-Case Complexity*. Foundations and Trends in Theoretical Computer Science 2(1), 1–106, 2006. https://doi.org/10.1561/0400000004 ; arXiv:cs/0606037. Definition, lemma and theorem numbers (Definitions 1, 2, 6, 8–11 and 17, Proposition 7, Lemma 18, Theorem 19, Claim 20) were checked against the arXiv text on 2026-11-07.
 
+<a id="burrowswheeler94"></a>
+## burrowswheeler94
+
+Michael Burrows and David J. Wheeler. *A Block-sorting Lossless Data Compression Algorithm*. SRC Research Report 124, Digital Systems Research Center, Palo Alto, 10 May 1994. Openly hosted copy: https://www.cs.jhu.edu/~langmea/resources/burrows_wheeler.pdf . On 2026-11-08 UTC the worker checked the following against that copy: Section 2, Algorithm C (steps C1–C2, with `I` the first row equal to `S`, numbered from zero) and Algorithm D (steps D1–D3), the running example `S = abraca`, `L = caraab`, `I = 1`, `T = (4 0 5 1 2 3)`, the remark after D3 on periodic `S`, and Section 4.2 (the arrays `C` and `P`, with `T[i] = P[i] + C[L[i]]`). The HP Labs copy of the report could not be reached (connection failure), so it was not compared.
+
 <a id="canetti20"></a>
 ## canetti20
 
@@ -696,6 +701,11 @@ Bernhard Korte and Jens Vygen. *Combinatorial Optimization: Theory and Algorithm
 ## kov17
 
 Peter Kairouz, Sewoong Oh and Pramod Viswanath. *The Composition Theorem for Differential Privacy*. IEEE Transactions on Information Theory 63(6), 4037–4049, 2017. https://doi.org/10.1109/TIT.2017.2685505 ; theorem numbering cited from arXiv:1311.0776v4, 2015. Theorem 3.4 (equation (7)) was checked against the arXiv v4 PDF on 2026-11-07; the journal metadata was checked against Crossref.
+
+<a id="lamportshostakpease1982"></a>
+## lamportshostakpease1982
+
+Leslie Lamport, Robert Shostak and Marshall Pease. "The Byzantine Generals Problem." *ACM Transactions on Programming Languages and Systems* 4(3), 382–401, July 1982. https://doi.org/10.1145/357172.357176 ; author-hosted copy of the typeset article: https://lamport.azurewebsites.net/pubs/byz.pdf . Checked against that copy on 2026-11-08 UTC by worker w169-omt: §1, pp. 383–384 (conditions 1′ and 2 on the values `v(i)`, the interactive consistency conditions IC1 and IC2, and the reduction in which each general sends its value by a solution to the commander problem); §3, pp. 387–388 (the oral-message assumptions A1–A3, the default order RETREAT, the definition of `OM(m)` and of `majority`, and the remark that values are prefixed by the sequence of relaying lieutenants); p. 390 (Lemma 1: `OM(m)` satisfies IC2 with more than `2k + m` generals and at most `k` traitors; Theorem 1: `OM(m)` satisfies IC1 and IC2 with more than `3m` generals and at most `m` traitors); §7, pp. 400–401 (message paths of length up to `m + 1`, and up to `(n − 1)(n − 2)⋯(n − m − 1)` messages).
 
 <a id="lean-validation"></a>
 ## lean-validation

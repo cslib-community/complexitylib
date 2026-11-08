@@ -1794,10 +1794,14 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Online convex optimization:** projected online gradient descent and its `O(GD√T)` and
   strongly convex `O(log T)` regret bounds (Zinkevich; Hazan Theorems 3.1 and 3.3), over the
   metric projection onto complete convex sets, are in `MachineLearning/OnlineLearning`
-  ([#2983](https://github.com/cslib-community/complexitylib/issues/2983)). Remaining:
-  follow-the-regularized-leader and online mirror descent (recovering Hedge as the entropic
-  case), the `Ω(GD√T)` lower bound, online Newton step for exp-concave losses, Blackwell
-  approachability and calibration, and finite-precision implementations.
+  ([#2983](https://github.com/cslib-community/complexitylib/issues/2983)).
+  Follow-the-regularized-leader with a fixed strongly convex regularizer (regret equality, be the
+  leader, the `L² / (2μ)` stability bound, tuned and linearized-loss forms) and Euclidean lazy
+  projection are there too ([#3160](https://github.com/cslib-community/complexitylib/issues/3160)).
+  Remaining: entropic FTRL recovering Hedge with `√(2T ln n)`, time-varying regularizers and
+  local-norm bounds, online mirror descent (Bregman divergences, agile OMD), the `Ω(GD√T)` lower
+  bound, online Newton step for exp-concave losses, Blackwell approachability and calibration,
+  and finite-precision implementations.
 
 ### Combinatorial optimization
 
@@ -2214,6 +2218,15 @@ Arrow's theorem). Remaining directions:
 
 ### String algorithms
 
+- **Burrows–Wheeler transform** ([#3354](https://github.com/cslib-community/complexitylib/issues/3354)):
+  the rotation-sort transform with its index, the LF-mapping (row and occurrence forms), the
+  decoding formula, invertibility and a table-driven `TimeM` decoder with exactly `|w|` LF steps
+  are in `Algorithms/Lean/BurrowsWheeler`. Remaining: charged construction of the rank tables and
+  of the forward transform (comparison counts for the rotation sort); move-to-front and entropy
+  coding of the last column; compression bounds in terms of the empirical entropy `H_k` (Manzini);
+  FM-index backward search and rank/select structures; and the link to suffix arrays for
+  sentinel-terminated words, once [#3331](https://github.com/cslib-community/complexitylib/issues/3331)
+  lands.
 - **Suffix arrays** ([#3331](https://github.com/cslib-community/complexitylib/issues/3331)):
   `Algorithms/Lean/SuffixArray` has the suffix-array specification with uniqueness, a sort-based
   reference construction, Kasai et al.'s LCP construction with at most `2|w|` character
@@ -2419,12 +2432,14 @@ Arrow's theorem). Remaining directions:
   derandomization, Ghaffari's `O(log Δ) + poly(log log n)` bound, and the
   Kuhn–Moscibroda–Wattenhofer lower bounds.
 - **Fault-tolerant agreement:** synchronous Byzantine agreement on the complete graph, the
-  `n ≤ 3t` impossibility and the single-fault protocol exist
+  `n ≤ 3t` impossibility and the oral messages protocol `OM(t)` for all `n > 3t` in `t + 1`
+  rounds exist, giving the exact characterization `n ≤ 1 ∨ n > 3t` for `R ≥ t + 1` rounds
   (`Complexity/Computability/Distributed/Byzantine/`,
-  [#3261](https://github.com/cslib-community/complexitylib/issues/3261)). Open: the connectivity
-  bound `κ ≥ 2t + 1` on general graphs (Fischer–Lynch–Merritt §3.2), the upper bound for all
-  `n > 3t` (`OM(t)` or exponential information gathering), the `t + 1` round lower bound
-  (Fischer–Lynch), authenticated (signed-message) agreement for any `n > t`, weak agreement,
+  [#3261](https://github.com/cslib-community/complexitylib/issues/3261),
+  [#3494](https://github.com/cslib-community/complexitylib/issues/3494)). Open: the connectivity
+  bound `κ ≥ 2t + 1` on general graphs (Fischer–Lynch–Merritt §3.2), the `t + 1` round lower bound
+  (Fischer–Lynch), authenticated (signed-message) agreement for any `n > t` (`SM(m)`),
+  polynomial-message protocols (message counts are not measured), weak agreement,
   the Byzantine firing squad (Fischer–Lynch–Merritt §5), approximate agreement and clock
   synchronization bounds, and randomized agreement.
 

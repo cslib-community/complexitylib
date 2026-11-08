@@ -195,7 +195,7 @@ for feasible `x,y` disagreeing at `i`, some disagreeing coordinate `j` makes
 have the same parity, which may be odd; it forces `j ≠ i`. Twists and coordinate equivalences
 preserve these properties, and feasible tuples are connected by feasible two-coordinate flips.
 The four-coordinate lemmas isolate local exchange consequences used by the paper's blossom
-proof; they do not prove its forest or contraction invariants.
+proof; they do not prove its full forest or whole-blossom contraction invariants.
 
 [Difference tests](../../ComplexityTests/CyclicDifference.lean) show that ternary NAE maps to
 an even delta-matroid of three weight-two tuples. [Exchange tests](../../ComplexityTests/DeltaMatroid.lean)
@@ -228,8 +228,8 @@ strict width decrease and nonincrease of the full encoded table size. `Table.exa
 constructs the new connector relation in native polynomial time from a scope list: the list's
 length pays for quadratic output. There is no polynomial-output claim from a binary arity alone.
 The zero-connector relation is empty. [Table tests](../../ComplexityTests/CSPTable.lean) cover
-malformed widths, repeated rows, contraction cases and framed size calculations. Delta-matroid
-preservation and whole-blossom correctness are not consequences of these table-operation lemmas.
+malformed widths, repeated rows, contraction cases and framed size calculations. These operation lemmas provide the executable and quantitative layer; the mathematical closure
+is supplied separately below. Whole-blossom correctness still remains unproved.
 
 `Problems.Graph.RotationSystem` represents edge ends by edge-list position and a Boolean side.
 Loops have two distinct ends, and parallel edges retain separate positions. Vertex rotations
@@ -243,6 +243,34 @@ and [constraint-order tests](../../ComplexityTests/CSPRotationSystem.lean).
 Rotations alone do not impose genus zero. These modules prove no planar recognition, geometric
 realization, planar reduction, edge solver or dichotomy. In particular, isolated vertices require
 separate treatment in a future embedding model. The full objective remains [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+
+## Delta-matroid composition and local contraction closure
+
+`Complexity.Foundations.Data.BitString.DeltaMatroid.Composition` proves direct products,
+elimination of equal coordinate pairs, and relational composition. `IsDeltaMatroid.comp` and
+`IsEvenDeltaMatroid.comp` join relations on `ι ⊕ κ` and `κ ⊕ τ` along the finite shared `κ`
+coordinates, then remove those coordinates. Both require a nonempty composed relation:
+nonempty inputs alone do not guarantee compatible shared values. Empty external coordinate
+types are allowed. The proof uses successive one-sided exchanges, without assuming simultaneous
+exchange. This maps Proposition 6 and its parity corollary in Kazda–Kolmogorov–Rolínek,
+arXiv:1602.03124v6, printed pp. 0:4–0:5, with output nonemptiness made explicit.
+
+`Complexity.Logics.Propositional.CSP.Table.DeltaMatroid` connects this mathematics to the actual
+guarded table semantics. `Table.isEvenDeltaMatroid_contract` requires the original declared-arity
+table relation to be even and `Table.canContract table reference positions = true`. The latter
+supplies the feasible reference and distinct in-range internal positions; the reference witnesses
+nonemptiness of the output internally. The proof preserves outside-coordinate order and the
+final connector, using composition with a proved star gadget that permits zero internal changes
+or one internal change paired with a true connector. No blossom or solver hypothesis appears.
+Unlike strict width decrease, closure requires no lower bound of two on the selected positions.
+
+`Table.isEvenDeltaMatroid_exactlyOne` proves closure for every nonempty connector scope, with odd
+common parity. The empty-scope relation is rejected under the nonempty delta-matroid convention.
+[Composition and contraction tests](../../ComplexityTests/DeltaMatroidComposition.lean) cover
+incompatible shared coordinates, empty external coordinates, arbitrary scope lengths, ordered
+outside ports, empty selections, nullary tables, and malformed guards. Native operation and size
+certificates remain those of `PolyTime.CSP.Table`. Whole-instance blossom contraction/lifting,
+solver correctness, native solver cost and the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
 
 ## Algebraic proof systems
 
