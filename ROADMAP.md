@@ -769,9 +769,9 @@ index links to canonical definitions rather than keeping a second set.
 
 - **MIP = NEXP** ([#892]): `NEXP ⊆ MIP₂` through the BFL multilinearity test and arithmetization
   of exponential-time tableaux; an efficient GKR verifier under log-space uniformity.
-- **Goldwasser–Sipser** ([#2981](https://github.com/cslib-community/complexitylib/issues/2981)):
-  `IP[k] ⊆ AM[k + 2]` for the private-coin games `IPk`, by the set lower bound protocol on the
-  gap-amplified game (`IPGameClass.exists_repeat`).
+- **Oracle-model `IP[k]`**: oracle-PPT `IP` verifiers with at most `k` queries give exactly the
+  count-based `IPk` (coin fixing and padding to `k` rounds), which carries `IPk_eq_AM` to the
+  oracle model; `IP[k(n)] ⊆ AM[k(n) + 2]` for patterns that depend on the input length.
 - The Babai–Moran speedup `AM[2 t(n)] = AM[t(n)]` for polynomially many rounds (patterns that
   depend on the input length), interactive-machine characterizations of Arthur–Merlin classes, and
   statistical and perfect zero knowledge.
@@ -892,6 +892,14 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Parameterized:** strongly uniform variants (computable `f`), further explicit polynomial
   kernels, the W and A hierarchies, and parameterized lower bounds; connect these to
   [structural graph algorithms](#structural-graph-algorithms) and their decomposition costs.
+- **Kernelization lower bounds**
+  ([#3210](https://github.com/cslib-community/complexitylib/issues/3210)): `NP/poly`, and the
+  Fortnow–Santhanam theorem that an OR-distillation of an `NP`-hard problem gives
+  `coNP ⊆ NP/poly`, in the class-wise form over a polynomial equivalence relation. Remaining:
+  OR-cross-composition, polynomial compressions and the Bodlaender–Jansen–Kratsch theorem ruling
+  out polynomial kernels unless `coNP ⊆ NP/poly`; concrete lower bounds (k-Path, Clique
+  parameterized by vertex cover); Yap's collapse `coNP ⊆ NP/poly → PH = Σ₃`; AND-composition
+  (Drucker).
 - **Color coding** ([#2870](https://github.com/cslib-community/complexitylib/issues/2870)):
   colorful k-Path is in `FPT` by the dynamic programming over color sets. Remaining: random
   colorings (a fixed `k`-set is colorful with probability `K.descFactorial k / K ^ k ≥ e ^ (-k)`)
@@ -993,7 +1001,20 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   - total and variable space;
   - time–space trade-offs for pebbling formulas, building on `Complexity/Computability/Pebbling`;
   - degree versus space in polynomial calculus.
-- Polynomial calculus and sum-of-squares, and certified DPLL solver runtimes.
+- **Sum-of-squares** ([#3260](https://github.com/cslib-community/complexitylib/issues/3260)):
+  `Algebraic/SumOfSquares/` has degree-`d` refutations and pseudo-expectations with the easy
+  duality direction, Schoenebeck's pseudo-expectation for parity systems with no width-`d`
+  derivation of `0 = 1` (Schoenebeck Lemma 13), and Grigoriev's bound `e(G) ≤ d` for Tseitin
+  parity systems, with a linear-degree expander family. Next:
+  - the converse duality, by hyperplane separation, and the Lasserre/Sherali–Adams hierarchies with
+    a bridge to the proof system;
+  - Grigoriev's `Ω(n)` bound for random `3`-XOR (Barak–Steurer Theorem 2), through expansion of
+    random hypergraphs, and Schoenebeck's gaps for CSPs implied by XOR;
+  - the `0/1` encoding and Grigoriev's knapsack bound;
+  - the full Positivstellensatz calculus with inequality constraints and products of constraints,
+    and its relation to the equational form here;
+  - size–degree relations for sum-of-squares, and size lower bounds.
+- Polynomial calculus, and certified DPLL solver runtimes.
 - **Frege** ([#3069](https://github.com/cslib-community/complexitylib/issues/3069)): implicational
   completeness of the Hilbert-style system (Kalmár); formula-size measures; the simulation of
   resolution as a p-simulation of Cook–Reckhow proof systems, with encodings and translation
@@ -1566,6 +1587,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   (`Algorithms/Matching/MVV`), and Tutte's determinant criterion with the same test for general
   graphs (`Algorithms/Matching/Tutte`): MVV for general graphs (its Pfaffian form), a machine-level
   running-time certificate for the determinant test, and an RNC implementation.
+- **Auction algorithms** ([#3317](https://github.com/cslib-community/complexitylib/issues/3317)):
+  remaining after Bertsekas's Gauss–Seidel auction for square, complete integer assignment
+  instances (`Algorithms/Lean/Assignment`: `ε`-complementary slackness, termination within
+  `n (C + ε) / ε + 1` bids, `n ε`-optimality and exact optimality after scaling by `n + 1`):
+  `ε`-scaling and its `O(n A log (n C))` bound, a charged `TimeM` implementation, the Jacobi,
+  reverse and asymmetric auctions, sparse and rectangular instances, a bridge to the Hungarian
+  method's potentials, and `ε`-relaxation for minimum-cost flow.
 - **Graph search and shortest paths** ([#3053](https://github.com/cslib-community/complexitylib/issues/3053)):
   after `TimeM` depth-first search, topological sort and Bellman–Ford
   (`Algorithms/Lean/{DFS,BellmanFord}`), strongly connected components in linear time with the
@@ -1607,6 +1635,14 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   `3/2`, and possibly the Karlin–Klein–Oveis Gharan `3/2 - 10^{-36}` improvement as a long-range
   target. LP-based and primal–dual analyses of the same problems belong to the primal–dual
   approximation direction under Optimization and duality.
+- **Metric k-center** ([#3281](https://github.com/cslib-community/complexitylib/issues/3281)):
+  remaining after Gonzalez's farthest-first 2-approximation and the combinatorial dominating-set
+  gap behind the hardness of beating `2` (`Algorithms/Lean/KCenter`): NP-hardness of dominating
+  set on the encoded `Graph` problems (for example from vertex cover), a polynomial-time
+  certificate for the map from graphs to `{1, 2}` distance matrices, and the resulting statement
+  that a polynomial-time `(2 - ε)`-approximation implies `P = NP`; a machine-level running time
+  for Gonzalez's algorithm; the Hochbaum–Shmoys threshold algorithm; and k-supplier and
+  k-median.
 
 ### Sorting and selection
 
@@ -1757,6 +1793,15 @@ pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
   Output/count validation and complete native circuit-bound VOLE execution (#2765; #643;
   prerequisite #2738), growing extension-field arithmetic, raw-bit adversarial transport (#2744)
   and fresh-session amplification remain separate endpoints.
+- **Entropy-optimal sampling from fair coins:** `Probability/DDGTree` and
+  `Probability/DDGTree/KnuthYao` prove the Knuth–Yao bound `H(p) ≤ E[T]` for every DDG tree
+  generating `p`, and `E[T] < H(p) + 2` with optimality for the Knuth–Yao tree. They also prove
+  the dyadic equality characterization, all for distributions on a finite type
+  ([#3360](https://github.com/cslib-community/complexitylib/issues/3360)). Extend to countable
+  support and infinite entropy. For rational `p`, implement the Knuth–Yao sampler as a native
+  fair-coin program whose output law and expected time are certified (an `IsPPTOn`-style
+  certificate in expected time), as in Saad–Freer–Rinard–Mansinghka's finite-precision
+  entropy-optimal samplers.
 - **Markov-chain sampling:** `Probability/MarkovChain/*` provides discrete kernels,
   stationarity, reversibility, total-variation mixing times, Markovian couplings, reversible
   Metropolis chains and path coupling, with the lazy hypercube walk
@@ -1777,6 +1822,12 @@ pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
   rational matrices through explicit mixing and reduction theorems. Reuse the coupling and
   expander APIs and connect to the separate Stockmeyer oracle-counting track where their
   hypotheses agree.
+- **Permanent bounds** ([#3377](https://github.com/cslib-community/complexitylib/issues/3377)):
+  Brégman's upper bound for 0/1 matrices and bipartite perfect matchings, with its equality case,
+  is in `Foundations/Combinatorics/Bregman`. Remaining: Brégman's bound for nonnegative real
+  matrices, the van der Waerden lower bound for doubly stochastic matrices (Egorychev–Falikman,
+  or Gurvits's capacity proof), the Kahn–Lovász bound for perfect matchings of general graphs,
+  and their use in approximate-counting analyses.
 
 ### Constructive probabilistic methods
 
@@ -1820,6 +1871,19 @@ pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
 
 ### String algorithms
 
+- **Suffix arrays** ([#3331](https://github.com/cslib-community/complexitylib/issues/3331)):
+  `Algorithms/Lean/SuffixArray` has the suffix-array specification with uniqueness, a sort-based
+  reference construction, Kasai et al.'s LCP construction with at most `2|w|` character
+  comparisons, and plain binary-search pattern matching with at most `2|p|(⌊log₂ n⌋ + 1)`
+  comparisons. Remaining: linear-time construction (SA-IS of Nong, Zhang and Chan, or the DC3
+  skew algorithm of Kärkkäinen and Sanders) with a charged cost model for integer alphabets; a
+  comparison-count bound for the sort-based reference construction (through `mergeSortM` with a
+  charged suffix comparator);
+  Manber–Myers `O(|p| + log n)` search with precomputed LCP information; suffix trees (Ukkonen or
+  McCreight construction) and their equivalence with suffix arrays plus LCP arrays; and
+  applications such as longest repeated substring and the Burrows–Wheeler transform. Once a second
+  client appears (Z-function, LCP-accelerated search), move `lcpLen` and its lemmas to a
+  `Foundations/Data/List` module in the `List` namespace.
 - **Multi-pattern matching** ([#3358](https://github.com/cslib-community/complexitylib/issues/3358)):
   Aho–Corasick with states represented by their strings, valid failure and output tables from
   the level-order construction, exact reporting of all occurrences, the scan bound of the
