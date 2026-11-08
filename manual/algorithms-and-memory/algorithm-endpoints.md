@@ -133,7 +133,31 @@ The programs are generic in the entry type, so they combine weights only through
 | `Cslib.Query.apspBySquaring`, `isShortestDistances_apspBySquaring`, `cost_apspBySquaring_le` | APSP from any product subroutine `mp` with `⌈log₂(n−1)⌉` calls, so cost `⌈log₂(n−1)⌉·t` when each call costs at most `t` |
 | `Cslib.Query.minPlusViaAPSP`, `eval_minPlusViaAPSP`, `cost_minPlusViaAPSP` | the (min,+) product from one call of any APSP subroutine that is correct on `3n`-vertex graphs without negative cycles, at exactly the cost of that call |
 
-The two reductions are in [MinPlus.lean](../../Complexity/Algorithms/Lean/Query/ShortestPaths/MinPlus.lean), and the [tests](../../ComplexityTests/ShortestPaths.lean) run all programs on a graph with a negative edge. Together they show that a cost-`T(n)` algorithm for either problem gives one for the other with cost `⌈log₂(n−1)⌉·T(n)` or `T(3n)`. This is the starting point of the APSP class of [Vassilevska Williams and Williams][vww18]. The negative-triangle equivalence and the other problems in that class are not formalized. Neither is a word-RAM realization with bit-length costs, so no statement here concerns subcubic running time.
+The two reductions are in [MinPlus.lean](../../Complexity/Algorithms/Lean/Query/ShortestPaths/MinPlus.lean), and the [tests](../../ComplexityTests/ShortestPaths.lean) run all programs on a graph with a negative edge. Together they show that a cost-`T(n)` algorithm for either problem gives one for the other with cost `⌈log₂(n−1)⌉·T(n)` or `T(3n)`. This is the starting point of the APSP class of [Vassilevska Williams and Williams][vww18].
+
+#### Negative triangles and the (min,+) product
+
+Import `Complexity.Algorithms.Lean.Query.ShortestPaths.NegTriangleSubcubic` for the reduction from the (min,+) product to negative triangle detection. Its three steps are in [NegTriangleFinding.lean](../../Complexity/Algorithms/Lean/Query/ShortestPaths/NegTriangleFinding.lean) and [MinPlusViaNegTriangle.lean](../../Complexity/Algorithms/Lean/Query/ShortestPaths/MinPlusViaNegTriangle.lean). The last of these also has the converse.
+
+The pure [NegativeTriangle.lean](../../Complexity/Algorithms/ShortestPaths/NegativeTriangle.lean) states the problems on a tripartite graph with parts `I`, `J`, `K` and weight matrices `A : Matrix I K`, `B : Matrix K J`, `C : Matrix I J` over `MinTropical R`. `IsNegTriangle A B C i j k` means `A i k + B k j + C i j < 0`. `OnNegTriangle` asks for some `k`, and `HasNegTriangle` asks for some `i, j, k`. A finder answer `IsNegTriangleAnswer` is `none` exactly when there is no negative triangle. `onNegTriangle_iff` says the pair `(i, j)` lies on a negative triangle iff `(A * B) i j + C i j < 0`. `FiniteEntriesBounded A W` says the finite entries lie in `[-W, W]`, and `⊤` entries are allowed.
+
+The reductions call subroutines. Finding and blocking are generic in the weights: they pass sub-matrices on and mask an edge by writing the no-edge weight `0`. The binary search and the converse are not generic. The binary search builds weights `-mid` and is specific to `MinTropical (WithTop ℤ)`, that is `ℤ ∪ {∞}`, and the converse compares the entries of the product. Unlike the APSP reductions above, these programs therefore build and compare weights in pure code. Correctness assumes that the subroutine is correct under the oracle. Cost theorems hold under every oracle and weight, given nonnegative per-call bounds. `FreeM` charges only subroutine calls. Building sub-instances, padding, loops, removed-edge bookkeeping, binary-search intervals and the converse's `n²` final comparisons are pure code and are free. So the cost theorems transfer the reduction's pattern of detector calls and are not intrinsic bounds on either problem. A detector that decides in pure code, issuing no queries, satisfies the exponent hypothesis with `c = 0`.
+
+| Declaration | Statement |
+|---|---|
+| `Cslib.Query.findNegTri`, `isNegTriangleAnswer_findNegTri`, `cost_findNegTri_le` | finding a negative triangle on parts of size `2^L` by halving with a detector `det`: `8` calls per level and one at the bottom. The cost is at most `findNegTriCost τ L = τ 1 + ∑_{l<L} 8 τ(2^l)` when `det m` costs at most `τ m` for `m ≠ 0` [VWW Lemma 4.1][vww18] |
+| `Cslib.Query.findNegTriCost_rpow_le` | Lemma 4.1 for polynomial costs: for `τ m = c·m^e` with `c ≥ 0` and `e ≥ 1`, `findNegTriCost τ L ≤ 8·c·(2^L)^e` |
+| `Cslib.Query.allPairsNegTri`, `allPairsNegTri_eval`, `cost_allPairsNegTri_le` | all pairs on negative triangles, with parts split into `t` blocks of size `\|κ\|`. Each block triple is drained with a finder, and each triangle found has its `I`–`J` edge removed. This makes at most `t³ + (t\|κ\|)²` finder calls. It is the pairs form of [VWW Lemma 4.2][vww18]: the lemma outputs a maximal set of negative triangles with distinct `I`–`J` pairs, and the pairs on negative triangles are the consequence the paper states after it |
+| `Cslib.Query.minPlusViaAPNT`, `eval_minPlusViaAPNT`, `cost_minPlusViaAPNT_le` | the (min,+) product by simultaneous binary search with an all-pairs subroutine: exactly `⌈log₂(2W+2)⌉` calls when the finite entries of `A * B` lie in `[-W, W]` [VWW Theorem 4.2][vww18] |
+| `Cslib.Query.minPlusViaNegTri`, `eval_minPlusViaNegTri`, `cost_minPlusViaNegTri_le` | the composition, with blocks of size `s = 2^⌊⌊log₂ n⌋/3⌋` and `t = ⌊n/s⌋ + 1` blocks (padding with isolated vertices). The cost is at most `⌈log₂(2W+2)⌉·(t³ + (ts)²)·(τ 1 + ∑_{l<L} 8 τ(2^l))` |
+| `Cslib.Query.cost_minPlusViaNegTri_le_rpow` | the exponent. If `det m` costs at most `c·m^(3−δ)` for `m ≠ 0`, with `c ≥ 0` and `δ ≤ 2`, the product costs at most `544·c·⌈log₂(2W+2)⌉·n^(3−δ/3)` for `n ≥ 1`. So truly subcubic detection gives a truly subcubic product with `δ' = δ/3`, matching the `O(n²·T(n^{1/3})·log W)` of Theorem 4.2 |
+| `Cslib.Query.negTriViaMinPlus`, `eval_negTriViaMinPlus`, `cost_negTriViaMinPlus` | the converse in its one-product form: one call of a (min,+) product subroutine decides negative triangle at exactly the cost of that call. With `schoolbookMatMul` this is a cubic detector. It is weaker than [VWW Theorem 4.1][vww18], which reduces negative triangle detection to (min,+) product verification; that reduction is not formalized |
+
+The [tests](../../ComplexityTests/NegativeTriangle.lean) run every step with the honest oracle and check the query counts. They also show that the binary search fails when the bound `W` is too small. Finally, they instantiate the exponent bound with the schoolbook detector, `δ = 0` and real weights via `Cslib.FreeM.map_cost`.
+
+Helpers specific to this reduction (`halves`, `octant`, `block`, `maskedBlock`, `markPair`, `blockTriples` and the binary-search steps `bsMid`, `bsQuery`, `bsRounds`, `bsDecode`) live in the namespace `Cslib.Query.NegTri`.
+
+Scope relative to the paper: the weights are `ℤ ∪ {∞}`, with no `−∞` and no general (min,⊙) structure. The paper's `W` is the largest finite weight of the structure, which bounds the inputs, and its product saturates outside `[−W, W]` (footnote 6). Here weights are added without saturation, and `W` bounds the finite entries of the product `A * B`. By `eval_minPlusViaNegTri_of_bounded`, inputs with finite entries in `[−M, M]` give `W = 2M`. The binary search queries the detector with `I`–`J` weights in `[−(W+1), W]`. The output-sensitive listing bound (Theorem 4.3) and the other problems in the class (minimum-weight cycle, replacement paths, metricity, product verification) are not formalized. Neither is a word-RAM realization with bit-length costs, so no statement here concerns subcubic running time on a machine. The statements concern subcubic query cost relative to a detector.
 
 ## Depth-first search, topological sort and Bellman–Ford
 
@@ -247,9 +271,15 @@ The [checked examples](../../ComplexityTests/StoerWagner.lean) test three graphs
 
 The contraction API (`mergePair`, `embedCompact`, `contractMatrix`, `contractPart`, `contractCut`, `isContractionOf_contract`) lives in `Cslib.WeightedCut` and imports no probability, so this deterministic module does not depend on the randomized Karger development. The [checked examples](../../ComplexityTests/WeightedCutContraction.lean) contract a weighted 4-cycle.
 
+## Maximum flow: Dinitz's blocking-flow algorithm
+
+Import `Complexity.Algorithms.Lean.MaxFlow.LevelGraph` ([Complexity/Algorithms/Lean/MaxFlow/LevelGraph.lean](../../Complexity/Algorithms/Lean/MaxFlow/LevelGraph.lean)) for the phase analysis of [Dinitz's algorithm][dinic70] ([Schrijver's monograph][schrijver03], Section 10.6) on the integral networks of `MaxFlow.Basic`. `Flow.levelNet f d` keeps the residual arcs `u → v` with `d v = d u + 1`. `Flow.augmentLevel` adds a flow of that network to `f`, with `value_augmentLevel` and `resCap_augmentLevel`. `Flow.IsBlocking` says every simple `s`-`t` path along positive-capacity arcs has a saturated arc. For `d = f.resDist`, the Edmonds–Karp residual distance, `resDist_le_resDist_augmentLevel` shows that no distance from `s` decreases. `resDist_lt_resDist_augmentLevel`, the phase lemma, shows that a blocking flow strictly increases the distance of a reachable `t`. `IsDinitzRun.length_le` then bounds any run of phases, from any initial flow, by `|V| - 1`. `Flow.bfsDist` computes `resDist` layer by layer (`bfsDist_eq_resDist`). `isBlocking_iff_bfsDist_slackNet` makes `IsBlocking` decidable by one breadth-first search in the network of unused capacities (`Flow.slackNet`).
+
+`Complexity.Algorithms.Lean.MaxFlow.Dinitz` ([Complexity/Algorithms/Lean/MaxFlow/Dinitz.lean](../../Complexity/Algorithms/Lean/MaxFlow/Dinitz.lean)) is a pure Lean function over `Network (Fin n)` with candidate neighbour lists `adj` (`AdjValid`, as for Edmonds–Karp). It is not a `TimeM` program. Each phase of `dinitz N adj` computes `bfsDist` and stops once `t` is unreachable. Otherwise it builds a blocking flow of the level network with `greedyBlockingFlow` and augments by it. `greedyBlockingFlow` repeatedly pushes the bottleneck of a `bfsM` path of unsaturated arcs. A level network has no antiparallel arcs, so each push saturates a new arc. `greedyBlockingFlow_spec` gives a blocking flow after at most `|unsatArcs|` pushes, which `card_unsatArcs_zero_levelNet_le` bounds by `|N.posArcs|` for a level network. For `N.s ≠ N.t`, `dinitz_correct` returns a maximum flow, a minimum cut of equal capacity, the identification of that cut with the residual-reachability cut, at most `n - 1` phases, and at most `(n - 1) * |N.posArcs|` pushes. `dinitz_isDinitzRun` exhibits the phases as an `IsDinitzRun` from the zero flow. The [checked client](../../ComplexityTests/Dinitz.lean) runs the CLRS network (value `23`, `2` phases) and a network attaining the phase bound (`3 = |V| - 1` phases). It also checks a later phase cancelling flow sent by an earlier one, a blocking flow that is not maximum, and the `s = t` and unreachable-sink cases. Limitation: the blocking flow comes from a fresh breadth-first search per push, not from the depth-first search with dead-end deletion, and no running time is charged. The `O(|V|^2 |E|)` bound is not formalized; ROADMAP records it as remaining.
+
 ## Gomory–Hu trees
 
-Import `Complexity.Algorithms.Lean.GomoryHu.WeightedCut` ([source](../../Complexity/Algorithms/Lean/GomoryHu/WeightedCut.lean)). The declarations live in `Cslib.Algorithms.Lean.GomoryHu` and `Cslib.WeightedCut`. This is a theorem-level development: there is no algorithm and no running time. For a weighted multigraph `W : V → V → ℕ` with `IsMultigraph W`, `minCutBetween W s t` is the minimum `s`–`t` cut weight `λ(s, t)` ([source](../../Complexity/Foundations/Combinatorics/WeightedCut/MinCutBetween.lean)). `Network.Flow.IsMaxFlow.value_eq_minCutBetween` identifies it with the value of a maximum `s`–`t` flow in the network with capacities `W`, using the existing max-flow min-cut theorem. [MinCutBetween.lean](../../Complexity/Foundations/Combinatorics/WeightedCut/MinCutBetween.lean) also proves:
+Import `Complexity.Algorithms.Lean.GomoryHu.WeightedCut` ([source](../../Complexity/Algorithms/Lean/GomoryHu/WeightedCut.lean)) for the structure theory and `Complexity.Algorithms.Lean.GomoryHu.Construction` for the algorithm. The declarations live in `Cslib.Algorithms.Lean.GomoryHu` and `Cslib.WeightedCut`. For a weighted multigraph `W : V → V → ℕ` with `IsMultigraph W`, `minCutBetween W s t` is the minimum `s`–`t` cut weight `λ(s, t)` ([source](../../Complexity/Foundations/Combinatorics/WeightedCut/MinCutBetween.lean)). `Network.Flow.IsMaxFlow.value_eq_minCutBetween` identifies it with the value of a maximum `s`–`t` flow in the network with capacities `W`, using the existing max-flow min-cut theorem. [MinCutBetween.lean](../../Complexity/Foundations/Combinatorics/WeightedCut/MinCutBetween.lean) also proves:
 
 - the triangle inequality `min_le_minCutBetween`: `min (λ(u, v)) (λ(v, w)) ≤ λ(u, w)` for `u ≠ w`;
 - its consequence `minCutBetween_eq_of_lt`;
@@ -259,7 +289,7 @@ Import `Complexity.Algorithms.Lean.GomoryHu.WeightedCut` ([source](../../Complex
 The general theory, in [Basic.lean](../../Complexity/Algorithms/Lean/GomoryHu/Basic.lean) and [Existence.lean](../../Complexity/Algorithms/Lean/GomoryHu/Existence.lean), works for any set function `f : Finset V → β` with values in a linearly ordered cancellative commutative monoid. Three definitions carry it:
 
 - `IsMinCutBetween f s t X`: `X` contains `s`, misses `t` and minimizes `f`.
-- `edgeSide T u v`: the vertices reachable from `u` in `T` once the edge `uv` is deleted.
+- `SimpleGraph.edgeSide T u v`: the vertices reachable from `u` in `T` once the edge `uv` is deleted. This and its lemmas live in [EdgeSide.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/EdgeSide.lean), since they are plain tree facts.
 - `IsGomoryHuTree f T`: `T` is a spanning tree and, for every tree edge `uv`, `edgeSide T u v` is a minimum `u`–`v` cut. This is the cut-equivalent tree of [Gomory and Hu][gomoryhu61] ([Schrijver 2003][schrijver03], Section 15.4).
 
 `exists_isGomoryHuTree` proves existence for every symmetric (`f Xᶜ = f X`) submodular `f` on a nonempty finite `V`, and `exists_isGomoryHuTree_cutWeight` is the graph case. Gomory and Hu treat graphs only; the symmetric submodular form is the standard abstraction of their proof, which uses only these two properties. The proof follows Gomory and Hu's recursion without contracting vertices. It splits the terminals along a minimum cut, uses `IsMinCutBetween.inter` to uncross the minimum cuts on each side into that side, and joins the two partial trees built recursively with one edge. Three consequences follow:
@@ -270,13 +300,26 @@ The general theory, in [Basic.lean](../../Complexity/Algorithms/Lean/GomoryHu/Ba
 
 To check a candidate tree, first compute its edge sides with `edgeSide_eq_of_forall_adj`: if `S` contains `u`, misses `v` and no other tree edge crosses `S`, then `edgeSide T u v = S`. Then decide the minimum-cut conditions. The [tests](../../ComplexityTests/GomoryHu.lean) do this for the path `0 - 1 - 2 - 3` on a five-edge graph. They also refute a star, and a path for another graph, as Gomory–Hu trees.
 
+### Gusfield's construction
+
+[Gusfield][gusfield90]'s algorithm computes the tree with `n - 1` minimum cut computations in the original graph, without contraction. [Gusfield.lean](../../Complexity/Algorithms/Lean/GomoryHu/Gusfield.lean) states it on parent functions `p : V → V` with an arbitrary cut oracle `C : V → V → Finset V`. Every vertex starts below the root `r`. Each other vertex `s` is processed once, with `t = p s` and `X = C s t`: the other vertices whose parent is `t` and which lie in `X` are re-hung below `s`, and if `p t ∈ X`, `s` takes the place of `t`. `gusfieldParent C r l` runs this over a list `l` of vertices. `SimpleGraph.parentGraph p`, the graph of a parent function on any vertex type, is in [Acyclic.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/Acyclic.lean), next to the parent arrays `parentTree` on `Fin (n + 1)`. `parentTree_eq_parentGraph` identifies the two when `p 0 = 0`. `isGomoryHuTree_gusfieldParent` proves the result is a Gomory–Hu tree for every symmetric submodular `f`, whenever `C s t` is a minimum `s`–`t` cut for all `s ≠ t` and `l` is duplicate-free and contains every vertex other than `r`. The oracle may return any minimum cut. The proof uncrosses each oracle cut with the sides of the existing tree edges at `t`, using `IsMinCutBetween.union` and `IsMinCutBetween.sdiff` from [Basic.lean](../../Complexity/Algorithms/Lean/GomoryHu/Basic.lean).
+
+[Construction.lean](../../Complexity/Algorithms/Lean/GomoryHu/Construction.lean) makes the algorithm executable. `gomoryHuM W adj r` is a `TimeM ℕ` program over `Fin n`. It returns the parent array as a `Vector (Fin n) n`, and uses the minimum cut of the Edmonds–Karp solver `edmondsKarpM` (`ekCut`) as the oracle, once per non-root vertex. `vget_gomoryHuM` identifies the output with `gusfieldParent (ekCut W adj) r (List.finRange n)`. So `isGomoryHuTree_gomoryHuM` gives a Gomory–Hu tree of `cutWeight W` for every multigraph `W` and adjacency lists `adj` covering its edges (the `AdjValid` condition of Edmonds–Karp). The time bounds:
+
+- `gomoryHuM_time_le_of_forall`: at most `2 n + (n - 1) (B + n + 2)` charged steps, when every Edmonds–Karp call costs at most `B`;
+- `gomoryHuM_time_le`: the same with `edmondsKarpM_time_le` substituted, which is `O(n m²)` per call for `m` edges;
+- `gomoryHuM_time_le_dense`: `O(n⁶)` for dense adjacency lists.
+
+The cost model is the Edmonds–Karp one, extended with `Finset` membership on the returned cut as a free primitive. One tick is charged per parent-array slot allocated, per vertex for the loop test, per parent read and per vertex scanned when re-hanging. One more tick per non-root vertex covers the final swap test and its two writes. Vector reads and writes, `Finset` membership tests on the returned cut and `Fin n` comparisons are free primitives inside those steps. The [tests](../../ComplexityTests/GomoryHuConstruction.lean) run `gomoryHuM` by `decide` on the five-edge graph of the structure tests. From roots `0` and `3` they obtain the path `0 - 1 - 2 - 3`; the run from `3` takes the swap branch. The tests also instantiate the time bounds, and refute the output of `gusfieldParent` with a non-minimum oracle as a Gomory–Hu tree.
+
 Limitations:
 
 - Weights are natural numbers.
-- The construction with `n - 1` maximum-flow calls is not formalized, whether in Gomory and Hu's form or in [Gusfield][gusfield90]'s variant without contraction; neither is its running time.
+- `gomoryHuM` returns the tree without its edge weights `λ(u, p u)`.
+- Only Edmonds–Karp is available as the maximum flow oracle; `gomoryHuM_time_le_of_forall` takes any per-call bound.
 - Minimum cuts are not enumerated.
 
-[#3320](https://github.com/cslib-community/complexitylib/issues/3320) tracks the remaining work.
+[#3422](https://github.com/cslib-community/complexitylib/issues/3422) tracks the remaining work.
 
 ## Maximum flow: generic push–relabel
 
@@ -294,6 +337,39 @@ Import `Complexity.Algorithms.Lean.MaxFlow.Preflow` ([Complexity/Algorithms/Lean
 `pushRelabelWith N vs norm` scans the vertex list `vs` for the first active vertex and pushes along its first admissible arc, or relabels it. `pushRelabelWith_correct` assumes that `vs` lists every vertex, that `norm` is the identity (`∀ σ, norm σ = σ`) and that `s ≠ t`. Under these hypotheses it shows that the function performs a run of at most `maxOps N` operations and returns a maximum flow and a minimum cut of equal value. `pushRelabel` on `Fin n` takes `vs = List.finRange n` and `norm = tabulate`, which stores the state as a matrix and a vector after every operation, so the kernel can evaluate it. `pushRelabel_correct` then needs only `s ≠ t`. The [checked client](../../ComplexityTests/PushRelabel.lean) evaluates it by `decide +kernel` on the CLRS six-vertex network (value `23`, `29` operations). It evaluates it by `decide` on edge cases: antiparallel arcs, an unreachable sink, a single arc `s → t`, and `s = t`.
 
 Limitations: the bounds count operations and do not charge the selection of an operation, so there is no `TimeM` running-time bound. The FIFO, relabel-to-front and highest-label rules, the gap and global-relabelling heuristics and dynamic trees are not formalized ([#3373](https://github.com/cslib-community/complexitylib/issues/3373)).
+
+## Menger's theorem
+
+Import `Complexity.Algorithms.Lean.MaxFlow.Menger` ([source](../../Complexity/Algorithms/Lean/MaxFlow/Menger.lean)). The declarations live in `Cslib.Algorithms.Lean.MaxFlow`. This is a theorem-level development: there is no algorithm and no running time. Every form of [Menger's theorem][menger27] is derived from the integral max-flow min-cut theorem `Network.exists_maxFlow_eq_minCut` together with a flow decomposition, and each comes in two versions: an `iff` against all cuts, and an existence statement whose cut has exactly as many elements as there are paths. Graphs are finite and have two terminals. Directed paths are duplicate-free vertex lists (`IsDipath`). Undirected paths are Mathlib `Walk`s with `IsPath`.
+
+| Form | Source | `iff` version | Matching-cut version |
+|---|---|---|---|
+| directed, arc-disjoint | [Schrijver 2017][schrijver17], Corollary 4.1b | `exists_arcDisjoint_iff_forall_isArcCut` | `exists_arcDisjoint_eq_outArcs` |
+| directed, internally disjoint | [Schrijver 2017][schrijver17], Corollary 4.1a | `exists_internallyDisjoint_iff_forall_isVertexCut` | `exists_internallyDisjoint_eq_isVertexCut` |
+| undirected, edge-disjoint | [Diestel 2025][diestel25], Corollary 3.3.5 (ii) | `isEdgeReachable_iff_exists_edgeDisjoint` | `exists_edgeDisjoint_eq_not_reachable` |
+| undirected, internally disjoint | [Diestel 2025][diestel25], Corollary 3.3.5 (i) | `exists_internallyDisjoint_iff_forall_isVertexSeparator` | `exists_internallyDisjoint_eq_isVertexSeparator` |
+
+- **Directed, arc-disjoint.** For `s ≠ t`, the matching-cut version gives `(outArcs G S).card` pairwise arc-disjoint `s`–`t` paths for some `S` with `s ∈ S` and `t ∉ S`. Here `outArcs G S` is Schrijver's `δ^out(S)`.
+- **Directed, internally disjoint.** For `s ≠ t` not adjacent, the matching-cut version gives internally disjoint paths and an `s`–`t` vertex cut (`IsVertexCut`) of the same size. The proof splits each vertex, as in the derivation after Corollary 4.1b.
+- **Undirected, edge-disjoint.** The `iff` version characterizes Mathlib's `SimpleGraph.IsEdgeReachable k u v` by `k` pairwise edge-disjoint `u`–`v` paths. Antiparallel flow is cancelled (`Network.Flow.cancel`), so the paths share no undirected edge in either direction.
+- **Undirected, internally disjoint.** Separators are `IsVertexSeparator` (Diestel §1.4).
+
+The `iff` versions also hold in the degenerate cases: `s = t`, and for the vertex forms adjacent `s`, `t`. In those cases no cut exists and both sides are true for every `k`.
+
+Each form has a weak-duality lemma: `card_le_card_of_arcDisjoint_of_isArcCut`, `card_le_card_of_internallyDisjoint_of_isVertexCut`, `le_encard_of_edgeDisjoint_of_not_reachable` and `card_le_card_of_internallyDisjoint_of_isVertexSeparator`. Four closed-set certificates turn a vertex set `S` with `s ∈ S` and `t ∉ S` into a decidable cut check: `isArcCut_outArcs`, `isVertexCut_of_forall_adj`, `not_reachable_deleteEdges_of_forall_adj` and `isVertexSeparator_of_forall_adj`.
+
+The reusable flow layer is [Decomposition.lean](../../Complexity/Algorithms/Lean/MaxFlow/Decomposition.lean). `Network.Flow.exists_flowPaths` decomposes an integral flow of value `k` into `k` simple paths along positive-flow arcs, with each arc `(u, v)` on at most `f u v` of them. `Network.Flow.cancel` removes antiparallel flow and keeps the value.
+
+The [tests](../../ComplexityTests/Menger.lean) check two examples. In the 3-cube, between antipodal vertices, the edge and vertex connectivity are both `3`: they give three explicit paths, show `IsEdgeReachable 3`, refute `IsEdgeReachable 4` with the three edges at `0`, and refute four internally disjoint paths with the separator `{1, 2, 4}`. One test applies `exists_internallyDisjoint_eq_isVertexSeparator` as stated and pins its common size `m` to `3` by weak duality. They also check a small digraph with arc and vertex connectivity `2`.
+
+Limitations:
+
+- Only finite graphs with two terminals are covered. Directed graphs are Mathlib `Digraph`s, which have no parallel arcs, so the arc form covers simple digraphs and not the directed multigraphs allowed by Schrijver.
+- The `A`–`B` set version ([Schrijver 2017][schrijver17], Theorem 4.1; [Diestel 2025][diestel25], Theorem 3.3.1) is not formalized, and neither is the global `k`-connectivity form ([Diestel 2025][diestel25], Theorem 3.3.6).
+- Infinite graphs and the Erdős–Menger conjecture (Aharoni–Berger) are not formalized.
+- No algorithm or running time is given for computing local connectivity.
+
+[#3409](https://github.com/cslib-community/complexitylib/issues/3409) tracks the remaining work.
 
 ## Bipartite matching and Hopcroft–Karp
 
@@ -359,7 +435,15 @@ The executable solver is in `Complexity.Algorithms.Lean.Matroid.Intersection.Sol
 
 Import `Complexity.Algorithms.Lean.StableMatching.Incentives` (which also brings in `Basic`, `DeferredAcceptance` and `Blocking`) and `Complexity.Algorithms.Lean.StableMatching.Lattice`; the declarations live in the namespace `Cslib.Algorithms.Lean.StableMatching`. This is a pure Lean development, not a RAM client. An `Instance n` has `n` proposers and `n` receivers with strict complete preference lists (`Fin n → Equiv.Perm (Fin n)`, rank `0` most preferred); a `Matching n` is a permutation, and `IsStable` means no blocking pair. `Instance.deferredAcceptance` is a total, `decide`-evaluable implementation of proposer-proposing deferred acceptance whose state is the vector of rejection counts. The modules prove stability of the output, the bound `proposals_le : I.proposals ≤ n ^ 2 - n + 1`, proposer-optimality and receiver-pessimality, the distributive lattice `Instance.Stable I` with deferred acceptance as `⊤` and its receiver-proposing dual as `⊥`, the blocking lemma `exists_isBlockingPair_of_lt`, weak Pareto optimality, and coalitional strategy-proofness for proposers (`not_forall_mem_propRank_lt_of_isStable`). Roth's impossibility theorem `MatchingMechanism.not_isStable_and_strategyProof` is proved for three agents on each side (`MatchingMechanism 3`), with the checked witness `MatchingMechanism.rothInstance`. That suffices for the existential impossibility; the statement for every `n ≥ 3` is not formalized.
 
-The cost measure is the number of proposals, a property of the algorithm's trace rather than of a machine model; no Word-RAM or Turing implementation is certified. Incomplete lists, ties, unequal sides and many-to-one markets are not modeled; [#2990](https://github.com/cslib-community/complexitylib/issues/2990) tracks these directions. [ComplexityTests/StableMatching.lean](../../ComplexityTests/StableMatching.lean) contains the checked instances.
+The cost measure is the number of proposals, a property of the algorithm's trace rather than of a machine model; no Word-RAM or Turing implementation is certified. [ComplexityTests/StableMatching.lean](../../ComplexityTests/StableMatching.lean) contains the checked instances.
+
+### Incomplete lists and the rural hospitals theorem
+
+Import `Complexity.Algorithms.Lean.StableMatching.Incomplete.RuralHospitals` and `Complexity.Algorithms.Lean.StableMatching.Incomplete.Complete`, which bring in the rest of `Incomplete/`. They model markets with unacceptable partners and possibly unequal sides. An `IncompleteInstance m n` has `m` proposers and `n` receivers. Each agent has a list of the agents it finds acceptable (`propPref : Fin m → List (Fin n)`, most preferred first). Unlisted agents are unacceptable, and only the first occurrence of a repeated entry counts. A `PartialMatching m n` is Mathlib's partial bijection `Fin m ≃. Fin n`, so agents may be unmatched. `propRank p o` ranks an outcome `o : Option (Fin n)` by its position in the list. `none` and unlisted receivers get the list's length, so every acceptable partner beats staying unmatched. `IsStable` means individually rational (`IsIndividuallyRational`) with no blocking pair. A pair `(p, r)` blocks when each strictly prefers the other to its current outcome. These are the definitions of the marriage model as presented in [Roth and Sotomayor][rothsotomayor90], Chapter 2.
+
+`IncompleteInstance.deferredAcceptance` is a `decide`-evaluable implementation of proposer-proposing deferred acceptance. A proposer whose list runs out stays unmatched. The run reaches a fixed point within `totalLength` steps (`step_run_fixed`) and makes at most `totalLength` rejections in total (`sum_finalState_le`), where `totalLength` is the total length of the proposers' lists. The module proves that the output is stable (`isStable_deferredAcceptance`), proposer-optimal (`isProposerOptimal_deferredAcceptance`) and receiver-pessimal. Running the algorithm on the swapped market gives `receiverDeferredAcceptance`, which is receiver-optimal. The rural hospitals theorem in the form of [Roth and Sotomayor][rothsotomayor90], Theorem 2.22, is `unmatched_eq_of_isStable`: any two stable matchings leave the same proposers and the same receivers unmatched. `matchedProposers_eq_of_isStable` and `matchedReceivers_eq_of_isStable` state it for the `Finset`s of matched agents. The proof uses optimality and pessimality of deferred acceptance, together with `PartialMatching.card_matchedReceivers` (a matching matches as many proposers as receivers).
+
+`Instance.toIncompleteInstance` turns a complete-list market into a market in which everyone lists everyone. `isStable_toIncompleteInstance_iff_exists` shows that its stable matchings are exactly the stable perfect matchings `μ.toPEquiv` of the original market. `deferredAcceptance_toIncompleteInstance` shows that the two implementations agree. The complete-list API (lattice, blocking lemma, incentives) has not been generalized to incomplete lists. [ComplexityTests/StableMatchingIncomplete.lean](../../ComplexityTests/StableMatchingIncomplete.lean) checks a market with two stable matchings in which one proposer is unmatched in every stable matching. It also checks a receiver that stays unmatched even though it lists an unmatched proposer, and agreement with the complete-list implementation on Roth's market. Ties, many-to-one markets and the capacitated rural hospitals theorem are not modeled; [#2990](https://github.com/cslib-community/complexitylib/issues/2990) tracks these directions.
 
 ## Assignment problem: Bertsekas's auction algorithm
 
@@ -997,6 +1081,17 @@ Import `Complexity.Algorithms.Lean.KCenter.Gonzalez` ([source](../../Complexity/
 
 The [k-center examples](../../ComplexityTests/KCenter.lean) run Gonzalez on three points of a line at `0, 1, 2` with one center. It picks the endpoint and has radius `2`, while the middle point has radius `1`, so the factor `2` is attained. The same tight instance appears on the path `0 - 1 - 2` with `domDist`, where Gonzalez's center does not dominate, so the gap needs `ρ < 2`. A symmetric distance violating the triangle inequality makes Gonzalez pay `100` against an optimum of `1`. A distance vanishing between distinct points makes it repeat a center. The Hochbaum–Shmoys threshold algorithm, k-supplier and k-median are open ([ROADMAP](../../ROADMAP.md#combinatorial-optimization)).
 
+## Lovász theta and Shannon capacity
+
+These are graph invariants with no algorithm attached yet. They are the mathematical side of the semidefinite route to perfect-graph optimization ([ROADMAP](../../ROADMAP.md#optimization-and-duality)). Modules under `Complexity/Foundations/Combinatorics/SimpleGraph/` build them on Mathlib's `SimpleGraph.indepNum`, `chromaticNumber` and `cycleGraph`; [IndepNum.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/IndepNum.lean) adds the general facts about `indepNum` they need (monotonicity under embeddings, invariance under isomorphism, `α(G) ≤ |V|`). `import Complexity.Foundations.Combinatorics.SimpleGraph.Pentagon` brings in all of them, and the notation `⊠` needs `open SimpleGraph`:
+
+- [StrongProduct.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/StrongProduct.lean) defines `G ⊠ H` (scoped notation in `SimpleGraph`) and the powers `G.strongPow k` on `Fin k → V`. It proves supermultiplicativity `α(G) α(H) ≤ α(G ⊠ H)` and `α(Gᵏ) ≤ |V|ᵏ`. Mathlib has no strong product at the pin; mathlib4#43170 proposes one.
+- [ShannonCapacity.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/ShannonCapacity.lean) defines `shannonCapacity G` as the supremum over `k ≥ 1` of `α(Gᵏ)^(1/k)`. `tendsto_shannonCapacity` shows that the sequence converges to it (Fekete's lemma); for an empty vertex type both sides are `0`.
+- [LovaszTheta.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/LovaszTheta.lean) defines `IsOrthonormalRepresentation` (unit vectors, orthogonal on *nonadjacent* distinct pairs, as in [Lovász][lovasz1979]) and `lovaszTheta G`. The latter is the infimum over representations `u` in some `ℝᵈ` and unit handles `c` of `max_v 1/⟪c, u v⟫²`; `lovaszTheta_le_of_rep` accepts representations in any real inner product space. It proves the sandwich `indepNum_le_lovaszTheta` and `lovaszTheta_le_chromaticNumber_compl`, that is `α(G) ≤ ϑ(G) ≤ χ(Gᶜ)` for finite `G` (`lovaszTheta_le_of_cliqueCover` states the upper half for a cover by cliques), together with `lovaszTheta_strongProd_le` and `shannonCapacity_le_lovaszTheta`. The [Knuth][knuth1994] locators in the module docstring give the sandwich and product lemmas.
+- [Pentagon.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/Pentagon.lean) gives Shannon's five-word code in `C₅ ⊠ C₅` [Shannon][shannon1956] and Lovász's umbrella in `ℝ³`. Together they prove `shannonCapacity_cycleGraph_five` and `lovaszTheta_cycleGraph_five` (both `√5`) and `indepNum_cycleGraph_five`.
+
+The theta function is a real infimum without a computational interface. Its SDP and eigenvalue characterizations, polynomial-time approximation (Grötschel–Lovász–Schrijver) and the resulting perfect-graph algorithms are open ([#2998](https://github.com/cslib-community/complexitylib/issues/2998)). The [checked examples](../../ComplexityTests/Foundations/Combinatorics/SimpleGraph/LovaszTheta.lean) compute `ϑ` for empty, complete and edgeless graphs and `Θ` for empty and edgeless graphs. They separate `α(C₅) = 2` from `Θ(C₅) = √5`, and restate the Shannon-capacity statement of the pentagon from first principles.
+
 ## Linear-programming duality over ordered fields
 
 Import `Complexity.Foundations.LinearAlgebra.Matrix.LinearProgramming` ([LinearProgramming.lean](../../Complexity/Foundations/LinearAlgebra/Matrix/LinearProgramming.lean)). This is mathematics with no machine model or running time. For a matrix `A : Matrix ι κ K` over any linearly ordered field `K` (so `ℚ` is included), the primal program maximizes `c ⬝ᵥ x` subject to `A *ᵥ x ≤ b` and the dual minimizes `y ⬝ᵥ b` subject to `0 ≤ y` and `y ᵥ* A = c`. Programs are plain matrix data; there is no bundled LP structure and no encoding.
@@ -1005,7 +1100,18 @@ Import `Complexity.Foundations.LinearAlgebra.Matrix.LinearProgramming` ([LinearP
 - **Farkas' lemma:** `Matrix.not_exists_mulVec_le_iff` ([Farkas.lean](../../Complexity/Foundations/LinearAlgebra/Matrix/Farkas.lean)) shows that `A *ᵥ x ≤ b` is infeasible iff some `y ≥ 0` has `y ᵥ* A = 0` and `y ⬝ᵥ b < 0`. `exists_nonneg_mulVec_eq_iff` is the equality form with `x ≥ 0`. Mathlib's `ProperCone.hyperplane_separation` covers only closed cones in real locally convex spaces.
 - **Duality:** weak duality is `dotProduct_le_dotProduct_of_mulVec_le`. Strong duality, `exists_isGreatest_isLeast_dotProduct`, says that when both programs are feasible both optima are attained and equal. `bddAbove_image_dotProduct_iff` and `bddBelow_image_dotProduct_iff` give the unbounded outcomes: a feasible program is bounded iff the other program is feasible. `exists_isGreatest_of_bddAbove` gives attainment, `dotProduct_eq_dotProduct_iff_of_mulVec_le` complementary slackness, and `exists_dual_le_of_forall_le` the affine Farkas lemma. `exists_isGreatest_isLeast_dotProduct_of_nonneg` covers the canonical pair `max {c ⬝ᵥ x | A *ᵥ x ≤ b, 0 ≤ x}` and `min {y ⬝ᵥ b | c ≤ y ᵥ* A, 0 ≤ y}`.
 
-The [checked examples](../../ComplexityTests/Foundations/LinearAlgebra/Matrix/LinearProgramming.lean) give an infeasible system with its certificate, a feasible system with no certificate, an empty system, programs with values `3` and `22 / 5`, and an unbounded program with infeasible dual. Not formalized: bit-size bounds on solutions and certificates, membership of rational LP feasibility in NP ∩ coNP, and any polynomial-time LP algorithm ([ROADMAP](../../ROADMAP.md#optimization-and-duality)).
+The [checked examples](../../ComplexityTests/Foundations/LinearAlgebra/Matrix/LinearProgramming.lean) give an infeasible system with its certificate, a feasible system with no certificate, an empty system, programs with values `3` and `22 / 5`, and an unbounded program with infeasible dual. Not formalized: bit-size bounds on solutions and certificates, membership of rational LP feasibility in NP ∩ coNP, and any polynomial-time LP algorithm ([ROADMAP](../../ROADMAP.md#optimization-and-duality)). The [simplex method with Bland's rule](#the-simplex-method-with-blands-rule) below solves these programs exactly from a feasible start.
+
+## The simplex method with Bland's rule
+
+Import `Complexity.Algorithms.Lean.Simplex.LinearProgram` ([source](../../Complexity/Algorithms/Lean/Simplex/LinearProgram.lean)); the dictionaries are in [Dictionary.lean](../../Complexity/Algorithms/Lean/Simplex/Dictionary.lean) and the pivoting rule in [Bland.lean](../../Complexity/Algorithms/Lean/Simplex/Bland.lean). Like the duality theorems above, this is a pure Lean function over an exact linearly ordered field, with no machine model, running time or bit complexity. A `Dictionary ι K` on finitely many linearly ordered variables `ι` writes each basic variable as `x i = rhs i + ∑ j ∉ basis, coeff i j * x j` and the objective as `objConst + ∑ j ∉ basis, objCoeff j * x j` ([Chvátal][chvatal83], Chapter 2, with `coeff i j = -a_ij`). Its program maximizes the objective over the nonnegative solutions of the rows.
+
+- **Pivoting:** `pivot D r s` solves row `r` for `x s`. `equivalent_pivot` shows that a pivot on a nonzero coefficient preserves the solutions and the objective. `feasible_pivot` shows that the ratio test preserves feasibility, and `objConst_le_pivot` that entering a variable with nonnegative reduced cost does not decrease the objective. `basicSolution_pivot` moves the basic solution along the edge `ray s` by the ratio of the leaving row.
+- **Certificates:** `isGreatest_value` gives optimality when no reduced cost is positive. `not_bddAbove_value` gives unboundedness when an entering variable has no leaving row.
+- **Bland's rule:** `blandStep` takes the smallest nonbasic variable with a positive reduced cost and, among the rows of minimal ratio, the smallest basic variable ([Bland][bland77]). `basis_ne_of_blandPivot` proves that no basis repeats along any sequence of Bland pivots from a feasible dictionary, by the standard argument about the largest variable that enters and leaves during a cycle. Since pivots preserve the number `m` of basic variables, `add_one_le_choose_of_blandPivot` bounds such a sequence by `N.choose m - 1` pivots, where `N` is the number of variables. `simplex D` runs with that much fuel. `simplex_spec` shows that, from a feasible dictionary, it returns an equivalent feasible dictionary whose basic solution is optimal, or proves the objective unbounded.
+- **Matrix programs:** `simplex_spec_of_represents` states the result for `max c ⬝ᵥ x` subject to `x ≥ 0`, `A *ᵥ x = b` from any feasible dictionary that represents the program, and `Represents.eq_zero_of_mulVec_eq_zero` shows that the basic columns of `A` are linearly independent. For `x ≥ 0`, `A *ᵥ x ≤ b` the start is `slackDictionary A b c`, which is feasible iff `b ≥ 0` (`feasible_slackDictionary_iff`), and `simplex_slackDictionary_spec` returns an optimal `x` or unboundedness. The feasible sets are written `{x | 0 ≤ x ∧ A *ᵥ x ≤ b}` and `{y | 0 ≤ y ∧ c ≤ y ᵥ* A}`, as in `exists_isGreatest_isLeast_dotProduct_of_nonneg`. From the final dictionary `D`, `D.slackDual` takes the negated reduced costs of the slack variables. `slackDual_nonneg`, `le_slackDual_vecMul` and `slackDual_dotProduct` show that it is dual feasible with value `D.objConst`, the primal optimum. `isLeast_dotProduct_slackDual` combines these with weak duality (`dotProduct_le_dotProduct_of_nonneg_of_mulVec_le`) to show that it is dual optimal. Strong duality itself is the theorem above; `slackDual` is the explicit dual solution the method produces.
+
+Phase I is not formalized: the method needs a feasible starting dictionary, so a program `A *ᵥ x ≤ b` with some `b i < 0` is outside the scope of `simplex_slackDictionary_spec`. The [checked examples](../../ComplexityTests/Algorithms/Lean/Simplex.lean) run Chvátal's introductory program (optimum `13` after two pivots, with `slackDual` evaluating to the dual optimum `(1, 0, 1)`) and his cycling example. On the cycling example, Dantzig's largest-coefficient rule returns to the initial basis after six degenerate pivots, so the anti-cycling theorem is not vacuous; Bland's rule reaches the optimum `1` after seven pivots. The examples also cover an unbounded program, an already-optimal start and an infeasible slack dictionary. The Klee–Minty lower bound for Dantzig's rule, smoothed analysis and polynomial-time LP algorithms remain open ([ROADMAP](../../ROADMAP.md#optimization-and-duality)).
 
 ## LLL-reduced bases and lattice basis reduction
 
@@ -1140,11 +1246,15 @@ The numeric values above are transcriptions of checked source statements, not re
 [bertsekas88]: ../sources.md#bertsekas88
 [bertsekas98]: ../sources.md#bertsekas98
 [bfprt73]: ../sources.md#bfprt73
+[bland77]: ../sources.md#bland77
 [burrowswheeler94]: ../sources.md#burrowswheeler94
 [ccpv11]: ../sources.md#ccpv11
 [christofides76]: ../sources.md#christofides76
+[chvatal83]: ../sources.md#chvatal83
 [clrs09]: ../sources.md#clrs09
 [coverthomas06]: ../sources.md#coverthomas06
+[diestel25]: ../sources.md#diestel25
+[dinic70]: ../sources.md#dinic70
 [edmonds65]: ../sources.md#edmonds65
 [fks84]: ../sources.md#fks84
 [floyd62]: ../sources.md#floyd62
@@ -1163,14 +1273,19 @@ The numeric values above are transcriptions of checked source statements, not re
 [kortevygen18]: ../sources.md#kortevygen18
 [lll82]: ../sources.md#lll82
 [manbermyers93]: ../sources.md#manbermyers93
+[menger27]: ../sources.md#menger27
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
+[knuth1994]: ../sources.md#knuth1994
+[lovasz1979]: ../sources.md#lovasz1979
 [nagamochiibaraki92]: ../sources.md#nagamochiibaraki92
 [roth82]: ../sources.md#roth82
 [rothpostlewaite77]: ../sources.md#rothpostlewaite77
+[rothsotomayor90]: ../sources.md#rothsotomayor90
 [roughgarden13cs364a]: ../sources.md#roughgarden13cs364a
 [schrijver03]: ../sources.md#schrijver03
 [schrijver17]: ../sources.md#schrijver17
 [schummervohra07]: ../sources.md#schummervohra07
+[shannon1956]: ../sources.md#shannon1956
 [shapleyscarf74]: ../sources.md#shapleyscarf74
 [sipser13]: ../sources.md#sipser13
 [stoerwagner97]: ../sources.md#stoerwagner97

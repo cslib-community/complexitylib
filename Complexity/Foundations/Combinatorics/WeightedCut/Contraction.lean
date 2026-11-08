@@ -47,6 +47,7 @@ back cuts keep their weight, and a cut that does not separate `u` and `v` keeps 
   swap-compacting the last active slot preserves `Cslib.WeightedCut.IsContractionOf`.
 * `Cslib.WeightedCut.pullbackCut_contractCut`, `Cslib.WeightedCut.cutWeight_contractCut`: a cut
   that does not separate `u` and `v` pulls back to the same set, with the same weight.
+* `Cslib.WeightedCut.pullbackCut_id`: pulling a cut back along the identity gives the same cut.
 
 ## References
 
@@ -59,8 +60,8 @@ namespace Cslib.WeightedCut
 
 /-! ### Merging (`mergePair`) and swap-compaction (`embedCompact` / `contractMatrix`) -/
 
-/-- Phase A matrix update when merging active supervertex `v` into `u` (`u ≠ v`): edges incident to
-`v` are redirected to `u`, self-loops at `u` are cleared, and row/column `v` become isolated. -/
+/-- Matrix update when merging active supervertex `v` into `u` (`u ≠ v`): edges incident to `v` are
+redirected to `u`, self-loops at `u` are cleared, and row/column `v` become isolated. -/
 def mergePair {k : ℕ} (W : Fin k → Fin k → ℕ) (u v : Fin k) (i j : Fin k) : ℕ :=
   if i = j ∨ i = v ∨ j = v then 0
   else if i = u then W u j + W v j
@@ -375,7 +376,8 @@ theorem pullbackCut_contractCut {n m : ℕ} (part : Fin n → Fin (m + 1))
   · rfl
 
 /-- Pulling a cut back along the identity gives the same cut. -/
-theorem pullbackCut_id {n : ℕ} (C : Finset (Fin n)) : pullbackCut id C = C := by
+theorem pullbackCut_id {V : Type*} [Fintype V] [DecidableEq V] (C : Finset V) :
+    pullbackCut id C = C := by
   ext x
   simp [pullbackCut]
 

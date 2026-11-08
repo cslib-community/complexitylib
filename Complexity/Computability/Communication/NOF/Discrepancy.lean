@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Communication.NOF.Leaf
 public import Complexity.Computability.Communication.NOF.Randomized
 public import Complexity.Foundations.Data.BitString.Sign
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
@@ -54,6 +55,8 @@ public-coin protocols with error `1 / 2 - γ` on every input
 
 ## Main results
 
+* `Cslib.Communication.NOF.Protocol.isCylinderIntersection_leaf`: the inputs reaching a leaf of a
+  protocol form a cylinder intersection.
 * `Cslib.Communication.NOF.isCylinderIntersection_iff`: cylinder intersections are the sets
   `cylinderIntersection φ`.
 * `Cslib.Communication.NOF.Protocol.abs_sum_mul_signVal_le`: correlation with a protocol on a
@@ -135,6 +138,23 @@ theorem isCylinderIntersection_iff [DecidableEq ι] {C : Set (∀ j, X j)} :
     · simp only [Set.mem_ofPred_eq, view_update_self]
     · ext x
       simp
+
+/-- **Leaves are cylinder intersections**: the inputs reaching a given leaf form a cylinder
+intersection. -/
+theorem Protocol.isCylinderIntersection_leaf [DecidableEq ι] {Z : Type*} (p : Protocol X Z)
+    (l : Fin p.leafCount) : IsCylinderIntersection {x | p.leaf x = l} := by
+  -- The `i`-th cylinder: the inputs that player `i` cannot tell apart from one reaching `l`.
+  refine ⟨fun i => {x | ∃ y, p.leaf y = l ∧ view i y = view i x}, fun i x a => ?_, ?_⟩
+  · simp only [Set.mem_ofPred_eq, view_update_self]
+  · ext x
+    simp only [Set.mem_ofPred_eq, Set.mem_iInter]
+    refine ⟨fun hx i => ⟨x, hx, rfl⟩, fun hx => ?_⟩
+    choose y hy hview using hx
+    rcases isEmpty_or_nonempty ι with hι | ⟨⟨i⟩⟩
+    · -- With no players a protocol is a single leaf.
+      have h1 := p.leafCount_eq_one_of_isEmpty
+      exact Fin.ext (by have := (p.leaf x).isLt; have := l.isLt; omega)
+    · rw [p.leaf_eq_of_view_eq hview (fun j j' => (hy j).trans (hy j').symm) i, hy i]
 
 /-! ### Discrepancy -/
 
