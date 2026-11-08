@@ -1285,6 +1285,13 @@ each statement against the numbered result. Organize modules by subject, not cha
   `D(f) = O(N⁰(f) N¹(f))` relating deterministic and nondeterministic communication.
 - Multiparty number-in-hand protocols, direct-product results, and reductions to streaming,
   sketching and cell-probe lower bounds.
+- **Sign-rank and unbounded error**
+  ([#3262](https://github.com/cslib-community/complexitylib/issues/3262)): the Paturi–Simon
+  characterization is done. Remaining: sign-rank lower bounds, namely Forster's bound
+  `signRank(H_n) ≥ 2^{n/2}` for Hadamard matrices (needs isotropic position), the
+  Alon–Frankl–Rödl counting bound, `signRank(EQ) = 3` on four or more inputs, and the
+  Razborov–Sherstov exponential sign-rank bound for an AC⁰ function, separating `Σ₂^cc` from
+  `UPP^cc`.
 - **Dynamic cell-probe lower bounds**
   ([#3207](https://github.com/cslib-community/complexitylib/issues/3207)): the Fredman–Saks
   chronogram bound for dynamic prefix parity, `log_β n ≤ 128 t_q + 1` with
