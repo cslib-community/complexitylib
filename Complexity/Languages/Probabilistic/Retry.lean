@@ -24,6 +24,8 @@ When one run fails with probability `q` (under answer distributions `h`, as in
 `OracleComp.evalWith`):
 
 * the loop fails with probability exactly `q ^ fuel` (`OracleComp.evalWith_retry_none`);
+* it returns a good result `a` with probability `P(a) (1 + q + ⋯ + q ^ (fuel - 1))`, where `P(a)`
+  is the probability that one run returns `a` (`OracleComp.evalWith_retry_some`);
 * its expected cost is `c (1 + q + ⋯ + q ^ (fuel - 1))` for a run of expected cost `c`
   (`OracleComp.expectedCost_retry`), so at most `2 c` for every fuel when `q ≤ 1 / 2`
   (`OracleComp.expectedCost_retry_le_two_mul`): the expected number of runs is at most `2`.
@@ -46,6 +48,8 @@ follow-up.
 
 * `Cslib.OracleComp.mem_supportWith_retry`: a returned result is good and a result of one run.
 * `Cslib.OracleComp.evalWith_retry_none`: the loop fails with probability `q ^ fuel`.
+* `Cslib.OracleComp.evalWith_retry_some`: the loop returns a good result `a` with probability
+  `P(a) (1 + q + ⋯ + q ^ (fuel - 1))`, where `P(a)` is the probability that one run returns `a`.
 * `Cslib.OracleComp.expectedCost_retry`, `Cslib.OracleComp.expectedCost_retry_le_two_mul`: the
   expected cost of the loop is a geometric sum, at most twice a run when `q ≤ 1 / 2`.
 * `Cslib.OracleComp.mem_supportWith_pi_iff`, `Cslib.OracleComp.expectedCost_pi`,
@@ -124,6 +128,39 @@ theorem evalWith_retry_none_le {q : ℝ≥0∞}
     evalWith h (retry good program fuel) none ≤ q ^ fuel := by
   rw [evalWith_retry_none]
   gcongr
+
+/-- The loop returns `a` with probability `P(a) (1 + q + ⋯ + q ^ (fuel - 1))` when `a` is good,
+and never otherwise, where `P(a)` is the probability that one run returns `a` and `q` is the
+probability that one run fails. -/
+theorem evalWith_retry_some (fuel : ℕ) (a : α) :
+    evalWith h (retry good program fuel) (some a) =
+      (if good a then evalWith h program a else 0) *
+        ∑ i ∈ Finset.range fuel, (evalWith h program).toOuterMeasure {a | ¬ good a} ^ i := by
+  classical
+  induction fuel with
+  | zero => simp
+  | succ fuel ih =>
+    have hterm : ∀ b, evalWith h program b *
+        evalWith h (if good b then pure (some b) else retry good program fuel) (some a) =
+        (if b = a then (if good a then evalWith h program a else 0) else 0) +
+          {x | ¬ good x}.indicator (evalWith h program) b *
+            evalWith h (retry good program fuel) (some a) := by
+      intro b
+      by_cases hb : good b
+      · by_cases hba : b = a
+        · subst hba
+          simp [hb]
+        · simp [hb, hba, Ne.symm hba]
+      · by_cases hba : b = a
+        · subst hba
+          simp [hb]
+        · simp [hb, hba]
+    rw [retry_succ, evalWith_bind, PMF.bind_apply]
+    refine (tsum_congr hterm).trans ?_
+    rw [tsum_add, tsum_ite_eq, ENNReal.tsum_mul_right, ← PMF.toOuterMeasure_apply, ih,
+      Finset.sum_range_succ', pow_zero]
+    simp only [pow_succ', ← Finset.mul_sum]
+    ring
 
 variable (cost : ι → ℝ≥0∞)
 
