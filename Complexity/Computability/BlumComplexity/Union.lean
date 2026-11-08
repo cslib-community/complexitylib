@@ -17,9 +17,9 @@ import Mathlib.Order.SuccPred.Nat
 
 For every Blum complexity measure `Φ` and every uniformly computable family of bounds
 `T 0, T 1, …` that increases pointwise in the index, there is a single computable bound `t` with
-`C_t = ⋃ i, C_{T i}`. This is the union theorem, attributed to McCreight and Meyer
-[McCreight and Meyer, *Classes of computable functions defined by bounds on
-computation*][McCreightMeyer1969].
+`C_t = ⋃ i, C_{T i}`. This is the union theorem [Odifreddi1999, Theorem VII.3.7], attributed
+there to McCreight and Meyer [McCreight and Meyer, *Classes of computable functions defined by
+bounds on computation*][McCreightMeyer1969].
 
 ## Construction
 
@@ -51,7 +51,8 @@ content for every program, including programs that diverge somewhere: a program 
 only assumes `T i ≤ T (i + 1)` almost everywhere, and `union_theorem_of_directed` only assumes that
 the family is directed under almost-everywhere domination (`Directed (· ≤ᶠ[atTop] ·) T`). Both are
 derived here from `union_theorem`, applied to the partial suprema `partialSups (T · n)` of the
-family. The exact hypotheses of the source have not been checked against the paper.
+family. `union_theorem` has the hypotheses of [Odifreddi1999, Theorem VII.3.7]; those of the
+original paper have not been checked.
 
 ## Main results
 
@@ -66,6 +67,7 @@ family. The exact hypotheses of the source have not been checked against the pap
 
 ## References
 
+* [P. Odifreddi, *Classical Recursion Theory, Volume II*][Odifreddi1999]
 * [E. M. McCreight and A. R. Meyer, *Classes of computable functions defined by bounds on
   computation*][McCreightMeyer1969]
 * [A. Borodin, *Computational complexity and the existence of complexity gaps*][Borodin1972]
@@ -233,9 +235,9 @@ theorem exists_union_bound {T : ℕ → ℕ → ℕ} (hT : Computable₂ T)
   · obtain ⟨N, hN⟩ := eventually_atTop.1 hc
     exact exists_index Φ T c N hN
 
-/-- **The union theorem** [McCreightMeyer1969]. For a uniformly computable family of bounds `T`
-that increases pointwise in the index, some computable `t` has `C_t = ⋃ i, C_{T i}`. The bound is
-diagonal: `t n = T i n` for some `i ≤ n`. -/
+/-- **The union theorem** [Odifreddi1999, Theorem VII.3.7] [McCreightMeyer1969]. For a uniformly
+computable family of bounds `T` that increases pointwise in the index, some computable `t` has
+`C_t = ⋃ i, C_{T i}`. The bound is diagonal: `t n = T i n` for some `i ≤ n`. -/
 theorem union_theorem {T : ℕ → ℕ → ℕ} (hT : Computable₂ T)
     (hmono : ∀ i n, T i n ≤ T (i + 1) n) :
     ∃ t : ℕ → ℕ, Computable t ∧ (∀ n, ∃ i ≤ n, t n = T i n) ∧
