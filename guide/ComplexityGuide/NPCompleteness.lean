@@ -49,6 +49,7 @@ import Complexity.Logics.Propositional.CSP.Planar.Normalization
 import Complexity.Logics.Propositional.CSP.Planar.OneInThree.Gadget
 import Complexity.Algorithms.Lean.EdgeCSP.Forest.Blossom
 import Complexity.Algorithms.Lean.EdgeCSP.Forest.Optimality
+import Complexity.Computability.PolyTime.CSP.Edge.Forest.Spec
 import Complexity.Foundations.Data.BitString.CyclicDifference
 import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
 import Complexity.Tactic.PolyTime
@@ -89,6 +90,7 @@ import Complexity.Logics.Propositional.CSP.Planar.Normalization
 import Complexity.Logics.Propositional.CSP.Planar.OneInThree.Gadget
 import Complexity.Algorithms.Lean.EdgeCSP.Forest.Blossom
 import Complexity.Algorithms.Lean.EdgeCSP.Forest.Optimality
+import Complexity.Computability.PolyTime.CSP.Edge.Forest.Spec
 import Complexity.Foundations.Data.BitString.CyclicDifference
 import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
 import Complexity.Tactic.PolyTime
@@ -978,8 +980,65 @@ Complete actual-run clients are in `ComplexityTests/EdgeCSPForestEvents.lean`,
 `ComplexityTests/EdgeCSPForestTerminal.lean` and
 `ComplexityTests/EdgeCSPForestOptimality.lean`. They include nonempty preparation,
 repeated original constraints, timestamp zero, odd parity and sparse labels.
-This layer proves fresh-search correctness. Native compilation, whole-blossom
+These mathematical endpoints compose with the native compiler below. Whole-blossom
 contraction/lifting, recursive solving and the full planar dichotomy remain separate.
+
+
+# Native Fresh Forest Search
+
+Import `Complexity.Computability.PolyTime.CSP.Edge.Forest.Spec` for the complete
+fresh-search entry point. Its input is an explicit-table CSP with binary original
+names and one finite occurrence-bit buffer. Table arities and output indices are
+binary, while internal constraint/scope positions are unary. All clocks are
+funded by actual lists, including on malformed input:
+
+```lean
+open Cslib.Complexity.CSP.EdgeForest Turing.MultiTapeTM in
+example : ComputableInPolyTime run encInput (encOption encResultCode) := by
+  fun_prop
+```
+
+Correct buffer width alone gives exact agreement and decoding, without semantic
+or forest-invariant hypotheses:
+
+```lean
+open Cslib.Logic.PL.CSP Cslib.Complexity.CSP Cslib.Complexity.CSP.EdgeForest in
+example (input : Input)
+    (hw : input.labels.length = (incidenceList input.body).length) :
+    (run input).bind (decode input.body) =
+      some (Forest.search Table.sem (EdgeAugmenting.labeling input.body input.labels)) :=
+  decode_run input hw
+```
+
+{name}`Cslib.Complexity.CSP.EdgeForest.run_eq_none_iff` proves that `none` means
+width mismatch. A correctly sized buffer never exhausts the clock. Logs, roots,
+partial current copies and timestamps are retained; decoding external codes
+rejects invalid indices. This establishes no semantic correctness for an event
+on invalid input. With the model hypotheses, the composed specification applies
+to the actual decoded result:
+
+```lean
+open Cslib.Logic.PL.CSP Cslib.Complexity.CSP Cslib.Complexity.CSP.EdgeForest in
+example (input : Input)
+    (hw : input.labels.length = (incidenceList input.body).length)
+    (hF : EdgeInstance input.body)
+    (hf : ValidLabeling Table.sem (EdgeAugmenting.labeling input.body input.labels))
+    (hM : EdgeInstance.EvenConstraints Table.sem input.body)
+    {m : Forest.Meeting input.body}
+    (hr : (run input).bind (decode input.body) = some (.augment m)) :
+    m.walk.IsAugmenting Table.sem (EdgeAugmenting.labeling input.body input.labels) := by
+  have hs := run_spec input hw hF hf hM
+  rw [hr] at hs
+  exact hs.1
+```
+
+The same specification supplies optimality for exhaustion and valid
+count-preserving preparation for a blossom. This is a native fresh-search routine,
+without an improving comparison input. The existing augmentation API is preserved
+through the shared buffer module. `ComplexityTests/EdgeCSPForestNative.lean` checks
+actual executions, including an end-to-end valid augmentation to zero defects.
+Whole-blossom contraction/lifting, recursive solving, geometric recognition and
+the full planar dichotomy remain open.
 
 
 # Finite Crossover Gadget Semantics

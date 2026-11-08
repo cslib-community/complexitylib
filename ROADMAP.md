@@ -467,6 +467,8 @@ index links to canonical definitions rather than keeping a second set.
   Fresh chronological forest search now derives terminal f-DAGs, valid augmentations and
   source-strength prepared blossoms from its actual execution; fresh exhaustion proves
   optimality. Whole-blossom contraction/lifting and recursive native solving remain open.
+  The fresh search also has an ordinary native polynomial-time compiler, exact width-only
+  decoding agreement and a composed semantic specification; it still stops at its first event.
 
 - **Boolean Schaefer dichotomy** ([#2822](https://github.com/cslib-community/complexitylib/issues/2822)):
   the stack proves native polynomial-time tractability for all six common-polymorphism cases

@@ -6,9 +6,9 @@ Authors: OpenAI
 
 module
 
-import Complexity.Computability.PolyTime.CSP.Edge.Forest.Agreement
-import Complexity.Computability.PolyTime.CSP.Edge.Forest.PolyTime
+import Complexity.Computability.PolyTime.CSP.Edge.Forest.Spec
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
+import Mathlib.Tactic.FinCases
 
 /-! Actual native forest runs and exact source/decoding agreement on raw explicit tables. -/
 
@@ -33,6 +33,31 @@ example : run doubled = some (.inr (.inl ⟨[0, 1], [], ⟨0, []⟩, 1⟩)) := b
 example : (run doubled).bind (decode doubled.body) =
     some (Forest.search Table.sem (labeling doubled.body doubled.labels)) :=
   decode_run doubled (by decide)
+
+private def doubledMeeting : Forest.Meeting doubled.body :=
+  ⟨[0, 1], [], ⟨⟨⟨0, by decide⟩, ⟨0, by decide⟩⟩, []⟩,
+    ⟨⟨0, by decide⟩, ⟨1, by decide⟩⟩⟩
+
+-- The decoded native augmentation composes with the mathematical endpoint, actually
+-- producing a valid zero-defect labeling from this two-defect input.
+example : ValidLabeling Table.sem
+    (doubledMeeting.walk.flip (labeling doubled.body doubled.labels)) ∧
+    (defects (doubledMeeting.walk.flip (labeling doubled.body doubled.labels))).card = 0 := by
+  have he : EdgeInstance doubled.body := by unfold EdgeInstance; decide
+  have hv : ValidLabeling Table.sem (labeling doubled.body doubled.labels) := by
+    unfold ValidLabeling
+    decide
+  have hm : EdgeInstance.EvenConstraints Table.sem doubled.body := by
+    intro i
+    fin_cases i <;> exact {
+      isDeltaMatroid := { nonempty := by change ∃ t, _; decide, exchange := by decide }
+      parity_eq := by decide }
+  have hd : (defects (labeling doubled.body doubled.labels)).card = 2 := by decide
+  have hs := run_spec doubled (by decide) he hv hm
+  have hr : (run doubled).bind (decode doubled.body) = some (.augment doubledMeeting) := by
+    decide
+  rw [hr] at hs
+  exact ⟨hs.2.1, by have := hs.2.2; omega⟩
 
 private def triangle : Input := ⟨[(inequality, [0, 1]), (equality, [1, 2]), (equality, [2, 0])],
   [true, false, false, false, false, false]⟩

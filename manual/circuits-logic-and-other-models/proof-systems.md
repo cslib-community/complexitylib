@@ -298,8 +298,8 @@ half-Hamming exchange bound. `none` is a helper failure or width rejection, not 
 answer. [Native augmentation tests](../../ComplexityTests/EdgeCSPAugmentingNative.lean) exercise
 returned paths, both phases, width rejection, empty/nullary constraints and sparse binary names.
 The supplied improving comparison remains necessary for this two-phase routine. The fresh search
-below has no comparison input; native compilation of that search and the full solver are outside
-this layer.
+below has no comparison input, and its native compiler is documented separately below.
+Whole-blossom contraction/lifting and the full solver remain open.
 
 The reusable scan lives in `CSP.Occurrence.Enumeration`: `incidenceList` and
 `occurrences_eq_map_incidenceList` connect typed occurrences to the existing ordered record list.
@@ -398,9 +398,45 @@ the local disagreement-count lemma directly.
 [optimality tests](../../ComplexityTests/EdgeCSPForestOptimality.lean) cover both ancestor cases,
 nonempty preparation, repeated constraints, timestamp zero, odd parity and sparse binary names.
 The exhausted example with a connected feasible-pair graph still has two unavoidable defects.
-These are mathematical correctness and finite execution results. Native fresh-search cost,
-whole-blossom contraction/lifting and the complete solver/dichotomy remain outside this layer;
+These mathematical results compose with the native compiler below. Whole-blossom
+contraction/lifting and the complete solver/dichotomy remain outside this layer;
 [#3091](https://github.com/cslib-community/complexitylib/issues/3091) stays open.
+
+## Native fresh forest search
+
+Import `Complexity.Computability.PolyTime.CSP.Edge.Forest.Spec` for the program, native
+certificate, exact bridge and semantic specification. The namespace is
+`Cslib.Complexity.CSP.EdgeForest`. `Input` contains an explicit `CSP Table Nat` and one
+occurrence-bit buffer in constraint-then-port order. `encInput` frames the CSP before the
+Boolean list. Original names, table arities and public output occurrence indices are binary;
+internal work records use unary constraint/scope positions. Every clock traverses actual lists.
+
+`computableInPolyTime_run` is an ordinary native polynomial-time certificate on the complete
+encoded input, including malformed tables and arbitrary buffers. The outer clock is the actual
+occurrence count plus one; stopped states freeze the first event. The full log remains in its
+original encoded field, and final output conversion happens once after iteration.
+
+`run_eq` requires only exact buffer width and identifies the complete output with the existing
+`Forest.search`. `run_eq_none_iff` shows that width mismatch is the only rejection: `none` is not
+an unsatisfiability answer. `code` and `decode` retain original roots, newest-first expansions,
+partial meetings and implicit timestamps; external out-of-range indices are rejected.
+`decode_run` recovers the exact typed source result from a correctly sized buffer. These
+representation theorems assume no edge condition, validity or evenness.
+
+`run_spec` adds the edge-instance condition, valid initial labels and even delta-matroid
+constraints. It transfers the three mathematical guarantees to the actual decoded native result:
+optimality, valid two-defect augmentation, or valid defect-count-preserving blossom preparation.
+Decoded event tags alone establish none of these semantic claims. There is no improving comparison
+input, contraction step or recursive solver in this routine.
+
+`PolyTime.CSP.Edge.Buffer` holds the shared enumeration/label operations and certificates;
+the existing `EdgeAugmenting` namespace and public imports remain available. The
+[native forest tests](../../ComplexityTests/EdgeCSPForestNative.lean) cover all three outcomes,
+partial meetings, repeated original constraints, scan order, malformed tables, width rejection,
+invalid indices and names up to `2^250`. An end-to-end client derives a valid zero-defect labeling
+from the actual decoded augmentation. The existing native augmentation regression suite remains
+unchanged. Full recursive solving, geometric realization/recognition and the planar dichotomy
+remain open under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
 
 ## Finite crossover gadget semantics
 

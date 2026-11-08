@@ -2782,6 +2782,12 @@ public import Complexity.Computability.PolyTime.CSP.AffineTemplate
 public import Complexity.Computability.PolyTime.CSP.Boolean
 public import Complexity.Computability.PolyTime.CSP.CNFTemplate
 public import Complexity.Computability.PolyTime.CSP.Edge.Augmenting
+public import Complexity.Computability.PolyTime.CSP.Edge.Buffer
+public import Complexity.Computability.PolyTime.CSP.Edge.Forest.Agreement
+public import Complexity.Computability.PolyTime.CSP.Edge.Forest.Code
+public import Complexity.Computability.PolyTime.CSP.Edge.Forest.PolyTime
+public import Complexity.Computability.PolyTime.CSP.Edge.Forest.Program
+public import Complexity.Computability.PolyTime.CSP.Edge.Forest.Spec
 public import Complexity.Computability.PolyTime.CSP.Gadget
 public import Complexity.Computability.PolyTime.CSP.Gadget.Size
 public import Complexity.Computability.PolyTime.CSP.Occurrence
