@@ -412,8 +412,7 @@ theorem LearnsStateless.card_mul_sq_sub_one_le_two_mul_add_one {κ : Type} [Fint
     rw [sub_nonneg, div_le_one hdpos]
     exact hd1
   have hpos : 0 < τ ^ 2 - 1 / d := sub_pos.2 hγτ
-  have h2 : (1 - 1 / d) / ((1 - 2 * ε) ^ 2 - 1 / d) ≤ (1 - 1 / d) / (τ ^ 2 - 1 / d) :=
-    div_le_div_of_nonneg_left hnum hpos (by linarith)
+  have h2 : (1 - 1 / d) / ((1 - 2 * ε) ^ 2 - 1 / d) ≤ (1 - 1 / d) / (τ ^ 2 - 1 / d) := by gcongr
   have h' : d ≤ (2 * q + 1) * ((1 - 1 / d) / (τ ^ 2 - 1 / d)) := by
     calc d ≤ _ := h
       _ ≤ 2 * q * ((1 - 1 / d) / (τ ^ 2 - 1 / d)) + (1 - 1 / d) / (τ ^ 2 - 1 / d) := by

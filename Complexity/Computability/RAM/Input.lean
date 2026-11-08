@@ -292,8 +292,7 @@ theorem time_prepare_append_le {R b : ℕ} (hR : 5 ≤ R) (tail : Program) (inpu
       have hclear : R ≤ R * ((input.length + 1) * (bitLength (R + 5) + b + 1)) := by
         exact Nat.le_mul_of_pos_right _ (by positivity)
       nlinarith only [hfirst, hclear]
-    _ ≤ (24 + R) * (input.length + 1) * ((bitLength (R + 5) + 2) * b) :=
-      Nat.mul_le_mul_left _ hbound
+    _ ≤ (24 + R) * (input.length + 1) * ((bitLength (R + 5) + 2) * b) := by gcongr
     _ = _ := by ring
 
 end Cslib.RAM.Input

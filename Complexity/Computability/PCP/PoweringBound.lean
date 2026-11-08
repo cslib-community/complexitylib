@@ -115,8 +115,7 @@ private theorem sq_le_mul_add_of_le {a e x P : ℝ} (ha : 0 ≤ a) (hae : a ≤ 
   · have h₁ : a ^ 2 * (e + P) ≤ e ^ 2 * (a + P) := by
       nlinarith [mul_nonneg (mul_nonneg ha (ha.trans hae)) (sub_nonneg.2 hae),
         mul_nonneg hP (mul_nonneg (sub_nonneg.2 hae) (add_nonneg ha (ha.trans hae)))]
-    have h₂ : e ^ 2 * (a + P) ≤ x * (e + P) * (a + P) :=
-      mul_le_mul_of_nonneg_right h (add_nonneg ha hP)
+    have h₂ : e ^ 2 * (a + P) ≤ x * (e + P) * (a + P) := by gcongr
     nlinarith
 
 /-- Truncating the increasing second-moment ratio at any nonnegative threshold gives a linear
@@ -133,8 +132,7 @@ private theorem mul_min_le_div {c B B' T ε u δ : ℝ} (hc : 0 ≤ c) (hB : 0 �
     mul_le_mul_of_nonneg_left (min_le_right _ _) (sq_nonneg T)
   have hε₀ : 0 ≤ ε := hm₀.trans hmε
   calc c ^ 2 / (c + T ^ 2 * δ + B') * m = c ^ 2 * m / (c + T ^ 2 * δ + B') := by ring
-    _ ≤ c ^ 2 * m / (c + T ^ 2 * m + B) :=
-        div_le_div_of_nonneg_left (by positivity) (by positivity) (by linarith)
+    _ ≤ c ^ 2 * m / (c + T ^ 2 * m + B) := by gcongr
     _ ≤ c ^ 2 * ε / (c + T ^ 2 * ε + B) := by
         rw [div_le_div_iff₀ (by positivity) (by positivity)]
         nlinarith [mul_nonneg (mul_nonneg (sq_nonneg c) (add_nonneg hc.le hB)) (sub_nonneg.2 hmε)]
@@ -607,8 +605,7 @@ theorem le_unsatVal_power_of_le (H : ℕ) (hH : 2 * H + 1 < T)
   have hlam : R.graph.spectralExpansion < 1 := hμ.trans_lt hμ₁
   have hB : 0 ≤ 2 * (T : ℝ) / (1 - R.graph.spectralExpansion) :=
     div_nonneg (by positivity) (sub_pos.2 hlam).le
-  have hBB : 2 * (T : ℝ) / (1 - R.graph.spectralExpansion) ≤ 2 * T / (1 - μ) :=
-    div_le_div_of_nonneg_left (by positivity) (sub_pos.2 hμ₁) (by linarith)
+  have hBB : 2 * (T : ℝ) / (1 - R.graph.spectralExpansion) ≤ 2 * T / (1 - μ) := by gcongr
   rcases isEmpty_or_nonempty D with hD | hD
   · -- without labels, `R` has no darts and its value is zero
     have h₀ : R.toConstraintGraph.unsatVal = 0 := by
