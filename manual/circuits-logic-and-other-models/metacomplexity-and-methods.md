@@ -1116,17 +1116,46 @@ from impossible capacity and cap overflow, the unique empty-assignment term,
 padded truncated reconstruction and exact native grouped readback/resource
 composition.
 
-This completes the native-to-grouped finite-sum identity, not its remaining
-identification with `systemIncidencePolynomial`. At the computed cap and groups,
-the next exact target is equality of their images under `truncRingHom (n+1) (n+1)`:
-the sum of `rankIncidencePolynomial` over actual decoded arrays versus
-`systemIncidencePolynomial k (n,sys)`. Prove that equality from the partition of
-original test incidences, canonical listed integer lifts and the finite subset
-families; it is not an assumption of a new count theorem. Only then does the
-already proved `rootCount_eq_incidenceResidue` connect this native output to the
-original assignment count. The high-incidence/parity/sharper-sparsification and
-eta-time absorption/rescaling stages, the old complete counter's extra log-log
-factor, common-occurrence weighted rows and raw-row/table/graph/ALL-main gaps
-remain open. The source locator is OpenAI2026ETH, Appendix D.3, Lemma D.2,
-PDF pp.55–56, especially the unique-index/zero-unused-bit and contraction-sum
-paragraphs; no full 1575 Lemma 3.2 or Theorem 7.1 endpoint is claimed.
+This completes the native-to-grouped fitting-rank identity. The next section removes
+these array/rank indices from the global sum. Original-equation coordinate and
+coefficient identification, complete sharper counting and the broader frontend/graph
+objectives remain separate. The source locator is OpenAI2026ETH, Appendix D.3,
+Lemma D.2, PDF pp.55–56, especially the unique-index/zero-unused-bit and
+contraction-sum paragraphs; no full 1575 Lemma 3.2 or Theorem 7.1 is claimed.
+
+
+### Remove the global array and rank indices
+
+Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceSelectionSum`.
+`sum_rankIncidencePolynomial_eq_selectionPolynomial` replaces the complete array/rank sum
+by `selectionPolynomial`: choose a sublist of each actual `pairInc` block, keep exactly
+families whose total length is at most the cap, and multiply the corresponding group
+coefficients and declared free-variable weight. This is an exact identity over integer
+polynomials. The proof recovers the unique array from the sublist lengths and the unique
+fitting ranks from sublist coverage, so it preserves multiplicity even for repeated
+input equations. Dead arrays contribute zero. `mem_selectionFamilies` exposes the
+componentwise sublist condition without unfolding the mathematical enumeration.
+
+`sumArrays_eq_selectionResidue` connects this family sum directly to the actual native
+scalar output for $n\ge1$. These finite sets specify the output; the native machine
+continues to decode binary indices, write networks and stream contractions. Its existing
+binary time includes the actual degree-array traversal, and its peak workspace remains
+polynomial in the original encoding. No output-size bound is substituted for runtime and
+no extra log-log factor is discarded.
+
+From the repository root run
+`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceSelectionSum`.
+The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceSelectionSum.lean)
+checks separate positions for repeated equations, a cap that admits a singleton and one
+that rejects it, native readback for a nonconstant equation, no equations and a constant
+contradiction, and composition with the existing binary time/space certificate.
+
+The remaining original-count equality compares this `selectionPolynomial`, in the
+truncated modular ring at the computed parameters, with `systemIncidencePolynomial`.
+Transport local test positions to original row indices and identify canonical listed
+integer monomial counts with finite equation lifts; preserve degree and free-variable
+weight through that transport. `rootCount_eq_incidenceResidue` becomes applicable only
+after this equality is proved. Original count correctness, high-incidence/parity/sparsification composition,
+eta-time absorption/rescaling, common-occurrence/raw-row/table/graph and ALL-main remain
+open. The source is OpenAI2026ETH, Lemma D.2, PDF pp.55–56; this is not the complete
+STOC1575 Lemma 3.2 or Theorem 7.1.

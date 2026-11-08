@@ -1166,12 +1166,24 @@ global grouped incidence sum for n≥1. No desired output/coefficient congruence
 assumed, and no exhaustive evaluator replaces the certified native machine.
 Its actual binary time and polynomial original-input peak space are unchanged.
 
-The precise remaining equality is between the images under
-`truncRingHom (n+1) (n+1)` of (1) the sum of `rankIncidencePolynomial` over the
-actual decoded arrays and (2) `systemIncidencePolynomial k (n,sys)`. Derive it
-from original test-incidence partitioning, canonical listed integer lifts and
-finite subset-family reindexing. It is not a premise smuggled into a count
-endpoint. Original-assignment count correctness, complete sharper-counter
+`IncidenceSelectionSum` now removes all array and rank indices from that global
+sum. `sum_rankIncidencePolynomial_eq_selectionPolynomial` is an exact integer
+polynomial identity: actual fitting ranks select sublists, their lengths recover
+the unique computed array, and unique sublist coverage proves a bijection onto
+all block families of total size at most the cap. Dead arrays vanish before
+reindexing. `sumArrays_eq_selectionResidue` connects this capped family sum to
+the actual native scalar output, preserving its binary time and peak-space
+certificate without executing the mathematical family enumeration.
+
+The precise remaining equality is now between the images under
+`truncRingHom (n+1) (n+1)` of `selectionPolynomial` at the computed parameters and
+`systemIncidencePolynomial k (n,sys)`. Reindex selected block incidences through
+the residue-class/local-test-position bijection into original test/variable
+families, preserving total degree and the free-variable weight. Identify the
+canonical listed integer monomial counts with the finite equation lift and
+transport the per-test coefficient products. The array/rank reindexing is proved;
+this original-coordinate/coefficient identity is still not a theorem premise.
+Original-assignment count correctness, complete sharper-counter
 branch/parity/sparsification composition and actual eta-time absorption/rescaling
 remain open. The old complete counter still retains its extra log-log factor;
 common-occurrence weighted rows, arbitrary variable-length raw rows, tables,
