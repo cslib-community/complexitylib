@@ -61,8 +61,9 @@ chapter notes of [WilliamsonShmoys2011], Chapter 2) is not formalized.
 * `IsFarthestFirst.pairwise_lt`: separation of a farthest-first traversal.
 * `IsFarthestFirst.centerDist_le_two_mul`, `centerDist_gonzalez_le_two_mul`: every point of `P` is
   within `2 r` of the centers when some `k` centers cover `P` within `r`.
-* `radius_gonzalez_le_two_mul`, `radius_gonzalez_le_two_mul_radius`: on a finite space the radius
-  is at most twice the optimum, and at most twice the radius of every set of at most `k` centers.
+* `radius_gonzalez_le_two_mul`, `radius_gonzalez_le_two_mul_radius`,
+  `radius_gonzalez_le_two_mul_optRadius`: on a finite space the radius is at most twice the
+  optimum, and at most twice the radius of every set of at most `k` centers.
 
 ## References
 
@@ -305,6 +306,14 @@ theorem radius_gonzalez_le_two_mul_radius (hsymm : ∀ x y, d x y = d y x)
     (hS : S.card ≤ k) {r : α} (hr : radius d S ≤ r) :
     radius d (gonzalez d P k).toFinset ≤ ((2 * r : α) : WithTop α) :=
   radius_gonzalez_le_two_mul hsymm htri hP ((optRadius_le_radius hS).trans hr)
+
+/-- **The 2-approximation against the optimum value:** with `k ≥ 1` centers the optimal radius
+is finite, and Gonzalez's radius is at most twice it. -/
+theorem radius_gonzalez_le_two_mul_optRadius (hsymm : ∀ x y, d x y = d y x)
+    (htri : ∀ x y z, d x z ≤ d x y + d y z) (hP : ∀ v, v ∈ P) {k : ℕ} (hk : 0 < k) :
+    radius d (gonzalez d P k).toFinset ≤
+      ((2 * (optRadius d k).untop (optRadius_lt_top hk).ne : α) : WithTop α) :=
+  radius_gonzalez_le_two_mul hsymm htri hP (WithTop.coe_untop _ _).ge
 
 end Approximation
 
