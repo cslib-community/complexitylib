@@ -33,6 +33,9 @@ The bound is tight, as the note at the end of Section 5.2 observes. In the *even
 `2 ^ (n - 1)` sets of a given parity (`PIR.ncard_support_evenTwoServer`). These sets have an
 injective encoding by `n - 1` bits (`PIR.exists_injOn_evenTwoServer`).
 
+The proofs use privacy only through supports: a set possible for the server `s` and the index `j`
+is possible for `s` and every index `h`, as in observation 1 of the source.
+
 Only linear-summation schemes are covered. Lower bounds for general two-server schemes are open in
 the source and are not formalized here.
 
@@ -250,14 +253,14 @@ theorem isLinearSummation_twoServer : (twoServer ι).IsLinearSummation where
 variable (h₀ : ι)
 
 /-- Make a set even by flipping the position `h₀` if needed. -/
-def makeEven (u : ι → Bool) : ι → Bool :=
+private def makeEven (u : ι → Bool) : ι → Bool :=
   u + Pi.single h₀ (∑ h, u h)
 
-theorem sum_makeEven (u : ι → Bool) : ∑ h, makeEven h₀ u h = false := by
+private theorem sum_makeEven (u : ι → Bool) : ∑ h, makeEven h₀ u h = false := by
   simp only [makeEven, Pi.add_apply, sum_add_distrib, sum_pi_single', mem_univ, ite_true]
   exact BooleanRing.add_self _
 
-theorem makeEven_add_single (u : ι → Bool) (i : ι) (b : Bool) :
+private theorem makeEven_add_single (u : ι → Bool) (i : ι) (b : Bool) :
     makeEven h₀ (u + Pi.single i b) = makeEven h₀ u + Pi.single i b + Pi.single h₀ b := by
   have hsum : ∑ h, (u + Pi.single i b : ι → Bool) h = ∑ h, u h + b := by
     simp only [Pi.add_apply, sum_add_distrib, sum_pi_single', mem_univ, ite_true]
@@ -275,7 +278,7 @@ noncomputable def evenTwoServer : Scheme ι Bool Unit (ι → Bool) Bool where
   answer _ x a := x ⬝ᵥ a
   reconstruct _ _ a := a false + a true
 
-theorem eval_serverQuery_evenTwoServer (σ : Bool) (i : ι) :
+private theorem eval_serverQuery_evenTwoServer (σ : Bool) (i : ι) :
     ProbComp.eval ((evenTwoServer h₀).serverQuery σ i) =
       (PMF.uniformOfFintype (ι → Bool)).map fun u => makeEven h₀ u + Pi.single i σ := by
   rw [Scheme.eval_serverQuery, evenTwoServer]
@@ -334,7 +337,7 @@ theorem sum_of_mem_support_evenTwoServer {σ : Bool} {i : ι} {v : ι → Bool}
 
 omit [DecidableEq ι] in
 /-- Sets of the same parity that agree outside `h₀` are equal. -/
-theorem injOn_restrict_of_sum_eq (σ : Bool) :
+private theorem injOn_restrict_of_sum_eq (σ : Bool) :
     Set.InjOn (fun v : ι → Bool => fun h : {h // h ≠ h₀} => v h) {v | ∑ h, v h = σ} := by
   classical
   intro v hv w hw hvw
@@ -365,14 +368,15 @@ theorem ncard_support_evenTwoServer (σ : Bool) (i : ι) :
   rwa [Set.ncard_univ, Nat.card_eq_fintype_card, Fintype.card_fun, Fintype.card_bool,
     Fintype.card_subtype_compl, Fintype.card_subtype_eq] at h
 
-/-- `n - 1` bits encode the queries of each server of the even-set scheme. -/
-theorem exists_injOn_evenTwoServer (σ : Bool) (i : ι) :
+/-- `n - 1` bits encode the queries of each server of the even-set scheme: one encoding, for
+every index. -/
+theorem exists_injOn_evenTwoServer (σ : Bool) :
     ∃ enc : (ι → Bool) → BitString (Fintype.card ι - 1),
-      Set.InjOn enc (ProbComp.eval ((evenTwoServer h₀).serverQuery σ i)).support := by
+      ∀ i, Set.InjOn enc (ProbComp.eval ((evenTwoServer h₀).serverQuery σ i)).support := by
   have hcard : Fintype.card {h // h ≠ h₀} = Fintype.card ι - 1 := by
     rw [Fintype.card_subtype_compl, Fintype.card_subtype_eq]
   let e := Fintype.equivFinOfCardEq hcard
-  refine ⟨fun v k => v (e.symm k), ?_⟩
+  refine ⟨fun v k => v (e.symm k), fun i => ?_⟩
   intro v hv w hw hvw
   refine injOn_restrict_of_sum_eq h₀ σ (sum_of_mem_support_evenTwoServer h₀ hv)
     (sum_of_mem_support_evenTwoServer h₀ hw) (funext fun h => ?_)

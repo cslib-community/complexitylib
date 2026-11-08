@@ -44,13 +44,19 @@ to output both `x j` and `y j`.
 With that step, the source's counting argument goes through (`InteractiveScheme.injective_leaf`):
 for fixed coins, the transcript determines the database. So every index has at least `2 ^ n`
 possible transcripts (`InteractiveScheme.two_pow_card_le_ncard_transcripts`), the protocol tree
-has at least `2 ^ n` leaves, and the protocol sends at least `n` bits on some input
-(`InteractiveScheme.card_le_depth`). The privacy hypothesis is weaker than the source's, which
-covers the whole view of the server; the server's own coins are independent of `i` anyway. The
-server sending the database attains the bound (`InteractiveScheme.download`), so a scheme sending
-at most `c` bits exists exactly when `n ≤ c` (`InteractiveScheme.exists_iff`).
+has at least `2 ^ n` leaves, and the protocol has depth at least `n`
+(`InteractiveScheme.card_le_depth`). Communication is measured by `Protocol.depth`, the worst-case
+number of bits over all branches of the protocol tree, reachable or not. The privacy hypothesis
+asks only that the transcript law be independent of `i`. This is weaker than privacy of the
+server's whole view, since the server's own coins do not depend on `i` anyway. The proofs use
+privacy only through supports: a transcript possible for `(x, i)` is possible for `(x, j)`. The
+server sending the database attains the bound (`InteractiveScheme.download`), so a scheme of
+protocol depth at most `c` exists exactly when `n ≤ c` (`InteractiveScheme.exists_iff`).
 
-The server is Alice and the user is Bob in `Communication.Protocol`.
+The server is Alice and the user is Bob in `Communication.Protocol`. With uniform bit-string coins
+and leaves labelled by `Bool`, a scheme would be a `Communication.PrivateCoin` protocol. Here the
+leaves are labelled by functions of the user's view, and the user's coins may depend on its index,
+so `InteractiveScheme` is a separate structure.
 
 ## Main definitions
 
@@ -70,10 +76,10 @@ The server is Alice and the user is Bob in `Communication.Protocol`.
 * `Cslib.Crypto.Protocols.PIR.InteractiveScheme.two_pow_card_le_ncard_transcripts`: at least
   `2 ^ n` possible transcripts for each index.
 * `Cslib.Crypto.Protocols.PIR.InteractiveScheme.two_pow_card_le_leafCount`,
-  `Cslib.Crypto.Protocols.PIR.InteractiveScheme.card_le_depth`: at least `2 ^ n` leaves and `n`
-  bits.
-* `Cslib.Crypto.Protocols.PIR.InteractiveScheme.exists_iff`: one server needs exactly `n` bits,
-  with or without interaction.
+  `Cslib.Crypto.Protocols.PIR.InteractiveScheme.card_le_depth`: at least `2 ^ n` leaves and
+  protocol depth at least `n`.
+* `Cslib.Crypto.Protocols.PIR.InteractiveScheme.exists_iff`: one server needs protocol depth
+  exactly `n`, with or without interaction.
 
 ## References
 
@@ -251,9 +257,10 @@ theorem two_pow_card_le_leafCount [Fintype ι] (hcorrect : P.IsCorrect) (hprivat
   · refine (two_pow_card_le_ncard_transcripts hcorrect hprivate i).trans ?_
     exact (Set.ncard_le_card _).trans_eq (Nat.card_eq_fintype_card.trans (Fintype.card_fin _))
 
-/-- **A perfectly correct and perfectly private single-server scheme for `n`-bit databases sends at
-least `n` bits on some input, even with interaction**
-[CGKS, Section 5.1][ChorGoldreichKushilevitzSudan1998]. -/
+/-- **A perfectly correct and perfectly private single-server scheme for `n`-bit databases has
+protocol depth at least `n`, even with interaction**
+[CGKS, Section 5.1][ChorGoldreichKushilevitzSudan1998]. The depth is the worst-case number of bits
+over all branches of the protocol tree. -/
 theorem card_le_depth [Fintype ι] (hcorrect : P.IsCorrect) (hprivate : P.IsPrivate) :
     Fintype.card ι ≤ P.protocol.depth :=
   (Nat.pow_le_pow_iff_right (by norm_num : 1 < 2)).mp
@@ -298,8 +305,9 @@ theorem depth_download (n : ℕ) : (download n).protocol.depth = n :=
       (card_le_depth (isCorrect_download n) (isPrivate_download n)))
 
 /-- **One server needs exactly `n` bits, with or without interaction**: a perfectly correct and
-perfectly private interactive scheme for `n`-bit databases that sends at most `c` bits on every
-input exists exactly when `n ≤ c` [CGKS, Section 5.1][ChorGoldreichKushilevitzSudan1998]. -/
+perfectly private interactive scheme for `n`-bit databases of protocol depth at most `c` (the
+worst case over all branches of the protocol tree) exists exactly when `n ≤ c`
+[CGKS, Section 5.1][ChorGoldreichKushilevitzSudan1998]. -/
 theorem exists_iff (n c : ℕ) :
     (∃ (C D : Type) (P : InteractiveScheme (Fin n) C D),
       P.IsCorrect ∧ P.IsPrivate ∧ P.protocol.depth ≤ c) ↔ n ≤ c := by

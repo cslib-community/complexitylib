@@ -12,9 +12,10 @@ import Complexity.Probability.PMF.Uniform
 # Tests: lower bounds for private information retrieval
 
 * **Interactive single server.** The server sending a three-bit database is a correct, private
-  interactive scheme with three bits, and no scheme sends at most two. A protocol in which the user
-  sends its two-bit index and the server answers with the bit is correct for a four-bit database
-  (checked by `decide`) with three bits, so the lower bound shows that it is not private.
+  interactive scheme of protocol depth three, and no scheme has depth at most two. A protocol in
+  which the user sends its two-bit index and the server answers with the bit is correct for a
+  four-bit database (checked by `decide`) with depth three, so the lower bound shows that it is not
+  private.
 * **Linear summation.** The basic two-server scheme on three bits sends each server any of the
   `8` sets, while the even-set scheme sends exactly `4 = 2 ^ (3 - 1)`, the least possible, and
   those sets have a two-bit encoding. The scheme that sends `∅` and `{i}` is a correct
@@ -93,13 +94,9 @@ example (σ : Bool) (i : Fin 3) :
   rw [ncard_support_evenTwoServer, Fintype.card_fin]
   rfl
 
-example (σ : Bool) (i : Fin 3) : ∃ enc : (Fin 3 → Bool) → BitString 2,
-    Set.InjOn enc (ProbComp.eval ((evenTwoServer (0 : Fin 3)).serverQuery σ i)).support :=
-  exists_injOn_evenTwoServer 0 σ i
-
-/-- Making a set even at `0` gives a set of even size. -/
-example : ∀ u : Fin 3 → Bool, ∑ h, makeEven 0 u h = false := by
-  decide
+example (σ : Bool) : ∃ enc : (Fin 3 → Bool) → BitString 2,
+    ∀ i, Set.InjOn enc (ProbComp.eval ((evenTwoServer (0 : Fin 3)).serverQuery σ i)).support :=
+  exists_injOn_evenTwoServer (0 : Fin 3) σ
 
 /-- The scheme that sends `∅` to the server `false` and `{i}` to the server `true`. -/
 def directSets : Scheme (Fin 3) Bool Unit (Fin 3 → Bool) Bool where
