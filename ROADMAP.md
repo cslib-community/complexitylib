@@ -849,10 +849,11 @@ universe size, not supplied as unverified input tables. In dependency order:
   `Primcodable` bridge from Mathlib `L.Sentence` that transfers the results to Mathlib syntax
   ([#2886](https://github.com/cslib-community/complexitylib/issues/2886)).
 - **Logic and automata on words**, after Büchi–Elgot–Trakhtenbrot for finite words (MSO =
-  regular) and FO[<] ⊊ MSO via EVEN
-  ([#2885](https://github.com/cslib-community/complexitylib/issues/2885)): FO[<] = star-free =
-  aperiodic (McNaughton–Papert, Schützenberger; star-free ⇒ FO is
-  [#3075](https://github.com/cslib-community/complexitylib/issues/3075));
+  regular), FO[<] ⊊ MSO via EVEN
+  ([#2885](https://github.com/cslib-community/complexitylib/issues/2885)) and star-free ⇒ FO[<]
+  ([#3075](https://github.com/cslib-community/complexitylib/issues/3075)): the converse FO[<] ⇒
+  star-free over a finite alphabet (McNaughton–Papert), by composition of rank-k types, and
+  star-free = aperiodic (Schützenberger), from cslib's syntactic monoid;
   closure of regular languages under homomorphic images, upstream to cslib; the non-elementary
   lower bound on formula-to-automaton translation; Büchi's theorem for ω-words (S1S) over
   cslib's ω-regular languages; and MSO on trees: finite trees and tree automata
