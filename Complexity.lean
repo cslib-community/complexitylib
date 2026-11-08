@@ -3190,6 +3190,7 @@ public import Complexity.Computability.WordRAM.Allocation
 public import Complexity.Computability.WordRAM.ArrayAppend
 public import Complexity.Computability.WordRAM.ArrayNormalize
 public import Complexity.Computability.WordRAM.Basis
+public import Complexity.Computability.WordRAM.BoundedExec
 public import Complexity.Computability.WordRAM.Call
 public import Complexity.Computability.WordRAM.Compile
 public import Complexity.Computability.WordRAM.Controller
@@ -3274,6 +3275,10 @@ public import Complexity.Computability.WordRAM.Realization.WhileAbsorb
 public import Complexity.Computability.WordRAM.Realization.Witness
 public import Complexity.Computability.WordRAM.RegisterCopy
 public import Complexity.Computability.WordRAM.RegisterFrame
+public import Complexity.Computability.WordRAM.Resizable.Basic
+public import Complexity.Computability.WordRAM.Resizable.Clocked
+public import Complexity.Computability.WordRAM.Resizable.LoopDist
+public import Complexity.Computability.WordRAM.Resizable.Randomized
 public import Complexity.Computability.WordRAM.Sequence
 public import Complexity.Computability.WordRAM.Signed.Arithmetic
 public import Complexity.Computability.WordRAM.Signed.ArrayArithmetic.Body
@@ -3803,6 +3808,7 @@ public import Complexity.DataStructure.Memory.Frame
 public import Complexity.DataStructure.Memory.Record
 public import Complexity.DataStructure.Memory.RecordLink
 public import Complexity.DataStructure.Memory.Region
+public import Complexity.DataStructure.Memory.Resizable
 public import Complexity.DataStructure.Memory.Spec
 public import Complexity.DataStructure.Memory.Triple
 public import Complexity.DataStructure.ObliviousSequence
