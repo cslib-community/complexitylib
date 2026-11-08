@@ -41,6 +41,11 @@ the states entered by the steps whose head move crosses that boundary.
   invariance of runs and crossing sequences.
 * `Cslib.Turing.SingleTapeTM.AbsCfg.sum_length_crossings_le`: for any finite set of boundaries,
   the crossing sequences during `t` steps have total length at most `t`.
+  `AbsCfg.length_crossings_le` is the single-boundary case, and `AbsCfg.crossings_eq_of_halted`
+  says that steps after the halt add no crossings.
+* `Cslib.Turing.SingleTapeTM.card_sub_pow_mul_le_sum_length`: pairwise distinct lists over a
+  finite type `β`, indexed by `s`, have total length at least `(|s| - (|β| + 1) ^ L) L`. With
+  `sum_length_crossings_le`, distinct crossing sequences force a long run.
 * `Cslib.Turing.SingleTapeTM.cut_and_paste_run`: let the prefixes `u₁, u₂` be both empty or both
   nonempty. If the runs on `u₁ ++ v₁` and `u₂ ++ v₂` have halted by steps `t₁` and `t₂` with
   equal crossing sequences after the prefixes, then the run on `u₁ ++ v₂` has halted by step
@@ -247,6 +252,50 @@ lemma AbsCfg.crossings_of_none {a : tm.AbsCfg} (h : a.state = none) (k : ℤ) (t
   induction t with
   | zero => rfl
   | succ t ih => simp [crossings, next_of_none h, ih]
+
+/-- A crossing sequence is no longer than the number of steps. -/
+lemma AbsCfg.length_crossings_le (a : tm.AbsCfg) (k : ℤ) (t : ℕ) :
+    (a.crossings k t).length ≤ t := by
+  simpa using a.sum_length_crossings_le {k} t
+
+omit [Inhabited Symbol] [Fintype Symbol] in
+/-- At most `(|β| + 1) ^ L` elements have pairwise distinct images that are lists of length
+`< L` over `β`. -/
+private lemma card_filter_length_lt_le {ι β : Type*} [Fintype β] {s : Finset ι}
+    {f : ι → List β} (hf : Set.InjOn f s) (L : ℕ) :
+    (s.filter fun x => (f x).length < L).card ≤ (Fintype.card β + 1) ^ L := by
+  classical
+  have h := Finset.card_le_card_of_injOn (s := s.filter fun x => (f x).length < L)
+    (t := (Finset.univ : Finset (Fin L → Option β))) (fun x j => (f x)[(j : ℕ)]?)
+    (fun _ _ => Finset.mem_coe.mpr (Finset.mem_univ _)) ?_
+  · simpa [Fintype.card_option] using h
+  · intro x hx y hy hxy
+    simp only [Finset.coe_filter, Set.mem_ofPred_eq] at hx hy
+    refine hf hx.1 hy.1 (List.ext_getElem? fun j => ?_)
+    by_cases hj : j < L
+    · exact congrFun hxy ⟨j, hj⟩
+    · rw [List.getElem?_eq_none (by omega), List.getElem?_eq_none (by omega)]
+
+omit [Inhabited Symbol] [Fintype Symbol] in
+/-- **Counting distinct crossing sequences.** If `f` takes pairwise distinct values on `s`, lists
+over a finite type `β`, then all but `(|β| + 1) ^ L` of them have length at least `L`, so their
+total length is at least `(|s| - (|β| + 1) ^ L) L`. -/
+theorem card_sub_pow_mul_le_sum_length {ι β : Type*} [Fintype β] {s : Finset ι}
+    {f : ι → List β} (hf : Set.InjOn f s) (L : ℕ) :
+    (s.card - (Fintype.card β + 1) ^ L) * L ≤ ∑ x ∈ s, (f x).length := by
+  classical
+  have hbad := card_filter_length_lt_le hf L
+  have hsplit := Finset.card_filter_add_card_filter_not (s := s) (fun x => (f x).length < L)
+  calc (s.card - (Fintype.card β + 1) ^ L) * L
+      ≤ (s.filter fun x => ¬ (f x).length < L).card * L := Nat.mul_le_mul_right _ (by omega)
+    _ ≤ ∑ x ∈ s.filter fun x => ¬ (f x).length < L, (f x).length := by
+        rw [← smul_eq_mul]
+        exact Finset.card_nsmul_le_sum _ _ _ fun x hx => by
+          rw [Finset.mem_filter] at hx
+          omega
+    _ ≤ ∑ x ∈ s, (f x).length :=
+        Finset.sum_le_sum_of_subset_of_nonneg (Finset.filter_subset _ _) fun _ _ _ =>
+          Nat.zero_le _
 
 /-- **Translation invariance.** The shifted run crosses the shifted boundary in the same
 states. -/
@@ -705,6 +754,17 @@ lemma AbsCfg.run_eq_of_halted (a : tm.AbsCfg) {s t : ℕ} (hs : (a.run s).state 
     rw [run_add, run_of_none hs]
   · obtain ⟨d, rfl⟩ := Nat.exists_eq_add_of_le h
     rw [run_add, run_of_none ht]
+
+/-- Once a run has halted, later steps add no crossings: crossing sequences up to any two halted
+times agree. -/
+lemma AbsCfg.crossings_eq_of_halted (a : tm.AbsCfg) (k : ℤ) {s t : ℕ}
+    (hs : (a.run s).state = none) (ht : (a.run t).state = none) :
+    a.crossings k s = a.crossings k t := by
+  rcases le_total s t with h | h
+  · obtain ⟨d, rfl⟩ := Nat.exists_eq_add_of_le h
+    rw [crossings_add, crossings_of_none hs, List.append_nil]
+  · obtain ⟨d, rfl⟩ := Nat.exists_eq_add_of_le h
+    rw [crossings_add, crossings_of_none ht, List.append_nil]
 
 /-- If `tm` reaches a halted configuration `c` from the initial configuration on `l` within `t`
 steps, then the absolute run has halted by time `t` and scans the symbol under the head of

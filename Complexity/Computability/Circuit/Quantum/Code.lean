@@ -303,15 +303,6 @@ theorem mem_accepting (hm : 0 < m) {y : Fin m → Bool} :
     y ∈ accepting m ↔ y ⟨0, hm⟩ = true := by
   simp [accepting, onesAt, hm]
 
-/-- The probability of the rejecting outcomes is one minus the acceptance probability. -/
-private theorem measureProb_compl_accepting (ψ : Qubits m) (hψ : ‖ψ‖ = 1) :
-    measureProb ψ (accepting m)ᶜ = 1 - measureProb ψ (accepting m) := by
-  have h := measureProb_univ ψ
-  rw [hψ, one_pow, ← union_compl (accepting m), measureProb,
-    sum_union disjoint_compl_right] at h
-  rw [measureProb, measureProb]
-  linarith
-
 /-- **A final NOT on qubit `0` exchanges acceptance and rejection.** -/
 theorem acceptProb_append_not (hm : 0 < m) (gs : List GateCode) (x : List Bool) :
     acceptProb m (gs ++ [(false, 0, [])]) x = 1 - acceptProb m gs x := by
@@ -342,7 +333,10 @@ theorem acceptProb_append_not (hm : 0 < m) (gs : List GateCode) (x : List Bool) 
       g.eval ψ := by
     simp only [Circuit.run, Circuit.ofCodes_append, Circuit.eval_append, ψ]
     simp [Circuit.ofCodes, hg]
-  rw [acceptProb, hrun, acceptProb, ← measureProb_compl_accepting ψ (Circuit.norm_run _ _)]
+  -- the rejecting outcomes have probability one minus the acceptance probability
+  have hcompl := measureProb_compl ψ (accepting m)
+  rw [show ‖ψ‖ = 1 from Circuit.norm_run _ _, one_pow] at hcompl
+  rw [acceptProb, hrun, acceptProb, ← hcompl]
   simp only [measureProb, happly]
   refine sum_nbij' flip flip (fun y hy => ?_) (fun y hy => ?_) (fun y _ => hflip y)
     (fun y _ => hflip y) (fun y _ => rfl)

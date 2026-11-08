@@ -50,6 +50,7 @@ unsatisfiable.
 * `Cslib.Logic.PL.Ineq.contra`, `Cslib.Logic.PL.Ineq.nonneg`, `Cslib.Logic.PL.Ineq.leOne`: the
   contradiction `0 ≥ 1` and the axioms `xᵥ ≥ 0` and `-xᵥ ≥ -1`.
 * `Cslib.Logic.PL.Ineq.div`: rounded division.
+* `Cslib.Logic.PL.Ineq.relabel`: renaming the variables.
 * `Cslib.Logic.PL.Literal.toIneq`, `Cslib.Logic.PL.Clause.toIneq`, `Cslib.Logic.PL.CNF.toIneqs`:
   literals, clauses and CNFs as inequalities.
 * `Cslib.Logic.PL.CuttingPlanes.IsProof`: cutting planes proofs.
@@ -65,6 +66,8 @@ unsatisfiable.
   `Cslib.Logic.PL.CuttingPlanes.RefutableInSize.not_satisfiable`: soundness.
 * `Cslib.Logic.PL.CuttingPlanes.IsProof.comp`,
   `Cslib.Logic.PL.CuttingPlanes.DerivableInSize.extend`: composing proofs.
+* `Cslib.Logic.PL.CuttingPlanes.IsProof.mono`, `Cslib.Logic.PL.CuttingPlanes.IsProof.restrict`:
+  a proof uses only the hypotheses among its lines.
 
 ## References
 
@@ -174,6 +177,12 @@ theorem lhs_of_coeff_eq_smul (σ : V → Bool) {I J : Ineq V} {c : ℤ} (h : I.c
     (⟨Finsupp.single v a, b⟩ : Ineq V).lhs σ = a * (σ v).toInt := by
   simp [lhs]
 
+/-- The left-hand side over finitely many variables, as a sum. -/
+theorem lhs_eq_sum [Fintype V] (σ : V → Bool) (I : Ineq V) :
+    I.lhs σ = ∑ v, I.coeff v * (σ v).toInt := by
+  rw [lhs, Finsupp.linearCombination_apply, Finsupp.sum_fintype _ _ fun _ => by simp]
+  rfl
+
 theorem Holds.add {σ : V → Bool} {I J : Ineq V} (hI : I.Holds σ) (hJ : J.Holds σ) :
     (I + J).Holds σ := by
   unfold Holds at *
@@ -261,6 +270,33 @@ theorem div_eq_of {I J : Ineq V} {c : ℕ} (hc : 0 < c) (hcoeff : I.coeff = (c :
   · refine le_antisymm ((bound_div_le_iff hc).2 hhi) ?_
     rw [bound_div, le_neg, Int.ediv_le_iff_le_mul hc']
     linarith
+
+/-! ### Renaming variables -/
+
+variable {W : Type*}
+
+/-- Renaming the variables of an inequality along `f`; the coefficients of variables with the same
+image add up. -/
+@[expose] def relabel (f : V → W) (I : Ineq V) : Ineq W := ⟨I.coeff.mapDomain f, I.bound⟩
+
+theorem coeff_relabel (f : V → W) (I : Ineq V) : (I.relabel f).coeff = I.coeff.mapDomain f := rfl
+
+@[simp] theorem bound_relabel (f : V → W) (I : Ineq V) : (I.relabel f).bound = I.bound := rfl
+
+/-- Along an injective renaming, the coefficient of `f v` is that of `v`. -/
+@[simp] theorem coeff_relabel_apply {f : V → W} (hf : f.Injective) (I : Ineq V) (v : V) :
+    (I.relabel f).coeff (f v) = I.coeff v :=
+  Finsupp.mapDomain_apply_of_injective hf _ _
+
+@[simp] theorem lhs_relabel (f : V → W) (σ : W → Bool) (I : Ineq V) :
+    (I.relabel f).lhs σ = I.lhs (σ ∘ f) := by
+  simp only [lhs, coeff_relabel, Finsupp.linearCombination_mapDomain]
+  rfl
+
+/-- `σ` satisfies a renamed inequality iff `σ ∘ f` satisfies the original. -/
+@[simp] theorem holds_relabel (f : V → W) (σ : W → Bool) (I : Ineq V) :
+    (I.relabel f).Holds σ ↔ I.Holds (σ ∘ f) := by
+  simp only [Holds, bound_relabel, lhs_relabel]
 
 end Ineq
 
@@ -463,6 +499,31 @@ theorem comp (hΔ : IsProof Δ ls') (h : IsProof Γ ls) (hΔΓ : ∀ I ∈ Δ, I
     refine ⟨_ :: ls'', h''.div c hc hdvd (hup _ h₁), fun J hJ => ?_, by simpa using hlen⟩
     rcases List.mem_cons.1 hJ with rfl | hJ
     exacts [List.mem_cons_self, List.mem_cons_of_mem _ (hup J hJ)]
+
+/-- Enlarging the hypotheses keeps a proof a proof. -/
+theorem mono (h : IsProof Γ ls) (hΓΔ : Γ ⊆ Δ) : IsProof Δ ls := by
+  induction h with
+  | nil => exact .nil
+  | hyp _ hI ih => exact ih.hyp (hΓΔ hI)
+  | nonneg _ v ih => exact ih.nonneg v
+  | leOne _ v ih => exact ih.leOne v
+  | add _ hI hJ ih => exact ih.add hI hJ
+  | smul _ c hc hI ih => exact ih.smul c hc hI
+  | div _ c hc hdvd hI ih => exact ih.div c hc hdvd hI
+
+/-- A proof uses only the hypotheses among its lines. -/
+theorem restrict (h : IsProof Γ ls) : IsProof (Γ ∩ {I | I ∈ ls}) ls := by
+  suffices ∀ ls', ls ⊆ ls' → IsProof (Γ ∩ {I | I ∈ ls'}) ls from this ls (List.Subset.refl _)
+  intro ls' hsub
+  induction h with
+  | nil => exact .nil
+  | hyp _ hI ih =>
+    exact (ih (List.cons_subset.1 hsub).2).hyp ⟨hI, (List.cons_subset.1 hsub).1⟩
+  | nonneg _ v ih => exact (ih (List.cons_subset.1 hsub).2).nonneg v
+  | leOne _ v ih => exact (ih (List.cons_subset.1 hsub).2).leOne v
+  | add _ hI hJ ih => exact (ih (List.cons_subset.1 hsub).2).add hI hJ
+  | smul _ c hc hI ih => exact (ih (List.cons_subset.1 hsub).2).smul c hc hI
+  | div _ c hc hdvd hI ih => exact (ih (List.cons_subset.1 hsub).2).div c hc hdvd hI
 
 end IsProof
 
