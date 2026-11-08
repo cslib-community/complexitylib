@@ -1707,6 +1707,7 @@ public import Complexity.Computability.Complexity.Classes.ModP
 public import Complexity.Computability.Complexity.Classes.ModP.GapP
 public import Complexity.Computability.Complexity.Classes.ModP.Time
 public import Complexity.Computability.Complexity.Classes.NP
+public import Complexity.Computability.Complexity.Classes.NP.Advice
 public import Complexity.Computability.Complexity.Classes.NP.Closure
 public import Complexity.Computability.Complexity.Classes.NP.GuessVerify
 public import Complexity.Computability.Complexity.Classes.NP.Image
@@ -1978,6 +1979,7 @@ public import Complexity.Computability.Complexity.ImmermanVardi.Tableau.Step
 public import Complexity.Computability.Complexity.Parameterized
 public import Complexity.Computability.Complexity.Parameterized.Clique
 public import Complexity.Computability.Complexity.Parameterized.ColorCoding
+public import Complexity.Computability.Complexity.Parameterized.Distillation
 public import Complexity.Computability.Complexity.Parameterized.Kernelization
 public import Complexity.Computability.Complexity.Parameterized.VertexCover
 public import Complexity.Computability.Complexity.Parameterized.VertexCover.BussKernel
@@ -4253,6 +4255,7 @@ public import Complexity.Foundations.Combinatorics.Sunflower.Closure
 public import Complexity.Foundations.Combinatorics.Sunflower.Implication
 public import Complexity.Foundations.Combinatorics.Sunflower.LowerBound
 public import Complexity.Foundations.Combinatorics.Sunflower.Pluck
+public import Complexity.Foundations.Combinatorics.TupleCover
 public import Complexity.Foundations.Combinatorics.UniformSchedules
 public import Complexity.Foundations.Combinatorics.WeightBudget
 public import Complexity.Foundations.Combinatorics.WeightedCut

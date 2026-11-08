@@ -94,6 +94,11 @@ Manuel Blum. *A Machine-Independent Theory of the Complexity of Recursive Functi
 
 Markus Bläser and Bodo Manthey. *Smoothed Complexity Theory*. ACM Transactions on Computation Theory 7(2), Article 6, 2015; preliminary version in MFCS 2012. https://doi.org/10.1145/2656210 ; arXiv:1202.1936. Read in arXiv v2 (29 June 2012) on 2026-11-08. §5, in the paragraph before Theorem 5.2, attributes `DistNP ⊆ Avg-P ⇒ NE = E` to Ben-David, Chor, Goldreich and Luby. Journal metadata checked against the Crossref record.
 
+<a id="bodlaenderjansenkratsch2014"></a>
+## bodlaenderjansenkratsch2014
+
+Hans L. Bodlaender, Bart M. P. Jansen and Stefan Kratsch. "Kernelization Lower Bounds by Cross-Composition." *SIAM Journal on Discrete Mathematics* 28(1), 277–305, 2014. https://doi.org/10.1137/120880240 . Inspected the arXiv version [1206.5941v1](https://arxiv.org/abs/1206.5941v1) on 2026-11-08: Definition 4 (weak OR-distillation, p. 5), Theorem 2 (Fortnow–Santhanam, p. 6), Lemma 1 (complementary witness lemma, attributed to Dell and van Melkebeek, p. 7), Definition 8 (polynomial equivalence relation, p. 8) and Theorem 6 with its proof (pp. 10–11). Locators follow that arXiv numbering; the journal numbering was not checked.
+
 <a id="borodin72"></a>
 ## borodin72
 
@@ -248,6 +253,11 @@ Robert W. Floyd. "Algorithm 97: Shortest Path." *Communications of the ACM* 5(6)
 ## fly22
 
 Zhiyuan Fan, Jiatu Li, and Tianqi Yang. *The Exact Complexity of Pseudorandom Functions and the Black-Box Natural Proof Barrier for Bootstrapping Results in Computational Complexity*. Electronic Colloquium on Computational Complexity (ECCC), Report TR21-125, Revision 1 (12 June 2022), https://eccc.weizmann.ac.il/report/2021/125/ ; conference version in *Proceedings of the 54th Annual ACM SIGACT Symposium on Theory of Computing (STOC 2022)*, 962–975, https://doi.org/10.1145/3519935.3520010 . Inspected ECCC TR21-125 Revision 1 PDF directly: Section 4.1 (pp. 24–26), Section 4.2, Definitions 4.3–4.5 (pp. 26–27), Section 4.4, Definition 4.9 (p. 28), Section 7.1, Definition 7.1, Lemmas 7.2–7.4, and Theorem 7.5 (pp. 39–41), and Section 7.2 (pp. 41–42).
+
+<a id="fortnowsanthanam2011"></a>
+## fortnowsanthanam2011
+
+Lance Fortnow and Rahul Santhanam. "Infeasibility of Instance Compression and Succinct PCPs for NP." *Journal of Computer and System Sciences* 77(1), 91–106, 2011. https://doi.org/10.1016/j.jcss.2010.06.007 . Bibliographic data from the DOI record. The paper was not inspected in this pass; the manual cites the statement of its distillation theorem through [Bodlaender, Jansen and Kratsch](#bodlaenderjansenkratsch2014), Theorem 2.
 
 <a id="freivalds79"></a>
 ## freivalds79
