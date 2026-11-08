@@ -74,6 +74,8 @@ public import Complexity.Algorithms.Lean.KMP.Basic
 public import Complexity.Algorithms.Lean.KMP.Search
 public import Complexity.Algorithms.Lean.Karger.Contraction
 public import Complexity.Algorithms.Lean.Karger.FastCut
+public import Complexity.Algorithms.Lean.Karger.Memory
+public import Complexity.Algorithms.Lean.Karger.Memory.Contract
 public import Complexity.Algorithms.Lean.Karger.Memory.Layout
 public import Complexity.Algorithms.Lean.Karger.MinCutCount
 public import Complexity.Algorithms.Lean.Knapsack.FPTAS
