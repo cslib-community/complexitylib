@@ -3271,6 +3271,7 @@ public import Complexity.Computability.Streaming.Distinctness
 public import Complexity.Computability.Streaming.FkEstimator
 public import Complexity.Computability.Streaming.Frequency
 public import Complexity.Computability.Streaming.GraphStream
+public import Complexity.Computability.Streaming.JoinSize
 public import Complexity.Computability.Streaming.MisraGries
 public import Complexity.Computability.Streaming.MomentLowerBound
 public import Complexity.Computability.TreeEval.Ary.Basic
@@ -5474,6 +5475,7 @@ public import Complexity.Probability.KWiseIndependent.Restriction
 public import Complexity.Probability.KWiseIndependent.SecondMoment
 public import Complexity.Probability.KWiseIndependent.Trinomial
 public import Complexity.Probability.KWiseIndependent.TugOfWar
+public import Complexity.Probability.KWiseIndependent.TugOfWarProduct
 public import Complexity.Probability.LinearCombination
 public import Complexity.Probability.LocalLemma
 public import Complexity.Probability.LocalitySensitiveHash

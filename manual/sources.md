@@ -29,6 +29,11 @@ Alfred V. Aho, Margaret J. Corasick. "Efficient String Matching: An Aid to Bibli
 
 Noga Alon, László Babai and Hiroshi Suzuki. “Multilinear Polynomials and Frankl–Ray-Chaudhuri–Wilson Type Intersection Theorems.” *Journal of Combinatorial Theory, Series A* 58(2), 165–180, 1991. https://doi.org/10.1016/0097-3165(91)90058-O . Bibliographic metadata from search summaries on 2026-11-08; the full text was not inspected in this pass. The manual attributes only the multilinear polynomial method for uniform and nonuniform restricted-intersection bounds to this paper; theorem numbers are not cited.
 
+<a id="alongibbonsmatiasszegedy99"></a>
+## alongibbonsmatiasszegedy99
+
+Noga Alon, Phillip B. Gibbons, Yossi Matias, Mario Szegedy. “Tracking Join and Self-Join Sizes in Limited Storage.” *Proceedings of the 18th ACM SIGMOD-SIGACT-SIGART Symposium on Principles of Database Systems (PODS)*, 10–20, 1999. https://doi.org/10.1145/303976.303978 . Author-hosted PostScript of the conference version: https://www.math.tau.ac.il/~matias/papers/pods99.ps . Checked against that copy on 2026-11-08: Section 4.3 (the tug-of-war join signature `S(F) = ∑ ε_i f_i` with four-wise independent `±1` signs and estimator `S(F)·S(G)`), Lemma 4.4 (mean `|F ⋈ G|`, variance at most `2·SJ(F)·SJ(G)`, through the exact variance in equation (3) of its proof), Theorem 4.5 (the `k`-fold mean with `k = c·B₂²/B₁²` and Chebyshev), the deletion rule following it, and the statement of Theorem 4.3 (signature lower bound, not formalized). The journal version, *Journal of Computer and System Sciences* 64(3), 719–747, 2002, https://doi.org/10.1006/jcss.2001.1813 , was taken from bibliographic metadata and not inspected.
+
 <a id="alonmatiasszegedy99"></a>
 ## alonmatiasszegedy99
 
