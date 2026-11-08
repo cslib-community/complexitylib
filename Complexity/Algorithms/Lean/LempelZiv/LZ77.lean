@@ -101,10 +101,7 @@ theorem iterate_copyStep {d : ℕ} (hd : 0 < d) :
       rw [copyStep, List.getElem?_eq_getElem hlt, ← hv.1]
     have hlen : (h ++ [a]).length - d = h.length - d + 1 := by
       rw [List.length_append, List.length_singleton]; omega
-    have hv' : v <+: (h ++ [a] ++ v).drop ((h ++ [a]).length - d) := by
-      rw [hlen, List.append_assoc, List.singleton_append,
-        List.drop_append_of_le_length (by omega)]
-      exact hv.2
+    have hv' : v <+: (h ++ [a] ++ v).drop ((h ++ [a]).length - d) := by grind
     have hdh' : d ≤ (h ++ [a]).length := by
       rw [List.length_append, List.length_singleton]; omega
     rw [List.length_cons, Function.iterate_succ_apply, hstep,

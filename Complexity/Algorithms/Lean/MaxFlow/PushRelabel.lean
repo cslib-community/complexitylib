@@ -335,9 +335,7 @@ theorem sum_height_le {σ : State N} (hσ : σ.Inv) :
     Finset.mem_erase.mpr ⟨hst.symm, Finset.mem_univ _⟩
   rw [← Finset.add_sum_erase _ _ hs, ← Finset.add_sum_erase _ _ ht, hσ.valid.source,
     hσ.valid.sink]
-  have hcard : ((Finset.univ.erase N.s).erase N.t).card = Fintype.card V - 2 := by
-    rw [Finset.card_erase_of_mem ht, Finset.card_erase_of_mem hs, Finset.card_univ]
-    omega
+  have hcard : ((Finset.univ.erase N.s).erase N.t).card = Fintype.card V - 2 := by grind
   have := Finset.sum_le_card_nsmul ((Finset.univ.erase N.s).erase N.t) (fun v => σ.height v)
     (2 * Fintype.card V - 1) (fun v _ => hσ.height_le v)
   rw [hcard, Nat.nsmul_eq_mul] at this
@@ -550,10 +548,7 @@ theorem potential_apply_le {σ : State N} (hσ : σ.Inv) {o : Op V} (ho : σ.Adm
       rw [ite_eq_left hns, ite_eq_right hsat, Nat.mul_zero, Nat.add_zero]
       have hsat' : σ.flow.pushAmount u v ≠ σ.flow.resCap u v := hsat
       -- a nonsaturating push moves the whole excess of `u`
-      have hamt : (σ.flow.pushAmount u v : ℤ) = σ.flow.excess u := by
-        unfold pushAmount at hsat' ⊢
-        have := hu_act.2.2
-        omega
+      have hamt : (σ.flow.pushAmount u v : ℤ) = σ.flow.excess u := by grind [pushAmount]
       have hTu0 : ¬ (σ.flow.push u v).IsActive u := fun h => by
         have := h.2.2
         omega

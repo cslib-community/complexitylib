@@ -796,9 +796,7 @@ private theorem filter_tightCandidates_leftPrefix {k t : ℕ} (ht : t < k) :
     rcases List.mem_map.mp hx with ⟨i, hi_take, rfl⟩
     have hi_lt : i.val < t := by
       rcases List.mem_iff_getElem.mp hi_take with ⟨idx, hidx, hget⟩
-      have hidx_lt : idx < t := by
-        rw [List.length_take] at hidx
-        exact lt_of_lt_of_le hidx (Nat.min_le_left t _)
+      have hidx_lt : idx < t := by grind
       have hval : ((List.finRange k).take t)[idx].val = idx := by simp
       rw [← hget, hval]
       exact hidx_lt
@@ -983,9 +981,7 @@ private theorem submodularGreedy_tightObjective_steps {k : ℕ} (hk : 0 < k) :
         tightObjective (β := β) k (insert c (leftPrefix k t)) ≤
           tightObjective (β := β) k (insert (Sum.inl ⟨t, ht_lt⟩) (leftPrefix k t)) := by
       intro c hc
-      have hc_filt : c ∈ (tightCandidates k).filter (· ∉ leftPrefix k t) := by
-        rw [hfilt]
-        exact List.mem_cons_of_mem _ hc
+      have hc_filt : c ∈ (tightCandidates k).filter (· ∉ leftPrefix k t) := by grind
       have hc_notMem : c ∉ leftPrefix k t := of_decide_eq_true (List.mem_filter.mp hc_filt).2
       rw [tightObjective_insert_leftPrefix_eq hk ht_lt hc_notMem,
         tightObjective_insert_leftPrefix_eq hk ht_lt ht_notMem]
