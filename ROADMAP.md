@@ -769,6 +769,15 @@ universe size, not supplied as unverified input tables. In dependency order:
   theorems; then
   counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Connect
   the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
+- **Color refinement and Weisfeiler–Leman:** building on
+  [color refinement](Complexity/Foundations/Combinatorics/SimpleGraph/ColorRefinement.lean)
+  (stabilization, the coarsest equitable partition and soundness of the 1-WL isomorphism test,
+  [#3265](https://github.com/cslib-community/complexitylib/issues/3265)), add the correspondence
+  between equitable partitions and fractional automorphisms and isomorphisms (Tinhofer;
+  Ramana–Scheinerman–Ullman; Grohe–Kersting–Mladenov–Selman, Theorems 4.1 and 5.2), a certified
+  polynomial-time color refinement algorithm, `k`-dimensional Weisfeiler–Leman, the
+  Immerman–Lander correspondence with the counting logic C² and its finite-variable extensions,
+  and Cai–Fürer–Immerman graphs.
 - **Undecidability in the finite:** Trakhtenbrot's theorem holds for raw relational sentences
   over any vocabulary with a binary relation symbol (Libkin, Theorem 9.2,
   [Binary](Complexity/Logics/FirstOrder/Trakhtenbrot/Binary.lean)). Next, add a computable
