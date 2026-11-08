@@ -18,7 +18,7 @@ public import Mathlib.Data.Nat.Log
 
 Word-granular resizable memory specification (`Cslib.DataStructure.Memory.Resizable`) accompanying
 the **Resizable Word RAM** (`Cslib.WordRAM.Resizable`), modeling the dynamically resizable `w`-bit
-word memory of [LiLiangYuZhou2023], Section 2.1, [LiLiangYuZhou2024], Section 3.2, and
+word memory of [LiLiangYuZhou2023Succincter], Section 2.1, [LiLiangYuZhou2024], Section 3.2, and
 [KuszmaulLiangZhou2026], Section 5.1 (termed the "virtual memory (VM) model" in those papers, with
 1-indexed addresses `[1..M]` mapped here to 0-indexed `[0, s.frontier)`).
 
@@ -56,14 +56,14 @@ may **grow** (`grow k`, `growDirty k`) or **shrink** (`shrink k`) the active pre
 
 ## References
 
-* [LiLiangYuZhou2023] Tianxiao Li, Jingxun Liang, Huacheng Yu, and Renfei Zhou, *Dynamic
-  "Succincter"*, FOCS 2023 (`arXiv:2309.12950v1`, Section 2.1, PDF pp. 6–7 / printed pp. 5–6).
+* [LiLiangYuZhou2023Succincter] Tianxiao Li, Jingxun Liang, Huacheng Yu, and Renfei Zhou, *Dynamic
+  "Succincter"*, FOCS 2023, pp. 1715–1733 (`arXiv:2309.12950v1`, Section 2.1).
 * [LiLiangYuZhou2024] Tianxiao Li, Jingxun Liang, Huacheng Yu, and Renfei Zhou, *Dynamic
   Dictionary with Subconstant Wasted Bits per Key*, SODA 2024 (`arXiv:2310.20536v1`, Section 3.2,
-  PDF pp. 9–10 / printed pp. 8–9).
+  PDF pp. 9–11 / printed pp. 8–10).
 * [KuszmaulLiangZhou2026] William Kuszmaul, Jingxun Liang, and Renfei Zhou, *Succinct Dynamic
   Rank/Select: Bypassing the Tree-Structure Bottleneck*, SODA 2026 (`arXiv:2510.19175v1`,
-  Section 5.1, PDF p. 16 / printed p. 15, and Footnote 10).
+  Section 5.1, PDF pp. 16–19 / printed pp. 15–18, and Footnote 10, PDF p. 18 / printed p. 17).
 -/
 
 @[expose] public section
@@ -93,7 +93,7 @@ theorem zeroAbove_emptyState : ZeroAbove emptyState := fun _ _ => rfl
 
 /-! ## Operations, deterministic `spec w`, and relational `demonicSpec w` -/
 
-/-- Operations of a word-granular resizable memory ([LiLiangYuZhou2023], Section 2.1;
+/-- Operations of a word-granular resizable memory ([LiLiangYuZhou2023Succincter], Section 2.1;
 [KuszmaulLiangZhou2026], Section 5.1). -/
 inductive Op where
   /-- Read the `w`-bit word at address `a < frontier`. -/
@@ -400,7 +400,7 @@ abbrev spaceWords (s : State) : ℕ := s.frontier
 def spaceBits (w : ℕ) (s : State) : ℕ := w * s.frontier
 
 /-- Total space in bits of `s.frontier` allocated words plus a spillover integer in `[0, K)`
-([LiLiangYuZhou2023], Section 2.1). -/
+([LiLiangYuZhou2023Succincter], Section 2.1; [KuszmaulLiangZhou2026], Section 5.1). -/
 def spilloverSpaceBits (w K : ℕ) (s : State) : ℕ := w * s.frontier + Nat.clog 2 K
 
 /-- Peak number of allocated words reached during execution of `p` from `s` on `spec`. -/

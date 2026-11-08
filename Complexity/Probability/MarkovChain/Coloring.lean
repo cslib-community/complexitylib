@@ -40,7 +40,7 @@ the update with probability at most `1 / (q - Δ)` when `w` is a neighbor of `v`
 the same dynamics with only the vertices of a set `U` updated
 (`Cslib.Probability.MarkovChain.glauberColoringOn`; `glauberColoring` is the case `U = univ`).
 The uniform distribution on the proper colorings agreeing with a coloring `b` off `U`
-(`Cslib.Probability.MarkovChain.frozenColorings`) is reversible. The chain started at a coloring
+(`SimpleGraph.frozenColorings`) is reversible. The chain started at a coloring
 that agrees with `b` off `U` stays among such colorings, so path coupling on that closed set
 (`Cslib.Probability.MarkovChain.IsStationary.dist_le_of_pathCoupling_on`) gives the bound
 `(1 - c / |U|) ^ t |U|` on the distance to stationarity, `c = (q - 2Δ) / (q - Δ)`. In particular
@@ -56,8 +56,6 @@ off `U`.
 * `Cslib.Probability.MarkovChain.glauberColoringOn`: Glauber dynamics updating the vertices
   of `U`.
 * `Cslib.Probability.MarkovChain.glauberColoring`: Glauber dynamics for colorings.
-* `Cslib.Probability.MarkovChain.frozenColorings`: the proper colorings agreeing with `b` off
-  `U`.
 
 ## Main results
 
@@ -157,55 +155,6 @@ theorem eq_of_mem_support_recolor {x y : V → Fin q} {w : V} (hy : y ∈ (recol
     rw [hy]
 
 /-! ### Stationarity -/
-
-/-- The proper colorings agreeing with `b` off `U`, the state space `X_k` of [LevinPeres2017],
-Section 14.4.2, when `U` is the set of the first `k` vertices. -/
-def frozenColorings (q : ℕ) (U : Finset V) (b : V → Fin q) : Finset (V → Fin q) :=
-  Finset.univ.filter fun x => G.IsProperColoring x ∧ ∀ u ∉ U, x u = b u
-
-variable {G}
-
-theorem mem_frozenColorings {U : Finset V} {b x : V → Fin q} :
-    x ∈ frozenColorings G q U b ↔ G.IsProperColoring x ∧ ∀ u ∉ U, x u = b u := by
-  simp [frozenColorings]
-
-theorem mem_frozenColorings_self {U : Finset V} {b : V → Fin q} (hb : G.IsProperColoring b) :
-    b ∈ frozenColorings G q U b :=
-  mem_frozenColorings.2 ⟨hb, fun _ _ => rfl⟩
-
-theorem frozenColorings_univ (b : V → Fin q) :
-    frozenColorings G q Finset.univ b = G.properColorings q := by
-  ext x
-  simp [mem_frozenColorings, mem_properColorings]
-
-/-- With every vertex frozen, only `b` itself remains. -/
-theorem frozenColorings_empty {b : V → Fin q} (hb : G.IsProperColoring b) :
-    frozenColorings G q ∅ b = {b} := by
-  ext x
-  simp only [mem_frozenColorings, Finset.notMem_empty, not_false_eq_true, forall_const,
-    Finset.mem_singleton]
-  constructor
-  · rintro ⟨-, h⟩
-    exact funext h
-  · rintro rfl
-    exact ⟨hb, fun _ => rfl⟩
-
-/-- Freezing one more vertex `v` at its color in `b` keeps the colorings with `x v = b v`. -/
-theorem frozenColorings_erase (U : Finset V) (b : V → Fin q) (v : V) :
-    frozenColorings G q (U.erase v) b = (frozenColorings G q U b).filter fun x => x v = b v := by
-  ext x
-  simp only [Finset.mem_filter, mem_frozenColorings, Finset.mem_erase, not_and_or, not_not,
-    ne_eq]
-  constructor
-  · rintro ⟨hx, hb⟩
-    exact ⟨⟨hx, fun u hu => hb u (Or.inr hu)⟩, hb v (Or.inl rfl)⟩
-  · rintro ⟨⟨hx, hb⟩, hv⟩
-    refine ⟨hx, fun u hu => ?_⟩
-    rcases hu with rfl | hu
-    · exact hv
-    · exact hb u hu
-
-variable (G)
 
 /-- Detailed balance for a single heat-bath update at `w`, for the uniform distribution on a set
 `T` of proper colorings closed under recoloring `w` with an allowed color. -/

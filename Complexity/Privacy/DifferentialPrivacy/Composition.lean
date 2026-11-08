@@ -147,6 +147,15 @@ noncomputable def adaptiveComposition (M : List R → D → PMF R) : ℕ → D �
     let r ← M history x
     return r :: history
 
+theorem adaptiveComposition_zero (M : List R → D → PMF R) (x : D) :
+    adaptiveComposition M 0 x = PMF.pure [] := by
+  simp only [adaptiveComposition]
+
+theorem adaptiveComposition_succ (M : List R → D → PMF R) (k : ℕ) (x : D) :
+    adaptiveComposition M (k + 1) x = (adaptiveComposition M k x).bind fun history =>
+      (M history x).bind fun r => PMF.pure (r :: history) := by
+  simp only [adaptiveComposition, monad_bind_eq_bind, monad_pure_eq_pure]
+
 /-- Every transcript of `k` rounds lists `k` outputs. -/
 theorem length_of_mem_support_adaptiveComposition (M : List R → D → PMF R) (k : ℕ) (x : D)
     {l : List R} (hl : l ∈ (adaptiveComposition M k x).support) : l.length = k := by

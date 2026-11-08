@@ -18,7 +18,7 @@ public import Complexity.Tactic.Realize
 
 This module formalizes the word-granular **Resizable Word RAM** machine model (`RData`, `RInstr`,
 `RProgram`, `RCode`, and `RDemonicExec`), grounding the resizable word-prefix memory model of
-[LiLiangYuZhou2023], [LiLiangYuZhou2024], and [KuszmaulLiangZhou2026] directly on
+[LiLiangYuZhou2023Succincter], [LiLiangYuZhou2024], and [KuszmaulLiangZhou2026] directly on
 `Cslib.WordRAM` instructions.
 
 A machine data configuration `RData r` consists of `r` registers (`regs : Fin r → ℕ`), a
@@ -78,14 +78,14 @@ in `[1, L]`). Unlike fixed-memory `Cslib.WordRAM`:
 ## References
 
 * [Hagerup1998] Torben Hagerup, *Sorting and Searching on the Word RAM*, STACS 1998.
-* [LiLiangYuZhou2023] Tianxiao Li, Jingxun Liang, Huacheng Yu, and Renfei Zhou, *Dynamic
-  "Succincter"*, FOCS 2023 (`arXiv:2309.12950v1`, Section 2.1, PDF pp. 6–7 / printed pp. 5–6).
+* [LiLiangYuZhou2023Succincter] Tianxiao Li, Jingxun Liang, Huacheng Yu, and Renfei Zhou, *Dynamic
+  "Succincter"*, FOCS 2023, pp. 1715–1733 (`arXiv:2309.12950v1`, Section 2.1).
 * [LiLiangYuZhou2024] Tianxiao Li, Jingxun Liang, Huacheng Yu, and Renfei Zhou, *Dynamic
   Dictionary with Subconstant Wasted Bits per Key*, SODA 2024 (`arXiv:2310.20536v1`, Section 3.2,
-  PDF pp. 9–10 / printed pp. 8–9).
+  PDF pp. 9–11 / printed pp. 8–10).
 * [KuszmaulLiangZhou2026] William Kuszmaul, Jingxun Liang, and Renfei Zhou, *Succinct Dynamic
   Rank/Select: Bypassing the Tree-Structure Bottleneck*, SODA 2026 (`arXiv:2510.19175v1`,
-  Section 5.1, PDF p. 16 / printed p. 15, and Footnotes 10 and 13).
+  Section 5.1, PDF pp. 16–19 / printed pp. 15–18, and Footnote 10, PDF p. 18 / printed p. 17).
 -/
 
 @[expose] public section

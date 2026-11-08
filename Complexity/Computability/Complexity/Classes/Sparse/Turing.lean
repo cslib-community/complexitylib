@@ -31,7 +31,9 @@ list is the advice; a finite list replaces the oracle in polynomial time
 advice (`Cslib.Circuits.Boolean.PPoly.of_advice`) gives circuits of polynomial size. This is one
 half of `P/poly = P^SPARSE`, which [Hemaspaandra and Ogihara, p. 22][HemaspaandraOgihara2002] cite
 as well known, and whose bibliographic notes (p. 27) attribute it, through Berman and Hartmanis,
-to Meyer.
+to Meyer. The converse, with a tally oracle, is in
+`Complexity/Computability/Complexity/Classes/Sparse/Meyer.lean`
+(`Cslib.Complexity.PPolyOn_eq_iUnion_PWithOracle_SPARSE`).
 
 Consequently, if `SAT` is polynomial-time Turing reducible to a sparse set, then `SAT` has circuits
 of polynomial size and the Karp–Lipton theorem collapses the polynomial hierarchy to `Σ₂`

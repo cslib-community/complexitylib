@@ -107,7 +107,8 @@ theorem two_pow_length_word_le (j : ℕ) : 2 ^ (word j).length ≤ j + 1 := by
   rw [word, List.length_dropLast, Nat.size_eq_bits_len]
   exact Nat.lt_size.mp (Nat.sub_lt (Nat.size_pos.mpr (Nat.succ_pos j)) Nat.one_pos)
 
-private theorem length_word_lt (j : ℕ) : (word j).length < j + 1 :=
+/-- The word with index `j` is shorter than `j + 1`. -/
+theorem length_word_lt (j : ℕ) : (word j).length < j + 1 :=
   (Nat.lt_two_pow_self).trans_le (two_pow_length_word_le j)
 
 /-- **The index of the word with index `j` is `j`.** The binary digits of `j + 1` end with `true`:
