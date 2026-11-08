@@ -1277,7 +1277,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   definitions, conditional `K^t` measure, and `NP` memberships are in `Kolmogorov/MINKT.lean`,
   `Kolmogorov/Conditional.lean`, and `Kolmogorov/MINcKT.lean`), as independently scoped
   developments; the reverse
-  multi-tape-to-single-tape simulation and machine-backed Nisan–Wigderson decoding.
+  multi-tape-to-single-tape simulation and machine-backed Nisan–Wigderson decoding. Beyond the
+  plain Kolmogorov–Levin symmetry of information for the Partrec universal method
+  ([#3324](https://github.com/cslib-community/complexitylib/issues/3324)): the exact symmetry
+  `K(x, y) = K(x) + K(y | x, K(x)) + O(1)` of prefix complexity (Gács, Chaitin); symmetry of
+  information for the binary-string models (`condUniversalTM`) and for time-bounded complexity,
+  with its connection to one-way functions (Liu–Pass, Hirahara).
 - **Quantum computation** ([#896]): channel semantics and approximation costs alongside the
   circuit and measurement semantics, reusing suitable quantum foundations rather than
   incompatible models, and a bridge between the query and circuit models; complete problems for
