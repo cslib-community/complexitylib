@@ -9,7 +9,6 @@ module
 
 public import Complexity.Init
 public import Mathlib.Probability.ProbabilityMassFunction.Basic
-import Complexity.Probability.PMF.Event
 
 /-!
 # Real-valued probabilities are at most one
@@ -24,7 +23,9 @@ or `μ.toOuterMeasure s ≤ 1` through `ENNReal.toReal` by hand.
 * `Cslib.Probability.PMF.toReal_apply_le_one`: an outcome has real-valued probability at most one;
   in particular `Pr[e] ≤ 1` for every Boolean experiment.
 * `Cslib.Probability.PMF.toOuterMeasure_toReal_le_one`: an event has real-valued probability at
-  most one.
+  most one. The name puts `toOuterMeasure` first, as the `toOuterMeasure_toReal_*` lemmas of
+  `Complexity.Probability.PMF.Event` do, rather than Mathlib's head-first
+  `toReal_toOuterMeasure_le_one`.
 -/
 
 public section
@@ -38,6 +39,8 @@ theorem toReal_apply_le_one {α : Type*} (μ : _root_.PMF α) (a : α) : (μ a).
 /-- An event has real-valued probability at most one. -/
 theorem toOuterMeasure_toReal_le_one {α : Type*} (μ : _root_.PMF α) (s : Set α) :
     (μ.toOuterMeasure s).toReal ≤ 1 :=
-  ENNReal.toReal_le_of_le_ofReal zero_le_one (by simpa using toOuterMeasure_le_one μ s)
+  ENNReal.toReal_le_of_le_ofReal zero_le_one <| by
+    rw [ENNReal.ofReal_one, ← (μ.toOuterMeasure_apply_eq_one_iff Set.univ).2 (Set.subset_univ _)]
+    exact μ.toOuterMeasure.mono (Set.subset_univ s)
 
 end Cslib.Probability.PMF
