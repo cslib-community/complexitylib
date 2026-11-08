@@ -84,6 +84,11 @@ James Cook and Ian Mertz. *Tree Evaluation is in Space O(log n · log log n)*. S
 
 Stephen A. Cook, Robert A. Reckhow. “Time Bounded Random Access Machines.” *Journal of Computer and System Sciences* 7(4), 354–375, 1973. https://doi.org/10.1016/S0022-0000(73)80029-7 . Local source explicitly labels its adaptation; publisher fetch unavailable in this pass.
 
+<a id="cookreckhow79"></a>
+## cookreckhow79
+
+Stephen A. Cook, Robert A. Reckhow. “The Relative Efficiency of Propositional Proof Systems.” *The Journal of Symbolic Logic* 44(1), 36–50, 1979. https://doi.org/10.2307/2273702 . The manual cites this paper for the notion of a Frege system. The simulation of resolution by the Frege system in the [proof-systems chapter](circuits-logic-and-other-models/proof-systems.md) is presented as a standard fact in this framework, with no theorem locator; the paper itself was not re-inspected in this pass.
+
 <a id="cormode05"></a>
 ## cormode05
 
