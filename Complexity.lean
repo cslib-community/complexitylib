@@ -4194,6 +4194,7 @@ public import Complexity.Foundations.Data.BitString.Weight
 public import Complexity.Foundations.Data.BitString.WordCount
 public import Complexity.Foundations.Data.BitString.ZModTwo
 public import Complexity.Foundations.Data.Code.AsymptoticallyGood
+public import Complexity.Foundations.Data.Code.BallVolume
 public import Complexity.Foundations.Data.Code.Basic
 public import Complexity.Foundations.Data.Code.BerlekampWelch
 public import Complexity.Foundations.Data.Code.Concatenation
@@ -4315,6 +4316,7 @@ public import Complexity.Foundations.Data.Nat.CeilDiv
 public import Complexity.Foundations.Data.Nat.CeilQuarter
 public import Complexity.Foundations.Data.Nat.Choose
 public import Complexity.Foundations.Data.Nat.Choose.Central
+public import Complexity.Foundations.Data.Nat.Choose.Entropy
 public import Complexity.Foundations.Data.Nat.Choose.PrimePowerDvd
 public import Complexity.Foundations.Data.Nat.Choose.Real
 public import Complexity.Foundations.Data.Nat.Choose.Sum
@@ -5013,6 +5015,8 @@ public import Complexity.Probability.ApproximateCounting.Relative
 public import Complexity.Probability.BitString
 public import Complexity.Probability.BitString.AffineHash
 public import Complexity.Probability.BitString.AffineHash.ThreeWise
+public import Complexity.Probability.BitString.BinarySymmetricChannel
+public import Complexity.Probability.BitString.BinarySymmetricChannel.Achievability
 public import Complexity.Probability.BitString.CoinFlips
 public import Complexity.Probability.BitString.Collision
 public import Complexity.Probability.BitString.LazyRandomWalk
