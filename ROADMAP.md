@@ -499,10 +499,11 @@ index links to canonical definitions rather than keeping a second set.
   `n` are in `Foundations/NumberTheory/Primality`, together with the Rabin–Monier bound
   `4 · #strong liars ≤ φ(n)` for odd composite `n ≠ 9` (`Primality/RabinMonier`), and an explicit
   Miller–Rabin verifier puts the primes in `coRP` independently of AKS
-  (`Problems/Primes/MillerRabin`). Remaining
-  ([#2958](https://github.com/cslib-community/complexitylib/issues/2958)): a polynomial-time Jacobi
-  symbol, and the Solovay–Strassen verifier stated as a `coRP` membership (with its gcd step, since
-  non-units can satisfy Euler's congruence).
+  (`Problems/Primes/MillerRabin`). The Jacobi symbol is computable in polynomial time on binary
+  inputs (`PolyTime/Nat/Jacobi`). Remaining
+  ([#2958](https://github.com/cslib-community/complexitylib/issues/2958)): the Solovay–Strassen
+  verifier stated as a `coRP` membership (with its gcd step, since non-units can satisfy Euler's
+  congruence).
 - The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
   its input.
 - **Space:** Savitch bounds for general space-constructible functions.
@@ -674,9 +675,16 @@ index links to canonical definitions rather than keeping a second set.
 - **Distributional framework** ([#2865](https://github.com/cslib-community/complexitylib/issues/2865)): extend the length-indexed ensembles, `AvgP`/`HeurP`,
   `DistNP` and dominating reductions with polynomial-time computable ensembles being samplable,
   Levin's runtime-moment definition of average polynomial time and its relation to errorless
-  schemes (instances of probability zero obstruct a literal equivalence), randomized
-  average-case classes, and `(L, U) ∈ AvgP` implying `L ∈ E`-style consequences. Reuse the
-  specialized Liu–Pass hardness notions through further proved bridges.
+  schemes (instances of probability zero obstruct a literal equivalence), and randomized
+  average-case classes. Reuse the specialized Liu–Pass hardness notions through further proved
+  bridges.
+- **Heuristic hierarchy and universal distributions** ([#2865](https://github.com/cslib-community/complexitylib/issues/2865)): prove that
+  `(BH, U^BH) ∈ Heur_{1/n} P` gives `DistNP ⊆ HeurP`, and the `Avg` analogue
+  (Bogdanov–Trevisan Prop. 21). The source pads instances to `(M, x, 1^{t + ⌈1/δ⌉})`, which can
+  change `BH` membership, so the proof should route through a fixed clocked universal program
+  whose input carries `(c, z, 1^t)`. Also prove the theorem of Levin, Li and Vitányi
+  (Bogdanov–Trevisan Thm 16): under the ensemble `K_n(x) ∝ 2^{-C(x)}` on each length, a decidable
+  `L` with `(L, K) ∈ Heur_{1/n³} P` is in `P`.
 - **Completeness beyond computable ensembles** ([#2865](https://github.com/cslib-community/complexitylib/issues/2865)): extend the bounded-halting completeness for
   `DistNP` to samplable distributions (Impagliazzo–Levin, `SampNP`), and bridge the verifier-form
   bounded halting problem to a nondeterministic machine model. Connect the framework to one-way
@@ -852,8 +860,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Håstad's optimal MAX-E3SAT hardness** ([#886]): for `0 < ε < 1/8`, NP-hardness of
   distinguishing satisfiable E3-CNF formulas from those where every assignment satisfies at most
   `7/8 + ε` of the clauses. Holenstein's parallel repetition theorem for two-prover games is
-  proved (`TwoProverGame.value_pow_le`). What remains is small-soundness Label Cover through
-  parallel repetition and Håstad's separate perfect-completeness construction for MAX-E3SAT.
+  proved (`TwoProverGame.value_pow_le`), and so is parallel repetition for simple Label Cover
+  instances (`LabelCoverRepetition.one_sub_unsatVal_pow_le`). What remains is NP-hardness of
+  small-soundness Label Cover (loop removal before the incidence reduction, so that its output is
+  simple, and a polynomial-time certificate for the repetition) and Håstad's separate
+  perfect-completeness construction for MAX-E3SAT.
 - The FGLSS clique-hardness reduction and its amplification, retaining the exact gap and
   reduction runtime.
 - Gap and approximation-preserving reductions, APX/PTAS/FPTAS, inapproximability consequences of
@@ -1083,6 +1094,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   budgets, their success sets, and measure and dimension within complexity classes; connect
   quantitative randomness to the Kolmogorov-complexity development. State the resource bounds
   and uniformity of the betting strategies separately from ordinary measure-theoretic facts.
+  Beyond Lutz's p-measure in `E`
+  ([#3139](https://github.com/cslib-community/complexitylib/issues/3139)): the quantitative
+  Measure Conservation bound, countable p-unions (Lutz's Lemma 3.10(c)), measure in `EXP` (`p₂`),
+  p-randomness, gales and resource-bounded dimension.
 
 ## Communication, queries, learning and other models
 
@@ -1214,6 +1229,16 @@ each statement against the numbered result. Organize modules by subject, not cha
   generalization guarantees.
   Keep the adjacency relation, interaction model, privacy parameters and computational resources
   explicit, reusing the probability, oracle-computation and learning APIs.
+- **Privacy–accuracy lower bounds**
+  ([#3178](https://github.com/cslib-community/complexitylib/issues/3178)): the packing lemma, the
+  `Ω(k / ε)` bound for one-way marginals and the Dinur–Nissim reconstruction attack, with its
+  consequence that the distortion a private mechanism can guarantee on every database for all
+  subset-count queries is linear in the number of rows, are in `Privacy/DifferentialPrivacy`
+  (Dwork–Roth Chapter 8). Remaining
+  ([#3201](https://github.com/cslib-community/complexitylib/issues/3201)): reconstruction from
+  `O(n)` random `±1` queries with `o(√n)` error (Dwork–Roth Theorem 8.2), De's
+  `Ω(min(k, d) / ε)` bound over a small universe (Theorem 8.8), and `(ε, δ)` lower bounds via
+  fingerprinting codes.
 
 ## Algorithms and optimization
 
@@ -1360,10 +1385,14 @@ densities (expected revenue equals expected virtual welfare; Vickrey with a rese
 
 ### Structural graph algorithms
 
-- Tree decompositions, width and normalization into a suitable decomposition form; a reusable
-  dynamic-programming evaluator over a supplied decomposition, with state-space, transition,
-  join and runtime bounds. Start with native independent-set, coloring and SAT/CSP decision and
-  counting clients, specifying the graph whose width is measured.
+- **Dynamic programming over tree decompositions**
+  ([#2927](https://github.com/cslib-community/complexitylib/issues/2927)): a reusable evaluator
+  over a supplied rooted decomposition
+  (`Foundations/Combinatorics/SimpleGraph/TreeDecomposition`), with state-space, transition, join
+  and runtime bounds. Start with maximum-weight independent set in `O(2^k · poly(k) · n)`, then
+  coloring and SAT/CSP decision and counting clients that specify the graph whose width is
+  measured. Also: nice decompositions, treewidth under minors, and its grid and separator
+  characterizations.
 - **Algorithmic metatheorems:** MSO-to-automata/evaluator compilation and a Courcelle-style
   theorem with computable parameter dependence on width and formula size. Keep the supplied
   decomposition and its encoding explicit; certify decomposition finding separately. Connect
