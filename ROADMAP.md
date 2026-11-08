@@ -992,12 +992,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `coNP ⊆ NP/poly`, in the class-wise form over a polynomial equivalence relation; polynomial
   compressions, OR-cross-composition and the Bodlaender–Jansen–Kratsch theorem ruling out
   polynomial kernels and compressions unless `coNP ⊆ NP/poly`; k-Path has no polynomial kernel
-  or compression unless `coNP ⊆ NP/poly`, by an OR-cross-composition from Hamiltonian path.
+  or compression unless `coNP ⊆ NP/poly`, by an OR-cross-composition from Hamiltonian path;
+  k-Path is `NP`-complete.
   Remaining ([#3266](https://github.com/cslib-community/complexitylib/issues/3266)): further
-  concrete lower bounds (Clique parameterized by vertex cover); k-Path in `NP`; moving the
-  single-copy pendant gadget and `LongPath_npHard` from `Parameterized/LongPathKernel.lean` to a
-  `Problems/LongPath` hardness module beside the other `NP`-hardness results;
-  cross-compositions of bounded cost and the complementary witness lemma; Yap's collapse
+  concrete lower bounds (Clique parameterized by vertex cover); cross-compositions of bounded cost and the complementary witness lemma; Yap's collapse
   `coNP ⊆ NP/poly → PH = Σ₃`; AND-composition (Drucker).
 - **Color coding** ([#2870](https://github.com/cslib-community/complexitylib/issues/2870)):
   colorful k-Path is in `FPT` by the dynamic programming over color sets. Remaining: random
