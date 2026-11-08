@@ -181,6 +181,114 @@ private def deleteVertsAddUniversalVertsIso {d : ℕ} (U' : Set (V ⊕ Fin d))
     change (_ ∧ _ ∧ G.Adj _ _) ↔ (_ ∧ _ ∧ G.Adj _ _)
     exact ⟨fun h => ⟨v.2, w.2, h.2.2⟩, fun h => ⟨⟨trivial, v.2.2⟩, ⟨trivial, w.2.2⟩, h.2.2⟩⟩
 
+/-- If `U'` contains all the new vertices of `G.addUniversalVerts d`, then deleting it leaves as
+many odd components as deleting its trace `Sum.inl ⁻¹' U'` from `G`, and `U'` has `d` more
+vertices than its trace. -/
+private theorem ncard_oddComponents_deleteVerts_addUniversalVerts [Finite V] {d : ℕ}
+    {U' : Set (V ⊕ Fin d)} (hU' : Set.range Sum.inr ⊆ U') :
+    ((⊤ : (G.addUniversalVerts d).Subgraph).deleteVerts U').coe.oddComponents.ncard =
+        ((⊤ : G.Subgraph).deleteVerts (Sum.inl ⁻¹' U')).coe.oddComponents.ncard ∧
+      U'.ncard = (Sum.inl ⁻¹' U' : Set V).ncard + d := by
+  refine ⟨(Iso.ncard_oddComponents_eq (deleteVertsAddUniversalVertsIso U' hU')).symm, ?_⟩
+  have hU'eq : U' = Sum.inl '' (Sum.inl ⁻¹' U') ∪ Set.range Sum.inr := by
+    ext x
+    rcases x with x | i
+    · simp
+    · simpa using hU' ⟨i, rfl⟩
+  rw [hU'eq, Set.ncard_union_eq, Set.ncard_image_of_injective _ Sum.inl_injective,
+    Set.ncard_range_of_injective Sum.inr_injective, Nat.card_eq_fintype_card,
+    Fintype.card_fin, Set.preimage_union, Set.preimage_image_eq _ Sum.inl_injective]
+  · simp
+  · rw [Set.disjoint_left]
+    rintro _ ⟨v, -, rfl⟩ ⟨i, hi⟩
+    exact Sum.inr_ne_inl hi
+
+/-- If `U'` misses a new vertex of `G.addUniversalVerts d`, then deleting `U'` leaves a connected
+graph, since the missed vertex is adjacent to every other remaining vertex: there is at most one
+odd component. -/
+private theorem ncard_oddComponents_deleteVerts_addUniversalVerts_le_one [Finite V] {d : ℕ}
+    {U' : Set (V ⊕ Fin d)} {i : Fin d} (hi : Sum.inr i ∉ U') :
+    ((⊤ : (G.addUniversalVerts d).Subgraph).deleteVerts U').coe.oddComponents.ncard ≤ 1 := by
+  set H := ((⊤ : (G.addUniversalVerts d).Subgraph).deleteVerts U').coe
+  have hi' : Sum.inr i ∈ ((⊤ : (G.addUniversalVerts d).Subgraph).deleteVerts U').verts :=
+    ⟨trivial, hi⟩
+  have hreach (x : ((⊤ : (G.addUniversalVerts d).Subgraph).deleteVerts U').verts) :
+      H.Reachable x ⟨_, hi'⟩ := by
+    by_cases h : x = ⟨_, hi'⟩
+    · rw [h]
+    · refine (Subgraph.Adj.coe (Subgraph.deleteVerts_adj.mpr
+        ⟨trivial, x.2.2, trivial, hi, ?_⟩)).reachable
+      rcases x with ⟨x | j, hx'⟩
+      · trivial
+      · exact fun hji => h (by subst hji; rfl)
+  have hpre : H.Preconnected := fun x y => (hreach x).trans (hreach y).symm
+  have := hpre.subsingleton_connectedComponent
+  exact Set.ncard_le_one_iff_subsingleton.mpr Set.subsingleton_of_subsingleton
+
+/-- **No Tutte violator.** Let `U₀` maximize the deficiency `o(G - U) - |U|`, with maximum `d`.
+Then `G.addUniversalVerts d` satisfies Tutte's condition: a set containing all the new vertices
+has the deficiency of its trace minus `d ≤ 0`, and any other set leaves at most one odd component,
+which parity excludes when the set is empty. -/
+private theorem not_isTutteViolator_addUniversalVerts [Finite V] {U₀ : Set V} {d : ℕ}
+    (hmax : ∀ U : Set V, ((⊤ : G.Subgraph).deleteVerts U).coe.oddComponents.ncard + U₀.ncard ≤
+      ((⊤ : G.Subgraph).deleteVerts U₀).coe.oddComponents.ncard + U.ncard)
+    (hd : ((⊤ : G.Subgraph).deleteVerts U₀).coe.oddComponents.ncard = U₀.ncard + d)
+    (U' : Set (V ⊕ Fin d)) : ¬(G.addUniversalVerts d).IsTutteViolator U' := by
+  classical
+  have := Fintype.ofFinite V
+  intro hU'
+  unfold IsTutteViolator at hU'
+  by_cases hsub : Set.range Sum.inr ⊆ U'
+  · obtain ⟨hodd, hcard⟩ := ncard_oddComponents_deleteVerts_addUniversalVerts hsub
+    have := hmax (Sum.inl ⁻¹' U')
+    omega
+  obtain ⟨_, ⟨i, rfl⟩, hi⟩ := Set.not_subset.mp hsub
+  have hle1 := ncard_oddComponents_deleteVerts_addUniversalVerts_le_one (G := G) hi
+  rcases U'.eq_empty_or_nonempty with rfl | hne
+  · -- `G - U₀` has `|V| - |U₀| ≡ |U₀| + d` vertices modulo `2`, so `|V| + d` is even, while one
+    -- odd component would make `|V ⊕ Fin d| = |V| + d` odd.
+    have hpar := odd_ncard_oddComponents ((⊤ : G.Subgraph).deleteVerts U₀).coe
+    rw [hd, card_verts_deleteVerts_top, Nat.odd_iff, Nat.odd_iff] at hpar
+    have hU₀V := Set.ncard_le_card U₀
+    have h := odd_ncard_oddComponents
+      ((⊤ : (G.addUniversalVerts d).Subgraph).deleteVerts (∅ : Set (V ⊕ Fin d))).coe
+    rw [Set.ncard_empty] at hU'
+    have h1 : ((⊤ : (G.addUniversalVerts d).Subgraph).deleteVerts
+        (∅ : Set (V ⊕ Fin d))).coe.oddComponents.ncard = 1 := by omega
+    rw [h1, card_verts_deleteVerts_top, Set.ncard_empty, Nat.card_sum,
+      Nat.card_eq_fintype_card (α := Fin d), Fintype.card_fin] at h
+    have hodd := Nat.odd_iff.mp (h.mp odd_one)
+    omega
+  · have := (Set.ncard_pos (Set.toFinite _)).mpr hne
+    omega
+
+/-- **Restricting the perfect matching.** A perfect matching of `G.addUniversalVerts d` restricts
+to a matching of `G` that misses at most `d` vertices: the partners of the missed vertices are
+distinct new vertices. -/
+private theorem exists_isMatching_ncard_compl_le_of_isPerfectMatching [Finite V] {d : ℕ}
+    {M' : (G.addUniversalVerts d).Subgraph} (hM' : M'.IsPerfectMatching) :
+    ∃ M : G.Subgraph, M.IsMatching ∧ M.vertsᶜ.ncard ≤ d := by
+  classical
+  let M : G.Subgraph :=
+    { verts := {v | ∃ w, M'.Adj (.inl v) (.inl w)}
+      Adj := fun v w => M'.Adj (.inl v) (.inl w)
+      adj_sub := fun h => M'.adj_sub h
+      edge_vert := fun h => ⟨_, h⟩
+      symm := ⟨fun _ _ h => M'.symm.symm _ _ h⟩ }
+  refine ⟨M, ?_, ?_⟩
+  · rintro v ⟨w, hw⟩
+    exact ⟨w, hw, fun y hy => Sum.inl_injective (hM'.1.eq_of_adj_left hy hw)⟩
+  choose p hp using fun x => (hM'.1 (hM'.2 x)).exists
+  have h := Set.ncard_le_ncard_of_injOn (s := M.vertsᶜ) (t := Set.range (Sum.inr : Fin d → _))
+    (fun v => p (.inl v)) (fun v hv => ?_) (fun v _ w _ h => Sum.inl_injective
+      (hM'.1.eq_of_adj_right (hp _) (by rw [show p (.inl v) = p (.inl w) from h]; exact hp _)))
+    (Set.toFinite _)
+  · rwa [Set.ncard_range_of_injective Sum.inr_injective, Nat.card_eq_fintype_card,
+      Fintype.card_fin] at h
+  · rcases hpv : p (.inl v) with w | i
+    · exact absurd ⟨w, hpv ▸ hp (.inl v)⟩ hv
+    · exact ⟨i, rfl⟩
+
 /-- **Tutte–Berge, strong duality** ([Berge1958]; [Schrijver2017], Theorem 5.1): a finite graph
 has a matching `M` and a vertex set `U` with `|V(M)| + o(G - U) = |V| + |U|`. -/
 theorem exists_isMatching_ncard_verts_add_ncard_oddComponents_eq [Finite V] (G : SimpleGraph V) :
@@ -189,7 +297,7 @@ theorem exists_isMatching_ncard_verts_add_ncard_oddComponents_eq [Finite V] (G :
         Nat.card V + U.ncard := by
   classical
   have := Fintype.ofFinite V
-  -- a vertex set `U₀` maximizing the deficiency `o(G - U) - |U|`
+  -- a vertex set `U₀` maximizing the deficiency `o(G - U) - |U|`, with maximum `d`
   obtain ⟨U₀, -, hU₀⟩ := Finset.exists_max_image (Finset.univ : Finset (Set V))
     (fun U => ((⊤ : G.Subgraph).deleteVerts U).coe.oddComponents.ncard + (Nat.card V - U.ncard))
     ⟨∅, Finset.mem_univ _⟩
@@ -204,98 +312,10 @@ theorem exists_isMatching_ncard_verts_add_ncard_oddComponents_eq [Finite V] (G :
     rw [Set.ncard_empty] at this
     omega
   obtain ⟨d, hd⟩ := Nat.exists_eq_add_of_le hle
-  -- parity: `|V| + d` is even
-  have hpar : Even (Nat.card V + d) := by
-    have h := odd_ncard_oddComponents ((⊤ : G.Subgraph).deleteVerts U₀).coe
-    rw [hd, card_verts_deleteVerts_top] at h
-    rw [← Nat.not_odd_iff_even, Nat.odd_iff]
-    rw [Nat.odd_iff, Nat.odd_iff] at h
-    omega
-  -- `G.addUniversalVerts d` has no Tutte violator
-  have htutte : ∀ U' : Set (V ⊕ Fin d), ¬(G.addUniversalVerts d).IsTutteViolator U' := by
-    intro U' hU'
-    unfold IsTutteViolator at hU'
-    by_cases hsub : Set.range Sum.inr ⊆ U'
-    · rw [← Iso.ncard_oddComponents_eq (deleteVertsAddUniversalVertsIso U' hsub)] at hU'
-      have hU'eq : U' = Sum.inl '' (Sum.inl ⁻¹' U') ∪ Set.range Sum.inr := by
-        ext x
-        rcases x with x | i
-        · simp
-        · simpa using hsub ⟨i, rfl⟩
-      have hcard : U'.ncard = (Sum.inl ⁻¹' U' : Set V).ncard + d := by
-        rw [hU'eq, Set.ncard_union_eq, Set.ncard_image_of_injective _ Sum.inl_injective,
-          Set.ncard_range_of_injective Sum.inr_injective, Nat.card_eq_fintype_card,
-          Fintype.card_fin, Set.preimage_union, Set.preimage_image_eq _ Sum.inl_injective]
-        · simp
-        · rw [Set.disjoint_left]
-          rintro _ ⟨v, -, rfl⟩ ⟨i, hi⟩
-          exact Sum.inr_ne_inl hi
-      have := hmax (Sum.inl ⁻¹' U')
-      omega
-    · obtain ⟨_, ⟨i, rfl⟩, hi⟩ := Set.not_subset.mp hsub
-      have hi' : Sum.inr i ∈ ((⊤ : (G.addUniversalVerts d).Subgraph).deleteVerts U').verts :=
-        ⟨trivial, hi⟩
-      have hadj : ∀ x : ((⊤ : (G.addUniversalVerts d).Subgraph).deleteVerts U').verts,
-          x ≠ ⟨_, hi'⟩ →
-            ((⊤ : (G.addUniversalVerts d).Subgraph).deleteVerts U').coe.Adj x ⟨_, hi'⟩ :=
-        fun x hx => by
-          refine Subgraph.Adj.coe (Subgraph.deleteVerts_adj.mpr
-            ⟨trivial, x.2.2, trivial, hi, ?_⟩)
-          rcases x with ⟨x | j, hx'⟩
-          · trivial
-          · exact fun h => hx (by subst h; rfl)
-      have hpre : ((⊤ : (G.addUniversalVerts d).Subgraph).deleteVerts U').coe.Preconnected :=
-        fun x y => by
-          have hx : ((⊤ : (G.addUniversalVerts d).Subgraph).deleteVerts U').coe.Reachable x
-              ⟨_, hi'⟩ := by
-            by_cases h : x = ⟨_, hi'⟩
-            · rw [h]
-            · exact (hadj x h).reachable
-          have hy : ((⊤ : (G.addUniversalVerts d).Subgraph).deleteVerts U').coe.Reachable y
-              ⟨_, hi'⟩ := by
-            by_cases h : y = ⟨_, hi'⟩
-            · rw [h]
-            · exact (hadj y h).reachable
-          exact hx.trans hy.symm
-      have hsing := hpre.subsingleton_connectedComponent
-      have hle1 : ((⊤ : (G.addUniversalVerts d).Subgraph).deleteVerts U').coe.oddComponents.ncard
-          ≤ 1 := Set.ncard_le_one_iff_subsingleton.mpr Set.subsingleton_of_subsingleton
-      rcases U'.eq_empty_or_nonempty with rfl | hne
-      · have h := odd_ncard_oddComponents
-          ((⊤ : (G.addUniversalVerts d).Subgraph).deleteVerts (∅ : Set (V ⊕ Fin d))).coe
-        rw [Set.ncard_empty] at hU'
-        have h1 : ((⊤ : (G.addUniversalVerts d).Subgraph).deleteVerts
-            (∅ : Set (V ⊕ Fin d))).coe.oddComponents.ncard = 1 := by omega
-        rw [h1, card_verts_deleteVerts_top, Set.ncard_empty, Nat.card_sum,
-          Nat.card_eq_fintype_card (α := Fin d),
-          Fintype.card_fin] at h
-        rw [← Nat.not_odd_iff_even] at hpar
-        exact hpar (h.mp odd_one)
-      · have := (Set.ncard_pos (Set.toFinite _)).mpr hne
-        omega
-  obtain ⟨M', hM'⟩ := (tutte (G := G.addUniversalVerts d)).mpr htutte
-  -- restrict the perfect matching to `G`
-  let M : G.Subgraph :=
-    { verts := {v | ∃ w, M'.Adj (.inl v) (.inl w)}
-      Adj := fun v w => M'.Adj (.inl v) (.inl w)
-      adj_sub := fun h => M'.adj_sub h
-      edge_vert := fun h => ⟨_, h⟩
-      symm := ⟨fun _ _ h => M'.symm.symm _ _ h⟩ }
-  have hM : M.IsMatching := by
-    rintro v ⟨w, hw⟩
-    exact ⟨w, hw, fun y hy => Sum.inl_injective (hM'.1.eq_of_adj_left hy hw)⟩
-  -- at most `d` vertices of `G` are uncovered: their partners are distinct new vertices
-  choose p hp using fun x => (hM'.1 (hM'.2 x)).exists
-  have hunc : M.vertsᶜ.ncard ≤ d := by
-    have h := Set.ncard_le_ncard_of_injOn (s := M.vertsᶜ) (t := Set.range (Sum.inr : Fin d → _))
-      (fun v => p (.inl v)) (fun v hv => ?_) (fun v _ w _ h => Sum.inl_injective
-        (hM'.1.eq_of_adj_right (hp _) (by rw [show p (.inl v) = p (.inl w) from h]; exact hp _)))
-      (Set.toFinite _)
-    · rwa [Set.ncard_range_of_injective Sum.inr_injective, Nat.card_eq_fintype_card,
-        Fintype.card_fin] at h
-    · rcases hpv : p (.inl v) with w | i
-      · exact absurd ⟨w, hpv ▸ hp (.inl v)⟩ hv
-      · exact ⟨i, rfl⟩
+  -- `G.addUniversalVerts d` has a perfect matching; restrict it to `G`
+  obtain ⟨M', hM'⟩ := (tutte (G := G.addUniversalVerts d)).mpr
+    (not_isTutteViolator_addUniversalVerts hmax hd)
+  obtain ⟨M, hM, hunc⟩ := exists_isMatching_ncard_compl_le_of_isPerfectMatching hM'
   refine ⟨M, U₀, hM, le_antisymm (hM.ncard_verts_add_ncard_oddComponents_le U₀) ?_⟩
   have := Set.ncard_add_ncard_compl M.verts
   omega
