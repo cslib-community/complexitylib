@@ -29,6 +29,7 @@ import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
 import Complexity.Tactic.PolyTime
 import Complexity.Tactic.PPT
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Target collision-resistant hash-and-sign and stateless signatures from one-way permutations
@@ -698,18 +699,7 @@ private theorem computableInPolyTime_simRun_raw {k : ℕ} {Control : Type} [Fini
       ∀ m₀, acc.2 = some m₀ → m₀.length ≤ consumed.length
   let size (p : P) : ℕ :=
     (2 * cCfg + 2) * (p.1.length + p.2.2.length + p.2.1.length + 1) + 2
-  have hsize : PolyBounded (fun p : P => (encP p).length) size := by
-    apply PolyBounded.of_forall_le (2 * cCfg + 4) 1
-    rintro ⟨w, r, cs⟩
-    dsimp only [P, encP, size]
-    rw [length_encPair, length_encPair]
-    simp only [encBits_apply, pow_one]
-    calc (2 * cCfg + 2) * (w.length + cs.length + r.length + 1) + 2
-        ≤ (2 * cCfg + 2) * (w.length + cs.length + r.length + 1) +
-            2 * (w.length + cs.length + r.length + 1) := by omega
-      _ = (2 * cCfg + 4) * (w.length + cs.length + r.length + 1) := by ring
-      _ ≤ (2 * cCfg + 4) * (2 * w.length + 1 + (2 * r.length + 1 + cs.length) + 1) :=
-          Nat.mul_le_mul_left _ (by omega)
+  have hsize : PolyBounded (fun p : P => (encP p).length) size := by growth_poly
   have hfold := (ComputableInPolyTime.foldlWith_spec
     (encA := encBool) (encL := encBits) (encB := encAcc)
     (par := fun p : P => p.2.1) (list := fun p : P => p.2.2)

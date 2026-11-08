@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TruncatedEntry
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Direct truncated contraction with polynomial-time entries
@@ -62,11 +63,8 @@ theorem truncDirectCertificate_le_of_isPolynomial
   obtain ⟨Kd, hKd⟩ := truncDirectCertificate_le entry ce
   let E : ℕ → ℕ := fun n => a * 3 ^ d * (n + 1) ^ d
   let F : ℕ → ℕ := fun n => Kd * (n + E n + 1) ^ Kd * (E n + 1)
-  have hEp : PolyBounded id E :=
-    (PolyBounded.const (a * 3 ^ d)).mul ((PolyBounded.self.add (PolyBounded.const 1)).pow d)
-  have hFp : PolyBounded id F :=
-    ((PolyBounded.const Kd).mul (((PolyBounded.self.add hEp).add
-      (PolyBounded.const 1)).pow Kd)).mul (hEp.add (PolyBounded.const 1))
+  have hEp : PolyBounded id E := by growth_poly
+  have hFp : PolyBounded id F := by growth_poly
   obtain ⟨aF, dF, hF⟩ := hFp.exists_le
   refine ⟨aF + dF, fun P ℓ r G => ?_⟩
   set n := (encTrunc encT (P, ℓ, r, G)).length

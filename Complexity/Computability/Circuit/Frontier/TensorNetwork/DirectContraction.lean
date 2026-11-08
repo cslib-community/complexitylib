@@ -28,6 +28,7 @@ import Mathlib.Algebra.Order.BigOperators.Group.List
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Size
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Contracting an explicit tensor network by direct summation
@@ -543,12 +544,7 @@ theorem directContractionBinaryCertificate_bounds :
   obtain ⟨hspace, T, hT, htime⟩ := directContractionCertificate_bounds
   have hcap := NativeCertificate.ofPolyTime_isPolynomial capPrecision_polyTime
   have hlen : PolyBounded (fun x => (encBinaryInput x).length)
-      fun x => (encContractionInput (capPrecision x)).length :=
-    PolyBounded.of_forall_le 3 1 fun x => by
-      have := min_le_left (encExplicitNetwork x.2.2).length x.1
-      simp only [capPrecision, encContractionInput, length_encPair, encUnary_apply,
-        List.length_replicate, pow_one]
-      omega
+      fun x => (encContractionInput (capPrecision x)).length := by growth_poly
   refine ⟨hcap.2.add (hspace.comp hlen), fun x =>
     (NativeCertificate.ofPolyTime capPrecision_polyTime).time x + T (capPrecision x),
     hcap.1.add (hT.comp hlen), fun x => ?_⟩

@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Lists
 import Complexity.Computability.GenericRAM.Native.Certificate
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Polynomially many queries with a common running-time factor
@@ -57,8 +58,7 @@ theorem polynomial_queries {answer : α × β → γ} {queries : α → List β}
   let O := fun x => (encList eo ((queries x).map fun q => answer (x, q))).length
   have hL : PolyBounded L L := .self
   have hQ : PolyBounded L Q := hq.polyBounded_length
-  have hB : PolyBounded L B :=
-    (((PolyBounded.const 2).mul hL).add hQ).add (PolyBounded.const 2)
+  have hB : PolyBounded L B := by growth_poly
   have hquery (x : α) (q : β) (h : q ∈ queries x) :
       (encPair ei eq (x, q)).length + 1 ≤ B x := by
     have := length_le_encList_of_mem eq h
@@ -79,11 +79,8 @@ theorem polynomial_queries {answer : α × β → γ} {queries : α → List β}
   let U := fun x => L x + L x + cq.time x +
     (Q x + 1) * (L x + Q x + O x + B x ^ e)
   let V := fun x => L x + L x + cq.space x + L x + Q x + O x + B x ^ b
-  have hU : PolyBounded L U :=
-    ((hL.add hL).add hcq.1).add
-      ((hQ.add (PolyBounded.const 1)).mul (((hL.add hQ).add hO).add (hB.pow e)))
-  have hV : PolyBounded L V :=
-    (((((hL.add hL).add hcq.2).add hL).add hQ).add hO).add (hB.pow b)
+  have hU : PolyBounded L U := by growth_poly
+  have hV : PolyBounded L V := by growth_poly
   obtain ⟨k, d, hk⟩ := (hU.add hV).exists_le
   have hmap := ha.mapWith
     (ComputableInO.of_eq (encIn := ei) (encMid := ei) fun _ => rfl) cq.computes

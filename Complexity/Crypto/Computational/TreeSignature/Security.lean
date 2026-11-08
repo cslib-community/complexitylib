@@ -38,6 +38,7 @@ import Complexity.Languages.Probabilistic.RandomOracle.Probabilistic
 import Complexity.Languages.Probabilistic.UntilBad
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Security of stateless tree signatures
@@ -802,25 +803,18 @@ private theorem isOraclePPTOn_certifyPlanted (S : IndexedSignatureScheme) {depth
         ((((PolyBounded.const 2).mul hKPoly).add (.const 1)).add hMePoly)).add (.const 1))
     have hvB : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
         (fun a => (encNodeCache a.visited).length +
-          depth a.parameter * (4 * (depth a.parameter + 1) + 2 * Mv a + 3)) :=
-      hN0Poly.add (hd.mul (((((PolyBounded.const 4).mul (hd.add (.const 1))).add
-        ((PolyBounded.const 2).mul hMvPoly))).add (.const 3)))
+          depth a.parameter * (4 * (depth a.parameter + 1) + 2 * Mv a + 3)) := by growth_poly
     have heB : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
         (fun a => (encEdgeCache a.edges).length +
-          depth a.parameter * (8 * depth a.parameter + 2 * Me a + 11)) :=
-      hE0Poly.add (hd.mul (((((PolyBounded.const 8).mul hd).add
-        ((PolyBounded.const 2).mul hMePoly))).add (.const 11)))
+          depth a.parameter * (8 * depth a.parameter + 2 * Me a + 11)) := by growth_poly
     have hleft : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
         (fun a => 2 * depth a.parameter + 1 + (2 * Mv a + 1 +
-          depth a.parameter * (2 * (2 * (encKeys a.keys).length + 1 + Me a) + 1))) :=
-      (((PolyBounded.const 2).mul hd).add (.const 1)).add
-        ((((PolyBounded.const 2).mul hMvPoly).add (.const 1)).add hcertB)
+          depth a.parameter * (2 * (2 * (encKeys a.keys).length + 1 + Me a) + 1))) := by growth_poly
     have hright : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
         (fun a => 2 * ((encNodeCache a.visited).length +
             depth a.parameter * (4 * (depth a.parameter + 1) + 2 * Mv a + 3)) + 1 +
           ((encEdgeCache a.edges).length +
-            depth a.parameter * (8 * depth a.parameter + 2 * Me a + 11))) :=
-      (((PolyBounded.const 2).mul hvB).add (.const 1)).add heB
+            depth a.parameter * (8 * depth a.parameter + 2 * Me a + 11))) := by growth_poly
     exact (((PolyBounded.const 2).mul hleft).add (.const 1)).add hright
   · rintro ⟨⟨keys, ⟨target, sigCap⟩, ⟨n, leaf⟩⟩, ⟨visited₀, edges₀⟩⟩ i
       ⟨⟨node, idx, certs⟩, ⟨visited, edges⟩⟩ hi

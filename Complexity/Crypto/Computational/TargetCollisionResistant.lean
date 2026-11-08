@@ -31,6 +31,7 @@ import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
 import Complexity.Probability.PMF
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Target collision resistance and universal one-way hash families
@@ -731,11 +732,9 @@ theorem computableInPolyTime_uowhfTreeLevels
         (ComputableTidilyInPolyTime.range.comp hhalf) hcell)) fun _ => rfl
   let initLen (a : γ) : ℕ := (encList encBits (init a)).length
   let elemCap (a : γ) : ℕ := M a + initLen a
-  have hM_pb : PolyBounded (fun a => (encIn a).length) M := by
-    simpa only [encUnary_apply, List.length_replicate] using hM.tidy.polyBounded_length
-  have hpoly : PolyBounded (fun a => (encIn a).length) (fun a => initLen a * (2 * elemCap a + 1)) :=
-    hinit.tidy.polyBounded_length.mul
-      (((PolyBounded.const 2).mul (hM_pb.add hinit.tidy.polyBounded_length)).add (.const 1))
+  have hM_pb : PolyBounded (fun a => (encIn a).length) M := by growth_poly
+  have hpoly : PolyBounded (fun a => (encIn a).length) (fun a => initLen a * (2 * elemCap a + 1)) := by
+    growth_poly
   refine .of_tidy (ComputableTidilyInPolyTime.foldlWith
     (encA := encBits) (encL := encList encBits) (encP := EPar) (encB := encList encBits)
     (par := fun a => (n a, κ a, M a))

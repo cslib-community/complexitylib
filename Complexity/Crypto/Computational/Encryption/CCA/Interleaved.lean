@@ -33,6 +33,7 @@ import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
 import Complexity.Tactic.PolyTime
 import Complexity.Tactic.PPT
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Fully adaptive interleaved-query multi-challenge CCA security (Attack Game 12.1)
@@ -1441,19 +1442,14 @@ private theorem polyBounded_interleavedLoopGrowth (cs ds ce de cd dd : ℕ) :
       simp only [EInterleavedLoop, length_encPair, encBits_apply]
       omega
   have hBPoly : PolyBounded (fun q => (EInterleavedLoop q).length)
-      (fun q => cs * (q.2.1.1 + q.2.1.2.length + 2) ^ ds) :=
-    (PolyBounded.const cs).mul (((hnPoly.add hpkPoly).add (.const 2)).pow ds)
+      (fun q => cs * (q.2.1.1 + q.2.1.2.length + 2) ^ ds) := by growth_poly
   have hctMaxPoly : PolyBounded (fun q => (EInterleavedLoop q).length)
       (fun q =>
         ce * (2 * q.2.1.1 + 2 * q.2.1.2.length + cs * (q.2.1.1 + q.2.1.2.length + 2) ^ ds + 5) ^
-          de) :=
-    (PolyBounded.const ce).mul
-      ((((((PolyBounded.const 2).mul hnPoly).add
-        ((PolyBounded.const 2).mul hpkPoly)).add hBPoly).add (.const 5)).pow de)
+          de) := by growth_poly
   have hdecMaxPoly : PolyBounded (fun q => (EInterleavedLoop q).length)
-      (fun q => cd * (2 * q.2.1.1 + cs * (q.2.1.1 + q.2.1.2.length + 2) ^ ds + 3) ^ dd) :=
-    (PolyBounded.const cd).mul
-      (((((PolyBounded.const 2).mul hnPoly).add hBPoly).add (.const 3)).pow dd)
+      (fun q => cd * (2 * q.2.1.1 + cs * (q.2.1.1 + q.2.1.2.length + 2) ^ ds + 3) ^ dd) := by
+    growth_poly
   exact ((((PolyBounded.const 2).mul hBPoly).add
     ((PolyBounded.const 4).mul hctMaxPoly)).add
     ((PolyBounded.const 2).mul hdecMaxPoly)).add (.const 8)

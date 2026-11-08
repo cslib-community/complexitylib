@@ -17,6 +17,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Foundations.Data.Int.Order
 import Complexity.Foundations.Data.List.OfFn
 import Mathlib.Data.List.GetD
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # A list program for the staged integer determinant
@@ -504,12 +505,7 @@ theorem length_encList_stagesRows_le (A : List (List ℤ)) {i k : ℕ} (hik : i 
 
 private lemma polyBounded_stageTableBound {α : Type} {size L k : α → ℕ}
     (hL : PolyBounded size L) (hk : PolyBounded size k) :
-    PolyBounded size (fun x => stageTableBound (L x) (k x)) := by
-  have hentry : PolyBounded size (fun x => stageEntryBound (L x) (k x)) :=
-    (hL.add (hk.mul (((PolyBounded.const 2).mul hL).add (.const 1)))).add (.const 1)
-  have hrow : PolyBounded size (fun x => stageRowBound (L x) (k x)) :=
-    hL.mul (((PolyBounded.const 2).mul hentry).add (.const 1))
-  exact hL.mul (((PolyBounded.const 2).mul hrow).add (.const 1))
+    PolyBounded size (fun x => stageTableBound (L x) (k x)) := by growth_poly
 
 variable {α : Type} {encIn : α ↪ List Bool}
 

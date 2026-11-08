@@ -28,6 +28,7 @@ import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Choose.Sum
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Beigel–Tarui parity-amplifier coefficients and staged factor jet evaluation
@@ -1107,9 +1108,7 @@ theorem polyNorm1_le_two_pow_encList (l : List ℤ) :
   let bound (L : ℕ) : ℕ := 2 * (L * (4 * L + 5)) + 6 * L + 8
   have hL := hp.polyBounded_length
   have hpoly : PolyBounded (fun x => (encIn x).length)
-      (fun x => bound (encList encIntBin (p x)).length) :=
-    (((PolyBounded.const 2).mul (hL.mul (((PolyBounded.const 4).mul hL).add (.const 5)))).add
-      ((PolyBounded.const 6).mul hL)).add (.const 8)
+      (fun x => bound (encList encIntBin (p x)).length) := by growth_poly
   refine (foldl' hrev (const ([], (0, 0))) hstep hpoly fun x i _ => ?_).of_enc_eq fun _ => rfl
   set L := (encList encIntBin (p x)).length; set w := (p x).reverse.take i
   obtain ⟨hlen_st, hrem_st, hmem_st⟩ := foldl_divModByHStep_bounds w
@@ -1144,8 +1143,7 @@ private theorem taylorInvOneSubPow_polytime {ℓ : α → ℕ}
         (ComputableTidilyInPolyTime.listTakeWithInput (fst _ _).tidy
           (unary_add' (snd _ _) (const 1)).tidy)))
   let bound (k : ℕ) : ℕ := k * (4 * k + 5)
-  have hpoly : PolyBounded (fun x => (encIn x).length) (fun x => bound (ℓ x)) :=
-    hℓ.polyBounded.mul (((PolyBounded.const 4).mul hℓ.polyBounded).add (.const 5))
+  have hpoly : PolyBounded (fun x => (encIn x).length) (fun x => bound (ℓ x)) := by growth_poly
   refine (iterate hcnt hinit hstep hpoly fun x i hi => ?_).of_enc_eq fun _ => rfl
   obtain ⟨hlen, hmem, -⟩ := length_and_norm_taylorIterate (ℓ x) i hi
   exact (length_encList_le encIntBin _ fun z hz =>
@@ -1158,9 +1156,7 @@ private theorem oneSubPow_polytime {ℓ : α → ℕ}
       (fun x => ParityFactorEval.oneSubPow (ℓ x)) encIn (encList encIntBin) := by
   have hstep := computableInPolyTime_polyMul (const [1, -1]) id'
   let bound (k : ℕ) : ℕ := (2 * k + 1) * (2 * k + 5)
-  have hpoly : PolyBounded (fun x => (encIn x).length) (fun x => bound (ℓ x)) :=
-    (((PolyBounded.const 2).mul hℓ.polyBounded).add (.const 1)).mul
-      (((PolyBounded.const 2).mul hℓ.polyBounded).add (.const 5))
+  have hpoly : PolyBounded (fun x => (encIn x).length) (fun x => bound (ℓ x)) := by growth_poly
   refine (iterate hℓ (const [1]) hstep hpoly fun x i hi => ?_).of_enc_eq fun _ => rfl
   change (encList encIntBin (ParityFactorEval.oneSubPow i)).length ≤ bound (ℓ x)
   refine (length_encList_le encIntBin _ fun z hz => length_encIntBin_le_of_natAbs_le
@@ -1196,11 +1192,7 @@ private theorem oneSubPow_polytime {ℓ : α → ℕ}
     2 * (4 * k * (2 * bElem k + 1)) + 1 + k * (2 * (3 * bElem k + 1) + 1)
   have hk := hℓ.polyBounded
   have hpb_elem := ((PolyBounded.const 7).mul (hk.mul hk)).add (.const 2)
-  have hpb_bound : PolyBounded (fun x => (encIn x).length) (fun x => bound (ℓ x)) :=
-    (((PolyBounded.const 2).mul (((PolyBounded.const 4).mul hk).mul
-      (((PolyBounded.const 2).mul hpb_elem).add (.const 1)))).add (.const 1)).add
-      (hk.mul (((PolyBounded.const 2).mul
-        (((PolyBounded.const 3).mul hpb_elem).add (.const 1))).add (.const 1)))
+  have hpb_bound : PolyBounded (fun x => (encIn x).length) (fun x => bound (ℓ x)) := by growth_poly
   refine ((iterate hℓ (hpoly_coeffs.prod (const [])) hstep hpb_bound fun x s hs =>
     ?_).snd').of_enc_eq fun _ => rfl
   set k := ℓ x; set st := ParityFactorEval.parityDivStep^[s] (parityPolyCoeffs k, [])
@@ -1242,10 +1234,7 @@ theorem parityLinearCoeffs_polytime :
   let bElem (Lu k : ℕ) : ℕ := 2 * Lu * k + 2
   let bound (n Lu k : ℕ) : ℕ := n * (2 * bElem Lu k + 1)
   have hpb_bound : PolyBounded (fun x => (encIn x).length)
-      (fun x => bound (J x) (encList encIntBin (u x)).length (s x)) :=
-    hJ.polyBounded.mul (((PolyBounded.const 2).mul
-      ((((PolyBounded.const 2).mul hu.polyBounded_length).mul hs.polyBounded).add (.const 2))).add
-      (.const 1))
+      (fun x => bound (J x) (encList encIntBin (u x)).length (s x)) := by growth_poly
   refine iterateWith (par := fun x => (J x, u x)) (count := s)
     (init := fun x => truncZJet (J x) [1]) (step := fun par acc => mulZJet par.1 par.2 acc)
     (hJ.prod hu) hs (computableInPolyTime_truncZJet hJ (const [1]))

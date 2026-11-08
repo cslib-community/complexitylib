@@ -22,6 +22,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLoops
 import Complexity.Foundations.Data.List.Lookup
 import Complexity.Foundations.Data.List.OfFn
 import Mathlib.Data.List.GetD
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Computing the packing of Lemma D.3 in polynomial time
@@ -407,9 +408,7 @@ theorem computableInPolyTime_bestLabel :
     · omega
     · simp only [pow_zero]; omega
   have hsize : PolyBounded (fun q => (encStepIn q).length)
-      (fun q => poly (encStreamSlotIn (bestLabelIn q)).length) :=
-    (PolyBounded.of_polynomiallyBounded (fun s => (encStreamSlotIn s).length) hpoly).comp
-      computableInPolyTime_bestLabelIn.polyBounded_length
+      (fun q => poly (encStreamSlotIn (bestLabelIn q)).length) := by growth_poly
   have hc : c.IsPolynomial := by
     refine ⟨(hIn.1.add (((PolyBounded.self).add (.const 2)).mul hsize)).mono fun q => ?_,
       (hIn.2.add hsize).mono fun q => ?_⟩
@@ -503,11 +502,7 @@ theorem computableInPolyTime_labelPass :
   let bound (x : PackingInput) : ℕ :=
     2 * (2 * (encPackingInput x).length) *
       (2 * (encPackingInput x).length * (2 * (encPackingInput x).length + 1) + 3) + 1
-  have hsize : PolyBounded (fun x => (encPackingInput x).length) bound := by
-    have h := PolyBounded.self (size := fun x : PackingInput => (encPackingInput x).length)
-    exact ((((PolyBounded.const 2).mul ((PolyBounded.const 2).mul h)).mul
-      ((((PolyBounded.const 2).mul h).mul (((PolyBounded.const 2).mul h).add
-        (.const 1))).add (.const 3))).add (.const 1))
+  have hsize : PolyBounded (fun x => (encPackingInput x).length) bound := by growth_poly
   refine (ComputableInPolyTime.foldlWith_spec hpar hlist hinit computableInPolyTime_labelStep
     (fun x _ words => WordsInvariant x.1.1 x.1.2.1 (cappedLength x.1.2.2 x.2.1
       (x.2.2.map Prod.swap).length) x.2.1 words)

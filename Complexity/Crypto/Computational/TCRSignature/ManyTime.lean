@@ -28,6 +28,7 @@ import Complexity.Probability.PMF
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
 import Complexity.Tactic.PPT
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Many-time fresh-key TCR hash-and-sign on arbitrary-length bit words
@@ -452,17 +453,7 @@ private theorem computableInPolyTime_replayCfg_raw {k : ℕ} {Control : Type} [F
     FiniteConfig.SpaceBound p.2.1.length consumed.length p.1 cfg
   let size (p : P) : ℕ :=
     cCfg * (p.2.1.length + (encList encTraceStep p.2.2).length + p.1 + 1)
-  have hsize : PolyBounded (fun p : P => (encP p).length) size := by
-    apply PolyBounded.of_forall_le (cCfg + 1) 1
-    rintro ⟨lim, w, tr⟩
-    dsimp only [P, encP, size]
-    rw [length_encPair, length_encPair]
-    simp only [encUnary_apply, List.length_replicate, encBits_apply, pow_one]
-    calc cCfg * (w.length + (encList encTraceStep tr).length + lim + 1)
-        ≤ (cCfg + 1) * (w.length + (encList encTraceStep tr).length + lim + 1) :=
-          Nat.mul_le_mul_right _ (Nat.le_succ _)
-      _ ≤ (cCfg + 1) * (2 * lim + 1 + (2 * w.length + 1 + (encList encTraceStep tr).length) + 1) :=
-          Nat.mul_le_mul_left _ (by omega)
+  have hsize : PolyBounded (fun p : P => (encP p).length) size := by growth_poly
   exact (ComputableInPolyTime.foldlWith_spec
     (encA := encTraceStep) (encL := encList encTraceStep) (encB := encFiniteConfig)
     (par := fun p : P => p.1) (list := fun p : P => p.2.2)

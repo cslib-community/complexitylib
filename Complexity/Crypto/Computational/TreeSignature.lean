@@ -368,11 +368,8 @@ theorem computableInPolyTime_certify :
   let Bk (x : ChainInput) : ℕ := ck * ((encChainInput x).length + 1) ^ dk
   let Bs (x : ChainInput) : ℕ :=
     cs * (8 * (encChainInput x).length + 3 * Bk x + 11) ^ ds
-  have hBk : PolyBounded (fun x => (encChainInput x).length) Bk :=
-    PolyBounded.of_forall_le ck dk fun _ => le_rfl
-  have hBs : PolyBounded (fun x => (encChainInput x).length) Bs := by
-    dsimp only [Bs]
-    growth_poly
+  have hBk : PolyBounded (fun x => (encChainInput x).length) Bk := by growth_poly
+  have hBs : PolyBounded (fun x => (encChainInput x).length) Bs := by growth_poly
   have hkeyLe (x : ChainInput) {path : List Bool}
       (hpath : path.length ≤ x.bits.length) :
       (nodeKey S T coins x.parameter x.secret path).1.length ≤ Bk x ∧

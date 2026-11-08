@@ -25,6 +25,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Mathlib.Analysis.Complex.ExponentialBounds
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Sequential initial-test search and shortened Tanner check matrices
@@ -456,10 +457,7 @@ private theorem searchMatrix_cert {α Q : Type} {encIn : α ↪ List Bool} {encQ
       (fun p => by dsimp only; generalize 2 ^ wCheck p.2.1 = z; omega)).congr (fun _ => rfl)
   let B (a : α) : ℕ :=
     2 * (encQ (qOf a)).length + 1 + (3 + rowsOf (qOf a) * (2 * colsOf (qOf a) + 1))
-  have hBP : PolyBounded (fun a => (encIn a).length) B :=
-    (((PolyBounded.const 2).mul hq.polyBounded_length).add (.const 1)).add
-      ((PolyBounded.const 3).add ((polyBounded hra).mul
-        (((PolyBounded.const 2).mul (polyBounded hca)).add (.const 1))))
+  have hBP : PolyBounded (fun a => (encIn a).length) B := by growth_poly
   have hB (a : α) (j : ℕ) (_ : j ≤ 2 ^ (rowsOf (qOf a) * colsOf (qOf a))) :
       (encSt (IndexFold.run (searchMatrixStep rowsOf colsOf check) j
         (qOf a, (false, listRows (rowsOf (qOf a)) (colsOf (qOf a)) []))).2).length ≤ B a := by
@@ -1195,8 +1193,7 @@ theorem initialTestsRows_computableInO :
       (hmu_X.mul (hmu_X.mul hmu_X))).mono fun p => by
       refine (Nat.min_le_right _ _).trans ?_; unfold initialRowWeightBound mu; ring_nf; exact le_rfl
   have hell_X : PolyBounded X (fun p => ellG p.1 p.2) := hmu_X.mono fun p => ellG_le_mu p.1 p.2
-  have hcG_X : PolyBounded X (fun p => cG p.1 p.2) :=
-    (hdG_X.add (.const 1)).mono fun p => cG_le_dG_add_one p.1 p.2
+  have hcG_X : PolyBounded X (fun p => cG p.1 p.2) := by growth_poly
   let E1 (p : ℕ × ℕ) : ℕ := dG p.1 p.2 * ellG p.1 p.2 + ellG p.1 p.2 + 2
   let E2 (p : ℕ × ℕ) : ℕ := cG p.1 p.2 * dG p.1 p.2 + dG p.1 p.2 + 2
   obtain ⟨q, hq_poly, hEq⟩ := (((((hdG_X.mul hell_X).add hell_X).add (.const 2)).add

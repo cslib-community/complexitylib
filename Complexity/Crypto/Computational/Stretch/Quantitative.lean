@@ -16,6 +16,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.It
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Tactic.PolyTime.Init
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Quantitative certificates for polynomial PRG stretch
@@ -142,9 +143,7 @@ theorem polyTime_iterate {α : Type} {input : α ↪ List Bool}
       input encBits := by
   obtain ⟨c, d, hlength⟩ := hgenerator.tidy.polyBounded_length.exists_le
   have hpoly : PolyBounded (fun a => (input a).length)
-      (fun a => c * (2 * (input a).length + seedBits a + 2) ^ d) :=
-    (PolyBounded.const c).mul (((((PolyBounded.const 2).mul .self).add
-      hseedBits.tidy.polyBounded).add (.const 2)).pow d)
+      (fun a => c * (2 * (input a).length + seedBits a + 2) ^ d) := by growth_poly
   have hfst := ComputableTidilyInPolyTime.fst input encBits
   have hsnd := ComputableTidilyInPolyTime.snd input encBits
   have hsb := hseedBits.tidy.comp hfst

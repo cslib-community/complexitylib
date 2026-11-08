@@ -22,6 +22,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Polynomial-time Turing reductions and the Turing bridge
@@ -418,9 +419,7 @@ theorem ComputableInPolyTimeWithOracle.of_mem_PWithOracle {O₁ O₂ : Set (List
         fun _ : Unit => ([], Cslib.Turing.BiTape.nil))).of_enc_eq fun a => ?_
     simp [Turing.MultiTapeMachine.FiniteConfig.init, Turing.FiniteCfg.init]
   have hbound : PolyBounded (fun a => (encA a).length)
-      (fun a => cf * ((encA a).length + c * ((encA a).length + 1) ^ d + 1 + 1)) :=
-    PolyBounded.mono (PolyBounded.of_polynomiallyBounded (fun a => (encA a).length)
-      (bound := fun L => cf * (L + c * (L + 1) ^ d + 1 + 1)) (by fun_prop)) fun _ => le_rfl
+      (fun a => cf * ((encA a).length + c * ((encA a).length + 1) ^ d + 1 + 1)) := by growth_poly
   have hit := (Probability.IsOraclePPTOn.iterate_spec' hcount hinit
     (isOraclePPTOn_oracleAnswerStep machine hprog)
     (fun a i cfg => Turing.MultiTapeMachine.FiniteConfig.SpaceBound (encA a).length i 1 cfg)
