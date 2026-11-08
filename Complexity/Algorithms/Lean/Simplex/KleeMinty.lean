@@ -411,13 +411,13 @@ end Succ
 @[simp] private theorem pair_castAdd (k : Fin n) : pair (Fin.castAdd n k) = k := by
   simp only [pair, Fin.append_left, id]
 
-@[simp] private theorem pair_natAdd (k : Fin n) : pair (Fin.natAdd n k) = k := by
+private theorem pair_natAdd (k : Fin n) : pair (Fin.natAdd n k) = k := by
   simp only [pair, Fin.append_right, id]
 
 @[simp] private theorem isX_castAdd (k : Fin n) : isX (Fin.castAdd n k) = true := by
   simp only [isX, Fin.append_left]
 
-@[simp] private theorem isX_natAdd (k : Fin n) : isX (Fin.natAdd n k) = false := by
+private theorem isX_natAdd (k : Fin n) : isX (Fin.natAdd n k) = false := by
   simp only [isX, Fin.append_right]
 
 @[simp] private theorem pair_var (k : Fin n) (b : Bool) : pair (var k b) = k := by
@@ -846,13 +846,13 @@ theorem slackDictionary_kleeMinty :
     rw [mem_dict_basis, hb, mem_slackDictionary_basis]
     induction v using Fin.addCases with
     | left i => simp [i.isLt]
-    | right i => simp [-Fin.natAdd_eq_addNat]
+    | right i => simp [-Fin.natAdd_eq_addNat, isX_natAdd]
   · funext v
     induction v using Fin.addCases with
     | left i => simp [slackDictionary, dict, hb]
     | right i =>
-      simp [-Fin.natAdd_eq_addNat, slackDictionary, dict, hb, kleeMintyRhs, rowConst,
-        zVal_zero_left]
+      simp [-Fin.natAdd_eq_addNat, pair_natAdd, isX_natAdd, slackDictionary, dict, hb, kleeMintyRhs,
+        rowConst, zVal_zero_left]
   · funext v u
     induction v using Fin.addCases with
     | left i => simp [slackDictionary, dict, hb]
@@ -862,12 +862,12 @@ theorem slackDictionary_kleeMinty :
         simp only [slackDictionary, dict, hb, Fin.append_right, Fin.append_left, isX_natAdd,
           isX_castAdd, pair_natAdd, pair_castAdd, kleeMintyMatrix, Matrix.of_apply, rowCoeff, hs]
         split_ifs <;> simp_all
-      | right k => simp [-Fin.natAdd_eq_addNat, slackDictionary, dict, hb]
+      | right k => simp [-Fin.natAdd_eq_addNat, isX_natAdd, slackDictionary, dict, hb]
   · simp [slackDictionary, dict, zVal_zero_left]
   · funext u
     induction u using Fin.addCases with
     | left k => simp [slackDictionary, dict, hb, kleeMintyObj, cost, hs]
-    | right k => simp [-Fin.natAdd_eq_addNat, slackDictionary, dict, hb]
+    | right k => simp [-Fin.natAdd_eq_addNat, isX_natAdd, slackDictionary, dict, hb]
 
 private theorem zVal_top_succ : (zVal (2 ^ (n + 1) - 1) (n + 1) : K) = 100 ^ n := by
   have h0 : ∀ k ≤ n, (zVal (2 ^ (n + 1) - 1) k : K) = 0 := by
