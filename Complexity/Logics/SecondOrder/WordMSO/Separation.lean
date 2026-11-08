@@ -19,9 +19,11 @@ The language of even-length words is MSO-definable (`definable_even`) and regula
 first-order definable over any nonempty alphabet, so `FO[<] ⊊ MSO` over finite words. Over a
 one-letter alphabet `{a}` the language is `(aa)*`, and this is the first-order half of Libkin's
 Corollary 7.27 [Libkin2004], whose proof shows `(aa)*` regular but not star-free because EVEN is
-not first-order definable over linear orders. (Concluding "not star-free" also needs the direction
-star-free ⇒ first-order of Theorem 7.26 there, which this module does not prove.) Over larger
-alphabets it is the same statement for `(ΣΣ)*`, with the same proof. The proof follows Libkin's:
+not first-order definable over linear orders. Concluding "not star-free" also needs the direction
+star-free ⇒ first-order of Theorem 7.26 there, `Cslib.Language.IsStarFree.foDefinable`; the
+module `Complexity.Logics.SecondOrder.WordMSO.StarFree` combines the two as
+`Cslib.Logic.WordMSO.not_isStarFree_even`. Over larger alphabets it is the same statement for
+`(ΣΣ)*`, with the same proof. The proof follows Libkin's:
 on a word whose letters are all equal to `c`, a first-order word formula is equivalent to a
 sentence of Mathlib's language of orders (`Formula.toOrder`, with `P_c` true and every other letter
 predicate false), so EVEN would be first-order definable on finite linear orders. That contradicts
