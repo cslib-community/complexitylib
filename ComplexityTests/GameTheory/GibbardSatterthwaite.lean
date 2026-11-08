@@ -245,6 +245,8 @@ def lie₀ : Ranking (Fin 3) := ofScore ![0, 2, 1] (by decide)
 /-- Voter `1`'s ranking `0 ≻ 1 ≻ 2`. -/
 def vote₁ : Ranking (Fin 3) := ofScore ![2, 1, 0] (by decide)
 
+/-- For two score-vector rankings, the Borda score of `a` counts the alternatives with a lower
+score in each vector. -/
 theorem bordaScore_ofScore (s t : Fin 3 → ℕ) (hs : Function.Injective s)
     (ht : Function.Injective t) (a : Fin 3) :
     bordaScore ![ofScore s hs, ofScore t ht] a =
