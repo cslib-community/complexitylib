@@ -1573,6 +1573,7 @@ public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.Re
 public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.Transducer
 public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure
 public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Compile
+public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Counting
 public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Loop
 public import Complexity.Computability.Complexity.Classes.LogSpace.PolyTime
 public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized
