@@ -811,6 +811,8 @@ public import Complexity.Computability.Circuit.Arithmetic.Hessian
 public import Complexity.Computability.Circuit.Arithmetic.Hessian.SourceComplexity
 public import Complexity.Computability.Circuit.Arithmetic.MatrixMultiplication.Exponent
 public import Complexity.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
+public import Complexity.Computability.Circuit.Arithmetic.Noncommutative.ABP
+public import Complexity.Computability.Circuit.Arithmetic.Noncommutative.Nisan
 public import Complexity.Computability.Circuit.Arithmetic.Pairing
 public import Complexity.Computability.Circuit.Arithmetic.Permanent
 public import Complexity.Computability.Circuit.Arithmetic.Permanent.BooleanSum
@@ -4301,6 +4303,7 @@ public import Complexity.Foundations.GroupTheory.Perm.Fixing
 public import Complexity.Foundations.GroupTheory.Perm.Last
 public import Complexity.Foundations.LinearAlgebra.CubeSum
 public import Complexity.Foundations.LinearAlgebra.ExchangeReplacement
+public import Complexity.Foundations.LinearAlgebra.FreeAlgebra
 public import Complexity.Foundations.LinearAlgebra.ImageSparsification
 public import Complexity.Foundations.LinearAlgebra.Interpolation
 public import Complexity.Foundations.LinearAlgebra.KernelVector
