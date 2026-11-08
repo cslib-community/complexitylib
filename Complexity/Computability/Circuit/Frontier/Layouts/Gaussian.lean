@@ -103,9 +103,7 @@ theorem exists_parameters {ξ : ℝ} (hξ : 0 < ξ) :
       ).continuousAt (x := g)) (π * ξ / 6) (by positivity)
   set ρ₀ := g - min η (1 / 4) / 2 with hρ₀
   have hmin : 0 < min η (1 / 4) := lt_min hη (by norm_num)
-  have hρ₀g : ρ₀ < g := by
-    rw [hρ₀]
-    linarith
+  have hρ₀g : ρ₀ < g := by grind
   have hρ₀low : 1 / 8 ≤ ρ₀ := by
     rw [hρ₀, hg]
     linarith [min_le_right η (1 / 4)]

@@ -235,9 +235,7 @@ theorem one_div_le_abs_div_sqrt_two_sub {a b : ℤ} (hab : a ≠ 0 ∨ b ≠ 0) 
       abs_div, abs_two]
   have hx0 : 0 ≤ |x| := abs_nonneg x
   rcases le_or_gt (|x| + 1) |(b : ℝ)| with hb | hb
-  · have : 1 ≤ |x - b| := by
-      rw [abs_sub_comm]
-      linarith [abs_sub_abs_le_abs_sub (b : ℝ) x]
+  · have : 1 ≤ |x - b| := by grind
     refine le_trans ?_ this
     rw [div_le_one (by positivity)]
     linarith
@@ -273,9 +271,7 @@ private theorem div_le_abs_sum_of_card_le {k : ℕ} {w : Fin d → ℤ}
   generalize (T.filter fun i => w i = -k).card = b at hab ⊢
   generalize (T.filter fun i => ¬ w i = -k).card = a at hab ⊢
   generalize hF : ⌊(k : ℝ) / √2⌋ = F
-  have hab' : ((a : ℤ)) ≠ 0 ∨ ((b : ℤ)) ≠ 0 := by
-    have := hT.card_pos
-    omega
+  have hab' : ((a : ℤ)) ≠ 0 ∨ ((b : ℤ)) ≠ 0 := by grind
   have h17 := one_div_le_abs_div_sqrt_two_sub hab'
   push_cast at h17
   have hs2 : (4 : ℝ) / 3 ≤ √2 := by

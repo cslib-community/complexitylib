@@ -103,9 +103,7 @@ theorem active_mass_fixed_power (n : ℕ) (c : Circuit signature n n) (T L : ℕ
     rw [hpow]
     change 2 ^ (d - 1) < _ at hp
     omega
-  have hfit : 4 * L < 2 ^ (n + 3) := by
-    simp only [Nat.pow_succ]
-    omega
+  have hfit : 4 * L < 2 ^ (n + 3) := by grind
   obtain ⟨out, hout, hsize⟩ := exists_fixedOutput (w := n + 3) c T (4 * L) d cp
   refine ⟨out, fun x => ?_, ?_⟩
   · rw [hout x]

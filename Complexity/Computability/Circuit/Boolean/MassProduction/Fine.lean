@@ -125,10 +125,7 @@ theorem exists_complexity_le_of_bounds {A₁ E₁ A₂ E₂ : ℕ} (hS : Schedul
         (2 * (p + w) + ℓ * (h * m) + D + 4) ^ (E₁ + E₂) := by
   set b := h * m with hbdef
   have hb : b ≠ 0 := Nat.mul_ne_zero (by omega) (by omega)
-  have hℓ2 : 2 ≤ ℓ := by
-    by_contra hlt
-    rw [show ℓ - 2 = 0 by omega, Nat.zero_mul] at hbudget
-    omega
+  have hℓ2 : 2 ≤ ℓ := by grind
   obtain ⟨K, _, _, _, hcard⟩ := exists_field_card_eq_two_pow hb
   classical
   obtain ⟨bits⟩ := nonempty_addEquiv_bitString hcard

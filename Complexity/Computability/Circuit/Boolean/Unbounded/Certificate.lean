@@ -593,11 +593,7 @@ theorem exists_claims {d n : ℕ} {gates : List (Op × List ℕ)}
     have hcw : ∀ c ∈ g.2, c < n + j := fun c hc => by have := hlt c hc; omega
     set v := evalCode interpretation false x gates with hv_def
     by_cases hlarge : 2 < g.2.length
-    · have hcost : largeGateCost signature g.1 = 1 := by
-        have h2 : 2 < g.1.arity := by
-          have : g.2.length = g.1.arity := hlen
-          omega
-        simp only [largeGateCost, h2, ↓reduceIte]
+    · have hcost : largeGateCost signature g.1 = 1 := by grind [largeGateCost]
       have hsd : ∀ c ∈ g.2, (smallDepths d n gates).getD c (d + 1) ≤ d := fun c hc => by
         have h0 := hwdc c hc
         have h1 := hdpc c hc

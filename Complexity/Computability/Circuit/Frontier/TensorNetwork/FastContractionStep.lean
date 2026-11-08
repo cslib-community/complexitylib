@@ -102,9 +102,7 @@ theorem nativeMk_eq (hx : WF x) (ha : active x = true) {c : State} (hc : c ∈ c
 /-- The level of a node index is the `2`-adic valuation of its node. -/
 theorem level_eq {k : ℕ} (hk : k < 2 ^ (slots x + 1)) :
     level x k = padicValInt 2 (node (slots x) k) := by
-  have : ((k : ℤ) - 2 ^ slots x).natAbs = k - 2 ^ slots x + (2 ^ slots x - k) := by
-    rw [show (2 : ℤ) ^ slots x = ((2 ^ slots x : ℕ) : ℤ) by push_cast; rfl]
-    omega
+  have : ((k : ℤ) - 2 ^ slots x).natAbs = k - 2 ^ slots x + (2 ^ slots x - k) := by grind
   rw [level, node, padicValInt, this, twoVal_eq (by rw [pow_succ] at hk ⊢; omega)]
 
 /-- The tapered multiplicities sum to at most `2 ^ (a + 1) h u`. -/

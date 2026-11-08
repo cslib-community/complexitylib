@@ -210,10 +210,7 @@ theorem eventually_abs_correlation_quadForm_le_of_isLittleO {A c γ : ℝ} (hA :
     Q ?_
   filter_upwards [hQ, he.bound hτpos] with n hQn hen U hU
   have h₁ := hQn U hU
-  have h₂ : e n ≤ τ * n := by
-    have := le_abs_self (e n)
-    simp only [Real.norm_eq_abs, Nat.abs_cast] at hen
-    linarith
+  have h₂ : e n ≤ τ * n := by grind [Real.norm_eq_abs, Nat.abs_cast]
   linarith
 
 end Cslib.Circuits.Frontier

@@ -239,9 +239,7 @@ theorem exists_repeat_power (c : Circuit signature n n) (T L : ℕ) (hL : 0 < L)
     rw [show 2 ^ d = 2 ^ (d - 1) * 2 by rw [← Nat.pow_succ, show (d - 1).succ = d by omega]]
     change 2 ^ (d - 1) < 2 * L + 1 at hp
     omega
-  have hfit : 2 * L < 2 ^ (n + 2) := by
-    simp only [Nat.pow_succ]
-    omega
+  have hfit : 2 * L < 2 ^ (n + 2) := by grind
   obtain ⟨out, hout, hs⟩ := exists_fixedOutput (w := n + 2) c T (2 * L) d (Fin.elim0 :
     Fin 0 → BitString n)
   refine ⟨out, fun x hx => ?_, ?_⟩

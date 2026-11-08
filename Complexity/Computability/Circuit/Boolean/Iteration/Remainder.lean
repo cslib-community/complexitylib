@@ -193,10 +193,7 @@ theorem bounded_modulus_remainder (m k : ℕ) :
   have hdn : (wide x).toNat = (d x).toNat := by
     simp only [wide, BitVec.toNat_setWidth]
     exact Nat.mod_eq_of_lt ((d x).isLt.trans_le (Nat.pow_le_pow_right (by decide) k.le_succ))
-  have hb : 2 * (wide x).toNat ≤ 2 ^ (k + 1) := by
-    rw [hdn, pow_succ]
-    have := (d x).isLt
-    omega
+  have hb : 2 * (wide x).toNat ≤ 2 ^ (k + 1) := by grind
   have hr := toNat_streamRemainder (wide x) (bits x) (by rwa [hdn]) hb
   rw [hdn] at hr
   have he : out.eval interpretation x = fun i : Fin k => (result x).getLsbD i.val := by

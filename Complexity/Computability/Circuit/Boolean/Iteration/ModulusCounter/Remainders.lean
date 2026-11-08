@@ -226,9 +226,7 @@ theorem short_remainder_circuit (k m T : ℕ) (hT : T < 2 ^ m) :
       (if decide (word x = (0 : BitVec k)) then (0 : BitVec k) else r x) =
         word (remainder T x) := by
     rw [remainder_word]
-    have hzero : word x = (0 : BitVec k) ↔ (word x).toNat = 0 := by
-      rw [← BitVec.toNat_inj]
-      simp
+    have hzero : word x = (0 : BitVec k) ↔ (word x).toNat = 0 := by grind
     simp only [decide_eq_true_eq, hzero]
     split_ifs with h0
     · simp

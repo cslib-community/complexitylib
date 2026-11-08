@@ -173,9 +173,7 @@ private theorem residual_deficit_lt (p : Program signature n g)
   have hcards : V.card + F.card ≤ n := by
     rw [← card_union_of_disjoint hFV.symm]
     simpa using card_le_univ (V ∪ F)
-  have hVc : Vᶜ.card - F.card = Uᶜ.card := by
-    rw [card_compl, card_compl, Fintype.card_coe, card_compl, Fintype.card_fin]
-    omega
+  have hVc : Vᶜ.card - F.card = Uᶜ.card := by grind [card_compl, Fintype.card_coe, Fintype.card_fin]
   have hleft (gate : Fin g) :
       (inputSupport p gate ∩ V ⊆ ∅) ↔ Disjoint (residualSupport p F gate) U := by
     constructor
