@@ -11,6 +11,7 @@ public import Complexity.Probability.Product
 public import Complexity.Probability.CorrelatedSampling.Embeddability
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Filter
+import Complexity.Probability.PMF.ToReal
 import Complexity.Probability.StatisticalDistance.Event
 
 /-!
@@ -25,7 +26,8 @@ probability of a pair of deterministic strategies `X → A` and `Y → B`
 asks `n` independent pairs of questions at once and accepts when every coordinate is accepted
 (`Cslib.PCP.TwoProverGame.pow`) [Holenstein, Definition 2.3][Holenstein2009]. Answering each
 coordinate independently with an optimal strategy shows `value G ^ n ≤ value (G.pow n)`
-(`pow_value_le_value_pow`); the parallel repetition theorem bounds `value (G.pow n)` from above.
+(`pow_value_le_value_pow`); the parallel repetition theorem bounds `value (G.pow n)` from above
+(`value_pow_le`, in `Complexity/Computability/PCP/ParallelRepetition.lean`).
 
 For a pair of strategies of the repetition, `winsOn` is the event that every coordinate in a set
 `C` is won [Holenstein, Definition 2.4][Holenstein2009] and `winProbOn` its probability. If the
@@ -84,9 +86,8 @@ noncomputable def value : ℝ := ⨆ (ha : X → A) (hb : Y → B), G.winProb ha
 
 theorem winProb_nonneg (ha : X → A) (hb : Y → B) : 0 ≤ G.winProb ha hb := ENNReal.toReal_nonneg
 
-theorem winProb_le_one (ha : X → A) (hb : Y → B) : G.winProb ha hb ≤ 1 := by
-  simpa [winProb] using
-    ENNReal.toReal_mono ENNReal.one_ne_top (Cslib.Probability.PMF.toOuterMeasure_le_one _ _)
+theorem winProb_le_one (ha : X → A) (hb : Y → B) : G.winProb ha hb ≤ 1 :=
+  Cslib.Probability.PMF.toOuterMeasure_toReal_le_one _ _
 
 section Finite
 

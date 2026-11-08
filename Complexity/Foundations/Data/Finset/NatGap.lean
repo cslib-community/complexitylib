@@ -5,7 +5,7 @@ Authors: Vincent Palma
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, finset gaps)
 
 public import Complexity.Init
 public import Mathlib.Data.Finset.Max

@@ -4,34 +4,22 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Computability.PCP.TwoProverGame
+import Complexity.Computability.PCP.TwoProverGame.CHSH
 import Complexity.Probability.PMF.Filter
 import Complexity.Probability.PMF.Map
 
 /-! # Two-prover one-round games
 
-The CHSH game: the constant strategies win with probability `3/4`, so its value is at least `3/4`
-and the value of its `n`-fold repetition is at least `(3/4)^n`. A game that accepts every answer
-has value one. Strategy extraction on the one-fold repetition, where the questions embed exactly,
-bounds every strategy of `chsh.pow 1` by the value of CHSH.
+The CHSH game (`Cslib.PCP.TwoProverGame.chsh`) has value `3/4`, so the value of its `n`-fold
+repetition is at least `(3/4)^n`. A game that accepts every answer has value one. Strategy
+extraction on the one-fold repetition, where the questions embed exactly, bounds every strategy of
+`chsh.pow 1` by the value of CHSH.
 -/
 
 namespace ComplexityTests.TwoProverGame
 
-open Cslib.PCP Cslib.Probability.CorrelatedSampling
+open Cslib.PCP Cslib.PCP.TwoProverGame Cslib.Probability.CorrelatedSampling
 open scoped Cslib.Probability.PMF
-
-/-- The **CHSH game**: uniform questions `x, y`, accepted when `a xor b = x && y`. -/
-noncomputable def chsh : TwoProverGame Bool Bool Bool Bool where
-  questions := Cslib.Probability.PMF.uniformOfFintype (Bool × Bool)
-  accepts x y a b := (a ^^ b) = (x && y)
-
-theorem winProb_chsh_const : chsh.winProb (fun _ => false) (fun _ => false) = 3 / 4 := by
-  rw [TwoProverGame.winProb, Cslib.Probability.PMF.toOuterMeasure_apply_toReal]
-  simp [chsh, Cslib.Probability.PMF.uniformOfFintype_apply, Fintype.sum_prod_type]
-  norm_num
-
-example : 3 / 4 ≤ chsh.value := winProb_chsh_const ▸ chsh.winProb_le_value _ _
 
 example (n : ℕ) : (3 / 4 : ℝ) ^ n ≤ (chsh.pow n).value := by
   rw [← winProb_chsh_const, ← chsh.winProb_pow n]

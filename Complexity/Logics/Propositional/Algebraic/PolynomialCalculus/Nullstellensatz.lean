@@ -13,13 +13,15 @@ import Complexity.Foundations.Data.MvPolynomial.Support
 import Mathlib.Tactic.Ring.RingNF
 
 /-!
-# Simulating Nullstellensatz refutations in polynomial calculus
+# Simulating Nullstellensatz proofs in polynomial calculus
 
-An NS refutation certificate of size at most `s` and degree at most `d` yields a PC refutation
-of size at most `s ^ 2 + (d + 1) * s` and degree at most `d`
+An NS certificate for a nonzero polynomial `q`, of size at most `s` and degree at most `d`,
+yields a PC proof containing `q`, of size at most `s ^ 2 + (d + 1) * s` and degree at most `d`
 (`Cslib.Logic.PL.PC.exists_isProof_of_ns`). Both bounds hold for
 the same PC proof. The construction expands each multiplier into monomials, derives the
 corresponding monomial multiples of the inputs, and combines them with their coefficients.
+The refutation case `q = 1` over nontrivial coefficients is
+`Cslib.Logic.PL.PC.exists_refutation_of_ns`.
 
 A size bound alone uses a replacement certificate. If every input has total degree at most
 `d₀`, `Cslib.Logic.PL.NS.IsProof.exists_degree_le_mul_size` gives an NS refutation
@@ -32,20 +34,22 @@ The degree-only corollary preserves the NS degree bound
 
 [de Rezende et al., Fact 8.1, p. 218][DeRezendeEtAl2021] states, over a field, that an NS proof
 of a polynomial from `n`-variate inputs yields a PC proof of size `poly(s, n)`, preserving
-degree or block-degree. Here the refutation case is proved for total degree over a nontrivial
-commutative semiring, with the explicit degree-dependent bounds above. `NS.size` follows the
+degree or block-degree. Here nonzero targets are handled for total degree over a commutative
+semiring, with the explicit degree-dependent bounds above. `NS.size` follows the
 source's size convention `∑ i, ‖p i‖ * ‖f i‖`. The size-only corollary additionally uses an
 input-degree bound and the auxiliary gap-truncation lemma proved in
 `Complexity.Logics.Propositional.Algebraic.Nullstellensatz.Proof`.
 
-The simulations assume nontrivial coefficients. Over the trivial semiring the empty input list
-has an NS refutation, since its empty sum equals `1`, but no PC refutation, since a PC proof from
-no inputs has no lines.
+The refutation simulations assume nontrivial coefficients. Over the trivial semiring the empty
+input list has an NS refutation, since its empty sum equals `1`, but no PC refutation, since a
+PC proof from no inputs has no lines.
 
 ## Main results
 
 * `Cslib.Logic.PL.PC.exists_isProof_of_ns`: simultaneous size and
-  degree bounds for one PC proof of a given NS refutation.
+  degree bounds for one PC proof of a nonzero NS target.
+* `Cslib.Logic.PL.PC.exists_refutation_of_ns`: the refutation specialization over
+  nontrivial coefficients.
 * `Cslib.Logic.PL.PC.RefutableInSize.of_ns`: PC size at most
   `(d₀ + 1) * s ^ 2 + s` from NS size at most `s` and input degrees at most `d₀`.
 * `Cslib.Logic.PL.PC.RefutableInDegree.of_ns`: PC refutability
@@ -61,18 +65,19 @@ public section
 
 namespace Cslib.Logic.PL.PC
 
-variable {V R : Type*} [CommSemiring R] [Nontrivial R]
+variable {V R : Type*} [CommSemiring R]
 
 open MvPolynomial
 
-/-- An NS refutation certificate of size at most `s` and degree at most `d` yields
-a PC refutation of size at most `s ^ 2 + (d + 1) * s` and degree at most `d`.
-Both bounds hold for the same PC proof. This gives a refutation simulation related to
+/-- An NS certificate for a nonzero polynomial `q`, of size at most `s` and degree at most `d`,
+yields a PC proof containing `q`, of size at most `s ^ 2 + (d + 1) * s` and degree at most `d`.
+Both bounds hold for the same PC proof. This gives a simulation related to
 [DeRezendeEtAl2021, Fact 8.1], with an explicit degree-dependent size bound. -/
 theorem exists_isProof_of_ns {s d : ℕ} {F : List (MvPolynomial V R)}
-    {P : Fin F.length → MvPolynomial V R} (hP : NS.IsProof F P 1)
+    {P : Fin F.length → MvPolynomial V R} {q : MvPolynomial V R}
+    (hP : NS.IsProof F P q) (hq : q ≠ 0)
     (hs : NS.size F P ≤ s) (hd : NS.degree F P ≤ d) :
-    ∃ ls : List (MvPolynomial V R), IsProof F ls ∧ 1 ∈ ls ∧
+    ∃ ls : List (MvPolynomial V R), IsProof F ls ∧ q ∈ ls ∧
       size ls ≤ s ^ 2 + (d + 1) * s ∧ degree ls ≤ d := by
   classical
   let t := Finset.univ.sigma fun i : Fin F.length => (P i).support
@@ -80,7 +85,7 @@ theorem exists_isProof_of_ns {s d : ℕ} {F : List (MvPolynomial V R)}
     fun x => monomial x.2 1 * F.get x.1
   let a : (Σ _ : Fin F.length, V →₀ ℕ) → R := fun x => (P x.1).coeff x.2
   let w : (Σ _ : Fin F.length, V →₀ ℕ) → ℕ := fun x => (F.get x.1).support.card
-  have hsum : ∑ x ∈ t, C (a x) * p x = 1 := by
+  have hsum : ∑ x ∈ t, C (a x) * p x = q := by
     dsimp only [t, p, a]
     rw [Finset.sum_sigma]
     calc
@@ -89,7 +94,7 @@ theorem exists_isProof_of_ns {s d : ℕ} {F : List (MvPolynomial V R)}
         intro i _
         simp only [← mul_assoc, C_mul_monomial, mul_one]
         rw [← Finset.sum_mul, support_sum_monomial_coeff, mul_comm]
-      _ = 1 := hP
+      _ = q := hP
   have hw : ∑ x ∈ t, w x = NS.size F P := by
     dsimp only [t, w]
     rw [Finset.sum_sigma]
@@ -107,10 +112,21 @@ theorem exists_isProof_of_ns {s d : ℕ} {F : List (MvPolynomial V R)}
     exact Nat.mul_le_mul_right _ (by omega)
   obtain ⟨ls, hls, hmem, hs', hd'⟩ :=
     exists_isProof_sum t p a w (fun x => (d + 1) * w x) d hsupport hproof
-      (by rw [hsum]; exact one_ne_zero)
+      (hsum.symm ▸ hq)
   refine ⟨ls, hls, hsum ▸ hmem, hs'.trans ?_, hd'⟩
   rw [← Finset.mul_sum, hw]
   exact Nat.add_le_add (Nat.pow_le_pow_left hs 2) (Nat.mul_le_mul_left _ hs)
+
+variable [Nontrivial R]
+
+/-- An NS refutation certificate of size at most `s` and degree at most `d` yields
+a PC refutation satisfying both bounds `s ^ 2 + (d + 1) * s` and `d`. -/
+theorem exists_refutation_of_ns {s d : ℕ} {F : List (MvPolynomial V R)}
+    {P : Fin F.length → MvPolynomial V R} (hP : NS.IsProof F P 1)
+    (hs : NS.size F P ≤ s) (hd : NS.degree F P ≤ d) :
+    ∃ ls : List (MvPolynomial V R), IsProof F ls ∧ 1 ∈ ls ∧
+      size ls ≤ s ^ 2 + (d + 1) * s ∧ degree ls ≤ d :=
+  exists_isProof_of_ns hP one_ne_zero hs hd
 
 /-- An NS refutation of size at most `s` yields a PC refutation of size at most
 `(d₀ + 1) * s ^ 2 + s` when every input polynomial has total degree at most `d₀`.
@@ -120,7 +136,7 @@ theorem RefutableInSize.of_ns {s d₀ : ℕ} {F : List (MvPolynomial V R)}
     RefutableInSize F ((d₀ + 1) * s ^ 2 + s) := by
   obtain ⟨P, hP, hs⟩ := hs
   obtain ⟨Q, hQ, hsize, hdeg⟩ := hP.exists_degree_le_mul_size hd₀
-  obtain ⟨ls, hls, h1, hS, _⟩ := exists_isProof_of_ns (s := s) (d := d₀ * s)
+  obtain ⟨ls, hls, h1, hS, _⟩ := exists_refutation_of_ns (s := s) (d := d₀ * s)
     hQ (hsize.trans hs) (hdeg.trans (Nat.mul_le_mul_left d₀ hs))
   refine ⟨ls, hls, h1, hS.trans_eq ?_⟩
   ring
@@ -129,7 +145,7 @@ theorem RefutableInSize.of_ns {s d₀ : ℕ} {F : List (MvPolynomial V R)}
 theorem RefutableInDegree.of_ns {d : ℕ} {F : List (MvPolynomial V R)}
     (hs : NS.RefutableInDegree F d) : RefutableInDegree F d := by
   obtain ⟨P, hP, hd⟩ := hs
-  obtain ⟨ls, hls, h1, _, hd'⟩ := exists_isProof_of_ns hP le_rfl hd
+  obtain ⟨ls, hls, h1, _, hd'⟩ := exists_refutation_of_ns hP le_rfl hd
   exact ⟨ls, hls, h1, hd'⟩
 
 end Cslib.Logic.PL.PC

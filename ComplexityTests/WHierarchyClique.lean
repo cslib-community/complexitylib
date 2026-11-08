@@ -1,0 +1,167 @@
+/-
+Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Samuel Schlesinger
+-/
+
+import Complexity.Computability.Complexity.Parameterized.WHierarchy.Clique
+
+/-!
+# Tests: the graph of a circuit of weft one
+
+The short lists over a list, what a bracket knows about a position, consistency of brackets, and
+cliques of a graph given by a Boolean adjacency, evaluated by `decide`. Then the correctness of
+the graph construction on small instances: the graph of the fixed yes-instance of `WCS 1 1` has a
+clique of the size and that of the fixed no-instance has none, and the graph of the conjunction of
+three inputs has a clique of the size for weight `3` and none for weight `2`. The graph of the
+first of two inputs is computed for weights `0` and `1`: for weight `0` it has no edge, so the
+refutation of a certificate by a bracket is exercised. Finally the
+hardness: the clique size bound, `W[1]`-completeness of `Clique` and `IndependentSet`, a problem
+of `W[1]` reducing to `IndependentSet`, and `Clique` in `FPT` putting every `WCS 1 d` in `FPT`.
+-/
+
+namespace ComplexityTests.WHierarchyClique
+
+open Cslib Cslib.Complexity Cslib.Circuits Cslib.Circuits.Boolean Turing.MultiTapeTM WCS
+  WCS.ToClique
+
+/-! ### Short lists -/
+
+example : [0, 1].listsUpTo 2 = [[], [0], [0, 0], [0, 1], [1], [1, 0], [1, 1]] := by decide
+
+example : ([0, 1].listsUpTo 2).length = 7 ∧ (List.range 3).listsUpTo 0 = [[]] := by decide
+
+/-! ### Brackets -/
+
+-- The selected positions are `1 < 3` (`kk = 2`), and the bracket names the first one. It knows
+-- that `1` is selected and that `0` is not (it is before the first selected position), and does
+-- not know `2`.
+example : know 2 [(0, 1)] 1 = some true ∧ know 2 [(0, 1)] 0 = some false ∧
+    know 2 [(0, 1)] 2 = none := by decide
+
+-- Naming both selected positions shows that `2`, between them, and `4`, after the last, are not
+-- selected.
+example : know 2 [(0, 1), (1, 3)] 2 = some false ∧ know 2 [(0, 1), (1, 3)] 4 = some false := by
+  decide
+
+-- With no selected position, no position is selected.
+example : know 0 [] 5 = some false := by decide
+
+-- Brackets agreeing on the order of indices and positions are consistent; brackets naming two
+-- positions for one index, or out of order, are not.
+example : consistent [(0, 1)] [(1, 3)] = true ∧ consistent [(0, 1)] [(0, 2)] = false ∧
+    consistent [(0, 3)] [(1, 1)] = false := by decide
+
+/-! ### Graphs from a Boolean adjacency -/
+
+-- Three pairwise distinct vertices, adjacent when distinct: a triangle.
+example : ((Graph.ofAdj [0, 1, 2] fun a b => a != b), 3) ∈ Clique := by
+  rw [Graph.mem_Clique_ofAdj_iff_entries (fun v => by simp)]
+  exact ⟨{0, 1, 2}, by decide, by decide, by decide⟩
+
+-- Adjacent only when both are even: the largest clique has two vertices.
+example : ((Graph.ofAdj [0, 1, 2] fun a b => a != b && a % 2 == 0 && b % 2 == 0), 3) ∉ Clique := by
+  rw [Graph.mem_Clique_ofAdj_iff_entries (fun v => by simp)]
+  rintro ⟨T, hT, hTv, hTadj⟩
+  have hsub : T ⊆ {0, 1, 2} := fun v hv => by simpa using hTv v hv
+  have h1 : (1 : ℕ) ∉ T := fun h1 => by
+    obtain ⟨w, hw, hw1⟩ : ∃ w ∈ T, w ≠ 1 := by
+      by_contra! h
+      have : T ⊆ {1} := fun v hv => by simpa using h v hv
+      have := Finset.card_le_card this
+      simp at this
+      omega
+    have := hTadj 1 h1 w hw hw1.symm
+    simp at this
+  have : T ⊆ {0, 2} := fun v hv => by
+    have := hsub hv
+    simp only [Finset.mem_insert, Finset.mem_singleton] at this ⊢
+    rcases this with rfl | rfl | rfl
+    · exact Or.inl rfl
+    · exact absurd hv h1
+    · exact Or.inr rfl
+  have := Finset.card_le_card this
+  simp at this
+  omega
+
+/-! ### Correctness on small instances -/
+
+example : toClique (WCS.yesInstance 1) ∈ Clique :=
+  (toClique_mem_Clique_iff _).2 (WCS.yesInstance_mem 1)
+
+example : toClique (WCS.noInstance 1) ∉ Clique :=
+  fun h => WCS.noInstance_not_mem 1 ((toClique_mem_Clique_iff _).1 h)
+
+/-- The conjunction of three inputs, as a circuit of weft at most `1` and depth at most `1`. -/
+def and3 : WeftCircuit 1 1 :=
+  ⟨⟨3, ⟨Program.empty.gate ⟨.and 3, fun i => .input i⟩, fun _ => .gate 0⟩⟩, by decide⟩
+
+-- The graph of the conjunction of three inputs has a clique of the size for weight `3`, and none
+-- for weight `2`.
+example : toClique (and3, 3) ∈ Clique :=
+  (toClique_mem_Clique_iff _).2 ⟨fun _ => true, by decide, by decide⟩
+
+example : toClique (and3, 2) ∉ Clique := by
+  rw [toClique_mem_Clique_iff]
+  rintro ⟨x, hk, hx⟩
+  revert hk hx
+  revert x
+  unfold BitString.weight
+  decide
+
+-- The clique size: one certificate and one bracket for each list of at most `2 ^ (d + 1)`
+-- indices.
+example : size 0 3 1 = 4 ∧ size 0 3 5 = 22 := by decide
+
+/-- The first of two inputs, as a circuit of weft and depth `0`. -/
+def fst2 : WeftCircuit 1 0 :=
+  ⟨⟨2, ⟨Program.empty, fun _ => .input 0⟩⟩, by decide⟩
+
+-- The graph itself, computed by `decide`. For weight `0` it has two vertices, the certificate and
+-- the empty bracket, and no edge: the empty bracket says that input `0` is not selected, which
+-- refutes the certificate. The clique size is `2`, so there is no clique of the size.
+example : (toClique (fst2, 0)).1.1.length = 2 ∧ (toClique (fst2, 0)).1.2 = [] ∧
+    (toClique (fst2, 0)).2 = 2 := by decide
+
+-- For weight `1` the graph has eight vertices and clique size `4`.
+example : (toClique (fst2, 1)).1.1.length = 8 ∧ (toClique (fst2, 1)).2 = 4 := by decide
+
+example : toClique (fst2, 0) ∉ Clique := by
+  rw [toClique_mem_Clique_iff]
+  rintro ⟨x, hk, hx⟩
+  revert hk hx
+  revert x
+  unfold BitString.weight
+  decide
+
+example : toClique (fst2, 1) ∈ Clique :=
+  (toClique_mem_Clique_iff _).2 ⟨fun i => decide (i.1 = 0), by decide, by decide⟩
+
+/-! ### Hardness -/
+
+-- The clique size against its bound `(k + 1) ^ 2 ^ (d + 1) + 1`.
+example : size 0 3 5 = 22 ∧ 22 ≤ (5 + 1) ^ 2 ^ (0 + 1) + 1 := by decide
+
+example : size 0 3 5 ≤ (5 + 1) ^ 2 ^ (0 + 1) + 1 := size_le 0 3 5
+
+-- `Clique` and `IndependentSet` are `W[1]`-complete.
+example : Clique ∈ W 1 (encPair encGraph encNat) Prod.snd ∧
+    WHard 1 (encPair encGraph encNat) Prod.snd Clique :=
+  ⟨Clique_mem_W, Clique_wHard⟩
+
+example : IndependentSet ∈ W 1 (encPair encGraph encNat) Prod.snd ∧
+    WHard 1 (encPair encGraph encNat) Prod.snd IndependentSet :=
+  ⟨IndependentSet_mem_W, IndependentSet_wHard⟩
+
+-- A problem of `W[1]` fpt-reduces to `IndependentSet`.
+example : FPTReducible (encWCS 1 5) (encPair encGraph encNat) Prod.snd Prod.snd (WCS 1 5)
+    IndependentSet :=
+  IndependentSet_wHard _ _ _ (WCS_mem_W 1 5)
+
+-- If `Clique` is in `FPT`, so is weighted satisfiability of every class of weft-one circuits.
+example (h : Clique ∈ FPT (encPair encGraph encNat) Prod.snd) (d : ℕ) :
+    WCS 1 d ∈ FPT (encWCS 1 d) Prod.snd := by
+  rw [← W_one_eq_FPT_iff.2 h]
+  exact WCS_mem_W 1 d
+
+end ComplexityTests.WHierarchyClique
