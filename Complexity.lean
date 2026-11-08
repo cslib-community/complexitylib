@@ -4610,6 +4610,8 @@ public import Complexity.Logics.FirstOrder.Interpretation.Rank
 public import Complexity.Logics.FirstOrder.Interpretation.Tagged
 public import Complexity.Logics.FirstOrder.Interpretation.Tuple
 public import Complexity.Logics.FirstOrder.Interpretation.Unit
+public import Complexity.Logics.FirstOrder.Locality.Gaifman
+public import Complexity.Logics.FirstOrder.Locality.Hanf
 public import Complexity.Logics.FirstOrder.Operator.Basic
 public import Complexity.Logics.FirstOrder.Operator.Definability
 public import Complexity.Logics.FirstOrder.Operator.Definability.Finite
