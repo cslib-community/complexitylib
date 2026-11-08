@@ -246,6 +246,30 @@ degree at most `1` in each variable, so over an integral domain any `S` with two
 perfect matching (not formalized). Run
 `scripts/build.sh ComplexityTests.EdmondsMatching`.
 
+For a general graph, import [Matching/Tutte.lean](../../Complexity/Algorithms/Matching/Tutte.lean).
+The graph is a Mathlib `G : SimpleGraph V` with `[DecidableRel G.Adj]` on a finite, linearly ordered
+`V`, and a perfect matching is `∃ M : G.Subgraph, M.IsPerfectMatching`. `tutteMatrix G` has one
+indeterminate per unordered pair, `X s(i, j)` at an edge with `i < j` and `-X s(i, j)` at an edge
+with `j < i`. `det_tutteMatrix_ne_zero_iff` is Tutte's matrix theorem, proved here over any
+nontrivial commutative ring (the sources state it over a field). For Tutte's combinatorial
+odd-component criterion use Mathlib's `SimpleGraph.tutte`. The randomized test uses `tutteEval G r` with `r : Sym2 V → R`. As in the bipartite case,
+`det_tutteEval_eq_zero` gives no false positives, `card_det_tutteEval_eq_zero_div_le` bounds false
+negatives by `|V| / |S|` over an integral domain, and `exists_det_tutteEval_ne_zero` finds detecting
+values in any `S` with more than `|V|` elements. Two reusable pieces sit underneath:
+`Matrix.det_eq_sum_even_cycleType_of_transpose_eq_neg` in
+[SkewDeterminant.lean](../../Complexity/Foundations/LinearAlgebra/Matrix/SkewDeterminant.lean)
+(odd cycles cancel in a skew-symmetric determinant, via `Equiv.Perm.reverseCycle` in
+[ReverseCycle.lean](../../Complexity/Foundations/GroupTheory/Perm/ReverseCycle.lean); an alternating
+matrix of odd order has determinant `0`), and `SimpleGraph.exists_isPerfectMatching_of_perm` in
+[PermMatching.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/PermMatching.lean) (a
+permutation along the edges with only even cycles gives a perfect matching). The
+[checked clients](../../ComplexityTests/TutteMatching.lean), a `module`, compute the determinant
+`r²` of a single edge and its `2 / 3` probability bound over `{0, 1, 2}`, extract and detect a
+perfect matching of `K₄` from the rotation of `Fin 4`, show that the triangle's Tutte matrix is
+singular at all values and that the star `K₁,₃` has the zero Tutte polynomial, and show that the
+zero-diagonal hypothesis is needed over `ZMod 2`. Run
+`scripts/build.sh ComplexityTests.TutteMatching`.
+
 To find the matching rather than only detect it, import
 [Matching/MVV.lean](../../Complexity/Algorithms/Matching/MVV.lean), the algebraic core of
 Mulmuley, Vazirani and Vazirani for bipartite graphs. `weightedEdmonds G w` is the Edmonds matrix
