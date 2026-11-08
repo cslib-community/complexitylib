@@ -30,7 +30,8 @@ any fixed bits all but fewer than `N` seeds give the OR. This is a seeded form o
 polynomial for OR of Razborov [Razborov1987] and Smolensky [Smolensky1987], with seeds from the
 powering construction of Alon, Goldreich, Håstad and Peralta [AlonGoldreichHastadPeralta1992,
 Section 3]. Beigel and Tarui instead isolate a true bit by the Valiant–Vazirani lemma
-[BeigelTarui1994, Lemma 2.3]; both give `O(log s)` seed bits and degree.
+[BeigelTarui1994, Lemma 2.3]. Here the seed is one field element and the test has degree `|κ|`,
+its dimension over `𝔽₂`.
 
 ## Main definitions
 

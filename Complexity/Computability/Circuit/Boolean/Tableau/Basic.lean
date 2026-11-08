@@ -69,6 +69,7 @@ only inputs and earlier gates. Its correctness is proved in
 * `Cslib.Circuits.Boolean.Tableau.gateCode_wire`: the gate at a position's wire is the gate of its
   position.
 * `Cslib.Circuits.Boolean.Tableau.isCodeFrom_gates`: the gate list is the code of a program.
+* `Cslib.Circuits.Boolean.Tableau.gateCode_wf`: each gate has its arity and reads earlier wires.
 * `Cslib.Circuits.Boolean.Tableau.code_circuit`: the code of the circuit is the gate list with
   the output wire.
 
@@ -503,6 +504,14 @@ theorem isCodeFrom_gates (n T : ℕ) : Program.IsCodeFrom signature n 0 (gates t
     rw [wire_sub] at hw ⊢
     simp only [wire] at this
     omega
+
+/-- Every gate of the tableau has as many arguments as its operation takes, and its arguments are
+earlier wires. -/
+theorem gateCode_wf {n T g : ℕ} (hg : g < numGates k State T) :
+    (gateCode tm n T g).2.length = signature.Arity (gateCode tm n T g).1 ∧
+      ∀ i ∈ (gateCode tm n T g).2, i < n + g := by
+  have h := (isCodeFrom_gates tm n T).getElem g (by simpa [gates] using hg)
+  simpa [gates] using h
 
 omit [DecidableEq State] in
 /-- The output wire index is strictly less than the total number of wires

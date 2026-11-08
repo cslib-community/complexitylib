@@ -52,6 +52,8 @@ exponential time to `APSPACE`.
 
 ## Main results
 
+* `Turing.MultiTapeATM.WordGame.wins_false_cons_cons_iff`,
+  `Turing.MultiTapeATM.WordGame.wins_true_cons_cons_iff`: won positions of each player.
 * `Turing.MultiTapeATM.wordGame_spec`: the machine stays within the space of the preparation and of
   one round, accepts exactly when the existential player wins, and halts within a time linear in
   the length of the longest play.
@@ -94,6 +96,49 @@ inductive Wins (U : List Bool → List Bool) : List Bool → Prop
   | _, [_] => True
   | 0, _ :: _ :: _ => False
   | n + 1, u :: _ :: r => ∀ b, Ends U n (U (u :: b :: r))
+
+/-- A position of the existential player is won exactly when some move leads to a won position. -/
+theorem wins_false_cons_cons_iff {U : List Bool → List Bool} {x : Bool} {r : List Bool} :
+    Wins U (false :: x :: r) ↔ ∃ b, Wins U (U (false :: b :: r)) := by
+  constructor
+  · intro h
+    cases h with
+    | existsMove b h => exact ⟨b, h⟩
+  · rintro ⟨b, h⟩
+    exact .existsMove b h
+
+/-- A position of the universal player is won exactly when every move leads to a won position. -/
+theorem wins_true_cons_cons_iff {U : List Bool → List Bool} {x : Bool} {r : List Bool} :
+    Wins U (true :: x :: r) ↔ ∀ b, Wins U (U (true :: b :: r)) := by
+  constructor
+  · intro h
+    cases h with
+    | forallMove h => exact h
+  · intro h
+    exact .forallMove h
+
+/-- The empty position is lost. -/
+theorem not_wins_nil {U : List Bool → List Bool} : ¬ Wins U [] := by
+  intro h
+  cases h
+
+/-- A one-bit position is won exactly when the bit is `true`. -/
+theorem wins_singleton_iff {U : List Bool → List Bool} {b : Bool} : Wins U [b] ↔ b = true := by
+  constructor
+  · intro h
+    cases h
+    rfl
+  · rintro rfl
+    exact .accept
+
+/-- A bound on the length of the plays may be raised. -/
+theorem Ends.mono {U : List Bool → List Bool} :
+    ∀ {m n : ℕ} {w : List Bool}, m ≤ n → Ends U m w → Ends U n w
+  | _, _, [], _, _ => by simp [Ends]
+  | _, _, [_], _, _ => by simp [Ends]
+  | 0, _, _ :: _ :: _, _, h => h.elim
+  | m + 1, n + 1, u :: x :: r, hmn, h => fun b => Ends.mono (by omega) (h b)
+  | _ + 1, 0, _ :: _ :: _, hmn, _ => absurd hmn (by omega)
 
 /-! ### The machine -/
 
