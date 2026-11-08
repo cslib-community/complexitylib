@@ -722,10 +722,10 @@ universe size, not supplied as unverified input tables. In dependency order:
 - Extend the synthesis rules to nested operator bodies and give regular-language quantifiers
   their ordered characteristic-word semantics.
 - **FO(TC) = NL** on ordered structures
-  ([#1246](https://github.com/cslib-community/complexitylib/issues/1246)): closures under negation
-  in the native NL model checker via an inductive-counting block, and NL ⊆ FO(positive TC) via
-  configuration-graph reachability. Separately, the native NL closure facts this route bypasses:
-  intersection, union, logspace reductions and NL^(NL ∩ coNL) = NL.
+  ([#1246](https://github.com/cslib-community/complexitylib/issues/1246)): NL ⊆ FO(TC) via
+  configuration-graph reachability under the ordered encoding (FO(TC) ⊆ NL is done). Separately,
+  the native NL closure facts the in-compiler inductive counting bypasses: intersection, union,
+  logspace reductions and NL^NL = NL.
 - Further logical characterizations on ordered structures: FO(DTC) = L,
   SO-Horn = P (Grädel), and DLOGTIME-uniform AC⁰ = FO(≤, BIT) (Barrington–Immerman–Straubing);
   then order-invariant and fixed-point queries and uniform translations between syntax,
@@ -1108,8 +1108,8 @@ each statement against the numbered result. Organize modules by subject, not cha
   incompatible models, and a bridge between the query and circuit models; complete problems for
   BQP; for QMA ([#2876](https://github.com/cslib-community/complexitylib/issues/2876)), error
   reduction from an inverse-polynomial gap, strong error reduction that keeps the witness length,
-  `QMA ⊆ PP` ([#3028](https://github.com/cslib-community/complexitylib/issues/3028)),
-  mixed witnesses, QCMA and the local Hamiltonian problem; related query,
+  `PromiseQMA(c, s) ⊆ PP` for non-constant `c(n), s(n)` with an inverse-polynomial gap,
+  `QMA ⊆ A₀PP`, mixed witnesses, QCMA and the local Hamiltonian problem; related query,
   communication and interactive classes, with amplification, containments and complete problems.
   Supply the
   [quantum adversary models](#concurrent-and-quantum-security) needed by cryptographic
@@ -1298,10 +1298,11 @@ densities (expected revenue equals expected virtual welfare; Vickrey with a rese
   second-moment analysis (#3003). Implement Metropolis sampling for encoded
   rational target weights, charging initialization, arithmetic and every transition, with support and
   mixing hypotheses explicit.
-- **FPRAS and almost-uniform sampling:** an almost-uniform sampling (FPAUS) interface with
-  explicit output-distribution error alongside the FPRAS interface, and sampling/counting
-  reductions for suitably self-reducible relations, with the sampling and counting oracle
-  costs included.
+- **FPRAS and almost-uniform sampling:** `Classes/FPRAS` and `Classes/FPAUS` give the two
+  interfaces, and `Classes/FPAUS/FPRAS` proves FPAUS ⇒ FPRAS for one-bit self-reducible
+  witness families (#3039). Prove the converse FPRAS ⇒ FPAUS with Jerrum–Valiant–Vazirani
+  rejection sampling, allow self-reductions fixing several symbols per step, and instantiate both
+  directions for concrete relations such as DNF assignments.
 - Extend to randomized approximate counting for matchings and permanents of nonnegative
   rational matrices through explicit mixing and reduction theorems. Reuse the coupling and
   expander APIs and connect to the separate Stockmeyer oracle-counting track where their

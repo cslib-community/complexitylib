@@ -1331,6 +1331,7 @@ public import Complexity.Computability.Circuit.Parallel
 public import Complexity.Computability.Circuit.Pi
 public import Complexity.Computability.Circuit.Pointwise
 public import Complexity.Computability.Circuit.Program
+public import Complexity.Computability.Circuit.Quantum.AcceptOperator
 public import Complexity.Computability.Circuit.Quantum.Basic
 public import Complexity.Computability.Circuit.Quantum.Classical
 public import Complexity.Computability.Circuit.Quantum.Code
@@ -1514,6 +1515,10 @@ public import Complexity.Computability.Complexity.Classes.DP
 public import Complexity.Computability.Complexity.Classes.EXP
 public import Complexity.Computability.Complexity.Classes.EXP.Padding
 public import Complexity.Computability.Complexity.Classes.EXP.Separation
+public import Complexity.Computability.Complexity.Classes.FPAUS
+public import Complexity.Computability.Complexity.Classes.FPAUS.Counting
+public import Complexity.Computability.Complexity.Classes.FPAUS.FPRAS
+public import Complexity.Computability.Complexity.Classes.FPAUS.SelfReducible
 public import Complexity.Computability.Complexity.Classes.FPRAS
 public import Complexity.Computability.Complexity.Classes.FewP
 public import Complexity.Computability.Complexity.Classes.FewP.Machine
@@ -1570,6 +1575,7 @@ public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.Re
 public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.Transducer
 public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure
 public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Compile
+public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Counting
 public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Loop
 public import Complexity.Computability.Complexity.Classes.LogSpace.PolyTime
 public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized
@@ -1660,6 +1666,7 @@ public import Complexity.Computability.Complexity.Classes.Promise.Time
 public import Complexity.Computability.Complexity.Classes.Promise.Time.Verifier
 public import Complexity.Computability.Complexity.Classes.QMA
 public import Complexity.Computability.Complexity.Classes.QMA.Amplification
+public import Complexity.Computability.Complexity.Classes.QMA.Counting
 public import Complexity.Computability.Complexity.Classes.QMA.MA
 public import Complexity.Computability.Complexity.Classes.QMA.NP
 public import Complexity.Computability.Complexity.Classes.RP
@@ -4488,6 +4495,7 @@ public import Complexity.Foundations.Probability.TrueSampleMeans
 public import Complexity.Foundations.Quantum.HadamardTransform
 public import Complexity.Foundations.Quantum.Measurement
 public import Complexity.Foundations.Quantum.Measurement.Overlap
+public import Complexity.Foundations.Quantum.Measurement.Restrict
 public import Complexity.Foundations.Quantum.TensorPower
 public import Complexity.Foundations.Relation.Acyclic
 public import Complexity.Foundations.Relation.InductiveCounting
