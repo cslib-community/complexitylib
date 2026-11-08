@@ -1010,6 +1010,13 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `W[1] = FPT` exactly when `Clique` is in `FPT`. Remaining
   ([#3256](https://github.com/cslib-community/complexitylib/issues/3256)): `W[t] ⊆ XP`,
   W[2]-completeness of Dominating Set, short Turing machine acceptance, `W[P]` and the A-hierarchy.
+- **Exact exponential algorithms** ([#3013](https://github.com/cslib-community/complexitylib/issues/3013)):
+  the Bellman–Held–Karp dynamic program for TSP, correct against brute force in `n² · 2ⁿ`
+  unit-cost operations and deciding `TSP` and `HamCycle`, is in `Algorithms/Lean/TSP/HeldKarp`.
+  Remaining: inclusion–exclusion counting of Hamiltonian paths (Karp; Bax) in `2ⁿ · poly(n)` time
+  and polynomial space, with the space bound in a model that measures it; machine-level
+  certificates for these algorithms; and further exact algorithms such as subset convolution and
+  inclusion–exclusion colouring.
 - **Exponential-time SAT** ([#894]): Schöning, PPZ and PPSZ run on the randomized word RAM with
   exact laws, amplification and time bounds (PPSZ's round count takes an input bound
   `a / b ≥ 1 - qbar k h`); Schöning has a curated abstract. Optional remainder: PPZ and PPSZ

@@ -104,6 +104,11 @@ Richard Beigel and John Gill. "Counting Classes: Thresholds, Parity, Mods, and F
 
 Richard Bellman. "On a Routing Problem." *Quarterly of Applied Mathematics* 16(1), 87–90, 1958. https://doi.org/10.1090/qam/102435 . Bibliographic data from the DOI record and secondary summaries; the paper was not inspected in this pass.
 
+<a id="bellman62"></a>
+## bellman62
+
+Richard Bellman. “Dynamic Programming Treatment of the Travelling Salesman Problem.” *Journal of the ACM* 9(1), 61–63, 1962. https://doi.org/10.1145/321105.321111 . Bibliographic metadata checked on 2026-11-07; the article body was not inspected in this pass, so the manual cites it for the subset dynamic program and not for a numbered statement.
+
 <a id="bennett89"></a>
 ## bennett89
 
@@ -436,6 +441,11 @@ Samuel Fiorini, Serge Massar, Sebastian Pokutta, Hans Raj Tiwary and Ronald de W
 
 Marshall L. Fisher, George L. Nemhauser, Laurence A. Wolsey. “An Analysis of Approximations for Maximizing Submodular Set Functions—II.” *Mathematical Programming Study* 8, 73–87, 1978. https://doi.org/10.1007/BFb0121195 . Bibliographic data from the DOI record; the paper is paywalled and its full text was not inspected. The manual attributes to it only the greedy `1/2` (matroid) and `1/(p+1)` (intersection of `p` matroids) bounds, following [Călinescu et al.](#ccpv11), Section 1 and Appendix B.
 
+<a id="fominkratsch10"></a>
+## fominkratsch10
+
+Fedor V. Fomin and Dieter Kratsch. *Exact Exponential Algorithms*. Texts in Theoretical Computer Science, An EATCS Series. Springer, 2010. https://doi.org/10.1007/978-3-642-16533-7 . Bibliographic metadata checked on 2026-11-07. The locator (Section 1.2, the dynamic program for TSP in the introductory chapter) was taken from secondary descriptions and review; the book body was not inspected in this pass.
+
 <a id="fortnowsanthanam2011"></a>
 ## fortnowsanthanam2011
 
@@ -576,6 +586,11 @@ Jason D. Hartline. *Mechanism Design and Approximation*, book manuscript; chapte
 ## hartmanis1968
 
 Juris Hartmanis. "Computational Complexity of One-Tape Turing Machine Computations." *Journal of the ACM* 15(2), 325–339, 1968. https://doi.org/10.1145/321450.321464 . Bibliographic metadata checked through Crossref; the article body was not inspected in this pass. The manual cites it for the `n log n` lower bound on one-tape recognition of nonregular languages, as attributed in [Pighizzini 2009](#pighizzini2009), §1 and §4.
+
+<a id="heldkarp62"></a>
+## heldkarp62
+
+Michael Held and Richard M. Karp. “A Dynamic Programming Approach to Sequencing Problems.” *Journal of the Society for Industrial and Applied Mathematics* 10(1), 196–210, 1962. https://doi.org/10.1137/0110015 . Bibliographic metadata checked on 2026-11-07; the article body was not inspected in this pass, so the manual cites it for the subset dynamic program and not for a numbered statement.
 
 <a id="hennie1965"></a>
 ## hennie1965

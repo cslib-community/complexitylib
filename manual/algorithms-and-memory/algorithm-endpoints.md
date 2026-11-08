@@ -1141,6 +1141,16 @@ Import `Complexity.Algorithms.Lean.KCenter.Gonzalez` ([source](../../Complexity/
 
 The [k-center examples](../../ComplexityTests/KCenter.lean) run Gonzalez on three points of a line at `0, 1, 2` with one center. It picks the endpoint and has radius `2`, while the middle point has radius `1`, so the factor `2` is attained. The same tight instance appears on the path `0 - 1 - 2` with `domDist`, where Gonzalez's center does not dominate, so the gap needs `ρ < 2`. A symmetric distance violating the triangle inequality makes Gonzalez pay `100` against an optimum of `1`. A distance vanishing between distinct points makes it repeat a center. The Hochbaum–Shmoys threshold algorithm, k-supplier and k-median are open ([ROADMAP](../../ROADMAP.md#combinatorial-optimization)).
 
+## Exact exponential algorithms: Bellman–Held–Karp
+
+Import `Complexity.Algorithms.Lean.TSP.HeldKarp` ([source](../../Complexity/Algorithms/Lean/TSP/HeldKarp.lean)) for the algorithm and `Complexity.Computability.Complexity.Problems.TSP.HeldKarp` ([source](../../Complexity/Computability/Complexity/Problems/TSP/HeldKarp.lean)) for the decision problems. Like the set-cover algorithm above, `heldKarp d` is a pure Lean program, here in cslib's `TimeM ℕ` tick monad, not a machine program. The cities are `Fin (n + 1)` and `d` is any cost function into a linearly ordered additive commutative monoid: costs may be asymmetric, non-metric or negative (`ℤ`), or `⊤` for a missing edge (`WithTop ℕ`). Tours start and end at city `0`. `walkCosts d S t` is the set of costs of the walks that leave `0`, visit each city of `S ⊆ {1, …, n}` once and then move to `t`. The table entry for `(S, t)` with `t = i + 1`, `i ∉ S`, is the Held–Karp value `C(S ∪ {t}, t)` of [Bellman][bellman62] and [Held and Karp][heldkarp62] ([Fomin and Kratsch, Section 1.2][fominkratsch10]). The table also holds an entry `(S, 0)` for every `S`, the least cost from `0` through `S` back to `0`; only `(univ, 0)`, the optimal tour, is read, and Held and Karp compute it by a separate closing minimization. Walk and closed-walk costs (`walkCost`, `cycleCost`, `cycleCost_cons`, `cycleCost_rotate`) live in `Complexity.Algorithms.Lean.TSP.Walk`, shared with the MST tour above.
+
+- **Correctness:** `isLeast_heldKarp` proves that `(heldKarp d).ret` is the least element of `walkCosts d univ 0`; `isLeast_heldKarp_permutations` restates this against brute force over all permutations of `1, …, n`. The proof goes through Bellman's principle `isLeast_walkCosts_of_forall` and the table invariant `HeldKarp.isLeast_tableM`.
+- **Cost:** `time_heldKarp_le` bounds the ticks by `n² · 2ⁿ`. A tick is one candidate `T (S \ {i}, i) + d i t`, i.e. one addition and one comparison in `W`, whatever the size of the numbers. Table reads and writes and the enumeration of subsets are free, and `TimeM` does not measure the `2ⁿ (n + 1)`-entry table.
+- **Decision problems:** `TSP.mem_TSP_iff_heldKarp_le` identifies `TSP` membership of a matrix with `n + 1` rows with `heldKarp` on its `dist` entries; this uses `TSP.tourLength_eq_cycleCost` and the rotation invariance `cycleCost_rotate`. `TSP.heldKarpDecide` decides `TSP` (`heldKarpDecide_eq_true_iff`) in `(n - 1)² · 2ⁿ⁻¹` ticks on `n` cities, and composed with the polynomial-time reduction `HamCycle.toTSP` it decides `HamCycle` within the same bound in the number of distinct vertices. No machine-level certificate is given: the bounds count unit-cost operations, not Turing-machine or word-RAM steps.
+
+The [checked examples](../../ComplexityTests/TSPHeldKarp.lean) compare a four-city optimum with all six tours, use negative integer costs, cover the one-city edge case and the empty `TSP` instance, and decide `HamCycle` on a triangle (yes) and a three-vertex path (no). Inclusion–exclusion counting of Hamiltonian paths in `2ⁿ · poly(n)` time and polynomial space is open ([ROADMAP](../../ROADMAP.md#search-parameterized-and-fine-grained-complexity)).
+
 ## Lovász theta and Shannon capacity
 
 These are graph invariants with no algorithm attached yet. They are the mathematical side of the semidefinite route to perfect-graph optimization ([ROADMAP](../../ROADMAP.md#optimization-and-duality)). Modules under `Complexity/Foundations/Combinatorics/SimpleGraph/` build them on Mathlib's `SimpleGraph.indepNum`, `chromaticNumber` and `cycleGraph`; [IndepNum.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/IndepNum.lean) adds the general facts about `indepNum` they need (monotonicity under embeddings, invariance under isomorphism, `α(G) ≤ |V|`). `import Complexity.Foundations.Combinatorics.SimpleGraph.Pentagon` brings in all of them, and the notation `⊠` needs `open SimpleGraph`:
@@ -1364,6 +1374,7 @@ The numeric values above are transcriptions of checked source statements, not re
 
 [ahocorasick75]: ../sources.md#ahocorasick75
 [babai86]: ../sources.md#babai86
+[bellman62]: ../sources.md#bellman62
 [berge57]: ../sources.md#berge57
 [berge58]: ../sources.md#berge58
 [complexitylib]: ../sources.md#complexitylib
@@ -1386,6 +1397,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [floyd62]: ../sources.md#floyd62
 [fmptw15]: ../sources.md#fmptw15
 [fnw78]: ../sources.md#fnw78
+[fominkratsch10]: ../sources.md#fominkratsch10
 [freivalds79]: ../sources.md#freivalds79
 [gilbertpollak68]: ../sources.md#gilbertpollak68
 [goemanswilliamson95]: ../sources.md#goemanswilliamson95
@@ -1393,6 +1405,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [gomoryhu61]: ../sources.md#gomoryhu61
 [gusfield90]: ../sources.md#gusfield90
 [gusfield97]: ../sources.md#gusfield97
+[heldkarp62]: ../sources.md#heldkarp62
 [hierholzer73]: ../sources.md#hierholzer73
 [hmu06]: ../sources.md#hmu06
 [kargerstein96]: ../sources.md#kargerstein96

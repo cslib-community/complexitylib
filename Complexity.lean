@@ -176,9 +176,11 @@ public import Complexity.Algorithms.Lean.SuffixArray.Basic
 public import Complexity.Algorithms.Lean.SuffixArray.Kasai
 public import Complexity.Algorithms.Lean.SuffixArray.Search
 public import Complexity.Algorithms.Lean.TSP.Christofides
+public import Complexity.Algorithms.Lean.TSP.HeldKarp
 public import Complexity.Algorithms.Lean.TSP.MSTTour
 public import Complexity.Algorithms.Lean.TSP.PerfectMatching
 public import Complexity.Algorithms.Lean.TSP.Shortcut
+public import Complexity.Algorithms.Lean.TSP.Walk
 public import Complexity.Algorithms.Lean.TimeM.Loops
 public import Complexity.Algorithms.Lean.TreeDecomposition.BagMask
 public import Complexity.Algorithms.Lean.TreeDecomposition.IndependentSet
@@ -2229,6 +2231,7 @@ public import Complexity.Computability.Complexity.Problems.TQBF.Closed
 public import Complexity.Computability.Complexity.Problems.TSP
 public import Complexity.Computability.Complexity.Problems.TSP.Approximation
 public import Complexity.Computability.Complexity.Problems.TSP.Christofides
+public import Complexity.Computability.Complexity.Problems.TSP.HeldKarp
 public import Complexity.Computability.Complexity.Problems.ThreeSAT
 public import Complexity.Computability.Complexity.Problems.ThreeSAT.Levin
 public import Complexity.Computability.Complexity.Problems.ThreeSATThree
