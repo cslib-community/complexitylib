@@ -11,6 +11,7 @@ public import Complexity.Probability.IID
 public import Cslib.Probability.StatisticalDistance
 import Complexity.Probability.IID.Occurrence
 import Complexity.Probability.PMF
+import Complexity.Probability.PMF.ToReal
 import Complexity.Probability.StatisticalDistance.Event
 
 /-!
@@ -116,8 +117,7 @@ theorem acceptProb₂_nonneg {k : ℕ} (T : (Fin k → α) → (Fin k → α) �
 theorem acceptProb₂_le_one {k : ℕ} (T : (Fin k → α) → (Fin k → α) → PMF Bool) (p q : PMF α) :
     acceptProb₂ T p q ≤ 1 := by
   rw [acceptProb₂_eq]
-  exact ENNReal.toReal_le_of_le_ofReal zero_le_one
-    (ENNReal.ofReal_one.symm ▸ PMF.coe_le_one _ true)
+  exact toReal_apply_le_one _ true
 
 /-- `T` is a `k`-sample closeness tester with proximity `ε`: given `k` independent samples of each
 of two unknown distributions, it accepts with probability at least `2 / 3` when they are equal and

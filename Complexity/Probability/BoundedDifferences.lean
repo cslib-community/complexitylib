@@ -8,9 +8,11 @@ module
 -- upstream: candidate
 
 public import Complexity.Probability.Product
+public import Mathlib.Algebra.BigOperators.Expect
 public import Mathlib.Probability.Moments.SubGaussian
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Expect
+import Mathlib.Algebra.Order.BigOperators.Expect
 import Mathlib.Probability.ProbabilityMassFunction.Integrals
 
 /-!
@@ -37,6 +39,8 @@ written as iterated finite averages. The tail bounds are finite-PMF event probab
 ## Main results
 
 * `Cslib.Probability.hasBoundedDifferences_sum`: sums of bounded coordinate scores.
+* `Cslib.Probability.HasBoundedDifferences.ciSup`, `Cslib.Probability.HasBoundedDifferences.expect`:
+  pointwise suprema and uniform averages of families with bounded differences.
 * `Cslib.Probability.HasBoundedDifferences.sum_pi_mul_exp_le`: the moment generating function
   bound.
 * `Cslib.Probability.HasBoundedDifferences.hasSubgaussianMGF_pi`: the sub-Gaussian form.
@@ -57,6 +61,7 @@ written as iterated finite averages. The tail bounds are finite-PMF event probab
 namespace Cslib.Probability
 
 open MeasureTheory ProbabilityTheory Cslib.Probability.PMF
+open scoped BigOperators
 
 variable {ι : Type*} [DecidableEq ι] {α : ι → Type*}
 
@@ -72,6 +77,32 @@ variable {f : (∀ i, α i) → ℝ} {c : ι → ℝ}
 /-- Negation preserves bounded differences. -/
 theorem neg (hf : HasBoundedDifferences f c) : HasBoundedDifferences (fun x => -f x) c :=
   fun x i a => by simpa only [neg_sub_neg, abs_sub_comm] using hf x i a
+
+/-- A pointwise supremum of a family of functions with bounded differences `c` has bounded
+differences `c`, provided the family is bounded above at every point. -/
+theorem ciSup {κ : Type*} {g : κ → (∀ i, α i) → ℝ} (hc : ∀ i, 0 ≤ c i)
+    (hg : ∀ k, HasBoundedDifferences (g k) c) (hbdd : ∀ x, BddAbove (Set.range fun k => g k x)) :
+    HasBoundedDifferences (fun x => ⨆ k, g k x) c := by
+  intro x i a
+  rcases isEmpty_or_nonempty κ with hκ | hκ
+  · simpa only [Real.iSup_of_isEmpty, sub_self, abs_zero] using hc i
+  rw [abs_sub_le_iff, sub_le_iff_le_add, sub_le_iff_le_add]
+  constructor
+  · refine ciSup_le fun k => ?_
+    linarith [(abs_sub_le_iff.1 (hg k x i a)).1, le_ciSup (hbdd x) k]
+  · refine ciSup_le fun k => ?_
+    linarith [(abs_sub_le_iff.1 (hg k x i a)).2, le_ciSup (hbdd (Function.update x i a)) k]
+
+/-- A uniform average of functions with bounded differences `c` has bounded differences `c`. -/
+theorem expect {κ : Type*} [Fintype κ] {g : κ → (∀ i, α i) → ℝ} (hc : ∀ i, 0 ≤ c i)
+    (hg : ∀ k, HasBoundedDifferences (g k) c) :
+    HasBoundedDifferences (fun x => 𝔼 k, g k x) c := by
+  intro x i a
+  rw [← Finset.expect_sub_distrib]
+  refine (Finset.abs_expect_le _ _).trans ?_
+  rcases isEmpty_or_nonempty κ with hκ | hκ
+  · simpa only [Finset.univ_eq_empty, Finset.expect_empty] using hc i
+  · exact Finset.expect_le Finset.univ_nonempty fun k _ => hg k x i a
 
 end HasBoundedDifferences
 

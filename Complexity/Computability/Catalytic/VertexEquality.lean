@@ -62,7 +62,7 @@ Turing-machine space certificate.
 ## Main definitions
 
 * `Cslib.Catalytic.ExcursionProc`: a deterministic `m`-visit single-endpoint comparison procedure,
-  with `run`, `runExcursions`, and combinators `mapState`, `fst`, `precomp`, `append`,
+  with `run`, `runExcursions`, and combinators `mapState`, `liftFst`, `precomp`, `append`,
   `liftAlternating`.
 * `Cslib.Catalytic.sqDistProc`, `Cslib.Catalytic.keyTestProc`: `addSqDist` and `keyTest` packaged
   as `4`-visit `ExcursionProc`s.
@@ -70,8 +70,14 @@ Turing-machine space certificate.
 * `Cslib.Catalytic.outerChunkBits`, `Cslib.Catalytic.outerDigits`, `Cslib.Catalytic.outerAccBits`,
   `Cslib.Catalytic.innerChunkBits`, `Cslib.Catalytic.innerDigits`, `Cslib.Catalytic.innerAccBits`:
   explicit bit-width parameters for the two-stage reduction.
+* `Cslib.Catalytic.OuterRegState`, `Cslib.Catalytic.InnerRegState`, `Cslib.Catalytic.KeyTableState`:
+  the Stage-1 and Stage-2 registers with their accumulators, and the Stage-3 `ZMod 2` key table.
 * `Cslib.Catalytic.VertexCatState`, `Cslib.Catalytic.VertexLocalFrame`: the shared catalytic memory
   and the `7`-bit local frame `Fin 64 × ZMod 2`.
+* `Cslib.Catalytic.stageOneSqDistProc`, `Cslib.Catalytic.twoStageSqDistProc`: the `4`-visit Stage-1
+  and `16`-visit Stage-2 sum-of-squares procedures.
+* `Cslib.Catalytic.vertexStateEquiv`: the reassociation separating the shared catalyst from the
+  local result bit.
 * `Cslib.Catalytic.vertexEqProc`, `Cslib.Catalytic.catalyticVertexEq`: the `64`-excursion restoring
   equality procedure and its Boolean wrapper.
 * `Cslib.Catalytic.vertexCatBits`, `Cslib.Catalytic.vertexCatLinearConst`: exact catalytic bit count
@@ -170,14 +176,14 @@ private theorem foldl_mapState {m : ℕ} {S₁ S₂ : Type*} (e : S₁ ≃ S₂)
     foldl_mapState e (fun acc p ↦ P.step p (bif P.side p then y else x) acc) (e.symm s)
 
 /-- Lift a procedure on `S` to `S × Θ`, acting on the first component and leaving `Θ` untouched. -/
-@[expose] def fst {m : ℕ} {α S : Type*} (Θ : Type*) (P : ExcursionProc m α S) :
+@[expose] def liftFst {m : ℕ} {α S : Type*} (Θ : Type*) (P : ExcursionProc m α S) :
     ExcursionProc m α (S × Θ) where
   side := P.side
   step p v st := (P.step p v st.1, st.2)
 
-@[simp] theorem run_fst {m : ℕ} {α S Θ : Type*} (P : ExcursionProc m α S) (x y : α)
-    (s : S) (θ : Θ) : (P.fst Θ).run x y (s, θ) = (P.run x y s, θ) := by
-  unfold run fst
+@[simp] theorem run_liftFst {m : ℕ} {α S Θ : Type*} (P : ExcursionProc m α S) (x y : α)
+    (s : S) (θ : Θ) : (P.liftFst Θ).run x y (s, θ) = (P.run x y s, θ) := by
+  unfold run liftFst
   induction m generalizing s with
   | zero => rfl
   | succ m ih => exact ih ⟨fun p ↦ P.side p.succ, fun p ↦ P.step p.succ⟩ _
@@ -212,7 +218,7 @@ state and `b = π (P_fwd.run x y s)` in the shifted state across four blocks. -/
     (P_fwd P_inv : ExcursionProc (n + 1) α S) (π : S → β) (Q : ExcursionProc 4 β Θ) :
     ExcursionProc (((n + 1) + (n + 1)) + ((n + 1) + (n + 1))) α (S × Θ) :=
   let block (P : ExcursionProc (n + 1) α S) (k : Fin 4) : ExcursionProc (n + 1) α (S × Θ) :=
-    (P.fst Θ).precomp fun st ↦ (st.1, Q.step k (π st.1) st.2)
+    (P.liftFst Θ).precomp fun st ↦ (st.1, Q.step k (π st.1) st.2)
   ((block P_fwd 0).append (block P_inv 1)).append ((block P_fwd 2).append (block P_inv 3))
 
 /-- **Four-block forward/inverse lifting**: when `P_inv` undoes `P_fwd` on `(x, y)` and `Q`
@@ -224,7 +230,7 @@ theorem run_liftAlternating {n : ℕ} {α β S Θ : Type*}
     (hinv : P_inv.run x y (P_fwd.run x y s) = s) (θ : Θ) :
     (liftAlternating P_fwd P_inv π Q).run x y (s, θ) =
       (s, Q.run (π s) (π (P_fwd.run x y s)) θ) := by
-  simp only [liftAlternating, run_append, run_precomp, run_fst, hinv]
+  simp only [liftAlternating, run_append, run_precomp, run_liftFst, hinv]
   simp only [run, Fin.foldl_succ, Fin.foldl_zero, hside, Matrix.cons_val_zero,
     Matrix.cons_val_succ, Bool.cond_false, Bool.cond_true]
   rfl

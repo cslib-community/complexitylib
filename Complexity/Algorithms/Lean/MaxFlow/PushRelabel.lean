@@ -54,8 +54,12 @@ executable scheduler.
 * `PushRelabel.numNonsatPushes_le`: at most `(|V| - 2)(2|V| - 1) + (2|V| - 1)|V| |N.symArcs|`
   nonsaturating pushes; `numNonsatPushes_lt_posArcs`: fewer than `4|V|²(|V| + |E|)`
   ([CLRS2009], Lemma 26.23).
-* `PushRelabel.length_le`: every run from the initial state has at most `maxOps N` operations, so
-  the generic algorithm terminates after `O(|V|² |E|)` operations ([CLRS2009], Theorem 26.24).
+* `PushRelabel.length_le`: every run from the initial state has at most `maxOps N` operations, and
+  `maxOps_le`: `maxOps N ≤ 4|V|²(1 + |E|)`, so the generic algorithm terminates after
+  `O(|V|² (|E| + 1))` operations ([CLRS2009], Theorem 26.24, operation count).
+* `PushRelabel.isMaxFlow_isMinCut_of_isRun`: a run under any selection rule that reaches a state
+  admitting no operation ends with a maximum flow and a minimum gap cut of equal value
+  ([CLRS2009], Lemma 26.14 and Theorem 26.18).
 * `pushRelabelWith_correct`, `pushRelabel_correct`: the executable returns a maximum flow and a
   minimum cut of equal value after a run of at most `maxOps N` operations ([CLRS2009], Theorems
   26.18 and 26.24).
@@ -282,6 +286,15 @@ theorem Inv.run {σ : State N} (hσ : σ.Inv) {os : List (Op V)} (hos : σ.IsRun
   | nil => exact hσ
   | cons o os ih => exact ih (hσ.apply hos.1) hos.2
 
+omit [DecidableEq V] in
+/-- A state satisfying the invariant and admitting no operation has no active vertex
+([CLRS2009], Lemma 26.14). -/
+theorem Inv.not_isActive {σ : State N} (hσ : σ.Inv) (hstop : ∀ o, ¬ σ.Admissible o) (v : V) :
+    ¬ σ.flow.IsActive v := fun hv => by
+  rcases hσ.valid.exists_canPush_or_canRelabel hv with ⟨w, hw⟩ | hr
+  · exact hstop (.push v w) hw
+  · exact hstop (.relabel v) hr
+
 theorem le_height_apply {σ : State N} {o : Op V} (ho : σ.Admissible o) (x : V) :
     σ.height x ≤ (σ.apply o).height x := by
   cases o with
@@ -334,7 +347,7 @@ theorem sum_height_le {σ : State N} (hσ : σ.Inv) :
 
 /-- The bookkeeping behind the saturating-push bound: after `c` saturating pushes from `a` to `b`,
 heights have grown by about `2c` ([CLRS2009], proof of Lemma 26.22). -/
-@[expose] def PairInv (a b : V) (σ : State N) (c : ℕ) : Prop :=
+def PairInv (a b : V) (σ : State N) (c : ℕ) : Prop :=
   (σ.flow.resCap a b = 0 → 2 * c ≤ σ.height a + 1) ∧
     (0 < σ.flow.resCap a b → 2 * c ≤ σ.height b)
 
@@ -468,7 +481,7 @@ theorem numSatPushes_le_of_inv {σ : State N} (hσ : σ.Inv) {os : List (Op V)} 
 /-! ### Nonsaturating pushes -/
 
 /-- The potential `Φ = ∑_{v active} h(v)` of [CLRS2009], proof of Lemma 26.23. -/
-@[expose] def potential (σ : State N) : ℕ :=
+def potential (σ : State N) : ℕ :=
   ∑ v, if σ.flow.IsActive v then σ.height v else 0
 
 private theorem sum_split_two {u v : V} (huv : u ≠ v) (g : V → ℕ) :
@@ -660,13 +673,32 @@ theorem numNonsatPushes_lt_posArcs (hst : N.s ≠ N.t) {os : List (Op V)}
   have h7 : 4 * n ^ 2 * (n + P) = 4 * n ^ 2 * n + 4 * n ^ 2 * P := by ring
   omega
 
-/-- The total operation bound `2 (|V| - 2)(2|V| - 1) + 2|V| · |V| |N.symArcs|`. -/
+/-- The total operation bound `2 (|V| - 2)(2|V| - 1) + 2|V| · |V| |N.symArcs|`; at most
+`4|V|²(1 + |E|)` by `maxOps_le`. -/
 @[expose] def maxOps (N : Network V) : ℕ :=
   2 * ((Fintype.card V - 2) * (2 * Fintype.card V - 1)) +
     2 * Fintype.card V * (Fintype.card V * N.symArcs.card)
 
+/-- `maxOps N ≤ 4|V|²(1 + |E|)` with `E = N.posArcs`, so `maxOps N = O(|V|² (|E| + 1))`. -/
+theorem maxOps_le (N : Network V) :
+    maxOps N ≤ 4 * Fintype.card V ^ 2 * (1 + N.posArcs.card) := by
+  have hS := N.card_symArcs_le_two_mul_posArcs
+  unfold maxOps
+  obtain ⟨n, hn⟩ : ∃ n, Fintype.card V = n := ⟨_, rfl⟩
+  obtain ⟨P, hP⟩ : ∃ P, N.posArcs.card = P := ⟨_, rfl⟩
+  rw [hn, hP]
+  rw [hP] at hS
+  have h1 : (n - 2) * (2 * n - 1) ≤ n * (2 * n) := Nat.mul_le_mul (by omega) (by omega)
+  have h2 : 2 * n * (n * N.symArcs.card) ≤ 2 * n * (n * (2 * P)) :=
+    Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ hS)
+  have h3 : n * (2 * n) = 2 * n ^ 2 := by ring
+  have h4 : 2 * n * (n * (2 * P)) = 4 * n ^ 2 * P := by ring
+  have h5 : 4 * n ^ 2 * (1 + P) = 4 * n ^ 2 + 4 * n ^ 2 * P := by ring
+  omega
+
 /-- **Operation bound** ([CLRS2009], Theorem 26.24, operation count): every run of the generic
-algorithm from the initial state has at most `maxOps N = O(|V|² |E|)` operations. -/
+algorithm from the initial state has at most `maxOps N ≤ 4|V|²(1 + |E|)` operations
+(`maxOps_le`). -/
 theorem length_le (hst : N.s ≠ N.t) {os : List (Op V)} (hos : (init N).IsRun os) :
     os.length ≤ maxOps N := by
   rw [length_eq (init N) os]
@@ -681,6 +713,21 @@ theorem length_le (hst : N.s ≠ N.t) {os : List (Op V)} (hos : (init N).IsRun o
     refine Nat.mul_le_mul_right _ ?_
     omega
   omega
+
+/-- **Correctness of every run** ([CLRS2009], Lemma 26.14 and Theorem 26.18): if a run of the
+generic algorithm from the initial state, under any selection rule, reaches a state admitting no
+operation, then its preflow is a maximum flow and the gap cut of its heights is a minimum cut of
+the same value. By `length_le`, every run reaches such a state within `maxOps N` operations. -/
+theorem isMaxFlow_isMinCut_of_isRun (hst : N.s ≠ N.t) {os : List (Op V)}
+    (hos : (init N).IsRun os) (hstop : ∀ o, ¬ ((init N).run os).Admissible o) :
+    ∃ hz : ∀ v, v ≠ N.s → v ≠ N.t → ((init N).run os).flow.excess v = 0,
+      (((init N).run os).flow.toFlow hz).IsMaxFlow ∧
+        N.IsMinCut (gapCut ((init N).run os).height) ∧
+        (((init N).run os).flow.toFlow hz).value =
+          (N.cutCapacity (gapCut ((init N).run os).height) : ℤ) := by
+  have hinv := (inv_init hst).run hos
+  have hz := excess_eq_zero_of_forall_not_isActive _ (hinv.not_isActive hstop)
+  exact ⟨hz, hinv.valid.isMaxFlow_toFlow hz, hinv.valid.isMinCut_gapCut hz⟩
 
 /-! ### An executable scheduler -/
 
