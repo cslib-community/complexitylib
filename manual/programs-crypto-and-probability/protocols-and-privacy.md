@@ -1436,6 +1436,48 @@ batching and deletion/reuse remain to be integrated. It bypasses the old sparse
 interpreter only for this separate route; the old interpreter/compactor costs
 remain unchanged. Sharp source time/space and the broader 733 results stay open.
 
+`ClassStreaming.run` provides a separate **class-retaining execution** that avoids
+both full half-space arrays. A packed counter evaluates one original forward or
+inverse word at a time and tests its low bits. Count-only passes derive occurrence
+counts, including equal-state collisions; a count-only outer prepass computes
+the maximum of the smaller class sizes before any class is retained. Each class
+then computes its retaining orientation, collects only the smaller side, sorts
+that class by the existing radix machine, and streams/probes opposite-side words
+against it. The original input, class counter and optional hit are the only values
+passed between classes. Retained lists do not accumulate across the outer loop.
+A hit skips subsequent searches while the fixed binary counter finishes.
+
+`count_eq`, `retained_length` and `balance_eq` derive this behavior from the
+executed passes. `global_retained_prefix` bounds every retaining prefix by the
+computed maximum. `retaining_prefix_wire` separately derives physical full-state
+and packed-witness widths: for half lengths $l,r$, width $m$ and smaller count
+$c_g$, the encoded sort input of every retaining prefix is at most
+$2m+1+c_g(4m+2(l+r)+3)$ bits. These are **retained-value bounds**, not a substitute
+for machine auxiliary-workspace bounds. `original_machine` composes a single
+finite multitape machine before all original input parameters, with the actual
+balance prepass, counter control, chosen orientation, class sorting, streamed
+lookup, release between classes and witness decoding charged in
+`sourceCertificate.time/space`. Output is the computed maximum paired with the
+optional original-order witness; `.2 = none` proves exhaustive absence.
+
+This route **rescans all half words for each class**, rather than using Lemma 8's
+output-sensitive projected-quarter join and dynamic-programming count tables.
+Its retained-list lookup is linear, and the certified callbacks currently charge
+polynomial time/workspace in the complete retained input. Sorting's simultaneous
+input/output buffers and these callback costs remain in the composed profiles.
+Thus no sharp $O^*(2^{q/2})$ global time or $O^*(2^{q/4}+mu_p)$ peak space is
+concluded. Integrating the efficient projected-quarter generator/counting/access
+route and replacing polynomial retained-list callback overhead remain necessary.
+The older `SortedMeet` and compacting interpreter implementations are unchanged.
+
+From the repository root, build
+`lake build Complexity.Cryptanalysis.AddXNORClassStreaming`, then run
+`lake env lean ComplexityTests/AddXNORClassStreaming.lean`. The
+[class-streaming client](../../ComplexityTests/AddXNORClassStreaming.lean) executes
+both count-selected orientations, collisions, class misses, zero width, empty
+tails, residual quarter cuts and original-order inverse readback. It instantiates
+the general prefix-volume, correctness and uniform-machine certificates.
+
 From the repository root, build
 `lake build Complexity.Cryptanalysis.AddXNORSortedMeet`, then run
 `lake env lean ComplexityTests/AddXNORSortedMeet.lean`. The

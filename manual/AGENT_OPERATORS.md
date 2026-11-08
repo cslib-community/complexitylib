@@ -155,6 +155,17 @@ as the class-count/orientation/deletion/reuse algorithm. Reuse this actual
 matching stage when integrating bounded class batches; keep simultaneous full
 state/payload storage and transient workspace charged. The old compacting
 interpreter's cubic filter has not changed.
+`ClassStreaming.run` now executes a count-only maximum prepass, computed smaller-side
+retention, actual radix sorting of that class and singly evaluated opposite-side
+probing. Only the input, counter and optional hit pass between classes. Its
+original-input machine returns the computed maximum and decoded witness/miss;
+list-prefix and physical wire bounds are proved from actual occurrence counts.
+Keep those retained-value bounds separate from the composed callbacks' polynomial
+auxiliary-workspace charges. This route rescans half words for every class and
+uses linear retained-list lookup, so it is not the source's efficient projected
+quarter-join/count-table realization. Handoffs must retain that time gap and the
+unproved sharp global bit peak-space bound, even though full half-space arrays
+are absent from this implementation.
 
 ## Correct course and hand work over
 

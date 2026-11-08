@@ -264,7 +264,19 @@ retained state. These general profiles have not been reduced to a global source
 asymptotic. This full-state fallback does not use projection depth for smaller
 classes and does not supply the desired smaller-class peak space. Projected class
 enumeration/counting, computed orientation, bounded-batch access and arena
-reuse/release remain open; the complete old uniform execution keeps its old costs. A real
+reuse/release remain open; the complete old uniform execution keeps its old costs.
+A separate `ClassStreaming` execution now computes actual per-class occurrence
+counts and their maximum smaller count before retaining anything, sorts one
+computed smaller full-state class, streams opposite-side packed words and passes
+only input/counter/hit between classes. Original-input witness/miss and one
+uniform bit-machine execution are proved. Every retaining prefix has a derived
+smaller-count bound and a physical full-state/packed-payload wire bound; the
+composed profiles separately charge all callback, sorting, clock and output tapes.
+This implementation scans every half word for each class and uses linear lookup;
+callbacks still charge polynomial workspace in their retained input. It does not
+prove the sharp source global bounds. Efficient projected-quarter joins, actual
+DP count tables, resource-faithful class access and linear auxiliary workspace
+remain to be integrated, rather than inferred from retained list size. A real
 streaming default filter also removes whole-list accumulator copying,
 with `O(I+(n+1)P(B))` time and `O(I+P(B))` charged space. It is an alternative
 component, not installed in the existing cubic-filter uniform execution. Those

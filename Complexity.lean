@@ -2899,6 +2899,7 @@ public import Complexity.Cryptanalysis.AddXNORBits
 public import Complexity.Cryptanalysis.AddXNORChain
 public import Complexity.Cryptanalysis.AddXNORChainReverse
 public import Complexity.Cryptanalysis.AddXNORClassEnumeration
+public import Complexity.Cryptanalysis.AddXNORClassStreaming
 public import Complexity.Cryptanalysis.AddXNORClasses
 public import Complexity.Cryptanalysis.AddXNORCompactExecution
 public import Complexity.Cryptanalysis.AddXNORCounting
