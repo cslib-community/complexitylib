@@ -107,6 +107,9 @@ public import Complexity.Algorithms.Lean.Scheduling.IdenticalMachines
 public import Complexity.Algorithms.Lean.Scheduling.LPT
 public import Complexity.Algorithms.Lean.Scheduling.Precedence
 public import Complexity.Algorithms.Lean.SetCover.Greedy
+public import Complexity.Algorithms.Lean.Simplex.Bland
+public import Complexity.Algorithms.Lean.Simplex.Dictionary
+public import Complexity.Algorithms.Lean.Simplex.LinearProgram
 public import Complexity.Algorithms.Lean.Sort.Bitonic.Basic
 public import Complexity.Algorithms.Lean.Sort.Bitonic.Correctness
 public import Complexity.Algorithms.Lean.Sort.Bitonic.Trace

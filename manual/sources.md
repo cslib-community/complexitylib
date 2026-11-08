@@ -89,6 +89,11 @@ Manuel Blum, Robert W. Floyd, Vaughan Pratt, Ronald L. Rivest and Robert E. Tarj
 
 Ziv Bar-Yossef, T. S. Jayram, Ravi Kumar, D. Sivakumar, Luca Trevisan. “Counting Distinct Elements in a Data Stream.” *Randomization and Approximation Techniques in Computer Science (RANDOM 2002)*, LNCS 2483, 1–10, Springer, 2002. https://doi.org/10.1007/3-540-45726-7_1 . Author-hosted copy: https://webee.technion.ac.il/people/zivby/papers/f0/f0.ps . Locators checked against that copy on 2026-11-08 UTC: Section 2 (the first algorithm) and Theorem 1. The algorithm picks a pairwise independent hash `h : [m] → [M]` with `M = m³` and keeps the `t = ⌈96/ε²⌉` smallest distinct hash values. It outputs `tM/v`, where `v` is the `t`-th smallest value. Each tail is bounded by `1/6` via Chebyshev, plus `1/m` for collisions, and the median of `O(log(1/δ))` copies gives `O(1/ε² · log m · log(1/δ))` bits. The LNCS page numbers come from the DOI record and were not checked against the typeset volume.
 
+<a id="bland77"></a>
+## bland77
+
+Robert G. Bland. "New Finite Pivoting Rules for the Simplex Method." *Mathematics of Operations Research* 2(2), 103–107, 1977. https://doi.org/10.1287/moor.2.2.103 . Bibliographic data from the DOI record and search summaries; the paper was not inspected in this pass, and no theorem number is claimed. The manual credits it with the smallest-subscript pivoting rule and its finiteness; the formalized no-cycling proof is the standard largest-fickle-variable argument as presented in textbooks such as [chvatal83](#chvatal83), Chapter 3.
+
 <a id="blum67"></a>
 ## blum67
 
@@ -158,6 +163,11 @@ Nicos Christofides. *Worst-Case Analysis of a New Heuristic for the Travelling S
 ## chrobakkarloffpaynevishwanathan91
 
 Marek Chrobak, Howard J. Karloff, Thomas H. Payne, Sundar Vishwanathan. "New Results on Server Problems." *SIAM Journal on Discrete Mathematics* 4(2), 172–181, 1991. https://doi.org/10.1137/0404017 . Bibliographic metadata only; the full text was not inspected in this pass, so no theorem number is cited. The manual credits this paper with the `k`-competitiveness of Double Coverage on the line, which secondary sources attribute to it; the local proof uses the standard potential `k·M_min + Σ_{i<j}|s_i - s_j|`.
+
+<a id="chvatal83"></a>
+## chvatal83
+
+Vašek Chvátal. *Linear Programming*. W. H. Freeman, New York, 1983. Bibliographic data from library and search summaries; the book was not inspected in this pass. The chapter locators used in the manual and docstrings (Chapter 2 for dictionaries, pivoting and the optimality test; Chapters 2–3 for the unboundedness test, which search summaries of the table of contents place in Chapter 3; Chapter 3 for cycling, the cycling example and the smallest-subscript rule; Chapter 5 for duality and the dual solution read off the final dictionary) come from secondary summaries and memory of the book, not from a copy, and are unverified. The coefficients of the cycling example in `ComplexityTests/Algorithms/Lean/Simplex.lean` were taken from those summaries and checked by running Dantzig's rule on them, which returns to the initial basis after six degenerate pivots.
 
 <a id="cks20"></a>
 ## cks20
