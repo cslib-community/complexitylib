@@ -12,7 +12,6 @@ public import Mathlib.Combinatorics.SimpleGraph.Clique
 import Complexity.Foundations.Probability.SecondMoment
 import Mathlib.Data.Nat.Choose.Bounds
 import Mathlib.Data.Sym.Card
-import Mathlib.MeasureTheory.Integral.Bochner.Set
 
 /-!
 # Cliques and the triangle threshold in binomial random graphs
@@ -27,12 +26,14 @@ For triangles these first-moment bounds are matched by the second moment method,
 [Janson, Łuczak and Ruciński, Chapter 3][JansonLuczakRucinski2000]. Let `X` count the triangles of
 `G(n, p)`. Two distinct triangles sharing an edge span `5` edges, and two triangles sharing at most
 one vertex are independent; there are at most `3 (n - 3)` triangles sharing an edge with a fixed
-one. The second moment method then bounds `P(X = 0) ≤ Var X / (E X) ^ 2` by
-`1 / (C(n, 3) p ^ 3) + 3 (n - 3) / (C(n, 3) p)`
-(`SimpleGraph.binomialRandom_real_cliqueFree_three_le_of_choose`), hence by
-`16 / (n p) ^ 3 + 48 / (n p)` for `n ≥ 4`
-(`SimpleGraph.binomialRandom_real_cliqueFree_three_le`). With the first-moment bound
-`P(X > 0) ≤ (n p) ^ 3 / 6` (`SimpleGraph.binomialRandom_real_not_cliqueFree_three_le`):
+one. For `n ≥ 3` and `p > 0`, the second moment method then bounds
+`P(X = 0) ≤ Var X / (E X) ^ 2` by `1 / (C(n, 3) p ^ 3) + 3 (n - 3) / (C(n, 3) p)`
+(`SimpleGraph.binomialRandom_real_cliqueFree_three_le_choose`), hence by
+`16 / (n p) ^ 3 + 48 / (n p)` for `n ≥ 4` and `p > 0`
+(`SimpleGraph.binomialRandom_real_cliqueFree_three_le`). The second term is loose: the
+covariance term is of order `1 / (n ^ 2 p)`, and it is weakened to `48 / (n p)` only to state the
+bound in the single parameter `n p`. With the first-moment bound `P(X > 0) ≤ (n p) ^ 3 / 6`
+(`SimpleGraph.binomialRandom_real_not_cliqueFree_three_le`):
 
 * if `n p(n) → 0`, then `G(n, p(n))` is triangle-free with probability tending to `1`
   (`SimpleGraph.tendsto_binomialRandom_real_not_cliqueFree_three`);
@@ -40,8 +41,8 @@ one. The second moment method then bounds `P(X = 0) ≤ Var X / (E X) ^ 2` by
   (`SimpleGraph.tendsto_binomialRandom_real_cliqueFree_three`,
   `SimpleGraph.tendsto_binomialRandom_real_not_cliqueFree_three_nhds_one`).
 
-The triangle is the case `v = e = 3` of the threshold `n ^ (-v / e)` for strictly balanced graphs;
-the general case is not formalized here.
+The triangle is the case `v = e = 3` of the threshold `n ^ (-v / e)` for balanced graphs; the
+general case is not formalized here.
 
 ## Main results
 
@@ -51,7 +52,7 @@ the general case is not formalized here.
   `p ^ C(k, 2)`.
 * `SimpleGraph.integral_card_cliqueFinset`: the expected number of `k`-cliques.
 * `SimpleGraph.binomialRandom_real_not_cliqueFree_le`: the first-moment bound for `k`-cliques.
-* `SimpleGraph.binomialRandom_real_cliqueFree_three_le_of_choose`,
+* `SimpleGraph.binomialRandom_real_cliqueFree_three_le_choose`,
   `SimpleGraph.binomialRandom_real_cliqueFree_three_le`: the second-moment bounds for triangles.
 * `SimpleGraph.binomialRandom_real_not_cliqueFree_three_le`: the first-moment bound for triangles.
 * `SimpleGraph.tendsto_binomialRandom_real_not_cliqueFree_three`,
@@ -178,14 +179,13 @@ theorem integral_card_cliqueFinset [DecidableEq V] (p : I) (k : ℕ) :
       (Fintype.card V).choose k * (p : ℝ) ^ k.choose 2 := by
   have hcount (G : SimpleGraph V) : (#(G.cliqueFinset k) : ℝ) =
       ∑ t ∈ powersetCard k (univ : Finset V),
-        {G : SimpleGraph V | G.IsClique (t : Set V)}.indicator (fun _ => 1) G := by
-    simp only [Set.indicator_apply, Set.mem_ofPred_eq, sum_boole]
+        {G : SimpleGraph V | G.IsClique (t : Set V)}.indicator (1 : SimpleGraph V → ℝ) G := by
+    simp only [Set.indicator_apply, Set.mem_ofPred_eq, Pi.one_apply, sum_boole]
     congr 2
     ext t
     simp [mem_cliqueFinset_iff, isNClique_iff, mem_powersetCard, and_comm]
   simp_rw [hcount]
-  rw [integral_finsetSum _ fun t _ => (integrable_const 1).indicator (measurableSet_isClique t)]
-  simp_rw [integral_indicator_const _ (measurableSet_isClique _), smul_eq_mul, mul_one]
+  rw [integral_sum_indicator_one _ fun t _ => measurableSet_isClique t]
   rw [sum_congr rfl fun t ht => by
     rw [binomialRandom_real_isClique, (mem_powersetCard.1 ht).2], sum_const, card_powersetCard,
     card_univ, nsmul_eq_mul]
@@ -280,7 +280,7 @@ for `n ≥ 3` and `p > 0`, `G(n, p)` is triangle-free with probability at most
 `1 / (C(n, 3) p ^ 3) + 3 (n - 3) / (C(n, 3) p)`. This is the bound `Var X / (E X) ^ 2` for the
 number `X` of triangles, with the covariances of pairs of triangles sharing an edge bounded by
 `p ^ 5` and those of pairs sharing at most one vertex equal to zero. -/
-theorem binomialRandom_real_cliqueFree_three_le_of_choose {n : ℕ} (hn : 3 ≤ n) (p : I)
+theorem binomialRandom_real_cliqueFree_three_le_choose {n : ℕ} (hn : 3 ≤ n) (p : I)
     (hp : 0 < (p : ℝ)) :
     G(Fin n, p).real {G | G.CliqueFree 3} ≤
       1 / (n.choose 3 * (p : ℝ) ^ 3) + 3 * (n - 3 : ℝ) / (n.choose 3 * p) := by
@@ -344,7 +344,9 @@ private theorem pow_three_le_sixteen_mul_choose {n : ℕ} (hn : 4 ≤ n) :
   nlinarith [sq_nonneg (m : ℝ), (m.cast_nonneg : (0 : ℝ) ≤ m)]
 
 /-- **The triangle threshold, second moment, in terms of `n p`**: for `n ≥ 4` and `p > 0`,
-`G(n, p)` is triangle-free with probability at most `16 / (n p) ^ 3 + 48 / (n p)`. -/
+`G(n, p)` is triangle-free with probability at most `16 / (n p) ^ 3 + 48 / (n p)`. The second
+term is loose (`binomialRandom_real_cliqueFree_three_le_choose` gives order `1 / (n ^ 2 p)`); it
+is stated in terms of `n p` alone, which suffices for the threshold. -/
 theorem binomialRandom_real_cliqueFree_three_le {n : ℕ} (hn : 4 ≤ n) (p : I)
     (hp : 0 < (p : ℝ)) :
     G(Fin n, p).real {G | G.CliqueFree 3} ≤ 16 / (n * p) ^ 3 + 48 / (n * p) := by
@@ -352,7 +354,7 @@ theorem binomialRandom_real_cliqueFree_three_le {n : ℕ} (hn : 4 ≤ n) (p : I)
   have hn0 : (0 : ℝ) < n := by exact_mod_cast (by omega : 0 < n)
   have hn4 : (4 : ℝ) ≤ n := by exact_mod_cast hn
   have hC0 : (0 : ℝ) < n.choose 3 := by exact_mod_cast Nat.choose_pos (by omega)
-  refine (binomialRandom_real_cliqueFree_three_le_of_choose (by omega) p hp).trans
+  refine (binomialRandom_real_cliqueFree_three_le_choose (by omega) p hp).trans
     (add_le_add ?_ ?_)
   · rw [div_le_div_iff₀ (by positivity) (by positivity)]
     nlinarith [pow_pos hp 3]

@@ -1097,7 +1097,7 @@ each statement against the numbered result. Organize modules by subject, not cha
   for Mathlib's binomial random graph `G(n, p)`, the first-moment `0`-statement for every fixed
   subgraph and the triangle threshold `p = 1 / n` (both moments, explicit bounds) are in
   `Foundations/Probability/Combinatorics/BinomialRandomGraph`. Remaining: the second-moment
-  `1`-statement for strictly balanced graphs at `n ^ (-v / e)` and Bollobás's general threshold
+  `1`-statement for balanced graphs at `n ^ (-v / e)` and Bollobás's general threshold
   `n ^ (-1 / m(H))`, Janson's inequality and the Poisson limit at the threshold, and the
   connectivity threshold `log n / n`.
 - **Codes:** Guruswami–Sudan list decoding and local decoding, keeping interpolation,

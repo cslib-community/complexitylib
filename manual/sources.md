@@ -12,7 +12,7 @@ Noga Alon, Yossi Matias, Mario Szegedy. “The Space Complexity of Approximating
 <a id="alonspencer2016"></a>
 ## alonspencer2016
 
-Noga Alon and Joel H. Spencer. *The Probabilistic Method*, 4th edition. Wiley, 2016. ISBN 978-1-119-06195-3. Bibliographic data from the library bibliography. The section locators used for the second moment method and random graphs (Chapter 4: §4.1 basics, §4.3 sums of indicators, §4.4 random graphs and threshold functions) were taken from secondary tables of contents; the book was not inspected in this pass, and no theorem number is claimed.
+Noga Alon and Joel H. Spencer. *The Probabilistic Method*, 4th edition. Wiley, 2016. ISBN 978-1-119-06195-3. Bibliographic data from the library bibliography. The section locators used for the second moment method and random graphs (Chapter 4: §4.3 for the bound `Pr[X = 0] ≤ Var X / (E X) ^ 2`, §4.4 for random graphs and threshold functions) were taken from secondary tables of contents and from an agent review, which placed the bound at Theorem 4.3.1. The book was not inspected in this pass, and the library cites section numbers only.
 
 <a id="alonyusterzwick1995"></a>
 ## alonyusterzwick1995
