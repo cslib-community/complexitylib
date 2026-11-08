@@ -3689,6 +3689,10 @@ public import Complexity.Crypto.Protocols.MPC.OTCommitment.Session
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.World
 public import Complexity.Crypto.Protocols.MPC.PolyTime
 public import Complexity.Crypto.Protocols.MPC.SharedMul
+public import Complexity.Crypto.Protocols.PIR.Basic
+public import Complexity.Crypto.Protocols.PIR.Cube
+public import Complexity.Crypto.Protocols.PIR.SingleServer
+public import Complexity.Crypto.Protocols.PIR.SmoothCode
 public import Complexity.Crypto.Protocols.PolynomialCommitment.Basic
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort.FiatShamir
