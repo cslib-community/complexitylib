@@ -477,6 +477,14 @@ index links to canonical definitions rather than keeping a second set.
   faster program for a finite variant of `f` (M. Blum, *On effective procedures for speeding up
   algorithms*, J. ACM 18(2), 1971), and Blum measures for
   native multitape time and space through a Gödel-numbering bridge from native descriptions.
+- **Busy beaver** ([#3314](https://github.com/cslib-community/complexitylib/issues/3314)):
+  Radó's output and fuel busy beaver functions for `Nat.Partrec.Code` on input `0`, with codes
+  measured by Gödel number, dominate every computable function, and a computable upper bound on
+  either would decide halting (`Computability/BusyBeaver`). Remaining: Radó's `Σ(n)` and `S(n)`
+  for Turing machines counted by states, with a simulation bridge to the code version and the
+  known small values (`S(5) = 47,176,870`, verified by the bbchallenge Coq proof) as a cross-check;
+  independence of busy beaver values from ZFC (Aaronson–Yedidia); and the connection to Chaitin's
+  `Ω`.
 - **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
   degrees `1 ≤ a < b`, in deterministic and in nondeterministic time, and the `O(t log t)`
   universal simulation ([#800]) gives `DTIME f ⊂ DTIME g` for time-constructible `f ≥ n` once
