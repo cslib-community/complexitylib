@@ -18,9 +18,9 @@ Kernel-checked instances for `Cslib.DataStructure.PrefixSums.CellProbe`:
 1. the layout of the hard instance for `β = 2`, `L = 2`, and the answer formula on one input;
 2. a correct scheme, `naive`, with one `w`-bit cell per bit. Updates write their bit (depth `1`)
    and queries read the whole prefix (depth at most `n`). It satisfies every hypothesis of
-   `exists_le_mul_probes` (with `n = 64`, `w = 1`, `L = 1`, `β = 64`, `t_u = 1`, since
-   `129 ^ 8 ≤ 2 ^ 64`) and of `log_le_of_answersQueries` (with `n ≤ 2 ^ w`), so neither theorem is
-   vacuous;
+   `exists_le_mul_probes`, both with one epoch (`n = 64`, `w = 1`, `L = 1`, `β = 64`, `t_u = 1`,
+   since `129 ^ 8 ≤ 2 ^ 64`) and with two (`n = 131072`, `w = 1`, `L = 2`, `β = 256`), and of
+   `log_le_of_answersQueries` (with `n ≤ 2 ^ w`), so neither theorem is vacuous;
 3. a scheme, `zeroScheme`, that ignores updates and answers `0` with no probes. It meets every
    hypothesis of `exists_le_mul_probes` except `AnswersQueries`, and the theorem refutes
    correctness, so that hypothesis cannot be dropped.
@@ -52,7 +52,7 @@ theorem hn8 : 2 * 2 ^ 2 ≤ 8 := by norm_num
 `(X 0 0 + X 0 1) + X 1 0 = 0 + 1`. -/
 example :
     prefixParity (arrayOf (hardUpdates hn8 onesInput)) (hardQueryIdx hn8 two_pos 1) = 1 ∧
-      hardAnswer two_pos onesInput 1 = 1 := by
+      hardAnswer onesInput 1 = 1 := by
   refine ⟨?_, ?_⟩
   · rw [prefixParity_hardUpdates hn8 two_pos two_pos]
     decide
@@ -160,6 +160,18 @@ example : ∃ (X : HardInput 64 1) (q : Fin (64 ^ 1)),
       (.query (hardQueryIdx hn64 one_pos q))).probes ((naive 64 1).runSeq (hardUpdates hn64 X)).2 :=
   exists_le_mul_probes hn64 one_pos (naive 64 1) (naive_answersQueries one_pos) (by norm_num)
     naive_update_depth (by norm_num)
+
+theorem hn131072 : 2 * 256 ^ 2 ≤ 131072 := by norm_num
+
+/-- **Two-epoch nonvacuity**: `naive 131072 1` satisfies every hypothesis of `exists_le_mul_probes`
+with `L = 2`, `β = 256` and `t_u = 1`, a genuine two-epoch chronogram, so some query of the hard
+instance makes at least one probe. -/
+example : ∃ (X : HardInput 256 2) (q : Fin (256 ^ 2)),
+    2 ≤ 64 * ((naive 131072 1).step (hardUpdates hn131072 X).length
+      (.query (hardQueryIdx hn131072 two_pos q))).probes
+        ((naive 131072 1).runSeq (hardUpdates hn131072 X)).2 :=
+  exists_le_mul_probes hn131072 two_pos (naive 131072 1) (naive_answersQueries one_pos)
+    (by norm_num) naive_update_depth (by norm_num)
 
 /-- **Nonvacuity of the logarithmic form**: on `n ≤ 2 ^ w` bits, `naive n w` satisfies every
 hypothesis of `log_le_of_answersQueries` with `t_u = 1` and `t_q = n`. -/
