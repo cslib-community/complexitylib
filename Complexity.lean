@@ -2571,6 +2571,7 @@ public import Complexity.Computability.PolyTime.CNF.GreedyParitySearch
 public import Complexity.Computability.PolyTime.CNF.SparseCNFLeafCounter
 public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
 public import Complexity.Computability.PolyTime.CNF.WeightedNormalization
+public import Complexity.Computability.PolyTime.CNF.WeightedQuery
 public import Complexity.Computability.PolyTime.CSP.ToCNF
 public import Complexity.Computability.PolyTime.CSP.Vars
 public import Complexity.Computability.PolyTime.CommonCountingAccum
@@ -2592,6 +2593,7 @@ public import Complexity.Computability.PolyTime.LinearAlgebra.BooleanMeasurement
 public import Complexity.Computability.PolyTime.LinearAlgebra.CopyPlacement
 public import Complexity.Computability.PolyTime.LinearAlgebra.ExchangeReplacement
 public import Complexity.Computability.PolyTime.LinearAlgebra.ReplacementDesignBuilder
+public import Complexity.Computability.PolyTime.List.BoundedEnumeration
 public import Complexity.Computability.PolyTime.PacketPacking
 public import Complexity.Computability.PolyTime.ParityFactorEval
 public import Complexity.Computability.PolyTime.SparseMonomialJet

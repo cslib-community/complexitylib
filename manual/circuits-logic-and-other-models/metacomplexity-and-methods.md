@@ -665,7 +665,62 @@ repeated opposite signs, a `2^80` coefficient, deleted true rows, rejection,
 inconsistency, unused variables and Boolean/fractional full-rank recovery.
 This certifies the normalizer/backend stage, not the entire original-input
 counting plan: small-dimension counting, tagged direct-answer emission, selected
-row/query serialization, bounded subset enumeration/deduplication/query writing
-and their composed machine resources remain to connect. Whole-endpoint peak
+row/query serialization and their composed machine resources remain to connect
+to the tagged plan. The certified selected-query continuation below resolves the
+query branch itself. Whole-endpoint peak
 space, advertised counting runtime, full table frontend and graph endpoints
 remain open. Theorem 7.1 and ALL-main remain incomplete.
+
+
+Import `Complexity.Computability.PolyTime.CNF.WeightedQuery` for the certified
+selected-query branch, in namespace `Cslib.Logic.PL.WeightedRow.BinaryQuery`.
+`RowData` stores canonical signed variable/weight entries and a binary demand;
+`encRow`, `encLiteral` and `encCNF` frame unary variable indices, polarity bits
+and binary integer data. `boundedAt` chooses the actual bounded enumeration
+from a fixed cap and binary demand. Its fallback on an out-of-cap parameter is
+length zero; correctness is asserted on the original normalized-demand domain.
+
+`upper_polytime`, `attainment_polytime`, `base_polytime` and `query_polytime`
+charge bounded candidate traversal, binary weight tests, signed literal writing,
+encoded clause equality scans, global deduplication and boundary CNF writing.
+The generic `sublistsLen_polytime` and `dedup_polytime` certificates use suffix
+scans proved equal to the existing lists, including their order. The induction
+is on the fixed selected length; no full powerset or input-sized exponent is
+used. The existing combinatorial candidate bound is retained separately from
+this instruction-cost argument.
+
+`selectedQuery d n rows beta` computes the actual retained normalized rows and
+Gram-selected original indices before writing the query.
+`selectedQuery_polytime` composes the approved binary normalizer/backend with
+the new writer: a plain finite-state binary multitape machine has polynomial
+time and stage space in the complete encoded input length for every fixed `d`.
+No normalized rows, basis, candidate budget or desired runtime is advice.
+`originalQueryStage_polytime` certifies one composed machine returning all
+backend diagnostics and both CNFs together, charging their simultaneous
+workspace and writes.
+`selectedRows_ofOccurrences` and `selectedQuery_ofOccurrences` connect the result
+to the actual reviewed selected capped rows. `query_ofRows` proves exact query
+list equality after injectively flattening original/path indices; sharp clause
+and width bounds transfer. All declared variables are still counted, including
+unused ones. The query branch applies only where the dispatcher has computed
+positive deficient rank and consistency; unconditional execution of this stage
+is not a replacement for the direct branches.
+
+`candidate_prefix_bits` bounds candidate-weight partial sums by the actual
+framed row input. Written indices fit the declared original/path interval; all
+index arithmetic is certified unary arithmetic. The approved backend supplies
+its integer-growth bounds. `selectedQuery_output_polyBounded` derives storage
+from the actual machine-time certificate. This is polynomial stage workspace
+through the independent time/space predicate, not a numerical peak-space
+polynomial or a complete counting-algorithm space theorem.
+
+From the repository root run `scripts/build.sh ComplexityTests.WeightedBinaryQuery`.
+The [complete client](../../ComplexityTests/WeightedBinaryQuery.lean) checks exact
+sublist/dedup order, duplicate and unattainable rows, all boundary cases, actual
+query counts on declared bits, computed original-row selection, repeated opposite
+occurrences and a `2^80` coefficient. Test-only exhaustive counting is absent
+from the implementation. The complete encoded plan still needs small-dimension
+direct counting, tagged answer/declaration emission and branch/whole-plan
+resource composition. Whole-endpoint peak space, advertised sharper counting
+time, full table frontend and graph endpoints remain open. Theorem 7.1 and
+ALL-main remain incomplete.

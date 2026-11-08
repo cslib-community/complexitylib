@@ -959,8 +959,25 @@ consistency and full-rank candidate testing are certified. The serialized stage
 is proved equal to the actual original-input normalized/capped tables and
 dispatcher diagnostics. Uncapped aggregation-prefix bit widths and post-cap
 Gram/Bird/Cramer widths are derived; output storage follows the runtime proof.
-This is a stage certificate: small-variable counting, tagged direct answers,
-selected-row/query encoding and bounded enumeration/writing still need resource
-composition into the complete counting plan. Whole-endpoint peak space, sharper
+The separate selected-query continuation below resolves its query branch.
+Small-variable counting, tagged direct answers and branch/whole-plan resource
+composition remain to connect into the complete counting plan. Whole-endpoint peak space, sharper
 counting runtime, full table frontend and graph endpoints remain open; no
 Theorem 7.1 or ALL-main completion is claimed.
+
+
+The actual selected-query branch now has fixed-demand polynomial binary
+time/space certificates, composed from original-occurrence normalization and
+computed Gram selection through bounded sublists, signed weight filtering,
+global encoded-clause deduplication and ordinary boundary CNF writing. Suffix
+scan machines are proved to compute the exact existing enumeration/dedup lists;
+combinatorial output bounds are not used as a substitute for runtime. The
+selected-row and query outputs are connected to the reviewed executable
+queries, including sharp width/clause budgets and declared-index bounds.
+Candidate-prefix integer widths and machine-derived output storage are covered.
+One composed stage machine returns backend diagnostics and both queries with
+polynomial time and simultaneous stage workspace.
+Remaining complete-plan resource work is small-dimension direct counting,
+tagged direct/query answer and declaration serialization, and branch/whole-plan
+composition. Whole-endpoint peak space, advertised counting runtime, full table
+frontend and graph endpoints stay open; no Theorem 7.1/ALL-main completion follows.
