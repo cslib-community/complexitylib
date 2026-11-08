@@ -241,8 +241,8 @@ theorem distinctCopies_of_nodup_times (w : Walk F) {times : List ℕ}
   change ((w.steps.zip times).map Prod.snd).Nodup
   rwa [List.map_snd_zip (Nat.le_of_eq hl)]
 
-/-- An f-blossom following source Definition 39, retaining distinct copied steps. Witnesses specify the
-copied constraints and the terminal meeting, rather than assuming an event-correctness oracle. -/
+/-- An f-blossom following source Definition 39, retaining distinct copied steps. Witnesses specify
+the copied constraints and the terminal meeting, rather than assuming an event-correctness oracle. -/
 @[expose] def IsBlossom (sem : Rel → List Bool → Bool) (f : OccurrenceLabeling F Bool)
     (w : Walk F) : Prop :=
   w.IsWalk ∧ w.finish = w.start ∧ w.steps ≠ [] ∧ Inconsistent f w.start ∧
