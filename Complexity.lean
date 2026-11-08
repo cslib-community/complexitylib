@@ -842,6 +842,7 @@ public import Complexity.Computability.Circuit.Arithmetic.Permanent.Projection
 public import Complexity.Computability.Circuit.Arithmetic.Power
 public import Complexity.Computability.Circuit.Arithmetic.RelativeRank
 public import Complexity.Computability.Circuit.Arithmetic.RelativeRankUpper
+public import Complexity.Computability.Circuit.Arithmetic.Rigidity
 public import Complexity.Computability.Circuit.Arithmetic.SPCircuit
 public import Complexity.Computability.Circuit.Arithmetic.SetMultilinear
 public import Complexity.Computability.Circuit.Arithmetic.SetMultilinearGadget
@@ -4422,6 +4423,7 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.PartialDerivatives
 public import Complexity.Foundations.LinearAlgebra.Matrix.PilotCorrection
 public import Complexity.Foundations.LinearAlgebra.Matrix.Rank
 public import Complexity.Foundations.LinearAlgebra.Matrix.RectPermanent
+public import Complexity.Foundations.LinearAlgebra.Matrix.Rigidity
 public import Complexity.Foundations.LinearAlgebra.Matrix.SchurComplement
 public import Complexity.Foundations.LinearAlgebra.Matrix.SubmatrixRobust
 public import Complexity.Foundations.LinearAlgebra.Matrix.TimeLayer

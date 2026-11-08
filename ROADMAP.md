@@ -1064,6 +1064,19 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `R[x] / (x ^ m + 1)` and the `O(n log n log log n)` integer bound); mixed-radix and Bluestein
   transforms; and lower bounds such as Morgenstern's `Ω(n log n)` for bounded-coefficient linear
   circuits.
+- **Matrix rigidity and linear circuits**
+  ([#3209](https://github.com/cslib-community/complexitylib/issues/3209)): rigidity
+  (`Foundations/LinearAlgebra/Matrix/Rigidity.lean`) and Valiant's criterion
+  (`Circuit/Arithmetic/Rigidity.lean`) are proved: a fan-in-2 affine circuit of size `s` and depth
+  below `2 ^ D` computing `A x` gives `R_A(2 t s / D) ≤ m 2 ^ (2 ^ (D - t))` for every `t ≤ D`, so a
+  matrix with `R_A(n / e) > n 2 ^ (log₂ n / k)` needs `Ω(n log log n)` gates in depth `O(log n)`.
+  The criterion also covers polynomial gates over infinite fields. Open: the explicit lower bounds
+  `R(r) = Ω(n² / r · log(n / r))` for Cauchy and other totally regular matrices, through the
+  Kővári–Sós–Turán bound and the untouched-minor lemma (Lokam, Lemma 2.4 and Theorem 2.5);
+  Shparlinsky's Vandermonde and the Sylvester–Hadamard bounds; the upper bound `R(r) ≤ (n - r)²`
+  and the counting proof that random matrices over finite fields are nearly maximally rigid;
+  Alman–Williams non-rigidity of the Walsh–Hadamard matrix; the criterion for nonlinear gates over
+  finite fields; and, as Valiant's open problem, an explicit `(εn, n ^ (1 + δ))`-rigid matrix.
 - **Real-algebraic decision procedures:** port the Sturm–Tarski query evaluator, recursive
   evaluator, implicit arithmetic, native space certificates and the ETR upper bound from
   [lean-canny](https://github.com/SamuelSchlesinger/lean-canny).
