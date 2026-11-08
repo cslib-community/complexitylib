@@ -66,7 +66,7 @@ with the Section 4 algebraic replacement design specialization of Sections 5.3�
    (`CNF.modelCountOn_eq_sum_branch_emod_ediv_design_greedy`,
    `CNF.exists_initialTests_modelCountOn_eq_sum_branch_emod_ediv_design_greedy`), with
    `max D₀ P` simplified unconditionally to `D₀ = initialRowWeightBound B φ.length`
-   (`CNF.max_initialRowWeightBound_greedyRowListLength`).
+   (`Cslib.BitString.max_initialRowWeightBound_greedyRowListLength`).
 
 ## Main definitions
 
@@ -95,7 +95,6 @@ with the Section 4 algebraic replacement design specialization of Sections 5.3�
 * `Cslib.Logic.PL.CNF.commonZeroCount_parityRowSystem_eq_sum_branch_emod_ediv_design`,
   `Cslib.Logic.PL.CNF.numPassing_eq_sum_branch_emod_ediv_design`,
   `Cslib.Logic.PL.CNF.modelCountOn_eq_sum_branch_emod_ediv_design_greedy`,
-  `Cslib.Logic.PL.CNF.max_initialRowWeightBound_greedyRowListLength`,
   `Cslib.Logic.PL.CNF.exists_initialTests_modelCountOn_eq_sum_branch_emod_ediv_design_greedy`:
   end-to-end `ReplacementDesign` recovery of `commonZeroCount`, `numPassing`, and
   `φ.modelCountOn Finset.univ`.
@@ -515,26 +514,6 @@ theorem CNF.modelCountOn_eq_sum_branch_emod_ediv_design_greedy
   exact CNF.commonZeroCount_parityRowSystem_eq_sum_branch_emod_ediv_design hk
     (A (3 * Fintype.card V)) S e scope D emb
 
-/-- For all `B, m : ℕ`, the Lemma 6.2 greedy list length
-`P = 20000 * B ^ 2 * (Nat.log 2 m + 1) ^ 2` is at most the Lemma 6.1 initial row weight bound
-`D₀ = 320000 * B ^ 2 * (Nat.log 2 m + 1) ^ 3`. -/
-theorem CNF.greedyRowListLength_le_initialRowWeightBound (B m : ℕ) :
-    greedyRowListLength B m ≤ initialRowWeightBound B m := by
-  unfold greedyRowListLength initialRowWeightBound
-  have h1 : 20000 * B ^ 2 ≤ 320000 * B ^ 2 :=
-    Nat.mul_le_mul_right (B ^ 2) (by decide)
-  have h2 : (Nat.log 2 m + 1) ^ 2 ≤ (Nat.log 2 m + 1) ^ 3 :=
-    Nat.pow_le_pow_right (Nat.succ_pos _) (by decide)
-  exact Nat.mul_le_mul h1 h2
-
-/-- Consequently `max (initialRowWeightBound B m) (greedyRowListLength B m)` simplifies to
-`initialRowWeightBound B m`. -/
-@[simp]
-theorem CNF.max_initialRowWeightBound_greedyRowListLength (B m : ℕ) :
-    max (initialRowWeightBound B m) (greedyRowListLength B m) =
-      initialRowWeightBound B m :=
-  max_eq_left (CNF.greedyRowListLength_le_initialRowWeightBound B m)
-
 /-- **Lemmas 6.1–6.2 & §§5.4–5.5, 6.3 (end-to-end initial + greedy parity-test compilation and
 branch-summed `ReplacementDesign` recovery of `φ.modelCountOn Finset.univ`)**: for any width-`≤ k`
 CNF `φ` on `n = Fintype.card V ≥ 1` variables with `φ.length ≤ B * n` (`B ≥ 1`), there exist
@@ -591,7 +570,7 @@ theorem CNF.exists_initialTests_modelCountOn_eq_sum_branch_emod_ediv_design_gree
   · obtain ⟨hlen_i, hj⟩ := hbounds i hi
     refine ⟨hlen_i, fun j => ?_⟩
     obtain ⟨hM, hcard, hscope⟩ := hj j
-    rw [CNF.max_initialRowWeightBound_greedyRowListLength] at hcard hscope
+    rw [max_initialRowWeightBound_greedyRowListLength] at hcard hscope
     exact ⟨hM, hcard, hscope⟩
   · rw [← hcount]
     exact CNF.commonZeroCount_parityRowSystem_eq_sum_branch_emod_ediv_design hk

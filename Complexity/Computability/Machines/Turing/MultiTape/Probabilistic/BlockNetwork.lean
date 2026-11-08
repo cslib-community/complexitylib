@@ -437,7 +437,7 @@ private theorem blockControl_init (q₀ : State) :
 
 /-- A work-tape cell of a block outside the window of a configuration is outside its three
 blocks. -/
-private theorem notMem_blockWindow {c : Cfg k Bool State input} {h : Fin k} {j : ℤ}
+theorem notMem_blockWindow {c : Cfg k Bool State input} {h : Fin k} {j : ℤ}
     (hj : ¬ |c.blockIndex b (some h) - j| ≤ 1) (r : ZMod b) :
     b * j + (r.val : ℤ) ∉ c.blockWindow b h := by
   have hb : (0 : ℤ) < b := by exact_mod_cast Nat.pos_of_neZero b

@@ -345,19 +345,6 @@ theorem CNF.sum_branch_domainExaminationBound_parityRowSystem_le [Fintype V] [De
 
 /-! ### 3. End-to-end Lemma 6.1 + Lemma 6.2 + Section 6.3 greedy parity-test schedule theorem -/
 
-private theorem greedyRowListLength_le_initialRowWeightBound (B m : ℕ) :
-    greedyRowListLength B m ≤ initialRowWeightBound B m := by
-  unfold greedyRowListLength initialRowWeightBound
-  have h1 : 20000 * B ^ 2 ≤ 320000 * B ^ 2 := Nat.mul_le_mul_right _ (by decide)
-  have h2 : (Nat.log 2 m + 1) ^ 2 ≤ (Nat.log 2 m + 1) ^ 3 :=
-    Nat.pow_le_pow_right (Nat.succ_pos _) (by decide)
-  exact Nat.mul_le_mul h1 h2
-
-private theorem max_initialRowWeightBound_greedyRowListLength (B m : ℕ) :
-    max (initialRowWeightBound B m) (greedyRowListLength B m) =
-      initialRowWeightBound B m :=
-  max_eq_left (greedyRowListLength_le_initialRowWeightBound B m)
-
 /-- **Lemmas 6.1–6.2 & Section 6.3 (greedy parity-row selection with uniform per-branch
 `Feasible` and `ReplacementDesign` guarantees at every stage `i ≤ 3 * n`)**:
 For any `1 ≤ β`, there exists `n₀ ≥ 20` such that for any width-`≤ k` CNF `φ : CNF V` on

@@ -128,10 +128,6 @@ theorem truncSum_modEq {c : C} {P ℓ : ℕ} (hmod : modulus c = 2 ^ P) (G : ℕ
 private theorem sum_polyTime : ComputableInPolyTime List.sum (encList encNat) encNat := by
   fun_prop
 
-private theorem mod_polyTime :
-    ComputableInPolyTime (fun p : ℕ × ℕ => p.1 % p.2) (encPair encNat encNat) encNat := by
-  fun_prop
-
 private theorem modulusFst_polyTime (hmodulus : ComputableInPolyTime modulus encC encNat) :
     ComputableInPolyTime (fun q : C × ℕ => modulus q.1) (encPair encC encNat) encNat :=
   hmodulus.comp (ComputableInPolyTime.fst _ _)
@@ -146,7 +142,7 @@ private noncomputable def termCertificate
     (hmodulus : ComputableInPolyTime modulus encC encNat) :
     NativeCertificate (fun q : C × ℕ => truncCoeffSum entry (build q) % modulus q.1)
       (encPair encC encNat) encNat :=
-  ((NativeCertificate.ofPolyTime mod_polyTime).comp
+  ((NativeCertificate.ofPolyTime ComputableInPolyTime.binary_mod).comp
     (((NativeCertificate.ofPolyTime sum_polyTime).comp
         (cA.comp (NativeCertificate.ofPolyTime hbuild))).prod
       (NativeCertificate.ofPolyTime (modulusFst_polyTime hmodulus)))).congr fun _ => rfl
@@ -162,7 +158,7 @@ private theorem termCertificate_time
         (NativeCertificate.ofPolyTime sum_polyTime).time
           ((build q).2.2.2.truncContraction entry (build q).1 (build q).2.1) +
         (NativeCertificate.ofPolyTime (modulusFst_polyTime hmodulus)).time q +
-        (NativeCertificate.ofPolyTime mod_polyTime).time
+        (NativeCertificate.ofPolyTime ComputableInPolyTime.binary_mod).time
           (truncCoeffSum entry (build q), modulus q.1) := rfl
 
 private theorem termCertificate_space
@@ -176,7 +172,7 @@ private theorem termCertificate_space
         (NativeCertificate.ofPolyTime sum_polyTime).space
           ((build q).2.2.2.truncContraction entry (build q).1 (build q).2.1) +
         (NativeCertificate.ofPolyTime (modulusFst_polyTime hmodulus)).space q +
-        (NativeCertificate.ofPolyTime mod_polyTime).space
+        (NativeCertificate.ofPolyTime ComputableInPolyTime.binary_mod).space
           (truncCoeffSum entry (build q), modulus q.1) := rfl
 
 /-- **Time and space of the loop.** Let `A` be an algorithm with the interface of Theorem D.1 at
@@ -213,7 +209,7 @@ theorem exists_truncSum_certificate {Adm : ℕ → ℕ → ℕ × DescribedNetwo
   obtain ⟨pB, hpB, mB, bB⟩ := exists_mono_poly_cert hbuild
   obtain ⟨pS, hpS, mS, bS⟩ := exists_mono_poly_cert sum_polyTime
   obtain ⟨pF, hpF, mF, bF⟩ := exists_mono_poly_cert (modulusFst_polyTime hmodulus)
-  obtain ⟨pM, hpM, mM, bM⟩ := exists_mono_poly_cert mod_polyTime
+  obtain ⟨pM, hpM, mM, bM⟩ := exists_mono_poly_cert ComputableInPolyTime.binary_mod
   obtain ⟨pBL, hpBL, mBL, bBL⟩ := exists_mono_poly hbuild.polyBounded_length
   obtain ⟨pSL, hpSL, mSL, bSL⟩ := exists_mono_poly sum_polyTime.polyBounded_length
   obtain ⟨K₀, hK₀⟩ := A.bound Cadm D

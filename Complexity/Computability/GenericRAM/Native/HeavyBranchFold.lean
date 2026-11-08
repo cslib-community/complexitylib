@@ -1073,16 +1073,13 @@ theorem computableInPolyTime_prepareStep :
       prepareBranch p.inp.numVars p.inp.vars p.vals p.inp.system)
       (encPair (encPair encUnary encBits) (encPair encBranchInput encNat)) encBranchOutcome := by
   unfold encBranchInput; fun_prop
-private theorem computableInPolyTime_binaryAdd :
-    ComputableInPolyTime (fun x : ℕ × ℕ => x.1 + x.2) (encPair encNat encNat) encNat :=
-  ComputableInPolyTime.binary_add
 private theorem computableInPolyTime_dim :
     ComputableInPolyTime (fun inp : BranchInput => inp.2.1.length) encBranchInput encUnary := by
   unfold encBranchInput; fun_prop
 private noncomputable def prepareStepCert :=
   NativeCertificate.ofPolyTime computableInPolyTime_prepareStep
 private noncomputable def binaryAddCert :=
-  NativeCertificate.ofPolyTime computableInPolyTime_binaryAdd
+  NativeCertificate.ofPolyTime ComputableInPolyTime.binary_add
 private noncomputable def dimCert := NativeCertificate.ofPolyTime computableInPolyTime_dim
 private noncomputable def initAccCert : NativeCertificate (fun inp : BranchInput => (inp, 0))
     encBranchInput (encPair encBranchInput encNat) :=
@@ -1182,7 +1179,7 @@ private noncomputable def visitOverhead (L : ℕ) : ℕ :=
   let hpv := NativeCertificate.ofPolyTime_isPolynomial
     (BooleanFold.prepare_polyTime (encB := encPair encBranchInput encNat))
   let hps := NativeCertificate.ofPolyTime_isPolynomial computableInPolyTime_prepareStep
-  let hadd := NativeCertificate.ofPolyTime_isPolynomial computableInPolyTime_binaryAdd
+  let hadd := NativeCertificate.ofPolyTime_isPolynomial ComputableInPolyTime.binary_add
   17 * L + 18 + monoPolyBound hpv.1 (5 * L + 5) + monoPolyBound hpv.2 (5 * L + 5) +
     monoPolyBound hps.1 (6 * L + 4) + monoPolyBound hps.2 (6 * L + 4) +
     20 * monoPolyBound computableInPolyTime_prepareStep.polyBounded_length (6 * L + 4) +
@@ -1303,7 +1300,7 @@ private theorem branch_step_bounds {solver : ℕ → List (List (List ℕ)) → 
   let hpv := NativeCertificate.ofPolyTime_isPolynomial
     (BooleanFold.prepare_polyTime (encB := encPair encBranchInput encNat))
   let hps := NativeCertificate.ofPolyTime_isPolynomial computableInPolyTime_prepareStep
-  let hadd := NativeCertificate.ofPolyTime_isPolynomial computableInPolyTime_binaryAdd
+  let hadd := NativeCertificate.ofPolyTime_isPolynomial ComputableInPolyTime.binary_add
   have hpvT := le_monoPolyBound hpv.1 st hlen_state
   have hpvS := le_monoPolyBound hpv.2 st hlen_state
   have hpsT := le_monoPolyBound hps.1 q hlen_q; have hpsS := le_monoPolyBound hps.2 q hlen_q

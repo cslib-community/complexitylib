@@ -25,10 +25,6 @@ namespace Turing.MultiTapeTM.ComputableInPolyTime
 open Cslib Internal.ListIndex
 variable {α : Type} {encA : α ↪ List Bool}
 
-private theorem tailPlain {encL : List α ↪ List Bool} [ListEncoding encA encL] :
-    ComputableInPolyTime List.tail encL encL := by
-  exact (ListEncoding.tail (enc₁ := encA) (enc := encL)).computableInPolyTime
-
 private theorem headPlain {encL : List α ↪ List Bool} [ListEncoding encA encL] (d : α) :
     ComputableInPolyTime (fun l : List α => l.headD d) encL encA := by
   exact (ListEncoding.headD (enc₁ := encA) (enc := encL) d).computableInPolyTime
@@ -44,7 +40,7 @@ theorem dropUnary {encL : List α ↪ List Bool} [ListEncoding encA encL]
   have h := foldl' (encA := encBool) (encL := encBits)
     (list := fun p : List α × ℕ => List.replicate p.2 true) (step := fun acc _ => acc.tail)
     ((of_eq (encIn := encUnary) (encOut := encBits) fun _ => rfl).comp (snd encL encUnary))
-    (fst encL encUnary) ((tailPlain (encA := encA) (encL := encL)).comp (fst encL encBool))
+    (fst encL encUnary) ((tail (encA := encA) (encL := encL)).comp (fst encL encBool))
     (B := fun p => (encPair encL encUnary p).length) .self (fun p i _ => by
       rw [List.take_replicate, heq]
       have := SizedListEncoding.length_drop_le (encA := encA) (encL := encL) p.1 (min i p.2)

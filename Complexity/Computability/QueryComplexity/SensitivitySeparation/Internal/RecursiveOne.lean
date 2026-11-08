@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.QueryComplexity.SensitivitySeparation.Internal.RecursiveSets
+import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
 /-!
 # Superquadratic sensitivity separation: recursive one
@@ -83,13 +84,13 @@ theorem recursive_sensitivity_one_at {k r h : ℕ} {I : Type} [Fintype I]
       exact ⟨j, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hij⟩,
         by simpa [childChanges] using hg⟩
   have hU : U.card ≤ r * sideSensitivity F true := by
-    simpa [U] using card_biUnion_le_mul Finset.univ
+    simpa [U] using Finset.card_biUnion_le_card_mul Finset.univ
       (fun c => childChanges F (Fin.last h) x i c) (sideSensitivity F true)
       (fun c _ => by
         rw [childChanges_card]
         exact sensitivityAt_le_sideSensitivity F true _ _ (hcond.1 c))
   have hV : V.card ≤ o * sideSensitivity F false := by
-    simpa only [V, ho i] using card_biUnion_le_mul (Finset.univ.filter (T.Adj i))
+    simpa only [V, ho i] using Finset.card_biUnion_le_card_mul (Finset.univ.filter (T.Adj i))
       (fun j => childChanges F (gateIndex q) x j (label i j)) (sideSensitivity F false)
       (fun j hj => by
         rw [childChanges_card]
@@ -167,13 +168,13 @@ theorem recursive_joint_one_at {k r h : ℕ} {I : Type} [Fintype I]
       exact ⟨j, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hij⟩,
         by simpa [childJointChanges] using And.intro hg' hg⟩
   have hU : U.card ≤ r * sideSensitivity F true := by
-    simpa [U] using card_biUnion_le_mul Finset.univ
+    simpa [U] using Finset.card_biUnion_le_card_mul Finset.univ
       (fun c => childChanges F (Fin.last h) x i c) (sideSensitivity F true)
       (fun c _ => by
         rw [childChanges_card]
         exact sensitivityAt_le_sideSensitivity F true _ _ (hcond.1 c))
   have hV : V.card ≤ o * jointSensitivity F false := by
-    simpa only [V, ho i] using card_biUnion_le_mul (Finset.univ.filter (T.Adj i))
+    simpa only [V, ho i] using Finset.card_biUnion_le_card_mul (Finset.univ.filter (T.Adj i))
       (fun j => childJointChanges F (gateIndex q') (gateIndex q) x j (label i j))
       (jointSensitivity F false) (fun j hj => by
         have hij := (Finset.mem_filter.mp hj).2

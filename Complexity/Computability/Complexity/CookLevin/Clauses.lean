@@ -88,15 +88,6 @@ private theorem mapFilterConst_plain {ι : Type*} {α β : Type} {encIn : α ↪
     refine h.of_enc_eq fun x => ?_
     cases hta : test x a <;> simp [hta]
 
-@[local fun_prop]
-private theorem int_abs_le_nat'_plain {α : Type} {input : α ↪ List Bool}
-    {position : α → ℤ} {bound : α → ℕ}
-    (hposition : ComputableInPolyTime position input encIntUnary)
-    (hbound : ComputableInPolyTime bound input encUnary) :
-    ComputableInPolyTime (fun a => decide (|position a| ≤ (bound a : ℤ))) input encBool := by
-  simp only [← Int.natCast_natAbs, Int.ofNat_le]
-  fun_prop
-
 /-- Enumerate the feature groups in polynomial time in the unary input and window bounds. -/
 @[fun_prop]
 theorem computableInPolyTime_groups :
