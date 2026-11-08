@@ -4275,6 +4275,7 @@ public import Complexity.Foundations.Combinatorics.SimpleGraph.Acyclic
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Berge
 public import Complexity.Foundations.Combinatorics.SimpleGraph.CliqueCover
 public import Complexity.Foundations.Combinatorics.SimpleGraph.ColorRefinement
+public import Complexity.Foundations.Combinatorics.SimpleGraph.Connectivity.Connected
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Crown
 public import Complexity.Foundations.Combinatorics.SimpleGraph.DominatingSet
 public import Complexity.Foundations.Combinatorics.SimpleGraph.EvenEdges
@@ -4660,6 +4661,7 @@ public import Complexity.Foundations.LinearAlgebra.TracePower
 public import Complexity.Foundations.LinearAlgebra.VariableCopyPlacement
 public import Complexity.Foundations.Logic.Function.Iterate
 public import Complexity.Foundations.MeasureTheory.Constructions.BorelSpace.Order
+public import Complexity.Foundations.MeasureTheory.Constructions.SimpleGraph
 public import Complexity.Foundations.MeasureTheory.Group.ConvolutionDensity
 public import Complexity.Foundations.MeasureTheory.Group.FundamentalDomain
 public import Complexity.Foundations.MeasureTheory.Group.QuotientDensity

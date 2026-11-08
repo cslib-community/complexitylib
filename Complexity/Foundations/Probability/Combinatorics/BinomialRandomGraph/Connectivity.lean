@@ -7,9 +7,10 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate (Mathlib, `Mathlib/Probability/Combinatorics/BinomialRandomGraph/`)
 
-public import Complexity.Init
+public import Complexity.Foundations.MeasureTheory.Constructions.SimpleGraph
 public import Mathlib.Combinatorics.SimpleGraph.Connectivity.Connected
 public import Mathlib.Probability.Combinatorics.BinomialRandomGraph.Defs
+import Complexity.Foundations.Combinatorics.SimpleGraph.Connectivity.Connected
 import Mathlib.Algebra.Order.Field.GeomSum
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Data.Nat.Choose.Bounds
@@ -19,15 +20,17 @@ import Mathlib.Data.Nat.Choose.Bounds
 
 The binomial random graph `G(n, p)` (Mathlib's `SimpleGraph.binomialRandom`) is connected with
 probability tending to `1` once `n p - log n → ∞`: this is the upper half of the Erdős–Rényi
-connectivity threshold `p = log n / n`
-[Frieze and Karoński, Theorem 4.1][FriezeKaronski2016].
+connectivity threshold `p = log n / n`, in the `G(n, p)` form proved in the proof of
+[Frieze and Karoński, Theorem 4.1][FriezeKaronski2016] and cited in their Section 4.2.
 
 The proof is a union bound over vertex cuts. A graph on `n ≥ 1` vertices that is not connected
 has a vertex set `S` with `1 ≤ |S| ≤ n / 2` and no edge between `S` and its complement
-(`SimpleGraph.exists_forall_not_adj_of_not_connected`). In `G(V, p)` none of the edges in a fixed
-set `t` of non-diagonal edges is present with probability `(1 - p) ^ |t|`
-(`SimpleGraph.binomialRandom_real_disjoint_edgeSet`), so a fixed cut is empty with probability
-`(1 - p) ^ (|S| (n - |S|))` (`SimpleGraph.binomialRandom_real_forall_not_adj`), and
+(`SimpleGraph.exists_forall_not_adj_of_not_connected`, in
+`Complexity/Foundations/Combinatorics/SimpleGraph/Connectivity/Connected.lean`). In `G(V, p)`
+none of the edges in a fixed set `t` of non-diagonal edges is present with probability
+`(1 - p) ^ |t|` (`SimpleGraph.binomialRandom_real_disjoint_edgeSet`), so a fixed cut is empty
+with probability `(1 - p) ^ (|S| (n - |S|))` (`SimpleGraph.binomialRandom_real_forall_not_adj`),
+and
 
 `P(G(n, p) is not connected) ≤ ∑_{k = 1}^{⌊n / 2⌋} C(n, k) (1 - p) ^ (k (n - k))`
 
@@ -45,19 +48,16 @@ the cut-based union bound used here is a standard simplification, and the consta
 through the second moment of the number of isolated vertices) and the limit `e ^ (-e ^ (-c))` at
 `p = (log n + c) / n` are not formalized here.
 
-For countable `V` single graphs are measurable, so for finite `V` the measurable space on
-`SimpleGraph V` is discrete and every event about a random graph on finitely many vertices is
-measurable.
+Measurability comes from `Complexity/Foundations/MeasureTheory/Constructions/SimpleGraph.lean`:
+for finite `V` the measurable space on `SimpleGraph V` is discrete, so every event about a random
+graph on finitely many vertices is measurable.
 
 ## Main results
 
-* `SimpleGraph.measurableSet_disjoint_edgeSet`: events defined by forbidden edges are measurable.
 * `SimpleGraph.binomialRandom_real_disjoint_edgeSet`: a fixed set of non-diagonal edges is absent
   with probability `(1 - p) ^ |t|`.
 * `SimpleGraph.binomialRandom_real_forall_not_adj`: a fixed vertex cut is empty with probability
   `(1 - p) ^ (|S| (|V| - |S|))`.
-* `SimpleGraph.exists_forall_not_adj_of_not_connected`: a disconnected graph has an empty cut on
-  at most half of the vertices.
 * `SimpleGraph.binomialRandom_real_not_connected_le_sum`: the union bound over cuts.
 * `SimpleGraph.binomialRandom_real_not_connected_le`: the explicit bound
   `35 n exp (-(n p))`.
@@ -78,27 +78,6 @@ open scoped Finset Topology
 namespace SimpleGraph
 
 variable {V : Type*}
-
-/-- For countable `V`, single graphs are measurable: a graph is determined by its adjacency
-relation. With `Finite V` this makes `SimpleGraph V` a discrete measurable space, so every event
-about a random graph on finitely many vertices is measurable. -/
-instance [Countable V] : MeasurableSingletonClass (SimpleGraph V) where
-  measurableSet_singleton G := by
-    have : ({G} : Set (SimpleGraph V)) = Adj ⁻¹' {G.Adj} := by
-      ext H
-      simp only [Set.mem_singleton_iff, Set.mem_preimage]
-      exact ⟨fun h => h ▸ rfl, fun h => SimpleGraph.ext h⟩
-    rw [this]
-    exact measurable_adj (measurableSet_singleton _)
-
-/-- The graphs with no edge in a given set form a measurable set. -/
-theorem measurableSet_disjoint_edgeSet [Countable V] (t : Set (Sym2 V)) :
-    MeasurableSet {G : SimpleGraph V | Disjoint t G.edgeSet} := by
-  have : {G : SimpleGraph V | Disjoint t G.edgeSet} = ⋂ e ∈ t, {G | e ∈ G.edgeSet}ᶜ := by
-    ext G; simp [Set.disjoint_left]
-  rw [this]
-  refine MeasurableSet.biInter (Set.to_countable t) fun e _ => ?_
-  exact (measurableSet_setOfPred.2 ((measurable_set_iff.1 measurable_edgeSet) e)).compl
 
 /-- `G(V, p)` has no edge in a fixed finite set `t` of non-diagonal edges with probability
 `(1 - p) ^ |t|`. -/
@@ -161,29 +140,6 @@ theorem binomialRandom_real_forall_not_adj [Fintype V] (p : I) (S : Finset V) :
     · intro h u hu v hv huv
       exact h ⟨(u, v), ⟨hu, hv⟩, rfl⟩ huv
   rw [hset, binomialRandom_real_disjoint_edgeSet p t hdiag, hcard]
-
-/-- A graph on a nonempty finite vertex set that is not connected has a nonempty vertex set `S`
-with at most half of the vertices and no edge between `S` and its complement. -/
-theorem exists_forall_not_adj_of_not_connected [Fintype V] [Nonempty V]
-    {G : SimpleGraph V} (hG : ¬G.Connected) :
-    ∃ S : Finset V, 1 ≤ #S ∧ 2 * #S ≤ Fintype.card V ∧ ∀ u ∈ S, ∀ v ∉ S, ¬G.Adj u v := by
-  classical
-  rw [connected_iff] at hG
-  simp only [‹Nonempty V›, and_true, Preconnected, not_forall] at hG
-  obtain ⟨u, v, huv⟩ := hG
-  set C : Finset V := {w | G.Reachable u w} with hC
-  have hclosed : ∀ a b, G.Adj a b → (a ∈ C ↔ b ∈ C) := fun a b hab => by
-    simp only [hC, mem_filter, mem_univ, true_and]
-    exact ⟨fun h => h.trans hab.reachable, fun h => h.trans hab.symm.reachable⟩
-  have huC : u ∈ C := by simp [hC]
-  have hvC : v ∉ C := by simpa [hC] using huv
-  have hsum : #C + #Cᶜ = Fintype.card V := card_add_card_compl C
-  by_cases h : 2 * #C ≤ Fintype.card V
-  · refine ⟨C, card_pos.2 ⟨u, huC⟩, h, fun a ha b hb hab => hb ((hclosed a b hab).1 ha)⟩
-  · refine ⟨Cᶜ, card_pos.2 ⟨v, mem_compl.2 hvC⟩, by omega, fun a ha b hb hab => ?_⟩
-    rw [mem_compl] at ha hb
-    rw [not_not] at hb
-    exact ha ((hclosed a b hab).2 hb)
 
 /-- **Union bound over cuts**: `G(V, p)` on `n ≥ 1` vertices is disconnected with probability at
 most `∑_{k = 1}^{⌊n / 2⌋} C(n, k) (1 - p) ^ (k (n - k))`. -/
@@ -370,8 +326,9 @@ theorem binomialRandom_real_not_connected_le {n : ℕ} (hn : 0 < n) (p : I)
   have hE := Real.exp_one_lt_d9
   nlinarith [sum_le_sum hgeom]
 
-/-- **Connectivity above the threshold** [Frieze and Karoński, Theorem 4.1][FriezeKaronski2016]:
-if `n p(n) - log n → ∞`, then `G(n, p(n))` is disconnected with probability tending to `0`. -/
+/-- **Connectivity above the threshold**, the `G(n, p)` form from the proof of
+[Frieze and Karoński, Theorem 4.1][FriezeKaronski2016]: if `n p(n) - log n → ∞`, then
+`G(n, p(n))` is disconnected with probability tending to `0`. -/
 theorem tendsto_binomialRandom_real_not_connected {p : ℕ → I}
     (hp : Tendsto (fun n : ℕ => n * (p n : ℝ) - Real.log n) atTop atTop) :
     Tendsto (fun n : ℕ => G(Fin n, p n).real {G | ¬G.Connected}) atTop (𝓝 0) := by
@@ -389,8 +346,9 @@ theorem tendsto_binomialRandom_real_not_connected {p : ℕ → I}
     eventually_gt_atTop 0] with n hn hn0
   exact binomialRandom_real_not_connected_le hn0 (p n) hn
 
-/-- **Connectivity above the threshold** [Frieze and Karoński, Theorem 4.1][FriezeKaronski2016]:
-if `n p(n) - log n → ∞`, then `G(n, p(n))` is connected with probability tending to `1`. -/
+/-- **Connectivity above the threshold**, the `G(n, p)` form from the proof of
+[Frieze and Karoński, Theorem 4.1][FriezeKaronski2016]: if `n p(n) - log n → ∞`, then
+`G(n, p(n))` is connected with probability tending to `1`. -/
 theorem tendsto_binomialRandom_real_connected {p : ℕ → I}
     (hp : Tendsto (fun n : ℕ => n * (p n : ℝ) - Real.log n) atTop atTop) :
     Tendsto (fun n : ℕ => G(Fin n, p n).real {G | G.Connected}) atTop (𝓝 1) := by

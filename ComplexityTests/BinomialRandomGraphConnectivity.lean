@@ -12,7 +12,7 @@ import Complexity.Foundations.Probability.Combinatorics.BinomialRandomGraph.Conn
 * Every event about a random graph on finitely many vertices is measurable.
 * Degenerate parameters: `G(n, 1)` is connected almost surely for `n ≥ 1`, and `G(n, 0)` is
   disconnected almost surely for `n ≥ 2`.
-* The union bound over cuts on two vertices is `2 (1 - p)`.
+* The union bound over cuts on two vertices gives `2 (1 - p)`; the true value is `1 - p`.
 * The explicit bound is nonvacuous: `G(20, 1/2)` is disconnected with probability below `1 / 20`.
 * Constant `p = 1 / 2` lies above the connectivity threshold.
 -/
@@ -41,7 +41,8 @@ example (n : ℕ) (hn : 2 ≤ n) : G(Fin n, 0).real {G | G.Connected} = 0 := by
 
 /-! ### The union bound and the explicit bound -/
 
-/-- On two vertices the union bound over cuts is `2 (1 - p)`. -/
+/-- On two vertices the union bound over cuts gives `2 (1 - p)`. This is not exact: the true value
+is `1 - p`, and the sum counts both `S` and its complement when `|S| = n / 2`. -/
 example (p : I) : G(Fin 2, p).real {G | ¬G.Connected} ≤ 2 * (1 - p) := by
   have := binomialRandom_real_not_connected_le_sum (V := Fin 2) p
   simpa using this
