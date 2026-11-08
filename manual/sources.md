@@ -1017,15 +1017,15 @@ David P. Williamson and David B. Shmoys. *The Design of Approximation Algorithms
 
 Andrew Chi-Chih Yao. "New Algorithms for Bin Packing." *Journal of the ACM* 27(2), 207–227, 1980. https://doi.org/10.1145/322186.322187 . Bibliographic data and the abstract are from the Crossref record of the DOI, checked on 2026-11-08 UTC. The abstract defines `r(S)` as the maximum ratio `S(L)/L*` for large `L*`, where `S(L)` is the number of bins used by algorithm `S` and `L*` the minimum number needed. It states that every on-line algorithm `S` has `r(S) ≥ 3/2`. The item types `1/7 + ε`, `1/3 + ε` and `1/2 + ε` of the construction are as reported in [baloghbekesidosaepsteinlevin18](#baloghbekesidosaepsteinlevin18), Section 1. The full text was not inspected, since no open copy was found, so the theorem number and Yao's own proof are not recorded. [OnlineLowerBound](../Complexity/Algorithms/Lean/BinPacking/OnlineLowerBound.lean) cites the paper on that basis.
 
+<a id="yao80b"></a>
+## yao80b
+
+F. Frances Yao. "Efficient Dynamic Programming Using Quadrangle Inequalities." *Proceedings of the 12th Annual ACM Symposium on Theory of Computing* (STOC 1980), 429–435. https://doi.org/10.1145/800141.804691 . The bibliographic data come from secondary indexes and search summaries; the paper was not inspected in this pass. The manual credits it, as secondary sources do, with the lemma that the optimal cost inherits the quadrangle inequality from a monotone weight satisfying it, and with the resulting monotonicity of optimal roots. Its lemma and theorem numbers are not cited.
+
 <a id="yekhanin12"></a>
 ## yekhanin12
 
 Sergey Yekhanin. *Locally Decodable Codes*. Foundations and Trends in Theoretical Computer Science 6(3), 139–255, 2012. https://doi.org/10.1561/0400000030 . Definition 6.1 and Lemma 6.2 (§6.1.1, private information retrieval from perfectly smooth codes) were checked on 2026-11-08 against the author's draft at https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/LDC_now.pdf ; the numbering of the published monograph was not checked.
-
-<a id="yao80"></a>
-## yao80
-
-F. Frances Yao. "Efficient Dynamic Programming Using Quadrangle Inequalities." *Proceedings of the 12th Annual ACM Symposium on Theory of Computing* (STOC 1980), 429–435. https://doi.org/10.1145/800141.804691 . The bibliographic data come from secondary indexes and search summaries; the paper was not inspected in this pass. The manual credits it, as secondary sources do, with the lemma that the optimal cost inherits the quadrangle inequality from a monotone weight satisfying it, and with the resulting monotonicity of optimal roots. Its lemma and theorem numbers are not cited.
 
 <a id="yao86"></a>
 ## yao86
