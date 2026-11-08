@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Communication.NOF.Transcript
+public import Complexity.Computability.Communication.NOF.Leaf
 public import Mathlib.Combinatorics.Additive.Corner.Roth
 public import Mathlib.Topology.Instances.ENat
 import Mathlib.Combinatorics.Pigeonhole
