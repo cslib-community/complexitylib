@@ -33,6 +33,8 @@ The distance-to-uniform estimate is the Cauchy–Schwarz step in the leftover ha
 * `Cslib.Probability.PMF.collisionProbability_pos`, `collisionProbability_le_one`,
   `toReal_le_sqrt_of_collisionProbability_le`: elementary bounds.
 * `Cslib.Probability.PMF.collisionProbability_sq_le_sum_pow_three`: Jensen, `‖p‖₂⁴ ≤ ‖p‖₃³`.
+* `Cslib.Probability.PMF.four_mul_dist_sq_le_card_mul_sum_sq`: Cauchy–Schwarz between
+  statistical distance and `ℓ₂` distance.
 * `Cslib.Probability.PMF.dist_uniform_le`: distance to uniform from excess collisions.
 
 ## References
@@ -169,6 +171,15 @@ theorem collisionProbability_conditionalSnd_uniform_map [Fintype α] [Nonempty �
   rw [conditionalSnd_uniform_map, collisionProbability_map_of_injective _ _ Subtype.val_injective,
     collisionProbability_uniform, Nat.card_eq_fintype_card]
 
+/-- **Cauchy–Schwarz between `ℓ₁` and `ℓ₂`.** On `n` points, `4 dist(p, q)² ≤ n ‖p - q‖₂²`. -/
+theorem four_mul_dist_sq_le_card_mul_sum_sq [Fintype α] (p q : PMF α) :
+    4 * dist p q ^ 2 ≤ Fintype.card α * ∑ a, ((p a).toReal - (q a).toReal) ^ 2 := by
+  have h := Finset.sum_mul_sq_le_sq_mul_sq Finset.univ (fun a => |(p a).toReal - (q a).toReal|)
+    (fun _ => (1 : ℝ))
+  simp only [mul_one, sq_abs, one_pow, Finset.sum_const, Finset.card_univ, nsmul_eq_mul] at h
+  rw [dist_eq]
+  nlinarith
+
 /-- Squared distance to uniform is controlled by the excess collision probability. -/
 theorem dist_uniform_sq_le [Fintype α] [Nonempty α] (p : PMF α) :
     4 * dist p (PMF.uniformOfFintype α) ^ 2 ≤
@@ -182,14 +193,10 @@ theorem dist_uniform_sq_le [Fintype α] [Nonempty α] (p : PMF α) :
     simp only [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
     field_simp
     ring
-  have h := Finset.sum_mul_sq_le_sq_mul_sq (Finset.univ : Finset α)
-    (fun a => |(p a).toReal - (Fintype.card α : ℝ)⁻¹|) (fun _ => (1 : ℝ))
-  simp only [mul_one, sq_abs, one_pow, Finset.sum_const, Finset.card_univ,
-    nsmul_eq_mul, mul_one, hsum] at h
-  rw [dist_eq]
-  simp only [PMF.uniformOfFintype_apply, ENNReal.toReal_inv, ENNReal.toReal_natCast]
-  have hcancel : (Fintype.card α : ℝ)⁻¹ * Fintype.card α = 1 := inv_mul_cancel₀ hcard
-  nlinarith
+  have h := four_mul_dist_sq_le_card_mul_sum_sq p (PMF.uniformOfFintype α)
+  simp only [PMF.uniformOfFintype_apply, ENNReal.toReal_inv, ENNReal.toReal_natCast, hsum] at h
+  rw [mul_sub, mul_inv_cancel₀ hcard] at h
+  exact h
 
 /-- Cauchy–Schwarz bounds distance to uniform by the square root of excess collisions. -/
 theorem dist_uniform_le [Fintype α] [Nonempty α] (p : PMF α) :

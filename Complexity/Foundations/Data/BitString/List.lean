@@ -39,7 +39,9 @@ row extraction is ordinary dropping, padding and taking, including on short or e
 * `Cslib.BitString.listRows_eq_ofFn`, `Cslib.BitString.listRows_ofFn`: agreement with the finite
   block representation.
 * `Cslib.BitString.listRows_succ_append`: the rows of a word whose first row is given.
-* `Cslib.BitString.ofFn_blocksEquiv_symm`: packing fixed-width rows is list concatenation.
+
+Packing fixed-width rows is list concatenation by `Cslib.BitString.ofFn_blocksEquiv_symm`, in
+`Complexity.Foundations.Data.BitString.Block`.
 
 ## References
 
@@ -122,17 +124,6 @@ length `k` satisfying `g` iff every string of `k` bits does. -/
 theorem forall_take_ofFn_iff {k K : ℕ} (h : k ≤ K) {g : List Bool → Prop} :
     (∀ y : BitString K, g ((List.ofFn y).take k)) ↔ ∀ y : BitString k, g (List.ofFn y) := by
   simpa only [not_exists, not_not] using (exists_take_ofFn_iff h (g := fun w => ¬g w)).not
-
-/-- Packing fixed-width rows in the block representation is ordinary list concatenation. -/
-theorem ofFn_blocksEquiv_symm {count width : ℕ} (rows : Fin count → BitString width) :
-    List.ofFn (blocksEquiv.symm rows) =
-      (List.ofFn (fun i => List.ofFn (rows i))).flatten := by
-  have h := congrArg (fun values => (List.ofFn fun i => List.ofFn (values i)).flatten)
-    (blocksEquiv.apply_symm_apply rows)
-  change (List.ofFn fun i => List.ofFn fun j =>
-    blocksEquiv.symm rows (finProdFinEquiv (i, j))).flatten = _ at h
-  simpa only [List.ofFn_mul, finProdFinEquiv, Equiv.coe_fn_mk,
-    Nat.mul_comm, Nat.add_comm] using h
 
 /-- Reading fewer rows agrees with restricting the longer fixed-width view. -/
 theorem block_ofList_prefix {count rows width : ℕ} (h : rows ≤ count) (word : List Bool) :
