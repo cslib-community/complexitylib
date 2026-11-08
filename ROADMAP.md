@@ -1793,9 +1793,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   beyond the one-to-one, complete-list deferred-acceptance development in
   `Algorithms/Lean/StableMatching` (stability, the `n^2 - n + 1` proposal bound, optimality, the
   lattice, the blocking lemma, strategy-proofness, and Roth's impossibility theorem for three
-  agents per side): Roth's theorem for every `n ≥ 3` by padding the witness, incomplete lists and
-  the rural hospitals theorem, many-to-one college admissions, ties, rotations and the
-  stable-matching poset, stable roommates, and a charged native implementation in `O(n^2)` time.
+  agents per side) and its incomplete-list extension in `StableMatching/Incomplete` (unequal
+  sides, deferred acceptance, optimality, and the one-to-one rural hospitals theorem): Roth's
+  theorem for every `n ≥ 3` by padding the witness, the lattice, blocking lemma and incentive
+  (strategy-proofness) results for incomplete lists, many-to-one college admissions with the
+  capacitated rural hospitals theorem, ties, rotations and the stable-matching poset, stable
+  roommates, and a charged native implementation in `O(n^2)` time.
 - **Housing markets and top trading cycles** ([#3286](https://github.com/cslib-community/complexitylib/issues/3286)):
   beyond the Shapley–Scarf development in `Algorithms/Lean/HousingMarket` (TTC as the unique
   strict-core and competitive allocation, individual rationality, Pareto efficiency and

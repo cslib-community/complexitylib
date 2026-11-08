@@ -133,6 +133,10 @@ public import Complexity.Algorithms.Lean.StableMatching.Basic
 public import Complexity.Algorithms.Lean.StableMatching.Blocking
 public import Complexity.Algorithms.Lean.StableMatching.DeferredAcceptance
 public import Complexity.Algorithms.Lean.StableMatching.Incentives
+public import Complexity.Algorithms.Lean.StableMatching.Incomplete.Basic
+public import Complexity.Algorithms.Lean.StableMatching.Incomplete.Complete
+public import Complexity.Algorithms.Lean.StableMatching.Incomplete.DeferredAcceptance
+public import Complexity.Algorithms.Lean.StableMatching.Incomplete.RuralHospitals
 public import Complexity.Algorithms.Lean.StableMatching.Lattice
 public import Complexity.Algorithms.Lean.SteinerTree.Graph
 public import Complexity.Algorithms.Lean.SteinerTree.Metric
