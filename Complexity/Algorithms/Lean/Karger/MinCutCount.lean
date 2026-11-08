@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.Lean.Karger.Contraction
 public import Complexity.Foundations.Combinatorics.WeightedCut.Blocks
+import Complexity.Languages.Probabilistic.Oracle.Simulation
 import Complexity.Probability.PMF.Map
 
 /-!
@@ -37,22 +38,22 @@ Source map ([KargerStein1996], author copy dated 6 August 1996):
 
 * Section 2, the blocks `s(a)` and the output cut `(s(a), s(b))`: `TrackedGraph`,
   `TrackedGraph.side`.
-* Lemma 2.1, "a cut is output iff no edge crossing it is contracted": the direction used, a cut
-  that survives is output, is `two_div_le_cutLaw`'s final step, with `TrackedSurvives` for
-  "no crossing edge was contracted".
+* Lemma 2.1 (a cut is output if and only if no edge crossing it is contracted): the direction
+  used, a cut that survives is output, is `two_div_le_cutLaw`'s final step, with
+  `TrackedSurvives` for the event that no crossing edge was contracted.
 * Theorem 2.2, a particular minimum cut is output with probability at least `C(n, 2)⁻¹`:
   `two_div_le_cutLaw`.
 * The count of minimum cuts, attributed in the proof of Theorem 4.4 to Dinitz, Karzanov and
   Lomonosov (1976): `card_minCuts_le_choose_two`, by the disjointness argument of the proof of
   Theorem 8.4 (stated there for `α`-minimal cuts) applied to Theorem 2.2. The `n`-cycle attains
-  it (`ComplexityTests.KargerMinCutCount`).
+  it, as remarked after Theorem 2.2; `ComplexityTests.KargerMinCutCount` checks `n = 4` and `5`.
 
 Scope: weights are natural numbers (`Cslib.WeightedCut.IsMultigraph`), and the graph is connected
 (`0 < minCut W₀`), without which the count fails (the empty graph on four vertices has seven
-minimum cuts). A minimum cut `{C, Cᶜ}` is counted once, by its side `C` that avoids a fixed vertex
-`x₀`. Not formalized here: the `O(n^(2α))` bound on `α`-minimal cuts (Theorem 8.4), the cactus
-representation of all minimum cuts, and the per-cut bound for the recursive Karger–Stein
-algorithm.
+non-trivial minimum cuts). A minimum cut `{C, Cᶜ}` is counted once, by its side `C` that avoids a
+fixed vertex `x₀`. Not formalized here: the `O((2n)^(2α))` bound on `α`-minimal cuts
+(Theorem 8.4), the enumeration and cactus representation of all minimum cuts, and the per-cut
+bound for the recursive Karger–Stein algorithm.
 
 ## Main definitions
 
@@ -65,8 +66,9 @@ algorithm.
 
 * `map_run_trackedSpec`: forgetting the blocks maps runs over `trackedSpec n` to runs over `spec`.
 * `trackedSurvives_contractTimes`: the survival bound, over the blocks.
-* `answer_eq_cutWeight_side`, `answerLaw_eq_map_cutLaw`: the answer is the weight of the
-  non-trivial output cut.
+* `cutLaw_eq`: the output cut is the block of supervertex `1` after `n - 2` contractions.
+* `answer_eq_cutWeight_side`, `answerLaw_eq_map_cutLaw`, `isNonTrivialCut_of_mem_support_cutLaw`:
+  the answer is the weight of the output cut, which is non-trivial.
 * `two_div_le_cutLaw`: each minimum cut is output with probability at least `2 / (n (n - 1))`.
 * `card_minCuts_le_choose_two`: at most `n.choose 2` minimum cuts.
 
@@ -162,25 +164,17 @@ theorem trackedStep_toGraph {n : ℕ} (G : TrackedGraph n) (o : Op) :
 /-! ## Runs -/
 
 /-- **The blocks are bookkeeping.** Every client with coins draws the same answers and the same
-graphs over the structure with blocks as over `spec`. -/
+graphs over the structure with blocks as over `spec`: `TrackedGraph.toGraph` represents the state
+(`Cslib.ProbOracleComp.run_interpret_map_state`). -/
 theorem map_run_trackedSpec {n : ℕ} {α : Type} (p : ProbOracleComp Op.Result α)
     (G : TrackedGraph n) :
     ((trackedSpec n).toRandomized.withCoins.run p G).map (fun x => (x.1, x.2.toGraph)) =
-      spec.toRandomized.withCoins.run p G.toGraph := by
-  induction p generalizing G with
-  | pure a => simp
-  | liftBind o k ih =>
-    rw [RandomizedSpec.run_liftBind, RandomizedSpec.run_liftBind, PMF.map_bind]
-    cases o with
-    | inl m =>
-      rw [RandomizedSpec.withCoins_law_inl, RandomizedSpec.withCoins_law_inl, PMF.bind_map,
-        PMF.bind_map]
-      exact congrArg _ (funext fun r => ih r G)
-    | inr o =>
-      change (PMF.pure ((trackedStep G o).2, (trackedStep G o).1)).bind _ =
-        (PMF.pure ((step G.toGraph o).2, (step G.toGraph o).1)).bind _
-      rw [PMF.pure_bind, PMF.pure_bind, ← trackedStep_toGraph G o]
-      exact ih _ _
+      spec.toRandomized.withCoins.run p G.toGraph :=
+  ProbOracleComp.run_interpret_map_state _ _ TrackedGraph.toGraph
+    (fun o G => by
+      change (PMF.pure ((trackedStep G o).2, (trackedStep G o).1)).map _ =
+        PMF.pure ((step G.toGraph o).2, (step G.toGraph o).1)
+      rw [PMF.pure_map, ← trackedStep_toGraph G o]) p G
 
 /-- One contraction of a graph with positive total weight, over the structure with blocks: a
 uniform offset below the total doubled weight, then contraction of the pair sampled there. -/
@@ -393,14 +387,18 @@ theorem isNonTrivialCut_of_mem_support_cutLaw {n : ℕ} (hn : 2 ≤ n) {W₀ : F
   obtain ⟨x, hx, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hC
   exact (answer_eq_cutWeight_side hn hW₀ hx).1
 
-/-- **Karger's theorem for a fixed cut** [KargerStein1996]. On a connected multigraph with
-`n ≥ 2` vertices, `karger` outputs a fixed minimum cut `{C, Cᶜ}` with probability at least
-`2 / (n (n - 1)) = 1 / C(n, 2)`. -/
-theorem two_div_le_cutLaw {n : ℕ} (hn : 2 ≤ n) {W₀ : Fin n → Fin n → ℕ} (hW₀ : IsMultigraph W₀)
+/-- **Karger's theorem for a fixed cut** [KargerStein1996]. On a connected multigraph on `Fin n`,
+`karger` outputs a fixed minimum cut `{C, Cᶜ}` with probability at least
+`2 / (n (n - 1)) = 1 / C(n, 2)`. (`C` non-trivial forces `n ≥ 2`.) -/
+theorem two_div_le_cutLaw {n : ℕ} {W₀ : Fin n → Fin n → ℕ} (hW₀ : IsMultigraph W₀)
     (hmin : 0 < minCut W₀) {C : Finset (Fin n)} (hC : IsNonTrivialCut C)
     (hCmin : cutWeight W₀ C = minCut W₀) :
     (2 : ℝ≥0∞) / ((n * (n - 1) : ℕ) : ℝ≥0∞) ≤
       (cutLaw W₀).toOuterMeasure {C, Finset.univ \ C} := by
+  have hn : 2 ≤ n := by
+    have := (isNonTrivialCut_iff_card C).mp hC
+    rw [Fintype.card_fin] at this
+    omega
   obtain ⟨s, rfl⟩ : ∃ s, n = 2 + s := ⟨n - 2, by omega⟩
   have hid : pullbackCut id C = C := pullbackCut_id C
   have hsurv := trackedSurvives_contractTimes le_rfl hmin s (isContractionOf_id hW₀)
@@ -455,7 +453,7 @@ theorem card_minCuts_le_choose_two {n : ℕ} {W₀ : Fin n → Fin n → ℕ} (h
     have hx₀ := (Finset.mem_filter.mp hC).2.1
     have hne : C ≠ Finset.univ \ C := fun h =>
       hx₀ (h ▸ Finset.mem_sdiff.mpr ⟨Finset.mem_univ x₀, hx₀⟩)
-    have h := two_div_le_cutLaw hn hW₀ hmin (hnt C hC) (Finset.mem_filter.mp hC).2.2
+    have h := two_div_le_cutLaw hW₀ hmin (hnt C hC) (Finset.mem_filter.mp hC).2.2
     rwa [← Finset.coe_pair, PMF.toOuterMeasure_apply_finset, Finset.sum_pair hne] at h
   have hdisj : Disjoint F (F.image (Finset.univ \ ·)) := by
     rw [Finset.disjoint_left]

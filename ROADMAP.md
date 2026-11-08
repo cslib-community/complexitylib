@@ -1689,8 +1689,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   `WeightedCut/Blocks`, [#3489](https://github.com/cslib-community/complexitylib/issues/3489)):
   the `O(n m + n² log n)` priority-queue version, real weights,
   Nagamochi–Ibaraki sparse certificates for `k`-edge-connectivity,
-  Karger's near-linear minimum cut algorithm, the `O(n^(2α))` bound on `α`-minimal cuts, the
-  cactus representation of all minimum cuts, and Queyranne's minimization of symmetric submodular
+  Karger's near-linear minimum cut algorithm, the `O((2n)^(2α))` bound on `α`-minimal cuts, the
+  enumeration and cactus representation of all minimum cuts, the per-cut bound for recursive
+  Karger–Stein, deriving the untracked Karger theorems from the block-tracking ones
+  ([#3539](https://github.com/cslib-community/complexitylib/issues/3539)), and Queyranne's
+  minimization of symmetric submodular
   functions (which generalizes the maximum adjacency argument to hypergraph cuts).
 - **Gomory–Hu trees** ([#3320](https://github.com/cslib-community/complexitylib/issues/3320)):
   remaining after the existence theorem for cut-equivalent trees of symmetric submodular set
