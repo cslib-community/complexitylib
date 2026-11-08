@@ -1560,9 +1560,14 @@ Bayes–Nash characterization with revenue equivalence and the symmetric first-p
 - **Moser–Tardos resampling:** `Logics/Propositional/CNF/Moser*` runs Moser's `k`-SAT
   resampling algorithm on an explicit tape and bounds its resamplings by entropy compression when
   every clause shares a variable with fewer than `2 ^ (k - 3)` others
-  ([#2879](https://github.com/cslib-community/complexitylib/issues/2879)). Extend it to the
-  variable form of the Local Lemma under `e p (d + 1) ≤ 1` (witness trees, sharper expected
-  bounds), with native sampling and event-detection costs. The Kolmogorov form of the argument
+  ([#2879](https://github.com/cslib-community/complexitylib/issues/2879)).
+  `Probability/MoserTardos` proves the general variable form (Moser–Tardos Theorem 1.2): under the
+  asymmetric local-lemma hypothesis, every valid selection rule resamples `A` at most
+  `x(A) / (1 - x(A))` times in expectation, and the algorithm terminates almost surely
+  ([#3096](https://github.com/cslib-community/complexitylib/issues/3096)). Derive the symmetric
+  `e p (d + 1) ≤ 1` form and the `k`-SAT instance from it, prove the parallel and derandomized
+  versions (Theorems 1.3–1.4) and the lopsided form, and add native sampling and event-detection
+  costs. The Kolmogorov form of the argument
   is relative to an explicit decoder
   ([#3043](https://github.com/cslib-community/complexitylib/issues/3043)); implement the decoder
   as a multi-tape machine taking the formula to transfer it to the conditional universal

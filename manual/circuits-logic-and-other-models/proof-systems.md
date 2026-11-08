@@ -48,6 +48,38 @@ up a budget of `t > m + c` resamplings. The
 recovered tape and its description, and a formula where only the existential bound applies;
 check them with `scripts/build.sh ComplexityTests.Moser`.
 
+The general Moser–Tardos theorem for the variable form of the Local Lemma is in
+`Complexity.Probability.MoserTardos` [mosertardos10]. The setting is finitely many independent
+variables `σ v ∼ μ v` and finitely many measurable events `A i`, each depending (in Mathlib's
+`DependsOn` sense) only on the variables in a finite set `vbl i`. The algorithm's randomness is
+the table `MoserTardos.table μ` of independent samples `T (v, n)`, where `T (v, n)` is the value
+of `v` after its `n`-th resampling. A selection rule `sel T w : Option ι` picks the next event
+after the log `w`. It may depend on the whole table, and it is *valid* when it only picks events
+that occur. Assume `x i ∈ [0, 1)` and `Pr[A i] ≤ x i ∏ j ∈ Γ i, (1 - x j)`, where `Γ i`
+contains every other event sharing a variable with `A i`. Under this hypothesis, Theorem 1.2 of
+the paper is `MoserTardos.lintegral_resamplings_le`: for every valid rule the expected number of
+resamplings of `A i` is at most `x i / (1 - x i)`. The rule need not be measurable, so this `∫⁻`
+is a lower integral. `exists_measurable_ge_resamplings` closes the gap: one measurable function
+with the same bound dominates the count under every valid rule, so the bound also holds for the
+outer expectation. The total over all events is `lintegral_sum_resamplings_le`. Almost sure
+termination is `ae_exists_run_eq_none`. `ae_exists_forall_notMem_run` says that a valid rule
+that stops only when no event occurs almost surely reaches an assignment avoiding every event;
+`ae_exists_forall_notMem_run_greedy` is the greedy case. The existential corollary is
+`exists_forall_notMem`. The witness trees of the proof are recorded as finite sets of
+`(label, depth)` pairs in `Complexity.Probability.MoserTardos.Witness`. Lemma 2.1 is
+`proper_witness`, the coupling `check_witness`, `measure_check_eq_prod` and, combined,
+`table_witness_le`. Here `Proper` is the level independence proved inside Lemma 2.1(i), which
+implies the paper's properness. The paper's Galton–Watson counting is replaced by a depth
+induction, `sum_prod_shapes_le`. The model counts resamplings; it does not charge for sampling or
+for detecting occurring events. Theorems 1.3 (the parallel version) and 1.4 (the deterministic
+version) and the lopsided form are not formalized. The
+[checked examples](../../ComplexityTests/MoserTardos.lean) give one fair coin, where the bound is
+`x / (1 - x) = 1`, two dependent events on three coins that meet the hypothesis with equality, an
+impossible event with `x = 0`, two complementary events for which no `x` satisfies the
+hypothesis, and a concrete valid log on a fixed table whose witness tree is computed by `decide`
+and passes its check. Check them with
+`scripts/build.sh ComplexityTests.MoserTardos`.
+
 Support-based CNF model counting counts assignments to variables that occur. Declared-universe counting instead fixes a larger variable set and can include free choices for unused variables. The library supplies relabeling and exact gadget-counting bridges, so a reduction claiming preservation of counts must specify which convention it preserves. This distinction is particularly relevant to dense relabeling and the [native fixed-width counting endpoint](../machines-and-classes/native-counting.md).
 
 [Constraint](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/CSP.lean#L69) has a relation alphabet and constraints consisting of a relation label plus a variable list. Semantics evaluates the label on the corresponding list of domain values. Arity is not enforced by the relation's type; a fixed-arity interpretation is an additional condition. Boolean/CNF translations and partition-function clients instantiate this generic semantic interface.
@@ -244,3 +276,4 @@ This section inventories resolution, including clause space, cutting planes, sem
 
 [complexitylib]: ../sources.md#complexitylib
 [cookreckhow79]: ../sources.md#cookreckhow79
+[mosertardos10]: ../sources.md#mosertardos10
