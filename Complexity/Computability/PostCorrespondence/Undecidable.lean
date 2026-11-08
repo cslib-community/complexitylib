@@ -70,7 +70,7 @@ namespace Universal
 open ToPartrec PartrecToTM2
 
 /-- The four stacks of `PartrecToTM2` form a finite type. -/
-local instance : Fintype K' :=
+local instance fintypeK' : Fintype K' :=
   ⟨⟨{K'.main, K'.rev, K'.aux, K'.stack}, by decide⟩, fun k => by cases k <;> decide⟩
 
 theorem exists_univ : ∃ u : Code, ∀ n : ℕ,
@@ -176,15 +176,17 @@ theorem trNat_eq (n : ℕ) :
     · exact absurd (by rw [← Num.to_of_nat n.div2, ← Num.ofNat'_eq, h]; rfl) hd
     · rfl
 
-/-! The finite alphabets and state set are primcodable through enumerations. -/
+/-- The stack alphabet of `PartrecToTM2` is primcodable through an enumeration. -/
+noncomputable local instance primcodableΓ' : Primcodable Γ' :=
+  Primcodable.ofEquiv _ (Fintype.equivFin Γ')
 
-noncomputable local instance : Primcodable Γ' := Primcodable.ofEquiv _ (Fintype.equivFin Γ')
-
-noncomputable local instance : Primcodable (TM2to1.Γ' K' fun _ : K' => Γ') :=
+/-- The tape alphabet of `M₀` is primcodable through an enumeration. -/
+noncomputable local instance primcodableTapeΓ : Primcodable (TM2to1.Γ' K' fun _ : K' => Γ') :=
   letI := Classical.decEq (TM2to1.Γ' K' fun _ : K' => Γ')
   Primcodable.ofEquiv _ (Fintype.equivFin _)
 
-noncomputable local instance : Primcodable (S₀ : Set (TM1to0.Λ' M₁)) :=
+/-- The state set of `M₀'` is primcodable through an enumeration. -/
+noncomputable local instance primcodableS₀ : Primcodable (S₀ : Set (TM1to0.Λ' M₁)) :=
   letI := Classical.decEq (S₀ : Set (TM1to0.Λ' M₁))
   Primcodable.ofEquiv _ (Fintype.equivFin _)
 
