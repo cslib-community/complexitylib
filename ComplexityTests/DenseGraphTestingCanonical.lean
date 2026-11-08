@@ -11,8 +11,9 @@ import ComplexityTests.DenseGraphTesting
 /-! Concrete instances of canonical testers in the dense graph model: triangle-freeness is a
 graph property, the canonical triangle tester obtained from the general theorem, an explicit
 canonical tester on three vertices with its exact behaviour on the triangle and the empty graph,
-decision properties that are too small or large enough for perfect completeness, and a sample that
-is too small for soundness. -/
+decision properties that are too small or large enough for perfect completeness, a sample that is
+too small for soundness, and a labelled property that is not closed under relabelling, for which
+the canonical construction fails. -/
 
 namespace ComplexityTests.DenseGraphTestingCanonical
 
@@ -138,6 +139,61 @@ example :
     refine ⟨(⊤ : SimpleGraph (Fin 2)).map (Fin.castLEEmb (by norm_num)), ?_,
       ⟨Embedding.map _ _⟩⟩
     exact cliqueFree_map_iff.mpr (cliqueFree_of_card_lt (by simp))
+  rw [h₂] at h₁
+  norm_num at h₁
+
+-- The empty graph is `1/10`-far from the labelled property "vertices `0` and `1` are adjacent".
+theorem isFar_bot_adj :
+    IsFar (⊥ : SimpleGraph (Fin 3)) (fun G => G.Adj 0 1) (1 / 10) := by
+  classical
+  rw [isFar_iff]
+  intro H hH
+  rw [editDist_eq_card, Fintype.card_fin]
+  refine lt_of_lt_of_le (by norm_num) (Nat.one_le_cast.mpr (Finset.card_pos.mpr ⟨s(0, 1), ?_⟩))
+  simp [Finset.mem_symmDiff, hH]
+
+-- That property is not closed under relabelling.
+theorem not_isInvariant_adj : ¬ IsInvariant (fun G : SimpleGraph (Fin 3) => G.Adj 0 1) := by
+  intro h
+  have := h (Equiv.swap 1 2) (edge 0 1) (by simp [edge_adj])
+  simp [edge_adj, Equiv.swap_apply_of_ne_of_ne] at this
+
+-- One query decides it, which gives a one-sided tester with one query.
+theorem isOneSidedTester_queryAdj :
+    IsOneSidedTester (queryAdj 0 1 : Tester 3) (fun G => G.Adj 0 1) (1 / 10) 1 where
+  queryBounded := isQueryBounded_queryAdj 0 1
+  accept G hG := by
+    classical
+    rw [acceptProb_eq, evalWith_queryAdj, decide_eq_true hG]
+    simp
+  reject G hG := by
+    classical
+    have hG' : ¬ G.Adj 0 1 := fun h => not_isFar_of h (by norm_num) hG
+    rw [acceptProb_eq, evalWith_queryAdj, decide_eq_false hG']
+    norm_num
+
+open Classical in
+-- Without invariance the canonical construction fails: every two sample vertices induce an
+-- empty graph, which embeds into a graph with an edge `0 1` away from that edge, so the empty
+-- graph is accepted with certainty although it is `1/10`-far from the property.
+example :
+    ¬ IsOneSidedTester
+      (canonicalTester 3 (min (2 * 1) 3) (min_le_right _ _)
+        (InducedOf fun G : SimpleGraph (Fin 3) => G.Adj 0 1))
+      (fun G => G.Adj 0 1) (1 / 10) ((2 * 1).choose 2) := by
+  intro hT
+  have h₁ := hT.reject ⊥ isFar_bot_adj
+  have h₂ : acceptProb (canonicalTester 3 (min (2 * 1) 3) (min_le_right _ _)
+      (InducedOf fun G : SimpleGraph (Fin 3) => G.Adj 0 1)) ⊥ = 1 := by
+    rw [acceptProb_canonicalTester, ENNReal.toReal_eq_one_iff,
+      PMF.toOuterMeasure_apply_eq_one_iff]
+    intro σ _
+    simp only [Set.mem_ofPred_eq, comap_bot]
+    refine ⟨edge 0 1, by simp [edge_adj], ⟨⟨(Fin.castLEEmb (by norm_num)).trans
+      (Fin.succEmb 2), ?_⟩⟩⟩
+    intro a b
+    simp only [Function.Embedding.trans_apply, Fin.castLEEmb_apply, Fin.coe_succEmb,
+      edge_adj, bot_adj, Fin.succ_ne_zero, false_and, and_false, or_self]
   rw [h₂] at h₁
   norm_num at h₁
 
