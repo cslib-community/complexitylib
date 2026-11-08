@@ -5132,6 +5132,7 @@ public import Complexity.Probability.HashIsolation
 public import Complexity.Probability.IID
 public import Complexity.Probability.IID.CollisionCount
 public import Complexity.Probability.IID.CrossCollisionCount
+public import Complexity.Probability.IID.Event
 public import Complexity.Probability.IID.Occurrence
 public import Complexity.Probability.Isolation
 public import Complexity.Probability.KWiseIndependent
@@ -5146,6 +5147,9 @@ public import Complexity.Probability.KWiseIndependent.Trinomial
 public import Complexity.Probability.KWiseIndependent.TugOfWar
 public import Complexity.Probability.LinearCombination
 public import Complexity.Probability.LocalLemma
+public import Complexity.Probability.LocalitySensitiveHash
+public import Complexity.Probability.LocalitySensitiveHash.BitSampling
+public import Complexity.Probability.LocalitySensitiveHash.MinHash
 public import Complexity.Probability.LoomisWhitney
 public import Complexity.Probability.MarkovChain.Basic
 public import Complexity.Probability.MarkovChain.Coloring
