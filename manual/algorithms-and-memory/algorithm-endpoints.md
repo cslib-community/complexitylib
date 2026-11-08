@@ -813,6 +813,17 @@ Import `Complexity.Foundations.Analysis.Convex.ExtendedFormulation` ([ExtendedFo
 
 The [checked examples](../../ComplexityTests/Foundations/Analysis/Convex/ExtendedFormulation.lean) prove that the triangle has extension complexity `3` and the unit square `4`. For the square, the slack matrix has rank `3`. Both lower bounds come from fooling sets on the slack matrix. The hexagon with vertices `(±2, 0)`, `(±1, ±1)` has six facets, but an explicit nonnegative factorization of inner dimension `5` and an extended formulation with five inequalities give `xc ≤ 5`. The point counterexample is also checked. Not formalized: the facet form of the theorem (FMPTW Theorem 3 (ii)), and the exponential lower bounds for the correlation, cut, stable-set and TSP polytopes ([ROADMAP](../../ROADMAP.md#optimization-and-duality)).
 
+## Goemans–Williamson MAX-CUT rounding
+
+Import `Complexity.Algorithms.Lean.MaxCut.GoemansWilliamson` ([GoemansWilliamson.lean](../../Complexity/Algorithms/Lean/MaxCut/GoemansWilliamson.lean)). This analyzes random-hyperplane rounding of a given vector solution of the MAX-CUT semidefinite relaxation [Goemans and Williamson, Sections 2–3][goemanswilliamson95]. The rounding is an expectation under Mathlib's exact `stdGaussian`; no SDP solver, finite-precision sampler or running time is involved. A weighted multigraph is a `Fintype` of edges `ι` with `ends : ι → V × V` and weights `w : ι → ℝ`. `cutValue ends w side` is the weight of a cut and `sdpValue ends w v = ∑ e, w e * (1 - ⟪v (ends e).1, v (ends e).2⟫) / 2` is the relaxation's objective at a vector assignment `v : V → F`. `hyperplaneSide v r i = decide (0 ≤ ⟪v i, r⟫)` is the rounded cut. The source draws `r` uniformly from the sphere; the side depends only on the direction of `r`, so a standard Gaussian gives the same distribution.
+
+- **The constant:** `Real.goemansWilliamsonConstant` ([GoemansWilliamson.lean](../../Complexity/Foundations/Analysis/SpecialFunctions/GoemansWilliamson.lean)) is `α = inf_{0 < θ ≤ π} (2 / π) θ / (1 - cos θ)`. `goemansWilliamsonConstant_mul_le_arccos` is Lemma 3.4 (`α (1 - y) / 2 ≤ arccos y / π` on `[-1, 1]`). `lt_goemansWilliamsonConstant` is Lemma 3.5 (`0.87856 < α`), and `goemansWilliamsonConstant_lt` gives `α < 0.87857`. The numerics use the source's tangent-line argument at `θ₀ = π - 0.810474`, with degree-ten Taylor bounds `Real.cos_bound_ten` and `Real.sin_bound_ten` ([Trigonometric/Bounds.lean](../../Complexity/Foundations/Analysis/SpecialFunctions/Trigonometric/Bounds.lean)) and Mathlib's six-digit bounds on `π`.
+- **Expectation:** `integral_cutValue_hyperplaneSide` is Theorem 3.1 (expected weight `∑ e, w e * arccos ⟪…⟫ / π` for unit vectors), from Sheppard's formula (`measureReal_stdGaussian_zero_mem_uIoc_eq_arccos`, the source's Lemma 3.2). `goemansWilliamsonConstant_mul_sdpValue_le_integral` is Theorem 3.3 for nonnegative weights.
+- **Guarantee against the true optimum:** `sdpValue_signVector` shows that a cut's `±u` vector solution has objective equal to the cut's weight. Hence `goemansWilliamsonConstant_mul_sub_le_integral` gives `α (cutValue side - ε) ≤ E[cutValue (hyperplaneSide v r)]` for every cut `side`, when `v` are unit vectors within `ε` of optimal. `goemansWilliamsonConstant_mul_cutValue_le_integral` is the exact-optimum form. `exists_forall_goemansWilliamsonConstant_mul_sub_le` picks one hyperplane achieving the bound, and `exists_isMaxOn_sdpValue` shows that optimal unit vectors exist in every nontrivial finite-dimensional space.
+- **Bridge:** in [GoemansWilliamsonCutWeight.lean](../../Complexity/Algorithms/Lean/MaxCut/GoemansWilliamsonCutWeight.lean), kept separate so the analysis does not import the machine-level `MaxCut` development, `cutValue_eq_cutWeight` identifies `cutValue` on an edge list with `Cslib.Complexity.MaxCut.cutWeight`, the weight used by the NP-complete `MaxCut` problem. `goemansWilliamsonConstant_mul_cutWeight_le_integral` restates the guarantee there.
+
+The [checked examples](../../ComplexityTests/GoemansWilliamsonMaxCut.lean) use the triangle with three unit vectors at `120°`. Their objective `9 / 4` is optimal because `‖a + b + c‖² ≥ 0`, so the headline hypotheses are satisfiable. The rounded cut has expected weight exactly `2`, the maximum cut. Not formalized: polynomial-time SDP solving to precision `ε`, a `ProbComp` realization of the Gaussian, tightness (the Feige–Schechtman integrality gap), the MAX-2SAT and MAX-DICUT extensions and derandomization ([#3230](https://github.com/cslib-community/complexitylib/issues/3230)).
+
 ## Freivalds' matrix-product verification
 
 Import `Complexity.Algorithms.Lean.Freivalds` ([Complexity/Algorithms/Lean/Freivalds.lean](../../Complexity/Algorithms/Lean/Freivalds.lean)). It checks a claimed product `A * B = C` of rectangular matrices `l × m`, `m × n` and `l × n` over any ring with decidable equality, following [Freivalds][freivalds79]. The deterministic check `checkM A B C x` computes `A *ᵥ (B *ᵥ x)` and `C *ᵥ x` in `TimeM` and compares them. The cost model charges `2` per dot-product entry (one multiplication, one addition) and `1` per compared entry; reads, sampling and the vector encoding are free, and ring operations have unit cost whatever the operand size. Under it, `time_checkM` is exactly `2 * (m * n + l * m + l * n) + l`, independent of `x`, and `time_checkAllM_square` gives `k * (6 * n ^ 2 + n)` for `k` checks of square matrices.
@@ -832,6 +843,17 @@ Import `Complexity.Algorithms.Lean.Euler.Circuit` ([source](../../Complexity/Alg
 
 The [examples](../../ComplexityTests/EulerCircuit.lean) run the algorithm on a bowtie (where a second triangle must be spliced in) and on a multigraph with parallel edges and a self-loop. They also refute Euler circuits for a path with odd endpoints and for two disjoint triangles whose degrees are even.
 
+## Christofides' 3/2-approximation for metric TSP
+
+Import `Complexity.Computability.Complexity.Problems.TSP.Christofides` ([source](../../Complexity/Computability/Complexity/Problems/TSP/Christofides.lean)); the generic algorithm is in `Complexity/Algorithms/Lean/TSP/Christofides.lean`. It uses the cost model of the MST 2-approximation above: vertices `Fin n`, costs `δ : Fin n → Fin n → ℕ` and closed-walk cost `cycleCost δ`. `christofides δ` takes Kruskal's tree `T` of the complete graph and the odd-degree vertices `oddVertices T`. It computes a minimum-weight perfect matching `M` on them with `minPerfectMatching`, runs Hierholzer's `eulerCircuit` on the edge list `T.map WeightedEdge.endpoints ++ M` (the multigraph `T ⊎ M`, where an edge in both appears twice) from vertex `0`, and shortcuts the result with `List.dedup`. A perfect matching on `O` is an edge list whose `VertexCover.endpoints` are a permutation of `O`. The proof follows Theorem 2.13 of [Williamson and Shmoys][williamsonshmoys11] ([Christofides][christofides76]):
+
+- **Handshake:** `Euler.even_length_filter_odd_degree` ([Handshake.lean](../../Complexity/Algorithms/Lean/Euler/Handshake.lean)) holds for list multigraphs with parallel edges and self-loops. It gives `even_length_oddVertices`.
+- **Shortcutting:** `cycleCost_le_of_sublist` ([Shortcut.lean](../../Complexity/Algorithms/Lean/TSP/Shortcut.lean)) says that under the triangle inequality, a subsequence of a closed walk costs no more. `cycleCost_dedup_le_of_isEulerCircuit` bounds a shortcut Euler circuit by the weight of its multigraph. `List.dedup` keeps the last visit to each vertex, whereas the textbook keeps the first; both are subsequences.
+- **Matching bound:** `two_mul_sum_le_cycleCost` ([PerfectMatching.lean](../../Complexity/Algorithms/Lean/TSP/PerfectMatching.lean)) shows that a minimum-weight perfect matching on `O` costs at most half of any tour through `O`. The tour is shortcut to `O` and its edges are split into two alternating perfect matchings. This step needs no symmetry.
+- **Bound:** `two_mul_cycleCost_shortcutTour_le_three_mul` holds for any `IsMinSpanningTree` and any minimum-weight perfect matching on its odd vertices. `two_mul_cycleCost_christofides_le_three_mul` is the algorithm's instance. On `TSP` instances, `christofidesTour_perm` and `two_mul_tourLength_christofidesTour_le_three_mul` state `2 · length ≤ 3 · length(p)` for every tour `p` of a metric matrix (`TSP.IsMetric`, as above).
+
+`minPerfectMatching` is exhaustive search over `(2k − 1)!!` matchings, with optimality proved by `sum_minPerfectMatching_le`. So these results certify the approximation ratio, not a polynomial running time. Edmonds' weighted matching algorithm ([Edmonds][edmonds65]) and any machine-level certificate remain open. The [examples](../../ComplexityTests/TSPChristofides.lean) run the algorithm on a four-city star whose three perfect matchings cost `5`, `6` and `6`; exhaustive search picks the cheapest. The Euler circuit `[0, 1, 2, 0, 3, 0]` is shortcut to an optimal tour of length `11`. The examples also instantiate the general bound with Kruskal's tree, and check the empty and one-city instances.
+
 ## Tree Evaluation
 
 The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root of an explicitly table-encoded perfect binary tree in native independent workspace `O(log n · log log n)` for positive value length and height. The output is not charged to workspace, and the theorem leaves time existential. The same page distinguishes borrowed-register restoration and fan-in/packed procedure variants.
@@ -841,12 +863,15 @@ The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root 
 The numeric values above are transcriptions of checked source statements, not results of new execution benchmarks. The source-reference audit checks locations and digests; it does not rerun Lean or prove asymptotic summaries. The full Haskell/Lean runtime behavior, allocator, operating system and hardware are outside these idealized RAM models.
 
 [complexitylib]: ../sources.md#complexitylib
+[christofides76]: ../sources.md#christofides76
 [clrs09]: ../sources.md#clrs09
+[edmonds65]: ../sources.md#edmonds65
 [floyd62]: ../sources.md#floyd62
+[fmptw15]: ../sources.md#fmptw15
 [freivalds79]: ../sources.md#freivalds79
+[goemanswilliamson95]: ../sources.md#goemanswilliamson95
 [hierholzer73]: ../sources.md#hierholzer73
 [kortevygen18]: ../sources.md#kortevygen18
-[fmptw15]: ../sources.md#fmptw15
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
 [roth82]: ../sources.md#roth82
 [rothpostlewaite77]: ../sources.md#rothpostlewaite77
