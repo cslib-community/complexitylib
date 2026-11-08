@@ -989,6 +989,12 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   tables and its composition with that lemma and with `exists_GapLabelCover_npHard` (Theorem 5.4),
   the composition with the four-clause reduction (Theorem 6.1, imperfect completeness), and
   Håstad's separate test for satisfiable formulas (Theorem 6.5).
+- **Unique Games with perfect completeness**
+  ([#3363](https://github.com/cslib-community/complexitylib/issues/3363)): label propagation
+  decides satisfiable unique games (`Cslib.Complexity.solvedBy_gapUniqueGames_one`), with
+  an `O(L · (N + E))` step bound in an explicit `TimeM` cost model (`solveM_time_le`). Remaining:
+  `GapUniqueGames (Fin L) 1 s ∈ PromiseP` under the encoding of `UniqueGamesConjecture`, through
+  the plain polynomial-time framework.
 - The FGLSS clique-hardness reduction and its amplification, retaining the exact gap and
   reduction runtime.
 - Gap and approximation-preserving reductions, APX/PTAS/FPTAS, inapproximability consequences of
