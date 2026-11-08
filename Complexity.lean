@@ -4365,6 +4365,7 @@ public import Complexity.Foundations.NumberTheory.Padics.AdjoinRootReduction
 public import Complexity.Foundations.NumberTheory.Padics.AdjoinRootValuation
 public import Complexity.Foundations.NumberTheory.Padics.RatValuation
 public import Complexity.Foundations.NumberTheory.Primality.EulerLiars
+public import Complexity.Foundations.NumberTheory.Primality.RabinMonier
 public import Complexity.Foundations.NumberTheory.Primality.StrongLiars
 public import Complexity.Foundations.NumberTheory.Primality.Witness
 public import Complexity.Foundations.NumberTheory.PrimeCounting
