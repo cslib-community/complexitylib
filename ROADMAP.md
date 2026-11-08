@@ -1130,6 +1130,13 @@ each statement against the numbered result. Organize modules by subject, not cha
   integer leaves) results.
 - Multiparty protocols, discrepancy and information complexity, direct-sum and direct-product
   results, and reductions to streaming, sketching and cell-probe lower bounds.
+- **Sign-rank and unbounded error**
+  ([#3262](https://github.com/cslib-community/complexitylib/issues/3262)): the Paturi–Simon
+  characterization is done. Remaining: sign-rank lower bounds, namely Forster's bound
+  `signRank(H_n) ≥ 2^{n/2}` for Hadamard matrices (needs isotropic position), the
+  Alon–Frankl–Rödl counting bound, `signRank(EQ) = 3` on four or more inputs, and the
+  Razborov–Sherstov exponential sign-rank bound for an AC⁰ function, separating `Σ₂^cc` from
+  `UPP^cc`.
 - **Streaming and sketching:** native time and space bounds for Count-Min, including hash-seed
   storage and evaluation; the AMS sketch for `F₀`, the AMS `F_k` estimator for streams of unknown
   length (reservoir sampling), and the `n^{Ω(1)}` lower bounds for `F_k` with `k ≥ 6`; `ProbComp`
