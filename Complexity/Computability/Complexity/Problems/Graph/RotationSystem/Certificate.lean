@@ -457,14 +457,17 @@ end RotationCertificate
 
 namespace RotationSystem
 
-private theorem vertex_mem {G : Graph}
+/-- Every dart endpoint is declared when all listed edge endpoints are declared. -/
+theorem vertex_mem {G : Graph}
     (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (d : Dart G) : d.vertex ∈ G.1 := by
   apply hG
   rw [← Dart.vertex_index, List.getD_eq_getElem _ _ (show d.index < G.incidenceVertices.length
     from endpoint_index_lt G d.1.isLt d.2)]
   exact List.getElem_mem _
 
-private theorem sameComponent_reverse {G : Graph}
+/-- The two indexed ends of an edge belong to the same declared-vertex component,
+including when the edge is a loop. All listed endpoints must be declared. -/
+theorem sameComponent_reverse {G : Graph}
     (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (d : Dart G) :
     RotationCertificate.SameComponent G d.vertex d.reverse.vertex := by
   have hd := vertex_mem hG d
