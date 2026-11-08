@@ -151,6 +151,23 @@ The [test file](../../ComplexityTests/LocalitySensitiveHash.lean) contains:
 - a bit-sampling family on `Fin 8 → Bool`, banded to `(0.9965, 0.48)` and amplified with `exists_banded`;
 - a negative example: the same family is not `(7/8, 1/4)`-sensitive.
 
+### Approximate near neighbours
+
+[DataStructure/NearNeighbor/LSH.lean](../../Complexity/DataStructure/NearNeighbor/LSH.lean) builds the `(c, r)`-approximate near-neighbour structure of Indyk and Motwani [indykmotwani98][indykmotwani98] [harpeledindykmotwani12][harpeledindykmotwani12] on top of these families. There are `L` tables keyed by `g (s j)`, with the seeds `s : Fin L → ι` drawn from `PMF.iid ν L`. `candidates g s P q` lists the points of `P` colliding with `q`, table by table and with repetitions. `query g far s T P q` scans the first `T` candidates and returns the first one that is not far from `q`, where `far` is a decidable relation.
+
+The results:
+
+- **Soundness.** Every answer is a point of `P` not far from `q` (`query_eq_some`).
+- **Exact failure bound** (`toOuterMeasure_query_eq_none_le`). Suppose `x₀ ∈ P` is not far from `q` and collides with it with probability at least `P₁`, and every far point of `P` collides with probability at most `P₂ ≥ 0`. Then for `T > 0` the query returns `none` with probability at most `(1 − P₁)^L + L|P|P₂/T`. The first term is the event that `x₀` collides with `q` in no table, using independence of the tables (`PMF.toOuterMeasure_iid_forall`). The second is Markov's inequality for the number of far candidates (`le_countP_candidates`, `tsum_iid_mul_countP_candidates_le`). That bound uses only the marginal law of each table (`PMF.toOuterMeasure_iid_eval`).
+- **AND tables** (`toOuterMeasure_query_andHash_eq_none_le`). For a `(p₁, p₂)`-sensitive family with `0 ≤ p₂ < p₁` and `g = andHash hash k`, and some point of `P` near `q`, the bound is `(1 − p₁^k)^L + L|P|p₂^k/T`.
+- **Explicit parameters** (`toOuterMeasure_query_numTables_eq_none_le`). Assume `0 < p₂ < p₁ ≤ 1`, and take `n = |P|`, `ρ = rho p₁ p₂ = log(1/p₁)/log(1/p₂)`, `k = numHashes n p₂ = ⌈log n / log(1/p₂)⌉₊`, `L = numTables n p₁ p₂ = ⌈n^ρ/p₁⌉₊` and `T = 3L`. Then `n p₂^k ≤ 1` (`mul_pow_numHashes_le`) and `L p₁^k ≥ 1` (`one_le_numTables_mul_pow`), so the query fails with probability at most `e⁻¹ + 1/3 < 0.71`. Stopping after `3L` candidates is the scanning rule of Indyk and Motwani [indykmotwani98][indykmotwani98], as presented by Andoni and Indyk [andoniindyk08][andoniindyk08], §2.4 ("Strategy 1", p. 119). This is the static structure; [harpeledindykmotwani12][harpeledindykmotwani12], Theorem 3.4, also supports insertions and deletions.
+- **Repetition.** `queryRepeat` runs `R` independent structures, and all of them fail with probability at most `(e⁻¹ + 1/3)^R` (`toOuterMeasure_queryRepeat_numTables_eq_none_le`).
+- **What is bounded.** The query inspects at most `min T (L|P|)` candidates, so it tests `far` at most `T = 3L` times (`length_take_candidates_le`, `length_candidates_le`). The parameters satisfy `k < log n / log(1/p₂) + 1` and `L < n^ρ/p₁ + 1` (`numHashes_lt`, `numTables_lt`), with `0 ≤ ρ < 1` (`rho_nonneg`, `rho_lt_one`). No declaration counts operations. The counts of a bucketed implementation, namely `kL` base-hash evaluations per query and `nL` stored entries, are not formalized: `candidates` describes a bucket by filtering `P`, so it evaluates each table hash on all of `P`.
+
+[NearNeighbor/Hamming.lean](../../Complexity/DataStructure/NearNeighbor/Hamming.lean) specializes to bit sampling on words of length `d` with `0 < r`, `1 < c` and `cr < d`. `rho_one_sub_le` proves `ρ(1 − r/d, 1 − cr/d) ≤ 1/c` by concavity of `log`. `toOuterMeasure_query_bitSampling_eq_none_le` is the Hamming-space guarantee, and `numTables_bitSampling_lt` gives `L < n^{1/c}/p₁ + 1`.
+
+The [test file](../../ComplexityTests/NearNeighbor.lean) runs the query on `Fin 8` with two bit-extraction tables. With `T ≤ 2` two far candidates exhaust the budget; with `T = 3` the near point is returned. It also runs `queryRepeat`, evaluates `e⁻¹ + 1/3 < 1` and `(e⁻¹ + 1/3)^10 < 0.03`, computes `numHashes 16 (1/2) = 4`, and instantiates the Hamming-space theorem on three words in `Fin 8 → Bool`.
+
 ## Native streaming folds
 
 [Complexity/Computability/Machines/Turing/MultiTape/Complexity/Streaming.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Complexity/Streaming.lean) gives actual machine-backed scans of raw bit strings through Christian Reitwiessner's streaming backend. A round holds an encoded accumulator and one input bit instead of copying the remaining input list. Time sums the round computation, old/new state encoding sizes and control; workspace takes a peak bound and charges retained accumulators. Read-only input and write-only output are excluded from work-tape space.
@@ -189,10 +206,11 @@ The k-minimum-values sketch for `F₀` has no `ProbComp` sampler or machine real
 
 No automatic native realization of the Count-Min sketch was identified in its four source modules.
 
-The locality-sensitive hashing modules prove information-theoretic statements only. The following are not formalized:
+The locality-sensitive hashing modules prove probabilistic statements only. The near-neighbour structure bounds the parameters `k`, `L` and `ρ` and the number of inspected candidates, but no declaration counts hash evaluations, stored entries or time. Its buckets are described by filtering the point set, so the following are not formalized:
 
-- the `(c, r)`-approximate near-neighbour data structure with query time `n^ρ`, where `ρ = log(1/p₁)/log(1/p₂)`;
-- the cost of evaluating or storing the hashes;
+- a dictionary from hash values to buckets, its word-RAM lookup time, the `n^ρ` query time, and the time to build the tables;
+- the cost of one hash evaluation or distance test, and the bits needed to store the seeds;
+- dynamic insertions and deletions, and the reduction from approximate nearest neighbour to the `(c, r)` problem;
 - SimHash, p-stable LSH, and LSH lower bounds;
 - MinHash over smaller min-wise independent families: it uses a uniform permutation of the whole universe.
 
@@ -208,6 +226,7 @@ Online bin packing is modelled by `OnlinePacker`, not through `Problem`/`DetStra
 
 [achlioptas03]: ../sources.md#achlioptas03
 [alonmatiasszegedy99]: ../sources.md#alonmatiasszegedy99
+[andoniindyk08]: ../sources.md#andoniindyk08
 [baloghbekesidosaepsteinlevin18]: ../sources.md#baloghbekesidosaepsteinlevin18
 [bjkst02]: ../sources.md#bjkst02
 [borodinelyaniv98]: ../sources.md#borodinelyaniv98
