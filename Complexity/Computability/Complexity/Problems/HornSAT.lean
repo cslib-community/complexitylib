@@ -95,10 +95,7 @@ theorem forced_subset_succ (φ : CNF V) (n : ℕ) :
 
 private theorem step_congr (φ : CNF V) {s t : List V} (h : ∀ v, v ∈ s ↔ v ∈ t) :
     step φ s = step φ t := by
-  have he : ∀ v, s.contains v = t.contains v := by
-    intro v
-    apply Bool.eq_iff_iff.mpr
-    simpa only [List.contains_iff_mem] using h v
+  have he : ∀ v, s.contains v = t.contains v := by grind
   simp only [step, enabled, he]
 
 /-- Every variable forced by any pass is true in every model. -/

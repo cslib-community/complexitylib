@@ -121,9 +121,7 @@ private theorem length_encList_coverStep_le {G : Graph} (C : List ℕ) {e : ℕ 
     (encList encNat (coverStep C e)).length ≤
       (encList encNat C).length + (4 * (encGraph G).length + 2) := by
   obtain ⟨-, h1, h2⟩ := mem_declaredEdges.1 he
-  have hV : (encList encNat G.1).length ≤ (encGraph G).length := by
-    simp only [encGraph, length_encPair]
-    omega
+  have hV : (encList encNat G.1).length ≤ (encGraph G).length := by grind [encGraph, length_encPair]
   have h1 := (length_le_encList_of_mem encNat h1).trans hV
   have h2 := (length_le_encList_of_mem encNat h2).trans hV
   unfold coverStep

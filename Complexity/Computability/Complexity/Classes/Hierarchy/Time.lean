@@ -156,10 +156,7 @@ private theorem clockedBounds_aux (cA cD cO C₂ : ℕ) : ∃ K, ∀ {n A D N J 
     (Nat.pow_le_pow_right hY1 (by omega))
   have hX4Y2 : (n + 1) ^ 4 * (J + 1) ^ 2 ≤ W := Nat.mul_le_mul (Nat.pow_le_pow_right hX1 (by omega))
     (Nat.pow_le_pow_right hY1 (by omega))
-  have hY2 : (J + 1) ^ 2 ≤ W := by
-    have := Nat.mul_le_mul (Nat.one_le_pow 5 (n + 1) hX1)
-      (Nat.pow_le_pow_right hY1 (show 2 ≤ 3 by omega))
-    rwa [one_mul] at this
+  have hY2 : (J + 1) ^ 2 ≤ W := by grind
   -- the pieces
   have hU' : 100000 * (P * (n + 1)) ^ 4 * (J + 1) ^ 2 ≤ 100000 * P ^ 5 * W := by
     have hmono := Nat.mul_le_mul
@@ -330,8 +327,7 @@ theorem setOf_timeDiagonal_notMem_DTIME_of_frequently_le {f J : ℕ → ℕ}
     simp only [List.length_append, length_frame, pad, List.length_replicate]
     omega
   have hshort : Diagonal.shortDesc (frame (eDesc (desc eS eBit tm)) ++ pad) = true := by
-    rw [Diagonal.shortDesc, unframe_frame_append, hlen]
-    exact decide_eq_true hcode
+    grind [Diagonal.shortDesc, unframe_frame_append]
   have htime : c₁ * f (frame (eDesc (desc eS eBit tm)) ++ pad).length + c₂ ≤
       J (frame (eDesc (desc eS eBit tm)) ++ pad).length := by
     rw [hlen]

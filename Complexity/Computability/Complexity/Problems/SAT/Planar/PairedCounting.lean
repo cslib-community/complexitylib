@@ -58,9 +58,7 @@ theorem source_cell_mem_ordinary {φ : CNF ℕ} {v : ℕ} (hv : v ∈ φ.vars) :
   have hret : Layout.center (φ.distinctVars.idxOf o.2.2.1) ∈
       (occurrencePath φ o).dropLast := by
     rw [← he]
-    have hi : 0 < (occurrencePath φ o).dropLast.length := by
-      simp only [List.length_dropLast]
-      omega
+    have hi : 0 < (occurrencePath φ o).dropLast.length := by grind
     rw [← List.getElem_dropLast hi]
     exact List.getElem_mem _
   exact (mem_ordinaryCells φ _).2

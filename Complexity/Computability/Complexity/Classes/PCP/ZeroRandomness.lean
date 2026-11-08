@@ -64,9 +64,7 @@ theorem PCP_zero_zero : PCP (fun _ => 0) (fun _ => 0) enc = P enc := by
     · exact hv.comp (g := fun a : α => ((a, ([] : List Bool)), ([] : List Bool))) (by fun_prop)
     · -- with no random bits there are no queries, so the verdict ignores the proof
       have key (π : List Bool) : V.accepts a π [] = V.verdict ((a, []), []) := by
-        have h0 : V.queries (a, []) = [] :=
-          List.eq_nil_of_length_eq_zero (hqs a [] (by simp [hcoins a]))
-        simp [PCPVerifier.accepts, h0, PCPVerifier.answers]
+        grind [PCPVerifier.accepts, PCPVerifier.answers]
       constructor
       · intro ha
         obtain ⟨π, hπ⟩ := hcomp a ha

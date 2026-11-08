@@ -294,9 +294,7 @@ private theorem card_amplifiedSet_bounds {N m T K : ℕ} (S : Finset (BitString 
       have := Nat.pow_le_pow_left hnot 5
       rw [mul_pow] at this
       simpa using this
-    have h16 : 16 * #S ^ 5 < 2 ^ ℓ := by
-      have h2 : 2 ^ (ℓ + 1) = 2 ^ ℓ * 2 := pow_succ 2 ℓ
-      omega
+    have h16 : 16 * #S ^ 5 < 2 ^ ℓ := by grind
     rw [hY, hcard]
     have := Nat.mul_le_mul_right (2 ^ (T - ℓ)) h16.le
     rw [← hsplit, h4] at this

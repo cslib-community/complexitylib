@@ -156,10 +156,7 @@ private theorem exists_foldBranch_subset (G : Graph) {S : Finset ℕ}
       have hadj : G.toSimpleGraph.Adj e.1 e.2 := ⟨hne, Or.inl he⟩
       have heS : e.1 ∈ S ∨ e.2 ∈ S := hS e.1 he₁ e.2 he₂ hadj
       let b : Bool := decide (e.1 ∉ S)
-      have hwS : (if b then e.2 else e.1) ∈ S := by
-        by_cases h₁ : e.1 ∈ S
-        · simp [b, h₁]
-        · simp [b, h₁, heS.resolve_left h₁]
+      have hwS : (if b then e.2 else e.1) ∈ S := by grind
       have hwC : (if b then e.2 else e.1) ∉ C := by
         split_ifs <;> assumption
       have hstep : foldBranch G (bs ++ [b]) = (if b then e.2 else e.1) :: C := by

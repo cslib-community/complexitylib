@@ -177,9 +177,7 @@ theorem sourceDirection_ne {G : Graph} {d : Graph.OrthogonalDrawing}
     (hc : G.2[i].2 = G.2[j].2) : sourceDirection G d i ≠ sourceDirection G d j := by
   obtain ⟨b, r, hr⟩ := sourceRoute_shape hd hi
   obtain ⟨c, s, hs⟩ := sourceRoute_shape hd hj
-  have he : sourceStart G d i = sourceStart G d j := by
-    unfold sourceStart
-    rw [List.getD_eq_getElem _ _ hi, List.getD_eq_getElem _ _ hj, hc]
+  have he : sourceStart G d i = sourceStart G d j := by grind [sourceStart]
   have ho₁ := (sourceRoute_regular hd hi).1
   have ho₂ := (sourceRoute_regular hd hj).1
   rw [hr] at ho₁

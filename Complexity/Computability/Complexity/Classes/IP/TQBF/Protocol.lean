@@ -243,11 +243,7 @@ theorem acceptProb_verify_le [IsDomain F] {ε : ℝ≥0∞}
       have hp (z : F) : evalCoeffList z (x.1.take (e.degBound v + 1)) = p.eval z :=
         (eval_ofCoeffList z _).symm
       have hg (z : F) : g.eval z = e.eval (Function.update r v z) := e.eval_restrict r v z
-      have hne : p - g ≠ 0 := by
-        intro h
-        rw [sub_eq_zero] at h
-        apply hc
-        rw [ArithQBF.eval_op, ← hg, ← hg, ← h, ← hp, ← hp, hcheck]
+      have hne : p - g ≠ 0 := by grind [sub_eq_zero, ArithQBF.eval_op]
       have hdeg : (p - g).natDegree ≤ e.degBound v :=
         (natDegree_sub_le _ _).trans (max_le ((natDegree_ofCoeffList_le _).trans (by
           rw [List.length_take]; omega)) (e.natDegree_restrict_le r v))

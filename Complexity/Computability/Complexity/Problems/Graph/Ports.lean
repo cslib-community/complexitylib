@@ -167,9 +167,7 @@ theorem portAt_canonicalPorts (G : Graph) {i : ℕ} (hi : i < G.2.length) (side 
 theorem edgeEndpoint_mem (G : Graph)
     (hG : ∀ edge ∈ G.2, edge.1 ∈ G.1 ∧ edge.2 ∈ G.1) {i : ℕ}
     (hi : i < G.2.length) (side : Bool) : G.edgeEndpoint i side ∈ G.1 := by
-  have hmem : G.2.getD i (0, 0) ∈ G.2 := by
-    rw [List.getD_eq_getElem _ _ hi]
-    exact List.getElem_mem hi
+  have hmem : G.2.getD i (0, 0) ∈ G.2 := by grind
   cases side
   · exact (hG _ hmem).1
   · exact (hG _ hmem).2

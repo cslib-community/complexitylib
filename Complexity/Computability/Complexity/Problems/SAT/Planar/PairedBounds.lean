@@ -88,10 +88,7 @@ private theorem cellBound_occurrencePath {φ : CNF ℕ} {o : Occurrence ℕ}
 private theorem cellBound_crossing {φ : CNF ℕ} {p : Point} (hp : p ∈ crossingSites φ) :
     CellBound φ p := by
   have hlen := (PlanarCompile.mem_crossingSites φ p).mp hp |>.2.2
-  have hnonempty : ((paths φ).filter fun r => r.contains p) ≠ [] := by
-    intro he
-    rw [he] at hlen
-    simp at hlen
+  have hnonempty : ((paths φ).filter fun r => r.contains p) ≠ [] := by grind
   obtain ⟨r, hr⟩ := List.exists_mem_of_ne_nil _ hnonempty
   obtain ⟨hr, hp⟩ := List.mem_filter.mp hr
   exact cellBound_path hr (List.contains_iff_mem.mp hp)
@@ -99,8 +96,7 @@ private theorem cellBound_crossing {φ : CNF ℕ} {p : Point} (hp : p ∈ crossi
 private theorem cellBound_clause {φ : CNF ℕ} {i : ℕ} (hi : i < φ.length) :
     CellBound φ (Layout.center (φ.distinctVars.length + i)) := by
   have hn : φ.distinctVars.length + i < (SAT.incidenceGraph φ).1.length := by
-    simp only [SAT.length_vertices_incidenceGraph, CNF.length_distinctVars]
-    omega
+    grind [SAT.length_vertices_incidenceGraph, CNF.length_distinctVars]
   simp only [CellBound, Layout.center, Nat.cast_add]
   omega
 

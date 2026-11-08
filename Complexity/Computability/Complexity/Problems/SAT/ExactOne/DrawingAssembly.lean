@@ -107,9 +107,7 @@ theorem positiveFormulaDrawing_occurrence (φ : CNF ℕ) (d : Graph.OrthogonalDr
   · have hr : (positiveFormulaDrawing φ d).incidenceRoute o = pc.2.2[o.2.1] := by
       change ((positivePlacedClauses φ d).getD o.1 ([], (0, 0), [])).2.2.getD o.2.1 [] = _
       rw [List.getD_eq_getElem _ _ hip, List.getD_eq_getElem _ _ hjr]
-    have hli : o.2.2 = pc.1[o.2.1] := by
-      have h := congrArg (fun cs => cs.getD o.2.1 (.inl (.inl 0), true)) hec
-      simpa only [List.getD_eq_getElem _ _ hjp, List.getD_eq_getElem _ _ hj, hl] using h.symm
+    have hli : o.2.2 = pc.1[o.2.1] := by grind
     rw [hr, hli]
     have hz := List.getElem_mem (l := pc.1.zip pc.2.2) (n := o.2.1)
       (by simp only [List.length_zip]; omega)

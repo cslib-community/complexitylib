@@ -136,9 +136,7 @@ theorem wire_first_entry {φ : CNF ℕ} {o : Occurrence ℕ}
     ((wire (crossingSites φ) (occurrencePath φ o)).headD (fallback, fallback)).1 =
       (Layout.center (φ.distinctVars.idxOf o.2.2.1), none) := by
   have hlen := occurrencePath_length_ge_two ho
-  have hwpos : 0 < (wire (crossingSites φ) (occurrencePath φ o)).length := by
-    rw [length_wire]
-    omega
+  have hwpos : 0 < (wire (crossingSites φ) (occurrencePath φ o)).length := by grind [length_wire]
   have hhead : (wire (crossingSites φ) (occurrencePath φ o)).headD (fallback, fallback) =
       (wire (crossingSites φ) (occurrencePath φ o))[0] := by
     generalize hc : wire (crossingSites φ) (occurrencePath φ o) = xs at hwpos ⊢
@@ -193,9 +191,7 @@ theorem clause_center_not_mem_dropLast {φ : CNF ℕ} {o : Occurrence ℕ}
   intro hp
   obtain ⟨k, hk, heq⟩ := List.mem_iff_getElem.mp hp
   have hlen := occurrencePath_length_ge_two ho
-  have hk' : k < (occurrencePath φ o).length := by
-    simp only [List.length_dropLast] at hk
-    omega
+  have hk' : k < (occurrencePath φ o).length := by grind
   have hlast := (occurrencePath_endpoints ho).2
   rw [List.getLast?_eq_getElem?, List.getElem?_eq_getElem (by omega)] at hlast
   have heq' : (occurrencePath φ o)[k] =

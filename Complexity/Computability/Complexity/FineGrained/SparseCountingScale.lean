@@ -981,9 +981,7 @@ theorem prop64_time_bound_general
     simp only [G, hcond, ↓reduceIte]; exact le_max_left _ _
   have hG_tree (n : ℕ) : F_tree n ≤ G n := by
     dsimp only [G]; split_ifs <;> [exact le_max_right _ _; exact le_rfl]
-  have hG_large (n : ℕ) (hn0 : N₀ ≤ n) (hs2 : 2 ≤ numGroups n) : G n = F_tree n := by
-    have hnot : ¬ (n < N₀ ∨ numGroups n < 2) := by omega
-    simp only [G, hnot, ↓reduceIte]
+  have hG_large (n : ℕ) (hn0 : N₀ ≤ n) (hs2 : 2 ≤ numGroups n) : G n = F_tree n := by grind
   have hK : (K_coeff : ℝ) =
       (C_node : ℝ) + (C_init_coeff : ℝ) + (((C_B + 1) ^ d_leaf : ℕ) : ℝ) := by
     dsimp only [K_coeff]; push_cast; rfl

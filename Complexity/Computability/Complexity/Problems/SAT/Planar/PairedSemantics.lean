@@ -180,10 +180,7 @@ theorem map_fst_links (sites : List Point) (r : Route) :
   apply List.ext_getElem
   · simp [wire, List.consecutivePairs]
   · intro i hi hj
-    have hi' : i + 2 < r.length := by
-      simp only [List.length_map, List.consecutivePairs, List.length_zip,
-        List.length_tail, List.length_dropLast] at hi
-      omega
+    have hi' : i + 2 < r.length := by grind
     simp only [List.getElem_map, List.consecutivePairs, List.getElem_zip, List.getElem_tail]
     rw [getElem_wire sites r i (by omega), getElem_wire sites r (i + 1) (by omega)]
     simp only [List.getElem_dropLast]

@@ -223,9 +223,7 @@ theorem computableInPolyTimeWithOracle_selfReduce (A : Set (List Bool)) :
     hcount (ComputableInPolyTime.const []) (isOraclePPTOn_searchStepProgram hprogCert)
     (fun φ i answers => answers.map Prod.fst = φ.vars.take i) (fun _ => rfl)
     (fun φ i answers hi hinv next hnext => by
-      have hlen : answers.length = i := by
-        rw [← List.length_map (f := Prod.fst), hinv, List.length_take]
-        omega
+      have hlen : answers.length = i := by grind [List.length_take]
       unfold searchStepProgram at hnext
       rw [ite_eq_left (by omega), OracleComp.interpret_map] at hnext
       obtain ⟨b, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext
@@ -237,9 +235,7 @@ theorem computableInPolyTimeWithOracle_selfReduce (A : Set (List Bool)) :
     (fun φ i answers hi hinv => by
       have hmem : ∀ l ∈ answers, l.1 ∈ φ.vars := fun l hl =>
         List.mem_of_mem_take (hinv ▸ List.mem_map_of_mem hl)
-      have hlen : answers.length ≤ φ.vars.length := by
-        rw [← List.length_map (f := Prod.fst), hinv, List.length_take]
-        omega
+      have hlen : answers.length ≤ φ.vars.length := by grind [List.length_take]
       simp only [encUnary_apply, List.length_replicate]
       exact (length_encList_le_of_mem_vars hmem).trans (Nat.mul_le_mul_right _ hlen))
   refine ⟨searchProgram prog, ?_, fun φ => interpret_searchProgram hprog φ⟩

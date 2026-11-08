@@ -55,9 +55,7 @@ private theorem coarse_polynomial_hierarchy {d : ℕ} (hd : 2 ≤ d) :
   refine DTIME_ssubset_DTIME (timeConstructible_succ_pow hd)
     (fun n => (Nat.le_succ n).trans (Nat.le_self_pow (by omega) _)) ?_
   filter_upwards [eventually_ge_atTop 7] with n hn
-  have hp : (n + 1) ^ d + 1 ≤ 2 * (n + 1) ^ d := by
-    have := Nat.one_le_pow d (n + 1) (by omega)
-    omega
+  have hp : (n + 1) ^ d + 1 ≤ 2 * (n + 1) ^ d := by grind
   calc (n + 1) ^ 8 * ((n + 1) ^ d + 1) ^ 3
       ≤ (n + 1) ^ 8 * (2 * (n + 1) ^ d) ^ 3 :=
         Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hp 3)

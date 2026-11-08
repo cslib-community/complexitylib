@@ -167,12 +167,7 @@ theorem padCheckAt_eq_some_iff {y : List Bool} {h : ℕ} {φ : CNF ℕ} :
     split_ifs at hφ with hc
     obtain ⟨hlt, henc, hpow⟩ := hc
     obtain rfl := Option.some_injective _ hφ
-    have hk : (unpad y).1.length ^ h = (unpad y).2 := by
-      rw [capPow] at hpow
-      rcases le_total ((unpad y).1.length ^ h) ((unpad y).2 + 1) with h₁ | h₁
-      · rwa [min_eq_left h₁] at hpow
-      · rw [min_eq_right h₁] at hpow
-        omega
+    have hk : (unpad y).1.length ^ h = (unpad y).2 := by grind [capPow]
     rw [henc, hk, pad_unpad hlt]
   · rintro rfl
     rw [padCheckAt, unpad_pad]

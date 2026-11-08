@@ -193,9 +193,7 @@ theorem finalRoute_eq_translate (sites : List Point) {p q : Point}
       variablePosition (signal sites p q (PairedPorts.spokeLane (side q p)))] =
       translate (cellOrigin 120 q) (finalLocalRoute (side q p)) := by
   rw [signal_position]
-  have hrev : Orthogonal.length q p = 1 := by
-    simp only [Orthogonal.length] at h ⊢
-    omega
+  have hrev : Orthogonal.length q p = 1 := by grind [Orthogonal.length]
   rcases q with ⟨x, y⟩
   rcases PlanarCompile.unit_neighbor_cases hrev with rfl | rfl | rfl | rfl <;>
     simp [translate, finalLocalRoute, side, PlanarCompile.side, center, PlanarCompile.center,

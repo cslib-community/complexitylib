@@ -163,8 +163,7 @@ theorem mem_EUThreeSAT_toEUThreeSAT_iff (φ : CNF ℕ) :
       exact forall₂_congr fun c hc => by rw [EUThreeSAT.eval_clause σ c (hw c hc).1]
     change (_ ∧ _) ↔ _ ∧ _ ∧ _
     have hs : CNF.Satisfiable (φ.flatMap EUThreeSAT.clause) ↔ φ.OneSatisfiable := by
-      unfold CNF.Satisfiable CNF.OneSatisfiable
-      exact exists_congr fun σ => by rw [hv]
+      grind [CNF.Satisfiable, CNF.OneSatisfiable]
     simp only [he, hp, true_and]
     exact ⟨fun h => ⟨hw, hs.mp h⟩, fun h => hs.mpr h.2⟩
   · have hg' : ¬((∀ c ∈ φ, c.length = 3 ∧ (c.map Prod.fst).Nodup) ∧

@@ -177,9 +177,7 @@ theorem orthogonalRoutes_wireLength_le (G : Graph) (ports : List (Fin 3 × Fin 3
     obtain ⟨⟨edge, i⟩, he, rfl⟩ := List.mem_map.1 hr
     obtain ⟨hi, heq⟩ := List.getElem?_eq_some_iff.1 (List.mem_zipIdx_iff_getElem?.1 he)
     change G.2[i] = edge at heq
-    have hm : edge ∈ G.2 := by
-      have hmem : G.2[i] ∈ G.2 := List.getElem_mem hi
-      simpa only [heq] using hmem
+    have hm : edge ∈ G.2 := by grind
     exact Layout.route_wireLength_le hi (List.idxOf_lt_length_iff.2 (hG edge hm).1)
       (List.idxOf_lt_length_iff.2 (hG edge hm).2) _ _
   calc

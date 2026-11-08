@@ -317,13 +317,7 @@ private theorem chain_gadgets_iff {G : Graph} {p : List ℕ} (hp : ∀ v ∈ p, 
   | nil => rfl
   | cons a p =>
     have ha := hp a (List.mem_cons_self ..)
-    have hp' : ∀ v ∈ a :: (p ++ [a]), v ∈ G.1 := by
-      intro v hv
-      simp only [List.mem_cons, List.mem_append, List.not_mem_nil, or_false] at hv
-      rcases hv with rfl | hv | rfl
-      · exact ha
-      · exact hp v (List.mem_cons_of_mem _ hv)
-      · exact ha
+    have hp' : ∀ v ∈ a :: (p ++ [a]), v ∈ G.1 := by grind
     have e : gadgets G (a :: (p ++ [a])) = (G.splitVertex a 0 :: G.splitVertex a 1 ::
         G.splitVertex a 2 :: (gadgets G p ++ [G.splitVertex a 0])) ++
           [G.splitVertex a 1, G.splitVertex a 2] := by
@@ -356,10 +350,7 @@ private theorem exists_eq_gadgets {G : Graph} (n : ℕ) : ∀ (l : List ℕ) (v 
     have hnd₁ : l₁.Nodup := (List.nodup_cons.1 hnd).2
     have hch₁ : l₁.IsChain G.split.toSimpleGraph.Adj := hch.tail
     -- `mid(v)` lies in `l₁`, at some position `j`.
-    have hm : G.splitVertex v 1 ∈ l₁ := by
-      rcases List.mem_cons.1 (hmid v hv (List.mem_cons_self ..)) with h | h
-      · simp [splitVertex_eq_splitVertex_iff] at h
-      · exact h
+    have hm : G.splitVertex v 1 ∈ l₁ := by grind [splitVertex_eq_splitVertex_iff]
     obtain ⟨j, hj, hjm⟩ := List.getElem_of_mem hm
     -- `mid(v)` is not the last vertex, and its successor is `out(v)`.
     have hj₁ : j + 1 < l₁.length := by

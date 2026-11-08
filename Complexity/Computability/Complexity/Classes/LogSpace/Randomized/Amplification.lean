@@ -202,10 +202,7 @@ private theorem exists_rejectCoins_le_of_mem_RL (h : A ∈ RL enc) (r : ℕ) :
       have hle := (M.orElse M').acceptCoins_le (enc a) (t + ((enc a).length + 2 + t'))
       refine ⟨_, MultiTapePTM.runsInTime_toNTM_orElse M M' ht ht', fun ha => ?_, fun ha => ?_⟩ <;>
         generalize t + ((enc a).length + 2 + t') = T at hprod hle ⊢
-      · have h₁ : 2 * (2 ^ t - M.acceptCoins (enc a) t) ≤ 2 ^ t := by
-          have := hmem ha
-          have := M.acceptCoins_le (enc a) t
-          omega
+      · have h₁ : 2 * (2 ^ t - M.acceptCoins (enc a) t) ≤ 2 ^ t := by grind
         refine Nat.le_of_mul_le_mul_right ?_ hpos
         calc 2 ^ (r + 1) * (2 ^ T - (M.orElse M').acceptCoins (enc a) T) * (2 ^ t * 2 ^ t')
             = (2 * (2 ^ t - M.acceptCoins (enc a) t)) *
