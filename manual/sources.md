@@ -39,6 +39,16 @@ Richard Bellman. "On a Routing Problem." *Quarterly of Applied Mathematics* 16(1
 
 Leonard Berman and Juris Hartmanis. *On Isomorphisms and Density of NP and Other Complete Sets*. Technical Report TR75-260, Department of Computer Science, Cornell University, October 1975. https://hdl.handle.net/1813/7101 . The open eCommons PDF is an image scan without a text layer. An independent agent review checked these locators against it on 2026-11-08 UTC: §I, printed p. 2 (the isomorphism conjecture and its `P ≠ NP` consequence); §III, Theorem 1, printed pp. 7–10 (PDF pp. 10–13; isomorphism from invertible, length-increasing one-one reductions); Lemmas 3 and 5, printed pp. 10–12 (length growth and the two-argument padding and read-back condition); and Theorem 7 with its CNF construction, printed pp. 13–14. The journal version (*SIAM Journal on Computing* 6(2), 305–322, 1977, https://doi.org/10.1137/0206023) was not checked, and its numbering is not claimed to match.
 
+<a id="bertsekas88"></a>
+## bertsekas88
+
+Dimitri P. Bertsekas. "The auction algorithm: A distributed relaxation method for the assignment problem." *Annals of Operations Research* 14, 105–123, 1988. https://doi.org/10.1007/BF02186476 . Author-hosted scan: https://web.mit.edu/dimitrib/www/TheAuctionAP.pdf . The original algorithm is the MIT LIDS working paper "A Distributed Algorithm for the Assignment Problem" (March 1979), retyped at https://web.mit.edu/dimitrib/www/Bertsekas_Auction_Distributed_1979.pdf . The manual uses the 1988 paper for the `O(N A C / ε)` complexity of the pure (unscaled) auction (§1) and for scaling integer costs by `N + 1` and running down to `ε = 1` (§3). Both locators were checked against the author-hosted scan on 2026-11-08 UTC.
+
+<a id="bertsekas98"></a>
+## bertsekas98
+
+Dimitri P. Bertsekas. *Network Optimization: Continuous and Discrete Models*. Athena Scientific, Belmont, MA, 1998. ISBN 1-886529-02-7. Author-hosted copy: https://web.mit.edu/dimitrib/www/netbook_Full_Book_NEW.pdf . Checked against that copy on 2026-11-08 UTC: §1.3.3 and Prop. 1.4 (an assignment satisfying `ε`-complementary slackness is within `n ε` of optimal); §7.1.1, ε-CS (7.1), the bidding rule (7.2)–(7.5) with the Gauss–Seidel version, Prop. 7.1 (ε-CS is preserved) and Prop. 7.2 (termination, `n ε`-optimality, optimality for integer data and `ε < 1/n`); Figs. 1.12–1.14 (the price-war example); §7.1.4 and Prop. 7.3 (`ε`-scaling, not formalized).
+
 <a id="blum67"></a>
 ## blum67
 
