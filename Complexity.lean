@@ -1995,6 +1995,8 @@ public import Complexity.Computability.Complexity.ImmermanVardi.Tableau.Step
 public import Complexity.Computability.Complexity.Parameterized
 public import Complexity.Computability.Complexity.Parameterized.Clique
 public import Complexity.Computability.Complexity.Parameterized.ColorCoding
+public import Complexity.Computability.Complexity.Parameterized.Compression
+public import Complexity.Computability.Complexity.Parameterized.CrossComposition
 public import Complexity.Computability.Complexity.Parameterized.Distillation
 public import Complexity.Computability.Complexity.Parameterized.Kernelization
 public import Complexity.Computability.Complexity.Parameterized.VertexCover
