@@ -222,7 +222,10 @@ result `ten_mul_length_firstFit_le` gives `10 * FF ≤ 17 * OPT + 8` against eve
 `FF ≤ ⌊17/10 * OPT⌋` is not formalized. The
 [BinPackingFirstFitWeight client](../../ComplexityTests/BinPackingFirstFitWeight.lean) checks a bin
 attaining the weight bound and an instance with `OPT = 9` where First Fit uses `15` bins; check it
-with `scripts/build.sh ComplexityTests.BinPackingFirstFitWeight`.
+with `scripts/build.sh ComplexityTests.BinPackingFirstFitWeight`. If a case of the weight bounds
+does not close under `omega`, check the scaling and whether each breakpoint of the weight is open
+or closed as in the source; if the lower bound fails, check that it uses the algorithm's rule, not
+only pairwise overfull bins.
 
 **When it fails:** if the `foldl'` states-bound premise fails, bound the encoded table through the
 invariant (its length and the subsequence property of every entry), not by the number of steps.
