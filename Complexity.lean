@@ -2329,6 +2329,7 @@ public import Complexity.Computability.Kolmogorov.AverageCase
 public import Complexity.Computability.Kolmogorov.Basic
 public import Complexity.Computability.Kolmogorov.ChainRule
 public import Complexity.Computability.Kolmogorov.Conditional
+public import Complexity.Computability.Kolmogorov.ConditionalPartrec
 public import Complexity.Computability.Kolmogorov.Depth
 public import Complexity.Computability.Kolmogorov.Incompleteness
 public import Complexity.Computability.Kolmogorov.Incompressibility
@@ -2341,6 +2342,7 @@ public import Complexity.Computability.Kolmogorov.NisanWigderson
 public import Complexity.Computability.Kolmogorov.Partrec
 public import Complexity.Computability.Kolmogorov.SelfDelimiting
 public import Complexity.Computability.Kolmogorov.SingleTape
+public import Complexity.Computability.Kolmogorov.SymmetryOfInformation
 public import Complexity.Computability.Kolmogorov.TimeBounded
 public import Complexity.Computability.Kolmogorov.Uncomputability
 public import Complexity.Computability.Languages.ChomskyNormalForm
@@ -4379,6 +4381,7 @@ public import Complexity.Foundations.Combinatorics.WeightedCut.MinCutBetween
 public import Complexity.Foundations.Combinatorics.WeightedCut.Multigraph
 public import Complexity.Foundations.Computability.ComputablePred
 public import Complexity.Foundations.Computability.ContextFreeGrammar
+public import Complexity.Foundations.Computability.DistinctValues
 public import Complexity.Foundations.Computability.KleenePost
 public import Complexity.Foundations.Computability.RecursiveInCode
 public import Complexity.Foundations.Control.Monad.FilterM

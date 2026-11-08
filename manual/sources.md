@@ -947,6 +947,11 @@ Claude E. Shannon. *The Zero Error Capacity of a Noisy Channel*. IRE Transaction
 
 Lloyd Shapley and Herbert Scarf. *On Cores and Indivisibility*. Journal of Mathematical Economics 1(1), 23–37, 1974. https://doi.org/10.1016/0304-4068(74)90033-0 . Bibliographic metadata only; the publisher's text is paywalled and was not inspected. The housing market model and the top trading cycles algorithm (credited there to David Gale) are attributed to it as in [roughgarden13cs364a](#roughgarden13cs364a), Lecture #9, §3, and [schummervohra07](#schummervohra07), §10.6 (which lists the pages as 23–28; the Crossref record was not rechecked). The housing-market modules also attribute to it the competitive allocation at round-size prices (`isCompetitive_ttc`), from memory of the literature; this attribution is unverified.
 
+<a id="shenuspenskyvereshchagin17"></a>
+## shenuspenskyvereshchagin17
+
+Alexander Shen, Vladimir A. Uspensky and Nikolay Vereshchagin. *Kolmogorov Complexity and Algorithmic Randomness*. Mathematical Surveys and Monographs 220, American Mathematical Society, 2017. https://doi.org/10.1090/surv/220 . The printed edition was not inspected. The authors' open draft dated 6 October 2016 (https://www.lirmm.fr/~ashen/kolmbook-eng.pdf) was read on 2026-11-08 UTC: Section 2.2, Theorem 17 (optimal conditional decompressors), Theorem 18 (`C(x | y) ≤ C(x) + O(1)`, `C(x | x) = O(1)`), Theorem 20 (`C(x, y) ≤ C(x) + 2 log C(x) + C(y | x) + O(1)`), Theorem 21 (Kolmogorov–Levin, `O(log n)` form, proof by sections and large sections) and Theorem 22 (`C(x, y) = C(x) + C(y | x) + O(log C(x, y))`); Section 2.3, the definition `I(x : y) = C(y) − C(y | x)` and Theorem 23 (information symmetry). The draft's theorem numbers are not claimed to match the printed edition, so the library cites sections.
+
 <a id="sipser13"></a>
 ## sipser13
 
