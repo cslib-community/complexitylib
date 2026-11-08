@@ -1343,6 +1343,17 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   analyses of the same problems belong to the primal–dual approximation direction under
   Optimization and duality.
 
+### Sorting and selection
+
+- **Comparison selection** ([#3279](https://github.com/cslib-community/complexitylib/issues/3279)):
+  groups-of-five median-of-medians selection in cslib's comparison-query model, correct for
+  total preorders and making at most `37 n` comparisons under every oracle, is in
+  `Algorithms/Lean/Query/Select`. Remaining: the `5.4305 n` bound of Blum, Floyd, Pratt, Rivest
+  and Tarjan for their refined `PICK` and Dor and Zwick's `2.95 n` median bound; group-size
+  variants such as groups of three or seven; comparison lower bounds (`n − 1` for the minimum,
+  `⌈3n/2⌉ − 2` for the minimum and maximum together, and lower bounds for the median); and a
+  word-RAM implementation with charged instruction counts.
+
 ### Online algorithms and competitive analysis
 
 - Request sequences, online strategies, offline optima and competitive ratios with additive

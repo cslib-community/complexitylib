@@ -66,7 +66,11 @@ public import Complexity.Algorithms.Lean.Query.FreeM.Tabulate
 public import Complexity.Algorithms.Lean.Query.Matroid.Greedy
 public import Complexity.Algorithms.Lean.Query.Matroid.IndepQuery
 public import Complexity.Algorithms.Lean.Query.Matroid.LowerBound
+public import Complexity.Algorithms.Lean.Query.Select.Correctness
+public import Complexity.Algorithms.Lean.Query.Select.Cost
+public import Complexity.Algorithms.Lean.Query.Select.Defs
 public import Complexity.Algorithms.Lean.Query.ShortestPaths.MinPlus
+public import Complexity.Algorithms.Lean.Query.Sort.Merge.CountBound
 public import Complexity.Algorithms.Lean.Query.Submodular.Greedy
 public import Complexity.Algorithms.Lean.Query.Submodular.LowerBound
 public import Complexity.Algorithms.Lean.Query.Submodular.ValueQuery
@@ -4244,6 +4248,7 @@ public import Complexity.Foundations.Data.List.Last
 public import Complexity.Foundations.Data.List.Lex
 public import Complexity.Foundations.Data.List.Lookup
 public import Complexity.Foundations.Data.List.OfFn
+public import Complexity.Foundations.Data.List.OrderStatistic
 public import Complexity.Foundations.Data.List.Perm
 public import Complexity.Foundations.Data.List.Range
 public import Complexity.Foundations.Data.List.RowMajor
