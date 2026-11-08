@@ -55,8 +55,10 @@ charged (the public-coin convention of `Cslib.Streaming.Randomized`), every sket
 bits once `(2 m + 1) ^ (4 r k) ≤ 2 ^ b` (`Cslib.Streaming.spaceLE_joinSketchRandom`); with the
 seeds stored, once `(|ι| (2 m + 1) ^ 2) ^ (2 r k) ≤ 2 ^ b`
 (`Cslib.Streaming.exists_injOn_iUnion_reachable_joinSketch`). With the four-wise independent
-polynomial hash families on a universe of `n` attribute values (`log₂ |ι| = O(log n)`), this is
-`O(r k (log n + log m))` bits, the `k log n` bits per relation of the source plus the counters.
+polynomial hash families on a domain of `t` attribute values (`log₂ |ι| = O(log t)`), this is
+`O(r k (log t + log m))` bits. In the source, `n` is the number of tuples in each relation, not
+the domain size, and the hash functions are not charged, so its `k log n` bits per relation
+count only the `k` counters, matching the public-coin bound above.
 
 **Scope.** The relations are insert-only: the source also handles deletions by subtracting the
 sign, which would need turnstile stream items, not formalized here. The answer is the median of
