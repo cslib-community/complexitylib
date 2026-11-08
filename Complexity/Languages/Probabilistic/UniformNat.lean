@@ -116,8 +116,7 @@ theorem eval_sampleDyadicIndex (bound : ℕ) :
       (PMF.uniformOfFintype (Fin (dyadicSize bound))).map Fin.val := by
   simp only [sampleDyadicIndex, ProbComp.eval_map, BitString.eval_sampleList,
     uniformList_boundedBinaryValue]
-  congr 1
-  funext i
+  congr 1 with i : 1
   exact Nat.min_eq_right i.isLt.le
 
 /-- Move an independent source inside a uniform index choice, with a fixed fallback for padding
@@ -137,8 +136,7 @@ theorem eval_bind_sampleDyadicIndex_guard {α β : Type} (source : ProbComp α) 
   simp only [ProbComp.eval_bind, eval_sampleDyadicIndex]
   simp only [PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def]
   rw [PMF.bind_comm]
-  congr 1
-  funext i
+  congr 1 with i : 1
   by_cases hi : i.val < bound <;>
     simp only [hi, ite_true, ite_false, ProbComp.eval_pure, PMF.bind_const]
 

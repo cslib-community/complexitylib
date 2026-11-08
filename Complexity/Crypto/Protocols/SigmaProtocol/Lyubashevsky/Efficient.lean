@@ -287,8 +287,7 @@ theorem eval_sampleIntBox_eq_map_zmod (B width : ℕ) :
         (Nat.cast : ℕ → ZMod (2 * B + 1))).map (fun r => boxShift B r.val) := by
   rw [sampleIntBox, ProbComp.eval_map, PMF.map_comp, ProbComp.eval_sampleModNat,
     PMF.map_comp, PMF.map_comp]
-  congr 1
-  funext i
+  congr 1 with i : 1
   simp only [Function.comp_apply, ZMod.val_natCast, Nat.mod_mod]
 
 /-- **1D box sampler statistical distance.** `sampleIntBox B width` is within
@@ -1237,8 +1236,7 @@ theorem nonAbortSimulatorRealizedBy_lyubashevskySimulateWord :
         (PMF.uniformOfFinset (intBox (Fin p.m) p.γ)
           (intBox_nonempty p.γ)).map post := by
     simp only [lyubashevskySimulate, boxReject, shiftReject, PMF.map_comp]
-    congr 1
-    funext z
+    congr 1 with z : 1
     simp only [Function.comp_apply, add_zero, post, lyubashevskySimulatePostprocess_ofFn]
     split_ifs <;> rfl
   have hreal :

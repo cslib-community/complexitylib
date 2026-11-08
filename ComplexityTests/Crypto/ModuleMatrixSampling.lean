@@ -96,8 +96,7 @@ example : ∃ sample : (((ℕ × ℕ) × ℕ) × ℕ) → ProbComp (List Bool),
     convert PMF.map_const (PMF.uniformOfFintype
       (Matrix (Fin 1) (Fin 2) (Fin 1 → ZMod (2 ^ 0))))
       (encList (encList encNat) [[0, 0]]) using 1
-    congr 1
-    funext A
+    congr 1 with A : 1
     have : A = 0 := by
       ext i j l
       exact (ZMod.val_injective 1) (by
@@ -151,8 +150,7 @@ example : ∃ sample run,
     change (PMF.uniformOfFintype (Matrix (Fin 1) (Fin 1) (Fin 2 → ZMod 4))).map
       (fun A => run (((1, 2), 4), (ModuleSIS.encodeMatrix A,
         (ModuleSIS.encodeVec (![![-1, 2]]), ModuleSIS.encodeVec (![![1, -1]]))))) = _
-    congr 1
-    funext A
+    congr 1 with A : 1
     exact hrun 1 2 4 (by decide) A (![![-1, 2]]) (![![1, -1]])
 
 end ComplexityTests.Crypto.ModuleMatrixSampling

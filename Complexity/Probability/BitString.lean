@@ -142,8 +142,7 @@ theorem uniformList_map_of_bijective (f : List Bool → List Bool) (hf : Functio
   calc
     (uniformList n).map f = ((PMF.uniformOfFintype (Fin n → Bool)).map bits).map List.ofFn := by
       simp only [uniformList, PMF.map_comp]
-      congr 1
-      funext word
+      congr 1 with word : 1
       exact (hbits word).symm
     _ = uniformList n := by rw [PMF.uniformOfFintype_map_equiv]; rfl
 

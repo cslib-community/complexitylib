@@ -869,8 +869,7 @@ theorem run_interpret_bcsMemoize {Stmt Chal β : Type} [DecidableEq Stmt] [Decid
           (.inl msg) h]
       change (((BitString.uniformList σ).map (fun v => (v, (msg, v) :: tr_MT))).map _).map _ = _
       simp only [PMF.map_comp, Function.comp_def, bcsOracleDist]
-      congr 2
-      funext v
+      congr 2 with v : 1
       simp only [Prod.mk.injEq, true_and]
       funext q
       cases q with
@@ -891,8 +890,7 @@ theorem run_interpret_bcsMemoize {Stmt Chal β : Type} [DecidableEq Stmt] [Decid
           (.inr fsq) h]
       change (((PMF.uniformOfFintype Chal).map (fun v => (v, (fsq, v) :: tr_FS))).map _).map _ = _
       simp only [PMF.map_comp, Function.comp_def, bcsOracleDist]
-      congr 2
-      funext v
+      congr 2 with v : 1
       simp only [Prod.mk.injEq, true_and]
       funext q
       cases q with

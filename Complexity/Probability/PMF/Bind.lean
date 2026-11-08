@@ -62,8 +62,7 @@ theorem bind_sigma_apply {β : α → Type*} (p : PMF α) (f : (a : α) → PMF 
 theorem bind_congr_on_support (p : PMF α) (f g : α → PMF β)
     (h : ∀ a ∈ p.support, f a = g a) : p.bind f = p.bind g := by
   rw [← PMF.bindOnSupport_eq_bind p f, ← PMF.bindOnSupport_eq_bind p g]
-  congr 1
-  funext a ha
+  congr 1 with a ha : 2
   exact h a ha
 
 /-- If every second stage of a two-stage experiment gives the outcome `b` probability `c`, so

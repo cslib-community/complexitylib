@@ -174,8 +174,7 @@ theorem mixed_real_accepts_half :
     simp only [realOpening, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
       PMF.pure_bind, senderRun, senderOfPrograms, mixedChoose, mixedFinish,
       ProbComp.eval_pure, transfer_eq, PMF.map]
-    congr 1
-    funext c
+    congr 1 with c : 1
     cases h₀ : c 0 <;> cases h₁ : c 1 <;>
       simp [openResult, decodeOpening, Accepts, table, Fin.forall_fin_two,
         Fin.cons, Fin.tail, h₀, h₁, fin4ToBoolPair_boolPairToFin4] <;> rfl

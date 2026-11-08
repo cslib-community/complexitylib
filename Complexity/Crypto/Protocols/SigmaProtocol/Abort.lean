@@ -121,10 +121,8 @@ theorem acceptedConversation_eq_bind [Fintype C] [Nonempty C] (x : X) (y : Y) :
   rw [acceptedConversation, conversation_eq_bind_transcript]
   simp only [acceptedTranscript, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.map_bind,
     PMF.pure_map, PMF.bind_map]
-  congr 1
-  funext c
-  congr 1
-  funext tz
+  congr 1 with c : 1
+  congr 1 with tz : 1
   obtain ⟨t, _ | z⟩ := tz <;> rfl
 
 variable {P}

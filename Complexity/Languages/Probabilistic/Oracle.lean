@@ -148,8 +148,7 @@ theorem sample_run_interpret {Query' : Type} {spec' : Query' → Type}
       (OracleComp.interpret (sumHandler (fun n => StateT.lift (sample (ProbComp.unifFin n)))
         (fun q state => sample (oracle q state))) program).run s := by
   rw [OracleComp.map_run_interpret (isMonadHom_sample (spec := spec'))]
-  congr 2
-  funext q state
+  congr 2 with q state : 2
   cases q with
   | inl n => simp [StateT.lift]
   | inr q => rfl

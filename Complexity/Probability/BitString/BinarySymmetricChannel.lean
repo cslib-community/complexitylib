@@ -266,8 +266,7 @@ theorem decodingError_symm (p : I) (E : M → ι → Bool) (D : (ι → Bool) �
   classical
   rw [decodingError_eq_bernoulliAverage, decodingError_eq_bernoulliAverage,
     unitInterval.coe_symm_eq, bernoulliAverage_one_sub]
-  congr 1
-  funext e
+  congr 1 with e : 1
   have h : (fun i => !(E m + fun i => !e i) i) = E m + e := by
     funext i
     change (!(E m i ^^ !e i)) = (E m i ^^ e i)

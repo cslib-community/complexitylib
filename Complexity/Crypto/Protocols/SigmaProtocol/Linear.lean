@@ -134,8 +134,7 @@ theorem linear_specialHVZK :
     rw [linear_transcript, linearSimulate]
     conv_lhs => rw [← PMF.uniformOfFintype_map_equiv (Equiv.addRight (ι c • x))]
     rw [PMF.map_comp]
-    congr 1
-    funext r
+    congr 1 with r : 1
     simp only [Function.comp_apply, Equiv.coe_addRight, map_add, map_smul, hxy,
       add_sub_cancel_right]
 

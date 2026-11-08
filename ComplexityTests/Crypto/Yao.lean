@@ -75,8 +75,7 @@ example (x : (i : Fin 2) → YaoIn 1 1 i)
       (batchOTWorld 1 (Bool × Bool)) x).support) :
     r.2 = yaoOutputs ![x 0 0 && x 1 0] := by
   rw [yao_output_of_mem_support andC Boolean.interpretation toyF id x hr]
-  congr 1
-  funext j
+  congr 1 with j : 1
   fin_cases j
   rfl
 

@@ -42,8 +42,7 @@ private theorem real_two : realOpening mixedSender 2 (pure ()) (fun _ => pure (c
   simp only [realOpening, Cslib.Probability.PMF.monad_bind_eq_bind,
     Cslib.Probability.PMF.monad_pure_eq_pure, PMF.pure_bind, senderRun, mixedSender,
     transfer_eq, PMF.map]
-  congr 1
-  funext c
+  congr 1 with c : 1
   cases h₀ : c 0 <;> cases h₁ : c 1 <;>
     simp [openResult, claimOne, Accepts, opening, table, Fin.forall_fin_two,
       Fin.cons, Fin.tail, h₀, h₁, fin4ToBoolPair_boolPairToFin4] <;> rfl
@@ -98,8 +97,7 @@ example : bindingGame mixedSender 2 (pure ())
     simp only [bindingGame, Cslib.Probability.PMF.monad_bind_eq_bind,
       Cslib.Probability.PMF.monad_pure_eq_pure, PMF.pure_bind, senderRun, mixedSender,
       transfer_eq, PMF.map]
-    congr 1
-    funext c
+    congr 1 with c : 1
     cases h₀ : c 0 <;> cases h₁ : c 1 <;>
       simp [doubleOpens, Accepts, opening, table, Fin.forall_fin_two,
         Fin.cons, Fin.tail, h₀, h₁, fin4ToBoolPair_boolPairToFin4] <;> rfl

@@ -91,11 +91,9 @@ theorem xorMix_map {α β : Type*} [Fintype α] [Fintype β] (p₀ p₁ : PMF α
   unfold xorMix
   split_ifs with h
   · rw [PMF.map_bind]
-    congr 1
-    funext b
+    congr 1 with b : 1
     rw [← pi_map]
-    congr 1
-    funext i
+    congr 1 with i : 1
     cases b i <;> rfl
   · rw [← pi_map]
 
@@ -121,8 +119,7 @@ theorem xorMix_map_uniform {γ α : Type*} [Fintype γ] [Nonempty γ] [Fintype �
     ⟨parityComplete c (fun _ => false), by simp [parity_parityComplete]⟩
   rw [xorMix, dite_eq_left hne, ← uniformOfFintype_map_parityComplete c j hne, PMF.bind_map,
     ← uniformOfFintype_prod, PMF.map_bind]
-  congr 1
-  funext r
+  congr 1 with r : 1
   have hsel : (fun i => bif parityComplete c r i then (uniformOfFintype γ).map f₁
       else (uniformOfFintype γ).map f₀) =
       fun i => (uniformOfFintype γ).map

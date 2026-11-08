@@ -179,13 +179,11 @@ theorem hit_visible_eq :
   rw [lyubashevskySignVisibleProg_eq_bind_full, lyubashevskySignVisibleSim_eq_bind_full]
   dsimp only [lyubashevskySignFullProg, lyubashevskySignFullSim]
   simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
-  congr 1
-  funext A
+  congr 1 with A : 1
   refine PMF.bind_congr_on_support (H_fixed A) _ _ fun h hh => ?_
   simp only [hprog_run, hsim_run]
   rw [PMF.bind_comm]
-  congr 1
-  funext c
+  congr 1 with c : 1
   have hhvzk := (lyubashevsky_nonAbortSpecialHVZK (n := 1) (m := 2) (k := 1) (q := 17)
     (γ := 3) (β := 1) (by decide) (by decide)).acceptedTranscript_eq
     (0 : Matrix (Fin 2) (Fin 1) ℤ) (A, key.2) (zero_relation A h hh) c
