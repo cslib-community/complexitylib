@@ -59,7 +59,9 @@ solver in `TimeM ℕ` via `edmondsKarpDenseM`.
   operations, `ℕ` arithmetic, and edge-indicator queries `G (u, v)` inside each charged step are
   treated as unit-cost primitives (not persistent copy-on-write or bit-level Turing costs).
 * **Algorithmic scope:** `bipartiteMatchingM` uses the dense Edmonds–Karp wrapper in `O((m + r)^5)`
-  ticks rather than specialized unit-capacity blocking-flow phases (Hopcroft–Karp `O(|E| √|V|)`).
+  ticks rather than specialized unit-capacity blocking-flow phases. The Hopcroft–Karp solver
+  `hopcroftKarpM` in `Complexity.Algorithms.Lean.MaxFlow.HopcroftKarp` computes the same outputs in
+  `O((m + r + |E|) √ν)` ticks.
 
 ## Main definitions
 
