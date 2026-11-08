@@ -111,11 +111,31 @@ for the lazy hypercube walk `Cslib.BitString.lazyRandomWalk ι`, `mixingTime_laz
 proves `t_mix(ε) ≤ ⌈n log n + n log ε⁻¹⌉`. The ceiling is necessary, as the `n = 1`, `ε = 2/5`
 check shows.
 
+When a coupling of all pairs is hard to build, use path coupling from
+[MarkovChain/PathCoupling.lean](../../Complexity/Probability/MarkovChain/PathCoupling.lean). Choose
+a neighbor relation `N` and a metric `ρ` with `IsPathMetric N ρ`: `ρ` vanishes on the diagonal, is
+at least one off it, and every `x ≠ y` has a neighbor of `x` on a geodesic to `y`. For Hamming
+distance on `∀ i, β i`, `isPathMetric_hammingDist` supplies this. Then couple one step from
+neighbors only: for `N x y`, give `ω : PMF (S × S)` with marginals `P x` and `P y` and
+`∑ p, (ω p).toReal * ρ p.1 p.2 ≤ κ * ρ x y`.
+`IsStationary.mixingTime_le_of_pathCoupling` turns `κ ≤ exp (-α)` and `ρ ≤ D` into
+`t_mix(ε) ≤ ⌈(log D - log ε) / α⌉`, and `dist_pow_le_of_pathCoupling` gives the underlying
+`‖Pᵗ(x, ·) - Pᵗ(y, ·)‖_TV ≤ κᵗ ρ(x, y)`. Optimal couplings of the one-step laws come from
+`exists_coupling_toReal_eq_dist` in
+[StatisticalDistance/OptimalCoupling.lean](../../Complexity/Probability/StatisticalDistance/OptimalCoupling.lean),
+and `dist_uniformOfFinset_le` bounds the distance between uniform laws on nearly equal sets. The
+worked client is [MarkovChain/Coloring.lean](../../Complexity/Probability/MarkovChain/Coloring.lean):
+for Glauber dynamics on `q`-colorings with `q > 2Δ`, `mixingTime_glauberColoring_le` proves
+`t_mix(ε) ≤ ⌈((q - Δ) / (q - 2Δ)) n (log n - log ε)⌉`. Its stationary law needs a proper coloring,
+which `properColorings_nonempty` provides from greedy coloring
+(`SimpleGraph.colorable_of_maxDegree_lt`).
+
 The [checked clients](../../ComplexityTests/MarkovChain.lean) compute `d(t) = (2/3)(1/4)^t` and
 `t_mix(1/4) = 1` exactly for a two-state chain with non-uniform stationary law, show that the flip
 chain never mixes, compute a Metropolis acceptance probability, and give the hypercube instance
-with `n = 1`. Run
-`scripts/build.sh ComplexityTests.MarkovChain`. A goal of the form `t_mix(ε) = k` needs both
+with `n = 1`. The [path-coupling checks](../../ComplexityTests/PathCoupling.lean) instantiate the
+coloring bound on a single edge and show that the condition `ρ ≥ 1` off the diagonal cannot be
+dropped. Run `scripts/build.sh ComplexityTests.MarkovChain ComplexityTests.PathCoupling`. A goal of the form `t_mix(ε) = k` needs both
 directions: `mixingTime_le_of_distToStationary_le` for `≤`, and
 `(hπ : P.IsStationary π).mixingTime_le_iff` at `k - 1` for `≥`.
 
@@ -124,7 +144,8 @@ directions: `mixingTime_le_of_distToStationary_le` for `≤`, and
 Import [Matching/Edmonds.lean](../../Complexity/Algorithms/Matching/Edmonds.lean). A bipartite
 graph is `G : V × V → Bool` on a finite type `V` of left and right vertices, the representation
 of `Cslib.Circuits.BipartiteMatching.HasPerfectMatching`. `edmondsMatrix G` has the indeterminate
-`X (i, j)` at each edge and `0` elsewhere. `det_edmondsMatrix_ne_zero_iff` is Edmonds' criterion:
+`X (i, j)` at each edge and `0` elsewhere. `det_edmondsMatrix_ne_zero_iff` is Edmonds' criterion
+(Edmonds 1967):
 over any nontrivial commutative ring, the determinant is a nonzero polynomial exactly when `G` has
 a perfect matching. The randomized test of Lovász evaluates `edmondsEval G r`, the same matrix
 with values `r : V × V → R`. Its error is one-sided: `det_edmondsEval_eq_zero` gives determinant
@@ -142,7 +163,10 @@ degree of a determinant of polynomials. Use them for other symbolic-determinant 
 
 The [checked clients](../../ComplexityTests/EdmondsMatching.lean) compute the `2 × 2`
 determinant of the complete graph, apply the test to a graph whose right vertex `1` is
-unmatched, and show that `|V| < |S|` cannot be relaxed to `|V| ≤ |S|`. Run
+unmatched, and show that values from the one-element set `{0}` miss the matching of a single edge.
+The bound `|V| < |S|` comes from Schwartz–Zippel and is not sharp in general: the determinant has
+degree at most `1` in each variable, so over an integral domain any `S` with two elements detects a
+perfect matching (not formalized). Run
 `scripts/build.sh ComplexityTests.EdmondsMatching`.
 
 To find the matching rather than only detect it, import

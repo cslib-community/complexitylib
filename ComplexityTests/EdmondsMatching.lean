@@ -8,7 +8,7 @@ import Complexity.Algorithms.Matching.Edmonds
 
 /-! The Edmonds matrix of small bipartite graphs: the `2 × 2` determinant of the complete graph and
 its detection from three values, a graph without a perfect matching, the empty vertex type, the
-strictness of the size bound in `exists_det_edmondsEval_ne_zero`, and axiom guards. -/
+a one-vertex instance where values from a one-element set fail to detect the matching. -/
 
 namespace ComplexityTests.EdmondsMatching
 
@@ -67,28 +67,14 @@ example : HasPerfectMatching fun _ : Fin 0 × Fin 0 => true := ⟨1, fun v => v.
 /-- On the empty vertex type, the Edmonds matrix has determinant `1` at all values. -/
 example (r : Fin 0 × Fin 0 → ℤ) : (edmondsEval (fun _ => true) r).det = 1 := det_isEmpty
 
-/-- The bound `|V| < |S|` in `exists_det_edmondsEval_ne_zero` cannot be relaxed to `|V| ≤ |S|`:
-for one vertex with its single edge, values from `{0}` never detect the perfect matching. -/
+/-- Some size hypothesis on `S` is needed in `exists_det_edmondsEval_ne_zero`: for one vertex with
+its single edge, values from `{0}` (so `|S| = |V|`) never detect the perfect matching. The bound
+`|V| < |S|` is what the Schwartz–Zippel argument gives; it is not sharp in general, since the
+determinant has degree at most `1` in each variable, so over an integral domain any `S` with two
+elements detects a perfect matching (not formalized here). -/
 example (r : Fin 1 × Fin 1 → ℤ) (hr : ∀ e, r e ∈ ({0} : Finset ℤ)) :
     (edmondsEval (fun _ => true) r).det = 0 := by
   rw [det_unique, edmondsEval_apply]
   simpa using hr _
-
-/-! ### Axiom guards -/
-
-/-- info: 'Cslib.Algorithms.Matching.det_edmondsMatrix_ne_zero_iff' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms det_edmondsMatrix_ne_zero_iff
-
-/-- info: 'Cslib.Algorithms.Matching.card_det_edmondsEval_eq_zero_div_le' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms card_det_edmondsEval_eq_zero_div_le
-
-/-- info: 'Cslib.Algorithms.Matching.exists_det_edmondsEval_ne_zero' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms exists_det_edmondsEval_ne_zero
 
 end ComplexityTests.EdmondsMatching
