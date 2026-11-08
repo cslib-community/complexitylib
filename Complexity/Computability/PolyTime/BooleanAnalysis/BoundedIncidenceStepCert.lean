@@ -79,8 +79,6 @@ namespace Cslib.Complexity.SubexponentialSAT.SparsePolyCounter
 open Finset Cslib Cslib.BitString Cslib.CommonCountingAccum Cslib.Complexity Cslib.GenericRAM
 open Cslib.LinearAlgebra Turing.MultiTapeTM
 
-local notation "encSys" => encList (encList (encList encNat))
-
 /-! ### 1. Stage Encodings and Polynomial-Time Step Helpers -/
 
 section StageHelpers
@@ -408,7 +406,7 @@ private theorem computableInPolyTime_checkRestrictedGroup {α : Type} {encIn : �
 private theorem computableInPolyTime_buildEqRowTables {α : Type} {encIn : α ↪ List Bool}
     {n' : α → ℕ} {eqs' : α → List (List (List ℕ))} {data : α → ReplacementDesignData}
     (hn' : ComputableInPolyTime n' encIn encUnary)
-    (heqs : ComputableInPolyTime eqs' encIn encSys)
+    (heqs : ComputableInPolyTime eqs' encIn encSparseSystem)
     (hdata : ComputableInPolyTime data encIn encReplacementDesignData) :
     ComputableInPolyTime (fun x => buildEqRowTables (n' x) (eqs' x) (data x))
       encIn (encList (encList (encList (encList encIntBin)))) := by
@@ -427,7 +425,7 @@ private theorem computableInPolyTime_buildEqRowTables {α : Type} {encIn : α �
 private theorem computableInPolyTime_groupEquationsAt {α : Type} {encIn : α ↪ List Bool}
     {eqs' : α → List (List (List ℕ))} {factorGroups : α → List (List ℕ)}
     {eqRowTables : α → List (List (List (List ℤ)))} {t g : α → ℕ}
-    (heqs : ComputableInPolyTime eqs' encIn encSys)
+    (heqs : ComputableInPolyTime eqs' encIn encSparseSystem)
     (hfg : ComputableInPolyTime factorGroups encIn (encList (encList encNat)))
     (htab : ComputableInPolyTime eqRowTables encIn
       (encList (encList (encList (encList encIntBin)))))
