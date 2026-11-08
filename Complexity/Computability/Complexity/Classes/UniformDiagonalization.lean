@@ -8,10 +8,10 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Classes.Ladner.PolyTime
-public import Complexity.Computability.Complexity.Classes.Immune
 public import Complexity.Computability.Complexity.Reduction
-public import Complexity.Computability.Machines.Turing.MultiTape.Halting.Partrec
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Clocked
+import Complexity.Computability.Complexity.Classes.Immune
+import Complexity.Computability.Machines.Turing.MultiTape.Halting.Partrec
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.TwoPow
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -33,8 +33,8 @@ and `A₂`, and reduces to `A₂` when `A₁ ∈ P` and `A₂` is neither empty 
 
 The proof is delayed diagonalization. Stage `k` separates the mixed set from the member of index
 `k / 2` of the first family (even `k`) or the second family (odd `k`). The words of length `n` are
-put on the side of the stage at `n`, and the stage advances at `n + 1` when a word of index below
-`n` separates the two sets, as seen by runs of `n` steps of both machines
+put on the side of the stage at `n`. The stage at `n` advances over the stage at `n - 1` when a
+word of index below `n` separates the two sets, as seen by runs of `n` steps of both machines
 (`Turing.MultiTapeTM.Universal.runBool`). This check takes polynomial time in `n`, so `G ∈ P`.
 Since the sets of each side are infinitely different from the members of their family, every
 stage is reached, and leaving stage `k` needs a separating word.
@@ -78,7 +78,7 @@ outside `P`, is not formalized here: it needs a recursive presentation of that d
   classes*][Schoening1982]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
@@ -92,7 +92,7 @@ open Ladner (word index word_index index_word length_word_lt index_add_two_le)
 /-! ### The construction -/
 
 /-- The side of stage `k`: `true` (the first pair) at even stages, `false` at odd ones. -/
-def side (k : ℕ) : Bool := decide (k % 2 = 0)
+@[expose] def side (k : ℕ) : Bool := decide (k % 2 = 0)
 
 variable (dA : Bool → Desc) (dF : Bool → Desc)
 
@@ -422,14 +422,15 @@ theorem exists_mem_P_forall_ite_ne {A₁ A₂ : Set (List Bool)} (hA₁ : IsDeci
     exact D_ne hS hinf false i
 
 /-- A class of sets is **recursively presentable** when it is the class of the sets
-`{a | F (i, a) = true}`, `i : ℕ`, for a computable `F`. -/
-def RecursivelyPresentable {α : Type} (enc : α ↪ List Bool) (C : Set (Set α)) : Prop :=
+`{a | F (i, a) = true}`, `i : ℕ`, for a computable `F`. Such a class is nonempty, so the empty class
+is not recursively presentable. -/
+@[expose] def RecursivelyPresentable {α : Type} (enc : α ↪ List Bool) (C : Set (Set α)) : Prop :=
   ∃ F : ℕ × α → Bool, IsComputable F (encPair encUnary enc) encBool ∧
     C = Set.range fun i => {a | F (i, a) = true}
 
 /-- A class of sets is **closed under finite variations** when it contains every set finitely
 different from one of its members. -/
-def ClosedUnderFiniteVariation {α : Type} (C : Set (Set α)) : Prop :=
+@[expose] def ClosedUnderFiniteVariation {α : Type} (C : Set (Set α)) : Prop :=
   ∀ ⦃L L' : Set α⦄, L ∈ C → (L ∆ L').Finite → L' ∈ C
 
 /-- A set outside a class closed under finite variations is infinitely different from each of its
@@ -462,10 +463,11 @@ theorem isDecidable_of_mem_P {α : Type} {enc : α ↪ List Bool} {A : Set α} (
   let ⟨f, hf, hA⟩ := h
   isDecidable_iff.mpr ⟨f, hf.isComputable, hA⟩
 
-/-- **The mixed set is decidable** when `A₁` and `A₂` are and `G ∈ P`. -/
-theorem isDecidable_ite {α : Type} {enc : α ↪ List Bool} {G A₁ A₂ : Set α} (hG : G ∈ P enc)
-    (hA₁ : IsDecidable A₁ enc) (hA₂ : IsDecidable A₂ enc) : IsDecidable (G.ite A₁ A₂) enc := by
-  obtain ⟨g, hg, hG'⟩ := isDecidable_iff.mp (isDecidable_of_mem_P hG)
+/-- **The mixed set is decidable** when `G`, `A₁` and `A₂` are. -/
+theorem isDecidable_ite {α : Type} {enc : α ↪ List Bool} {G A₁ A₂ : Set α}
+    (hG : IsDecidable G enc) (hA₁ : IsDecidable A₁ enc) (hA₂ : IsDecidable A₂ enc) :
+    IsDecidable (G.ite A₁ A₂) enc := by
+  obtain ⟨g, hg, hG'⟩ := isDecidable_iff.mp hG
   obtain ⟨f₁, hf₁, hA₁'⟩ := isDecidable_iff.mp hA₁
   obtain ⟨f₂, hf₂, hA₂'⟩ := isDecidable_iff.mp hA₂
   have hsel := IsComputable.of_finite (encIn := encPair encBool (encPair encBool encBool))
@@ -479,7 +481,7 @@ theorem isDecidable_ite {α : Type} {enc : α ↪ List Bool} {G A₁ A₂ : Set 
 
 /-- The **marked union** of two sets of words: `false :: x` for `x ∈ A₁` and `true :: x` for
 `x ∈ A₂`. -/
-def markedUnion (A₁ A₂ : Set (List Bool)) : Set (List Bool) :=
+@[expose] def markedUnion (A₁ A₂ : Set (List Bool)) : Set (List Bool) :=
   {w | ∃ x, (w = false :: x ∧ x ∈ A₁) ∨ (w = true :: x ∧ x ∈ A₂)}
 
 theorem cons_mem_markedUnion {A₁ A₂ : Set (List Bool)} {b : Bool} {x : List Bool} :
@@ -522,31 +524,7 @@ theorem closedUnderFiniteVariation_P {α : Type} (enc : α ↪ List Bool) :
 
 namespace UniformDiagonalization
 
-open Ladner (runIndexed clock exists_index_ge universal_desc_of_halted)
-
-/-- **Machines deciding problems in `P` have indices with large clocks.** A problem in `P` is
-decided by machines of arbitrarily large index whose clocks exceed their running time. -/
-theorem exists_index_of_mem_P {A : Set (List Bool)} (h : A ∈ P encBits) (B : ℕ) :
-    ∃ i, B ≤ i ∧ ∀ w, ∃ b, runIndexed i w (clock i w.length) = ([eBit b], true) ∧
-      (b = true ↔ w ∈ A) := by
-  obtain ⟨f, ⟨t, s, ht, -, k, State, hfinite, tm, htm⟩, hf⟩ := mem_P.mp h
-  have := Fintype.ofFinite State
-  let eS : State ↪ ℕ := (Fintype.equivFin State).toEmbedding.trans Fin.valEmbedding
-  have hrun (x : List Bool) : (tm.runFrom (tm.initCfg x) (t x.length)).Halted ∧
-      (tm.runFrom (tm.initCfg x) (t x.length)).output = [f x] :=
-    (htm x).runFrom_of_le le_rfl
-  obtain ⟨c, e, hle⟩ := (PolyBounded.of_polynomiallyBounded List.length ht).exists_le
-  obtain ⟨i, hi, hdesc⟩ := exists_index_ge (desc eS eBit tm) (B + c + e)
-  -- the clock of the index exceeds the time bound
-  have hclock (x : List Bool) : t x.length ≤ clock i x.length := by
-    calc t x.length ≤ c * (x.length + 1) ^ e := hle x
-      _ ≤ 2 ^ i * (x.length + 1) ^ i :=
-          Nat.mul_le_mul ((Nat.lt_two_pow_self (n := i)).le.trans' (by omega))
-            (Nat.pow_le_pow_right (by omega) (by omega))
-      _ = clock i x.length := by rw [clock, ← mul_pow]; ring_nf
-  refine ⟨i, by omega, fun w => ⟨f w, ?_, (hf w).symm⟩⟩
-  rw [runIndexed, hdesc]
-  exact universal_desc_of_halted eS tm hrun (hclock _)
+open Ladner (runIndexed clock exists_index_of_mem_P)
 
 /-- The presentation of `P`: whether the machine with index `i` accepts `w` within its clock. -/
 def pIndexed (p : ℕ × List Bool) : Bool :=
@@ -562,11 +540,10 @@ theorem setOf_pIndexed_mem_P (i : ℕ) : {w | pIndexed (i, w) = true} ∈ P encB
 
 theorem exists_setOf_pIndexed_eq {A : Set (List Bool)} (h : A ∈ P encBits) (B : ℕ) :
     ∃ i, B ≤ i ∧ {w | pIndexed (i, w) = true} = A := by
-  obtain ⟨i, hi, hrun⟩ := exists_index_of_mem_P h B
+  obtain ⟨f, hf, i, hi, hrun⟩ := exists_index_of_mem_P h B
   refine ⟨i, hi, Set.ext fun w => ?_⟩
-  obtain ⟨b, hb, hiff⟩ := hrun w
-  rw [Set.mem_ofPred_eq, pIndexed, hb, ← hiff]
-  cases b <;> decide
+  rw [Set.mem_ofPred_eq, pIndexed, hrun, hf]
+  cases f w <;> decide
 
 /-- The presentation of `P` with the clock capped at `c`. -/
 private def pIndexedCap (p : (ℕ × List Bool) × ℕ) : Bool :=
