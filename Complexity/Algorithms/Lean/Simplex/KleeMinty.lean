@@ -32,8 +32,8 @@ With `0`-based indices, the `n`-dimensional Klee–Minty program is
   subject to `2 * ∑_{j<i} 10 ^ (i - j) * x_j + x_i ≤ 100 ^ i` for `i < n`, and `x ≥ 0`
 
 (`kleeMintyMatrix`, `kleeMintyRhs`, `kleeMintyObj`). [Chvatal1983] writes it with `1`-based
-indices, `10 ^ (n - j)` and `100 ^ (i - 1)`. Its optimum is `100 ^ (n - 1)`, attained at
-`x = (0, …, 0, 100 ^ (n - 1))`.
+indices, `10 ^ (n - j)` and `100 ^ (i - 1)`. For `n ≥ 1` its optimum is `100 ^ (n - 1)`,
+attained at `x = (0, …, 0, 100 ^ (n - 1))`.
 
 ## Proof
 
@@ -229,31 +229,33 @@ private theorem exists_lowest_zero {N : ℕ} (hN : N < 2 ^ n - 1) :
 
 /-! ### Signs, values and coefficients -/
 
-theorem bitSign_succ (N k : ℕ) :
+private theorem bitSign_succ (N k : ℕ) :
     (bitSign N (k + 1) : K) = if flipped N k then -bitSign N k else bitSign N k := by
   unfold bitSign flipped
   cases N.testBit k <;> cases N.testBit (k + 1) <;> simp
 
-theorem bitSign_of_testBit_false {N k : ℕ} (h : N.testBit k = false) : (bitSign N k : K) = 1 := by
+private theorem bitSign_of_testBit_false {N k : ℕ} (h : N.testBit k = false) :
+    (bitSign N k : K) = 1 := by
   unfold bitSign; rw [h]; simp
 
-theorem bitSign_of_testBit_true {N k : ℕ} (h : N.testBit k = true) : (bitSign N k : K) = -1 := by
+private theorem bitSign_of_testBit_true {N k : ℕ} (h : N.testBit k = true) :
+    (bitSign N k : K) = -1 := by
   unfold bitSign; rw [h]; simp
 
-theorem zVal_zero (N : ℕ) : (zVal N 0 : K) = 0 := by simp only [zVal]
+private theorem zVal_zero (N : ℕ) : (zVal N 0 : K) = 0 := by simp only [zVal]
 
-theorem zVal_succ (N k : ℕ) :
+private theorem zVal_succ (N k : ℕ) :
     (zVal N (k + 1) : K) = if flipped N k then 100 ^ k - 10 * zVal N k else 10 * zVal N k := by
   simp only [zVal]
 
-theorem rowCoeff_of_lt {N k p : ℕ} (h : p < k) :
+private theorem rowCoeff_of_lt {N k p : ℕ} (h : p < k) :
     (rowCoeff N k p : K) = -2 * 10 ^ (k - p) * bitSign N p * bitSign N k := by
   rw [rowCoeff]; exact ite_eq_left h
 
-theorem rowCoeff_self (N k : ℕ) : (rowCoeff N k k : K) = -1 := by
+private theorem rowCoeff_self (N k : ℕ) : (rowCoeff N k k : K) = -1 := by
   rw [rowCoeff, ite_eq_right (lt_irrefl k), ite_eq_left rfl]
 
-theorem rowCoeff_of_gt {N k p : ℕ} (h : k < p) : (rowCoeff N k p : K) = 0 := by
+private theorem rowCoeff_of_gt {N k p : ℕ} (h : k < p) : (rowCoeff N k p : K) = 0 := by
   rw [rowCoeff, ite_eq_right (show ¬p < k by omega), ite_eq_right (show ¬p = k by omega)]
 
 /-! ### From vertex `N` to vertex `N + 1` -/
@@ -262,18 +264,19 @@ section Succ
 
 variable {N j : ℕ}
 
-theorem bitSign_succ_of_le (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
+private theorem bitSign_succ_of_le (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
     {l : ℕ} (hl : l ≤ j) : (bitSign (N + 1) l : K) = -bitSign N l := by
   unfold bitSign
   rw [testBit_succ hj hlow, ite_eq_left hl]
   cases N.testBit l <;> simp
 
-theorem bitSign_succ_of_gt (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
+private theorem bitSign_succ_of_gt (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
     {l : ℕ} (hl : j < l) : (bitSign (N + 1) l : K) = bitSign N l := by
   unfold bitSign
   rw [testBit_succ hj hlow, ite_eq_right (show ¬l ≤ j by omega)]
 
-theorem flipped_succ (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true) (k : ℕ) :
+private theorem flipped_succ (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
+    (k : ℕ) :
     flipped (N + 1) k = if k = j then !flipped N k else flipped N k := by
   unfold flipped
   rw [testBit_succ hj hlow, testBit_succ hj hlow]
@@ -286,7 +289,7 @@ theorem flipped_succ (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l =
   · rw [ite_eq_right (show ¬k ≤ j by omega), ite_eq_right (show ¬k + 1 ≤ j by omega),
       ite_eq_right (show k ≠ j by omega)]
 
-theorem zVal_succ_of_le (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
+private theorem zVal_succ_of_le (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
     {k : ℕ} (hk : k ≤ j) : (zVal (N + 1) k : K) = zVal N k := by
   induction k with
   | zero => rw [zVal_zero, zVal_zero]
@@ -294,7 +297,7 @@ theorem zVal_succ_of_le (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit 
     rw [zVal_succ (N + 1) k, zVal_succ N k, flipped_succ hj hlow,
       ite_eq_right (show k ≠ j by omega), ih (by omega)]
 
-theorem zVal_succ_of_gt (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
+private theorem zVal_succ_of_gt (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
     {m : ℕ} (hm : j ≤ m) :
     (zVal (N + 1) (m + 1) : K) =
       zVal N (m + 1) + 10 ^ (m - j) * bitSign N (m + 1) * rowConst N j := by
@@ -318,11 +321,11 @@ theorem zVal_succ_of_gt (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit 
     · simp only [↓reduceIte]
       ring
 
-theorem rowConst_succ_self (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true) :
+private theorem rowConst_succ_self (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true) :
     (rowConst (N + 1) j : K) = rowConst N j := by
   rw [rowConst, rowConst, zVal_succ_of_le hj hlow le_rfl]
 
-theorem rowConst_succ_of_ne (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
+private theorem rowConst_succ_of_ne (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
     {P : ℕ} (hP : P ≠ j) :
     (rowConst (N + 1) P : K) = rowConst N P + rowCoeff N P j * rowConst N j := by
   rcases lt_or_gt_of_ne hP with h | h
@@ -332,7 +335,7 @@ theorem rowConst_succ_of_ne (hj : N.testBit j = false) (hlow : ∀ l < j, N.test
       bitSign_of_testBit_false hj, show m + 1 - j = m - j + 1 by omega, pow_succ]
     ring
 
-theorem rowCoeff_succ_left (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
+private theorem rowCoeff_succ_left (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
     {p : ℕ} (hp : p ≠ j) : (rowCoeff (N + 1) j p : K) = rowCoeff N j p := by
   rcases lt_or_gt_of_ne hp with h | h
   · rw [rowCoeff_of_lt h, rowCoeff_of_lt h, bitSign_succ_of_le hj hlow h.le,
@@ -340,7 +343,7 @@ theorem rowCoeff_succ_left (hj : N.testBit j = false) (hlow : ∀ l < j, N.testB
     ring
   · rw [rowCoeff_of_gt h, rowCoeff_of_gt h]
 
-theorem rowCoeff_succ_right (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
+private theorem rowCoeff_succ_right (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
     {P : ℕ} (hP : P ≠ j) : (rowCoeff (N + 1) P j : K) = -rowCoeff N P j := by
   rcases lt_or_gt_of_ne hP with h | h
   · rw [rowCoeff_of_gt h, rowCoeff_of_gt h, neg_zero]
@@ -348,7 +351,7 @@ theorem rowCoeff_succ_right (hj : N.testBit j = false) (hlow : ∀ l < j, N.test
       bitSign_succ_of_gt hj hlow h]
     ring
 
-theorem rowCoeff_succ (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
+private theorem rowCoeff_succ (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
     {P p : ℕ} (hP : P ≠ j) (hp : p ≠ j) :
     (rowCoeff (N + 1) P p : K) = rowCoeff N P p + rowCoeff N P j * rowCoeff N j p := by
   rcases lt_trichotomy p P with hpP | hpP | hpP
@@ -376,12 +379,12 @@ theorem rowCoeff_succ (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l 
     · rw [rowCoeff_of_gt h, zero_mul, add_zero]
     · rw [rowCoeff_of_gt (h.trans hpP), mul_zero, add_zero]
 
-theorem cost_succ_self (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
+private theorem cost_succ_self (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
     (hjn : j < n) : (cost n (N + 1) j : K) = -cost n N j := by
   rw [cost, cost, bitSign_succ_of_le hj hlow le_rfl, bitSign_succ_of_gt hj hlow hjn]
   ring
 
-theorem cost_succ_of_ne (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
+private theorem cost_succ_of_ne (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
     (hjn : j < n) {p : ℕ} (hp : p ≠ j) :
     (cost n (N + 1) p : K) = cost n N p + cost n N j * rowCoeff N j p := by
   rcases lt_or_gt_of_ne hp with h | h
@@ -394,7 +397,7 @@ theorem cost_succ_of_ne (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit 
   · rw [rowCoeff_of_gt h, mul_zero, add_zero, cost, cost, bitSign_succ_of_gt hj hlow h,
       bitSign_succ_of_gt hj hlow hjn]
 
-theorem zVal_succ_top (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
+private theorem zVal_succ_top (hj : N.testBit j = false) (hlow : ∀ l < j, N.testBit l = true)
     (hjn : j < n) : (zVal (N + 1) n : K) = zVal N n + cost n N j * rowConst N j := by
   obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
   rw [zVal_succ_of_gt hj hlow (by omega : j ≤ m), cost, bitSign_of_testBit_false hj,
@@ -405,29 +408,29 @@ end Succ
 
 /-! ### Variables -/
 
-@[simp] theorem pair_castAdd (k : Fin n) : pair (Fin.castAdd n k) = k := by
+@[simp] private theorem pair_castAdd (k : Fin n) : pair (Fin.castAdd n k) = k := by
   simp only [pair, Fin.append_left, id]
 
-@[simp] theorem pair_natAdd (k : Fin n) : pair (Fin.natAdd n k) = k := by
+@[simp] private theorem pair_natAdd (k : Fin n) : pair (Fin.natAdd n k) = k := by
   simp only [pair, Fin.append_right, id]
 
-@[simp] theorem isX_castAdd (k : Fin n) : isX (Fin.castAdd n k) = true := by
+@[simp] private theorem isX_castAdd (k : Fin n) : isX (Fin.castAdd n k) = true := by
   simp only [isX, Fin.append_left]
 
-@[simp] theorem isX_natAdd (k : Fin n) : isX (Fin.natAdd n k) = false := by
+@[simp] private theorem isX_natAdd (k : Fin n) : isX (Fin.natAdd n k) = false := by
   simp only [isX, Fin.append_right]
 
-@[simp] theorem pair_var (k : Fin n) (b : Bool) : pair (var k b) = k := by
+@[simp] private theorem pair_var (k : Fin n) (b : Bool) : pair (var k b) = k := by
   cases b
   · rw [var, ite_eq_right Bool.false_ne_true, pair_natAdd]
   · rw [var, ite_eq_left rfl, pair_castAdd]
 
-@[simp] theorem isX_var (k : Fin n) (b : Bool) : isX (var k b) = b := by
+@[simp] private theorem isX_var (k : Fin n) (b : Bool) : isX (var k b) = b := by
   cases b
   · rw [var, ite_eq_right Bool.false_ne_true, isX_natAdd]
   · rw [var, ite_eq_left rfl, isX_castAdd]
 
-theorem eq_var_iff {v : Fin (n + n)} {k : Fin n} {b : Bool} :
+private theorem eq_var_iff {v : Fin (n + n)} {k : Fin n} {b : Bool} :
     v = var k b ↔ pair v = k ∧ isX v = b := by
   constructor
   · rintro rfl
@@ -443,14 +446,14 @@ theorem basic_var_self (N : ℕ) (j : Fin n) : Basic N (var j (flipped N j)) := 
 theorem not_basic_var_not (N : ℕ) (j : Fin n) : ¬Basic N (var j (!flipped N j)) := by
   simp [Basic]
 
-theorem eq_var_self_iff {N : ℕ} {j : Fin n} {v : Fin (n + n)} :
+private theorem eq_var_self_iff {N : ℕ} {j : Fin n} {v : Fin (n + n)} :
     v = var j (flipped N j) ↔ pair v = j ∧ Basic N v := by
   rw [eq_var_iff, Basic]
   constructor
   · rintro ⟨rfl, h⟩; exact ⟨rfl, h⟩
   · rintro ⟨rfl, h⟩; exact ⟨rfl, h⟩
 
-theorem eq_var_not_iff {N : ℕ} {j : Fin n} {v : Fin (n + n)} :
+private theorem eq_var_not_iff {N : ℕ} {j : Fin n} {v : Fin (n + n)} :
     v = var j (!flipped N j) ↔ pair v = j ∧ ¬Basic N v := by
   rw [eq_var_iff, Basic]
   constructor
@@ -462,7 +465,7 @@ theorem eq_var_not_iff {N : ℕ} {j : Fin n} {v : Fin (n + n)} :
     revert h
     cases isX v <;> cases flipped N (pair v) <;> simp
 
-theorem basic_succ_iff {N : ℕ} {j : Fin n} (hj : N.testBit j = false)
+private theorem basic_succ_iff {N : ℕ} {j : Fin n} (hj : N.testBit j = false)
     (hlow : ∀ l < (j : ℕ), N.testBit l = true) (v : Fin (n + n)) :
     Basic (N + 1) v ↔ (Basic N v ↔ pair v ≠ j) := by
   unfold Basic
@@ -491,16 +494,6 @@ theorem dict_coeff {N : ℕ} {v u : Fin (n + n)} (hv : Basic N v) (hu : ¬Basic 
 theorem dict_objCoeff {N : ℕ} {u : Fin (n + n)} (hu : ¬Basic N u) :
     (dict n N : Dictionary (Fin (n + n)) K).objCoeff u = cost n N (pair u) := by
   simp [dict, hu]
-
-omit [Field K] in
-private theorem dictionary_ext {ι : Type*} {D D' : Dictionary ι K} (h1 : D.basis = D'.basis)
-    (h2 : D.rhs = D'.rhs) (h3 : D.coeff = D'.coeff) (h4 : D.objConst = D'.objConst)
-    (h5 : D.objCoeff = D'.objCoeff) : D = D' := by
-  cases D
-  cases D'
-  dsimp only at h1 h2 h3 h4 h5
-  subst h1 h2 h3 h4 h5
-  rfl
 
 /-- **The pivot step**: at the lowest zero bit `j` of `N`, pivoting `dict n N` on the leaving
 basic variable of pair `j` and the entering nonbasic variable of pair `j` yields `dict n (N + 1)`.
@@ -540,7 +533,7 @@ theorem pivot_dict {N : ℕ} {j : Fin n} (hj : N.testBit j = false)
     intro v h
     rw [basic_succ_iff hj hlow]
     simp [h]
-  apply dictionary_ext
+  apply Dictionary.ext
   · ext v
     simp only [Dictionary.mem_pivot_basis, mem_dict_basis]
     rcases hcases v with rfl | rfl | ⟨h, hvr, hvs⟩
@@ -602,10 +595,11 @@ section Ordered
 
 variable [LinearOrder K] [IsStrictOrderedRing K]
 
-theorem bitSign_le_one (N k : ℕ) : (bitSign N k : K) ≤ 1 := by
+private theorem bitSign_le_one (N k : ℕ) : (bitSign N k : K) ≤ 1 := by
   unfold bitSign; split_ifs <;> norm_num
 
-theorem zVal_nonneg_and (N k : ℕ) : 0 ≤ (zVal N k : K) ∧ 100 * (zVal N k : K) ≤ 100 ^ k := by
+private theorem zVal_nonneg_and (N k : ℕ) :
+    0 ≤ (zVal N k : K) ∧ 100 * (zVal N k : K) ≤ 100 ^ k := by
   induction k with
   | zero => simp [zVal]
   | succ k ih =>
@@ -620,19 +614,19 @@ theorem zVal_nonneg_and (N k : ℕ) : 0 ≤ (zVal N k : K) ∧ 100 * (zVal N k :
       · nlinarith
       · rw [pow_succ]; nlinarith
 
-theorem rowConst_bounds (N k : ℕ) :
+private theorem rowConst_bounds (N k : ℕ) :
     4 * (100 : K) ^ k ≤ 5 * rowConst N k ∧ (rowConst N k : K) ≤ 100 ^ k := by
   obtain ⟨h0, h1⟩ := zVal_nonneg_and (K := K) N k
   unfold rowConst
   constructor <;> nlinarith
 
-theorem rowConst_pos (N k : ℕ) : 0 < (rowConst N k : K) := by
+private theorem rowConst_pos (N k : ℕ) : 0 < (rowConst N k : K) := by
   have := (rowConst_bounds (K := K) N k).1
   have : (0 : K) < 100 ^ k := by positivity
   linarith
 
 omit [LinearOrder K] [IsStrictOrderedRing K] in
-theorem bitSign_top {N : ℕ} (hN : N < 2 ^ n) : (bitSign N n : K) = 1 :=
+private theorem bitSign_top {N : ℕ} (hN : N < 2 ^ n) : (bitSign N n : K) = 1 :=
   bitSign_of_testBit_false (Nat.testBit_lt_two_pow hN)
 
 /-- At vertex `N < 2 ^ n - 1` with lowest zero bit `j`, Dantzig's rule enters the nonbasic
@@ -836,7 +830,7 @@ theorem eq_of_dict_basis_eq {N M : ℕ} (hN : N < 2 ^ n) (hM : M < 2 ^ n)
 
 /-! ### The Klee–Minty program -/
 
-theorem zVal_zero_left (k : ℕ) : (zVal 0 k : K) = 0 := by
+private theorem zVal_zero_left (k : ℕ) : (zVal 0 k : K) = 0 := by
   induction k with
   | zero => exact zVal_zero 0
   | succ k ih => simp [zVal_succ, flipped, ih]
@@ -847,7 +841,7 @@ theorem slackDictionary_kleeMinty :
   have hb : ∀ v : Fin (n + n), Basic 0 v ↔ isX v = false := fun v => by
     simp [Basic, flipped]
   have hs : ∀ k, (bitSign 0 k : K) = 1 := fun k => bitSign_of_testBit_false (Nat.zero_testBit k)
-  apply dictionary_ext
+  apply Dictionary.ext
   · ext v
     rw [mem_dict_basis, hb, mem_slackDictionary_basis]
     induction v using Fin.addCases with
@@ -875,7 +869,7 @@ theorem slackDictionary_kleeMinty :
     | left k => simp [slackDictionary, dict, hb, kleeMintyObj, cost, hs]
     | right k => simp [-Fin.natAdd_eq_addNat, slackDictionary, dict, hb]
 
-theorem zVal_top_succ : (zVal (2 ^ (n + 1) - 1) (n + 1) : K) = 100 ^ n := by
+private theorem zVal_top_succ : (zVal (2 ^ (n + 1) - 1) (n + 1) : K) = 100 ^ n := by
   have h0 : ∀ k ≤ n, (zVal (2 ^ (n + 1) - 1) k : K) = 0 := by
     intro k hk
     induction k with
@@ -886,6 +880,11 @@ theorem zVal_top_succ : (zVal (2 ^ (n + 1) - 1) (n + 1) : K) = 100 ^ n := by
         show k + 1 < n + 1 by omega]
   rw [zVal_succ, h0 n le_rfl]
   simp [flipped, Nat.testBit_two_pow_sub_one]
+
+/-- The objective value at the last vertex of the `(n + 1)`-dimensional program is `100 ^ n`. -/
+theorem objConst_dict_top :
+    (dict (n + 1) (2 ^ (n + 1) - 1) : Dictionary (Fin (n + 1 + (n + 1))) K).objConst = 100 ^ n :=
+  zVal_top_succ
 
 end KleeMinty
 
@@ -928,7 +927,6 @@ theorem isGreatest_kleeMinty (n : ℕ) :
   obtain ⟨h1, h2, -, h4⟩ := S.dantzigRun_eq_optimal hS hrun
   rw [← image_value_slackDictionary, S.image_value_feasibleSet_eq h1]
   have := (dict (n + 1) (2 ^ (n + 1) - 1) : Dictionary _ K).isGreatest_value h2 h4
-  rwa [show (dict (n + 1) (2 ^ (n + 1) - 1) : Dictionary _ K).objConst = 100 ^ n from
-    zVal_top_succ] at this
+  rwa [objConst_dict_top] at this
 
 end Cslib.Algorithms.Lean.Simplex

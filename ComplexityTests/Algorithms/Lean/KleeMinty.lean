@@ -78,8 +78,7 @@ example (f : ℕ) : (∃ D, (km 10).dantzigRun f = .outOfFuel D) ↔ f < 1023 :=
 example : IsGreatest ((kleeMintyObj 3 ⬝ᵥ ·) ''
     {x | 0 ≤ x ∧ kleeMintyMatrix 3 *ᵥ x ≤ kleeMintyRhs 3}) (10000 : ℚ) := by
   have := isGreatest_kleeMinty (K := ℚ) 2
-  norm_num at this
-  exact this
+  rwa [show (100 : ℚ) ^ 2 = 10000 by norm_num] at this
 
 /-! ### 3. Bland's rule on the same programs -/
 
