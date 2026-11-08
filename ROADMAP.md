@@ -560,10 +560,11 @@ index links to canonical definitions rather than keeping a second set.
   `O(ℓ + H log(ℓ + 2))` parameter bound remain open ([#2855]).
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
   bounds for sublinear space, distinct from polynomial-space simulation.
-- **Alternating space, `EXP ⊆ APSPACE` and `P ⊆ AL`**
-  ([#2873](https://github.com/cslib-community/complexitylib/issues/2873)): an alternating machine
-  checks one cell of a deterministic tableau. It guesses the cell's predecessor window
-  existentially and checks each predecessor cell universally.
+- **Alternating logspace, `P ⊆ AL`**
+  ([#2873](https://github.com/cslib-community/complexitylib/issues/2873)): play the circuit-value
+  game on the tableau of a polynomial-time machine (`Tableau.ValueGame`, which gives
+  `APSPACE = EXP`) in logarithmic space. This needs a word game machine whose round reads the
+  input from the input tape and keeps only the `O(log n)`-bit wire claim on its work tape.
 - **Deeper consequences of a Boolean-hierarchy collapse:** Kadin's sparse `S` with
   `coNP ⊆ NP^S`, and the collapse of `PH` into `P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`, which follows from
   results of Wagner and of Chang and Kadin, not from Kadin's 1988 argument (see his erratum).

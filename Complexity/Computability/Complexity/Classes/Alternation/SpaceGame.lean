@@ -8,16 +8,20 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Classes.Alternation.Space
-public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.WordGame
+public import Complexity.Computability.Circuit.Boolean.Tableau.ValueGame
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.StreamFold
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.BitString
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatPow
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelOnWords
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimePrimitives
+import Complexity.Computability.Machines.Turing.MultiTape.Run
 import Mathlib.Data.Set.Finite.List
 
 /-!
-# Word games on polynomially long positions are in `APSPACE`
+# Word games in `APSPACE`, and `APSPACE = EXP`
 
 A word game (`Turing.MultiTapeATM.WordGame`) whose initial position `I a` and update `U` are
 polynomial-space computable, whose reachable positions have polynomial length, and whose plays all
@@ -30,10 +34,13 @@ through an encoding of typed positions (`Cslib.Complexity.mem_APSPACE_of_wins_po
 polynomial-time update on all words this is `Cslib.Complexity.mem_APSPACE_of_wins`.
 
 The plays may be exponentially long: only their finiteness is assumed, since deciding asks every
-branch to halt. This is the step from deterministic exponential time to `APSPACE`. A game checking
-the tableau of a machine running in time `2 ^ n ^ k`, whose positions name one wire of the tableau,
-gives `EXP ⊆ APSPACE`; together with `Cslib.Complexity.APSPACE_subset_EXP` that gives
-`APSPACE = EXP`.
+branch to halt. This is the step from deterministic exponential time to `APSPACE`. A problem in
+`EXP` is decided by a machine within `T = 2 ^ p n` steps, so by the output wire of its tableau
+circuit (`Cslib.Circuits.Boolean.Tableau.evalOutput_gates`). The circuit-value game on that
+tableau (`Cslib.Circuits.Boolean.Tableau.ValueGame`) has claims of polynomial length and an update
+within linear space in the claim, so `EXP ⊆ APSPACE` (`Cslib.Complexity.EXP_subset_APSPACE`).
+Together with `Cslib.Complexity.APSPACE_subset_EXP` this gives `APSPACE = EXP`
+(`Cslib.Complexity.APSPACE_eq_EXP`).
 
 ## Main results
 
@@ -41,12 +48,15 @@ gives `EXP ⊆ APSPACE`; together with `Cslib.Complexity.APSPACE_subset_EXP` tha
   with a polynomial-space initial position and update is in `APSPACE`.
 * `Cslib.Complexity.mem_APSPACE_of_wins`: the same with a polynomial-time initial position and
   update.
+* `Cslib.Complexity.EXP_subset_APSPACE`: `EXP ⊆ APSPACE`.
+* `Cslib.Complexity.APSPACE_eq_EXP`: `APSPACE = EXP`.
 
 ## References
 
 * [A. K. Chandra, D. C. Kozen, L. J. Stockmeyer, *Alternation*][ChandraKozenStockmeyer1981]
 * [M. Sipser, *Introduction to the Theory of Computation*][Sipser2013]
 -/
+
 public section
 
 namespace Cslib.Complexity
@@ -183,5 +193,108 @@ theorem mem_APSPACE_of_wins {A : Set α} {I : α → List Bool} {U : List Bool �
     (hA : ∀ a, a ∈ A ↔ WordGame.Wins U (I a)) : A ∈ APSPACE enc :=
   mem_APSPACE_of_wins_polySpace (encPos := encBits) (.of_polyTime hI) (.of_polyTime hU) hℓ
     (fun _ u _ r b _ => ⟨u :: b :: r, rfl, rfl⟩) hlen hends hA
+
+/-! ### `EXP ⊆ APSPACE` -/
+
+section EXP
+
+open Circuits Circuits.Boolean Circuits.Boolean.Tableau Circuits.Boolean.Tableau.ValueGame
+open ComputableInSpace
+
+/-- The time bound `c₁ * 2 ^ m + c₂` is at most `2 ^ (m + c₁ + c₂ + n)`. -/
+private theorem two_pow_bound (c₁ c₂ m n : ℕ) :
+    c₁ * 2 ^ m + c₂ ≤ 2 ^ (m + c₁ + c₂ + n) := by
+  have h₁ : c₁ < 2 ^ c₁ := Nat.lt_two_pow_self
+  have h₂ : c₂ < 2 ^ c₂ := Nat.lt_two_pow_self
+  have hX : 1 ≤ 2 ^ m := Nat.one_le_two_pow
+  have hR : 1 ≤ 2 ^ n := Nat.one_le_two_pow
+  rw [pow_add, pow_add, pow_add]
+  have hPQ : 2 ^ c₁ + 2 ^ c₂ ≤ 2 ^ c₁ * 2 ^ c₂ + 1 := by nlinarith
+  nlinarith [Nat.mul_le_mul_left (2 ^ m * 2 ^ c₁ * 2 ^ c₂) hR]
+
+/-- **`EXP ⊆ APSPACE`**: the circuit-value game on the tableau of an exponential-time decider is
+played in alternating polynomial space. -/
+theorem EXP_subset_APSPACE : EXP enc ⊆ APSPACE enc := by
+  intro A hA
+  obtain ⟨d, c₁, c₂, s, k, State, hfin, tm, htm⟩ := mem_EXP_iff.mp hA
+  have := Fintype.ofFinite State
+  classical
+  set n : α → ℕ := fun a => (enc a).length
+  set E : α → ℕ := fun a => n a ^ d + c₁ + c₂ + n a
+  set T : α → ℕ := fun a => 2 ^ E a
+  set N : α → ℕ := fun a => outWire k State (n a) (T a)
+  set M : α → ℕ := fun a => n a + numGates k State (T a)
+  set Bs : α → ℕ := fun a => n a + E a
+  have hin : (fun a => (enc a).length) ≼ Bs := .of_le fun a => by simp [Bs, n]
+  have hx : ComputableInSpace (fun a => enc a) enc (encList encBool) Bs :=
+    ((budget_comp_linear (of_inO ComputableInDegree.bitsToList.inO_one)
+      ((of_inO ComputableInDegree.id'.inO_one).of_enc_eq
+        (encB := encBits) (g := fun a => enc a) fun _ => rfl)).weaken hin)
+  have hn : ComputableInSpace n enc encNat Bs := budget_length hx
+  have hE : ComputableInSpace E enc encNat Bs :=
+    budget_natAdd (budget_natAdd (budget_natAdd (budget_natPow hn hin d) (budget_const c₁ hin))
+      (budget_const c₂ hin)) hn
+  have hT : ComputableInSpace T enc encNat Bs := by
+    refine budget_natPow_variable (budget_const 2 hin) hE (.of_le_linear 3 3 fun a => ?_)
+    have h2 : (encNat 2).length = 2 := rfl
+    have hEl : (encNat (E a)).length ≤ E a :=
+      length_encNat_le_of_lt_two_pow Nat.lt_two_pow_self
+    simp only [h2, Bs]
+    nlinarith
+  have hN : ComputableInSpace N enc encNat Bs :=
+    budget_natAdd (budget_natAdd (budget_natAdd hn (budget_const 2 hin))
+      (budget_natMul hT (blockSize_inSpace (k := k) (State := State) hT hin)))
+      (budget_natAdd (gfStart_inSpace (k := k) (State := State) hT hin) (budget_const _ hin))
+  have hM : ComputableInSpace M enc encNat Bs :=
+    budget_natAdd hn (budget_natAdd (budget_const 2 hin)
+      (budget_natMul (budget_natAdd hT (budget_const 1 hin))
+        (blockSize_inSpace (k := k) (State := State) hT hin)))
+  have hBs : PolyBounded (fun a => (enc a).length) Bs := by
+    have hn' : PolyBounded (fun a => (enc a).length) n := PolyBounded.self
+    exact hn'.add ((((hn'.pow d).add (.const c₁)).add (.const c₂)).add hn')
+  have hJ := budget_prod hx (budget_prod hT
+    (budget_prod hN (budget_const (encB := encBool) true hin)))
+  have hJM := budget_prod hx (budget_prod hT
+    (budget_prod hM (budget_const (encB := encBool) true hin)))
+  have hI := ComputableInPolySpace.of_inSpace hBs
+    (budget_comp_linear (emit_inSpace tm) hJ)
+  have hℓ := (ComputableInPolySpace.of_inSpace hBs hJM).polyBounded_length.add
+    (PolyBounded.const 2)
+  have hNM (a : α) : N a < M a := outWire_lt (k := k) (State := State) _ _
+  refine mem_APSPACE_of_wins_polySpace (π := Pos) (encPos := encPos) (F := step tm)
+    (U := update tm encClaim) hI ((ComputableInPolySpace.of_inSpace
+      (PolyBounded.self) (step_inSpace tm))) hℓ ?_ ?_ ?_ ?_
+  · intro a u x r b hr
+    obtain ⟨w', v, -, he⟩ := reach_emit (tm := tm) encClaim (hNM a) hr
+    obtain ⟨-, rfl⟩ := emit_eq_cons he.symm
+    exact ⟨pos u b (enc a, T a, w', v), encPos_pos _ _ _, by rw [step_pos, update_emit_cons]⟩
+  · intro a w hr
+    obtain ⟨w', v, hw', rfl⟩ := reach_emit (tm := tm) encClaim (hNM a) hr
+    refine (length_emit_le _).trans ?_
+    simp only [encPair_apply, Nat.add_le_add_iff_right]
+    exact length_encClaim_mono hw'.le
+  · exact fun a => ⟨N a, ends_emit (tm := tm) encClaim (enc a) (T a) (N a) (hNM a) true⟩
+  · intro a
+    rw [wins_emit_iff (enc a) (T a) (N a) (hNM a) true]
+    have hnT : (enc a).length < 2 * T a := by
+      have : n a < 2 ^ n a := Nat.lt_two_pow_self
+      have : 2 ^ n a ≤ T a := Nat.pow_le_pow_right (by norm_num) (by simp only [E]; omega)
+      simp only [n] at *
+      omega
+    have hval : val tm (T a) (enc a) (N a) =
+        decide (OutView.ofList (tm.runFrom (tm.initCfg (enc a)) (T a)).output = .one true) :=
+      evalOutput_gates tm hnT
+    have hle : c₁ * 2 ^ (enc a).length ^ d + c₂ ≤ T a := two_pow_bound _ _ _ _
+    obtain ⟨-, hout⟩ := (htm a).runFrom_of_le hle
+    rw [hval, hout]
+    by_cases h : a ∈ A <;> simp [h, indicator, OutView.ofList]
+
+end EXP
+
+/-- **`APSPACE = EXP`** [Chandra, Kozen and Stockmeyer, Section 3][ChandraKozenStockmeyer1981]
+[Sipser, Section 10.3][Sipser2013]: alternating polynomial space is deterministic exponential
+time. -/
+theorem APSPACE_eq_EXP : APSPACE enc = EXP enc :=
+  le_antisymm APSPACE_subset_EXP EXP_subset_APSPACE
 
 end Cslib.Complexity
