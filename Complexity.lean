@@ -4295,6 +4295,7 @@ public import Complexity.Foundations.Combinatorics.SimpleGraph.TreeDecomposition
 public import Complexity.Foundations.Combinatorics.SimpleGraph.TutteBerge
 public import Complexity.Foundations.Combinatorics.SmallSubsets
 public import Complexity.Foundations.Combinatorics.Sperner
+public import Complexity.Foundations.Combinatorics.Sperner.Kuhn
 public import Complexity.Foundations.Combinatorics.SubsetPairCount
 public import Complexity.Foundations.Combinatorics.Sunflower
 public import Complexity.Foundations.Combinatorics.Sunflower.Closure

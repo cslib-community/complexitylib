@@ -914,11 +914,14 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `EOPL = PLS ∩ PPAD`; also `UEOPL`.
 - **Sperner's lemma** ([#2999](https://github.com/cslib-community/complexitylib/issues/2999)):
   the parity form on the triangulated square grid by door-following, and circuit `Sperner2D` in
-  `PPAD` as the end-of-line relation of its door graph. Remaining
-  ([#3087](https://github.com/cslib-community/complexitylib/issues/3087)): `PPAD`-hardness of
-  two-dimensional Sperner/Brouwer (Chen–Deng), `PPAD`-completeness of three-dimensional Sperner
-  (Papadimitriou 1994), and the `d`-dimensional simplex form with general Sperner boundary
-  conditions.
+  `PPAD` as the end-of-line relation of its door graph. The `d`-dimensional parity form on the
+  Kuhn-triangulated hypergrid (Chen–Deng–Teng 2009, Corollary 4.3) is in place. Remaining
+  ([#3087](https://github.com/cslib-community/complexitylib/issues/3087)): `PPAD` membership of
+  circuit `d`-dimensional Sperner/Brouwer (needs an oriented door graph), `PPAD`-hardness of
+  two-dimensional Sperner/Brouwer (Chen–Deng), and `PPAD`-completeness of three-dimensional
+  Sperner (Papadimitriou 1994). Optional: the classical form on a triangulated `d`-simplex (not
+  formalized), and a bridge identifying `Cslib.Sperner.triangles` with the two-dimensional Kuhn
+  triangulation.
 - **Parameterized:** strongly uniform variants (computable `f`), further explicit polynomial
   kernels, the W and A hierarchies, and parameterized lower bounds; connect these to
   [structural graph algorithms](#structural-graph-algorithms) and their decomposition costs.
