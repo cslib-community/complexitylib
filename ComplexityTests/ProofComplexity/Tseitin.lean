@@ -12,7 +12,8 @@ import Complexity.Logics.Propositional.Resolution.TseitinExpander
 
 Tseitin formulas on a triangle and on a multigraph with a self-loop and parallel edges: incidence,
 satisfiability by total charge, connectivity, and the width lower bound on the triangle;
-and satisfiability of the hypotheses of the expander bounds.
+satisfiability of the hypotheses of the expander bounds; and the width bound for the explicit
+expander family.
 -/
 
 namespace ComplexityTests.ProofComplexity.Tseitin
@@ -83,5 +84,17 @@ example : Fintype.card (Fin 120) + 2 ≤
   simp only [Fintype.card_fin]
   push_cast
   linarith
+
+/-- The explicit expander family has refutation width at least `n / 18000`: on `4392000`
+vertices, at least `244`. -/
+example : ∃ m, ∃ φ : CNF (Fin m), ¬ φ.Satisfiable ∧ ∀ w, φ.RefutableInWidth w → 244 ≤ w := by
+  obtain ⟨m, -, ends, χ, -, hG, he, -, -, hunsat⟩ :=
+    Tseitin.exists_expander_tseitinFormula 4392000 (by norm_num)
+  refine ⟨m, CNF.tseitinFormula ends χ, hunsat, fun w h => ?_⟩
+  have hw := Tseitin.minBalancedCut_le_of_refutableInWidth hG h
+  have : 244 ≤ Multigraph.minBalancedCut ends := by
+    have : (244 : ℝ) ≤ Multigraph.minBalancedCut ends := by linarith
+    exact_mod_cast this
+  omega
 
 end ComplexityTests.ProofComplexity.Tseitin
