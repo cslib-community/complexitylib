@@ -565,9 +565,12 @@ index links to canonical definitions rather than keeping a second set.
   `TISP(t, s)`, two-quantifier alternating time `Σ₂TIME(t)` (bridged to `Σ₂ᵖ`) and the slowdown
   lemma `NTIME(n) ⊆ DTIME(t') ⇒ Σ₂TIME(t) ⊆ NTIME(t'(O(t)))` are in
   [`TimeSpace/Slowdown.lean`](Complexity/Computability/Complexity/Classes/TimeSpace/Slowdown.lean).
-  Still open: the speedup lemma `TISP(t, s) ⊆ Σ₂TIME(...)` by guessing configurations of the
-  universal machine, and the Arora–Barak lower bound `NTIME(n) ⊄ TISP(n^1.2, n^0.2)` with the
-  Lipton–Viglas `n^(√2 − ε)` form. Beyond these: the `√(t·s)` windowed speedup, the golden-ratio
+  The speedup lemma, in the weaker form `TISP(t, s) ⊆ Σ₂TIME(√t · (s + n log² n + log² t))` for a
+  machine on an oracle-described input, and the instance `TISP(n¹², n²) ⊆ Σ₂TIME(n⁸)` are in
+  [`TimeSpace/Speedup.lean`](Complexity/Computability/Complexity/Classes/TimeSpace/Speedup.lean).
+  Still open: the Arora–Barak lower bound `NTIME(n) ⊄ TISP(n^1.2, n^0.2)` by virtual padding, with
+  the Lipton–Viglas `n^(√2 − ε)` form. Beyond these: the textbook `√(t·s)` speedup, which needs
+  amortized `O(1)` simulation steps rather than copying a configuration per step, the golden-ratio
   deterministic bound of Fortnow, Lipton, van Melkebeek and Viglas, and the transfer to SAT. The
   transfer needs a quasi-linear-size Cook–Levin reduction.
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
@@ -628,7 +631,12 @@ index links to canonical definitions rather than keeping a second set.
   bounded/logarithmic-query results and
   separations, and Section 5 mitoticity/diagonalization. The additional parity-logspace
   application needs a native path-counting class and complement closure.
-- **Uniform diagonalization** (Schöning), which generalizes Ladner's theorem.
+- **Uniform diagonalization** ([#3142](https://github.com/cslib-community/complexitylib/issues/3142)):
+  after Schöning's theorem for recursively presentable classes closed under finite variations, with
+  the reductions of the mixed set and `P` as an instance (`Classes/UniformDiagonalization.lean`):
+  a recursive presentation of the polynomial-time degree of a decidable set outside `P`, hence
+  Ladner's density theorem and an `NP`-intermediate problem below every `NP`-complete one if
+  `P ≠ NP`; other presentable classes (`NP`, `PSPACE`, the polynomial hierarchy levels).
 - **Selectivity and downward self-reducibility:** downward self-reducible sets lie in PSPACE,
   self-reducible P-selective sets lie in P, and P-selective sets are not `≤ₜₜᵖ`-hard for NP unless
   P = NP.
@@ -641,11 +649,12 @@ index links to canonical definitions rather than keeping a second set.
   (`Problems/BoundedHalting.lean`, [#3002](https://github.com/cslib-community/complexitylib/issues/3002)),
   and complexity cores, with Lynch's lemma that problems outside `P` have infinite polynomial cores
   (`Classes/Immune/Core.lean`, `Classes/Immune/PolyTimeCore.lean`,
-  [#3080](https://github.com/cslib-community/complexitylib/issues/3080)):
+  [#3080](https://github.com/cslib-community/complexitylib/issues/3080)), decidable ones inside
+  decidable problems on bit strings (`Classes/Immune/RecursiveCore.lean`,
+  [#3182](https://github.com/cslib-community/complexitylib/issues/3182)):
   a SAT-free home for the machine enumeration of `Ladner/Basic.lean` shared by Ladner and the
   immunity modules;
-  the recursive core of Lynch's Lemma 1 (a decidable problem outside `P` has an infinite
-  *decidable* core); `EXP`
+  decidable cores for general encodings with a decidable range; `EXP`
   and `PSPACE` instances of the class-generic core theorem (`exists_infinite_isComplexityCore_subset`
   needs only countability, finite sets and closure under unions); core density for intractable
   sets (Orponen and Schöning) and core sizes for hard sets (Juedes and Lutz);
@@ -1139,16 +1148,18 @@ each statement against the numbered result. Organize modules by subject, not cha
   ([#2930](https://github.com/cslib-community/complexitylib/issues/2930)). Closeness testing has
   the two-sample model and the collision-based tolerant `ℓ₂` tester with `O(√b / ε²)` samples
   when both squared `ℓ₂` norms are at most `b`, hence `O(n / ε²)` samples in statistical distance
-  ([#3017](https://github.com/cslib-community/complexitylib/issues/3017)). In the dense graph
+  ([#3017](https://github.com/cslib-community/complexitylib/issues/3017)). Flattening (split
+  distributions along samples of both distributions) gives the optimal closeness tester with
+  `m + k ≤ 520 max(n^{2/3} ε^{-4/3}, √n ε^{-2}) + 3` samples of each distribution
+  ([#3122](https://github.com/cslib-community/complexitylib/issues/3122)). In the dense graph
   (adjacency-matrix) model, triangle-freeness has a one-sided tester whose query bound depends
   only on `ε`, through Mathlib's triangle removal lemma
-  ([#3036](https://github.com/cslib-community/complexitylib/issues/3036)). Remaining: the optimal
-  `O(n^{2/3} ε^{-4/3} + √n ε^{-2})` closeness tester by flattening and its matching lower bound,
-  further access models, the odd-domain lower bound, instance-optimal identity testing, tolerant
-  and structured-property distribution testing; in the dense graph model, `H`-freeness for general
-  `H` (it needs a general removal lemma), bipartiteness and `k`-colourability with
-  `poly(1/ε)` queries, and canonical (non-adaptive sampling) testers; further query and sample
-  lower bounds.
+  ([#3036](https://github.com/cslib-community/complexitylib/issues/3036)). Remaining: the matching
+  `Ω(n^{2/3} ε^{-4/3} + √n ε^{-2})` closeness lower bound, further access models, the odd-domain
+  lower bound, instance-optimal identity testing, tolerant and structured-property distribution
+  testing; in the dense graph model, `H`-freeness for general `H` (it needs a general removal
+  lemma), bipartiteness and `k`-colourability with `poly(1/ε)` queries, and canonical
+  (non-adaptive sampling) testers; further query and sample lower bounds.
 - **Kolmogorov complexity and metacomplexity** ([#798], [#884]): the near-linear threshold regime
   of Liu–Pass Theorem 3.1 (c), hardness for every polynomial `t(n) ≥ (1 + ε)n` rather than above a
   polynomial threshold, which needs a rate-1 efficient conditional EP-PRG running in `n + O(n^c)`
@@ -1367,12 +1378,12 @@ densities (expected revenue equals expected virtual welfare; Vickrey with a rese
   Metropolis chains and path coupling, with the lazy hypercube walk
   (`Probability/BitString/LazyRandomWalk`, #2857) and Glauber dynamics for `q > 2Δ` colorings
   (`Probability/MarkovChain/Coloring`, #2933) as clients. Extend with conductance,
-  canonical-path and spectral-gap arguments. For the reduction from approximately counting
-  colorings to sampling them, frozen-boundary Glauber dynamics and the ratio bound are in place
-  (`Probability/MarkovChain/Coloring/Ratio`); finish with the product estimator and its
-  second-moment analysis (#3003). Implement Metropolis sampling for encoded
-  rational target weights, charging initialization, arithmetic and every transition, with support and
-  mixing hypotheses explicit.
+  canonical-path and spectral-gap arguments. Approximate counting of colorings from samples
+  (`Probability/MarkovChain/Coloring/Count`, with the generic product estimator in
+  `Probability/Product/Estimator`) is in place as a distributional statement; charge its
+  `n t a` Glauber updates in a cost model to obtain an FPRAS in the sense of `Classes/FPRAS`.
+  Implement Metropolis sampling for encoded rational target weights, charging initialization,
+  arithmetic and every transition, with support and mixing hypotheses explicit.
 - **FPRAS and almost-uniform sampling:** `Classes/FPRAS` and `Classes/FPAUS` give the two
   interfaces, and `Classes/FPAUS/FPRAS` proves FPAUS ⇒ FPRAS for one-bit self-reducible
   witness families (#3039). Prove the converse FPRAS ⇒ FPAUS with Jerrum–Valiant–Vazirani
@@ -1550,10 +1561,9 @@ densities (expected revenue equals expected virtual welfare; Vickrey with a rese
   cycles, Cole–Vishkin and Linial's `log*` bound, the bridge to Mathlib's `cycleGraph` colourings
   and the `Θ(log* n)` bounds for maximal independent sets on cycles exist
   (`Complexity/Computability/Distributed/OrientedCycle/`). For LCL problems without inputs on
-  directed cycles (Chang–Studený–Suomela, Table 1), the `O(1)`/`Ω(log* n)` gap and the
-  `Θ(log* n)` bound for problems with a flexible state exist (`OrientedCycle/LCL/`). Open: the
-  `Ω(n)` lower bound for problems without a flexible state
-  ([#3009](https://github.com/cslib-community/complexitylib/issues/3009)), a tight
+  directed cycles (Chang–Studený–Suomela, Table 1), the full `O(1)`/`Θ(log* n)`/`Θ(n)`
+  classification exists (`OrientedCycle/LCL/`,
+  [#3009](https://github.com/cslib-community/complexitylib/issues/3009)). Open: a tight
   `½ log* n + O_|L|(1)` upper bound for flexible problems, LCLs with inputs, on paths (directed
   or undirected) and on undirected cycles, general graphs with port numbering, Linial's `O(Δ²)` colouring and
   `(Δ + 1)`-colouring/MIS on bounded-degree graphs, CONGEST message bounds, randomized LOCAL
