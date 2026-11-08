@@ -8,7 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Pebbling.Basic
-public import Complexity.Computability.Circuit.Program
+public import Cslib.Computability.Circuit.Program
+import Complexity.Computability.Circuit.Program
 
 /-!
 # Register evaluation of straight-line programs is black pebbling

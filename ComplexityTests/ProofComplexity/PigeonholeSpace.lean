@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Logics.Propositional.Resolution.PigeonholeSpace
+import Complexity.Logics.Propositional.Resolution.SpaceWidth
 
 /-!
 # Tests: Duplicator strategies and the extended pigeonhole formula

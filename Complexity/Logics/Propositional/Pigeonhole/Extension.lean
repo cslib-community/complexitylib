@@ -7,7 +7,9 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Logics.Propositional.Pigeonhole
+public import Complexity.Logics.Propositional.CNF
+public import Mathlib.Data.List.FinRange
+import Complexity.Logics.Propositional.Pigeonhole
 
 /-!
 # The extended pigeonhole formula
@@ -39,14 +41,14 @@ the chain, a satisfying assignment would satisfy `PHP^m_n` on the variables `inl
 
 * `Cslib.Logic.PL.CNF.PHPExtVar`: the variables of `EPHP^m_n`.
 * `Cslib.Logic.PL.CNF.pigeonholeExt`: the extended pigeonhole formula `EPHP^m_n`.
-* `Cslib.Logic.PL.CNF.placeAssign`: the assignment placing each pigeon `i` in a hole `f i`.
+* `Cslib.Logic.PL.CNF.pigeonholeExtAssign`: the assignment placing each pigeon `i` in a hole `f i`.
 
 ## Main results
 
 * `Cslib.Logic.PL.CNF.mem_pigeonholeExt`: the clauses of `EPHP^m_n`.
 * `Cslib.Logic.PL.CNF.length_le_three_of_mem_pigeonholeExt`: `EPHP^m_n` is a `3`-CNF.
 * `Cslib.Logic.PL.CNF.not_satisfiable_pigeonholeExt`: `EPHP^m_n` is unsatisfiable for `m > n`.
-* `Cslib.Logic.PL.CNF.eval_placeAssign_pigeonholeExt`: an injective placement satisfies it.
+* `Cslib.Logic.PL.CNF.eval_pigeonholeExtAssign`: an injective placement satisfies it.
 
 ## References
 
@@ -156,23 +158,23 @@ theorem not_satisfiable_pigeonholeExt (h : n < m) : ¬ (pigeonholeExt m n).Satis
 
 /-- The assignment **placing** each pigeon `i` in the hole `f i`: `inl (i, j)` holds when
 `f i = j`, and `inr (i, j)` when `j ≤ f i`. -/
-def placeAssign (f : Fin m → Fin n) : PHPExtVar m n → Bool
+def pigeonholeExtAssign (f : Fin m → Fin n) : PHPExtVar m n → Bool
   | .inl (i, j) => decide (f i = j)
   | .inr (i, j) => decide (j.val ≤ (f i).val)
 
 /-- **An injective placement satisfies `EPHP^m_n`.** -/
-theorem eval_placeAssign_pigeonholeExt {f : Fin m → Fin n} (hf : Function.Injective f) :
-    (pigeonholeExt m n).eval (placeAssign f) = true := by
+theorem eval_pigeonholeExtAssign {f : Fin m → Fin n} (hf : Function.Injective f) :
+    (pigeonholeExt m n).eval (pigeonholeExtAssign f) = true := by
   rw [eval_eq_true_iff]
   intro c hc
   rcases mem_pigeonholeExt.1 hc with ⟨i, rfl⟩ | ⟨i, rfl⟩ | ⟨i, j, rfl⟩ | ⟨i, i', j, hii', rfl⟩
-  · simp [phpStartClause, Clause.eval, Literal.eval, placeAssign]
-  · simp [phpStopClause, Clause.eval, Literal.eval, placeAssign, Fin.last]
-  · simp only [phpStepClause, Clause.eval, Literal.eval, placeAssign, List.any_cons, List.any_nil,
-      Bool.or_false, Fin.val_castSucc, Fin.val_succ, Fin.ext_iff, Bool.or_eq_true, beq_iff_eq,
-      decide_eq_false_iff_not, decide_eq_true_eq]
+  · simp [phpStartClause, Clause.eval, Literal.eval, pigeonholeExtAssign]
+  · simp [phpStopClause, Clause.eval, Literal.eval, pigeonholeExtAssign, Fin.last]
+  · simp only [phpStepClause, Clause.eval, Literal.eval, pigeonholeExtAssign, List.any_cons,
+      List.any_nil, Bool.or_false, Fin.val_castSucc, Fin.val_succ, Fin.ext_iff, Bool.or_eq_true,
+      beq_iff_eq, decide_eq_false_iff_not, decide_eq_true_eq]
     omega
-  · simp only [phpExtHoleClause, Clause.eval, Literal.eval, placeAssign, List.any_cons,
+  · simp only [phpExtHoleClause, Clause.eval, Literal.eval, pigeonholeExtAssign, List.any_cons,
       List.any_nil, Bool.or_false]
     by_cases h₁ : f i = j
     · have : f i' ≠ j := fun h₂ => hii'.ne (hf (h₁.trans h₂.symm))
@@ -182,7 +184,7 @@ theorem eval_placeAssign_pigeonholeExt {f : Fin m → Fin n} (hf : Function.Inje
 /-- **`EPHP^m_n` is satisfiable exactly when there are at most as many pigeons as holes.** -/
 theorem satisfiable_pigeonholeExt_iff : (pigeonholeExt m n).Satisfiable ↔ m ≤ n := by
   refine ⟨fun h => not_lt.1 fun hlt => not_satisfiable_pigeonholeExt hlt h, fun hmn => ?_⟩
-  exact ⟨placeAssign (Fin.castLE hmn), eval_placeAssign_pigeonholeExt (Fin.castLE_injective hmn)⟩
+  exact ⟨pigeonholeExtAssign (Fin.castLE hmn), eval_pigeonholeExtAssign (Fin.castLE_injective hmn)⟩
 
 end CNF
 
