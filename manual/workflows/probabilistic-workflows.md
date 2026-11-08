@@ -147,19 +147,23 @@ unmatched, and show that `|V| < |S|` cannot be relaxed to `|V| ≤ |S|`. Run
 
 To find the matching rather than only detect it, import
 [Matching/MVV.lean](../../Complexity/Algorithms/Matching/MVV.lean), the algebraic core of
-Mulmuley, Vazirani and Vazirani. `weightedEdmonds G w` is the Edmonds matrix over `ℤ` at the
-values `2 ^ w (i, j)`. When `IsUniqueMinMatching G w σ₀` holds, `matchingWeight_eq_padicValInt_det`
-recovers the weight `W` of `σ₀` as the `2`-adic valuation of the determinant, and
-`two_pow_dvd_mul_adjugate_weightedEdmonds` gives `σ₀ i = j ↔ ¬ 2 ^ (W + 1) ∣ B i j * adj(B) j i`.
-Edge weights are functions `Edges G → Fin N`, read as `1, …, N` by `extendWeight`.
+Mulmuley, Vazirani and Vazirani for bipartite graphs. `weightedEdmonds G w` is the Edmonds matrix
+over `ℤ` at the values `2 ^ w (i, j)`. When `IsUniqueMinMatching G w σ₀` holds,
+`matchingWeight_eq_padicValInt_det` recovers the weight `W` of `σ₀` as the `2`-adic valuation of
+the determinant, and `apply_eq_iff_not_two_pow_succ_dvd_mul_adjugate` gives
+`σ₀ i = j ↔ ¬ 2 ^ (W + 1) ∣ B i j * adj(B) j i`. The procedure itself is the named relation
+`mvvOutput G w`, and `mvvOutput_iff_apply_eq` says that on isolating weights it outputs exactly
+`σ₀`. Edge weights are functions `Edges G → Fin N`, read as `1, …, N` by `extendWeight`.
 `half_le_dens_exists_isUniqueMinMatching` applies the isolation lemma when `2 |E| ≤ N`, and
-`half_le_dens_mvv` states that the whole procedure returns a perfect matching for at least half of
-the weight functions. These are bipartite statements, and the parallel determinant and inverse
-computations are not formalized. The [checked clients](../../ComplexityTests/MVVMatching.lean)
-recover the identity matching on `K₂,₂` from the determinant `-12` and show that equal weights make
-the determinant vanish. Run `scripts/build.sh ComplexityTests.MVVMatching`. A concrete instance of
-`half_le_dens_mvv` on `Fin 2` needs `convert` rather than `exact`, because the concrete and generic
-`Decidable` instances of the filter predicate differ.
+`half_le_dens_mvv` states that `MVVSucceeds G (extendWeight w)` (the output is a perfect matching)
+holds for at least half of the weight functions. Module clients work through the characterization
+lemmas `isUniqueMinMatching_iff`, `matchingWeight_def`, `mvvOutput_iff`, `mvvSucceeds_iff`,
+`mem_matchingEdges`, `extendWeight_of_edge` and `extendWeight_of_not_edge`. MVV state the
+determinant lemmas for the Tutte matrix of a general graph; general graphs and the parallel
+determinant and inverse computations are not formalized. The
+[checked clients](../../ComplexityTests/MVVMatching.lean), a `module`, recover the identity
+matching on `K₂,₂` from the determinant `-12` and show that equal weights make the determinant
+vanish. Run `scripts/build.sh ComplexityTests.MVVMatching`.
 
 ## Compose local embeddings and extract a strategy
 

@@ -25,31 +25,43 @@ contributes `± 2 ^ (weight of σ)` to `det B`. When the minimum-weight perfect 
 unique, of weight `W`, every other term is divisible by `2 ^ (W + 1)`, so
 
 * `2 ^ W` divides `det B` and `2 ^ (W + 1)` does not
-  (`Cslib.Algorithms.Matching.two_pow_dvd_det_weightedEdmonds`), so `W` is the `2`-adic valuation
-  of `det B` (`Cslib.Algorithms.Matching.matchingWeight_eq_padicValInt_det`);
+  (`Cslib.Algorithms.Matching.two_pow_dvd_det_weightedEdmonds`,
+  `Cslib.Algorithms.Matching.not_two_pow_succ_dvd_det_weightedEdmonds`), so `W` is the `2`-adic
+  valuation of `det B` (`Cslib.Algorithms.Matching.matchingWeight_eq_padicValInt_det`);
 * `σ₀` matches `i` to `j` exactly when `2 ^ (W + 1)` does not divide `B i j * adj(B) j i`
-  (`Cslib.Algorithms.Matching.two_pow_dvd_mul_adjugate_weightedEdmonds`), since that product is
-  the signed sum over the perfect matchings that match `i` to `j`.
+  (`Cslib.Algorithms.Matching.apply_eq_iff_not_two_pow_succ_dvd_mul_adjugate`), since that product
+  is the signed sum over the perfect matchings that match `i` to `j`.
+
+MVV state these lemmas for the Tutte matrix of a general graph, where the power is `2 ^ (2 W)`;
+the statements here are their bipartite (Edmonds-matrix) form. The procedure
+`Cslib.Algorithms.Matching.mvvOutput G w` computes `W` from `det B` and outputs the pairs `(i, j)`
+passing the divisibility test; on isolating weights it outputs exactly `σ₀`
+(`Cslib.Algorithms.Matching.mvvOutput_iff_apply_eq`).
 
 The isolation lemma makes the minimum unique with probability at least `1 / 2` when the edge
 weights are independent and uniform on `{1, …, N}` with `N ≥ 2 |E|`
 (`Cslib.Algorithms.Matching.half_le_dens_exists_isUniqueMinMatching`, from
-`Cslib.Probability.half_le_dens_minWeightSets_card_eq_one`). Together, the procedure that computes
-`W` from `det B` and outputs the pairs `(i, j)` passing the divisibility test returns a perfect
-matching of `G` with probability at least `1 / 2` (`Cslib.Algorithms.Matching.half_le_dens_mvv`).
-Probabilities are proportions of the weight functions, as in the isolation lemma. The parallel
-(NC) computation of the determinant and the adjugate is not formalized.
+`Cslib.Probability.half_le_dens_minWeightSets_card_eq_one`). Together, the procedure returns a
+perfect matching of `G` with probability at least `1 / 2`
+(`Cslib.Algorithms.Matching.half_le_dens_mvv`). Probabilities are proportions of the weight
+functions, as in the isolation lemma. The parallel (NC) computation of the determinant and the
+adjugate is not formalized.
 
 ## Main definitions
 
 * `Cslib.Algorithms.Matching.weightedEdmonds`: the Edmonds matrix at powers of two.
 * `Cslib.Algorithms.Matching.IsUniqueMinMatching`: a unique minimum-weight perfect matching.
+* `Cslib.Algorithms.Matching.mvvOutput`: the pairs output by the procedure.
+* `Cslib.Algorithms.Matching.MVVSucceeds`: the output is a perfect matching.
 
 ## Main results
 
-* `Cslib.Algorithms.Matching.two_pow_dvd_det_weightedEdmonds`: the largest power of two dividing
-  the determinant.
-* `Cslib.Algorithms.Matching.two_pow_dvd_mul_adjugate_weightedEdmonds`: reading off the matching.
+* `Cslib.Algorithms.Matching.matchingWeight_eq_padicValInt_det`: the weight of the isolated
+  matching is the `2`-adic valuation of the determinant.
+* `Cslib.Algorithms.Matching.apply_eq_iff_not_two_pow_succ_dvd_mul_adjugate`: reading off the
+  matching.
+* `Cslib.Algorithms.Matching.mvvOutput_iff_apply_eq`: the procedure is correct on isolating
+  weights.
 * `Cslib.Algorithms.Matching.half_le_dens_exists_isUniqueMinMatching`: the isolation lemma for
   perfect matchings.
 * `Cslib.Algorithms.Matching.half_le_dens_mvv`: the procedure succeeds with probability at least
@@ -112,6 +124,12 @@ variable [Fintype V] [DecidableEq V]
 /-- The weight `∑ v, w (v, σ v)` of the perfect matching `σ`. -/
 def matchingWeight (w : V × V → ℕ) (σ : Perm V) : ℕ := ∑ v, w (v, σ v)
 
+omit [DecidableEq V] in
+/-- The weight of a perfect matching is the sum of the weights of its pairs. -/
+theorem matchingWeight_def (w : V × V → ℕ) (σ : Perm V) :
+    matchingWeight w σ = ∑ v, w (v, σ v) := by
+  rw [matchingWeight]
+
 /-- The perfect matchings of `G`, as permutations. -/
 def perfectMatchings (G : V × V → Bool) : Finset (Perm V) :=
   univ.filter fun σ => ∀ v, G (v, σ v) = true
@@ -173,10 +191,17 @@ theorem mul_adjugate_weightedEdmonds (G : V × V → Bool) (w : V × V → ℕ) 
 
 /-! ### Reading off a unique minimum-weight perfect matching -/
 
-/-- `σ₀` is the **unique minimum-weight perfect matching** of `G` under `w`. -/
+/-- `σ₀` is the **unique minimum-weight perfect matching** of the bipartite graph `G` under `w`. -/
 def IsUniqueMinMatching (G : V × V → Bool) (w : V × V → ℕ) (σ₀ : Perm V) : Prop :=
   σ₀ ∈ perfectMatchings G ∧
     ∀ σ ∈ perfectMatchings G, σ ≠ σ₀ → matchingWeight w σ₀ < matchingWeight w σ
+
+/-- `σ₀` is the unique minimum-weight perfect matching when it is a perfect matching and every
+other perfect matching is strictly heavier. -/
+theorem isUniqueMinMatching_iff {G : V × V → Bool} {w : V × V → ℕ} {σ₀ : Perm V} :
+    IsUniqueMinMatching G w σ₀ ↔ σ₀ ∈ perfectMatchings G ∧
+      ∀ σ ∈ perfectMatchings G, σ ≠ σ₀ → matchingWeight w σ₀ < matchingWeight w σ := by
+  rw [IsUniqueMinMatching]
 
 /-- Being the unique minimum-weight perfect matching is decidable. -/
 instance (G : V × V → Bool) (w : V × V → ℕ) (σ₀ : Perm V) :
@@ -184,11 +209,8 @@ instance (G : V × V → Bool) (w : V × V → ℕ) (σ₀ : Perm V) :
   inferInstanceAs (Decidable (σ₀ ∈ perfectMatchings G ∧
     ∀ σ ∈ perfectMatchings G, σ ≠ σ₀ → matchingWeight w σ₀ < matchingWeight w σ))
 
-/-- **The weight of the isolated matching from the determinant** [MulmuleyVaziraniVazirani1987]:
-if `σ₀` is the unique minimum-weight perfect matching, of weight `W`, the determinant of the
-weighted Edmonds matrix is divisible by `2 ^ W` but not by `2 ^ (W + 1)`. In particular it is
-nonzero, and `W` is the exponent of the largest power of two dividing it. -/
-theorem two_pow_dvd_det_weightedEdmonds {G : V × V → Bool} {w : V × V → ℕ} {σ₀ : Perm V}
+/-- Both halves of the divisibility of the determinant by powers of two. -/
+private theorem two_pow_dvd_det_and_not_dvd {G : V × V → Bool} {w : V × V → ℕ} {σ₀ : Perm V}
     (h : IsUniqueMinMatching G w σ₀) :
     (2 : ℤ) ^ matchingWeight w σ₀ ∣ (weightedEdmonds G w).det ∧
       ¬ (2 : ℤ) ^ (matchingWeight w σ₀ + 1) ∣ (weightedEdmonds G w).det := by
@@ -196,16 +218,33 @@ theorem two_pow_dvd_det_weightedEdmonds {G : V × V → Bool} {w : V × V → �
   exact two_pow_dvd_sum_and_not_dvd (ε := fun σ => ((Perm.sign σ : ℤˣ) : ℤ))
     (w := fun σ => matchingWeight w σ) h.1 (Units.isUnit _) h.2
 
+/-- **The weight of the isolated matching divides the determinant**: if `σ₀` is the unique
+minimum-weight perfect matching of the bipartite graph `G`, of weight `W`, then `2 ^ W` divides
+the determinant of the weighted Edmonds matrix. With `not_two_pow_succ_dvd_det_weightedEdmonds`,
+this is the bipartite (Edmonds-matrix) form of the determinant lemma of
+[MulmuleyVaziraniVazirani1987], which is stated for the Tutte matrix of a general graph, where the
+power is `2 ^ (2 W)`; see [Motwani and Raghavan, Section 12.4][MotwaniRaghavan95]. -/
+theorem two_pow_dvd_det_weightedEdmonds {G : V × V → Bool} {w : V × V → ℕ} {σ₀ : Perm V}
+    (h : IsUniqueMinMatching G w σ₀) :
+    (2 : ℤ) ^ matchingWeight w σ₀ ∣ (weightedEdmonds G w).det :=
+  (two_pow_dvd_det_and_not_dvd h).1
+
+/-- If `σ₀` is the unique minimum-weight perfect matching of the bipartite graph `G`, of weight
+`W`, then `2 ^ (W + 1)` does not divide the determinant of the weighted Edmonds matrix. So `W` is
+the exponent of the largest power of two dividing it (`matchingWeight_eq_padicValInt_det`). -/
+theorem not_two_pow_succ_dvd_det_weightedEdmonds {G : V × V → Bool} {w : V × V → ℕ}
+    {σ₀ : Perm V} (h : IsUniqueMinMatching G w σ₀) :
+    ¬ (2 : ℤ) ^ (matchingWeight w σ₀ + 1) ∣ (weightedEdmonds G w).det :=
+  (two_pow_dvd_det_and_not_dvd h).2
+
 /-- The determinant of the weighted Edmonds matrix is nonzero when the minimum-weight perfect
 matching is unique. -/
 theorem det_weightedEdmonds_ne_zero {G : V × V → Bool} {w : V × V → ℕ} {σ₀ : Perm V}
     (h : IsUniqueMinMatching G w σ₀) : (weightedEdmonds G w).det ≠ 0 := fun h0 =>
-  (two_pow_dvd_det_weightedEdmonds h).2 (h0 ▸ dvd_zero _)
+  not_two_pow_succ_dvd_det_weightedEdmonds h (h0 ▸ dvd_zero _)
 
-/-- **Reading off the isolated matching** [MulmuleyVaziraniVazirani1987]: if `σ₀` is the unique
-minimum-weight perfect matching, of weight `W`, then `2 ^ W` divides `B i j * adj(B) j i` for
-every `i, j`, and `σ₀` matches `i` to `j` exactly when `2 ^ (W + 1)` does not. -/
-theorem two_pow_dvd_mul_adjugate_weightedEdmonds {G : V × V → Bool} {w : V × V → ℕ}
+/-- Both halves of the divisibility of `B i j * adj(B) j i` by powers of two. -/
+private theorem two_pow_dvd_mul_adjugate_and_iff {G : V × V → Bool} {w : V × V → ℕ}
     {σ₀ : Perm V} (h : IsUniqueMinMatching G w σ₀) (i j : V) :
     (2 : ℤ) ^ matchingWeight w σ₀ ∣
         weightedEdmonds G w i j * adjugate (weightedEdmonds G w) j i ∧
@@ -225,17 +264,86 @@ theorem two_pow_dvd_mul_adjugate_weightedEdmonds {G : V × V → Bool} {w : V ×
         fun he => hij (he ▸ (mem_filter.1 hσ).2)
     exact ⟨(pow_dvd_pow 2 (Nat.le_succ _)).trans hdvd, iff_of_false hij (not_not.2 hdvd)⟩
 
+/-- If `σ₀` is the unique minimum-weight perfect matching of the bipartite graph `G`, of weight
+`W`, then `2 ^ W` divides `B i j * adj(B) j i` for all `i, j`, where `B` is the weighted Edmonds
+matrix. -/
+theorem two_pow_dvd_mul_adjugate_weightedEdmonds {G : V × V → Bool} {w : V × V → ℕ}
+    {σ₀ : Perm V} (h : IsUniqueMinMatching G w σ₀) (i j : V) :
+    (2 : ℤ) ^ matchingWeight w σ₀ ∣
+      weightedEdmonds G w i j * adjugate (weightedEdmonds G w) j i :=
+  (two_pow_dvd_mul_adjugate_and_iff h i j).1
+
+/-- **Reading off the isolated matching**: if `σ₀` is the unique minimum-weight perfect matching of
+the bipartite graph `G`, of weight `W`, then `σ₀` matches `i` to `j` exactly when `2 ^ (W + 1)`
+does not divide `B i j * adj(B) j i`, where `B` is the weighted Edmonds matrix. This is the
+bipartite (Edmonds-matrix) form of the edge test of [MulmuleyVaziraniVazirani1987], which is
+stated for the Tutte matrix of a general graph; see
+[Motwani and Raghavan, Section 12.4][MotwaniRaghavan95]. -/
+theorem apply_eq_iff_not_two_pow_succ_dvd_mul_adjugate {G : V × V → Bool} {w : V × V → ℕ}
+    {σ₀ : Perm V} (h : IsUniqueMinMatching G w σ₀) (i j : V) :
+    σ₀ i = j ↔ ¬ (2 : ℤ) ^ (matchingWeight w σ₀ + 1) ∣
+      weightedEdmonds G w i j * adjugate (weightedEdmonds G w) j i :=
+  (two_pow_dvd_mul_adjugate_and_iff h i j).2
+
 /-- The weight of the unique minimum-weight perfect matching is the exponent of the largest power
 of two dividing the determinant of the weighted Edmonds matrix. -/
 theorem matchingWeight_eq_padicValInt_det {G : V × V → Bool} {w : V × V → ℕ} {σ₀ : Perm V}
     (h : IsUniqueMinMatching G w σ₀) :
     matchingWeight w σ₀ = padicValInt 2 (weightedEdmonds G w).det := by
-  obtain ⟨h1, h2⟩ := two_pow_dvd_det_weightedEdmonds h
-  have hle := ((padicValInt_dvd_iff (p := 2) _ _).1 (by exact_mod_cast h1)).resolve_left
+  have hle := ((padicValInt_dvd_iff (p := 2) _ _).1
+    (by exact_mod_cast two_pow_dvd_det_weightedEdmonds h)).resolve_left
     (det_weightedEdmonds_ne_zero h)
   have hlt : ¬ matchingWeight w σ₀ + 1 ≤ padicValInt 2 (weightedEdmonds G w).det :=
-    fun hle' => h2 (by exact_mod_cast (padicValInt_dvd_iff (p := 2) _ _).2 (Or.inr hle'))
+    fun hle' => not_two_pow_succ_dvd_det_weightedEdmonds h
+      (by exact_mod_cast (padicValInt_dvd_iff (p := 2) _ _).2 (Or.inr hle'))
   omega
+
+/-! ### The output of the procedure -/
+
+/-- **The output of the Mulmuley–Vazirani–Vazirani procedure** on the bipartite graph `G` with
+weights `w`: with `B` the weighted Edmonds matrix and `W` the exponent of the largest power of two
+dividing `det B`, the pair `(i, j)` is output when `2 ^ (W + 1)` does not divide
+`B i j * adj(B) j i`. -/
+def mvvOutput (G : V × V → Bool) (w : V × V → ℕ) (i j : V) : Prop :=
+  ¬ (2 : ℤ) ^ (padicValInt 2 (weightedEdmonds G w).det + 1) ∣
+    weightedEdmonds G w i j * adjugate (weightedEdmonds G w) j i
+
+/-- The defining divisibility test of `mvvOutput`. -/
+theorem mvvOutput_iff {G : V × V → Bool} {w : V × V → ℕ} {i j : V} :
+    mvvOutput G w i j ↔ ¬ (2 : ℤ) ^ (padicValInt 2 (weightedEdmonds G w).det + 1) ∣
+      weightedEdmonds G w i j * adjugate (weightedEdmonds G w) j i := by
+  rw [mvvOutput]
+
+/-- The output of the procedure is decidable. -/
+instance (G : V × V → Bool) (w : V × V → ℕ) (i j : V) : Decidable (mvvOutput G w i j) :=
+  inferInstanceAs (Decidable (¬ (2 : ℤ) ^ (padicValInt 2 (weightedEdmonds G w).det + 1) ∣
+    weightedEdmonds G w i j * adjugate (weightedEdmonds G w) j i))
+
+/-- **The procedure is correct on isolating weights**: if `σ₀` is the unique minimum-weight perfect
+matching of the bipartite graph `G` under `w`, the procedure outputs exactly the pairs of `σ₀`. -/
+theorem mvvOutput_iff_apply_eq {G : V × V → Bool} {w : V × V → ℕ} {σ₀ : Perm V}
+    (h : IsUniqueMinMatching G w σ₀) (i j : V) : mvvOutput G w i j ↔ σ₀ i = j := by
+  rw [mvvOutput_iff, ← matchingWeight_eq_padicValInt_det h,
+    apply_eq_iff_not_two_pow_succ_dvd_mul_adjugate h]
+
+/-- **The procedure succeeds** on the bipartite graph `G` with weights `w`: its output is a perfect
+matching of `G`. -/
+def MVVSucceeds (G : V × V → Bool) (w : V × V → ℕ) : Prop :=
+  ∃ σ ∈ perfectMatchings G, ∀ i j, σ i = j ↔ mvvOutput G w i j
+
+/-- The procedure succeeds when its output is the graph of a perfect matching. -/
+theorem mvvSucceeds_iff {G : V × V → Bool} {w : V × V → ℕ} :
+    MVVSucceeds G w ↔ ∃ σ ∈ perfectMatchings G, ∀ i j, σ i = j ↔ mvvOutput G w i j := by
+  rw [MVVSucceeds]
+
+/-- Success of the procedure is decidable. -/
+instance (G : V × V → Bool) (w : V × V → ℕ) : Decidable (MVVSucceeds G w) :=
+  inferInstanceAs (Decidable (∃ σ ∈ perfectMatchings G, ∀ i j, σ i = j ↔ mvvOutput G w i j))
+
+/-- The procedure succeeds whenever the minimum-weight perfect matching is unique. -/
+theorem mvvSucceeds_of_isUniqueMinMatching {G : V × V → Bool} {w : V × V → ℕ} {σ₀ : Perm V}
+    (h : IsUniqueMinMatching G w σ₀) : MVVSucceeds G w :=
+  mvvSucceeds_iff.2 ⟨σ₀, h.1, fun i j => (mvvOutput_iff_apply_eq h i j).symm⟩
 
 /-! ### Isolating weights -/
 
@@ -246,9 +354,28 @@ abbrev Edges (G : V × V → Bool) := {e : V × V // G e = true}
 def matchingEdges (G : V × V → Bool) (σ : Perm V) : Finset (Edges G) :=
   univ.filter fun e => σ e.1.1 = e.1.2
 
+/-- An edge `(i, j)` belongs to the matching `σ` when `σ i = j`. -/
+theorem mem_matchingEdges {G : V × V → Bool} {σ : Perm V} {e : Edges G} :
+    e ∈ matchingEdges G σ ↔ σ e.1.1 = e.1.2 := by
+  simp [matchingEdges]
+
 /-- The weight `x + 1 ∈ {1, …, N}` on the edges of `G`, extended by `0` to all pairs. -/
 def extendWeight {G : V × V → Bool} {N : ℕ} (w : Edges G → Fin N) (e : V × V) : ℕ :=
   if h : G e = true then (w ⟨e, h⟩).val + 1 else 0
+
+omit [Fintype V] [DecidableEq V] in
+/-- On an edge, the extended weight is the label plus one. -/
+theorem extendWeight_of_edge {G : V × V → Bool} {N : ℕ} (w : Edges G → Fin N) {e : V × V}
+    (h : G e = true) : extendWeight w e = (w ⟨e, h⟩).val + 1 := by
+  unfold extendWeight
+  simp [h]
+
+omit [Fintype V] [DecidableEq V] in
+/-- Off the edges, the extended weight is `0`. -/
+theorem extendWeight_of_not_edge {G : V × V → Bool} {N : ℕ} (w : Edges G → Fin N) {e : V × V}
+    (h : G e = false) : extendWeight w e = 0 := by
+  unfold extendWeight
+  simp [h]
 
 /-- Distinct perfect matchings have distinct edge sets. -/
 theorem matchingEdges_injOn (G : V × V → Bool) :
@@ -277,10 +404,10 @@ theorem setWeight_matchingEdges {G : V × V → Bool} {σ : Perm V} (hσ : σ �
   · intro v _
     simp [extendWeight, mem_perfectMatchings.1 hσ v]
 
-/-- **The isolation lemma for perfect matchings** [MulmuleyVaziraniVazirani1987]: if `G` has a
-perfect matching and its edges get independent uniform weights from `{1, …, N}` with
-`N ≥ 2 |E|`, then with probability at least `1 / 2` the minimum-weight perfect matching is
-unique. -/
+/-- **The isolation lemma for bipartite perfect matchings** [MulmuleyVaziraniVazirani1987]: if the
+bipartite graph `G` has a perfect matching and its edges get independent uniform weights from
+`{1, …, N}` with `N ≥ 2 |E|`, then with probability at least `1 / 2` the minimum-weight perfect
+matching is unique. -/
 theorem half_le_dens_exists_isUniqueMinMatching {G : V × V → Bool} (hG : HasPerfectMatching G)
     {N : ℕ} [NeZero N] (hN : 2 * Fintype.card (Edges G) ≤ N) :
     1 / 2 ≤ dens (univ.filter fun w : Edges G → Fin N =>
@@ -306,24 +433,17 @@ theorem half_le_dens_exists_isUniqueMinMatching {G : V × V → Bool} (hG : HasP
   rw [hS] at this
   exact mem_singleton.1 this
 
-/-- **The Mulmuley–Vazirani–Vazirani matching algorithm, algebraic core**
-[MulmuleyVaziraniVazirani1987]: if `G` has a perfect matching and its edges get independent
-uniform weights `w` from `{1, …, N}` with `N ≥ 2 |E|`, then with probability at least `1 / 2` the
-following procedure outputs a perfect matching of `G`. Let `B` be the Edmonds matrix at the values
-`2 ^ w (i, j)` and `W` the exponent of the largest power of two dividing `det B`; output the pairs
-`(i, j)` for which `2 ^ (W + 1)` does not divide `B i j * adj(B) j i`. -/
+/-- **The Mulmuley–Vazirani–Vazirani algorithm for bipartite graphs, algebraic core**
+[MulmuleyVaziraniVazirani1987] [Motwani and Raghavan, Section 12.4][MotwaniRaghavan95]: if the
+bipartite graph `G` has a perfect matching and its edges get independent uniform weights `w` from
+`{1, …, N}` with `N ≥ 2 |E|`, then with probability at least `1 / 2` the procedure `mvvOutput`
+outputs a perfect matching of `G`. -/
 theorem half_le_dens_mvv {G : V × V → Bool} (hG : HasPerfectMatching G) {N : ℕ} [NeZero N]
     (hN : 2 * Fintype.card (Edges G) ≤ N) :
-    1 / 2 ≤ dens (univ.filter fun w : Edges G → Fin N =>
-      ∃ σ ∈ perfectMatchings G, ∀ i j, σ i = j ↔
-        ¬ (2 : ℤ) ^ (padicValInt 2 (weightedEdmonds G (extendWeight w)).det + 1) ∣
-          weightedEdmonds G (extendWeight w) i j *
-            adjugate (weightedEdmonds G (extendWeight w)) j i) := by
+    1 / 2 ≤ dens (univ.filter fun w : Edges G → Fin N => MVVSucceeds G (extendWeight w)) := by
   refine (half_le_dens_exists_isUniqueMinMatching hG hN).trans (dens_le_dens fun w hw => ?_)
   simp only [mem_filter, mem_univ, true_and] at hw ⊢
   obtain ⟨σ₀, h⟩ := hw
-  refine ⟨σ₀, h.1, fun i j => ?_⟩
-  rw [← matchingWeight_eq_padicValInt_det h]
-  exact (two_pow_dvd_mul_adjugate_weightedEdmonds h i j).2
+  exact mvvSucceeds_of_isUniqueMinMatching h
 
 end Cslib.Algorithms.Matching
