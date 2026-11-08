@@ -145,9 +145,7 @@ theorem exists_isHonest_of_measured {h : Code → Code} (hh : Computable h)
       ∀ (i : Code) (f : ℕ → ℕ), (∀ n, f n ∈ (h i).eval n) → Φ.IsHonest g f := by
   refine ⟨bound Φ h, computable_bound Φ hh hgr, fun i f hf => ⟨h i, hf, ?_⟩⟩
   filter_upwards [eventually_ge_atTop (encode i)] with n hn m hm
-  have hmem : f n ∈ (h (ofNat Code (encode i))).eval n := by
-    rw [ofNat_encode]
-    exact hf n
+  have hmem : f n ∈ (h (ofNat Code (encode i))).eval n := by grind [ofNat_encode]
   have hterm := term_mem Φ hmem
   rw [ofNat_encode] at hterm
   rw [Part.mem_unique hm hterm]

@@ -86,9 +86,7 @@ private theorem propagation_succ (δ : ℝ) (ε : ℕ → ℝ) (j : ℕ) :
     rw [mul_sum]
     apply sum_congr rfl
     intro i hi
-    have hexp : j + 1 - i = (j - i) + 1 := by
-      have hi' := mem_range.mp hi
-      omega
+    have hexp : j + 1 - i = (j - i) + 1 := by grind
     rw [hexp, pow_succ]
     ring
   rw [sum_range_succ, hsum]

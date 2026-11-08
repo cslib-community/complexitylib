@@ -143,9 +143,7 @@ theorem update_eq_self_of_mem_sentinelFirst (hn : 0 < n) (hR : 0 ≤ R) (hL : 3 
     update s n K ρ z w y = w y ∧
       update s n K ρ z (sentinelFirst marked L w) y = sentinelFirst marked L w y := by
   have hL' : R < L := by linarith
-  have hw' : ∀ y ∈ s, y ∈ marked → R < w y 0 := by
-    intro y hy hm
-    linarith [hw y hy hm]
+  have hw' : ∀ y ∈ s, y ∈ marked → R < w y 0 := by grind
   have hu' : threshold s n ρ z w ≤ R :=
     (threshold_eq_sentinelFirst hn hR hL' hw' hu).trans_le hu
   constructor
@@ -173,9 +171,7 @@ theorem sentinelFirst_update (hK : 0 < K) (hKn : K ≤ n) (hR : 0 ≤ R) (hL : 3
     funext ν
     simp only [sentinelFirst, ho]
   · have hL' : R < L := by linarith
-    have hw' : ∀ y ∈ s, y ∈ marked → R < w y 0 := by
-      intro y hy hm
-      linarith [hw y hy hm]
+    have hw' : ∀ y ∈ s, y ∈ marked → R < w y 0 := by grind
     rw [sentinelFirst_of_not_mem hm]
     unfold update
     rw [threshold_eq_sentinelFirst hn hR hL' hw' hu,

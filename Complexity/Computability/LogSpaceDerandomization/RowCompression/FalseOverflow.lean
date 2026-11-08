@@ -94,10 +94,7 @@ theorem half_floor_le_clippedError {ρ d v : ℝ} {w raw : Fin 2 → ℝ}
         _ ≤ (ρ / 2) * (5 / 4) := mul_le_mul_of_nonneg_left (by linarith) (by positivity)
         _ ≤ _ := by linarith
     exact (le_min hsmall hrel).trans (le_max_left _ _)
-  · have hraw : |w 1| ≤ ρ / 100 + |raw 1| := by
-      have h : |w 1| ≤ |w 1 - raw 1| + |raw 1| := by
-        simpa only [sub_zero] using abs_sub_le (w 1) (raw 1) 0
-      exact h.trans (add_le_add (hprev 1) le_rfl)
+  · have hraw : |w 1| ≤ ρ / 100 + |raw 1| := by grind
     have hrel : ρ / 2 ≤ |raw 1 - v| := by rw [hv, sub_zero]; linarith
     exact (le_min hsmall hrel).trans (le_max_right _ _)
 
@@ -186,9 +183,7 @@ theorem one_le_sum_clippedError_pow_of_firstOverflow_dyadic {s : Finset ι}
   have hzabs := abs_iterate_defaultValue_sub_le_of_no_overflow
     (show 0 ≤ a.defaultValue by rw [ha]) j hover.1
   rw [ha, sub_zero] at hzabs
-  have hz : (iterate s n K (dyadicFloor η m) Δ a j).defaultValue ≤ dyadicFloor η m j := by
-    have h := le_abs_self (iterate s n K (dyadicFloor η m) Δ a j).defaultValue
-    linarith
+  have hz : (iterate s n K (dyadicFloor η m) Δ a j).defaultValue ≤ dyadicFloor η m j := by grind
   apply one_le_sum_clippedError_pow_of_overflow hn hρ hρ1 hz hover.2 hfirst hsecond ?_ hheavy p
   intro y _ ν
   rw [uncompressedRow_succ]

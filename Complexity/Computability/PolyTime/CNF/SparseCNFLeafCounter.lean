@@ -325,10 +325,7 @@ theorem sparseCNFDeclaredCounter_eq_modelCountOn {P : Type*} {NOf BOf : P → �
           · exact False.elim (hlt hlt')
         simp only [decide_eq_true hmB, ↓reduceIte]
         obtain ⟨hN1, _⟩ := pos_of_nonempty_nonnil_valid hvalid he hnil
-        have hB1 : 1 ≤ BOf p := by
-          rcases Nat.eq_zero_or_pos (BOf p) with hB0 | hBp
-          · rw [hB0, Nat.zero_mul] at hmB; omega
-          · exact hBp
+        have hB1 : 1 ≤ BOf p := by grind
         obtain ⟨_, hinit_rows, hinit_dist⟩ := initialTestsRows_spec hN1 hB1 hmB
         let ψFin := toFinCNF (NOf p) hN1 ψ
         have hcard : Fintype.card (Fin (NOf p)) = NOf p := Fintype.card_fin (NOf p)
@@ -1038,10 +1035,7 @@ theorem exists_sparseCNFDeclaredCertificate_bounds (k N₀ : ℕ)
   · simp only [hfast, ↓reduceIte]
     obtain ⟨hv, he, hnil, _, hmB⟩ := entersSparseFastPath_eq_true_iff.mp hfast
     obtain ⟨hN1, _⟩ := pos_of_nonempty_nonnil_valid hv he hnil
-    have hB1 : 1 ≤ BOf x.1 := by
-      rcases Nat.eq_zero_or_pos (BOf x.1) with hB0 | hBp
-      · rw [hB0, Nat.zero_mul] at hmB; omega
-      · exact hBp
+    have hB1 : 1 ≤ BOf x.1 := by grind
     obtain ⟨hinit_len, hinit_rows, _⟩ := initialTestsRows_spec hN1 hB1 hmB
     let gIn := assembleGreedyInput NOf BOf (x, initialTestsRows x.2.length (BOf x.1))
     let finalRows := greedyParityRows

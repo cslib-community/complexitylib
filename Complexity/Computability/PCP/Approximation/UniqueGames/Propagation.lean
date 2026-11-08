@@ -837,10 +837,7 @@ private theorem inv_scan {labels : List α} (hlabels : ∀ a, a ∈ labels) {g :
       by_cases hinc : e.src = u ∨ e.dst = u
       · exact hsettled_adj e (mem_adj.2 ⟨he, hinc⟩)
       · push Not at hinc
-        have hold : S.Done e.src ∨ S.Done e.dst := by
-          rcases hd with hd | hd
-          · exact Or.inl ((hdone _ hd).resolve_left hinc.1)
-          · exact Or.inr ((hdone _ hd).resolve_left hinc.2)
+        have hold : S.Done e.src ∨ S.Done e.dst := by grind
         have hS1 : S1.Settled e := h.settled e he hold
         exact hS1.mono hstep
 

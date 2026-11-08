@@ -105,9 +105,7 @@ private theorem sentinelFirst_update_all (hmarked : marked ⊆ s)
   by_cases hm : y ∈ marked
   · exact sentinelFirst_update hK hKn hR hL hw hq hu (hmarked hm)
   · have hL' : R < L := by linarith
-    have hw' : ∀ y ∈ s, y ∈ marked → R < w y 0 := by
-      intro y hy hm
-      linarith [hw y hy hm]
+    have hw' : ∀ y ∈ s, y ∈ marked → R < w y 0 := by grind
     rw [sentinelFirst_of_not_mem hm]
     unfold update
     rw [threshold_eq_sentinelFirst (hK.trans_le hKn) hR hL' hw' hu,

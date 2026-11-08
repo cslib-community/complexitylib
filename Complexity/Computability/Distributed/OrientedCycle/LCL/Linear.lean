@@ -155,10 +155,7 @@ private theorem isFlexible_of_apply_eq {t n : ℕ} [NeZero n] (F : LocalRule ℕ
     intro a b h
     simp only [hσ] at h
     split_ifs at h <;> omega
-  have hσn : ∀ k < n, σ k < n := by
-    intro k hk
-    simp only [hσ]
-    split_ifs <;> omega
+  have hσn : ∀ k < n, σ k < n := by grind
   set x₁ : ZMod n → ℕ := fun v => σ v.val with hx₁def
   have hx₁ : Function.Injective x₁ := hσinj.comp (ZMod.val_injective n)
   have hx₁n : ∀ v, x₁ v < n := fun v => hσn _ (ZMod.val_lt v)

@@ -444,9 +444,7 @@ theorem exists_orderedComparisonTree_iff (q e L a : ℕ) :
   · rintro ⟨hL0, hL⟩
     induction q generalizing e L a with
     | zero =>
-      have hL1 : L = 1 := by
-        simp only [BitString.ballSize_zero_left] at hL
-        omega
+      have hL1 : L = 1 := by grind [BitString.ballSize_zero_left]
       subst L
       refine ⟨.leaf a, rfl, by simp, by simp, ?_⟩
       intro j hj
@@ -469,17 +467,11 @@ theorem exists_orderedComparisonTree_iff (q e L a : ℕ) :
           have hpos := BitString.ballSize_pos q (e + 1)
           have hrightCapacityPos := BitString.ballSize_pos q e
           let leftLeaves := min (BitString.ballSize q (e + 1)) (L - 1)
-          have hleftPos : 0 < leftLeaves := by
-            dsimp only [leftLeaves]
-            omega
-          have hleftLt : leftLeaves < L := by
-            dsimp only [leftLeaves]
-            omega
+          have hleftPos : 0 < leftLeaves := by grind
+          have hleftLt : leftLeaves < L := by grind
           have hleftCap : leftLeaves ≤ BitString.ballSize q (e + 1) := min_le_left _ _
           have hrightPos : 0 < L - leftLeaves := by omega
-          have hrightCap : L - leftLeaves ≤ BitString.ballSize q e := by
-            dsimp only [leftLeaves]
-            omega
+          have hrightCap : L - leftLeaves ≤ BitString.ballSize q e := by grind
           obtain ⟨tl, hll, hld, hle, hlv⟩ := ih (e + 1) leftLeaves a hleftPos hleftCap
           obtain ⟨tr, hrl, hrd, hre, hrv⟩ :=
             ih e (L - leftLeaves) (a + leftLeaves) hrightPos hrightCap

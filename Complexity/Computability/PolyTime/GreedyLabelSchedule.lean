@@ -415,9 +415,7 @@ theorem constructedSchedules_eq_pass {E m n Q r : ℕ} (hr : 1 ≤ r)
   have hpass := greedySchedulePass_eq_greedyLabelPass (Q := Q) hr edge C
   have hw0 : wordToSchedule hr Q (List.replicate Q 0) = fun _ => ⟨0, hr⟩ := by
     funext t; rw [wordToSchedule]
-    have hget : (List.replicate Q 0).getD t.val 0 = 0 := by
-      rw [List.getD_eq_getElem _ _ (by simp only [List.length_replicate]; exact t.isLt)]
-      simp only [List.getElem_replicate]
+    have hget : (List.replicate Q 0).getD t.val 0 = 0 := by grind
     rw [hget]; split_ifs <;> rfl
   refine ⟨funext fun v => ?_, funext fun f => ?_⟩
   · simp only [constructedVarSchedule]

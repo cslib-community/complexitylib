@@ -320,10 +320,7 @@ theorem exists_solvesUnbounded_depth_le [Finite X] [Fintype Y] (f : X → Y → 
       exact_mod_cast this)
     (fun y j => (c y j).toNat)
     (fun y j => by
-      have : (((c y j).toNat : ℕ) : ℤ) ≤ ((2 ^ β : ℕ) : ℤ) := by
-        push_cast
-        rw [Int.toNat_of_nonneg (hc y j).1]
-        exact (hc y j).2
+      have : (((c y j).toNat : ℕ) : ℤ) ≤ ((2 ^ β : ℕ) : ℤ) := by grind
       exact_mod_cast this)
   refine ⟨α, β, P, fun x _ y _ => ?_, hdepth⟩
   rw [errorProb_lt_half_iff, hrun]

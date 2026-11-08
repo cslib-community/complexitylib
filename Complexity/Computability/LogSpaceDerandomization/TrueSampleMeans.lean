@@ -78,11 +78,7 @@ theorem expect_eq_dens_mul_expect_of_eq_zero {Ω : Type*} [Fintype Ω] (S : Fins
     (v : Ω → ℝ) (hv : ∀ σ ∉ S, v σ = 0) :
     𝔼 σ, v σ = (dens S : ℝ) * 𝔼 σ ∈ S, v σ := by
   classical
-  have hmask : ∀ σ, v σ = if σ ∈ S then v σ else 0 := by
-    intro σ
-    split_ifs with hσ
-    · rfl
-    · exact hv σ hσ
+  have hmask : ∀ σ, v σ = if σ ∈ S then v σ else 0 := by grind
   calc
     𝔼 σ, v σ = 𝔼 σ, if σ ∈ S then v σ else 0 :=
       expect_congr rfl fun σ _ => hmask σ

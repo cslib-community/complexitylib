@@ -237,12 +237,8 @@ theorem leafScore_add_one_le_leafScore_path {M : ℝ} {d : ℕ} {q : ι → ℝ}
     rw [paths_leaf, List.mem_singleton] at hp
     exact (hne (hp.trans rfl)).elim
   | node i left right ihl ihr =>
-    have hleft : left.depth ≤ d - 1 := by
-      rw [depth_node] at ht
-      omega
-    have hright : right.depth ≤ d - 1 := by
-      rw [depth_node] at ht
-      omega
+    have hleft : left.depth ≤ d - 1 := by grind [depth_node]
+    have hright : right.depth ≤ d - 1 := by grind [depth_node]
     rw [paths_node, List.mem_append, List.mem_map, List.mem_map] at hp
     rcases hp with ⟨p', hp', rfl⟩ | ⟨p', hp', rfl⟩
     · cases hx : x i with

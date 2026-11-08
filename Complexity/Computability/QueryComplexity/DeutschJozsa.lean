@@ -88,9 +88,7 @@ theorem lt_depth_of_eval_ne {β : Type*} {m : ℕ} (hι : Fintype.card ι = 2 * 
   push Not at hle
   set Q := t.queries fun _ => false
   have hQ : #Q ≤ m := (t.card_queries_le_depth _).trans hle
-  have hQc : m ≤ #Qᶜ := by
-    rw [card_compl]
-    omega
+  have hQc : m ≤ #Qᶜ := by grind [card_compl]
   obtain ⟨T, hTQ, hT⟩ := exists_subset_card_eq hQc
   set y : ι → Bool := fun i => decide (i ∈ T)
   have hy : IsBalanced y := by

@@ -184,10 +184,7 @@ theorem omResolve_eq_omResolve {F : Finset P} {val : P → List P → Bool}
     · simp only [omResolve]
       have hjτ' : j ∉ τ.toFinset := by simpa using hjτ
       have hcard : τ.toFinsetᶜ.card = (j :: τ).toFinsetᶜ.card + 1 := by
-        have := Finset.card_le_univ (insert j τ.toFinset)
-        rw [Finset.card_compl, Finset.card_compl, List.toFinset_cons,
-          Finset.card_insert_of_notMem hjτ'] at *
-        omega
+        grind [Finset.card_compl, List.toFinset_cons]
       -- The faulty commander leaves at most `m` faulty processes in the subinstances.
       have hF' : (F \ (j :: τ).toFinset).card ≤ m := by
         have hsub : F \ (j :: τ).toFinset ⊆ (F \ τ.toFinset).erase j := fun y hy => by

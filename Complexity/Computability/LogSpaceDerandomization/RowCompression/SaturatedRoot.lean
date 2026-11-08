@@ -115,10 +115,7 @@ private theorem eval_iterate_eq_sentinel {ι : Type u} {s : Finset ι} {n : ℕ 
     have he : ε m ≤ 1 / 8 := (le_prefixErrorBudget hε (le_refl _)).trans hE
     have hraw := (abs_sub_le_of_clippedError_le (hfirst y hy) (by linarith : ε m < 1)
       (herr m (le_refl m) y hy)).1
-    have hd : 16 * (θ + 1) < truth y 0 := by
-      have hd := (mem_filter.mp hmarked).2
-      dsimp only [L] at hd
-      linarith
+    have hd : 16 * (θ + 1) < truth y 0 := by grind
     have hlarge := three_mul_scale_le_of_small_error hθ hmargin hd he hraw (hloss y hy 0)
     have hv : θ ≤ actual.row y 0 := by
       rw [hc.2.1 y hmarked]

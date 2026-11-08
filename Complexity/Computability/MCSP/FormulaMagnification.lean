@@ -598,9 +598,7 @@ private theorem two_mul_pow_le_succ_pow (m : ℕ) :
   simp only [Nat.cast_id]
   have h1 : m ^ (m + 1) * 1 ^ (m + 1 - (m + 1)) * (m + 1).choose (m + 1) = m ^ (m + 1) := by
     simp
-  have h2 : m ^ m * 1 ^ (m + 1 - m) * (m + 1).choose m = m ^ (m + 1) + m ^ m := by
-    have hsub : m + 1 - m = 1 := Nat.add_sub_cancel_left m 1
-    rw [hsub, Nat.choose_succ_self_right, one_pow, mul_one, mul_add, mul_one, pow_succ]
+  have h2 : m ^ m * 1 ^ (m + 1 - m) * (m + 1).choose m = m ^ (m + 1) + m ^ m := by grind
   rw [h1, h2]
   omega
 

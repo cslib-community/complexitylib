@@ -81,11 +81,7 @@ theorem sourceDetector_stability (A B : ι → κ → Matrix V V ℝ) (y : V) :
     |sourceDetector P X Y A y - sourceDetector P X Y B y| ≤
       𝔼 s, 𝔼 t ∈ {t | Y t y},
         kthLargest 1 {x | X s x} (fun x => |A s t x y - B s t x y|) := by
-  have hclip (a b : ℝ) : |min 1 (max 0 a) - min 1 (max 0 b)| ≤ |a - b| := by
-    apply (abs_min_sub_min_le_max _ _ _ _).trans
-    apply max_le
-    · simp
-    · exact (abs_max_sub_max_le_max _ _ _ _).trans (by simp)
+  have hclip (a b : ℝ) : |min 1 (max 0 a) - min 1 (max 0 b)| ≤ |a - b| := by grind
   apply (hclip _ _).trans
   rw [← expect_sub_distrib]
   apply (abs_expect_le _ _).trans

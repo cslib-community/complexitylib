@@ -486,9 +486,7 @@ private theorem outputs_start {m T : ℕ} (hm : m ≠ 0) :
     intro q hd hc₀ hc hn hs ht hd' hl
     have hcT : q.c = numLabels ^ T := by omega
     have hfalse : decide (∃ c', q.c ≤ c' ∧ c' < numLabels ^ T ∧ Success I m T c') = false := by
-      simp only [decide_eq_false_iff_not, not_exists, not_and]
-      intro c' h₁ h₂
-      omega
+      grind
     rw [hfalse]
     refine (reaches_start hm q hc hn hs ht hd').outputs (outputs_check_overflow _ rfl ?_)
     simp [hl, hcT, Nat.div_self (pow_pos numLabels_pos T)]

@@ -63,8 +63,7 @@ theorem degreeOf_indicatorAt_le [Nontrivial R] (e : Fin k → Fin n) (a : Fin k 
   classical
   refine (degreeOf_prod_le _ _ _).trans (Finset.sum_le_sum fun j _ => ?_)
   have hX : (X (e j) : MvPolynomial (Fin n) R).degreeOf v ≤ if e j = v then 1 else 0 := by
-    rw [degreeOf_X]
-    split_ifs <;> simp_all [eq_comm]
+    grind [degreeOf_X]
   by_cases ha : a j = true
   · rw [ite_eq_left ha]
     exact hX

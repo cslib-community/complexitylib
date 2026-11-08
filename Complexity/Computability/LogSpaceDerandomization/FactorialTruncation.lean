@@ -242,10 +242,7 @@ include hφθ in
 /-- A positive cutoff leaves at least `θ f` behind. -/
 private theorem le_sub_cutoff_of_pos (y : V) {t : ℝ} (h : 0 < φ y t) : θ * f ≤ t - φ y t := by
   have h1 := hφθ y t
-  have h2 : 0 < t - θ * f := by
-    by_contra hneg
-    rw [max_eq_right (by linarith)] at h1
-    linarith
+  have h2 : 0 < t - θ * f := by grind
   rw [max_eq_left h2.le] at h1
   linarith
 
