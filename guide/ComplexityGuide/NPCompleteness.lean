@@ -963,6 +963,11 @@ reflected-order rejection. The proofs are original finite permutation and
 algebraic arguments. No native runtime, geometric realization, full recipe
 closure, recognition or Hanani–Tutte theorem is asserted here.
 
+For permutation-only proofs, import `Complexity.Foundations.GroupTheory.Perm.InsertAfter`,
+`CycleSurgery` or `SelectedOrbits`. The APIs live in `Equiv.Perm.Insertion`,
+`Equiv.Perm.CycleSurgery` and `Equiv.Perm.SelectedOrbits`, with no graph dependency.
+`ComplexityTests/PermutationSurgery.lean` is a complete standalone client.
+
 # Ordered Incidence-to-Polygon Rotations
 
 Import `Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler`.

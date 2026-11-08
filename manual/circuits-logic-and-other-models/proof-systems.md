@@ -337,7 +337,14 @@ The [corner](../../ComplexityTests/RotationCornerFaces.lean),
 [algebraic converse](../../ComplexityTests/RotationLiftingConverse.lean) clients check actual
 successor tables, nonbridge connectors, loops at both endpoints, empty residual blocks,
 reflected-order rejection and untouched point/edge components. Arbitrary-degree star
-rotations are supplied by `Star.starRotation` and `numericalGenusZero_starRotation`.
+rotations are supplied by importing `Star` at the same module prefix and using
+`starRotation` and `numericalGenusZero_starRotation`.
+The general point-insertion, cycle-surgery and selected-orbit APIs live in
+`Complexity.Foundations.GroupTheory.Perm.InsertAfter`, `CycleSurgery` and
+`SelectedOrbits`, in `Equiv.Perm.Insertion`, `Equiv.Perm.CycleSurgery` and
+`Equiv.Perm.SelectedOrbits`; they import no graph modules. The complete
+[permutation-only client](../../ComplexityTests/PermutationSurgery.lean) uses these imports
+without the graph layer.
 These are original permutation/algebraic proofs, with no native runtime or geometric
 realization claim. Full gadget-recipe realization, recognition, Hanani–Tutte and the planar
 dichotomy remain open under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
