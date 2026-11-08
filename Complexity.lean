@@ -12,11 +12,11 @@ public import Complexity.Algorithms.ExactTriangle.PieceBounds
 public import Complexity.Algorithms.ExactTriangle.Splitting
 public import Complexity.Algorithms.ExactTriangle.Weights
 public import Complexity.Algorithms.ExactTriangle.Witnesses
+public import Complexity.Algorithms.LatticeReduction.Potential
+public import Complexity.Algorithms.LatticeReduction.Reduced
 public import Complexity.Algorithms.Lean.AhoCorasick.Basic
 public import Complexity.Algorithms.Lean.AhoCorasick.KMP
 public import Complexity.Algorithms.Lean.AhoCorasick.Search
-public import Complexity.Algorithms.LatticeReduction.Potential
-public import Complexity.Algorithms.LatticeReduction.Reduced
 public import Complexity.Algorithms.Lean.BellmanFord.Basic
 public import Complexity.Algorithms.Lean.BinPacking.Basic
 public import Complexity.Algorithms.Lean.BinPacking.FirstFit
