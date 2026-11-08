@@ -12,6 +12,7 @@ public import Complexity.Computability.PCP.Approximation.LabelCover.Repetition
 public import Complexity.Computability.PCP.Encoded.Deloop
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Pair
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListMap
 
@@ -77,8 +78,7 @@ private theorem isPolyTime_tupleCode_const (k : ℕ) :
   induction k with
   | zero => exact .const 0
   | succ k ih =>
-    exact (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.unary_pair).comp
-      (ComputableInPolyTime.id'.prod ih)
+    exact ComputableInPolyTime.unary_pair.comp (ComputableInPolyTime.id'.prod ih)
 
 variable [Fintype β] [Finite γ]
 
@@ -91,7 +91,7 @@ private theorem isPolyTime_consEdge {k : ℕ} {Input : Type} {input : Input ↪ 
     (he : ComputableInPolyTime e input (Edge.encoding (encPi (encPi encG)))) :
     ComputableInPolyTime (fun x => consEdge (d x) (e x)) input
       (Edge.encoding (encPi (encPi encG))) := by
-  have hpair := ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.unary_pair
+  have hpair := ComputableInPolyTime.unary_pair
   have hc : ComputableInPolyTime
       (fun p : (β → γ) × ((Fin k → β) → Fin k → γ) =>
         fun a : Fin (k + 1) → β => (Fin.cons (p.1 (a 0)) (p.2 (Fin.tail a)) : Fin (k + 1) → γ))
