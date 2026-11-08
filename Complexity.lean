@@ -3960,7 +3960,9 @@ public import Complexity.DataStructure.NearNeighbor.Hamming
 public import Complexity.DataStructure.NearNeighbor.LSH
 public import Complexity.DataStructure.ObliviousSequence
 public import Complexity.DataStructure.Online.Basic
+public import Complexity.DataStructure.Online.Randomized
 public import Complexity.DataStructure.Online.SkiRental
+public import Complexity.DataStructure.Online.SkiRental.Randomized
 public import Complexity.DataStructure.OrderedSet.Basic
 public import Complexity.DataStructure.OrderedSet.ExtractMin
 public import Complexity.DataStructure.OrderedSet.Spec
