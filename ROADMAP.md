@@ -1544,9 +1544,8 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   access-and-rotation model with Wilber-style lower bounds. State dynamic optimality as a
   conjectural research target with explicit strategy and sequence quantifiers.
 - **Beyond deterministic ski rental and list update:** the randomized `e/(e-1)` ski-rental bound
-  against an oblivious adversary, randomized list update (BIT, COMB), list update with insertions
-  and deletions, and the `k`-server problem, starting with Double Coverage on the line and on
-  trees ([#3057](https://github.com/cslib-community/complexitylib/issues/3057)).
+  against an oblivious adversary, randomized list update (BIT, COMB), and list update with
+  insertions and deletions ([#3057](https://github.com/cslib-community/complexitylib/issues/3057)).
 - **Optimal stopping:** `Probability/OptimalStopping/*` covers the rank-based secretary problem
   (exact cutoff-rule success, optimality among all rank-based rules, `1/e` bounds and limit), the
   single-threshold `½` prophet inequality for independent discrete (`PMF`) laws with tightness
@@ -1558,6 +1557,14 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   multiple-choice prophet inequalities, the full-information secretary problem, a general
   mixtures theorem for randomized rules (only the coin-tie threshold case,
   `tieExpectedReward_le_valueFrom`, is proved), and the posted-price mechanism corollary.
+- **`k`-server** ([#3287](https://github.com/cslib-community/complexitylib/issues/3287)):
+  `DataStructure/KServer/*` covers the deterministic lower bound `k` on every metric with at least
+  `k + 1` points (Manasse–McGeoch–Sleator) and the `k`-competitiveness of Double Coverage on the
+  integer line (Chrobak–Karloff–Payne–Vishwanathan). Remaining: the Manasse–McGeoch–Sleator bound
+  `k / (k - h + 1)` against `h < k` offline servers, Double Coverage on trees (Chrobak–Larmore),
+  the work-function algorithm's `2k - 1` bound (Koutsoupias–Papadimitriou), the `k`-server
+  conjecture as a research target with explicit quantifiers, the `k = 2` case on every metric,
+  randomized `k`-server, and the offline optimum by min-cost flow.
 
 ### Algorithmic game theory ([#2900](https://github.com/cslib-community/complexitylib/issues/2900))
 

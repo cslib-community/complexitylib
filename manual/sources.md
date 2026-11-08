@@ -89,6 +89,11 @@ Eshan Chattopadhyay and Jyun-Jie Liao. *Optimal Error Pseudodistributions for Re
 
 Nicos Christofides. *Worst-Case Analysis of a New Heuristic for the Travelling Salesman Problem*. Report 388, Graduate School of Industrial Administration, Carnegie-Mellon University, 1976; reprinted in *Operations Research Forum* 3, article 20, 2022, https://doi.org/10.1007/s43069-021-00101-z . The report details are those of reference [73] in [Williamson and Shmoys](#williamsonshmoys11), whose Chapter 2 Notes attribute the algorithm to Christofides; the reprint details come from search summaries. Neither the report nor the reprint was checked; the formalization follows the proof of Theorem 2.13 of Williamson and Shmoys.
 
+<a id="chrobakkarloffpaynevishwanathan91"></a>
+## chrobakkarloffpaynevishwanathan91
+
+Marek Chrobak, Howard J. Karloff, Thomas H. Payne, Sundar Vishwanathan. "New Results on Server Problems." *SIAM Journal on Discrete Mathematics* 4(2), 172–181, 1991. https://doi.org/10.1137/0404017 . Bibliographic metadata only; the full text was not inspected in this pass, so no theorem number is cited. The manual credits this paper with the `k`-competitiveness of Double Coverage on the line, which secondary sources attribute to it; the local proof uses the standard potential `k·M_min + Σ_{i<j}|s_i - s_j|`.
+
 <a id="cks20"></a>
 ## cks20
 
@@ -368,6 +373,11 @@ Yanyi Liu and Rafael Pass. *On One-way Functions and Kolmogorov Complexity*. FOC
 ## ltv98
 
 Ming Li, John Tromp and Paul Vitányi. *Reversible Simulation of Irreversible Computation by Pebble Games*. Physica D 120, 168–176, 1998. https://doi.org/10.1016/S0167-2789(98)00052-9 . Locators refer to arXiv:quant-ph/9703009v3 (11 April 1997), https://arxiv.org/abs/quant-ph/9703009v3 . The reversible pebble rule (Section 6), the procedures `pebble(s, n)` and `unpebble(s, n)` (Section 7), Theorem 1, Corollaries 1 and 2, Lemma 1 and Theorem 2 were checked.
+
+<a id="manassemcgeochsleator90"></a>
+## manassemcgeochsleator90
+
+Mark S. Manasse, Lyle A. McGeoch, Daniel D. Sleator. "Competitive Algorithms for Server Problems." *Journal of Algorithms* 11(2), 208–230, 1990. https://doi.org/10.1016/0196-6774(90)90003-W ; author PDF https://www.cs.cmu.edu/~sleator/papers/server-problems.pdf . Theorem 6 (lower bound `k/(k-h+1)` against `h`-server offline algorithms on a graph with at least `k + 1` nodes, proved with a lazy online algorithm, its nemesis sequence and an ensemble of offline algorithms) and Corollary 7 (no `c`-competitive algorithm for `c < k`) were checked against the author PDF on 2026-11-08. The local lower bound is the case `h = k`.
 
 <a id="mathlib"></a>
 ## mathlib
