@@ -14,6 +14,7 @@ Two-dimensional witnesses in `EuclideanSpace ℝ (Fin 2)` with unit vectors `e�
 
 * the standard basis `(e₀, e₁)` is `3/4`-reduced, so the hypotheses of the SVP bound
   `IsReduced.norm_le_sqrt_two_pow_mul` are satisfiable;
+* `(e₀, ½ e₀ + e₁)` is `3/4`-reduced with `μ₁₀ = 1/2`, the extreme allowed by (1.4);
 * `(e₀, e₀ + e₁)` is not size reduced (`μ₁₀ = 1`);
 * `(2 e₀, e₀ + e₁)` violates the exchange condition at `(0, 1)`, swapping it is an exchange step,
   and the potential drops from `4` to `2 < (3/4) · 4`.
@@ -72,6 +73,34 @@ theorem isReduced_std : IsReduced (3 / 4) ![e₀, e₁] := by
 example {x : EuclideanSpace ℝ (Fin 2)} (hx : x ∈ Submodule.span ℤ (Set.range ![e₀, e₁]))
     (hx0 : x ≠ 0) : ‖e₀‖ ≤ Real.sqrt 2 ^ 1 * ‖x‖ :=
   isReduced_std.norm_le_sqrt_two_pow_mul hx hx0
+
+/-! ### A reduced basis with a nonzero size coefficient -/
+
+/-- The basis `(e₀, ½ e₀ + e₁)`. -/
+noncomputable abbrev bHalf : Fin 2 → EuclideanSpace ℝ (Fin 2) := ![e₀, (1 / 2 : ℝ) • e₀ + e₁]
+
+/-- `μ₁₀ = 1/2` for `(e₀, ½ e₀ + e₁)`. -/
+theorem gramSchmidtCoeff_bHalf : gramSchmidtCoeff ℝ bHalf 1 0 = 1 / 2 := by
+  have h0 : gramSchmidt ℝ bHalf 0 = e₀ := gramSchmidt_bot ℝ bHalf
+  rw [gramSchmidtCoeff, h0]
+  simp [inner_add_right, inner_smul_right, EuclideanSpace.inner_single_left, PiLp.norm_single]
+
+theorem norm_sq_bHalf_one : ‖bHalf 1‖ ^ 2 = 5 / 4 := by
+  simp only [bHalf, Matrix.cons_val_one, Matrix.cons_val_zero]
+  rw [@norm_add_sq_real, norm_smul, PiLp.norm_single, PiLp.norm_single, real_inner_smul_left,
+    EuclideanSpace.inner_single_left]
+  norm_num
+
+/-- `(e₀, ½ e₀ + e₁)` is `3/4`-reduced with the extreme size coefficient `μ₁₀ = 1/2`. -/
+theorem isReduced_bHalf : IsReduced (3 / 4) bHalf := by
+  refine ⟨fun i j hji => ?_, fun i j hij => ?_⟩
+  · fin_cases i <;> fin_cases j <;> simp at hji
+    simp only [Fin.mk_one, Fin.zero_eta, gramSchmidtCoeff_bHalf]
+    norm_num
+  · fin_cases i <;> fin_cases j <;> simp at hij
+    simp only [Fin.mk_one, Fin.zero_eta, exchangeCondAt_two_iff, norm_sq_bHalf_one]
+    simp [bHalf, PiLp.norm_single]
+    norm_num
 
 /-! ### A basis that is not size reduced -/
 
