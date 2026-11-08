@@ -10,12 +10,13 @@ module
 public import Complexity.Computability.Complexity.Problems.BipartitePerfectMatching
 public import Complexity.Algorithms.Lean.MaxFlow.BipartiteMatching
 public import Complexity.Computability.Complexity.Classes.P
-public import Complexity.Tactic.PolyTime
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Unary
 import Complexity.Algorithms.Lean.MaxFlow.AugmentingPath
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLoops
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Sqrt
+import Complexity.Tactic.PolyTime
 
 /-!
 # Bipartite perfect matching is in P
@@ -41,9 +42,14 @@ matching. This is the augmenting-path method for maximum bipartite matching ([CL
 Section 26.3) with one augmentation per breadth-first round, not the `O(√n)`-phase schedule of
 Hopcroft and Karp [HopcroftKarp1973], which the polynomial bound does not need.
 
-Labels and matchings hold at most `n + 1` edges with endpoints below `n`, written in unary, so every
-state is polynomially bounded and both loops are polynomial-time by the iteration rules for plain
-computability.
+Both loops are polynomial-time by the iteration rules for plain computability, with all edges
+written in unary and their endpoints below `n`. After `i` labelling passes every label is a path of
+at most `i` edges, so the labelling stays within a cubic bound in the input length. An augmentation
+round adds the at most `n + 1` edges of one path and only removes matching edges, so the encoded
+matching grows by at most `(n + 1)(6n + 1)` bits per round over the `n` rounds.
+
+The algorithm's definitions are `@[expose]` so that `decide +kernel` can run the decider on small
+instances in the tests.
 
 ## Main definitions
 
@@ -593,12 +599,6 @@ private theorem edgesBelow_augmentAlong {n : ℕ} {M p : List (ℕ × ℕ)} (hM 
   · exact hp e he
   · exact hM e (List.mem_filter.mp he).1
 
-/-- A matching of `K_{n,n}` has at most `n` edges. -/
-private theorem card_le_of_isMatching {n : ℕ} {G : Fin n × Fin n → Bool}
-    {M : Finset (Fin n × Fin n)} (hM : IsMatching G M) : M.card ≤ n := by
-  rw [← card_matchedLeft hM]
-  simpa using Finset.card_le_univ (matchedLeft M)
-
 /-- One augmentation round either grows the matching, or leaves it unchanged and it is
 maximum. -/
 private theorem augmentStep_spec {w : List Bool} {n : ℕ} {M : List (ℕ × ℕ)}
@@ -624,7 +624,7 @@ private theorem augmentStep_spec {w : List Bool} {n : ℕ} {M : List (ℕ × ℕ
       rw [hP] at hmem
       simp at hmem
     have hk := card_mul_le_of_noShortAug hmatch hM' hno
-    have hle : (edgeSet n M).card ≤ n := card_le_of_isMatching hmatch
+    have hle : (edgeSet n M).card ≤ n := hmatch.card_le_card_left.trans_eq (Fintype.card_fin n)
     nlinarith
   · have hp : p ∈ augmentingPaths w n M (labelling w n M) := by
       rw [hP]
@@ -697,7 +697,7 @@ theorem isMaxMatching_maximumMatching (w : List Bool) (n : ℕ) :
   obtain ⟨-, hmatch, hmin⟩ := matchInv_maximumMatching w n
   refine ⟨hmatch, fun M' hM' => ?_⟩
   have h1 := hmin M' hM'
-  have h2 := card_le_of_isMatching hM'
+  have h2 : M'.card ≤ n := hM'.card_le_card_left.trans_eq (Fintype.card_fin n)
   omega
 
 private theorem deciderAt_eq_true_iff (w : List Bool) (n : ℕ) :
@@ -727,7 +727,7 @@ private theorem deciderAt_eq_true_iff (w : List Bool) (n : ℕ) :
     rw [hcard, min_self] at h1
     have h2 : (matchedLeft (edgeSet n (maximumMatching w n))).card = n := by
       rw [card_matchedLeft hmatch]
-      exact le_antisymm (card_le_of_isMatching hmatch) h1
+      exact le_antisymm (hmatch.card_le_card_left.trans_eq (Fintype.card_fin n)) h1
     exact Finset.eq_univ_of_card _ (by rw [h2, Fintype.card_fin])
 
 /-- **The decider decides bipartite perfect matching.** -/
