@@ -29,9 +29,11 @@ The graph construction of `Cslib.Complexity.WCS.toClique` is polynomial-time for
 `IndependentSet`, by complementing the graph (`IndependentSet_wHard`). With their membership in
 `W[1]` (`Clique_mem_W`, `IndependentSet_mem_W`) both are `W[1]`-complete, and `W[1]` collapses to
 `FPT` exactly when `Clique` is in `FPT` (`W_one_eq_FPT_iff`)
-[Cygan et al., Chapter 13][CyganEtAl2015] [DowneyFellows1999]. The reduction goes through the
-original certificate-and-bracket graph of `WCS.toClique`, not the reduction of the cited sources;
-the chapter locator has not been checked against the book.
+[Cygan et al., Chapter 13][CyganEtAl2015] [DowneyFellows1999]. The graph of `WCS.toClique`, with
+one certificate vertex and bracket vertices, is this library's formulation. Certifying an
+unselected input by the consecutive selected inputs around it follows the classical gap technique
+of the standard proof [DowneyFellows1999] [FlumGrohe2006]. The locators have not been checked
+against the books.
 
 The vertices of the graph are lists of at most `2 ^ d` claims and lists of at most `2 ^ (d + 1)`
 index-position pairs, so for fixed `d` there are polynomially many of them; the reduction is
@@ -50,6 +52,7 @@ polynomial-time for each fixed `d`, not uniformly in `d`.
 
 * [M. Cygan et al., *Parameterized Algorithms*, Chapter 13][CyganEtAl2015]
 * [R. G. Downey, M. R. Fellows, *Parameterized Complexity*][DowneyFellows1999]
+* [J. Flum, M. Grohe, *Parameterized Complexity Theory*][FlumGrohe2006]
 -/
 
 public section
@@ -116,9 +119,9 @@ private theorem computableInPolyTime_brackets (d : ℕ) {n kk : γ → ℕ}
   ComputableInPolyTime.listsUpTo (computableInPolyTime_pairs hn hkk) _
 
 /-- Listing the index lists is polynomial-time for a fixed depth. -/
-private theorem computableInPolyTime_classes (d : ℕ) {kk : γ → ℕ}
+private theorem computableInPolyTime_indexLists (d : ℕ) {kk : γ → ℕ}
     (hkk : ComputableInPolyTime kk encIn encUnary) :
-    ComputableInPolyTime (fun a => classes d (kk a)) encIn (encList (encList encUnary)) :=
+    ComputableInPolyTime (fun a => indexLists d (kk a)) encIn (encList (encList encUnary)) :=
   ComputableInPolyTime.listsUpTo (by fun_prop) _
 
 /-- The partial input of a bracket is polynomial-time. -/
@@ -225,7 +228,7 @@ private theorem computableInPolyTime_size (d : ℕ) {n k : γ → ℕ}
     (hn : ComputableInPolyTime n encIn encUnary) (hk : ComputableInPolyTime k encIn encNat) :
     ComputableInPolyTime (fun a => size d (n a) (k a)) encIn encNat := by
   have hkk : ComputableInPolyTime (fun a => min (n a + 1) (k a)) encIn encUnary := by fun_prop
-  have hc := computableInPolyTime_classes d hkk
+  have hc := computableInPolyTime_indexLists d hkk
   unfold size
   fun_prop
 
@@ -238,7 +241,7 @@ theorem size_le (d n k : ℕ) : size d n k ≤ (k + 1) ^ 2 ^ (d + 1) + 1 := by
   rw [List.length_range] at hlen
   have hpow : (min (n + 1) k + 1) ^ 2 ^ (d + 1) ≤ (k + 1) ^ 2 ^ (d + 1) :=
     Nat.pow_le_pow_left (by omega) _
-  unfold size classes
+  unfold size indexLists
   omega
 
 /-- The output wire of a one-output circuit is the first entry of the outputs of its code. -/

@@ -8,8 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Mathlib.Algebra.Order.BigOperators.Group.List
 import Mathlib.Algebra.Group.Action.Defs
+import Mathlib.Algebra.Order.BigOperators.Group.List
 import Mathlib.Data.List.Nodup
 import Mathlib.Tactic.Ring
 

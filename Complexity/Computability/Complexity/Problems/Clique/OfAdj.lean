@@ -148,20 +148,18 @@ theorem computableInPolyTime_ofAdj {vs : γ → List V} {adj : γ → V → V �
     (hadj : ComputableInPolyTime (fun p : γ × (V × V) => adj p.1 p.2.1 p.2.2)
       (encPair encIn (encPair encV encV)) encBool) :
     ComputableInPolyTime (fun a => ofAdj (vs a) (adj a)) encIn encGraph := by
-  have hvs' := hvs.tidy
-  have hz := (ComputableTidilyInPolyTime.zipIdx encV).comp hvs'
-  have hb := ComputableInPolyTime.unary_to_binary.tidy
-  have hadj' := hadj.tidy
-  have hlen : ComputableTidilyInPolyTime (fun a => (vs a).length) encIn encUnary := by
+  have hz : ComputableInPolyTime (fun a => (vs a).zipIdx) encIn (encList (encPair encV encUnary)) :=
+    (ComputableTidilyInPolyTime.zipIdx encV).computableInPolyTime.comp hvs
+  have hb := ComputableInPolyTime.unary_to_binary
+  have hlen : ComputableInPolyTime (fun a => (vs a).length) encIn encUnary := by
     fun_prop
-  have hverts : ComputableTidilyInPolyTime (fun a => (List.range (vs a).length).map id)
+  have hverts : ComputableInPolyTime (fun a => (List.range (vs a).length).map id)
       encIn (encList encNat) := by
     fun_prop
-  have hedges : ComputableTidilyInPolyTime (fun a => (vs a).zipIdx.flatMap fun c =>
+  have hedges : ComputableInPolyTime (fun a => (vs a).zipIdx.flatMap fun c =>
       ((vs a).zipIdx.filter fun b => adj a c.1 b.1).map fun b => (c.2, b.2))
       encIn (encList (encPair encNat encNat)) := by
     fun_prop
-  refine ComputableInPolyTime.of_tidy ?_
   unfold ofAdj encGraph
   simpa using hverts.prod hedges
 

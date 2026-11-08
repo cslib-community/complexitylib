@@ -24,7 +24,7 @@ polynomial time is polynomial-time
   polynomial-time in `a` for a fixed `r`.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 

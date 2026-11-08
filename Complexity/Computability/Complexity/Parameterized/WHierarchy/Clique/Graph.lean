@@ -22,9 +22,11 @@ This file builds, from a circuit of weft at most `1` and depth at most `d` and a
 graph and a clique size (`WCS.toClique`), and shows that the graph has a clique of that size
 exactly when the circuit has a satisfying input with `k` ones (`WCS.toClique_mem_Clique_iff`).
 This is the core of the `W[1]`-hardness of `Clique` [Cygan et al., Chapter 13][CyganEtAl2015]
-[DowneyFellows1999]. The certificate-and-bracket graph is an original construction of this library,
-built on the certificates of `Cslib.Circuits.Boolean.Unbounded.WeftOne`; the cited sources prove the
-theorem through their own reduction. The chapter locator has not been checked against the book.
+[DowneyFellows1999]. The graph, with one certificate vertex built on the certificates of
+`Cslib.Circuits.Boolean.Unbounded.WeftOne` and bracket vertices, is this library's formulation.
+Certifying an unselected input by the consecutive selected inputs around it follows the classical
+gap technique of the standard proof [DowneyFellows1999] [FlumGrohe2006]. The locators have not been
+checked against the books.
 
 Write `n` for the number of inputs and `kk = min (n + 1) k`. The vertices are of two kinds.
 
@@ -63,6 +65,7 @@ holds on the selected input, which therefore satisfies the circuit.
 
 * [M. Cygan et al., *Parameterized Algorithms*, Chapter 13][CyganEtAl2015]
 * [R. G. Downey, M. R. Fellows, *Parameterized Complexity*][DowneyFellows1999]
+* [J. Flum, M. Grohe, *Parameterized Complexity Theory*][FlumGrohe2006]
 -/
 
 @[expose] public section
@@ -92,7 +95,7 @@ def brackets (d n kk : ℕ) : List (List (ℕ × ℕ)) :=
   (pairs n kk).listsUpTo (2 ^ (d + 1))
 
 /-- The index lists: lists of at most `2 ^ (d + 1)` indices below `kk`. -/
-def classes (d kk : ℕ) : List (List ℕ) :=
+def indexLists (d kk : ℕ) : List (List ℕ) :=
   (List.range kk).listsUpTo (2 ^ (d + 1))
 
 /-- The partial input that a bracket describes. -/
@@ -126,7 +129,7 @@ def graph (d n : ℕ) (gates : List (Unbounded.Op × List ℕ)) (o k : ℕ) : Gr
 
 /-- The clique size for depth `d`, `n` inputs and weight `k`. -/
 def size (d n k : ℕ) : ℕ :=
-  (classes d (min (n + 1) k)).length + 1
+  (indexLists d (min (n + 1) k)).length + 1
 
 end ToClique
 
@@ -159,10 +162,10 @@ theorem mem_brackets {d n kk : ℕ} {P : List (ℕ × ℕ)} :
   simp only [brackets, List.mem_listsUpTo, mem_pairs]
 
 theorem mem_classes {d kk : ℕ} {C : List ℕ} :
-    C ∈ classes d kk ↔ C.length ≤ 2 ^ (d + 1) ∧ ∀ j ∈ C, j < kk := by
-  simp only [classes, List.mem_listsUpTo, List.mem_range]
+    C ∈ indexLists d kk ↔ C.length ≤ 2 ^ (d + 1) ∧ ∀ j ∈ C, j < kk := by
+  simp only [indexLists, List.mem_listsUpTo, List.mem_range]
 
-theorem nodup_classes (d kk : ℕ) : (classes d kk).Nodup :=
+theorem nodup_classes (d kk : ℕ) : (indexLists d kk).Nodup :=
   List.nodup_listsUpTo List.nodup_range _
 
 theorem mem_vertices {d n kk : ℕ} {gates : List (Unbounded.Op × List ℕ)} {o : ℕ} {v : Vertex} :
@@ -198,7 +201,6 @@ theorem vadj_brackets_iff (n kk : ℕ) (gates : List (Unbounded.Op × List ℕ))
     (vadj n kk gates (false, [], P) (false, [], Q) ||
       vadj n kk gates (false, [], Q) (false, [], P)) = true ↔
       P.map Prod.fst ≠ Q.map Prod.fst ∧ consistent P Q = true := by
-  rw [consistent_comm] at *
   simp only [vadj, Bool.false_eq_true, ↓reduceIte, Bool.not_false, Bool.true_and,
     Bool.or_eq_true, Bool.and_eq_true, bne_iff_ne, ne_eq]
   rw [consistent_comm Q P]
@@ -247,7 +249,7 @@ theorem forall₂_knowList {n kk : ℕ} {P : List (ℕ × ℕ)} {x : List Bool} 
   rw [h i hi b hb, List.get_eq_getElem, List.getD_eq_getElem _ _ (by omega)]
 
 /-- A finite set of naturals is the image of a function increasing on `[0, T.card)`. -/
-theorem exists_strictMonoOn_enum (T : Finset ℕ) :
+private theorem exists_strictMonoOn_enum (T : Finset ℕ) :
     ∃ u : ℕ → ℕ, StrictMonoOn u (Set.Iio T.card) ∧
       ∀ s, s ∈ T ↔ ∃ i < T.card, u i = s := by
   classical
@@ -306,14 +308,14 @@ theorem mem_Clique_of_eval {d n : ℕ} (c : Circuit Unbounded.signature n 1) (hw
   have hBfst : ∀ C, (B C).map Prod.fst = C := fun C => by
     simp only [B, List.map_map]
     exact List.map_id C
-  have hB : ∀ C ∈ classes d k, B C ∈ brackets d n k := by
+  have hB : ∀ C ∈ indexLists d k, B C ∈ brackets d n k := by
     intro C hC
     obtain ⟨hlen, hlt'⟩ := mem_classes.1 hC
     refine mem_brackets.2 ⟨by simpa [B] using hlen, fun p hp => ?_⟩
     obtain ⟨j, hj, rfl⟩ := List.mem_map.1 hp
     exact ⟨hlt' j hj, hun j (hlt' j hj)⟩
   have hxlen : (List.ofFn x).length = n := List.length_ofFn
-  have hnoref : ∀ C ∈ classes d k, refutes n k c.code.1 cl (B C) = false := by
+  have hnoref : ∀ C ∈ indexLists d k, refutes n k c.code.1 cl (B C) = false := by
     intro C hC
     have hCk := (mem_classes.1 hC).2
     refine refutes_eq_false c.isCodeFrom_code (forall₂_knowList hxlen ?_)
@@ -335,7 +337,7 @@ theorem mem_Clique_of_eval {d n : ℕ} (c : Circuit Unbounded.signature n 1) (hw
       exact Bool.false_ne_true h'
   -- The clique.
   rw [graph, size, hkk, Graph.mem_Clique_ofAdj_iff_entries (vadj_self _ _ _)]
-  refine ⟨insert (true, cl, []) ((classes d k).toFinset.image fun C => (false, [], B C)),
+  refine ⟨insert (true, cl, []) ((indexLists d k).toFinset.image fun C => (false, [], B C)),
     ?_, ?_, ?_⟩
   · rw [Finset.card_insert_of_notMem (by simp), Finset.card_image_of_injective,
       List.toFinset_card_of_nodup (nodup_classes d k)]
@@ -407,7 +409,7 @@ theorem satisfiableWithWeight_of_mem_Clique {d n : ℕ} (c : Circuit Unbounded.s
     have := hTadj _ (Finset.mem_filter.1 hv).1 _ (Finset.mem_filter.1 hw).1 hne
     rw [vadj_brackets_iff] at this
     exact this.1 hvw
-  have hBsub : Bs.image (fun v : Vertex => v.2.2.map Prod.fst) ⊆ (classes d kk).toFinset := by
+  have hBsub : Bs.image (fun v : Vertex => v.2.2.map Prod.fst) ⊆ (indexLists d kk).toFinset := by
     intro C hC
     obtain ⟨v, hv, rfl⟩ := Finset.mem_image.1 hC
     obtain ⟨-, -, hP⟩ := hBsv v hv
@@ -417,15 +419,15 @@ theorem satisfiableWithWeight_of_mem_Clique {d n : ℕ} (c : Circuit Unbounded.s
     exact (hlt p hp).1
   have hsplit := Finset.card_filter_add_card_filter_not (s := T) fun v => v.1 = true
   rw [← hCs, ← hBs, hTcard] at hsplit
-  have hBle : Bs.card ≤ (classes d kk).length := by
+  have hBle : Bs.card ≤ (indexLists d kk).length := by
     rw [← Finset.card_image_of_injOn hBinj, ← List.toFinset_card_of_nodup (nodup_classes d kk)]
     exact Finset.card_le_card hBsub
   have hCs1' : Cs.card = 1 := by omega
-  have hBimg : Bs.image (fun v : Vertex => v.2.2.map Prod.fst) = (classes d kk).toFinset := by
+  have hBimg : Bs.image (fun v : Vertex => v.2.2.map Prod.fst) = (indexLists d kk).toFinset := by
     refine Finset.eq_of_subset_of_card_le hBsub ?_
     rw [Finset.card_image_of_injOn hBinj, List.toFinset_card_of_nodup (nodup_classes d kk)]
     omega
-  have hcover : ∀ C ∈ classes d kk, ∃ P, (false, [], P) ∈ T ∧ P ∈ brackets d n kk ∧
+  have hcover : ∀ C ∈ indexLists d kk, ∃ P, (false, [], P) ∈ T ∧ P ∈ brackets d n kk ∧
       P.map Prod.fst = C := by
     intro C hC
     rw [← List.mem_toFinset, ← hBimg] at hC
