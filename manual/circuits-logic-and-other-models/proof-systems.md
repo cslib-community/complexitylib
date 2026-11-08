@@ -451,9 +451,20 @@ the actual result equation, deriving forest and event invariants internally:
   and exactly two defects disappear. Prefix validity comes from the two directed ancestries;
   it does not assume that arbitrary f-walk reversal preserves validity.
 - `search_blossom_correct` proves that the actual `m.blossomData` succeeds. Its preparatory flip
-  is valid and preserves defect count, and its cycle satisfies `Walk.IsBlossom`. This source-strength
-  Definition 39 predicate includes the closed nonempty incidence trail, defective base,
-  consistent internal variables and a complete timestamped f-DAG with feasibility and no shortcuts.
+  is valid and preserves defect count, and its cycle satisfies `Walk.IsBlossom`. The
+  Definition 39 interface includes a closed nonempty incidence trail, defective base,
+  consistent internal variables, distinct copied steps and a complete timestamped f-DAG
+  with feasibility and no shortcuts.
+
+`Walk.DistinctCopies` requires one timestamp per step and no repeated copied constraint
+(position, timestamp). Original constraints may recur at different timestamps.
+`Trace.blossom_times_nodup` derives the stronger distinct-timestamp property for both actual
+extractor outcomes. This makes explicit the two-arm geometry needed by Lemma 40 when it
+invokes Corollary 36. A graph union alone can hide a four-port shared copy. The
+[kernel-checked counterexample](../../ComplexityTests/EdgeCSPBlossomCopies.lean) satisfies
+the former union-only conditions but has an invalid proper prefix; its original instance is
+UNSAT while the corresponding table contraction is SAT. A positive actual-search test retains
+a repeated original constraint at distinct times. Search programs and native codes are unchanged.
 
 Both least-common-ancestor cases are covered. A variable ancestor is a defective root and needs
 no preparation. At a constraint ancestor, the computed root path is flipped and the copied
