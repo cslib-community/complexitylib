@@ -565,9 +565,12 @@ index links to canonical definitions rather than keeping a second set.
   `TISP(t, s)`, two-quantifier alternating time `Σ₂TIME(t)` (bridged to `Σ₂ᵖ`) and the slowdown
   lemma `NTIME(n) ⊆ DTIME(t') ⇒ Σ₂TIME(t) ⊆ NTIME(t'(O(t)))` are in
   [`TimeSpace/Slowdown.lean`](Complexity/Computability/Complexity/Classes/TimeSpace/Slowdown.lean).
-  Still open: the speedup lemma `TISP(t, s) ⊆ Σ₂TIME(...)` by guessing configurations of the
-  universal machine, and the Arora–Barak lower bound `NTIME(n) ⊄ TISP(n^1.2, n^0.2)` with the
-  Lipton–Viglas `n^(√2 − ε)` form. Beyond these: the `√(t·s)` windowed speedup, the golden-ratio
+  The speedup lemma, in the weaker form `TISP(t, s) ⊆ Σ₂TIME(√t · (s + n log² n + log² t))` for a
+  machine on an oracle-described input, and the instance `TISP(n¹², n²) ⊆ Σ₂TIME(n⁸)` are in
+  [`TimeSpace/Speedup.lean`](Complexity/Computability/Complexity/Classes/TimeSpace/Speedup.lean).
+  Still open: the Arora–Barak lower bound `NTIME(n) ⊄ TISP(n^1.2, n^0.2)` by virtual padding, with
+  the Lipton–Viglas `n^(√2 − ε)` form. Beyond these: the textbook `√(t·s)` speedup, which needs
+  amortized `O(1)` simulation steps rather than copying a configuration per step, the golden-ratio
   deterministic bound of Fortnow, Lipton, van Melkebeek and Viglas, and the transfer to SAT. The
   transfer needs a quasi-linear-size Cook–Levin reduction.
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp

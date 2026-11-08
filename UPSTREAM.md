@@ -46,6 +46,9 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `Universal/Input` uses the existing native streaming fold to emit a selected input symbol
   without repeatedly copying list tails. Retain these local improvements when synchronizing
   `Universal/Complexity`, `Bound` and their resource consumers with `crei/tidy-universal`.
+  `Bound`'s `q₀_le`, `tapes_le` and `table_le` are public locally, for the time–space speedup
+  in `Classes/TimeSpace/Speedup` and for `Universal/WindowedBound`; keep them public when
+  synchronizing.
   This is an extension of the existing interpreter, not a buffered Hennie–Stearns backend.
   `Universal/Windowed*` adds a divide-and-conquer windowed simulation on top of the vendored
   description format and `stepWith`; with the native `Combinators/StackLoop` and
