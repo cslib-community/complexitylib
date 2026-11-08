@@ -176,8 +176,9 @@ strict width decrease and nonincrease of the full encoded table size. `Table.exa
 constructs the new connector relation in native polynomial time from a scope list: the list's
 length pays for quadratic output. There is no polynomial-output claim from a binary arity alone.
 The zero-connector relation is empty. [Table tests](../../ComplexityTests/CSPTable.lean) cover
-malformed widths, repeated rows, contraction cases and framed size calculations. These operation lemmas provide the executable and quantitative layer; the mathematical closure
-is supplied separately below. Whole-blossom correctness still remains unproved.
+malformed widths, repeated rows, contraction cases and framed size calculations. These operation
+lemmas supply executable operations and quantitative bounds. Mathematical closure and
+whole-instance correctness are documented separately below.
 
 `Problems.Graph.RotationSystem` represents edge ends by edge-list position and a Boolean side.
 Loops have two distinct ends, and parallel edges retain separate positions. Vertex rotations
@@ -364,7 +365,7 @@ common parity. The empty-scope relation is rejected under the nonempty delta-mat
 [Composition and contraction tests](../../ComplexityTests/DeltaMatroidComposition.lean) cover
 incompatible shared coordinates, empty external coordinates, arbitrary scope lengths, ordered
 outside ports, empty selections, nullary tables, and malformed guards. Native operation and size
-certificates remain those of `PolyTime.CSP.Table`. Whole-instance blossom contraction/lifting,
+certificates remain those of `PolyTime.CSP.Table`. The whole-instance mathematical layer appears below;
 solver correctness, native solver cost and the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
 
 ## Prefix-valid walks and augmentation
@@ -399,8 +400,8 @@ constraints, actual returned paths, odd unsatisfiable units, repeated constraint
 empty/nullary cases, sparse labels, and a trail whose final flip is valid but an intermediate
 prefix is invalid. This routine takes an improving comparison labeling as input. The fresh
 forest search below instead starts from the base labeling alone and stops at exhaustion,
-augmentation or a blossom. Whole-blossom contraction/lifting, the full solver and planar
-dichotomy remain open under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+augmentation or a blossom. The contraction/lifting entry below supplies the mathematical
+next step; native recursive solving and the planar dichotomy remain open under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
 
 For explicit tables, import `Complexity.Computability.PolyTime.CSP.Edge.Augmenting`.
 In `Cslib.Complexity.CSP.EdgeAugmenting`, `Input` contains the original `CSP Table Nat`,
@@ -419,7 +420,7 @@ answer. [Native augmentation tests](../../ComplexityTests/EdgeCSPAugmentingNativ
 returned paths, both phases, width rejection, empty/nullary constraints and sparse binary names.
 The supplied improving comparison remains necessary for this two-phase routine. The fresh search
 below has no comparison input, and its native compiler is documented separately below.
-Whole-blossom contraction/lifting and the full solver remain open.
+The whole-instance mathematical layer is documented below; the full native solver remains open.
 
 The reusable scan lives in `CSP.Occurrence.Enumeration`: `incidenceList` and
 `occurrences_eq_map_incidenceList` connect typed occurrences to the existing ordered record list.
@@ -458,7 +459,7 @@ of orientation. Its direct local-exchange proof avoids the source proof's tempor
 timestamp and handles timestamp zero. See [DAG tests](../../ComplexityTests/EdgeCSPDAG.lean) for repeated
 original constraints, exact deletion, extra-child rerooting, meeting paths, odd parity and failed
 invariants. The fresh search below derives these DAG hypotheses from its actual execution;
-whole-blossom contraction/lifting and the full planar endpoint remain open under
+whole-instance contraction/lifting is supplied below; the full planar endpoint remains open under
 [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
 
 `Complexity.Logics.Propositional.CSP.Edge.Walk.Operations` supplies disjoint linked-trail
@@ -529,8 +530,8 @@ the local disagreement-count lemma directly.
 [optimality tests](../../ComplexityTests/EdgeCSPForestOptimality.lean) cover both ancestor cases,
 nonempty preparation, repeated constraints, timestamp zero, odd parity and sparse binary names.
 The exhausted example with a connected feasible-pair graph still has two unavoidable defects.
-These mathematical results compose with the native compiler below. Whole-blossom
-contraction/lifting and the complete solver/dichotomy remain outside this layer;
+These mathematical results compose with the native compiler and whole-instance contraction/lifting
+below. The native recursive solver and complete dichotomy remain open;
 [#3091](https://github.com/cslib-community/complexitylib/issues/3091) stays open.
 
 ## Native fresh forest search
@@ -568,6 +569,49 @@ invalid indices and names up to `2^250`. An end-to-end client derives a valid ze
 from the actual decoded augmentation. The existing native augmentation regression suite remains
 unchanged. Full recursive solving, geometric realization/recognition and the planar dichotomy
 remain open under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+
+## Whole-instance blossom contraction and lifting
+
+Import `Complexity.Algorithms.Lean.EdgeCSP.Blossom.Optimality` for executable projection,
+lifting and optimality transfer, and `.Size` for the recursion resource and row bounds.
+All constructors use the original `CSP Table Nat` and positional occurrence labels.
+`Blossom.contract f (Blossom.internal w)` processes each distinct touched original
+constraint once, gathering **all** its internal ports even when the cycle visits that
+constraint repeatedly. Outside ports keep their order. Untouched and nullary constraints
+remain, and one fresh connector per touched constraint joins a new exactly-one relation.
+Names come from an occurrence maximum plus constraint indices, without scanning a binary-name
+interval. `valid_reference`, `edge_contract` and `even_contract` prove the required
+model invariants. The central reference row is genuinely one-hot; all-zero connector labels
+would fail exactly-one. Its single new connector defect replaces the blossom's old defect.
+
+`projectAugmentation_spec` maps a genuine original augmentation to a valid contracted
+improvement. `isOptimal_of_reference` proves that an optimal contracted reference implies
+optimality of the prepared original labeling. Conversely, `liftComparison_spec` executes
+`liftComparison f w g` for **any** improving valid contracted labeling `g`. It derives
+an augmenting walk away from the new connector defect, restores the outside prefix, and
+uses an accepted contracted row to construct the original exchange and shortest exit.
+The result is valid and has exactly two fewer original defects. Outside values may change;
+no comparison agreement, global model, solver or lifting provider is assumed. This is strict
+improvement transfer, not equality with an arbitrarily better comparison's defect count.
+
+For `b` distinct internal variables and `r` distinct touched original constraints,
+`numVars(new)+b = numVars(old)+r`, `r ≤ b`, and positive-scope constraint count increases
+by one. Thus `contractionMeasure_contract_lt` strictly decreases
+`2*numVars−positiveCount`, including `r=b`; variable count alone need not decrease.
+Nullaries do not contribute to `positiveCount`. Old row counts do not increase; the new
+central relation has `r` rows of width `r`, so its Boolean row data is quadratic in `r`.
+These are termination/storage accounting facts, without a native runtime theorem.
+
+The construction maps KKR v6 §5.3 (printed pp. 12–13), Observation 26/Corollary 27,
+Definition 39/Lemma 40 and Lemmas 42–44 (pp. 19–22). The copied-step distinction is explicit;
+the cut/completion attachment proof and finite bookkeeping are original alternatives.
+[Contraction tests](../../ComplexityTests/EdgeCSPBlossomContraction.lean) and
+[lifting tests](../../ComplexityTests/EdgeCSPBlossomLifting.lean) execute nonempty preparation,
+repeated original constraints, grouped ports, honest one-hot references, `r=b` accounting,
+sparse names up to `2^250`, forward projection and an actual optimal comparison whose outside
+values change. Native recursive compilation and polynomial bounds for the complete solver,
+recognition/geometric correspondence, planar hardness and full
+[#3091](https://github.com/cslib-community/complexitylib/issues/3091) remain open.
 
 ## Finite crossover gadget semantics
 

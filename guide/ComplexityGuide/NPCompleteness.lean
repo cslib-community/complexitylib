@@ -53,6 +53,8 @@ import Complexity.Logics.Propositional.CSP.Planar.OneInThree.Gadget
 import Complexity.Algorithms.Lean.EdgeCSP.Forest.Blossom
 import Complexity.Algorithms.Lean.EdgeCSP.Forest.Optimality
 import Complexity.Computability.PolyTime.CSP.Edge.Forest.Spec
+import Complexity.Algorithms.Lean.EdgeCSP.Blossom.Optimality
+import Complexity.Algorithms.Lean.EdgeCSP.Blossom.Size
 import Complexity.Foundations.Data.BitString.CyclicDifference
 import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
 import Complexity.Tactic.PolyTime
@@ -972,7 +974,8 @@ example {table : Table} {reference : List Bool} {positions : List ℕ}
 
 The new connector's exactly-one relation is even for every nonempty scope,
 with odd common parity. Empty scopes are excluded. These local mathematical
-closures do not prove whole-blossom lifting, the edge solver, or its native cost.
+closures feed the whole-instance layer below; the edge solver and its native
+cost remain open.
 
 
 # Prefix-Valid Edge-CSP Augmentation
@@ -1071,8 +1074,8 @@ example {Rel V : Type} {F : CSP Rel V} {w : Walk F}
 
 Arbitrary f-walk reversal need not preserve prefix validity, even for even
 delta-matroid relations. Operation tests give a counterexample. These results
-feed the fresh forest search below. Whole-blossom contraction/lifting, native
-recursive solving and the full planar dichotomy remain open.
+feed the fresh forest search and whole-instance contraction/lifting below.
+Native recursive solving and the full planar dichotomy remain open.
 
 
 # Fresh Forest Search
@@ -1146,8 +1149,9 @@ Complete actual-run clients are in `ComplexityTests/EdgeCSPForestEvents.lean`,
 `ComplexityTests/EdgeCSPForestTerminal.lean` and
 `ComplexityTests/EdgeCSPForestOptimality.lean`. They include nonempty preparation,
 repeated original constraints, timestamp zero, odd parity and sparse labels.
-These mathematical endpoints compose with the native compiler below. Whole-blossom
-contraction/lifting, recursive solving and the full planar dichotomy remain separate.
+These mathematical endpoints compose with the native compiler and whole-instance
+contraction/lifting below. Recursive solving and the full planar dichotomy remain
+open.
 
 
 # Native Fresh Forest Search
@@ -1206,8 +1210,69 @@ count-preserving preparation for a blossom. This is a native fresh-search routin
 without an improving comparison input. The existing augmentation API is preserved
 through the shared buffer module. `ComplexityTests/EdgeCSPForestNative.lean` checks
 actual executions, including an end-to-end valid augmentation to zero defects.
-Whole-blossom contraction/lifting, recursive solving, geometric recognition and
-the full planar dichotomy remain open.
+The next entry supplies mathematical whole-blossom contraction/lifting. Native
+recursive solving, geometric recognition and the full planar dichotomy remain open.
+
+
+# Whole-Instance Blossom Contraction and Lifting
+
+Import `Complexity.Algorithms.Lean.EdgeCSP.Blossom.Optimality` and
+`Complexity.Algorithms.Lean.EdgeCSP.Blossom.Size`. The actual constructor
+contracts every internal port of each distinct touched original constraint once,
+retains outside order and nullaries, and appends a genuine exactly-one node.
+Its reference labels use a one-hot central row:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Logic.PL.CSP.Blossom in
+example {F : CSP Table ℕ} {f : OccurrenceLabeling F Bool} {w : Walk F}
+    (hF : EdgeInstance F) (hf : ValidLabeling Table.sem f)
+    (hb : w.IsBlossom Table.sem f) :
+    ValidLabeling Table.sem (reference f (internal w)) ∧
+      (contract f (internal w)).contractionMeasure < F.contractionMeasure :=
+  ⟨valid_reference hf _ (touched_ne_nil w hb.steps_ne_nil),
+    contractionMeasure_contract_lt hF hb⟩
+```
+
+If `b` internal variables touch `r` original constraints, `r ≤ b` and
+`numVars(new)+b = numVars(old)+r`. Positive constraint count increases by one.
+The resource `2*numVars−positiveCount` strictly decreases even when `r=b`;
+variable count alone is insufficient. Nullary constraints are not counted.
+
+{name}`Cslib.Logic.PL.CSP.Blossom.isOptimal_of_reference` transfers
+optimality from the contracted reference. If a recursive call instead supplies
+any improving valid contracted labels, the executable lift returns valid
+original labels with exactly two fewer defects:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Logic.PL.CSP.Blossom in
+example {F : CSP Table ℕ} {f : OccurrenceLabeling F Bool} {w : Walk F}
+    (hF : EdgeInstance F) (hf : ValidLabeling Table.sem f)
+    (hb : w.IsBlossom Table.sem f)
+    (hM : EdgeInstance.EvenConstraints Table.sem F)
+    (g : OccurrenceLabeling (contract f (internal w)) Bool)
+    (hg : ValidLabeling Table.sem g)
+    (hlt : (defects g).card < (defects (reference f (internal w))).card) :
+    match liftComparison f w g with
+    | some result => ValidLabeling Table.sem result ∧
+        (defects result).card + 2 = (defects f).card
+    | none => False := by
+  obtain ⟨result, hr, hv, hc⟩ := liftComparison_spec hF hb hf hM g hg hlt
+  rw [hr]
+  exact ⟨hv, hc⟩
+```
+
+No agreement with old outside labels is required. The code derives the actual
+augmenting walk, restores its outside prefix, and selects an original exchange
+and shortest exit using the full no-shortcut blossom. Forward projection is
+{name}`Cslib.Logic.PL.CSP.Blossom.projectAugmentation_spec`.
+
+`ComplexityTests/EdgeCSPBlossomContraction.lean` and
+`ComplexityTests/EdgeCSPBlossomLifting.lean` execute repeated original
+constraints, nonempty preparation, changed outside values, sparse binary names,
+and exact `r=b` accounting. Old table row counts do not increase; the new
+exactly-one table has `r` rows of width `r`. These mathematical and executable
+results do not yet certify native cost or compile the complete recursive solver.
+Geometric recognition, planar hardness and the full dichotomy remain open.
 
 
 # Finite Crossover Gadget Semantics

@@ -479,7 +479,10 @@ index links to canonical definitions rather than keeping a second set.
   source-strength prepared blossoms from its actual execution; fresh exhaustion proves
   optimality. Copied cycle steps are explicitly distinct, and both actual extractor outcomes
   derive distinct timestamps; a union-only counterexample is retained. Whole-blossom
-  contraction/lifting and recursive native solving remain open.
+  contraction/lifting now has an executable grouped constructor, forward projection,
+  arbitrary improving-comparison lifting and optimality transfer. The concrete
+  2*numVars-positiveCount measure strictly decreases even when variable count does not.
+  Native recursive compilation and the full solver remain open.
   The fresh search also has an ordinary native polynomial-time compiler, exact width-only
   decoding agreement and a composed semantic specification; it still stops at its first event.
 
