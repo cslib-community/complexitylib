@@ -13,7 +13,7 @@ public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.
 # Closed passages through a single indexed loop
 
 `ClosedPassages.loop` is the single-loop constructor extracted from
-`ComplexityTests/RotationIntersection.lean`, with its original proof and source credit.
+`ComplexityTests.RotationIntersection`, with its original proof and source credit.
 Numerical genus zero then excludes interlacing ends of any two distinct indexed loops,
 including in arbitrary-degree, disconnected graphs with sparse or repeated declarations.
 This is a combinatorial prerequisite for polygonal realization, not a geometric theorem.
