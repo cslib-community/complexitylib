@@ -8,8 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.Combinatorics.Digraph.MatrixTree
-public import Mathlib.Data.Fintype.Pi
-public import Mathlib.Data.Fintype.Sigma
+import Mathlib.Data.Fintype.Pi
+import Mathlib.Data.Fintype.Sigma
 
 /-!
 # Spanning in-arborescences of finite multidigraphs
@@ -72,6 +72,7 @@ def arcMatrix : Matrix V V R :=
   Matrix.of fun u w => ((Finset.univ.filter fun e => src e = u ∧ tgt e = w).card : R)
 
 /-- The entries of the arc-count matrix. -/
+@[simp]
 theorem arcMatrix_apply {R : Type*} [NatCast R] [Fintype E] [DecidableEq V] (u w : V) :
     arcMatrix src tgt R u w = ((Finset.univ.filter fun e => src e = u ∧ tgt e = w).card : R) := by
   rw [arcMatrix, Matrix.of_apply]

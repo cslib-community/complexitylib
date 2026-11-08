@@ -17,6 +17,9 @@ counts Eulerian circuits from the number of arcs `1 → 0`:
 * the `2`-cycle with a loop at `1` has `1`, since loops do not contribute;
 * two disjoint loops form a balanced multidigraph without Eulerian circuits.
 
+On the bidirected triangle the reduced Laplacian is a genuine `2 × 2` determinant, `3`: there are
+`3` spanning in-arborescences and `3` Eulerian circuits starting with a fixed arc, all exhibited.
+
 A single loop at `0` next to an isolated vertex `1` has one Eulerian circuit but no spanning
 arborescence, so the hypothesis that every vertex has an outgoing arc is needed. A single arc
 `0 → 1` is unbalanced and has no Eulerian circuit.
@@ -113,6 +116,59 @@ example : Nat.card {l : List (Fin 2) // IsEulerianCircuit srcTwoLoops srcTwoLoop
   have h1 : (Finset.univ.filter fun e => srcTwoLoops e = 1 ∧ srcTwoLoops e = 0).card = 0 := by
     decide
   rw [h1] at h
+  norm_num at h
+  exact_mod_cast h
+
+/-! ### The bidirected triangle -/
+
+/-- The bidirected triangle: arcs `0 : 0 → 1`, `1 : 1 → 0`, `2 : 1 → 2`, `3 : 2 → 1`,
+`4 : 2 → 0` and `5 : 0 → 2`. -/
+def srcTri : Fin 6 → Fin 3 := ![0, 1, 1, 2, 2, 0]
+
+/-- The bidirected triangle: arcs `0 : 0 → 1`, `1 : 1 → 0`, `2 : 1 → 2`, `3 : 2 → 1`,
+`4 : 2 → 0` and `5 : 0 → 2`. -/
+def tgtTri : Fin 6 → Fin 3 := ![1, 0, 2, 1, 0, 2]
+
+-- The three Eulerian circuits starting with the arc `0 : 0 → 1`.
+example : IsEulerianCircuit srcTri tgtTri 0 [0, 1, 5, 3, 2, 4] :=
+  ⟨by decide, by decide, rfl, by decide, by decide⟩
+
+example : IsEulerianCircuit srcTri tgtTri 0 [0, 2, 3, 1, 5, 4] :=
+  ⟨by decide, by decide, rfl, by decide, by decide⟩
+
+example : IsEulerianCircuit srcTri tgtTri 0 [0, 2, 4, 5, 3, 1] :=
+  ⟨by decide, by decide, rfl, by decide, by decide⟩
+
+/-- The reduced Laplacian at `0` of a matrix on `Fin 3`, as a `2 × 2` determinant. -/
+theorem det_laplacian_submatrix_zero_three {R : Type*} [CommRing R]
+    (A : Matrix (Fin 3) (Fin 3) R) :
+    (A.laplacian.submatrix (Subtype.val : {v : Fin 3 // v ≠ 0} → Fin 3) Subtype.val).det =
+      (A 1 0 + A 1 2) * (A 2 0 + A 2 1) - A 1 2 * A 2 1 := by
+  refine (det_submatrix_equiv_self (finSuccAboveEquiv (0 : Fin 3))
+    (A.laplacian.submatrix (Subtype.val : {v : Fin 3 // v ≠ 0} → Fin 3) Subtype.val)).symm.trans
+    ?_
+  rw [submatrix_submatrix, det_fin_two]
+  simp only [Function.comp_apply, finSuccAboveEquiv_apply, Fin.succAbove_zero, laplacian_apply,
+    submatrix_apply, Fin.sum_univ_three]
+  simp only [Fin.succ_zero_eq_one, Fin.succ_one_eq_two, ite_true, Fin.reduceEq, ite_false]
+  ring
+
+/-- The bidirected triangle has `3` spanning in-arborescences rooted at `0`, by the determinant,
+and so `3` Eulerian circuits starting with a fixed arc. -/
+example : Nat.card {l : List (Fin 6) // IsEulerianCircuit srcTri tgtTri 0 l} = 3 := by
+  have h := natCard_isEulerianCircuit_eq_det_mul srcTri tgtTri ℤ (by decide)
+    (fun v => by fin_cases v; exacts [⟨0, rfl⟩, ⟨1, rfl⟩, ⟨3, rfl⟩]) 0
+  have hsrc : srcTri 0 = 0 := rfl
+  rw [hsrc, det_laplacian_submatrix_zero_three, arcMatrix_apply, arcMatrix_apply,
+    arcMatrix_apply, arcMatrix_apply, Fin.prod_univ_three] at h
+  have h10 : (Finset.univ.filter fun e => srcTri e = 1 ∧ tgtTri e = 0).card = 1 := by decide
+  have h12 : (Finset.univ.filter fun e => srcTri e = 1 ∧ tgtTri e = 2).card = 1 := by decide
+  have h20 : (Finset.univ.filter fun e => srcTri e = 2 ∧ tgtTri e = 0).card = 1 := by decide
+  have h21 : (Finset.univ.filter fun e => srcTri e = 2 ∧ tgtTri e = 1).card = 1 := by decide
+  have d0 : (Finset.univ.filter fun e => srcTri e = 0).card = 2 := by decide
+  have d1 : (Finset.univ.filter fun e => srcTri e = 1).card = 2 := by decide
+  have d2 : (Finset.univ.filter fun e => srcTri e = 2).card = 2 := by decide
+  rw [h10, h12, h20, h21, d0, d1, d2] at h
   norm_num at h
   exact_mod_cast h
 

@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.Combinatorics.Multidigraph.Arborescence
-public import Mathlib.Data.Fintype.List
+import Mathlib.Data.Fintype.List
 public import Mathlib.Data.List.Chain
 public import Mathlib.Data.Nat.Factorial.Basic
 import Mathlib.Data.List.Permutation
@@ -255,7 +255,7 @@ private theorem countP_tgt_lt {l : List E} (hl : l.Nodup) {e : E} (he : e ∉ l)
 
 variable {src tgt} in
 /-- A multidigraph with an Eulerian circuit is balanced: every vertex has as many outgoing as
-incoming arcs. -/
+incoming arcs. This is the necessity half of [Stanley2013], Theorem 10.1. -/
 theorem IsEulerianCircuit.card_filter_src_eq {e₀ : E} {l : List E}
     (hl : IsEulerianCircuit src tgt e₀ l) (v : V) :
     (univ.filter fun e => src e = v).card = (univ.filter fun e => tgt e = v).card := by
