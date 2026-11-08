@@ -908,15 +908,15 @@ The STOC1575 weighted-row module now proves Theorem 7.1 equations (24)–(25)
 assignment semantics for positive capped signed rows, per-row binomial counts,
 and an existing-TwoBoundary count/width wrapper. Nontrivial weighted clients cover
 both polarities, zero demand and unattainable demand. This does not complete the
-bounded-demand endpoint: executable subset enumeration (the present listing is
-noncomputable) and composed runtime/space remain
-open, as do graph endpoints.
+bounded-demand endpoint: replacing the mathematical all-cases plan with a fully
+encoded executable pipeline and proving composed runtime/space remain open, as do
+graph endpoints. The separate executable row/query writer is described below.
 
 Global weighted upper clauses now deduplicate across all retained rows as finite
 sets of signed literals. Exact evaluation/count preservation, query width and an
 explicit degree-d+1 base bound are proved; the attainment term alone carries the
-row factor. This does not complete Theorem 7.1: executable listing and composed
-runtime/space remain open.
+row factor. This does not complete Theorem 7.1: the mathematical assembler still
+uses this noncomputable listing, and composed runtime/space remain open.
 
 
 The capped weighted-row affine bridge now materializes signed integer coefficients
@@ -927,5 +927,14 @@ The all-cases mathematical assembler now normalizes the original occurrence inpu
 dispatches direct branches using computed tests, and composes selected actual capped
 rows with global queries in positive deficient rank. Exact full-input count recovery,
 the 2r-2 variable cap, width d+2 and a global polynomial clause budget are certified.
-Executable subset listing, composed encoded runtime/space and graph endpoints remain
-open; Theorem 7.1 and ALL-main are not completed by this mathematical plan.
+Executable all-cases assembly, composed encoded runtime/space and graph endpoints
+remain open; Theorem 7.1 and ALL-main are not completed by this mathematical plan.
+
+The bounded-list weighted query writer now executes equations (24)–(25) using
+only bounded-length sublists of canonical finite supports. Exact binomial
+candidate counts, fixed-bound polynomial domination, literal widths, global
+list deduplication, pointwise correspondence to `globalQuery` and exact counting
+are proved. The all-cases plan remains mathematical: executable direct-branch
+replacement, encoded normalization/materialization, composed binary runtime and
+space, the sharp executable global clause budget and graph endpoints remain open.
+This continuation does not complete Theorem 7.1 or ALL-main.

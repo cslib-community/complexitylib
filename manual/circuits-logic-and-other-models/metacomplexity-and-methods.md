@@ -576,3 +576,19 @@ space guarantee. Theorem 7.1 and the graph endpoints remain incomplete.
 The [counting client](../../ComplexityTests/WeightedCounting.lean) exercises the
 original-input entry point and the direct and query interfaces. From the
 repository root run `scripts/build.sh ComplexityTests.WeightedCounting`.
+
+For executable bounded subset enumeration on `Fin n`, import
+`Complexity.Logics.Propositional.CNF.WeightedExecutable`. `boundedLists` visits
+only the requested lengths using `List.sublistsLen`; its exact binomial count and
+`boundedLists_polynomial` bound include empty inputs. `upperList` and
+`attainmentList` write signed clauses and terms from the canonical support order.
+`executableQuery` deduplicates upper clauses globally and invokes the existing
+boundary writer. `executableQuery_eval` proves pointwise agreement with
+`globalQuery`, and `executable_counting_identity` transfers exact full-variable
+count recovery. Width is at most `d+2`; the row candidate budgets are polynomial
+for fixed `d`. Run `scripts/build.sh ComplexityTests.WeightedExecutable` from the
+repository root to check concrete mixed-sign, overweight, duplicate-row and
+boundary-query examples. These executable writers do not replace the
+noncomputable direct branches in `CountingPlan`. Composed binary construction
+time/space, a sharp executable global clause-count bound, and graph endpoints
+remain unproved; the candidate-count theorem alone is not a runtime certificate.
