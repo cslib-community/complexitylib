@@ -472,6 +472,11 @@ head. After the merge, regenerate the import aggregates with `lake exe mk_all`, 
 [`leanagg` driver](CONTRIBUTING.md#proposing-and-contributing-work) merge them; never trust a
 `merge=union` result, which keeps deleted imports and can misorder added ones.
 
+A branch that forked before the module root was renamed from Complexity to CslibFrontier is
+restacked with `python3 scripts/rename_module_root.py --restack` (from a checkout of current
+`main`; `--onto` names the restacked head of a lower stacked branch). It merges the rename and
+converts the branch's own module names and paths. See the script's documentation.
+
 A restack keeps its approval when `python3 scripts/check_restack.py <approved head> <new head>`
 passes and CI passes at the new head. The script replays the approved change onto the `main` that
 the new head is based on, which is what the merge queue would have built from the approved head,

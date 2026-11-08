@@ -171,7 +171,7 @@ class CheckOutputTests(unittest.TestCase):
             db.execute("DELETE FROM modules WHERE name IN ('CslibFrontier.Removed', 'CslibFrontier')")
             db.commit()
             before = self.artifact_bytes()
-            self.assert_failure("Missing modules in documentation database: Complexity")
+            self.assert_failure("Missing modules in documentation database: CslibFrontier")
             self.assertEqual(self.artifact_bytes(), before)
 
     def test_config_only_does_not_inspect_output(self):
@@ -213,11 +213,11 @@ class CheckOutputTests(unittest.TestCase):
 
     def test_missing_root_module(self):
         del self.index["modules"]["CslibFrontier"]
-        self.assert_failure("Missing module in search index: Complexity")
+        self.assert_failure("Missing module in search index: CslibFrontier")
 
     def test_missing_root_page(self):
         self.page("CslibFrontier").unlink()
-        self.assert_failure("Missing module page: Complexity")
+        self.assert_failure("Missing module page: CslibFrontier")
 
     def test_missing_theorem_anchor(self):
         self.write(self.page("CslibFrontier.Current"))
@@ -314,7 +314,7 @@ class CheckOutputTests(unittest.TestCase):
         self.write(
             self.docs / "navbar.html",
             '<div class="nav_link"><a href="./">index</a></div>'
-            '<details class="nav_sect" data-path="./CslibFrontier.html"><summary>Complexity (<a href="./CslibFrontier.html">file</a>)</summary>'
+            '<details class="nav_sect" data-path="./CslibFrontier.html"><summary>CslibFrontier (<a href="./CslibFrontier.html">file</a>)</summary>'
             '<div class="nav_link"><a href="./CslibFrontier/Current.html">Current</a></div></details>'
             '<details class="nav_sect" data-path="./Init.html"><summary>Init</summary>'
             '<div class="nav_link"><a href="./Init/Prelude.html">Prelude</a></div></details>'

@@ -183,7 +183,7 @@ class UpstreamExportTests(unittest.TestCase):
 
     def test_invalid_module_names_are_rejected_without_writing(self) -> None:
         self.write_local("CslibFrontier.lean", "module\n")
-        for name in ("CslibFrontier", "Complexity..Init", "Complexity./Init", "CslibFrontier.Init/../Init"):
+        for name in ("CslibFrontier", "CslibFrontier..Init", "CslibFrontier./Init", "CslibFrontier.Init/../Init"):
             with self.subTest(name=name):
                 code, out, err = self.run_upstream("--no-mk-all", name)
                 self.assertNotEqual(code, 0, out + err)

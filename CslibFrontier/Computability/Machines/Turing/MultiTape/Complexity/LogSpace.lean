@@ -46,7 +46,7 @@ inclusion `DSPACE(s) ⊆ DTIME(2 ^ O(s))` of cslib pull request #767
 (`ComputesInTimeAndSpace.truncate` there), stated for the current machine API.
 
 Composition is in
-`CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/Composition/Recompute.lean`.
+`CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Composition.Recompute`.
 It is kept apart because its machine is built from the universal machine; this file does not
 depend on that machine.
 
@@ -276,12 +276,12 @@ theorem ComputableInLogSpace.of_finite [Finite α] (f : α → β) :
 
 `ComputableInLogSpace` is a `fun_prop` predicate. The identity and constants are its core rules
 here. Its composition rule is registered in
-`CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/Composition/Recompute.lean`,
+`CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Composition.Recompute`,
 so `fun_prop` needs that module to decompose a goal; pairing, projections, case distinctions and
 word operations are registered in
 `CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/Words.lean`, and the
 counter-program primitives in
-`CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/CounterProgram/Words.lean`.
+`CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Words`.
 The inclusion in polynomial time is a one-way transition rule: a logspace certificate closes a
 plain polynomial-time goal, and there is no rule back, so the search has no cycle. -/
 

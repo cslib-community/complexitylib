@@ -14,7 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace
 
 Composite arithmetic on unary numbers and list lengths, discharged by `fun_prop` alone with the
 instances of
-`CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/CounterProgram/Unary.lean`.
+`CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Unary`.
 -/
 
 namespace ComplexityTests.LogSpaceUnary

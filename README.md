@@ -93,7 +93,7 @@ the selection is not an exhaustive API reference.
 
 ## Build and use
 
-The package is named `complexitylib`; imports begin with `CslibFrontier.`. Most declaration
+The package is named `cslib-frontier`; imports begin with `CslibFrontier.`. Most declaration
 namespaces begin with `Cslib`, and Turing-machine declarations use `Turing`.
 
 ### Build a checkout
@@ -105,7 +105,7 @@ and Python 3.11+. The commands below assume Bash. Elan selects the Lean and Lake
 
 ```bash
 git clone https://github.com/cslib-community/cslib-frontier.git
-cd complexitylib
+cd cslib-frontier
 scripts/build.sh --wfail --iofail
 ```
 
@@ -220,8 +220,10 @@ This is the canonical CSLib-based Complexitylib. The renamed historical
 [pre-CSLib implementation](https://github.com/SamuelSchlesinger/complexitylib-v1) remains available
 with archival pending; it has a different API, and some developments remain to be ported. The temporary
 repository and package name `complexitylib2` was retired when this repository moved to CSLib
-Community. Downstream projects using that package name should change it to `complexitylib`; Lean
-imports remain unchanged.
+Community. The repository was later renamed from `complexitylib` to `cslib-frontier`, with the
+Lake package renamed to match and the module root renamed from Complexity to CslibFrontier.
+Downstream projects should require `cslib-frontier` and import `CslibFrontier.*` modules;
+declaration names did not change.
 
 Modules follow CSLib's APIs, paths, namespaces, and contribution standards so they can move
 upstream with the import prefix changed from `CslibFrontier.` to `Cslib.`. Acceptance requires

@@ -137,8 +137,8 @@ def checkAbstract (abstractNamespace : Name) (allowedModules : Array Name := #[]
           pending := pending.push (root, c)
     | some idx =>
       let owner := env.header.moduleNames[idx.toNat]!
-      let isLocalRepo := (`CslibFrontier).isPrefixOf owner || (`CslibFrontierTests).isPrefixOf owner ||
-        (`CslibFrontierAbstracts).isPrefixOf owner
+      let isLocalRepo := (`CslibFrontier).isPrefixOf owner ||
+        (`CslibFrontierTests).isPrefixOf owner || (`CslibFrontierAbstracts).isPrefixOf owner
       if isLocalRepo then
         unless allowedModules.contains owner do
           throwError

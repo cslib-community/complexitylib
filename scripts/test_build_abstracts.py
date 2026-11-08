@@ -62,9 +62,9 @@ class BuildAbstractsTests(unittest.TestCase):
             build.module_source_path(module, self.root).write_text(
                 imports + f"/-! # {module.rsplit('.', 1)[-1]} foundation\n"
                 "Exact checked definitions.\n-/\n"
-                f"namespace CslibFrontierTests.Abstracts.{module.rsplit('.', 1)[-1]}\n"
+                f"namespace ComplexityTests.Abstracts.{module.rsplit('.', 1)[-1]}\n"  # rename-module-root: keep
                 f"/-- The foundational definition {name}. -/\ndef {name} : Nat := 0\n"
-                f"end CslibFrontierTests.Abstracts.{module.rsplit('.', 1)[-1]}\n")
+                f"end ComplexityTests.Abstracts.{module.rsplit('.', 1)[-1]}\n")  # rename-module-root: keep
         source = build.module_source_path(self.entry["module"], self.root)
         source.write_text("import CslibFrontierAbstracts.Check\n"
                           "import CslibFrontierAbstracts.ExampleBridge\n"

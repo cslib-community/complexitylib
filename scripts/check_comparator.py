@@ -50,11 +50,14 @@ def prepare(suite: str) -> Path:
         raise ValueError(f"generated source directory must not contain symlinks: {GENERATED}")
     GENERATED.mkdir(parents=True, exist_ok=True)
     name, theorems = SUITES[suite]
-    namespace = f"CslibFrontierComparator.{name}"
+    # The statement modules moved to the `CslibFrontierComparator` root; their declarations keep
+    # the `ComplexityComparator` namespace.  (rename-module-root: keep)
+    namespace = f"ComplexityComparator.{name}"  # rename-module-root: keep
+    package = f"CslibFrontierComparator.{name}"
     challenge = f"CslibFrontierComparatorChallenges.{name}"
     source = HEADER + f"""module
 
-public import {namespace}.Statements
+public import {package}.Statements
 
 public section
 
@@ -66,7 +69,7 @@ universe u v w s
     write_generated(GENERATED / f"{name}.lean", source, lean=True)
     config = {
         "challenge_module": challenge,
-        "solution_module": f"{namespace}.Solution",
+        "solution_module": f"{package}.Solution",
         "theorem_names": [f"{namespace}.{theorem}" for theorem, _ in theorems],
         "permitted_axioms": AXIOMS,
     }
@@ -78,7 +81,7 @@ universe u v w s
 def negative_control() -> int:
     """A valid proof of True must be rejected as a proof of the basic contracts."""
     config = json.loads(prepare("basic").read_text())
-    module = "ComplexityComparatorChallenges.WrongStatement"
+    module = "CslibFrontierComparatorChallenges.WrongStatement"
     source = HEADER + "module\n\npublic section\n\n"
     for theorem in config["theorem_names"]:
         source += f"theorem {theorem} : True := True.intro\n\n"

@@ -87,7 +87,7 @@ class QueryTests(unittest.TestCase):
     def setUp(self) -> None:
         self.decls = {
             "A.used": declaration("A.used", 3, lib_refs={"CslibFrontier.B", "CslibFrontier.C"},
-                                  test_refs={"ComplexityTests.A"}),
+                                  test_refs={"CslibFrontierTests.A"}),
             "A.local": declaration("A.local", 5, local_uses=2, implicit=["simp"]),
             "A.none": declaration("A.none", 7, sort="definition"),
             "A.tested": declaration("A.tested", 9, abstract_refs={"CslibFrontierAbstracts.X"}),
@@ -98,7 +98,7 @@ class QueryTests(unittest.TestCase):
     def test_references_list_users_by_role(self) -> None:
         self.assertEqual(aq.reference_lines(self.decls, ["CslibFrontier/A.lean"], unused=False), [
             "CslibFrontier/A.lean:3: A.used (theorem): library CslibFrontier.B, CslibFrontier.C; "
-            "tests ComplexityTests.A",
+            "tests CslibFrontierTests.A",
             "CslibFrontier/A.lean:5: A.local (theorem): only its own module "
             "[used implicitly through simp?]",
             "CslibFrontier/A.lean:7: A.none (definition): nowhere",

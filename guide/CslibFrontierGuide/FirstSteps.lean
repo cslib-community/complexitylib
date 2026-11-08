@@ -17,7 +17,7 @@ set_option verso.code.warnLineLength 80
 tag := "first-steps"
 %%%
 
-The package is named `complexitylib`, and its modules begin with `CslibFrontier.` and mirror CSLib's
+The package is named `cslib-frontier`, and its modules begin with `CslibFrontier.` and mirror CSLib's
 layout. `import CslibFrontier` imports the whole library, which is convenient for exploring but slow
 to load; a development imports the modules it uses. Each module's documentation lists its main
 definitions and results, with references.

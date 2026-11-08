@@ -103,13 +103,13 @@ class OutputCheckTests(unittest.TestCase):
 
     def test_glob_library_modules_are_read_from_sources(self) -> None:
         self.write_ileans({"CslibFrontier": [], "CslibFrontierAbstracts": [],
-                           "ComplexityTests.T": ["CslibFrontier.B"], "CslibFrontier.B": [],
-                           "ComplexityTests.Stale": []})
-        glob = lambda root: ["ComplexityTests.T"] if root == "CslibFrontierTests" else []
+                           "CslibFrontierTests.T": ["CslibFrontier.B"], "CslibFrontier.B": [],
+                           "CslibFrontierTests.Stale": []})
+        glob = lambda root: ["CslibFrontierTests.T"] if root == "CslibFrontierTests" else []
         self.assertEqual(sorted(lo.load_ileans(self.reference, glob=glob)),
-                         ["CslibFrontier.B", "ComplexityTests.T"])
+                         ["CslibFrontier.B", "CslibFrontierTests.T"])
         self.assertEqual(lo.root_modules(glob),
-                         ["CslibFrontier", "ComplexityTests.T", "CslibFrontierAbstracts"])
+                         ["CslibFrontier", "CslibFrontierTests.T", "CslibFrontierAbstracts"])
 
     def test_missing_reachable_output_is_refused(self) -> None:
         self.write_ileans({"CslibFrontier": ["CslibFrontier.Live"], "CslibFrontierAbstracts": [],
