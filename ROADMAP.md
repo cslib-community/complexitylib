@@ -1451,10 +1451,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   Rademacher complexity
   ([#3297](https://github.com/cslib-community/complexitylib/issues/3297)): Massart's lemma,
   symmetrization, the McDiarmid generalization bounds with expected and empirical complexity,
-  and the growth-function and VC bounds for `{-1, +1}` classes are in place on finite domains.
-  Remaining: Talagrand's contraction lemma, the 0-1 loss relation and the resulting VC
-  generalization bound, margin bounds, local Rademacher complexity, and general measurable
-  domains.
+  the growth-function and VC bounds for `{-1, +1}` classes, the 0-1 loss relation, and the
+  resulting growth-function, VC and agnostic ERM bounds for binary classification are in place
+  on finite domains. Remaining: Talagrand's contraction lemma, margin bounds, local Rademacher
+  complexity, and general measurable domains.
   Statistical queries
   ([#2910](https://github.com/cslib-community/complexitylib/issues/2910)): the deterministic SQ
   model has correlational and SQ-dimension query lower bounds, including parities, the
