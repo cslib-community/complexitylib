@@ -37,16 +37,17 @@ Checks enforced by default (see AGENTS.md):
    Inline and multiline settings and decimal/hexadecimal numerals are checked. With the default
    selection, an entry whose file no longer needs it (no budget above the default, or a cap above the largest
    budget) is reported as stale, so the allowlist only shrinks as budgets are reduced (#1528).
-8. (Default selection only.) `ROADMAP.md` adds no issue-link reference definitions
-   (`[#N]: https://…`): only the labels in `ROADMAP_ISSUE_DEFINITIONS`, which predate the rule,
-   may be defined. New links are written inline, since every PR appending a definition to the
-   shared tail block conflicts with the others in the merge queue. Each `[#N]` shortcut that is
-   not an inline link or a definition must still have its definition.
+8. (Default selection only.) `ROADMAP.md` lists directions by scope only (CONTRIBUTING.md,
+   Documentation): it has no link reference definitions (`[label]: https://…`), since every PR
+   appending one to a shared tail block conflicted with the others in the merge queue, so every
+   link, including each `[#N]`, is written inline. Each top-level entry has no nested bullets
+   and at most `ROADMAP_ENTRY_MAX` characters of Markdown (a link counts as its text), which
+   keeps status and progress notes on issues, where the file says they belong.
 
 Opt-in heuristic checks:
-10. (`--check-simp`) Flag non-terminal bare `simp` tactics in `-- upstream: candidate` modules
-    under Complexity/.
-11. (`--max-lines N`) Flag Lean files exceeding N lines.
+9. (`--check-simp`) Flag non-terminal bare `simp` tactics in `-- upstream: candidate` modules
+   under Complexity/.
+10. (`--max-lines N`) Flag Lean files exceeding N lines.
 """
 
 from __future__ import annotations
@@ -560,50 +561,100 @@ def check_bibliography(text: str, rel: str = "references.bib") -> list[str]:
     return errors
 
 
-# The issue-link reference definitions that `ROADMAP.md` may keep: those on `main` when inline
-# links became the rule, and those of pull requests then open, so that queued work is not failed
-# for following the old convention. The set never grows; a closed direction drops its definition
-# without editing this list. The one-time conversion of the block to inline links (#2943) empties
-# it.
-ROADMAP_ISSUE_DEFINITIONS = frozenset({
-    321, 324, 399, 456, 459, 474, 486, 581, 585, 608, 640, 643, 798, 800, 862, 884, 886, 888, 889,
-    890, 891, 892, 894, 895, 896, 897, 939, 949, 999, 1002, 1104, 1124, 1155, 1351, 1539, 1572,
-    1817, 2019, 2062, 2063, 2084, 2145, 2205, 2213, 2261, 2289, 2290, 2347, 2423, 2468, 2521,
-    2527, 2568, 2579, 2585, 2620, 2636, 2642, 2652, 2661, 2812, 2855, 2861, 2866, 2870, 2884,
-    2899, 2900,
-})
-# A reference definition `[#N]: target` (CommonMark allows up to three leading spaces).
-ROADMAP_ISSUE_DEFINITION_RE = re.compile(r"^ {0,3}\[#(\d+)\]:", re.M)
-# A use `[#N]` of the label: a shortcut, collapsed or full reference, but not an inline link.
-# This is a plain scan, not a Markdown parse, so `[#N]` in code spans or fenced blocks, as nested
-# link text (`[text [#N]](url)`), after an escape (`\[#N]`) or before another label
-# (`[#N][label]`) is also taken as a use, and is reported when `#N` has no definition.
+# The visible-text budget of one top-level `ROADMAP.md` entry: room for a direction's scope in a
+# few sentences, not for its status (#2943).
+ROADMAP_ENTRY_MAX = 600
+# A link reference definition `[label]: target` (CommonMark allows up to three leading spaces).
+# It only counts at the start of a block: CommonMark does not let a definition interrupt a
+# paragraph, so a continuation line such as `  [Lemma 3]: the key step.` is ordinary text.
+ROADMAP_DEFINITION_RE = re.compile(r"^ {0,3}\[([^\]\n]+)\]:[ \t]*\S")
+# A use `[#N]` of an issue label that is not an inline link: a shortcut, collapsed or full
+# reference; a definition is reported as such. This is a plain scan, not a Markdown parse, so
+# `[#N]` in code spans or fenced blocks, as nested link text (`[text [#N]](url)`) or after an
+# escape (`\[#N]`) is also reported.
 ROADMAP_ISSUE_REFERENCE_RE = re.compile(r"\[#(\d+)\](?!\()")
+# Entries are top-level bullet or ordered list items.
+ROADMAP_ENTRY_RE = re.compile(r"^(?:[-*+]|\d+[.)])[ \t]")
+ROADMAP_NESTED_RE = re.compile(r"^[ \t]+(?:[-*+]|\d+[.)])[ \t]")
+# Unindented lines that start a new block rather than continue an entry lazily.
+ROADMAP_BLOCK_RE = re.compile(r"^(?:#|\||>|```|~~~)")
+ROADMAP_INLINE_LINK_RE = re.compile(r"\[([^\]]*)\]\([^)]*\)")
 
 
-def check_roadmap_links(text: str, rel: str = "ROADMAP.md") -> list[str]:
-    """No new `[#N]:` reference definitions, and every `[#N]` reference is defined."""
-    errors: list[str] = []
-    defined: set[int] = set()
-    for m in ROADMAP_ISSUE_DEFINITION_RE.finditer(text):
-        number = int(m.group(1))
-        defined.add(number)
-        if number not in ROADMAP_ISSUE_DEFINITIONS:
-            line = text.count("\n", 0, m.start()) + 1
-            errors.append(
-                f"{rel}:{line}: new reference definition `[#{number}]:`; write the link inline as "
-                f"`[#{number}](https://github.com/cslib-community/complexitylib/issues/{number})`, "
-                "since definitions appended to the end of the file conflict across queued PRs "
-                "(CONTRIBUTING.md, Documentation)")
-    for m in ROADMAP_ISSUE_REFERENCE_RE.finditer(text):
-        number = int(m.group(1))
-        if number in defined:
+def roadmap_entries(text: str) -> list[tuple[int, list[str]]]:
+    """Top-level list items with their continuation lines, by starting line number.
+
+    An entry continues through indented lines, also across blank lines (a loose list item's
+    later paragraphs or sub-lists), and through lazy unindented continuation lines; it ends at
+    the next item, at a heading, table, quote or fence, or at an unindented line after a blank."""
+    entries: list[tuple[int, list[str]]] = []
+    current: list[str] | None = None
+    after_blank = False
+    for number, line in enumerate(text.split("\n"), start=1):
+        if ROADMAP_ENTRY_RE.match(line):
+            current = [line]
+            entries.append((number, current))
+            after_blank = False
+        elif current is None:
             continue
-        line = text.count("\n", 0, m.start()) + 1
+        elif not line.strip():
+            after_blank = True
+        elif line[:1] in (" ", "\t"):
+            current.append(line)
+            after_blank = False
+        elif after_blank or ROADMAP_BLOCK_RE.match(line):
+            current = None
+        else:
+            current.append(line)
+    return entries
+
+
+def roadmap_definitions(text: str) -> list[tuple[int, str]]:
+    """Link reference definitions that start a block: line number and label."""
+    found: list[tuple[int, str]] = []
+    block_start = True
+    for number, line in enumerate(text.split("\n"), start=1):
+        m = ROADMAP_DEFINITION_RE.match(line)
+        is_definition = bool(m) and block_start
+        if is_definition:
+            found.append((number, m.group(1)))
+        block_start = not line.strip() or is_definition or line.startswith("#")
+    return found
+
+
+def check_roadmap(text: str, rel: str = "ROADMAP.md") -> list[str]:
+    """Inline links only, and short top-level entries without nested bullets."""
+    errors: list[str] = []
+    issues = "https://github.com/cslib-community/complexitylib/issues/"
+    definitions = roadmap_definitions(text)
+    defined_lines = {number for number, _ in definitions}
+    for number, label in definitions:
         errors.append(
-            f"{rel}:{line}: `[#{number}]` has no reference definition and renders as plain text; "
-            f"write it as `[#{number}](https://github.com/cslib-community/complexitylib/issues/"
-            f"{number})`")
+            f"{rel}:{number}: reference definition `[{label}]:`; write the link inline instead, "
+            "since definitions collected at the end of the file conflict across queued PRs "
+            "(CONTRIBUTING.md, Documentation)")
+    for m in ROADMAP_ISSUE_REFERENCE_RE.finditer(text):
+        line = text.count("\n", 0, m.start()) + 1
+        line_start = text.rfind("\n", 0, m.start()) + 1
+        if line in defined_lines and not text[line_start:m.start()].strip():
+            continue
+        number = m.group(1)
+        errors.append(
+            f"{rel}:{line}: `[#{number}]` is not an inline link; write it as "
+            f"`[#{number}]({issues}{number})`")
+    for number, lines in roadmap_entries(text):
+        for line in lines[1:]:
+            if ROADMAP_NESTED_RE.match(line):
+                errors.append(
+                    f"{rel}:{number}: nested list item in this entry; state the direction's scope "
+                    "in the entry's own sentences, or list a separate direction as its own entry")
+                break
+        visible = ROADMAP_INLINE_LINK_RE.sub(r"\1", " ".join(part.strip() for part in lines))
+        if len(visible) > ROADMAP_ENTRY_MAX:
+            errors.append(
+                f"{rel}:{number}: entry has {len(visible)} characters of Markdown, counting links "
+                f"as their text (limit {ROADMAP_ENTRY_MAX}); state the direction's scope only, and "
+                "keep status and progress on its issue (CONTRIBUTING.md, Documentation)")
     return errors
 
 
@@ -673,7 +724,7 @@ def main() -> int:
     if not args.paths:
         errors += check_bibliography(bibliography)
         errors += check_heartbeat_allowlist_stale(heartbeat_caps)
-        errors += check_roadmap_links((ROOT / "ROADMAP.md").read_text(encoding="utf-8"))
+        errors += check_roadmap((ROOT / "ROADMAP.md").read_text(encoding="utf-8"))
     if errors:
         for err in errors:
             print(f"ERROR: {err}", file=sys.stderr)
