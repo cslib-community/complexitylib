@@ -161,8 +161,8 @@ theorem DTIME_two_pow_subset_EXP {h : ℕ → ℕ} (hh : PolynomiallyBounded h) 
 
 /-- Nondeterministic time `2 ^ h n`, for a polynomially bounded exponent `h`, is within
 nondeterministic exponential time. -/
-theorem NTIME_two_pow_subset_NEXP {α : Type} {enc : α ↪ List Bool} {h : ℕ → ℕ}
-    (hh : PolynomiallyBounded h) : NTIME enc (fun n => 2 ^ h n) ⊆ NEXP enc := fun _ hA =>
+theorem NTIME_two_pow_subset_NEXP {h : ℕ → ℕ} (hh : PolynomiallyBounded h) :
+    NTIME enc (fun n => 2 ^ h n) ⊆ NEXP enc := fun _ hA =>
   let ⟨k, hk⟩ := hh
   mem_NEXP_iff.mpr ⟨k, NTIME_mono_of_eventually_le
     (hk.mono fun _ hn => Nat.pow_le_pow_right (by norm_num) hn) hA⟩

@@ -364,10 +364,7 @@ theorem NEXP_subset_EXP_of_expPaddedNPEasy (hNP : ExpPaddedNPEasy) : NEXP enc �
   obtain ⟨d, hd⟩ := Set.mem_iUnion.mp (NTIME_two_pow_subset_iUnion_DTIME_of_expPaddedNPEasy hNP
     (ComputableInPolyTime.unary_pow (k + 1))
       (fun n => Nat.le_self_pow (by omega) n) hk')
-  refine mem_EXP_iff.mpr ⟨k + 2, DTIME_mono_of_eventually_le (Filter.eventually_atTop.mpr
-    ⟨d, fun n hn => Nat.pow_le_pow_right (by norm_num) ?_⟩) hd⟩
-  rw [pow_succ' n (k + 1)]
-  exact Nat.mul_le_mul_right _ hn
+  exact DTIME_two_pow_subset_EXP (h := fun n => d * n ^ (k + 1)) (by fun_prop) hd
 
 /-- **If `NP ⊆ P`, then `NEXP ⊆ EXP`** [Arora and Barak, Section 2.6][AroraBarak09]. -/
 theorem NEXP_subset_EXP_of_NP_subset_P (hNP : NP encBits ⊆ P encBits) : NEXP enc ⊆ EXP enc :=
@@ -505,8 +502,9 @@ theorem preimage_pad_mem_NEXP {B : Set (List Bool)} (hB : B ∈ NP encBits) {f :
     (T₀ := fun n => n + (n + (n + 1) ^ d + (f n + 1) * 2 ^ f n))
     (computableInO_frame_append_replicate (t := fun n => 2 ^ f n) hpad)
   -- the padded instance is written within time `2 ^ O(f n)`, and `f` is polynomially bounded
-  refine NTIME_two_pow_subset_NEXP (h := fun n => ((d + 2) * f n + 2) * D)
-    (by have := hf.polynomiallyBounded; fun_prop) (NTIME_mono (fun n => ?_) hD)
+  have := hf.polynomiallyBounded
+  refine NTIME_two_pow_subset_NEXP (h := fun n => ((d + 2) * f n + 2) * D) (by fun_prop)
+    (NTIME_mono (fun n => ?_) hD)
   rw [pow_mul]
   exact Nat.pow_le_pow_left (padTime_add_one_le (hn n) le_rfl) D
 
@@ -590,9 +588,10 @@ theorem preimage_pad_prod_two_pow_mem_EXP {B : Set (List Bool × ℕ)}
   obtain ⟨d₁, hpad_g⟩ := exists_computableInO_two_pow_length hg
   have hφ := (computableInO_frame_append_replicate (t := fun n => 2 ^ f n) hpad_f).prod
     (hpad_g.comp_enc enc)
+  have := hf.polynomiallyBounded
+  have := hg.polynomiallyBounded
   refine DTIME_two_pow_subset_EXP (h := fun n => (d₀ + d₁ + d + 2) * (f n + g n + 3))
-    (by have := hf.polynomiallyBounded; have := hg.polynomiallyBounded; fun_prop)
-    (preimage_mem_DTIME (C := 3) hd hφ fun a => ?_)
+    (by fun_prop) (preimage_mem_DTIME (C := 3) hd hφ fun a => ?_)
   set n := (enc a).length
   set X := f n + g n with hX
   have hnX : n ≤ X := (hnf n).trans (Nat.le_add_right _ _)
