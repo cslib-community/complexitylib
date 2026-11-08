@@ -466,12 +466,16 @@ index links to canonical definitions rather than keeping a second set.
 - **Abstract (Blum) complexity** ([#2866]): Blum complexity measures over Mathlib's
   `Nat.Partrec.Code`, with the `evaln` fuel instance, Borodin's gap theorem for the
   almost-everywhere classes (also with a two-argument stretch), recursive relatedness, Blum's
-  speedup theorem, and arbitrarily complex functions with the resulting strict hierarchy of
-  classes, are in `Computability/BlumComplexity`. Remaining: the McCreight–Meyer union theorem;
-  Blum's compression theorem in its running-time form (a single computable `h` such that every
-  total `φ_i` has `C_{Φ_i} ⊂ C_{n ↦ h n (Φ_i n)}`; the value form with `φ_i` in place of `Φ_i`
-  is false, by the gap theorem); honesty; effective forms of speedup such as Blum's
-  pseudo-speedup, which computes a faster program for a finite variant of `f` (M. Blum, *On
+  speedup theorem, arbitrarily complex functions with the resulting strict hierarchy of
+  classes, and the McCreight–Meyer union theorem, are in `Computability/BlumComplexity`.
+  Remaining: Blum's compression theorem in its running-time form (a single computable `h` such
+  that every total `φ_i` has `C_{Φ_i} ⊂ C_{n ↦ h n (Φ_i n)}`; the value form with `φ_i` in place
+  of `Φ_i` is false, by the gap theorem); the McCreight–Meyer honesty and naming theorems
+  ([#3234](https://github.com/cslib-community/complexitylib/issues/3234): every `C_t` equals
+  `C_{t'}` for an `h`-honest `t'`, with one computable `h` for all `t`, or for the cost `Φ_e` of a
+  total program; the 1969 paper is paywalled and the open Hartmanis–Hopcroft survey is an image
+  scan, so neither formulation has been checked against a source); effective forms of speedup
+  such as Blum's pseudo-speedup, which computes a faster program for a finite variant of `f` (M. Blum, *On
   effective procedures for speeding up algorithms*, J. ACM 18(2), 1971), and Blum measures for
   native multitape time and space through a Gödel-numbering bridge from native descriptions.
 - **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
