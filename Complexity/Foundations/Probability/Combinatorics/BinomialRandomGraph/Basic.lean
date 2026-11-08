@@ -1,0 +1,191 @@
+/-
+Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Samuel Schlesinger
+-/
+
+module
+-- upstream: candidate (Mathlib, `Mathlib/Probability/Combinatorics/BinomialRandomGraph/`)
+
+public import Complexity.Init
+public import Mathlib.Combinatorics.SimpleGraph.Copy
+public import Mathlib.MeasureTheory.Integral.Bochner.Basic
+public import Mathlib.Probability.Combinatorics.BinomialRandomGraph.Defs
+import Mathlib.Data.Fintype.CardEmbedding
+import Mathlib.MeasureTheory.Integral.Bochner.Set
+
+/-!
+# Subgraph probabilities in binomial random graphs
+
+Mathlib's `SimpleGraph.binomialRandom V p`, written `G(V, p)`, is the law of the random simple
+graph on `V` in which each pair of distinct vertices is an edge independently with probability
+`p`. This file computes the basic probabilities of `G(V, p)` for countable `V`:
+
+* `G(V, p)` contains a fixed finite set `s` of non-diagonal edges with probability `p ^ |s|`
+  (`SimpleGraph.binomialRandom_real_subset_edgeSet`), so it contains a fixed subgraph `H` on its
+  own vertex set with probability `p ^ e(H)` (`SimpleGraph.binomialRandom_real_le`);
+* for finite `V` the expected number of labelled copies of a finite graph `H` is the falling
+  factorial `|V| (|V| - 1) ⋯ (|V| - v(H) + 1)` times `p ^ e(H)`
+  (`SimpleGraph.integral_labelledCopyCount`), and by the union
+  bound `G(V, p)` contains a copy of `H` with at most this probability
+  (`SimpleGraph.binomialRandom_real_isContained_le`);
+* consequently, if `n ^ v(H) p(n) ^ e(H) → 0`, then `G(n, p(n))` contains no copy of `H` with
+  probability tending to `1` (`SimpleGraph.tendsto_binomialRandom_real_isContained`). This is the
+  first-moment half of the small-subgraph threshold theorem
+  [Janson, Łuczak and Ruciński, Chapter 3][JansonLuczakRucinski2000]; applied to the densest
+  subgraph of `H`, it gives the `0`-statement below `n ^ (-1 / m(H))`. The second-moment half is
+  proved for triangles in the sibling module `BinomialRandomGraph.Clique`.
+
+## Main results
+
+* `SimpleGraph.measurableSet_subset_edgeSet`, `SimpleGraph.measurableSet_le`: events defined by
+  required edges are measurable.
+* `SimpleGraph.binomialRandom_real_subset_edgeSet`, `SimpleGraph.binomialRandom_real_le`: the
+  probability of a fixed set of edges or a fixed subgraph.
+* `SimpleGraph.integral_labelledCopyCount`: the expected number of labelled copies of `H`.
+* `SimpleGraph.binomialRandom_real_isContained_le`: the first-moment bound for containing `H`.
+* `SimpleGraph.tendsto_binomialRandom_real_isContained`: its asymptotic form.
+
+## References
+
+* [N. Alon, J. H. Spencer, *The Probabilistic Method*, Section 4.4][AlonSpencer2016]
+* [S. Janson, T. Łuczak, A. Ruciński, *Random Graphs*, Chapter 3][JansonLuczakRucinski2000]
+-/
+
+public section
+
+open MeasureTheory ProbabilityTheory unitInterval Finset Filter
+open scoped Finset Topology
+
+namespace SimpleGraph
+
+variable {V W : Type*}
+
+/-! ### Fixed edges and fixed subgraphs -/
+
+/-- The graphs containing a given set of edges form a measurable set. -/
+theorem measurableSet_subset_edgeSet [Countable V] (s : Set (Sym2 V)) :
+    MeasurableSet {G : SimpleGraph V | s ⊆ G.edgeSet} := by
+  have : {G : SimpleGraph V | s ⊆ G.edgeSet} = ⋂ e ∈ s, {G | e ∈ G.edgeSet} := by
+    ext G; simp [Set.subset_def]
+  rw [this]
+  refine MeasurableSet.biInter (Set.to_countable s) fun e _ => ?_
+  exact measurableSet_setOfPred.2 ((measurable_set_iff.1 measurable_edgeSet) e)
+
+/-- The supergraphs of a given graph form a measurable set. -/
+theorem measurableSet_le [Countable V] (H : SimpleGraph V) :
+    MeasurableSet {G : SimpleGraph V | H ≤ G} := by
+  simpa only [← edgeSet_subset_edgeSet] using measurableSet_subset_edgeSet H.edgeSet
+
+/-- `G(V, p)` contains a fixed finite set `s` of non-diagonal edges with probability `p ^ |s|`. -/
+theorem binomialRandom_subset_edgeSet [Countable V] (p : I) (s : Finset (Sym2 V))
+    (hs : ∀ e ∈ s, ¬e.IsDiag) :
+    G(V, p) {G | (s : Set (Sym2 V)) ⊆ G.edgeSet} = toNNReal p ^ #s := by
+  rw [binomialRandom_eq_map, Measure.map_apply measurable_fromEdgeSet
+    (measurableSet_subset_edgeSet _), setBernoulli_apply']
+  have : (fun q : Sym2 V → Prop => {i | q i}) ⁻¹'
+      (fromEdgeSet ⁻¹' {G | (s : Set (Sym2 V)) ⊆ G.edgeSet}) =
+      Set.pi (s : Set (Sym2 V)) (fun _ => {True}) := by
+    ext q
+    simp only [Set.mem_preimage, Set.mem_ofPred_eq, edgeSet_fromEdgeSet, Set.subset_def,
+      Set.mem_sdiff, Set.mem_pi, Finset.mem_coe, Set.mem_singleton_iff, eq_iff_iff, iff_true]
+    exact ⟨fun h e he => (h e he).1, fun h e he => ⟨h e he, hs e he⟩⟩
+  rw [this, Measure.infinitePi_pi _ (fun _ _ => measurableSet_singleton _)]
+  rw [Finset.prod_congr rfl (g := fun _ => (toNNReal p : ENNReal))]
+  · simp
+  intro e he
+  rw [bernoulliMeasure_apply_of_mem_of_notMem p (measurableSet_singleton _)]
+  · simpa using hs e he
+  · simp
+
+/-- `G(V, p)` contains a fixed finite set `s` of non-diagonal edges with probability `p ^ |s|`. -/
+theorem binomialRandom_real_subset_edgeSet [Countable V] (p : I) (s : Finset (Sym2 V))
+    (hs : ∀ e ∈ s, ¬e.IsDiag) :
+    G(V, p).real {G | (s : Set (Sym2 V)) ⊆ G.edgeSet} = (p : ℝ) ^ #s := by
+  rw [measureReal_def, binomialRandom_subset_edgeSet p s hs]
+  simp
+
+/-- `G(V, p)` contains a fixed subgraph `H` with finitely many edges with probability
+`p ^ e(H)`. -/
+theorem binomialRandom_real_le [Countable V] (p : I) (H : SimpleGraph V) [Fintype H.edgeSet] :
+    G(V, p).real {G | H ≤ G} = (p : ℝ) ^ #H.edgeFinset := by
+  have : {G : SimpleGraph V | H ≤ G} =
+      {G | ((H.edgeFinset : Finset (Sym2 V)) : Set (Sym2 V)) ⊆ G.edgeSet} := by
+    ext G; simp
+  rw [this, binomialRandom_real_subset_edgeSet p _ fun e he => not_isDiag_of_mem_edgeFinset he]
+
+/-! ### Labelled copies -/
+
+/-- Copies of `H` in `G` are the vertex embeddings under which the image of `H` is a subgraph of
+`G`. -/
+private def copyEquiv (H : SimpleGraph W) (G : SimpleGraph V) :
+    Copy H G ≃ {f : W ↪ V // H.map f ≤ G} where
+  toFun c := ⟨c.toEmbedding, map_le_iff_le_comap.2 fun _ _ h => c.toHom.map_adj h⟩
+  invFun f := ⟨⟨f.1, fun h => (map_le_iff_le_comap.1 f.2) h⟩, f.1.injective⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+/-- The image of `H` under a fixed vertex embedding is present in `G(V, p)` with probability
+`p ^ e(H)`. -/
+private theorem binomialRandom_real_map_le [Finite V] [Finite W] (p : I) (H : SimpleGraph W)
+    [Fintype H.edgeSet] (f : W ↪ V) :
+    G(V, p).real {G | H.map f ≤ G} = (p : ℝ) ^ #H.edgeFinset := by
+  classical
+  have := Fintype.ofFinite V
+  have := Fintype.ofFinite W
+  rw [binomialRandom_real_le]
+  congr 1
+  convert card_edgeFinset_map f H
+
+/-- **The expected number of labelled copies** of a graph `H` in `G(V, p)` is the falling
+factorial `|V| (|V| - 1) ⋯ (|V| - v(H) + 1)` times `p ^ e(H)`
+[Alon and Spencer, Section 4.4][AlonSpencer2016]. -/
+theorem integral_labelledCopyCount [Fintype V] [Fintype W] (p : I) (H : SimpleGraph W)
+    [Fintype H.edgeSet] :
+    ∫ G, (G.labelledCopyCount H : ℝ) ∂G(V, p) =
+      (Fintype.card V).descFactorial (Fintype.card W) * (p : ℝ) ^ #H.edgeFinset := by
+  classical
+  have hcount (G : SimpleGraph V) : (G.labelledCopyCount H : ℝ) =
+      ∑ f : W ↪ V, {G : SimpleGraph V | H.map f ≤ G}.indicator (fun _ => 1) G := by
+    rw [labelledCopyCount, Fintype.card_eq_nat_card, Nat.card_congr (copyEquiv H G),
+      Nat.card_eq_fintype_card, Fintype.card_subtype]
+    simp [Set.indicator_apply, Finset.sum_boole]
+  simp_rw [hcount]
+  rw [integral_finsetSum _ fun f _ => (integrable_const 1).indicator (measurableSet_le _)]
+  simp_rw [integral_indicator_const _ (measurableSet_le _), smul_eq_mul, mul_one,
+    binomialRandom_real_map_le]
+  rw [Finset.sum_const, Finset.card_univ, Fintype.card_embedding_eq, nsmul_eq_mul]
+
+/-- **First moment bound for containment** [Alon and Spencer, Section 4.4][AlonSpencer2016]:
+`G(V, p)` contains a copy of `H` with probability at most the expected number
+`|V| (|V| - 1) ⋯ (|V| - v(H) + 1) · p ^ e(H)` of labelled copies. -/
+theorem binomialRandom_real_isContained_le [Fintype V] [Fintype W] (p : I) (H : SimpleGraph W)
+    [Fintype H.edgeSet] :
+    G(V, p).real {G | H ⊑ G} ≤
+      (Fintype.card V).descFactorial (Fintype.card W) * (p : ℝ) ^ #H.edgeFinset := by
+  classical
+  have hset : {G : SimpleGraph V | H ⊑ G} = ⋃ f ∈ (univ : Finset (W ↪ V)), {G | H.map f ≤ G} := by
+    ext G
+    simp only [Set.mem_ofPred_eq, Set.mem_iUnion, mem_univ, exists_const,
+      isContained_iff_exists_le_comap, map_le_iff_le_comap]
+  rw [hset]
+  refine (measureReal_biUnion_finset_le _ _).trans_eq ?_
+  simp_rw [binomialRandom_real_map_le]
+  rw [Finset.sum_const, Finset.card_univ, Fintype.card_embedding_eq, nsmul_eq_mul]
+
+/-- **Below the first-moment threshold** [Janson, Łuczak and Ruciński, Chapter 3]
+[JansonLuczakRucinski2000]: if `n ^ v(H) p(n) ^ e(H) → 0`, then `G(n, p(n))` contains a copy of
+`H` with probability tending to `0`. -/
+theorem tendsto_binomialRandom_real_isContained [Fintype W] (H : SimpleGraph W)
+    [Fintype H.edgeSet] {p : ℕ → I}
+    (hp : Tendsto (fun n : ℕ => (n : ℝ) ^ Fintype.card W * (p n : ℝ) ^ #H.edgeFinset) atTop
+      (𝓝 0)) :
+    Tendsto (fun n => G(Fin n, p n).real {G | H ⊑ G}) atTop (𝓝 0) := by
+  refine squeeze_zero (fun _ => measureReal_nonneg) (fun n => ?_) hp
+  refine (binomialRandom_real_isContained_le (p n) H).trans ?_
+  rw [Fintype.card_fin]
+  gcongr
+  · exact pow_nonneg (p n).2.1 _
+  · exact_mod_cast Nat.descFactorial_le_pow n _
+
+end SimpleGraph

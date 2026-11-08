@@ -1093,6 +1093,13 @@ each statement against the numbered result. Organize modules by subject, not cha
   Chattopadhyay–Zuckerman and Li. Keep the clique and independence bounds separate from the
   polynomial-time recognition and adjacency certificates on vertex names. An explicit graph on
   `2 ^ Ω(k)` vertices is open.
+- **Random graph thresholds** ([#3275](https://github.com/cslib-community/complexitylib/issues/3275)):
+  for Mathlib's binomial random graph `G(n, p)`, the first-moment `0`-statement for every fixed
+  subgraph and the triangle threshold `p = 1 / n` (both moments, explicit bounds) are in
+  `Foundations/Probability/Combinatorics/BinomialRandomGraph`. Remaining: the second-moment
+  `1`-statement for strictly balanced graphs at `n ^ (-v / e)` and Bollobás's general threshold
+  `n ^ (-1 / m(H))`, Janson's inequality and the Poisson limit at the threshold, and the
+  connectivity threshold `log n / n`.
 - **Codes:** Guruswami–Sudan list decoding and local decoding, keeping interpolation,
   list-size/agreement guarantees and decoding runtime as separate obligations; concrete
   list-decodable codes for Nisan–Wigderson.

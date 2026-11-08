@@ -41,6 +41,16 @@ Graph bounds and explicitness are separate obligations. [`Cslib.ExplicitRamsey`]
 
 Nagy's graph has `Θ(k ^ 3)` vertices for homogeneous-set bound `k`, and Erdős's existential bound is exponential in `k`. Erdős's bound overtakes Nagy's at `k = 20`. Stronger explicit constructions (Frankl–Wilson, and the two-source disperser and extractor graphs) are not formalized. An explicit graph on `2 ^ Ω(k)` vertices is an open problem ([#3041](https://github.com/cslib-community/complexitylib/issues/3041)).
 
+## Random graphs and thresholds
+
+The binomial random graph `G(V, p)` is Mathlib's `SimpleGraph.binomialRandom`, a measure on `SimpleGraph V` with `p : unitInterval`. The library adds its basic probabilities and the first and second moment methods for small subgraphs. [Binomial random graph basics](../../Complexity/Foundations/Probability/Combinatorics/BinomialRandomGraph/Basic.lean) show that a fixed finite set of non-diagonal edges is present with probability `p ^ |s|` (`binomialRandom_real_subset_edgeSet`) and a fixed subgraph with probability `p ^ e(H)` (`binomialRandom_real_le`). The expected number of labelled copies of `H` is the falling factorial `|V| (|V| - 1) ⋯ (|V| - v(H) + 1)` times `p ^ e(H)` (`integral_labelledCopyCount`), and the union bound gives the same bound on the probability of containing `H` (`binomialRandom_real_isContained_le`). `tendsto_binomialRandom_real_isContained` is the first-moment half of the small-subgraph threshold theorem: if `n ^ v(H) p(n) ^ e(H) → 0`, then `G(n, p(n))` contains `H` with probability tending to `0`. Applied to the densest subgraph of `H`, this is the `0`-statement below `n ^ (-1 / m(H))`. [jansonluczakrucinski2000][jansonluczakrucinski2000]
+
+[The clique module](../../Complexity/Foundations/Probability/Combinatorics/BinomialRandomGraph/Clique.lean) proves the **triangle threshold** `p = 1 / n` with explicit bounds. A fixed `k`-set is a clique with probability `p ^ C(k, 2)` (`binomialRandom_real_isClique`), so the expected number of `k`-cliques is `C(|V|, k) p ^ C(k, 2)` (`integral_card_cliqueFinset`). The first moment gives `P(G(n, p) has a triangle) ≤ (n p) ^ 3 / 6` (`binomialRandom_real_not_cliqueFree_three_le`). The second moment gives `P(G(n, p) is triangle-free) ≤ 1 / (C(n, 3) p ^ 3) + 3 (n - 3) / (C(n, 3) p)` for `n ≥ 3` (`binomialRandom_real_cliqueFree_three_le_of_choose`), and hence `≤ 16 / (n p) ^ 3 + 48 / (n p)` for `n ≥ 4` (`binomialRandom_real_cliqueFree_three_le`). The asymptotic forms are `tendsto_binomialRandom_real_not_cliqueFree_three` (`n p(n) → 0`) and `tendsto_binomialRandom_real_cliqueFree_three` / `tendsto_binomialRandom_real_not_cliqueFree_three_nhds_one` (`n p(n) → ∞`). [alonspencer2016][alonspencer2016]
+
+The second-moment step uses two measure-theoretic statements in [SecondMoment](../../Complexity/Foundations/Probability/SecondMoment.lean). `measureReal_nonpos_le_variance_div_sq` bounds `P(X ≤ 0)` by `Var X / (E X) ^ 2`. `measureReal_forall_notMem_le` bounds the probability that none of the events `A k` occurs by `(∑∑ P(A k ∩ A l) - S ^ 2) / S ^ 2`, where `S = ∑ P(A k)`. For a count of edge-set events, each pair probability is again `p ^ |s ∪ t|`, so the variance computation reduces to counting overlaps. The [checked instances](../../ComplexityTests/BinomialRandomGraph.lean) cover `p = 0` and `p = 1`, the expected numbers of edges and triangles, and both sides of the threshold. They also show the bound is nonvacuous: `G(1000, 1/2)` contains a triangle with probability above `9 / 10`.
+
+Only the triangle case (`v = e = 3`) of the threshold `n ^ (-v / e)` for strictly balanced graphs is proved; the general balanced-graph second-moment theorem, Janson's inequality, the Poisson limit at the threshold and the connectivity threshold `log n / n` are not formalized ([#3275](https://github.com/cslib-community/complexitylib/issues/3275)). The uniform `G(n, 1/2)` of the [first-order 0-1 law](finite-model-logic.md) is a separate PMF construction, and no bridge to `binomialRandom` is proved.
+
 ## Natural proofs and cryptographic assumptions
 
 [NaturalProof.IsLarge](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/NaturalProof.lean#L147) separates largeness, constructivity and usefulness. A property is a family of sets of Boolean functions. Constructivity concerns deciding from a full truth table; polynomial in that input length is exponential in the function's arity. Usefulness excludes every easy language's slices eventually. Largeness is a quantitative density condition.
@@ -61,10 +71,12 @@ These are mathematical proof interfaces, not automatically encoded certificates 
 
 The conditional statements, truth-table scales and source-specific quantitative scope were inspected, but the complete magnification and cryptographic reduction proofs were not independently reconstructed in this worker pass. Distinguish a valid conditional theorem, a conventional open assumption, and a premise that this same library proves false elsewhere.
 
+[alonspencer2016]: ../sources.md#alonspencer2016
 [complexitylib]: ../sources.md#complexitylib
 [erdos1947]: ../sources.md#erdos1947
 [erdosszekeres1935]: ../sources.md#erdosszekeres1935
 [impagliazzowigderson97]: ../sources.md#impagliazzowigderson97
+[jansonluczakrucinski2000]: ../sources.md#jansonluczakrucinski2000
 [nagy1972]: ../sources.md#nagy1972
 [nisanwigderson94]: ../sources.md#nisanwigderson94
 [sudantrevisanvadhan01]: ../sources.md#sudantrevisanvadhan01
