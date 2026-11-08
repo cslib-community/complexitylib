@@ -44,6 +44,11 @@ Charles H. Bennett. *Time/Space Trade-Offs for Reversible Computation*. SIAM Jou
 
 Leonard Berman and Juris Hartmanis. *On Isomorphisms and Density of NP and Other Complete Sets*. Technical Report TR75-260, Department of Computer Science, Cornell University, October 1975. https://hdl.handle.net/1813/7101 . The open eCommons PDF is an image scan without a text layer. An independent agent review checked these locators against it on 2026-11-08 UTC: §I, printed p. 2 (the isomorphism conjecture and its `P ≠ NP` consequence); §III, Theorem 1, printed pp. 7–10 (PDF pp. 10–13; isomorphism from invertible, length-increasing one-one reductions); Lemmas 3 and 5, printed pp. 10–12 (length growth and the two-argument padding and read-back condition); and Theorem 7 with its CNF construction, printed pp. 13–14. The journal version (*SIAM Journal on Computing* 6(2), 305–322, 1977, https://doi.org/10.1137/0206023) was not checked, and its numbering is not claimed to match.
 
+<a id="bland77"></a>
+## bland77
+
+Robert G. Bland. "New Finite Pivoting Rules for the Simplex Method." *Mathematics of Operations Research* 2(2), 103–107, 1977. https://doi.org/10.1287/moor.2.2.103 . Bibliographic data from the DOI record and search summaries; the paper was not inspected in this pass, and no theorem number is claimed. The manual credits it with the smallest-subscript pivoting rule and its finiteness; the formalized no-cycling proof is the standard largest-fickle-variable argument as presented in textbooks such as [chvatal83](#chvatal83), Chapter 3.
+
 <a id="blum67"></a>
 ## blum67
 
@@ -88,6 +93,11 @@ Eshan Chattopadhyay and Jyun-Jie Liao. *Optimal Error Pseudodistributions for Re
 ## christofides76
 
 Nicos Christofides. *Worst-Case Analysis of a New Heuristic for the Travelling Salesman Problem*. Report 388, Graduate School of Industrial Administration, Carnegie-Mellon University, 1976; reprinted in *Operations Research Forum* 3, article 20, 2022, https://doi.org/10.1007/s43069-021-00101-z . The report details are those of reference [73] in [Williamson and Shmoys](#williamsonshmoys11), whose Chapter 2 Notes attribute the algorithm to Christofides; the reprint details come from search summaries. Neither the report nor the reprint was checked; the formalization follows the proof of Theorem 2.13 of Williamson and Shmoys.
+
+<a id="chvatal83"></a>
+## chvatal83
+
+Vašek Chvátal. *Linear Programming*. W. H. Freeman, New York, 1983. Bibliographic data from library and search summaries; the book was not inspected in this pass. The chapter locators used in the manual and docstrings (Chapter 2 for dictionaries, pivoting and the optimality and unboundedness tests; Chapter 3, "Degeneracy", for cycling, the cycling example and the smallest-subscript rule) come from secondary summaries. The coefficients of the cycling example in `ComplexityTests/Algorithms/Lean/Simplex.lean` were taken from those summaries and checked by running Dantzig's rule on them, which returns to the initial basis after six degenerate pivots.
 
 <a id="cks20"></a>
 ## cks20
