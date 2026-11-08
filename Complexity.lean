@@ -5215,6 +5215,7 @@ public import Complexity.Probability.BitString.AffineHash
 public import Complexity.Probability.BitString.AffineHash.ThreeWise
 public import Complexity.Probability.BitString.BinarySymmetricChannel
 public import Complexity.Probability.BitString.BinarySymmetricChannel.Achievability
+public import Complexity.Probability.BitString.BinarySymmetricChannel.Converse
 public import Complexity.Probability.BitString.CoinFlips
 public import Complexity.Probability.BitString.Collision
 public import Complexity.Probability.BitString.LazyRandomWalk
@@ -5242,6 +5243,8 @@ public import Complexity.Probability.DDGTree.KnuthYao
 public import Complexity.Probability.Divergence
 public import Complexity.Probability.Entropy
 public import Complexity.Probability.Entropy.BitString
+public import Complexity.Probability.Entropy.Fano
+public import Complexity.Probability.Entropy.Pi
 public import Complexity.Probability.EntropyConcentration
 public import Complexity.Probability.EntropyExtraction
 public import Complexity.Probability.Extractor.Basic

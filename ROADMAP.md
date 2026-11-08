@@ -1254,9 +1254,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   Tanner-code distance bound in `Complexity/Foundations/Combinatorics/Expander/TannerCode.lean`.
 - **Channel coding** ([#3304](https://github.com/cslib-community/complexitylib/issues/3304)):
   achievability for the binary symmetric channel (random codes with nearest codeword decoding at
-  every rate below `1 - h₂(p)`, maximal error `≤ 10 exp (-δ n)`) is in place. Remaining: the
-  converse (weak, via Fano, and strong: every code of rate above capacity has error bounded
-  away from zero), general discrete memoryless channels with mutual-information capacity,
+  every rate below `1 - h₂(p)`, maximal error `≤ 10 exp (-δ n)`) and the weak converse (via
+  Fano's inequality: above capacity the average error of every code is bounded away from zero)
+  are in place. Remaining: the strong converse (Wolfowitz: the error tends to `1` above
+  capacity), general discrete memoryless channels with mutual-information capacity (the chain
+  rule for `n` channel uses and the data-processing inequality), channels with feedback,
   explicit and efficiently decodable capacity-achieving codes (Forney concatenation, polar
   codes), and the link to list decoding.
 - **Locally decodable codes** ([#2929](https://github.com/cslib-community/complexitylib/issues/2929)):
