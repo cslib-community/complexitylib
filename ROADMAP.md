@@ -488,6 +488,14 @@ index links to canonical definitions rather than keeping a second set.
   faster program for a finite variant of `f` (M. Blum, *On effective procedures for speeding up
   algorithms*, J. ACM 18(2), 1971), and Blum measures for
   native multitape time and space through a Gödel-numbering bridge from native descriptions.
+- **Degrees of unsolvability** ([#3379](https://github.com/cslib-community/complexitylib/issues/3379)):
+  oracle codes for Mathlib's `RecursiveIn` with stage-bounded evaluation, the use principle and
+  the equivalence `f ≤ᵀ g ↔ ∃ c, Code.eval g c = f`, and the incomparability part of the
+  Kleene–Post theorem by finite extension, are in `Foundations/Computability`.
+  Remaining: the Kleene–Post bound `A, B ≤ᵀ ∅′` (a primitive recursive oracle `evaln` on encoded
+  codes, typed `RecursiveIn` combinators, the halting set and the jump); the Friedberg–Muchnik
+  theorem (incomparable computably enumerable degrees, by finite injury); Sacks splitting and
+  density of the c.e. degrees; and Spector's minimal degree.
 - **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
   degrees `1 ≤ a < b`, in deterministic and in nondeterministic time, and the `O(t log t)`
   universal simulation ([#800]) gives `DTIME f ⊂ DTIME g` for time-constructible `f ≥ n` once

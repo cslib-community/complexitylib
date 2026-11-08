@@ -4207,6 +4207,8 @@ public import Complexity.Foundations.Combinatorics.WeightBudget
 public import Complexity.Foundations.Combinatorics.WeightedCut
 public import Complexity.Foundations.Combinatorics.WeightedCut.Multigraph
 public import Complexity.Foundations.Computability.ComputablePred
+public import Complexity.Foundations.Computability.KleenePost
+public import Complexity.Foundations.Computability.RecursiveInCode
 public import Complexity.Foundations.Control.Monad.FilterM
 public import Complexity.Foundations.Control.Monad.IsMonadHom.StateT
 public import Complexity.Foundations.Control.Monad.Memoize
