@@ -535,19 +535,13 @@ theorem allGates_wellFormedAt_fieldGates (hm : Nat.size x.length ≤ s + cb + tb
     (fun i hi => wellFormedAt_not (by omega)) (fun k hk i hi => ?_) (fun ℓ hℓ q hq => ?_)
     (fun i hi => ?_)
   · have hle := chain_off_add_width_le (s := s) (cb := cb) (tb := tb) (x := x) (n := n) (T := T) k
-    refine wellFormedAt_two (arity_andOr _) ?_ ?_
-    · simp only [chainBase]
-      split_ifs <;> omega
-    · simp only [chainBase]
-      split_ifs <;> omega
+    refine wellFormedAt_two (arity_andOr _) ?_ ?_ <;> simp only [chainBase] <;> split_ifs <;> omega
   · unfold treeGate
-    split_ifs with h₀ h₁
+    split_ifs with h₀
     · exact wellFormedAt_const _
-    · have hq' := Nat.mod_lt q (Nat.two_pow_pos (ℓ - 1))
-      have hpow : 2 ^ ℓ = 2 * 2 ^ (ℓ - 1) := by
-        rw [← Nat.pow_succ']; congr 1; omega
-      refine wellFormedAt_two rfl ?_ ?_ <;> simp only [treeBase, chainBase] <;> omega
-    · have hq' := Nat.mod_lt q (Nat.two_pow_pos (ℓ - 1))
+    -- Both choices of the second argument read earlier wires.
+    all_goals
+      have hq' := Nat.mod_lt q (Nat.two_pow_pos (ℓ - 1))
       have hpow : 2 ^ ℓ = 2 * 2 ^ (ℓ - 1) := by
         rw [← Nat.pow_succ']; congr 1; omega
       refine wellFormedAt_two rfl ?_ ?_ <;> simp only [treeBase, chainBase] <;> omega
