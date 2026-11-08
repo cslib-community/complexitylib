@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Probability.UniversalHash
+import Complexity.Probability.PMF.Markov
 
 /-!
 # Expected collisions of universal hash families
@@ -31,8 +32,13 @@ Section 11.5:
 * if `n² ≤ m`, the hash is injective on `S` except with probability at most `1 / 2`
   (`IsTwoUniversal.toOuterMeasure_not_injOn_le`);
 * if `n ≤ m`, the expected sum of squared bucket sizes is at most `2n - 1`
-  (`IsTwoUniversal.tsum_sum_card_filter_sq_le`), so by Markov's inequality it exceeds `4n` with
-  probability at most `1 / 2` (`IsTwoUniversal.toOuterMeasure_four_mul_lt_sum_card_filter_sq_le`).
+  (`IsTwoUniversal.tsum_sum_card_filter_sq_le`), so by Markov's inequality
+  (`Cslib.Probability.PMF.mul_toOuterMeasure_le_tsum`) it exceeds `4n` with probability at most
+  `1 / 2` (`IsTwoUniversal.toOuterMeasure_four_mul_lt_sum_card_filter_sq_le`).
+
+CLRS states the two probability bounds for `m = n²` and `m = n`, with strict inequalities
+(`< 1 / 2`, and secondary storage `≥ 4n`). The forms here allow any `m` at least that large and
+bound the probability by `≤ 1 / 2`; they are exactly what the construction's success tests use.
 
 Expectations are `∑' i, seed i * f i` in `ℝ≥0∞` over an arbitrary seed law, and probabilities are
 `PMF.toOuterMeasure`. These are information-theoretic statements; evaluation cost is separate.
@@ -46,7 +52,6 @@ Expectations are `∑' i, seed i * f i` in `ℝ≥0∞` over an arbitrary seed l
 * `Cslib.Probability.orderedCollisionCount_eq_zero_iff`,
   `Cslib.Probability.two_le_orderedCollisionCount`: collisions and injectivity.
 * `Cslib.Probability.sum_card_filter_sq`: squared bucket sizes count collisions.
-* `Cslib.Probability.mul_toOuterMeasure_le_tsum`: Markov's inequality for a `PMF`.
 * `Cslib.Probability.IsUniversalHash.tsum_orderedCollisionCount_le`: expected collisions.
 * `Cslib.Probability.IsUniversalHash.tsum_sum_card_filter_sq_le`: expected squared bucket sizes.
 * `Cslib.Probability.IsTwoUniversal.toOuterMeasure_not_injOn_le`: injectivity into `n²` cells.
@@ -62,7 +67,7 @@ Expectations are `∑' i, seed i * f i` in `ℝ≥0∞` over an arbitrary seed l
   Section 11.5][CLRS2009]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 
@@ -73,7 +78,7 @@ variable {ι X Y : Type*}
 
 /-- The number of ordered pairs `(x, y)` of distinct elements of `S` that `h` maps to the same
 value. Each unordered colliding pair is counted twice. -/
-def orderedCollisionCount [DecidableEq Y] (h : X → Y) (S : Finset X) : ℕ :=
+@[expose] def orderedCollisionCount [DecidableEq Y] (h : X → Y) (S : Finset X) : ℕ :=
   (S.offDiag.filter fun p => h p.1 = h p.2).card
 
 section Deterministic
@@ -148,18 +153,6 @@ theorem sum_card_filter_sq [Fintype Y] (h : X → Y) (S : Finset X) :
 
 end Deterministic
 
-/-- **Markov's inequality** for a probability mass function and an extended nonnegative score:
-`t · Pr[t ≤ f] ≤ E[f]`. -/
-theorem mul_toOuterMeasure_le_tsum (p : PMF ι) (f : ι → ℝ≥0∞) (t : ℝ≥0∞) :
-    t * p.toOuterMeasure {i | t ≤ f i} ≤ ∑' i, p i * f i := by
-  rw [PMF.toOuterMeasure_apply, ← ENNReal.tsum_mul_left]
-  refine tsum_le_tsum fun i => ?_
-  by_cases hi : t ≤ f i
-  · rw [Set.indicator_of_mem (by exact hi), mul_comm]
-    gcongr
-  · rw [Set.indicator_of_notMem (by exact hi), mul_zero]
-    positivity
-
 variable [DecidableEq Y]
 
 /-- **Expected collisions** of an `ε`-universal family: on a set of `n` keys the expected number of
@@ -200,7 +193,8 @@ theorem IsUniversalHash.tsum_sum_card_filter_sq_le [Fintype Y] {seed : PMF ι} {
 omit [DecidableEq Y] in
 /-- **Perfect hashing into `n²` cells** ([CLRS2009], Section 11.5): a universal family into at
 least `n²` values is injective on a fixed set of `n` keys except with probability at most `1 / 2`.
--/
+CLRS states the strict bound `< 1 / 2` for exactly `n²` values; the non-strict form is what the
+secondary level of the construction uses. -/
 theorem IsTwoUniversal.toOuterMeasure_not_injOn_le [Fintype Y] {seed : PMF ι} {hash : ι → X → Y}
     (hh : IsTwoUniversal seed hash) (S : Finset X) (hS : S.card ^ 2 ≤ Fintype.card Y) :
     seed.toOuterMeasure {i | ¬ Set.InjOn (hash i) S} ≤ 2⁻¹ := by
@@ -219,7 +213,7 @@ theorem IsTwoUniversal.toOuterMeasure_not_injOn_le [Fintype Y] {seed : PMF ι} {
       ≤ 2 * seed.toOuterMeasure {i | (2 : ℝ≥0∞) ≤ (orderedCollisionCount (hash i) S : ℝ≥0∞)} := by
         gcongr
     _ ≤ ∑' i, seed i * (orderedCollisionCount (hash i) S : ℝ≥0∞) :=
-        mul_toOuterMeasure_le_tsum seed _ 2
+        PMF.mul_toOuterMeasure_le_tsum seed _ 2
     _ ≤ 1 := (hh.tsum_orderedCollisionCount_le S).trans hle
 
 /-- **Linear total secondary space** ([CLRS2009], Section 11.5): with a universal family into at
@@ -245,7 +239,8 @@ theorem IsTwoUniversal.tsum_sum_card_filter_sq_le [Fintype Y] {seed : PMF ι} {h
 
 /-- **Markov bound for the top level** ([CLRS2009], Section 11.5): with a universal family into
 at least `n` values, the sum of squared bucket sizes exceeds `4n` with probability at most
-`1 / 2`. -/
+`1 / 2`. CLRS bounds the probability of `≥ 4n` by `< 1 / 2` for exactly `n` values; the top-level
+test of the construction accepts `≤ 4n`, so it needs the form stated here. -/
 theorem IsTwoUniversal.toOuterMeasure_four_mul_lt_sum_card_filter_sq_le [Fintype Y]
     {seed : PMF ι} {hash : ι → X → Y} (hh : IsTwoUniversal seed hash) (S : Finset X)
     (hS : S.card ≤ Fintype.card Y) :
@@ -261,7 +256,7 @@ theorem IsTwoUniversal.toOuterMeasure_four_mul_lt_sum_card_filter_sq_le [Fintype
     omega
   have hmarkov : ((4 * S.card + 1 : ℕ) : ℝ≥0∞) * P ≤ (2 * S.card - 1 : ℕ) := by
     rw [show P = _ from congrArg seed.toOuterMeasure hset]
-    exact (mul_toOuterMeasure_le_tsum seed _ _).trans (hh.tsum_sum_card_filter_sq_le S hS)
+    exact (PMF.mul_toOuterMeasure_le_tsum seed _ _).trans (hh.tsum_sum_card_filter_sq_le S hS)
   have hne0 : ((4 * S.card + 1 : ℕ) : ℝ≥0∞) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
   have hnetop : ((4 * S.card + 1 : ℕ) : ℝ≥0∞) ≠ ⊤ := ENNReal.natCast_ne_top _
   rw [ENNReal.le_inv_iff_mul_le, ← ENNReal.mul_le_mul_iff_right hne0 hnetop, mul_one]

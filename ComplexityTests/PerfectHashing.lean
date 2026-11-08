@@ -9,6 +9,7 @@ module
 
 public import Complexity.DataStructure.Dictionary.PerfectHashing.Construction
 public import Complexity.Init
+public import Complexity.Probability.HashFamily.Collisions
 public import Complexity.Probability.HashFamily.Uniform
 
 /-!

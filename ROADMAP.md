@@ -1659,7 +1659,8 @@ densities (expected revenue equals expected virtual welfare; Vickrey with a rese
 - **Perfect hashing** ([#3276](https://github.com/cslib-community/complexitylib/issues/3276)):
   the static FKS two-level table, following the CLRS universal-family account, is proved over
   typed cells with an abstract cost model of seed draws and hash evaluations
-  (`DataStructure/Dictionary/PerfectHashing`). It gives 3-probe lookups, at most `5n + 2` cells,
+  (`DataStructure/Dictionary/PerfectHashing`). It gives 3-probe lookups (hash evaluation
+  uncharged), at most `5n + 2` cells (`O(n)` words only for `O(1)`-word seeds),
   a fuel-truncated construction with geometric failure, and expected `O(n)` draws and
   evaluations. Remaining:
   - a word-RAM realization with `w`-bit seeds and headers, charged bucketing and layout, an

@@ -33,7 +33,10 @@ arbitrary interface its possible results are coordinatewise (`OracleComp.mem_sup
 its expected cost is the sum of the expected costs (`OracleComp.expectedCost_pi`), and the
 probability that some coordinate is bad is at most the sum of the probabilities
 (`OracleComp.toOuterMeasure_evalWith_pi_exists_le`, a union bound). These complement the
-`ProbComp` statements of `Complexity.Languages.Probabilistic.Vector`.
+`ProbComp` statements of `Complexity.Languages.Probabilistic.Vector`. `ProbComp.mem_support_pi_iff`
+there is the special case of `OracleComp.mem_supportWith_pi_iff` for uniform replies, with the same
+proof. Deriving it from the general lemma would make `Vector` import `Semantics`, so it is left as a
+follow-up.
 
 ## Main definitions
 
@@ -50,7 +53,7 @@ probability that some coordinate is bad is at most the sum of the probabilities
   for `OracleComp.pi`.
 -/
 
-@[expose] public section
+public section
 
 open scoped ENNReal
 
@@ -62,7 +65,7 @@ variable {ι : Type u} {spec : OracleSpec.{u, v} ι} {α : Type v}
 
 /-- Run `program` at most `fuel` times and return the first result satisfying `good`, or `none`
 when all `fuel` runs fail. Checking `good` makes no call. -/
-def retry (good : α → Prop) [DecidablePred good] (program : OracleComp spec α) :
+@[expose] def retry (good : α → Prop) [DecidablePred good] (program : OracleComp spec α) :
     ℕ → OracleComp spec (Option α)
   | 0 => pure none
   | fuel + 1 => do
@@ -176,22 +179,17 @@ theorem evalWith_bind_elim_none_le (program : OracleComp spec (Option α))
     (hnext : ∀ a, evalWith h (next a) none ≤ c) :
     evalWith h (program >>= fun o => o.elim (pure none) next) none ≤
       evalWith h program none + c := by
-  rw [evalWith_bind, PMF.bind_apply]
-  calc ∑' o, evalWith h program o * evalWith h (o.elim (pure none) next) none
-      ≤ ∑' o, (evalWith h program o * ({none} : Set (Option α)).indicator 1 o +
-          evalWith h program o * c) := by
-        refine tsum_le_tsum fun o => ?_
-        cases o with
-        | none => simp
-        | some a =>
-          simp only [Option.elim_some, Set.mem_singleton_iff, reduceCtorEq, not_false_eq_true,
-            Set.indicator_of_notMem, mul_zero, zero_add]
-          gcongr
-          exact hnext a
-    _ = evalWith h program none + c := by
-        rw [tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
-          tsum_eq_single none fun o ho => by simp [ho]]
-        simp
+  have hcompl : ({o | o.isSome} : Set (Option α))ᶜ = {none} := by
+    ext o
+    cases o <;> simp
+  have key := Probability.PMF.toOuterMeasure_bind_failure_le (evalWith h program)
+    (fun o => evalWith h (o.elim (pure none) next)) {o | o.isSome} {none} c fun o _ ho => by
+      obtain ⟨a, rfl⟩ := Option.isSome_iff_exists.mp ho
+      rw [PMF.toOuterMeasure_apply_singleton]
+      exact hnext a
+  rw [hcompl, PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_apply_singleton] at key
+  rw [evalWith_bind]
+  exact key
 
 /-- The expected cost of a partial program followed, on success, by a continuation is at most the
 expected cost of the first program plus a bound on the expected cost of every continuation. -/

@@ -9,7 +9,8 @@ module
 
 public import Complexity.DataStructure.Dictionary.PerfectHashing.Table
 public import Complexity.Languages.Probabilistic.Retry
-public import Complexity.Probability.HashFamily.Collisions
+public import Complexity.Probability.UniversalHash
+import Complexity.Probability.HashFamily.Collisions
 
 /-!
 # Building an FKS table
@@ -72,7 +73,7 @@ probability of `none` decays geometrically in `fuel`.
   Section 11.5][CLRS2009]
 -/
 
-@[expose] public section
+public section
 
 open scoped ENNReal
 
@@ -101,7 +102,7 @@ abbrev Query.Response {F : Family X} : Query F → Type
 abbrev buildSpec (F : Family X) : OracleSpec (Query F) := Query.Response
 
 /-- The honest answers: a draw follows the seed law, an evaluation returns the hash value. -/
-noncomputable def answer (F : Family X) : (q : Query F) → PMF (Query.Response q)
+@[expose] noncomputable def answer (F : Family X) : (q : Query F) → PMF (Query.Response q)
   | .draw r => F.seed r
   | .eval r s x => PMF.pure (F.hash r s x)
 
@@ -111,12 +112,12 @@ noncomputable def answer (F : Family X) : (q : Query F) → PMF (Query.Response 
     answer F (.eval r s x) = PMF.pure (F.hash r s x) := rfl
 
 /-- Count seed draws. -/
-def drawCost {F : Family X} : Query F → ℝ≥0∞
+@[expose] def drawCost {F : Family X} : Query F → ℝ≥0∞
   | .draw _ => 1
   | .eval _ _ _ => 0
 
 /-- Count hash evaluations. -/
-def evalCost {F : Family X} : Query F → ℝ≥0∞
+@[expose] def evalCost {F : Family X} : Query F → ℝ≥0∞
   | .draw _ => 0
   | .eval _ _ _ => 1
 
@@ -145,19 +146,21 @@ def trial (F : Family X) (r : ℕ) (keys : List X) : OracleComp (buildSpec F) (T
   pure ⟨s, vs⟩
 
 /-- The keys whose observed value is `j`. -/
-def bucketOf {r : ℕ} (keys : List X) (vs : List (Fin (r + 1))) (j : Fin (r + 1)) : List X :=
+@[expose] def bucketOf {r : ℕ} (keys : List X) (vs : List (Fin (r + 1))) (j : Fin (r + 1)) :
+    List X :=
   ((keys.zip vs).filter fun p => p.2 = j).map Prod.fst
 
 /-- A top-level attempt succeeds when the squared bucket sizes sum to at most `4 n`. -/
-def TopGood {F : Family X} {r : ℕ} (keys : List X) (t : Trial F r) : Prop :=
+@[expose] def TopGood {F : Family X} {r : ℕ} (keys : List X) (t : Trial F r) : Prop :=
   ∑ j, (bucketOf keys t.values j).length ^ 2 ≤ 4 * keys.length
 
-instance {F : Family X} {r : ℕ} (keys : List X) : DecidablePred (TopGood (F := F) (r := r) keys) :=
+instance {F : Family X} {r : ℕ} (keys : List X) :
+    DecidablePred (TopGood (F := F) (r := r) keys) :=
   fun _ => inferInstanceAs (Decidable (_ ≤ _))
 
 /-- A secondary attempt succeeds when the observed values are distinct, that is, when the function
 is injective on the bucket. -/
-def SecGood {F : Family X} {r : ℕ} (t : Trial F r) : Prop :=
+@[expose] def SecGood {F : Family X} {r : ℕ} (t : Trial F r) : Prop :=
   t.values.Nodup
 
 instance {F : Family X} {r : ℕ} : DecidablePred (SecGood (F := F) (r := r)) :=

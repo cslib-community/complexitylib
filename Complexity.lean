@@ -5099,6 +5099,7 @@ public import Complexity.Probability.PMF.Event
 public import Complexity.Probability.PMF.Expect
 public import Complexity.Probability.PMF.Filter
 public import Complexity.Probability.PMF.Map
+public import Complexity.Probability.PMF.Markov
 public import Complexity.Probability.PMF.Option
 public import Complexity.Probability.PMF.Option.Bind
 public import Complexity.Probability.PMF.TwoBranch

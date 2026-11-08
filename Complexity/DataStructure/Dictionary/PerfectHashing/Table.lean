@@ -33,7 +33,10 @@ of typed cells (`PerfectHashing.Cell`):
 
 A cell holds one key, one seed, or one address with one seed. On a word RAM a seed of a family such
 as `(a x + b) mod p mod m` occupies `O(1)` words, but this file counts typed cells, not words or
-bits.
+bits. The bound of `5 n + 2` cells is therefore `O(n)` words only for families whose seeds fit in
+`O(1)` words; such a family is not formalized here, and a seed of the uniformly random function
+family used in the tests is a whole function table. Likewise the `3` probes of a lookup count
+memory reads only: evaluating the hash functions is not charged.
 
 `PerfectHashing.lookup F x` is an `OracleComp` over the memory interface (`PerfectHashing.memSpec`,
 the read of one cell per call). The algorithm depends only on the family and the key; the table is
