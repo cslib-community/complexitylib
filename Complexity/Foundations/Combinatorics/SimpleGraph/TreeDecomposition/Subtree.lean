@@ -165,10 +165,10 @@ theorem eq_of_mem_children {i c c' j : Fin (n + 1)} (hc : c ∈ R.children i)
 
 variable (R)
 
+open scoped Classical in
 /-- The vertices in the bags of the subtree rooted at `i`. -/
-noncomputable def subtreeVerts (i : Fin (n + 1)) : Finset V := by
-  classical
-  exact (Finset.univ.filter (R.IsDescendant · i)).biUnion R.bag
+noncomputable def subtreeVerts (i : Fin (n + 1)) : Finset V :=
+  (Finset.univ.filter (R.IsDescendant · i)).biUnion R.bag
 
 variable {R}
 

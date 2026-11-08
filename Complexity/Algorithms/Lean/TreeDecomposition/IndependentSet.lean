@@ -15,9 +15,13 @@ import Mathlib.Tactic.Linarith
 /-!
 # Maximum-weight independent set over a tree decomposition
 
-Given a graph `G` with a rooted tree decomposition `R : G.RootedTreeDecomposition n` of width at
-most `k` and vertex weights `w : V → ℕ`, the dynamic program `mwisM R w` returns the maximum total
-weight of an independent set of `G`, using `O(2 ^ k · k ^ 2 · n)` time.
+Given a graph `G` with a rooted tree decomposition `R : G.RootedTreeDecomposition n` and vertex
+weights `w : V → ℕ`, the dynamic program `mwisValue R w` is the maximum total weight of an
+independent set of `G`. The charged version `mwisM R w` returns the same value. If `R` has width at
+most `k`, its declared cost is at most `(n + 1) · 2 ^ (k + 1) · (2 (k + 1) ^ 2 + 2 (k + 1) + 6)`
+ticks, where `n + 1` is the number of decomposition nodes, not the number of vertices. These ticks
+are a declared per-node cost function, not a count of the operations the Lean program performs;
+see "Cost model and limitations" below.
 
 The program processes the nodes in decreasing order, so every child is handled before its
 parent. Node `i` keeps a table indexed by the subsets `S` of its bag. Once all children of `i`
@@ -26,13 +30,14 @@ below `i` and outside the bag of `i` such that `J ∪ S` is independent. Process
 with parent `p` adds to the table of `p`, at `S`, the best value over the subsets `T` of the bag
 of `j` that are independent and agree with `S` on the shared vertices. The answer is the best
 value over the independent subsets of the root bag. Because every child table is indexed by its
-intersection with the parent bag, the program works on arbitrary rooted decompositions; it does
-not need a nice decomposition and has no `4 ^ k` join.
+intersection with the parent bag, the program works on arbitrary rooted decompositions: it needs
+no nice decomposition and no separate join nodes.
 
 ## Main definitions
 
 * `Cslib.Algorithms.Lean.TreeDecomposition.mwisValue`: the value computed by the program.
-* `Cslib.Algorithms.Lean.TreeDecomposition.mwisM`: the same program in `TimeM ℕ`.
+* `Cslib.Algorithms.Lean.TreeDecomposition.mwisM`: the same value in `TimeM ℕ`, with the declared
+  per-node cost.
 
 ## Main results
 
@@ -40,17 +45,19 @@ not need a nice decomposition and has no `4 ^ k` join.
   of `∑ v ∈ I, w v` over the independent finite sets `I`.
 * `Cslib.Algorithms.Lean.TreeDecomposition.mwisValue_one_eq_indepNum`: with unit weights it is
   the independence number.
-* `Cslib.Algorithms.Lean.TreeDecomposition.time_mwisM_le`: if `R` has width at most `k` then the
-  program uses at most `(n + 1) · 2 ^ (k + 1) · (2 (k + 1) ^ 2 + 2 (k + 1) + 6)` ticks.
+* `Cslib.Algorithms.Lean.TreeDecomposition.time_mwisM_le`: if `R` has width at most `k`, the
+  declared cost is at most `(n + 1) · 2 ^ (k + 1) · (2 (k + 1) ^ 2 + 2 (k + 1) + 6)` ticks.
 
 ## Cost model and limitations
 
-The ticks are trusted annotations in the `TimeM` convention. They charge an implementation that
+The ticks of `mwisM` are a declared cost function: `tablesM` charges one lump tick
+`stepCost (#bag j) (#bag (parent j))` per nonroot node `j` and `mwisM` charges `rootCost (#bag 0)`
+at the root. They describe an implementation that is not formalized here. That implementation
 stores each bag as an array of at most `k + 1` vertices, represents subsets of a bag as bit masks,
 stores each table as an array indexed by masks, and answers adjacency queries `G.Adj u v` and
 weight lookups `w v` in unit time (a unit-cost RAM with an adjacency matrix). Additions and
 comparisons of weights cost one unit. Processing a child with bag size `b` and parent bag size
-`q` costs `stepCost b q`:
+`q` is charged `stepCost b q`:
 
 * `b * q` to locate the bag vertices of the child in the parent bag;
 * for each of the `2 ^ b` subsets `T` of the child bag: `b * b` adjacency tests for independence,
@@ -60,11 +67,24 @@ comparisons of weights cost one unit. Processing a child with bag size `b` and p
 * for each of the `2 ^ q` subsets `S` of the parent bag: `q` operations to project `S` onto the
   child bag and `2` for the lookup and addition.
 
-The root costs `rootCost r = 2 ^ r * (r * r + r + 3)` for root bag size `r`. The value is computed
-by the pure specification-level functions below, which compute the same numbers as the charged
-array implementation. Reading the input and building the bag arrays are not charged. The node
-count `n + 1` is a parameter of the decomposition and is not bounded in terms of `card V` here.
-The decomposition is supplied by the caller; computing one is a separate problem.
+The root is charged `rootCost r = 2 ^ r * (r * r + r + 3)` for root bag size `r`. A node's own
+table is zero-initialized once, at `2 ^ (#bag)` unit steps; this is charged as the zero
+initialization in the node's own `stepCost` (or in `rootCost` at the root), so it changes only the
+constant. Reading the input and building the bag arrays are not charged.
+
+The value is computed by the specification-level functions `forget`, `step` and `tables`. They
+are not that array implementation, and it is not proved that the array implementation computes
+the same values or performs the charged number of operations. In particular, the tables are
+closures and are never materialized, so `forget` re-evaluates the child closures, and evaluating
+`mwisM` or `mwisValue` as written takes time exponential in the depth of the decomposition. It is
+not an FPT computation. An executable program whose ticks track the operations it performs is
+remaining work ([#3295](https://github.com/cslib-community/complexitylib/issues/3295)).
+
+The node count `n + 1` is a parameter of the decomposition and is not bounded in terms of
+`card V` here. The decomposition is supplied by the caller; computing one is a separate problem.
+The specification and the correctness theorems are universe polymorphic. The charged part takes
+`V : Type`, because the tables `Fin (n + 1) → Finset V → ℕ` must live in the universe of the
+`TimeM` monad's values, and `TimeM ℕ` is a monad on `Type`.
 
 ## References
 
@@ -77,25 +97,19 @@ namespace Cslib.Algorithms.Lean.TreeDecomposition
 
 open SimpleGraph SimpleGraph.RootedTreeDecomposition
 
-variable {V : Type} {G : SimpleGraph V} {n : ℕ}
-
-/-- Total weight of a finite set of vertices. -/
-@[expose] def wsum (w : V → ℕ) (S : Finset V) : ℕ :=
-  ∑ v ∈ S, w v
-
 /-! ### The dynamic program -/
 
 section Program
 
-variable [DecidableEq V] [DecidableRel G.Adj]
+variable {V : Type*} {G : SimpleGraph V} {n : ℕ} [DecidableEq V] [DecidableRel G.Adj]
 
 variable (G) in
 /-- The message from a child with bag `B` and table `f` to its parent with bag `P`, at a subset
-`S` of `P`: the best value of `wsum (T \ P) + f T` over the independent subsets `T ⊆ B` that agree
-with `S` on `B ∩ P`. -/
+`S` of `P`: the best value of `(∑ v ∈ T \ P, w v) + f T` over the independent subsets `T ⊆ B`
+that agree with `S` on `B ∩ P`. -/
 @[expose] def forget (w : V → ℕ) (B P : Finset V) (f : Finset V → ℕ) (S : Finset V) : ℕ :=
   (B.powerset.filter fun T : Finset V => G.IsIndepSet (↑T : Set V) ∧ T ∩ P = S ∩ B).sup
-    fun T => wsum w (T \ P) + f T
+    fun T => (∑ v ∈ T \ P, w v) + f T
 
 /-- Process node `j`: add its message to the table of its parent. -/
 @[expose] def step (R : G.RootedTreeDecomposition n) (w : V → ℕ)
@@ -109,115 +123,19 @@ with `S` on `B ∩ P`. -/
   | 0 => fun _ _ => 0
   | t + 1 => step R w (tables R w t) (Fin.ofNat (n + 1) (n - t))
 
-/-- The value of the dynamic program: the best value of `wsum S + table S` over the independent
-subsets `S` of the root bag, after processing every nonroot node. -/
+/-- The value of the dynamic program: the best value of `(∑ v ∈ S, w v) + table S` over the
+independent subsets `S` of the root bag, after processing every nonroot node. -/
 @[expose] def mwisValue (R : G.RootedTreeDecomposition n) (w : V → ℕ) : ℕ :=
   ((R.bag 0).powerset.filter fun S : Finset V => G.IsIndepSet (↑S : Set V)).sup fun S =>
-    wsum w S + tables R w n 0 S
+    (∑ v ∈ S, w v) + tables R w n 0 S
 
 end Program
-
-/-! ### Charged version -/
-
-/-- Ticks charged for processing a child with bag size `b` whose parent has bag size `q`. -/
-@[expose] def stepCost (b q : ℕ) : ℕ :=
-  b * q + 2 ^ b * (b * b + b + 4) + 2 ^ q * (q + 2)
-
-/-- Ticks charged at the root, with root bag size `r`. -/
-@[expose] def rootCost (r : ℕ) : ℕ :=
-  2 ^ r * (r * r + r + 3)
-
-/-- The per-node bound `2 ^ m (2 m ^ 2 + 2 m + 6)` for bags of size at most `m`. -/
-@[expose] def nodeCost (m : ℕ) : ℕ :=
-  2 ^ m * (2 * m * m + 2 * m + 6)
-
-section Charged
-
-variable [DecidableEq V] [DecidableRel G.Adj]
-
-/-- `tables` in `TimeM ℕ`, charging `stepCost` per processed node. -/
-@[expose] def tablesM (R : G.RootedTreeDecomposition n) (w : V → ℕ) :
-    ℕ → TimeM ℕ (Fin (n + 1) → Finset V → ℕ)
-  | 0 => pure fun _ _ => 0
-  | t + 1 => do
-    let acc ← tablesM R w t
-    let j : Fin (n + 1) := Fin.ofNat (n + 1) (n - t)
-    TimeM.tick (stepCost (R.bag j).card (R.bag (R.parent j)).card)
-    pure (step R w acc j)
-
-/-- The dynamic program in `TimeM ℕ`. -/
-@[expose] def mwisM (R : G.RootedTreeDecomposition n) (w : V → ℕ) : TimeM ℕ ℕ := do
-  let acc ← tablesM R w n
-  TimeM.tick (rootCost (R.bag 0).card)
-  pure (((R.bag 0).powerset.filter fun S : Finset V => G.IsIndepSet (↑S : Set V)).sup fun S =>
-    wsum w S + acc 0 S)
-
-@[simp] theorem ret_tablesM (R : G.RootedTreeDecomposition n) (w : V → ℕ) (t : ℕ) :
-    (tablesM R w t).ret = tables R w t := by
-  induction t with
-  | zero => rfl
-  | succ t ih => simp only [tablesM, tables, TimeM.ret_bind, TimeM.ret_pure, ih]
-
-@[simp] theorem ret_mwisM (R : G.RootedTreeDecomposition n) (w : V → ℕ) :
-    (mwisM R w).ret = mwisValue R w := by
-  simp only [mwisM, mwisValue, TimeM.ret_bind, TimeM.ret_pure, ret_tablesM]
-
-end Charged
-
-theorem stepCost_mono {b b' q q' : ℕ} (hb : b ≤ b') (hq : q ≤ q') :
-    stepCost b q ≤ stepCost b' q' := by
-  unfold stepCost
-  have h1 : 2 ^ b ≤ 2 ^ b' := Nat.pow_le_pow_right (by norm_num) hb
-  have h2 : 2 ^ q ≤ 2 ^ q' := Nat.pow_le_pow_right (by norm_num) hq
-  gcongr
-
-theorem rootCost_mono {r r' : ℕ} (hr : r ≤ r') : rootCost r ≤ rootCost r' := by
-  unfold rootCost
-  have h1 : 2 ^ r ≤ 2 ^ r' := Nat.pow_le_pow_right (by norm_num) hr
-  gcongr
-
-theorem stepCost_le_nodeCost (m : ℕ) : stepCost m m ≤ nodeCost m := by
-  unfold stepCost nodeCost
-  have h : 1 ≤ 2 ^ m := Nat.one_le_two_pow
-  have h2 : m * m ≤ 2 ^ m * (m * m) := Nat.le_mul_of_pos_left _ h
-  nlinarith
-
-theorem rootCost_le_nodeCost (m : ℕ) : rootCost m ≤ nodeCost m := by
-  unfold rootCost nodeCost
-  gcongr <;> omega
-
-section Time
-
-variable [DecidableEq V] [DecidableRel G.Adj]
-
-theorem time_tablesM_le (R : G.RootedTreeDecomposition n) (w : V → ℕ) {k : ℕ}
-    (hk : R.width ≤ k) (t : ℕ) : (tablesM R w t).time ≤ t * nodeCost (k + 1) := by
-  induction t with
-  | zero => simp only [tablesM, TimeM.time_pure, zero_mul, le_refl]
-  | succ t ih =>
-    simp only [tablesM, TimeM.time_bind, TimeM.time_tick, TimeM.time_pure, add_zero]
-    have hb := R.width_le_iff.1 hk
-    have := (stepCost_mono (hb (Fin.ofNat (n + 1) (n - t)))
-      (hb (R.parent (Fin.ofNat (n + 1) (n - t))))).trans (stepCost_le_nodeCost (k + 1))
-    rw [Nat.succ_mul]
-    omega
-
-/-- **Running time.** On a rooted decomposition with `n + 1` nodes and width at most `k`, the
-program uses at most `(n + 1) · 2 ^ (k + 1) · (2 (k + 1) ^ 2 + 2 (k + 1) + 6)` ticks: linear in the
-number of nodes and `2 ^ k · poly(k)` per node. -/
-theorem time_mwisM_le (R : G.RootedTreeDecomposition n) (w : V → ℕ) {k : ℕ}
-    (hk : R.width ≤ k) : (mwisM R w).time ≤ (n + 1) * nodeCost (k + 1) := by
-  simp only [mwisM, TimeM.time_bind, TimeM.time_tick, TimeM.time_pure, add_zero]
-  have h1 := time_tablesM_le R w hk n
-  have h2 := (rootCost_mono (R.width_le_iff.1 hk 0)).trans (rootCost_le_nodeCost (k + 1))
-  rw [Nat.succ_mul]
-  omega
-
-end Time
 
 /-! ### Correctness -/
 
 section Correctness
+
+variable {V : Type*} {G : SimpleGraph V} {n : ℕ}
 
 private theorem isIndepSet_iff_forall {S : Finset V} :
     G.IsIndepSet (↑S : Set V) ↔ ∀ x ∈ S, ∀ y ∈ S, ¬G.Adj x y :=
@@ -236,46 +154,43 @@ private noncomputable def below (i : Fin (n + 1)) : Finset V :=
 /-- The intended table of node `i` at `S`. -/
 private noncomputable def opt (i : Fin (n + 1)) (S : Finset V) : ℕ :=
   ((below R i).powerset.filter fun J : Finset V => G.IsIndepSet (↑(J ∪ S) : Set V)).sup
-    (wsum w)
+    fun J => ∑ v ∈ J, w v
 
 /-- The intended message from `c` to its parent at `S`. -/
 private noncomputable def msg (c : Fin (n + 1)) (S : Finset V) : ℕ :=
   ((R.subtreeVerts c \ R.bag (R.parent c)).powerset.filter
-    fun J : Finset V => G.IsIndepSet (↑(J ∪ S) : Set V)).sup (wsum w)
+    fun J : Finset V => G.IsIndepSet (↑(J ∪ S) : Set V)).sup
+      fun J => ∑ v ∈ J, w v
 
 variable {R w}
 
-private theorem wsum_le_opt {i : Fin (n + 1)} {S J : Finset V} (hJ : J ⊆ below R i)
-    (hJS : G.IsIndepSet (↑(J ∪ S) : Set V)) : wsum w J ≤ opt R w i S :=
-  Finset.le_sup (f := wsum w) (Finset.mem_filter.2 ⟨Finset.mem_powerset.2 hJ, hJS⟩)
+private theorem sum_le_opt {i : Fin (n + 1)} {S J : Finset V} (hJ : J ⊆ below R i)
+    (hJS : G.IsIndepSet (↑(J ∪ S) : Set V)) : ∑ v ∈ J, w v ≤ opt R w i S :=
+  Finset.le_sup (f := fun J => ∑ v ∈ J, w v) (Finset.mem_filter.2 ⟨Finset.mem_powerset.2 hJ, hJS⟩)
 
 private theorem exists_opt (i : Fin (n + 1)) {S : Finset V} (hS : G.IsIndepSet (↑S : Set V)) :
-    ∃ J ⊆ below R i, G.IsIndepSet (↑(J ∪ S) : Set V) ∧ opt R w i S = wsum w J := by
+    ∃ J ⊆ below R i, G.IsIndepSet (↑(J ∪ S) : Set V) ∧ opt R w i S = ∑ v ∈ J, w v := by
   have h0 : (∅ : Finset V) ∈ (below R i).powerset.filter
       fun J : Finset V => G.IsIndepSet (↑(J ∪ S) : Set V) :=
     Finset.mem_filter.2 ⟨Finset.empty_mem_powerset _, by rwa [Finset.empty_union]⟩
-  obtain ⟨J, hJ, hJeq⟩ := Finset.exists_mem_eq_sup _ ⟨∅, h0⟩ (wsum w)
+  obtain ⟨J, hJ, hJeq⟩ := Finset.exists_mem_eq_sup _ ⟨∅, h0⟩ fun J => ∑ v ∈ J, w v
   rw [Finset.mem_filter, Finset.mem_powerset] at hJ
   exact ⟨J, hJ.1, hJ.2, hJeq⟩
 
-private theorem wsum_le_msg {c : Fin (n + 1)} {S J : Finset V}
+private theorem sum_le_msg {c : Fin (n + 1)} {S J : Finset V}
     (hJ : J ⊆ R.subtreeVerts c \ R.bag (R.parent c)) (hJS : G.IsIndepSet (↑(J ∪ S) : Set V)) :
-    wsum w J ≤ msg R w c S :=
-  Finset.le_sup (f := wsum w) (Finset.mem_filter.2 ⟨Finset.mem_powerset.2 hJ, hJS⟩)
+    ∑ v ∈ J, w v ≤ msg R w c S :=
+  Finset.le_sup (f := fun J => ∑ v ∈ J, w v) (Finset.mem_filter.2 ⟨Finset.mem_powerset.2 hJ, hJS⟩)
 
 private theorem exists_msg (c : Fin (n + 1)) {S : Finset V} (hS : G.IsIndepSet (↑S : Set V)) :
     ∃ J ⊆ R.subtreeVerts c \ R.bag (R.parent c), G.IsIndepSet (↑(J ∪ S) : Set V) ∧
-      msg R w c S = wsum w J := by
+      msg R w c S = ∑ v ∈ J, w v := by
   have h0 : (∅ : Finset V) ∈ (R.subtreeVerts c \ R.bag (R.parent c)).powerset.filter
       fun J : Finset V => G.IsIndepSet (↑(J ∪ S) : Set V) :=
     Finset.mem_filter.2 ⟨Finset.empty_mem_powerset _, by rwa [Finset.empty_union]⟩
-  obtain ⟨J, hJ, hJeq⟩ := Finset.exists_mem_eq_sup _ ⟨∅, h0⟩ (wsum w)
+  obtain ⟨J, hJ, hJeq⟩ := Finset.exists_mem_eq_sup _ ⟨∅, h0⟩ fun J => ∑ v ∈ J, w v
   rw [Finset.mem_filter, Finset.mem_powerset] at hJ
   exact ⟨J, hJ.1, hJ.2, hJeq⟩
-
-private theorem wsum_union {A B : Finset V} (h : Disjoint A B) :
-    wsum w (A ∪ B) = wsum w A + wsum w B :=
-  Finset.sum_union h
 
 private theorem forget_congr {B P : Finset V} {f g : Finset V → ℕ}
     (h : ∀ T ⊆ B, G.IsIndepSet (↑T : Set V) → f T = g T) (S : Finset V) :
@@ -325,9 +240,9 @@ private theorem forget_opt {c : Fin (n + 1)} {S : Finset V}
     have hdisj : Disjoint (T \ R.bag (R.parent c)) J := by
       refine Finset.disjoint_left.2 fun x hx hxJ => ?_
       exact (Finset.mem_sdiff.1 (hJ hxJ)).2 (hTB (Finset.mem_sdiff.1 hx).1)
-    calc wsum w (T \ R.bag (R.parent c)) + opt R w c T
-        = wsum w ((T \ R.bag (R.parent c)) ∪ J) := by rw [hJeq, wsum_union hdisj]
-      _ ≤ msg R w c S := wsum_le_msg hKsub hKS
+    calc (∑ v ∈ T \ R.bag (R.parent c), w v) + opt R w c T
+        = ∑ v ∈ (T \ R.bag (R.parent c)) ∪ J, w v := by rw [hJeq, Finset.sum_union hdisj]
+      _ ≤ msg R w c S := sum_le_msg hKsub hKS
   · rw [Finset.mem_filter, Finset.mem_powerset] at hK
     obtain ⟨hKsub, hKS⟩ := hK
     have hKP : ∀ x ∈ K, x ∉ R.bag (R.parent c) := fun x hx => (Finset.mem_sdiff.1 (hKsub hx)).2
@@ -360,18 +275,19 @@ private theorem forget_opt {c : Fin (n + 1)} {S : Finset V}
         · exact absurd (hSP h.1) hxP
       · intro h
         exact ⟨.inl h, hKP x h.1⟩
-    have hle := wsum_le_opt (w := w) hJsub (isIndepSet_of_subset hKS hJT)
+    have hle := sum_le_opt (w := w) hJsub (isIndepSet_of_subset hKS hJT)
     have hmem : K ∩ R.bag c ∪ S ∩ R.bag c ∈ (R.bag c).powerset.filter fun T : Finset V =>
         G.IsIndepSet (↑T : Set V) ∧ T ∩ R.bag (R.parent c) = S ∩ R.bag c :=
       Finset.mem_filter.2 ⟨Finset.mem_powerset.2 hTB, isIndepSet_of_subset hKS hTKS, hTP⟩
-    calc wsum w K = wsum w (K ∩ R.bag c) + wsum w (K \ R.bag c) :=
+    calc ∑ v ∈ K, w v = (∑ v ∈ K ∩ R.bag c, w v) + ∑ v ∈ K \ R.bag c, w v :=
           (Finset.sum_inter_add_sum_sdiff K (R.bag c) w).symm
-      _ ≤ wsum w ((K ∩ R.bag c ∪ S ∩ R.bag c) \ R.bag (R.parent c)) +
+      _ ≤ (∑ v ∈ (K ∩ R.bag c ∪ S ∩ R.bag c) \ R.bag (R.parent c), w v) +
             opt R w c (K ∩ R.bag c ∪ S ∩ R.bag c) := by
           rw [hTsdiff]
           exact Nat.add_le_add_left hle _
       _ ≤ forget G w (R.bag c) (R.bag (R.parent c)) (opt R w c) S :=
-          Finset.le_sup (f := fun T => wsum w (T \ R.bag (R.parent c)) + opt R w c T) hmem
+          Finset.le_sup (f := fun T => (∑ v ∈ T \ R.bag (R.parent c), w v) + opt R w c T)
+            hmem
 
 /-- The intended table of a node is the sum of the intended messages of its children. -/
 private theorem opt_eq_sum {i : Fin (n + 1)} {S : Finset V} (hS : G.IsIndepSet (↑S : Set V)) :
@@ -397,14 +313,14 @@ private theorem opt_eq_sum {i : Fin (n + 1)} {S : Finset V} (hS : G.IsIndepSet (
       obtain ⟨hxJ, hxc⟩ := Finset.mem_inter.1 hx
       exact eq_of_mem_subtreeVerts_of_mem_children hc hc' hxc (Finset.mem_inter.1 hx').2
         (Finset.mem_sdiff.1 (hJsub hxJ)).2
-    have hle : ∀ c ∈ R.children i, wsum w (J ∩ R.subtreeVerts c) ≤ msg R w c S := by
+    have hle : ∀ c ∈ R.children i, ∑ v ∈ J ∩ R.subtreeVerts c, w v ≤ msg R w c S := by
       intro c hc
-      refine wsum_le_msg (fun x hx => ?_)
+      refine sum_le_msg (fun x hx => ?_)
         (isIndepSet_of_subset hJS (Finset.union_subset_union Finset.inter_subset_left le_rfl))
       obtain ⟨hxJ, hxc⟩ := Finset.mem_inter.1 hx
       rw [hpar c hc]
       exact Finset.mem_sdiff.2 ⟨hxc, (Finset.mem_sdiff.1 (hJsub hxJ)).2⟩
-    calc wsum w J = ∑ c ∈ R.children i, wsum w (J ∩ R.subtreeVerts c) := by
+    calc ∑ v ∈ J, w v = ∑ c ∈ R.children i, ∑ v ∈ J ∩ R.subtreeVerts c, w v := by
           conv_lhs => rw [hcover]
           exact Finset.sum_biUnion hdisj
       _ ≤ ∑ c ∈ R.children i, msg R w c S := Finset.sum_le_sum hle
@@ -447,10 +363,10 @@ private theorem opt_eq_sum {i : Fin (n + 1)} {S : Finset V} (hS : G.IsIndepSet (
           exact isIndepSet_iff_forall.1 (hKS c) y (Finset.mem_union_left _ hyc) x
             (hkey c hc y hyc x hx hxy.symm) hxy.symm
         · exact isIndepSet_iff_forall.1 hS x hx' y hy' hxy
-    calc ∑ c ∈ R.children i, msg R w c S = ∑ c ∈ R.children i, wsum w (K c) :=
+    calc ∑ c ∈ R.children i, msg R w c S = ∑ c ∈ R.children i, ∑ v ∈ K c, w v :=
           Finset.sum_congr rfl fun c _ => hKeq c
-      _ = wsum w J := (Finset.sum_biUnion hdisj).symm
-      _ ≤ opt R w i S := wsum_le_opt hJsub hJS
+      _ = ∑ v ∈ J, w v := (Finset.sum_biUnion hdisj).symm
+      _ ≤ opt R w i S := sum_le_opt hJsub hJS
 
 private theorem val_ofNat_sub {t : ℕ} (ht : t < n) :
     (Fin.ofNat (n + 1) (n - t)).val = n - t := by
@@ -535,7 +451,7 @@ theorem isGreatest_mwisValue (R : G.RootedTreeDecomposition n) (w : V → ℕ) :
       (mwisValue R w) := by
   have hval : mwisValue R w =
       ((R.bag 0).powerset.filter fun S : Finset V => G.IsIndepSet (↑S : Set V)).sup
-        fun S => wsum w S + opt R w 0 S := by
+        fun S => (∑ v ∈ S, w v) + opt R w 0 S := by
     unfold mwisValue
     refine Finset.sup_congr rfl fun S hS => ?_
     rw [Finset.mem_filter, Finset.mem_powerset] at hS
@@ -545,14 +461,13 @@ theorem isGreatest_mwisValue (R : G.RootedTreeDecomposition n) (w : V → ℕ) :
       ((R.bag 0).powerset.filter fun S : Finset V => G.IsIndepSet (↑S : Set V))
       ⟨∅, Finset.mem_filter.2 ⟨Finset.empty_mem_powerset _, by
         simp only [Finset.coe_empty, Set.pairwise_empty]⟩⟩
-      fun S => wsum w S + opt R w 0 S
+      fun S => (∑ v ∈ S, w v) + opt R w 0 S
     rw [Finset.mem_filter, Finset.mem_powerset] at hS
     obtain ⟨J, hJ, hJS, hJeq⟩ := exists_opt (R := R) (w := w) 0 hS.2
     have hdisj : Disjoint J S := Finset.disjoint_left.2 fun x hxJ hxS =>
       (Finset.mem_sdiff.1 (hJ hxJ)).2 (hS.1 hxS)
     refine ⟨J ∪ S, hJS, ?_⟩
-    change wsum w (J ∪ S) = _
-    rw [hval, hSeq, hJeq, wsum_union hdisj, Nat.add_comm]
+    rw [hval, hSeq, hJeq, Finset.sum_union hdisj, Nat.add_comm]
   · rintro x ⟨I, hI, rfl⟩
     have hsub : I ∩ R.bag 0 ⊆ R.bag 0 := Finset.inter_subset_right
     have hSi : G.IsIndepSet (↑(I ∩ R.bag 0) : Set V) :=
@@ -564,13 +479,13 @@ theorem isGreatest_mwisValue (R : G.RootedTreeDecomposition n) (w : V → ℕ) :
     have hmem : I ∩ R.bag 0 ∈
         (R.bag 0).powerset.filter fun S : Finset V => G.IsIndepSet (↑S : Set V) :=
       Finset.mem_filter.2 ⟨Finset.mem_powerset.2 hsub, hSi⟩
-    calc ∑ v ∈ I, w v = wsum w (I ∩ R.bag 0) + wsum w (I \ R.bag 0) :=
+    calc ∑ v ∈ I, w v = (∑ v ∈ I ∩ R.bag 0, w v) + ∑ v ∈ I \ R.bag 0, w v :=
           (Finset.sum_inter_add_sum_sdiff I (R.bag 0) w).symm
-      _ ≤ wsum w (I ∩ R.bag 0) + opt R w 0 (I ∩ R.bag 0) :=
-          Nat.add_le_add_left (wsum_le_opt hJ hJS) _
+      _ ≤ (∑ v ∈ I ∩ R.bag 0, w v) + opt R w 0 (I ∩ R.bag 0) :=
+          Nat.add_le_add_left (sum_le_opt hJ hJS) _
       _ ≤ mwisValue R w := by
           rw [hval]
-          exact Finset.le_sup (f := fun S => wsum w S + opt R w 0 S) hmem
+          exact Finset.le_sup (f := fun S => (∑ v ∈ S, w v) + opt R w 0 S) hmem
 
 /-- With unit weights the dynamic program computes the independence number. -/
 theorem mwisValue_one_eq_indepNum (R : G.RootedTreeDecomposition n) :
@@ -585,5 +500,103 @@ theorem mwisValue_one_eq_indepNum (R : G.RootedTreeDecomposition n) :
     rwa [Finset.sum_const, smul_eq_mul, mul_one, hs.card_eq] at this
 
 end Correctness
+
+
+/-! ### Declared cost -/
+
+/-- Ticks charged for processing a child with bag size `b` whose parent has bag size `q`, in the
+declared cost model of the module docstring. -/
+@[expose] def stepCost (b q : ℕ) : ℕ :=
+  b * q + 2 ^ b * (b * b + b + 4) + 2 ^ q * (q + 2)
+
+/-- Ticks charged at the root, with root bag size `r`, in the declared cost model. -/
+@[expose] def rootCost (r : ℕ) : ℕ :=
+  2 ^ r * (r * r + r + 3)
+
+/-- The per-node bound `2 ^ m (2 m ^ 2 + 2 m + 6)` for bags of size at most `m`. -/
+@[expose] def nodeCost (m : ℕ) : ℕ :=
+  2 ^ m * (2 * m * m + 2 * m + 6)
+
+theorem stepCost_mono {b b' q q' : ℕ} (hb : b ≤ b') (hq : q ≤ q') :
+    stepCost b q ≤ stepCost b' q' := by
+  unfold stepCost
+  have h1 : 2 ^ b ≤ 2 ^ b' := Nat.pow_le_pow_right (by norm_num) hb
+  have h2 : 2 ^ q ≤ 2 ^ q' := Nat.pow_le_pow_right (by norm_num) hq
+  gcongr
+
+theorem rootCost_mono {r r' : ℕ} (hr : r ≤ r') : rootCost r ≤ rootCost r' := by
+  unfold rootCost
+  have h1 : 2 ^ r ≤ 2 ^ r' := Nat.pow_le_pow_right (by norm_num) hr
+  gcongr
+
+theorem stepCost_le_nodeCost (m : ℕ) : stepCost m m ≤ nodeCost m := by
+  unfold stepCost nodeCost
+  have h : 1 ≤ 2 ^ m := Nat.one_le_two_pow
+  have h2 : m * m ≤ 2 ^ m * (m * m) := Nat.le_mul_of_pos_left _ h
+  nlinarith
+
+theorem rootCost_le_nodeCost (m : ℕ) : rootCost m ≤ nodeCost m := by
+  unfold rootCost nodeCost
+  gcongr <;> omega
+
+section Charged
+
+variable {V : Type} {G : SimpleGraph V} {n : ℕ} [DecidableEq V] [DecidableRel G.Adj]
+
+/-- `tables` in `TimeM ℕ`, charging the declared lump cost `stepCost` per processed node. The
+tick is not a count of the operations performed by `step`. -/
+@[expose] def tablesM (R : G.RootedTreeDecomposition n) (w : V → ℕ) :
+    ℕ → TimeM ℕ (Fin (n + 1) → Finset V → ℕ)
+  | 0 => pure fun _ _ => 0
+  | t + 1 => do
+    let acc ← tablesM R w t
+    let j : Fin (n + 1) := Fin.ofNat (n + 1) (n - t)
+    TimeM.tick (stepCost (R.bag j).card (R.bag (R.parent j)).card)
+    pure (step R w acc j)
+
+/-- The dynamic program in `TimeM ℕ`, with the declared per-node cost of the module docstring. -/
+@[expose] def mwisM (R : G.RootedTreeDecomposition n) (w : V → ℕ) : TimeM ℕ ℕ := do
+  let acc ← tablesM R w n
+  TimeM.tick (rootCost (R.bag 0).card)
+  pure (((R.bag 0).powerset.filter fun S : Finset V => G.IsIndepSet (↑S : Set V)).sup fun S =>
+    (∑ v ∈ S, w v) + acc 0 S)
+
+@[simp] theorem ret_tablesM (R : G.RootedTreeDecomposition n) (w : V → ℕ) (t : ℕ) :
+    (tablesM R w t).ret = tables R w t := by
+  induction t with
+  | zero => rfl
+  | succ t ih => simp only [tablesM, tables, TimeM.ret_bind, TimeM.ret_pure, ih]
+
+@[simp] theorem ret_mwisM (R : G.RootedTreeDecomposition n) (w : V → ℕ) :
+    (mwisM R w).ret = mwisValue R w := by
+  simp only [mwisM, mwisValue, TimeM.ret_bind, TimeM.ret_pure, ret_tablesM]
+
+theorem time_tablesM_le (R : G.RootedTreeDecomposition n) (w : V → ℕ) {k : ℕ}
+    (hk : R.width ≤ k) (t : ℕ) : (tablesM R w t).time ≤ t * nodeCost (k + 1) := by
+  induction t with
+  | zero => simp only [tablesM, TimeM.time_pure, zero_mul, le_refl]
+  | succ t ih =>
+    simp only [tablesM, TimeM.time_bind, TimeM.time_tick, TimeM.time_pure, add_zero]
+    have hb := R.width_le_iff.1 hk
+    have := (stepCost_mono (hb (Fin.ofNat (n + 1) (n - t)))
+      (hb (R.parent (Fin.ofNat (n + 1) (n - t))))).trans (stepCost_le_nodeCost (k + 1))
+    rw [Nat.succ_mul]
+    omega
+
+/-- **Declared cost.** On a rooted decomposition with `n + 1` nodes (decomposition nodes, not
+vertices of `G`) and width at most `k`, the declared cost of `mwisM` is at most
+`(n + 1) · 2 ^ (k + 1) · (2 (k + 1) ^ 2 + 2 (k + 1) + 6)` ticks: linear in the number of nodes and
+`2 ^ k · poly(k)` per node. The ticks are the declared per-node cost function of the module
+docstring for an unformalized array implementation; they do not count the operations of `mwisM`
+itself, whose evaluation as written is not FPT. -/
+theorem time_mwisM_le (R : G.RootedTreeDecomposition n) (w : V → ℕ) {k : ℕ}
+    (hk : R.width ≤ k) : (mwisM R w).time ≤ (n + 1) * nodeCost (k + 1) := by
+  simp only [mwisM, TimeM.time_bind, TimeM.time_tick, TimeM.time_pure, add_zero]
+  have h1 := time_tablesM_le R w hk n
+  have h2 := (rootCost_mono (R.width_le_iff.1 hk 0)).trans (rootCost_le_nodeCost (k + 1))
+  rw [Nat.succ_mul]
+  omega
+
+end Charged
 
 end Cslib.Algorithms.Lean.TreeDecomposition

@@ -19,7 +19,12 @@ Kernel-checked runs of the tree-decomposition dynamic program, with no `native_d
    `216`, and the independence number `2` read off the unit-weight run;
 2. the five-cycle with a width-two fan decomposition: the independence number `2` and a weighted
    value in which the best set avoids the heaviest vertex's neighbours;
-3. a one-node decomposition of the edgeless graph on three vertices, where every vertex is chosen.
+3. a one-node decomposition of the edgeless graph on three vertices, where every vertex is chosen;
+4. the star `K_{1,3}` with a root bag `{0}` and three children, which exercises the sum of
+   several child messages: the independence number `3` and two weighted values.
+
+The tick counts checked here are the declared cost of `mwisM` (see the module docstring of
+`Complexity.Algorithms.Lean.TreeDecomposition.IndependentSet`), not a count of evaluation steps.
 -/
 
 public section
@@ -117,6 +122,39 @@ def bagDecomposition : (⊥ : SimpleGraph (Fin 3)).RootedTreeDecomposition 0 whe
 /-- Every vertex is chosen, and only the root is charged: `rootCost 3 = 120`. -/
 example : mwisValue bagDecomposition ![2, 3, 4] = 9 ∧
     (mwisM bagDecomposition ![2, 3, 4]).time = 120 := by
+  decide
+
+/-! ### 4. A star with three children -/
+
+/-- The star `K_{1,3}` with centre `0` and leaves `1, 2, 3`. -/
+def star : SimpleGraph (Fin 4) where
+  Adj i j := i ≠ j ∧ (i = 0 ∨ j = 0)
+  symm := ⟨fun _ _ h => ⟨h.1.symm, h.2.symm⟩⟩
+  loopless := ⟨fun _ h => h.1 rfl⟩
+
+instance : DecidableRel star.Adj := fun i j =>
+  inferInstanceAs (Decidable (i ≠ j ∧ (i = 0 ∨ j = 0)))
+
+/-- The star decomposition: root bag `{0}` and three children with bags `{0, ℓ}`, so the root
+table is the sum of three child messages. -/
+def starDecomposition : star.RootedTreeDecomposition 3 where
+  parent := ![0, 0, 0, 0]
+  parent_zero := by decide
+  parent_lt := by decide
+  bag := ![{0}, {0, 1}, {0, 2}, {0, 3}]
+  exists_mem_bag := by decide
+  exists_adj_mem_bag := by decide
+  top_unique := by decide
+
+/-- The unit-weight run sums the three leaf messages: the independence number is `3`. -/
+example : star.indepNum = 3 := by
+  rw [← mwisValue_one_eq_indepNum starDecomposition]
+  decide
+
+/-- With weights `2, 1, 1, 1` the three leaves (total `3`) beat the centre; with weights
+`5, 1, 1, 1` the centre wins. -/
+example : mwisValue starDecomposition ![2, 1, 1, 1] = 3 ∧
+    mwisValue starDecomposition ![5, 1, 1, 1] = 5 := by
   decide
 
 end Cslib.Tests.TreeDecompositionIndependentSet
