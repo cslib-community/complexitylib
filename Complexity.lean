@@ -3943,15 +3943,14 @@ public import Complexity.Foundations.Combinatorics.SharedSummaries
 public import Complexity.Foundations.Combinatorics.ShiftColoring
 public import Complexity.Foundations.Combinatorics.SimpleGraph.CliqueCover
 public import Complexity.Foundations.Combinatorics.SimpleGraph.EvenEdges
+public import Complexity.Foundations.Combinatorics.SimpleGraph.GreedyColoring
 public import Complexity.Foundations.Combinatorics.SimpleGraph.IndepNum
 public import Complexity.Foundations.Combinatorics.SimpleGraph.LovaszTheta
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Pentagon
+public import Complexity.Foundations.Combinatorics.SimpleGraph.Rado
 public import Complexity.Foundations.Combinatorics.SimpleGraph.ShannonCapacity
 public import Complexity.Foundations.Combinatorics.SimpleGraph.StrongProduct
-public import Complexity.Foundations.Combinatorics.SimpleGraph.GreedyColoring
-public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
-public import Complexity.Foundations.Combinatorics.SimpleGraph.Rado
 public import Complexity.Foundations.Combinatorics.SimpleGraph.SymmDiff
 public import Complexity.Foundations.Combinatorics.SmallSubsets
 public import Complexity.Foundations.Combinatorics.SubsetPairCount
