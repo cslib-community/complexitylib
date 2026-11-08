@@ -46,6 +46,9 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `Universal/Input` uses the existing native streaming fold to emit a selected input symbol
   without repeatedly copying list tails. Retain these local improvements when synchronizing
   `Universal/Complexity`, `Bound` and their resource consumers with `crei/tidy-universal`.
+  `Bound`'s `q₀_le`, `tapes_le` and `table_le` are public locally, for the time–space speedup
+  in `Classes/TimeSpace/Speedup` and for `Universal/WindowedBound`; keep them public when
+  synchronizing.
   This is an extension of the existing interpreter, not a buffered Hennie–Stearns backend.
   `Universal/Windowed*` adds a divide-and-conquer windowed simulation on top of the vendored
   description format and `stepWith`; with the native `Combinators/StackLoop` and
@@ -754,7 +757,8 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `isRealizableBy_map_graph` and `IsRealizableBy.optimalError_eq_zero`, so reconcile names
   before submission. #966 would make `sampleComplexity` and `vcDim` `ℕ∞`-valued;
   `sampleComplexity_realizableDistributions_le_of_finite`,
-  `sampleComplexity_realizableDistributions_le_of_hasFiniteVCDim` and
+  `sampleComplexity_realizableDistributions_le_of_hasFiniteVCDim`,
+  `sampleComplexity_univ_le_of_finite` (agnostic, `AgnosticFiniteClass`) and
   `growthFunction_le_sum_choose_vcDim` will need restating if it lands.
 
 These are coordination references, not a second record of live PR status. Check the relevant

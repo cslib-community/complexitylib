@@ -465,8 +465,7 @@ theorem le_acceptProb₂_closenessTester {p q : PMF α} {k : ℕ} {ε δ b : ℝ
     1 - δ ≤ acceptProb₂ (closenessTester k ε) p q := by
   obtain ⟨hK, hk0, hε⟩ := setup hδ hp hk
   rcases le_or_gt 1 δ with hδ1 | hδ1
-  · have : 0 ≤ acceptProb₂ (closenessTester k ε) p q := by
-      rw [acceptProb₂_eq]; exact ENNReal.toReal_nonneg
+  · have := acceptProb₂_nonneg (closenessTester k ε) p q
     linarith
   have hS : 0 ≤ Real.sqrt b := Real.sqrt_nonneg b
   have hb : 0 ≤ b := ((collisionProbability_pos p).trans_le hp).le
@@ -508,10 +507,7 @@ theorem acceptProb₂_closenessTester_le {p q : PMF α} {k : ℕ} {ε δ b : ℝ
     acceptProb₂ (closenessTester k ε) p q ≤ δ := by
   obtain ⟨hK, hk0, hε⟩ := setup hδ hp hk
   rcases le_or_gt 1 δ with hδ1 | hδ1
-  · have : acceptProb₂ (closenessTester k ε) p q ≤ 1 := by
-      rw [acceptProb₂_eq]
-      exact ENNReal.toReal_le_of_le_ofReal zero_le_one
-        (ENNReal.ofReal_one.symm ▸ PMF.coe_le_one _ true)
+  · have := acceptProb₂_le_one (closenessTester k ε) p q
     linarith
   have hS : 0 ≤ Real.sqrt b := Real.sqrt_nonneg b
   have hb : 0 ≤ b := ((collisionProbability_pos p).trans_le hp).le
@@ -567,16 +563,9 @@ theorem isClosenessTester_closenessTester {k : ℕ} {ε : ℝ} (hε : 0 < ε)
       exact_mod_cast Fintype.card_pos
     refine acceptProb₂_closenessTester_le (by norm_num) (collisionProbability_le_one p)
       (collisionProbability_le_one q) (key p) ?_
-    -- Cauchy–Schwarz: `(∑ |p - q|)² ≤ n ∑ (p - q)²`, and `∑ |p - q| = 2 dist p q ≥ 2 ε`.
-    have hcs := sum_mul_sq_le_sq_mul_sq univ (fun a => |(p a).toReal - (q a).toReal|)
-      (fun _ => (1 : ℝ))
-    simp only [mul_one, sq_abs, one_pow, sum_const, card_univ, nsmul_eq_mul] at hcs
-    have hsum : 2 * ε ≤ ∑ a, |(p a).toReal - (q a).toReal| := by
-      have := hpq
-      rw [dist_eq] at this
-      linarith
-    have h2 : (2 * ε) ^ 2 ≤ (∑ a, |(p a).toReal - (q a).toReal|) ^ 2 :=
-      pow_le_pow_left₀ (by positivity) hsum 2
+    -- Cauchy–Schwarz: `4 dist(p, q)² ≤ n ‖p - q‖₂²`.
+    have hcs := four_mul_dist_sq_le_card_mul_sum_sq p q
+    have h2 : ε ^ 2 ≤ dist p q ^ 2 := pow_le_pow_left₀ hε.le hpq 2
     rw [div_pow, Real.sq_sqrt hn.le, div_le_iff₀ hn]
     nlinarith
 

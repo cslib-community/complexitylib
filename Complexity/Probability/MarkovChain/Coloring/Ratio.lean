@@ -10,6 +10,7 @@ module
 public import Complexity.Probability.MarkovChain.Coloring
 import Complexity.Probability.PMF
 import Complexity.Probability.PMF.Expect
+import Complexity.Foundations.Analysis.SpecialFunctions.ExpOneSubInvPow
 import Mathlib.Analysis.SpecialFunctions.Exp
 
 /-!
@@ -17,10 +18,11 @@ import Mathlib.Analysis.SpecialFunctions.Exp
 
 Fix a proper coloring `b` of a graph `G` with maximum degree `Δ`, a set `U` of vertices and
 `v ∈ U`, and let `X_U` be the proper `q`-colorings agreeing with `b` off `U`
-(`Cslib.Probability.MarkovChain.frozenColorings`). Freezing `v` at its color `b v` keeps a
-fraction at least `(1 - 1 / (q - Δ)) ^ Δ / q` of `X_U` when `Δ < q`
-(`Cslib.Probability.MarkovChain.card_frozenColorings_erase_ge`), hence at least `1 / (e q)` when
-`2Δ < q` (`Cslib.Probability.MarkovChain.inv_exp_mul_le_card_frozenColorings_erase_div`). This is
+(`SimpleGraph.frozenColorings`). Freezing `v` at its color `b v` keeps a fraction at least
+`(1 - 1 / (q - Δ)) ^ Δ / q` of `X_U` when `Δ < q`
+(`Cslib.Probability.MarkovChain.mul_card_frozenColorings_le_card_erase`), hence at least
+`1 / (e q)` when `2Δ < q`
+(`Cslib.Probability.MarkovChain.inv_exp_mul_le_card_frozenColorings_erase_div`). This is
 [LevinPeres2017], Lemma 14.16, the lower bound on the ratios `|X_{k-1}| / |X_k|` estimated by the
 approximate counting algorithm of [LevinPeres2017], Section 14.4.2.
 
@@ -36,7 +38,7 @@ distribution is `π`, and `x v = b v` is the event `x ∈ X_{U \ {v}}`.
 
 * `Cslib.Probability.MarkovChain.sum_uniformOfFinset_frozenColorings_ite`: under the uniform
   distribution on `X_U`, the probability that `x v = b v` is `|X_{U \ {v}}| / |X_U|`.
-* `Cslib.Probability.MarkovChain.card_frozenColorings_erase_ge`: the bound
+* `Cslib.Probability.MarkovChain.mul_card_frozenColorings_le_card_erase`: the bound
   `(1 - 1 / (q - Δ)) ^ Δ / q`.
 * `Cslib.Probability.MarkovChain.inv_exp_mul_le_card_frozenColorings_erase_div`:
   [LevinPeres2017], Lemma 14.16.
@@ -91,39 +93,10 @@ theorem sum_uniformOfFinset_frozenColorings_ite {U : Finset V} {b : V → Fin q}
   simp only [hπ]
   rw [Finset.sum_ite_mem, Finset.univ_inter, Finset.sum_const, nsmul_eq_mul, div_eq_mul_inv]
 
-/-- `e⁻¹ ≤ (1 - 1 / a) ^ Δ` when `Δ + 1 ≤ a`. -/
-private theorem exp_neg_one_le_one_sub_inv_pow {a : ℝ} {Δ : ℕ} (ha : (Δ : ℝ) + 1 ≤ a) :
-    Real.exp (-1) ≤ (1 - 1 / a) ^ Δ := by
-  rcases Nat.eq_zero_or_pos Δ with rfl | hΔ
-  · rw [pow_zero, Real.exp_le_one_iff]
-    norm_num
-  have hΔ1 : (1 : ℝ) ≤ Δ := by exact_mod_cast hΔ
-  have ha0 : 0 < a - 1 := by linarith
-  -- `e^{-1 / (a - 1)} ≤ 1 - 1 / a`, from `1 + 1 / (a - 1) ≤ e^{1 / (a - 1)}`
-  have h1 : Real.exp (-(1 / (a - 1))) ≤ 1 - 1 / a := by
-    have h := Real.add_one_le_exp (1 / (a - 1))
-    have hpos : 0 < 1 / (a - 1) + 1 := by positivity
-    rw [Real.exp_neg]
-    calc (Real.exp (1 / (a - 1)))⁻¹ ≤ (1 / (a - 1) + 1)⁻¹ := inv_anti₀ hpos h
-      _ = 1 - 1 / a := by
-          have : a - 1 ≠ 0 := ha0.ne'
-          have : a ≠ 0 := by linarith
-          field_simp
-          ring
-  calc Real.exp (-1) ≤ Real.exp (-(1 / (a - 1))) ^ Δ := by
-        rw [← Real.exp_nat_mul, Real.exp_le_exp]
-        have hΔ : (Δ : ℝ) / (a - 1) ≤ 1 := by
-          rw [div_le_one ha0]
-          linarith
-        have : (Δ : ℝ) * -(1 / (a - 1)) = -((Δ : ℝ) / (a - 1)) := by ring
-        rw [this]
-        linarith
-    _ ≤ (1 - 1 / a) ^ Δ := pow_le_pow_left₀ (Real.exp_pos _).le h1 Δ
-
 /-- **Freezing a vertex** ([LevinPeres2017], proof of Lemma 14.16): if `b` is a proper coloring,
 `Δ < q` and `v ∈ U`, then freezing `v` at `b v` keeps a fraction at least
 `(1 - 1 / (q - Δ)) ^ Δ / q` of the colorings agreeing with `b` off `U`. -/
-theorem card_frozenColorings_erase_ge (hq : G.maxDegree < q) {b : V → Fin q}
+theorem mul_card_frozenColorings_le_card_erase (hq : G.maxDegree < q) {b : V → Fin q}
     (hb : G.IsProperColoring b) {U : Finset V} {v : V} (hv : v ∈ U) :
     (1 - 1 / ((q - G.maxDegree : ℕ) : ℝ)) ^ G.maxDegree / q *
         (frozenColorings G q U b).card ≤ (frozenColorings G q (U.erase v) b).card := by
@@ -253,9 +226,10 @@ theorem inv_exp_mul_le_card_frozenColorings_erase_div (hq : 2 * G.maxDegree < q)
   have hne : (frozenColorings G q U b).Nonempty := ⟨b, mem_frozenColorings_self hb⟩
   have hX : (0 : ℝ) < (frozenColorings G q U b).card := Nat.cast_pos.2 hne.card_pos
   have hq0 : (0 : ℝ) < q := Nat.cast_pos.2 (by omega)
-  have h := card_frozenColorings_erase_ge (by omega) hb hv
+  have h := mul_card_frozenColorings_le_card_erase (by omega) hb hv
   have hexp : Real.exp (-1) ≤ (1 - 1 / ((q - G.maxDegree : ℕ) : ℝ)) ^ G.maxDegree := by
-    refine exp_neg_one_le_one_sub_inv_pow ?_
+    rw [one_div]
+    refine Real.exp_neg_one_le_one_sub_inv_pow ?_
     exact_mod_cast (by omega : G.maxDegree + 1 ≤ q - G.maxDegree)
   rw [le_div_iff₀ hX]
   calc (Real.exp 1 * q)⁻¹ * (frozenColorings G q U b).card
