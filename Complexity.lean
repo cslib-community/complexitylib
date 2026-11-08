@@ -1033,6 +1033,7 @@ public import Complexity.Computability.Circuit.Boolean.Oracle
 public import Complexity.Computability.Circuit.Boolean.PPoly
 public import Complexity.Computability.Circuit.Boolean.PPolyHard
 public import Complexity.Computability.Circuit.Boolean.Parity
+public import Complexity.Computability.Circuit.Boolean.Polarization
 public import Complexity.Computability.Circuit.Boolean.PolynomialTime
 public import Complexity.Computability.Circuit.Boolean.PopulationCount
 public import Complexity.Computability.Circuit.Boolean.PopulationCount.PolyTime
@@ -1331,6 +1332,7 @@ public import Complexity.Computability.Circuit.Monotone.Formula
 public import Complexity.Computability.Circuit.Monotone.KarchmerWigderson
 public import Complexity.Computability.Circuit.Monotone.Set
 public import Complexity.Computability.Circuit.Monotone.Synthesis
+public import Complexity.Computability.Circuit.OutputDistribution
 public import Complexity.Computability.Circuit.Parallel
 public import Complexity.Computability.Circuit.Pebbling
 public import Complexity.Computability.Circuit.Pi
@@ -2005,6 +2007,7 @@ public import Complexity.Computability.Complexity.Problems.SharpDNF.KarpLubyMadr
 public import Complexity.Computability.Complexity.Problems.SharpDNF.KarpLubyMadras.PolyTime
 public import Complexity.Computability.Complexity.Problems.SharpSAT
 public import Complexity.Computability.Complexity.Problems.SharpThreeSAT
+public import Complexity.Computability.Complexity.Problems.StatisticalDifference
 public import Complexity.Computability.Complexity.Problems.SubsetSum
 public import Complexity.Computability.Complexity.Problems.SubsetSum.Digits
 public import Complexity.Computability.Complexity.Problems.SubsetSum.Mask
@@ -5034,6 +5037,7 @@ public import Complexity.Probability.StatisticalDistance.Polarization
 public import Complexity.Probability.StatisticalDistance.Product
 public import Complexity.Probability.StatisticalDistance.UniformMod
 public import Complexity.Probability.StatisticalDistance.XOR
+public import Complexity.Probability.StatisticalDistance.XORSampling
 public import Complexity.Probability.Uniform
 public import Complexity.Probability.UniformNat
 public import Complexity.Probability.UniversalHash

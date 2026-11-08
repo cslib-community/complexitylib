@@ -108,9 +108,8 @@ explicit distributions over finite types, with the half-L1 `dist` above.
   `obtain ⟨m, b, hm, hlam, hell, h⟩ := exists_polarization hβ hβα hα hα1`, then
   `(h p₀ p₁ k).1` for the far side and `(h p₀ p₁ k).2` for the near side.
 
-The circuit-level Statistical Difference problem and its polynomial-time polarization map are not
-formalized yet; [issue #3205](https://github.com/cslib-community/complexitylib/issues/3205) tracks
-them. The [checked clients](../../ComplexityTests/Polarization.lean) cover the following:
+The checked clients in [Polarization.lean](../../ComplexityTests/Polarization.lean) cover the
+following:
 
 - the exact XOR distance `1/8` of a uniform bit against a point mass;
 - the failure of the identity at `k = 0`;
@@ -118,6 +117,47 @@ them. The [checked clients](../../ComplexityTests/Polarization.lean) cover the f
 - the thresholds `α = 2/3`, `β = 1/3`.
 
 Run `scripts/build.sh ComplexityTests.Polarization`.
+
+### Polarize circuit samplers and Statistical Difference instances
+
+A circuit `C : Circuit σ n m` is a sampler. `C.outputDist I` is the distribution of its outputs on
+uniform inputs, defined in
+[Circuit/OutputDistribution.lean](../../Complexity/Computability/Circuit/OutputDistribution.lean).
+`Circuit.outputDist_replicate` says that `C.replicate k` samples `iid (C.outputDist I) k`, with the
+`k` output blocks flattened by `Cslib.BitString.blocksEquiv`.
+
+- **XOR and polarization circuits.** Import
+  [Circuit/Boolean/Polarization.lean](../../Complexity/Computability/Circuit/Boolean/Polarization.lean).
+  For De Morgan circuits `C₀ C₁ : Circuit signature n m`, `xorMixCircuit C₀ C₁ j c` reads `j`
+  selector bits and then `j + 1` data blocks. It samples
+  `xorMix (C₀.outputDist _) (C₁.outputDist _) (j + 1) c` (`outputDist_xorMixCircuit`). The selector
+  is completed to parity `c` by `parityComplete`, from
+  [XORSampling.lean](../../Complexity/Probability/StatisticalDistance/XORSampling.lean).
+  `polarizeCircuit C₀ C₁ lam ell k c` samples `polarize … (lam + 1) ell (k + 1) c`
+  (`outputDist_polarizeCircuit`). Note that the coordinate counts are passed as predecessors.
+  `dist_outputDist_polarizeCircuit` transfers the distance bounds of `polarize` unchanged.
+- **Statistical Difference.** Import
+  [Problems/StatisticalDifference.lean](../../Complexity/Computability/Complexity/Problems/StatisticalDifference.lean).
+  An `SDInstance` is a pair of De Morgan circuits with common input and output counts, and
+  `StatisticalDifference α β` is `PromiseProblem.gapMax` of `SDInstance.distance`.
+  `SDInstance.exists_polarize` is the Polarization Lemma on instances, for constant thresholds
+  `0 ≤ β < α² ≤ 1`. Its inner count is `m (⌊log₂ (k + 1)⌋ + 1) - 1`, its copy count is
+  `2 ^ (b (⌊log₂ (k + 1)⌋ + 1))` and its outer count is `k`.
+  `StatisticalDifference.exists_mapsTo_polarize` states the result as `Set.MapsTo` into
+  `StatisticalDifference (1 - (1/2)^(k+1)) ((1/2)^(k+1))`, for `k ≠ 0`.
+
+This is the semantic half of the reduction only. Polynomial-time computability of the
+polarization map on encoded instances, with `k` growing with the instance length, is not formalized
+yet. Neither is SZK. [Issue #3205](https://github.com/cslib-community/complexitylib/issues/3205)
+tracks both. The checked clients in
+[StatisticalDifference.lean](../../ComplexityTests/StatisticalDifference.lean) cover:
+
+- parity completion;
+- the XOR circuit on two constant circuits;
+- a far instance and a near instance against `SD^{2/3,1/3}`;
+- both instances pushed through the Polarization Lemma.
+
+Run `scripts/build.sh ComplexityTests.StatisticalDifference`.
 
 ## Bound the mixing time of a finite Markov chain
 

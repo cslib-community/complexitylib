@@ -708,8 +708,9 @@ index links to canonical definitions rather than keeping a second set.
   statistical and perfect zero knowledge.
 - **Statistical zero knowledge** ([#3205](https://github.com/cslib-community/complexitylib/issues/3205)):
   the Sahai–Vadhan polarization of statistical distance is available on explicit finite
-  distributions. Next come the Statistical Difference promise problem on pairs of encoded circuits
-  with a polynomial-time polarization map, honest-verifier SZK with `SD` in it, `SD` being
+  distributions, and on pairs of circuit samplers as a map on Statistical Difference instances
+  (`Problems/StatisticalDifference.lean`). Next come the polynomial-time computability of that map
+  on encoded instances, with error `2^-|x|`, honest-verifier SZK with `SD` in it, `SD` being
   SZK-complete, Entropy Difference (Goldreich–Vadhan), closure under complement (Okamoto), and
   `SZK ⊆ AM ∩ coAM` (Fortnow; Aiello–Håstad).
 
