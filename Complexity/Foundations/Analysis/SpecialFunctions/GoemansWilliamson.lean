@@ -43,7 +43,7 @@ explicit rational arithmetic.
 * `Real.goemansWilliamsonConstant_mul_le_arccos`: `α · (1 - y) / 2 ≤ arccos y / π` for
   `-1 ≤ y ≤ 1` [GoemansWilliamson1995, Lemma 3.4].
 * `Real.lt_goemansWilliamsonConstant`: `0.87856 < α` [GoemansWilliamson1995, Lemma 3.5].
-* `Real.goemansWilliamsonConstant_lt`: `α < 0.87857`, so the four-digit value is sharp.
+* `Real.goemansWilliamsonConstant_lt`: `α < 0.87857`, so `α = 0.87856…` to five decimal digits.
 
 ## References
 
@@ -163,7 +163,7 @@ theorem lt_goemansWilliamsonConstant : (0.87856 : ℝ) < goemansWilliamsonConsta
   exact gw_lower_aux θ.2.1 θ.2.2
 
 /-- The Goemans–Williamson constant is below `0.87857`, witnessed by `θ = π - 0.810474`. With
-`Real.lt_goemansWilliamsonConstant`, this pins down the first four decimal digits. -/
+`Real.lt_goemansWilliamsonConstant`, this pins down the first five decimal digits. -/
 theorem goemansWilliamsonConstant_lt : goemansWilliamsonConstant < 0.87857 := by
   have hplo := pi_gt_d6
   have hphi := pi_lt_d6

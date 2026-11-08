@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Algorithms.Lean.MaxCut.GoemansWilliamson
+import Complexity.Algorithms.Lean.MaxCut.GoemansWilliamsonCutWeight
 
 /-! # Tests for Goemans–Williamson rounding
 

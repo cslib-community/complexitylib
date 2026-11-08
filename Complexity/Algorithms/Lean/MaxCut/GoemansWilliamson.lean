@@ -8,7 +8,6 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Computability.Complexity.Problems.MaxCut
 public import Complexity.Foundations.Analysis.SpecialFunctions.GoemansWilliamson
 public import Mathlib.Probability.Distributions.Gaussian.Multivariate
 import Complexity.Foundations.MeasureTheory.Constructions.BorelSpace.Order
@@ -65,9 +64,10 @@ assignments of unit vectors form a compact set. For the guarantee, `F` may have 
 the source uses dimension `n`, the number of vertices, where an optimal solution of the
 semidefinite program is a Gram matrix of vectors.
 
-Finally, `cutValue_eq_cutWeight` identifies `cutValue` on the edge list of an instance of the
-weighted `Cslib.Complexity.MaxCut` problem with `Cslib.Complexity.MaxCut.cutWeight`, and
-`goemansWilliamsonConstant_mul_cutWeight_le_integral` restates the guarantee for that problem.
+The bridge to the weighted `Cslib.Complexity.MaxCut` problem and its
+`Cslib.Complexity.MaxCut.cutWeight` is in
+`Complexity.Algorithms.Lean.MaxCut.GoemansWilliamsonCutWeight`, so that this module does not
+depend on the machine-level complexity of `MaxCut`.
 
 ## Limitations
 
@@ -99,8 +99,6 @@ not formalized.
 * `exists_forall_goemansWilliamsonConstant_mul_sub_le`: some hyperplane cut achieves the
   guarantee.
 * `exists_isMaxOn_sdpValue`: the relaxation has an optimal solution.
-* `cutValue_eq_cutWeight`, `goemansWilliamsonConstant_mul_cutWeight_le_integral`: the bridge to
-  `Cslib.Complexity.MaxCut`.
 
 ## References
 
@@ -309,40 +307,5 @@ theorem exists_isMaxOn_sdpValue [Nontrivial F] (ends : ι → V × V)
     fun_prop
   obtain ⟨v, hv, hmax⟩ := hK.exists_isMaxOn ⟨fun _ => u, fun _ => hu⟩ hcont.continuousOn
   exact ⟨v, hv, hmax⟩
-
-/-! ### The bridge to `Cslib.Complexity.MaxCut` -/
-
-/-- **`cutValue` is `MaxCut.cutWeight`.** On the edge list `L` of an instance of the weighted
-`Cslib.Complexity.MaxCut` problem, indexed by positions, `cutValue` is the weight
-`Cslib.Complexity.MaxCut.cutWeight L side`. -/
-theorem cutValue_eq_cutWeight (L : List ((ℕ × ℕ) × ℕ)) (side : ℕ → Bool) :
-    cutValue (fun i : Fin L.length => L[i].1) (fun i => (L[i].2 : ℝ)) side =
-      (Cslib.Complexity.MaxCut.cutWeight L side : ℝ) := by
-  unfold cutValue
-  simp only [Fin.getElem_fin]
-  rw [Fin.sum_univ_fun_getElem L fun x => if side x.1.1 ≠ side x.1.2 then (x.2 : ℝ) else 0]
-  unfold Cslib.Complexity.MaxCut.cutWeight
-  induction L with
-  | nil => simp
-  | cons x L ih =>
-    rw [List.map_cons, List.sum_cons, ih, List.filter_cons]
-    by_cases h : side x.1.1 = side x.1.2
-    · simp [Cslib.Complexity.MaxCut.crosses, h]
-    · simp [Cslib.Complexity.MaxCut.crosses, h]
-
-/-- **The Goemans–Williamson guarantee for `Cslib.Complexity.MaxCut`.** For the edge list `L` of
-an instance of weighted MAX-CUT and unit vectors `v` within `ε` of optimal for its relaxation,
-the expected weight of the rounded cut is at least `α` times the weight of every cut minus `ε`.
-Vertices are natural numbers; only the endpoints of `L` matter. -/
-theorem goemansWilliamsonConstant_mul_cutWeight_le_integral (L : List ((ℕ × ℕ) × ℕ))
-    {v : ℕ → F} (hv : ∀ i, ‖v i‖ = 1) {ε : ℝ}
-    (hopt : ∀ v' : ℕ → F, (∀ i, ‖v' i‖ = 1) →
-      sdpValue (fun i : Fin L.length => L[i].1) (fun i => (L[i].2 : ℝ)) v' ≤
-        sdpValue (fun i : Fin L.length => L[i].1) (fun i => (L[i].2 : ℝ)) v + ε)
-    (side : ℕ → Bool) :
-    goemansWilliamsonConstant * ((Cslib.Complexity.MaxCut.cutWeight L side : ℝ) - ε) ≤
-      ∫ r, (Cslib.Complexity.MaxCut.cutWeight L (hyperplaneSide v r) : ℝ) ∂stdGaussian F := by
-  simp only [← cutValue_eq_cutWeight]
-  exact goemansWilliamsonConstant_mul_sub_le_integral _ (fun _ => Nat.cast_nonneg _) hv hopt side
 
 end Cslib.Algorithms.Lean.MaxCut

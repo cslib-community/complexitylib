@@ -841,7 +841,7 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   Goemans–Williamson analysis of random-hyperplane rounding for weighted MAX-CUT, with
   `0.87856 < α`, is in `Algorithms/Lean/MaxCut/GoemansWilliamson`. It is stated against every cut
   for given `ε`-optimal unit vectors under an exact Gaussian. Remaining
-  ([#3212](https://github.com/cslib-community/complexitylib/issues/3212)): polynomial-time SDP
+  ([#3230](https://github.com/cslib-community/complexitylib/issues/3230)): polynomial-time SDP
   solving with precision accounting, a `ProbComp` realization of the Gaussian sample, tightness
   (the Feige–Schechtman integrality gap), the MAX-2SAT and MAX-DICUT extensions and
   derandomization.
