@@ -970,11 +970,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   noise-free block simulation from random examples with a fixed-distribution PAC corollary, and
   the low-degree algorithm as a non-adaptive SQ learner. Remaining: simulation under random
   classification noise of known and of unknown rate (Kearns's Lemma 2 and Theorem 3); the
-  single-sample finite-query-space form of Kearns's Theorem 1 and a distribution-free variant;
-  randomized SQ learners; and Feldman's statistical dimension for a specified planted problem,
-  with matching sample and runtime upper bounds. Develop low-degree likelihood-ratio and
-  sum-of-squares comparisons where justified, distinguishing restricted-model bounds from
-  unrestricted computational hardness. Use the [distributional framework](#average-case-complexity).
+  single-sample form of Kearns's Theorem 1 (finite query space and finite VC dimension) and a
+  distribution-free variant; randomized SQ learners; and Feldman's statistical dimension for a
+  specified planted problem, with matching sample and runtime upper bounds. Develop low-degree
+  likelihood-ratio and sum-of-squares comparisons where justified, distinguishing restricted-model
+  bounds from unrestricted computational hardness. Use the
+  [distributional framework](#average-case-complexity).
 - **Online learning in the mistake-bound model**
   ([#2908](https://github.com/cslib-community/complexitylib/issues/2908)): the realizable model,
   the halving algorithm, the Littlestone dimension with the standard optimal algorithm (optimal

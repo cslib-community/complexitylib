@@ -25,18 +25,24 @@ with probability `2 exp (-m τ² / 2)`, and by a union bound over the at most `q
 all answers are within tolerance except with probability `2 q exp (-m τ² / 2)`. The run is then a
 run of the learner against an oracle answering within tolerance, so the hypothesis has error at
 most `ε` whenever the learner learns with tolerance `τ` and error `ε`
-(`StatisticalQuery.Learns.toOuterMeasure_lt_disagreement_simulate_le`). With
-`m ≥ 2 log (2 q / δ) / τ²` this is a PAC learner from `q m` examples for the family of the
+(`StatisticalQuery.Learns.toOuterMeasure_lt_disagreement_simulate_le`). Whenever
+`2 q exp (-m τ² / 2) ≤ δ`, this is a PAC learner from `q m` examples for the family of the
 distributions of a `D`-random point labelled by a concept of the class
 (`StatisticalQuery.Learns.isPACLearnerFor`): learnability from statistical queries implies PAC
-learnability [Kearns1998, Theorem 1].
+learnability [Kearns1998, Theorem 1]. The simulation needs a positive tolerance. For `τ > 0` and
+`0 < δ < 1` the condition holds once `m ≥ 2 log (2 q / δ) / τ²`. At `τ = 0` it reads `2 q ≤ δ`,
+which holds only for a learner making no queries.
 
 The learner may choose its queries adaptively; the union bound runs along the tree of its calls
 (`StatisticalQuery.toOuterMeasure_simulate_notMem_le`): each query of the run is answered from a
 block of examples independent of the blocks used before, whatever the earlier answers were. This
 is the block form of the simulation in [Reyzin, Section 2.1][Reyzin2020], with `m` examples per
-query. Kearns's Theorem 1 also covers the case of a finite query space answered from a single
-sample; that form is not formalized here.
+query. The union bound is proved by induction on the query budget, splitting off the first block
+with `PMF.pi_fin_succ`. The library's presampling theorem
+(`Cslib.OracleComp.IsQueryBounded.run_interpret_presample`) transports exact laws from online runs,
+and there is no online form of this bound to transport. Kearns's proof of Theorem 1 instead answers
+every query from a single sample, with sample bounds for a finite query space and for a query space
+of finite VC dimension; the single-sample form and both of its bounds are not formalized here.
 
 ## Main definitions
 
