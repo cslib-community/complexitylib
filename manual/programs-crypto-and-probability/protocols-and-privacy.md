@@ -668,6 +668,14 @@ world. They do not equate arbitrary interleavings or prove a new security notion
 receiver-program adapter, uniform native execution contracts for this common world, two-sided
 realization, composition/UC and full malicious MPC remain separate obligations.
 
+## Garbled circuits
+
+[Primitives/Garbling/Basic.lean](../../Complexity/Crypto/Primitives/Garbling/Basic.lean) garbles a circuit `C : Circuit σ n m` over any signature with a Boolean interpretation. It uses point-and-permute in the style of Yao [yao86][yao86] and Beaver–Micali–Rogaway [bmr90][bmr90]. Each wire carries two labels in `K × Bool` for a finite additive group `K`. The `Bool` component is the colour, which is the wire's value masked by a permutation bit. A gate of arity `a` has `2 ^ a` rows indexed by argument colours. Each row holds the gate's output label for those colours, masked by the sum `Σₖ F (key of argument k) (tw slot)` of a keyed function `F : K → T → K × Bool`, where `tw` assigns a tweak to each (gate, row, argument) slot. `Garbled.run_garbleWith` proves exact correctness for every `F`, every tweak map and every choice of keys and permutation bits; `Garbled.run_of_mem_support` lifts this to every outcome of the randomized `garble`. Evaluation runs `n + C.size` rounds on the public `Circuit.Topology` and needs only `Topology.IsOrdered`, which every circuit's topology satisfies (`Circuit.isOrdered_topology` in [Circuit/Topology.lean](../../Complexity/Computability/Circuit/Topology.lean)).
+
+[Primitives/Garbling/Privacy.lean](../../Complexity/Crypto/Primitives/Garbling/Privacy.lean) proves simulation privacy with topology side information in the sense of Bellare–Hoang–Rogaway [bhr12][bhr12]. The evaluator's `View` is the table, one label per input wire and the decoding bits. `simulate` sees only the topology, `F`, `tw` and the output. It samples uniform wire labels and filler rows, and `View.run_simulateWith` shows that its views decode to the output. `advantage_realGame_simGame_le` bounds the advantage of every distinguisher `D` between `realGame` and `simGame` by `Σ_{j < n + C.size} PRF.advantage F (reduction C I F tw x D j)`, assuming `tw` is injective. The assumption is needed: in a row that reads one wire twice with the same colour, equal tweaks on the two slots would make their mask terms cancel in the colour bit. The identity tweak map on slots satisfies it. The proof is a hybrid over wires in wire-number order. The reduction for wire `j` embeds the PRF key as the inactive key of wire `j`, makes at most one oracle query per argument slot (`isQueryBounded_reduction`), and runs `D` once. `advantage_realGame_simGame_le_mul` gives `(n + C.size) · ε` under a uniform bound `ε`. The PRF game is the finite private-coin oracle game of [Primitives/PRF/Finite.lean](../../Complexity/Crypto/Primitives/PRF/Finite.lean).
+
+The statement is concrete and single-instance: the circuit, input and distinguisher are fixed and the keyed function is arbitrary, so the bound is meaningful only when the reductions' PRF advantages are small. In the prv.sim game of [bhr12][bhr12] the adversary chooses the circuit and input itself; a bound for that game follows by averaging over its choice, but this transfer is not formalized. Running time is not tracked: there are no cost bounds for garbling, evaluation, the simulator or the reductions. Nothing here is asymptotic or polynomial-time; there is no connection to the word-level `PseudorandomFunction`; Yao's two-party protocol with oblivious transfer is not formalized; and free-XOR, half-gates and other table-size optimizations are absent. These remain in [#3236](https://github.com/cslib-community/complexitylib/issues/3236). Theorem numbers of [bhr12][bhr12] and [lp09][lp09] were not checked, since their full texts were inaccessible in this pass. Checked instances are in [ComplexityTests/Crypto/Garbling.lean](../../ComplexityTests/Crypto/Garbling.lean).
+
 ## Upstream perfect secrecy and sharing
 
 Pinned cslib supplies [PerfectlySecret](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Crypto/Protocols/PerfectSecrecy/Defs.lean#L76): observing any positive-probability ciphertext leaves every message prior unchanged. Its equivalent ciphertext-distribution formulation and one-time-pad instance are finite semantic security, with no PPT restriction. The upstream commitment interface separately defines perfect/statistical hiding and perfect binding [cslib][cslib].
@@ -722,6 +730,8 @@ Model boundaries: privacy is against each single server, not coalitions (`t`-pri
 Only selected protocol endpoints and key definitions were traced. The source files themselves give detailed source mappings; this pass did not independently reconcile every textbook constant, lattice-abort construction or signature reduction. Existing regression tests are not newly executed evidence. The precise coalition and advice restrictions above should be retained even when summarizing the results compactly.
 
 [bcs16]: ../sources.md#bcs16
+[bhr12]: ../sources.md#bhr12
+[bmr90]: ../sources.md#bmr90
 [bs23]: ../sources.md#bs23
 [cgks98]: ../sources.md#cgks98
 [complexitylib]: ../sources.md#complexitylib
@@ -731,4 +741,6 @@ Only selected protocol endpoints and key definitions were traced. The source fil
 [goldreich04]: ../sources.md#goldreich04
 [grs12]: ../sources.md#grs12
 [kov17]: ../sources.md#kov17
+[lp09]: ../sources.md#lp09
+[yao86]: ../sources.md#yao86
 [yekhanin12]: ../sources.md#yekhanin12
