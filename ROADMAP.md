@@ -1133,9 +1133,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   convex optimization through explicit oracle and numerical-error contracts.
 - **Lovász theta and perfect graphs** ([#2998](https://github.com/cslib-community/complexitylib/issues/2998)):
   Shannon capacity, the orthonormal-representation theta function, the sandwich
-  `α(G) ≤ ϑ(G) ≤ χ(Ḡ)`, `Θ(G) ≤ ϑ(G)` and `Θ(C₅) = √5` are in
-  `Foundations/Combinatorics/SimpleGraph`. Remaining: the equivalent SDP and eigenvalue
-  formulations of `ϑ`, and its polynomial-time approximation by the ellipsoid method
+  `α(G) ≤ ϑ(G) ≤ χ(Ḡ)`, `Θ(G) ≤ ϑ(G)`, `|V| ≤ ϑ(G) ϑ(Ḡ)`, `Θ(C₅) = √5` and the exact `ϑ` of
+  odd cycles and their complements are in `Foundations/Combinatorics/SimpleGraph`. Remaining:
+  the equivalent SDP and eigenvalue formulations of `ϑ` (including the Hoffman-type eigenvalue
+  bound), multiplicativity `ϑ(G ⊠ H) = ϑ(G) ϑ(H)` and `ϑ(G) ϑ(Ḡ) = |V|` for vertex-transitive
+  `G`, and the polynomial-time approximation of `ϑ` by the ellipsoid method
   (Grötschel–Lovász–Schrijver), which makes clique number and chromatic number of perfect graphs
   polynomial-time computable. This waits on the separation–optimization interface.
 - **Primal–dual approximation and multiplicative weights:** reusable analyses with vertex cover
