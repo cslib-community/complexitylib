@@ -167,7 +167,7 @@ Marek Chrobak, Howard J. Karloff, Thomas H. Payne, Sundar Vishwanathan. "New Res
 <a id="chvatal83"></a>
 ## chvatal83
 
-Vašek Chvátal. *Linear Programming*. W. H. Freeman, New York, 1983. Bibliographic data from library and search summaries; the book was not inspected in this pass. The chapter locators used in the manual and docstrings (Chapter 2 for dictionaries, pivoting and the optimality test; Chapters 2–3 for the unboundedness test, which search summaries of the table of contents place in Chapter 3; Chapter 3 for cycling, the cycling example and the smallest-subscript rule; Chapter 5 for duality and the dual solution read off the final dictionary) come from secondary summaries and memory of the book, not from a copy, and are unverified. The coefficients of the cycling example in `ComplexityTests/Algorithms/Lean/Simplex.lean` were taken from those summaries and checked by running Dantzig's rule on them, which returns to the initial basis after six degenerate pivots.
+Vašek Chvátal. *Linear Programming*. W. H. Freeman, New York, 1983. Bibliographic data from library and search summaries; the book was not inspected in this pass. The chapter locators used in the manual and docstrings (Chapter 2 for dictionaries, pivoting and the optimality test; Chapters 2–3 for the unboundedness test, which search summaries of the table of contents place in Chapter 3; Chapter 3 for cycling, the cycling example and the smallest-subscript rule; Chapter 4 for the Klee–Minty programs and the `2^n - 1` pivots of the largest-coefficient rule on them; Chapter 5 for duality and the dual solution read off the final dictionary) come from secondary summaries and memory of the book, not from a copy, and are unverified. The coefficients of the cycling example in `ComplexityTests/Algorithms/Lean/Simplex.lean` were taken from those summaries and checked by running Dantzig's rule on them, which returns to the initial basis after six degenerate pivots.
 
 <a id="cks20"></a>
 ## cks20
@@ -458,6 +458,11 @@ Tadao Kasami. *An Efficient Recognition and Syntax-Analysis Algorithm for Contex
 ## katzlindell20
 
 Jonathan Katz and Yehuda Lindell. *Introduction to Modern Cryptography*, 3rd edition. CRC Press, 2020. Bibliographic metadata and section titles checked against the authors' 3rd-edition table of contents and preface: https://www.cs.umd.edu/~jkatz/imc/toc-preface-3rd.pdf (Sections 9.2.3–9.2.4 on the factoring and RSA assumptions; Section 15.1.1 on trapdoor permutations; Section 15.2 on Paillier encryption; Sections 15.4.1–15.4.3 on quadratic residues and the quadratic residuosity assumption; and Sections 15.5.1–15.5.2 on modular square roots and the Rabin trapdoor permutation). Detailed numbered locators (Definitions, Claims, Propositions, Lemmas, Constructions, Examples, Exercises, and Theorems) remain attributed to the Lean source docstrings, as the textbook body was not independently audited; the Lean modules adapt the parameter generators, RSA challenge domain, Rabin sampling distribution, and the Paillier encryption-randomness sampler (dyadic sampling with `unitOrOne` in place of uniform `ℤ_N^*`) as documented in their module docstrings and implementation notes.
+
+<a id="kleeminty72"></a>
+## kleeminty72
+
+Victor Klee and George J. Minty. "How Good Is the Simplex Algorithm?" In O. Shisha (ed.), *Inequalities III*, Academic Press, New York, 1972, pp. 159–175. Bibliographic data from search summaries; the paper was not inspected in this pass, and no theorem number is claimed. The manual credits it with the deformed cubes on which Dantzig's largest-coefficient rule visits all `2^n` vertices. The formalized program, `max ∑ 10^(n-j) x_j` subject to `2 ∑_{j<i} 10^(i-j) x_j + x_i ≤ 100^(i-1)` and `x ≥ 0`, is the textbook form attributed to [chvatal83](#chvatal83), Chapter 4, which was not inspected either; the coefficients were taken from secondary summaries and checked by running Dantzig's rule on them for `n ≤ 7`, which takes `2^n - 1` pivots in each case.
 
 <a id="knuthyao76"></a>
 ## knuthyao76

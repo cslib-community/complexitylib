@@ -1551,14 +1551,17 @@ each statement against the numbered result. Organize modules by subject, not cha
   method on dictionaries with Bland's rule, its no-cycling theorem, termination within
   `N.choose m - 1` pivots, the optimality and unboundedness certificates and an optimal dual
   solution read off the final dictionary are in `Algorithms/Lean/Simplex`
-  ([#3370](https://github.com/cslib-community/complexitylib/issues/3370)). Remaining:
+  ([#3370](https://github.com/cslib-community/complexitylib/issues/3370)), as is the Klee–Minty
+  lower bound: Dantzig's rule makes exactly `2ⁿ - 1` pivots on the `n`-dimensional Klee–Minty
+  program ([#3441](https://github.com/cslib-community/complexitylib/issues/3441)). Remaining:
   rational input and output encodings; bit-size bounds on basic solutions and Farkas
   certificates (Cramer's rule with the Hadamard bound), giving LP feasibility in NP ∩ coNP with
   machine-checked certificate verifiers; and a polynomial-time LP algorithm (ellipsoid or
   interior point) with bit complexity and intermediate precision accounted for. For the simplex
-  method: Phase I (an initial feasible dictionary or an infeasibility certificate); the
-  Klee–Minty cube on which Dantzig's rule makes `2ⁿ - 1` pivots; smoothed analysis
-  (Spielman–Teng); strongly polynomial special cases; and a costed implementation.
+  method: Phase I (an initial feasible dictionary or an infeasibility certificate); exponential
+  lower bounds for other pivoting rules, such as Bland's rule on Klee–Minty-type programs
+  (Avis–Chvátal 1978); smoothed analysis (Spielman–Teng); strongly polynomial special cases; and a
+  costed implementation.
 - **Lattice basis reduction** ([#3235](https://github.com/cslib-community/complexitylib/issues/3235)):
   `δ`-reduced bases, the LLL approximation `‖b₁‖² ≤ (4/(4δ-1))^{n-1} ‖x‖²` (paper indexing,
   `n` vectors) to the shortest vector (Lenstra–Lenstra–Lovász Proposition (1.11)), the potential
