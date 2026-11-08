@@ -39,11 +39,13 @@ to a bin `b ∈ B_i` is matched to `b`, and both `a` and `b` are removed before 
 
 Because `h` is fixed in advance, the resulting assignment `matching h A` (for `B = Finset.univ` of
 all `n'` slots, or more generally `matchOptOn h A B` for any `B` with `A.card ≤ B.card`) depends
-solely on `h` and the current active set `A`. Under uniform independent permutations (`schemePMF`),
-the expected number of rounds `T` is at most `⌈log₂ |A|⌉ + 2 = O(log (max |A| 2))`
-([LiLiangYuZhou2024, Claim 3.3]), any single insertion or deletion changes at most `2 * (T + 1)`
-ball assignments ([LiLiangYuZhou2024, Claim 3.4]), and an atomic replacement `(A.erase x) ∪ {y}`
-changes at most `4 * T + 6` assignments ([LiLiangYuZhou2024, Lemma 3.2]).
+solely on `h` and the current active set `A`. For any fixed `h` with `T := rounds h A`, when active
+cardinality stays `≤ n'`, a single insertion or deletion changes at most `2 * (T + 1)` ball
+assignments ([LiLiangYuZhou2024, Claim 3.4]), and an atomic replacement `insert y (A.erase x)`
+changes at most `4 * T + 6` assignments ([LiLiangYuZhou2024, Section 5.2 via Claim 3.4]). Under
+uniform independent permutations (`schemePMF`), the expected round count is at most
+`⌈log₂ |A|⌉ + 2 = O(log (max |A| 2))` ([LiLiangYuZhou2024, Claim 3.3]), giving expected
+`O(log (max |A| 2))` single-update relocation cost ([LiLiangYuZhou2024, Lemma 3.2]).
 
 ## Scope note
 

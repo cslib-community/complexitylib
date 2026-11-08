@@ -1253,7 +1253,8 @@ theorem eq_of_query_eq {U' n' X m : ℕ} (hm : m ≤ n')
   dsimp only at hhdr hslots
   rw [hhdr, hslots]
 
-/-- Unconditional canonicality on full-capacity leaf states `FixedEncoded U' n' X` (`m = n'`). -/
+/-- Canonicality of well-formed full-capacity leaf states `FixedEncoded U' n' X` (`m = n'`),
+without an explicit `UnusedSlotsZero` hypothesis. -/
 theorem eq_of_query_eq_fixed {U' n' X : ℕ}
     (h : DynamicMatching.Scheme U' n') {e₁ e₂ : FixedEncoded U' n' X}
     (hwf₁ : WellFormed le_rfl h e₁) (hwf₂ : WellFormed le_rfl h e₂)
