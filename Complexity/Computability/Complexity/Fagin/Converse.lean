@@ -163,29 +163,19 @@ theorem exists_pow_bound (p : Polynomial ℕ) (c d : ℕ) :
     v.length_encStructure_le_pow ha (by omega)
   have hp_le : p.eval (encStructure a).length ≤ cp * (g a.1 + 1) ^ dp :=
     (hp _).trans (Nat.mul_le_mul_left cp (Nat.pow_le_pow_left (by omega) dp))
-  let N := (frame (encStructure a)).length + p.eval (encStructure a).length + 1
-  let M := 2 * g a.1 + 1 + cp * (g a.1 + 1) ^ dp + 1
-  have hNM : N ≤ M := by
-    change (frame (encStructure a)).length + p.eval (encStructure a).length + 1 ≤
-      2 * g a.1 + 1 + cp * (g a.1 + 1) ^ dp + 1
-    rw [length_frame]
+  -- with `N` the verifier input length plus one and `M` its bound in terms of `g a.1`, both goals
+  -- are at most `F a.1 = (c + 1) * M ^ (d + 1) + 1`
+  set N := (frame (encStructure a)).length + p.eval (encStructure a).length + 1 with hN
+  have hNM : N ≤ 2 * g a.1 + 1 + cp * (g a.1 + 1) ^ dp + 1 := by
+    rw [hN, length_frame]
     omega
-  have hN1 : N ≤ N ^ (d + 1) := Nat.le_self_pow (by omega) N
-  have hNd : N ^ d ≤ N ^ (d + 1) := Nat.pow_le_pow_right (by omega) (Nat.le_succ d)
-  have hMd : N ^ (d + 1) ≤ M ^ (d + 1) := Nat.pow_le_pow_left hNM (d + 1)
-  constructor
-  · calc (frame (encStructure a)).length + p.eval (encStructure a).length + 2
-        = 1 * N + 1 := by
-          change _ = 1 * ((frame (encStructure a)).length + p.eval (encStructure a).length + 1) + 1
-          omega
-      _ ≤ (c + 1) * M ^ (d + 1) + 1 :=
-        Nat.add_le_add_right (Nat.mul_le_mul (by omega) (hN1.trans hMd)) 1
-      _ ≤ a.1 ^ k := hF_le
-  · calc c * ((frame (encStructure a)).length + p.eval (encStructure a).length + 1) ^ d + 1
-        = c * N ^ d + 1 := rfl
-      _ ≤ (c + 1) * M ^ (d + 1) + 1 :=
-        Nat.add_le_add_right (Nat.mul_le_mul (by omega) (hNd.trans hMd)) 1
-      _ ≤ a.1 ^ k := hF_le
+  have hN_le : N ≤ (c + 1) * N ^ (d + 1) :=
+    (Nat.le_self_pow (by omega) N).trans (Nat.le_mul_of_pos_left _ (by omega))
+  have hNd_le : c * N ^ d ≤ (c + 1) * N ^ (d + 1) :=
+    Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right (by omega) (Nat.le_succ d))
+  have hNM_pow := Nat.mul_le_mul_left (c + 1) (Nat.pow_le_pow_left hNM (d + 1))
+  change (c + 1) * (2 * g a.1 + 1 + cp * (g a.1 + 1) ^ dp + 1) ^ (d + 1) + 1 ≤ a.1 ^ k at hF_le
+  constructor <;> omega
 
 /-! ### Combined ESO sentence on the power structure -/
 

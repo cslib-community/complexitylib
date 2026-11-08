@@ -290,6 +290,15 @@ theorem computableInPolyTime_padLength :
     binary_log_two.comp (unary_to_binary.comp (snd _ _))
   simpa only [Nat.min_def] using ite_decide (unary_le' h1 h2) h1 h2
 
+/-- Exponentials of multiples of a quantity bounded by the length parameter are polynomial in the
+padded input. -/
+private theorem polyBounded_two_pow_mul_of_le_padLength {f : List Bool × ℕ → ℕ}
+    (hf : ∀ x, f x ≤ padLength x) (c : ℕ) :
+    PolyBounded (fun x : List Bool × ℕ => (encPair encBits encUnary x).length)
+      fun x => 2 ^ (c * f x) :=
+  (polyBounded_two_pow_mul_padLength c).mono fun x =>
+    Nat.pow_le_pow_right (by norm_num) (Nat.mul_le_mul_left c (hf x))
+
 /-- **The padded program is polynomial-time**, for any function `gL` on bit words computable in
 time `2 ^ O(n)`: every loop runs over at most `p ^ O(1)` elements for the padding `p`, the modulus
 is found among `2 ^ (w + 1) ≤ 2 p + 2` codes, and `gL` is called on words of length at most
@@ -303,36 +312,28 @@ theorem computableInPolyTime_paddedProgram (M : ℕ) {gL : List Bool → Bool} {
     unfold blockLength
     fun_prop
   have hbℓ : ∀ x, blockLength M (padLength x) ≤ padLength x := fun x => Nat.div_le_self _ _
-  have hMbℓ : ∀ x, M * blockLength M (padLength x) ≤ padLength x := fun x => by
+  have hmulℓ : ∀ x, M * blockLength M (padLength x) ≤ padLength x ∧
+      4 * blockLength M (padLength x) ≤ padLength x := fun x => by
     have := Nat.div_mul_le_self (padLength x) (4 * (M + 1))
     unfold blockLength
-    nlinarith
-  have h4bℓ : ∀ x, 4 * blockLength M (padLength x) ≤ padLength x := fun x => by
-    have := Nat.div_mul_le_self (padLength x) (4 * (M + 1))
-    unfold blockLength
-    nlinarith
-  -- the enumerations
-  have hE : ComputableInPolyTime (fun x => BitString.enumList (blockLength M (padLength x)))
-      (encPair encBits encUnary) (encList encBits) :=
-    bitsEnumList_of_polyBounded hb
-      ((polyBounded_two_pow_mul_padLength 1).mono fun x => by
-        rw [one_mul]
-        exact Nat.pow_le_pow_right (by norm_num) (hbℓ x))
+    constructor <;> nlinarith
   have hMb : ComputableInPolyTime (fun x => M * blockLength M (padLength x))
       (encPair encBits encUnary) encUnary := by
     fun_prop
+  -- the enumerations
+  have hE : ComputableInPolyTime (fun x => BitString.enumList (blockLength M (padLength x)))
+      (encPair encBits encUnary) (encList encBits) :=
+    bitsEnumList_of_polyBounded hb (by
+      simpa only [one_mul] using polyBounded_two_pow_mul_of_le_padLength hbℓ 1)
   have hEn : ComputableInPolyTime
       (fun x => BitString.enumList (M * blockLength M (padLength x)))
       (encPair encBits encUnary) (encList encBits) :=
-    bitsEnumList_of_polyBounded hMb
-      ((polyBounded_two_pow_mul_padLength 1).mono fun x => by
-        rw [one_mul]
-        exact Nat.pow_le_pow_right (by norm_num) (hMbℓ x))
+    bitsEnumList_of_polyBounded hMb (by
+      simpa only [one_mul] using polyBounded_two_pow_mul_of_le_padLength (fun x => (hmulℓ x).1) 1)
   -- the queries to the decider
   have htest := ComputableInO.computableInPolyTime_take
     (fun _ _ h => Nat.pow_le_pow_right two_pos (Nat.mul_le_mul_left k h)) hgL
-    hMb ((polyBounded_two_pow_mul_padLength k).mono fun x =>
-      Nat.pow_le_pow_right (by norm_num) (Nat.mul_le_mul_left k (hMbℓ x)))
+    hMb (polyBounded_two_pow_mul_of_le_padLength (fun x => (hmulℓ x).1) k)
   have hpts : ComputableInPolyTime
       (fun x => (BitString.enumList (M * blockLength M (padLength x))).filter
         fun z => gL (z.take (M * blockLength M (padLength x))))
@@ -345,7 +346,7 @@ theorem computableInPolyTime_paddedProgram (M : ℕ) {gL : List Bool → Bool} {
       (bound := fun x => 2 * x.2 + 2) (by fun_prop) fun x => ?_
     have h1 := two_pow_padLength_le x
     have h2 : 2 ^ (4 * blockLength M (padLength x)) ≤ 2 ^ padLength x :=
-      Nat.pow_le_pow_right (by norm_num) (h4bℓ x)
+      Nat.pow_le_pow_right (by norm_num) (hmulℓ x).2
     rw [pow_succ]
     omega
   have h4b : ComputableInPolyTime (fun x => 4 * blockLength M (padLength x))

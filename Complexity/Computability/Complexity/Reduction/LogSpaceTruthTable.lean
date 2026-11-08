@@ -529,13 +529,11 @@ theorem LogSpaceKTruthTableReducible.trans {k₁ k₂ : ℕ}
     · simp only [List.length_take, List.length_drop, List.length_map, List.length_range]
       omega
     · simp only [List.length_map, List.length_range] at hj₂
-      have hk₂_pos : 0 < k₂ := lt_of_le_of_lt (Nat.zero_le j) (lt_of_lt_of_le hj₂ (hr₂k _))
       have hj_lt_k₂ : j < k₂ := lt_of_lt_of_le hj₂ (hr₂k _)
-      have hm_lt_r : i * k₂ + j < r a := lt_of_lt_of_le (Nat.add_lt_add_left hj₂ _) h_end
       have hm_le_M : i * k₂ + j ≤ k₁ * k₂ :=
-        le_trans (le_of_lt hm_lt_r) (Nat.mul_le_mul_right k₂ (hr₁k a))
+        ((Nat.add_lt_add_left hj₂ _).trans_le h_end).le.trans (Nat.mul_le_mul_right k₂ (hr₁k a))
       have hdiv_eq : (i * k₂ + j) / k₂ = i := by
-        rw [mul_comm i k₂, Nat.mul_add_div hk₂_pos, Nat.div_eq_of_lt hj_lt_k₂, add_zero]
+        rw [mul_comm i k₂, Nat.mul_add_div (by omega), Nat.div_eq_of_lt hj_lt_k₂, add_zero]
       have hmod_eq : (i * k₂ + j) % k₂ = j := by
         rw [mul_comm i k₂, Nat.mul_add_mod, Nat.mod_eq_of_lt hj_lt_k₂]
       simp [q, Nat.min_eq_left hm_le_M, hdiv_eq, hmod_eq]
