@@ -1263,7 +1263,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   definitions, conditional `K^t` measure, and `NP` memberships are in `Kolmogorov/MINKT.lean`,
   `Kolmogorov/Conditional.lean`, and `Kolmogorov/MINcKT.lean`), as independently scoped
   developments; the reverse
-  multi-tape-to-single-tape simulation and machine-backed Nisan–Wigderson decoding.
+  multi-tape-to-single-tape simulation and machine-backed Nisan–Wigderson decoding. Beyond
+  Chaitin's incompleteness theorem for plain complexity
+  ([#3323](https://github.com/cslib-community/complexitylib/issues/3323)): the same theorem for
+  the multi-tape `plain` complexity (needs compiling partial recursive functions to `universalTM`
+  programs), a prefix-free version, Chaitin's halting probability `Ω` and its randomness,
+  Solovay's refinements, and the Kritchman–Raz proof of Gödel's second incompleteness theorem.
 - **Quantum computation** ([#896]): channel semantics and approximation costs alongside the
   circuit and measurement semantics, reusing suitable quantum foundations rather than
   incompatible models, and a bridge between the query and circuit models; complete problems for
