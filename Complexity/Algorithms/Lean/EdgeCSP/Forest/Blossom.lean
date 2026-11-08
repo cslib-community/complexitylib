@@ -906,6 +906,133 @@ theorem blossom_metadata {b : BlossomData F} (hb : m.blossomData = some b) :
         omega
       · cases hb
 
+private theorem Trace.join_times_nodup (h : Trace sem f m) (k : ℕ)
+    (hk : m.commonNodes.length < 2 * k + 2) :
+    (m.left.times.drop k ++ [m.older.length] ++ (m.right.times.drop k).reverse).Nodup := by
+  have hleft : (m.left.times.drop k).Nodup :=
+    ((m.older.ancestry_times_pairwise m.current.input.var).imp
+      (fun hlt he => by rw [he] at hlt; exact Nat.lt_irrefl _ hlt)).sublist (List.drop_sublist _ _)
+  have hright : (m.right.times.drop k).Nodup :=
+    ((m.older.ancestry_times_pairwise m.output.var).imp
+      (fun hlt he => by rw [he] at hlt; exact Nat.lt_irrefl _ hlt)).sublist (List.drop_sublist _ _)
+  have hfreshL : ∀ t ∈ m.left.times.drop k, t < m.older.length :=
+    fun t ht => m.older.ancestry_time_lt _ (List.mem_of_mem_drop ht)
+  have hfreshR : ∀ t ∈ m.right.times.drop k, t < m.older.length :=
+    fun t ht => m.older.ancestry_time_lt _ (List.mem_of_mem_drop ht)
+  have hcross : ∀ t ∈ m.left.times.drop k, ∀ u ∈ m.right.times.drop k, t ≠ u := by
+    intro t ht u hu he
+    have htl : m.left.times.drop k = (m.left.walk.drop k).steps.map
+        (fun s => m.older.stamp s.1) := by
+      simpa only [Meeting.left, Walk.drop, List.map_drop] using congrArg (List.drop k)
+        (h.expansion.grown.ancestry_times_eq_stamp m.current.input.var)
+    have htr : m.right.times.drop k = (m.right.walk.drop k).steps.map
+        (fun s => m.older.stamp s.1) := by
+      simpa only [Meeting.right, Walk.drop, List.map_drop] using congrArg (List.drop k)
+        (h.expansion.grown.ancestry_times_eq_stamp m.output.var)
+    rw [htl] at ht
+    rw [htr] at hu
+    obtain ⟨s, hs, rfl⟩ := List.mem_map.mp ht
+    obtain ⟨z, hz, rfl⟩ := List.mem_map.mp hu
+    have hsfull := List.mem_of_mem_drop hs
+    have hzfull := List.mem_of_mem_drop hz
+    have ha := (h.expansion.grown.ancestry_arcs _ hsfull).1
+    have hb := (h.expansion.grown.ancestry_arcs _ hzfull).1
+    have hc := congrArg Arc.copy (Log.incoming_time_unique ha hb rfl rfl he)
+    have hd := h.left_drop_disjoint_right k hk
+    have hw := (h.expansion.grown.ancestry_directed h.expansion.visited).drop
+      (m.older.toDAG_supported m.roots) k
+    exact Finset.disjoint_left.mp hd (hw.mem_copies.mpr ⟨s, hs, rfl⟩)
+      (h.right_directed.mem_copies.mpr ⟨z, hzfull, hc.symm⟩)
+  rw [List.nodup_append, List.nodup_append]
+  refine ⟨⟨hleft, by simp, ?_⟩, List.nodup_reverse.mpr hright, ?_⟩
+  · intro t ht u hu he
+    have hu' := List.mem_singleton.mp hu
+    exact Nat.ne_of_lt (hfreshL t ht) (he.trans hu')
+  · intro t ht u hu he
+    have hum := List.mem_reverse.mp hu
+    rcases List.mem_append.mp ht with ht | ht
+    · exact hcross t ht u hum he
+    · have ht' := List.mem_singleton.mp ht
+      exact Nat.ne_of_lt (hfreshR u hum) (he.symm.trans ht')
+
+/-- Actual extractor timestamps distinguish every copied cycle step in both LCA branches.
+The cross-arm distinction follows from the ancestry common-prefix theorem. Original
+constraints may still occur repeatedly, at different timestamps. -/
+theorem Trace.blossom_times_nodup (h : Trace sem f m) {b : BlossomData F}
+    (hb : m.blossomData = some b) : b.times.Nodup := by
+  unfold blossomData at hb
+  split at hb
+  · cases hb
+  next a ha =>
+    cases a with
+    | inl v =>
+      cases hb
+      apply h.join_times_nodup
+      have hl := m.ancestor_variable_length ha
+      omega
+    | inr c =>
+      dsimp only at hb
+      split at hb
+      next ain lp bin rp hs ht =>
+        cases hb
+        let k := (m.commonNodes.length - 1) / 2
+        have hkl := (m.ancestor_constraint_index_lt ha).1
+        have hkr := (m.ancestor_constraint_index_lt ha).2
+        have hcs := h.constraint_first_copies ha hs ht
+        have hsl : m.left.walk.steps[k] = (ain, lp) := by
+          simpa only [List.getElem?_eq_getElem hkl, Option.some.injEq] using hs
+        have hsr : m.right.walk.steps[k] = (bin, rp) := by
+          simpa only [List.getElem?_eq_getElem hkr, Option.some.injEq] using ht
+        have hkl' : k < m.left.times.length := by
+          have hl := m.older.ancestry_length m.current.input.var
+          change m.left.times.length = m.left.walk.steps.length at hl
+          omega
+        have hkr' : k < m.right.times.length := by
+          have hl := m.older.ancestry_length m.output.var
+          change m.right.times.length = m.right.walk.steps.length at hl
+          omega
+        have hlt : m.left.times[k] = c.2 := by
+          have he := h.expansion.grown.ancestry_times_eq_stamp m.current.input.var
+          change m.left.times = m.left.walk.steps.map (fun s => m.older.stamp s.1) at he
+          simp only [he, List.getElem_map, hsl]
+          exact congrArg Prod.snd hcs.1
+        have hrt : m.right.times[k] = c.2 := by
+          have he := h.expansion.grown.ancestry_times_eq_stamp m.output.var
+          change m.right.times = m.right.walk.steps.map (fun s => m.older.stamp s.1) at he
+          simp only [he, List.getElem_map, hsr]
+          exact congrArg Prod.snd hcs.2
+        have hlateL : ∀ t ∈ m.left.times.drop (k + 1), c.2 < t := by
+          have hp := (m.older.ancestry_times_pairwise m.current.input.var).sublist
+            (List.drop_sublist k _)
+          change (m.left.times.drop k).Pairwise (· < ·) at hp
+          rw [List.drop_eq_getElem_cons hkl', hlt] at hp
+          exact (List.pairwise_cons.mp hp).1
+        have hlateR : ∀ t ∈ m.right.times.drop (k + 1), c.2 < t := by
+          have hp := (m.older.ancestry_times_pairwise m.output.var).sublist
+            (List.drop_sublist k _)
+          change (m.right.times.drop k).Pairwise (· < ·) at hp
+          rw [List.drop_eq_getElem_cons hkr', hrt] at hp
+          exact (List.pairwise_cons.mp hp).1
+        have hlast : c.2 < m.older.length := hlt ▸
+          m.older.ancestry_time_lt _ (List.getElem_mem hkl')
+        have hbound : m.commonNodes.length < 2 * (k + 1) + 2 := by
+          have hl := m.ancestor_constraint_length ha
+          change m.commonNodes.length = 2 * k + 2 at hl
+          omega
+        dsimp only
+        apply List.nodup_append.mpr
+        refine ⟨h.join_times_nodup (k + 1) hbound, by simp, ?_⟩
+        intro t ht u hu he
+        have hu' := List.mem_singleton.mp hu
+        have hgt : c.2 < t := by
+          rcases List.mem_append.mp ht with ht | ht
+          · rcases List.mem_append.mp ht with ht | ht
+            · exact hlateL t ht
+            · exact (List.mem_singleton.mp ht) ▸ hlast
+          · exact hlateR t (List.mem_reverse.mp ht)
+        exact Nat.ne_of_lt hgt (hu' ▸ he.symm)
+      · cases hb
+
 /-- The returned preparatory path is a trail from an originally inconsistent root. -/
 theorem Trace.blossom_prepare_isWalk (h : Trace sem f m) {b : BlossomData F}
     (hb : m.blossomData = some b) : b.prepare.IsWalk ∧ Inconsistent f b.prepare.start := by
@@ -1044,7 +1171,8 @@ theorem Trace.blossom_correct (h : Trace sem f m) (hF : EdgeInstance F)
   have hw := h.blossom_cycle_isWalk hF hf hb
   have hm := blossom_metadata hb
   refine ⟨hw, h.blossom_cycle_closed hb, ?_, h.blossom_base_inconsistent hF hb, ?_,
-    b.times, b.pivot, hm.1, hm.2.1, hm.2.2, ?_⟩
+    b.times, b.pivot, b.cycle.distinctCopies_of_nodup_times hm.1
+      (h.blossom_times_nodup hb), hm.2.1, hm.2.2, ?_⟩
   · intro he
     have hh := hm.2.2
     rw [he, List.length_nil] at hh

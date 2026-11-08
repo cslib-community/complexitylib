@@ -17,6 +17,9 @@ Definition 39 of [KazdaKolmogorovRolinek2018], arXiv:1602.03124v6, printed p. 19
 The closed incidence trail has one inconsistent base and consistent internal variables.
 Its timestamped graph consists of the forward initial arm and the reversed final arm,
 meeting at the copied constraint of step `pivot`. That constraint has two incoming ports.
+Every step retains a distinct copied constraint, including between the two arms. This makes
+explicit the two-arm geometry used by Lemma 40 when it invokes Corollary 36: the graph union
+alone can hide a shared four-port copy. Original constraints may recur at different times.
 The graph must satisfy every condition of `DAG.IsFDAG`, including no shortcuts; validity
 of the final or proper-prefix flip alone is not a blossom certificate.
 -/
@@ -218,13 +221,33 @@ end DAG
 
 namespace Walk
 
+/-- Original constraint positions paired with the supplied timestamps, one per cycle step.
+The two incidences of the meeting step refer to the same copy and are counted only once. -/
+@[expose] def copies (w : Walk F) (times : List ℕ) : List (DAG.Copy F) :=
+  (w.steps.zip times).map fun ((input, _), time) => (input.1, time)
+
+/-- Every cycle step has a timestamp and uses its own copied constraint node. Repeated
+original constraints are allowed at different times. This excludes a four-port shared copy
+hidden by taking the union of the two arms in `DAG.blossomDAG`. -/
+@[expose] def DistinctCopies (w : Walk F) (times : List ℕ) : Prop :=
+  times.length = w.steps.length ∧ (w.copies times).Nodup
+
+/-- Distinct timestamps give distinct copied steps, independently of original constraint
+repetitions. Length equality prevents the zip from discarding steps. -/
+theorem distinctCopies_of_nodup_times (w : Walk F) {times : List ℕ}
+    (hl : times.length = w.steps.length) (hn : times.Nodup) : w.DistinctCopies times := by
+  refine ⟨hl, List.Nodup.of_map (f := Prod.snd) ?_⟩
+  simp only [copies, List.map_map]
+  change ((w.steps.zip times).map Prod.snd).Nodup
+  rwa [List.map_snd_zip (Nat.le_of_eq hl)]
+
 /-- An f-blossom in the exact sense of source Definition 39. The witnesses specify the
 copied constraints and the terminal meeting, rather than assuming an event-correctness oracle. -/
 @[expose] def IsBlossom (sem : Rel → List Bool → Bool) (f : OccurrenceLabeling F Bool)
     (w : Walk F) : Prop :=
   w.IsWalk ∧ w.finish = w.start ∧ w.steps ≠ [] ∧ Inconsistent f w.start ∧
     InternallyConsistent f w.steps ∧
-    ∃ (times : List ℕ) (pivot : ℕ), times.length = w.steps.length ∧
+    ∃ (times : List ℕ) (pivot : ℕ), w.DistinctCopies times ∧
       0 < pivot ∧ pivot ≤ w.steps.length ∧
       letI : DecidableEq V := Classical.decEq V
       (DAG.blossomDAG w times pivot).IsFDAG sem f
