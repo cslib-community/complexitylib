@@ -1342,9 +1342,12 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Random graph connectivity** ([#3485](https://github.com/cslib-community/complexitylib/issues/3485)):
   for Mathlib's binomial random graph `G(n, p)`, connectivity with high probability when
   `n p - log n → ∞` (union bound over cuts, explicit bound `35 n exp (-(n p))`) is in
-  `Foundations/Probability/Combinatorics/BinomialRandomGraph/Connectivity.lean`. Remaining: the
-  lower half (`n p - log n → -∞`, isolated vertices by the second moment), the limit
-  `e ^ (-e ^ (-c))` at `p = (log n + c) / n`, and the hitting-time theorem.
+  `Foundations/Probability/Combinatorics/BinomialRandomGraph/Connectivity.lean`. The lower half
+  (`n p - log n → -∞`, through the sharp threshold for isolated vertices by the first and second
+  moments, [#3560](https://github.com/cslib-community/complexitylib/issues/3560)) is in
+  `BinomialRandomGraph/IsolatedVertices.lean`. Remaining: the limit `e ^ (-e ^ (-c))` at
+  `p = (log n + c) / n` (the Poisson limit of the number of isolated vertices), the hitting-time
+  theorem, and the translation to `G(n, m)`.
 - **Explicit Ramsey graphs** ([#3041](https://github.com/cslib-community/complexitylib/issues/3041)):
   strongly explicit graphs with no `k`-clique and no `k`-independent set, on more vertices than
   Frankl–Wilson's `k ^ Θ(log k / log log k)`, toward Erdős's existential `2 ^ (k / 2)`: the
