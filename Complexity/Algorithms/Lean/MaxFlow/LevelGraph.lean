@@ -44,6 +44,10 @@ can occur.
    Dinitz phases (`Network.IsDinitzRun`), from any initial flow, has at most `|V| - 1` phases.
 6. **Breadth-first layers (`Flow.resBall`, `Flow.bfsDist`):** computable residual distances,
    proved equal to `Flow.resDist` (`Flow.bfsDist_eq_resDist`).
+7. **Deciding blocking (`Flow.slackNet`, `Flow.unsatArcs`):** `g` is blocking exactly when the
+   network of unused capacities `L.cap - g` has no augmenting path for its zero flow
+   (`Flow.isBlocking_iff_not_exists_slackNet`), which one breadth-first search decides
+   (`Flow.isBlocking_iff_bfsDist_slackNet`, `Decidable g.IsBlocking`).
 
 ## Main definitions
 
@@ -54,6 +58,8 @@ can occur.
 * `Cslib.Algorithms.Lean.MaxFlow.Network.IsDinitzStep`, `Network.IsDinitzRun`: Dinitz phases and
   runs of phases.
 * `Cslib.Algorithms.Lean.MaxFlow.Network.Flow.resBall`, `Flow.bfsDist`: breadth-first layers.
+* `Cslib.Algorithms.Lean.MaxFlow.Network.Flow.slackNet`, `Flow.unsatArcs`: unused capacities and
+  unsaturated arcs of a flow.
 
 ## Main results
 
@@ -64,6 +70,8 @@ can occur.
 * `Cslib.Algorithms.Lean.MaxFlow.Network.IsDinitzRun.length_le`: at most `|V| - 1` phases.
 * `Cslib.Algorithms.Lean.MaxFlow.Network.Flow.bfsDist_eq_resDist`: breadth-first layers compute
   residual distances.
+* `Cslib.Algorithms.Lean.MaxFlow.Network.Flow.isBlocking_iff_bfsDist_slackNet`: blocking is
+  decidable by one breadth-first search.
 
 ## References
 
@@ -334,6 +342,7 @@ theorem isDinitzStep_of_isBlocking {f : N.Flow} {d : V → ℕ} (hd : ∀ v, d v
   obtain rfl : d = f.resDist := funext hd
   exact ⟨hreach, g, hg, rfl⟩
 
+/-- Each Dinitz phase strictly increases the residual distance of `N.t`. -/
 theorem IsDinitzStep.resDist_lt {f f' : N.Flow} (h : N.IsDinitzStep f f') :
     f.resDist N.t < f'.resDist N.t := by
   obtain ⟨hreach, g, hg, rfl⟩ := h
@@ -351,6 +360,7 @@ theorem IsDinitzStep.source_ne_sink {f f' : N.Flow} (h : N.IsDinitzStep f f') : 
 @[expose] def IsDinitzRun (T : ℕ) (flows : ℕ → N.Flow) : Prop :=
   ∀ i < T, N.IsDinitzStep (flows i) (flows (i + 1))
 
+/-- After `T` Dinitz phases the residual distance of `N.t` has grown by at least `T`. -/
 theorem IsDinitzRun.resDist_add_le {T : ℕ} {flows : ℕ → N.Flow} (h : N.IsDinitzRun T flows) :
     (flows 0).resDist N.t + T ≤ (flows T).resDist N.t := by
   induction T with
@@ -451,6 +461,82 @@ theorem bfsDist_eq_resDist (f : N.Flow) (v : V) : f.bfsDist v = f.resDist v := b
 end Flow
 
 end Layers
+
+/-! ### Slack networks and deciding blocking -/
+
+namespace Flow
+
+variable {L : Network V}
+
+/-- The network of unused capacities `L.cap u v - g u v` of a flow `g` of `L`. Its residual
+arcs for the zero flow are the unsaturated arcs of `g`. -/
+@[expose] def slackNet (g : L.Flow) : Network V where
+  cap u v := L.cap u v - g u v
+  s := L.s
+  t := L.t
+
+theorem resCap_zero_slackNet (g : L.Flow) (u v : V) :
+    (Flow.zero g.slackNet).resCap u v = L.cap u v - g u v := by
+  simp only [resCap, slackNet, zero_apply, Nat.sub_zero, Nat.add_zero]
+
+theorem isAugmentingPath_of_slackNet {g : L.Flow} {p : List V}
+    (hp : (Flow.zero g.slackNet).IsAugmentingPath p) : g.IsAugmentingPath p := by
+  obtain ⟨hnd, hs, ht, hpos⟩ := hp
+  refine ⟨hnd, hs, ht, fun e he => ?_⟩
+  have h := hpos e he
+  rw [resCap_zero_slackNet] at h
+  unfold resCap
+  omega
+
+/-- If no path of unsaturated arcs joins the terminals, `g` is blocking. -/
+theorem isBlocking_of_not_exists_slackNet {g : L.Flow}
+    (h : ¬ ∃ p, (Flow.zero g.slackNet).IsAugmentingPath p) : g.IsBlocking := by
+  intro p hnd hs ht _
+  by_contra hno
+  refine h ⟨p, hnd, hs, ht, fun e he => ?_⟩
+  rw [resCap_zero_slackNet]
+  have hle := g.le_cap e.1 e.2
+  have hne : g e.1 e.2 ≠ L.cap e.1 e.2 := fun heq => hno ⟨e, he, heq⟩
+  omega
+
+/-- `g` is blocking exactly when no path of unsaturated arcs joins the terminals. -/
+theorem isBlocking_iff_not_exists_slackNet {g : L.Flow} :
+    g.IsBlocking ↔ ¬ ∃ p, (Flow.zero g.slackNet).IsAugmentingPath p := by
+  refine ⟨fun hg ⟨p, hnd, hs, ht, hpos⟩ => ?_, isBlocking_of_not_exists_slackNet⟩
+  have hcap : ∀ e ∈ pathArcs p, 0 < L.cap e.1 e.2 := fun e he => by
+    have h := hpos e he
+    rw [resCap_zero_slackNet] at h
+    omega
+  obtain ⟨e, he, hsat⟩ := hg p hnd hs ht hcap
+  have h := hpos e he
+  rw [resCap_zero_slackNet] at h
+  omega
+
+/-- Arcs not saturated by `g`. -/
+def unsatArcs (g : L.Flow) : Finset (V × V) :=
+  Finset.univ.filter fun e => g e.1 e.2 < L.cap e.1 e.2
+
+@[simp]
+theorem mem_unsatArcs (g : L.Flow) (e : V × V) : e ∈ g.unsatArcs ↔ g e.1 e.2 < L.cap e.1 e.2 := by
+  simp only [unsatArcs, Finset.mem_filter, Finset.mem_univ, true_and]
+
+section Decide
+
+variable [DecidableEq V]
+
+/-- Blocking is decided by one breadth-first search in the slack network. -/
+theorem isBlocking_iff_bfsDist_slackNet {g : L.Flow} :
+    g.IsBlocking ↔ Fintype.card V ≤ (Flow.zero g.slackNet).bfsDist L.t := by
+  rw [isBlocking_iff_not_exists_slackNet, exists_augmentingPath_iff_resReachable,
+    ← resDist_lt_card_iff_resReachable, bfsDist_eq_resDist, not_lt]
+  rfl
+
+instance (g : L.Flow) : Decidable g.IsBlocking :=
+  decidable_of_iff _ isBlocking_iff_bfsDist_slackNet.symm
+
+end Decide
+
+end Flow
 
 end Network
 

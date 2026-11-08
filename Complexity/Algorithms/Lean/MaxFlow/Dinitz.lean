@@ -23,8 +23,9 @@ residually reachable from `N.s`.
    unsaturated arcs joins the terminals (found by `bfsM` on the slack network `Flow.slackNet`), push
    its bottleneck. Since a level network has no antiparallel arcs, each push only increases arc
    flows and saturates a new arc (`Flow.card_unsatArcs_augmentByBottleneck_lt`), so the loop stops
-   after at most `|N.posArcs|` pushes (`Flow.card_unsatArcs_zero_levelNet_le`) with a blocking flow
-   (`greedyBlockingFlow_spec`).
+   with a blocking flow after at most `|Flow.unsatArcs|` pushes (`greedyBlockingFlow_spec`), which
+   is at most `|N.posArcs|` at the zero flow of a level network
+   (`Flow.card_unsatArcs_zero_levelNet_le`).
 2. **Phases (`dinitzLoop`, `dinitz`):** each phase computes `Flow.bfsDist` (equal to
    `Flow.resDist`), stops if `N.t` is unreachable, and otherwise augments by a greedy blocking flow
    of the level network. The phases form a run of Dinitz phases (`dinitz_isDinitzRun`), hence there
@@ -45,8 +46,6 @@ residually reachable from `N.s`.
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.MaxFlow.Network.Flow.slackNet`, `Flow.unsatArcs`: unused capacities and
-  unsaturated arcs of a flow.
 * `Cslib.Algorithms.Lean.MaxFlow.greedyBlockingFlow`: greedy blocking flows in a network without
   antiparallel arcs.
 * `Cslib.Algorithms.Lean.MaxFlow.DinitzOutput`, `dinitzLoop`, `dinitz`, `dinitzDense`: the
@@ -80,63 +79,7 @@ variable {V : Type*} [Fintype V] {N : Network V}
 
 namespace Flow
 
-variable {L : Network V}
-
-/-- The network of unused capacities `L.cap u v - g u v` of a flow `g` of `L`. Its residual
-arcs for the zero flow are the unsaturated arcs of `g`. -/
-@[expose] def slackNet (g : L.Flow) : Network V where
-  cap u v := L.cap u v - g u v
-  s := L.s
-  t := L.t
-
-theorem resCap_zero_slackNet (g : L.Flow) (u v : V) :
-    (Flow.zero g.slackNet).resCap u v = L.cap u v - g u v := by
-  simp only [resCap, slackNet, zero_apply, Nat.sub_zero, Nat.add_zero]
-
-theorem isAugmentingPath_of_slackNet {g : L.Flow} {p : List V}
-    (hp : (Flow.zero g.slackNet).IsAugmentingPath p) : g.IsAugmentingPath p := by
-  obtain ⟨hnd, hs, ht, hpos⟩ := hp
-  refine ⟨hnd, hs, ht, fun e he => ?_⟩
-  have h := hpos e he
-  rw [resCap_zero_slackNet] at h
-  unfold resCap
-  omega
-
-/-- If no path of unsaturated arcs joins the terminals, `g` is blocking. -/
-theorem isBlocking_of_not_exists_slackNet {g : L.Flow}
-    (h : ¬ ∃ p, (Flow.zero g.slackNet).IsAugmentingPath p) : g.IsBlocking := by
-  intro p hnd hs ht _
-  by_contra hno
-  refine h ⟨p, hnd, hs, ht, fun e he => ?_⟩
-  rw [resCap_zero_slackNet]
-  have hle := g.le_cap e.1 e.2
-  have hne : g e.1 e.2 ≠ L.cap e.1 e.2 := fun heq => hno ⟨e, he, heq⟩
-  omega
-
-/-- `g` is blocking exactly when no path of unsaturated arcs joins the terminals. -/
-theorem isBlocking_iff_not_exists_slackNet {g : L.Flow} :
-    g.IsBlocking ↔ ¬ ∃ p, (Flow.zero g.slackNet).IsAugmentingPath p := by
-  refine ⟨fun hg ⟨p, hnd, hs, ht, hpos⟩ => ?_, isBlocking_of_not_exists_slackNet⟩
-  have hcap : ∀ e ∈ pathArcs p, 0 < L.cap e.1 e.2 := fun e he => by
-    have h := hpos e he
-    rw [resCap_zero_slackNet] at h
-    omega
-  obtain ⟨e, he, hsat⟩ := hg p hnd hs ht hcap
-  have h := hpos e he
-  rw [resCap_zero_slackNet] at h
-  omega
-
-variable [DecidableEq V]
-
-/-- Blocking is decided by one breadth-first search in the slack network. -/
-theorem isBlocking_iff_bfsDist_slackNet {g : L.Flow} :
-    g.IsBlocking ↔ Fintype.card V ≤ (Flow.zero g.slackNet).bfsDist L.t := by
-  rw [isBlocking_iff_not_exists_slackNet, exists_augmentingPath_iff_resReachable,
-    ← resDist_lt_card_iff_resReachable, bfsDist_eq_resDist, not_lt]
-  rfl
-
-instance (g : L.Flow) : Decidable g.IsBlocking :=
-  decidable_of_iff _ isBlocking_iff_bfsDist_slackNet.symm
+variable {L : Network V} [DecidableEq V]
 
 /-- Pushing the bottleneck along a path of unsaturated arcs of a network without antiparallel
 arcs only increases arc flows. -/
@@ -174,10 +117,6 @@ theorem exists_saturated_augmentByBottleneck_of_slackNet (hst : L.s ≠ L.t) {g 
   unfold resCap at hres heq
   omega
 
-/-- Arcs not saturated by `g`. -/
-@[expose] def unsatArcs (g : L.Flow) : Finset (V × V) :=
-  Finset.univ.filter fun e => g e.1 e.2 < L.cap e.1 e.2
-
 /-- Each bottleneck push along unsaturated arcs saturates a new arc and keeps saturated arcs
 saturated. -/
 theorem card_unsatArcs_augmentByBottleneck_lt (hanti : ∀ u v, 0 < L.cap u v → L.cap v u = 0)
@@ -189,13 +128,12 @@ theorem card_unsatArcs_augmentByBottleneck_lt (hanti : ∀ u v, 0 < L.cap u v �
   have hsub : (g.augmentByBottleneck p (isAugmentingPath_of_slackNet hp)).unsatArcs ⊆
       g.unsatArcs := by
     intro x hx
-    simp only [unsatArcs, Finset.mem_filter, Finset.mem_univ, true_and] at hx ⊢
+    rw [mem_unsatArcs] at hx ⊢
     have := le_augmentByBottleneck_of_slackNet hanti hp x.1 x.2
     omega
   refine Finset.card_lt_card ((Finset.ssubset_iff_of_subset hsub).mpr ⟨e, ?_, ?_⟩)
-  · simp only [unsatArcs, Finset.mem_filter, Finset.mem_univ, true_and]
-    exact hlt
-  · simp only [unsatArcs, Finset.mem_filter, Finset.mem_univ, true_and, not_lt]
+  · exact (mem_unsatArcs _ _).mpr hlt
+  · rw [mem_unsatArcs, not_lt]
     exact hsat
 
 /-- A level network has at most `|N.posArcs|` arcs: it has no antiparallel arcs and its arcs lie
@@ -204,8 +142,7 @@ theorem card_unsatArcs_zero_levelNet_le (f : N.Flow) (d : V → ℕ) :
     (Flow.zero (f.levelNet d)).unsatArcs.card ≤ N.posArcs.card := by
   set A := (Flow.zero (f.levelNet d)).unsatArcs
   have hmem : ∀ e, e ∈ A ↔ d e.2 = d e.1 + 1 ∧ 0 < f.resCap e.1 e.2 := fun e => by
-    simp only [A, unsatArcs, Finset.mem_filter, Finset.mem_univ, true_and, zero_apply,
-      levelNet_cap_pos_iff]
+    simp only [A, mem_unsatArcs, zero_apply, levelNet_cap_pos_iff]
   have hsym : ∀ e ∈ A, e.1 ≠ e.2 ∧ 0 < N.cap e.1 e.2 + N.cap e.2 e.1 := fun e he => by
     obtain ⟨hd, hpos⟩ := (hmem e).mp he
     have := f.resCap_le_cap_add_cap e.1 e.2
@@ -289,6 +226,9 @@ on `slackNet`), push its bottleneck. -/
         (augmentFlowMatrixM G p (Flow.isAugmentingPath_of_slackNet (res.augPath_valid p hp))).ret
         (k + 1)
 
+/-- **Greedy blocking flows**: on a network `L` without antiparallel arcs and with `L.s ≠ L.t`,
+with valid neighbor lists and enough fuel, `greedyBlockingFlow` returns a blocking flow after at
+most `|G.toFlow.unsatArcs|` further bottleneck pushes. -/
 theorem greedyBlockingFlow_spec {n : ℕ} {L : Network (Fin n)} {adj : Fin n → List (Fin n)}
     (hadj : AdjValid L adj) (hanti : ∀ u v, 0 < L.cap u v → L.cap v u = 0) (hst : L.s ≠ L.t) :
     ∀ (fuel : ℕ) (G : FlowMatrix L) (k : ℕ), G.toFlow.unsatArcs.card < fuel →

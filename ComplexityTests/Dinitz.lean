@@ -22,9 +22,11 @@ Kernel-checked examples (without `native_decide`) for level networks, blocking f
    bottleneck pushes.
 2. **Tight phase count:** a 4-vertex network on which `dinitz` needs `3 = |V| - 1` phases, so the
    bound `Network.IsDinitzRun.length_le` is attained.
-3. **Blocking flows:** a unit-capacity network with a blocking flow that is not maximum, a
+3. **Reverse-flow cancellation:** an 8-vertex network on which the second phase cancels the first
+   phase's flow on an arc.
+4. **Blocking flows:** a unit-capacity network with a blocking flow that is not maximum, a
    non-blocking flow of the same network, and the level network dropping an arc inside a layer.
-4. **Edge cases:** `N.s = N.t` (no phases, zero flow) and an unreachable sink (no phases, cut of the
+5. **Edge cases:** `N.s = N.t` (no phases, zero flow) and an unreachable sink (no phases, cut of the
    reachable vertices).
 -/
 
@@ -116,6 +118,30 @@ example : (dinitzDense tightNet).phases = 3 := by decide
 example : (dinitzDense tightNet).flow.value = 3 := by decide
 
 example : (dinitzDense tightNet).phases = Fintype.card (Fin 4) - 1 := by decide
+
+/-! ### Reverse-flow cancellation -/
+
+/-- Unit arcs in which the second phase must cancel the first phase's flow on `1 → 3` through
+its reverse residual arc. -/
+def revNet : Network (Fin 8) where
+  cap u v :=
+    match u.1, v.1 with
+    | 0, 1 => 1
+    | 0, 2 => 1
+    | 1, 3 => 1
+    | 1, 4 => 1
+    | 3, 7 => 1
+    | 4, 6 => 1
+    | 6, 7 => 1
+    | 2, 5 => 1
+    | 5, 3 => 1
+    | _, _ => 0
+  s := 0
+  t := 7
+
+example : (dinitzDense revNet).flow.value = 2 ∧ (dinitzDense revNet).phases = 2 ∧
+    (dinitzDense revNet).flow 1 3 = 0 := by
+  decide
 
 /-! ### Blocking flows -/
 
