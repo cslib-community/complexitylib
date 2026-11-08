@@ -1363,6 +1363,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   with `q` queries for a property closed under relabelling becomes a canonical one-sided tester
   that samples at most `2q` vertices and decides on the induced subgraph (Goldreich–Trevisan,
   one-sided half; [#3180](https://github.com/cslib-community/complexitylib/issues/3180)).
+  Monotonicity of Boolean functions on the hypercube `{0,1}ⁿ` has the
+  Goldreich–Goldwasser–Lehman–Ron–Samorodnitsky edge tester: by squashing along each coordinate, a
+  function ε-far from monotone violates at least an `ε / n` fraction of the edges, so `⌈2n / ε⌉`
+  edge trials (`2⌈2n / ε⌉` queries) reject with probability at least `2/3`, and monotone functions
+  always pass ([#3257](https://github.com/cslib-community/complexitylib/issues/3257)).
   Remaining: the matching `Ω(n^{2/3} ε^{-4/3} + √n ε^{-2})` closeness lower bound, further access
   models, the odd-domain lower bound, instance-optimal identity testing, tolerant and
   structured-property distribution testing; in the dense graph model, `H`-freeness for general `H`
@@ -1370,7 +1375,9 @@ each statement against the numbered result. Organize modules by subject, not cha
   with `poly(1/ε)` queries, the two-sided half of Goldreich–Trevisan (canonical testers with `O(q)`
   sample vertices and `O(q²)` queries), and deciding by the property itself when it is closed
   under induced subgraphs (their Proposition D.2, due to Alon) or is a graph partition property
-  (Corollary 5.9); further query and sample lower bounds.
+  (Corollary 5.9); for monotonicity, the `Ω(√n)` lower bound for non-adaptive one-sided testers
+  (Fischer et al. 2002), larger ranges and hypergrids, and the directed-isoperimetry path testers
+  with `Õ(√n / ε²)` queries (Khot–Minzer–Safra); further query and sample lower bounds.
 - **Kolmogorov complexity and metacomplexity** ([#798], [#884]): the near-linear threshold regime
   of Liu–Pass Theorem 3.1 (c), hardness for every polynomial `t(n) ≥ (1 + ε)n` rather than above a
   polynomial threshold, which needs a rate-1 efficient conditional EP-PRG running in `n + O(n^c)`

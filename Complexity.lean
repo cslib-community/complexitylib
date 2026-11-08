@@ -3043,6 +3043,8 @@ public import Complexity.Computability.PropertyTesting.Distribution.UniformityCo
 public import Complexity.Computability.PropertyTesting.Distribution.UniformityLowerBound
 public import Complexity.Computability.PropertyTesting.Linearity
 public import Complexity.Computability.PropertyTesting.LinearityLowerBound
+public import Complexity.Computability.PropertyTesting.Monotonicity.Basic
+public import Complexity.Computability.PropertyTesting.Monotonicity.EdgeTester
 public import Complexity.Computability.QueryComplexity.AndOrTree
 public import Complexity.Computability.QueryComplexity.AndOrTree.Randomized
 public import Complexity.Computability.QueryComplexity.ApproximateDegree
