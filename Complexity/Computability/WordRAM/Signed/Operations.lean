@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.WordRAM.Signed.State
 public import Complexity.Computability.WordRAM.Signed.Comparison
+import Complexity.Computability.WordRAM.SymbolicExec
 
 /-!
 # Translating signed RAM data operations and tests
@@ -38,7 +39,7 @@ The translation is an original implementation using the existing signed RAM sema
 
 namespace Cslib.GenericRAM.Signed.ToWordRAM
 
-open WordRAM (Code ExecWithin Exec)
+open WordRAM (Code ExecWithin Exec WP)
 open WordRAM.Signed
 
 variable {r : ℕ}
@@ -111,44 +112,26 @@ theorem exec_address {w : ℕ} {s : GenericRAM.Data model r} {x : WordRAM.Data (
     (hx : Represents w s x) (a : Fin r) (ha : 0 ≤ s.regs a) :
     ∃ y, ExecWithin (w + 2) (addressCode a) x y 2 ∧
       y.regs left = (s.regs a).toNat ∧ Represents w s y := by
-  let y := (x.set two 2).set left (s.regs a).toNat
   have hv : encode (s.regs a) / 2 = (s.regs a).toNat := by
     rw [encode_div_two]
     have := Int.eq_natAbs_of_nonneg ha
     omega
   have hf : WordRAM.Fits (w + 2) ((s.regs a).toNat) :=
     (encoded_fits (hx.fits a)).of_le (by unfold encode; split_ifs <;> omega)
-  refine ⟨y, ?_, by simp [y], ?_⟩
-  · let z := x.set two 2
-    have hz := hx.scratch (i := two) (by dsimp [two]; omega) 2
-    have hzr : z.regs (bank a) = encode (s.regs a) := hz.regs a
-    have hz2 : z.regs two = 2 := by simp [z]
-    have hd : WordRAM.Fits (w + 2) (WordRAM.BinOp.div.eval (z.regs (bank a)) (z.regs two)) := by
-      simpa only [WordRAM.BinOp.eval, hzr, hz2, hv] using hf
-    have he := Exec.bin (x := z) (d := left) hd
-    have hdiv : Exec (B := .standard) (w + 2) (.op (.bin .div left (bank a) two)) z y 1 := by
-      simpa only [WordRAM.BinOp.eval, hzr, hz2, hv] using he
-    exact (Exec.const (x := x) (d := two) (two_fits w)).within.seq hdiv.within
-  · exact (hx.scratch (i := two) (by dsimp [two]; omega) _).scratch
-      (i := left) (by dsimp [left]; omega) _
+  unfold addressCode
+  wram_exec [hx.regs, hv, two_fits, hf]
+  exact ⟨by wram_simp, (hx.scratch (i := two) (by dsimp [two]; omega) _).scratch
+    (i := left) (by dsimp [left]; omega) _⟩
 
 /-- Copy the operands to the arithmetic workspace without changing represented source data. -/
 theorem exec_operands {w : ℕ} {s : GenericRAM.Data model r} {x : WordRAM.Data (r + 9)}
     (hx : Represents w s x) (a b : Fin r) :
     ∃ y, ExecWithin (w + 2) (operandsCode a b) x y 2 ∧
       y.regs left = encode (s.regs a) ∧ y.regs right = encode (s.regs b) ∧ Represents w s y := by
-  let q := x.set left (encode (s.regs a))
-  let y := q.set right (encode (s.regs b))
-  have hq := hx.scratch (i := left) (by dsimp [left]; omega) (encode (s.regs a))
-  have hqr : q.regs (bank b) = encode (s.regs b) := hq.regs _
-  have hfirst : Exec (B := .standard) (w + 2) (.op (.copy left (bank a))) x q 1 := by
-    simpa only [hx.regs] using (Exec.copy (B := .standard) (w := w + 2)
-      (x := x) (d := left) (s := bank a))
-  have hsecond : Exec (B := .standard) (w + 2) (.op (.copy right (bank b))) q y 1 := by
-    simpa only [hqr] using (Exec.copy (B := .standard) (w := w + 2)
-      (x := q) (d := right) (s := bank b))
-  exact ⟨y, (hfirst.seq hsecond).within, by simp [y, q, left, right], by simp [y],
-    hq.scratch (i := right) (by simp) _⟩
+  unfold operandsCode
+  wram_exec [hx.regs]
+  exact ⟨by wram_simp, by wram_simp,
+    (hx.scratch (i := left) (by dsimp [left]; omega) _).scratch (i := right) (by simp) _⟩
 
 /-- Every successful source data operation has an unsigned implementation in at most
 twenty-three instructions at width `w + 2`. Aliased source/destination registers are allowed. -/
@@ -180,15 +163,11 @@ theorem exec_compileOp {w : ℕ} {s t : GenericRAM.Data model r} {x : WordRAM.Da
       subst t
       obtain ⟨z, hpre, hza, hzb, hz⟩ := exec_operands hx (args 0) (args 1)
       obtain ⟨y, hy, hyr, hyf⟩ := exec_arithmetic f (hx.fits _) (hx.fits _) hv z hza hzb
-      have hyrep := hz.of_frame hyf
-      refine ⟨y.set (bank d) (encode (f.eval (s.regs (args 0)) (s.regs (args 1)))), ?_,
-        hyrep.set d hv⟩
-      have hlast : Exec (B := .standard) (w + 2) (.op (.copy (bank d) result)) y
-          (y.set (bank d) (encode (f.eval (s.regs (args 0)) (s.regs (args 1))))) 1 := by
-        simpa only [hyr] using (Exec.copy (B := .standard) (w := w + 2) (x := y)
-          (d := bank d) (s := result))
       -- The two operand copies precede the arithmetic block; the destination copy follows it.
-      exact hpre.seq (hy.seq hlast.within)
+      refine WP.exists_execWithin (WP.seq (WP.of_execWithin hpre
+        (WP.seq (WP.of_execWithin hy ?_))))
+      wram_exec [hyr]
+      exact (hz.of_frame hyf).set d hv
     · simp [GenericRAM.Op.eval, model, GenericRAM.Data.put, hv] at he
   | load d a =>
     by_cases hn : s.regs a < 0 ∨ s.regs a ≥ ((2 : ℤ) ^ w)
@@ -199,11 +178,9 @@ theorem exec_compileOp {w : ℕ} {s t : GenericRAM.Data model r} {x : WordRAM.Da
           simpa [GenericRAM.Op.eval, GenericRAM.Data.move, model, hn, hv] using he
         subst t
         obtain ⟨y, hy, hya, hyr⟩ := exec_address hx a hnonneg
-        have hl : Exec (B := .standard) (w + 2) (.op (.load (bank d) left)) y
-            (y.set (bank d) (encode (s.mem (s.regs a).toNat))) 1 := by
-          simpa only [hya, hyr.mem] using (Exec.load (B := .standard) (w := w + 2)
-            (x := y) (d := bank d) (a := left))
-        exact ⟨_, (hy.seq hl.within).mono (by decide), hyr.set d hv⟩
+        refine WP.exists_execWithin (WP.seq (WP.of_execWithin hy ?_))
+        wram_exec [hya, hyr.mem]
+        exact hyr.set d hv
       · simp [GenericRAM.Op.eval, GenericRAM.Data.move, model, hn, hv] at he
   | store a i =>
     by_cases hn : s.regs a < 0 ∨ s.regs a ≥ ((2 : ℤ) ^ w)
@@ -214,11 +191,9 @@ theorem exec_compileOp {w : ℕ} {s t : GenericRAM.Data model r} {x : WordRAM.Da
         simpa [GenericRAM.Op.eval, model, hn, hv] using he
       subst t
       obtain ⟨y, hy, hya, hyr⟩ := exec_address hx a hnonneg
-      have hl : Exec (B := .standard) (w + 2) (.op (.store left (bank i))) y
-          (y.write (s.regs a).toNat (encode (s.regs i))) 1 := by
-        simpa only [hya, hyr.regs] using (Exec.store (B := .standard) (w := w + 2)
-          (x := y) (a := left) (s := bank i))
-      exact ⟨_, (hy.seq hl.within).mono (by decide), hyr.write _ _⟩
+      refine WP.exists_execWithin (WP.seq (WP.of_execWithin hy ?_))
+      wram_exec [hya, hyr.regs]
+      exact hyr.write _ _
 
 /-- Every successful source test is implemented within fourteen instructions, returning its
 Boolean result and preserving the source data. Scratch register `two` is set to one. -/
@@ -235,29 +210,14 @@ theorem exec_compileCond {w : ℕ} {s : GenericRAM.Data model r} {x : WordRAM.Da
       change some (decide (s.regs (args 0) = s.regs (args 1))) = some b at he
       have hb := Option.some.inj he
       subst b
-      let q := x.set two 1
-      have hq : Represents w s q := hx.scratch (i := two) (by dsimp [two]; omega) 1
-      let y := q.set result (if s.regs (args 0) = s.regs (args 1) then 1 else 0)
-      have hrun : ExecWithin (w + 2) (compileCond (.test .eq args)) x y 14 := by
-        have hinit := Exec.const (B := .standard) (x := x) (d := two) h1
-        by_cases hab : s.regs (args 0) = s.regs (args 1)
-        · have hc : (WordRAM.Cond.eq (bank (args 0)) (bank (args 1))).Holds q := by
-            change q.regs (bank (args 0)) = q.regs (bank (args 1))
-            rw [hq.regs, hq.regs, hab]
-          have hbody := ExecWithin.branch_pos (neg := .op (.const result 0)) hc
-            (Exec.const (B := .standard) (x := q) (d := result) h1).within
-          simpa only [compileCond, y, hab, ite_true] using
-            (hinit.within.seq hbody).mono (by decide : 1 + (1 + 1) ≤ 14)
-        · have hc : ¬(WordRAM.Cond.eq (bank (args 0)) (bank (args 1))).Holds q := by
-            change ¬q.regs (bank (args 0)) = q.regs (bank (args 1))
-            rw [hq.regs, hq.regs]
-            exact fun h => hab (encode_injective h)
-          have hbody := ExecWithin.branch_neg (pos := .op (.const result 1)) hc
-            (Exec.const (B := .standard) (x := q) (d := result) (WordRAM.fits_zero (w + 2))).within
-          simpa only [compileCond, y, hab, ite_false] using
-            (hinit.within.seq hbody).mono (by decide : 1 + (1 + 2) ≤ 14)
-      exact ⟨y, hrun, by simp [y], by simp [y, q, result, two, Fin.mk.injEq],
-        hq.scratch (i := result) (by dsimp [result]; omega) _⟩
+      have hq : Represents w s (x.set two 1) := hx.scratch (i := two) (by dsimp [two]; omega) 1
+      simp only [compileCond]
+      wram_exec [hx.regs, h1]
+      all_goals refine ⟨?_, by wram_simp, hq.scratch (i := result) (by dsimp [result]; omega) _⟩
+      all_goals
+        wram_simp
+        simp only [encode_injective.eq_iff] at hc
+        simp [hc]
     | lt =>
       change some (decide (s.regs (args 0) < s.regs (args 1))) = some b at he
       have hb := Option.some.inj he
