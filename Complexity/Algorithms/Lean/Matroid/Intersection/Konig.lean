@@ -23,13 +23,13 @@ theorem gives a vertex cover of size `M₁.eRk U + M₂.eRk (E \ U)`. Edmonds' t
 maximum matching together with a vertex cover of the same size. This is König's theorem
 ([Koenig1931]), derived by the matroid route of [Schrijver2017], Exercise 10.22.
 
-The library already proves König's theorem through network flows
-(`Cslib.Algorithms.Lean.MaxFlow.exists_maxMatching_eq_minVertexCover`). This module does not
-re-prove it. It connects the matroid-intersection objects to the existing
-`Cslib.Algorithms.Lean.MaxFlow.IsMatching`, `VertexCover` and `IsVertexCover` API. It uses the
-existing matching/cover weak duality
-`Cslib.Algorithms.Lean.MaxFlow.card_le_size_of_matching_vertexCover` only to conclude minimality of
-the cover.
+The library's primary statement of König's theorem is the flow-based
+`Cslib.Algorithms.Lean.MaxFlow.exists_maxMatching_eq_minVertexCover`. This module gives a second,
+flow-independent derivation via matroid intersection, with an explicit separator cover. It is
+stated with the existing `Cslib.Algorithms.Lean.MaxFlow.IsMatching`, `VertexCover` and
+`IsVertexCover` API, and shares with the flow proof only the matching/cover weak duality
+`Cslib.Algorithms.Lean.MaxFlow.card_le_size_of_matching_vertexCover`, used to conclude minimality
+of the cover.
 
 ## Main definitions
 
@@ -73,7 +73,7 @@ variable {α β : Type*}
 /-- The unit-capacity partition matroid of `f : α → β`: its ground set is all of `α`, and a set `I`
 is independent exactly when `f` is injective on `I`, so each fibre of `f` is a block of capacity
 one. It is the free matroid on `β` pulled back along `f`. -/
-@[expose] def unitPartitionMatroid (f : α → β) : Matroid α :=
+def unitPartitionMatroid (f : α → β) : Matroid α :=
   (Matroid.freeOn Set.univ).comap f
 
 theorem unitPartitionMatroid_indep_iff {f : α → β} {I : Set α} :
@@ -167,9 +167,9 @@ theorem exists_maxMatching_separatorCover [Fintype L] [Fintype R] (G : L × R �
     ∃ (M U : Finset (L × R)), U ⊆ bipartiteEdges G ∧ IsMaxMatching G M ∧
       IsMinVertexCover G (separatorCover (bipartiteEdges G) U) ∧
       M.card = (separatorCover (bipartiteEdges G) U).size := by
-  obtain ⟨M, U, hME, hUE, hmax, heq⟩ := exists_commonIndep_card_eq_eRk_add_eRk
+  obtain ⟨M, U, hUE, hmax, heq⟩ := exists_commonIndep_card_eq_eRk_add_eRk
     (unitPartitionMatroid Prod.fst) (unitPartitionMatroid Prod.snd) (bipartiteEdges G)
-  have hM : IsMatching G M := isMatching_iff_isCommonIndep.mpr ⟨hME, hmax.2.1⟩
+  have hM : IsMatching G M := isMatching_iff_isCommonIndep.mpr ⟨hmax.1, hmax.2.1⟩
   have hsize : M.card = (separatorCover (bipartiteEdges G) U).size := by
     have h := heq
     rw [← size_separatorCover] at h

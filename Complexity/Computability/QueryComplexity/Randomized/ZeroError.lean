@@ -42,6 +42,8 @@ coin tosses select a deterministic tree.
 
 * `Cslib.RandomizedDecisionTree.expectedCost_uniformMixture`: the expected cost of a uniform
   mixture is the average cost.
+* `Cslib.RandomizedDecisionTree.errorProb_uniformMixture`: the error probability of a uniform
+  mixture is the fraction of wrong members.
 * `Cslib.RandomizedDecisionTree.computes_uniformMixture`: a mixture of correct trees is always
   correct.
 * `Cslib.QueryComplexity.zeroErrorComplexity_le`: an always-correct randomized tree bounds `R₀`.
@@ -122,6 +124,18 @@ theorem expectedCost_uniformMixture (g : C → DecisionTree ι β) (x : ι → B
     Finsupp.sum_fintype _ _ fun _ => zero_mul _, Fintype.expect_eq_sum_div_card, sum_div]
   refine sum_congr rfl fun c _ => ?_
   simp [div_eq_inv_mul]
+
+/-- The error probability of the uniform mixture of `g` on `x` is the fraction of the members of
+the family that answer wrongly on `x`. -/
+theorem errorProb_uniformMixture [DecidableEq β] (g : C → DecisionTree ι β)
+    (f : (ι → Bool) → β) (x : ι → Bool) :
+    (uniformMixture g).errorProb f x =
+      (#{c | (g c).eval x ≠ f x} : ℝ) / Fintype.card C := by
+  rw [errorProb_eq_sum, uniformMixture, StdSimplex.weights_map,
+    Finsupp.sum_mapDomain_index (fun _ => zero_mul _) fun _ _ _ => add_mul _ _ _,
+    Finsupp.sum_fintype _ _ fun _ => zero_mul _, card_filter, Nat.cast_sum, sum_div]
+  refine sum_congr rfl fun c _ => ?_
+  by_cases h : (g c).eval x = f x <;> simp [h, div_eq_inv_mul]
 
 end UniformMixture
 
