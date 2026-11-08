@@ -1,9 +1,9 @@
 name: Install Lean
 description: >-
   Restore elan and the toolchain named in `lean-toolchain` from the Actions cache, or install them
-  with bounded retries and save them (#1426). Run it before `leanprover/lean-action`: that action
-  always reinstalls elan from GitHub, but then finds the toolchain installed and does not download
-  it from releases.lean-lang.org.
+  with bounded retries and save them (#1426), and put elan on the path. Lean CI, the guide and
+  Comparator use it instead of `leanprover/lean-action`, which reinstalls elan from GitHub releases
+  without retries. API docs still run that action after this one, for its GitHub cache restore.
 runs:
   using: composite
   steps:

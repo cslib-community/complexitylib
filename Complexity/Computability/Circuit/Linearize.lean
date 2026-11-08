@@ -15,6 +15,7 @@ public import Mathlib.Data.Matrix.Mul
 public import Mathlib.LinearAlgebra.Pi
 import Complexity.Computability.Circuit.Program
 import Complexity.Foundations.Data.MvPolynomial.DualNumber
+import Cslib.Computability.Circuit.Depth
 import Mathlib.Algebra.MvPolynomial.Funext
 
 /-!
@@ -51,6 +52,7 @@ value at `ε x` is `ε (M x)_i`.
 
 * `Cslib.Circuits.Program.exists_affine_trace`: affine circuits compute affine maps.
 * `Cslib.Circuits.Program.trace_linearize`: the linearized program reads off the dual numbers.
+* `Cslib.Circuits.Program.depths_linearize`: linearization preserves the depth of every gate.
 * `Cslib.Circuits.Circuit.Computes.exists_affine`: linearization of circuits for linear maps.
 
 ## References
@@ -171,6 +173,19 @@ theorem Program.fanInAtMost_linearize (p : Program σ n s) (r : ℕ) :
   simp only [Program.fanInAtMost_iff]
   exact forall_congr' fun g => iff_of_eq (congrArg (· ≤ r) (p.arity_lines_linearize P g))
 
+/-- Linearization preserves the depth of every gate: each gate reads the same wires. -/
+theorem Program.depths_linearize : ∀ {s : ℕ} (p : Program σ n s),
+    (p.linearize P).depths = p.depths
+  | _, .empty => funext fun k => k.elim0
+  | _, .gate p line => by
+    have ih := depths_linearize p
+    funext k
+    induction k using Fin.lastCases with
+    | last =>
+      simp only [Program.linearize, Program.depths_gate_last, Program.wireDepths, ih]
+      rfl
+    | cast k => simp only [Program.linearize, Program.depths_gate_castSucc, ih]
+
 /-- The real part of the value of a wire at the input `ε x` is its value at the zero input. -/
 private theorem Program.fst_trace_dualNumber (p : Program σ n s) (x : Fin n → F) (w : Wire n s) :
     (p.trace (polynomialInterpretation P F[ε]) (fun j => inr (x j)) w).fst =
@@ -225,18 +240,20 @@ end Linearize
 
 /-- **Linearization.** Over an infinite field, a circuit with polynomial operations computing a
 linear map `x ↦ M x` is matched by a circuit over the affine basis computing the same map, with
-the same number of gates, the same inner gates, and the same fan-in. -/
+the same number of gates, the same inner gates, the same fan-in, and the same depth. -/
 theorem Circuit.Computes.exists_affine [Field F] [Infinite F] {σ : Signature}
     {I : Interpretation σ F} (hI : I.IsPolynomial) {c : Circuit σ n m}
     {M : Matrix (Fin m) (Fin n) F} (hc : c.Computes I fun x => M *ᵥ x) :
     ∃ c' : Circuit (affineSignature F) n m, c'.size = c.size ∧
       c'.innerSize = c.innerSize ∧ (∀ r, c'.FanInAtMost r ↔ c.FanInAtMost r) ∧
-      c'.Computes (affineInterpretation F) fun x => M *ᵥ x := by
+      c'.depth = c.depth ∧ c'.Computes (affineInterpretation F) fun x => M *ᵥ x := by
   choose P hP using hI
   obtain rfl : I = polynomialInterpretation P F := funext fun o => funext (hP o)
   refine ⟨⟨c.program.linearize P, c.outputs⟩, rfl,
     congrArg Finset.card (c.program.innerGates_linearize P),
-    fun r => c.program.fanInAtMost_linearize P r, fun x => funext fun i => ?_⟩
+    fun r => c.program.fanInAtMost_linearize P r, ?_, fun x => funext fun i => ?_⟩
+  · simp only [Circuit.depth, Circuit.outputDepths, Program.wireDepths,
+      c.program.depths_linearize P]
   change (c.program.linearize P).trace _ x (c.outputs i) = _
   rw [Program.trace_linearize, Circuit.trace_outputs_dualNumber P hc]
   simp

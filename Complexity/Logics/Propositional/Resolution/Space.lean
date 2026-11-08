@@ -48,7 +48,8 @@ empty clause, a refutation needs space at least `3`: the empty clause is derived
 held at the same time (`Cslib.Logic.PL.CNF.RefutableInSpace.three_le`).
 
 The Atserias–Dalmau inequality, bounding width by clause space, is in
-`Complexity.Logics.Propositional.Resolution.SpaceWidth`.
+`Complexity.Logics.Propositional.Resolution.SpaceWidth`; Esteban and Torán's bound of clause space
+by tree-like size is in `Complexity.Logics.Propositional.Resolution.TreeLikeSpace`.
 
 ## Main definitions
 
@@ -178,6 +179,23 @@ private theorem three_le_of_configLTS_mTr (hφ : [] ∉ φ) {M M' : Finset (Clau
         · exact absurd h hM
       | erase c => exact absurd (Finset.mem_of_mem_erase h₁) hM
     · exact ih h₁ hM'
+
+/-- Erasing clauses one at a time runs from a configuration to any subset of it. -/
+theorem exists_configLTS_mTr_of_subset {M N : Finset (Clause V)} (hNM : N ⊆ M) (hM : M.card ≤ s) :
+    ∃ ms, (φ.configLTS s).MTr M ms N := by
+  induction h : (M \ N).card generalizing M with
+  | zero =>
+    obtain rfl : M = N :=
+      (Finset.sdiff_eq_empty_iff_subset.1 (Finset.card_eq_zero.1 h)).antisymm hNM
+    exact ⟨[], .refl⟩
+  | succ n ih =>
+    obtain ⟨c, hc⟩ : (M \ N).Nonempty := Finset.card_pos.1 (by omega)
+    obtain ⟨hcM, hcN⟩ := Finset.mem_sdiff.1 hc
+    obtain ⟨ms, hms⟩ := ih (M := M.erase c)
+      (fun x hx => Finset.mem_erase.2 ⟨fun hxc => hcN (hxc ▸ hx), hNM hx⟩)
+      ((Finset.card_erase_le).trans hM)
+      (by rw [Finset.erase_sdiff_comm, Finset.card_erase_of_mem hc, h]; rfl)
+    exact ⟨.erase c :: ms, .stepL ⟨.erase c, (Finset.card_erase_le).trans hM⟩ hms⟩
 
 namespace RefutableInSpace
 
