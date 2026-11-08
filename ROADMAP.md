@@ -466,7 +466,9 @@ index links to canonical definitions rather than keeping a second set.
   operations. Their geometric realization and native hardness transfer remain unproved.
   Fresh chronological forest search now derives terminal f-DAGs, valid augmentations and
   source-strength prepared blossoms from its actual execution; fresh exhaustion proves
-  optimality. Whole-blossom contraction/lifting and recursive native solving remain open.
+  optimality. Copied cycle steps are explicitly distinct, and both actual extractor outcomes
+  derive distinct timestamps; a union-only counterexample is retained. Whole-blossom
+  contraction/lifting and recursive native solving remain open.
 
 - **Boolean Schaefer dichotomy** ([#2822](https://github.com/cslib-community/complexitylib/issues/2822)):
   the stack proves native polynomial-time tractability for all six common-polymorphism cases
