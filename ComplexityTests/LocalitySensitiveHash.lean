@@ -25,7 +25,8 @@ import Mathlib.Tactic.NormNum
 5. Nonvacuity of `IsLocalitySensitive`: bit sampling on `Fin 8 → Bool` is
    `(1, 4, 7/8, 1/2)`-sensitive, its banding with `k = 4`, `L = 10` separates near and far pairs
    (`≥ 0.9965` versus `≤ 0.48`), `exists_banded` applies, and a family failing the far bound.
-6. The Jaccard triangle inequality on `Fin 4` and on `Finset ℕ`.
+6. Separation (`jaccard_eq_one_iff`) and the Jaccard triangle inequality on `Fin 4` and on
+   `Finset ℕ`.
 -/
 
 public section
@@ -155,7 +156,7 @@ example : ∃ k L : ℕ, IsLocalitySensitive
     (fun x y => (hammingDist x y : ℝ) ≤ 1) (fun x y => 4 ≤ (hammingDist x y : ℝ))
     (1 - 0.01) 0.01 := by
   obtain ⟨k, L, -, h⟩ := bitSampling_sensitive.exists_banded (δ := 0.01) (δ' := 0.01)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
   exact ⟨k, L, h⟩
 
 /-- The sensitivity bounds are not automatic: bit sampling is not `(1, 4, 7/8, 1/4)`-sensitive,
@@ -174,6 +175,11 @@ example : 1 - jaccard ({0} : Finset (Fin 4)) {2} ≤
     (1 - jaccard ({0} : Finset (Fin 4)) {0, 1, 2}) +
       (1 - jaccard ({0, 1, 2} : Finset (Fin 4)) {2}) :=
   jaccard_triangle _ _ _
+
+/-- Distinct sets have Jaccard similarity below `1`. -/
+example : jaccard ({0, 1} : Finset (Fin 4)) {0, 1, 2} ≠ 1 := by
+  rw [Ne, jaccard_eq_one_iff]
+  decide
 
 /-- The triangle inequality needs no order or finiteness on the ambient type: here sets of
 naturals. -/

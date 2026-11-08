@@ -38,12 +38,12 @@ Collision probabilities of independent repetitions are exact:
   `sCurve k L p = 1 - (1 - p ^ k) ^ L` (`orCollisionProb_andHash`). This is the S-curve of the
   banding technique ([LeskovecRajaramanUllman2020], Sections 3.4.2 and 3.6.3).
 
-Both constructions preserve sensitivity with the transformed probabilities. If `p₂ < p₁ ≤ 1`, then
-for all `δ, δ' > 0` some `k` and `L = ⌈log (1/δ) / p₁ ^ k⌉₊` make near pairs collide with
-probability at least `1 - δ` and far pairs with probability at most `δ'`
-(`IsLocalitySensitive.exists_banded`). The explicit bounds behind it are `le_sCurve` (near pairs:
-`1 - δ ≤ sCurve k L p` once `log (1/δ) ≤ L p₁ ^ k`) and `sCurve_le` (far pairs: `sCurve k L p ≤
-L p₂ ^ k`, a union bound over the bands).
+Both constructions preserve sensitivity with the transformed probabilities. If
+`0 ≤ p₂ < p₁ ≤ 1`, then for all `δ > 0` and `δ' > 0` some `k` and `L = ⌈log (1/δ) / p₁ ^ k⌉₊`
+make near pairs collide with probability at least `1 - δ` and far pairs with probability at most
+`δ'` (`IsLocalitySensitive.exists_banded`). The explicit bounds behind it are `le_sCurve`
+(near pairs: `1 - δ ≤ sCurve k L p` once `log (1/δ) ≤ L p₁ ^ k`) and `sCurve_le` (far pairs:
+`sCurve k L p ≤ L p₂ ^ k`, a union bound over the bands).
 
 Charikar's observation ([Charikar2002], Lemma 1) that `1 - collisionProb` satisfies the triangle
 inequality is `collisionProb_triangle`.
@@ -87,7 +87,7 @@ cost of evaluating the hashes are not formalized here.
 * [M. S. Charikar, *Similarity estimation techniques from rounding algorithms*][Charikar2002]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 
@@ -98,8 +98,9 @@ variable {ι X Y : Type*}
 /-! ### Collision probability -/
 
 /-- The probability that `x` and `x'` collide under the keyed family `hash` with seed law
-`seed`. -/
-noncomputable def collisionProb (seed : PMF ι) (hash : ι → X → Y) (x x' : X) : ℝ :=
+`seed`. Not to be confused with `Cslib.Probability.PMF.collisionProbability`, the probability
+that two independent samples of one law agree. -/
+@[expose] noncomputable def collisionProb (seed : PMF ι) (hash : ι → X → Y) (x x' : X) : ℝ :=
   (seed.toOuterMeasure {i | hash i x = hash i x'}).toReal
 
 theorem collisionProb_nonneg (seed : PMF ι) (hash : ι → X → Y) (x x' : X) :
@@ -189,7 +190,7 @@ one. -/
 theorem IsLocalitySensitive.and {seed : PMF ι} {hash : ι → X → Y} {near far : X → X → Prop}
     {p₁ p₂ : ℝ} (h : IsLocalitySensitive (collisionProb seed hash) near far p₁ p₂)
     (hp₁ : 0 ≤ p₁) (k : ℕ) :
-    IsLocalitySensitive (collisionProb (PMF.iid seed k) (Cslib.Probability.andHash hash k))
+    IsLocalitySensitive (collisionProb (PMF.iid seed k) (andHash hash k))
       near far (p₁ ^ k) (p₂ ^ k) where
   le_of_near x x' hx := by
     rw [collisionProb_andHash]
@@ -241,7 +242,7 @@ theorem IsLocalitySensitive.or {seed : PMF ι} {hash : ι → X → Y} {near far
 
 /-- The S-curve of banding: `L` bands of `k` rows each collide in some band with probability
 `1 - (1 - p ^ k) ^ L` when one row collides with probability `p`. -/
-def sCurve (k L : ℕ) (p : ℝ) : ℝ :=
+@[expose] def sCurve (k L : ℕ) (p : ℝ) : ℝ :=
   1 - (1 - p ^ k) ^ L
 
 /-- `L` bands of `k` independently keyed rows collide in some band with probability
@@ -300,18 +301,18 @@ theorem sCurve_le {k L : ℕ} {p p₂ : ℝ} (hp : 0 ≤ p) (hpp₂ : p ≤ p₂
   rw [sCurve]
   nlinarith [Nat.cast_nonneg (α := ℝ) L]
 
-/-- **The S-curve gap.** If `0 ≤ p₂ < p₁ ≤ 1`, then for all `0 < δ ≤ 1` and `δ' > 0` there is a
+/-- **The S-curve gap.** If `0 ≤ p₂ < p₁ ≤ 1`, then for all `δ > 0` and `δ' > 0` there is a
 number of rows `k` such that `L = ⌈log (1/δ) / p₁ ^ k⌉₊` bands give `1 - δ ≤ sCurve k L p` for
 every `p ∈ [p₁, 1]` and `sCurve k L p ≤ δ'` for every `p ∈ [0, p₂]`. The proof takes `k` with
-`(p₂ / p₁) ^ k ≤ δ' / (2 (log (1/δ) + 1))` and `p₂ ^ k ≤ δ' / 2`. -/
+`(p₂ / p₁) ^ k ≤ δ' / (2 (c + 1))` and `p₂ ^ k ≤ δ' / 2`, where `c = max 0 (log (1/δ))`. -/
 theorem exists_sCurve_gap {p₁ p₂ δ δ' : ℝ} (hp₂ : 0 ≤ p₂) (hp₁₂ : p₂ < p₁) (hp₁ : p₁ ≤ 1)
-    (hδ : 0 < δ) (hδ1 : δ ≤ 1) (hδ' : 0 < δ') :
+    (hδ : 0 < δ) (hδ' : 0 < δ') :
     ∃ k : ℕ, ∃ L : ℕ, L = ⌈Real.log δ⁻¹ / p₁ ^ k⌉₊ ∧
       (∀ p, p₁ ≤ p → p ≤ 1 → 1 - δ ≤ sCurve k L p) ∧
       (∀ p, 0 ≤ p → p ≤ p₂ → sCurve k L p ≤ δ') := by
   have hp₁0 : 0 < p₁ := hp₂.trans_lt hp₁₂
-  set c := Real.log δ⁻¹
-  have hc : 0 ≤ c := Real.log_nonneg ((one_le_inv₀ hδ).2 hδ1)
+  set c := max 0 (Real.log δ⁻¹)
+  have hc : 0 ≤ c := le_max_left _ _
   have hr0 : 0 ≤ p₂ / p₁ := div_nonneg hp₂ hp₁0.le
   have hr1 : p₂ / p₁ < 1 := (div_lt_one hp₁0).2 hp₁₂
   have hp₂1 : p₂ < 1 := hp₁₂.trans_le hp₁
@@ -323,17 +324,19 @@ theorem exists_sCurve_gap {p₁ p₂ δ δ' : ℝ} (hp₂ : 0 ≤ p₂) (hp₁�
   have hp₂k : p₂ ^ k ≤ δ' / 2 :=
     (pow_le_pow_of_le_one hp₂ hp₂1.le (le_max_right _ _)).trans hk₂.le
   have hp₁k : 0 < p₁ ^ k := pow_pos hp₁0 k
-  refine ⟨k, ⌈c / p₁ ^ k⌉₊, rfl, fun p hp hp1 => ?_, fun p hp hp2 => ?_⟩
+  refine ⟨k, ⌈Real.log δ⁻¹ / p₁ ^ k⌉₊, rfl, fun p hp hp1 => ?_, fun p hp hp2 => ?_⟩
   · refine le_sCurve hp₁0.le hp hp1 hδ ?_
     rw [← div_le_iff₀ hp₁k]
     exact Nat.le_ceil _
   · refine (sCurve_le hp hp2 hp₂1.le).trans ?_
-    have hL : (⌈c / p₁ ^ k⌉₊ : ℝ) ≤ c / p₁ ^ k + 1 :=
-      (Nat.ceil_lt_add_one (div_nonneg hc hp₁k.le)).le
+    have hL : (⌈Real.log δ⁻¹ / p₁ ^ k⌉₊ : ℝ) ≤ c / p₁ ^ k + 1 := by
+      have h1 : ⌈Real.log δ⁻¹ / p₁ ^ k⌉₊ ≤ ⌈c / p₁ ^ k⌉₊ :=
+        Nat.ceil_le_ceil (div_le_div_of_nonneg_right (le_max_right _ _) hp₁k.le)
+      exact (Nat.cast_le.2 h1).trans (Nat.ceil_lt_add_one (div_nonneg hc hp₁k.le)).le
     have hdiv : c / p₁ ^ k * p₂ ^ k = c * (p₂ / p₁) ^ k := by
       rw [div_pow]
       field_simp
-    calc (⌈c / p₁ ^ k⌉₊ : ℝ) * p₂ ^ k ≤ (c / p₁ ^ k + 1) * p₂ ^ k :=
+    calc (⌈Real.log δ⁻¹ / p₁ ^ k⌉₊ : ℝ) * p₂ ^ k ≤ (c / p₁ ^ k + 1) * p₂ ^ k :=
           mul_le_mul_of_nonneg_right hL (pow_nonneg hp₂ k)
       _ = c * (p₂ / p₁) ^ k + p₂ ^ k := by rw [add_mul, one_mul, hdiv]
       _ ≤ c * (δ' / (2 * (c + 1))) + δ' / 2 := by gcongr
@@ -349,11 +352,11 @@ pairs collide with probability at least `1 - δ` and far pairs with probability 
 theorem IsLocalitySensitive.exists_banded {seed : PMF ι} {hash : ι → X → Y}
     {near far : X → X → Prop} {p₁ p₂ δ δ' : ℝ}
     (h : IsLocalitySensitive (collisionProb seed hash) near far p₁ p₂) (hp₂ : 0 ≤ p₂)
-    (hp₁₂ : p₂ < p₁) (hp₁ : p₁ ≤ 1) (hδ : 0 < δ) (hδ1 : δ ≤ 1) (hδ' : 0 < δ') :
+    (hp₁₂ : p₂ < p₁) (hp₁ : p₁ ≤ 1) (hδ : 0 < δ) (hδ' : 0 < δ') :
     ∃ k : ℕ, ∃ L : ℕ, L = ⌈Real.log δ⁻¹ / p₁ ^ k⌉₊ ∧
       IsLocalitySensitive (orCollisionProb (PMF.iid seed k) (andHash hash k) L) near far
         (1 - δ) δ' := by
-  obtain ⟨k, L, hL, hnear, hfar⟩ := exists_sCurve_gap hp₂ hp₁₂ hp₁ hδ hδ1 hδ'
+  obtain ⟨k, L, hL, hnear, hfar⟩ := exists_sCurve_gap hp₂ hp₁₂ hp₁ hδ hδ'
   refine ⟨k, L, hL, fun x x' hx => ?_, fun x x' hx => ?_⟩
   · rw [orCollisionProb_andHash]
     exact hnear _ (h.le_of_near x x' hx) (collisionProb_le_one _ _ _ _)

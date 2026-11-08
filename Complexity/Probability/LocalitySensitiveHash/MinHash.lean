@@ -32,7 +32,8 @@ Consequently MinHash is a `(d₁, d₂, 1 - d₁, 1 - d₂)`-sensitive family fo
 `b` bands of `r` MinHash rows gives the S-curve `1 - (1 - J ^ r) ^ b`
 ([LeskovecRajaramanUllman2020], Section 3.4.2; `orCollisionProb_andHash_minHash`). Charikar's
 triangle inequality gives the triangle inequality for the Jaccard distance
-(`jaccard_triangle`).
+(`jaccard_triangle`); with `jaccard_comm` and `jaccard_eq_one_iff`, the Jaccard distance is a
+metric on finite sets.
 
 The random permutation is a uniformly random element of the full symmetric group `Equiv.Perm α`.
 Smaller min-wise independent families and the hash-based approximations used in practice are not
@@ -49,6 +50,7 @@ treated here.
   J(A, B)`.
 * `Cslib.Probability.isLocalitySensitive_minHash`: sensitivity for the Jaccard distance.
 * `Cslib.Probability.orCollisionProb_andHash_minHash`: the banding S-curve for MinHash.
+* `Cslib.Probability.jaccard_eq_one_iff`: `J(A, B) = 1` exactly when `A = B`.
 * `Cslib.Probability.jaccard_triangle`: the triangle inequality for the Jaccard distance, on any
   type with decidable equality.
 
@@ -60,7 +62,7 @@ treated here.
 * [M. S. Charikar, *Similarity estimation techniques from rounding algorithms*][Charikar2002]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 
@@ -69,7 +71,7 @@ section Jaccard
 variable {α : Type*} [DecidableEq α]
 
 /-- The Jaccard similarity `|A ∩ B| / |A ∪ B|` of two finite sets, with `J(∅, ∅) = 1`. -/
-def jaccard (A B : Finset α) : ℚ :=
+@[expose] def jaccard (A B : Finset α) : ℚ :=
   if A ∪ B = ∅ then 1 else ((A ∩ B).card : ℚ) / (A ∪ B).card
 
 /-- For sets with a nonempty union, the Jaccard similarity is `|A ∩ B| / |A ∪ B|`. -/
@@ -100,6 +102,22 @@ theorem jaccard_le_one (A B : Finset α) : jaccard A B ≤ 1 := by
   · exact div_le_one_of_le₀ (by exact_mod_cast Finset.card_le_card Finset.inter_subset_union)
       (Nat.cast_nonneg _)
 
+/-- Two finite sets have Jaccard similarity `1` exactly when they are equal, so the Jaccard
+distance `1 - J` separates points. -/
+theorem jaccard_eq_one_iff {A B : Finset α} : jaccard A B = 1 ↔ A = B := by
+  refine ⟨fun h => ?_, fun h => h ▸ jaccard_self A⟩
+  rw [jaccard] at h
+  split_ifs at h with hAB
+  · exact (Finset.union_eq_empty.1 hAB).1.trans (Finset.union_eq_empty.1 hAB).2.symm
+  · have hpos : ((A ∪ B).card : ℚ) ≠ 0 := by
+      exact_mod_cast Finset.card_ne_zero.2 (Finset.nonempty_iff_ne_empty.2 hAB)
+    rw [div_eq_one_iff_eq hpos, Nat.cast_inj] at h
+    have hU : A ∪ B ⊆ A ∩ B :=
+      (Finset.eq_of_subset_of_card_le Finset.inter_subset_union h.ge).symm.subset
+    exact Finset.Subset.antisymm
+      (Finset.subset_union_left.trans (hU.trans Finset.inter_subset_right))
+      (Finset.subset_union_right.trans (hU.trans Finset.inter_subset_left))
+
 /-- The Jaccard similarity is invariant under embeddings. -/
 theorem jaccard_map {β : Type*} [DecidableEq β] (f : α ↪ β) (A B : Finset α) :
     jaccard (A.map f) (B.map f) = jaccard A B := by
@@ -114,7 +132,7 @@ variable {α : Type*} [LinearOrder α]
 
 /-- The MinHash of a finite set `A` under the ranking `σ`: the least rank `min σ(A)`, or `⊤` when
 `A` is empty. -/
-def minHash (σ : Equiv.Perm α) (A : Finset α) : WithTop α :=
+@[expose] def minHash (σ : Equiv.Perm α) (A : Finset α) : WithTop α :=
   A.inf fun a => (σ a : WithTop α)
 
 @[simp]

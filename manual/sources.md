@@ -67,7 +67,7 @@ Allan Borodin, Ran El-Yaniv. *Online Computation and Competitive Analysis*. Camb
 <a id="broder97"></a>
 ## broder97
 
-Andrei Z. Broder. “On the Resemblance and Containment of Documents.” *Proceedings of Compression and Complexity of Sequences 1997* (SEQUENCES 1997), IEEE, 21–29. https://doi.org/10.1109/SEQUEN.1997.666900 . Bibliographic data from the DOI record and secondary indexes; the full text was not inspected in this pass (no connection to the publisher). The manual credits it with the MinHash identity `Pr[min σ(A) = min σ(B)] = |A ∩ B|/|A ∪ B|` for a uniform permutation, which secondary sources attribute to it.
+Andrei Z. Broder. “On the Resemblance and Containment of Documents.” *Proceedings of Compression and Complexity of Sequences 1997* (SEQUENCES 1997), IEEE, 21–29. https://doi.org/10.1109/SEQUEN.1997.666900 . DOI and metadata as reported by search indexes; neither the DOI nor the full text was resolved in this pass (no connection to the publisher). The manual credits it with the MinHash identity `Pr[min σ(A) = min σ(B)] = |A ∩ B|/|A ∪ B|` for a uniform permutation, which secondary sources attribute to it.
 
 <a id="bs23"></a>
 ## bs23
@@ -87,7 +87,7 @@ Ran Canetti. *Universally Composable Security*. Journal of the ACM 67(5), Articl
 <a id="charikar02"></a>
 ## charikar02
 
-Moses S. Charikar. “Similarity Estimation Techniques from Rounding Algorithms.” *Proceedings of the 34th Annual ACM Symposium on Theory of Computing* (STOC 2002), 380–388. https://doi.org/10.1145/509907.509965 . Bibliographic data from the DOI record and secondary indexes. The locator Lemma 1 (for a similarity admitting a locality-sensitive hashing scheme, `1 − sim` satisfies the triangle inequality) was not checked against the full text in this pass.
+Moses S. Charikar. “Similarity Estimation Techniques from Rounding Algorithms.” *Proceedings of the 34th Annual ACM Symposium on Theory of Computing* (STOC 2002), 380–388. https://doi.org/10.1145/509907.509965 . DOI and metadata as reported by search indexes; the DOI was not resolved in this pass. The locator Lemma 1 (for a similarity admitting a locality-sensitive hashing scheme, `1 − sim` satisfies the triangle inequality) was not checked against the full text in this pass.
 
 <a id="chattopadhyayliao20"></a>
 ## chattopadhyayliao20
@@ -222,7 +222,7 @@ Craig Gentry, Amit Sahai, Brent Waters. “Homomorphic Encryption from Learning 
 <a id="harpeledindykmotwani12"></a>
 ## harpeledindykmotwani12
 
-Sariel Har-Peled, Piotr Indyk, Rajeev Motwani. “Approximate Nearest Neighbor: Towards Removing the Curse of Dimensionality.” *Theory of Computing* 8(14), 321–350, 2012. https://doi.org/10.4086/toc.2012.v008a014 . Bibliographic data from the journal's listing in secondary search results; the open-access PDF could not be fetched in this pass (no connection). Cited for the `(r, cr, p₁, p₂)` form of locality-sensitive families.
+Sariel Har-Peled, Piotr Indyk, Rajeev Motwani. “Approximate Nearest Neighbor: Towards Removing the Curse of Dimensionality.” *Theory of Computing* 8(14), 321–350, 2012. https://doi.org/10.4086/toc.2012.v008a014 . DOI and metadata as reported by search indexes; the open-access PDF could not be fetched in this pass (no connection). Cited for the `(r, cr, p₁, p₂)` form of locality-sensitive families.
 
 <a id="hartline21"></a>
 ## hartline21
@@ -297,7 +297,7 @@ Russell Impagliazzo and Avi Wigderson. *P = BPP if E Requires Exponential Circui
 <a id="indykmotwani98"></a>
 ## indykmotwani98
 
-Piotr Indyk, Rajeev Motwani. “Approximate Nearest Neighbors: Towards Removing the Curse of Dimensionality.” *Proceedings of the 30th Annual ACM Symposium on Theory of Computing* (STOC 1998), 604–613. https://doi.org/10.1145/276698.276876 . Bibliographic data from the DOI record and secondary indexes; the full text was not inspected in this pass. Cited for the definition of locality-sensitive families and for bit sampling under the Hamming distance.
+Piotr Indyk, Rajeev Motwani. “Approximate Nearest Neighbors: Towards Removing the Curse of Dimensionality.” *Proceedings of the 30th Annual ACM Symposium on Theory of Computing* (STOC 1998), 604–613. https://doi.org/10.1145/276698.276876 . DOI and metadata as reported by search indexes; neither the DOI nor the full text was resolved in this pass. Cited for the definition of locality-sensitive families and for bit sampling under the Hamming distance.
 
 <a id="irani91"></a>
 ## irani91
@@ -337,7 +337,7 @@ Lean development team. *Validating a Lean Proof*, The Lean Language Reference, a
 <a id="leskovecrajaramanullman20"></a>
 ## leskovecrajaramanullman20
 
-Jure Leskovec, Anand Rajaraman, Jeffrey D. Ullman. *Mining of Massive Datasets*, 3rd edition. Cambridge University Press, 2020. https://doi.org/10.1017/9781108684163 . The section locators used here (3.3.3 minhashing and Jaccard similarity, 3.4.2 analysis of the banding technique, 3.6.1 locality-sensitive functions, 3.6.2 families for the Jaccard distance, 3.6.3 amplification, 3.7.1 families for the Hamming distance) were matched against section titles reported by secondary sources; the book text was not inspected in this pass (no connection to the authors' site).
+Jure Leskovec, Anand Rajaraman, Jeffrey D. Ullman. *Mining of Massive Datasets*, 3rd edition. Cambridge University Press, 2020. https://doi.org/10.1017/9781108684163 . DOI and metadata as reported by search indexes. The section locators used here (3.3.3 minhashing and Jaccard similarity, 3.4.2 analysis of the banding technique, 3.6.1 locality-sensitive functions, 3.6.2 families for the Jaccard distance, 3.6.3 amplification, 3.7.1 families for the Hamming distance) were matched against section titles reported by secondary sources; the book text was not inspected in this pass (no connection to the authors' site).
 
 <a id="lev86"></a>
 ## lev86
