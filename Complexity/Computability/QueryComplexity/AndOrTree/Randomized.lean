@@ -278,13 +278,11 @@ theorem expectedCost_directional_le (k : ℕ) :
 NAND tree: the positive root of `2 α² = α + 4`. -/
 noncomputable def directionalRate : ℝ := (1 + √33) / 4
 
-private theorem five_lt_sqrt_33 : 5 < √(33 : ℝ) := by
-  rw [show (5 : ℝ) = √25 by rw [show (25 : ℝ) = 5 ^ 2 by norm_num, Real.sqrt_sq (by norm_num)]]
-  exact Real.sqrt_lt_sqrt (by norm_num) (by norm_num)
+private theorem five_lt_sqrt_33 : 5 < √(33 : ℝ) :=
+  (Real.lt_sqrt (by norm_num)).2 (by norm_num)
 
-private theorem sqrt_33_lt_six : √(33 : ℝ) < 6 := by
-  rw [show (6 : ℝ) = √36 by rw [show (36 : ℝ) = 6 ^ 2 by norm_num, Real.sqrt_sq (by norm_num)]]
-  exact Real.sqrt_lt_sqrt (by norm_num) (by norm_num)
+private theorem sqrt_33_lt_six : √(33 : ℝ) < 6 :=
+  (Real.sqrt_lt' (by norm_num)).2 (by norm_num)
 
 /-- `2 α² = α + 4`. -/
 theorem two_mul_directionalRate_sq : 2 * directionalRate ^ 2 = directionalRate + 4 := by
