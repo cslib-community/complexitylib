@@ -7,6 +7,7 @@ Authors: Jonathan Katz
 module
 -- upstream: candidate
 
+public import Complexity.Foundations.Combinatorics.Expander.Power
 public import Complexity.Probability.PairwiseIndependentHash.ComponentGap
 public import Complexity.Probability.PairwiseIndependentHash.ValidatedWords
 import Complexity.Foundations.Data.Finset.Expect
@@ -40,8 +41,9 @@ items 1–4) of [OpenAI2026LogSpace] directly on the multi-component product env
   `z = 0`). For every `A` in `ComponentSlice H M P L y` and every move word `w` of length `t`,
   there is a unique wrap word `z` passing `IsValidComponentWord`
   (`existsUnique_isValidComponentWord`), it lies in `(affineWrapBox H) ^ t`
-  (`componentWordWrap_mem`), and `componentWordPerm L w z` maps `A` to the exact `t`-step slice
-  walk endpoint `sliceWalkTrajectory` (`componentWordPerm_wrap_eq`).
+  (`componentWordWrap_mem`), and `componentWordPerm L w z` maps `A` to the exact endpoint
+  `(G.pow t).neighbor A w` of the walk along `w` in the reindexed lazy product multigraph `G`
+  (`componentWordPerm_wrap_eq`, using `RotationMap.pow`).
 * **Exact conditional walk identity (item 4).** Averaging over `w : Fin t → ComponentLazyStep H J`
   and summing over `z ∈ (affineWrapBox H) ^ t`—with no normalization by `(7 ^ H) ^ t`—recovers the
   exact `t`-step lazy product walk on `ComponentSlice H M P L y`
@@ -62,8 +64,6 @@ items 1–4) of [OpenAI2026LogSpace] directly on the multi-component product env
 * `Cslib.Probability.componentStepWrap`, `Cslib.Probability.componentWordWrap`: the unique valid
   wrap vector and length-`t` wrap word.
 * `Cslib.Probability.componentValidatedStep`: one-step validated walk operator on `ComponentSpace`.
-* `Cslib.Probability.sliceWalkTrajectory`: deterministic `t`-step walk trajectory along an edge
-  word in a `RotationMap`.
 
 ## Main results
 
@@ -73,7 +73,7 @@ items 1–4) of [OpenAI2026LogSpace] directly on the multi-component product env
   permutation on `ComponentSpace H M P`.
 * `Cslib.Probability.existsUnique_isValidComponentWord`,
   `Cslib.Probability.componentWordWrap_mem`, `Cslib.Probability.componentWordPerm_wrap_eq`: unique
-  valid wrap word in `(affineWrapBox H) ^ t` matching the exact slice trajectory.
+  valid wrap word in `(affineWrapBox H) ^ t`, reaching the walk endpoint `(G.pow t).neighbor A w`.
 * `Cslib.Probability.walk_pow_componentMove_eq_iterate`,
   `Cslib.Probability.walk_pow_componentMove_eq_expect_word`: `t` steps of the lazy product walk on
   `ComponentSlice H M P L y` equal both the `t`-fold iterate of `componentValidatedStep` and the
@@ -143,7 +143,7 @@ abbrev ComponentSlice (H M : ℕ) {J : ℕ} (P : Fin J → ℕ) [∀ j, NeZero (
 @[expose] def componentSliceVal {H M J : ℕ} {P : Fin J → ℕ} [∀ j, NeZero (P j)]
     {L : Fin J → ℕ} {y : ∀ j, ZMod (P j)}
     (A : ComponentSlice H M P L y) : ComponentSpace H M P :=
-  (fun j ↦ (A.1 j).1, A.2)
+  Prod.map (fun S j ↦ (S j).val) id A
 
 /-! ### One-step ambient variant permutations and wrap validation -/
 
@@ -273,7 +273,7 @@ theorem componentStepPerm_wrap_eq [∀ j, Fact (P j).Prime] {L : Fin J → ℕ} 
           neighbor_reindex, Equiv.symm_symm, neighbor_lazy_inl, neighbor_ofPerms_false,
           neighbor_ofPerms_true, componentMove, boxProdPerms, Sum.elim_inr, componentEquiv,
           Equiv.prodCongr_symm, Equiv.refl_symm, Equiv.prodCongr_apply, Prod.map_snd,
-          Equiv.refl_apply]
+          Equiv.refl_apply, id_eq]
   · rw [neighbor_reindex, Equiv.symm_symm, neighbor_lazy_inr, Equiv.symm_apply_apply]
     rfl
 
@@ -322,29 +322,6 @@ end OneStep
 section Words
 
 variable {H M J : ℕ} {P : Fin J → ℕ}
-
-/-- Deterministic `t`-step trajectory in a `RotationMap` along an edge word `w : Fin t → D`. -/
-@[expose] def sliceWalkTrajectory {V D : Type*} (G : RotationMap V D) :
-    ∀ {t : ℕ}, (Fin t → D) → V → V
-  | 0, _, v => v
-  | _ + 1, w, v => sliceWalkTrajectory G (w ∘ Fin.succ) (G.neighbor v (w 0))
-
-/-- `t` steps of `G.walk` equal the uniform expectation over edge words `w : Fin t → D` of
-`g (sliceWalkTrajectory G w v)`. -/
-theorem walk_pow_eq_expect_trajectory {V D : Type*} [Fintype D] (G : RotationMap V D)
-    (g : V → ℝ) (t : ℕ) (v : V) :
-    (G.walk ^ t) g v = 𝔼 w : Fin t → D, g (sliceWalkTrajectory G w v) := by
-  induction t generalizing v with
-  | zero =>
-    symm
-    exact Fintype.expect_unique fun w ↦ g (sliceWalkTrajectory G w v)
-  | succ t ih =>
-    rw [pow_succ', Module.End.mul_apply, RotationMap.walk_apply, Fin.expect_univ_cons]
-    refine expect_congr rfl fun e _ ↦ ?_
-    rw [ih]
-    exact expect_congr rfl fun w' _ ↦ by
-      simp only [sliceWalkTrajectory, Fin.cons_zero]
-      rfl
 
 /-- **Ambient permutation of a length-`t` word** `(w, z)` (Lemma 6.3, items 1–2): applies step `0`,
 then step `1`, …, through step `t - 1`. Because it is a composition of `Equiv.Perm`s, it is
@@ -447,19 +424,20 @@ theorem componentWordWrap_mem [∀ j, Fact (P j).Prime] {L : Fin J → ℕ} [∀
       exact (Fintype.mem_piFinset.1 hmem) j
 
 /-- On `ComponentSlice H M P L y`, applying `componentWordPerm` with the unique valid wrap word
-reproduces the exact `t`-step slice walk trajectory (Lemma 6.3, item 3). -/
+reaches the endpoint `(G.pow t).neighbor A w` of the walk along `w` in the reindexed lazy product
+multigraph `G` (Lemma 6.3, item 3). -/
 theorem componentWordPerm_wrap_eq [∀ j, Fact (P j).Prime] {L : Fin J → ℕ} [∀ j, NeZero (L j)]
     (hL : ∀ j, L j ≤ P j) {y : ∀ j, ZMod (P j)} :
     ∀ {t : ℕ} (w : Fin t → ComponentLazyStep H J) (A : ComponentSlice H M P L y),
       componentWordPerm L w (componentWordWrap L y w (componentSliceVal A))
           (componentSliceVal A) =
         componentSliceVal
-          (sliceWalkTrajectory
-            ((ofPerms (componentMove H M P L)).lazy.reindex (componentEquiv M hL y).symm) w A)
+          ((((ofPerms (componentMove H M P L)).lazy.reindex (componentEquiv M hL y).symm).pow
+            t).neighbor A w)
   | 0, _, _ => rfl
   | _ + 1, w, A => by
     simp only [componentWordPerm, componentWordWrap, Equiv.trans_apply, Fin.cons_zero,
-      sliceWalkTrajectory]
+      neighbor_pow_succ]
     have hcons :
         (Fin.cons (componentStepWrap L y (w 0) (componentSliceVal A))
           (componentWordWrap L y (w ∘ Fin.succ)
@@ -473,7 +451,8 @@ theorem componentWordPerm_wrap_eq [∀ j, Fact (P j).Prime] {L : Fin J → ℕ} 
     exact componentWordPerm_wrap_eq hL (w ∘ Fin.succ) _
 
 /-- **Exactly one length-`t` wrap word survives** on `ComponentSlice H M P L y`, evaluating to the
-`t`-step slice walk endpoint. -/
+endpoint `(G.pow t).neighbor A w` of the walk along `w` in the reindexed lazy product multigraph
+`G`. -/
 theorem sum_ite_isValidComponentWord [∀ j, Fact (P j).Prime] {L : Fin J → ℕ} [∀ j, NeZero (L j)]
     (hL : ∀ j, L j ≤ P j) {y : ∀ j, ZMod (P j)} {R : Type*} [AddCommMonoid R]
     {t : ℕ} (w : Fin t → ComponentLazyStep H J) (f : ComponentSpace H M P → R)
@@ -482,8 +461,8 @@ theorem sum_ite_isValidComponentWord [∀ j, Fact (P j).Prime] {L : Fin J → �
         (if IsValidComponentWord L y w z (componentSliceVal A)
           then f (componentWordPerm L w z (componentSliceVal A)) else 0) =
       f (componentSliceVal
-        (sliceWalkTrajectory
-          ((ofPerms (componentMove H M P L)).lazy.reindex (componentEquiv M hL y).symm) w A)) := by
+        ((((ofPerms (componentMove H M P L)).lazy.reindex (componentEquiv M hL y).symm).pow
+          t).neighbor A w)) := by
   simp only [isValidComponentWord_iff, sum_ite_eq', componentWordWrap_mem hL, ite_true,
     componentWordPerm_wrap_eq hL]
 
@@ -500,7 +479,7 @@ theorem walk_pow_componentMove_eq_expect_word [∀ j, Fact (P j).Prime] {L : Fin
         ∑ z ∈ Fintype.piFinset (fun _ : Fin t ↦ affineWrapBox H),
           if IsValidComponentWord L y w z (componentSliceVal A)
           then f (componentWordPerm L w z (componentSliceVal A)) else 0 := by
-  rw [walk_pow_eq_expect_trajectory]
+  rw [← walk_pow, walk_apply]
   exact expect_congr rfl fun w _ ↦ (sum_ite_isValidComponentWord hL w f A).symm
 
 end Words
