@@ -23,7 +23,39 @@ import Mathlib.Data.List.GetD
 /-!
 # Certificates for circuits of weft one
 
-PLACEHOLDER
+A wire of a circuit over the unbounded fan-in basis is true on an input exactly when there is a
+short list of *claims* (wire, value) that is valid for it. This is the combinatorial core of the
+W[1]-hardness of `Clique` [Cygan et al., Chapter 13][CyganEtAl2015]; see also
+[Downey and Fellows][DowneyFellows1999].
+
+A claim on a conjunction that it is true, or on a disjunction that it is false, is *checked*
+through the arguments of the gate. A claim on an input is checked by the input itself. The claims
+are *valid* (`claimsValid`) for an output wire when two things hold. First, Kleene evaluation finds
+the output true, with the claimed gates replaced by constants and from the claimed inputs. Second,
+every check lies at *small depth* at most `d`. The small depth (`smallDepths`) is the length of a
+longest path of gates with at most two arguments that ends at the wire, capped at `d + 1`.
+
+* **Soundness** (`eval_of_claimsValid`): if the claims are valid and every check holds on an
+  input, then the output is true on that input.
+* **Completeness** (`exists_claimsValid`): if the output has weft at most one and depth at most
+  `d`, and is true on an input, then at most `2 ^ d` claims that are correct on the input are valid
+  for it.
+* **Locality** (`exists_determining`): a wire of small depth `D ≤ d` is determined by at most
+  `2 ^ D` inputs. Kleene evaluation knows its value from any partial input that agrees with the
+  input on them.
+* **Complexity** (`computableInPolyTime_claimsValid`): for a fixed `d`, checking claims is
+  polynomial-time.
+
+## Main definitions
+
+* `WeftOne.claimsValid`: the certificate check.
+* `WeftOne.claimChecks`: the checks of a claim.
+* `WeftOne.smallDepths`: the capped small depths of the wires.
+
+## References
+
+* [M. Cygan et al., *Parameterized Algorithms*][CyganEtAl2015]
+* [R. G. Downey, M. R. Fellows, *Parameterized Complexity*][DowneyFellows1999]
 -/
 
 @[expose] public section
@@ -362,7 +394,8 @@ theorem exists_determining {d n : ℕ} {gates : List (Op × List ℕ)}
     · have h2' : g.2.length ≤ 2 := by simpa using h2
       have hchild : ∀ c ∈ g.2, (smallDepths d n gates).getD c (d + 1) ≤ D - 1 ∧ c < n + j := by
         intro c hc
-        have := le_maxTwo h2 (List.mem_map_of_mem (f := ((smallDepths d n gates).getD · (d + 1))) hc)
+        have := le_maxTwo h2
+          (List.mem_map_of_mem (f := ((smallDepths d n gates).getD · (d + 1))) hc)
         have hc' := hlt c hc
         refine ⟨?_, by omega⟩
         have hmin := min_le_iff.1 hw
@@ -399,7 +432,8 @@ theorem exists_determining {d n : ℕ} {gates : List (Op × List ℕ)}
           rw [List.map_map]
           rfl
         rw [getD_kleeneEval_add hρ h hg, getD_evalCode_add h hx hg, List.map_congr_left hcs, hmap,
-          ← ofFn_elim_eq_map (σ := signature) false _ _ hlen, List.map_ofFn, ← kleeneInterpretation_some]
+          ← ofFn_elim_eq_map (σ := signature) false _ _ hlen, List.map_ofFn,
+          ← kleeneInterpretation_some]
         rfl
     · omega
 
@@ -427,7 +461,8 @@ theorem getD_evalCode_depth_le {σ : Signature} (cost : σ.Op → ℕ) {n : ℕ}
 theorem cost_le_getD_evalCode_depth {σ : Signature} (cost : σ.Op → ℕ) {n : ℕ}
     {gates : List (σ.Op × List ℕ)} (h : Program.IsCodeFrom σ n 0 gates) {j : ℕ}
     {g : σ.Op × List ℕ} (hg : gates[j]? = some g) :
-    cost g.1 ≤ (evalCode (depthInterpretation cost) 0 (List.replicate n 0) gates).getD (n + j) 0 := by
+    cost g.1 ≤
+      (evalCode (depthInterpretation cost) 0 (List.replicate n 0) gates).getD (n + j) 0 := by
   have h' : Program.IsCodeFrom σ (List.replicate n 0).length 0 gates := by
     rwa [List.length_replicate]
   have hv := getD_evalCode (depthInterpretation cost) 0 (List.replicate n 0) h' hg
@@ -441,7 +476,8 @@ theorem getD_smallDepths_le {d n : ℕ} {gates : List (Op × List ℕ)}
     (hwd : (evalCode (depthInterpretation (largeGateCost signature)) 0 (List.replicate n 0)
       gates).getD w 0 = 0) :
     (smallDepths d n gates).getD w (d + 1) ≤
-      (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0) gates).getD w 0 := by
+      (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0)
+        gates).getD w 0 := by
   induction w using Nat.strong_induction_on with
   | _ w ih =>
     rcases Nat.lt_or_ge w n with hwn | hwn
@@ -465,9 +501,11 @@ theorem getD_smallDepths_le {d n : ℕ} {gates : List (Op × List ℕ)}
     simp only [getD_smallDepths_add h hg, smallDepthOp, List.length_map, h2, ↓reduceIte]
     refine (min_le_right _ _).trans ?_
     have hmax : maxTwo (g.2.map ((smallDepths d n gates).getD · (d + 1))) + 1 ≤
-        (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0) gates).getD (n + j) 0 := by
+        (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0)
+          gates).getD (n + j) 0 := by
       have : maxTwo (g.2.map ((smallDepths d n gates).getD · (d + 1))) ≤
-          (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0) gates).getD (n + j) 0 - 1 := by
+          (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0)
+            gates).getD (n + j) 0 - 1 := by
         refine maxTwo_le fun v hv => ?_
         obtain ⟨c, hc, rfl⟩ := List.mem_map.1 hv
         have h1 := getD_evalCode_depth_le 1 h hg hc
@@ -517,9 +555,11 @@ theorem exists_claims {d n : ℕ} {gates : List (Op × List ℕ)}
     (hw : w < n + gates.length)
     (hwd : (evalCode (depthInterpretation (largeGateCost signature)) 0 (List.replicate n 0)
       gates).getD w 0 ≤ 1)
-    (hdp : (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0) gates).getD w 0 ≤ d) :
+    (hdp : (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0)
+      gates).getD w 0 ≤ d) :
     ∃ cl : List (ℕ × Bool),
-      cl.length ≤ 2 ^ (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0) gates).getD w 0 ∧
+      cl.length ≤ 2 ^ (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0)
+        gates).getD w 0 ∧
       (∀ c ∈ cl, c.1 < n + gates.length ∧
         (evalCode interpretation false x gates).getD c.1 false = c.2) ∧
       (∀ e ∈ cl.flatMap (claimChecks n gates), (smallDepths d n gates).getD e.1 (d + 1) ≤ d) ∧
@@ -559,9 +599,12 @@ theorem exists_claims {d n : ℕ} {gates : List (Op × List ℕ)}
     have hwdc : ∀ c ∈ g.2, (evalCode (depthInterpretation (largeGateCost signature)) 0
         (List.replicate n 0) gates).getD c 0 + largeGateCost signature g.1 ≤ 1 :=
       fun c hc => (getD_evalCode_depth_le _ h hg hc).trans hwd
-    have hdpc : ∀ c ∈ g.2, (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0)
-        gates).getD c 0 + 1 ≤ (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0)
-          gates).getD (n + j) 0 := fun c hc => getD_evalCode_depth_le 1 h hg hc
+    have hdpc : ∀ c ∈ g.2,
+        (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0)
+          gates).getD c 0 + 1 ≤
+          (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0)
+            gates).getD (n + j) 0 :=
+      fun c hc => getD_evalCode_depth_le 1 h hg hc
     have hcw : ∀ c ∈ g.2, c < n + j := fun c hc => by have := hlt c hc; omega
     set v := evalCode interpretation false x gates with hv_def
     by_cases hlarge : 2 < g.2.length
@@ -637,25 +680,27 @@ theorem exists_claims {d n : ℕ} {gates : List (Op × List ℕ)}
       refine ⟨g.2.flatMap CL, ?_, ?_, ?_, fun claims hsub hcorr => ?_⟩
       · rw [List.length_flatMap]
         have hbound : ∀ c ∈ g.2, (CL c).length ≤
-            2 ^ ((evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0) gates).getD (n + j) 0
-              - 1) := fun c hc =>
+            2 ^ ((evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0)
+              gates).getD (n + j) 0 - 1) := fun c hc =>
           (hCL_len c hc).trans (Nat.pow_le_pow_right (by norm_num) (by have := hdpc c hc; omega))
         calc (g.2.map fun c => (CL c).length).sum
-            ≤ (g.2.map fun _ => 2 ^ ((evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0)
-                gates).getD (n + j) 0 - 1)).sum := List.sum_le_sum fun c hc => hbound c hc
-          _ = g.2.length * 2 ^ ((evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0)
-                gates).getD (n + j) 0 - 1) := by
+            ≤ (g.2.map fun _ => 2 ^ (
+                (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0)
+                  gates).getD (n + j) 0 - 1)).sum := List.sum_le_sum fun c hc => hbound c hc
+          _ = g.2.length * 2 ^ (
+                (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0)
+                  gates).getD (n + j) 0 - 1) := by
               rw [List.map_const', List.sum_replicate, smul_eq_mul]
-          _ ≤ 2 ^ (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0) gates).getD
-                (n + j) 0 := by
+          _ ≤ 2 ^ (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0)
+                gates).getD (n + j) 0 := by
               rcases Nat.eq_zero_or_pos g.2.length with h0 | hpos
               · rw [h0, Nat.zero_mul]
                 exact Nat.zero_le _
               · obtain ⟨c, hc⟩ := List.exists_mem_of_length_pos hpos
                 have := hdpc c hc
                 obtain ⟨D', hD'⟩ := Nat.exists_eq_add_of_le (show 1 ≤
-                  (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0) gates).getD
-                    (n + j) 0 by omega)
+                  (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0)
+                    gates).getD (n + j) 0 by omega)
                 rw [hD', Nat.add_sub_cancel_left, Nat.add_comm 1 D', pow_succ']
                 exact Nat.mul_le_mul_right _ hlarge
       · intro c' hc'
@@ -711,7 +756,8 @@ theorem exists_claimsValid {d n : ℕ} {gates : List (Op × List ℕ)}
     (ho : o < n + gates.length)
     (hwd : (evalCode (depthInterpretation (largeGateCost signature)) 0 (List.replicate n 0)
       gates).getD o 0 ≤ 1)
-    (hdp : (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0) gates).getD o 0 ≤ d)
+    (hdp : (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0)
+      gates).getD o 0 ≤ d)
     (hv : (evalCode interpretation false x gates).getD o false = true) :
     ∃ claims : List (ℕ × Bool), claims.length ≤ 2 ^ d ∧
       (∀ c ∈ claims, c.1 < n + gates.length ∧
@@ -905,6 +951,55 @@ theorem computableInPolyTime_claimsValid (d : ℕ)
   exact ComputableInPolyTime.bool_and' hfirst hall
 
 end PolyTime
+
+/-! ### Circuits -/
+
+section Circuits
+
+variable {n : ℕ} (c : Circuit signature n 1)
+
+/-- The gate list of a circuit is a code from its inputs. -/
+theorem isCodeFrom_code : Program.IsCodeFrom signature n 0 c.code.1 :=
+  (Circuit.isSome_ofCode_iff.1 (by rw [Circuit.ofCode_code]; rfl)).1
+
+/-- The output wire of a circuit with one output, read from its code. -/
+theorem lt_of_outputs : (c.outputs 0).toNat < n + c.code.1.length :=
+  (Circuit.isSome_ofCode_iff.1 (by rw [Circuit.ofCode_code]; rfl)).2.2 _
+    (by simp [Circuit.code])
+
+/-- **Soundness for circuits.** If claims are valid for the output of a circuit and every check
+of a claim holds on an input, the circuit accepts the input. -/
+theorem eval_of_claimsValid_circuit {d : ℕ} {claims : List (ℕ × Bool)}
+    (hvalid : claimsValid d n c.code.1 (c.outputs 0).toNat claims = true) (x : BitString n)
+    (hchecks : ∀ e ∈ claims.flatMap (claimChecks n c.code.1),
+      (evalCode interpretation false (List.ofFn x) c.code.1).getD e.1 false = e.2) :
+    c.eval interpretation x 0 = true := by
+  rw [c.eval_eq_getD interpretation false]
+  exact eval_of_claimsValid (isCodeFrom_code c) hvalid (List.length_ofFn) hchecks
+
+/-- **Completeness for circuits.** A circuit of weft at most one and depth at most `d` that
+accepts an input has at most `2 ^ d` claims, correct on the input, that are valid for its
+output. -/
+theorem exists_claimsValid_circuit {d : ℕ} (hw : c.weft ≤ 1) (hd : c.depth ≤ d) (x : BitString n)
+    (hx : c.eval interpretation x 0 = true) :
+    ∃ claims : List (ℕ × Bool), claims.length ≤ 2 ^ d ∧
+      (∀ e ∈ claims, e.1 < n + c.code.1.length ∧
+        (evalCode interpretation false (List.ofFn x) c.code.1).getD e.1 false = e.2) ∧
+      claimsValid d n c.code.1 (c.outputs 0).toNat claims = true := by
+  have hwd : (evalCode (depthInterpretation (largeGateCost signature)) 0 (List.replicate n 0)
+      c.code.1).getD (c.outputs 0).toNat 0 ≤ 1 := by
+    rw [Circuit.getD_evalCode_depthInterpretation]
+    exact (c.weft_le_iff.1 hw) 0
+  have hdp : (evalCode (depthInterpretation (σ := signature) 1) 0 (List.replicate n 0)
+      c.code.1).getD (c.outputs 0).toNat 0 ≤ d := by
+    rw [Circuit.getD_evalCode_depthInterpretation]
+    refine le_trans ?_ hd
+    rw [← Circuit.depthWith_one]
+    exact c.wireDepthsWith_outputs_le_depthWith 1 0
+  rw [c.eval_eq_getD interpretation false] at hx
+  exact exists_claimsValid (isCodeFrom_code c) List.length_ofFn (lt_of_outputs c) hwd hdp hx
+
+end Circuits
 
 end WeftOne
 
