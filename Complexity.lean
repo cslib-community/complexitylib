@@ -46,6 +46,7 @@ public import Complexity.Algorithms.Lean.Kruskal.SimpleGraph
 public import Complexity.Algorithms.Lean.Matroid.Greedy
 public import Complexity.Algorithms.Lean.Matroid.Intersection
 public import Complexity.Algorithms.Lean.Matroid.Intersection.Konig
+public import Complexity.Algorithms.Lean.Matroid.Intersection.Solver
 public import Complexity.Algorithms.Lean.MaxFlow.AugmentingPath
 public import Complexity.Algorithms.Lean.MaxFlow.Basic
 public import Complexity.Algorithms.Lean.MaxFlow.BipartiteMatching
@@ -61,10 +62,12 @@ public import Complexity.Algorithms.Lean.Query.Arith.Karatsuba.Cost
 public import Complexity.Algorithms.Lean.Query.Arith.Karatsuba.Defs
 public import Complexity.Algorithms.Lean.Query.Arith.Lemmas
 public import Complexity.Algorithms.Lean.Query.Arith.MatMul
+public import Complexity.Algorithms.Lean.Query.FreeM.FilterM
 public import Complexity.Algorithms.Lean.Query.FreeM.MOfFn
 public import Complexity.Algorithms.Lean.Query.FreeM.Tabulate
 public import Complexity.Algorithms.Lean.Query.Matroid.Greedy
 public import Complexity.Algorithms.Lean.Query.Matroid.IndepQuery
+public import Complexity.Algorithms.Lean.Query.Matroid.Intersection
 public import Complexity.Algorithms.Lean.Query.Matroid.LowerBound
 public import Complexity.Algorithms.Lean.Query.ShortestPaths.MinPlus
 public import Complexity.Algorithms.Lean.Query.Submodular.Greedy
@@ -133,6 +136,7 @@ public import Complexity.Algorithms.Reachability.InductiveCounting.Semantics
 public import Complexity.Algorithms.Reachability.Reingold
 public import Complexity.Algorithms.Reachability.ReingoldEval
 public import Complexity.Algorithms.Reachability.Savitch
+public import Complexity.Algorithms.Reachability.ShortestWalk
 public import Complexity.Algorithms.ShortestPaths.FloydWarshall
 public import Complexity.Algorithms.ShortestPaths.Power
 public import Complexity.Algorithms.ShortestPaths.Tripartite
@@ -4148,6 +4152,7 @@ public import Complexity.Foundations.Combinatorics.WeightBudget
 public import Complexity.Foundations.Combinatorics.WeightedCut
 public import Complexity.Foundations.Combinatorics.WeightedCut.Multigraph
 public import Complexity.Foundations.Computability.ComputablePred
+public import Complexity.Foundations.Control.Monad.FilterM
 public import Complexity.Foundations.Control.Monad.IsMonadHom.StateT
 public import Complexity.Foundations.Control.Monad.Memoize
 public import Complexity.Foundations.Data.BiTape

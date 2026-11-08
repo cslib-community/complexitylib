@@ -1390,10 +1390,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   linear-time 2-SAT algorithm as a client of the `TwoSAT` problem module; the Bellman–Ford
   predecessor tree; and bridges from Bellman–Ford to Dijkstra's distances and to the matrix
   shortest-path model.
-- **Matroids:** Edmonds' matroid intersection theorem, the exchange-graph augmenting-path step and
-  König's theorem via partition matroids are in `Algorithms/Lean/Matroid/Intersection`. Remaining:
-  a verified executable matroid-intersection solver, with independence-oracle query counts kept
-  separate from `TimeM` implementation costs
+- **Matroids:** Edmonds' matroid intersection theorem, the exchange-graph augmenting-path step,
+  König's theorem via partition matroids and a verified executable solver with exact
+  independence-oracle query counts are in `Algorithms/Lean/Matroid/Intersection` and
+  `Algorithms/Lean/Query/Matroid/Intersection`. Remaining: `TimeM` costs for the solver's host
+  computation, kept separate from the query counts
   ([#2018](https://github.com/cslib-community/complexitylib/issues/2018)); then weighted matroid
   intersection.
 - **Submodular optimization:** further constraints and approximation bounds beyond the
