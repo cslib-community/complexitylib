@@ -94,6 +94,21 @@ example : ¬ ∃ W : Fin 4 → cube.Walk 0 7, (∀ i, (W i).IsPath) ∧
   have := h _ cube_sep
   simp at this
 
+/-- The matching-cut form of Menger, used as stated: it yields internally disjoint `0`-`7` paths
+and a separator of the same size `m`, and weak duality against `cubeW` and `cube_sep` pins
+`m = 3`. -/
+example : ∃ (m : ℕ) (W : Fin m → cube.Walk 0 7), m = 3 ∧ (∀ i, (W i).IsPath) ∧
+    (InternallyDisjoint 0 7 fun i => (W i).support) ∧
+    ∃ T : Finset (Fin 8), IsVertexSeparator cube 0 7 T ∧ T.card = m := by
+  obtain ⟨m, W, hW, hdisj, T, hT, hTm⟩ :=
+    exists_internallyDisjoint_eq_isVertexSeparator cube (u := 0) (v := 7) (by decide) (by decide)
+  refine ⟨m, W, ?_, hW, hdisj, T, hT, hTm⟩
+  have h1 := card_le_card_of_internallyDisjoint_of_isVertexSeparator hW hdisj cube_sep
+  have h2 := card_le_card_of_internallyDisjoint_of_isVertexSeparator cubeW_isPath
+    cubeW_internallyDisjoint hT
+  have h3 : ({1, 2, 4} : Finset (Fin 8)).card = 3 := by decide
+  omega
+
 /-! ### 2. A small digraph -/
 
 /-- A small digraph: arcs `0 → 1`, `0 → 2`, `1 → 2`, `1 → 3`, `2 → 3`. -/

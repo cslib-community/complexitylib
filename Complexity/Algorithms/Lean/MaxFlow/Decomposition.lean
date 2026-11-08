@@ -19,7 +19,7 @@ import Mathlib.Data.Fintype.BigOperators
 # Path Decomposition of Integral Flows
 
 Decomposes a feasible integral `s`-`t` flow on a `Cslib.Algorithms.Lean.MaxFlow.Network` into
-simple `s`-`t` paths along positive-flow arcs: a flow of value `k` (with `N.s ≠ N.t`) contains `k`
+simple `s`-`t` paths along positive-flow arcs: a flow of value `k` contains `k`
 simple `s`-`t` paths such that each arc `(u, v)` lies on at most `f u v` of them. The remaining
 flow is a circulation and is not recorded; this is the path half of the classical flow
 decomposition. Also provides cancellation of antiparallel flow, which keeps the value and leaves
@@ -41,73 +41,11 @@ Menger's theorem from the integral max-flow/min-cut theorem
 * `Cslib.Algorithms.Lean.MaxFlow.Network.Flow.value_cancel`,
   `Cslib.Algorithms.Lean.MaxFlow.Network.Flow.cancel_eq_zero_or`: cancellation keeps the value and
   removes antiparallel flow.
-* `Cslib.Algorithms.Lean.MaxFlow.exists_list_of_reflTransGen`,
-  `Cslib.Algorithms.Lean.MaxFlow.exists_nodup_list_of_reflTransGen`: reflexive–transitive chains
-  as (simple) vertex lists, the bridge between `Relation.ReflTransGen` and `pathArcs`.
-* `Cslib.Algorithms.Lean.MaxFlow.exists_mem_pathArcs_boundary`,
-  `Cslib.Algorithms.Lean.MaxFlow.exists_mem_pathArcs_snd_eq`: boundary-arc and entering-arc lemmas
-  for vertex lists.
 -/
 
 public section
 
 namespace Cslib.Algorithms.Lean.MaxFlow
-
-section PathLemmas
-
-variable {V : Type*}
-
-/-- A reflexive–transitive chain of `r`-steps from `u` to `v` is realized by a vertex list from `u`
-to `v` whose consecutive pairs are `r`-steps. -/
-theorem exists_list_of_reflTransGen {r : V → V → Prop} {u v : V}
-    (h : Relation.ReflTransGen r u v) :
-    ∃ p : List V, p.head? = some u ∧ p.getLast? = some v ∧ ∀ e ∈ pathArcs p, r e.1 e.2 := by
-  induction h with
-  | refl => exact ⟨[u], rfl, rfl, by simp⟩
-  | @tail b c _ hstep ih =>
-    obtain ⟨p, hhead, hlast, harcs⟩ := ih
-    have hp_ne : p ≠ [] := by
-      rintro rfl
-      simp at hhead
-    refine ⟨p ++ [c], ?_, by simp, ?_⟩
-    · rw [List.head?_append_of_ne_nil p hp_ne]
-      exact hhead
-    · intro e he
-      rw [pathArcs_append_singleton hp_ne hlast, List.mem_append, List.mem_singleton] at he
-      rcases he with he' | rfl
-      · exact harcs e he'
-      · exact hstep
-
-/-- A vertex list from `u` to `v` whose consecutive pairs are `r`-steps gives a
-reflexive–transitive chain of `r`-steps. -/
-theorem reflTransGen_of_pathArcs {r : V → V → Prop} :
-    ∀ {p : List V} {u v : V}, p.head? = some u → p.getLast? = some v →
-      (∀ e ∈ pathArcs p, r e.1 e.2) → Relation.ReflTransGen r u v
-  | [], _, _, hu, _, _ => by simp at hu
-  | [x], u, v, hu, hv, _ => by
-    simp only [List.head?_cons, Option.some.injEq] at hu
-    simp only [List.getLast?_singleton, Option.some.injEq] at hv
-    subst hu hv
-    exact .refl
-  | x :: y :: rest, u, v, hu, hv, hp => by
-    simp only [List.head?_cons, Option.some.injEq] at hu
-    subst hu
-    exact Relation.ReflTransGen.head (hp (x, y) List.mem_cons_self)
-      (reflTransGen_of_pathArcs (p := y :: rest) rfl (by simpa using hv)
-        fun e he => hp e (List.mem_cons_of_mem _ he))
-
-/-- A reflexive–transitive chain of `r`-steps from `u` to `v` is realized by a duplicate-free
-vertex list from `u` to `v` whose consecutive pairs are `r`-steps (loop erasure). -/
-theorem exists_nodup_list_of_reflTransGen {r : V → V → Prop} {u v : V}
-    (h : Relation.ReflTransGen r u v) :
-    ∃ p : List V, p.Nodup ∧ p.head? = some u ∧ p.getLast? = some v ∧
-      ∀ e ∈ pathArcs p, r e.1 e.2 := by
-  classical
-  obtain ⟨p, hs, ht, harcs⟩ := exists_list_of_reflTransGen h
-  exact ⟨loopErase p, nodup_loopErase p, by rw [head?_loopErase, hs],
-    by rw [getLast?_loopErase, ht], fun e he => harcs e (mem_pathArcs_loopErase he)⟩
-
-end PathLemmas
 
 namespace Network
 
@@ -213,10 +151,10 @@ theorem exists_isFlowPath (f : N.Flow) (hpos : 0 < f.value) : ∃ p, f.IsFlowPat
     omega
 
 /-- **Flow decomposition into paths** (path part of the classical flow decomposition):
-a feasible integral flow `f` of value `k` with `N.s ≠ N.t` contains `k` simple `s`-`t` paths
-along positive-flow arcs such that every arc `(u, v)` lies on at most `f u v` of them. (The
-remaining flow consists of circulations, which are not recorded.) -/
-theorem exists_flowPaths [DecidableEq V] (hst : N.s ≠ N.t) (f : N.Flow) :
+a feasible integral flow `f` of value `k` contains `k` simple `s`-`t` paths along positive-flow
+arcs such that every arc `(u, v)` lies on at most `f u v` of them. (The remaining flow consists of
+circulations, which are not recorded. If `N.s = N.t`, then `k = 0`.) -/
+theorem exists_flowPaths [DecidableEq V] (f : N.Flow) :
     ∃ P : Fin f.value.toNat → List V, (∀ i, f.IsFlowPath (P i)) ∧
       ∀ u v, (Finset.univ.filter fun i => (u, v) ∈ pathArcs (P i)).card ≤ f u v := by
   suffices h : ∀ k : ℕ, ∀ f : N.Flow, f.value.toNat = k →
@@ -231,6 +169,9 @@ theorem exists_flowPaths [DecidableEq V] (hst : N.s ≠ N.t) (f : N.Flow) :
   | succ k ih =>
     intro f hk
     have hpos : 0 < f.value := by omega
+    have hst : N.s ≠ N.t := fun h => by
+      rw [f.value_eq_zero_of_s_eq_t h] at hpos
+      exact lt_irrefl 0 hpos
     obtain ⟨p, hp⟩ := f.exists_isFlowPath hpos
     let g := f.subPath p hp
     have hg : g.value.toNat = k := by
@@ -261,7 +202,6 @@ theorem exists_flowPaths [DecidableEq V] (hst : N.s ≠ N.t) (f : N.Flow) :
         simp only at this
         omega
       · omega
-
 
 /-- Cancel antiparallel flow: subtract `min (f u v) (f v u)` from both `f u v` and `f v u`. -/
 def cancel (f : N.Flow) : N.Flow where
@@ -302,52 +242,5 @@ theorem value_cancel (f : N.Flow) : f.cancel.value = f.value := by
 end Flow
 
 end Network
-
-section PathLemmas
-
-variable {V : Type*}
-
-/-- A vertex list starting inside a predicate `S` and ending outside it has a consecutive arc
-leaving `S`. -/
-theorem exists_mem_pathArcs_boundary (S : V → Prop) :
-    ∀ {p : List V} {s t : V}, p.head? = some s → p.getLast? = some t → S s → ¬ S t →
-      ∃ e ∈ pathArcs p, S e.1 ∧ ¬ S e.2
-  | [], _, _, hs, _, _, _ => by simp at hs
-  | [x], s, t, hs, ht, hSs, hSt => by
-    simp only [List.head?_cons, Option.some.injEq] at hs
-    simp only [List.getLast?_singleton, Option.some.injEq] at ht
-    subst hs ht
-    exact absurd hSs hSt
-  | x :: y :: rest, s, t, hs, ht, hSs, hSt => by
-    simp only [List.head?_cons, Option.some.injEq] at hs
-    subst hs
-    by_cases hy : S y
-    · obtain ⟨e, he, hSe⟩ :=
-        exists_mem_pathArcs_boundary S (p := y :: rest) rfl (by simpa using ht) hy hSt
-      exact ⟨e, by simp [he], hSe⟩
-    · exact ⟨(x, y), by simp, hSs, hy⟩
-
-/-- Every vertex of a vertex list other than its head is entered by a consecutive arc. -/
-theorem exists_mem_pathArcs_snd_eq :
-    ∀ {p : List V} {v : V}, v ∈ p → p.head? ≠ some v → ∃ u, (u, v) ∈ pathArcs p
-  | [], _, hv, _ => by simp at hv
-  | [x], v, hv, hh => by
-    rw [List.mem_singleton] at hv
-    subst hv
-    exact (hh rfl).elim
-  | x :: y :: rest, v, hv, hh => by
-    by_cases hyv : y = v
-    · subst hyv
-      exact ⟨x, by simp⟩
-    · have hv' : v ∈ y :: rest := by
-        rcases List.mem_cons.mp hv with h | h
-        · subst h
-          exact (hh rfl).elim
-        · exact h
-      obtain ⟨u, hu⟩ := exists_mem_pathArcs_snd_eq (p := y :: rest) hv'
-        (by simpa using hyv)
-      exact ⟨u, by simp [hu]⟩
-
-end PathLemmas
 
 end Cslib.Algorithms.Lean.MaxFlow

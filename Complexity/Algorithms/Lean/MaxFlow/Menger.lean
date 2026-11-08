@@ -26,9 +26,11 @@ and undirected edge-disjoint and internally vertex-disjoint ([Diestel2025], Coro
 
 ## Model and source mapping
 
-* **Directed graphs:** Mathlib `Digraph V` on a finite vertex type. A directed `s`-`t` path
-  (`IsDipath`) is a duplicate-free vertex list from `s` to `t` whose consecutive pairs
-  (`pathArcs`) are arcs.
+* **Directed graphs:** Mathlib `Digraph V` on a finite vertex type. A `Digraph` is an arc
+  relation, so it has no parallel arcs: the arc form covers simple digraphs, not the directed
+  multigraphs allowed in [Schrijver2017] (loops are harmless, as paths are duplicate-free). A
+  directed `s`-`t` path (`IsDipath`) is a duplicate-free vertex list from `s` to `t` whose
+  consecutive pairs (`pathArcs`) are arcs.
 * **Arc form** ([Schrijver2017], Corollary 4.1b): `ArcDisjoint`, and `IsArcCut` (a set of arcs
   meeting every `s`-`t` path). Schrijver's `s`-`t` cuts `δ^out(U)` are `outArcs G U`. The proof
   sends one unit of flow per arc of `G` (`unitNetwork`), decomposes an integral maximum flow into
@@ -45,10 +47,10 @@ and undirected edge-disjoint and internally vertex-disjoint ([Diestel2025], Coro
 
 ## Scope
 
-Finite graphs and two terminals only. Not covered: the set version for `A`-`B` paths
-([Schrijver2017], Theorem 4.1; [Diestel2025], Theorem 3.3.1), the global `k`-connectivity form
-([Diestel2025], Theorem 3.3.6), infinite graphs, and any running-time bound. The proofs are
-existence proofs with no algorithm attached.
+Finite graphs, two terminals, and simple digraphs only. Not covered: directed multigraphs, the
+set version for `A`-`B` paths ([Schrijver2017], Theorem 4.1; [Diestel2025], Theorem 3.3.1), the
+global `k`-connectivity form ([Diestel2025], Theorem 3.3.6), infinite graphs, and any running-time
+bound. The proofs are existence proofs with no algorithm attached.
 
 ## Main definitions
 
@@ -119,9 +121,8 @@ whose consecutive pairs are arcs of `G`. -/
   p.Nodup ∧ p.head? = some s ∧ p.getLast? = some t ∧ ∀ e ∈ pathArcs p, G.Adj e.1 e.2
 
 instance instDecidableIsDipath [DecidableEq V] (G : Digraph V) [DecidableRel G.Adj] (s t : V)
-    (p : List V) : Decidable (IsDipath G s t p) := by
-  unfold IsDipath
-  infer_instance
+    (p : List V) : Decidable (IsDipath G s t p) :=
+  inferInstanceAs (Decidable (_ ∧ _ ∧ _ ∧ _))
 
 /-- `C` is an `s`-`t` arc cut of `G`: every directed `s`-`t` path of `G` uses an arc of `C`. -/
 @[expose] def IsArcCut (G : Digraph V) (s t : V) (C : Finset (V × V)) : Prop :=
@@ -195,7 +196,7 @@ private theorem exists_unit_flowPaths (G : Digraph V) [DecidableRel G.Adj] {s t 
     Network.exists_maxFlow_eq_minCut (N := unitNetwork G s t) hst
   have hval' : f₀.cancel.value = ((outArcs G S).card : ℤ) := by
     rw [Network.Flow.value_cancel, hval, cutCapacity_unitNetwork]
-  obtain ⟨P, hP, hcount⟩ := f₀.cancel.exists_flowPaths hst
+  obtain ⟨P, hP, hcount⟩ := f₀.cancel.exists_flowPaths
   have hk : f₀.cancel.value.toNat = (outArcs G S).card := by omega
   have hcap : ∀ u v, f₀.cancel u v ≤ if G.Adj u v then 1 else 0 :=
     fun u v => f₀.cancel.le_cap u v
@@ -518,8 +519,7 @@ theorem exists_internallyDisjoint_eq_isVertexCut [Finite V] (G : Digraph V) {s t
     change (∑ w, (f (s, true) (w, false) : ℤ)) - ∑ u, (f (u, true) (s, false) : ℤ) =
       (∑ y, (f (s, true) y : ℤ)) - ∑ x, (f x (s, true) : ℤ)
     rw [hout, hin, hin']
-  have hst'' : (unitNetwork G s t).s ≠ (unitNetwork G s t).t := hst
-  obtain ⟨P, hP, hcount⟩ := g.exists_flowPaths hst''
+  obtain ⟨P, hP, hcount⟩ := g.exists_flowPaths
   have hPdi : ∀ i, IsDipath G s t (P i) := by
     intro i
     obtain ⟨hnd, hs, ht, hpos⟩ := hP i
@@ -599,25 +599,6 @@ variable {V : Type*}
 /-- The symmetric digraph of a simple graph: each edge becomes two opposite arcs. -/
 private def toDigraph (G : SimpleGraph V) : Digraph V := ⟨G.Adj⟩
 
-private theorem forall_mem_pathArcs_of_isChain {r : V → V → Prop} :
-    ∀ {l : List V}, l.IsChain r → ∀ e ∈ pathArcs l, r e.1 e.2
-  | [], _, e, he => by simp at he
-  | [_], _, e, he => by simp at he
-  | x :: y :: rest, h, e, he => by
-    rw [List.isChain_cons_cons] at h
-    rw [pathArcs_cons_cons, List.mem_cons] at he
-    rcases he with rfl | he
-    · exact h.1
-    · exact forall_mem_pathArcs_of_isChain h.2 e he
-
-private theorem isChain_of_forall_mem_pathArcs {r : V → V → Prop} :
-    ∀ {l : List V}, (∀ e ∈ pathArcs l, r e.1 e.2) → l.IsChain r
-  | [], _ => List.IsChain.nil
-  | [x], _ => List.IsChain.singleton x
-  | x :: y :: rest, h =>
-    List.IsChain.cons_cons (h (x, y) (by simp))
-      (isChain_of_forall_mem_pathArcs fun e he => h e (by simp [he]))
-
 private theorem edges_eq_map_pathArcs {G : SimpleGraph V} {u v : V} (w : G.Walk u v) :
     w.edges = (pathArcs w.support).map fun e => s(e.1, e.2) := by
   induction w with
@@ -631,7 +612,8 @@ private theorem edges_eq_map_pathArcs {G : SimpleGraph V} {u v : V} (w : G.Walk 
 
 private theorem isDipath_support {G : SimpleGraph V} {u v : V} {w : G.Walk u v}
     (hw : w.IsPath) : IsDipath (toDigraph G) u v w.support := by
-  refine ⟨hw.support_nodup, ?_, ?_, forall_mem_pathArcs_of_isChain w.isChain_adj_support⟩
+  refine ⟨hw.support_nodup, ?_, ?_,
+    forall_mem_pathArcs_iff_isChain.mpr w.isChain_adj_support⟩
   · rw [List.head?_eq_some_head (Walk.support_ne_nil w), Walk.head_support]
   · rw [List.getLast?_eq_some_getLast (Walk.support_ne_nil w), Walk.getLast_support]
 
@@ -641,7 +623,7 @@ private theorem exists_walk_of_isDipath {G : SimpleGraph V} {u v : V} {p : List 
   have hne : p ≠ [] := by
     rintro rfl
     simp at hu
-  have hchain : p.IsChain G.Adj := isChain_of_forall_mem_pathArcs (r := G.Adj) hadj
+  have hchain : p.IsChain G.Adj := forall_mem_pathArcs_iff_isChain.mp hadj
   have hu' : p.head hne = u := by
     rw [List.head?_eq_some_head hne] at hu
     exact Option.some.inj hu

@@ -19,6 +19,7 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Sigma
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Data.Fintype.Basic
+import Mathlib.Data.List.Chain
 
 /-!
 # Integral Network Flows and the Max-Flow / Min-Cut Theorem
@@ -67,6 +68,9 @@ Chapter I, Sections 4–8; [CLRS2009], Sections 26.1–26.2, Theorem 26.6).
   `isMaxFlow_iff_exists_cut_value_eq`: Ford–Fulkerson optimality characterizations.
 * `Cslib.Algorithms.Lean.MaxFlow.Network.exists_maxFlow_eq_minCut`: existence of an integral
   maximum flow and minimum `s`-`t` cut of equal value when `N.s ≠ N.t`.
+* `Cslib.Algorithms.Lean.MaxFlow.forall_mem_pathArcs_iff_isChain`,
+  `exists_nodup_list_of_reflTransGen`, `reflTransGen_of_pathArcs`: the bridge between `pathArcs`,
+  `List.IsChain` and `Relation.ReflTransGen`.
 
 ## References
 
@@ -223,6 +227,80 @@ theorem not_swap_mem_pathArcs {p : List V} (hp : p.Nodup) {u v : V}
         · exact hx (snd_mem_of_mem_pathArcs he')
         · exact ih hnodup he' hswap'
 
+/-- The consecutive pairs of `p` are all `r`-steps iff `p` is an `r`-chain (`List.IsChain`). -/
+theorem forall_mem_pathArcs_iff_isChain {r : V → V → Prop} :
+    ∀ {p : List V}, (∀ e ∈ pathArcs p, r e.1 e.2) ↔ p.IsChain r
+  | [] => by simp [pathArcs_nil]
+  | [x] => by simp [pathArcs_singleton]
+  | x :: y :: rest => by
+    rw [pathArcs_cons_cons, List.forall_mem_cons, List.isChain_cons_cons,
+      forall_mem_pathArcs_iff_isChain]
+
+/-- A reflexive–transitive chain of `r`-steps from `u` to `v` is realized by a vertex list from `u`
+to `v` whose consecutive pairs are `r`-steps (`List.exists_isChain_ne_nil_of_relationReflTransGen`
+in `pathArcs` form). -/
+theorem exists_list_of_reflTransGen {r : V → V → Prop} {u v : V}
+    (h : Relation.ReflTransGen r u v) :
+    ∃ p : List V, p.head? = some u ∧ p.getLast? = some v ∧ ∀ e ∈ pathArcs p, r e.1 e.2 := by
+  obtain ⟨p, hne, hc, hu, hv⟩ := List.exists_isChain_ne_nil_of_relationReflTransGen h
+  exact ⟨p, by rw [List.head?_eq_some_head hne, hu], by rw [List.getLast?_eq_some_getLast hne, hv],
+    forall_mem_pathArcs_iff_isChain.mpr hc⟩
+
+/-- A vertex list from `u` to `v` whose consecutive pairs are `r`-steps gives a
+reflexive–transitive chain of `r`-steps (`List.relationReflTransGen_of_exists_isChain` in
+`pathArcs` form). -/
+theorem reflTransGen_of_pathArcs {r : V → V → Prop} {p : List V} {u v : V}
+    (hu : p.head? = some u) (hv : p.getLast? = some v) (hp : ∀ e ∈ pathArcs p, r e.1 e.2) :
+    Relation.ReflTransGen r u v := by
+  have hne : p ≠ [] := by
+    rintro rfl
+    simp at hu
+  rw [List.head?_eq_some_head hne, Option.some.injEq] at hu
+  rw [List.getLast?_eq_some_getLast hne, Option.some.injEq] at hv
+  subst hu hv
+  exact List.relationReflTransGen_of_exists_isChain p (forall_mem_pathArcs_iff_isChain.mp hp) hne
+
+/-- A vertex list starting inside a predicate `S` and ending outside it has a consecutive arc
+leaving `S`. -/
+theorem exists_mem_pathArcs_boundary (S : V → Prop) :
+    ∀ {p : List V} {s t : V}, p.head? = some s → p.getLast? = some t → S s → ¬ S t →
+      ∃ e ∈ pathArcs p, S e.1 ∧ ¬ S e.2
+  | [], _, _, hs, _, _, _ => by simp at hs
+  | [x], s, t, hs, ht, hSs, hSt => by
+    simp only [List.head?_cons, Option.some.injEq] at hs
+    simp only [List.getLast?_singleton, Option.some.injEq] at ht
+    subst hs ht
+    exact absurd hSs hSt
+  | x :: y :: rest, s, t, hs, ht, hSs, hSt => by
+    simp only [List.head?_cons, Option.some.injEq] at hs
+    subst hs
+    by_cases hy : S y
+    · obtain ⟨e, he, hSe⟩ :=
+        exists_mem_pathArcs_boundary S (p := y :: rest) rfl (by simpa using ht) hy hSt
+      exact ⟨e, by simp [he], hSe⟩
+    · exact ⟨(x, y), by simp, hSs, hy⟩
+
+/-- Every vertex of a vertex list other than its head is entered by a consecutive arc. -/
+theorem exists_mem_pathArcs_snd_eq :
+    ∀ {p : List V} {v : V}, v ∈ p → p.head? ≠ some v → ∃ u, (u, v) ∈ pathArcs p
+  | [], _, hv, _ => by simp at hv
+  | [x], v, hv, hh => by
+    rw [List.mem_singleton] at hv
+    subst hv
+    exact (hh rfl).elim
+  | x :: y :: rest, v, hv, hh => by
+    by_cases hyv : y = v
+    · subst hyv
+      exact ⟨x, by simp⟩
+    · have hv' : v ∈ y :: rest := by
+        rcases List.mem_cons.mp hv with h | h
+        · subst h
+          exact (hh rfl).elim
+        · exact h
+      obtain ⟨u, hu⟩ := exists_mem_pathArcs_snd_eq (p := y :: rest) hv'
+        (by simpa using hyv)
+      exact ⟨u, by simp [hu]⟩
+
 private theorem pathArcs_suffix {l₁ l₂ : List V} (h : l₁ <:+ l₂) :
     pathArcs l₁ <:+ pathArcs l₂ := by
   obtain ⟨pre, rfl⟩ := h
@@ -334,6 +412,17 @@ theorem length_loopErase_le [DecidableEq V] (p : List V) : (loopErase p).length 
       exact le_trans hsuf.sublist.length_le (Nat.le_succ_of_le ih)
     · simp only [List.length_cons]
       omega
+
+/-- A reflexive–transitive chain of `r`-steps from `u` to `v` is realized by a duplicate-free
+vertex list from `u` to `v` whose consecutive pairs are `r`-steps (loop erasure). -/
+theorem exists_nodup_list_of_reflTransGen {r : V → V → Prop} {u v : V}
+    (h : Relation.ReflTransGen r u v) :
+    ∃ p : List V, p.Nodup ∧ p.head? = some u ∧ p.getLast? = some v ∧
+      ∀ e ∈ pathArcs p, r e.1 e.2 := by
+  classical
+  obtain ⟨p, hs, ht, harcs⟩ := exists_list_of_reflTransGen h
+  exact ⟨loopErase p, nodup_loopErase p, by rw [head?_loopErase, hs],
+    by rw [getLast?_loopErase, ht], fun e he => harcs e (mem_pathArcs_loopErase he)⟩
 
 private theorem sum_ite_mem_fst [Fintype V] [DecidableEq V] {q : List (V × V)} (hq : q.Nodup)
     (u : V) :
@@ -509,6 +598,17 @@ theorem netOut_eq_zero (f : N.Flow) {v : V} (hvs : v ≠ N.s) (hvt : v ≠ N.t) 
 theorem netOut_eq_sum_sub (f : N.Flow) (u : V) :
     f.netOut u = ∑ v, ((f u v : ℤ) - (f v u : ℤ)) := by
   rw [netOut, Finset.sum_sub_distrib]
+
+/-- If source and sink coincide, every flow has value `0`: conservation holds at every other
+vertex and net outflows sum to `0`. -/
+theorem value_eq_zero_of_s_eq_t (f : N.Flow) (hst : N.s = N.t) : f.value = 0 := by
+  have htot : ∑ v, f.netOut v = 0 := by
+    simp only [netOut, Finset.sum_sub_distrib]
+    rw [Finset.sum_comm]
+    exact sub_self _
+  rw [Finset.sum_eq_single N.s (fun v _ hvs => f.netOut_eq_zero hvs (hst ▸ hvs))
+    (fun h => absurd (Finset.mem_univ _) h)] at htot
+  exact htot
 
 /-- A feasible flow `f` is a maximum flow if every feasible flow on `N` has value at most
 `f.value`. -/
@@ -803,58 +903,14 @@ theorem lt_value_augmentByBottleneck [DecidableEq V] (f : N.Flow) (hst : N.s ≠
 @[expose] def ResReachable (f : N.Flow) (u v : V) : Prop :=
   Relation.ReflTransGen (fun x y => 0 < f.resCap x y) u v
 
-private theorem exists_walk_of_resReachable (f : N.Flow) {u v : V} (h : f.ResReachable u v) :
-    ∃ p : List V, p.head? = some u ∧ p.getLast? = some v ∧
-      ∀ e ∈ pathArcs p, 0 < f.resCap e.1 e.2 := by
-  induction h with
-  | refl => exact ⟨[u], rfl, rfl, by simp⟩
-  | @tail b c _ hstep ih =>
-    obtain ⟨p, hhead, hlast, harcs⟩ := ih
-    have hp_ne : p ≠ [] := by
-      intro hnil
-      rw [hnil] at hhead
-      simp at hhead
-    refine ⟨p ++ [c], ?_, ?_, ?_⟩
-    · rw [List.head?_append_of_ne_nil p hp_ne]
-      exact hhead
-    · simp
-    · intro e he
-      rw [pathArcs_append_singleton hp_ne hlast, List.mem_append, List.mem_singleton] at he
-      rcases he with he' | rfl
-      · exact harcs e he'
-      · exact hstep
-
 theorem exists_augmentingPath_iff_resReachable (f : N.Flow) :
     (∃ p, f.IsAugmentingPath p) ↔ f.ResReachable N.s N.t := by
-  classical
   constructor
   · rintro ⟨p, _, hs, ht, harcs⟩
-    have hwalk : ∀ q : List V, ∀ u v : V,
-        q.head? = some u → q.getLast? = some v →
-        (∀ e ∈ pathArcs q, 0 < f.resCap e.1 e.2) → f.ResReachable u v := by
-      intro q
-      induction q with
-      | nil => intro u v hu; simp at hu
-      | cons x rest ih =>
-        intro u v hu hv hq
-        simp only [List.head?_cons, Option.some.injEq] at hu
-        subst hu
-        rcases rest with _ | ⟨y, rest'⟩
-        · simp only [List.getLast?_singleton, Option.some.injEq] at hv
-          subst hv
-          exact .refl
-        · have hstep : 0 < f.resCap x y := hq (x, y) List.mem_cons_self
-          have htail : f.ResReachable y v :=
-            ih y v rfl (by simpa using hv) (fun e he => hq e (List.mem_cons_of_mem _ he))
-          exact Relation.ReflTransGen.head hstep htail
-    exact hwalk p N.s N.t hs ht harcs
+    exact reflTransGen_of_pathArcs hs ht harcs
   · intro hreach
-    obtain ⟨p, hs, ht, harcs⟩ := f.exists_walk_of_resReachable hreach
-    refine ⟨loopErase p, nodup_loopErase p, ?_, ?_, ?_⟩
-    · rw [head?_loopErase, hs]
-    · rw [getLast?_loopErase, ht]
-    · intro e he
-      exact harcs e (mem_pathArcs_loopErase he)
+    obtain ⟨p, hnd, hs, ht, harcs⟩ := exists_nodup_list_of_reflTransGen hreach
+    exact ⟨p, hnd, hs, ht, harcs⟩
 
 /-- Residual-reachability cut associated with a flow `f`: all vertices reachable from `N.s` along
 positive-residual-capacity arcs. -/

@@ -273,7 +273,7 @@ The [tests](../../ComplexityTests/Menger.lean) check two examples. In the 3-cube
 
 Limitations:
 
-- Only finite graphs with two terminals are covered.
+- Only finite graphs with two terminals are covered. Directed graphs are Mathlib `Digraph`s, which have no parallel arcs, so the arc form covers simple digraphs and not the directed multigraphs allowed by Schrijver.
 - The `A`–`B` set version ([Schrijver 2017][schrijver17], Theorem 4.1; [Diestel 2025][diestel25], Theorem 3.3.1) is not formalized, and neither is the global `k`-connectivity form ([Diestel 2025][diestel25], Theorem 3.3.6).
 - Infinite graphs and the Erdős–Menger conjecture (Aharoni–Berger) are not formalized.
 - No algorithm or running time is given for computing local connectivity.
