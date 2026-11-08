@@ -9,6 +9,7 @@ module
 
 public import Complexity.Foundations.Data.BitString.CyclicDifference
 public import Complexity.Foundations.Data.BitString.Flip
+import Complexity.Foundations.GroupTheory.Perm.Fin
 import Mathlib.Tactic.SplitIfs
 
 /-!
@@ -28,12 +29,6 @@ an adjacent identification is the last-to-first edge, rather than an implicit pe
 public section
 
 namespace Cslib.BitString
-
-/-- The value of the cyclic successor, including the last-to-first edge. -/
-theorem val_finRotate {n : ℕ} (i : Fin (n + 1)) :
-    (finRotate (n + 1) i).val = if i.val < n then i.val + 1 else 0 := by
-  rw [coe_finRotate]
-  split_ifs with h h' h' <;> simp_all only [Fin.ext_iff, Fin.val_last] <;> omega
 
 /-- Identify old ports `i` and `i+1`, keeping `i`; at the last edge identify the last
 port with port 0 and keep port 0. All other free ports keep their order. -/
@@ -250,8 +245,9 @@ theorem capPort_next_capDifferencePort {n : ℕ} (j : Fin (n + 2)) :
   rw [he, capPort_of_four_le _ (by change 4 ≤ j.val + 3; omega)]
   apply congrArg Sum.inl
   apply Fin.ext
-  rw [val_finRotate]; simp only [hlt, ite_true]
-  omega
+  rw [val_finRotate]
+  dsimp only
+  split_ifs <;> omega
 
 /-- The cap retains precisely the differences in order `0,3,4,…`. -/
 theorem cyclicDifference_capPort {n : ℕ} (y : Fin (n + 2) → Bool) (z : Fin 1 → Bool) :
