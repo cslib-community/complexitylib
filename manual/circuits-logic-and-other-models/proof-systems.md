@@ -33,9 +33,20 @@ Moser's resampling algorithm is a step function `Moser.step` reading an explicit
 Fortnow's exposition. On the fair-coin tape `Cslib.BitString.coinFlips`,
 `Moser.ae_exists_eval_final` says the run almost surely stops with a satisfying assignment, and
 `Moser.lintegral_resamplings_le` bounds the expected number of resamplings by `m + 2`, the
-constant of this encoding. These count resamplings, not machine time. The
-[checked examples](../../ComplexityTests/Moser.lean) include a concrete run, its log and the
-recovered tape; check them with `scripts/build.sh ComplexityTests.Moser`.
+constant of this encoding. These count resamplings, not machine time. The existential Local Lemma
+for the same formulas is `CNF.IsExactDistinct.satisfiable_of_exp_mul_le` in
+`Complexity.Logics.Propositional.CNF.LocalLemma`: `Moser.degree φ i ≤ d` for every clause and
+`Real.exp 1 * (d + 1) ≤ 2 ^ k` give satisfiability, with no algorithm. Its constant is better, but
+it does not say how to find the assignment. Fortnow's Kolmogorov-complexity form of the
+compression argument is in `Complexity.Logics.Propositional.CNF.Moser.Kolmogorov`. There the
+complexity is `ecomplexity` for the explicit decoder `Moser.descriptionMethod φ k L`, not for a
+universal machine. Under `3 ≤ k`, `CNF.IsExactDistinct k φ` and `degree φ i < 2 ^ (k - 3)`,
+`Moser.not_exhausts_of_length_sub_le_ecomplexity` shows that a tape word `y` of length `n + t k`
+whose complexity for `Moser.descriptionMethod φ k (k - 3)` is at least `n + t k - c` does not use
+up a budget of `t > m + c` resamplings. The
+[checked examples](../../ComplexityTests/Moser.lean) include a concrete run, its log, the
+recovered tape and its description, and a formula where only the existential bound applies;
+check them with `scripts/build.sh ComplexityTests.Moser`.
 
 Support-based CNF model counting counts assignments to variables that occur. Declared-universe counting instead fixes a larger variable set and can include free choices for unused variables. The library supplies relabeling and exact gadget-counting bridges, so a reduction claiming preservation of counts must specify which convention it preserves. This distinction is particularly relevant to dense relabeling and the [native fixed-width counting endpoint](../machines-and-classes/native-counting.md).
 
@@ -147,6 +158,8 @@ A tree-like derivation yields a decision tree that finds a clause falsified by t
 
 Interpolation modules extract circuits separating the two sides of a refuted conjunction. Monotone extraction supports clique/coloring lower-bound applications, and a separate polynomial-time file addresses encoded extraction. The distinction between semantic existence of an interpolant and a native efficient extraction algorithm follows the same design pattern as circuits and finite-model logic. See [interpolation](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/Interpolation.lean), [monotone extraction](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/Interpolation/MonotoneExtraction.lean) and [native extraction](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/Interpolation/PolyTime.lean).
 
+[Semantic derivations](../../Complexity/Logics/Propositional/SemanticDerivation.lean) formalize Krajíček's communication route to interpolation, which is not tied to one proof system. Import `Complexity.Logics.Propositional.SemanticDerivation`. A line is a set of assignments, and `IsSemanticRefutation (initSets 𝒜 ℬ) D` says that each of the `k` lines of `D` is either a cylinder over an initial set, everything, or contains the intersection of two earlier lines, and that some line is `∅`. `IsSemanticRefutation.exists_dagProtocol` turns such a refutation into a dag-like Karchmer–Wigderson protocol with `k` inner nodes and communication `2 t`. This requires two per-line costs to be at most `t`: deciding whether the mixed assignment `(v, q, r)` lies in each line, and finding a coordinate at each `𝒜`-cylinder. For shared variables of type `Fin n`, `exists_circuit` and `exists_monotone_circuit` then give a separating circuit with at most `(k · 2 ^ (2 t) + 1) · 2 ^ (2 t + 1)` gates. The `_of_commComplexity_le` forms state this for lines with Krajíček's `CC` and `MCC_U` at most `t`; the monotone form assumes the models of `𝒜` are upward closed. This sharpens the bounds of Theorem 5.1, `(k + 2 n) · 2 ^ O(t)` and, in the monotone case, `(k + n) · 2 ^ O(t)`: the `2 n` answer nodes of the source's protocol are leaves here and cost nothing. `lt_of_forall_lt_size` is the transfer to line lower bounds. Only the monotone case for the `𝒜` side is stated. Resolution and cutting-planes refutations are not yet translated into semantic refutations, so no proof-system client uses this theorem yet. The [checked examples](../../ComplexityTests/ProofComplexity/SemanticDerivation.lean) apply every form to a three-line refutation of `x₀ = 1` against `x₀ = 0`; check them with `scripts/build.sh ComplexityTests.ProofComplexity.SemanticDerivation`.
+
 ## Cutting planes
 
 Import `Complexity.Logics.Propositional.CuttingPlanes.Separation` for everything below, or the
@@ -169,6 +182,6 @@ Two Boolean-analysis lemmas from the subset-sum degree lower bound of Impagliazz
 
 ## Known Limitations
 
-This section inventories resolution, cutting planes and their syntax clients. It does not reclassify PCPs or interactive proofs as resolution proof systems; their verifier and protocol models have separate owners. The endpoint statements and model conventions are source-inspected, while every proof body and every original lower-bound paper has not been independently checked in this worker pass.
+This section inventories resolution, cutting planes, semantic derivations and their syntax clients. It does not reclassify PCPs or interactive proofs as resolution proof systems; their verifier and protocol models have separate owners. The endpoint statements and model conventions are source-inspected, while every proof body and every original lower-bound paper has not been independently checked in this worker pass.
 
 [complexitylib]: ../sources.md#complexitylib

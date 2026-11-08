@@ -19,6 +19,9 @@ disjunction, implication, composition with computable functions, comparisons of 
 natural-number functions, and bounded quantification. The bounded quantifiers are the computable
 analogues of Mathlib's `PrimrecPred.forall_lt` and `PrimrecPred.exists_lt`: a bound computed from
 the parameter, over a predicate decidable in the parameter and the bound variable together.
+Unbounded existential quantification of a computable predicate gives an r.e. predicate
+(`ComputablePred.rePred_exists`), and r.e. predicates are closed under substitution of computable
+functions (`REPred.comp`).
 
 ## Main results
 
@@ -26,6 +29,8 @@ the parameter, over a predicate decidable in the parameter and the bound variabl
 * `ComputablePred.comp`: substitution of a computable function.
 * `ComputablePred.nat_le`, `ComputablePred.nat_lt`: comparisons of computable functions.
 * `ComputablePred.forall_lt`, `ComputablePred.exists_lt`: bounded quantification.
+* `ComputablePred.rePred_exists`: unbounded existential quantification gives an r.e. predicate.
+* `REPred.comp`: substitution of a computable function into an r.e. predicate.
 -/
 
 public section
@@ -110,4 +115,33 @@ theorem exists_lt {p : α → ℕ → Prop} (hp : ComputablePred (Function.uncur
   ((forall_lt (p := fun a i => ¬p a i) hp.not hf).not).of_eq fun _ => by
     simp only [not_forall, not_not, exists_prop]
 
+/-- Unbounded existential quantification of a computable predicate is r.e.: search for a witness
+by `Nat.rfind` over the codes of `β`. -/
+theorem rePred_exists {p : α → β → Prop} (hp : ComputablePred (Function.uncurry p)) :
+    REPred fun a => ∃ b, p a b := by
+  obtain ⟨hdec, hp⟩ := hp
+  let _ : ∀ a b, Decidable (p a b) := fun a b => hdec (a, b)
+  let f : α → ℕ → Bool := fun a n =>
+    ((Encodable.decode (α := β) n).map fun b => decide (p a b)).getD false
+  have hp' : Computable fun q : (α × ℕ) × β => decide (p q.1.1 q.2) :=
+    hp.comp (Computable.pair (Computable.fst.comp Computable.fst) Computable.snd)
+  have hf : Computable₂ f :=
+    Computable.option_getD (Computable.option_map (Computable.decode.comp Computable.snd)
+      hp'.to₂) (Computable.const false)
+  let q : α → ℕ →. Bool := fun a n => Part.some (f a n)
+  have hq : Partrec fun a => Nat.rfind (q a) := Partrec.rfind hf.partrec₂
+  refine hq.dom_re.of_eq fun a => Nat.rfind_dom.trans ⟨fun ⟨n, hn, _⟩ => ?_,
+    fun ⟨b, hb⟩ => ⟨Encodable.encode b, ?_, fun _ => trivial⟩⟩
+  · have hn' : f a n = true := (Part.mem_some_iff.1 hn).symm
+    simp only [f] at hn'
+    cases hb : Encodable.decode (α := β) n with
+    | none => simp [hb] at hn'
+    | some b => exact ⟨b, by simpa [hb] using hn'⟩
+  · exact Part.mem_some_iff.2 (by simp [f, Encodable.encodek, hb])
+
 end ComputablePred
+
+/-- Substituting a computable function into an r.e. predicate gives an r.e. predicate. -/
+theorem REPred.comp {α β : Type*} [Primcodable α] [Primcodable β] {p : β → Prop}
+    (hp : REPred p) {f : α → β} (hf : Computable f) : REPred fun a => p (f a) :=
+  Partrec.comp hp hf
