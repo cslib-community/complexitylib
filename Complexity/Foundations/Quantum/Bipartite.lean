@@ -166,6 +166,10 @@ noncomputable def postMeasure [Fintype κ] (i : ι) (Ψ : EuclideanSpace ℂ (ι
     EuclideanSpace ℂ κ :=
   ((‖condState i Ψ‖⁻¹ : ℝ) : ℂ) • condState i Ψ
 
+theorem postMeasure_def [Fintype κ] (i : ι) (Ψ : EuclideanSpace ℂ (ι × κ)) :
+    postMeasure i Ψ = ((‖condState i Ψ‖⁻¹ : ℝ) : ℂ) • condState i Ψ := by
+  rfl
+
 /-- The post-measurement state of an outcome of positive probability is a unit vector. -/
 theorem norm_postMeasure [Fintype κ] (i : ι) (Ψ : EuclideanSpace ℂ (ι × κ))
     (h : condState i Ψ ≠ 0) : ‖postMeasure i Ψ‖ = 1 := by

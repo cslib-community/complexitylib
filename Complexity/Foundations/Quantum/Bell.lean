@@ -126,6 +126,9 @@ theorem star_maxEntangled_dotProduct_kronecker_mulVec_eq_trace (A B : Matrix ι 
 two qubits. -/
 noncomputable def bell : EuclideanSpace ℂ (Bool × Bool) := maxEntangled Bool
 
+theorem bell_eq_maxEntangled : bell = maxEntangled Bool := by
+  rfl
+
 theorem bell_apply (b c : Bool) :
     bell.ofLp (b, c) = if b = c then (((Real.sqrt 2)⁻¹ : ℝ) : ℂ) else 0 := by
   rw [bell, maxEntangled_apply]
