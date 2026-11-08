@@ -7,8 +7,10 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.QueryComplexity.Randomized.Counting
-public import Complexity.Foundations.Data.BitString.Basic
+public import Complexity.Computability.QueryComplexity.Randomized
+public import Complexity.Foundations.Data.Code.Hadamard
+import Complexity.Computability.DecisionTree.Leaves
+import Complexity.Computability.QueryComplexity.Randomized.Counting
 
 /-!
 # The classical query complexity of Bernstein–Vazirani
@@ -18,6 +20,10 @@ public import Complexity.Foundations.Data.BitString.Basic
 with the bit strings `a ∈ {0,1}^n`, is the truth table `x_a = s ⬝ᵥ a` of a linear function for an
 unknown `s ∈ {0,1}^n`; the goal is to find `s`. The positions `Fin N` are identified with the bit
 strings `K → Bool` by an equivalence `e`, and `Cslib.QueryComplexity.linearTable e s` is the input.
+It is the Hadamard codeword of `s` read through `e`
+(`Cslib.QueryComplexity.linearTable_eq_hadamardCode_comp`), so distinct strings have distinct
+inputs (`Cslib.QueryComplexity.linearTable_injective`, from
+`Cslib.BitString.hadamardCode_injective`).
 
 **Upper bound.** Querying the `n` unit vectors reads off `s` coordinate by coordinate:
 `Cslib.QueryComplexity.linearDecode e` recovers `s` from `linearTable e s`
@@ -73,32 +79,31 @@ the bit strings by `e`. -/
 @[expose] def linearTable (e : Fin N ≃ (K → Bool)) (s : K → Bool) : Fin N → Bool :=
   fun i => s ⬝ᵥ e i
 
+/-- The truth table of `a ↦ s ⬝ᵥ a` is the Hadamard codeword of `s`, read through `e`. -/
+theorem linearTable_eq_hadamardCode_comp (e : Fin N ≃ (K → Bool)) (s : K → Bool) :
+    linearTable e s = hadamardCode s ∘ e :=
+  rfl
+
+/-- The truth table determines the hidden string. -/
+theorem linearTable_injective (e : Fin N ≃ (K → Bool)) : Function.Injective (linearTable e) :=
+  fun s s' h => hadamardCode_injective (e.surjective.injective_comp_right
+    (by simpa only [linearTable_eq_hadamardCode_comp] using h))
+
 section Decode
 
 variable [DecidableEq K]
 
 /-- Read off the hidden string at the unit vectors: coordinate `k` is the queried bit at the
 position of the unit vector `e_k`. -/
-@[expose] def linearDecode (e : Fin N ≃ (K → Bool)) (X : Fin N → Bool) : K → Bool :=
+def linearDecode (e : Fin N ≃ (K → Bool)) (X : Fin N → Bool) : K → Bool :=
   fun k => X (e.symm (Pi.single k true))
 
 /-- Decoding the truth table of `a ↦ s ⬝ᵥ a` recovers `s`. -/
 @[simp] theorem linearDecode_linearTable (e : Fin N ≃ (K → Bool)) (s : K → Bool) :
     linearDecode e (linearTable e s) = s := by
   funext k
-  simp only [linearDecode, linearTable, Equiv.apply_symm_apply, dotProduct_single]
-  cases s k <;> rfl
-
-end Decode
-
-/-- The truth table determines the hidden string. -/
-theorem linearTable_injective (e : Fin N ≃ (K → Bool)) : Function.Injective (linearTable e) := by
-  classical
-  exact Function.LeftInverse.injective (linearDecode_linearTable e)
-
-section Decode
-
-variable [DecidableEq K]
+  simp only [linearDecode, linearTable_eq_hadamardCode_comp, Function.comp_apply,
+    Equiv.apply_symm_apply, hadamardCode_single]
 
 /-- The decision tree that queries the `n` unit vectors and outputs the decoded string. -/
 noncomputable def linearDecodeTree (e : Fin N ≃ (K → Bool)) : DecisionTree (Fin N) (K → Bool) :=
@@ -135,8 +140,7 @@ private theorem injOn_of_linearTable {e : Fin N ≃ (K → Bool)} {F : (Fin N �
   rw [hF, hF] at hXY
   rw [hXY]
 
-end Decode
-
+omit [DecidableEq K] in
 /-- **The deterministic lower bound for Bernstein–Vazirani**: a decision tree that recovers `s`
 from the truth table of `a ↦ s ⬝ᵥ a` for every `s` has depth at least `n`. -/
 theorem card_le_depth_of_linearTable (e : Fin N ≃ (K → Bool)) (t : DecisionTree (Fin N) (K → Bool))
@@ -151,6 +155,7 @@ theorem card_le_depth_of_linearTable (e : Fin N ≃ (K → Bool)) (t : DecisionT
   rw [card_image_linearTable] at h
   exact (Nat.pow_le_pow_iff_right (by norm_num)).mp h
 
+omit [DecidableEq K] in
 /-- **The randomized lower bound for Bernstein–Vazirani**: a randomized decision tree that
 recovers `s` from the truth table of `a ↦ s ⬝ᵥ a` with error at most `ε` for every `s` (as the
 restriction of a total function `F`) has depth `q` with `2^n (1 - ε) ≤ 2^q`. -/
@@ -166,6 +171,7 @@ theorem linearTable_randomized_lower_bound (e : Fin N ≃ (K → Bool))
   rw [card_image_linearTable] at h
   exact_mod_cast h
 
+omit [DecidableEq K] in
 /-- **Bounded-error randomized decision trees need `n` queries for Bernstein–Vazirani**: for error
 `ε < 1/2`, a randomized decision tree that recovers `s` from the truth table of `a ↦ s ⬝ᵥ a` has
 depth at least `n`. -/
@@ -181,10 +187,6 @@ theorem card_le_depth_of_linearTable_randomized (e : Fin N ≃ (K → Bool))
     exact pow_le_pow_right₀ (by norm_num) hlt
   have hpos : (0 : ℝ) < 2 ^ μ.depth := by positivity
   nlinarith
-
-section Decode
-
-variable [DecidableEq K]
 
 /-- **The deterministic query complexity of Bernstein–Vazirani is `n`.** -/
 theorem complexity_linearDecode (e : Fin N ≃ (K → Bool)) :
