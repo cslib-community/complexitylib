@@ -227,9 +227,10 @@ end IsAugmentingPath
 
 /-! ### The symmetric difference of two matchings -/
 
-/-- The symmetric difference of two matchings alternates with respect to the first one. This
-generalizes Mathlib's `Subgraph.IsPerfectMatching.isAlternating_symmDiff_left` from perfect
-matchings to arbitrary matchings. -/
+/-- The symmetric difference of two matchings alternates with respect to the first one. For two
+matchings of the same graph, this generalizes Mathlib's
+`Subgraph.IsPerfectMatching.isAlternating_symmDiff_left` from perfect matchings to arbitrary
+matchings (Mathlib's lemma allows the second matching to live in a different graph). -/
 theorem IsMatching.isAlternating_symmDiff (hM : M.IsMatching) (hM' : M'.IsMatching) :
     (M.spanningCoe ∆ M'.spanningCoe).IsAlternating M.spanningCoe := by
   intro v w w' hww' hvw hvw'

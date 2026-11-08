@@ -42,7 +42,7 @@ Charles H. Bennett. *Time/Space Trade-Offs for Reversible Computation*. SIAM Jou
 <a id="berge57"></a>
 ## berge57
 
-Claude Berge. *Two Theorems in Graph Theory*. Proceedings of the National Academy of Sciences of the United States of America 43(9), 842–844, 1957. https://doi.org/10.1073/pnas.43.9.842 . Bibliographic metadata only; the primary text was not inspected. The manual attributes to this paper the augmenting-path characterization of maximum matchings (Theorem 1) as reported by [schrijver17](#schrijver17), Section 3.2.
+Claude Berge. *Two Theorems in Graph Theory*. Proceedings of the National Academy of Sciences of the United States of America 43(9), 842–844, 1957. https://doi.org/10.1073/pnas.43.9.842 . Bibliographic metadata only; the primary text was not inspected. The manual attributes to this paper the augmenting-path characterization of maximum matchings; the "Theorem 1" locator comes from secondary descriptions and is unverified. Schrijver's lecture notes ([schrijver17](#schrijver17), Theorem 3.2) state the result without attribution.
 
 <a id="berge58"></a>
 ## berge58

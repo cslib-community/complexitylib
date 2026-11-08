@@ -197,6 +197,7 @@ The [checked instances](../../ComplexityTests/GeneralMatching.lean) cover three 
 Still open ([#3337](https://github.com/cslib-community/complexitylib/issues/3337)):
 - Edmonds' blossom-contraction lemma ([Schrijver's lecture notes][schrijver17], Theorem 5.2);
 - an executable blossom algorithm with its `O(|V|²|E|)` bound;
+- weighted general matching;
 - the Gallai–Edmonds decomposition.
 
 ## Matroid intersection
