@@ -129,14 +129,14 @@ theorem closed₀ {q a q' s} (h : (q', s) ∈ M₀ q a) (hq : q ∈ (S₀ : Set 
 noncomputable def M₀' : TM0.Machine (TM2to1.Γ' K' fun _ => Γ') (S₀ : Set (TM1to0.Λ' M₁)) :=
   OfTM0.restrict M₀ closed₀
 
-theorem tm2_init_eq (v : List ℕ) :
+private theorem tm2_init_eq (v : List ℕ) :
     (TM2.init K'.main (trList v) : TM2.Cfg (fun _ : K' => Γ') UΛ (Option Γ')) = init univ v := by
   simp only [TM2.init, init]
   congr 1
   funext k
   cases k <;> rfl
 
-theorem dom_M₂ (n : ℕ) :
+private theorem dom_M₂ (n : ℕ) :
     (TM2.eval M₂ K'.main (trList [n])).Dom ↔ (univ.eval [n]).Dom := by
   rw [TM2.eval, Part.map_Dom, tm2_init_eq]
   have := tr_eval univ [n]
@@ -151,7 +151,7 @@ theorem dom_M₀' (n : ℕ) :
 
 /-! ### Computability of the reduction -/
 
-theorem trNat_eq (n : ℕ) :
+private theorem trNat_eq (n : ℕ) :
     trNat n = if n = 0 then [] else (if n.bodd then Γ'.bit1 else Γ'.bit0) :: trNat n.div2 := by
   split_ifs with hn hb
   · rw [hn, trNat_zero]
@@ -190,7 +190,7 @@ noncomputable local instance primcodableS₀ : Primcodable (S₀ : Set (TM1to0.�
   letI := Classical.decEq (S₀ : Set (TM1to0.Λ' M₁))
   Primcodable.ofEquiv _ (Fintype.equivFin _)
 
-theorem primrec_trNat : Primrec trNat := by
+private theorem primrec_trNat : Primrec trNat := by
   have hdig : Primrec fun b : Bool => if b then Γ'.bit1 else Γ'.bit0 := Primrec.dom_finite _
   have hl : Primrec fun p : Unit × List (List Γ') => p.2 := Primrec.snd
   have hlen : Primrec fun p : Unit × List (List Γ') => p.2.length := Primrec.list_length.comp hl
@@ -217,7 +217,7 @@ theorem primrec_trNat : Primrec trNat := by
         Option.getD_some, trNat_eq n, ite_eq_right (Nat.pos_iff_ne_zero.mp hn)]
   exact (this.comp (Primrec.const ()) Primrec.id).of_eq fun _ => rfl
 
-theorem primrec_trInit :
+private theorem primrec_trInit :
     Primrec (TM2to1.trInit (Γ := fun _ : K' => Γ') K'.main) := by
   let G := TM2to1.Γ' K' fun _ : K' => Γ'
   let f : Γ' → G := fun a => (false, Function.update (fun _ => none) K'.main (some a))
@@ -233,7 +233,7 @@ theorem primrec_trInit :
 noncomputable def input (n : ℕ) : List (TM2to1.Γ' K' fun _ : K' => Γ') :=
   TM2to1.trInit K'.main (trList [n])
 
-theorem primrec_input : Primrec input := by
+private theorem primrec_input : Primrec input := by
   have : Primrec fun n : ℕ => trList [n] :=
     (Primrec.list_append.comp primrec_trNat (Primrec.const [Γ'.cons])).of_eq fun _ => rfl
   exact (primrec_trInit.comp this).of_eq fun _ => rfl
@@ -243,7 +243,7 @@ code as an MPCP instance, then code the instance in binary. -/
 noncomputable def mReduction (c : Nat.Partrec.Code) : MInstance Bool :=
   (OfTM0.mInstance M₀' (input (Encodable.encode c))).subst boolCode
 
-theorem eval_dom_iff_solvable (c : Nat.Partrec.Code) :
+theorem eval_dom_iff_mReduction_solvable (c : Nat.Partrec.Code) :
     (c.eval 0).Dom ↔ (mReduction c).Solvable := by
   rw [mReduction, MInstance.solvable_subst_iff flatMap_boolCode_injective,
     ← OfTM0.eval_dom_iff_solvable, input, dom_M₀', univ_spec, Denumerable.ofNat_encode]
@@ -259,7 +259,8 @@ end Universal
 /-- The halting problem reduces to MPCP over `Bool`. -/
 theorem halting_manyOneReducible_mSolvable :
     (fun c : Nat.Partrec.Code => (c.eval 0).Dom) ≤₀ (MInstance.Solvable : MInstance Bool → Prop) :=
-  ⟨Universal.mReduction, Universal.primrec_mReduction.to_comp, Universal.eval_dom_iff_solvable⟩
+  ⟨Universal.mReduction, Universal.primrec_mReduction.to_comp,
+    Universal.eval_dom_iff_mReduction_solvable⟩
 
 /-- **MPCP is undecidable** over the binary alphabet. -/
 theorem not_computablePred_mSolvable_bool :

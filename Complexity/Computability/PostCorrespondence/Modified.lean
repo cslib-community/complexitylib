@@ -27,6 +27,10 @@ domino with a start marker `▷`, which occurs in no other domino. A match then 
 domino, the part before its first occurrence matches on its own, and the part after it gives an
 MPCP match. The domino `ε / ε`, which would be a PCP match by itself, is dropped.
 
+Sipser's machine instances contain no domino with an empty bottom, so his proof is unaffected. The
+instances of `Complexity.Computability.PostCorrespondence.OfTM0` do: the rule `OfTM0.Rule.finish`
+erases the final word `⊢ halt ⊣`, so the marker is needed in this chain. Empty tops are harmless.
+
 ## Main definitions
 
 * `Cslib.PostCorrespondence.Marked`: the alphabet `α` with the markers `⋆`, `◇` and `▷`.

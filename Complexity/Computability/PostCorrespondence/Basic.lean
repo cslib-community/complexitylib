@@ -18,7 +18,9 @@ A *domino* is a pair of words over an alphabet `α`, its top and its bottom. An 
 **Post's correspondence problem** (PCP) is a finite list `P` of dominoes. It is *solvable* when some
 nonempty sequence of dominoes of `P`, repetitions allowed, has equal top and bottom concatenations
 [Post1946]; [Sipser2013, §5.2]. The **modified correspondence problem** (MPCP) of [Sipser2013, §5.2]
-additionally fixes the first domino of the match.
+additionally fixes the first domino of the match. Here an MPCP instance is a start domino and a
+list of dominoes that may follow it, so the start domino may recur only if it is also in the list;
+Sipser's MPCP, where the start domino belongs to the instance, is the case where it is.
 
 Instances are encoded through `Primcodable` instances, so the two decision problems are predicates
 for Mathlib's `ComputablePred` and many-one reducibility `≤₀`. Their undecidability is proved in
@@ -176,7 +178,8 @@ structure MInstance (α : Type*) where
   dominoes : List (Domino α)
 
 /-- An MPCP instance is solvable when the start domino followed by some sequence of its dominoes
-has equal top and bottom concatenations. -/
+has equal top and bottom concatenations. The start domino occurs again only if it is listed in
+`dominoes`. -/
 @[expose] def MInstance.Solvable (I : MInstance α) : Prop :=
   ∃ ds : List (Domino α), (∀ d ∈ ds, d ∈ I.dominoes) ∧
     I.start.top ++ tops ds = I.start.bottom ++ bottoms ds

@@ -116,13 +116,13 @@ end Letter
 open Letter
 
 /-- The word `⊢ L⁻¹ x R ⊣` of a tape `L⁻¹ a R` whose scanned cell is written as the letter `x`. -/
-def word (x : Letter Γ Λ) (L R : List Γ) : List (Letter Γ Λ) :=
+private def word (x : Letter Γ Λ) (L R : List Γ) : List (Letter Γ Λ) :=
   lb :: (L.reverse.map sym ++ x :: (R.map sym ++ [rb]))
 
 /-! ### Parsing configuration words -/
 
 /-- Whether a letter is the scanned cell or the halt marker. -/
-def IsActive : Letter Γ Λ → Prop
+private def IsActive : Letter Γ Λ → Prop
   | cell _ _ => True
   | halt => True
   | _ => False
@@ -223,7 +223,7 @@ private theorem peel_left_lb {L : List Γ} {p : List (Letter Γ Λ)}
     obtain ⟨-, h₂⟩ := List.append_inj' h rfl
     simp at h₂
 
-theorem rb_notMem_word {x : Letter Γ Λ} (hx : x ≠ rb) (L R : List Γ) :
+private theorem rb_notMem_word {x : Letter Γ Λ} (hx : x ≠ rb) (L R : List Γ) :
     rb ∉ lb :: L.reverse.map sym ++ x :: R.map sym := by
   simp [Ne.symm hx]
 
@@ -342,13 +342,13 @@ theorem eval_dom_iff (M : TM0.Machine Γ Λ) (l : List Γ) : (TM0.eval M l).Dom 
 
 /-- The words reachable from the initial word: configuration words of reachable configurations,
 and, once the machine has halted, words with the halt marker and the empty word. -/
-def Good (M : TM0.Machine Γ Λ) (l : List Γ) (w : List (Letter Γ Λ)) : Prop :=
+private def Good (M : TM0.Machine Γ Λ) (l : List Γ) (w : List (Letter Γ Λ)) : Prop :=
   (∃ q a L R, StateTransition.Reaches (TM0.step M) (TM0.init l) (cfgOf q a L R) ∧
       w = word (cell q a) L R) ∨
     (Halts M l ∧ (w = [] ∨ ∃ L R, w = word halt L R))
 
 /-- One rewriting step preserves `Good`. -/
-theorem good_of_rewrites {M : TM0.Machine Γ Λ} {l : List Γ} {u v : List (Letter Γ Λ)}
+private theorem good_of_rewrites {M : TM0.Machine Γ Λ} {l : List Γ} {u v : List (Letter Γ Λ)}
     (hu : Good M l u) (h : Rewrites (Rule M) u v) : Good M l v := by
   obtain ⟨p, d, s, hd, rfl, rfl⟩ := h
   rcases hu with ⟨q, a, L, R, hr, hw⟩ | ⟨hh, hw | ⟨L, R, hw⟩⟩
@@ -426,15 +426,15 @@ theorem good_of_rewrites {M : TM0.Machine Γ Λ} {l : List Γ} {u v : List (Lett
       obtain ⟨rfl, rfl⟩ := peel_right_rb hs
       exact Or.inr ⟨hh, Or.inl rfl⟩
 
-theorem good_of_reflTransGen {M : TM0.Machine Γ Λ} {l : List Γ} {w : List (Letter Γ Λ)}
+private theorem good_of_reflTransGen {M : TM0.Machine Γ Λ} {l : List Γ} {w : List (Letter Γ Λ)}
     (h : ReflTransGen (Rewrites (Rule M)) (word (cell default l.headI) [] l.tail) w) :
     Good M l w := by
   induction h with
   | refl => exact Or.inl ⟨default, l.headI, [], l.tail, ReflTransGen.refl, rfl⟩
   | tail _ hstep ih => exact good_of_rewrites ih hstep
 
-theorem good_ends {M : TM0.Machine Γ Λ} {l : List Γ} {w : List (Letter Γ Λ)} (h : Good M l w) :
-    w = [] ∨ ∃ w', w = w' ++ [rb] ∧ rb ∉ w' := by
+private theorem good_ends {M : TM0.Machine Γ Λ} {l : List Γ} {w : List (Letter Γ Λ)}
+    (h : Good M l w) : w = [] ∨ ∃ w', w = w' ++ [rb] ∧ rb ∉ w' := by
   rcases h with ⟨q, a, L, R, -, rfl⟩ | ⟨-, rfl | ⟨L, R, rfl⟩⟩
   · exact Or.inr ⟨lb :: L.reverse.map sym ++ cell q a :: R.map sym, by simp [word],
       rb_notMem_word (by simp) L R⟩
@@ -442,7 +442,7 @@ theorem good_ends {M : TM0.Machine Γ Λ} {l : List Γ} {w : List (Letter Γ Λ)
   · exact Or.inr ⟨lb :: L.reverse.map sym ++ halt :: R.map sym, by simp [word],
       rb_notMem_word (by simp) L R⟩
 
-theorem rb_mem_top {M : TM0.Machine Γ Λ} {d : Domino (Letter Γ Λ)} (hd : Rule M d)
+private theorem rb_mem_top {M : TM0.Machine Γ Λ} {d : Domino (Letter Γ Λ)} (hd : Rule M d)
     (h : rb ∈ d.top) : ∃ t, d.top = t ++ [rb] ∧ rb ∉ t := by
   cases hd with
   | rightEnd hM => exact ⟨[cell _ _], rfl, by simp⟩
@@ -451,7 +451,7 @@ theorem rb_mem_top {M : TM0.Machine Γ Λ} {d : Domino (Letter Γ Λ)} (hd : Rul
 
 /-! ### Completeness -/
 
-theorem halt_reflTransGen {M : TM0.Machine Γ Λ} :
+private theorem halt_reflTransGen {M : TM0.Machine Γ Λ} :
     ∀ L R : List Γ, ReflTransGen (Rewrites (Rule M)) (word halt L R) []
   | c :: L, R => by
     refine ReflTransGen.head ⟨lb :: L.reverse.map sym, ⟨[sym c, halt], [halt]⟩,
@@ -461,7 +461,7 @@ theorem halt_reflTransGen {M : TM0.Machine Γ Λ} :
       by simp [word], by simp [word]⟩ (halt_reflTransGen [] R)
   | [], [] => ReflTransGen.single ⟨[], ⟨[lb, halt, rb], []⟩, [], Rule.finish, rfl, rfl⟩
 
-theorem reflTransGen_of_reaches {M : TM0.Machine Γ Λ} {c c' : TM0.Cfg Γ Λ}
+private theorem reflTransGen_of_reaches {M : TM0.Machine Γ Λ} {c c' : TM0.Cfg Γ Λ}
     (h : StateTransition.Reaches (TM0.step M) c c') (hc' : TM0.step M c' = none) :
     ∀ q a L R, c = cfgOf q a L R →
       ReflTransGen (Rewrites (Rule M)) (word (cell q a) L R) [] := by
