@@ -2426,12 +2426,14 @@ Arrow's theorem). Remaining directions:
   derandomization, Ghaffari's `O(log Δ) + poly(log log n)` bound, and the
   Kuhn–Moscibroda–Wattenhofer lower bounds.
 - **Fault-tolerant agreement:** synchronous Byzantine agreement on the complete graph, the
-  `n ≤ 3t` impossibility and the single-fault protocol exist
+  `n ≤ 3t` impossibility and the oral messages protocol `OM(t)` for all `n > 3t` in `t + 1`
+  rounds exist, giving the exact characterization `n ≤ 1 ∨ n > 3t` for `R ≥ t + 1` rounds
   (`Complexity/Computability/Distributed/Byzantine/`,
-  [#3261](https://github.com/cslib-community/complexitylib/issues/3261)). Open: the connectivity
-  bound `κ ≥ 2t + 1` on general graphs (Fischer–Lynch–Merritt §3.2), the upper bound for all
-  `n > 3t` (`OM(t)` or exponential information gathering), the `t + 1` round lower bound
-  (Fischer–Lynch), authenticated (signed-message) agreement for any `n > t`, weak agreement,
+  [#3261](https://github.com/cslib-community/complexitylib/issues/3261),
+  [#3494](https://github.com/cslib-community/complexitylib/issues/3494)). Open: the connectivity
+  bound `κ ≥ 2t + 1` on general graphs (Fischer–Lynch–Merritt §3.2), the `t + 1` round lower bound
+  (Fischer–Lynch), authenticated (signed-message) agreement for any `n > t` (`SM(m)`),
+  polynomial-message protocols (message counts are not measured), weak agreement,
   the Byzantine firing squad (Fischer–Lynch–Merritt §5), approximate agreement and clock
   synchronization bounds, and randomized agreement.
 
