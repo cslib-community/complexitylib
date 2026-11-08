@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Cslib.Foundations.Data.Polynomial.Monotone
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # `Σₖ₊₁` as projections of `Πₖ`
@@ -82,8 +83,7 @@ theorem alternation_truncateBlocks {ps : List (Polynomial ℕ)} {n m : ℕ} (h :
     -- a short block is the cut of its padding
     have hpad (w : List Bool) (hw : w.length = p.eval n) :
         (w ++ List.replicate (p.eval m - p.eval n) false).length = p.eval m := by
-      simp only [List.length_append, List.length_replicate, hw]
-      omega
+      enc_len [hw]
     have htake (w : List Bool) (hw : w.length = p.eval n) :
         (w ++ List.replicate (p.eval m - p.eval n) false).take (p.eval n) = w := by
       rw [← hw, List.take_left]
@@ -140,8 +140,7 @@ theorem exists_mem_PiP_of_mem_SigmaP_succ {k : ℕ} {A : Set α} (hA : A ∈ Sig
   let B : Set (α × List Bool) := {y | Alternation false
     (ps.map fun r => r.eval (enc y.1).length) fun w => V (y.1, y.2 ++ w) = true}
   have hle (y : α × List Bool) : (enc y.1).length ≤ (encPair enc encBits y).length := by
-    simp only [length_encPair]
-    omega
+    enc_len
   refine ⟨p, B, ⟨ps, fun z => V (z.1.1, z.1.2 ++ truncateBlocks ps (enc z.1.1).length
       (encPair enc encBits z.1).length z.2), hlen', ?_, fun y => ?_⟩, hA⟩
   · have hfst := (ComputableInPolyTime.fst (encPair enc encBits) encBits)

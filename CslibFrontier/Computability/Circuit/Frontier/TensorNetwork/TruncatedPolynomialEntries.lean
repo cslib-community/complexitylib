@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.TruncatedEntry
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Direct truncated contraction with polynomial-time entries
@@ -45,8 +46,7 @@ theorem DescribedNetwork.length_entryInput_le (G : DescribedNetwork T)
     dsimp only
     omega
   have h3 := length_le_length_encList encNat v.1
-  simp only [length_encPair, encBits_apply] at h1 ⊢
-  omega
+  enc_len at h1 ⊢
 
 /-- Direct truncated contraction with a polynomial entry procedure has only the `2 ^ m`
 enumeration factor. The result includes its encoded output in the space bound. -/
@@ -71,8 +71,7 @@ theorem truncDirectCertificate_le_of_isPolynomial
   refine ⟨aF + dF, fun P ℓ r G => ?_⟩
   set n := (encTrunc encT (P, ℓ, r, G)).length
   have hL : (DescribedNetwork.encDescribed encT G).length ≤ n := by
-    simp only [n, length_encPair]
-    omega
+    enc_len [n]
   have he : ∀ v ∈ G.vertices, ∀ bs : List Bool, bs.length = v.1.length →
       ce.time (v.2, bs) ≤ E n ∧ ce.space (v.2, bs) ≤ E n := by
     intro v hv bs hbs

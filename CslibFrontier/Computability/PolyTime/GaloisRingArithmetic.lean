@@ -29,6 +29,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLo
 import Mathlib.Algebra.BigOperators.Intervals
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Size
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Arithmetic modulo `2 ^ p` and a monic polynomial, on coefficient lists
@@ -609,8 +610,7 @@ theorem computableInPolyTime_mul {p : α → ℕ} {fl c d : α → List ℕ}
   · have hcur := length_encList_le (length_mulX (p x) (fl x) s.1) fun _ h => lt_of_mem_mulX h
     have hacc := length_encList_le (length_addSmul (p x) (fl x) s.2 ((c x).getD i 0) s.1)
       fun _ h => lt_of_mem_addSmul h
-    simp only [mulStep, encS, length_encPair]
-    omega
+    enc_len [mulStep, encS]
 
 /-- **Powers are polynomial-time**, with the precision and the exponent in unary. -/
 @[fun_prop]
@@ -703,8 +703,7 @@ theorem computableInPolyTime_seed {p : α → ℕ} {fl x : α → List ℕ}
   · have h1 := length_encList_le (length_mul (p a) (fl a) s.1 s.1) fun _ h => lt_of_mem_mul h
     have h2 := length_encList_le (length_mul (p a) (fl a) s.2 (mul (p a) (fl a) s.1 s.1))
       fun _ h => lt_of_mem_mul h
-    simp only [seedStep, length_encPair]
-    omega
+    enc_len [seedStep]
 
 /-- **Inversion is polynomial-time**, with the precision in unary. -/
 @[fun_prop]

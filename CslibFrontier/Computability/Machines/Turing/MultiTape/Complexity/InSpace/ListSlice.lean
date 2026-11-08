@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.I
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
 import Mathlib.Data.List.GetD
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Native reversal and binary slicing of framed lists
@@ -53,8 +54,7 @@ theorem listReverse {α : Type} (enc : α ↪ List Bool) :
           4 * ((encList enc l).length + 1) := by
     have ha := length_le_encList_of_mem enc (List.getElem_mem hi)
     have hs := hstate l i hi.le
-    simp only [length_encPair]
-    omega
+    enc_len
   have hfold := ComputableInSpace.foldl hlist hinit hstep hspace hstate
   refine hfold.weaken (.of_le_linear 8 8 fun _ => by omega) |>.of_enc_eq ?_
   intro l
@@ -77,8 +77,7 @@ theorem listDrop {α : Type} (enc : α ↪ List Bool) :
     (Q := fun q => (encList enc q.1).length) (B := fun q => (encList enc q.1).length)
     (fun q k _ => hlen q k) (fun q k _ => hlen q k)
   refine h.weaken (.of_le_linear 8 8 fun q => ?_) |>.of_enc_eq ?_
-  · simp only [length_encPair]
-    omega
+  · enc_len
   · intro q
     rw [List.tail_iterate]
 

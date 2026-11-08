@@ -18,6 +18,7 @@ import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Indexed signature schemes
@@ -214,9 +215,7 @@ theorem isPPTOn_run_indexedSigningOracle (S : IndexedSignatureScheme) {adversary
         Nat.mul_le_mul_left c (Nat.pow_le_pow_left (by omega) d)
       dsimp only
       omega
-    · simp only [encList_cons, List.length_append, length_frame, encPair_apply, encUnary_apply,
-        encBits_apply, List.length_replicate]
-      omega
+    · enc_len [encList_cons, encPair_apply]
   · simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hresult
     subst hresult
     exact ⟨trivial, by simp, by lia⟩

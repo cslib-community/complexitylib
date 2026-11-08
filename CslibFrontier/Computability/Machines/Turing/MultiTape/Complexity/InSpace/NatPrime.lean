@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
 public import Mathlib.Data.Nat.Prime.Defs
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Native primality testing and bounded prime search
@@ -120,8 +121,7 @@ theorem isPrime_inSpace :
     have hsum := length_encNat_add_le_add n 2
     have htwo : (encNat 2).length = 2 := rfl
     have hb : (encBool (trialRun n k).2.2).length = 1 := by simp
-    simp only [encTrialState, length_encPair, trialRun_candidate, trialRun_divisor] at *
-    omega
+    enc_len [encTrialState, trialRun_candidate, trialRun_divisor] at *
   have hrun := budget_iterate hid hinit trialStep_inSpace hstates
     (.of_le_linear 16 16 fun _ => le_rfl)
   have htrial := snd' (snd' hrun)
@@ -244,8 +244,7 @@ theorem boundedFirstPrime_inSpace :
     have hsum := length_encNat_add_le_add q.1 q.2
     have hsucc := length_encNat_add_le_add (q.1 + q.2) 1
     have hone : (encNat 1).length = 1 := rfl
-    simp only [encSearchState, length_encPair, hcursor] at *
-    omega
+    enc_len [encSearchState, hcursor] at *
   have hrun := budget_iterate hn hinit searchStep_inSpace hstates
     (.of_le_linear 16 16 fun _ => le_rfl)
   exact (snd' hrun).of_enc_eq fun _ => rfl

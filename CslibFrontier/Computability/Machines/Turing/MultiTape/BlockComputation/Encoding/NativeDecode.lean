@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Pi
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.ListSlice
 import Mathlib.Data.List.Induction
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Native decoding of runtime-width Boolean block labels
@@ -101,8 +102,7 @@ private theorem wordDrop_inSpace : ComputableInSpace
     (Q := fun p => p.1.length) (B := fun p => p.1.length)
     (fun p i _ => by simp [List.tail_iterate]) (fun p i _ => by simp [List.tail_iterate])
   refine h.weaken (.of_le_linear 8 8 fun p => ?_) |>.of_enc_eq ?_
-  · simp only [length_encPair, encBits_apply]
-    omega
+  · enc_len
   · intro p
     rw [List.tail_iterate]
 
@@ -188,8 +188,7 @@ private theorem scan_fold_length (word : List Bool) (q : Scan) :
   | cons bit word ih =>
     have h := ih (scan q bit)
     have hstep := scan_length q bit
-    simp only [List.foldl_cons, List.length_cons]
-    omega
+    enc_len [List.foldl_cons]
 
 private theorem scan_fold_cells (word : List Bool) (acc : List ℕ) :
     (word.foldl scan (false, false, acc)).2.2 = (cells word).reverse ++ acc := by
@@ -213,8 +212,7 @@ theorem cells_inSpace : ComputableInSpace cells encBits (encList encNat)
       (encScan ((word.take i).foldl scan (false, false, []))).length ≤ 6 + 5 * word.length := by
     have h := scan_fold_length (word.take i) (false, false, [])
     simp only [encList_nil, List.length_nil, List.length_take] at h
-    simp only [encScan, length_encPair, encBool_apply, List.length_singleton]
-    omega
+    enc_len [encScan, List.length_singleton]
   have hspace (word : List Bool) (i : ℕ) (hi : i < word.length) :
       (encPair encScan encBool ((word.take i).foldl scan (false, false, []), word[i])).length ≤
         20 * (word.length + 1) := by
@@ -236,8 +234,7 @@ theorem length_cells (word : List Bool) : (cells word).length = word.length / 2 
   | nil => rfl
   | singleton bit => simp [cells]
   | cons_cons first second word ih _ =>
-    simp only [cells, List.length_cons, ih]
-    omega
+    enc_len [cells, ih]
 
 /-- Every streamed cell is one of the three canonical replay codes. -/
 theorem mem_cells_le (word : List Bool) : ∀ n ∈ cells word, n ≤ 2 := by

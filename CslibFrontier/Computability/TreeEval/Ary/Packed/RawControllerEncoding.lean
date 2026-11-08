@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.TreeEval.Ary.Packed.RawControllerCorrect
 public import CslibFrontier.Computability.TreeEval.Ary.IterativeEncoding
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Uniform binary encoding of the raw packed controller
@@ -109,8 +110,7 @@ theorem length_encFullState_ofCfg_le [NeZero p] (q : Ary.Iter.Cfg (ZMod p) d r)
   rw [← encMode_ofMode] at hmode
   simp only [encFullState, encState, ofCfg, length_encPair, List.length_map] at *
   unfold fullSpaceBound
-  simp only [encParams, length_encPair, length_encNat_eq_size]
-  omega
+  enc_len [encParams, length_encNat_eq_size]
 
 /-- Every physical raw prefix has the bound when its actual external replies meet the
 controller's explicit contracts. No unit enumeration is stored in the raw state. -/
@@ -181,8 +181,7 @@ theorem fullSpaceBound_packed_le (hd : 0 < d) (hb : 0 < b) :
   have hstack := Nat.mul_le_mul_left H hframe
   have hmeta : 2 * (encParams (fieldModulus d b, d, chunkCount d b)).length +
       2 * (fieldModulus d b).size + (d + 1).size + 5 ≤ 20 * chunkWidth d b + 30 := by
-    simp only [encParams, length_encPair, length_encNat_eq_size]
-    omega
+    enc_len [encParams, length_encNat_eq_size]
   unfold fullSpaceBound
   calc
     _ ≤ 2 * ((d + 1) * (17 * (b + chunkWidth d b))) +

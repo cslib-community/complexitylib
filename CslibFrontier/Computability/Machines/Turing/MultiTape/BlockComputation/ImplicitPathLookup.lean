@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ImplicitPathSpace
 public import CslibFrontier.Computability.TreeEval.Ary.Descending
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Checked implicit block-tree addresses
@@ -59,14 +60,12 @@ private theorem all_inSpace (k : ℕ) :
         ((a.2.2.take i).foldl (fun good j => good && decide (j < k * 3 + 1)) true,
           a.2.2[i])).length ≤ 4 * ((encWalkArgs a).length + 1) := by
     have hm := length_le_encList_of_mem encNat (List.getElem_mem hi)
-    simp only [encWalkArgs, length_encPair, encBool_apply, List.length_singleton] at *
-    omega
+    enc_len [encWalkArgs, List.length_singleton] at *
   have hstates (a : WalkArgs) (i : ℕ) (_hi : i ≤ a.2.2.length) :
       (encBool ((a.2.2.take i).foldl
         (fun good j => good && decide (j < k * 3 + 1)) true)).length ≤
           4 * ((encWalkArgs a).length + 1) := by
-    simp only [encBool_apply, List.length_singleton]
-    omega
+    enc_len [List.length_singleton]
   have hfold := ComputableInSpace.foldl
     (encIn := encWalkArgs) (encA := encNat) (encL := encList encNat) (encB := encBool)
     (list := fun a : WalkArgs => a.2.2) (init := fun _ : WalkArgs => true)

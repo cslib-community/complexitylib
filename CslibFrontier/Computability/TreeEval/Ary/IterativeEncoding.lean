@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.TreeEval.Ary.IterativeBounds
 public import CslibFrontier.Computability.TreeEval.Ary.PackingParameters
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pi
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Option
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Binary encodings for iterative Cook–Mertz
@@ -148,8 +149,7 @@ theorem length_encMode_le (encK : K ↪ List Bool) (mode : Mode K d) {L : ℕ}
     have hk := hK c
     have ht := Nat.size_le_size t.isLt.le
     change (encOption (encPair encK (encIndex (d + 1))) (some (c, t))).length ≤ _
-    simp only [encOption_some, List.length_cons, length_encPair, length_encIndex]
-    omega
+    enc_len [length_encIndex]
 
 /-- Every frame and every separator is charged; the register bank is charged only once. -/
 theorem length_encCfg_le (encK : K ↪ List Bool) (q : Cfg K d r) {rounds L : ℕ}
@@ -164,8 +164,7 @@ theorem length_encCfg_le (encK : K ↪ List Bool) (q : Cfg K d r) {rounds L : �
   have hmul := Nat.mul_le_mul_right (2 * frameBits d rounds L + 1) hq.1
   change (encPair (encRegs encK)
     (encPair (encList (encFrame encK)) (encMode encK)) (q.regs, q.stack, q.mode)).length ≤ _
-  simp only [length_encPair]
-  omega
+  enc_len
 
 /-- The compact representation bound holds at every clock of a root call. -/
 theorem length_encCfg_runFrom_le [Field K] (encK : K ↪ List Bool) {L : ℕ}

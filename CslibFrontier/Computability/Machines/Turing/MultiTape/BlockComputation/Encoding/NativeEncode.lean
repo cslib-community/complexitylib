@@ -15,6 +15,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.I
 import CslibFrontier.Foundations.Data.BitString.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Pi
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Pi
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Native serialization of runtime-width block results
@@ -157,8 +158,7 @@ theorem word_inSpace : ComputableInSpace (fun q : ℕ × ℕ => word q.1 q.2)
     have hc := length_encNat_le_self q.1.size
     have hbsize := length_encNat_eq_size q.1
     rw [← hbsize] at hc ⊢
-    simp only [length_encPair]
-    omega
+    enc_len
   · intro q
     rw [iterate_wordStep]
     apply congrArg (encList encBool)
@@ -215,8 +215,7 @@ theorem windowWord_inSpace : ComputableInSpace windowWord (encList encNat) (encL
           16 * ((encList encNat cells).length + 1) := by
     have h := hstate cells i hi.le
     have hv := length_le_encList_of_mem encNat (List.getElem_mem hi)
-    simp only [length_encPair]
-    omega
+    enc_len
   have h := ComputableInSpace.foldl hid (budget_const [] (.refl _)) hs hspace hstate
   refine h.weaken (.of_le_linear 64 64 fun _ => by omega) |>.of_enc_eq ?_
   intro cells

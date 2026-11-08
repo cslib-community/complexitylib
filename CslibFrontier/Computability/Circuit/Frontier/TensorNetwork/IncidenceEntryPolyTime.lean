@@ -27,6 +27,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNa
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptionPrimitives
 import CslibFrontier.Foundations.Data.BitString.Binary
 import Mathlib.Data.List.GetD
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # The polynomial-time steps of the entries of the incidence network
@@ -139,12 +140,9 @@ theorem blockIndices_polyTime :
             (as := b.1)).symm.le.trans ?_
           exact List.length_le_sum_of_one_le _ fun x hx => by
             obtain ⟨a, -, rfl⟩ := List.mem_map.mp hx
-            simp only [length_encPair]
-            omega
-        simp only [encBlock, length_encPair]
-        omega
-      simp only [encQ, length_encPair]
-      omega
+            enc_len
+        enc_len [encBlock]
+      enc_len [encQ]
     omega
   have hfold := foldlWithInput_of_bounded_growth (encA := encBlock) (encL := encList encBlock)
     (encB := encS) (step := fun _ st b => indexStep st b) hinit

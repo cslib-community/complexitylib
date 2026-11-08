@@ -16,6 +16,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Wo
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimePrimitives
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Bounds
 import Mathlib.Tactic.Linarith
+import CslibFrontier.Tactic.EncLen
 
 /-! # Direct word equality at the original resource bounds
 
@@ -87,8 +88,7 @@ public theorem eqWords :
     hfold).mono 64 (fun p => ?_) fun p => ?_).of_enc_eq fun p => ?_
   · simp only [length_encPair, encBits_apply]
     nlinarith
-  · simp only [length_encPair, encBits_apply]
-    omega
+  · enc_len
   · simpa using congrArg encBool (EqWords.foldl_result p.1 p.2 true).symm
 
 /-- Equality, for any encoding. -/
@@ -101,8 +101,7 @@ public theorem eq {α : Type} [DecidableEq α] (enc : α ↪ List Bool) :
     (fun p => ?_) fun p => ?_).of_enc_eq fun p => ?_
   · simp only [length_encPair]
     nlinarith
-  · simp only [length_encPair]
-    omega
+  · enc_len
   · simp [enc.injective.eq_iff]
 
 end ComputableInO

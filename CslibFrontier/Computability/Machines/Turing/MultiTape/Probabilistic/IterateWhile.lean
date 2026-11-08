@@ -258,9 +258,8 @@ theorem RunsWords.iterateWhileRound {tm : MultiTapePTM k Bool State Operation} (
     (hl : ∀ (OracleState : Type)
       (oracle : Operation × List Bool → StateT OracleState PMF (List Bool))
       (s : OracleState) (w' : List Bool) (s' : OracleState),
-      (w', s') ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-        program).run s).support → w'.length ≤ l) (out₀ : List Bool) :
+      (w', s') ∈ (ProbOracleComp.runWith oracle program
+          s).support → w'.length ≤ l) (out₀ : List Bool) :
     (tm.iterateWhileRound mark).RunsWords x (words vp v) out₀
       (3 * vp.length + 6 * v.length + 16 + (t + l + 6)) program (fun v' => words v v')
       (fun _ => []) := by
@@ -286,9 +285,8 @@ public theorem ComputesTidily.iterateWhile {tm : MultiTapePTM k Bool State Opera
     (hpreserve : ∀ n < r, ∀ w, invariant n w →
       ∀ (OracleState : Type) (oracle : Operation × List Bool → StateT OracleState PMF (List Bool))
         (s s' : OracleState) (w' : List Bool),
-        (w', s') ∈ ((OracleComp.interpret
-          (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (step w)).run s).support → invariant (n + 1) w' ∧ w' ≠ [])
+        (w', s') ∈ (ProbOracleComp.runWith oracle (step w)
+            s).support → invariant (n + 1) w' ∧ w' ≠ [])
     (hlast : ∀ w, invariant r w → tm.ComputesTidily w t (pure []))
     (hlength : ∀ n ≤ r, ∀ w, invariant n w → w.length ≤ L) :
     (tm.iterateWhile mark).ComputesTidily w₀ ((r + 1) * (t + 10 * L + 23) + 8 * L + 17)
@@ -304,13 +302,10 @@ public theorem ComputesTidily.iterateWhile {tm : MultiTapePTM k Bool State Opera
   have hpres : ∀ n < r, ∀ p, inv n p →
       ∀ (OracleState : Type) (oracle : Operation × List Bool → StateT OracleState PMF (List Bool))
         (st st' : OracleState) (p' : List Bool × List Bool),
-        (p', st') ∈ ((OracleComp.interpret
-          (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (step' p)).run st).support →
+        (p', st') ∈ (ProbOracleComp.runWith oracle (step' p) st).support →
         inv (n + 1) p' ∧ words (k := k) p'.1 p'.2 (nextTape k) ≠ [] := by
     intro n hn p hp _ oracle st st' p' hp'
-    simp only [step', OracleComp.interpret_map, StateT.run_map, PMF.monad_map_eq_map,
-      PMF.mem_support_map_iff] at hp'
+    simp only [step', ProbOracleComp.runWith_map, PMF.mem_support_map_iff] at hp'
     obtain ⟨⟨w', st''⟩, hw', heq⟩ := hp'
     rcases Prod.mk.inj heq with ⟨rfl, rfl⟩
     obtain ⟨hinv, hne⟩ := hpreserve n hn p.2 hp.1 _ oracle st st'' w' hw'
@@ -323,9 +318,7 @@ public theorem ComputesTidily.iterateWhile {tm : MultiTapePTM k Bool State Opera
       have hl : ∀ (OracleState : Type)
           (oracle : Operation × List Bool → StateT OracleState PMF (List Bool))
           (s : OracleState) (w' : List Bool) (s' : OracleState),
-          (w', s') ∈ ((OracleComp.interpret
-            (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-            (step p.2)).run s).support → w'.length ≤ L :=
+          (w', s') ∈ (ProbOracleComp.runWith oracle (step p.2) s).support → w'.length ≤ L :=
         fun _ oracle s w' s' hw' =>
           hlength (n + 1) hn w' (hpreserve n hn p.2 hp.1 _ oracle s s' w' hw').1
       have hround' := (RunsWords.iterateWhileRound (x := w₀) mark (vp := p.1)
@@ -337,8 +330,7 @@ public theorem ComputesTidily.iterateWhile {tm : MultiTapePTM k Bool State Opera
     (fun p hp => by
       have hround' := (RunsWords.iterateWhileRound (x := w₀) mark (vp := p.1) (l := 0)
         (hlast p.2 hp.1) (fun _ _ _ w' _ hw' => by
-          simp only [OracleComp.interpret_pure, StateT.run_pure,
-            Probability.PMF.monad_pure_eq_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at hw'
+          simp only [ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at hw'
           simp [hw'.1]) out).of_map (fun v' => (p.2, v'))
         (fun q => words q.1 q.2) (fun _ => [])
       rw [map_pure] at hround'
@@ -347,23 +339,20 @@ public theorem ComputesTidily.iterateWhile {tm : MultiTapePTM k Bool State Opera
       exact hround'.mono (by omega))
     hpres
     (fun p _ _ _ _ _ p' hp' => by
-      simp only [last, OracleComp.interpret_pure, StateT.run_pure,
-        Probability.PMF.monad_pure_eq_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at hp'
+      simp only [last, ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at hp'
       rw [hp'.1]
       exact words_next _ _)
   -- every supported final loop state holds the last word on the current tape only
   have hfinal : ∀ (OracleState : Type)
       (oracle : Operation × List Bool → StateT OracleState PMF (List Bool))
       (s s' : OracleState) (p : List Bool × List Bool),
-      (p, s') ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-        (OracleComp.iterate r step' ([], w₀) >>= last)).run s).support →
+      (p, s') ∈ (ProbOracleComp.runWith oracle (OracleComp.iterate r step' ([], w₀) >>= last)
+          s).support →
       p.2 = [] ∧ p.1.length ≤ L := by
     intro _ oracle s s' p hp
-    rw [OracleComp.interpret_bind, StateT.run_bind, Probability.PMF.monad_bind_eq_bind] at hp
+    rw [ProbOracleComp.runWith_bind] at hp
     obtain ⟨⟨mid, s₁⟩, hmid, hp⟩ := (PMF.mem_support_bind_iff _ _ _).mp hp
-    simp only [last, OracleComp.interpret_pure, StateT.run_pure,
-      Probability.PMF.monad_pure_eq_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at hp
+    simp only [last, ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at hp
     obtain ⟨rfl, -⟩ := hp
     have hmidInv := OracleComp.iterate_invariant inv ⟨hbase, by simp⟩
       (fun n p hn hp p' hp' => by

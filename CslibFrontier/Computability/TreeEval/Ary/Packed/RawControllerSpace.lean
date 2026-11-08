@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.TreeEval.Ary.Packed.RawController
 public import CslibFrontier.Computability.TreeEval.Reader.Cert.Residue
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Native streamed updates of the flat register bank
@@ -169,8 +170,7 @@ private theorem bankMap_inSpace :
     change (encNat q.2[i]).length ≤ (encList encNat q.2).length at hv
     simp only [length_encPair]
     dsimp only [bankUpdateSpace] at hs ⊢
-    simp only [length_encPair] at hs ⊢
-    omega
+    enc_len at hs ⊢
   have hfold := ComputableInSpace.foldlWith hpar hlist hinit bankFoldStep_inSpace hspace hstate
   refine (snd' hfold).weaken ?_ |>.of_enc_eq ?_
   · refine .of_le_linear 256 256 fun q => ?_
@@ -231,8 +231,7 @@ private theorem padding_inSpace :
     · simp [paddingStep, h, show ¬q.2 < q.1.1 by omega]
     · simp [paddingStep, h, show q.2 < q.1.1 by omega]
   have hp (q : BankPar × List ℕ) : (encNat q.1.1.1).length ≤ (encIn q).length := by
-    simp only [encIn, encBankPar, length_encPair]
-    omega
+    enc_len [encIn, encBankPar]
   have hl (q : BankPar × List ℕ) : (encList encNat q.2).length ≤ (encIn q).length :=
     length_le_encPair_right encBankPar (encList encNat) q
   have hspace (q : BankPar × List ℕ) (i : ℕ) (hi : i < q.2.length) :
@@ -242,8 +241,7 @@ private theorem padding_inSpace :
     have hv := length_le_encList_of_mem encNat (List.getElem_mem hi)
     have hb := hp q
     have hc := hl q
-    simp only [length_encPair, encBool_apply, List.length_singleton]
-    omega
+    enc_len [List.length_singleton]
   have hstate (q : BankPar × List ℕ) (i : ℕ) (hi : i ≤ q.2.length) :
       (encBool ((q.2.take i).foldl (paddingStep q.1.1.1) true)).length ≤ 1 := by simp
   have hfold := ComputableInSpace.foldlWith hpar hlist hinit hstep hspace hstate

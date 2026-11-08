@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Problems.MonotoneCircuitVal
 public import CslibFrontier.Computability.Complexity.Problems.CircuitValue.Completeness
 public import CslibFrontier.Computability.Circuit.Monotone.DualRail
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Doubled
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # The monotone circuit value problem is `P`-complete
@@ -277,9 +278,7 @@ theorem computableInLogSpace_dualTableauInstance :
   have hin : (fun p => (WriterSpec.encStepIn p).length) ≼ fun p => wBudget p.1 :=
     .of_le_linear 2 0 fun p => by
       simp only [length_encPair, encBool_apply, wBudget]
-      simp only [encNat_apply, List.length_cons, List.length_nil, zero_add, add_zero,
-        Order.add_one_le_iff]
-      omega
+      enc_len [encNat_apply, zero_add, add_zero, Order.add_one_le_iff]
   have hs := (ComputableInSpace.fst encNat3 encBool).weaken hin
   have hn := fst' (snd' hs)
   have hi := snd' (snd' hs)

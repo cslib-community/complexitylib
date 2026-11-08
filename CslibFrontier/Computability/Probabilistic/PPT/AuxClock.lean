@@ -244,8 +244,9 @@ theorem IsPPTWithAux.isOraclePPTWithAux {program : α → List Bool → ProbComp
   obtain ⟨k, State, hfinite, machine, c, d, h⟩ := h
   refine ⟨inferInstance, k, State, hfinite, MultiTapePTM.ofClosed machine, c, d,
     fun a z OracleState oracle s => ?_⟩
+  change ProbOracleComp.runWith oracle _ s = ProbOracleComp.runWith oracle _ s
   rw [MultiTapePTM.run_interpret_runOracle_ofClosed, ← h a z, ← ProbOracleComp.sample_map,
-    ProbOracleComp.run_interpret_sample, ProbComp.eval_map]
+    ProbOracleComp.runWith_sample, ProbComp.eval_map]
 
 /-- Every `IsPPTWithAux` program is a standard `IsPPTOn` program on `encPair input encBits`. -/
 theorem IsPPTWithAux.isPPTOn {program : α → List Bool → ProbComp β}
@@ -293,8 +294,8 @@ private theorem RunsWords.of_runFrom {k : ℕ} {State : Type} {tm : MultiTapeTM 
   have htapes' : cfg.tapes = wordsCfg x (some tm.q₀) ws₀ out₀ := htapes
   dsimp only
   rw [run_interpret_runOracleConfigFrom_ofDeterministic, htapes', hrun]
-  simp only [OracleComp.interpret_pure, StateT.run_pure, Probability.PMF.monad_pure_eq_pure,
-    PMF.pure_map, id_eq, PMF.support_pure, Set.mem_singleton_iff, forall_eq, true_and]
+  simp only [ProbOracleComp.runWith_pure, PMF.pure_map, id_eq, PMF.support_pure,
+    Set.mem_singleton_iff, forall_eq, true_and]
   exact hbuf
 
 private def unframePrefixCore : MultiTapeTM 0 Bool Bool :=
@@ -645,8 +646,7 @@ private theorem computesTidily_takePrefixPTM {k : ℕ} {State : Type}
       (fun w' => Function.update (fun _ => []) (Fin.last k) w') (fun _ => []) := by
     refine hbudget.outputToWord_of_le (l := K) ?_ []
     intro OracleState oracle s w' s' hw'
-    simp only [OracleComp.interpret_pure, StateT.run_pure, Probability.PMF.monad_pure_eq_pure,
-      PMF.mem_support_pure_iff] at hw'
+    simp only [ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff] at hw'
     rcases Prod.mk.inj hw' with ⟨rfl, rfl⟩
     simp
   have hinj₁ : Function.Injective
@@ -771,13 +771,11 @@ theorem IsOraclePPTOn.isOraclePPTWithAux_take
     have hcomp := hunframe.comp_of_le (prog₂ := fun w => pure (encUnary (limitFn w)))
       (t₂ := tLimit n) (l := n) true
       (fun OracleState oracle s w s' hw => by
-        simp only [OracleComp.interpret_pure, StateT.run_pure, Probability.PMF.monad_pure_eq_pure,
-          PMF.mem_support_pure_iff] at hw
+        simp only [ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff] at hw
         rcases Prod.mk.inj hw with ⟨rfl, rfl⟩
         exact le_rfl)
       (fun w OracleState oracle s s' hw => by
-        simp only [OracleComp.interpret_pure, StateT.run_pure, Probability.PMF.monad_pure_eq_pure,
-          PMF.mem_support_pure_iff] at hw
+        simp only [ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff] at hw
         rcases Prod.mk.inj hw with ⟨rfl, rfl⟩
         simpa only [map_pure, encBits_apply, tLimit, n] using htmLimit u)
     simpa only [pure_bind, encUnary_apply, limitFn, K, n] using hcomp
@@ -800,13 +798,11 @@ theorem IsOraclePPTOn.isOraclePPTWithAux_take
       (prog₂ := fun _ => output <$> program a (z.take (c * (n + 1) ^ d)))
       (t₂ := tProg n) (l := K n) true
       (fun OracleState oracle s w s' hw => by
-        simp only [OracleComp.interpret_pure, StateT.run_pure, Probability.PMF.monad_pure_eq_pure,
-          PMF.mem_support_pure_iff] at hw
+        simp only [ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff] at hw
         rcases Prod.mk.inj hw with ⟨rfl, rfl⟩
         exact hwTrunc_len)
       (fun w OracleState oracle s s' hw => by
-        simp only [OracleComp.interpret_pure, StateT.run_pure, Probability.PMF.monad_pure_eq_pure,
-          PMF.mem_support_pure_iff] at hw
+        simp only [ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff] at hw
         rcases Prod.mk.inj hw with ⟨rfl, rfl⟩
         refine (htmProg (a, z.take (c * (n + 1) ^ d))).mono ?_
         exact Nat.mul_le_mul_left cP (Nat.pow_le_pow_left (Nat.add_le_add_right hwTrunc_len 1) dP))

@@ -28,6 +28,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNa
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptionPrimitives
 import CslibFrontier.Tactic.OptionMatch
 import Mathlib.Data.List.GetD
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # The native packet evaluator
@@ -1099,10 +1100,8 @@ theorem entryCertificate_le :
         change k.bits.length ≤ k
         rw [Nat.size_eq_bits_len]
         exact (Nat.size_le.mpr Nat.lt_two_pow_self).trans le_rfl
-      simp only [encUnary_apply, List.length_replicate]
-      omega
-    simp only [length_encPair]
-    omega
+      enc_len
+    enc_len
   have hred1 := hRv _ (reduced_value packetTerms q.1 q.2.1 q.2.2)
   have hred2 := hRv _ (reduced_sourceProduct q.1 q.2.2)
   have hmul : (encMul z).length + 1 ≤ 8 * Z := by

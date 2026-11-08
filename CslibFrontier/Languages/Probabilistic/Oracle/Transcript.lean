@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Languages.Probabilistic.Oracle
+public import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 public import CslibFrontier.Languages.Probabilistic.Transcript
 
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
@@ -41,11 +41,10 @@ variable {Query α State : Type} {Response : Query → Type}
 /-- Forgetting the external log preserves the joint result and complete oracle state. -/
 theorem run_interpret_withTranscript (oracle : (q : Query) → StateT State PMF (Response q))
     (program : ProbOracleComp Response α) (s : State) (transcript : Transcript Response) :
-    ((interpret (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
-      program).run (s, transcript)).map (fun (result, state) => (result, state.1)) =
-        (interpret (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          program).run s := by
-  apply ProbOracleComp.run_interpret_map_state (withTranscript oracle) oracle Prod.fst
+    (ProbOracleComp.runWith (withTranscript oracle) program (s, transcript)).map
+        (fun (result, state) => (result, state.1)) =
+      ProbOracleComp.runWith oracle program s := by
+  apply ProbOracleComp.runWith_map_state (withTranscript oracle) oracle Prod.fst
   intro q state
   simp only [withTranscript, PMF.map_comp, Function.comp_def, Prod.mk.eta]
   exact PMF.map_id _
@@ -55,14 +54,11 @@ change either part of the log. -/
 theorem run_interpret_withTranscript_append
     (oracle : (q : Query) → StateT State PMF (Response q)) (program : ProbOracleComp Response α)
     (s : State) (transcript : Transcript Response) :
-    (interpret (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
-      program).run (s, transcript) =
-        ((interpret
-          (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (withTranscript oracle))
-            program).run (s, [])).map (fun (result, state, fresh) =>
-              (result, state, fresh ++ transcript)) := by
+    ProbOracleComp.runWith (withTranscript oracle) program (s, transcript) =
+      (ProbOracleComp.runWith (withTranscript oracle) program (s, [])).map
+        (fun (result, state, fresh) => (result, state, fresh ++ transcript)) := by
   symm
-  apply ProbOracleComp.run_interpret_map_state (withTranscript oracle) (withTranscript oracle)
+  apply ProbOracleComp.runWith_map_state (withTranscript oracle) (withTranscript oracle)
     (fun state => (state.1, state.2 ++ transcript))
   intro q state
   simp [withTranscript, PMF.map_comp, Function.comp_def]

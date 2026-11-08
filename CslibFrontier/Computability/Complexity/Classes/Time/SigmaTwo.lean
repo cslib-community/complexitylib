@@ -20,6 +20,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Quantita
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OPrimitives
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Two-quantifier alternating time
@@ -222,8 +223,7 @@ private theorem exists_computableInO_eval (p : Polynomial ℕ) :
     (ComputableInO.lengthUnary.comp_enc enc).comp_linear (ComputableInO.fst enc _)
   refine ⟨c, d, _, (h.comp hn).mono_time 1 fun x => ?_⟩
   have := hc (enc x.1).length
-  simp only [encUnary_apply, List.length_replicate] at this
-  omega
+  enc_len at this
 
 /-- A problem in `Σ₂ᵖ` is in `Σ₂TIME(n ^ k)` for some `k`: pad both blocks to a common length,
 and let the verifier cut them back. Cutting is linear, and the original verifier then runs within
@@ -270,13 +270,10 @@ theorem exists_mem_SigmaTwoTIME_of_mem_SigmaP_two {A : Set α} (hA : A ∈ Sigma
     have hpre : (encPair enc encBits (a, cutBlocks (p₁.eval (enc a).length)
         (p₂.eval (enc a).length) u v)).length ≤
         2 * (enc a).length + 2 + p₁.eval (enc a).length + p₂.eval (enc a).length := by
-      simp only [length_encPair, encBits_apply, cutBlocks, List.length_append, List.length_take]
-      omega
+      enc_len [cutBlocks, List.length_take]
     have hTVa := (hcV (a, cutBlocks (p₁.eval (enc a).length) (p₂.eval (enc a).length) u v)).trans
       (Nat.mul_le_mul_left cV (Nat.pow_le_pow_left (Nat.add_le_add_right hpre 1) dV))
-    simp only [Function.comp_apply, length_encPair, encBits_apply, encUnary_apply,
-      List.length_replicate, hu, hv] at hTVa ⊢
-    omega
+    enc_len [Function.comp_apply, hu, hv] at hTVa ⊢
   · -- correctness
     have hRL := hRL a L hL
     have hP₁ : p₁.eval (enc a).length ≤ L := by omega

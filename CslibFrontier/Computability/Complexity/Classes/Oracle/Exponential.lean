@@ -185,8 +185,7 @@ theorem IsOraclePPTOn.preprocess_exp {program : β → WordOracleComp Operation 
       (t₂ := c₂ * (firstTime a + 1) ^ d₂)
       (fun word State oracle s s' hword => by
         have hlen := (hsource a).length_output_le oracle s hword
-        simp only [OracleComp.interpret_pure, StateT.run_pure, PMF.monad_pure_eq_pure,
-          PMF.mem_support_pure_iff, Prod.mk.injEq] at hword
+        simp only [ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at hword
         obtain ⟨rfl, -⟩ := hword
         rw [hcontinuation]
         exact (htarget (prepare a)).mono (Nat.mul_le_mul_left c₂

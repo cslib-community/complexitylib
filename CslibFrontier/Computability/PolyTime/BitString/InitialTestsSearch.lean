@@ -25,6 +25,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Mathlib.Analysis.Complex.ExponentialBounds
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Sequential initial-test search and shortened Tanner check matrices
@@ -464,9 +465,7 @@ private theorem searchMatrix_cert {α Q : Type} {encIn : α ↪ List Bool} {encQ
       (encSt (IndexFold.run (searchMatrixStep rowsOf colsOf check) j
         (qOf a, (false, listRows (rowsOf (qOf a)) (colsOf (qOf a)) []))).2).length ≤ B a := by
     obtain ⟨hq_eq, ⟨w, hw⟩, -, -⟩ := run_searchMatrixStep_inv rowsOf colsOf check j (qOf a)
-    simp only [encSt, encPay, length_encPair, encBool_apply, List.length_singleton, hq_eq, hw,
-      length_encList_listRows, B]
-    omega
+    enc_len [encSt, encPay, List.length_singleton, hq_eq, hw, length_encList_listRows, B]
   exact (HasKPolyCert.indexFold (K := fun a => 2 ^ wCheck (qOf a) + 1) (B := B)
     (fun _ => Nat.le_add_left 1 _) (binary_two_pow.comp (hrcQ.comp hq)) hinit hStep hBP
     (fun a j _ => Nat.le_of_eq (congrArg (fun x => 2 ^ wCheck x + 1)
@@ -1146,7 +1145,7 @@ private theorem exists_pow_of_polyBounded_mb {u : ℕ × ℕ → ℕ}
     (PolyBounded.const c).add ((PolyBounded.const d).mul (PolyBounded.self.add (.const 4))),
     fun p => ?_⟩
   have hlen : (encMB p).length + 1 = 2 * p.1 + 2 + p.2 := by
-    simp only [encMB, length_encPair, encUnary_apply, List.length_replicate]; omega
+    enc_len [encMB]
   rw [Nat.pow_add]; refine (hle p).trans (Nat.mul_le_mul Nat.lt_two_pow_self.le ?_)
   rw [Nat.mul_comm, Nat.pow_mul, hlen]; exact Nat.pow_le_pow_left (linear_mb_le_two_pow p.1 p.2) d
 private abbrev encMid := encPair encMB (encPair (encList encBits) (encList encBits))
@@ -1182,7 +1181,7 @@ theorem initialTestsRows_computableInO :
       (hSh.prod hLo)).polyPost (fun _ => Nat.le_add_right 1 _) hBuild).congr (fun _ => rfl)
   have hLenSum : PolyBounded (fun p : ℕ × ℕ => p.1 + p.2) lenMB :=
     (((PolyBounded.const 2).mul PolyBounded.self).add (.const 1)).mono fun p => by
-      simp only [lenMB, encMB, length_encPair, encUnary_apply, List.length_replicate]; omega
+      enc_len [lenMB, encMB]
   obtain ⟨S, hS_poly, hSpace⟩ := ((pOf lenMB hpS).mono hS).comp hLenSum
   obtain ⟨Ep, hEpP, hEp⟩ := exists_pow_of_polyBounded_mb (pOf lenMB hpT)
   have hB_X : PolyBounded X Prod.snd := PolyBounded.self.mono fun _ => by dsimp only [X]; omega
@@ -1226,7 +1225,7 @@ theorem initialTestsRows_computableInO_nmb :
     (NativeCertificate.linear (ComputableInO.snd encUnary encMB))
   have hLenNMB : PolyBounded sz (fun p => (encNMB p).length) :=
     (((PolyBounded.const 4).mul PolyBounded.self).add (.const 3)).mono fun p => by
-      simp only [sz, encNMB, encMB, length_encPair, encUnary_apply, List.length_replicate]; omega
+      enc_len [sz, encNMB, encMB]
   obtain ⟨S', hS', hSpace⟩ := hLenNMB.add ((pOf id hS).comp ((PolyBounded.self (size := sz)).mono
     (u := fun p : ℕ × ℕ × ℕ => p.2.1 + p.2.2) fun _ => by dsimp only [sz]; omega))
   let q' (X : ℕ) : ℕ := q X + (X + 5)
@@ -1235,7 +1234,7 @@ theorem initialTestsRows_computableInO_nmb :
       2 * (p.1 + 2 ^ q' (p.2.2 + Nat.log 2 (p.2.1 + 2)) + 1)
     set X := p.2.2 + Nat.log 2 (p.2.1 + 2)
     have hlen : (encNMB p).length = 2 * p.1 + (2 * p.2.1 + 2 + p.2.2) := by
-      simp only [encNMB, encMB, length_encPair, encUnary_apply, List.length_replicate]; omega
+      enc_len [encNMB, encMB]
     have h1 := Nat.pow_le_pow_right (by decide : 0 < 2) (by omega : X + 4 ≤ q X + (X + 4))
     have h2 := Nat.pow_le_pow_right (by decide : 0 < 2) (by omega : q X ≤ q X + (X + 4))
     have h3 : 2 ^ q' X = 2 * 2 ^ (q X + (X + 4)) := by

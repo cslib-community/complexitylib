@@ -82,15 +82,12 @@ theorem ComputesTidily.comp_of_le {tm₁ : MultiTapePTM k₁ Bool State₁ Opera
     (hl : ∀ (OracleState : Type)
       (oracle : Operation × List Bool → StateT OracleState PMF (List Bool))
       (s : OracleState) (w : List Bool) (s' : OracleState),
-      (w, s') ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-        prog₁).run s).support → w.length ≤ l)
+      (w, s') ∈ (ProbOracleComp.runWith oracle prog₁ s).support → w.length ≤ l)
     (h₂ : ∀ w (OracleState : Type)
       (oracle : Operation × List Bool → StateT OracleState PMF (List Bool))
       (s s' : OracleState),
-      (w, s') ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-        prog₁).run s).support → tm₂.ComputesTidily w t₂ (prog₂ w)) :
+      (w, s') ∈ (ProbOracleComp.runWith oracle prog₁
+          s).support → tm₂.ComputesTidily w t₂ (prog₂ w)) :
     (tm₂.tidyComp tm₁ mark).ComputesTidily x (t₁ + t₂ + 4 * l + 9) (prog₁ >>= prog₂) := by
   rw [computesTidily_iff_nil_output]
   let K := max k₁ k₂
@@ -126,9 +123,7 @@ theorem ComputesTidily.comp_of_le {tm₁ : MultiTapePTM k₁ Bool State₁ Opera
   have hp₂₃ : ∀ w (OracleState : Type)
       (oracle : Operation × List Bool → StateT OracleState PMF (List Bool))
       (s s' : OracleState),
-      (w, s') ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-        prog₁).run s).support →
+      (w, s') ∈ (ProbOracleComp.runWith oracle prog₁ s).support →
       (((tm₂.extendTapes (Fin.castLEEmb (le_max_right k₁ k₂))).inputFromWord mark).seq
         (ofDeterministic ((clearWork Bool).extendTapes (tapeEmb A)))).RunsWords
         x (Function.update (fun _ => []) A w) ([] ++ []) ((t₂ + 4) + 3 * (l + 1))
@@ -147,9 +142,7 @@ theorem ComputesTidily.comp_of_le {tm₁ : MultiTapePTM k₁ Bool State₁ Opera
     have hp₃ : ∀ y (OracleState' : Type)
         (oracle' : Operation × List Bool → StateT OracleState' PMF (List Bool))
         (s₀ s₁ : OracleState'),
-        (y, s₁) ∈ ((OracleComp.interpret
-          (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle')
-          (prog₂ w)).run s₀).support →
+        (y, s₁) ∈ (ProbOracleComp.runWith oracle' (prog₂ w) s₀).support →
         (ofDeterministic (Oracle := Operation)
           ((clearWork Bool).extendTapes (tapeEmb A))).RunsWords
           x (Function.update (fun _ => []) A w) ([] ++ id y) (3 * (l + 1)) (pure ())
@@ -180,9 +173,8 @@ theorem ComputesTidily.comp {tm₁ : MultiTapePTM k₁ Bool State₁ Operation}
     (h₂ : ∀ w (OracleState : Type)
       (oracle : Operation × List Bool → StateT OracleState PMF (List Bool))
       (s s' : OracleState),
-      (w, s') ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-        prog₁).run s).support → tm₂.ComputesTidily w t₂ (prog₂ w)) :
+      (w, s') ∈ (ProbOracleComp.runWith oracle prog₁
+          s).support → tm₂.ComputesTidily w t₂ (prog₂ w)) :
     (tm₂.tidyComp tm₁ mark).ComputesTidily x (5 * t₁ + t₂ + 9) (prog₁ >>= prog₂) := by
   exact (h₁.comp_of_le mark (fun _ oracle s _ _ hw => h₁.length_output_le oracle s hw) h₂).mono
     (by omega)
@@ -205,9 +197,8 @@ theorem ComputesTidily.append {tm₁ : MultiTapePTM k₁ Bool State₁ Operation
     (h₂ : ∀ w₁ (OracleState : Type)
       (oracle : Operation × List Bool → StateT OracleState PMF (List Bool))
       (s s' : OracleState),
-      (w₁, s') ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-        prog₁).run s).support → tm₂.ComputesTidily x t₂ (prog₂ w₁)) :
+      (w₁, s') ∈ (ProbOracleComp.runWith oracle prog₁
+          s).support → tm₂.ComputesTidily x t₂ (prog₂ w₁)) :
     (appendPTM tm₁ tm₂).ComputesTidily x (t₁ + t₂)
       (prog₁ >>= fun w₁ => (fun w₂ => w₁ ++ w₂) <$> prog₂ w₁) := by
   rw [computesTidily_iff_nil_output]
@@ -218,9 +209,7 @@ theorem ComputesTidily.append {tm₁ : MultiTapePTM k₁ Bool State₁ Operation
   have hp₂ : ∀ w₁ (OracleState : Type)
       (oracle : Operation × List Bool → StateT OracleState PMF (List Bool))
       (s s' : OracleState),
-      (w₁, s') ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-        prog₁).run s).support →
+      (w₁, s') ∈ (ProbOracleComp.runWith oracle prog₁ s).support →
       (tm₂.extendTapes (Fin.castLEEmb (le_max_right k₁ k₂))).RunsWords
         x (fun _ => []) ([] ++ id w₁) t₂ (prog₂ w₁) (fun _ _ => []) id :=
     fun w₁ OracleState oracle s s' hw =>
@@ -391,12 +380,9 @@ theorem ComputesTidily.ite {tmc : MultiTapePTM k₀ Bool State₀ Operation}
   have hl : ∀ (OracleState : Type)
       (oracle : Operation × List Bool → StateT OracleState PMF (List Bool))
       (s : OracleState) (w' : List Bool) (s' : OracleState),
-      (w', s') ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-        (pure w)).run s).support → w'.length ≤ w.length := by
+      (w', s') ∈ (ProbOracleComp.runWith oracle (pure w) s).support → w'.length ≤ w.length := by
     intro _ _ _ w' s' hw'
-    simp only [OracleComp.interpret_pure, StateT.run_pure,
-      Probability.PMF.monad_pure_eq_pure, PMF.mem_support_pure_iff] at hw'
+    simp only [ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff] at hw'
     rcases Prod.mk.inj hw' with ⟨rfl, rfl⟩
     exact le_rfl
   have hp₁ : (tmc.extendTapes (Fin.castLEEmb (le_max_left k₀ (max k₁ k₂)))).outputToWord.RunsWords
@@ -412,9 +398,8 @@ theorem ComputesTidily.ite {tmc : MultiTapePTM k₀ Bool State₀ Operation}
     intro OracleState oracle s cfg htapes hbuf
     obtain ⟨hlaw, hclean⟩ := hcongr OracleState oracle s cfg htapes hbuf
     refine ⟨?_, hclean⟩
-    simpa only [OracleComp.interpret_pure, OracleComp.interpret_map, StateT.run_pure,
-      StateT.run_map, Probability.PMF.monad_pure_eq_pure, PMF.monad_map_eq_map, PMF.pure_map]
-      using hlaw
+    simpa only [ProbOracleComp.runWith_pure, ProbOracleComp.runWith_map, PMF.pure_map,
+      Prod.map_apply, id_eq] using hlaw
   have hp₂ : (branch (Fin.last K)
       ((tm₁.extendTapes (Fin.castLEEmb ((le_max_left k₁ k₂).trans
         (le_max_right k₀ _)))).extendTapes Fin.castSuccEmb)
@@ -437,9 +422,7 @@ theorem ComputesTidily.ite {tmc : MultiTapePTM k₀ Bool State₀ Operation}
   have hp₃ : ∀ y (OracleState : Type)
       (oracle : Operation × List Bool → StateT OracleState PMF (List Bool))
       (s s' : OracleState),
-      (y, s') ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-        (if w = [] then prog₂ else prog₁)).run s).support →
+      (y, s') ∈ (ProbOracleComp.runWith oracle (if w = [] then prog₂ else prog₁) s).support →
       clearLast.RunsWords
         x (Function.update (fun _ => []) (Fin.last K) w) ([] ++ id y)
         (3 * (w.length + 1)) (pure ()) (fun _ _ => []) (fun _ => []) := by

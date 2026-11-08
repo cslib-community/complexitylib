@@ -386,8 +386,9 @@ theorem IsPPTOn.isOraclePPTOn [Finite Operation] {program : α → ProbComp γ}
   obtain ⟨k, Control, hfinite, machine, c, d, h⟩ := h
   refine ⟨inferInstance, k, Control, hfinite, ofClosed machine, c, d,
     fun a State oracle s => ?_⟩
+  change ProbOracleComp.runWith oracle _ s = ProbOracleComp.runWith oracle _ s
   rw [run_interpret_runOracle_ofClosed, ← h a, ← ProbOracleComp.sample_map,
-    ProbOracleComp.run_interpret_sample, ProbComp.eval_map]
+    ProbOracleComp.runWith_sample, ProbComp.eval_map]
 
 /-- A sampled closed program certified without external channels is closed strict PPT: the
 realizing machine has no channels, so it is a closed machine with the same output law. -/

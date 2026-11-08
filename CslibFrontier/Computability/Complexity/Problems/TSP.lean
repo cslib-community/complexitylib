@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Mathlib.Data.List.GetD
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # The traveling salesman problem
@@ -193,8 +194,7 @@ theorem isVerifier : IsVerifier encTSP (Polynomial.X ^ 2) verifier TSP := by
     (P := fun x p => tourLength x.1 p ≤ x.2) (fun x => ?_) (fun _ _ => decide_eq_true_iff) (D, b)
   rw [List.length_range]
   refine (length_le_length_encList (encList encNat) x.1).trans ?_
-  simp only [encTSP, length_encPair]
-  omega
+  enc_len [encTSP]
 
 /-- The `TSP` verifier is polynomial-time. -/
 @[fun_prop]
@@ -255,8 +255,7 @@ private theorem chain_iff {R : ℕ → ℕ → Prop} {q : List ℕ} :
     simp
   · have hlen : (q ++ q.take 1).length = q.length + 1 := by
       have := List.length_pos_iff.2 hq
-      simp only [List.length_append, List.length_take]
-      omega
+      enc_len [List.length_take]
     constructor
     · intro h k hk
       have := h k (by omega)
@@ -355,8 +354,7 @@ theorem toTSP_mem_iff (G : Graph) : toTSP G ∈ TSP ↔ G ∈ HamCycle := by
           refine ⟨V.idxOf v, hp.mem_iff.2 (List.mem_range.2 hlt), ?_⟩
           rw [List.getD_eq_getElem _ _ hlt, List.getElem_idxOf]
       · have hp'len : (p ++ p.take 1).length = V.length + 1 := by
-          simp only [List.length_append, List.length_take, hplen]
-          omega
+          enc_len [List.length_take, hplen]
         rw [chain_iff]
         intro k hk
         rw [List.length_map, hplen] at hk
@@ -378,8 +376,7 @@ theorem toTSP_mem_iff (G : Graph) : toTSP G ∈ TSP ↔ G ∈ HamCycle := by
         obtain ⟨k, hk, rfl⟩ := List.mem_map.1 ha
         rw [List.mem_range, List.length_map] at hk
         have hq'len : (q ++ q.take 1).length = q.length + 1 := by
-          simp only [List.length_append, List.length_take]
-          omega
+          enc_len [List.length_take]
         have hmem : ∀ j < q.length + 1, (q ++ q.take 1).getD j 0 ∈ V := fun j hj => by
           have hj' : j < (q ++ q.take 1).length := by omega
           rw [List.getD_eq_getElem _ _ hj']

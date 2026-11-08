@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.DegreeOpti
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OLoops
 import Mathlib.Data.List.ReduceOption
 import Mathlib.Tactic.Linarith
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Walking along two lists
@@ -110,8 +111,7 @@ private lemma length_zipFoldArg_le (p : π) (a : α) (r : List β) (acc : List �
       8 * ((encPair (encPair encP (encPair (encList encB) (encList encC))) encA
         ((p, r, acc), a)).length + 1) := by
   have hhead := length_encOption_head?_le (encB := encB) r
-  simp only [length_encPair] at *
-  omega
+  enc_len at *
 
 /-- A round of `Turing.MultiTapeTM.zipFold`, in space linear in the rest of the second list, the
 results so far and the element, up to the constants of `f`, and in the time of `f` beyond that. -/
@@ -176,8 +176,7 @@ private lemma length_foldl_zipFoldStep_le (q : π × List α × List β) (i B : 
   have h₂ := SizedListEncoding.length_drop_le (encA := encB) (encL := encList encB) r
     (l.take i).length
   rw [foldl_zipFoldStep, List.nil_append]
-  simp only [length_encPair] at *
-  omega
+  enc_len at *
 
 /-- The input of round `i` is bounded by the input and the results so far. -/
 private lemma length_zipFoldRound_le (q : π × List α × List β) (i B : ℕ) (hi : i < q.2.1.length)
@@ -188,8 +187,7 @@ private lemma length_zipFoldRound_le (q : π × List α × List β) (i B : ℕ) 
   have h₁ := length_foldl_zipFoldStep_le (encP := encP) (encA := encA) (encB := encB) q i B hout
   have h₂ := length_le_encList_of_mem encA (List.getElem_mem hi)
   obtain ⟨p, l, r⟩ := q
-  simp only [length_encPair] at *
-  omega
+  enc_len at *
 
 /-- **Walking along two lists.** For a linear `f`, whose results collected along the way are
 linear in the input, walking along two lists takes time the length of the first list times the
@@ -246,7 +244,7 @@ theorem zipFold [Inhabited β] [Inhabited γ]
   all_goals
     have hparts : (encP q.1).length + (encList encA q.2.1).length ≤
         (encPair encP (encPair (encList encA) (encList encB)) q).length := by
-      simp only [length_encPair]; omega
+      enc_len
     generalize (encPair encP (encPair (encList encA) (encList encB)) q).length = X at *
     have hsplit : C * (X + 1) =
         (K + 8) * ((8 + 2 * k) * (X + 1)) + (2 * (X + 1) + k * (X + 1)) + 2 * (X + 1) := by
@@ -298,7 +296,7 @@ theorem zipFold [Inhabited β] [Inhabited γ]
   refine ⟨K * 8 + 16, ((snd' hfold).mono_le fun q => ?_).of_enc_eq fun q => ?_⟩
   · have hparts : (encP q.1).length + (encList encA q.2.1).length ≤
         (encPair encP (encPair (encList encA) (encList encB)) q).length := by
-      simp only [length_encPair]; omega
+      enc_len
     generalize (encPair encP (encPair (encList encA) (encList encB)) q).length = X at *
     generalize B q = Y at *
     nlinarith

@@ -14,6 +14,7 @@ import Mathlib.Data.Fintype.Lattice
 import Mathlib.Tactic.GCongr
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Folds behind a finite-state translator
@@ -122,9 +123,7 @@ public lemma elim_le (q : Q) (w : List Bool) {k : ℕ} (hk : k < w.length) (F : 
     rw [tr.run_take_succ q w hk, he] at h
     have hj : (tr.run q (w.take k)).2.length < (tr.run q w).2.length := by
       have := congrArg List.length h
-      simp only [List.length_take, List.length_append, Option.toList_some,
-        List.length_singleton] at this
-      omega
+      enc_len [List.length_take, Option.toList_some, List.length_singleton] at this
     have : (tr.run q w).2[(tr.run q (w.take k)).2.length] = e := by
       have := congrArg (·[(tr.run q (w.take k)).2.length]?) h
       simp only [List.getElem?_take, ↓reduceIte, Option.toList_some,
@@ -156,8 +155,7 @@ public theorem lift (tr : Translator Q E)
         (tr.step p.1.1 p.2).2.elim 0 fun e => S (p.1.2, e)) := by
   have hl (p : (Q × σ) × Bool) : (encPair encQ encBool (p.1.1, p.2)).length ≤
       (encPair (encPair encQ encS) encBool p).length := by
-    simp only [length_encPair, encBool_apply, List.length_singleton]
-    omega
+    enc_len [List.length_singleton]
   have h₁ := fst (encPair encQ encS) encBool
   have hqb := (fst' h₁).prod (snd (encPair encQ encS) encBool)
   have hstate := ((ComputableTidilyInDegree.of_finite (encIn := encPair encQ encBool)
@@ -345,8 +343,7 @@ public theorem ComputableTidilyInTimeAndSpace.multiPassFold_translate {Q E σ γ
   have hlen (x : γ) (q : Q) (s : σ) (hs : (encS s).length ≤ lMax x) :
       (encPair encQ encS (q, s)).length ≤ 2 * cQ + 1 + lMax x := by
     have := hcQ q
-    simp only [length_encPair]
-    omega
+    enc_len
   have hK2 (a b : ℕ) (hab : a + b ≤ K) (X : ℕ) : a * X + b * X ≤ 2 * K * X := by
     rw [← Nat.add_mul]
     exact Nat.mul_le_mul_right X (by omega)

@@ -3123,6 +3123,7 @@ public import CslibFrontier.Computability.Machines.Turing.SingleTape.NLogNGap
 public import CslibFrontier.Computability.Machines.Turing.SingleTape.Palindrome
 public import CslibFrontier.Computability.Machines.Turing.SingleTape.Partrec
 public import CslibFrontier.Computability.Machines.Turing.SingleTape.PostTuringMachine
+public import CslibFrontier.Computability.Machines.Turing.SingleTape.TM0Restrict
 public import CslibFrontier.Computability.Machines.Turing.TM2.ConfigBound
 public import CslibFrontier.Computability.Machines.Turing.TM2.Degree
 public import CslibFrontier.Computability.Machines.Turing.TM2.Encoding

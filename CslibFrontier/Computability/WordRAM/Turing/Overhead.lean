@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.GenericRAM.Simulation.Degree
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Lists
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatLength
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Explicit overhead of the word-RAM simulation by Turing machines
@@ -97,9 +98,7 @@ theorem foldl_initStep (l : List ℕ) (k : ℕ) (acc : List (ℕ × ℕ)) :
   | nil => simp
   | cons x l ih =>
     rw [List.foldl_cons, initStep, ih, List.zipIdx_cons]
-    simp only [List.length_cons, List.map_cons, List.append_assoc, List.singleton_append,
-      Prod.mk.injEq, and_true]
-    omega
+    enc_len [List.map_cons, List.append_assoc, List.singleton_append, Prod.mk.injEq, and_true]
 
 /-- The stored cells of `State.init` as the result of the counted fold. -/
 theorem initEntries_eq_foldl (input : List ℕ) :
@@ -275,9 +274,7 @@ theorem Program.ComputesInTime.computableInO_of_width
         stateBound r (labelBound p.toGeneric) (width a)
           ((encode (width a) a).length + 1 + steps a) := by
       have := hOutLen a 0 (Nat.zero_le _)
-      simp only [FiniteState.run_zero, FiniteState.resultEncoding, encOption_some,
-        encSum_inl, List.length_cons] at this
-      omega
+      enc_len [FiniteState.run_zero, FiniteState.resultEncoding] at this
     have hQ := Nat.mul_le_mul_left (steps a + 1) (Nat.add_le_add hXD hsq)
     have hPQ : R ^ max 3 d ≤ (steps a + 1) * R ^ max 3 d := Nat.le_mul_of_pos_left _ (by omega)
     have hencT := length_encNat_le_self (steps a)

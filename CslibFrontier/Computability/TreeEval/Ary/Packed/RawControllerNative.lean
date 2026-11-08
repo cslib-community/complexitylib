@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.TreeEval.Ary.Packed.RawControllerSpace
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Cases
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.ListSlice
 import Mathlib.Data.List.GetD
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Native local computation of the uniform raw controller
@@ -73,13 +74,10 @@ private theorem path_encoding_le (st : List Frame) :
   | nil => simp [path]
   | cons fr st ih =>
     have hc : (encNat fr.2.1).length ≤ (encFrame fr).length := by
-      simp only [encFrame, length_encPair]
-      omega
+      enc_len [encFrame]
     have hp : path (fr :: st) = path st ++ [fr.2.1] := by simp [path]
     rw [hp, encList_append, List.length_append]
-    simp only [encList_cons, encList_nil, List.append_nil, List.length_append,
-      length_frame] at ih ⊢
-    omega
+    enc_len [encList_cons, encList_nil, List.append_nil] at ih ⊢
 
 private theorem path_inSpace :
     ComputableInSpace path (encList encFrame) (encList encNat)
@@ -107,8 +105,7 @@ private theorem path_inSpace :
           4 * ((encList encFrame st).length + 1) := by
     have hf := length_le_encList_of_mem encFrame (List.getElem_mem hi)
     have hs := hstate st i hi.le
-    simp only [encFrame, length_encPair] at hf hs ⊢
-    omega
+    enc_len [encFrame] at hf hs ⊢
   have hfold := ComputableInSpace.foldl hid hinit hstep hspace hstate
   refine hfold.weaken (.of_le_linear 8 8 fun _ => by omega) |>.of_enc_eq ?_
   intro st
