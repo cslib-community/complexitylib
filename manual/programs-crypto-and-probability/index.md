@@ -1438,8 +1438,7 @@ require a positive latency. It uses the actual maximum concurrent duration, not
 an instruction count or a sum of concurrent call times. `latency_sum_lower` adds
 this envelope along supported native histories; `issued_bound` combines it with
 the concrete source deadline guard to bound actual issued count by
-$v=min(u,lfloor D/ell
-floor)$, represented by `effectiveTurns` on nonnegative
+$v=\min(u,\lfloor D/\ell\rfloor)$, represented by `effectiveTurns` on nonnegative
 real interface clocks.
 
 `issued_live` proves that a source response resumes at the actual native query
