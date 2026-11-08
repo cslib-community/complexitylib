@@ -34,6 +34,7 @@ independent.
 
 ## Main results
 
+* `Matrix.pderiv_prod_X`: differentiating a product of permutation entries.
 * `Matrix.choose_sq_le_rank_partialDerivatives_det_mvPolynomialX`,
   `Matrix.choose_sq_le_rank_partialDerivatives_permanent_mvPolynomialX`: the `k`-th order partial
   derivatives of the generic determinant and permanent span at least `choose n k ^ 2` dimensions.
@@ -56,8 +57,12 @@ variable {K : Type*} [Field K] {n : ℕ}
 private noncomputable def permSum (w : Perm (Fin n) → K) : MvPolynomial (Fin n × Fin n) K :=
   ∑ σ, w σ • ∏ i, X (σ i, i)
 
-private theorem pderiv_prod_X (σ : Perm (Fin n)) (r c : Fin n) (S : Finset (Fin n)) :
-    pderiv (r, c) (∏ i ∈ S, X (σ i, i) : MvPolynomial (Fin n × Fin n) K) =
+omit [Field K] in
+/-- The partial derivative of a product of permutation entries `X (σ i, i)` along `(r, c)`
+deletes the factor of column `c` when it is the entry `(r, c)`, and vanishes otherwise. -/
+theorem pderiv_prod_X {ι R : Type*} [DecidableEq ι] [CommSemiring R] (σ : Perm ι) (r c : ι)
+    (S : Finset ι) :
+    pderiv (r, c) (∏ i ∈ S, X (σ i, i) : MvPolynomial (ι × ι) R) =
       if c ∈ S ∧ σ c = r then ∏ i ∈ S.erase c, X (σ i, i) else 0 := by
   classical
   induction S using Finset.induction_on with

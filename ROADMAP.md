@@ -1118,6 +1118,16 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   determinant through the adjugate circuits of
   [`Arithmetic/Adjugate`](Complexity/Computability/Circuit/Arithmetic/Adjugate.lean), which needs
   a circuit model with division.
+- **Determinantal complexity**
+  ([#3384](https://github.com/cslib-community/complexitylib/issues/3384)): the Mignon–Ressayre
+  bound `n² ≤ 2 · dc(perm_n)` is proved in
+  [`Arithmetic/DeterminantalComplexity`](Complexity/Computability/Circuit/Arithmetic/DeterminantalComplexity.lean)
+  over every field with `2 ≠ 0` and `(n - 1)! ≠ 0`, including characteristic zero. Remaining:
+  Valiant's universality (every polynomial has a determinantal representation, so `dc` is finite)
+  and Grenet's upper bound `dc(perm_n) ≤ 2ⁿ - 1`; the Cai–Chen–Li extension to every
+  characteristic other than two; Yabe's real bound `dc(perm_n) ≥ (n - 1)² + 1` through
+  Sylvester's law of inertia; and border determinantal complexity in the geometric complexity
+  theory programme (Landsberg–Manivel–Ressayre).
 - **The matrix multiplication exponent** (ω ≤ 9/4): Pass's constructive proof
   (arXiv:2610.28627v2) of OpenAI's bound is formalized over every field of characteristic zero:
   for every `τ > 9/4` an exact bilinear algorithm for some `v × v` multiplication with fewer than
