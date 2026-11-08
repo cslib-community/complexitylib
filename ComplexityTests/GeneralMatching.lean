@@ -119,8 +119,8 @@ theorem cycleMatching_isMatching : cycleMatching.IsMatching := by
 /-- `U = ∅` certifies that `{01, 23}` is a maximum matching of the `5`-cycle: the cycle has an odd
 component, so `|V(M)| + o(C₅) = 4 + 1 = 5 + |∅|`. -/
 example : cycleMatching.IsMaximumMatching := by
-  refine cycleMatching_isMatching.isMaximumMatching_iff_exists_ncard_verts_add_ncard_oddComponents_eq.mpr
-    ⟨∅, ?_⟩
+  refine (IsMatching.isMaximumMatching_iff_exists_ncard_verts_add_ncard_oddComponents_eq
+    cycleMatching_isMatching).mpr ⟨∅, ?_⟩
   have hverts : cycleMatching.verts.ncard = 4 := by
     rw [cycleMatching, Set.ncard_coe_finset]
     rfl

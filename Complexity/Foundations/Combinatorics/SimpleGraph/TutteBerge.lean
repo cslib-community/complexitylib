@@ -43,8 +43,7 @@ Here it is stated with vertex counts: a matching `M` covers `2|M|` vertices, so 
   maximality.
 * `SimpleGraph.Subgraph.IsMaximumMatching.isLeast_two_mul_ncard_edgeSet`: **the Tutte–Berge
   formula**. Twice the size of a maximum matching is the least value of `|V| + |U| - o(G - U)`.
-* `SimpleGraph.Iso.ncard_oddComponents_eq`: isomorphic finite graphs have equally many odd
-  components.
+* `SimpleGraph.Iso.ncard_oddComponents_eq`: isomorphic graphs have equally many odd components.
 
 ## References
 
@@ -58,8 +57,8 @@ namespace SimpleGraph
 
 variable {V : Type*} {G : SimpleGraph V}
 
-/-- Isomorphic finite graphs have equally many odd components. -/
-theorem Iso.ncard_oddComponents_eq [Finite V] {W : Type*} [Finite W] {G : SimpleGraph V}
+/-- Isomorphic graphs have equally many odd components. -/
+theorem Iso.ncard_oddComponents_eq {W : Type*} {G : SimpleGraph V}
     {H : SimpleGraph W} (φ : G ≃g H) : G.oddComponents.ncard = H.oddComponents.ncard := by
   refine Set.ncard_congr (fun c _ => φ.connectedComponentEquiv c) (fun c hc => ?_)
     (fun c _ d _ h => φ.connectedComponentEquiv.injective h) (fun d hd => ?_)
