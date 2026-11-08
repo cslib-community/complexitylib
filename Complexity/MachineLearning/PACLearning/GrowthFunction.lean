@@ -12,6 +12,7 @@ public import Mathlib.Analysis.SpecialFunctions.Exp
 import Complexity.Foundations.Combinatorics.SmallSubsets
 import Complexity.Foundations.Data.Nat.Choose.Sum
 import Complexity.Foundations.Data.Nat.Choose.Real
+import Complexity.MachineLearning.PACLearning.VCDimension
 
 /-! # The growth function and Sauer's lemma
 
@@ -239,6 +240,6 @@ theorem growthFunction_le_exp_one_mul_div_pow {C : ConceptClass α Bool} {d m : 
 /-- Sauer's lemma in terms of the VC dimension, for a class of finite VC dimension. -/
 theorem growthFunction_le_sum_choose_vcDim {C : ConceptClass α Bool} (hC : HasFiniteVCDim C)
     (m : ℕ) : growthFunction C m ≤ ∑ i ∈ Finset.range (vcDim C + 1), m.choose i :=
-  growthFunction_le_sum_choose (fun W hW => le_csSup hC ⟨W, rfl, hW⟩) m
+  growthFunction_le_sum_choose (fun _ hW => hW.card_le_vcDim hC) m
 
 end Cslib.MachineLearning.PACLearning
