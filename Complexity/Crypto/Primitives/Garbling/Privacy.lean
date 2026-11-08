@@ -304,6 +304,66 @@ private theorem uniformOfFintype_map_eq_of_shift {Ω ι L : Type} [Fintype Ω] [
   obtain ⟨e, he⟩ := hshift (fun i => if h : U i then c ⟨i, h⟩ else 0)
   exact ⟨e, fun ω => funext fun i => by simp [he _ _ i.2, i.2]⟩
 
+/-- Against a random oracle, hybrid view `j` can absorb any shift `c` of the rows hidden in hybrid
+`j + 1` by a translation of (oracle, filler rows). Rows already hidden in hybrid `j` are filler, so
+the filler absorbs their shift. Every other such row reads the inactive colour of wire `j` in at least
+one slot; the oracle is shifted at the tweak of the first such slot of each row. Distinct slots have
+distinct tweaks, so this shifts exactly one mask term of the row. -/
+private theorem exists_perm_hybridView_table_add (C : Circuit σ n m) (I : Interpretation σ Bool)
+    (F : K → T → K × Bool) (tw : Slot C.topology → T) (htw : Function.Injective tw)
+    (x : Fin n → Bool) (j : ℕ) (key : Wire n C.size × Bool → K) (perm : Wire n C.size → Bool)
+    (c : Row C.topology → K × Bool) :
+    ∃ e : Equiv.Perm ((T → K × Bool) × (Row C.topology → K × Bool)), ∀ ω r,
+      Hidden (act C I x perm) (j + 1) r →
+        (hybridView C I F tw x j key perm (e ω).2 fun p => (e ω).1 (tw p)).table r =
+          (hybridView C I F tw x j key perm ω.2 fun p => ω.1 (tw p)).table r + c r := by
+  classical
+  -- The first slot of its row that reads the inactive colour of wire `j`.
+  let First : Slot C.topology → Prop := fun p =>
+    IsTarget (act C I x perm) j p ∧ ∀ k, IsTarget (act C I x perm) j ⟨p.1, k⟩ → p.2 ≤ k
+  let δ : T → K × Bool := Function.extend tw (fun p => if First p then c p.1 else 0) 0
+  have hδ (p : Slot C.topology) : δ (tw p) = if First p then c p.1 else 0 :=
+    htw.extend_apply _ _ p
+  refine ⟨Equiv.addRight (δ, c), fun ω r hr => ?_⟩
+  simp only [hybridView, Equiv.coe_addRight, Prod.fst_add, Prod.snd_add, Pi.add_apply]
+  by_cases h : Hidden (act C I x perm) j r
+  · rw [ite_eq_left h, ite_eq_left h]
+  rw [ite_eq_right h, ite_eq_right h]
+  -- Some slot of `r` reads the inactive colour of wire `j`; let `k₀` be the first one.
+  obtain ⟨k₁, hk₁, hlt₁⟩ := hr
+  have htk₁ : IsTarget (act C I x perm) j ⟨r, k₁⟩ := by
+    refine ⟨hk₁, ?_⟩
+    change (C.topology.wires r.1 k₁).toNat = j
+    by_contra hne
+    exact h ⟨k₁, hk₁, by omega⟩
+  let S := Finset.univ.filter fun k => IsTarget (act C I x perm) j ⟨r, k⟩
+  have hS : S.Nonempty := ⟨k₁, Finset.mem_filter.mpr ⟨Finset.mem_univ _, htk₁⟩⟩
+  have hFirst (k : Fin _) : First ⟨r, k⟩ ↔ k = S.min' hS := by
+    constructor
+    · intro hk
+      exact le_antisymm (hk.2 _ (Finset.mem_filter.mp (S.min'_mem hS)).2)
+        (S.min'_le k (Finset.mem_filter.mpr ⟨Finset.mem_univ _, hk.1⟩))
+    · rintro rfl
+      exact ⟨(Finset.mem_filter.mp (S.min'_mem hS)).2,
+        fun k hk => S.min'_le k (Finset.mem_filter.mpr ⟨Finset.mem_univ _, hk⟩)⟩
+  -- The oracle shifts summed over the target slots of `r` give exactly `c r`.
+  have hδsum : (∑ k, if IsTarget (act C I x perm) j ⟨r, k⟩ then δ (tw ⟨r, k⟩) else 0) = c r := by
+    have hterm (k : Fin _) : (if IsTarget (act C I x perm) j ⟨r, k⟩ then δ (tw ⟨r, k⟩) else 0) =
+        if k = S.min' hS then c r else 0 := by
+      rw [hδ]
+      by_cases hk : k = S.min' hS
+      · have hk' := (hFirst k).mpr hk
+        rw [ite_eq_left hk, ite_eq_left hk', ite_eq_left hk'.1]
+      · have hk' := mt (hFirst k).mp hk
+        rw [ite_eq_right hk, ite_eq_right hk', ite_self]
+    rw [Finset.sum_congr rfl fun k _ => hterm k, Fintype.sum_ite_eq']
+  rw [add_assoc, ← hδsum, ← Finset.sum_add_distrib]
+  congr 1
+  refine Finset.sum_congr rfl fun k _ => ?_
+  split_ifs
+  · rfl
+  · exact (add_zero _).symm
+
 variable [Fintype K] [Nonempty K]
 
 /-! ### Experiments -/
@@ -532,66 +592,8 @@ private theorem idealGame_reduction (C : Circuit σ n m) (I : Interpretation σ 
     rw [ite_eq_left hr, ite_eq_left hr]
     rfl
   have hshiftL : ∀ c : Row C.topology → K × Bool, ∃ e : Equiv.Perm Ω,
-      ∀ ω r, Hidden a (j + 1) r → Tl (e ω) r = Tl ω r + c r := by
-    intro c
-    -- Shift the oracle at the tweak of the first target slot of each row by that row's shift.
-    let First : Slot C.topology → Prop := fun p =>
-      IsTarget a j p ∧ ∀ k, IsTarget a j ⟨p.1, k⟩ → p.2 ≤ k
-    let δ : T → K × Bool := fun t =>
-      ∑ p : Slot C.topology, if tw p = t ∧ First p then c p.1 else 0
-    refine ⟨Equiv.addRight (δ, c), fun ω r hr => ?_⟩
-    by_cases h : Hidden a j r
-    · simp only [Tl, hybridView, Equiv.coe_addRight]
-      rw [ite_eq_left h, ite_eq_left h]
-      rfl
-    · simp only [Tl, hybridView, Equiv.coe_addRight]
-      rw [ite_eq_right h, ite_eq_right h]
-      have hfst : (ω + (δ, c)).1 = ω.1 + δ := rfl
-      rw [hfst]
-      simp only [Pi.add_apply]
-      have hδ : ∀ k, δ (tw ⟨r, k⟩) = if First ⟨r, k⟩ then c r else 0 := by
-        intro k
-        simp only [δ]
-        rw [Finset.sum_eq_single ⟨r, k⟩]
-        · simp only [true_and]
-        · intro p _ hp
-          rw [ite_eq_right]
-          rintro ⟨hp', -⟩
-          exact hp (htw hp')
-        · intro hmem
-          exact absurd (Finset.mem_univ _) hmem
-      obtain ⟨k₁, hk₁, hlt₁⟩ := hr
-      have htk₁ : IsTarget a j ⟨r, k₁⟩ := by
-        refine ⟨hk₁, ?_⟩
-        change (C.topology.wires r.1 k₁).toNat = j
-        by_contra hne
-        exact h ⟨k₁, hk₁, by omega⟩
-      let S := Finset.univ.filter fun k => IsTarget a j ⟨r, k⟩
-      have hS : S.Nonempty := ⟨k₁, by simp [S, htk₁]⟩
-      let k₀ := S.min' hS
-      have hk₀ : First ⟨r, k₀⟩ := by
-        refine ⟨(Finset.mem_filter.mp (S.min'_mem hS)).2, fun k hk => ?_⟩
-        exact S.min'_le k (by simp [S, hk])
-      have hk₀u : ∀ k, First ⟨r, k⟩ → k = k₀ :=
-        fun k hk => le_antisymm (hk.2 k₀ hk₀.1) (hk₀.2 k hk.1)
-      have hsplit : (∑ k, if IsTarget a j ⟨r, k⟩ then ω.1 (tw ⟨r, k⟩) + δ (tw ⟨r, k⟩) else
-            F (key (C.topology.wires r.1 k, r.2 k)) (tw ⟨r, k⟩)) =
-          (∑ k, if IsTarget a j ⟨r, k⟩ then ω.1 (tw ⟨r, k⟩) else
-            F (key (C.topology.wires r.1 k, r.2 k)) (tw ⟨r, k⟩)) +
-          ∑ k, if IsTarget a j ⟨r, k⟩ then δ (tw ⟨r, k⟩) else 0 := by
-        rw [← Finset.sum_add_distrib]
-        refine Finset.sum_congr rfl fun k _ => ?_
-        split_ifs <;> simp
-      have hδsum : (∑ k, if IsTarget a j ⟨r, k⟩ then δ (tw ⟨r, k⟩) else 0) = c r := by
-        rw [Finset.sum_eq_single k₀]
-        · rw [ite_eq_left hk₀.1, hδ, ite_eq_left hk₀]
-        · intro k _ hk
-          split_ifs
-          · rw [hδ, ite_eq_right fun h2 => hk (hk₀u k h2)]
-          · rfl
-        · intro hmem
-          exact absurd (Finset.mem_univ _) hmem
-      rw [hsplit, hδsum, add_assoc]
+      ∀ ω r, Hidden a (j + 1) r → Tl (e ω) r = Tl ω r + c r :=
+    exists_perm_hybridView_table_add C I F tw htw x j key perm
   rw [uniformOfFintype_map_eq_of_shift (Hidden a (j + 1)) z Tl houtL hshiftL,
     uniformOfFintype_map_eq_of_shift (Hidden a (j + 1)) z Tr houtR hshiftR]
 
