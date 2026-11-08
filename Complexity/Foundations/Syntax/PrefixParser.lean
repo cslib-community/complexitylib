@@ -72,7 +72,8 @@ theorem append_injective {α τ : Type*} {readToken : τ → Option (Step α)}
     (h : tokens left ++ rest = tokens right ++ rest') : left = right ∧ rest = rest' := by
   have hparse := congrArg
     (parseFuel readToken ((tokens left).length + (tokens right).length)) h
-  rw [roundtrip _ _ _ (by omega), roundtrip _ _ _ (by omega)] at hparse
+  rw [roundtrip _ _ _ (Nat.le_add_right _ _),
+    roundtrip _ _ _ (Nat.le_add_left _ _)] at hparse
   have hp := Option.some.inj hparse
   exact ⟨congrArg Prod.fst hp, congrArg Prod.snd hp⟩
 

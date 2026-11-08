@@ -36,3 +36,12 @@ example : PrefixParser.decode ArithQBF.readToken [(.or, 0), (.var, 2)] = none :=
 -- The same parser also supports an empty result type, without choosing a default value.
 example : PrefixParser.decode (fun (_ : Unit) => (none : Option (PrefixParser.Step Empty))) [] =
     none := rfl
+
+-- Keep prefix injectivity independent of arithmetic tactics that add quotient axioms.
+/-- info: 'Cslib.PrefixParser.append_injective' does not depend on any axioms -/
+#guard_msgs in
+#print axioms Cslib.PrefixParser.append_injective
+
+/-- info: 'Cslib.Logic.PL.ArithQBF.tokens_append_inj' depends on axioms: [propext] -/
+#guard_msgs in
+#print axioms Cslib.Logic.PL.ArithQBF.tokens_append_inj

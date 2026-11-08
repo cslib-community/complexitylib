@@ -129,7 +129,7 @@ theorem parseFuel_tokens (e : ArithQBF ℕ) (rest : List (Kind × ℕ)) (fuel : 
     | succ fuel =>
       simp only [tokens, List.length_cons] at hf
       simp only [tokens, List.cons_append, Cslib.PrefixParser.parseFuel, readToken]
-      rw [ih rest fuel (by omega)]
+      rw [ih rest fuel (Nat.le_of_succ_le_succ hf)]
       rfl
   | bin op e₁ e₂ ih₁ ih₂ =>
     cases fuel with
@@ -137,16 +137,18 @@ theorem parseFuel_tokens (e : ArithQBF ℕ) (rest : List (Kind × ℕ)) (fuel : 
     | succ fuel =>
       cases op <;> simp only [tokens, List.length_cons, List.length_append] at hf ⊢ <;>
         simp only [List.cons_append, List.append_assoc, Cslib.PrefixParser.parseFuel, readToken] <;>
-        rw [ih₁ (e₂.tokens ++ rest) fuel (by omega)] <;>
+        rw [ih₁ (e₂.tokens ++ rest) fuel
+          (Nat.le_trans (Nat.le_add_right _ _) (Nat.le_of_succ_le_succ hf))] <;>
         dsimp only [Bind.bind, Option.bind] <;>
-        rw [ih₂ rest fuel (by omega)] <;> rfl
+        rw [ih₂ rest fuel
+          (Nat.le_trans (Nat.le_add_left _ _) (Nat.le_of_succ_le_succ hf))] <;> rfl
   | op op _ e ih =>
     cases fuel with
     | zero => cases op <;> simp [tokens] at hf
     | succ fuel =>
       cases op <;> simp only [tokens, List.length_cons] at hf ⊢ <;>
         simp only [List.cons_append, Cslib.PrefixParser.parseFuel, readToken] <;>
-        rw [ih rest fuel (by omega)] <;> rfl
+        rw [ih rest fuel (Nat.le_of_succ_le_succ hf)] <;> rfl
 
 /-- **Tokens in prefix order determine the formula**, and what follows them. -/
 theorem tokens_append_inj {e e' : ArithQBF ℕ} {r r' : List (Kind × ℕ)}
