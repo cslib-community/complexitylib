@@ -1141,6 +1141,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceE
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryCertificate
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryCorrectness
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryPolyTime
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceGeneralCounter
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceGroupCoefficients
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetwork
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetworkBounds
@@ -1150,6 +1151,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceO
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceOriginalCounter
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidencePadding
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceParityCounter
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceParityResources
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceRankSum
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceSelectionSum
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceSelections
@@ -1712,6 +1714,7 @@ public import Complexity.Computability.Complexity.FineGrained.Reduction
 public import Complexity.Computability.Complexity.FineGrained.ReplacementParams
 public import Complexity.Computability.Complexity.FineGrained.ReplacementScheduleDesign
 public import Complexity.Computability.Complexity.FineGrained.Schoening
+public import Complexity.Computability.Complexity.FineGrained.SharpCountingSchedule
 public import Complexity.Computability.Complexity.FineGrained.SparseBranchAsymptotics
 public import Complexity.Computability.Complexity.FineGrained.SparseBranchSchedule
 public import Complexity.Computability.Complexity.FineGrained.SparseCountingScale
@@ -3749,6 +3752,7 @@ public import Complexity.Foundations.Data.Nat.Fields
 public import Complexity.Foundations.Data.Nat.IntermediateValue
 public import Complexity.Foundations.Data.Nat.Log
 public import Complexity.Foundations.Data.Nat.LogLogSqrtLog
+public import Complexity.Foundations.Data.Nat.LogLogSqrtLogPolylog
 public import Complexity.Foundations.Data.Nat.LogLogSqrtLogReal
 public import Complexity.Foundations.Data.Nat.LogRpow
 public import Complexity.Foundations.Data.Nat.Morton

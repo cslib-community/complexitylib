@@ -1212,24 +1212,21 @@ length/encoding transfer, all reduced solver costs and binary accumulation are
 charged. General natural/real estimates also prove fixed linear query-variable
 rescaling without adding an iterated-log factor.
 
-The actual parity-leaf composition now uses the native counter:
-`IncidenceUniformSparseCounter` derives a global sharp callback time/polynomial-space
-certificate by executable sparse validation and a fixed-size exhaustive fallback.
-`IncidenceParityCounter.compiledSystem_isSparse` proves the sparse hypotheses for
-every compiled greedy candidate, including discarded candidates. `countParity`
-counts original assignments on polylogarithmic-density leaves, preserving declared
-unused variables. Its actual native certificate has global polynomial workspace
-and an explicit initial-search/all-candidate time bound with sharp per-call costs.
-No counter/resource contract substitutes for these implementations.
+Remaining core work is the final general-density machine time/space composition:
+instantiate uniform disjoint traversal with the normalized native parity leaves,
+charge every intermediate formula encoding and transfer global polynomial
+workspace, combine the sharp traversal clock with the sharp leaf certificate,
+and absorb the bounded-size prefix in that composed machine. The actual parity
+initial-search/all-candidate overhead has been absorbed with a single loglog;
+its certificate is all-size. The sharper computed schedule now has its own exact
+ceiling-square-root characterization, actual tree budget, polynomial numerical
+depth/occurrence bounds and binary-clock certificate. Unrestricted-density
+original-count correctness is proved by `IncidenceGeneralCounter`, including
+normalization and unused-variable restoration, but its final machine resource
+certificate remains open.
 
-Remaining core work is absorbing the parity initial-search/candidate overhead into
-eta and the sharper counting-sparsification composition for arbitrary-density CNFs.
-Appendix D.3 (PDF p.57) uses sigma=1/ceil(sqrt(lambda)); the old
-`SparseCountingScale` uses `ReplacementParams.numGroups` with nu² in its
-denominator, so its tree exponent cannot be reused as a single-loglog bound.
-Then compose native traversal, small-dimension handling and weighted binary
-reconstruction/eta rescaling. The older complete interpolation counter still
-retains its extra loglog factor; only the new normalized sparse-system path has
-the sharper proved endpoint. Common-occurrence weighted rows, arbitrary
-variable-length weighted raw rows, table/graph endpoints, full Lemma 3.2/Theorem 7.1,
+Then compose weighted binary reconstruction/eta rescaling. The older complete
+counter's extra loglog and nu²-denominator schedule cannot be relabeled as the
+sharper source bound. Common-occurrence weighted rows, arbitrary variable-length
+weighted raw rows, table/graph endpoints, full resource Lemma 3.2/Theorem 7.1,
 other-paper objectives and ALL-main remain open.

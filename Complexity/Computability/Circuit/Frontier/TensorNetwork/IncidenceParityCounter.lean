@@ -19,8 +19,8 @@ Instantiate the executable parity reduction with the native incidence counter, i
 candidate tested and discarded by greedy search. Declared unused variables remain counted.
 Correctness covers polylogarithmic-density leaves at all sizes. The certificate has global
 polynomial workspace and an explicit split-time bound charging all candidates and initial-row
-search. Absorption of that overhead and the general-density counting-sparsification schedule
-remain separate obligations; this is not Lemma 3.2 for arbitrary density.
+search. The companion `IncidenceParityResources` absorbs that overhead. Composed general-density
+resources remain a separate obligation; this is not Lemma 3.2 for arbitrary density.
 
 This implements the polylogarithmic-density leaf step of Appendix D.3, p. 57 in
 [OpenAI2026ETH], toward the general-density counter imported by Lemma 3.2 of

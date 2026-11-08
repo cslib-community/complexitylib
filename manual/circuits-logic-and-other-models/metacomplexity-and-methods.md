@@ -1271,21 +1271,58 @@ output writing and all original native stages, even on invalid inputs.
 workspace. Its explicit `sparseCNFTimeBound` charges the initial search and
 $(3n+1)(\texttt{candidateTupleCount}\ m\ P+1)$ actual candidate evaluations, where
 $P=\texttt{greedyRowListLength}\ B\ m$. Each call has the proved single-loglog callback
-bound with a polynomial encoded-system length. The theorem does **not** yet absorb the initial
-search/candidate overhead into $\eta(n)$.
+bound with a polynomial encoded-system length.
+
+The companion `IncidenceParityResources` now finishes this leaf resource composition.
+`exists_countParity_sharp_certificate` gives one actual machine with global bounds, at **every**
+size and for every typed input:
+$$A(L+1)^A2^{A\,\texttt{Nat.logLogSqrtLogScale}(n)},\qquad A(L+1)^A\text{ space}.$$
+Here $L$ is the complete unary-declared-size/binary-index CNF encoding length. The time includes
+initial-row search, every candidate, compilation, native evaluation and binary output writing.
+These are charged native-certificate bounds, realized up to fixed machine constants.
+The correctness domain remains the density restriction above; rejected dense inputs do not acquire
+a counting claim from an all-input resource bound. `exists_countParity_real_sharp_certificate`
+replaces the rounded exponent with $6A\eta(n)$ for $n\ge16$.
+
+`LogLogSqrtLogPolylog` bounds every fixed polynomial in $\lceil\log_2 n\rceil$ by the rounded
+scale plus a fixed additive constant. The constant covers the finite exceptional prefix, including
+zero. This absorbs both initial search and the full candidate multiplier; the older module's
+integer query-count estimate is reused, while its squared-loglog asymptotic is not used.
+
+### Compose disjoint counting at the sharper schedule
+
+`SharpCountingSchedule.sharpSearchDivisor` computes $\lceil\sqrt{\lceil\log_2 n\rceil}\rceil$,
+using one when the logarithm is zero. Its exact square bounds identify the source schedule
+$\sigma=1/\lceil\sqrt\lambda\rceil$, without the old $\nu^2$ denominator. The computed
+first-success threshold satisfies the actual disjoint counting-tree budget.
+`sharp_parameters_polylog` bounds numerical depth and leaf occurrences by fixed polynomials
+in $\lambda$, not just their binary lengths. `sharp_rounds_polytime` computes the actual binary
+traversal clock in polynomial time/space; `sharp_rounds_le` bounds its value by
+$4\,2^{\texttt{Nat.logLogSqrtLogScale}(n)}$ for supported formulas and $n\ge4$, independently
+of clause density. Computing this clock does not mean executing its steps takes polynomial time.
+
+Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceGeneralCounter`.
+`exists_countGeneralParity_eq_modelCountOn` derives fixed density and small-size parameters
+from the width and proves the original declared-variable count for **arbitrary clause density**.
+`countGeneralParity` uses direct counting below the fixed cutoff and the existing executable
+disjoint search otherwise. Each actual parity leaf count is normalized to its occurring support;
+the outer search restores the unused original variables exactly once. Empty formulas, empty
+clauses and zero variables are included. No leaf-counter or sparsifier-correctness contract is
+assumed. This is correctness of the composed function, not its final native resource certificate.
 
 From the repository root run
-`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceParityCounter`.
-The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceParityCounter.lean)
-checks a unit formula with an unused declared variable, zero variables, contradiction,
-symbolic above-cutoff candidate coverage, and global native callback/parity workspace bounds.
+`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceSharpParity`.
+The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceSharpParity.lean)
+checks ceiling rounding, actual traversal clocks, polynomial absorption including zero, sharp
+native parity resources with original-count semantics, dense repeated clauses, unused declared
+bits, zero-variable direct branches and a nonempty family above the general counter's cutoff.
 
-The general-density CNF endpoint is still open. Absorb the explicit parity overhead and use
-the Appendix D.3 p.57 counting-sparsification schedule
-$\sigma=1/\lceil\sqrt\lambda\rceil$. The older `SparseCountingScale` schedule has $\nu^2$
-in its group-count denominator, so its tree bound cannot be relabeled with the sharper exponent.
-Native tree traversal, bounded-size handling at that endpoint, weighted binary reconstruction
-and full runtime composition remain to connect. The existing complete CNF/weighted counter
-still has its extra log-log factor. Common-occurrence weighted input, arbitrary ragged weighted
-rows, table/graph, full Lemma 3.2/Theorem 7.1 and ALL-main gaps remain. The source for the
-completed normalized sparse-system step is OpenAI2026ETH Appendix D.3, Lemma D.2, PDF pp.54–57.
+The final general-density **machine time/space composition remains open**: instantiate the
+uniform traversal resource theorem with normalized native parity leaves, charge intermediate
+formula encodings, transfer the all-input polynomial workspace bounds, combine the proved
+clock and leaf exponent, and handle the bounded-size prefix in that composed certificate.
+Then compose weighted binary reconstruction and eta rescaling. Neither the existing full
+CNF/weighted counter's extra log-log factor nor its older sparsification schedule is relabeled.
+Common-occurrence weighted input, arbitrary ragged weighted rows, table/graph, full resource
+Lemma 3.2/Theorem 7.1 and ALL-main gaps remain. The source schedule and final required composition
+are OpenAI2026ETH Appendix D.3, PDF p.57, imported by STOC1575 Lemma 3.2 p.11.
