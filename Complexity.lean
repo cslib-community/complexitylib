@@ -796,6 +796,9 @@ public import Complexity.Computability.BlumComplexity.Speedup
 public import Complexity.Computability.BranchingProgram.MonoidProgram
 public import Complexity.Computability.BranchingProgram.PolyLength
 public import Complexity.Computability.Catalytic.Comparison
+public import Complexity.Computability.CellProbe.DecisionTree
+public import Complexity.Computability.CellProbe.Defs
+public import Complexity.Computability.CellProbe.Randomized
 public import Complexity.Computability.Circuit.Approximation
 public import Complexity.Computability.Circuit.Approximation.Hamming
 public import Complexity.Computability.Circuit.Arithmetic
@@ -3490,6 +3493,7 @@ public import Complexity.Crypto.Protocols.Cipher.EvenMansour
 public import Complexity.Crypto.Protocols.Cipher.FeistelNetworks
 public import Complexity.Crypto.Protocols.Cipher.LubyRackoff
 public import Complexity.Crypto.Protocols.Commitment.World
+public import Complexity.Crypto.Protocols.KEM.FujisakiOkamoto
 public import Complexity.Crypto.Protocols.MAC.CarterWegman
 public import Complexity.Crypto.Protocols.MPC.Basic
 public import Complexity.Crypto.Protocols.MPC.Beaver
@@ -4368,6 +4372,7 @@ public import Complexity.Foundations.NumberTheory.Padics.AdjoinRootReduction
 public import Complexity.Foundations.NumberTheory.Padics.AdjoinRootValuation
 public import Complexity.Foundations.NumberTheory.Padics.RatValuation
 public import Complexity.Foundations.NumberTheory.Primality.EulerLiars
+public import Complexity.Foundations.NumberTheory.Primality.RabinMonier
 public import Complexity.Foundations.NumberTheory.Primality.StrongLiars
 public import Complexity.Foundations.NumberTheory.Primality.Witness
 public import Complexity.Foundations.NumberTheory.PrimeCounting
@@ -4842,11 +4847,13 @@ public import Complexity.Logics.SecondOrder.WordMSO.OfRegular
 public import Complexity.Logics.SecondOrder.WordMSO.Separation
 public import Complexity.Logics.SecondOrder.WordMSO.ToRegular
 public import Complexity.MachineLearning.OnlineLearning.Hedge
+public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Agnostic
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Basic
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Halving
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Littlestone
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.MonotoneDisjunctions
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Perceptron
+public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Randomized
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.SOA
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Thresholds
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.VCDimension
@@ -4874,9 +4881,11 @@ public import Complexity.MachineLearning.UniformLearning.KushilevitzMansour
 public import Complexity.MachineLearning.UniformLearning.LowDegree
 public import Complexity.MachineLearning.UniformLearning.LowDegreeClasses
 public import Complexity.MachineLearning.UniformLearning.MembershipQuery
+public import Complexity.Privacy.DifferentialPrivacy.AboveThreshold
 public import Complexity.Privacy.DifferentialPrivacy.Basic
 public import Complexity.Privacy.DifferentialPrivacy.Composition
 public import Complexity.Privacy.DifferentialPrivacy.DiscreteLaplace
+public import Complexity.Privacy.DifferentialPrivacy.ExponentialMechanism
 public import Complexity.Privacy.DifferentialPrivacy.Hamming
 public import Complexity.Privacy.DifferentialPrivacy.RandomizedResponse
 public import Complexity.Probability.AdaptiveWeights

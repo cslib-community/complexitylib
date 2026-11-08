@@ -496,11 +496,13 @@ index links to canonical definitions rather than keeping a second set.
 - **Randomized primality tests**
   ([#2917](https://github.com/cslib-community/complexitylib/issues/2917)): the Euler-liar
   (Solovay–Strassen) and strong-liar (Miller–Rabin) bounds `2 · #liars ≤ φ(n)` for odd composite
-  `n` are in `Foundations/NumberTheory/Primality`, and an explicit Miller–Rabin verifier puts the
-  primes in `coRP` independently of AKS (`Problems/Primes/MillerRabin`). Remaining
-  ([#2958](https://github.com/cslib-community/complexitylib/issues/2958)): the Rabin–Monier bound
-  `#strong liars ≤ φ(n) / 4`, a polynomial-time Jacobi symbol, and the Solovay–Strassen verifier
-  stated as a `coRP` membership (with its gcd step, since non-units can satisfy Euler's congruence).
+  `n` are in `Foundations/NumberTheory/Primality`, together with the Rabin–Monier bound
+  `4 · #strong liars ≤ φ(n)` for odd composite `n ≠ 9` (`Primality/RabinMonier`), and an explicit
+  Miller–Rabin verifier puts the primes in `coRP` independently of AKS
+  (`Problems/Primes/MillerRabin`). Remaining
+  ([#2958](https://github.com/cslib-community/complexitylib/issues/2958)): a polynomial-time Jacobi
+  symbol, and the Solovay–Strassen verifier stated as a `coRP` membership (with its gcd step, since
+  non-units can satisfy Euler's congruence).
 - The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
   its input.
 - **Space:** Savitch bounds for general space-constructible functions.
@@ -1096,13 +1098,17 @@ each statement against the numbered result. Organize modules by subject, not cha
   ([#2908](https://github.com/cslib-community/complexitylib/issues/2908)): the realizable model,
   the halving algorithm, the Littlestone dimension with the standard optimal algorithm (optimal
   mistake bound equals Littlestone dimension), the VC comparison with the threshold gap,
-  Novikoff's perceptron bound, and WINNOW1 for monotone disjunctions with Littlestone's matching
-  `k ⌊log₂ (n / k)⌋` lower bound are in `MachineLearning/OnlineLearning/MistakeBound`. Remaining:
-  WINNOW2 for linearly separable Boolean functions with separation `δ` and Littlestone's
-  attribute transformations (Littlestone 1988, Theorems 9 and 10); randomized learners and the
-  agnostic setting, with Littlestone-dimension regret bounds (Ben-David–Pál–Shalev-Shwartz 2009);
-  multiclass and real-valued analogues; online-to-batch conversion into the PAC framework; and
-  running-time bounds, since the standard optimal algorithm is a noncomputable specification.
+  Novikoff's perceptron bound, WINNOW1 for monotone disjunctions with Littlestone's matching
+  `k ⌊log₂ (n / k)⌋` lower bound, and the agnostic upper bound (expected regret
+  `2 √(T d log (T + 1))` for Littlestone dimension `d`, Hedge over SOA experts,
+  Ben-David–Pál–Shalev-Shwartz 2009, [#3120](https://github.com/cslib-community/complexitylib/issues/3120))
+  with Cover's linear lower bound for deterministic learners are in
+  `MachineLearning/OnlineLearning/MistakeBound`. Remaining: WINNOW2 for linearly separable Boolean
+  functions with separation `δ` and Littlestone's attribute transformations (Littlestone 1988,
+  Theorems 9 and 10); the agnostic lower bound `Ω(√(Ldim(C) T))`, adaptive adversaries against
+  randomized learners, an unknown horizon (the doubling trick) and the optimal `Θ(√(Ldim(C) T))`
+  regret; multiclass and real-valued analogues; online-to-batch conversion into the PAC framework;
+  and running-time bounds, since the standard optimal algorithm is a noncomputable specification.
 - **Property and distribution testing:** independent repetition of Boolean local tests and BLR
   linearity testing have explicit decision-tree query bounds. Uniformity testing has matching
   `Θ(√n / ε²)` sample bounds for `ε ≤ 1/2` on even domains: the collision tester and Paninski's
@@ -1170,8 +1176,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   ([#2867](https://github.com/cslib-community/complexitylib/issues/2867)) leave the advanced
   composition theorem, exact-sampling costs for discrete noise, and continuous Laplace/Gaussian
   mechanisms with their finite-precision analysis.
-- The exponential mechanism, private query answering and private learning; privacy–accuracy
-  and sample-complexity lower bounds; then adaptive data-analysis and generalization guarantees.
+- Private query answering and private learning, building on the exponential mechanism and the
+  sparse vector technique ([#2977](https://github.com/cslib-community/complexitylib/issues/2977));
+  privacy–accuracy and sample-complexity lower bounds; then adaptive data-analysis and
+  generalization guarantees.
   Keep the adjacency relation, interaction model, privacy parameters and computational resources
   explicit, reusing the probability, oracle-computation and learning APIs.
 
