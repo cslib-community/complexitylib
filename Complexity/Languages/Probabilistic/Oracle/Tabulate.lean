@@ -14,10 +14,10 @@ public import Complexity.Languages.Probabilistic.Oracle.QueryCount
 
 `ProbOracleComp.tabulate q ps` queries the oracle at `q p` for each point `p` of the list `ps`, in
 order, and returns the table of answers, with `0` at points outside the list. Against a fixed
-function the table is that function on the list (`interpret_tabulate`), and the program makes
-exactly one query per list entry (`isQueryBounded_tabulate`). A reduction that needs an oracle's
-values on a known finite set of points, for example every PRF input used by a construction, reads
-them all up front this way and then runs without further queries.
+function the table is that function on the list (`interpret_tabulate`), and the program makes at
+most `ps.length` queries, one per list entry (`isQueryBounded_tabulate`). A reduction that needs
+an oracle's values on a known finite set of points, for example every PRF input used by a
+construction, reads them all up front this way and then runs without further queries.
 
 ## Main definitions
 
@@ -26,10 +26,10 @@ them all up front this way and then runs without further queries.
 ## Main results
 
 * `Cslib.ProbOracleComp.interpret_tabulate`: against a fixed function, the returned table.
-* `Cslib.ProbOracleComp.isQueryBounded_tabulate`: one query per list entry.
+* `Cslib.ProbOracleComp.isQueryBounded_tabulate`: at most one query per list entry.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.ProbOracleComp
 
@@ -64,7 +64,7 @@ theorem interpret_tabulate {m : Type → Type*} [Monad m] [LawfulMonad m]
       simp
     · simp [h]
 
-/-- Tabulation makes one external query per list entry. -/
+/-- Tabulation makes at most `ps.length` external queries, one per list entry. -/
 theorem isQueryBounded_tabulate (q : P → Query) (ps : List P) :
     (tabulate (R := R) q ps).IsQueryBounded ps.length := by
   induction ps with

@@ -379,10 +379,10 @@ families and full-input native runtime.
   ([#3236](https://github.com/cslib-community/complexitylib/issues/3236)): point-and-permute
   garbling of arbitrary-basis circuits with exact correctness and concrete simulation privacy is
   in `Crypto/Primitives/Garbling`. The bound is the sum of `n + size` PRF advantages, and each
-  reduction makes one query per table slot. Next: Yao's semi-honest two-party protocol with an
-  ideal OT oracle in the MPC framework, which needs an advantage-bounded semi-honest notion. After
-  that: the asymptotic PPT statement from the word-level `PseudorandomFunction`, then free-XOR and
-  half-gates.
+  reduction makes at most one query per table slot. Next: Yao's semi-honest two-party protocol
+  with an ideal OT oracle in the MPC framework, which needs an advantage-bounded semi-honest
+  notion. After that: the asymptotic PPT statement from the word-level `PseudorandomFunction`,
+  then free-XOR and half-gates.
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.

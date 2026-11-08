@@ -21,7 +21,8 @@ open Cslib Cslib.Circuits Cslib.Crypto Cslib.Crypto.Garbling
 def andC : Circuit Boolean.signature 2 1 :=
   ⟨Program.empty.gate ⟨Boolean.Op.and, ![Wire.input 0, Wire.input 1]⟩, fun _ => Wire.gate 0⟩
 
-/-- A toy keyed function on one-bit keys: the mask is the key, with the tweak ignored. -/
+/-- A toy keyed function on one-bit keys: the mask is the key, with the tweak ignored. It is not
+pseudorandom; it only makes the correctness and privacy statements concrete. -/
 def toyF (k : Bool) (_ : Slot andC.topology) : Bool × Bool := (k, k)
 
 /-- Fixed wire keys. -/
@@ -60,17 +61,19 @@ def loopTopology : Circuit.Topology 0 1 1 where
 
 example : ¬ loopTopology.IsOrdered := fun h => (Nat.lt_irrefl _) (h 0 (0 : Fin 1))
 
--- Each reduction for the AND circuit queries its oracle exactly once per argument slot.
+-- Each reduction for the AND circuit makes at most one query per argument slot.
 example (D : View andC.topology Bool → ProbComp Bool) (j : ℕ) :
     (reduction andC Boolean.interpretation toyF id 0 D j).IsQueryBounded 8 := by
   have h := isQueryBounded_reduction andC Boolean.interpretation toyF id 0 D j
   rwa [show Fintype.card (Slot andC.topology) = 8 by decide] at h
 
--- The identity PRF, keyed by the whole function, has advantage zero.
+-- Calibration of the PRF game only: the identity PRF, keyed by the whole function table, has
+-- advantage zero. Its key type differs from the garbling key type, so it does not instantiate `F`.
 example (A : PRF.Adversary (Fin 2) Bool) : PRF.advantage (fun (f : Fin 2 → Bool) x => f x) A = 0 :=
   Game.advantage_self _
 
 -- The privacy bound applies to the AND circuit with injective tweaks, for every distinguisher.
+-- This checks that `htw` is satisfiable (by `id`); with the toy `F` the right side is not small.
 example (D : View andC.topology Bool → ProbComp Bool) (x : Fin 2 → Bool) :
     Game.advantage (realGame andC Boolean.interpretation toyF id x D)
         (simGame andC Boolean.interpretation toyF id x D) ≤

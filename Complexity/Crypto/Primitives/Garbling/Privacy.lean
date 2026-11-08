@@ -36,9 +36,15 @@ argument over the wires in wire-number order: hybrid `j` replaces by uniform val
 read an inactive label on a wire numbered below `j`. The reduction for wire `j` embeds the PRF
 key as the inactive key of wire `j`: with the keyed oracle it produces hybrid `j` exactly
 (`PRF.realGame` side), and with a random function hybrid `j + 1` exactly (`PRF.idealGame` side).
-Each reduction tabulates the oracle once at the tweaks of all argument slots
-(`isQueryBounded_reduction`) and runs `D` once. When every reduction has PRF advantage at most `ε`
-the advantage is at most `(n + C.size) * ε` (`advantage_realGame_simGame_le_mul`).
+Each reduction reads the oracle up front at the tweaks of all argument slots, with at most one
+query per slot (`isQueryBounded_reduction`), and runs `D` once. When every reduction has PRF
+advantage at most `ε` the advantage is at most `(n + C.size) * ε`
+(`advantage_realGame_simGame_le_mul`).
+
+Tweak injectivity is needed. Take a row that reads one wire twice with the same colour. If its
+two argument slots had equal tweaks, their mask terms would be equal and cancel in the `Bool`
+component, so for a binary gate that row's colour bit would be sent in the clear. The identity on
+`Slot C.topology` is an injective tweak map.
 
 The simulator is correct: on an ordered topology every simulated view decodes to the output
 (`View.run_simulateWith`).
@@ -46,7 +52,12 @@ The simulator is correct: on an ordered topology every simulated view decodes to
 This is the single-instance form of simulation privacy: the circuit, input and distinguisher are
 fixed, so a bound uniform over a class of distinguishers follows by bounding the PRF advantage of
 the corresponding reductions. No bound holds for arbitrary distinguishers, since an exhaustive
-key search distinguishes once `K` is fixed.
+key search distinguishes once `K` is fixed. In the prv.sim game of [BellareHoangRogaway2012] the
+adversary itself chooses the circuit and the input, possibly at random and keeping state for its
+guess; a bound for that game follows from this one by averaging over the adversary's choice, since
+the advantage of a mixture is at most the average advantage. That transfer is not formalized here.
+Running time is not tracked either: there are no cost bounds for garbling, evaluation, the
+simulator or the reductions.
 
 ## Main definitions
 
@@ -58,7 +69,7 @@ key search distinguishes once `K` is fixed.
 ## Main results
 
 * `Cslib.Crypto.Garbling.View.run_simulateWith`: simulated views decode to the output.
-* `Cslib.Crypto.Garbling.isQueryBounded_reduction`: each reduction makes one query per slot.
+* `Cslib.Crypto.Garbling.isQueryBounded_reduction`: at most one query per slot.
 * `Cslib.Crypto.Garbling.advantage_realGame_simGame_le`: privacy, as a sum of PRF advantages.
 * `Cslib.Crypto.Garbling.advantage_realGame_simGame_le_mul`: privacy with a uniform PRF bound.
 
@@ -349,7 +360,7 @@ noncomputable def reduction (C : Circuit σ n m) (I : Interpretation σ Bool)
   let O ← ProbOracleComp.tabulate tw (Finset.univ : Finset (Slot C.topology)).toList
   ProbOracleComp.sample (D (hybridView C I F tw x j key perm R O))
 
-/-- Each reduction makes one oracle query per argument slot of the garbled table. -/
+/-- Each reduction makes at most one oracle query per argument slot of the garbled table. -/
 theorem isQueryBounded_reduction (C : Circuit σ n m) (I : Interpretation σ Bool)
     (F : K → T → K × Bool) (tw : Slot C.topology → T) (x : Fin n → Bool)
     (D : View C.topology K → ProbComp Bool) (j : ℕ) :
@@ -591,7 +602,10 @@ private theorem idealGame_reduction (C : Circuit σ n m) (I : Interpretation σ 
 /-- **Simulation privacy of garbled circuits.** For every circuit `C`, input `x` and
 distinguisher `D`, if distinct argument slots have distinct tweaks, the advantage of `D` between
 the real and the simulated view is at most the sum, over the `n + C.size` wires, of the PRF
-advantage of the reduction for that wire against `F`. -/
+advantage of the reduction for that wire against `F`. The hypothesis `htw` cannot be dropped:
+in a row reading one wire twice with the same colour, equal tweaks on the two slots make their
+mask terms cancel in the `Bool` component. The identity tweak map, with `T = Slot C.topology`,
+satisfies it. -/
 theorem advantage_realGame_simGame_le (C : Circuit σ n m) (I : Interpretation σ Bool)
     (F : K → T → K × Bool) (tw : Slot C.topology → T) (htw : Function.Injective tw)
     (x : Fin n → Bool) (D : View C.topology K → ProbComp Bool) :
