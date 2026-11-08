@@ -5113,6 +5113,7 @@ public import Complexity.Languages.Probabilistic.UniformNat.Support
 public import Complexity.Languages.Probabilistic.UntilBad
 public import Complexity.Languages.Probabilistic.UntilBad.TwoCost
 public import Complexity.Languages.Probabilistic.Vector
+public import Complexity.Logics.FirstOrder.Atom
 public import Complexity.Logics.FirstOrder.Basic
 public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.Basic
 public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity

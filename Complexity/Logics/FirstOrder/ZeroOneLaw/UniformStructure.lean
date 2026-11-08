@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Circuit.Boolean.FirstOrder
+public import Complexity.Logics.FirstOrder.Atom
 public import Complexity.Logics.FirstOrder.ZeroOneLaw.Transfer
 import Complexity.Foundations.Data.Fintype.RestrictInjective
 import Complexity.Foundations.ModelTheory.Basic
@@ -28,9 +28,8 @@ of the `n²` ordered pairs is an edge with probability `1/2`. It is not `G(n, 1/
 random simple graph of `Complexity.Logics.FirstOrder.ZeroOneLaw`; under it the simple-graph axioms
 hold with probability tending to `0`, as the library's tests check.
 
-Atomic facts are `Cslib.Circuits.Boolean.ModelChecking.Atom`, and the structure given by a truth
-table is that of `Cslib.Circuits.Boolean.ModelChecking.Model`, so the circuit model-checking API
-applies to the same structures.
+Atomic facts are `Cslib.Logic.FO.Atom`, and the structure given by a truth table is that of
+`Cslib.Logic.FO.Model`.
 
 A nullary relation symbol is a single atomic fact, true with probability exactly `1/2` for every
 `n`, so a vocabulary with one has no 0-1 law (`Cslib.Logic.FO.not_zero_one_law_of_nullary`).
@@ -59,20 +58,16 @@ A nullary relation symbol is a single atomic fact, true with probability exactly
 
 public section
 
-open FirstOrder Language Structure Cslib.Probability Cslib.Circuits.Boolean.ModelChecking Filter
+open FirstOrder Language Structure Cslib.Probability Filter
 
 namespace Cslib.Logic.FO
 
 universe u v
 
-/-- There are finitely many atomic facts on `Fin n` when `L` has finitely many relation symbols. -/
-instance {L : Language} [Finite (Σ l, L.Relations l)] {n : ℕ} : Finite (Atom L n) :=
-  inferInstanceAs (Finite (Σ R : Σ l, L.Relations l, Fin R.1 → Fin n))
-
 variable {L : Language.{u, v}} [L.IsRelational]
 
 /-- The structure on `Fin n` whose true atomic facts are those given by `y`: the structure of
-`Cslib.Circuits.Boolean.ModelChecking.Model y`. -/
+`Cslib.Logic.FO.Model y`. -/
 abbrev atomStructure {n : ℕ} (y : Atom L n → Bool) : L.Structure (Fin n) :=
   inferInstanceAs (L.Structure (Model y))
 
@@ -82,7 +77,7 @@ theorem relMap_atomStructure {n l : ℕ} (y : Atom L n → Bool) (R : L.Relation
 
 open Classical in
 /-- For a relational language, a structure on `Fin n` is the same as the truth table of its
-atomic facts. The inverse reads off the atomic facts with `ModelChecking.atomsOf`. -/
+atomic facts. The inverse reads off the atomic facts with `Cslib.Logic.FO.atomsOf`. -/
 noncomputable def atomStructureEquiv (n : ℕ) : (Atom L n → Bool) ≃ L.Structure (Fin n) where
   toFun := atomStructure
   invFun S := letI := S; atomsOf (L := L) (Equiv.refl (Fin n))

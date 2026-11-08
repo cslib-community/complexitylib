@@ -19,6 +19,7 @@ namespace ComplexityTests.OrderedFirstOrderCircuits
 
 open FirstOrder Language
 open Cslib.Circuits.Boolean
+open Cslib.Logic.FO (Atom atomsOf)
 
 private inductive Relation : ℕ → Type
   | mark : Relation 1
@@ -29,14 +30,14 @@ private abbrev inputLanguage : Language where
 
 private instance : inputLanguage.IsRelational := fun _ => inferInstance
 
-private def atomEquiv (n : ℕ) : ModelChecking.Atom inputLanguage n ≃ Fin n where
+private def atomEquiv (n : ℕ) : Atom inputLanguage n ≃ Fin n where
   toFun a := match a with | ⟨⟨_, .mark⟩, xs⟩ => xs 0
   invFun i := ⟨⟨1, .mark⟩, fun _ => i⟩
   left_inv := by
     rintro ⟨⟨_, r⟩, xs⟩
     cases r
     exact congrArg
-      (fun t : Fin 1 → Fin n => (⟨⟨1, Relation.mark⟩, t⟩ : ModelChecking.Atom inputLanguage n))
+      (fun t : Fin 1 → Fin n => (⟨⟨1, Relation.mark⟩, t⟩ : Atom inputLanguage n))
       (funext fun i => congrArg xs (Subsingleton.elim 0 i))
   right_inv _ := rfl
 
@@ -146,7 +147,7 @@ example :
 example (s : inputLanguage.Structure (Fin 3)) :
     letI := s;
     (compile (n := 3) mixed).eval Unbounded.interpretation
-      (ModelChecking.atomsOf (L := inputLanguage) (Equiv.refl _) ∘ (atomEquiv 3).symm) = true ↔
+      (atomsOf (L := inputLanguage) (Equiv.refl _) ∘ (atomEquiv 3).symm) = true ↔
         Fin 3 ⊨ mixed := by
   let _ := s
   exact (ModelChecking.Ordered.eval_toUnbounded_atomsOf (atomEquiv 3) mixed Fin.elim0).trans (by
@@ -155,7 +156,7 @@ example (s : inputLanguage.Structure (Fin 3)) :
       (fun (v : Empty → Fin 3) (xs : Fin 0 → Fin 3) => BoundedFormula.Realize mixed v xs)
       (Subsingleton.elim _ _) (Subsingleton.elim _ _)))
 
-private def emptyAtoms (n : ℕ) : ModelChecking.Atom Language.empty n ≃ Fin 0 where
+private def emptyAtoms (n : ℕ) : Atom Language.empty n ≃ Fin 0 where
   toFun a := a.1.2.elim
   invFun := Fin.elim0
   left_inv a := a.1.2.elim
@@ -179,7 +180,7 @@ private abbrev nullaryLanguage : Language where
 
 private instance : nullaryLanguage.IsRelational := fun _ => inferInstance
 
-private def nullaryAtoms (n : ℕ) : ModelChecking.Atom nullaryLanguage n ≃ Fin 1 where
+private def nullaryAtoms (n : ℕ) : Atom nullaryLanguage n ≃ Fin 1 where
   toFun _ := 0
   invFun _ := ⟨⟨0, .flag⟩, Fin.elim0⟩
   left_inv := by
@@ -187,7 +188,7 @@ private def nullaryAtoms (n : ℕ) : ModelChecking.Atom nullaryLanguage n ≃ Fi
     cases r
     exact congrArg
       (fun t : Fin 0 → Fin n => (⟨⟨0, NullaryRelation.flag⟩, t⟩ :
-        ModelChecking.Atom nullaryLanguage n)) (Subsingleton.elim _ _)
+        Atom nullaryLanguage n)) (Subsingleton.elim _ _)
   right_inv i := Subsingleton.elim _ _
 
 private def flag : (language nullaryLanguage).Sentence :=

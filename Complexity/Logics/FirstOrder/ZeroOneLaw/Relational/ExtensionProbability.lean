@@ -9,6 +9,8 @@ module
 
 public import Complexity.Logics.FirstOrder.ZeroOneLaw.Relational.ExtensionAxiom
 public import Complexity.Logics.FirstOrder.ZeroOneLaw.UniformStructure
+public import Mathlib.Order.Filter.AtTopBot.Basic
+public import Mathlib.Topology.Instances.Real.Lemmas
 import Complexity.Foundations.Analysis.SpecificLimits.DescFactorial
 import Complexity.Foundations.Data.Fintype.RestrictInjective
 import Mathlib.Data.Fintype.CardEmbedding
@@ -45,7 +47,7 @@ truth table along an injection is uniformly random.
 
 public section
 
-open FirstOrder Language Structure Cslib.Circuits.Boolean.ModelChecking Filter
+open FirstOrder Language Structure Filter
 
 namespace Cslib.Logic.FO.Relational
 
