@@ -158,8 +158,7 @@ example : Cslib.BitString.rankCombination (Cslib.BitString.unrankCombination 6 3
 /-- info: (true, true) -/
 #guard_msgs in
 #eval
-  let S : { S : Finset (Fin 6) // S.card = 3 } :=
-    ⟨{⟨0, by decide⟩, ⟨2, by decide⟩, ⟨5, by decide⟩}, by decide⟩
+  let S : { S : Finset (Fin 6) // S.card = 3 } := ⟨{(0 : Fin 6), 2, 5}, by decide⟩
   let r := Cslib.BitString.subsetEquiv 6 3 S
   let S' := (Cslib.BitString.subsetEquiv 6 3).symm r
   (decide (S' = S), decide (Cslib.BitString.subsetEquiv 6 3 S' = r))

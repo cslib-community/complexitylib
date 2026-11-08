@@ -171,12 +171,12 @@ def subsetEquiv (m k : ℕ) : { S : Finset (Fin m) // S.card = k } ≃ Fin (m.ch
 
 @[simp]
 theorem val_subsetEquiv {m k : ℕ} (S : { S : Finset (Fin m) // S.card = k }) :
-    (subsetEquiv m k S).val = rankCombination (List.ofFn fun u : Fin m => decide (u ∈ S.1)) :=
-  rfl
+    (subsetEquiv m k S).val = rankCombination (List.ofFn fun u : Fin m => decide (u ∈ S.1)) := by
+  simp [subsetEquiv]
 
 @[simp]
 theorem coe_subsetEquiv_symm {m k : ℕ} (r : Fin (m.choose k)) :
-    ((subsetEquiv m k).symm r).1 = supportOfList m (unrankCombination m k r.val) :=
-  rfl
+    ((subsetEquiv m k).symm r).1 = supportOfList m (unrankCombination m k r.val) := by
+  simp [subsetEquiv]
 
 end Cslib.BitString

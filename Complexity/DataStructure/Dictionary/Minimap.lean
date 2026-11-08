@@ -176,8 +176,8 @@ def activeSet {U' n' X m : ℕ} (e : Encoded U' n' X m) : Finset (Fin U') :=
   (activeSub e).1
 
 @[simp]
-theorem card_activeSet {U' n' X m : ℕ} (e : Encoded U' n' X m) : (activeSet e).card = m :=
-  (activeSub e).2
+theorem card_activeSet {U' n' X m : ℕ} (e : Encoded U' n' X m) : (activeSet e).card = m := by
+  exact (activeSub e).2
 
 /-- Spillover tuple `Fin m → Fin K` (in increasing order of key in `activeSet e`) in `e.header`. -/
 private def spillVec {U' n' X m : ℕ} (e : Encoded U' n' X m) :
@@ -335,8 +335,7 @@ private theorem unpackPair?_isSome {U' n' X m : ℕ} (hm : m ≤ n')
   dsimp only [lookupDecoded]
   simp only [hu, ↓reduceDIte, Option.isSome_map]
   have hcard : S.card ≤ n' := hS.le.trans hm
-  have hB : S.card ≤ (Finset.univ : Finset (Fin n')).card := by simpa using hcard
-  exact (DynamicMatching.matchOptOn_isSome_iff h hB u).mpr hu
+  exact (DynamicMatching.matchOpt_isSome_iff h hcard u).mpr hu
 
 /-- Total extraction of `(spillover, slotWord)` for an active key `a ∈ activeSet e`. -/
 private def unpackPair {U' n' X m : ℕ} (hm : m ≤ n')
@@ -715,24 +714,26 @@ theorem size_eq_card_activeSet {U' n' X : ℕ} (b : BoundedEncoded U' n' X) :
   (card_activeSet b.encoded).symm
 
 @[simp]
-theorem size_empty (U' n' X : ℕ) : (empty U' n' X).size.val = 0 := rfl
+theorem size_empty (U' n' X : ℕ) : (empty U' n' X).size.val = 0 := by
+  simp [empty]
 
 @[simp]
-theorem activeSet_empty (U' n' X : ℕ) : activeSet (empty U' n' X).encoded = ∅ :=
-  Minimap.activeSet_empty U' n' X
+theorem activeSet_empty (U' n' X : ℕ) : activeSet (empty U' n' X).encoded = ∅ := by
+  simp [empty]
 
 @[simp]
 theorem activeSet_encode {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
     (s : Dictionary.State U') (hb : Dictionary.ValuesBounded X s)
     (hs : (Dictionary.dom s).card ≤ n') :
-    activeSet (encode h s hb hs).encoded = Dictionary.dom s :=
-  Minimap.activeSet_encode hs h s hb rfl
+    activeSet (encode h s hb hs).encoded = Dictionary.dom s := by
+  simp [encode]
 
 @[simp]
 theorem size_encode {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
     (s : Dictionary.State U') (hb : Dictionary.ValuesBounded X s)
     (hs : (Dictionary.dom s).card ≤ n') :
-    (encode h s hb hs).size.val = (Dictionary.dom s).card := rfl
+    (encode h s hb hs).size.val = (Dictionary.dom s).card := by
+  simp [encode]
 
 @[simp]
 theorem activeSet_insert {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
@@ -865,9 +866,7 @@ private theorem slots_packPairs_of_matchOpt {U' n' X m : ℕ} (hm : m ≤ n')
     {a : Fin U'} {b : Fin n'} (hab : DynamicMatching.matchOpt h S a = some b) :
     ∃ ha : a ∈ S, (packPairs hm h S hS pairs).slots b = (pairs a ha).2 := by
   have hSle : S.card ≤ n' := hS.le.trans hm
-  have hB : S.card ≤ (Finset.univ : Finset (Fin n')).card := by simpa using hSle
-  have ha : a ∈ S := (DynamicMatching.matchOptOn_isSome_iff h hB a).mp
-    (by change (DynamicMatching.matchOpt h S a).isSome = true; rw [hab]; rfl)
+  have ha : a ∈ S := (DynamicMatching.matchOpt_isSome_iff h hSle a).mp (by rw [hab]; rfl)
   refine ⟨ha, ?_⟩
   let idxMap : Fin m → Fin n' := fun i =>
     DynamicMatching.matching h S hSle ⟨S.orderEmbOfFin hS i, S.orderEmbOfFin_mem hS i⟩
@@ -920,7 +919,9 @@ private theorem unusedSlotsZero_packPairs {U' n' X m : ℕ} (hm : m ≤ n')
   exact slots_packPairs_of_forall_ne hm h S hS pairs hb
 
 theorem unusedSlotsZero_empty {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n') :
-    UnusedSlotsZero h (empty U' n' X) := fun _ _ => rfl
+    UnusedSlotsZero h (empty U' n' X) := by
+  intro _ _
+  simp [empty]
 
 theorem unusedSlotsZero_encode {U' n' X m : ℕ} (hm : m ≤ n')
     (h : DynamicMatching.Scheme U' n') (s : Dictionary.State U')
@@ -1294,9 +1295,7 @@ private theorem slotDiff_packPairs_le {U' n' X m m' : ℕ} (hm : m ≤ n')
           fun hne => ha_notD (mem_filter.mpr ⟨mem_univ a', hne⟩)
         rw [Classical.not_not.mp h1, hab']
       have hSle : S.card ≤ n' := (card_activeSet e).le.trans hm
-      have hB : S.card ≤ (Finset.univ : Finset (Fin n')).card := by simpa using hSle
-      have haS : a' ∈ S := (DynamicMatching.matchOptOn_isSome_iff h hB a').mp
-        (by change (DynamicMatching.matchOpt h S a').isSome = true; rw [heq_m]; rfl)
+      have haS : a' ∈ S := (DynamicMatching.matchOpt_isSome_iff h hSle a').mp (by rw [heq_m]; rfl)
       obtain ⟨haS', hslot'⟩ := slots_packPairs_of_matchOpt hm' h S' hS' pairs' hab'
       rw [hslot', hsame a' haS haS' ha_notV, unpackPair_snd_of_matchOpt hm h e haS heq_m]
     · push Not at hex'
@@ -1331,11 +1330,8 @@ theorem slotDiff_insertNew_le {U' n' X m : ℕ} (hm' : m + 1 ≤ n')
       4 * (DynamicMatching.rounds h (activeSet e) + 1) := by
   have hm : m ≤ n' := Nat.le_of_succ_le hm'
   have hSle : (activeSet e).card ≤ n' := (card_activeSet e).le.trans hm
-  have hB : (activeSet e).card ≤ (Finset.univ : Finset (Fin n')).card := by simpa using hSle
   have hins_le : (insert u (activeSet e)).card ≤ n' := by
     rw [card_insert_of_notMem hu, card_activeSet]; exact hm'
-  have hBins : (insert u (activeSet e)).card ≤ (Finset.univ : Finset (Fin n')).card := by
-    simpa using hins_le
   dsimp only [insertNew]
   refine (slotDiff_packPairs_le hm hm' h e hz (insert u (activeSet e)) _ _ {u} ?_).trans ?_
   · intro a ha _ haV
@@ -1348,9 +1344,9 @@ theorem slotDiff_insertNew_le {U' n' X m : ℕ} (hm' : m + 1 ≤ n')
       have his1 : (DynamicMatching.matchOpt h (activeSet e) u).isSome = false := by
         rw [Bool.eq_false_iff]
         exact fun hm_some =>
-          hu ((DynamicMatching.matchOptOn_isSome_iff h hB u).mp hm_some)
+          hu ((DynamicMatching.matchOpt_isSome_iff h hSle u).mp hm_some)
       have his2 : (DynamicMatching.matchOpt h (insert u (activeSet e)) u).isSome = true :=
-        (DynamicMatching.matchOptOn_isSome_iff h hBins u).mpr
+        (DynamicMatching.matchOpt_isSome_iff h hins_le u).mpr
           (mem_insert_self u _)
       rw [heq, his2] at his1
       exact Bool.false_ne_true his1.symm

@@ -208,14 +208,14 @@ def equiv (X r_sp : ℕ) :
 
 @[simp]
 theorem coe_equiv {X r_sp : ℕ} (x : Fin X) :
-    (equiv X r_sp x).1 = encode r_sp x :=
-  rfl
+    (equiv X r_sp x).1 = encode r_sp x := by
+  simp [equiv]
 
 @[simp]
 theorem val_equiv_symm {X r_sp : ℕ}
     (km : { km : Fin (spillUniv X r_sp) × Fin (2 ^ memBits X r_sp) // decodeVal km < X }) :
-    ((equiv X r_sp).symm km).val = decodeVal km.1 :=
-  rfl
+    ((equiv X r_sp).symm km).val = decodeVal km.1 := by
+  simp [equiv]
 
 /-! ### Spillover universe and bit-redundancy bounds (Lemma 3.8) -/
 
