@@ -753,6 +753,13 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 ### Search, parameterized and fine-grained complexity
 
 - **TFNP:** CLS, further local search, fixed-point and equilibrium problems.
+- **Sperner's lemma** ([#2999](https://github.com/cslib-community/complexitylib/issues/2999)):
+  the parity form on the triangulated square grid by door-following, and circuit `Sperner2D` in
+  `PPAD` as the end-of-line relation of its door graph. Remaining
+  ([#3087](https://github.com/cslib-community/complexitylib/issues/3087)): `PPAD`-hardness of
+  two-dimensional Sperner/Brouwer (Chen–Deng), `PPAD`-completeness of three-dimensional Sperner
+  (Papadimitriou 1994), and the `d`-dimensional simplex form with general Sperner boundary
+  conditions.
 - **Parameterized:** strongly uniform variants (computable `f`), further explicit polynomial
   kernels, the W and A hierarchies, and parameterized lower bounds; connect these to
   [structural graph algorithms](#structural-graph-algorithms) and their decomposition costs.
