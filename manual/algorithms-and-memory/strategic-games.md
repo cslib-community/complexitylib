@@ -3,9 +3,9 @@
 [Chapter index](index.md) · [Online and streaming models](online-and-streaming.md)
 
 This page covers finite strategic games in cost-minimization form, potential games, atomic and
-nonatomic congestion games, and price-of-anarchy bounds. All of it is mathematics about
-real-valued costs. No machine model is involved, and equilibrium computation carries no resource
-claim [complexitylib][complexitylib].
+nonatomic congestion games, price-of-anarchy bounds, and no-regret (Hedge) dynamics. All of it is
+mathematics about real-valued costs. No machine model is involved, and equilibrium computation
+carries no resource claim [complexitylib][complexitylib].
 
 ## The strategic-game layer
 
@@ -55,7 +55,45 @@ equilibrium by `λ / (1 - μ)` times that of any profile. `IsSmooth.expected_soc
 the same bound for coarse correlated equilibria. `IsSmooth.expected_socialCost_le_of_forall_le`
 allows an additive slack `ε i` in player `i`'s equilibrium inequality and yields
 `(λ * socialCost s' + ∑ i, ε i) / (1 - μ)`. That is the static form of the no-regret bound, where
-the slack is each player's average regret. No learning dynamics are formalized.
+the slack is each player's average regret.
+
+## Mixed strategies and no-regret dynamics
+
+[Mixed.lean](../../Complexity/GameTheory/Strategic/Mixed.lean) represents mixed strategies as
+vectors `p : ∀ i, S i → ℝ`. The product distribution `productDist` has weight
+`productWeight p s = ∏ i, p i (s i)` on the profile `s`. The expected cost vector
+`deviationCost G p i a` is player `i`'s expected cost for playing `a` while the others follow `p`
+[roughgarden13cs364a][roughgarden13cs364a]. `sum_mul_deviationCost` shows that averaging this
+vector against `p i` gives player `i`'s expected cost under `productDist`. So a learner facing
+these vectors has the regret of the player in the game.
+
+[NoRegret.lean](../../Complexity/GameTheory/Strategic/NoRegret.lean) handles arbitrary sequences
+`σ : ℕ → StdSimplex ℝ (∀ i, S i)` of outcome distributions; regret is stated as a hypothesis on
+expected costs. `timeAverage σ T hT` is `(1/T) ∑ t < T, σ t`. The main results:
+
+- `CostGame.timeAverage_le_add` (Lecture 17, Proposition 3.1): regret at most `R i` makes the time
+  average a coarse correlated equilibrium up to slack `R i / T`.
+- `IsSmooth.sum_expected_socialCost_le` (Lecture 17, Corollary 3.3): in a smooth game with
+  `μ < 1`, the total expected social cost of `T` rounds is at most
+  `(T λ socialCost s' + ∑ i, R i) / (1 - μ)`.
+- `IsSmooth.timeAverage_expected_socialCost_le`: the same bound for the time average.
+
+[Hedge.lean](../../Complexity/GameTheory/Strategic/Hedge.lean) defines the dynamics in which every
+player runs a multiplicative update on its expected cost vectors (`mwuWeight`, `mwuProb`). The
+players' losses are coupled, but `prob_mwuLoss` identifies each player's mixed strategies with the
+single-learner `Experts.prob` against the loss sequence it faces. So the
+[online-learning bounds](../circuits-logic-and-other-models/learning-and-testing.md) apply without
+change. `hedgeProb G M T` runs Hedge on costs divided by a bound `M`, with the tuned rate
+`√(ln |S i| / T)`, and `hedgeDist` is its outcome distribution. The main results, assuming costs
+bounded by `M > 0` and `T ≥ ln |S i|`:
+
+- `hedge_regret_le`: each player's regret is at most `2 M √(T ln |S i|)`.
+- `IsSmooth.timeAverage_hedgeDist_socialCost_le`: the time-averaged expected social cost is at
+  most `(λ socialCost s' + 2 M ∑ i, √(ln |S i| / T)) / (1 - μ)`.
+- `timeAverage_hedgeDist_le_add`: the time average is an approximate coarse correlated equilibrium.
+
+[Congestion/Hedge.lean](../../Complexity/GameTheory/Congestion/Hedge.lean) specializes the bound to
+affine congestion games: `5/2 socialCost s' + 3 M ∑ i, √(ln |S i| / T)`.
 
 ## Atomic congestion games
 
@@ -118,19 +156,28 @@ checks the following:
 
 - the Monderer–Shapley Prisoner's Dilemma with its exact potential;
 - matching pennies, which has no pure equilibrium, no FIP and no generalized ordinal potential;
-- point-mass coarse correlated equilibria.
+- point-mass coarse correlated equilibria;
+- uniform mixing in matching pennies, which is a coarse correlated equilibrium;
+- Proposition 3.1 on a constant equilibrium sequence.
+
+The congestion tests also check that Hedge dynamics start uniform, and they apply the Hedge
+price-of-anarchy bound to the two-link game for every horizon.
 
 ## Known Limitations
 
-Mixed and correlated equilibria, existence of Wardrop flows, and weighted congestion games are not
-formalized. The same holds for the Monderer–Shapley isomorphism between potential games and
-congestion games (Theorems 2.8 and 3.2) and for the complexity of finding equilibria (PLS- and
-PPAD-completeness). These are ROADMAP directions under [#2900](https://github.com/cslib-community/complexitylib/issues/2900).
+Mixed Nash and correlated equilibria (with swap regret), existence of Wardrop flows, and weighted
+congestion games are not formalized. The same holds for the Monderer–Shapley isomorphism between
+potential games and congestion games (Theorems 2.8 and 3.2) and for the complexity of finding
+equilibria (PLS- and PPAD-completeness). These are ROADMAP directions under
+[#2900](https://github.com/cslib-community/complexitylib/issues/2900). Hedge dynamics are
+full-information and deterministic: they work with expected costs, not sampled play or bandit
+feedback, and only time-average guarantees are proved, not last-iterate convergence.
 The theorems of Rosenthal, Christodoulou–Koutsoupias and Awerbuch–Azar–Epstein are attributed as
 cited in the Monderer–Shapley and Roughgarden papers; their own texts were not consulted.
 
 [complexitylib]: ../sources.md#complexitylib
 [mondererShapley96]: ../sources.md#monderershapley96
 [rosenthal73]: ../sources.md#rosenthal73
+[roughgarden13cs364a]: ../sources.md#roughgarden13cs364a
 [roughgarden15]: ../sources.md#roughgarden15
 [roughgardenTardos02]: ../sources.md#roughgardentardos02

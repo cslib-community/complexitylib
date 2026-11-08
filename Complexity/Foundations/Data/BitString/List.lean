@@ -87,6 +87,11 @@ theorem ofList_ofFn_append {n : ℕ} (bits : BitString n) (word : List Bool) :
     ofList n (List.ofFn bits ++ word) = bits := by
   rw [ofList_append_of_le (by simp), ofList_ofFn]
 
+/-- The `n`-bit view of a word reads only its first `n` bits. -/
+theorem ofList_take (n : ℕ) (word : List Bool) : ofList n (word.take n) = ofList n word := by
+  funext i
+  simp [ofList, i.isLt]
+
 /-- Reading a word into a bit string pads it with `false` or truncates it. -/
 theorem ofFn_ofList_eq_take (n : ℕ) (word : List Bool) :
     List.ofFn (ofList n word) = (word ++ List.replicate n false).take n := by

@@ -10,6 +10,7 @@ module
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.SOA
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.VCDimension
 public import Mathlib.Order.Interval.Finset.Nat
+import Complexity.MachineLearning.PACLearning.VCDimension
 
 /-!
 # Thresholds: VC dimension one, unbounded Littlestone dimension
@@ -177,10 +178,9 @@ theorem vcDim_eq_one_of_subset_thresholdClass {C : ConceptClass ℕ Bool} (hC : 
   have hub : ∀ n ∈ {n : ℕ | ∃ W : Finset ℕ, W.card = n ∧ SetShatters C (W : Set ℕ)}, n ≤ 1 := by
     rintro n ⟨W, rfl, hW⟩
     exact not_lt.mp fun h => not_setShatters_thresholdClass h (hW.superset hC)
-  change sSup _ = 1
-  apply le_antisymm
-  · exact csSup_le' hub
-  · exact le_csSup ⟨1, hub⟩ ⟨{x}, by simp, by simpa using hx⟩
+  refine le_antisymm (csSup_le' hub) ?_
+  simpa using (show SetShatters C (({x} : Finset ℕ) : Set ℕ) by simpa using hx).card_le_vcDim
+    ⟨1, hub⟩
 
 /-- For `N ≥ 1`, the thresholds `θ ≤ N` have VC dimension `1`. -/
 theorem vcDim_thresholdClassUpTo {N : ℕ} (hN : 1 ≤ N) : vcDim (thresholdClassUpTo N) = 1 :=
