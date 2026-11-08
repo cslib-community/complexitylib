@@ -8,6 +8,7 @@ module
 -- upstream: candidate (Mathlib, `Mathlib/Data/Nat/Basic.lean`)
 
 public import Complexity.Init
+import Mathlib.Algebra.Order.Ring.Abs
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -138,23 +139,20 @@ theorem pow_le_two_pow {D b : ℕ} (hD : 1 ≤ D) (hb : 4 * D ^ 2 ≤ b) :
     _ ≤ 2 ^ b := Nat.pow_le_pow_right (by decide) (Nat.div_mul_le_self b D)
 
 /-- Consecutive `(j + 1)`-th powers differ by at most `(j + 1) (c + 1) ^ j`, the case `a = b + 1`
-of `a ^ k - b ^ k ≤ (a - b) k a ^ (k - 1)` [AlonMatiasSzegedy1999, proof of Theorem 2.1]. -/
+of `a ^ k - b ^ k ≤ (a - b) k a ^ (k - 1)` [AlonMatiasSzegedy1999, proof of Theorem 2.1]; a
+specialization of Mathlib's `abs_pow_sub_pow_le`. -/
 theorem succ_pow_sub_pow_le (c j : ℕ) :
     (c + 1) ^ (j + 1) - c ^ (j + 1) ≤ (j + 1) * (c + 1) ^ j := by
-  induction j with
-  | zero => simp
-  | succ j ih =>
-    obtain ⟨d, hd⟩ : ∃ d, (c + 1) ^ (j + 1) = c ^ (j + 1) + d :=
-      Nat.exists_eq_add_of_le (Nat.pow_le_pow_left (Nat.le_succ c) _)
-    rw [hd, Nat.add_sub_cancel_left] at ih
-    have e1 : (c + 1) ^ (j + 1 + 1) = (c + 1) * (c + 1) ^ (j + 1) := by ring
-    have e2 : c ^ (j + 1 + 1) = c * c ^ (j + 1) := by ring
-    have e3 : (c + 1) ^ (j + 1) = (c + 1) * (c + 1) ^ j := by ring
-    have hcd : c * d ≤ (j + 1) * (c + 1) ^ (j + 1) :=
-      calc c * d ≤ c * ((j + 1) * (c + 1) ^ j) := Nat.mul_le_mul_left c ih
-        _ ≤ (c + 1) * ((j + 1) * (c + 1) ^ j) := Nat.mul_le_mul_right _ (Nat.le_succ c)
-        _ = (j + 1) * (c + 1) ^ (j + 1) := by rw [e3]; ring
-    rw [e1, e2, Nat.sub_le_iff_le_add, hd]
-    nlinarith
+  have h := abs_pow_sub_pow_le ((c : ℤ) + 1) (c : ℤ) (j + 1)
+  have hle : c ^ (j + 1) ≤ (c + 1) ^ (j + 1) := Nat.pow_le_pow_left (Nat.le_succ c) _
+  have hc : (0 : ℤ) ≤ c := Int.natCast_nonneg c
+  have hmax : max |(c : ℤ) + 1| |(c : ℤ)| = (c : ℤ) + 1 := by
+    rw [abs_of_nonneg (by linarith), abs_of_nonneg hc]
+    exact max_eq_left (by linarith)
+  rw [hmax, add_sub_cancel_left, abs_one, one_mul, Nat.add_sub_cancel,
+    abs_of_nonneg (sub_nonneg.2 (pow_le_pow_left₀ hc (by linarith) _))] at h
+  zify [hle]
+  push_cast at h ⊢
+  linarith
 
 end Nat

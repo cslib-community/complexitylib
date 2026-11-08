@@ -20,7 +20,8 @@ Verifies non-vacuity and concrete behavior of:
 2. the hypothesis `k ≠ 0`: for `k = 0` the basic estimator is identically zero while `F₀ ≠ 0`;
 3. the sketch `Cslib.Streaming.fkSketch` on a concrete stream and concrete positions;
 4. the hypotheses of `Cslib.Streaming.solves_fkEstimator` (`F₂` over a universe of size `4`, group
-   size `12`, accuracy `η = 1`), of `Cslib.Streaming.solves_fkEstimator_of_rpow`, of
+   size `12`, accuracy `η = 1`; `F₃` over a universe of size `100`, group size `800`, accuracy
+   `η = 1 / 2`, error `(8 / 9) ^ 2`), of `Cslib.Streaming.solves_fkEstimator_of_rpow`, of
    `Cslib.Streaming.spaceLE_fkEstimator` (positions not charged) and of
    `Cslib.Streaming.exists_injOn_iUnion_reachable_fkSketch` (positions stored) hold with explicit
    parameters.
@@ -82,6 +83,12 @@ copies: `(3 · 2) ^ 2 · 4 = 144 = (12 · 1²) ^ 2`. -/
 example : (fkEstimator (Fin 4) 2 5 1 12).Solves (8 / 9)
     (fun s Y => s.length = 5 → |Y - freqMoment 2 s| ≤ 1 * freqMoment 2 s) 5 :=
   solves_fkEstimator two_ne_zero one_pos (by norm_num) (by norm_num)
+
+/-- `F₃` over `Fin 100` within `F₃ / 2` (`η = 1 / 2`) with error `(8 / 9) ^ 2`, from two pairs of
+groups of `800` copies: `(3 · 3) ^ 3 · 100 ^ 2 = 7290000 ≤ 8000000 = (800 · (1 / 2)²) ^ 3`. -/
+example : (fkEstimator (Fin 100) 3 7 2 800).Solves ((8 / 9) ^ 2)
+    (fun s Y => s.length = 7 → |Y - freqMoment 3 s| ≤ 1 / 2 * freqMoment 3 s) 7 :=
+  solves_fkEstimator three_ne_zero (by norm_num) (by norm_num) le_rfl
 
 /-- The `rpow` form of the group size condition, for `F₁`: `3 · 1 · 4 ^ 0 ≤ 3 · 1²`. -/
 example : (fkEstimator (Fin 4) 1 5 1 3).Solves (8 / 9)
