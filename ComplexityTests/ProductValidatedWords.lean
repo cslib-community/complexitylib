@@ -82,6 +82,21 @@ example {t : ℕ} (w : Fin t → ComponentLazyStep 3 2) (z : Fin t → Fin 3 →
         ∃! z' : Fin t → Fin 3 → ℤ, IsValidComponentWord ![3, 4] sampleIds w z' A :=
   ⟨expect_componentWordPerm ![3, 4] w z g, existsUnique_isValidComponentWord sampleIds w⟩
 
+/-- The sample side lengths `![3, 4]` fit inside the primes `![5, 7]`. -/
+theorem sample_hL : ∀ j : Fin 2, ![3, 4] j ≤ ![5, 7] j := fun j ↦ by fin_cases j <;> decide
+
+/-- **A one-step word reaches the one-step neighbor**: `componentWordPerm_wrap_eq` is stated with
+the power `G.pow t` of the reindexed lazy product multigraph, whose length-`1` walks are single
+`neighbor` steps of `G`. -/
+example (A : ComponentSlice 3 8 ![5, 7] ![3, 4] sampleIds) (e : ComponentLazyStep 3 2) :
+    componentWordPerm ![3, 4] ![e]
+        (componentWordWrap ![3, 4] sampleIds ![e] (componentSliceVal A)) (componentSliceVal A) =
+      componentSliceVal
+        (((ofPerms (componentMove 3 8 ![5, 7] ![3, 4])).lazy.reindex
+          (componentEquiv 8 sample_hL sampleIds).symm).neighbor A e) := by
+  rw [componentWordPerm_wrap_eq sample_hL, neighbor_pow_succ, neighbor_pow_zero]
+  rfl
+
 /-- **`L²` concentration of the multi-component validated-word estimator**: for all `H ≥ 3`, `J`
 channels with `1 ≤ L j ≤ P j`, free bits in `(ZMod M) ^ H`, retained identifiers `y`, and observable
 `f : ComponentSpace H M P → ℝ`, the length-`t` validated-word estimator has conditional variance at
@@ -117,10 +132,9 @@ example (y : ∀ j : Fin 2, ZMod (![5, 7] j)) (f : ComponentSpace 3 8 ![5, 7] �
         𝔼 A : ComponentSlice 3 8 ![5, 7] ![3, 4] y,
           (f (componentSliceVal A) -
             𝔼 B : ComponentSlice 3 8 ![5, 7] ![3, 4] y, f (componentSliceVal B)) ^ 4 := by
-  have hL : ∀ j : Fin 2, ![3, 4] j ≤ ![5, 7] j := fun j ↦ by fin_cases j <;> decide
-  have h := expect_walk_pow_componentMove_sub_expect_pow_four_le (M := 8) le_rfl hL y
+  have h := expect_walk_pow_componentMove_sub_expect_pow_four_le (M := 8) le_rfl sample_hL y
     (fun B ↦ f (componentSliceVal B)) t
-  simp only [walk_pow_componentMove_eq_expect_word hL f (2 * t)] at h
+  simp only [walk_pow_componentMove_eq_expect_word sample_hL f (2 * t)] at h
   norm_num at h ⊢
   exact h
 

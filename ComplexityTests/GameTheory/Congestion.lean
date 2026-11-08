@@ -6,7 +6,7 @@ Authors: Samuel Schlesinger
 
 import Complexity.GameTheory.Congestion.Affine
 import Complexity.GameTheory.Congestion.Hedge
-import Complexity.GameTheory.Congestion.Nonatomic
+import Complexity.GameTheory.Congestion.PigouBound
 
 /-!
 # Congestion games and the price of anarchy

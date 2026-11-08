@@ -27,11 +27,11 @@ twice the minimum number of vertices, and is computable in polynomial time on `e
 
 `VertexCover` and `Graph.vertexCoverNum` count declared vertices meeting every edge between
 declared vertices; edges with an undeclared endpoint and self-loops impose nothing. The algorithm
-therefore scans `declaredEdges G`, the listed edges with both endpoints declared.
+therefore scans `Cslib.Complexity.VertexCover.declaredEdges G`, the listed edges with both endpoints
+declared.
 
 ## Main definitions
 
-* `Cslib.Complexity.VertexCover.declaredEdges`: the listed edges between declared vertices.
 * `Cslib.Complexity.VertexCover.approxCover`: the matching cover of the declared edges.
 
 ## Main results
@@ -55,23 +55,10 @@ namespace Cslib.Complexity.VertexCover
 open Turing.MultiTapeTM ComputableInPolyTime
 open Cslib.Algorithms.Lean.VertexCover
 
-/-- Whether both endpoints of `e` are declared vertices of `G`. -/
-@[expose] def isDeclaredEdge (G : Graph) (e : ℕ × ℕ) : Bool :=
-  decide (e.1 ∈ G.1) && decide (e.2 ∈ G.1)
-
-/-- The listed edges of `G` between declared vertices. -/
-@[expose] def declaredEdges (G : Graph) : List (ℕ × ℕ) :=
-  G.2.filter (isDeclaredEdge G)
-
 /-- **The maximal-matching approximation** for `VertexCover`: both endpoints of each edge of a
 greedy maximal matching of the edges between declared vertices. -/
 @[expose] def approxCover (G : Graph) : List ℕ :=
   matchingCover (declaredEdges G)
-
-/-- An edge is declared when it is listed and both endpoints are declared vertices. -/
-theorem mem_declaredEdges {G : Graph} {e : ℕ × ℕ} :
-    e ∈ declaredEdges G ↔ e ∈ G.2 ∧ e.1 ∈ G.1 ∧ e.2 ∈ G.1 := by
-  simp [declaredEdges, isDeclaredEdge]
 
 /-- The returned vertices are distinct. -/
 theorem nodup_approxCover (G : Graph) : (approxCover G).Nodup :=
@@ -119,24 +106,6 @@ theorem length_approxCover_le_two_mul_vertexCoverNum (G : Graph) :
   exact hS u hdecl.1 v hdecl.2 ((fromRel_declaredEdges_adj hdecl.1 hdecl.2).1 huv)
 
 /-! ### Polynomial time -/
-
-/-- Testing whether an edge joins declared vertices is polynomial-time. -/
-@[local fun_prop]
-private theorem computableInPolyTime_isDeclaredEdge :
-    ComputableInPolyTime (fun p : Graph × (ℕ × ℕ) => isDeclaredEdge p.1 p.2)
-      (encPair encGraph (encPair encNat encNat)) encBool := by
-  unfold isDeclaredEdge encGraph
-  fun_prop
-
-/-- Listing the edges between declared vertices is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_declaredEdges :
-    ComputableInPolyTime declaredEdges encGraph (encList (encPair encNat encNat)) := by
-  have hE : ComputableInPolyTime (fun G : Graph => G.2) encGraph
-      (encList (encPair encNat encNat)) := by
-    unfold encGraph
-    fun_prop
-  exact filterWithInput hE computableInPolyTime_isDeclaredEdge
 
 /-- One step of the cover scan is polynomial-time. -/
 @[local fun_prop]

@@ -9,14 +9,14 @@ module
 
 public import Complexity.Init
 public import Complexity.Foundations.BooleanAnalysis.Bernoulli
+public import Complexity.Probability.Product
 public import Mathlib.Analysis.Complex.Exponential
 public import Mathlib.InformationTheory.Hamming
-public import Mathlib.Probability.ProbabilityMassFunction.Basic
+public import Mathlib.Probability.ProbabilityMassFunction.Constructions
 public import Mathlib.Topology.UnitInterval
 import Complexity.Foundations.Combinatorics.BinomialTail
 import Complexity.Foundations.Data.BitString.Basic
 import Complexity.Probability.PMF.Event
-import Complexity.Probability.Product
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 
@@ -58,13 +58,15 @@ Achievability of the capacity `1 - h₂(p)` by random codes is in
 
 ## Main results
 
+* `Cslib.BitString.bscNoise_eq_pi`, `Cslib.BitString.bsc_eq_map`: the noise is a product of
+  independent coins and the output is the input plus the noise.
 * `Cslib.BitString.bscNoise_apply_toReal`, `Cslib.BitString.bsc_apply_toReal`: the masses of the
   noise and of the channel output.
 * `Cslib.BitString.exists_isNearestDecoder`: nearest-codeword decoders exist.
 * `Cslib.BitString.bsc_apply_toReal_le_of_isNearestDecoder`: nearest-codeword decoding is
   maximum-likelihood decoding for `p ≤ 1 / 2`.
-* `Cslib.BitString.decodingError_eq_bernoulliAverage`: the error probability as an average over the
-  noise.
+* `Cslib.BitString.decodingError_def`, `Cslib.BitString.decodingError_eq_bernoulliAverage`: the
+  error probability as a probability of the channel output and as an average over the noise.
 * `Cslib.BitString.decodingError_zero_eq_zero`, `Cslib.BitString.IsNearestDecoder.leftInverse`:
   a noiseless channel never confuses the messages of an injective code.
 * `Cslib.BitString.bscNoise_toOuterMeasure_lt_weight_toReal`,
@@ -106,6 +108,10 @@ probability `p`. -/
 noncomputable def bscNoise (p : I) : PMF (ι → Bool) :=
   Probability.PMF.pi fun _ => flipBit p
 
+/-- The noise of `BSC_p` is the product of independent coins of bias `p`, one per coordinate. -/
+theorem bscNoise_eq_pi (p : I) : bscNoise (ι := ι) p = Probability.PMF.pi fun _ => flipBit p := by
+  rw [bscNoise]
+
 /-- The noise of `BSC_p` has the law of a random mask of rate `p`. -/
 theorem bscNoise_apply_toReal (p : I) (e : ι → Bool) :
     (bscNoise p e).toReal = bernoulliWeight p e := by
@@ -116,6 +122,10 @@ theorem bscNoise_apply_toReal (p : I) (e : ι → Bool) :
 `x + e`, where the noise `e` flips every bit independently with probability `p`. -/
 noncomputable def bsc (p : I) (x : ι → Bool) : PMF (ι → Bool) :=
   (bscNoise p).map (x + ·)
+
+/-- `BSC_p` delivers the input plus the noise. -/
+theorem bsc_eq_map (p : I) (x : ι → Bool) : bsc p x = (bscNoise p).map (x + ·) := by
+  rw [bsc]
 
 theorem bsc_apply (p : I) (x y : ι → Bool) : bsc p x y = bscNoise p (x + y) := by
   rw [bsc, PMF.map_apply, tsum_eq_single (x + y)]
@@ -183,6 +193,12 @@ variable {M : Type*}
 `E m` is sent through `BSC_p`. -/
 noncomputable def decodingError (p : I) (E : M → ι → Bool) (D : (ι → Bool) → M) (m : M) : ℝ :=
   ((bsc p (E m)).toOuterMeasure {y | D y ≠ m}).toReal
+
+/-- The error probability is the probability, under the channel output on `E m`, that `D` does not
+return `m`. -/
+theorem decodingError_def (p : I) (E : M → ι → Bool) (D : (ι → Bool) → M) (m : M) :
+    decodingError p E D m = ((bsc p (E m)).toOuterMeasure {y | D y ≠ m}).toReal := by
+  rw [decodingError]
 
 /-- `D` decodes `E` to a nearest codeword: the codeword of the decoded message is at least as close
 to the received word as every other codeword. For `p ≤ 1 / 2` this is maximum-likelihood decoding

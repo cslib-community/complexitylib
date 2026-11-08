@@ -9,10 +9,25 @@ The private-transcript sources are described in [the extraction methods](develop
 
 Scott Aaronson. *The Busy Beaver Frontier*. ACM SIGACT News 51(3), 32–54, 2020. https://doi.org/10.1145/3427361.3427369 ; author's version https://www.scottaaronson.com/papers/bb.pdf . Read in the author's version on 2026-11-08: Proposition 1 (oracle access to any upper bound on the shift function solves the halting problem, hence no such bound is computable; the library proves the unrelativized corollary) and Proposition 2 (the shift function eventually exceeds every computable function). Both are stated for Turing machines; Section 2 notes that they hold in any universal model of computation. Section 1 defines `BB_L` for a programming language `L` with bit-string programs (and a variant through Kolmogorov complexity), the closest analogue of the library's code-size version. Journal pagination was taken from the bibliographic record.
 
+<a id="abukhzam2007"></a>
+## abukhzam2007
+
+Faisal N. Abu-Khzam, Michael R. Fellows, Michael A. Langston and W. Henry Suters. "Crown Structures for Vertex Cover Kernelization." *Theory of Computing Systems* 41(3), 411–430, 2007. https://doi.org/10.1007/s00224-007-1328-0 . Bibliographic data and the abstract (crown structures; a crown-based kernelization compared with the LP-based one) were checked against secondary search summaries on 2026-11-08 UTC. The full text was not inspected, and the crown definition used in [Crown](../Complexity/Foundations/Combinatorics/SimpleGraph/Crown.lean) is not attributed to a numbered statement there. Chor, Fellows and Juedes, "Linear Kernels in Linear Time, or How to Save k Colors in O(n²) Steps", WG 2004, LNCS 3353, 257–269, https://doi.org/10.1007/978-3-540-30559-0_22, is cited in the module docstring on the same basis.
+
 <a id="achlioptas03"></a>
 ## achlioptas03
 
 Dimitris Achlioptas. “Database-Friendly Random Projections: Johnson–Lindenstrauss with Binary Coins.” *Journal of Computer and System Sciences* 66(4), 671–687, 2003. https://doi.org/10.1016/S0022-0000(03)00025-4 . Author-hosted copy of the typeset journal version: https://cgi.di.uoa.gr/~optas/papers/jl.pdf . Checked against that copy on 2026-11-07 UTC: Theorem 1.1 on p. 673 (squared distances within `1 ± ε` with probability at least `1 - n^(-β)` for `k ≥ k₀ = (4 + 2β) log n / (ε²/2 - ε³/3)`, stated for all `ε, β > 0`; the `±1` distribution is (1)). Also checked: Lemma 4.1 on p. 679 (Gaussian entries), Lemma 5.1 on p. 679 (the per-vector tails), and Lemma 5.2 on p. 680, eqs. (6)–(7) (the bounds on `𝔼 exp (h Q²)` and `𝔼 Q⁴`).
+
+<a id="ahocorasick75"></a>
+## ahocorasick75
+
+Alfred V. Aho, Margaret J. Corasick. "Efficient String Matching: An Aid to Bibliographic Search." *Communications of the ACM* 18(6), 333–340, 1975. https://doi.org/10.1145/360825.360855 . Scanned copy in D. J. Bernstein's bibliography archive, https://cr.yp.to/bib/1975/aho.pdf , checked 2026-11-08 for Algorithms 1 and 3, Lemmas 1–3, Theorems 1, 2 and 4, and Figures 1 and 2.
+
+<a id="alonbabaisuzuki1991"></a>
+## alonbabaisuzuki1991
+
+Noga Alon, László Babai and Hiroshi Suzuki. “Multilinear Polynomials and Frankl–Ray-Chaudhuri–Wilson Type Intersection Theorems.” *Journal of Combinatorial Theory, Series A* 58(2), 165–180, 1991. https://doi.org/10.1016/0097-3165(91)90058-O . Bibliographic metadata from search summaries on 2026-11-08; the full text was not inspected in this pass. The manual attributes only the multilinear polynomial method for uniform and nonuniform restricted-intersection bounds to this paper; theorem numbers are not cited.
 
 <a id="alonmatiasszegedy99"></a>
 ## alonmatiasszegedy99
@@ -23,6 +38,16 @@ Noga Alon, Yossi Matias, Mario Szegedy. “The Space Complexity of Approximating
 ## alonyusterzwick1995
 
 Noga Alon, Raphael Yuster, Uri Zwick. "Color-Coding." *Journal of the ACM* 42(4), 844–856, 1995. https://doi.org/10.1145/210332.210337 . Bibliographic data from the DOI record. The locator Lemma 3.1 (colorful paths by dynamic programming over color sets) was taken from secondary descriptions; the full text was not inspected in this pass.
+
+<a id="anshelevichdktwr08"></a>
+## anshelevichdktwr08
+
+Elliot Anshelevich, Anirban Dasgupta, Jon Kleinberg, Éva Tardos, Tom Wexler and Tim Roughgarden. *The Price of Stability for Network Design with Fair Cost Allocation*. SIAM Journal on Computing 38(4), 1602–1623, 2008; preliminary version in FOCS 2004. https://doi.org/10.1137/070680096 . Bibliographic metadata only, as given in [roughgarden13cs364a](#roughgarden13cs364a), Lecture #15, reference [1]; the DOI was taken from a search summary. The paper's text was not inspected (the author-hosted copies tried returned 404), so no locator in it is cited. The `H_k` price-of-stability theorem is attributed to it as in [roughgarden13cs364a](#roughgarden13cs364a), Lecture #15, Theorem 2.1, and proved following [tardoswexler07](#tardoswexler07), §19.3.
+
+<a id="baloghbekesidosaepsteinlevin18"></a>
+## baloghbekesidosaepsteinlevin18
+
+János Balogh, József Békési, György Dósa, Leah Epstein and Asaf Levin. *A new lower bound for classic online bin packing*. arXiv:1807.05554v1, 2018. https://arxiv.org/abs/1807.05554 ; published in *Algorithmica* 83(7), 2047–2062, 2021, https://doi.org/10.1007/s00453-021-00818-7 (bibliographic data from the Crossref record; the locators follow arXiv v1). Worker w156-ff read the arXiv version on 2026-11-08 UTC. Section 1 reports that Yao's first lower bound on the asymptotic competitive ratio uses at most three types of items, `1/7 + ε`, `1/3 + ε` and `1/2 + ε`; it does not state the value of that bound. It also reports the later bounds of Brown and Liang (`1.53635`), van Vliet (`1.5401474`) and Balogh, Békési and Galambos (`248/161`). The library's [OnlineLowerBound](../Complexity/Algorithms/Lean/BinPacking/OnlineLowerBound.lean) module takes its item types from this report.
 
 <a id="barak-steurer16"></a>
 ## barak-steurer16
@@ -84,6 +109,11 @@ Dimitri P. Bertsekas. *Network Optimization: Continuous and Discrete Models*. At
 
 Manuel Blum, Robert W. Floyd, Vaughan Pratt, Ronald L. Rivest and Robert E. Tarjan. *Time Bounds for Selection*. Journal of Computer and System Sciences 7(4), 448–461, 1973. https://doi.org/10.1016/S0022-0000(73)80033-9 . Bibliographic metadata and the abstract's `5.4305 n` comparison bound for `PICK` were checked through secondary search results on 2026-11-08; the paper's text was not read. The manual attributes to this paper only the median-of-medians selection algorithm and that constant. The groups-of-five accounting in the Lean files follows the presentation in [clrs09](#clrs09), Section 9.3, which was not checked against the printed book.
 
+<a id="bhr12"></a>
+## bhr12
+
+Mihir Bellare, Viet Tung Hoang, Phillip Rogaway. "Foundations of Garbled Circuits." *Proceedings of the 2012 ACM Conference on Computer and Communications Security (CCS '12)*, 784–796, 2012. https://doi.org/10.1145/2382196.2382279 . Full version: Cryptology ePrint Archive, Report 2012/265. Bibliographic data from the DOI record and secondary listings. The ePrint copy returned HTTP 403 and the ACM page sat behind a bot challenge in this pass, so no theorem or definition numbers are claimed. The garbling-scheme syntax and simulation-based privacy with topology side information are cited at paper level only.
+
 <a id="bjkst02"></a>
 ## bjkst02
 
@@ -104,10 +134,15 @@ Manuel Blum. *A Machine-Independent Theory of the Complexity of Recursive Functi
 
 Markus Bläser and Bodo Manthey. *Smoothed Complexity Theory*. ACM Transactions on Computation Theory 7(2), Article 6, 2015; preliminary version in MFCS 2012. https://doi.org/10.1145/2656210 ; arXiv:1202.1936. Read in arXiv v2 (29 June 2012) on 2026-11-08. §5, in the paragraph before Theorem 5.2, attributes `DistNP ⊆ Avg-P ⇒ NE = E` to Ben-David, Chor, Goldreich and Luby. Journal metadata checked against the Crossref record.
 
+<a id="bmr90"></a>
+## bmr90
+
+Donald Beaver, Silvio Micali, Phillip Rogaway. "The Round Complexity of Secure Protocols." *Proceedings of the 22nd Annual ACM Symposium on Theory of Computing (STOC '90)*, 503–513, 1990. https://doi.org/10.1145/100216.100287 . Bibliographic data from the DOI record and secondary listings, cited as the usual source of the point-and-permute technique. The full text was not inspected in this pass.
+
 <a id="bodlaenderjansenkratsch2014"></a>
 ## bodlaenderjansenkratsch2014
 
-Hans L. Bodlaender, Bart M. P. Jansen and Stefan Kratsch. "Kernelization Lower Bounds by Cross-Composition." *SIAM Journal on Discrete Mathematics* 28(1), 277–305, 2014. https://doi.org/10.1137/120880240 . Inspected the arXiv version [1206.5941v1](https://arxiv.org/abs/1206.5941v1) on 2026-11-08: Definition 4 (weak OR-distillation, p. 5), Theorem 2 (Fortnow–Santhanam, p. 6), Lemma 1 (complementary witness lemma, attributed to Dell and van Melkebeek, p. 7), Definition 8 (polynomial equivalence relation, p. 8) and Theorem 6 with its proof (pp. 10–11). Locators follow that arXiv numbering; the journal numbering was not checked.
+Hans L. Bodlaender, Bart M. P. Jansen and Stefan Kratsch. "Kernelization Lower Bounds by Cross-Composition." *SIAM Journal on Discrete Mathematics* 28(1), 277–305, 2014. https://doi.org/10.1137/120880240 . Inspected the arXiv version [1206.5941v1](https://arxiv.org/abs/1206.5941v1) on 2026-11-08: Definition 1 (kernelization, generalized kernelization, p. 4), Definition 2 (compression, p. 5), Proposition 1 (p. 5), Definition 4 (weak OR-distillation, p. 5), Theorem 2 (Fortnow–Santhanam, p. 6), Lemma 1 (complementary witness lemma, attributed to Dell and van Melkebeek, p. 7), Definition 8 (polynomial equivalence relation, p. 8), Definition 9 (and/or-cross-composition, p. 8), Theorem 5 and Corollary 2 (p. 9) and Theorem 6 with its proof (pp. 10–11). Locators follow that arXiv numbering; the journal numbering was not checked.
 
 <a id="borodin72"></a>
 ## borodin72
@@ -124,6 +159,11 @@ Allan Borodin, Ran El-Yaniv. *Online Computation and Competitive Analysis*. Camb
 
 L. M. Brégman. "Some properties of nonnegative matrices and their permanents." *Soviet Mathematics Doklady* 14, 945–949, 1973; translated from *Doklady Akademii Nauk SSSR* 211, 27–30, 1973. Bibliographic data from secondary sources; the paper was not inspected. The manual credits it only with the statement of the bound `per A ≤ ∏ i, (r i)! ^ (1 / r i)` for 0/1 matrices.
 
+<a id="broder97"></a>
+## broder97
+
+Andrei Z. Broder. “On the Resemblance and Containment of Documents.” *Proceedings of Compression and Complexity of Sequences 1997* (SEQUENCES 1997), IEEE, 21–29. https://doi.org/10.1109/SEQUEN.1997.666900 . DOI and metadata as reported by search indexes; neither the DOI nor the full text was resolved in this pass (no connection to the publisher). The manual credits it with the MinHash identity `Pr[min σ(A) = min σ(B)] = |A ∩ B|/|A ∪ B|` for a uniform permutation, which secondary sources attribute to it.
+
 <a id="bs23"></a>
 ## bs23
 
@@ -139,15 +179,35 @@ Andrej Bogdanov and Luca Trevisan. *Average-Case Complexity*. Foundations and Tr
 
 Ran Canetti. *Universally Composable Security*. Journal of the ACM 67(5), Article 28, 2020; full version Cryptology ePrint Archive 2000/067. https://doi.org/10.1145/3402457 .
 
+<a id="ccpv11"></a>
+## ccpv11
+
+Gruia Călinescu, Chandra Chekuri, Martin Pál, Jan Vondrák. “Maximizing a Monotone Submodular Function subject to a Matroid Constraint.” *SIAM Journal on Computing* 40(6), 1740–1766, 2011. https://doi.org/10.1137/080733991 . The `p`-system definition and the greedy ratios `1/p` (modular) and `1/(p+1)` (monotone submodular) in Section 1, and the proof of the `1/(p+1)` bound in Appendix B (“Analysis of Greedy for p-systems”), were checked on 2026-11-08 against the authors' manuscript dated September 21, 2009, at https://theory.stanford.edu/~jvondrak/data/submod-matroid.pdf ; the journal pagination was not checked. The manual reports the original Fisher–Nemhauser–Wolsey and Jenkyns attributions as stated in this paper.
+
 <a id="cgks98"></a>
 ## cgks98
 
-Benny Chor, Oded Goldreich, Eyal Kushilevitz and Madhu Sudan. *Private Information Retrieval*. Journal of the ACM 45(6), 965–981, 1998; preliminary version FOCS 1995. https://doi.org/10.1145/293347.293350 . Definition 1 (§2.1), the schemes of §§3.1, 3.2 and 3.4 (Proposition 4, Corollary 3) and the single-server bound of §5.1 were checked on 2026-11-08 against the authors' journal version of April 21, 1998, at http://people.csail.mit.edu/madhu/papers/1995/pir-journ.pdf . The typeset JACM PDF was not consulted; locators follow the authors' version.
+Benny Chor, Oded Goldreich, Eyal Kushilevitz and Madhu Sudan. *Private Information Retrieval*. Journal of the ACM 45(6), 965–981, 1998; preliminary version FOCS 1995. https://doi.org/10.1145/293347.293350 . Definition 1 (§2.1), the schemes of §§3.1, 3.2 and 3.4 (Proposition 4, Corollary 3), the covering-code schemes of §3.3 (Theorem 1, its footnote on exact covers, Corollary 2; pp. 8–10), the single-server bound of §5.1 in its one-round and interactive forms, and §5.2 (the Claim, its two observations and the closing note on the even-set scheme) were checked on 2026-11-08 against the authors' journal version of April 21, 1998, at http://people.csail.mit.edu/madhu/papers/1995/pir-journ.pdf (§5 is on pp. 13–15). In the interactive form, the user's output may depend on its coins, so the source's step that the same communication forces the same output is replaced by the rectangle property of protocols. The typeset JACM PDF was not consulted; locators follow the authors' version.
 
 <a id="chaitin74"></a>
 ## chaitin74
 
 Gregory J. Chaitin. *Information-Theoretic Limitations of Formal Systems*. Journal of the ACM 21(3), 403–424, 1974. https://doi.org/10.1145/321832.321839 . Bibliographic metadata checked on 2026-11-08; the paper is behind the ACM paywall and was not inspected. The manual attributes the incompleteness theorem for program-size complexity to it, following the customary attribution; its theorem numbers and the exact form of its bound are unverified. The Lean docstrings also cite the textbook treatment in Li and Vitányi, *An Introduction to Kolmogorov Complexity and Its Applications*, 4th edition (Springer, 2019), Chapter 2; the section and theorem locator within that chapter was not checked.
+
+<a id="chakrabarti25"></a>
+## chakrabarti25
+
+Amit Chakrabarti. *Data Stream Algorithms: Lecture Notes*. Dartmouth College, latest update July 1, 2025. https://www.cs.dartmouth.edu/~ac/Teach/data-streams-lecnotes.pdf . Locators checked against that PDF on 2026-11-07 UTC: Unit 1 (Section 1.1 for the MAJORITY and FREQUENT problems, Algorithm 1 and Theorem 1.3.1 for Misra–Gries, Exercise 1-1 for the `(m − m̂)/k` sharpening), Section 2.4 (the median trick) and Section 5.3 (Algorithms 7–8 and equations (5.1)–(5.7) for the Count-Sketch).
+
+<a id="charikar02"></a>
+## charikar02
+
+Moses S. Charikar. “Similarity Estimation Techniques from Rounding Algorithms.” *Proceedings of the 34th Annual ACM Symposium on Theory of Computing* (STOC 2002), 380–388. https://doi.org/10.1145/509907.509965 . DOI and metadata as reported by search indexes; the DOI was not resolved in this pass. The locator Lemma 1 (for a similarity admitting a locality-sensitive hashing scheme, `1 − sim` satisfies the triangle inequality) was not checked against the full text in this pass.
+
+<a id="charikar04"></a>
+## charikar04
+
+Moses Charikar, Kevin Chen, Martin Farach-Colton. “Finding Frequent Items in Data Streams.” *Theoretical Computer Science* 312(1), 3–15, 2004; preliminary version in ICALP 2002. https://doi.org/10.1016/S0304-3975(03)00400-6 . Bibliographic data from search summaries of the DOI record; the Count-Sketch statements formalized here follow the presentation of [chakrabarti25](#chakrabarti25), Section 5.3. The journal text was not inspected in this pass.
 
 <a id="chattopadhyayliao20"></a>
 ## chattopadhyayliao20
@@ -209,10 +269,17 @@ Stephen A. Cook, Robert A. Reckhow. “The Relative Efficiency of Propositional 
 
 Graham Cormode, S. Muthukrishnan. “An Improved Data Stream Summary: The Count-Min Sketch and its Applications.” *Journal of Algorithms* 55(1), 58–75, 2005. https://doi.org/10.1016/j.jalgor.2003.12.001 ; author PDF https://www.cs.ox.ac.uk/people/graham.cormode/pubs/papers/cm-full.pdf . Sections 3–4.1 and fixed point-query guarantee consulted.
 
+<a id="correaschulzstiermoses04"></a>
+## correaschulzstiermoses04
+
+José R. Correa, Andreas S. Schulz and Nicolás E. Stier-Moses. *Selfish Routing in Capacitated Networks*. Mathematics of Operations Research 29(4), 961–976, 2004. https://doi.org/10.1287/moor.1040.0098 . Bibliographic metadata only; the publisher's text is paywalled and no open author's version was found, so it was not inspected and no locator in it is cited. Following [roughgarden13cs364a](#roughgarden13cs364a), Lecture #11, Theorem 3.3, which credits it, `Complexity/GameTheory/Congestion/PigouBound.lean` cites it for the Pigou-bound theorem in the generality formalized there.
+
 <a id="coverthomas06"></a>
 ## coverthomas06
 
-Thomas M. Cover and Joy A. Thomas. *Elements of Information Theory*, second edition. Wiley-Interscience, 2006. https://doi.org/10.1002/047174882X . Section 5.11, "Generation of discrete distributions from fair coins": Theorem 5.11.1 (`H(X) ≤ E[T]` for every generating tree), Theorem 5.11.2 (equality for dyadic distributions) and Theorem 5.11.3 (`H(X) ≤ E[T] < H(X) + 2` for the optimal tree). The theorem numbers and statements were taken from secondary summaries and course notes on 2026-11-08; the printed book was not inspected.
+Thomas M. Cover and Joy A. Thomas. *Elements of Information Theory*, second edition. Wiley-Interscience, 2006. https://doi.org/10.1002/047174882X . Section 5.11, "Generation of discrete distributions from fair coins": Theorem 5.11.1 (`H(X) ≤ E[T]` for every generating tree), Theorem 5.11.2 (equality for dyadic distributions) and Theorem 5.11.3 (`H(X) ≤ E[T] < H(X) + 2` for the optimal tree). The theorem numbers and statements were taken from secondary summaries and course notes on 2026-11-08; the printed book was not inspected. Also cited for Section 2.10 (Fano's inequality: Theorem 2.10.1, the corollary after it with the sharper `log(|𝒳| − 1)` form for estimators valued in `𝒳`, and the remark on guessing without side information), Section 7.1 (capacity of the binary symmetric channel), Lemma 7.9.2 and Theorem 7.9.1 (the converse to the channel coding theorem); these locators were likewise checked against secondary course material, not the printed book.
+
+Chapter 13 (universal source coding): the Lempel–Ziv tree-structured (incremental) parsing, its example `ABBABBABBBAABABAA`, and the distinct-parsing lemma `c(n) ≤ n / ((1 - ε_n) log n)` with `ε_n = min(1, (log log n + 4) / log n)` in §13.5. The library cites only the section; secondary sources disagree on the lemma's number. The section, the lemma's statement and the example were taken from secondary course material and search summaries and were not checked against the printed book.
 
 <a id="cslib"></a>
 ## cslib
@@ -222,22 +289,32 @@ CSLib contributors. *CSLib*, pinned dependency snapshot `254e30e6d4299c51323aaea
 <a id="cygan2015"></a>
 ## cygan2015
 
-Marek Cygan, Fedor V. Fomin, Łukasz Kowalik, Daniel Lokshtanov, Dániel Marx, Marcin Pilipczuk, Michał Pilipczuk, and Saket Saurabh. *Parameterized Algorithms*. Springer, 2015. [DOI](https://doi.org/10.1007/978-3-319-21275-3). Inspected the authors' companion PDF dated 2016-05-30: Definitions 1.2–1.3 (p. 13), Definition 2.1 (pp. 18–19), Lemma 2.2 (p. 20), and Section 2.2.1 (pp. 21–22); accessed 2026-11-02. The color-coding locators Section 5.2 and Lemma 5.5, and the fpt-reduction locator Section 13.1, used in [parameterized complexity](machines-and-classes/parameterized-complexity.md), were not re-inspected.
+Marek Cygan, Fedor V. Fomin, Łukasz Kowalik, Daniel Lokshtanov, Dániel Marx, Marcin Pilipczuk, Michał Pilipczuk, and Saket Saurabh. *Parameterized Algorithms*. Springer, 2015. [DOI](https://doi.org/10.1007/978-3-319-21275-3). Inspected the authors' companion PDF dated 2016-05-30: Definitions 1.2–1.3 (p. 13), Definition 2.1 (pp. 18–19), Lemma 2.2 (p. 20), and Section 2.2.1 (pp. 21–22); accessed 2026-11-02. On 2026-11-08 the same PDF returned HTTP 403, so the crown material of Section 2.3 cited by [Crown](../Complexity/Foundations/Combinatorics/SimpleGraph/Crown.lean) was not inspected. Secondary sources number the crown lemma Lemma 2.14 and the `3k` kernel Theorem 2.16; these numbers are unverified and are not used in the Lean docstrings. The color-coding locators Section 5.2 and Lemma 5.5, the fpt-reduction locator Section 13.1, and the tree-decomposition locator Section 7.3.1 (weighted independent set, stated for `n`-vertex graphs), used in [parameterized complexity](machines-and-classes/parameterized-complexity.md), were not re-inspected.
 
 <a id="dasguptagupta03"></a>
 ## dasguptagupta03
 
 Sanjoy Dasgupta, Anupam Gupta. “An Elementary Proof of a Theorem of Johnson and Lindenstrauss.” *Random Structures & Algorithms* 22(1), 60–65, 2003. https://doi.org/10.1002/rsa.10073 . Author-hosted copy: https://cseweb.ucsd.edu/~dasgupta/papers/jl.pdf . Checked against that copy on 2026-11-07 UTC: Theorem 2.1 on p. 61 (`0 < ε < 1` and `k ≥ 4 (ε²/2 - ε³/3)⁻¹ ln n`), and Lemma 2.2 on p. 62 (tails for the projection of a random unit vector onto `k` coordinates, proved with `𝔼 exp (sX²) = (1 - 2s)^(-1/2)` for a standard Gaussian `X`).
 
+<a id="dinic70"></a>
+## dinic70
+
+E. A. Dinic. “Algorithm for Solution of a Problem of Maximum Flow in Networks with Power Estimation.” *Soviet Mathematics Doklady* 11, 1277–1280 (1970). This original paper was not consulted. The bibliographic data come from secondary citations, and the manual attributes to it only the level-network and blocking-flow method and its phase bound, as these are standardly described. Yefim Dinitz's historical account, “Dinitz' Algorithm: The Original Version and Even's Version” (in *Theoretical Computer Science: Essays in Memory of Shimon Even*, LNCS 3895, 218–240, Springer, 2006, https://doi.org/10.1007/11685654_10 ; bibliographic data checked against the Crossref record on 2026-11-08), is cited in the module docstrings for the history. Its text was not inspected: the author-hosted PDF's text layer could not be extracted.
+
 <a id="dinur2007"></a>
 ## dinur2007
 
 Irit Dinur. “The PCP Theorem by Gap Amplification.” *Journal of the ACM* 54(3), Article 12 (2007). DOI: https://doi.org/10.1145/1236457.1236459. Author copy dated 2007-02-13 inspected: https://www.wisdom.weizmann.ac.il/~dinuri/mypapers/combpcp.pdf (opening definition and Theorem 1.1).
 
+<a id="dosasgall2013"></a>
+## dosasgall2013
+
+György Dósa and Jiří Sgall. "First Fit bin packing: A tight analysis." *30th International Symposium on Theoretical Aspects of Computer Science (STACS 2013)*, LIPIcs 20, 538–549, 2013. https://doi.org/10.4230/LIPIcs.STACS.2013.538 . Worker w156-ff read the open-access LIPIcs PDF on 2026-11-08 UTC and checked these parts: the weight function of Section 1.2 (scaled size `6/5 · a` plus a bonus); the observation there that every bin weighs at most `1.7`; Lemma 1.1, the amortization step; and the Section 1.1 history of the additive constants. [FirstFitWeight](../Complexity/Algorithms/Lean/BinPacking/FirstFitWeight.lean) cites these locators. The constant `+0.9` is credited there to Garey, Graham, Johnson and Yao (ref. [4]), and `+0.7` to Xia and Tan (ref. [15]); both attributions are reported only via this paper. The absolute bound `FF ≤ 1.7 · Opt` (Theorem 3.13) and the lower bounds of Section 4 (Lemma 4.1, Theorem 4.2) were read but are not formalized. The small instances for `Opt ≤ 9` at the end of the proof of Theorem 4.2 (`i` items each of sizes `1/6 - 2δ`, `1/3 + δ` and `1/2 + δ`) are checked for `i = 3` and `i = 9` in [BinPackingFirstFitWeight](../ComplexityTests/BinPackingFirstFitWeight.lean).
+
 <a id="dworkroth14"></a>
 ## dworkroth14
 
-Cynthia Dwork and Aaron Roth. *The Algorithmic Foundations of Differential Privacy*. Foundations and Trends in Theoretical Computer Science 9(3–4), 211–407, 2014. https://doi.org/10.1561/0400000042 . Definition 2.4, Proposition 2.1, Theorem 2.2 and its footnote, §2.3, Claim 3.5, Theorem 3.16, Definition 3.7, Theorem 3.20, Corollary 3.21, Theorem B.1 and Corollary B.2 were checked against the published PDF on 2026-11-07.
+Cynthia Dwork and Aaron Roth. *The Algorithmic Foundations of Differential Privacy*. Foundations and Trends in Theoretical Computer Science 9(3–4), 211–407, 2014. https://doi.org/10.1561/0400000042 . Definition 2.4, Proposition 2.1, Theorem 2.2 and its footnote, §2.3, Claim 3.5, Theorem 3.16, Definition 3.7, Theorem 3.20, Corollary 3.21, Theorem B.1 and Corollary B.2 were checked against the published PDF on 2026-11-07. Lemma 8.4 and Corollary 8.5 (p. 165), Theorem 8.7 (p. 166), Theorem 8.8 with its proof and Claim 8.9 (pp. 167–169), and the bibliographic notes of §8.3, which credit Theorem 8.8 to De (p. 171), were checked on 2026-11-08 against the authors' open version (https://www.cis.upenn.edu/~aaroth/Papers/privacybook.pdf), whose page numbers these are.
 
 <a id="edmonds65"></a>
 ## edmonds65
@@ -274,10 +351,20 @@ Robert W. Floyd. "Algorithm 97: Shortest Path." *Communications of the ACM* 5(6)
 
 Zhiyuan Fan, Jiatu Li, and Tianqi Yang. *The Exact Complexity of Pseudorandom Functions and the Black-Box Natural Proof Barrier for Bootstrapping Results in Computational Complexity*. Electronic Colloquium on Computational Complexity (ECCC), Report TR21-125, Revision 1 (12 June 2022), https://eccc.weizmann.ac.il/report/2021/125/ ; conference version in *Proceedings of the 54th Annual ACM SIGACT Symposium on Theory of Computing (STOC 2022)*, 962–975, https://doi.org/10.1145/3519935.3520010 . Inspected ECCC TR21-125 Revision 1 PDF directly: Section 4.1 (pp. 24–26), Section 4.2, Definitions 4.3–4.5 (pp. 26–27), Section 4.4, Definition 4.9 (p. 28), Section 7.1, Definition 7.1, Lemmas 7.2–7.4, and Theorem 7.5 (pp. 39–41), and Section 7.2 (pp. 41–42).
 
+<a id="fnw78"></a>
+## fnw78
+
+Marshall L. Fisher, George L. Nemhauser, Laurence A. Wolsey. “An Analysis of Approximations for Maximizing Submodular Set Functions—II.” *Mathematical Programming Study* 8, 73–87, 1978. https://doi.org/10.1007/BFb0121195 . Bibliographic data from the DOI record; the paper is paywalled and its full text was not inspected. The manual attributes to it only the greedy `1/2` (matroid) and `1/(p+1)` (intersection of `p` matroids) bounds, following [Călinescu et al.](#ccpv11), Section 1 and Appendix B.
+
 <a id="fortnowsanthanam2011"></a>
 ## fortnowsanthanam2011
 
 Lance Fortnow and Rahul Santhanam. "Infeasibility of Instance Compression and Succinct PCPs for NP." *Journal of Computer and System Sciences* 77(1), 91–106, 2011. https://doi.org/10.1016/j.jcss.2010.06.007 . Bibliographic data from the DOI record. The paper was not inspected in this pass; the manual cites the statement of its distillation theorem through [Bodlaender, Jansen and Kratsch](#bodlaenderjansenkratsch2014), Theorem 2.
+
+<a id="franklwilson1981"></a>
+## franklwilson1981
+
+Peter Frankl and Richard M. Wilson. “Intersection Theorems with Geometric Consequences.” *Combinatorica* 1(4), 357–368, 1981. https://doi.org/10.1007/BF02579457 . Bibliographic metadata as already recorded in the library bibliography; it was not re-checked against the publisher record, and the full text was not inspected in this pass. The manual attributes to this paper the modular intersection theorem and the explicit Ramsey graph on the `(p² - 1)`-subsets of a `p³`-set. The formal modular statement is the restricted form given by the triangular polynomial argument (`|L| ≤ d mod p`); the paper's own hypotheses (reportedly `|L| ≤ d` in the uniform case) were not checked.
 
 <a id="freivalds79"></a>
 ## freivalds79
@@ -298,6 +385,11 @@ Oded Goldreich, Shafi Goldwasser, Silvio Micali. “How to Construct Random Func
 ## gglrs00
 
 Oded Goldreich, Shafi Goldwasser, Eric Lehman, Dana Ron and Alex Samorodnitsky. *Testing Monotonicity*. Combinatorica 20(3), 301–337, 2000. https://doi.org/10.1007/s004930070011 . Bibliographic metadata checked against the Crossref record on 2026-11-08. The journal version is paywalled, and the author-hosted pages could not be reached (connection reset), so the text was not inspected and no theorem locator is claimed. The manual attributes the edge tester for Boolean functions on the hypercube to this paper, as [roughgarden15cc](#roughgarden15cc) does.
+
+<a id="gilbertpollak68"></a>
+## gilbertpollak68
+
+E. N. Gilbert and H. O. Pollak. *Steiner Minimal Trees*. SIAM Journal on Applied Mathematics 16(1), 1–29, 1968. https://doi.org/10.1137/0116001 . Cited only because the Chapter 12 Notes of [Williamson and Shmoys](#williamsonshmoys11) attribute the MST factor-2 heuristic for Steiner tree to Moore, as described in this paper. The paper itself was not checked.
 
 <a id="gkr15"></a>
 ## gkr15
@@ -329,10 +421,20 @@ Oded Goldreich. *Foundations of Cryptography, Volume 2: Basic Applications*. Cam
 
 Ralph E. Gomory and T. C. Hu. “Multi-Terminal Network Flows.” *Journal of the Society for Industrial and Applied Mathematics* 9(4), 551–570, 1961. https://doi.org/10.1137/0109047 . Bibliographic metadata checked through the publisher record; the article body was not inspected in this pass. The manual cites it for cut-equivalent (Gomory–Hu) trees and the triangle inequality for minimum cut values, as described in [Schrijver 2003](#schrijver03), Section 15.4.
 
+<a id="grenet11"></a>
+## grenet11
+
+Bruno Grenet. *An upper bound for the permanent versus determinant problem*. Manuscript, 2011 (the PDF is dated May 25, 2012). https://www-verimag.imag.fr/~grenetb/publis/Gre11.pdf . Checked against the author's PDF on 2026-11-08. Its unnumbered Lemma (an algebraic branching program of size `2ⁿ` on the subsets of `{1, …, n}` computes the permanent) and unnumbered Theorem (a `(2ⁿ - 1) × (2ⁿ - 1)` matrix with entries in `{x_ij} ∪ {-1, 0, 1}` has the permanent as determinant) are `Matrix.permanent_eq_det_grenetMatrix` and `Cslib.Circuits.Arithmetic.isProjection_permanent_det_two_pow_sub_one`. Grenet works over fields of characteristic other than two; the library proves the identity over every commutative ring. The library uses Grenet's construction with a different sign normalization: `-1` on the diagonal at every vertex other than the merged source and sink, rather than loops of weight `1` with weight `-1` on the first layer for even `n`. It proves the determinant identity through the adjugate rather than through cycle covers.
+
 <a id="grigoriev01"></a>
 ## grigoriev01
 
 Dima Grigoriev. *Linear lower bound on degrees of Positivstellensatz calculus proofs for the parity*. Theoretical Computer Science 259(1–2), 613–622, 2001. https://doi.org/10.1016/S0304-3975(00)00157-2 . Bibliographic metadata checked against the Crossref record on 2026-11-08 UTC. The article is behind a publisher paywall, so its text was not consulted, and no theorem or page locator in it is claimed. The library attributes the linear degree lower bound for Tseitin parity systems on expanders to this paper. The precise statement used is that of [barak-steurer16](#barak-steurer16), lecture "Higher-degree integrality gaps", Lemma 24.
+
+<a id="grigorievhirschpasechnik02"></a>
+## grigorievhirschpasechnik02
+
+Dima Grigoriev, Edward A. Hirsch and Dmitrii V. Pasechnik. *Complexity of Semialgebraic Proofs*. Moscow Mathematical Journal 2(4), 647–679, 2002; extended abstracts in STACS 2002 and ICALP 2002. https://doi.org/10.17323/1609-4514-2002-2-4-647-679 . Bibliographic metadata checked against the Crossref record on 2026-11-08 UTC. On the same date worker w96-sos consulted the author-hosted copy https://edwardahirsch.github.io/edwardahirsch/papers/02mmj.pdf for Section 2.3 (the translation of a CNF into the inequalities (2.4)–(2.6)), Section 2.5 (static `LS₊`) and Example 2.1 (p. 10 of that copy: the degree-`2` static `LS₊` refutation of `PHP^m_{m-1}`). The ECCC version (TR01-103) could not be retrieved, and the typeset journal pagination of Example 2.1 was not checked.
 
 <a id="grs12"></a>
 ## grs12
@@ -352,7 +454,12 @@ Anupam Gupta. “Dimension Reduction and the JL Lemma.” Chapter 11 of the lect
 <a id="gusfield90"></a>
 ## gusfield90
 
-Dan Gusfield. “Very Simple Methods for All Pairs Network Flow Analysis.” *SIAM Journal on Computing* 19(1), 143–155, 1990. https://doi.org/10.1137/0219009 . Bibliographic metadata checked through the publisher record; the article body was not inspected in this pass. Cited only for the variant of the Gomory–Hu construction without contraction, which is not formalized.
+Dan Gusfield. “Very Simple Methods for All Pairs Network Flow Analysis.” *SIAM Journal on Computing* 19(1), 143–155, 1990. https://doi.org/10.1137/0219009 . Bibliographic metadata checked through the publisher record; the article body (paywalled) was not inspected, so no theorem or page locator is given. Cited for the variant of the Gomory–Hu construction without contraction: a parent array, one minimum cut computation per non-root vertex in the original graph, the re-hanging of vertices on the source side, and the swap of `s` and `t` when the parent of `t` is on the source side. That description was taken from secondary accounts of the algorithm. The Lean proof of correctness (`isGomoryHuTree_gusfieldParent`) is self-contained and does not follow the article's argument.
+
+<a id="harpeledindykmotwani12"></a>
+## harpeledindykmotwani12
+
+Sariel Har-Peled, Piotr Indyk, Rajeev Motwani. “Approximate Nearest Neighbor: Towards Removing the Curse of Dimensionality.” *Theory of Computing* 8(14), 321–350, 2012. https://doi.org/10.4086/toc.2012.v008a014 . DOI and metadata as reported by search indexes; the open-access PDF could not be fetched in this pass (no connection). Cited for the `(r, cr, p₁, p₂)` form of locality-sensitive families.
 
 <a id="hartline21"></a>
 ## hartline21
@@ -429,6 +536,11 @@ Russell Impagliazzo and Ramamohan Paturi. *On the Complexity of k-SAT*. Journal 
 
 Russell Impagliazzo and Avi Wigderson. *P = BPP if E Requires Exponential Circuits: Derandomizing the XOR Lemma*. Proceedings of the 29th Annual ACM Symposium on Theory of Computing, 220–229, 1997. DOI: [10.1145/258533.258590](https://doi.org/10.1145/258533.258590). ACM metadata checked by the coordinated source pass on 2026-11-02; no complete literature proof audit is asserted.
 
+<a id="indykmotwani98"></a>
+## indykmotwani98
+
+Piotr Indyk, Rajeev Motwani. “Approximate Nearest Neighbors: Towards Removing the Curse of Dimensionality.” *Proceedings of the 30th Annual ACM Symposium on Theory of Computing* (STOC 1998), 604–613. https://doi.org/10.1145/276698.276876 . DOI and metadata as reported by search indexes; neither the DOI nor the full text was resolved in this pass. Cited for the definition of locality-sensitive families and for bit sampling under the Hamming distance.
+
 <a id="irani91"></a>
 ## irani91
 
@@ -459,10 +571,25 @@ Tadao Kasami. *An Efficient Recognition and Syntax-Analysis Algorithm for Contex
 
 Jonathan Katz and Yehuda Lindell. *Introduction to Modern Cryptography*, 3rd edition. CRC Press, 2020. Bibliographic metadata and section titles checked against the authors' 3rd-edition table of contents and preface: https://www.cs.umd.edu/~jkatz/imc/toc-preface-3rd.pdf (Sections 9.2.3–9.2.4 on the factoring and RSA assumptions; Section 15.1.1 on trapdoor permutations; Section 15.2 on Paillier encryption; Sections 15.4.1–15.4.3 on quadratic residues and the quadratic residuosity assumption; and Sections 15.5.1–15.5.2 on modular square roots and the Rabin trapdoor permutation). Detailed numbered locators (Definitions, Claims, Propositions, Lemmas, Constructions, Examples, Exercises, and Theorems) remain attributed to the Lean source docstrings, as the textbook body was not independently audited; the Lean modules adapt the parameter generators, RSA challenge domain, Rabin sampling distribution, and the Paillier encryption-randomness sampler (dyadic sampling with `unitOrOne` in place of uniform `ℤ_N^*`) as documented in their module docstrings and implementation notes.
 
+<a id="khot10"></a>
+## khot10
+
+Subhash Khot. "On the Unique Games Conjecture (Invited Survey)." *2010 IEEE 25th Annual Conference on Computational Complexity (CCC)*, 99–121, 2010. https://doi.org/10.1109/CCC.2010.19 . Author-hosted copy inspected: https://cs.nyu.edu/~khot/papers/UGCSurvey.pdf (Section 2.4, p. 6 of the author copy: the second paragraph after Definition 2.4, beginning "Let us return", on finding a satisfying labelling of a value-1 instance by trying every label for one vertex and propagating along each connected component, and the remark after Conjecture 2.5 that the conjecture would be false with `ε = 0`). The page range and DOI are from the bibliographic record and were not checked against the typeset proceedings.
+
 <a id="kleeminty72"></a>
 ## kleeminty72
 
 Victor Klee and George J. Minty. "How Good Is the Simplex Algorithm?" In O. Shisha (ed.), *Inequalities III*, Academic Press, New York, 1972, pp. 159–175. Bibliographic data from search summaries; the paper was not inspected in this pass, and no theorem number is claimed. The manual credits it with the deformed cubes on which Dantzig's largest-coefficient rule visits all `2^n` vertices. The formalized program, `max ∑ 10^(n-j) x_j` subject to `2 ∑_{j<i} 10^(i-j) x_j + x_i ≤ 100^(i-1)` and `x ≥ 0`, is the textbook form attributed to [chvatal83](#chvatal83), Chapter 4, which was not inspected either; the coefficients were taken from secondary summaries and checked by running Dantzig's rule on them for `n ≤ 7`, which takes `2^n - 1` pivots in each case.
+
+<a id="kleenepost54"></a>
+## kleenepost54
+
+Stephen C. Kleene and Emil L. Post. *The Upper Semi-Lattice of Degrees of Recursive Unsolvability*. Annals of Mathematics (2) 59(3), 379–407, 1954. https://doi.org/10.2307/1969708 . Bibliographic metadata checked on 2026-11-08; the article is paywalled and was not inspected. The manual attributes to it, following the customary attribution, the existence of two Turing-incomparable sets below `0′` by the finite extension method. No section or theorem locator is claimed.
+
+<a id="kmb81"></a>
+## kmb81
+
+L. Kou, G. Markowsky and L. Berman. *A Fast Algorithm for Steiner Trees*. Acta Informatica 15(2), 141–145, 1981. https://doi.org/10.1007/BF00288961 . The heuristic's steps (shortest-path distance graph on the terminals, its minimum spanning tree, replacement by shortest paths, a spanning tree of the result, then pruning non-terminal leaves) and the `2 (1 - 1/ℓ)` bound, with `ℓ` the number of leaves of an optimal tree, are taken from the abstract and secondary sources. The body of the paper was not consulted.
 
 <a id="knuthyao76"></a>
 ## knuthyao76
@@ -494,6 +621,11 @@ Lean development team. *Validating a Lean Proof*, The Lean Language Reference, a
 
 Carlton E. Lemke and Joseph T. Howson, Jr. "Equilibrium Points of Bimatrix Games." *Journal of the Society for Industrial and Applied Mathematics* 12(2), 413–423, 1964. https://doi.org/10.1137/0112033 . Bibliographic data from the DOI record and secondary summaries; the paper's text was not consulted. It is cited only as the origin of the algorithm. Locators for the formalized statements follow [vonstengel07](#vonstengel07).
 
+<a id="leskovecrajaramanullman20"></a>
+## leskovecrajaramanullman20
+
+Jure Leskovec, Anand Rajaraman, Jeffrey D. Ullman. *Mining of Massive Datasets*, 3rd edition. Cambridge University Press, 2020. https://doi.org/10.1017/9781108684163 . DOI and metadata as reported by search indexes. The section locators used here (3.3.3 minhashing and Jaccard similarity, 3.4.2 analysis of the banding technique, 3.6.1 locality-sensitive functions, 3.6.2 families for the Jaccard distance, 3.6.3 amplification, 3.7.1 families for the Hamming distance) were matched against section titles reported by secondary sources; the book text was not inspected in this pass (no connection to the authors' site).
+
 <a id="lev86"></a>
 ## lev86
 
@@ -513,6 +645,11 @@ Yanyi Liu and Rafael Pass. *On One-way Functions and Kolmogorov Complexity*. FOC
 ## lll82
 
 Arjen K. Lenstra, Hendrik W. Lenstra Jr. and László Lovász. "Factoring Polynomials with Rational Coefficients." *Mathematische Annalen* 261, 515–534, 1982. https://doi.org/10.1007/BF01457454 . Inspected the author-hosted scan https://www.math.leidenuniv.nl/~hwl/PUBLICATIONS/1982f/art.pdf on 2026-11-08: §1, conditions (1.4)–(1.5) and the remark after (1.5), Proposition (1.6) and the remark after it, Proposition (1.11), the algorithm (1.15)–(1.21), the swap formulas (1.22) and the termination argument (1.23)–(1.26).
+
+<a id="lp09"></a>
+## lp09
+
+Yehuda Lindell, Benny Pinkas. "A Proof of Security of Yao's Protocol for Two-Party Computation." *Journal of Cryptology* 22(2), 161–188, 2009. https://doi.org/10.1007/s00145-008-9036-8 . Metadata checked at the publisher. The full text is paywalled and ePrint 2004/175 returned HTTP 403 in this pass, so theorem and section locators are not claimed.
 
 <a id="ltv98"></a>
 ## ltv98
@@ -538,6 +675,16 @@ Mathlib contributors. *Mathlib*, pinned source `69552756cd8a2d2d48763cf7279fd814
 ## mccreightmeyer69
 
 Edward M. McCreight and Albert R. Meyer. *Classes of Computable Functions Defined by Bounds on Computation: Preliminary Report*. Proceedings of the First Annual ACM Symposium on Theory of Computing (STOC '69), 79–88, 1969. https://doi.org/10.1145/800169.805423 . Bibliographic metadata checked on 2026-11-08; the paper is behind the ACM paywall and was not inspected. The manual attributes the union, naming and honesty theorems to it, following the customary attribution; Odifreddi's textbook [odifreddi99](#odifreddi99) attributes the Naming Theorem VII.3.6 and the Union Theorem VII.3.7 to it. The paper's own theorem numbers and exact hypotheses are unverified. Odifreddi states the union theorem for a uniformly recursive sequence `t_n` with `t_n(x) ≤ t_{n+1}(x)` for all `n` and `x`, which is the hypothesis of `union_theorem`. Secondary accounts state the union theorem for a recursively enumerable "self-bounded" set of bounds, in which every finite subset is dominated almost everywhere by a member; this would match `union_theorem_of_directed`, but it has not been checked against the paper, so the library derives the directed and almost-everywhere variants from the pointwise `union_theorem`. The open survey by Hartmanis and Hopcroft (Cornell TR70-59, https://hdl.handle.net/1813/5918) is an image scan that was not read in this pass.
+
+<a id="mignonressayre04"></a>
+## mignonressayre04
+
+Thierry Mignon and Nicolas Ressayre. *A quadratic bound for the determinant and permanent problem*. International Mathematics Research Notices 2004(79), 4241–4253, 2004. https://doi.org/10.1155/S1073792804142566 . Bibliographic metadata checked on 2026-11-08; the publisher copy was not inspected, so no theorem number is claimed. The statement (`dc(perm_n) ≥ n²/2` in characteristic zero), the point `X₀` (all ones with `1 - n` in one corner), and the two Hessian lemmas were checked against R. Saptharishi, *A survey of lower bounds in arithmetic circuit complexity*, chapter "Determinantal Complexity Lower Bounds" (Theorem `thm:Mignon-Ressayre-mainthm`, Lemmas `lem:MR-det-ub` and `lem:MR-perm-lb`), at GitHub revision `af95c539`. The full rank of the Hessian at `X₀` is proved in the library by its own sandwich-identity argument, not by the survey's eigenvalue or block-matrix computation.
+
+<a id="misragries82"></a>
+## misragries82
+
+Jayadev Misra, David Gries. “Finding Repeated Elements.” *Science of Computer Programming* 2(2), 143–152, 1982. https://doi.org/10.1016/0167-6423(82)90012-0 . Bibliographic data from search summaries of the DOI record; the Misra–Gries statements formalized here follow the presentation of [chakrabarti25](#chakrabarti25), Unit 1. The journal text was not inspected in this pass.
 
 <a id="mitzenmacherupfal17"></a>
 ## mitzenmacherupfal17
@@ -604,6 +751,11 @@ OpenAI. *The Exponential Time Hypothesis is False*. Manuscript dated 17 October 
 
 Giovanni Pighizzini. "Nondeterministic One-Tape Off-Line Turing Machines and Their Time Complexity." arXiv:0905.1271v1 [cs.FL], 2009. https://arxiv.org/abs/0905.1271v1 . The v1 text was read for §1, Theorem 1 (§3: crossing sequences of bounded length imply regularity, stated for nondeterministic machines under the weak measure), and the opening of §4 with Theorem 3 (attribution of the deterministic `n log n` bound to Trakhtenbrot, Hartmanis and Kobayashi). The arXiv record says the paper was to appear in the *Journal of Automata, Languages and Combinatorics*; secondary indexes place it in volume 14 (2009), pp. 107–124. The journal version was not inspected.
 
+<a id="post46"></a>
+## post46
+
+Emil L. Post. "A Variant of a Recursively Unsolvable Problem." *Bulletin of the American Mathematical Society* 52(4), 264–268, 1946. https://doi.org/10.1090/S0002-9904-1946-08555-9 . Bibliographic metadata only. The publisher's PDF returned an access error and was not inspected. It is cited as the origin of the correspondence problem and its unsolvability, as in [sipser13](#sipser13), §5.2.
+
 <a id="radhakrishnan97"></a>
 ## radhakrishnan97
 
@@ -613,6 +765,11 @@ Jaikumar Radhakrishnan. "An Entropy Proof of Bregman's Theorem." *Journal of Com
 ## rado62
 
 Tibor Radó. *On Non-Computable Functions*. The Bell System Technical Journal 41(3), 877–884, 1962. https://doi.org/10.1002/j.1538-7305.1962.tb00480.x ; scan at https://archive.org/details/bstj41-3-877 . Read in the archive.org text on 2026-11-08: Section V, Theorem (`Σ(n)` eventually exceeds every computable `f`, so `Σ` is not computable), proved with an auxiliary computable majorant of `f`; Section VI defines the shift function `S(n)` and derives the same domination from `S(n) ≥ Σ(n)`.
+
+<a id="raychaudhuriwilson1975"></a>
+## raychaudhuriwilson1975
+
+Dijen K. Ray-Chaudhuri and Richard M. Wilson. “On `t`-Designs.” *Osaka Journal of Mathematics* 12(3), 737–744, 1975. Bibliographic metadata from search summaries on 2026-11-08; the full text was not inspected in this pass. The manual attributes only the uniform bound `C(n, s)` for `s` allowed intersection sizes to this paper.
 
 <a id="reingold2008"></a>
 ## reingold2008
@@ -644,10 +801,20 @@ Alvin E. Roth. *Incentive Compatibility in a Market with Indivisible Goods*. Eco
 
 Alvin E. Roth and Andrew Postlewaite. *Weak versus Strong Domination in a Market with Indivisible Goods*. Journal of Mathematical Economics 4(2), 131–137, 1977. https://doi.org/10.1016/0304-4068(77)90004-0 . Bibliographic metadata only; the publisher's text is paywalled and was not inspected, so no theorem number is cited. The housing-market modules attribute to it, as the standard primary reference and without a verified locator, the uniqueness of the strict-core (weak-domination) allocation and its agreement with the competitive allocation; neither [schummervohra07](#schummervohra07) nor [roughgarden13cs364a](#roughgarden13cs364a), Lecture #9, cites it.
 
+<a id="rothsotomayor90"></a>
+## rothsotomayor90
+
+Alvin E. Roth and Marilda A. Oliveira Sotomayor. *Two-Sided Matching: A Study in Game-Theoretic Modeling and Analysis*. Econometric Society Monographs, Cambridge University Press, 1990. https://doi.org/10.1017/CCOL052139015X . Bibliographic metadata checked against Crossref on 2026-11-08. The book itself was not inspected. Its Chapter 2 theorem numbers and statements were checked against Muriel Niederle's lecture notes *Matching: The Theory* (Stanford, 26 September 2011, https://web.stanford.edu/~niederle/MarketDesignClassIntro2.pdf), which follow the book's numbering. They are Theorem 2.8 (a stable matching exists for every marriage market), Theorem 2.12 (with strict preferences there are M-optimal and W-optimal stable matchings), Theorem 2.13 (opposing interests, credited to Knuth) and Theorem 2.22 (with strict preferences, the set of people who are single is the same for all stable matchings). The incomplete-list stable-matching modules cite these theorems.
+
+<a id="roughgarden03"></a>
+## roughgarden03
+
+Tim Roughgarden. *The Price of Anarchy is Independent of the Network Topology*. Journal of Computer and System Sciences 67(2), 341–364, 2003. https://doi.org/10.1016/S0022-0000(03)00044-8 . The author's version of 23 December 2002 (https://theory.stanford.edu/~tim/papers/indep.pdf) was consulted on 2026-11-08 for Section 2.4, Definitions 2.5 and 3.1–3.3, Theorem 3.8, Lemma 4.1, Theorem 4.2, Proposition 5.1 and Remark 5.2; locators follow that version. Its anarchy value is defined through marginal costs for latencies with `x c(x)` convex, and Proposition 5.1 takes the degree `p ≥ 1`. The library uses the equivalent Pigou-ratio definition of [roughgarden13cs364a](#roughgarden13cs364a), Lecture #11, (2), which needs no convexity, and includes `d = 0`.
+
 <a id="roughgarden13cs364a"></a>
 ## roughgarden13cs364a
 
-Tim Roughgarden. *CS364A: Algorithmic Game Theory*, lecture notes, Stanford University, Fall 2013. https://theory.stanford.edu/~tim/f13/f13.html . Lecture #17, "No-Regret Dynamics" (18 November 2013), was consulted on 2026-11-07 for Definition 1.2, §3, Proposition 3.1, Remark 3.2, Corollary 3.3 and footnote 1. Lecture #9, "Beyond Quasi-Linearity" (21 October 2013), was consulted on 2026-11-08 for §3 (the top trading cycle algorithm, Theorems 3.1 and 3.2). Its core is defined by strict blocking, for which only the existence half of Theorem 3.2 holds; a checked three-agent market in `ComplexityTests/HousingMarket.lean` has a second core allocation.
+Tim Roughgarden. *CS364A: Algorithmic Game Theory*, lecture notes, Stanford University, Fall 2013. https://theory.stanford.edu/~tim/f13/f13.html . Lecture #17, "No-Regret Dynamics" (18 November 2013), was consulted on 2026-11-07 for Definition 1.2, §3, Proposition 3.1, Remark 3.2, Corollary 3.3 and footnote 1. Lecture #9, "Beyond Quasi-Linearity" (21 October 2013), was consulted on 2026-11-08 for §3 (the top trading cycle algorithm, Theorems 3.1 and 3.2). Its core is defined by strict blocking, for which only the existence half of Theorem 3.2 holds; a checked three-agent market in `ComplexityTests/HousingMarket.lean` has a second core allocation. Lecture #11, "Selfish Routing and the Price of Anarchy" (28 October 2013), was consulted on 2026-11-08 for Definition 3.2, the Pigou bound (2), Theorem 3.3, Table 1 and the proof in §5. Lecture #15, "Best-Case and Strong Nash Equilibria" (11 November 2013), was consulted on 2026-11-08 for §1.2 (network cost-sharing games, displays (1) and (2)), §1.3 (VHS or Betamax, Figure 1), §1.4 (the opt-out example, Figure 2), Theorem 2.1, the remark after it that the opt-out example rules out a smaller factor, and displays (3) and (4). Exercise Set #7, Exercise 55 (`C(f)/2 ≤ Φ(f) ≤ C(f)` for affine atomic selfish routing), was consulted on the same day.
 
 <a id="roughgarden15"></a>
 ## roughgarden15
@@ -664,6 +831,11 @@ Tim Roughgarden. *Communication Complexity (for Algorithm Designers)*. Lecture n
 
 Tim Roughgarden and Éva Tardos. *How Bad Is Selfish Routing?* Journal of the ACM 49(2), 236–259, 2002. https://doi.org/10.1145/506147.506153 . The author's version of 5 December 2001 was consulted on 2026-11-07 for Section 2.1, Definition 2.1, Lemma 2.2, Theorem 4.5 and Figure 3; locators follow that version.
 
+<a id="roughgardentardos07"></a>
+## roughgardentardos07
+
+Tim Roughgarden and Éva Tardos. "Introduction to the Inefficiency of Equilibria." Chapter 17 of Noam Nisan, Tim Roughgarden, Éva Tardos and Vijay V. Vazirani (eds.), *Algorithmic Game Theory*, Cambridge University Press, 2007, 443–459. A university-hosted PDF of the book was consulted on 2026-11-08 for §17.1.3 (the definitions of the price of anarchy and the price of stability) and Example 17.3 with Figure 17.3 (the `H_k` lower bound for Shapley network design games).
+
 <a id="sakszhou99"></a>
 ## sakszhou99
 
@@ -677,7 +849,7 @@ Grant Schoenebeck. *Linear Level Lasserre Lower Bounds for Certain k-CSPs*. 49th
 <a id="schrijver03"></a>
 ## schrijver03
 
-Alexander Schrijver. *Combinatorial Optimization: Polyhedra and Efficiency*. Algorithms and Combinatorics 24, Springer, 2003. Cited for Gomory–Hu trees. The locator (Chapter 15, “Connectivity and Gomory–Hu trees”, Section 15.4) is taken from secondary descriptions of the table of contents only: the book itself was not inspected, and no theorem or page locator is claimed.
+Alexander Schrijver. *Combinatorial Optimization: Polyhedra and Efficiency*. Algorithms and Combinatorics 24, Springer, 2003. Cited for Gomory–Hu trees. The locator (Chapter 15, “Connectivity and Gomory–Hu trees”, Section 15.4) is taken from secondary descriptions of the table of contents only: the book itself was not inspected, and no theorem or page locator is claimed. It is also cited for Dinitz's algorithm: the locator Section 10.6 (on Dinitz's `O(n²m)` maximum-flow algorithm) was likewise taken from secondary descriptions of the table of contents.
 
 <a id="schrijver17"></a>
 ## schrijver17
@@ -707,12 +879,17 @@ Lloyd Shapley and Herbert Scarf. *On Cores and Indivisibility*. Journal of Mathe
 <a id="sipser13"></a>
 ## sipser13
 
-Michael Sipser. *Introduction to the Theory of Computation*, third edition. Cengage Learning, 2013. Cited for Definition 2.8 (Chomsky normal form: rules `A → BC` and `A → a`, with `S → ε` permitted for the start variable `S`, and `S` forbidden on every right-hand side; the library's `ChomskyNormalFormGrammar` imposes the latter restriction only when `S → ε` is present) and Theorem 7.16 ("Every context-free language is a member of P", proved by the CYK dynamic program). Both locators were checked against secondary course material, not the printed book.
+Michael Sipser. *Introduction to the Theory of Computation*, third edition. Cengage Learning, 2013. Cited for Definition 2.8 (Chomsky normal form: rules `A → BC` and `A → a`, with `S → ε` permitted for the start variable `S`, and `S` forbidden on every right-hand side; the library's `ChomskyNormalFormGrammar` imposes the latter restriction only when `S → ε` is present) and Theorem 7.16 ("Every context-free language is a member of P", proved by the CYK dynamic program). Both locators were checked against secondary course material, not the printed book. Also cited for §5.2 and Theorem 5.15 (Post's correspondence problem is undecidable, proved through the modified problem MPCP by a reduction from `A_TM`). That locator was checked against secondary summaries, not the printed book.
 
 <a id="sleatortarjan85"></a>
 ## sleatortarjan85
 
 Daniel D. Sleator, Robert E. Tarjan. “Amortized Efficiency of List Update and Paging Rules.” *Communications of the ACM* 28(2), 202–208, 1985. https://doi.org/10.1145/2786.2793 ; author PDF https://www.cs.cmu.edu/~sleator/papers/amortized-efficiency.pdf . Paging scope and equal-capacity specialization checked against source and local mapping. The list-update cost model of Section 2, Theorem 1 (`C_MF(s) ≤ 2C_A(s) + X_A(s) − F_A(s) − m`) and the remark after its proof (different initial lists, plus the initial inversion count) were checked against the author PDF on 2026-11-07 UTC.
+
+<a id="soare87"></a>
+## soare87
+
+Robert I. Soare. *Recursively Enumerable Sets and Degrees*. Perspectives in Mathematical Logic, Springer, 1987. https://doi.org/10.1007/978-3-662-02460-7 . Bibliographic metadata checked on 2026-11-08; the book was not inspected, and no open copy was used. It is cited as a standard reference for oracle computations, the use principle and finite extension constructions. No chapter or theorem locator is claimed.
 
 <a id="stoerwagner97"></a>
 ## stoerwagner97
@@ -723,6 +900,11 @@ Mechthild Stoer and Frank Wagner. "A Simple Min-Cut Algorithm." *Journal of the 
 ## sudantrevisanvadhan01
 
 Madhu Sudan, Luca Trevisan and Salil Vadhan. *Pseudorandom Generators without the XOR Lemma*. Journal of Computer and System Sciences 62(2), 236–266, 2001. DOI: [10.1006/jcss.2000.1730](https://doi.org/10.1006/jcss.2000.1730). Publisher metadata and abstract checked by the coordinated source pass on 2026-11-02; the proof-route attribution comes from the pinned Lean module.
+
+<a id="tardoswexler07"></a>
+## tardoswexler07
+
+Éva Tardos and Tom Wexler. "Network Formation Games and the Potential Function Method." Chapter 19 of Noam Nisan, Tim Roughgarden, Éva Tardos and Vijay V. Vazirani (eds.), *Algorithmic Game Theory*, Cambridge University Press, 2007, 487–516. A university-hosted PDF of the book was consulted on 2026-11-08 for §19.3.1 (the global connection game, the potential `Σ c_e H_{k_e}`, Lemmas 19.7 and 19.8, Theorem 19.10), §19.3.2 (fair cost sharing as a congestion game with `c_e(x) = c_e / x`) and §19.3.3 (Theorem 19.13: `cost(S) / A ≤ Φ(S) ≤ B · cost(S)` with `A, B > 0` gives price of stability at most `AB`).
 
 <a id="tarjan72"></a>
 ## tarjan72
@@ -767,14 +949,29 @@ R. Ryan Williams. *Simulating Time With Square-Root Space*. arXiv:2502.17779v1 (
 <a id="williamsonshmoys11"></a>
 ## williamsonshmoys11
 
-David P. Williamson and David B. Shmoys. *The Design of Approximation Algorithms*. Cambridge University Press, 2011. https://doi.org/10.1017/CBO9780511921735 . Section 1.6 (Algorithm 1.2, Theorems 1.11 and 1.12) and the Chapter 1 Chapter Notes attribution of the greedy set-cover analysis to Chvátal (Mathematics of Operations Research 4(3), 233–235, 1979, https://doi.org/10.1287/moor.4.3.233) were checked against the authors' electronic edition at https://www.designofapproxalgs.com on 2026-11-07, as were Section 2.4 (Lemma 2.10, Theorems 2.11 and 2.12) and the Chapter 2 Chapter Notes, which attribute nearest addition and its analysis to Rosenkrantz, Stearns and Lewis (1977) and call the double-tree algorithm folklore. The handshake argument, Theorem 2.13 (Christofides' algorithm is a 3/2-approximation) and its proof, and the Chapter 2 Notes attribution to Christofides (reference [73]) were checked against the same edition on 2026-11-08. Section 2.2 (Algorithm 2.1, Theorems 2.3 and 2.4) and the Chapter 2 Chapter Notes, which attribute the k-center algorithm and analysis to Gonzalez (Theoretical Computer Science 38, 293–306, 1985, https://doi.org/10.1016/0304-3975(85)90224-5), an alternative 2-approximation to Hochbaum and Shmoys (Mathematics of Operations Research 10(2), 180–184, 1985, https://doi.org/10.1287/moor.10.2.180) and Theorem 2.4 to Hsu and Nemhauser (Discrete Applied Mathematics 1(3), 209–215, 1979, https://doi.org/10.1016/0166-218X(79)90044-1), were checked against the same electronic edition on 2026-11-08; the three original papers were not checked.
+David P. Williamson and David B. Shmoys. *The Design of Approximation Algorithms*. Cambridge University Press, 2011. https://doi.org/10.1017/CBO9780511921735 . Section 1.6 (Algorithm 1.2, Theorems 1.11 and 1.12) and the Chapter 1 Chapter Notes attribution of the greedy set-cover analysis to Chvátal (Mathematics of Operations Research 4(3), 233–235, 1979, https://doi.org/10.1287/moor.4.3.233) were checked against the authors' electronic edition at https://www.designofapproxalgs.com on 2026-11-07, as were Section 2.4 (Lemma 2.10, Theorems 2.11 and 2.12) and the Chapter 2 Chapter Notes, which attribute nearest addition and its analysis to Rosenkrantz, Stearns and Lewis (1977) and call the double-tree algorithm folklore. The handshake argument, Theorem 2.13 (Christofides' algorithm is a 3/2-approximation) and its proof, and the Chapter 2 Notes attribution to Christofides (reference [73]) were checked against the same edition on 2026-11-08, as were Exercise 2.5 (the MST 2-approximation for Steiner tree, metric part (a) and metric completion part (b)), Section 12.3 and the Chapter 12 Notes attribution of the factor-2 Steiner heuristic to Moore via Gilbert and Pollak (reference [130]). Section 2.2 (Algorithm 2.1, Theorems 2.3 and 2.4) and the Chapter 2 Chapter Notes, which attribute the k-center algorithm and analysis to Gonzalez (Theoretical Computer Science 38, 293–306, 1985, https://doi.org/10.1016/0304-3975(85)90224-5), an alternative 2-approximation to Hochbaum and Shmoys (Mathematics of Operations Research 10(2), 180–184, 1985, https://doi.org/10.1287/moor.10.2.180) and Theorem 2.4 to Hsu and Nemhauser (Discrete Applied Mathematics 1(3), 209–215, 1979, https://doi.org/10.1016/0166-218X(79)90044-1), were checked against the same electronic edition on 2026-11-08; the three original papers were not checked.
+
+<a id="yao80"></a>
+## yao80
+
+Andrew Chi-Chih Yao. "New Algorithms for Bin Packing." *Journal of the ACM* 27(2), 207–227, 1980. https://doi.org/10.1145/322186.322187 . Bibliographic data and the abstract are from the Crossref record of the DOI, checked on 2026-11-08 UTC. The abstract defines `r(S)` as the maximum ratio `S(L)/L*` for large `L*`, where `S(L)` is the number of bins used by algorithm `S` and `L*` the minimum number needed. It states that every on-line algorithm `S` has `r(S) ≥ 3/2`. The item types `1/7 + ε`, `1/3 + ε` and `1/2 + ε` of the construction are as reported in [baloghbekesidosaepsteinlevin18](#baloghbekesidosaepsteinlevin18), Section 1. The full text was not inspected, since no open copy was found, so the theorem number and Yao's own proof are not recorded. [OnlineLowerBound](../Complexity/Algorithms/Lean/BinPacking/OnlineLowerBound.lean) cites the paper on that basis.
 
 <a id="yekhanin12"></a>
 ## yekhanin12
 
 Sergey Yekhanin. *Locally Decodable Codes*. Foundations and Trends in Theoretical Computer Science 6(3), 139–255, 2012. https://doi.org/10.1561/0400000030 . Definition 6.1 and Lemma 6.2 (§6.1.1, private information retrieval from perfectly smooth codes) were checked on 2026-11-08 against the author's draft at https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/LDC_now.pdf ; the numbering of the published monograph was not checked.
 
+<a id="yao86"></a>
+## yao86
+
+Andrew Chi-Chih Yao. "How to Generate and Exchange Secrets (Extended Abstract)." *27th Annual Symposium on Foundations of Computer Science (FOCS 1986)*, 162–167, 1986. https://doi.org/10.1109/SFCS.1986.25 . Bibliographic data from the DOI record and secondary listings, cited as the customary origin of garbled circuits. The full text was not inspected in this pass.
+
 <a id="younger67"></a>
 ## younger67
 
 Daniel H. Younger. "Recognition and Parsing of Context-Free Languages in Time n³." *Information and Control* 10(2), 189–208, 1967. https://doi.org/10.1016/S0019-9958(67)80007-X . Bibliographic metadata was checked on 2026-11-08; the article body was not inspected. It is cited, with [Kasami 1965](#kasami65), as an original source of the CYK algorithm.
+
+<a id="zivlempel78"></a>
+## zivlempel78
+
+Jacob Ziv and Abraham Lempel. "Compression of Individual Sequences via Variable-Rate Coding." *IEEE Transactions on Information Theory* 24(5), 530–536, 1978. https://doi.org/10.1109/TIT.1978.1055934 . Bibliographic data from the DOI record and secondary summaries. The incremental parsing rule (each phrase is the shortest new prefix) is attributed through [Cover and Thomas](#coverthomas06); the paper's text was not inspected in this pass.
