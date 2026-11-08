@@ -4,12 +4,12 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Computability.Distributed.OrientedCycle.LCL.Flexible
+import Complexity.Computability.Distributed.OrientedCycle.LCL.Classification
 import Complexity.Computability.Distributed.OrientedCycle.MIS
 
 /-! LCL problems on oriented cycles: 3-colouring and maximal independent sets (flexible, no loop,
-`Θ(log* n)`), 2-colouring (no flexible state), a problem with a loop, the node-edge-checkable
-bridge, and concrete anchors and fillings. -/
+`Θ(log* n)`), 2-colouring (no flexible state, `Θ(n)`), a problem with a loop, the
+node-edge-checkable bridge, and concrete anchors and fillings. -/
 
 namespace ComplexityTests.Distributed.OrientedCycle.LCL
 
@@ -147,6 +147,42 @@ example {S : Type} {A : Algorithm ℕ S Bool} {n t : ℕ} (hA : A.SolvesLCL twoC
   have h := hA.logStar_le (fun a h => h rfl)
   have h2 : Nat.logStar (Fintype.card Bool) = 1 := by decide
   omega
+
+/-! ### The `Θ(n)` row: 2-colouring -/
+
+-- Closed walks of the consecutive lengths `2` and `3` give flexibility `2 * 2`.
+example : IsFlexible threeCol 0 4 :=
+  IsFlexible.of_consecutive (.tail _ 1 0 1 (.single (by decide)) (by decide))
+    (.tail _ 2 0 2 (.tail _ 1 2 1 (.single (by decide)) (by decide)) (by decide))
+
+-- Without a flexible state, `t` rounds handle only cycles with `n ≤ (|L| + 1) (2t + 1)` nodes.
+example {S : Type} {A : Algorithm ℕ S Bool} {n t : ℕ} (hA : A.SolvesLCL twoCol n t) :
+    n ≤ 3 * (2 * t + 1) := by
+  simpa using hA.le_of_forall_not_isFlexible twoCol_not_isFlexible
+
+-- In particular no `1`-round algorithm 2-colours the 10-cycle.
+example {S : Type} (A : Algorithm ℕ S Bool) : ¬A.SolvesLCL twoCol 10 1 := fun hA => by
+  have := hA.le_of_forall_not_isFlexible twoCol_not_isFlexible
+  simp at this
+
+/-- The alternating 2-colouring of the 10-cycle. -/
+def alt10 : ZMod 10 → Bool := fun v => decide (v.val % 2 = 0)
+
+-- Gathering 2-colours the 10-cycle in `⌊10 / 2⌋ = 5` rounds.
+example : ∃ A : Algorithm ℕ (ℤ → ℕ) Bool, A.SolvesLCL twoCol 10 5 :=
+  (show IsSolution twoCol alt10 by decide).exists_solvesLCL
+
+-- Odd cycles have no 2-colouring, so the upper bound does not apply to them.
+example : ∀ ℓ : ZMod 5 → Bool, ¬IsSolution twoCol ℓ := by decide
+
+-- The classification puts 2-colouring in its third case: `⌊n / 2⌋` rounds on every even cycle.
+-- (The universes of the state types in the lower-bound clauses are fixed explicitly.)
+example (n : ℕ) (h : ∃ ℓ : ZMod n → Bool, IsSolution twoCol ℓ) :
+    ∃ A : Algorithm ℕ (ℤ → ℕ) Bool, A.SolvesLCL twoCol n (n / 2) := by
+  rcases trichotomy.{0, 0, 0} twoCol with ⟨a, ha, -⟩ | ⟨-, q, K, hq, -⟩ | ⟨-, h3⟩
+  · exact absurd rfl ha
+  · exact absurd hq (twoCol_not_isFlexible q K)
+  · exact (h3 n h).1
 
 /-! ### A problem with a loop -/
 
