@@ -69,7 +69,8 @@ theorem disagreement_eq_zero_of_lt {c h : Bool → Bool}
 negation on a bit exactly with tolerance `1/8`: its error bound `1/2 - 1/6 + 1/8` is below
 `1/2`. -/
 theorem exists_learns_idNot :
-    ∃ A : Algorithm Bool, A.IsQueryBounded 2 ∧ Learns A (PMF.uniformOfFintype Bool) idNot (1 / 8) 0 := by
+    ∃ A : Algorithm Bool, A.IsQueryBounded 2 ∧
+      Learns A (PMF.uniformOfFintype Bool) idNot (1 / 8) 0 := by
   obtain ⟨A, hq, -, hA⟩ := exists_learns_sqDim (PMF.uniformOfFintype Bool) idNot
   rw [sqDim_idNot] at hq hA
   refine ⟨A, hq, fun c hc h hh => (disagreement_eq_zero_of_lt ?_).le⟩
