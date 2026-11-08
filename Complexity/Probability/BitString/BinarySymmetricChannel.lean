@@ -69,6 +69,9 @@ Achievability of the capacity `1 - h₂(p)` by random codes is in
   error probability as a probability of the channel output and as an average over the noise.
 * `Cslib.BitString.decodingError_zero_eq_zero`, `Cslib.BitString.IsNearestDecoder.leftInverse`:
   a noiseless channel never confuses the messages of an injective code.
+* `Cslib.BitString.decodingError_nonneg`, `Cslib.BitString.decodingError_le_one`,
+  `Cslib.BitString.decodingError_symm`: error probabilities lie in `[0, 1]`, and complementing the
+  received word exchanges `BSC_p` and `BSC_{1 - p}`.
 * `Cslib.BitString.bscNoise_toOuterMeasure_lt_weight_toReal`,
   `Cslib.BitString.bscNoise_toOuterMeasure_lt_weight_toReal_le`: the number of flipped bits is
   binomial, with a Hoeffding upper tail.
@@ -236,6 +239,40 @@ theorem decodingError_eq_bernoulliAverage [DecidableEq M] (p : I) (E : M → ι 
   refine (Fintype.sum_equiv (Equiv.addLeft (E m)) _ _ fun e => ?_).symm
   simp only [Equiv.coe_addLeft, Set.mem_ofPred_eq, bsc_apply, BitString.add_cancel_left,
     bscNoise_apply_toReal, mul_ite, mul_one, mul_zero]
+
+omit [DecidableEq ι] in
+/-- Error probabilities are nonnegative. -/
+theorem decodingError_nonneg (p : I) (E : M → ι → Bool) (D : (ι → Bool) → M) (m : M) :
+    0 ≤ decodingError p E D m := by
+  classical
+  rw [decodingError_eq_bernoulliAverage]
+  simpa only [bernoulliAverage_const] using
+    bernoulliAverage_mono p.2.1 p.2.2 (f := fun _ => 0) fun e => by split_ifs <;> norm_num
+
+omit [DecidableEq ι] in
+/-- Error probabilities are at most one. -/
+theorem decodingError_le_one (p : I) (E : M → ι → Bool) (D : (ι → Bool) → M) (m : M) :
+    decodingError p E D m ≤ 1 := by
+  classical
+  rw [decodingError_eq_bernoulliAverage]
+  simpa only [bernoulliAverage_const] using
+    bernoulliAverage_mono p.2.1 p.2.2 (g := fun _ => 1) fun e => by split_ifs <;> norm_num
+
+omit [DecidableEq ι] in
+/-- **Flipping every received bit turns `BSC_p` into `BSC_{1 - p}`**: a decoder `D` errs on `BSC_p`
+exactly as often as the decoder that first complements the received word errs on `BSC_{1 - p}`. -/
+theorem decodingError_symm (p : I) (E : M → ι → Bool) (D : (ι → Bool) → M) (m : M) :
+    decodingError (σ p) E (fun y => D fun i => !y i) m = decodingError p E D m := by
+  classical
+  rw [decodingError_eq_bernoulliAverage, decodingError_eq_bernoulliAverage,
+    unitInterval.coe_symm_eq, bernoulliAverage_one_sub]
+  congr 1
+  funext e
+  have h : (fun i => !(E m + fun i => !e i) i) = E m + e := by
+    funext i
+    change (!(E m i ^^ !e i)) = (E m i ^^ e i)
+    cases E m i <;> cases e i <;> rfl
+  rw [h]
 
 omit [DecidableEq ι] in
 /-- Over the noiseless channel `BSC_0`, a decoder that inverts the encoder never errs. -/

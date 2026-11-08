@@ -37,8 +37,6 @@ an exact potential; a generalized ordinal potential suffices, and every exact po
 
 ## Main results
 
-* `Cslib.GameTheory.CostGame.IsGeneralizedOrdinalPotential.le_of_reflTransGen`: a generalized
-  ordinal potential does not increase along improvement paths.
 * `IsGeneralizedOrdinalPotential.exists_reflTransGen_isPureNash_socialCost_le` (in
   `Cslib.GameTheory.CostGame`): better-response dynamics started at `s₀` reach a pure Nash
   equilibrium of social cost at most `A * B * socialCost s₀`.
@@ -55,20 +53,7 @@ public section
 
 namespace Cslib.GameTheory.CostGame
 
-variable {ι : Type*} {S : ι → Type*} [DecidableEq ι] {G : CostGame ι S}
-
-/-- A generalized ordinal potential does not increase along an improvement path: if better-response
-dynamics lead from `s` to `t`, then `Φ t ≤ Φ s`. -/
-theorem IsGeneralizedOrdinalPotential.le_of_reflTransGen {Φ : (∀ i, S i) → ℝ}
-    (h : G.IsGeneralizedOrdinalPotential Φ) {s t : ∀ i, S i}
-    (hst : Relation.ReflTransGen (flip G.Improves) s t) : Φ t ≤ Φ s := by
-  induction hst with
-  | refl => exact le_rfl
-  | tail _ hbc ih =>
-    obtain ⟨i, a, rfl, hlt⟩ := hbc
-    exact (h _ i a hlt).le.trans ih
-
-variable [Fintype ι]
+variable {ι : Type*} {S : ι → Type*} [DecidableEq ι] [Fintype ι] {G : CostGame ι S}
 
 /-- **The potential function method along better-response dynamics**: if a generalized ordinal
 potential `Φ` satisfies `socialCost s ≤ A * Φ s` and `Φ s ≤ B * socialCost s` for every profile

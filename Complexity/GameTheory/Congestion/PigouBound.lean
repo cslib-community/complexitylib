@@ -125,7 +125,7 @@ theorem lt_pigouBound_iff {C : Set (ℝ → ℝ)} {a : ℝ≥0∞} :
   · rintro ⟨c, hc, r, x, hr, hx, h⟩
     exact ⟨c, hc, r, hr, x, hx, h⟩
 
-/-- The Pigou bound is at least `1` as soon as some `c ∈ C` is positive at some `r ≥ 0`: the
+/-- The Pigou bound is at least `1` as soon as some `c ∈ C` and `r ≥ 0` have `r c(r) > 0`: the
 ratio at `x = r` is `1`. -/
 theorem one_le_pigouBound {C : Set (ℝ → ℝ)} {c : ℝ → ℝ} (hc : c ∈ C) {r : ℝ} (hr : 0 ≤ r)
     (hpos : 0 < r * c r) : 1 ≤ pigouBound C := by
@@ -206,6 +206,19 @@ theorem pow_mem_polynomialLatencies (d : ℕ) : (fun x : ℝ => x ^ d) ∈ polyn
     · subst h; simp
     · simp [h]
   · rw [Finset.sum_eq_single (Fin.last d)]
+    · simp
+    · intro i _ hi
+      simp [hi]
+    · simp
+
+/-- Nonnegative constant functions are polynomial latencies of every degree. -/
+theorem const_mem_polynomialLatencies {d : ℕ} (a : ℝ) (ha : 0 ≤ a) :
+    (fun _ : ℝ => a) ∈ polynomialLatencies d := by
+  refine ⟨Pi.single 0 a, fun i => ?_, fun x => ?_⟩
+  · by_cases h : i = 0
+    · subst h; simpa using ha
+    · simp [h]
+  · rw [Finset.sum_eq_single 0]
     · simp
     · intro i _ hi
       simp [hi]
@@ -577,11 +590,7 @@ theorem exists_cost_eq_mul_of_mem_polynomialLatencies (d : ℕ) :
     pigouNetwork_isWardrop _ zero_le_one, pigouNetwork_isFeasible _ ht0.le ht1, ?_, ?_⟩
   · fin_cases e
     · exact pow_mem_polynomialLatencies d
-    · refine ⟨Pi.single 0 1, fun i => ?_, fun x => ?_⟩
-      · by_cases h : i = 0
-        · subst h; simp
-        · simp [h]
-      · simp [pigouNetwork, Pi.single_apply]
+    · exact const_mem_polynomialLatencies _ (pow_nonneg zero_le_one d)
   · rw [hcost]; exact hpos
   · rw [hcost, inv_mul_cancel₀ hpos.ne', pigouNetwork_cost]
     simp

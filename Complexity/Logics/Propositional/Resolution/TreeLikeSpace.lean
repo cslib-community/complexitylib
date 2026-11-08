@@ -41,6 +41,7 @@ counterpart in the survey:
 * a tree-like refutation of Strahler number `r` gives clause space `r + 2`
   (`Cslib.Logic.PL.CNF.Derivation.refutableInSpace`), as the complete binary tree of height `h ≥ 1`
   has black pebbling price `h + 2` (`Cslib.Pebbling.blackPebblingPrice_completeBinaryTree_root`);
+  so does a DPLL tree of rank `r` (`Cslib.DecisionTree.FindsFalsifiedClause.refutableInSpace`);
 * a tree-like refutation of `S` nodes gives clause space `log₂ (S + 1) + 1`
   (`Cslib.Logic.PL.CNF.Derivation.refutableInSpace_log`);
 * equivalently, if `φ` is not refutable in clause space `s`, every tree-like refutation has
@@ -64,7 +65,8 @@ The original paper of Esteban and Torán was not inspected for this formalizatio
   Ehrenfeucht–Haussler rank of the decision tree of the derivation.
 * `Cslib.Logic.PL.CNF.Derivation.two_pow_strahler_add_one_le`: `2 ^ (r + 1) ≤ S + 1`.
 * `Cslib.Logic.PL.CNF.Derivation.exists_configLTS_mTr`,
-  `Cslib.Logic.PL.CNF.Derivation.refutableInSpace`: clause space at most `r + 2`.
+  `Cslib.Logic.PL.CNF.Derivation.refutableInSpace`,
+  `Cslib.DecisionTree.FindsFalsifiedClause.refutableInSpace`: clause space at most `r + 2`.
 * `Cslib.Logic.PL.CNF.Derivation.refutableInSpace_log`,
   `Cslib.Logic.PL.CNF.Derivation.two_pow_le_size_add_one`: **Esteban and Torán's bound**.
 * `Cslib.Logic.PL.CNF.Derivation.exists_of_restrict`: lifting a tree-like derivation from a
@@ -206,6 +208,20 @@ theorem two_pow_le_size_add_one (d : φ.Derivation []) {s : ℕ} (h : ¬ φ.Refu
     by_contra hs
     exact h (d.refutableInSpace.mono (by omega))
   exact (Nat.pow_le_pow_right (by norm_num) hs).trans d.two_pow_strahler_add_one_le
+
+end Derivation
+
+/-- **A DPLL tree of rank `r` gives clause space `r + 2`**: a decision tree of
+Ehrenfeucht–Haussler rank `r` finding a falsified clause of `φ` gives a tree-like refutation of
+Strahler number at most `r` (`Cslib.DecisionTree.FindsFalsifiedClause.exists_derivation_rank_le`).
+-/
+theorem _root_.Cslib.DecisionTree.FindsFalsifiedClause.refutableInSpace
+    {t : DecisionTree V (Clause V)} (ht : t.FindsFalsifiedClause φ) :
+    φ.RefutableInSpace (t.rank + 2) := by
+  obtain ⟨d, -, hd⟩ := ht.exists_derivation_rank_le
+  exact d.refutableInSpace.mono (by rw [Derivation.strahler_eq_rank_toDecisionTree]; omega)
+
+namespace Derivation
 
 /-! ### Formulas on `n` variables -/
 

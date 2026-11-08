@@ -39,6 +39,8 @@ many bins as any packing of the same items (`length_lt_two_mul_of_isChain`).
 * `Cslib.Algorithms.Lean.BinPacking.IsPacking.sum_le_mul_length`: the volume bound.
 * `Cslib.Algorithms.Lean.BinPacking.IsPacking.sum_map_le_mul_length`: the volume bound for a
   weight bounded on every bin.
+* `Cslib.Algorithms.Lean.BinPacking.IsPacking.count_le_mul_length`: the counting bound for an item
+  of which every bin holds a bounded number of copies.
 * `Cslib.Algorithms.Lean.BinPacking.exists_isPacking_iff`: a packing exists exactly when every
   item fits into a bin.
 * `Cslib.Algorithms.Lean.BinPacking.length_lt_two_mul_of_isChain`: a packing whose consecutive
@@ -94,6 +96,16 @@ theorem sum_map_le_mul_length (h : IsPacking C l bins) (f : ℕ → ℕ) {K : �
   simpa using List.sum_le_length_nsmul (bins.map (List.sum ∘ List.map f)) K fun x hx => by
     obtain ⟨b, hb, rfl⟩ := List.mem_map.1 hx
     exact hK b (h.sum_le b hb)
+
+/-- **Counting bound**: if every list of items of total size at most `C` holds at most `k` copies
+of an item `x`, then a packing holds at most `k` copies of `x` per bin. -/
+theorem count_le_mul_length (h : IsPacking C l bins) (x : ℕ) {k : ℕ}
+    (hk : ∀ b : List ℕ, b.sum ≤ C → b.count x ≤ k) :
+    l.count x ≤ k * bins.length := by
+  rw [← h.perm.count_eq, List.count_flatten, Nat.mul_comm]
+  simpa using List.sum_le_length_nsmul (bins.map (List.count x)) k fun y hy => by
+    obtain ⟨b, hb, rfl⟩ := List.mem_map.1 hy
+    exact hk b (h.sum_le b hb)
 
 /-- Every packed item fits into a bin. -/
 theorem le_of_mem (h : IsPacking C l bins) {a : ℕ} (ha : a ∈ l) : a ≤ C := by
