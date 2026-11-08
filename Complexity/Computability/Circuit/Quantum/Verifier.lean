@@ -280,6 +280,15 @@ theorem acceptProb_ofCircuitFamily (F : UniformCircuitFamily) (x : List Bool)
   rw [hψ, acceptProb_smul, acceptProb_ket, norm_smul, norm_ket, mul_one, h0, List.append_nil]
   rfl
 
+/-- A verifier reading no witness qubits on inputs of length `|x|` accepts the (unique) basis
+witness as its circuit family accepts `x`. -/
+theorem acceptProb_ket_of_witnessLength_eq_zero (x : List Bool) (h : V.witnessLength x.length = 0)
+    (z : Fin (V.witnessLength x.length) → Bool) :
+    V.acceptProb x (ket z) = V.toUniformCircuitFamily.acceptProb x := by
+  rw [acceptProb_ket, List.eq_nil_of_length_eq_zero (by simp [h] : (List.ofFn z).length = 0),
+    List.append_nil]
+  rfl
+
 end UniformVerifierFamily
 
 end Cslib.Quantum

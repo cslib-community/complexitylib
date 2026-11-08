@@ -1692,9 +1692,8 @@ private theorem hkLoopM_spec (hadj : BipAdjValid G adj) {C : ℕ}
   induction fuel with
   | zero =>
     intro n mate hM hfuel
-    have h1 := card_matchedLeft hM
-    have h2 := Finset.card_le_univ (matchedLeft (mateMatching mate))
-    simp only [Fintype.card_fin] at h2
+    have h := hM.card_le_card_left
+    simp only [Fintype.card_fin] at h
     omega
   | succ fuel ih =>
     intro n mate hM hfuel
@@ -1957,21 +1956,14 @@ theorem hopcroftKarpM_time_le (hadj : BipAdjValid G adj) :
       2 * Nat.sqrt ν + 1 by omega)
   omega
 
-private theorem card_le_min_of_isMatching {M : Finset (Fin m × Fin r)} (hM : IsMatching G M) :
-    M.card ≤ min m r := by
-  have h1 := card_matchedLeft hM
-  have h2 := card_matchedRight hM
-  have h3 := Finset.card_le_univ (matchedLeft M)
-  have h4 := Finset.card_le_univ (matchedRight M)
-  simp only [Fintype.card_fin] at h3 h4
-  omega
-
 /-- `O((m + r + |adj|) √(min m r))` form of `hopcroftKarpM_time_le`. -/
 theorem hopcroftKarpM_time_le_sqrt_min (hadj : BipAdjValid G adj) :
     (hopcroftKarpM G adj).time ≤
       (2 * Nat.sqrt (min m r) + 1) * (7 * m + 3 * r + 1 + 4 * bipAdjSteps adj) + m + 3 * r := by
   have h := hopcroftKarpM_time_le hadj
-  have hs := Nat.sqrt_le_sqrt (card_le_min_of_isMatching (hopcroftKarpM_correct hadj).1.1)
+  have hM := (hopcroftKarpM_correct hadj).1.1
+  have hs := Nat.sqrt_le_sqrt (le_min (hM.card_le_card_left.trans_eq (Fintype.card_fin m))
+    (hM.card_le_card_right.trans_eq (Fintype.card_fin r)))
   have := Nat.mul_le_mul_right (7 * m + 3 * r + 1 + 4 * bipAdjSteps adj)
     (show 2 * Nat.sqrt (hopcroftKarpM G adj).ret.matching.card + 1 ≤
       2 * Nat.sqrt (min m r) + 1 by omega)
