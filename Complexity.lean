@@ -2619,6 +2619,9 @@ public import Complexity.Computability.Probabilistic.NativeInterface
 public import Complexity.Computability.Probabilistic.NativeOneTurn
 public import Complexity.Computability.Probabilistic.NativeOpenExecution
 public import Complexity.Computability.Probabilistic.NativeOpenSelection
+public import Complexity.Computability.Probabilistic.NativeOutputBuffer
+public import Complexity.Computability.Probabilistic.NativeQueryAll
+public import Complexity.Computability.Probabilistic.NativeSequential
 public import Complexity.Computability.Probabilistic.NativeUnboundedExecution
 public import Complexity.Computability.Probabilistic.Oracle
 public import Complexity.Computability.Probabilistic.Oracle.Composition
@@ -4340,6 +4343,7 @@ public import Complexity.Probability.PMF.Map
 public import Complexity.Probability.PMF.ObservedProcess
 public import Complexity.Probability.PMF.StoppedProcess
 public import Complexity.Probability.PMF.StoppedProcess.Boundary
+public import Complexity.Probability.PMF.StoppedProcess.Map
 public import Complexity.Probability.PMF.TwoBranch
 public import Complexity.Probability.PMF.Uniform
 public import Complexity.Probability.PMF.UniformBound

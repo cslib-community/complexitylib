@@ -201,9 +201,16 @@ stopping and source-mask output. Its derived joint law and actual guarded-source
 admission preserve hidden-state correlation, provenance, cancellation invoices and
 concurrent duration. Initial proposal data is ignored. A two-turn proper-partial
 cover client checks actual history-dependent queries and the full joint result.
-This program is not yet a uniform native upper oracle policy: copying/parsing
-variable-length raw reports (including unbounded invoice metadata), compiling the
-scheduler and composing their response-dependent native clocks/tapes remain open.
+An actual finite-control full-reply reader now writes and issues the raw request,
+scans the complete response and preserves its joint private state/invoice/duration.
+The native output compiler buffers that response on a real work tape from a blank
+initial buffer. General actual native `seq` composition now preserves unbounded
+terminal laws, including divergent phases, without common phase clocks; a reader
+can hand its real buffer to arbitrary native continuation code. These laws follow
+from native instructions and stopped limits, not a supplied representation.
+This is not yet a uniform native upper oracle policy: the raw packet parser,
+rewind/framing/input preparation for the rational retention phase, native scheduler
+realization and adaptive query/stop/output loop still need concrete composition.
 The strict oracle-PPT compiler's input-only clock and bounded-prefix query do not
 supply that realization. Native productive continuation, quantitative upper bounds
 and a successful output from that same compiled selector remain to be assembled.

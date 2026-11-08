@@ -1523,8 +1523,9 @@ The source client serializes proposals from an actual canonical concurrent repor
 excluding canceled calls. It checks the two correlated output/completion cases and
 runs the generated local machine with the existing source memory, including its
 cancellation invoice. This serialization is currently a semantic data conversion.
-The local theorem starts with `encInput` already on its input tape: copying and
-parsing the raw native reply, handing off native tapes, selecting the next whole
+The local theorem starts with `encInput` already on its input tape. The native
+reader below now copies the full raw reply to a work buffer; parsing it into that
+encoded retention input, preparing the local tapes, selecting the next whole
 batch, stopping at the source budget/deadline and returning the final cover still
 require a constructed native loop. The current local phase must not be used as an
 assumed successful upper-policy witness for the optimum comparison. No finite
@@ -1595,9 +1596,69 @@ This is an executable program and source-semantics connection, not a compiled
 native adaptive selector. `NativeRetention.compiled` still realizes only its local
 phase. The strict oracle-PPT calculus only copies a supplied bounded reply prefix;
 it cannot read an arbitrary invoice followed by later proposal slots under an
-input-only polynomial clock. A full native realization needs the unbounded-reply
-reader, runtime parser, scheduler compilation and tape/clock composition. The
+input-only polynomial clock. The unbounded native reader and sequential laws
+below remove that common-clock obstruction. A full realization still needs the
+runtime parser, local-input preparation, scheduler compilation and complete loop. The
 source excludes local computation from its deadline, so that stronger strict-PPT
 clock is not a source requirement. No native upper probability/cost bound or
 native optimum comparison follows merely by assuming the missing realization.
 The prior native lower and retained-receipt quantitative results remain separate.
+
+
+### Native full replies and unbounded phase composition
+
+Import `Complexity.Computability.Probabilistic.NativeQueryAll`. It also exposes
+`NativeSequential` and `NativeOutputBuffer`. The
+[complete native source client](../../ComplexityTests/NativeQueryAll.lean) starts
+from actual machine configurations and checks real concurrent response packets,
+cancellation charges, unbounded geometric invoice metadata and native halting/
+diverging continuations. From a matching warm checkout, run:
+
+```bash
+scripts/build.sh ComplexityTests.NativeQueryAll ComplexityTests.NativeRetentionSelector
+```
+
+`NativeQueryAll.machine op k` is one binary finite-control machine. It scans the
+request on its input tape, writes the selected query buffer, issues exactly one
+call and copies answer cells until the actual blank boundary. `terminal_query`
+identifies its whole unbounded native terminal law with the very same response,
+private state and event/resource update. It neither bounds the response length nor
+assumes a terminating clock. `query_readback` identifies its output/memory with the
+original raw handler's joint query result. `terminal_from` runs the phase with
+arbitrary retained work tapes, output prefix and other channels: control must be
+`write`, the input cursor must be at position 1 and the selected query buffer empty.
+It leaves other channels and work tapes unchanged. The returned cursor is at the
+right input boundary; it is not a tidy input-head-restoration theorem.
+
+`NativeOutputBuffer.execute_buffer` derives the existing native output compiler's
+whole finite-clock law. `terminal_buffer` lifts it to unbounded stopping, preserving
+all divergence, hidden state and joint resources. The general mathematical lemma
+`StoppedProcess.terminal_map` derives this from exact one-step simulation and
+matching halting predicates; injectivity, finite state and a common terminating
+clock are unnecessary. A configuration map in this proof is a representation of
+the compiled execution, not a free runtime copy operation.
+
+For the reader, `buffered_start` proves that the actual output-buffered machine
+starts with a blank buffer. `terminal_buffered` identifies its final real work
+tape with the full raw reply. `NativeOutputBuffer.buffer_contents` locates the word
+on `Fin.last k`, with its head at the write frontier and the ordinary output empty.
+The compiler performs the writes: no response value is installed by a premise.
+`finish_resources` adds exactly the actual response charge and duration to the
+previous resource ledger; local reading does not add oracle resource charges.
+
+`NativeSequential.terminal_seq` proves the exact law of the existing native `seq`
+compiler. It transfers all tapes/channels and the same oracle memory to the second
+machine. Either phase may diverge or take an unbounded response-dependent number of
+instructions. `NativeQueryAll.terminal_then` specializes this to full-reply reading;
+`terminal_buffered_then` passes the real work buffer to arbitrary actual native
+continuation code. These are compiler theorems, not assumed source-validity or
+machine-to-program representation contracts.
+
+The continuation must still rewind/frame the buffer and execute a parser before
+using it as the retention machine's encoded input. The full native scheduler and
+adaptive stop/output loop are not realized by these theorems. Consequently they do
+not yet supply the native upper success, tail-sum cost or common-oracle optimum
+comparison. An optional terminal value `none` records divergence; it is not a
+halted failure and must not be assigned a zero accrued prefix bill. The existing
+native whole-epoch trace retains such prefix resources, while cofinal path-cost
+and real-integrability packaging remain separate obligations.
