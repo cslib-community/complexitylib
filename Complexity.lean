@@ -1858,6 +1858,7 @@ public import Complexity.Computability.Complexity.Problems.ElementDistinctness
 public import Complexity.Computability.Complexity.Problems.ExactThreeSAT
 public import Complexity.Computability.Complexity.Problems.GeneralizedGeography
 public import Complexity.Computability.Complexity.Problems.Graph
+public import Complexity.Computability.Complexity.Problems.Graph.DartConnectivity
 public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalDrawing
 public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalDrawing.Encoding
 public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalLayout
@@ -1867,6 +1868,11 @@ public import Complexity.Computability.Complexity.Problems.Graph.PerfectMatching
 public import Complexity.Computability.Complexity.Problems.Graph.Ports
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Certificate
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.ComponentCounts
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Components
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Differences
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Dual
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
 public import Complexity.Computability.Complexity.Problems.Graph.VertexColors
 public import Complexity.Computability.Complexity.Problems.GraphIsomorphism
 public import Complexity.Computability.Complexity.Problems.Hamiltonian
@@ -4231,6 +4237,7 @@ public import Complexity.Foundations.Geometry.Orthogonal.Separation
 public import Complexity.Foundations.Geometry.Orthogonal.Simple
 public import Complexity.Foundations.Geometry.Orthogonal.Subdivision
 public import Complexity.Foundations.Geometry.Orthogonal.Trim
+public import Complexity.Foundations.GroupTheory.Perm.Doubled
 public import Complexity.Foundations.GroupTheory.Perm.Fin
 public import Complexity.Foundations.GroupTheory.Perm.FiveCycle
 public import Complexity.Foundations.GroupTheory.Perm.Fixing
@@ -4246,6 +4253,7 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.CopyStage
 public import Complexity.Foundations.LinearAlgebra.Matrix.CorrectionHierarchy
 public import Complexity.Foundations.LinearAlgebra.Matrix.CutRank
 public import Complexity.Foundations.LinearAlgebra.Matrix.Derivation
+public import Complexity.Foundations.LinearAlgebra.Matrix.EndpointIncidence
 public import Complexity.Foundations.LinearAlgebra.Matrix.FactorialTruncation
 public import Complexity.Foundations.LinearAlgebra.Matrix.Kronecker
 public import Complexity.Foundations.LinearAlgebra.Matrix.Lindsey

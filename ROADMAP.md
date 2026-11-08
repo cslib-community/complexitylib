@@ -458,6 +458,10 @@ index links to canonical definitions rather than keeping a second set.
   edge-CSP algorithm and planar hardness transfer. The full endpoint must discharge these
   ingredients internally, including the additional self-complementary tractable family.
   Supplied-embedding or matching-realizable-only milestones leave this objective open.
+  Actual indexed dualization and componentwise numerical Euler preservation are proved,
+  together with arbitrary-size face-parity lifting to vertex spins under the numerical
+  genus-zero and declared-endpoint guards. Geometric realization and native compilation
+  of these graph transformations remain open.
   Arbitrary-arity cyclic-obstruction normalization now supplies an ordered finite recipe,
   its actual primitive-positive gadget and combinatorial size bounds; geometric realization
   of those operations and the planar hardness/solver assembly remain outstanding.

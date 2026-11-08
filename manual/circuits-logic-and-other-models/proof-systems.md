@@ -212,12 +212,52 @@ successor table. The native cost proof covers malformed tables and enormous bina
 indices; only actual list lengths fund iteration. See the [graph certificate tests](../../ComplexityTests/RotationCertificate.lean)
 and [ordered CSP certificate tests](../../ComplexityTests/CSPRotationCertificate.lean).
 
-These are finite encoding and numerical-verification results. Geometric realization, identifying
-the outer face across disconnected components, bare-instance recognition/construction, planar
-duality and the edge solver remain open. Exact relation-arity and satisfiability guards are
+These are finite encoding and numerical-verification results; the indexed duality and lifting
+theorems below extend their mathematical interface. Geometric realization, identifying the outer
+face across disconnected components, bare-instance recognition/construction and the edge solver
+remain open. Exact relation-arity and satisfiability guards are
 separate: a false nullary relation passes the port-order check. Rejection of a supplied toroidal
 rotation does not prove that its graph is nonplanar. The full objective remains
 [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+
+## Indexed duality and Boolean difference lifting
+
+Import `Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Dual`,
+`ComponentCounts` and `Lifting` at the same module prefix. The namespace is
+`Cslib.Complexity.Graph.RotationSystem`. These modules use the existing listed multigraph and
+rotation models. `dualGraph` preserves each listed edge position and names its incident faces
+by their least actual dart indices. `dualRotation` uses the source face successor as its vertex
+rotation; the dual face successor is edge reversal, source rotation, then edge reversal.
+The complete face/incident-vertex equivalences include singleton face orbits and retain loops,
+parallel occurrences and repeated boundary vertices.
+
+`numericalGenusZero_dual_iff r hG` preserves the existing componentwise numerical predicate.
+Its explicit `hG` requires every endpoint to be declared. Source isolated points have no dart
+and are omitted by dualization; their conventional source Euler equation is trivial. The
+empty graph and disconnected mixtures of point and edge components are included. The proof
+provides actual component bijections and exact vertex, edge and face counts.
+
+`FaceEven x` requires even parity on every actual face boundary. Darts are counted separately,
+so repeated appearances of an edge contribute with their boundary multiplicity. `edgeGradient`
+assigns the XOR of the endpoint spins to each indexed edge. With declared endpoints and
+`r.NumericalGenusZero`, `faceEven_iff_exists_vertexSpins r hG hgenus x` proves
+`r.FaceEven x ↔ ∃ spin : Nat → Bool, G.edgeGradient spin = x` for arbitrary finite listed graphs.
+The proof derives connectivity and characteristic-two incidence ranks internally. The reverse
+implication, `faceEven_edgeGradient`, telescopes along face boundaries and needs neither graph
+premise. Duplicate vertex declarations and sparse natural-number names are supported.
+
+The [dual and lifting tests](../../ComplexityTests/RotationDual.lean) check actual bridge, loop
+and digon dual data; a toroidal obstruction; disconnected point/edge mixtures; duplicate
+vertex declarations; names of size `2^100`; and the endpoint guard. The generic
+`Matrix.endpointIncidence` API is in
+`Complexity.Foundations.LinearAlgebra.Matrix.EndpointIncidence`; loops contribute twice and
+cancel over `ZMod 2`, while parallel column positions stay distinct. Finite permutation orbit
+transport is shared through `Complexity.Foundations.GroupTheory.Perm.Doubled`.
+
+These are combinatorial duality and lifting results, reconstructing the graph prerequisite in
+Dvořák–Kupec, §3, printed p. 439. Geometric realization, bare rotation recognition, native
+compilation, the full cyclic-difference CSP reduction and recursive edge solving remain open
+under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
 
 ## Delta-matroid composition and local contraction closure
 
