@@ -20,9 +20,10 @@ A polynomial `f` has a *determinantal representation of size `m`* if it is the d
 `m × m` matrix whose entries are affine-linear polynomials (total degree at most one). Its
 *determinantal complexity* `determinantalComplexity f : ℕ∞` is the least such `m`.
 
-Valiant [Valiant1979Algebra] shows that every polynomial has a determinantal representation, so
-the determinantal complexity is finite. That universality theorem is not formalized here, so in
-general `determinantalComplexity f = ⊤` means that `f` has no representation.
+`determinantalComplexity f = ⊤` means that `f` has no representation. Valiant
+[Valiant1979Algebra] shows that every polynomial has a determinantal representation, so the
+determinantal complexity is finite. That universality theorem is not formalized here, so
+finiteness is known here only for specific polynomials such as the permanent.
 
 **Grenet's theorem** [Grenet][Grenet2011]: the generic `n × n` permanent is a projection of the
 generic `(2ⁿ - 1) × (2ⁿ - 1)` determinant (`isProjection_permanent_det_two_pow_sub_one`), over

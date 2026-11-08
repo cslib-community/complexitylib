@@ -59,7 +59,9 @@ The core theorem needs a decoder for the encoding of instances (`Turing.MultiTap
 parse the list of instances in a certificate. The corollaries for `NP`-hard problems need none:
 they transfer the hypotheses along a reduction from `SAT`
 (`Cslib.Complexity.CookLevin.SAT_npComplete`), whose formulas have a decoder, and the relation
-along the reduction (`Cslib.Complexity.IsPolyEquivalence.comap`).
+along the reduction (`Cslib.Complexity.IsPolyEquivalence.comap`). Equality of a key computed in
+polynomial time with unary output, such as a number of vertices, is a polynomial equivalence
+relation (`Cslib.Complexity.IsPolyEquivalence.of_key`).
 
 The distillation is computed in time polynomial in the length `t + 2 (|x₁| + ⋯ + |xₜ|)` of the
 encoded list `[x₁, …, xₜ]` (`Turing.MultiTapeTM.encList`, `Turing.MultiTapeTM.length_encList`);
@@ -168,6 +170,23 @@ theorem IsPolyEquivalence.comap {encC : β ↪ List Bool} {r : β × β → Bool
   have hPz : P z := ⟨a, ha, hz⟩
   refine ⟨hPz.choose, mem_image.2 ⟨⟨z, mem_filter.2 ⟨hzT, hPz⟩⟩, mem_attach _ _, rfl⟩, ?_⟩
   exact hr.equivalence.trans (hr.equivalence.symm hPz.choose_spec.2) hz
+
+/-- Equality of unary numbers is a polynomial equivalence relation, with the `n + 1` classes of the
+numbers `m ≤ n` up to length `n`. -/
+theorem isPolyEquivalence_eq_unary :
+    IsPolyEquivalence encUnary fun p : ℕ × ℕ => decide (p.1 = p.2) := by
+  refine ⟨⟨fun _ => decide_eq_true rfl, fun h => decide_eq_true (of_decide_eq_true h).symm,
+    fun h h' => decide_eq_true ((of_decide_eq_true h).trans (of_decide_eq_true h'))⟩,
+    decide_eq' (fst _ _) (snd _ _), fun n => n + 1, by fun_prop, fun n => ?_⟩
+  refine ⟨range (n + 1), (card_range _).le, fun a ha => ⟨a, ?_, decide_eq_true rfl⟩⟩
+  rw [encUnary_apply, List.length_replicate] at ha
+  exact mem_range.2 (Nat.lt_succ_of_le ha)
+
+/-- **Equal keys** form a polynomial equivalence relation, for a key computable in polynomial time
+with unary output: instances are related when they have the same key. -/
+theorem IsPolyEquivalence.of_key {key : α → ℕ} (hkey : ComputableInPolyTime key enc encUnary) :
+    IsPolyEquivalence enc fun p => decide (key p.1 = key p.2) :=
+  isPolyEquivalence_eq_unary.comap hkey
 
 /-! ### The advice -/
 
