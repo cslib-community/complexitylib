@@ -1544,9 +1544,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   `Algorithms/Lean/MaxFlow`); then minimum-cost flow on the residual network, reusing the
   potential, weak-duality and complementary-slackness lemmas of `WeightedMatching`. Remaining
   matching directions: the decomposition of `M ⊕ M*` into vertex-disjoint augmenting paths,
-  rectangular and sparse weighted bipartite matching, general (non-bipartite) matching with
-  blossoms (weighted and unweighted), and a sparse Hopcroft–Karp entry point that also charges
-  construction of the adjacency lists.
+  rectangular and sparse weighted bipartite matching, and a sparse Hopcroft–Karp entry point that
+  also charges construction of the adjacency lists. General (non-bipartite) matching with
+  blossoms (weighted and unweighted;
+  [#3337](https://github.com/cslib-community/complexitylib/issues/3337)): Berge's lemma and the
+  Tutte–Berge formula are proved in `Foundations/Combinatorics/SimpleGraph/{Berge,TutteBerge}`;
+  still open are Edmonds' blossom-contraction lemma, an executable blossom algorithm with its
+  `O(|V|²|E|)` bound, weighted general matching, and the Gallai–Edmonds decomposition.
 - **Gomory–Hu trees** ([#3320](https://github.com/cslib-community/complexitylib/issues/3320)):
   remaining after the existence theorem for cut-equivalent trees of symmetric submodular set
   functions and weighted undirected graphs, with flow-equivalence, the minimum-cut triangle
