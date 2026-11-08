@@ -12,6 +12,7 @@ public import Complexity.Computability.WordRAM.Heap
 import Complexity.Computability.WordRAM.Call
 import Mathlib.Data.List.OfFn
 import Mathlib.Tactic.FinCases
+import Complexity.Tactic.Fits
 
 /-!
 # Native stack calls for Chan–He traversal records
@@ -123,9 +124,9 @@ theorem exec_push {w base capacity : ℕ} (h2 : Fits w 2) (hcap : Fits w (base +
     (hv : vs.length < capacity) (hw : Fits w v) :
     ∃ y, Exec w program (prepare 0 v x) y 7 ∧
       Rep w base capacity (v :: vs) y ∧ Modifies (footprint base capacity) x.mem y.mem := by
-  have h1 : Fits w 1 := h2.of_le (by decide)
-  have haddr : Fits w (base + vs.length) := hcap.of_le (by omega)
-  have hinc : Fits w (vs.length + 1) := hcap.of_le (by omega)
+  have h1 : Fits w 1 := by fits
+  have haddr : Fits w (base + vs.length) := by fits
+  have hinc : Fits w (vs.length + 1) := by fits
   let y := (((((prepare 0 v x).set zero 0).set one 1).set
     addr (base + vs.length)).write (base + vs.length) v |>.set len (vs.length + 1)).set out 0
   have he : Exec w program (prepare 0 v x) y 7 := by
@@ -152,7 +153,7 @@ theorem exec_pop {w base capacity : ℕ} (h2 : Fits w 2) (hcap : Fits w (base + 
     {vs : List ℕ} {x : Data 9} {v : ℕ} (hr : Rep w base capacity (v :: vs) x) :
     ∃ y, Exec w program (prepare 1 0 x) y 11 ∧ y.regs out = v ∧
       Rep w base capacity vs y ∧ Modifies (footprint base capacity) x.mem y.mem := by
-  have h1 : Fits w 1 := h2.of_le (by decide)
+  have h1 : Fits w 1 := by fits
   have hl : x.regs len = vs.length + 1 := hr.length_eq
   have hsub : Fits w vs.length := hcap.of_le (by have := hr.capacity_le; simp_all; omega)
   have ha : Fits w (base + vs.length) := hcap.of_le (by have := hr.capacity_le; simp_all; omega)
@@ -165,7 +166,7 @@ theorem exec_pop {w base capacity : ℕ} (h2 : Fits w 2) (hcap : Fits w (base + 
     ram_eval [program, prepare, readAt, y, hr.pointer, hl, h1, ha, hsub, Nat.add_sub_cancel,
       Nat.add_eq_zero_iff, and_false, hread]
   refine ⟨y, he, by simp +decide [y, Data.set], ⟨?_, ?_, ?_, ?_, ?_⟩, Modifies.refl _ _⟩
-  · exact he.bounded ((hr.bounded.set (h2.of_le (by decide))).set (fits_zero w))
+  · exact he.bounded ((hr.bounded.set (by fits)).set (fits_zero w))
   · simp +decide [y, Data.set, prepare, hr.pointer]
   · simp +decide [y, Data.set]
   · have := hr.capacity_le
@@ -288,7 +289,7 @@ theorem popRecord_exec (reg : Fin 9 → Fin r) (hi : Function.Injective reg)
   | succ n ih =>
     rw [List.ofFn_succ, List.cons_append] at hr
     let q := (x.set (reg tag) 1).set (reg arg) 0
-    have h1 : Fits w 1 := h2.of_le (by decide)
+    have h1 : Fits w 1 := by fits
     have hp : Exec (B := .standard) w
         (.seq (.op (.const (reg tag) 1)) (.op (.const (reg arg) 0))) x q 2 := by
       ram_eval [q, h1]

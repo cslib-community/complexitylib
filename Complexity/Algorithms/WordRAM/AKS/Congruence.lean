@@ -10,6 +10,7 @@ module
 import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.AKS.PolyArray
 public import Complexity.Algorithms.WordRAM.AKS.PolyPow
+import Complexity.Tactic.Fits
 
 /-!
 # The AKS congruence for one `a` on the word RAM
@@ -166,10 +167,10 @@ theorem exec {w : ℕ} (x : Data 25) {a b t r n A : ℕ} (ha : x.regs R = a) (hb
     ∃ y, ExecWithin w program x y (time r n) ∧ y.regs flag ≤ 1 ∧
       (y.regs flag = 1 ↔ Congruence n r A) ∧
       ∀ j, Keep j → y.regs j = x.regs j := by
-  have h1 : Fits w 1 := hfn.of_le (by nlinarith)
+  have h1 : Fits w 1 := by fits
   have hfn1 : Fits w (n + 1) := hfn.of_le (by nlinarith)
-  have hfnn : Fits w n := hfn.of_le (by nlinarith)
-  have hfr : Fits w r := hf2.of_le (by omega)
+  have hfnn : Fits w n := by fits
+  have hfr : Fits w r := by fits
   -- `B := X + A`.
   let x₁ := (((x.set one 1).set er (1 % r)).set aa A).set pa b
   have hrun₁ : ExecWithin (B := .standard) w (ram[ one ← #1; er ← one % rr; aa ← av; pa ← B ])

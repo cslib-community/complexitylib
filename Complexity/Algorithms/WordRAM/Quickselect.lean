@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.Quicksort
 import Mathlib.Data.List.Sort
+import Complexity.Tactic.Fits
 
 /-!
 # In-place randomized quickselect on the word RAM
@@ -1073,13 +1074,12 @@ private theorem selectSetup_spec {w : ℕ} {x : Data 16}
   let vbase := x.regs base
   let n := x.regs len
   let k := x.regs rk
-  have hfit1 : Fits w 1 := hfit.of_le (by omega)
   let s₁ := x.set one 1
   let s₂ := s₁.set target (vbase + k)
   let s₃ := s₂.set lo vbase
   let s₄ := s₃.set lo1 (vbase + 1)
   let x_init := s₄.set hi (vbase + n)
-  have e₁ : Exec (B := .standard) w (.op (.const one 1)) x s₁ 1 := Exec.const hfit1
+  have e₁ : Exec (B := .standard) w (.op (.const one 1)) x s₁ 1 := Exec.const (by fits)
   have e₂ : Exec w (.op (.bin .add target base rk)) s₁ s₂ 1 := by
     have hb₁ : s₁.regs base = vbase := by
       simp only [s₁, Data.set_regs, Function.update_of_ne (by decide : base ≠ one)]; rfl
@@ -1282,8 +1282,7 @@ theorem loadHeader_spec {w k : ℕ} {input : List ℕ} (hfit : InputFits w (k ::
   let x₀ : Data 16 := Data.init (k :: input)
   have hfit_len1 : Fits w (input.length + 1) := by
     simpa only [List.length_cons] using hfit.1
-  have hfit1 : Fits w 1 := hfit_len1.of_le (by omega)
-  have hfit_len : Fits w input.length := hfit_len1.of_le (by omega)
+  have hfit_len : Fits w input.length := by fits
   let s₁ := x₀.set len (input.length + 1)
   let s₂ := s₁.set one 1
   let s₃ := s₂.set rk k
@@ -1291,7 +1290,7 @@ theorem loadHeader_spec {w k : ℕ} {input : List ℕ} (hfit : InputFits w (k ::
   have e₁ : Exec (B := .standard) w (.op (.load len ans)) x₀ s₁ 1 := by
     simpa only [s₁, x₀, Data.init_regs, Data.init_mem_zero, List.length_cons] using
       Exec.load (w := w) (d := len) (a := ans) (x := x₀)
-  have e₂ : Exec (B := .standard) w (.op (.const one 1)) s₁ s₂ 1 := Exec.const hfit1
+  have e₂ : Exec (B := .standard) w (.op (.const one 1)) s₁ s₂ 1 := Exec.const (by fits)
   have e₃ : Exec (B := .standard) w (.op (.load rk one)) s₂ s₃ 1 := by
     have ho₂ : s₂.regs one = 1 := by simp only [s₂, Data.set_regs, Function.update_self]
     have hm₂ : s₂.mem 1 = k := by

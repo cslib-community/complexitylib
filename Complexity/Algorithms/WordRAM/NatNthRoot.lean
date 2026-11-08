@@ -13,6 +13,7 @@ public import Complexity.Computability.WordRAM.RegisterFrame
 public import Mathlib.Analysis.SpecialFunctions.Pow.NthRootLemmas
 public import Mathlib.Data.Nat.Log
 import Mathlib.Tactic.Linarith
+import Complexity.Tactic.Fits
 
 /-!
 # A charged native integer `k`-th root
@@ -102,7 +103,7 @@ theorem exec {w : ℕ} (x : Data 6) (hm : 1 ≤ x.regs m) (h1 : Fits w 1)
       have hpow : y.regs p = b ^ y.regs i := hyp.resolve_right (fun h => hover h.1)
       have hmul : Fits w (y.regs p * y.regs m) := by
         rw [hym]; exact hprod.of_le (Nat.mul_le_mul_right _ (by omega))
-      have hinc : Fits w (y.regs i + 1) := hk.of_le (by omega)
+      have hinc : Fits w (y.regs i + 1) := by fits
       refine ⟨?z, ?run, ?inv, ?decrease⟩
       case run =>
         refine ExecWithin.branch_neg hc' ?_
@@ -204,8 +205,8 @@ theorem exec {w : ℕ} (x : Data 10) (hk : 1 ≤ x.regs k) (hkfit : Fits w (x.re
   set N := x.regs n
   set e := x.regs k
   have he0 : e ≠ 0 := by omega
-  have h1 : Fits w 1 := hfit.of_le (by omega)
-  have h2 : Fits w 2 := hfit.of_le (by omega)
+  have h1 : Fits w 1 := by fits
+  have h2 : Fits w 2 := by fits
   let I (y : Data 10) : Prop := y.regs n = N ∧ y.regs k = e ∧ y.regs one = 1 ∧ y.regs two = 2 ∧
     y.regs t = y.regs lo + 1 ∧ y.regs lo < y.regs hi ∧ y.regs hi ≤ N + 1 ∧
     y.regs lo ^ e ≤ N ∧ N < y.regs hi ^ e ∧ y.mem = x.mem
@@ -219,8 +220,8 @@ theorem exec {w : ℕ} (x : Data 10) (hk : 1 ≤ x.regs k) (hkfit : Fits w (x.re
     have hgap : l + 1 < h := by simpa only [Cond.holds_lt, hyt, hh] using hc
     have hmd1 : l < (l + h) / 2 := by omega
     have hmd2 : (l + h) / 2 < h := by omega
-    have hsum : Fits w (l + h) := hfit.of_le (by nlinarith)
-    have hdiv : Fits w ((l + h) / 2) := hsum.of_le (Nat.div_le_self _ _)
+    have hsum : Fits w (l + h) := by fits
+    have hdiv : Fits w ((l + h) / 2) := by fits
     -- After the two midpoint instructions.
     let y₁ := (y.set mid (l + h)).set mid ((l + h) / 2)
     have hrun₁ : ExecWithin (B := .standard) w (ram[ mid ← lo + hi; mid ← mid / two ]) y y₁ 2 := by
@@ -259,7 +260,7 @@ theorem exec {w : ℕ} (x : Data 10) (hk : 1 ≤ x.regs k) (hkfit : Fits w (x.re
       have hpow : N < ((l + h) / 2) ^ e := by
         by_contra hle
         exact absurd (hple.mpr (not_lt.mp hle)) (not_le.mpr hover)
-      have hinc : Fits w (l + 1) := hfit.of_le (by nlinarith)
+      have hinc : Fits w (l + 1) := by fits
       let z := (y₂.set hi ((l + h) / 2)).set t (l + 1)
       have hrun₃ : ExecWithin (B := .standard) w
           (ram[ if n < p then [ hi ← mid ] else [ lo ← mid ]; t ← lo + one ]) y₂ z 3 := by
@@ -273,7 +274,7 @@ theorem exec {w : ℕ} (x : Data 10) (hk : 1 ≤ x.regs k) (hkfit : Fits w (x.re
         exact clog_halve (by omega) (by omega)
     · have hc' : ¬(Cond.lt n p).Holds y₂ := by simpa only [Cond.holds_lt, hy₂n] using hover
       have hpow : ((l + h) / 2) ^ e ≤ N := hple.mp (not_lt.mp hover)
-      have hinc : Fits w ((l + h) / 2 + 1) := hfit.of_le (by nlinarith)
+      have hinc : Fits w ((l + h) / 2 + 1) := by fits
       let z := (y₂.set lo ((l + h) / 2)).set t ((l + h) / 2 + 1)
       have hrun₃ : ExecWithin (B := .standard) w
           (ram[ if n < p then [ hi ← mid ] else [ lo ← mid ]; t ← lo + one ]) y₂ z 4 := by
@@ -285,7 +286,7 @@ theorem exec {w : ℕ} (x : Data 10) (hk : 1 ≤ x.regs k) (hkfit : Fits w (x.re
           simp +decide [z, hy₂n, hy₂k, hy₂o, hy₂two, hy₂hi] <;> omega
       · simp +decide only [z, Data.set_regs, Function.update_apply, ↓reduceIte, hy₂hi, hl, hh]
         exact clog_halve (by omega) (by omega)
-  have hn1 : Fits w (x.regs n + 1) := hfit.of_le (by nlinarith)
+  have hn1 : Fits w (x.regs n + 1) := by fits
   let x₀ := ((((x.set lo 0).set one 1).set two 2).set hi (N + 1)).set t 1
   have hx₀ : I x₀ := by
     have hpow : N < (N + 1) ^ e := Nat.lt_of_lt_of_le (Nat.lt_succ_self N) (Nat.le_self_pow he0 _)

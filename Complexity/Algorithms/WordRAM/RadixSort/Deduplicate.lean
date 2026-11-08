@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.RadixSort.Program
 public import Complexity.Algorithms.WordRAM.Deduplicate.Program
 public import Complexity.Computability.WordRAM.Signed.Encoding
+import Complexity.Tactic.Fits
 
 /-!
 # Native radix sorting followed by unique-key/multiplicity array construction
@@ -75,16 +76,15 @@ theorem deduplicate_exec {w base keyBits : ℕ} (xs : List ℕ) (x : Data 16)
   obtain ⟨u, hu, hum, hp, hsorted, hptr, huf⟩ := exec xs x₀
     (by simpa +decide [x₀] using hn) (by simpa +decide [x₀] using hs)
     (by simpa +decide [x₀] using hd) (by simpa +decide [x₀] using hb)
-    hmem hkeys hwords (hfit.of_le (by omega)) hbits h2
+    hmem hkeys hwords (by fits) hbits h2
   have hun : u.regs len = xs.length := by
     simpa +decide [x₀] using (hu.regs_eq (i := len) (by decide)).trans
       (show x₀.regs len = xs.length by simpa +decide [x₀] using hn)
   have huo : u.regs origin = base := by
     simpa only [x₀, Data.set_regs, Function.update_self] using hu.regs_eq (i := origin) (by decide)
-  have htwice : Fits w (u.regs len + u.regs len) := hfit.of_le (by rw [hun]; omega)
-  have hkeyaddr : Fits w (u.regs len + u.regs len + base) := hfit.of_le (by rw [hun]; omega)
-  have hcntaddr : Fits w (u.regs len + u.regs len + base + u.regs len) :=
-    hfit.of_le (by rw [hun]; omega)
+  have htwice : Fits w (u.regs len + u.regs len) := by fits
+  have hkeyaddr : Fits w (u.regs len + u.regs len + base) := by fits
+  have hcntaddr : Fits w (u.regs len + u.regs len + base + u.regs len) := by fits
   let v := ((u.set Deduplicate.keys (u.regs len + u.regs len)).set
     Deduplicate.keys (u.regs len + u.regs len + base)).set
     Deduplicate.counts (u.regs len + u.regs len + base + u.regs len)

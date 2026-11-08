@@ -13,6 +13,7 @@ import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.FinCases
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # The search for `r` in the AKS algorithm on the word RAM
@@ -114,7 +115,7 @@ private theorem powers_exec {w : ℕ} (x : Data 13) {N L₀ R : ℕ} (hn : x.reg
       (y.regs ok = 1 ↔ ∀ j, 1 ≤ j → j ≤ L₀ → N ^ j % R ≠ 1) ∧
       ∀ j ∈ [n, L, r, found, one], y.regs j = x.regs j := by
   have hR0 : 0 < R := by omega
-  have h1f : Fits w 1 := hfL.of_le (by omega)
+  have h1f : Fits w 1 := by fits
   let J (j : ℕ) (y : Data 13) : Prop := y.regs L = L₀ ∧ y.regs r = R ∧ y.regs one = 1 ∧
     y.regs nr = N % R ∧ y.regs p = N ^ j % R ∧ y.regs ok ≤ 1 ∧
     (y.regs ok = 1 ↔ ∀ b, 1 ≤ b → b ≤ j → N ^ b % R ≠ 1)
@@ -129,10 +130,10 @@ private theorem powers_exec {w : ℕ} (x : Data 13) {N L₀ R : ℕ} (hn : x.reg
     have hmul : N ^ K % R * (N % R) < R * R := Nat.mul_lt_mul'' hPR hNR
     have hmod : N ^ K % R * (N % R) % R = N ^ (K + 1) % R := by
       rw [← Nat.mul_mod, pow_succ]
-    have hf₁ : Fits w (N ^ K % R * (N % R)) := hfR.of_le hmul.le
+    have hf₁ : Fits w (N ^ K % R * (N % R)) := by fits
     have hf₂ : Fits w (N ^ (K + 1) % R) := hfR.of_le
       ((Nat.mod_lt _ hR0).le.trans (Nat.le_mul_self R))
-    have hf₃ : Fits w (K + 1) := hfL.of_le (by omega)
+    have hf₃ : Fits w (K + 1) := by fits
     have hiff (o : ℕ) : ((∀ j, 1 ≤ j → j ≤ K + 1 → N ^ j % R ≠ 1) ↔
         (∀ j, 1 ≤ j → j ≤ K → N ^ j % R ≠ 1) ∧ N ^ (K + 1) % R ≠ 1) := by
       constructor
@@ -193,7 +194,7 @@ theorem exec {w : ℕ} (x : Data 13) {N L₀ r₀ : ℕ} (hn : x.regs n = N) (hL
     (hfL : Fits w (L₀ + 1)) :
     ∃ y, ExecWithin w program x y (time L₀ r₀) ∧ 2 ≤ y.regs r ∧ y.regs r ≤ r₀ ∧
       Good N L₀ (y.regs r) ∧ y.regs n = N ∧ y.regs L = L₀ := by
-  have h1f : Fits w 1 := hfL.of_le (by omega)
+  have h1f : Fits w 1 := by fits
   have hfr₁ : Fits w (r₀ + 1) := hfR.of_le (by nlinarith)
   let I (y : Data 13) : Prop := y.regs n = N ∧ y.regs L = L₀ ∧ y.regs one = 1 ∧ 2 ≤ y.regs r ∧
     y.regs r ≤ r₀ ∧ y.regs found ≤ 1 ∧ (y.regs found = 1 → Good N L₀ (y.regs r))
@@ -228,7 +229,7 @@ theorem exec {w : ℕ} (x : Data 13) {N L₀ r₀ : ℕ} (hn : x.regs n = N) (hL
     have hy₃r : y₃.regs r = R := by rw [hy₃ r (by simp), hy₁r]
     have hy₃ok : y₃.regs ok = y₁.regs ok := hy₃ ok (by simp)
     -- Accept or advance.
-    have hfR1 : Fits w (R + 1) := hfr₁.of_le (by omega)
+    have hfR1 : Fits w (R + 1) := by fits
     have hgood' : Good N L₀ R ↔ Nat.gcd N R = 1 ∧ y₁.regs ok = 1 := by
       rw [hokiff]; rfl
     by_cases hG : Good N L₀ R

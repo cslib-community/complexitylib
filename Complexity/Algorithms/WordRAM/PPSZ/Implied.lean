@@ -13,6 +13,7 @@ public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.PPSZ.Clauses
 import Complexity.Computability.WordRAM.Sequence
 import Mathlib.Data.Nat.Bitwise
+import Complexity.Tactic.Fits
 
 /-!
 # w-implication on the word RAM
@@ -1724,10 +1725,10 @@ theorem impliedCode_spec (φ : CNF (Fin n)) (τ : Fin n → Option Bool) (x : Fi
     ∃ z, ExecWithin w impliedCode y z (impliedTime s (encodeClauses φ).length) ∧
       z.mem = y.mem ∧ z.regs res = optCode (implied φ s τ x) := by
   set Db := Tb + 2 * n + 1 with hDb
-  have hf1 : Fits w (Tb + n) := hw.of_le (by omega)
-  have hf2 : Fits w (Tb + n + n) := hw.of_le (by omega)
-  have hf3 : Fits w (Tb + n + n + 1) := hw.of_le (by omega)
-  have hf4 : Fits w (Tb + n + n + 1 + s) := hw.of_le (by omega)
+  have hf1 : Fits w (Tb + n) := by fits
+  have hf2 : Fits w (Tb + n + n) := by fits
+  have hf3 : Fits w (Tb + n + n + 1) := by fits
+  have hf4 : Fits w (Tb + n + n + 1 + s) := by fits
   have hs' : y.mem (Tb + n + n) = s := by rw [← hs]; congr 1; omega
   let y₁ := (((((y.set dBase (Tb + n)).set dBase (Tb + n + n)).set sReg s).set dBase
     (Tb + n + n + 1)).set eBase (Tb + n + n + 1 + s)).set bReg 1

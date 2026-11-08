@@ -11,6 +11,7 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Callee
 import Batteries.Data.Fin.Lemmas
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # A finite exhaustive native Exact Triangle callee
@@ -152,7 +153,7 @@ private theorem exec_accumulate {w v : ℕ} (j : Fin 3) (x : Data 24)
     ∃ y, ExecWithin w (accumulate j) x y 5 ∧
       y.regs positive = x.regs positive + positivePart v ∧
       y.regs negative = x.regs negative + negativePart v ∧ y.mem = x.mem := by
-  have hsign : Fits w (v % 2) := h2fit.of_le (by omega)
+  have hsign : Fits w (v % 2) := by fits
   let a := x.set magnitude (v / 2) |>.set sign (v % 2)
   let y := if v % 2 = 0 then a.set positive (x.regs positive + v / 2)
     else a.set negative (x.regs negative + v / 2)
@@ -213,13 +214,13 @@ private theorem exec_loadTriple {w t F abp bcp acp free v₀ v₁ v₂ : ℕ}
   let k := q.modNat.modNat
   have hcell (a b : Fin t) : a.val * t + b.val < t * t := by
     simpa only [Fin.coe_mkDivMod, Nat.mul_comm] using (Fin.mkDivMod a b).isLt
-  have hfree : Fits w free := hfit.of_le (by omega)
+  have hfree : Fits w free := by fits
   have harea : t * t ≤ free := by omega
   have htfree : t ≤ free := (Nat.le_mul_self t).trans harea
-  have hif : Fits w i.val := hfree.of_le (by have := i.isLt; omega)
-  have hjf : Fits w j.val := hfree.of_le (by have := j.isLt; omega)
-  have hkf : Fits w k.val := hfree.of_le (by have := k.isLt; omega)
-  have hrf : Fits w q.modNat.val := hfree.of_le (by have := q.modNat.isLt; omega)
+  have hif : Fits w i.val := by fits
+  have hjf : Fits w j.val := by fits
+  have hkf : Fits w k.val := by fits
+  have hrf : Fits w q.modNat.val := by fits
   have hip : Fits w (i.val * t) := hfree.of_le (by have := hcell i j; omega)
   have hjp : Fits w (j.val * t) := hfree.of_le (by have := hcell j k; omega)
   have hij : Fits w (i.val * t + j.val) := hfree.of_le (by have := hcell i j; omega)
@@ -291,14 +292,14 @@ private theorem exec_body {w t F abp bcp acp free : ℕ}
   have hva : encode za / 2 ≤ F := magnitude_le (hA _ _)
   have hvb : encode zb / 2 ≤ F := magnitude_le (hB _ _)
   have hvc : encode zc / 2 ≤ F := magnitude_le (hC _ _)
-  have h2fit : Fits w 2 := hfit.of_le (by omega)
-  have hsum : Fits w (3 * F) := hfit.of_le (by omega)
+  have h2fit : Fits w 2 := by fits
+  have hsum : Fits w (3 * F) := by fits
   obtain ⟨a, ha, hpa, ha₀, ha₁, ha₂, hap, han, ham⟩ :=
     exec_loadTriple (v₀ := encode za) (v₁ := encode zb) (v₂ := encode zc) x h q hq
       hbc hac hf hfit (hmA _ _) (hmB _ _) (hmC _ _)
   obtain ⟨b, hb, hbp, hbn, hbm⟩ := exec_accumulate 0 a ha₀ hpa.two hpa.zero h2fit
-    (hsum.of_le (by omega)) (hsum.of_le (by rw [hap]; omega))
-    (hsum.of_le (by rw [han]; omega))
+    (by fits) (by fits)
+    (by fits)
   have hpb : Control t abp bcp acp b :=
     hpa.congr (fun i hi _ _ => hb.regs_eq (accumulate_preserves 0 i (by omega)))
   have hbpF : b.regs positive ≤ F := by
@@ -310,7 +311,7 @@ private theorem exec_body {w t F abp bcp acp free : ℕ}
   have hb₁ : b.regs (word 1) = encode zb :=
     (hb.regs_eq (accumulate_preserves 0 _ (by decide))).trans ha₁
   obtain ⟨c, hc, hcp, hcn, hcm⟩ := exec_accumulate 1 b hb₁ hpb.two hpb.zero h2fit
-    (hsum.of_le (by omega)) (hsum.of_le (by omega)) (hsum.of_le (by omega))
+    (by fits) (by fits) (by fits)
   have hpc : Control t abp bcp acp c :=
     hpb.congr (fun i hi _ _ => hc.regs_eq (accumulate_preserves 1 i (by omega)))
   have hcpF : c.regs positive ≤ 2 * F := by
@@ -325,7 +326,7 @@ private theorem exec_body {w t F abp bcp acp free : ℕ}
     (hc.regs_eq (accumulate_preserves 1 _ (by decide))).trans
       ((hb.regs_eq (accumulate_preserves 0 _ (by decide))).trans ha₂)
   obtain ⟨d, hd, hdp, hdn, hdm⟩ := exec_accumulate 2 c hc₂ hpc.two hpc.zero h2fit
-    (hsum.of_le (by omega)) (hsum.of_le (by omega)) (hsum.of_le (by omega))
+    (by fits) (by fits) (by fits)
   have hpd : Control t abp bcp acp d :=
     hpc.congr (fun i hi _ _ => hd.regs_eq (accumulate_preserves 2 i (by omega)))
   have hkeep (i : Fin 24) (hi : i.val < 12) : d.regs i = x.regs i :=
@@ -365,9 +366,9 @@ private theorem exec_scan {w t F abp bcp acp free : ℕ}
     ∃ y, ExecWithin w program x y (39 * (t * (t * t)) + 9) ∧ y.regs out ≤ 1 ∧
       (y.regs out = 1 ↔ Cslib.Algorithms.ExactTriangle.HasZeroTriangle A B C) ∧
       y.mem = x.mem := by
-  have h2 : Fits w 2 := hfit.of_le (by omega)
-  have h1 : Fits w 1 := hfit.of_le (by omega)
-  have harea : Fits w (t * t) := hfit.of_le (by omega)
+  have h2 : Fits w 2 := by fits
+  have h1 : Fits w 1 := by fits
+  have harea : Fits w (t * t) := by fits
   have hstop : Fits w ((t * t) * t) := hfit.of_le (by rw [Nat.mul_assoc]; omega)
   rw [Nat.mul_assoc] at hstop
   let a := x.set current 0 |>.set area (t * t) |>.set stop (t * (t * t))

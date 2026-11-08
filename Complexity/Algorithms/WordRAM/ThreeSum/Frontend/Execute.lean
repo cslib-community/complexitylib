@@ -11,6 +11,7 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend.Arrays
 import Complexity.Computability.WordRAM.MemoryView
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Complete descriptor-table execution
@@ -101,11 +102,11 @@ theorem setup_exec {w U : ℕ} (l : Layout) (k : ℕ) (x : Data 48)
       y.regs current = 0 ∧ y.regs heap = l.pointer 0 ∧ y.mem = x.mem := by
   obtain ⟨fN, fSq, fS, fD, fA, f2A, fP, fAC, fE, _, f5⟩ := layout_bounds l U
   have f0 : Fits w 0 := fits_zero w
-  have f1 : Fits w 1 := hfit.of_le (by omega)
-  have f2 : Fits w 2 := hfit.of_le (by omega)
-  have f3 : Fits w 3 := hfit.of_le (by omega)
-  have f4 : Fits w 4 := hfit.of_le (by omega)
-  have f5' : Fits w 5 := hfit.of_le f5
+  have f1 : Fits w 1 := by fits
+  have f2 : Fits w 2 := by fits
+  have f3 : Fits w 3 := by fits
+  have f4 : Fits w 4 := by fits
+  have f5' : Fits w 5 := by fits
   have fn := hfit.of_le fN
   have fsq := hfit.of_le fSq
   have fs : Fits w (l.digits * l.digits * 2) := by
@@ -223,8 +224,8 @@ theorem loop_exec {w U : ℕ} (l : Layout) (rs : List (ℕ × ℕ)) (x : Data 48
         have := l.descriptor_before hj 0
         have hp0 : l.pointer 0 ≤ l.endpoint := l.pointer_mono (i := 0) (j := l.arrays) (by omega)
         omega))
-      (by rw [hyheap, hyr.capacity, ← Layout.pointer_succ]; exact hfit.of_le (hnext.trans he))
-      (hfit.of_le (by have := hb.2.2.2.2.1; omega))
+      (by rw [hyheap, hyr.capacity, ← Layout.pointer_succ]; fits)
+      (by fits)
     simp only [hyr.descriptors, hyheap, hyr.capacity] at hzd0 hzd1 hzp hzf hzh
     have hf (b : ℕ) (houtside : b < l.pointer (y.regs current) ∨
         l.pointer (y.regs current + 1) ≤ b)

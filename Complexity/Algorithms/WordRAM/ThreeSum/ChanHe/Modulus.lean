@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Search
 import Complexity.Algorithms.ThreeSum.ChanHe.SelectorBounds
+import Complexity.Tactic.Fits
 
 /-!
 # Native setup of the two Chan–He prime searches
@@ -87,7 +88,7 @@ theorem exec_firstSetup {w : ℕ} (x : Data 64) (h3 : Fits w 3)
     (hsq : ∀ j, Fits w (x.regs (CountCall.length j) ^ 2))
     (hcut : ∀ j, Fits w (3 * x.regs digits * x.regs (CountCall.length j) ^ 2)) :
     ExecWithin w firstSetup x (firstState x) 9 := by
-  have h1 : Fits w 1 := h3.of_le (by omega)
+  have h1 : Fits w 1 := by fits
   simp only [digits] at htriple
   simp only [CountCall.length, pow_two] at hsq hcut
   ram_eval [firstSetup, firstState, h3, h1, htriple, hsq 0, hsq 1, hsq 2,
@@ -244,9 +245,9 @@ private theorem localFits_of_budget {w : ℕ} (x : Data 64) (h : Fits (w + 2) (b
     LocalFits w x := by
   have hb := budget_bounds x 0
   refine ⟨fun j => h.of_le (budget_bounds x j).1,
-    fun j => h.of_le (budget_bounds x j).2.1, h.of_le hb.2.2.1,
-    h.of_le hb.2.2.2.1, h.of_le hb.2.2.2.2.1, ?_, ?_, ?_,
-    h.of_le hb.2.2.2.2.2.2.2.2.1, h.of_le hb.2.2.2.2.2.2.2.2.2⟩
+    fun j => h.of_le (budget_bounds x j).2.1, by fits,
+    h.of_le hb.2.2.2.1, by fits, ?_, ?_, ?_,
+    h.of_le hb.2.2.2.2.2.2.2.2.1, by fits⟩
   · exact fun j => h.of_le (budget_bounds x j).2.2.2.2.2.1
   · exact fun j => h.of_le (budget_bounds x j).2.2.2.2.2.2.1
   · exact fun j => h.of_le (budget_bounds x j).2.2.2.2.2.2.2.1
@@ -461,7 +462,7 @@ theorem exec {w : ℕ} (x : Data 64) (values : Fin 3 → ℕ → ℤ)
   have hencoded : Fits (w + 2) (2 * p) := by
     rw [← henc]
     exact (encode_fits hpf).mono (by omega)
-  have htwo : Fits (w + 2) 2 := hfits.three.of_le (by omega)
+  have htwo : Fits (w + 2) 2 := by fits
   have hc : ExecWithin (w + 2)
       (ram[ first ← Search.answer; Search.two ← #2; CountCall.modulus ← first * Search.two ])
       b c 3 := by

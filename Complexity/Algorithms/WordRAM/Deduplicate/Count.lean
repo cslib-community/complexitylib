@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.Deduplicate.Model
 public import Complexity.Computability.WordRAM.ListArray
+import Complexity.Tactic.Fits
 
 /-!
 # Native counting of one adjacent run
@@ -102,9 +103,9 @@ theorem exec {w s n start stop k : ℕ} (x : Data 16)
       have hread : y.mem (y.regs src + y.regs idx) = k := by
         rw [hym, hys]; exact hmem _ hlo hlt
       have had : Fits w (y.regs src + y.regs idx) := by
-        rw [hys]; exact hfit.of_le (by omega)
-      have hic : Fits w (y.regs idx + 1) := hfit.of_le (by omega)
-      have hcc : Fits w (y.regs count + 1) := hfit.of_le (by omega)
+        rw [hys]; fits
+      have hic : Fits w (y.regs idx + 1) := by fits
+      have hcc : Fits w (y.regs count + 1) := by fits
       refine ⟨?_, ?run, ?_, ?_⟩
       case run => ram_eval [body, hidx, hread, hyk, hyo, had, hic, hcc]
       · simp +decide only [I, Data.set_regs, Data.set_mem, Function.update_apply,
@@ -119,7 +120,7 @@ theorem exec {w s n start stop k : ℕ} (x : Data 16)
         have hread : y.mem (y.regs src + y.regs idx) ≠ y.regs key := by
           simpa only [hym, hys, hend, hyk] using hnext hsn
         have had : Fits w (y.regs src + y.regs idx) := by
-          rw [hys]; exact hfit.of_le (by omega)
+          rw [hys]; fits
         refine ⟨?_, ?run, ?_, ?_⟩
         case run => ram_eval [body, hidx, hread, had]
         · simp +decide only [I, Data.set_regs, Data.set_mem, Function.update_apply,

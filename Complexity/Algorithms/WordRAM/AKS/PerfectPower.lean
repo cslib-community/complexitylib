@@ -13,6 +13,7 @@ public import Complexity.Algorithms.WordRAM.NatNthRoot
 public import Complexity.Foundations.NumberTheory.AKS.PerfectPower
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Perfect-power detection on the word RAM
@@ -116,9 +117,9 @@ theorem exec {w : ℕ} (x : Data 14) (hn : 2 ≤ x.regs n)
   obtain ⟨L, hL⟩ : ∃ L, Nat.log 2 N = L := ⟨_, rfl⟩
   have hLN : L < N := hL ▸ Nat.log_lt_self 2 (by omega)
   have hLpos : 1 ≤ L := hL ▸ Nat.le_log_of_pow_le one_lt_two (by omega)
-  have hfitN : Fits w N := hfit.of_le (by nlinarith)
-  have h2 : Fits w 2 := hfit.of_le (by nlinarith)
-  have h1 : Fits w 1 := hfit.of_le (by nlinarith)
+  have hfitN : Fits w N := by fits
+  have h2 : Fits w 2 := by fits
+  have h1 : Fits w 1 := by fits
   let Good (b : ℕ) : Prop := ∃ c, 2 ≤ c ∧ c < b ∧ Nat.nthRoot c N ^ c = N
   let P (j : ℕ) (y : Data 14) : Prop := y.regs n = N ∧ y.regs one = 1 ∧ y.regs two = 2 ∧
     y.regs lim = L + 1 ∧ 2 ≤ j ∧
@@ -131,7 +132,7 @@ theorem exec {w : ℕ} (x : Data 14) (hn : 2 ≤ x.regs n)
     have hkL' : y.regs k ≤ L := by omega
     obtain ⟨b, hb⟩ : ∃ b, y.regs k = b := ⟨_, rfl⟩
     rw [hb] at hk2 hkL' hyf
-    have hbfit : Fits w b := hfitN.of_le (by omega)
+    have hbfit : Fits w b := by fits
     -- The root search.
     have hrn : rootMap NatNthRoot.n = n := rfl
     have hrk : rootMap NatNthRoot.k = k := rfl
@@ -174,7 +175,7 @@ theorem exec {w : ℕ} (x : Data 14) (hn : 2 ≤ x.regs n)
     have hy₂f : y₂.regs flag = y.regs flag :=
       (hpres₂ flag (by decide)).trans (hpres₁ flag (by decide))
     -- Record the comparison and advance the exponent.
-    have hinc : Fits w (b + 1) := hfitN.of_le (by omega)
+    have hinc : Fits w (b + 1) := by fits
     let v := if a ^ b = N then 1 else y.regs flag
     let z := (y₂.set flag v).set k (b + 1)
     have hrun₃ : ExecWithin (B := .standard) w
@@ -231,7 +232,7 @@ theorem exec {w : ℕ} (x : Data 14) (hn : 2 ≤ x.regs n)
   obtain ⟨y₁, hrun₁, hy₁r, hy₁m, hy₁o, hy₁t⟩ :=
     NatLog.exec_rename logMap logMap_injective x₁ h2 (by simpa [hla, x₁] using hlarg)
       (by simp only [hla, x₁, Data.set_regs, Function.update_self, hL]
-          exact hfitN.of_le (by omega))
+          fits)
   have hx₁ : x₁.regs larg = N := by simp [x₁]
   rw [hla, hx₁, hL] at hrun₁ hy₁r
   rw [hlr] at hy₁r
@@ -241,7 +242,7 @@ theorem exec {w : ℕ} (x : Data 14) (hn : 2 ≤ x.regs n)
     hrun₁.regs_eq (Code.preserves_rename_of_forall_ne _ _ _ hj)
   have hy₁n : y₁.regs n = N := by
     rw [hpres₁ n (by decide)]; simp +decide [x₁, hN]
-  have hL1 : Fits w (L + 1) := hfitN.of_le (by omega)
+  have hL1 : Fits w (L + 1) := by fits
   let x₂ := ((y₁.set lim (L + 1)).set flag 0).set k 2
   have hrun₂ : ExecWithin (B := .standard) w (ram[ lim ← lres + one; flag ← #0; k ← #2 ])
       y₁ x₂ 3 := by

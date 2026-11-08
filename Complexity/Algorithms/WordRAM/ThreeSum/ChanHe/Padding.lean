@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.WordRAM.Notation
 import Complexity.Computability.WordRAM.CountingLoop
 import Mathlib.Tactic.NormNum
+import Complexity.Tactic.Fits
 
 /-!
 # Initializing the four columns of a Chan–He node
@@ -126,12 +127,12 @@ theorem exec {w : ℕ} (x : Data 10) (h4 : Fits w 4)
     have hp₁ := hr pad1 (by decide)
     have hp₂ := hr pad2 (by decide)
     have hp₃ := hr pad3 (by decide)
-    have fa : Fits w (4 * y.regs idx) := hfit.of_le (by omega)
-    have fb : Fits w (x.regs dst + 4 * y.regs idx) := hfit.of_le (by omega)
-    have fc : Fits w (x.regs dst + 4 * y.regs idx + 1) := hfit.of_le (by omega)
-    have fd : Fits w (x.regs dst + 4 * y.regs idx + 1 + 1) := hfit.of_le (by omega)
-    have fe : Fits w (x.regs dst + 4 * y.regs idx + 1 + 1 + 1) := hfit.of_le (by omega)
-    have fi : Fits w (y.regs idx + 1) := hfit.of_le (by omega)
+    have fa : Fits w (4 * y.regs idx) := by fits
+    have fb : Fits w (x.regs dst + 4 * y.regs idx) := by fits
+    have fc : Fits w (x.regs dst + 4 * y.regs idx + 1) := by fits
+    have fd : Fits w (x.regs dst + 4 * y.regs idx + 1 + 1) := by fits
+    have fe : Fits w (x.regs dst + 4 * y.regs idx + 1 + 1 + 1) := by fits
+    have fi : Fits w (y.regs idx + 1) := by fits
     refine ⟨?z, ?run, ?inv, ?increment⟩
     case run => ram_eval [body, h1, hfour, hd, hp₀, hp₁, hp₂, hp₃, fa, fb, fc, fd, fe, fi]
     case inv =>

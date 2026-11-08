@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Program
 public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Width
+import Complexity.Tactic.Fits
 
 /-!
 # Logarithmic physical width for the complete ordinary host
@@ -135,8 +136,8 @@ theorem envelope_fits {κ d n w : ℕ} (hw : width κ d n ≤ w) :
       Nat.pow_le_pow_right (by omega) (by dsimp only [envelopeExponent]; omega)
   have hf := (margin_fits hw).mono (show w - 3 ≤ w by omega)
   have hm := envelope_margin κ n
-  exact ⟨hf.of_le (by omega), hf.of_le (by omega),
-    hf.of_le (by omega), hf.of_le (by omega)⟩
+  exact ⟨by fits, by fits,
+    hf.of_le (by omega), by fits⟩
 
 /-- All local caller premises follow from the single global logarithmic threshold. -/
 theorem caller_fits {κ d n N H w : ℕ} (hN : N < (n + 2) ^ envelopeExponent κ)
@@ -157,8 +158,8 @@ theorem caller_fits {κ d n N H w : ℕ} (hN : N < (n + 2) ^ envelopeExponent κ
     exact Nat.add_le_add_right (Nat.sqrt_le_self N) 1
   have hm := envelope_margin κ n
   have hf := (margin_fits hw).mono (show w - 3 ≤ w by omega)
-  refine ⟨?_, ?_, ?_, ?_, hf.of_le (by omega), hf.of_le (by omega),
-    hf.of_le (by omega), hf.of_le (by omega)⟩
+  refine ⟨?_, ?_, ?_, ?_, by fits, by fits,
+    hf.of_le (by omega), by fits⟩
   · intro s hs
     apply signed_margin hw
     rw [abs_of_nonneg (by positivity)]

@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Place
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Charged execution of the native Chan–He placement scan
@@ -107,7 +108,7 @@ theorem exec_body {w M N U t : ℕ} (x : Data 32) (values : ℕ → ℤ) (neg : 
   have hr' : targetKey M neg (values k) < M := by
     rw [targetKey_eq hM]
     exact residueKey_lt hM _
-  have f (v : ℕ) (hv : v ≤ budget x M N U t) : Fits w v := hfit.of_le hv
+  have f (v : ℕ) (hv : v ≤ budget x M N U t) : Fits w v := by fits
   have fone : Fits w 1 := f _ (by dsimp only [budget]; omega)
   have fzero : Fits w 0 := fits_zero _
   have fs : Fits w (x.regs src + k) := f _ (by dsimp only [budget, k]; omega)
@@ -258,8 +259,8 @@ theorem exec {w M N U t : ℕ} (x : Data 32) (values : ℕ → ℤ) (neg : Bool)
     (fun _ hy => hy.1 len (by decide)) hbody
     (by simp +decide [x₀, idx, count, one, two, four, zero]) hx₀
   have f4 : Fits w 4 := hfit.of_le (by dsimp only [budget]; omega)
-  have f2 : Fits w 2 := f4.of_le (by decide)
-  have f1 : Fits w 1 := f4.of_le (by decide)
+  have f2 : Fits w 2 := by fits
+  have f1 : Fits w 1 := by fits
   have hinit : ExecWithin (B := .standard) w (ram[
       idx ← #0; count ← #0; one ← #1; two ← #2; four ← #4; zero ← #0 ]) x x₀ 6 := by
     ram_eval [x₀, f1, f2, f4]

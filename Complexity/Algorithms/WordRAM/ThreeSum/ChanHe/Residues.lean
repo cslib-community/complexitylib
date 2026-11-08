@@ -12,6 +12,7 @@ public import Complexity.Computability.WordRAM.Copy
 import Mathlib.Tactic.NormNum
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Native Euclidean residue arrays
@@ -114,7 +115,7 @@ theorem exec {w M : ℕ} (x : Data 16) (values : ℕ → ℤ) (hM : 0 < M)
       simp only [memory, show ¬(x.regs dst ≤ x.regs src + y.regs idx ∧
         x.regs src + y.regs idx < x.regs dst + y.regs idx) from by omega, ↓reduceIte]
       exact hinput _ hlt
-    have ha : Fits (w + 2) (y.regs src + y.regs idx) := hs.of_le (by rw [hsrc]; omega)
+    have ha : Fits (w + 2) (y.regs src + y.regs idx) := by fits
     let p := ((y.set addr (y.regs src + y.regs idx)).set left
       (encode (values (y.regs idx)))).set right (encode (M : ℤ))
     have hp : ExecWithin (w + 2)
@@ -135,8 +136,8 @@ theorem exec {w M : ℕ} (x : Data 16) (values : ℕ → ℤ) (hM : 0 < M)
     have hdecode : z.regs result / 2 = (values (y.regs idx) % (M : ℤ)).toNat := by
       rw [hzval, GenericRAM.Signed.Arithmetic.eval, encode_div_two]
       omega
-    have hb : Fits (w + 2) (z.regs dst + z.regs idx) := hd.of_le (by rw [hzd, hzi]; omega)
-    have hn : Fits (w + 2) (z.regs idx + 1) := hs.of_le (by rw [hzi]; omega)
+    have hb : Fits (w + 2) (z.regs dst + z.regs idx) := by fits
+    have hn : Fits (w + 2) (z.regs idx + 1) := by fits
     have htwo : Fits (w + 2) 2 := (show Fits 2 2 from by decide).mono (by omega)
     have hrem : Fits (w + 2) (z.regs result / 2) := by
       rw [hdecode]

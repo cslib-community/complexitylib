@@ -11,6 +11,7 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.Cell
 public import Complexity.Algorithms.WordRAM.ThreeSum.Memory
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Native matrix-building loop for Convolution-3SUM
@@ -101,8 +102,8 @@ theorem exec {w : ℕ} (A : Args) (x : Data 28)
       ((hr Cell.matAB (by decide)).trans hab) ((hr Cell.matBC (by decide)).trans hbc)
       ((hr Cell.matAC (by decide)).trans hac) ((hr Cell.len (by decide)).trans hlen)
       ((hr Cell.base (by decide)).trans hbase) ((hr Cell.filler (by decide)).trans hf)
-      hinput hlt hidx hF hnF hμ haddr (habfit.of_le (by omega))
-      (hbcfit.of_le (by omega)) (hacfit.of_le (by omega)) hbelow (by omega)
+      hinput hlt hidx hF hnF hμ haddr (by fits)
+      (by fits) (by fits) hbelow (by omega)
     have hzc : z.regs Cell.cell = y.regs Cell.cell := hzreg Cell.cell (by decide)
     have hzo : z.regs one = 1 := (hzreg one (by decide)).trans ho
     have hza : z.regs area = A.t * A.t := (hzreg area (by decide)).trans ha
@@ -115,8 +116,7 @@ theorem exec {w : ℕ} (A : Args) (x : Data 28)
     have hmemory : z.mem = A.filled x.mem (y.regs Cell.cell + 1) := by
       rw [A.filled_succ x.mem hABBC hBCAC hlt, ← hm]
       simpa only [Args.valueAB, Args.valueBC, Args.valueAC] using hzmem
-    have hinc : Fits (w + 2) (z.regs Cell.cell + z.regs one) :=
-      hacfit.of_le (by rw [hzc, hzo]; omega)
+    have hinc : Fits (w + 2) (z.regs Cell.cell + z.regs one) := by fits
     refine ⟨z.set Cell.cell (y.regs Cell.cell + 1), ?_, ?_, ?_⟩
     · have hi := (ExecWithin.bin (f := BinOp.add)
         (x := z) (d := Cell.cell) (i := Cell.cell) (j := one) hinc)
@@ -137,7 +137,7 @@ theorem exec {w : ℕ} (A : Args) (x : Data 28)
       · exact hmemory
     · simp only [Data.set_regs, Function.update_self]
   have h1 : Fits (w + 2) 1 := (show Fits 2 1 from by decide).mono (by omega)
-  have harea : Fits (w + 2) (A.t * A.t) := hacfit.of_le (by omega)
+  have harea : Fits (w + 2) (A.t * A.t) := by fits
   let x₀ := ((x.set Cell.cell 0).set one 1).set area (A.t * A.t)
   have hx₀ : Inv (x₀.regs Cell.cell) x₀ := by
     refine ⟨?_, ?_, ?_, ?_⟩

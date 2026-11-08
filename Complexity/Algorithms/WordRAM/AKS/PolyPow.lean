@@ -12,6 +12,7 @@ public import Complexity.Algorithms.WordRAM.AKS.PolyMul
 public import Complexity.Computability.WordRAM.Copy
 public import Complexity.Computability.WordRAM.RegisterFrame
 public import Mathlib.Data.Nat.Size
+import Complexity.Tactic.Fits
 
 /-!
 # Powers modulo `X^r - 1` and `n` on the word RAM
@@ -143,7 +144,6 @@ private theorem mulInto_exec {w : ℕ} (X : Data 21) {x y d : Fin 21} (hx : x.va
   have hyb : y ≠ pb := fun h => by subst h; simp at hy
   have hda : d ≠ pa := fun h => by subst h; simp at hd
   have hdb : d ≠ pb := fun h => by subst h; simp at hd
-  have h1 : Fits w 1 := hfn.of_le (by nlinarith)
   -- Set the arguments of the multiplication.
   let X₁ := ((X.set pa a).set pb b).set pt t
   have hrun₁ : ExecWithin (B := .standard) w (ram[ pa ← x; pb ← y; pt ← T ]) X X₁ 3 := by
@@ -187,7 +187,7 @@ private theorem mulInto_exec {w : ℕ} (X : Data 21) {x y d : Fin 21} (hx : x.va
   have hlen : (X₂.comap copyMap).regs ArrayCopy.len = r := hXr
   obtain ⟨Y₂, hrun₄', ⟨hY₂m, -, -, hY₂len⟩, outside₂⟩ :=
     ExecWithin.rename_post copyMap_injective (ArrayCopy.exec_of_separated_or_eq (w := w)
-      (X₂.comap copyMap) h1 (by rw [hsrc, hlen]; exact hft) (by rw [hdst, hlen]; exact hfd)
+      (X₂.comap copyMap) (by fits) (by rw [hsrc, hlen]; exact hft) (by rw [hdst, hlen]; exact hfd)
       (by rw [hsrc, hdst, hlen]; omega))
   simp only [Data.comap_mem] at hY₂m
   rw [hlen, hsrc, hdst] at hY₂m

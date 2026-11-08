@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.PPSZ.Implied
 public import Complexity.Algorithms.WordRAM.PPZ.Round
+import Complexity.Tactic.Fits
 
 /-!
 # One round of PPSZ on the randomized word RAM
@@ -115,7 +116,7 @@ theorem roundCore_law {φ : CNF (Fin n)} {C Tb s w : ℕ} {M : ℕ → ℕ}
       (fun y => RoundFrame φ C Tb M y ∧ ∀ v < n, y.mem (Tb + v) ≤ 1)
       (n * (impliedTime s (encodeClauses φ).length + 25) + 6) (2 * n)
       (fun y => PPZ.partialAssignmentAt y.mem Tb n) (round φ s) :=
-  roundCoreWith_law (impliedCode_isOracleCode hs hzero hw) (hw.of_le (by omega)) hx
+  roundCoreWith_law (impliedCode_isOracleCode hs hzero hw) (by fits) hx
 
 /-! ### The program -/
 
@@ -159,12 +160,12 @@ theorem roundSetup_exec (s : ℕ) (φ : CNF (Fin n)) {w : ℕ}
     ExecWithin w roundSetup (Data.init (s :: encode φ)) (roundSetupData s φ) 12 ∧
       RoundFrame φ 3 ((s :: encode φ).length + 1) (roundSetupData s φ).mem
         (roundSetupData s φ) := by
-  have hf1 : Fits w 1 := hw.of_le (by omega)
+  have hf1 : Fits w 1 := by fits
   have hf2 : Fits w 2 := hw.of_le (by simp [encode]; omega)
   have hf3 : Fits w 3 := hw.of_le (by simp [encode]; omega)
-  have hf4 : Fits w ((s :: encode φ).length + 1) := hw.of_le (by omega)
-  have hf5 : Fits w ((s :: encode φ).length + 1 + n) := hw.of_le (by omega)
-  have hf6 : Fits w ((s :: encode φ).length + 1 + n + n) := hw.of_le (by omega)
+  have hf4 : Fits w ((s :: encode φ).length + 1) := by fits
+  have hf5 : Fits w ((s :: encode φ).length + 1 + n) := by fits
+  have hf6 : Fits w ((s :: encode φ).length + 1 + n + n) := by fits
   have hm0 : (Data.init (s :: encode φ) : Data 32).mem 0 = (s :: encode φ).length := rfl
   have hm1 : (Data.init (s :: encode φ) : Data 32).mem 1 = s := rfl
   have hm2 : (Data.init (s :: encode φ) : Data 32).mem 2 = n := rfl
@@ -211,7 +212,7 @@ theorem roundProgram_spec (s : ℕ) (φ : CNF (Fin n)) {w : ℕ}
   set Tb := (s :: encode φ).length + 1
   obtain ⟨hy, hfr⟩ := roundSetup_exec s φ (hw.of_le (by omega))
   have hT : 1 ≤ Tb := by omega
-  have hw' : Fits w (Tb + 2 * n) := hw.of_le (by omega)
+  have hw' : Fits w (Tb + 2 * n) := by fits
   have hs : (roundSetupData s φ).mem (Tb + 2 * n) = s := by
     rw [roundSetupData_mem, ite_eq_left_iff.mpr (fun h => absurd (by omega) h)]
   have hzero : ∀ i < 2 * s, (roundSetupData s φ).mem (Tb + 2 * n + 1 + i) = 0 := fun i _ => by
@@ -220,7 +221,7 @@ theorem roundProgram_spec (s : ℕ) (φ : CNF (Fin n)) {w : ℕ}
       List.getD_eq_getElem?_getD, List.getElem?_eq_none (by omega)]
     rfl
   have hcore := ExecRandLaw.seq_det hy (ExecRandLaw.seq_det_right
-    (roundCore_law hs hzero (hw.of_le (by omega)) hfr)
+    (roundCore_law hs hzero (by fits) hfr)
     (Q := fun y => (RoundFrame φ 3 Tb (roundSetupData s φ).mem y ∧ ∀ v < n, y.mem (Tb + v) ≤ 1) ∧
       y.regs out = if φ.eval (assignmentAt y.mem Tb n) then 1 else 0)
     fun y ⟨hfy, hby⟩ => by

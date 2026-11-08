@@ -16,6 +16,7 @@ public import Complexity.Algorithms.WordRAM.Schoening.Trial
 public import Complexity.Computability.Complexity.FineGrained.PPZ.LazyOrder
 public import Complexity.Computability.WordRAM.Randomized.Law
 import Complexity.Probability.PMF.Map
+import Complexity.Tactic.Fits
 
 /-!
 # One round of PPZ on the randomized word RAM
@@ -252,9 +253,9 @@ theorem initLoop_spec {φ : CNF (Fin n)} {C Tb w : ℕ} {M : ℕ → ℕ} (hw : 
     obtain ⟨i, hi⟩ : ∃ i, x.regs iReg = i := ⟨_, rfl⟩
     rw [hi] at hd hv
     have hc : (Cond.lt iReg nReg).Holds x := by simp [Cond.holds_lt, hx.nReg_eq, hi]; omega
-    have hf1 : Fits w (Tb + i) := hw.of_le (by omega)
-    have hf2 : Fits w (Tb + n + i) := hw.of_le (by omega)
-    have hf3 : Fits w (i + 1) := hw.of_le (by omega)
+    have hf1 : Fits w (Tb + i) := by fits
+    have hf2 : Fits w (Tb + n + i) := by fits
+    have hf3 : Fits w (i + 1) := by fits
     let y := (((((x.set addr (Tb + i)).write (Tb + i) 2).set addr (Tb + n + i)).write
       (Tb + n + i) i).set iReg (i + 1))
     have hrun : ExecWithin w initBody x y 5 := by
@@ -406,7 +407,7 @@ theorem forcedCode_isOracleCode {φ : CNF (Fin n)} {C Tb w : ℕ} {M : ℕ → �
   exec τ v y hf hv hs := by
     obtain ⟨z, hz, hzm, hzr, -⟩ := forcedCode_spec φ τ v y (hf.scanFrame hv hs hw hT)
       (by rw [hf.cBeg_eq]; exact hf.clauses) (by rw [hf.cBeg_eq, hf.cEnd_eq]; exact hf.span)
-      (by rw [hf.cEnd_eq]; exact hw.of_le (by omega))
+      (by rw [hf.cEnd_eq]; fits)
     exact ⟨z, hz, hzm, hzr⟩
 
 /-- The postcondition of the step from step `i`:for the drawn position `p` and the value `b` set,
@@ -430,8 +431,8 @@ theorem roundBodyWith_law {φ : CNF (Fin n)} {C Tb w T : ℕ} {M : ℕ → ℕ}
       ((Probability.PMF.uniformOfFintype (Fin (m + 1))).bind fun p =>
         (stepWith O τ (g p)).map fun b => (p.val, b)) := by
   have hf := hx.frame
-  have hf1 : Fits w (n - i) := hw.of_le (by omega)
-  have hf2 : Fits w (n - i - 1) := hw.of_le (by omega)
+  have hf1 : Fits w (n - i) := by fits
+  have hf2 : Fits w (n - i - 1) := by fits
   let x₂ := (x.set jReg (n - i)).set jReg (n - i - 1)
   have h₁ : ExecWithin w (ram[ jReg ← nReg - iReg ] : Code .standard 32) x (x.set jReg (n - i))
       1 := by
@@ -457,9 +458,9 @@ theorem roundBodyWith_law {φ : CNF (Fin n)} {C Tb w T : ℕ} {M : ℕ → ℕ}
     have hmk : x.mem (Tb + n + (k'.val + i)) = (g k : ℕ) := by
       rw [show Tb + n + (k'.val + i) = Tb + n + i + (k : ℕ) by omega]
       exact hx.order k
-    have hfa : Fits w (k'.val + i) := hw.of_le (by omega)
-    have hfb : Fits w (Tb + n + i) := hw.of_le (by omega)
-    have hfc : Fits w (Tb + n + (k'.val + i)) := hw.of_le (by omega)
+    have hfa : Fits w (k'.val + i) := by fits
+    have hfb : Fits w (Tb + n + i) := by fits
+    have hfc : Fits w (Tb + n + (k'.val + i)) := by fits
     let y₁ := ((((((((x₂.set jReg k'.val).set jReg (k'.val + i)).set aI (Tb + n + i)).set aJ
       (Tb + n + (k'.val + i))).set val (g 0 : ℕ)).set xReg (g k : ℕ)).write (Tb + n + i)
       (g k : ℕ)).write (Tb + n + (k'.val + i)) (g 0 : ℕ))
@@ -489,8 +490,8 @@ theorem roundBodyWith_law {φ : CNF (Fin n)} {C Tb w T : ℕ} {M : ℕ → ℕ}
     have hiz : z.regs iReg = i := (hz.regs_eq hoc.preserves_i).trans hi₁
     have hxz : z.regs xReg = (g k : ℕ) := (hz.regs_eq hoc.preserves_x).trans hxr₁
     -- the value set, and the store
-    have hfs : Fits w (Tb + (g k : ℕ)) := hw.of_le (by omega)
-    have hfi : Fits w (i + 1) := hw.of_le (by omega)
+    have hfs : Fits w (Tb + (g k : ℕ)) := by fits
+    have hfi : Fits w (i + 1) := by fits
     have hstore : ∀ b : Bool, ∃ Y, ExecWithin w storeCode (z.set res b.toNat) Y 3 ∧
         StepPost φ C Tb M i τ g Y ∧ F Y = F (z.set res b.toNat) := by
       intro b
@@ -525,7 +526,7 @@ theorem roundBodyWith_law {φ : CNF (Fin n)} {C Tb w T : ℕ} {M : ℕ → ℕ}
         have hc : (Cond.eq res two).Holds z := by simp [Cond.holds_eq, hzr, hfz.two_eq, optCode]
         have hr := ExecRandLaw.rand (w := w) (B := .standard) (dst := res) (src := one) (x := z)
           (f := F) (P := fun z' => ∃ b : Bool, z' = z.set res b.toNat)
-          (by rw [hfz.one_eq]; exact hw.of_le (by omega)) (fun k₂ => ⟨decide (k₂.val = 1), by
+          (by rw [hfz.one_eq]; fits) (fun k₂ => ⟨decide (k₂.val = 1), by
             have h2 : k₂.val < 2 := by have := k₂.isLt; have h1 := hfz.one_eq; omega
             congr 1
             rcases (show k₂.val = 0 ∨ k₂.val = 1 by omega) with h | h <;> simp [h]⟩)
@@ -554,7 +555,7 @@ theorem roundBodyWith_law {φ : CNF (Fin n)} {C Tb w T : ℕ} {M : ℕ → ℕ}
   -- the draw
   have hrand := ExecRandLaw.rand (w := w) (B := .standard) (dst := jReg) (src := jReg) (x := x₂)
     (f := fun y => y.regs jReg) (P := fun y => ∃ k : Fin (x₂.regs jReg + 1), y = x₂.set jReg k.val)
-    (by rw [hx₂j]; exact hw.of_le (by omega)) fun k => ⟨k, rfl⟩
+    (by rw [hx₂j]; fits) fun k => ⟨k, rfl⟩
   have hall := ExecRandLaw.seq_det h₁ (ExecRandLaw.seq_det h₂ (ExecRandLaw.seq hrand hrest))
   refine (hall.congr_law ?_).mono (fun _ h => h) (by omega) le_rfl
   simp only [Data.set_regs, Function.update_self]
@@ -756,7 +757,7 @@ theorem roundCheck_exec {φ : CNF (Fin n)} {C Tb w : ℕ} {M : ℕ → ℕ} (hw 
       rfl
   have hm₁ : y₁.mem = x.mem := hm₀
   have hf₁ : RoundFrame φ C Tb M y₁ := hx.of_execWithin (by decide) hrun fun a _ => by rw [hm₁]
-  have hfo : Fits w (1 - y₁.regs sFound) := hw.of_le (by omega)
+  have hfo : Fits w (1 - y₁.regs sFound) := by fits
   have hout := ExecWithin.bin (w := w) (f := .sub) (d := out) (i := one) (j := sFound) (x := y₁)
     (by rw [hf₁.one_eq]; exact hfo)
   refine ⟨_, hrun.seq hout, by simpa using hm₁, hf₁.set (by decide) _, ?_⟩
@@ -795,10 +796,10 @@ def roundSetupData (φ : CNF (Fin n)) : Data 32 :=
 theorem roundSetup_exec (φ : CNF (Fin n)) {w : ℕ} (hw : Fits w ((encode φ).length + 2 * n + 1)) :
     ExecWithin w roundSetup (Data.init (encode φ)) (roundSetupData φ) 8 ∧
       RoundFrame φ 2 ((encode φ).length + 1) (roundSetupData φ).mem (roundSetupData φ) := by
-  have hf1 : Fits w 1 := hw.of_le (by omega)
+  have hf1 : Fits w 1 := by fits
   have hf2 : Fits w 2 := hw.of_le (by simp [encode]; omega)
-  have hf3 : Fits w ((encode φ).length + 1) := hw.of_le (by omega)
-  have hf4 : Fits w ((encode φ).length + 1 + n) := hw.of_le (by omega)
+  have hf3 : Fits w ((encode φ).length + 1) := by fits
+  have hf4 : Fits w ((encode φ).length + 1 + n) := by fits
   have hm0 : (Data.init (encode φ) : Data 32).mem 0 = (encode φ).length := rfl
   have hm1 : (Data.init (encode φ) : Data 32).mem 1 = n := rfl
   refine ⟨?run, ?frame⟩
@@ -837,7 +838,7 @@ theorem roundProgram_spec (φ : CNF (Fin n)) {w : ℕ}
   set Tb := (encode φ).length + 1
   obtain ⟨hy, hfr⟩ := roundSetup_exec φ hw
   have hT : 1 ≤ Tb := by omega
-  have hw' : Fits w (Tb + 2 * n) := hw.of_le (by omega)
+  have hw' : Fits w (Tb + 2 * n) := by fits
   have hcore := ExecRandLaw.seq_det hy (ExecRandLaw.seq_det_right (roundCore_law hw' hT hfr)
     (Q := fun y => (RoundFrame φ 2 Tb (roundSetupData φ).mem y ∧ ∀ v < n, y.mem (Tb + v) ≤ 1) ∧
       y.regs out = if φ.eval (assignmentAt y.mem Tb n) then 1 else 0)

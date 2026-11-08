@@ -11,6 +11,7 @@ import Complexity.Computability.WordRAM.SymbolicExec.CanonicalCall
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Parameters
 public import Complexity.Algorithms.WordRAM.ThreeSum.Fill
 public import Complexity.Computability.WordRAM.RegisterFrame
+import Complexity.Tactic.Fits
 
 /-!
 # Preparing the native Convolution-3SUM host
@@ -164,14 +165,14 @@ theorem exec_layout_at {w N U src : ℕ} (x : Data 64)
   have ht : Fits w t := hsize.of_le (by have := Nat.le_mul_self t; dsimp [t] at *; omega)
   have ha : Fits w (t * t) := hsize.of_le (by dsimp [t] at *; omega)
   have hs : Fits w (t + t) := hsize.of_le (by have := Nat.le_mul_self t; dsimp [t] at *; omega)
-  have hab : Fits w (src + N) := hsize.of_le (by omega)
+  have hab : Fits w (src + N) := by fits
   have hbc : Fits w (src + N + t * t) := hsize.of_le (by dsimp [t] at *; omega)
   have hac : Fits w (src + N + t * t + t * t) := hsize.of_le (by dsimp [t] at *; omega)
   have hfree : Fits w (src + N + t * t + t * t + t * t) :=
     hsize.of_le (by dsimp [t] at *; omega)
-  have hu2 : Fits w (U + U) := hfill.of_le (by omega)
-  have hu1 : Fits w (U + U + 1) := hfill.of_le (by omega)
-  have hu4 : Fits w (U + U + 1 + (U + U + 1)) := hfill.of_le (by omega)
+  have hu2 : Fits w (U + U) := by fits
+  have hu1 : Fits w (U + U + 1) := by fits
+  have hu4 : Fits w (U + U + 1 + (U + U + 1)) := by fits
   refine ⟨?y, ?run, ?parameters, ?counter, ?found, ?memory⟩
   case run =>
     ram_eval [layout, hr, ho, hN, hU, hb, ht, ha, hs, hab, hbc, hac, hfree,
@@ -199,7 +200,7 @@ theorem exec_prepare {w : ℕ} (κ : ℕ) (x : Data 64)
           5 * Nat.sqrt (x.mem 0) + 24) ∧
       Parameters (x.mem 0) ((x.mem 0 + 2) ^ κ) y ∧
       y.regs inst = 0 ∧ y.regs found = 0 ∧ y.mem = x.mem := by
-  have h1 : Fits w 1 := hfill.of_le (by omega)
+  have h1 : Fits w 1 := by fits
   unfold prepare setup
   wram_exec
   wram_call (ChanHe.Parameters.exec κ _ hbudget) canonical parameter_injective with

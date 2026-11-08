@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.Schoening.Scan
 public import Complexity.Computability.Complexity.FineGrained.PPZ
+import Complexity.Tactic.Fits
 
 /-!
 # Forced values of PPZ on the word RAM
@@ -252,7 +253,7 @@ theorem litBody_spec (τ : Fin n → Option Bool) (x : Fin n) (b : Bool) (l : Li
   · subst hvx
     have hf1 : Fits w (l.2.toNat ^^^ b.toNat) :=
       hf.fits.of_le (by have := toNat_xor_le_one l.2 b; have := hf.pos; omega)
-    have hf2 : Fits w (1 - (l.2.toNat ^^^ b.toNat)) := hf.fits.of_le (by have := hf.pos; omega)
+    have hf2 : Fits w (1 - (l.2.toNat ^^^ b.toNat)) := by fits
     have hf3 : Fits w (h.toNat ||| (1 - (l.2.toNat ^^^ b.toNat))) := hf.fits.of_le (by
       rw [toNat_xor_eq, toNat_or]; have := Bool.toNat_le (h || (l.2 == b)); have := hf.pos; omega)
     have hf4 : Fits w (o.toNat &&& (1 - (l.2.toNat ^^^ b.toNat))) := hf.fits.of_le (by
@@ -269,7 +270,7 @@ theorem litBody_spec (τ : Fin n → Option Bool) (x : Fin n) (b : Bool) (l : Li
     have hbx : (l.1 == x) = false := beq_eq_false_iff_ne.mpr hvx
     have hτv : y.mem (y.regs tBase + l.1.val) = optCode (τ l.1) := hf.stored l.1
     have hfa : Fits w (y.regs tBase + l.1.val) := hf.fits.of_le (by omega)
-    have hfe : Fits w (1 - l.2.toNat) := hf.fits.of_le (by have := hf.pos; omega)
+    have hfe : Fits w (1 - l.2.toNat) := by fits
     by_cases hve : optCode (τ l.1) = 1 - l.2.toNat
     · refine ⟨((((((((y.set lit (litCode l)).set var l.1.val).set sgn l.2.toNat).set addr
         (y.regs tBase + l.1.val)).set val (optCode (τ l.1))).set eq (1 - l.2.toNat)).set ok
@@ -385,8 +386,8 @@ theorem clauseLoop_spec (τ : Fin n → Option Bool) (x : Fin n) (b : Bool) (ψ 
         (by simpa [encodeClause] using hpc)
       simpa using this.2
     have hc : (Cond.lt ptr cEnd).Holds y := by simp only [Cond.holds_lt]; omega
-    have hf1 : Fits w (y.regs ptr + 1) := hce.of_le (by omega)
-    have hf2 : Fits w (y.regs ptr + 1 + c.length) := hce.of_le (by omega)
+    have hf1 : Fits w (y.regs ptr + 1) := by fits
+    have hf2 : Fits w (y.regs ptr + 1 + c.length) := by fits
     have hone := hf.one_eq
     have hzero := hf.zero_eq
     let y₁ := ((((y.set len c.length).set lptr (y.regs ptr + 1)).set lend
