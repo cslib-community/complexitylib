@@ -64,10 +64,14 @@ closures. For a phase on `m` supervertices of a graph on `n` vertices:
   (`2 m`), moving row and column `m - 1` into the freed slot `t` (`2 m`), relabelling the original
   vertices (`n`) and comparing two weights (`1`).
 
-The final phase, on two supervertices, needs no search and costs `2 + n`. The total is at most
-`n ^ 3 + 4 n ^ 2` (`time_stoerWagnerM_le`). This is the `O(n³)` array version of the algorithm;
-the `O(n m + n² log n)` bound of [StoerWagner1997] uses Fibonacci heaps and is not formalized
-here.
+The final phase, on two supervertices, needs no search and costs `2 + n`. One-time setup is not
+charged: the weight matrix is taken as given, and the initial map `part = id` of the `n` original
+vertices to supervertices is free. The total is at most `n ^ 3 + 4 n ^ 2` (`time_stoerWagnerM_le`).
+This bound is loose. Summing the charges by hand, a phase on `m ≥ 3` supervertices costs
+`m ^ 2 + 6 m + 2 n + 1`, so the charged time is `n ^ 3 / 3 + O(n ^ 2)`; only the weaker bound is
+proved. On the 8-vertex example of the tests the charged time is `509`, against the bound `768`.
+This is the `O(n³)` array version of the algorithm; the `O(n m + n² log n)` bound of
+[StoerWagner1997] uses Fibonacci heaps and is not formalized here.
 
 ## Limitations
 
@@ -410,7 +414,8 @@ theorem ret_stoerWagnerM {n : ℕ} (W : Fin n → Fin n → ℕ) :
   · exact ret_runM n W id
 
 /-- **The cost of the Stoer–Wagner algorithm**: at most `n ^ 3 + 4 n ^ 2` steps on `n` vertices in
-the cost model of the module docstring. -/
+the cost model of the module docstring, which does not charge one-time setup. The bound is not
+tight: the leading term of the charged time is `n ^ 3 / 3`. -/
 theorem time_stoerWagnerM_le {n : ℕ} (W : Fin n → Fin n → ℕ) :
     (stoerWagnerM W).time ≤ n ^ 3 + 4 * n ^ 2 := by
   obtain _ | _ | n := n

@@ -229,7 +229,7 @@ Import `Complexity.Algorithms.Lean.StoerWagner.Basic` ([Basic.lean](../../Comple
   - recording a cut of the phase costs `m + n`;
   - a merge costs `4 m + n + 1`: merging row and column `t` into `s`, moving row and column `m − 1` into the freed slot, relabelling the original vertices, and one comparison.
 
-  The charges are annotations; they are not derived from the Lean evaluation, which uses closures.
+  The charges are annotations; they are not derived from the Lean evaluation, which uses closures. One-time setup is not charged: the weight matrix is taken as given, and the initial map `part = id` of the original vertices to supervertices is free. The bound `n ^ 3 + 4 n ^ 2` is loose. Summing the charges by hand, a phase on `m ≥ 3` supervertices costs `m ^ 2 + 6 m + 2 n + 1`, so the charged time is `n ^ 3 / 3 + O(n ^ 2)` (`509` against the bound `768` on the 8-vertex example); only the weaker bound is proved.
 
 The [checked examples](../../ComplexityTests/StoerWagner.lean) test three graphs against brute force over all vertex sets. The first is a weighted 4-cycle. The second is the 8-vertex example graph of [Stoer and Wagner][stoerwagner97], with edge weights from a secondary reproduction (Wikipedia's article). It has minimum cut `4`, and search from its vertex `2` gives the ordering `2, 3, 4, 7, 8, 6, 5, 1` of the worked example's first phase, with cut of the phase `5`. The third is the Boost Graph Library example, which asserts minimum cut weight `7`. The examples also show that an ordering without the MA property can end in a pair whose last-vertex cut is not minimal. They cover a disconnected graph and `n = 0, 1, 2`. Not formalized:
 - the `O(n m + n² log n)` priority-queue version;
