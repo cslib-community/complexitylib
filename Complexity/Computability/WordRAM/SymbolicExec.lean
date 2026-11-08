@@ -30,7 +30,8 @@ The registers and memory cells an instruction reads are simplified as it execute
 set `wram_simps`. Reads after `Cslib.WordRAM.Data.set` and `Cslib.WordRAM.Data.write` reduce by
 the simplification procedures `Cslib.WordRAM.Data.reduceRegs` and `Cslib.WordRAM.Data.reduceMem`.
 The first compares register names by evaluation when they are literals, and otherwise by hypotheses
-`j ≠ i`, `j ∉ Set.range f` and `Function.Injective f`, or by the discharger on their values, as for
+`j ≠ i`, `j ∉ Set.range f`, `Function.Injective f` and instances of `∀ xs, a ≠ b`, such as
+`∀ i j, src i ≠ tmp j` for two renamed banks, or by the discharger on their values, as for
 `Fin.castAdd` and names `⟨k + 9, _⟩`; the second asks the discharger whether two addresses are
 equal. Memory that is not read at an address, such as an argument of a definition, becomes
 `Function.update` (`Cslib.WordRAM.Data.reduceWriteMem`). The given simp lemmas rewrite the values,
@@ -62,7 +63,7 @@ a program.
 * `wram_bounded`: word-sizedness of data built by writes.
 * `Cslib.WordRAM.Data.reduceRegs`, `Cslib.WordRAM.Data.reduceMem`,
   `Cslib.WordRAM.Data.reduceWriteMem`: simplification procedures reading registers and memory
-  after writes.
+  after writes; `Cslib.WordRAM.Basis.reduceInterp`, evaluating an operation of a basis.
 
 ## Main results
 
@@ -267,6 +268,13 @@ theorem exactMod (hi : x.regs i = u) (hj : x.regs j = b') (hb : b' ≠ 0) (hv : 
 theorem exactWidth (h : Q (x.set d w) 1) : WP w (.op (.exactWidth d)) x Q :=
   of_execWithin (ExecWithin.op (Op.eval_exactWidth w d x)) h
 
+/-- An operation `f` of any basis on the registers `args`, with fitting value `v`, as over
+`Basis.additive`; `hv` evaluates `f` on the values of the registers. -/
+theorem alu {f : B.Op} {args : Fin (B.Arity f) → Fin r}
+    (hv : B.interp w f (fun a => x.regs (args a)) = some v) (hfit : Fits w v)
+    (h : Q (x.set d v) 1) : WP w (.op (.alu f d args)) x Q :=
+  of_execWithin (ExecWithin.alu hv hfit) h
+
 end Ops
 
 end WP
@@ -346,12 +354,45 @@ meta def injective? (f : Expr) : MetaM (Option Expr) := do
       | return none
     return if f' == f then some d.toExpr else none
 
+/-- The body of `e` under its leading `∀` binders, with loose bound variables. -/
+meta def forallBody : Expr → Expr
+  | .forallE _ _ b _ => forallBody b
+  | e => e
+
+/-- The sides `a` and `b` of a statement `a ≠ b` or `¬a = b`. -/
+meta def neSides? (p : Expr) : Option (Expr × Expr) :=
+  if p.isAppOfArity ``Ne 3 then some (p.getArg! 1, p.getArg! 2)
+  else if p.isAppOfArity ``Not 1 && p.appArg!.isAppOfArity ``Eq 3 then
+    some (p.appArg!.getArg! 1, p.appArg!.getArg! 2)
+  else none
+
+/-- A hypothesis `∀ xs, a ≠ b`, or `∀ xs, ¬a = b`, with an instance `j ≠ i` or `i ≠ j`, as
+`hd : ∀ i j, src i ≠ tmp j` separates two renamed banks of registers. The instance is found by
+unifying `a` and `b` with the names at reducible transparency, and every bound variable must be
+determined by them, so that a hypothesis with premises is not used. Gives `j ≠ i`. -/
+meta def forallNe? (j i : Expr) : MetaM (Option Expr) := do
+  (← getLCtx).findDeclRevM? fun d => do
+    if d.isImplementationDetail then return none
+    let ty := (← instantiateMVars d.type).cleanupAnnotations
+    unless ty.isForall && (neSides? (forallBody ty)).isSome do return none
+    withNewMCtxDepth do
+      let (xs, _, body) ← forallMetaTelescope ty
+      let some (a, b) := neSides? body | return none
+      for (l, r, symm) in [(j, i, false), (i, j, true)] do
+        let s ← saveState
+        if ← withReducible (isDefEq a l <&&> isDefEq b r) then
+          let h ← instantiateMVars (mkAppN d.toExpr xs)
+          unless h.hasMVar do
+            return some (← if symm then mkAppM ``Ne.symm #[h] else pure h)
+        s.restore
+      return none
+
 /-- A proof that the register names `j` and `i` differ, for names that need not evaluate to
 literals: by evaluation if they have no free variables; by a hypothesis `j ≠ i` or `i ≠ j`, also
 stated as `¬j = i` as `by_cases` gives it; by a hypothesis `j ∉ Set.range f` when `i` is `f a`, or
-symmetrically; by a hypothesis `Function.Injective f` when they are `f b` and `f a` with `b` and `a`
-different; and otherwise by the discharger on their values, when one of them unfolds to a
-constructor `⟨k, _⟩` (`finVal`). -/
+symmetrically; by an instance of a hypothesis `∀ xs, a ≠ b` (`forallNe?`); by a hypothesis
+`Function.Injective f` when they are `f b` and `f a` with `b` and `a` different; and otherwise by
+the discharger on their values, when one of them unfolds to a constructor `⟨k, _⟩` (`finVal`). -/
 meta partial def regNe? (j i : Expr) : SimpM (Option Expr) := do
   let p ← mkAppM ``Ne #[j, i]
   if let some r ← decideClosed? p then return r
@@ -361,6 +402,7 @@ meta partial def regNe? (j i : Expr) : SimpM (Option Expr) := do
     if let some h ← assumption? q then return some (← mkAppM ``Ne.symm #[h])
   if let some h ← outsideRange? j i then return some h
   if let some h ← outsideRange? i j then return some (← mkAppM ``Ne.symm #[h])
+  if let some h ← forallNe? j i then return some h
   if let (.app f b, .app f' a) := (j, i) then
     if f == f' then
       if let some hf ← injective? f then
@@ -437,6 +479,13 @@ meta def reduceWriteMemStep (e : Expr) : SimpM Simp.Step := do
   let some (_, _, rhs) := (← inferType proof).eq? | return .continue
   return .visit { expr := rhs, proof? := proof }
 
+/-- Evaluate an operation of a basis, `B.interp w f vals`, by unfolding it, when it unfolds to a
+value `some v`; otherwise leave it. -/
+meta def reduceInterpStep (e : Expr) : SimpM Simp.DStep := do
+  let_expr Basis.interp _ _ _ _ := e | return .continue
+  let e ← whnfD e
+  return if e.isAppOfArity ``Option.some 2 then .visit e else .continue
+
 /-- Close the goal `g` with the tactic `tac`, or restore the state and report failure. -/
 meta def closesWith (tac : TSyntax `tactic) (g : MVarId) : TacticM Bool := do
   let s ← saveState
@@ -453,9 +502,9 @@ end WP.Exec
 namespace Data
 
 /-- `simp` procedure reading a register after `Data.set` and `Data.write`. Register names that
-evaluate to literals are compared by evaluation; others by hypotheses `j ≠ i`, `j ∉ Set.range f`
-and `Function.Injective f`, or by the discharger on their values (`WP.Exec.regNe?`). It is a
-pre-procedure (`↓`), so that the data is not simplified first. -/
+evaluate to literals are compared by evaluation; others by hypotheses `j ≠ i`, `j ∉ Set.range f`,
+`Function.Injective f` and instances of `∀ xs, a ≠ b`, or by the discharger on their values
+(`WP.Exec.regNe?`). It is a pre-procedure (`↓`), so that the data is not simplified first. -/
 simproc ↓ [wram_simps] reduceRegs (Data.regs _ _) := WP.Exec.reduceRegsStep
 
 /-- `simp` procedure reading memory after `Data.set` and `Data.write`, deciding whether two
@@ -472,6 +521,14 @@ attribute [wram_simps] Data.set_regs_self Data.set_regs_of_ne Data.set_mem Data.
   BinOp.eval BinOp.evalExact fits_zero Nat.add_zero Nat.zero_add Nat.add_sub_cancel
   Nat.add_sub_cancel_left Nat.sub_zero Nat.sub_self Nat.lt_irrefl Nat.not_lt_zero Nat.zero_lt_succ
   Nat.add_one_ne_zero not_true_eq_false not_false_eq_true and_self and_true true_and
+
+/-- `simp` procedure evaluating an operation `B.interp w f vals` of a basis given by a definition,
+such as `Basis.additive`, when it unfolds to a value `some v` (`WP.alu`). It is a pre-procedure
+(`↓`), so that it sees the basis before simplification unfolds it. -/
+dsimproc ↓ [wram_simps] Basis.reduceInterp (Basis.interp _ _ _ _) := WP.Exec.reduceInterpStep
+
+/- The arguments `![i, j]` of a binary operation, for `WP.alu`. -/
+attribute [wram_simps] Matrix.cons_val_zero Matrix.cons_val_one
 
 namespace WP.Exec
 
@@ -571,6 +628,9 @@ meta def opRule? (o : Expr) : Option Name :=
   | some ``Op.bin => some ``WP.bin
   | some ``Op.width => some ``WP.width
   | some ``Op.exactWidth => some ``WP.exactWidth
+  -- `Op.addAdditive` is defined in `WordRAM.Allocation`, which this module does not import, so its
+  -- name is not resolved here; `ComplexityTests/WordRAMSymbolicExec.lean` runs it.
+  | some ``Op.alu | some `Cslib.WordRAM.Op.addAdditive => some ``WP.alu
   | some ``Op.exactBin =>
     match (o.getArg! 1).constName? with
     | some ``BinOp.sub => some ``WP.exactSub
