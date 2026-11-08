@@ -111,28 +111,16 @@ theorem norm_inner_run_le {f : BooleanFunction N} {ε : ℝ}
     (S : Finset (Fin N × Bool × W)) (h : ∀ x, |measureProb (run U ψ₀ x T) S - bitVal ℝ (f x)| ≤ ε)
     (hε : 2 * ε ≤ 1) {x y : Fin N → Bool} (hxy : f x ≠ f y) :
     ‖inner ℂ (run U ψ₀ x T) (run U ψ₀ y T)‖ ≤ 2 * √(ε * (1 - ε)) := by
-  have hov := norm_inner_sq_add_sq_measureProb_sub_le_one (norm_run U ψ₀ x T ▸ hψ₀)
-    (norm_run U ψ₀ y T ▸ hψ₀) S
+  have hx := norm_run U ψ₀ x T ▸ hψ₀
+  have hy := norm_run U ψ₀ y T ▸ hψ₀
   obtain ⟨hx₁, hx₂⟩ := abs_le.1 (h x)
   obtain ⟨hy₁, hy₂⟩ := abs_le.1 (h y)
-  have hε0 : 0 ≤ ε := (abs_nonneg _).trans (h x)
-  -- the acceptance probabilities differ by at least `1 - 2ε`
-  have hgap : (1 - 2 * ε) ^ 2 ≤
-      (measureProb (run U ψ₀ x T) S - measureProb (run U ψ₀ y T) S) ^ 2 := by
-    rw [← sq_abs (measureProb (run U ψ₀ x T) S - measureProb (run U ψ₀ y T) S)]
-    refine pow_le_pow_left₀ (by linarith) ?_ 2
-    cases hfx : f x <;> cases hfy : f y <;> simp only [hfx, hfy, ne_eq, not_true_eq_false] at hxy
-    · simp only [hfx, hfy, bitVal_false, bitVal_true, sub_zero] at hx₁ hx₂ hy₁ hy₂
-      rw [abs_sub_comm]
-      exact (by linarith : 1 - 2 * ε ≤ _).trans (le_abs_self _)
-    · simp only [hfx, hfy, bitVal_false, bitVal_true, sub_zero] at hx₁ hx₂ hy₁ hy₂
-      exact (by linarith : 1 - 2 * ε ≤ _).trans (le_abs_self _)
-  have hc : (2 * √(ε * (1 - ε))) ^ 2 = 4 * (ε * (1 - ε)) := by
-    rw [mul_pow, Real.sq_sqrt (mul_nonneg hε0 (by linarith))]
-    norm_num
-  refine (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 ?_
-  rw [hc]
-  nlinarith
+  cases hfx : f x <;> cases hfy : f y <;> simp only [hfx, hfy, ne_eq, not_true_eq_false] at hxy
+  · simp only [hfx, hfy, bitVal_false, bitVal_true, sub_zero] at hx₂ hy₁
+    rw [← norm_inner_symm]
+    exact norm_inner_le_two_mul_sqrt_of_measureProb hy hx (by linarith) hx₂ hε
+  · simp only [hfx, hfy, bitVal_false, bitVal_true, sub_zero] at hx₁ hy₂
+    exact norm_inner_le_two_mul_sqrt_of_measureProb hx hy (by linarith) hy₂ hε
 
 section Progress
 
