@@ -873,6 +873,12 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Parameterized:** strongly uniform variants (computable `f`), further explicit polynomial
   kernels, the W and A hierarchies, and parameterized lower bounds; connect these to
   [structural graph algorithms](#structural-graph-algorithms) and their decomposition costs.
+- **Crown decompositions** ([#3378](https://github.com/cslib-community/complexitylib/issues/3378)):
+  crowns, the crown reduction rule, the crown lemma and the combinatorial `3k`-vertex (and `2k`)
+  kernel for vertex cover on `SimpleGraph`. Remaining: a polynomial-time crown finder (maximum
+  matching or Kőnig cover in the machine model) and the resulting `IsKernelization` of the encoded
+  `VertexCover` with `O(k)` vertices, the LP-based `2k` kernel by Nemhauser–Trotter, and the
+  expansion lemma (`q`-expansions) with its kernels.
 - **Color coding** ([#2870](https://github.com/cslib-community/complexitylib/issues/2870)):
   colorful k-Path is in `FPT` by the dynamic programming over color sets. Remaining: random
   colorings (a fixed `k`-set is colorful with probability `K.descFactorial k / K ^ k ≥ e ^ (-k)`)
