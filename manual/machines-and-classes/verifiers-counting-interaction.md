@@ -85,6 +85,22 @@ when both counts are at most one, `replayPathCount_le_one` preserves unambiguity
 [counting](../../Complexity/Computability/Complexity/Classes/SharpP/Lowness.lean)
 lowness proofs share this API while retaining their different final sums.
 
+For quantifier-alternation simulations of oracle programs, import
+[`Classes.PH.OracleNP`](../../Complexity/Computability/Complexity/Classes/PH/OracleNP.lean).
+`Turing.MultiTapePTM.eq_oracleReplies_iff` characterizes the canonical transcript by its reply
+equations. `oracleTranscriptYes` and `oracleTranscriptNo` split those equations by bit: the transcripts whose
+`true` bits answer queries in `A` form an `NP` problem when `A ∈ NP`, and the transcripts whose
+`false` query bits answer queries outside `A` form a `coNP` problem. Guessing the transcript and
+projecting with `mem_SigmaP_of_exists` (`Classes/PH/Collapse.lean`) gives
+`PWithOracle_subset_SigmaP_two_inter_PiP_two`, that is `P^NP ⊆ Σ₂ ∩ Π₂`, and so
+`PNPLog_subset_PH`. With `PH_subset_PNPLog_of_sparse`, `PH_eq_PNPLog_of_sparse` in
+[`Classes.Sparse.Kadin`](../../Complexity/Computability/Complexity/Classes/Sparse/Kadin.lean) is
+Kadin's `PH = P^{NP[O(log n)]}` for a sparse Turing-complete `S ∈ NP`. Kadin's stronger hypothesis
+`coNP ⊆ NP^S` and Hemachandra's `P^{NP[O(log n)]} = P^NP_tt` are not formalized. The
+[checked client](../../ComplexityTests/PHOracleNP.lean) certifies the empty transcript, rejects an
+uncertified `true` reply for the empty oracle, and places an `NP` problem and its complement in
+`Σ₂ ∩ Π₂`.
+
 ## MA and AM
 
 The [Arthur–Merlin definitions](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/ArthurMerlin.lean#L98) are fixed polynomial-length classical verifier games. In MA the proof precedes the random seed: a yes instance has one proof accepted on at least two thirds of seeds, while every proof for a no instance is accepted on at most one third. In AM the random challenge precedes the proof: acceptance counts the seeds for which some reply makes the verifier accept. The existential reply may therefore depend on the challenge.
