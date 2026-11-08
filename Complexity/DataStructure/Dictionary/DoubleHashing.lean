@@ -2659,11 +2659,7 @@ theorem sum_probeCount_oddStride_doubleTab_le
   let c := 2 * max c_exp 1
   let b := (1 + Nat.clog 2 (max n_max 4)) / 2
   have hc1 : 1 ≤ c := by omega
-  have hM : 1 ≤ M := by
-    by_contra h
-    have : M = 0 := by omega
-    subst this
-    omega
+  have hM : 1 ≤ M := by grind
   have hclog_le : Nat.clog 2 (max n_max 4) ≤ 2 * b := by omega
   have hmax_le_2b : max n_max 4 ≤ 2 ^ (2 * b) :=
     (Nat.le_pow_clog (by decide) (max n_max 4)).trans
@@ -2689,9 +2685,7 @@ theorem sum_probeCount_oddStride_doubleTab_le
   have hb_min_def : doubleTabMinB c_exp = 4 * (24 * c + 8) ^ 2 := doubleTabMinB_eq c_exp
   have hb_8c : 8 * c ≤ b := by nlinarith
   have hb_64 : 64 ≤ b := by nlinarith
-  have hcut_le : maxProbeCutoff n_max ≤ 2 * b + 4 := by
-    unfold maxProbeCutoff
-    omega
+  have hcut_le : maxProbeCutoff n_max ≤ 2 * b + 4 := by grind [maxProbeCutoff]
   have h2cut_sq : 2 * maxProbeCutoff n_max + 1 ≤ b ^ 2 := by nlinarith
   have hck_cube : c * (2 * maxProbeCutoff n_max + 1) ≤ b ^ 3 := by
     calc c * (2 * maxProbeCutoff n_max + 1)
