@@ -39,7 +39,8 @@ formalized.
 ## Main definitions
 
 * `Cslib.PCP.QuantumStrategy`: a quantum strategy in the tensor-product model.
-* `Cslib.PCP.QuantumStrategy.answers`: the distribution of the answers on given questions.
+* `Cslib.PCP.QuantumStrategy.answers`, `Cslib.PCP.QuantumStrategy.prob`: the distribution of the
+  answers on given questions.
 * `Cslib.PCP.QuantumStrategy.ofDeterministic`: a deterministic strategy as a quantum strategy.
 * `Cslib.PCP.QuantumStrategy.reindex`: relabelling the bases of the two systems.
 * `Cslib.PCP.TwoProverGame.quantumWinProb`: the winning probability of a quantum strategy.
@@ -48,8 +49,8 @@ formalized.
 ## Main results
 
 * `Cslib.PCP.TwoProverGame.quantumWinProb_eq_sum`: the winning probability as an explicit sum.
-* `Cslib.PCP.TwoProverGame.quantumWinProb_ofDeterministic`: deterministic strategies win with the
-  same probability as quantum strategies.
+* `Cslib.PCP.TwoProverGame.quantumWinProb_ofDeterministic`: the quantum embedding of a
+  deterministic strategy wins with its classical probability.
 * `Cslib.PCP.TwoProverGame.quantumWinProb_le_quantumValue`,
   `Cslib.PCP.TwoProverGame.quantumValue_le`: `quantumValue` is the least upper bound.
 * `Cslib.PCP.TwoProverGame.value_le_quantumValue`: entanglement does not hurt.
@@ -96,6 +97,26 @@ theorem answers_apply (S : QuantumStrategy X Y A B ι κ) (x : X) (y : Y) (a : A
     S.answers x y (a, b) = ENNReal.ofReal
       (star S.state.ofLp ⬝ᵥ (((S.alice x).effect a ⊗ₖ (S.bob y).effect b) *ᵥ S.state.ofLp)).re :=
   rfl
+
+/-- The probability `⟨ψ|X_x^a ⊗ Y_y^b|ψ⟩` that the players answer `(a, b)` on questions `(x, y)`:
+the outcome probability of the product POVM. -/
+noncomputable def prob (S : QuantumStrategy X Y A B ι κ) (x : X) (y : Y) (a : A) (b : B) : ℝ :=
+  ((S.alice x).kronecker (S.bob y)).prob S.state (a, b)
+
+theorem prob_eq (S : QuantumStrategy X Y A B ι κ) (x : X) (y : Y) (a : A) (b : B) :
+    S.prob x y a b =
+      (star S.state.ofLp ⬝ᵥ (((S.alice x).effect a ⊗ₖ (S.bob y).effect b) *ᵥ S.state.ofLp)).re :=
+  rfl
+
+theorem prob_nonneg (S : QuantumStrategy X Y A B ι κ) (x : X) (y : Y) (a : A) (b : B) :
+    0 ≤ S.prob x y a b :=
+  POVM.prob_nonneg _ _ _
+
+theorem sum_prob (S : QuantumStrategy X Y A B ι κ) (x : X) (y : Y) :
+    ∑ a, ∑ b, S.prob x y a b = 1 := by
+  have h := ((S.alice x).kronecker (S.bob y)).sum_prob S.state
+  rw [S.norm_state, one_pow, Fintype.sum_prod_type] at h
+  exact h
 
 /-- The deterministic strategy `(ha, hb)` as a quantum strategy on one-dimensional systems. -/
 noncomputable def ofDeterministic [DecidableEq A] [DecidableEq B] (ha : X → A) (hb : Y → B) :
@@ -191,7 +212,7 @@ theorem quantumWinProb_reindex {ι' κ' : Type*} [Fintype ι'] [DecidableEq ι']
 
 end WinProb
 
-/-- A deterministic strategy wins with the same probability as a classical or a quantum strategy. -/
+/-- The quantum embedding of a deterministic strategy wins with its classical probability. -/
 theorem quantumWinProb_ofDeterministic [DecidableEq A] [DecidableEq B] (ha : X → A)
     (hb : Y → B) : G.quantumWinProb (QuantumStrategy.ofDeterministic ha hb) = G.winProb ha hb := by
   rw [quantumWinProb, winProb]

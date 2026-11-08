@@ -79,7 +79,7 @@ example (x y : Bool) :
     (QuantumStrategy.ofDeterministic (fun _ : Bool => false) fun _ : Bool => false).correlation
       x y = 1 := by
   rw [QuantumStrategy.correlation_eq]
-  simp [QuantumStrategy.prob, QuantumStrategy.ofDeterministic, POVM.const]
+  simp [QuantumStrategy.prob_eq, QuantumStrategy.ofDeterministic, POVM.const]
 
 /-! ### The EPR strategy -/
 

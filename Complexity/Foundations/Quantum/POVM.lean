@@ -28,7 +28,7 @@ jointly perform the Kronecker product POVM `E_a ⊗ F_b` (`Cslib.Quantum.POVM.kr
 A *`±1` observable* is a Hermitian matrix `O` with `O² = 1`. It is the projective measurement with
 outcome `false` on the `+1` eigenspace and `true` on the `-1` eigenspace, with effects `(1 ± O)/2`
 (`Cslib.Quantum.POVM.ofObservable`), the convention `0 ↦ +1`, `1 ↦ -1` of
-[Cleve, Høyer, Toner, Watrous, §3][CleveHoyerTonerWatrous2004]. Conversely, every two-outcome POVM
+[Cleve, Høyer, Toner, Watrous, §2][CleveHoyerTonerWatrous2004]. Conversely, every two-outcome POVM
 `M` has the observable `E_false - E_true` (`Cslib.Quantum.POVM.observable`), which is a contraction
 even when `M` is not projective (`Cslib.Quantum.POVM.posSemidef_one_sub_observable_mul_self`).
 
@@ -61,7 +61,7 @@ even when `M` is not projective (`Cslib.Quantum.POVM.posSemidef_one_sub_observab
   strategies*][CleveHoyerTonerWatrous2004]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Quantum
 
@@ -107,7 +107,7 @@ section Basic
 variable [Fintype A] [Fintype ι] [DecidableEq ι]
 
 /-- The probability `⟨ψ|E_a|ψ⟩` of the outcome `a` when measuring `ψ` with `M`. -/
-noncomputable def prob (M : POVM A ι) (ψ : EuclideanSpace ℂ ι) (a : A) : ℝ :=
+@[expose] noncomputable def prob (M : POVM A ι) (ψ : EuclideanSpace ℂ ι) (a : A) : ℝ :=
   (star ψ.ofLp ⬝ᵥ (M.effect a *ᵥ ψ.ofLp)).re
 
 theorem ofReal_prob (M : POVM A ι) (ψ : EuclideanSpace ℂ ι) (a : A) :
@@ -125,7 +125,8 @@ theorem sum_prob (M : POVM A ι) (ψ : EuclideanSpace ℂ ι) : ∑ a, M.prob ψ
   rw [← dotProduct_sum, ← sum_mulVec, M.sum_effect, one_mulVec, star_dotProduct_self_eq_norm_sq]
 
 /-- The outcome distribution of measuring the unit state `ψ` with `M`. -/
-noncomputable def measure (M : POVM A ι) (ψ : EuclideanSpace ℂ ι) (hψ : ‖ψ‖ = 1) : PMF A :=
+@[expose] noncomputable def measure (M : POVM A ι) (ψ : EuclideanSpace ℂ ι) (hψ : ‖ψ‖ = 1) :
+    PMF A :=
   PMF.ofFintype (fun a => ENNReal.ofReal (M.prob ψ a)) <| by
     rw [← ENNReal.ofReal_sum_of_nonneg fun a _ => M.prob_nonneg ψ a, sum_prob, hψ, one_pow,
       ENNReal.ofReal_one]
@@ -135,7 +136,7 @@ noncomputable def measure (M : POVM A ι) (ψ : EuclideanSpace ℂ ι) (hψ : �
   rfl
 
 /-- The trivial measurement that always reports the outcome `a`. -/
-noncomputable def const [DecidableEq A] (a : A) : POVM A ι where
+@[expose] noncomputable def const [DecidableEq A] (a : A) : POVM A ι where
   effect a' := if a' = a then 1 else 0
   posSemidef a' := by
     split_ifs
@@ -185,7 +186,7 @@ variable [Fintype A] [Fintype B] [Fintype ι] [DecidableEq ι] [Fintype κ] [Dec
 
 /-- The **product POVM** `E_a ⊗ F_b` on `ℂ^ι ⊗ ℂ^κ`: the first party measures the first factor with
 `M` and the second party measures the second factor with `N`. -/
-noncomputable def kronecker (M : POVM A ι) (N : POVM B κ) : POVM (A × B) (ι × κ) where
+@[expose] noncomputable def kronecker (M : POVM A ι) (N : POVM B κ) : POVM (A × B) (ι × κ) where
   effect ab := M.effect ab.1 ⊗ₖ N.effect ab.2
   posSemidef ab := (M.posSemidef ab.1).kronecker (N.posSemidef ab.2)
   sum_effect := by
@@ -202,7 +203,7 @@ section Reindex
 variable [Fintype A] [Fintype ι] [DecidableEq ι] [Fintype ι'] [DecidableEq ι']
 
 /-- Relabel the basis of the system along `e : ι ≃ ι'`. -/
-noncomputable def reindex (M : POVM A ι) (e : ι ≃ ι') : POVM A ι' where
+@[expose] noncomputable def reindex (M : POVM A ι) (e : ι ≃ ι') : POVM A ι' where
   effect a := (M.effect a).submatrix e.symm e.symm
   posSemidef a := (M.posSemidef a).submatrix _
   sum_effect := by
@@ -217,8 +218,8 @@ variable [Fintype ι] [DecidableEq ι]
 
 /-- The two-outcome projective measurement of a **`±1` observable** `O` (Hermitian, `O² = 1`): the
 effects are `(1 + O)/2` for `false` (eigenvalue `+1`) and `(1 - O)/2` for `true` (eigenvalue `-1`)
-[Cleve, Høyer, Toner, Watrous, §3][CleveHoyerTonerWatrous2004]. -/
-noncomputable def ofObservable (O : Matrix ι ι ℂ) (hO : O.IsHermitian) (hO2 : O * O = 1) :
+[Cleve, Høyer, Toner, Watrous, §2][CleveHoyerTonerWatrous2004]. -/
+@[expose] noncomputable def ofObservable (O : Matrix ι ι ℂ) (hO : O.IsHermitian) (hO2 : O * O = 1) :
     POVM Bool ι where
   effect b := bif b then (2⁻¹ : ℂ) • (1 - O) else (2⁻¹ : ℂ) • (1 + O)
   posSemidef b := by
@@ -237,7 +238,8 @@ noncomputable def ofObservable (O : Matrix ι ι ℂ) (hO : O.IsHermitian) (hO2 
     module
 
 /-- The observable `E_false - E_true` of a two-outcome POVM. -/
-noncomputable def observable (M : POVM Bool ι) : Matrix ι ι ℂ := M.effect false - M.effect true
+@[expose] noncomputable def observable (M : POVM Bool ι) : Matrix ι ι ℂ :=
+  M.effect false - M.effect true
 
 theorem isHermitian_observable (M : POVM Bool ι) : M.observable.IsHermitian :=
   (M.posSemidef false).isHermitian.sub (M.posSemidef true).isHermitian

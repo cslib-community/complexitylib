@@ -41,6 +41,13 @@ which strictly exceeds the classical value `3/4`
 The measurements are arbitrary POVMs, not only projective ones, and the dimensions are arbitrary
 finite types. The model is the finite-dimensional tensor-product model with a pure shared state.
 
+Mathlib's `tsirelson_inequality` (`Mathlib.Algebra.Star.CHSH`) is the operator form of the bound,
+`A₀B₀ + A₀B₁ + A₁B₀ - A₁B₁ ≤ 2√2` in an ordered `*`-algebra, proved by a sum of squares. It needs a
+CHSH tuple (`IsCHSHTuple`): self-adjoint *involutions* `A_x² = B_y² = 1`, with each `A_x`
+commuting with each `B_y`. It is not reused here, because the observable `E_false - E_true` of a
+non-projective POVM is only a contraction (`A_x² ≤ 1`), not an involution. The vector argument
+covers every POVM directly.
+
 ## Main definitions
 
 * `Cslib.PCP.QuantumStrategy.correlation`: the correlation `⟨ψ|A_x ⊗ B_y|ψ⟩` of a strategy with
@@ -81,17 +88,12 @@ where `A_x` and `B_y` are the observables `E_false - E_true` of the two measurem
 noncomputable def correlation (S : QuantumStrategy X Y Bool Bool ι κ) (x : X) (y : Y) : ℝ :=
   (star S.state.ofLp ⬝ᵥ (((S.alice x).observable ⊗ₖ (S.bob y).observable) *ᵥ S.state.ofLp)).re
 
-/-- The probability that a strategy with binary answers answers `(a, b)` on questions `(x, y)`. -/
-noncomputable def prob (S : QuantumStrategy X Y Bool Bool ι κ) (x : X) (y : Y) (a b : Bool) :
-    ℝ :=
-  (star S.state.ofLp ⬝ᵥ (((S.alice x).effect a ⊗ₖ (S.bob y).effect b) *ᵥ S.state.ofLp)).re
-
-private theorem sub_kronecker' {l m n p : Type*} (A₁ A₂ : Matrix l m ℂ) (B : Matrix n p ℂ) :
+private theorem sub_kronecker {l m n p : Type*} (A₁ A₂ : Matrix l m ℂ) (B : Matrix n p ℂ) :
     (A₁ - A₂) ⊗ₖ B = A₁ ⊗ₖ B - A₂ ⊗ₖ B := by
   ext ⟨i, k⟩ ⟨j, l⟩
   exact sub_mul _ _ _
 
-private theorem kronecker_sub' {l m n p : Type*} (A : Matrix l m ℂ) (B₁ B₂ : Matrix n p ℂ) :
+private theorem kronecker_sub {l m n p : Type*} (A : Matrix l m ℂ) (B₁ B₂ : Matrix n p ℂ) :
     A ⊗ₖ (B₁ - B₂) = A ⊗ₖ B₁ - A ⊗ₖ B₂ := by
   ext ⟨i, k⟩ ⟨j, l⟩
   exact mul_sub _ _ _
@@ -100,19 +102,9 @@ private theorem kronecker_sub' {l m n p : Type*} (A : Matrix l m ℂ) (B₁ B₂
 theorem correlation_eq (S : QuantumStrategy X Y Bool Bool ι κ) (x : X) (y : Y) :
     S.correlation x y = S.prob x y false false + S.prob x y true true - S.prob x y false true -
       S.prob x y true false := by
-  simp only [correlation, prob, POVM.observable, sub_kronecker', kronecker_sub', sub_mulVec,
+  simp only [correlation, prob_eq, POVM.observable, sub_kronecker, kronecker_sub, sub_mulVec,
     dotProduct_sub, Complex.sub_re]
   ring
-
-theorem sum_prob (S : QuantumStrategy X Y Bool Bool ι κ) (x : X) (y : Y) :
-    S.prob x y false false + S.prob x y true true + S.prob x y false true +
-      S.prob x y true false = 1 := by
-  have h := ((S.alice x).kronecker (S.bob y)).sum_prob S.state
-  rw [S.norm_state, one_pow, Fintype.sum_prod_type, Fintype.sum_bool, Fintype.sum_bool,
-    Fintype.sum_bool] at h
-  simp only [POVM.prob, POVM.kronecker] at h
-  simp only [prob]
-  linarith
 
 /-- The correlation as an inner product `Re ⟨(A_x ⊗ 1)ψ, (1 ⊗ B_y)ψ⟩`. -/
 private theorem correlation_eq_re_inner (S : QuantumStrategy X Y Bool Bool ι κ) (x : X) (y : Y) :
@@ -136,7 +128,7 @@ private theorem norm_alice_le (S : QuantumStrategy X Y Bool Bool ι κ) (x : X) 
         EuclideanSpace ℂ (ι × κ))‖ ≤ 1 := by
   refine (norm_toLp_mulVec_le_of_posSemidef ?_ S.state).trans_eq S.norm_state
   rw [conjTranspose_kronecker, (S.alice x).isHermitian_observable.eq, conjTranspose_one,
-    ← mul_kronecker_mul, mul_one, ← one_kronecker_one, ← sub_kronecker']
+    ← mul_kronecker_mul, mul_one, ← one_kronecker_one, ← sub_kronecker]
   exact (S.alice x).posSemidef_one_sub_observable_mul_self.kronecker PosSemidef.one
 
 private theorem norm_bob_le (S : QuantumStrategy X Y Bool Bool ι κ) (y : Y) :
@@ -144,7 +136,7 @@ private theorem norm_bob_le (S : QuantumStrategy X Y Bool Bool ι κ) (y : Y) :
         EuclideanSpace ℂ (ι × κ))‖ ≤ 1 := by
   refine (norm_toLp_mulVec_le_of_posSemidef ?_ S.state).trans_eq S.norm_state
   rw [conjTranspose_kronecker, (S.bob y).isHermitian_observable.eq, conjTranspose_one,
-    ← mul_kronecker_mul, mul_one, ← one_kronecker_one, ← kronecker_sub']
+    ← mul_kronecker_mul, mul_one, ← one_kronecker_one, ← kronecker_sub]
   exact PosSemidef.one.kronecker (S.bob y).posSemidef_one_sub_observable_mul_self
 
 end QuantumStrategy
@@ -209,7 +201,8 @@ theorem quantumWinProb_chsh {ι κ : Type*} [Fintype ι] [DecidableEq ι] [Finty
   have h6 := S.sum_prob false true
   have h7 := S.sum_prob true false
   have h8 := S.sum_prob true true
-  simp only [QuantumStrategy.prob] at h1 h2 h3 h4 h5 h6 h7 h8
+  simp only [Fintype.sum_bool] at h5 h6 h7 h8
+  simp only [QuantumStrategy.prob_eq] at h1 h2 h3 h4 h5 h6 h7 h8
   linarith
 
 theorem cos_sq_pi_div_eight : Real.cos (π / 8) ^ 2 = 1 / 2 + √2 / 4 := by
