@@ -25,8 +25,9 @@ These kernel-checked examples (using no `native_decide`) exercise
    holds with equality.
 2. **The triangle inequality is needed.** With the terminals `10` apart and still at distance `1`
    from the centre, the tree on the terminals costs `20 > 2 · 3`.
-3. **Distinct terminals are needed.** With constant cost `5` and the terminal list `[1, 1]`, the
-   heuristic pays `5` to join the two copies, while the optimum is `0`.
+3. **Distinct terminals are needed when the diagonal is nonzero.** With constant cost `5`, so that
+   `δ 1 1 = 5`, and the terminal list `[1, 1]`, the heuristic pays `5` to join the two copies,
+   while the optimum is `0`.
 4. Edge cases: no terminals and one terminal give the empty tree.
 5. **Graphs.** On the star graph `K_{1,3}` with unit weights, every Steiner subgraph for the leaves
    contains all three edges, so the optimum is `3`. For every shortest-walk oracle the heuristic
@@ -221,7 +222,7 @@ theorem starEdges_subset {F : Finset (Sym2 (Fin 4))}
   · exact mem_of_isSteinerSubgraph_star hF (j := 1) (by decide) (by decide) (by decide)
   · exact mem_of_isSteinerSubgraph_star hF (j := 1) (by decide) (by decide) (by decide)
 
-theorem graphSteinerOpt_star : graphSteinerOpt starGraph unitWeight [1, 2, 3] = 3 := by
+theorem graphSteinerOpt_star : graphSteinerOpt unitWeight starGraph [1, 2, 3] = 3 := by
   refine le_antisymm ((graphSteinerOpt_le isSteinerSubgraph_star).trans_eq (by decide)) ?_
   obtain ⟨F, hF, hc⟩ := exists_isSteinerSubgraph_sum_eq_graphSteinerOpt (w := unitWeight)
     (fun u v => (starGraph_preconnected u v).some) [1, 2, 3]
@@ -268,7 +269,7 @@ theorem isSteinerSubgraph_tri :
     · exact (h02.trans h21).symm
     · exact .refl _
 
-example : graphSteinerOpt (⊤ : SimpleGraph (Fin 3)) triWeight [0, 1] ≤ 2 :=
+example : graphSteinerOpt triWeight (⊤ : SimpleGraph (Fin 3)) [0, 1] ≤ 2 :=
   (graphSteinerOpt_le isSteinerSubgraph_tri).trans_eq (by decide)
 
 /-- Whatever shortest walks it is given, the heuristic does not use the heavy edge: its cost is at

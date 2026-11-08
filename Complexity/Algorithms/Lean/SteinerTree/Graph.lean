@@ -30,14 +30,21 @@ and Berman [KouMarkowskyBerman1981].
 * A solution is a finite edge set `F : Finset (Sym2 V)` of edges of `G` whose spanning subgraph
   `SimpleGraph.fromEdgeSet F` connects every two terminals (`IsSteinerSubgraph`). Its cost is
   `F.sum w`. Weights are nonnegative, so a cheapest such `F` may be taken to be a tree.
-* `graphSteinerOpt G w R` is the least cost of a Steiner subgraph. It is `0` when there is no
+* `graphSteinerOpt w G R` is the least cost of a Steiner subgraph. It is `0` when there is no
   Steiner subgraph. With a shortest-walk oracle there always is one (`isSteinerSubgraph_kmbEdges`).
 * Shortest walks are given by an oracle `P : ∀ u v, G.Walk u v` with no walk cheaper than
-  `P u v` (`IsShortestWalkOracle`). Any shortest-path algorithm can supply it. An oracle exists
-  exactly when `G` is preconnected (`exists_isShortestWalkOracle`), and its costs are the metric
-  completion `metricCompletion w G` (`IsShortestWalkOracle.walkWeight_eq`).
-* `kmbEdges P R` runs `steinerMST` on the costs `walkWeight w (P u v)` and returns the set of edges
-  of the walks `P u v` along the tree edges.
+  `P u v` (`IsShortestWalkOracle`). Any shortest-path algorithm can supply it. Every preconnected
+  graph has an oracle (`exists_isShortestWalkOracle`). Conversely, the walks `P u v` themselves
+  show that `G` is preconnected. The oracle's costs are the metric completion
+  `metricCompletion w G` (`IsShortestWalkOracle.walkWeight_eq`).
+* `kmbEdges w P R` runs `steinerMST` on the costs `walkWeight w (P u v)` and returns the set of
+  edges of the walks `P u v` along the tree edges.
+* The bounds assume duplicate-free terminals (`R.Nodup`), because they are derived from the metric
+  theorems of `Complexity.Algorithms.Lean.SteinerTree.Metric`. There, `Nodup` is needed only for
+  costs with a nonzero diagonal. Oracle costs have a zero diagonal (`walkWeight w (P x x) ≤
+  walkWeight w Walk.nil = 0`), so repeated terminals do not change the weight of the minimum
+  spanning tree. Dropping the hypothesis would need a zero-diagonal variant of the metric theorem,
+  which is not proved here.
 
 ## Source mapping
 
@@ -165,11 +172,11 @@ theorem IsShortestWalkOracle.le_of_adj {P : ∀ u v : V, G.Walk u v}
 
 /-- The optimum graph Steiner cost: the least weight of a Steiner subgraph (`0` if there is
 none). -/
-noncomputable def graphSteinerOpt (G : SimpleGraph V) (w : Sym2 V → ℕ) (R : List V) : ℕ :=
+noncomputable def graphSteinerOpt (w : Sym2 V → ℕ) (G : SimpleGraph V) (R : List V) : ℕ :=
   sInf {c | ∃ F, IsSteinerSubgraph G R F ∧ F.sum w = c}
 
 theorem graphSteinerOpt_le {R : List V} {F : Finset (Sym2 V)} (hF : IsSteinerSubgraph G R F) :
-    graphSteinerOpt G w R ≤ F.sum w :=
+    graphSteinerOpt w G R ≤ F.sum w :=
   Nat.sInf_le ⟨F, hF, rfl⟩
 
 /-! ### Expanding pairs into walks -/
@@ -307,7 +314,7 @@ theorem sum_kmbEdges_le_two_mul {P : ∀ u v : V, G.Walk u v} (hP : IsShortestWa
 omit [DecidableEq V] in
 /-- If `G` has walks between all pairs of vertices, the optimum is attained. -/
 theorem exists_isSteinerSubgraph_sum_eq_graphSteinerOpt (P : ∀ u v : V, G.Walk u v)
-    (R : List V) : ∃ F, IsSteinerSubgraph G R F ∧ F.sum w = graphSteinerOpt G w R := by
+    (R : List V) : ∃ F, IsSteinerSubgraph G R F ∧ F.sum w = graphSteinerOpt w G R := by
   classical
   exact Nat.sInf_mem (s := {c | ∃ F, IsSteinerSubgraph G R F ∧ F.sum w = c})
     ⟨_, _, isSteinerSubgraph_kmbEdges (w := w) P R, rfl⟩
@@ -316,7 +323,7 @@ theorem exists_isSteinerSubgraph_sum_eq_graphSteinerOpt (P : ∀ u v : V, G.Walk
 ([WilliamsonShmoys2011], Exercise 2.5(b)): `cost(kmbEdges) ≤ 2 · OPT`. -/
 theorem sum_kmbEdges_le_two_mul_graphSteinerOpt {P : ∀ u v : V, G.Walk u v}
     (hP : IsShortestWalkOracle w G P) {R : List V} (hR : R.Nodup) :
-    (kmbEdges w P R).sum w ≤ 2 * graphSteinerOpt G w R := by
+    (kmbEdges w P R).sum w ≤ 2 * graphSteinerOpt w G R := by
   obtain ⟨F, hF, hc⟩ := exists_isSteinerSubgraph_sum_eq_graphSteinerOpt (w := w) P R
   rw [← hc]
   exact sum_kmbEdges_le_two_mul hP hR hF

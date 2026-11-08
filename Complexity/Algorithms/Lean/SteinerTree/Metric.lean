@@ -37,7 +37,9 @@ The algorithm `steinerMST δ R` takes a duplicate-free list of terminals `R`. It
 algorithm (`Cslib.Algorithms.Lean.Kruskal.kruskalEdges`) on the complete graph on the indices
 `Fin R.length` with costs `terminalCost δ R i j = δ R[i] R[j]`, and maps the resulting tree back to
 the terminals. This is the minimum spanning tree of the subgraph `G[R]` induced by the terminals in
-the source.
+the source. The bounds need `R.Nodup` because `δ x x` may be positive. With `δ x x = 5`, the
+heuristic pays `5` to join the two copies in `R = [1, 1]`, while `steinerOpt δ [1, 1] = 0` (see
+`ComplexityTests.SteinerTree`).
 
 ## Source mapping
 
