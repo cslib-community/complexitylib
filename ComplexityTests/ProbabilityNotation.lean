@@ -67,6 +67,12 @@ example : Pr[ProbComp.uniform (Fin 2) >>= next] = (Pr[next 0] + Pr[next 1]) / 2 
 example : 0 ≤ Pr[program] ∧ Pr[program] ≤ 1 :=
   ⟨ENNReal.toReal_nonneg, PMF.toReal_apply_le_one _ _⟩
 
+-- The event bound, through the set-event form of the notation.
+example (ν : PMF (Fin 3)) (s : Set (Fin 3)) [DecidablePred (· ∈ s)] :
+    Pr[(fun x => decide (x ∈ s)) <$> ν] ≤ 1 := by
+  rw [PMF.probability_map_decide_mem]
+  exact PMF.toOuterMeasure_toReal_le_one ν s
+
 example : Pr[pure true] = 1 := by
   rw [ProbComp.probability_pure]
   rfl
