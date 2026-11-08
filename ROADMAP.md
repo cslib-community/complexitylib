@@ -1017,11 +1017,7 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   decision problem is NP-complete by the Garey–Johnson–Stockmeyer ten-clause gadget
   (`Problems/MaxTwoSAT`). Remaining: APX-hardness with explicit inapproximability constants,
   and a reduction from MAX 2-SAT to unweighted MAX CUT (the library's `MaxCut` is weighted and
-  reduces from `Partition`). Unit-weight Steiner tree in graphs (Garey and Johnson ND12, locator
-  from secondary sources), by reduction from vertex cover through a root adjacent to every
-  vertex and one terminal per edge adjacent to its endpoints, is a nearby uncovered
-  NP-completeness entry for the Karp audit
-  ([#2904](https://github.com/cslib-community/complexitylib/issues/2904)).
+  reduces from `Partition`).
 - **Unique Games with perfect completeness**
   ([#3363](https://github.com/cslib-community/complexitylib/issues/3363)): label propagation
   decides satisfiable unique games (`Cslib.Complexity.solvedBy_gapUniqueGames_one`), with
@@ -1806,7 +1802,10 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   leaf bound `2 (1 - 1/ℓ)` and their pruning steps; Zelikovsky's `11/6` and Robins–Zelikovsky's
   `1.55` greedy algorithms; the Byrka–Grandoni–Rothvoß–Sanità LP-rounding bounds (`1.694` in
   Williamson–Shmoys Section 12.3, and `ln 4 + ε`); NP-hardness of the decision version (Karp, within
-  [#2904](https://github.com/cslib-community/complexitylib/issues/2904)); and a polynomial-time
+  [#2904](https://github.com/cslib-community/complexitylib/issues/2904)), already with unit
+  weights by reduction from `VertexCover` (Garey and Johnson ND12, locator from secondary sources:
+  a root adjacent to every vertex and one terminal per edge, adjacent to its endpoints); and a
+  polynomial-time
   certificate for the heuristic with an executable shortest-path oracle.
 - **Metric k-center** ([#3281](https://github.com/cslib-community/complexitylib/issues/3281)):
   remaining after Gonzalez's farthest-first 2-approximation, the combinatorial dominating-set

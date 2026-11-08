@@ -45,7 +45,11 @@ formula with a clause of another width becomes a fixed no-instance. Composed wit
 ## Main results
 
 * `Cslib.Complexity.MaxTwoSAT.mem_NP`: `MaxTwoSAT ∈ NP`.
-* `Cslib.Complexity.MaxTwoSAT.countP_gadget`: the satisfied clauses of one gadget.
+* `Cslib.Complexity.MaxTwoSAT.countP_gadget`: the satisfied clauses of one gadget, counted by
+  `MaxTwoSAT.gadgetScore`.
+* `Cslib.Complexity.MaxTwoSAT.gadgetScore_le`, `Cslib.Complexity.MaxTwoSAT.gadgetScore_majority`,
+  `Cslib.Complexity.MaxTwoSAT.gadgetScore_false_le`: at most seven, seven when the clause holds and
+  the fresh variable is the majority, at most six when the clause fails.
 * `Cslib.Complexity.mem_MaxTwoSAT_toMaxTwoSAT_iff`: correctness of the reduction.
 * `Cslib.Complexity.polyTimeReducible_ExactThreeSAT_MaxTwoSAT`,
   `Cslib.Complexity.polyTimeReducible_ThreeSAT_MaxTwoSAT`: `ExactThreeSAT` and `ThreeSAT` reduce
@@ -82,7 +86,7 @@ theorem mem_MaxTwoSAT_iff {φ : CNF ℕ} {K : ℕ} :
 namespace MaxTwoSAT
 
 /-- Assignments that agree on the variables of `φ` satisfy the same number of its clauses. -/
-theorem countP_eval_congr {σ τ : ℕ → Bool} {φ : CNF ℕ} (h : ∀ v ∈ φ.vars, σ v = τ v) :
+private theorem countP_eval_congr {σ τ : ℕ → Bool} {φ : CNF ℕ} (h : ∀ v ∈ φ.vars, σ v = τ v) :
     φ.countP (Clause.eval σ) = φ.countP (Clause.eval τ) := by
   refine List.countP_congr fun c hc => ?_
   have hc' : CNF.eval σ [c] = CNF.eval τ [c] := CNF.eval_congr fun v hv => by
@@ -172,18 +176,21 @@ theorem countP_gadget (σ : ℕ → Bool) (a b c : Literal ℕ) (w : ℕ) :
 theorem gadgetScore_le (x y z q : Bool) : gadgetScore x y z q ≤ 7 := by
   cases x <;> cases y <;> cases z <;> cases q <;> decide
 
+/-- The majority of three truth values. -/
+def majority (x y z : Bool) : Bool := x && y || x && z || y && z
+
 /-- If the clause holds, setting the variable to the majority of its literals satisfies seven
 clauses of the gadget. -/
 theorem gadgetScore_majority {x y z : Bool} (h : (x || y || z) = true) :
-    gadgetScore x y z (x && y || x && z || y && z) = 7 := by
-  cases x <;> cases y <;> cases z <;> simp_all [gadgetScore]
+    gadgetScore x y z (majority x y z) = 7 := by
+  cases x <;> cases y <;> cases z <;> simp_all [gadgetScore, majority]
 
 /-- If the clause fails, the gadget has at most six satisfied clauses. -/
 theorem gadgetScore_false_le (q : Bool) : gadgetScore false false false q ≤ 6 := by
   cases q <;> decide
 
 /-- Every clause of a gadget has at most two literals. -/
-theorem length_le_of_mem_gadget {a b c : Literal ℕ} {w : ℕ} {d : Clause ℕ}
+private theorem length_le_of_mem_gadget {a b c : Literal ℕ} {w : ℕ} {d : Clause ℕ}
     (hd : d ∈ gadget a b c w) : d.length ≤ 2 := by
   simp only [gadget, List.mem_cons, List.not_mem_nil, or_false] at hd
   rcases hd with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> simp
@@ -212,13 +219,9 @@ def toMaxTwoSAT (φ : CNF ℕ) : CNF ℕ × ℕ :=
     (φ.zipIdx.flatMap fun c => clauseGadget c.1 c.2, 7 * φ.length)
   else ([[]], 1)
 
-/-- The value of a doubled literal under `σ` is the value of the literal under `σ ∘ (2 * ·)`. -/
-theorem MaxTwoSAT.eval_doubleLiteral (σ : ℕ → Bool) (l : Literal ℕ) :
-    Literal.eval σ (doubleLiteral l) = Literal.eval (fun v => σ (2 * v)) l := rfl
-
 /-- The satisfied clauses of the reduced formula are the sum of the satisfied clauses of the
 gadgets. -/
-theorem MaxTwoSAT.countP_flatMap_clauseGadget (σ : ℕ → Bool) (φ : CNF ℕ) :
+private theorem MaxTwoSAT.countP_flatMap_clauseGadget (σ : ℕ → Bool) (φ : CNF ℕ) :
     (φ.zipIdx.flatMap fun c => clauseGadget c.1 c.2).countP (Clause.eval σ) =
       (φ.zipIdx.map fun c => (clauseGadget c.1 c.2).countP (Clause.eval σ)).sum := by
   rw [List.countP_flatMap]
@@ -226,7 +229,7 @@ theorem MaxTwoSAT.countP_flatMap_clauseGadget (σ : ℕ → Bool) (φ : CNF ℕ)
 
 /-- On a clause of three literals, the gadget score under `σ` is that of the three literal values
 under any `τ` with `τ v = σ (2 v)`. -/
-theorem MaxTwoSAT.countP_clauseGadget (σ τ : ℕ → Bool) (hτ : ∀ v, τ v = σ (2 * v))
+private theorem MaxTwoSAT.countP_clauseGadget (σ τ : ℕ → Bool) (hτ : ∀ v, τ v = σ (2 * v))
     (a b c : Literal ℕ) (i : ℕ) :
     (clauseGadget [a, b, c] i).countP (Clause.eval σ) =
       gadgetScore (Literal.eval τ a) (Literal.eval τ b) (Literal.eval τ c) (σ (2 * i + 1)) := by
@@ -234,9 +237,6 @@ theorem MaxTwoSAT.countP_clauseGadget (σ τ : ℕ → Bool) (hτ : ∀ v, τ v 
   subst hτ'
   rw [clauseGadget, countP_gadget]
   rfl
-
-/-- The majority of three truth values. -/
-def MaxTwoSAT.majority (x y z : Bool) : Bool := x && y || x && z || y && z
 
 /-- A formula is in `ExactThreeSAT` exactly when its image under `toMaxTwoSAT` is in
 `MaxTwoSAT`. -/
@@ -292,7 +292,7 @@ theorem mem_MaxTwoSAT_toMaxTwoSAT_iff (φ : CNF ℕ) :
         have hodd : ¬(2 * j + 1) % 2 = 0 := by omega
         have hdiv : (2 * j + 1) / 2 = j := by omega
         simp only [hodd, hdiv, ↓reduceIte, List.getD_eq_getElem?_getD, hget, Option.getD_some,
-          List.headD_cons, List.tail_cons, majority]
+          List.headD_cons, List.tail_cons]
         simp only [Clause.eval_cons, Clause.eval_nil, Bool.or_false] at hc
         exact gadgetScore_majority (by simpa [Bool.or_assoc] using hc)
   · simp only [toMaxTwoSAT, hall, Bool.false_eq_true, ↓reduceIte]

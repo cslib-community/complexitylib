@@ -269,9 +269,12 @@ Here is the tree, with the reduction for each edge and the completeness theorem 
 * 3SAT reduces to maximum 2-satisfiability ({name}`polyTimeReducible_ThreeSAT_MaxTwoSAT`,
   {name}`MaxTwoSAT_npComplete`): given clauses of at most two literals and a binary target `K`,
   can some assignment satisfy `K` of them? Each clause of three literals becomes the ten-clause
-  gadget of Garey, Johnson and Stockmeyer ({name}`MaxTwoSAT.gadget`) with a fresh variable. An
-  assignment satisfies at most seven of its clauses, and exactly seven for the best value of the
-  fresh variable when the source clause holds ({name}`MaxTwoSAT.countP_gadget`). Short clauses
+  gadget of Garey, Johnson and Stockmeyer ({name}`MaxTwoSAT.gadget`) with a fresh variable, whose
+  satisfied clauses depend only on four truth values ({name}`MaxTwoSAT.countP_gadget`). An
+  assignment satisfies at most seven of them ({name}`MaxTwoSAT.gadgetScore_le`), seven when the
+  source clause holds and the fresh variable is the majority of its literals
+  ({name}`MaxTwoSAT.gadgetScore_majority`), and at most six when it fails
+  ({name}`MaxTwoSAT.gadgetScore_false_le`). Short clauses
   are first padded by repetition through {name}`toExactThreeSAT`. Plain 2-satisfiability, by
   contrast, is in `NL` ({name}`TwoSAT.mem_NL`).
 * 3SAT reduces to {name}`ThreeSATThree` via {name}`toThreeSATThree`
