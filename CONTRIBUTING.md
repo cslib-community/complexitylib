@@ -265,8 +265,9 @@ ROADMAP lists open directions only; status and progress live on issues and PRs, 
 edit ROADMAP unless it opens or closes a direction. Write a new issue or PR link in ROADMAP inline,
 as `[#N](https://github.com/cslib-community/complexitylib/issues/N)`, rather than as a
 `[#N]: …` reference definition appended to the end of the file: such appended lines conflict
-between PRs in the merge queue, and `scripts/check_hygiene.py` rejects new ones. UPSTREAM records
-coordination and exceptional integration decisions, while source markers record module status.
+between PRs in the merge queue, and `scripts/check_hygiene.py` rejects new ones.
+[Upstreaming](#upstreaming) lists live coordination threads, while source markers record module
+status and module docstrings record provenance.
 Batch measurements and validation/review evidence belong in commit or PR descriptions.
 Link to these sources instead of repeating them in new guides. Add a separate document only when
 it provides useful explanation that does not already have a suitable home.
@@ -383,3 +384,68 @@ and head SHA in the module's `-- upstream:` marker.
 Coordinate cross-cutting abstractions with CSLib before proposing them upstream. Follow
 [AGENTS.md](AGENTS.md#staying-current-with-upstream) for pin updates, synchronization checks,
 and removal of superseded local copies.
+
+Upstream status is recorded in source. Each module's `-- upstream:` marker gives its status, PR
+number, copied revision and, when it is not the mirrored CSLib path, its destination; markers can
+also introduce copied blocks. `-- vendored:` comments record local adaptations of copies, and
+module docstrings and [NOTICE](NOTICE) record provenance and credit. `lakefile.toml`,
+`lake-manifest.json` and `lean-toolchain` pin versions. `python3 scripts/upstream_sync.py --offline`
+lists copies; without `--offline` it compares recorded revisions and the base pin with upstream
+(head revisions only, not source equality).
+
+### Coordination threads
+
+These are pointers to upstream discussions that affect local work, not a record of live PR status;
+check the thread before starting or submitting overlapping work. Add or remove a line when a thread
+opens or closes, and keep details in the linked thread or the module docstring.
+
+* **Machine calculus (Christian Reitwiessner).** The calculus copies
+  [`crei/tidy-universal`](https://github.com/crei/cslib/tree/crei/tidy-universal),
+  [#1111](https://github.com/leanprover/cslib/pull/1111) and
+  [#1138](https://github.com/leanprover/cslib/pull/1138); the branch's `IterateWhile` supersedes
+  [#1112](https://github.com/leanprover/cslib/pull/1112). Shared encodings are coordinated in
+  [#611](https://github.com/leanprover/cslib/issues/611) and
+  [#590](https://github.com/leanprover/cslib/issues/590) (`TapeEncodable`). Markers at
+  `@9cce4cc7` name an unpublished later revision of the branch, so `upstream_sync.py` reports them
+  as moved until it is published.
+* **Complexity classes.** [#767](https://github.com/leanprover/cslib/pull/767) proposes
+  language-indexed `DTIME`/`DSPACE`. Check it before adding space-to-time inclusions or overlapping
+  classes; once it lands, derive the local encoded-instance `DSPACE`, `L`, `DTIME` and `EXP` from
+  it (see `Classes/Space`).
+* **Probability and security games.** Local copies of
+  [#1129](https://github.com/leanprover/cslib/pull/1129),
+  [#1062](https://github.com/leanprover/cslib/pull/1062),
+  [#1069](https://github.com/leanprover/cslib/pull/1069),
+  [#1070](https://github.com/leanprover/cslib/pull/1070) and
+  [#1072](https://github.com/leanprover/cslib/pull/1072). Coordinate `PFunctor.FreeM` with
+  [#1086](https://github.com/leanprover/cslib/pull/1086)–[#1089](https://github.com/leanprover/cslib/pull/1089),
+  the arbitrary-type metric with [#1065](https://github.com/leanprover/cslib/pull/1065), and
+  `Crypto/Primitives/PRG/Game` with [#1071](https://github.com/leanprover/cslib/pull/1071).
+* **Decision trees.** Align `Computability/DecisionTree` with
+  [#925](https://github.com/leanprover/cslib/pull/925), and coordinate its certificate follow-up
+  `D ≤ C₀ C₁`.
+* **Word RAM and algorithm models.** `Computability/WordRAM` adapts Erik Demaine's
+  [lean-trominoes](https://github.com/edemaine/lean-trominoes); coordinate submission and
+  attribution with him. Before submitting WordRAM, GenericRAM or `DataStructure/StateTransition`,
+  coordinate with Shreyas Srinivas's [#685](https://github.com/leanprover/cslib/pull/685) and his
+  Algolean register models, and with the merged [#401](https://github.com/leanprover/cslib/pull/401).
+* **PAC learning.** `PACLearning/Realizable` is an unchanged copy of
+  [#858](https://github.com/leanprover/cslib/pull/858).
+  [#966](https://github.com/leanprover/cslib/pull/966) would make `sampleComplexity` and `vcDim`
+  `ℕ∞`-valued; if it lands, restate the bounds in `FiniteClass`, `VCUpperBound`,
+  `AgnosticFiniteClass` and `GrowthFunction`. Before submission, reconcile names with
+  [`feat/pac-learning-ehkv-headline`](https://github.com/SamuelSchlesinger/cslib/tree/feat/pac-learning-ehkv-headline).
+* **Tree decompositions.** Upstream `SimpleGraph/TreeDecomposition` through Justin Lai's
+  [mathlib4#38334](https://github.com/leanprover-community/mathlib4/pull/38334),
+  [#39939](https://github.com/leanprover-community/mathlib4/pull/39939) and
+  [#39864](https://github.com/leanprover-community/mathlib4/pull/39864), not as a competing
+  candidate; the module docstring records the differences.
+* **Withdrawn submissions.** The redos of
+  [#1099](https://github.com/leanprover/cslib/pull/1099)–[#1101](https://github.com/leanprover/cslib/pull/1101)
+  (`Circuit/Boolean/{PPoly,MachineSimulation,PolynomialTime}`) should answer the review requests
+  for abstract word encodings and textbook sources. The review of
+  [#874](https://github.com/leanprover/cslib/pull/874) (series #869, #871–#875) asked for
+  composition above the configuration level, with `TransformsTapes`-style specifications.
+
+Earlier coordination notes, placement suggestions and the pre-release deprecation list are in
+[`UPSTREAM.md` at its retirement](https://github.com/cslib-community/complexitylib/blob/9886447e2de18946a08dc3377543e532979fdce2/UPSTREAM.md).

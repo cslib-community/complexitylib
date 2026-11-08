@@ -36,6 +36,18 @@ vertex type has treewidth `0`.
 Condition 3 is stated as preconnectedness of the induced subgraph, so a vertex lying in no bag
 would satisfy it vacuously; condition 1 rules that out.
 
+## Relation to open Mathlib pull requests
+
+Justin Lai's open Mathlib pull requests mathlib4#38334, #39939 and #39864 define the same
+structure as `TreeDecomp`, with the same three axioms. Here the index type is a
+universe-polymorphic parameter `ι` rather than `W : Type`, and `width` is `ℕ`-valued on a
+`Fintype` index. `etreewidth` minimizes over `Fin n`-indexed decompositions, so it is `⊤` exactly
+for infinite `V`, whereas #38334 minimizes over all index types, giving the edgeless graph on `ℕ`
+extended treewidth `0`. The two agree for finite `V`. The rooted parent-array form
+(`TreeDecomposition/Rooted`, `SimpleGraph.parentTree`, `IsTree.parent`), the topmost-node clique
+proof, `minDegree_le_treewidth`, `treewidth_le_one_iff` and `treewidth_cycleGraph` are additions
+on top of that work, which upstreaming should follow rather than compete with.
+
 ## Main definitions
 
 * `SimpleGraph.TreeDecomposition G ι`: a tree decomposition of `G` indexed by a tree on `ι`.

@@ -224,7 +224,8 @@ imports remain unchanged.
 Modules follow CSLib's APIs, paths, namespaces, and contribution standards so they can move
 upstream with the import prefix changed from `Complexity.` to `Cslib.`. Acceptance requires
 CSLib review. [ROADMAP.md](ROADMAP.md) records outstanding work;
-[UPSTREAM.md](UPSTREAM.md) records upstream coordination and exceptional integration decisions.
+[CONTRIBUTING.md](CONTRIBUTING.md#upstreaming) describes upstreaming and lists live coordination
+threads; each module's `-- upstream:` marker records its status.
 
 Source headers retain authorship, module docstrings credit mathematical and formalization
 sources, and [references.bib](references.bib) contains the bibliography.

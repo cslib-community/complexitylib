@@ -49,7 +49,7 @@ The package is `complexitylib`; imports start with `Complexity.`. Most declarati
 | `abstracts/catalogue.json` | Headline selection, not the whole API |
 | `results/` | Result and reference inventory beyond the selected abstracts |
 | `ROADMAP.md` | Outstanding directions and incomplete endpoints |
-| `UPSTREAM.md` and source markers | CSLib coordination and local-copy status |
+| `-- upstream:` markers and `CONTRIBUTING.md` (Upstreaming) | Local-copy status and live CSLib/Mathlib coordination |
 
 Import a topic module or tactic module first. `import Complexity` imports the entire library and is usually unnecessary for a small client. The [architecture reference](../design-and-assurance/architecture.md) explains the layers.
 
