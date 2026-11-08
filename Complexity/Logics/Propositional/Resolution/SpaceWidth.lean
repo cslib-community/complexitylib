@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Logics.Propositional.Resolution.Space
+import Complexity.Logics.Propositional.Resolution.ExistentialPebble
 
 /-!
 # Clause space bounds width
@@ -69,16 +70,12 @@ variable {V : Type*} [DecidableEq V] {φ : CNF V} {w : ℕ}
 
 /-! ### Good partial assignments
 
-A partial assignment is a total assignment `σ` read only on a finite set `d` of variables. -/
+A partial assignment is a total assignment `σ` read only on a finite set `d` of variables;
+`Cslib.Logic.PL.CNF.Falsifies σ d c` says that it falsifies `c`. -/
 
 /-- `c` is a line of some proof from `φ` whose lines have width at most `w`. -/
 private def WDerives (φ : CNF V) (w : ℕ) (c : Clause V) : Prop :=
   ∃ ls, φ.IsProof ls ∧ c ∈ ls ∧ ∀ c' ∈ ls, c'.width ≤ w
-
-/-- The assignment `σ`, read on `d`, falsifies `c`: every literal of `c` is on a variable of `d`
-and false under `σ`. -/
-private def Falsifies (σ : V → Bool) (d : Finset V) (c : Clause V) : Prop :=
-  ∀ l ∈ c, l.1 ∈ d ∧ σ l.1 ≠ l.2
 
 /-- The assignment `σ`, read on `d`, satisfies `c`: some literal of `c` is on a variable of `d`
 and true under `σ`. -/
