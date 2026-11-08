@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Probability.Collision
-public import Complexity.Probability.IID
+public import Complexity.Probability.IID.Occurrence
 public import Mathlib.Data.Nat.Choose.Basic
 import Mathlib.Data.Nat.Choose.Cast
 
@@ -28,17 +28,16 @@ of arXiv:1611.03579v1), the basis of their sharp analysis.
 
 The proof inducts on the number of samples, peeling off the first draw (`sum_iid_succ_mul`), and
 tracks the joint moments of the collision count and the occurrence counts of single values
-(`occurrenceCount`). These joint moments are public because the cross-collision count of two
-independent samples is a sum of products of occurrence counts.
+(`occurrenceCount`, both from `Complexity.Probability.IID.Occurrence`). These joint moments are
+public because the cross-collision count of two independent samples is a sum of products of
+occurrence counts.
 
 ## Main definitions
 
 * `Cslib.Probability.PMF.collisionCount`: the number of colliding pairs of sample positions.
-* `Cslib.Probability.PMF.occurrenceCount`: the number of sample positions holding a given value.
 
 ## Main results
 
-* `Cslib.Probability.PMF.sum_iid_succ_mul`: expectations under `k + 1` draws via the first draw.
 * `Cslib.Probability.PMF.sum_iid_mul_collisionCount`: the mean of the collision count.
 * `Cslib.Probability.PMF.sum_iid_mul_collisionCount_sub_sq`: the variance of the collision count.
 * `Cslib.Probability.PMF.sum_iid_mul_occurrenceCount`,
@@ -59,42 +58,11 @@ namespace Cslib.Probability.PMF
 
 open Finset
 
-variable {α : Type*} [Fintype α]
-
-/-- Expectation under `k + 1` independent draws: draw the first, then the rest. -/
-theorem sum_iid_succ_mul (μ : PMF α) (k : ℕ) (f : (Fin (k + 1) → α) → ℝ) :
-    ∑ x, (iid μ (k + 1) x).toReal * f x =
-      ∑ a, (μ a).toReal * ∑ x, (iid μ k x).toReal * f (Fin.cons a x) := by
-  rw [← (Fin.consEquiv fun _ : Fin (k + 1) => α).sum_comp, Fintype.sum_prod_type]
-  refine sum_congr rfl fun a _ => ?_
-  rw [mul_sum]
-  refine sum_congr rfl fun x _ => ?_
-  simp only [Fin.consEquiv_apply, iid_apply, Fin.prod_univ_succ, Fin.cons_zero, Fin.cons_succ,
-    ENNReal.toReal_mul, ENNReal.toReal_prod]
-  ring
-
-variable [DecidableEq α]
+variable {α : Type*} [Fintype α] [DecidableEq α]
 
 /-- The number of colliding pairs `i < j` with `x i = x j` among the samples `x`. -/
 @[expose] def collisionCount {k : ℕ} (x : Fin k → α) : ℕ :=
   #{ij : Fin k × Fin k | ij.1 < ij.2 ∧ x ij.1 = x ij.2}
-
-omit [Fintype α] in
-/-- The number of sample positions `i` with `x i = b`. -/
-def occurrenceCount {k : ℕ} (x : Fin k → α) (b : α) : ℕ := #{i | x i = b}
-
-omit [Fintype α] in
-/-- The occurrence count is a sum of indicators. -/
-theorem occurrenceCount_eq_sum {k : ℕ} (x : Fin k → α) (b : α) :
-    (occurrenceCount x b : ℝ) = ∑ i, if x i = b then 1 else 0 := by
-  simp only [occurrenceCount, Finset.card_filter, Nat.cast_sum, Nat.cast_ite, Nat.cast_one,
-    Nat.cast_zero]
-
-omit [Fintype α] in
-private theorem occurrenceCount_cons {k : ℕ} (a : α) (x : Fin k → α) (b : α) :
-    (occurrenceCount (Fin.cons a x : Fin (k + 1) → α) b : ℝ) =
-      (if a = b then 1 else 0) + occurrenceCount x b := by
-  simp only [occurrenceCount_eq_sum, Fin.sum_univ_succ, Fin.cons_zero, Fin.cons_succ]
 
 omit [Fintype α] in
 private theorem collisionCount_cons {k : ℕ} (a : α) (x : Fin k → α) :
