@@ -9,7 +9,9 @@ module
 
 public import Complexity.Computability.Streaming.Basic
 public import Complexity.Computability.Streaming.Frequency
+public import Complexity.Foundations.Algebra.FiniteMagnitude
 public import Complexity.Foundations.Data.Finset.Median
+public import Complexity.Foundations.Data.Fintype.Grid
 public import Complexity.Probability.KWiseIndependent
 public import Complexity.Probability.UniversalHash
 import Complexity.Probability.KWiseIndependent.CountSketch
@@ -271,7 +273,8 @@ theorem mem_Icc_state_countSketch_snd (hsgn : ∀ y, |sgn y| ≤ 1) (ω : Fin (2
     split_ifs
     · exact hsgn _
     · simp only [abs_zero, zero_le_one]
-  exact abs_le.1 ((abs_sum_map_le hle s).trans (by exact_mod_cast hs : ((s.length : ℕ) : ℤ) ≤ m))
+  exact abs_le.1 ((List.abs_sum_map_le hle s).trans
+    (by exact_mod_cast hs : ((s.length : ℕ) : ℤ) ≤ m))
 
 /-- **The memory of the randomized Count-Sketch** [Chakrabarti2025, Section 5.3.2]: every sketch it
 draws uses at most `b` bits of memory on streams of at most `m` items when
@@ -292,7 +295,7 @@ theorem spaceLE_countSketchRandom [Fintype ι] [Nonempty ι] [Fintype κ] [Nonem
     refine ⟨?_, fun i => Fintype.mem_piFinset.2 fun j =>
       mem_Icc_state_countSketch_snd hsgn ω hs i j⟩
     rw [state_countSketch, mem_singleton]
-  · rw [card_product, card_singleton, one_mul, card_piFinset_Icc, Fintype.card_fin,
+  · rw [card_product, card_singleton, one_mul, Fintype.card_piFinset_Icc, Fintype.card_fin,
       Fintype.card_fin]
     exact hb
 
@@ -315,7 +318,7 @@ theorem exists_injOn_iUnion_reachable_countSketch [Fintype ι] [Fintype κ]
     rw [mem_coe, mem_product, Fintype.mem_piFinset]
     exact ⟨mem_univ _, fun i => Fintype.mem_piFinset.2 fun j =>
       mem_Icc_state_countSketch_snd hsgn ω hs i j⟩
-  · rw [card_product, card_piFinset_Icc, Fintype.card_fin, Fintype.card_fin, card_univ,
+  · rw [card_product, Fintype.card_piFinset_Icc, Fintype.card_fin, Fintype.card_fin, card_univ,
       Fintype.card_fun, Fintype.card_prod, Fintype.card_fin]
     exact hb
 

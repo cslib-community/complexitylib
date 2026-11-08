@@ -15,8 +15,6 @@ public import Mathlib.Data.Finset.Density
 public import Mathlib.Data.Fintype.Card
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Uniform
-import Mathlib.Data.Fintype.Pi
-import Mathlib.Data.Int.Interval
 import Mathlib.Logic.Embedding.Set
 
 /-!
@@ -65,8 +63,6 @@ between problems.
 
 * `Cslib.Streaming.Algorithm.spaceLE_of_subset_finset`,
   `Cslib.Streaming.Algorithm.spaceLE_of_card_le`: counting reachable states bounds the memory.
-* `Cslib.Streaming.abs_sum_map_le`: a sum of at most unit integers is bounded by the stream length.
-* `Cslib.Streaming.card_piFinset_Icc`: the number of states of a grid of bounded integer counters.
 * `Cslib.Streaming.Algorithm.SpaceLE.reduce`, `Cslib.Streaming.Randomized.SpaceLE.map_reduce`,
   `Cslib.Streaming.Randomized.errorProb_map_reduce_le`: reductions keep memory and error.
 * `Cslib.Streaming.Randomized.solves_pure`, `Cslib.Streaming.Randomized.spaceLE_pure`:
@@ -196,28 +192,6 @@ theorem SpaceLE.reduce {α' β' : Type*} {m b : ℕ} (p : List α) (h : A.SpaceL
   omega
 
 end Algorithm
-
-/-! ### Counter bounds -/
-
-/-- A sum of at most unit integers is bounded by the number of terms. -/
-theorem abs_sum_map_le {α : Type*} {f : α → ℤ} (hf : ∀ a, |f a| ≤ 1) (s : List α) :
-    |(s.map f).sum| ≤ s.length := by
-  induction s with
-  | nil => simp
-  | cons a s ih =>
-    rw [List.map_cons, List.sum_cons, List.length_cons, Nat.cast_succ]
-    exact (abs_add_le _ _).trans (by linarith [hf a])
-
-alias _root_.List.abs_sum_map_le := abs_sum_map_le
-
-/-- The number of values of an `ι × κ` grid of integer counters in `[-m, m]`. -/
-theorem card_piFinset_Icc {ι κ : Type*} [Fintype ι] [DecidableEq ι] [Fintype κ] [DecidableEq κ]
-    (m : ℕ) :
-    (Fintype.piFinset fun _ : ι => Fintype.piFinset fun _ : κ =>
-      Finset.Icc (-(m : ℤ)) m).card = (2 * m + 1) ^ (Fintype.card ι * Fintype.card κ) := by
-  have : (↑m + 1 - -(m : ℤ)).toNat = 2 * m + 1 := by omega
-  simp only [Fintype.card_piFinset, Int.card_Icc, this, Finset.prod_const, Finset.card_univ]
-  rw [← pow_mul, mul_comm (Fintype.card κ)]
 
 /-! ### Randomized streaming algorithms -/
 

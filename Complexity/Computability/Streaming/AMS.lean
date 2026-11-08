@@ -9,6 +9,8 @@ module
 
 public import Complexity.Computability.Streaming.Basic
 public import Complexity.Computability.Streaming.Frequency
+public import Complexity.Foundations.Algebra.FiniteMagnitude
+public import Complexity.Foundations.Data.Fintype.Grid
 public import Complexity.Probability.KWiseIndependent
 public import Complexity.Probability.MedianOfMeans
 import Complexity.Foundations.Data.Finset.Expect
@@ -225,7 +227,7 @@ theorem mem_Icc_state_amsSketch_snd (hsgn : ∀ y, |sgn y| ≤ 1) (ω : Fin (2 *
     {m : ℕ} {s : List α} (hs : s.length ≤ m) (i : Fin (2 * r)) (l : Fin k) :
     ((amsSketch h sgn r k ω).state s).2 i l ∈ Icc (-(m : ℤ)) m := by
   rw [state_amsSketch, mem_Icc]
-  exact abs_le.1 ((abs_sum_map_le (fun a => hsgn (h (ω i l) a)) s).trans
+  exact abs_le.1 ((List.abs_sum_map_le (fun a => hsgn (h (ω i l) a)) s).trans
     (by exact_mod_cast hs : ((s.length : ℕ) : ℤ) ≤ m))
 
 /-- **The memory of the randomized AMS sketch** [AlonMatiasSzegedy1999, Theorem 2.2]: every sketch
@@ -246,7 +248,7 @@ theorem spaceLE_ams [Fintype ι] [Nonempty ι] (hsgn : ∀ y, |sgn y| ≤ 1) {m 
     rw [mem_coe, mem_product, Fintype.mem_piFinset]
     refine ⟨?_, fun i => Fintype.mem_piFinset.2 fun l => mem_Icc_state_amsSketch_snd hsgn ω hs i l⟩
     rw [state_amsSketch, mem_singleton]
-  · rw [card_product, card_singleton, one_mul, card_piFinset_Icc, Fintype.card_fin,
+  · rw [card_product, card_singleton, one_mul, Fintype.card_piFinset_Icc, Fintype.card_fin,
       Fintype.card_fin]
     exact hb
 
@@ -268,7 +270,7 @@ theorem exists_injOn_iUnion_reachable_amsSketch [Fintype ι] (hsgn : ∀ y, |sgn
     rw [mem_coe, mem_product, Fintype.mem_piFinset]
     exact ⟨mem_univ _, fun i => Fintype.mem_piFinset.2 fun l =>
       mem_Icc_state_amsSketch_snd hsgn ω hs i l⟩
-  · rw [card_product, card_piFinset_Icc, Fintype.card_fin, Fintype.card_fin, card_univ,
+  · rw [card_product, Fintype.card_piFinset_Icc, Fintype.card_fin, Fintype.card_fin, card_univ,
       Fintype.card_pi, prod_const, card_univ, Fintype.card_fin, Fintype.card_pi, prod_const,
       card_univ, Fintype.card_fin, ← pow_mul, mul_comm k, ← mul_pow]
     exact hb

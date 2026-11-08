@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Streaming.AMS
+public import Complexity.Foundations.Data.Fintype.Grid
 import Complexity.Foundations.Data.Finset.Expect
 import Complexity.Probability.KWiseIndependent.TugOfWar
 import Complexity.Probability.KWiseIndependent.TugOfWarProduct
@@ -418,7 +419,7 @@ private def joinStates (W : Finset (Fin (2 * r) → Fin k → ι)) (m : ℕ) :
 
 private theorem card_joinStates (W : Finset (Fin (2 * r) → Fin k → ι)) (m : ℕ) :
     #(joinStates W m) = #W * ((2 * m + 1) ^ 2) ^ (2 * r * k) := by
-  rw [joinStates, card_map, card_product, card_product, card_piFinset_Icc, Fintype.card_fin,
+  rw [joinStates, card_map, card_product, card_product, Fintype.card_piFinset_Icc, Fintype.card_fin,
     Fintype.card_fin, ← mul_pow, ← sq]
 
 private theorem state_mem_joinStates (hsgn : ∀ y, |sgn y| ≤ 1)

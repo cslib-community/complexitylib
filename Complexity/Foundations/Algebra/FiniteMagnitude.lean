@@ -9,6 +9,7 @@ module
 
 public import Complexity.Init
 public import Mathlib.Algebra.Order.BigOperators.Ring.Finset
+import Mathlib.Tactic.Linarith
 
 /-!
 # Magnitudes of finite sums and products
@@ -17,6 +18,7 @@ public import Mathlib.Algebra.Order.BigOperators.Ring.Finset
 
 * `Finset.abs_sum_mul_le`: bounded signed linear combinations.
 * `Finset.abs_prod_le_one`: products of coefficients bounded by one.
+* `List.abs_sum_map_le`: a sum of at most unit integers is bounded by the list length.
 
 ## References
 
@@ -51,3 +53,16 @@ theorem abs_prod_le_one [CommRing R] [LinearOrder R] [IsStrictOrderedRing R] (s 
 
 
 end Finset
+
+namespace List
+
+/-- A sum of at most unit integers is bounded by the number of terms. -/
+theorem abs_sum_map_le {α : Type*} {f : α → ℤ} (hf : ∀ a, |f a| ≤ 1) (s : List α) :
+    |(s.map f).sum| ≤ s.length := by
+  induction s with
+  | nil => simp
+  | cons a s ih =>
+    rw [List.map_cons, List.sum_cons, List.length_cons, Nat.cast_succ]
+    exact (abs_add_le _ _).trans (by linarith [hf a])
+
+end List

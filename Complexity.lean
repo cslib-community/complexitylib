@@ -4693,6 +4693,7 @@ public import Complexity.Foundations.Data.Finset.Tournament
 public import Complexity.Foundations.Data.Finset.UniqueTail
 public import Complexity.Foundations.Data.Finset.Variance
 public import Complexity.Foundations.Data.Finsupp.OddSupport
+public import Complexity.Foundations.Data.Fintype.Grid
 public import Complexity.Foundations.Data.Fintype.RestrictInjective
 public import Complexity.Foundations.Data.Hamming
 public import Complexity.Foundations.Data.Hamming.Expansion
