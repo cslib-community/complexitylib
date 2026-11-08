@@ -23,6 +23,59 @@ import Mathlib.Data.Set.Finite.List
 
 /-!
 # Uniform diagonalization
+
+Schöning's uniform diagonalization theorem [Schöning][Schoening1982]
+(`Cslib.Complexity.exists_mem_P_ite_notMem`): let `C₁`, `C₂` be recursively presentable classes
+of sets of bit words, both closed under finite variations, and let `A₁ ∉ C₁` and `A₂ ∉ C₂` be
+decidable. Then some `G ∈ P` makes the set `G.ite A₁ A₂`, which agrees with `A₁` on `G` and with
+`A₂` off `G`, belong to neither class. This set is decidable, reduces to the marked union of `A₁`
+and `A₂`, and reduces to `A₂` when `A₁ ∈ P` and `A₂` is neither empty nor everything.
+
+The proof is delayed diagonalization. Stage `k` separates the mixed set from the member of index
+`k / 2` of the first family (even `k`) or the second family (odd `k`). The words of length `n` are
+put on the side of the stage at `n`, and the stage advances at `n + 1` when a word of index below
+`n` separates the two sets, as seen by runs of `n` steps of both machines
+(`Turing.MultiTapeTM.Universal.runBool`). This check takes polynomial time in `n`, so `G ∈ P`.
+Since the sets of each side are infinitely different from the members of their family, every
+stage is reached, and leaving stage `k` needs a separating word.
+
+`P` itself meets the hypotheses: it is closed under finite variations
+(`Cslib.Complexity.closedUnderFiniteVariation_P`), and it is recursively presentable by the
+machines run within polynomial clocks (`Cslib.Complexity.recursivelyPresentable_P`).
+
+## Main definitions
+
+* `Cslib.Complexity.RecursivelyPresentable`: the class of the sets `{a | F (i, a) = true}` for a
+  computable `F`, with the index `i` in unary.
+* `Cslib.Complexity.ClosedUnderFiniteVariation`: closure under finite symmetric differences.
+* `Cslib.Complexity.markedUnion`: `false :: x` for `x ∈ A₁` and `true :: x` for `x ∈ A₂`.
+
+## Main results
+
+* `Cslib.Complexity.exists_mem_P_ite_notMem`: Schöning's uniform diagonalization theorem.
+* `Cslib.Complexity.exists_mem_P_forall_ite_ne`: the effective form, against two computable
+  families of sets, each infinitely different from `A₁` or `A₂`.
+* `Cslib.Complexity.isDecidable_ite`, `Cslib.Complexity.polyTimeReducible_ite_markedUnion`,
+  `Cslib.Complexity.polyTimeReducible_ite_of_mem_P`: the mixed set is decidable and reduces to the
+  marked union, and to `A₂` when `A₁ ∈ P`.
+* `Cslib.Complexity.recursivelyPresentable_P`, `Cslib.Complexity.closedUnderFiniteVariation_P`:
+  `P` meets the hypotheses.
+* `Cslib.Complexity.exists_mem_P_ite_notMem_P`: the theorem with `C₁ = P`.
+
+## Implementation notes
+
+The classes are of sets of bit words (`encBits`), so the theorem is the binary-alphabet case of
+the source statement. Decidable sets and presentations are computed by total native machines
+(`Turing.MultiTapeTM.IsComputable`). The reduction to `A₂` takes a member and a non-member of
+`A₂` in place of the hypothesis that `A₂` is neither empty nor everything.
+
+Ladner's density theorem, the application to the polynomial-time degree of a decidable set
+outside `P`, is not formalized here: it needs a recursive presentation of that degree.
+
+## References
+
+* [U. Schöning, *A uniform approach to obtain diagonal sets in complexity
+  classes*][Schoening1982]
 -/
 
 @[expose] public section
