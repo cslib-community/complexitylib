@@ -195,14 +195,6 @@ theorem nearestPlane_spec (B : Vector (Vector ℤ m) n) (t : Vector ℤ m) :
   rw [hout, sub_sub_cancel]
   exact hbound j j.isLt
 
-theorem mem_span_realRows_of_eq_sum {B : Vector (Vector ℤ m) n} {v : Fin m → ℤ} {e : Fin n → ℤ}
-    (h : v = ∑ i, e i • rows B i) :
-    intToEuclidean v ∈ Submodule.span ℤ (Set.range (realRows B)) := by
-  rw [span_realRows]
-  refine Submodule.mem_map_of_mem ?_
-  rw [h]
-  exact Submodule.sum_mem _ fun i _ => Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, rfl⟩)
-
 /-- The nearest-plane loop satisfies the nearest-plane condition for the rows of `B`, with the
 target and output embedded in `ℝᵐ`. -/
 theorem isNearestPlane_nearestPlane (B : Vector (Vector ℤ m) n) (t : Vector ℤ m) :

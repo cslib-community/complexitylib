@@ -25,22 +25,24 @@ If `b : Fin (n + 1) → E` is `δ`-reduced with `1/4 < δ ≤ 1`, every such `y`
 `∑_{i ≤ n} 2ⁱ < 2ⁿ⁺¹`, so `‖x - y‖ ≤ 2^{d/2} ‖x - v‖` for `d` vectors
 (`Cslib.Algorithms.LatticeReduction.IsNearestPlane.norm_le_sqrt_two_pow_mul`), which is
 Lemma 6 of [Regev2004], Lecture 3: `y` solves the closest vector problem within a factor `2^{d/2}`.
-[Regev2004] attributes the sharper factor `2 (2/√3)ᵈ` to [Babai1986]; it is not formalized here.
+[Regev2004] attributes the factor `2 (2/√3)ᵈ` to [Babai1986]. For a `1`-reduced basis, the
+general bound at `δ = 1` gives `‖x - y‖² ≤ 3 ((4/3)ᵈ - 1) ‖x - v‖² ≤ 4 (4/3)ᵈ⁻¹ ‖x - v‖²`, i.e. that
+factor (with exponent `d - 1`). What is not provided is an executable reduction with `δ` near `1`:
+`Cslib.Algorithms.LatticeReduction.lll` fixes `δ = 3/4`.
 
 The proof is not the inductive one of [Regev2004]. Write `T_j(z) = ⟪b*ⱼ, z⟫² / ‖b*ⱼ‖²`, so that
-`‖z‖² = ‖z - Pz‖² + ∑ⱼ T_j(z)` with `P` the orthogonal projection onto the span of `b`
-(`Cslib.Algorithms.LatticeReduction.norm_sq_eq_norm_sq_sub_add_sum`). The residual `z - Pz` is
-unchanged by lattice translations, so it suffices to compare the sums. If `k` is the largest index
-where the coefficients of `y` and `v` differ, then `T_j(x - y) = T_j(x - v)` for `j > k`,
-`T_k(x - v) ≥ ‖b*ₖ‖² / 4`, and `T_j(x - y) ≤ ‖b*ⱼ‖² / 4 ≤ αᵏ⁻ʲ ‖b*ₖ‖² / 4` for `j ≤ k`.
+`‖z‖² = ‖z - Pz‖² + ∑ⱼ T_j(z)` with `P z = ∑ⱼ (⟪b*ⱼ, z⟫ / ‖b*ⱼ‖²) b*ⱼ` the orthogonal projection
+onto the span of `b`. The residual `z - Pz` is unchanged by lattice translations, so it suffices to
+compare the sums. The projection is a private helper in this explicit Gram–Schmidt form (rather
+than Mathlib's `starProjection`) because the proof works coordinate by coordinate. If `k` is the
+largest index where the coefficients of `y` and `v` differ, then `T_j(x - y) = T_j(x - v)` for
+`j > k`, `T_k(x - v) ≥ ‖b*ₖ‖² / 4`, and `T_j(x - y) ≤ ‖b*ⱼ‖² / 4 ≤ αᵏ⁻ʲ ‖b*ₖ‖² / 4` for `j ≤ k`.
 
 The statements hold in any real inner product space and do not assume that `b` is linearly
 independent.
 
 ## Main definitions
 
-* `Cslib.Algorithms.LatticeReduction.gramSchmidtProj`: the orthogonal projection onto the span of
-  `b`, written in the Gram–Schmidt basis.
 * `Cslib.Algorithms.LatticeReduction.IsNearestPlane`: the output condition of the nearest-plane
   algorithm.
 
@@ -68,10 +70,10 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] {n : ℕ}
 
 /-- The component of `z` along the span of `b`, written in the Gram–Schmidt basis:
 `∑ⱼ (⟪b*ⱼ, z⟫ / ‖b*ⱼ‖²) b*ⱼ`. -/
-noncomputable def gramSchmidtProj (b : Fin n → E) (z : E) : E :=
+private noncomputable def gramSchmidtProj (b : Fin n → E) (z : E) : E :=
   ∑ j, (inner ℝ (gramSchmidt ℝ b j) z / ‖gramSchmidt ℝ b j‖ ^ 2) • gramSchmidt ℝ b j
 
-theorem inner_gramSchmidt_gramSchmidtProj (b : Fin n → E) (z : E) (i : Fin n) :
+private theorem inner_gramSchmidt_gramSchmidtProj (b : Fin n → E) (z : E) (i : Fin n) :
     inner ℝ (gramSchmidt ℝ b i) (gramSchmidtProj b z) = inner ℝ (gramSchmidt ℝ b i) z := by
   rw [gramSchmidtProj, inner_sum, Finset.sum_eq_single i]
   · rw [inner_smul_right, real_inner_self_eq_norm_sq]
@@ -82,13 +84,13 @@ theorem inner_gramSchmidt_gramSchmidtProj (b : Fin n → E) (z : E) (i : Fin n) 
     rw [inner_smul_right, gramSchmidt_orthogonal ℝ b hji.symm, mul_zero]
   · intro h; exact absurd (Finset.mem_univ i) h
 
-theorem inner_gramSchmidtProj_gramSchmidt (b : Fin n → E) (z : E) (i : Fin n) :
+private theorem inner_gramSchmidtProj_gramSchmidt (b : Fin n → E) (z : E) (i : Fin n) :
     inner ℝ (gramSchmidtProj b z) (gramSchmidt ℝ b i) = inner ℝ z (gramSchmidt ℝ b i) := by
   rw [real_inner_comm, inner_gramSchmidt_gramSchmidtProj, real_inner_comm]
 
 /-- Pythagoras for the decomposition `z = (z - Pz) + Pz`:
 `‖z‖² = ‖z - Pz‖² + ∑ⱼ ⟪b*ⱼ, z⟫² / ‖b*ⱼ‖²`. -/
-theorem norm_sq_eq_norm_sq_sub_add_sum (b : Fin n → E) (z : E) :
+private theorem norm_sq_eq_norm_sq_sub_add_sum (b : Fin n → E) (z : E) :
     ‖z‖ ^ 2 = ‖z - gramSchmidtProj b z‖ ^ 2 +
       ∑ j, inner ℝ (gramSchmidt ℝ b j) z ^ 2 / ‖gramSchmidt ℝ b j‖ ^ 2 := by
   have hP : inner ℝ (z - gramSchmidtProj b z) (gramSchmidtProj b z) = 0 := by
@@ -109,7 +111,7 @@ theorem norm_sq_eq_norm_sq_sub_add_sum (b : Fin n → E) (z : E) :
   rw [sq, sq, h, hP2]
 
 /-- The projection fixes the integer span of `b`. -/
-theorem gramSchmidtProj_eq_self {b : Fin n → E} {w : E}
+private theorem gramSchmidtProj_eq_self {b : Fin n → E} {w : E}
     (hw : w ∈ Submodule.span ℤ (Set.range b)) : gramSchmidtProj b w = w := by
   have hw' : w ∈ Submodule.span ℝ (Set.range (gramSchmidt ℝ b)) := by
     rw [span_gramSchmidt ℝ b]
@@ -128,27 +130,13 @@ theorem gramSchmidtProj_eq_self {b : Fin n → E} {w : E}
   · intro h; exact absurd (Finset.mem_univ j) h
 
 /-- Lattice translations do not change the residual `z - Pz`. -/
-theorem sub_gramSchmidtProj_add {b : Fin n → E} (z : E) {w : E}
+private theorem sub_gramSchmidtProj_add {b : Fin n → E} (z : E) {w : E}
     (hw : w ∈ Submodule.span ℤ (Set.range b)) :
     z + w - gramSchmidtProj b (z + w) = z - gramSchmidtProj b z := by
   have hadd : gramSchmidtProj b (z + w) = gramSchmidtProj b z + gramSchmidtProj b w := by
     simp only [gramSchmidtProj, inner_add_right, add_div, add_smul, Finset.sum_add_distrib]
   rw [hadd, gramSchmidtProj_eq_self hw]
   abel
-
-/-- `⟪b*ⱼ, ∑ᵢ eᵢ bᵢ⟫ = eⱼ ‖b*ⱼ‖²` for integer coefficients that vanish above `j`. -/
-theorem inner_gramSchmidt_sum_zsmul (b : Fin n → E) (e : Fin n → ℤ) {j : Fin n}
-    (he : ∀ i, j < i → e i = 0) :
-    inner ℝ (gramSchmidt ℝ b j) (∑ i, e i • b i) = e j * ‖gramSchmidt ℝ b j‖ ^ 2 := by
-  rw [inner_sum, Finset.sum_eq_single j]
-  · rw [← Int.cast_smul_eq_zsmul ℝ, inner_smul_right, inner_gramSchmidt_self_right]
-    rfl
-  · intro i _ hij
-    rw [← Int.cast_smul_eq_zsmul ℝ, inner_smul_right]
-    rcases lt_or_gt_of_ne hij with h | h
-    · rw [gramSchmidt_inv_triangular ℝ b h, mul_zero]
-    · rw [he i h, Int.cast_zero, zero_mul]
-  · intro h; exact absurd (Finset.mem_univ j) h
 
 /-- The output condition of Babai's nearest-plane algorithm ([Babai1986]; [Regev2004],
 Lecture 3, §1): `y` lies in the integer span of `b`, and every Gram–Schmidt coordinate of
@@ -229,6 +217,7 @@ theorem IsNearestPlane.norm_sq_le {δ : ℝ} {b : Fin (n + 1) → E} (hb : IsRed
     intro j hj
     rw [hdd', inner_add_right, ← he, hg,
       inner_gramSchmidt_sum_zsmul b e fun i hi => habove i (lt_of_le_of_lt hj hi)]
+    rfl
   have hTabove : ∀ j, k < j → T d' j = T d j := by
     intro j hj
     simp only [T]

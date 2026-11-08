@@ -1667,9 +1667,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   executable LLL-then-round algorithm on integer bases and targets that solves CVP within `2^{n/2}`.
   Remaining: a cost model for the executable LLL with the `O(n⁴ log B)` arithmetic-operation bound
   (the current version recomputes Gram–Schmidt every round) and the `O(n log B)` bit-size bound of
-  (1.26), then `ComputableInPolyTime` statements for LLL and Babai; the `√(4/3)ⁿ`-type refinement
-  and rational targets for Babai; then applications (simultaneous Diophantine approximation,
-  polynomial factorization over `ℚ`).
+  (1.26), then `ComputableInPolyTime` statements for LLL and Babai; an executable reduction with
+  `δ` near `1` (at `δ = 1` the abstract bound already gives Babai's factor `2 (2/√3)ⁿ⁻¹` for
+  `1`-reduced bases, but `lll` fixes `δ = 3/4`) and rational targets for Babai; then applications
+  (simultaneous Diophantine approximation, polynomial factorization over `ℚ`).
 - **Separation and optimization:** a precise oracle interface and a separation–optimization
   equivalence with its representation, accuracy and well-boundedness hypotheses. Extend to
   convex optimization through explicit oracle and numerical-error contracts.
