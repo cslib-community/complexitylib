@@ -1833,11 +1833,15 @@ Bayes–Nash characterization with revenue equivalence and the symmetric first-p
 ### Social choice ([#3282](https://github.com/cslib-community/complexitylib/issues/3282))
 
 Social welfare functions on strict rankings and Arrow's impossibility theorem (Geanakoplos's
-pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
+pivotal-voter proof) are in `GameTheory/SocialChoice`, with social choice functions, the
+equivalence of strategy-proofness and Maskin monotonicity, and the Gibbard–Satterthwaite and
+Muller–Satterthwaite theorems for a range of at least three alternatives (Nisan's reduction to
+Arrow's theorem). Remaining directions:
 
-- **Strategy-proofness:** the Gibbard–Satterthwaite theorem for social choice functions onto at
-  least three alternatives, for example by Reny's side-by-side proof (Economics Letters 70, 2001),
-  sharing the pivotal-voter infrastructure with Arrow's theorem.
+- **Strategy-proofness beyond the full domain:** the Gibbard–Satterthwaite theorem allowing
+  individual indifference, Gibbard's 1977 theorem on random social choice functions (strategy-proof
+  lotteries are mixtures of unilateral and duple rules), and escape routes such as single-peaked
+  domains (the median voter rule, Moulin's characterization of strategy-proof rules there).
 - **Characterizations:** May's theorem (majority rule is the only anonymous, neutral, positively
   responsive rule on two alternatives); derive the individual-weak-order corollary of Arrow's
   theorem (by an IIA reduction to strict profiles); the infinite-electorate counterexample from a

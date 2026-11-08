@@ -5,7 +5,8 @@ quasilinear utilities, following Roughgarden's CS364A lecture notes (2013), Lect
 They are mathematical models of incentives: allocation and payment rules are arbitrary real
 functions, and no running time is charged. Hardness and approximation of the allocation
 problems, such as knapsack, are separate questions. Preference aggregation without money, starting
-with Arrow's impossibility theorem, is in `Complexity/GameTheory/SocialChoice/` and is described
+with Arrow's impossibility theorem and the Gibbard–Satterthwaite theorem, is in
+`Complexity/GameTheory/SocialChoice/` and is described
 [below](#social-choice-arrows-impossibility-theorem).
 
 ## Single-parameter environments
@@ -246,6 +247,49 @@ To show that a rule escapes it, find the hypothesis that fails. A rule with stri
 `F : Profile V A → Ranking A`, is covered through `fun P => (F P).toWeakRanking` and
 `Ranking.toWeakRanking_prefers`, as in the checked example.
 
+## Social choice: the Gibbard–Satterthwaite theorem
+
+Import `Complexity.GameTheory.SocialChoice.GibbardSatterthwaite`. It reuses `Ranking` and `Profile`
+from the Arrow module. A `SocialChoiceFunction V A` maps every profile `V → Ranking A` to one
+alternative. The definitions, all in `SocialChoiceFunction`, are `@[expose]`d:
+
+- `IsStrategyProof`: for all profiles `P` and `Q` that differ only in voter `i`'s ranking, `i` does
+  not strictly prefer `f Q` to `f P` by the true ranking `P i`. `isStrategyProof_iff` restates it
+  with `Function.update`.
+- `IsMaskinMonotone`: if no voter ranks an alternative above `f P` at `Q` that they ranked below it
+  at `P`, then `f Q = f P`.
+- `IsDictator i`: for every profile, voter `i` ranks the outcome above every other alternative in
+  the *range* of `f`. For a rule onto `A`, `isDictator_iff_of_surjective` reduces this to `i`'s top
+  alternative always being chosen. `IsDictatorial` asks for some dictator.
+- `dictatorship i` chooses `(P i).top`, where `Ranking.top` is the top alternative of a ranking of a
+  finite nonempty type.
+
+The main results:
+
+- `isStrategyProof_iff_isMaskinMonotone`: with `[Finite V]`, strategy-proofness and Maskin
+  monotonicity are equivalent (Muller and Satterthwaite, 1977).
+- `isDictatorial_of_isStrategyProof`: with `[Finite V]` and `3 ≤ (Set.range f).encard`, a
+  strategy-proof rule is dictatorial. This is the Gibbard–Satterthwaite theorem in its range form.
+  `isDictatorial_of_isMaskinMonotone` is the Muller–Satterthwaite theorem in the same form.
+- `isDictatorial_of_isStrategyProof_of_surjective` is the onto form of
+  [Nisan][nisan07], Theorem 9.8. It takes `Function.Surjective f` and three distinct alternatives.
+- `isStrategyProof_and_surjective_iff`: with `[Finite V] [Finite A] [Nonempty A]` and three
+  distinct alternatives, the strategy-proof onto rules are exactly the dictatorships.
+  `IsDictator.isStrategyProof` gives one direction for every rule, onto or not.
+
+The proof is the reduction to Arrow's theorem in [Nisan][nisan07], §9.2.4. Changing one voter's
+report at a time shows that a strategy-proof rule is Maskin monotone. Let every voter move the
+alternatives of a set `S` to the top of their ranking (`Ranking.toTopSet`). If `S` meets the range,
+monotonicity and unanimity keep the outcome in `S`. Society then ranks `a` at least as high as `b`
+when the outcome after every voter moves `a` and `b` to the top is `a`. This is a weak ranking,
+weakly Pareto and IIA, so `SocialWelfareFunction.isDictatorial_of_isPareto_of_isIIA` gives a
+dictator. Nisan's construction needs a rule onto `A`. For the range form, the induced social welfare
+function ranks the range: each voter's ranking of the range is extended to `A` by placing the range
+on top (`Ranking.extend`).
+
+The set of alternatives may be infinite, as for Arrow's theorem. The electorate must be finite,
+since Arrow's theorem is used.
+
 ## Worked examples
 
 The [checked examples](../../ComplexityTests/GameTheory/MechanismDesign.lean) show the following:
@@ -272,6 +316,18 @@ the theorem is not vacuous. Three hypotheses are each tested against a rule that
 
 The examples also apply the theorem to three voters and three alternatives, and to a rule with
 strict social rankings.
+
+The [Gibbard–Satterthwaite examples](../../ComplexityTests/GameTheory/GibbardSatterthwaite.lean)
+also use only the public surface. A dictatorship is strategy-proof and onto, so the theorem is not
+vacuous; the theorem is applied to three voters and three alternatives and, in range form, to a rule
+with values in `ℕ`. Majority rule between two alternatives `a` and `b`, ties going to `b`, is
+strategy-proof. With at least two voters it is not dictatorial: a lone supporter of `a` cannot get
+`a`. On `Bool` with three voters it is onto, so the theorem needs three alternatives. On `Fin 3` its
+range is `{0, 1}`, so the hypothesis concerns the range, not the number of alternatives. Finally, the
+Borda count with two voters and three alternatives, ties going to the smaller alternative, is
+manipulable. Voter `0` ranks `1 ≻ 0 ≻ 2` and voter `1` ranks `0 ≻ 1 ≻ 2`. The scores are
+`(3, 3, 0)`, so the outcome is `0`. If voter `0` reports `1 ≻ 2 ≻ 0` instead, the scores are
+`(2, 3, 1)` and the outcome is `1`. Both outcomes are checked by `decide`.
 
 The [optimal-auction examples](../../ComplexityTests/GameTheory/OptimalAuction.lean) use
 `U[0, 1]`, which has reserve price `1/2`. With two bidders, bids `(0.3, 0.4)` do not sell. On
@@ -308,11 +364,12 @@ Green–Laffont/Holmström characterization of DSIC welfare maximizers, a bridge
 single-parameter mechanisms as general ones (for example VCG specializing to Vickrey), and any
 computational cost of allocation rules. See `ROADMAP.md` and issues #2947, #3001 and #3173.
 
-For social choice, only Arrow's theorem for strict individual rankings is formalized. A finite
-electorate is necessary, but the infinite-electorate counterexample built from a nonprincipal
-ultrafilter (Fishburn 1970) is not formalized. Also not formalized are the corollary for
-individual weak orders, the Gibbard–Satterthwaite theorem, May's theorem, quantitative (Kalai)
-versions of Arrow's theorem and the complexity of winner determination and manipulation. See
-`ROADMAP.md` and issue #3282.
+For social choice, Arrow's theorem and the Gibbard–Satterthwaite theorem are formalized for strict
+individual rankings. A finite electorate is necessary, but the infinite-electorate counterexample
+built from a nonprincipal ultrafilter (Fishburn 1970) is not formalized. Also not formalized are the
+corollary for individual weak orders, May's theorem, quantitative (Kalai) versions of Arrow's
+theorem, and the complexity of winner determination and manipulation. See `ROADMAP.md` and issue
+#3282.
 
 [hartline21]: ../sources.md#hartline21
+[nisan07]: ../sources.md#nisan07
