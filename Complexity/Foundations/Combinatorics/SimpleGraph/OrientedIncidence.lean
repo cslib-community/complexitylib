@@ -8,6 +8,7 @@ module
 -- upstream: candidate (Mathlib, `Mathlib/Combinatorics/SimpleGraph/IncMatrix.lean`)
 
 public import Complexity.Init
+public import Complexity.Foundations.LinearAlgebra.Matrix.Laplacian
 public import Mathlib.Combinatorics.SimpleGraph.LapMatrix
 
 /-!
@@ -53,6 +54,19 @@ theorem out_fst_ne_out_snd_of_mem_edgeSet {e : Sym2 V} (he : e ∈ G.edgeSet) :
     rw [← Sym2.mk_fst_out_snd_out e, Sym2.mk_isDiag_iff]
     exact h
   exact G.not_isDiag_of_mem_edgeSet he this
+
+/-- The **weighted adjacency matrix** of `G` for edge weights `w : Sym2 V → R`: the entry `(u, v)`
+is `w s(u, v)` if `u` and `v` are adjacent and `0` otherwise. Only the values of `w` on the edges
+of `G` matter. -/
+def weightedAdjMatrix {R : Type*} [Zero R] [DecidableRel G.Adj] (w : Sym2 V → R) :
+    Matrix V V R :=
+  Matrix.of fun u v => if G.Adj u v then w s(u, v) else 0
+
+/-- The entries of the weighted adjacency matrix. -/
+@[simp]
+theorem weightedAdjMatrix_apply {R : Type*} [Zero R] [DecidableRel G.Adj] (w : Sym2 V → R)
+    (u v : V) : G.weightedAdjMatrix w u v = if G.Adj u v then w s(u, v) else 0 := by
+  rw [weightedAdjMatrix, Matrix.of_apply]
 
 variable [DecidableEq V]
 
@@ -144,5 +158,65 @@ theorem orientedIncMatrix_mul_transpose :
       · rw [ite_eq_right_iff]
         intro hx
         exact absurd (hx ▸ x.2 : s(u, w) ∈ G.edgeSet) hadj
+
+/-- The Laplacian of `G` is the Laplacian (`Matrix.laplacian`) of its weighted adjacency matrix
+with all weights `1`. -/
+theorem lapMatrix_eq_laplacian_weightedAdjMatrix (R : Type*) [AddCommGroupWithOne R] :
+    G.lapMatrix R = (G.weightedAdjMatrix fun _ => (1 : R)).laplacian := by
+  ext u v
+  rw [laplacian_apply]
+  simp only [weightedAdjMatrix_apply, lapMatrix, degMatrix, adjMatrix_apply, Matrix.sub_apply,
+    diagonal_apply, Finset.sum_boole, ← card_neighborFinset_eq_degree, neighborFinset_eq_filter]
+
+/-- **The weighted Laplacian is a weighted Gram matrix of the oriented incidence matrix**:
+`N * diagonal w * Nᵀ` is the Laplacian of the weighted adjacency matrix `G.weightedAdjMatrix w`,
+where `N` is `SimpleGraph.orientedIncMatrix G` cast to `R`. -/
+theorem orientedIncMatrix_map_mul_diagonal_mul_transpose {R : Type*} [CommRing R]
+    (w : Sym2 V → R) :
+    G.orientedIncMatrix.map (Int.cast : ℤ → R) * diagonal (fun e : G.edgeSet => w e) *
+      (G.orientedIncMatrix.map (Int.cast : ℤ → R))ᵀ = (G.weightedAdjMatrix w).laplacian := by
+  ext u v
+  rw [laplacian_apply, Matrix.mul_apply]
+  simp only [mul_diagonal, map_apply, transpose_apply, weightedAdjMatrix_apply]
+  by_cases huv : u = v
+  · subst huv
+    simp only [↓reduceIte, G.loopless.irrefl, sub_zero]
+    have hsq : ∀ e : G.edgeSet, (G.orientedIncMatrix u e : R) * w e *
+        (G.orientedIncMatrix u e : R) = if u ∈ (e : Sym2 V) then w e else 0 := by
+      intro e
+      rw [mul_right_comm, ← Int.cast_mul, orientedIncMatrix_mul_self]
+      split_ifs <;> simp
+    simp only [hsq]
+    rw [← Finset.sum_filter, ← Finset.sum_filter]
+    refine Finset.sum_bij (fun e he => Sym2.Mem.other (Finset.mem_filter.1 he).2)
+      (fun e he => ?_) (fun e₁ he₁ e₂ he₂ h => ?_) (fun x hx => ?_) (fun e he => ?_)
+    · have := Sym2.other_spec (Finset.mem_filter.1 he).2
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+      rw [← mem_edgeSet, this]
+      exact e.2
+    · apply Subtype.ext
+      rw [← Sym2.other_spec (Finset.mem_filter.1 he₁).2,
+        ← Sym2.other_spec (Finset.mem_filter.1 he₂).2, h]
+    · have hadj : G.Adj u x := (Finset.mem_filter.1 hx).2
+      refine ⟨⟨s(u, x), hadj⟩, by simp, ?_⟩
+      exact Sym2.congr_right.1 (Sym2.other_spec _)
+    · rw [Sym2.other_spec]
+  · have hoff : ∀ e : G.edgeSet, (G.orientedIncMatrix u e : R) * w e *
+        (G.orientedIncMatrix v e : R) = if (e : Sym2 V) = s(u, v) then -w e else 0 := by
+      intro e
+      rw [mul_right_comm, ← Int.cast_mul, orientedIncMatrix_mul_of_ne huv]
+      split_ifs <;> simp
+    simp only [hoff, huv, ↓reduceIte, zero_sub]
+    by_cases hadj : G.Adj u v
+    · rw [ite_eq_left_iff.mpr fun h => absurd hadj h,
+        Finset.sum_eq_single (⟨s(u, v), hadj⟩ : G.edgeSet)]
+      · simp
+      · intro e _ he
+        exact ite_eq_right_iff.mpr fun h => absurd (Subtype.ext h) he
+      · simp
+    · rw [ite_eq_right_iff.mpr fun h => absurd h hadj, neg_zero]
+      exact Finset.sum_eq_zero fun e _ =>
+        ite_eq_right_iff.mpr fun (h : (e : Sym2 V) = s(u, v)) =>
+          absurd (h ▸ e.2 : s(u, v) ∈ G.edgeSet) hadj
 
 end SimpleGraph

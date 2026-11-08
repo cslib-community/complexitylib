@@ -4114,6 +4114,7 @@ public import Complexity.Foundations.Combinatorics.BinomialTail
 public import Complexity.Foundations.Combinatorics.BudgetTuples
 public import Complexity.Foundations.Combinatorics.CentralBinomial
 public import Complexity.Foundations.Combinatorics.DepthReduction
+public import Complexity.Foundations.Combinatorics.Digraph.MatrixTree
 public import Complexity.Foundations.Combinatorics.Expander.AffineFamily
 public import Complexity.Foundations.Combinatorics.Expander.AffinePlane
 public import Complexity.Foundations.Combinatorics.Expander.AffineTower
@@ -4548,6 +4549,7 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.FactorialTruncation
 public import Complexity.Foundations.LinearAlgebra.Matrix.Farkas
 public import Complexity.Foundations.LinearAlgebra.Matrix.FourierMotzkin
 public import Complexity.Foundations.LinearAlgebra.Matrix.Kronecker
+public import Complexity.Foundations.LinearAlgebra.Matrix.Laplacian
 public import Complexity.Foundations.LinearAlgebra.Matrix.Lindsey
 public import Complexity.Foundations.LinearAlgebra.Matrix.LinearProgramming
 public import Complexity.Foundations.LinearAlgebra.Matrix.ListProd

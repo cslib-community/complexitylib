@@ -752,9 +752,10 @@ index links to canonical definitions rather than keeping a second set.
   #P-completeness; modular and counting hierarchies; the oracle-algorithm form of Stockmeyer's
   approximate counting.
 - **Exact counting by determinants**
-  ([#3081](https://github.com/cslib-community/complexitylib/issues/3081)): beyond polynomial-time
-  spanning-tree counting through Kirchhoff's matrix-tree theorem, the weighted and directed
-  (arborescence) matrix-tree theorems, the BEST theorem for Eulerian circuits, and Kasteleyn's
+  ([#3081](https://github.com/cslib-community/complexitylib/issues/3081)): Kirchhoff's
+  matrix-tree theorem (with polynomial-time spanning-tree counting), its weighted form and Tutte's
+  directed (arborescence) form are done. Remaining: the BEST theorem for Eulerian circuits,
+  polynomial-time counting of arborescences and of weighted spanning trees, and Kasteleyn's
   Pfaffian method for perfect matchings of planar graphs, in contrast with permanent
   #P-completeness.
 - For composite moduli: the prime-power collapse `Mod_{p^e}P = Mod_pP` and union closure.
