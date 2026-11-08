@@ -35,8 +35,8 @@ and contracts it (`contractStep`), so it contracts each edge `{u, v}` with proba
 `2 W u v / S`. `contractTimes s` makes `s` steps, and `karger` contracts down to two supervertices
 and answers half their total weight, the weight of the cut between them.
 
-All probability is proved here, on the specification. The proofs run over `trackedSpec n`, the same
-structure that also keeps the block of original vertices merged into each supervertex
+All probability is proved here, on the specification. Run laws are derived over `trackedSpec n`, the
+same structure that also keeps the block of original vertices merged into each supervertex
 (`TrackedGraph`, [Karger and Stein, Section 2][KargerStein1996]). The blocks are bookkeeping:
 forgetting them maps every run over `trackedSpec n` to the run of the same client over `spec`
 (`map_run_trackedSpec`), so each statement about `spec` is the corresponding statement over the
@@ -215,14 +215,17 @@ structure TrackedGraph (n : ℕ) where
   blocks : Fin size → Finset (Fin n)
 
 /-- The graph of a tracked contraction, forgetting the blocks. -/
+@[no_expose]
 def TrackedGraph.toGraph {n : ℕ} (G : TrackedGraph n) : Graph := ⟨G.size, G.weight⟩
 
 /-- The singleton blocks of the uncontracted graph `W`. -/
+@[no_expose]
 def TrackedGraph.init {n : ℕ} (W : Fin n → Fin n → ℕ) : TrackedGraph n :=
   ⟨n, W, fun i => pullbackCut id {i}⟩
 
 /-- Contraction with blocks: `contractGraph` on the weights, and `contractBlocks` on the blocks.
 Arguments out of range leave the graph unchanged. -/
+@[no_expose]
 def contractTracked {n : ℕ} : TrackedGraph n → ℕ → ℕ → TrackedGraph n
   | ⟨k + 1, W, b⟩, u, v =>
     if h : u < k + 1 ∧ v < k + 1 then
@@ -260,6 +263,7 @@ theorem toGraph_contractTracked {n : ℕ} (G : TrackedGraph n) (u v : ℕ) :
       rfl
 
 /-- The transition function of the contraction structure with blocks: `step` on the weights. -/
+@[no_expose]
 noncomputable def trackedStep {n : ℕ} (G : TrackedGraph n) : (o : Op) → TrackedGraph n × o.Result
   | .size => (G, G.size)
   | .total => (G, totalDoubledWeight G.weight)
@@ -385,6 +389,7 @@ theorem run_contractStep_bind_of_eq_zero {α : Type} (p : ProbOracleComp Op.Resu
 
 /-- The cut `C` of `W₀` survives in `G`: `G` is a contraction of `W₀` to `t` supervertices along
 a map whose fibres are the blocks of `G`, under which `C` is the preimage of a cut. -/
+@[no_expose]
 def TrackedSurvives {n : ℕ} (W₀ : Fin n → Fin n → ℕ) (C : Finset (Fin n)) (t : ℕ)
     (G : TrackedGraph n) : Prop :=
   ∃ (W : Fin t → Fin t → ℕ) (part : Fin n → Fin t) (B : Finset (Fin t)),
@@ -537,6 +542,7 @@ theorem isContractionOf_of_mem_support_contractTimes {n t : ℕ} (ht : 1 ≤ t)
 
 /-- The cut that a tracked contraction to two supervertices outputs: the block of supervertex
 `1`. -/
+@[no_expose]
 def TrackedGraph.side {n : ℕ} (G : TrackedGraph n) : Finset (Fin n) :=
   if h : 1 < G.size then G.blocks ⟨1, h⟩ else ∅
 
@@ -570,6 +576,7 @@ theorem answerLaw_eq {n : ℕ} (W : Fin n → Fin n → ℕ) :
 
 /-- The law of the cut that one run of `karger` outputs on `W`: the block of the second of the two
 supervertices it leaves. -/
+@[no_expose]
 noncomputable def cutLaw {n : ℕ} (W : Fin n → Fin n → ℕ) : PMF (Finset (Fin n)) :=
   ((trackedSpec n).toRandomized.withCoins.run karger (TrackedGraph.init W)).map
     fun x => x.2.side
