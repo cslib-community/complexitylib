@@ -35,14 +35,14 @@ This module formalizes the one-round Feistel hash permutation families used for 
 routing (`ℋ_ℓ^ch`) and key-ID compression (`ℋ_ℓ^id`) in Tianxiao Li, Jingxun Liang, Huacheng Yu,
 and Renfei Zhou, *"Dynamic Dictionary with Subconstant Wasted Bits per Key"*, *Proc. 2024 Annual
 ACM-SIAM Symposium on Discrete Algorithms (SODA 2024)*, pp. 171–207 (`arXiv:2310.20536v1`,
-Section 5.4, PDF pp. 30–33 / printed pp. 29–32, Lemmas 5.1–5.2; Appendix B, PDF pp. 40–43 /
-printed pp. 39–42, Definition B.1, Claim B.2, Claim B.3, Theorem B.4, and Corollaries B.5–B.6).
+Section 5.4, PDF pp. 30–33 / printed pp. 29–32, Lemmas 5.1–5.2; Appendix B, PDF pp. 41–44 /
+printed pp. 40–43, Definition B.1, Claim B.2, Claim B.3, Theorem B.4, and Corollaries B.5–B.6).
 
 ## Source statements, notation mapping, and proof adaptations
 
 In `arXiv:2310.20536v1`:
-* **Mixed-domain one-round Feistel permutation (Definition B.1, PDF p. 40 / printed p. 39;
-  Corollaries B.5–B.6, PDF pp. 42–43 / printed pp. 41–42)**:
+* **Mixed-domain one-round Feistel permutation (Definition B.1, PDF p. 41 / printed p. 40;
+  Corollaries B.5–B.6, PDF pp. 43–44 / printed pp. 42–43)**:
   For a round function `f : α → Fin (2 ^ s)` (specialized to `α = Fin T` on `{0, 1}^s × Fin T`
   and to `α = Fin (2 ^ (L - s))` on `{0, 1}^L`), `feistelPair f (x_L, x_R) = (x_L ^^^ f x_R, x_R)`
   is an exact involution (`feistelPair_involutive`, `feistelPairEquiv`). On flat integers
@@ -51,8 +51,9 @@ In `arXiv:2310.20536v1`:
   reconstructing `x_L + 2 ^ s * x_R` reduce to bit-mask and bit-shift operations even when `T` is
   not a power of two (top level `ℓ = 0`, where `B_0 = 2 ^ s` is a power of two while
   `T = 2 ^ I_1 * Q_1` or `Q_1` is general).
-* **Child-router Feistel family `ℋ_ℓ^ch` (Lemma 5.1, PDF p. 31 / printed p. 30 & PDF p. 40 /
-  printed p. 39; Claim B.3, PDF p. 40 / printed p. 39; Corollary B.5, PDF p. 42 / printed p. 41)**:
+* **Child-router Feistel family `ℋ_ℓ^ch` (Lemma 5.1, PDF p. 32 / printed p. 31 & PDF pp. 41–42 /
+  printed pp. 40–41; Claim B.3, PDF pp. 41–42 / printed pp. 40–41; Corollary B.5, PDF p. 43 /
+  printed p. 42)**:
   Grouping `S : Finset (Fin (2 ^ s) × Fin T)` by `z = x.2 ∈ S.image Prod.snd`, distinct keys with
   the same right part `z` never collide in `feistelHead f` (`feistelHead_ne_of_snd_eq_of_ne`), so
   `bucketLoad f S b = #{z ∈ S.image Prod.snd | (b ^^^ f z, z) ∈ S}` is a sum of `{0, 1}` indicators
@@ -60,8 +61,8 @@ In `arXiv:2310.20536v1`:
   unconditionally via Mikkel Thorup's double tabulation [Thorup2013] (`ChildRouterSeed c q b s`)
   bounds bucket-load deviations by `δ_dt + 2 ^ (s + 1) * (3 * m * μ / a ^ 2) ^ m` and yields failure
   probability `≤ 1 / (4 * (#S) ^ 2)` for the `(1 / 5) * (#S / 2 ^ s) ^ (2 / 3)` window.
-* **ID-compressor Feistel family `ℋ_ℓ^id` (Lemma 5.2, PDF p. 32 / printed p. 31 & PDF pp. 41–42 /
-  printed pp. 40–41; Corollary B.6, PDF pp. 42–43 / printed pp. 41–42)**:
+* **ID-compressor Feistel family `ℋ_ℓ^id` (Lemma 5.2, PDF p. 33 / printed p. 32 & PDF pp. 42–43 /
+  printed pp. 41–42; Corollary B.6, PDF pp. 43–44 / printed pp. 42–43)**:
   Under any pairwise independent round family `h : ι → Fin T → Fin (2 ^ s)` [CarterWegman1979],
   [WegmanCarter1981], keys sharing `x.2` never collide and keys with `x₁.2 ≠ x₂.2` collide in
   `feistelHead` with probability `1 / 2 ^ s`, giving non-injectivity probability
@@ -70,18 +71,19 @@ In `arXiv:2310.20536v1`:
   via `2`-wise trinomial polynomial hashing (`IdCompressorSeed T s`, `trinomialPolyHash`) uses
   `2 * trinomialDeg T s ≤ 6 * max ⌈log₂ max(T, 2)⌉ (max s 1) = O(s + log T)` seed bits.
 * **Adaptations and scope**:
-  - Instead of invoking Theorem B.4 (Jeanette P. Schmidt, Alan Siegel, and Aravind Srinivasan,
-    *SIAM J. Discrete Math.* 8(2):223–250, 1995, Theorem 5), Section 2 proves an elementary
-    variance-sensitive `2m`-th central moment bound (`expect_sum_sub_expect_pow_le`, extending the
-    limited-independence moment method of [BellareRompel1994]) via
-    `Nat.pow_self_le_three_pow_mul_factorial` (`r ^ r ≤ 3 ^ r * r!`), giving
-    `Pr[|∑ (g_z - E[g_z])| ≥ a] ≤ 2 * (3 * m * μ / a ^ 2) ^ m` whenever `2 * m ≤ 3 * μ`.
-  - Lemma 5.1(c) and Corollary B.5(c) state `n ≥ 2 ^ s * s ^ 4` and in the proof (PDF p. 41, line
-    2358) assume sufficiently large `s` (for `s = 1, n = 16`, `[8 - 4/5, 8 + 4/5]` contains only
-    `8`, so even uniform hashing fails with probability `> 4/5 > 1 / (4 * 16 ^ 2)`). We expose the
-    exact quantitative hypothesis `2 ^ s * (150 * childRouterHalfInd #S) ^ 3 ≤ #S` (valid at every
-    Section 5.4 tree level even when `s = 1`) and prove that `2 ^ s * s ^ 4 ≤ #S` implies it for
-    `s ≥ childRouterMinS` (`childRouter_conc_of_two_pow_mul_pow_four_le`).
+  - Instead of invoking Theorem B.4 (PDF p. 42 / printed p. 41; Jeanette P. Schmidt, Alan Siegel,
+    and Aravind Srinivasan, *SIAM J. Discrete Math.* 8(2):223–250, 1995, Theorem 5), Section 2
+    proves an elementary variance-sensitive `2m`-th central moment bound
+    (`expect_sum_sub_expect_pow_le`, extending the limited-independence moment method of
+    [BellareRompel1994]) via `Nat.pow_self_le_three_pow_mul_factorial` (`r ^ r ≤ 3 ^ r * r!`),
+    giving `Pr[|∑ (g_z - E[g_z])| ≥ a] ≤ 2 * (3 * m * μ / a ^ 2) ^ m` whenever `2 * m ≤ 3 * μ`.
+  - Lemma 5.1(c) and Corollary B.5(c) state `n ≥ 2 ^ s * s ^ 4` and in Claim B.3's proof
+    (PDF p. 42 / printed p. 41) assume sufficiently large `s` (for `s = 1, n = 16`,
+    `[8 - 4/5, 8 + 4/5]` contains only `8`, so even uniform hashing fails with probability
+    `> 4/5 > 1 / (4 * 16 ^ 2)`). We expose the exact quantitative hypothesis
+    `2 ^ s * (150 * childRouterHalfInd #S) ^ 3 ≤ #S` (valid at every Section 5.4 tree level even
+    when `s = 1`) and prove that `2 ^ s * s ^ 4 ≤ #S` implies it for `s ≥ childRouterMinS`
+    (`childRouter_conc_of_two_pow_mul_pow_four_le`).
   - Word-RAM instruction-level evaluation and resampling certificates for `doubleTabHash` and
     `trinomialPolyHash` already live in
     `Complexity.DataStructure.HashFamily.WordRAM.DoubleTabulation` and
@@ -184,13 +186,15 @@ open scoped BigOperators ENNReal
 (`Definition B.1`, `Corollaries B.5–B.6`) -/
 
 /-- The `s`-bit Feistel head projection `x_L ^^^ f x_R` (`ĥ(x)` in Appendix B of
-`arXiv:2310.20536v1`, PDF p. 40, line 2294, and PDF p. 42, lines 2409 and 2430). -/
+`arXiv:2310.20536v1`, Proof of Lemma 5.1, PDF p. 41 / printed p. 40, and Corollaries B.5–B.6,
+PDF pp. 43–44 / printed pp. 42–43). -/
 @[expose]
 def feistelHead {s : ℕ} {α : Type*} (f : α → Fin (2 ^ s)) (x : Fin (2 ^ s) × α) : Fin (2 ^ s) :=
   x.1 ^^^ f x.2
 
-/-- Mixed-domain one-round Feistel map `(x_L, x_R) ↦ (x_L ^^^ f x_R, x_R)` (`Definition B.1` and
-`Corollaries B.5–B.6`, PDF pp. 40, 42 of `arXiv:2310.20536v1`). -/
+/-- Mixed-domain one-round Feistel map `(x_L, x_R) ↦ (x_L ^^^ f x_R, x_R)` (`Definition B.1`,
+PDF p. 41 / printed p. 40, and `Corollaries B.5–B.6`, PDF pp. 43–44 / printed pp. 42–43 of
+`arXiv:2310.20536v1`). -/
 @[expose]
 def feistelPair {s : ℕ} {α : Type*} (f : α → Fin (2 ^ s)) (x : Fin (2 ^ s) × α) :
     Fin (2 ^ s) × α :=
@@ -268,14 +272,15 @@ theorem eq_of_feistelHead_eq_of_snd_eq {s : ℕ} {α : Type*} {f : α → Fin (2
   · exact hsnd
 
 /-- Distinct keys sharing the same right coordinate `x₁.2 = x₂.2` never collide under `feistelHead`
-(`arXiv:2310.20536v1`, Appendix B, PDF p. 40 line 2325 and PDF p. 41 line 2388). -/
+(`arXiv:2310.20536v1`, Appendix B, Claim B.3 proof, PDF p. 42 / printed p. 41, and Lemma 5.2
+proof, PDF p. 43 / printed p. 42). -/
 theorem feistelHead_ne_of_snd_eq_of_ne {s : ℕ} {α : Type*} {f : α → Fin (2 ^ s)}
     {x₁ x₂ : Fin (2 ^ s) × α} (hsnd : x₁.2 = x₂.2) (hne : x₁ ≠ x₂) :
     feistelHead f x₁ ≠ feistelHead f x₂ :=
   fun hhd => hne (eq_of_feistelHead_eq_of_snd_eq hhd hsnd)
 
 /-- Among all keys routed into a single child bucket `b : Fin (2 ^ s)`, the right coordinate
-`Prod.snd` (`y_prim` in Section 5.4, PDF p. 31 line 1749) is injective. -/
+`Prod.snd` (`y_prim` in Section 5.4, PDF p. 32 / printed p. 31) is injective. -/
 theorem injOn_snd_of_feistelHead_eq {s : ℕ} {α : Type*} (f : α → Fin (2 ^ s))
     (b : Fin (2 ^ s)) :
     Set.InjOn Prod.snd {x : Fin (2 ^ s) × α | feistelHead f x = b} :=
@@ -671,14 +676,14 @@ end MomentConcentration
 section ChildRouter
 
 /-- Number of keys in `S : Finset (Fin (2 ^ s) × α)` routed to child bucket `b : Fin (2 ^ s)` under
-`feistelHead f` (`|ĥ⁻¹(y)|` in Claim B.3, PDF p. 40 line 2297 of `arXiv:2310.20536v1`). -/
+`feistelHead f` (`|ĥ⁻¹(y)|` in Claim B.3, PDF p. 41 / printed p. 40 of `arXiv:2310.20536v1`). -/
 @[expose]
 def bucketLoad {s : ℕ} {α : Type*} (f : α → Fin (2 ^ s))
     (S : Finset (Fin (2 ^ s) × α)) (b : Fin (2 ^ s)) : ℕ :=
   #{x ∈ S | feistelHead f x = b}
 
 /-- Within any bucket `b`, projecting `{x ∈ S | feistelHead f x = b}` to `Prod.snd` (`y_prim`)
-preserves cardinality (`arXiv:2310.20536v1`, Section 5.4, PDF p. 31 line 1749). -/
+preserves cardinality (`arXiv:2310.20536v1`, Section 5.4, PDF p. 32 / printed p. 31). -/
 theorem card_image_snd_filter_feistelHead_eq {s : ℕ} {α : Type*} [DecidableEq α]
     (f : α → Fin (2 ^ s)) (S : Finset (Fin (2 ^ s) × α)) (b : Fin (2 ^ s)) :
     #(({x ∈ S | feistelHead f x = b}).image Prod.snd) = bucketLoad f S b :=
@@ -1179,7 +1184,8 @@ def childRouterThreshold (ε_inv α_inv : ℕ) : ℕ :=
   2 ^ (childRouterChars ε_inv * max α_inv 1 * childRouterMinB ε_inv α_inv)
 
 /-- Explicit threshold `s₀ = 2100 ^ 3` above which `#S ≥ 2 ^ s * s ^ 4` implies
-`2 ^ s * (150 * childRouterHalfInd #S) ^ 3 ≤ #S` (`arXiv:2310.20536v1`, PDF p. 41 line 2358). -/
+`2 ^ s * (150 * childRouterHalfInd #S) ^ 3 ≤ #S` (`arXiv:2310.20536v1`, Appendix B, Claim B.3
+proof, PDF p. 42 / printed p. 41). -/
 @[expose]
 def childRouterMinS : ℕ :=
   2100 ^ 3
@@ -1409,7 +1415,7 @@ theorem lemma5_1_concentration {ε_inv α_inv s L : ℕ} (hsL : s ≤ L)
 
 /-- When `s ≥ childRouterMinS` (`2100 ^ 3`), the paper's condition `2 ^ s * s ^ 4 ≤ n` implies
 the quantitative concentration hypothesis `2 ^ s * (150 * childRouterHalfInd n) ^ 3 ≤ n`
-(`arXiv:2310.20536v1`, Appendix B, PDF p. 41 line 2358). -/
+(`arXiv:2310.20536v1`, Appendix B, Claim B.3 proof, PDF p. 42 / printed p. 41). -/
 theorem childRouter_conc_of_two_pow_mul_pow_four_le {s n : ℕ}
     (hs : childRouterMinS ≤ s) (hn : 2 ^ s * s ^ 4 ≤ n) :
     2 ^ s * (150 * childRouterHalfInd n) ^ 3 ≤ n := by
@@ -1666,9 +1672,10 @@ theorem prob_not_injOn_idCompressorHead_le (s T : ℕ) (S : Finset (Fin (2 ^ s) 
     dens_not_injOn_idCompressorHead_le s T S
 
 /-- **Section 5.4 `2 / n_next ^ 2` instantiation of `Corollary B.6(c)`**
-(`arXiv:2310.20536v1`, PDF p. 32 lines 1845–1853): whenever `#S ≤ n_bar`, `1 ≤ n_next`, and
-`n_bar ^ 2 * n_next ^ 2 ≤ 4 * 2 ^ s` (satisfied both when `n_bar ≤ 2 * n_next ∧ n_next ^ 4 ≤ 2 ^ s`
-and when `n_next ≤ n_bar ∧ n_bar ^ 4 ≤ 2 * 2 ^ s`), collision probability is `≤ 2 / n_next ^ 2`. -/
+(`arXiv:2310.20536v1`, Section 5.4, PDF p. 33 / printed p. 32): whenever `#S ≤ n_bar`,
+`1 ≤ n_next`, and `n_bar ^ 2 * n_next ^ 2 ≤ 4 * 2 ^ s` (satisfied both when
+`n_bar ≤ 2 * n_next ∧ n_next ^ 4 ≤ 2 ^ s` and when `n_next ≤ n_bar ∧ n_bar ^ 4 ≤ 2 * 2 ^ s`),
+collision probability is `≤ 2 / n_next ^ 2`. -/
 theorem dens_not_injOn_idCompressorHead_le_two_div_sq {s T n_bar n_next : ℕ}
     (S : Finset (Fin (2 ^ s) × Fin T)) (hS : #S ≤ n_bar) (hn : 1 ≤ n_next)
     (hI : n_bar ^ 2 * n_next ^ 2 ≤ 4 * 2 ^ s) :
