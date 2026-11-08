@@ -4069,6 +4069,7 @@ public import Complexity.Foundations.Combinatorics.Expander.AffineFamily
 public import Complexity.Foundations.Combinatorics.Expander.AffinePlane
 public import Complexity.Foundations.Combinatorics.Expander.AffineTower
 public import Complexity.Foundations.Combinatorics.Expander.Basic
+public import Complexity.Foundations.Combinatorics.Expander.Bipartite
 public import Complexity.Foundations.Combinatorics.Expander.BoxProduct
 public import Complexity.Foundations.Combinatorics.Expander.Cayley
 public import Complexity.Foundations.Combinatorics.Expander.Cheeger
@@ -4249,6 +4250,8 @@ public import Complexity.Foundations.Data.Code.AsymptoticallyGood
 public import Complexity.Foundations.Data.Code.Basic
 public import Complexity.Foundations.Data.Code.BerlekampWelch
 public import Complexity.Foundations.Data.Code.Concatenation
+public import Complexity.Foundations.Data.Code.ExpanderCode
+public import Complexity.Foundations.Data.Code.FlipDecoding
 public import Complexity.Foundations.Data.Code.Hadamard
 public import Complexity.Foundations.Data.Code.HammingBound
 public import Complexity.Foundations.Data.Code.HintDecoding
