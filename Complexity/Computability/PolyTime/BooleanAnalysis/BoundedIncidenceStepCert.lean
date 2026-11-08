@@ -184,14 +184,6 @@ private theorem bi_intBin_add' {α : Type} {encIn : α ↪ List Bool} {a b : α 
     ComputableInPolyTime (fun x => a x + b x) encIn encIntBin :=
   bi_intBin_add.comp (ha.prod hb)
 
-private theorem bi_intBin_pow : ComputableInPolyTime (fun p : ℤ × ℕ => p.1 ^ p.2)
-    (encPair encIntBin encUnary) encIntBin := by fun_prop
-
-private theorem bi_intBin_pow' {α : Type} {encIn : α ↪ List Bool} {a : α → ℤ} {b : α → ℕ}
-    (ha : ComputableInPolyTime a encIn encIntBin) (hb : ComputableInPolyTime b encIn encUnary) :
-    ComputableInPolyTime (fun x => a x ^ b x) encIn encIntBin :=
-  bi_intBin_pow.comp (ha.prod hb)
-
 private theorem bi_replicate_base {α : Type} (enc : α ↪ List Bool) :
     ComputableInPolyTime (fun p : ℕ × α => List.replicate p.1 p.2)
       (encPair encUnary enc) (encList enc) := by fun_prop
@@ -217,9 +209,6 @@ private theorem bi_listDropWithInput {α γ : Type} {encA : α ↪ List Bool}
     (hcount : ComputableInPolyTime count encIn encUnary) :
     ComputableInPolyTime (fun x => (list x).drop (count x)) encIn (encList encA) :=
   (bi_dropUnary encA).comp (hlist.prod hcount)
-
-private theorem bi_flatten {α : Type} (enc : α ↪ List Bool) :
-    ComputableInPolyTime List.flatten (encList (encList enc)) (encList enc) := by fun_prop
 
 private theorem bi_listGetD_nat_dyn {α : Type} {encIn : α ↪ List Bool}
     {xs : α → List ℕ} {idx fallback : α → ℕ}
