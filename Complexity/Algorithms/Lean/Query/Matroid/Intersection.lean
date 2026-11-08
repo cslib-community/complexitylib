@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.Lean.Matroid.Intersection.Solver
+public import Complexity.Algorithms.Lean.Query.FreeM.FilterM
 public import Complexity.Algorithms.Lean.Query.Matroid.IndepQuery
 public import Cslib.Algorithms.Lean.Query.Bounds
 public import Mathlib.Algebra.BigOperators.Intervals
@@ -155,20 +156,6 @@ theorem eval_matroidIntersection_spec [DecidableEq α] {M₁ M₂ : Matroid α}
 
 /-! ### Query counts -/
 
-private theorem countQueries_selectM {β : Type} (oracle : {ι : Type} → IndepPairQuery α ι → ι)
-    (p : β → FreeM (IndepPairQuery α) Bool) (hp : ∀ x, (p x).countQueries oracle = 1)
-    (xs : List β) : (selectM p xs).countQueries oracle = xs.length := by
-  induction xs with
-  | nil => rfl
-  | cons x xs ih =>
-    simp only [selectM, FreeM.countQueries_bind, FreeM.countQueries_pure, hp, ih,
-      List.length_cons]
-    omega
-
-theorem length_exchPairs [DecidableEq α] (V : List α) (I : Finset α) :
-    (exchPairs V I).length = (V.filter (· ∈ I)).length * (V.filter (· ∉ I)).length := by
-  simp [exchPairs, List.length_flatMap]
-
 /-- One phase from `I` makes `2 * |V \ I| * (1 + |V ∩ I|)` independence tests, whatever the
 oracle answers. -/
 theorem countQueries_exchTablesM [DecidableEq α] (oracle : {ι : Type} → IndepPairQuery α ι → ι)
@@ -178,7 +165,8 @@ theorem countQueries_exchTablesM [DecidableEq α] (oracle : {ι : Type} → Inde
   have hq₁ : ∀ S, (ask₁ (α := α) S).countQueries oracle = 1 := fun _ => rfl
   have hq₂ : ∀ S, (ask₂ (α := α) S).countQueries oracle = 1 := fun _ => rfl
   simp only [exchTablesM, FreeM.countQueries_bind, FreeM.countQueries_pure,
-    countQueries_selectM oracle _ (fun _ => hq₁ _), countQueries_selectM oracle _ (fun _ => hq₂ _),
+    FreeM.countQueries_filterM_of_eq_one oracle (fun _ => hq₁ _),
+    FreeM.countQueries_filterM_of_eq_one oracle (fun _ => hq₂ _),
     length_exchPairs]
   ring
 

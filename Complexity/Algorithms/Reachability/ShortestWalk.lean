@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Mathlib.Data.Finset.Card
+import Mathlib.Data.Finset.Card
 import Mathlib.Data.List.Chain
 
 /-!

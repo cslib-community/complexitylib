@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.Lean.Matroid.Intersection
 public import Complexity.Algorithms.Reachability.ShortestWalk
 public import Cslib.Foundations.Control.Monad.IsMonadHom
+import Complexity.Foundations.Control.Monad.FilterM
 import Complexity.Foundations.Data.List.EraseDups
 
 /-!
@@ -32,7 +33,6 @@ Breadth-first search and the bookkeeping on lists are pure host computation and 
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.Matroid.selectM`: monadic filter, one test per element.
 * `Cslib.Algorithms.Lean.Matroid.ExchTables`, `exchTablesM`, `exchTables`: the exchange digraph of
   `I` computed by independence tests.
 * `Cslib.Algorithms.Lean.Matroid.exchSearch`: breadth-first search in the exchange digraph.
@@ -51,6 +51,8 @@ Breadth-first search and the bookkeeping on lists are pure host computation and 
   ([Schrijver2017], Theorem 10.8).
 * `Cslib.Algorithms.Lean.Matroid.maxCommonIndepM_pure`, `Cslib.IsMonadHom.map_maxCommonIndepM`:
   the monadic algorithm with pure tests is the pure algorithm, and monad morphisms commute with it.
+  The tests are issued through core `List.filterM`; the bridges use `List.filterM_pure` and
+  `Cslib.IsMonadHom.map_filterM` from `Complexity.Foundations.Control.Monad.FilterM`.
 
 ## References
 
@@ -65,34 +67,6 @@ open Cslib.Reachability
 open scoped symmDiff
 
 namespace Cslib.Algorithms.Lean.Matroid
-
-/-! ### A monadic filter -/
-
-/-- Keep the elements of `xs` accepted by the effectful test `p`, testing each element once, from
-left to right. -/
-@[expose] def selectM {α : Type} {m : Type → Type*} [Monad m] (p : α → m Bool) :
-    List α → m (List α)
-  | [] => pure []
-  | x :: xs => do
-    let b ← p x
-    let ys ← selectM p xs
-    pure (if b then x :: ys else ys)
-
-@[simp] theorem selectM_pure {α : Type} {m : Type → Type*} [Monad m] [LawfulMonad m]
-    (p : α → Bool) (xs : List α) :
-    selectM (fun x => (pure (p x) : m Bool)) xs = pure (xs.filter p) := by
-  induction xs with
-  | nil => rfl
-  | cons x xs ih =>
-    simp only [selectM, pure_bind, ih, List.filter_cons]
-
-theorem _root_.Cslib.IsMonadHom.map_selectM {α : Type} {m n : Type → Type*} [Monad m] [Monad n]
-    {f : {γ : Type} → m γ → n γ} (hf : IsMonadHom m n f) (p : α → m Bool) (xs : List α) :
-    f (selectM p xs) = selectM (fun x => f (p x)) xs := by
-  induction xs with
-  | nil => exact hf.map_pure _
-  | cons x xs ih =>
-    simp only [selectM, hf.map_bind, hf.map_pure, ih]
 
 /-! ### The exchange digraph -/
 
@@ -144,13 +118,14 @@ matroid for an exchange arc. -/
   (V.filter (· ∈ I)).flatMap fun x => (V.filter (· ∉ I)).map fun y => (x, y)
 
 /-- The exchange digraph of `I` on the candidates `V`, computed by the effectful independence
-tests `indep₁` and `indep₂`: `2 * |V \ I| * (1 + |I|)` tests on duplicate-free `V`. -/
+tests `indep₁` and `indep₂`: `2 * |V \ I| * (1 + |I|)` tests on duplicate-free `V` with
+`I ⊆ V`. -/
 @[expose] def exchTablesM {α : Type} [DecidableEq α] {m : Type → Type*} [Monad m]
     (indep₁ indep₂ : Finset α → m Bool) (V : List α) (I : Finset α) : m (ExchTables α) := do
-  let sources ← selectM (fun y => indep₁ (insert y I)) (V.filter (· ∉ I))
-  let sinks ← selectM (fun y => indep₂ (insert y I)) (V.filter (· ∉ I))
-  let arcs₁ ← selectM (fun e => indep₁ (insert e.2 (I.erase e.1))) (exchPairs V I)
-  let arcs₂ ← selectM (fun e => indep₂ (insert e.2 (I.erase e.1))) (exchPairs V I)
+  let sources ← (V.filter (· ∉ I)).filterM fun y => indep₁ (insert y I)
+  let sinks ← (V.filter (· ∉ I)).filterM fun y => indep₂ (insert y I)
+  let arcs₁ ← (exchPairs V I).filterM fun e => indep₁ (insert e.2 (I.erase e.1))
+  let arcs₂ ← (exchPairs V I).filterM fun e => indep₂ (insert e.2 (I.erase e.1))
   pure ⟨sources, sinks, arcs₁, arcs₂⟩
 
 /-- The exchange digraph of `I` on the candidates `V`, computed by Boolean independence tests. -/
@@ -214,10 +189,10 @@ variable {α : Type} [DecidableEq α] {m n : Type → Type*} [Monad m] [Monad n]
     exchTablesM (fun S => (pure (indep₁ S) : m Bool)) (fun S => pure (indep₂ S)) V I =
       pure (exchTables indep₁ indep₂ V I) := by
   simp only [exchTablesM, exchTables]
-  rw [selectM_pure (p := fun y => indep₁ (insert y I)),
-    selectM_pure (p := fun y => indep₂ (insert y I)),
-    selectM_pure (p := fun e : α × α => indep₁ (insert e.2 (I.erase e.1))),
-    selectM_pure (p := fun e : α × α => indep₂ (insert e.2 (I.erase e.1)))]
+  rw [List.filterM_pure (p := fun y => indep₁ (insert y I)),
+    List.filterM_pure (p := fun y => indep₂ (insert y I)),
+    List.filterM_pure (p := fun e : α × α => indep₁ (insert e.2 (I.erase e.1))),
+    List.filterM_pure (p := fun e : α × α => indep₂ (insert e.2 (I.erase e.1)))]
   simp only [pure_bind]
 
 @[simp] theorem maxCommonIndepLoopM_pure [LawfulMonad m] (indep₁ indep₂ : Finset α → Bool)
@@ -243,7 +218,7 @@ theorem _root_.Cslib.IsMonadHom.map_exchTablesM {f : {γ : Type} → m γ → n 
     (hf : IsMonadHom m n f) (indep₁ indep₂ : Finset α → m Bool) (V : List α) (I : Finset α) :
     f (exchTablesM indep₁ indep₂ V I) =
       exchTablesM (fun S => f (indep₁ S)) (fun S => f (indep₂ S)) V I := by
-  simp only [exchTablesM, hf.map_bind, hf.map_selectM, hf.map_pure]
+  simp only [exchTablesM, hf.map_bind, hf.map_filterM, hf.map_pure]
 
 theorem _root_.Cslib.IsMonadHom.map_maxCommonIndepLoopM {f : {γ : Type} → m γ → n γ}
     (hf : IsMonadHom m n f) (indep₁ indep₂ : Finset α → m Bool) (V : List α) (fuel : ℕ)
@@ -277,6 +252,10 @@ variable {α : Type*} [DecidableEq α] {M₁ M₂ : Matroid α} {indep₁ indep�
 theorem mem_exchPairs {V : List α} {I : Finset α} {x y : α} :
     (x, y) ∈ exchPairs V I ↔ x ∈ V ∧ x ∈ I ∧ y ∈ V ∧ y ∉ I := by
   simp [exchPairs, and_assoc]
+
+theorem length_exchPairs (V : List α) (I : Finset α) :
+    (exchPairs V I).length = (V.filter (· ∈ I)).length * (V.filter (· ∉ I)).length := by
+  simp [exchPairs, List.length_flatMap]
 
 private theorem src_exchTables_iff (h₁ : ∀ S, indep₁ S = true ↔ M₁.Indep (S : Set α))
     {V : List α} {I : Finset α} {v : α} :
