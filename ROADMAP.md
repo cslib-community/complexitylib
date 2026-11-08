@@ -1470,6 +1470,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   rectangular and sparse weighted bipartite matching, general (non-bipartite) matching with
   blossoms (weighted and unweighted), and a sparse Hopcroft–Karp entry point that also charges
   construction of the adjacency lists.
+- **Gomory–Hu trees** ([#3320](https://github.com/cslib-community/complexitylib/issues/3320)):
+  remaining after the existence theorem for cut-equivalent trees of symmetric submodular set
+  functions and weighted undirected graphs, with flow-equivalence, the minimum-cut triangle
+  inequality and the `n - 1` bound on distinct minimum cut values (`Algorithms/Lean/GomoryHu`,
+  [#3285](https://github.com/cslib-community/complexitylib/issues/3285)): the Gomory–Hu or
+  Gusfield construction with `n - 1` maximum-flow calls as a `TimeM` program over Edmonds–Karp,
+  with its running-time bound, and real-valued capacities.
 - **Algebraic matching** ([#3052](https://github.com/cslib-community/complexitylib/issues/3052)):
   remaining after Edmonds' determinant criterion and Lovász's randomized test for bipartite
   graphs (`Algorithms/Matching/Edmonds`), the bipartite Mulmuley–Vazirani–Vazirani core
