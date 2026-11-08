@@ -558,6 +558,16 @@ index links to canonical definitions rather than keeping a second set.
   and registry does not complete that broader scope.
   For Cook–Mertz itself: malformed-input handling and the refined
   `O(ℓ + H log(ℓ + 2))` parameter bound remain open ([#2855]).
+- **Time–space lower bounds for nondeterministic linear time**
+  ([#2896](https://github.com/cslib-community/complexitylib/issues/2896)): simultaneous
+  `TISP(t, s)`, two-quantifier alternating time `Σ₂TIME(t)` (bridged to `Σ₂ᵖ`) and the slowdown
+  lemma `NTIME(n) ⊆ DTIME(t') ⇒ Σ₂TIME(t) ⊆ NTIME(t'(O(t)))` are in
+  [`TimeSpace/Slowdown.lean`](Complexity/Computability/Complexity/Classes/TimeSpace/Slowdown.lean).
+  Still open: the speedup lemma `TISP(t, s) ⊆ Σ₂TIME(...)` by guessing configurations of the
+  universal machine, and the Arora–Barak lower bound `NTIME(n) ⊄ TISP(n^1.2, n^0.2)` with the
+  Lipton–Viglas `n^(√2 − ε)` form. Beyond these: the `√(t·s)` windowed speedup, the golden-ratio
+  deterministic bound of Fortnow, Lipton, van Melkebeek and Viglas, and the transfer to SAT. The
+  transfer needs a quasi-linear-size Cook–Levin reduction.
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
   bounds for sublinear space, distinct from polynomial-space simulation.
 - **Alternating space, `EXP ⊆ APSPACE` and `P ⊆ AL`**
@@ -792,6 +802,14 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `a / b ≥ 1 - qbar k h`); Schöning has a curated abstract. Optional remainder: PPZ and PPSZ
   abstracts, and the uniform `o(n)` forms of the PPSZ bounds with `w` growing in `n`.
   Further fine-grained reductions and consequences of ETH, SETH and other named hypotheses.
+- **Reductions from orthogonal vectors**
+  ([#3037](https://github.com/cslib-community/complexitylib/issues/3037)): diameter two versus
+  three is done for general `m` (`FineGrained.Diameter`, the `OV` form of Roditty–Vassilevska
+  Williams Theorem 9). Remaining: the `(3/2 - ε)`-approximation corollary for diameter; the
+  sparse-graph `m ^ (2 - ε)` statement, which needs the low-dimension form of `OVH` (dimension
+  `c log N`, from `SETH` with sparsification); the quadratic dynamic programs for longest common
+  subsequence and edit distance, and their `OV` hardness by alignment gadgets (Backurs–Indyk;
+  Abboud–Backurs–Vassilevska Williams; Bringmann–Künnemann).
 
 ### Approximation and PCP
 
@@ -828,16 +846,19 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 - Proof-space lower bounds, Frege, polynomial calculus and sum-of-squares, and certified DPLL
   solver runtimes.
-- **Cutting planes:** Krajíček's feasible interpolation for cutting planes with bounded
-  coefficients and the resulting clique–colouring lower bound
-  ([#2019](https://github.com/cslib-community/complexitylib/issues/2019), M4); Pudlák's
+- **Cutting planes:** the clique–colouring lower bound for cutting planes with bounded
+  coefficients from Krajíček's feasible interpolation, Corollary 7.3
+  ([#2019](https://github.com/cslib-community/complexitylib/issues/2019), M4b), and the
+  monotone case of the interpolation theorem in which the shared variables occur in `Γ_B` with
+  nonpositive coefficients only; Pudlák's
   lower bound for unrestricted coefficients via monotone real circuits (untracked);
   coefficient-size measures; Buss–Clote cutting planes with division by 2 only; and the
   simulation of resolution as a p-simulation of Cook–Reckhow proof systems, with encodings and
   translation time.
 - **Feasible interpolation** ([#1817]): further clients of Krajíček's interpolation theorem for
   semantic derivations ([#2019]): resolution through Theorem 6.1, the linear equational calculus,
-  and the monotone case for the `ℬ` side. The cutting-planes client is under **Cutting planes**.
+  and the monotone case for the `ℬ` side. The remaining cutting-planes work is under **Cutting
+  planes**.
 - **Proof search:** automatizability and weak automatizability with explicit encodings and
   runtime dependence on the shortest proof; proof-search reductions built on the Cook–Reckhow
   and p-simulation APIs; then reflection principles and bounded-arithmetic witnessing theorems.
@@ -849,9 +870,13 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   NEXP. `SymAnd/ACC0.lean` defines the `SYM ∘ AND` circuit `Circuit.toSymAnd` of every circuit
   with `MOD_m` gates, `m > 0`, and proves that it computes the same function with polylogarithmic
   fan-in and quasi-polynomial size, with explicit bounds (Yao; Beigel–Tarui, Theorem 1.1); every
-  language of `AC0Mod m` (any `m`) and of `ACC0` follows. Still open: a machine computing that
-  circuit in quasi-polynomial time, Williams's fast `SYM ∘ AND` evaluation and ACC-SAT algorithm,
-  a fine nondeterministic time hierarchy, and the `E^NP` and NEXP lower bounds.
+  language of `AC0Mod m` (any `m`) and of `ACC0` follows. `SymAnd/Evaluate.lean` proves Williams's
+  Evaluation Lemma in the unit-cost `TimeM` model: Yates's fast zeta transform gives the truth
+  table of a `SYM ∘ AND` circuit with `s` gates, whose symmetric gate costs `T`, in
+  `(n + 2)(2^n + (s + 1)(T + 1))` ticks
+  ([#3023](https://github.com/cslib-community/complexitylib/issues/3023)). Still open: a machine
+  computing that circuit in quasi-polynomial time, a Turing-machine or word-RAM evaluator, the
+  ACC-SAT algorithm, a fine nondeterministic time hierarchy, and the `E^NP` and NEXP lower bounds.
 - **Circuit lower bounds from refuting ETH** ([#1539]): `E^NP ⊄ SIZE(O(n))`, and a language in
   `E^NP` whose fan-in-two circuits need more than `c n √log n` gates infinitely often, by
   Williams's witness-circuit argument with the library's #CircuitSAT counters. `E^NP` is defined,
