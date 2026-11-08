@@ -62,7 +62,7 @@ theorem isPolyTime_composeSelectedEnumerated {Input : Type} {input : Input ↪ L
     {graph : Input → Graph (α → α → Bool)}
     (hgraph : ComputableInPolyTime graph input (encoding constraintEncoding)) :
     ComputableInPolyTime (fun x => (graph x).composeSelectedEnumerated)
-      input (encoding (encPi (encPi encBool))) :=
+      input (encoding encConstraintTable) :=
   SelectedHadamardTester.implementation.isPolyTime_composeEnumerated hgraph
 
 /-- Each old vertex and edge reserves a complete local slot block. -/
