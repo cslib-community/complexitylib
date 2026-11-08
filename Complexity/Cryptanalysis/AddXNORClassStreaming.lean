@@ -307,8 +307,12 @@ def allRecords (input : Input) (right : Bool) : List (ℕ × ℕ) :=
 
 /-- The streaming observer is the selected low-bit class of the actual generated records. -/
 theorem mem_records (input : Input) (right : Bool) (r : ℕ × ℕ) :
+    let parameters := input.2
+    let depth := parameters.1
+    let selectedClass := parameters.2
     r ∈ records input right (limit input right) ↔
-      r ∈ allRecords input right ∧ r.1 % 2 ^ input.2.1 = input.2.2 := by
+      r ∈ allRecords input right ∧ r.1 % 2 ^ depth = selectedClass := by
+  dsimp only
   simp only [records, allRecords, List.mem_map, List.mem_filter, List.mem_range, accepts,
     decide_eq_true_eq]
   constructor
@@ -319,9 +323,16 @@ theorem mem_records (input : Input) (right : Bool) (r : ℕ × ℕ) :
 
 /-- Reuse the actual sorted generator's permutation, with full inverse payload provenance. -/
 theorem allRecords_mem (input : Input) (right : Bool) (r : ℕ × ℕ) :
+    let source := input.1
+    let parameters := source.1
+    let width := parameters.1
+    let halves := source.2
+    let forward := halves.1
+    let backward := halves.2
     r ∈ allRecords input right ↔ r ∈
-      if right then SortedMeet.inverse ((input.1.1.1, 0), input.1.2.2)
-      else SortedQuarterMachine.run (input.1.1, input.1.2.1) := by
+      if right then SortedMeet.inverse ((width, 0), backward)
+      else SortedQuarterMachine.run (parameters, forward) := by
+  dsimp only
   have h (q : SortedQuarterMachine.Input) (r : ℕ × ℕ) :
       r ∈ SortedQuarterMachine.run q ↔
         r ∈ (List.range (2 ^ q.2.length)).map (SortedQuarterMachine.record q) := by
@@ -408,9 +419,16 @@ theorem allSearch_none {m : ℕ} (as bs : List (BitVec m)) (s : BitVec m) (p : �
 /-- Every all-class hit is also a hit of the reviewed full-state batch matcher. -/
 theorem allSearch_sound (input : SortedMeet.Input × ℕ) (out : ℕ × ℕ)
     (hit : allSearch input = some out) :
-    ∃ a ∈ SortedQuarterMachine.run (input.1.1, input.1.2.1),
-      ∃ b ∈ SortedMeet.inverse ((input.1.1.1, 0), input.1.2.2),
+    let source := input.1
+    let parameters := source.1
+    let width := parameters.1
+    let halves := source.2
+    let forward := halves.1
+    let backward := halves.2
+    ∃ a ∈ SortedQuarterMachine.run (parameters, forward),
+      ∃ b ∈ SortedMeet.inverse ((width, 0), backward),
         a.1 = b.1 ∧ out = (a.2, b.2) := by
+  dsimp only
   obtain ⟨g, _, hs⟩ := all_sound input out hit
   obtain ⟨a, ha, b, hb, he, ho⟩ := search_sound _ out hs
   exact ⟨a, (allRecords_mem _ _ _).mp ((mem_records _ _ _).mp ha).1,
