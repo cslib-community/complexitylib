@@ -300,7 +300,7 @@ example : ¬ IsOraclePPTOn encBits encBits
   obtain ⟨c, d, hbound⟩ := h.length_le
   let reply := List.replicate (c + 1) false
   have hlength := hbound [] Unit (fun _ s => PMF.pure (reply, s)) () () reply (by
-    simp [StateT.run])
+    simp)
   simp only [encBits, Function.Embedding.coe_refl, id_eq, List.length_nil, Nat.zero_add, one_pow,
     Nat.mul_one, reply, List.length_replicate] at hlength
   lia

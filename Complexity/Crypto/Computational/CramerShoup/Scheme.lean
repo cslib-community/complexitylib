@@ -365,9 +365,7 @@ theorem ADCCA2AdversaryOf.IsPPT.query_bounds {Msg AD : Type} {encMsg : Msg ↪ L
           (c₂ * (n + state.length + ct.length + 2) ^ d₂)) ∧
       (∀ n pk (State : Type)
         (oracle : Unit × List Bool → StateT State PMF (List Bool)) s s' choice,
-        (choice, s') ∈ ((OracleComp.interpret
-          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m)) oracle)
-            (adversary.choose n pk)).run s).support →
+        (choice, s') ∈ (ProbOracleComp.runWith oracle (adversary.choose n pk) s).support →
         choice.2.length ≤ cs * (n + pk.length + 2) ^ ds) := by
   obtain ⟨c₁, d₁, hchoose⟩ := hA.choose.query_bounds
   obtain ⟨c₂, d₂, hguess⟩ := hA.guess.query_bounds

@@ -122,9 +122,8 @@ theorem IsOraclePPTOn.run_interpret_preprocess_open
           (output <$> program (prepare a))).run (initial a) := by
     rw [OracleComp.interpret_map, StateT.run_map, Functor.map_map]
     rfl
-  rw [hout, OracleComp.interpret_map, StateT.run_map, OracleComp.interpret_map, StateT.run_map,
-    ProbOracleComp.run_interpret_run_interpret, ProbOracleComp.run_interpret_run_interpret,
-    hrealize]
+  rw [hout, ProbOracleComp.runWith_map, ProbOracleComp.runWith_map,
+    ProbOracleComp.runWith_run_interpret, ProbOracleComp.runWith_run_interpret, hrealize]
 
 /-- `Cslib.Probability.IsOraclePPTOn.run_interpret_preprocess_open` with plain polynomial-time
 preparation, initial state and resource allowance. -/

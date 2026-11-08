@@ -75,14 +75,11 @@ theorem IsOraclePPTOn.exists_savedCoins {Operation α β : Type} [DecidableEq Op
         (fun p : List Bool × List Bool =>
           machine.runCoins (fun op word => ProbOracleComp.query (op, word)) p.1 p.2) ∧
       ∀ a (Store : Type) (oracle : Operation × List Bool → StateT Store PMF (List Bool)) s,
-        (OracleComp.interpret
-          (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-            (output <$> program a)).run s =
+        ProbOracleComp.runWith oracle (output <$> program a) s =
           (BitString.uniformList (c * ((input a).length + 1) ^ d)).bind (fun coins =>
-            (OracleComp.interpret
-              (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-                (machine.runCoins (fun op word => ProbOracleComp.query (op, word))
-                  coins (input a))).run s) := by
+            ProbOracleComp.runWith oracle
+                (machine.runCoins (fun op word => ProbOracleComp.query (op, word)) coins (input a))
+                s) := by
   obtain ⟨hops, k, Control, hfinite, machine, c, d, hrun⟩ := h
   let := hops
   let := hfinite
@@ -96,8 +93,8 @@ theorem IsOraclePPTOn.exists_savedCoins {Operation α β : Type} [DecidableEq Op
     (fun _ => by simp only [ProbOracleComp.run_interpret_sample, ProbComp.eval_uniform])
     (c * ((input a).length + 1) ^ d) (machine.initialConfig (input a)) s
   have hout := congrArg (PMF.map (fun result => (result.1.tapes.output, result.2))) hc
-  simpa only [MultiTapePTM.runOracle, MultiTapePTM.run, MultiTapePTM.runFrom, runCoins,
-    runFromCoins, OracleComp.interpret_map,
+  simpa only [ProbOracleComp.runWith, OracleComp.runWith, MultiTapePTM.runOracle,
+    MultiTapePTM.run, MultiTapePTM.runFrom, runCoins, runFromCoins, OracleComp.interpret_map,
     StateT.run_map, PMF.monad_map_eq_map, PMF.map_bind] using hout
 
 end Cslib.Probability

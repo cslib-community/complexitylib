@@ -185,14 +185,16 @@ theorem oraclePPT_iff {program : ℕ → List Bool → OracleProgram Bool} :
   constructor
   · rintro ⟨k, Control, hfinite, machine, c, d, h⟩
     refine ⟨inferInstance, k, Control, hfinite, machine, c, d, fun p State oracle s => ?_⟩
-    simpa only [execute_eq, boolEncoding, encBool, encodePair, encPair, unaryEncoding, encUnary,
-      bitsEncoding, encBits, frame, Turing.MultiTapeTM.frame, Function.Embedding.coeFn_mk,
-      Function.Embedding.coe_refl] using h p.1 p.2 State oracle s
+    simpa only [execute_eq, Cslib.ProbOracleComp.runWith, Cslib.OracleComp.runWith,
+      boolEncoding, encBool, encodePair, encPair, unaryEncoding, encUnary, bitsEncoding, encBits,
+      frame, Turing.MultiTapeTM.frame, Function.Embedding.coeFn_mk, Function.Embedding.coe_refl]
+      using h p.1 p.2 State oracle s
   · rintro ⟨_, k, Control, hfinite, machine, c, d, h⟩
     refine ⟨k, Control, hfinite, machine, c, d, fun n aux State oracle s => ?_⟩
-    simpa only [execute_eq, boolEncoding, encBool, encodePair, encPair, unaryEncoding, encUnary,
-      bitsEncoding, encBits, frame, Turing.MultiTapeTM.frame, Function.Embedding.coeFn_mk,
-      Function.Embedding.coe_refl] using h (n, aux) State oracle s
+    simpa only [execute_eq, Cslib.ProbOracleComp.runWith, Cslib.OracleComp.runWith,
+      boolEncoding, encBool, encodePair, encPair, unaryEncoding, encUnary, bitsEncoding, encBits,
+      frame, Turing.MultiTapeTM.frame, Function.Embedding.coeFn_mk, Function.Embedding.coe_refl]
+      using h (n, aux) State oracle s
 
 noncomputable def evaluateOracle {β : Type} (program : OracleProgram β)
     (oracle : List Bool → List Bool) : PMF β :=
