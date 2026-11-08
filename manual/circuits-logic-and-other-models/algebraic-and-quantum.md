@@ -105,7 +105,24 @@ Complete client: [MatrixRigidity.lean](../../ComplexityTests/MatrixRigidity.lean
 lake build Complexity.Computability.Circuit.Arithmetic.Rigidity ComplexityTests.MatrixRigidity
 ```
 
-**Not certified here.** No explicit matrix is known to satisfy the asymptotic hypothesis, since finding one is Valiant's open problem. The test's witness is therefore degenerate: its rank target is `0`. The criterion does not cover nonlinear gates over finite fields, or fan-in above `2`. The size here counts gates, not Lokam's edges. Explicit rigidity lower bounds (the untouched-minor argument, Cauchy and Vandermonde matrices), the counting bounds `R_A(r) ≤ (n - r)²` and near-maximal rigidity of random matrices, and Alman–Williams non-rigidity of the Walsh–Hadamard matrices are open; see [ROADMAP.md](../../ROADMAP.md).
+**Not certified here.** No explicit matrix is known to satisfy the asymptotic hypothesis, since finding one is Valiant's open problem. The test's witness is therefore degenerate: its rank target is `0`. The criterion does not cover nonlinear gates over finite fields, or fan-in above `2`. The size here counts gates, not Lokam's edges.
+
+### Explicit lower bounds: totally regular and Cauchy matrices
+
+[Matrix/Rigidity/TotallyRegular.lean](../../Complexity/Foundations/LinearAlgebra/Matrix/Rigidity/TotallyRegular.lean) proves the explicit rigidity bound of Friedman and of Shokrollahi, Spielman and Stemann, the best known explicit bound as surveyed by Lokam (2009), in the form of Lokam's Theorem 2.5. `IsTotallyRegular.le_rigidity_of_le_two_pow` says that an `n × n` totally regular matrix (every square submatrix is nonsingular, `Matrix.IsTotallyRegular`) needs at least `n² / (4 (r + 1)) · log₂ (n / r)` changes to bring its rank down to at most `r`, for `n ≤ 2 ^ r` and `2 r ≤ n`. Lokam states the theorem for `log² n ≤ r ≤ n / 2`, with the square of the logarithm. With base-`2` logarithms, `log² n ≤ r` implies `n ≤ 2 ^ r`, so the range proved here is wider; for example, `n = 64`, `r = 6` is inside it but outside Lokam's. The proof is the same, so this is not a new result. The logarithm in the bound is to base `2`; Lokam leaves the base of `log (n / r)` unstated. The proof has two steps:
+
+- `Cslib.kovari_sos_turan` in [KovariSosTuran.lean](../../Complexity/Foundations/Combinatorics/KovariSosTuran.lean) is the Kővári–Sós–Turán bound (Lokam, Lemma 2.3, from Bollobás, *Modern Graph Theory*, §IV.2, Theorem 10). It is stated for an `m × n` grid with natural-number powers and truncated subtraction: a set `S` with no `s × s` rectangle `I ×ˢ J` satisfies `n (|S| - (s - 1) n) ^ s ≤ (s - 1) (n (m + 1 - s)) ^ s`. For `1 ≤ s ≤ m + 1`, taking `s`-th roots gives Lokam's real-root form; outside that range the real-root form can fail (a full `1 × 1` grid with `s = 3`), but the natural-number form still holds.
+- `Cslib.exists_disjoint_product_of_card_lt` is the untouched-minor lemma (Lokam, Lemma 2.4). If fewer than `n (m - r) / (2 (r + 1)) · log₂ (n / r)` cells of an `m × n` grid are changed, with `n ≤ r 2 ^ (r + 1)`, then some `(r + 1) × (r + 1)` rectangle is untouched. For `r ≥ m` the bound is `0`, so there is nothing to prove. In a totally regular matrix that submatrix is nonsingular, so the changed matrix keeps rank at least `r + 1`.
+
+`IsTotallyRegular.le_rigidity` is the rectangular statement the proof gives: `n (m - r) / (2 (r + 1)) · log₂ (n / r) ≤ A.rigidity r` for an `m × n` totally regular matrix, under `n ≤ r 2 ^ (r + 1)`. For square matrices, Lokam's hypothesis `log² n ≤ r` implies `n ≤ 2 ^ r ≤ r 2 ^ (r + 1)` when `r ≥ 1`. `le_rigidity_cauchy` applies the bound to Cauchy matrices. The library writes them as `1 / (x i - y j)`; Lokam's `1 / (x i + y j)` is `cauchy x (-y)`. `le_rigidity_cauchyNat` and `le_rigidity_cauchyNat_zmod` apply it to the explicit family `cauchyNat` over fields of characteristic zero and over `ZMod q` for primes `q ≥ 2 n`.
+
+Complete client: [MatrixRigidityCauchy.lean](../../ComplexityTests/MatrixRigidityCauchy.lean). It checks that the Kővári–Sós–Turán bound is attained on a `2 × 2` grid and derives the bound `22` for rectangle-free subsets of a `7 × 7` grid. It checks that every `5` cells of a `4 × 4` grid miss some `2 × 2` rectangle, and that a rectangular `4 × 8` Cauchy matrix satisfies every hypothesis of the general bound. Finally it shows that the `64 × 64` explicit Cauchy matrix over `ℚ` and over `ZMod 131` needs at least `438` changes to reach rank at most `6`. These parameters satisfy `n ≤ 2 ^ r` but lie outside Lokam's `log² n ≤ r`. Build it with
+
+```bash
+lake build Complexity.Foundations.LinearAlgebra.Matrix.Rigidity.TotallyRegular ComplexityTests.MatrixRigidityCauchy
+```
+
+**Not certified here.** At `r = ε n` the bound is only `Ω(n)`, far below what Valiant's criterion needs (Lokam, p. 16). Shparlinsky's Vandermonde bound, the Sylvester–Hadamard bounds, the counting bounds `R_A(r) ≤ (n - r)²` and near-maximal rigidity of random matrices, and Alman–Williams non-rigidity of the Walsh–Hadamard matrices are open; see [ROADMAP.md](../../ROADMAP.md).
 
 ## Rational formulas and hitting lists
 
