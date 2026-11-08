@@ -289,6 +289,11 @@ Sandy Irani. "Two Results on the List Update Problem." *Information Processing L
 
 Anna R. Karlin, Mark S. Manasse, Larry Rudolph, Daniel D. Sleator. "Competitive Snoopy Caching." *Algorithmica* 3, 79–119, 1988. https://doi.org/10.1007/BF01762111 . Bibliographic data from secondary indexes and the DOI record; the full text was not inspected in this pass. The manual credits this paper only with the rent-or-buy framing behind ski rental, which secondary sources attribute to it.
 
+<a id="kasai01"></a>
+## kasai01
+
+Toru Kasai, Gunho Lee, Hiroki Arimura, Setsuo Arikawa and Kunsoo Park. "Linear-Time Longest-Common-Prefix Computation in Suffix Arrays and Its Applications." *Combinatorial Pattern Matching (CPM 2001)*, Lecture Notes in Computer Science 2089, 181–192, Springer, 2001. https://doi.org/10.1007/3-540-48194-X_17 . Bibliographic data from secondary indexes and the DOI record; the publisher's full text was not accessible in this pass. The manual credits it with the text-order LCP algorithm and the height lemma `lcp[rank[i + 1]] ≥ lcp[rank[i]] - 1`, following the customary attribution; its internal lemma and theorem numbers are not cited.
+
 <a id="katzlindell20"></a>
 ## katzlindell20
 
@@ -333,6 +338,11 @@ Yanyi Liu and Rafael Pass. *On One-way Functions and Kolmogorov Complexity*. FOC
 ## ltv98
 
 Ming Li, John Tromp and Paul Vitányi. *Reversible Simulation of Irreversible Computation by Pebble Games*. Physica D 120, 168–176, 1998. https://doi.org/10.1016/S0167-2789(98)00052-9 . Locators refer to arXiv:quant-ph/9703009v3 (11 April 1997), https://arxiv.org/abs/quant-ph/9703009v3 . The reversible pebble rule (Section 6), the procedures `pebble(s, n)` and `unpebble(s, n)` (Section 7), Theorem 1, Corollaries 1 and 2, Lemma 1 and Theorem 2 were checked.
+
+<a id="manbermyers93"></a>
+## manbermyers93
+
+Udi Manber and Gene Myers. "Suffix Arrays: A New Method for On-Line String Searches." *SIAM Journal on Computing* 22(5), 935–948, 1993; preliminary version in SODA 1990. https://doi.org/10.1137/0222058 . Bibliographic data from secondary indexes and the DOI record; the journal text is behind the SIAM paywall and was not inspected. The manual credits it with the suffix array and with the contrast between the plain `O(P log N)` binary search and the `O(P + log N)` search that reuses longest-common-prefix information, following the customary attribution; section and theorem numbers are not cited.
 
 <a id="mathlib"></a>
 ## mathlib
