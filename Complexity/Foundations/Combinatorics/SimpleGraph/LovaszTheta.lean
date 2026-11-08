@@ -21,7 +21,7 @@ An *orthonormal representation* of a simple graph `G` on `V` is a family of unit
 in a real inner product space such that `u v ⟂ u w` whenever `v ≠ w` are nonadjacent. Lovász's
 theta function is
 `ϑ(G) = min_{u, c} max_v 1 / ⟪c, u v⟫²`,
-over orthonormal representations `u` and unit vectors `c` (the *handle*) [Lovasz1979]; this is the
+over orthonormal representations `u` and unit vectors `c` (the *handle*) [Lovasz1979Shannon]; this is the
 unweighted case of `ϑ₁` in Knuth's notes [Knuth1994, §5, (5.2)], whose *orthogonal labelings* are
 orthonormal representations in this sense [Knuth1994, §1]. We define `ϑ(G)` as the infimum of all
 `t > 0` such that `1 ≤ t ⟪c, u v⟫²` for every vertex `v`, for some orthonormal representation in
@@ -40,9 +40,9 @@ the span of the finitely many vectors.
   *sandwich theorem* `α(G) ≤ ϑ(G) ≤ χ(Gᶜ)` [Knuth1994, §4, (4.9)].
 * **Strong products** (`SimpleGraph.lovaszTheta_strongProd_le`): `ϑ(G ⊠ H) ≤ ϑ(G) ϑ(H)`. The
   tensor products `u v ⊗ w v'` form an orthonormal representation of `G ⊠ H` with handle
-  `c ⊗ c'` [Lovasz1979], [Knuth1994, §20, Lemma].
+  `c ⊗ c'` [Lovasz1979Shannon], [Knuth1994, §20, Lemma].
 * **Shannon capacity** (`SimpleGraph.shannonCapacity_le_lovaszTheta`): `Θ(G) ≤ ϑ(G)`, since
-  `α(Gᵏ) ≤ ϑ(Gᵏ) ≤ ϑ(G)ᵏ` [Lovasz1979].
+  `α(Gᵏ) ≤ ϑ(Gᵏ) ≤ ϑ(G)ᵏ` [Lovasz1979Shannon].
 
 The theta function can be computed to any precision in polynomial time by semidefinite
 programming or the ellipsoid method [Knuth1994]; that algorithmic statement is not formalized here.
@@ -64,7 +64,7 @@ programming or the ellipsoid method [Knuth1994]; that algorithmic statement is n
 ## References
 
 * [D. E. Knuth, *The sandwich theorem*][Knuth1994]
-* [L. Lovász, *On the Shannon capacity of a graph*][Lovasz1979]
+* [L. Lovász, *On the Shannon capacity of a graph*][Lovasz1979Shannon]
 -/
 
 public section

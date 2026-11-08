@@ -18,7 +18,7 @@ public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 The five-cycle `C₅ = SimpleGraph.cycleGraph 5` has independence number `2`, but its strong square
 has the independent set `{(i, 2i mod 5)}` of size `5` [Shannon1956], so `Θ(C₅) ≥ √5`. Shannon left
 the exact value open; Lovász proved `Θ(C₅) = √5` with the *umbrella* orthonormal representation in
-`ℝ³` [Lovasz1979]: the unit vectors
+`ℝ³` [Lovasz1979Shannon]: the unit vectors
 `u i = (5^(-1/4), r cos (2πi/5), r sin (2πi/5))`, `r² = 1 - 1/√5`,
 make `⟪u i, u j⟫ = 1/√5 + r² cos (2π(i - j)/5)` vanish when `i - j ≡ ±2 (mod 5)`, because
 `cos (4π/5) = -cos (π/5) = -(1 + √5)/4`. With the handle `c = (1, 0, 0)`, `⟪c, u i⟫² = 1/√5`, so
@@ -39,7 +39,7 @@ make `⟪u i, u j⟫ = 1/√5 + r² cos (2π(i - j)/5)` vanish when `i - j ≡ �
 ## References
 
 * [D. E. Knuth, *The sandwich theorem*][Knuth1994]
-* [L. Lovász, *On the Shannon capacity of a graph*][Lovasz1979]
+* [L. Lovász, *On the Shannon capacity of a graph*][Lovasz1979Shannon]
 * [C. E. Shannon, *The zero error capacity of a noisy channel*][Shannon1956]
 -/
 

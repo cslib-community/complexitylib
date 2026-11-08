@@ -18,7 +18,17 @@ Several stronger predicates retain the same membership equivalence while adding 
 | [`PolyTimeInvertibleLengthIncreasingOneOneReducible`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Isomorphism.lean#L311) | Both a total polynomial-time left inverse and strict encoded-length increase. |
 | [`PolyTimeIsomorphic`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Isomorphism.lean#L116) | An equivalence of the entire ambient instance types, with both directions polynomial time and membership preserved. |
 
-A left inverse is defined even outside the image of the forward map; its behavior there need not recover a meaningful source instance. An isomorphism requires surjectivity as well as injectivity. The isomorphism API proves preservation of [P](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Isomorphism.lean#L169) and [NP](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Isomorphism.lean#L174) and basic composition laws. It does not turn mutual one-one reducibility into an isomorphism theorem.
+A left inverse is defined even outside the image of the forward map; its behavior there need not recover a meaningful source instance. An isomorphism requires surjectivity as well as injectivity. The isomorphism API proves preservation of [P](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Isomorphism.lean#L169) and [NP](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Isomorphism.lean#L174) and basic composition laws. It does not by itself turn mutual one-one reducibility into an isomorphism theorem.
+
+### Berman–Hartmanis isomorphism theory
+
+The source version is the 1975 Cornell technical report of Berman and Hartmanis [bermanhartmanis75][bermanhartmanis75]. Locators below refer to that report; the numbering of the 1977 journal version has not been checked. The report works with languages of strings and with polynomial-time partial inverses defined on the range of a reduction. The library works with typed instances under injective encodings, total polynomial-time left inverses, and forward-image tests such as `f (f' y) = y` that decide the range. The padding results also need a total decoder, described below.
+
+[`polyTime_schroeder_bernstein`](../../Complexity/Computability/Complexity/Reduction/Isomorphism/SchroederBernstein.lean) is the polynomial-time Cantor–Schröder–Bernstein theorem of Berman and Hartmanis (§III, Theorem 1). Suppose maps `f : α → β` and `g : β → α` are polynomial time, strictly increase encoded length, and have polynomial-time left inverses. Then some `e : α ≃ β` has `e` and `e.symm` polynomial time and `e a = f a ∨ g (e a) = a` for every `a`. The proof decides the side on which the backward chain of preimages from `a` stops, by a fuelled walk through the iteration combinator. Length increase bounds the walk by the encoded length of `a`. Only left inverses are assumed, and the instance types are arbitrary types with injective encodings. Its corollary [`PolyTimeInvertibleLengthIncreasingOneOneReducible.polyTimeIsomorphic`](../../Complexity/Computability/Complexity/Reduction/Isomorphism/SchroederBernstein.lean) turns mutual `≤₁,ᵢₗ` reducibility into `≅ᵖ`.
+
+[`Paddable`](../../Complexity/Computability/Complexity/Reduction/Isomorphism/Paddable.lean) asks for polynomial-time maps `pad : α → List Bool → α` and `unpad : α → List Bool` with `unpad (pad a y) = y` and `pad a y ∈ A ↔ a ∈ A`. This is the typed form of the report's two-argument padding and read-back condition (Lemmas 3 and 5). The padding lemma upgrades a many-one reduction into a paddable language to `≤₁,ᵢₗ`: it pads the reduct with the framed source encoding and enough filler to exceed every polynomial bound on the read-back. Inverting it decodes a word back to a typed source instance, so the lemma and its corollaries assume a total polynomial-time `Decoder` for each source encoding. This hypothesis is the typed-model counterpart of working over strings. The module proves that interreducible paddable languages, and in particular paddable `NP`-complete languages, are `≅ᵖ`. It also proves that paddability is invariant under `≅ᵖ`, and that an `NP`-complete language is `≅ᵖ` to a paddable `NP`-complete one exactly when it is paddable. A nonempty paddable language is infinite. Reading words through a total decoder preserves paddability and `NP`-completeness, and gives a `≅ᵖ` between a paddable typed language and its word language.
+
+[`SAT.pad`](../../Complexity/Computability/Complexity/Problems/SAT/Paddable.lean) prepends the tautological clause `[(N, true), (N, false), (N, true)]`, where `N` has binary digits `y ++ [true]`. This gadget differs from the CNF construction for the report's Theorem 7, which pads with clauses over fresh variables: here one clause over a single variable records the padding in the variable's binary digits, and `N` need not be fresh because the clause is always true. The clause has width three and contains both literals of `N`, so `SAT`, `UNSAT`, `ThreeSAT`, `ExactThreeSAT` and `NAEThreeSAT` are paddable, and `SAT` is `≅ᵖ` to each of the three `NP`-complete variants under `encCNF`. The construction does not apply to languages that require distinct variables in a clause, such as `EUThreeSAT`, or exactly one true literal per clause. [`BermanHartmanisConjecture`](../../Complexity/Computability/Complexity/Reduction/Isomorphism/Conjecture.lean) states the conjecture of the report's §I as a hypothesis for languages of bit strings, following the source's string formulation; like the source's, it implies `P ≠ NP`. The module proves that the conjecture is equivalent to paddability of every `NP`-complete word language, and that it implies `SAT ∉ P` and `P ≠ NP` for formulas and for bit strings. Berman's theorem that `EXP`-complete sets are complete under one-one length-increasing reductions, and the Agrawal–Allender–Rudich `AC⁰` isomorphism theorem, are not formalized. The [BermanHartmanis tests](../../ComplexityTests/BermanHartmanis.lean) check an isomorphism between even- and odd-length words obtained from the theorem, a paddable and a nonpaddable language, concrete runs of the SAT padding, and client uses of the SAT-variant isomorphisms.
 
 ## Nonadaptive query batches
 
@@ -252,6 +262,33 @@ Undecidability of some left cut is not formalized, because no count of machines 
 open: self-reducible P-selective sets lie in `P`, and P-selective sets are not truth-table-hard for
 `NP` unless `P = NP`.
 
+## Sparse and tally oracles
+
+Meyer's theorem `P/poly = P^SPARSE` is in two modules. The oracle is a word language
+`S : Set (List Bool)`, sparse for `encBits` (`SPARSE encBits`) or tally (`TALLY`, all letters
+`true`). The decided problem `A : Set α` is in `PPolyOn enc` for an arbitrary instance encoding
+`enc`.
+[`Sparse.Turing`](../../Complexity/Computability/Complexity/Classes/Sparse/Turing.lean) proves
+`PWithOracle_subset_PPolyOn`: the advice lists the short members of `S`.
+[`Sparse.Meyer`](../../Complexity/Computability/Complexity/Classes/Sparse/Meyer.lean) proves the
+converse with a tally oracle. For `exists_polyTimeTruthTableReducible_adviceTally`,
+`PPoly.exists_evalAdvice` provides advice `α` of polynomial length. Its oracle `adviceTally α` contains the unary word of
+`Nat.pair n i` exactly when bit `i` of `α n` is `true` (`encUnary_pair_mem_adviceTally`). The
+reduction is nonadaptive. On an input of length `n` it asks all `|α n|` bit queries and then
+evaluates the listed circuits. `PolyTimeTruthTableReducible.polyTimeTuringReducible` turns it into
+`PWithOracle` membership.
+
+Use `mem_PPolyOn_iff_exists_mem_SPARSE_mem_PWithOracle` or
+`mem_PPolyOn_iff_exists_mem_TALLY_mem_PWithOracle` to move between circuits and oracles. For example,
+`P^S ⊆ P^T` for some tally `T` when `S` is sparse. The class equalities are
+`PPolyOn_eq_iUnion_PWithOracle_SPARSE` and `PPolyOn_eq_iUnion_PWithOracle_TALLY`, and
+`mem_PPolyOn_iff_exists_mem_TALLY_polyTimeTruthTableReducible` gives `P/poly = R_tt(TALLY)`. The
+oracle languages exist but need not be decidable, as for `P/poly` itself. The
+[checked client](../../ComplexityTests/SparseMeyer.lean) shows members and non-members of a
+concrete `adviceTally` and applies the theorem to every length-defined language, including
+undecidable ones. Kadin's `P^{NP[O(log n)]}` consequences and Hemachandra's `P^NP_tt`
+characterization remain open (see `ROADMAP.md`).
+
 ## Parameter-sensitive transfer rules
 
 [FPT reductions and kernels](parameterized-complexity.md) separately bound the target parameter by a function of the source parameter. Fine-grained transfer uses more quantitative contracts without defining a new reduction datatype. [`DecidableInExpTime.of_reduction`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/FineGrained/Reduction.lean#L117) takes a native polynomial-time membership-preserving map with `μB(f(a)) ≤ c μA(a)+c`. A target time rate `2^(δ μB)` yields source rate `2^(cδ μA)`, up to encoded-length polynomial factors, for `δ ≥ 0`. [`DecidableInSubexpTime.of_reduction`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/FineGrained/Reduction.lean#L181) transfers the predicate that permits a decider for each positive rate.
@@ -267,3 +304,4 @@ The inspected [ReductionVariants tests](https://github.com/cslib-community/compl
 [Autoreducibility](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/Autoreducibility.lean#L1) gives a concrete mitotic co-singleton and proves its many-one autoreducibility obstruction; [TuringAutoreducible](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/TuringAutoreducible.lean#L1) instantiates zero-query and parity-preserving examples. These are static inspections of existing test sources. The [model map](../model-map.md) indexes the semantic/resource variants and their explanations, with no fresh Lean compilation claim. The generic reduction kernel and the local bounded-reduction modules carry candidate upstream markers.
 
 [complexitylib]: ../sources.md#complexitylib
+[bermanhartmanis75]: ../sources.md#bermanhartmanis75

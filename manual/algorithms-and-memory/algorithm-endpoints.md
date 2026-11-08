@@ -103,6 +103,23 @@ executor is removed, while Model/Trees/Forest, PQCode and the execution core sti
 MinPQ/FibonacciHeapBridge remain. F2, its abstract-space decision and general whole-client
 transfer remain open; the selected abstract statements are unchanged.
 
+### All-pairs shortest paths and the (min,+) product
+
+Import `Complexity.Algorithms.Lean.Query.ShortestPaths.MinPlus` for the two reductions and `Complexity.Algorithms.Lean.Query.Arith.FloydWarshall` for Floyd–Warshall; both import the pure walk and matrix-power theory in `Complexity.Algorithms.ShortestPaths`.
+
+These results use the query model `FreeM`, not the word RAM. A weighted digraph on `Fin n` is a matrix over `MinTropical R`, where `R` is any `LinearOrderedAddCommMonoidWithTop`, for example `WithTop ℤ` with negative weights. The tropical `0 = ⊤` means no edge, `*` adds weights and `+` takes minima, so the matrix product is the (min,+) product. [Walk.lean](../../Complexity/Algorithms/ShortestPaths/Walk.lean) defines `walkWeight`, `NoNegCycle` (every closed walk has weight at least `0`) and `IsShortestDistances W D` (each `D i j` is the greatest lower bound of the weights of the walks from `i` to `j`). [Power.lean](../../Complexity/Algorithms/ShortestPaths/Power.lean) proves `isShortestDistances_one_add_pow`: `(1 + W) ^ k` is the distance matrix for every `k ≥ n - 1` when there are no negative cycles. It also proves the negative-cycle test `noNegCycle_iff_one_le_one_add_pow_diag`, which makes `NoNegCycle` decidable [CLRS 25.1][clrs09].
+
+The programs are generic in the entry type, so they combine weights only through `ArithQuery` queries: `.mul` adds weights and `.add` compares them. Correctness theorems assume an oracle that answers `.add` and `.mul` honestly. Cost theorems hold under every oracle. Indexing, `withOneDiag` and building the tripartite matrix are pure code, which `FreeM` does not charge.
+
+| Declaration | Statement |
+|---|---|
+| `Cslib.Query.floydWarshall`, `cost_floydWarshall`, `isShortestDistances_floydWarshall` | Floyd–Warshall with pivots `0, …, n−1` makes exactly `n³` additions and `n³` multiplications and returns the distance matrix [Floyd 1962][floyd62], [CLRS 25.2][clrs09]. The pure lemma `Cslib.Algorithms.ShortestPaths.isShortestDistances_foldl_fwStep` proves the relaxation correct for every pivot list that contains each vertex, in any order |
+| `Cslib.Query.schoolbookMatMul`, `cost_schoolbookMatMul` | the (min,+) product with `n²·(n·cMul + (n−1)·cAdd)` cost |
+| `Cslib.Query.apspBySquaring`, `isShortestDistances_apspBySquaring`, `cost_apspBySquaring_le` | APSP from any product subroutine `mp` with `⌈log₂(n−1)⌉` calls, so cost `⌈log₂(n−1)⌉·t` when each call costs at most `t` |
+| `Cslib.Query.minPlusViaAPSP`, `eval_minPlusViaAPSP`, `cost_minPlusViaAPSP` | the (min,+) product from one call of any APSP subroutine that is correct on `3n`-vertex graphs without negative cycles, at exactly the cost of that call |
+
+The two reductions are in [MinPlus.lean](../../Complexity/Algorithms/Lean/Query/ShortestPaths/MinPlus.lean), and the [tests](../../ComplexityTests/ShortestPaths.lean) run all programs on a graph with a negative edge. Together they show that a cost-`T(n)` algorithm for either problem gives one for the other with cost `⌈log₂(n−1)⌉·T(n)` or `T(3n)`. This is the starting point of the APSP class of [Vassilevska Williams and Williams][vww18]. The negative-triangle equivalence and the other problems in that class are not formalized. Neither is a word-RAM realization with bit-length costs, so no statement here concerns subcubic running time.
+
 ## Depth-first search, topological sort and Bellman–Ford
 
 These are pure Lean functions on adjacency lists, with `TimeM` cost models (as for Kruskal and Edmonds–Karp), not machine programs.
@@ -148,6 +165,22 @@ Import `Complexity.Algorithms.Lean.MaxFlow.HopcroftKarp` ([Complexity/Algorithms
 Outputs use the same `IsMatching`/`VertexCover` vocabulary as the Edmonds–Karp reduction `bipartiteMatchingM`. `card_hopcroftKarpM_matching` shows the two solvers return matchings of the same size, so a client can switch solvers without changing its statements. `decidePerfectMatchingHKM_eq_true_iff` gives the same characterisation of `HasPerfectMatching` as `decidePerfectMatchingM`.
 
 The combinatorial layer is [Complexity/Algorithms/Lean/MaxFlow/AugmentingPath.lean](../../Complexity/Algorithms/Lean/MaxFlow/AugmentingPath.lean). It contains Berge's theorem (`isMaxMatching_iff_forall_not_isAugmentingPath`), the phase lemma (`IsMaximalLayeredAugmentation.noShortAug_augment`) and the phase bound (`IsPhaseRun.le_two_mul_sqrt`). These proofs use a layered counting lemma, `card_mul_le_of_noShortAug`, instead of decomposing `M ⊕ M*` into disjoint augmenting paths; that decomposition is not formalized.
+
+## Matroid intersection
+
+Import `Complexity.Algorithms.Lean.Matroid.Intersection` ([Complexity/Algorithms/Lean/Matroid/Intersection.lean](../../Complexity/Algorithms/Lean/Matroid/Intersection.lean)). It proves Edmonds' matroid intersection theorem for Mathlib matroids `M₁ M₂ : Matroid α` relative to a finite candidate set `E : Finset α`, following the augmenting-path proof of [Schrijver's lecture notes][schrijver17], Section 10.5. The matroids' ground sets need not equal `E`: elements outside `Mᵢ.E` behave as loops. `iSup_card_eq_iInf_eRk_add_eRk` states that the maximum of `I.card` over common independent `I ⊆ E` equals the minimum of `M₁.eRk U + M₂.eRk (E \ U)` over `U ⊆ E`. `iSup_encard_eq_iInf_eRk_add_eRk` gives the same equality for a finite `X : Set α`. Taking `X` to be the common ground set gives the source's Theorem 10.9. `exists_commonIndep_card_eq_eRk_add_eRk` and its `ℕ`-valued companion give a maximum common independent set together with an optimal `U`. Weak duality (`encard_le_eRk_add_eRk`) needs no finiteness.
+
+The algorithmic layer is stated on explicit objects. `IsExchSource`, `IsExchSink` and `IsExchArc` are the source set, sink set and arcs of the exchange digraph `H(M₁, M₂, I)`, displays (23)–(24) of the notes. A walk is a `List α` (`IsExchWalk`, `IsExchAugWalk`), and `IsShortestExchAugWalk` asks for the minimum number of vertices. `IsShortestExchAugWalk.augment` (Theorem 10.6) shows that `I ∆ p.toFinset` is a common independent subset of `E` of size `I.card + 1`; it relies on `indep_exchange_chain`, the chordless-exchange step of Lemma 10.2. `exists_separator_of_not_exists_exchAugWalk` (Theorem 10.7) shows that when no augmenting walk exists, the set of vertices unreachable from the sources attains the bound. The [tests](../../ComplexityTests/MatroidIntersection.lean) include a walk that is augmenting but not shortest, along which the exchange breaks `M₁`-independence, so the shortest-walk hypothesis cannot be dropped.
+
+`Complexity.Algorithms.Lean.Matroid.Intersection.Konig` ([Complexity/Algorithms/Lean/Matroid/Intersection/Konig.lean](../../Complexity/Algorithms/Lean/Matroid/Intersection/Konig.lean)) connects this to the bipartite matching vocabulary above. `unitPartitionMatroid f` is the free matroid pulled back along `f`, in which a set is independent when `f` is injective on it. `isMatching_iff_isCommonIndep` identifies matchings of `G : L × R → Bool` with common independent subsets of `bipartiteEdges G` for the `Prod.fst` and `Prod.snd` partition matroids (Example 10.5a). `exists_maxMatching_separatorCover` derives König's theorem from Edmonds' theorem (Exercise 10.22). The cover is read off from the separator, and its minimality uses the existing matching/cover weak duality. The flow-based König theorem `exists_maxMatching_eq_minVertexCover` remains the primary statement; the tests recover its form from the matroid route.
+
+This is a theorem-level milestone. There is no executable matroid-intersection solver yet, and no independence-oracle query count or `TimeM` bound; that remaining work is tracked in [#2018](https://github.com/cslib-community/complexitylib/issues/2018). Weighted matroid intersection and infinite ground sets are not treated.
+
+## Stable matching
+
+Import `Complexity.Algorithms.Lean.StableMatching.Incentives` (which also brings in `Basic`, `DeferredAcceptance` and `Blocking`) and `Complexity.Algorithms.Lean.StableMatching.Lattice`; the declarations live in the namespace `Cslib.Algorithms.Lean.StableMatching`. This is a pure Lean development, not a RAM client. An `Instance n` has `n` proposers and `n` receivers with strict complete preference lists (`Fin n → Equiv.Perm (Fin n)`, rank `0` most preferred); a `Matching n` is a permutation, and `IsStable` means no blocking pair. `Instance.deferredAcceptance` is a total, `decide`-evaluable implementation of proposer-proposing deferred acceptance whose state is the vector of rejection counts. The modules prove stability of the output, the bound `proposals_le : I.proposals ≤ n ^ 2 - n + 1`, proposer-optimality and receiver-pessimality, the distributive lattice `Instance.Stable I` with deferred acceptance as `⊤` and its receiver-proposing dual as `⊥`, the blocking lemma `exists_isBlockingPair_of_lt`, weak Pareto optimality, and coalitional strategy-proofness for proposers (`not_forall_mem_propRank_lt_of_isStable`). Roth's impossibility theorem `MatchingMechanism.not_isStable_and_strategyProof` is proved for three agents on each side (`MatchingMechanism 3`), with the checked witness `MatchingMechanism.rothInstance`. That suffices for the existential impossibility; the statement for every `n ≥ 3` is not formalized.
+
+The cost measure is the number of proposals, a property of the algorithm's trace rather than of a machine model; no Word-RAM or Turing implementation is certified. Incomplete lists, ties, unequal sides and many-to-one markets are not modeled; [#2990](https://github.com/cslib-community/complexitylib/issues/2990) tracks these directions. [ComplexityTests/StableMatching.lean](../../ComplexityTests/StableMatching.lean) contains the checked instances.
 
 ## Scheduling bounds
 
@@ -723,6 +756,14 @@ Import `Complexity.Algorithms.Lean.Freivalds` ([Complexity/Algorithms/Lean/Freiv
 
 The probability core is in [Complexity/Probability/Freivalds.lean](../../Complexity/Probability/Freivalds.lean). It contains the counting bound `card_filter_mulVec_eq_mul_card_le`, its `k`-vector form, and `isUniversalHash_mulVec`, which states `M ↦ M *ᵥ (e ∘ x)` as a `1/|S|`-universal family under the existing `IsUniversalHash` predicate. The [checked examples](../../ComplexityTests/Freivalds.lean) include several things. One is a `2 × 2` product that one vector misses and another exposes. Another is a `1 × 1` instance whose acceptance probability is exactly `1/2`, which shows the `0`/`1` bound is attained. A third is a `ZMod 4` instance where the encoding `id` fails the injectivity hypothesis and the counting bound fails with it. The randomized verifier is not a machine program: Karp–Rabin fingerprinting, rolling-hash matching, the fingerprint equality protocol and bit-level costs remain open ([ROADMAP](../../ROADMAP.md#randomized-verification-and-fingerprinting)).
 
+## Euler circuits in multigraphs
+
+Import `Complexity.Algorithms.Lean.Euler.Circuit` ([source](../../Complexity/Algorithms/Lean/Euler/Circuit.lean)). A finite multigraph is an edge list `H : List (α × α)`, with parallel edges and self-loops allowed, and edges are compared up to orientation through `undirected`. A walk is a vertex list whose edges are its consecutive pairs (Mathlib's `List.consecutivePairs`). `IsEulerCircuit H u w` says that `w` runs from `u` back to `u` and uses every edge of `H` exactly once, in either direction. The degree of a vertex counts endpoints, so a self-loop counts twice.
+
+`exists_isEulerCircuit_iff` is Euler's theorem in this model: an Euler circuit from `u` exists exactly when every degree is even and every edge is connected to `u` (`Relation.EqvGen` of the edge relation, analogous to Kruskal's tree). Unlike the textbook statement for connected loopless graphs, the model allows self-loops and the empty multigraph and ignores isolated vertices. The sufficiency direction is constructive. `eulerCircuit H u` is Hierholzer's algorithm [Hierholzer][hierholzer73] ([Korte and Vygen][kortevygen18], Section 2.4): `walkFrom` follows unused edges greedily, and `walkFrom_spec` shows that it can only stop at the other odd vertex, or back at its start when all degrees are even. `eulerLoop` then splices in closed walks from visited vertices that still have unused edges. `mem_of_isEulerCircuit` says that the circuit visits every vertex connected to its start, and `sum_map_consecutivePairs_eq` that it weighs as much as its multigraph under a symmetric weight. Mathlib's `SimpleGraph.Walk.IsEulerian` covers only simple graphs and only necessity. The list model is what Christofides' algorithm needs, since a spanning tree together with a matching may repeat an edge. No running time is charged.
+
+The [examples](../../ComplexityTests/EulerCircuit.lean) run the algorithm on a bowtie (where a second triangle must be spliced in) and on a multigraph with parallel edges and a self-loop. They also refute Euler circuits for a path with odd endpoints and for two disjoint triangles whose degrees are even.
+
 ## Tree Evaluation
 
 The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root of an explicitly table-encoded perfect binary tree in native independent workspace `O(log n · log log n)` for positive value length and height. The output is not charged to workspace, and the theorem leaves time existential. The same page distinguishes borrowed-register restoration and fan-in/packed procedure variants.
@@ -733,10 +774,15 @@ The numeric values above are transcriptions of checked source statements, not re
 
 [complexitylib]: ../sources.md#complexitylib
 [clrs09]: ../sources.md#clrs09
+[floyd62]: ../sources.md#floyd62
 [freivalds79]: ../sources.md#freivalds79
+[hierholzer73]: ../sources.md#hierholzer73
+[kortevygen18]: ../sources.md#kortevygen18
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
 [knuth1994]: ../sources.md#knuth1994
 [lovasz1979]: ../sources.md#lovasz1979
+[schrijver17]: ../sources.md#schrijver17
 [shannon1956]: ../sources.md#shannon1956
+[vww18]: ../sources.md#vww18
 [thorup13]: ../sources.md#thorup13
 [williamsonshmoys11]: ../sources.md#williamsonshmoys11
