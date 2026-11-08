@@ -20,7 +20,7 @@ For a positive definite `A : Matrix ι ι ℝ` and `c : ι → ℝ`, the ellipso
 `Matrix.ellipsoid A c = {x | (x - c) ⬝ᵥ A⁻¹ *ᵥ (x - c) ≤ 1}` has volume `√(det A)` times the
 volume of the Euclidean unit ball. A *central cut* through the center `c` in direction `a ≠ 0`
 keeps the half `{x | a ⬝ᵥ x ≤ a ⬝ᵥ c}`. With `n = card ι` and `b = A a / √(aᵀ A a)`, the
-Löwner–John update
+central-cut update
 
 `c' = c - b / (n + 1)`,  `A' = n² / (n² - 1) · (A - 2 / (n + 1) · b bᵀ)`
 
@@ -49,6 +49,7 @@ and the volume formula uses `CFC.sqrt A` and Mathlib's `addHaar_preimage_linearM
 
 ## Main results
 
+* `Matrix.convex_ellipsoid`: ellipsoids with positive definite shape are convex.
 * `Matrix.volume_ellipsoid`: `vol E(A, c) = √(det A) · vol E(1, 0)`, and
   `Matrix.volume_ellipsoid_one_zero` identifies `E(1, 0)` with the Euclidean unit ball.
 * `Matrix.PosDef.centralCutShape`: the updated shape is positive definite.
@@ -82,6 +83,38 @@ theorem mem_ellipsoid {A : Matrix ι ι ℝ} {c x : ι → ℝ} :
 
 theorem center_mem_ellipsoid (A : Matrix ι ι ℝ) (c : ι → ℝ) : c ∈ ellipsoid A c := by
   simp [mem_ellipsoid]
+
+omit [DecidableEq ι] in
+/-- The quadratic form `q v = v ⬝ᵥ M *ᵥ v` of a positive semidefinite `M` is convex:
+`q (s u + t v) ≤ s q u + t q v` for `s, t ≥ 0` with `s + t = 1`. -/
+private lemma quadForm_combo_le {M : Matrix ι ι ℝ} (hM : M.PosSemidef) (u v : ι → ℝ) {s t : ℝ}
+    (hs : 0 ≤ s) (ht : 0 ≤ t) (hst : s + t = 1) :
+    (s • u + t • v) ⬝ᵥ (M *ᵥ (s • u + t • v)) ≤
+      s * (u ⬝ᵥ (M *ᵥ u)) + t * (v ⬝ᵥ (M *ᵥ v)) := by
+  have hnn : 0 ≤ (u - v) ⬝ᵥ (M *ᵥ (u - v)) := by
+    simpa using hM.dotProduct_mulVec_nonneg (u - v)
+  have hsym : u ⬝ᵥ (M *ᵥ v) = v ⬝ᵥ (M *ᵥ u) := hM.isHermitian.isSymm.dotProduct_mulVec_comm
+  simp only [mulVec_add, mulVec_sub, mulVec_smul, dotProduct_add, dotProduct_sub, add_dotProduct,
+    sub_dotProduct, dotProduct_smul, smul_dotProduct, smul_eq_mul] at hnn ⊢
+  have hst' : t = 1 - s := by linarith
+  subst hst'
+  nlinarith [mul_nonneg hs ht]
+
+/-- An ellipsoid with positive definite shape is convex. -/
+theorem convex_ellipsoid {A : Matrix ι ι ℝ} (hA : A.PosDef) (c : ι → ℝ) :
+    Convex ℝ (ellipsoid A c) := by
+  intro x hx y hy s t hs ht hst
+  rw [mem_ellipsoid] at hx hy ⊢
+  have hxy : s • x + t • y - c = s • (x - c) + t • (y - c) := by
+    have hc : c = s • c + t • c := by rw [← add_smul, hst, one_smul]
+    conv_lhs => rw [hc]
+    rw [smul_sub, smul_sub]
+    abel
+  rw [hxy]
+  calc _ ≤ s * ((x - c) ⬝ᵥ (A⁻¹ *ᵥ (x - c))) + t * ((y - c) ⬝ᵥ (A⁻¹ *ᵥ (y - c))) :=
+        quadForm_combo_le hA.inv.posSemidef _ _ hs ht hst
+    _ ≤ s * 1 + t * 1 := by gcongr
+    _ = 1 := by rw [mul_one, mul_one, hst]
 
 /-- The ellipsoid with shape `r² • 1` is the closed Euclidean ball of radius `r`. -/
 theorem ellipsoid_sq_smul_one {r : ℝ} (hr : r ≠ 0) (z : ι → ℝ) :
@@ -140,7 +173,7 @@ theorem volume_ellipsoid {A : Matrix ι ι ℝ} (hA : A.PosDef) (c : ι → ℝ)
   have hSS : S * S = A := CFC.sqrt_mul_sqrt_self A hA.posSemidef.nonneg
   have hSdet : S.det = √A.det := by simpa using hA.posSemidef.det_sqrt
   have hSdet0 : S.det ≠ 0 := by rw [hSdet]; exact (Real.sqrt_pos.mpr hA.det_pos).ne'
-  have hST : Sᵀ = S := by simpa [conjTranspose_eq_transpose_of_trivial] using hSherm.eq
+  have hST : Sᵀ = S := hSherm.isSymm.eq
   have hpre : ellipsoid A 0 = toLin' S⁻¹ ⁻¹' ellipsoid 1 0 := by
     ext x
     simp only [mem_ellipsoid, Set.mem_preimage, sub_zero, inv_one, one_mulVec, toLin'_apply]
@@ -186,7 +219,7 @@ end Volume
 central cut with normal `a`, where `n = card ι` and `b = centralCutDir A a`. For `n ≥ 2` this is
 the textbook `n² / (n² - 1) · (A - 2 / (n + 1) · b bᵀ)` (`centralCutShape_of_two_le_card`); for
 `n = 1` it is `A / 4` (`centralCutShape_of_card_eq_one`). -/
-@[expose] noncomputable def centralCutShape (A : Matrix ι ι ℝ) (a : ι → ℝ) : Matrix ι ι ℝ :=
+noncomputable def centralCutShape (A : Matrix ι ι ℝ) (a : ι → ℝ) : Matrix ι ι ℝ :=
   ((Fintype.card ι : ℝ) ^ 2 / ((Fintype.card ι : ℝ) ^ 2 - 1)) •
       (A - vecMulVec (centralCutDir A a) (centralCutDir A a)) +
     ((Fintype.card ι : ℝ) / ((Fintype.card ι : ℝ) + 1)) ^ 2 •
@@ -217,15 +250,6 @@ private lemma card_pos_of_ne_zero (ha : a ≠ 0) : 0 < Fintype.card ι := by
   rw [not_nonempty_iff] at h
   exact ha (Subsingleton.elim _ _)
 
-omit [Fintype ι] [DecidableEq ι] in
-private lemma transpose_eq_of_posDef {M : Matrix ι ι ℝ} (hM : M.PosDef) : Mᵀ = M := by
-  simpa [conjTranspose_eq_transpose_of_trivial] using hM.isHermitian.eq
-
-omit [DecidableEq ι] in
-private lemma dotProduct_mulVec_comm_of_posDef {M : Matrix ι ι ℝ} (hM : M.PosDef) (x y : ι → ℝ) :
-    x ⬝ᵥ (M *ᵥ y) = y ⬝ᵥ (M *ᵥ x) := by
-  rw [dotProduct_mulVec, ← mulVec_transpose, transpose_eq_of_posDef hM, dotProduct_comm]
-
 /-- The dual vector `a / √(aᵀ A a)`, with `A *ᵥ cutDual A a = centralCutDir A a`. -/
 private noncomputable def cutDual (A : Matrix ι ι ℝ) (a : ι → ℝ) : ι → ℝ :=
   (√(a ⬝ᵥ (A *ᵥ a)))⁻¹ • a
@@ -250,7 +274,7 @@ private lemma centralCutDir_dotProduct_cutDual (hA : A.PosDef) (ha : a ≠ 0) :
 private lemma vecMulVec_centralCutDir_mul_inv (hA : A.PosDef) :
     vecMulVec (centralCutDir A a) (centralCutDir A a) * A⁻¹ =
       vecMulVec (centralCutDir A a) (cutDual A a) := by
-  rw [vecMulVec_mul, ← mulVec_transpose, transpose_eq_of_posDef hA.inv,
+  rw [vecMulVec_mul, ← mulVec_transpose, hA.inv.isHermitian.isSymm.eq,
     inv_mulVec_centralCutDir hA]
 
 private lemma vecMulVec_eq_one_of_card_eq_one (h : Fintype.card ι = 1) {u v : ι → ℝ}
@@ -385,7 +409,7 @@ theorem ellipsoid_inter_halfspace_subset (hA : A.PosDef) (ha : a ≠ 0) (c : ι 
     simp only [star_trivial, hAb, hyb, hba, mul_one] at this
     nlinarith
   have hbAy : b ⬝ᵥ (A⁻¹ *ᵥ y) = t := by
-    rw [dotProduct_mulVec_comm_of_posDef hA.inv, hAb, hyb]
+    rw [hA.inv.isHermitian.isSymm.dotProduct_mulVec_comm, hAb, hyb]
   simp only [cutInv, ← hn_def, ← ha', add_mulVec, smul_mulVec, hW, mulVec_add, mulVec_smul, hAb,
     dotProduct_add, dotProduct_smul, add_dotProduct, smul_dotProduct, hba, hab, hyb, ← ht, ← hq,
     hbAy, smul_eq_mul]
@@ -426,7 +450,7 @@ theorem det_centralCutShape (hA : A.PosDef) (ha : a ≠ 0) :
       (A + vecMulVec (-(2 / (n + 1)) • centralCutDir A a) (cutDual A a) * A) := by
     have hAW : vecMulVec (-(2 / (n + 1)) • centralCutDir A a) (cutDual A a) * A =
         (-(2 / (n + 1))) • vecMulVec (centralCutDir A a) (centralCutDir A a) := by
-      rw [vecMulVec_mul, ← mulVec_transpose, transpose_eq_of_posDef hA, mulVec_cutDual,
+      rw [vecMulVec_mul, ← mulVec_transpose, hA.isHermitian.isSymm.eq, mulVec_cutDual,
         smul_vecMulVec]
     rw [hAW]
     simp only [centralCutShape, hm]
@@ -498,9 +522,10 @@ private lemma cut_ratio_lt {k : ℕ} (hk : 1 ≤ k) :
         congr 1
         ring
 
-/-- **Volume ratio** of a central cut: `vol E(A', c') < exp (-1 / (2 (n + 1))) · vol E(A, c)`, for
-every dimension `n ≥ 1` [BertsimasTsitsiklis1997, Theorem 8.1(b)],
-[GrotschelLovaszSchrijver1988, Section 3.1]. The proof bounds the exact ratio
+/-- **Volume ratio** of a central cut: `vol E(A', c') < exp (-1 / (2 (n + 1))) · vol E(A, c)`
+[BertsimasTsitsiklis1997, Theorem 8.1(b)], [GrotschelLovaszSchrijver1988, Section 3.1]. Bertsimas
+and Tsitsiklis state it for `n ≥ 2`; it is proved here for every `n ≥ 1`, the case `n = 1`
+(bisection, ratio `1 / 2 < exp (-1 / 4)`) being added. The proof bounds the exact ratio
 `√(det A' / det A)` from `det_centralCutShape` using `1 + x ≤ exp x`. -/
 theorem volume_ellipsoid_centralCut_lt (hA : A.PosDef) (ha : a ≠ 0) (c : ι → ℝ) :
     volume (ellipsoid (centralCutShape A a) (centralCutCenter A c a)) <

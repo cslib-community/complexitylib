@@ -19,7 +19,10 @@ each step queries the oracle at the current center. If the oracle certifies the 
 the method stops (the state no longer changes). Otherwise it returns a hyperplane through the
 center with `P` strictly on one side, and the method replaces the ellipsoid by the central-cut
 ellipsoid `Matrix.centralCutShape`/`Matrix.centralCutCenter` containing that half
-[GrotschelLovaszSchrijver1988, Section 3.2], [BertsimasTsitsiklis1997, Section 8.2].
+[GrotschelLovaszSchrijver1988, Section 3.1], [BertsimasTsitsiklis1997, Section 8.2]. This is the
+exact-arithmetic method of those sections; the finite-precision central-cut method of
+[GrotschelLovaszSchrijver1988, Section 3.2], with rounding and its larger constants, is not
+formalized here.
 
 Since each cut shrinks the volume by the factor `exp (-1 / (2 (n + 1)))`
 (`Matrix.volume_ellipsoid_centralCut_lt`), after `N` steps either the current center is in `P` or
@@ -51,7 +54,7 @@ reduction of feasibility to that case) are not formalized here.
 ## References
 
 * [BertsimasTsitsiklis1997], Section 8.2
-* [GrotschelLovaszSchrijver1988], Sections 2.1 and 3.2
+* [GrotschelLovaszSchrijver1988], Sections 2.1 and 3.1
 * [Khachiyan1979]
 -/
 
@@ -65,7 +68,12 @@ variable {ι : Type*} [Fintype ι]
 
 /-- `sep` is a *strong separation oracle* for `P` [GrotschelLovaszSchrijver1988, Section 2.1]: on a
 query `z` it either answers `none`, certifying `z ∈ P`, or returns a nonzero vector `a` with
-`a ⬝ᵥ x < a ⬝ᵥ z` for every `x ∈ P`, i.e. a hyperplane strictly separating `z` from `P`. -/
+`a ⬝ᵥ x < a ⬝ᵥ z` for every `x ∈ P`, i.e. a hyperplane strictly separating `z` from `P`.
+
+Grötschel, Lovász and Schrijver pose the strong separation problem for convex sets, with a
+normalized cut vector given in binary. Here `P` is an arbitrary set, any nonzero real `a` is
+allowed and no encoding or output size is involved, so for convex `P` this is the real-number
+content of that problem up to scaling of `a`. -/
 structure IsStrongSeparationOracle (P : Set (ι → ℝ)) (sep : (ι → ℝ) → Option (ι → ℝ)) : Prop where
   mem_of_eq_none {z : ι → ℝ} : sep z = none → z ∈ P
   ne_zero_of_eq_some {z a : ι → ℝ} : sep z = some a → a ≠ 0
@@ -93,7 +101,7 @@ structure State (ι : Type*) where
 
 /-- One step of the central-cut ellipsoid method: query the oracle at the center; if it answers
 `none` the center lies in `P` and the state is kept, otherwise cut through the center with the
-returned normal [GrotschelLovaszSchrijver1988, Section 3.2]. -/
+returned normal [GrotschelLovaszSchrijver1988, Section 3.1]. -/
 noncomputable def step (sep : (ι → ℝ) → Option (ι → ℝ)) (s : State ι) : State ι :=
   match sep s.center with
   | none => s
@@ -154,7 +162,7 @@ theorem subset_ellipsoid_run (hsep : IsStrongSeparationOracle P sep) {A₀ : Mat
 
 /-- **Volume decrease of the ellipsoid method**: after `N` steps either the current center lies in
 `P` or the current ellipsoid has volume at most `exp (-N / (2 (n + 1)))` times the initial one,
-where `n = card ι` [GrotschelLovaszSchrijver1988, Section 3.2], [BertsimasTsitsiklis1997,
+where `n = card ι` [GrotschelLovaszSchrijver1988, Section 3.1], [BertsimasTsitsiklis1997,
 Section 8.2]. -/
 theorem center_mem_or_volume_ellipsoid_run_le (hsep : IsStrongSeparationOracle P sep)
     {A₀ : Matrix ι ι ℝ} (hA₀ : A₀.PosDef) (c₀ : ι → ℝ) (N : ℕ) :
@@ -183,7 +191,7 @@ theorem center_mem_or_volume_ellipsoid_run_le (hsep : IsStrongSeparationOracle P
 
 /-- **The ellipsoid method with a strong separation oracle**: if `P ⊆ E(A₀, c₀)`, then after `N`
 steps either the current center lies in `P` or
-`vol P ≤ exp (-N / (2 (n + 1))) · vol E(A₀, c₀)` [GrotschelLovaszSchrijver1988, Section 3.2],
+`vol P ≤ exp (-N / (2 (n + 1))) · vol E(A₀, c₀)` [GrotschelLovaszSchrijver1988, Section 3.1],
 [BertsimasTsitsiklis1997, Section 8.2]. Arithmetic is exact over `ℝ`. -/
 theorem center_mem_or_volume_le (hsep : IsStrongSeparationOracle P sep) {A₀ : Matrix ι ι ℝ}
     (hA₀ : A₀.PosDef) {c₀ : ι → ℝ} (hP : P ⊆ ellipsoid A₀ c₀) (N : ℕ) :
@@ -196,7 +204,7 @@ theorem center_mem_or_volume_le (hsep : IsStrongSeparationOracle P sep) {A₀ : 
 
 /-- **Iteration bound**: if `P ⊆ E(A₀, c₀)`, `0 < v` and `N > 2 (n + 1) ln (vol E(A₀, c₀) / v)`,
 then after `N` steps either the current center lies in `P` or `vol P < v`
-[GrotschelLovaszSchrijver1988, Section 3.2], [BertsimasTsitsiklis1997, Section 8.2]. -/
+[GrotschelLovaszSchrijver1988, Section 3.1], [BertsimasTsitsiklis1997, Section 8.2]. -/
 theorem center_mem_or_volume_lt (hsep : IsStrongSeparationOracle P sep) {A₀ : Matrix ι ι ℝ}
     (hA₀ : A₀.PosDef) {c₀ : ι → ℝ} (hP : P ⊆ ellipsoid A₀ c₀) {v : ℝ} (hv : 0 < v) {N : ℕ}
     (hN : 2 * ((Fintype.card ι : ℝ) + 1) *
@@ -215,7 +223,7 @@ theorem center_mem_or_volume_lt (hsep : IsStrongSeparationOracle P sep) {A₀ : 
 
 /-- **Ball sandwich**: if `P` contains a ball of radius `r > 0` and lies in the ball of radius `R`
 about `c₀`, the method started from that ball finds a point of `P` within any
-`N > 2 n (n + 1) ln (R / r)` steps [GrotschelLovaszSchrijver1988, Section 3.2],
+`N > 2 n (n + 1) ln (R / r)` steps [GrotschelLovaszSchrijver1988, Section 3.1],
 [BertsimasTsitsiklis1997, Section 8.2]. -/
 theorem center_mem_of_ball_subset (hsep : IsStrongSeparationOracle P sep) {r R : ℝ} (hr : 0 < r)
     (hR : 0 < R) {z c₀ : ι → ℝ} (hzP : {x | (x - z) ⬝ᵥ (x - z) ≤ r ^ 2} ⊆ P)

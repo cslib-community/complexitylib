@@ -21,7 +21,8 @@ The unit ellipsoid is the unit ball, contains its center and misses `(2, 0)`. El
 positive definite shape have positive finite volume, so the volume bounds are not vacuous. In
 dimension one a central cut of `[-1, 1]` is bisection: shape `1 / 4`, center `-1 / 2`. The ball
 `{x | (x - z) ⬝ᵥ (x - z) ≤ r ^ 2}` has a strong separation oracle cutting with normal `x - z`; it
-answers `none` at the center and cuts at a point outside, and the ball sandwich theorem with it
+answers `none` at the center and cuts at a point outside (from `[-1, 1]` towards `3` the new center
+is `1 / 2`), and the ball sandwich theorem with it
 finds a point of any unit disk `B(z, 1)` with `z ⬝ᵥ z ≤ 1` within `9` steps from the disk of radius
 `2` about the origin.
 -/
@@ -120,6 +121,16 @@ example : run (ballSep (![3] : Fin 1 → ℝ) 1) 1 0 1 =
   rw [run_succ, run_zero, step_of_eq_some]
   simp [ballSep, dotProduct]
   norm_num
+
+/-- Cutting `[-1, 1]` towards the point `3` keeps `[0, 1]`: the new center is `1 / 2`. -/
+example : (run (ballSep (![3] : Fin 1 → ℝ) 1) 1 0 1).center = ![1 / 2] := by
+  have h9 : √(9 : ℝ) = 3 := by
+    rw [show (9 : ℝ) = 3 ^ 2 by norm_num, Real.sqrt_sq (by norm_num)]
+  rw [run_succ, run_zero, step_of_eq_some (a := 0 - ![3]) (by simp [ballSep, dotProduct]; norm_num)]
+  ext i
+  fin_cases i
+  simp [centralCutCenter, centralCutDir, dotProduct]
+  norm_num [h9]
 
 /-- The iteration bound is not vacuous: started from the ball of radius `2` about the origin, the
 method finds a point of any unit ball `B(z, 1)` with `z ⬝ᵥ z ≤ 1` in the plane within `9` steps,
