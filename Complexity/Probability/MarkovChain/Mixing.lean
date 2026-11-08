@@ -45,6 +45,8 @@ from an optimal coupling (`Cslib.Probability.PMF.dist_bind_le_mul`).
 
 ## Main results
 
+* `Cslib.Probability.MarkovChain.IsStationary.dist_le_of_forall_mem_support`: if every start in
+  the support of `π` is within `δ` of `x` after `t` steps, then so is `π`.
 * `Cslib.Probability.MarkovChain.IsStationary.distToStationary_le_distPair`,
   `Cslib.Probability.MarkovChain.distPair_le_two_mul_distToStationary`: Lemma 4.10.
 * `Cslib.Probability.MarkovChain.distPair_add_le`: Lemma 4.11, `d̄(s + t) ≤ d̄(s) d̄(t)`.
@@ -122,14 +124,20 @@ theorem distPair_le_one (t : ℕ) : P.distPair t ≤ 1 :=
 
 variable {P π}
 
+/-- If after `t` steps the chain started at `x` is within `δ` of the chain started at every state
+in the support of a stationary `π`, then it is within `δ` of `π`. -/
+theorem IsStationary.dist_le_of_forall_mem_support (hπ : P.IsStationary π) {t : ℕ} {x : S}
+    {δ : ℝ} (h : ∀ y ∈ π.support, dist ((P ^ t) y) ((P ^ t) x) ≤ δ) :
+    dist ((P ^ t) x) π ≤ δ := by
+  rw [← hπ.bind_pow t, dist_comm]
+  exact dist_bind_left_le_of_le π (P ^ t) ((P ^ t) x) h
+
 /-- `d(t) ≤ d̄(t)` for stationary `π` ([LevinPeres2017], Lemma 4.10). -/
 theorem IsStationary.distToStationary_le_distPair (hπ : P.IsStationary π) (t : ℕ) :
-    P.distToStationary π t ≤ P.distPair t := by
-  refine P.distToStationary_le π (fun x => ?_) (P.distPair_nonneg t)
-  calc dist ((P ^ t) x) π = dist (π.bind (P ^ t)) ((P ^ t) x) := by
-        rw [hπ.bind_pow, dist_comm]
-    _ ≤ P.distPair t :=
-        dist_bind_left_le_of_le π (P ^ t) ((P ^ t) x) fun y _ => P.dist_le_distPair t y x
+    P.distToStationary π t ≤ P.distPair t :=
+  P.distToStationary_le π
+    (fun x => hπ.dist_le_of_forall_mem_support fun y _ => P.dist_le_distPair t y x)
+    (P.distPair_nonneg t)
 
 /-- `d̄(t) ≤ 2 d(t)` ([LevinPeres2017], Lemma 4.10); this holds for every `π`. -/
 theorem distPair_le_two_mul_distToStationary (t : ℕ) :

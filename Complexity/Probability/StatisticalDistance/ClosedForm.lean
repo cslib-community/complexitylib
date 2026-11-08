@@ -9,18 +9,24 @@ module
 
 public import Cslib.Probability.StatisticalDistance
 public import Complexity.Probability.PMF
+import Complexity.Probability.StatisticalDistance
 
 /-!
 # Closed forms for statistical distance
 
-Two closed forms for cslib's statistical distance `dist` on finite PMFs. The distance from a point
+Closed forms for cslib's statistical distance `dist` on finite PMFs. The distance from a point
 mass `PMF.pure a` is the mass the other distribution places off `a` (`dist_pure_left`). On `Bool`,
-the distance is the difference of the probabilities of `true` (`dist_bool`).
+the distance is the difference of the probabilities of `true` (`dist_bool`). Between uniform
+distributions on finite sets `A` and `B` with `|A| ≤ |B|`, it is the fraction of `B` outside `A`
+(`dist_uniformOfFinset_of_card_le`).
 
 ## Main results
 
 * `Cslib.Probability.PMF.dist_pure_left`: distance from a point mass.
 * `Cslib.Probability.PMF.dist_bool`: distance on `Bool`.
+* `Cslib.Probability.PMF.dist_uniformOfFinset_of_card_le`,
+  `Cslib.Probability.PMF.dist_uniformOfFinset_le`: distance between uniform distributions on
+  finite sets.
 -/
 
 public section
@@ -62,5 +68,48 @@ theorem dist_bool (p q : PMF Bool) :
     show 1 - (p true).toReal - (1 - (q true).toReal) = -((p true).toReal - (q true).toReal) by
       ring, abs_neg]
   ring
+
+/-- The statistical distance between uniform distributions on finite sets `A` and `B` with
+`|A| ≤ |B|` is the fraction of `B` outside `A`. -/
+theorem dist_uniformOfFinset_of_card_le [Fintype α] [DecidableEq α] {A B : Finset α}
+    (hA : A.Nonempty) (hB : B.Nonempty) (hAB : A.card ≤ B.card) :
+    dist (uniformOfFinset A hA) (uniformOfFinset B hB) = (B \ A).card / B.card := by
+  classical
+  have hAc : (0 : ℝ) < A.card := by exact_mod_cast hA.card_pos
+  have hinv : (B.card : ℝ)⁻¹ ≤ (A.card : ℝ)⁻¹ := inv_anti₀ hAc (by exact_mod_cast hAB)
+  have happly (s : Finset α) (hs : s.Nonempty) (a : α) :
+      (uniformOfFinset s hs a).toReal = if a ∈ s then (s.card : ℝ)⁻¹ else 0 := by
+    rw [uniformOfFinset_apply]
+    split_ifs <;> simp
+  rw [dist_comm, dist_eq_sum_filter_lt]
+  have hfilter : (Finset.univ.filter fun a =>
+      (uniformOfFinset A hA a).toReal < (uniformOfFinset B hB a).toReal) = B \ A := by
+    ext a
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_sdiff, happly]
+    by_cases haA : a ∈ A <;> by_cases haB : a ∈ B <;>
+      simp [haA, haB, not_lt.mpr hinv, hB.card_pos]
+  rw [hfilter, Finset.sum_congr rfl fun a ha => by
+    rw [happly, happly, ite_eq_left (Finset.mem_sdiff.1 ha).1,
+      ite_eq_right (Finset.mem_sdiff.1 ha).2, sub_zero], Finset.sum_const, nsmul_eq_mul,
+    div_eq_mul_inv]
+
+/-- Uniform distributions on finite sets of size at least `m > 0` that differ by at most `k`
+elements on each side are within statistical distance `k / m`. -/
+theorem dist_uniformOfFinset_le [Fintype α] [DecidableEq α] {A B : Finset α}
+    (hA : A.Nonempty) (hB : B.Nonempty) {k m : ℕ} (hm : 0 < m) (hmA : m ≤ A.card)
+    (hmB : m ≤ B.card) (hBA : (B \ A).card ≤ k) (hAB : (A \ B).card ≤ k) :
+    dist (uniformOfFinset A hA) (uniformOfFinset B hB) ≤ k / m := by
+  have key {A B : Finset α} (hA : A.Nonempty) (hB : B.Nonempty) (hmB : m ≤ B.card)
+      (hBA : (B \ A).card ≤ k) (hle : A.card ≤ B.card) :
+      dist (uniformOfFinset A hA) (uniformOfFinset B hB) ≤ k / m := by
+    rw [dist_uniformOfFinset_of_card_le hA hB hle]
+    have hm' : (0 : ℝ) < m := by exact_mod_cast hm
+    calc ((B \ A).card : ℝ) / B.card ≤ k / B.card :=
+          div_le_div_of_nonneg_right (by exact_mod_cast hBA) (Nat.cast_nonneg _)
+      _ ≤ k / m := div_le_div_of_nonneg_left (Nat.cast_nonneg _) hm' (by exact_mod_cast hmB)
+  rcases le_total A.card B.card with hle | hle
+  · exact key hA hB hmB hBA hle
+  · rw [dist_comm]
+    exact key hB hA hmA hAB hle
 
 end Cslib.Probability.PMF

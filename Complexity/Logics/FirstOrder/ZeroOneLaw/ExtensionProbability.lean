@@ -11,8 +11,8 @@ public import Complexity.Logics.FirstOrder.ZeroOneLaw.ExtensionAxiom
 public import Complexity.Logics.FirstOrder.ZeroOneLaw.RandomGraph
 public import Mathlib.Order.Filter.AtTopBot.Basic
 public import Mathlib.Topology.Instances.Real.Lemmas
+import Complexity.Foundations.Analysis.SpecificLimits.DescFactorial
 import Complexity.Foundations.Combinatorics.SimpleGraph.SymmDiff
-import Mathlib.Analysis.SpecificLimits.Normed
 import Mathlib.Data.Fintype.CardEmbedding
 
 /-!
@@ -242,34 +242,6 @@ theorem randomGraphProb_not_extensionAxiom_le (n k : ℕ) (s : Fin k → Bool) :
           rfl)
     _ ≤ _ := h
 
-private theorem tendsto_descFactorial_mul_pow (k : ℕ) :
-    Filter.Tendsto (fun n : ℕ => (n.descFactorial k : ℝ) * (1 - (2 ^ k : ℝ)⁻¹) ^ (n - k))
-      Filter.atTop (nhds 0) := by
-  rcases Nat.eq_zero_or_pos k with rfl | hk
-  · simp only [Nat.descFactorial_zero, Nat.cast_one, pow_zero, inv_one, sub_self, one_mul,
-      Nat.sub_zero]
-    exact tendsto_pow_atTop_nhds_zero_of_lt_one le_rfl zero_lt_one
-  set q : ℝ := 1 - (2 ^ k : ℝ)⁻¹ with hq
-  have hq0 : 0 < q := by
-    rw [hq, sub_pos]
-    exact inv_lt_one_of_one_lt₀ (one_lt_pow₀ (one_lt_two : (1 : ℝ) < 2) hk.ne')
-  have hq1 : q < 1 := by
-    rw [hq, sub_lt_self_iff, inv_pos]
-    positivity
-  -- `n ^ k q ^ n → 0`, and the descending factorial is at most `n ^ k`.
-  have hlim := (tendsto_pow_const_mul_const_pow_of_abs_lt_one k
-    (abs_lt.2 ⟨by linarith, hq1⟩)).const_mul (q ^ k)⁻¹
-  rw [mul_zero] at hlim
-  refine squeeze_zero' (Filter.Eventually.of_forall fun n =>
-    mul_nonneg (Nat.cast_nonneg _) (pow_nonneg hq0.le _)) ?_ hlim
-  filter_upwards [Filter.eventually_ge_atTop k] with n hn
-  calc (n.descFactorial k : ℝ) * q ^ (n - k) ≤ (n : ℝ) ^ k * q ^ (n - k) := by
-        gcongr
-        exact_mod_cast Nat.descFactorial_le_pow n k
-    _ = (q ^ k)⁻¹ * ((n : ℝ) ^ k * q ^ n) := by
-        rw [← pow_sub_mul_pow q hn]
-        field_simp
-
 /-- **Extension axioms hold almost surely.** For every pattern `s`, the probability that
 `G(n, 1/2)` satisfies the extension axiom for `s` tends to `1` [Fagin1976]
 [Libkin2004, Section 12.2]. -/
@@ -280,7 +252,10 @@ theorem tendsto_randomGraphProb_extensionAxiom (k : ℕ) (s : Fin k → Bool) :
       (fun n => randomGraphProb n (fun G => ¬Satisfies G (extensionAxiom k s)))
       Filter.atTop (nhds 0) :=
     squeeze_zero (fun n => randomGraphProb_nonneg _ _)
-      (fun n => randomGraphProb_not_extensionAxiom_le n k s) (tendsto_descFactorial_mul_pow k)
+      (fun n => randomGraphProb_not_extensionAxiom_le n k s)
+      (tendsto_descFactorial_mul_pow_sub k
+        (sub_nonneg.2 (inv_le_one_of_one_le₀ (one_le_pow₀ one_le_two)))
+        (sub_lt_self _ (inv_pos.2 (by positivity))))
   have := h0.const_sub 1
   simp only [sub_zero, randomGraphProb_not, sub_sub_cancel] at this
   exact this
