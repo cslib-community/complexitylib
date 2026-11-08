@@ -237,12 +237,16 @@ See [the module-system guidance](CONTRIBUTING.md#public-surface-under-the-module
 
 ```bash
 lake build --wfail --iofail
-lake exe mk_all --check
+python3 scripts/mk_all.py --check
 lake test --wfail --iofail
 lake lint
-lake exe lint-style
+lake exe lint-style $(python3 scripts/mk_all.py --aggregates)
 lake exe checkInitImports
 ```
+
+`lint-style` lints the modules that the modules it is given import directly; by default those are
+the root aggregators, which import directory shards rather than every module, so the sequence
+passes it every aggregator.
 
 `scripts/check.sh` first runs the live manual checker and its tooling tests, then restores
 optional caches and runs this sequence. Both full and quick modes require those manual checks;
@@ -270,8 +274,16 @@ ambiguous change/import analysis fall back to all six gates. The one exception i
 encoding-readability lint instead. Quick success alone does not satisfy the full validation
 requirement above; documentation-only checks need not invoke quick mode.
 
-`lake exe mk_all` regenerates `Complexity.lean` after adding a file. New test files go in
-`ComplexityTests/`; the test library is built from a Lake glob, so there is no aggregator to update.
+After adding, moving or deleting a library file, run `python3 scripts/mk_all.py`. It regenerates
+`Complexity.lean`, which imports `Complexity/Init.lean` and one shard per top-level directory, and
+the shard of every directory, `Complexity/All/<directory>.lean`, which imports that directory's
+modules and the shards of its subdirectories. A new module therefore changes only the shard of its
+directory (and the parent's shard when the directory is new), and two pull requests conflict there
+only when they add neighbouring modules to the same directory: GitHub ignores the `merge=union`
+attribute of `.gitattributes`. `import Complexity` still imports every module, and
+`import Complexity.All.Crypto` everything under `Complexity/Crypto/`. `Complexity/All/` is
+reserved for the generated shards. New test files go in `ComplexityTests/`; the test library is
+built from a Lake glob, so there is no aggregator to update.
 
 ## File rules
 
@@ -474,8 +486,8 @@ A restack keeps its approval when `python3 scripts/check_restack.py <approved he
 passes and CI passes at the new head. The script replays the approved change onto the `main` that
 the new head is based on, which is what the merge queue would have built from the approved head,
 and passes only when the new head's tree is exactly that replay. The one exception is that the
-`mk_all` import aggregates may order their lines differently, since CI's `mk_all --check` pins the
-order. A conflict in the replay, and any other difference, fails it. The replay merges
+import aggregators that `scripts/mk_all.py` generates, `Complexity.lean` and its shards, may order
+their lines differently, since CI's `mk_all --check` pins the order. A conflict in the replay, and any other difference, fails it. The replay merges
 `references.bib` entry by entry, as `scripts/resolve_bib_conflict.py` does, so a bibliography
 merge written by that script, with nothing else changed, passes. After `git fetch origin`, run the
 script from a checkout of current `origin/main`, not of the PR's branch, which could change it.

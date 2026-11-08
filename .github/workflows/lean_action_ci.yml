@@ -89,6 +89,10 @@ jobs:
         run: python3 -B scripts/check_operator_manual.py
       - name: "Source hygiene"
         run: python3 -B scripts/check_hygiene.py --check-simp
+      # The generated import aggregators: each library root and its per-directory shards
+      # (scripts/mk_all.py). Sources only: no Lean.
+      - name: "mk_all --check"
+        run: python3 -B scripts/mk_all.py --check
       # A compound encoding that three or more public statements of a module spell out needs a
       # name (#1656). The existing ones are counted per module in
       # scripts/encoding_readability_baseline.json, which only falls. Pull requests enforce it in
@@ -200,7 +204,7 @@ jobs:
           DISABLE_BUILD_HANDOFF: ${{ vars.DISABLE_BUILD_HANDOFF }}
         run: python3 -B scripts/cache_handoff.py restore
       - name: "lake build"
-        run: lake build --wfail --iofail @complexitylib @/mk_all @/checkInitImports @mathlib/lint-style
+        run: lake build --wfail --iofail @complexitylib @/checkInitImports @mathlib/lint-style
       - name: "lake test"
         id: test
         run: lake test --wfail --iofail
@@ -294,18 +298,13 @@ jobs:
           BASE=${BASE:-$RECORDED_BASE}
           git fetch --no-tags --depth=1 origin "$BASE"
           python3 -B scripts/check_pr_names.py --event "$GITHUB_EVENT_PATH" --base "$BASE" --github
-      - name: "lake exe mk_all --check"
-        run: |
-          set -e
-          lake exe mk_all --check
-      - name: Test import generation with custom source directories
-        run: |
-          test -x .lake/build/bin/mk_all
-          python3 -B -m unittest discover -s scripts -p 'test_mk_all.py'
+      # `lint-style` lints the modules that the modules it is given import directly, by default
+      # those of the root aggregators, which import directory shards rather than every module.
+      # Give it every aggregator; "mk_all --check" above has already checked them.
       - name: "lake exe lint-style"
         run: |
           set -e
-          lake exe lint-style
+          lake exe lint-style $(python3 -B scripts/mk_all.py --aggregates)
       - name: "checkInitImports"
         run: |
           set -e

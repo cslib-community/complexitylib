@@ -369,7 +369,7 @@ class WorkflowContract(unittest.TestCase):
         restore = sections["Restore validated merge-group build outputs"]
         for expected in ("github.event_name == 'push'", "github.ref == 'refs/heads/main'", "vars.DISABLE_BUILD_HANDOFF != '1'", "vars.DISABLE_BUILD_HANDOFF != 'true'"):
             self.assertIn(expected, restore)
-        for name in ("lake build", "lake test", "lake lint", "lake exe mk_all --check", "lake exe lint-style", "checkInitImports"):
+        for name in ("lake build", "lake test", "lake lint", "mk_all --check", "lake exe lint-style", "checkInitImports"):
             self.assertNotIn("handoff-measurement", sections[name])
         self.assertIn("path: ${{ steps.handoff-measurement.outputs.report }}", sections["Record optional handoff measurement"])
         self.assertNotIn("RUNNER_TEMP", sections["Record optional handoff measurement"])
@@ -379,7 +379,9 @@ class WorkflowContract(unittest.TestCase):
             if line.startswith(("lake ", "python3 ")):
                 commands.append(shlex.split(line))
         for command in study.CHECKS:
-            self.assertIn(command, commands)
+            # A shell command (`sh -c`) appears in the workflow as its own `run:` line.
+            self.assertIn(shlex.split(command[2]) if command[:2] == ["sh", "-c"] else command,
+                          commands)
 
 
 if __name__ == "__main__":

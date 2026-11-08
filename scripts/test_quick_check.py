@@ -188,7 +188,7 @@ class QuickCheckTests(unittest.TestCase):
         plan = quick.Plan("base", ["Demo.Base"], [("lint", ["lint", "--base", "base"])])
         for lint_status, expected in ((0, [["lint", "--base", "base"],
                                            ["lake", "build", "--wfail", "--iofail", "Demo.Base"],
-                                           ["lake", "exe", "mk_all", "--check"]]),
+                                           [sys.executable, "-B", "scripts/mk_all.py", "--check"]]),
                                       (3, [["lint", "--base", "base"]])):
             with self.subTest(lint_status=lint_status):
                 calls = []
@@ -416,7 +416,7 @@ class LocalManualGateTests(unittest.TestCase):
         recorder = ('#!/usr/bin/env python3\nimport json,os,sys\n'
                     'with open(os.environ["QUICK_COMMAND_LOG"], "a") as f:\n'
                     ' f.write(json.dumps([sys.argv[0].split("/")[-1], *sys.argv[1:]])+"\\n")\n')
-        for path in ("bin/lake", "scripts/cache/ensure.sh", "scripts/quick_check.py"):
+        for path in ("bin/lake", "scripts/cache/ensure.sh", "scripts/quick_check.py", "scripts/mk_all.py"):
             self.write(path, recorder)
             (self.root / path).chmod(0o755)
         self.log = self.root / "commands.jsonl"
@@ -439,9 +439,10 @@ class LocalManualGateTests(unittest.TestCase):
                 commands = [json.loads(x) for x in self.log.read_text().splitlines()]
                 self.assertEqual(commands[0], ["ensure.sh"])
                 expected = [["quick_check.py", "--base", "example-base"]] if args else [
-                    ["lake", "build", "--wfail", "--iofail"], ["lake", "exe", "mk_all", "--check"],
+                    ["lake", "build", "--wfail", "--iofail"], ["mk_all.py", "--check"],
                     ["lake", "test", "--wfail", "--iofail"], ["lake", "lint"],
-                    ["lake", "exe", "lint-style"], ["lake", "exe", "checkInitImports"]]
+                    ["mk_all.py", "--aggregates"], ["lake", "exe", "lint-style"],
+                    ["lake", "exe", "checkInitImports"]]
                 self.assertEqual(commands[1:], expected)
                 self.assertFalse(list(self.root.glob("complexitylib-check.*")))
                 self.log.unlink()
@@ -475,6 +476,8 @@ class RepositoryLayoutTests(unittest.TestCase):
         # gates; #1729's `defaultFacets = []` did so unnoticed.
         modules, aggregates, roots, _ = quick.source_modules(REPO)
         self.assertIn("Complexity", aggregates)
+        self.assertIn("Complexity.All.Foundations", aggregates)
+        self.assertNotIn("Complexity.Foundations.Data.List.Basic", aggregates)
         self.assertIn("ComplexityComparatorChallenges", roots)
         self.assertIn("ComplexityTests.Axioms", modules)
 

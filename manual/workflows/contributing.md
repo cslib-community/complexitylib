@@ -22,7 +22,7 @@ Public resource statements use plain computability predicates; tidiness remains 
 
 Begin with diagnostics for the changed file and a representative downstream client. For new bundled hypotheses, provide a satisfying instance; use a negative case when it exposes vacuity or a model boundary. Tests should exercise behavior or the interface rather than restate a theorem by name.
 
-After adding a library file, run `lake exe mk_all` to regenerate the aggregate. New tests belong in `ComplexityTests/` and are included by a Lake glob. During development:
+After adding, moving or deleting a library file, run `python3 scripts/mk_all.py` to regenerate the import aggregators: `Complexity.lean` imports one shard per top-level directory, and the shard `Complexity/All/<directory>.lean` of each directory imports its modules and the shards of its subdirectories. A new module changes only its directory's shard, so pull requests that add modules to different directories do not conflict there. New tests belong in `ComplexityTests/` and are included by a Lake glob. During development:
 
 ```bash
 scripts/check.sh --quick
@@ -34,10 +34,10 @@ Lean, dependency or build changes need all six gates on the final revision:
 
 ```bash
 lake build --wfail --iofail
-lake exe mk_all --check
+python3 scripts/mk_all.py --check
 lake test --wfail --iofail
 lake lint
-lake exe lint-style
+lake exe lint-style $(python3 scripts/mk_all.py --aggregates)
 lake exe checkInitImports
 ```
 

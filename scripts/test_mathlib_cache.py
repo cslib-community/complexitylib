@@ -240,7 +240,8 @@ class WorkflowWiringTests(unittest.TestCase):
                 self.assertIn("python3 -B scripts/cache/get_mathlib.py --lean-action", step)
         ci = (REPO / ".github/workflows/lean_action_ci.yml").read_text()
         for command in ("lake build --wfail --iofail", "lake test --wfail --iofail", "lake lint",
-                        "lake exe mk_all --check", "lake exe lint-style", "lake exe checkInitImports"):
+                        "python3 -B scripts/mk_all.py --check", "lake exe lint-style",
+                        "lake exe checkInitImports"):
             self.assertIn(command, ci)
         docs = (REPO / ".github/workflows/docs.yml").read_text()
         self.assertLess(docs.index("run: scripts/cache/get-missing.sh"),

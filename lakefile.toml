@@ -59,13 +59,6 @@ leanOptions = {weak.linter.style.header = false}
 allowNonModules = true
 
 [[lean_exe]]
-name = "mk_all"
-srcDir = "scripts"
-root = "MkAll"
-allowNonModules = true
-supportInterpreter = true
-
-[[lean_exe]]
 name = "checkInitImports"
 srcDir = "scripts"
 root = "CheckInitImports"

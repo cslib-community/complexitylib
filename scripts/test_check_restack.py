@@ -49,7 +49,7 @@ class RestackTests(unittest.TestCase):
         self.root = pathlib.Path(tmp.name)
         self.git("init", "-q", "-b", "main")
         self.commit("base", {"Complexity.lean": AGGREGATE, "Lib.lean": LIB,
-                             ".gitattributes": "Complexity.lean merge=union\n"})
+                             ".gitattributes": "Complexity.lean merge=union\nComplexity/All/** merge=union\n"})
 
     def git(self, *args: str) -> str:
         return subprocess.run(["git", "-C", str(self.root), *args], capture_output=True,
@@ -126,6 +126,20 @@ class RestackTests(unittest.TestCase):
         code, out = self.check(approved, self.merge_main({"Complexity.lean": sorted_imports}))
         self.assertEqual(code, 0, out)
         self.assertIn("aggregates differing only in line order: Complexity.lean", out)
+
+    def test_shard_in_sorted_order_passes_and_a_module_does_not(self) -> None:
+        shard = "Complexity/All/Area.lean"
+        approved = self.feature({shard: "-- generated\n\nimport A\nimport B\nimport C\n",
+                                 "B.lean": "theorem b : True := trivial\n"})
+        self.on_main({shard: "-- generated\n\nimport A\nimport Bb\nimport C\n",
+                      "Bb.lean": "def bb := 0\n"})
+        sorted_imports = "-- generated\n\nimport A\nimport B\nimport Bb\nimport C\n"
+        code, out = self.check(approved, self.merge_main({shard: sorted_imports}))
+        self.assertEqual(code, 0, out)
+        self.assertIn(f"aggregates differing only in line order: {shard}", out)
+        self.assertTrue(check_restack.is_aggregate("abstracts/ComplexityAbstracts/All/X.lean"))
+        for path in ("Complexity/Area.lean", "Complexity/All/X.md", "Other/All/X.lean"):
+            self.assertFalse(check_restack.is_aggregate(path), path)
 
     def stack(self, lower_final: str) -> tuple[str, str, str]:
         """An upper PR approved on a lower PR that then lands, squashed, as `lower_final`.

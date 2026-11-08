@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Report whether an aggregate-only conflict has an exact canonical Git merge.
 
-All four inputs must be full commit IDs available locally. Git writes only to a temporary
-repository; the inspected repository is read-only. See aggregate_merge.md for the contract.
+The aggregates are `Complexity.lean` and its directory shards under `Complexity/All/`, generated
+by `scripts/mk_all.py`. All four inputs must be full commit IDs available locally. Git writes
+only to a temporary repository; the inspected repository is read-only. See aggregate_merge.md
+for the contract.
 """
 
 from __future__ import annotations
@@ -19,11 +21,14 @@ import sys
 import tempfile
 import tomllib
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import mk_all  # noqa: E402
 
 AGGREGATE = "Complexity.lean"
-# scripts/MkAll.lean, module-style branch; intentionally not a general Lean header parser.
-MODULE_HEADER = b"module  -- shake: keep-all --deprecated_module: ignore\n\n"
-COMPONENT = re.compile(r"[A-Za-z_][A-Za-z_0-9]*\Z")  # quick_check.source_modules convention
+SHARDS = f"Complexity/{mk_all.SHARD_DIR}/"
+# scripts/mk_all.py, module-style root; intentionally not a general Lean header parser.
+MODULE_HEADER = (mk_all.MODULE_HEADER + "\n").encode()
+COMPONENT = mk_all.COMPONENT  # quick_check.source_modules convention
 OID = re.compile(r"[0-9a-f]{40}\Z")
 
 
@@ -34,6 +39,15 @@ class Rejected(Exception):
 def require(condition: bool, message: str) -> None:
     if not condition:
         raise Rejected(message)
+
+
+def is_aggregate(path: str) -> bool:
+    return path == AGGREGATE or path.startswith(SHARDS)
+
+
+def blob_oid(content: bytes) -> str:
+    """The SHA-1 object ID that Git gives a blob with this content."""
+    return hashlib.sha1(b"blob %d\0" % len(content) + content).hexdigest()
 
 
 def environment() -> dict[str, str]:
@@ -74,8 +88,14 @@ class Git:
         require(entry["type"] == "blob", "expected a blob")
         return self.run("cat-file", "blob", entry["oid"]).stdout
 
-    def set_aggregate(self, entry: dict[str, str]) -> str:
-        self.run("update-index", "--add", "--cacheinfo", entry["mode"], entry["oid"], AGGREGATE)
+    def set_aggregates(self, files: dict[str, dict[str, str]]) -> str:
+        """Replace every aggregate in the index by `files` and write the tree."""
+        current = [p for p in self.run("ls-files", "-z").stdout.decode().split("\0")
+                   if p and is_aggregate(p)]
+        # `--index-info` removes a path given mode 0, then adds the new entries.
+        lines = [f"0 {'0' * 40}\t{path}" for path in current]
+        lines += [f"{entry['mode']} {entry['oid']}\t{path}" for path, entry in sorted(files.items())]
+        self.run("update-index", "--index-info", data="".join(f"{line}\n" for line in lines).encode())
         return self.text("write-tree")
 
 
@@ -117,19 +137,26 @@ def scratch_git(repo: Path, commits: tuple[str, ...]):
         yield git
 
 
-def canonical(entries: dict[str, dict[str, str]]) -> bytes:
-    """Mirror mk_all's Complexity root: all .lean modules, sorted by module name."""
+def canonical(entries: dict[str, dict[str, str]]) -> dict[str, bytes]:
+    """Mirror scripts/mk_all.py for the Complexity root: the aggregates of every .lean module
+    outside `Complexity/All/`, by path."""
     modules = []
     for path, entry in entries.items():
-        if path.startswith("Complexity/") and path.endswith(".lean"):
-            parts = path[:-5].split("/")
-            require(all(COMPONENT.fullmatch(part) for part in parts),
-                    f"unsupported module path: {path}")
+        if path.startswith("Complexity/") and path.endswith(".lean") and not is_aggregate(path):
+            parts = path[len("Complexity/"):-5].split("/")
+            require(all(COMPONENT.fullmatch(part) for part in parts) and
+                    parts != [mk_all.SHARD_DIR], f"unsupported module path: {path}")
             require(entry["type"] == "blob" and entry["mode"] in {"100644", "100755"},
                     f"nonregular Lean module: {path}")
-            modules.append(".".join(parts))
+            modules.append(tuple(parts))
     require(bool(modules), "empty Complexity library")
-    return MODULE_HEADER + b"".join(f"public import {name}\n".encode() for name in sorted(modules))
+    files = mk_all.generate(mk_all.Library("Complexity", Path(".")), sorted(modules), True)
+    return {path.as_posix(): text.encode() for path, text in files.items()}
+
+
+def canonical_entries(files: dict[str, bytes]) -> dict[str, dict[str, str]]:
+    return {path: {"mode": "100644", "type": "blob", "oid": blob_oid(content)}
+            for path, content in files.items()}
 
 
 def check_aggregate(git: Git, entries: dict, label: str) -> None:
@@ -148,8 +175,11 @@ def check_aggregate(git: Git, entries: dict, label: str) -> None:
     content = git.blob(entries[AGGREGATE])
     require(content.startswith(MODULE_HEADER), f"{label}: changed known aggregate preamble")
     # Exact generation rejects options/declarations, comments, malformed, repeated, missing,
-    # extra and unsorted imports. General Lean parsing would accept too much here.
-    require(content == canonical(entries), f"{label}: aggregate is not canonical for its inventory")
+    # extra and unsorted imports, in the root and every shard, and missing or obsolete shards.
+    # General Lean parsing would accept too much here.
+    actual = {p: e for p, e in entries.items() if is_aggregate(p)}
+    require(actual == canonical_entries(canonical(entries)),
+            f"{label}: aggregate is not canonical for its inventory")
 
 
 def merge(git: Git, prefix: str, source: str, attributes: str):
@@ -192,24 +222,28 @@ def verify(git: Git, prefix: str, source: str, reviewed_base: str, reviewed_head
     require(attrs == b"Complexity.lean\0merge\0unspecified\0", "cannot disable tracked attributes")
     status, neutral, conflicts = merge(git, prefix, source, empty)
     report.update(neutral_tree=neutral, conflicts=conflicts)
-    require(status == 1 and conflicts == [AGGREGATE],
-            f"complete neutral conflict set must be exactly [{AGGREGATE!r}], got {conflicts!r}")
+    require(status == 1 and bool(conflicts) and all(map(is_aggregate, conflicts)),
+            f"complete neutral conflict set must be generated aggregates only "
+            f"({AGGREGATE!r} and {SHARDS}*), got {conflicts!r}")
     merged = git.entries(neutral)
-    content = canonical(merged)
-    entry = {"mode": "100644", "type": "blob",
-             "oid": git.run("hash-object", "-w", "--stdin", data=content).stdout.decode().strip()}
+    files = canonical(merged)
+    aggregates = canonical_entries(files)
+    for path, content in files.items():
+        if merged.get(path) != aggregates[path]:
+            written = git.run("hash-object", "-w", "--stdin", data=content).stdout.decode().strip()
+            require(written == aggregates[path]["oid"], "unexpected blob ID")
     git.run("read-tree", neutral)
-    candidate = git.set_aggregate(entry)
+    candidate = git.set_aggregates(aggregates)
     candidate_entries = git.entries(candidate)
-    require({p: e for p, e in merged.items() if p != AGGREGATE} ==
-            {p: e for p, e in candidate_entries.items() if p != AGGREGATE},
+    require({p: e for p, e in merged.items() if not is_aggregate(p)} ==
+            {p: e for p, e in candidate_entries.items() if not is_aggregate(p)},
             "canonicalization changed a nonaggregate entry")
     feature = git.run("diff", "--no-ext-diff", "--no-textconv", "--no-renames", "--binary",
                       "--full-index", reviewed_base, reviewed_head, "--", ".",
-                      ":(exclude)Complexity.lean").stdout
+                      f":(exclude){AGGREGATE}", f":(exclude){SHARDS}").stdout
     require(bool(feature), "reviewed feature has no nonaggregate payload")
     own_paths = sorted(p for p in inventories["reviewed_base"].keys() | inventories["reviewed_head"].keys()
-                       if p != AGGREGATE and inventories["reviewed_base"].get(p) !=
+                       if not is_aggregate(p) and inventories["reviewed_base"].get(p) !=
                        inventories["reviewed_head"].get(p))
     for path in own_paths:
         require(candidate_entries.get(path) == inventories["reviewed_head"].get(path),
@@ -218,16 +252,23 @@ def verify(git: Git, prefix: str, source: str, reviewed_base: str, reviewed_head
     # guards docs, removals, modes and every unrelated accepted-prefix entry.
     git.run("read-tree", prefix)
     git.run("apply", "--cached", "--binary", data=feature)
-    require(git.set_aggregate(entry) == candidate, "feature forward replay does not recover candidate")
+    require(git.set_aggregates(aggregates) == candidate,
+            "feature forward replay does not recover candidate")
     git.run("read-tree", candidate)
     git.run("apply", "--cached", "--binary", "--reverse", data=feature)
-    recovered = git.set_aggregate(inventories["prefix"][AGGREGATE])
+    recovered = git.set_aggregates({p: e for p, e in inventories["prefix"].items() if is_aggregate(p)})
     require(recovered == report["input_trees"]["prefix"], "feature inverse does not recover exact prefix")
+    digest = hashlib.sha256()
+    for path, content in sorted(files.items()):
+        digest.update(path.encode() + b"\0" + content + b"\0")
     report.update(candidate_tree=candidate, candidate_entries=candidate_entries,
                   reviewed_paths=own_paths, reviewed_entries={p: candidate_entries.get(p) for p in own_paths},
                   feature_patch_sha256=hashlib.sha256(feature).hexdigest(), recovered_prefix_tree=recovered,
-                  canonical_aggregate_sha256=hashlib.sha256(content).hexdigest(),
-                  canonical_import_count=len(content.splitlines()) - 2)
+                  canonical_aggregate_sha256=digest.hexdigest(), canonical_aggregate_files=len(files),
+                  canonical_import_count=sum(1 for content in files.values()
+                                             for line in content.decode().splitlines()
+                                             if line.startswith("public import ") and
+                                             not line.startswith(f"public import Complexity.{mk_all.SHARD_DIR}.")))
     # A private canonical tree is not an admission mechanism. The ordinary tracked-attribute
     # merge, in the target-prefix direction, must produce exactly that tree itself.
     status, default, conflicts = merge(git, prefix, source, prefix)

@@ -1,9 +1,11 @@
-# Generated root import aggregators are sorted lists of one-line imports. (The test library has
-# no aggregator: Lake builds it from a glob, see `lakefile.toml`.)
-# Union merge avoids spurious 3-line context conflicts when concurrent PRs add
-# imports in the same alphabetical neighborhood; `lake exe mk_all --check` in
-# merge-queue CI still enforces canonical sort order.
+# Generated import aggregators (`scripts/mk_all.py`) are sorted lists of one-line imports: each
+# library root and its per-directory shards under `<root>/All/`. (The test library has no
+# aggregator: Lake builds it from a glob, see `lakefile.toml`.) Union merge lets a local
+# `git merge` combine concurrent additions in the same neighbourhood; `mk_all --check` in CI
+# still enforces the canonical content. GitHub ignores merge drivers, so on GitHub such
+# additions conflict; the shards confine that to additions in the same directory.
 Complexity.lean merge=union
+Complexity/All/** merge=union
 abstracts/ComplexityAbstracts.lean merge=union
 # `references.bib` names the opt-in local driver of `scripts/resolve_bib_conflict.py`, which merges
 # entries by key. Where `merge.bibkeys.driver` is not configured, git uses its ordinary text merge.

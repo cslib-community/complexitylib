@@ -49,7 +49,7 @@ class CacheBootstrapTests(unittest.TestCase):
                          "GIT_COMMITTER_EMAIL": "bootstrap@example.invalid",
                          "BOOTSTRAP_LOG": str(self.log)})
         self.git("init", "-q")
-        for name in ("scripts/build.sh", "scripts/check.sh", "scripts/quick_check.py",
+        for name in ("scripts/build.sh", "scripts/check.sh", "scripts/quick_check.py", "scripts/mk_all.py",
                      "scripts/cache/ensure.sh", "scripts/cache/bounded.py", "scripts/cache/restore.py", "scripts/cache/windows_job.py"):
             path = self.root / name
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -118,19 +118,20 @@ class CacheBootstrapTests(unittest.TestCase):
         self.assert_success(self.run_script("build.sh", "Demo.Client"))
         self.assert_success(self.run_script("check.sh"))
         self.assertEqual(self.fetch_count(), 1)
-        self.assertEqual([e["args"] for e in self.events() if e["kind"] == "lake"][-6:], [
-            ["build", "--wfail", "--iofail"], ["exe", "mk_all", "--check"],
-            ["test", "--wfail", "--iofail"], ["lint"], ["exe", "lint-style"],
-            ["exe", "checkInitImports"]])
+        # The aggregator check (`scripts/mk_all.py --check`) runs between build and test without
+        # Lake; the fixture has no default targets, so `lint-style` gets no aggregator modules.
+        self.assertEqual([e["args"] for e in self.events() if e["kind"] == "lake"][-5:], [
+            ["build", "--wfail", "--iofail"], ["test", "--wfail", "--iofail"], ["lint"],
+            ["exe", "lint-style"], ["exe", "checkInitImports"]])
 
     def test_quick_check_restores_before_lean_header_inspection_and_build(self):
         self.write("Demo/Base.lean", "def value := 2\n")
         self.assert_success(self.run_script("check.sh", "--quick"))
-        fetch, headers, build, aggregate = self.events()
+        # The closing aggregator check is `scripts/mk_all.py --check`, which needs no Lake.
+        fetch, headers, build = self.events()
         self.assertEqual(fetch["kind"], "fetch")
         self.assertEqual(headers["args"][:3], ["env", "lean", "--run"])
         self.assertTrue({"Demo.Base", "Demo.Client"} <= set(build["args"]))
-        self.assertEqual(aggregate["args"], ["exe", "mk_all", "--check"])
 
     def test_quick_fallback_restores_once_and_preserves_failed_gate(self):
         self.write("README.md", "forces full validation\n")
@@ -138,8 +139,9 @@ class CacheBootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("falls back", result.stdout)
         self.assertEqual(self.fetch_count(), 1)
+        # Five Lake gates; the aggregator check runs `scripts/mk_all.py` without Lake.
         commands = [e["args"] for e in self.events() if e["kind"] == "lake"]
-        self.assertEqual(len(commands), 6)
+        self.assertEqual(len(commands), 5)
         self.assertEqual(commands[0], ["build", "--wfail", "--iofail"])
         self.assertEqual(commands[-1], ["exe", "checkInitImports"])
 

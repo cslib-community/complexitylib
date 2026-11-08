@@ -30,15 +30,14 @@ MAX_SAMPLES = 16
 MAX_BYTES = 32 * 1024 ** 3
 MAX_SECONDS = 7200
 CHECKS = [
-    ["lake", "build", "--wfail", "--iofail", "@complexitylib", "@/mk_all",
+    ["lake", "build", "--wfail", "--iofail", "@complexitylib",
      "@/checkInitImports", "@mathlib/lint-style"],
+    ["python3", "-B", "scripts/mk_all.py", "--check"],
     ["lake", "test", "--wfail", "--iofail"],
     ["lake", "lint"],
     ["python3", "-B", "-m", "unittest", "scripts/test_check_tidy_surface.py"],
     ["python3", "-B", "scripts/check_tidy_surface.py"],
-    ["lake", "exe", "mk_all", "--check"],
-    ["python3", "-B", "-m", "unittest", "discover", "-s", "scripts", "-p", "test_mk_all.py"],
-    ["lake", "exe", "lint-style"],
+    ["sh", "-c", "lake exe lint-style $(python3 -B scripts/mk_all.py --aggregates)"],
     ["lake", "exe", "checkInitImports"],
 ]
 
