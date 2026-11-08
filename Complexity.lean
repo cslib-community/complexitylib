@@ -4825,6 +4825,7 @@ public import Complexity.Foundations.RingTheory.CyclicIntRing
 public import Complexity.Foundations.RingTheory.CyclicIntRing.Coefficients
 public import Complexity.Foundations.RingTheory.GaloisRing
 public import Complexity.Foundations.RingTheory.RootsOfUnity.Principal
+public import Complexity.Foundations.Syntax.PrefixParser
 public import Complexity.GameTheory.Bimatrix.Basic
 public import Complexity.GameTheory.Bimatrix.BestResponsePolytope
 public import Complexity.GameTheory.Bimatrix.LemkeHowson
