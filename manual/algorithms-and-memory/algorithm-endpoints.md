@@ -13,6 +13,21 @@ These results are clients of the RAM and specification models, not additional ex
 
 Quickselect receives the index followed by the array; an invalid index has an explicit eight-step, no-write, no-randomness behavior returning zero. The expected costs are machine instruction counts. They do not price the `rand` instruction as an exact strict-PPT finite-coin sampler.
 
+### Deterministic selection in the comparison model
+
+Import `Complexity.Algorithms.Lean.Query.Select.Correctness` and `Complexity.Algorithms.Lean.Query.Select.Cost`. [Defs.lean](../../Complexity/Algorithms/Lean/Query/Select/Defs.lean) defines `Cslib.Query.select k xs`, the groups-of-five median-of-medians algorithm in cslib's comparison-query model `FreeM (LEQuery α)`, the model of `Cslib.Query.mergeSort`. Every comparison `a ≤ b` is an oracle query and list manipulation is free. The program sorts lists of at most `selectCutoff = 730` elements with `mergeSort`. For a longer list it takes the lower median of each group of five, selects the median of these medians recursively as the pivot, partitions three ways (below, equivalent to and above the pivot) and recurses into the part holding rank `k` [BFPRT 1973][bfprt73], [CLRS 9.3][clrs09]. The three-way partition makes the algorithm correct for total preorders with ties. Before recursing into a side, the program checks without comparisons that the side has at most `selectSideBound n` elements, and returns `none` otherwise. Under an oracle implementing a total preorder the check always passes. It makes the recursion well founded and lets the comparison bound hold for every oracle.
+
+| Declaration | Statement |
+|---|---|
+| `select_isOrderStatistic`, `eval_select_eq_none` | under an oracle implementing a total preorder `r`, `select k xs` returns an element of rank `k` when `k < xs.length`, and `none` otherwise. No antisymmetry is assumed |
+| `eval_select_eq_getElem?_mergeSort` | in a linear order, `select k xs` returns `xs.mergeSort[k]?` |
+| `length_filter_lt_le_selectSideBound`, `length_filter_gt_le_selectSideBound` | the median-of-medians counting bound: if the pivot has rank `⌊(g−1)/2⌋` among the `g = ⌈n/5⌉` group medians, at most `n − 3⌊(g−1)/2⌋ − 1` elements lie strictly on either side of it |
+| `select_countQueries_le`, `select_upperBound` | `select k` makes at most `37 n` comparisons under every oracle, as `UpperBound (select k) List.length (37 * ·)` |
+
+The cost proof solves `T(n) ≤ 8n/5 + T(⌈n/5⌉) + 2n + T(selectSideBound n)` by strong induction. Sorting the groups costs `8n/5` (`medians_countQueries_le`), the partition costs `2n` (`partition3_countQueries_le`), and the base case costs `n⌈log₂ n⌉ ≤ 10n`. The group cost uses [CountBound.lean](../../Complexity/Algorithms/Lean/Query/Sort/Merge/CountBound.lean), which sharpens cslib's merge bound: a merge makes at most `|xs| + |ys| − 1` comparisons (`merge_countQueries_le_sub_one`), so `mergeSort` sorts five elements with at most `8` (`mergeSortCountBound_five`). Ranks are stated with `List.IsOrderStatistic` in [OrderStatistic.lean](../../Complexity/Foundations/Data/List/OrderStatistic.lean): at most `k` elements lie strictly below `y` and more than `k` lie at or below it. `List.isOrderStatistic_iff_mergeSort` identifies the rank-`k` element of a linear order with `xs.mergeSort[k]`. The [tests](../../ComplexityTests/QuerySelect.lean) run lists longer than the cutoff, duplicates, out-of-range ranks, a preorder with ties and a dishonest oracle.
+
+The constant `37` comes from this simple accounting. Blum, Floyd, Pratt, Rivest and Tarjan refine the algorithm (`PICK`) to at most `5.4305 n` comparisons [BFPRT 1973][bfprt73]; that constant is not formalized. Group sizes other than five, the comparison lower bounds (`n − 1` for the minimum, `⌈3n/2⌉ − 2` for the minimum and maximum together, and the selection lower bounds) and a word-RAM implementation also remain open; see `ROADMAP.md`.
+
 ## Shortest paths and priority queues
 
 [abstracts/ComplexityAbstracts/DijkstraAbstract.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/DijkstraAbstract.lean) represents directed weighted multigraphs by adjacency lists with natural weights; parallel edges and self-loops are allowed. Output distance is an extended natural, encoded as zero for infinity and `d+1` for a finite distance. The word condition is `8*(n+m+2)*(W+2) < 2^w`.
@@ -270,6 +285,34 @@ The combinatorial layer is [Complexity/Algorithms/Lean/MaxFlow/AugmentingPath.le
 Import `Complexity.Algorithms.Lean.MaxFlow.Hungarian` ([Complexity/Algorithms/Lean/MaxFlow/Hungarian.lean](../../Complexity/Algorithms/Lean/MaxFlow/Hungarian.lean)). It is a native `TimeM ℕ` program, not a RAM-model program. `hungarianM c` takes integer costs `c : Fin n × Fin n → ℤ` on the complete bipartite graph and minimizes. `hungarianM_correct` shows three things: the output matching is a minimum-cost perfect matching (`IsMinCostPerfectMatching`), the output potentials `y`, `z` are feasible (`IsFeasiblePotential`), and the cost equals `∑ y + ∑ z`. `hungarianM_time_le` bounds the charged steps by `6 * n ^ 3 + 6 * n ^ 2 + 3 * n`. Ticks are charged per column scanned for a row minimum, per entry of each allocated or rebuilt table (potentials, mate, tree, slack and path tables), per column scanned by the argmin, per tree extension, and per rematched column. Vector reads and writes, list cons, `ℤ` arithmetic and comparisons, and cost queries `c (u, v)` are free primitives inside those charged steps, as in the Edmonds–Karp and Hopcroft–Karp solvers. The module docstring's "Cost model and limitations" gives the per-round breakdown. Rectangular instances and forbidden edges have to be padded or given large costs. For maximum weight, negate the costs.
 
 Egerváry's theorem is available without running the algorithm. `exists_isMinCostPerfectMatching_potential_eq` gives the integral form. `isMinCostPerfectMatching_iff_exists_potential` gives the min–max form, and `exists_perm_assignment` the permutation form. The weak-duality and complementary-slackness lemmas in [Complexity/Algorithms/Lean/MaxFlow/WeightedMatching.lean](../../Complexity/Algorithms/Lean/MaxFlow/WeightedMatching.lean) are stated for arbitrary graphs and arbitrary matchings, for reuse by minimum-cost flow. The [checked client](../../ComplexityTests/Hungarian.lean) evaluates complete runs, including an instance where greedy fails and one that needs dual adjustments. It checks the optimum against all permutations of a `3 × 3` instance, verifies the dual certificates independently, and applies `hungarianM_correct` and `hungarianM_time_le`.
+
+## General matching: Berge's lemma and the Tutte–Berge formula
+
+These results are about matchings in arbitrary finite graphs, not necessarily bipartite. They are stated on Mathlib's `SimpleGraph` and `SimpleGraph.Subgraph.IsMatching`, not on the bipartite `L × R → Bool` model above, and there is no executable algorithm yet.
+
+[Complexity/Foundations/Combinatorics/SimpleGraph/Berge.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/Berge.lean) defines:
+- `Subgraph.IsAugmentingPath M p`: a path between distinct uncovered vertices that alternates in Mathlib's `IsAlternating` sense;
+- `Subgraph.augment M p`: `M ∆ E(p)`;
+- `Subgraph.IsMaximumMatching`: a matching with at least as many edges, counted by `Set.encard`, as every matching.
+
+`IsAugmentingPath.isMatching_augment` and `ncard_verts_augment` show that augmenting gives a matching covering two more vertices. `IsMatching.isMaximumMatching_iff_forall_not_isAugmentingPath` is Berge's lemma for finite graphs ([Berge 1957][berge57], Theorem 1; [Schrijver's lecture notes][schrijver17], Theorem 3.2). It is proved from `IsMatching.exists_isAugmentingPath_of_ncard_lt`, using the odd-degree vertices of a component of `M ∆ M'`. `exists_isMaximumMatching` gives a maximum matching of a finite graph, and `IsPerfectMatching.isMaximumMatching` shows that perfect matchings are maximum. The bipartite Berge theorem in `MaxFlow/AugmentingPath` is a separate statement in its own model; neither is derived from the other.
+
+[Complexity/Foundations/Combinatorics/SimpleGraph/TutteBerge.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/TutteBerge.lean) proves the Tutte–Berge formula ([Berge 1958][berge58]; [Schrijver's lecture notes][schrijver17], Theorem 5.1) with vertex counts, writing `o(G - U)` as `((⊤ : G.Subgraph).deleteVerts U).coe.oddComponents.ncard`:
+- `IsMatching.ncard_verts_add_ncard_oddComponents_le` (weak duality): `|V(M)| + o(G - U) ≤ |V| + |U|`.
+- `exists_isMatching_ncard_verts_add_ncard_oddComponents_eq` (strong duality) is derived from Mathlib's `SimpleGraph.tutte` by adjoining `d` universal vertices, where `d` is the maximum deficiency.
+- `IsMatching.isMaximumMatching_iff_exists_ncard_verts_add_ncard_oddComponents_eq`: a single `U` certifies that a matching is maximum.
+- `IsMaximumMatching.isLeast_two_mul_ncard_edgeSet`: `2ν(G)` is the least value of `|V| + |U| - o(G - U)`.
+
+The [checked instances](../../ComplexityTests/GeneralMatching.lean) cover three graphs:
+- On the path `0 - 1 - 2 - 3`, an explicit walk is an augmenting path for `{12}`.
+- On the `5`-cycle, `U = ∅` certifies the matching `{01, 23}`.
+- On the star `K_{1,3}`, `U = {0}` certifies the matching `{01}`.
+
+Still open ([#3337](https://github.com/cslib-community/complexitylib/issues/3337)):
+- Edmonds' blossom-contraction lemma ([Schrijver's lecture notes][schrijver17], Theorem 5.2);
+- an executable blossom algorithm with its `O(|V|²|E|)` bound;
+- weighted general matching;
+- the Gallai–Edmonds decomposition.
 
 ## Matroid intersection
 
@@ -971,7 +1014,10 @@ The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root 
 
 The numeric values above are transcriptions of checked source statements, not results of new execution benchmarks. The source-reference audit checks locations and digests; it does not rerun Lean or prove asymptotic summaries. The full Haskell/Lean runtime behavior, allocator, operating system and hardware are outside these idealized RAM models.
 
+[berge57]: ../sources.md#berge57
+[berge58]: ../sources.md#berge58
 [complexitylib]: ../sources.md#complexitylib
+[bfprt73]: ../sources.md#bfprt73
 [christofides76]: ../sources.md#christofides76
 [clrs09]: ../sources.md#clrs09
 [edmonds65]: ../sources.md#edmonds65
