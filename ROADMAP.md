@@ -294,10 +294,19 @@ only a previous key; a large colliding group is output without a growing-group
 state or repeated group copying. Exact grouped wire/order/occurrence semantics
 and a uniform quarter-scale time/charged-peak-space bound are proved, including
 physical record widths and callback/framing temporaries. These quarter buckets
-are not the complete two-quarter classes. Inverse queries, output-sensitive group
-pair emission/full-state reconstruction, actual class counts and fused bounded
-writing/persistent retained tapes remain open before the global source resources
-can be concluded. Older class/batch counter implementations are unchanged. A real
+are not the complete two-quarter classes. `ClassJoin` now assembles actual
+forward/inverse quarter-query generation, tagged sorting/grouping, exhaustive
+packed-pair joins, count-only group products and per-pair streamed full-state
+reconstruction from original input. Its fixed runtime outer loop visits every
+computed forward class and produces a binary count table; zero counts have
+original packed-word exhaustive-miss semantics. The stored table has the derived
+quarter-scale bound `2^p (4k+7)`. Actual uniform bit certificates include every
+composed phase and table/control copying, but generic join/count callbacks still
+pay polynomial grouped-wire cost. No near-linear group consumption, both-side
+computed-balance orientation, fused bounded writing/probing/persistent retained
+tapes or sharp global source inequalities follow from these profiles. These
+remain required; table/output encoding is not auxiliary TM workspace. Older
+class/batch counter implementations and the complete solver are unchanged. A real
 streaming default filter also removes whole-list accumulator copying,
 with `O(I+(n+1)P(B))` time and `O(I+P(B))` charged space. It is an alternative
 component, not installed in the existing cubic-filter uniform execution. Those

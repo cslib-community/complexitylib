@@ -1532,12 +1532,45 @@ under the admitted depth conditions. Duplicate keys and payload occurrences
 are not discarded, including zero-width quarters.
 
 These are **first-quarter buckets**, not the full two-quarter classes $F_g,B_g$,
-and they do not compute $mu_p$. The inverse-query producer, output-sensitive
-group join, full-state reconstruction per emitted pair, class counting and fused
-bounded writer with persistent retained tapes remain to be implemented/composed.
-The previous class/batch counter routes are unchanged and still pay their repeated
-scans and state-copying costs. No sharp global dissection or whole-paper result
-follows from the grouped-quarter bound.
+and they do not compute $\mu_p$.
+
+`ClassJoin` now generates the forward first quarter and genuine inverse
+second-quarter queries, tags and sorts their union, and feeds the same one-pass
+group writer. `KeyJoin` emits every cross-side occurrence pair in a group;
+its count pass instead multiplies the two group populations and sums, without
+constructing the pairs. Collisions and duplicate occurrences contribute to the
+count. `original_witnesses` and `mem_fullStates` prove exhaustive packed-pair
+semantics and actual original full-width states, with inverse payloads reversed
+back to original operator order. Full-state reconstruction uses a real streamed
+per-pair callback, charging the original input and one packed pair.
+
+`ClassJoin.table` is a fixed runtime-counter program visiting all $2^p$ computed
+forward classes, producing binary counts and releasing each round's quarter/group
+temporaries. `tableCertificate` composes actual preparation, generation, inverse
+execution, sorting/grouping, counting and loop control. `original_table_zero_iff`
+proves an indexed zero is an exhaustive original-input class miss. `table_wire`
+bounds the stored table by $2^p(4k+7)$ bits; it does **not** bound the machine's
+internal workspace by that table size.
+
+The generic join/count consumers still pay polynomial cost in the complete
+grouped wire volume, and the outer certificate also charges captured-table
+copying and final reversal. This route avoids rescanning all half words for a
+count, but does not yet provide a resource-faithful linear group consumer. The
+forward table has not been connected to both-direction computed-balance
+orientation. Fused bounded writing/probing with persistent retained tapes,
+all-class search/reuse and the sharp global time/peak-space inequalities remain
+open. The previous class/batch counter routes retain all their scans/copying
+costs; their complete solver has not been replaced. No sharp source or whole-paper
+result follows from these assembled class-count and full-state producer profiles.
+
+From the repository root, build
+`lake build Complexity.Cryptanalysis.AddXNORClassJoin`, then run
+`lake env lean ComplexityTests/AddXNORClassJoin.lean`. The
+[class-join client](../../ComplexityTests/AddXNORClassJoin.lean) executes real
+non-self-inverse addition with colliding projected keys, all-class counts,
+full-width retained records, exhaustive zero counts, duplicate occurrences and
+zero/empty/capped inputs. It also applies the arbitrary-width original-input
+semantics and actual source/count/state/table machine certificates.
 
 From the repository root, build
 `lake build Complexity.Cryptanalysis.AddXNORGroupedQuarter`, then run

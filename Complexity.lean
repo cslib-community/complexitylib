@@ -1961,6 +1961,7 @@ public import Complexity.Computability.Machines.ReadMachine.VirtualWord
 public import Complexity.Computability.Machines.ReadMachine.VirtualWord.Evaluator
 public import Complexity.Computability.Machines.ReadMachine.VirtualWord.Runtime
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.KeyGrouping
+public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoin
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.RadixPartition
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.RadixSort
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.SortedMatch
@@ -2901,6 +2902,7 @@ public import Complexity.Cryptanalysis.AddXNORBits
 public import Complexity.Cryptanalysis.AddXNORChain
 public import Complexity.Cryptanalysis.AddXNORChainReverse
 public import Complexity.Cryptanalysis.AddXNORClassEnumeration
+public import Complexity.Cryptanalysis.AddXNORClassJoin
 public import Complexity.Cryptanalysis.AddXNORClassStreaming
 public import Complexity.Cryptanalysis.AddXNORClasses
 public import Complexity.Cryptanalysis.AddXNORCompactExecution

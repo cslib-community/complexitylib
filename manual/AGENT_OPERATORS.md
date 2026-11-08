@@ -184,11 +184,19 @@ sorting and one-pass equal-key grouping. The group writer holds only a previous
 key and emits nested frames directly; its actual prefix/callback bounds avoid a
 growing-group accumulator. Its input/output quarter volume is still charged,
 with a proved quarter-scale uniform time/space bound. Do not equate first-quarter
-buckets with complete two-quarter classes or their maximum balance. The inverse
-producer, equal-key pair consumer, DP/counting integration and fused bounded
-writing/persistent retained-tape execution remain open; previous all-class counter
-copying costs are unchanged. Reuse the checked grouped-quarter client when building
-the next consumer, and keep global resource claims separate from this stage.
+buckets with complete two-quarter classes or their maximum balance.
+`ClassJoin` now composes forward/inverse quarter generation, tagged sorting and
+that group writer with all-pair occurrence semantics, count-only products and
+streamed original full-state reconstruction. Its fixed outer counter computes
+the entire forward-class count table, including exhaustive zero-count semantics.
+The stored binary table has a derived quarter-scale wire bound. The actual
+certificates still charge polynomial grouped-volume consumers, captured table
+copying and reversal; table size alone does not bound auxiliary TM workspace.
+Do not promote these profiles to sharp global resources or computed balance:
+connecting both orientations, a near-linear group consumer, fused bounded
+writing/probing with persistent retained tapes and global search/reuse remain.
+Use the complete class-join client from the Operator's Manual for handoff checks;
+leave the older complete solver and every scan/copying charge intact.
 
 ## Correct course and hand work over
 
