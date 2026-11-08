@@ -9,13 +9,15 @@ module
 public import Complexity.Computability.Complexity.Classes.Hierarchy.Polynomial
 public import Complexity.Computability.Complexity.Classes.TimeSpace.Basic
 public import Complexity.Computability.Complexity.Classes.TimeSpace.Slowdown
+public import Complexity.Computability.Complexity.Classes.TimeSpace.Speedup
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Streaming
 
 /-! Simultaneous time and space classes, two-quantifier alternating time and the slowdown lemma
 on concrete instances. Parity is in linear time and constant space, hence in `Σ₂TIME(n)` and in
 `Σ₂ᵖ`. The deterministic polynomial time hierarchy gives a problem outside `TISP(n, n)`. The
 slowdown lemma is instantiated at the exponents of the Arora–Barak time–space lower bound and at a
-quadratic deterministic hypothesis. -/
+quadratic deterministic hypothesis. The speedup lemma places parity in `Σ₂TIME(n⁸)` through
+`TISP(n¹², n²)`, and the general speedup gives `TISP(n, n) ⊆ Σ₂TIME((n + 1) ^ 4)`. -/
 
 public section
 
@@ -75,5 +77,26 @@ example (hN : NTIME encBits id ⊆ DTIME encBits fun m => (m + 1) ^ 2) :
     SigmaTwoTIME encBits (fun n => (n + 1) ^ 2) ⊆ NTIME encBits (fun n => (n + 1) ^ 4) :=
   SigmaTwoTIME_succ_pow_subset_NTIME_succ_pow (p := 2) (q := 1) (C := 1) hN
     (fun m => by simp) (by omega) le_rfl (by omega) (by omega)
+
+/-- The Arora–Barak instance of the speedup on parity: from `TISP(n¹², n²)` to `Σ₂TIME(n⁸)`. -/
+example : {w | oddOnes w = true} ∈ SigmaTwoTIME encBits (fun n => (n + 1) ^ 8) :=
+  TISP_pow_twelve_subset_SigmaTwoTIME
+    (TISP_mono (fun n => (Nat.le_succ n).trans (Nat.le_self_pow (by decide) _))
+      (fun _ => Nat.zero_le _) oddOnes_mem_TISP)
+
+/-- The general speedup at linear time and space, with the crude bound `√n + 1 ≤ n + 1`:
+`TISP(n, n) ⊆ Σ₂TIME((n + 1) ^ 4)`. -/
+example : TISP encBits (fun n => n) (fun n => n) ⊆ SigmaTwoTIME encBits fun n => (n + 1) ^ 4 := by
+  refine TISP_subset_SigmaTwoTIME ⟨3, fun n => ?_⟩
+  have h₁ : Nat.sqrt n + 1 ≤ n + 1 := Nat.succ_le_succ (Nat.sqrt_le_self n)
+  have h₂ : n.size + 1 ≤ n + 1 :=
+    Nat.succ_le_succ ((Nat.size_le.mpr Nat.lt_two_pow_self).trans le_rfl)
+  have h₃ : (n.size + 1) ^ 2 ≤ (n + 1) ^ 2 := Nat.pow_le_pow_left h₂ 2
+  have h₄ : n + (n + 1) * (n.size + 1) ^ 2 + (n.size + 1) ^ 2 ≤ 3 * (n + 1) ^ 3 := by
+    have := Nat.mul_le_mul_left (n + 1) h₃
+    nlinarith
+  have h₅ := Nat.mul_le_mul h₁ h₄
+  have h₆ : (n + 1) * (3 * (n + 1) ^ 3) = 3 * (n + 1) ^ 4 := by ring
+  omega
 
 end ComplexityTests.TimeSpace

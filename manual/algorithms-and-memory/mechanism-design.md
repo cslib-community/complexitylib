@@ -4,7 +4,9 @@ The modules under `Complexity/GameTheory/Mechanism/` formalize sealed-bid mechan
 quasilinear utilities, following Roughgarden's CS364A lecture notes (2013), Lectures 2–5 and 7.
 They are mathematical models of incentives: allocation and payment rules are arbitrary real
 functions, and no running time is charged. Hardness and approximation of the allocation
-problems, such as knapsack, are separate questions.
+problems, such as knapsack, are separate questions. Preference aggregation without money, starting
+with Arrow's impossibility theorem, is in `Complexity/GameTheory/SocialChoice/` and is described
+[below](#social-choice-arrows-impossibility-theorem).
 
 ## Single-parameter environments
 
@@ -133,6 +135,117 @@ case the DSIC and single-item results (`IsVirtualWelfareMaximizing.isMonotone`,
 itself still holds, since it does not assume regularity. The checked examples prove that
 `f(v) = 2v` fails `IsRegular` for every choice of `f(0)`.
 
+## Bayes–Nash equilibrium, revenue equivalence and the first-price auction
+
+Import `Complexity.GameTheory.Mechanism.Bayesian` (Hartline, *Mechanism Design and Approximation*,
+Chapter 2, version of 20 September 2021 [hartline21]). Bidder `i`'s valuation is drawn from `μ i`,
+supported on `[0, h i]`, and bidder `i` bids `β i v` on valuation `v`. The interim rules
+`M.interimAllocation μ β i z` and `M.interimPayment μ β i z` are the expected allocation and payment
+of bid `z`, an integral over `Measure.pi μ` in which coordinate `i` is overwritten by `z`.
+Hartline's interim rules indexed by values are their compositions with `β i`.
+
+- `M.IsBayesNash μ h β` requires, for every bidder and *every* type `v ∈ [0, h i]` (not almost
+  every), a legal bid `0 ≤ β i v` that no legal bid `z ≥ 0` beats in interim utility. Bids
+  outside the range of `β i` count as deviations. The definition does not link `h` to `μ`: `h i`
+  is meant to be the support bound and `μ i` a probability measure, which the revenue results
+  assume; otherwise it can hold vacuously (`h i < 0`, or some `μ j = 0`).
+- `IsTruthfulOn X P s` (in `SingleParameter`) is one-dimensional incentive compatibility of a
+  curve pair; `IsTruthfulOn.monotoneOn` is the swap argument, and DSIC along one bidder's own bid
+  is `IsTruthfulOn` on `[0, ∞)` (`Mechanism.IsDSIC.isTruthfulOn`), which Myerson's Lemma uses. On
+  `[0, h]` it is equivalent to monotonicity of `X` plus `P v = P 0 + (v X v - ∫₀ᵛ X)`
+  (`IsTruthfulOn.payment_eq`, `isTruthfulOn_of_payment_eq`). The proof reuses Myerson's DSIC
+  lemmas through a private one-bidder mechanism on the bid projected to `[0, h]`
+  (`Set.projIcc`), so nothing is re-derived.
+- `IsBayesNash.monotoneOn` and `IsBayesNash.interimPayment_eq` are Theorem 2.5.1. The converse,
+  `isBayesNash_iff`, replaces Hartline's assumption of onto strategies by the condition that every
+  legal bid is weakly dominated by the bid of some type in the support. Onto strategies meet it
+  with equality, and it is the check (v)(b) of Hartline's §2.8 that the first-price equilibrium
+  needs.
+- `IsBayesNash.integral_sum_payment_eq` is the Bayes–Nash revenue formula: the zero types' interim
+  payments plus the expected virtual welfare of the equilibrium allocation. It needs probability
+  measures with `HasValueDensity`, integrable payments and measurable, bounded allocations.
+  `IsBayesNash.integral_payment_eq_integral_interimAllocation` is the per-bidder interim form
+  `pᵢ(0) + E[φᵢ(vᵢ) xᵢ(vᵢ)]`, which needs no measurability of the ex post allocation.
+- Revenue equivalence (Corollary 2.7.1, with equal rather than zero payments of the zero types):
+  `IsBayesNash.integral_sum_payment_eq_of_interimAllocation_ae_eq` assumes interim allocation
+  rules equal for almost every type, Hartline's "same BNE allocation";
+  `IsBayesNash.integral_sum_payment_eq_of_allocation_ae_eq` assumes the stronger almost sure
+  equality of ex post allocations; `IsBayesNash.interimPayment_eq_of_interimAllocation_eq` is the
+  type-by-type form.
+
+`Complexity.GameTheory.Mechanism.FirstPrice` defines the first-price auction
+(`FirstPrice.mechanism`, Vickrey's winner, who pays its bid) and the strategy
+`uniformBid n v = (n - 1) v / n`. `isBayesNash_uniformBid` proves that for `n` bidders with values
+uniform on `[0, 1]` this is a Bayes–Nash equilibrium. Its expected revenue is `(n - 1) / (n + 1)`
+(`integral_sum_payment_uniformBid`), equal to the second-price auction's
+(`integral_sum_payment_uniformBid_eq_vickrey`, Corollary 2.7.2 for the uniform distribution;
+`integral_sum_payment_vickrey`). `not_isBayesNash_id` shows that truthful bidding is not an
+equilibrium with two or more bidders. Hartline proves the two-bidder case (§2.3, Example 2.8.1); the
+`n`-bidder formula is the standard generalization, derived here by the same method rather than
+quoted.
+
+To verify a candidate equilibrium of another auction, compute the interim allocation
+`interimAllocation μ β i z` for every bid `z ≥ 0`, as `interimAllocation_uniformBid` does. Then
+apply `isBayesNash_iff`: monotonicity and the payment identity are one-variable facts, and for
+domination exhibit, for each bid outside the range, a type whose bid does at least as well.
+
+## Social choice: Arrow's impossibility theorem
+
+Import `Complexity.GameTheory.SocialChoice.Arrow`. The namespace `Cslib.GameTheory.SocialChoice`
+models preference aggregation: there are no payments or utilities, only rankings. Voters `V` rank
+alternatives `A`.
+
+- `Ranking A` is a strict linear order, given by a relation `Prefers` that is irreflexive,
+  transitive and total on distinct alternatives. `toTop b` and `toBottom b` move `b` to one end
+  and keep the other alternatives in order. `IsTop` and `IsBottom` say that `b` is at an end.
+  `Ranking.nonempty` gives a ranking of any type, by the Szpilrajn extension theorem.
+- `WeakRanking A` is a complete preorder `AtLeast`, with strict part
+  `Prefers a b := ¬ AtLeast b a`, so society may be indifferent. `Ranking.toWeakRanking` views a
+  ranking as a weak ranking without ties.
+- A `SocialWelfareFunction V A` maps every profile `V → Ranking A` to a `WeakRanking A`. Every
+  profile of strict rankings is admissible (unrestricted domain); voters cannot be indifferent.
+  This makes Arrow's theorem formally stronger, not weaker: Pareto and IIA are only assumed on
+  strict profiles, so more rules are covered. The version in which voters may be indifferent
+  follows by a short IIA reduction, which is not formalized.
+
+Rankings are bundled structures, not `LinearOrder` instances, because a profile puts different
+orders on the same type and the proof builds rankings pointwise. The bridge instances
+`IsStrictTotalOrder A r.Prefers`, `IsPreorder A R.AtLeast` and `Std.Total R.AtLeast` give access to
+Mathlib's unbundled order API. The axioms and the strict part of a weak ranking are `@[expose]`d,
+so clients can unfold them.
+
+The axioms are `IsPareto` (weak Pareto: if every voter strictly prefers `a` to `b`, so does
+society), `IsIIA` (society's `AtLeast a b` depends only on each voter's `Prefers a b`;
+`IsIIA.prefers_iff` gives the strict form), `IsDictator i` (whenever voter `i` strictly prefers `a`
+to `b`, so does society) and `IsDictatorial`. `dictatorship i` adopts voter `i`'s ranking. The
+main results:
+
+- `isDictatorial_of_isPareto_of_isIIA`: with `[Finite V]` and three distinct alternatives
+  (`∃ a b c : A, a ≠ b ∧ a ≠ c ∧ b ≠ c`), a weakly Pareto rule satisfying IIA is dictatorial.
+  This is Arrow's theorem. `isDictatorial_of_three_le_card` takes `3 ≤ Fintype.card A` instead.
+  The set of alternatives may be infinite.
+- `existsUnique_isDictator_of_isPareto_of_isIIA`: the dictator is unique. By
+  `isDictator_iff_eq_dictatorship`, a rule with dictator `i` is `dictatorship i`, so it has no
+  ties. `isPareto_and_isIIA_iff` combines these: the weakly Pareto IIA rules are exactly the
+  dictatorships.
+- `isTop_or_isBottom_of_extremal`: the extremal lemma used in the proof.
+
+The proof is the first of the three in Geanakoplos, *Three brief proofs of Arrow's impossibility
+theorem* (Economic Theory, 2005). Suppose every voter
+places `b` at one end of their ranking. Then society places `b` strictly at one end: otherwise
+some `a ≥ b ≥ c` socially with `a ≠ c`, and moving `c` above `a` in every ranking, without moving
+`b`, contradicts transitivity by IIA and Pareto. Next, move `b` from the bottom to the top one
+voter at a time. An induction over `Finset`s finds an *extremely pivotal* voter `n`, whose move
+takes `b` from the social bottom to the social top. Voter `n` dictates every pair `x, y ≠ b`:
+consider a profile in which `n` ranks `x ≻ b ≻ y` and everyone else keeps `b` where it was. It
+agrees with the pivotal profiles on `x` versus `b` and on `b` versus `y`. Finally, the pivotal
+voters of different alternatives coincide, which covers the pairs containing `b`.
+
+To apply the theorem to a concrete rule, prove `IsPareto` and `IsIIA` and obtain the dictator.
+To show that a rule escapes it, find the hypothesis that fails. A rule with strict social rankings,
+`F : Profile V A → Ranking A`, is covered through `fun P => (F P).toWeakRanking` and
+`Ranking.toWeakRanking_prefers`, as in the checked example.
+
 ## Worked examples
 
 The [checked examples](../../ComplexityTests/GameTheory/MechanismDesign.lean) show the following:
@@ -146,12 +259,32 @@ The [checked examples](../../ComplexityTests/GameTheory/MechanismDesign.lean) sh
 - Knapsack feasibility holds and fails on small inputs, and the existence theorems are
   nonvacuous.
 
+The [social choice examples](../../ComplexityTests/GameTheory/SocialChoice.lean) are a `module`
+that uses only the public surface of the Arrow module. Dictatorship is weakly Pareto and IIA, so
+the theorem is not vacuous. Three hypotheses are each tested against a rule that drops it:
+
+- With three voters and two alternatives, pairwise majority rule is weakly Pareto, IIA and not
+  dictatorial, so three alternatives are needed.
+- With two voters and three alternatives, the Borda count is weakly Pareto and not dictatorial:
+  when the two voters hold opposite rankings, every alternative has Borda score `2`. By Arrow's
+  theorem the Borda count therefore violates IIA, so IIA is needed.
+- Universal indifference is IIA but not weakly Pareto.
+
+The examples also apply the theorem to three voters and three alternatives, and to a rule with
+strict social rankings.
+
 The [optimal-auction examples](../../ComplexityTests/GameTheory/OptimalAuction.lean) use
 `U[0, 1]`, which has reserve price `1/2`. With two bidders, bids `(0.3, 0.4)` do not sell. On
 `(0.6, 0.2)` bidder `0` pays `1/2`. On `(0.7, 0.9)` bidder `1` pays `0.7`. The plain Vickrey rule
 is not a virtual-welfare maximizer, and Myerson's theorem compares Vickrey with and without the
 reserve, so its hypotheses are satisfiable. The rising density `f(v) = 2v` on `[0, 1]` fails
 `IsRegular` for every choice of `f(0)`, which illustrates the endpoint convention.
+
+The [Bayes–Nash examples](../../ComplexityTests/GameTheory/BayesNash.lean) check that the
+second-price interim rules `x(v) = v`, `p(v) = v²/2` are incentive compatible while a decreasing
+curve is not. In the two-bidder first-price auction, bidding `v / 2` is an equilibrium, a bid of
+`1/4` wins with probability `1/2`, truthful bidding is not an equilibrium, and both auctions earn
+`1/3`. With three bidders the bid is `2v/3` and both earn `1/2`; a lone bidder bids `0`.
 
 To prove that a concrete rule is implementable, prove `IsMonotone` by `intro i b hb z hz z' hz'
 hzz'` followed by `change` to the explicit curve inequality. Then apply `myerson_isDSIC`, or, for
@@ -163,12 +296,23 @@ entry.
 
 ## Known Limitations
 
-Only dominant-strategy, deterministic, sealed-bid mechanisms are covered. Not yet formalized:
+Only deterministic, sealed-bid mechanisms are covered: dominant-strategy incentive compatibility
+in general, and Bayes–Nash equilibrium for single-parameter mechanisms. Not yet formalized:
 the sponsored-search payment formula (Lecture 3, (8)–(9)), the greedy knapsack rule and its
 1/2-approximation (Lecture 4, §2.2, Theorem 2.1), ironing for irregular distributions, regular
 distributions whose virtual valuation is unbounded below at `0` (such as `f(v) = 2v`),
-optimality among Bayesian incentive-compatible mechanisms (Lecture 5, §3.2), revenue equivalence
-and first-price equilibria, a measurable argmax for virtual-welfare maximization, the
+optimality among Bayesian incentive-compatible mechanisms (Lecture 5, §3.2), the revelation
+principle, first-price equilibria for non-uniform or asymmetric priors and their uniqueness
+(Hartline, §2.9), the all-pay auction, a measurable argmax for virtual-welfare maximization, the
 Green–Laffont/Holmström characterization of DSIC welfare maximizers, a bridge exhibiting
 single-parameter mechanisms as general ones (for example VCG specializing to Vickrey), and any
-computational cost of allocation rules. See `ROADMAP.md` and issues #2947 and #3001.
+computational cost of allocation rules. See `ROADMAP.md` and issues #2947, #3001 and #3173.
+
+For social choice, only Arrow's theorem for strict individual rankings is formalized. A finite
+electorate is necessary, but the infinite-electorate counterexample built from a nonprincipal
+ultrafilter (Fishburn 1970) is not formalized. Also not formalized are the corollary for
+individual weak orders, the Gibbard–Satterthwaite theorem, May's theorem, quantitative (Kalai)
+versions of Arrow's theorem and the complexity of winner determination and manipulation. See
+`ROADMAP.md` and issue #3282.
+
+[hartline21]: ../sources.md#hartline21
