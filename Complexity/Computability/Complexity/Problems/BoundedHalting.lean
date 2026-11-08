@@ -11,6 +11,7 @@ public import Complexity.Computability.Complexity.Classes.EXP
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Decode
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Machine
 public import Complexity.Foundations.Data.BitString.List.Binary
+import Complexity.Computability.Complexity.Classes.EXP.Decidable
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -65,6 +66,7 @@ the classes closed under polynomial-time reductions, such as `NP` and `PSPACE`, 
   is acceptance within the step bound.
 * `Cslib.Complexity.BoundedHalting.mem_E`, `Cslib.Complexity.BoundedHalting.mem_EXP`: bounded
   halting is in `E`, hence in `EXP`.
+* `Cslib.Complexity.BoundedHalting.isDecidable`: bounded halting is decidable.
 * `Cslib.Complexity.BoundedHalting.polyTimeReducible`: every problem decided within time
   `c₁ * 2 ^ p n + c₂`, with `p` polynomial-time, reduces to bounded halting.
 * `Cslib.Complexity.BoundedHalting.polyTimeComplete_E`,
@@ -168,6 +170,10 @@ theorem mem_E : BoundedHalting ∈ E encBits := by
 /-- **Bounded halting is in `EXP`.** -/
 theorem mem_EXP : BoundedHalting ∈ EXP encBits :=
   E_subset_EXP mem_E
+
+/-- **Bounded halting is decidable**, since it is in `E`. -/
+theorem isDecidable : IsDecidable BoundedHalting encBits :=
+  isDecidable_of_mem_E mem_E
 
 /-- **Exponential-time problems reduce to bounded halting.** A problem decided within time
 `c₁ * 2 ^ p n + c₂` on instances of encoded length `n`, where `p` is computable in polynomial time

@@ -37,6 +37,8 @@ obtained non-constructively, from a counting argument
 * `Cslib.Logic.PL.Tseitin.edgeExpansion_mul_card_div_three_le_of_refutableInWidth`,
   `Cslib.Logic.PL.Tseitin.exp_edgeExpansion_le_of_refutableInSize`: the width and size lower bounds
   for Tseitin formulas on rotation maps, in terms of edge expansion.
+* `Cslib.Logic.PL.Tseitin.exists_expander_tseitinFormula`: the explicit expander family of Tseitin
+  formulas, with its constants.
 * `Cslib.Logic.PL.CNF.exists_forall_refutableInSize_exp_le`: for every `n ≥ 4392000`, an
   unsatisfiable formula with at most `120 n` variables and `2 ^ 120 · n` clauses of width at most
   `120` needs resolution refutations of `exp (n / (960 · 36000²))` lines.
@@ -102,6 +104,52 @@ end Tseitin
 
 /-! ### Hard formulas -/
 
+namespace Tseitin
+
+/-- **The explicit expander family of Tseitin formulas**: for every `n ≥ 2` there is a connected
+multigraph on `n` vertices with at most `120 n` edges, each vertex on at most `120` edges other
+than self-loops, and expansion `e(G) ≥ n / 18000`, whose Tseitin formula with a single charged
+vertex has at most `2 ^ 120 · n` clauses, of width at most `120`, and is unsatisfiable. It is the
+multigraph of the `120`-regular expander `Cslib.RotationMap.expander (Fin n)`, with edge expansion
+at least `1 / 6000`, whose existence is proved non-constructively. This is the common setup of
+`Cslib.Logic.PL.CNF.exists_forall_refutableInSize_exp_le` and of the clause-space family in
+`Complexity.Logics.Propositional.Resolution.TseitinSpace`. -/
+theorem exists_expander_tseitinFormula (n : ℕ) (hn : 2 ≤ n) :
+    ∃ m ≤ 120 * n, ∃ (ends : Fin m → Sym2 (Fin n)) (χ : Fin n → Bool),
+      (∀ v, #(Multigraph.incidence ends v) ≤ 120) ∧ (Multigraph.toSimpleGraph ends).Connected ∧
+      (n : ℝ) / 18000 ≤ Multigraph.minBalancedCut ends ∧
+      (CNF.tseitinFormula ends χ).length ≤ 2 ^ 120 * n ∧
+      (∀ c ∈ CNF.tseitinFormula ends χ, c.width ≤ 120) ∧
+      ¬ (CNF.tseitinFormula ends χ).Satisfiable := by
+  have : NeZero n := ⟨by omega⟩
+  have : Nontrivial (Fin n) := Fin.nontrivial_iff_two_le.2 hn
+  set G := RotationMap.expander (Fin n)
+  let f : Fin (Fintype.card G.edges) ≃ G.edges := (Fintype.equivFin G.edges).symm
+  let ends := G.edgeEnds ∘ f
+  let χ : Fin n → Bool := fun v => decide (v = 0)
+  have hdeg (v : Fin n) : #(Multigraph.incidence ends v) ≤ 120 := by
+    rw [Multigraph.card_incidence_comp]
+    simpa using G.card_incidence_edgeEnds_le v
+  have hm : Fintype.card G.edges ≤ 120 * n := by
+    rw [Fintype.card_coe, mul_comm]
+    simpa using G.card_edges_le
+  -- the edge expansion is at least `1 / 6000`, so `e(G) ≥ n / 18000`
+  have hh := RotationMap.le_edgeExpansion_expander (Fin n)
+  have he : (n : ℝ) / 18000 ≤ Multigraph.minBalancedCut ends := by
+    rw [Multigraph.minBalancedCut_comp]
+    have := G.edgeExpansion_mul_card_div_three_le_minBalancedCut
+    simp only [Fintype.card_fin] at this
+    nlinarith [(n.cast_nonneg : (0 : ℝ) ≤ n)]
+  have hG : (Multigraph.toSimpleGraph ends).Connected := by
+    rw [Multigraph.toSimpleGraph_comp, G.toSimpleGraph_edgeEnds]
+    exact G.connected_toSimpleGraph_of_edgeExpansion_pos (by linarith)
+  refine ⟨_, hm, ends, χ, hdeg, hG, he, ?_, fun c hc => ?_, CNF.not_satisfiable_tseitinFormula ?_⟩
+  · simpa [mul_comm] using CNF.length_tseitinFormula_le (χ := χ) hdeg
+  · exact (List.toFinset_card_le c).trans (CNF.length_le_of_mem_tseitinFormula hdeg hc)
+  · simp [χ, parityOn, filter_eq']
+
+end Tseitin
+
 namespace CNF
 
 /-- **Unsatisfiable formulas with `O(n)` variables and clauses of constant width need resolution
@@ -117,37 +165,13 @@ theorem exists_forall_refutableInSize_exp_le :
       φ.length ≤ 2 ^ 120 * n ∧ (∀ c ∈ φ, c.width ≤ 120) ∧ ¬ φ.Satisfiable ∧
       ∀ s, φ.RefutableInSize s → Real.exp (n / (960 * 36000 ^ 2)) ≤ s := by
   intro n hn
-  have : NeZero n := ⟨by omega⟩
-  have : Nontrivial (Fin n) := Fin.nontrivial_iff_two_le.2 (by omega)
-  set G := RotationMap.expander (Fin n)
-  let f : Fin (Fintype.card G.edges) ≃ G.edges := (Fintype.equivFin G.edges).symm
-  let ends := G.edgeEnds ∘ f
-  let χ : Fin n → Bool := fun v => decide (v = 0)
-  have hdeg (v : Fin n) : #(Multigraph.incidence ends v) ≤ 120 := by
-    rw [Multigraph.card_incidence_comp]
-    simpa using G.card_incidence_edgeEnds_le v
-  have hm : Fintype.card G.edges ≤ 120 * n := by
-    rw [Fintype.card_coe, mul_comm]
-    simpa using G.card_edges_le
-  refine ⟨_, hm, tseitinFormula ends χ, ?_, fun c hc => ?_, not_satisfiable_tseitinFormula ?_,
-    fun s hs => ?_⟩
-  · simpa [mul_comm] using length_tseitinFormula_le (χ := χ) hdeg
-  · exact (List.toFinset_card_le c).trans (length_le_of_mem_tseitinFormula hdeg hc)
-  · simp [χ, parityOn, filter_eq']
-  -- the edge expansion is at least `1 / 6000`, so `e(G) ≥ n / 18000`
-  have hh := RotationMap.le_edgeExpansion_expander (Fin n)
-  have he : (n : ℝ) / 18000 ≤ Multigraph.minBalancedCut ends := by
-    rw [Multigraph.minBalancedCut_comp]
-    have := G.edgeExpansion_mul_card_div_three_le_minBalancedCut
-    simp only [Fintype.card_fin] at this
-    nlinarith [(n.cast_nonneg : (0 : ℝ) ≤ n)]
+  obtain ⟨m, hm, ends, χ, hdeg, hG, he, hlen, hw, hunsat⟩ :=
+    Tseitin.exists_expander_tseitinFormula n (by omega)
+  refine ⟨m, hm, tseitinFormula ends χ, hlen, hw, hunsat, fun s hs => ?_⟩
   have hn' : (4392000 : ℝ) ≤ n := by exact_mod_cast hn
   have hke : 120 + 2 ≤ Multigraph.minBalancedCut ends := by
     have : (122 : ℝ) ≤ Multigraph.minBalancedCut ends := by linarith
     exact_mod_cast this
-  have hG : (Multigraph.toSimpleGraph ends).Connected := by
-    rw [Multigraph.toSimpleGraph_comp, G.toSimpleGraph_edgeEnds]
-    exact G.connected_toSimpleGraph_of_edgeExpansion_pos (by linarith)
   have hsize := Tseitin.exp_le_of_refutableInSize hG hdeg (by simpa using hm) hke hs
   refine le_trans (Real.exp_le_exp.2 ?_) hsize
   -- `e(G) - 122 ≥ n / 36000`

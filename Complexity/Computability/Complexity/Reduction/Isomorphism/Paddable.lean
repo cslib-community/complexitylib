@@ -69,6 +69,11 @@ language is `≅ᵖ` to its language of words.
 * `Cslib.Complexity.NPComplete.polyTimeIsomorphic_iff_paddable`: for a paddable `NP`-complete
   `B`, an `NP`-complete language is `≅ᵖ` to `B` exactly when it is paddable.
 * `Cslib.Complexity.Paddable.infinite`: a nonempty paddable language is infinite.
+* `Cslib.Complexity.Paddable.compl`: paddability passes to the complement.
+* `Cslib.Complexity.Paddable.preimage_decode`, `Cslib.Complexity.NPComplete.preimage_decode`:
+  reading words through a total decoder preserves paddability and `NP`-completeness.
+* `Cslib.Complexity.Paddable.polyTimeIsomorphic_preimage_decode`: a paddable typed language is
+  `≅ᵖ` to its language of words.
 
 ## References
 
@@ -200,8 +205,11 @@ theorem NPComplete.polyTimeIsomorphic_of_paddable (hA : NPComplete encA A)
   hpA.polyTimeIsomorphic hpB DA DB (hB.2 encA A hA.1) (hA.2 encB B hB.1)
 
 /-- For a paddable `NP`-complete language `B`, an `NP`-complete language is polynomial-time
-isomorphic to `B` exactly when it is paddable [Berman and Hartmanis][BermanHartmanis1975]. With
-`B = SAT`, the Berman–Hartmanis conjecture says that every `NP`-complete language is paddable. -/
+isomorphic to `B` exactly when it is paddable. The reverse direction is
+`NPComplete.polyTimeIsomorphic_of_paddable` ([Berman and Hartmanis][BermanHartmanis1975], §III,
+Theorem 1 combined with Lemmas 3 and 5); the forward direction, transport of paddability along
+`≅ᵖ`, is derived here. With `B = SAT`, the Berman–Hartmanis conjecture says that every
+`NP`-complete language is paddable. -/
 theorem NPComplete.polyTimeIsomorphic_iff_paddable (hA : NPComplete encA A)
     (hB : NPComplete encB B) (hpB : Paddable encB B) (DA : Decoder encA) (DB : Decoder encB) :
     PolyTimeIsomorphic encA encB A B ↔ Paddable encA A :=

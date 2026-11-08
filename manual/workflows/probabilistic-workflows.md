@@ -80,6 +80,171 @@ The [checked clients](../../ComplexityTests/PMFConditioning.lean) condition two 
 rectangles, split off one of two fair bits, and relabel two point masses injectively. Run
 `scripts/build.sh ComplexityTests.PMFConditioning`.
 
+## Count the fair coins used by an exact sampler
+
+Import [DDGTree.lean](../../Complexity/Probability/DDGTree.lean) to describe an exact sampler as
+a discrete distribution generating tree. Such a tree reads fair bits and stops at an
+outcome-labelled leaf, and it may be infinite. A `DDGTree α` is given by its prefix labelling
+`output : List Bool → Option α`, with leaves absorbing. `T.run n` is the law of the outcome after
+`n` fair bits, where `none` means "still running". `T.Generates p` states that the eventual output
+has law `p`. `T.expectedFlips` is the tail sum `∑ₙ P(T > n)`. For trees that halt almost surely,
+`expectedFlips_eq_tsum_mul` converts it to `∑ₖ (k + 1) P(T = k + 1)`, and
+`tendsto_run_none_of_generates` shows that every generator of a finite distribution halts almost
+surely. A tree that fails to halt with positive probability has `expectedFlips = ⊤`
+(`expectedFlips_eq_top`). `T.output <$> BitString.sampleList n` is the same experiment written as a
+`ProbComp`; its `eval` is `T.run n`.
+
+Import [DDGTree/KnuthYao.lean](../../Complexity/Probability/DDGTree/KnuthYao.lean) for the
+entropy bounds ([Knuth–Yao 1976](../sources.md#knuthyao76);
+[Cover–Thomas §5.11](../sources.md#coverthomas06)), stated for distributions on a finite type:
+
+- `entropy_le_expectedFlips hT : ENNReal.ofReal (PMF.entropy p) ≤ T.expectedFlips` for every
+  `hT : T.Generates p`;
+- `knuthYao p` generates `p` (`knuthYao_generates`), has the least expected cost
+  (`isLeast_expectedFlips_knuthYao`; pointwise `run_knuthYao_none_le`), and satisfies
+  `expectedFlips_knuthYao_lt : (knuthYao p).expectedFlips < ENNReal.ofReal (PMF.entropy p + 2)`;
+- `exists_generates_expectedFlips_eq_entropy_iff`: some tree attains `H(p)` exactly when every
+  positive `p a` is a power of `1/2`.
+
+To compute the optimal cost for a concrete `p`, rewrite with `expectedFlips_knuthYao` to
+`∑ₐ knuthYaoCost (p a).toReal`. Then use `knuthYaoCost_inv_two_pow` for dyadic masses, or sum the
+truncation errors `truncErr` directly. To build a tree from a leaf profile, use `ofCounts t`. In
+that tree, `t k a` of the `2 ^ k` depth-`k` positions lie at or below a leaf labelled `a`; a leaf at
+depth `j ≤ k` counts `2 ^ (k - j)` times. Equivalently, `t k a / 2 ^ k` is the probability of having
+output `a` within `k` flips (`run_ofCounts`). The profile must be inherited,
+`2 * t k a ≤ t (k + 1) a`, and must satisfy the Kraft-type budget `∑ₐ t k a ≤ 2 ^ k`.
+
+The [checked clients](../../ComplexityTests/KnuthYao.lean) cover the fair coin (`1` flip), the
+dyadic `(1/2, 1/4, 1/4)` (`3/2` flips, equal to the entropy) and `(2/3, 1/3)`. For the last, the
+optimal cost is exactly `2`, no generating tree does better, and the entropy is strictly smaller.
+They also cover a non-halting tree that generates nothing and has infinite cost. Run
+`scripts/build.sh ComplexityTests.KnuthYao`. The model counts coin flips only; it does not certify
+that `knuthYao p` is computable from an encoding of `p`, or bound its running time.
+
+## Polarize statistical distance
+
+Sahai and Vadhan's polarization of statistical distance is formalized on explicit distributions
+over finite types, with the half-L1 `dist` above. The source is Sahai–Vadhan 2003, §3.2: the
+Polarization Lemma is Lemma 3.3, extended to thresholds `α² > β` in the remark after its proof; the
+Direct Product Lemma is Lemma 3.4 and the XOR Lemma is Lemma 3.5. Statistical Difference is defined
+in §3.1 with the strict thresholds `2/3` and `1/3`; the variant `SD^{α,β}` with non-strict
+thresholds, used below, is defined on p. 234.
+
+- **XOR construction.** Import
+  [StatisticalDistance/XOR.lean](../../Complexity/Probability/StatisticalDistance/XOR.lean).
+  `xorMix p₀ p₁ k c` draws selector bits of parity `c` uniformly, then coordinate `i` from `p₀`
+  or `p₁` according to bit `i`. For `k ≠ 0`, `dist_xorMix` proves
+  `dist (xorMix p₀ p₁ k false) (xorMix p₀ p₁ k true) = dist p₀ p₁ ^ k`.
+  `dist_xorMix_le` gives the upper bound for every `k`. The identity fails at `k = 0`, where both
+  sides live on a one-point type.
+- **Direct-product lower bound.** Import
+  [StatisticalDistance/DirectProduct.lean](../../Complexity/Probability/StatisticalDistance/DirectProduct.lean).
+  `one_sub_two_mul_exp_le_dist_iid` proves `1 - 2 exp (-k δ² / 2) ≤ dist (iid μ k) (iid ν k)` from
+  Hoeffding's inequality. The matching upper bound `k δ` is `dist_iid_le`.
+- **Polarization.** Import
+  [StatisticalDistance/Polarization.lean](../../Complexity/Probability/StatisticalDistance/Polarization.lean).
+  `polarize p₀ p₁ λ ℓ k c` applies the XOR construction on `k` coordinates to `ℓ` independent
+  copies of the XOR construction on `λ` coordinates. `dist_polarize_le` bounds its distance by
+  `(ℓ δ^λ)^k`, and `one_sub_two_mul_mul_exp_le_dist_polarize` bounds it below by
+  `1 - 2 k exp (-ℓ δ^(2λ) / 2)`. For constant thresholds `0 ≤ β < α² ≤ 1`,
+  `exists_polarization` provides constants `m ≠ 0` and `b`. With these, `λ = m (⌊log₂ k⌋ + 1)` and
+  `ℓ = 2 ^ (b (⌊log₂ k⌋ + 1))` are polynomially bounded in `k`. Distance `≥ α` then becomes
+  `≥ 1 - 2⁻ᵏ`, and distance `≤ β` becomes `≤ 2⁻ᵏ`. Use it as
+  `obtain ⟨m, b, hm, hlam, hell, h⟩ := exists_polarization hβ hβα hα hα1`, then
+  `(h p₀ p₁ k).1` for the far side and `(h p₀ p₁ k).2` for the near side.
+
+The checked clients in [Polarization.lean](../../ComplexityTests/Polarization.lean) cover the
+following:
+
+- the exact XOR distance `1/8` of a uniform bit against a point mass;
+- the failure of the identity at `k = 0`;
+- a direct-product bound at `32` copies;
+- the thresholds `α = 2/3`, `β = 1/3`.
+
+Run `scripts/build.sh ComplexityTests.Polarization`.
+
+### Polarize circuit samplers and Statistical Difference instances
+
+A circuit `C : Circuit σ n m` is a sampler. `C.outputDist I` is the distribution of its outputs on
+uniform inputs, defined in
+[Circuit/OutputDistribution.lean](../../Complexity/Computability/Circuit/OutputDistribution.lean).
+`Circuit.outputDist_replicate` says that `C.replicate k` samples `iid (C.outputDist I) k`, with the
+`k` output blocks flattened by `Cslib.BitString.blocksEquiv`.
+
+- **XOR and polarization circuits.** Import
+  [Circuit/Boolean/Polarization.lean](../../Complexity/Computability/Circuit/Boolean/Polarization.lean).
+  For De Morgan circuits `C₀ C₁ : Circuit signature n m`, `xorMixCircuit C₀ C₁ j c` reads `j`
+  selector bits and then `j + 1` data blocks. It samples
+  `xorMix (C₀.outputDist _) (C₁.outputDist _) (j + 1) c` (`outputDist_xorMixCircuit`). The selector
+  is completed to parity `c` by `BitString.parityComplete`, from
+  [XORSampling.lean](../../Complexity/Probability/StatisticalDistance/XORSampling.lean).
+  `polarizeCircuit C₀ C₁ lam ell k c` samples `polarize … (lam + 1) ell (k + 1) c`
+  (`outputDist_polarizeCircuit`). Note that the coordinate counts are passed as predecessors.
+  `dist_outputDist_polarizeCircuit` transfers the distance bounds of `polarize` unchanged.
+- **Statistical Difference.** Import
+  [Problems/StatisticalDifference.lean](../../Complexity/Computability/Complexity/Problems/StatisticalDifference.lean).
+  An `SDInstance` is a pair of De Morgan circuits with common input and output counts, and
+  `StatisticalDifference α β` is `PromiseProblem.gapMax` of `SDInstance.distance`.
+  `SDInstance.exists_polarize` is the Polarization Lemma on instances, for constant thresholds
+  `0 ≤ β < α² ≤ 1`. It passes `m (⌊log₂ (k + 1)⌋ + 1) - 1` as `lam`, so there are
+  `m (⌊log₂ (k + 1)⌋ + 1)` inner coordinates. It passes `2 ^ (b (⌊log₂ (k + 1)⌋ + 1))` as `ell`,
+  the number of copies, and `k` as the outer argument, so there are `k + 1` outer coordinates.
+  `StatisticalDifference.exists_mapsTo_polarize` states the result as `Set.MapsTo` into
+  `StatisticalDifference (1 - (1/2)^(k+1)) ((1/2)^(k+1))`, for `k ≠ 0`.
+- **Polynomial-time polarization.** Import
+  [Problems/StatisticalDifference/PolyTime.lean](../../Complexity/Computability/Complexity/Problems/StatisticalDifference/PolyTime.lean).
+  `encSDInstance` encodes the input and output counts in unary, followed by both circuit codes.
+  `SDInstance.computableInPolyTime_polarize` makes `x.polarize (lam x) (ell x) (k x)`
+  polynomial-time whenever the three parameters are polynomial-time with unary output.
+  `SDInstance.computableInPolyTime_polarize_comp` is the general form. There the instance and the
+  parameters are polynomial-time functions of any encoded input; `computableInPolyTime_polarize_log`
+  specializes it to the parameters of `SDInstance.exists_polarize`.
+  `SDInstance.exists_computableInPolyTime_polarize_unary` is the source's form, with the error
+  parameter `k` a separate unary input: one map on `encPair encSDInstance encUnary` with error
+  `(1/2)^(k + 1)`.
+  `SDInstance.exists_computableInPolyTime_polarize` instead takes `k = K x` for a function `K` of
+  the instance. Use
+  `obtain ⟨m, b, hm, h⟩ := …`, then `h K hK` for any polynomial-time unary `K`. It returns the
+  polynomial-time certificate and the two distance bounds with error `(1/2)^(K x + 1)`.
+  Two corollaries cover the common cases. With `K x` the encoded length,
+  `SDInstance.exists_computableInPolyTime_polarize_length` gives error `(1/2)^(|x| + 1)`. With `K`
+  constant, `StatisticalDifference.polyTimeReducible` is a `PromiseProblem.PolyTimeReducible`
+  from `SD^{α,β}` to `SD^{α',β'}`, for all constants `0 < β' < α' < 1`.
+  The raw code generators behind the certificate are in
+  [Circuit/Boolean/Polarization/PolyTime.lean](../../Complexity/Computability/Circuit/Boolean/Polarization/PolyTime.lean).
+  Import that module directly to use them; `StatisticalDifference/PolyTime.lean` does not
+  re-export it. Each generator has a `_code` lemma stating exact agreement with the typed circuit.
+  `polarizeCode` builds on `replicateCode`, from
+  [CodeReplication.lean](../../Complexity/Computability/Circuit/Boolean/CodeReplication.lean),
+  and on `muxCode`, from
+  [Comparison/PolyTime.lean](../../Complexity/Computability/Circuit/Boolean/Comparison/PolyTime.lean).
+
+The thresholds are constants with `0 ≤ β < α² ≤ 1`, and the circuits are De Morgan circuits with
+common input and output counts. SZK itself is not formalized yet;
+[issue #3205](https://github.com/cslib-community/complexitylib/issues/3205) tracks it. The checked
+clients in [StatisticalDifference.lean](../../ComplexityTests/StatisticalDifference.lean) cover:
+
+- parity completion;
+- the XOR circuit on two constant circuits;
+- a far instance and a near instance against `SD^{2/3,1/3}`;
+- both instances pushed through the Polarization Lemma.
+
+The clients in
+[StatisticalDifferencePolyTime.lean](../../ComplexityTests/StatisticalDifferencePolyTime.lean)
+cover:
+
+- a concrete replicated code and its typed agreement;
+- the multiplexer gate count;
+- a polynomial-time polarization map with fixed parameters;
+- the reduction from `SD^{2/3,1/3}` to `SD^{9/10,1/10}` on the far and the near instance;
+- the length-indexed polarization on the same instances;
+- the polarization with the error parameter `k` in unary on the same instances, for every `k`;
+- `SDInstance.computableInPolyTime_polarize_comp` on `p ↦ p.1.polarize 1 2 p.2` over
+  `encPair encSDInstance encUnary`.
+
+Run `scripts/build.sh ComplexityTests.StatisticalDifference` and
+`scripts/build.sh ComplexityTests.StatisticalDifferencePolyTime`.
+
 ## Bound the mixing time of a finite Markov chain
 
 Import [MarkovChain/Coupling.lean](../../Complexity/Probability/MarkovChain/Coupling.lean). A chain
@@ -142,12 +307,27 @@ If the chain is confined to a set `C` closed under `P` and does not mix on all o
 only for neighbors in `C`, and bound the distance from starts in `C`, for a stationary law
 supported in `C`. The client is Glauber dynamics with a frozen boundary,
 `glauberColoringOn G q U hU`, which recolors only vertices of `U`. On the proper colorings
-`frozenColorings G q U b` that agree with `b` off `U`, `dist_glauberColoringOn_frozen_le_of_le`
-gives the sampling time of Levin and Peres, (14.23). For approximate counting,
+`G.frozenColorings q U b` that agree with `b` off `U`, `dist_glauberColoringOn_frozen_le_of_le`
+gives the sampling time of Levin and Peres, (14.23). It needs `2Δ < q`, `|U| ≤ n`, a start `x`
+that agrees with `b` off `U`, a nonempty `G.frozenColorings q U b` (from `mem_frozenColorings_self`
+when `b` is proper), `0 < δ` and `t ≥ ((q - Δ) / (q - 2Δ)) n (log n - log δ)`, and gives distance
+at most `δ` to the uniform law on `G.frozenColorings q U b`; `dist_glauberColoringOn_edge` in the
+checks below instantiates it. For approximate counting,
 [Coloring/Ratio.lean](../../Complexity/Probability/MarkovChain/Coloring/Ratio.lean) proves their
 Lemma 14.16, `inv_exp_mul_le_card_frozenColorings_erase_div`: freezing one more vertex keeps at
-least a `1 / (e q)` fraction of the colorings. The estimator of Theorem 14.14 is not yet
-formalized.
+least a `1 / (e q)` fraction of the colorings.
+[Coloring/Count.lean](../../Complexity/Probability/MarkovChain/Coloring/Count.lean) proves their
+Theorem 14.14, `le_toOuterMeasure_coloringCountEstimator`: `coloringCountEstimator` multiplies,
+over the `n` vertices, the fraction of `a` frozen-boundary samples in which one more vertex keeps
+its color, and with `t` and `a` as in (14.21) it is within relative error `ε` of
+`1 / |properColorings|` with probability at least `1 - η`. The concentration step is the generic
+product estimator of [Product/Estimator.lean](../../Complexity/Probability/Product/Estimator.lean):
+`le_toOuterMeasure_productEstimate` needs each stage probability within relative error
+`ε / (6 n)` of a target `r k ≥ b > 0` and `48 n ≤ 5 η ε² a b`, and proves it from the exact
+mean and second moment of independent empirical frequencies by Chebyshev's inequality. Both
+results concern only the law of `W`. The `n t a` Glauber updates are not charged in any cost
+model, so this is not yet the fully polynomial randomized approximation scheme of Levin and Peres,
+Remark 14.15.
 
 The [checked clients](../../ComplexityTests/MarkovChain.lean) compute `d(t) = (2/3)(1/4)^t` and
 `t_mix(1/4) = 1` exactly for a two-state chain with non-uniform stationary law, show that the flip
@@ -155,7 +335,10 @@ chain never mixes, compute a Metropolis acceptance probability, and give the hyp
 with `n = 1`. The [path-coupling checks](../../ComplexityTests/PathCoupling.lean) instantiate the
 coloring bound on a single edge, show that the condition `ρ ≥ 1` off the diagonal cannot be
 dropped, and compute the frozen colorings, the ratio of Lemma 14.16 and the frozen sampling time
-on a single edge. Run `scripts/build.sh ComplexityTests.MarkovChain ComplexityTests.PathCoupling`.
+on a single edge. The [counting checks](../../ComplexityTests/ColoringCount.lean) instantiate
+Theorem 14.14 on a single edge, show that its sample sizes can always be met, and show that one
+sample per stage never gives relative error `1 / 2` there. Run
+`scripts/build.sh ComplexityTests.MarkovChain ComplexityTests.PathCoupling ComplexityTests.ColoringCount`.
 A goal of the form `t_mix(ε) = k` needs both directions: `mixingTime_le_of_distToStationary_le`
 for `≤`, and `(hπ : P.IsStationary π).mixingTime_le_iff` at `k - 1` for `≥`.
 
@@ -188,6 +371,50 @@ The bound `|V| < |S|` comes from Schwartz–Zippel and is not sharp in general: 
 degree at most `1` in each variable, so over an integral domain any `S` with two elements detects a
 perfect matching (not formalized). Run
 `scripts/build.sh ComplexityTests.EdmondsMatching`.
+
+For a general graph, import [Matching/Tutte.lean](../../Complexity/Algorithms/Matching/Tutte.lean).
+The graph is a Mathlib `G : SimpleGraph V` with `[DecidableRel G.Adj]` on a finite, linearly ordered
+`V`, and a perfect matching is `∃ M : G.Subgraph, M.IsPerfectMatching`. `tutteMatrix G` has one
+indeterminate per unordered pair, `X s(i, j)` at an edge with `i < j` and `-X s(i, j)` at an edge
+with `j < i`. `det_tutteMatrix_ne_zero_iff` is Tutte's matrix theorem, proved here over any
+nontrivial commutative ring (the sources state it over a field). For Tutte's combinatorial
+odd-component criterion use Mathlib's `SimpleGraph.tutte`. The randomized test uses `tutteEval G r` with `r : Sym2 V → R`. As in the bipartite case,
+`det_tutteEval_eq_zero` gives no false positives, `card_det_tutteEval_eq_zero_div_le` bounds false
+negatives by `|V| / |S|` over an integral domain, and `exists_det_tutteEval_ne_zero` finds detecting
+values in any `S` with more than `|V|` elements. Two reusable pieces sit underneath:
+`Matrix.det_eq_sum_even_cycleType_of_transpose_eq_neg` in
+[SkewDeterminant.lean](../../Complexity/Foundations/LinearAlgebra/Matrix/SkewDeterminant.lean)
+(odd cycles cancel in a skew-symmetric determinant, via `Equiv.Perm.reverseCycle` in
+[ReverseCycle.lean](../../Complexity/Foundations/GroupTheory/Perm/ReverseCycle.lean); an alternating
+matrix of odd order has determinant `0`), and `SimpleGraph.exists_isPerfectMatching_of_perm` in
+[PermMatching.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/PermMatching.lean) (a
+permutation along the edges with only even cycles gives a perfect matching). The
+[checked clients](../../ComplexityTests/TutteMatching.lean), a `module`, compute the determinant
+`r²` of a single edge and its `2 / 3` probability bound over `{0, 1, 2}`, extract and detect a
+perfect matching of `K₄` from the rotation of `Fin 4`, show that the triangle's Tutte matrix is
+singular at all values and that the star `K₁,₃` has the zero Tutte polynomial, and show that the
+zero-diagonal hypothesis is needed over `ZMod 2`. Run
+`scripts/build.sh ComplexityTests.TutteMatching`.
+
+To find the matching rather than only detect it, import
+[Matching/MVV.lean](../../Complexity/Algorithms/Matching/MVV.lean), the algebraic core of
+Mulmuley, Vazirani and Vazirani for bipartite graphs. `weightedEdmonds G w` is the Edmonds matrix
+over `ℤ` at the values `2 ^ w (i, j)`. When `IsUniqueMinMatching G w σ₀` holds,
+`matchingWeight_eq_padicValInt_det` recovers the weight `W` of `σ₀` as the `2`-adic valuation of
+the determinant, and `apply_eq_iff_not_two_pow_succ_dvd_mul_adjugate` gives
+`σ₀ i = j ↔ ¬ 2 ^ (W + 1) ∣ B i j * adj(B) j i`. The procedure itself is the named relation
+`mvvOutput G w`, and `mvvOutput_iff_apply_eq` says that on isolating weights it outputs exactly
+`σ₀`. Edge weights are functions `Edges G → Fin N`, read as `1, …, N` by `extendWeight`.
+`half_le_dens_exists_isUniqueMinMatching` applies the isolation lemma when `2 |E| ≤ N`, and
+`half_le_dens_mvv` states that `MVVSucceeds G (extendWeight w)` (the output is a perfect matching)
+holds for at least half of the weight functions. Module clients work through the characterization
+lemmas `isUniqueMinMatching_iff`, `matchingWeight_def`, `mvvOutput_iff`, `mvvSucceeds_iff`,
+`mem_matchingEdges`, `extendWeight_of_edge` and `extendWeight_of_not_edge`. MVV state the
+determinant lemmas for the Tutte matrix of a general graph; general graphs and the parallel
+determinant and inverse computations are not formalized. The
+[checked clients](../../ComplexityTests/MVVMatching.lean), a `module`, recover the identity
+matching on `K₂,₂` from the determinant `-12` and show that equal weights make the determinant
+vanish. Run `scripts/build.sh ComplexityTests.MVVMatching`.
 
 ## Compose local embeddings and extract a strategy
 
@@ -391,8 +618,39 @@ CHSH has value `3/4`, and the [parallel repetition clients](../../ComplexityTest
 derive `(3/4)^n ≤ v(CHSHⁿ) ≤ (1 - (1/4)³ / 6000)^{n / 2}`. They also show that the value of the
 repetition tends to zero for every game of value below one, and apply Lemma 6.5 with nothing
 conditioned, which gives a coordinate won with probability at most `G.value`. Run
-`scripts/build.sh ComplexityTests.ParallelRepetition`. The library does not yet use
-the theorem for small-soundness Label Cover
+`scripts/build.sh ComplexityTests.ParallelRepetition`.
+
+For Label Cover, import
+[LabelCover/Repetition.lean](../../Complexity/Computability/PCP/Approximation/LabelCover/Repetition.lean)
+and open `Cslib.PCP.Encoded`. For an instance `g : Graph (β → γ)` with `[Fintype β] [Fintype γ]`
+and `[DecidableEq γ]`, apply `LabelCoverRepetition.one_sub_unsatVal_pow_le hpar hβγ hε k`. Its
+premises are that the instance has no parallel edges (`hpar : g.NoParallelEdges`, decidable), that
+`2 ≤ Fintype.card β * Fintype.card γ`, and `hε : ε ≤ (g.toGraph projectionEval).unsatVal`. The
+conclusion bounds the satisfied proportion `1 - ((pow k g).toGraph projectionEval).unsatVal` of the
+`k`-fold repetition `LabelCoverRepetition.pow k g`. The bound does not require the edge list to be
+nonempty or well formed. The vertex numbers of the repetition grow like `(n + 1) ^ (2 ^ k)`
+(`LabelCoverRepetition.vertices_pow_le`), so its polynomial-time compilation holds for each fixed
+`k` only. The [Label Cover repetition clients](../../ComplexityTests/LabelCoverRepetition.lean)
+compute the numbering of a two-fold repetition, separate instances without parallel edges from
+instances with them, and bound the repetitions of an instance of value `1/2` by
+`(1 - (1/2)³ / 6000)^{k / 2}`.
+
+For a hardness result, import
+[LabelCover/SmallSoundness.lean](../../Complexity/Computability/PCP/Approximation/LabelCover/SmallSoundness.lean).
+`polyTimeReducible_GapTwoCSP_GapLabelCover_pow a b hab encA hε hε1 hk` reduces
+`GapTwoCSP α (1 - ε)` to Label Cover over `k`-tuples, for any finite alphabet `α` with two
+distinct symbols, `0 < ε ≤ 1` and `0 < k`. The soundness is
+`(1 - (ε / 2)³ / 6000)^{k / log₂ (|α|² |α|)}`. Apply `Graph.deloop` before
+`LabelCoverIncidence.reduce`: loop removal makes a binary CSP instance loopless without changing
+its value (`Graph.isLoopless_deloop`, `Graph.unsatVal_deloop`), and the incidence reduction of a
+loopless instance has no parallel edges (`LabelCoverIncidence.noParallelEdges_reduce`). Compose with a hard source through
+`PromiseProblem.NPHard.trans`, as `GapLabelCover_npHard_pow` does with `GapTwoCSP_npHard`, and
+weaken the soundness with `PromiseProblem.NPHard.mono`, as `exists_GapLabelCover_npHard` does. The
+[small-soundness clients](../../ComplexityTests/LabelCoverSmallSoundness.lean) remove a concrete
+loop, show that the incidence reduction of a loop has parallel edges and has none after loop
+removal, and instantiate both hardness theorems. Run
+`scripts/build.sh ComplexityTests.LabelCoverRepetition ComplexityTests.LabelCoverSmallSoundness`.
+Håstad's reductions from Label Cover remain open
 ([#886](https://github.com/cslib-community/complexitylib/issues/886)).
 
 ## Project a continuous Gaussian density
@@ -1697,3 +1955,91 @@ from the repository root to check them; the monomial clients are in
 `ComplexityTests.GaussianNoiseOperator`.
 
 Smoothness of `U_ρ f` for `|ρ| < 1` (Proposition 11.16) is not formalized.
+
+## Compare bits with Gaussians by the invariance principle
+
+Import
+[`Complexity.Foundations.BooleanAnalysis.Invariance`](../../Complexity/Foundations/BooleanAnalysis/Invariance.lean)
+for functions on the cube, or
+[`Complexity.Foundations.Probability.Multilinear.Invariance`](../../Complexity/Foundations/Probability/Multilinear/Invariance.lean)
+for formal multilinear polynomials. Open `ProbabilityTheory` (and `Cslib.BitString` for the cube).
+A formal multilinear polynomial is its coefficient function `c : Finset ι → ℝ`;
+`multilinearEval c z = ∑ S, c S * ∏ i ∈ S, z i` and `multilinearInfluence c i = ∑ S ∋ i, c S ^ 2`.
+Degree at most `k` is the hypothesis `∀ S, k < #S → c S = 0`. The variables are independent with
+laws `μ i : Measure ℝ`, through `Measure.pi μ`, and `HasInvarianceMoments (μ i)` is O'Donnell's
+Hypothesis 11.65: mean `0`, second moment `1`, third moment `0` and fourth moment at most `9`. Its
+first field, `memLp_four : MemLp id 4 μ`, also requires the fourth moment to be finite, so that the
+moment integrals are meaningful. The structure does not include `IsProbabilityMeasure`; the
+theorems take `[∀ i, IsProbabilityMeasure (μ i)]` as a separate instance argument.
+`hasInvarianceMoments_gaussianReal` and `hasInvarianceMoments_rademacher` supply it for standard
+Gaussians and uniform random signs.
+
+- `abs_integral_comp_multilinearEval_sub_le` is the Basic Invariance Principle (O'Donnell, §11.6,
+  eq. (11.29)): for `ψ` that is `C⁴` with `|iteratedDeriv 4 ψ| ≤ C`, the expectations of
+  `ψ (multilinearEval c ·)` under `Measure.pi μ` and `Measure.pi ν` differ by at most
+  `C / 12 * 9 ^ k * ∑ t, multilinearInfluence c t ^ 2`.
+- `abs_integral_comp_multilinearEval_sub_le_of_influence_le` is Corollary 11.67. It assumes
+  `∑ S with S ≠ ∅, c S ^ 2 ≤ 1` (variance at most one) and `multilinearInfluence c t ≤ ε` for every
+  `t`, together with `0 ≤ ε`, and bounds the difference by `C / 12 * k * 9 ^ k * ε`.
+- `abs_integral_comp_multilinearEval_sub_le_of_contDiff_three` is the `C³` form
+  `C / 3 * 3 ^ k * ∑ t, multilinearInfluence c t ^ ((3 : ℝ) / 2)`. It is the analogue, under
+  Hypothesis 11.65, of Remark 11.66, whose hypothesis is `(2, 3, ρ)`-hypercontractivity instead.
+- On the cube, `abs_expect_comp_sub_integral_comp_multilinearEval_le` and its `_of_influence_le` and
+  `_of_contDiff_three` forms compare `𝔼 x, ψ (f x)` at uniform bits with
+  `∫ y, ψ (multilinearEval (fourierCoeff f) y) ∂Measure.pi μ`. They assume `totalDegree f ≤ k`
+  and use `influence i f` and the variance `𝔼 x, (f x - 𝔼 y, f y) ^ 2`. The translation goes
+  through `integral_pi_rademacher`, `multilinearEval_fourierCoeff_signVal` and
+  `multilinearInfluence_fourierCoeff`.
+
+The proof is the replacement method. `MeasureTheory.abs_integral_pi_sub_le_sum` in
+[`PiUpdate`](../../Complexity/Foundations/MeasureTheory/Integral/PiUpdate.lean) telescopes over the
+hybrids `Measure.pi (s.piecewise ν μ)` and applies to any integrand. The Bonami Lemma for these
+variables, `integral_multilinearEval_pow_four_le`, is in
+[`Multilinear/Bonami`](../../Complexity/Foundations/Probability/Multilinear/Bonami.lean). It covers
+only the case `B ≤ 9` with variance `1` of Corollary 9.6. Cauchy–Schwarz for real integrals,
+`MeasureTheory.sq_integral_mul_le`, needs no sign condition. It is in
+[`Integral/CauchySchwarz`](../../Complexity/Foundations/MeasureTheory/Integral/CauchySchwarz.lean)
+with `MeasureTheory.integrable_pow_of_memLp` and `MeasureTheory.integrable_abs_pow_of_memLp`, which
+give integrability of the moments of order `j ≤ n` of a variable in `Lⁿ`.
+
+The checked [`MultilinearInvariance.lean` clients](../../ComplexityTests/MultilinearInvariance.lean)
+cover Hypothesis 11.65 for Gaussians and signs and its failure for a point mass, and bits versus
+Gaussians for any function of two bits with `ψ = cos` (`C⁴`) and `ψ = sin` (`C³`). They also show
+that a degree-`0` polynomial has exactly equal expectations. Run
+`scripts/build.sh ComplexityTests.MultilinearInvariance` from the repository root to check them.
+
+The test function must be smooth. The following are not formalized: the Lipschitz form
+(Corollary 11.68) and the Lévy-distance form (Corollary 11.70); the forms for functions with small
+high-degree tails, including noise-stable functions (Corollary 11.69), and cdf-closeness through
+the Carbery–Wright theorem (Theorem 11.71); the general Invariance Principle with
+hypercontractive ensembles; and Majority Is Stablest.
+
+## Evaluate a multi-component conditional walk via validated words
+
+Import
+[`Complexity.Probability.PairwiseIndependentHash.ProductValidatedWords`](../../Complexity/Probability/PairwiseIndependentHash/ProductValidatedWords.lean)
+and open `Cslib.Probability` to express `t` steps of the lazy conditional product walk over `J`
+retention slices and a free-bit torus `(ZMod M)^H` on the ambient space
+`ComponentSpace H M P = (∀ j, FrameChannel (P j) H 1) × (Fin H → ZMod M)` (Section 6.1, Lemma 6.3,
+items 1–4 of [OpenAI's logspace preprint](../sources.md#openai-logspace26)).
+
+- Each step label `ComponentLazyStep H J` has `4 * (J + 1) * H^2` choices (`card_componentLazyStep`),
+  and each candidate wrap vector lies in `affineWrapBox H = {-3, …, 3}^H` of size `7^H`
+  (`card_affineWrapBox`), independently of `P`, `L`, `M`, `y` and `t`.
+- Every length-`t` word permutation `componentWordPerm L w z` is a bijection of
+  `ComponentSpace H M P` independent of the retained identifiers `y` and preserves uniform
+  expectations (`expect_componentWordPerm`).
+- Retained identifiers `y` enter only through the endpoint wrap test `IsValidComponentWord`: on
+  `ComponentSlice H M P L y`, a unique wrap word in `(affineWrapBox H)^t` survives
+  (`existsUnique_isValidComponentWord`, `componentWordWrap_mem`) and matches the exact slice walk
+  trajectory (`componentWordPerm_wrap_eq`), so averaging over move words `w` and summing over
+  wrap words `z` without dividing by `(7^H)^t` equals `walk^t`
+  (`walk_pow_componentMove_eq_expect_word`, and iteratively `walk_pow_componentMove_eq_iterate`).
+
+The checked [`ProductValidatedWords.lean` clients](../../ComplexityTests/ProductValidatedWords.lean)
+verify concrete alphabet sizes and step wraps on two channels (`𝔽₅`, `𝔽₇`) plus `(ZMod 8)^3` and
+combine `walk_pow_componentMove_eq_expect_word` with `ComponentGap` and `SliceFourthMoment` to
+bound the `L²` and `L⁴` central moments of the explicit validated-word estimator. Run
+`scripts/build.sh ComplexityTests.ProductValidatedWords` from the repository root to check them.
+This module covers items 1–4 (distributional and combinatorial word identities); explicit machine
+or streaming space realization (the post-item space bound of Lemma 6.3) is separate.

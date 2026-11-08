@@ -16,7 +16,9 @@ import Mathlib.Tactic.ComputeDegree
 The Reed–Solomon code of dimension two over `ZMod 5`, of length five and minimum distance four,
 uniquely decodes one error. The Johnson bound applies at radius two, beyond half the minimum
 distance: a Hamming ball of radius two contains at most ten codewords, and listing them list
-decodes the code up to radius `2 / 5`.
+decodes the code up to radius `2 / 5`. The q-ary Johnson bound, which uses the alphabet size five,
+reaches radius three, where the alphabet-free bound says nothing: a Hamming ball of radius three
+contains at most sixteen codewords.
 -/
 
 namespace ComplexityTests.Code.Johnson
@@ -71,5 +73,23 @@ example : ∃ C : ListCode (Fin 2 → ZMod 5) (Fin 5) (ZMod 5) 10,
   simp only [Fintype.card_fin] at h
   norm_num at h
   exact h
+
+/-- The alphabet-free Johnson bound does not apply at radius three: `5 * (5 - 4) < (5 - 3) ^ 2`
+fails. -/
+example : ¬ 5 * (5 - 4) < (5 - 3) ^ 2 := by decide
+
+open Classical in
+/-- **The q-ary Johnson bound at radius three.** With `q = 5`, `n = 5`, `d = 4` and `e = 3`, the
+radius satisfies `q e ≤ (q - 1) n`, and the bound reads
+`M (4 * 2 ^ 2 + 3 ^ 2 - 4 * 5 * 1) ≤ 4 * 5 * 4`, so a Hamming ball of radius three contains at most
+sixteen Reed–Solomon codewords. -/
+example (w : Fin 5 → ZMod 5) :
+    #{c : Fin 5 → ZMod 5 | c ∈ reedSolomon points5 2 ∧ hammingDist c w ≤ 3} ≤ 16 := by
+  have h := card_filter_hammingDist_le_mul_le_of_mul_le
+    (C := {c | c ∈ reedSolomon points5 2}) (d := 4) (by simpa using minDist_rs.ge) w (e := 3)
+    (by simp)
+  rw [Finset.filter_filter] at h
+  simp only [ZMod.card, Fintype.card_fin] at h
+  omega
 
 end ComplexityTests.Code.Johnson
