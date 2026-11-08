@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Advice
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound
 public import Complexity.Computability.Complexity.Problems.GraphIsomorphism
 public import Complexity.Foundations.Data.BitString.Block
@@ -64,6 +65,8 @@ protocol in `Complexity.Computability.Complexity.Classes.IP.GraphNonIsomorphism`
 * `Cslib.Complexity.GraphNonIsomorphism.mem_GraphIsomorphism_iff_mem_orbit`: isomorphism as
   relabelling of adjacency matrices.
 * `Cslib.Complexity.GraphNonIsomorphism.mem_AM`: graph non-isomorphism is in `AM`.
+* `Cslib.Complexity.GraphNonIsomorphism.GraphIsomorphism_mem_coNPPoly`: graph isomorphism is in
+  `coNP/poly`.
 
 ## References
 
@@ -667,6 +670,12 @@ theorem mem_AM : GraphNonIsomorphism ∈ AM (encPair encGraph encGraph) := by
     have h := length_distinctVertices_eq_of_mem_GraphIsomorphism hiso
     rw [card_certifiedSet_eq_card_pairs_union h, card_pairs_union,
       ite_eq_left ((mem_GraphIsomorphism_iff_mem_orbit h).1 hiso)]
+
+/-- **Graph isomorphism is in `coNP/poly`**: graph non-isomorphism is in `AM`, which is contained
+in `NP/poly` (`Cslib.Complexity.AM_subset_NPPoly`). -/
+theorem GraphIsomorphism_mem_coNPPoly :
+    GraphIsomorphism ∈ coNPPoly (encPair encGraph encGraph) :=
+  AM_subset_NPPoly mem_AM
 
 end GraphNonIsomorphism
 
