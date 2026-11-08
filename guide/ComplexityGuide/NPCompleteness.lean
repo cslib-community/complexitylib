@@ -670,9 +670,20 @@ general edge-CSP solver and full planar dichotomy remain to be formalized.
 # Indexed CSP and Table Operations
 
 {name}`Cslib.Logic.PL.CSP.Occurrence` preserves constraint and scope positions,
-including repeated variables and identical constraints. Consistent valid local
-labels reconstruct precisely a global CSP model. The native incidence graph
-retains one edge per argument; it never expands sparse binary names to a range.
+including repeated variables and identical constraints. Given a supplied value
+`outside : D`, consistent valid local labels reconstruct precisely a global CSP
+model. Reconstruction uses `outside` at nonoccurring variables; this hypothesis
+matters when the domain may be empty. The native incidence graph retains one
+edge per argument; it never expands sparse binary names to a range.
+
+```lean
+open Cslib.Logic.PL in
+example {Rel V D : Type} (sem : Rel → List D → Bool)
+    (F : CSP Rel V) (outside : D) :
+    F.Satisfiable sem ↔ ∃ l : F.OccurrenceLabeling D,
+      CSP.ValidLabeling sem l ∧ CSP.ConsistentLabeling l :=
+  CSP.satisfiable_iff_exists_labeling sem outside
+```
 
 {name}`Cslib.Logic.PL.CSP.Table` is an explicit relation alphabet for the same CSP
 lists. Its semantics rejects malformed row widths. Local contraction projects

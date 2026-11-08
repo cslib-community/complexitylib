@@ -156,7 +156,9 @@ planar complexity dichotomy yet. The full remaining objective is [#3091](https:/
 `Complexity.Logics.Propositional.CSP.Occurrence` indexes arguments by constraint position and
 scope position, preserving repeated variables and identical constraints. `ValidLabeling` checks
 each ordered local tuple; `ConsistentLabeling` requires agreement at all occurrences of a variable.
-Their conjunction is equivalent to the existing CSP satisfiability predicate. `EdgeInstance`
+Given a supplied `outside : D`, their conjunction is equivalent to the existing CSP
+satisfiability predicate. Reconstruction assigns `outside` to every nonoccurring variable; the
+domain-value hypothesis is necessary when the domain may be empty. `EdgeInstance`
 requires exactly two occurrences per occurring variable, in distinct constraints, and supplies a
 partner involution. Its endpoint agreement is equivalent to global consistency. The native
 `Cslib.Complexity.CSP.incidenceGraph` in `Problems.CSP.Incidence` reuses the existing listed graph
