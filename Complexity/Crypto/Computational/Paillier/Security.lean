@@ -178,7 +178,7 @@ private theorem powMod_mul_val_pow_eq_ciphertext (N : ℕ) [NeZero N] (m : ℕ)
   · unfold ciphertext
     exact Nat.mod_lt _ (Nat.pos_of_ne_zero hN2)
   · rw [natCast_ciphertext (NeZero.ne N), ZMod.unitsMap_val, ZMod.cast_eq_val, ZMod.val_natCast,
-      ← natCast_pow_self_mod, ZMod.natCast_zmod_val]
+      ← ZMod.natCast_pow_self_mod, ZMod.natCast_zmod_val]
     simp only [powMod_of_ne_zero hN2, ZMod.natCast_mod, Nat.cast_mul, Nat.cast_pow, Nat.cast_add,
       Nat.cast_one, ZMod.natCast_zmod_val, Units.val_pow_eq_pow_val]
 
