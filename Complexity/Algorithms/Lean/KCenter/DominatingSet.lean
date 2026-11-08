@@ -36,11 +36,10 @@ ordered strict semiring `α` such as `ℕ` or `ℝ`. A `ρ`-approximate set of c
 
 ## Limitations
 
-This module proves the combinatorial reduction and the gap only. NP-hardness of dominating set on
-the library's encoded graphs is `Cslib.Complexity.DominatingSet_npComplete`
-(`Complexity.Computability.Complexity.Problems.DominatingSet`). The NP-hardness statement of
-Theorem 2.4 additionally needs a polynomial-time certificate for the graph-to-distance-matrix map,
-which is not formalized yet.
+This module proves the combinatorial reduction and the gap only, on Mathlib simple graphs. The
+NP-hardness statement of Theorem 2.4 on encoded instances, with the polynomial-time map from
+encoded graphs to distance matrices, is `Cslib.Complexity.P_eq_NP_of_kCenter_approx`
+(`Complexity.Computability.PCP.Approximation.KCenter`).
 
 ## Main definitions
 
@@ -171,7 +170,8 @@ theorem optRadius_domDist_eq_two {k : ℕ} (hk : 0 < k)
 of centers that is `ρ`-approximate for the `{1, 2}` distance with `ρ < 2` is dominating. So a
 `ρ`-approximation algorithm for k-center with `ρ < 2` decides whether a dominating set of at most
 `k` vertices exists: check whether its output dominates the graph and has at most `k` vertices.
-This is the combinatorial core of Theorem 2.4; the NP-hardness reduction is not formalized. -/
+This is the combinatorial core of Theorem 2.4; the NP-hardness statement is
+`Cslib.Complexity.P_eq_NP_of_kCenter_approx`. -/
 theorem isDominatingSet_of_radius_le_mul {k : ℕ} {ρ : α} (hρ : ρ < 2)
     (happrox : ∀ r : α, optRadius (domDist G) k ≤ (r : WithTop α) →
       radius (domDist G) S ≤ ((ρ * r : α) : WithTop α))
