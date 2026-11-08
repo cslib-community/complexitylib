@@ -26,6 +26,8 @@ probability of a measurement. In particular, states that a measurement tells apa
 * `Cslib.Quantum.norm_inner_le_two_mul_sqrt_of_measureProb`: `|⟨ψ, φ⟩| ≤ 2√(ε(1-ε))` when a
   measurement accepts `ψ` with probability at least `1 - ε` and `φ` with probability at most
   `ε ≤ 1/2`.
+* `Cslib.Quantum.one_sub_two_mul_sqrt_nonneg`: the resulting factor `1 - 2√(ε(1-ε))` is
+  nonnegative.
 
 ## References
 
@@ -117,5 +119,11 @@ theorem norm_inner_le_two_mul_sqrt_of_measureProb {ι : Type*} [Fintype ι]
   refine (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 ?_
   rw [hc]
   nlinarith
+
+/-- The factor `1 - 2√(ε(1-ε))` of the adversary bounds is nonnegative, as `ε (1 - ε) ≤ 1/4`. -/
+theorem one_sub_two_mul_sqrt_nonneg (ε : ℝ) : 0 ≤ 1 - 2 * √(ε * (1 - ε)) := by
+  have : √(ε * (1 - ε)) ≤ 1 / 2 :=
+    (Real.sqrt_le_left (by norm_num)).2 (by nlinarith [sq_nonneg (1 - 2 * ε)])
+  linarith
 
 end Cslib.Quantum

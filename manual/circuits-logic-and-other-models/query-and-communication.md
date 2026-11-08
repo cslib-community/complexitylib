@@ -18,7 +18,7 @@ The [zero-error module](../../Complexity/Computability/QueryComplexity/Randomize
 
 [distributionalComplexity](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/QueryComplexity/Yao.lean#L74) instead fixes a distribution on inputs and minimizes deterministic depth subject to average error. Yao's theorem equates randomized complexity to the supremum of these distributional complexities on the finite domain and supplies an attaining hard distribution. The [Nisan relation](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/QueryComplexity/Randomized/Nisan.lean) gives `D <= 27 R_(1/3)^3`; approximate degree and block-sensitivity lower bounds are stated over the same cost convention.
 
-Quantum queries use arbitrary input-independent isometries and a controlled phase oracle, charging only oracle uses. Their definitions and BBBV/polynomial/adversary/Grover endpoints are described in [algebraic and quantum models](algebraic-and-quantum.md). That chapter also covers the exponential separation between quantum and randomized queries for Simon's problem, whose classical side is the randomized decision-tree lower bound [simon_randomized_lower_bound](../../Complexity/Computability/QueryComplexity/Simon.lean).
+Quantum queries use arbitrary input-independent isometries and a controlled phase oracle, charging only oracle uses. Their definitions and BBBV/polynomial/adversary/Grover endpoints are described in [algebraic and quantum models](algebraic-and-quantum.md). That chapter also covers the exponential separation between quantum and randomized queries for Simon's problem, whose classical side is the randomized decision-tree lower bound [simon_randomized_lower_bound](../../Complexity/Computability/QueryComplexity/Simon.lean). It also covers Deutsch–Jozsa. The deterministic bound `N/2 + 1` is in [DeutschJozsa](../../Complexity/Computability/QueryComplexity/DeutschJozsa.lean). Three random queries with error `1/4` on the promise ([Randomized/DeutschJozsa](../../Complexity/Computability/QueryComplexity/Randomized/DeutschJozsa.lean), through `RandomizedDecisionTree.errorProb_uniformMixture`) show that its quantum advantage holds only for exact algorithms.
 
 ## Adaptive cell-probe trees and schemes
 
@@ -30,7 +30,19 @@ Structural worst-case height `ProbeTree.depth`, input-specific path cost `ProbeT
 
 The complete [checked client](../../ComplexityTests/CellProbe.lean) exercises read/write locality and frame lemmas on distinct memories, the `DecisionTree` adapter, a tight `K = 17` lower and upper bound in `Mem 3 2` (`3 ≤ t.depth`, plus `w = 0`), and zero-error coin-fixing over an infinite operation type where `correctSeqs` strictly extends `hardDist.support` (plus a non-trivial write-read check on uniform random initial memory). Run `scripts/build.sh --wfail --iofail ComplexityTests.CellProbe`. These modules define the standalone cell-probe layer without `Cslib.DataStructure` specification wrappers or a Word-RAM simulation theorem; transferring a cell-probe lower bound to Word-RAM instruction counts requires a separate machine-to-cell-probe simulation bridge.
 
-[`Complexity.Computability.CellProbe.Chronogram`](../../Complexity/Computability/CellProbe/Chronogram.lean) is the problem-independent bookkeeping behind Fredman and Saks's chronogram method for dynamic lower bounds (history in Pătraşcu–Demaine 2006, §3.1). An `IndexedScheme` runs consecutive operation segments `seg 0, seg 1, …` from step `t₀` and memory `m₀`; `segStart` and `segMem` give the step and memory at which segment `j` starts. `laterCells L j` collects the cells probed by segments `j + 1, …, L - 1`, and `lastCells L j` the cells probed by segment `j` and by no later segment. These sets are defined by *probes*, not writes: a later read also removes a cell from `lastCells`. This suffices because a cell that no later segment probes keeps its contents, and the cells probed later are exactly those whose final contents the overlay records. `overlayMem L j` lays the final contents of `laterCells` over the memory before segment `j`. It agrees with the memory after all `L` segments outside `lastCells L j` (`overlayMem_eq_of_notMem_lastCells`) and differs from `segMem j` on at most `#laterCells` cells (`hammingDist_overlayMem_le`), which is at most `d * Σ_{j < k < L} |seg k|` under a uniform step-depth bound `d` (`card_laterCells_le`). The sets `lastCells L j` for `j < L` are pairwise disjoint, so a probe set `P` meets at most `#P` of them (`card_filter_lastCells_le`). A query tree whose probes on the final memory avoid `lastCells L j` answers identically, with the same probe count, on the overlay (`run_overlayMem_eq`). `card_filter_hammingDist_le_le_pow` bounds the number of memories within Hamming distance `r` of a fixed memory by `(S * (2 ^ w - 1) + 1) ^ r`, a special case of the alphabet-generic `Code.card_filter_hammingDist_le_le_pow` in [`Complexity.Foundations.Data.Code.HammingBound`](../../Complexity/Foundations/Data/Code/HammingBound.lean); this is the count of possible overlays in an encoding argument, about `log S + w` bits per recorded cell. The module proves no lower bound by itself. The Fredman–Saks bound for dynamic prefix parity that uses it is tracked in [#3207](https://github.com/cslib-community/complexitylib/issues/3207). Its [checked client](../../ComplexityTests/CellProbeChronogram.lean) uses an adaptive copy-and-write scheme in which a later read alone removes a cell from `lastCells`. It also shows that the overlay differs from the final memory exactly on a last-touched cell, and that a query probing that cell answers differently, so the disjointness hypothesis of `run_overlayMem_eq` is needed. Run `scripts/build.sh --wfail --iofail ComplexityTests.CellProbeChronogram`.
+[`Complexity.Computability.CellProbe.Chronogram`](../../Complexity/Computability/CellProbe/Chronogram.lean) is the problem-independent bookkeeping behind Fredman and Saks's chronogram method for dynamic lower bounds (history in Pătraşcu–Demaine 2006, §3.1). An `IndexedScheme` runs consecutive operation segments `seg 0, seg 1, …` from step `t₀` and memory `m₀`; `segStart` and `segMem` give the step and memory at which segment `j` starts. `laterCells L j` collects the cells probed by segments `j + 1, …, L - 1`, and `lastCells L j` the cells probed by segment `j` and by no later segment. These sets are defined by *probes*, not writes: a later read also removes a cell from `lastCells`. This suffices because a cell that no later segment probes keeps its contents, and the cells probed later are exactly those whose final contents the overlay records. `overlayMem L j` lays the final contents of `laterCells` over the memory before segment `j`. It agrees with the memory after all `L` segments outside `lastCells L j` (`overlayMem_eq_of_notMem_lastCells`) and differs from `segMem j` on at most `#laterCells` cells (`hammingDist_overlayMem_le`), which is at most `d * Σ_{j < k < L} |seg k|` under a uniform step-depth bound `d` (`card_laterCells_le`). The sets `lastCells L j` for `j < L` are pairwise disjoint, so a probe set `P` meets at most `#P` of them (`card_filter_lastCells_le`). A query tree whose probes on the final memory avoid `lastCells L j` answers identically, with the same probe count, on the overlay (`run_overlayMem_eq`). `card_filter_hammingDist_le_le_pow` bounds the number of memories within Hamming distance `r` of a fixed memory by `(S * (2 ^ w - 1) + 1) ^ r`, a special case of the alphabet-generic `Code.card_filter_hammingDist_le_le_pow` in [`Complexity.Foundations.Data.Code.HammingBound`](../../Complexity/Foundations/Data/Code/HammingBound.lean); this is the count of possible overlays in an encoding argument, about `log S + w` bits per recorded cell. The module proves no lower bound by itself; [`Complexity.DataStructure.PrefixSums.CellProbe.LowerBound`](../../Complexity/DataStructure/PrefixSums/CellProbe/LowerBound.lean), described next, uses it. Its [checked client](../../ComplexityTests/CellProbeChronogram.lean) uses an adaptive copy-and-write scheme in which a later read alone removes a cell from `lastCells`. It also shows that the overlay differs from the final memory exactly on a last-touched cell, and that a query probing that cell answers differently, so the disjointness hypothesis of `run_overlayMem_eq` is needed. Run `scripts/build.sh --wfail --iofail ComplexityTests.CellProbeChronogram`.
+
+[`Complexity.DataStructure.PrefixSums.CellProbe.LowerBound`](../../Complexity/DataStructure/PrefixSums/CellProbe/LowerBound.lean) proves the Fredman–Saks chronogram lower bound for dynamic prefix parity: partial sums over `ZMod 2`, where `update i b` sets bit `i` and `query i` returns `A 0 + ⋯ + A i`, as in Pătraşcu–Demaine 2006, §2.1. `AnswersQueries D` says that a deterministic `IndexedScheme (Op n) Result S w` answers every query correctly after every operation sequence. Suppose updates have depth at most `t_u`, `L β ^ L ≤ n`, `β ≥ 4` and `(S 2 ^ w + 1) ^ (8 t_u) ≤ 2 ^ β`. Then the average query over the hard distribution makes at least `L / 64` probes (`card_mul_le_sum_probes`, `exists_le_mul_probes`), and a query-depth bound `t_q` gives `L ≤ 64 t_q` (`le_mul_of_answersQueries`). With `S ≤ 2 ^ w`, choosing `β = max 4 (8 t_u (2 w + 1))` and `L = ⌊log_β n / 2⌋` gives `log_β n ≤ 128 t_q + 1` (`log_le_of_answersQueries`). This is the trade-off `t_q = Ω(lg n / (lg b + lg t_u))` for word size `b` that Pătraşcu–Demaine §3.1 attributes to Fredman–Saks 1989.
+
+The hard instance `hardUpdates hn X` has `L` epochs. Epoch `j` writes the `β ^ (L - j)` bits `X j` at positions `k β ^ j L + j`, and query `q < β ^ L` then answers `Σ_j prefixParity (X j) (q / β ^ j)` (`prefixParity_hardUpdates`). For each epoch the proof counts the *bad* queries, those whose probes meet `lastCells`, and replays the others on the overlay. At most `(S 2 ^ w + 1) ^ (2 t_u β ^ (L - j - 1))` overlays exist, and an overlay determines the prefix-parity vector of epoch `j` up to a Hamming ball of radius `β ^ (L - j) / 16`. Hence at most half of the values of epoch `j` leave fewer than `β ^ L / 32` bad queries. Finally, the bad queries of distinct epochs are charged to distinct probed cells.
+
+The scope is deterministic schemes with worst-case update depth, and the constants are not optimized. Amortized updates, Las Vegas randomization and the stronger Pătraşcu–Demaine trade-offs remain open in [#3207](https://github.com/cslib-community/complexitylib/issues/3207). The [checked client](../../ComplexityTests/CellProbeFredmanSaks.lean) does three things:
+
+- It checks the hard-instance layout and answer formula for `β = L = 2`.
+- It proves correct the one-cell-per-bit scheme (update depth `1`, query depth `n`). That scheme meets all hypotheses of the hard-instance form with one epoch (`n = 64`, `w = 1`, `β = 64`) and with two (`n = 131072`, `w = 1`, `β = 256`), and of the logarithmic form (`n ≤ 2 ^ w`).
+- It shows that a probe-free scheme answering `0` meets every hypothesis except `AnswersQueries`, which the theorem then refutes.
+
+Run `scripts/build.sh --wfail --iofail ComplexityTests.CellProbeFredmanSaks`.
 
 ## Deterministic communication and its variants
 
@@ -189,10 +201,87 @@ and MIS are flexible without a loop, and the anchors and filling on a 6-cycle. F
 which has no flexible state, they check that no `1`-round algorithm solves the 10-cycle, that
 gathering solves it in `5` rounds, and that the trichotomy puts it in the `Θ(n)` row.
 
-Only oriented cycles are covered. General graphs with port numbering, Linial's `O(Δ²)` colouring,
-`(Δ + 1)`-colouring and MIS on bounded-degree graphs, the CONGEST message-size bound,
-randomized LOCAL algorithms, and LCLs with inputs or on paths and undirected cycles remain open;
-see `ROADMAP.md`.
+Only oriented cycles are covered in the LOCAL model. General graphs with port numbering, Linial's
+`O(Δ²)` colouring, `(Δ + 1)`-colouring and MIS on bounded-degree graphs, the CONGEST message-size
+bound, randomized LOCAL algorithms, and LCLs with inputs or on paths and undirected cycles remain
+open; see `ROADMAP.md`.
+
+## Byzantine agreement
+
+Import `Complexity.Computability.Distributed.Byzantine.NodeBound` for the impossibility theorems,
+or `Complexity.Computability.Distributed.Byzantine.OralMessages` for these together with the
+single-fault protocol. Both build on
+[Byzantine/Basic.lean](../../Complexity/Computability/Distributed/Byzantine/Basic.lean), the model
+of deterministic synchronous message passing on the complete graph of a process type `P`. A
+`Protocol P State Msg` gives every process an initial state from its input bit (`init`), a message
+to every process (itself included) in each round (`send r i s j`), a state update from the messages
+received (`update r i s m`, where `m j` came from `j`), and a Boolean decision (`output`). All four
+take the process as an argument, so processes may run different code. Messages and local
+computation are unbounded and the round number is common knowledge.
+
+Faults are Byzantine and static. `Protocol.state π F adv x r i` is the state of `i` after `r` rounds
+on inputs `x : P → Bool` when the processes in `F : Finset P` are faulty. In round `r + 1` a faulty
+`j` sends `adv r j i` to `i`, arbitrarily and possibly differently to different recipients.
+`Protocol.decision π F adv x R i` is the decision after `R` rounds. Runs are deterministic, so a
+fixed table `adv` is as strong as an adaptive or rushing adversary: the messages such an adversary
+sends on a given input form a table. `Protocol.adaptiveState_eq_state` checks this for a rushing
+adversary `strat r σ j i` that sees the global state `σ` after `r` rounds, and
+`SolvesByzantineAgreement.adaptive` transfers agreement and validity to such adversaries.
+`SolvesByzantineAgreement t R` requires, for every `F` with at most `t` processes, every `adv` and
+every `x`, *agreement* (all correct processes decide alike) and *validity* (if every correct
+process has input `v`, every correct process decides `v`). Decisions are read after exactly `R`
+rounds, which is how termination is expressed; a protocol that decides earlier keeps its state.
+Protocols whose decision round depends on the run are not covered. For finite `P` and `Msg` this
+loses nothing, since by König's lemma they decide within a bound uniform over all runs, but for
+infinite `Msg` a fixed `R` is strictly narrower than eventual decision. To prove that a protocol
+solves the problem, unfold `Protocol.decision` and `Protocol.state` round by round, as
+`om1_heard` and `om1_report` in
+[OralMessages.lean](../../Complexity/Computability/Distributed/Byzantine/OralMessages.lean) do.
+
+Impossibility proofs use the covering lemma `Protocol.state_eq_coverState`. A covering network is
+given by a node type `N`, a process `label a` whose code node `a` runs, an input `input a`, and the
+node `nbr a j` that sends to `a` in the role of process `j`; `Protocol.coverState` is its run. If
+the correct processes embed into the network by `e`, keeping their code, inputs and mutual wiring,
+and every faulty process sends to a correct `i` what the network shows `e i`, then every correct
+`i` is in the state of `e i` after every round. This lemma packages the Locality and Fault axioms of
+Fischer, Lynch and Merritt (PODC 1985, §2) for this model. To use it, supply the network and check
+the four hypotheses: `hlabel`, `hinput` and `hadv` are usually `rfl`, and `hnbr` is the
+combinatorial content.
+
+[Byzantine/NodeBound.lean](../../Complexity/Computability/Distributed/Byzantine/NodeBound.lean)
+proves their Theorem 1 (§3.1): `Protocol.not_solvesByzantineAgreement` says that no protocol on
+`n` processes with `2 ≤ n ≤ 3t` solves Byzantine agreement against `t` faults, for any fixed
+decision round `R`. `Protocol.not_solvesByzantineAgreement_three` is the hexagon case `n = 3`,
+`t = 1`. Both follow from `Protocol.not_solvesByzantineAgreement_of_partition`, which needs a
+map `g : P → Fin 3` whose fibres have at most `t` elements, with `g a = 0` and `g c = 2` for some
+`a`, `c`. The proof glues two copies of the network, with inputs `0` and `1`, crossing the edges
+between the groups `0` and `2`. Unlike the paper, the middle group may be empty, so `n = 2` is
+included. For `n ≤ 1` agreement is trivial: `Protocol.solvesByzantineAgreement_ownInput` (in
+`Byzantine/Basic.lean`) decides the own input.
+
+[Byzantine/OralMessages.lean](../../Complexity/Computability/Distributed/Byzantine/OralMessages.lean)
+gives the matching upper bound for one fault. `om1` sends inputs in round 1 and relays them in
+round 2. A process estimates the input of each `k` by the strict majority of the relays from the
+processes `j ≠ k`, and decides the strict majority of these estimates, ties going to `false`.
+`solvesByzantineAgreement_om1` proves that it tolerates one fault among `n ≥ 4` processes in any
+`R ≥ 2` rounds. This is the single-fault procedure of Pease, Shostak and Lamport (JACM 1980, §2;
+there for `n = 4`), generalized to `n ≥ 4` and followed by a majority vote, as in `OM(1)` of
+Lamport, Shostak and Pease (TOPLAS 1982, Theorem 1).
+`exists_solvesByzantineAgreement_one_iff` combines the bounds: for `R ≥ 2`, `n` processes can
+tolerate one fault exactly when `n ≤ 1` or `n ≥ 4`. The statement quantifies over `S M : Type`.
+
+[Checked examples](../../ComplexityTests/Computability/Distributed/Byzantine.lean) show a leader
+protocol that solves the fault-free problem and fails against a faulty leader that tells different
+processes different things. They also run `om1` on four processes against an equivocating process,
+with mixed and with unanimous inputs, and against a rushing process, and instantiate the node bound
+at `n = 2` and `n = 6`.
+
+Only static faults on the complete graph with Boolean inputs are covered. The connectivity bound
+`κ ≥ 2t + 1` (Fischer, Lynch and Merritt, §3.2), the general upper bound for `n > 3t` (`OM(t)` or
+exponential information gathering), the `t + 1` round lower bound, authenticated agreement and
+randomized agreement remain open; see `ROADMAP.md`. The asynchronous impossibility of Fischer,
+Lynch and Paterson is upstream in CSLib (`Cslib/Computability/Distributed/FLP`), in a separate
+asynchronous crash-fault model.
 
 ## Locally decodable codes
 

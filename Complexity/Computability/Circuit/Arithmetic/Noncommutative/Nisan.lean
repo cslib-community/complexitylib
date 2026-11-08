@@ -56,6 +56,8 @@ labels; the lower bound holds for them.
   dimension of the row space.
 * `Cslib.Circuits.Arithmetic.one_le_rank_nisanMatrix`: `rank M_k(f) ≥ 1` for nonzero homogeneous
   `f`.
+* `Cslib.Circuits.Arithmetic.rank_nisanMatrix_zero_left`,
+  `Cslib.Circuits.Arithmetic.rank_nisanMatrix_zero_right`: the outer ranks are `1`.
 * `Cslib.Circuits.Arithmetic.NoncommABP.exists_width_eq_rank`: the optimal widths are attained.
 * `Cslib.Circuits.Arithmetic.NoncommABP.isLeast_size`: Nisan's theorem.
 
@@ -191,6 +193,19 @@ theorem one_le_rank_nisanMatrix [Fintype X] {f : FreeAlgebra K X} {k m : ℕ}
   have h' := congrFun (congrArg Subtype.val h) (FreeMonoid.ofList (w.toList.drop k))
   change coeff (FreeMonoid.ofFn u * _) f = 0 at h'
   rwa [hu, ← FreeMonoid.ofList_append, List.take_append_drop, FreeMonoid.ofList_toList] at h'
+
+/-- For nonzero `f` homogeneous of degree `d`, the first Nisan matrix has rank `1`:
+`rank M_0(f) = 1`. -/
+theorem rank_nisanMatrix_zero_left [Fintype X] {f : FreeAlgebra K X} {d : ℕ}
+    (hd : f.IsHomogeneous d) (hf : f ≠ 0) : (nisanMatrix 0 d f).rank = 1 :=
+  le_antisymm ((Matrix.rank_le_card_height _).trans (by simp))
+    (one_le_rank_nisanMatrix (by rwa [zero_add]) hf)
+
+/-- For nonzero `f` homogeneous of degree `d`, the last Nisan matrix has rank `1`:
+`rank M_d(f) = 1`. -/
+theorem rank_nisanMatrix_zero_right [Fintype X] {f : FreeAlgebra K X} {d : ℕ}
+    (hd : f.IsHomogeneous d) (hf : f ≠ 0) : (nisanMatrix d 0 f).rank = 1 :=
+  le_antisymm ((Matrix.rank_le_card_width _).trans (by simp)) (one_le_rank_nisanMatrix hd hf)
 
 /-- The row space of layer `0` is spanned by the row of the empty word. -/
 theorem nisanRowSpace_zero (f : FreeAlgebra K X) : nisanRowSpace f 0 = K ∙ nisanRow f 1 := by
