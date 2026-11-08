@@ -120,15 +120,9 @@ private def halfSelected {W m p a b c d : ℕ} (L : SearchLayout W m p a b c d)
         ((orientedCycle L (~~~t).toNat (~~~s).toNat (~~~g).toNat true).rename bank))
       (.seq (ram[ orientation ← #0 ]) (registerCycle L s.toNat t.toNat classIndex false)))
 
-/-- Reuse the full immediate-parameter execution after computing both actual
-class registers. The result, witness and memory are identical, instruction for
-instruction; no semantic query, direction or dictionary premise is introduced. -/
-theorem registerSelected_exec {W m p a b c d T : ℕ} (L : SearchLayout W m p a b c d)
-    (s t : BitVec m) (g : BitVec p) (x y : Data 40)
-    (hg : x.regs classIndex = g.toNat) (hng : x.regs inverseIndex = (~~~g).toNat)
-    (he : ExecWithin W (selectedClass L s t g) x y T) :
-    ExecWithin W (registerSelected L s t) x y T := by
-  have first : Code.RegisterParameter classIndex g.toNat
+private theorem firstParameter {W m p a b c d : ℕ}
+    (L : SearchLayout W m p a b c d) (s t : BitVec m) (g : BitVec p) :
+    Code.RegisterParameter classIndex g.toNat
       (selectedClass L s t g) (halfSelected L s t g) := by
     unfold selectedClass halfSelected
     repeat' first
@@ -140,7 +134,10 @@ theorem registerSelected_exec {W m p a b c d T : ℕ} (L : SearchLayout W m p a 
       | apply Code.RegisterParameter.copy; decide
       | apply Code.RegisterParameter.seq
       | apply Code.RegisterParameter.branch
-  have second : Code.RegisterParameter inverseIndex (~~~g).toNat
+
+private theorem secondParameter {W m p a b c d : ℕ}
+    (L : SearchLayout W m p a b c d) (s t : BitVec m) (g : BitVec p) :
+    Code.RegisterParameter inverseIndex (~~~g).toNat
       (halfSelected L s t g) (registerSelected L s t) := by
     unfold halfSelected registerSelected
     repeat' first
@@ -152,7 +149,24 @@ theorem registerSelected_exec {W m p a b c d T : ℕ} (L : SearchLayout W m p a 
       | apply Code.RegisterParameter.copy; decide
       | apply Code.RegisterParameter.seq
       | apply Code.RegisterParameter.branch
-  exact second.execWithin hng (first.execWithin hg he)
+
+/-- Reuse the full immediate-parameter execution after computing both actual
+class registers. The result, witness and memory are identical, instruction for
+instruction; no semantic query, direction or dictionary premise is introduced. -/
+theorem registerSelected_exec {W m p a b c d T : ℕ} (L : SearchLayout W m p a b c d)
+    (s t : BitVec m) (g : BitVec p) (x y : Data 40)
+    (hg : x.regs classIndex = g.toNat) (hng : x.regs inverseIndex = (~~~g).toNat)
+    (he : ExecWithin W (selectedClass L s t g) x y T) :
+    ExecWithin W (registerSelected L s t) x y T := by
+  exact (secondParameter L s t g).execWithin hng ((firstParameter L s t g).execWithin hg he)
+
+/-- Parameter transfer preserves the complete store charge of the class lifetime. -/
+theorem registerSelected_stores {W m p a b c d T S : ℕ}
+    (L : SearchLayout W m p a b c d) (s t : BitVec m) (g : BitVec p) (x y : Data 40)
+    (hg : x.regs classIndex = g.toNat) (hng : x.regs inverseIndex = (~~~g).toNat)
+    (he : StoresWithin W (selectedClass L s t g) x y T S) :
+    StoresWithin W (registerSelected L s t) x y T S :=
+  (he.parameter (firstParameter L s t g) hg).parameter (secondParameter L s t g) hng
 
 /-- The dynamic selector leaves the class index and exclusive bound available to
 its native enclosing loop. -/

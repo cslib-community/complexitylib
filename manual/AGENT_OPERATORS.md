@@ -105,7 +105,11 @@ the merge queue through landing. [Coordinator duties](../AGENTS.md#coordinators)
 The manuals are part of this workflow. Changes to library usage belong in the Operator's Manual;
 changes to roles, delegation, review or human direction may affect this Agent Operator's Manual.
 Coordinators check both against the final change. A reasoned finding of no impact is valid;
-an unchecked box or a passing build is not a usability review.
+an unchecked box or a passing build is not a usability review. When reviewing
+resource results, inspect what is counted: a simultaneous bound at every actual
+execution prefix, total historical allocation and a class-average estimate have
+different meanings. Preserve the stated machine model when reporting a milestone;
+a native RAM word bound alone does not supply a multitape bit-time theorem.
 
 ## Correct course and hand work over
 

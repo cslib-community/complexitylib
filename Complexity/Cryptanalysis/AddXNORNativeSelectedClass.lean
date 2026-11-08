@@ -8,7 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Cryptanalysis.AddXNORNativeCounterPair
-public import Complexity.Cryptanalysis.AddXNORNativeOrientedSearch
+public import Complexity.Cryptanalysis.AddXNORNativeClassCounts
+import all Complexity.Cryptanalysis.AddXNORNativeClassCounts
 import all Complexity.Cryptanalysis.AddXNORNativeCounterPair
 import all Complexity.Cryptanalysis.AddXNORNativeOrientedSearch
 
@@ -27,14 +28,6 @@ public section
 namespace Cslib.Cryptanalysis.AddXNOR.Native.Driver
 
 open Cslib.WordRAM Quarter
-
-/-- Forward multiplicity observer of the actual native counter table. -/
-def forwardCount {m p : ℕ} (as bs : List (BitVec m)) (s : BitVec m) (g : BitVec p) : ℕ :=
-  (WordTable.classCounters ((as ++ bs).map (BitVec.setWidth p)) (s.setWidth p)).read g
-
-/-- Backward multiplicity observer in its physical complemented coordinates. -/
-def backwardCount {m p : ℕ} (cs ds : List (BitVec m)) (t : BitVec m) (g : BitVec p) : ℕ :=
-  (WordTable.backwardCounters ((cs ++ ds).map (BitVec.setWidth p)) (t.setWidth p)).read g
 
 /-- Actual table cells and addresses surviving while full-width classes execute. -/
 def Ready {W m p : ℕ} (as bs cs ds : List (BitVec m)) (s t : BitVec m)
@@ -95,6 +88,8 @@ theorem selectedClass_exec {W m p : ℕ} (hp : p ≤ m)
     (hfit : Fits W (L.D + 4 * 2 ^ m + 8))
     (hload : Fits W (2 * L.q₂ + 2 * 2 ^ p + 4)) :
     ∃ y, ExecWithin W (selectedClass L s t g) x y (selectedTime as bs cs ds s t g) ∧
+      StoresWithin W (selectedClass L s t g) x y (selectedTime as bs cs ds s t g)
+        (lifetimeStores (p := p) as bs cs ds s t) ∧
       (y.regs tag ≠ 0 ↔ PackedClassSolution as bs cs ds s t g) ∧
       (y.regs tag ≠ 0 → eval (witness as bs cs ds y) s = t) ∧
       y.regs orientation = (if backwardCount cs ds t g < forwardCount as bs s g then 1 else 0) ∧
@@ -125,6 +120,12 @@ theorem selectedClass_exec {W m p : ℕ} (hp : p ≤ m)
           (if back then (~~~s).toNat else t.toNat)
           (if back then (~~~g).toNat else g.toNat) back).rename bank)) u y
         (1 + orientedTime back as bs cs ds s t g) ∧
+      StoresWithin W (.seq (ram[ orientation ← #(if back then 1 else 0) ])
+        ((orientedCycle L (if back then (~~~t).toNat else s.toNat)
+          (if back then (~~~s).toNat else t.toNat)
+          (if back then (~~~g).toNat else g.toNat) back).rename bank)) u y
+        (1 + orientedTime back as bs cs ds s t g)
+        (orientedStores back as bs cs ds s t g) ∧
       (y.regs tag ≠ 0 ↔ PackedClassSolution as bs cs ds s t g) ∧
       (y.regs tag ≠ 0 → eval (witness as bs cs ds y) s = t) ∧
       y.regs orientation = (if back then 1 else 0) ∧
@@ -136,7 +137,8 @@ theorem selectedClass_exec {W m p : ℕ} (hp : p ≤ m)
         (ram[ orientation ← #(if back then 1 else 0) ]) u v 1 := by
       apply ExecWithin.const
       split <;> exact hload.of_le (by omega)
-    obtain ⟨z, hz, hit, sound, frame, raw⟩ := oriented_cycle_exec hp as bs cs ds s t g L back
+    obtain ⟨z, hz, stored, hit, sound, frame, raw⟩ :=
+      oriented_cycle_exec hp as bs cs ds s t g L back
       (v.comap bank) (by simpa only [SearchLayout.Raw, v, u, Data.comap_mem, Data.set_mem] using hx)
       hfit
     let y := z.extend bank v
@@ -152,7 +154,9 @@ theorem selectedClass_exec {W m p : ℕ} (hp : p ≤ m)
     have yq : y.regs backwardPointer = x.regs backwardPointer := by
       rw [yh _ (by decide)]; simp +decide [v, u, backwardPointer, orientation,
         countAddress, forwardValue, backwardValue]
-    refine ⟨y, flag.seq cycle, ?_, ?_, ydir, ym, ?_, ?_, ?_⟩
+    refine ⟨y, flag.seq cycle, ?_, ?_, ?_, ydir, ym, ?_, ?_, ?_⟩
+    · simpa only [Nat.zero_add] using
+        (flag.withoutStores (of_decide_eq_true rfl)).seq (stored.rename bank_injective)
     · simpa only [tag, y, Data.extend, bank_injective.extend_apply] using hit
     · intro h
       have hd : Decidable.decide (y.regs orientation = 1) = back := by
@@ -170,21 +174,47 @@ theorem selectedClass_exec {W m p : ℕ} (hp : p ≤ m)
     · rw [yh _ (by decide)]
       simp +decide [v, u, balance, orientation, countAddress, forwardValue, backwardValue]
   by_cases h : B < F
-  · obtain ⟨y, he, rest⟩ := run true
-    refine ⟨y, (load.seq (ExecWithin.branch_pos ?_ he)).mono ?_, ?_⟩
+  · obtain ⟨y, he, stored, rest⟩ := run true
+    refine ⟨y, (load.seq (ExecWithin.branch_pos ?_ he)).mono ?_, ?_, ?_⟩
     · simpa +decide [u, Cond.holds_lt, forwardValue, backwardValue, countAddress] using h
     · dsimp only [selectedTime]
       have hh := Nat.le_max_right (orientedTime false as bs cs ds s t g)
         (orientedTime true as bs cs ds s t g)
       omega
+    · have hm := min_count_le_computedBalance (p := p) as bs cs ds s t g
+      change min F B ≤ _ at hm
+      rw [min_eq_right (Nat.le_of_lt h)] at hm
+      have bound := (orientedStores_backward_le hp as bs cs ds s t g).trans
+        (Nat.mul_le_mul_left _ (Nat.add_le_add_left hm _))
+      refine ((load.withoutStores (of_decide_eq_true rfl)).seq
+        (StoresWithin.branch_pos ?_ stored)).mono ?_ ?_
+      · simpa +decide [u, Cond.holds_lt, forwardValue, backwardValue, countAddress] using h
+      · dsimp only [selectedTime]
+        have hh := Nat.le_max_right (orientedTime false as bs cs ds s t g)
+          (orientedTime true as bs cs ds s t g)
+        omega
+      · simpa only [Nat.zero_add, lifetimeStores] using bound
     · simpa only [B, F, h, ↓reduceIte, Bool.true_eq] using rest
-  · obtain ⟨y, he, rest⟩ := run false
-    refine ⟨y, (load.seq (ExecWithin.branch_neg ?_ he)).mono ?_, ?_⟩
+  · obtain ⟨y, he, stored, rest⟩ := run false
+    refine ⟨y, (load.seq (ExecWithin.branch_neg ?_ he)).mono ?_, ?_, ?_⟩
     · simpa +decide [u, Cond.holds_lt, forwardValue, backwardValue, countAddress] using h
     · dsimp only [selectedTime]
       have hh := Nat.le_max_left (orientedTime false as bs cs ds s t g)
         (orientedTime true as bs cs ds s t g)
       omega
+    · have hm := min_count_le_computedBalance (p := p) as bs cs ds s t g
+      change min F B ≤ _ at hm
+      rw [min_eq_left (Nat.le_of_not_gt h)] at hm
+      have bound := (orientedStores_forward_le hp as bs cs ds s t g).trans
+        (Nat.mul_le_mul_left _ (Nat.add_le_add_left hm _))
+      refine ((load.withoutStores (of_decide_eq_true rfl)).seq
+        (StoresWithin.branch_neg ?_ stored)).mono ?_ ?_
+      · simpa +decide [u, Cond.holds_lt, forwardValue, backwardValue, countAddress] using h
+      · dsimp only [selectedTime]
+        have hh := Nat.le_max_left (orientedTime false as bs cs ds s t g)
+          (orientedTime true as bs cs ds s t g)
+        omega
+      · simpa only [Nat.zero_add, lifetimeStores] using bound
     · simpa only [B, F, h, ↓reduceIte, Bool.false_eq_true] using rest
 
 end Cslib.Cryptanalysis.AddXNOR.Native.Driver

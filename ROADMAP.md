@@ -42,7 +42,8 @@ reduction, every positive rational width restriction, and the direct linear-widt
 3-SAT map are implemented, with explicit encoding-length bounds. Theorem 2's
 sparsification/disjunction resource refinement, exact reduction multiplicity,
 multitape bit-runtime certificates, native meet-in-the-middle resources, small-operand
-bounds, native streaming class enumeration and full dissection time/space certificates,
+bounds, source multitape streaming-class enumeration and dissection time/space
+certificates,
 and ideal-chain
 search/decision lower bounds still need proofs. Executable bit-table reachability
 with recursive pointer/Boolean cost bounds, exact forward/backward class-counter
@@ -50,24 +51,26 @@ DP and computed balance, both uniform per-class means, and the exact expected
 operator-flip weight are implemented. Quarter-indexed forward/backward class streaming
 and the counter-directed dissection now have unrestricted decision/witness correctness,
 exact indexed multiplicities, output-sensitive chain-call counts and a retained dictionary
-node bound in terms of the actual maximum smaller-class size. Their native runtime,
-preprocessing/address-capacity and compiled peak-space bridges remain open.
+node bound in terms of the actual maximum smaller-class size. Their native resource
+composition is now supplied by the fixed-loop endpoint
+described below; the source multitape bit-model bridge remains open.
 Native forward counter preprocessing now executes from standard encoded input
 through halt, preserving indexed multiplicities, with at most $43(q+1)2^p$
 instructions and a conservative full accessed-storage certificate that includes
 counter word widths and registers. Original-input native projection and backward preprocessing now reuse the same
 counter kernel through explicit operand reversal and complement conjugacy. They
 include input-fit, charged projection/initialization/halt and prefix memory-support
-certificates. Native class streaming, dictionary allocation/reuse and the integrated
-dissection decision/witness time and simultaneous peak-space certificate remain
-open; neither preprocessing certificate completes Lemma 8 or Theorem 7.
+certificates. Native class streaming, dictionary allocation/reuse and integrated native
+dissection resources are supplied by the later endpoint below; the source
+multitape bit-model certificate remains open. Neither preprocessing certificate
+alone completes Lemma 8 or Theorem 7.
 The native balance traversal now reads both actual counter arrays, including
 complemented backward addresses, and returns their exact maximum smaller-class
 size in at most $14\cdot2^p+7$ instructions including halt. Every continuing
 prefix preserves the entire memory, so the scan adds eighteen registers and no
 occupied memory cells. This certificate requires the already constructed arrays;
 their joint original-input execution with class streaming and dictionary storage
-is still missing. It does not complete the requested integrated endpoint.
+is now supplied below. The scan alone does not complete the integrated endpoint.
 Native first-quarter construction now clears actual low-key heads and stores
 all indexed full-state/witness records with charged instruction, halt, word-fit
 and prefix-support certificates. Native operator reversal, inverse head lookup
@@ -94,8 +97,9 @@ these restrictions do not establish the general construction premises.
 General native backward preparation now derives full inverse-state bucket records
 and original packed indices for arbitrary operand lists and widths, including
 non-self-inverse additions. The complete native selected-class enumerator now connects
-these buckets to a decision and witness endpoint, described below; global class iteration
-and source resource composition remain open.
+these buckets to a decision and witness endpoint, described below. The later
+native endpoint supplies global iteration and RAM resources; the source bit model
+remains open.
 Forward first-quarter preparation followed by forward second-quarter retention now
 derives its exact retained dictionary, top and provenance from actual native stores,
 with a checked direction-distinguishing client and preservation of all forward buckets.
@@ -156,13 +160,29 @@ and search block has 960 (961 with halt), independent of class count and scalar
 values. The conservative bound adds 7·2^p+6 to the earlier unrolled reference cost,
 charging setup, complement arithmetic, branches, increment and loop control.
 This completes the fixed-size outer-control functional/finite-time milestone.
-Layout/width/seed immediates remain scalar parameters; a fully encoded input-header
-decoder and immediate-bit bounds are not supplied. The selected multiplicity is bounded by
-the computed balance, but simultaneous compiled-prefix occupied storage in terms
-of that balance, global asymptotic time composition, derived global width/address
-fit and the source sorted-list/compact-arena multitape bit model remain unproved.
-These components do not close Lemma 8/Theorem 7 or 733 ALL-main; per-class final
-memory or release bounds must not be promoted to a global peak-space certificate.
+The new `Driver.original_resources` endpoint now derives global native work and
+simultaneous compiled-prefix nonzero support from standard initialized original
+quarter arrays. Actual retained/streamed indexed counts equal the computed class
+counters; their sums are the two half-word populations. The probe is write-free,
+and actual counter selection bounds the retained count by the computed maximum
+of minima. Each release restores the zero dictionary tail, so the proof reuses
+one lifetime allowance instead of accumulating historical allocation. A compact
+layout derives input fit and logarithmic physical word/address capacity, including
+full-state slots and half-word multiplicity values. Preprocessing, all array and
+quarter setup, both orientations, release, loop control and halt are charged.
+For quarter lengths $k,k,k,k+r$ with $p≤k$, block time is at most
+$1000(4k+r+1)2^{2k+r}$ instructions, plus halt; simultaneous occupied memory is at
+most $1000(4k+r+1)(2^{k+r}+\mu)$ words, plus forty registers. The maximum
+$\mu$ is the actual computed balance, not a class mean. Every compiled prefix is
+word-bounded; multiplying occupied words and registers by the derived width
+accounts for stored word contents. Checked clients include strict inverse
+selection, non-self-inverse addition, collisions, empty misses and zero width.
+Layout/width/seed immediates remain scalar program parameters. A fully encoded
+header decoder, program/immediate-bit accounting, native variable-length witness
+serialization and the source sorted-list/compact-arena multitape bit model remain
+open. Four packed witness words are already in the charged register bank.
+These components do not close Lemma 8/Theorem 7 or 733 ALL-main. Earlier component
+contracts above are not individually the global resource endpoint.
 The pointer/Boolean and counter-operation
 models do not replace native bit-runtime or peak-space certificates. The actual fixed
 WordRAM reachable-state array program now has an unrestricted standard-input-to-halt

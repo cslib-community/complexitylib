@@ -178,6 +178,8 @@ theorem forward_kernel_exec {W m p : ℕ} (hp : p ≤ m)
     (hx : L.Raw as bs cs ds x) :
     ∃ y, ExecWithin W (orientedKernel L s.toNat t.toNat g.toNat false) x y
         (searchTime as bs cs ds s t g) ∧
+      StoresWithin W (orientedKernel L s.toNat t.toNat g.toNat false) x y
+        (searchTime as bs cs ds s t g) (searchStores as bs cs ds s g) ∧
       (y.regs operand ≠ 0 ↔ PackedClassSolution as bs cs ds s t g) ∧
       (y.regs operand ≠ 0 → eval (orientedWitness false as bs cs ds y) s = t) ∧
       ∃ keys, Dictionary.Valid y.mem L.D (y.regs Dictionary.top) keys ∧
@@ -185,13 +187,13 @@ theorem forward_kernel_exec {W m p : ℕ} (hp : p ≤ m)
         (∀ a, a < L.q₂ → y.mem a = x.mem a) ∧
         (∀ a, L.D ≤ a → Dictionary.erasedMemory y.mem L.D keys a = 0) ∧
         (∀ k ∈ keys, k < 2 ^ m) ∧ y.regs Dictionary.table = L.D := by
-  obtain ⟨y, he, hh, _, hw, _, keys, hk, hl, frame, erased, bound, table⟩ :=
+  obtain ⟨y, he, stored, hh, _, hw, _, keys, hk, hl, frame, erased, bound, table⟩ :=
     searchClass_exec hp as bs cs ds s t g x hx.1 hx.2.1 hx.2.2.1 hx.2.2.2.1
       L.input₁ L.input₂ L.input₃ L.input₄
       (by have := L.project₂; omega) (by have := L.project₃; omega)
       L.positive L.heads (by have := L.arena; have := Nat.zero_le (2 ^ ds.length); omega) L.heads₄
       (by have := L.boundary; have := Nat.zero_le (2 ^ as.length); omega) hx.2.2.2.2 L.capacity
-  exact ⟨y, he, hh, hw, keys, hk, hl, frame, erased, bound, table⟩
+  exact ⟨y, he, stored, hh, hw, keys, hk, hl, frame, erased, bound, table⟩
 
 /-- Either actual native orientation decides the original class and returns an
 original-chain witness. No correctness of inverse-retained payloads is assumed. -/
@@ -206,6 +208,15 @@ theorem oriented_kernel_exec {W m p : ℕ} (hp : p ≤ m)
         x y (if back then
           searchTime ds.reverse cs.reverse bs.reverse as.reverse (~~~t) (~~~s) (~~~g)
           else searchTime as bs cs ds s t g) ∧
+      StoresWithin W
+        (orientedKernel L (if back then (~~~t).toNat else s.toNat)
+          (if back then (~~~s).toNat else t.toNat)
+          (if back then (~~~g).toNat else g.toNat) back)
+        x y (if back then
+          searchTime ds.reverse cs.reverse bs.reverse as.reverse (~~~t) (~~~s) (~~~g)
+          else searchTime as bs cs ds s t g)
+        (if back then searchStores ds.reverse cs.reverse bs.reverse as.reverse (~~~t) (~~~g)
+          else searchStores as bs cs ds s g) ∧
       (y.regs operand ≠ 0 ↔ PackedClassSolution as bs cs ds s t g) ∧
       (y.regs operand ≠ 0 → eval (orientedWitness back as bs cs ds y) s = t) ∧
       ∃ keys, Dictionary.Valid y.mem L.D (y.regs Dictionary.top) keys ∧
@@ -216,12 +227,14 @@ theorem oriented_kernel_exec {W m p : ℕ} (hp : p ≤ m)
         (∀ k ∈ keys, k < 2 ^ m) ∧ y.regs Dictionary.table = L.D := by
   cases back
   · exact forward_kernel_exec hp as bs cs ds s t g L x hx
-  · obtain ⟨y, he, hh, hw, keys, hk, hl, frame, erased, bound, table⟩ :=
+  · obtain ⟨y, he, stored, hh, hw, keys, hk, hl, frame, erased, bound, table⟩ :=
       forward_kernel_exec hp ds.reverse cs.reverse bs.reverse as.reverse (~~~t) (~~~s) (~~~g)
         (reverseLayout as bs cs ds L) x (SearchLayout.Raw.reverse as bs cs ds L x hx)
-    refine ⟨y, ?_, ?_, ?_, keys, hk, hl, frame, erased, bound, table⟩
+    refine ⟨y, ?_, ?_, ?_, ?_, keys, hk, hl, frame, erased, bound, table⟩
     · simpa only [orientedKernel, Bool.true_eq, Bool.false_eq_true, ↓reduceIte, reverseLayout,
         List.length_reverse] using he
+    · simpa only [orientedKernel, Bool.true_eq, Bool.false_eq_true, ↓reduceIte, reverseLayout,
+        List.length_reverse] using stored
     · exact hh.trans (packedClassSolution_reverse_iff hp as bs cs ds s t g)
     · intro hit
       exact inverse_witness_sound as bs cs ds s t y (hw hit)
@@ -262,6 +275,14 @@ def orientedTime {m p : ℕ} (back : Bool) (as bs cs ds : List (BitVec m))
   12 * (if back then insertionCount ds.reverse cs.reverse (~~~t) (~~~g)
     else insertionCount as bs s g) + 7
 
+/-- Stores per dictionary lifetime, without charging the write-free stream. -/
+def orientedStores {m p : ℕ} (back : Bool) (as bs cs ds : List (BitVec m))
+    (s t : BitVec m) (g : BitVec p) : ℕ :=
+  (if back then searchStores ds.reverse cs.reverse bs.reverse as.reverse (~~~t) (~~~g)
+    else searchStores as bs cs ds s g) +
+  12 * (if back then insertionCount ds.reverse cs.reverse (~~~t) (~~~g)
+    else insertionCount as bs s g) + 7
+
 /-- An oriented native lifetime, including release even on a successful hit. -/
 @[expose] def orientedCycle {W m p a b c d : ℕ} (L : SearchLayout W m p a b c d)
     (s t g : ℕ) (back : Bool) : Code .standard 32 :=
@@ -279,10 +300,15 @@ theorem oriented_cycle_exec {W m p : ℕ} (hp : p ≤ m)
           (if back then (~~~s).toNat else t.toNat)
           (if back then (~~~g).toNat else g.toNat) back)
         x y (orientedTime back as bs cs ds s t g) ∧
+      StoresWithin W
+        (orientedCycle L (if back then (~~~t).toNat else s.toNat)
+          (if back then (~~~s).toNat else t.toNat)
+          (if back then (~~~g).toNat else g.toNat) back)
+        x y (orientedTime back as bs cs ds s t g) (orientedStores back as bs cs ds s t g) ∧
       (y.regs operand ≠ 0 ↔ PackedClassSolution as bs cs ds s t g) ∧
       (y.regs operand ≠ 0 → eval (orientedWitness back as bs cs ds y) s = t) ∧
       (∀ a, a < L.q₂ → y.mem a = x.mem a) ∧ L.Raw as bs cs ds y := by
-  obtain ⟨u, hu, hh, hw, keys, hk, hl, frame, erased, bound, table⟩ :=
+  obtain ⟨u, hu, stored, hh, hw, keys, hk, hl, frame, erased, bound, table⟩ :=
     oriented_kernel_exec hp as bs cs ds s t g L back x hx
   obtain ⟨y, hy, ym, yo, yb, yops, yf⟩ := releaseWitness_exec keys u table hk
     (hfit.of_le (by omega))
@@ -302,7 +328,9 @@ theorem oriented_cycle_exec {W m p : ℕ} (hp : p ≤ m)
     _ ≤ L.D := L.boundary
   have original (a : ℕ) (ha : a < L.q₂) : y.mem a = x.mem a := by
     rw [ym, Dictionary.erasedMemory_below _ _ _ _ (ha.trans_le qD), frame a ha]
-  refine ⟨y, (hu.seq hy).mono (by dsimp only [orientedTime]; omega), ?_, ?_, original, ?_⟩
+  refine ⟨y, (hu.seq hy).mono (by dsimp only [orientedTime]; omega),
+    (stored.seq hy.stores).mono (by dsimp only [orientedTime]; omega)
+      (by dsimp only [orientedStores]; omega), ?_, ?_, original, ?_⟩
   · rwa [yo]
   · intro hit
     have witness : orientedWitness back as bs cs ds y = orientedWitness back as bs cs ds u := by

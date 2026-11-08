@@ -2770,6 +2770,7 @@ public import Complexity.Computability.WordRAM.Defs
 public import Complexity.Computability.WordRAM.Dynamic
 public import Complexity.Computability.WordRAM.ExactLog
 public import Complexity.Computability.WordRAM.ExactNotation
+public import Complexity.Computability.WordRAM.ExecInvariant
 public import Complexity.Computability.WordRAM.Footprint
 public import Complexity.Computability.WordRAM.Function
 public import Complexity.Computability.WordRAM.GhostLoop
@@ -2859,12 +2860,14 @@ public import Complexity.Computability.WordRAM.Signed.Operations
 public import Complexity.Computability.WordRAM.Signed.State
 public import Complexity.Computability.WordRAM.Structured
 public import Complexity.Computability.WordRAM.Subroutine
+public import Complexity.Computability.WordRAM.SupportTrace
 public import Complexity.Computability.WordRAM.SymbolicExec
 public import Complexity.Computability.WordRAM.SymbolicExec.Call
 public import Complexity.Computability.WordRAM.SymbolicExec.Init
 public import Complexity.Computability.WordRAM.Time
 public import Complexity.Computability.WordRAM.Trace
 public import Complexity.Computability.WordRAM.TraceBounds
+public import Complexity.Computability.WordRAM.TraceParameters
 public import Complexity.Computability.WordRAM.Turing
 public import Complexity.Computability.WordRAM.Turing.ListOutput
 public import Complexity.Computability.WordRAM.Turing.Overhead
@@ -2891,6 +2894,7 @@ public import Complexity.Cryptanalysis.AddXNORNativeBackwardRetain
 public import Complexity.Cryptanalysis.AddXNORNativeBalance
 public import Complexity.Cryptanalysis.AddXNORNativeBuckets
 public import Complexity.Cryptanalysis.AddXNORNativeClassCounters
+public import Complexity.Cryptanalysis.AddXNORNativeClassCounts
 public import Complexity.Cryptanalysis.AddXNORNativeClassLoop
 public import Complexity.Cryptanalysis.AddXNORNativeClassPrepare
 public import Complexity.Cryptanalysis.AddXNORNativeClassProbe
@@ -2908,6 +2912,9 @@ public import Complexity.Cryptanalysis.AddXNORNativeDualProbe
 public import Complexity.Cryptanalysis.AddXNORNativeEmit
 public import Complexity.Cryptanalysis.AddXNORNativeEnumeration
 public import Complexity.Cryptanalysis.AddXNORNativeForwardRetain
+public import Complexity.Cryptanalysis.AddXNORNativeGlobalLayout
+public import Complexity.Cryptanalysis.AddXNORNativeGlobalResources
+public import Complexity.Cryptanalysis.AddXNORNativeGlobalTime
 public import Complexity.Cryptanalysis.AddXNORNativeOppositeQuery
 public import Complexity.Cryptanalysis.AddXNORNativeOrientation
 public import Complexity.Cryptanalysis.AddXNORNativeOrientedSearch

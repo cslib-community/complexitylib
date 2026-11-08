@@ -65,10 +65,6 @@ structure CounterLayout {W m p a b c d : ℕ} (L : SearchLayout W m p a b c d) w
     4 * 2 ^ p + 2 * 2 ^ (c + d) + 2 ^ m + 12)
   capacityScan : Fits W (B + C + 3 * 2 ^ p + 2)
 
-/-- Exact maximum of the two constructed multiplicity counters' minima. -/
-def computedBalance {m p : ℕ} (as bs cs ds : List (BitVec m)) (s t : BitVec m) : ℕ :=
-  Finset.univ.sup fun g : BitVec p => min (forwardCount as bs s g) (backwardCount cs ds t g)
-
 /-- The computed count observer is the existing manuscript balance parameter,
 with no new balance assumption or independent notion of solution count. -/
 theorem computedBalance_eq_classBalance {m p : ℕ} (hp : p ≤ m)
@@ -130,6 +126,13 @@ def prepareTime (p a b : ℕ) : ℕ :=
     (1 + (((10 * b + 8) + (6 + (4 * 2 ^ p + b * (14 * 2 ^ p + 14) + 10))) + 1))) +
     (14 * 2 ^ p + 11)
 
+/-- Simultaneous occupied cells: preprocessing is charged once, and the largest
+selected retained class allowance is reused after each native release. -/
+def dissectionSpace {m p : ℕ} (D : ℕ) (as bs cs ds : List (BitVec m))
+    (s t : BitVec m) : ℕ :=
+  D + prepareTime p (as.length + bs.length) (cs.length + ds.length) +
+    lifetimeStores (p := p) as bs cs ds s t
+
 /-- Exact balance semantics of a ready native table pair. -/
 theorem ready_balance_eq {W m p : ℕ} (as bs cs ds : List (BitVec m)) (s t : BitVec m)
     (L : SearchLayout W m p as.length bs.length cs.length ds.length) (x : Data 40)
@@ -169,6 +172,10 @@ theorem dissection_exec {W m p : ℕ} (hp : p ≤ m)
     ∃ y, ExecWithin W (dissection L K s t) x y
         (prepareTime p (as.length + bs.length) (cs.length + ds.length) +
           (5 + loopTime (p := p) as bs cs ds s t 0 (2 ^ p))) ∧
+      SpaceWithin W (dissection L K s t) x y
+        (prepareTime p (as.length + bs.length) (cs.length + ds.length) +
+          (5 + loopTime (p := p) as bs cs ds s t 0 (2 ^ p)))
+        (dissectionSpace (p := p) L.D as bs cs ds s t) ∧
       (y.regs tag ≠ 0 ↔ ∃ g : BitVec p, PackedClassSolution as bs cs ds s t g) ∧
       (y.regs tag = 0 ↔ ¬∃ g : BitVec p, PackedClassSolution as bs cs ds s t g) ∧
       (y.regs tag ≠ 0 → eval (witness as bs cs ds y) s = t) ∧
@@ -231,11 +238,22 @@ theorem dissection_exec {W m p : ℕ} (hp : p ≤ m)
     · rcases uq with h | h <;> rw [h] <;> have := K.below <;> omega
   have mu : u.regs balance = computedBalance (p := p) as bs cs ds s t :=
     ub.trans (ready_balance_eq as bs cs ds s t L u ready)
-  obtain ⟨y, hy, hit, sound, _, _, _, yr, _, yb⟩ := searchLoop_exec hp as bs cs ds s t L
+  obtain ⟨y, hy, space, hit, sound, _, _, _, yr, _, yb⟩ := searchLoop_exec hp as bs cs ds s t L
     u raw ready hfit hload
   have iffhit := hit
-  refine ⟨y, ?_, iffhit, ?_, sound, yb.trans mu, yr⟩
+  refine ⟨y, ?_, ?_, iffhit, ?_, sound, yb.trans mu, yr⟩
   · simpa only [dissection, prepareTime, List.length_append, List.length_reverse] using hu.seq hy
+  · have prepSpace := hu.stores.space
+      (x.supportLe_of_zero_tail (fun a ha => hx.2.2.2.2 a ha))
+    have prepBound := prepSpace.mono le_rfl
+      (show L.D + _ ≤ dissectionSpace (p := p) L.D as bs cs ds s t by
+        simp only [dissectionSpace, prepareTime, List.length_append, List.length_reverse]
+        omega)
+    have searchBound := space.mono le_rfl
+      (show L.D + _ ≤ dissectionSpace (p := p) L.D as bs cs ds s t by
+        dsimp only [dissectionSpace]; omega)
+    simpa only [dissection, prepareTime, List.length_append, List.length_reverse]
+      using prepBound.seq searchBound
   · constructor
     · intro hz hs; exact (iffhit.mpr hs) hz
     · intro hn; by_contra hz; exact hn (iffhit.mp hz)

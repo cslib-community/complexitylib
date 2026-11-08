@@ -82,6 +82,9 @@ theorem classBody_exec {W m p j : ℕ} (hp : p ≤ m)
     (hload : Fits W (2 * L.q₂ + 2 * 2 ^ p + 4)) :
     ∃ y, ExecWithin W (classBody L s t) x y
         (selectedTime as bs cs ds s t (BitVec.ofNat p j) + 7) ∧
+      SpaceWithin W (classBody L s t) x y
+        (selectedTime as bs cs ds s t (BitVec.ofNat p j) + 7)
+        (L.D + lifetimeStores (p := p) as bs cs ds s t) ∧
       (y.regs tag ≠ 0 ↔ PackedClassSolution as bs cs ds s t (BitVec.ofNat p j)) ∧
       (y.regs tag ≠ 0 → eval (witness as bs cs ds y) s = t) ∧
       y.regs classIndex = (if y.regs tag ≠ 0 then 2 ^ p else j + 1) ∧
@@ -100,7 +103,7 @@ theorem classBody_exec {W m p j : ℕ} (hp : p ≤ m)
   have setup : ExecWithin W inverseClass x z 3 := by
     ram_eval [inverseClass, z, hN, hj, h1, hmask, hkey,
       classLimit, classIndex, inverseIndex, Fin.mk.injEq]
-  obtain ⟨u, hu, hit, sound, _, frame, raw, ready, ub⟩ :=
+  obtain ⟨u, hu, stores, hit, sound, _, frame, raw, ready, ub⟩ :=
     selectedClass_exec hp as bs cs ds s t g L z
       (by simpa only [SearchLayout.Raw, z, Data.comap_mem, Data.set_mem] using hx)
       (by simpa +decide [Ready, z, inverseIndex, forwardPointer, backwardPointer, zero] using hr)
@@ -109,6 +112,15 @@ theorem classBody_exec {W m p j : ℕ} (hp : p ≤ m)
     registerSelected_exec L s t g z u
       (by simpa +decide [z, classIndex, inverseIndex, gnat] using hj)
       (by simp only [z, Data.set_regs, Function.update_self, BitVec.toNat_not]; rfl) hu
+  have zsupport : z.SupportLe L.D :=
+    z.supportLe_of_zero_tail (fun a ha => hx.2.2.2.2 a ha)
+  have stored := registerSelected_stores L s t g z u
+    (by simpa +decide [z, classIndex, inverseIndex, gnat] using hj)
+    (by simp only [z, Data.set_regs, Function.update_self, BitVec.toNat_not]; rfl) stores
+  have spaces := stored.space zsupport
+  have setupSpace := (setup.space_writeFree (by decide)
+    (x.supportLe_of_zero_tail (fun a ha => hx.2.2.2.2 a ha))).mono le_rfl
+      (Nat.le_add_right L.D (lifetimeStores (p := p) as bs cs ds s t))
   have index : u.regs classIndex = j :=
     ((setup.seq actual).regs_eq (by
       exact ⟨by decide, registerSelected_preserves L s t _ (Or.inl rfl)⟩)).trans hj
@@ -154,11 +166,15 @@ theorem classBody_exec {W m p j : ℕ} (hp : p ≤ m)
     have advance : ExecWithin W advanceClass u y 4 :=
       (ExecWithin.branch_pos (by simp only [Cond.holds_lt, ready.2.2.2.2]; omega)
         done).mono (by omega)
-    refine ⟨y, ?_, result y advance (by simp [y, hh]) rfl⟩
-    have he : ExecWithin W (classBody L s t) x y
+    refine ⟨y, ?_, ?_, result y advance (by simp [y, hh]) rfl⟩
+    · have he : ExecWithin W (classBody L s t) x y
         (selectedTime as bs cs ds s t g + 7) :=
-      (setup.seq (actual.seq advance)).mono (by omega)
-    simpa only [classBody, geq] using he
+        (setup.seq (actual.seq advance)).mono (by omega)
+      simpa only [classBody, geq] using he
+    · have sp := setupSpace.seq (spaces.seq
+        (advance.space_writeFree (by decide) spaces.finish))
+      rw [← geq]
+      exact sp.mono (by omega) le_rfl
   · let y := u.set inverseIndex 1 |>.set classIndex (j + 1)
     have hnext : Fits W (j + 1) := hload.of_le (by omega)
     have done : ExecWithin (B := .standard) W
@@ -166,11 +182,15 @@ theorem classBody_exec {W m p j : ℕ} (hp : p ≤ m)
       ram_eval [y, index, h1, hnext, classIndex, inverseIndex, Fin.mk.injEq]
     have advance : ExecWithin W advanceClass u y 4 :=
       ExecWithin.branch_neg (by simp only [Cond.holds_lt, ready.2.2.2.2]; omega) done
-    refine ⟨y, ?_, result y advance (by simp [y, hh]) rfl⟩
-    have he : ExecWithin W (classBody L s t) x y
+    refine ⟨y, ?_, ?_, result y advance (by simp [y, hh]) rfl⟩
+    · have he : ExecWithin W (classBody L s t) x y
         (selectedTime as bs cs ds s t g + 7) :=
-      (setup.seq (actual.seq advance)).mono (by omega)
-    simpa only [classBody, geq] using he
+        (setup.seq (actual.seq advance)).mono (by omega)
+      simpa only [classBody, geq] using he
+    · have sp := setupSpace.seq (spaces.seq
+        (advance.space_writeFree (by decide) spaces.finish))
+      rw [← geq]
+      exact sp.mono (by omega) le_rfl
 
 private theorem two_le_loopTime {m p : ℕ} (as bs cs ds : List (BitVec m))
     (s t : BitVec m) (j n : ℕ) : 2 ≤ loopTime (p := p) as bs cs ds s t j n := by
@@ -187,6 +207,8 @@ theorem classLoop_exec {W m p j n : ℕ} (hp : p ≤ m)
     (hfit : Fits W (L.D + 4 * 2 ^ m + 8))
     (hload : Fits W (2 * L.q₂ + 2 * 2 ^ p + 4)) :
     ∃ y, ExecWithin W (classLoop L s t) x y (loopTime (p := p) as bs cs ds s t j n) ∧
+      SpaceWithin W (classLoop L s t) x y (loopTime (p := p) as bs cs ds s t j n)
+        (L.D + lifetimeStores (p := p) as bs cs ds s t) ∧
       (y.regs tag ≠ 0 ↔ RangeSolution (p := p) as bs cs ds s t j n) ∧
       (y.regs tag ≠ 0 → eval (witness as bs cs ds y) s = t) ∧
       y.regs classIndex = 2 ^ p ∧ y.regs classLimit = 2 ^ p ∧
@@ -197,7 +219,10 @@ theorem classLoop_exec {W m p j n : ℕ} (hp : p ≤ m)
   | zero =>
     have done : ¬(Cond.lt classIndex classLimit).Holds x := by
       simp only [Cond.holds_lt, hj, hN]; omega
-    refine ⟨x, ExecWithin.loop_exit done, ?_, ?_, by omega, hN,
+    refine ⟨x, ExecWithin.loop_exit done,
+      SpaceWithin.loop_exit done ((x.supportLe_of_zero_tail
+        (fun a ha => hx.2.2.2.2 a ha)).mono
+          (Nat.le_add_right L.D (lifetimeStores (p := p) as bs cs ds s t))), ?_, ?_, by omega, hN,
       fun _ _ => rfl, hx, hr, rfl⟩
     · simp [htag, RangeSolution]; omega
     · simp [htag]
@@ -205,27 +230,35 @@ theorem classLoop_exec {W m p j n : ℕ} (hp : p ≤ m)
     have hjN : j < 2 ^ p := by omega
     have test : (Cond.lt classIndex classLimit).Holds x := by
       simpa only [Cond.holds_lt, hj, hN] using hjN
-    obtain ⟨u, hu, hit, sound, ui, uN, frame, raw, ready, ub⟩ :=
+    obtain ⟨u, hu, space, hit, sound, ui, uN, frame, raw, ready, ub⟩ :=
       classBody_exec hp as bs cs ds s t L x hx hr hj hN hjN hfit hload
     by_cases hh : u.regs tag ≠ 0
     · rw [ite_eq_left hh] at ui
       have exit : ¬(Cond.lt classIndex classLimit).Holds u := by
         simp only [Cond.holds_lt, ui, uN]; omega
       have he := ExecWithin.loop_iter test hu (ExecWithin.loop_exit exit)
-      refine ⟨u, he.mono ?_, ?_, sound, ?_, uN, frame, raw, ready, ub⟩
+      refine ⟨u, he.mono ?_, ?_, ?_, sound, ?_, uN, frame, raw, ready, ub⟩
       · simp only [loopTime]
         have := two_le_loopTime (p := p) as bs cs ds s t (j + 1) n
         omega
+      · apply (SpaceWithin.loop_iter test space
+          (SpaceWithin.loop_exit exit space.finish)).mono
+        · simp only [loopTime]
+          have := two_le_loopTime (p := p) as bs cs ds s t (j + 1) n
+          omega
+        · exact le_rfl
       · rw [range_succ]
         exact ⟨fun _ => Or.inl (hit.mp hh), fun _ => hh⟩
       · exact ui
     · have ui' : u.regs classIndex = j + 1 := by simpa only [hh, ↓reduceIte] using ui
       have miss : u.regs tag = 0 := by omega
-      obtain ⟨y, hy, yh, yw, yi, yN, yf, yr, yt, yb⟩ :=
+      obtain ⟨y, hy, yspace, yh, yw, yi, yN, yf, yr, yt, yb⟩ :=
         ih (j := j + 1) u raw ready ui' uN (by omega) miss
-      refine ⟨y, ?_, ?_, yw, yi, yN, ?_, yr, yt, yb.trans ub⟩
+      refine ⟨y, ?_, ?_, ?_, yw, yi, yN, ?_, yr, yt, yb.trans ub⟩
       · have he := ExecWithin.loop_iter test hu hy
         exact he.mono (by simp only [loopTime]; omega)
+      · exact (SpaceWithin.loop_iter test space yspace).mono
+          (by simp only [loopTime]; omega) le_rfl
       · rw [range_succ]
         have hn : ¬PackedClassSolution as bs cs ds s t (BitVec.ofNat p j) :=
           fun h => hh (hit.mpr h)
@@ -243,6 +276,9 @@ theorem searchLoop_exec {W m p : ℕ} (hp : p ≤ m)
     (hload : Fits W (2 * L.q₂ + 2 * 2 ^ p + 4)) :
     ∃ y, ExecWithin W (searchLoop L s t) x y
         (5 + loopTime (p := p) as bs cs ds s t 0 (2 ^ p)) ∧
+      SpaceWithin W (searchLoop L s t) x y
+        (5 + loopTime (p := p) as bs cs ds s t 0 (2 ^ p))
+        (L.D + lifetimeStores (p := p) as bs cs ds s t) ∧
       (y.regs tag ≠ 0 ↔ ∃ g : BitVec p, PackedClassSolution as bs cs ds s t g) ∧
       (y.regs tag ≠ 0 → eval (witness as bs cs ds y) s = t) ∧
       y.regs classIndex = 2 ^ p ∧ y.regs classLimit = 2 ^ p ∧
@@ -259,7 +295,7 @@ theorem searchLoop_exec {W m p : ℕ} (hp : p ≤ m)
         classIndex ← #0; tag ← #0 ]) x z 5 := by
     ram_eval [z, hpfit, hn, h1, fits_zero W, Nat.shiftLeft_eq, one_mul,
       classLimit, classIndex, tag, bank, Quarter.operand, Fin.mk.injEq]
-  obtain ⟨y, hy, hit, sound, yi, yN, frame, raw, ready, yb⟩ :=
+  obtain ⟨y, hy, space, hit, sound, yi, yN, frame, raw, ready, yb⟩ :=
     classLoop_exec (j := 0) (n := 2 ^ p) hp as bs cs ds s t L z
       (by simpa only [SearchLayout.Raw, z, Data.comap_mem, Data.set_mem] using hx)
       (by simpa +decide [Ready, z, classLimit, classIndex, tag, bank, Quarter.operand,
@@ -267,9 +303,13 @@ theorem searchLoop_exec {W m p : ℕ} (hp : p ≤ m)
       (by simp +decide [z, classLimit, classIndex, tag, bank, Quarter.operand])
       (by simp +decide [z, classLimit, classIndex, tag, bank, Quarter.operand])
       (by omega) (by simp [z]) hfit hload
-  refine ⟨y, setup.seq hy, hit.trans (range_all_iff as bs cs ds s t), sound,
+  refine ⟨y, setup.seq hy, ?_, hit.trans (range_all_iff as bs cs ds s t), sound,
     yi, yN, frame, raw, ready, ?_⟩
-  simpa +decide [z, classLimit, classIndex, tag, bank, Quarter.operand, balance] using yb
+  · have setupSpace := (setup.space_writeFree (of_decide_eq_true rfl)
+      (x.supportLe_of_zero_tail (fun a ha => hx.2.2.2.2 a ha))).mono le_rfl
+        (Nat.le_add_right L.D (lifetimeStores (p := p) as bs cs ds s t))
+    exact setupSpace.seq space
+  · simpa +decide [z, classLimit, classIndex, tag, bank, Quarter.operand, balance] using yb
 
 /-- The complete outer search has fixed compiled instruction count, independent
 of projection width, number of classes, quarter lengths, seeds and layout values. -/

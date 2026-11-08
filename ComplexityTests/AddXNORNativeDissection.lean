@@ -97,6 +97,9 @@ non-self-inverse addition, initially dirty scratch and colliding low keys. -/
 private theorem checked (t : BitVec 3) :
     ∃ y, ExecWithin 16 (dissection layout counters 1#3 t) input y
         (prepareTime 2 4 2 + (5 + loopTime (p := 2) first middle middle middle 1#3 t 0 4)) ∧
+      SpaceWithin 16 (dissection layout counters 1#3 t) input y
+        (prepareTime 2 4 2 + (5 + loopTime (p := 2) first middle middle middle 1#3 t 0 4))
+        (dissectionSpace (p := 2) layout.D first middle middle middle 1#3 t) ∧
       (y.regs tag ≠ 0 ↔
         ∃ g : BitVec 2, PackedClassSolution first middle middle middle 1#3 t g) ∧
       (y.regs tag = 0 ↔
@@ -121,7 +124,7 @@ example : ∃ y, ExecWithin 16 (dissection layout counters 1#3 2#3) input y
       (prepareTime 2 4 2 + (5 + loopTime (p := 2) first middle middle middle 1#3 2#3 0 4)) ∧
     y.regs tag ≠ 0 ∧ eval (witness first middle middle middle y) 1#3 = 2#3 ∧
     y.regs balance = 2 ∧ (∀ a, 320 ≤ a → y.mem a = 0) := by
-  obtain ⟨y, he, hit, _, sound, mu, yr⟩ := checked 2#3
+  obtain ⟨y, he, _, hit, _, sound, mu, yr⟩ := checked 2#3
   have hh : y.regs tag ≠ 0 := hit.mpr ⟨0#2, 4, by decide, 0, by decide, 0, by decide,
     0, by decide, by decide +kernel, by decide +kernel⟩
   exact ⟨y, he, hh, sound hh, mu.trans (by decide +kernel), yr.2.2.2.2⟩

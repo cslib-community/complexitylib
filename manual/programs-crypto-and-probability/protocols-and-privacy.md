@@ -705,10 +705,10 @@ These statements separate counted chain calls, inspected dictionary nodes and
 retained dictionary size. The dictionary is now bound before its consumer fold.
 The native endpoint below now composes projection, both counter directions and
 balance with selected-class construction and fixed-size native all-class search, under
-explicit address-fit hypotheses. This is separate from the functional trie
-implementation here. Word-bit simulation, global allocation and compiled
-peak storage remain unproved. Thus this streaming implementation is functionally certified,
-while the paper's full runtime/space endpoint remains open. The existing
+explicit address-fit hypotheses; `Driver.original_resources` also derives a
+compact layout and simultaneous prefix-space bound. This is separate from the
+functional trie implementation here, which has no native word-bit simulation
+or global allocation certificate. The source bit-model endpoint remains open. The existing
 per-class means still give no bound on expected maximum balance.
 
 Import [AddXNORCounting.lean](../../Complexity/Cryptanalysis/AddXNORCounting.lean)
@@ -1037,15 +1037,76 @@ raw-input endpoint. If an outer state must survive a class call, keep it in the
 reserved high registers; `Code.RegisterParameter` now supports both branches,
 with `preserves_iff` and `size_eq` for frames and compiled size.
 
-`selected_count_le_balance` bounds the multiplicity selected by the actual
-comparison, but it is not a simultaneous compiled-prefix memory bound. Global
-asymptotic time, peak occupied storage in terms of computed balance, derived global
-word/address fit and the source sorted-list multitape bit model remain open.
-This does not complete Lemma 8/Theorem 7 or 733 ALL-main.
+For the global native resource endpoint, import
+`Complexity.Cryptanalysis.AddXNORNativeGlobalResources` and apply
+`Driver.original_resources hp as bs cs ds s t`, where `hp : p ≤ m`.
+The theorem supplies the initialized original input, compact array layout and
+physical word width; no counter, orientation, query, traversal, dictionary,
+completion or desired resource invariant is a premise. Its tag decides the
+ordinary `Solvable ((as ++ bs) ++ (cs ++ ds)) s t` predicate, a miss proves absence,
+and a hit returns an original-chain witness through `Driver.witness`. The actual
+balance register equals `computedBalance`, the maximum of the constructed
+forward/backward count minima.
+
+Write $a,b,c,d$ for the quarter lengths, $q=a+b+c+d$, $N=2^p$,
+$C=100(q+1)$ and $Q=N+2^a+2^b+2^c+2^d$. Put
+$\mu=\max_g\min(F_g,B_g)$ for the actual multiplicity counters and let
+$P=\texttt{prepareTime}\ p\ (a+b)\ (c+d)$. The complete compiled program,
+including halt, takes at most
+$$P+N(CQ+18)+C(2^{a+b}+2^{c+d})+8$$
+native instructions. `insertionCount_eq_forwardCount` and
+`classProbeHits_eq_backwardCount` identify actual indexed records with computed
+counts; conjugacy exchanges these counts in the inverse orientation.
+`sum_forwardCount` and `sum_backwardCount` sum them to the two half-word
+populations, including duplicates. `dissectionTime_le` composes preprocessing,
+construction, both directions, release and all outer loop control.
+
+The compact layout places the dictionary at
+$$D=1+2q+2(b+c)+6N+6(2^a+2^d).$$
+Every continuing prefix of the actual compiled run, including its final state
+before halt, has nonzero memory support at most
+$$D+P+C(Q+\mu).$$
+The theorem includes unread input cells and all surviving counter/projection/quarter
+scratch cells. Add forty words for registers. `Exec.All.prefix` carries the
+structured execution's annotation through native jumps and tests. The probe
+phase is proved write-free; one lifetime's actual stores depend on its retained
+count, which the native comparison bounds by $\mu$. Dictionary release resets
+the zero tail before the next lifetime. The proof reuses this allowance across
+classes; it does not sum historical allocations or replace a maximum by a mean.
+Collisions can shorten the physical dictionary chain without discarding their
+indexed counter multiplicity.
+
+`compactSearchLayout` and `compactCounterLayout` arrange the original arrays
+contiguously, reuse the reversed suffix and place all counter buffers before the
+class workspaces. `quarterInput_raw` establishes every construction premise from
+`Data.init (quarterInput as bs cs ds)`. `globalWidth` is one plus the base-two
+logarithm of `layoutLimit`, which bounds layout addresses, full-state dictionary
+slots, quarter indices and half-word counters. `quarterInput_fits` includes the
+input length header. Every actual read/write address and value fits that width;
+every prefix's cells and registers remain word-bounded. Multiplying the occupied
+cell allowance plus forty by `globalWidth` bounds stored word contents. It is not
+a bit-time simulation or a sparse-memory serialization theorem.
+
+For source quarter lengths $k,k,k,k+r$ and $p≤k$, `globalTime_quarters` bounds the
+block by $1000(4k+r+1)2^{2k+r}$ instructions, with one more for halt.
+`peakCells_quarters` bounds occupied memory by
+$1000(4k+r+1)(2^{k+r}+\mu)$ words. The source split has $r=q-4k$ between zero and
+three; the Lean bounds also admit larger remainders. These are resource components
+of [WangLvShenZhang2027], Lemma 8/Theorem 7, PDF pp. 21–22, for the actual fixed
+native program. Input placement is the RAM convention, and scalar lengths, seeds
+and layout/width values remain program parameters. A header decoder, encoded
+program/immediate-bit accounting, variable-length witness serialization and the
+source sorted-list multitape bit model remain open. Four packed witness words
+already reside in the charged register bank. This does not complete Lemma 8/Theorem 7
+or 733 ALL-main.
 
 From the repository root build
-`lake build Complexity.Cryptanalysis.AddXNORNativeDissection`, then run
-`lake env lean ComplexityTests/AddXNORNativeDissection.lean`.
+`lake build Complexity.Cryptanalysis.AddXNORNativeGlobalResources`, then run
+`lake env lean ComplexityTests/AddXNORNativeGlobalResources.lean`.
+The complete clients include unequal quarters with strict inverse selection and
+non-self-inverse addition, colliding low keys, exhaustive empty-quarter misses,
+zero-width multiplicity collisions, and a concrete bit-capacity bound including
+all forty registers at every prefix.
 The complete client instantiates all raw premises with unequal quarters,
 non-self-inverse addition, dirty scratch and low-key collisions. It checks native
 strict inverse and forward selection, tie/forward zero-width collisions, exhausted
@@ -1069,8 +1130,8 @@ exposes its restored packed word, so outer loops reuse proved register facts.
 
 This older API searches one class and always retains the forward side. The
 `Driver.dissection_exec` endpoint above supplies actual counter-table selection
-and native iteration/release across classes; its global asymptotic time and
-compiled peak-storage theorem remain open. A local miss from the older API is
+and native iteration/release across classes. `Driver.original_resources` supplies
+the composed native time and simultaneous prefix-space theorem. A local miss from the older API is
 not a global no-instance conclusion. The following backward-record consumer
 cannot substitute for the forward retained dictionary.
 
@@ -1124,6 +1185,8 @@ prefix. `probeClass_exec` in `Complexity.Cryptanalysis.AddXNORNativeClassProbe`
 now proves general termination, exact complete-stream hit/miss semantics and
 payload provenance, with a decreasing finite counter and a charged budget.
 `searchClass_exec` above supplies its constructed buckets/dictionary and original
-chain interpretation from raw input. Counter-selected orientation and global
-computed-balance resources remain open. The source sorted-list bit-operation
+chain interpretation from raw input. That older component alone does not supply
+counter-selected orientation or global computed-balance resources;
+`Driver.original_resources` above supplies the native composition. The source
+sorted-list bit-operation
 model remains distinct.

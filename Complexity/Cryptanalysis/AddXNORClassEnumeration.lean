@@ -418,28 +418,30 @@ theorem mem_backClassRecords {m p : ℕ} (hp : p ≤ m)
       rw [he]
       exact hlow
 
+/-- Exact backward multiplicity as a sum over both indexed quarter words. -/
+theorem backClassRecords_length {m p : ℕ} (hp : p ≤ m)
+    (first second : List (BitVec m)) (t : BitVec m) (g : BitVec p) :
+    (backClassRecords first second t g).length =
+      ((operatorWords first.length).map fun xs => ((operatorWords second.length).map fun ys =>
+        if (backward (xs.zip first) (backward (ys.zip second) t)).setWidth p = g
+        then 1 else 0).sum).sum := by
+  simp only [backClassRecords, List.length_flatMap, List.length_map, prepareBack,
+    bucket_bucketIndex, filter_length_eq_sum, backPrefixes, List.map_map, Function.comp_def]
+  congr 1
+  apply List.map_congr_left
+  intro xs _
+  congr 1
+  apply List.map_congr_left
+  intro ys _
+  simp only [beq_iff_eq, back_bucket_test hp, emitBack]
+
 /-- Exact backward cardinality agrees with inverse counter preprocessing. -/
 theorem backClassRecords_length_eq_count {m p a b : ℕ} (hp : p ≤ m)
     (first : Fin a → BitVec m) (second : Fin b → BitVec m)
     (t : BitVec m) (g : BitVec p) :
     (backClassRecords (List.ofFn first) (List.ofFn second) t g).length =
       backwardClassCount p (Fin.append first second) t g := by
-  have hlen : (backClassRecords (List.ofFn first) (List.ofFn second) t g).length =
-      ((operatorWords a).map fun xs => ((operatorWords b).map fun ys =>
-        if (backward (xs.zip (List.ofFn first))
-          (backward (ys.zip (List.ofFn second)) t)).setWidth p = g
-        then 1 else 0).sum).sum := by
-    simp only [backClassRecords, List.length_flatMap, List.length_map, prepareBack,
-      bucket_bucketIndex, filter_length_eq_sum, backPrefixes, List.map_map, Function.comp_def,
-      List.length_ofFn]
-    congr 1
-    apply List.map_congr_left
-    intro xs _
-    congr 1
-    apply List.map_congr_left
-    intro ys _
-    simp only [beq_iff_eq, back_bucket_test hp, emitBack]
-  rw [hlen]
+  rw [backClassRecords_length hp, List.length_ofFn, List.length_ofFn]
   simp only [WordTable.sum_operatorWords, WordTable.steps_zip]
   unfold backwardClassCount
   rw [← Fintype.sum_bijective _ (append_bijective a b)

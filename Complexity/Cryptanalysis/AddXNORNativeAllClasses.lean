@@ -96,7 +96,7 @@ theorem searchClasses_exec {W m p : ℕ} (hp : p ≤ m)
         using hr
     · simp +decide [y, tag, bank, Quarter.operand, balance]
   | succ n ih =>
-    obtain ⟨u, hu, hit, sound, _, frame, raw, ready, ub⟩ :=
+    obtain ⟨u, hu, _, hit, sound, _, frame, raw, ready, ub⟩ :=
       selectedClass_exec hp as bs cs ds s t (BitVec.ofNat p j) L x hx hr hfit hload
     by_cases hh : u.regs tag ≠ 0
     · have keep : ExecWithin (B := .standard) W (ram[ tag ← tag ]) u u 1 := by

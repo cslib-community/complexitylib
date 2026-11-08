@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
+public import Complexity.Computability.WordRAM.TraceParameters
 public import Complexity.Cryptanalysis.AddXNORNativeClassPrepare
 public import Complexity.Cryptanalysis.AddXNORNativeQuarterProjection
 import all Complexity.Computability.WordRAM.Structured
@@ -107,6 +108,16 @@ precomputed correct bucket/query is an input: both middle words are loop counter
     (.seq (prepareClassBuckets b n₁ b₄ n₄ M s t h f h₄ f₄ N)
       (searchPreparedClass c n₂ b₃ n₃ q₂ q₃ M N g h h₄ D))
 
+/-- Stores charged to one search. The entire opposite-class streaming phase
+is write-free, so its potentially much larger duration is absent. -/
+def searchStores {m p : ℕ} (as bs cs ds : List (BitVec m))
+    (s : BitVec m) (g : BitVec p) : ℕ :=
+  ((10 * bs.length + 8) + (10 * cs.length + 8)) +
+    ((7 + (4 * 2 ^ p + 2 ^ as.length * (11 * as.length + 22) + 10) +
+      (7 + (4 * 2 ^ p + 2 ^ ds.length * (18 * ds.length + 37) + 10))) +
+      (8 + ((5 + classRetainTime bs g (fun k => Forward.records as s p k.toNat)
+        0 (2 ^ bs.length)) + (8 + (2 + 0)))))
+
 /-- General original-array class decision, witness soundness, derived dictionary
 validity and finite native time. Every premise is about raw inputs, layout or
 word capacity; no traversal, termination or semantic dictionary is assumed. -/
@@ -138,6 +149,15 @@ theorem searchClass_exec {W m p b c b₃ b₄ q₂ q₃ h f h₄ f₄ D : ℕ}
             (7 + (4 * 2 ^ p + 2 ^ ds.length * (18 * ds.length + 37) + 10))) +
             (8 + ((5 + classRetainTime bs g fs 0 (2 ^ bs.length)) +
               (8 + (2 + (4 + classProbeTime cs g rs 0 (2 ^ cs.length)))))))) ∧
+      StoresWithin W
+        (searchClass b as.length c bs.length b₃ cs.length b₄ ds.length q₂ q₃
+          (2 ^ m) (2 ^ p) s.toNat t.toNat g.toNat h f h₄ f₄ D) x y
+        (((10 * bs.length + 8) + (10 * cs.length + 8)) +
+          ((7 + (4 * 2 ^ p + 2 ^ as.length * (11 * as.length + 22) + 10) +
+            (7 + (4 * 2 ^ p + 2 ^ ds.length * (18 * ds.length + 37) + 10))) +
+            (8 + ((5 + classRetainTime bs g fs 0 (2 ^ bs.length)) +
+              (8 + (2 + (4 + classProbeTime cs g rs 0 (2 ^ cs.length))))))))
+        (searchStores as bs cs ds s g) ∧
       (y.regs operand ≠ 0 ↔ PackedClassSolution as bs cs ds s t g) ∧
       (y.regs operand = 0 ↔ ¬PackedClassSolution as bs cs ds s t g) ∧
       (y.regs operand ≠ 0 →
@@ -259,7 +279,9 @@ theorem searchClass_exec {W m p b c b₃ b₄ q₂ q₃ h f h₄ f₄ D : ℕ}
     exact nativeClassHit_iff hp as bs cs ds s t g D r.mem
       (fun q => empty _ (by simp only [Dictionary.slot]; omega))
   refine ⟨y, hz.seq (hu.seq (layout.seq (hv.seq (layout₃.seq (limit.seq hy))))),
-    tag, ?_, ?_, ?_, keys, ?_, vlen, ?_, ?_, ?_, ?_⟩
+    ?_, tag, ?_, ?_, ?_, keys, ?_, vlen, ?_, ?_, ?_, ?_⟩
+  · exact hz.stores.seq (hu.stores.seq (layout.stores.seq (hv.stores.seq
+      (layout₃.stores.seq (limit.stores.seq (hy.withoutStores (by decide)))))))
   · constructor
     · intro hz hs; exact (tag.mpr hs) hz
     · intro hn; by_contra hz; exact hn (tag.mp hz)
