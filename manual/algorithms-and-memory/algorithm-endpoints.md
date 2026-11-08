@@ -272,6 +272,21 @@ Limitations:
 
 [#3320](https://github.com/cslib-community/complexitylib/issues/3320) tracks the remaining work.
 
+## Maximum flow: generic push–relabel
+
+Import `Complexity.Algorithms.Lean.MaxFlow.Preflow` ([Complexity/Algorithms/Lean/MaxFlow/Preflow.lean](../../Complexity/Algorithms/Lean/MaxFlow/Preflow.lean)) for the objects of the push–relabel method of [Goldberg and Tarjan][goldbergtarjan88], following [CLRS, Section 26.4][clrs09], on the integral networks of `MaxFlow.Basic`. Antiparallel arcs are allowed. `Network.Preflow` bounds arc flows by the capacities and requires inflow at least outflow at every vertex other than `s`. `Preflow.IsValidLabeling f h` says `h s = |V|`, `h t = 0` and `h u ≤ h v + 1` on every residual arc. `Preflow.push` and `Preflow.relabel` have the preconditions `CanPush` and `CanRelabel`. `IsValidLabeling.push` and `.relabel` keep labelings valid (Lemma 26.16). `exists_canPush_or_canRelabel` shows that an active vertex admits one of the two operations (Lemma 26.14). `not_resReachable` rules out a residual `s`–`t` path (Lemma 26.17). `resReachable_source_of_excess_pos` gives every vertex with positive excess a residual path back to `s` (Lemma 26.19), and `le_of_excess_pos` bounds its height by `2|V| - 1` (Lemma 26.20). With no active vertex, `isMaxFlow_toFlow` shows the preflow is a maximum flow (Theorem 26.18). `isMinCut_gapCut` shows that the vertices above the least empty height level form a minimum cut of the same value. This gap cut is read off from the heights alone.
+
+`Complexity.Algorithms.Lean.MaxFlow.PushRelabel` ([Complexity/Algorithms/Lean/MaxFlow/PushRelabel.lean](../../Complexity/Algorithms/Lean/MaxFlow/PushRelabel.lean)) states the operation bounds for every run of the generic algorithm. A run is a list of operations, each admissible in the state it is applied to (`PushRelabel.State.IsRun`), so the bounds hold for every selection rule. For `s ≠ t`, a run from `PushRelabel.init N` has:
+
+- at most `(|V| - 2)(2|V| - 1) < 2|V|²` relabels (`numRelabels_le`, `numRelabels_lt`; Corollary 26.21);
+- at most `|V|` saturating pushes per arc pair of `N.symArcs`, so at most `2|V||E|` (`numSatPushes_le`, `numSatPushes_le_posArcs`; Lemma 26.22, where `E = N.posArcs`);
+- fewer than `4|V|²(|V| + |E|)` nonsaturating pushes (`numNonsatPushes_le`, `numNonsatPushes_lt_posArcs`; Lemma 26.23), by the potential `Σ_{v active} h v`;
+- at most `maxOps N = O(|V|² |E|)` operations in total (`length_le`; the operation count of Theorem 26.24).
+
+`pushRelabelWith N vs norm` scans the vertex list `vs` for the first active vertex and pushes along its first admissible arc, or relabels it. `pushRelabelWith_correct` shows that it performs a run of at most `maxOps N` operations and returns a maximum flow and a minimum cut of equal value. `pushRelabel` on `Fin n` tabulates the state after every operation, so the kernel can evaluate it. The [checked client](../../ComplexityTests/PushRelabel.lean) runs it with `decide +kernel` on the CLRS six-vertex network (value `23`, `29` operations) and on edge cases: antiparallel arcs, an unreachable sink, a single arc `s → t`, and `s = t`.
+
+Limitations: the bounds count operations and do not charge the selection of an operation, so there is no `TimeM` running-time bound. The FIFO, relabel-to-front and highest-label rules, the gap and global-relabelling heuristics and dynamic trees are not formalized ([#3373](https://github.com/cslib-community/complexitylib/issues/3373)).
+
 ## Bipartite matching and Hopcroft–Karp
 
 Import `Complexity.Algorithms.Lean.MaxFlow.HopcroftKarp` ([Complexity/Algorithms/Lean/MaxFlow/HopcroftKarp.lean](../../Complexity/Algorithms/Lean/MaxFlow/HopcroftKarp.lean)). It is a native `TimeM ℕ` program, not a RAM-model program. It takes `G : Fin m × Fin r → Bool` and candidate neighbour lists `adj` with `BipAdjValid G adj` (every edge of `G` occurs in `adj`; extra candidates only cost time). `hopcroftKarpM_correct` gives a maximum matching (`IsMaxMatching`), a minimum König cover (`IsMinVertexCover`), equal sizes, and at most `2 * Nat.sqrt ν` augmenting phases, where `ν` is the maximum matching size. `hopcroftKarpM_time_le` bounds the charged steps by `(2 * Nat.sqrt ν + 1) * (7 * m + 3 * r + 1 + 4 * bipAdjSteps adj) + m + 3 * r`. Ticks are charged per entry of each allocated table (mate, matched-left, layer and visited tables), per mate entry scanned to mark matched left vertices, per left vertex examined when seeding BFS layer `0`, per expanded BFS layer, per frontier left vertex and candidate edge inspected by the BFS, per DFS root and candidate edge scanned by the DFS, per rematched right vertex, and per step of the final matching and cover extraction. Vector reads and writes, list cons, `Finset` insertion, `ℕ`/`Option` comparisons and edge queries `G (u, v)` are free primitives inside those charged steps, as in the Edmonds–Karp solver (the module docstring's "Cost model and limitations" gives the per-phase breakdown). Converting the input into `adj` is not charged. `hopcroftKarpDenseM` uses every pair as a candidate, giving `O(m r √(min m r))`. The [checked client](../../ComplexityTests/HopcroftKarp.lean) builds `adj` for small graphs, discharges `BipAdjValid` by `decide`, evaluates complete runs, and applies `hopcroftKarpM_correct` and `hopcroftKarpDenseM_time_le`.
@@ -1067,6 +1082,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [floyd62]: ../sources.md#floyd62
 [freivalds79]: ../sources.md#freivalds79
 [goemanswilliamson95]: ../sources.md#goemanswilliamson95
+[goldbergtarjan88]: ../sources.md#goldbergtarjan88
 [gomoryhu61]: ../sources.md#gomoryhu61
 [gusfield90]: ../sources.md#gusfield90
 [hierholzer73]: ../sources.md#hierholzer73
