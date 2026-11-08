@@ -228,7 +228,8 @@ private theorem prepared_memory
   · rfl
   · split <;> rfl
 
-private theorem phase_invariant
+/-- Actual selected/dispatch interface ticks preserve source feasibility and joint meters. -/
+theorem phase_invariant
     (phase next : Phase k Control Unit (ServerState n Private) input)
     (hi : Invariant limits (worldOf phase).memory)
     (hn : next ∈ (phaseStep machine (environment limits sample) phase).support) :

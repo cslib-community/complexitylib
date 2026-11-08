@@ -1272,17 +1272,90 @@ packet-writing PTM actually constructs and submits the two-call packet and retai
 the same report, hidden bit and resource law, even though it copies no reply bits
 onto its output tape. It is not the source's native upper selector.
 
-This adapter supports a fixed finite opportunity index and discrete joint PMF laws.
-Physical nonnegative real clocks and monotone token trajectories are external handler
-semantics, not a compiled real-time timer or a verified oracle implementation.
-The finite table transfer is batch-local: a latent scenario label is not automatically
-visible to the machine, and no sufficient finite abstraction of unbounded response,
-usage or private metadata is assumed. A whole-policy quantitative transfer with
-fixed-oracle conditional consistency and epoch envelopes for every admitted native
-competitor remains open. Uniform native upper selectors, source subinstance/role and
-external PTM encodings, canonical residual recovery, general measurable/nonatomic
-responses and exact local-termination conventions also remain open. Divergent-path
-accrued resources require separate semantics from terminal bills.
+### Whole-policy native traces and quantitative kernels
+
+Import `Complexity.Computability.Probabilistic.NativeBatch.Quantitative`. The
+[complete two-batch native client](../../ComplexityTests/NativeBatchPolicy.lean) and
+[unbounded metadata/divergence client](../../ComplexityTests/NativeBatchMetadata.lean)
+use actual finite-control native code and the fixed concurrent handler. They do
+not construct a finite `FiniteProfile` as a substitute for the native policy.
+
+`NativeBatch.Trace.State` retains the actual optional native phase and every
+source-epoch receipt. An issued batch appends its actual `Exchange`; halt or silent
+divergence appends `none`. This record is not a zero-cost replacement for an earlier
+bill: the previous receipt list persists. `seek_state` proves that silent native
+computation and rejected requests leave the accepted oracle state unchanged.
+`law_hidden`, `law_resume` and `law_valid` derive actual hidden-law correspondence,
+finite-prefix resumption, ledger agreement and source/native invariants.
+`law_ledger_bound` retains turn/deadline/nonreuse bounds even on divergent prefixes.
+
+`law_done` uses the concrete turn guard: a still-live returned epoch world must
+already have issued at least its epoch index's number of batches, so after
+`limits.turns + 1` epochs the outcome is halted or divergent. No common native
+instruction clock or almost-sure local termination is assumed. `law_terminal` and
+`law_native_terminal` identify this whole-policy readback with the complete original
+native terminal law. `terminal_resources` gives the identical bill and physical
+duration on every terminating path from an empty accepted history.
+`terminal_provenance` transfers the original successful-output-only SelectionOnly
+admission through the concrete candidate codec. These are proved connections, not
+representation premises. `step_done` cannot issue another batch or erase receipts.
+
+`NativeBatch.Quantitative.select` executes silent native code and holds the entire
+selected source batch. `Observation` retains its full receipt history and source
+signal. `conditional` conditions the actual hidden checkpoint and then dispatches
+the same oracle response; null observations use harmless completion.
+`selection_factor` recovers the actual whole-policy transition. Positive conditional
+support stays on the actual observation fiber, and `conditional_issued` proves one
+issued batch for a query signal and zero for halt/divergence. The hidden tapes,
+private oracle memory and auxiliary response/usage metadata need no finite alphabet.
+
+`expected_accrued` proves that expected summed receipt resources equal the sum of
+those selected-before-response conditional expectations. Expectations take values
+in nonnegative extended reals, so unbounded or infinite expectations require no
+integrability premise. `conditional_comparison` transfers supported local resource
+comparisons. In particular, `cost_lower` and `cost_upper` derive
+$c\,\mathbb E[T] \le \mathbb E[\mathrm{bill}]$ and
+$\mathbb E[\mathrm{bill}] \le c\,\mathbb E[T]$ from the corresponding conditional
+cost envelopes on positive-mass selected batches. `cost_upper_budget` derives
+finite expected bill at most the finite conditional envelope times the actual source
+turn budget, without counting the extra halting decision. It does not assume
+integrability or a bounded total invoice. `complete_expected_step` checks
+that another no-call decision after the full budget changes no such resource.
+
+For universal accounting, use `Trace.startWorld` with a fixed oracle seed.
+`universal_cost_lower` fixes `limits`, `sample` and that seed before quantifying
+over native machines and inputs satisfying the original SelectionOnly admission.
+It covers finite-control binary-tape competitors without needing finiteness in
+the resource proof. The same hidden-state oracle is used across all
+histories and competitors; different actual posteriors do not change that oracle.
+Each competitor requires only its own reached conditional cost envelope; the API
+does not demand envelopes on additional machines or null histories. No total
+cost lower bound, finite sufficient abstraction or law equality is assumed.
+`conditional_of_response_bound` is an optional sufficient rule for concrete oracles;
+it does not strengthen the transfer theorem to require pointwise hidden-state bounds.
+
+The native client actually writes both nonempty packets, retains a correlated bit
+across two batches and performs local halting. Its complete law has three decisions,
+two issued batches, expected bill $13$ and latency $8$. Conditional bill envelopes
+$3$ and $11$ are proved for every reached selected-history signal and yield the
+whole-policy comparisons. The metadata client samples a geometric natural number,
+shares it across calls and retains it for later batches. Every invoice scale has
+positive mass; no finite alphabet can losslessly preserve its invoice observations.
+It proves a per-issued expected cost lower envelope $1$ for every admitted native
+competitor against that fixed oracle. A genuine silent-loop suffix preserves an
+already charged first receipt rather than turning its previous bill into zero.
+
+This is a whole-policy discrete native resource transfer, not unrestricted source
+Theorems 5/6. The source completion/revealed-progress/binomial/deadline comparisons,
+success-level lower cost and native optimum/envelope ratio still need generalized
+applications. Uniform native upper selectors with local certification/source stopping,
+source WSC subinstance/role and residual-label codecs, and external PTM encodings
+remain open. A latent scenario is never assumed publicly visible. Fixed finite call
+opportunities and external nonnegative real clocks remain interface conventions;
+compiled physical timers and general measurable/nonatomic laws are not established.
+The trace preserves divergent mass and its earlier receipts, but equality with a
+cofinal infinite-instruction path-cost law and real integrability are separate
+obligations. Divergence has no native terminal-world bill.
 
 Theorem 4's native resource/asymptotic/hardness gaps remain. Neither unrestricted
 Theorems 5/6 nor ALL-main is complete. No selected abstract model or statement

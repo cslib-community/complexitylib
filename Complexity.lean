@@ -2607,6 +2607,8 @@ public import Complexity.Computability.Probabilistic.Finite
 public import Complexity.Computability.Probabilistic.LinearHash
 public import Complexity.Computability.Probabilistic.Memoize
 public import Complexity.Computability.Probabilistic.NativeBatch
+public import Complexity.Computability.Probabilistic.NativeBatch.Quantitative
+public import Complexity.Computability.Probabilistic.NativeBatch.Trace
 public import Complexity.Computability.Probabilistic.NativeEpoch
 public import Complexity.Computability.Probabilistic.NativeInterface
 public import Complexity.Computability.Probabilistic.NativeOneTurn
@@ -4326,6 +4328,7 @@ public import Complexity.Probability.Minimax
 public import Complexity.Probability.PMF
 public import Complexity.Probability.PMF.Bind
 public import Complexity.Probability.PMF.Disintegration
+public import Complexity.Probability.PMF.Disintegration.Support
 public import Complexity.Probability.PMF.Event
 public import Complexity.Probability.PMF.Expect
 public import Complexity.Probability.PMF.Map

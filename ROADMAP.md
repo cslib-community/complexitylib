@@ -150,11 +150,26 @@ deadline cancellation, reuse and zero-budget rejection; an actual native packet-
 PTM derives the two-call memory/resource law. A constructed finite joint trajectory
 table instantiates the quantitative oracle at one reached physical snapshot. This
 batch-local transfer is not a compiler from arbitrary native policies into finite
-tables. Fixed-oracle conditional consistency and quantitative epoch envelopes for
-every admitted native competitor, source subinstance/role codecs, a sufficient finite
-record abstraction (or generalized quantitative kernels), and native upper selectors
-remain open, as do nonterminating-path resource semantics, general measurable laws,
-external PTM/source encodings, residual-label recovery and native upper realization.
+tables. Whole-policy native traces now avoid that finite abstraction: actual silent
+source epochs retain accrued receipts on divergence, preserve native/source meters
+and SelectionOnly provenance, and terminate or diverge after at most the finite
+turn budget plus one epoch. Their complete readback equals the original unbounded
+native terminal law. General discrete selected-history kernels derive resource
+accounting and lower/upper conditional-cost comparisons for arbitrary native metadata;
+a finite conditional upper envelope gives finite expected bill bounded by that envelope
+times the actual source turn budget.
+The universal cost theorem fixes one oracle and seed before quantifying over every
+finite-control admitted native competitor. A real two-batch packet-writing PTM has
+issued count two, expected bill 13 and latency 8. A geometric-metadata client proves
+unbounded positive-mass invoices, excludes a lossless finite invoice alphabet, and
+discharges a nonzero universal per-issued cost envelope for every native competitor.
+This does not transfer the source completion/revealed-progress/binomial/deadline
+bounds, the full success-level lower comparison or native optimum/envelope ratio.
+Those generalized quantitative applications, native uniform upper selectors and local
+certification, source subinstance/role/residual/external-machine encodings and exact
+source stopping conventions remain open. The retained divergent-prefix ledger is
+not yet a cofinal infinite-instruction path-cost or real-integrability theorem;
+general measurable/nonatomic laws and compiled physical-clock semantics remain open.
 Unrestricted Theorems 5/6 and ALL-main remain incomplete.
 Theorem 4's native resource/asymptotic/hardness claims also remain open. Neither the
 policy LP nor the binary-input two-batch savings FPTAS supplies those missing claims.
