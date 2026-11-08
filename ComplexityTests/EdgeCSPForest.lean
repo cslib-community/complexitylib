@@ -18,6 +18,25 @@ namespace ComplexityTests.EdgeCSPForest
 open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Logic.PL.CSP.Forest
 open Cslib.Logic.PL.CSP.DAG
 
+-- Equality depends on positional ports, not equality of relation symbols or variable names.
+private abbrev opaqueNames : CSP (ℕ → Bool) (ℕ → Bool) :=
+  [(fun _ => false, [fun _ => false, fun _ => true])]
+private abbrev opaquePort (j : Fin 2) : opaqueNames.Occurrence := ⟨0, j⟩
+
+example : (⟨opaquePort 0, [opaquePort 1]⟩ : Expansion opaqueNames) =
+    ⟨opaquePort 0, [opaquePort 1]⟩ := by decide
+example : (⟨opaquePort 0, []⟩ : Expansion opaqueNames) ≠ ⟨opaquePort 1, []⟩ := by decide
+example : (ScanResult.continued [opaquePort 0]) ≠
+    ScanResult.meeting [] (opaquePort 1) := by decide
+
+private abbrev opaqueRelations : CSP (ℕ → Bool) ℕ := [(fun _ => false, [0, 1])]
+private abbrev opaqueRelationPort (j : Fin 2) : opaqueRelations.Occurrence := ⟨0, j⟩
+private abbrev opaqueMeeting : Meeting opaqueRelations :=
+  ⟨[0], [], ⟨opaqueRelationPort 0, []⟩, opaqueRelationPort 1⟩
+
+example : opaqueMeeting = opaqueMeeting := by decide
+example : Result.augment opaqueMeeting ≠ Result.blossom opaqueMeeting := by decide
+
 private def binarySem (odd : Bool) : List Bool → Bool
   | [a, b] => if odd then a != b else a == b
   | _ => false
