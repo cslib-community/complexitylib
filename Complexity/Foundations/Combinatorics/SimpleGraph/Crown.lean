@@ -40,18 +40,17 @@ maximum matching `M`, of at most `k` edges. The unmatched vertices form an indep
 of more than `k` vertices. By Hall's theorem, either `I` matches into its neighbourhood, a
 matching of more than `k` edges, or some `S ⊆ I` has fewer neighbours than vertices; a subset
 of `I` of maximum surplus `|Y| - |N(Y)|` is then a crown (`SimpleGraph.exists_isCrown_of_card_lt`).
-Hall's theorem takes the place of Kőnig's theorem used in [CyganEtAl2015, Section 2.3].
+Hall's theorem takes the place of Kőnig's theorem in the usual textbook argument.
 
 *Kernel.* A crown with the largest `C ∪ H` leaves a residual graph without nonempty crowns
 (`SimpleGraph.exists_isCrown_forall_isCrown_eq_empty`). Applying the crown lemma to that residual
 gives the `3k` kernel (`SimpleGraph.exists_isMatchingInto_or_exists_isCrown_card_compl_le`): a
 matching of more than `k` edges, or a crown with `|H| ≤ k` whose residual has at most
-`3 (k - |H|)` vertices. Packaged as instance and target, a vertex cover of at most `k ≥ 1`
-vertices exists exactly when the induced graph on some set of at most `3k` vertices has one of at
-most `k' ≤ k` vertices (`SimpleGraph.exists_card_le_three_mul_vertexCoverNum_le_iff`).
+`3 (k - |H|)` vertices. By the reduction rule, `(G - (C ∪ H), k - |H|)` is then an equivalent
+instance with at most `3 (k - |H|)` vertices.
 
 A graph without nonempty crowns has at most `2 |S|` vertices for every vertex cover `S`
-(`SimpleGraph.card_le_two_mul_card_of_isVertexCover`), since the complement of `S` is an
+(`SimpleGraph.card_le_two_mul_card_of_forall_isCrown_eq_empty`), since the complement of `S` is an
 independent set at least as large as its neighbourhood. Hence a single crown leaves a residual
 of at most `2 (k - |H|)` vertices for every `k ≥ τ(G)`
 (`SimpleGraph.exists_isCrown_forall_card_compl_le`). This matches the `2k` size of the LP-based
@@ -76,9 +75,8 @@ needs a polynomial-time maximum matching or Kőnig cover in the machine model.
   reduction rule.
 * `SimpleGraph.exists_isMatchingInto_or_exists_isCrown`,
   `SimpleGraph.exists_isMatchingInto_or_exists_isCrown_of_forall_exists_adj`: the crown lemma.
-* `SimpleGraph.exists_isMatchingInto_or_exists_isCrown_card_compl_le`,
-  `SimpleGraph.exists_card_le_three_mul_vertexCoverNum_le_iff`: the `3k` kernel.
-* `SimpleGraph.card_le_two_mul_card_of_isVertexCover`,
+* `SimpleGraph.exists_isMatchingInto_or_exists_isCrown_card_compl_le`: the `3k` kernel.
+* `SimpleGraph.card_le_two_mul_card_of_forall_isCrown_eq_empty`,
   `SimpleGraph.exists_isCrown_forall_card_compl_le`: the `2k` bound for crown-free residuals.
 
 ## References
@@ -98,7 +96,9 @@ namespace SimpleGraph
 variable {V : Type*} {G : SimpleGraph V}
 
 /-- `m` matches `A` into `B` in `G`: it sends the vertices of `A` to distinct neighbours in `B`.
-The matching edges are `{a, m a}` for `a ∈ A`. -/
+When `A` and `B` are disjoint, as in every result below that counts edges, the edges `{a, m a}` for
+`a ∈ A` form a matching of `|A|` edges (`SimpleGraph.IsMatchingInto.exists_isMatching`); without
+disjointness two of them may coincide. -/
 structure IsMatchingInto (G : SimpleGraph V) (A B : Finset V) (m : V → V) : Prop where
   /-- Every vertex of `A` is matched into `B`. -/
   mapsTo : ∀ a ∈ A, m a ∈ B
@@ -495,7 +495,7 @@ theorem exists_isCrown_forall_isCrown_eq_empty [Finite V] :
 
 /-- A graph whose crowns are all empty has at most `2 |S|` vertices for every vertex cover `S`:
 otherwise the independent set `Sᶜ` has fewer neighbours than vertices. -/
-theorem card_le_two_mul_card_of_isVertexCover (hfree : ∀ C H, G.IsCrown C H → C = ∅)
+theorem card_le_two_mul_card_of_forall_isCrown_eq_empty (hfree : ∀ C H, G.IsCrown C H → C = ∅)
     {S : Finset V} (hS : G.IsVertexCover S) : Fintype.card V ≤ 2 * S.card := by
   classical
   have hind : G.IsIndepSet (Sᶜ : Finset V) := by
@@ -518,8 +518,9 @@ private theorem card_compl_union_eq [DecidableEq V] (C H : Finset V)
   rw [← Nat.card_eq_fintype_card, Nat.card_coe_set_eq, ← Finset.coe_union, ← Finset.coe_compl,
     Set.ncard_coe_finset]
 
-/-- **Crown lemma** [CyganEtAl2015, Section 2.3]: a graph with more than `3k` vertices has a
-matching of more than `k` edges or a crown with `C` nonempty. -/
+/-- **Crown lemma**, existence form of a variant of [CyganEtAl2015, Section 2.3]: a graph with
+more than `3k` vertices has a matching of more than `k` edges or a crown with `C` nonempty.
+Isolated vertices are allowed, and `H` may be empty. -/
 theorem exists_isMatchingInto_or_exists_isCrown {k : ℕ} (hk : 3 * k < Fintype.card V) :
     (∃ A B m, Disjoint A B ∧ G.IsMatchingInto A B m ∧ k < A.card) ∨
       ∃ C H, C.Nonempty ∧ G.IsCrown C H := by
@@ -595,9 +596,9 @@ theorem exists_isMatchingInto_or_exists_isCrown {k : ℕ} (hk : 3 * k < Fintype.
     obtain ⟨C, H, -, hC, hCH⟩ := G.exists_isCrown_of_card_lt (hIind.mono hSI) hS
     exact ⟨C, H, hC, hCH⟩
 
-/-- **Crown lemma** in the form of [CyganEtAl2015, Section 2.3]: a graph without isolated vertices
-and with more than `3k` vertices has a matching of more than `k` edges or a crown with `C` and `H`
-nonempty. -/
+/-- **Crown lemma** [CyganEtAl2015, Section 2.3], existence form: a graph without isolated
+vertices and with more than `3k` vertices has a matching of more than `k` edges or a crown with `C`
+and `H` nonempty. The cited lemma also finds one of them in polynomial time; this one does not. -/
 theorem exists_isMatchingInto_or_exists_isCrown_of_forall_exists_adj
     (hadj : ∀ v, ∃ w, G.Adj v w) {k : ℕ} (hk : 3 * k < Fintype.card V) :
     (∃ A B m, Disjoint A B ∧ G.IsMatchingInto A B m ∧ k < A.card) ∨
@@ -606,9 +607,11 @@ theorem exists_isMatchingInto_or_exists_isCrown_of_forall_exists_adj
   · exact Or.inl h
   · exact Or.inr ⟨C, H, hC, hCH.head_nonempty hC fun c _ => hadj c, hCH⟩
 
-/-- **The `3k` kernel for vertex cover** [CyganEtAl2015, Section 2.3]: `G` has a matching of more
-than `k` edges, so no vertex cover of at most `k` vertices, or a crown `(C, H)` with `|H| ≤ k`
-whose residual graph `G - (C ∪ H)` has at most `3 (k - |H|)` vertices. -/
+/-- **The `3k` kernel for vertex cover** [CyganEtAl2015, Section 2.3], existence form: `G` has a
+matching of more than `k` edges, so no vertex cover of at most `k` vertices, or a crown `(C, H)`
+with `|H| ≤ k` whose residual graph `G - (C ∪ H)` has at most `3 (k - |H|)` vertices. By
+`SimpleGraph.IsCrown.vertexCoverNum_le_iff`, `(G - (C ∪ H), k - |H|)` is then an equivalent
+instance. The crown is not constructed in polynomial time. -/
 theorem exists_isMatchingInto_or_exists_isCrown_card_compl_le [DecidableEq V] (k : ℕ) :
     (∃ A B m, Disjoint A B ∧ G.IsMatchingInto A B m ∧ k < A.card) ∨
       ∃ C H, G.IsCrown C H ∧ H.card ≤ k ∧ (C ∪ H)ᶜ.card ≤ 3 * (k - H.card) := by
@@ -641,31 +644,6 @@ theorem exists_isMatchingInto_or_exists_isCrown_card_compl_le [DecidableEq V] (k
       omega
   · exact absurd (hfree C' H' hCH') hC'.ne_empty
 
-omit [Fintype V] in
-/-- **Kernel form of the `3k` bound**: for `k ≥ 1`, `G` has a vertex cover of at most `k` vertices
-exactly when the induced graph on some set `R` of at most `3k` vertices has one of at most
-`k' ≤ k` vertices. `R` is the residual of a crown, or an edge with `k' = 0` when `G` has a
-matching of more than `k` edges. -/
-theorem exists_card_le_three_mul_vertexCoverNum_le_iff [Finite V] {k : ℕ} (hk : 0 < k) :
-    ∃ (R : Finset V) (k' : ℕ), k' ≤ k ∧ R.card ≤ 3 * k ∧
-      (G.vertexCoverNum ≤ k ↔ (G.induce (R : Set V)).vertexCoverNum ≤ k') := by
-  classical
-  cases nonempty_fintype V
-  rcases G.exists_isMatchingInto_or_exists_isCrown_card_compl_le k with
-    ⟨A, B, m, hAB, hm, hkA⟩ | ⟨C, H, hCH, hHk, hR⟩
-  · obtain ⟨a, ha⟩ := Finset.card_pos.1 (by omega : 0 < A.card)
-    refine ⟨{a, m a}, 0, Nat.zero_le _, Finset.card_le_two.trans (by omega), ?_⟩
-    have hlt : (k : ℕ∞) < G.vertexCoverNum :=
-      (Nat.cast_lt.2 hkA).trans_le (hm.card_le_vertexCoverNum hAB)
-    refine iff_of_false (not_le.2 hlt) fun h0 => ?_
-    rw [Nat.cast_zero, nonpos_iff_eq_zero, vertexCoverNum_eq_zero] at h0
-    have hadj : (G.induce (({a, m a} : Finset V) : Set V)).Adj ⟨a, by simp⟩ ⟨m a, by simp⟩ :=
-      hm.adj a ha
-    rw [h0] at hadj
-    exact hadj
-  · refine ⟨(C ∪ H)ᶜ, k - H.card, Nat.sub_le _ _, hR.trans (by omega), ?_⟩
-    rw [Finset.coe_compl, Finset.coe_union, hCH.vertexCoverNum_le_iff, and_iff_right hHk]
-
 /-- **The `2k` bound**: some crown `(C, H)` leaves a residual graph `G - (C ∪ H)` of at most
 `2 (k - |H|)` vertices for every `k` with `τ(G) ≤ k`, the size of the Nemhauser–Trotter
 kernel. -/
@@ -678,7 +656,7 @@ theorem exists_isCrown_forall_card_compl_le [DecidableEq V] :
   obtain ⟨hHk, hk'⟩ := hCH.vertexCoverNum_le_iff.1 hk
   refine ⟨hHk, ?_⟩
   obtain ⟨S, hS, hScov⟩ := (G.induce (↑C ∪ ↑H : Set V)ᶜ).vertexCoverNum_exists
-  have h₂ := (G.induce (↑C ∪ ↑H : Set V)ᶜ).card_le_two_mul_card_of_isVertexCover hfree
+  have h₂ := (G.induce (↑C ∪ ↑H : Set V)ᶜ).card_le_two_mul_card_of_forall_isCrown_eq_empty hfree
     (S := S.toFinset) (by rwa [Set.coe_toFinset])
   rw [card_compl_union_eq] at h₂
   have hSk : S.toFinset.card ≤ k - H.card := by
