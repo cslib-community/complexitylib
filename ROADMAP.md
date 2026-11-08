@@ -1199,7 +1199,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   of the issue); amortized updates; Las Vegas randomization through the cell-probe Yao averaging;
   and Pătraşcu–Demaine's `Ω(log n)` information-transfer bound.
 - **Streaming and sketching:** native time and space bounds for Count-Min, including hash-seed
-  storage and evaluation; the AMS sketch for `F₀`, the AMS `F_k` estimator for streams of unknown
+  storage and evaluation; for distinct elements
+  ([#3340](https://github.com/cslib-community/complexitylib/issues/3340)), the space-optimal `F₀`
+  estimators (Bar-Yossef et al. Theorems 2–3, Kane–Nelson–Woodruff `O(ε⁻² + log n)`) and the
+  `Ω(ε⁻²)` and `Ω(log n)` lower bounds for approximate `F₀`; the AMS `F_k` estimator for
+  streams of unknown
   length (reservoir sampling), and the `n^{Ω(1)}` lower bounds for `F_k` with `k ≥ 6`; `ProbComp`
   samplers and native realizations of the AMS sketches; CountSketch, turnstile updates, and
   heavy-hitter recovery; multi-pass communication-to-streaming transfers with pass counts.
