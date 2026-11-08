@@ -261,8 +261,8 @@ Meyer's theorem `P/poly = P^SPARSE` is in two modules. The oracle is a word lang
 [`Sparse.Turing`](../../Complexity/Computability/Complexity/Classes/Sparse/Turing.lean) proves
 `PWithOracle_subset_PPolyOn`: the advice lists the short members of `S`.
 [`Sparse.Meyer`](../../Complexity/Computability/Complexity/Classes/Sparse/Meyer.lean) proves the
-converse with a tally oracle. `exists_polyTimeTruthTableReducible_adviceTally` takes the circuit
-advice `α` of `PPoly.exists_evalAdvice`. Its oracle `adviceTally α` contains the unary word of
+converse with a tally oracle. For `exists_polyTimeTruthTableReducible_adviceTally`,
+`PPoly.exists_evalAdvice` provides advice `α` of polynomial length. Its oracle `adviceTally α` contains the unary word of
 `Nat.pair n i` exactly when bit `i` of `α n` is `true` (`encUnary_pair_mem_adviceTally`). The
 reduction is nonadaptive. On an input of length `n` it asks all `|α n|` bit queries and then
 evaluates the listed circuits. `PolyTimeTruthTableReducible.polyTimeTuringReducible` turns it into

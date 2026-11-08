@@ -10,8 +10,8 @@ module
 public import Complexity.Init
 public import Complexity.Computability.Complexity.Classes.Sparse.Turing
 public import Complexity.Computability.Complexity.Classes.Tally
-public import Complexity.Computability.Complexity.Reduction.Turing
 import Complexity.Computability.Circuit.Boolean.Advice
+import Complexity.Computability.Complexity.Reduction.Turing
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Pair
@@ -51,6 +51,8 @@ languages (`Cslib.Complexity.mem_PPolyOn_iff_exists_mem_TALLY_polyTimeTruthTable
   membership in `adviceTally α` reads the bits of `α`, and `adviceTally α` is tally.
 * `Cslib.Complexity.exists_polyTimeTruthTableReducible_adviceTally`: a problem in `P/poly` has a
   polynomial-time truth-table reduction to `adviceTally α` for advice `α` of polynomial length.
+* `Cslib.Complexity.exists_mem_TALLY_polyTimeTruthTableReducible_of_mem_PPolyOn`: a problem in
+  `P/poly` is truth-table reducible in polynomial time to a tally language.
 * `Cslib.Complexity.mem_PPolyOn_iff_exists_mem_TALLY_polyTimeTruthTableReducible`: `P/poly` is the
   class of problems truth-table reducible in polynomial time to tally languages.
 * `Cslib.Complexity.exists_mem_TALLY_mem_PWithOracle_of_mem_PPolyOn`: `P/poly ⊆ P^TALLY`.
@@ -125,8 +127,9 @@ theorem exists_mem_TALLY_polyTimeTruthTableReducible_of_mem_PPolyOn (hA : A ∈ 
   obtain ⟨adv, -, h⟩ := exists_polyTimeTruthTableReducible_adviceTally hA
   exact ⟨adviceTally adv, adviceTally_mem_TALLY adv, h⟩
 
-/-- **`P/poly ⊆ P^TALLY`** (Meyer): a problem in `P/poly` is decided in polynomial time relative
-to some tally oracle language [Hemaspaandra and Ogihara, p. 22][HemaspaandraOgihara2002]. -/
+/-- **`P/poly ⊆ P^TALLY`**: a problem in `P/poly` is decided in polynomial time relative to some
+tally oracle language. This tally strengthening of `P/poly ⊆ P^SPARSE` is proved here through the
+truth-table reduction to `adviceTally`. -/
 theorem exists_mem_TALLY_mem_PWithOracle_of_mem_PPolyOn (hA : A ∈ PPolyOn enc) :
     ∃ T ∈ TALLY, A ∈ PWithOracle T enc := by
   obtain ⟨T, hT, h⟩ := exists_mem_TALLY_polyTimeTruthTableReducible_of_mem_PPolyOn hA
