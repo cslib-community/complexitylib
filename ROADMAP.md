@@ -1453,6 +1453,17 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   rectangular and sparse weighted bipartite matching, general (non-bipartite) matching with
   blossoms (weighted and unweighted), and a sparse Hopcroft–Karp entry point that also charges
   construction of the adjacency lists.
+- **Global minimum cut** ([#3369](https://github.com/cslib-community/complexitylib/issues/3369)):
+  beyond Karger's and Karger–Stein's randomized algorithms (`Algorithms/WordRAM/Karger`) and the
+  deterministic Stoer–Wagner algorithm with the maximum adjacency ordering lemma and an `O(n³)`
+  `TimeM` bound on natural-number weights (`Algorithms/Lean/StoerWagner`,
+  `WeightedCut/MAOrdering`): the `O(n m + n² log n)` priority-queue version, real weights,
+  Nagamochi–Ibaraki sparse certificates for `k`-edge-connectivity,
+  Karger's near-linear minimum cut algorithm, and Queyranne's minimization of symmetric submodular
+  functions (which generalizes the maximum adjacency argument to hypergraph cuts). Moving the
+  contraction API (`contractMatrix`, `contractPart`, `contractCut`) from `WordRAM/Karger` into
+  `WeightedCut`, and restating the cut-of-the-phase lemma with minimum `s`–`t` cuts once those have
+  a shared definition, would let both algorithms share one foundation.
 - **Algebraic matching** ([#3052](https://github.com/cslib-community/complexitylib/issues/3052)):
   remaining after Edmonds' determinant criterion and Lovász's randomized test for bipartite
   graphs (`Algorithms/Matching/Edmonds`), the bipartite Mulmuley–Vazirani–Vazirani core
