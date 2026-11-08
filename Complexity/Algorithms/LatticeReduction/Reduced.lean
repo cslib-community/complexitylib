@@ -15,7 +15,7 @@ public import Complexity.Foundations.Analysis.InnerProductSpace.GramSchmidtOrtho
 A family `b : Fin n → E` in a real inner product space has Gram–Schmidt vectors
 `b*ᵢ = gramSchmidt ℝ b i` and coefficients `μᵢⱼ = gramSchmidtCoeff ℝ b i j`. Following
 [LenstraLenstraLovasz1982], (1.4)–(1.5), with the constant `3/4` replaced by a parameter `δ` as
-in the remark after their Proposition (1.6), `b` is *`δ`-reduced*
+allowed by the remark after their (1.5), `b` is *`δ`-reduced*
 (`Cslib.Algorithms.LatticeReduction.IsReduced δ b`) when
 
 * it is size reduced: `|μᵢⱼ| ≤ 1/2` for `j < i` (`Cslib.Algorithms.LatticeReduction.IsSizeReduced`);
@@ -130,9 +130,10 @@ theorem IsReduced.norm_sq_gramSchmidt_chain {δ : ℝ} {b : Fin n → E} (hb : I
       _ = (4 / (4 * δ - 1)) ^ (k + 1) * ‖gramSchmidt ℝ b ⟨j + (k + 1), hk⟩‖ ^ 2 := by
           rw [pow_succ]; ring
 
-/-- Proposition (1.11) of [LenstraLenstraLovasz1982] for a parameter `δ ∈ (1/4, 1]`, as in the
-remark after their Proposition (1.6) (which takes `1/4 < δ < 1`): if `b : Fin (n + 1) → E` is
-`δ`-reduced, then `‖b₀‖² ≤ (4/(4δ-1))ⁿ ‖x‖²` for every nonzero `x` in the integer span of `b`. -/
+/-- Proposition (1.11) of [LenstraLenstraLovasz1982] for a parameter `δ ∈ (1/4, 1]` in place of
+`3/4` (the remark after their (1.5) allows `1/4 < δ < 1`, and the remark after (1.6) replaces the
+powers of `2` by powers of `4/(4δ-1)`): if `b : Fin (n + 1) → E` is `δ`-reduced, then
+`‖b₀‖² ≤ (4/(4δ-1))ⁿ ‖x‖²` for every nonzero `x` in the integer span of `b`. -/
 theorem IsReduced.norm_sq_le {δ : ℝ} {b : Fin (n + 1) → E} (hb : IsReduced δ b)
     (hδ : 1 / 4 < δ) (hδ1 : δ ≤ 1) {x : E} (hx : x ∈ Submodule.span ℤ (Set.range b))
     (hx0 : x ≠ 0) : ‖b 0‖ ^ 2 ≤ (4 / (4 * δ - 1)) ^ n * ‖x‖ ^ 2 := by

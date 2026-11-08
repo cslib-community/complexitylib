@@ -73,7 +73,7 @@ example : signRank (equality (X := Fin 5)) ≤ 3 := signRank_equality_le_three
 -- Monotonicity under submatrices: restricting equality on `Fin 5` to `Fin 3`.
 example : signRank (fun x y : Fin 3 => equality (Fin.castLE (by omega) x : Fin 5)
     (Fin.castLE (by omega) y)) ≤ signRank (equality (X := Fin 5)) :=
-  signRank_comp_le _ _ _
+  signRank_comap_le _ _ _
 
 /-! ### Unbounded-error protocols -/
 
@@ -117,7 +117,7 @@ example : ¬fairCoin.SolvesUnbounded (fun x y z => equality x y = z) Set.univ Se
   have := (PrivateCoin.errorProb_lt_half_iff fairCoin equality true true).mp
     (h true trivial true trivial)
   have hsum : ∑ s : BitString 1, ∑ t : BitString 0,
-      (if fairCoin.run (true, s) (true, t) then (-1 : ℝ) else 1) = 0 := by
+      BitString.signVal (fairCoin.run (true, s) (true, t)) = 0 := by
     rw [← (Equiv.funUnique (Fin 1) Bool).symm.sum_comp, Fintype.sum_bool]
     simp [fairCoin]
   rw [hsum, mul_zero] at this
