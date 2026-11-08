@@ -1708,6 +1708,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   (`Algorithms/Matching/MVV`), and Tutte's determinant criterion with the same test for general
   graphs (`Algorithms/Matching/Tutte`): MVV for general graphs (its Pfaffian form), a machine-level
   running-time certificate for the determinant test, and an RNC implementation.
+- **Blocking-flow maximum flow** ([#3328](https://github.com/cslib-community/complexitylib/issues/3328)):
+  after level networks, the Dinitz phase lemma, the `|V| - 1` phase bound and a verified executable
+  Dinitz solver with a greedy blocking-flow search (`Algorithms/Lean/MaxFlow/{LevelGraph,Dinitz}`),
+  a charged `TimeM` version with the current-arc depth-first blocking-flow search (`O(|V| |E|)`
+  per phase, `O(|V|^2 |E|)` overall); Sleator–Tarjan dynamic trees (`O(|V| |E| log |V|)`); the
+  Even–Tarjan unit-capacity bounds `O(|E| · min(|V|^{2/3}, |E|^{1/2}))`; Karzanov's `O(|V|^3)`
+  preflows and push–relabel.
 - **Auction algorithms** ([#3317](https://github.com/cslib-community/complexitylib/issues/3317)):
   remaining after Bertsekas's Gauss–Seidel auction for square, complete integer assignment
   instances (`Algorithms/Lean/Assignment`: `ε`-complementary slackness, termination within
