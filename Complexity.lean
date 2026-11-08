@@ -1332,6 +1332,7 @@ public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.Asympt
 public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.LowerBound
 public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.Negative
 public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.Positive
+public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.Separation
 public import Complexity.Computability.Circuit.Monotone.Clique.Approximator
 public import Complexity.Computability.Circuit.Monotone.Clique.Asymptotic
 public import Complexity.Computability.Circuit.Monotone.Clique.Closure.Approximator
@@ -1901,6 +1902,8 @@ public import Complexity.Computability.Complexity.Parameterized.VertexCover
 public import Complexity.Computability.Complexity.Parameterized.VertexCover.BussKernel
 public import Complexity.Computability.Complexity.Parameterized.WHierarchy
 public import Complexity.Computability.Complexity.Parameterized.WHierarchy.IndependentSet
+public import Complexity.Computability.Complexity.Problems.BipartitePerfectMatching
+public import Complexity.Computability.Complexity.Problems.BipartitePerfectMatching.Membership
 public import Complexity.Computability.Complexity.Problems.BoundedHalting
 public import Complexity.Computability.Complexity.Problems.CSP.Affine
 public import Complexity.Computability.Complexity.Problems.CSP.Basic
