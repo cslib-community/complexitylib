@@ -75,6 +75,31 @@ theorem chaseProg_realizesBounded :
       (fun _ _ _ => True) (fun _ _ => 0) := by
   realize
 
+/-- `by realize` synthesizes `RealizesBounded` when an `iterate` step captures outer runtime words
+(exercising the `Eq.mp (congrArg wrap safeEq)` proof-spine translation). -/
+theorem capturedIterate_realizesBounded :
+    RealizesBounded .exact
+      (fun d : Fin 3 → ℕ => iterate (fun _ : Unit × ℕ => Memory.read (d 0)) () (d 1) (d 2))
+      (.refl _) singleWord (fun _ _ _ => True) (fun _ _ => 0) := by
+  realize
+
+/-- `by realize` synthesizes `RealizesBounded` when a captured-word `iterate` step also invokes a
+local `RealizesBounded` subroutine with nontrivial domain `P`. -/
+theorem capturedIterateCall_realizesBounded (m : ℕ × ℕ → Memory.Prog ℕ)
+    (P : ℕ → ℕ × ℕ → Memory.State → Prop)
+    (hm : RealizesBounded .exact m pairWords singleWord P (fun _ _ => 0)) :
+    RealizesBounded .exact
+      (fun d : Fin 3 → ℕ => iterate (fun _ : Unit × ℕ => do
+        let v ← Memory.read (d 0)
+        m (d 0, v)) () (d 1) (d 2))
+      (.refl _) singleWord
+      (fun w d s => iterationSafe
+        (fun _ : Unit × ℕ => do let v ← Memory.read (d 0); m (d 0, v))
+        (fun w _ s => P w (d 0, s.mem (d 0)) s) w () (d 1) (d 2) s)
+      (fun _ _ => 0) := by
+  realize
+  exact h
+
 /-- Ordinary `Realizes` goals continue to elaborate identically via `by realize`. -/
 theorem chaseProg_realizes :
     Realizes .exact chaseProg pairWords singleWord

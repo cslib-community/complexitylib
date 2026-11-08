@@ -21,59 +21,44 @@ This module formalizes the word-granular **Resizable Word RAM** machine model (`
 [LiLiangYuZhou2023Succincter], [LiLiangYuZhou2024], and [KuszmaulLiangZhou2026] directly on
 `Cslib.WordRAM` instructions.
 
-A machine data configuration `RData r` consists of `r` registers (`regs : Fin r → ℕ`), a
-word-addressed memory (`mem : ℕ → ℕ`), and the active word frontier (`frontier : ℕ`, written `L`
-or `M` in the literature; our addresses are `0`-indexed in `[0, frontier)` rather than `1`-indexed
-in `[1, L]`). Unlike fixed-memory `Cslib.WordRAM`:
+A machine configuration `RData r` holds `r` registers (`regs : Fin r → ℕ`), word-addressed memory
+(`mem : ℕ → ℕ`), and the `0`-indexed active word frontier (`frontier : ℕ`, `[0, frontier)`):
 
-1. **Bounds-checked memory access (`evalResizable`)**: `Op.load d a` and `Op.store a s` succeed
-   only when the target word address `x.regs a` lies strictly inside the currently allocated prefix
-   `[0, x.frontier)` (`x.regs a < x.frontier`), faulting (`none`) otherwise.
-2. **Word-granular resizing instructions (`RInstr.grow` and `RInstr.shrink`)**:
-   - `grow dst kReg` extends `[0, frontier)` by `k = regs kReg` words to `[0, frontier + k)` when
-     `Fits w (frontier + k)`, stores the old `frontier` in register `dst`, and initializes the
-     newly allocated words `[frontier, frontier + k)` **demonically** (`DemonicGrow w frontier k
-     mem mem'`, allowing arbitrary `w`-bit words in `[frontier, frontier + k)` while preserving
-     existing words `< frontier` and keeping unallocated words `≥ frontier + k` equal to `0`,
-     matching [KuszmaulLiangZhou2026], Section 5.1, PDF p. 16 / printed p. 15 and Footnotes 10
-     and 13).
-   - `shrink kReg` contracts `[0, frontier)` by `k = regs kReg ≤ frontier` words to
-     `[0, frontier - k)` and zeroes the released suffix `[frontier - k, frontier)`.
+1. **Bounds-checked access (`evalResizable`)**: `Op.load d a` and `Op.store a s` require
+   `x.regs a < x.frontier`, faulting (`none`) otherwise.
+2. **Word-granular resizing (`RInstr.grow`, `RInstr.shrink`)**: `grow dst kReg` extends
+   `[0, frontier)` to `[0, frontier + k)` when `Fits w (frontier + k)`, stores old `frontier` in
+   `dst`, and initializes `[frontier, frontier + k)` demonically (`DemonicGrow`, matching
+   [KuszmaulLiangZhou2026], Section 5.1, Footnote 10); `shrink kReg` contracts `[0, frontier)` by
+   `k ≤ frontier` words and zeroes `[frontier - k, frontier)`.
 3. **Direct `realize` bridge (`RDemonicExec.of_execBounded`, `RDemonicExec.of_realizesBounded`)**:
-   Every frontier-bounded execution `ExecBounded w L c x.toData y T` with `L ≤ x.frontier` lifts
-   directly to `RDemonicExec` on `RCode.ofCode c` without re-proving instruction semantics, and
-   `growZeroCode` deterministically erases any demonic growth garbage in `4 * k + 7` instructions.
+   any `ExecBounded w L c x.toData y T` with `L ≤ x.frontier` lifts directly to `RDemonicExec`, and
+   `growZeroCode` erases demonic growth in `4 * k + 7` instructions.
 
 ## Main definitions
 
 * `Cslib.WordRAM.Resizable.RData`, `Cslib.WordRAM.Resizable.RData.Bounded`: resizable machine data
-  with active word frontier `frontier`, and its word/frontier boundedness invariant.
-* `Cslib.WordRAM.Resizable.DemonicGrow`: relational specification of demonic word-granular growth.
-* `Cslib.WordRAM.Resizable.evalResizable`: bounds-checked data instruction evaluation on `RData r`.
+  and its word/frontier boundedness invariant.
+* `Cslib.WordRAM.Resizable.DemonicGrow`, `Cslib.WordRAM.Resizable.evalResizable`: demonic growth
+  relation and bounds-checked data instruction evaluation.
 * `Cslib.WordRAM.Resizable.RInstr`, `Cslib.WordRAM.Resizable.RProgram`,
-  `Cslib.WordRAM.Resizable.RState`, `Cslib.WordRAM.Resizable.RCfg`: flat instructions, programs,
-  states, and absorbing configurations of a Resizable Word RAM.
-* `Cslib.WordRAM.Resizable.RCode`, `Cslib.WordRAM.Resizable.RCode.ofCode`,
-  `Cslib.WordRAM.Resizable.RCode.assemble`, `Cslib.WordRAM.Resizable.RCode.program`: structured
-  Resizable Word RAM programs and flat assembly.
-* `Cslib.WordRAM.Resizable.RDemonicExec`: big-step demonic execution judgment tracking both
-  instruction count `T` and peak active hardware word frontier `L_peak`.
-* `Cslib.WordRAM.Resizable.growZeroCode`: basis-generic (`Basis.exact`) subroutine that executes
-  demonic `grow` followed by a bounds-checked zero-fill loop.
+  `Cslib.WordRAM.Resizable.RState`, `Cslib.WordRAM.Resizable.RCfg`,
+  `Cslib.WordRAM.Resizable.RCode`: flat and structured Resizable Word RAM programs and states.
+* `Cslib.WordRAM.Resizable.RDemonicExec`: big-step demonic execution tracking steps `T` and peak
+  hardware word frontier `L_peak`.
+* `Cslib.WordRAM.Resizable.growZeroCode`: exact-basis (`Basis.exact`) subroutine executing demonic
+  `grow` followed by zero-fill (transferable via `RCode.mapSimulates`).
 
 ## Main results
 
-* `Cslib.WordRAM.Resizable.clear_demonicGrow_eq`: clearing `[frontier, frontier + k)` after any
-  `DemonicGrow` recovers the canonical zero-extended memory identically.
-* `Cslib.WordRAM.Resizable.RDemonicExec.of_execBounded`: lift any `ExecBounded` execution below
-  `x.frontier` directly to `RDemonicExec`.
-* `Cslib.WordRAM.Resizable.RDemonicExec.of_realizesBounded`: lift any non-allocating
-  `RealizesBounded` `Memory.Prog` certificate directly to `RDemonicExec`.
-* `Cslib.WordRAM.Resizable.RDemonicExec.mapSimulates`: transport `RDemonicExec` along any
-  `Basis.Simulates` simulation.
+* `Cslib.WordRAM.Resizable.clear_demonicGrow_eq`: clearing `[frontier, frontier + k)` after
+  `DemonicGrow` recovers canonical zero-extended memory.
+* `Cslib.WordRAM.Resizable.RDemonicExec.of_execBounded`,
+  `Cslib.WordRAM.Resizable.RDemonicExec.of_realizesBounded`,
+  `Cslib.WordRAM.Resizable.RDemonicExec.mapSimulates`: lifting `ExecBounded`/`RealizesBounded`
+  programs and transporting bases.
 * `Cslib.WordRAM.Resizable.growZeroCode_exec`: `growZeroCode` executes in `4 * k + 7` instructions
-  with peak frontier `x.frontier + k` and deterministically zeroes all demonically initialized
-  words.
+  with peak frontier `x.frontier + k` and zeroes demonically initialized words.
 
 ## References
 
@@ -712,7 +697,7 @@ theorem of_execWithin_regOnly {T : ℕ} {c : Code B r} {y : Data r}
 
 /-- **Direct `RealizesBounded` → `RDemonicExec` bridge (`RDemonicExec.of_realizesBounded`).**
 Any `Memory.Prog` client certified by `RealizesBounded` whose post-state frontier stays
-`≤ x.frontier` (for example, any `NoAlloc` segment using only `Memory.read`, `Memory.write`,
+`≤ x.frontier` (for example, any non-allocating segment using only `Memory.read`, `Memory.write`,
 arithmetic glue, conditionals, `iterate`, and `boundedWhile` when `x.regs frontier ≤ x.frontier`)
 executes directly on the Resizable Word RAM via `RCode.ofCode`. -/
 theorem of_realizesBounded {k l n C : ℕ} {δ α : Type}
@@ -812,7 +797,7 @@ theorem zeroFillExact_execBounded {w : ℕ} {cur stop zero one : Fin r} {x : Dat
   rw [hx0, hxk] at hloop
   exact hloop.mono (by omega)
 
-/-- Basis-generic (`Basis.exact`) subroutine that executes demonic `grow result count` and then
+/-- Exact-basis (`Basis.exact`) subroutine that executes demonic `grow result count` and then
 zeroes `[frontier, frontier + count)` via `zeroFillExact` in `4 * count + 7` instructions.
 Use `.mapSimulates Basis.Simulates.exactStandard` to obtain the `Basis.standard` program. -/
 def growZeroCode (count result cur stop zero one : Fin r) : RCode .exact r :=
@@ -913,26 +898,23 @@ namespace Cslib.WordRAM
 open Lean Meta Elab Tactic Cslib.WordRAM.Realization in
 /-- Map a `Realizes` proof-combinator constant to its `RealizesBounded` counterpart. -/
 def mapRealizesConst (c : Name) : Option Name :=
-  if c == ``Realizes.consequence then some ``RealizesBounded.consequence
-  else if c == ``Realizes.consequence_valid then some ``RealizesBounded.consequence_valid
-  else if c == ``Realizes.congr then some ``RealizesBounded.congr
-  else if c == ``Realizes.reindex then some ``RealizesBounded.reindex
-  else if c == ``Realizes.mono_mul then some ``RealizesBounded.mono_mul
-  else if c == ``Realizes.pure₀ then some ``RealizesBounded.pure₀
-  else if c == ``Realizes.bind₀_of_run then some ``RealizesBounded.bind₀_of_run
-  else if c == ``Realizes.read then some ``RealizesBounded.read
-  else if c == ``Realizes.write then some ``RealizesBounded.write
-  else if c == ``Realizes.alloc then some ``RealizesBounded.alloc
-  else if c == ``Realizes.allocDirty then some ``RealizesBounded.allocDirty
-  else if c == ``Realizes.branch₀ then some ``RealizesBounded.branch₀
-  else if c == ``Realizes.iterate₀ then some ``RealizesBounded.iterate₀
-  else if c == ``Realizes.while₀ then some ``RealizesBounded.while₀
-  else none
+  [(``Realizes.consequence, ``RealizesBounded.consequence),
+   (``Realizes.consequence_valid, ``RealizesBounded.consequence_valid),
+   (``Realizes.congr, ``RealizesBounded.congr), (``Realizes.reindex, ``RealizesBounded.reindex),
+   (``Realizes.mono_mul, ``RealizesBounded.mono_mul), (``Realizes.pure₀, ``RealizesBounded.pure₀),
+   (``Realizes.bind₀_of_run, ``RealizesBounded.bind₀_of_run),
+   (``Realizes.read, ``RealizesBounded.read), (``Realizes.write, ``RealizesBounded.write),
+   (``Realizes.alloc, ``RealizesBounded.alloc),
+   (``Realizes.allocDirty, ``RealizesBounded.allocDirty),
+   (``Realizes.branch₀, ``RealizesBounded.branch₀),
+   (``Realizes.iterate₀, ``RealizesBounded.iterate₀),
+   (``Realizes.while₀, ``RealizesBounded.while₀)].lookup c
 
 open Lean Meta Elab Tactic Cslib.WordRAM.Realization in
 /-- Translate the `Realizes` proof spine to `RealizesBounded` without touching client terms. -/
 partial def translateRealizesProof (shadowMap : Std.HashMap FVarId FVarId) (e : Expr) :
     Expr :=
+  let toBounded (t : Expr) : Expr := mkAppN (.const ``RealizesBounded []) t.getAppArgs
   match e with
   | .fvar fid => shadowMap[fid]?.map .fvar |>.getD e
   | .lam n t b bi => .lam n t (translateRealizesProof shadowMap b) bi
@@ -941,8 +923,20 @@ partial def translateRealizesProof (shadowMap : Std.HashMap FVarId FVarId) (e : 
     let fn := e.getAppFn
     let args := e.getAppArgs
     if fn.isConstOf ``id && args.size == 2 && args[0]!.isAppOfArity ``Realizes 10 then
-      mkApp2 fn (mkAppN (.const ``RealizesBounded []) args[0]!.getAppArgs)
-        (translateRealizesProof shadowMap args[1]!)
+      mkApp2 fn (toBounded args[0]!) (translateRealizesProof shadowMap args[1]!)
+    else if fn.isConstOf ``Eq.mp && args.size == 4 && args[0]!.isAppOfArity ``Realizes 10 &&
+        args[1]!.isAppOfArity ``Realizes 10 then
+      let hEq := if args[2]!.isAppOfArity ``congrArg 6 then
+        let cArgs := args[2]!.getAppArgs
+        match cArgs[4]! with
+        | .lam nm sTy body bi =>
+          if body.isAppOfArity ``Realizes 10 then
+            mkAppN args[2]!.getAppFn (cArgs.set! 4 (.lam nm sTy (toBounded body) bi))
+          else args[2]!
+        | _ => args[2]!
+      else args[2]!
+      mkApp4 fn (toBounded args[0]!) (toBounded args[1]!) hEq
+        (translateRealizesProof shadowMap args[3]!)
     else match fn with
       | .const c us =>
         match mapRealizesConst c with
