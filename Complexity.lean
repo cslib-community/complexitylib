@@ -64,6 +64,7 @@ public import Complexity.Algorithms.Lean.KMP.Basic
 public import Complexity.Algorithms.Lean.KMP.Search
 public import Complexity.Algorithms.Lean.Karger.Contraction
 public import Complexity.Algorithms.Lean.Karger.FastCut
+public import Complexity.Algorithms.Lean.Karger.MinCutCount
 public import Complexity.Algorithms.Lean.Knapsack.FPTAS
 public import Complexity.Algorithms.Lean.Knapsack.PolyTime
 public import Complexity.Algorithms.Lean.Knapsack.ProfitDP
@@ -4368,6 +4369,7 @@ public import Complexity.Foundations.Combinatorics.TupleCover
 public import Complexity.Foundations.Combinatorics.UniformSchedules
 public import Complexity.Foundations.Combinatorics.WeightBudget
 public import Complexity.Foundations.Combinatorics.WeightedCut
+public import Complexity.Foundations.Combinatorics.WeightedCut.Blocks
 public import Complexity.Foundations.Combinatorics.WeightedCut.Contraction
 public import Complexity.Foundations.Combinatorics.WeightedCut.MAOrdering
 public import Complexity.Foundations.Combinatorics.WeightedCut.MinCutBetween

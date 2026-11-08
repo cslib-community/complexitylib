@@ -582,6 +582,11 @@ Sandy Irani. "Two Results on the List Update Problem." *Information Processing L
 
 William B. Johnson, Joram Lindenstrauss. “Extensions of Lipschitz Mappings into a Hilbert Space.” In *Conference in Modern Analysis and Probability (New Haven, Conn., 1982)*, Contemporary Mathematics 26, 189–206. American Mathematical Society, 1984. https://doi.org/10.1090/conm/026/737400 . Bibliographic data from the DOI record; the manual attributes only the existence of low-distortion linear embeddings of `n` points into `O(log n / ε²)` dimensions to this paper.
 
+<a id="kargerstein96"></a>
+## kargerstein96
+
+David R. Karger and Clifford Stein. "A New Approach to the Minimum Cut Problem." *Journal of the ACM* 43(4), 601–640, 1996. https://doi.org/10.1145/234533.234534 . Bibliography key `KargerStein1996`. Inspected on 2026-11-08 in the author-hosted copy (people.csail.mit.edu/karger/Papers/contract.pdf, dated 6 August 1996); locators refer to that copy. Section 2 defines the blocks `s(a)` and the output cut. Lemma 2.1 says a cut is output iff no crossing edge is contracted. Theorem 2.2 is the per-cut bound `C(n, 2)⁻¹`, and the text after its proof notes that the `n`-cycle makes the bound tight. The proof of Theorem 4.4 attributes the bound of `C(n, 2)` minimum cuts to Dinitz, Karzanov and Lomonosov (1976). The proof of Theorem 8.4, stated for `α`-minimal cuts, bounds their number by the disjointness of the output events; applied to Theorem 2.2, this argument gives the count. That 1976 paper was not consulted and is cited only through this attribution.
+
 <a id="karlin88"></a>
 ## karlin88
 

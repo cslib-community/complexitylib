@@ -246,6 +246,24 @@ The specification `ApproximateMembership.spec U n ε` enforces strict set validi
 
 The Karger–Stein endpoint uses one fixed 24-register program, `O(n² log n)` worst-case steps and `O(n²)` matrix scratch per tree, with success at least `1/(floorlog₂(n)+15)`. Repetition gives minimum-cut **value** with failure at most `1/(2n)` in `O(n² log³ n)`. It does not enumerate all minimum cuts or attain the source's sparse-space formulation. The threshold is an integer inequality rather than a literal square-root expression; the abstract labels the implementation and proof adaptations.
 
+### Each minimum cut, and the number of minimum cuts
+
+Import `Complexity.Algorithms.Lean.Karger.MinCutCount` ([MinCutCount.lean](../../Complexity/Algorithms/Lean/Karger/MinCutCount.lean)). The contraction structure `Karger.spec` keeps only the weight matrix, so `karger` answers a weight, not a cut. Following [Karger and Stein, Section 2][kargerstein96], `trackedSpec n` also keeps the block of original vertices merged into each supervertex (`TrackedGraph`). Blocks are contracted by `Cslib.WeightedCut.contractBlocks` ([Blocks.lean](../../Complexity/Foundations/Combinatorics/WeightedCut/Blocks.lean)), which agrees with `contractPart` on the fibres of a supervertex map (`contractBlocks_pullbackCut`).
+
+- **Bookkeeping:** `map_run_trackedSpec` shows that forgetting the blocks maps every run over `trackedSpec n` to the run of the same client over `spec`. It is an instance of `Cslib.ProbOracleComp.run_interpret_map_state` with `TrackedGraph.toGraph` as the state representation. Statements about the answers and the weight matrices of `spec` therefore transfer to `trackedSpec n`. Statements about the blocks, such as the survival bound `trackedSurvives_contractTimes`, need their own proofs.
+- **Output cut:** one run of `karger` also outputs the block of supervertex `1` of the last two (`TrackedGraph.side`); `cutLaw W₀` is its law. On a multigraph (`IsMultigraph W₀`) with `n ≥ 2` vertices, `answer_eq_cutWeight_side` shows the output cut is non-trivial and the answer is its weight; `answerLaw_eq_map_cutLaw` states this as `answerLaw ⟨n, W₀⟩ = (cutLaw W₀).map (cutWeight W₀)`.
+- **Per-cut bound** (Theorem 2.2 of the source): `two_div_le_cutLaw`. If also `0 < minCut W₀`, each fixed minimum cut `{C, Cᶜ}` (with `C` non-trivial, which forces `n ≥ 2`) is output with probability at least `2 / (n (n - 1)) = 1 / C(n, 2)`. The proof reruns the survival induction over the blocks (`trackedSurvives_contractTimes`): a cut that survives to two supervertices is the output cut, up to complement.
+- **Count:** `card_minCuts_le_choose_two`. Each run outputs one cut, so the events for distinct minimum cuts are disjoint and their probabilities sum to at most `1`. A connected multigraph therefore has at most `n.choose 2` minimum cuts, counted by the side `C` with `x₀ ∉ C` and `cutWeight W₀ C = minCut W₀`. The bound is due to Dinitz, Karzanov and Lomonosov (1976); the proof is the one in [Karger and Stein][kargerstein96].
+
+The [checked examples](../../ComplexityTests/KargerMinCutCount.lean) count by brute force the `C(4, 2) = 6` minimum cuts of the unit 4-cycle, where the bound is tight, and the `C(5, 2) = 10` minimum cuts of the unit 5-cycle. They also instantiate both theorems on the 4-cycle. The empty graph on four vertices has `7` non-trivial minimum cuts. The filter, which then also contains `∅`, has `8 > C(4, 2)` elements, so `0 < minCut W₀` is needed.
+
+Not formalized:
+- the `O((2n)^(2α))` bound on `α`-minimal cuts (Theorem 8.4 of the source);
+- the enumeration and the cactus representation of all minimum cuts;
+- the per-cut bound for the recursive Karger–Stein algorithm.
+
+The tracked development duplicates part of `Karger/Contraction.lean`; [#3539](https://github.com/cslib-community/complexitylib/issues/3539) tracks deriving the untracked theorems from it.
+
 ### Deterministic minimum cut: Stoer–Wagner
 
 Import `Complexity.Algorithms.Lean.StoerWagner.Basic` ([Basic.lean](../../Complexity/Algorithms/Lean/StoerWagner/Basic.lean)). It uses the weighted multigraphs of `Cslib.WeightedCut` (`W : Fin n → Fin n → ℕ`, symmetric with zero diagonal) and the contraction of [Contraction.lean](../../Complexity/Foundations/Combinatorics/WeightedCut/Contraction.lean) (`contractMatrix`, `contractPart`, `contractCut`), which it shares with Karger's algorithm. The algorithm follows [Stoer and Wagner][stoerwagner97].
@@ -1258,6 +1276,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [gusfield90]: ../sources.md#gusfield90
 [hierholzer73]: ../sources.md#hierholzer73
 [hmu06]: ../sources.md#hmu06
+[kargerstein96]: ../sources.md#kargerstein96
 [kasai01]: ../sources.md#kasai01
 [kasami65]: ../sources.md#kasami65
 [kmb81]: ../sources.md#kmb81
