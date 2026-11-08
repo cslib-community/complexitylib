@@ -95,6 +95,26 @@ Support-based CNF model counting counts assignments to variables that occur. Dec
 
 [QBF](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/QBF.lean#L76) uses named-variable Boolean quantifiers. Evaluating an existential or universal binder updates the assignment with both possible values and ORs or ANDs the results. Arithmetization and native/interactive-proof completeness clients live in their corresponding sections. This formula syntax does not by itself assert a resource bound for evaluation.
 
+## Boolean functional completeness
+
+Import `Complexity.Logics.BooleanClone.Post` for Post's five-class criterion. A family
+`G n` of Boolean operations is `BooleanClone.FunctionallyComplete G` exactly when it has
+an operation outside each of the 0-preserving, 1-preserving, monotone, self-dual and affine
+classes (`BooleanClone.functionallyComplete_iff`). The witnesses may have different arities;
+the family may be infinite. Affinity uses the existing `BitString.IsAffine` convention.
+
+`BooleanClone.generated` records finite superpositions and projections. Its foundation and
+four-generator classification are shared with Schaefer's proof below. Import
+`Complexity.Logics.BooleanClone.Formula` for `generated_iff_exists_formula` and
+`exists_circuit_of_postCriterion`: the generated operations have actual formula and circuit
+realizations. See the [checked NAND and incomplete-basis examples](../../ComplexityTests/PostCompleteness.lean).
+
+This API quantifies over **positive input arities**. Constants are unary constant functions.
+NAND alone is complete in this sense, but cannot synthesize a zero-input constant gate.
+Circuit `Interpretation.IsComplete` also quantifies over zero inputs, so the Post theorem
+supplies positive-arity circuits without claiming that stronger instance. No gate-count bound
+or full classification of Post's lattice is asserted.
+
 ## Boolean Schaefer dichotomy
 
 Import `Complexity.Computability.Complexity.Problems.CSP.Schaefer` for the full Boolean
