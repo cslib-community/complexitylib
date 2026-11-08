@@ -101,6 +101,12 @@ Add the integration authority you intend to grant. Without that authority, the c
 prepare and review work but must not assume permission to merge. When integration is authorized,
 the coordinator still needs the required validation and independent review and should monitor
 the merge queue through landing. [Coordinator duties](../AGENTS.md#coordinators) define the details.
+When the queue ejects a PR whose only conflict is in `references.bib`, the coordinator or author
+can run `python3 scripts/resolve_bib_conflict.py origin/<branch>` after `git fetch origin` to
+write the merge with `main` instead of sending the PR back. It refuses any other conflict and
+pushes nothing. Pushing its commit to the PR branch is a deliberate step by the author or a
+coordinator acting for them, who records the push and whether existing review carries forward,
+as the [Review cycle](../AGENTS.md#review-cycle) requires.
 
 The manuals are part of this workflow. Changes to library usage belong in the Operator's Manual;
 changes to roles, delegation, review or human direction may affect this Agent Operator's Manual.

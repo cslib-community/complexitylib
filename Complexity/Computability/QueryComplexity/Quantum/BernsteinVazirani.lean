@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.QueryComplexity.BernsteinVazirani
 public import Complexity.Computability.QueryComplexity.Quantum.Search
 public import Complexity.Foundations.Quantum.HadamardTransform
 import Complexity.Foundations.BooleanAnalysis.HadamardRectangles
@@ -20,7 +21,7 @@ with the bit strings `a ∈ {0,1}^n`, is the truth table `x_a = s ⬝ᵥ a` of a
 unknown `s ∈ {0,1}^n`; the goal is to find `s`.
 
 Here the positions `Fin N` are identified with the bit strings `K → Bool` by an equivalence `e`,
-and `Cslib.Quantum.linearTable e s` is the input. The algorithm
+and `Cslib.QueryComplexity.linearTable e s` is the input. The algorithm
 (`Cslib.Quantum.bernsteinVazirani`) starts in `|0, 1⟩` (`Cslib.Quantum.bernsteinVaziraniInit`),
 applies the Hadamard transform to the query register, makes one phase query, which multiplies the
 amplitude of `|a⟩` by `(-1)^{s ⬝ᵥ a}`, and applies the Hadamard transform again. **One query
@@ -28,13 +29,14 @@ recovers `s` exactly**: the final state is the basis state `|s, 1⟩`
 (`Cslib.Quantum.run_bernsteinVazirani`), so measuring the query register gives `s` with
 probability `1` (`Cslib.Quantum.regProb_run_bernsteinVazirani`).
 
-Classically `n` queries are needed, since each answer is a single bit; that information-theoretic
-lower bound is not formalized here. The exponential separation of
-`Complexity/Computability/QueryComplexity/Quantum/Simon.lean` uses the same Hadamard transforms.
+Classically `n` queries are needed, even with randomness and error `ε < 1/2`
+(`Complexity/Computability/QueryComplexity/BernsteinVazirani.lean`), in the same bit-query model
+on the same input; `Cslib.Quantum.bernsteinVazirani_separation` combines the two bounds. The
+exponential separation of `Complexity/Computability/QueryComplexity/Quantum/Simon.lean` uses the
+same Hadamard transforms.
 
 ## Main definitions
 
-* `Cslib.Quantum.linearTable`: the truth table of the linear function `a ↦ s ⬝ᵥ a`.
 * `Cslib.Quantum.bernsteinVazirani`, `Cslib.Quantum.bernsteinVaziraniInit`: the algorithm and its
   initial state.
 
@@ -43,6 +45,7 @@ lower bound is not formalized here. The exponential separation of
 * `Cslib.Quantum.run_bernsteinVazirani`: after one query the state is `|s, 1⟩`.
 * `Cslib.Quantum.regProb_run_bernsteinVazirani`: measuring the query register gives `s` with
   certainty.
+* `Cslib.Quantum.bernsteinVazirani_separation`: one quantum query against `n` randomized queries.
 
 ## References
 
@@ -54,14 +57,9 @@ public section
 
 namespace Cslib.Quantum
 
-open Finset BitString
+open Finset BitString QueryComplexity
 
 variable {N : ℕ} {K : Type*} [Fintype K] [DecidableEq K]
-
-/-- The truth table of the linear function `a ↦ s ⬝ᵥ a`, with the query positions identified with
-the bit strings by `e`. -/
-@[expose] def linearTable (e : Fin N ≃ (K → Bool)) (s : K → Bool) : Fin N → Bool :=
-  fun i => s ⬝ᵥ e i
 
 /-- **The Bernstein–Vazirani algorithm**: the Hadamard transform on the query register, one query,
 and the Hadamard transform again. -/
@@ -116,5 +114,18 @@ theorem regProb_run_bernsteinVazirani (e : Fin N ≃ (K → Bool)) (s : K → Bo
       (e.symm s) = 1 := by
   rw [run_bernsteinVazirani, regProb, measureProb_ket]
   simp
+
+/-- **The quantum–classical query separation for Bernstein–Vazirani**, in the bit-query model on
+the truth table of `a ↦ s ⬝ᵥ a`: one quantum query recovers `s` with certainty, while every
+randomized decision tree that recovers `s` with error `ε < 1/2` (as the restriction of a total
+function `F`) has depth at least `n`. -/
+theorem bernsteinVazirani_separation (e : Fin N ≃ (K → Bool)) :
+    (∀ s, regProb (run (bernsteinVazirani e) (bernsteinVaziraniInit e) (linearTable e s) 1)
+      (e.symm s) = 1) ∧
+    ∀ (μ : RandomizedDecisionTree (Fin N) (K → Bool)) (F : (Fin N → Bool) → K → Bool) (ε : ℝ),
+      (∀ s, F (linearTable e s) = s) → ε < 1 / 2 →
+      (∀ s, μ.errorProb F (linearTable e s) ≤ ε) → Fintype.card K ≤ μ.depth :=
+  ⟨regProb_run_bernsteinVazirani e, fun μ _ _ hF hε hμ =>
+    card_le_depth_of_linearTable_randomized e μ hF hε hμ⟩
 
 end Cslib.Quantum
