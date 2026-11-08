@@ -48,8 +48,8 @@ The far notion is related to Mathlib's deletion distance: an `ε`-far graph is
 closed under taking subgraphs, deletion distance more than `ε n²` implies `ε`-far
 (`isFar_of_deleteFar`, `isFar_of_farFromTriangleFree`).
 
-Repetition (`repeatAll`) runs independent copies of a tester and accepts when all of them accept;
-its acceptance probability is the power of the single-run acceptance probability
+Repetition (`OracleComp.repeatAll`) runs independent copies of a tester and accepts when all of them
+accept; its acceptance probability is the power of the single-run acceptance probability
 (`acceptProb_repeatAll`). This turns a perfectly complete `q`-query test that rejects far graphs
 with probability at least `δ` into a one-sided tester after `k` runs with `2 ≤ δ k`
 (`isOneSidedTester_repeatAll`).
@@ -65,15 +65,14 @@ This file bounds queries only; it makes no claim about running time.
 * `Cslib.DenseGraphTesting.IsOneSidedTester`: one-sided testers with a worst-case query bound.
 * `Cslib.DenseGraphTesting.OneSidedTestable`: testability with a query bound depending only on
   the proximity parameter.
-* `Cslib.DenseGraphTesting.repeatAll`: independent repetition, accepting when every run accepts.
 
 ## Main results
 
 * `Cslib.DenseGraphTesting.IsFar.deleteFar`, `IsFar.farFromTriangleFree`,
   `isFar_of_deleteFar`, `isFar_of_farFromTriangleFree`: comparison with Mathlib's deletion
   distance.
-* `Cslib.DenseGraphTesting.acceptProb_repeatAll`, `isQueryBounded_repeatAll`: repetition
-  multiplies acceptance probabilities and query bounds.
+* `Cslib.DenseGraphTesting.acceptProb_repeatAll`, `isQueryBounded_repeatAll`: repetition with
+  `OracleComp.repeatAll` multiplies acceptance probabilities and query bounds.
 * `Cslib.DenseGraphTesting.isOneSidedTester_repeatAll`: amplification of a perfectly complete
   test.
 
@@ -279,11 +278,6 @@ end Far
 def queryAdj {n : ℕ} (u v : Fin n) : ProbOracleComp (pairSpec (Fin n)) Bool :=
   ProbOracleComp.query (u, v)
 
-/-- Run `k` independent copies of the tester `T` in sequence, rejecting as soon as one of them
-rejects and accepting when all of them accept. -/
-def repeatAll {n : ℕ} (T : Tester n) : ℕ → Tester n :=
-  OracleComp.repeatAll T
-
 /-- A uniform coin toss of a tester is distributed as the corresponding `ProbComp`. -/
 theorem evalWith_sample {n : ℕ} (G : SimpleGraph (Fin n)) {α : Type} (p : ProbComp α) :
     OracleComp.evalWith (OracleComp.sumHandler ProbComp.unifOracle (adjOracle G))
@@ -324,13 +318,13 @@ theorem IsOneSidedTester.evalWith_false_eq_zero {n : ℕ} {P : SimpleGraph (Fin 
 
 /-- Independent repetition multiplies acceptance probabilities. -/
 theorem acceptProb_repeatAll {n : ℕ} (T : Tester n) (G : SimpleGraph (Fin n)) (k : ℕ) :
-    acceptProb (repeatAll T k) G = acceptProb T G ^ k :=
+    acceptProb (OracleComp.repeatAll T k) G = acceptProb T G ^ k :=
   OracleComp.evalWith_repeatAll_true_toReal _ T k
 
 /-- `k` repetitions of a `q`-query tester ask at most `q k` queries. -/
 theorem isQueryBounded_repeatAll {n : ℕ} {T : Tester n} {q : ℕ}
     (hT : ProbOracleComp.IsQueryBounded T q) (k : ℕ) :
-    ProbOracleComp.IsQueryBounded (repeatAll T k) (q * k) := by
+    ProbOracleComp.IsQueryBounded (OracleComp.repeatAll T k) (q * k) := by
   induction k with
   | zero => exact .pure _ _
   | succ k ih =>
@@ -347,7 +341,7 @@ theorem isOneSidedTester_repeatAll {n : ℕ} {T : Tester n} {P : SimpleGraph (Fi
     {ε δ : ℝ} {q k : ℕ} (hq : ProbOracleComp.IsQueryBounded T q)
     (hacc : ∀ G, P G → acceptProb T G = 1)
     (hrej : ∀ G, IsFar G P ε → acceptProb T G ≤ 1 - δ) (hk : 2 ≤ δ * k) :
-    IsOneSidedTester (repeatAll T k) P ε (q * k) where
+    IsOneSidedTester (OracleComp.repeatAll T k) P ε (q * k) where
   queryBounded := isQueryBounded_repeatAll hq k
   accept G hG := by rw [acceptProb_repeatAll, hacc G hG, one_pow]
   reject G hG := by

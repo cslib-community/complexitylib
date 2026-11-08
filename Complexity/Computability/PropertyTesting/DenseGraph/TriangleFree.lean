@@ -139,7 +139,7 @@ def triangleTrial (m : ℕ) : Tester (m + 1) := do
 without queries. -/
 def triangleTester : (n : ℕ) → ℕ → Tester n
   | 0, _ => pure true
-  | m + 1, k => repeatAll (triangleTrial m) k
+  | m + 1, k => OracleComp.repeatAll (triangleTrial m) k
 
 /-- A trial asks three queries. -/
 theorem isQueryBounded_triangleTrial (m : ℕ) :
