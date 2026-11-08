@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Name compound encodings that public statements repeat (#1656).
 
-Usage: python3 scripts/check_encoding_readability.py [--base REF | --all | --report]
+Usage: python3 scripts/check_encoding_readability.py
+           [--base REF | --all | --report | --list [PREFIX]]
            [--update-baseline [--allow-increase]] [--summary [N]] [--root DIR] [--baseline FILE]
 
 This checks rule 1 of "Encodings in statements" in AGENTS.md. A *compound encoding* is an
@@ -60,6 +61,13 @@ with the current violations; it refuses to add or raise an entry unless `--allow
 given, for instance when a module moves or a rename changes the spelling of recorded terms.
 `--summary` prints the totals, the counts per top-level directory of `Complexity/`, the modules
 with the most violations and the terms repeated in several modules.
+
+`--list [PREFIX]` is for the sweep. It ignores the baseline and prints every violation, with its
+declarations, in the modules whose path is PREFIX or lies under it (such as `Complexity/Logics`),
+or in every module. It also prints the `local notation`s whose right-hand side contains a compound
+encoding: the check reads a notation as an atom, so these hide compound encodings, and rule 3
+asks for a documented `abbrev` instead. It always succeeds, and combines with neither the other
+modes nor `--update-baseline` or `--summary`.
 
 The check reads only the sources: it needs no build outputs.
 """
@@ -128,6 +136,13 @@ class Violation:
     term: str  # canonical, with `?1`, `?2`, … for local variables
     spelling: str  # as first written
     declarations: list[tuple[str, int]] = field(default_factory=list)  # (name, line)
+
+
+@dataclass
+class Notation:
+    line: int
+    lhs: str  # the notation's name and parameters, as written
+    rhs: str  # with whitespace normalized
 
 
 @dataclass
@@ -258,9 +273,11 @@ def _fields(text: str, begin: int, end: int, owner: str, local_names: frozenset[
     return found
 
 
-def public_declarations(text: str) -> list[Declaration]:
+def public_declarations(text: str, notations: list[Notation] | None = None
+                        ) -> list[Declaration]:
     """The public declarations of a Lean source file outside `Internal` namespaces, with their
-    signatures."""
+    signatures. If `notations` is given, append to it the `local notation`s outside `Internal`
+    namespaces whose right-hand side contains a compound encoding."""
     _, syntax = masks(text)
     in_module = re.search(r"^module\b", syntax, re.M) is not None
     starts = sorted(set(command_starts(syntax)) | {m.start() for m in EXTRA_SCOPE.finditer(syntax)})
@@ -295,6 +312,15 @@ def public_declarations(text: str) -> list[Declaration]:
             del scopes[max(1, len(scopes) - count):]
         elif keyword == "variable":
             scope.variables = scope.variables | binder_names(command[pos:], stop_at_colon=False)
+        elif keyword == "notation" and "local" in modifiers and notations is not None:
+            arrow = command.find("=>", pos)
+            if arrow < 0 or "Internal" in scope.namespace:
+                continue
+            rhs = command[arrow + 2:]
+            if any(compound for *_, compound in encoding_terms(rhs)):
+                notations.append(Notation(text.count("\n", 0, start + keyword_start) + 1,
+                                          _normalize(text[start + pos:start + arrow]),
+                                          _normalize(rhs)))
         elif keyword in DECLARATIONS:
             if modifiers & {"private", "local"} or not (scope.public or "public" in modifiers):
                 continue
@@ -587,26 +613,36 @@ def module_violations(declarations: list[Declaration]) -> list[Violation]:
     return violations
 
 
-def checked_files(root: Path) -> list[Path]:
+def checked_files(root: Path, prefix: str = "") -> list[Path]:
+    """The checked modules, or those whose path relative to `root` is `prefix` or lies under it."""
+    parts = Path(prefix).parts
     return sorted(path for path in (root / "Complexity").rglob("*.lean")
-                  if "Internal" not in path.relative_to(root).with_suffix("").parts)
+                  if "Internal" not in path.relative_to(root).with_suffix("").parts
+                  and path.relative_to(root).parts[:len(parts)] == parts)
 
 
-def scan(root: Path) -> dict[str, list[Violation]]:
-    """The violations of each module that has any, by source path."""
+def scan(root: Path, prefix: str = "", notations: dict[str, list[Notation]] | None = None
+         ) -> dict[str, list[Violation]]:
+    """The violations of each module (under `prefix`) that has any, by source path. If
+    `notations` is given, record in it the `local notation`s of each module that abbreviate a
+    compound encoding."""
     found = {}
-    for path in checked_files(root):
+    for path in checked_files(root, prefix):
         rel = path.relative_to(root).as_posix()
         text = path.read_text(encoding="utf-8")
-        # A violation mentions combinators at least this often.
-        if len(COMBINATOR_NAME.findall(text)) < 2 * MIN_DECLARATIONS:
+        mentions = len(COMBINATOR_NAME.findall(text))
+        # A violation mentions combinators at least this often, a compound encoding twice.
+        notes = [] if notations is not None and mentions >= 2 and "notation" in text else None
+        if mentions < 2 * MIN_DECLARATIONS and notes is None:
             continue
         try:
-            violations = module_violations(public_declarations(text))
+            violations = module_violations(public_declarations(text, notes))
         except ValueError as error:
             raise ValueError(f"{rel}: {error}") from error
         if violations:
             found[rel] = violations
+        if notes:
+            notations[rel] = notes
     return found
 
 
@@ -651,17 +687,46 @@ def compare(current: dict[str, dict[str, int]], baseline: dict[str, dict[str, in
     return over, under
 
 
+def violation_lines(path: str, violation: Violation, entry: int = 0) -> list[str]:
+    """A violation with its declarations, and its baseline entry if it has one."""
+    spelling = f" (as `{violation.spelling}`)" if violation.spelling != violation.term else ""
+    recorded = f", baseline {entry}" if entry else ""
+    return [f"{path}: `{violation.term}`{spelling} in {len(violation.declarations)} public "
+            f"signatures{recorded}:",
+            *(f"  {path}:{line}: {name}" for name, line in violation.declarations)]
+
+
 def over_report(over: list[Change], found: dict[str, list[Violation]]) -> str:
     out = [f"A compound encoding that {MIN_DECLARATIONS} or more public statements of a module "
            "spell out needs a name (#1656; AGENTS.md, \"Encodings in statements\"). Name each "
            "term below with a documented reducible `abbrev`, or reuse one with the same meaning, "
            "and write the name in these statements:"]
-    for path, term, count, entry in over:
-        violation = next(v for v in found[path] if v.term == term)
-        spelling = f" (as `{violation.spelling}`)" if violation.spelling != term else ""
-        recorded = f", baseline {entry}" if entry else ""
-        out += ["", f"{path}: `{term}`{spelling} in {count} public signatures{recorded}:"]
-        out += [f"  {path}:{line}: {name}" for name, line in violation.declarations]
+    for path, term, _, entry in over:
+        out += ["", *violation_lines(path, next(v for v in found[path] if v.term == term), entry)]
+    return "\n".join(out)
+
+
+def listing(found: dict[str, list[Violation]], notations: dict[str, list[Notation]],
+            prefix: str, modules: int) -> str:
+    """Every violation and compound-encoding notation of the `modules` checked modules under
+    `prefix`, for `--list`."""
+    out = []
+    for path, violations in sorted(found.items()):
+        for violation in violations:
+            out += [*violation_lines(path, violation), ""]
+    if notations:
+        out.append("Local notations that abbreviate a compound encoding; replace each with a "
+                   "documented reducible `abbrev` (AGENTS.md, \"Encodings in statements\", "
+                   "rule 3):")
+        out += [f"  {path}:{notation.line}: local notation {notation.lhs} => {notation.rhs}"
+                for path, found_here in sorted(notations.items()) for notation in found_here]
+        out.append("")
+    where = f" under {prefix}" if prefix else ""
+    total = sum(len(violations) for violations in found.values())
+    count = sum(len(found_here) for found_here in notations.values())
+    out.append(f"{total} repeated compound encoding(s) in {len(found)} of {modules} checked "
+               f"module(s){where}, and {count} local notation(s) that abbreviate a compound "
+               "encoding; listing only, the baseline is ignored and nothing is enforced.")
     return "\n".join(out)
 
 
@@ -723,6 +788,11 @@ def main(argv: list[str] | None = None) -> int:
     scope.add_argument("--all", action="store_true", help="enforce in every module")
     scope.add_argument("--report", action="store_true",
                        help="report every difference from the baseline and succeed")
+    scope.add_argument("--list", nargs="?", const="", metavar="PREFIX",
+                       help="ignore the baseline and list every repeated compound encoding with "
+                            "its declarations, and the local notations that abbreviate a compound "
+                            "encoding, in the modules under the path PREFIX (such as "
+                            "Complexity/Logics) or in every module; always succeeds")
     parser.add_argument("--update-baseline", action="store_true",
                         help="rewrite the baseline entries of the enforced modules")
     parser.add_argument("--allow-increase", action="store_true",
@@ -739,6 +809,13 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--summary does not combine with --update-baseline")
     if args.report and args.update_baseline:
         parser.error("--report does not combine with --update-baseline")
+    if args.list is not None and (args.update_baseline or args.summary is not None):
+        parser.error("--list does not combine with --update-baseline or --summary")
+    if args.list is not None:
+        notations: dict[str, list[Notation]] = {}
+        found = scan(args.root, args.list, notations)
+        print(listing(found, notations, args.list, len(checked_files(args.root, args.list))))
+        return 0
     baseline_path = args.baseline or args.root / BASELINE.relative_to(ROOT)
     found = scan(args.root)
     current = counts(found)

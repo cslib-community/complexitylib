@@ -8,8 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Circuit.Boolean.Word.Rewire
-public import Complexity.Foundations.Data.Nat.HalvingRecurrence
 public import Complexity.Foundations.Data.Nat.LogTwoRpow
+import Complexity.Foundations.Data.Nat.HalvingRecurrence
 import Mathlib.Data.BitVec
 import Mathlib.Tactic.LinearCombination
 import Mathlib.Tactic.Ring
@@ -48,6 +48,18 @@ that is the low `w` bits, while `mulBits` has all `2w` bits. The constants here 
 asymptotic saving is a factor `w ^ (2 - log₂ 3)`, even against a circuit that returns half
 the bits.
 
+A fairer baseline for the full product is `Modular.multiply (2w)` on zero-extended inputs (that
+wiring is not formalized here). Its bounds are `63 (2w + 1)²` gates and depth
+`9 + 14 ⌈log₂ (2w + 1)⌉` (`Modular.depth_multiply_le`). `Karatsuba.gates_add_one_lt` shows
+`gates w + 1 < 63 (2w + 1)²` for every `w`, so Karatsuba is below that gate bound at all widths.
+It pays in depth: the ripple-carry additions make its depth linear in `w`, which is not
+formalized either. Both comparisons are against an upper bound on the schoolbook circuit, not its
+exact size.
+
+Callers of `Synthesis.word_mul_karatsuba` must make the `false` constant available. The
+construction uses it for the high bit at width `1` and for the zero bits of shifted and
+zero-extended words. `complexity_mulBits_le` charges one gate for it.
+
 ## Main definitions
 
 * `Cslib.Circuits.Boolean.Karatsuba.gates`: the gate count of the construction.
@@ -64,6 +76,8 @@ the bits.
 * `Cslib.Circuits.Boolean.Karatsuba.gates_le_pow_clog`, `Karatsuba.gates_le_rpow`:
   `gates w ≤ 419 · 3 ^ ⌈log₂ w⌉ ≤ 1257 w ^ log₂ 3`.
 * `Cslib.Circuits.Boolean.complexity_mulBits_le_rpow`: complexity at most `1257 w ^ log₂ 3 + 1`.
+* `Cslib.Circuits.Boolean.Karatsuba.gates_add_one_lt`: `gates w + 1 < 63 (2w + 1)²`, below the
+  schoolbook bound at width `2w`.
 
 ## References
 
@@ -266,12 +280,9 @@ theorem gates_of_two_le {w : ℕ} (hw : 2 ≤ w) :
 
 /-! ### The synthesis bound -/
 
-/-- `Synthesis.Builder.add` with the new targets stated explicitly. Stating them keeps the
-accumulated family syntactic, so membership in it can be checked at reducible transparency. -/
-private theorem extendTo {n a b : ℕ} {s t : Set (BooleanFunction n)}
-    (h : Synthesis interpretation s t a) (u : Set (BooleanFunction n))
-    (h' : Synthesis interpretation t u b) : Synthesis interpretation s (t ∪ u) (a + b) :=
-  h.comp (h'.mono Set.subset_union_right Set.Subset.rfl le_rfl)
+-- `avail` and `availm` are restricted forms of the public `synthesis_available`. They match
+-- only syntactic union members at reducible transparency and never look inside a wire family.
+-- On the fifteen-step chain below, `synthesis_available` exceeds the default heartbeat budget.
 
 /-- Close `X ⊆ A₀ ∪ T₁ ∪ ⋯ ∪ Tₖ` when `X` is `A₀` or syntactically some `Tᵢ`. -/
 local syntax "avail" : tactic
@@ -302,7 +313,7 @@ private theorem synthesis_wideMul {n : ℕ} (w : ℕ) : ∀ (s : Set (BooleanFun
       rintro _ ⟨i, _⟩
       exact i.elim0
     · -- One conjunction for the low bit; the high bit is the available `false`.
-      have h := extendTo (Synthesis.of_subset (I := interpretation) (Set.Subset.rfl : s ⊆ s)) _
+      have h := (Synthesis.of_subset (I := interpretation) (Set.Subset.rfl : s ⊆ s)).extend _
         ((Synthesis.of_mem (I := interpretation) (ha ⟨0, rfl⟩)).and
           (Synthesis.of_mem (hb ⟨0, rfl⟩)))
       refine h.mono Set.Subset.rfl ?_ (by simp)
@@ -342,49 +353,49 @@ private theorem synthesis_wideMul {n : ℕ} (w : ℕ) : ∀ (s : Set (BooleanFun
       ⟨⟨m, by omega⟩, rfl⟩
     -- Each step adds its targets to the available family; `avail`/`availm` locate earlier ones.
     have S0 : Synthesis interpretation s s 0 := Synthesis.of_subset Set.Subset.rfl
-    have S1 := extendTo S0 (wordWires fun x => z0 m (a x) (b x))
+    have S1 := S0.extend (wordWires fun x => z0 m (a x) (b x))
       (ih m hmw s (fun x => low m (a x)) (fun x => low m (b x)) hloa hlob hz)
-    have S2 := extendTo S1 (wordWires fun x => z2 m (a x) (b x))
+    have S2 := S1.extend (wordWires fun x => z2 m (a x) (b x))
       (ih m hmw _ (fun x => high m (a x)) (fun x => high m (b x))
         (hhia.trans (by avail)) (hhib.trans (by avail)) (by availm))
-    have S3 := extendTo S2 (wordWires fun x => midSum m (a x))
+    have S3 := S2.extend (wordWires fun x => midSum m (a x))
       (Synthesis.word_add (fun x => (low m (a x)).setWidth (m + 1))
         (fun x => (high m (a x)).setWidth (m + 1))
         (wordWires_subset_iff.mp ((wordWires_setWidth_subset hloa hz).trans (by avail)))
         (wordWires_subset_iff.mp ((wordWires_setWidth_subset hhia hz).trans (by avail))))
-    have S4 := extendTo S3 (wordWires fun x => midSum m (b x))
+    have S4 := S3.extend (wordWires fun x => midSum m (b x))
       (Synthesis.word_add (fun x => (low m (b x)).setWidth (m + 1))
         (fun x => (high m (b x)).setWidth (m + 1))
         (wordWires_subset_iff.mp ((wordWires_setWidth_subset hlob hz).trans (by avail)))
         (wordWires_subset_iff.mp ((wordWires_setWidth_subset hhib hz).trans (by avail))))
-    have S5 := extendTo S4 (wordWires fun x => z1 m (a x) (b x))
+    have S5 := S4.extend (wordWires fun x => z1 m (a x) (b x))
       (ih m hmw _ (fun x => midRem m (a x)) (fun x => midRem m (b x))
         (hra (by avail) (by availm)) (hrb (by avail) (by availm)) (by availm))
-    have S6 := extendTo S5 (wordWires fun x => mask m (a x) (b x))
+    have S6 := S5.extend (wordWires fun x => mask m (a x) (b x))
       (Synthesis.word_mask (f := fun x => midCarry m (a x)) (b := fun x => midRem m (b x))
         (by availm) (hrb (by avail) (by availm)))
-    have S7 := extendTo S6 (wordWires fun x => mask m (b x) (a x))
+    have S7 := S6.extend (wordWires fun x => mask m (b x) (a x))
       (Synthesis.word_mask (f := fun x => midCarry m (b x)) (b := fun x => midRem m (a x))
         (by availm) (hra (by avail) (by availm)))
-    have S8 := extendTo S7 {fun x => midCarry m (a x) && midCarry m (b x)}
+    have S8 := S7.extend {fun x => midCarry m (a x) && midCarry m (b x)}
       ((Synthesis.of_mem (I := interpretation) (f := fun x => midCarry m (a x))
         (by availm)).and (Synthesis.of_mem (f := fun x => midCarry m (b x)) (by availm)))
     have hcc : (fun x => (midCarry m (a x) && midCarry m (b x))) ∈
         ({fun x => midCarry m (a x) && midCarry m (b x)} : Set (BooleanFunction n)) := rfl
-    have S9 := extendTo S8 (wordWires fun x => p1 m (a x) (b x))
+    have S9 := S8.extend (wordWires fun x => p1 m (a x) (b x))
       (Synthesis.word_add (fun x => (z1 m (a x) (b x)).setWidth (w + w))
         (fun x => (mask m (a x) (b x)).setWidth (w + w) <<< m)
         (wordWires_subset_iff.mp (wordWires_setWidth_subset
           (value := fun x => z1 m (a x) (b x)) (by avail) (by availm)))
         (wordWires_subset_iff.mp (wordWires_shiftLeft_subset (wordWires_setWidth_subset
           (value := fun x => mask m (a x) (b x)) (by avail) (by availm)) (by availm))))
-    have S10 := extendTo S9 (wordWires fun x => p2 m (a x) (b x))
+    have S10 := S9.extend (wordWires fun x => p2 m (a x) (b x))
       (Synthesis.word_add (fun x => p1 m (a x) (b x))
         (fun x => (mask m (b x) (a x)).setWidth (w + w) <<< m)
         (wordWires_subset_iff.mp (by avail))
         (wordWires_subset_iff.mp (wordWires_shiftLeft_subset (wordWires_setWidth_subset
           (value := fun x => mask m (b x) (a x)) (by avail) (by availm)) (by availm))))
-    have S11 := extendTo S10 (wordWires fun x => p m (a x) (b x))
+    have S11 := S10.extend (wordWires fun x => p m (a x) (b x))
       (Synthesis.word_add (fun x => p2 m (a x) (b x))
         (fun x =>
           (BitVec.ofBool (midCarry m (a x) && midCarry m (b x))).setWidth (w + w) <<< (m + m))
@@ -392,26 +403,26 @@ private theorem synthesis_wideMul {n : ℕ} (w : ℕ) : ∀ (s : Set (BooleanFun
         (wordWires_subset_iff.mp (wordWires_shiftLeft_subset (wordWires_setWidth_subset
           (wordWires_ofBool (f := fun x => midCarry m (a x) && midCarry m (b x)) (by availm))
           (by availm)) (by availm))))
-    have S12 := extendTo S11 (wordWires fun x => q1 m (a x) (b x))
+    have S12 := S11.extend (wordWires fun x => q1 m (a x) (b x))
       (Synthesis.word_sub (fun x => p m (a x) (b x))
         (fun x => (z0 m (a x) (b x)).setWidth (w + w))
         (wordWires_subset_iff.mp (by avail))
         (wordWires_subset_iff.mp (wordWires_setWidth_subset
           (value := fun x => z0 m (a x) (b x)) (by avail) (by availm))))
-    have S13 := extendTo S12 (wordWires fun x => q m (a x) (b x))
+    have S13 := S12.extend (wordWires fun x => q m (a x) (b x))
       (Synthesis.word_sub (fun x => q1 m (a x) (b x))
         (fun x => (z2 m (a x) (b x)).setWidth (w + w))
         (wordWires_subset_iff.mp (by avail))
         (wordWires_subset_iff.mp (wordWires_setWidth_subset
           (value := fun x => z2 m (a x) (b x)) (by avail) (by availm))))
-    have S14 := extendTo S13 (wordWires fun x => r1 m (a x) (b x))
+    have S14 := S13.extend (wordWires fun x => r1 m (a x) (b x))
       (Synthesis.word_add (fun x => (z0 m (a x) (b x)).setWidth (w + w))
         (fun x => q m (a x) (b x) <<< m)
         (wordWires_subset_iff.mp (wordWires_setWidth_subset
           (value := fun x => z0 m (a x) (b x)) (by avail) (by availm)))
         (wordWires_subset_iff.mp (wordWires_shiftLeft_subset (g := fun x => q m (a x) (b x))
           (by avail) (by availm))))
-    have S15 := extendTo S14 (wordWires fun x => r m (a x) (b x))
+    have S15 := S14.extend (wordWires fun x => r m (a x) (b x))
       (Synthesis.word_add (fun x => r1 m (a x) (b x))
         (fun x => (z2 m (a x) (b x)).setWidth (w + w) <<< (m + m))
         (wordWires_subset_iff.mp (by avail))
@@ -435,7 +446,12 @@ open Boolean
 variable {n w : ℕ} {s : Set (BooleanFunction n)}
 
 /-- **Karatsuba multiplication.** From available `w`-bit words `a` and `b` and the `false`
-constant, the `2w` bits of `a * b` cost `Karatsuba.gates w` gates. -/
+constant, the `2w` bits of `a * b` cost `Karatsuba.gates w` gates.
+
+The `false` constant must be in `s` (hypothesis `hz`). It supplies the high bit at width `1` and
+the zero bits of shifted and zero-extended words, and it is not charged here. A client whose
+sources are only the inputs first adds it with `Synthesis.const`, one more gate, as
+`complexity_mulBits_le` does. -/
 theorem word_mul_karatsuba (a b : BitString n → BitVec w)
     (ha : ∀ i : Fin w, (fun x => (a x).getLsbD i.val) ∈ s)
     (hb : ∀ i : Fin w, (fun x => (b x).getLsbD i.val) ∈ s) (hz : (fun _ => false) ∈ s) :
@@ -478,6 +494,22 @@ theorem gates_le_rpow (n : ℕ) : (gates n : ℝ) ≤ 1257 * (n : ℝ) ^ Real.lo
       exact_mod_cast gates_le_pow_clog n
     push_cast at h h' ⊢
     linarith
+
+/-- `gates w + 1 < 63 (2w + 1)²` for every `w`. The right side is the bound
+`Modular.size_multiply_le` for the schoolbook multiplier at width `2w`, which on zero-extended
+inputs gives all `2w` bits of the product. So Karatsuba's full product, including its `false`
+constant, is below that bound at every width. -/
+theorem gates_add_one_lt (w : ℕ) : gates w + 1 < 63 * (w + w + 1) ^ 2 := by
+  induction w using Nat.strong_induction_on with
+  | _ w ih =>
+  rcases Nat.lt_or_ge w 12 with hw | hw
+  · have small : ∀ v < 12, gates v + 1 < 63 * (v + v + 1) ^ 2 := by decide +kernel
+    exact small w hw
+  · have hm := ih ((w + 1) / 2) (by omega)
+    rw [gates_of_two_le (by omega)]
+    have h2m : (w + 1) / 2 + (w + 1) / 2 + 1 ≤ w + 2 := by omega
+    have hsq := Nat.pow_le_pow_left h2m 2
+    nlinarith
 
 end Karatsuba
 

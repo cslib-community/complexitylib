@@ -220,7 +220,7 @@ class RatchetTests(unittest.TestCase):
         """Run the check in the whole tree (`--all`) unless `flags` choose another scope."""
         if baseline is not None:
             self.baseline.write_text(json.dumps(baseline))
-        scope = [] if {"--base", "--report"} & set(flags) else ["--all"]
+        scope = [] if {"--base", "--report", "--list"} & set(flags) else ["--all"]
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             code = c.main(["--root", str(self.root), "--baseline", str(self.baseline), *scope,
@@ -284,6 +284,64 @@ class RatchetTests(unittest.TestCase):
         self.assertIn("1 repeated compound encoding(s) in 1 module(s), spelled out in 3", out)
         self.assertIn("Area\t1\t1", out)
         self.assertIn("1\t3\tComplexity/Area/A.lean", out)
+
+    def test_list_ignores_the_baseline_and_always_succeeds(self) -> None:
+        for baseline in ({"Complexity/Area/A.lean": {TERM: 3}}, {}, None):
+            with self.subTest(baseline=baseline):
+                code, out, err = self.run_main(baseline, "--list")
+                self.assertEqual((code, err), (0, ""))
+                self.assertIn(f"Complexity/Area/A.lean: `{TERM}` in 3 public signatures:", out)
+                self.assertIn("Complexity/Area/A.lean:8: a", out)
+                self.assertNotIn("baseline 3", out)
+                self.assertIn("1 repeated compound encoding(s) in 1 of 1 checked module(s), and "
+                              "0 local notation(s)", out)
+                self.assertNotIn("Internal", out)
+        self.assertEqual(self.run_main({}, "--all")[0], 1)  # the same tree fails enforcement
+
+    def test_list_restricts_to_a_path_prefix(self) -> None:
+        other = self.root / "Complexity/Areas/B.lean"
+        other.parent.mkdir(parents=True)
+        other.write_text(HEADER + "".join(theorem(n) for n in "xyz"))
+        for prefix, shown, status in (
+                ("Complexity/Area", "A.lean", "1 repeated compound encoding(s) in 1 of 1 checked "
+                                              "module(s) under Complexity/Area,"),
+                ("./Complexity/Areas/", "B.lean", "in 1 of 1 checked module(s) under"),
+                ("Complexity/Area/A.lean", "A.lean", "in 1 of 1 checked module(s) under"),
+                ("Complexity/Are", None, "0 repeated compound encoding(s) in 0 of 0 checked"),
+                ("", "A.lean", "2 repeated compound encoding(s) in 2 of 2 checked module(s), and")):
+            with self.subTest(prefix=prefix):
+                code, out, _ = self.run_main(None, "--list", prefix)
+                self.assertEqual(code, 0)
+                self.assertIn(status, out)
+                for name in ("A.lean", "B.lean"):
+                    (self.assertIn if name == shown or not prefix else self.assertNotIn)(
+                        f"{name}: `{TERM}`", out)
+
+    def test_list_reports_local_notations_for_compound_encodings(self) -> None:
+        self.module.write_text(
+            HEADER + f'/-- A doc. -/\nlocal notation "encX" =>\n  {TERM}\n\n'
+            'local notation "encY" => encPair encNat encBool\n'
+            'notation "encZ" => encPair encNat (encList encBool)\n'
+            'namespace Internal\nlocal notation "encW" => encList (encList encBool)\nend Internal\n'
+            'local notation "encV" e => encPair e (encOption encBool)\n'
+            "theorem a : True := trivial\n")
+        code, out, _ = self.run_main(None, "--list")
+        self.assertEqual(code, 0)
+        self.assertIn(f'Complexity/Area/A.lean:9: local notation "encX" => {TERM}\n', out)
+        self.assertIn('Complexity/Area/A.lean:17: local notation "encV" e => '
+                      "encPair e (encOption encBool)\n", out)
+        for name in ("encY", "encZ", "encW"):
+            self.assertNotIn(name, out)
+        self.assertIn("0 repeated compound encoding(s) in 0 of 1 checked module(s), and 2 local "
+                      "notation(s)", out)
+        self.assertEqual(self.run_main({}, "--all")[0], 0)  # notations never fail the check
+
+    def test_list_combines_with_no_other_mode(self) -> None:
+        for flags in (("--all",), ("--report",), ("--base", "origin/main"), ("--update-baseline",),
+                      ("--update-baseline", "--allow-increase"), ("--summary",)):
+            with self.subTest(flags=flags), self.assertRaises(SystemExit) as raised:
+                self.run_main({}, "--list", *flags)
+            self.assertEqual(raised.exception.code, 2)
 
 
 
