@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Erik Demaine
 -/
 
-import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.IntersectionParity
+import Complexity.Computability.Complexity.Problems.Graph.ClosedPassages.Loop
 import Mathlib.Tactic.FinCases
 
 /-!
@@ -67,27 +67,8 @@ private def emptyPassages (G : Graph) : ClosedPassages G (fun _ => false) where
       right_inv := fun d => False.elim (Bool.false_ne_true d.property) }
   vertex_eq := fun i => Fin.elim0 i
 
-private def loopPassages {G : Graph} (e : Fin G.2.length)
-    (he : (Dart.vertex (G := G) (e, false)) = Dart.vertex (e, true)) :
-    ClosedPassages G (fun i => decide (i = e)) where
-  count := 1
-  ports :=
-    { toFun := fun p => ⟨(e, p.2), by simp⟩
-      invFun := fun d => (0, d.val.2)
-      left_inv := by
-        rintro ⟨i, b⟩
-        have hi : i = 0 := Subsingleton.elim _ _
-        subst i
-        rfl
-      right_inv := by
-        rintro ⟨⟨i, b⟩, hi⟩
-        have hei : i = e := of_decide_eq_true hi
-        subst i
-        rfl }
-  vertex_eq := fun _ => he
-
-private def firstLoop := loopPassages (G := bouquet) 0 (by decide)
-private def secondLoop := loopPassages (G := bouquet) 1 (by decide)
+private noncomputable def firstLoop := ClosedPassages.loop (G := bouquet) 0 (by decide)
+private noncomputable def secondLoop := ClosedPassages.loop (G := bouquet) 1 (by decide)
 
 -- A bridge cannot carry a nonzero vertex-even label; its one face has equal colors on both ends.
 example (x : Fin 1 → Bool) (hx : bridge.VertexEven x) : x 0 = false := by
@@ -311,8 +292,8 @@ example (x : Fin 2 → Bool) : ∃ q, sparseRotation.faceBoundary q = x :=
       (loops_even (G := sparseGraph) (by decide) x)
 
 example : sparseRotation.intersectionParity
-    (loopPassages (G := sparseGraph) 0 (by decide))
-    (loopPassages (G := sparseGraph) 1 (by decide)) = false :=
+    (ClosedPassages.loop (G := sparseGraph) 0 (by decide))
+    (ClosedPassages.loop (G := sparseGraph) 1 (by decide)) = false :=
   sparseRotation.intersectionParity_eq_false (by decide)
     (genus_of_verify sparseRotation (by decide) (by decide)) _ _ (by decide)
 
