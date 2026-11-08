@@ -7,7 +7,8 @@ Authors: OpenAI
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.CornerGenus
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.FaceCounts
+public import Complexity.Foundations.GroupTheory.Perm.SelectedOrbits
 public import Complexity.Computability.Complexity.Problems.Graph.DartConnectivity
 
 /-!
@@ -23,7 +24,7 @@ public section
 
 namespace Cslib.Complexity.Graph.RotationSystem
 
-open Equiv RotationCertificate CornerFaces
+open Equiv RotationCertificate Perm.SelectedOrbits
 
 /-- Reinterpret literally equal listed graphs by retaining their edge indices and end bits. -/
 @[expose] def graphEqDartEquiv {G H : Graph} (h : G = H) : Dart G ≃ Dart H :=

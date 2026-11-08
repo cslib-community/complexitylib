@@ -7,25 +7,12 @@ Authors: OpenAI
 -- upstream: candidate
 
 import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.VertexMergeGenus
-import Complexity.Foundations.GroupTheory.Perm.InvariantPredicate
 
 /-! Active transpositions, nonconstant selections and literal vertex-identification tables. -/
 
 namespace ComplexityTests.VertexIdentification
 
-open Cslib.Complexity Graph.RotationSystem Graph.RotationSystem.CornerFaces
-
--- The swapped elements are distinct and both satisfy a genuinely nonconstant predicate.
-example (x : Fin 4) : (Equiv.swap (0 : Fin 4) 1 x).val < 2 ↔ x.val < 2 :=
-  Equiv.predicate_swap (fun x : Fin 4 => x.val < 2) 0 1 (by decide) x
-
-example : Equiv.swap (0 : Fin 4) 1 0 = 1 ∧ ¬ (2 : Fin 4).val < 2 := by decide
-
-example : Nat.card (OrbitOn (Equiv.swap (0 : Fin 4) 1 * Equiv.swap 0 1)
-      (fun x : Fin 4 => x.val < 2)) =
-    Nat.card (OrbitOn (Equiv.swap (0 : Fin 4) 1) (fun x : Fin 4 => x.val < 2)) + 1 := by
-  simpa using card_orbitOn_swap_mul (Equiv.swap (0 : Fin 4) 1) (fun x => x.val < 2)
-    (by decide +kernel) 0 1 (by decide) (by decide +kernel)
+open Cslib.Complexity Graph.RotationSystem
 
 private abbrev edge : Graph := ([0, 1, 8], [(0, 1)])
 

@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.CornerInsertion
-public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.CycleSplice
+public import Complexity.Foundations.GroupTheory.Perm.CycleSurgery
 import Mathlib.Data.List.GetD
 
 /-!
@@ -25,7 +25,7 @@ public section
 
 namespace Cslib.Complexity.Graph.RotationSystem
 
-open Equiv CycleSplice
+open Equiv Perm.CycleSurgery
 
 /-- The actual graph before deleting its last edge; no corner darts are required at points. -/
 @[expose] def lastEdgeGraph (G : Graph) (u v : ℕ) : Graph := (G.1, G.2 ++ [(u, v)])

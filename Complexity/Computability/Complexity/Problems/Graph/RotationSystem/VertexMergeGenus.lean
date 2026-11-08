@@ -9,7 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.VertexMerge
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Transport
-public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.SelectedSwap
+public import Complexity.Foundations.GroupTheory.Perm.SelectedOrbits
 
 /-!
 # Component and face counts for vertex identification
@@ -23,7 +23,7 @@ public section
 
 namespace Cslib.Complexity.Graph.RotationSystem
 
-open Equiv RotationCertificate CornerFaces
+open Equiv RotationCertificate Perm.SelectedOrbits
 
 /-- Original declared endpoints remain declared under the actual name update. -/
 theorem mergeGraph_endpoints_declared {G : Graph} (h k : Dart G)

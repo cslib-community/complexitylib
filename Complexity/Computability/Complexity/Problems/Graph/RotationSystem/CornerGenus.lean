@@ -7,7 +7,8 @@ Authors: OpenAI
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.ComponentSplice
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.CornerFaces
+public import Complexity.Foundations.GroupTheory.Perm.SelectedOrbits
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.FaceCounts
 
 /-!
@@ -103,19 +104,12 @@ theorem card_componentEdgeSet_cornerGraph {G : Graph} (h k : Dart G)
       (fun edge => decide (SameComponent G root edge.1)) = _
   simp
 
-/-- Old face steps preserve each declared component selection. -/
-theorem component_faceNext_iff {G : Graph} (r : RotationSystem G)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (root : ℕ) (d : Dart G) :
-    SameComponent G root (r.faceNext d).vertex ↔ SameComponent G root d.vertex := by
-  have hs := r.sameComponent_faceNext hG d
-  exact ⟨fun h => h.trans hs.symm, fun h => h.trans hs⟩
-
 /-- The actual component selection agrees with the old dart selection extended to the two
 new edge ends. No injectivity of vertices or boundary labels is used. -/
 theorem component_cornerDartEquiv {G : Graph} (h k : Dart G)
     (hc : SameComponent G h.vertex k.vertex) (root : ℕ) (z : Option (Option (Dart G))) :
     SameComponent (cornerGraph h k) root ((cornerDartEquiv h k).symm z).vertex ↔
-      CornerFaces.extendedPredicate (fun d : Dart G => SameComponent G root d.vertex)
+      Equiv.Perm.SelectedOrbits.extendedPredicate (fun d : Dart G => SameComponent G root d.vertex)
         (SameComponent G root h.vertex) z := by
   rcases z with _ | (_ | d)
   · change SameComponent (cornerGraph h k) root (newCornerDart h k true).vertex ↔ _
@@ -139,9 +133,9 @@ theorem card_componentFace_insertEdge {G : Graph} (r : RotationSystem G)
   classical
   have hc := r.sameComponent_of_sameFace hG hf
   let p := fun d : Dart G => SameComponent G root d.vertex
-  let q := CornerFaces.extendedPredicate p (p h)
+  let q := Equiv.Perm.SelectedOrbits.extendedPredicate p (p h)
   have hm : ∀ d, cornerDartEquiv h k ((r.insertEdge h k).faceNext d) =
-      CornerFaces.splice r.faceNext h k (cornerDartEquiv h k d) := by
+      Equiv.Perm.CycleSurgery.splice r.faceNext h k (cornerDartEquiv h k d) := by
     intro d
     have he := congrArg (fun f => f (cornerDartEquiv h k d)) (r.faceNext_insertEdge h k)
     simpa only [Equiv.permCongr_apply, Equiv.symm_apply_apply] using he
@@ -150,11 +144,12 @@ theorem card_componentFace_insertEdge {G : Graph} (r : RotationSystem G)
     intro d
     simpa only [Equiv.symm_apply_apply, q, p] using
       component_cornerDartEquiv h k hc root (cornerDartEquiv h k d)
-  have he := Nat.card_congr (CornerFaces.orbitOnEquiv (cornerDartEquiv h k)
-    (r.insertEdge h k).faceNext (CornerFaces.splice r.faceNext h k) hm
+  have he := Nat.card_congr (Equiv.Perm.SelectedOrbits.orbitOnEquiv (cornerDartEquiv h k)
+    (r.insertEdge h k).faceNext (Equiv.Perm.CycleSurgery.splice r.faceNext h k) hm
     (fun d : Dart (cornerGraph h k) => SameComponent (cornerGraph h k) root d.vertex) q hp)
   rw [he]
-  exact CornerFaces.card_orbitOn_splice r.faceNext p (r.component_faceNext_iff hG root) h k
+  exact Equiv.Perm.SelectedOrbits.card_orbitOn_splice r.faceNext p
+    (r.component_faceNext_iff hG root) h k
     ⟨fun h => h.trans hc, fun h => h.trans hc.symm⟩ hf
 
 /-- Every new dart vertex is an old dart vertex. This uses occurrence corners, so distinct

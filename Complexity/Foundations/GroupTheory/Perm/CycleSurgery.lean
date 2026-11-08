@@ -5,9 +5,9 @@ Authors: OpenAI
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib GroupTheory/Perm/Cycle)
 
-public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.DartInsertion
+public import Complexity.Foundations.GroupTheory.Perm.InsertAfter
 public import Complexity.Foundations.GroupTheory.Perm.Doubled
 import Mathlib.SetTheory.Cardinal.NatCard
 
@@ -21,10 +21,10 @@ the directed successor convention and serve face-cycle accounting for rotation s
 
 public section
 
-namespace Cslib.Complexity.Graph.RotationSystem.CycleSplice
+namespace Equiv.Perm.CycleSurgery
 
 open Equiv
-open DartInsertion
+open Insertion
 
 variable {α : Type} [DecidableEq α] [Finite α]
 
@@ -317,4 +317,87 @@ theorem card_orbits_swap_mul (f : Perm α) (a b : α) (hab : a ≠ b) :
   rw [he, card_orbits_inv, card_orbits_inv] at h
   simpa only [Perm.sameCycle_inv] using h
 
-end Cslib.Complexity.Graph.RotationSystem.CycleSplice
+
+variable {α : Type} [DecidableEq α]
+
+/-- The literal face successor after inserting the two edge ends. `some none` is the first
+new end and `none` the second; the remaining points are old indexed darts. -/
+@[expose] def splice (f : Perm α) (h k : α) : Perm (Option (Option α)) :=
+  swap (some (some k)) none * swap (some (some h)) (some none) *
+    f.optionCongr.optionCongr * swap (some none) none
+
+/-- Deleting the second new end leaves the first inserted before `k`, in the permutation
+whose incoming successors at `h` and `k` have been interchanged. This holds also for `h=k`. -/
+theorem removeNone_splice (f : Perm α) (h k : α) :
+    removeNone (splice f h k) =
+      swap (some k) none * (swap h k * f).optionCongr := by
+  apply Equiv.optionCongr_injective
+  rw [map_equiv_removeNone]
+  apply Equiv.ext
+  intro z
+  rcases z with _ | (_ | a)
+  · simp [splice, swap_apply_def]
+  · by_cases hk : h = k
+    · simp [splice, swap_apply_def, hk]
+    · simpa [splice, swap_apply_def, hk] using Ne.symm hk
+  · by_cases hah : f a = h
+    · by_cases hk : h = k <;> simp [splice, swap_apply_def, hah, hk]
+    · by_cases hak : f a = k
+      · have hkh : k ≠ h := by intro he; exact hah (hak.trans he)
+        simp [splice, swap_apply_def, hak, hkh, hkh.symm]
+      · simp [splice, swap_apply_def, hah, hak]
+
+/-- The first inserted end is never a singleton face after deleting the second end. -/
+theorem removeNone_splice_none (f : Perm α) (h k : α) :
+    removeNone (splice f h k) none = some k := by
+  rw [removeNone_splice]
+  simp
+
+/-- The second inserted end is a singleton face exactly for coincident corners. -/
+theorem splice_none_fixed_iff (f : Perm α) (h k : α) :
+    splice f h k none = none ↔ h = k := by
+  by_cases hk : h = k
+  · subst k; simp [splice]
+  · simp [splice, swap_apply_def, hk]
+
+/-- Removing both inserted ends leaves precisely the incoming-successor swap. -/
+theorem removeNone_removeNone_splice (f : Perm α) (h k : α) :
+    removeNone (removeNone (splice f h k)) = swap h k * f := by
+  apply Equiv.optionCongr_injective
+  rw [map_equiv_removeNone, removeNone_splice_none, removeNone_splice]
+  rw [← mul_assoc, swap_comm none (some k), swap_mul_self, one_mul]
+
+/-- Exact face count before distinguishing the equal-corner and two-corner cases. -/
+theorem card_orbits_splice [Finite α] (f : Perm α) (h k : α) :
+    Nat.card (Quotient (Perm.SameCycle.setoid (splice f h k))) =
+      Nat.card (Quotient (Perm.SameCycle.setoid (swap h k * f))) +
+        if h = k then 1 else 0 := by
+  have h₁ := card_orbits_removeNone_add (splice f h k)
+  have h₂ := card_orbits_removeNone (removeNone (splice f h k))
+    (by rw [removeNone_splice_none]; simp)
+  rw [removeNone_removeNone_splice] at h₂
+  rw [← h₂] at h₁
+  simpa only [splice_none_fixed_iff] using h₁
+
+/-- Cofacial corners, including coincident corners, gain exactly one face. -/
+theorem card_orbits_splice_sameCycle [Finite α] (f : Perm α) (h k : α)
+    (hc : f.SameCycle h k) :
+    Nat.card (Quotient (Perm.SameCycle.setoid (splice f h k))) =
+      Nat.card (Quotient (Perm.SameCycle.setoid f)) + 1 := by
+  rw [card_orbits_splice]
+  by_cases hk : h = k
+  · subst k; rw [swap_self]; simp only [↓reduceIte]; rfl
+  · have he := (card_orbits_swap_mul f h k hk).1 hc
+    simp only [hk, ite_false, Nat.add_zero, he]
+
+/-- Different face cycles merge, so the total face count decreases by one. -/
+theorem card_orbits_splice_of_not_sameCycle [Finite α] (f : Perm α) (h k : α)
+    (hc : ¬ f.SameCycle h k) :
+    Nat.card (Quotient (Perm.SameCycle.setoid (splice f h k))) + 1 =
+      Nat.card (Quotient (Perm.SameCycle.setoid f)) := by
+  have hk : h ≠ k := fun he => hc (he ▸ Perm.SameCycle.rfl)
+  rw [card_orbits_splice]
+  simp only [hk, ite_false, Nat.add_zero]
+  exact (card_orbits_swap_mul f h k hk).2 hc
+
+end Equiv.Perm.CycleSurgery

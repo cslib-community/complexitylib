@@ -5,24 +5,24 @@ Authors: OpenAI
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib GroupTheory/Perm/Option)
 
-public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem
+public import Complexity.Init
+public import Complexity.Foundations.GroupTheory.Perm.Doubled
 public import Mathlib.GroupTheory.Perm.Option
 
 /-!
-# Inserting one dart at a specified corner
+# Inserting a point in a permutation cycle
 
-The new dart is inserted immediately after the specified old dart. The successor equations
-fix the orientation, including when the old vertex cycle is a singleton. The orbit
-correspondence includes fixed points; counting only nontrivial permutation factors would
-lose unary faces. These are permutation ingredients for indexed rotation surgery, with no
-geometric interpretation or genus-preservation assertion on their own.
+`Equiv.Perm.Insertion.insertAfter` inserts an optional point immediately after a chosen
+point. Exact successor equations, complete orbit correspondence and the `removeNone`
+inverse include singleton cycles. The results are about arbitrary permutations and have
+no graph dependency or geometric hypothesis.
 -/
 
 public section
 
-namespace Cslib.Complexity.Graph.RotationSystem.DartInsertion
+namespace Equiv.Perm.Insertion
 
 open Equiv
 
@@ -187,4 +187,15 @@ theorem card_orbits_removeNone [Finite α] (f : Perm (Option α)) (hn : f none �
   conv_rhs => rw [← insertAfter_removeNone f h he]
   exact (card_orbits_insertAfter (removeNone f) h).symm
 
-end Cslib.Complexity.Graph.RotationSystem.DartInsertion
+/-- Inserting two points gives the two literal outgoing-successor swaps. -/
+theorem insertAfter_twice {α : Type} [DecidableEq α] (f : Perm α) (h k : α) :
+    insertAfter (insertAfter f h) (some k) = f.optionCongr.optionCongr *
+      swap (some (some h)) (some none) * swap (some (some k)) none := by
+  have hm : (f.optionCongr * swap (some h) none).optionCongr =
+      f.optionCongr.optionCongr * (swap (some h) none).optionCongr := by
+    apply Equiv.ext
+    rintro (_ | z) <;> rfl
+  dsimp only [insertAfter]
+  rw [hm, Equiv.optionCongr_swap]
+
+end Equiv.Perm.Insertion

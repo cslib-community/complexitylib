@@ -26,7 +26,7 @@ public section
 
 namespace Cslib.Complexity.Graph.RotationSystem
 
-open Equiv RotationCertificate CycleSplice
+open Equiv RotationCertificate Perm.CycleSurgery
 
 /-- Every endpoint of a retained edge was already declared before deletion. -/
 theorem endpoints_declared_deleteLastEdge {G : Graph} {u v : ℕ}

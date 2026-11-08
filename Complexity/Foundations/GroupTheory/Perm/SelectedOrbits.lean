@@ -5,24 +5,24 @@ Authors: OpenAI
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib GroupTheory/Perm/Cycle)
 
-public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.CornerFaces
+public import Complexity.Foundations.GroupTheory.Perm.CycleSurgery
 import Complexity.Foundations.GroupTheory.Perm.InvariantPredicate
 
 /-!
-# Localizing face surgery to invariant dart sets
+# Complete permutation orbits on invariant subsets
 
-Component faces are a subset of the full orbit quotient, rather than separate geometric
-outer faces. This module transports such subsets to the permutation restricted to their
-invariant darts. In particular singleton cycles remain present in every count.
+`Equiv.Perm.SelectedOrbits.OrbitOn` selects complete orbit classes meeting an invariant
+subset. Subtype and coordinate equivalences localize the counts, including singleton
+cycles. Exact splice and incoming-swap counts require no graph or genus assumptions.
 -/
 
 public section
 
-namespace Cslib.Complexity.Graph.RotationSystem.CornerFaces
+namespace Equiv.Perm.SelectedOrbits
 
-open Equiv
+open Equiv CycleSurgery
 
 variable {α : Type}
 
@@ -76,7 +76,7 @@ theorem splice_preserves [DecidableEq α] (f : Perm α) (p : α → Prop)
 
 /-- When both new points are selected, the selected dart type is literally the old selected
 set with two indexed ends adjoined. -/
-@[expose] def selectedDartEquiv (p : α → Prop) :
+@[expose] def selectedPointEquiv (p : α → Prop) :
     Option (Option {a // p a}) ≃ {z // extendedPredicate p True z} where
   toFun z := match z with
     | none => ⟨none, True.intro⟩
@@ -89,8 +89,8 @@ set with two indexed ends adjoined. -/
   left_inv := by rintro (_ | (_ | a)) <;> rfl
   right_inv := by rintro ⟨_ | (_ | a), ha⟩ <;> rfl
 
-private theorem coe_selectedDartEquiv (p : α → Prop) (z : Option (Option {a // p a})) :
-    ((selectedDartEquiv p) z).val = Option.map (Option.map Subtype.val) z := by
+private theorem coe_selectedPointEquiv (p : α → Prop) (z : Option (Option {a // p a})) :
+    ((selectedPointEquiv p) z).val = Option.map (Option.map Subtype.val) z := by
   rcases z with _ | (_ | a) <;> rfl
 
 private theorem map_splice {β : Type} [DecidableEq α] [DecidableEq β]
@@ -113,17 +113,17 @@ private theorem map_splice {β : Type} [DecidableEq α] [DecidableEq β]
 /-- Splice restriction when both corners belong to the selected invariant component. -/
 theorem selected_splice_permCongr [DecidableEq α] (f : Perm α) (p : α → Prop)
     (hp : ∀ a, p (f a) ↔ p a) (h k : α) (hh : p h) (hk : p k) :
-    (selectedDartEquiv p).permCongr (splice (f.subtypePerm hp) ⟨h, hh⟩ ⟨k, hk⟩) =
+    (selectedPointEquiv p).permCongr (splice (f.subtypePerm hp) ⟨h, hh⟩ ⟨k, hk⟩) =
       (splice f h k).subtypePerm
         (splice_preserves f p hp h k True (iff_true_intro hh) (iff_true_intro hk)) := by
   apply Equiv.ext
   intro z
-  obtain ⟨z, rfl⟩ := (selectedDartEquiv p).surjective z
+  obtain ⟨z, rfl⟩ := (selectedPointEquiv p).surjective z
   simp only [Equiv.permCongr_apply, Equiv.symm_apply_apply]
   apply Subtype.ext
-  change ((selectedDartEquiv p) (splice (f.subtypePerm hp) ⟨h, hh⟩ ⟨k, hk⟩ z)).val =
-    splice f h k ((selectedDartEquiv p) z).val
-  rw [coe_selectedDartEquiv, coe_selectedDartEquiv]
+  change ((selectedPointEquiv p) (splice (f.subtypePerm hp) ⟨h, hh⟩ ⟨k, hk⟩ z)).val =
+    splice f h k ((selectedPointEquiv p) z).val
+  rw [coe_selectedPointEquiv, coe_selectedPointEquiv]
   exact map_splice Subtype.val Subtype.val_injective (f.subtypePerm hp) f
     (fun _ => rfl) ⟨h, hh⟩ ⟨k, hk⟩ z
 
@@ -135,12 +135,12 @@ theorem card_orbitOn_splice_selected [Finite α] [DecidableEq α] (f : Perm α) 
       Nat.card (OrbitOn f p) + 1 := by
   let hp' := splice_preserves f p hp h k True (iff_true_intro hh) (iff_true_intro hk)
   rw [← Nat.card_congr (subtypeOrbitEquiv (splice f h k) _ hp'),
-    ← selected_splice_permCongr f p hp h k hh hk, CycleSplice.card_orbits_permCongr,
-    card_orbits_splice_cofacial _ _ _ (Perm.sameCycle_subtypePerm.mpr hc),
+    ← selected_splice_permCongr f p hp h k hh hk, CycleSurgery.card_orbits_permCongr,
+    card_orbits_splice_sameCycle _ _ _ (Perm.sameCycle_subtypePerm.mpr hc),
     Nat.card_congr (subtypeOrbitEquiv f p hp)]
 
 /-- Excluding both new ends leaves exactly the old selected darts. -/
-@[expose] def unselectedDartEquiv (p : α → Prop) :
+@[expose] def unselectedPointEquiv (p : α → Prop) :
     {a // p a} ≃ {z // extendedPredicate p False z} where
   toFun a := ⟨some (some a.val), a.property⟩
   invFun z := match z with
@@ -157,12 +157,12 @@ theorem card_orbitOn_splice_selected [Finite α] [DecidableEq α] (f : Perm α) 
 /-- A component disjoint from the splice corners retains its literal restricted rotation. -/
 theorem unselected_splice_permCongr [DecidableEq α] (f : Perm α) (p : α → Prop)
     (hp : ∀ a, p (f a) ↔ p a) (h k : α) (hh : ¬ p h) (hk : ¬ p k) :
-    (unselectedDartEquiv p).permCongr (f.subtypePerm hp) =
+    (unselectedPointEquiv p).permCongr (f.subtypePerm hp) =
       (splice f h k).subtypePerm
         (splice_preserves f p hp h k False (iff_false_intro hh) (iff_false_intro hk)) := by
   apply Equiv.ext
   intro z
-  obtain ⟨a, rfl⟩ := (unselectedDartEquiv p).surjective z
+  obtain ⟨a, rfl⟩ := (unselectedPointEquiv p).surjective z
   simp only [Equiv.permCongr_apply, Equiv.symm_apply_apply]
   apply Subtype.ext
   have hfh : f a.val ≠ h := fun he => hh (he ▸ (hp a.val).mpr a.property)
@@ -178,7 +178,7 @@ theorem card_orbitOn_splice_unselected [Finite α] [DecidableEq α] (f : Perm α
       Nat.card (OrbitOn f p) := by
   let hp' := splice_preserves f p hp h k False (iff_false_intro hh) (iff_false_intro hk)
   rw [← Nat.card_congr (subtypeOrbitEquiv (splice f h k) _ hp'),
-    ← unselected_splice_permCongr f p hp h k hh hk, CycleSplice.card_orbits_permCongr,
+    ← unselected_splice_permCongr f p hp h k hh hk, CycleSurgery.card_orbits_permCongr,
     Nat.card_congr (subtypeOrbitEquiv f p hp)]
 
 open Classical in
@@ -212,4 +212,44 @@ noncomputable def orbitOnEquiv {β : Type} [Finite α] [Finite β]
       change Quotient.mk _ (e (e.symm b)) = eq z
       simpa only [e.apply_symm_apply] using he)
 
-end Cslib.Complexity.Graph.RotationSystem.CornerFaces
+variable [Finite α] [DecidableEq α]
+
+open Classical in
+/-- An incoming swap at distinct same-cycle points adds one selected orbit in their invariant
+component, and retains every selected orbit outside that component. -/
+theorem card_orbitOn_swap_mul (f : Perm α) (p : α → Prop) (hp : ∀ a, p (f a) ↔ p a)
+    (h k : α) (hne : h ≠ k) (hc : f.SameCycle h k) :
+    Nat.card (OrbitOn (swap h k * f) p) = Nat.card (OrbitOn f p) + if p h then 1 else 0 := by
+  have hm : p h ↔ p k := Iff.of_eq (Perm.sameCycle_one.mp (hc.map_of_semiconj
+    (show Function.Semiconj p f (1 : Perm Prop) from fun a => propext (hp a))))
+  let hp' : ∀ a, p ((swap h k * f) a) ↔ p a := fun a =>
+    (Equiv.predicate_swap p h k hm (f a)).trans (hp a)
+  rw [← Nat.card_congr (subtypeOrbitEquiv (swap h k * f) p hp')]
+  by_cases hh : p h
+  · have hk := hm.mp hh
+    let h' : {a // p a} := ⟨h, hh⟩
+    let k' : {a // p a} := ⟨k, hk⟩
+    have he : (swap h k * f).subtypePerm hp' = swap h' k' * f.subtypePerm hp := by
+      apply Equiv.ext
+      intro a
+      apply Subtype.ext
+      change swap h k (f a.val) = (swap h' k' (f.subtypePerm hp a)).val
+      exact (Subtype.val_injective.map_swap h' k' (f.subtypePerm hp a)).symm
+    rw [he]
+    have h₁ := (card_orbits_swap_mul (f.subtypePerm hp) h' k'
+      (fun he => hne (congrArg Subtype.val he))).1 (Perm.sameCycle_subtypePerm.mpr hc)
+    rw [h₁, Nat.card_congr (subtypeOrbitEquiv f p hp)]
+    simp only [hh, ite_true]
+  · have hk : ¬ p k := fun hk => hh (hm.mpr hk)
+    have he : (swap h k * f).subtypePerm hp' = f.subtypePerm hp := by
+      apply Equiv.ext
+      intro a
+      apply Subtype.ext
+      change swap h k (f a.val) = f a.val
+      exact swap_apply_of_ne_of_ne
+        (fun he => hh (he ▸ (hp a.val).mpr a.property))
+        (fun he => hk (he ▸ (hp a.val).mpr a.property))
+    rw [he, Nat.card_congr (subtypeOrbitEquiv f p hp)]
+    simp only [hh, ite_false, Nat.add_zero]
+
+end Equiv.Perm.SelectedOrbits

@@ -24,7 +24,7 @@ public section
 
 namespace Cslib.Complexity.Graph.RotationSystem
 
-open Equiv CycleSplice
+open Equiv Perm.CycleSurgery
 
 /-- Remove the last edge and replace its first endpoint's name by its second throughout
 the retained graph. Declared points and repeated edge occurrences are retained. -/

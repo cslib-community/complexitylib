@@ -9,7 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.VertexFibers
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Relabel
-public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.CycleSplice
+public import Complexity.Foundations.GroupTheory.Perm.CycleSurgery
 
 /-!
 # Identifying two distinct incident vertices at specified corners
@@ -24,7 +24,7 @@ public section
 
 namespace Cslib.Complexity.Graph.RotationSystem
 
-open Equiv CycleSplice
+open Equiv Perm.CycleSurgery
 
 /-- Identify the second corner's vertex with the first, retaining all listed edge positions. -/
 @[expose] def mergeGraph {G : Graph} (h k : Dart G) : Graph :=

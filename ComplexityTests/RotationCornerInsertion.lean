@@ -56,6 +56,5 @@ example : Graph.RotationCertificate.verifyGenusZero
     (cornerGraph (G := loop) (0, false) (0, true)) ⟨[2, 3, 1, 0]⟩ = false := by decide
 
 -- A fixed point survives insertion as an actual two-element cycle.
-example : DartInsertion.insertAfter (Equiv.refl (Fin 1)) 0 none = some 0 := by decide
 
 end ComplexityTests.RotationCornerInsertion

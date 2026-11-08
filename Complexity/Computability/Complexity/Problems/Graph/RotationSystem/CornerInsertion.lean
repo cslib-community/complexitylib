@@ -7,7 +7,8 @@ Authors: OpenAI
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.DartInsertion
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem
+public import Complexity.Foundations.GroupTheory.Perm.InsertAfter
 import Complexity.Foundations.GroupTheory.Perm.Doubled
 import Mathlib.Data.List.GetD
 
@@ -26,7 +27,7 @@ public section
 namespace Cslib.Complexity.Graph.RotationSystem
 
 open Equiv
-open DartInsertion
+open Equiv.Perm.Insertion
 
 /-- Append a structural edge between the vertices of two chosen dart corners. -/
 @[expose] def cornerGraph {G : Graph} (h k : Dart G) : Graph :=
@@ -123,7 +124,7 @@ is `h, new true, new false, old successor`; the ends of a loop remain distinct. 
         (insertAfter (insertAfter r.rotate h) (some k)))
       (by intro a; simp) (cornerDartEquiv h k d) (cornerDartEquiv h k e)
     simp only [Equiv.symm_apply_apply] at he
-    rw [he, DartInsertion.sameCycle_iff, DartInsertion.sameCycle_iff, r.sameCycle_iff]
+    rw [he, Equiv.Perm.Insertion.sameCycle_iff, Equiv.Perm.Insertion.sameCycle_iff, r.sameCycle_iff]
     exact Iff.of_eq (congrArg₂ Eq (vertex_cornerDartEquiv h k d).symm
       (vertex_cornerDartEquiv h k e).symm)
 

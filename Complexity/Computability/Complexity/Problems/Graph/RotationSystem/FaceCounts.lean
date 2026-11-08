@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Erik Demaine. All rights reserved.
+Copyright (c) 2026 Erik Demaine, OpenAI. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Erik Demaine
+Authors: Erik Demaine, OpenAI
 -/
 
 module
@@ -88,6 +88,14 @@ theorem count_faceRepresentatives_eq_card_componentFace {G : Graph} (r : Rotatio
         intro i
         simp [componentFaceIndices]))
     _ = _ := card_componentFaceRepresentatives r hG root
+
+/-- Old face steps preserve each declared component selection. -/
+theorem component_faceNext_iff {G : Graph} (r : RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (root : ℕ) (d : Dart G) :
+    RotationCertificate.SameComponent G root (r.faceNext d).vertex ↔
+      RotationCertificate.SameComponent G root d.vertex := by
+  have hs := r.sameComponent_faceNext hG d
+  exact ⟨fun h => h.trans hs.symm, fun h => h.trans hs⟩
 
 end RotationSystem
 
