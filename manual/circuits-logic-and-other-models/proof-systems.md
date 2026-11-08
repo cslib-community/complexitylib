@@ -33,9 +33,20 @@ Moser's resampling algorithm is a step function `Moser.step` reading an explicit
 Fortnow's exposition. On the fair-coin tape `Cslib.BitString.coinFlips`,
 `Moser.ae_exists_eval_final` says the run almost surely stops with a satisfying assignment, and
 `Moser.lintegral_resamplings_le` bounds the expected number of resamplings by `m + 2`, the
-constant of this encoding. These count resamplings, not machine time. The
-[checked examples](../../ComplexityTests/Moser.lean) include a concrete run, its log and the
-recovered tape; check them with `scripts/build.sh ComplexityTests.Moser`.
+constant of this encoding. These count resamplings, not machine time. The existential Local Lemma
+for the same formulas is `CNF.IsExactDistinct.satisfiable_of_exp_mul_le` in
+`Complexity.Logics.Propositional.CNF.LocalLemma`: `Moser.degree φ i ≤ d` for every clause and
+`Real.exp 1 * (d + 1) ≤ 2 ^ k` give satisfiability, with no algorithm. Its constant is better, but
+it does not say how to find the assignment. Fortnow's Kolmogorov-complexity form of the
+compression argument is in `Complexity.Logics.Propositional.CNF.Moser.Kolmogorov`. There the
+complexity is `ecomplexity` for the explicit decoder `Moser.descriptionMethod φ k L`, not for a
+universal machine. Under `3 ≤ k`, `CNF.IsExactDistinct k φ` and `degree φ i < 2 ^ (k - 3)`,
+`Moser.not_exhausts_of_length_sub_le_ecomplexity` shows that a tape word `y` of length `n + t k`
+whose complexity for `Moser.descriptionMethod φ k (k - 3)` is at least `n + t k - c` does not use
+up a budget of `t > m + c` resamplings. The
+[checked examples](../../ComplexityTests/Moser.lean) include a concrete run, its log, the
+recovered tape and its description, and a formula where only the existential bound applies;
+check them with `scripts/build.sh ComplexityTests.Moser`.
 
 Support-based CNF model counting counts assignments to variables that occur. Declared-universe counting instead fixes a larger variable set and can include free choices for unused variables. The library supplies relabeling and exact gadget-counting bridges, so a reduction claiming preservation of counts must specify which convention it preserves. This distinction is particularly relevant to dense relabeling and the [native fixed-width counting endpoint](../machines-and-classes/native-counting.md).
 

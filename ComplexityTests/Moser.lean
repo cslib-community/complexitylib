@@ -4,10 +4,14 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import Complexity.Logics.Propositional.CNF.LocalLemma
+import Complexity.Logics.Propositional.CNF.Moser.Kolmogorov
 import Complexity.Logics.Propositional.CNF.Moser.Probability
+import Mathlib.Analysis.Complex.ExponentialBounds
 
 /-! Moser's resampling algorithm for `k`-SAT: a concrete run that resamples once, its log and the
-recovered tape, instances of the Local Lemma hypotheses, and instances where they fail. -/
+recovered tape, its description for the Kolmogorov bridge, instances of the Local Lemma hypotheses
+(constructive and existential), and instances where they fail. -/
 
 namespace ComplexityTests.Moser
 
@@ -82,6 +86,66 @@ example : ∀ i < 9, decode φ 3 0 (final φ 3 2 x).assignment (log φ 3 2 0 x (
   intro i hi
   exact decode_run φ_exact φ_degree 2 x (fuel φ 2) i (by rw [← final, h]; omega)
 
+/-! ### The description method of the decoder -/
+
+/-- The first `6 + 1 * 3` bits of the tape `x`. -/
+def y : List Bool := List.ofFn fun i : Fin 9 => x i
+
+-- With a budget of one resampling the run on `y` uses it up, and the description (final assignment
+-- and log, `L = 0`) decodes to `y`. Its `6 + 3 = 9` bits are within `n + m + t (L + 2) = 10`.
+example : Exhausts φ 3 1 fun i => y.getD i false := by decide
+
+example : (description φ 3 1 0 fun i => y.getD i false).length = 9 := by decide
+
+example : decodeWord φ 3 0 (description φ 3 1 0 fun i => y.getD i false) = y :=
+  decodeWord_description φ_exact φ_degree rfl (by decide)
+
+example : (descriptionMethod φ 3 0).Produces (description φ 3 1 0 fun i => y.getD i false) y :=
+  descriptionMethod_produces φ_exact φ_degree rfl (by decide)
+
+example : (descriptionMethod φ 3 0).ecomplexity y ≤ (6 + 2 + 1 * (0 + 2) : ℕ) :=
+  ecomplexity_le_of_exhausts φ_exact φ_degree rfl (by decide)
+
+-- Fortnow's argument: with a budget of `3 > m` resamplings, the run on some tape word of length
+-- `6 + 3 * 3` succeeds.
+example : ∃ y : List Bool, y.length = 6 + 3 * 3 ∧
+    φ.eval (final φ 3 3 fun i => y.getD i false).assignment = true :=
+  exists_eval_final_of_degree_lt le_rfl φ_exact φ_degree (by decide)
+
+/-! ### The existential Local Lemma -/
+
+/-- Five exact `4`-clauses sharing `x₀`, each of degree `4`. -/
+def ρ : CNF (Fin 16) :=
+  [[(0, true), (1, true), (2, true), (3, true)], [(0, true), (4, true), (5, true), (6, true)],
+    [(0, false), (7, true), (8, true), (9, true)], [(0, false), (10, true), (11, true), (12, true)],
+    [(0, true), (13, false), (14, true), (15, true)]]
+
+example : ∀ i : Fin ρ.length, degree ρ i = 4 := by decide
+
+-- The constructive bound `degree < 2 ^ (4 - 3)` fails ...
+example : ¬∀ i : Fin ρ.length, degree ρ i < 2 ^ (4 - 3) := by decide
+
+-- ... but `e (4 + 1) ≤ 2 ^ 4` holds, so the existential Local Lemma applies.
+example : ρ.Satisfiable := by
+  refine CNF.IsExactDistinct.satisfiable_of_exp_mul_le (k := 4) (d := 4) (by decide)
+    (fun i => (by decide : ∀ i : Fin ρ.length, degree ρ i = 4) i ▸ le_rfl) ?_
+  have := Real.exp_one_lt_d9
+  norm_num at this ⊢
+  linarith
+
+-- The constructive hypothesis implies the existential one, since `e < 8`.
+example {k d : ℕ} (hk : 3 ≤ k) (hd : d < 2 ^ (k - 3)) : Real.exp 1 * (d + 1) ≤ 2 ^ k := by
+  have h1 : ((d : ℝ) + 1) ≤ 2 ^ (k - 3) := by exact_mod_cast Nat.succ_le_of_lt hd
+  have h2 : Real.exp 1 ≤ 2 ^ 3 := by
+    have := Real.exp_one_lt_d9
+    norm_num at this ⊢
+    linarith
+  calc Real.exp 1 * (d + 1) ≤ 2 ^ 3 * 2 ^ (k - 3) := by gcongr
+    _ = 2 ^ k := by
+      rw [← pow_add]
+      congr 1
+      omega
+
 /-! ### Instances where the hypotheses fail -/
 
 -- A repeated variable, and a clause of the wrong length.
@@ -104,5 +168,11 @@ example : ¬χ.Satisfiable := by
   revert hσ
   revert σ
   decide
+
+-- The existential Local Lemma does not apply to `χ`: `e (7 + 1) > 2 ^ 3`.
+example : ¬Real.exp 1 * (7 + 1) ≤ 2 ^ 3 := by
+  have := Real.exp_one_gt_d9
+  intro h
+  linarith
 
 end ComplexityTests.Moser
