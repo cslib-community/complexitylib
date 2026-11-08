@@ -36,6 +36,7 @@ positions of one block takes that block from the first tuple and every other blo
 
 * `Cslib.BitString.pairwiseDisjoint_blockBits`: blocks occupy disjoint positions.
 * `Cslib.BitString.block_piecewise`: gluing two tuples along one block.
+* `Cslib.BitString.ofFn_blocksEquiv_symm`: concatenating blocks concatenates their lists.
 -/
 
 @[expose] public section
@@ -135,5 +136,16 @@ theorem listBlock_flatMap {β : Type*} (f : β → List α) (hf : ∀ b, (f b).l
     · rw [listBlock, Nat.succ_mul, Nat.add_comm, ← List.drop_drop, List.drop_left' (hf b),
         List.getElem_cons_succ]
       exact ih i (by simpa using hi)
+
+/-- The list of the concatenation of blocks is the concatenation of the lists of the blocks. -/
+theorem ofFn_blocksEquiv_symm (z : Fin m → Fin k → α) :
+    List.ofFn (blocksEquiv.symm z) = (List.ofFn fun i => List.ofFn (z i)).flatten := by
+  rw [List.ofFn_mul]
+  congr 1
+  refine List.ofFn_inj.2 (funext fun i => List.ofFn_inj.2 (funext fun j => ?_))
+  rw [← congrFun (congrFun (block_blocksEquiv_symm z) i) j, block_apply]
+  refine congrArg _ (Fin.ext ?_)
+  simp only [finProdFinEquiv_apply_val]
+  rw [Nat.add_comm, Nat.mul_comm]
 
 end Cslib.BitString
