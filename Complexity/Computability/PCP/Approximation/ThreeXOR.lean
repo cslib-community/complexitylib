@@ -24,8 +24,9 @@ each output clause.
 This is the elementary reduction in the proof of [Håstad, Theorem 6.1, p. 831][Hastad2001].
 His sign-product equation `xyz = 1` corresponds to XOR `false` here. The local counting argument
 is applied to entire systems, with a plain polynomial-time certificate over framed encodings.
-This module does not establish hardness of MAX-E3LIN, small-soundness Label Cover, or the
-perfect-completeness hardness theorem for MAX-E3SAT.
+This module does not establish hardness of MAX-E3LIN or the perfect-completeness hardness
+theorem for MAX-E3SAT; small-soundness Label Cover is in
+`Complexity.Computability.PCP.Approximation.LabelCover.SmallSoundness`.
 
 ## Main definitions
 

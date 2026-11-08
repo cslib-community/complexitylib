@@ -30,10 +30,16 @@ from check_abstract_ci import (
 
 ROOT = Path(__file__).resolve().parents[1]
 INPUTS = ("lean-toolchain", "lake-manifest.json", "lakefile.toml")
-MAX_FILES = 100_000
-MAX_BYTES = 4 * 1024 ** 3
-MAX_ARCHIVE_BYTES = 1024 ** 3
+# Payload bounds. On 2026-11-08 a full build was 101,848 files and 4.64 GB, packing to 1.67 GB;
+# the earlier bounds (100,000 files, 4 GiB, 1 GiB compressed) had silently disabled the handoff,
+# so every `main` push rebuilt what its merge group had already checked. These leave about 2.5x
+# headroom; a miss is reported as a workflow warning so that outgrowing them again is visible.
+MAX_FILES = 300_000
+MAX_BYTES = 12 * 1024 ** 3
+MAX_ARCHIVE_BYTES = 4 * 1024 ** 3
 MAX_METADATA_BYTES = 64 * 1024
+# Download budget for an archive of up to MAX_ARCHIVE_BYTES, inside the step's 10 minutes.
+DOWNLOAD_SECONDS = 420
 
 
 def digest(path: Path) -> str:
@@ -291,7 +297,11 @@ def install_build(root: Path, staged: Path, backup: Path) -> None:
         raise
 
 
-def restore(root: Path, env: dict, *, api=gh_get, downloader=gh_download_artifact) -> None:
+def download_handoff(repository: str, run_id: int, name: str, destination: Path) -> None:
+    gh_download_artifact(repository, run_id, name, destination, timeout=DOWNLOAD_SECONDS)
+
+
+def restore(root: Path, env: dict, *, api=gh_get, downloader=download_handoff) -> None:
     context = source_context(root, env, "push")
     workflow = api(f"repos/{context['repository']}/actions/workflows/{WORKFLOW_FILE}")
     require(isinstance(workflow, dict) and workflow.get("path") == WORKFLOW_PATH
@@ -339,7 +349,12 @@ def main() -> int:
             restore(ROOT, os.environ)
     except (Rejected, OSError, ValueError, TypeError, KeyError, subprocess.SubprocessError,
             tarfile.TarError, EOFError) as error:
-        print(f"Build handoff unavailable: {error}; continuing without this optional cache")
+        message = f"Build handoff unavailable: {error}; continuing without this optional cache"
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            # A workflow warning shows on the run summary; the step still succeeds.
+            data = message.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+            message = f"::warning title=Build handoff unavailable::{data}"
+        print(message)
     return 0
 
 
