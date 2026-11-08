@@ -1684,9 +1684,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   deterministic Stoer–Wagner algorithm with the maximum adjacency ordering lemma and an `O(n³)`
   `TimeM` bound on natural-number weights (`Algorithms/Lean/StoerWagner`,
   `WeightedCut/MAOrdering`), both built on the probability-free contraction API of
-  `WeightedCut/Contraction`: the `O(n m + n² log n)` priority-queue version, real weights,
+  `WeightedCut/Contraction`, and the per-cut bound `1 / C(n, 2)` of the contraction algorithm with
+  the `C(n, 2)` bound on the number of minimum cuts (`Algorithms/Lean/Karger/MinCutCount`,
+  `WeightedCut/Blocks`, [#3489](https://github.com/cslib-community/complexitylib/issues/3489)):
+  the `O(n m + n² log n)` priority-queue version, real weights,
   Nagamochi–Ibaraki sparse certificates for `k`-edge-connectivity,
-  Karger's near-linear minimum cut algorithm, and Queyranne's minimization of symmetric submodular
+  Karger's near-linear minimum cut algorithm, the `O(n^(2α))` bound on `α`-minimal cuts, the
+  cactus representation of all minimum cuts, and Queyranne's minimization of symmetric submodular
   functions (which generalizes the maximum adjacency argument to hypergraph cuts).
 - **Gomory–Hu trees** ([#3320](https://github.com/cslib-community/complexitylib/issues/3320)):
   remaining after the existence theorem for cut-equivalent trees of symmetric submodular set
