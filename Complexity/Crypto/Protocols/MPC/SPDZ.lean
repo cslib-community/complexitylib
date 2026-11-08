@@ -16,9 +16,11 @@ import Mathlib.Algebra.Group.TransferInstance
 /-!
 # SPDZ Authenticated Secret Sharing, Online Operations, and Batch `MACCheck` Soundness
 
-This module formalizes the SPDZ authenticated secret-sharing representation, its linear and
-Beaver-triple online operations, and the two-round commit-then-open batch `MACCheck` protocol and
-its $2 / p$ soundness bound over prime fields `ZMod p` ([DamgardPastroSmartZakarias2012]):
+This module formalizes the SPDZ authenticated secret-sharing representation and its linear and
+Beaver-triple online operations ([DamgardPastroSmartZakarias2012]), together with the two-round
+commit-then-open batch `MACCheck` protocol and the $2 / p$ bound for its standalone
+cheating-equation game over prime fields `ZMod p`
+([DamgardKellerLarraiaPastroSchollSmart2013]):
 
 1. **SPDZ Authenticated Secret Sharing (`AuthShare`):** represents an authenticated value
    $\langle a \rangle = (\delta, (a_0, \dots, a_{n-1}), (\gamma_0, \dots, \gamma_{n-1}))$ over
@@ -38,29 +40,36 @@ its $2 / p$ soundness bound over prime fields `ZMod p` ([DamgardPastroSmartZakar
    `checkResidual`, `macCheckProtocol`, `eval_snd_macCheckProtocol_eq_pure_true`):** two-round
    commit-then-open protocol over `Complexity.Crypto.Protocols.MPC.Basic` and
    `Complexity.Crypto.Protocols.MPC.Broadcast` checking a batch of $T$ publicly opened values via
-   random linear combination weights $e \in (\mathbb{Z}_p)^T$. Honest executions satisfy
+   linear combination weights $e \in (\mathbb{Z}_p)^T$ supplied as inputs
+   ([DamgardKellerLarraiaPastroSchollSmart2013]). Honest executions satisfy
    $\sum_i \sigma_i = 0$ (`sum_checkResidual_eq_zero`) and accept with probability `1`.
-4. **Residual Cheating Equation & $2 / p$ Soundness (`sum_checkResidual_eq_neg_mul`,
-   `sum_checkResidual_add_eq_zero_iff`, `linearCombZeroGame`, `macCheckSoundnessGame`,
-   `eval_macCheckSoundnessGame_le`, `eval_macCheckSoundness_bind_le`):** for prime `p` and any
-   nonzero vector of opening errors `err ≠ 0` (even against an adaptive residual shift
-   `deltaShift : (Fin T → ZMod p) → ZMod p` chosen as a function of the public weights `e`, or
-   generated from prior randomized adversary state `adv : ProbComp S` independent of `alpha`),
-   `MACCheck` accepts with probability at most $2 / p$:
+4. **Residual Cheating Equation & $2 / p$ Standalone Cheating-Equation Game Bound
+   (`sum_checkResidual_eq_neg_mul`, `sum_checkResidual_add_eq_zero_iff`, `linearCombZeroGame`,
+   `macCheckSoundnessGame`, `eval_macCheckSoundnessGame_le`, `eval_macCheckSoundness_bind_le`):**
+   for prime `p` and any nonzero vector of opening errors `err ≠ 0` (even against an adaptive
+   residual shift `deltaShift : (Fin T → ZMod p) → ZMod p` chosen as a function of the public
+   weights `e`, or generated from prior randomized adversary state `adv : ProbComp S` independent
+   of `alpha`), the `MACCheck` cheating equation
+   `alpha * linearCombAddHom err e = deltaShift e` (standalone game) holds with probability at
+   most $2 / p$ ([DamgardKellerLarraiaPastroSchollSmart2013]):
    - Stage 1 (`eval_linearCombZeroGame_eq`): $\Pr_e[\sum_\ell e_\ell \cdot \mathrm{err}_\ell = 0]
-     = 1 / p$, proved via `Cslib.Probability.uniformOfFintype_map_linearComb`.
-   - Stage 2 (`card_filter_macKey_eq_le_one`, `eval_macKey_guess_le`): whenever
-     $L = \sum_\ell e_\ell \cdot \mathrm{err}_\ell \neq 0$, at most one key
-     $\alpha \in \mathbb{Z}_p$ satisfies $\alpha \cdot L = \Delta(e)$.
+     = 1 / p$, proved via `Cslib.Probability.toOuterMeasure_uniform_linearComb_eq_zero`.
+   - Stage 2 (`eval_macKey_guess_le`): whenever
+     $L = \sum_\ell e_\ell \cdot \mathrm{err}_\ell \neq 0$, a uniform key
+     $\alpha \in \mathbb{Z}_p$ satisfies $\alpha \cdot L = \Delta(e)$ with probability $1 / p$,
+     proved via `Cslib.Probability.toOuterMeasure_uniform_linearComb_eq` on `Unit`.
 
 Scope note: `macCheckProtocol` is parameterized over an abstract deterministic commitment map
-`commit : ZMod p → Coins → Comm` (checking equality of Round-1 commitments and Round-2 openings),
-and `macCheckSoundnessGame` / `macCheckSoundnessAdvGame` analyze the standalone algebraic
+`commit : ZMod p → Coins → Comm` (checking equality of Round-1 commitments and Round-2 openings);
+weights are supplied as inputs (`PartyCheckInput.weights`) whose joint generation after the
+openings is not modeled, `alpha` is not sampled by the protocol, and the `AddCommMonoid` structures
+on `Coins`, `Comm`, and `ResidualOpening` are only used by the `broadcastSteps` combinator.
+The games `macCheckSoundnessGame` and `macCheckSoundnessAdvGame` analyze the standalone algebraic
 information-theoretic cheating equation given an independent uniform global MAC key
 $\alpha \in \mathbb{Z}_p$ and public weights $e \in (\mathbb{Z}_p)^T$ (modeling the sum
 $\alpha = \sum_i \alpha_i$ when at least one party's additive key share is uniform and unknown to
-the adversary), rather than a computational commitment binding reduction, UC emulation proof, or
-polynomial-time simulator certificate.
+the adversary), rather than an execution of `macCheckProtocol`, a computational commitment binding
+reduction, a UC emulation proof, or a polynomial-time simulator certificate.
 
 ## Main definitions
 
@@ -87,11 +96,10 @@ polynomial-time simulator certificate.
 * `Cslib.Crypto.Protocols.MPC.SPDZ.macCheckSchedule`,
   `Cslib.Crypto.Protocols.MPC.SPDZ.macCheckProtocol`: two-round commit-then-open `MACCheck`
   protocol over `Complexity.Crypto.Protocols.MPC.Basic`.
-* `Cslib.Crypto.Protocols.MPC.SPDZ.errorLinearComb`,
-  `Cslib.Crypto.Protocols.MPC.SPDZ.linearCombZeroGame`,
+* `Cslib.Crypto.Protocols.MPC.SPDZ.linearCombZeroGame`,
   `Cslib.Crypto.Protocols.MPC.SPDZ.macCheckSoundnessGame`,
-  `Cslib.Crypto.Protocols.MPC.SPDZ.macCheckSoundnessAdvGame`: weighted error combination and
-  `ProbComp` soundness games.
+  `Cslib.Crypto.Protocols.MPC.SPDZ.macCheckSoundnessAdvGame`: standalone `ProbComp`
+  cheating-equation games.
 
 ## Main results
 
@@ -110,24 +118,24 @@ polynomial-time simulator certificate.
 * `Cslib.Crypto.Protocols.MPC.SPDZ.sum_checkResidual_eq_neg_mul`,
   `Cslib.Crypto.Protocols.MPC.SPDZ.sum_checkResidual_add_eq_zero_iff`: algebraic residual identity
   and cheating equation for forged openings.
-* `Cslib.Crypto.Protocols.MPC.SPDZ.map_errorLinearComb_uniform`,
-  `Cslib.Crypto.Protocols.MPC.SPDZ.card_filter_errorLinearComb_eq_zero_mul_le`,
-  `Cslib.Crypto.Protocols.MPC.SPDZ.eval_linearCombZeroGame_eq`,
+* `Cslib.Crypto.Protocols.MPC.SPDZ.eval_linearCombZeroGame_eq`,
   `Cslib.Crypto.Protocols.MPC.SPDZ.eval_linearCombZeroGame_le`,
   `Cslib.Crypto.Protocols.MPC.SPDZ.toReal_eval_linearCombZeroGame_le`: Stage 1 weight-cancellation
   probability $1 / p$.
-* `Cslib.Crypto.Protocols.MPC.SPDZ.card_filter_macKey_eq_le_one`,
-  `Cslib.Crypto.Protocols.MPC.SPDZ.eval_macKey_guess_le`: Stage 2 key-guessing uniqueness.
+* `Cslib.Crypto.Protocols.MPC.SPDZ.eval_macKey_guess_le`: Stage 2 key-guessing probability bound.
 * `Cslib.Crypto.Protocols.MPC.SPDZ.eval_macCheckSoundnessGame_le`,
   `Cslib.Crypto.Protocols.MPC.SPDZ.toReal_eval_macCheckSoundnessGame_le`,
   `Cslib.Crypto.Protocols.MPC.SPDZ.succProbability_macCheckSoundnessGame_le`,
-  `Cslib.Crypto.Protocols.MPC.SPDZ.eval_macCheckSoundness_bind_le`: concrete $2 / p$ soundness of
-  SPDZ `MACCheck`.
+  `Cslib.Crypto.Protocols.MPC.SPDZ.eval_macCheckSoundness_bind_le`: concrete $2 / p$ bound for the
+  standalone `MACCheck` cheating-equation game.
 
 ## References
 
 * [I. Damgård, V. Pastro, N. P. Smart, S. Zakarias, *Multiparty Computation from Somewhat
   Homomorphic Encryption*][DamgardPastroSmartZakarias2012].
+* [I. Damgård, M. Keller, E. Larraia, V. Pastro, P. Scholl, N. P. Smart, *Practical Covertly
+  Secure MPC for Dishonest Majority — Or: Breaking the SPDZ
+  Limits*][DamgardKellerLarraiaPastroSchollSmart2013].
 -/
 
 public section
@@ -231,12 +239,12 @@ audited in batch by `MACCheck`. -/
 @[simp] theorem secret_neg {p n : ℕ} (s : AuthShare p n) :
     (-s).secret = -s.secret := by
   change (∑ i : Fin n, -s.valShares i) = -∑ i : Fin n, s.valShares i
-  exact @Finset.sum_neg_distrib _ (ZMod p) _ _ _
+  exact Finset.sum_neg_distrib ..
 
 @[simp] theorem macSum_neg {p n : ℕ} (s : AuthShare p n) :
     (-s).macSum = -s.macSum := by
   change (∑ i : Fin n, -s.macShares i) = -∑ i : Fin n, s.macShares i
-  exact @Finset.sum_neg_distrib _ (ZMod p) _ _ _
+  exact Finset.sum_neg_distrib ..
 
 @[simp] theorem delta_neg {p n : ℕ} (s : AuthShare p n) :
     (-s).delta = -s.delta := rfl
@@ -370,7 +378,7 @@ end AuthShare
   deriving DecidableEq, Inhabited, Repr
 
 /-- Party `i`'s local input to a batch `MACCheck` over `T` opened values
-([DamgardPastroSmartZakarias2012]). -/
+([DamgardKellerLarraiaPastroSchollSmart2013]). -/
 @[ext] structure PartyCheckInput (p T : ℕ) where
   /-- The `T` publicly opened values and modifiers `(a'_ℓ, δ_ℓ)`. -/
   opened : Fin T → OpenedValue p
@@ -403,21 +411,14 @@ instance {p : ℕ} {Coins : Type} [AddCommMonoid Coins] :
     AddCommMonoid (ResidualOpening p Coins) :=
   (ResidualOpening.equivProd p Coins).addCommMonoid
 
-/-- Party `i`'s local `MACCheck` residual share ([DamgardPastroSmartZakarias2012]):
+/-- Party `i`'s local `MACCheck` residual share ([DamgardKellerLarraiaPastroSchollSmart2013]):
 `σ_i = (∑ ℓ, e_ℓ * γ(a_ℓ)_i) - α_i * (∑ ℓ, e_ℓ * (a'_ℓ + δ_ℓ))`. -/
 @[expose] def checkResidual {p T : ℕ} (inp : PartyCheckInput p T) : ZMod p :=
   (∑ l : Fin T, inp.weights l * inp.macShares l) -
     inp.keyShare * ∑ l : Fin T, inp.weights l * ((inp.opened l).value + (inp.opened l).delta)
 
-/-- Weighted linear combination `∑ ℓ, e_ℓ * err_ℓ` of opening errors `err_ℓ = a'_ℓ - a_ℓ`. -/
-@[expose] def errorLinearComb {p T : ℕ} (e err : Fin T → ZMod p) : ZMod p :=
-  ∑ l : Fin T, e l * err l
-
-@[simp] theorem errorLinearComb_apply {p T : ℕ} (e err : Fin T → ZMod p) :
-    errorLinearComb e err = ∑ l : Fin T, e l * err l := rfl
-
 /-- Verify that every party's Round-2 residual opening matches its Round-1 commitment and that the
-opened residual shares sum to `0` ([DamgardPastroSmartZakarias2012]). -/
+opened residual shares sum to `0` ([DamgardKellerLarraiaPastroSchollSmart2013]). -/
 @[expose] def verifyResiduals {p n : ℕ} {Coins Comm : Type} [DecidableEq Comm]
     (commit : ZMod p → Coins → Comm)
     (commits : Fin n → Comm) (openings : Fin n → ResidualOpening p Coins) : Bool :=
@@ -453,15 +454,16 @@ structure PartyCheckInput.Honest {p n T : ℕ} (alpha : ZMod p)
   /-- Every opened value equals the true secret `(shares ℓ).secret`. -/
   value_eq : ∀ l, (opened l).value = (shares l).secret
 
-/-- Core algebraic residual identity of SPDZ `MACCheck` ([DamgardPastroSmartZakarias2012]):
-when `inp` is authenticated for `shares` with claimed public openings `opened`,
+/-- Core algebraic residual identity of SPDZ `MACCheck`
+([DamgardKellerLarraiaPastroSchollSmart2013]): when `inp` is authenticated for `shares` with
+claimed public openings `opened`,
 `∑ i, checkResidual (inp i) = - alpha * ∑ ℓ, e_ℓ * ((opened ℓ).value - (shares ℓ).secret)`. -/
 theorem sum_checkResidual_eq_neg_mul {p n T : ℕ} {alpha : ZMod p}
     {shares : Fin T → AuthShare p n} {opened : Fin T → OpenedValue p}
     {e : Fin T → ZMod p} {inp : Fin n → PartyCheckInput p T}
     (hauth : PartyCheckInput.AuthenticFor alpha shares opened e inp) :
     (∑ i : Fin n, checkResidual (inp i)) =
-      -alpha * errorLinearComb e (fun l => (opened l).value - (shares l).secret) := by
+      -alpha * linearCombAddHom (fun l => (opened l).value - (shares l).secret) e := by
   have h1 :
       (∑ i : Fin n, ∑ l : Fin T, (inp i).weights l * (inp i).macShares l) =
         alpha * ∑ l : Fin T, e l * ((shares l).secret + (shares l).delta) := by
@@ -483,7 +485,7 @@ theorem sum_checkResidual_eq_neg_mul {p n T : ℕ} {alpha : ZMod p}
         alpha * ∑ l : Fin T, e l * ((opened l).value + (shares l).delta) := by
     simp_rw [hauth.weights_eq, hauth.opened_eq, hauth.delta_eq, ← Finset.sum_mul,
       hauth.sum_keyShare]
-  simp only [checkResidual, Finset.sum_sub_distrib, h1, h2, errorLinearComb_apply]
+  simp only [checkResidual, Finset.sum_sub_distrib, h1, h2, linearCombAddHom_apply]
   rw [← mul_sub, ← Finset.sum_sub_distrib]
   have hsub :
       (∑ l : Fin T, (e l * ((shares l).secret + (shares l).delta) -
@@ -504,15 +506,15 @@ theorem sum_checkResidual_eq_zero {p n T : ℕ} {alpha : ZMod p}
   rw [sum_checkResidual_eq_neg_mul hhon.toAuthenticFor]
   simp [hhon.value_eq]
 
-/-- Cheating equation equivalence ([DamgardPastroSmartZakarias2012]): adding an adversarial
-residual shift `deltaOpen` to the honest residual sum yields `0` if and only if
-`alpha * errorLinearComb e err = deltaOpen`. -/
+/-- Cheating equation equivalence ([DamgardKellerLarraiaPastroSchollSmart2013]): adding an
+adversarial residual shift `deltaOpen` to the honest residual sum yields `0` if and only if
+`alpha * linearCombAddHom err e = deltaOpen`. -/
 theorem sum_checkResidual_add_eq_zero_iff {p n T : ℕ} {alpha : ZMod p}
     {shares : Fin T → AuthShare p n} {opened : Fin T → OpenedValue p}
     {e : Fin T → ZMod p} {inp : Fin n → PartyCheckInput p T}
     (hauth : PartyCheckInput.AuthenticFor alpha shares opened e inp) (deltaOpen : ZMod p) :
     (∑ i : Fin n, checkResidual (inp i)) + deltaOpen = 0 ↔
-      alpha * errorLinearComb e (fun l => (opened l).value - (shares l).secret) = deltaOpen := by
+      alpha * linearCombAddHom (fun l => (opened l).value - (shares l).secret) e = deltaOpen := by
   rw [sum_checkResidual_eq_neg_mul hauth]
   constructor <;> intro h <;> linear_combination -h
 
@@ -523,7 +525,7 @@ theorem sum_checkResidual_add_eq_zero_iff {p n T : ℕ} {alpha : ZMod p}
     broadcastSchedule n noOracleSpec (ResidualOpening p Coins)
 
 /-- Two-round commit-then-open `MACCheck` protocol over `Complexity.Crypto.Protocols.MPC.Basic`
-([DamgardPastroSmartZakarias2012]):
+([DamgardKellerLarraiaPastroSchollSmart2013]):
 1. Each party `i` samples commitment coins `r_i ← sampleCoins`, computes `σ_i = checkResidual`,
    and broadcasts `commit σ_i r_i` in Round 1.
 2. Each party `i` broadcasts `⟨σ_i, r_i⟩ : ResidualOpening p Coins` in Round 2.
@@ -584,85 +586,52 @@ theorem eval_snd_macCheckProtocol_eq_pure_true {p n T : ℕ} {Coins Comm : Type}
         fun _ => PMF.pure (fun _ => true) from funext hconst]
   exact PMF.bind_const _ _
 
-/-! ### Concrete $2 / p$ soundness of SPDZ `MACCheck` over prime fields -/
+/-! ### Concrete $2 / p$ bound for the standalone `MACCheck` cheating-equation game -/
 
 /-- Stage-1 `ProbComp` game testing whether random weights `e ← ProbComp.uniform (Fin T → ZMod p)`
 annihilate a fixed nonzero error vector `err : Fin T → ZMod p`. -/
 noncomputable def linearCombZeroGame (p T : ℕ) [NeZero p] (err : Fin T → ZMod p) :
     ProbComp Bool := do
   let e ← ProbComp.uniform (Fin T → ZMod p)
-  return decide (errorLinearComb e err = 0)
+  return decide (linearCombAddHom err e = 0)
 
-/-- Full SPDZ `MACCheck` soundness game ([DamgardPastroSmartZakarias2012]): samples an independent
-uniform MAC key `alpha ← ProbComp.uniform (ZMod p)` and public weights
+/-- Standalone `MACCheck` cheating-equation game ([DamgardKellerLarraiaPastroSchollSmart2013]):
+samples an independent uniform MAC key `alpha ← ProbComp.uniform (ZMod p)` and public weights
 `e ← ProbComp.uniform (Fin T → ZMod p)`, and tests whether the adversary's (possibly `e`-adaptive)
 residual shift `deltaShift e` satisfies the cheating equation
-`alpha * errorLinearComb e err = deltaShift e`. -/
+`alpha * linearCombAddHom err e = deltaShift e`. -/
 noncomputable def macCheckSoundnessGame (p T : ℕ) [NeZero p]
     (err : Fin T → ZMod p) (deltaShift : (Fin T → ZMod p) → ZMod p) : ProbComp Bool := do
   let alpha ← ProbComp.uniform (ZMod p)
   let e ← ProbComp.uniform (Fin T → ZMod p)
-  return decide (alpha * errorLinearComb e err = deltaShift e)
+  return decide (alpha * linearCombAddHom err e = deltaShift e)
 
-/-- Stateful randomized-adversary `MACCheck` soundness game (paralleling
+/-- Stateful randomized-adversary standalone `MACCheck` cheating-equation game (paralleling
 `Complexity.Crypto.Protocols.VOLE.MulCheck`): an arbitrary prior computation `adv : ProbComp S`
 selects state `s` determining both the opening error vector `err s` and the `e`-adaptive shift
 `deltaShift s` before the independent key `alpha` is sampled, winning if `err s ≠ 0` and
-`alpha * errorLinearComb e (err s) = deltaShift s e`. -/
+`alpha * linearCombAddHom (err s) e = deltaShift s e`. -/
 noncomputable def macCheckSoundnessAdvGame (p T : ℕ) [NeZero p] {S : Type}
     (adv : ProbComp S) (err : S → Fin T → ZMod p)
     (deltaShift : S → (Fin T → ZMod p) → ZMod p) : ProbComp Bool := do
   let s ← adv
   let alpha ← ProbComp.uniform (ZMod p)
   let e ← ProbComp.uniform (Fin T → ZMod p)
-  return decide (err s ≠ 0 ∧ alpha * errorLinearComb e (err s) = deltaShift s e)
-
-/-- For prime `p` and any nonzero error vector `err ≠ 0`, `errorLinearComb · err` maps the uniform
-distribution on `Fin T → ZMod p` to the uniform distribution on `ZMod p` (via
-`Cslib.Probability.uniformOfFintype_map_linearComb`). -/
-theorem map_errorLinearComb_uniform {p T : ℕ} [Fact (Nat.Prime p)]
-    {err : Fin T → ZMod p} (herr : err ≠ 0) :
-    (PMF.uniformOfFintype (Fin T → ZMod p)).map (fun e => errorLinearComb e err) =
-      PMF.uniformOfFintype (ZMod p) := by
-  obtain ⟨l₀, hl₀⟩ := Function.ne_iff.mp herr
-  exact uniformOfFintype_map_linearComb hl₀
-
-/-- Stage-1 rank-nullity counting bound: for prime `p` and `err ≠ 0`, the hyperplane
-`{e : Fin T → ZMod p | errorLinearComb e err = 0}` has cardinality satisfying `card * p ≤ p ^ T`
-(in fact equality holds, via `Cslib.Probability.card_mul_card_filter_eq_of_shift`). -/
-theorem card_filter_errorLinearComb_eq_zero_mul_le {p T : ℕ} [Fact (Nat.Prime p)]
-    {err : Fin T → ZMod p} (herr : err ≠ 0) :
-    (Finset.univ.filter fun e : Fin T → ZMod p => errorLinearComb e err = 0).card * p ≤
-      p ^ T := by
-  obtain ⟨l₀, hl₀⟩ := Function.ne_iff.mp herr
-  have hshift : ∀ c : ZMod p, ∃ σ : Equiv.Perm (Fin T → ZMod p),
-      ∀ e, errorLinearComb (σ e) err = errorLinearComb e err + c := by
-    intro c
-    obtain ⟨g, rfl⟩ := linearCombAddHom_surjective hl₀ c
-    refine ⟨Equiv.addRight g, fun e => ?_⟩
-    simpa only [Equiv.coe_addRight, errorLinearComb, linearCombAddHom_apply] using
-      (linearCombAddHom err).map_add e g
-  have hcard := card_mul_card_filter_eq_of_shift (f := fun e => errorLinearComb e err) hshift 0
-  simp only [ZMod.card, Fintype.card_pi, Finset.prod_const, Finset.card_univ,
-    Fintype.card_fin] at hcard
-  linarith
+  return decide (err s ≠ 0 ∧ alpha * linearCombAddHom (err s) e = deltaShift s e)
 
 /-- Stage 1 exact probability: for prime `p` and `err ≠ 0`, `linearCombZeroGame p T err` outputs
-`true` with exact probability `p⁻¹`. -/
+`true` with exact probability `p⁻¹` (via `toOuterMeasure_uniform_linearComb_eq_zero`). -/
 theorem eval_linearCombZeroGame_eq {p T : ℕ} [Fact (Nat.Prime p)]
     {err : Fin T → ZMod p} (herr : err ≠ 0) :
     (ProbComp.eval (linearCombZeroGame p T err)) true = (p : ℝ≥0∞)⁻¹ := by
-  simp only [linearCombZeroGame, bind_pure_comp, ProbComp.eval_map, ProbComp.eval_uniform]
-  have hcomp :
-      (PMF.uniformOfFintype (Fin T → ZMod p)).map (fun e => decide (errorLinearComb e err = 0)) =
-        ((PMF.uniformOfFintype (Fin T → ZMod p)).map (fun e => errorLinearComb e err)).map
-          (fun v => decide (v = 0)) := by
-    rw [PMF.map_comp]; rfl
-  rw [hcomp, map_errorLinearComb_uniform herr, PMF.map_apply]
-  rw [tsum_eq_single (0 : ZMod p)]
-  · simp [PMF.uniformOfFintype_apply, ZMod.card]
-  · intro v hv
-    simp [hv]
+  obtain ⟨l₀, hl₀⟩ := Function.ne_iff.mp herr
+  simp only [linearCombZeroGame, bind_pure_comp, ProbComp.eval_map, ProbComp.eval_uniform,
+    ← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply]
+  have hpre : (fun e : Fin T → ZMod p => decide (linearCombAddHom err e = 0)) ⁻¹' {true} =
+      {e | ∑ l, e l * err l = 0} := by
+    ext e
+    simp
+  rw [hpre, toOuterMeasure_uniform_linearComb_eq_zero hl₀, ZMod.card, one_div]
 
 /-- Stage 1 upper bound in `ℝ≥0∞`. -/
 theorem eval_linearCombZeroGame_le {p T : ℕ} [Fact (Nat.Prime p)]
@@ -676,18 +645,9 @@ theorem toReal_eval_linearCombZeroGame_le {p T : ℕ} [Fact (Nat.Prime p)]
     ((ProbComp.eval (linearCombZeroGame p T err)) true).toReal ≤ 1 / (p : ℝ) := by
   rw [eval_linearCombZeroGame_eq herr, ENNReal.toReal_inv, ENNReal.toReal_natCast, one_div]
 
-/-- Stage-2 key-guessing uniqueness: for prime `p` and any nonzero field element `L ≠ 0`, at most
-one key `alpha : ZMod p` satisfies `alpha * L = d`. -/
-theorem card_filter_macKey_eq_le_one {p : ℕ} [Fact (Nat.Prime p)]
-    {L : ZMod p} (hL : L ≠ 0) (d : ZMod p) :
-    (Finset.univ.filter fun alpha : ZMod p => alpha * L = d).card ≤ 1 := by
-  refine Finset.card_le_one.mpr fun a₁ ha₁ a₂ ha₂ => ?_
-  have h₁ := (Finset.mem_filter.mp ha₁).right
-  have h₂ := (Finset.mem_filter.mp ha₂).right
-  exact mul_right_cancel₀ hL (h₁.trans h₂.symm)
-
 /-- Stage-2 pointwise key-guessing bound: for any `L, d : ZMod p`, a uniform key `alpha : ZMod p`
-satisfies `alpha * L = d` with probability at most `(if L = 0 then 1 else 0) + p⁻¹`. -/
+satisfies `alpha * L = d` with probability at most `(if L = 0 then 1 else 0) + p⁻¹` (proved in the
+`L ≠ 0` branch via `toOuterMeasure_uniform_linearComb_eq` on `Unit`). -/
 theorem eval_macKey_guess_le {p : ℕ} [Fact (Nat.Prime p)] (L d : ZMod p) :
     ((PMF.uniformOfFintype (ZMod p)).map fun alpha => decide (alpha * L = d)) true ≤
       (if L = 0 then (1 : ℝ≥0∞) else 0) + (p : ℝ≥0∞)⁻¹ := by
@@ -695,66 +655,61 @@ theorem eval_macKey_guess_le {p : ℕ} [Fact (Nat.Prime p)] (L d : ZMod p) :
   · simp only [hL, ↓reduceIte]
     exact (PMF.coe_le_one _ _).trans le_self_add
   · simp only [hL, ↓reduceIte, zero_add]
-    rw [PMF.map_apply, tsum_eq_single (d * L⁻¹)]
-    · by_cases hsat : (d * L⁻¹) * L = d
-      · simp [hsat, PMF.uniformOfFintype_apply, ZMod.card]
-      · simp [hsat]
-    · intro alpha hne
-      have hmul : alpha * L ≠ d := fun h => hne (by rw [← h, mul_inv_cancel_right₀ hL])
-      simp [hmul]
+    rw [← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply,
+      ← Cslib.Probability.PMF.uniformOfFintype_map_equiv (Equiv.funUnique Unit (ZMod p)),
+      PMF.toOuterMeasure_map_apply]
+    have hpre : (Equiv.funUnique Unit (ZMod p) ⁻¹'
+        ((fun alpha : ZMod p => decide (alpha * L = d)) ⁻¹' {true})) =
+        {r : Unit → ZMod p | ∑ i : Unit, r i * L = d} := by
+      ext r
+      simp
+    rw [hpre, toOuterMeasure_uniform_linearComb_eq (d := fun _ => L) (i₀ := ()) hL d,
+      ZMod.card, one_div]
 
-/-- Concrete $2 / p$ soundness of SPDZ `MACCheck` ([DamgardPastroSmartZakarias2012]): for prime
-`p`, any nonzero opening error vector `err ≠ 0`, and any `e`-adaptive residual shift `deltaShift`,
+/-- Concrete $2 / p$ bound for the standalone `MACCheck` cheating-equation game
+([DamgardKellerLarraiaPastroSchollSmart2013]): for prime `p`, any nonzero opening error vector
+`err ≠ 0`, and any `e`-adaptive residual shift `deltaShift`,
 `macCheckSoundnessGame p T err deltaShift` outputs `true` with probability at most `2 / p`. -/
 theorem eval_macCheckSoundnessGame_le {p T : ℕ} [Fact (Nat.Prime p)]
     {err : Fin T → ZMod p} (herr : err ≠ 0)
     (deltaShift : (Fin T → ZMod p) → ZMod p) :
     (ProbComp.eval (macCheckSoundnessGame p T err deltaShift)) true ≤ 2 / (p : ℝ≥0∞) := by
+  obtain ⟨l₀, hl₀⟩ := Function.ne_iff.mp herr
   simp only [macCheckSoundnessGame, ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_pure]
   rw [PMF.bind_comm, PMF.bind_apply]
-  let S : Finset (Fin T → ZMod p) :=
-    Finset.univ.filter fun e : Fin T → ZMod p => errorLinearComb e err = 0
-  have hpoint : ∀ e : Fin T → ZMod p,
-      ((PMF.uniformOfFintype (ZMod p)).bind
-        (fun alpha => PMF.pure (decide (alpha * errorLinearComb e err = deltaShift e)))) true ≤
-      (if e ∈ S then (1 : ℝ≥0∞) else 0) + (p : ℝ≥0∞)⁻¹ := by
+  let μ := PMF.uniformOfFintype (Fin T → ZMod p)
+  let S : Set (Fin T → ZMod p) := {e | ∑ l, e l * err l = 0}
+  have hstep : ∀ e : Fin T → ZMod p,
+      μ e * ((PMF.uniformOfFintype (ZMod p)).bind
+        (fun alpha => PMF.pure (decide (alpha * linearCombAddHom err e = deltaShift e)))) true ≤
+      S.indicator μ e + μ e * (p : ℝ≥0∞)⁻¹ := by
     intro e
     have hm :
         ((PMF.uniformOfFintype (ZMod p)).bind
-          (fun alpha => PMF.pure (decide (alpha * errorLinearComb e err = deltaShift e)))) =
+          (fun alpha => PMF.pure (decide (alpha * linearCombAddHom err e = deltaShift e)))) =
         (PMF.uniformOfFintype (ZMod p)).map
-          (fun alpha => decide (alpha * errorLinearComb e err = deltaShift e)) := by
+          (fun alpha => decide (alpha * linearCombAddHom err e = deltaShift e)) := by
       rw [PMF.map]; rfl
-    rw [hm]
-    simpa only [S, Finset.mem_filter, Finset.mem_univ, true_and] using
-      eval_macKey_guess_le (errorLinearComb e err) (deltaShift e)
-  have hμ : ∀ e : Fin T → ZMod p,
-      PMF.uniformOfFintype (Fin T → ZMod p) e ≤ ((p : ℝ≥0∞) ^ T)⁻¹ := by
-    intro e
-    simp [PMF.uniformOfFintype_apply, ZMod.card]
-  have hsum :=
-    Cslib.Probability.PMF.tsum_mul_le_card_mul_add
-      (PMF.uniformOfFintype (Fin T → ZMod p)) hμ S hpoint
-  have hp_pos : 0 < p := (Fact.out : Nat.Prime p).pos
-  have hp_ne_zero : (p : ℝ≥0∞) ≠ 0 := Nat.cast_ne_zero.mpr hp_pos.ne'
-  have hp_ne_top : (p : ℝ≥0∞) ≠ ⊤ := ENNReal.natCast_ne_top p
-  have hpT_ne_zero : (p : ℝ≥0∞) ^ T ≠ 0 := pow_ne_zero T hp_ne_zero
-  have hpT_ne_top : (p : ℝ≥0∞) ^ T ≠ ⊤ := ENNReal.pow_ne_top hp_ne_top
-  have hcard_cast : (S.card : ℝ≥0∞) * (p : ℝ≥0∞) ≤ (p : ℝ≥0∞) ^ T := by
-    exact_mod_cast card_filter_errorLinearComb_eq_zero_mul_le herr
-  have hstage1 : (S.card : ℝ≥0∞) * ((p : ℝ≥0∞) ^ T)⁻¹ ≤ (p : ℝ≥0∞)⁻¹ := by
-    rw [ENNReal.le_inv_iff_mul_le, mul_right_comm]
-    calc (S.card : ℝ≥0∞) * (p : ℝ≥0∞) * ((p : ℝ≥0∞) ^ T)⁻¹
-        ≤ (p : ℝ≥0∞) ^ T * ((p : ℝ≥0∞) ^ T)⁻¹ := by gcongr
-      _ = 1 := ENNReal.mul_inv_cancel hpT_ne_zero hpT_ne_top
-  calc ∑' e, PMF.uniformOfFintype (Fin T → ZMod p) e *
+    have hkey := eval_macKey_guess_le (linearCombAddHom err e) (deltaShift e)
+    rw [← hm] at hkey
+    refine (mul_le_mul_right hkey (μ e)).trans ?_
+    by_cases he : e ∈ S
+    · have he0 : ∑ l, e l * err l = 0 := he
+      simp [he, he0, mul_add]
+    · have he0 : ∑ l, e l * err l ≠ 0 := he
+      simp [he, he0]
+  calc ∑' e, μ e *
         ((PMF.uniformOfFintype (ZMod p)).bind
-          (fun alpha => PMF.pure (decide (alpha * errorLinearComb e err = deltaShift e)))) true
-      ≤ S.card * ((p : ℝ≥0∞) ^ T)⁻¹ + (p : ℝ≥0∞)⁻¹ := hsum
-    _ ≤ (p : ℝ≥0∞)⁻¹ + (p : ℝ≥0∞)⁻¹ := by gcongr
+          (fun alpha => PMF.pure (decide (alpha * linearCombAddHom err e = deltaShift e)))) true
+      ≤ ∑' e, (S.indicator μ e + μ e * (p : ℝ≥0∞)⁻¹) := tsum_le_tsum hstep
+    _ = μ.toOuterMeasure S + (p : ℝ≥0∞)⁻¹ := by
+        rw [tsum_add, ← PMF.toOuterMeasure_apply, ENNReal.tsum_mul_right,
+          PMF.tsum_coe, one_mul]
+    _ = (p : ℝ≥0∞)⁻¹ + (p : ℝ≥0∞)⁻¹ := by
+        rw [toOuterMeasure_uniform_linearComb_eq_zero hl₀, ZMod.card, one_div]
     _ = 2 / (p : ℝ≥0∞) := by rw [div_eq_mul_inv, two_mul]
 
-/-- Real-valued `2 / p` soundness bound for `macCheckSoundnessGame`. -/
+/-- Real-valued `2 / p` bound for `macCheckSoundnessGame`. -/
 theorem toReal_eval_macCheckSoundnessGame_le {p T : ℕ} [Fact (Nat.Prime p)]
     {err : Fin T → ZMod p} (herr : err ≠ 0)
     (deltaShift : (Fin T → ZMod p) → ZMod p) :
@@ -767,7 +722,7 @@ theorem toReal_eval_macCheckSoundnessGame_le {p T : ℕ} [Fact (Nat.Prime p)]
   have htr := ENNReal.toReal_mono hne_top h
   rwa [ENNReal.toReal_div, ENNReal.toReal_ofNat, ENNReal.toReal_natCast] at htr
 
-/-- `Game.succProbability` form of the `2 / p` soundness bound for `macCheckSoundnessGame`. -/
+/-- `Game.succProbability` form of the `2 / p` bound for `macCheckSoundnessGame`. -/
 theorem succProbability_macCheckSoundnessGame_le {p T : ℕ} [Fact (Nat.Prime p)]
     {err : Fin T → ZMod p} (herr : err ≠ 0)
     (deltaShift : (Fin T → ZMod p) → ZMod p) :
@@ -775,9 +730,9 @@ theorem succProbability_macCheckSoundnessGame_le {p T : ℕ} [Fact (Nat.Prime p)
       2 / (p : ℝ) :=
   toReal_eval_macCheckSoundnessGame_le herr deltaShift
 
-/-- Soundness of `MACCheck` against any prior randomized adversary `adv : ProbComp S` that selects
-state `s` (fixing `err s` and `deltaShift s`) before the independent uniform key `alpha : ZMod p`
-is sampled. -/
+/-- Standalone `MACCheck` cheating-equation bound against any prior randomized adversary
+`adv : ProbComp S` that selects state `s` (fixing `err s` and `deltaShift s`) before the
+independent uniform key `alpha : ZMod p` is sampled. -/
 theorem eval_macCheckSoundness_bind_le {p T : ℕ} [Fact (Nat.Prime p)] {S : Type}
     (adv : ProbComp S) (err : S → Fin T → ZMod p)
     (deltaShift : S → (Fin T → ZMod p) → ZMod p) :
@@ -792,7 +747,7 @@ theorem eval_macCheckSoundness_bind_le {p T : ℕ} [Fact (Nat.Prime p)] {S : Typ
         (ProbComp.eval do
           let alpha ← ProbComp.uniform (ZMod p)
           let e ← ProbComp.uniform (Fin T → ZMod p)
-          return decide (err s ≠ 0 ∧ alpha * errorLinearComb e (err s) = deltaShift s e)) =
+          return decide (err s ≠ 0 ∧ alpha * linearCombAddHom (err s) e = deltaShift s e)) =
         ProbComp.eval (macCheckSoundnessGame p T (err s) (deltaShift s)) := by
       simp only [herr, ne_eq, not_false_eq_true, true_and, macCheckSoundnessGame]
     rw [heq]

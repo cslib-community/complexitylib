@@ -22,11 +22,11 @@ Non-vacuous concrete evaluations, protocol executions, and soundness instantiati
    `n = 2`, `T = 2`):** honest two-round `macCheckProtocol` acceptance (`n = 2, T = 2` and `n = 1,
    T = 1` edge case), commitment-mismatch rejection in `verifyResiduals`, and concrete verification
    of `sum_checkResidual_eq_neg_mul` and `sum_checkResidual_add_eq_zero_iff` on a forged opening.
-3. **`2 / p` soundness games (`ZMod 5`, `T = 1` and `T = 2`):** concrete instantiations of
-   `eval_linearCombZeroGame_eq`, `eval_macCheckSoundnessGame_le`,
+3. **`2 / p` standalone cheating-equation games (`ZMod 5`, `T = 1` and `T = 2`):** concrete
+   instantiations of `eval_linearCombZeroGame_eq`, `eval_macCheckSoundnessGame_le`,
    `succProbability_macCheckSoundnessGame_le`, and `eval_macCheckSoundness_bind_le`, together with
    exact counting of accepting `(alpha, e)` pairs (`9` out of `25` pairs on `T = 1`, strictly
-   within the `2 / 5 = 10 / 25` soundness bound).
+   within the `2 / 5 = 10 / 25` bound).
 -/
 
 namespace ComplexityTests.Crypto.SPDZ
@@ -142,9 +142,10 @@ example :
     (∑ i : Fin 2, checkResidual (forgedBatch i)) = (2 : ZMod 5) ∧
       ((∑ i : Fin 2, checkResidual (forgedBatch i)) + 3 = 0 ↔
         (4 : ZMod 5) *
-          errorLinearComb ![2, 3]
+          linearCombAddHom
             (fun l => (![⟨4, 1⟩, ⟨2, 0⟩] l : OpenedValue 5).value -
-              (![authX, authY] l).secret) = 3) :=
+              (![authX, authY] l).secret)
+            ![2, 3] = 3) :=
   ⟨by rw [sum_checkResidual_eq_neg_mul forgedBatch_authentic]; decide,
    sum_checkResidual_add_eq_zero_iff forgedBatch_authentic 3⟩
 
@@ -157,7 +158,7 @@ example :
     false := by
   decide
 
-/-! ### 3. Concrete `2 / p` soundness game instantiations over `ZMod 5` -/
+/-! ### 3. Concrete `2 / p` standalone cheating-equation game instantiations over `ZMod 5` -/
 
 /-- Stage 1 exact probability `1 / 5` on `ZMod 5` (`T = 2`, `err = ![1, 0]`). -/
 example :
@@ -170,11 +171,11 @@ example :
 and the `1 / 5` key-guessing event (`e 0 ≠ 0`). -/
 example :
     (Finset.univ.filter fun ((alpha, e) : ZMod 5 × (Fin 1 → ZMod 5)) =>
-      alpha * errorLinearComb e ![1] = (if e 0 = 0 then 0 else 1)).card = 9 := by
+      alpha * linearCombAddHom ![1] e = (if e 0 = 0 then 0 else 1)).card = 9 := by
   decide
 
-/-- Concrete `2 / 5` soundness bound on `ZMod 5` (`T = 1`, `err = ![1]`) in `ℝ≥0∞`, `ℝ`, and
-stateful-adversary `macCheckSoundnessAdvGame` forms. -/
+/-- Concrete `2 / 5` standalone cheating-equation bound on `ZMod 5` (`T = 1`, `err = ![1]`) in
+`ℝ≥0∞`, `ℝ`, and stateful-adversary `macCheckSoundnessAdvGame` forms. -/
 example :
     let deltaShift : (Fin 1 → ZMod 5) → ZMod 5 := fun e => if e 0 = 0 then 0 else 1
     (ProbComp.eval (macCheckSoundnessGame 5 1 ![1] deltaShift)) true ≤ 2 / (5 : ℝ≥0∞) ∧
