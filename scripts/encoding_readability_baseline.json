@@ -115,9 +115,6 @@
  "Complexity/Computability/Probabilistic/Memoize.lean": {
   "encList (encPair ?1 ?2)": 4
  },
- "Complexity/Computability/Probabilistic/Oracle/Parameter.lean": {
-  "encPair ?1 (encPair (encPair ?2 encBits) ?3)": 4
- },
  "Complexity/Computability/WordRAM/Native.lean": {
   "encPair encUnary (encPi encNat)": 11
  },

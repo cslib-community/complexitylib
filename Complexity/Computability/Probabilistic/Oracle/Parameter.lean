@@ -106,8 +106,7 @@ theorem IsOraclePPT.run_interpret_preprocess {Caller State : Type}
     {prepare : Caller → ℕ × List Bool} {initial : Caller → State}
     {resources : Caller → List Bool → ℕ} (hprogram : IsOraclePPT output program)
     (hprepare : ComputableTidilyInPolyTime prepare input (encPair encUnary encBits))
-    (hhandler : IsPPTOn
-      (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
+    (hhandler : IsPPTOn (encHandlerCall input operationEncoding stateEncoding)
       (encPair encBits stateEncoding)
       (fun ⟨caller, request, state⟩ => handler caller request state))
     (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
@@ -135,8 +134,7 @@ theorem IsOraclePPT.run_interpret_preprocess' {Caller State : Type}
     {prepare : Caller → ℕ × List Bool} {initial : Caller → State}
     {resources : Caller → List Bool → ℕ} (hprogram : IsOraclePPT output program)
     (hprepare : ComputableInPolyTime prepare input (encPair encUnary encBits))
-    (hhandler : IsPPTOn
-      (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
+    (hhandler : IsPPTOn (encHandlerCall input operationEncoding stateEncoding)
       (encPair encBits stateEncoding)
       (fun ⟨caller, request, state⟩ => handler caller request state))
     (hinitial : ComputableInPolyTime initial input stateEncoding)
@@ -166,8 +164,7 @@ theorem IsOraclePPT.run_interpret_preprocess_open {External Caller State : Type}
     {prepare : Caller → ℕ × List Bool} {initial : Caller → State}
     {resources : Caller → List Bool → ℕ} (hprogram : IsOraclePPT output program)
     (hprepare : ComputableTidilyInPolyTime prepare input (encPair encUnary encBits))
-    (hhandler : IsOraclePPTOn
-      (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
+    (hhandler : IsOraclePPTOn (encHandlerCall input operationEncoding stateEncoding)
       (encPair encBits stateEncoding)
       (fun ⟨caller, request, state⟩ => handler caller request state))
     (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
@@ -197,8 +194,7 @@ theorem IsOraclePPT.run_interpret_preprocess_open' {External Caller State : Type
     {prepare : Caller → ℕ × List Bool} {initial : Caller → State}
     {resources : Caller → List Bool → ℕ} (hprogram : IsOraclePPT output program)
     (hprepare : ComputableInPolyTime prepare input (encPair encUnary encBits))
-    (hhandler : IsOraclePPTOn
-      (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
+    (hhandler : IsOraclePPTOn (encHandlerCall input operationEncoding stateEncoding)
       (encPair encBits stateEncoding)
       (fun ⟨caller, request, state⟩ => handler caller request state))
     (hinitial : ComputableInPolyTime initial input stateEncoding)
@@ -228,8 +224,7 @@ theorem IsOraclePPT.run_interpret_preprocess_open_of_polyBounded {External Calle
     {prepare : Caller → ℕ × List Bool} {initial : Caller → State}
     {resources : Caller → List Bool → ℕ} (hprogram : IsOraclePPT output program)
     (hprepare : ComputableInPolyTime prepare input (encPair encUnary encBits))
-    (hhandler : IsOraclePPTOn
-      (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
+    (hhandler : IsOraclePPTOn (encHandlerCall input operationEncoding stateEncoding)
       (encPair encBits stateEncoding)
       (fun ⟨caller, request, state⟩ => handler caller request state))
     (hinitial : ComputableInPolyTime initial input stateEncoding)

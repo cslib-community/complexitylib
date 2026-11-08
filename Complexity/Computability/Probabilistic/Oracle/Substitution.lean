@@ -29,6 +29,10 @@ not suffice: repeatedly doubling the handler's state is efficient per call but n
 Closed substitution (`Cslib.Probability.IsOraclePPTOn.run_interpret_preprocess`) is the special
 case of a sampled closed handler without external channels.
 
+## Main definitions
+
+* `Cslib.Probability.encHandlerCall`: the encoded input of a stateful handler.
+
 ## Main results
 
 * `Cslib.Probability.IsOraclePPTOn.run_interpret_preprocess_open`: open substitution with
@@ -54,6 +58,14 @@ namespace Cslib.Probability
 
 open Turing.MultiTapeTM
 
+/-- The input of a stateful oracle handler: the caller's input, then the request (an operation
+and its word), then the handler's state. Each pair frames its first part, so this is
+`encPair input (encPair (encPair operationEncoding encBits) stateEncoding)`. -/
+abbrev encHandlerCall {Caller Operation State : Type} (input : Caller ↪ List Bool)
+    (operationEncoding : Operation ↪ List Bool) (stateEncoding : State ↪ List Bool) :
+    Caller × (Operation × List Bool) × State ↪ List Bool :=
+  encPair input (encPair (encPair operationEncoding encBits) stateEncoding)
+
 /-- Substitute a stateful handler with its own external calls into an oracle program. The
 substituted program is strict oracle PPT and preserves the joint law of the result, the
 handler's final state and every external oracle's state. The allowance bounds each reply and the
@@ -71,8 +83,7 @@ theorem IsOraclePPTOn.run_interpret_preprocess_open_of_polyBounded
     {prepare : Caller → α} {initial : Caller → State} {resources : Caller → List Bool → ℕ}
     (hprogram : IsOraclePPTOn source output program)
     (hprepare : ComputableInPolyTime prepare input source)
-    (hhandler : IsOraclePPTOn
-      (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
+    (hhandler : IsOraclePPTOn (encHandlerCall input operationEncoding stateEncoding)
       (encPair encBits stateEncoding)
       (fun ⟨caller, request, state⟩ => handler caller request state))
     (hinitial : ComputableInPolyTime initial input stateEncoding)
@@ -146,8 +157,7 @@ theorem IsOraclePPTOn.run_interpret_preprocess_open
     {prepare : Caller → α} {initial : Caller → State} {resources : Caller → List Bool → ℕ}
     (hprogram : IsOraclePPTOn source output program)
     (hprepare : ComputableTidilyInPolyTime prepare input source)
-    (hhandler : IsOraclePPTOn
-      (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
+    (hhandler : IsOraclePPTOn (encHandlerCall input operationEncoding stateEncoding)
       (encPair encBits stateEncoding)
       (fun ⟨caller, request, state⟩ => handler caller request state))
     (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
@@ -181,8 +191,7 @@ theorem IsOraclePPTOn.run_interpret_preprocess_open'
     {prepare : Caller → α} {initial : Caller → State} {resources : Caller → List Bool → ℕ}
     (hprogram : IsOraclePPTOn source output program)
     (hprepare : ComputableInPolyTime prepare input source)
-    (hhandler : IsOraclePPTOn
-      (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
+    (hhandler : IsOraclePPTOn (encHandlerCall input operationEncoding stateEncoding)
       (encPair encBits stateEncoding)
       (fun ⟨caller, request, state⟩ => handler caller request state))
     (hinitial : ComputableInPolyTime initial input stateEncoding)
