@@ -31,6 +31,16 @@ The [worst-case endpoint](https://github.com/cslib-community/complexitylib/blob/
 
 The [machine endpoint account](../machines-and-classes/endpoints-and-hierarchies.md#hardness-versus-randomness) states the uniform class side and the literature-check scope. Here the inspected evidence is the circuit-hardness definition, the final theorem statements and their direct native bridge, not an independent reconstruction of the hardness amplification or generator proof.
 
+## Explicit Ramsey graphs
+
+Explicit Ramsey graphs are a standard derandomization benchmark: the counting argument shows that most graphs have no large homogeneous set, but it names none. [`SimpleGraph.ramseyNumber`](../../Complexity/Foundations/Combinatorics/SimpleGraph/Ramsey/Basic.lean) is the least `n` such that every simple graph on `n` vertices has a `k`-clique or an `l`-independent set. It is characterized on any finite vertex type by `ramseyNumber_le_card_iff` (upper bounds) and `card_lt_ramseyNumber_iff` (lower bounds: exhibit one graph with neither). The Erdős–Szekeres recursion gives `ramseyNumber_le_four_pow`. [erdosszekeres1935][erdosszekeres1935] The [Erdős module](../../Complexity/Foundations/Combinatorics/SimpleGraph/Ramsey/Erdos.lean) proves the lower bound `two_rpow_half_lt_ramseyNumber`, `2 ^ (k / 2) < R(k, k)` for `k ≥ 3`, by finite counting. The underlying count `lt_ramseyNumber_of_two_mul_choose_lt` (`2 C(n, k) < 2 ^ C(k, 2)`) needs no probability space. [erdos1947][erdos1947]
+
+The explicit counterpart is [Nagy's graph](../../Complexity/Foundations/Combinatorics/SimpleGraph/Ramsey/Nagy.lean). Its vertices are the `3`-subsets of a `t`-element type, and two vertices are adjacent when they meet in exactly one point. Oddtown and the uniform Fisher inequality bound its cliques and independent sets by `t`. Both are proved through one [Gram-matrix rank bound](../../Complexity/Foundations/LinearAlgebra/Matrix/UniformGram.lean) over `ZMod 2` and `ℚ` ([set-family module](../../Complexity/Foundations/Combinatorics/SetFamily/Oddtown.lean)). Hence `choose_three_lt_ramseyNumber` gives `C(t, 3) < R(t + 1, t + 1)`. [nagy1972][nagy1972]
+
+Graph bounds and explicitness are separate obligations. [`Cslib.ExplicitRamsey`](../../Complexity/Computability/Complexity/ExplicitRamsey.lean) names a vertex by its increasing triple `(a, b, c)` with `a < b < c < t`. `nagyLabel_injective` and `range_nagyLabel` show that these names are a bijection onto the triples accepted by `nagyIsLabel`. `nagyGraph_adj_iff_nagyAdj` transfers adjacency to `nagyAdj` on names. `computableInPolyTime_nagyAdj` and `computableInPolyTime_nagyIsLabel` are plain `ComputableInPolyTime` certificates for binary naturals; one machine serves every `t`. The cost is therefore polylogarithmic in the number of vertices, the strongly explicit regime. The [checked clients](../../ComplexityTests/Ramsey.lean) include `R(3, 3) = 6` and a Fano-plane instance attaining the uniform Fisher bound.
+
+Nagy's graph has `Θ(k ^ 3)` vertices for homogeneous-set bound `k`, and Erdős's existential bound is exponential in `k`. Erdős's bound overtakes Nagy's at `k = 20`. Stronger explicit constructions (Frankl–Wilson, and the two-source disperser and extractor graphs) are not formalized. An explicit graph on `2 ^ Ω(k)` vertices is an open problem ([#3041](https://github.com/cslib-community/complexitylib/issues/3041)).
+
 ## Natural proofs and cryptographic assumptions
 
 [NaturalProof.IsLarge](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/NaturalProof.lean#L147) separates largeness, constructivity and usefulness. A property is a family of sets of Boolean functions. Constructivity concerns deciding from a full truth table; polynomial in that input length is exponential in the function's arity. Usefulness excludes every easy language's slices eventually. Largeness is a quantitative density condition.
@@ -52,6 +62,9 @@ These are mathematical proof interfaces, not automatically encoded certificates 
 The conditional statements, truth-table scales and source-specific quantitative scope were inspected, but the complete magnification and cryptographic reduction proofs were not independently reconstructed in this worker pass. Distinguish a valid conditional theorem, a conventional open assumption, and a premise that this same library proves false elsewhere.
 
 [complexitylib]: ../sources.md#complexitylib
+[erdos1947]: ../sources.md#erdos1947
+[erdosszekeres1935]: ../sources.md#erdosszekeres1935
 [impagliazzowigderson97]: ../sources.md#impagliazzowigderson97
+[nagy1972]: ../sources.md#nagy1972
 [nisanwigderson94]: ../sources.md#nisanwigderson94
 [sudantrevisanvadhan01]: ../sources.md#sudantrevisanvadhan01
