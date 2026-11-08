@@ -1283,11 +1283,16 @@ each statement against the numbered result. Organize modules by subject, not cha
   encodable codes; and Zémor's decoding of Tanner codes on spectral expanders, building on the
   Tanner-code distance bound in `Complexity/Foundations/Combinatorics/Expander/TannerCode.lean`.
 - **Channel coding** ([#3304](https://github.com/cslib-community/complexitylib/issues/3304)):
-  achievability for the binary symmetric channel (random codes with nearest codeword decoding at
-  every rate below `1 - h₂(p)`, maximal error `≤ 10 exp (-δ n)`) and the weak converse (via
-  Fano's inequality: above capacity the average error of every code is bounded away from zero)
-  are in place. Remaining: the strong converse (Wolfowitz: the error tends to `1` above
-  capacity), general discrete memoryless channels with mutual-information capacity (the chain
+  for the binary symmetric channel, the following are in place:
+  - achievability (random codes with nearest codeword decoding at every rate below `1 - h₂(p)`,
+    maximal error `≤ 10 exp (-δ n)`);
+  - the weak converse, via Fano's inequality;
+  - the strong converse (above capacity, the average error of every code is
+    `≥ 1 - 2 exp (-δ n)`);
+  - the capacity theorem (`1 - h₂(p)` is the supremum of achievable rates, for every `p`).
+
+  Remaining: the behaviour at rate exactly `1 - h₂(p)` (second-order, dispersion terms),
+  general discrete memoryless channels with mutual-information capacity (the chain
   rule for `n` channel uses and the data-processing inequality), channels with feedback,
   explicit and efficiently decodable capacity-achieving codes (Forney concatenation, polar
   codes), and the link to list decoding.

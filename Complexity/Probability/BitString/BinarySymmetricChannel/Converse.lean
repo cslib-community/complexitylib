@@ -54,7 +54,9 @@ and hence `(1 - Pe) log₂ |M| ≤ n (1 - h₂(p)) + 1`
 The results hold for every `p ∈ [0, 1]` and every deterministic decoder, not only nearest-codeword
 decoders. With `Cslib.BitString.eventually_exists_code_decodingError_le` they show that
 `1 - h₂(p)` is the capacity of `BSC_p` for `p < 1 / 2`. The strong converse (the error tends to `1`
-above capacity, [Guruswami, Rudra and Sudan, Theorem 6.3.1(2)][GuruswamiRudraSudan2019]), general
+above capacity, [Guruswami, Rudra and Sudan, Theorem 6.3.1(2)][GuruswamiRudraSudan2019]) is in
+`Complexity.Probability.BitString.BinarySymmetricChannel.StrongConverse`, and the capacity theorem
+for every `p` in `Complexity.Probability.BitString.BinarySymmetricChannel.Capacity`. General
 discrete memoryless channels and channels with feedback are not formalized here.
 
 ## Main results

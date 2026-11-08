@@ -5241,7 +5241,9 @@ public import Complexity.Probability.BitString.AffineHash
 public import Complexity.Probability.BitString.AffineHash.ThreeWise
 public import Complexity.Probability.BitString.BinarySymmetricChannel
 public import Complexity.Probability.BitString.BinarySymmetricChannel.Achievability
+public import Complexity.Probability.BitString.BinarySymmetricChannel.Capacity
 public import Complexity.Probability.BitString.BinarySymmetricChannel.Converse
+public import Complexity.Probability.BitString.BinarySymmetricChannel.StrongConverse
 public import Complexity.Probability.BitString.CoinFlips
 public import Complexity.Probability.BitString.Collision
 public import Complexity.Probability.BitString.LazyRandomWalk
