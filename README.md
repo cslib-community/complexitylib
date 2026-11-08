@@ -183,10 +183,8 @@ pull requests that change the guide and uploads the pages as a `guide` artifact.
 
 This repository was the canonical CSLib-based Complexitylib until 2026-11-08, when it was renamed
 from complexitylib to cslib-frontier and its scope widened from computational complexity theory to
-computer science generally. [Epsilon Eridani](https://github.com/cslib-community/EpsilonEridani)
-merged into it at the same time: its B-tree development is being ported here, its open proposals
-are now issues here, and the repository will be archived
-([#3675](https://github.com/cslib-community/cslib-frontier/issues/3675)). The renamed historical
+computer science generally ([#3675](https://github.com/cslib-community/cslib-frontier/issues/3675)).
+The renamed historical
 [pre-CSLib implementation](https://github.com/SamuelSchlesinger/complexitylib-v1) remains available
 with archival pending; it has a different API, and some developments remain to be ported. The temporary
 repository and package name `complexitylib2` was retired when this repository moved to CSLib
