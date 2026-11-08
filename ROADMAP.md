@@ -669,8 +669,10 @@ index links to canonical definitions rather than keeping a second set.
   game on the tableau of a polynomial-time machine (`Tableau.ValueGame`, which gives
   `APSPACE = EXP`) in logarithmic space. This needs a word game machine whose round reads the
   input from the input tape and keeps only the `O(log n)`-bit wire claim on its work tape. Once it
-  is proved, add `AL = P` to the alternation abstract, which states `AP = PSPACE` and
-  `APSPACE = EXP` ([#3135](https://github.com/cslib-community/complexitylib/issues/3135)).
+  is proved, add `AL = P` to the
+  [alternation abstract](abstracts/ComplexityAbstracts/AlternationAbstract.lean), which states
+  `AP = PSPACE` and `APSPACE = EXP`, as part of
+  [#2873](https://github.com/cslib-community/complexitylib/issues/2873).
 - **Pebble games and space lower bounds**
   ([#2995](https://github.com/cslib-community/complexitylib/issues/2995)): the black pebble game
   on a `Digraph`, the path-blocking lower-bound engine, and the exact prices `h + 2` of the
@@ -808,7 +810,11 @@ index links to canonical definitions rather than keeping a second set.
   polynomial-time counting of arborescences and of weighted spanning trees, and Kasteleyn's
   Pfaffian method for perfect matchings of planar graphs, in contrast with permanent
   #P-completeness.
-- For composite moduli: the prime-power collapse `Mod_{p^e}P = Mod_pP` and union closure.
+- For composite moduli
+  ([#3495](https://github.com/cslib-community/complexitylib/issues/3495)): the prime-power
+  collapse `Mod_{p^e}P = Mod_pP` is done. Remaining: union closure for every modulus through
+  Hertrampf's characterization of `Mod_{jk}P` for coprime `j, k` (Beigel–Gill, Theorem 32 and
+  Corollary 35).
   Complement closure for moduli that are not prime powers is open, and relativizing proofs
   cannot give it (Barrington–Beigel–Rudich), so it is not a library direction.
 - Target-relativized `LWPP^A`, `WPP^A` and `SBP^A` with `FP^A` targets; adaptive WPP closure and
@@ -905,9 +911,10 @@ universe size, not supplied as unverified input tables. In dependency order:
   regular), FO[<] ⊊ MSO via EVEN
   ([#2885](https://github.com/cslib-community/complexitylib/issues/2885)) and star-free ⇒ FO[<]
   ([#3075](https://github.com/cslib-community/complexitylib/issues/3075)): the converse FO[<] ⇒
-  star-free over a finite alphabet (McNaughton–Papert), by composition of rank-k types, and
-  star-free = aperiodic (Schützenberger), from cslib's syntactic monoid, with decidability of
-  first-order definability for regular languages;
+  star-free over a finite alphabet (McNaughton–Papert,
+  [#3469](https://github.com/cslib-community/complexitylib/issues/3469)), by composition of
+  rank-k types, and star-free = aperiodic (Schützenberger), from cslib's syntactic monoid, with
+  decidability of first-order definability for regular languages;
   closure of regular languages under homomorphic images, upstream to cslib; the non-elementary
   lower bound on formula-to-automaton translation; Büchi's theorem for ω-words (S1S) over
   cslib's ω-regular languages; and MSO on trees: finite trees and tree automata
@@ -985,13 +992,17 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **APSP class** ([#3076](https://github.com/cslib-community/complexitylib/issues/3076)): APSP and
   the (min,+) product reduce to each other in the query model (repeated squaring costs
   `⌈log₂ (n - 1)⌉` products, the tripartite graph one APSP call on `3 n` vertices), with
-  Floyd–Warshall and schoolbook products as instances. Remaining: the negative-triangle
-  equivalence and the other APSP-equivalent problems of Vassilevska Williams and Williams
-  (minimum-weight cycle, replacement paths, metricity, (min,+) product verification); the
-  radius and median equivalences of Abboud, Grandoni and Vassilevska Williams (SODA 2015); a
-  bridge from vertex-list walks to `Quiver.Path` weights; word-RAM realizations with bit-length
-  costs; Kerr's `Ω(n³)` bound for (min,+) straight-line programs. Bellman–Ford with
-  negative-cycle reporting is [#3053](https://github.com/cslib-community/complexitylib/issues/3053).
+  Floyd–Warshall and schoolbook products as instances. The (min,+) product reduces to negative
+  triangle detection (Vassilevska Williams–Williams Lemma 4.1, Lemma 4.2 in its pairs form and
+  Theorem 4.2, weights `ℤ ∪ {∞}`): an `n ^ (3 - δ)` detector gives an `n ^ (3 - δ / 3) log W`
+  product, and one product decides negative triangle. Remaining: `-∞` weights and general (min,⊙) structures; the
+  output-sensitive listing bound (Theorem 4.3); the other APSP-equivalent problems of Vassilevska
+  Williams and Williams (minimum-weight cycle, replacement paths, metricity, (min,+) product
+  verification); the radius and median equivalences of Abboud, Grandoni and Vassilevska Williams
+  (SODA 2015); a bridge from vertex-list walks to `Quiver.Path` weights; word-RAM realizations
+  with bit-length costs; Kerr's `Ω(n³)` bound for (min,+) straight-line programs. Bellman–Ford
+  with negative-cycle reporting is
+  [#3053](https://github.com/cslib-community/complexitylib/issues/3053).
 - **Reductions from orthogonal vectors**
   ([#3037](https://github.com/cslib-community/complexitylib/issues/3037)): diameter two versus
   three is done for general `m` (`FineGrained.Diameter`, the `OV` form of Roditty–Vassilevska
@@ -1336,11 +1347,16 @@ each statement against the numbered result. Organize modules by subject, not cha
   encodable codes; and Zémor's decoding of Tanner codes on spectral expanders, building on the
   Tanner-code distance bound in `Complexity/Foundations/Combinatorics/Expander/TannerCode.lean`.
 - **Channel coding** ([#3304](https://github.com/cslib-community/complexitylib/issues/3304)):
-  achievability for the binary symmetric channel (random codes with nearest codeword decoding at
-  every rate below `1 - h₂(p)`, maximal error `≤ 10 exp (-δ n)`) and the weak converse (via
-  Fano's inequality: above capacity the average error of every code is bounded away from zero)
-  are in place. Remaining: the strong converse (Wolfowitz: the error tends to `1` above
-  capacity), general discrete memoryless channels with mutual-information capacity (the chain
+  for the binary symmetric channel, the following are in place:
+  - achievability (random codes with nearest codeword decoding at every rate below `1 - h₂(p)`,
+    maximal error `≤ 10 exp (-δ n)`);
+  - the weak converse, via Fano's inequality;
+  - the strong converse (above capacity, the average error of every code is
+    `≥ 1 - 2 exp (-δ n)`);
+  - the capacity theorem (`1 - h₂(p)` is the supremum of achievable rates, for every `p`).
+
+  Remaining: the behaviour at rate exactly `1 - h₂(p)` (second-order, dispersion terms),
+  general discrete memoryless channels with mutual-information capacity (the chain
   rule for `n` channel uses and the data-processing inequality), channels with feedback,
   explicit and efficiently decodable capacity-achieving codes (Forney concatenation, polar
   codes), and the link to list decoding.
@@ -1408,9 +1424,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   bound `disc(f) ^ (2 ^ k) ≤ E(f)` and the Babai–Nisan–Szegedy lower bound `Ω(n / 4 ^ k)` for
   generalized inner product; leaves as cylinder intersections (the star lemma) and the
   Chandra–Furst–Lipton lower bound `D(Exactly-N) → ∞` for three players via Mathlib's corners
-  theorem ([#3424](https://github.com/cslib-community/complexitylib/issues/3424)). Remaining: the
-  sharper `Ω(n / 2 ^ k)` bound for generalized inner product (source to be verified before citing)
-  and Grolmusz's `O(k n / 2 ^ k)` protocol; for Exactly-N, the converse from corner-free colorings,
+  theorem ([#3424](https://github.com/cslib-community/complexitylib/issues/3424)); Grolmusz's
+  `O(k n / 2 ^ k + k)` protocol for generalized inner product
+  ([#3453](https://github.com/cslib-community/complexitylib/issues/3453)). Remaining: the sharper
+  `Ω(n / 2 ^ k)` bound for generalized inner product (source to be verified before citing), and
+  Grolmusz's protocol for an arbitrary finite player type; for Exactly-N, the converse from
+  corner-free colorings,
   upper bounds from Behrend's construction, quantitative corners bounds and the `k`-player version;
   matrix multiplication (Raz) and NOF disjointness lower bounds; and applications to
   `ACC⁰` and branching-program lower bounds. A two-party companion is the Aho–Ullman–Yannakakis bound
@@ -1696,6 +1715,13 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Separation and optimization:** a precise oracle interface and a separation–optimization
   equivalence with its representation, accuracy and well-boundedness hypotheses. Extend to
   convex optimization through explicit oracle and numerical-error contracts.
+- **Lovász theta and perfect graphs** ([#2998](https://github.com/cslib-community/complexitylib/issues/2998)):
+  Shannon capacity, the orthonormal-representation theta function, the sandwich
+  `α(G) ≤ ϑ(G) ≤ χ(Ḡ)`, `Θ(G) ≤ ϑ(G)` and `Θ(C₅) = √5` are in
+  `Foundations/Combinatorics/SimpleGraph`. Remaining: the equivalent SDP and eigenvalue
+  formulations of `ϑ`, and its polynomial-time approximation by the ellipsoid method
+  (Grötschel–Lovász–Schrijver), which makes clique number and chromatic number of perfect graphs
+  polynomial-time computable. This waits on the separation–optimization interface.
 - **Primal–dual approximation and multiplicative weights:** reusable analyses with vertex cover
   and set cover as first primal–dual clients. Real-valued regret bounds for weighted majority,
   multiplicative weights and Hedge (with tuned learning rates), and the algorithmic minimax
@@ -1739,13 +1765,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   Nagamochi–Ibaraki sparse certificates for `k`-edge-connectivity,
   Karger's near-linear minimum cut algorithm, and Queyranne's minimization of symmetric submodular
   functions (which generalizes the maximum adjacency argument to hypergraph cuts).
-- **Gomory–Hu trees** ([#3320](https://github.com/cslib-community/complexitylib/issues/3320)):
-  remaining after the existence theorem for cut-equivalent trees of symmetric submodular set
-  functions and weighted undirected graphs, with flow-equivalence, the minimum-cut triangle
-  inequality and the `n - 1` bound on distinct minimum cut values (`Algorithms/Lean/GomoryHu`,
-  [#3285](https://github.com/cslib-community/complexitylib/issues/3285)): the Gomory–Hu or
-  Gusfield construction with `n - 1` maximum-flow calls as a `TimeM` program over Edmonds–Karp,
-  with its running-time bound, and real-valued capacities.
+- **Gomory–Hu trees** ([#3422](https://github.com/cslib-community/complexitylib/issues/3422)):
+  remaining after the existence theorem for cut-equivalent trees, flow-equivalence, the
+  minimum-cut triangle inequality, the `n - 1` bound on distinct minimum cut values, and Gusfield's
+  construction with `n - 1` Edmonds–Karp calls and its `TimeM` bound (`Algorithms/Lean/GomoryHu`,
+  [#3285](https://github.com/cslib-community/complexitylib/issues/3285),
+  [#3320](https://github.com/cslib-community/complexitylib/issues/3320)): returning the tree's
+  edge weights from the maximum flow values, and real-valued capacities.
 - **Push–relabel maximum flow** ([#3373](https://github.com/cslib-community/complexitylib/issues/3373)):
   remaining after preflows, valid labelings, optimality at termination with a gap minimum cut, the
   operation bounds of the generic Goldberg–Tarjan algorithm and a verified executable scheduler
@@ -1753,6 +1779,14 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   scanning (`O(|V|² |E|)`), the FIFO and relabel-to-front rules (`O(|V|³)`), highest-label
   selection (`O(|V|² √|E|)`), gap and global-relabelling heuristics, and dynamic trees
   (`O(|V| |E| log(|V|² / |E|))`).
+- **Menger's theorem** ([#3409](https://github.com/cslib-community/complexitylib/issues/3409)):
+  remaining after the two-terminal arc, edge and vertex forms for finite digraphs and simple
+  graphs, derived from integral max-flow/min-cut via flow decomposition
+  (`Algorithms/Lean/MaxFlow/Menger`, `MaxFlow/Decomposition`,
+  [#3380](https://github.com/cslib-community/complexitylib/issues/3380)): the directed-multigraph
+  (capacity) form, the `A`–`B` set version and the global `k`-connectivity form, Menger for
+  infinite graphs (the Erdős–Menger conjecture, proved by Aharoni and Berger), and a native
+  `k`-connectivity test with a charged running-time bound.
 - **Algebraic matching** ([#3052](https://github.com/cslib-community/complexitylib/issues/3052)):
   remaining after Edmonds' determinant criterion and Lovász's randomized test for bipartite
   graphs (`Algorithms/Matching/Edmonds`), the bipartite Mulmuley–Vazirani–Vazirani core
@@ -1797,9 +1831,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   beyond the one-to-one, complete-list deferred-acceptance development in
   `Algorithms/Lean/StableMatching` (stability, the `n^2 - n + 1` proposal bound, optimality, the
   lattice, the blocking lemma, strategy-proofness, and Roth's impossibility theorem for three
-  agents per side): Roth's theorem for every `n ≥ 3` by padding the witness, incomplete lists and
-  the rural hospitals theorem, many-to-one college admissions, ties, rotations and the
-  stable-matching poset, stable roommates, and a charged native implementation in `O(n^2)` time.
+  agents per side) and its incomplete-list extension in `StableMatching/Incomplete` (unequal
+  sides, deferred acceptance, optimality, and the one-to-one rural hospitals theorem): Roth's
+  theorem for every `n ≥ 3` by padding the witness, the lattice, blocking lemma and incentive
+  (strategy-proofness) results for incomplete lists, many-to-one college admissions with the
+  capacitated rural hospitals theorem, ties, rotations and the stable-matching poset, stable
+  roommates, and a charged native implementation in `O(n^2)` time.
 - **Housing markets and top trading cycles** ([#3286](https://github.com/cslib-community/complexitylib/issues/3286)):
   beyond the Shapley–Scarf development in `Algorithms/Lean/HousingMarket` (TTC as the unique
   strict-core and competitive allocation, individual rationality, Pareto efficiency and
@@ -1880,6 +1917,14 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   the work-function algorithm's `2k - 1` bound (Koutsoupias–Papadimitriou), the `k`-server
   conjecture as a research target with explicit quantifiers, the `k = 2` case on every metric,
   randomized `k`-server, and the offline optimum by min-cost flow.
+- **Online bin packing** ([#2964](https://github.com/cslib-community/complexitylib/issues/2964)):
+  `Algorithms/Lean/BinPacking/{Online,OnlineLowerBound}` covers deterministic online packers and
+  Yao's `3/2` lower bound, which with First Fit's `17/10` brackets the deterministic asymptotic
+  ratio in `[3/2, 17/10]`. Remaining: the stronger lower bounds of Brown–Liang (`1.536`), van Vliet
+  (`1.5401`), Balogh–Békési–Galambos (`248/161`) and the fully adaptive constructions; Harmonic-type
+  upper bounds; randomized lower bounds; and an `Online.Problem` instance (a bin-packing problem
+  charging `1` per opened bin, `OnlinePacker` as a `DetStrategy`, and a `not_isCompetitive_of_lt`
+  corollary).
 
 ### Algorithmic game theory ([#2900](https://github.com/cslib-community/complexitylib/issues/2900))
 
@@ -1950,11 +1995,15 @@ Bayes–Nash characterization with revenue equivalence and the symmetric first-p
 ### Social choice ([#3282](https://github.com/cslib-community/complexitylib/issues/3282))
 
 Social welfare functions on strict rankings and Arrow's impossibility theorem (Geanakoplos's
-pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
+pivotal-voter proof) are in `GameTheory/SocialChoice`, with social choice functions, the
+equivalence of strategy-proofness and Maskin monotonicity, and the Gibbard–Satterthwaite and
+Muller–Satterthwaite theorems for a range of at least three alternatives (Nisan's reduction to
+Arrow's theorem). Remaining directions:
 
-- **Strategy-proofness:** the Gibbard–Satterthwaite theorem for social choice functions onto at
-  least three alternatives, for example by Reny's side-by-side proof (Economics Letters 70, 2001),
-  sharing the pivotal-voter infrastructure with Arrow's theorem.
+- **Strategy-proofness beyond the full domain:** the Gibbard–Satterthwaite theorem allowing
+  individual indifference, Gibbard's 1977 theorem on random social choice functions (strategy-proof
+  lotteries are mixtures of unilateral and duple rules), and escape routes such as single-peaked
+  domains (the median voter rule, Moulin's characterization of strategy-proof rules there).
 - **Characterizations:** May's theorem (majority rule is the only anonymous, neutral, positively
   responsive rule on two alternatives); derive the individual-weak-order corollary of Arrow's
   theorem (by an IIA reduction to strict profiles); the infinite-electorate counterexample from a
