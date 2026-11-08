@@ -16,8 +16,8 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.Exec
 
 A physical descriptor, its query span and its raw matrix pair suffice for the complete box
 backend and original-weight verifier. The physical ordinal and logical chunk/piece index are
-independent. This boundary requires no all-record producer Output and permits dirty scratch;
-the old standalone specialization remains in `BoxRecordWitness.Exec`.
+independent. This boundary requires no all-record producer `Output` and permits dirty scratch;
+the standalone producer-output specialization is in `BoxRecordWitness.Exec`.
 -/
 
 public section

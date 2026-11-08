@@ -39,9 +39,10 @@ and overwrite the bit in place (`Turing.MultiTapeTM.set_frame_append_cons`).
 * `Turing.MultiTapeTM.length_unframe_le`: the word framed at the start of a word is no longer than
   the word.
 * `Turing.MultiTapeTM.frame_append_cons`: a frame split at a framed bit.
-* `Turing.MultiTapeTM.getElem?_frame_append_length`,
-  `Turing.MultiTapeTM.getElem?_frame_append_cons`: the terminator and the tags of a frame followed
-  by a word.
+* `Turing.MultiTapeTM.getElem?_frame_append_cons`: the tags of a frame followed by a word (see
+  `Complexity/Computability/Machines/Turing/MultiTape/Encodings/Frame/Lookup.lean` for
+  `Turing.MultiTapeTM.getElem?_frame_append`, `Turing.MultiTapeTM.getElem?_frame_append_length`,
+  and `Turing.MultiTapeTM.getElem?_frame_append_boundary`).
 * `Turing.MultiTapeTM.lt_length_frame_append_cons`,
   `Turing.MultiTapeTM.two_mul_length_le_length_frame_append`: positions within a frame followed by
   a word.
@@ -231,11 +232,6 @@ private theorem length_flatMap_pair (w : List Bool) :
 theorem frame_append_cons (w v : List Bool) (c : Bool) :
     frame (w ++ c :: v) = (w.flatMap fun b => [true, b]) ++ true :: c :: frame v := by
   simp [frame]
-
-/-- After the pairs of a frame comes its terminator `false`. -/
-theorem getElem?_frame_append_length (w x : List Bool) :
-    (frame w ++ x)[2 * w.length]? = some false := by
-  exact (getElem?_frame_append_boundary w x 0).1
 
 /-- Each pair of a frame starts with the tag `true`. -/
 theorem getElem?_frame_append_cons (w v x : List Bool) (c : Bool) :

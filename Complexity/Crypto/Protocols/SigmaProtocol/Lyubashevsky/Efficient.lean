@@ -766,15 +766,9 @@ theorem efficientSpecialSoundness_lyubashevsky :
 
 /-! ### Part 1b: Uniform polynomial-time verifier (`EfficientVerifier`) -/
 
-/-- Total polynomial-time decoder for signed binary integers. -/
-def intDecoder : Decoder encIntBin where
-  decode := decodeIntBin
-  decode_enc := decodeIntBin_encIntBin
-  computable := computableInPolyTime_decodeIntBin.exists_degree
-
 /-- Total polynomial-time decoder for framed lists of signed binary integers. -/
 def intListDecoder : Decoder (encList encIntBin) :=
-  Decoder.list intDecoder
+  Decoder.list Decoder.intBin
 
 /-- Total polynomial-time decoder for framed matrices of signed binary integers. -/
 def intMatrixDecoder : Decoder (encList (encList encIntBin)) :=

@@ -90,8 +90,9 @@ def idealSenderHandler (k : ℕ) (choices : List Bool)
       | some cmd => Phased.handler (.inl cmd) store
     return ([], next, store')
 
-/-- Execute a complete adversary in the real OT receiver, retaining its actual receipt and
-terminal observation and the adversary output. Unary `k` is charged by the uniform certificate. -/
+/-- Execute a complete adversary in the real OT receiver, retaining the shared phase-history
+receipt `s.receipt`, the terminal receiver observation, and the adversary output. Unary `k` is
+charged by the uniform certificate. -/
 noncomputable def completeSenderReal {Output : Type} (k : ℕ)
     (program : WordOracleComp SenderOperation Output) :
     ProbComp (Phased.Observation × Phased.Observation × Output) := do
@@ -102,7 +103,9 @@ noncomputable def completeSenderReal {Output : Type} (k : ℕ)
   return (s.receipt, s.observation k choices received, out)
 
 /-- Execute the simulator and actual phased functionality together from idle. The adversary
-receives empty replies; final functionality storage and the receiver's choices remain private. -/
+receives empty replies; the receipt component `s.receipt` comes from the shared phase history `s`
+(rather than a functionality poll), while the terminal observation is `Phased.observe store`, and
+final functionality storage and the simulator's choice coins remain private. -/
 noncomputable def completeSenderIdeal {Output : Type} (k : ℕ)
     (program : WordOracleComp SenderOperation Output) :
     ProbComp (Phased.Observation × Phased.Observation × Output) := do

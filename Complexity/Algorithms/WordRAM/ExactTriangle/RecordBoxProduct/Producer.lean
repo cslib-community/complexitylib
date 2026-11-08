@@ -27,8 +27,6 @@ open Cslib.Algorithms.MatrixMultiplication.Schonhage
 open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage
 open RecordProduct
 
--- The composed readback contains nested finite writer-argument structures and vector fields.
-set_option maxRecDepth 4096 in
 /-- Full adapter execution over a genuine producer output. Every descriptor and source-span
 premise of `exec` is derived here from the actual output; none remains an independent caller
 certificate. A following initialized client obtains this output by executing the producer. -/

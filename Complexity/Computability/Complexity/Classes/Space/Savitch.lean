@@ -17,11 +17,12 @@ Every problem decided by a nondeterministic machine within polynomial space is d
 deterministic machine within polynomial space: Savitch's decider
 (`Turing.MultiTapeNTM.savitchDecide`), which runs his midpoint recursion with an explicit stack on
 the codes of the finite views of the nondeterministic machine. With the converse inclusion,
-`NPSPACE = PSPACE` [Sipser, Corollary 8.6][Sipser2013]. Both classes are machine-defined: the
-deterministic class by plain total decision within polynomial space, the nondeterministic class by
-accepting computation paths, with every computation path within the space bound and every branch
-halting. The simulation uses only the space bound and acceptance, so it applies to recognizers,
-whose branches may run forever (`Cslib.Complexity.mem_PSPACE_of_recognizesInSpace`).
+`NPSPACE = PSPACE` [Sipser, remark after Definition 8.6][Sipser2013]. Both classes are
+machine-defined: the deterministic class by plain total decision within polynomial space, the
+nondeterministic class by accepting computation paths, with every computation path within the
+space bound and every branch halting. The simulation uses only the space bound and acceptance, so
+it applies to recognizers, whose branches may run forever
+(`Cslib.Complexity.mem_PSPACE_of_recognizesInSpace`).
 
 ## Main results
 
@@ -32,7 +33,8 @@ whose branches may run forever (`Cslib.Complexity.mem_PSPACE_of_recognizesInSpac
 
 ## References
 
-* [M. Sipser, *Introduction to the Theory of Computation*, Corollary 8.6][Sipser2013]
+* [M. Sipser, *Introduction to the Theory of Computation*, Theorem 8.5 and the remark after
+  Definition 8.6][Sipser2013]
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 4.2][AroraBarak09]
 -/
 
@@ -57,12 +59,12 @@ theorem mem_PSPACE_of_recognizesInSpace {k : ℕ} {State : Type} [Finite State]
 
 /-- **Savitch's theorem for polynomial space**: every problem decided by a nondeterministic
 machine within polynomial space is decided by a deterministic machine within polynomial space,
-namely Savitch's decider [Sipser, Corollary 8.6][Sipser2013]. -/
+namely Savitch's decider [Sipser, Theorem 8.5][Sipser2013]. -/
 theorem NPSPACE_subset_PSPACE : NPSPACE enc ⊆ PSPACE enc := by
   rintro A ⟨k, State, hfinite, ntm, s, hs, hA⟩
   exact mem_PSPACE_of_recognizesInSpace hs hA.recognizesInSpace
 
-/-- **`NPSPACE = PSPACE`** [Sipser, Corollary 8.6][Sipser2013]. -/
+/-- **`NPSPACE = PSPACE`** [Sipser, remark after Definition 8.6][Sipser2013]. -/
 theorem NPSPACE_eq_PSPACE : NPSPACE enc = PSPACE enc :=
   Set.Subset.antisymm NPSPACE_subset_PSPACE PSPACE_subset_NPSPACE
 

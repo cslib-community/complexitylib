@@ -744,6 +744,18 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
 * **Earlier review requests.** The withdrawn #1099–#1101 requested abstract word encodings and
   textbook sources for FP/poly, P/poly and their machine simulation. The withdrawn #869 and
   #871–#875 requested composition above configuration level; use `TransformsTapes`-style specs.
+* **Realizable PAC learning.** `MachineLearning/PACLearning/Realizable` copies Shaopeng Zhu's
+  #858 unchanged; drop the copy once #858 lands. The local `RealizableSample`, `ERM`,
+  `FiniteClass`, `GrowthFunction`, `EpsilonNet` and `VCUpperBound` modules build on it and on the
+  pinned `PACLearning.{Defs, VersionSpace, VCDimension}`. Samuel Schlesinger's lower-bound stack
+  (#950, #961 merged; headline on `SamuelSchlesinger/cslib:feat/pac-learning-ehkv-headline`)
+  proves the EHKV `Ω(d/ε)` bound, so it is not duplicated here; that branch's
+  `error_realizable_self_eq_zero` and `optimalError_realizable_eq_zero` overlap
+  `isRealizableBy_map_graph` and `IsRealizableBy.optimalError_eq_zero`, so reconcile names
+  before submission. #966 would make `sampleComplexity` and `vcDim` `ℕ∞`-valued;
+  `sampleComplexity_realizableDistributions_le_of_finite`,
+  `sampleComplexity_realizableDistributions_le_of_hasFiniteVCDim` and
+  `growthFunction_le_sum_choose_vcDim` will need restating if it lands.
 
 These are coordination references, not a second record of live PR status. Check the relevant
 upstream discussion before starting or submitting overlapping work.
@@ -787,6 +799,7 @@ agreement during upstream review.
 | `Foundations/BooleanAnalysis/{Bernoulli,CoordinateSampling,Fibers,HarmonicTransform,LightPatterns,MirrorSets}`, `Foundations/Analysis/HarmonicMean` | Consider Mathlib probability APIs; generic finite-type `harmonicMean` is split into `Foundations/Analysis/HarmonicMean` (#317). |
 | `Foundations/BooleanAnalysis/HadamardTester` | Consider the PCP hierarchy. |
 | `Foundations/Combinatorics/CentralBinomial` | Consider Mathlib's `Data/Nat/Choose/Central` (`Nat.centralBinom_sq_mul_le`) and `Combinatorics/Choose`. |
+| `Foundations/Combinatorics/InclusionMatrix` | Mathlib candidate: Gottlieb's full-rank theorem for subset inclusion matrices over fields where `1, …, #U` are nonzero, with its double-counting lemmas; consider `Combinatorics/SetFamily`. |
 | `Foundations/Combinatorics/{FiniteCover,Hoeffding,Hypergeometric,PowersetTail,Sunflower}` | Consider Mathlib combinatorics; probabilistic-method lemmas belong near `Combinatorics/Probabilistic`. |
 | `Foundations/Data/Finset/Expect` | Product-type expectation helpers extracted from `Foundations/Combinatorics/Expander/Products` (#317); Mathlib candidates. |
 | `Foundations/Data/Finset/Markov` | Mathlib candidate: `Algebra/Order/BigOperators/Group/Finset` (`Finset.card_filter_mul_le_sum`, `Finset.mul_card_filter_le_sum`). |

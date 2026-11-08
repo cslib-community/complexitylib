@@ -349,6 +349,8 @@ class WorktreeCreateTests(unittest.TestCase):
         ensure.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(ensure_src, ensure)
         ensure.chmod(0o755)
+        for name in ("bounded.py", "restore.py", "windows_job.py"):
+            shutil.copy(repo_root / "scripts/cache" / name, ensure.parent / name)
         get_sh = self.work / "scripts/cache/get.sh"
         get_sh.write_text(
             "#!/usr/bin/env bash\n"

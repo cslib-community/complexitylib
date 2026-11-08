@@ -23,7 +23,7 @@ query word. No oracle assumption or correctness premise is needed.
 * `Cslib.Crypto.Encryption.exists_decryption_length_bound`: a unary-computable reply cap.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Encryption
 

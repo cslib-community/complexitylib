@@ -21,12 +21,12 @@ variable {α : Type} [Inhabited α] (enc : α ↪ List Bool)
 example : ComputableInO (fun l : List α => l.head?.getD default) (encList enc) enc
     (fun l => (2 * (enc default).length + 8) * ((encList enc l).length + 1))
     (fun l => (2 * (enc default).length + 8) * ((encList enc l).length + 1)) :=
-  ComputableInO.optionGetD default (ComputableInO.head?_inO (encB := enc))
+  ComputableInO.optionGetD default (ComputableInO.head? (encB := enc))
 
 -- Both pure bounds combine through an ordinary import on the same composed operation.
 example (l : List α) :
     (enc (l.head?.getD default)).length ≤ (encList enc l).length + 1 + (enc default).length :=
-  (length_getD_le (encC := enc) l.head?).trans
-    (Nat.add_le_add_right (length_head?_le (encB := enc) l) _)
+  (length_enc_getD_le (encC := enc) l.head?).trans
+    (Nat.add_le_add_right (length_encOption_head?_le (encB := enc) l) _)
 
 end ComplexityTests.ListHead

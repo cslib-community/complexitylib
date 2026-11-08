@@ -7,9 +7,10 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Crypto.Game.CloseTo
 public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.RandomOracle
-public import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Commitment
-public import Complexity.Crypto.Game.CloseTo.UntilBad
+import Complexity.Crypto.Game.CloseTo.UntilBad
+import Complexity.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Commitment
 
 /-!
 # Programming every bounded signing attempt
@@ -35,7 +36,7 @@ open Probability Probability.PMF OracleComp ROMSignature Interactive
 open scoped _root_.Matrix ENNReal
 
 private theorem closeTo_attempt_program {Ω M : Type} [DecidableEq M]
-    (n m k q η γ β Q : ℕ) [Fact q.Prime] (hγ : 2 * γ < q)
+    (n m k q γ β Q : ℕ) [Fact q.Prime] (hγ : 2 * γ < q)
     (H : Matrix (Fin n) (Fin m) (ZMod q) → PMF Ω)
     (S : Ω → Matrix (Fin m) (Fin k) ℤ)
     (T : Matrix (Fin n) (Fin m) (ZMod q) → Ω → Matrix (Fin n) (Fin k) (ZMod q))
@@ -47,9 +48,8 @@ private theorem closeTo_attempt_program {Ω M : Type} [DecidableEq M]
         let h ← H A
         let coin ← (lyubashevsky n m k q γ β).commit (S h) (A, T A h)
         let out ← (interpret (oracle (BitString k))
-          ((fiatShamir (Function.Embedding.refl _) (lyubashevsky n m k q γ β)
-            (lyubashevskyKeyGen n m k q η)).sign
-            (S h, (A, T A h)) (msg h) coin)).run (cache h)
+          ((fun c => (coin.1, (lyubashevsky n m k q γ β).respond (S h) (A, T A h) coin.2 c)) <$>
+            OracleComp.query (msg h, coin.1))).run (cache h)
         return (A, h, out))
       (do
         let A ← PMF.uniformOfFintype (Matrix (Fin n) (Fin m) (ZMod q))
@@ -74,9 +74,9 @@ private theorem closeTo_attempt_program {Ω M : Type} [DecidableEq M]
   let real := fun a : Matrix (Fin n) (Fin m) (ZMod q) × Ω ×
       ((Fin n → ZMod q) × (Fin m → ℤ)) =>
     ((interpret (oracle (BitString k))
-      ((fiatShamir (Function.Embedding.refl _) (lyubashevsky n m k q γ β)
-        (lyubashevskyKeyGen n m k q η)).sign
-        (S a.2.1, (a.1, T a.1 a.2.1)) (msg a.2.1) a.2.2)).run (cache a.2.1)).map
+      ((fun c => (a.2.2.1,
+          (lyubashevsky n m k q γ β).respond (S a.2.1) (a.1, T a.1 a.2.1) a.2.2.2 c)) <$>
+        OracleComp.query (msg a.2.1, a.2.2.1))).run (cache a.2.1)).map
         (fun out => (a.1, a.2.1, out))
   let programmed := fun a : Matrix (Fin n) (Fin m) (ZMod q) × Ω ×
       ((Fin n → ZMod q) × (Fin m → ℤ)) =>
@@ -92,7 +92,7 @@ private theorem closeTo_attempt_program {Ω M : Type} [DecidableEq M]
       | some c => exact False.elim (hgood (by
           simp only [Set.mem_ofPred_eq, hit, hq, Option.isSome_some]))
     dsimp only [real, programmed]
-    simp only [fiatShamir, Function.Embedding.refl_apply, interpret_map, interpret_query,
+    simp only [interpret_map, interpret_query,
       StateT.run_map, PMF.monad_map_eq_map, PMF.map_comp, Function.comp_def]
     change ((oracle (BitString k) (msg a.2.1, a.2.2.1) (cache a.2.1)).map _) = _
     rw [oracle, memoize_of_none _ _ _ hlookup]
@@ -115,7 +115,7 @@ private theorem closeTo_attempt_program {Ω M : Type} [DecidableEq M]
 and full cache law by the finite sum of prior-cache collision bounds. Every attempt executes,
 including after the first success, and every programmed entry is retained even on abort. -/
 theorem closeTo_lyubashevskySign_program {Ω M : Type} [DecidableEq M]
-    (n m k q η γ β K Q : ℕ) [Fact q.Prime] (hγ : 2 * γ < q)
+    (n m k q γ β K Q : ℕ) [Fact q.Prime] (hγ : 2 * γ < q)
     (H : Matrix (Fin n) (Fin m) (ZMod q) → PMF Ω)
     (S : Ω → Matrix (Fin m) (Fin k) ℤ)
     (T : Matrix (Fin n) (Fin m) (ZMod q) → Ω → Matrix (Fin n) (Fin k) (ZMod q))
@@ -127,7 +127,7 @@ theorem closeTo_lyubashevskySign_program {Ω M : Type} [DecidableEq M]
         let h ← H A
         let out ← (iid ((lyubashevsky n m k q γ β).commit (S h) (A, T A h)) K).bind fun coins =>
           (interpret (oracle (BitString k))
-            (fiatShamirAbortSign (lyubashevsky n m k q γ β) (lyubashevskyKeyGen n m k q η)
+            (fiatShamirAbortSign (lyubashevsky n m k q γ β)
               (S h, (A, T A h)) (msg h) K coins)).run (cache h)
         return (A, h, out))
       (do
@@ -137,7 +137,7 @@ theorem closeTo_lyubashevskySign_program {Ω M : Type} [DecidableEq M]
           (interpret (m := StateT (List ((M × (Fin n → ZMod q)) × BitString k)) PMF)
             (fun point curCache => (PMF.uniformOfFintype (BitString k)).map
             (fun c => (c, (point, c) :: curCache)))
-            (fiatShamirAbortSign (lyubashevsky n m k q γ β) (lyubashevskyKeyGen n m k q η)
+            (fiatShamirAbortSign (lyubashevsky n m k q γ β)
               (S h, (A, T A h)) (msg h) K coins)).run (cache h)
         return (A, h, out))
       (∑ j ∈ Finset.range K, ((Q + j : ℕ) / (q : ℝ≥0∞) ^ n +
@@ -173,11 +173,11 @@ theorem closeTo_lyubashevskySign_program {Ω M : Type} [DecidableEq M]
       (fun v => msg v.1) (fun v => v.2.2) hlength).map
       (fun out => combine out.1 out.2.1 out.2.2)
     -- Use the same real continuation for the first hop, then the induction hypothesis.
-    have hhead := (closeTo_attempt_program n m k q η γ β Q hγ H S T msg cache hcache).bind_left
+    have hhead := (closeTo_attempt_program n m k q γ β Q hγ H S T msg cache hcache).bind_left
       (fun out => ((iid ((lyubashevsky n m k q γ β).commit (S out.2.1)
         (out.1, T out.1 out.2.1)) K).bind fun coins =>
         (interpret (oracle (BitString k))
-          (fiatShamirAbortSign (lyubashevsky n m k q γ β) (lyubashevskyKeyGen n m k q η)
+          (fiatShamirAbortSign (lyubashevsky n m k q γ β)
             (S out.2.1, (out.1, T out.1 out.2.1)) (msg out.2.1) K coins)).run out.2.2.2).map
               (fun later => combine out.1 (out.2.1, out.2.2) later))
     simp only [history, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
@@ -187,7 +187,7 @@ theorem closeTo_lyubashevskySign_program {Ω M : Type} [DecidableEq M]
     simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
       fiatShamirAbortSign_run_succ, PMF.bind_bind, PMF.pure_bind,
       PMF.map, Function.comp_def]
-    simp only [fiatShamir, Function.Embedding.refl_apply, interpret_map, interpret_query,
+    simp only [interpret_map, interpret_query,
       StateT.run_map, PMF.monad_map_eq_map, PMF.map, PMF.bind_bind, PMF.pure_bind,
       Function.comp_def, combine] at hboth ⊢
     simp only [StateT.run, PMF.bind_bind, PMF.pure_bind] at hboth ⊢
