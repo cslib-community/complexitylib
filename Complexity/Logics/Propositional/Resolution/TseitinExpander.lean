@@ -109,7 +109,8 @@ namespace Tseitin
 /-- **The explicit expander family of Tseitin formulas**: for every `n ≥ 2` there is a connected
 multigraph on `n` vertices with at most `120 n` edges, each vertex on at most `120` edges other
 than self-loops, and expansion `e(G) ≥ n / 18000`, whose Tseitin formula with a single charged
-vertex has at most `2 ^ 120 · n` clauses, of width at most `120`, and is unsatisfiable. It is the
+vertex has at most `2 ^ 120 · n` clauses, each with at most `120` literals and so of width at most
+`120`, and is unsatisfiable. It is the
 multigraph of the `120`-regular expander `Cslib.RotationMap.expander (Fin n)`, with edge expansion
 at least `1 / 6000`, whose existence is proved non-constructively. This is the common setup of
 `Cslib.Logic.PL.CNF.exists_forall_refutableInSize_exp_le` and of the clause-space family in
@@ -119,6 +120,7 @@ theorem exists_expander_tseitinFormula (n : ℕ) (hn : 2 ≤ n) :
       (∀ v, #(Multigraph.incidence ends v) ≤ 120) ∧ (Multigraph.toSimpleGraph ends).Connected ∧
       (n : ℝ) / 18000 ≤ Multigraph.minBalancedCut ends ∧
       (CNF.tseitinFormula ends χ).length ≤ 2 ^ 120 * n ∧
+      (∀ c ∈ CNF.tseitinFormula ends χ, c.length ≤ 120) ∧
       (∀ c ∈ CNF.tseitinFormula ends χ, c.width ≤ 120) ∧
       ¬ (CNF.tseitinFormula ends χ).Satisfiable := by
   have : NeZero n := ⟨by omega⟩
@@ -143,9 +145,12 @@ theorem exists_expander_tseitinFormula (n : ℕ) (hn : 2 ≤ n) :
   have hG : (Multigraph.toSimpleGraph ends).Connected := by
     rw [Multigraph.toSimpleGraph_comp, G.toSimpleGraph_edgeEnds]
     exact G.connected_toSimpleGraph_of_edgeExpansion_pos (by linarith)
-  refine ⟨_, hm, ends, χ, hdeg, hG, he, ?_, fun c hc => ?_, CNF.not_satisfiable_tseitinFormula ?_⟩
+  have hlen (c) (hc : c ∈ CNF.tseitinFormula ends χ) : c.length ≤ 120 :=
+    CNF.length_le_of_mem_tseitinFormula hdeg hc
+  refine ⟨_, hm, ends, χ, hdeg, hG, he, ?_, hlen, fun c hc => ?_,
+    CNF.not_satisfiable_tseitinFormula ?_⟩
   · simpa [mul_comm] using CNF.length_tseitinFormula_le (χ := χ) hdeg
-  · exact (List.toFinset_card_le c).trans (CNF.length_le_of_mem_tseitinFormula hdeg hc)
+  · exact (List.toFinset_card_le c).trans (hlen c hc)
   · simp [χ, parityOn, filter_eq']
 
 end Tseitin
@@ -165,7 +170,7 @@ theorem exists_forall_refutableInSize_exp_le :
       φ.length ≤ 2 ^ 120 * n ∧ (∀ c ∈ φ, c.width ≤ 120) ∧ ¬ φ.Satisfiable ∧
       ∀ s, φ.RefutableInSize s → Real.exp (n / (960 * 36000 ^ 2)) ≤ s := by
   intro n hn
-  obtain ⟨m, hm, ends, χ, hdeg, hG, he, hlen, hw, hunsat⟩ :=
+  obtain ⟨m, hm, ends, χ, hdeg, hG, he, hlen, -, hw, hunsat⟩ :=
     Tseitin.exists_expander_tseitinFormula n (by omega)
   refine ⟨m, hm, tseitinFormula ends χ, hlen, hw, hunsat, fun s hs => ?_⟩
   have hn' : (4392000 : ℝ) ≤ n := by exact_mod_cast hn

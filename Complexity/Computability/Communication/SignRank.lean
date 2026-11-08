@@ -23,7 +23,7 @@ where `f` is true and positive where `f` is false (`SignRepresents`). The *sign-
 the least rank of such a matrix (`signRank`) [Paturi and Simon][PaturiSimon1986]
 [Sherstov and Wu, §2.8][SherstovWu2019]. It is invariant under negating `f` (`signRank_not`) and
 exchanging the players (`signRank_swap`), does not increase on submatrices
-(`signRank_comp_le`), and is at most the rank of the sign matrix (`signRank_le_rank_signMatrix`).
+(`signRank_comap_le`), and is at most the rank of the sign matrix (`signRank_le_rank_signMatrix`).
 A sign-representation of least rank factors through `signRank f` dimensions
 (`exists_mul_signRepresents`), and by scaling and rounding every factorization can be replaced by
 an integer one (`exists_int_mul_signRepresents`).
@@ -49,7 +49,7 @@ The sign-rank characterizes unbounded-error communication; see
   of sign-representations.
 * `Cslib.Communication.signRank_le_rank_signMatrix`,
   `Cslib.Communication.signRank_le_rank_communicationMatrix_add_one`: sign-rank is at most rank.
-* `Cslib.Communication.signRank_comp_le`: monotonicity under submatrices.
+* `Cslib.Communication.signRank_comap_le`: monotonicity under submatrices.
 * `Cslib.Communication.exists_mul_signRepresents`,
   `Cslib.Communication.exists_int_mul_signRepresents`: real and integer factorizations.
 * `Cslib.Communication.signRank_equality_le_three`, `Cslib.Communication.two_le_signRank_equality`:
@@ -192,7 +192,7 @@ theorem signRank_le_card_left [Fintype X] (f : X → Y → Bool) : signRank f �
 
 /-- **Monotonicity under submatrices**: restricting (or repeating) rows and columns does not
 increase the sign-rank. -/
-theorem signRank_comp_le [Fintype Y'] (f : X → Y → Bool) (a : X' → X) (b : Y' → Y) :
+theorem signRank_comap_le [Fintype Y'] (f : X → Y → Bool) (a : X' → X) (b : Y' → Y) :
     signRank (fun x y => f (a x) (b y)) ≤ signRank f := by
   obtain ⟨A, hA, hr⟩ := exists_signRepresents_rank_eq f
   exact (signRank_le_rank (hA.submatrix a b)).trans (hr ▸ Matrix.rank_submatrix_le A a b)
