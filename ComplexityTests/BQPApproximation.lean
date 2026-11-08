@@ -10,7 +10,8 @@ import ComplexityTests.BQP
 
 /-! Approximation bookkeeping for quantum circuits and `BQP` from a constant gap: exact binomial
 tails of threshold votes, a Hoeffding bound checked against the exact tail, gaps on one side of
-`1 / 2`, the degenerate gap below `0`, and lower bounds on distances forced by measurements. -/
+`1 / 2`, the degenerate gap below `0`, lower bounds on distances forced by measurements, and the
+distance between `NOT` and the identity. -/
 
 namespace ComplexityTests.BQPApproximation
 
@@ -94,5 +95,37 @@ example {n : ℕ} (C D : Circuit n) (h : C.length = D.length) (x : Fin n → Boo
       (g'.matrix : Matrix (Fin n → Bool) (Fin n → Bool) ℂ)‖) C D).sum :=
   hη.trans ((Circuit.abs_measureProb_eval_sub_le C D (norm_ket x) S).trans
     (Circuit.norm_matrix_sub_matrix_le C D h))
+
+/-! ### A telescoping instance with nonzero distance -/
+
+/-- `NOT` on the only qubit of a one-qubit register. -/
+noncomputable def notGate : PlacedGate 1 := ⟨1, Gate.not, Function.Embedding.refl _⟩
+
+/-- The identity gate on the only qubit of a one-qubit register. -/
+noncomputable def idGate : PlacedGate 1 := ⟨1, Gate.ofPerm 1, Function.Embedding.refl _⟩
+
+theorem run_notGate : Circuit.run [notGate] (fun _ => false) = ket fun _ => true := by
+  rw [Circuit.run, Circuit.eval_cons, Circuit.eval_nil]
+  refine (PlacedGate.eval_ofPerm_ket _ _ _).trans (congrArg ket (funext fun j => ?_))
+  fin_cases j
+  exact splitEquiv_symm_apply_wire (Function.Embedding.refl _) _ _ 0
+
+theorem run_idGate : Circuit.run [idGate] (fun _ => false) = ket fun _ => false := by
+  rw [Circuit.run, Circuit.eval_cons, Circuit.eval_nil]
+  refine (PlacedGate.eval_ofPerm_ket _ _ _).trans (congrArg ket (funext fun j => ?_))
+  fin_cases j
+  exact splitEquiv_symm_apply_wire (Function.Embedding.refl _) _ _ 0
+
+/-- Replacing `NOT` by the identity moves the probability of reading `1` from `|0⟩` from `1` to
+`0`. The perturbation and telescoping bounds therefore force `‖NOT - 1‖ ≥ 1`, a concrete pair of
+one-gate circuits at nonzero distance. -/
+example : 1 ≤ ‖(notGate.matrix : Matrix (Fin 1 → Bool) (Fin 1 → Bool) ℂ) - idGate.matrix‖ := by
+  have h := (Circuit.abs_measureProb_eval_sub_le [notGate] [idGate] (norm_ket fun _ => false)
+    {fun _ => true}).trans (Circuit.norm_matrix_sub_matrix_le [notGate] [idGate] rfl)
+  rw [← Circuit.run, ← Circuit.run, run_notGate, run_idGate, measureProb_ket, measureProb_ket,
+    ite_eq_left (mem_singleton_self _),
+    ite_eq_right fun h => Bool.false_ne_true (congrFun (mem_singleton.mp h) 0), sub_zero,
+    abs_one] at h
+  simpa using h
 
 end ComplexityTests.BQPApproximation

@@ -211,16 +211,14 @@ theorem slotsEmb_finProdFinEquiv (hnp : n + p ≤ m) (hm : m ≤ W) (q : Fin (2 
     slotsEmb hnp hm (finProdFinEquiv q) = slotEmb hnp hm q := by
   simp [slotsEmb]
 
-/-- The counter starts after the first block. -/
-theorem le_base : W ≤ Amplify.base W (2 * R) := Nat.le_mul_of_pos_left W (by omega)
-
 /-- The first block lies in the register. -/
 theorem lt_width_of_lt {c : ℕ} (h : c < W) : c < Amplify.width W (2 * R) R :=
-  lt_of_lt_of_le h (le_base.trans (Amplify.base_lt_width (w := W) (k := 2 * R) (t := R)).le)
+  lt_of_lt_of_le h
+    (Amplify.le_base.trans (Amplify.base_lt_width (w := W) (k := 2 * R) (t := R)).le)
 
 /-- The input and the witness blocks fit in the first block of the register. -/
 theorem witBlock_le (hW : n + 2 * R * p ≤ W) : n + 2 * R * p ≤ Amplify.width W (2 * R) R :=
-  hW.trans (le_base.trans (Amplify.base_lt_width (w := W) (k := 2 * R) (t := R)).le)
+  hW.trans (Amplify.le_base.trans (Amplify.base_lt_width (w := W) (k := 2 * R) (t := R)).le)
 
 /-- **Moving the witness blocks into the copies**: the CNOT gates of `moveInCodes` and then
 `moveOutCodes` move the bits on the witness blocks `n, …, n + 2 R p - 1` into the witness qubits
@@ -504,7 +502,7 @@ theorem measureProb_codes (hnp : n + p ≤ m) (hm : m ≤ W) (hW : n + 2 * R * p
     rfl
   have hX1high (c : ℕ) (hc : Amplify.base W (2 * R) ≤ c) : readBit X1 c = false := by
     rw [hX1bit, ite_eq_right, hX0high c]
-    · have := le_base (W := W) (R := R)
+    · have := Amplify.le_base (w := W) (k := 2 * R)
       omega
     · rintro ⟨j, hj, i, hi, rfl⟩
       exact absurd hc (not_le.mpr (Amplify.block_lt hj hi))
