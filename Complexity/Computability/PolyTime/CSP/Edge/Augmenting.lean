@@ -341,10 +341,6 @@ private theorem poly_repairStep :
 private theorem length_flip (bits : List Bool) (indices : List ℕ) :
     (flip bits indices).length = bits.length := by simp [flip]
 
-private theorem length_bits (bits : List Bool) :
-    (encList encBool bits).length = 3 * bits.length := by
-  simp [length_encList, Nat.mul_comm]
-
 private theorem poly_repair :
     ComputableInPolyTime repair encInput encRepairState := by
   unfold repair
@@ -360,7 +356,7 @@ private theorem poly_repair :
   rcases state with ⟨g, k⟩
   unfold repairStep
   cases repairPair input.body input.labels g <;>
-    simp [length_bits, length_flip, encUnary_apply]; omega
+    simp [length_encList, length_flip, encUnary_apply]; omega
 
 attribute [local fun_prop] poly_repair
 
