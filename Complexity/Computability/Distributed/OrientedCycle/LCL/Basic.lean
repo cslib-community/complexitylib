@@ -43,7 +43,10 @@ This file proves the first gap of their classification on directed cycles (Table
   (`Algorithm.SolvesLCL.exists_loop_of_zero`).
 
 Flexible problems are solved in `O(log* n)` rounds in
-`Complexity.Computability.Distributed.OrientedCycle.LCL.Flexible`.
+`Complexity.Computability.Distributed.OrientedCycle.LCL.Flexible`. Problems without a flexible
+state need `Θ(n)` rounds (`Complexity.Computability.Distributed.OrientedCycle.LCL.Linear`), and
+`Complexity.Computability.Distributed.OrientedCycle.LCL.Classification` assembles the
+three-way classification.
 
 ## Main definitions
 

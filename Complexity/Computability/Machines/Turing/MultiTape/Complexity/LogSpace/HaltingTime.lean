@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Configurations
 public import Cslib.Foundations.Relation.RelatesInSteps
+import Complexity.Foundations.Relation.RelatesWithinSteps
 
 /-!
 # Halting within the number of reachable views
@@ -45,16 +46,6 @@ open Cslib.Turing
 namespace Turing.MultiTapeNTM
 
 variable {k : ℕ} {State : Type} {ntm : MultiTapeNTM k Bool State} {input : List Bool}
-
-/-- **Pumping a cycle.** A path to `b` followed by any number of rounds of a cycle at `b`. -/
-private theorem relatesInSteps_pump {α : Type*} {r : α → α → Prop} {i m : ℕ} {a b : α}
-    (h : Relation.RelatesInSteps r a b i) (hcycle : Relation.RelatesInSteps r b b m)
-    (rounds : ℕ) : Relation.RelatesInSteps r a b (i + rounds * m) := by
-  induction rounds with
-  | zero => simpa using h
-  | succ rounds ih =>
-    have := ih.trans hcycle
-    rwa [Nat.add_assoc, ← Nat.succ_mul] at this
 
 /-- **Views along a computation path.** A computation path has a chain of views from the initial
 view, one view per configuration, each representing its configuration. -/
@@ -189,7 +180,7 @@ theorem runsInTime_of_runsInSpace {s t : ℕ} (hs : ntm.RunsInSpace input s)
     have := hchain.relatesInSteps_getElem i (j - i) (by omega)
     simp only [Nat.add_sub_cancel' hij.le] at this
     rwa [← heq] at this
-  have hlong := relatesInSteps_pump hpre hcycle t
+  have hlong := hpre.add_mul_of_cycle hcycle t
   obtain ⟨q, hq, hqrep⟩ := exists_computationPath_of_relatesInSteps hlong
   have hhalt := ht q (by rw [hq]; nlinarith [Nat.sub_pos_of_lt hij])
   -- the repeated view is running
