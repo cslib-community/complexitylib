@@ -32,6 +32,15 @@ The cases are mutually exclusive by their first conjuncts, since a loop is a fle
 (`LCL.IsFlexible.of_loop`). The bounds are stated for each `n`, and the algorithms of cases 2 and
 3 may depend on `n`.
 
+Case 3 also contains the problems that are solvable on no cycle at all, those without a
+*repeatable* state (a closed walk `q ⇝ q`); for them both clauses hold vacuously. The source lists
+these separately as unsolvable in Table 1. Case 3 is non-vacuous exactly when some state is
+repeatable, as for 2-colouring, since a closed walk of length `m` gives solutions on every cycle
+whose length is a positive multiple of `m`.
+
+To destructure `trichotomy`, fix the universes of the state types in the lower-bound clauses
+explicitly, e.g. `trichotomy.{0, 0, 0} R`; otherwise Lean reports universe level metavariables.
+
 ## Main results
 
 * `Cslib.Distributed.OrientedCycle.LCL.trichotomy`: the `O(1)` / `Θ(log* n)` / `Θ(n)`
@@ -51,7 +60,8 @@ namespace Cslib.Distributed.OrientedCycle.LCL
 Suomela][ChangStudenySuomela2023], Table 1, directed cycles). Every problem with finitely many
 labels has a loop and round complexity `0`; or no loop, a flexible state and round complexity
 `Θ(log* n)`; or no flexible state and round complexity `Θ(n)` on the cycles where it is
-solvable. -/
+solvable. The last case also contains the problems solvable on no cycle, which the source lists
+separately as unsolvable; it is non-vacuous exactly when some state has a closed walk. -/
 theorem trichotomy {L : Type*} [Fintype L] (R : L → L → Prop) :
     (∃ a, R a a ∧ ∀ n t, (Algorithm.const a : Algorithm ℕ Unit L).SolvesLCL R n t) ∨
     ((∀ a, ¬R a a) ∧ ∃ q K, IsFlexible R q K ∧ ∀ n, K ≤ n →

@@ -147,11 +147,16 @@ lengths `d` and `d + 1`, and `IsFlexible.of_consecutive` (Mathlib's `frobeniusNu
 makes that state flexible. The source instead moves nodes repeatedly; the single move is a
 difference in proof route, not a new result. `IsSolution.exists_solvesLCL` is the matching upper
 bound: on a cycle where `R` is solvable, `gatherRule` sees the whole cycle in `⌊n / 2⌋` rounds and
-outputs a rotation of a fixed solution. Theorem 6.5 also assumes a repeatable state, which only
+outputs a rotation of a fixed solution. It finds the node with identifier `0`, so it relies on the
+`{0, …, n - 1}` identifier convention. Theorem 6.5 also assumes a repeatable state, which only
 makes `R` solvable on infinitely many cycles; the Lean bounds are stated for each solvable `n`
 instead. `LCL.trichotomy` in `Classification.lean` assembles the three rows for finite `L`: a loop
 and `0` rounds, no loop but a flexible state and `Θ(log* n)`, or no flexible state and `Θ(n)`. The
-bounds hold for each `n`, and the algorithms of the last two rows may depend on `n`.
+bounds hold for each `n`, and the algorithms of the last two rows may depend on `n`. The last row
+also contains the problems solvable on no cycle (no repeatable state), which the source lists
+separately as unsolvable; for them its clauses are vacuous. The lower-bound clauses quantify over
+state types of any universe, so destructuring `trichotomy` needs explicit universes, as in
+`trichotomy.{0, 0, 0} R`.
 
 [Checked examples](../../ComplexityTests/Computability/Distributed/OrientedCycle.lean) run the
 algorithms on a 5-cycle and on the infinite path. They also show that the one-node cycle has no

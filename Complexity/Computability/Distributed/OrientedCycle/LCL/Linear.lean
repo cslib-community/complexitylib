@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Distributed.OrientedCycle.LCL.Basic
+import Complexity.Foundations.Relation.RelatesWithinSteps
 import Mathlib.Data.ZMod.Basic
 import Mathlib.NumberTheory.FrobeniusNumber
 import Mathlib.Tactic.Ring
@@ -26,6 +27,8 @@ directed cycles.
 * **Upper bound** (`LCL.IsSolution.exists_solvesLCL`). If the `n`-cycle has a solution at all,
   some algorithm solves `R` on it in `⌊n / 2⌋` rounds (`LCL.gatherRule`): each node sees the whole
   cycle, finds the node with identifier `0` and outputs the matching rotation of a fixed solution.
+  Like the other algorithms here it depends on `n`, and it relies on the identifiers being exactly
+  `{0, …, n - 1}`; with a larger identifier range it would locate the minimum identifier instead.
 
 `LCL.IsSolution.exists_solvesLCL_and_le_of_forall_not_isFlexible` packages both directions:
 problems without a flexible state have round complexity `Θ(n)` on the cycles where they are
@@ -66,6 +69,8 @@ route, not a new result; it gives the explicit bound above.
 * `Cslib.Distributed.OrientedCycle.LocalRule.le_of_forall_not_isFlexible` and
   `Cslib.Distributed.OrientedCycle.Algorithm.SolvesLCL.le_of_forall_not_isFlexible`: the `Ω(n)`
   lower bound.
+* `Cslib.Distributed.OrientedCycle.LCL.gatherRule_isSolution`: if `n ≤ 2r + 1`, the gathering
+  rule of radius `r` outputs a solution.
 * `Cslib.Distributed.OrientedCycle.LCL.IsSolution.exists_solvesLCL`: the `⌊n / 2⌋` upper bound.
 * `Cslib.Distributed.OrientedCycle.LCL.IsSolution.exists_solvesLCL_and_le_of_forall_not_isFlexible`:
   `Θ(n)`.
@@ -96,15 +101,6 @@ theorem IsSolution.relatesInSteps {n : ℕ} {ℓ : ZMod n → L} (h : IsSolution
     have := h (v + m)
     rwa [add_assoc, ← Nat.cast_succ] at this
 
-/-- A closed walk of length `a` repeated `i` times. -/
-private theorem relatesInSteps_mul {q : L} {a : ℕ} (h : Relation.RelatesInSteps R q q a) (i : ℕ) :
-    Relation.RelatesInSteps R q q (i * a) := by
-  induction i with
-  | zero =>
-    rw [zero_mul]
-    exact .refl q
-  | succ i ih => simpa [Nat.succ_mul] using ih.trans h
-
 /-- Closed walks of two consecutive lengths `d` and `d + 1` make `q` flexible with flexibility
 `d * d` (the Frobenius number of `{d, d + 1}` is `d * (d + 1) - d - (d + 1) < d * d`). -/
 theorem IsFlexible.of_consecutive {q : L} {d : ℕ} (hd : Relation.RelatesInSteps R q q d)
@@ -127,8 +123,8 @@ theorem IsFlexible.of_consecutive {q : L} {d : ℕ} (hd : Relation.RelatesInStep
       omega)
   obtain ⟨i, j, hij⟩ := (AddSubmonoid.mem_closure_pair _ _ _).1 hF
   simp only [smul_eq_mul] at hij
-  rw [← hij]
-  exact (relatesInSteps_mul hd i).trans (relatesInSteps_mul hd1 j)
+  rw [← hij, ← zero_add (i * d)]
+  exact ((Relation.RelatesInSteps.refl q).add_mul_of_cycle hd i).add_mul_of_cycle hd1 j
 
 /-! ### The lower bound -/
 
