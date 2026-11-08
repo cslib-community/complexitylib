@@ -932,8 +932,14 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   Conjecture stated explicitly. The 2-to-2 games theorem waits for [#886].
 - **Approximation algorithms:** a general interface for approximation ratios of optimization
   problems, under which polynomial-time algorithms such as Johnson's `7 / 8` algorithm for
-  MAX-E3SAT meet matching hardness results such as Håstad's ([#886]); LP and SDP rounding, such
-  as Goemans–Williamson for MAX-CUT and MAX-SAT.
+  MAX-E3SAT meet matching hardness results such as Håstad's ([#886]); LP and SDP rounding. The
+  Goemans–Williamson analysis of random-hyperplane rounding for weighted MAX-CUT, with
+  `0.87856 < α`, is in `Algorithms/Lean/MaxCut/GoemansWilliamson`. It is stated against every cut
+  for given `ε`-optimal unit vectors under an exact Gaussian. Remaining
+  ([#3230](https://github.com/cslib-community/complexitylib/issues/3230)): polynomial-time SDP
+  solving with precision accounting, a `ProbComp` realization of the Gaussian sample, tightness
+  (the Feige–Schechtman integrality gap), the MAX-2SAT and MAX-DICUT extensions and
+  derandomization.
 - **Packing approximation**
   ([#2964](https://github.com/cslib-community/complexitylib/issues/2964)): the asymptotic
   approximation scheme for bin packing of Fernandez de la Vega and Lueker, First Fit's `17/10`
