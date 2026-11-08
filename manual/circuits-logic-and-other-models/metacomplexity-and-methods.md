@@ -39,7 +39,15 @@ The explicit counterpart is [Nagy's graph](../../Complexity/Foundations/Combinat
 
 Graph bounds and explicitness are separate obligations. [`Cslib.ExplicitRamsey`](../../Complexity/Computability/Complexity/ExplicitRamsey.lean) names a vertex by its increasing triple `(a, b, c)` with `a < b < c < t`. `nagyLabel_injective` and `range_nagyLabel` show that these names are a bijection onto the triples accepted by `nagyIsLabel`. `nagyGraph_adj_iff_nagyAdj` transfers adjacency to `nagyAdj` on names. `computableInPolyTime_nagyAdj` and `computableInPolyTime_nagyIsLabel` are plain `ComputableInPolyTime` certificates for binary naturals; one machine serves every `t`. The cost is therefore polylogarithmic in the number of vertices, the strongly explicit regime. The [checked clients](../../ComplexityTests/Ramsey.lean) include `R(3, 3) = 6` and a Fano-plane instance attaining the uniform Fisher bound.
 
-Nagy's graph has `Θ(k ^ 3)` vertices for homogeneous-set bound `k`, and Erdős's existential bound is exponential in `k`. Erdős's bound overtakes Nagy's at `k = 20`. Stronger explicit constructions (Frankl–Wilson, and the two-source disperser and extractor graphs) are not formalized. An explicit graph on `2 ^ Ω(k)` vertices is an open problem ([#3041](https://github.com/cslib-community/complexitylib/issues/3041)).
+The [Ray-Chaudhuri–Wilson module](../../Complexity/Foundations/Combinatorics/SetFamily/RayChaudhuriWilson.lean) proves intersection bounds by the multilinear polynomial method of Alon, Babai and Suzuki. Over any field, if no member size lies in `L` and every pairwise intersection size does, the family has at most `∑_{i ≤ |L|} C(n, i)` members (`Fintype.card_le_sum_choose_of_card_inter_mem`). A `d`-uniform family has at most `C(n, |L|)` members when also `(j : K) ≠ d` for `j < |L|` (`Fintype.card_le_choose_of_card_inter_mem`). Two specializations follow. `Fintype.card_le_choose_of_card_inter_mem_of_lt` is Ray-Chaudhuri–Wilson for a set of naturals below `d`. `Fintype.card_le_choose_of_card_inter_mem_zmod` is the modular Frankl–Wilson bound over `ZMod p` with `d mod p ∉ L`. [alonbabaisuzuki1991][alonbabaisuzuki1991] [raychaudhuriwilson1975][raychaudhuriwilson1975] [franklwilson1981][franklwilson1981]
+
+The modular bound is a restricted form: it assumes `|L| ≤ d mod p`. Some side condition is necessary, and a checked counterexample in the [tests](../../ComplexityTests/FranklWilson.lean) shows the bound failing without it. Frankl and Wilson's inclusion-matrix theorem, with its own side conditions, is not formalized.
+
+The [Frankl–Wilson graph](../../Complexity/Foundations/Combinatorics/SimpleGraph/Ramsey/FranklWilson.lean) `franklWilsonGraph α p d` has the `d`-subsets of `α` as vertices. Two vertices are adjacent when their intersection size is not congruent to `d` mod `p`. For a prime `p` with `d ≡ -1 (mod p)`, the modular bound excludes cliques of size `C(n, p - 1) + 1` (`cliqueFree_franklWilsonGraph`). Ray-Chaudhuri–Wilson excludes independent sets of size `C(n, ⌊d / p⌋) + 1` (`indepSetFree_franklWilsonGraph`). With `n = p³` and `d = p² - 1`, `choose_lt_ramseyNumber_franklWilson` gives `C(p³, p² - 1) < R(k, k)` for `k = C(p³, p - 1) + 1`. `pow_lt_ramseyNumber_franklWilson` records `k ^ c < R(k, k)` for every prime `p ≥ 6c + 3`, a superpolynomial explicit bound.
+
+The [explicitness module](../../Complexity/Computability/Complexity/ExplicitRamsey/FranklWilson.lean) names a `d`-subset of `Fin n` by its increasing list of elements. `subsetLabel_injective` and `range_subsetLabel` identify the names with the lists accepted by `isSubsetLabel`. `franklWilsonGraph_adj_iff_subsetAdj` transfers adjacency to `subsetAdj`. The four `computableInPolyTime_*` theorems are plain `ComputableInPolyTime` certificates for binary naturals. `franklWilsonIsLabel` and `franklWilsonAdj` take only `p`, so one machine serves every prime. A name has `O(p² log p)` bits, logarithmic in the number of vertices.
+
+Nagy's graph has `Θ(k ^ 3)` vertices for homogeneous-set bound `k`. Frankl and Wilson's has `k ^ Θ(log k / log log k)`, and Erdős's existential bound is exponential in `k`. Erdős's bound overtakes Nagy's at `k = 20`. The two-source disperser and extractor graphs are not formalized. An explicit graph on `2 ^ Ω(k)` vertices is an open problem ([#3041](https://github.com/cslib-community/complexitylib/issues/3041)).
 
 ## Natural proofs and cryptographic assumptions
 
@@ -61,10 +69,13 @@ These are mathematical proof interfaces, not automatically encoded certificates 
 
 The conditional statements, truth-table scales and source-specific quantitative scope were inspected, but the complete magnification and cryptographic reduction proofs were not independently reconstructed in this worker pass. Distinguish a valid conditional theorem, a conventional open assumption, and a premise that this same library proves false elsewhere.
 
+[alonbabaisuzuki1991]: ../sources.md#alonbabaisuzuki1991
 [complexitylib]: ../sources.md#complexitylib
 [erdos1947]: ../sources.md#erdos1947
 [erdosszekeres1935]: ../sources.md#erdosszekeres1935
+[franklwilson1981]: ../sources.md#franklwilson1981
 [impagliazzowigderson97]: ../sources.md#impagliazzowigderson97
 [nagy1972]: ../sources.md#nagy1972
 [nisanwigderson94]: ../sources.md#nisanwigderson94
+[raychaudhuriwilson1975]: ../sources.md#raychaudhuriwilson1975
 [sudantrevisanvadhan01]: ../sources.md#sudantrevisanvadhan01

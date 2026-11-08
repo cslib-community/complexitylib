@@ -1196,9 +1196,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   guarantees separate from uniform construction and decoding costs.
 - **Explicit Ramsey graphs** ([#3041](https://github.com/cslib-community/complexitylib/issues/3041)):
   strongly explicit graphs with no `k`-clique and no `k`-independent set, on more vertices than
-  Nagy's `C(k - 1, 3)`, toward Erdős's existential `2 ^ (k / 2)`: Frankl–Wilson's
-  `k ^ Θ(log k / log log k)` vertices, then the disperser and extractor constructions of Cohen,
-  Chattopadhyay–Zuckerman and Li. Keep the clique and independence bounds separate from the
+  Frankl–Wilson's `k ^ Θ(log k / log log k)`, toward Erdős's existential `2 ^ (k / 2)`: the
+  two-source disperser and extractor constructions of Barak–Rao–Shaltiel–Wigderson, Cohen,
+  Chattopadhyay–Zuckerman and Li, with the disperser connection of
+  [#895](https://github.com/cslib-community/complexitylib/issues/895). Also open here: Frankl and
+  Wilson's modular intersection theorem in its inclusion-matrix form, without the polynomial-method
+  side condition `|L| ≤ d mod p`. Keep the clique and independence bounds separate from the
   polynomial-time recognition and adjacency certificates on vertex names. An explicit graph on
   `2 ^ Ω(k)` vertices is open.
 - **Codes:** Guruswami–Sudan list decoding and local decoding, keeping interpolation,

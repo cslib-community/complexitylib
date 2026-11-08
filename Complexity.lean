@@ -1880,6 +1880,7 @@ public import Complexity.Computability.Complexity.CookLevin.RunFeatures
 public import Complexity.Computability.Complexity.CookLevin.Tableau
 public import Complexity.Computability.Complexity.CookLevin.Witness
 public import Complexity.Computability.Complexity.ExplicitRamsey
+public import Complexity.Computability.Complexity.ExplicitRamsey.FranklWilson
 public import Complexity.Computability.Complexity.Fagin.Converse
 public import Complexity.Computability.Complexity.Fagin.Layout
 public import Complexity.Computability.Complexity.Fagin.Ordered
@@ -4204,6 +4205,7 @@ public import Complexity.Foundations.Combinatorics.PowersetTail
 public import Complexity.Foundations.Combinatorics.ReplacementCounting
 public import Complexity.Foundations.Combinatorics.ReplacementDesignBridge
 public import Complexity.Foundations.Combinatorics.SetFamily.Oddtown
+public import Complexity.Foundations.Combinatorics.SetFamily.RayChaudhuriWilson
 public import Complexity.Foundations.Combinatorics.SetPartition.Basic
 public import Complexity.Foundations.Combinatorics.SetPartition.JoinMatrix
 public import Complexity.Foundations.Combinatorics.SharedSummaries
@@ -4221,6 +4223,7 @@ public import Complexity.Foundations.Combinatorics.SimpleGraph.ProperColoring
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Rado
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Ramsey.Basic
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Ramsey.Erdos
+public import Complexity.Foundations.Combinatorics.SimpleGraph.Ramsey.FranklWilson
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Ramsey.Nagy
 public import Complexity.Foundations.Combinatorics.SimpleGraph.SymmDiff
 public import Complexity.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Basic
