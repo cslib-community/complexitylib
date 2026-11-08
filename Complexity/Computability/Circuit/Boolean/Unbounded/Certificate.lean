@@ -10,6 +10,14 @@ module
 public import Complexity.Computability.Circuit.Boolean.Unbounded.Kleene
 public import Complexity.Computability.Circuit.Weft
 public import Complexity.Computability.Circuit.Encoding.Layer
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Mathlib.Data.List.GetD
 
 /-!
@@ -716,6 +724,187 @@ theorem exists_claimsValid {d n : ℕ} {gates : List (Op × List ℕ)}
   rw [hv] at hk
   simp only [claimsValid, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true]
   exact ⟨hk, hchk⟩
+
+/-! ### Polynomial time -/
+
+section PolyTime
+
+variable {γ : Type} {encIn : γ ↪ List Bool} {nf : γ → ℕ} {gf : γ → List (Op × List ℕ)}
+  {of : γ → ℕ} {cf : γ → List (ℕ × Bool)}
+
+/-- Whether an operation, by its number, can be claimed to have value `b`. -/
+private def claimFlag (op : Op) (b : Bool) : Bool :=
+  !(op.toNat == 0) && ((op.toNat % 2 == 1) == b)
+
+private theorem claimFlag_eq (op : Op) (b : Bool) (g : List ℕ) :
+    claimFlag op b = decide (claimable (op, g) = some b) := by
+  cases op <;> cases b <;> simp [claimFlag, claimable, Op.toNat, Nat.add_mod]
+
+private theorem claimInput_eq (claims : List (ℕ × Bool)) (i : ℕ) :
+    claimInput claims i = if decide ((i, true) ∈ claims) then some true
+      else if decide ((i, false) ∈ claims) then some false else none := by
+  simp only [claimInput, decide_eq_true_eq]
+
+private theorem computableInPolyTime_claimInputs
+    (hn : ComputableInPolyTime nf encIn encUnary)
+    (hc : ComputableInPolyTime cf encIn (encList (encPair encUnary encBool))) :
+    ComputableInPolyTime (fun a => claimInputs (nf a) (cf a)) encIn
+      (encList (encOption encBool)) := by
+  unfold claimInputs
+  refine ComputableInPolyTime.mapWithInput (ComputableInPolyTime.range.comp hn) ?_
+  simp only [claimInput_eq]
+  have hp := ComputableInPolyTime.id' (encIn := encPair encIn encUnary)
+  have hcl := hc.comp hp.fst'
+  have ht := ComputableInPolyTime.decide_mem hcl (hp.snd'.prod (ComputableInPolyTime.const true))
+  have hf := ComputableInPolyTime.decide_mem hcl (hp.snd'.prod (ComputableInPolyTime.const false))
+  exact ComputableInPolyTime.ite' ht (ComputableInPolyTime.const _)
+    (ComputableInPolyTime.ite' hf (ComputableInPolyTime.const _) (ComputableInPolyTime.const _))
+
+private theorem computableInPolyTime_opNat :
+    ComputableInPolyTime (fun g : Op × List ℕ => g.1.toNat) (Circuit.encGate encOp) encUnary :=
+  (ComputableInPolyTime.id' (encIn := Circuit.encGate encOp)).fst'.of_enc_eq fun _ => rfl
+
+private theorem computableInPolyTime_claimFlag {f : γ → Op × List ℕ} {b : γ → Bool}
+    (hf : ComputableInPolyTime f encIn (Circuit.encGate encOp))
+    (hb : ComputableInPolyTime b encIn encBool) :
+    ComputableInPolyTime (fun a => claimFlag (f a).1 (b a)) encIn encBool := by
+  have hop := computableInPolyTime_opNat.comp hf
+  unfold claimFlag
+  have h0 := ComputableInPolyTime.unary_beq' hop (ComputableInPolyTime.const 0)
+  have h1 := ComputableInPolyTime.unary_beq' (ComputableInPolyTime.unary_mod.comp
+    (hop.prod (ComputableInPolyTime.const 2))) (ComputableInPolyTime.const 1)
+  fun_prop
+
+private theorem overrideGate_eq (n : ℕ) (claims : List (ℕ × Bool)) (g : Op × List ℕ) (j : ℕ) :
+    overrideGate n claims g j =
+      if claimFlag g.1 true && decide ((n + j, true) ∈ claims) then (.and 0, [])
+      else if claimFlag g.1 false && decide ((n + j, false) ∈ claims) then (.or 0, [])
+      else g := by
+  simp only [overrideGate, claimFlag_eq g.1 _ g.2, Bool.and_eq_true, decide_eq_true_eq]
+
+private theorem computableInPolyTime_overrideGates
+    (hn : ComputableInPolyTime nf encIn encUnary)
+    (hg : ComputableInPolyTime gf encIn (encList (Circuit.encGate encOp)))
+    (hc : ComputableInPolyTime cf encIn (encList (encPair encUnary encBool))) :
+    ComputableInPolyTime (fun a => overrideGates (nf a) (cf a) (gf a)) encIn
+      (encList (Circuit.encGate encOp)) := by
+  simp only [overrideGates, overrideGate_eq]
+  refine ComputableInPolyTime.mapWithInput
+    ((ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.zipIdx _)).comp hg) ?_
+  have hp := ComputableInPolyTime.id'
+    (encIn := encPair encIn (encPair (Circuit.encGate encOp) encUnary))
+  have hcl := hc.comp hp.fst'
+  have hw := ComputableInPolyTime.unary_add' (hn.comp hp.fst') hp.snd'.snd'
+  have ht := ComputableInPolyTime.bool_and'
+    (computableInPolyTime_claimFlag hp.snd'.fst' (ComputableInPolyTime.const true))
+    (ComputableInPolyTime.decide_mem hcl (hw.prod (ComputableInPolyTime.const true)))
+  have hf := ComputableInPolyTime.bool_and'
+    (computableInPolyTime_claimFlag hp.snd'.fst' (ComputableInPolyTime.const false))
+    (ComputableInPolyTime.decide_mem hcl (hw.prod (ComputableInPolyTime.const false)))
+  exact ComputableInPolyTime.ite' ht (ComputableInPolyTime.const _)
+    (ComputableInPolyTime.ite' hf (ComputableInPolyTime.const _) hp.snd'.fst')
+
+private theorem claimChecks_eq (n : ℕ) (gates : List (Op × List ℕ)) (c : ℕ × Bool) :
+    claimChecks n gates c = if decide (c.1 < n) then [c]
+      else if claimFlag (gateAt n gates c.1).1 c.2 then (gateAt n gates c.1).2.map (·, c.2)
+      else [] := by
+  simp only [claimChecks, claimFlag_eq _ _ (gateAt n gates c.1).2, decide_eq_true_eq]
+
+private theorem computableInPolyTime_checks
+    (hn : ComputableInPolyTime nf encIn encUnary)
+    (hg : ComputableInPolyTime gf encIn (encList (Circuit.encGate encOp)))
+    (hc : ComputableInPolyTime cf encIn (encList (encPair encUnary encBool))) :
+    ComputableInPolyTime (fun a => (cf a).flatMap (claimChecks (nf a) (gf a))) encIn
+      (encList (encPair encNat encBool)) := by
+  refine ComputableInPolyTime.flatMapWithInput hc ?_
+  simp only [claimChecks_eq]
+  have hp := ComputableInPolyTime.id' (encIn := encPair encIn (encPair encUnary encBool))
+  have hb := ComputableInPolyTime.unary_to_binary
+  have hgate : ComputableInPolyTime (fun p : γ × (ℕ × Bool) => gateAt (nf p.1) (gf p.1) p.2.1)
+      (encPair encIn (encPair encUnary encBool)) (Circuit.encGate encOp) := by
+    unfold gateAt
+    exact ComputableInPolyTime.listGetDWithInput (hg.comp hp.fst')
+      (ComputableInPolyTime.unary_sub' hp.snd'.fst' (hn.comp hp.fst')) _
+  have hlt := ComputableInPolyTime.unary_lt' hp.snd'.fst' (hn.comp hp.fst')
+  have hself : ComputableInPolyTime (fun p : γ × (ℕ × Bool) => [p.2])
+      (encPair encIn (encPair encUnary encBool)) (encList (encPair encNat encBool)) :=
+    ComputableInPolyTime.cons' ((hb.comp hp.snd'.fst').prod hp.snd'.snd')
+      (ComputableInPolyTime.const [])
+  have hmap : ComputableInPolyTime
+      (fun p : γ × (ℕ × Bool) => (gateAt (nf p.1) (gf p.1) p.2.1).2.map (·, p.2.2))
+      (encPair encIn (encPair encUnary encBool)) (encList (encPair encNat encBool)) := by
+    refine ComputableInPolyTime.mapWithInput hgate.snd' ?_
+    have hq := ComputableInPolyTime.id'
+      (encIn := encPair (encPair encIn (encPair encUnary encBool)) encNat)
+    exact hq.snd'.prod hq.fst'.snd'.snd'
+  exact ComputableInPolyTime.ite' hlt hself (ComputableInPolyTime.ite'
+    (computableInPolyTime_claimFlag hgate hp.snd'.snd') hmap (ComputableInPolyTime.const []))
+
+private theorem computableInPolyTime_smallDepthOp (d : ℕ) :
+    ComputableInPolyTime (fun l : List ℕ => smallDepthOp d Op.not l) (encList encUnary)
+      encUnary := by
+  unfold smallDepthOp maxTwo
+  fun_prop
+
+theorem smallDepthOp_le (d : ℕ) (op : Op) (l : List ℕ) : smallDepthOp d op l ≤ d + 1 := by
+  unfold smallDepthOp
+  split_ifs
+  · exact min_le_left _ _
+  · exact le_rfl
+
+private theorem computableInPolyTime_smallDepths (d : ℕ)
+    (hn : ComputableInPolyTime nf encIn encUnary)
+    (hg : ComputableInPolyTime gf encIn (encList (Circuit.encGate encOp))) :
+    ComputableInPolyTime (fun a => smallDepths d (nf a) (gf a)) encIn (encList encUnary) := by
+  have hstep : ComputableInPolyTime
+      (fun p : List ℕ × (Op × List ℕ) =>
+        p.1 ++ [smallDepthOp d p.2.1 (p.2.2.map (p.1.getD · (d + 1)))])
+      (encPair (encList encUnary) (Circuit.encGate encOp)) (encList encUnary) := by
+    have hp := ComputableInPolyTime.id' (encIn :=
+      encPair (encList encUnary) (Circuit.encGate encOp))
+    have hargs : ComputableInPolyTime
+        (fun p : List ℕ × (Op × List ℕ) => p.2.2.map (p.1.getD · (d + 1)))
+        (encPair (encList encUnary) (Circuit.encGate encOp)) (encList encUnary) := by
+      refine ComputableInPolyTime.mapWithInput hp.snd'.snd' ?_
+      have hq := ComputableInPolyTime.id' (encIn :=
+        encPair (encPair (encList encUnary) (Circuit.encGate encOp)) encNat)
+      exact ComputableInPolyTime.listGetD_binary (encA := encUnary) (d + 1) hq.fst'.fst' hq.snd'
+    exact ComputableInPolyTime.listAppend' hp.fst' (ComputableInPolyTime.cons'
+      ((computableInPolyTime_smallDepthOp d).comp hargs) (ComputableInPolyTime.const []))
+  unfold smallDepths
+  exact ComputableInPolyTime.foldl_of_bounded_growth hg
+    (ComputableInPolyTime.replicate hn (ComputableInPolyTime.const 0)) hstep
+    (growth := 2 * (d + 1) + 5) fun sd g => by
+      have := smallDepthOp_le d g.1 (g.2.map (sd.getD · (d + 1)))
+      simp only [encList_append, List.length_append, encList_cons, encList_nil, List.append_nil,
+        length_frame, encUnary_apply, List.length_replicate]
+      omega
+
+/-- **The certificate check is polynomial-time**, for a fixed depth bound `d` and inputs, gates,
+output and claims computed in polynomial time. -/
+theorem computableInPolyTime_claimsValid (d : ℕ)
+    (hn : ComputableInPolyTime nf encIn encUnary)
+    (hg : ComputableInPolyTime gf encIn (encList (Circuit.encGate encOp)))
+    (ho : ComputableInPolyTime of encIn encNat)
+    (hc : ComputableInPolyTime cf encIn (encList (encPair encUnary encBool))) :
+    ComputableInPolyTime (fun a => claimsValid d (nf a) (gf a) (of a) (cf a)) encIn encBool := by
+  have hk := computableInPolyTime_kleeneEval (computableInPolyTime_claimInputs hn hc)
+    (computableInPolyTime_overrideGates hn hg hc)
+  have hval := ComputableInPolyTime.listGetD_binary (encA := encOption encBool) none hk ho
+  have hfirst := ComputableInPolyTime.decide_eq' hval
+    (ComputableInPolyTime.const (some true) (encOut := encOption encBool))
+  have hsd := computableInPolyTime_smallDepths d hn hg
+  have hall : ComputableInPolyTime
+      (fun a => ((cf a).flatMap (claimChecks (nf a) (gf a))).all fun e =>
+        decide ((smallDepths d (nf a) (gf a)).getD e.1 (d + 1) ≤ d)) encIn encBool := by
+    refine ComputableInPolyTime.allWithInput (computableInPolyTime_checks hn hg hc) ?_
+    have hp := ComputableInPolyTime.id' (encIn := encPair encIn (encPair encNat encBool))
+    exact ComputableInPolyTime.unary_le'
+      (ComputableInPolyTime.listGetD_binary (encA := encUnary) (d + 1) (hsd.comp hp.fst')
+        hp.snd'.fst') (ComputableInPolyTime.const d)
+  exact ComputableInPolyTime.bool_and' hfirst hall
+
+end PolyTime
 
 end WeftOne
 
