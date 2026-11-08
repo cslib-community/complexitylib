@@ -4647,6 +4647,7 @@ public import Complexity.Logics.Propositional.CSP.HardCore
 public import Complexity.Logics.Propositional.CSP.Occurrence
 public import Complexity.Logics.Propositional.CSP.PartitionFunction
 public import Complexity.Logics.Propositional.CSP.Permanent
+public import Complexity.Logics.Propositional.CSP.Planar.Crossover
 public import Complexity.Logics.Propositional.CSP.PrimitivePositive
 public import Complexity.Logics.Propositional.CSP.Table
 public import Complexity.Logics.Propositional.CSP.Table.DeltaMatroid

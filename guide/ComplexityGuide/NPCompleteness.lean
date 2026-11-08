@@ -41,6 +41,7 @@ import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Certifica
 import Complexity.Computability.PolyTime.CSP.Table
 import Complexity.Logics.Propositional.CSP.Edge.Augmenting
 import Complexity.Logics.Propositional.CSP.Table.DeltaMatroid
+import Complexity.Logics.Propositional.CSP.Planar.Crossover
 import Complexity.Foundations.Data.BitString.CyclicDifference
 import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
 import Complexity.Tactic.PolyTime
@@ -73,6 +74,7 @@ import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Certifica
 import Complexity.Computability.PolyTime.CSP.Table
 import Complexity.Logics.Propositional.CSP.Edge.Augmenting
 import Complexity.Logics.Propositional.CSP.Table.DeltaMatroid
+import Complexity.Logics.Propositional.CSP.Planar.Crossover
 import Complexity.Foundations.Data.BitString.CyclicDifference
 import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
 import Complexity.Tactic.PolyTime
@@ -836,3 +838,33 @@ example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
 
 The test module also rejects final-only validity. A complete solver still needs
 DAG/forest/blossom search and the native runtime certificate.
+
+
+# Finite Crossover Gadget Semantics
+
+{name}`Cslib.BitString.cross` equates opposite cyclic ports.
+{name}`Cslib.BitString.nearCross` additionally accepts `0001` and `1110`.
+{name}`Cslib.BitString.IsStandardizedInconsistent` has exactly eight shapes.
+The literal Dvořák–Kupec Figure 1(a) gadget targets CROSS or NEAR-CROSS according
+to which optional complementary pairs occur:
+
+```lean
+open Cslib.BitString Cslib.Logic.PL.CSP.Crossover in
+example : figureOneARelation (standardizedRelation true false false) =
+    nearCross := figureOneARelation_standardized true false false
+```
+
+{name}`Cslib.Logic.PL.CSP.Crossover.figureOneAStandardized` exposes the selected
+target as an ordinary primitive-positive gadget. Figure 1(b) then defines CROSS
+from NEAR-CROSS using one existential auxiliary:
+
+```lean
+open Cslib.BitString Cslib.Logic.PL.CSP.Crossover in
+example : ∃ b, figureOneB.body.eval nearSem
+    (Sum.elim ![false, true, false, true] b) = true :=
+  (figureOneB.correct _).mp (by decide)
+```
+
+Both bodies retain the source diagram's numbered port order and use guarded
+scope widths. These results concern finite semantics; planar substitution,
+Lemma 6 normalization, hardness and a new native runtime certificate remain open.
