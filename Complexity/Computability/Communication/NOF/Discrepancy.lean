@@ -207,6 +207,26 @@ theorem exists_abs_sum_eq_discrepancy (ν : PMF (∀ i, X i)) (f : (∀ i, X i) 
 
 namespace Protocol
 
+omit [Fintype ι] [∀ i, Fintype (X i)] in
+/-- Strengthening player `i`'s test by a further test `t` of what they see cuts the cylinder
+intersection down to its inputs passing `t`. -/
+private theorem mem_cylinderIntersection_update_and {φ : ∀ j, View X j → Bool} {i : ι}
+    {t : View X i → Bool} {x : ∀ j, X j} :
+    x ∈ cylinderIntersection (Function.update φ i fun v => φ i v && t v) ↔
+      x ∈ cylinderIntersection φ ∧ t (view i x) = true := by
+  simp only [mem_cylinderIntersection]
+  rw [Function.forall_update_iff φ (fun j (g : View X j → Bool) => g (view j x) = true)]
+  simp only [Bool.and_eq_true]
+  constructor
+  · rintro ⟨⟨hi, ht⟩, hne⟩
+    refine ⟨fun j => ?_, ht⟩
+    by_cases hj : j = i
+    · subst hj
+      exact hi
+    · exact hne j hj
+  · rintro ⟨h, ht⟩
+    exact ⟨⟨h i, ht⟩, fun j _ => h j⟩
+
 /-- **Correlation with a protocol on a cylinder intersection**: on the cylinder intersection of the
 tests `φ`, the correlation under `ν` of `f` with the output of a protocol is at most `2 ^ depth`
 times the discrepancy of `f` under `ν`. The bit written at each node splits the cylinder
@@ -227,20 +247,7 @@ theorem abs_sum_mul_signVal_le (p : Protocol X Bool) (ν : PMF (∀ i, X i))
     have hψ (b : Bool) (x : ∀ j, X j) :
         x ∈ cylinderIntersection (ψ b) ↔
           x ∈ cylinderIntersection φ ∧ send (view i x) = b := by
-      simp only [mem_cylinderIntersection]
-      have hupd := Function.forall_update_iff φ (a := i) (b := fun v => φ i v && (send v == b))
-        (fun j (g : View X j → Bool) => g (view j x) = true)
-      simp only [Bool.and_eq_true, beq_iff_eq] at hupd
-      rw [hupd]
-      constructor
-      · rintro ⟨⟨hi, hb⟩, hne⟩
-        refine ⟨fun j => ?_, hb⟩
-        by_cases hj : j = i
-        · rw [hj]
-          exact hi
-        · exact hne j hj
-      · rintro ⟨h, hb⟩
-        exact ⟨⟨h i, hb⟩, fun j _ => h j⟩
+      rw [mem_cylinderIntersection_update_and, beq_iff_eq]
     have hsplit : ∑ x with x ∈ cylinderIntersection φ,
           (ν x).toReal * signVal (f x) * signVal ((speak i send p₀ p₁).run x) =
         ∑ x with x ∈ cylinderIntersection (ψ false),

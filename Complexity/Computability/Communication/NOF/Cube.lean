@@ -84,6 +84,33 @@ private theorem piecewise_insert_update_update {S : Finset ι} {j : ι} (hj : j 
     (insert j S).piecewise (update b j d) (update a j c) = update (S.piecewise b a) j d := by
   rw [piecewise_insert, piecewise_update_update hj, update_idem, update_self]
 
+/-- Resampling player `j`'s part of both corners of a cube: averaging over `c, d` the products
+over the subcubes `S ⊆ T`, with `x j` set to `c` and to `d`, is the average over the cube with
+`j ∉ T` added. -/
+private theorem expect_expect_prod_update_eq {T : Finset ι} {j : ι} (hj : j ∉ T)
+    (F : (∀ i, X i) → ℝ) :
+    𝔼 c : X j, 𝔼 d : X j, 𝔼 a, 𝔼 b, ∏ S ∈ T.powerset,
+        (F (update (S.piecewise b a) j c) * F (update (S.piecewise b a) j d)) =
+      𝔼 a, 𝔼 b, ∏ S ∈ (insert j T).powerset, F (S.piecewise b a) := by
+  symm
+  calc _ = 𝔼 a, 𝔼 c : X j, 𝔼 b, 𝔼 d : X j, ∏ S ∈ (insert j T).powerset,
+        F (S.piecewise (update b j d) (update a j c)) := by
+        rw [← Fintype.expect_expect_update_pi _ j]
+        refine Finset.expect_congr rfl fun a _ => Finset.expect_congr rfl fun c _ => ?_
+        exact (Fintype.expect_expect_update_pi _ j).symm
+    _ = 𝔼 c : X j, 𝔼 d : X j, 𝔼 a, 𝔼 b, ∏ S ∈ (insert j T).powerset,
+        F (S.piecewise (update b j d) (update a j c)) := by
+        rw [Finset.expect_comm]
+        refine Finset.expect_congr rfl fun c _ => ?_
+        rw [Finset.expect_congr rfl fun a _ => Finset.expect_comm _ _ _, Finset.expect_comm]
+    _ = _ := by
+        refine Finset.expect_congr rfl fun c _ => Finset.expect_congr rfl fun d _ => ?_
+        refine Finset.expect_congr rfl fun a _ => Finset.expect_congr rfl fun b _ => ?_
+        rw [prod_powerset_insert hj, ← prod_mul_distrib]
+        refine prod_congr rfl fun S hS => ?_
+        have hjS : j ∉ S := fun h => hj (mem_powerset.mp hS h)
+        rw [piecewise_update_update hjS, piecewise_insert_update_update hjS]
+
 /-- **The cube lemma**: the correlation of `F` with a product of bounded functions `g i`, each not
 depending on `x i`, over the players `i ∈ T`, is controlled by the averages of products of `F`
 over the `2 ^ |T|` corners `S.piecewise b a`, `S ⊆ T`, of a random cube. -/
@@ -152,28 +179,6 @@ theorem pow_expect_mul_prod_le (T : Finset ι) (F : (∀ i, X i) → ℝ)
       · rw [abs_mul]
         have h1 := hg1 i (mem_insert_of_mem hi)
         exact (mul_le_mul (h1 _) (h1 _) (abs_nonneg _) zero_le_one).trans_eq (one_mul 1)
-    -- Resampling player `j`'s part of both corners `a` and `b` of the cube.
-    have hcube : 𝔼 c : X j, 𝔼 d : X j, 𝔼 a, 𝔼 b, ∏ S ∈ T.powerset,
-          (F (update (S.piecewise b a) j c) * F (update (S.piecewise b a) j d)) =
-        𝔼 a, 𝔼 b, ∏ S ∈ (insert j T).powerset, F (S.piecewise b a) := by
-      symm
-      calc _ = 𝔼 a, 𝔼 c : X j, 𝔼 b, 𝔼 d : X j, ∏ S ∈ (insert j T).powerset,
-            F (S.piecewise (update b j d) (update a j c)) := by
-            rw [← Fintype.expect_expect_update_pi _ j]
-            refine Finset.expect_congr rfl fun a _ => Finset.expect_congr rfl fun c _ => ?_
-            exact (Fintype.expect_expect_update_pi _ j).symm
-        _ = 𝔼 c : X j, 𝔼 d : X j, 𝔼 a, 𝔼 b, ∏ S ∈ (insert j T).powerset,
-            F (S.piecewise (update b j d) (update a j c)) := by
-            rw [Finset.expect_comm]
-            refine Finset.expect_congr rfl fun c _ => ?_
-            rw [Finset.expect_congr rfl fun a _ => Finset.expect_comm _ _ _, Finset.expect_comm]
-        _ = _ := by
-            refine Finset.expect_congr rfl fun c _ => Finset.expect_congr rfl fun d _ => ?_
-            refine Finset.expect_congr rfl fun a _ => Finset.expect_congr rfl fun b _ => ?_
-            rw [prod_powerset_insert hj, ← prod_mul_distrib]
-            refine prod_congr rfl fun S hS => ?_
-            have hjS : j ∉ S := fun h => hj (mem_powerset.mp hS h)
-            rw [piecewise_update_update hjS, piecewise_insert_update_update hjS]
     calc ((𝔼 x, F x * ∏ i ∈ insert j T, g i x) ^ 2) ^ (2 ^ #T)
         ≤ (𝔼 c : X j, 𝔼 d : X j, 𝔼 x, (F (update x j c) * F (update x j d)) *
             ∏ i ∈ T, (g i (update x j c) * g i (update x j d))) ^ (2 ^ #T) := by
@@ -186,7 +191,7 @@ theorem pow_expect_mul_prod_le (T : Finset ι) (F : (∀ i, X i) → ℝ)
       _ ≤ 𝔼 c : X j, 𝔼 d : X j, 𝔼 a, 𝔼 b, ∏ S ∈ T.powerset,
             (F (update (S.piecewise b a) j c) * F (update (S.piecewise b a) j d)) :=
           Finset.expect_le_expect fun c _ => Finset.expect_le_expect fun d _ => hih c d
-      _ = _ := hcube
+      _ = _ := expect_expect_prod_update_eq hj F
 
 /-- The *cube expectation* of `f : (∀ i, X i) → Bool`: the average, over two independent uniform
 inputs `a` and `b`, of the product of the signs `(-1) ^ f` at the `2 ^ k` corners

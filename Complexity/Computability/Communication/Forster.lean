@@ -81,6 +81,31 @@ namespace Cslib.Communication
 
 variable {X Y : Type*} [Fintype X] [Fintype Y]
 
+/-- **Cauchy–Schwarz for a bilinear form**: `|∑ₓᵧ pₓ Mₓᵧ qᵧ| ≤ ‖p‖₂ ‖M q‖₂`. -/
+private theorem abs_sum_mul_le_sqrt_mul_sqrt (M : Matrix X Y ℝ) (p : X → ℝ) (q : Y → ℝ) :
+    |∑ x, ∑ y, p x * M x y * q y| ≤ √(∑ x, p x ^ 2) * √(∑ x, (M *ᵥ q) x ^ 2) := by
+  have h1 : ∑ x, ∑ y, p x * M x y * q y = p ⬝ᵥ (M *ᵥ q) := by
+    simp only [dotProduct, mulVec, mul_sum, mul_assoc]
+  rw [h1, ← Real.sqrt_mul (sum_nonneg fun x _ => sq_nonneg _)]
+  exact Real.abs_le_sqrt (sum_mul_sq_le_sq_mul_sq _ _ _)
+
+/-- The dot product of two unit vectors has square at most one. -/
+private theorem dotProduct_sq_le_one {K : Type*} [Fintype K] {a b : K → ℝ} (ha : a ⬝ᵥ a = 1)
+    (hb : b ⬝ᵥ b = 1) : (a ⬝ᵥ b) ^ 2 ≤ 1 := by
+  have h := sum_mul_sq_le_sq_mul_sq univ a b
+  simp only [sq, ← dotProduct.eq_1, ha, hb, mul_one] at h
+  rwa [sq]
+
+/-- The sign step of Forster's argument: if `w` has the sign `s = ±1` and `|w| ≤ 1`, then a margin
+`μ ≥ 0` with `μ ≤ s m` gives `μ w² ≤ m w`. -/
+private theorem mul_sq_le_mul_of_sign {μ m s w : ℝ} (hs : s * s = 1) (hμ : μ ≤ s * m)
+    (hμ0 : 0 ≤ μ) (hsw : 0 < s * w) (hw : w ^ 2 ≤ 1) : μ * w ^ 2 ≤ m * w := by
+  have hsw1 : s * w ≤ 1 := by nlinarith
+  calc μ * w ^ 2 = μ * (s * w) * (s * w) := by linear_combination -μ * w ^ 2 * hs
+    _ ≤ μ * (s * w) * 1 := by gcongr
+    _ ≤ s * m * (s * w) := by nlinarith
+    _ = m * w := by linear_combination m * w * hs
+
 /-- The double-counting step of Forster's argument: unit vectors `aₓ, bᵧ` correlated with `M`
 (`μ ⟨aₓ, bᵧ⟩² ≤ Mₓᵧ ⟨aₓ, bᵧ⟩`) and spread out (`∑ₓ ⟨aₓ, bᵧ⟩² ≥ c`) force
 `|Y| μ c ≤ λ √|X| √|Y|`. -/
@@ -140,6 +165,94 @@ private theorem exists_generalPosition_of_mul [Finite X] [Finite Y] {d : ℕ}
   obtain ⟨ε, hε1, hε2⟩ := (hdet.and (hsign.filter_mono nhdsWithin_le_nhds)).exists
   exact ⟨U + ε • W, hε1, hε2⟩
 
+/-- Normalizing two vectors of positive length divides their dot product by both lengths. -/
+private theorem dotProduct_normalize {e f : X → ℝ} :
+    ((√(e ⬝ᵥ e))⁻¹ • e) ⬝ᵥ ((√(f ⬝ᵥ f))⁻¹ • f) = (e ⬝ᵥ f) / (√(e ⬝ᵥ e) * √(f ⬝ᵥ f)) := by
+  rw [smul_dotProduct, dotProduct_smul, smul_eq_mul, smul_eq_mul, div_eq_mul_inv, mul_inv]
+  ring
+
+omit [Fintype Y] in
+/-- The unit vectors of Forster's argument [Alon, Moran and Yehudayoff, proof of Theorem 23]
+[AlonMoranYehudayoff2016]. Let the rows `uₓ` of `U` and the columns `vᵧ` of `V` represent the signs
+`s` (`s x y ⟨uₓ, vᵧ⟩ > 0`), and let the weights `p > 0` put the `uₓ` in approximate isotropic
+position: `A = ∑ₓ pₓ uₓ uₓᵀ` is positive definite with leverages `pₓ uₓᵀ A⁻¹ uₓ ≤ R`. The feature
+map `φ w = (√p_z ⟨u_z, w⟩)_z` realizes `A` (`⟨φ w, φ w'⟩ = wᵀ A w'`), so the normalized vectors
+`aₓ ∝ φ (A⁻¹ uₓ)` and `bᵧ ∝ φ vᵧ` have `⟨aₓ, bᵧ⟩ ∝ ⟨uₓ, vᵧ⟩`, hence the signs `s`, and
+`∑ₓ ⟨aₓ, bᵧ⟩² ≥ 1 / R`. -/
+private theorem exists_unit_vectors_of_isotropic [Nonempty X] [Nonempty Y] {d : ℕ}
+    (U : Matrix X (Fin d) ℝ) (V : Matrix (Fin d) Y ℝ) (s : X → Y → ℝ)
+    (hUV : ∀ x y, 0 < s x y * (U * V) x y) {p : X → ℝ} (hp : ∀ x, 0 < p x)
+    (hA : (∑ x, p x • vecMulVec (U x) (U x)).PosDef) {R : ℝ}
+    (hlev : ∀ x, p x * (U x ⬝ᵥ ((∑ z, p z • vecMulVec (U z) (U z))⁻¹ *ᵥ U x)) ≤ R) :
+    ∃ (a : X → X → ℝ) (b : Y → X → ℝ), (∀ x, a x ⬝ᵥ a x = 1) ∧ (∀ y, b y ⬝ᵥ b y = 1) ∧
+      (∀ x y, 0 < s x y * (a x ⬝ᵥ b y)) ∧ ∀ y, 1 / R ≤ ∑ x, (a x ⬝ᵥ b y) ^ 2 := by
+  obtain ⟨x₀⟩ := ‹Nonempty X›
+  obtain ⟨y₀⟩ := ‹Nonempty Y›
+  set A := ∑ x, p x • vecMulVec (U x) (U x) with hAdef
+  set B := A⁻¹ with hB
+  have hBpd : B.PosDef := hA.inv
+  have hAB : A * B = 1 := mul_nonsing_inv A hA.det_pos.ne'.isUnit
+  have hAsymm : Aᵀ = A := by
+    have := hA.isHermitian
+    rwa [IsHermitian, conjTranspose_eq_transpose_of_trivial] at this
+  let v : Y → Fin d → ℝ := fun y j => V j y
+  have hUv : ∀ x y, (U * V) x y = U x ⬝ᵥ v y := fun x y => rfl
+  have hbil : ∀ u w : Fin d → ℝ, u ⬝ᵥ (A *ᵥ w) = ∑ z, p z * (U z ⬝ᵥ u) * (U z ⬝ᵥ w) :=
+    fun u w => Matrix.dotProduct_sum_smul_vecMulVec_mulVec univ p U u w
+  -- The feature map `φ` realizes `A`, and `B = A⁻¹` turns `A` into the plain dot product.
+  let φ : (Fin d → ℝ) → X → ℝ := fun w z => √(p z) * (U z ⬝ᵥ w)
+  have hφ : ∀ u w, φ u ⬝ᵥ φ w = u ⬝ᵥ (A *ᵥ w) := by
+    intro u w
+    rw [hbil]
+    refine sum_congr rfl fun z _ => ?_
+    linear_combination (U z ⬝ᵥ u) * (U z ⬝ᵥ w) * Real.mul_self_sqrt (hp z).le
+  have hφB : ∀ u w, φ (B *ᵥ u) ⬝ᵥ φ w = u ⬝ᵥ w := by
+    intro u w
+    rw [hφ, dotProduct_mulVec, ← mulVec_transpose, hAsymm, mulVec_mulVec, hAB, one_mulVec]
+  have hU0 : ∀ x, U x ≠ 0 := fun x h0 => by
+    simpa [hUv, h0] using hUV x y₀
+  have hv0 : ∀ y, v y ≠ 0 := fun y h0 => by
+    simpa [hUv, h0] using hUV x₀ y
+  have hg0 : ∀ x, 0 < φ (B *ᵥ U x) ⬝ᵥ φ (B *ᵥ U x) := fun x => by
+    rw [hφB]
+    simpa using hBpd.dotProduct_mulVec_pos (hU0 x)
+  have hh0 : ∀ y, 0 < φ (v y) ⬝ᵥ φ (v y) := fun y => by
+    rw [hφ]
+    simpa using hA.dotProduct_mulVec_pos (hv0 y)
+  -- The normalized vectors and their correlations.
+  let a : X → X → ℝ := fun x => (√(φ (B *ᵥ U x) ⬝ᵥ φ (B *ᵥ U x)))⁻¹ • φ (B *ᵥ U x)
+  let b : Y → X → ℝ := fun y => (√(φ (v y) ⬝ᵥ φ (v y)))⁻¹ • φ (v y)
+  have hab : ∀ x y, a x ⬝ᵥ b y = (U x ⬝ᵥ v y) /
+      (√(φ (B *ᵥ U x) ⬝ᵥ φ (B *ᵥ U x)) * √(φ (v y) ⬝ᵥ φ (v y))) := fun x y => by
+    rw [← hφB (U x) (v y)]
+    exact dotProduct_normalize
+  have hunit : ∀ {e : X → ℝ}, 0 < e ⬝ᵥ e → ((√(e ⬝ᵥ e))⁻¹ • e) ⬝ᵥ ((√(e ⬝ᵥ e))⁻¹ • e) = 1 :=
+    fun he => by rw [dotProduct_normalize, Real.mul_self_sqrt he.le, div_self he.ne']
+  refine ⟨a, b, fun x => hunit (hg0 x), fun y => hunit (hh0 y), fun x y => ?_, fun y => ?_⟩
+  · rw [hab, mul_div_assoc', ← hUv]
+    exact div_pos (hUV x y) (mul_pos (Real.sqrt_pos.2 (hg0 x)) (Real.sqrt_pos.2 (hh0 y)))
+  -- Spread: each term is at least `pₓ ⟨uₓ, vᵧ⟩² / (R ⟨φ vᵧ, φ vᵧ⟩)`, and these sum to `1 / R`.
+  have hh := hh0 y
+  have hR0 : 0 < R := by
+    have h := hg0 x₀
+    rw [hφB] at h
+    exact (mul_pos (hp x₀) h).trans_le (hlev x₀)
+  have hterm : ∀ x, p x * (U x ⬝ᵥ v y) ^ 2 / (R * (φ (v y) ⬝ᵥ φ (v y))) ≤ (a x ⬝ᵥ b y) ^ 2 := by
+    intro x
+    have hg := hg0 x
+    rw [hab, div_pow, mul_pow, Real.sq_sqrt hg.le, Real.sq_sqrt hh.le,
+      div_le_div_iff₀ (mul_pos hR0 hh) (mul_pos hg hh)]
+    have hlev' : p x * (φ (B *ᵥ U x) ⬝ᵥ φ (B *ᵥ U x)) ≤ R := by rw [hφB]; exact hlev x
+    nlinarith [mul_le_mul_of_nonneg_right hlev'
+      (mul_nonneg (sq_nonneg (U x ⬝ᵥ v y)) hh.le)]
+  have hsum : ∑ x, p x * (U x ⬝ᵥ v y) ^ 2 = φ (v y) ⬝ᵥ φ (v y) := by
+    rw [hφ, hbil]
+    exact sum_congr rfl fun x _ => by ring
+  calc 1 / R = ∑ x, p x * (U x ⬝ᵥ v y) ^ 2 / (R * (φ (v y) ⬝ᵥ φ (v y))) := by
+        rw [← sum_div, hsum]
+        field_simp
+    _ ≤ ∑ x, (a x ⬝ᵥ b y) ^ 2 := sum_le_sum fun x _ => hterm x
+
 /-- **Forster's sign-rank bound, bilinear form.** Let `M` be a real `X × Y` matrix with
 `μ ≤ (-1)^{f x y} M x y` for all `x, y` (so for `μ > 0`, `M` sign-represents `f` with margin `μ`)
 and `|∑ₓᵧ pₓ Mₓᵧ qᵧ| ≤ λ ‖p‖₂ ‖q‖₂` for all real vectors `p, q`. Then
@@ -152,29 +265,26 @@ theorem mul_sqrt_card_mul_card_le_mul_signRank (f : X → Y → Bool) (M : Matri
       |∑ x, ∑ y, p x * M x y * q y| ≤ lam * √(∑ x, p x ^ 2) * √(∑ y, q y ^ 2)) :
     μ * √(Fintype.card X * Fintype.card Y) ≤ lam * signRank f := by
   classical
-  rcases isEmpty_or_nonempty X with hX | ⟨⟨x₀⟩⟩
+  rcases isEmpty_or_nonempty X with hX | hX
   · have h := signRank_le_card_left f
     rw [Fintype.card_eq_zero, Nat.le_zero] at h
     simp [h, Fintype.card_eq_zero]
-  rcases isEmpty_or_nonempty Y with hY | ⟨⟨y₀⟩⟩
+  rcases isEmpty_or_nonempty Y with hY | hY
   · have h := signRank_le_card_right f
     rw [Fintype.card_eq_zero, Nat.le_zero] at h
     simp [h, Fintype.card_eq_zero]
-  have hm : (0 : ℝ) < Fintype.card X := by exact_mod_cast Fintype.card_pos_iff.2 ⟨x₀⟩
-  have hn : (0 : ℝ) < Fintype.card Y := by exact_mod_cast Fintype.card_pos_iff.2 ⟨y₀⟩
+  have hm : (0 : ℝ) < Fintype.card X := by exact_mod_cast Fintype.card_pos
+  have hn : (0 : ℝ) < Fintype.card Y := by exact_mod_cast Fintype.card_pos
   have hm' : 0 < √(Fintype.card X : ℝ) := Real.sqrt_pos.2 hm
   have hn' : 0 < √(Fintype.card Y : ℝ) := Real.sqrt_pos.2 hn
+  -- `λ ≥ 0`, from the bilinear bound at `p = q = 1`.
   have hlam : 0 ≤ lam := by
     have h := (abs_nonneg _).trans (hspec (fun _ => 1) (fun _ => 1))
     simp only [one_pow, sum_const, card_univ, nsmul_eq_mul, mul_one] at h
-    by_contra hneg
-    push Not at hneg
-    have := mul_neg_of_neg_of_pos (mul_neg_of_neg_of_pos hneg hm') hn'
-    linarith
+    exact nonneg_of_mul_nonneg_left (nonneg_of_mul_nonneg_left h hn') hm'
   rcases le_or_gt μ 0 with hμ0 | hμ0
   · nlinarith [Real.sqrt_nonneg (Fintype.card X * Fintype.card Y : ℝ),
       mul_nonneg hlam (Nat.cast_nonneg (α := ℝ) (signRank f))]
-  have hdm : signRank f ≤ Fintype.card X := signRank_le_card_left f
   obtain ⟨U, V, hUV⟩ := exists_mul_signRepresents f
   obtain ⟨U', hgen, hU'V⟩ := exists_generalPosition_of_mul U V (signMatrix ℝ f) hUV
   -- For every `ε > 0`: `|Y| μ ≤ (d / |X| + ε) λ √|X| √|Y|`.
@@ -182,138 +292,39 @@ theorem mul_sqrt_card_mul_card_le_mul_signRank (f : X → Y → Bool) (M : Matri
       ((signRank f : ℝ) / Fintype.card X + ε) *
         (lam * √(Fintype.card X : ℝ) * √(Fintype.card Y : ℝ)) := by
     intro ε hε
-    obtain ⟨p, hp, hApd, hlev⟩ := Matrix.exists_isotropic_weights U' hgen hdm hε
-    set R : ℝ := (signRank f : ℝ) / Fintype.card X + ε with hR
-    have hR0 : 0 < R := by positivity
-    set A := ∑ x, p x • vecMulVec (U' x) (U' x) with hA
-    set B := A⁻¹ with hB
-    have hBpd : B.PosDef := hApd.inv
-    have hAB : A * B = 1 := mul_nonsing_inv A hApd.det_pos.ne'.isUnit
-    have hAsymm : Aᵀ = A := by
-      have := hApd.isHermitian
-      rwa [IsHermitian, conjTranspose_eq_transpose_of_trivial] at this
-    let v : Y → Fin (signRank f) → ℝ := fun y j => V j y
-    have hUv : ∀ x y, (U' * V) x y = U' x ⬝ᵥ v y := fun x y => rfl
-    have hbil : ∀ u w : Fin (signRank f) → ℝ,
-        u ⬝ᵥ (A *ᵥ w) = ∑ z, p z * (U' z ⬝ᵥ u) * (U' z ⬝ᵥ w) :=
-      fun u w => Matrix.dotProduct_sum_smul_vecMulVec_mulVec univ p U' u w
-    have hcross : ∀ u w : Fin (signRank f) → ℝ, (B *ᵥ u) ⬝ᵥ (A *ᵥ w) = u ⬝ᵥ w := by
-      intro u w
-      rw [dotProduct_mulVec, ← mulVec_transpose, hAsymm, mulVec_mulVec, hAB, one_mulVec]
-    set g : X → ℝ := fun x => U' x ⬝ᵥ (B *ᵥ U' x) with hg
-    set h : Y → ℝ := fun y => v y ⬝ᵥ (A *ᵥ v y) with hh
-    have hU0 : ∀ x, U' x ≠ 0 := fun x h0 => by
-      have := hU'V x y₀
-      rw [hUv, h0, zero_dotProduct, mul_zero] at this
-      exact lt_irrefl _ this
-    have hv0 : ∀ y, v y ≠ 0 := fun y h0 => by
-      have := hU'V x₀ y
-      rw [hUv, h0, dotProduct_zero, mul_zero] at this
-      exact lt_irrefl _ this
-    have hg0 : ∀ x, 0 < g x := fun x => by simpa using hBpd.dotProduct_mulVec_pos (hU0 x)
-    have hh0 : ∀ y, 0 < h y := fun y => by simpa using hApd.dotProduct_mulVec_pos (hv0 y)
-    have hsq : ∀ z, √(p z) * √(p z) = p z := fun z => Real.mul_self_sqrt (hp z).le
-    have hpair : ∀ (F G : X → ℝ) (s s' : ℝ),
-        ∑ z, √(p z) * F z / s * (√(p z) * G z / s') = (∑ z, p z * F z * G z) / (s * s') := by
-      intro F G s s'
-      rw [sum_div]
-      refine sum_congr rfl fun z _ => ?_
-      rw [div_mul_div_comm]
-      congr 1
-      linear_combination F z * G z * hsq z
-    -- The normalized vectors of the isotropic configuration.
-    let a : X → X → ℝ := fun x z => √(p z) * (U' z ⬝ᵥ (B *ᵥ U' x)) / √(g x)
-    let b : Y → X → ℝ := fun y z => √(p z) * (U' z ⬝ᵥ v y) / √(h y)
-    have hab : ∀ x y, a x ⬝ᵥ b y = (U' x ⬝ᵥ v y) / (√(g x) * √(h y)) := by
-      intro x y
-      calc a x ⬝ᵥ b y
-          = (∑ z, p z * (U' z ⬝ᵥ (B *ᵥ U' x)) * (U' z ⬝ᵥ v y)) / (√(g x) * √(h y)) :=
-            hpair (fun z => U' z ⬝ᵥ (B *ᵥ U' x)) (fun z => U' z ⬝ᵥ v y) _ _
-        _ = (U' x ⬝ᵥ v y) / (√(g x) * √(h y)) := by rw [← hbil, hcross]
-    have haa : ∀ x, a x ⬝ᵥ a x = 1 := by
-      intro x
-      calc a x ⬝ᵥ a x
-          = (∑ z, p z * (U' z ⬝ᵥ (B *ᵥ U' x)) * (U' z ⬝ᵥ (B *ᵥ U' x))) /
-              (√(g x) * √(g x)) :=
-            hpair (fun z => U' z ⬝ᵥ (B *ᵥ U' x)) (fun z => U' z ⬝ᵥ (B *ᵥ U' x)) _ _
-        _ = 1 := by
-            rw [← hbil, hcross, Real.mul_self_sqrt (hg0 x).le]
-            exact div_self (hg0 x).ne'
-    have hbb : ∀ y, b y ⬝ᵥ b y = 1 := by
-      intro y
-      calc b y ⬝ᵥ b y
-          = (∑ z, p z * (U' z ⬝ᵥ v y) * (U' z ⬝ᵥ v y)) / (√(h y) * √(h y)) :=
-            hpair (fun z => U' z ⬝ᵥ v y) (fun z => U' z ⬝ᵥ v y) _ _
-        _ = 1 := by
-            rw [← hbil, Real.mul_self_sqrt (hh0 y).le]
-            exact div_self (hh0 y).ne'
-    have hc : ∀ y, 1 / R ≤ ∑ x, (a x ⬝ᵥ b y) ^ 2 := by
-      intro y
-      have hterm : ∀ x, p x * (U' x ⬝ᵥ v y) ^ 2 / (R * h y) ≤ (a x ⬝ᵥ b y) ^ 2 := by
-        intro x
-        rw [hab, div_pow, mul_pow, Real.sq_sqrt (hg0 x).le, Real.sq_sqrt (hh0 y).le,
-          div_le_div_iff₀ (mul_pos hR0 (hh0 y)) (mul_pos (hg0 x) (hh0 y))]
-        have hlev' : p x * g x ≤ R := hlev x
-        nlinarith [mul_le_mul_of_nonneg_left hlev'
-          (mul_nonneg (sq_nonneg (U' x ⬝ᵥ v y)) (hh0 y).le)]
-      have hsum : ∑ x, p x * (U' x ⬝ᵥ v y) ^ 2 = h y := by
-        change _ = v y ⬝ᵥ (A *ᵥ v y)
-        rw [hbil]
-        exact sum_congr rfl fun x _ => by ring
-      have hhy := (hh0 y).ne'
-      calc 1 / R = ∑ x, p x * (U' x ⬝ᵥ v y) ^ 2 / (R * h y) := by
-            rw [← sum_div, hsum]
-            field_simp
-        _ ≤ ∑ x, (a x ⬝ᵥ b y) ^ 2 := sum_le_sum fun x _ => hterm x
-    have hMab : ∀ x y, μ * (a x ⬝ᵥ b y) ^ 2 ≤ M x y * (a x ⬝ᵥ b y) := by
-      intro x y
-      set w := a x ⬝ᵥ b y with hw
-      set s := signMatrix ℝ f x y with hs
-      have hs2 : s * s = 1 := by rw [hs, signMatrix_apply]; split_ifs <;> norm_num
-      have hsw : 0 < s * w := by
-        rw [hw, hab, mul_div_assoc']
-        exact div_pos (hU'V x y)
-          (mul_pos (Real.sqrt_pos.2 (hg0 x)) (Real.sqrt_pos.2 (hh0 y)))
-      have hw1 : w ^ 2 ≤ 1 := by
-        have h1 := sum_mul_sq_le_sq_mul_sq univ (a x) (b y)
-        have e1 : ∑ i, a x i ^ 2 = 1 := by rw [← haa x]; simp only [dotProduct, sq]
-        have e2 : ∑ i, b y i ^ 2 = 1 := by rw [← hbb y]; simp only [dotProduct, sq]
-        rw [e1, e2, mul_one] at h1
-        exact h1
-      have e : (s * w) ^ 2 = w ^ 2 := by linear_combination w ^ 2 * hs2
-      have e' : (s * M x y) * (s * w) = M x y * w := by linear_combination M x y * w * hs2
-      have hsw1 : s * w ≤ 1 := by nlinarith
-      nlinarith [hμ x y, mul_le_mul_of_nonneg_left hsw1 (mul_nonneg hμ0.le hsw.le),
-        mul_le_mul_of_nonneg_right (hμ x y) hsw.le]
-    have hcore := card_mul_le_of_unit_vectors (K := X) M hspec a b haa hbb hMab hμ0.le hc hlam
+    obtain ⟨p, hp, hA, hlev⟩ :=
+      Matrix.exists_isotropic_weights U' hgen (signRank_le_card_left f) hε
+    obtain ⟨a, b, ha, hb, hsign, hc⟩ :=
+      exists_unit_vectors_of_isotropic U' V (signMatrix ℝ f) hU'V hp hA hlev
+    have hs : ∀ x y, signMatrix ℝ f x y * signMatrix ℝ f x y = 1 := fun x y => by
+      rw [signMatrix_apply]
+      split_ifs <;> norm_num
+    have hcore := card_mul_le_of_unit_vectors M hspec a b ha hb
+      (fun x y => mul_sq_le_mul_of_sign (hs x y) (hμ x y) hμ0.le (hsign x y)
+        (dotProduct_sq_le_one (ha x) (hb y))) hμ0.le hc hlam
+    have hR0 : 0 < (signRank f : ℝ) / Fintype.card X + ε := by positivity
     rw [mul_one_div, ← mul_div_assoc, div_le_iff₀ hR0] at hcore
     linarith
   -- Let `ε → 0`.
   set K := lam * √(Fintype.card X : ℝ) * √(Fintype.card Y : ℝ) with hK
-  have hK0 : 0 ≤ K := by positivity
   have hlim : (Fintype.card Y : ℝ) * μ ≤ (signRank f : ℝ) / Fintype.card X * K := by
-    refine le_of_forall_pos_le_add fun ε hε => ?_
-    have h0 := key (ε / (K + 1)) (by positivity)
-    have h1 : ε / (K + 1) * K ≤ ε := by
-      rw [div_mul_eq_mul_div, div_le_iff₀ (by linarith)]
-      nlinarith
-    nlinarith [h0, h1]
+    have hcont : Tendsto (fun ε : ℝ => ((signRank f : ℝ) / Fintype.card X + ε) * K) (𝓝[>] 0)
+        (𝓝 ((signRank f : ℝ) / Fintype.card X * K)) :=
+      tendsto_nhdsWithin_of_tendsto_nhds (Continuous.tendsto' (by fun_prop) 0 _ (by rw [add_zero]))
+    exact ge_of_tendsto hcont (eventually_nhdsWithin_of_forall key)
+  -- Multiply by `|X|` and cancel `√|X| √|Y| = √(|X| |Y|)`.
   rw [Real.sqrt_mul hm.le]
   set P := √(Fintype.card X : ℝ) * √(Fintype.card Y : ℝ) with hP
-  have hP0 : 0 < P := mul_pos hm' hn'
   have hPP : P * P = Fintype.card X * Fintype.card Y := by
     rw [hP, mul_mul_mul_comm, Real.mul_self_sqrt hm.le, Real.mul_self_sqrt hn.le]
-  have hm0 := hm.ne'
-  have h3 : P * (P * μ) ≤ P * (lam * signRank f) := by
-    calc P * (P * μ) = Fintype.card X * (Fintype.card Y * μ) := by
-          rw [← mul_assoc, hPP, mul_assoc]
-      _ ≤ Fintype.card X * ((signRank f : ℝ) / Fintype.card X * K) :=
-          mul_le_mul_of_nonneg_left hlim hm.le
-      _ = P * (lam * signRank f) := by
-          rw [hK, mul_assoc lam, ← hP]
-          field_simp
-  have := le_of_mul_le_mul_left h3 hP0
-  linarith
+  have hKP : K = lam * P := by rw [hK, hP, mul_assoc]
+  refine le_of_mul_le_mul_left ?_ (mul_pos hm' hn' : 0 < P)
+  calc P * (μ * P) = Fintype.card X * (Fintype.card Y * μ) := by
+        linear_combination μ * hPP
+    _ ≤ Fintype.card X * ((signRank f : ℝ) / Fintype.card X * K) := by gcongr
+    _ = P * (lam * signRank f) := by
+        rw [hKP]
+        field_simp
 
 open scoped Matrix.Norms.L2Operator in
 /-- The bilinear form of a matrix is bounded by its spectral norm:
@@ -321,15 +332,9 @@ open scoped Matrix.Norms.L2Operator in
 private theorem abs_sum_mul_le_l2_opNorm [DecidableEq Y] (M : Matrix X Y ℝ) (p : X → ℝ)
     (q : Y → ℝ) :
     |∑ x, ∑ y, p x * M x y * q y| ≤ ‖M‖ * √(∑ x, p x ^ 2) * √(∑ y, q y ^ 2) := by
-  have h1 : ∑ x, ∑ y, p x * M x y * q y = p ⬝ᵥ (M *ᵥ q) := by
-    simp only [dotProduct, mulVec, mul_sum, mul_assoc]
-  rw [h1]
-  have hcs : |p ⬝ᵥ (M *ᵥ q)| ≤ √(∑ x, p x ^ 2) * √(∑ x, (M *ᵥ q) x ^ 2) := by
-    rw [← Real.sqrt_mul (sum_nonneg fun x _ => sq_nonneg _)]
-    exact Real.abs_le_sqrt (sum_mul_sq_le_sq_mul_sq _ _ _)
   have hop := Matrix.l2_opNorm_mulVec M (WithLp.toLp 2 q)
   simp only [EuclideanSpace.norm_eq, Real.norm_eq_abs, sq_abs] at hop
-  calc _ ≤ _ := hcs
+  calc _ ≤ _ := abs_sum_mul_le_sqrt_mul_sqrt M p q
     _ ≤ √(∑ x, p x ^ 2) * (‖M‖ * √(∑ y, q y ^ 2)) :=
         mul_le_mul_of_nonneg_left (by simpa using hop) (Real.sqrt_nonneg _)
     _ = _ := by ring
@@ -375,20 +380,15 @@ theorem card_le_signRank_sq_of_isHadamard [DecidableEq X] {f : X → X → Bool}
   have h := mul_sqrt_card_mul_card_le_mul_signRank f H (μ := 1) (lam := √(Fintype.card X))
     (fun x y => by simp only [H, signMatrix_apply]; split_ifs <;> norm_num)
     fun p q => by
-      have h1 : ∑ x, ∑ y, p x * H x y * q y = p ⬝ᵥ (H *ᵥ q) := by
-        simp only [dotProduct, mulVec, mul_sum, mul_assoc]
-      rw [h1]
-      have hcs : |p ⬝ᵥ (H *ᵥ q)| ≤ √(∑ x, p x ^ 2) * √(∑ x, (H *ᵥ q) x ^ 2) := by
-        rw [← Real.sqrt_mul (sum_nonneg fun x _ => sq_nonneg _)]
-        exact Real.abs_le_sqrt (sum_mul_sq_le_sq_mul_sq _ _ _)
-      rw [sum_mulVec_sq_of_isHadamard hf, Real.sqrt_mul hN] at hcs
-      linarith
+      have h := abs_sum_mul_le_sqrt_mul_sqrt H p q
+      rw [sum_mulVec_sq_of_isHadamard hf, Real.sqrt_mul hN, mul_left_comm] at h
+      rwa [← mul_assoc] at h
+  -- `|X| ≤ √|X| · signRank f`, so `√|X| ≤ signRank f`.
   rw [one_mul, Real.sqrt_mul hN, Real.mul_self_sqrt hN] at h
   have hs := Real.mul_self_sqrt hN
-  have hs0 := Real.sqrt_nonneg (Fintype.card X : ℝ)
-  have hd := Nat.cast_nonneg (α := ℝ) (signRank f)
   have : (Fintype.card X : ℝ) ≤ (signRank f : ℝ) ^ 2 := by
-    nlinarith [sq_nonneg (√(Fintype.card X : ℝ) - signRank f)]
+    nlinarith [sq_nonneg (√(Fintype.card X : ℝ) - signRank f),
+      Real.sqrt_nonneg (Fintype.card X : ℝ)]
   exact_mod_cast this
 
 /-- **Forster's bound for the inner product** [Forster, 2002][Forster2002]: the inner product on

@@ -178,46 +178,30 @@ theorem discrepancy_gip_pow_le [Nonempty ι] (n : ℕ) :
 private theorem two_mul_le_of_pow_le {k n c : ℕ} (hk : k ≠ 0) {A m : ℝ} (hA : 0 < A)
     (hAm : A⁻¹ ≤ Real.exp m) (h : A ^ (2 ^ k) ≤ 2 ^ (c * 2 ^ k) * (1 - 2 / 2 ^ k) ^ n) :
     2 * (n : ℝ) ≤ 4 ^ k * (c + m) := by
-  have hK : (2 : ℝ) ≤ 2 ^ k := by
-    calc (2 : ℝ) = 2 ^ 1 := (pow_one 2).symm
-      _ ≤ 2 ^ k := pow_le_pow_right₀ one_le_two (Nat.one_le_iff_ne_zero.mpr hk)
-  have hKpos : (0 : ℝ) < 2 ^ k := by positivity
-  -- `(1 - 2 / 2 ^ k) ^ n ≤ exp (-2 n / 2 ^ k)`.
+  -- Each factor is at most an exponential: `b ≤ exp t` gives `b ^ j ≤ exp (j t)`.
+  have hpow : ∀ {b t : ℝ} (j : ℕ), 0 ≤ b → b ≤ Real.exp t → b ^ j ≤ Real.exp (j * t) :=
+    fun j hb hbt => (pow_le_pow_left₀ hb hbt j).trans_eq (Real.exp_nat_mul _ j).symm
   have h0 : 0 ≤ 1 - 2 / (2 : ℝ) ^ k := by
-    rw [sub_nonneg, div_le_one hKpos]
-    exact hK
-  have hexp : (1 - 2 / (2 : ℝ) ^ k) ^ n ≤ Real.exp (-(2 * n / 2 ^ k)) := by
-    calc (1 - 2 / (2 : ℝ) ^ k) ^ n ≤ Real.exp (-(2 / 2 ^ k)) ^ n :=
-          pow_le_pow_left₀ h0 (by linarith [Real.add_one_le_exp (-(2 / (2 : ℝ) ^ k))]) n
-      _ = Real.exp (-(2 * n / 2 ^ k)) := by
-          rw [← Real.exp_nat_mul]
-          ring_nf
-  -- `2 ^ (c 2 ^ k) ≤ exp (c 2 ^ k)` and `(A ^ (2 ^ k))⁻¹ ≤ exp (m 2 ^ k)`.
-  have htwo : (2 : ℝ) ^ (c * 2 ^ k) ≤ Real.exp (c * 2 ^ k) := by
-    have h2 : (2 : ℝ) ≤ Real.exp 1 := by linarith [Real.add_one_le_exp 1]
-    calc (2 : ℝ) ^ (c * 2 ^ k) ≤ Real.exp 1 ^ (c * 2 ^ k) := by gcongr
-      _ = Real.exp (c * 2 ^ k) := by
-          rw [← Real.exp_nat_mul]
-          push_cast
-          ring_nf
-  have hAinv : (A ^ (2 ^ k))⁻¹ ≤ Real.exp (m * 2 ^ k) := by
-    calc (A ^ (2 ^ k))⁻¹ = A⁻¹ ^ (2 ^ k) := (inv_pow A _).symm
-      _ ≤ Real.exp m ^ (2 ^ k) := pow_le_pow_left₀ (inv_nonneg.mpr hA.le) hAm _
-      _ = Real.exp (m * 2 ^ k) := by
-          rw [← Real.exp_nat_mul]
-          push_cast
-          ring_nf
+    rw [sub_nonneg, div_le_one (by positivity)]
+    exact le_self_pow₀ one_le_two hk
+  have hexp := hpow n h0 (Real.one_sub_le_exp_neg _)
+  have htwo := hpow (c * 2 ^ k) zero_le_two (by linarith [Real.add_one_le_exp 1] : 2 ≤ Real.exp 1)
+  have hAinv := hpow (2 ^ k) (inv_nonneg.mpr hA.le) hAm
+  rw [inv_pow] at hAinv
+  -- Hence `1 = A⁻ᴷ Aᴷ ≤ exp (K m + c K - 2 n / K)` for `K = 2 ^ k`.
   have hApos : 0 < A ^ (2 ^ k) := pow_pos hA _
-  have h1 : 1 ≤ Real.exp (m * 2 ^ k + c * 2 ^ k + -(2 * n / 2 ^ k)) := by
+  have h1 : 1 ≤ Real.exp ((2 ^ k : ℕ) * m + (c * 2 ^ k : ℕ) * 1 + n * -(2 / 2 ^ k)) := by
     calc (1 : ℝ) = (A ^ (2 ^ k))⁻¹ * A ^ (2 ^ k) := (inv_mul_cancel₀ hApos.ne').symm
-      _ ≤ Real.exp (m * 2 ^ k) * (Real.exp (c * 2 ^ k) * Real.exp (-(2 * n / 2 ^ k))) := by
+      _ ≤ Real.exp ((2 ^ k : ℕ) * m) *
+            (Real.exp ((c * 2 ^ k : ℕ) * 1) * Real.exp (n * -(2 / 2 ^ k))) := by
           refine mul_le_mul hAinv (h.trans ?_) hApos.le (Real.exp_pos _).le
           exact mul_le_mul htwo hexp (pow_nonneg h0 _) (Real.exp_pos _).le
-      _ = Real.exp (m * 2 ^ k + c * 2 ^ k + -(2 * n / 2 ^ k)) := by
-          rw [Real.exp_add, Real.exp_add, mul_assoc]
+      _ = _ := by rw [Real.exp_add, Real.exp_add, mul_assoc]
   have h2 := Real.one_le_exp_iff.mp h1
-  have h3 : 2 * (n : ℝ) / 2 ^ k ≤ (m + c) * 2 ^ k := by linarith
-  rw [div_le_iff₀ hKpos] at h3
+  push_cast at h2
+  -- Multiply by `K`: `2 n ≤ K² (c + m) = 4 ^ k (c + m)`.
+  have h3 : (n : ℝ) * (2 / 2 ^ k) ≤ 2 ^ k * (m + c) := by linarith
+  rw [mul_div_assoc', div_le_iff₀ (by positivity)] at h3
   have h4 : (4 : ℝ) ^ k = 2 ^ k * 2 ^ k := by
     rw [← mul_pow]
     norm_num
