@@ -1830,6 +1830,7 @@ public import Complexity.Computability.Complexity.Classes.Space.Closure
 public import Complexity.Computability.Complexity.Classes.Space.GeneralizedGeography
 public import Complexity.Computability.Complexity.Classes.Space.GeneralizedGeography.Membership
 public import Complexity.Computability.Complexity.Classes.Space.GeneralizedGeography.Reduction
+public import Complexity.Computability.Complexity.Classes.Space.Image
 public import Complexity.Computability.Complexity.Classes.Space.Nondeterministic
 public import Complexity.Computability.Complexity.Classes.Space.Savitch
 public import Complexity.Computability.Complexity.Classes.Space.TM2
@@ -2463,6 +2464,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.TwoPow
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.ZipFold
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigOLe
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BoundedSearch
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.BitString
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.BitString.Cut
