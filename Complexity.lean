@@ -1514,6 +1514,7 @@ public import Complexity.Computability.Communication.NOF.Cube
 public import Complexity.Computability.Communication.NOF.Discrepancy
 public import Complexity.Computability.Communication.NOF.ExactlyN
 public import Complexity.Computability.Communication.NOF.GeneralizedInnerProduct
+public import Complexity.Computability.Communication.NOF.Grolmusz
 public import Complexity.Computability.Communication.NOF.Protocol
 public import Complexity.Computability.Communication.NOF.Randomized
 public import Complexity.Computability.Communication.NOF.Transcript
