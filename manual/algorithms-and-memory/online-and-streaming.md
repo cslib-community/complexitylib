@@ -38,6 +38,24 @@
 
 The metric is number of page faults. The recency-list Lean implementation is not claimed to take constant RAM time per request. This is competitive resource analysis over a state-transition model.
 
+## Adaptive search trees: splay trees
+
+[SplayTree/Basic](../../Complexity/DataStructure/SplayTree/Basic.lean) implements bottom-up splaying on Mathlib's `BinaryTree` with no stored balance data. Each result records the exact number of edge rotations. [SplayTree/AccessLemma](../../Complexity/DataStructure/SplayTree/AccessLemma.lean) proves the Access Lemma for arbitrary positive weights. The weights are analysis parameters only: the tree never stores them. One splay costs `splayTime = max rotations 1`, and `splaySeqTime xs t` sums this cost over the access sequence `xs`, splaying each tree in turn. The module also proves:
+
+- the Balance Theorem `(3m + n) log₂ n + m`, which also covers absent keys;
+- Static Optimality `m + 4 ∑ q(y) log₂(m / q(y))`, where `q(y)` is the access frequency of `y`, for accesses to stored keys when every stored key is accessed at least once (`q(y) ≥ 1`; the bound fails without this hypothesis);
+- a general fixed-weight bound `splaySeqTime_le_fixed_weights`;
+- unit-weight update bounds.
+
+[SplayTree/Impl](../../Complexity/DataStructure/SplayTree/Impl.lean) packages these as a self-adjusting `OrderedSet` with an amortized rotation bound [sleatortarjan85b][sleatortarjan85b].
+
+[SplayTree/WorkingSet](../../Complexity/DataStructure/SplayTree/WorkingSet.lean) proves two locality bounds with explicit constants. Both apply to `m` accesses to keys of an `Ordered` tree with `n` keys:
+
+- **Static Finger** (Theorem 3): `splaySeqTime_le_static_finger` bounds the cost by `7m + 6 ∑ log₂(d(xⱼ) + 1) + n(2 + 2 log₂ n)` for a fixed finger key `f` in the tree. Here `d = fingerDist (elements t) f` counts the stored keys in the half-open interval from `f` (exclusive) to `xⱼ` (inclusive), so `d(f) = 0`. On keys `1, …, n` this is `|xⱼ − f|`, and it is defined for any linear order.
+- **Working Set** (Theorem 4): `splaySeqTime_le_working_set` bounds the cost by `4m + 6 ∑ log₂(t(j) + 1) + n(1 + 2 log₂ n)`. Here `workingSetNumbers` computes `t(j)`, the number of distinct keys accessed since the previous access of the same key, or since the start of the sequence for a first access.
+
+The working-set proof follows the source. It assigns the weights `1, 1/4, …, 1/n²` in move-to-front order and reassigns them after every access. The reassignment changes the potential explicitly, and `potential_reweight_root_le` accounts for that change. The accessed key is at the root, so its subtree size is unchanged, while every other key's weight can only decrease, so the potential does not increase. [Checked instances](../../ComplexityTests/SplayTree.lean) compute working-set numbers and finger distances and apply both theorems to a degenerate seven-key spine [sleatortarjan85b][sleatortarjan85b].
+
 ## The k-server problem
 
 [KServer/Basic](../../Complexity/DataStructure/KServer/Basic.lean) instantiates the online `Problem` with `k` servers on a metric whose distances are natural numbers (`NatMetric`). A configuration is a labeled tuple `Fin k → α`, a request is a point, a transition must put some server on the request, and its cost `moveCost` is the summed per-server distance. Coincident servers are allowed. Relabeling is free, so the cheapest move to a configuration's multiset is the minimum-cost perfect matching `matchCost` (`matchCostAlong_eq_moveCost`), and the offline optimum is that of the source's multiset formulation. `NatMetric.line` is the integer line and `NatMetric.uniform` the uniform metric, on which `k`-server is paging up to the cost convention.
@@ -220,6 +238,8 @@ The abstract model counts reachable memory states and imposes no uniformity or t
 
 The k-minimum-values sketch for `F₀` has no `ProbComp` sampler or machine realization either. Its error analysis needs a pairwise independent family into `Fin M` with at least as many values as distinct items. The space-optimal estimators for `F₀` (Bar-Yossef et al., Theorems 2–3; Kane–Nelson–Woodruff's `O(ε⁻² + log n)`) are not formalized, and neither are the `Ω(ε⁻²)` and `Ω(log n)` lower bounds for approximate `F₀`.
 
+The splay-tree cost is a rotation count, not a RAM or Turing-machine time. The Static Finger and Working Set theorems cover only accesses to keys present in the tree. Sleator–Tarjan's Unified Theorem, Cole's Dynamic Finger theorem, BST access-and-rotation lower bounds (Wilber-style) and dynamic optimality are not formalized.
+
 No automatic native realization of the Count-Min sketch was identified in its four source modules.
 
 The locality-sensitive hashing modules prove probabilistic statements only. The near-neighbour structure bounds the parameters `k`, `L` and `ρ` and the number of inspected candidates, but no declaration counts hash evaluations, stored entries or time. Its buckets are described by filtering the point set, so the following are not formalized:
@@ -266,5 +286,6 @@ Online bin packing is modelled by `OnlinePacker`, not through `Problem`/`DetStra
 [manassemcgeochsleator90]: ../sources.md#manassemcgeochsleator90
 [misragries82]: ../sources.md#misragries82
 [sleatortarjan85]: ../sources.md#sleatortarjan85
+[sleatortarjan85b]: ../sources.md#sleatortarjan85b
 [yao77]: ../sources.md#yao77
 [yao80]: ../sources.md#yao80

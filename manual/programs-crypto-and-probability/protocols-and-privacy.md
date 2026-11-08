@@ -701,6 +701,8 @@ Pinned cslib supplies [PerfectlySecret](https://github.com/leanprover/cslib/blob
 
 [Scheme](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Crypto/Protocols/SecretSharing/Scheme.lean#L52) bundles deterministic reconstruction for authorized coalitions, a randomness PMF, monotone authorization and equal unauthorized-coalition view laws across all secrets. Shamir's `schemeWith` permits a tail sampler with the translation symmetry needed for privacy; `uniformTailSampler` gives the usual finite-field instance. These are reusable information-theoretic interfaces; the survey does not infer a polynomial-time protocol or a secret-sharing-to-native-MPC compiler from them.
 
+The quantum one-time pad ([OneTimePad.lean](../../Complexity/Crypto/Protocols/Quantum/OneTimePad.lean)) is the quantum counterpart: the key-averaged ciphertext state is the same for every plaintext state, even given an entangled reference system. It is stated with density matrices rather than through `PerfectlySecret`; see [Density matrices, no-signalling and the quantum one-time pad](../circuits-logic-and-other-models/algebraic-and-quantum.md#density-matrices-no-signalling-and-the-quantum-one-time-pad).
+
 Perfect secrecy, zero knowledge and semi-honest MPC privacy do not substitute for differential privacy's adjacent-dataset comparison, which the next section formalizes.
 
 ## Differential privacy

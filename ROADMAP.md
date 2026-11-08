@@ -807,11 +807,11 @@ index links to canonical definitions rather than keeping a second set.
   approximate counting.
 - **Exact counting by determinants**
   ([#3081](https://github.com/cslib-community/complexitylib/issues/3081)): Kirchhoff's
-  matrix-tree theorem (with polynomial-time spanning-tree counting), its weighted form and Tutte's
-  directed (arborescence) form are done. Remaining: the BEST theorem for Eulerian circuits,
-  polynomial-time counting of arborescences and of weighted spanning trees, and Kasteleyn's
-  Pfaffian method for perfect matchings of planar graphs, in contrast with permanent
-  #P-completeness.
+  matrix-tree theorem (with polynomial-time spanning-tree counting), its weighted form, Tutte's
+  directed (arborescence) form and the BEST theorem for Eulerian circuits of multidigraphs are
+  done. Remaining: polynomial-time counting of arborescences, of weighted spanning trees and of
+  Eulerian circuits, the root independence of the BEST count, and Kasteleyn's Pfaffian method
+  for perfect matchings of planar graphs, in contrast with permanent #P-completeness.
 - For composite moduli
   ([#3495](https://github.com/cslib-community/complexitylib/issues/3495)): the prime-power
   collapse `Mod_{p^e}P = Mod_pP` is done. Remaining: union closure for every modulus through
@@ -976,6 +976,16 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   matching or Kőnig cover in the machine model) and the resulting `IsKernelization` of the encoded
   `VertexCover` with `O(k)` vertices, the LP-based `2k` kernel by Nemhauser–Trotter, and the
   expansion lemma (`q`-expansions) with its kernels.
+- **Iterative compression** ([#3456](https://github.com/cslib-community/complexitylib/issues/3456)):
+  odd cycle transversal on `SimpleGraph` with the compression lemma, a minimum vertex separator by
+  vertex splitting and Edmonds–Karp, and the `TimeM` algorithm `octM` in `O(3^k · n^6)`.
+  Remaining: Hüffner's `O(3^k · k m n)` and `O(3^k · m n)` (at most `k + 1` augmenting paths on
+  adjacency lists, then incremental flow updates), encoded `OddCycleTransversal ∈ FPT` on
+  multi-tape machines, the `O*(2.3146^k)` LP-based algorithm
+  (Lokshtanov–Narayanaswamy–Raman–Ramanujan–Saurabh), feedback vertex set and directed variants
+  by iterative compression; once Menger's theorem
+  ([#3413](https://github.com/cslib-community/complexitylib/pull/3413)) lands, the bridge
+  `MaxFlow.IsVertexSeparator G u v T ↔ u ∉ T ∧ v ∉ T ∧ G.IsSeparator {u} {v} T`.
 - **Kernelization lower bounds**
   ([#3210](https://github.com/cslib-community/complexitylib/issues/3210)): `NP/poly`, and the
   Fortnow–Santhanam theorem that an OR-distillation of an `NP`-hard problem gives
@@ -1000,6 +1010,13 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `W[1] = FPT` exactly when `Clique` is in `FPT`. Remaining
   ([#3256](https://github.com/cslib-community/complexitylib/issues/3256)): `W[t] ⊆ XP`,
   W[2]-completeness of Dominating Set, short Turing machine acceptance, `W[P]` and the A-hierarchy.
+- **Exact exponential algorithms** ([#3013](https://github.com/cslib-community/complexitylib/issues/3013)):
+  the Bellman–Held–Karp dynamic program for TSP, correct against brute force in `n² · 2ⁿ`
+  unit-cost operations and deciding `TSP` and `HamCycle`, is in `Algorithms/Lean/TSP/HeldKarp`.
+  Remaining: inclusion–exclusion counting of Hamiltonian paths (Karp; Bax) in `2ⁿ · poly(n)` time
+  and polynomial space, with the space bound in a model that measures it; machine-level
+  certificates for these algorithms; and further exact algorithms such as subset convolution and
+  inclusion–exclusion colouring.
 - **Exponential-time SAT** ([#894]): Schöning, PPZ and PPSZ run on the randomized word RAM with
   exact laws, amplification and time bounds (PPSZ's round count takes an input bound
   `a / b ≥ 1 - qbar k h`); Schöning has a curated abstract. Optional remainder: PPZ and PPSZ
@@ -1343,6 +1360,14 @@ each statement against the numbered result. Organize modules by subject, not cha
 
 ## Pseudorandomness, coding and Boolean analysis
 
+- **Improved sparse expanders**
+  ([#3348](https://github.com/cslib-community/complexitylib/issues/3348)): construct simple
+  degree-two/three cores and their matching-path extensions, connect their generalized
+  eigenvector equations to normalized spectral expansion, and formalize explicit core families
+  and the density-sequence asymptotic coefficient approaching `π² / 8`. For lossless expansion,
+  construct the equivariant regular subgraph and prove full row rank through the orbit-matrix
+  and prime-power-group argument. Finite spectral certificates, conditional cut-rank bounds,
+  and transfer for a supplied subgraph do not complete these construction endpoints.
 - **Derandomization from hardness:** the infinitely-often variant, and the EXP ⊄ P/poly endpoint
   of Babai, Fortnow, Nisan and Wigderson.
 - **Hard-core lemma** ([#3557](https://github.com/cslib-community/complexitylib/issues/3557)):
@@ -1649,9 +1674,15 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Quantum computation** ([#896]): channel semantics and approximation costs alongside the
   circuit and measurement semantics, reusing suitable quantum foundations rather than
   incompatible models, and a bridge between the query and circuit models; complete problems for
-  BQP; for QMA ([#2876](https://github.com/cslib-community/complexitylib/issues/2876)), error
+  BQP; gate-set universality
+  ([#3350](https://github.com/cslib-community/complexitylib/issues/3350)): `BQP` over arbitrary
+  elementary gates equals `BQP` over Hadamard, NOT, CNOT and Toffoli, which needs Kitaev's
+  universality of `{Λ(P(i)), H}`, Solovay–Kitaev and polynomial-time synthesis (the exact real
+  simulation of controlled phase gates, `mem_BQP_iff_phase`, is done); for QMA ([#2876](https://github.com/cslib-community/complexitylib/issues/2876)), error
   reduction from an inverse-polynomial gap, strong error reduction that keeps the witness length,
-  `QMA ⊆ A₀PP`, mixed witnesses, QCMA and the local Hamiltonian problem; related query,
+  `QMA ⊆ A₀PP`, mixed witnesses, QCMA and the local Hamiltonian problem; BQP with arbitrary
+  elementary gates through Shi's constructive synthesis of real rotations
+  ([#3350](https://github.com/cslib-community/complexitylib/issues/3350)); related query,
   communication and interactive classes, with amplification, containments and complete problems.
   Supply the
   [quantum adversary models](#concurrent-and-quantum-security) needed by cryptographic
@@ -1662,10 +1693,14 @@ each statement against the numbered result. Organize modules by subject, not cha
   ancilla-free no-cloning, single-qubit teleportation and superdense coding, prove the
   Wootters–Zurek form of no-cloning with an input-dependent apparatus register (by the same
   linearity argument) and teleportation of one half of an entangled state, as in entanglement
-  swapping (a pure-state statement). Prove Holevo's bound (in particular, superdense coding is
-  optimal) and Nayak's bound for quantum random access codes; both need density matrices, von
-  Neumann entropy and mutual information. With channel semantics, prove no-cloning for mixed
-  states and no-broadcasting.
+  swapping (a pure-state statement). Building on the density matrices, partial traces,
+  no-signalling and quantum one-time pad of
+  [#3490](https://github.com/cslib-community/complexitylib/issues/3490), prove that `2n` key bits
+  are necessary to encrypt `n` qubits (Ambainis–Mosca–Tapp–de Wolf), Holevo's bound (in
+  particular, superdense coding is optimal) and Nayak's bound for quantum random access codes. All
+  three need von Neumann entropy (AMTW's Theorem 5.3 uses it; the weaker key-count bound
+  `N ≥ 4ⁿ` may admit a dimension argument), and the last two also need mutual information. With
+  channel semantics (CPTP maps), prove no-cloning for mixed states and no-broadcasting.
 
 - **Quantum query separations**
   ([#2991](https://github.com/cslib-community/complexitylib/issues/2991)): beyond the decision
@@ -1762,12 +1797,25 @@ each statement against the numbered result. Organize modules by subject, not cha
   `Problems/LinearProgramming`. The simplex method on dictionaries with Bland's rule, its no-cycling
   theorem, termination within `N.choose m - 1` pivots, the optimality and unboundedness certificates
   and an optimal dual solution read off the final dictionary are in `Algorithms/Lean/Simplex`
-  ([#3370](https://github.com/cslib-community/complexitylib/issues/3370)). Remaining: a
+  ([#3370](https://github.com/cslib-community/complexitylib/issues/3370)), as is the Klee–Minty
+  lower bound: Dantzig's rule makes exactly `2ⁿ - 1` pivots on the `n`-dimensional Klee–Minty
+  program ([#3441](https://github.com/cslib-community/complexitylib/issues/3441)). Remaining: a
   polynomial-time LP algorithm (ellipsoid or interior point) with bit complexity and intermediate
   precision accounted for; and LP optimization as a search problem with rational outputs. For the
-  simplex method: Phase I (an initial feasible dictionary or an infeasibility certificate); the
-  Klee–Minty cube on which Dantzig's rule makes `2ⁿ - 1` pivots; smoothed analysis (Spielman–Teng);
-  strongly polynomial special cases; and a costed implementation.
+  simplex method: Phase I (an initial feasible dictionary or an infeasibility certificate);
+  exponential lower bounds for other pivoting rules, such as Bland's rule on Klee–Minty-type
+  programs (Avis–Chvátal 1978); smoothed analysis (Spielman–Teng); strongly polynomial special
+  cases; and a costed implementation.
+- **Extension complexity** ([#3258](https://github.com/cslib-community/complexitylib/issues/3258)):
+  nonnegative rank, slack matrices, extended formulations with free equations, Yannakakis's
+  factorization theorem `xc P = rank₊ S` for nontrivial polytopes, and the rectangle covering bound
+  `N¹(supp M) ≤ ⌈log₂ rank₊ M⌉` are in `Foundations/LinearAlgebra/Matrix/NonnegRank`,
+  `Foundations/Analysis/Convex/ExtendedFormulation` and
+  `Communication/Nondeterministic/{CoverNumber,ExtensionComplexity}`. Remaining: the facet
+  form of the theorem (an extension with `r` facets); exponential lower bounds for the
+  correlation, cut, stable-set and TSP polytopes (Fiorini–Massar–Pokutta–Tiwary–de Wolf), for
+  instance through Kaibel–Weltge's `(3/2)^n` rectangle-cover bound for unique disjointness;
+  semidefinite and conic extensions; and Rothvoß's lower bound for the perfect matching polytope.
 - **Lattice basis reduction** ([#3235](https://github.com/cslib-community/complexitylib/issues/3235)):
   `δ`-reduced bases, the LLL approximation `‖b₁‖² ≤ (4/(4δ-1))^{n-1} ‖x‖²` (paper indexing,
   `n` vectors) to the shortest vector (Lenstra–Lenstra–Lovász Proposition (1.11)), the potential
@@ -1834,21 +1882,27 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   Tutte–Berge formula are proved in `Foundations/Combinatorics/SimpleGraph/{Berge,TutteBerge}`;
   still open are Edmonds' blossom-contraction lemma, an executable blossom algorithm with its
   `O(|V|²|E|)` bound, weighted general matching, and the Gallai–Edmonds decomposition.
+- **Chain decompositions** ([#3371](https://github.com/cslib-community/complexitylib/issues/3371)):
+  Mirsky's theorem (`Foundations/Order/Mirsky`), Dilworth's theorem by Fulkerson's reduction to
+  König's theorem, and a Hopcroft–Karp minimum chain cover with an `O(n^{5/2})` charged bound
+  (`Algorithms/Lean/MaxFlow/{Dilworth,ChainCover}`) are done for finite posets. Remaining: the
+  Greene–Kleitman theorem on `k`-chain and `k`-antichain families, Dilworth's theorem for infinite
+  posets of finite width (compactness), the perfect-graph view (comparability graphs and their
+  complements are perfect), weighted versions, a sparse entry point that charges building the
+  comparability lists, and a RAM-model or Turing-machine realization of the chain-cover solver.
 - **Global minimum cut** ([#3369](https://github.com/cslib-community/complexitylib/issues/3369)):
   beyond Karger's and Karger–Stein's randomized algorithms (`Algorithms/WordRAM/Karger`) and the
   deterministic Stoer–Wagner algorithm with the maximum adjacency ordering lemma and an `O(n³)`
   `TimeM` bound on natural-number weights (`Algorithms/Lean/StoerWagner`,
   `WeightedCut/MAOrdering`), both built on the probability-free contraction API of
   `WeightedCut/Contraction`, and the per-cut bound `1 / C(n, 2)` of the contraction algorithm with
-  the `C(n, 2)` bound on the number of minimum cuts (`Algorithms/Lean/Karger/MinCutCount`,
-  `WeightedCut/Blocks`, [#3489](https://github.com/cslib-community/complexitylib/issues/3489)):
+  the `C(n, 2)` bound on the number of minimum cuts (`Algorithms/Lean/Karger/Contraction`,
+  `Algorithms/Lean/Karger/MinCutCount`, `WeightedCut/Blocks`, [#3489](https://github.com/cslib-community/complexitylib/issues/3489)):
   the `O(n m + n² log n)` priority-queue version, real weights,
   Nagamochi–Ibaraki sparse certificates for `k`-edge-connectivity,
   Karger's near-linear minimum cut algorithm, the `O((2n)^(2α))` bound on `α`-minimal cuts, the
   enumeration and cactus representation of all minimum cuts, the per-cut bound for recursive
-  Karger–Stein, deriving the untracked Karger theorems from the block-tracking ones
-  ([#3539](https://github.com/cslib-community/complexitylib/issues/3539)), and Queyranne's
-  minimization of symmetric submodular
+  Karger–Stein, and Queyranne's minimization of symmetric submodular
   functions (which generalizes the maximum adjacency argument to hypergraph cuts).
 - **Gomory–Hu trees** ([#3422](https://github.com/cslib-community/complexitylib/issues/3422)):
   remaining after the existence theorem for cut-equivalent trees, flow-equivalence, the
@@ -1979,20 +2033,26 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Comparison selection** ([#3279](https://github.com/cslib-community/complexitylib/issues/3279)):
   groups-of-five median-of-medians selection in cslib's comparison-query model, correct for
   total preorders and making at most `37 n` comparisons under every oracle, is in
-  `Algorithms/Lean/Query/Select`. Remaining: sharper constants for the same algorithm (a
-  six-comparison median of five, and reusing the group comparisons in the partition); the
-  `5.4305 n` bound of Blum, Floyd, Pratt, Rivest and Tarjan for their refined `PICK` and Dor and
-  Zwick's `2.95 n` median bound; group-size variants such as groups of three or seven;
-  comparison lower bounds (`n − 1` for the minimum, `⌈3n/2⌉ − 2` for the minimum and maximum
-  together, and lower bounds for the median); and a word-RAM implementation with charged
-  instruction counts.
+  `Algorithms/Lean/Query/Select`. The comparison lower bounds `n − 1` for the minimum and
+  `⌈3n/2⌉ − 2` for the minimum and maximum together (Pohl's adversary), with matching algorithms,
+  are in `Algorithms/Lean/Query/Select/MinMax`. Remaining: sharper constants for the same
+  algorithm (a six-comparison median of five, and reusing the group comparisons in the
+  partition); the `5.4305 n` bound of Blum, Floyd, Pratt, Rivest and Tarjan for their refined
+  `PICK` and Dor and Zwick's `2.95 n` median bound; group-size variants such as groups of three
+  or seven; further comparison lower bounds (Kislitsyn's `n + ⌈log₂ n⌉ − 2` for the second
+  smallest, and lower bounds for the median and for general ranks, such as the `2n − o(n)` of
+  Bent and John); and a word-RAM implementation with charged instruction counts.
 
 ### Online algorithms and competitive analysis
 
 - Request sequences, online strategies, offline optima and competitive ratios with additive
   constants; distinguish deterministic and randomized strategies and oblivious and adaptive
   adversaries. Compare algorithms in the same action and cost model, including initialization.
-- **Adaptive search trees:** working-set and dynamic-finger bounds for splay trees, and a BST
+- **Adaptive search trees:** `DataStructure/SplayTree/*` covers the Access Lemma with arbitrary
+  positive weights, the Balance, Static Optimality, Static Finger and Working Set theorems with
+  explicit constants, and the update bounds
+  ([#3143](https://github.com/cslib-community/complexitylib/issues/3143)). Extend to
+  Sleator–Tarjan's Unified Theorem and Cole's Dynamic Finger theorem for splay trees, and a BST
   access-and-rotation model with Wilber-style lower bounds. State dynamic optimality as a
   conjectural research target with explicit strategy and sequence quantifiers.
 - **Beyond deterministic ski rental and list update:** randomized strategies against an oblivious
@@ -2290,6 +2350,15 @@ Arrow's theorem). Remaining directions:
   computation; Ukkonen's and Myers' `O((|x| + |y|) d)` algorithms for distance `d`; the
   Masek–Paterson four-Russians speedup; and `OV` hardness
   ([#3037](https://github.com/cslib-community/complexitylib/issues/3037)).
+- **Palindromes** ([#3372](https://github.com/cslib-community/complexitylib/issues/3372)):
+  `Algorithms/Lean/Palindrome` has the maximal palindromic radii at all `2|w| + 1` centers, the
+  characterization of palindromic factors and prefixes by the radii, a longest palindromic factor,
+  and Manacher's algorithm with exact radii and at most `3|w|` character comparisons. Remaining:
+  Manacher's on-line formulation (reporting palindromic prefixes as letters arrive, with a
+  per-letter amortized bound); palindromic trees (eertrees) and counting distinct palindromic
+  factors (at most `|w| + 1`); the parallel algorithms of Apostolico, Breslauer and Galil; and the
+  Z-algorithm with a linear comparison bound, reusing `lcpLen` from the suffix-array work once that
+  has a shared home.
 
 ## Machines, RAM and data structures
 

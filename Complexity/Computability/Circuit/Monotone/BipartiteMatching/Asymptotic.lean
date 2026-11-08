@@ -173,20 +173,17 @@ theorem two_pow_sq_lt_size_of_separates_ofPerm_ofColoring {n : ℕ} (hn : 320 �
       calc (r - 1) ^ (2 * s) = (2 ^ s * (K * s)) ^ (4 * s) := by
             rw [show r - 1 = (q * s) ^ 2 by omega, ← pow_mul, show q * s = 2 ^ s * (K * s) by
               rw [← hqdef]; ring, show 2 * (2 * s) = 4 * s by ring]
-        _ ≤ (2 ^ s * 2 ^ s) ^ (4 * s) :=
-            Nat.pow_le_pow_left (Nat.mul_le_mul_left _ hKs) _
+        _ ≤ (2 ^ s * 2 ^ s) ^ (4 * s) := by gcongr
         _ = 2 ^ (8 * s ^ 2) := by rw [← pow_add, ← pow_mul]; ring_nf
     have hlt : 2 ^ (8 * s ^ 2) * 2 ^ (s ^ 2) < (n - s) ^ (s + 1) := by
       calc 2 ^ (8 * s ^ 2) * 2 ^ (s ^ 2) = 2 ^ (9 * s ^ 2) := by rw [← pow_add]; ring_nf
         _ < 2 ^ (15 * s * s) := Nat.pow_lt_pow_right (by norm_num) (by nlinarith)
         _ = (2 ^ (15 * s)) ^ s := by rw [← pow_mul]
         _ ≤ (n - s) ^ s := Nat.pow_le_pow_left hns _
-        _ ≤ (n - s) ^ (s + 1) :=
-            Nat.pow_le_pow_right (by have := Nat.one_le_two_pow (n := 15 * s); omega) (by omega)
+        _ ≤ (n - s) ^ (s + 1) := by gcongr <;> omega
     calc Positive.errorCap n r s * 2 ^ (s ^ 2)
         = (r - 1) ^ (2 * s) * 2 ^ (s ^ 2) * (n - (s + 1))! := by rw [Positive.errorCap]; ring
-      _ ≤ 2 ^ (8 * s ^ 2) * 2 ^ (s ^ 2) * (n - (s + 1))! :=
-          Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ hr)
+      _ ≤ 2 ^ (8 * s ^ 2) * 2 ^ (s ^ 2) * (n - (s + 1))! := by gcongr
       _ < (n - s) ^ (s + 1) * (n - (s + 1))! :=
           Nat.mul_lt_mul_of_pos_right hlt (Nat.factorial_pos _)
       _ ≤ n ! := by rw [mul_comm]; exact hfact
@@ -208,8 +205,7 @@ theorem two_pow_sq_lt_size_of_separates_ofPerm_ofColoring {n : ℕ} (hn : 320 �
     refine Nat.lt_of_mul_lt_mul_right (a := 2 ^ K) ?_
     calc 2 ^ (s + 1) * (matchings n s).card * (2 ^ s - 1) ^ q * 2 ^ (s ^ 2) * 2 ^ K
         = 2 ^ (s + 1) * (matchings n s).card * 2 ^ (s ^ 2) * ((2 ^ s - 1) ^ q * 2 ^ K) := by ring
-      _ ≤ 2 ^ (s + 1) * 2 ^ (2 * (L + 1) * s) * 2 ^ (s ^ 2) * 2 ^ (s * q) :=
-          Nat.mul_le_mul (Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ hM)) hB
+      _ ≤ 2 ^ (s + 1) * 2 ^ (2 * (L + 1) * s) * 2 ^ (s ^ 2) * 2 ^ (s * q) := by gcongr
       _ = 2 ^ (s + 1 + 2 * (L + 1) * s + s ^ 2) * 2 ^ (s * q) := by rw [← pow_add, ← pow_add]
       _ < 2 ^ K * 2 ^ (s * q) :=
           Nat.mul_lt_mul_of_pos_right (Nat.pow_lt_pow_right (by norm_num) (by nlinarith))
