@@ -24,9 +24,9 @@ directions until no nonzero kernel vector of `A` is supported inside its support
 Gram system of its support columns, so Cramer's rule writes it as `p / d` with integers `p` and
 `d` that are determinants of integer matrices; Mathlib's `Matrix.det_le` bounds them. The usual
 reduction of `A *ᵥ x ≤ b` to equality form with nonnegative variables, and of a Farkas certificate
-(`Matrix.not_exists_mulVec_le_iff`) to a nonnegative solution of `[Aᵀ; bᵀ] y = (0, -1)`, give the
-same bounds for inequality systems and for certificates of infeasibility. These are the size
-bounds behind the membership of rational linear-programming feasibility in `NP ∩ coNP`
+(`Matrix.not_exists_mulVec_le_iff`) to a nonnegative solution of `[Aᵀ; bᵀ] y = (0, -1)`, give
+bounds of the same form for inequality systems and for certificates of infeasibility. These are
+the size bounds behind the membership of rational linear-programming feasibility in `NP ∩ coNP`
 (`Cslib.Complexity.LPFeasibility.mem_NP`, `Cslib.Complexity.LPFeasibility.mem_coNP`).
 
 `Matrix.det_le` is the bound `|det M| ≤ (card n)! * c ^ card n` from the Leibniz expansion rather
@@ -39,8 +39,8 @@ bit length, which is all the complexity bounds need.
 * `Matrix.exists_int_nonneg_mulVec_eq`: an integer system `A *ᵥ x = b` with a nonnegative
   solution has one of the form `p / d` with `0 ≤ p`, `0 < d` and
   `p j, d ≤ (card n)! * (card m * B ^ 2 + 1) ^ card n`, `B` bounding the entries.
-* `Matrix.exists_int_mulVec_le`: the same for `A *ᵥ x ≤ b`, with `2 * card n + card m` in place
-  of `card n`.
+* `Matrix.exists_int_mulVec_le`: for `A *ᵥ x ≤ b`, a solution `p / d` with `|p j|` and `0 < d`
+  at most `(2 * card n + card m)! * (card m * (B + 1) ^ 2 + 1) ^ (2 * card n + card m)`.
 * `Matrix.exists_int_farkas_certificate`: an infeasible integer system `A *ᵥ x ≤ b` has an integer
   Farkas certificate `y ≥ 0`, `y ᵥ* A = 0`, `y ⬝ᵥ b < 0` with
   `y i ≤ (card m)! * ((card n + 1) * (B + 1) ^ 2 + 1) ^ card m`.
@@ -343,7 +343,7 @@ theorem exists_int_mulVec_le {A : Matrix m n ℤ} {b : m → ℤ} {B : ℕ}
 /-- **Small Farkas certificates.** If `A *ᵥ x ≤ b`, with integer entries of absolute value at most
 `B`, has no solution over a linearly ordered field, then an integer vector `y ≥ 0` with
 `y ᵥ* A = 0` and `y ⬝ᵥ b < 0` certifies it, with entries at most
-`(card m)! * ((card n + 1) * B ^ 2 + 1) ^ card m`. -/
+`(card m)! * ((card n + 1) * (B + 1) ^ 2 + 1) ^ card m`. -/
 theorem exists_int_farkas_certificate {A : Matrix m n ℤ} {b : m → ℤ} {B : ℕ}
     (hA : ∀ i j, |A i j| ≤ B) (hb : ∀ i, |b i| ≤ B)
     (h : ¬∃ x : n → K, A.map (Int.cast : ℤ → K) *ᵥ x ≤ fun i => (b i : K)) :

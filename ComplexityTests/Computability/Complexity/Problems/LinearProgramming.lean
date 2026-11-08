@@ -22,8 +22,9 @@ Concrete systems for the certificate checks. The system `2 x ≤ 1, -2 x ≤ -1`
 system `x ≤ 0, -x ≤ -1` is infeasible and `certCheck` accepts the Farkas certificate `[1, 1]`. A
 nonpositive denominator, a certificate with positive right-hand side, and a certificate whose
 combination does not vanish are rejected. The empty system is feasible, and a row with no
-coefficients and a negative bound is infeasible. The basic-solution bound has a sharp instance:
-`2 x = 1` needs the denominator `2`, which the bound `1! * (1 * 2 ^ 2 + 1) ^ 1 = 5` allows.
+coefficients and a negative bound is infeasible. The basic-solution bound is instantiated on
+`2 x = 1`, whose solution needs the denominator `2`, within the bound
+`1! * (1 * 2 ^ 2 + 1) ^ 1 = 5`.
 -/
 
 @[expose] public section

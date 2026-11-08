@@ -15,6 +15,7 @@ import Complexity.Computability.Complexity.Classes.NP.Witness
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.IntBinary.Decode
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.PolyTime.Int.Compare
 import Complexity.Computability.PolyTime.Int.DotProduct
 import Complexity.Foundations.Data.List.Blocks
 import Complexity.Foundations.Data.List.DotProduct
@@ -25,9 +26,9 @@ import Mathlib.Data.List.GetD
 # Rational linear-programming feasibility is in `NP ∩ coNP`
 
 `LPFeasibility` is the set of finite systems of linear inequalities `∑ j, a j * x j ≤ t` with
-integer coefficients, encoded as lists of pairs `(a, t)` with signed-binary integers, that have a
-rational solution. A system with rational coefficients is equivalent to an integer one after
-clearing denominators row by row.
+integer coefficients that have a rational solution, encoded by `LPFeasibility.encSystem` as lists
+of pairs `(a, t)` with signed-binary integers. A system with rational coefficients is equivalent
+to an integer one after clearing denominators row by row.
 
 Both a solution and a proof of infeasibility have polynomial-size certificates:
 
@@ -37,7 +38,8 @@ Both a solution and a proof of infeasibility have polynomial-size certificates:
   `∑ j, a j * w j ≤ d * t` for every row in polynomial time.
 * **`coNP`.** By Farkas' lemma (`Matrix.not_exists_mulVec_le_iff`) an infeasible system has a
   nonnegative combination of its rows that reads `0 ≤ s` with `s < 0`; by
-  `Matrix.exists_int_farkas_certificate` it has one with integer multipliers of the same size.
+  `Matrix.exists_int_farkas_certificate` it has one with integer multipliers bounded by the same
+  `2 ^ ((3L + 3) * 6L)`.
   `LPFeasibility.certCheck` verifies such a certificate in polynomial time.
 
 The verifiers are integer computations, proved polynomial-time with the plain
@@ -46,7 +48,8 @@ or interior-point methods) is not formalized here.
 
 ## Main definitions
 
-* `Cslib.Complexity.LPFeasibility`.
+* `Cslib.Complexity.LPFeasibility`, with the instance encoding
+  `Cslib.Complexity.LPFeasibility.encSystem`.
 * `Cslib.Complexity.LPFeasibility.check`, `Cslib.Complexity.LPFeasibility.certCheck`: the
   certificate checks for feasibility and infeasibility.
 
@@ -80,6 +83,11 @@ coefficients that have a rational solution. A constraint `(a, t)` asks for
   {C | ∃ x : ℕ → ℚ, ∀ c ∈ C, ∑ j ∈ range c.1.length, (c.1.getD j 0 : ℚ) * x j ≤ c.2}
 
 namespace LPFeasibility
+
+/-- The instance encoding of `LPFeasibility`: a framed list of rows, each a framed signed-binary
+list of coefficients followed by the signed-binary bound. -/
+abbrev encSystem : List (List ℤ × ℤ) ↪ List Bool :=
+  encList (encPair (encList encIntBin) encIntBin)
 
 /-- The constraint matrix of `C` with `n` columns, missing coefficients read as zero. -/
 @[expose] def matrix (C : List (List ℤ × ℤ)) (n : ℕ) : Matrix (Fin C.length) (Fin n) ℤ :=
@@ -183,9 +191,9 @@ private theorem factorial_mul_pow_le {k l L B : ℕ} (hk : k ≤ 3 * L) (hl : l 
 /-- Every coefficient of a system has absolute value below `2 ^ L`, `L` its encoded length. -/
 private theorem abs_le_two_pow {C : List (List ℤ × ℤ)} {c : List ℤ × ℤ} (hc : c ∈ C)
     {z : ℤ} (hz : z ∈ c.1 ∨ z = c.2) :
-    |z| ≤ ((2 ^ (encList (encPair (encList encIntBin) encIntBin) C).length : ℕ) : ℤ) := by
+    |z| ≤ ((2 ^ (encSystem C).length : ℕ) : ℤ) := by
   have hlen :
-      (encIntBin z).length ≤ (encList (encPair (encList encIntBin) encIntBin) C).length := by
+      (encIntBin z).length ≤ (encSystem C).length := by
     refine le_trans ?_ (length_le_encList_of_mem _ hc)
     rcases hz with hz | rfl
     · exact (length_le_encList_of_mem _ hz).trans (length_le_encPair_left _ _ c)
@@ -193,19 +201,19 @@ private theorem abs_le_two_pow {C : List (List ℤ × ℤ)} {c : List ℤ × ℤ
   rw [length_encIntBin] at hlen
   rw [Int.abs_eq_natAbs]
   have : z.natAbs < 2 ^ z.natAbs.size := Nat.lt_size_self _
-  have h2 : 2 ^ z.natAbs.size ≤ 2 ^ (encList (encPair (encList encIntBin) encIntBin) C).length :=
+  have h2 : 2 ^ z.natAbs.size ≤ 2 ^ (encSystem C).length :=
     Nat.pow_le_pow_right (by norm_num) (by omega)
   exact_mod_cast (this.trans_le h2).le
 
 /-- Every row has at most `L` coefficients, `L` the encoded length. -/
 private theorem length_le_encLength {C : List (List ℤ × ℤ)} {c : List ℤ × ℤ} (hc : c ∈ C) :
-    c.1.length ≤ (encList (encPair (encList encIntBin) encIntBin) C).length :=
+    c.1.length ≤ (encSystem C).length :=
   (length_le_length_encList _ _).trans
     ((length_le_encPair_left _ _ c).trans (length_le_encList_of_mem _ hc))
 
 private theorem abs_matrix_le (C : List (List ℤ × ℤ)) (n : ℕ) (i : Fin C.length) (j : Fin n) :
     |matrix C n i j| ≤
-      ((2 ^ (encList (encPair (encList encIntBin) encIntBin) C).length : ℕ) : ℤ) := by
+      ((2 ^ (encSystem C).length : ℕ) : ℤ) := by
   simp only [matrix, of_apply]
   by_cases hj : (j : ℕ) < C[i.1].1.length
   · rw [List.getD_eq_getElem _ _ hj]
@@ -214,7 +222,7 @@ private theorem abs_matrix_le (C : List (List ℤ × ℤ)) (n : ℕ) (i : Fin C.
     positivity
 
 private theorem abs_rhs_le (C : List (List ℤ × ℤ)) (i : Fin C.length) :
-    |rhs C i| ≤ ((2 ^ (encList (encPair (encList encIntBin) encIntBin) C).length : ℕ) : ℤ) :=
+    |rhs C i| ≤ ((2 ^ (encSystem C).length : ℕ) : ℤ) :=
   abs_le_two_pow (List.getElem_mem i.2) (Or.inr rfl)
 
 /-- An integer of absolute value at most `2 ^ E` has an encoding of length at most `E + 2`. -/
@@ -247,8 +255,8 @@ private theorem eval_witnessPoly (L : ℕ) :
 size, by `Matrix.exists_int_mulVec_le`. -/
 private theorem exists_check_of_mem {C : List (List ℤ × ℤ)} (hC : C ∈ LPFeasibility) :
     ∃ w : ℤ × List ℤ, check (C, w) = true ∧ (encPair encIntBin (encList encIntBin) w).length ≤
-      witnessPoly.eval (encList (encPair (encList encIntBin) encIntBin) C).length := by
-  set L := (encList (encPair (encList encIntBin) encIntBin) C).length with hL
+      witnessPoly.eval (encSystem C).length := by
+  set L := (encSystem C).length with hL
   have hrow : ∀ c ∈ C, c.1.length ≤ L := fun c hc => length_le_encLength hc
   have hm : C.length ≤ L := length_le_length_encList _ _
   obtain ⟨x, hx⟩ := (mem_iff_exists_mulVec_le hrow).1 hC
@@ -325,7 +333,7 @@ theorem notMem_of_certCheck {C : List (List ℤ × ℤ)} {q : List ℤ}
   simp only [certCheck, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true,
     List.mem_range] at h
   obtain ⟨⟨hq, hcol⟩, hrhs⟩ := h
-  set L := (encList (encPair (encList encIntBin) encIntBin) C).length
+  set L := (encSystem C).length
   intro hC
   obtain ⟨x, hx⟩ := (mem_iff_exists_mulVec_le fun c hc => length_le_encLength hc).1 hC
   refine (not_exists_mulVec_le_iff ((matrix C L).map (Int.cast : ℤ → ℚ)) fun i => (rhs C i : ℚ)).2
@@ -363,8 +371,8 @@ theorem notMem_of_certCheck {C : List (List ℤ × ℤ)} {q : List ℤ}
 polynomial size, by `Matrix.exists_int_farkas_certificate`. -/
 private theorem exists_certCheck_of_notMem {C : List (List ℤ × ℤ)} (hC : C ∉ LPFeasibility) :
     ∃ q : List ℤ, certCheck (C, q) = true ∧ (encList encIntBin q).length ≤
-      witnessPoly.eval (encList (encPair (encList encIntBin) encIntBin) C).length := by
-  set L := (encList (encPair (encList encIntBin) encIntBin) C).length with hL
+      witnessPoly.eval (encSystem C).length := by
+  set L := (encSystem C).length with hL
   have hrow : ∀ c ∈ C, c.1.length ≤ L := fun c hc => length_le_encLength hc
   have hm : C.length ≤ L := length_le_length_encList _ _
   have hno : ¬∃ x : Fin L → ℚ, (matrix C L).map (Int.cast : ℤ → ℚ) *ᵥ x ≤
@@ -401,21 +409,6 @@ private theorem exists_certCheck_of_notMem {C : List (List ℤ × ℤ)} (hC : C 
 
 /-! ### Polynomial-time checks -/
 
-@[fun_prop]
-private theorem intBin_le_polyTime {α : Type} {input : α ↪ List Bool} {left right : α → ℤ}
-    (hleft : ComputableInPolyTime left input encIntBin)
-    (hright : ComputableInPolyTime right input encIntBin) :
-    ComputableInPolyTime (fun a => decide (left a ≤ right a)) input encBool :=
-  .of_tidy (ComputableTidilyInPolyTime.intBin_le' hleft.tidy hright.tidy)
-
-@[fun_prop]
-private theorem intBin_lt_polyTime {α : Type} {input : α ↪ List Bool} {left right : α → ℤ}
-    (hleft : ComputableInPolyTime left input encIntBin)
-    (hright : ComputableInPolyTime right input encIntBin) :
-    ComputableInPolyTime (fun a => decide (left a < right a)) input encBool :=
-  .of_tidy (ComputableTidilyInPolyTime.intBin_lt' hleft.tidy hright.tidy)
-
-@[fun_prop]
 private theorem listDotProduct_polyTime {α : Type} {input : α ↪ List Bool} {n : α → ℕ}
     {l w : α → List ℤ} (hn : ComputableInPolyTime n input encUnary)
     (hl : ComputableInPolyTime l input (encList encIntBin))
@@ -423,9 +416,11 @@ private theorem listDotProduct_polyTime {α : Type} {input : α ↪ List Bool} {
     ComputableInPolyTime (fun a => ListMatrix.dotProduct (n a) (l a) (w a)) input encIntBin :=
   listDotProduct.comp (hn.prod (hl.prod hw))
 
+attribute [local fun_prop] listDotProduct_polyTime
+
 /-- The `NP` check is polynomial-time. -/
 theorem computableInPolyTime_check : ComputableInPolyTime check
-    (encPair (encList (encPair (encList encIntBin) encIntBin))
+    (encPair (encSystem)
       (encPair encIntBin (encList encIntBin))) encBool := by
   unfold check
   apply bool_and' (by fun_prop)
@@ -434,7 +429,7 @@ theorem computableInPolyTime_check : ComputableInPolyTime check
 
 /-- The `coNP` check is polynomial-time. -/
 theorem computableInPolyTime_certCheck : ComputableInPolyTime certCheck
-    (encPair (encList (encPair (encList encIntBin) encIntBin)) (encList encIntBin)) encBool := by
+    (encPair (encSystem) (encList encIntBin)) encBool := by
   unfold certCheck
   apply bool_and' (bool_and' ?_ ?_) (by fun_prop)
   · apply allWithInput (by fun_prop)
@@ -457,18 +452,18 @@ private theorem mem_NP_of_check {α β : Type} {enc : α ↪ List Bool} {encW : 
   exact mem_NP_of_witness D hchk (fun _ _ => Iff.rfl) fun a b hb => hcomplete a (hsound a b hb)
 
 /-- **Rational LP feasibility is in `NP`.** -/
-theorem mem_NP : LPFeasibility ∈ NP (encList (encPair (encList encIntBin) encIntBin)) :=
+theorem mem_NP : LPFeasibility ∈ NP (encSystem) :=
   mem_NP_of_check (.pair .intBin (.list .intBin)) computableInPolyTime_check
     (fun _ _ h => mem_of_check h) fun _ hC => exists_check_of_mem hC
 
 /-- **Rational LP feasibility is in `coNP`.** -/
-theorem mem_coNP : LPFeasibility ∈ coNP (encList (encPair (encList encIntBin) encIntBin)) :=
+theorem mem_coNP : LPFeasibility ∈ coNP (encSystem) :=
   mem_NP_of_check (.list .intBin) computableInPolyTime_certCheck
     (fun _ _ h => notMem_of_certCheck h) fun _ hC => exists_certCheck_of_notMem hC
 
 /-- **Rational LP feasibility is in `NP ∩ coNP`** [Schrijver1986, Section 10.1]. -/
-theorem mem_NP_inter_coNP : LPFeasibility ∈ NP (encList (encPair (encList encIntBin) encIntBin)) ∩
-    coNP (encList (encPair (encList encIntBin) encIntBin)) :=
+theorem mem_NP_inter_coNP : LPFeasibility ∈ NP (encSystem) ∩
+    coNP (encSystem) :=
   ⟨mem_NP, mem_coNP⟩
 
 end LPFeasibility

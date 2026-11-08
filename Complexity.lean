@@ -2787,6 +2787,7 @@ public import Complexity.Computability.PolyTime.GaloisRingSeries
 public import Complexity.Computability.PolyTime.GaloisRingUnits
 public import Complexity.Computability.PolyTime.GreedyLabelSchedule
 public import Complexity.Computability.PolyTime.GreedySlotScore
+public import Complexity.Computability.PolyTime.Int.Compare
 public import Complexity.Computability.PolyTime.Int.DotProduct
 public import Complexity.Computability.PolyTime.Int.ExactDiv
 public import Complexity.Computability.PolyTime.Int.Jet
