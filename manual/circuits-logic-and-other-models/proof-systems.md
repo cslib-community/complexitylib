@@ -162,7 +162,7 @@ Interpolation modules extract circuits separating the two sides of a refuted con
 
 ## Clause space
 
-Import `Complexity.Logics.Propositional.Resolution.SpaceWidth` for the definitions and the inequality, or `Complexity.Logics.Propositional.Resolution.TseitinSpace` for the Tseitin corollaries.
+Import `Complexity.Logics.Propositional.Resolution.SpaceWidth` for the definitions and the inequality, `Complexity.Logics.Propositional.Resolution.TseitinSpace` for the Tseitin corollaries, or `Complexity.Logics.Propositional.Resolution.PigeonholeSpace` for Duplicator strategies and the pigeonhole bounds.
 
 [Configuration-style resolution](../../Complexity/Logics/Propositional/Resolution/Space.lean) follows Esteban and Torán. It keeps a `Finset` of clauses in memory, and each move (`ConfigMove`) changes it by one of three rules (`CNF.ConfigStep`): download a clause of the formula, add the resolvent of two clauses in memory, or erase a clause. The resolution rule is that of `CNF.IsProof`, with no weakening. `CNF.configLTS φ s` is the cslib `LTS` of these moves, restricted to configurations of at most `s` clauses. It follows the same pattern as the pebbling library's `Cslib.Pebbling.blackPebbleGame`.
 
@@ -175,7 +175,17 @@ Import `Complexity.Logics.Propositional.Resolution.SpaceWidth` for the definitio
 
 [The space–width module](../../Complexity/Logics/Propositional/Resolution/SpaceWidth.lean) proves the Atserias–Dalmau inequality (their Theorem 3) in the form of Theorem 1 of Filmus, Lauria, Mikša, Nordström and Vinyals (STACS 2014), whose constant `s + k - 3` it uses; Atserias and Dalmau's own constant is not claimed. `RefutableInSpace.refutableInWidth` says that if every clause has width at most `k`, clause space `s` gives a refutation of width `s + k - 3`, with truncated subtraction. Unlike that paper, the theorem does not assume `[] ∉ φ`. The contrapositive `RefutableInSpace.add_four_le` turns a width lower bound `¬ RefutableInWidth w` into the space bound `w + 4 ≤ s + k`.
 
-The proof keeps Atserias and Dalmau's Duplicator strategy, the partial assignments that falsify no clause derivable within width `w`, as private definitions. The game itself is not exported, and neither is the converse characterization of width.
+The proof keeps Atserias and Dalmau's Duplicator strategy, the partial assignments that falsify no clause derivable within width `w`, as private definitions. The converse characterization of width (their Lemma 2) is not exported.
+
+[The existential pebble module](../../Complexity/Logics/Propositional/Resolution/ExistentialPebble.lean) exports the game for lower bounds. Import `Complexity.Logics.Propositional.Resolution.ExistentialPebble`. A partial assignment is a total assignment `σ` read on a finite set `d`, and `CNF.Falsifies σ d c` says that every literal of `c` is on a variable of `d` and false under `σ`. `CNF.DuplicatorStrategy φ k` is Atserias and Dalmau's Definition 2: a nonempty family of such assignments on at most `k` variables that falsify no clause of `φ`, closed under restriction, and extendable to any variable from fewer than `k` variables. `DuplicatorStrategy.not_refutableInWidth` is their Lemma 3 in the library's width convention: a strategy with `w + 1` pebbles rules out `RefutableInWidth w`. The game has nothing to do with the black pebble game of `Complexity/Computability/Pebbling`.
+
+[The pigeonhole space module](../../Complexity/Logics/Propositional/Resolution/PigeonholeSpace.lean) applies it to Atserias and Dalmau's Section 5 example. Import `Complexity.Logics.Propositional.Resolution.PigeonholeSpace`.
+
+- [The extended pigeonhole formula](../../Complexity/Logics/Propositional/Pigeonhole/Extension.lean) `CNF.pigeonholeExt m n` (`EPHP^m_n`) replaces each width-`n` pigeon clause of `PHP^m_n` with a chain of start, step and stop clauses of width at most `3`. The chain runs through variables "pigeon `i` sits in a hole `≥ j`". `satisfiable_pigeonholeExt_iff` says it is satisfiable exactly when `m ≤ n`.
+- `CNF.pigeonholeExtStrategy m n` is Duplicator's strategy on `EPHP^m_{n+1}` with `n + 1` pebbles: the partial assignments that agree with a placement of pigeons that is injective on the pebbled pigeons.
+- So with `n + 1` holes there is no refutation of width `n` (`not_refutableInWidth_pigeonholeExt`). Stated per hole count, every refutation of `EPHP^m_n` has width at least `n` (`le_of_refutableInWidth_pigeonholeExt`) and clause space at least `n` (`le_of_refutableInSpace_pigeonholeExt`, through `RefutableInSpace.add_four_le` with `k = 3`). The number of pigeons is arbitrary.
+
+The mathematical symbols of the available copy of Atserias and Dalmau's paper do not extract. So neither their exact clauses nor the pebble count of their Lemma 6 is quoted; the encoding, the strategy and these constants are ours. The clause space of the wide formula `PHP^m_n` itself, proved by Alekhnovich, Ben-Sasson, Razborov and Wigderson, is not treated, and their paper was not inspected.
 
 [The Tseitin module](../../Complexity/Logics/Propositional/Resolution/TseitinSpace.lean) combines this with the width bound of Ben-Sasson and Wigderson:
 
@@ -185,11 +195,13 @@ The proof keeps Atserias and Dalmau's Duplicator strategy, the partial assignmen
 
 As with the size bound, the expanders come from a counting argument.
 
-The [checked examples](../../ComplexityTests/ProofComplexity/Space.lean) refute `x ∧ ¬x` in space `3` and show that space `2` is impossible. They also give a five-line refutation that erasure keeps in space `3`, and a formula with a width-`3` clause on which the inequality is attained: `k = s = 3`, width `3` and not `2`. Check them with `scripts/build.sh ComplexityTests.ProofComplexity.Space`.
+The [checked examples](../../ComplexityTests/ProofComplexity/Space.lean) refute `x ∧ ¬x` in space `3` and show that space `2` is impossible. They also give a five-line refutation that erasure keeps in space `3`, and a formula with a width-`3` clause on which the inequality is attained: `k = s = 3`, width `3` and not `2`. Check them with `scripts/build.sh ComplexityTests.ProofComplexity.Space`. The [pigeonhole examples](../../ComplexityTests/ProofComplexity/PigeonholeSpace.lean) build Duplicator strategies from satisfying assignments and with no pebble, and show there is none for `x ∧ ¬x` with one pebble. They also check that `EPHP^3_2` is refutable but not in width `1`, and that `EPHP^6_5` is refutable but needs clause space `5`. Check them with `scripts/build.sh ComplexityTests.ProofComplexity.PigeonholeSpace`.
 
 Not yet formalized:
 
 - the Esteban–Torán bound of clause space by the logarithm of tree-like size;
+- clause space of the wide pigeonhole formula and of random `k`-CNFs;
+- the converse of Atserias and Dalmau's Lemma 3 (their Lemma 2) as a public statement;
 - total and variable space;
 - time–space trade-offs and pebbling formulas;
 - the polynomial-calculus analogue, degree versus space, which is open.
