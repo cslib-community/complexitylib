@@ -846,7 +846,9 @@ public import Complexity.Computability.Circuit.Arithmetic.Hessian.SourceComplexi
 public import Complexity.Computability.Circuit.Arithmetic.MatrixMultiplication.Exponent
 public import Complexity.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
 public import Complexity.Computability.Circuit.Arithmetic.Noncommutative.ABP
+public import Complexity.Computability.Circuit.Arithmetic.Noncommutative.Circuit
 public import Complexity.Computability.Circuit.Arithmetic.Noncommutative.Nisan
+public import Complexity.Computability.Circuit.Arithmetic.Noncommutative.Palindrome
 public import Complexity.Computability.Circuit.Arithmetic.Pairing
 public import Complexity.Computability.Circuit.Arithmetic.Permanent
 public import Complexity.Computability.Circuit.Arithmetic.Permanent.BooleanSum
