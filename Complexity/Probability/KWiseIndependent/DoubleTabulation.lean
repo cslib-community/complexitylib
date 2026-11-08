@@ -12,6 +12,7 @@ public import Complexity.Init
 public import Complexity.Probability.KWiseIndependent
 import Complexity.Foundations.Data.BitString.Sum
 import Complexity.Foundations.Data.Nat.SummationByParts
+import Mathlib.Combinatorics.Enumerative.DoubleCounting
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Data.Finset.Powerset
 import Mathlib.Data.Fintype.Pi
@@ -550,6 +551,14 @@ private theorem prefixChars_mono {c b : ℕ} (X : Finset (Fin c → Fin (2 ^ b))
   simp only [prefixChars, List.mem_toFinset] at hα ⊢
   exact List.Sublist.mem hα (List.take_sublist_take_left h)
 
+/-- A character of the prefix `L_{≤ r}` is `(sortedChars X)[i]` for some index `i < r`. -/
+private theorem exists_lt_of_mem_prefixChars {c b : ℕ} {X : Finset (Fin c → Fin (2 ^ b))}
+    {r : ℕ} {α : Fin c × Fin (2 ^ b)} (hα : α ∈ prefixChars X r) :
+    ∃ (i : ℕ) (hi : i < (sortedChars X).length), i < r ∧ (sortedChars X)[i] = α := by
+  simp only [prefixChars, List.mem_toFinset, List.mem_take_iff_getElem] at hα
+  obtain ⟨i, hi, heq⟩ := hα
+  exact ⟨i, lt_of_lt_of_le hi (Nat.min_le_right _ _), lt_of_lt_of_le hi (Nat.min_le_left _ _), heq⟩
+
 /-- Set `Γ_{≤ r}` of pairs `(y, j) ∈ X × Fin d` whose output `simpleTabTuple T₁ y j` collides with
 some `x ∈ X \ {y}` such that `posSymmDiff x y ⊆ prefixChars X r` ([Thorup2013], Section 3,
 p. 11). -/
@@ -639,6 +648,21 @@ private theorem phi_zero_eq_zero {c d b : ℕ} (T₁ : DoubleTabTopSeed c d b)
     omega
   · exact Finset.notMem_empty j hj
 
+/-- A position-character set inside the prefix of length `r + 1` that misses the `r`-th sorted
+character lies inside the prefix of length `r`. -/
+private theorem subset_prefixChars_of_subset_succ {c b : ℕ} (X : Finset (Fin c → Fin (2 ^ b)))
+    {r : ℕ} (hr : r < (sortedChars X).length) {A : Finset (Fin c × Fin (2 ^ b))}
+    (hsub : A ⊆ prefixChars X (r + 1)) (hnot : (sortedChars X)[r] ∉ A) :
+    A ⊆ prefixChars X r := by
+  intro β hβ
+  have hβ' := hsub hβ
+  rw [prefixChars_succ X hr, Finset.mem_insert] at hβ'
+  rcases hβ' with rfl | hβ'
+  · exact (hnot hβ).elim
+  · exact hβ'
+
+/-- A pair `p` that enters `Γ_{≤ r + 1}` at step `r` has a colliding key `x ≠ p.1` whose symmetric
+difference with `p.1` contains the `r`-th sorted character; in particular `p.2 ∈ Φ_r`. -/
 private theorem exists_witness_of_mem_gammaSet_sdiff {c d b : ℕ}
     (T₁ : DoubleTabTopSeed c d b) (X : Finset (Fin c → Fin (2 ^ b))) {r : ℕ}
     (hr : r < (sortedChars X).length)
@@ -655,111 +679,77 @@ private theorem exists_witness_of_mem_gammaSet_sdiff {c d b : ℕ}
   rcases hp_in with ⟨hpX, x, hxX, hne, hsub, heq⟩
   have hmem_r : (sortedChars X)[r] ∈ posSymmDiff x p.1 := by
     by_contra hnot
-    apply hp_out
-    refine ⟨hpX, x, hxX, hne, fun β hβ => ?_, heq⟩
-    have hβ' := hsub hβ
-    rw [prefixChars_succ X hr, Finset.mem_insert] at hβ'
-    rcases hβ' with rfl | hβ'
-    · exact (hnot hβ).elim
-    · exact hβ'
+    exact hp_out ⟨hpX, x, hxX, hne, subset_prefixChars_of_subset_succ X hr hsub hnot, heq⟩
   have hj_phi : p.2 ∈ PhiSet T₁ X r := by
     simp only [PhiSet, hr, ↓reduceDIte, Finset.mem_filter, Finset.mem_univ, true_and]
     exact ⟨x, hxX, p.1, hpX, hmem_r, hsub, heq⟩
   exact ⟨hpX, hj_phi, x, hxX, hne, hmem_r, hsub, heq⟩
 
 /-- **Lemma 9 ([Thorup2013], Section 3, Eq. (8), pp. 12–13)**: for each step `r < ℓ*`,
-`γ_{≤ r + 1} - γ_{≤ r} ≤ 2 * ϕ_r * n_r`. -/
+`γ_{≤ r + 1} - γ_{≤ r} ≤ 2 * ϕ_r * n_r`.
+
+Write `α_r` for the `r`-th sorted character and `S_r` for the `n_r` keys containing it. A pair
+`p = (y, j)` new at step `r` collides with a key `x` with `α_r ∈ x △ y`, so `j ∈ Φ_r` and exactly
+one of `x`, `y` lies in `S_r`. The pairs with `y ∈ S_r` lie in `S_r × Φ_r`; each pair with `y ∉ S_r`
+is determined by `(x, j) ∈ S_r × Φ_r`, since two such pairs with the same `x` and `j` would collide
+with each other below `α_r` and so would not be new. -/
 private theorem gamma_succ_sub_le {c d b : ℕ} (T₁ : DoubleTabTopSeed c d b)
     (X : Finset (Fin c → Fin (2 ^ b))) {r : ℕ} (hr : r < (sortedChars X).length) :
     gamma T₁ X (r + 1) - gamma T₁ X r ≤ 2 * (phi T₁ X r * sortedFreq X r) := by
   classical
   let α_r := (sortedChars X)[r]
   let D := GammaSet T₁ X (r + 1) \ GammaSet T₁ X r
-  let S_r := X.filter fun x => α_r ∈ posSet x
+  let P := (X.filter fun x => α_r ∈ posSet x) ×ˢ PhiSet T₁ X r
+  have hP : #P = phi T₁ X r * sortedFreq X r := by
+    simp only [P, Finset.card_product, sortedFreq, hr, ↓reduceDIte, Nat.mul_comm]
+    rfl
   have hcard_D : gamma T₁ X (r + 1) - gamma T₁ X r = #D := by
     rw [gamma, gamma, ← Finset.card_sdiff_of_subset (gammaSet_mono T₁ X (Nat.le_succ r))]
+  -- Split the new pairs by whether their own key contains `α_r`.
   let D₁ := D.filter fun p => α_r ∈ posSet p.1
   let D₂ := D.filter fun p => α_r ∉ posSet p.1
-  have hD_le : #D ≤ #D₁ + #D₂ := by
-    refine (Finset.card_le_card fun p hp => ?_).trans (Finset.card_union_le D₁ D₂)
-    simp only [D₁, D₂, Finset.mem_union, Finset.mem_filter, hp, true_and]
-    exact em (α_r ∈ posSet p.1)
-  have hD₁_sub : D₁ ⊆ S_r ×ˢ PhiSet T₁ X r := by
-    intro p hp
+  have hD : #D₁ + #D₂ = #D := Finset.card_filter_add_card_filter_not _
+  have hD₁_le : #D₁ ≤ #P := by
+    refine Finset.card_le_card fun p hp => ?_
     rcases Finset.mem_filter.mp hp with ⟨hpD, hp_pos⟩
     have hw := exists_witness_of_mem_gammaSet_sdiff T₁ X hr hpD
     exact Finset.mem_product.mpr ⟨Finset.mem_filter.mpr ⟨hw.1, hp_pos⟩, hw.2.1⟩
-  have hD₁_le : #D₁ ≤ phi T₁ X r * sortedFreq X r := by
-    calc #D₁ ≤ #(S_r ×ˢ PhiSet T₁ X r) := Finset.card_le_card hD₁_sub
-      _ = phi T₁ X r * sortedFreq X r := by
-        simp only [Finset.card_product, sortedFreq, hr, ↓reduceDIte, Nat.mul_comm]
-        rfl
-  let w : (Fin c → Fin (2 ^ b)) × Fin d → (Fin c → Fin (2 ^ b)) × Fin d := fun p =>
-    if hp : p ∈ D then
-      (Classical.choose (exists_witness_of_mem_gammaSet_sdiff T₁ X hr hp).2.2, p.2)
-    else p
-  have hw_maps : ∀ p ∈ D₂, w p ∈ S_r ×ˢ PhiSet T₁ X r := by
-    intro p hp
-    rcases Finset.mem_filter.mp hp with ⟨hpD, hp_not⟩
-    have hspec := Classical.choose_spec (exists_witness_of_mem_gammaSet_sdiff T₁ X hr hpD).2.2
-    rcases hspec with ⟨hxX, _, hmem_symm, _, _⟩
-    have hx_pos : α_r ∈ posSet (Classical.choose
-        (exists_witness_of_mem_gammaSet_sdiff T₁ X hr hpD).2.2) := by
-      rcases Finset.mem_symmDiff.mp hmem_symm with ⟨hx_in, _⟩ | ⟨hy_in, _⟩
-      · exact hx_in
-      · exact (hp_not hy_in).elim
-    simp only [w, hpD, ↓reduceDIte, Finset.mem_product]
-    exact ⟨Finset.mem_filter.mpr ⟨hxX, hx_pos⟩,
-      (exists_witness_of_mem_gammaSet_sdiff T₁ X hr hpD).2.1⟩
-  have hw_inj : Set.InjOn w D₂ := by
-    intro p₁ hp₁ p₂ hp₂ heq
-    rcases Finset.mem_filter.mp hp₁ with ⟨hp₁D, hp₁_not⟩
-    rcases Finset.mem_filter.mp hp₂ with ⟨hp₂D, hp₂_not⟩
-    simp only [w, hp₁D, hp₂D, ↓reduceDIte, Prod.ext_iff] at heq
-    rcases heq with ⟨hx_eq, hj_eq⟩
-    refine Prod.ext ?_ hj_eq
-    by_contra hne_yz
-    let x₁ := Classical.choose (exists_witness_of_mem_gammaSet_sdiff T₁ X hr hp₁D).2.2
-    let x₂ := Classical.choose (exists_witness_of_mem_gammaSet_sdiff T₁ X hr hp₂D).2.2
-    have hx₁₂ : x₁ = x₂ := hx_eq
-    have hspec₁ : x₁ ∈ X ∧ x₁ ≠ p₁.1 ∧ (sortedChars X)[r] ∈ posSymmDiff x₁ p₁.1 ∧
-        posSymmDiff x₁ p₁.1 ⊆ prefixChars X (r + 1) ∧
-        simpleTabTuple T₁ x₁ p₁.2 = simpleTabTuple T₁ p₁.1 p₁.2 :=
-      Classical.choose_spec (exists_witness_of_mem_gammaSet_sdiff T₁ X hr hp₁D).2.2
-    have hspec₂ : x₂ ∈ X ∧ x₂ ≠ p₂.1 ∧ (sortedChars X)[r] ∈ posSymmDiff x₂ p₂.1 ∧
-        posSymmDiff x₂ p₂.1 ⊆ prefixChars X (r + 1) ∧
-        simpleTabTuple T₁ x₂ p₂.2 = simpleTabTuple T₁ p₂.1 p₂.2 :=
-      Classical.choose_spec (exists_witness_of_mem_gammaSet_sdiff T₁ X hr hp₂D).2.2
-    rcases hspec₁ with ⟨_, _, _, hsub₁, htab₁⟩
-    rcases hspec₂ with ⟨_, _, _, hsub₂, htab₂⟩
-    have hp₁_in : p₁ ∈ GammaSet T₁ X r := by
-      rw [GammaSet, Finset.mem_filter]
-      refine ⟨Finset.mem_product.mpr ⟨(exists_witness_of_mem_gammaSet_sdiff T₁ X hr hp₁D).1,
-        Finset.mem_univ _⟩, p₂.1, (exists_witness_of_mem_gammaSet_sdiff T₁ X hr hp₂D).1,
-        Ne.symm hne_yz, ?_, ?_⟩
-      · intro β hβ
-        have hβ_u := posSymmDiff_subset_union x₁ p₂.1 p₁.1 hβ
-        have hβ_pre : β ∈ prefixChars X (r + 1) := by
-          rcases Finset.mem_union.mp hβ_u with hβ₂ | hβ₁
-          · rw [hx₁₂] at hβ₂
-            exact hsub₂ hβ₂
-          · exact hsub₁ hβ₁
-        rw [prefixChars_succ X hr, Finset.mem_insert] at hβ_pre
-        rcases hβ_pre with rfl | hβ_pre
-        · exfalso
-          rcases Finset.mem_symmDiff.mp hβ with ⟨h₂, _⟩ | ⟨h₁, _⟩
-          · exact hp₂_not h₂
-          · exact hp₁_not h₁
-        · exact hβ_pre
-      · rw [← hj_eq, ← hx₁₂] at htab₂
-        exact htab₂.symm.trans htab₁
-    exact (Finset.mem_sdiff.mp hp₁D).2 hp₁_in
-  have hD₂_le : #D₂ ≤ phi T₁ X r * sortedFreq X r := by
-    calc #D₂ ≤ #(S_r ×ˢ PhiSet T₁ X r) := Finset.card_le_card_of_injOn w hw_maps hw_inj
-      _ = phi T₁ X r * sortedFreq X r := by
-        simp only [Finset.card_product, sortedFreq, hr, ↓reduceDIte, Nat.mul_comm]
-        rfl
-  rw [hcard_D]
+  -- A pair `p ∈ D₂` is charged to `(x, p.2) ∈ P` for a colliding key `x ∋ α_r`.
+  let Charge (p q : (Fin c → Fin (2 ^ b)) × Fin d) : Prop :=
+    q.2 = p.2 ∧ posSymmDiff q.1 p.1 ⊆ prefixChars X (r + 1) ∧ α_r ∈ posSet q.1 ∧
+      simpleTabTuple T₁ q.1 p.2 = simpleTabTuple T₁ p.1 p.2
+  have hD₂_le : #D₂ ≤ #P := by
+    refine Finset.card_le_card_of_forall_subsingleton Charge (fun p hp => ?_) fun q _ => ?_
+    · rcases Finset.mem_filter.mp hp with ⟨hpD, hp_not⟩
+      obtain ⟨-, hj, x, hxX, -, hmem, hsub, htab⟩ :=
+        exists_witness_of_mem_gammaSet_sdiff T₁ X hr hpD
+      have hx_pos : α_r ∈ posSet x := by
+        rcases Finset.mem_symmDiff.mp hmem with ⟨hx, -⟩ | ⟨hy, -⟩
+        · exact hx
+        · exact (hp_not hy).elim
+      exact ⟨(x, p.2), Finset.mem_product.mpr ⟨Finset.mem_filter.mpr ⟨hxX, hx_pos⟩, hj⟩,
+        rfl, hsub, hx_pos, htab⟩
+    · -- Two pairs charged to the same `q` collide with each other below `α_r`.
+      rintro p₁ ⟨hp₁, hj₁, hsub₁, -, htab₁⟩ p₂ ⟨hp₂, hj₂, hsub₂, -, htab₂⟩
+      rcases Finset.mem_filter.mp hp₁ with ⟨hp₁D, hp₁_not⟩
+      rcases Finset.mem_filter.mp hp₂ with ⟨hp₂D, hp₂_not⟩
+      have hj : p₁.2 = p₂.2 := hj₁.symm.trans hj₂
+      refine Prod.ext ?_ hj
+      by_contra hne
+      have hsub : posSymmDiff p₂.1 p₁.1 ⊆ prefixChars X r := by
+        refine subset_prefixChars_of_subset_succ X hr
+          ((posSymmDiff_subset_union q.1 p₂.1 p₁.1).trans (Finset.union_subset hsub₂ hsub₁))
+          fun hα => ?_
+        rcases Finset.mem_symmDiff.mp hα with ⟨h₂, -⟩ | ⟨h₁, -⟩
+        · exact hp₂_not h₂
+        · exact hp₁_not h₁
+      refine (Finset.mem_sdiff.mp hp₁D).2 ?_
+      simp only [GammaSet, Finset.mem_filter, Finset.mem_product, Finset.mem_univ, and_true]
+      refine ⟨(exists_witness_of_mem_gammaSet_sdiff T₁ X hr hp₁D).1, p₂.1,
+        (exists_witness_of_mem_gammaSet_sdiff T₁ X hr hp₂D).1, Ne.symm hne, hsub, ?_⟩
+      rw [← hj] at htab₂
+      exact htab₂.symm.trans htab₁
+  rw [hcard_D, ← hD, ← hP]
   omega
 
 /-- If every prefix `1 ≤ ℓ ≤ ℓ*` has `< q * ℓ` derivable outputs, summation by parts yields
@@ -869,20 +859,15 @@ private theorem exists_eq_tuple_of_mem_phiSet {c d b ℓ : ℕ} [NeZero (2 * c)]
   have hr_B : r ∈ B := Finset.mem_filter.mpr ⟨Finset.mem_univ r, hr_mem⟩
   have hB_le_r : ∀ idx ∈ B, idx ≤ r := by
     intro idx hidx
-    have hLidx : L idx ∈ prefixChars X (r.val + 1) := hsub (Finset.mem_filter.mp hidx).2
-    simp only [prefixChars, List.mem_toFinset, List.mem_take_iff_getElem] at hLidx
-    rcases hLidx with ⟨i, hi, heq⟩
-    have hi_lt : i < r.val + 1 := lt_of_lt_of_le hi (Nat.min_le_left _ _)
+    obtain ⟨i, _, hi_lt, heq⟩ :=
+      exists_lt_of_mem_prefixChars (hsub (Finset.mem_filter.mp hidx).2)
     have hidx_eq : i = idx.val := (nodup_sortedChars X).getElem_inj_iff.mp heq
     exact Fin.le_iff_val_le_val.mpr (by omega)
   have hB_img : B.image L = posSymmDiff x y := by
     ext α
     simp only [B, Finset.mem_image, Finset.mem_filter, Finset.mem_univ, true_and]
     refine ⟨fun ⟨idx, hα, heq⟩ => heq ▸ hα, fun hα => ?_⟩
-    have hα_pre : α ∈ prefixChars X (r.val + 1) := hsub hα
-    simp only [prefixChars, List.mem_toFinset, List.mem_take_iff_getElem] at hα_pre
-    rcases hα_pre with ⟨i, hi, heq⟩
-    have hi_lt : i < r.val + 1 := lt_of_lt_of_le hi (Nat.min_le_left _ _)
+    obtain ⟨i, _, hi_lt, heq⟩ := exists_lt_of_mem_prefixChars (hsub hα)
     exact ⟨⟨i, by omega⟩, heq ▸ hα, heq⟩
   have hB_card : #B ≤ 2 * c := by
     rw [← Finset.card_image_of_injective B hL_inj, hB_img]
@@ -945,48 +930,25 @@ private theorem exists_satisfiesCode_of_not_isKUnique {c d b q k : ℕ} [NeZero 
     (sortedChars X)[idx.val]'(lt_of_lt_of_le idx.isLt hℓ_hi)
   have hL_inj : Function.Injective L := fun i₁ i₂ h =>
     Fin.ext ((nodup_sortedChars X).getElem_inj_iff.mp h)
-  let AllPairs : Finset (Fin ℓ × Fin d) :=
-    Finset.univ.biUnion fun r : Fin ℓ => (PhiSet T₁ X r.val).image fun j => (r, j)
-  have hcard_pairs : #AllPairs = ∑ i ∈ Finset.range ℓ, phi T₁ X i := by
-    rw [Finset.card_biUnion]
-    · rw [← Fin.sum_univ_eq_sum_range]
-      refine Finset.sum_congr rfl fun r _ => ?_
-      rw [Finset.card_image_of_injective _ (fun _ _ h => (Prod.ext_iff.mp h).2), phi]
-    · intro r₁ _ r₂ _ hne s hs₁ hs₂ p hp
-      have h₁ := hs₁ hp
-      have h₂ := hs₂ hp
-      simp only [Finset.mem_image] at h₁ h₂
-      rcases h₁ with ⟨_, _, rfl⟩
-      rcases h₂ with ⟨_, _, heq⟩
-      exact (hne (Prod.ext_iff.mp heq).1.symm).elim
-  have hlen_list : q * ℓ ≤ AllPairs.toList.length := by
-    rw [Finset.length_toList, hcard_pairs]
+  -- Enumerate `q * ℓ` of the derivable pairs `(r, j)`, `j ∈ Φ_r`, injectively.
+  let Pairs : Finset (Σ _ : Fin ℓ, Fin d) := Finset.univ.sigma fun r => PhiSet T₁ X r.val
+  have hcard : q * ℓ ≤ #Pairs := by
+    rw [Finset.card_sigma, Fin.sum_univ_eq_sum_range (fun i => #(PhiSet T₁ X i))]
     exact hqℓ
-  let p_at (s : Fin (q * ℓ)) : Fin ℓ × Fin d :=
-    AllPairs.toList[s.val]'(lt_of_lt_of_le s.isLt hlen_list)
-  have hp_mem (s : Fin (q * ℓ)) : (p_at s).2 ∈ PhiSet T₁ X (p_at s).1.val := by
-    have hmem : p_at s ∈ AllPairs :=
-      Finset.mem_toList.mp (List.getElem_mem (lt_of_lt_of_le s.isLt hlen_list))
-    simp only [AllPairs, Finset.mem_biUnion, Finset.mem_univ, true_and, Finset.mem_image] at hmem
-    rcases hmem with ⟨r, j, hj, heq⟩
-    have hr : r = (p_at s).1 := (Prod.ext_iff.mp heq).1
-    have hj' : j = (p_at s).2 := (Prod.ext_iff.mp heq).2
-    exact hr ▸ hj' ▸ hj
-  let M : Fin (q * ℓ) → (Fin (2 * c) → Fin ℓ) × Fin d := fun s =>
-    (Classical.choose (exists_eq_tuple_of_mem_phiSet T₁ X hℓ_hi (p_at s).1 (hp_mem s)),
-      (p_at s).2)
-  refine ⟨ℓ, Finset.mem_Icc.mpr ⟨hℓ_lo, hℓ_ck⟩, L, M, hL_inj, ?_, ?_⟩
-  · intro s₁ s₂ heq
-    have hspec₁ := (Classical.choose_spec
-      (exists_eq_tuple_of_mem_phiSet T₁ X hℓ_hi (p_at s₁).1 (hp_mem s₁))).1
-    have hspec₂ := (Classical.choose_spec
-      (exists_eq_tuple_of_mem_phiSet T₁ X hℓ_hi (p_at s₂).1 (hp_mem s₂))).1
-    have hp_eq : p_at s₁ = p_at s₂ :=
-      Prod.ext (hspec₁.symm.trans ((Prod.ext_iff.mp heq).1.trans hspec₂)) (Prod.ext_iff.mp heq).2
-    exact Fin.ext ((Finset.nodup_toList AllPairs).getElem_inj_iff.mp hp_eq)
-  · intro s
-    exact (Classical.choose_spec
-      (exists_eq_tuple_of_mem_phiSet T₁ X hℓ_hi (p_at s).1 (hp_mem s))).2
+  let pair (s : Fin (q * ℓ)) : Pairs := Pairs.equivFin.symm (Fin.castLE hcard s)
+  have hpair_inj : Function.Injective pair :=
+    Pairs.equivFin.symm.injective.comp (Fin.castLE_injective hcard)
+  have hpair_mem (s : Fin (q * ℓ)) : (pair s).1.2 ∈ PhiSet T₁ X (pair s).1.1.val :=
+    (Finset.mem_sigma.mp (pair s).2).2
+  -- Each derivable pair `(r, j)` gives an equation whose last character is `L r`.
+  choose g hg_last hg_sum using fun s =>
+    exists_eq_tuple_of_mem_phiSet T₁ X hℓ_hi (pair s).1.1 (hpair_mem s)
+  refine ⟨ℓ, Finset.mem_Icc.mpr ⟨hℓ_lo, hℓ_ck⟩, L, fun s => (g s, (pair s).1.2), hL_inj, ?_,
+    hg_sum⟩
+  intro s₁ s₂ heq
+  obtain ⟨hlast, hj⟩ := Prod.ext_iff.mp heq
+  refine hpair_inj (Subtype.ext (Sigma.ext ?_ (heq_of_eq hj)))
+  exact (hg_last s₁).symm.trans (hlast.trans (hg_last s₂))
 
 /-! ## Section 5: Efficient-code seed counting (`[Thorup2013]`, §2, Eqs. (6)–(7)) -/
 
@@ -1109,14 +1071,19 @@ private theorem card_filter_satisfiesSub_erase {c d b q ℓ : ℕ} [NeZero (2 * 
       rw [← hsymm, Equiv.apply_symm_apply]
     · intro h
       rw [h, Equiv.symm_apply_apply, BitString.add_self]
+  -- `T₁ ↦ (T₁ p₀, T₁ with p₀ set to the value forced by r₀)` is a bijection from the tables
+  -- satisfying `S.erase r₀` to `Fin (2 ^ b) ×` the tables satisfying `S`; the inverse writes the
+  -- first component back at `p₀`.
   let A := (Finset.univ : Finset (Fin (2 ^ b))) ×ˢ
     (Finset.univ.filter fun T₁ : DoubleTabTopSeed c d b => SatisfiesSub T₁ L M S)
   let B := Finset.univ.filter fun T₁ : DoubleTabTopSeed c d b => SatisfiesSub T₁ L M (S.erase r₀)
   have hbij : #B = #A := by
-    refine Finset.card_bij
-      (fun T₁ _ => (T₁ p₀.1 j₀ p₀.2, updateTopSeed T₁ p₀ j₀ (BitString.equivFin b (restSum T₁))))
-      (fun T₁ hT₁ => ?_) (fun T₁ hT₁ T₁' hT₁' heq => ?_) (fun ⟨v, T₁⟩ hp => ?_)
-    · have hsub : SatisfiesSub T₁ L M (S.erase r₀) := (Finset.mem_filter.mp hT₁).2
+    refine Finset.card_nbij'
+      (fun T₁ => (T₁ p₀.1 j₀ p₀.2, updateTopSeed T₁ p₀ j₀ (BitString.equivFin b (restSum T₁))))
+      (fun vT => updateTopSeed vT.2 p₀ j₀ vT.1) (fun T₁ hT₁ => ?_) (fun vT hvT => ?_)
+      (fun T₁ _ => ?_) (fun vT hvT => ?_)
+    · -- The updated table satisfies `r₀` by construction and the other equations by `hsub_upd`.
+      have hsub : SatisfiesSub T₁ L M (S.erase r₀) := (Finset.mem_filter.mp hT₁).2
       refine Finset.mem_product.mpr ⟨Finset.mem_univ _, Finset.mem_filter.mpr ⟨Finset.mem_univ _,
         fun r hr => ?_⟩⟩
       by_cases hrr₀ : r = r₀
@@ -1124,24 +1091,17 @@ private theorem card_filter_satisfiesSub_erase {c d b q ℓ : ℕ} [NeZero (2 * 
         dsimp only
         rw [hr₀_eq, updateTopSeed_self, hrest_upd]
       · exact ((hsub_upd T₁ _).mpr hsub) r (Finset.mem_erase.mpr ⟨hrr₀, hr⟩)
-    · rcases Prod.ext_iff.mp heq with ⟨hval, hupd⟩
-      dsimp only at hval hupd
-      calc T₁ = updateTopSeed (updateTopSeed T₁ p₀ j₀ (BitString.equivFin b (restSum T₁)))
-            p₀ j₀ (T₁ p₀.1 j₀ p₀.2) := by
-            rw [updateTopSeed_updateTopSeed, updateTopSeed_eq_self]
-        _ = updateTopSeed (updateTopSeed T₁' p₀ j₀ (BitString.equivFin b (restSum T₁')))
-            p₀ j₀ (T₁' p₀.1 j₀ p₀.2) := by rw [hupd, hval]
-        _ = T₁' := by rw [updateTopSeed_updateTopSeed, updateTopSeed_eq_self]
-    · have hS : SatisfiesSub T₁ L M S := (Finset.mem_filter.mp (Finset.mem_product.mp hp).2).2
-      have hS_er : SatisfiesSub T₁ L M (S.erase r₀) :=
-        fun r hr => hS r (Finset.mem_of_mem_erase hr)
-      have hr₀_T₁ : T₁ p₀.1 j₀ p₀.2 = BitString.equivFin b (restSum T₁) :=
+    · have hS : SatisfiesSub vT.2 L M S := (Finset.mem_filter.mp (Finset.mem_product.mp hvT).2).2
+      exact Finset.mem_filter.mpr ⟨Finset.mem_univ _,
+        (hsub_upd vT.2 vT.1).mpr fun r hr => hS r (Finset.mem_of_mem_erase hr)⟩
+    · simp only [updateTopSeed_updateTopSeed, updateTopSeed_eq_self]
+    · obtain ⟨v, T₁⟩ := vT
+      have hS : SatisfiesSub T₁ L M S := (Finset.mem_filter.mp (Finset.mem_product.mp hvT).2).2
+      have hforced : T₁ p₀.1 j₀ p₀.2 = BitString.equivFin b (restSum T₁) :=
         (hr₀_eq T₁).mp (hS r₀ hr₀)
-      refine ⟨updateTopSeed T₁ p₀ j₀ v,
-        Finset.mem_filter.mpr ⟨Finset.mem_univ _, (hsub_upd T₁ v).mpr hS_er⟩, ?_⟩
-      refine Prod.ext (by simp) ?_
+      refine Prod.ext (updateTopSeed_self T₁ p₀ j₀ v) ?_
       dsimp only
-      rw [updateTopSeed_updateTopSeed, hrest_upd, ← hr₀_T₁, updateTopSeed_eq_self]
+      rw [updateTopSeed_updateTopSeed, hrest_upd, ← hforced, updateTopSeed_eq_self]
   rw [hbij, Finset.card_product, Finset.card_univ, Fintype.card_fin]
 
 private theorem card_filter_satisfiesSub_eq {c d b q ℓ : ℕ} [NeZero (2 * c)]
