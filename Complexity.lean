@@ -16,6 +16,9 @@ public import Complexity.Algorithms.LatticeReduction.LLL
 public import Complexity.Algorithms.LatticeReduction.Potential
 public import Complexity.Algorithms.LatticeReduction.RationalGramSchmidt
 public import Complexity.Algorithms.LatticeReduction.Reduced
+public import Complexity.Algorithms.Lean.AhoCorasick.Basic
+public import Complexity.Algorithms.Lean.AhoCorasick.KMP
+public import Complexity.Algorithms.Lean.AhoCorasick.Search
 public import Complexity.Algorithms.Lean.Assignment.Auction
 public import Complexity.Algorithms.Lean.Assignment.Basic
 public import Complexity.Algorithms.Lean.BellmanFord.Basic

@@ -2015,6 +2015,15 @@ pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
   applications such as longest repeated substring and the Burrows–Wheeler transform. Once a second
   client appears (Z-function, LCP-accelerated search), move `lcpLen` and its lemmas to a
   `Foundations/Data/List` module in the `List` namespace.
+- **Multi-pattern matching** ([#3358](https://github.com/cslib-community/complexitylib/issues/3358)):
+  Aho–Corasick with states represented by their strings, valid failure and output tables from
+  the level-order construction, exact reporting of all occurrences, the scan bound of the
+  paper's Theorem 2 and the transitions counted in its Theorem 4 is in
+  `Algorithms/Lean/AhoCorasick`. Remaining: an explicit integer-state trie with a charged goto
+  table and its linear construction (Algorithm 2, Theorem 3), linear charged level/queue
+  bookkeeping in the failure construction (currently an uncharged scan of all keywords per
+  depth), a construction that charges each shared trie state once, the deterministic automaton
+  of Section 6, and machine-level or RAM realizations.
 
 ## Machines, RAM and data structures
 
