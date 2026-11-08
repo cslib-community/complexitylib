@@ -4887,8 +4887,10 @@ public import Complexity.MachineLearning.PACLearning.RealizableSample
 public import Complexity.MachineLearning.PACLearning.VCDimension
 public import Complexity.MachineLearning.PACLearning.VCUpperBound
 public import Complexity.MachineLearning.StatisticalQuery.Basic
+public import Complexity.MachineLearning.StatisticalQuery.LowDegree
 public import Complexity.MachineLearning.StatisticalQuery.LowerBound
 public import Complexity.MachineLearning.StatisticalQuery.Parity
+public import Complexity.MachineLearning.StatisticalQuery.Simulation
 public import Complexity.MachineLearning.UniformLearning.AC0
 public import Complexity.MachineLearning.UniformLearning.Basic
 public import Complexity.MachineLearning.UniformLearning.KushilevitzMansour
@@ -5019,6 +5021,7 @@ public import Complexity.Probability.PairwiseIndependentHash.ValidatedWords
 public import Complexity.Probability.Pinsker
 public import Complexity.Probability.Product
 public import Complexity.Probability.Product.Event
+public import Complexity.Probability.Product.Reindex
 public import Complexity.Probability.Product.Split
 public import Complexity.Probability.ProductConditioning
 public import Complexity.Probability.ProductConditioning.SideInformation
