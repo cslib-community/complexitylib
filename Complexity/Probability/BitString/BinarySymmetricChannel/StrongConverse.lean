@@ -47,8 +47,10 @@ probabilities `p > 1 / 2` reduce to `1 - p` by complementing the received word
 The source states the result for `0 ≤ p < 1 / 2` and the *maximal* error: some message is misdecoded
 with probability more than `1 / 2`, or more than `1 - 2 ^ (-β n)` (Remark 6.3.2). The theorems here
 bound the *average* error by `1 - 2 exp (-δ n)` for every `p ∈ [0, 1]` and every `n`, which implies
-the maximal-error form. Unlike the source, they need the rate to be strictly above capacity: the
-source's case `ε = 0`, a rate of exactly `1 - h₂(p)`, is not covered. Together with
+the maximal-error form. They take the rate strictly above capacity. The source's statement nominally
+allows its slack `ε = 0`, a rate of exactly `1 - h₂(p)`, but its proof needs `ε > 0`, and that case
+fails as stated: for `p = 0` and `k = n` the identity code never errs. The behaviour at capacity
+depends on second-order terms and is not treated here. Together with
 `Cslib.BitString.eventually_exists_code_decodingError_le` they determine the capacity of `BSC_p`
 (`Complexity.Probability.BitString.BinarySymmetricChannel.Capacity`). General discrete memoryless
 channels and channels with feedback are not formalized here.
@@ -346,8 +348,10 @@ open Filter in
 [Guruswami, Rudra and Sudan, Theorem 6.3.1(2)][GuruswamiRudraSudan2019]: if `R > 1 - h₂(p)`,
 then for all sufficiently large `n`, every encoder `E : {0, 1} ^ k → {0, 1} ^ n` with
 `k ≥ R n` and every decoder `D` misdecode some message `m` with probability greater than `ε`, for
-any fixed `ε < 1`. The source has `ε = 1 / 2` and `0 ≤ p < 1 / 2`, and also allows `R = 1 - h₂(p)`
-(its `ε = 0`), which is not covered here. -/
+any fixed error level `ε < 1`. The source fixes the error level `1 / 2` and takes `0 ≤ p < 1 / 2`;
+its rate slack, also called `ε` there, corresponds to `R - (1 - h₂(p)) > 0` here. The source
+nominally allows slack `0`, but its proof needs a positive slack, and that case fails as stated
+(`p = 0`, `k = n`, the identity code). -/
 theorem eventually_exists_lt_decodingError (p : I) {R : ℝ}
     (hR : 1 - Real.binEntropy p / Real.log 2 < R) {ε : ℝ} (hε : ε < 1) :
     ∀ᶠ n : ℕ in atTop, ∀ (k : ℕ), R * n ≤ k → ∀ (E : BitString k → BitString n)

@@ -65,7 +65,8 @@ open scoped BigOperators unitInterval
 
 /-- A rate `R` is **achievable** on `BSC_p` if for every `ε > 0` and all sufficiently large `n`
 there is a code with `2 ^ ⌈R n⌉₊` codewords of length `n` and a decoder whose maximal error
-probability is at most `ε`. -/
+probability is at most `ε`. This notion is specific to the binary symmetric channel on bit strings;
+general discrete memoryless channels would need their own definition. -/
 @[expose] def IsAchievableRate (p : I) (R : ℝ) : Prop :=
   ∀ ε > 0, ∀ᶠ n : ℕ in atTop, ∃ (E : Fin (2 ^ ⌈R * n⌉₊) → BitString n)
     (D : BitString n → Fin (2 ^ ⌈R * n⌉₊)), ∀ m, decodingError p E D m ≤ ε
