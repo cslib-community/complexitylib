@@ -14,6 +14,7 @@ public import Mathlib.Data.Nat.Log
 import Complexity.Computability.Circuit.Depth
 import Complexity.Computability.Circuit.Linearize
 import Complexity.Computability.Circuit.Program
+import Complexity.Foundations.Combinatorics.DepthReduction
 
 /-!
 # Valiant's rigidity criterion for linear circuits
@@ -42,39 +43,36 @@ circuits, so the lower bounds below are at least as strong.
 ## Main results
 
 * `Cslib.Circuits.Circuit.Computes.rigidity_le`: the quantitative criterion. If `c` computes
-  `A *ᵥ ·` with fan-in at most `2` and `c.depth < 2 ^ D`, then for `q > 0` and `q * t ≤ D`,
-  `A.rigidity (2 * c.size / q) ≤ m * 2 ^ (2 ^ (D - t))`.
+  `A *ᵥ ·` with fan-in at most `2` and `c.depth < 2 ^ D`, then for every `t ≤ D`,
+  `A.rigidity (2 * t * c.size / D) ≤ m * 2 ^ (2 ^ (D - t))`.
 * `Cslib.Circuits.Circuit.Computes.mul_log_log_lt_size`: the asymptotic criterion, explicitly. If
   `n * 2 ^ (log₂ n / k) < A.rigidity (n / e)`, then circuits of depth at most `C * log₂ n` need
-  `n * ((log₂ log₂ n + 1) / (log₂ (2 * C * k) + 1)) < 2 * e * c.size` gates, that is
-  `Ω(n log log n)` gates for fixed `C, k, e`.
+  `n * (log₂ log₂ n + 1) < 2 * e * (log₂ (2 * C * k) + 1) * c.size`, that is `Ω(n log log n)`
+  gates for fixed `C, k, e`.
 * `Cslib.Circuits.Circuit.Computes.rigidity_le_of_isPolynomial`: the quantitative criterion for
   circuits with polynomial operations (such as `+, ×`) over an infinite field, by linearization.
 
 ## Proof
 
 The coefficient of input `j` at wire `w` is the trace at `Pi.single j 1` minus the trace at `0`.
-Write each gate's depth, which is below `2 ^ D`, in binary and cut it into `q` blocks of `t` bits.
-Every wire read by a gate crosses at most one block: the block holding the highest bit in which the
-depths of its endpoints differ. Some block is crossed by at most `2 * c.size / q` of the at most
-`2 * c.size` wires, by pigeonhole. Deleting that block of bits from every depth leaves labels below
-`2 ^ (D - t)` that strictly increase along every uncrossed wire. Let `T` be the set of tails of the
-crossed wires. By induction over the program, each output's coefficients, outside at most
-`2 ^ (2 ^ (D - t))` inputs, are a fixed linear combination of the coefficients at `T`. This is a
-matrix of rank at most `|T|` differing from `A` in at most `m * 2 ^ (2 ^ (D - t))` entries.
-
-The block-deletion step is the depth reduction of [Valiant1977] (see [Lokam2009], Lemma 2.2, which
-[Lokam2009] credits to Erdős, Graham and Szemerédi): it removes `t` levels of a binary depth
-hierarchy at once, instead of halving the depth `t` times.
+The depths of the gates, capped below `2 ^ D`, grade the at most `2 * c.size` wires read by gates
+with `2 ^ D` levels. By Valiant's depth reduction (`Cslib.IsGrading.exists_sdiff`, [Lokam2009],
+Lemma 2.2, which [Lokam2009] credits to Erdős, Graham and Szemerédi), removing some `t / D` of
+these wires leaves wires graded with `2 ^ (D - t)` levels. Let `T` be the set of tails of the
+removed wires, so `|T| ≤ 2 * t * c.size / D`. By induction over the program, each output's
+coefficients, outside at most `2 ^ (2 ^ (D - t))` inputs, are a fixed linear combination of the
+coefficients at `T`. This is a matrix of rank at most `|T|` differing from `A` in at most
+`m * 2 ^ (2 ^ (D - t))` entries.
 
 ## Scope
 
-The quantitative theorem bounds the rigidity at target rank `2 * c.size / q`, which matches
-[Lokam2009], Theorem 2.1, `R_A(s log t / log d) ≤ 2 ^ O(d / t) * n`, under the dictionary
-`t ↦ 2 ^ t`, `d ↦ 2 ^ D`, `log d / log t ↦ q`, `s ↦ 2 * c.size` (edges). No explicit matrix is
-known to satisfy the hypothesis of the asymptotic form for any fixed constants: proving one exists
-is Valiant's open problem. The criterion is proved for affine circuits over any field. Over an
-infinite field it extends to circuits with polynomial operations such as `+, ×`
+The quantitative theorem is [Lokam2009], Theorem 2.1, `R_A(s log t / log d) ≤ 2 ^ O(d / t) * n`,
+with explicit constants, under the dictionary `t ↦ 2 ^ t`, `d ↦ 2 ^ D` and `s ↦ 2 * c.size`, so
+that `s log t / log d ↦ 2 * t * c.size / D`. Here `2 * c.size` is the number of edges when every
+gate has fan-in `2`, and bounds it in general. No explicit matrix is known to satisfy the
+hypothesis of the asymptotic form for any fixed constants: proving one exists is Valiant's open
+problem. The criterion is proved for affine circuits over any field. Over an infinite field it
+extends to circuits with polynomial operations such as `+, ×`
 (`Circuit.Computes.rigidity_le_of_isPolynomial`), because linearization keeps size, fan-in and
 depth (`Circuit.Computes.exists_affine`). Over finite fields, nonlinear gates are not covered.
 
@@ -207,163 +205,119 @@ private theorem rigidity_le_of_cut {c : Circuit (affineSignature K) n m}
         Finset.sum_le_sum fun o _ => (hS o).trans (Nat.pow_le_pow_right two_pos (hD o))
     _ = m * 2 ^ D := by simp
 
-end Circuit
-
-/-! ### Depth reduction by deleting a block of bits -/
-
-section DepthReduction
-
-/-- An edge from depth `lo` to depth `hi` *crosses block `b`* (of `t` bits) when the binary
-expansions of `lo` and `hi` first differ, reading from the top, inside bits `b * t` to
-`(b + 1) * t - 1`. -/
-private def Crosses (t b lo hi : ℕ) : Prop :=
-  lo / 2 ^ (b * t) ≠ hi / 2 ^ (b * t) ∧ lo / 2 ^ ((b + 1) * t) = hi / 2 ^ ((b + 1) * t)
-
-private theorem div_two_pow_eq_of_le {x y u v : ℕ} (huv : u ≤ v)
-    (h : x / 2 ^ u = y / 2 ^ u) : x / 2 ^ v = y / 2 ^ v := by
-  obtain ⟨w, rfl⟩ := Nat.exists_eq_add_of_le huv
-  rw [pow_add, ← Nat.div_div_eq_div_mul, ← Nat.div_div_eq_div_mul, h]
-
-/-- An edge crosses at most one block. -/
-private theorem Crosses.eq {t b b' lo hi : ℕ} (h : Crosses t b lo hi) (h' : Crosses t b' lo hi) :
-    b = b' := by
-  by_contra hne
-  rcases Nat.lt_or_gt_of_ne hne with hlt | hlt
-  · exact h'.1 (div_two_pow_eq_of_le (Nat.mul_le_mul_right t hlt) h.2)
-  · exact h.1 (div_two_pow_eq_of_le (Nat.mul_le_mul_right t hlt) h'.2)
-
-/-- **Pigeonhole over blocks.** If every element of a finite type satisfies `P b` for at most one
-`b`, then among `q > 0` candidates some `b < q` is satisfied by at most a `1 / q` fraction. -/
-private theorem exists_card_mul_le {ι : Type*} [Fintype ι] (P : ℕ → ι → Prop)
-    (hP : ∀ x b b', P b x → P b' x → b = b') {q : ℕ} (hq : 0 < q) :
-    ∃ b < q, ∃ X : Finset ι, (∀ x, x ∈ X ↔ P b x) ∧ q * X.card ≤ Fintype.card ι := by
-  classical
-  by_contra hcon
-  simp only [not_exists, not_and, not_le] at hcon
-  let X : ℕ → Finset ι := fun b => Finset.univ.filter (P b)
-  have hlt : ∀ b ∈ Finset.range q, Fintype.card ι < q * (X b).card := fun b hb =>
-    hcon b (Finset.mem_range.1 hb) (X b) (by simp [X])
-  have hdisj : ((Finset.range q : Finset ℕ) : Set ℕ).PairwiseDisjoint X :=
-    fun b _ b' _ hbb' => Finset.disjoint_filter.2 fun x _ hb hb' => hbb' (hP x b b' hb hb')
-  have hsum : ∑ b ∈ Finset.range q, (X b).card ≤ Fintype.card ι :=
-    (Finset.card_biUnion hdisj).symm.trans_le (Finset.card_le_univ _)
-  have := Finset.sum_lt_sum_of_nonempty (Finset.nonempty_range_iff.2 hq.ne') hlt
-  simp only [Finset.sum_const, Finset.card_range, smul_eq_mul, ← Finset.mul_sum] at this
-  have := Nat.mul_le_mul_left q hsum
-  omega
-
-/-- Delete bits `a` to `a + t - 1` of `x`. -/
-private def squeeze (a t x : ℕ) : ℕ :=
-  x / 2 ^ (a + t) * 2 ^ a + x % 2 ^ a
-
-/-- Deleting a block of bits is strictly monotone along edges that do not cross the block. -/
-private theorem squeeze_lt_squeeze {a t lo hi : ℕ} (hlt : lo < hi)
-    (hcross : ¬(lo / 2 ^ a ≠ hi / 2 ^ a ∧ lo / 2 ^ (a + t) = hi / 2 ^ (a + t))) :
-    squeeze a t lo < squeeze a t hi := by
-  have h2 : 0 < 2 ^ a := Nat.two_pow_pos a
-  have hlo := Nat.div_add_mod lo (2 ^ a)
-  have hhi := Nat.div_add_mod hi (2 ^ a)
-  unfold squeeze
-  by_cases h : lo / 2 ^ (a + t) = hi / 2 ^ (a + t)
-  · have ha : lo / 2 ^ a = hi / 2 ^ a := by
-      by_contra ha
-      exact hcross ⟨ha, h⟩
-    rw [h]
-    rw [ha] at hlo
-    omega
-  · have hle : lo / 2 ^ (a + t) + 1 ≤ hi / 2 ^ (a + t) :=
-      lt_of_le_of_ne (Nat.div_le_div_right hlt.le) h
-    have hmod := Nat.mod_lt lo h2
-    have := Nat.mul_le_mul_right (2 ^ a) hle
-    rw [Nat.add_mul, one_mul] at this
-    omega
-
-/-- Deleting `t` bits from a number below `2 ^ D` leaves a number below `2 ^ (D - t)`. -/
-private theorem squeeze_lt {a t x D : ℕ} (hx : x < 2 ^ D) (had : a + t ≤ D) :
-    squeeze a t x < 2 ^ (D - t) := by
-  have hq : x / 2 ^ (a + t) < 2 ^ (D - (a + t)) := by
-    rw [Nat.div_lt_iff_lt_mul (Nat.two_pow_pos _), ← pow_add, Nat.sub_add_cancel had]
-    exact hx
-  have hmod := Nat.mod_lt x (Nat.two_pow_pos a)
-  have := Nat.mul_le_mul_right (2 ^ a) (Nat.succ_le_of_lt hq)
-  rw [Nat.succ_mul, ← pow_add, show D - (a + t) + a = D - t by omega] at this
-  unfold squeeze
-  omega
-
-end DepthReduction
-
-namespace Circuit
-
-variable {m : ℕ}
-
 /-- **Valiant's rigidity criterion, quantitative form** ([Valiant1977]; [Lokam2009], Theorem 2.1).
 Let `c` be a circuit of affine gates of fan-in at most `2` over a field `K` computing
-`x ↦ A *ᵥ x`, and let `c.depth < 2 ^ D`. Split the `D` bits of a gate's depth into `q > 0` blocks of
-`t` bits (`q * t ≤ D`). Then `A` can be brought to rank at most `2 * c.size / q` by changing at most
-`m * 2 ^ (2 ^ (D - t))` entries.
+`x ↦ A *ᵥ x`, let `c.depth < 2 ^ D` and let `t ≤ D`. Then `A` can be brought to rank at most
+`2 * t * c.size / D` by changing at most `m * 2 ^ (2 ^ (D - t))` entries.
 
-Some block is crossed by at most `2 * c.size / q` of the at most `2 * c.size` wires read by gates
-(an Erdős–Graham–Szemerédi-style depth reduction). The gates reading those wires are cut: every
-output is then a linear combination of the cut wires plus a function of at most
-`2 ^ (2 ^ (D - t))` inputs, because deleting the crossed block of bits from each gate's depth
-leaves depths below `2 ^ (D - t)` that strictly increase along all uncut wires. -/
+The depths of the gates grade the at most `2 * c.size` wires read by gates with `2 ^ D` levels.
+Valiant's depth reduction (`Cslib.IsGrading.exists_sdiff`) removes some `t / D` of these wires so
+that the rest are graded with `2 ^ (D - t)` levels. The gates reading the removed wires are cut:
+every output is then a linear combination of the removed wires' tails plus a function of at most
+`2 ^ (2 ^ (D - t))` inputs. -/
 theorem Computes.rigidity_le {c : Circuit (affineSignature K) n m}
     {A : Matrix (Fin m) (Fin n) K} (hc : c.Computes (affineInterpretation K) (A *ᵥ ·))
-    (hfan : c.FanInAtMost 2) {D : ℕ} (hdepth : c.depth < 2 ^ D) {q t : ℕ} (hq : 0 < q)
-    (hqt : q * t ≤ D) :
-    A.rigidity (2 * c.size / q) ≤ m * 2 ^ (2 ^ (D - t)) := by
+    (hfan : c.FanInAtMost 2) {D t : ℕ} (hdepth : c.depth < 2 ^ D) (htD : t ≤ D) :
+    A.rigidity (2 * t * c.size / D) ≤ m * 2 ^ (2 ^ (D - t)) := by
   classical
-  -- the wires read by gates
-  let lo : (Σ k : Fin c.size, Fin ((affineSignature K).Arity (c.program.lines k).op)) → ℕ :=
-    fun e => c.program.wireDepths ((c.program.lines e.1).wires e.2)
-  let hi : (Σ k : Fin c.size, Fin ((affineSignature K).Arity (c.program.lines k).op)) → ℕ :=
-    fun e => c.program.depths e.1
-  obtain ⟨b, hb, X, hX, hXcard⟩ := exists_card_mul_le (fun b e => Crosses t b (lo e) (hi e))
-    (fun _ _ _ h h' => h.eq h') hq
-  let T : Finset (Wire n c.size) := X.image fun e => (c.program.lines e.1).wires e.2
-  have hedges : Fintype.card
-      (Σ k : Fin c.size, Fin ((affineSignature K).Arity (c.program.lines k).op)) ≤
-        2 * c.size := by
-    rw [Fintype.card_sigma]
-    calc ∑ k, Fintype.card (Fin ((affineSignature K).Arity (c.program.lines k).op))
-        ≤ ∑ _k : Fin c.size, 2 := Finset.sum_le_sum fun k _ => by
-          rw [Fintype.card_fin]
-          exact Program.fanInAtMost_iff.1 hfan k
-      _ = 2 * c.size := by simp [mul_comm]
-  have hT : T.card ≤ 2 * c.size / q := by
-    rw [Nat.le_div_iff_mul_le hq, mul_comm]
-    exact (Nat.mul_le_mul_left q Finset.card_image_le).trans (hXcard.trans hedges)
-  refine (A.rigidity_antitone hT).trans
-    (rigidity_le_of_cut hc hfan T (squeeze (b * t) t ∘ c.program.wireDepths) ?_ ?_)
-  · intro k a ha
-    refine squeeze_lt_squeeze (c.program.wireDepths_lines_lt k a) fun hcross => ha ?_
-    refine Finset.mem_image.2 ⟨⟨k, a⟩, (hX _).2 ⟨hcross.1, ?_⟩, rfl⟩
-    rw [add_mul, one_mul]
-    exact hcross.2
-  · intro o
-    refine (squeeze_lt (a := b * t) (t := t)
-      ((c.outputDepths_le_depth o).trans_lt hdepth) ?_).le
-    have : (b + 1) * t ≤ q * t := Nat.mul_le_mul_right t hb
-    rw [add_mul, one_mul] at this
+  have hout : ∀ o, c.program.wireDepths (c.outputs o) < 2 ^ D := fun o =>
+    (c.outputDepths_le_depth o).trans_lt hdepth
+  rcases Nat.eq_zero_or_pos D with rfl | hD
+  · -- in depth `0` every output is an input, and nothing needs to be cut
+    obtain rfl : t = 0 := by omega
+    refine (A.rigidity_antitone (Nat.zero_le _)).trans
+      (rigidity_le_of_cut hc hfan ∅ c.program.wireDepths
+        (fun k a _ => c.program.wireDepths_lines_lt k a) fun o => ?_)
+    have := hout o
+    simp only [pow_zero, Nat.sub_self] at this ⊢
     omega
+  -- the wires read by gates of depth below `2 ^ D`, as (tail, head) pairs
+  let E : Finset (Wire n c.size × Wire n c.size) :=
+    (Finset.univ.biUnion fun k : Fin c.size =>
+      Finset.univ.image fun a => ((c.program.lines k).wires a, Wire.gate k)).filter
+      fun e => c.program.wireDepths e.2 < 2 ^ D
+  have hEcard : E.card ≤ 2 * c.size :=
+    calc E.card ≤ _ := Finset.card_filter_le _ _
+      _ ≤ ∑ k : Fin c.size, (Finset.univ.image fun a =>
+            ((c.program.lines k).wires a, (Wire.gate k : Wire n c.size))).card :=
+          Finset.card_biUnion_le
+      _ ≤ ∑ _k : Fin c.size, 2 := Finset.sum_le_sum fun k _ =>
+          Finset.card_image_le.trans ((Finset.card_univ.trans (Fintype.card_fin _)).trans_le
+            (Program.fanInAtMost_iff.1 hfan k))
+      _ = 2 * c.size := by simp [mul_comm]
+  have hmem : ∀ k a, c.program.depths k < 2 ^ D →
+      ((c.program.lines k).wires a, Wire.gate k) ∈ E := fun k a hk =>
+    Finset.mem_filter.2 ⟨Finset.mem_biUnion.2 ⟨k, Finset.mem_univ _,
+      Finset.mem_image.2 ⟨a, Finset.mem_univ _, rfl⟩⟩, hk⟩
+  -- the depths, capped below `2 ^ D`, grade these wires
+  have hgrade : IsGrading E (2 ^ D) fun w => min (c.program.wireDepths w) (2 ^ D - 1) := by
+    refine ⟨fun w => ?_, fun e he => ?_⟩
+    · have := Nat.two_pow_pos D
+      change min (c.program.wireDepths w) (2 ^ D - 1) < 2 ^ D
+      omega
+    obtain ⟨he, hlt⟩ := Finset.mem_filter.1 he
+    obtain ⟨k, -, he⟩ := Finset.mem_biUnion.1 he
+    obtain ⟨a, -, rfl⟩ := Finset.mem_image.1 he
+    have h1 := c.program.wireDepths_lines_lt k a
+    have h2 : c.program.wireDepths (Wire.gate k) = c.program.depths k := rfl
+    dsimp only at hlt ⊢
+    omega
+  -- Valiant's depth reduction
+  obtain ⟨F, -, hFcard, g', hg'⟩ := hgrade.exists_sdiff htD
+  let T : Finset (Wire n c.size) := F.image Prod.fst
+  have hT : T.card ≤ 2 * t * c.size / D := by
+    rw [Nat.le_div_iff_mul_le hD]
+    calc T.card * D ≤ F.card * D := Nat.mul_le_mul_right D Finset.card_image_le
+      _ = D * F.card := mul_comm _ _
+      _ ≤ t * E.card := hFcard
+      _ ≤ t * (2 * c.size) := Nat.mul_le_mul_left t hEcard
+      _ = 2 * t * c.size := by ring
+  -- relabel: `g'` (below `2 ^ (D - t)`) on shallow wires, and deep gates above every such label
+  let ψ : Wire n c.size → ℕ := fun w =>
+    if c.program.wireDepths w < 2 ^ D then g' w else c.program.wireDepths w + 2 ^ D
+  have hpow : 2 ^ (D - t) ≤ 2 ^ D := Nat.pow_le_pow_right two_pos (Nat.sub_le D t)
+  refine (A.rigidity_antitone hT).trans (rigidity_le_of_cut hc hfan T ψ ?_ fun o => ?_)
+  · intro k a ha
+    have h1 := c.program.wireDepths_lines_lt k a
+    have h2 : c.program.wireDepths (Wire.gate k) = c.program.depths k := rfl
+    have hg'lt := hg'.1
+    by_cases hk : c.program.depths k < 2 ^ D
+    · -- an uncut wire into a shallow gate is graded by `g'`
+      have hnot : ((c.program.lines k).wires a, Wire.gate k) ∉ F := fun h =>
+        ha (Finset.mem_image.2 ⟨_, h, rfl⟩)
+      have := hg'.2 _ (Finset.mem_sdiff.2 ⟨hmem k a hk, hnot⟩)
+      dsimp only [ψ]
+      rw [ite_eq_left (h1.trans hk), ite_eq_left (h2 ▸ hk)]
+      exact this
+    · -- a deep gate is above every label
+      dsimp only [ψ]
+      rw [ite_eq_right (by omega : ¬c.program.wireDepths (Wire.gate k) < 2 ^ D)]
+      split_ifs with h
+      · have := hg'lt ((c.program.lines k).wires a)
+        omega
+      · omega
+  · have h := hout o
+    dsimp only [ψ]
+    rw [ite_eq_left h]
+    exact (hg'.1 _).le
 
 /-- **Valiant's rigidity criterion, asymptotic form** ([Valiant1977]; [Lokam2009], Theorem 2.1).
 Let `ℓ = Nat.log 2 n` and fix constants `C, k, e > 0`. If changing at most `n * 2 ^ (ℓ / k)`
 entries of the `n × n` matrix `A` cannot bring its rank down to `n / e`, then every circuit of
 affine gates of fan-in at most `2` computing `x ↦ A *ᵥ x` in depth at most `C * ℓ` has
-`n * ((log₂ ℓ + 1) / (log₂ (2 * C * k) + 1)) < 2 * e * c.size` gates: for fixed `C, k, e`, size
+`n * (log₂ ℓ + 1) < 2 * e * (log₂ (2 * C * k) + 1) * c.size`: for fixed `C, k, e`, size
 `Ω(n log log n)`. The hypothesis `2 * k ≤ ℓ` just asks for `n ≥ 2 ^ (2 * k)`.
 
-This is the statement of [Lokam2009], Theorem 2.1, in explicit form: if `A` is
+This is the statement of [Lokam2009], Theorem 2.1, in explicit form. If `A` is
 `(εn, n ^ (1 + δ))`-rigid, i.e. `n ^ (1 + δ) ≤ A.rigidity ⌊ε n⌋`, then the hypothesis holds for
-every `e ≥ 1 / ε` and every `k > 1 / δ`, since `n * 2 ^ (ℓ / k) ≤ n ^ (1 + 1 / k)` and
-`n / e ≤ ⌊ε n⌋`. -/
+every `e ≥ 1 / ε` and every `k > 1 / δ` once `n` is large enough: `n / e ≤ ⌊ε n⌋`, and
+`n * 2 ^ (ℓ / k) ≤ n ^ (1 + 1 / k) < n ^ (1 + δ)` for `n ≥ 2`. -/
 theorem Computes.mul_log_log_lt_size {C k e : ℕ} (hC : 0 < C) (hk : 0 < k) (he : 0 < e)
     {A : Matrix (Fin n) (Fin n) K} (hn : 2 * k ≤ Nat.log 2 n)
     (hrig : n * 2 ^ (Nat.log 2 n / k) < A.rigidity (n / e))
     {c : Circuit (affineSignature K) n n} (hc : c.Computes (affineInterpretation K) (A *ᵥ ·))
     (hfan : c.FanInAtMost 2) (hdepth : c.depth ≤ C * Nat.log 2 n) :
-    n * ((Nat.log 2 (Nat.log 2 n) + 1) / (Nat.log 2 (2 * C * k) + 1)) < 2 * e * c.size := by
+    n * (Nat.log 2 (Nat.log 2 n) + 1) < 2 * e * (Nat.log 2 (2 * C * k) + 1) * c.size := by
   set ℓ := Nat.log 2 n with hℓ
   have hCℓ : C * ℓ ≠ 0 := (Nat.mul_pos hC (by omega)).ne'
   set D := Nat.log 2 (C * ℓ) + 1 with hD
@@ -377,7 +331,7 @@ theorem Computes.mul_log_log_lt_size {C k e : ℕ} (hC : 0 < C) (hk : 0 < k) (he
     refine Nat.succ_le_succ (Nat.log_mono_right ?_)
     calc 2 * C * k = C * (2 * k) := by ring
       _ ≤ C * ℓ := Nat.mul_le_mul_left C hn
-  -- deleting `t` bits from depths below `2 ^ D` leaves at most `ℓ / k` levels
+  -- deleting `t` levels of the binary hierarchy of depths leaves at most `ℓ / k` levels
   have hpow : 2 ^ (D - t) ≤ ℓ / k := by
     rw [Nat.le_div_iff_mul_le hk]
     have h : 2 ^ (D - t) * 2 ^ t = 2 ^ D := by rw [← pow_add, Nat.sub_add_cancel htD]
@@ -389,28 +343,26 @@ theorem Computes.mul_log_log_lt_size {C k e : ℕ} (hC : 0 < C) (hk : 0 < k) (he
         _ ≤ 2 * (C * ℓ) := h2D
         _ = 2 * C * ℓ := by ring
     exact (Nat.lt_of_mul_lt_mul_left h2).le
-  set q := D / t with hq
-  have hqpos : 0 < q := Nat.div_pos htD (Nat.succ_pos _)
-  have hbound := hc.rigidity_le hfan hdepthD hqpos (Nat.div_mul_le_self D t)
-  -- the rigidity at rank `2 * c.size / q` is below the hypothesis, so that rank exceeds `n / e`
-  have hrank : n / e < 2 * c.size / q := by
+  have hbound := hc.rigidity_le hfan hdepthD htD
+  -- the rigidity at rank `2 * t * c.size / D` is below the hypothesis, so that rank exceeds `n / e`
+  have hrank : n / e < 2 * t * c.size / D := by
     by_contra hle
     have h1 := (A.rigidity_antitone (not_lt.1 hle)).trans hbound
     have h2 := Nat.mul_le_mul_left n (Nat.pow_le_pow_right two_pos hpow)
     omega
-  have h1 : (n / e + 1) * q ≤ 2 * c.size :=
-    (Nat.le_div_iff_mul_le hqpos).1 (Nat.succ_le_of_lt hrank)
+  have hDpos : 0 < D := Nat.succ_pos _
+  have h1 : (n / e + 1) * D ≤ 2 * t * c.size :=
+    (Nat.le_div_iff_mul_le hDpos).1 (Nat.succ_le_of_lt hrank)
   have h2 : n < (n / e + 1) * e := by
     rw [Nat.add_mul, one_mul]
     exact Nat.lt_div_mul_add he
-  have h3 : n * q < 2 * e * c.size :=
-    calc n * q < (n / e + 1) * e * q := Nat.mul_lt_mul_of_pos_right h2 hqpos
-      _ = (n / e + 1) * q * e := by ring
-      _ ≤ 2 * c.size * e := Nat.mul_le_mul_right e h1
-      _ = 2 * e * c.size := by ring
+  have h3 : n * D < 2 * e * t * c.size :=
+    calc n * D < (n / e + 1) * e * D := Nat.mul_lt_mul_of_pos_right h2 hDpos
+      _ = (n / e + 1) * D * e := by ring
+      _ ≤ 2 * t * c.size * e := Nat.mul_le_mul_right e h1
+      _ = 2 * e * t * c.size := by ring
   refine lt_of_le_of_lt (Nat.mul_le_mul_left n ?_) h3
-  exact Nat.div_le_div_right
-    (Nat.succ_le_succ (Nat.log_mono_right (Nat.le_mul_of_pos_left ℓ hC)))
+  exact Nat.succ_le_succ (Nat.log_mono_right (Nat.le_mul_of_pos_left ℓ hC))
 
 /-- **Valiant's rigidity criterion for polynomial operations over infinite fields.** Over an
 infinite field, a circuit whose operations are polynomials (for example the arithmetic basis
@@ -420,11 +372,11 @@ size, fan-in, and depth. -/
 theorem Computes.rigidity_le_of_isPolynomial [Infinite K] {σ : Signature}
     {I : Interpretation σ K} (hI : I.IsPolynomial) {c : Circuit σ n m}
     {A : Matrix (Fin m) (Fin n) K} (hc : c.Computes I (A *ᵥ ·)) (hfan : c.FanInAtMost 2)
-    {D : ℕ} (hdepth : c.depth < 2 ^ D) {q t : ℕ} (hq : 0 < q) (hqt : q * t ≤ D) :
-    A.rigidity (2 * c.size / q) ≤ m * 2 ^ (2 ^ (D - t)) := by
+    {D t : ℕ} (hdepth : c.depth < 2 ^ D) (htD : t ≤ D) :
+    A.rigidity (2 * t * c.size / D) ≤ m * 2 ^ (2 ^ (D - t)) := by
   obtain ⟨c', hsize, -, hfan', hdepth', hc'⟩ := hc.exists_affine hI
   rw [← hsize]
-  exact hc'.rigidity_le ((hfan' 2).2 hfan) (hdepth' ▸ hdepth) hq hqt
+  exact hc'.rigidity_le ((hfan' 2).2 hfan) (hdepth' ▸ hdepth) htD
 
 end Circuit
 

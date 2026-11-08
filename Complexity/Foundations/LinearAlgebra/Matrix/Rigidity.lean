@@ -39,8 +39,8 @@ of size `n` this is exact: `rigidity 1 r = n - r` (`Matrix.rigidity_one`).
 * `Matrix.exists_rigidity_eq`: some matrix of rank at most `r` attains the rigidity.
 * `Matrix.rigidity_antitone`: rigidity decreases as the target rank grows.
 * `Matrix.rigidity_eq_zero_iff`: rigidity is zero exactly when the rank is already at most `r`.
-* `Matrix.rank_eq_zero_iff`, `Matrix.rigidity_zero`: at target rank zero, rigidity counts the
-  nonzero entries.
+* `Matrix.rigidity_zero`: at target rank zero, rigidity counts the nonzero entries.
+* `Matrix.rank_le_diffCount_zero`: the rank is at most the number of nonzero entries.
 * `Matrix.rank_sub_diffCount_le_rank`, `Matrix.rank_sub_le_rigidity`: each change lowers the rank
   by at most one, so every matrix needs at least `rank A - r` changes.
 * `Matrix.rigidity_one`: the identity matrix of size `n` has rigidity `n - r`.
@@ -57,7 +57,12 @@ namespace Matrix
 
 variable {m n K α : Type*}
 
-/-- The number of entries where the matrices `A` and `B` differ. -/
+/-- The number of entries where the matrices `A` and `B` differ.
+
+When `m` is infinite (only `n` is required to be finite below), this counts with `Set.ncard`,
+which is `0` on infinite sets: then some matrix of rank at most one differs from `A` in infinitely
+many entries, and the rigidity collapses to the junk value `0`. The results relating rigidity to
+rank (`Matrix.rigidity_eq_zero_iff` and below) therefore assume `[Finite m]`. -/
 noncomputable def diffCount (A B : Matrix m n α) : ℕ :=
   {p : m × n | A p.1 p.2 ≠ B p.1 p.2}.ncard
 
@@ -74,6 +79,12 @@ theorem diffCount_le_card [Fintype m] (A B : Matrix m n α) :
     diffCount A B ≤ Fintype.card m * Fintype.card n := by
   rw [diffCount, ← Fintype.card_prod, ← Nat.card_eq_fintype_card]
   exact Set.ncard_le_card _
+
+/-- For finite matrices, `diffCount` is the size of a filtered `Finset` of positions. -/
+theorem diffCount_eq_card_filter [Fintype m] [DecidableEq α] (A B : Matrix m n α) :
+    diffCount A B = (Finset.univ.filter fun p : m × n => A p.1 p.2 ≠ B p.1 p.2).card := by
+  rw [diffCount, ← Set.ncard_coe_finset]
+  exact congrArg Set.ncard (by ext p; simp)
 
 /-- The number of differing entries is the sum over the rows of the number of differing entries
 in each row. -/
@@ -129,15 +140,6 @@ theorem rigidity_le_card [Fintype m] (A : Matrix m n K) (r : ℕ) :
     A.rigidity r ≤ Fintype.card m * Fintype.card n :=
   (rigidity_le (B := 0) (by simp)).trans (diffCount_le_card _ _)
 
-/-- A matrix has rank zero exactly when it is zero. -/
-theorem rank_eq_zero_iff {C : Matrix m n K} : C.rank = 0 ↔ C = 0 := by
-  classical
-  refine ⟨fun h => ?_, fun h => h ▸ rank_zero⟩
-  rw [Matrix.rank, Submodule.finrank_eq_zero, LinearMap.range_eq_bot] at h
-  ext i j
-  have := congrFun (LinearMap.congr_fun h (Pi.single j 1)) i
-  rwa [mulVecLin_apply, mulVec_single_one, col_apply] at this
-
 /-- At target rank zero, the rigidity is the number of nonzero entries. -/
 theorem rigidity_zero (A : Matrix m n K) : A.rigidity 0 = diffCount A 0 := by
   obtain ⟨B, hB, hAB⟩ := exists_rigidity_eq A 0
@@ -157,7 +159,8 @@ theorem rigidity_eq_zero_iff {A : Matrix m n K} {r : ℕ} : A.rigidity r = 0 ↔
     exact (Set.eq_empty_iff_forall_notMem.1 hAB) (i, j) hij
   exact this ▸ hB
 
-/-- The rank of a matrix is at most the number of its nonzero entries. -/
+/-- The rank of a matrix is at most the number of its nonzero entries. This is a fact about rank
+alone, stated with `diffCount`; it is an upstream candidate for Mathlib together with the module. -/
 theorem rank_le_diffCount_zero (C : Matrix m n K) : C.rank ≤ diffCount C 0 := by
   classical
   have := Fintype.ofFinite m

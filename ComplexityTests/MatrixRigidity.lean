@@ -10,8 +10,9 @@ import Complexity.Computability.Circuit.Arithmetic.Rigidity
 # Matrix rigidity and Valiant's criterion
 
 Checked instances: the rigidity of identity matrices, zero rigidity when the rank is already low,
-rigidity at target rank zero, a one-gate fan-in-`2` affine circuit and the zero-gate identity
-circuit satisfying every hypothesis of `Circuit.Computes.rigidity_le`, a one-gate arithmetic
+rigidity at target rank zero, a one-gate fan-in-`2` affine circuit (with `t = D` and `t < D`) and
+the zero-gate identity circuit (depth `0`) satisfying every hypothesis of
+`Circuit.Computes.rigidity_le`, a one-gate arithmetic
 circuit satisfying every hypothesis of `Circuit.Computes.rigidity_le_of_isPolynomial`, and a matrix
 satisfying the rigidity and size hypotheses of `Circuit.Computes.mul_log_log_lt_size`.
 -/
@@ -40,7 +41,7 @@ example : (0 : Matrix (Fin 3) (Fin 4) ℚ).rigidity 0 = 0 :=
 
 -- At target rank `0`, rigidity counts the nonzero entries: all `16 * 16` for the all-ones matrix.
 theorem rigidity_ones : (of fun _ _ => 1 : Matrix (Fin 16) (Fin 16) ℚ).rigidity 0 = 256 := by
-  rw [rigidity_zero, diffCount]
+  rw [rigidity_zero, diffCount_eq_card_filter]
   simp
 
 /-! ### A circuit satisfying the hypotheses of the quantitative criterion -/
@@ -64,16 +65,21 @@ private theorem sumCircuit_fanIn : sumCircuit.FanInAtMost 2 := by
 private theorem sumCircuit_depth : sumCircuit.depth < 2 ^ 1 := by
   decide
 
--- Every hypothesis holds: one gate, fan-in `2`, depth `1 < 2 ^ 1`, and `q = 1`, `t = 1`.
-example : (!![(1 : ℚ), 1]).rigidity (2 * 1 / 1) ≤ 1 * 2 ^ (2 ^ (1 - 1)) :=
-  sumCircuit_computes.rigidity_le sumCircuit_fanIn sumCircuit_depth one_pos le_rfl
+-- Every hypothesis holds: one gate, fan-in `2`, depth `1 < 2 ^ 1`, and `t = 1 ≤ D = 1`.
+example : (!![(1 : ℚ), 1]).rigidity (2 * 1 * 1 / 1) ≤ 1 * 2 ^ (2 ^ (1 - 1)) :=
+  sumCircuit_computes.rigidity_le sumCircuit_fanIn sumCircuit_depth le_rfl
+
+-- With slack in the depth, `0 < t < D`: depth `1 < 2 ^ 2`, `t = 1`, `D = 2`.
+example : (!![(1 : ℚ), 1]).rigidity (2 * 1 * 1 / 2) ≤ 1 * 2 ^ (2 ^ (2 - 1)) :=
+  sumCircuit_computes.rigidity_le sumCircuit_fanIn (by decide) (by norm_num)
 
 -- The zero-gate identity circuit computes the identity matrix with depth `0 < 2 ^ 0`.
-example (n : ℕ) : (1 : Matrix (Fin n) (Fin n) ℚ).rigidity (2 * 0 / 1) ≤ n * 2 ^ (2 ^ (0 - 0)) := by
+example (n : ℕ) :
+    (1 : Matrix (Fin n) (Fin n) ℚ).rigidity (2 * 0 * 0 / 0) ≤ n * 2 ^ (2 ^ (0 - 0)) := by
   have hc : (Circuit.id (affineSignature ℚ) n).Computes (affineInterpretation ℚ)
       ((1 : Matrix (Fin n) (Fin n) ℚ) *ᵥ ·) := fun x => by
     simp
-  exact hc.rigidity_le (Circuit.fanInAtMost_wiring _ 2) (by simp) one_pos le_rfl
+  exact hc.rigidity_le (Circuit.fanInAtMost_wiring _ 2) (by simp) le_rfl
 
 /-! ### The criterion for arithmetic circuits over an infinite field -/
 
@@ -90,9 +96,9 @@ private theorem addCircuit_computes :
   rw [Program.eval_gate_last]
   simp [Line.eval, arithInterpretation, mulVec, dotProduct, Fin.sum_univ_two]
 
-example : (!![(1 : ℚ), 1]).rigidity (2 * 1 / 1) ≤ 1 * 2 ^ (2 ^ (1 - 1)) :=
+example : (!![(1 : ℚ), 1]).rigidity (2 * 1 * 1 / 1) ≤ 1 * 2 ^ (2 ^ (1 - 1)) :=
   addCircuit_computes.rigidity_le_of_isPolynomial isPolynomial_arithInterpretation
-    (Circuit.fanInAtMost_two_arith _) (by decide) one_pos le_rfl
+    (Circuit.fanInAtMost_two_arith _) (by decide) le_rfl
 
 /-! ### The hypotheses of the asymptotic criterion are satisfiable -/
 
@@ -112,7 +118,7 @@ private theorem ones_hyp :
 example {c : Circuit (affineSignature ℚ) 16 16}
     (hc : c.Computes (affineInterpretation ℚ) (ones *ᵥ ·))
     (hfan : c.FanInAtMost 2) (hdepth : c.depth ≤ 1 * Nat.log 2 16) :
-    16 * ((Nat.log 2 (Nat.log 2 16) + 1) / (Nat.log 2 (2 * 1 * 2) + 1)) < 2 * 17 * c.size :=
+    16 * (Nat.log 2 (Nat.log 2 16) + 1) < 2 * 17 * (Nat.log 2 (2 * 1 * 2) + 1) * c.size :=
   hc.mul_log_log_lt_size one_pos two_pos (by norm_num) ones_hyp.1 ones_hyp.2 hfan hdepth
 
 end ComplexityTests.MatrixRigidity
