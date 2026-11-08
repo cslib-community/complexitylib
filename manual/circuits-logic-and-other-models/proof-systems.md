@@ -58,23 +58,26 @@ after the log `w`. It may depend on the whole table, and it is *valid* when it o
 that occur. Assume `x i ∈ [0, 1)` and `Pr[A i] ≤ x i ∏ j ∈ Γ i, (1 - x j)`, where `Γ i`
 contains every other event sharing a variable with `A i`. Under this hypothesis, Theorem 1.2 of
 the paper is `MoserTardos.lintegral_resamplings_le`: for every valid rule the expected number of
-resamplings of `A i` is at most `x i / (1 - x i)`. The expectation is a lower Lebesgue integral of
-an `ℝ≥0∞` count, so no measurability is required of the rule. The total over all events is
-`lintegral_sum_resamplings_le`. Almost sure termination is `ae_exists_run_eq_none`, and
-`ae_exists_forall_notMem_run_greedy` says the greedy run almost surely reaches an assignment
-avoiding every event. The existential corollary is `exists_forall_notMem`. The witness trees of
-the proof are recorded as finite sets of `(label, depth)` pairs in
-`Complexity.Probability.MoserTardos.Witness`, with Lemma 2.1 as `check_witness`,
-`proper_witness` and `measure_check_eq_prod`. Here `Proper` is the level independence proved
-inside Lemma 2.1(i), which implies the paper's properness. The paper's Galton–Watson counting is
-replaced by a
-depth induction, `sum_prod_shapes_le`. The model counts resamplings; it does not charge for
-sampling or for detecting occurring events. Theorems 1.3–1.4 (the polynomial-time and
-parallel versions) and the lopsided form are not formalized. The
-[checked examples](../../ComplexityTests/MoserTardos.lean) give one fair coin where the bound
-`x / (1 - x) = 1` is attained, an impossible event with `x = 0`, two complementary events for
-which no `x` satisfies the hypothesis, and a concrete valid log on a fixed table whose witness
-tree is computed by `decide` and passes its check. Check them with
+resamplings of `A i` is at most `x i / (1 - x i)`. The rule need not be measurable, so this `∫⁻`
+is a lower integral. `exists_measurable_ge_resamplings` closes the gap: one measurable function
+with the same bound dominates the count under every valid rule, so the bound also holds for the
+outer expectation. The total over all events is `lintegral_sum_resamplings_le`. Almost sure
+termination is `ae_exists_run_eq_none`. `ae_exists_forall_notMem_run` says that a valid rule
+that stops only when no event occurs almost surely reaches an assignment avoiding every event;
+`ae_exists_forall_notMem_run_greedy` is the greedy case. The existential corollary is
+`exists_forall_notMem`. The witness trees of the proof are recorded as finite sets of
+`(label, depth)` pairs in `Complexity.Probability.MoserTardos.Witness`. Lemma 2.1 is
+`proper_witness`, the coupling `check_witness`, `measure_check_eq_prod` and, combined,
+`table_witness_le`. Here `Proper` is the level independence proved inside Lemma 2.1(i), which
+implies the paper's properness. The paper's Galton–Watson counting is replaced by a depth
+induction, `sum_prod_shapes_le`. The model counts resamplings; it does not charge for sampling or
+for detecting occurring events. Theorems 1.3 (the parallel version) and 1.4 (the deterministic
+version) and the lopsided form are not formalized. The
+[checked examples](../../ComplexityTests/MoserTardos.lean) give one fair coin, where the bound is
+`x / (1 - x) = 1`, two dependent events on three coins that meet the hypothesis with equality, an
+impossible event with `x = 0`, two complementary events for which no `x` satisfies the
+hypothesis, and a concrete valid log on a fixed table whose witness tree is computed by `decide`
+and passes its check. Check them with
 `scripts/build.sh ComplexityTests.MoserTardos`.
 
 Support-based CNF model counting counts assignments to variables that occur. Declared-universe counting instead fixes a larger variable set and can include free choices for unused variables. The library supplies relabeling and exact gadget-counting bridges, so a reduction claiming preservation of counts must specify which convention it preserves. This distinction is particularly relevant to dense relabeling and the [native fixed-width counting endpoint](../machines-and-classes/native-counting.md).

@@ -8,10 +8,12 @@ import Complexity.Probability.MoserTardos
 import Cslib.Probability.PMF
 
 /-! The Moser–Tardos algorithmic local lemma: a satisfiable instance of its hypothesis on one fair
-coin, where the expectation bound of Theorem 1.2 is attained (the number of resamplings is
-geometric with mean `1`). Also a degenerate instance with an impossible event and `x = 0`, an
-instance where the hypothesis must fail because every assignment hits some event, and a concrete
-valid log on a fixed table with its witness tree computed by `decide`. -/
+coin, where Theorem 1.2 bounds the expected number of resamplings by `x / (1 - x) = 1` (for the
+greedy rule the count is geometric with mean `1`, so the bound is sharp; that equality is not
+checked here). Also: two dependent events on three fair coins that meet the hypothesis with
+equality; a degenerate instance with an impossible event and `x = 0`; an instance where the
+hypothesis must fail because every assignment hits some event; and a concrete valid log on a
+fixed table with its witness tree computed by `decide`. -/
 
 namespace ComplexityTests.MoserTardos
 
@@ -56,7 +58,7 @@ theorem measureReal_shows (b : Bool) : (Measure.pi coin).real (shows b) = 1 / 2 
     Cslib.Probability.PMF.uniformOfFintype_apply, Fintype.card_bool]
   norm_num
 
-/-! ### One fair coin, one event: the bound `x / (1 - x) = 1` holds with equality -/
+/-! ### One fair coin, one event: the bound `x / (1 - x) = 1` -/
 
 -- With `x = 1/2` and no neighbours, `Pr[A] = 1/2 ≤ x`: the hypothesis holds.
 theorem hyp : ∀ _ : Unit, (Measure.pi coin).real (shows true) ≤
@@ -80,6 +82,104 @@ example : ∀ᵐ T ∂table coin, ∃ n, ∀ _ : Unit,
     (fun _ => measurableSet_shows true) (fun _ => shows_dependsOn true) (fun _ => ∅)
     (fun i j h => absurd (Subsingleton.elim j i) h) (x := fun _ => 1 / 2)
     (fun _ => ⟨by norm_num, by norm_num⟩) hyp
+
+/-! ### Two dependent events on three fair coins -/
+
+/-- Three fair coins. -/
+noncomputable def coin3 : Fin 3 → Measure Bool :=
+  fun _ => (Cslib.Probability.PMF.uniformOfFintype Bool).toMeasure
+
+instance (v : Fin 3) : IsProbabilityMeasure (coin3 v) := by
+  unfold coin3
+  infer_instance
+
+theorem coin3_true (v : Fin 3) : coin3 v {true} = 1 / 2 := by
+  rw [coin3, PMF.toMeasure_apply_singleton _ _ (measurableSet_singleton true),
+    Cslib.Probability.PMF.uniformOfFintype_apply, Fintype.card_bool]
+  norm_num
+
+theorem coin3_bool (v : Fin 3) : coin3 v {false, true} = 1 := by
+  rw [show ({false, true} : Set Bool) = Set.univ from Set.eq_univ_of_forall fun b => by
+    cases b <;> simp]
+  exact measure_univ
+
+/-- Event `0` reads coins `0, 1` and event `1` reads coins `1, 2`: they share coin `1`. -/
+def vblPair : Fin 2 → Finset (Fin 3)
+  | 0 => {0, 1}
+  | 1 => {1, 2}
+
+/-- Event `i`: both coins of `vblPair i` show heads. -/
+def heads (i : Fin 2) : Set (Fin 3 → Bool) := {σ | ∀ v ∈ vblPair i, σ v = true}
+
+/-- Each event's only neighbour is the other one. -/
+def other : Fin 2 → Finset (Fin 2)
+  | 0 => {1}
+  | 1 => {0}
+
+theorem heads_eq_pi (i : Fin 2) :
+    heads i = Set.univ.pi fun v => if v ∈ vblPair i then {true} else Set.univ := by
+  ext σ
+  simp only [heads, Set.mem_ofPred_eq, Set.mem_pi, Set.mem_univ, true_implies]
+  refine ⟨fun h v => ?_, fun h v hv => ?_⟩
+  · split_ifs with hv
+    · exact h v hv
+    · exact Set.mem_univ _
+  · simpa [hv] using h v
+
+theorem measurableSet_heads (i : Fin 2) : MeasurableSet (heads i) := by
+  rw [heads_eq_pi]
+  exact MeasurableSet.univ_pi fun v => by
+    split_ifs
+    · exact measurableSet_singleton true
+    · exact MeasurableSet.univ
+
+theorem heads_dependsOn (i : Fin 2) :
+    DependsOn (· ∈ heads i) (vblPair i : Set (Fin 3)) :=
+  fun σ τ h => by
+    simp only [heads, Set.mem_ofPred_eq]
+    exact propext (forall₂_congr fun v hv => by rw [h v (Finset.mem_coe.2 hv)])
+
+theorem measureReal_heads (i : Fin 2) : (Measure.pi coin3).real (heads i) = 1 / 4 := by
+  rw [measureReal_def, heads_eq_pi, Measure.pi_pi, Fin.prod_univ_three]
+  fin_cases i <;> norm_num [vblPair, coin3_true, coin3_bool]
+
+theorem other_spec : ∀ i j, j ≠ i → ¬Disjoint (vblPair i) (vblPair j) → j ∈ other i := by
+  decide
+
+-- With `x = 1/2`: `Pr[A i] = 1/4 ≤ 1/2 · (1 - 1/2)`, with equality.
+theorem hypPair : ∀ i, (Measure.pi coin3).real (heads i) ≤
+    (fun _ => (1 / 2 : ℝ)) i * ∏ j ∈ other i, (1 - (fun _ => (1 / 2 : ℝ)) j) := by
+  intro i
+  rw [measureReal_heads]
+  fin_cases i <;> norm_num [other]
+
+-- Theorem 1.2 for a dependent pair: at most `1/2 / (1 - 1/2) = 1` resamplings of each event in
+-- expectation, and at most `2` in total.
+example {sel : (∀ p : Fin 3 × ℕ, (fun _ : Fin 3 => Bool) p.1) → List (Fin 2) → Option (Fin 2)}
+    (hsel : ∀ T w i, sel T w = some i → current vblPair T w ∈ heads i) :
+    ∫⁻ T, ∑ i, resamplings (α := fun _ : Fin 3 => Bool) sel i T ∂table coin3 ≤ 2 := by
+  refine (lintegral_sum_resamplings_le coin3 vblPair heads measurableSet_heads heads_dependsOn
+    other other_spec (x := fun _ => 1 / 2) (fun _ => ⟨by norm_num, by norm_num⟩) hypPair
+    hsel).trans (le_of_eq ?_)
+  norm_num [Fin.sum_univ_two]
+
+-- The outer-expectation form: one measurable bound, with integral at most `1`, for every rule.
+example : ∃ g : (∀ p : Fin 3 × ℕ, (fun _ : Fin 3 => Bool) p.1) → ℝ≥0∞, Measurable g ∧
+    ∫⁻ T, g T ∂table coin3 ≤ 1 ∧
+    ∀ sel : (∀ p : Fin 3 × ℕ, (fun _ : Fin 3 => Bool) p.1) → List (Fin 2) → Option (Fin 2),
+      (∀ T w j, sel T w = some j → current vblPair T w ∈ heads j) →
+        ∀ T, resamplings (α := fun _ : Fin 3 => Bool) sel 0 T ≤ g T := by
+  obtain ⟨g, hg, hint, hdom⟩ := exists_measurable_ge_resamplings coin3 vblPair heads
+    measurableSet_heads heads_dependsOn other other_spec (x := fun _ => 1 / 2)
+    (fun _ => ⟨by norm_num, by norm_num⟩) hypPair 0
+  refine ⟨g, hg, hint.trans (le_of_eq ?_), hdom⟩
+  norm_num
+
+-- Almost surely the greedy run avoids both events after finitely many resamplings.
+example : ∀ᵐ T ∂table coin3, ∃ n, ∀ i,
+    current vblPair T (run (greedy vblPair heads) T n) ∉ heads i :=
+  ae_exists_forall_notMem_run_greedy coin3 vblPair heads measurableSet_heads heads_dependsOn
+    other other_spec (x := fun _ => 1 / 2) (fun _ => ⟨by norm_num, by norm_num⟩) hypPair
 
 /-! ### An impossible event with `x = 0`: no resamplings in expectation -/
 

@@ -7,8 +7,10 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate (Mathlib, `Mathlib/Probability/Independence/InfinitePi.lean`)
 
-public import Complexity.Foundations.Probability.SecondMoment
+public import Complexity.Init
+public import Mathlib.Logic.Function.DependsOn
 public import Mathlib.Probability.Independence.InfinitePi
+import Complexity.Foundations.Probability.SecondMoment
 
 /-!
 # Local events of an infinite product are independent
@@ -26,7 +28,7 @@ algorithmic local lemma.
   sets of coordinates are independent under `Measure.infinitePi`.
 -/
 
-@[expose] public section
+public section
 
 open MeasureTheory Finset
 

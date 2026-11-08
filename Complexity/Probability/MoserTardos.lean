@@ -48,24 +48,36 @@ every other event sharing a variable with `A i` (the hypothesis of the asymmetri
 
 * `Cslib.Probability.MoserTardos.measure_check_eq_prod`: a proper witness structure passes its
   check with probability `∏ p ∈ S, Pr[A p.1]` [MoserTardos2010, Lemma 2.1].
+* `Cslib.Probability.MoserTardos.table_witness_le`: the probability that a fixed structure occurs
+  as the witness structure of a step of a valid log is at most `∏ p ∈ S, Pr[A p.1]`
+  [MoserTardos2010, Lemma 2.1(ii)].
 * `Cslib.Probability.MoserTardos.lintegral_resamplings_le`: **Theorem 1.2** of [MoserTardos2010].
   For every valid rule, the expected number of resamplings of `A i` is at most
   `x i / (1 - x i)`. `lintegral_sum_resamplings_le` sums this over the events, and
   `lintegral_iSup_count_le` states it for all valid logs at once.
+* `Cslib.Probability.MoserTardos.exists_measurable_ge_resamplings`: one measurable function with
+  the same bound dominates the count under every valid rule, so the bound also holds for the outer
+  expectation.
 * `Cslib.Probability.MoserTardos.ae_exists_run_eq_none`: almost surely the algorithm stops after
   finitely many steps, for every valid rule.
-* `Cslib.Probability.MoserTardos.ae_exists_forall_notMem_run_greedy`: almost surely the greedy run
-  reaches an assignment avoiding every event.
+* `Cslib.Probability.MoserTardos.ae_exists_forall_notMem_run`: almost surely a valid rule that
+  stops only when no event occurs reaches an assignment avoiding every event;
+  `ae_exists_forall_notMem_run_greedy` is the case of the greedy rule.
 * `Cslib.Probability.MoserTardos.exists_forall_notMem`: consequently some assignment avoids every
   event. This is the variable version of the existential local lemma (compare
   `Cslib.Probability.PMF.prod_one_sub_le_pi_iInter_compl`).
 
 ## Implementation notes
 
-The expectation is a lower Lebesgue integral of an `ℝ≥0∞`-valued count, so it is meaningful
-without any measurability assumption on the rule; finiteness is a consequence. The proof dominates
-the number of resamplings of `A i` by the number of proper structures in `shapes vbl i H` whose
-checks pass (`Cslib.Probability.MoserTardos.exists_witnesses`). That number is measurable, and its
+A rule may be any function of the table and the log, measurable or not. For such a rule the
+expectation `∫⁻` in `lintegral_resamplings_le` is the lower Lebesgue integral. The proof shows
+more: the count is dominated, for every valid rule at once, by the measurable rule-independent
+function `T ↦ ⨆ (w valid on T), w.count i` (`resamplings_le_iSup_count`,
+`measurable_iSup_count`). The integral of that function is at most `x i / (1 - x i)`, so the bound
+holds for the outer expectation too (`exists_measurable_ge_resamplings`). To bound this
+function, the proof dominates the number of steps labelled `i` of a valid log by the number of
+proper structures in `shapes vbl i H` whose checks pass
+(`Cslib.Probability.MoserTardos.exists_witnesses`). That number is measurable, and its
 expectation is at most `x i / (1 - x i)` by Lemma 2.1 and the counting bound
 `Cslib.Probability.MoserTardos.sum_prod_shapes_le`.
 
@@ -204,6 +216,25 @@ theorem measure_check_eq_prod (A : ι → Set (∀ v, α v)) (hAm : ∀ i, Measu
     table μ {T | Check vbl A S T} = ∏ p ∈ S, Measure.pi μ (A p.1) := by
   rw [check_eq_iInter]
   exact table_iInter_checkAt μ vbl A hAm hA hS S subset_rfl
+
+/-- **Lemma 2.1(ii)** of [MoserTardos2010]: the probability that a fixed structure `S` occurs as
+the witness structure of a step of some valid log on the table is at most
+`∏ p ∈ S, Pr[A p.1]`. The event is measured by the outer measure, so no measurability is
+needed. -/
+theorem table_witness_le [DecidableEq ι] (A : ι → Set (∀ v, α v))
+    (hAm : ∀ i, MeasurableSet (A i)) (hA : ∀ i, DependsOn (· ∈ A i) (vbl i : Set V))
+    (S : Finset (ι × ℕ)) :
+    table μ {T | ∃ i w, IsLog vbl A T (i :: w) ∧ witness vbl i w = S} ≤
+      ∏ p ∈ S, Measure.pi μ (A p.1) := by
+  rcases Set.eq_empty_or_nonempty {T | ∃ i w, IsLog vbl A T (i :: w) ∧ witness vbl i w = S} with
+    he | ⟨T₀, i₀, w₀, -, hw₀⟩
+  · rw [he, measure_empty]
+    exact zero_le
+  have hS : Proper vbl S := hw₀ ▸ proper_witness vbl i₀ w₀
+  rw [← measure_check_eq_prod μ vbl A hAm hA hS]
+  refine measure_mono fun T ⟨i, w, hlog, hw⟩ => ?_
+  rw [Set.mem_ofPred_eq, ← hw]
+  exact check_witness vbl A hA i w T hlog
 
 end Check
 
@@ -372,6 +403,17 @@ theorem resamplings_def [DecidableEq ι] (sel : (∀ p : V × ℕ, α p.1) → L
     resamplings sel i T = ⨆ n, ((run sel T n).count i : ℝ≥0∞) := by
   rw [resamplings]
 
+/-- Under a valid selection rule, the number of resamplings of `A i` is at most the largest number
+of steps labelled `i` in a valid log on the table, a bound that does not depend on the rule. -/
+theorem resamplings_le_iSup_count [DecidableEq V] [DecidableEq ι] (vbl : ι → Finset V)
+    (A : ι → Set (∀ v, α v)) {sel : (∀ p : V × ℕ, α p.1) → List ι → Option ι}
+    (hsel : ∀ T w i, sel T w = some i → current vbl T w ∈ A i) (i : ι)
+    (T : ∀ p : V × ℕ, α p.1) :
+    resamplings sel i T ≤ ⨆ (w : List ι) (_ : IsLog vbl A T w), (w.count i : ℝ≥0∞) := by
+  rw [resamplings_def]
+  exact iSup_le fun n => le_iSup₂_of_le (f := fun (w : List ι) (_ : IsLog vbl A T w) =>
+    (w.count i : ℝ≥0∞)) (run sel T n) (isLog_run vbl A hsel T n) le_rfl
+
 variable [DecidableEq V] (vbl : ι → Finset V)
 
 open scoped Classical in
@@ -404,7 +446,11 @@ variable {V ι : Type*} [Fintype V] [DecidableEq V]
 /-- **The Moser–Tardos theorem** [MoserTardos2010, Theorem 1.2]. Let `x i ∈ [0, 1)` with
 `Pr[A i] ≤ x i ∏ j ∈ Γ i, (1 - x j)`, where `Γ i` contains every other event sharing a variable
 with `A i`. Then for every selection rule that only resamples occurring events, the expected
-number of resamplings of `A i` is at most `x i / (1 - x i)`. -/
+number of resamplings of `A i` is at most `x i / (1 - x i)`.
+
+The rule is not assumed measurable, so `∫⁻` is the lower Lebesgue integral. The upper bound is
+nevertheless the full statement: `exists_measurable_ge_resamplings` dominates the count, for every
+valid rule, by one measurable function with the same bound. -/
 theorem lintegral_resamplings_le [DecidableEq ι] [Finite ι] (A : ι → Set (∀ v, α v))
     (hAm : ∀ i, MeasurableSet (A i))
     (hA : ∀ i, DependsOn (· ∈ A i) (vbl i : Set V)) (Γ : ι → Finset ι)
@@ -413,12 +459,59 @@ theorem lintegral_resamplings_le [DecidableEq ι] [Finite ι] (A : ι → Set (�
     (hP : ∀ i, (Measure.pi μ).real (A i) ≤ x i * ∏ j ∈ Γ i, (1 - x j))
     {sel : (∀ p : V × ℕ, α p.1) → List ι → Option ι}
     (hsel : ∀ T w i, sel T w = some i → current vbl T w ∈ A i) (i : ι) :
-    ∫⁻ T, resamplings sel i T ∂table μ ≤ ENNReal.ofReal (x i / (1 - x i)) := by
-  have := Fintype.ofFinite ι
-  refine (lintegral_mono fun T => ?_).trans (lintegral_iSup_count_le μ vbl A hAm hA Γ hΓ hx hP i)
-  rw [resamplings_def]
-  exact iSup_le fun n => le_iSup₂_of_le (f := fun (w : List ι) (_ : IsLog vbl A T w) =>
-    (w.count i : ℝ≥0∞)) (run sel T n) (isLog_run vbl A hsel T n) le_rfl
+    ∫⁻ T, resamplings sel i T ∂table μ ≤ ENNReal.ofReal (x i / (1 - x i)) :=
+  (lintegral_mono fun T => resamplings_le_iSup_count vbl A hsel i T).trans
+    (lintegral_iSup_count_le μ vbl A hAm hA Γ hΓ hx hP i)
+
+omit [Fintype V] in
+/-- Valid logs form a measurable set of tables. -/
+theorem measurableSet_isLog (A : ι → Set (∀ v, α v)) (hAm : ∀ i, MeasurableSet (A i)) :
+    ∀ w : List ι, MeasurableSet {T : ∀ p : V × ℕ, α p.1 | IsLog vbl A T w}
+  | [] => by
+    simp only [isLog_nil, Set.ofPred_true, MeasurableSet.univ]
+  | j :: w => by
+    have hcur : ∀ T : ∀ p : V × ℕ, α p.1, current vbl T w = fun v => T (v, uses vbl w v) :=
+      fun T => funext fun v => current_apply vbl T w v
+    have heq : {T : ∀ p : V × ℕ, α p.1 | IsLog vbl A T (j :: w)} =
+        (fun T v => T (v, uses vbl w v)) ⁻¹' A j ∩ {T | IsLog vbl A T w} := by
+      ext T
+      rw [Set.mem_ofPred_eq, isLog_cons, hcur]
+      rfl
+    rw [heq]
+    exact (measurable_read (fun v => uses vbl w v) (hAm j)).inter (measurableSet_isLog A hAm w)
+
+omit [Fintype V] in
+/-- The largest number of steps labelled `i` in a valid log is a measurable function of the
+table. -/
+theorem measurable_iSup_count [DecidableEq ι] [Countable ι] (A : ι → Set (∀ v, α v))
+    (hAm : ∀ i, MeasurableSet (A i)) (i : ι) :
+    Measurable fun T : ∀ p : V × ℕ, α p.1 =>
+      ⨆ (w : List ι) (_ : IsLog vbl A T w), (w.count i : ℝ≥0∞) := by
+  classical
+  refine Measurable.iSup fun w => ?_
+  have heq : (fun T : ∀ p : V × ℕ, α p.1 => ⨆ (_ : IsLog vbl A T w), (w.count i : ℝ≥0∞)) =
+      fun T => if IsLog vbl A T w then (w.count i : ℝ≥0∞) else 0 :=
+    funext fun T => iSup_eq_if _
+  rw [heq]
+  exact Measurable.ite (measurableSet_isLog vbl A hAm w) measurable_const measurable_const
+
+/-- **Theorem 1.2 for the outer expectation** [MoserTardos2010]. Under the local-lemma hypothesis
+there is a measurable function `g` of the table, with `∫⁻ g ≤ x i / (1 - x i)`, that bounds the
+number of resamplings of `A i` under every valid selection rule. So the bound holds for the upper
+(outer) expectation of the count as well, whether or not the rule is measurable. -/
+theorem exists_measurable_ge_resamplings [DecidableEq ι] [Finite ι] (A : ι → Set (∀ v, α v))
+    (hAm : ∀ i, MeasurableSet (A i))
+    (hA : ∀ i, DependsOn (· ∈ A i) (vbl i : Set V)) (Γ : ι → Finset ι)
+    (hΓ : ∀ i j, j ≠ i → ¬Disjoint (vbl i) (vbl j) → j ∈ Γ i)
+    {x : ι → ℝ} (hx : ∀ i, x i ∈ Set.Ico 0 1)
+    (hP : ∀ i, (Measure.pi μ).real (A i) ≤ x i * ∏ j ∈ Γ i, (1 - x j)) (i : ι) :
+    ∃ g : (∀ p : V × ℕ, α p.1) → ℝ≥0∞, Measurable g ∧
+      ∫⁻ T, g T ∂table μ ≤ ENNReal.ofReal (x i / (1 - x i)) ∧
+      ∀ sel : (∀ p : V × ℕ, α p.1) → List ι → Option ι,
+        (∀ T w j, sel T w = some j → current vbl T w ∈ A j) →
+          ∀ T, resamplings sel i T ≤ g T :=
+  ⟨_, measurable_iSup_count vbl A hAm i, lintegral_iSup_count_le μ vbl A hAm hA Γ hΓ hx hP i,
+    fun _ hsel T => resamplings_le_iSup_count vbl A hsel i T⟩
 
 omit [Fintype V] [∀ v, MeasurableSpace (α v)] in
 private theorem length_le_sum_iSup_passCount [DecidableEq ι] [Fintype ι] (A : ι → Set (∀ v, α v))
@@ -490,6 +583,22 @@ theorem ae_exists_run_eq_none [Finite ι] (A : ι → Set (∀ v, α v)) (hAm : 
   exact lt_irrefl _ (hlen.trans_lt hn)
 
 /-- **The algorithm finds a good assignment** [MoserTardos2010, Theorem 1.2]: under the
+local-lemma hypothesis, for every valid selection rule that stops only when no event occurs,
+almost surely the run reaches, after finitely many resamplings, an assignment in which no event
+occurs. -/
+theorem ae_exists_forall_notMem_run [Finite ι] (A : ι → Set (∀ v, α v))
+    (hAm : ∀ i, MeasurableSet (A i)) (hA : ∀ i, DependsOn (· ∈ A i) (vbl i : Set V))
+    (Γ : ι → Finset ι) (hΓ : ∀ i j, j ≠ i → ¬Disjoint (vbl i) (vbl j) → j ∈ Γ i)
+    {x : ι → ℝ} (hx : ∀ i, x i ∈ Set.Ico 0 1)
+    (hP : ∀ i, (Measure.pi μ).real (A i) ≤ x i * ∏ j ∈ Γ i, (1 - x j))
+    {sel : (∀ p : V × ℕ, α p.1) → List ι → Option ι}
+    (hsel : ∀ T w i, sel T w = some i → current vbl T w ∈ A i)
+    (hstop : ∀ T w, sel T w = none → ∀ i, current vbl T w ∉ A i) :
+    ∀ᵐ T ∂table μ, ∃ n, ∀ i, current vbl T (run sel T n) ∉ A i := by
+  filter_upwards [ae_exists_run_eq_none μ vbl A hAm hA Γ hΓ hx hP hsel] with T ⟨n, hn⟩
+  exact ⟨n, hstop T _ hn⟩
+
+/-- **The greedy run finds a good assignment** [MoserTardos2010, Theorem 1.2]: under the
 local-lemma hypothesis, almost surely the greedy run reaches, after finitely many resamplings, an
 assignment in which no event occurs. -/
 theorem ae_exists_forall_notMem_run_greedy [Finite ι] (A : ι → Set (∀ v, α v))
@@ -497,10 +606,9 @@ theorem ae_exists_forall_notMem_run_greedy [Finite ι] (A : ι → Set (∀ v, �
     (Γ : ι → Finset ι) (hΓ : ∀ i j, j ≠ i → ¬Disjoint (vbl i) (vbl j) → j ∈ Γ i)
     {x : ι → ℝ} (hx : ∀ i, x i ∈ Set.Ico 0 1)
     (hP : ∀ i, (Measure.pi μ).real (A i) ≤ x i * ∏ j ∈ Γ i, (1 - x j)) :
-    ∀ᵐ T ∂table μ, ∃ n, ∀ i, current vbl T (run (greedy vbl A) T n) ∉ A i := by
-  filter_upwards [ae_exists_run_eq_none μ vbl A hAm hA Γ hΓ hx hP (sel := greedy vbl A)
-    fun _ _ _ h => greedy_eq_some vbl h] with T ⟨n, hn⟩
-  exact ⟨n, greedy_eq_none vbl hn⟩
+    ∀ᵐ T ∂table μ, ∃ n, ∀ i, current vbl T (run (greedy vbl A) T n) ∉ A i :=
+  ae_exists_forall_notMem_run μ vbl A hAm hA Γ hΓ hx hP (fun _ _ _ h => greedy_eq_some vbl h)
+    fun _ _ h => greedy_eq_none vbl h
 
 omit [DecidableEq V] in
 /-- **The variable local lemma, constructively** [MoserTardos2010, Theorem 1.2]: under the
