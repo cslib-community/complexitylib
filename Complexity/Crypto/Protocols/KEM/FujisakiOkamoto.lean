@@ -12,6 +12,7 @@ public import Complexity.Languages.Probabilistic.Expect
 public import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF
+import Complexity.Probability.PMF.ToReal
 
 /-!
 # HHK17 Modular Fujisaki–Okamoto KEM Transforms
@@ -190,8 +191,8 @@ theorem msgFailProb_nonneg
 theorem msgFailProb_le_one
     (P : ExplicitCoinPKE PK SK M R CT) (pk : PK) (sk : SK) (m : M) :
     P.msgFailProb pk sk m ≤ 1 := by
-  rw [msgFailProb, ← ENNReal.toReal_one]
-  exact ENNReal.toReal_mono ENNReal.one_ne_top (PMF.toOuterMeasure_le_one _ _)
+  rw [msgFailProb]
+  exact PMF.toOuterMeasure_toReal_le_one _ _
 
 /-- If `Dec(sk, Enc(pk, m; r)) = some m` holds for every supported coin `r`, the message failure
 probability at `(pk, sk, m)` is `0`. -/

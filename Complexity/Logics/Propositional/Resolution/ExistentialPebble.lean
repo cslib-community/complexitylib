@@ -63,8 +63,8 @@ here are ours, with the off-by-one conventions of the library's
 
 ## Main results
 
-* `Cslib.Logic.PL.CNF.DuplicatorStrategy.extendSet`: a position extends to further variables, up to
-  the number of pebbles.
+* `Cslib.Logic.PL.CNF.DuplicatorStrategy.exists_extend_union`: a position extends to further
+  variables, up to the number of pebbles.
 * `Cslib.Logic.PL.CNF.DuplicatorStrategy.not_falsifies_of_isProof`: no position falsifies a line of
   a proof of width `w`, for `w + 1` pebbles.
 * `Cslib.Logic.PL.CNF.DuplicatorStrategy.not_refutableInWidth`: **a Duplicator strategy with
@@ -127,7 +127,7 @@ variable [DecidableEq V] {φ : CNF V} {w : ℕ}
 
 /-- **Extension to a set of variables**: a position of a `k`-pebble strategy on `d` extends to a
 position on `d ∪ e` agreeing with it on `d`, provided `|d| + |e| ≤ k`. -/
-theorem extendSet {k : ℕ} (S : DuplicatorStrategy φ k) {σ : V → Bool} {d : Finset V}
+theorem exists_extend_union {k : ℕ} (S : DuplicatorStrategy φ k) {σ : V → Bool} {d : Finset V}
     (hσ : S.Mem σ d) (e : Finset V) (hde : #d + #e ≤ k) :
     ∃ σ', S.Mem σ' (d ∪ e) ∧ ∀ x ∈ d, σ' x = σ x := by
   induction e using Finset.induction_on with
@@ -281,7 +281,8 @@ assignments on at most `w + 1` variables that falsify no clause derivable from `
 `w + 1` variables.
 
 Clauses of width `w + 1` must be excluded: `(x₀ ∨ x₁ ∨ x₂) ∧ ¬x₀ ∧ ¬x₁ ∧ ¬x₂` has no refutation of
-width `2`, but Spoiler wins with `3` pebbles by pebbling `x₀`, `x₁` and `x₂`. -/
+width `2`, but Spoiler wins with `3` pebbles by pebbling `x₀`, `x₁` and `x₂`. From a bound
+`hk : ∀ c ∈ φ, c.width ≤ w`, the hypothesis is `fun c hc => (Nat.lt_succ_of_le (hk c hc)).ne`. -/
 def ofNotRefutableInWidth (hk : ∀ c ∈ φ, c.width ≠ w + 1) (h : ¬ φ.RefutableInWidth w) :
     DuplicatorStrategy φ (w + 1) where
   Mem σ d := #d ≤ w + 1 ∧ Good φ w σ d
