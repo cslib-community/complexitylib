@@ -490,8 +490,7 @@ theorem exists_witness_of_card_eq {k : Nat} (hk : 0 < k) {pages : List α}
   have hle : (problem α k).scheduleCost s₀ reqs offStates ≤ m := by
     by_contra hgt
     have hm1 : m + 1 ≤ (problem α k).scheduleCost s₀ reqs offStates := by omega
-    have hmul : k * (m + 1) ≤ k * (problem α k).scheduleCost s₀ reqs offStates :=
-      Nat.mul_le_mul_left k hm1
+    have hmul : k * (m + 1) ≤ k * (problem α k).scheduleCost s₀ reqs offStates := by gcongr
     rw [Nat.mul_add, Nat.mul_one] at hmul
     omega
   exact ⟨reqs, offStates, hlen_reqs, hv,
@@ -535,8 +534,7 @@ theorem exists_ratio_violation_of_lt {k : Nat} (hk : 0 < k) {pages : List α}
   have hopt_le : (problem α k).scheduleCost s₀ reqs offStates ≤ m + (k - 1) := by
     by_contra hgt
     have hm1 : m + k ≤ (problem α k).scheduleCost s₀ reqs offStates := by omega
-    have hmul : k * (m + k) ≤ k * (problem α k).scheduleCost s₀ reqs offStates :=
-      Nat.mul_le_mul_left k hm1
+    have hmul : k * (m + k) ≤ k * (problem α k).scheduleCost s₀ reqs offStates := by gcongr
     rw [Nat.mul_add] at hmul
     have hk2 : k * (k - 1) + (k - 1) < k * k := by
       cases k with

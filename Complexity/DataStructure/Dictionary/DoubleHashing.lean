@@ -1679,8 +1679,7 @@ private theorem card_validTuples_le (M : ℕ) {w : ℕ} (hw : w ≤ 2 ^ M)
         (validTuples M w h (b + 1) hb).card ≤
             (validTuples M w h b (Nat.le_of_succ_le hb)).card * (2 ^ (M - 1) + w ^ 4) := by
           simpa using hbi
-        _ ≤ ((2 ^ M * 2 ^ (M - 1)) * (2 ^ (M - 1) + w ^ 4) ^ b) * (2 ^ (M - 1) + w ^ 4) :=
-          Nat.mul_le_mul_right _ ih
+        _ ≤ ((2 ^ M * 2 ^ (M - 1)) * (2 ^ (M - 1) + w ^ 4) ^ b) * (2 ^ (M - 1) + w ^ 4) := by gcongr
         _ = (2 ^ M * 2 ^ (M - 1)) * (2 ^ (M - 1) + w ^ 4) ^ (b + 1) := by
           ring
 
@@ -2056,8 +2055,7 @@ private theorem four_pow_mul_card_hasBFSWitness_le
         ≤ 2 ^ (M - 1) * (2 ^ (M - 1) + 2 ^ (M - 1)) :=
           Nat.mul_le_mul h16 (Nat.add_le_add_left hw4' _)
       _ = 2 ^ M * 2 ^ (M - 1) := by rw [h2M_eq]; ring
-  have hpow_le : (16 * n_max * (2 ^ (M - 1) + w ^ 4)) ^ w ≤ P_base ^ w :=
-    Nat.pow_le_pow_left hstep_base w
+  have hpow_le : (16 * n_max * (2 ^ (M - 1) + w ^ 4)) ^ w ≤ P_base ^ w := by gcongr
   have hP_pos : 0 < P_base ^ w :=
     Nat.pow_pos (Nat.mul_pos (Nat.two_pow_pos M) (Nat.two_pow_pos (M - 1)))
   have hmul_final :
@@ -2230,8 +2228,7 @@ theorem sum_probeCount_oddStride_le_of_kWiseIndependent
             Finset.sum_le_sum hterm
         _ = (∑ w ∈ Finset.Ico 1 L, 2 ^ (L - 1 - w)) * Fintype.card (Θ₁ × Θ₂) :=
             (Finset.sum_mul _ _ _).symm
-        _ ≤ 2 ^ (L - 1) * Fintype.card (Θ₁ × Θ₂) :=
-            Nat.mul_le_mul_right _ hsum_geom
+        _ ≤ 2 ^ (L - 1) * Fintype.card (Θ₁ × Θ₂) := by gcongr
     exact Nat.le_of_mul_le_mul_left hmul_L (Nat.two_pow_pos (L - 1))
   have hov_x₀ (x₀ : Fin U) :
       4 ^ L * (∑ w ∈ Finset.Ico L (2 * L), C x₀ w) ≤ 2 * Fintype.card (Θ₁ × Θ₂) := by
@@ -2253,8 +2250,7 @@ theorem sum_probeCount_oddStride_le_of_kWiseIndependent
           = 2 ^ (2 * L - 1 - w) * ((2 ^ (w - L) * 4 ^ L) * C x₀ w) := by
             rw [hpow_L1]
             ring
-        _ ≤ 2 ^ (2 * L - 1 - w) * ((4 ^ (w - L) * 4 ^ L) * C x₀ w) :=
-            Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ hpow24))
+        _ ≤ 2 ^ (2 * L - 1 - w) * ((4 ^ (w - L) * 4 ^ L) * C x₀ w) := by gcongr
         _ = 2 ^ (2 * L - 1 - w) * (4 ^ w * C x₀ w) := by rw [hpow_4w]
         _ ≤ 2 ^ (2 * L - 1 - w) * Fintype.card (Θ₁ × Θ₂) :=
             Nat.mul_le_mul_left _ (hC_bound x₀ hw_lt)
@@ -2278,8 +2274,7 @@ theorem sum_probeCount_oddStride_le_of_kWiseIndependent
             Finset.sum_le_sum hterm
         _ = (∑ w ∈ Finset.Ico L (2 * L), 2 ^ (2 * L - 1 - w)) * Fintype.card (Θ₁ × Θ₂) :=
             (Finset.sum_mul _ _ _).symm
-        _ ≤ 2 ^ L * Fintype.card (Θ₁ × Θ₂) :=
-            Nat.mul_le_mul_right _ hsum_geom
+        _ ≤ 2 ^ L * Fintype.card (Θ₁ × Θ₂) := by gcongr
         _ = 2 ^ (L - 1) * (2 * Fintype.card (Θ₁ × Θ₂)) := by rw [h2L_split, Nat.mul_assoc]
     exact Nat.le_of_mul_le_mul_left hmul_L (Nat.two_pow_pos (L - 1))
   have hov_two :
@@ -2297,8 +2292,7 @@ theorem sum_probeCount_oddStride_le_of_kWiseIndependent
         _ ≤ ∑ _x₀ ∈ insert u (Dictionary.dom s), 2 * Fintype.card (Θ₁ × Θ₂) :=
             Finset.sum_le_sum fun x₀ _ => hov_x₀ x₀
         _ = (insert u (Dictionary.dom s)).card * (2 * Fintype.card (Θ₁ × Θ₂)) := by simp
-        _ ≤ (n_max + 1) * (2 * Fintype.card (Θ₁ × Θ₂)) :=
-            Nat.mul_le_mul_right _ hcard_ins
+        _ ≤ (n_max + 1) * (2 * Fintype.card (Θ₁ × Θ₂)) := by gcongr
     have h4L_ge := four_mul_n_max_sq_le_four_pow_maxProbeCutoff n_max
     have hmul_4L :
         (2 * 4 ^ L) *
@@ -2310,11 +2304,9 @@ theorem sum_probeCount_oddStride_le_of_kWiseIndependent
           = 4 * n_max *
               (4 ^ L * ∑ x₀ ∈ insert u (Dictionary.dom s), ∑ w ∈ Finset.Ico L (2 * L), C x₀ w) := by
             ring
-        _ ≤ 4 * n_max * ((n_max + 1) * (2 * Fintype.card (Θ₁ × Θ₂))) :=
-            Nat.mul_le_mul_left _ hsum_4L
+        _ ≤ 4 * n_max * ((n_max + 1) * (2 * Fintype.card (Θ₁ × Θ₂))) := by gcongr
         _ = 2 * (4 * n_max * (n_max + 1)) * Fintype.card (Θ₁ × Θ₂) := by ring
-        _ ≤ (2 * 4 ^ L) * Fintype.card (Θ₁ × Θ₂) :=
-            Nat.mul_le_mul_right _ (Nat.mul_le_mul_left 2 h4L_ge)
+        _ ≤ (2 * 4 ^ L) * Fintype.card (Θ₁ × Θ₂) := by gcongr
     have hpos_4L : 0 < 2 * 4 ^ L := Nat.mul_pos (by decide) (Nat.pow_pos (by decide))
     exact Nat.le_of_mul_le_mul_left hmul_4L hpos_4L
   have hpt :
@@ -2500,8 +2492,7 @@ theorem sum_probeCount_oddStride_of_whp_kWiseIndependent
         exact Finset.sum_le_sum fun top₁ _ => Finset.sum_le_sum fun top₂ _ => hinner top₁ top₂
     _ = (∑ top₁ : Θ_top₁, ∑ top₂ : Θ_top₂, (2 + b₁ top₁ + b₂ top₂)) * B_card := by
         simp_rw [← Finset.sum_mul]
-    _ ≤ (3 * (Fintype.card Θ_top₁ * Fintype.card Θ_top₂)) * B_card :=
-        Nat.mul_le_mul_right B_card htop_le
+    _ ≤ (3 * (Fintype.card Θ_top₁ * Fintype.card Θ_top₂)) * B_card := by gcongr
     _ = 3 * Fintype.card ((Θ_top₁ × Θ_bot₁) × (Θ_top₂ × Θ_bot₂)) := by
         dsimp only [B_card]
         simp only [Fintype.card_prod]
@@ -2597,8 +2588,7 @@ theorem sum_probeCount_oddStride_doubleTab_of_codeBound_le
           refine Nat.mul_le_mul_right N_top ?_
           have hB_sq : B ≤ B * B := Nat.le_mul_of_pos_left B hB_ge
           nlinarith
-        _ ≤ (2 ^ (3 * b)) ^ 2 * N_top :=
-          Nat.mul_le_mul_right N_top (Nat.pow_le_pow_left hbound 2)
+        _ ≤ (2 ^ (3 * b)) ^ 2 * N_top := by gcongr
         _ = 2 ^ (6 * b) * N_top := by
           rw [← Nat.pow_mul]
           congr 2
@@ -2672,8 +2662,7 @@ theorem sum_probeCount_oddStride_doubleTab_le
     calc U ≤ max n_max 4 ^ c_exp := hU
       _ ≤ max n_max 4 ^ max c_exp 1 :=
         Nat.pow_le_pow_right (by omega) (le_max_left c_exp 1)
-      _ ≤ (2 ^ (2 * b)) ^ max c_exp 1 :=
-        Nat.pow_le_pow_left hmax_le_2b (max c_exp 1)
+      _ ≤ (2 ^ (2 * b)) ^ max c_exp 1 := by gcongr
       _ = 2 ^ (c * b) := by
         rw [← Nat.pow_mul]
         congr 1
