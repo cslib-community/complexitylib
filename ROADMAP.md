@@ -817,6 +817,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 ### Search, parameterized and fine-grained complexity
 
 - **TFNP:** CLS, further local search, fixed-point and equilibrium problems.
+- **Potential-line classes** ([#3206](https://github.com/cslib-community/complexitylib/issues/3206)):
+  `PPADS`, `EOPL` and `SOPL` with their easy inclusions are in place. Next: `SOPL ∩ PPAD ⊆ EOPL`,
+  then `PLS ∩ PPADS ⊆ SOPL` (Göös et al. 2022, Lemmas 2–4), giving `SOPL = PLS ∩ PPADS` and
+  `EOPL = PLS ∩ PPAD`; also `UEOPL`.
 - **Sperner's lemma** ([#2999](https://github.com/cslib-community/complexitylib/issues/2999)):
   the parity form on the triangulated square grid by door-following, and circuit `Sperner2D` in
   `PPAD` as the end-of-line relation of its door graph. Remaining
