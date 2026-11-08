@@ -1083,6 +1083,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   budgets, their success sets, and measure and dimension within complexity classes; connect
   quantitative randomness to the Kolmogorov-complexity development. State the resource bounds
   and uniformity of the betting strategies separately from ordinary measure-theoretic facts.
+  Beyond Lutz's p-measure in `E`
+  ([#3139](https://github.com/cslib-community/complexitylib/issues/3139)): the quantitative
+  Measure Conservation bound, countable p-unions (Lutz's Lemma 3.10(c)), measure in `EXP` (`p₂`),
+  p-randomness, gales and resource-bounded dimension.
 
 ## Communication, queries, learning and other models
 
