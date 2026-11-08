@@ -197,9 +197,7 @@ theorem pow_le_measureReal_iInter_compl [Fintype ι]
     (hlll : Real.exp 1 * q * (d + 1) ≤ 1) :
     ((d : ℝ) / (d + 1)) ^ Fintype.card ι ≤ μ.real (⋂ i, (A i)ᶜ) := by
   have hd1 : (0 : ℝ) < d + 1 := by positivity
-  have hsub : 1 - ((d : ℝ) + 1)⁻¹ = d / (d + 1) := by
-    field_simp
-    ring
+  have hsub : 1 - 1 / ((d : ℝ) + 1) = d / (d + 1) := by field_simp; ring
   have h := prod_one_sub_le_measureReal_iInter_compl hA Γ hΓ (fun _ => 1 / ((d : ℝ) + 1))
     (fun _ => ⟨by positivity, (div_le_one hd1).2 (by linarith [d.cast_nonneg (α := ℝ)])⟩)
     fun i => ?_
