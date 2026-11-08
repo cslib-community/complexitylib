@@ -2888,7 +2888,10 @@ public import Complexity.Computability.Pebbling.Basic
 public import Complexity.Computability.Pebbling.BinaryTree
 public import Complexity.Computability.Pebbling.Blocking
 public import Complexity.Computability.Pebbling.Map
+public import Complexity.Computability.Pebbling.Path
 public import Complexity.Computability.Pebbling.Pyramid
+public import Complexity.Computability.Pebbling.Reversible
+public import Complexity.Computability.Pebbling.ReversiblePath
 public import Complexity.Computability.PolyTime.BitString.InitialTestsSearch
 public import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceCounter
 public import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceExactness
@@ -2997,6 +3000,7 @@ public import Complexity.Computability.QueryComplexity.Quantum.Adversary
 public import Complexity.Computability.QueryComplexity.Quantum.AmbainisAdversary
 public import Complexity.Computability.QueryComplexity.Quantum.AmbainisAdversary.Symmetric
 public import Complexity.Computability.QueryComplexity.Quantum.AmbainisAdversary.Tribes
+public import Complexity.Computability.QueryComplexity.Quantum.AmbainisAdversary.WeightLayers
 public import Complexity.Computability.QueryComplexity.Quantum.BernsteinVazirani
 public import Complexity.Computability.QueryComplexity.Quantum.BitQuery
 public import Complexity.Computability.QueryComplexity.Quantum.Composition
@@ -3745,6 +3749,9 @@ public import Complexity.DataStructure.HashFamily.WordRAM.KWise
 public import Complexity.DataStructure.HashFamily.WordRAM.MultiplyShift
 public import Complexity.DataStructure.HashFamily.WordRAM.ReducedKWise
 public import Complexity.DataStructure.HashFamily.WordRAM.Tabulation
+public import Complexity.DataStructure.ListUpdate.Basic
+public import Complexity.DataStructure.ListUpdate.LowerBound
+public import Complexity.DataStructure.ListUpdate.MoveToFront
 public import Complexity.DataStructure.Memory.Alloc
 public import Complexity.DataStructure.Memory.Copy
 public import Complexity.DataStructure.Memory.Field
@@ -3756,6 +3763,7 @@ public import Complexity.DataStructure.Memory.Spec
 public import Complexity.DataStructure.Memory.Triple
 public import Complexity.DataStructure.ObliviousSequence
 public import Complexity.DataStructure.Online.Basic
+public import Complexity.DataStructure.Online.SkiRental
 public import Complexity.DataStructure.OrderedSet.Basic
 public import Complexity.DataStructure.OrderedSet.ExtractMin
 public import Complexity.DataStructure.OrderedSet.Spec
@@ -4190,6 +4198,7 @@ public import Complexity.Foundations.Data.BitString.Sum
 public import Complexity.Foundations.Data.BitString.Support
 public import Complexity.Foundations.Data.BitString.Threshold
 public import Complexity.Foundations.Data.BitString.Weight
+public import Complexity.Foundations.Data.BitString.WeightInterval
 public import Complexity.Foundations.Data.BitString.WordCount
 public import Complexity.Foundations.Data.BitString.ZModTwo
 public import Complexity.Foundations.Data.Code.AsymptoticallyGood
@@ -4329,6 +4338,8 @@ public import Complexity.Foundations.Data.Nat.Log
 public import Complexity.Foundations.Data.Nat.LogRpow
 public import Complexity.Foundations.Data.Nat.LogStar
 public import Complexity.Foundations.Data.Nat.LogTwoRpow
+public import Complexity.Foundations.Data.Nat.MasterTheorem
+public import Complexity.Foundations.Data.Nat.MasterTheoremAsymptotics
 public import Complexity.Foundations.Data.Nat.Morton
 public import Complexity.Foundations.Data.Nat.OddMulMod
 public import Complexity.Foundations.Data.Nat.OfDigits
@@ -4638,7 +4649,9 @@ public import Complexity.GameTheory.Congestion.Affine
 public import Complexity.GameTheory.Congestion.Basic
 public import Complexity.GameTheory.Congestion.Hedge
 public import Complexity.GameTheory.Congestion.Nonatomic
+public import Complexity.GameTheory.Mechanism.Bayesian
 public import Complexity.GameTheory.Mechanism.CriticalBid
+public import Complexity.GameTheory.Mechanism.FirstPrice
 public import Complexity.GameTheory.Mechanism.Knapsack
 public import Complexity.GameTheory.Mechanism.Myerson
 public import Complexity.GameTheory.Mechanism.OptimalAuction
@@ -4692,6 +4705,7 @@ public import Complexity.Languages.Probabilistic.Sum
 public import Complexity.Languages.Probabilistic.Transcript
 public import Complexity.Languages.Probabilistic.Traverse
 public import Complexity.Languages.Probabilistic.Traverse.CoinTape
+public import Complexity.Languages.Probabilistic.Traverse.SupportWith
 public import Complexity.Languages.Probabilistic.UniformNat
 public import Complexity.Languages.Probabilistic.UniformNat.Support
 public import Complexity.Languages.Probabilistic.UntilBad
@@ -4987,6 +5001,7 @@ public import Complexity.MachineLearning.PACLearning.UniformConvergence
 public import Complexity.MachineLearning.PACLearning.VCDimension
 public import Complexity.MachineLearning.PACLearning.VCUpperBound
 public import Complexity.MachineLearning.StatisticalQuery.Basic
+public import Complexity.MachineLearning.StatisticalQuery.Dimension
 public import Complexity.MachineLearning.StatisticalQuery.LowDegree
 public import Complexity.MachineLearning.StatisticalQuery.LowerBound
 public import Complexity.MachineLearning.StatisticalQuery.Parity
@@ -5089,6 +5104,7 @@ public import Complexity.Probability.Minimax
 public import Complexity.Probability.Minimax.Value
 public import Complexity.Probability.OptimalStopping.Basic
 public import Complexity.Probability.OptimalStopping.Prophet
+public import Complexity.Probability.OptimalStopping.ProphetIID
 public import Complexity.Probability.OptimalStopping.Secretary
 public import Complexity.Probability.Option
 public import Complexity.Probability.PMF
@@ -5100,6 +5116,7 @@ public import Complexity.Probability.PMF.Filter
 public import Complexity.Probability.PMF.Map
 public import Complexity.Probability.PMF.Option
 public import Complexity.Probability.PMF.Option.Bind
+public import Complexity.Probability.PMF.TailQuantile
 public import Complexity.Probability.PMF.TwoBranch
 public import Complexity.Probability.PMF.Uniform
 public import Complexity.Probability.PMF.UniformBound
