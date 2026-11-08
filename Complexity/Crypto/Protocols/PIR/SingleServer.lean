@@ -123,7 +123,9 @@ theorem isPrivate_download (ι : Type) : (download ι).IsPrivate :=
 
 theorem communication_download (ι : Type) [Fintype ι] [DecidableEq ι] :
     communication Unit Unit (ι → Bool) = Fintype.card ι := by
-  rw [communication_rows, Fintype.card_unit, Nat.clog_one_right, zero_add, one_mul]
+  rw [communication_of_card_answer Unit Unit (ι → Bool)
+      (by rw [Fintype.card_fun, Fintype.card_bool]),
+    Fintype.card_unit, Nat.clog_one_right, zero_add, one_mul]
 
 /-- One server needs at least `n` bits. -/
 theorem HasScheme.card_le {ι : Type} [Fintype ι] {c : ℕ} (h : HasScheme ι 1 c) :

@@ -33,7 +33,9 @@ user runs the decoder's output function on the answers. This is `PIR.ofDecoder`
 
 The source states the lemma for a perfectly smooth locally decodable code; its proof uses only that
 the decoder recovers `x i` from uncorrupted codewords, which is the hypothesis here. Decoding
-corrupted words is not needed.
+corrupted words is not needed. The source's databases and messages are `q`-ary; here they are
+Boolean, as in `Scheme`, while the code alphabet `Γ` is arbitrary. The decoder is non-adaptive, as
+in the source's proof, which sends all the queries at once.
 
 ## Main definitions
 

@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import Complexity.Computability.LocallyDecodable.Hadamard
 import Complexity.Crypto.Protocols.PIR.Cube
 import Complexity.Crypto.Protocols.PIR.SingleServer
 import Complexity.Crypto.Protocols.PIR.SmoothCode
@@ -22,8 +23,10 @@ import Mathlib.Tactic.NormNum
 * Both hypotheses of the lower bound are needed. The scheme that sends the index to the server is
   correct and communicates `3` bits for a four-bit database, so it is not private; the scheme that
   always outputs `false` is private and communicates nothing, but it is not correct.
-* The Hadamard code is perfectly smooth and decodes codewords exactly, so its decoder gives a
-  two-server scheme with `2 (3 + 1)` bits for a three-bit database, as the two-server scheme does.
+* The library's Hadamard decoder (`BitString.hadamardDecoder`) has uniform reads
+  (`BitString.map_hadamardDecoder_query`) and decodes codewords exactly, so its reads and output
+  give a two-server scheme with `2 (3 + 1)` bits for a three-bit database, as the two-server scheme
+  does.
 -/
 
 namespace ComplexityTests.Crypto.PIR
@@ -136,42 +139,37 @@ section Hadamard
 
 variable {ι : Type} [Fintype ι] [DecidableEq ι]
 
-/-- The positions read by the Hadamard decoder for the bit `i`: `r` and `eᵢ + r`. -/
+/-- The positions that the library's Hadamard decoder reads for the bit `i`: `r` and `eᵢ + r`. -/
 private def hadamardReads (i : ι) (r : ι → Bool) : Fin 2 → ι → Bool :=
   ![r, Pi.single i true + r]
 
-/-- The output of the Hadamard decoder: the exclusive or of the two symbols read. -/
+/-- The output function of the library's Hadamard decoder. -/
 private def hadamardOutput (_ : ι) (_ : ι → Bool) (a : Fin 2 → Bool) : Bool :=
   a 0 ^^ a 1
 
-/-- Both reads of the Hadamard decoder are uniform positions. -/
-private theorem map_hadamardReads (i : ι) (k : Fin 2) :
-    (ProbComp.eval (ProbComp.uniform (ι → Bool))).map (fun r => hadamardReads i r k) =
-      PMF.uniformOfFintype (ι → Bool) := by
-  rw [ProbComp.eval_uniform]
-  fin_cases k
-  · exact PMF.map_id _
-  · exact PMF.uniformOfFintype_map_equiv (Equiv.addLeft (Pi.single i true : ι → Bool))
+/-- These are the reads and the output of `BitString.hadamardDecoder`. -/
+private theorem hadamardDecoder_eq (i : ι) :
+    hadamardDecoder i =
+      nonadaptive (ProbComp.uniform (ι → Bool)) (hadamardReads i) (hadamardOutput i) := by
+  rw [hadamardDecoder]
+  rfl
 
 /-- The Hadamard decoder decodes every codeword with probability one. -/
 private theorem decodeLaw_hadamard (x : ι → Bool) (i : ι) :
     decodeLaw (nonadaptive (ProbComp.uniform (ι → Bool)) (hadamardReads i) (hadamardOutput i))
       (hadamardCode x) = PMF.pure (x i) := by
-  rw [decodeLaw_nonadaptive]
-  have h : (fun r => hadamardOutput i r (hadamardCode x ∘ hadamardReads i r)) =
-      Function.const _ (x i) := by
+  rw [← hadamardDecoder_eq, decodeLaw_hadamardDecoder]
+  have h : selfCorrect (hadamardCode x) (Pi.single i true) = Function.const _ (x i) := by
     funext r
-    simp only [hadamardOutput, hadamardReads, Function.comp_apply, Matrix.cons_val_zero,
-      Matrix.cons_val_one, hadamardCode_add, hadamardCode_single, Function.const_apply]
-    cases hadamardCode x r <;> cases x i <;> rfl
+    rw [selfCorrect_hadamardCode, hadamardCode_single, Function.const_apply]
   rw [h, PMF.map_const]
 
 omit [DecidableEq ι] in
 /-- The Hadamard decoder gives a two-server scheme with `2 (n + 1)` bits. -/
 private theorem hasScheme_hadamard : HasScheme ι 2 (2 * (Fintype.card ι + 1)) := by
   classical
-  have h := hasScheme_ofDecoder (q := 2) hadamardCode (fun _ => ProbComp.uniform (ι → Bool))
-    hadamardReads hadamardOutput map_hadamardReads decodeLaw_hadamard
+  have h := hasScheme_ofDecoder hadamardCode (fun _ => ProbComp.uniform (ι → Bool))
+    hadamardReads hadamardOutput (fun i k => map_hadamardDecoder_query i k) decodeLaw_hadamard
   rwa [Fintype.card_fun, Fintype.card_bool, Nat.clog_pow 2 _ (by norm_num),
     Nat.clog_eq_one le_rfl le_rfl] at h
 

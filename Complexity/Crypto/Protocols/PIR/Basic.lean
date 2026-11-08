@@ -41,11 +41,12 @@ of every query and answer: `|S| · (⌈log₂ |Q|⌉ + ⌈log₂ |A|⌉)`. For `
 `A = Fin ℓa → Bool` this is the source's `k · (ℓq + ℓa)`.
 
 Two transformations build schemes from schemes. `Scheme.rows` is the generic transformation of
-[CGKS, Section 3.4 and Proposition 4][ChorGoldreichKushilevitzSudan1998]: a database indexed by
-`ρ × ι` is a matrix with rows indexed by `ρ`, the user sends the query for the column `i`, and each
-server answers it once for every row. `Scheme.comap` restricts a scheme along an embedding of
-indices, padding the database with `false`; it turns a scheme for a grid or a cube into one for
-`Fin n`.
+[CGKS, Section 3.4][ChorGoldreichKushilevitzSudan1998], restated as Proposition 4 in Section 4.1: a
+database indexed by `ρ × ι` is a matrix with rows indexed by `ρ`, the user sends the query for the
+column `i`, and each server answers it once for every row. Its communication is computed for
+one-bit answers (`PIR.communication_rows`), the case that Section 3.4 uses. `Scheme.comap`
+restricts a scheme along an embedding of indices, padding the database with `false`; it turns a
+scheme for a grid or a cube into one for `Fin n`.
 
 `PIR.HasScheme ι k c` says that some `k`-server scheme for databases indexed by `ι` is correct and
 private and communicates at most `c` bits.
@@ -243,7 +244,8 @@ theorem IsPrivate.comap {ι' : Type} {P : Scheme ι' S R Q A} (h : P.IsPrivate) 
 end Scheme
 
 /-- The rows transformation keeps the queries and multiplies the length of each one-bit answer by
-the number of rows [CGKS, Proposition 4][ChorGoldreichKushilevitzSudan1998]. -/
+the number of rows [CGKS, Section 3.4][ChorGoldreichKushilevitzSudan1998]; this is the one-bit
+answer case of the accounting in Proposition 4 (Section 4.1). -/
 theorem communication_rows (S Q ρ : Type) [Fintype S] [Fintype Q] [Fintype ρ] [DecidableEq ρ] :
     communication S Q (ρ → Bool) =
       Fintype.card S * (Nat.clog 2 (Fintype.card Q) + Fintype.card ρ) :=
