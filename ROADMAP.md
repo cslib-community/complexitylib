@@ -910,7 +910,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
     a bridge to the proof system;
   - Grigoriev's `Ω(n)` bound for random `3`-XOR (Barak–Steurer Theorem 2), through expansion of
     random hypergraphs, and Schoenebeck's gaps for CSPs implied by XOR;
-  - the `0/1` encoding and Grigoriev's knapsack bound.
+  - the `0/1` encoding and Grigoriev's knapsack bound;
+  - the full Positivstellensatz calculus with inequality constraints and products of constraints,
+    and its relation to the equational form here;
+  - size–degree relations for sum-of-squares, and size lower bounds.
 - Polynomial calculus, and certified DPLL solver runtimes.
 - **Frege** ([#3069](https://github.com/cslib-community/complexitylib/issues/3069)): implicational
   completeness of the Hilbert-style system (Kalmár); formula-size measures; the simulation of

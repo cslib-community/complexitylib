@@ -34,10 +34,15 @@ refutation of degree at most `d` (`ParitySystem.not_sos_refutableInDegree_toPoly
 main lemma of [Schoenebeck, Lemma 13][Schoenebeck2008], in the sum-of-squares form of
 [Barak and Steurer, lecture "Higher-degree integrality gaps", Lemma 7 and the proof of Theorem 2]
 [BarakSteurer2016], for an arbitrary parity system: no expansion or randomness is assumed.
-Schoenebeck states it for the `w/2`-th round of the Lasserre hierarchy and width-`w` resolution on
-XOR formulas; here degree `d` plays the role of `w`, and width counts the variables of every line,
-axioms included (`Cslib.Logic.PL.ParitySystem.Derives`), which makes the hypothesis weaker than the
-source's. The construction is that of the sources:
+Schoenebeck states it for width-`w` resolution on XOR formulas and a round of the Lasserre
+hierarchy proportional to `w`. In the author's copy consulted (TeX output dated December 2008,
+p. 8) that round is `w/2`; versions of the paper differ on this constant, and the Lasserre vector
+solution is not constructed here. Round `r` of [Schoenebeck, Definition 5][Schoenebeck2008] has a
+vector for every `r`-junta, so it constrains moments of degree up to `2 r`; degree-`d`
+sum-of-squares corresponds to roughly round `d/2`. Here degree `d` plays the role of `w`, and
+width counts the variables of every line, axioms included
+(`Cslib.Logic.PL.ParitySystem.Derives`), which makes the hypothesis weaker than the source's. The
+construction is that of the sources:
 
 * `Ẽ[∏_{i ∈ T} Xᵢ] = (-1) ^ c` if width-`d` derivations reach `⊕_{i ∈ T} xᵢ = c`, and `0`
   otherwise (`ParitySystem.parityValue`). Since `0 = 1` is not derivable, at most one `c` is

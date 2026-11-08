@@ -4904,6 +4904,7 @@ public import Complexity.Logics.Propositional.Frege.Resolution
 public import Complexity.Logics.Propositional.Parity
 public import Complexity.Logics.Propositional.Parity.DepthThree
 public import Complexity.Logics.Propositional.ParitySystem
+public import Complexity.Logics.Propositional.ParitySystem.Tseitin
 public import Complexity.Logics.Propositional.Pigeonhole
 public import Complexity.Logics.Propositional.QBF
 public import Complexity.Logics.Propositional.QBF.Arithmetization

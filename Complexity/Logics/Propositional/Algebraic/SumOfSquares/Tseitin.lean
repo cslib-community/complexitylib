@@ -9,6 +9,7 @@ module
 
 public import Complexity.Foundations.Combinatorics.Multigraph.CutSpace
 public import Complexity.Logics.Propositional.Algebraic.SumOfSquares.Parity
+public import Complexity.Logics.Propositional.ParitySystem.Tseitin
 import Complexity.Foundations.Data.Finset.SymmDiff
 
 /-!

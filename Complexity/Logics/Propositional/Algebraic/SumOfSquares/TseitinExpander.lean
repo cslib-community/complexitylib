@@ -24,9 +24,11 @@ Constant-degree expanders (`Cslib.RotationMap.expander`) have `120` labels and e
 least `1 / 6000` (`Cslib.RotationMap.le_edgeExpansion_expander`). Their Tseitin parity systems with
 a single charged vertex form **a family of unsatisfiable parity systems with `n` equations of
 constant width on `O(n)` variables whose sum-of-squares refutations need degree `Ω(n)`**
-(`Cslib.Logic.PL.ParitySystem.exists_forall_sos_refutableInDegree_le`), with explicit constants
-[Grigoriev][Grigoriev2001]. The expanders, and so the systems, are obtained non-constructively,
-from a counting argument (`Cslib.RotationMap.exists_spectralExpansion_le`).
+(`Cslib.Logic.PL.ParitySystem.exists_forall_sos_refutableInDegree_le`). The linear degree bound is
+Grigoriev's [Grigoriev][Grigoriev2001]; the explicit constants `120` and `18000` are not from that
+source but from this library's expanders and the bound `h(G) |V| / 3 ≤ e(G)`. The expanders, and
+so the systems, are obtained non-constructively, from a counting argument
+(`Cslib.RotationMap.exists_spectralExpansion_le`).
 
 ## Main results
 
@@ -75,13 +77,17 @@ end Tseitin
 
 namespace ParitySystem
 
-/-- **Unsatisfiable parity systems of constant width need linear sum-of-squares degree**
-[Grigoriev][Grigoriev2001]. For every `n ≥ 2` there is an unsatisfiable parity system with `n`
-equations, each on at most `120` variables, on at most `120 n` variables, such that over every
-strictly ordered commutative ring, every sum-of-squares refutation of degree at most `d` of its
-`±1` encoding has `n ≤ 18000 d`. It is the Tseitin parity system, with a single charged vertex, of a
-`120`-regular expander on `n` vertices (`Cslib.RotationMap.expander`), whose existence is proved
-non-constructively. -/
+/-- **Unsatisfiable parity systems of constant width need linear sum-of-squares degree.** For
+every `n ≥ 2` there is an unsatisfiable parity system with `n` equations, each on at most `120`
+variables, on at most `120 n` variables, such that over every strictly ordered commutative ring,
+every sum-of-squares refutation of degree at most `d` of its `±1` encoding has `n ≤ 18000 d`. It
+is the Tseitin parity system, with a single charged vertex, of a `120`-regular expander on `n`
+vertices (`Cslib.RotationMap.expander`), whose existence is proved non-constructively.
+
+The `Ω(n)` degree bound for Tseitin systems on expanders is Grigoriev's [Grigoriev][Grigoriev2001].
+The constants `120` and `18000` are not from that source: they come from this library's expanders,
+which have `120` labels and edge expansion at least `1 / 6000`
+(`Cslib.RotationMap.le_edgeExpansion_expander`), together with `h(G) |V| / 3 ≤ e(G)`. -/
 theorem exists_forall_sos_refutableInDegree_le :
     ∀ n ≥ 2, ∃ m ≤ 120 * n, ∃ P : ParitySystem (Fin m),
       P.length = n ∧ (∀ e ∈ P, #e.1 ≤ 120) ∧ (∀ a, ¬ P.Holds a) ∧

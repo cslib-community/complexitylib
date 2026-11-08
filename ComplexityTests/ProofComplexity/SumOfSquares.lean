@@ -107,15 +107,16 @@ private theorem totalDegree_C_mul_le {p : MvPolynomial (Fin 3) ℚ} (c : ℚ)
 
 /-- **An explicit refutation of degree `2`**:
 `-2 (x₀x₂ + 1) + 2 (x₀x₁ - 1) + 2 (x₁x₂ - 1) - 3 (x₀² - 1) - (x₁² - 1) - (x₂² - 1)
-  + (x₀ - x₁ + x₂)² + x₀² + x₀² = -1`,
-so Grigoriev's bound `e(G) ≤ d` is attained on the triangle. -/
-example : SOS.RefutableInDegree ((tseitin triangle χ₁).toPolys ℚ) 2 := by
+  + (x₀ - x₁ + x₂)² + 2 x₀² = -1`,
+so Grigoriev's bound `e(G) ≤ d` is attained on the triangle. The square `x₀²` has weight `2`. -/
+private theorem triangle_refutable :
+    SOS.RefutableInDegree ((tseitin triangle χ₁).toPolys ℚ) 2 := by
   refine SOS.RefutableInDegree.of_list
     [(C (-2), parityPoly ℚ (Multigraph.incidence triangle 0) (χ₁ 0)),
       (C 2, parityPoly ℚ (Multigraph.incidence triangle 1) (χ₁ 1)),
       (C 2, parityPoly ℚ (Multigraph.incidence triangle 2) (χ₁ 2)),
       (C (-3), X 0 ^ 2 - 1), (C (-1), X 1 ^ 2 - 1), (C (-1), X 2 ^ 2 - 1)] ?_
-    [X 0 - X 1 + X 2, X 0, X 0] ?_ ?_
+    [(1, X 0 - X 1 + X 2), (2, X 0)] ?_ ?_ ?_
   · simp only [List.forall_mem_cons, List.not_mem_nil, IsEmpty.forall_iff, implies_true, and_true]
     exact ⟨⟨mem_tri 0, totalDegree_C_mul_le _ (totalDegree_tri_le 0)⟩,
       ⟨mem_tri 1, totalDegree_C_mul_le _ (totalDegree_tri_le 1)⟩,
@@ -124,14 +125,22 @@ example : SOS.RefutableInDegree ((tseitin triangle χ₁).toPolys ℚ) 2 := by
       ⟨X_sq_sub_one_mem_toPolys _ 1, totalDegree_C_mul_le _ (totalDegree_sign_le 1)⟩,
       ⟨X_sq_sub_one_mem_toPolys _ 2, totalDegree_C_mul_le _ (totalDegree_sign_le 2)⟩⟩
   · simp only [List.forall_mem_cons, List.not_mem_nil, IsEmpty.forall_iff, implies_true, and_true]
-    have hX (i : Fin 3) : 2 * (X i : MvPolynomial (Fin 3) ℚ).totalDegree ≤ 2 := by
-      rw [totalDegree_X]
+    norm_num
+  · simp only [List.forall_mem_cons, List.not_mem_nil, IsEmpty.forall_iff, implies_true, and_true]
     refine ⟨Nat.mul_le_mul_left 2 ((totalDegree_add _ _).trans (max_le ?_ (totalDegree_X _).le)),
-      hX 0, hX 0⟩
+      by rw [totalDegree_X]⟩
     exact (totalDegree_sub _ _).trans (max_le (totalDegree_X _).le (totalDegree_X _).le)
   · simp only [tri0, tri1, tri2, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
     simp only [map_neg, map_one, map_ofNat]
     ring
+
+/-- A refutation can be extracted, and it refutes in every larger degree. -/
+example : Nonempty (SOS.Refutation ((tseitin triangle χ₁).toPolys ℚ) 2) :=
+  SOS.refutableInDegree_iff.1 triangle_refutable
+
+example (r : SOS.Refutation ((tseitin triangle χ₁).toPolys ℚ) 2) :
+    SOS.RefutableInDegree ((tseitin triangle χ₁).toPolys ℚ) 5 :=
+  r.refutableInDegree.mono (by norm_num)
 
 /-! ### A triangle with two charged vertices -/
 
