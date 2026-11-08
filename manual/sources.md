@@ -597,6 +597,11 @@ Johan Håstad, Russell Impagliazzo, Leonid A. Levin, Michael Luby. “A Pseudora
 
 John E. Hopcroft, Rajeev Motwani and Jeffrey D. Ullman. *Introduction to Automata Theory, Languages, and Computation*, third edition. Addison-Wesley, 2006. ISBN 0-321-45536-3. Cited for Section 7.4.4 ("Testing Membership in a CFL"), the CYK algorithm for grammars in Chomsky normal form. The section number and title were checked against secondary course material, not the printed book.
 
+<a id="holenstein05"></a>
+## holenstein05
+
+Thomas Holenstein. “Key Agreement from Weak Bit Agreement.” *Proceedings of the 37th Annual ACM Symposium on Theory of Computing (STOC 2005)*. Author PDF inspected: https://crypto.ethz.ch/publications/files/Holens05.pdf (Section 2 on Impagliazzo's hard-core lemma; Section 2.1, Lemma 2.1; Section 2.1.1, Lemma 2.2 on choosing a set according to a measure).
+
 <a id="holenstein06"></a>
 ## holenstein06
 
@@ -621,6 +626,11 @@ Neil Immerman. “Nondeterministic Space Is Closed under Complementation.” *SI
 ## impagliazzo01
 
 Russell Impagliazzo and Ramamohan Paturi. *On the Complexity of k-SAT*. Journal of Computer and System Sciences 62(2), 367–375, 2001. DOI: [10.1006/jcss.2000.1727](https://doi.org/10.1006/jcss.2000.1727). [Author-hosted copy](https://cseweb.ucsd.edu/~paturi/myPapers/pubs/ImpagliazzoPaturi_2001_jcss.pdf). Publisher metadata and abstract checked 2026-11-02; cited for the historical exponent-based hypothesis, not for the 2026 result.
+
+<a id="impagliazzo95"></a>
+## impagliazzo95
+
+Russell Impagliazzo. “Hard-Core Distributions for Somewhat Hard Problems.” *Proceedings of the 36th Annual Symposium on Foundations of Computer Science (FOCS 1995)*, 538–545. DOI: [10.1109/SFCS.1995.492584](https://doi.org/10.1109/SFCS.1995.492584). Bibliographic metadata only; the paper itself was not inspected, and its statement is cited as recalled in [Holenstein 2005](#holenstein05), Section 2.
 
 <a id="impagliazzowigderson97"></a>
 ## impagliazzowigderson97

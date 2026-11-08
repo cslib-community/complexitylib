@@ -1041,6 +1041,7 @@ public import Complexity.Computability.Circuit.Boolean.GateElimination
 public import Complexity.Computability.Circuit.Boolean.Gates
 public import Complexity.Computability.Circuit.Boolean.Hamming
 public import Complexity.Computability.Circuit.Boolean.HardCore
+public import Complexity.Computability.Circuit.Boolean.HardCore.Set
 public import Complexity.Computability.Circuit.Boolean.HardnessAmplification
 public import Complexity.Computability.Circuit.Boolean.HardnessAmplification.Schedule
 public import Complexity.Computability.Circuit.Boolean.HardnessAmplification.Stages

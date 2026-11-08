@@ -1345,6 +1345,10 @@ each statement against the numbered result. Organize modules by subject, not cha
 
 - **Derandomization from hardness:** the infinitely-often variant, and the EXP ⊄ P/poly endpoint
   of Babai, Fortnow, Nisan and Wigderson.
+- **Hard-core lemma** ([#3557](https://github.com/cslib-community/complexitylib/issues/3557)):
+  the measure and set forms are in place for nonuniform De Morgan circuits, with density `δ` from
+  hardness `δ`. Open: Holenstein's optimal density (a set of density `δ` from hardness `δ / 2`,
+  his Lemma 2.1), the uniform hard-core lemma, and sharper size losses from smooth boosting.
 - **Extractors** ([#895]) beyond Chor–Goldreich: two-source extractors for lower min-entropy,
   where the `t`-wise independent parts of Chattopadhyay–Zuckerman's Theorem 4.1 are formalized with
   exponent `O(d²)` in place of their `3 d + 6` (the almost `t`-wise independent parts are not), with
