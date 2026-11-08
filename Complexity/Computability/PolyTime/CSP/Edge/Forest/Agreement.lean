@@ -97,21 +97,25 @@ theorem partners_eq (input : Input) (a : Occurrence input.body)
     partners input a.record =
       (Forest.partners Table.sem (labeling input.body input.labels) a).map Occurrence.record := by
   unfold partners Forest.partners
+  dsimp only [Occurrence.record]
   rw [occurrences_eq_map_incidenceList, List.filter_map]
   congr 2
   funext b
   have hf := EdgeAugmenting.labeling_flip input.labels [a, b] hw
   simp only [List.map_cons, List.map_nil, List.toFinset_cons, List.toFinset_nil,
     Finset.insert_empty] at hf
-  dsimp only [Function.comp_def]
+  dsimp only [Function.comp_def, Occurrence.record]
   rw [← occurrences_eq_map_incidenceList]
-  simp only [EdgeAugmenting.record_index, EdgeAugmenting.valid_eq, hf]
+  have haIndex := EdgeAugmenting.record_index a
+  have hbIndex := EdgeAugmenting.record_index b
+  simp only [Occurrence.record] at haIndex hbIndex
+  simp only [haIndex, hbIndex, EdgeAugmenting.valid_eq, hf]
   by_cases hv : a.var = b.var
-  · simp [Occurrence.record, hv]
+  · simp [hv]
   · have hab : a ≠ b := fun h => hv (congrArg Occurrence.var h)
     rw [DAG.pairFlip_eq _ hab]
     apply Bool.eq_iff_iff.mpr
-    simp [Bool.and_eq_true, Occurrence.record, hv, Fin.val_inj]
+    simp [Bool.and_eq_true, hv, Fin.val_inj]
 
 private theorem scan_stopped (rs : List ℕ) (es : WorkLog) (a : Record)
     (os bs : List Record) (b : Record) :

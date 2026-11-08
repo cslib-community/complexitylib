@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.PolyTime.CSP.Edge.Forest.Program
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.EraseDupsBy
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
@@ -40,47 +41,12 @@ attribute [local fun_prop] poly_body poly_labels EdgeAugmenting.poly_records
   EdgeAugmenting.poly_idxOf EdgeAugmenting.poly_flip EdgeAugmenting.poly_validWith
   EdgeAugmenting.poly_inconsistentWith EdgeAugmenting.poly_zipIdx
 
-private theorem eraseDups_loop_fold (xs acc : List ℕ) :
-    List.eraseDupsBy.loop (· == ·) xs acc =
-      (xs.foldl (fun acc a => if acc.any (fun b => a == b) then acc
-        else a :: acc) acc).reverse := by
-  induction xs generalizing acc with
-  | nil => rfl
-  | cons a xs ih =>
-    simp only [List.eraseDupsBy.loop, List.foldl_cons]
-    cases h : acc.any (fun b => a == b) <;> simpa only [h, Bool.false_eq_true,
-      ite_false, ite_true] using ih _
-
 private theorem poly_eraseDups :
     ComputableInPolyTime (List.eraseDups (α := ℕ)) (encList encNat) (encList encNat) := by
-  have hf : ComputableInPolyTime
-      (fun xs : List ℕ => xs.foldl
-        (fun acc a => if acc.any (fun b => a == b) then acc else a :: acc) [])
-      (encList encNat) (encList encNat) := by
-    apply ComputableInPolyTime.of_tidy
-    apply ComputableTidilyInPolyTime.foldlWithInput_of_bounded_growth
-      (encA := encNat) (encL := encList encNat)
-      (growth := fun xs => 2 * (encList encNat xs).length + 1)
-      (ComputableInPolyTime.const []).tidy
-    · refine ⟨(ComputableInPolyTime.id' (encIn := encList encNat)).tidy, ?_,
-        inferInstance, inferInstance⟩
-      exact (show ComputableInPolyTime
-        (fun p : ((List ℕ) × List ℕ) × ℕ =>
-          if p.1.2.any (fun b => p.2 == b) then p.1.2 else p.2 :: p.1.2)
-        (encPair (encPair (encList encNat) (encList encNat)) encNat)
-        (encList encNat) from by fun_prop).tidy
-    · refine ⟨((PolyBounded.const 2).mul .self).add (.const 1), ?_⟩
-      intro xs acc a ha
-      have hb := length_le_encList_of_mem encNat ha
-      split
-      · omega
-      · simp only [encList_cons, List.length_append, length_frame]
-        omega
-  have hr := ComputableInPolyTime.of_tidy
-    ((ComputableTidilyInPolyTime.listReverse encNat).comp hf.tidy)
-  convert hr using 1
-  funext xs
-  exact eraseDups_loop_fold xs []
+  change ComputableInPolyTime
+    (fun xs : List ℕ => xs.eraseDupsBy (fun a b => a == b)) (encList encNat) (encList encNat)
+  exact ComputableInPolyTime.eraseDupsByWithInput
+    (ComputableInPolyTime.id' (encIn := encList encNat)) (by fun_prop)
 
 attribute [local fun_prop] poly_eraseDups
 
@@ -146,11 +112,15 @@ private theorem poly_root : ComputableInPolyTime (fun p : WorkLog × ℕ => root
       from by fun_prop).tidy
   · refine ⟨(ComputableInPolyTime.fst encWorkLog encNat).polyBounded_length, ?_⟩
     intro p v e he
+    rcases e with ⟨⟨constraint, port, parentVariable⟩, outputs⟩
     have hb := length_le_encList_of_mem encWorkExpansion he
-    change (encWorkExpansion e).length ≤ (encWorkLog p.1).length at hb
-    have hr : (encNat e.1.2.2).length ≤ (encWorkExpansion e).length := by
+    change (encWorkExpansion ((constraint, port, parentVariable), outputs)).length ≤
+      (encWorkLog p.1).length at hb
+    have hr : (encNat parentVariable).length ≤
+        (encWorkExpansion ((constraint, port, parentVariable), outputs)).length := by
       simp only [encWorkExpansion, encRecord, encOccurrenceRecord, length_encPair]
       omega
+    dsimp only
     split <;> omega
 
 attribute [local fun_prop] poly_root
@@ -269,11 +239,12 @@ private theorem scan_size (rs : List ℕ) (es : WorkLog) (a : Record)
 private theorem step_size (input : Input) (s : State) :
     (encState (step input s)).length ≤ (encState s).length +
       32 * (encList encRecord (CSP.occurrences input.body)).length + 32 := by
+  rcases s with ⟨log, remaining, status⟩
   let B := (encList encRecord (CSP.occurrences input.body)).length
-  unfold step
+  simp only [step]
   split
   · omega
-  · cases hn : s.2.1.find? (fun a => visited (roots input) s.1 a.2.2) with
+  · cases hn : remaining.find? (fun (_, _, vertex) => visited (roots input) log vertex) with
     | none => simp [encState]; omega
     | some a =>
       simp only [Option.elim_some]
@@ -282,10 +253,10 @@ private theorem step_size (input : Input) (s : State) :
         have ha' := length_le_encList_of_mem encRecord ha
         have hp : (encList encRecord (partners input a)).length ≤ B :=
           ComputableTidilyInDegree.length_encList_filter_le _ _ _
-        have hs := scan_size (roots input) s.1 a (partners input a) ([], none)
-        change (encScanState (scan (roots input) s.1 a [] (partners input a))).length ≤
+        have hs := scan_size (roots input) log a (partners input a) ([], none)
+        change (encScanState (scan (roots input) log a [] (partners input a))).length ≤
           (encScanState ([], none)).length + 2 * _ at hs
-        generalize ho : scan (roots input) s.1 a [] (partners input a) = out at *
+        generalize ho : scan (roots input) log a [] (partners input a) = out at *
         rcases out with ⟨os, event⟩
         have hos : (encList encRecord os).length ≤ B + 1 := by
           simp only [encScanState, length_encPair] at hs
@@ -294,20 +265,20 @@ private theorem step_size (input : Input) (s : State) :
         cases event with
         | none =>
           have hf := ComputableTidilyInDegree.length_encList_filter_le encRecord
-            (fun b => decide (b ∉ used ((a, os) :: s.1))) s.2.1
+            (fun b => decide (b ∉ used ((a, os) :: log))) remaining
           simp only [Option.elim_none]
           calc
-            _ = 2 * (encWorkLog s.1).length + 4 * (encWorkExpansion (a, os)).length +
-                2 * (encList encRecord (s.2.1.filter
-                  (fun b => decide (b ∉ used ((a, os) :: s.1))))).length + 4 := by
+            _ = 2 * (encWorkLog log).length + 4 * (encWorkExpansion (a, os)).length +
+                2 * (encList encRecord (remaining.filter
+                  (fun b => decide (b ∉ used ((a, os) :: log))))).length + 4 := by
               simp only [encState, length_encPair, encWorkLog, encList_cons,
                 List.length_append, length_frame, encOption_none, List.length_nil]
               ring
-            _ ≤ 2 * (encWorkLog s.1).length + 4 * (encWorkExpansion (a, os)).length +
-                2 * (encList encRecord s.2.1).length + 4 :=
+            _ ≤ 2 * (encWorkLog log).length + 4 * (encWorkExpansion (a, os)).length +
+                2 * (encList encRecord remaining).length + 4 :=
               Nat.add_le_add_right
                 (Nat.add_le_add_left (Nat.mul_le_mul_left 2 hf) _) 4
-            _ ≤ (encState s).length + 32 * B + 32 := by
+            _ ≤ (encState (log, remaining, status)).length + 32 * B + 32 := by
               simp only [encState, encWorkExpansion, length_encPair]
               omega
         | some b =>

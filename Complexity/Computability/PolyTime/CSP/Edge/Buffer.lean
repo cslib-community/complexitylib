@@ -60,14 +60,16 @@ The default makes this total even for a short buffer. -/
 
 /-- Test every constraint against the complete finite labeling buffer. -/
 @[expose] def valid (F : CSP Table ℕ) (bits : List Bool) : Bool :=
-  F.zipIdx.all fun c => c.1.1.sem
-    (c.1.2.zipIdx.map fun v => readRecord F bits (c.2, v.2, v.1))
+  F.zipIdx.all fun ((table, scope), constraint) => table.sem
+    (scope.zipIdx.map fun (vertex, port) => readRecord F bits (constraint, port, vertex))
 
 /-- Test for unequal buffer bits at two actual occurrences of the requested variable. -/
 @[expose] def inconsistent (F : CSP Table ℕ) (bits : List Bool) (v : ℕ) : Bool :=
-  ((CSP.occurrences F).product (CSP.occurrences F)).any fun a =>
-    decide (a.1.2.2 = v) && decide (a.2.2.2 = v) &&
-      (readRecord F bits a.1 != readRecord F bits a.2)
+  ((CSP.occurrences F).product (CSP.occurrences F)).any
+    fun ((leftConstraint, leftPort, leftVariable), (rightConstraint, rightPort, rightVariable)) =>
+      decide (leftVariable = v) && decide (rightVariable = v) &&
+        (readRecord F bits (leftConstraint, leftPort, leftVariable) !=
+          readRecord F bits (rightConstraint, rightPort, rightVariable))
 
 /-- Flip precisely the selected global positions, preserving the buffer width. -/
 @[expose] def flip (bits : List Bool) (indices : List ℕ) : List Bool :=
@@ -243,6 +245,8 @@ theorem inconsistent_eq (F : CSP Table ℕ) (bits : List Bool) (v : ℕ) :
     rw [occurrences_eq_map_incidenceList] at ha hb
     obtain ⟨o, _, rfl⟩ := List.mem_map.mp ha
     obtain ⟨p, _, rfl⟩ := List.mem_map.mp hb
+    change (decide (o.var = v) && decide (p.var = v) &&
+      (readRecord F bits o.record != readRecord F bits p.record) = true) at ht
     simp only [Bool.and_eq_true, decide_eq_true_eq, bne_iff_ne, read_record] at ht
     exact ⟨o, p, ht.1.1, ht.1.2, ht.2⟩
   · rintro ⟨o, p, ho, hp, hd⟩
