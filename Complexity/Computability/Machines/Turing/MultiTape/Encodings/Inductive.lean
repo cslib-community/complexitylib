@@ -35,9 +35,11 @@ The command declares:
 The `toSum` and constructor rules are `scoped` `fun_prop` rules, as for `enc_structure`. The case
 rule is stated for an input paired with the value, as `ComputableInO.sumElimSnd` is.
 
-Recursive types are rejected by construction: a field's encoding is an ordinary term, so the type
-being declared cannot be encoded in its own fields. Fields that are propositions, indices or
-implicit arguments are not supported.
+The command does not inspect the declaration for recursion, and it derives no recursive
+encodings: each field encoding must already be available as an ordinary term, and the generated
+certificates are relative to those encodings. A recursive field is accepted only when such an
+encoding is supplied, for example `encUnary` for the field of `Nat.succ`. Fields that are
+propositions, indices or implicit arguments are not supported.
 -/
 
 public meta section
