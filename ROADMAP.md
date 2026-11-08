@@ -1149,8 +1149,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 
 ### Algorithmic game theory ([#2900](https://github.com/cslib-community/complexitylib/issues/2900))
 
-- **Computing equilibria:** PLS-completeness of finding a pure Nash equilibrium of a congestion
-  game (Fabrikant–Papadimitriou–Talwar) through an explicit local-search problem interface and
+- **Computing equilibria:** finding a pure Nash equilibrium of an explicit congestion game is in
+  `PLS` (`GameTheory/Congestion/PLS.lean`,
+  [#3149](https://github.com/cslib-community/complexitylib/issues/3149)). Extend to
+  PLS-completeness (Fabrikant–Papadimitriou–Talwar) by a reduction from local Max-Cut, which itself
+  needs Schäffer–Yannakakis PLS-completeness or a chain from `LocalOpt`; the symmetric case;
   succinct game encodings; polynomial-time algorithms for symmetric network congestion games;
   exponentially long better-response paths. Mixed Nash equilibria of finite games
   (Nash's theorem) and PPAD-completeness of computing them.

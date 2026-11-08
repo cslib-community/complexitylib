@@ -3,9 +3,10 @@
 [Chapter index](index.md) · [Online and streaming models](online-and-streaming.md)
 
 This page covers finite strategic games in cost-minimization form, potential games, atomic and
-nonatomic congestion games, price-of-anarchy bounds, and no-regret (Hedge) dynamics. All of it is
-mathematics about real-valued costs. No machine model is involved, and equilibrium computation
-carries no resource claim [complexitylib][complexitylib].
+nonatomic congestion games, price-of-anarchy bounds, and no-regret (Hedge) dynamics. Most of it is
+mathematics about real-valued costs with no machine model. The exception is the membership of pure
+Nash equilibria of explicit congestion games in `PLS`, which uses the native polynomial-time
+interface [complexitylib][complexitylib].
 
 ## The strategic-game layer
 
@@ -121,6 +122,30 @@ of anarchy bounds of `5/2` follow:
 `exists_socialCost_eq_five_halves_mul` shows that `5/2` is attained, by a three-player game on six
 resources.
 
+## Pure Nash equilibria of congestion games are in PLS
+
+[Congestion/PLS.lean](../../Complexity/GameTheory/Congestion/PLS.lean) formalizes the
+PLS-membership claim of [roughgarden13cs364a][roughgarden13cs364a], Lecture #19, §3, for
+congestion games with explicitly listed strategy sets. A `CongestionCode` lists each player's
+strategies as lists of resource indices, and each resource's cost table `[c_e(1), c_e(2), …]`.
+`encCongestion` writes resource indices in unary and costs in binary. Missing table entries read as
+`0`, out-of-range resource indices are ignored, and a player with no listed strategy gets the empty
+one. `toGame` reads the code as a `CongestionGame`, so `IsPureNash` is the library's notion.
+
+A profile is a bit string of length `vertexLength = players * width`. Player `i`'s block of
+`width` bits decodes to the number of ones in it, clamped to a strategy index, so every string of
+that length is a profile. `step` applies the first deviation that strictly lowers Rosenthal's
+potential, or stays put. The source's step plays a best response; the local optima are the same.
+The main results:
+
+- `pureNash_eq_localOptRel`: the search problem `PureNash` *equals* the `localOptRel` of
+  `vertexLength`, `step` and the natural-number potential. It is not merely reducible to it.
+- `pureNash_mem_PLS` and `pureNash_mem_TFNP`: finding a pure Nash equilibrium is in `PLS`, and is
+  therefore a total `FNP` problem.
+- `pureNash_iff`: a decidable characterization, used by the tests with `decide`.
+
+PLS-hardness [fabrikantPapadimitriouTalwar04][fabrikantPapadimitriouTalwar04] is not formalized.
+
 ## Nonatomic selfish routing
 
 [Congestion/Nonatomic.lean](../../Complexity/GameTheory/Congestion/Nonatomic.lean) models
@@ -162,13 +187,20 @@ checks the following:
 
 The congestion tests also check that Hedge dynamics start uniform, and they apply the Hedge
 price-of-anarchy bound to the two-link game for every horizon.
+[ComplexityTests/GameTheory/CongestionPLS.lean](../../ComplexityTests/GameTheory/CongestionPLS.lean)
+decides `PureNash` on a two-player code, at one equilibrium and two non-equilibria. It also checks
+the `step` map, clamping, a player with no listed strategy, and out-of-range resources.
 
 ## Known Limitations
 
 Mixed Nash and correlated equilibria (with swap regret), existence of Wardrop flows, and weighted
 congestion games are not formalized. The same holds for the Monderer–Shapley isomorphism between
-potential games and congestion games (Theorems 2.8 and 3.2) and for the complexity of finding
-equilibria (PLS- and PPAD-completeness). These are ROADMAP directions under
+potential games and congestion games (Theorems 2.8 and 3.2) and for hardness of finding equilibria:
+pure Nash equilibria of congestion games are in `PLS`, but their PLS-completeness (Lecture #19,
+Theorem 3.1) and PPAD-completeness of mixed equilibria are not formalized. Neither are
+exponentially long better-response paths or the polynomial-time algorithm for symmetric network
+congestion games.
+These are ROADMAP directions under
 [#2900](https://github.com/cslib-community/complexitylib/issues/2900). Hedge dynamics are
 full-information and deterministic: they work with expected costs, not sampled play or bandit
 feedback, and only time-average guarantees are proved, not last-iterate convergence.
@@ -176,6 +208,7 @@ The theorems of Rosenthal, Christodoulou–Koutsoupias and Awerbuch–Azar–Eps
 cited in the Monderer–Shapley and Roughgarden papers; their own texts were not consulted.
 
 [complexitylib]: ../sources.md#complexitylib
+[fabrikantPapadimitriouTalwar04]: ../sources.md#fabrikantpapadimitrioutalwar04
 [mondererShapley96]: ../sources.md#monderershapley96
 [rosenthal73]: ../sources.md#rosenthal73
 [roughgarden13cs364a]: ../sources.md#roughgarden13cs364a
