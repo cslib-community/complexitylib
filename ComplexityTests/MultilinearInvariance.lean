@@ -9,17 +9,19 @@ import Complexity.Foundations.BooleanAnalysis.Invariance
 /-! # The Basic Invariance Principle on small examples
 
 Standard Gaussians and uniform random signs satisfy Hypothesis 11.65 of O'Donnell's *Analysis of
-Boolean Functions*, and a point mass at `0` does not (its second moment is `0`). The fourth
-derivative of `cos` is `cos`, so the Basic Invariance Principle compares `E[cos f(x)]` at uniform
-bits with `E[cos F(g)]` at standard Gaussians for any function `f` on two bits; the third
-derivative of `sin` is `-cos`, which instantiates the `C³` form. A polynomial of degree `0` is
-constant, so both sides agree exactly, and the bound `C / 12 · 9 ^ 0 · ∑ Inf ^ 2 = 0` is tight.
+Boolean Functions*. A point mass at `0` does not (its second moment is `0`), and neither does the
+law on `{-4, 0, 4}` with probabilities `1/32, 15/16, 1/32`, whose first three moments are `0, 1, 0`
+but whose fourth moment is `16 > 9`. The fourth derivative of `cos` is `cos`, so the Basic
+Invariance Principle compares `E[cos f(x)]` at uniform bits with `E[cos F(g)]` at standard
+Gaussians for any function `f` on two bits; the third derivative of `sin` is `-cos`, which
+instantiates the `C³` form. A polynomial of degree `0` is constant, so both sides agree exactly,
+and the bound `C / 12 · 9 ^ 0 · ∑ Inf ^ 2 = 0` is tight.
 -/
 
 namespace ComplexityTests.MultilinearInvariance
 
 open MeasureTheory ProbabilityTheory Cslib Cslib.BitString Finset
-open scoped BigOperators
+open scoped BigOperators ENNReal
 
 /-! ### Hypothesis 11.65 -/
 
@@ -31,6 +33,34 @@ example : HasInvarianceMoments rademacher := hasInvarianceMoments_rademacher
 example : ¬ HasInvarianceMoments (Measure.dirac (0 : ℝ)) := fun h => by
   have := h.integral_sq
   simp at this
+
+/-- The law of `z ∈ {-4, 0, 4}` with probabilities `1/32, 15/16, 1/32`. -/
+noncomputable def threePoint : Measure ℝ :=
+  (32 : ℝ≥0∞)⁻¹ • Measure.dirac (-4) + (15 / 16 : ℝ≥0∞) • Measure.dirac 0 +
+    (32 : ℝ≥0∞)⁻¹ • Measure.dirac 4
+
+theorem integral_threePoint (g : ℝ → ℝ) :
+    ∫ s, g s ∂threePoint = g (-4) / 32 + 15 / 16 * g 0 + g 4 / 32 := by
+  have hi (c : ℝ≥0∞) (hc : c ≠ ∞) (a : ℝ) : Integrable g (c • Measure.dirac a) :=
+    (integrable_dirac (by simp)).smul_measure hc
+  have h15 : (15 / 16 : ℝ≥0∞) ≠ ∞ := ENNReal.div_ne_top (by simp) (by simp)
+  rw [threePoint, integral_add_measure ((hi _ (by simp) _).add_measure (hi _ h15 _))
+    (hi _ (by simp) _), integral_add_measure (hi _ (by simp) _) (hi _ h15 _),
+    integral_smul_measure, integral_smul_measure, integral_smul_measure, integral_dirac,
+    integral_dirac, integral_dirac]
+  simp only [smul_eq_mul, ENNReal.toReal_inv, ENNReal.toReal_div, ENNReal.toReal_ofNat]
+  ring
+
+/-- The fourth-moment condition is not implied by the others: `threePoint` has mean `0`, second
+moment `1` and third moment `0`, but fourth moment `16 > 9`, so it fails Hypothesis 11.65. -/
+example : ∫ s, s ∂threePoint = 0 ∧ ∫ s, s ^ 2 ∂threePoint = 1 ∧ ∫ s, s ^ 3 ∂threePoint = 0 ∧
+    ∫ s, s ^ 4 ∂threePoint = 16 := by
+  simp only [integral_threePoint]; norm_num
+
+example : ¬ HasInvarianceMoments threePoint := fun h => by
+  have := h.integral_pow_four_le
+  rw [integral_threePoint] at this
+  norm_num at this
 
 /-- A uniform random sign has fourth moment `1`. -/
 example : ∫ s, s ^ 4 ∂rademacher = 1 := by

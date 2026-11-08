@@ -19,13 +19,15 @@ at any base point `x` and increment `h` by `C |h| ^ (n + 1) / (n + 1)!`
 (`abs_sub_sum_iteratedDeriv_le`). Mathlib's `taylor_mean_remainder_bound` works on an interval
 `[a, b]` with `iteratedDerivWithin` and the weaker denominator `n!`; here the derivatives are the
 global `iteratedDeriv` and the increment may be negative. Consequently `f` grows at most like a
-polynomial of degree `n + 1` (`exists_abs_le_mul_one_add_pow`).
+polynomial of degree `n + 1`
+(`ContDiff.exists_abs_le_mul_one_add_pow_of_abs_iteratedDeriv_le`).
 
 ## Main results
 
 * `abs_sub_sum_iteratedDeriv_le`: the Lagrange remainder bound
   `|f (x + h) - ∑ j ≤ n, f⁽ʲ⁾ x h ^ j / j!| ≤ C |h| ^ (n + 1) / (n + 1)!`.
-* `exists_abs_le_mul_one_add_pow`: `|f y| ≤ K (1 + |y| ^ (n + 1))` for some `K`.
+* `ContDiff.exists_abs_le_mul_one_add_pow_of_abs_iteratedDeriv_le`:
+  `|f y| ≤ K (1 + |y| ^ (n + 1))` for some `K`.
 -/
 
 public section
@@ -63,8 +65,8 @@ theorem abs_sub_sum_iteratedDeriv_le {f : ℝ → ℝ} {n : ℕ} (hf : ContDiff 
 
 /-- A `C^(n+1)` function `f : ℝ → ℝ` with bounded `(n+1)`st derivative grows at most like a
 polynomial of degree `n + 1`: `|f y| ≤ K (1 + |y| ^ (n + 1))` for some constant `K`. -/
-theorem exists_abs_le_mul_one_add_pow {f : ℝ → ℝ} {n : ℕ} (hf : ContDiff ℝ (n + 1) f) {C : ℝ}
-    (hC : ∀ y, |iteratedDeriv (n + 1) f y| ≤ C) :
+theorem ContDiff.exists_abs_le_mul_one_add_pow_of_abs_iteratedDeriv_le {f : ℝ → ℝ} {n : ℕ}
+    (hf : ContDiff ℝ (n + 1) f) {C : ℝ} (hC : ∀ y, |iteratedDeriv (n + 1) f y| ≤ C) :
     ∃ K, ∀ y, |f y| ≤ K * (1 + |y| ^ (n + 1)) := by
   set A := ∑ j ∈ range (n + 1), |iteratedDeriv j f 0| / (j ! : ℝ)
   refine ⟨A + |C|, fun y => ?_⟩

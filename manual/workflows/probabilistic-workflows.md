@@ -1727,7 +1727,10 @@ A formal multilinear polynomial is its coefficient function `c : Finset ι → �
 `multilinearEval c z = ∑ S, c S * ∏ i ∈ S, z i` and `multilinearInfluence c i = ∑ S ∋ i, c S ^ 2`.
 Degree at most `k` is the hypothesis `∀ S, k < #S → c S = 0`. The variables are independent with
 laws `μ i : Measure ℝ`, through `Measure.pi μ`, and `HasInvarianceMoments (μ i)` is O'Donnell's
-Hypothesis 11.65: mean `0`, second moment `1`, third moment `0` and fourth moment at most `9`.
+Hypothesis 11.65: mean `0`, second moment `1`, third moment `0` and fourth moment at most `9`. Its
+first field, `memLp_four : MemLp id 4 μ`, also requires the fourth moment to be finite, so that the
+moment integrals are meaningful. The structure does not include `IsProbabilityMeasure`; the
+theorems take `[∀ i, IsProbabilityMeasure (μ i)]` as a separate instance argument.
 `hasInvarianceMoments_gaussianReal` and `hasInvarianceMoments_rademacher` supply it for standard
 Gaussians and uniform random signs.
 
@@ -1753,7 +1756,11 @@ The proof is the replacement method. `MeasureTheory.abs_integral_pi_sub_le_sum` 
 hybrids `Measure.pi (s.piecewise ν μ)` and applies to any integrand. The Bonami Lemma for these
 variables, `integral_multilinearEval_pow_four_le`, is in
 [`Multilinear/Bonami`](../../Complexity/Foundations/Probability/Multilinear/Bonami.lean). It covers
-only the case `B ≤ 9` with variance `1` of Corollary 9.6.
+only the case `B ≤ 9` with variance `1` of Corollary 9.6. Cauchy–Schwarz for real integrals,
+`MeasureTheory.sq_integral_mul_le`, needs no sign condition. It is in
+[`Integral/CauchySchwarz`](../../Complexity/Foundations/MeasureTheory/Integral/CauchySchwarz.lean)
+with `MeasureTheory.integrable_pow_of_memLp` and `MeasureTheory.integrable_abs_pow_of_memLp`, which
+give integrability of the moments of order `j ≤ n` of a variable in `Lⁿ`.
 
 The checked [`MultilinearInvariance.lean` clients](../../ComplexityTests/MultilinearInvariance.lean)
 cover Hypothesis 11.65 for Gaussians and signs and its failure for a point mass, and bits versus
@@ -1761,6 +1768,8 @@ Gaussians for any function of two bits with `ψ = cos` (`C⁴`) and `ψ = sin` (
 that a degree-`0` polynomial has exactly equal expectations. Run
 `scripts/build.sh ComplexityTests.MultilinearInvariance` from the repository root to check them.
 
-The test function must be smooth. The step from smooth test functions to CDF (Lévy) distance
-(Corollary 11.68), the general Invariance Principle with hypercontractive ensembles, and Majority
-Is Stablest are not formalized.
+The test function must be smooth. The following are not formalized: the Lipschitz form
+(Corollary 11.68) and the Lévy-distance form (Corollary 11.70); the forms for functions with small
+high-degree tails, including noise-stable functions (Corollary 11.69), and cdf-closeness through
+the Carbery–Wright theorem (Theorem 11.71); the general Invariance Principle with
+hypercontractive ensembles; and Majority Is Stablest.

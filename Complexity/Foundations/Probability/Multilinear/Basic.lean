@@ -26,8 +26,9 @@ coefficients `c : Finset ι → ℝ`, and it evaluates to `F(z) = ∑_S c S ∏_
 `i` writes `F(z) = E_i F(z) + z i · D_i F(z)`, where neither `E_i F` (`multilinearExpectCoeff`) nor
 `D_i F` (`multilinearDerivCoeff`) depends on `z i` (`multilinearEval_update`).
 
-When the variables are independent with mean `0`, second moment `1` and finite second moments, the
-monomials are orthonormal and `E[F(z)²] = ∑_S c S ^ 2` (`integral_multilinearEval_sq`)
+When the variables are independent with mean `0`, second moment `1` and finite fourth moments
+(each lies in `L⁴`, the integrability hypothesis used throughout), the monomials are orthonormal and
+`E[F(z)²] = ∑_S c S ^ 2` (`integral_multilinearEval_sq`)
 [O'Donnell, Remark 11.64][ODonnell2014]. This is proved by induction on the coordinates that `F`
 mentions, integrating out one coordinate at a time.
 
@@ -45,8 +46,6 @@ mentions, integrating out one coordinate at a time.
   `Inf_i[F] = ∑_S (D_i F)^(S) ^ 2`.
 * `ProbabilityTheory.sum_multilinearInfluence`: `∑_i Inf_i[F] = ∑_S |S| c S ^ 2`.
 * `ProbabilityTheory.memLp_multilinearEval`: `F(z) ∈ Lᵖ` when every variable is in `Lᵖ`.
-* `ProbabilityTheory.integrable_pow_of_memLp`: moments of order at most `n` of a variable in `Lⁿ`
-  are integrable.
 * `ProbabilityTheory.integral_multilinearEval_sq`: `E[F(z)²] = ∑_S c S ^ 2`.
 
 ## References
@@ -200,23 +199,6 @@ omit [DecidableEq ι] in
   simp [multilinearEval]
 
 /-! ### Integrability -/
-
-/-- Moments of order at most `n` of a real random variable in `Lⁿ` are integrable. -/
-theorem integrable_pow_of_memLp {μ : Measure ℝ} [IsFiniteMeasure μ] {n : ℕ} (h : MemLp id n μ)
-    {j : ℕ} (hj : j ≤ n) : Integrable (fun s => s ^ j) μ := by
-  rcases Nat.eq_zero_or_pos j with rfl | hj0
-  · simp
-  have h' : MemLp id (j : ℝ≥0∞) μ := h.mono_exponent (by exact_mod_cast hj)
-  refine (h'.integrable_norm_pow hj0.ne').mono' (by fun_prop) (ae_of_all _ fun s => ?_)
-  simp [norm_pow]
-
-/-- Absolute moments of order at most `n` of a real random variable in `Lⁿ` are integrable. -/
-theorem integrable_abs_pow_of_memLp {μ : Measure ℝ} [IsFiniteMeasure μ] {n : ℕ}
-    (h : MemLp id n μ) {j : ℕ} (hj : j ≤ n) : Integrable (fun s => |s| ^ j) μ := by
-  rcases Nat.eq_zero_or_pos j with rfl | hj0
-  · simp
-  have h' : MemLp id (j : ℝ≥0∞) μ := h.mono_exponent (by exact_mod_cast hj)
-  simpa using h'.integrable_norm_pow hj0.ne'
 
 omit [DecidableEq ι] in
 @[fun_prop]

@@ -11,6 +11,7 @@ public import Complexity.Foundations.Probability.Multilinear.Bonami
 public import Mathlib.Analysis.Calculus.ContDiff.Defs
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Complexity.Foundations.Analysis.Calculus.Taylor
+import Complexity.Foundations.MeasureTheory.Integral.CauchySchwarz
 import Complexity.Foundations.MeasureTheory.Integral.PiUpdate
 
 /-!
@@ -205,7 +206,7 @@ theorem integrable_comp_multilinearEval (μ : ι → Measure ℝ) [∀ i, IsProb
     (hμ : ∀ i, MemLp id 4 (μ i)) (c : Finset ι → ℝ) {ψ : ℝ → ℝ} {n : ℕ} (hn : n + 1 ≤ 4)
     (hψ : ContDiff ℝ (n + 1) ψ) {C : ℝ} (hC : ∀ y, |iteratedDeriv (n + 1) ψ y| ≤ C) :
     Integrable (fun z => ψ (multilinearEval c z)) (Measure.pi μ) := by
-  obtain ⟨K, hK⟩ := exists_abs_le_mul_one_add_pow hψ hC
+  obtain ⟨K, hK⟩ := hψ.exists_abs_le_mul_one_add_pow_of_abs_iteratedDeriv_le hC
   refine (((integrable_const 1).add
     (integrable_abs_multilinearEval_pow μ hμ c hn)).const_mul K).mono'
     (hψ.continuous.comp (continuous_multilinearEval c)).aestronglyMeasurable

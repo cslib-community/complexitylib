@@ -9,6 +9,7 @@ module
 
 public import Complexity.Foundations.Probability.Multilinear.Basic
 public import Complexity.Foundations.Probability.Gaussian.Moments
+import Complexity.Foundations.MeasureTheory.Integral.CauchySchwarz
 import Complexity.Foundations.MeasureTheory.Integral.PiUpdate
 
 /-!
@@ -28,7 +29,10 @@ standard Gaussians are the main examples (`hasInvarianceMoments_gaussianReal`; t
 with `E[zᵢ] = E[zᵢ³] = 0` and concludes `max(B, 9) ^ k`-reasonableness. The proof is the book's
 induction for the Bonami Lemma: write `F = E_i F + z i · D_i F`, integrate out `z i` to get
 `E[F⁴] = E[(E_i F)⁴] + 6 E[(E_i F)² (D_i F)²] + E[zᵢ⁴] E[(D_i F)⁴]`, and bound the middle term by
-Cauchy–Schwarz.
+Cauchy–Schwarz (`MeasureTheory.sq_integral_mul_le`). For uniform `±1` bits, the Boolean-cube form
+of the Bonami Lemma (`E[f⁴] ≤ 9 ^ k E[f²] ^ 2` for `f` of degree at most `k`) is
+`Cslib.BitString.expect_pow_four_le`; the bridge
+`Complexity.Foundations.BooleanAnalysis.Invariance` identifies the two settings.
 
 ## Main definitions
 
@@ -39,7 +43,6 @@ Cauchy–Schwarz.
 * `ProbabilityTheory.hasInvarianceMoments_gaussianReal`: standard Gaussians satisfy it.
 * `ProbabilityTheory.integral_multilinearEval_sq_of_hasInvarianceMoments`: `E[F(z)²] = ∑_S F̂(S)²`.
 * `ProbabilityTheory.integral_multilinearEval_pow_four_le`: the Bonami Lemma.
-* `ProbabilityTheory.sq_integral_mul_le`: Cauchy–Schwarz, `(∫ f g)² ≤ ∫ f² ∫ g²`.
 
 ## References
 
@@ -70,29 +73,6 @@ theorem hasInvarianceMoments_gaussianReal : HasInvarianceMoments (gaussianReal 0
   integral_sq := integral_sq_gaussianReal
   integral_pow_three := integral_pow_three_gaussianReal
   integral_pow_four_le := by rw [integral_pow_four_gaussianReal]; norm_num
-
-/-- **Cauchy–Schwarz** for real integrals: `(∫ f g)² ≤ (∫ f²) (∫ g²)`. -/
-theorem sq_integral_mul_le {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} {f g : Ω → ℝ}
-    (hf : Integrable (fun x => f x ^ 2) P) (hg : Integrable (fun x => g x ^ 2) P)
-    (hfg : Integrable (fun x => f x * g x) P) :
-    (∫ x, f x * g x ∂P) ^ 2 ≤ (∫ x, f x ^ 2 ∂P) * ∫ x, g x ^ 2 ∂P := by
-  have h (t : ℝ) : 0 ≤ (∫ x, f x ^ 2 ∂P) * (t * t) + (-2 * ∫ x, f x * g x ∂P) * t +
-      ∫ x, g x ^ 2 ∂P := by
-    have h1 : ∫ x, (t * f x - g x) ^ 2 ∂P =
-        ∫ x, ((t * t) * f x ^ 2 + (-2 * t) * (f x * g x) + g x ^ 2) ∂P := by
-      congr 1; funext x; ring
-    have h2 : ∫ x, (t * f x - g x) ^ 2 ∂P = (∫ x, f x ^ 2 ∂P) * (t * t) +
-        (-2 * ∫ x, f x * g x ∂P) * t + ∫ x, g x ^ 2 ∂P := by
-      rw [h1, integral_add (f := fun x => t * t * f x ^ 2 + -2 * t * (f x * g x))
-        ((hf.const_mul _).add (hfg.const_mul _)) hg,
-        integral_add (f := fun x => t * t * f x ^ 2) (g := fun x => -2 * t * (f x * g x))
-        (hf.const_mul _) (hfg.const_mul _), integral_const_mul, integral_const_mul]
-      ring
-    rw [← h2]
-    exact integral_nonneg fun x => sq_nonneg _
-  have := discrim_le_zero h
-  rw [discrim] at this
-  nlinarith
 
 namespace HasInvarianceMoments
 
