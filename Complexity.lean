@@ -16,6 +16,8 @@ public import Complexity.Algorithms.LatticeReduction.LLL
 public import Complexity.Algorithms.LatticeReduction.Potential
 public import Complexity.Algorithms.LatticeReduction.RationalGramSchmidt
 public import Complexity.Algorithms.LatticeReduction.Reduced
+public import Complexity.Algorithms.Lean.Assignment.Auction
+public import Complexity.Algorithms.Lean.Assignment.Basic
 public import Complexity.Algorithms.Lean.BellmanFord.Basic
 public import Complexity.Algorithms.Lean.BinPacking.Basic
 public import Complexity.Algorithms.Lean.BinPacking.FirstFit
