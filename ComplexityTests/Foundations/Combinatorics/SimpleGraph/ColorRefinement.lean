@@ -17,7 +17,8 @@ public import Mathlib.Combinatorics.SimpleGraph.Star
   one round, since their degree histograms differ.
 * The cycle `C₆` and the disjoint union `C₃ ⊕ C₃` are both `2`-regular of order `6`, so color
   refinement gives them the same histograms in every round, but they are not isomorphic.
-* Equitable and non-equitable colorings and partitions, and stable colorings of `P₃` and `C₆`.
+* Equitable and non-equitable colorings and partitions, and stable colorings of `P₃` and `C₆`; the
+  stable partition of `P₃` is computed exactly.
 -/
 
 public section
@@ -116,11 +117,24 @@ example : Setoid.ker ((cycleGraph 6).stableColoring (fun _ => ())) = ⊤ := by
   refine top_le_iff.1 (le_trans ?_ (isEquitable_cycleGraph_six.ker_le_ker_stableColoring le_rfl))
   exact fun _ _ _ => rfl
 
-/-- The partition of `P₃` into the middle vertex and the ends is the coarsest equitable partition,
-so it lies above the stable partition from the constant coloring. -/
-example : Setoid.ker ((pathGraph 3).stableColoring (fun _ => ())) ≥
-    Setoid.ker fun v : Fin 3 => decide (v = 1) :=
-  (isGreatest_ker_stableColoring (G := pathGraph 3) (χ₀ := fun _ => ())).2
-    ⟨fun _ _ _ => rfl, isEquitablePartition_ker_iff.2 isEquitable_pathGraph_three_middle⟩
+/-- The stable partition of `P₃` from the constant coloring is the partition into the middle vertex
+and the ends. The middle/ends partition is equitable and refines the constant coloring, so it
+refines the stable partition. Conversely, the stable partition refines the partition of round `1`,
+which separates the middle vertex (degree `2`) from the ends (degree `1`). -/
+example : Setoid.ker ((pathGraph 3).stableColoring (fun _ => ())) =
+    Setoid.ker fun v : Fin 3 => decide (v = 1) := by
+  refine le_antisymm (fun v w h => ?_) ((isGreatest_ker_stableColoring (G := pathGraph 3)
+    (χ₀ := fun _ => ())).2 ⟨fun _ _ _ => rfl,
+      isEquitablePartition_ker_iff.2 isEquitable_pathGraph_three_middle⟩)
+  rw [Setoid.ker_def, stableColoring_eq] at h
+  have h1 : (pathGraph 3).refinementColoring (fun _ => ()) 1 v =
+      (pathGraph 3).refinementColoring (fun _ => ()) 1 w :=
+    antitone_ker_refinementColoring (show 1 ≤ Fintype.card (Fin 3) by simp) h
+  have hdeg := congrArg (fun c : RefinementColor Unit 1 => Multiset.card c.2) h1
+  simp only [refinementColoring_succ, card_refineColoring_snd] at hdeg
+  rw [Setoid.ker_def]
+  clear h h1
+  revert v w
+  decide
 
 end Cslib.Tests.ColorRefinement

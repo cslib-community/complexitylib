@@ -81,17 +81,24 @@ this instance for a disjoint union `G ⊕g H` but no decidable adjacency instanc
 
 ## Implementation notes
 
-[GroheKerstingMladenovSelman2014] describe color refinement on graphs in their introduction and
-work, in Section 1, with the more general color refinement of matrices, that is, of weighted
-bipartite graphs, from the trivial partition. Their stabilization bound is `|V| + |W|` rounds and
-their coarsest-equitable-partition statement is for matrices. The present file treats simple graphs
-with an arbitrary initial coloring. The bound of `|V| - k₀` rounds is the standard counting
-argument, and the completeness of round `|V| + |W|` and the regular-graph example are standard.
+[GroheKerstingMladenovSelman2014] describe color refinement on graphs in words at the start of
+Section 1 (Introduction). In its paragraph "Colour Refinement on Matrices" they work with the
+color refinement of a matrix `A ∈ ℝ^{V×W}`, a weighted bipartite graph whose two sides are the rows
+`V` and the columns `W`, from the trivial partition. They state stabilization within `|V| + |W|`
+rounds, the number of vertices of that one bipartite graph, and that the result is the coarsest
+equitable partition. A `0`-`1` matrix gives the bipartite graph `B_A`; according to the source,
+general weighted directed graphs correspond to square matrices, but the source presents only the
+bipartite case. The present file treats simple graphs with an arbitrary initial coloring directly.
+The bound of `|V| - k₀` rounds is the standard counting argument. In
+`SimpleGraph.forall_colorHistogram_eq_iff`, `V` and `W` are the vertex types of two graphs, so its
+`|V| + |W|` is the order of their disjoint union and is unrelated to the source's bound. That
+lemma and the regular-graph example are standard.
 
 ## References
 
 * [M. Grohe, K. Kersting, M. Mladenov, E. Selman, *Dimension Reduction via Colour
-  Refinement*][GroheKerstingMladenovSelman2014], introduction and Section 1.
+  Refinement*][GroheKerstingMladenovSelman2014], Section 1 (Introduction), including the paragraph
+  "Colour Refinement on Matrices".
 -/
 
 public section
@@ -145,10 +152,11 @@ def IsEquitable (G : SimpleGraph V) [G.LocallyFinite] (χ : V → β) : Prop :=
   ∀ ⦃v w⦄, χ v = χ w → (G.neighborFinset v).val.map χ = (G.neighborFinset w).val.map χ
 
 /-- A partition of the vertices, given as a setoid, is *equitable* when any two vertices of the
-same block have the same number of neighbors in every block. -/
+same block have the same number of neighbors in every block. The numbers are counted in `ℕ∞`, so
+the definition also makes sense when neighborhoods are infinite. -/
 def IsEquitablePartition (G : SimpleGraph V) (r : Setoid V) : Prop :=
   ∀ ⦃v w⦄, r v w → ∀ u,
-    (G.neighborSet v ∩ {x | r u x}).ncard = (G.neighborSet w ∩ {x | r u x}).ncard
+    (G.neighborSet v ∩ {x | r u x}).encard = (G.neighborSet w ∩ {x | r u x}).encard
 
 /-- The coloring after `|V|` rounds of color refinement started from `χ₀`. By
 `SimpleGraph.ker_refinementColoring_eq`, its partition is the stable partition. -/
@@ -246,9 +254,9 @@ theorem isEquitable_iff_card_filter [DecidableEq β] {χ : V → β} :
   rw [Multiset.count_map, Multiset.count_map]
   simp only [Finset.card_def, Finset.filter_val, eq_comm (a := c)]
 
-private theorem ncard_neighborSet_inter (v : V) (p : V → Prop) [DecidablePred p] :
-    (G.neighborSet v ∩ {x | p x}).ncard = ((G.neighborFinset v).filter p).card := by
-  rw [← Set.ncard_coe_finset, Finset.coe_filter]
+private theorem encard_neighborSet_inter (v : V) (p : V → Prop) [DecidablePred p] :
+    (G.neighborSet v ∩ {x | p x}).encard = ((G.neighborFinset v).filter p).card := by
+  rw [← Set.encard_coe_eq_coe_finsetCard, Finset.coe_filter]
   congr 1
   ext x
   simp only [Set.mem_inter_iff, Set.mem_ofPred_eq, mem_neighborSet, mem_neighborFinset]
@@ -263,10 +271,10 @@ theorem isEquitablePartition_iff_isEquitable_mk {r : Setoid V} :
   · induction c using Quotient.inductionOn with
     | h u =>
       have hu := h u
-      rw [ncard_neighborSet_inter, ncard_neighborSet_inter] at hu
+      rw [encard_neighborSet_inter, encard_neighborSet_inter, Nat.cast_inj] at hu
       simpa only [Quotient.eq, Setoid.comm' r] using hu
   · have hu := h (Quotient.mk r u)
-    rw [ncard_neighborSet_inter, ncard_neighborSet_inter]
+    rw [encard_neighborSet_inter, encard_neighborSet_inter, Nat.cast_inj]
     simpa only [Quotient.eq, Setoid.comm' r] using hu
 
 /-- The partition into the color classes of `χ` is equitable exactly when `χ` is. -/
