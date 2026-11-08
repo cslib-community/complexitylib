@@ -648,11 +648,11 @@ index links to canonical definitions rather than keeping a second set.
   schemes (instances of probability zero obstruct a literal equivalence), randomized
   average-case classes, and `(L, U) ∈ AvgP` implying `L ∈ E`-style consequences. Reuse the
   specialized Liu–Pass hardness notions through further proved bridges.
-- **Levin completeness:** a distributional bounded-halting problem complete for `DistNP`
-  (Bogdanov–Trevisan Theorem 19, via the compression of Claim 20) under the existing dominating
-  reductions, followed by a separately scoped extension to samplable distributions
-  (Impagliazzo–Levin). Connect the framework to one-way functions, learning and the
-  metacomplexity track ([#798]), preserving the distribution and reduction conventions.
+- **Completeness beyond computable ensembles** ([#2865](https://github.com/cslib-community/complexitylib/issues/2865)): extend the bounded-halting completeness for
+  `DistNP` to samplable distributions (Impagliazzo–Levin, `SampNP`), and bridge the verifier-form
+  bounded halting problem to a nondeterministic machine model. Connect the framework to one-way
+  functions, learning and the metacomplexity track ([#798]), preserving the distribution and
+  reduction conventions.
 
 ### Counting and modular classes
 
@@ -740,11 +740,12 @@ universe size, not supplied as unverified input tables. In dependency order:
   closure of regular languages under homomorphic images, upstream to cslib; the non-elementary
   lower bound on formula-to-automaton translation; and Büchi's theorem for ω-words (S1S) over
   cslib's ω-regular languages.
-- **Asymptotic probabilities:** extend the graph 0-1 law for `G(n, 1/2)` and its Rado-graph
-  transfer to arbitrary finite relational vocabularies
-  ([#2967](https://github.com/cslib-community/complexitylib/issues/2967)), constant edge
-  probabilities and unlabelled structures; then the Kolaitis–Vardi laws for fixed-point and
-  finite-variable infinitary logics, and the Shelah–Spencer laws for sparse random graphs.
+- **Asymptotic probabilities:** extend the 0-1 laws for `G(n, 1/2)` and for uniform structures
+  over finite relational vocabularies
+  ([#2967](https://github.com/cslib-community/complexitylib/issues/2967)) to constant edge
+  probabilities, unlabelled structures and classes defined by parametric axioms such as the
+  simple-graph axioms; then the Kolaitis–Vardi laws for fixed-point and finite-variable infinitary
+  logics, and the Shelah–Spencer laws for sparse random graphs.
 - **Dynamic descriptive complexity:** dynamic programs and update semantics with explicit
   initialization, auxiliary relations and domain conventions; invariant-preservation rules and
   reachability in DynFO as a target. Relate logical update restrictions to the stateful-algorithm
@@ -1011,13 +1012,14 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Online learning in the mistake-bound model**
   ([#2908](https://github.com/cslib-community/complexitylib/issues/2908)): the realizable model,
   the halving algorithm, the Littlestone dimension with the standard optimal algorithm (optimal
-  mistake bound equals Littlestone dimension), the VC comparison with the threshold gap, and
-  Novikoff's perceptron bound are in `MachineLearning/OnlineLearning/MistakeBound`. Remaining:
-  Winnow and attribute-efficient learning of disjunctions (Littlestone 1988, Theorem 7); randomized
-  learners and the agnostic setting, with Littlestone-dimension regret bounds
-  (Ben-David–Pál–Shalev-Shwartz 2009); multiclass and real-valued analogues; online-to-batch
-  conversion into the PAC framework; and running-time bounds, since the standard optimal algorithm
-  is a noncomputable specification.
+  mistake bound equals Littlestone dimension), the VC comparison with the threshold gap,
+  Novikoff's perceptron bound, and WINNOW1 for monotone disjunctions with Littlestone's matching
+  `k ⌊log₂ (n / k)⌋` lower bound are in `MachineLearning/OnlineLearning/MistakeBound`. Remaining:
+  WINNOW2 for linearly separable Boolean functions with separation `δ` and Littlestone's
+  attribute transformations (Littlestone 1988, Theorems 9 and 10); randomized learners and the
+  agnostic setting, with Littlestone-dimension regret bounds (Ben-David–Pál–Shalev-Shwartz 2009);
+  multiclass and real-valued analogues; online-to-batch conversion into the PAC framework; and
+  running-time bounds, since the standard optimal algorithm is a noncomputable specification.
 - **Property and distribution testing:** independent repetition of Boolean local tests and BLR
   linearity testing have explicit decision-tree query bounds. Uniformity testing has matching
   `Θ(√n / ε²)` sample bounds for `ε ≤ 1/2` on even domains: the collision tester and Paninski's
@@ -1104,6 +1106,13 @@ each statement against the numbered result. Organize modules by subject, not cha
   randomized weighted majority and sampled Hedge as probabilistic computations, the regret lower
   bound, finite-precision implementations with charged running time, and applications to packing
   and covering LPs, boosting and learning.
+- **Online convex optimization:** projected online gradient descent and its `O(GD√T)` and
+  strongly convex `O(log T)` regret bounds (Zinkevich; Hazan Theorems 3.1 and 3.3), over the
+  metric projection onto complete convex sets, are in `MachineLearning/OnlineLearning`
+  ([#2983](https://github.com/cslib-community/complexitylib/issues/2983)). Remaining:
+  follow-the-regularized-leader and online mirror descent (recovering Hedge as the entropic
+  case), the `Ω(GD√T)` lower bound, online Newton step for exp-concave losses, Blackwell
+  approachability and calibration, and finite-precision implementations.
 
 ### Combinatorial optimization
 
@@ -1153,14 +1162,17 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   exponentially long better-response paths. Mixed Nash equilibria of finite games
   (Nash's theorem) and PPAD-completeness of computing them.
 - **Equilibrium concepts and dynamics:** mixed and correlated equilibria between pure Nash and
-  coarse correlated equilibria; no-regret dynamics converging to coarse correlated equilibria,
-  connecting multiplicative-weights regret bounds to the robust price of anarchy; convergence time
-  of better-response dynamics in potential games.
+  coarse correlated equilibria; swap regret and convergence to correlated equilibria, extending
+  the Hedge dynamics of [#3034](https://github.com/cslib-community/complexitylib/issues/3034);
+  last-iterate convergence of no-regret dynamics; bandit feedback and sampled play; convergence
+  time of better-response dynamics in potential games.
 - **Price of anarchy:** Wardrop equilibrium existence and essential uniqueness for continuous
   nondecreasing latencies (Beckmann's convex potential); the Pigou bound for general latency
-  classes and polynomial latencies of bounded degree; Braess's paradox; weighted and
-  mixed-strategy atomic congestion games; the Monderer–Shapley characterization of potential games
-  as congestion games.
+  classes and polynomial latencies of bounded degree; the price of stability by the potential
+  method, including the `H_k` bound for network cost-sharing games
+  ([#3035](https://github.com/cslib-community/complexitylib/issues/3035)); Braess's paradox;
+  weighted and mixed-strategy atomic congestion games; the Monderer–Shapley characterization of
+  potential games as congestion games.
 
 ### Mechanism design ([#2947](https://github.com/cslib-community/complexitylib/issues/2947))
 
