@@ -32,8 +32,8 @@ far, the weight of `C` within `A` is the weight of the edges of `A` crossing `C`
 next listed vertex is on the other side of `C` from the last listed one, its attachment to its own
 side of `A` is at most the weight of `C` within `A`. The last vertex `t` is such a vertex for
 every `C` separating `s` and `t`, and its attachment to `A` = all other vertices is its degree,
-the weight of `{t}`. This is the argument of [StoerWagner1997] by induction on the "active"
-vertices, phrased as an invariant of the prefixes.
+the weight of `{t}`. This is the standard inductive argument for the lemma (as described in
+secondary accounts of [StoerWagner1997]), phrased as an invariant of the prefixes.
 
 ## Main definitions
 

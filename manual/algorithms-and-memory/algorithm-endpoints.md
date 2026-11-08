@@ -207,11 +207,12 @@ Import `Complexity.Algorithms.Lean.StoerWagner.Basic` ([Basic.lean](../../Comple
 
 - **MA orderings:** [MAOrdering.lean](../../Complexity/Foundations/Combinatorics/WeightedCut/MAOrdering.lean) defines `attachWeight W A x = ∑ a ∈ A, W a x`, maximum adjacency orderings (`IsMAOrdering`, decidable) and maximum adjacency search `maSearch`, with ties broken by list order. `cutWeight_singleton_le_of_isMAOrdering` is the MA-ordering lemma ([Nagamochi and Ibaraki][nagamochiibaraki92]; the cut-of-the-phase lemma of [Stoer and Wagner][stoerwagner97]). If an MA ordering ends with `s, t`, then `{t}` weighs at most every vertex set containing exactly one of `s` and `t`. The proof is an induction over the prefixes of the ordering. `cutWeight_singleton_eq_minCutBetween_of_isMAOrdering` restates it as `cutWeight W {t} = minCutBetween W s t`, using the minimum `s`–`t` cut weight shared with the Gomory–Hu development. `maSearch_spec` shows that the search produces an MA ordering.
 - **Phase recursion:** `cutWeight_contractCut` shows that merging `t` into `s` preserves the cuts that do not separate them. `minCut_eq_min_contractMatrix` says that `minCut W` is the minimum of the weight of a minimum `s`–`t` cut and the `minCut` after the merge. `minCut_eq_min_minCutBetween` states it as `minCut W = min (minCutBetween W s t) (minCut (contractMatrix W s t))`. `minCut_eq_min_of_isMAOrdering` applies this to one phase.
-- **Algorithm:** `stoerWagner W` returns a `CutResult` with one side of a cut and its weight. It is structurally recursive (`run`, with fuel in `maSearch`), so `decide` evaluates it. `stoerWagner_spec`: for `2 ≤ n`, the side is a non-trivial cut whose weight is the answered weight, which equals `minCut W`.
-- **Cost:** `stoerWagnerM` adds `TimeM.tick` charges to the same program, and `ret_stoerWagnerM` shows that it returns the same result. `time_stoerWagnerM_le` bounds the time by `n ^ 3 + 2 n ^ 2`. The unit-cost model is an array implementation; for a phase on `m` supervertices of a graph on `n` vertices:
+- **Algorithm:** `stoerWagner W` returns a `CutResult` with one side of a cut and its weight. It is structurally recursive (`run`, with fuel in `maSearch`), so `decide` evaluates it. `stoerWagner_spec`: for `2 ≤ n` and `IsMultigraph W`, the side is a non-trivial cut whose weight is the answered weight, which equals `minCut W`.
+- **Cost:** `stoerWagnerM` adds `TimeM.tick` charges to the same program, and `ret_stoerWagnerM` shows that it returns the same result. `time_stoerWagnerM_le` bounds the time by `n ^ 3 + 4 n ^ 2`, and the tests pin the charged time `509` on the 8-vertex example. The unit-cost model is an array implementation; for a phase on `m` supervertices of a graph on `n` vertices:
+  - initializing the keys costs `m`;
   - a search step over `r` candidates costs `2 r − 1`;
   - recording a cut of the phase costs `m + n`;
-  - a merge costs `2 m + n + 1`.
+  - a merge costs `4 m + n + 1`: merging row and column `t` into `s`, moving row and column `m − 1` into the freed slot, relabelling the original vertices, and one comparison.
 
   The charges are annotations; they are not derived from the Lean evaluation, which uses closures.
 
@@ -222,6 +223,8 @@ The [checked examples](../../ComplexityTests/StoerWagner.lean) test three graphs
 - Nagamochi–Ibaraki sparse certificates;
 - Karger's near-linear algorithm;
 - Queyranne's symmetric submodular minimization ([#3369](https://github.com/cslib-community/complexitylib/issues/3369)).
+
+The contraction API comes from the randomized Karger module, so this deterministic module imports its probability dependencies; [#3403](https://github.com/cslib-community/complexitylib/issues/3403) tracks moving it into `WeightedCut`.
 
 ## Gomory–Hu trees
 

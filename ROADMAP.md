@@ -1519,7 +1519,8 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   Karger's near-linear minimum cut algorithm, and Queyranne's minimization of symmetric submodular
   functions (which generalizes the maximum adjacency argument to hypergraph cuts). Moving the
   contraction API (`contractMatrix`, `contractPart`, `contractCut`) from `WordRAM/Karger` into
-  `WeightedCut` would let both algorithms share one foundation.
+  `WeightedCut` ([#3403](https://github.com/cslib-community/complexitylib/issues/3403)) would let
+  both algorithms share one foundation.
 - **Gomory–Hu trees** ([#3320](https://github.com/cslib-community/complexitylib/issues/3320)):
   remaining after the existence theorem for cut-equivalent trees of symmetric submodular set
   functions and weighted undirected graphs, with flow-equivalence, the minimum-cut triangle

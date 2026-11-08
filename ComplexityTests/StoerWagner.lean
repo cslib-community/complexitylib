@@ -161,6 +161,10 @@ example (W : Fin 0 → Fin 0 → ℕ) : stoerWagner W = ⟨∅, 0⟩ := rfl
 
 /-! ### Cost -/
 
-example : (stoerWagnerM G8).time ≤ 640 := time_stoerWagnerM_le G8
+/-- The charged time on the 8-vertex example, pinned so that a change of the cost model shows up
+here: `509`, against the bound `8 ^ 3 + 4 * 8 ^ 2 = 768`. -/
+example : (stoerWagnerM G8).time = 509 := by decide
+
+example : (stoerWagnerM G8).time ≤ 768 := time_stoerWagnerM_le G8
 
 end ComplexityTests.StoerWagner

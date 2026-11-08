@@ -46,20 +46,28 @@ slot.
 * `Cslib.Algorithms.Lean.StoerWagner.minCut_eq_min_of_isMAOrdering`: one phase.
 * `Cslib.Algorithms.Lean.StoerWagner.stoerWagner_spec`: the algorithm answers a non-trivial cut of
   minimum weight, and its weight.
-* `Cslib.Algorithms.Lean.StoerWagner.time_stoerWagnerM_le`: at most `n ^ 3 + 2 n ^ 2` steps.
+* `Cslib.Algorithms.Lean.StoerWagner.time_stoerWagnerM_le`: at most `n ^ 3 + 4 n ^ 2` steps.
 
 ## Cost model
 
 `stoerWagnerM` charges unit cost per scanned entry of an array implementation with machine-word
 arithmetic on weights, as the `TimeM` annotations of the other algorithms here do; the charges are
 `TimeM.tick` annotations in the program, not derived from the Lean evaluation, which uses
-closures. A search step on `r` remaining candidates costs `2 r - 1`: a scan for the largest key and
-an update of the other `r - 1` keys, so a phase on `m` supervertices of a graph on `n` vertices
-costs `m ^ 2` for the search. Recording the cut of the phase costs `m + n` (its degree, and the
-vertex set of the original graph mapped to `t`), and the merge costs `2 m + n + 1` (merging a row
-and a column, relabelling the original vertices, comparing two weights). This is the `O(n³)`
-array version of the algorithm; the `O(n m + n² log n)` bound of [StoerWagner1997] uses Fibonacci
-heaps and is not formalized here.
+closures. For a phase on `m` supervertices of a graph on `n` vertices:
+
+* initializing the key array costs `m`;
+* a search step on `r` remaining candidates costs `2 r - 1`: a scan for the largest key and an
+  update of the other `r - 1` keys, so the search costs `m ^ 2`;
+* recording the cut of the phase costs `m + n`: its degree, and the vertex set of the original
+  graph mapped to `t`;
+* the merge costs `4 m + n + 1`: adding row and column `t` of the weight matrix into those of `s`
+  (`2 m`), moving row and column `m - 1` into the freed slot `t` (`2 m`), relabelling the original
+  vertices (`n`) and comparing two weights (`1`).
+
+The final phase, on two supervertices, needs no search and costs `2 + n`. The total is at most
+`n ^ 3 + 4 n ^ 2` (`time_stoerWagnerM_le`). This is the `O(n³)` array version of the algorithm;
+the `O(n m + n² log n)` bound of [StoerWagner1997] uses Fibonacci heaps and is not formalized
+here.
 
 ## Limitations
 
@@ -101,13 +109,13 @@ theorem isMAOrdering_maOrder {k : ℕ} (W : Fin k → Fin k → ℕ) : IsMAOrder
     fun v => (perm_maOrder W).mem_iff.mpr (List.mem_finRange v), (maOrder_spec W).2⟩
 
 /-- The last two entries `(s, t)` of a list, and `(d, d)` for shorter lists. -/
-def lastTwo {α : Type*} (d : α) (l : List α) : α × α :=
+private def lastTwo {α : Type*} (d : α) (l : List α) : α × α :=
   match l.reverse with
   | t :: s :: _ => (s, t)
   | _ => (d, d)
 
 /-- A list of length at least two ends with the two entries of `lastTwo`. -/
-theorem exists_eq_append_lastTwo {α : Type*} (d : α) {l : List α} (hl : 2 ≤ l.length) :
+private theorem exists_eq_append_lastTwo {α : Type*} (d : α) {l : List α} (hl : 2 ≤ l.length) :
     ∃ p, l = p ++ [(lastTwo d l).1, (lastTwo d l).2] := by
   unfold lastTwo
   rcases h : l.reverse with _ | ⟨t, _ | ⟨s, r⟩⟩
@@ -320,18 +328,22 @@ theorem time_maSearchM_le (W : V → V → ℕ) :
       simp only [TimeM.time_bind, TimeM.time_tick, TimeM.time_pure, hm, hstep]
       nlinarith
 
-/-- `maOrder` in `TimeM`. -/
-def maOrderM {k : ℕ} (W : Fin k → Fin k → ℕ) : TimeM ℕ (List (Fin k)) :=
+/-- `maOrder` in `TimeM`: initializing the `k` keys, then the search. -/
+def maOrderM {k : ℕ} (W : Fin k → Fin k → ℕ) : TimeM ℕ (List (Fin k)) := do
+  TimeM.tick k
   maSearchM W k (fun _ => 0) (List.finRange k)
 
 /-- `maOrderM` computes `maOrder`. -/
-theorem ret_maOrderM {k : ℕ} (W : Fin k → Fin k → ℕ) : (maOrderM W).ret = maOrder W :=
-  ret_maSearchM W k _ _
+theorem ret_maOrderM {k : ℕ} (W : Fin k → Fin k → ℕ) : (maOrderM W).ret = maOrder W := by
+  simp only [maOrderM, TimeM.ret_bind]
+  exact ret_maSearchM W k _ _
 
-/-- A maximum adjacency ordering of `k` supervertices costs at most `k ^ 2`. -/
-theorem time_maOrderM_le {k : ℕ} (W : Fin k → Fin k → ℕ) : (maOrderM W).time ≤ k ^ 2 := by
+/-- A maximum adjacency ordering of `k` supervertices costs at most `k ^ 2 + k`. -/
+theorem time_maOrderM_le {k : ℕ} (W : Fin k → Fin k → ℕ) : (maOrderM W).time ≤ k ^ 2 + k := by
   have := time_maSearchM_le W k (fun _ => 0) (List.finRange k)
-  rwa [List.length_finRange] at this
+  rw [List.length_finRange] at this
+  simp only [maOrderM, TimeM.time_bind, TimeM.time_tick]
+  omega
 
 /-- `run` in `TimeM`, with the charges of the cost model. -/
 def runM {n : ℕ} : (k : ℕ) → (Fin (k + 2) → Fin (k + 2) → ℕ) → (Fin n → Fin (k + 2)) →
@@ -345,7 +357,7 @@ def runM {n : ℕ} : (k : ℕ) → (Fin (k + 2) → Fin (k + 2) → ℕ) → (Fi
     TimeM.tick (k + 3 + n)
     let phase : CutResult n := ⟨pullbackCut part {st.2}, rowDeg W st.2⟩
     if hst : st.1 = st.2 then pure phase else do
-      TimeM.tick (2 * (k + 3) + n + 1)
+      TimeM.tick (4 * (k + 3) + n + 1)
       let rest ← runM k (contractMatrix W st.1 st.2) (contractPart part st.1 st.2 hst)
       pure (if rest.weight ≤ phase.weight then rest else phase)
 
@@ -365,9 +377,10 @@ theorem ret_runM {n : ℕ} :
     · simp only [TimeM.ret_bind, TimeM.ret_pure, ret_runM k]
 
 /-- The phases on `k + 2` supervertices of a contraction of a graph on `n` vertices cost at most
-`(k + 2) ^ 3 + 2 n (k + 2)`. -/
+`(k + 2) ^ 3 + 2 (k + 2) ^ 2 + 2 n (k + 2)`. -/
 theorem time_runM_le {n : ℕ} : ∀ (k : ℕ) (W : Fin (k + 2) → Fin (k + 2) → ℕ)
-    (part : Fin n → Fin (k + 2)), (runM k W part).time ≤ (k + 2) ^ 3 + 2 * n * (k + 2)
+    (part : Fin n → Fin (k + 2)),
+    (runM k W part).time ≤ (k + 2) ^ 3 + 2 * (k + 2) ^ 2 + 2 * n * (k + 2)
   | 0, W, part => by
     simp only [runM, TimeM.time_bind, TimeM.time_tick, TimeM.time_pure]
     nlinarith
@@ -396,10 +409,10 @@ theorem ret_stoerWagnerM {n : ℕ} (W : Fin n → Fin n → ℕ) :
   · rfl
   · exact ret_runM n W id
 
-/-- **The cost of the Stoer–Wagner algorithm**: at most `n ^ 3 + 2 n ^ 2` steps on `n` vertices in
+/-- **The cost of the Stoer–Wagner algorithm**: at most `n ^ 3 + 4 n ^ 2` steps on `n` vertices in
 the cost model of the module docstring. -/
 theorem time_stoerWagnerM_le {n : ℕ} (W : Fin n → Fin n → ℕ) :
-    (stoerWagnerM W).time ≤ n ^ 3 + 2 * n ^ 2 := by
+    (stoerWagnerM W).time ≤ n ^ 3 + 4 * n ^ 2 := by
   obtain _ | _ | n := n
   · simp [stoerWagnerM]
   · simp [stoerWagnerM]
