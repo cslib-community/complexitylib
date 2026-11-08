@@ -81,4 +81,9 @@ example :
 example : bwtFirst [3, 1, 2] = (bwtLast [3, 1, 2]).mergeSort (· ≤ ·) :=
   bwtFirst_eq_mergeSort_bwtLast _
 
+example :
+    ((List.range (bwtMatrix "cancan".toList).length).map (lfMap (bwtLast "cancan".toList))).Perm
+      (List.range (bwtMatrix "cancan".toList).length) :=
+  map_lfMap_range_perm _
+
 end Cslib.Algorithms.Lean.BurrowsWheeler.Tests

@@ -60,13 +60,13 @@ variable [DecidableEq α]
 
 /-- `rankTableFrom cnt L` lists, for each position `i`, `cnt L[i]` plus the number of earlier
 occurrences of `L[i]`. It is one left-to-right pass with a running count per symbol. -/
-@[expose] def rankTableFrom (cnt : α → ℕ) : List α → List ℕ
+def rankTableFrom (cnt : α → ℕ) : List α → List ℕ
   | [] => []
   | a :: L => cnt a :: rankTableFrom (Function.update cnt a (cnt a + 1)) L
 
 /-- The rank array `P` of [BurrowsWheeler1994], Section 4.2: `P[i]` is the number of occurrences
-of `L[i]` before position `i`. -/
-@[expose] def rankTable (L : List α) : List ℕ := rankTableFrom (fun _ => 0) L
+of `L[i]` before position `i` (Batteries' `L.countBefore L[i] i`). -/
+def rankTable (L : List α) : List ℕ := rankTableFrom (fun _ => 0) L
 
 theorem getElem?_rankTableFrom :
     ∀ (cnt : α → ℕ) (L : List α) (i : ℕ),
@@ -97,7 +97,7 @@ end RankTable
 /-- `k` LF steps from row `r` with the tables `C` and `P`, prepending the symbols read to `acc`.
 Each step costs one tick: it reads `L[r]` and `P[r]` and moves to `P[r] + C[L[r]]`
 ([BurrowsWheeler1994], Section 4.2). It stops early out of range. -/
-@[expose] def lfDecodeM (L : List α) (C : α → ℕ) (P : List ℕ) :
+def lfDecodeM (L : List α) (C : α → ℕ) (P : List ℕ) :
     ℕ → ℕ → List α → TimeM ℕ (List α)
   | 0, _, acc => pure acc
   | k + 1, r, acc =>
@@ -153,7 +153,7 @@ theorem lfDecodeM_bwtLast_time (w : List α) {C : α → ℕ}
       Nat.add_comm]
 
 /-- The charged inverse transform: `|L|` table-driven LF steps from row `I`. -/
-@[expose] def inverseBwtM (p : List α × ℕ) : TimeM ℕ (List α) :=
+def inverseBwtM (p : List α × ℕ) : TimeM ℕ (List α) :=
   lfDecodeM p.1 (fun c => p.1.countP (· < c)) (rankTable p.1) p.1.length p.2 []
 
 theorem inverseBwtM_ret (p : List α × ℕ) : (inverseBwtM p).ret = inverseBwt p :=

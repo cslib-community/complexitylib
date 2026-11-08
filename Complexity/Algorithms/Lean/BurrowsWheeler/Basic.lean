@@ -8,10 +8,12 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Foundations.Data.List.Lex
+public import Mathlib.Data.List.Lex
 public import Mathlib.Data.List.Rotate
 public import Mathlib.Data.List.Sort
+import Batteries.Data.List.Perm
 import Complexity.Foundations.Data.List.FilterMap
+import Complexity.Foundations.Data.List.Lex
 import Complexity.Foundations.Data.List.SortedCount
 import Mathlib.Order.WithBot
 
@@ -61,6 +63,7 @@ the end.
   is row `r` (the LF-mapping, row form).
 * `getElem?_bwtFirst_lfMap`, `count_take_bwtFirst_lfMap`: `F[lfMap L r] = L[r]`, and both are
   the same occurrence of that symbol (the LF-mapping, step D2).
+* `lfMap_bwtLast_injOn`, `map_lfMap_range_perm`: the LF-mapping permutes the rows (step D2).
 * `getElem?_bwtLast_iterate_lfMap`: `L[T^[i] I] = w[n - 1 - i]` (step D3).
 * `inverseBwt_bwt`: `inverseBwt (bwt w) = w`, hence `bwt_injective`.
 
@@ -133,7 +136,7 @@ zero ([BurrowsWheeler1994], Section 2, step C1). -/
 def bwtIndex (w : List α) : ℕ := (bwtMatrix w).idxOf w
 
 /-- The Burrows–Wheeler transform `(L, I)` ([BurrowsWheeler1994], Section 2, Algorithm C). -/
-@[expose] def bwt (w : List α) : List α × ℕ := (bwtLast w, bwtIndex w)
+def bwt (w : List α) : List α × ℕ := (bwtLast w, bwtIndex w)
 
 /-- The LF-mapping `T` of [BurrowsWheeler1994], Section 2, step D2, computed from the last
 column as in Section 4.2: `T r = C[L[r]] + P[r]`, where `C[c]` counts the symbols of `L`
@@ -158,9 +161,9 @@ range. -/
 ([BurrowsWheeler1994], Section 2, Algorithm D). -/
 @[expose] def inverseBwt (p : List α × ℕ) : List α := lfDecode p.1 p.1.length p.2 []
 
-@[simp] theorem fst_bwt (w : List α) : (bwt w).1 = bwtLast w := rfl
+@[simp] theorem fst_bwt (w : List α) : (bwt w).1 = bwtLast w := by rw [bwt]
 
-@[simp] theorem snd_bwt (w : List α) : (bwt w).2 = bwtIndex w := rfl
+@[simp] theorem snd_bwt (w : List α) : (bwt w).2 = bwtIndex w := by rw [bwt]
 
 /-! ## Basic facts -/
 
@@ -394,6 +397,55 @@ theorem count_take_bwtFirst_lfMap (w : List α) {r : ℕ} {c : α}
     rw [← List.count_append, List.take_append_drop]
   rw [hsplit, List.drop_eq_getElem_cons hr, hcr, List.count_cons_self]
   omega
+
+/-- The LF-mapping is one-to-one on the rows ([BurrowsWheeler1994], Section 2, step D2). -/
+theorem lfMap_bwtLast_injOn (w : List α) {r r' : ℕ} (hr : r < (bwtMatrix w).length)
+    (hr' : r' < (bwtMatrix w).length) (h : lfMap (bwtLast w) r = lfMap (bwtLast w) r') :
+    r = r' := by
+  rcases eq_or_ne w [] with rfl | hw
+  · simp only [bwtMatrix_nil, List.length_singleton] at hr hr'
+    omega
+  have hlen : (bwtLast w).length = (bwtMatrix w).length := by
+    rw [length_bwtLast, length_bwtMatrix hw]
+  -- the key step: an earlier occurrence index has a strictly smaller rank
+  have key : ∀ {a b : ℕ}, a < b → b < (bwtMatrix w).length →
+      lfMap (bwtLast w) a ≠ lfMap (bwtLast w) b := by
+    intro a b hab hb hab'
+    have ha : a < (bwtLast w).length := by omega
+    have hF := getElem?_bwtFirst_lfMap w a
+    have hF' := getElem?_bwtFirst_lfMap w b
+    rw [hab', hF', List.getElem?_eq_getElem (by omega : b < (bwtLast w).length),
+      List.getElem?_eq_getElem ha] at hF
+    have hc : (bwtLast w)[a]? = some (bwtLast w)[a] := List.getElem?_eq_getElem ha
+    have hcb : (bwtLast w)[b]? = some (bwtLast w)[a] := by
+      rw [List.getElem?_eq_getElem (by omega : b < (bwtLast w).length)]
+      exact hF
+    have e1 := count_take_bwtFirst_lfMap w hc
+    have e2 := count_take_bwtFirst_lfMap w hcb
+    rw [hab', e2] at e1
+    have hsucc : ((bwtLast w).take (a + 1)).count (bwtLast w)[a] =
+        ((bwtLast w).take a).count (bwtLast w)[a] + 1 := by
+      rw [List.take_add_one, List.count_append, hc]
+      simp
+    have hmono : ((bwtLast w).take (a + 1)).count (bwtLast w)[a] ≤
+        ((bwtLast w).take b).count (bwtLast w)[a] :=
+      ((List.take_prefix_take_left (by omega)).sublist).count_le _
+    omega
+  rcases lt_trichotomy r r' with hlt | heq | hgt
+  · exact absurd h (key hlt hr')
+  · exact heq
+  · exact absurd h.symm (key hgt hr)
+
+/-- The LF-mapping permutes the rows ([BurrowsWheeler1994], Section 2, step D2). -/
+theorem map_lfMap_range_perm (w : List α) :
+    (List.range (bwtMatrix w).length).map (lfMap (bwtLast w)) ~
+      List.range (bwtMatrix w).length := by
+  refine (List.subperm_of_subset ?_ ?_).perm_of_length_le (by simp)
+  · refine List.Nodup.map_on (fun x hx y hy hxy => ?_) List.nodup_range
+    exact lfMap_bwtLast_injOn w (List.mem_range.mp hx) (List.mem_range.mp hy) hxy
+  · intro x hx
+    obtain ⟨r, hr, rfl⟩ := List.mem_map.mp hx
+    exact List.mem_range.mpr (lfMap_bwtLast_lt w (List.mem_range.mp hr))
 
 /-- One decoding step: if row `r` holds `w.rotate (k + 1)`, then entry `r` of the last column is
 `w[k]`, and the LF-mapping moves to a row holding `w.rotate k`. -/
