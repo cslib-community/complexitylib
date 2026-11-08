@@ -753,6 +753,17 @@ Import `Complexity.Algorithms.Lean.Euler.Circuit` ([source](../../Complexity/Alg
 
 The [examples](../../ComplexityTests/EulerCircuit.lean) run the algorithm on a bowtie (where a second triangle must be spliced in) and on a multigraph with parallel edges and a self-loop. They also refute Euler circuits for a path with odd endpoints and for two disjoint triangles whose degrees are even.
 
+## Christofides' 3/2-approximation for metric TSP
+
+Import `Complexity.Computability.Complexity.Problems.TSP.Christofides` ([source](../../Complexity/Computability/Complexity/Problems/TSP/Christofides.lean)); the generic algorithm is in `Complexity/Algorithms/Lean/TSP/Christofides.lean`. It uses the cost model of the MST 2-approximation above: vertices `Fin n`, costs `δ : Fin n → Fin n → ℕ` and closed-walk cost `cycleCost δ`. `christofides δ` takes Kruskal's tree `T` of the complete graph and the odd-degree vertices `oddVertices T`. It computes a minimum-weight perfect matching `M` on them with `minPerfectMatching`, runs Hierholzer's `eulerCircuit` on the edge list `T ++ M` from vertex `0`, and shortcuts the result with `List.dedup`. A perfect matching on `O` is an edge list whose `VertexCover.endpoints` are a permutation of `O`. The proof follows Theorem 2.13 of [Williamson and Shmoys][williamsonshmoys11] ([Christofides][christofides76]):
+
+- **Handshake:** `Euler.even_length_filter_odd_degree` ([Handshake.lean](../../Complexity/Algorithms/Lean/Euler/Handshake.lean)) holds for list multigraphs with parallel edges and self-loops. It gives `even_length_oddVertices`.
+- **Shortcutting:** `cycleCost_le_of_sublist` ([Shortcut.lean](../../Complexity/Algorithms/Lean/TSP/Shortcut.lean)) says that under the triangle inequality, a subsequence of a closed walk costs no more. `cycleCost_dedup_le_of_isEulerCircuit` bounds a shortcut Euler circuit by the weight of its multigraph. `List.dedup` keeps the last visit to each vertex, whereas the textbook keeps the first; both are subsequences.
+- **Matching bound:** `two_mul_sum_le_cycleCost` ([PerfectMatching.lean](../../Complexity/Algorithms/Lean/TSP/PerfectMatching.lean)) shows that a minimum-weight perfect matching on `O` costs at most half of any tour through `O`. The tour is shortcut to `O` and its edges are split into two alternating perfect matchings. This step needs no symmetry.
+- **Bound:** `two_mul_cycleCost_shortcutTour_le_three_mul` holds for any `IsMinSpanningTree` and any minimum-weight perfect matching on its odd vertices. `two_mul_cycleCost_christofides_le_three_mul` is the algorithm's instance. On `TSP` instances, `christofidesTour_perm` and `two_mul_tourLength_christofidesTour_le_three_mul` state `2 · length ≤ 3 · length(p)` for every tour `p` of a metric matrix (`TSP.IsMetric`, as above).
+
+`minPerfectMatching` is exhaustive search over `(2k − 1)!!` matchings, with optimality proved by `sum_minPerfectMatching_le`. So these results certify the approximation ratio, not a polynomial running time. Edmonds' weighted matching algorithm ([Edmonds][edmonds65]) and any machine-level certificate remain open. The [examples](../../ComplexityTests/TSPChristofides.lean) run the algorithm on a four-city star whose three perfect matchings cost `5`, `6` and `6`; exhaustive search picks the cheapest. The Euler circuit `[0, 1, 2, 0, 3, 0]` is shortcut to an optimal tour of length `11`. The examples also instantiate the general bound with Kruskal's tree, and check the empty and one-city instances.
+
 ## Tree Evaluation
 
 The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root of an explicitly table-encoded perfect binary tree in native independent workspace `O(log n · log log n)` for positive value length and height. The output is not charged to workspace, and the theorem leaves time existential. The same page distinguishes borrowed-register restoration and fan-in/packed procedure variants.
@@ -762,7 +773,9 @@ The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root 
 The numeric values above are transcriptions of checked source statements, not results of new execution benchmarks. The source-reference audit checks locations and digests; it does not rerun Lean or prove asymptotic summaries. The full Haskell/Lean runtime behavior, allocator, operating system and hardware are outside these idealized RAM models.
 
 [complexitylib]: ../sources.md#complexitylib
+[christofides76]: ../sources.md#christofides76
 [clrs09]: ../sources.md#clrs09
+[edmonds65]: ../sources.md#edmonds65
 [floyd62]: ../sources.md#floyd62
 [freivalds79]: ../sources.md#freivalds79
 [hierholzer73]: ../sources.md#hierholzer73
