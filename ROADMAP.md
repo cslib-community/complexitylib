@@ -1225,6 +1225,16 @@ each statement against the numbered result. Organize modules by subject, not cha
   match the upper bound, via Yao's principle for expected cost; Monte Carlo (bounded-error) bounds
   for the same trees; and Saks–Wigderson's general read-once formula and game-tree (MIN/MAX over
   integer leaves) results.
+- **Information complexity**
+  ([#3243](https://github.com/cslib-community/complexitylib/issues/3243)): internal and external
+  information cost of deterministic, private-coin and public-coin protocols, with
+  `IC ≤ IC^ext ≤ CC` and equality on product inputs. Remaining: distributional-error information
+  complexity; additivity and the direct-sum theorem `IC_{μⁿ}(fⁿ) = n · IC_μ(f)`
+  (Braverman–Rao), whose embedding needs private sampling from conditional marginals of `μ`,
+  beyond the uniform dyadic tapes of `PrivateCoin`; information equals amortized communication;
+  and the Bar-Yossef–Jayram–Kumar–Sivakumar `Ω(n)` disjointness lower bound via the information
+  cost of AND, which needs conditional information cost under a non-product `μ` with an auxiliary
+  variable that makes the inputs conditionally independent.
 - **Number-on-forehead multiparty protocols**
   ([#3197](https://github.com/cslib-community/complexitylib/issues/3197)): `NOF.Protocol`,
   public-coin NOF protocols, cylinder intersections and the multiparty discrepancy bound
@@ -1235,8 +1245,8 @@ each statement against the numbered result. Organize modules by subject, not cha
   protocol; matrix multiplication (Raz) and NOF disjointness lower bounds; and applications to
   `ACC⁰` and branching-program lower bounds. A two-party companion is the Aho–Ullman–Yannakakis bound
   `D(f) = O(N⁰(f) N¹(f))` relating deterministic and nondeterministic communication.
-- Multiparty number-in-hand protocols, information complexity, direct-sum and direct-product
-  results, and reductions to streaming, sketching and cell-probe lower bounds.
+- Multiparty number-in-hand protocols, direct-product results, and reductions to streaming,
+  sketching and cell-probe lower bounds.
 - **Dynamic cell-probe lower bounds**
   ([#3207](https://github.com/cslib-community/complexitylib/issues/3207)): the Fredman–Saks
   chronogram bound for dynamic prefix parity, `log_β n ≤ 128 t_q + 1` with
