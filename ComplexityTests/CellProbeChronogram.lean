@@ -27,7 +27,7 @@ last-touched sets record the last probe, not the last write. The checks cover
 4. query replay on the overlay, together with a query that probes a last-touched cell and answers
    differently, so the disjointness hypothesis of `run_overlayMem_eq` cannot be dropped;
 5. the probe-count bound `card_laterCells_le` and the Hamming-ball count
-   `card_filter_hammingDist_le_mem`, including a case where the latter is tight.
+   `card_filter_hammingDist_le_le_pow`, including a case where the latter is attained.
 -/
 
 public section
@@ -162,21 +162,22 @@ theorem copier_depth_le (t : ℕ) (o : TOp) : (copier.step t o).depth ≤ 2 := b
   | write i v => revert i v; decide
   | copy src dst => revert src dst; decide
 
--- Segments `1` and `2` contain two operations of depth at most `2`, and probe three cells.
+-- Segments `1` and `2` contain two operations of depth at most `2` and probe three distinct cells,
+-- within the bound `2 * 2 = 4`; it is not attained because `write 1 0` has depth `1`.
 example :
     #(copier.laterCells segs 0 m₀ 3 0) = 3 ∧
       #(copier.laterCells segs 0 m₀ 3 0) ≤ 2 * ∑ k ∈ Ioo 0 3, (segs k).length :=
   ⟨by decide, copier.card_laterCells_le segs 0 m₀ fun _ _ t o _ => copier_depth_le t o⟩
 
--- A single 1-bit cell: both memories lie within distance `1` of `0`, below the bound `3`, and the
--- radius-`0` ball is the centre alone, matching the bound `1`.
+-- Two 1-bit cells: the radius-`1` ball around `0` has `3` memories, attaining the bound
+-- `(2 * (2 ^ 1 - 1) + 1) ^ 1 = 3`; the radius-`0` ball is the centre alone.
 example :
-    #{m' : Mem 1 1 | hammingDist (zeroMem 1 1) m' ≤ 1} = 2 ∧
-      #{m' : Mem 1 1 | hammingDist (zeroMem 1 1) m' ≤ 0} = (1 * 2 ^ 1 + 1) ^ 0 :=
+    #{m' : Mem 2 1 | hammingDist (zeroMem 2 1) m' ≤ 1} = 3 ∧
+      #{m' : Mem 2 1 | hammingDist (zeroMem 2 1) m' ≤ 0} = 1 :=
   ⟨by decide, by decide⟩
 
 example :
-    #{m' : Mem 2 1 | hammingDist (zeroMem 2 1) m' ≤ 1} ≤ (2 * 2 ^ 1 + 1) ^ 1 :=
-  card_filter_hammingDist_le_mem _ 1
+    #{m' : Mem 2 1 | hammingDist (zeroMem 2 1) m' ≤ 1} ≤ (2 * (2 ^ 1 - 1) + 1) ^ 1 :=
+  card_filter_hammingDist_le_le_pow _ 1
 
 end ComplexityTests.CellProbeChronogram

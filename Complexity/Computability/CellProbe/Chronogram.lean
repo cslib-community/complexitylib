@@ -11,7 +11,6 @@ public import Complexity.Init
 public import Complexity.Computability.CellProbe.Defs
 public import Mathlib.InformationTheory.Hamming
 import Complexity.Foundations.Data.Code.HammingBound
-import Mathlib.Data.Nat.Choose.Bounds
 
 /-!
 # Chronogram bookkeeping for cell-probe schemes
@@ -19,7 +18,11 @@ import Mathlib.Data.Nat.Choose.Bounds
 The chronogram method of Fredman and Saks [FredmanSaks1989] proves dynamic cell-probe lower bounds
 by splitting an update sequence into consecutive *epochs* and asking which epoch last wrote the
 cells that a later query probes (see [PatrascuDemaine2006], §3.1, p. 5, for the history of the
-method). This file supplies the epoch-independent bookkeeping for a deterministic step-indexed
+method). Here the epoch that last *probed* a cell stands in for the epoch that last wrote it: a cell
+that no later epoch probes keeps its contents, and the cells probed later are exactly the ones whose
+final contents an encoder records.
+
+This file supplies the epoch-independent bookkeeping for a deterministic step-indexed
 scheme `D : IndexedScheme Op Result cells w` that runs consecutive operation segments
 `seg 0, seg 1, …` from step `t₀` and memory `m₀`.
 
@@ -36,8 +39,8 @@ segment. `overlayMem` is the memory that a decoder can reconstruct from the memo
 * a query whose probed cells avoid `lastCells L j` gives the same answer on the overlay as on the
   true memory.
 
-At most `(cells * 2 ^ w + 1) ^ r` memories lie within Hamming distance `r` of a fixed memory, which
-bounds the number of overlays in an encoding argument.
+At most `(cells * (2 ^ w - 1) + 1) ^ r` memories lie within Hamming distance `r` of a fixed memory,
+which bounds the number of overlays in an encoding argument.
 
 ## Main definitions
 
@@ -67,8 +70,9 @@ bounds the number of overlays in an encoding argument.
   uniform depth bound.
 * `Cslib.CellProbe.IndexedScheme.run_overlayMem_eq`: a query avoiding `lastCells` answers the same
   on the overlay.
-* `Cslib.CellProbe.card_filter_hammingDist_le_mem`: at most `(cells * 2 ^ w + 1) ^ r` memories
-  within Hamming distance `r` of a memory.
+* `Cslib.CellProbe.card_filter_hammingDist_le_le_pow`: at most `(cells * (2 ^ w - 1) + 1) ^ r`
+  memories within Hamming distance `r` of a memory, from
+  `Cslib.Code.card_filter_hammingDist_le_le_pow`.
 
 ## References
 
@@ -84,23 +88,11 @@ namespace Cslib.CellProbe
 
 open Finset
 
-/-- At most `(cells * 2 ^ w + 1) ^ r` memories of `cells` cells of `w` bits lie within Hamming
-distance `r` of a fixed memory `m`. -/
-theorem card_filter_hammingDist_le_mem {cells w : ℕ} (m : Mem cells w) (r : ℕ) :
-    #{m' : Mem cells w | hammingDist m m' ≤ r} ≤ (cells * 2 ^ w + 1) ^ r := by
-  rw [Code.card_filter_hammingDist_le_eq_sum]
-  calc ∑ j ∈ range (r + 1), #{m' : Mem cells w | hammingDist m m' = j}
-      ≤ ∑ j ∈ range (r + 1), (cells * 2 ^ w) ^ j * 1 ^ (r - j) * r.choose j := by
-        refine sum_le_sum fun j hj => ?_
-        rw [Code.card_filter_hammingDist_eq_choose_mul_pow (q := 2 ^ w) (fun _ => by simp) m j,
-          Fintype.card_fin, one_pow, mul_one, mul_pow]
-        calc cells.choose j * (2 ^ w - 1) ^ j
-            ≤ cells ^ j * (2 ^ w) ^ j :=
-              Nat.mul_le_mul (Nat.choose_le_pow cells j)
-                (Nat.pow_le_pow_left (Nat.sub_le _ _) j)
-          _ ≤ cells ^ j * (2 ^ w) ^ j * r.choose j :=
-              Nat.le_mul_of_pos_right _ (Nat.choose_pos (Nat.lt_succ_iff.mp (mem_range.mp hj)))
-    _ = (cells * 2 ^ w + 1) ^ r := (add_pow _ _ _).symm
+/-- At most `(cells * (2 ^ w - 1) + 1) ^ r` memories of `cells` cells of `w` bits lie within
+Hamming distance `r` of a fixed memory `m`: the number of overlays in an encoding argument. -/
+theorem card_filter_hammingDist_le_le_pow {cells w : ℕ} (m : Mem cells w) (r : ℕ) :
+    #{m' : Mem cells w | hammingDist m m' ≤ r} ≤ (cells * (2 ^ w - 1) + 1) ^ r := by
+  simpa using Code.card_filter_hammingDist_le_le_pow (q := 2 ^ w) (fun _ => by simp) m r
 
 namespace IndexedScheme
 
@@ -121,24 +113,24 @@ step `t₀` and memory `m₀`. -/
   | j + 1 => (D.runInterval (segStart seg t₀ j) (D.segMem seg t₀ m₀ j) (seg j)).2
 
 /-- The cells probed while `D` runs segment `j`. -/
-@[expose] def segCells [DecidableEq Op] (D : IndexedScheme Op Result cells w)
+@[expose] def segCells (D : IndexedScheme Op Result cells w)
     (seg : ℕ → List Op) (t₀ : ℕ) (m₀ : Mem cells w) (j : ℕ) : Finset (Fin cells) :=
   D.probedCellsInterval (segStart seg t₀ j) (D.segMem seg t₀ m₀ j) (seg j)
 
 /-- The cells probed by the segments strictly between `j` and `L`. -/
-@[expose] def laterCells [DecidableEq Op] (D : IndexedScheme Op Result cells w)
+@[expose] def laterCells (D : IndexedScheme Op Result cells w)
     (seg : ℕ → List Op) (t₀ : ℕ) (m₀ : Mem cells w) (L j : ℕ) : Finset (Fin cells) :=
   (Ioo j L).biUnion (D.segCells seg t₀ m₀)
 
 /-- The cells probed by segment `j` and by no segment between `j` and `L`: the cells whose last
 probe before step `segStart seg t₀ L` happened during segment `j`. -/
-@[expose] def lastCells [DecidableEq Op] (D : IndexedScheme Op Result cells w)
+@[expose] def lastCells (D : IndexedScheme Op Result cells w)
     (seg : ℕ → List Op) (t₀ : ℕ) (m₀ : Mem cells w) (L j : ℕ) : Finset (Fin cells) :=
   D.segCells seg t₀ m₀ j \ D.laterCells seg t₀ m₀ L j
 
 /-- The final contents of the cells probed after segment `j`, laid over the memory before segment
 `j`. -/
-@[expose] def overlayMem [DecidableEq Op] (D : IndexedScheme Op Result cells w)
+@[expose] def overlayMem (D : IndexedScheme Op Result cells w)
     (seg : ℕ → List Op) (t₀ : ℕ) (m₀ : Mem cells w) (L j : ℕ) : Mem cells w :=
   fun c => if c ∈ D.laterCells seg t₀ m₀ L j then D.segMem seg t₀ m₀ L c
     else D.segMem seg t₀ m₀ j c
@@ -199,8 +191,6 @@ theorem runInterval_flatMap_range_append (L : ℕ) (ops : List Op) :
   rw [runInterval_append, hmem, hlen]
 
 /-! ### Later and last-touched cells -/
-
-variable [DecidableEq Op]
 
 /-- A cell lies in `laterCells L j` iff some segment strictly between `j` and `L` probes it. -/
 theorem mem_laterCells {L j : ℕ} {c : Fin cells} :
@@ -294,7 +284,6 @@ theorem card_filter_lastCells_le (L : ℕ) (P : Finset (Fin cells)) :
 
 /-! ### Probe counts under a uniform depth bound -/
 
-omit [DecidableEq Op] in
 /-- If every step on the operations of `ops` has depth at most `d`, running `ops` makes at most
 `d * ops.length` probes. -/
 theorem probesInterval_le_mul_length {d : ℕ} (t : ℕ) (m : Mem cells w) (ops : List Op)

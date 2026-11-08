@@ -1069,12 +1069,12 @@ each statement against the numbered result. Organize modules by subject, not cha
 - Multiparty protocols, discrepancy and information complexity, direct-sum and direct-product
   results, and reductions to streaming, sketching and cell-probe lower bounds.
 - **Dynamic cell-probe lower bounds**
-  ([#3207](https://github.com/cslib-community/complexitylib/issues/3207)): the Fredman–Saks
-  chronogram bound for dynamic prefix parity, `t_q = Ω(log n / log(t_u w))` against deterministic
-  schemes with worst-case update depth `t_u`, on the chronogram bookkeeping in
-  `Complexity.Computability.CellProbe.Chronogram`. Remaining: amortized updates, Las Vegas
-  randomization through the cell-probe Yao averaging, and Pătraşcu–Demaine's
-  `Ω(log n)` information-transfer bound.
+  ([#3207](https://github.com/cslib-community/complexitylib/issues/3207)): the problem-independent
+  chronogram bookkeeping is in `Complexity.Computability.CellProbe.Chronogram`. Remaining: the
+  Fredman–Saks bound for dynamic prefix parity, `t_q = Ω(log n / log(t_u (w + 1)))` for
+  deterministic schemes with worst-case update depth `t_u` and `S ≤ 2 ^ w` cells (milestone 2
+  of the issue); amortized updates; Las Vegas randomization through the cell-probe Yao averaging;
+  and Pătraşcu–Demaine's `Ω(log n)` information-transfer bound.
 - **Streaming and sketching:** native time and space bounds for Count-Min, including hash-seed
   storage and evaluation; the AMS sketches for `F₀` and `F_k` with `k > 2` and the `n^{Ω(1)}`
   lower bounds for `F_k` with `k ≥ 6`; `ProbComp` samplers and native realizations of the AMS `F₂`
