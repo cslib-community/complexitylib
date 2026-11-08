@@ -727,7 +727,7 @@ Bernhard von Stengel. "Equilibrium Computation for Two-Player Games in Strategic
 <a id="vww18"></a>
 ## vww18
 
-Virginia Vassilevska Williams and R. Ryan Williams. "Subcubic Equivalences Between Path, Matrix, and Triangle Problems." *Journal of the ACM* 65(5), 27:1–27:38, 2018; preliminary version in FOCS 2010. https://doi.org/10.1145/3186893 . Bibliographic metadata checked on 2026-11-07; the manual cites it only as the standard reference for the APSP class and the negative-triangle equivalence, without a theorem locator.
+Virginia Vassilevska Williams and R. Ryan Williams. "Subcubic Equivalences Between Path, Matrix, and Triangle Problems." *Journal of the ACM* 65(5), 27:1–27:38, 2018; preliminary version in FOCS 2010. https://doi.org/10.1145/3186893 . Bibliographic metadata checked on 2026-11-07. The authors' journal manuscript https://people.csail.mit.edu/virgi/tria-mmult-jv.pdf was consulted on 2026-11-08 for the negative triangle problem over a structure (Section 2), Theorem 4.1, Theorem 4.2, Lemma 4.1 and Lemma 4.2 (and its proof with parts of size `n^{1−a}`). Theorem and lemma numbers follow that manuscript.
 
 <a id="wattenhofer16"></a>
 ## wattenhofer16
