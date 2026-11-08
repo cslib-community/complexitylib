@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner
 
 import ComplexityTests.ConcurrentBatch
 import Complexity.Computability.Probabilistic.NativeBatch.Quantitative
+import Complexity.Computability.Probabilistic.NativeBatch.Deadline
 import Mathlib.Tactic
 
 /-!
@@ -442,5 +443,65 @@ example : NativeUnboundedExecution.SelectionOnly machine (environment limits sam
   have he : C = ∅ := Finset.eq_empty_of_isEmpty C
   simp [he]
 
+
+/-- Both real concurrent batches have latency at least three: the second waits
+until the absolute deadline cancels its unfinished call. No independence is used. -/
+theorem latency_envelope : Deadline.LowerLatency limits sample machine start 3 := by
+  intro t ht o ho hi next hn
+  have hs := Quantitative.conditional_support limits sample machine
+    (Trace.law limits sample machine t start) o ho next hn
+  have ht' : t < 3 := ht
+  interval_cases t
+  · change next ∈ (Trace.law limits sample machine 1 start).support at hs
+    rw [law_one, PMF.mem_support_map_iff] at hs
+    obtain ⟨u, _, rfl⟩ := hs
+    simpa only [traceOne, List.headD_cons, Option.elim_some, (first_resources u).1]
+      using (show (3 : ℝ≥0) ≤ 5 by norm_num)
+  · change next ∈ (Trace.law limits sample machine 2 start).support at hs
+    rw [law_two, PMF.mem_support_map_iff] at hs
+    obtain ⟨u, _, rfl⟩ := hs
+    simpa only [traceTwo, List.headD_cons, Option.elim_some, (second_resources u).1]
+      using (show (3 : ℝ≥0) ≤ 3 from le_rfl)
+  · change next ∈ (Trace.law limits sample machine 3 start).support at hs
+    rw [law_three, PMF.mem_support_map_iff] at hs
+    obtain ⟨u, _, he⟩ := hs
+    subst next
+    have he := Quantitative.conditional_record_isSome limits sample machine _ o ho (traceDone u) hn
+    rw [hi] at he
+    cases he
+
+/-- The actual correlated two-batch native run satisfies the derived physical
+turn cap, including its last zero-call halting decision. -/
+example (state : Trace.State 3 0 Bool (Fin 12) [])
+    (hs : state ∈ (Trace.law limits sample machine 3 start).support) :
+    (state.records.filterMap id).length ≤ Deadline.effectiveTurns limits 3 :=
+  Deadline.issued_bound limits sample machine 3 (by norm_num) 3 (by decide) start
+    (NativeBatch.initial_invariant limits false) rfl latency_envelope state hs
+
+private theorem floor_eight_thirds : ⌊(8 : ℝ≥0) / 3⌋₊ = 2 :=
+  (Nat.floor_eq_iff (by positivity)).mpr (by
+    norm_num [le_div_iff₀ (by norm_num : (0 : ℝ≥0) < 3),
+      div_lt_iff₀ (by norm_num : (0 : ℝ≥0) < 3)])
+
+/-- The exact physical allowance is two, not three source decisions. -/
+example : Deadline.effectiveTurns limits 3 = 2 := by
+  norm_num [Deadline.effectiveTurns, limits, floor_eight_thirds]
+
+/-- Earlier invoices retain their exact expectation through silent completion,
+by the derived physical truncation theorem. -/
+example : Quantitative.expected limits sample machine Trace.charge 3 start =
+    Quantitative.expected limits sample machine Trace.charge 2 start := by
+  have he : Deadline.effectiveTurns limits 3 = 2 := by
+    norm_num [Deadline.effectiveTurns, limits, floor_eight_thirds]
+  have h := Deadline.records_mean_stable limits sample machine 3 (by norm_num) 3
+    (by decide) start (NativeBatch.initial_invariant limits false) rfl latency_envelope
+    (by rw [he]; omega) (fun h => (h.map Trace.charge).sum) (by intro h; simp [Trace.charge])
+  rw [he] at h
+  exact h
+
+/-- Physical floor edge cases can dominate the independent source turn guard. -/
+example : Deadline.effectiveTurns { limits with turns := 10 } 3 = 2 ∧
+    Deadline.effectiveTurns { limits with turns := 10 } 9 = 0 := by
+  norm_num [Deadline.effectiveTurns, limits, floor_eight_thirds]
 
 end ComplexityTests.NativeBatchPolicy

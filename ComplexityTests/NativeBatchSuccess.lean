@@ -5,6 +5,7 @@ Authors: Christian Reitwiessner
 -/
 
 import ComplexityTests.NativeBatchProgress
+import Complexity.Computability.Probabilistic.NativeBatch.Deadline
 import Mathlib.Tactic
 
 /-!
@@ -399,5 +400,58 @@ example : Quantitative.expected limits sample machine Trace.charge 2 start ≤ 2
     (fun t ht o ho hi => (cost_envelope t (by change t < 1 at ht; omega) o ho hi).le)
   simpa only [show limits.turns + 1 = 2 from rfl, Nat.cast_one, one_div, inv_one, mul_one,
     ENNReal.ofReal_one] using h
+
+private theorem latency_envelope : Deadline.LowerLatency limits sample machine start 1 := by
+  intro t ht o ho hi next hn
+  have hs := Quantitative.conditional_support limits sample machine
+    (Trace.law limits sample machine t start) o ho next hn
+  have ht' : t < 2 := ht
+  interval_cases t
+  · change next ∈ (Trace.law limits sample machine 1 start).support at hs
+    rw [law_one, PMF.mem_support_pure_iff] at hs
+    subst next
+    norm_num [firstTrace, receipt, Exchange.duration, ConcurrentBatch.observe, limits,
+      batch, path, active, CallTrace.stop, CallTrace.response]
+  · change next ∈ (Trace.law limits sample machine 2 start).support at hs
+    rw [law_two, PMF.mem_support_pure_iff] at hs
+    subst next
+    have he := Quantitative.conditional_record_isSome limits sample machine _ o ho finalTrace hn
+    rw [hi] at he
+    cases he
+
+/-- The assembled native source lower transfer applies to the actual successful
+packet-writing/output code, its proved admission and all four reached envelopes. -/
+example :
+    (((NativeUnboundedExecution.terminal machine (environment limits sample) start).map
+        (Deadline.nativeByDeadline (Coverage.coverAccept coverInstance) limits.deadline)
+      true) * 1 * 2) / 1 ≤
+      Quantitative.expected limits sample machine Trace.charge (limits.turns + 1) start ∧
+    (NativeUnboundedExecution.terminal machine (environment limits sample) start).map
+        (Deadline.nativeByDeadline (Coverage.coverAccept coverInstance) limits.deadline)
+      true ≤ ENNReal.ofReal
+      (∫ j, (if 1 ≤ j then (1 : ℝ) else 0)
+        ∂ProbabilityTheory.binomial (Deadline.effectiveTurns limits 1) ⟨1, by norm_num⟩) := by
+  simpa only [ENNReal.ofReal_one, Nat.cast_one] using
+    Deadline.lower_guarantees limits sample machine
+    coverInstance 1 1
+    (by
+      intro q hq
+      have hq0 : q = 0 := by omega
+      subst q
+      simp [coverInstance])
+    start (NativeBatch.initial_invariant limits ()) rfl (Coverage.coverAccept coverInstance)
+    (by intro C hC; simpa [Coverage.coverAccept] using hC) admitted
+    ⟨1, by norm_num⟩ (by norm_num) 2 1 (by norm_num) cap_envelope
+    (fun t ht o ho hi => by simpa using progress_envelope t ht o ho hi)
+    (fun t ht o ho hi => (cost_envelope t ht o ho hi).ge) latency_envelope
+
+/-- Adding the real native elapsed-deadline test preserves this constructed
+machine's positive accepted mass; the event is not merely retained coverage. -/
+example : (NativeUnboundedExecution.terminal machine (environment limits sample) start).map
+    (Deadline.nativeByDeadline (Coverage.coverAccept coverInstance) limits.deadline) true = 1 := by
+  rw [Deadline.deadline_success_law limits sample machine _ start
+    (NativeBatch.initial_invariant limits ()),
+    ← Coverage.success_law limits sample machine _ start (NativeBatch.initial_invariant limits ())]
+  exact success_probability
 
 end ComplexityTests.NativeBatchSuccess

@@ -1392,8 +1392,8 @@ a positive finite $p$, and the original native admission. The required progress 
 and cost lower conclusion are proved, not premises. `revealed_envelope` derives zero
 progress on halt/divergence padding. `success_binomial` bounds actual native output
 success by the binomial tail for `limits.turns`, with no extra trial for completion.
-The physical latency lower envelope still needs to replace that budget by
-$\min(u,\lfloor D/\ell\rfloor)$; this exact deadline conclusion is not yet proved here.
+Import `Complexity.Computability.Probabilistic.NativeBatch.Deadline` for the exact
+physical deadline refinement described below.
 
 `Retained.completion` uses the existing local dual retention test and residual-count
 proof to obtain actual retained-cover probability at least the binomial upper tail.
@@ -1416,6 +1416,60 @@ issues one opportunity, writes a covering output and halts. It proves its origin
 SelectionOnly admission for every finite clock and instantiates both positive cost
 bounds and the single-trial native binomial bound at $p=1$. These clients establish
 nonvacuity; they do not implement the source's uniform upper policy on all instances.
+
+### Native physical deadline transfer
+
+Import `Complexity.Computability.Probabilistic.NativeBatch.Deadline` and use the
+same actual machines, sampler and initial oracle state as above. The
+[two-batch client](../../ComplexityTests/NativeBatchPolicy.lean) now proves its
+latency envelope from real concurrent receipts, including the absolute-deadline
+cancellation in its second batch. The
+[successful native client](../../ComplexityTests/NativeBatchSuccess.lean) applies the
+assembled guarantee to its proved admission and actual output code. Build both
+from the warm checkout with:
+
+```bash
+scripts/build.sh ComplexityTests.NativeBatchPolicy ComplexityTests.NativeBatchSuccess
+```
+
+`Deadline.LowerLatency` is the source almost-sure batch lower envelope on positive
+selected observations and supported conditional responses. Only issued batches
+require a positive latency. It uses the actual maximum concurrent duration, not
+an instruction count or a sum of concurrent call times. `latency_sum_lower` adds
+this envelope along supported native histories; `issued_bound` combines it with
+the concrete source deadline guard to bound actual issued count by
+$v=min(u,lfloor D/ell
+floor)$, represented by `effectiveTurns` on nonnegative
+real interface clocks.
+
+`issued_live` proves that a source response resumes at the actual native query
+continuation. A live epoch must already have issued at least its index's number
+of batches. Combining these facts with the duration bound proves `no_call_after`:
+no actual selected signal can issue a batch at or after $v$. This is a derived
+execution constraint, not a supplied physical turn cap. `records_mean_stable`
+then transfers all nonnegative receipt observables invariant under no-call padding
+back to epoch $v$. In particular, earlier bills, durations and revealed progress
+survive later silent halting or divergence; hidden local computation need not stop
+by a common instruction clock.
+
+Use `Deadline.lower_guarantees` for the assembled lower transfer. Its acceptance
+predicate may require the desired weight certificate and must imply coverage.
+The hypotheses are original native SelectionOnly admission, an empty initial
+accepted ledger and its invariant, reached coverage/progress/cost envelopes,
+and `LowerLatency`. It proves the success-level expected-bill lower bound and the
+necessary binomial probability bound at $v$. `nativeByDeadline` explicitly tests
+both decoded native acceptance and the original native elapsed resource.
+`terminal_duration_le` and `deadline_success_law` prove from the actual protocol
+that adding this deadline test loses no accepted terminal mass. Neither a desired
+success/count implication nor deadline/truncation law is a premise.
+
+`zero_deadline_failure` covers the boundary $D=0$ for every admitted native policy
+on a nonempty ground set, without progress/cost/latency envelopes. Admission rejects
+all batches before sampling, so no accepted nonempty cover is possible. This result
+does not exclude a successful empty cover on empty ground. Floor-boundary clients
+also check that a physical allowance can be smaller than the independent turn guard.
+These deadlines exclude local computation time, as in the paper. Compiled physical
+clock semantics and the infinite-instruction path-cost limit remain separate.
 
 The source native optimum/envelope comparison still needs that uniformly successful
 upper realization, along with source WSC subinstance/role and residual-label codecs

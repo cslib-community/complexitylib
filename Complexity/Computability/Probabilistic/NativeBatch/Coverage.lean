@@ -306,10 +306,42 @@ theorem success_cost_lower (I : Instance E (Fin m)) (b r : ℕ) (p c : ℝ≥0�
       by ring
     _ ≤ _ := mul_le_mul_right hb p
 
+/-- Accepted native covering outputs require the actual revealed-progress tail.
+The implication follows from concrete source provenance and reached coverage caps. -/
+theorem success_count_tail (I : Instance E (Fin m)) (b r : ℕ)
+    (hr : ∀ q < r, b * q < I.ground.card)
+    (world : World k Control Unit (ServerState n Private) input)
+    (hi : Invariant limits world.memory) (hzero : world.memory.privateState.history = [])
+    (accept : Finset (Fin m) → Bool)
+    (haccept : ∀ C, accept C = true → I.covered C = I.ground)
+    (hselect : NativeUnboundedExecution.SelectionOnly machine (environment limits sample)
+      (candidateParser (n := n) m) (decodeFamily m) accept world)
+    (H : ∀ t < limits.turns + 1, ∀ o ∈ ((select limits sample machine
+        (law limits sample machine t world)).map (Quantitative.observe limits)).support,
+      ∀ next ∈ (conditional limits sample machine (law limits sample machine t world) o).support,
+        (revealed I (proposal m) next.records \ revealed I (proposal m) o.history).card ≤ b)
+    : (NativeUnboundedExecution.terminal machine (environment limits sample) world).map
+        (nativeSuccess accept) true ≤
+      mean (law limits sample machine (limits.turns + 1) world) (fun state =>
+        ENNReal.ofReal (if r ≤ count (reveals I (proposal m)) state.records then 1 else 0)) := by
+  classical
+  rw [← success_law limits sample machine accept world hi]
+  rw [← DiscreteComparison.indicator_mean]
+  apply tsum_le_tsum
+  intro state
+  by_cases hs : state ∈ (law limits sample machine (limits.turns + 1) world).support
+  · apply mul_le_mul_right
+    by_cases he : success accept state = true
+    · have hn := success_count limits sample machine I b r hr world hi hzero
+        accept haccept hselect H state hs he
+      simp [he, hn]
+    · simp [he]
+  · simp [(PMF.apply_eq_zero_iff _ _).mpr hs]
+
 /-- The original native machine's actual covering-output probability is bounded
 by the binomial tail for the source issued-turn budget, with no fictitious trial
-for silent completion. Physical-latency lower envelopes require a further deadline
-reduction before replacing this budget by the source `min(u, floor(D/ℓ))`. -/
+for silent completion. The physical-latency refinement at the source
+`min(u, floor(D/ℓ))` is provided by `NativeBatch.Deadline`. -/
 theorem success_binomial (I : Instance E (Fin m)) (b r : ℕ)
     (hr : ∀ q < r, b * q < I.ground.card)
     (world : World k Control Unit (ServerState n Private) input)
@@ -349,20 +381,9 @@ theorem success_binomial (I : Instance E (Fin m)) (b r : ℕ)
   rw [bernoulliExpectation_eq_integral] at hc
   simp only [Nat.zero_add] at hc
   apply le_trans _ hc
-  have hbound : (law limits sample machine (limits.turns + 1) world).map (success accept) true ≤
-      mean (law limits sample machine (limits.turns + 1) world) (fun state =>
-        ENNReal.ofReal (if r ≤ count (reveals I (proposal m)) state.records then 1 else 0)) := by
-    rw [← DiscreteComparison.indicator_mean]
-    apply tsum_le_tsum
-    intro state
-    by_cases hs : state ∈ (law limits sample machine (limits.turns + 1) world).support
-    · apply mul_le_mul_right
-      by_cases he : success accept state = true
-      · have hn := success_count limits sample machine I b r hr world hi hzero
-          accept haccept hselect H state hs he
-        simp [he, hn]
-      · simp [he]
-    · simp [(PMF.apply_eq_zero_iff _ _).mpr hs]
+  have hbound := success_count_tail limits sample machine I b r hr world hi hzero
+    accept haccept hselect H
+  rw [← success_law limits sample machine accept world hi] at hbound
   apply hbound.trans_eq
   rw [History.final_records_mean limits sample machine world hi
     (fun h => ENNReal.ofReal (if r ≤ count (reveals I (proposal m)) h then 1 else 0))]

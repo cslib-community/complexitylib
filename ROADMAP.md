@@ -176,8 +176,17 @@ coverage probability 1/2 and a computed conditional invoice envelope. A concrete
 packet-writing/output machine proves original native SelectionOnly admission and
 success probability one, instantiates positive lower and upper cost bounds, and
 checks that silent halting adds no binomial trial.
-The exact physical deadline reduction `min(u, floor(D/ℓ))`, native optimum/envelope
-comparison through a uniformly realized successful upper selector, source
+Actual native lower-latency envelopes now derive the exact physical deadline
+allowance `min(u, floor(D/ℓ))`: an issued receipt resumes live native code, live
+epoch indices force prior issued turns, and actual accrued durations bound those
+turns. Later receipt observables are provably no-call padding, including retained
+bills on silent divergence. The assembled original-native accepted-by-deadline
+event satisfies both the success-level cost lower bound and the refined binomial
+tail. Zero external deadline forbids accepted nonempty covers without extra
+envelopes. Correlated/canceled two-batch and successful-output clients instantiate
+the actual latency and joint bounds. This uses external interface duration, not
+compiled physical timers. Native optimum/envelope comparison through a uniformly
+realized successful upper selector, source
 subinstance/role/residual/external-machine encodings and exact source stopping
 conventions remain open. In particular, the upper productivity contract excludes
 premature silent divergence; it is not yet established for a uniform native selector.

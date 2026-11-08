@@ -222,6 +222,41 @@ theorem final_not_issued (world : World k Control Unit (ServerState n Private) i
               rw [he] at hb
               omega
 
+/-- At any actual prior whose reached selected signals issue no batch, the next
+receipt is exactly no-call padding. Silent code may still halt or diverge. -/
+theorem no_call_records_mean (prior : PMF (State n k Private Control input))
+    (H : ∀ o ∈ ((select limits sample machine prior).map (Quantitative.observe limits)).support,
+      o.issued = false) (f : List (Record n) → ℝ≥0∞) :
+    mean (prior.bind (Trace.step limits sample machine)) (fun state => f state.records) =
+      mean prior (fun state => f (none :: state.records)) := by
+  rw [selected_mean, ← selected_history limits sample machine _ (fun h => f (none :: h))]
+  apply tsum_congr
+  intro o
+  by_cases ho : o ∈ ((select limits sample machine
+      prior).map (Quantitative.observe limits)).support
+  · congr 1
+    have he : ∀ next ∈ (conditional limits sample machine
+        prior o).support,
+        next.records = none :: o.history := by
+      intro next hn
+      obtain ⟨record, hr⟩ := conditional_records limits sample machine _ o ho next hn
+      have hissued := conditional_record_isSome limits sample machine _ o ho next hn
+      rw [H o ho, hr, List.headD_cons] at hissued
+      cases record with
+      | none => exact hr
+      | some receipt => cases hissued
+    calc
+      _ = ∑' next, conditional limits sample machine
+          prior o next * f (none :: o.history) := by
+        apply tsum_congr
+        intro next
+        by_cases hn : next ∈ (conditional limits sample machine
+            prior o).support
+        · simp only [he next hn]
+        · simp [(PMF.apply_eq_zero_iff _ _).mpr hn]
+      _ = _ := by rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
+  · simp [(PMF.apply_eq_zero_iff _ _).mpr ho]
+
 /-- Completion changes no receipt resource/progress after the issued-turn budget:
 the final epoch appends exactly a no-call record, while its hidden code may halt
 or diverge. The earlier whole receipt history retains its exact law. -/
@@ -229,36 +264,8 @@ theorem final_records_mean (world : World k Control Unit (ServerState n Private)
     (hi : Invariant limits world.memory) (f : List (Record n) → ℝ≥0∞) :
     mean (law limits sample machine (limits.turns + 1) world) (fun state => f state.records) =
       mean (law limits sample machine limits.turns world)
-        (fun state => f (none :: state.records)) := by
-  change mean ((law limits sample machine limits.turns world).bind
-    (Trace.step limits sample machine)) _ = _
-  rw [selected_mean, ← selected_history limits sample machine _ (fun h => f (none :: h))]
-  apply tsum_congr
-  intro o
-  by_cases ho : o ∈ ((select limits sample machine
-      (law limits sample machine limits.turns world)).map (Quantitative.observe limits)).support
-  · congr 1
-    have he : ∀ next ∈ (conditional limits sample machine
-        (law limits sample machine limits.turns world) o).support,
-        next.records = none :: o.history := by
-      intro next hn
-      obtain ⟨record, hr⟩ := conditional_records limits sample machine _ o ho next hn
-      have hissued := conditional_record_isSome limits sample machine _ o ho next hn
-      rw [final_not_issued limits sample machine world hi o ho, hr, List.headD_cons] at hissued
-      cases record with
-      | none => exact hr
-      | some receipt => cases hissued
-    calc
-      _ = ∑' next, conditional limits sample machine
-          (law limits sample machine limits.turns world) o next * f (none :: o.history) := by
-        apply tsum_congr
-        intro next
-        by_cases hn : next ∈ (conditional limits sample machine
-            (law limits sample machine limits.turns world) o).support
-        · simp only [he next hn]
-        · simp [(PMF.apply_eq_zero_iff _ _).mpr hn]
-      _ = _ := by rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
-  · simp [(PMF.apply_eq_zero_iff _ _).mpr ho]
+        (fun state => f (none :: state.records)) :=
+  no_call_records_mean limits sample machine _ (final_not_issued limits sample machine world hi) f
 
 /-- The final silent completion epoch adds no source resource. In particular,
 upper source envelopes are needed for only `limits.turns` genuine trial positions. -/

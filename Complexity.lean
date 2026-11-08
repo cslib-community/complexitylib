@@ -2608,6 +2608,7 @@ public import Complexity.Computability.Probabilistic.LinearHash
 public import Complexity.Computability.Probabilistic.Memoize
 public import Complexity.Computability.Probabilistic.NativeBatch
 public import Complexity.Computability.Probabilistic.NativeBatch.Coverage
+public import Complexity.Computability.Probabilistic.NativeBatch.Deadline
 public import Complexity.Computability.Probabilistic.NativeBatch.History
 public import Complexity.Computability.Probabilistic.NativeBatch.ProgressComparison
 public import Complexity.Computability.Probabilistic.NativeBatch.Quantitative
