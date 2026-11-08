@@ -48,7 +48,7 @@ The deterministic lifting theorem composes a Boolean function with an index gadg
 
 Import `Complexity.Computability.Distributed.OrientedCycle.RoundComplexity`,
 `Complexity.Computability.Distributed.OrientedCycle.MIS` or
-`Complexity.Computability.Distributed.OrientedCycle.LCL.Flexible` (or one of the modules below
+`Complexity.Computability.Distributed.OrientedCycle.LCL.Classification` (or one of the modules below
 them) for deterministic synchronous algorithms in Linial's LOCAL model on consistently oriented
 cycles.
 The nodes of the oriented `n`-cycle are `ZMod n`: node `v` has predecessor `v - 1` and successor
@@ -113,9 +113,11 @@ standard consequences of the 3-colouring bounds. Compose algorithms with `Algori
 convert an algorithm to a `LocalRule` with `Algorithm.toLocalRule` just to compose it, since
 flooding its whole window makes `decide` impractical.
 
-[LCL/Basic.lean](../../Complexity/Computability/Distributed/OrientedCycle/LCL/Basic.lean) and
-[LCL/Flexible.lean](../../Complexity/Computability/Distributed/OrientedCycle/LCL/Flexible.lean)
-cover part of the classification of LCL problems without inputs on directed cycles by Chang,
+[LCL/Basic.lean](../../Complexity/Computability/Distributed/OrientedCycle/LCL/Basic.lean),
+[LCL/Flexible.lean](../../Complexity/Computability/Distributed/OrientedCycle/LCL/Flexible.lean),
+[LCL/Linear.lean](../../Complexity/Computability/Distributed/OrientedCycle/LCL/Linear.lean) and
+[LCL/Classification.lean](../../Complexity/Computability/Distributed/OrientedCycle/LCL/Classification.lean)
+cover the classification of LCL problems without inputs on directed cycles by Chang,
 Studený and Suomela (TCS 2023, Table 1). A problem is a relation `R : L → L → Prop`, and
 `LCL.IsSolution R ℓ` asks `R (ℓ v) (ℓ (v + 1))` at every node. Their node-edge-checkable problems
 are the instance `LCL.nodeEdge` (`isSolution_nodeEdge_iff`, `nodeEdge_iff`), and MIS is an example
@@ -136,21 +138,34 @@ maximal anchoring (Def. 3.8). `IsFlexible.exists_solvesLCL_and_logStar_le`
 packages the `Θ(log* n)` bounds for flexible problems without a loop. The leading coefficient
 `(K - 1) / 2` is not tight. These rules are compositions of `LocalRule`s (`LocalRule.comp`,
 `LocalRule.apply_comp` in `Basic.lean`), so run them with `LocalRule.toAlgorithm_run` instead of
-unfolding `Algorithm.run`. Problems with no flexible state (`Ω(n)` rounds, their Thm 6.5) are not
-covered yet.
+unfolding `Algorithm.run`.
+In `Linear.lean`, `Algorithm.SolvesLCL.le_of_forall_not_isFlexible` is the `Ω(n)` lower bound
+(their Thm 6.5 via Lemma 6.3): if no state is flexible, every `t`-round algorithm has
+`n ≤ (|L| + 1) (2t + 1)`. The proof takes two nodes with equal outputs and disjoint windows, then
+moves one node so that one of the windows shifts by one. This gives closed walks of the consecutive
+lengths `d` and `d + 1`, and `IsFlexible.of_consecutive` (Mathlib's `frobeniusNumber_pair`) then
+makes that state flexible. The source instead moves nodes repeatedly; the single move is a
+difference in proof route, not a new result. `IsSolution.exists_solvesLCL` is the matching upper
+bound: on a cycle where `R` is solvable, `gatherRule` sees the whole cycle in `⌊n / 2⌋` rounds and
+outputs a rotation of a fixed solution. Theorem 6.5 also assumes a repeatable state, which only
+makes `R` solvable on infinitely many cycles; the Lean bounds are stated for each solvable `n`
+instead. `LCL.trichotomy` in `Classification.lean` assembles the three rows for finite `L`: a loop
+and `0` rounds, no loop but a flexible state and `Θ(log* n)`, or no flexible state and `Θ(n)`. The
+bounds hold for each `n`, and the algorithms of the last two rows may depend on `n`.
 
 [Checked examples](../../ComplexityTests/Computability/Distributed/OrientedCycle.lean) run the
 algorithms on a 5-cycle and on the infinite path. They also show that the one-node cycle has no
 proper colouring and no MIS, and that two rounds of 3-colouring fail on the cycle of length
 `2 ↑↑ 6 + 1`. The 5-cycle examples include the greedy MIS steps and the full `misAlgorithm 2` run.
 [LCL examples](../../ComplexityTests/Computability/Distributed/LCL.lean) check that 3-colouring
-and MIS are flexible without a loop, that 2-colouring has no flexible state, and the anchors and
-filling on a 6-cycle.
+and MIS are flexible without a loop, and the anchors and filling on a 6-cycle. For 2-colouring,
+which has no flexible state, they check that no `1`-round algorithm solves the 10-cycle, that
+gathering solves it in `5` rounds, and that the trichotomy puts it in the `Θ(n)` row.
 
 Only oriented cycles are covered. General graphs with port numbering, Linial's `O(Δ²)` colouring,
 `(Δ + 1)`-colouring and MIS on bounded-degree graphs, the CONGEST message-size bound,
-randomized LOCAL algorithms and the `Ω(n)` row of the LCL classification remain open; see
-`ROADMAP.md`.
+randomized LOCAL algorithms, and LCLs with inputs or on paths and undirected cycles remain open;
+see `ROADMAP.md`.
 
 ## Locally decodable codes
 
