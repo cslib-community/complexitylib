@@ -76,8 +76,8 @@ open scoped BigOperators
 
 variable {ι : Type*}
 
-/-- Where `F p ≥ 0`, read as signs `f` times `p` is `|p|`. -/
-private theorem signVal_mul_eq_abs {f : (ι → Bool) → Bool} {p : (ι → Bool) → ℝ}
+/-- Where `f`, read as signs, times `p` is nonnegative, it is `|p|`. -/
+theorem signVal_mul_eq_abs {f : (ι → Bool) → Bool} {p : (ι → Bool) → ℝ}
     (hp : ∀ x, 0 ≤ signVal (f x) * p x) (x : ι → Bool) : signVal (f x) * p x = |p x| := by
   rw [← abs_of_nonneg (hp x), abs_mul, abs_signVal, one_mul]
 
@@ -139,7 +139,7 @@ theorem isPTF_card (f : (ι → Bool) → Bool) : IsPTF (Fintype.card ι) f :=
 
 /-- Correlating with a function whose Fourier coefficients vanish outside `T` only involves the
 coefficients on `T`. -/
-private theorem expect_mul_eq_sum_of_fourierCoeff_eq_zero {T : Finset (Finset ι)}
+theorem expect_mul_eq_sum_of_fourierCoeff_eq_zero {T : Finset (Finset ι)}
     {p : (ι → Bool) → ℝ} (hpT : ∀ S ∉ T, fourierCoeff p S = 0) (g : (ι → Bool) → ℝ) :
     𝔼 x, g x * p x = ∑ S ∈ T, fourierCoeff g S * fourierCoeff p S := by
   rw [expect_mul_eq_sum_fourierCoeff_mul]
