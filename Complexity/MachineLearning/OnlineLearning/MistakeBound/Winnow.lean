@@ -38,8 +38,7 @@ For a target of `1 ≤ k ≤ n` variables, `mistakes_winnow_two_div_card_le` tak
 `θ = n / k`, giving `2 k log₂ (n / k) + 3 k`. For `2 k ≤ n` this matches Littlestone's lower bound
 `k ⌊log₂ (n / k)⌋` (in `MonotoneDisjunctions`) up to a constant factor. The hypothesis `1 ≤ k`
 is needed: for `k = 0` the threshold `n / k` is `0`. `mistakeBound_winnow_le` restates Theorem 7
-over the class
-`monotoneDisjunctions n k` of disjunctions of exactly `k` variables.
+over the class `monotoneDisjunctions n k` of disjunctions of exactly `k` variables.
 
 The weights are real numbers, so WINNOW1 is a mathematical specification here: no bit cost or
 running time is charged. Winnow updates multiplicatively, like the experts algorithms of
@@ -195,15 +194,15 @@ theorem winnow_apply (α θ : ℝ) (tie : Bool) (h : List ((Fin n → Bool) × B
     (x : Fin n → Bool) : winnow α θ tie h x = winnowPredict θ tie (winnowWeight α θ tie h) x := by
   rw [winnow]
 
-theorem winnowPredict_eq_false_le {θ : ℝ} {tie : Bool} {w : Fin n → ℝ} {x : Fin n → Bool}
-    (h : winnowPredict θ tie w x = false) : winnowScore w x ≤ θ := by
+theorem winnowScore_le_of_winnowPredict_eq_false {θ : ℝ} {tie : Bool} {w : Fin n → ℝ}
+    {x : Fin n → Bool} (h : winnowPredict θ tie w x = false) : winnowScore w x ≤ θ := by
   unfold winnowPredict at h
   split_ifs at h with he
   · exact he.le
   · simpa using h
 
-theorem le_winnowPredict_eq_true {θ : ℝ} {tie : Bool} {w : Fin n → ℝ} {x : Fin n → Bool}
-    (h : winnowPredict θ tie w x = true) : θ ≤ winnowScore w x := by
+theorem le_winnowScore_of_winnowPredict_eq_true {θ : ℝ} {tie : Bool} {w : Fin n → ℝ}
+    {x : Fin n → Bool} (h : winnowPredict θ tie w x = true) : θ ≤ winnowScore w x := by
   unfold winnowPredict at h
   split_ifs at h with he
   · exact he.ge
@@ -295,7 +294,7 @@ theorem winnowWeight_le {α θ : ℝ} (hα : 1 ≤ α) (hθ : 1 ≤ α * θ) (ti
       · rename_i hy
         have hpred : winnowPredict θ tie (winnowWeight α θ tie h) p.1 = false := by
           revert hwrong; cases winnowPredict θ tie (winnowWeight α θ tie h) p.1 <;> simp [hy]
-        have hs := winnowPredict_eq_false_le hpred
+        have hs := winnowScore_le_of_winnowPredict_eq_false hpred
         unfold winnowPromote
         split
         · rename_i hx
@@ -311,7 +310,7 @@ theorem winnowWeight_le {α θ : ℝ} (hα : 1 ≤ α) (hθ : 1 ≤ α * θ) (ti
 
 /-- On a promotion step for an example of a disjunction over `R`, some active variable lies in
 `R`, so the product of the weights over `R` grows by a factor of at least `α`. -/
-theorem prod_winnowPromote_ge {α : ℝ} (hα : 1 ≤ α) {w : Fin n → ℝ} (hw : ∀ i, 0 ≤ w i)
+theorem mul_prod_le_prod_winnowPromote {α : ℝ} (hα : 1 ≤ α) {w : Fin n → ℝ} (hw : ∀ i, 0 ≤ w i)
     {R : Finset (Fin n)} {x : Fin n → Bool} (hx : ∃ i ∈ R, x i = true) :
     α * ∏ i ∈ R, w i ≤ ∏ i ∈ R, winnowPromote α w x i := by
   obtain ⟨j, hj, hxj⟩ := hx
@@ -367,8 +366,8 @@ theorem winnow_invariant {α θ : ℝ} (hα : 1 ≤ α) (tie : Bool) (R : Finset
           winnowStep_promote hpred
         rw [hstep, sum_winnowPromote] at hsum
         rw [hstep] at hprod
-        have hs := winnowPredict_eq_false_le hpred
-        have hR := prod_winnowPromote_ge hα hw (monotoneDisjunction_eq_true.mp hy)
+        have hs := winnowScore_le_of_winnowPredict_eq_false hpred
+        have hR := mul_prod_le_prod_winnowPromote hα hw (monotoneDisjunction_eq_true.mp hy)
         refine ⟨u + 1, v, by simp [hc, hm]; ring, ?_, ?_⟩
         · push_cast
           have : (α - 1) * winnowScore w x ≤ (α - 1) * θ :=
@@ -383,7 +382,7 @@ theorem winnow_invariant {α θ : ℝ} (hα : 1 ≤ α) (tie : Bool) (R : Finset
           winnowStep_eliminate hpred
         rw [hstep, sum_winnowEliminate] at hsum
         rw [hstep, prod_winnowEliminate (monotoneDisjunction_eq_false.mp hy)] at hprod
-        have hs := le_winnowPredict_eq_true hpred
+        have hs := le_winnowScore_of_winnowPredict_eq_true hpred
         refine ⟨u, v + 1, by simp [hc, hm]; ring, ?_, hprod⟩
         push_cast
         linarith

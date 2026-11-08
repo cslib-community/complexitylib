@@ -70,6 +70,21 @@ The formal statement differs from the source in these modelling choices:
 
 **Not yet proved:** the Impagliazzo–Levin extension to `SampNP`. It is tracked on the [roadmap](../../ROADMAP.md#average-case-complexity).
 
+## Worst-case consequences: `DistNP ⊆ HeurP` implies `E = NE`
+
+Ben-David, Chor, Goldreich and Luby proved that `DistNP ⊆ AvgP` implies `NE = E` [bcgl92][bcgl92]. The primary text was not inspected. The attribution is checked against Bläser and Manthey [bm15][bm15], §5. The source works in Levin's model, with a single distribution on all words. The Lean statements use this page's length-indexed ensembles and the scheme classes `AvgP` and `HeurP`, and no bridge between the two models is formalized. [WorstCase](../../Complexity/Computability/Complexity/Classes/AverageCase/WorstCase.lean) proves the stronger `HeurP` form by a standard padding argument. The strengthening is not claimed as new. The hypothesis is not vacuous: `NP ⊆ P` gives `DistNP ⊆ AvgP` through `mem_AvgP_of_mem_P`.
+
+| Statement | Lean |
+|---|---|
+| A heuristic scheme run with parameter `k` is correct on every `x` with `D_{|x|}(x) > 1/(k+1)`; an errorless scheme answers every such `x` | `DistProblem.IsHeuristicScheme.correct_of_lt`, `DistProblem.IsErrorlessScheme.correct_of_lt` |
+| If `L ∈ HeurP`, then for each polynomial `q` one polynomial-time decider is correct on every `x` with `D_{|x|}(x) ≥ 1/q(|x|)`; on a support of such points it is exact | `exists_agree_of_mem_HeurP`, `exists_agree_on_support_of_mem_HeurP` |
+| `(L, U) ∈ HeurP` or `(L, U) ∈ AvgP` implies `L ∈ E` | `mem_E_of_mem_HeurP_uniform`, `mem_E_of_mem_AvgP_uniform` |
+| A `PComp` ensemble giving `frame u ++ 1^m` probability `2^{-(2|u|+1)}` | `PaddedFrame.ensemble`, `PaddedFrame.ensemble_pComp`, `PaddedFrame.ensemble_dist_frame_append` |
+| `DistNP ⊆ HeurP` implies that every `B ∈ NP` agrees with some `B' ∈ P` on all `frame u ++ 1^m` with `2^{|u|} ≤ m` | `expPaddedNPEasy_of_DistNP_subset_HeurP` |
+| `DistNP ⊆ HeurP` implies `NE ⊆ E`, `E = NE` and `EXP = NEXP`; `DistNP ⊆ AvgP` implies `E = NE`; `E ≠ NE` implies `¬ DistNP ⊆ HeurP` | `NE_subset_E_of_DistNP_subset_HeurP`, `E_eq_NE_of_DistNP_subset_HeurP`, `EXP_eq_NEXP_of_DistNP_subset_HeurP`, `E_eq_NE_of_DistNP_subset_AvgP`, `not_DistNP_subset_HeurP_of_E_ne_NE` |
+
+The padded ensemble is the collapse of the uniform ensemble (`HeaderParser.ensemble`) at the prefix code of framed words. Let `N = 2|u| + 1 + m` be the length of a padded word with `2^{|u|} ≤ m`. Its probability is at least `1/(2N²)`, so the scheme run with parameter `2N²` cannot err on it. The padding side is in [Padding](../../Complexity/Computability/Complexity/Classes/Padding.lean). Book's translation lemma uses the `P` decider of a padded problem only on padded instances. So `NTIME_subset_iUnion_DTIME_of_agree_padded` assumes only agreement on `frame u ++ 1^{t |u|}`. `ExpPaddedNPEasy` is that hypothesis for exponential padding, and `NE_subset_E_of_expPaddedNPEasy` and `NEXP_subset_EXP_of_expPaddedNPEasy` derive the collapses from it. The `NP ⊆ P` theorems (`NE_subset_E_of_NP_subset_P` and others) are now corollaries of these, with unchanged statements.
+
 ## Bridge to mild hardness
 
 [not_mildlyHardOnAverageDet_of_mem_HeurP](../../Complexity/Computability/Complexity/Classes/AverageCase/MildHardness.lean) shows the following. If `({x | b x = true}, Ensemble.uniform) ∈ HeurP`, then `fun x => (b x).toNat` is not `MildlyHardOnAverageDet`. The proof runs the scheme with confidence `2 p(n)`, which errs with probability at most `1/(2p(n)+1) < 1/p(n)`. Because the bound holds at every length (`exists_heuristic_of_mem_HeurP`), `not_mildlyHardOnAverageIO_of_mem_HeurP` also rules out infinitely-often hardness. `not_mildlyHardOnAverage_of_mem_HeurP` gives the strict-PPT version through the existing PPT-to-deterministic specialization. Only Boolean targets under the uniform ensemble are bridged.
@@ -92,5 +107,14 @@ The formal statement differs from the source in these modelling choices:
 - the header length and the exact probability `2^{-9}` of a concrete `BH` instance, and that the empty word is not in `BH`;
 - `(BH, U^BH) ∈ DistNP`, completeness, and the `AvgP`/`HeurP` corollaries.
 
+[ComplexityTests/AverageCaseWorstCase.lean](../../ComplexityTests/AverageCaseWorstCase.lean) checks the following:
+
+- the exact probability `2^{-3}` of the padded word `frame [true] ++ 1^2` under `PaddedFrame.ensemble`; which concrete words begin with a framed word; `(B, PaddedFrame.ensemble) ∈ DistNP` for `B ∈ NP`;
+- the threshold of `correct_of_lt` is sharp: a heuristic scheme for `(∅, U)` errs on `[true]`, whose probability is exactly `1/(1+1)`;
+- under the all-ones ensemble, a heuristic scheme gives an exact polynomial-time decider on the support;
+- `L ∈ P` gives `L ∈ E` through `AvgP`; `NP ⊆ P` gives `ExpPaddedNPEasy`, and `DistNP ⊆ AvgP` and `DistNP ⊆ HeurP`, so the hypotheses are not vacuous; and the `E = NE` and `EXP = NEXP` conclusions.
+
+[bcgl92]: ../sources.md#bcgl92
+[bm15]: ../sources.md#bm15
 [bt06]: ../sources.md#bt06
 [lev86]: ../sources.md#lev86

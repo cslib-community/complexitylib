@@ -444,6 +444,39 @@ additionally checks support of the postprocessed real key. Tests expose the fail
 KEM premise, and show that a perfect zero-width KEM with the insecure echo DEM remains insecure.
 Arbitrary message-space extension and stronger KEM query schedules remain separate.
 
+For explicit-coin public-key encryption and modular Fujisaki–Okamoto KEM transforms ([hhk17][hhk17],
+ePrint 2017/604 full version dated 2 November 2021), import
+[`FujisakiOkamoto.lean`](../../Complexity/Crypto/Protocols/KEM/FujisakiOkamoto.lean).
+Unlike the word-level encryption interface used by `encryptKeyEncaps`, `ExplicitCoinPKE` (§2.1)
+exposes a fixed coin type `R`, an arbitrary coin sampler `sampleCoins : ProbComp R` (where the
+paper uses uniform draws and permits key-dependent `R`), and deterministic encryption
+`encDet : PK → M → R → CT` alongside `keyGen` and `dec`, together with expected
+worst-case-message `δ`-correctness `ExplicitCoinPKE.DeltaCorrect` (defined via `ProbComp.expect`
+and `PMF.toOuterMeasure`, with `deltaCorrect_zero_of_perfect` and `DeltaCorrect.mono`),
+`γ`-spreadness `ExplicitCoinPKE.GammaSpread`, and the single-stage fixed-message distinguishing
+experiment `ExplicitCoinPKE.indCpaGame` (`ExplicitCoinPKE.indCpaAdvantage`, which takes
+caller-supplied messages `(m₀, m₁)` and probability-difference `Game.advantage` rather than
+§2.1 Def. 2.2 / Fig. 4's two-stage key-dependent-message guessing experiment and `|Pr[b' = b] - 1/2|`
+normalization). On top of `ExplicitCoinPKE`, `FujisakiOkamoto.encT` and `FujisakiOkamoto.decT`
+define the derandomization transform `T[PKE, G]` (§3.1, Fig. 5) with mandatory re-encryption check
+`encT P G pk m' = c` (`decT_encT_eq_some`, `encT_of_decT_eq_some`, `dec_of_decT_eq_some`,
+`decT_eq_none_of_reencrypt_ne`), while `FujisakiOkamoto.Scheme` (with arbitrary samplers
+`sampleMsg` and `sampleKey`) packages both explicit-rejection `FO^⊥` (§3.2.1, Fig. 9;
+`Scheme.encapsBot`, `Scheme.decapsBot`, `decapsBot_encT_eq_some`,
+`decapsBot_eq_none_of_reencrypt_ne`) and a deliberate domain-separated variant of
+implicit-rejection `FO-notbot` (§3.2.2, Fig. 12; `ImplicitSK`, `Scheme.keyGenNotBot`,
+`Scheme.encapsNotBot`, `Scheme.decapsNotBot`, `decapsNotBot_encT_eq`,
+`decapsNotBot_of_reencrypt_ne`) that tags `H : Bool × M × CT → K` with `false` for valid key
+derivations and `true` for fallback rejection keys `H(true, dk.fallback, c)` in place of HHK17's
+untagged `H(s, c)`. Only the transform definitions, correctness/spreadness predicates, and
+deterministic recovery and re-encryption rigidity lemmas are established in this module;
+random-oracle IND-CCA games and security reductions remain separate objectives. Checked clients in
+[`ComplexityTests/Crypto/FujisakiOkamoto.lean`](../../ComplexityTests/Crypto/FujisakiOkamoto.lean)
+exercise honest `T`/`FO^⊥`/`FO-notbot` recovery and non-canonical-coin rejection on
+`maskedShiftPKE`, zero-error and non-zero tight/non-tight `DeltaCorrect` witnesses (`noisyCoinPKE`
+with failure probability `1 / 2`), and positive and negative `GammaSpread` and `indCpaAdvantage`
+witnesses on `identityPKE`.
+
 For multi-block symmetric modes of operation over `BitString n`, import
 [`BlockCipher/Modes.lean`](../../Complexity/Crypto/Primitives/BlockCipher/Modes.lean)
 (Katz–Lindell 3rd ed., §3.6.2–§3.6.4 and Exercises 3.21, 3.24, 3.25, 3.29, 3.30, 3.32, 3.33).
@@ -538,6 +571,7 @@ The finite query-only PRG/cipher results, semantic commitment interfaces and uni
 [fly22]: ../sources.md#fly22
 [ggm86]: ../sources.md#ggm86
 [goldreich04]: ../sources.md#goldreich04
+[hhk17]: ../sources.md#hhk17
 [hhrvw20]: ../sources.md#hhrvw20
 [hill99]: ../sources.md#hill99
 [holenstein06]: ../sources.md#holenstein06

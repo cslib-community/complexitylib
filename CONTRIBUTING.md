@@ -109,10 +109,18 @@ certificates take
 `ComputableInSpace M.next (encStateRead encS) encS fun p => (encStateRead encS p).length`
 rather than restating `encPair encS (encOption encBool)` twice; `encStateRead` is documented as a
 state paired with the bit read, with the state framed. Because the name is reducible, the
-elaborated statement is unchanged, and `enc_len`, `fun_prop` and the combinators' simp lemmas see
-through it. New and changed statements follow the exact rules in
-[AGENTS.md](AGENTS.md#encodings-in-statements); the encoding-readability lint checks the
-repetition rule. Abstracts stay fully spelled out.
+statement is definitionally unchanged, and `enc_len`, `fun_prop` and the combinators' simp lemmas
+see through it; syntactic tools such as `omega` do not. New and changed statements follow the
+exact rules in [AGENTS.md](AGENTS.md#encodings-in-statements); the encoding-readability lint
+checks the repetition rule. Abstracts stay fully spelled out.
+
+To sweep an area, `python3 scripts/check_encoding_readability.py --list Complexity/Logics` lists
+its repeated compound encodings with their declarations, ignoring the baseline, and the local
+notations that abbreviate a compound encoding. A sweep must leave every statement unchanged:
+compare each changed public declaration's type with its type on `main`, either after
+`Lean.Meta.deltaExpand` of the new names and of the reducible type synonyms they mention, or with
+`isDefEq` at reducible transparency. Expanding only the new names is not enough: a coercion's type
+argument can read `CNF V` on one side and `List (List (V × Bool))` on the other.
 
 Improving an interface never weakens the mathematics: keep the models, encodings, independent
 resource bounds and nonvacuity of the results it touches.
