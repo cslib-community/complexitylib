@@ -202,14 +202,17 @@ theorem runInterval_flatMap_range_append (L : ℕ) (ops : List Op) :
 
 variable [DecidableEq Op]
 
+/-- A cell lies in `laterCells L j` iff some segment strictly between `j` and `L` probes it. -/
 theorem mem_laterCells {L j : ℕ} {c : Fin cells} :
     c ∈ D.laterCells seg t₀ m₀ L j ↔ ∃ k, j < k ∧ k < L ∧ c ∈ D.segCells seg t₀ m₀ k := by
   simp [laterCells, and_assoc]
 
+/-- Every segment strictly between `j` and `L` probes only cells of `laterCells L j`. -/
 theorem segCells_subset_laterCells {L j k : ℕ} (hjk : j < k) (hkL : k < L) :
     D.segCells seg t₀ m₀ k ⊆ D.laterCells seg t₀ m₀ L j :=
   subset_biUnion_of_mem (D.segCells seg t₀ m₀) (mem_Ioo.mpr ⟨hjk, hkL⟩)
 
+/-- The cells last touched by segment `j` are probed by segment `j`. -/
 theorem lastCells_subset_segCells (L j : ℕ) :
     D.lastCells seg t₀ m₀ L j ⊆ D.segCells seg t₀ m₀ j :=
   sdiff_subset
@@ -267,6 +270,7 @@ theorem disjoint_lastCells {L j k : ℕ} (hj : j < L) (hk : k < L) (hjk : j ≠ 
       ((D.lastCells_subset_segCells seg t₀ m₀ L j).trans
         (D.segCells_subset_laterCells seg t₀ m₀ h hj)) sdiff_disjoint).symm
 
+/-- The cells last touched by the segments `j < L` form a pairwise disjoint family. -/
 theorem pairwiseDisjoint_lastCells (L : ℕ) :
     ((range L : Finset ℕ) : Set ℕ).PairwiseDisjoint (D.lastCells seg t₀ m₀ L) :=
   fun _ hj _ hk hjk =>
