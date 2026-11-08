@@ -29,10 +29,10 @@ import Cslib.Foundations.Data.Polynomial.Monotone
 A polynomial-time computation with an oracle `A ∈ NP` is simulated in `Σ₂` by guessing its
 transcript of oracle replies (`Turing.MultiTapePTM.oracleReplies`). A guessed transcript is the
 canonical one exactly when every `true` reply answers a query in `A`, an `NP` condition
-(`Cslib.Complexity.transcriptYes_mem_NP`), and every `false` reply answers a query outside `A`, a
-`coNP` condition (`Cslib.Complexity.transcriptNo_mem_coNP`)
-(`Cslib.Complexity.mem_transcriptYes_inter_transcriptNo`). The pairs of an instance and an accepted
-canonical transcript therefore form a problem in `Σ₂`, and so does its projection
+(`Cslib.Complexity.oracleTranscriptYes_mem_NP`), and every `false` reply answers a query outside
+`A`, a `coNP` condition (`Cslib.Complexity.oracleTranscriptNo_mem_coNP`)
+(`Cslib.Complexity.mem_oracleTranscriptYes_inter_oracleTranscriptNo`). The pairs of an instance
+and an accepted canonical transcript therefore form a problem in `Σ₂`, and so does its projection
 (`Cslib.Complexity.mem_SigmaP_of_exists`). Since `P^A` is closed under complement, it also lies in
 `Π₂`. This is the inclusion `Δ₂ᵖ ⊆ Σ₂ᵖ ∩ Π₂ᵖ` of the polynomial hierarchy
 [Stockmeyer][Stockmeyer1976].
@@ -43,8 +43,8 @@ In particular `P^{NP[O(log n)]} ⊆ Σ₂ ∩ Π₂ ⊆ PH`
 
 ## Main definitions
 
-* `Cslib.Complexity.transcriptYes`, `Cslib.Complexity.transcriptNo`: the transcripts whose `true`,
-  respectively `false`, query replies are correct for the oracle.
+* `Cslib.Complexity.oracleTranscriptYes`, `Cslib.Complexity.oracleTranscriptNo`: the transcripts
+  whose `true`, respectively `false`, query replies are correct for the oracle.
 
 ## Main results
 
@@ -77,27 +77,43 @@ open _root_.Turing _root_.Turing.MultiTapePTM _root_.Turing.MultiTapeMachine
 variable {k : ℕ} {Control Operation : Type} [DecidableEq Operation]
 
 /-- Every `true` bit of the transcript answers a pending query in `A`. -/
-def transcriptYes (machine : MultiTapePTM k Bool Control Operation) (enc : α ↪ List Bool)
+def oracleTranscriptYes (machine : MultiTapePTM k Bool Control Operation) (enc : α ↪ List Bool)
     (A : Set (List Bool)) : Set (α × List Bool) :=
   {x | ∀ i < x.2.length, x.2.getD i false = true →
     (machine.pendingQuery (machine.replayPrefix (enc x.1) x.2 i)).isSome ∧
       machine.pendingRequest (machine.replayPrefix (enc x.1) x.2 i) ∈ A}
 
 /-- Every `false` bit of a pending query answers a query outside `A`. -/
-def transcriptNo (machine : MultiTapePTM k Bool Control Operation) (enc : α ↪ List Bool)
+def oracleTranscriptNo (machine : MultiTapePTM k Bool Control Operation) (enc : α ↪ List Bool)
     (A : Set (List Bool)) : Set (α × List Bool) :=
   {x | ∀ i < x.2.length, x.2.getD i false = false →
     (machine.pendingQuery (machine.replayPrefix (enc x.1) x.2 i)).isSome →
       machine.pendingRequest (machine.replayPrefix (enc x.1) x.2 i) ∉ A}
 
+theorem mem_oracleTranscriptYes {machine : MultiTapePTM k Bool Control Operation}
+    {A : Set (List Bool)} {x : α × List Bool} :
+    x ∈ oracleTranscriptYes machine enc A ↔ ∀ i < x.2.length, x.2.getD i false = true →
+      (machine.pendingQuery (machine.replayPrefix (enc x.1) x.2 i)).isSome ∧
+        machine.pendingRequest (machine.replayPrefix (enc x.1) x.2 i) ∈ A :=
+  Iff.rfl
+
+theorem mem_oracleTranscriptNo {machine : MultiTapePTM k Bool Control Operation}
+    {A : Set (List Bool)} {x : α × List Bool} :
+    x ∈ oracleTranscriptNo machine enc A ↔ ∀ i < x.2.length, x.2.getD i false = false →
+      (machine.pendingQuery (machine.replayPrefix (enc x.1) x.2 i)).isSome →
+        machine.pendingRequest (machine.replayPrefix (enc x.1) x.2 i) ∉ A :=
+  Iff.rfl
+
 variable {machine : MultiTapePTM k Bool Control Operation} {A : Set (List Bool)}
 
 open Classical in
-theorem mem_transcriptYes_inter_transcriptNo {x : α × List Bool} :
-    x ∈ transcriptYes machine enc A ∩ transcriptNo machine enc A ↔
+/-- A transcript is certified by both `oracleTranscriptYes` and `oracleTranscriptNo` exactly when
+it is the canonical transcript of oracle replies for `A` of its own length. -/
+theorem mem_oracleTranscriptYes_inter_oracleTranscriptNo {x : α × List Bool} :
+    x ∈ oracleTranscriptYes machine enc A ∩ oracleTranscriptNo machine enc A ↔
       x.2 = machine.oracleReplies (fun q => decide (q ∈ A)) x.2.length (enc x.1) := by
   rw [machine.eq_oracleReplies_iff]
-  simp only [transcriptYes, transcriptNo, Set.mem_inter_iff, Set.mem_ofPred_eq]
+  simp only [Set.mem_inter_iff, mem_oracleTranscriptYes, mem_oracleTranscriptNo]
   constructor
   · rintro ⟨hY, hN⟩ i hi
     cases hb : x.2.getD i false
@@ -114,12 +130,11 @@ theorem mem_transcriptYes_inter_transcriptNo {x : α × List Bool} :
     · rw [h i hi] at hb
       simpa only [hq, ↓reduceIte, decide_eq_false_iff_not] using hb
 
-
 open Classical in
 /-- The transcripts whose `true` bits are certified form a problem in `NP`: the certificate lists
 an `NP` certificate for every such bit, through a `#P` product. -/
-theorem transcriptYes_mem_NP [Finite Control] [Finite Operation] (hA : A ∈ NP encBits) :
-    transcriptYes machine enc A ∈ NP (encPair enc encBits) := by
+theorem oracleTranscriptYes_mem_NP [Finite Control] [Finite Operation] (hA : A ∈ NP encBits) :
+    oracleTranscriptYes machine enc A ∈ NP (encPair enc encBits) := by
   let _ := Fintype.ofFinite Operation
   obtain ⟨fA, hfA, hA⟩ := mem_NP_iff_exists_SharpP.mp hA
   have hinput : ComputableInPolyTime (fun a : α => enc a) enc encBits := ComputableInPolyTime.id'
@@ -147,7 +162,7 @@ theorem transcriptYes_mem_NP [Finite Control] [Finite Operation] (hA : A ∈ NP 
   refine mem_NP_iff_exists_SharpP.mpr ⟨fun x => ∏ i ∈ Finset.range x.2.length, factor (x, i),
     SharpP.prod_range_mem hfactor (by fun_prop), fun x => ?_⟩
   rw [CanonicallyOrderedAdd.prod_pos]
-  simp only [transcriptYes, Set.mem_ofPred_eq, Finset.mem_range]
+  simp only [mem_oracleTranscriptYes, Finset.mem_range]
   refine forall₂_congr fun i _ => ?_
   simp only [factor, cfg]
   cases x.2.getD i false
@@ -160,8 +175,8 @@ open Classical in
 /-- The transcripts whose `false` bits at queries are certified form a problem in `coNP`: a
 witness against it is the index of a `false` bit together with an `NP` certificate that its query
 lies in `A`. -/
-theorem transcriptNo_mem_coNP [Finite Control] [Finite Operation] (hA : A ∈ NP encBits) :
-    transcriptNo machine enc A ∈ coNP (encPair enc encBits) := by
+theorem oracleTranscriptNo_mem_coNP [Finite Control] [Finite Operation] (hA : A ∈ NP encBits) :
+    oracleTranscriptNo machine enc A ∈ coNP (encPair enc encBits) := by
   let _ := Fintype.ofFinite Operation
   obtain ⟨pA, VA, hVA, hA⟩ := mem_NP.mp hA
   have hinput : ComputableInPolyTime (fun a : α => enc a) enc encBits := ComputableInPolyTime.id'
@@ -204,7 +219,7 @@ theorem transcriptNo_mem_coNP [Finite Control] [Finite Operation] (hA : A ∈ NP
   have hR : ∀ x w, check (x, w) = true ↔ R x w := by
     intro x w
     simp only [check, R, Bool.and_eq_true, decide_eq_true_eq, Bool.not_eq_true', and_assoc]
-  have hset : (transcriptNo machine enc A)ᶜ = {x | ∃ w, R x w} := by
+  have hset : (oracleTranscriptNo machine enc A)ᶜ = {x | ∃ w, R x w} := by
     ext x
     constructor
     · intro hx
@@ -267,10 +282,10 @@ theorem ComputableInPolyTimeWithOracle.encoded_mem_SigmaP_two {f : α → β}
             (g := fun x : α × List Bool => (enc x.1, x.2)) (by fun_prop))), fun _ => Iff.rfl⟩
     rw [← SigmaP_zero] at hgoodP
     exact SigmaP_mono (show 0 ≤ 2 by omega) hgoodP
-  have hYes : transcriptYes machine enc A ∈ SigmaP 2 (encPair enc encBits) :=
-    SigmaP_subset_SigmaP_succ 1 (SigmaP_one ▸ transcriptYes_mem_NP hA)
-  have hNo : transcriptNo machine enc A ∈ SigmaP 2 (encPair enc encBits) :=
-    PiP_subset_SigmaP_succ 1 (PiP_one_eq_coNP ▸ transcriptNo_mem_coNP hA)
+  have hYes : oracleTranscriptYes machine enc A ∈ SigmaP 2 (encPair enc encBits) :=
+    SigmaP_subset_SigmaP_succ 1 (SigmaP_one ▸ oracleTranscriptYes_mem_NP hA)
+  have hNo : oracleTranscriptNo machine enc A ∈ SigmaP 2 (encPair enc encBits) :=
+    PiP_subset_SigmaP_succ 1 (PiP_one_eq_coNP ▸ oracleTranscriptNo_mem_coNP hA)
   have hB := inter_mem_SigmaP hgood (inter_mem_SigmaP hYes hNo)
   convert mem_SigmaP_of_exists (by omega) hB T using 1
   ext a
@@ -283,13 +298,14 @@ theorem ComputableInPolyTimeWithOracle.encoded_mem_SigmaP_two {f : α → β}
   constructor
   · intro h
     refine ⟨machine.oracleReplies g (c * ((enc a).length + 1) ^ d) (enc a),
-      machine.length_oracleReplies _ _ _, ?_, mem_transcriptYes_inter_transcriptNo.mpr ?_⟩
+      machine.length_oracleReplies _ _ _, ?_,
+      mem_oracleTranscriptYes_inter_oracleTranscriptNo.mpr ?_⟩
     · change P (a, _) = true
       rwa [hout]
     · rw [machine.length_oracleReplies]
   · rintro ⟨t, ht, hP', hYN⟩
     have heq : t = machine.oracleReplies g t.length (enc a) :=
-      mem_transcriptYes_inter_transcriptNo.mp hYN
+      mem_oracleTranscriptYes_inter_oracleTranscriptNo.mp hYN
     change P (a, machine.replayOutput (enc a) t) = true at hP'
     rwa [heq, ht, hout] at hP'
 

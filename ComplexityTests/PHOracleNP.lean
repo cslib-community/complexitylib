@@ -22,19 +22,20 @@ example (g : List Bool → Bool) (input : List Bool) : [] = machine.oracleReplie
 
 -- The empty transcript is certified for every oracle.
 example (A : Set (List Bool)) (a : List Bool) :
-    (a, []) ∈ transcriptYes machine encBits A ∩ transcriptNo machine encBits A :=
-  ⟨fun _ hi => absurd hi (Nat.not_lt_zero _), fun _ hi => absurd hi (Nat.not_lt_zero _)⟩
+    (a, []) ∈ oracleTranscriptYes machine encBits A ∩ oracleTranscriptNo machine encBits A :=
+  ⟨mem_oracleTranscriptYes.mpr fun _ hi => absurd hi (Nat.not_lt_zero _),
+    mem_oracleTranscriptNo.mpr fun _ hi => absurd hi (Nat.not_lt_zero _)⟩
 
 -- A `true` reply is never certified for the empty oracle, so such a transcript is not canonical.
-example (a : List Bool) : (a, [true]) ∉ transcriptYes machine encBits ∅ := fun h =>
-  (h 0 (by simp) rfl).2
+example (a : List Bool) : (a, [true]) ∉ oracleTranscriptYes machine encBits ∅ := fun h =>
+  (mem_oracleTranscriptYes.mp h 0 (by simp) rfl).2
 
 example (a : List Bool) :
     [true] ≠ machine.oracleReplies (fun q => decide (q ∈ (∅ : Set (List Bool)))) 1 a := by
   intro h
-  have hmem := mem_transcriptYes_inter_transcriptNo (machine := machine) (enc := encBits)
-    (A := ∅) (x := (a, [true]))
-  exact (hmem.mpr (by convert h; rfl)).1 0 (by simp) rfl |>.2
+  have hmem := mem_oracleTranscriptYes_inter_oracleTranscriptNo (machine := machine)
+    (enc := encBits) (A := ∅) (x := (a, [true]))
+  exact (mem_oracleTranscriptYes.mp (hmem.mpr (by convert h; rfl)).1 0 (by simp) rfl).2
 
 -- `Σₖ` is closed under polynomially bounded projection, here at level `1`.
 example {B : Set (List Bool × List Bool)} (hB : B ∈ SigmaP 1 (encPair encBits encBits)) :

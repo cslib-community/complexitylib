@@ -80,7 +80,7 @@ lowness proofs share this API while retaining their different final sums.
 For quantifier-alternation simulations of oracle programs, import
 [`Classes.PH.OracleNP`](../../Complexity/Computability/Complexity/Classes/PH/OracleNP.lean).
 `Turing.MultiTapePTM.eq_oracleReplies_iff` characterizes the canonical transcript by its reply
-equations. `transcriptYes` and `transcriptNo` split those equations by bit: the transcripts whose
+equations. `oracleTranscriptYes` and `oracleTranscriptNo` split those equations by bit: the transcripts whose
 `true` bits answer queries in `A` form an `NP` problem when `A ∈ NP`, and the transcripts whose
 `false` query bits answer queries outside `A` form a `coNP` problem. Guessing the transcript and
 projecting with `mem_SigmaP_of_exists` (`Classes/PH/Collapse.lean`) gives
@@ -88,7 +88,10 @@ projecting with `mem_SigmaP_of_exists` (`Classes/PH/Collapse.lean`) gives
 `PNPLog_subset_PH`. With `PH_subset_PNPLog_of_sparse`, `PH_eq_PNPLog_of_sparse` in
 [`Classes.Sparse.Kadin`](../../Complexity/Computability/Complexity/Classes/Sparse/Kadin.lean) is
 Kadin's `PH = P^{NP[O(log n)]}` for a sparse Turing-complete `S ∈ NP`. Kadin's stronger hypothesis
-`coNP ⊆ NP^S` and Hemachandra's `P^{NP[O(log n)]} = P^NP_tt` are not formalized.
+`coNP ⊆ NP^S` and Hemachandra's `P^{NP[O(log n)]} = P^NP_tt` are not formalized. The
+[checked client](../../ComplexityTests/PHOracleNP.lean) certifies the empty transcript, rejects an
+uncertified `true` reply for the empty oracle, and places an `NP` problem and its complement in
+`Σ₂ ∩ Π₂`.
 
 ## MA and AM
 
