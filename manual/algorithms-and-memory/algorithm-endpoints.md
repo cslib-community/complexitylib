@@ -155,6 +155,32 @@ Import `Complexity.Algorithms.Lean.StableMatching.Incentives` (which also brings
 
 The cost measure is the number of proposals, a property of the algorithm's trace rather than of a machine model; no Word-RAM or Turing implementation is certified. Incomplete lists, ties, unequal sides and many-to-one markets are not modeled; [#2990](https://github.com/cslib-community/complexitylib/issues/2990) tracks these directions. [ComplexityTests/StableMatching.lean](../../ComplexityTests/StableMatching.lean) contains the checked instances.
 
+## Scheduling bounds
+
+[Complexity/Algorithms/Lean/Scheduling/](../../Complexity/Algorithms/Lean/Scheduling/) contains
+classical makespan bounds as mathematical statements about schedules. These are not runtime claims.
+`IdenticalMachines.lean` models `P || C_max`: an assignment `σ : Fin n → Fin m` of jobs with
+processing times `p : Fin n → α` (an ordered field for the ratio theorems). `IsListSchedule p σ`
+is Graham's rule that each job goes to a least-loaded machine over the earlier jobs.
+`listSchedule` computes such an assignment. `IsListSchedule.makespan_le_optMakespan` proves
+`C ≤ (2 - 1/m) · OPT`, and `IsListSchedule.makespan_grahamTight` shows that the ratio is
+attained for every `m`. `LPT.lean` defines `lptSchedule`, which applies `listSchedule` after
+sorting by `lptOrder`, and proves `makespan_lptSchedule_le`: `C ≤ (4/3 - 1/(3m)) · OPT`.
+
+`Precedence.lean` models `P | prec | C_max` in discrete time. Start times are `s : J → ℕ`,
+processing times are natural numbers and `prec` is any relation; the bounds assume it is
+well-founded. `IsFeasible` and `IsGreedy` are predicates on
+schedules. `exists_isGreedy` constructs a greedy schedule for well-founded precedences and
+positive processing times. `IsGreedy.exists_chain` is Graham's critical chain.
+`IsGreedy.mul_makespan_le_of_le` is Graham's 1966 anomaly theorem. `Brent.lean` defines the
+critical-path `span` and proves the work and span laws, the greedy bound
+`m · T ≤ ∑ p + (m - 1) · span`, and Brent's lemma for unit-time DAGs
+(`exists_isFeasible_mul_makespan_le`). Two limitations apply: processing times in the precedence
+model are integers, and Graham's anomaly instances are not formalized.
+[ComplexityTests/Scheduling.lean](../../ComplexityTests/Scheduling.lean) checks the tight
+instances, nonvacuity of `IsGreedy`, a feasible schedule that is not greedy, and a zero-length
+self-loop showing that the critical-chain theorem needs well-founded precedences.
+
 ## Divide-and-conquer recurrences
 
 [MasterTheorem.lean](../../Complexity/Foundations/Data/Nat/MasterTheorem.lean) solves divide-and-conquer cost recurrences over `ℕ` with explicit constants. `Nat.DivideConquerBound T a b n₀ T₀ f` has two parts:
@@ -196,32 +222,6 @@ It also refutes the hypothesis for `n²`. Build with
 ```bash
 lake build Complexity.Foundations.Data.Nat.MasterTheoremAsymptotics ComplexityTests.MasterTheorem
 ```
-
-## Scheduling bounds
-
-[Complexity/Algorithms/Lean/Scheduling/](../../Complexity/Algorithms/Lean/Scheduling/) contains
-classical makespan bounds as mathematical statements about schedules. These are not runtime claims.
-`IdenticalMachines.lean` models `P || C_max`: an assignment `σ : Fin n → Fin m` of jobs with
-processing times `p : Fin n → α` (an ordered field for the ratio theorems). `IsListSchedule p σ`
-is Graham's rule that each job goes to a least-loaded machine over the earlier jobs.
-`listSchedule` computes such an assignment. `IsListSchedule.makespan_le_optMakespan` proves
-`C ≤ (2 - 1/m) · OPT`, and `IsListSchedule.makespan_grahamTight` shows that the ratio is
-attained for every `m`. `LPT.lean` defines `lptSchedule`, which applies `listSchedule` after
-sorting by `lptOrder`, and proves `makespan_lptSchedule_le`: `C ≤ (4/3 - 1/(3m)) · OPT`.
-
-`Precedence.lean` models `P | prec | C_max` in discrete time. Start times are `s : J → ℕ`,
-processing times are natural numbers and `prec` is any relation; the bounds assume it is
-well-founded. `IsFeasible` and `IsGreedy` are predicates on
-schedules. `exists_isGreedy` constructs a greedy schedule for well-founded precedences and
-positive processing times. `IsGreedy.exists_chain` is Graham's critical chain.
-`IsGreedy.mul_makespan_le_of_le` is Graham's 1966 anomaly theorem. `Brent.lean` defines the
-critical-path `span` and proves the work and span laws, the greedy bound
-`m · T ≤ ∑ p + (m - 1) · span`, and Brent's lemma for unit-time DAGs
-(`exists_isFeasible_mul_makespan_le`). Two limitations apply: processing times in the precedence
-model are integers, and Graham's anomaly instances are not formalized.
-[ComplexityTests/Scheduling.lean](../../ComplexityTests/Scheduling.lean) checks the tight
-instances, nonvacuity of `IsGreedy`, a feasible schedule that is not greedy, and a zero-length
-self-loop showing that the critical-chain theorem needs well-founded precedences.
 
 ## Other clients and classification
 
