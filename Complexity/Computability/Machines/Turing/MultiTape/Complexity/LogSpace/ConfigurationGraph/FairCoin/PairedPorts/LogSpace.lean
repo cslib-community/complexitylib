@@ -12,6 +12,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogS
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Composition.SmallSpace
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import Mathlib.Data.Nat.Size
+import Complexity.Tactic.EncLen
 
 /-!
 # Logarithmic-space certificates for clocked paired-port configuration graphs
@@ -442,8 +443,7 @@ theorem computableInLogSpace_clockedAccept {k : ℕ} {State : Type} [Fintype Sta
         C * (Nat.log2 (encWU x).length + 1) := by
     refine ⟨4, fun x => ?_⟩
     have hw_le : x.1.length ≤ (encWU x).length := by
-      simp only [encWU, length_encPair, encBits_apply]
-      omega
+      enc_len [encWU]
     have hln_le : (encNat x.1.length).length ≤ (encWU x).length :=
       (length_encNat_le_of_lt_two_pow Nat.lt_two_pow_self).trans hw_le
     have hlu_le : (encNat x.2).length ≤ (encWU x).length :=
@@ -477,8 +477,7 @@ theorem computableInLogSpace_clockedAccept {k : ℕ} {State : Type} [Fintype Sta
     have hL : 1 ≤ L := Nat.le_add_left _ _
     have hw_le : s.val.1.length ≤ (encSub s).length := by
       change s.val.1.length ≤ (encWU s.val).length
-      simp only [encWU, length_encPair, encBits_apply]
-      omega
+      enc_len [encWU]
     have hln_le : (encNat s.val.1.length).length ≤ L :=
       length_encNat_le_log2 hw_le
     have hlu_lt : (encNat s.val.2).length ≤ E * (L + 1) := by
@@ -625,8 +624,7 @@ private theorem computableInLogSpace_portGuard (k D d P : ℕ) :
       (encNat (encNat x.1.length).length).length ≤ C * (Nat.log2 (encTriple x).length + 1) := by
     refine ⟨1, fun ⟨w, a, p⟩ => ?_⟩
     have hw_le : w.length ≤ (encTriple (w, a, p)).length := by
-      simp only [encTriple, length_encPair, encBits_apply]
-      omega
+      enc_len [encTriple]
     have hln_le : (encNat w.length).length ≤ (encTriple (w, a, p)).length :=
       (length_encNat_le_of_lt_two_pow Nat.lt_two_pow_self).trans hw_le
     simpa using length_encNat_le_log2 hln_le
@@ -635,16 +633,14 @@ private theorem computableInLogSpace_portGuard (k D d P : ℕ) :
         C * (Nat.log2 (encTriple x).length + 1) := by
     refine ⟨1, fun ⟨w, a, p⟩ => ?_⟩
     have hla_le : (encNat a).length ≤ (encTriple (w, a, p)).length := by
-      simp only [encTriple, length_encPair]
-      omega
+      enc_len [encTriple]
     simpa using length_encNat_le_log2 hla_le
   have hlp_len : ∃ C, ∀ x : Triple,
       (encNat (encNat (Prod.snd x.2)).length).length ≤
         C * (Nat.log2 (encTriple x).length + 1) := by
     refine ⟨1, fun ⟨w, a, p⟩ => ?_⟩
     have hlp_le : (encNat p).length ≤ (encTriple (w, a, p)).length := by
-      simp only [encTriple, length_encPair]
-      omega
+      enc_len [encTriple]
     simpa using length_encNat_le_log2 hlp_le
   have hlengths := ComputableInLogSpace.pair hln (ComputableInLogSpace.pair hla hlp)
   have hlen_bound := pair_length_log hln_len (pair_length_log hla_len hlp_len)
@@ -699,8 +695,7 @@ private theorem length_lenSub_log (k D d P : ℕ) :
       (encNat (lenSub s)).length ≤ C * (Nat.log2 (encGuardedSub k D d P s).length + 1) := by
   refine ⟨1, fun ⟨⟨w, a, p⟩, _⟩ => ?_⟩
   have hw_le : w.length ≤ (encTriple (w, a, p)).length := by
-    simp only [encTriple, length_encPair, encBits_apply]
-    omega
+    enc_len [encTriple]
   simpa [lenSub] using length_encNat_le_log2 hw_le
 
 private theorem computableInLogSpace_napOfSub (k D d P : ℕ) :
@@ -721,8 +716,7 @@ private theorem length_napOfSub_log (k D d P : ℕ) :
     let L := Nat.log2 (encTriple (w, a, p)).length + 1
     have hL : 1 ≤ L := Nat.le_add_left _ _
     have hw_le : w.length ≤ (encTriple (w, a, p)).length := by
-      simp only [encTriple, length_encPair, encBits_apply]
-      omega
+      enc_len [encTriple]
     have hln : (encNat w.length).length ≤ L := length_encNat_le_log2 hw_le
     obtain ⟨hla_lt, -⟩ := of_decide_eq_true hs
     have hla_le : (encNat a).length ≤ E * (L + 1) :=

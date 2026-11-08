@@ -17,6 +17,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
+import Complexity.Tactic.EncLen
 
 /-!
 # Preimage counting and self-reduction for constant-locality Boolean maps
@@ -816,8 +817,7 @@ private theorem length_snd_iterate_preimageStepWith (count : ℕ × CNF ℕ → 
   | zero => simp
   | succ i ih =>
     rw [Function.iterate_succ_apply, ih]
-    simp only [preimageStepWith, List.length_append, List.length_singleton]
-    omega
+    enc_len [preimageStepWith, List.length_singleton]
 
 /-- Canonical mathematical declared-variable counter on `Finset.range p.1`. -/
 def canonicalDeclaredCount (p : ℕ × CNF ℕ) : ℕ :=
@@ -834,8 +834,7 @@ private theorem iterate_preimageStepWith_congr {k : ℕ} {count : ℕ × CNF ℕ
   | i + 1, u, hu => by
     rw [Function.iterate_succ_apply, Function.iterate_succ_apply]
     have hu1 : (u ++ [false]).length ≤ p.1 := by
-      simp only [List.length_append, List.length_singleton]
-      omega
+      enc_len [List.length_singleton]
     have hvalid : validDeclaredInput (max 1 k) p.1 (p.2 ++ prefixUnits (u ++ [false])) = true :=
       validDeclaredInput_append_prefixUnits hp hu1
     have hstep : preimageStepWith count (p, u) =
@@ -1051,9 +1050,7 @@ open SubexponentialSAT ComputableInPolyTime LocalMap
 
 private theorem numVars_le_length_encLocalMapQuery (q : LocalMap × List Bool) :
     q.1.numVars ≤ (encLocalMapQuery q).length := by
-  simp only [encLocalMapQuery, encLocalMap, LocalMap.numVars, length_encPair, encUnary_apply,
-    List.length_replicate]
-  omega
+  enc_len [encLocalMapQuery, encLocalMap, LocalMap.numVars]
 
 /-- **Declared-form local map preimage finder (Corollary C.2):** For every fixed locality bound
 `k`, `LocalMap.findPreimage k` is computed on native multi-tape Turing machines in time
