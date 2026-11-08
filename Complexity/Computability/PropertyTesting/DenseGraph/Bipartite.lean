@@ -25,9 +25,13 @@ Ron][GoldreichGoldwasserRon1998]; see also [Goldreich, Chapter 8][Goldreich2017]
 
 The tester `bipartiteRun n' s m` on `Fin (n' + 1)` samples `s` uniform vertices `u` and `m`
 uniform pairs of vertices `(x k, y k)`, all independent. It queries the `m (2 s + 1)` pairs
-`(x k, u i)`, `(y k, u i)` and `(x k, y k)` and accepts when the observed edges can be properly
-coloured with two colours (`bipAccept`). A bipartite graph is always accepted, since a proper
-2-colouring of the graph restricts to the observed edges.
+`(x k, u i)`, `(y k, u i)` and `(x k, y k)` and accepts when there is a proper 2-colouring of the
+sample *positions* (`bipAccept`): a colour for each index `i` of `u` and for each index `k` of `x`
+and of `y`, with different colours at the two ends of every observed edge. A vertex that occurs at
+several positions may receive different colours, so this is laxer than asking that the observed
+subgraph be bipartite: with `s = 0` and `m = 3` on the triangle, the tester can observe all three
+edges and still accept. A bipartite graph is always accepted, since a proper 2-colouring of the
+graph induces one of the positions.
 
 ## Source mapping
 
@@ -77,7 +81,8 @@ optimal: a uniform sample of `Õ(1 / ε)` vertices already induces a non-biparti
 
 ## Main definitions
 
-* `Cslib.DenseGraphTesting.bipAccept`: accept when the observed edges are 2-colourable.
+* `Cslib.DenseGraphTesting.bipAccept`: accept when the sample positions admit a proper
+  2-colouring.
 * `Cslib.DenseGraphTesting.bipartiteRun`, `bipartiteTester`: the bipartiteness tester.
 
 ## Main results
@@ -108,8 +113,9 @@ open SimpleGraph Finset
 /-! ### The decision rule -/
 
 /-- The decision rule of the bipartiteness tester. The bits `a k i`, `b k i` and `c k` report
-whether `x k ~ u i`, `y k ~ u i` and `x k ~ y k`; accept when the observed edges admit a proper
-2-colouring `χ` of the `u i`, `ξ` of the `x k` and `ζ` of the `y k`. -/
+whether `x k ~ u i`, `y k ~ u i` and `x k ~ y k`; accept when the sample positions admit a proper
+2-colouring: `χ` of the positions `i`, `ξ` and `ζ` of the positions `k` of `x` and of `y`. Colours
+are attached to positions, not vertices, so a repeated vertex may receive two colours. -/
 def bipAccept {s m : ℕ} (a b : Fin m → Fin s → Bool) (c : Fin m → Bool) : Bool :=
   decide (∃ (χ : Fin s → Bool) (ξ ζ : Fin m → Bool), (∀ k i, a k i = true → ξ k ≠ χ i) ∧
     (∀ k i, b k i = true → ζ k ≠ χ i) ∧ ∀ k, c k = true → ξ k ≠ ζ k)
@@ -517,6 +523,13 @@ private theorem two_pow_mul_one_sub_pow_le {ε : ℝ} (hε : ε ≤ 1) {s m : �
         mul_le_mul_of_nonneg_left (h₁.trans (h₂.trans h₄)) (by positivity)
     _ = 1 / 8 := h₅
 
+omit [Fintype V] [DecidableEq V] in
+/-- Positivity of the proximity parameter from the sample-size condition. -/
+private theorem pos_of_twelve_le {ε : ℝ} {s : ℕ} (hs : 12 ≤ ε * s) : 0 < ε := by
+  by_contra hε
+  have := not_lt.mp hε
+  nlinarith [Nat.cast_nonneg (α := ℝ) s]
+
 omit [DecidableEq V] in
 /-- The counting form of soundness. -/
 private theorem sum_accept_le {ε : ℝ} (h : IsFar G (fun H => H.IsBipartite) ε) {s m : ℕ}
@@ -527,10 +540,7 @@ private theorem sum_accept_le {ε : ℝ} (h : IsFar G (fun H => H.IsBipartite) �
       (Fintype.card V : ℝ) ^ s * (Fintype.card V : ℝ) ^ m * (Fintype.card V : ℝ) ^ m / 3 := by
   classical
   have hhalf := lt_half_of_isFar h
-  have hε : 0 < ε := by
-    by_contra hε
-    have := not_lt.mp hε
-    nlinarith [Nat.cast_nonneg (α := ℝ) s]
+  have hε : 0 < ε := pos_of_twelve_le hs
   have hV : 0 < Fintype.card V := by
     rcases Nat.eq_zero_or_pos (Fintype.card V) with hV | hV
     · have : IsEmpty V := Fintype.card_eq_zero_iff.mp hV
@@ -609,7 +619,7 @@ private theorem evalWith_pi_pure {ι : Type} {spec : ι → Type} (oracle : (q :
 
 /-- One run of the bipartiteness tester on `Fin (n' + 1)`: sample `s` uniform vertices `u` and `m`
 uniform pairs `(x k, y k)`, query `(x k, u i)`, `(y k, u i)` and `(x k, y k)`, and accept when the
-observed edges are 2-colourable. -/
+sample positions admit a proper 2-colouring (`bipAccept`). -/
 def bipartiteRun (n' s m : ℕ) : Tester (n' + 1) := do
   let u ← ProbOracleComp.sample (OracleComp.replicateFin s (ProbComp.unifFin n'))
   let x ← ProbOracleComp.sample (OracleComp.replicateFin m (ProbComp.unifFin n'))
@@ -685,12 +695,6 @@ theorem acceptProb_bipartiteRun (n' s m : ℕ) (G : SimpleGraph (Fin (n' + 1)))
   simp only [hpure, ← mul_sum]
   push_cast
   field_simp
-
-/-- Positivity of the proximity parameter from the sample-size condition. -/
-private theorem pos_of_twelve_le {ε : ℝ} {s : ℕ} (hs : 12 ≤ ε * s) : 0 < ε := by
-  by_contra hε
-  have := not_lt.mp hε
-  nlinarith [Nat.cast_nonneg (α := ℝ) s]
 
 /-- **Completeness.** A bipartite graph is accepted with probability one. -/
 theorem acceptProb_bipartiteTester_eq_one {n : ℕ} (s m : ℕ) {G : SimpleGraph (Fin n)}
