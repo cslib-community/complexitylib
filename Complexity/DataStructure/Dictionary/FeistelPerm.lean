@@ -20,7 +20,6 @@ import Complexity.Probability.KWiseIndependent.Concentration
 import Mathlib.Algebra.BigOperators.Field
 import Mathlib.Algebra.Order.BigOperators.Expect
 import Mathlib.Algebra.Order.BigOperators.Ring.Finset
-import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
@@ -31,7 +30,7 @@ import Mathlib.Tactic.Ring
 This module formalizes the one-round Feistel hash permutation families used for multi-level child
 routing (`ℋ_ℓ^ch`) and key-ID compression (`ℋ_ℓ^id`) in Tianxiao Li, Jingxun Liang, Huacheng Yu,
 and Renfei Zhou, *"Dynamic Dictionary with Subconstant Wasted Bits per Key"*, *Proc. 2024 Annual
-ACM-SIAM Symposium on Discrete Algorithms (SODA 2024)*, pp. 251–289 [LiLiangYuZhou2024]
+ACM-SIAM Symposium on Discrete Algorithms (SODA 2024)*, pp. 171–207 [LiLiangYuZhou2024]
 (`arXiv:2310.20536v1`, Section 5.4, PDF pp. 30–33 / printed pp. 29–32, Lemmas 5.1–5.2; Appendix B,
 PDF pp. 41–44 / printed pp. 40–43, Definition B.1, Claim B.2, Claim B.3, Theorem B.4, and
 Corollaries B.5–B.6).
@@ -488,18 +487,12 @@ private theorem dens_exists_le_sum {ι β : Type*} [Fintype ι] [Fintype β]
     [DecidablePred (fun i => ∃ b, P i b)] :
     (dens {i : ι | ∃ b : β, P i b} : ℝ) ≤ ∑ b : β, (dens {i : ι | P i b} : ℝ) := by
   classical
-  rcases isEmpty_or_nonempty ι with hEmpty | hne
-  · simp [dens_eq_card_div_card]
-  · have hcard_pos : (0 : ℝ) < Fintype.card ι := Nat.cast_pos.mpr Fintype.card_pos
-    have hsub : ({i : ι | ∃ b : β, P i b} : Finset ι) ⊆
-        (univ : Finset β).biUnion fun b => {i : ι | P i b} := by
-      intro i hi
-      obtain ⟨b, hb⟩ := (mem_filter.mp hi).2
-      exact mem_biUnion.mpr ⟨b, mem_univ b, mem_filter.mpr ⟨mem_univ i, hb⟩⟩
-    have hle_nat : #{i : ι | ∃ b : β, P i b} ≤ ∑ b : β, #{i : ι | P i b} :=
-      (card_le_card hsub).trans card_biUnion_le
-    simp only [dens_eq_card_div_card, NNRat.cast_div, NNRat.cast_natCast, ← sum_div]
-    exact div_le_div_of_nonneg_right (by exact_mod_cast hle_nat) hcard_pos.le
+  have hsub : ({i : ι | ∃ b : β, P i b} : Finset ι) ⊆
+      (univ : Finset β).biUnion fun b => {i : ι | P i b} := fun i hi => by
+    obtain ⟨b, hb⟩ := (mem_filter.mp hi).2
+    exact mem_biUnion.mpr ⟨b, mem_univ b, mem_filter.mpr ⟨mem_univ i, hb⟩⟩
+  exact (NNRat.cast_le.mpr ((dens_le_dens hsub).trans dens_biUnion_le)).trans_eq
+    (map_sum (NNRat.castHom ℝ) _ _)
 
 /-- **General `2m`-wise independent Feistel single-bucket tail bound (`Claim B.3`)**:
 for any `1 ≤ m`, `2m`-wise independent round family `h : ι → α → Fin (2 ^ s)`, finite set `S` with
@@ -637,63 +630,19 @@ private theorem dens_prod_le_of_good {α β : Type*} [Fintype α] [Nonempty α] 
     [∀ a, DecidablePred (P a)] [DecidablePred (fun p : α × β => P p.1 p.2)]
     {δ : ℝ} (hδ0 : 0 ≤ δ) (hgood : ∀ a ∈ G, (dens {y : β | P a y} : ℝ) ≤ δ) :
     (dens {p : α × β | P p.1 p.2} : ℝ) ≤ (dens {a : α | a ∉ G} : ℝ) + δ := by
-  classical
-  have hN1 : (0 : ℝ) < Fintype.card α := Nat.cast_pos.mpr Fintype.card_pos
-  have hN2 : (0 : ℝ) < Fintype.card β := Nat.cast_pos.mpr Fintype.card_pos
-  have hbi : ({p : α × β | P p.1 p.2} : Finset (α × β)) =
-      (univ : Finset α).biUnion fun a =>
-        ({y : β | P a y} : Finset β).map
-          ⟨fun y => (a, y), fun _ _ h => (Prod.ext_iff.mp h).2⟩ := by
-    ext ⟨a, y⟩
-    constructor
-    · intro h
-      exact mem_biUnion.mpr
-        ⟨a, mem_univ a, mem_map.mpr ⟨y, mem_filter.mpr ⟨mem_univ y, (mem_filter.mp h).2⟩, rfl⟩⟩
-    · intro h
-      obtain ⟨a', -, hy⟩ := mem_biUnion.mp h
-      obtain ⟨y', hy', heq⟩ := mem_map.mp hy
-      cases heq
-      exact mem_filter.mpr ⟨mem_univ _, (mem_filter.mp hy').2⟩
-  have hdisj : ((univ : Finset α) : Set α).PairwiseDisjoint fun a =>
-      ({y : β | P a y} : Finset β).map ⟨fun y => (a, y), fun _ _ h => (Prod.ext_iff.mp h).2⟩ := by
-    intro a₁ _ a₂ _ hne u hu₁ hu₂ p hp
-    obtain ⟨y₁, -, hpy₁⟩ := mem_map.mp (hu₁ hp)
-    obtain ⟨y₂, -, hpy₂⟩ := mem_map.mp (hu₂ hp)
-    exact False.elim (hne (congrArg Prod.fst (hpy₁.trans hpy₂.symm)))
-  have hcard_prod : (#{p : α × β | P p.1 p.2} : ℝ) = ∑ a : α, (#{y : β | P a y} : ℝ) := by
-    rw [hbi, card_biUnion hdisj, Nat.cast_sum]
-    exact sum_congr rfl fun a _ => by rw [card_map]
-  have hsplit : (∑ a : α, (#{y : β | P a y} : ℝ)) =
-      (∑ a ∈ univ with a ∈ G, (#{y : β | P a y} : ℝ)) +
-        ∑ a ∈ univ with a ∉ G, (#{y : β | P a y} : ℝ) :=
-    (sum_filter_add_sum_filter_not univ (· ∈ G) _).symm
-  have hG_sum : (∑ a ∈ univ with a ∈ G, (#{y : β | P a y} : ℝ)) ≤
-      (Fintype.card α : ℝ) * (δ * Fintype.card β) := by
-    calc (∑ a ∈ univ with a ∈ G, (#{y : β | P a y} : ℝ))
-        ≤ ∑ a ∈ univ with a ∈ G, δ * Fintype.card β := by
-          refine sum_le_sum fun a ha => ?_
-          have hd := hgood a (mem_filter.mp ha).2
-          rw [dens_eq_card_div_card, NNRat.cast_div, NNRat.cast_natCast, NNRat.cast_natCast,
-            div_le_iff₀ hN2] at hd
-          exact hd
-      _ = (#({a : α | a ∈ G}) : ℝ) * (δ * Fintype.card β) := by rw [sum_const, nsmul_eq_mul]
-      _ ≤ (Fintype.card α : ℝ) * (δ * Fintype.card β) := by
-          gcongr
-          exact_mod_cast card_le_univ _
-  have hbad_sum : (∑ a ∈ univ with a ∉ G, (#{y : β | P a y} : ℝ)) ≤
-      (#{a : α | a ∉ G} : ℝ) * Fintype.card β := by
-    calc (∑ a ∈ univ with a ∉ G, (#{y : β | P a y} : ℝ))
-        ≤ ∑ a ∈ univ with a ∉ G, (Fintype.card β : ℝ) :=
-          sum_le_sum fun a _ => by exact_mod_cast card_le_univ _
-      _ = (#{a : α | a ∉ G} : ℝ) * Fintype.card β := by rw [sum_const, nsmul_eq_mul]
-  rw [dens_eq_card_div_card, NNRat.cast_div, NNRat.cast_natCast, NNRat.cast_natCast,
-    Fintype.card_prod, Nat.cast_mul, div_le_iff₀ (mul_pos hN1 hN2), hcard_prod, hsplit]
-  rw [dens_eq_card_div_card, NNRat.cast_div, NNRat.cast_natCast, NNRat.cast_natCast]
-  have h1 : ((#{a : α | a ∉ G} : ℝ) / Fintype.card α + δ) * (Fintype.card α * Fintype.card β) =
-      (#{a : α | a ∉ G} : ℝ) * Fintype.card β +
-        (Fintype.card α : ℝ) * (δ * Fintype.card β) := by
-    field_simp
-  linarith
+  rw [← Fintype.expect_boole (fun p : α × β => P p.1 p.2),
+    Fintype.expect_prod_type (fun p : α × β => if P p.1 p.2 then (1 : ℝ) else 0)]
+  refine (expect_le_expect (g := fun a => (if a ∉ G then (1 : ℝ) else 0) + δ)
+    fun a _ => ?_).trans_eq ?_
+  · refine (expect_congr rfl fun y _ => (by congr : _ = if P a y then (1 : ℝ) else 0)).trans_le ?_
+    rw [Fintype.expect_boole]
+    by_cases ha : a ∈ G
+    · simp only [ha, not_true_eq_false, ↓reduceIte, zero_add]
+      exact hgood a ha
+    · simp only [ha, not_false_eq_true, ↓reduceIte]
+      have h1 : (dens {y : β | P a y} : ℝ) ≤ 1 := by exact_mod_cast dens_le_one
+      linarith
+  · rw [expect_add_distrib, Fintype.expect_boole, Fintype.expect_const]
 
 /-- **Unconditional Double-Tabulation Feistel concentration (`Corollary B.5(c)` parametric form)**:
 bounds the seed density on `ChildRouterSeed c q b s` where any child bucket deviates from
