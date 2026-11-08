@@ -144,6 +144,11 @@ theorem corr_comm (D : PMF X) (f g : X → Bool) : corr D f g = corr D g f := by
 @[simp] theorem corr_self (D : PMF X) (f : X → Bool) : corr D f f = 1 := by
   simp only [corr, BitString.signVal_mul_self, mul_one, Cslib.Probability.PMF.sum_toReal]
 
+/-- Negating a concept negates its correlations. -/
+theorem corr_not_right (D : PMF X) (f g : X → Bool) :
+    corr D f (fun x => !g x) = -corr D f g := by
+  simp only [corr, BitString.signVal_not, mul_neg, sum_neg_distrib]
+
 /-- The learner `A` learns the concept class `C` under `D` from statistical queries of tolerance
 `τ` with error `ε`: for every target `c ∈ C`, whatever answers within `τ` of the expectations the
 oracle gives, possibly depending on the earlier calls, the hypothesis disagrees with `c` with

@@ -1104,7 +1104,8 @@ each statement against the numbered result. Organize modules by subject, not cha
   model has correlational and SQ-dimension query lower bounds, including parities, the
   noise-free block simulation from random examples with a fixed-distribution PAC corollary,
   the low-degree algorithm as a non-adaptive SQ learner, and the characterization of weak
-  learning under a fixed distribution by the SQ dimension
+  learning under a fixed distribution by the absolute-correlation SQ dimension, polynomially
+  related to the one-sided variant
   ([#3204](https://github.com/cslib-community/complexitylib/issues/3204)). Remaining: simulation
   under random classification noise of known and of unknown rate (Kearns's Lemma 2 and
   Theorem 3); the single-sample form of Kearns's Theorem 1 (finite query space and finite VC

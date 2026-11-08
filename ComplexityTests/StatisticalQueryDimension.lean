@@ -9,11 +9,12 @@ import Complexity.MachineLearning.StatisticalQuery.Parity
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
 
 /-! Checks for the statistical query dimension and its characterization of weak learning: the
-dimension of the empty class, of a singleton and of the identity and negation on a bit; the weak
-learner, which learns the identity and negation on a bit exactly with tolerance `1/8`; and the
-parities on `n` bits, whose dimension is at least `2 ^ n`, so that by the characterization they
-are not weakly learnable from polynomially many statistical queries of inverse-polynomial
-tolerance with inverse-polynomial advantage. -/
+dimension of the empty class, of a singleton and of the identity and negation on a bit, which
+separates the absolute and one-sided dimensions (`1` and `2`); the weak learner, which learns the
+identity and negation on a bit exactly with one query of tolerance `1/8`, returning the negation
+of the queried concept on a negative answer; and the parities on `n` bits, whose dimension is at
+least `2 ^ n`, so that by the characterization they are not weakly learnable from polynomially
+many statistical queries of inverse-polynomial tolerance with inverse-polynomial advantage. -/
 
 namespace ComplexityTests.StatisticalQueryDimension
 
@@ -42,12 +43,37 @@ theorem corr_id_not : corr (PMF.uniformOfFintype Bool) id not = -1 := by
     Bool.not_true, Bool.not_false, BitString.signVal_true, BitString.signVal_false]
   norm_num
 
-/-- The identity and the negation on a bit have dimension `2`. -/
-theorem sqDim_idNot : sqDim (PMF.uniformOfFintype Bool) idNot = 2 := by
+/-- The identity and the negation on a bit have dimension `1`: they are perfectly anticorrelated,
+so no two of them have correlation of absolute value at most `1/2`. -/
+theorem sqDim_idNot : sqDim (PMF.uniformOfFintype Bool) idNot = 1 := by
   classical
-  refine le_antisymm ((sqDim_le_ncard _ _).trans_eq (Set.ncard_pair id_ne_not)) ?_
+  refine le_antisymm ?_ (one_le_sqDim ⟨id, by simp [idNot]⟩)
+  by_contra hlt
+  push Not at hlt
+  obtain ⟨F, hFC, hF, hpair⟩ := exists_finset_card_eq_sqDim (PMF.uniformOfFintype Bool) idNot
+  obtain ⟨a, ha, b, hb, hab⟩ := Finset.one_lt_card.1 (by rw [hF]; exact hlt)
+  have h : |corr (PMF.uniformOfFintype Bool) a b| ≤
+      1 / (sqDim (PMF.uniformOfFintype Bool) idNot : ℝ) := hpair ha hb hab
+  have hd : (2 : ℝ) ≤ sqDim (PMF.uniformOfFintype Bool) idNot := by exact_mod_cast hlt
+  have habs : |corr (PMF.uniformOfFintype Bool) a b| = 1 := by
+    rcases hFC ha with rfl | rfl <;> rcases hFC hb with rfl | rfl
+    · exact absurd rfl hab
+    · rw [corr_id_not, abs_neg, abs_one]
+    · rw [corr_comm, corr_id_not, abs_neg, abs_one]
+    · exact absurd rfl hab
+  rw [habs] at h
+  have : (1 : ℝ) / sqDim (PMF.uniformOfFintype Bool) idNot ≤ 1 / 2 := by
+    rw [div_le_div_iff₀ (by linarith) (by norm_num)]
+    linarith
+  linarith
+
+/-- The identity and the negation on a bit have one-sided dimension `2`: their correlation `-1`
+is at most `1/2`. -/
+theorem sqDimOneSided_idNot : sqDimOneSided (PMF.uniformOfFintype Bool) idNot = 2 := by
+  classical
+  refine le_antisymm ((sqDimOneSided_le_ncard _ _).trans_eq (Set.ncard_pair id_ne_not)) ?_
   have hcard : ({id, not} : Finset (Bool → Bool)).card = 2 := card_pair id_ne_not
-  have h := le_sqDim (D := PMF.uniformOfFintype Bool) (C := idNot) (F := {id, not})
+  have h := le_sqDimOneSided (D := PMF.uniformOfFintype Bool) (C := idNot) (F := {id, not})
     (by simp [idNot]) (by
       rw [hcard, coe_pair]
       refine Set.pairwise_pair.2 fun _ => ⟨?_, ?_⟩
@@ -56,6 +82,12 @@ theorem sqDim_idNot : sqDim (PMF.uniformOfFintype Bool) idNot = 2 := by
       · rw [corr_comm, corr_id_not]
         norm_num)
   rwa [hcard] at h
+
+/-- The absolute and one-sided dimensions differ. -/
+example :
+    sqDim (PMF.uniformOfFintype Bool) idNot < sqDimOneSided (PMF.uniformOfFintype Bool) idNot := by
+  rw [sqDim_idNot, sqDimOneSided_idNot]
+  norm_num
 
 /-- Under the uniform distribution on a bit, the error of a hypothesis is `0`, `1/2` or `1`, so an
 error below `1/2` is `0`. -/
@@ -66,11 +98,11 @@ theorem disagreement_eq_zero_of_lt {c h : Bool → Bool}
   simp only [disagreement, Fintype.sum_bool, PMF.uniformOfFintype_apply, Fintype.card_bool]
   split_ifs <;> norm_num
 
-/-- The weak learner from the dimension makes at most two queries and learns the identity and
-negation on a bit exactly with tolerance `1/8`: its error bound `1/2 - 1/6 + 1/8` is below
+/-- The weak learner from the dimension makes at most one query and learns the identity and
+negation on a bit exactly with tolerance `1/8`: its error bound `1/2 - 1/4 + 1/8` is below
 `1/2`. -/
 theorem exists_learns_idNot :
-    ∃ A : Algorithm Bool, A.IsQueryBounded 2 ∧
+    ∃ A : Algorithm Bool, A.IsQueryBounded 1 ∧
       Learns A (PMF.uniformOfFintype Bool) idNot (1 / 8) 0 := by
   obtain ⟨A, hq, -, hA⟩ := exists_learns_sqDim (PMF.uniformOfFintype Bool) idNot
   rw [sqDim_idNot] at hq hA
@@ -79,13 +111,17 @@ theorem exists_learns_idNot :
   norm_num at this ⊢
   linarith
 
-/-- The correlational learner for the list `[id, not]` learns the class exactly with tolerance
-`1/8`: each concept has correlation `1 > 1/2` with itself. -/
-example : Learns (corrLearner [id, not]) (PMF.uniformOfFintype Bool) idNot (1 / 8) 0 := by
-  have h := learns_corrLearner (D := PMF.uniformOfFintype Bool) (C := idNot) (gs := [id, not])
-    (γ := 1 / 2) (fun c hc => ⟨c, by rcases hc with rfl | rfl <;> simp, by
-      rw [corr_self]
-      norm_num⟩) (1 / 8)
+/-- The correlational learner for the single concept `id` learns the identity and its negation
+exactly with tolerance `1/8`: both have correlation of absolute value `1` with `id`, and on a
+negative answer the learner returns the negation of `id`. -/
+example : Learns (corrLearner [id]) (PMF.uniformOfFintype Bool) idNot (1 / 8) 0 := by
+  have h := learns_corrLearner (D := PMF.uniformOfFintype Bool) (C := idNot) (gs := [id])
+    (γ := 1 / 2) (fun c hc => ⟨id, List.mem_singleton_self _, by
+      rcases hc with rfl | rfl
+      · rw [corr_self, abs_one]
+        norm_num
+      · rw [corr_comm, corr_id_not, abs_neg, abs_one]
+        norm_num⟩) (1 / 8)
   refine fun c hc g hg => (disagreement_eq_zero_of_lt ?_).le
   have := h c hc g hg
   norm_num at this ⊢
@@ -118,7 +154,7 @@ theorem two_pow_le_sqDim_parities (n : ℕ) :
   · obtain ⟨S, -, rfl⟩ := mem_image.1 hf
     obtain ⟨T, -, rfl⟩ := mem_image.1 hg
     have hST : S ≠ T := fun h => hfg (by rw [h])
-    simp only [corr_uniformOfFintype_parityOn, hST, ↓reduceIte]
+    simp only [corr_uniformOfFintype_parityOn, hST, ↓reduceIte, abs_zero]
     positivity
 
 /-- `2 ^ n` is not polynomially bounded. -/
@@ -138,7 +174,7 @@ theorem not_weakly_learnable_parities :
   have hT := tfae_polynomiallyBounded_sqDim (fun n => PMF.uniformOfFintype (Fin n → Bool)) parities
   intro h
   have hdim : PolynomiallyBounded fun n =>
-      sqDim (PMF.uniformOfFintype (Fin n → Bool)) (parities n) := (hT.out 3 1).1 h
+      sqDim (PMF.uniformOfFintype (Fin n → Bool)) (parities n) := (hT.out 4 1).1 h
   exact not_polynomiallyBounded_two_pow (hdim.mono_of_le two_pow_le_sqDim_parities)
 
 end ComplexityTests.StatisticalQueryDimension
