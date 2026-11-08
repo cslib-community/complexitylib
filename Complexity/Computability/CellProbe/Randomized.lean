@@ -15,28 +15,35 @@ import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Expect
 
 /-!
-# Randomized Cell-Probe Trees, Schemes, and Yao Averaging
+# Randomized Cell-Probe Trees, Schemes, and Zero-Error Yao Averaging
 
-This file extends `Cslib.CellProbe` with internal-coin randomized cell-probe trees
+This file extends `Cslib.CellProbe` ([Miltersen1999]) with internal-coin randomized cell-probe trees
 (`RandProbeTree S w α := ProbOracleComp (@ProbeOp.Result S w) α`), randomized cell-probe schemes
-(`Randomized.Scheme`), and Yao averaging (the easy direction of Yao's principle) for zero-error
-randomized schemes [Yao1977; Yao1981; Miltersen1999].
+(`Randomized.Scheme`), and the averaging (coin-fixing) argument, the easy direction of Yao's
+principle [Yao1977], for zero-error (Las Vegas) randomized schemes.
 
 Private coin draws (`unifSpec`) incur `0` cell probes, while each cell read or write incurs `1`
-probe. Because every `ProbeOp.Result q` is finite (`Fin (2 ^ w)` or `PUnit`),
-`ProbOracleComp.coinLaw` and `ProbOracleComp.fixCoins` represent any `RandProbeTree` as a finite
-mixture of deterministic `ProbeTree`s (`RandProbeTree.run_eq_coinLaw_bind_fixCoins`). Averaging
-over coin-fixed deterministic schemes via
+probe; in `Randomized.Scheme`, `init : PMF (Mem cells w)` is an uncharged initial-memory
+distribution (which operations can inspect only by probing cells). Because every `ProbeOp.Result q`
+is finite (`Fin (2 ^ w)` or `PUnit`), `ProbOracleComp.coinLaw` and `ProbOracleComp.fixCoins`
+represent any `RandProbeTree` as a finite mixture of deterministic `ProbeTree`s
+(`RandProbeTree.run_eq_coinLaw_bind_fixCoins`).
+
+Averaging over coin-fixed deterministic schemes via
 `Cslib.Probability.PMF.exists_mem_support_tsum_mul_le_tsum_mul` and
-`Cslib.Probability.PMF.exists_mem_support_tsum_mul_le` (the easy direction of Yao's principle,
-not a minimax theorem) converts any **zero-error** randomized scheme `P` into a deterministic
-`IndexedScheme` (or a time-invariant `CellProbe.Scheme` when per-operation trees draw no private
-coins) that preserves sequence correctness across an arbitrary set `correctSeqs` of oblivious
-operation sequences while incurring at most `P`'s expected probes under a fixed input sequence
-distribution `hardDist`. Bounded-error (Monte Carlo) schemes and adaptive sequence adversaries are
-not covered by these zero-error oblivious-sequence reductions, and deterministic lower bounds
-paired with `exists_det_indexedScheme_le_expectedSeqProbes` must hold against `IndexedScheme`
-(whose `step` receives the operation index `t : ℕ` for free).
+`Cslib.Probability.PMF.exists_mem_support_tsum_mul_le` (the easy direction of Yao's principle
+[Yao1977]) converts any **zero-error (Las Vegas)** randomized scheme `P` (`hcorr` requires every
+supported transcript on `correctSeqs` to satisfy `Good`, so bounded-error Monte Carlo schemes and
+adaptive sequence adversaries are out of scope) into a deterministic scheme preserving correctness
+across `correctSeqs` while incurring at most `P`'s expected probes under a fixed oblivious sequence
+distribution `hardDist`:
+* `exists_det_indexedScheme_le_expectedSeqProbes` fixes independent per-step coins and therefore
+  returns an `IndexedScheme` (the **time-aware relaxation** of the cell-probe model whose `step`
+  receives the global step index `t : ℕ` as a free clock outside cell memory); deterministic lower
+  bounds paired with it must hold against step-indexed `IndexedScheme`s.
+* `exists_det_scheme_le_expectedSeqProbes` is the random-initial-memory / coin-free-step
+  specialization (`IsCoinFree`), returning a time-invariant `CellProbe.Scheme` without needing
+  `opsAlphabet` or `horizon`.
 
 ## Main definitions
 
@@ -69,10 +76,10 @@ paired with `exists_det_indexedScheme_le_expectedSeqProbes` must hold against `I
 * `Cslib.CellProbe.Randomized.Scheme.exists_det_indexedScheme_le_expectedSeqProbes`,
   `Cslib.CellProbe.Randomized.Scheme.exists_det_indexedScheme_tsum_mul_le`,
   `Cslib.CellProbe.Randomized.Scheme.exists_det_indexedScheme_le_expectedSeqProbes_of_fintype`:
-  Yao averaging (easy direction) for zero-error schemes against oblivious operation sequences,
-  producing a deterministic `IndexedScheme` in the coin-law support that satisfies
-  `Good ops (D_det.runSeq ops).1` for all `ops ∈ correctSeqs` and incurs at most the expected
-  probes of `P` over `hardDist`.
+  averaging (coin-fixing) argument, the easy direction of Yao's principle [Yao1977], for zero-error
+  schemes against oblivious operation sequences, producing a step-indexed `IndexedScheme` in the
+  coin-law support satisfying `Good ops (D_det.runSeq ops).1` for all `ops ∈ correctSeqs` and
+  incurring at most `P`'s expected probes over `hardDist`.
 * `Cslib.CellProbe.Randomized.Scheme.exists_det_scheme_le_expectedSeqProbes`:
   random-initial-memory / coin-free-step specialization producing a time-invariant deterministic
   `CellProbe.Scheme` without needing `opsAlphabet` or `horizon` (where randomness lives only in
@@ -81,7 +88,6 @@ paired with `exists_det_indexedScheme_le_expectedSeqProbes` must hold against `I
 ## References
 
 * [A. C.-C. Yao, *Probabilistic Computations: Toward a Unified Measure of Complexity*][Yao1977]
-* [A. C.-C. Yao, *Should Tables Be Sorted?*][Yao1981]
 * [P. B. Miltersen, *Cell Probe Complexity — a Survey*][Miltersen1999]
 -/
 
@@ -744,16 +750,18 @@ private theorem good_of_mem_support_law {SchemeType : Type*}
   rw [hmap, PMF.mem_support_map_iff]
   exact ⟨D_det, hD_mem, rfl⟩
 
-/-- **Yao averaging (easy direction) for zero-error schemes (`IndexedScheme` over explicit finite
-`opsAlphabet`):** Suppose `opsAlphabet : Finset Op` is a finite set of admissible operations,
-`correctSeqs` is any set of oblivious operation sequences of length `≤ horizon` over `opsAlphabet`
-on which **every** supported transcript of `P.runSeq ops` satisfies `Good ops` (zero-error;
-bounded-error Monte Carlo schemes are not covered), and `hardDist : PMF (List Op)` is any fixed
+/-- **Averaging (coin-fixing) argument, the easy direction of Yao's principle [Yao1977], for
+zero-error schemes (`IndexedScheme` over explicit finite `opsAlphabet`):** Suppose
+`opsAlphabet : Finset Op` is a finite set of admissible operations, `correctSeqs` is any set of
+oblivious operation sequences of length `≤ horizon` over `opsAlphabet` on which **every** supported
+transcript of `P.runSeq ops` satisfies `Good ops` (zero-error / Las Vegas correctness;
+bounded-error Monte Carlo schemes are out of scope), and `hardDist : PMF (List Op)` is any fixed
 sequence distribution supported on sequences of length `≤ horizon` over `opsAlphabet`.
 
-Then there exists a single deterministic `D_det : IndexedScheme Op Result cells w` in the support
-of `P.indexedSchemeLaw horizon opsAlphabet` that satisfies `Good ops (D_det.runSeq ops).1` for
-every `ops ∈ correctSeqs` and incurs expected probes over `hardDist` at most that of `P`. -/
+Then there exists a single deterministic `D_det : IndexedScheme Op Result cells w` (in the
+time-aware step-indexed relaxation) in the support of `P.indexedSchemeLaw horizon opsAlphabet` that
+satisfies `Good ops (D_det.runSeq ops).1` for every `ops ∈ correctSeqs` and incurs expected probes
+over `hardDist` at most that of `P`. -/
 theorem exists_det_indexedScheme_le_expectedSeqProbes
     [DecidableEq Op] [∀ o, Inhabited (Result o)]
     (P : Scheme Op Result cells w)
@@ -874,14 +882,14 @@ theorem expectedSeqProbes_eq_schemeLaw_tsum (P : Scheme Op Result cells w)
   rw [expectedSeqProbes, P.runSeq_eq_schemeLaw_bind hstep ops, Probability.PMF.tsum_bind_mul]
   exact tsum_congr fun _ => congrArg (_ * ·) (RandProbeTree.tsum_pure_snd _)
 
-/-- **Random-initial-memory / coin-free-step Yao averaging (`CellProbe.Scheme`):** when randomness
-lives only in initial memory `P.init` and per-operation trees draw no private coins
+/-- **Random-initial-memory / coin-free-step averaging argument [Yao1977] (`CellProbe.Scheme`):**
+when randomness lives only in initial memory `P.init` and per-operation trees draw no private coins
 (`∀ o, (P.step o).IsCoinFree`, so operations observe `P.init` only by probing cells), zero-error
 averaging against oblivious operation sequences yields a time-invariant deterministic
 `D_det : CellProbe.Scheme Op Result cells w` in `(P.schemeLaw hstep).support` preserving `Good` on
 all `ops ∈ correctSeqs` and incurring at most `P`'s expected probes over `hardDist` — without
-requiring `[DecidableEq Op]`, `opsAlphabet`, or `horizon` (bounded-error schemes are not
-covered). -/
+requiring `[DecidableEq Op]`, `opsAlphabet`, or `horizon` (bounded-error Monte Carlo schemes are
+out of scope). -/
 theorem exists_det_scheme_le_expectedSeqProbes
     (P : Scheme Op Result cells w)
     (hstep : ∀ o, (P.step o).IsCoinFree)

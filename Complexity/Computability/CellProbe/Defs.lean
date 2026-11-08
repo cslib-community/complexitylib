@@ -15,23 +15,34 @@ public import Mathlib.Data.Nat.Log
 /-!
 # Adaptive Cell-Probe Decision Trees and Deterministic Cell-Probe Schemes
 
-In the cell-probe model [Yao1981; Miltersen1999], persistent memory between operations consists
-solely of `S` cells of `w`-bit words (`Mem S w := Fin S → Fin (2 ^ w)`, total space `S * w` bits,
-with no persistent registers across operations). Each operation is answered by an adaptive
-read/write decision tree (`ProbeTree S w α := OracleComp (@ProbeOp.Result S w) α`) whose internal
-nodes either read a cell `i : Fin S` (branching `2 ^ w` ways on its `w`-bit content) or overwrite a
-cell `i : Fin S` with a `w`-bit value, while all local computation between probes is uncharged.
-Both reads and writes cost `1` probe: reading and then writing the same cell costs `2` probes here
-versus `1` step in Miltersen's combined read-and-assign decision-assignment tree
-([Miltersen1999], §1.2), so probe counts agree within a factor of `2`.
+The cell-probe model originates in Minsky and Papert [MinskyPapert1969] and was developed for
+dynamic data structures by Fredman and for static data structures by Yao [Yao1981] (see
+[Miltersen1999], §1.2, pp. 1–2; §1.5, p. 4; §2.1, pp. 4–5). In a time-invariant deterministic
+`Scheme`, persistent state between operations consists solely of `S` cells of `w`-bit words
+(`Mem S w := Fin S → Fin (2 ^ w)`, total space `S * w` bits, with no persistent registers across
+operations). `IndexedScheme` is a **time-aware relaxation** whose `step` additionally receives the
+global operation index `t : ℕ` (a free clock outside cell memory); because per-operation coin
+fixing (`Randomized.Scheme.exists_det_indexedScheme_le_expectedSeqProbes`) returns an
+`IndexedScheme` (only the coin-free-step variant returns a time-invariant `Scheme`), deterministic
+lower bounds used with it must hold against step-indexed schemes.
 
-Allowing an arbitrary fixed initial memory `Scheme.init` (or `IndexedScheme.init`) adds no power
-over all-zero initial memory `zeroMem`, because each operation's decision tree can XOR-mask cell
-reads and writes against the fixed initial memory at zero extra probe cost ([Miltersen1999], §1.3).
-In `IndexedScheme`, `step` receives the operation index `t : ℕ` for free without maintaining an
-in-memory counter, so deterministic lower bounds paired with coin-fixing over operation sequences
-must be proved against `IndexedScheme`. For the read-only embedding of static Boolean
-`DecisionTree`s into `ProbeTree S 1 α`, see `Complexity.Computability.CellProbe.DecisionTree`.
+Each operation is answered by an adaptive read/write decision tree
+(`ProbeTree S w α := OracleComp (@ProbeOp.Result S w) α`) whose internal nodes either read a cell
+`i : Fin S` (branching `2 ^ w` ways on its `w`-bit content) or overwrite a cell `i : Fin S` with a
+`w`-bit value, while all local computation between probes is uncharged. Three conventions differ
+slightly from Miltersen's presentation ([Miltersen1999], §1.2, pp. 1–2):
+* **Separate read and write probes:** reads and writes each cost `1` probe, whereas a combined
+  decision-assignment node in [Miltersen1999] reads and overwrites the same cell at cost `1`, so
+  probe counts here are at most twice Miltersen's.
+* **Arbitrary initial memory `init`:** `Scheme.init` and `IndexedScheme.init` allow any initial
+  `Mem cells w` rather than requiring `zeroMem`. For deterministic schemes this adds no power, as
+  each tree can XOR-relabel reads and writes against a fixed `init` at zero probe cost
+  ([Miltersen1999], §1.3, p. 3).
+* **Finite cell domain:** memory has `S` cells (`Fin S`) rather than an unbounded sequence
+  `C_0, C_1, …`, with `padCells` embedding `S ≤ S'`.
+
+For the read-only embedding of static Boolean `DecisionTree`s into `ProbeTree S 1 α`, see
+`Complexity.Computability.CellProbe.DecisionTree`.
 
 ## Main definitions
 
@@ -47,12 +58,17 @@ must be proved against `IndexedScheme`. For the read-only embedding of static Bo
   `Cslib.CellProbe.ProbeTree.padCells`: deterministic adaptive cell-probe trees, stateful execution,
   probe counts, probed-cell sets, worst-case depth, and cell padding.
 * `Cslib.CellProbe.Scheme`, `Cslib.CellProbe.IndexedScheme`, `Cslib.CellProbe.Scheme.toIndexed`:
-  time-invariant and step-indexed deterministic cell-probe schemes over arbitrary operation
-  signatures `(Op, Result)`.
+  time-invariant deterministic cell-probe schemes and their time-aware step-indexed relaxation over
+  arbitrary operation signatures `(Op, Result)`.
 * `Cslib.CellProbe.IndexedScheme.runInterval`, `Cslib.CellProbe.IndexedScheme.probesInterval`,
   `Cslib.CellProbe.IndexedScheme.probedCellsInterval`, `Cslib.CellProbe.IndexedScheme.runSeq`,
-  `Cslib.CellProbe.IndexedScheme.seqProbes`, `Cslib.CellProbe.IndexedScheme.padCells`: multi-step
-  interval and full-sequence execution, probe accounting, and cell padding.
+  `Cslib.CellProbe.IndexedScheme.seqProbes`, `Cslib.CellProbe.IndexedScheme.probedCellsSeq`,
+  `Cslib.CellProbe.IndexedScheme.padCells`: multi-step interval and full-sequence execution, probe
+  accounting, and cell padding on `IndexedScheme`.
+* `Cslib.CellProbe.Scheme.runFrom`, `Cslib.CellProbe.Scheme.probesFrom`,
+  `Cslib.CellProbe.Scheme.probedCellsFrom`, `Cslib.CellProbe.Scheme.runSeq`,
+  `Cslib.CellProbe.Scheme.seqProbes`, `Cslib.CellProbe.Scheme.probedCellsSeq`,
+  `Cslib.CellProbe.Scheme.padCells`: execution, probe accounting, and cell padding on `Scheme`.
 
 ## Main results
 
@@ -67,17 +83,18 @@ must be proved against `IndexedScheme`. For the read-only embedding of static Bo
   cells retain their initial values, and memories agreeing on `t.probedCells m₁` produce identical
   outputs, probe counts, probed-cell sets, and post-memory values on `t.probedCells m₁`.
 * `Cslib.CellProbe.ProbeTree.card_le_pow_depth`,
-  `Cslib.CellProbe.ProbeTree.clog_le_depth_of_injective`: `2 ^ w`-ary decision-tree leaf-counting
-  lower bound `K ≤ (2 ^ w) ^ t.depth` (`⌈log_{2^w} K⌉ ≤ t.depth`) for any tree distinguishing `K`
-  memory states ([Miltersen1999], §2.1).
+  `Cslib.CellProbe.ProbeTree.clog_le_depth_of_injective`: standard `2 ^ w`-ary branching lower bound
+  `K ≤ (2 ^ w) ^ t.depth` (`⌈log_{2^w} K⌉ ≤ t.depth`) for any tree distinguishing `K` memory states.
 * `Cslib.CellProbe.IndexedScheme.nextMem_runInterval_eq_of_notMem_probedCellsInterval`,
   `Cslib.CellProbe.IndexedScheme.runInterval_eq_of_eq_on_probedCellsInterval`: multi-operation
   interval lifts of the frame and locality/replay theorems.
 
 ## References
 
+* [M. Minsky, S. Papert, *Perceptrons: An Introduction to Computational Geometry*][MinskyPapert1969]
 * [A. C.-C. Yao, *Should Tables Be Sorted?*][Yao1981]
 * [P. B. Miltersen, *Cell Probe Complexity — a Survey*][Miltersen1999]
+* [A. C.-C. Yao, *Probabilistic Computations: Toward a Unified Measure of Complexity*][Yao1977]
 -/
 
 public section
@@ -100,10 +117,11 @@ abbrev Mem (S w : ℕ) : Type := Fin S → Fin (2 ^ w)
 theorem card_mem (S w : ℕ) : Fintype.card (Mem S w) = (2 ^ w) ^ S := by
   simp [Mem]
 
-/-- Subset snapshot of memory `m` restricted to a cell set `I : Finset (Fin S)`. -/
+/-- Subset snapshot of memory `m` restricted to a cell set `I : Finset (Fin S)`, defined via
+`Finset.restrict`. -/
 @[expose] def restrictMem {S w : ℕ} (m : Mem S w) (I : Finset (Fin S)) :
     (i : I) → Fin (2 ^ w) :=
-  fun i => m i.1
+  I.restrict m
 
 @[simp]
 theorem restrictMem_apply {S w : ℕ} (m : Mem S w) (I : Finset (Fin S)) (i : I) :
@@ -161,7 +179,7 @@ inductive ProbeOp (S w : ℕ) : Type where
   deriving DecidableEq, Repr
 
 /-- Equivalence between `ProbeOp S w` and `Fin S ⊕ (Fin S × Fin (2 ^ w))`. -/
-@[expose] def ProbeOp.equivSum (S w : ℕ) :
+private def ProbeOp.equivSum (S w : ℕ) :
     ProbeOp S w ≃ Fin S ⊕ (Fin S × Fin (2 ^ w)) where
   toFun
     | .read i => .inl i
@@ -628,9 +646,8 @@ theorem run_eq_of_eq_on_probedCells (t : ProbeTree S w α) {m₁ m₂ : Mem S w}
 
 /-! ### Information-theoretic counting lower bound -/
 
-/-- **`2 ^ w`-ary decision-tree counting bound ([Miltersen1999], §2.1):** if `t : ProbeTree S w α`
-produces distinct return values across `(enc x)` for all `x ∈ I`, then
-`I.card ≤ (2 ^ w) ^ t.depth`. -/
+/-- **Standard `2 ^ w`-ary branching bound:** if `t : ProbeTree S w α` produces distinct return
+values across `(enc x)` for all `x ∈ I`, then `I.card ≤ (2 ^ w) ^ t.depth`. -/
 theorem card_le_pow_depth {ι : Type*} (t : ProbeTree S w α) (I : Finset ι) (enc : ι → Mem S w)
     (hinj : Set.InjOn (fun x => (t.run (enc x)).1) ↑I) :
     I.card ≤ (2 ^ w) ^ t.depth := by
@@ -672,8 +689,8 @@ theorem card_le_pow_depth {ι : Type*} (t : ProbeTree S w α) (I : Finset ι) (e
       exact (ih PUnit.unit I (fun x => Function.update (enc x) j v) hinj').trans
         (Nat.pow_le_pow_right (Nat.two_pow_pos w) (Nat.le_succ _))
 
-/-- If `t : ProbeTree S w α` distinguishes every input of a finite type `ι` via `enc : ι → Mem S w`,
-then `Fintype.card ι ≤ (2 ^ w) ^ t.depth` ([Miltersen1999], §2.1). -/
+/-- Standard `2 ^ w`-ary branching bound: if `t : ProbeTree S w α` distinguishes every input of a
+finite type `ι` via `enc : ι → Mem S w`, then `Fintype.card ι ≤ (2 ^ w) ^ t.depth`. -/
 theorem card_le_pow_depth_of_injective {ι : Type*} [Fintype ι] (t : ProbeTree S w α)
     (enc : ι → Mem S w) (hinj : Function.Injective (fun x => (t.run (enc x)).1)) :
     Fintype.card ι ≤ (2 ^ w) ^ t.depth := by
@@ -760,9 +777,11 @@ structure Scheme (Op : Type u) (Result : Op → Type) (cells w : ℕ) where
   /-- Adaptive read/write cell-probe decision tree executed for each operation `o : Op`. -/
   step : (o : Op) → ProbeTree cells w (Result o)
 
-/-- Step-indexed deterministic cell-probe scheme, allowing the deterministic probe tree at step
-index `t : ℕ` to depend on `t` (obtained when fixing per-operation private coins via Yao's
-minimax principle). -/
+/-- **Time-aware relaxation** of a deterministic cell-probe scheme: `step` receives the global
+operation index `t : ℕ` (a free clock outside cell memory) in addition to `o : Op`. Fixing
+per-operation private coins via the averaging (coin-fixing) argument, the easy direction of Yao's
+principle [Yao1977], produces an `IndexedScheme`, so deterministic lower bounds paired with it must
+hold against step-indexed schemes. -/
 structure IndexedScheme (Op : Type u) (Result : Op → Type) (cells w : ℕ) where
   /-- Initial cell memory (0 probes). -/
   init : Mem cells w

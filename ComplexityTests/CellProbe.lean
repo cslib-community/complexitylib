@@ -371,22 +371,43 @@ theorem exists_det_indexedScheme_infDict_test :
       (fun ops _ tr htr => randDictScheme_zero_error ops htr) hardDist hν
   exact ⟨D_det, hgood, hcost⟩
 
-/-- Random-initial-memory / coin-free-step Yao averaging specialization
+/-- Random-initial-memory / coin-free-step averaging specialization
 (`exists_det_scheme_le_expectedSeqProbes`): uniformly random initial memory `init` paired with the
-coin-free `counterIndexed` operations (observed only by probing cells). -/
+coin-free `counterIndexed` operations (observed only by probing cells). Regardless of the random
+initial memory, writing `2` to cell `0` and querying cell `0` always returns `2`. -/
 noncomputable def randomInitScheme : Randomized.Scheme CounterOp CounterResult 3 2 where
   init := Probability.PMF.uniformOfFintype (Mem 3 2)
   step o := RandProbeTree.ofProbeTree (counterIndexed.step 0 o)
 
+def GoodWriteRead (ops : List CounterOp) (tr : List (Sigma CounterResult)) : Prop :=
+  ops = [.insert 0 2, .query 0] → tr = [⟨.insert 0 2, PUnit.unit⟩, ⟨.query 0, 2⟩]
+
 theorem exists_det_scheme_randomInit_test :
+    let seq : List CounterOp := [.insert 0 2, .query 0]
     ∃ D_det : Scheme CounterOp CounterResult 3 2,
-      (∑' ops, (PMF.pure [.query 0] : PMF (List CounterOp)) ops * (D_det.seqProbes ops : ℝ≥0∞)) ≤
-        ∑' ops, (PMF.pure [.query 0] : PMF (List CounterOp)) ops *
+      (∀ ops ∈ ({seq} : Set (List CounterOp)), GoodWriteRead ops (D_det.runSeq ops).1) ∧
+      (∑' ops, (PMF.pure seq : PMF (List CounterOp)) ops * (D_det.seqProbes ops : ℝ≥0∞)) ≤
+        ∑' ops, (PMF.pure seq : PMF (List CounterOp)) ops *
           randomInitScheme.expectedSeqProbes ops := by
-  obtain ⟨D_det, _, _, hcost⟩ :=
+  intro seq
+  have hcorr : ∀ ops ∈ ({seq} : Set (List CounterOp)),
+      ∀ tr ∈ ((randomInitScheme.runSeq ops).map Prod.fst).support, GoodWriteRead ops tr := by
+    intro ops hops tr htr
+    rw [Set.mem_singleton_iff] at hops
+    subst hops
+    simp only [Randomized.Scheme.runSeq, randomInitScheme, PMF.mem_support_map_iff,
+      PMF.mem_support_bind_iff] at htr
+    obtain ⟨_, ⟨m₀, _, z, hz, rfl⟩, rfl⟩ := htr
+    simp only [Randomized.Scheme.runFrom_cons, Randomized.Scheme.runFrom_nil,
+      RandProbeTree.run_ofProbeTree, counterIndexed, ProbeTree.run_write, ProbeTree.run_read,
+      PMF.pure_bind, PMF.pure_map, PMF.mem_support_pure_iff] at hz
+    rcases hz with rfl
+    intro _
+    simp [Function.update_self]
+  obtain ⟨D_det, _, hgood, hcost⟩ :=
     randomInitScheme.exists_det_scheme_le_expectedSeqProbes
       (fun o => RandProbeTree.isCoinFree_ofProbeTree _)
-      Set.univ (fun _ _ => True) (fun _ _ _ _ => trivial) (PMF.pure [.query 0])
-  exact ⟨D_det, hcost⟩
+      {seq} GoodWriteRead hcorr (PMF.pure seq)
+  exact ⟨D_det, hgood, hcost⟩
 
 end ComplexityTests.CellProbe
