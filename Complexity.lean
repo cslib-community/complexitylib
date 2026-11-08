@@ -2190,6 +2190,7 @@ public import Complexity.Computability.Kolmogorov.Basic
 public import Complexity.Computability.Kolmogorov.ChainRule
 public import Complexity.Computability.Kolmogorov.Conditional
 public import Complexity.Computability.Kolmogorov.Depth
+public import Complexity.Computability.Kolmogorov.Incompleteness
 public import Complexity.Computability.Kolmogorov.Incompressibility
 public import Complexity.Computability.Kolmogorov.Invariance
 public import Complexity.Computability.Kolmogorov.MINKT
