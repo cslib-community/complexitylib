@@ -887,9 +887,14 @@ universe size, not supplied as unverified input tables. In dependency order:
   by interpretation from finite linear orders, and on [Hanf and Gaifman locality](Complexity/Logics/FirstOrder/Locality/Hanf.lean)
   with its [game-free proofs](Complexity/Logics/FirstOrder/Locality/GraphProperties.lean) that
   connectivity, acyclicity and being a tree are not definable
-  ([locality track](https://github.com/cslib-community/complexitylib/issues/3015)), add Gaifman's
-  normal form theorem, further nondefinability applications of locality (Libkin's balanced binary
-  trees and transitive closure, then planarity, Hamiltonicity and `k`-colorability for `k ≥ 3`),
+  ([locality track](https://github.com/cslib-community/complexitylib/issues/3015)), and the
+  [Gaifman-locality proofs](Complexity/Logics/FirstOrder/Locality/Reachability.lean) that
+  transitive closure and reachability are not definable, with an exponential lower bound on the
+  locality radius and FO ⊊ FO(TC) on unordered graphs
+  ([#3483](https://github.com/cslib-community/complexitylib/issues/3483)), add Gaifman's normal
+  form theorem, the exact locality ranks `2 ^ (n - 1) - 1` and `2 ^ n - 1` (Libkin, Exercises 4.10
+  and 4.11), further nondefinability applications of locality (Libkin's balanced binary trees and
+  same generation, then planarity, Hamiltonicity and `k`-colorability for `k ≥ 3`),
   games for vocabularies with constants, and pebble games with their finite-variable equivalence
   theorems; then counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style
   separations. Connect the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.

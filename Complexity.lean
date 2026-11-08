@@ -5016,6 +5016,7 @@ public import Complexity.Logics.FirstOrder.Interpretation.Unit
 public import Complexity.Logics.FirstOrder.Locality.Gaifman
 public import Complexity.Logics.FirstOrder.Locality.GraphProperties
 public import Complexity.Logics.FirstOrder.Locality.Hanf
+public import Complexity.Logics.FirstOrder.Locality.Reachability
 public import Complexity.Logics.FirstOrder.Operator.Basic
 public import Complexity.Logics.FirstOrder.Operator.Definability
 public import Complexity.Logics.FirstOrder.Operator.Definability.Finite
@@ -5029,6 +5030,7 @@ public import Complexity.Logics.FirstOrder.Operator.Quantifiers
 public import Complexity.Logics.FirstOrder.Operator.Relabel
 public import Complexity.Logics.FirstOrder.Operator.TransitiveClosure
 public import Complexity.Logics.FirstOrder.Operator.TransitiveClosure.Definability
+public import Complexity.Logics.FirstOrder.Operator.TransitiveClosure.Expressiveness
 public import Complexity.Logics.FirstOrder.Operator.TransitiveClosure.Positive
 public import Complexity.Logics.FirstOrder.Ordered.Addition
 public import Complexity.Logics.FirstOrder.Ordered.Basic
