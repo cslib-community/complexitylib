@@ -30,11 +30,19 @@ transport along bijections of the domain (`IsTester.map_equiv`) and, more genera
 randomized map `F` of the samples that sends `P` into a property `P'` and far distributions to far
 distributions (`IsTester.bind_pi`): a tester for `P'` run on the mapped samples tests `P`.
 
+A *`k`-sample closeness tester* (`IsClosenessTester`) receives `k` independent samples of each of
+two unknown distributions `p` and `q` (`acceptProb₂`). It must accept with probability at least
+`2 / 3` when `p = q` and with probability at most `1 / 3` when `p` and `q` are at statistical
+distance at least `ε` [Canonne][Canonne2020].
+
 ## Main definitions
 
 * `Cslib.DistributionTesting.acceptProb`: the acceptance probability of a decision rule on `k`
   independent samples.
 * `Cslib.DistributionTesting.IsTester`: the `k`-sample tester property with proximity `ε`.
+* `Cslib.DistributionTesting.acceptProb₂`: the acceptance probability of a decision rule on `k`
+  independent samples of each of two distributions.
+* `Cslib.DistributionTesting.IsClosenessTester`: the `k`-sample closeness tester property.
 
 ## Main results
 
@@ -44,6 +52,8 @@ distributions (`IsTester.bind_pi`): a tester for `P'` run on the mapped samples 
 * `Cslib.DistributionTesting.IsTester.map_equiv`, `.comp_equiv_uniform`: relabelling the domain.
 * `Cslib.DistributionTesting.acceptProb_bind_pi`, `IsTester.bind_pi`: reductions along a
   randomized map of the samples.
+* `Cslib.DistributionTesting.acceptProb₂_pure`, `acceptProb₂_pure_eq_one_sub`: deterministic
+  two-sample rules.
 
 ## References
 
@@ -77,9 +87,54 @@ structure IsTester [Fintype α] {k : ℕ} (T : (Fin k → α) → PMF Bool) (P :
   accept : ∀ p ∈ P, 2 / 3 ≤ acceptProb T p
   reject : ∀ p, (∀ q ∈ P, ε ≤ dist p q) → acceptProb T p ≤ 1 / 3
 
+/-- The probability that the randomized decision rule `T` accepts `k` independent samples of `p`
+together with `k` further independent samples of `q`. -/
+noncomputable def acceptProb₂ {k : ℕ} (T : (Fin k → α) → (Fin k → α) → PMF Bool)
+    (p q : PMF α) : ℝ :=
+  (((iid p k).bind fun x => (iid q k).bind fun y => T x y) true).toReal
+
+/-- Unfolding lemma for `acceptProb₂`. -/
+theorem acceptProb₂_eq {k : ℕ} (T : (Fin k → α) → (Fin k → α) → PMF Bool) (p q : PMF α) :
+    acceptProb₂ T p q = (((iid p k).bind fun x => (iid q k).bind fun y => T x y) true).toReal := by
+  rw [acceptProb₂]
+
+/-- `T` is a `k`-sample closeness tester with proximity `ε`: given `k` independent samples of each
+of two unknown distributions, it accepts with probability at least `2 / 3` when they are equal and
+with probability at most `1 / 3` when they are at statistical distance at least `ε`. -/
+structure IsClosenessTester [Fintype α] {k : ℕ} (T : (Fin k → α) → (Fin k → α) → PMF Bool)
+    (ε : ℝ) : Prop where
+  accept : ∀ p, 2 / 3 ≤ acceptProb₂ T p p
+  reject : ∀ p q, ε ≤ dist p q → acceptProb₂ T p q ≤ 1 / 3
+
 section Fintype
 
 variable [Fintype α]
+
+/-- A deterministic two-sample decision rule accepts with the probability of its acceptance
+region. -/
+theorem acceptProb₂_pure {k : ℕ} (A : (Fin k → α) → (Fin k → α) → Bool) (p q : PMF α) :
+    acceptProb₂ (fun x y => PMF.pure (A x y)) p q =
+      ∑ x, ∑ y, (iid p k x).toReal * (iid q k y).toReal * (if A x y then 1 else 0) := by
+  rw [acceptProb₂, bind_apply_toReal]
+  refine sum_congr rfl fun x _ => ?_
+  rw [bind_apply_toReal, mul_sum]
+  refine sum_congr rfl fun y _ => ?_
+  cases A x y <;> simp
+
+/-- A deterministic two-sample rule accepts with probability one minus the mass of its rejection
+region. -/
+theorem acceptProb₂_pure_eq_one_sub {k : ℕ} (A : (Fin k → α) → (Fin k → α) → Bool)
+    (p q : PMF α) :
+    acceptProb₂ (fun x y => PMF.pure (A x y)) p q =
+      1 - ∑ x, ∑ y, (iid p k x).toReal * (iid q k y).toReal * (if !A x y then 1 else 0) := by
+  rw [acceptProb₂_pure, eq_sub_iff_add_eq, ← sum_add_distrib]
+  refine (sum_congr rfl fun x _ => ?_).trans (sum_toReal (iid p k))
+  rw [← sum_add_distrib]
+  calc ∑ y, ((iid p k x).toReal * (iid q k y).toReal * (if A x y then 1 else 0) +
+        (iid p k x).toReal * (iid q k y).toReal * (if !A x y then 1 else 0))
+      = ∑ y, (iid p k x).toReal * (iid q k y).toReal :=
+        sum_congr rfl fun y _ => by cases A x y <;> simp
+    _ = (iid p k x).toReal := by rw [← mul_sum, sum_toReal, mul_one]
 
 /-- A deterministic decision rule accepts with the probability of its acceptance region. -/
 theorem acceptProb_pure {k : ℕ} (A : (Fin k → α) → Bool) (p : PMF α) :
