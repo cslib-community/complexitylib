@@ -1568,6 +1568,9 @@ public import Complexity.Computability.Complexity.Classes.MIP
 public import Complexity.Computability.Complexity.Classes.MIP.Defs
 public import Complexity.Computability.Complexity.Classes.MIP.NEXP
 public import Complexity.Computability.Complexity.Classes.MIP.OptimalProver
+public import Complexity.Computability.Complexity.Classes.Measure.Basic
+public import Complexity.Computability.Complexity.Classes.Measure.Conservation
+public import Complexity.Computability.Complexity.Classes.Measure.DTIME
 public import Complexity.Computability.Complexity.Classes.ModP
 public import Complexity.Computability.Complexity.Classes.ModP.GapP
 public import Complexity.Computability.Complexity.Classes.ModP.Time
