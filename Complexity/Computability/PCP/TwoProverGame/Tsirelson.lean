@@ -272,12 +272,11 @@ theorem chshBobObservable_mul_self (y : Bool) :
     module
 
 /-- The **optimal CHSH strategy** [Cleve, Høyer, Toner, Watrous, §3.1][CleveHoyerTonerWatrous2004]:
-the EPR pair `(|00⟩ + |11⟩)/√2` (`Cslib.Quantum.maxEntangled Bool`, which is how
-`Cslib.Quantum.bell` is defined), with Alice measuring `Z` or `X` and Bob measuring
-`(Z ± X)/√2`. These are the measurements at angles `0, π/4` and `±π/8` of the source. -/
+the EPR pair `(|00⟩ + |11⟩)/√2` (`Cslib.Quantum.bell`), with Alice measuring `Z` or `X` and Bob
+measuring `(Z ± X)/√2`. These are the measurements at angles `0, π/4` and `±π/8` of the source. -/
 noncomputable def chshEPR : QuantumStrategy Bool Bool Bool Bool Bool Bool where
-  state := maxEntangled Bool
-  norm_state := norm_maxEntangled
+  state := bell
+  norm_state := norm_bell
   alice x := POVM.ofObservable (chshAliceObservable x) (isHermitian_chshAliceObservable x)
     (chshAliceObservable_mul_self x)
   bob y := POVM.ofObservable (chshBobObservable y) (isHermitian_chshBobObservable y)
@@ -293,7 +292,7 @@ theorem correlation_chshEPR (x y : Bool) :
   have hB : (chshEPR.bob y).observable = chshBobObservable y :=
     POVM.observable_ofObservable _ (isHermitian_chshBobObservable y)
       (chshBobObservable_mul_self y)
-  have hS : chshEPR.state = maxEntangled Bool := rfl
+  have hS : chshEPR.state = maxEntangled Bool := bell_eq_maxEntangled
   rw [QuantumStrategy.correlation, hA, hB, hS, star_maxEntangled_dotProduct_kronecker_mulVec]
   cases x <;> cases y <;>
     simp [chshAliceObservable, chshBobObservable]
