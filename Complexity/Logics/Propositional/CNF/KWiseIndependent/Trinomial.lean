@@ -79,8 +79,7 @@ theorem exists_assignments_two_pow_mul_countUnsat_le (k : ℕ) (vs : List V) :
       have := trinomialDeg_le_three_mul U 1
       rwa [max_self, max_eq_left hpos] at this
     have hpow := Nat.pow_clog_le_mul (b := 2) (n := max U 2) (by norm_num) (by omega)
-    calc 2 ^ (2 * 3 ^ t) ≤ 2 ^ (3 * Nat.clog 2 (max U 2)) :=
-          Nat.pow_le_pow_right (by norm_num) hdeg
+    calc 2 ^ (2 * 3 ^ t) ≤ 2 ^ (3 * Nat.clog 2 (max U 2)) := by gcongr
       _ = (2 ^ Nat.clog 2 (max U 2)) ^ 3 := by rw [mul_comm, pow_mul]
       _ ≤ (2 * vs.length + 4) ^ 3 := Nat.pow_le_pow_left (by omega) 3
   · obtain ⟨c, hc⟩ := exists_two_pow_mul_countUnsat_le hbit (e := pos)

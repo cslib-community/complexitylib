@@ -161,8 +161,7 @@ theorem card_letter_le_two_pow :
     rw [pow_mul]
     exact Nat.pow_le_pow_left (by norm_num) _
   have hctl : (s + 1) * (b ^ (k + 1) * 3) ≤ 2 ^ ((s + k + 3) * b) := by
-    calc (s + 1) * (b ^ (k + 1) * 3) ≤ 2 ^ (s * b) * (2 ^ ((k + 1) * b) * 2 ^ (2 * b)) :=
-          Nat.mul_le_mul hs (Nat.mul_le_mul hbk h3)
+    calc (s + 1) * (b ^ (k + 1) * 3) ≤ 2 ^ (s * b) * (2 ^ ((k + 1) * b) * 2 ^ (2 * b)) := by gcongr
       _ = 2 ^ ((s + k + 3) * b) := by rw [← pow_add, ← pow_add]; ring_nf
   have hcon : 3 ^ b ≤ 2 ^ ((s + k + 3) * b) :=
     h3b.trans (Nat.pow_le_pow_right two_pos (Nat.mul_le_mul_right b (by omega)))
