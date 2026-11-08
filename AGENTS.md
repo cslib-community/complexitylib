@@ -264,8 +264,10 @@ transitive importing clients, then checks import aggregates. The comparison uses
 with local `origin/main` by default, including committed, staged, unstaged and untracked changes;
 it does not fetch. Quick mode skips the global test/lint/style/init-import gates and is not full
 validation. Non-Lean changes, deletions/renames, changed aggregates, unsupported layouts and
-ambiguous change/import analysis fall back to all six gates. Quick success alone does not satisfy
-the full validation requirement above; documentation-only checks need not invoke quick mode.
+ambiguous change/import analysis fall back to all six gates. The one exception is
+`scripts/encoding_readability_baseline.json`, which no Lean gate reads: a change to it runs the
+encoding-readability lint instead. Quick success alone does not satisfy the full validation
+requirement above; documentation-only checks need not invoke quick mode.
 
 `lake exe mk_all` regenerates `Complexity.lean` after adding a file. New test files go in
 `ComplexityTests/`; the test library is built from a Lake glob, so there is no aggregator to update.
@@ -481,9 +483,15 @@ encoding-readability lint checks rule 1 against a per-module baseline that may o
 2. **Document the layout.** The `abbrev`'s docstring says what is encoded and how: the order of
    the parts, which parts are framed, and any tag bits. For example, `QueryMachine.encStateRead`
    is "a state paired with the bit read; the state is framed".
-3. **Keep it reducible.** Use `abbrev`, not `def`: the elaborated statement stays the same, so
-   `enc_len`, `fun_prop`, instance search and the combinators' simp lemmas such as
-   `length_encPair` see through the name, and clients that spell the body out still match.
+3. **Keep it reducible.** Use `abbrev`, not `def`. The statement is definitionally identical to
+   the spelled-out one: `enc_len`, `fun_prop`, instance search and `simp` with the combinators'
+   lemmas such as `length_encPair` see through the name, and so does `rw`, except where the name
+   heads the rewritten term. Syntactic tools may not: `omega` takes `(encX e p).length` and its
+   spelled-out form as different atoms, so the facts it combines must use one form, which can
+   need small proof edits. Do not abbreviate an encoding with a `local notation`: the lint reads
+   it as an atom, so it hides a compound encoding, and the documentation shows its expansion.
+   When you touch a module that abbreviates a compound encoding with one, replace it with a
+   documented `abbrev`.
 4. **Name domain encodings.** Encode a mathematical object (a formula, graph, circuit or problem
    instance) by a named, documented definition, not by a compound spelled out inside a larger
    encoding, even where it occurs only once.
