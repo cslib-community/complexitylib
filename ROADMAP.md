@@ -1298,6 +1298,14 @@ each statement against the numbered result. Organize modules by subject, not cha
   [quantum adversary models](#concurrent-and-quantum-security) needed by cryptographic
   reductions.
 
+- **Quantum information primitives**
+  ([#3329](https://github.com/cslib-community/complexitylib/issues/3329)): beyond pure-state
+  no-cloning, single-qubit teleportation and superdense coding, prove Holevo's bound (in
+  particular, superdense coding is optimal) and Nayak's bound for quantum random access codes.
+  Both need density matrices, von Neumann entropy and mutual information. With channel semantics,
+  prove no-cloning for mixed states, no-broadcasting, and teleportation of half of an entangled
+  state (entanglement swapping).
+
 - **Quantum query separations**
   ([#2991](https://github.com/cslib-community/complexitylib/issues/2991)): beyond the decision
   and search versions of Simon's problem, give the search version polynomial-time
