@@ -4288,6 +4288,7 @@ public import Complexity.Foundations.Combinatorics.Expander.Cayley
 public import Complexity.Foundations.Combinatorics.Expander.Cheeger
 public import Complexity.Foundations.Combinatorics.Expander.Connected
 public import Complexity.Foundations.Combinatorics.Expander.Contraction
+public import Complexity.Foundations.Combinatorics.Expander.CutRank
 public import Complexity.Foundations.Combinatorics.Expander.ElementaryMove
 public import Complexity.Foundations.Combinatorics.Expander.Existence
 public import Complexity.Foundations.Combinatorics.Expander.Family
@@ -4299,9 +4300,13 @@ public import Complexity.Foundations.Combinatorics.Expander.KilledWalk
 public import Complexity.Foundations.Combinatorics.Expander.Lazy
 public import Complexity.Foundations.Combinatorics.Expander.Loops
 public import Complexity.Foundations.Combinatorics.Expander.LowerBound
+public import Complexity.Foundations.Combinatorics.Expander.MatchingPaths
+public import Complexity.Foundations.Combinatorics.Expander.MatchingPencil
 public import Complexity.Foundations.Combinatorics.Expander.Mixing
 public import Complexity.Foundations.Combinatorics.Expander.Multigraph
+public import Complexity.Foundations.Combinatorics.Expander.NeighborDeletion
 public import Complexity.Foundations.Combinatorics.Expander.PairShearTranslation
+public import Complexity.Foundations.Combinatorics.Expander.PathInterpolation
 public import Complexity.Foundations.Combinatorics.Expander.Perm
 public import Complexity.Foundations.Combinatorics.Expander.PiProduct
 public import Complexity.Foundations.Combinatorics.Expander.Power
@@ -4384,6 +4389,7 @@ public import Complexity.Foundations.Combinatorics.SimpleGraph.CliqueCover
 public import Complexity.Foundations.Combinatorics.SimpleGraph.ColorRefinement
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Connectivity.Connected
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Crown
+public import Complexity.Foundations.Combinatorics.SimpleGraph.CutRank
 public import Complexity.Foundations.Combinatorics.SimpleGraph.DominatingSet
 public import Complexity.Foundations.Combinatorics.SimpleGraph.EdgeSide
 public import Complexity.Foundations.Combinatorics.SimpleGraph.EvenEdges
@@ -4750,6 +4756,7 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.FourierMotzkin
 public import Complexity.Foundations.LinearAlgebra.Matrix.GrenetPermanent
 public import Complexity.Foundations.LinearAlgebra.Matrix.HessianDeterminant
 public import Complexity.Foundations.LinearAlgebra.Matrix.HessianPermanent
+public import Complexity.Foundations.LinearAlgebra.Matrix.Hyperplane
 public import Complexity.Foundations.LinearAlgebra.Matrix.IsotropicPosition
 public import Complexity.Foundations.LinearAlgebra.Matrix.Kronecker
 public import Complexity.Foundations.LinearAlgebra.Matrix.Laplacian
@@ -4763,6 +4770,7 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.PartialDerivatives
 public import Complexity.Foundations.LinearAlgebra.Matrix.PilotCorrection
 public import Complexity.Foundations.LinearAlgebra.Matrix.PowPerturbation
 public import Complexity.Foundations.LinearAlgebra.Matrix.Rank
+public import Complexity.Foundations.LinearAlgebra.Matrix.RankSupport
 public import Complexity.Foundations.LinearAlgebra.Matrix.RectPermanent
 public import Complexity.Foundations.LinearAlgebra.Matrix.Rigidity
 public import Complexity.Foundations.LinearAlgebra.Matrix.Rigidity.TotallyRegular
