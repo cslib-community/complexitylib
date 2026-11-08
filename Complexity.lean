@@ -1511,9 +1511,11 @@ public import Complexity.Computability.Communication.Lifting.Partition
 public import Complexity.Computability.Communication.Lifting.Simulation
 public import Complexity.Computability.Communication.NOF.Cube
 public import Complexity.Computability.Communication.NOF.Discrepancy
+public import Complexity.Computability.Communication.NOF.ExactlyN
 public import Complexity.Computability.Communication.NOF.GeneralizedInnerProduct
 public import Complexity.Computability.Communication.NOF.Protocol
 public import Complexity.Computability.Communication.NOF.Randomized
+public import Complexity.Computability.Communication.NOF.Transcript
 public import Complexity.Computability.Communication.NOF.TwoParty
 public import Complexity.Computability.Communication.Newman
 public import Complexity.Computability.Communication.Nondeterministic.Basic
