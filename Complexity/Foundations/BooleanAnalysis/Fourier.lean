@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate (Mathlib, beside Analysis/Fourier/FiniteAbelian)
+-- upstream: candidate
 
 public import Complexity.Foundations.Data.BitString.Parity
 public import Complexity.Foundations.Data.BitString.Sign

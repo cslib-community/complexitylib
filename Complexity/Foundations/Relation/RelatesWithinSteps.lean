@@ -5,7 +5,7 @@ Authors: Bolton Bailey, Samuel Schlesinger
 -/
 
 module
--- upstream: candidate (Mathlib, Logic/Relation)
+-- upstream: candidate
 
 public import Complexity.Init
 public import Cslib.Foundations.Relation.RelatesInSteps

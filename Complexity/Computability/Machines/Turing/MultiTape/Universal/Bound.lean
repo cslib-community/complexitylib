@@ -78,7 +78,7 @@ lemma write_le {e : Key × Act} (he : e ∈ d.table) {ta : TapeAct} (hta : ta �
   omega
 
 -- vendored: `q₀_le`, `tapes_le` and `table_le` are public for `Classes/TimeSpace/Speedup` and
--- `Universal/WindowedBound`.
+-- `Universal/WindowedBound`; keep them public when resynchronizing.
 /-- The initial state of a description is within its length. -/
 public lemma q₀_le : d.q₀ ≤ descLen d := by
   simp only [descLen, eDesc_apply, length_encPair, encUnary_apply, List.length_replicate]; omega

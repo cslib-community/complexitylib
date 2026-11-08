@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate (Mathlib, Data/Nat/Choose/Central)
+-- upstream: candidate
 
 public import Complexity.Init
 public import Complexity.Foundations.Data.Nat.Choose.Central

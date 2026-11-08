@@ -5,7 +5,7 @@ Authors: Karn Seth, Samuel Schlesinger
 -/
 
 module
--- upstream: candidate (Matrix.toeplitz to Mathlib, beside LinearAlgebra/Matrix/Circulant)
+-- upstream: candidate
 
 public import Complexity.Foundations.LinearAlgebra.Matrix.Toeplitz
 public import Complexity.Probability.PairwiseIndependentHash.Affine
