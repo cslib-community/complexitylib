@@ -8,6 +8,7 @@ module
 -- upstream: candidate (Mathlib, `Mathlib/Computability/RE.lean`)
 
 public import Complexity.Init
+public import Mathlib.Computability.PartrecCode
 public import Mathlib.Computability.RE
 
 /-!
@@ -21,7 +22,8 @@ analogues of Mathlib's `PrimrecPred.forall_lt` and `PrimrecPred.exists_lt`: a bo
 the parameter, over a predicate decidable in the parameter and the bound variable together.
 Unbounded existential quantification of a computable predicate gives an r.e. predicate
 (`ComputablePred.rePred_exists`), and r.e. predicates are closed under substitution of computable
-functions (`REPred.comp`).
+functions (`REPred.comp`). A predicate is r.e. exactly when it is the domain of a code of
+`Nat.Partrec.Code`, evaluated at the encoded argument (`rePred_iff_exists_code`).
 
 ## Main results
 
@@ -31,6 +33,7 @@ functions (`REPred.comp`).
 * `ComputablePred.forall_lt`, `ComputablePred.exists_lt`: bounded quantification.
 * `ComputablePred.rePred_exists`: unbounded existential quantification gives an r.e. predicate.
 * `REPred.comp`: substitution of a computable function into an r.e. predicate.
+* `rePred_iff_exists_code`: r.e. predicates are the domains of codes.
 -/
 
 public section
@@ -145,3 +148,13 @@ end ComputablePred
 theorem REPred.comp {α β : Type*} [Primcodable α] [Primcodable β] {p : β → Prop}
     (hp : REPred p) {f : α → β} (hf : Computable f) : REPred fun a => p (f a) :=
   Partrec.comp hp hf
+
+/-- A predicate is r.e. exactly when it is the domain of a code: `p a` holds iff the code `c`
+halts on `encode a`. -/
+theorem rePred_iff_exists_code {α : Type*} [Primcodable α] {p : α → Prop} :
+    REPred p ↔ ∃ c : Nat.Partrec.Code, ∀ a, p a ↔ (c.eval (Encodable.encode a)).Dom := by
+  refine ⟨fun hp => ?_, fun ⟨c, hc⟩ => ?_⟩
+  · obtain ⟨c, hc⟩ := Nat.Partrec.Code.exists_code.mp hp
+    exact ⟨c, fun a => by simp [hc, Encodable.encodek, Part.assert]⟩
+  · exact ((Nat.Partrec.Code.eval_part.comp (Computable.const c) Computable.encode).dom_re).of_eq
+      fun a => (hc a).symm
