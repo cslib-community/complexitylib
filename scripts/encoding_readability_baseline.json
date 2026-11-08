@@ -147,26 +147,11 @@
  "Complexity/Computability/PolyTime/BitString/InitialTestsSearch.lean": {
   "encPair encUnary (encPair encUnary encUnary)": 3
  },
- "Complexity/Computability/PolyTime/BooleanAnalysis/SparsePolyCounter.lean": {
-  "encList (encList (encList encNat))": 4,
-  "encPair ?1 (encList encBits)": 3,
-  "encPair encUnary (encList (encList (encList encNat)))": 9
- },
  "Complexity/Computability/PolyTime/CNF/BranchedSparseCNFCounter.lean": {
   "encPair (encPair encUnit encUnary) encCNF": 6
  },
- "Complexity/Computability/PolyTime/CNF/GreedyParityContext.lean": {
-  "encPair ?1 (encList encBits)": 5
- },
  "Complexity/Computability/PolyTime/CNF/GreedyParitySearch.lean": {
   "encList (encPair encUnary encBool)": 4
- },
- "Complexity/Computability/PolyTime/CNF/SparseCNFLeafCounter.lean": {
-  "encPair encUnary (encList (encList (encList encNat)))": 9
- },
- "Complexity/Computability/PolyTime/CNF/SparsePolyCompile.lean": {
-  "encList (encList (encList encNat))": 6,
-  "encList (encList encNat)": 8
  },
  "Complexity/Computability/PolyTime/CSP/ToCNF.lean": {
   "encList (encList (encPair ?1 encBool))": 3
@@ -185,28 +170,8 @@
  "Complexity/Computability/PolyTime/GreedyLabelSchedule.lean": {
   "encPair (encList (encList encNat)) (encList (encList encNat))": 3
  },
- "Complexity/Computability/PolyTime/JetArray.lean": {
-  "encList (encList encIntBin)": 21,
-  "encPair (encPair (encPair encUnary encUnary) (encList (encList encIntBin))) (encList (encList encIntBin))": 3,
-  "encPair (encPair encUnary encUnary) (encList (encList encIntBin))": 3
- },
- "Complexity/Computability/PolyTime/LinearAlgebra/BooleanMeasurements.lean": {
-  "encList (encList encIntBin)": 6
- },
- "Complexity/Computability/PolyTime/LinearAlgebra/CopyPlacement.lean": {
-  "encList (encList encIntBin)": 6,
-  "encList (encPair encNat encNat)": 6
- },
  "Complexity/Computability/PolyTime/LinearAlgebra/ExchangeReplacement.lean": {
   "encPair (encList encNat) (encList encNat)": 3
- },
- "Complexity/Computability/PolyTime/LinearAlgebra/ReplacementDesignBuilder.lean": {
-  "encList (encList encIntBin)": 4,
-  "encList (encList encNat)": 9,
-  "encList (encPair encNat encNat)": 3
- },
- "Complexity/Computability/PolyTime/SparseMonomialJet.lean": {
-  "encList (encList encIntBin)": 7
  },
  "Complexity/Computability/Probabilistic/Memoize.lean": {
   "encList (encPair ?1 ?2)": 4
