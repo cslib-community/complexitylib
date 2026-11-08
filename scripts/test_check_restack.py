@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import check_restack  # noqa: E402
@@ -297,6 +298,89 @@ class RestackTests(unittest.TestCase):
         code, out = self.check(approved, dishonest)
         self.assertEqual(code, 1, out)
         self.assertIn("B.lean", out)
+
+    def test_git_config_variable_cannot_hide_a_configured_driver(self) -> None:
+        # `GIT_CONFIG` redirects only `git config`, so the driver listing would miss `keep`.
+        self.on_main({".gitattributes": "Complexity.lean merge=union\n*.txt merge=keep\n",
+                      "notes.txt": "a\nb\nc\n"})
+        approved = self.feature({"notes.txt": "a\nB\nc\n"})
+        self.on_main({"notes.txt": "a\nb\nc\nd\n"})
+        new = self.merge_main({"notes.txt": "a\nb\nc\nd\n"})
+        self.git("config", "merge.keep.driver", "true")
+        with mock.patch.dict(os.environ, {"GIT_CONFIG": os.devnull}):
+            code, out = self.check(approved, new)
+        self.assertEqual(code, 1, out)
+        self.assertIn("notes.txt", out)
+
+    def test_configured_driver_shadowing_a_builtin_is_refused(self) -> None:
+        approved = self.feature()
+        self.on_main({"Other.lean": "def o := 0\n"})
+        new = self.merge_main()
+        for name in ("union", "text"):
+            self.git("config", f"merge.{name}.driver", "true")
+            code, out = self.check(approved, new)
+            self.assertEqual(code, 2, out)
+            self.assertIn("built-in", out)
+            self.git("config", "--unset", f"merge.{name}.driver")
+
+    def grafted_history(self) -> tuple[str, str, str, str]:
+        """An approved PR, `main`'s tip M, a sibling Y of M that also weakens `Lib.lean`, and a new
+        head merging Y. Grafting Y under M makes Y the merge base, so its edit looks like `main`'s."""
+        approved = self.feature({"B.lean": "theorem b : True := trivial\n"})
+        main = self.on_main({"Other.lean": "def o := 0\n"})
+        self.git("checkout", "-q", "-b", "evil", "main^")
+        sibling = self.commit("evil", {"Other.lean": "def o := 0\n",
+                                       "Lib.lean": "theorem weakened : True := by sorry\n"})
+        self.git("checkout", "-q", "feature")
+        self.git("merge", "-q", "--no-edit", "evil")
+        return approved, main, sibling, self.git("rev-parse", "HEAD")
+
+    def test_grafts_cannot_move_the_merge_base(self) -> None:
+        approved, main, sibling, new = self.grafted_history()
+        self.assertEqual(self.check(approved, new)[0], 1)
+        grafts = self.root / ".git" / "info" / "grafts"
+        grafts.parent.mkdir(exist_ok=True)
+        grafts.write_text(f"{main} {sibling}\n")
+        code, out = self.check(approved, new)
+        self.assertEqual(code, 1, out)
+        self.assertIn("Lib.lean", out)
+        grafts.rename(self.root / ".git" / "grafts-elsewhere")
+        with mock.patch.dict(os.environ, {"GIT_GRAFT_FILE": str(self.root / ".git" / "grafts-elsewhere")}):
+            code, out = self.check(approved, new)
+        self.assertEqual(code, 1, out)
+
+    def test_shallow_repository_is_refused(self) -> None:
+        approved = self.feature()
+        self.on_main({"Other.lean": "def o := 0\n"})
+        self.git("checkout", "-q", "-b", "evil", "main")
+        sibling = self.commit("revert main", {"Other.lean": None})
+        self.git("checkout", "-q", "feature")
+        self.git("merge", "-q", "--no-edit", "evil")
+        new = self.git("rev-parse", "HEAD")
+        self.assertEqual(self.check(approved, new)[0], 1)
+        shallow = self.root / ".git" / "elsewhere-shallow"
+        shallow.write_text(f"{sibling}\n")
+        # A `GIT_SHALLOW_FILE` is ignored, so the true history decides.
+        with mock.patch.dict(os.environ, {"GIT_SHALLOW_FILE": str(shallow)}):
+            code, out = self.check(approved, new)
+        self.assertEqual(code, 1, out)
+        shallow.rename(self.root / ".git" / "shallow")
+        code, out = self.check(approved, new)
+        self.assertEqual(code, 2, out)
+        self.assertIn("shallow", out)
+
+    def test_rename_limit_cannot_hide_a_rename_delete_conflict(self) -> None:
+        axiom = "".join(f"theorem t{i} : {i} = {i} := rfl\n" for i in range(40))
+        self.on_main({"Axiom.lean": axiom})
+        approved = self.feature({"Axiom.lean": None})
+        self.on_main({"Axiom.lean": None, "Core/Kept.lean": axiom + "theorem extra : True := trivial\n",
+                      "Unrelated.lean": "def u := 0\n"})
+        # The restack keeps the renamed file, dropping the PR's deletion.
+        new = self.merge_main({"Core/Kept.lean": axiom + "theorem extra : True := trivial\n"})
+        self.git("config", "merge.renameLimit", "1")
+        code, out = self.check(approved, new)
+        self.assertEqual(code, 1, out)
+        self.assertIn("Core/Kept.lean", out)
 
     # The bibliography merges entry by entry, as `scripts/resolve_bib_conflict.py` does.
 

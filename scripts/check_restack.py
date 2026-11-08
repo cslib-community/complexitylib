@@ -22,11 +22,14 @@ not reviewed in this PR, and they would carry the approval if the lower PR never
 
 The replay uses the attributes in the new head's base commit (`--attr-source`) and no others: it
 ignores `core.attributesFile` and the system file, and refuses to run when `info/attributes` sets
-anything. It pins the merge settings, runs the tracked `bibkeys` driver of `references.bib` as this
-checkout's `scripts/resolve_bib_conflict.py`, makes every other configured merge driver report a
-conflict, and ignores replace refs, so local Git configuration cannot change its result. A
-`references.bib` merge written by `scripts/resolve_bib_conflict.py` therefore passes when it keeps
-the PR's entries.
+anything. It pins the merge settings, including the rename limit. It runs the tracked `bibkeys`
+driver of `references.bib` as this checkout's `scripts/resolve_bib_conflict.py`, makes every other
+configured merge driver report a conflict, and refuses a configured driver that would shadow a
+built-in one (`text`, `binary`, `union`). History is read without replace refs, grafts or the
+commit-graph file, and a shallow repository is refused. Local Git configuration and repository
+state therefore cannot change the result. A `references.bib` merge written by
+`scripts/resolve_bib_conflict.py`, with nothing else changed, passes. Run the script from an
+up-to-date `main` checkout, not from the PR, since the replay runs this checkout's code.
 
 Exit status: 0 when NEW is the replayed approved change; 1 when it differs (the differing paths
 and diffs are printed); 2 on a usage or Git error, including an approved change that is empty
@@ -57,7 +60,12 @@ MAX_DIFF_LINES = 60
 # Fixed merge settings, so the replay does not depend on the caller's Git configuration.
 MERGE_CONFIG = ("-c", "merge.conflictStyle=merge", "-c", "merge.renames=true",
                 "-c", "merge.directoryRenames=conflict", "-c", "merge.renormalize=false",
-                "-c", "merge.default=text")
+                "-c", "merge.default=text", "-c", "merge.renameLimit=7000")
+# Built-in drivers; a configured driver with one of these names would replace it.
+BUILTIN_DRIVERS = frozenset({"text", "binary", "union"})
+# Removed from the environment: `GIT_CONFIG` redirects only `git config`, so it would hide
+# configured drivers from `driver_config` while `merge-tree` still ran them.
+UNSET_VARIABLES = ("GIT_ATTR_SOURCE", "GIT_CONFIG", "GIT_SHALLOW_FILE")
 # The driver that `.gitattributes` names for `references.bib`, and this checkout's implementation.
 BIB_DRIVER = "bibkeys"
 BIB_RESOLVER = ROOT / "scripts" / "resolve_bib_conflict.py"
@@ -69,15 +77,16 @@ class GitError(Exception):
 
 
 def environment() -> dict[str, str]:
-    """The caller's environment without system attributes, attribute sources or replace refs."""
-    env = {key: value for key, value in os.environ.items() if key != "GIT_ATTR_SOURCE"}
-    env.update(GIT_ATTR_NOSYSTEM="1", GIT_NO_REPLACE_OBJECTS="1")
+    """The caller's environment without system attributes, replace refs or grafts."""
+    env = {key: value for key, value in os.environ.items() if key not in UNSET_VARIABLES}
+    env.update(GIT_ATTR_NOSYSTEM="1", GIT_NO_REPLACE_OBJECTS="1", GIT_GRAFT_FILE=os.devnull)
     return env
 
 
 def git(root: Path, *args: str, ok: tuple[int, ...] = (0,)) -> subprocess.CompletedProcess[bytes]:
-    result = subprocess.run(["git", "-C", str(root), *args], capture_output=True,
-                            env=environment())
+    # The commit-graph file is a cache of parents that a local edit could falsify.
+    result = subprocess.run(["git", "-c", "core.commitGraph=false", "-C", str(root), *args],
+                            capture_output=True, env=environment())
     if result.returncode not in ok:
         message = result.stderr.decode("utf-8", "replace").strip()
         raise GitError(f"git {' '.join(args)}: {message}")
@@ -130,6 +139,9 @@ def driver_config(root: Path) -> list[str]:
     names = {key[len("merge."):-len(".driver")]
              for key in listed.stdout.decode("utf-8", "surrogateescape").split("\0") if key}
     names.discard(BIB_DRIVER)
+    if names & BUILTIN_DRIVERS:
+        raise GitError(f"configured merge drivers {', '.join(sorted(names & BUILTIN_DRIVERS))} "
+                       "would replace Git's built-in ones; run the check in another clone")
     if any("=" in name or "\n" in name for name in names):
         raise GitError("a configured merge driver name contains `=` or a newline, so the replay "
                        "cannot disable it; run the check in another clone")
@@ -197,6 +209,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     root = args.root
     try:
+        if out(root, "rev-parse", "--is-shallow-repository") == "true":
+            raise GitError("the repository is shallow, so merge bases may be wrong; "
+                           "run `git fetch --unshallow origin` first")
         approved = resolve(root, args.approved)
         new = resolve(root, args.new)
         base = resolve(root, args.base)

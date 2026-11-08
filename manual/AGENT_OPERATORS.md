@@ -107,8 +107,9 @@ When the queue ejects a PR whose only conflict is in `references.bib`, the coord
 can run `python3 scripts/resolve_bib_conflict.py origin/<branch>` after `git fetch origin` to
 write the merge with `main` instead of sending the PR back. It refuses any other conflict and
 pushes nothing. Pushing its commit to the PR branch is a deliberate step by the author or a
-coordinator acting for them, who records the push. Whether existing approval carries forward is
-decided by `scripts/check_restack.py`, as [Restacks](../AGENTS.md#restacks) describes.
+coordinator acting for them, who records the push. Existing approval carries forward when
+`scripts/check_restack.py` passes and CI passes at the new head, as
+[Restacks](../AGENTS.md#restacks) describes.
 
 The manuals are part of this workflow. Changes to library usage belong in the Operator's Manual;
 changes to roles, delegation, review or human direction may affect this Agent Operator's Manual.

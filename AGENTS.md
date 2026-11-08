@@ -475,7 +475,8 @@ and passes only when the new head's tree is exactly that replay. The one excepti
 `mk_all` import aggregates may order their lines differently, since CI's `mk_all --check` pins the
 order. A conflict in the replay, and any other difference, fails it. The replay merges
 `references.bib` entry by entry, as `scripts/resolve_bib_conflict.py` does, so a bibliography
-merge written by that script passes when it keeps the PR's entries. Run `git fetch origin` first.
+merge written by that script, with nothing else changed, passes. Run the script from an up-to-date
+`main` checkout after `git fetch origin`, not from the PR's branch, which could change the script.
 An approval given while a PR is based on another branch also names that branch's head, and the
 check then needs `--approved-base <that head>`. Without it, the lower branch's changes, which this
 review did not cover, would carry the approval if the lower PR never landed. Anyone, including
