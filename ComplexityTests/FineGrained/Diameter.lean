@@ -12,7 +12,7 @@ import Complexity.Computability.Complexity.FineGrained.Diameter
 The graph of the reduction on concrete instances: its vertices and edges on one vector per list,
 on the instance with no vectors, and on vectors of different lengths; its diameter, three on an
 orthogonal pair and two on a non-orthogonal pair and on the empty instance; the parser on an
-encoded instance; the separating set of the corollary; and the axioms of the headline theorems.
+encoded instance; and the separating set of the corollaries.
 -/
 
 namespace ComplexityTests.FineGrained.Diameter
@@ -85,24 +85,12 @@ example : (∀ G : Graph, G.induced.ediam ≤ 2 → G ∈ {G : Graph | G.induced
     rw [h] at h₂
     exact absurd h₂ (by decide)⟩
 
-/-- Under `OVH`, the size form excludes deciders within time `(n + m) ^ 1.5`. -/
+/-- Under `OVH`, the size form excludes deciders within time `(n + m) ^ 1.5 + L`. -/
 example (h : OVH) : ¬DecidableInTimeO {G : Graph | G.induced.ediam ≤ 2} encGraph
-    fun G => ((G.1.length + G.2.length : ℕ) : ℝ) ^ (2 - (1 / 2 : ℝ)) :=
+    fun G => ((G.1.length + G.2.length : ℕ) : ℝ) ^ (2 - (1 / 2 : ℝ)) + (encGraph G).length :=
   not_decidableInTimeO_diameter_size_of_OVH h (by norm_num) (fun _ h => h) fun G h hG => by
     have h₂ : G.induced.ediam ≤ 2 := hG
     rw [h] at h₂
     exact absurd h₂ (by decide)
-
-/-! ### Axioms -/
-
-/-- info: 'Cslib.Complexity.OV.ediam_toDiameter' depends on axioms: [propext, Classical.choice,
-Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.OV.ediam_toDiameter
-
-/-- info: 'Cslib.Complexity.not_decidableInTimeO_diameter_of_OVH' depends on axioms: [propext,
-Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms Cslib.Complexity.not_decidableInTimeO_diameter_of_OVH
 
 end ComplexityTests.FineGrained.Diameter

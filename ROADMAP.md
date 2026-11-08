@@ -749,10 +749,12 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   Further fine-grained reductions and consequences of ETH, SETH and other named hypotheses.
 - **Reductions from orthogonal vectors**
   ([#3037](https://github.com/cslib-community/complexitylib/issues/3037)): diameter two versus
-  three is done (`FineGrained.Diameter`). Remaining: the quadratic dynamic programs for longest
-  common subsequence and edit distance, and their `OV` hardness by alignment gadgets
-  (Backurs–Indyk; Abboud–Backurs–Vassilevska Williams; Bringmann–Künnemann); the low-dimension
-  form of `OVH` with sparsification.
+  three is done for general `m` (`FineGrained.Diameter`, the `OV` form of Roditty–Vassilevska
+  Williams Theorem 9). Remaining: the `(3/2 - ε)`-approximation corollary for diameter; the
+  sparse-graph `m ^ (2 - ε)` statement, which needs the low-dimension form of `OVH` (dimension
+  `c log N`, from `SETH` with sparsification); the quadratic dynamic programs for longest common
+  subsequence and edit distance, and their `OV` hardness by alignment gadgets (Backurs–Indyk;
+  Abboud–Backurs–Vassilevska Williams; Bringmann–Künnemann).
 
 ### Approximation and PCP
 

@@ -26,11 +26,15 @@ import Mathlib.Data.List.GetD
 /-!
 # Orthogonal vectors hardness of diameter two versus three
 
-Roditty and Vassilevska Williams [RodittyVassilevskaWilliams2013] showed that, under the strong
-exponential time hypothesis, no algorithm distinguishes sparse graphs of diameter two from sparse
-graphs of diameter three within time `m ^ (2 - ε)` on `m` edges. Their reduction, composed with
-the split-and-list reduction of Williams [Williams2005], is a reduction from orthogonal vectors,
-formalized here.
+Roditty and Vassilevska Williams [RodittyVassilevskaWilliams2013] (Section 4, Theorem 9) showed
+that a procedure distinguishing graphs of diameter two from graphs of diameter three within time
+`m ^ (2 - ε)` on `m` edges solves CNF-SAT on `n` variables within time `2 ^ (n (1 - ε / 2))` times
+a polynomial. Their graph has a vertex for each partial assignment of either half of the variables,
+a vertex for each clause, and two hubs; the clause vertices and the hubs form a clique. This module
+formalizes the orthogonal vectors form of that construction, factoring it through the split-and-list
+reduction of Williams [Williams2005]: partial assignments become vectors and clauses become
+coordinates. The clique on the coordinates is replaced by edges from both hubs to every coordinate,
+and two padding vertices are added.
 
 From lists `A` and `B` of `N` vectors of dimension `d`, the graph `Cslib.Complexity.OV.toDiameter`
 has a vertex for each vector, a vertex for each coordinate, two hubs `0` and `1`, and two
@@ -43,20 +47,29 @@ not orthogonal. So the graph has diameter three when the instance has an orthogo
 diameter two otherwise (`Cslib.Complexity.OV.ediam_toDiameter`); the padding vertices keep the
 diameter at two on instances with no vectors.
 
-The graph has `O(N d)` vertices and edges. It is written by a single pass over the encoded
-instance, a finite automaton with two counters (`Cslib.Complexity.OV.parseRun`), the coordinate and
-the number of the current vector, streaming the vertices and edges of each bit to the output. The
-counters take `O(log L)` bits on an encoded instance of length `L`, so the reduction runs within
-time `L (log L) ^ D` (`Cslib.Complexity.OV.exists_computableInO_toDiameter`). Then a procedure
+The graph has `O(N d)` vertices and edges. Its vertex list and its edge list are each written by
+one pass over the encoded instance, a finite automaton with two counters
+(`Cslib.Complexity.OV.parseRun`), the coordinate and the number of the current vector, streaming
+the outputs of each bit. The counters take `O(log L)` bits on an encoded instance of length `L`, so
+the two streams, paired, compute the reduction within time `L (log L) ^ D`
+(`Cslib.Complexity.OV.exists_computableInO_toDiameter`). Then a procedure
 separating diameter two from diameter three within time `L ^ (2 - ε)`, on graphs encoded in length
 `L`, decides `OV` within time `N ^ (2 - ε')` times a polynomial in the dimension
 (`Cslib.Complexity.DecidableInTimeO.decidableInTimeO_OV_of_diameter`), which the orthogonal
 vectors hypothesis excludes (`Cslib.Complexity.not_decidableInTimeO_diameter_of_OVH`).
 
-The lower bound is stated in the length `L` of the encoded graph, and also in its number `n + m`
-of listed vertices and edges, which is at most `L`
+The lower bound is stated in the length `L` of the encoded graph. A time bound in the number
+`n + m` of listed vertices and edges alone would be vacuous: vertex labels are unbounded, and a
+machine whose time is bounded in `n + m` cannot read long labels, so it cannot tell a four-cycle
+from a path whose last edge leaves the declared vertices. The size form therefore charges the input
+length as well, with the bound `(n + m) ^ (2 - ε) + L`
 (`Cslib.Complexity.not_decidableInTimeO_diameter_size_of_OVH`). On the graphs of the reduction,
-vertex labels take `O(log (N d))` bits, so the two measures differ by a logarithmic factor.
+labels take `O(log (N d))` bits, so `L` and `n + m` differ by a logarithmic factor.
+
+The graphs of the reduction have `Θ(N d)` edges for an unrestricted dimension `d`, so this is
+Theorem 9 for general `m`. The statement for sparse graphs in the introduction of
+[RodittyVassilevskaWilliams2013] is not covered: it needs dimension `c log N`, that is the
+low-dimension form of the orthogonal vectors hypothesis, which this library does not state.
 
 **The hypothesis is unresolved.** This library neither proves nor refutes `OVH`; it refutes
 `SETH` (`Cslib.Complexity.CountingNativeEndpoint.not_SETH`), so the hardness from `SETH`, through
@@ -79,7 +92,7 @@ fast `OV` decider is unconditional.
   from three within time `L ^ (2 - ε)` decides `OV` within time `N ^ (2 - min ε 1 / 2) (d + 1) ^ 2`.
 * `Cslib.Complexity.not_decidableInTimeO_diameter_of_OVH`,
   `Cslib.Complexity.not_decidableInTimeO_diameter_size_of_OVH`: under `OVH`, diameter two is not
-  separated from diameter three in subquadratic time.
+  separated from diameter three within time `L ^ (2 - ε)`, nor within `(n + m) ^ (2 - ε) + L`.
 
 ## References
 
@@ -185,7 +198,8 @@ end Diameter
 
 open Diameter
 
-/-- **The graph of an orthogonal vectors instance** [RodittyVassilevskaWilliams2013]: a vertex for
+/-- **The graph of an orthogonal vectors instance**, the orthogonal vectors form of the graph of
+Theorem 9 of [RodittyVassilevskaWilliams2013]: a vertex for
 each vector and each coordinate, the hubs `0` and `1` and the padding vertices `2` and `3`. The hub
 `0` is adjacent to the vectors of the first list, the hub `1` to those of the second, both hubs to
 each other, to the coordinates and to the padding vertices, and a vector to the coordinates where it
@@ -914,10 +928,11 @@ open OV
 
 /-! ### The conditional lower bound -/
 
-/-- **Separating diameter two from three decides orthogonal vectors**
-[RodittyVassilevskaWilliams2013]: a procedure accepting the graphs of diameter at most two and
-rejecting those of diameter three, within time `L ^ (2 - ε)` on graphs encoded in length `L`,
-decides `OV` within time `N ^ (2 - min ε 1 / 2) (d + 1) ^ 2` on `N` vectors of dimension `d`. -/
+/-- **Separating diameter two from three decides orthogonal vectors**, the orthogonal vectors form
+of Theorem 9 of [RodittyVassilevskaWilliams2013]: a procedure accepting the graphs of diameter at
+most two and rejecting those of diameter three, within time `L ^ (2 - ε)` on graphs encoded in
+length `L`, decides `OV` within time `N ^ (2 - min ε 1 / 2) (d + 1) ^ 2` on `N` vectors of
+dimension `d`. -/
 theorem DecidableInTimeO.decidableInTimeO_OV_of_diameter {ε : ℝ} (hε : 0 < ε) {S : Set Graph}
     (hS₂ : ∀ G : Graph, G.induced.ediam ≤ 2 → G ∈ S)
     (hS₃ : ∀ G : Graph, G.induced.ediam = 3 → G ∉ S)
@@ -1076,34 +1091,51 @@ theorem not_decidableInTimeO_diameter_of_OVH (hOVH : OVH) {ε : ℝ} (hε : 0 < 
 
 /-- **Orthogonal vectors hardness of diameter two versus three, in the size of the graph**: under
 the orthogonal vectors hypothesis, for every `ε > 0`, no procedure accepting the graphs of diameter
-at most two and rejecting those of diameter three runs within time `(n + m) ^ (2 - ε)` on graphs
-listing `n` vertices and `m` edges. -/
+at most two and rejecting those of diameter three runs within time `(n + m) ^ (2 - ε) + L` on
+graphs listing `n` vertices and `m` edges, encoded in length `L`. The term `L` lets the procedure
+read its input: without it the statement would hold without the hypothesis, since a time bound in
+`n + m` alone does not allow reading long vertex labels. -/
 theorem not_decidableInTimeO_diameter_size_of_OVH (hOVH : OVH) {ε : ℝ} (hε : 0 < ε)
     {S : Set Graph} (hS₂ : ∀ G : Graph, G.induced.ediam ≤ 2 → G ∈ S)
     (hS₃ : ∀ G : Graph, G.induced.ediam = 3 → G ∉ S) :
-    ¬DecidableInTimeO S encGraph fun G => ((G.1.length + G.2.length : ℕ) : ℝ) ^ (2 - ε) := by
+    ¬DecidableInTimeO S encGraph fun G =>
+      ((G.1.length + G.2.length : ℕ) : ℝ) ^ (2 - ε) + (encGraph G).length := by
   intro hS
   refine not_decidableInTimeO_diameter_of_OVH hOVH (lt_min hε one_pos) hS₂ hS₃
-    (hS.mono 1 (fun G => ?_) (fun G => Real.rpow_nonneg (Nat.cast_nonneg _) _))
+    (hS.mono 2 (fun G => ?_) (fun G => Real.rpow_nonneg (Nat.cast_nonneg _) _))
   have hle : ((G.1.length + G.2.length : ℕ) : ℝ) ≤ (encGraph G).length := by
     exact_mod_cast G.length_vertices_add_length_edges_le_encGraph
-  simp only [Nat.cast_one, one_mul]
-  rcases Nat.eq_zero_or_pos (G.1.length + G.2.length) with h0 | h0
-  · rw [h0, Nat.cast_zero]
-    have h₁ : (0 : ℝ) ^ (2 - ε) ≤ 1 := by
-      by_cases h2 : 2 - ε = 0
-      · rw [h2, Real.rpow_zero]
-      · rw [Real.zero_rpow h2]
-        exact zero_le_one
-    have h₂ : (0 : ℝ) ≤ ((encGraph G).length : ℝ) ^ (2 - min ε 1) :=
-      Real.rpow_nonneg (Nat.cast_nonneg _) _
-    linarith
-  · have h1 : (1 : ℝ) ≤ ((G.1.length + G.2.length : ℕ) : ℝ) := by exact_mod_cast h0
-    have h₁ : ((G.1.length + G.2.length : ℕ) : ℝ) ^ (2 - ε) ≤
-        ((encGraph G).length : ℝ) ^ (2 - min ε 1) :=
-      (Real.rpow_le_rpow_of_exponent_le h1 (by linarith [min_le_left ε 1])).trans
-        (Real.rpow_le_rpow (by linarith) hle (by linarith [min_le_right ε 1]))
-    linarith
+  have hL : (1 : ℝ) ≤ (encGraph G).length := by
+    have : 0 < (encGraph G).length := by
+      rw [encGraph, length_encPair]
+      omega
+    exact_mod_cast this
+  have hpos : (0 : ℝ) ≤ ((encGraph G).length : ℝ) ^ (2 - min ε 1) :=
+    Real.rpow_nonneg (Nat.cast_nonneg _) _
+  -- the size term
+  have hA : ((G.1.length + G.2.length : ℕ) : ℝ) ^ (2 - ε) ≤
+      ((encGraph G).length : ℝ) ^ (2 - min ε 1) + 1 := by
+    rcases Nat.eq_zero_or_pos (G.1.length + G.2.length) with h0 | h0
+    · rw [h0, Nat.cast_zero]
+      have h₁ : (0 : ℝ) ^ (2 - ε) ≤ 1 := by
+        by_cases h2 : 2 - ε = 0
+        · rw [h2, Real.rpow_zero]
+        · rw [Real.zero_rpow h2]
+          exact zero_le_one
+      linarith
+    · have h1 : (1 : ℝ) ≤ ((G.1.length + G.2.length : ℕ) : ℝ) := by exact_mod_cast h0
+      have h₁ : ((G.1.length + G.2.length : ℕ) : ℝ) ^ (2 - ε) ≤
+          ((encGraph G).length : ℝ) ^ (2 - min ε 1) :=
+        (Real.rpow_le_rpow_of_exponent_le h1 (by linarith [min_le_left ε 1])).trans
+          (Real.rpow_le_rpow (by linarith) hle (by linarith [min_le_right ε 1]))
+      linarith
+  -- the length term
+  have hB : ((encGraph G).length : ℝ) ≤ ((encGraph G).length : ℝ) ^ (2 - min ε 1) := by
+    have h := Real.rpow_le_rpow_of_exponent_le hL
+      (show (1 : ℝ) ≤ 2 - min ε 1 by linarith [min_le_right ε 1])
+    rwa [Real.rpow_one] at h
+  simp only [Nat.cast_ofNat]
+  linarith
 
 /-- **Diameter at most two is not decidable in subquadratic time under the orthogonal vectors
 hypothesis**, for graphs encoded in length `L`. -/
