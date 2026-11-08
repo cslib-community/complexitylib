@@ -119,8 +119,8 @@ into a deletion and an insertion keeps the cost, so the distance is the insertio
 @[simp] theorem indel_ins (b : α) : (indel : Costs α).ins b = 1 := rfl
 @[simp] theorem indel_sub (a b : α) : (indel : Costs α).sub a b = if a = b then 0 else 2 := rfl
 
-@[simp] theorem unit_sub_self (a : α) : (unit : Costs α).sub a a = 0 := by simp [unit]
-@[simp] theorem indel_sub_self (a : α) : (indel : Costs α).sub a a = 0 := by simp [indel]
+theorem unit_sub_self (a : α) : (unit : Costs α).sub a a = 0 := by simp [unit]
+theorem indel_sub_self (a : α) : (indel : Costs α).sub a a = 0 := by simp [indel]
 
 end Costs
 
