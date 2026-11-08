@@ -322,6 +322,30 @@ degree at most `1` in each variable, so over an integral domain any `S` with two
 perfect matching (not formalized). Run
 `scripts/build.sh ComplexityTests.EdmondsMatching`.
 
+For a general graph, import [Matching/Tutte.lean](../../Complexity/Algorithms/Matching/Tutte.lean).
+The graph is a Mathlib `G : SimpleGraph V` with `[DecidableRel G.Adj]` on a finite, linearly ordered
+`V`, and a perfect matching is `∃ M : G.Subgraph, M.IsPerfectMatching`. `tutteMatrix G` has one
+indeterminate per unordered pair, `X s(i, j)` at an edge with `i < j` and `-X s(i, j)` at an edge
+with `j < i`. `det_tutteMatrix_ne_zero_iff` is Tutte's matrix theorem, proved here over any
+nontrivial commutative ring (the sources state it over a field). For Tutte's combinatorial
+odd-component criterion use Mathlib's `SimpleGraph.tutte`. The randomized test uses `tutteEval G r` with `r : Sym2 V → R`. As in the bipartite case,
+`det_tutteEval_eq_zero` gives no false positives, `card_det_tutteEval_eq_zero_div_le` bounds false
+negatives by `|V| / |S|` over an integral domain, and `exists_det_tutteEval_ne_zero` finds detecting
+values in any `S` with more than `|V|` elements. Two reusable pieces sit underneath:
+`Matrix.det_eq_sum_even_cycleType_of_transpose_eq_neg` in
+[SkewDeterminant.lean](../../Complexity/Foundations/LinearAlgebra/Matrix/SkewDeterminant.lean)
+(odd cycles cancel in a skew-symmetric determinant, via `Equiv.Perm.reverseCycle` in
+[ReverseCycle.lean](../../Complexity/Foundations/GroupTheory/Perm/ReverseCycle.lean); an alternating
+matrix of odd order has determinant `0`), and `SimpleGraph.exists_isPerfectMatching_of_perm` in
+[PermMatching.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/PermMatching.lean) (a
+permutation along the edges with only even cycles gives a perfect matching). The
+[checked clients](../../ComplexityTests/TutteMatching.lean), a `module`, compute the determinant
+`r²` of a single edge and its `2 / 3` probability bound over `{0, 1, 2}`, extract and detect a
+perfect matching of `K₄` from the rotation of `Fin 4`, show that the triangle's Tutte matrix is
+singular at all values and that the star `K₁,₃` has the zero Tutte polynomial, and show that the
+zero-diagonal hypothesis is needed over `ZMod 2`. Run
+`scripts/build.sh ComplexityTests.TutteMatching`.
+
 To find the matching rather than only detect it, import
 [Matching/MVV.lean](../../Complexity/Algorithms/Matching/MVV.lean), the algebraic core of
 Mulmuley, Vazirani and Vazirani for bipartite graphs. `weightedEdmonds G w` is the Edmonds matrix
@@ -548,14 +572,35 @@ conditioned, which gives a coordinate won with probability at most `G.value`. Ru
 
 For Label Cover, import
 [LabelCover/Repetition.lean](../../Complexity/Computability/PCP/Approximation/LabelCover/Repetition.lean)
-and apply `LabelCoverRepetition.one_sub_unsatVal_pow_le hsimple hβγ hε k`. Its premises are that the
-instance is simple (`Graph.IsSimple`, decidable), that `2 ≤ |β| |γ|` and that `ε` is at most the
-unsatisfied value of the instance. The conclusion bounds the satisfied proportion of the `k`-fold
-repetition `LabelCoverRepetition.pow k g`. The bound does not require the edge list to be nonempty
-or well formed. The [Label Cover repetition clients](../../ComplexityTests/LabelCoverRepetition.lean)
-compute the numbering of a two-fold repetition, separate simple from non-simple instances, and
-bound the repetitions of an instance of value `1/2` by `(1 - (1/2)³ / 6000)^{k / 2}`. NP-hardness of
-small-soundness Label Cover is not yet derived
+and open `Cslib.PCP.Encoded`. For an instance `g : Graph (β → γ)` with `[Fintype β] [Fintype γ]`
+and `[DecidableEq γ]`, apply `LabelCoverRepetition.one_sub_unsatVal_pow_le hpar hβγ hε k`. Its
+premises are that the instance has no parallel edges (`hpar : g.NoParallelEdges`, decidable), that
+`2 ≤ Fintype.card β * Fintype.card γ`, and `hε : ε ≤ (g.toGraph projectionEval).unsatVal`. The
+conclusion bounds the satisfied proportion `1 - ((pow k g).toGraph projectionEval).unsatVal` of the
+`k`-fold repetition `LabelCoverRepetition.pow k g`. The bound does not require the edge list to be
+nonempty or well formed. The vertex numbers of the repetition grow like `(n + 1) ^ (2 ^ k)`
+(`LabelCoverRepetition.vertices_pow_le`), so its polynomial-time compilation holds for each fixed
+`k` only. The [Label Cover repetition clients](../../ComplexityTests/LabelCoverRepetition.lean)
+compute the numbering of a two-fold repetition, separate instances without parallel edges from
+instances with them, and bound the repetitions of an instance of value `1/2` by
+`(1 - (1/2)³ / 6000)^{k / 2}`.
+
+For a hardness result, import
+[LabelCover/SmallSoundness.lean](../../Complexity/Computability/PCP/Approximation/LabelCover/SmallSoundness.lean).
+`polyTimeReducible_GapTwoCSP_GapLabelCover_pow a b hab encA hε hε1 hk` reduces
+`GapTwoCSP α (1 - ε)` to Label Cover over `k`-tuples, for any finite alphabet `α` with two
+distinct symbols, `0 < ε ≤ 1` and `0 < k`. The soundness is
+`(1 - (ε / 2)³ / 6000)^{k / log₂ (|α|² |α|)}`. Apply `Graph.deloop` before
+`LabelCoverIncidence.reduce`: loop removal makes a binary CSP instance loopless without changing
+its value (`Graph.isLoopless_deloop`, `Graph.unsatVal_deloop`), and the incidence reduction of a
+loopless instance has no parallel edges (`LabelCoverIncidence.noParallelEdges_reduce`). Compose with a hard source through
+`PromiseProblem.NPHard.trans`, as `GapLabelCover_npHard_pow` does with `GapTwoCSP_npHard`, and
+weaken the soundness with `PromiseProblem.NPHard.mono`, as `exists_GapLabelCover_npHard` does. The
+[small-soundness clients](../../ComplexityTests/LabelCoverSmallSoundness.lean) remove a concrete
+loop, show that the incidence reduction of a loop has parallel edges and has none after loop
+removal, and instantiate both hardness theorems. Run
+`scripts/build.sh ComplexityTests.LabelCoverRepetition ComplexityTests.LabelCoverSmallSoundness`.
+Håstad's reductions from Label Cover remain open
 ([#886](https://github.com/cslib-community/complexitylib/issues/886)).
 
 ## Project a continuous Gaussian density
