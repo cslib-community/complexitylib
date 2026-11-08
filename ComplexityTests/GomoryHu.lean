@@ -167,6 +167,26 @@ example : ¬ IsGomoryHuTree (cutWeight W') (SimpleGraph.pathGraph 4) := by
 
 /-! ### Edge cases -/
 
+/-- The abstract theorem with values in `ℤ` rather than `ℕ`: the integer cut function of `W` is
+symmetric and submodular, so it has a Gomory–Hu tree. -/
+example : ∃ T : SimpleGraph (Fin 4), IsGomoryHuTree (fun X => (cutWeight W X : ℤ)) T :=
+  exists_isGomoryHuTree (fun X => by simp only [cutWeight_compl' hW])
+    (fun A B => by exact_mod_cast cutWeight_union_add_cutWeight_inter_le W A B)
+
+/-- `λ(0, 1) = 5 > 4 = λ(1, 3)`, so the minimum is attained twice: `λ(0, 3) = λ(1, 3)`. -/
+example : minCutBetween W 0 3 = minCutBetween W 3 1 := by
+  rw [minCutBetween_comm hW 0 3]
+  refine minCutBetween_eq_of_lt hW (by decide) ?_
+  have h13 : IsMinCutBetween (cutWeight W) 1 0 {1, 2, 3} := by
+    unfold IsMinCutBetween
+    decide
+  have h31 : IsMinCutBetween (cutWeight W) 3 1 {3} := by
+    unfold IsMinCutBetween
+    decide
+  rw [← ((isMinCutBetween_cutWeight_iff W).mp h31).2.2,
+    ← ((isMinCutBetween_cutWeight_iff W).mp h13).2.2]
+  decide
+
 /-- On a single vertex, the one-vertex tree is a Gomory–Hu tree of every set function. -/
 example (f : Finset (Fin 1) → ℕ) : IsGomoryHuTree f (SimpleGraph.pathGraph 1) :=
   ⟨SimpleGraph.isTree_pathGraph_add_one 0, fun u v huv => absurd (Subsingleton.elim u v) huv.ne⟩

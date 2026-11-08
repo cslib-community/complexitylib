@@ -14,10 +14,10 @@ public import Complexity.Algorithms.Lean.GomoryHu.Basic
 
 Every symmetric submodular set function `f : Finset V → β` on a nonempty finite ground set has a
 Gomory–Hu tree (cut-equivalent tree): a spanning tree on `V` such that for every tree edge `uv`, the
-side of `T - uv` containing `u` is a minimum `u`–`v` cut of `f` ([GomoryHu1961]; [Schrijver2003],
-Section 15.4). The cut function of an undirected graph with nonnegative edge weights is symmetric
-and submodular, so this covers the classical Gomory–Hu theorem; the proof uses only these two
-properties.
+side of `T - uv` containing `u` is a minimum `u`–`v` cut of `f`. Gomory and Hu ([GomoryHu1961]; see
+also [Schrijver2003], Section 15.4) prove this for the cut function of an undirected graph with
+nonnegative edge weights, which is symmetric and submodular. Their proof uses only these two
+properties, and the statement for symmetric submodular functions is its standard abstraction.
 
 ## Proof
 
@@ -326,11 +326,13 @@ private theorem exists_inv {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X) (h
       (exact_restrict hsym hsub hL hex (hL.1 U hLU) (hU.compl hsym))
     exact glue hsym hs ht hLU hU I₁ I₂
 
-/-- **Gomory–Hu theorem** ([GomoryHu1961]; [Schrijver2003], Section 15.4) for symmetric submodular
-set functions: every symmetric submodular `f : Finset V → β` on a nonempty finite ground set `V`
-has a Gomory–Hu tree, a spanning tree `T` on `V` in which for every edge `uv`, the side of `T - uv`
-containing `u` is a minimum `u`–`v` cut of `f`. This is the cut-equivalent form; the classical
-graph case is `Cslib.Algorithms.Lean.GomoryHu.exists_isGomoryHuTree_cutWeight`. -/
+/-- **Gomory–Hu theorem** for symmetric submodular set functions: every symmetric submodular
+`f : Finset V → β` on a nonempty finite ground set `V` has a Gomory–Hu tree, a spanning tree `T` on
+`V` in which for every edge `uv`, the side of `T - uv` containing `u` is a minimum `u`–`v` cut of
+`f`. This is the cut-equivalent form. [GomoryHu1961] (see also [Schrijver2003], Section 15.4)
+proves it for cut functions of undirected graphs; the statement for symmetric submodular functions
+is the standard abstraction of that proof, which uses only symmetry and submodularity. The graph
+case is `Cslib.Algorithms.Lean.GomoryHu.exists_isGomoryHuTree_cutWeight`. -/
 theorem exists_isGomoryHuTree [Nonempty V] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
     (hsub : IsSubmodular f) : ∃ T : SimpleGraph V, IsGomoryHuTree f T := by
   obtain ⟨r⟩ := ‹Nonempty V›

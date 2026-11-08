@@ -20,9 +20,10 @@ weight `cutWeight W X` of a vertex set `X` containing `s` and missing `t` (and `
 By max-flow min-cut it is the value of a maximum `s`–`t` flow; see
 `Complexity.Algorithms.Lean.GomoryHu.WeightedCut`.
 
-The cut function `X ↦ cutWeight W X` is submodular, and posimodular when `W` is symmetric. The
-values `λ` satisfy the ultrametric triangle inequality `λ(u, w) ≥ min (λ(u, v)) (λ(v, w))`, the
-basic fact behind Gomory–Hu trees ([GomoryHu1961]; [Schrijver2003], Section 15.4).
+The cut function `X ↦ cutWeight W X` is submodular, and posimodular for a multigraph (symmetric
+`W`). The values `λ` satisfy the ultrametric triangle inequality
+`λ(u, w) ≥ min (λ(u, v)) (λ(v, w))`, the basic fact behind Gomory–Hu trees ([GomoryHu1961];
+[Schrijver2003], Section 15.4).
 
 ## Main definitions
 
@@ -167,8 +168,12 @@ theorem min_le_minCutBetween (W : V → V → ℕ) {u w : V} (huw : u ≠ w) (v 
 /-- Among the three values `λ(u, v)`, `λ(v, w)`, `λ(u, w)` of a multigraph, the minimum is
 attained at least twice: if `λ(u, v) < λ(v, w)` then `λ(u, w) = λ(u, v)`. -/
 theorem minCutBetween_eq_of_lt {W : V → V → ℕ} (hW : IsMultigraph W) {u v w : V} (huv : u ≠ v)
-    (huw : u ≠ w) (h : minCutBetween W u v < minCutBetween W v w) :
+    (h : minCutBetween W u v < minCutBetween W v w) :
     minCutBetween W u w = minCutBetween W u v := by
+  have huw : u ≠ w := by
+    rintro rfl
+    rw [minCutBetween_comm hW v u] at h
+    exact lt_irrefl _ h
   have h1 := min_le_minCutBetween W huw v
   have h2 := min_le_minCutBetween W huv w
   rw [minCutBetween_comm hW w v] at h2
