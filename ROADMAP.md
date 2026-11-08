@@ -1697,7 +1697,8 @@ each statement against the numbered result. Organize modules by subject, not cha
   `δ`-reduced bases, the LLL approximation `‖b₁‖² ≤ (4/(4δ-1))^{n-1} ‖x‖²` (paper indexing,
   `n` vectors) to the shortest vector (Lenstra–Lenstra–Lovász Proposition (1.11)), the potential
   argument bounding the number of exchange steps by `O(n² log B)` for integral Gram matrices, and
-  an executable LLL (`δ = 3/4`, exact rational Gram–Schmidt) on integer bases whose output is
+  an executable LLL (exact rational Gram–Schmidt; `δ = 3/4`, and `lllWith δ` for any rational
+  `0 < δ < 1` with an explicit `⌈δ/(1-δ)⌉`-scaled round budget) on integer bases whose output is
   reduced and spans the same lattice are in `Algorithms/LatticeReduction`, over Gram–Schmidt
   facts in `Foundations/Analysis/InnerProductSpace/GramSchmidtOrtho`. Remaining: a cost model for
   the executable LLL with the `O(n⁴ log B)` arithmetic-operation bound (the current version
