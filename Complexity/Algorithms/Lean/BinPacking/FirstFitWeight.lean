@@ -48,7 +48,7 @@ Dósa and Sgall's sketch in their Section 1.2 leaves three bins unaccounted for 
 `FF ≤ 1.7 * OPT + 3`; they remark that examining those bins brings the constant down to `0.6`.
 The case analysis of the remaining bins here, which gives `0.8`, is our own; the constant is not
 new, as Xia and Tan's `FF ≤ 1.7 * OPT + 0.7`, reported in
-[Dósa and Sgall, Section 1.1][DosaSgall2013], is already stronger. Their main result,
+[Dósa and Sgall, Section 1.1][DosaSgall2013], is already stronger. Dósa and Sgall's main result,
 the absolute bound `FF ≤ ⌊1.7 * OPT⌋` ([Dósa and Sgall, Theorem 3.13][DosaSgall2013]), is not
 formalized here; neither is the matching lower-bound family of their Section 4.
 
