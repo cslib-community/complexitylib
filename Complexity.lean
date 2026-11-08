@@ -1695,6 +1695,7 @@ public import Complexity.Computability.Complexity.Classes.Sparse.Fortune
 public import Complexity.Computability.Complexity.Classes.Sparse.Hausdorff
 public import Complexity.Computability.Complexity.Classes.Sparse.Kadin
 public import Complexity.Computability.Complexity.Classes.Sparse.Mahaney
+public import Complexity.Computability.Complexity.Classes.Sparse.Meyer
 public import Complexity.Computability.Complexity.Classes.Sparse.OneQuery
 public import Complexity.Computability.Complexity.Classes.Sparse.Prune
 public import Complexity.Computability.Complexity.Classes.Sparse.Turing
@@ -2369,6 +2370,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Poly
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Fin
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Gcd
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Pair
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.PowMod
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Prime
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Search

@@ -252,6 +252,33 @@ Undecidability of some left cut is not formalized, because no count of machines 
 open: self-reducible P-selective sets lie in `P`, and P-selective sets are not truth-table-hard for
 `NP` unless `P = NP`.
 
+## Sparse and tally oracles
+
+Meyer's theorem `P/poly = P^SPARSE` is in two modules. The oracle is a word language
+`S : Set (List Bool)`, sparse for `encBits` (`SPARSE encBits`) or tally (`TALLY`, all letters
+`true`). The decided problem `A : Set α` is in `PPolyOn enc` for an arbitrary instance encoding
+`enc`.
+[`Sparse.Turing`](../../Complexity/Computability/Complexity/Classes/Sparse/Turing.lean) proves
+`PWithOracle_subset_PPolyOn`: the advice lists the short members of `S`.
+[`Sparse.Meyer`](../../Complexity/Computability/Complexity/Classes/Sparse/Meyer.lean) proves the
+converse with a tally oracle. `exists_polyTimeTruthTableReducible_adviceTally` takes the circuit
+advice `α` of `PPoly.exists_evalAdvice`. Its oracle `adviceTally α` contains the unary word of
+`Nat.pair n i` exactly when bit `i` of `α n` is `true` (`encUnary_pair_mem_adviceTally`). The
+reduction is nonadaptive. On an input of length `n` it asks all `|α n|` bit queries and then
+evaluates the listed circuits. `PolyTimeTruthTableReducible.polyTimeTuringReducible` turns it into
+`PWithOracle` membership.
+
+Use `mem_PPolyOn_iff_exists_mem_SPARSE_mem_PWithOracle` or
+`mem_PPolyOn_iff_exists_mem_TALLY_mem_PWithOracle` to move between circuits and oracles. For example,
+`P^S ⊆ P^T` for some tally `T` when `S` is sparse. The class equalities are
+`PPolyOn_eq_iUnion_PWithOracle_SPARSE` and `PPolyOn_eq_iUnion_PWithOracle_TALLY`, and
+`mem_PPolyOn_iff_exists_mem_TALLY_polyTimeTruthTableReducible` gives `P/poly = R_tt(TALLY)`. The
+oracle languages exist but need not be decidable, as for `P/poly` itself. The
+[checked client](../../ComplexityTests/SparseMeyer.lean) shows members and non-members of a
+concrete `adviceTally` and applies the theorem to every length-defined language, including
+undecidable ones. Kadin's `P^{NP[O(log n)]}` consequences and Hemachandra's `P^NP_tt`
+characterization remain open (see `ROADMAP.md`).
+
 ## Parameter-sensitive transfer rules
 
 [FPT reductions and kernels](parameterized-complexity.md) separately bound the target parameter by a function of the source parameter. Fine-grained transfer uses more quantitative contracts without defining a new reduction datatype. [`DecidableInExpTime.of_reduction`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/FineGrained/Reduction.lean#L117) takes a native polynomial-time membership-preserving map with `μB(f(a)) ≤ c μA(a)+c`. A target time rate `2^(δ μB)` yields source rate `2^(cδ μA)`, up to encoded-length polynomial factors, for `δ ≥ 0`. [`DecidableInSubexpTime.of_reduction`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/FineGrained/Reduction.lean#L181) transfers the predicate that permits a decider for each positive rate.
