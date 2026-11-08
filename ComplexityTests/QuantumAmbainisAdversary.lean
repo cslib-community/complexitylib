@@ -157,4 +157,21 @@ example (N : ℕ) (hN : 0 < N) :
     rw [threshold_apply, decide_eq_false (by omega), bitVal_false] at this
     linarith
 
+-- The Nayak–Wu bound on `orSearch` for weight `2` against weight `0` (`Δ = 2`), with `m = 1`:
+-- `(1 - 2√(2/9)) (√(2N) + √(N - 1)) ≤ 8T`.
+example (N : ℕ) (hN : 2 ≤ N) :
+    (1 - 2 * √((1 / 3 : ℝ) * (1 - 1 / 3))) *
+        (√(N * |((2 : ℕ) : ℝ) - ((0 : ℕ) : ℝ)|) + √(((1 : ℕ) : ℝ) * (N - ((1 : ℕ) : ℝ)))) ≤
+      4 * (orRange N + orRange N : ℕ) * |((2 : ℕ) : ℝ) - ((0 : ℕ) : ℝ)| := by
+  have hN0 : 0 < N := by omega
+  refine one_sub_mul_add_le_four_mul_mul_abs_sub_of_weight (orSearch N) (norm_orSearchInit hN0) _
+    (orAccept N) (k := 2) (k' := 0) (by decide) hN (Nat.zero_le _) (fun x hx => ?_)
+    (fun y hy => ?_) (by norm_num) (by decide) (by decide)
+  · have := (abs_le.1 (abs_measureProb_run_orSearch_sub_le hN0 x)).1
+    rw [threshold_apply, decide_eq_true (by omega), bitVal_true] at this
+    linarith
+  · have := (abs_le.1 (abs_measureProb_run_orSearch_sub_le hN0 y)).2
+    rw [threshold_apply, decide_eq_false (by omega), bitVal_false] at this
+    linarith
+
 end ComplexityTests.QuantumAmbainisAdversary

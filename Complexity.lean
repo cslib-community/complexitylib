@@ -4091,6 +4091,7 @@ public import Complexity.Foundations.Data.BitString.Sum
 public import Complexity.Foundations.Data.BitString.Support
 public import Complexity.Foundations.Data.BitString.Threshold
 public import Complexity.Foundations.Data.BitString.Weight
+public import Complexity.Foundations.Data.BitString.WeightInterval
 public import Complexity.Foundations.Data.BitString.WordCount
 public import Complexity.Foundations.Data.BitString.ZModTwo
 public import Complexity.Foundations.Data.Code.AsymptoticallyGood

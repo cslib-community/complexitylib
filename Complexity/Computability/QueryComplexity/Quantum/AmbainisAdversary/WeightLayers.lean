@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.QueryComplexity.Quantum.AmbainisAdversary
 public import Complexity.Foundations.Data.BitString.Weight
+import Complexity.Foundations.Data.BitString.WeightInterval
 import Complexity.Foundations.Quantum.Measurement.Overlap
 
 /-!
@@ -65,75 +66,6 @@ open Finset Function BitString
 
 variable {N : ℕ} {W : Type*} [Fintype W]
 
-/-- If `u ≤ v` and `u ≠ v` for bits, then `u` is false and `v` is true. -/
-private theorem bool_eq_false_of_le_of_ne {u v : Bool} (h : u ≤ v) (hne : u ≠ v) :
-    u = false ∧ v = true := by
-  revert h hne
-  cases u <;> cases v <;> decide
-
-/-- The strings of weight `a` below `y` are the indicators of the `a`-subsets of its support. -/
-private theorem card_le_weight_eq (y : BitString N) (a : ℕ) :
-    #{x : BitString N | x ≤ y ∧ weight x = a} = (weight y).choose a := by
-  classical
-  rw [weight, ← card_powersetCard]
-  refine card_nbij' (fun x => ({i | x i = true} : Finset (Fin N))) (fun s i => decide (i ∈ s))
-    (fun x hx => ?_) (fun s hs => ?_) (fun x _ => ?_) (fun s _ => ?_)
-  · obtain ⟨hxy, hw⟩ := (mem_filter.1 hx).2
-    refine mem_powersetCard.2 ⟨fun i hi => ?_, hw⟩
-    have hxi : x i = true := (mem_filter.1 hi).2
-    exact mem_filter.2 ⟨mem_univ i, le_antisymm (Bool.le_true _) (hxi ▸ hxy i)⟩
-  · obtain ⟨hsub, hcard⟩ := mem_powersetCard.1 hs
-    refine mem_filter.2 ⟨mem_univ _, fun i => ?_, ?_⟩
-    · by_cases hi : i ∈ s
-      · have := (mem_filter.1 (hsub hi)).2
-        simp [hi, this]
-      · simp [hi]
-    · rw [← hcard, weight]
-      congr 1
-      ext i
-      simp
-  · funext i
-    simp
-  · ext i
-    simp
-
-/-- The strings of weight `b` above `x` are the complements of the strings of weight `N - b`
-below the complement of `x`. -/
-private theorem card_ge_weight_eq (x : BitString N) {b : ℕ} (hb : b ≤ N) :
-    #{y : BitString N | x ≤ y ∧ weight y = b} = (N - weight x).choose (N - b) := by
-  classical
-  rw [← show weight (fun i => !x i) = N - weight x by simpa using weight_not x,
-    ← card_le_weight_eq]
-  refine card_nbij' (fun y i => !y i) (fun z i => !z i) (fun y hy => ?_) (fun z hz => ?_)
-    (fun y _ => ?_) (fun z _ => ?_)
-  · obtain ⟨hxy, hw⟩ := (mem_filter.1 hy).2
-    refine mem_filter.2 ⟨mem_univ _, fun i => ?_, ?_⟩
-    · have : x i ≤ y i := hxy i
-      change (!y i) ≤ !x i
-      revert this
-      cases x i <;> cases y i <;> decide
-    · change weight (fun i => !y i) = N - b
-      rw [weight_not, Fintype.card_fin, hw]
-  · obtain ⟨hzx, hw⟩ := (mem_filter.1 hz).2
-    refine mem_filter.2 ⟨mem_univ _, fun i => ?_, ?_⟩
-    · have : z i ≤ !x i := hzx i
-      change x i ≤ !z i
-      revert this
-      cases x i <;> cases z i <;> decide
-    · change weight (fun i => !z i) = b
-      rw [weight_not, Fintype.card_fin, hw]
-      omega
-  · funext i
-    simp
-  · funext i
-    simp
-
-/-- `1 - 2√(ε(1-ε))` is nonnegative, as `ε (1 - ε) ≤ 1/4`. -/
-private theorem zero_le_one_sub_two_mul_sqrt (ε : ℝ) : 0 ≤ 1 - 2 * √(ε * (1 - ε)) := by
-  have : √(ε * (1 - ε)) ≤ 1 / 2 :=
-    (Real.sqrt_le_left (by norm_num)).2 (by nlinarith [sq_nonneg (1 - 2 * ε)])
-  linarith
-
 variable (U : ℕ → State N W →ₗᵢ[ℂ] State N W)
 
 /-- **Telling weight `a` from weight `b`**, the δ-form: let `a < b ≤ N`, and let a `T`-query
@@ -146,6 +78,9 @@ theorem one_sub_mul_sqrt_le_two_mul_mul_sub_of_le {ψ₀ : State N W} (hψ₀ : 
       ‖inner ℂ (run U ψ₀ x T) (run U ψ₀ y T)‖ ≤ δ) :
     (1 - δ) * √((N - a) * b) ≤ 2 * T * (b - a) := by
   classical
+  have card_ge (x : BitString N) : #{y : BitString N | x ≤ y ∧ weight y = b} =
+      (N - weight x).choose (N - b) := by
+    simpa using card_filter_ge_and_weight_eq x (by simpa using hbN)
   set R : Finset (BitString N × BitString N) :=
     (weightLayer N a ×ˢ weightLayer N b).filter fun p => p.1 ≤ p.2 with hRdef
   have hmemR {x y : BitString N} : (x, y) ∈ R ↔ weight x = a ∧ weight y = b ∧ x ≤ y := by
@@ -154,7 +89,7 @@ theorem one_sub_mul_sqrt_le_two_mul_mul_sub_of_le {ψ₀ : State N W} (hψ₀ : 
     obtain ⟨y, hy⟩ := weightLayer_nonempty hbN
     have hy' : weight y = b := mem_weightLayer.1 hy
     have : 0 < #{x : BitString N | x ≤ y ∧ weight x = a} := by
-      rw [card_le_weight_eq, hy']
+      rw [card_filter_le_and_weight_eq, hy']
       exact Nat.choose_pos hab.le
     obtain ⟨x, hx⟩ := card_pos.1 this
     obtain ⟨hxy, hxa⟩ := (mem_filter.1 hx).2
@@ -165,7 +100,7 @@ theorem one_sub_mul_sqrt_le_two_mul_mul_sub_of_le {ψ₀ : State N W} (hψ₀ : 
   have hm : ∀ p ∈ R, (N - a).choose (N - b) ≤ #{q ∈ R | q.1 = p.1} := by
     intro p hp
     obtain ⟨h1, -, -⟩ := hmemR.1 hp
-    rw [← h1, ← card_ge_weight_eq p.1 hbN]
+    rw [← h1, ← card_ge p.1]
     refine card_le_card_of_injOn (fun y => (p.1, y)) (fun y hy => ?_) (fun y _ z _ h => ?_)
     · obtain ⟨hy1, hy2⟩ := (mem_filter.1 hy).2
       exact mem_filter.2 ⟨hmemR.2 ⟨h1, hy2, hy1⟩, rfl⟩
@@ -173,7 +108,7 @@ theorem one_sub_mul_sqrt_le_two_mul_mul_sub_of_le {ψ₀ : State N W} (hψ₀ : 
   have hm' : ∀ p ∈ R, b.choose a ≤ #{q ∈ R | q.2 = p.2} := by
     intro p hp
     obtain ⟨-, h2, -⟩ := hmemR.1 hp
-    rw [← h2, ← card_le_weight_eq p.2 a]
+    rw [← h2, ← card_filter_le_and_weight_eq p.2 a]
     refine card_le_card_of_injOn (fun x => (x, p.2)) (fun x hx => ?_) (fun x _ z _ h => ?_)
     · obtain ⟨hx1, hx2⟩ := (mem_filter.1 hx).2
       exact mem_filter.2 ⟨hmemR.2 ⟨hx2, h2, hx1⟩, rfl⟩
@@ -183,14 +118,14 @@ theorem one_sub_mul_sqrt_le_two_mul_mul_sub_of_le {ψ₀ : State N W} (hψ₀ : 
         (N - a - 1).choose (N - b) * (b - 1).choose a := by
     intro p hp i hi
     obtain ⟨h1, h2, h12⟩ := hmemR.1 hp
-    obtain ⟨hp1, hp2⟩ := bool_eq_false_of_le_of_ne (h12 i) hi
+    obtain ⟨hp1, hp2⟩ := Bool.lt_iff.1 (lt_of_le_of_ne (h12 i) hi)
     refine Nat.mul_le_mul ?_ ?_
     · have hw : weight (update p.1 i true) = a + 1 := by rw [weight_update_true hp1, h1]
-      rw [show N - a - 1 = N - weight (update p.1 i true) by omega, ← card_ge_weight_eq _ hbN]
+      rw [show N - a - 1 = N - weight (update p.1 i true) by omega, ← card_ge _]
       refine card_le_card_of_injOn Prod.snd (fun q hq => ?_) (fun q hq r hr h => ?_)
       · obtain ⟨hqR, hqi, hq1⟩ := mem_filter.1 hq
         obtain ⟨-, hq2, hq12⟩ := hmemR.1 hqR
-        obtain ⟨-, hqi2⟩ := bool_eq_false_of_le_of_ne (hq12 i) hqi
+        obtain ⟨-, hqi2⟩ := Bool.lt_iff.1 (lt_of_le_of_ne (hq12 i) hqi)
         refine mem_filter.2 ⟨mem_univ _, fun j => ?_, hq2⟩
         by_cases hj : j = i
         · subst hj
@@ -203,11 +138,12 @@ theorem one_sub_mul_sqrt_le_two_mul_mul_sub_of_le {ψ₀ : State N W} (hψ₀ : 
     · have hw : weight (update p.2 i false) = b - 1 := by
         have := weight_update_false hp2
         omega
-      rw [show b - 1 = weight (update p.2 i false) from hw.symm, ← card_le_weight_eq]
+      rw [show b - 1 = weight (update p.2 i false) from hw.symm,
+        ← card_filter_le_and_weight_eq]
       refine card_le_card_of_injOn Prod.fst (fun q hq => ?_) (fun q hq r hr h => ?_)
       · obtain ⟨hqR, hqi, hq2⟩ := mem_filter.1 hq
         obtain ⟨hq1, -, hq12⟩ := hmemR.1 hqR
-        obtain ⟨hqi1, -⟩ := bool_eq_false_of_le_of_ne (hq12 i) hqi
+        obtain ⟨hqi1, -⟩ := Bool.lt_iff.1 (lt_of_le_of_ne (hq12 i) hqi)
         refine mem_filter.2 ⟨mem_univ _, fun j => ?_, hq1⟩
         by_cases hj : j = i
         · subst hj
@@ -305,7 +241,7 @@ theorem one_sub_mul_add_le_four_mul_mul_abs_sub_of_weight {ψ₀ : State N W}
       4 * T * |(k : ℝ) - k'| := by
   have hmain := one_sub_mul_sqrt_le_two_mul_mul_abs_sub_of_weight U hψ₀ T S hkk'
     hk hk' h₁ h₂ hε
-  have hc := zero_le_one_sub_two_mul_sqrt ε
+  have hc := one_sub_two_mul_sqrt_nonneg ε
   set a := min k k' with ha
   set b := max k k' with hb
   have hab : a ≤ b := min_le_max
@@ -347,7 +283,7 @@ theorem one_sub_mul_card_le_four_mul_mul_abs_sub_of_weight {ψ₀ : State N W}
     (1 - 2 * √(ε * (1 - ε))) * N ≤ 4 * T * |(k : ℝ) - k'| := by
   have hmain := one_sub_mul_sqrt_le_two_mul_mul_abs_sub_of_weight U hψ₀ T S hkk'
     hk hk' h₁ h₂ hε
-  have hc := zero_le_one_sub_two_mul_sqrt ε
+  have hc := one_sub_two_mul_sqrt_nonneg ε
   have haR : 2 * ((min k k' : ℕ) : ℝ) ≤ N := by exact_mod_cast hN
   have hbR : (N : ℝ) ≤ 2 * ((max k k' : ℕ) : ℝ) := by exact_mod_cast hN'
   have hsq : (N : ℝ) / 2 ≤ √((N - (min k k' : ℕ)) * (max k k' : ℕ)) :=
