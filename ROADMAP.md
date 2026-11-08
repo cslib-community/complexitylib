@@ -621,11 +621,12 @@ index links to canonical definitions rather than keeping a second set.
   (`Problems/BoundedHalting.lean`, [#3002](https://github.com/cslib-community/complexitylib/issues/3002)),
   and complexity cores, with Lynch's lemma that problems outside `P` have infinite polynomial cores
   (`Classes/Immune/Core.lean`, `Classes/Immune/PolyTimeCore.lean`,
-  [#3080](https://github.com/cslib-community/complexitylib/issues/3080)):
+  [#3080](https://github.com/cslib-community/complexitylib/issues/3080)), decidable ones inside
+  decidable problems on bit strings (`Classes/Immune/RecursiveCore.lean`,
+  [#3182](https://github.com/cslib-community/complexitylib/issues/3182)):
   a SAT-free home for the machine enumeration of `Ladner/Basic.lean` shared by Ladner and the
   immunity modules;
-  the recursive core of Lynch's Lemma 1 (a decidable problem outside `P` has an infinite
-  *decidable* core); `EXP`
+  decidable cores for general encodings with a decidable range; `EXP`
   and `PSPACE` instances of the class-generic core theorem (`exists_infinite_isComplexityCore_subset`
   needs only countability, finite sets and closure under unions); core density for intractable
   sets (Orponen and Schöning) and core sizes for hard sets (Juedes and Lutz);

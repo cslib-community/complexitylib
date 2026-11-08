@@ -1534,6 +1534,7 @@ public import Complexity.Computability.Complexity.Classes.Immune.Complete
 public import Complexity.Computability.Complexity.Classes.Immune.Construction
 public import Complexity.Computability.Complexity.Classes.Immune.Core
 public import Complexity.Computability.Complexity.Classes.Immune.PolyTimeCore
+public import Complexity.Computability.Complexity.Classes.Immune.RecursiveCore
 public import Complexity.Computability.Complexity.Classes.Inclusions
 public import Complexity.Computability.Complexity.Classes.Ladner
 public import Complexity.Computability.Complexity.Classes.Ladner.Basic
