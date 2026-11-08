@@ -128,9 +128,9 @@ resources.
 PLS-membership claim of [roughgarden13cs364a][roughgarden13cs364a], Lecture #19, §3, for
 congestion games with explicitly listed strategy sets. A `CongestionCode` lists each player's
 strategies as lists of resource indices, and each resource's cost table `[c_e(1), c_e(2), …]`.
-`encCongestion` writes resource indices in unary and costs in binary. Missing table entries read as
-`0`, out-of-range resource indices are ignored, and a player with no listed strategy gets the empty
-one. `toGame` reads the code as a `CongestionGame`, so `IsPureNash` is the library's notion.
+`encCongestion` writes resource indices in unary and costs as natural numbers in binary; the source
+allows arbitrary costs `c_e(i)`. Missing table entries read as `0`, out-of-range resource indices
+are ignored, and a player with no listed strategy gets the empty one. `toGame` reads the code as a `CongestionGame`, so `IsPureNash` is the library's notion.
 
 A profile is a bit string of length `vertexLength = players * width`. Player `i`'s block of
 `width` bits decodes to the number of ones in it, clamped to a strategy index, so every string of

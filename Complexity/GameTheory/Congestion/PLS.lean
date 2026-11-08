@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Classes.TFNP.Subclasses
 public import Complexity.GameTheory.Congestion.Basic
+import Complexity.Foundations.Data.BitString.Block
 import Complexity.Foundations.Data.List.Blocks
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -64,9 +65,10 @@ potential, a string is a local minimum exactly when it decodes to a pure Nash eq
 
 As in the source, strategy sets are listed explicitly. Resource indices are unary: an index below
 `resources` costs at most as many bits as the cost-table list, so this is at most a quadratic
-blow-up over binary indices. Costs are natural numbers in binary. Missing cost-table entries read
-as `0`, resource indices outside `[0, resources)` are ignored, and a player with no listed
-strategy gets the single empty strategy, so every code describes a game.
+blow-up over binary indices. Costs are natural numbers in binary, whereas the source allows
+arbitrary costs `c_e(i)`. Missing cost-table entries read as `0`, resource indices outside
+`[0, resources)` are ignored, and a player with no listed strategy gets the single empty strategy,
+so every code describes a game.
 
 The completeness half of [FabrikantPapadimitriouTalwar2004] (Lecture #19, Theorem 3.1, proved by
 a reduction from local Max-Cut) is not formalized.
@@ -116,7 +118,7 @@ def strategy (c : CongestionCode) (i k : ℕ) : List ℕ := (c.strategies i).get
 /-- The cost table of resource `e`. -/
 def costs (c : CongestionCode) (e : ℕ) : List ℕ := c.2.getD e []
 
-/-- The width of a player's block in a profile string; it exceeds every strategy count. -/
+/-- The width of a player's block in a profile string; it is at least every strategy count. -/
 def width (c : CongestionCode) : ℕ := c.1.flatten.length + 1
 
 /-- The length of profile strings. -/
@@ -133,17 +135,14 @@ def potential (c : CongestionCode) (p : List ℕ) : ℕ :=
 
 /-! ### Profile strings -/
 
-/-- The block of bits of player `i` in a profile string. -/
-def block (c : CongestionCode) (u : List Bool) (i : ℕ) : List Bool :=
-  (u.drop (i * c.width)).take c.width
-
 /-- Strategy `k` of player `i` if it exists, and strategy `0` otherwise. -/
 def clampStrategy (c : CongestionCode) (i k : ℕ) : ℕ := if k < c.numStrategies i then k else 0
 
 /-- The strategy indices of a profile string: player `i` plays the number of ones in its block,
 clamped to a strategy index. -/
 def decodeList (c : CongestionCode) (u : List Bool) : List ℕ :=
-  (List.range c.players).map fun i => c.clampStrategy i ((c.block u i).count true)
+  (List.range c.players).map fun i =>
+    c.clampStrategy i ((BitString.listBlock c.width u i).count true)
 
 /-- The profile string of a list of strategy indices: strategy `k` becomes a block of `k` ones
 followed by zeros. -/
@@ -226,13 +225,6 @@ private theorem potential_polyTime {p : γ → List ℕ}
   unfold potential; fun_prop
 
 @[fun_prop]
-private theorem block_polyTime {u : γ → List Bool} {i : γ → ℕ}
-    (hc : ComputableInPolyTime c encIn encCongestion)
-    (hu : ComputableInPolyTime u encIn encBits) (hi : ComputableInPolyTime i encIn encUnary) :
-    ComputableInPolyTime (fun x => (c x).block (u x) (i x)) encIn encBits := by
-  unfold block; fun_prop
-
-@[fun_prop]
 private theorem clampStrategy_polyTime {i k : γ → ℕ}
     (hc : ComputableInPolyTime c encIn encCongestion)
     (hi : ComputableInPolyTime i encIn encUnary) (hk : ComputableInPolyTime k encIn encUnary) :
@@ -244,7 +236,7 @@ private theorem decodeList_polyTime {u : γ → List Bool}
     (hc : ComputableInPolyTime c encIn encCongestion)
     (hu : ComputableInPolyTime u encIn encBits) :
     ComputableInPolyTime (fun x => (c x).decodeList (u x)) encIn (encList encUnary) := by
-  unfold decodeList; fun_prop
+  unfold decodeList BitString.listBlock; fun_prop
 
 @[fun_prop]
 private theorem encode_polyTime {p : γ → List ℕ} (hc : ComputableInPolyTime c encIn encCongestion)
@@ -316,7 +308,8 @@ def toGame (c : CongestionCode) :
 
 /-- The strategy profile of `c.toGame` decoded from a profile string. -/
 def decode (c : CongestionCode) (u : List Bool) : ∀ i : Fin c.players, Fin (c.numStrategies i) :=
-  fun i => ⟨c.clampStrategy i ((c.block u i).count true), c.clampStrategy_lt _ _⟩
+  fun i =>
+    ⟨c.clampStrategy i ((BitString.listBlock c.width u i).count true), c.clampStrategy_lt _ _⟩
 
 /-- A strategy profile of `c.toGame` as a list of strategy indices. -/
 def profileList (c : CongestionCode) (s : ∀ i : Fin c.players, Fin (c.numStrategies i)) :
@@ -417,19 +410,6 @@ theorem numStrategies_le_width (c : CongestionCode) (i : ℕ) : c.numStrategies 
       exact List.le_sum_of_mem (List.mem_map_of_mem (List.mem_of_getElem? h))
   omega
 
-private theorem block_flatMap (W : ℕ) (f : ℕ → List Bool) (hf : ∀ k, (f k).length = W)
-    (p : List ℕ) (i : ℕ) (hi : i < p.length) :
-    ((p.flatMap f).drop (i * W)).take W = f p[i] := by
-  induction p generalizing i with
-  | nil => simp at hi
-  | cons k p ih =>
-    rw [List.flatMap_cons]
-    rcases i with _ | i
-    · rw [Nat.zero_mul, List.drop_zero, List.take_left' (hf k), List.getElem_cons_zero]
-    · rw [Nat.succ_mul, Nat.add_comm, ← List.drop_drop, List.drop_left' (hf k),
-        List.getElem_cons_succ]
-      exact ih i (by simpa using hi)
-
 private theorem count_thermometer (W k : ℕ) :
     ((List.range W).map fun j => decide (j < k)).count true = min k W := by
   induction W with
@@ -448,8 +428,8 @@ theorem decode_encode (c : CongestionCode) (s : ∀ i : Fin c.players, Fin (c.nu
     c.decode (c.encode (c.profileList s)) = s := by
   funext i
   apply Fin.ext
-  simp only [decode, block, encode]
-  rw [block_flatMap c.width _ (by simp) _ i (by simp)]
+  simp only [decode, encode]
+  rw [BitString.listBlock_flatMap _ (by simp) _ i (by simp)]
   simp only [profileList, List.getElem_ofFn, count_thermometer]
   rw [min_eq_left ((s i).2.le.trans (c.numStrategies_le_width i))]
   simp [clampStrategy, (s i).2]

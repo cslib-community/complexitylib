@@ -29,7 +29,8 @@ positions of one block takes that block from the first tuple and every other blo
 * `Cslib.BitString.blocksEquiv`: cutting a tuple into its blocks; its inverse reads entry `p` of
   the tuple in its block (`BitString.blocksEquiv_symm_apply`).
 * `Cslib.BitString.blockBits`: the positions of the entries of a block.
-* `Cslib.BitString.listBlock`: a block of a list (`BitString.listBlock_ofFn`).
+* `Cslib.BitString.listBlock`: a block of a list (`BitString.listBlock_ofFn`,
+  `BitString.listBlock_flatMap`).
 
 ## Main results
 
@@ -120,5 +121,19 @@ theorem listBlock_ofFn (z : Fin (m * k) → α) (i : Fin m) :
   ext
   simp only [finProdFinEquiv_apply_val]
   rw [Nat.mul_comm, Nat.add_comm]
+
+/-- Block `i` of a concatenation of blocks of uniform length `k` is block `i` itself. -/
+theorem listBlock_flatMap {β : Type*} (f : β → List α) (hf : ∀ b, (f b).length = k)
+    (l : List β) (i : ℕ) (hi : i < l.length) :
+    listBlock k (l.flatMap f) i = f l[i] := by
+  induction l generalizing i with
+  | nil => simp at hi
+  | cons b l ih =>
+    rw [List.flatMap_cons]
+    rcases i with _ | i
+    · rw [listBlock, Nat.zero_mul, List.drop_zero, List.take_left' (hf b), List.getElem_cons_zero]
+    · rw [listBlock, Nat.succ_mul, Nat.add_comm, ← List.drop_drop, List.drop_left' (hf b),
+        List.getElem_cons_succ]
+      exact ih i (by simpa using hi)
 
 end Cslib.BitString
