@@ -19,9 +19,10 @@ import Complexity.Foundations.Data.Nat.PolynomialBound.Log
 Compute the Appendix D.3, p. 57 divisor `ceil(sqrt(clog₂ n))` of [OpenAI2026ETH], using one
 at exceptional sizes with zero logarithm. Discharge the existing disjoint counting-tree budget
 at its computed first-success threshold, and bound the actual traversal clock by the
-single-loglog scale. This does not yet connect sparse leaf occurrence/encoding bounds to the
-native parity counter, or certify the composed general-density counter of Lemma 3.2 in
-[ChenJiangZhu2027]. The old replacement-matrix schedule is not used.
+single-loglog scale. The companion `IncidenceGeneralCounter` already connects sparse leaves
+to the native parity counter semantically. Whole-search resource certification is supplied
+separately by `IncidenceGeneralResources`, toward Lemma 3.2 in [ChenJiangZhu2027].
+The old replacement-matrix schedule is not used.
 -/
 
 public section

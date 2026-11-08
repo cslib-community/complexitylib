@@ -20,8 +20,9 @@ exceptional-size prefix. The correctness theorem derives all leaf promises and a
 sparsifier/counter oracle.
 
 This establishes unrestricted-density original-count correctness toward [ChenJiangZhu2027],
-Lemma 3.2, using [OpenAI2026ETH], Appendix D.3, p. 57. The final composed machine time/space
-certificate, weighted binary reconstruction and other source endpoints are not established here.
+Lemma 3.2, using [OpenAI2026ETH], Appendix D.3, p. 57. The companion
+`IncidenceGeneralResources` supplies the composed machine time/space certificate. Weighted
+binary reconstruction and other source endpoints remain separate.
 -/
 
 public section

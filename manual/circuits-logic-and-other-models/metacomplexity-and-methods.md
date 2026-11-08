@@ -716,8 +716,8 @@ sublist/dedup order, duplicate and unattainable rows, all boundary cases, actual
 query counts on declared bits, computed original-row selection, repeated opposite
 occurrences and a `2^80` coefficient. Test-only exhaustive counting is absent
 from the implementation. The complete tagged continuation below resolves the
-remaining construction branches; advertised sharper counting time, full table
-frontend and graph endpoints remain open.
+remaining construction branches. The native continuation below supplies sharper counting time
+on the common-occurrence model; full raw/table frontend and graph endpoints remain open.
 
 
 Import `Complexity.Computability.PolyTime.CNF.WeightedPlan` for the complete
@@ -759,11 +759,10 @@ positive deficient rank, duplicate constraints, large binary coefficients and a
 binary `2^80` direct answer. Exhaustive counting appears only in tiny test oracles.
 
 This completes binary time/space certification of tagged plan construction,
-including simultaneous intermediate workspace and actual output writes. It does
-not run the external counting oracle. The source's advertised sharper counting
-time, full table frontend and graph endpoint remain open. The counting
-continuation below supplies whole-algorithm polynomial space. Theorem 7.1 and
-ALL-main remain incomplete.
+including simultaneous intermediate workspace and actual output writes. Construction stops
+before counting. The native continuation below now supplies polynomial space and sharper time
+on the stated common-occurrence model. The arbitrary raw frontend, full table/graph endpoints,
+Theorem 7.1 at its full source scope and ALL-main remain incomplete.
 
 
 Import `Complexity.Computability.Complexity.FineGrained.WeightedCountingPlan`
@@ -792,15 +791,33 @@ selection, large direct answers, unused declared bits, both boundary counts,
 contradictory rows and a nonzero instance of the existential native machine.
 The tiny exhaustive counter in this client is test-only.
 
-This supplies whole counting-algorithm polynomial space. The sharper source time
-remains open: Lemma 3.2 (PDF p. 11) and Proposition 4.2 (p. 14) of
-[1575](https://github.com/sigact-stoc/stoc2027/releases/download/papers-2/1575.pdf)
-use $\eta(N)=N\log\log N/\sqrt{\log N}$, whereas the proved native counter uses
-`interpolationScale`, asymptotically $N(\log\log N)^2/\sqrt{\log N}$.
-Polynomial-space composition does not remove that extra factor. No theorem here
-claims the advertised $L^{O_d(1)}2^{O_d(\eta(r))}$ time. Refining the core counter,
-then composing and rescaling its sharper rate through both calls, remains work;
-table frontend and graph endpoints also remain open.
+Import `Complexity.Computability.Complexity.FineGrained.WeightedCountingResources`
+for the actual sharper execution certificate. `exists_count_sharp_certificate d` constructs
+one native implementation of the tagged compiler, direct-tag readback, sequential false/true
+CNF calls and binary subtraction. It has global polynomial workspace on typed raw records.
+On `R : Fin t → Occurrences n m` with every computed demand at most fixed $d$, it returns the
+original assignment count and has time
+$$
+C(L+1)^e2^{A\,\texttt{Nat.logLogSqrtLogScale}(n)}.
+$$
+The constants and machine precede all inputs. Weights, targets, answers and subtraction are binary;
+$L$ includes the original unary declaration/indices and all binary occurrence data. Both retained
+answers, intermediate query encodings and output writing are charged. Actual direct tags make no
+counting calls, covering small dimensions and computed rejection/rank-zero/full-rank answers.
+
+`exists_count_real_sharp_certificate d` gives the same original count and global polynomial space,
+with exponent $6A\eta(n)$ when $n\ge16$. The proof uses the actual compiler's `2n-2` variable
+budget and proved fixed-linear scale comparison for both queries. A fixed additive exponent
+handles all smaller query dimensions; no extra loglog factor or faster-oracle assumption is used.
+The older `exists_count_polySpace` API now selects this sharper general-density counter too.
+
+From the repository root run `scripts/build.sh ComplexityTests.WeightedCountingResources`.
+The [complete client](../../ComplexityTests/WeightedCountingResources.lean) couples one actual
+machine with repeated-occurrence partial-rank queries, fractional full-rank rejection, a $2^{80}$
+coefficient, unused variables, an 81-bit direct answer, and real resource bounds for declared
+empty systems at arbitrary size. The restriction to one shared occurrence count per finite row
+family remains material. Arbitrary ragged raw-row correctness and its sharp-time transfer,
+table construction/resources, graph endpoints and full Theorem 7.1/ALL-main remain open.
 
 
 Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryBounds`
@@ -1308,7 +1325,7 @@ from the width and proves the original declared-variable count for **arbitrary c
 disjoint search otherwise. Each actual parity leaf count is normalized to its occurring support;
 the outer search restores the unused original variables exactly once. Empty formulas, empty
 clauses and zero variables are included. No leaf-counter or sparsifier-correctness contract is
-assumed. This is correctness of the composed function, not its final native resource certificate.
+assumed. The companion whole-machine resource certificate below now covers this same function.
 
 From the repository root run
 `scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceSharpParity`.
@@ -1317,12 +1334,37 @@ checks ceiling rounding, actual traversal clocks, polynomial absorption includin
 native parity resources with original-count semantics, dense repeated clauses, unused declared
 bits, zero-variable direct branches and a nonempty family above the general counter's cutoff.
 
-The final general-density **machine time/space composition remains open**: instantiate the
-uniform traversal resource theorem with normalized native parity leaves, charge intermediate
-formula encodings, transfer the all-input polynomial workspace bounds, combine the proved
-clock and leaf exponent, and handle the bounded-size prefix in that composed certificate.
-Then compose weighted binary reconstruction and eta rescaling. Neither the existing full
-CNF/weighted counter's extra log-log factor nor its older sparsification schedule is relabeled.
-Common-occurrence weighted input, arbitrary ragged weighted rows, table/graph, full resource
-Lemma 3.2/Theorem 7.1 and ALL-main gaps remain. The source schedule and final required composition
-are OpenAI2026ETH Appendix D.3, PDF p.57, imported by STOC1575 Lemma 3.2 p.11.
+### Use the whole general-density machine certificate
+
+Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceGeneralResources`.
+`exists_countGeneralParity_sharp_certificate k` fixes one actual `countGeneralParity` machine
+and all parameters before its input, for fixed $k\ge2$. It counts every valid original declared
+CNF, rejects invalid width/support inputs, and has global native time
+$D(L+1)^D2^{D\,\texttt{Nat.logLogSqrtLogScale}(n)}$ and space $D(L+1)^D$.
+The uniform disjoint traversal theorem is instantiated with the actual normalized parity leaves.
+Iteration-prefix bounds transfer every intermediate formula encoding. The declared-count bit
+length is bounded by the actual counter's charged workspace before binary normalization.
+Accumulation, final unused-variable restoration, selected validity guards and bounded direct
+counting are included; workspace has no factor of the traversal clock or counting time.
+
+`exists_countGeneralParity_source_certificate` matches Lemma 3.2's unrestricted-density resource
+claim: for every fixed $k\ge2$, all $n\ge20$ and every valid $m$-clause CNF, one machine has bit
+time $C(n+m+1)^e2^{A\eta(n)}$ and space $C(n+m+1)^e$, up to fixed realization constants.
+Here $\eta(n)=n\log_2\log_2 n/\sqrt{\log_2 n}$. The reusable encoding lemma
+`Cslib.Complexity.SAT.length_declaredInput_le` bounds
+$L+1\le(20k+4)(n+m+1)^2$ using actual binary literal indices below the declared size.
+There is no assumption on $m/n$, and unused declared bits remain counted. The real-scale
+comparison applies already at $n\ge16$; every smaller size is covered by the rounded certificate.
+
+From the repository root run
+`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceGeneralResources`.
+The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceGeneralResources.lean)
+checks a family with $n^2$ repeated clauses and $n-1$ unused variables, original count $2^{n-1}$,
+and the actual source time/space witness. It also covers zero-variable contradiction/tautology
+and an unbounded invalid-support family rejected in polynomial charged time at declared size zero.
+
+The sharper source counter and weighted common-occurrence execution are now certified. The
+arbitrary ragged weighted frontend, original-input representation/encoding transfer at full
+source generality, table closure/equation/separator/overlap construction resources, graph
+endpoints, full Theorem 7.1 and ALL-main remain open. The source composition is
+OpenAI2026ETH Appendix D.3, PDF p.57, imported by STOC1575 Lemma 3.2 p.11.

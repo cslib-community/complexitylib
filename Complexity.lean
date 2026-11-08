@@ -1142,6 +1142,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceE
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryCorrectness
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryPolyTime
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceGeneralCounter
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceGeneralResources
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceGroupCoefficients
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetwork
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetworkBounds
@@ -1721,6 +1722,7 @@ public import Complexity.Computability.Complexity.FineGrained.SparseCountingScal
 public import Complexity.Computability.Complexity.FineGrained.SparseParitySchedule
 public import Complexity.Computability.Complexity.FineGrained.Sparsification
 public import Complexity.Computability.Complexity.FineGrained.ThreeOccurrenceReduction
+public import Complexity.Computability.Complexity.FineGrained.WeightedCountingResources
 public import Complexity.Computability.Complexity.FineGrained.WideClauseCounting
 public import Complexity.Computability.Complexity.FineGrained.WeightedCountingPlan
 public import Complexity.Computability.Complexity.HardnessEncoding.PolyTime
@@ -1838,6 +1840,7 @@ public import Complexity.Computability.Complexity.Problems.SAT.Planar.Paths
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.Paths.Occupancy
 public import Complexity.Computability.Complexity.Problems.SAT.PolyTime
 public import Complexity.Computability.Complexity.Problems.SAT.Relation
+public import Complexity.Computability.Complexity.Problems.SAT.SizeBound
 public import Complexity.Computability.Complexity.Problems.SATUNSAT
 public import Complexity.Computability.Complexity.Problems.STCON
 public import Complexity.Computability.Complexity.Problems.STCON.Completeness

@@ -15,7 +15,7 @@ import all Complexity.Computability.PolyTime.CNF.WeightedPlan
 import all Complexity.Computability.Complexity.Problems.SAT
 import all Complexity.Logics.Propositional.CNF.ModelCount.Declared
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Plain
-import Complexity.Computability.Complexity.FineGrained.CountingNativeEndpoint
+import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceGeneralResources
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Sum
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -27,11 +27,12 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptio
 Compose the actual tagged original-input construction with the proved native declared CNF
 counter and binary subtraction. The counter is obtained from its machine theorem, not assumed
 as an oracle. This establishes the whole counting algorithm's polynomial space, including both
-answers and reconstruction, for [ChenJiangZhu2027], Section 7.1, Theorem 7.1 (PDF pp. 23–24).
+answers and reconstruction, on the common-occurrence frontend toward [ChenJiangZhu2027],
+Section 7.1, Theorem 7.1 (PDF pp. 23–24). Arbitrary ragged raw rows remain separate.
 
-The source Lemma 3.2 (PDF p. 11) and Proposition 4.2 (p. 14) use the sharper exponent
-`N log log N / sqrt (log N)`. The available native counter has the larger interpolation exponent
-`N (log log N)^2 / sqrt (log N)`. No sharper-time conclusion is asserted here.
+The native counter is the proved sharper general-density implementation of source Lemma 3.2
+(PDF p. 11), with exponent `N log log N / sqrt (log N)`. This module retains the polynomial-space
+execution API; weighted time composition is provided separately.
 
 ## Main definitions
 
@@ -164,11 +165,13 @@ theorem exists_count_polySpace (d : ℕ) :
       ∀ {n m t : ℕ} (R : Fin t → Occurrences n m) (_hd : ∀ j, (R j).demand ≤ d),
         count (n, (List.finRange t).map fun j => BinaryNormalization.ofOccurrences (R j)) =
           Fintype.card {σ : Fin n → Bool // ∀ j, ((R j).value σ : ℤ) = (R j).target} := by
-  obtain ⟨counter, T, S, A, c, e, a, b, hc, hspec, _, hS⟩ :=
-    Cslib.Complexity.CountingNativeEndpoint.exists_declaredCounter (d + 2)
-  have hs : PolyBounded (fun x => (encPair encUnary encCNF x).length) S :=
-    PolyBounded.of_forall_le a b hS
-  have hcounter := ComputableInPolySpace.of_inSpace hs (ComputableInSpace.of_inO hc)
+  obtain ⟨β, N₀, Ncut, cs, D, hresource, hspec⟩ :=
+    Cslib.Circuits.Frontier.IncidenceNetwork.exists_countGeneralParity_sharp_certificate
+      (d + 2) (by omega)
+  let counter := Cslib.Circuits.Frontier.IncidenceNetwork.countGeneralParity (d + 2) β N₀ Ncut
+  have hs : PolyBounded (fun x => (encPair encUnary encCNF x).length) cs.space :=
+    PolyBounded.of_forall_le D D fun x => (hresource x).2
+  have hcounter := ComputableInPolySpace.of_inSpace hs (ComputableInSpace.of_inO cs.computes)
   refine ⟨fun p => execute counter (compile d p.1 p.2),
     (execute_polySpace hcounter).comp (.of_polyTime (compile_polytime d)), ?_⟩
   intro n m t R hd

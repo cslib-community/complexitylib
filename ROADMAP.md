@@ -1212,21 +1212,16 @@ length/encoding transfer, all reduced solver costs and binary accumulation are
 charged. General natural/real estimates also prove fixed linear query-variable
 rescaling without adding an iterated-log factor.
 
-Remaining core work is the final general-density machine time/space composition:
-instantiate uniform disjoint traversal with the normalized native parity leaves,
-charge every intermediate formula encoding and transfer global polynomial
-workspace, combine the sharp traversal clock with the sharp leaf certificate,
-and absorb the bounded-size prefix in that composed machine. The actual parity
-initial-search/all-candidate overhead has been absorbed with a single loglog;
-its certificate is all-size. The sharper computed schedule now has its own exact
-ceiling-square-root characterization, actual tree budget, polynomial numerical
-depth/occurrence bounds and binary-clock certificate. Unrestricted-density
-original-count correctness is proved by `IncidenceGeneralCounter`, including
-normalization and unused-variable restoration, but its final machine resource
-certificate remains open.
+Remaining STOC1575 work is lifting the typed common-occurrence weighted frontend
+and its encoding/correctness/resource transfer to arbitrary variable-length raw
+rows, and completing the table closure/equation/separator/overlap construction
+resources and graph endpoints. The source-schedule whole general-density CNF
+machine now has its actual unrestricted-density sharp time/polynomial-space
+certificate, including source prefactors polynomial in N+M. Actual tagged weighted
+construction, sequential counting, binary reconstruction and eta rescaling now
+have sharp resources on the reviewed common-occurrence model; this restriction
+remains material and does not establish full Theorem 7.1.
 
-Then compose weighted binary reconstruction/eta rescaling. The older complete
-counter's extra loglog and nu²-denominator schedule cannot be relabeled as the
-sharper source bound. Common-occurrence weighted rows, arbitrary variable-length
-weighted raw rows, table/graph endpoints, full resource Lemma 3.2/Theorem 7.1,
-other-paper objectives and ALL-main remain open.
+The older interpolation counter is unchanged; its extra loglog and nu²-denominator
+schedule are not relabeled. Full raw weighted/Table/graph endpoints, other-paper
+objectives and ALL-main remain open.
