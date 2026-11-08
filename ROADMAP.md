@@ -1242,8 +1242,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 
 Single-parameter mechanisms with Myerson's Lemma for arbitrary monotone allocation rules, the
 Vickrey auction, knapsack auctions with welfare-maximizing rules, Groves/VCG mechanisms over
-finite outcome sets, and Myerson's optimal auction for independent regular distributions with
-densities (expected revenue equals expected virtual welfare; Vickrey with a reserve price) are in
+finite outcome sets, Myerson's optimal auction for independent regular distributions with
+densities (expected revenue equals expected virtual welfare; Vickrey with a reserve price), and the
+Bayes–Nash characterization with revenue equivalence and the symmetric first-price equilibrium
+`b(v) = (n - 1) v / n` for i.i.d. uniform values
+([#3173](https://github.com/cslib-community/complexitylib/issues/3173)) are in
 `GameTheory/Mechanism`. Remaining directions:
 
 - **Single-parameter corollaries:** the sponsored-search payment formula (rank-by-bid
@@ -1254,11 +1257,16 @@ densities (expected revenue equals expected virtual welfare; Vickrey with a rese
   regular distributions (Lecture 5, Definition 3.1) whose virtual valuation is unbounded below at
   `0`, such as `f(v) = 2v` on `[0, 1]`, which the endpoint convention of `IsRegular` excludes (this
   needs an explicit treatment of zero bids);
-  optimality among Bayesian incentive-compatible mechanisms (interim allocation rules, the
-  revelation principle); revenue equivalence and the symmetric first-price equilibrium
-  `b(v) = (n - 1) v / n` for i.i.d. uniform values; a measurable virtual-welfare maximizer for a
-  finite feasible set, removing the measurability hypothesis; and distributions without a bounded
+  optimality among Bayesian incentive-compatible mechanisms (the revelation principle, on top of
+  the interim rules of `Mechanism.Bayesian`); a measurable virtual-welfare maximizer for a finite
+  feasible set, removing the measurability hypothesis; and distributions without a bounded
   density (atoms, unbounded support).
+- **Bayes–Nash equilibria of auctions:** the symmetric first-price equilibrium
+  `b(v) = E[max of the other values | it is below v]` for general i.i.d. priors with densities and
+  its uniqueness (Hartline, *Mechanism Design and Approximation*, §2.8–2.9); the all-pay auction;
+  truthful bidding as a Bayes–Nash equilibrium of every DSIC mechanism; and the exact optimal
+  revenue `(n - 1 + 2^(-n)) / (n + 1)` for i.i.d. uniform values (`5/12` against the
+  second-price `1/3` for two bidders).
 - **Multi-parameter characterizations:** Groves mechanisms as the only DSIC welfare maximizers
   on rich valuation domains (Green–Laffont, Holmström), and limits of VCG such as revenue
   monotonicity and collusion.
