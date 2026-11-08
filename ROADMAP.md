@@ -927,15 +927,17 @@ The all-cases mathematical assembler now normalizes the original occurrence inpu
 dispatches direct branches using computed tests, and composes selected actual capped
 rows with global queries in positive deficient rank. Exact full-input count recovery,
 the 2r-2 variable cap, width d+2 and a global polynomial clause budget are certified.
-Composed encoded runtime/space and graph endpoints remain open; Theorem 7.1 and
+The binary construction continuation below supplies composed encoded construction
+resources; counting-time and graph endpoints remain open. Theorem 7.1 and
 ALL-main are not completed by this mathematical plan.
 
 The bounded-list weighted query writer now executes equations (24)–(25) using
 only bounded-length sublists of canonical finite supports. Exact binomial
 candidate counts, fixed-bound polynomial domination, literal widths, global
 list deduplication, pointwise correspondence to `globalQuery` and exact counting
-are proved. The separate executable all-cases continuation is described below;
-whole-pipeline encoded resource composition and graph endpoints remain open.
+are proved. The executable all-cases and complete binary construction
+continuations are described below; counting-time
+and graph endpoints remain open.
 This continuation does not complete Theorem 7.1 or ALL-main.
 
 
@@ -945,10 +947,9 @@ It reuses `CountingPlan` with exact full-variable count recovery, at most `2n-2`
 query variables, width `d+2` and the sharp fixed-demand polynomial clause budget.
 Canonical signed-list key injectivity supplies that budget for actual global
 deduplication. Concrete clients inspect computed constructors and counts.
-Executable finite-input correctness does not complete the source's resource
-theorem: complete encoded plan/query serialization, whole-pipeline binary time
-and peak space, advertised counting runtime, full table frontend and graph
-endpoints remain open. No ALL-main completion or issue closure follows.
+The binary construction continuation below resolves complete plan serialization
+and construction resources. Advertised counting runtime, full table frontend
+and graph endpoints remain open. No ALL-main completion or issue closure follows.
 
 
 The binary original-occurrence normalizer/backend stage now has composed plain
@@ -960,9 +961,9 @@ is proved equal to the actual original-input normalized/capped tables and
 dispatcher diagnostics. Uncapped aggregation-prefix bit widths and post-cap
 Gram/Bird/Cramer widths are derived; output storage follows the runtime proof.
 The separate selected-query continuation below resolves its query branch.
-Small-variable counting, tagged direct answers and branch/whole-plan resource
-composition remain to connect into the complete counting plan. Whole-endpoint peak space, sharper
-counting runtime, full table frontend and graph endpoints remain open; no
+The complete tagged construction continuation below composes small-variable
+counting and direct/query output resources. Whole counting-algorithm space,
+sharper counting runtime, full table frontend and graph endpoints remain open; no
 Theorem 7.1 or ALL-main completion is claimed.
 
 
@@ -977,7 +978,18 @@ queries, including sharp width/clause budgets and declared-index bounds.
 Candidate-prefix integer widths and machine-derived output storage are covered.
 One composed stage machine returns backend diagnostics and both queries with
 polynomial time and simultaneous stage workspace.
-Remaining complete-plan resource work is small-dimension direct counting,
-tagged direct/query answer and declaration serialization, and branch/whole-plan
-composition. Whole-endpoint peak space, advertised counting runtime, full table
-frontend and graph endpoints stay open; no Theorem 7.1/ALL-main completion follows.
+The complete tagged construction now composes this stage with small-dimension
+scans, computed direct branches, binary `2^n` writing and declared query output.
+`BinaryPlan.compile_polytime` certifies one actual output-producing machine,
+with fixed-demand polynomial binary time and independent polynomial space.
+`compile_original`, `compile_count` and `compile_withinBudget` connect its tagged
+output to the reviewed original-input all-cases plan, exact count and sharp
+query budget. Direct answers use at most `n+1` bits. No rank/basis/output advice
+or exponential assignment enumeration is used. Construction output storage
+follows the machine proof, rather than supplying its runtime bound.
+
+Remaining: compose external CNF counting with this tagged construction at the
+source's advertised sharper counting rate, establish whole counting-algorithm
+space, and complete the table frontend and graph endpoints. Raw malformed-list
+parser correctness is not proved. This construction milestone does not complete
+Theorem 7.1 or ALL-main; #1575 and the broader objective remain open.

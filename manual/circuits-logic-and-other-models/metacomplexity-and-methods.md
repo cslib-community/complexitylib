@@ -663,13 +663,9 @@ From the repository root run `scripts/build.sh ComplexityTests.WeightedBinaryNor
 The [complete client](../../ComplexityTests/WeightedBinaryNormalization.lean) checks
 repeated opposite signs, a `2^80` coefficient, deleted true rows, rejection,
 inconsistency, unused variables and Boolean/fractional full-rank recovery.
-This certifies the normalizer/backend stage, not the entire original-input
-counting plan: small-dimension counting, tagged direct-answer emission, selected
-row/query serialization and their composed machine resources remain to connect
-to the tagged plan. The certified selected-query continuation below resolves the
-query branch itself. Whole-endpoint peak
-space, advertised counting runtime, full table frontend and graph endpoints
-remain open. Theorem 7.1 and ALL-main remain incomplete.
+The complete tagged continuation below now composes this stage with direct
+answers and query writing. Advertised counting runtime, full table frontend
+and graph endpoints remain open; Theorem 7.1 and ALL-main remain incomplete.
 
 
 Import `Complexity.Computability.PolyTime.CNF.WeightedQuery` for the certified
@@ -719,8 +715,50 @@ The [complete client](../../ComplexityTests/WeightedBinaryQuery.lean) checks exa
 sublist/dedup order, duplicate and unattainable rows, all boundary cases, actual
 query counts on declared bits, computed original-row selection, repeated opposite
 occurrences and a `2^80` coefficient. Test-only exhaustive counting is absent
-from the implementation. The complete encoded plan still needs small-dimension
-direct counting, tagged answer/declaration emission and branch/whole-plan
-resource composition. Whole-endpoint peak space, advertised sharper counting
-time, full table frontend and graph endpoints remain open. Theorem 7.1 and
-ALL-main remain incomplete.
+from the implementation. The complete tagged continuation below resolves the
+remaining construction branches; advertised sharper counting time, full table
+frontend and graph endpoints remain open.
+
+
+Import `Complexity.Computability.PolyTime.CNF.WeightedPlan` for the complete
+binary construction, in namespace `Cslib.Logic.PL.WeightedRow.BinaryPlan`.
+`compile d n rows` consumes original occurrence records and returns `Output`:
+a tagged binary natural answer, or a declared variable count and the false/true
+ordinary CNFs. `encOutput` includes the tag, unary declaration and literal indices,
+binary direct answer and framed formula lists. The fixed demand cap `d` is not
+part of the varying input.
+
+`compile_polytime` certifies one plain binary multitape machine for this actual
+output, with polynomial time and independent polynomial space in the complete
+encoded input length. It composes computed normalization/backend diagnostics,
+branch tests, selected query writing and output serialization. It receives no
+basis, rank, answer or resource bound as advice. At width zero it scans the
+single assignment; at width one it scans the two constant assignments. Larger
+widths use computed rejection, empty-matrix, consistency, full-rank Booleanity
+and rank-zero tests before the positive deficient-rank query branch. The direct
+`2^n` answer uses certified binary exponentiation with unary exponent; it does
+not enumerate assignments. `compile_direct_bits` bounds direct answer bits by
+`n+1` on serialized original inputs.
+
+`compile_original` proves exact equality with serialization of the reviewed
+executable original-input all-cases plan. `compile_count` proves exact recovery
+of the original equation count, interpreting the query output as the difference
+of its two model counts. Those counts range over every declared variable,
+including unused variables. `compile_withinBudget` transfers the variable bound
+`2n-2`, sharp clause budget, width `d+2` and literal-index bounds to the actual
+output. `compile_output_polyBounded` derives encoded output storage from the
+machine certificate. Correctness uses the positive-weight `Occurrences` domain
+and its normalized-demand hypothesis; total execution on raw lists does not
+certify an arbitrary parser or malformed input semantics.
+
+From the repository root run `scripts/build.sh ComplexityTests.WeightedBinaryPlan`.
+The [complete client](../../ComplexityTests/WeightedBinaryPlan.lean) checks zero/one
+variables, no rows, rejection, inconsistency, Boolean/fractional full rank,
+positive deficient rank, duplicate constraints, large binary coefficients and a
+binary `2^80` direct answer. Exhaustive counting appears only in tiny test oracles.
+
+This completes binary time/space certification of tagged plan construction,
+including simultaneous intermediate workspace and actual output writes. It does
+not run the external counting oracle. The source's advertised sharper counting
+time, whole counting-algorithm space, full table frontend and graph endpoint
+remain open. Theorem 7.1 and ALL-main remain incomplete.

@@ -2571,6 +2571,7 @@ public import Complexity.Computability.PolyTime.CNF.GreedyParitySearch
 public import Complexity.Computability.PolyTime.CNF.SparseCNFLeafCounter
 public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
 public import Complexity.Computability.PolyTime.CNF.WeightedNormalization
+public import Complexity.Computability.PolyTime.CNF.WeightedPlan
 public import Complexity.Computability.PolyTime.CNF.WeightedQuery
 public import Complexity.Computability.PolyTime.CSP.ToCNF
 public import Complexity.Computability.PolyTime.CSP.Vars
