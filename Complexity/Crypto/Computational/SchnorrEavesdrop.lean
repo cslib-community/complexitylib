@@ -224,8 +224,7 @@ private theorem eval_schnorrSimulateWord_bits (n : ℕ) (d : F.Desc) (u : F.Carr
   rw [schnorrSimulateWord, ProbComp.eval_bind, PMF.map_comp]
   simp only [ProbComp.eval_pure, F.smul_encode, F.add_encode, hneg, neg_smul, ← sub_eq_add_neg]
   rw [← PMF.bind_pure_comp]
-  congr 1
-  funext a
+  congr 1 with a : 1
   simp only [Function.comp_apply, ZMod.val_natCast]
 
 private theorem eval_schnorrSimulatedTranscript (n : ℕ) (d : F.Desc) (u : F.Carrier d) (m : ℕ) :
@@ -252,8 +251,7 @@ private theorem schnorrHonestTranscript_eq_bind_uniform (d : F.Desc) (α : ZMod 
   conv_lhs =>
     rw [← PMF.uniformOfFintype_map_equiv (Equiv.subRight ((ofBits c : ZMod (F.order d)) * α))]
   rw [PMF.bind_map, ← PMF.bind_pure_comp]
-  congr 1
-  funext z
+  congr 1 with z : 1
   simp only [Function.comp_apply, Equiv.subRight_apply, sub_smul, mul_smul, sub_add_cancel]
 
 variable (F) in

@@ -126,8 +126,7 @@ theorem plainRow_trace (C : Circuit σ n m) (I : Interpretation σ Bool)
       C.program.trace I x ((C.program.lines g).wires k) + perm ((C.program.lines g).wires k) +
         perm ((C.program.lines g).wires k)) = C.program.trace I x (.gate g) := by
     rw [C.program.trace_gate]
-    congr 1
-    funext k
+    congr 1 with k : 1
     rw [add_assoc, BooleanRing.add_self, add_zero]
   exact congrArg (fun b => (key (.gate g, b + perm (.gate g)), b + perm (.gate g))) hv
 
