@@ -1307,6 +1307,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   length (reservoir sampling), and the `n^{Ω(1)}` lower bounds for `F_k` with `k ≥ 6`; `ProbComp`
   samplers and native realizations of the AMS sketches; CountSketch, turnstile updates, and
   heavy-hitter recovery; multi-pass communication-to-streaming transfers with pass counts.
+- **Dimension reduction** ([#2996](https://github.com/cslib-community/complexitylib/issues/2996)):
+  extend the Johnson–Lindenstrauss lemma for dense `±1` sign matrices to Achlioptas's sparse
+  `{-√3, 0, √3}` distribution, Gaussian and spherical projections, and fast and sparse JL
+  transforms; prove the Larsen–Nelson lower bound `k = Ω(ε⁻² log n)`; give JL maps as streaming
+  sketches with `ProbComp` samplers and native costs for applying the projection.
 - **Learning:** machine-certified running times for the LMN and Kushilevitz–Mansour learners;
   distributional problems and reductions, samplability, average-to-worst-case connections,
   PAC/agnostic learning, learning lower bounds, compression and refutation. For realizable
