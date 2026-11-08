@@ -4405,6 +4405,7 @@ public import Complexity.Probability.StochasticOracle.NativeResidualOneTurn
 public import Complexity.Probability.StochasticOracle.NativeRetention
 public import Complexity.Probability.StochasticOracle.NativeRetention.Correctness
 public import Complexity.Probability.StochasticOracle.NativeRetention.Execution
+public import Complexity.Probability.StochasticOracle.NativeRetention.Selector
 public import Complexity.Probability.StochasticOracle.PartialCover
 public import Complexity.Probability.StochasticOracle.PartialCoverGreedy
 public import Complexity.Probability.StochasticOracle.PartialCoverRisk

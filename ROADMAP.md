@@ -194,10 +194,19 @@ state-size/resource certificates and real-valued retention/certificate/provenanc
 correspondence are derived. The actual open native local phase terminates and
 preserves all previously received oracle memory, token bills and external duration.
 A correlated source-report client constructs its local input from actual proposals;
-this construction is currently a semantic serialization, not a native raw-channel
-parser or tape handoff. Copying/parsing the variable-length raw report (including
-unbounded invoice metadata) and implementing the adaptive query/stop/output loop
-remain open. This local phase is not a realized uniform upper oracle policy.
+the local machine still starts from prepared data rather than a native raw-channel
+parser or tape handoff. A complete `OracleComp` selector program now composes
+preformed batch selection, full raw responses, exact rational retention, completion
+stopping and source-mask output. Its derived joint law and actual guarded-source
+admission preserve hidden-state correlation, provenance, cancellation invoices and
+concurrent duration. Initial proposal data is ignored. A two-turn proper-partial
+cover client checks actual history-dependent queries and the full joint result.
+This program is not yet a uniform native upper oracle policy: copying/parsing
+variable-length raw reports (including unbounded invoice metadata), compiling the
+scheduler and composing their response-dependent native clocks/tapes remain open.
+The strict oracle-PPT compiler's input-only clock and bounded-prefix query do not
+supply that realization. Native productive continuation, quantitative upper bounds
+and a successful output from that same compiled selector remain to be assembled.
 Native optimum/envelope comparison through a uniformly
 realized successful upper selector, source
 subinstance/role/residual/external-machine encodings and exact source stopping

@@ -1544,3 +1544,60 @@ Theorem 4's native resource/asymptotic/hardness gaps remain. Neither unrestricte
 Theorems 5/6 nor ALL-main is complete. No selected abstract model or statement
 changes. The Agent Operator's Manual requires no edit because human direction,
 ownership, review and validation procedures are unchanged.
+
+
+### Complete raw-interface adaptive retention program
+
+Import `Complexity.Probability.StochasticOracle.NativeRetention.Selector`. The
+[complete two-turn client](../../ComplexityTests/NativeRetentionSelector.lean)
+constructs the scheduler, original source batches and correlated oracle, then
+checks the entire program's actual result and joint resources. From a matching
+warm checkout, run:
+
+```bash
+scripts/build.sh ComplexityTests.NativeRetentionSelector ComplexityTests.NativeRetention
+```
+
+`NativeRetention.Selector.program choose input budget` is a `ProbOracleComp`
+program on the original unit-channel bit-string interface. The scheduler is closed
+randomized program code returning a nonempty preformed `ConcurrentBatch.Batch`
+or an explicit halt. It receives the runtime rows, rational data and full visible
+history, including prior requests and all invoice bits, and an unbounded word of
+private scheduler storage. Its decision carries updated storage, so private random
+choices remain available on later turns. It cannot inspect hidden oracle memory or
+make additional external calls. The selector issues each query itself, decodes the
+actual complete reply, recomputes local retention and tests completion before
+selecting another batch. Caller-supplied `input.proposals` are ignored. A successful
+result is the original family mask; incomplete termination returns `none`.
+
+`run_joint` and `program_joint` derive the exact joint execution law with arbitrary
+stateful oracles. They keep every response/private-state/resource correlation;
+there is no finite metadata alphabet or independent-response assumption.
+`run_invariant`, `run_resources` and `program_correct` apply the original guarded
+source handler to derive feasibility, the exact source bill and duration ledger,
+selection-only provenance and the feasible-dual certificate of successful output.
+They require the usual input dual promises, not a supplied selector correctness or
+success guarantee. Invalid/reused/deadline-exhausted source requests are rejected
+by that handler, receive no proposals and consume no issued source turn. The
+program's finite budget counts selection attempts, including rejected attempts.
+A scheduler may also halt prematurely. Thus the code alone does not establish a
+positive productivity envelope or the theorem's upper success probability.
+
+In the checked client, the first batch reveals one of two proper partial covers
+and bills a canceled companion. The next raw query asks for the missing part using
+only the visible first response. The same hidden bit persists across both batches;
+a wrong query would receive no valid proposal. Both branches produce the full cover
+with bill 9 and external duration 3. Additional checks cover random initial hidden
+state, cancellation, completed-state stopping, empty ground and ignored fabricated
+initial proposals.
+
+This is an executable program and source-semantics connection, not a compiled
+native adaptive selector. `NativeRetention.compiled` still realizes only its local
+phase. The strict oracle-PPT calculus only copies a supplied bounded reply prefix;
+it cannot read an arbitrary invoice followed by later proposal slots under an
+input-only polynomial clock. A full native realization needs the unbounded-reply
+reader, runtime parser, scheduler compilation and tape/clock composition. The
+source excludes local computation from its deadline, so that stronger strict-PPT
+clock is not a source requirement. No native upper probability/cost bound or
+native optimum comparison follows merely by assuming the missing realization.
+The prior native lower and retained-receipt quantitative results remain separate.

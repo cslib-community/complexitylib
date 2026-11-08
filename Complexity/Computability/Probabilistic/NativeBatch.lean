@@ -67,7 +67,8 @@ theorem initial_invariant (state : Private) :
   exact ⟨initial_wellFormed limits state, by simp [initial, tokenBill],
     by simp [initial, elapsed], by intro m; simp [nativeAvailable, sourceAvailable, initial]⟩
 
-private theorem serve_invariant (memory : Memory Unit (ServerState n Private))
+/-- A supported raw transaction preserves the source ledger, including rejections. -/
+theorem serve_invariant (memory : Memory Unit (ServerState n Private))
     (h : Invariant limits memory) (word : Word) (reply : Reply) (next : ServerState n Private)
     (hr : (reply, next) ∈ (serve limits sample word memory.privateState).support) :
     Invariant limits (memory.record ((), word) reply next) := by
