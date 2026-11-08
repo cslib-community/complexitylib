@@ -1,12 +1,13 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Erik Demaine. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Erik Demaine
 -/
 
 module
 -- upstream: candidate
 
+public import Complexity.Foundations.Syntax.PrefixParser
 public import Complexity.Logics.Propositional.QBF
 public import Mathlib.Data.Fintype.Defs
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Primitives
@@ -96,45 +97,50 @@ def tokens : QBF ℕ → List (Kind × ℕ)
   | .ex v φ => (.ex, v) :: tokens φ
   | .all v φ => (.all, v) :: tokens φ
 
+/-- Interpret an existing formula token as its constructor. Nonzero payloads on constants and
+connectives are rejected. Variables and quantifiers retain their binary-encoded variable. -/
+def readToken : Kind × ℕ → Option (Cslib.PrefixParser.Step (QBF ℕ))
+  | (.var, v) => some (.atom (.var v))
+  | (.top, 0) => some (.atom .top)
+  | (.bot, 0) => some (.atom .bot)
+  | (.not, 0) => some (.unary .not)
+  | (.and, 0) => some (.binary .and)
+  | (.or, 0) => some (.binary .or)
+  | (.ex, v) => some (.unary (.ex v))
+  | (.all, v) => some (.unary (.all v))
+  | _ => none
+
+/-- Parsing a formula's tokens recovers it and leaves the following suffix untouched. -/
+theorem parseFuel_tokens (φ : QBF ℕ) (rest : List (Kind × ℕ)) (fuel : ℕ)
+    (hf : φ.tokens.length ≤ fuel) :
+    Cslib.PrefixParser.parseFuel readToken fuel (φ.tokens ++ rest) = some (φ, rest) := by
+  induction φ generalizing fuel rest with
+  | var _ | top | bot =>
+    cases fuel <;> simp_all [tokens, Cslib.PrefixParser.parseFuel, readToken]
+  | not φ ih | ex _ φ ih | all _ φ ih =>
+    cases fuel with
+    | zero => simp [tokens] at hf
+    | succ fuel =>
+      simp only [tokens, List.length_cons] at hf
+      simp only [tokens, List.cons_append, Cslib.PrefixParser.parseFuel, readToken]
+      rw [ih rest fuel (by omega)]
+      rfl
+  | and φ ψ ihφ ihψ | or φ ψ ihφ ihψ =>
+    cases fuel with
+    | zero => simp [tokens] at hf
+    | succ fuel =>
+      simp only [tokens, List.length_cons, List.length_append] at hf
+      simp only [tokens, List.cons_append, List.append_assoc,
+        Cslib.PrefixParser.parseFuel, readToken]
+      rw [ihφ (ψ.tokens ++ rest) fuel (by omega)]
+      dsimp only [Bind.bind, Option.bind]
+      rw [ihψ rest fuel (by omega)]
+      rfl
+
 /-- **Tokens in prefix order determine the formula**, and what follows them. -/
 theorem tokens_append_inj {φ ψ : QBF ℕ} {r r' : List (Kind × ℕ)}
-    (h : φ.tokens ++ r = ψ.tokens ++ r') : φ = ψ ∧ r = r' := by
-  induction φ generalizing ψ r r' with
-  | var v => cases ψ <;> simp_all [tokens]
-  | top => cases ψ <;> simp_all [tokens]
-  | bot => cases ψ <;> simp_all [tokens]
-  | not φ ih =>
-    cases ψ <;> simp only [tokens, List.cons_append, List.cons.injEq, Prod.mk.injEq,
-      reduceCtorEq, false_and] at h
-    obtain ⟨-, h⟩ := h
-    obtain ⟨rfl, rfl⟩ := ih h
-    exact ⟨rfl, rfl⟩
-  | and φ φ' ih ih' =>
-    cases ψ <;> simp only [tokens, List.cons_append, List.cons.injEq, Prod.mk.injEq,
-      reduceCtorEq, false_and, List.append_assoc] at h
-    obtain ⟨-, h⟩ := h
-    obtain ⟨rfl, h'⟩ := ih h
-    obtain ⟨rfl, rfl⟩ := ih' h'
-    exact ⟨rfl, rfl⟩
-  | or φ φ' ih ih' =>
-    cases ψ <;> simp only [tokens, List.cons_append, List.cons.injEq, Prod.mk.injEq,
-      reduceCtorEq, false_and, List.append_assoc] at h
-    obtain ⟨-, h⟩ := h
-    obtain ⟨rfl, h'⟩ := ih h
-    obtain ⟨rfl, rfl⟩ := ih' h'
-    exact ⟨rfl, rfl⟩
-  | ex v φ ih =>
-    cases ψ <;> simp only [tokens, List.cons_append, List.cons.injEq, Prod.mk.injEq,
-      reduceCtorEq, false_and, true_and] at h
-    obtain ⟨rfl, h⟩ := h
-    obtain ⟨rfl, rfl⟩ := ih h
-    exact ⟨rfl, rfl⟩
-  | all v φ ih =>
-    cases ψ <;> simp only [tokens, List.cons_append, List.cons.injEq, Prod.mk.injEq,
-      reduceCtorEq, false_and, true_and] at h
-    obtain ⟨rfl, h⟩ := h
-    obtain ⟨rfl, rfl⟩ := ih h
-    exact ⟨rfl, rfl⟩
+    (h : φ.tokens ++ r = ψ.tokens ++ r') : φ = ψ ∧ r = r' :=
+  Cslib.PrefixParser.append_injective parseFuel_tokens h
 
 theorem tokens_injective : Function.Injective tokens := fun φ ψ h =>
   (tokens_append_inj (r := []) (r' := []) (by simpa using h)).1

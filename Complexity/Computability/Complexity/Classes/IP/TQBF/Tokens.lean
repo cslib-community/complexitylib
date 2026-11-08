@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Erik Demaine. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Erik Demaine
 -/
 
 module
@@ -102,42 +102,57 @@ def tokens : ArithQBF ℕ → List (Kind × ℕ)
   | .op .all v e => (.all, v) :: tokens e
   | .op .lin v e => (.lin, v) :: tokens e
 
+/-- Interpret an arithmetic-formula token as its constructor, rejecting nonzero payloads on
+constants and connectives. -/
+def readToken : Kind × ℕ → Option (Cslib.PrefixParser.Step (ArithQBF ℕ))
+  | (.var, v) => some (.atom (.var v))
+  | (.top, 0) => some (.atom .top)
+  | (.bot, 0) => some (.atom .bot)
+  | (.not, 0) => some (.unary .not)
+  | (.and, 0) => some (.binary (.bin .and))
+  | (.or, 0) => some (.binary (.bin .or))
+  | (.ex, v) => some (.unary (.op .ex v))
+  | (.all, v) => some (.unary (.op .all v))
+  | (.lin, v) => some (.unary (.op .lin v))
+  | _ => none
+
+/-- Parsing an arithmetic formula's tokens recovers it and leaves the suffix untouched. -/
+theorem parseFuel_tokens (e : ArithQBF ℕ) (rest : List (Kind × ℕ)) (fuel : ℕ)
+    (hf : e.tokens.length ≤ fuel) :
+    Cslib.PrefixParser.parseFuel readToken fuel (e.tokens ++ rest) = some (e, rest) := by
+  induction e generalizing fuel rest with
+  | var _ | top | bot =>
+    cases fuel <;> simp_all [tokens, Cslib.PrefixParser.parseFuel, readToken]
+  | not e ih =>
+    cases fuel with
+    | zero => simp [tokens] at hf
+    | succ fuel =>
+      simp only [tokens, List.length_cons] at hf
+      simp only [tokens, List.cons_append, Cslib.PrefixParser.parseFuel, readToken]
+      rw [ih rest fuel (by omega)]
+      rfl
+  | bin op e₁ e₂ ih₁ ih₂ =>
+    cases fuel with
+    | zero => cases op <;> simp [tokens] at hf
+    | succ fuel =>
+      cases op <;> simp only [tokens, List.length_cons, List.length_append] at hf ⊢ <;>
+        simp only [List.cons_append, List.append_assoc, Cslib.PrefixParser.parseFuel, readToken] <;>
+        rw [ih₁ (e₂.tokens ++ rest) fuel (by omega)] <;>
+        dsimp only [Bind.bind, Option.bind] <;>
+        rw [ih₂ rest fuel (by omega)] <;> rfl
+  | op op _ e ih =>
+    cases fuel with
+    | zero => cases op <;> simp [tokens] at hf
+    | succ fuel =>
+      cases op <;> simp only [tokens, List.length_cons] at hf ⊢ <;>
+        simp only [List.cons_append, Cslib.PrefixParser.parseFuel, readToken] <;>
+        rw [ih rest fuel (by omega)] <;> rfl
+
 /-- **Tokens in prefix order determine the formula**, and what follows them. -/
 theorem tokens_append_inj {e e' : ArithQBF ℕ} {r r' : List (Kind × ℕ)}
-    (h : e.tokens ++ r = e'.tokens ++ r') : e = e' ∧ r = r' := by
-  induction e generalizing e' r r' with
-  | var v =>
-    rcases e' with _ | _ | _ | _ | ⟨_ | _, _, _⟩ | ⟨_ | _ | _, _, _⟩ <;> simp_all [tokens]
-  | top =>
-    rcases e' with _ | _ | _ | _ | ⟨_ | _, _, _⟩ | ⟨_ | _ | _, _, _⟩ <;> simp_all [tokens]
-  | bot =>
-    rcases e' with _ | _ | _ | _ | ⟨_ | _, _, _⟩ | ⟨_ | _ | _, _, _⟩ <;> simp_all [tokens]
-  | not e ih =>
-    rcases e' with _ | _ | _ | _ | ⟨_ | _, _, _⟩ | ⟨_ | _ | _, _, _⟩ <;>
-      simp only [tokens, List.cons_append, List.cons.injEq, Prod.mk.injEq, reduceCtorEq,
-        false_and] at h
-    obtain ⟨-, h⟩ := h
-    obtain ⟨rfl, rfl⟩ := ih h
-    exact ⟨rfl, rfl⟩
-  | bin o e₁ e₂ ih₁ ih₂ =>
-    rcases o with _ | _ <;>
-    rcases e' with _ | _ | _ | _ | ⟨_ | _, _, _⟩ | ⟨_ | _ | _, _, _⟩ <;>
-      simp only [tokens, List.cons_append, List.cons.injEq, Prod.mk.injEq, reduceCtorEq,
-        false_and, List.append_assoc] at h <;>
-    · obtain ⟨-, h⟩ := h
-      obtain ⟨rfl, h'⟩ := ih₁ h
-      obtain ⟨rfl, rfl⟩ := ih₂ h'
-      exact ⟨rfl, rfl⟩
-  | op o v e ih =>
-    rcases o with _ | _ | _ <;>
-    rcases e' with _ | _ | _ | _ | ⟨_ | _, _, _⟩ | ⟨_ | _ | _, _, _⟩ <;>
-      simp only [tokens, List.cons_append, List.cons.injEq, Prod.mk.injEq, reduceCtorEq,
-        false_and, true_and] at h <;>
-    · obtain ⟨rfl, h⟩ := h
-      obtain ⟨rfl, rfl⟩ := ih h
-      exact ⟨rfl, rfl⟩
+    (h : e.tokens ++ r = e'.tokens ++ r') : e = e' ∧ r = r' :=
+  Cslib.PrefixParser.append_injective parseFuel_tokens h
 
-/-- Linearizations come first in prefix order. -/
 private theorem tokens_lins (xs : List ℕ) (e : ArithQBF ℕ) :
     (lins xs e).tokens = xs.map (fun x => (Kind.lin, x)) ++ e.tokens := by
   induction xs with
