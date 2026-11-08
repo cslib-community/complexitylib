@@ -423,6 +423,15 @@ In order:
   VOLE-in-the-head remain (#643);
 - libzk's compositional structure as a composition of these components, without ciphersuites.
 
+### Private information retrieval ([#3251](https://github.com/cslib-community/complexitylib/issues/3251))
+
+- **Information-theoretic PIR:** `Crypto/Protocols/PIR` covers one-round schemes with perfect
+  correctness and single-server privacy, the one-round single-server bound, the subcube schemes
+  with the rows transformation, and schemes from perfectly smooth decoders. Next targets are the
+  covering-code two-server scheme with `O(n^{1/3})` bits (CGKS Section 3.3), the multi-round
+  single-server bound, `t`-private schemes against coalitions, block retrieval, the converse
+  from schemes to smooth codes (Katz–Trevisan), and two-server lower bounds.
+
 ### Concurrent and quantum security
 
 - **Concurrent composition:** extend the protocol semantics with environments, scheduling,
