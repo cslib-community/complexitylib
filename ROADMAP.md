@@ -1301,6 +1301,16 @@ each statement against the numbered result. Organize modules by subject, not cha
   recovery and the classical reductions; certify uniform circuit generation and polynomial gate
   bounds alongside correctness.
 
+- **Nonlocal games** ([#3313](https://github.com/cslib-community/complexitylib/issues/3313)):
+  beyond CHSH and Tsirelson's bound in the finite-dimensional tensor-product model, give general
+  XOR games Tsirelson's vector characterization and its semidefinite program (Cleve–Høyer–Toner–
+  Watrous, Theorem 4 and Proposition 5) and the Grothendieck-constant bound on the quantum
+  advantage (Theorem 7); mixed shared states and the commuting-operator model, with the inclusion of the
+  tensor-product value; parallel repetition of entangled games, alongside the classical theorem
+  ([#886](https://github.com/cslib-community/complexitylib/issues/886)); rigidity (self-testing)
+  of the CHSH strategy; and the entangled-prover class `MIP*`, toward the optional
+  [MIP* = RE](#optional-landmark-projects) project.
+
 ### Differential privacy and adaptive data analysis
 
 - Dataset adjacency and `(ε, δ)`-differential privacy for probabilistic programs, with
