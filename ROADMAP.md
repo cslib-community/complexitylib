@@ -1247,9 +1247,17 @@ literal indices and framed term lists; arbitrary untrusted-byte admission is sep
 `IndependentDomination` now supplies an actual explicit adjacency-matrix graph frontend and
 complete original-selection counting/sharp-time/global-space composition. Edge exclusions and
 closed-neighborhood coverage give width three, `2v-1` variables and at most `3v²` clauses; the
-empty graph is retained. This is the no-size-test fixed-rule subcase of Corollary 7.2, not all
-of that corollary or Proposition D.3's variable input cardinality test. The original vertex-count
-eta rescaling is proved; no marking multiplicity or assumed constructor/runtime is used.
+empty graph is retained. The continuation `IndependentDominationInterval` adds arbitrary signed
+binary lower/upper/exact input cardinality tests, covering this fixed-rule specialization of
+Corollary 7.2 and Proposition D.3's input upper-bound predicate/count. Actual capped threshold
+circuit generation and full functional CNF writing introduce at most `952(v+1)` gate variables;
+each accepted original selection has exactly one trace. Actual nonempty queries have width three,
+`2v+a-1` variables and at most `3v²+2+2856(v+1)` clauses; empty signed inputs dispatch directly.
+One complete native certificate composes signed normalization, construction, counting and
+reconstruction with global polynomial workspace and original-vertex single-loglog sharp time.
+Binary bounds vary with the input, and all their bits/writes are charged. This is not the general
+fixed-rule corollary, a full size-distribution iterator, a witness/optimization algorithm or a fresh
+bit-transition machine simulation. No marking multiplicity or assumed constructor/runtime is used.
 
 Remaining STOC1575 objectives, keeping the original inventory open:
 
@@ -1262,10 +1270,10 @@ Remaining STOC1575 objectives, keeping the original inventory open:
 - Theorem 7.1: the parsed ragged weighted-row counting/reduction is covered for the explicit
   nonsuccinct unary-declaration input encoding, with actual sharp time/polynomial space.
 - Corollary 7.2 / Theorem 7.3: fixed finite/cofinite degree rules and fixed labeled partition
-  matrices need functional threshold/size-test constructions and their complete resource/count
-  transfer; q and cutoff D must remain fixed independently of the input. The no-size-test
-  independent-domination specialization is now implemented; functional size-test and general
-  threshold/rule/matrix construction remain open.
+  matrices still need their actual local degree-rule/partition construction and complete resource/
+  count transfer; q and cutoff D must remain fixed independently of the input. Functional linear
+  input cardinality tests and complete signed size-constrained independent-domination counting
+  are now implemented. General degree-rule/matrix construction remains open.
 - Corollaries 7.4–7.5 / Proposition 7.6: graph decision/witness/optimum and induced-matching
   distribution endpoints remain open. Upper-domination width-3 differences count set–marking
   pairs, not original sets. Query budgets, directed/undirected promises, empty graphs and

@@ -818,6 +818,7 @@ public import Complexity.Computability.Circuit.Boolean.Formula.Andreev
 public import Complexity.Computability.Circuit.Boolean.Formula.Poly
 public import Complexity.Computability.Circuit.Boolean.Formula.Restriction
 public import Complexity.Computability.Circuit.Boolean.Formula.Subbotovskaya
+public import Complexity.Computability.Circuit.Boolean.FunctionalCNF
 public import Complexity.Computability.Circuit.Boolean.GateElimination
 public import Complexity.Computability.Circuit.Boolean.Gates
 public import Complexity.Computability.Circuit.Boolean.Hamming
@@ -1694,6 +1695,7 @@ public import Complexity.Computability.Complexity.FineGrained.Exponents
 public import Complexity.Computability.Complexity.FineGrained.GeneralCNFBranchSchedule
 public import Complexity.Computability.Complexity.FineGrained.GraphProblems
 public import Complexity.Computability.Complexity.FineGrained.IndependentDomination
+public import Complexity.Computability.Complexity.FineGrained.IndependentDominationInterval
 public import Complexity.Computability.Complexity.FineGrained.LocalMapCounting
 public import Complexity.Computability.Complexity.FineGrained.MaxSAT
 public import Complexity.Computability.Complexity.FineGrained.MaxSAT.Histogram
@@ -2602,10 +2604,12 @@ public import Complexity.Computability.PolyTime.BooleanAnalysis.IncidenceBranchi
 public import Complexity.Computability.PolyTime.BooleanAnalysis.SparsePolyCounter
 public import Complexity.Computability.PolyTime.BudgetTuples
 public import Complexity.Computability.PolyTime.CNF.BranchedSparseCNFCounter
+public import Complexity.Computability.PolyTime.CNF.CardinalityInterval
 public import Complexity.Computability.PolyTime.CNF.ExactOnePlan
 public import Complexity.Computability.PolyTime.CNF.GreedyParityContext
 public import Complexity.Computability.PolyTime.CNF.GreedyParitySearch
 public import Complexity.Computability.PolyTime.CNF.IndependentDomination
+public import Complexity.Computability.PolyTime.CNF.IndependentDominationInterval
 public import Complexity.Computability.PolyTime.CNF.SparseCNFLeafCounter
 public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
 public import Complexity.Computability.PolyTime.CNF.TwoBoundaryFrontend

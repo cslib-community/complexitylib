@@ -427,7 +427,8 @@ This interface is a functional composition with a binary-certified elimination b
 The `BinaryFrontend.compile` continuation below now supplies the complete actual binary
 constructor and sharp counting resource endpoint for the explicit promised table encoding.
 The rational kernel's own coefficient-growth theorem is not implied by the binary backend.
-The weighted-row endpoint later in this chapter is also certified; graph endpoints remain open.
+The weighted-row endpoint later in this chapter is also certified; the independent-domination
+frontend below covers one graph rule, with the other graph endpoints still open.
 
 The listing resource bound is promise-restricted. Without `DimensionOne`, take
 one width-$w$ table containing the all-zero tuple, all-one tuple and all $w$
@@ -601,14 +602,58 @@ space and $L^{O(1)}2^{O(\eta(n))}$ time, proving the fixed-linear $2n$ rescaling
 `exists_count_realEta_certificate` gives real eta for $n\ge16$, with rounded bounds at every size.
 
 This covers the no-size-test fixed independent-domination rule in Corollary 7.2 and the local
-predicate of Appendix D.4, Proposition D.3. It does not supply input cardinality bounds, size
-distributions, general finite/cofinite rules, labeled partition matrices or the remaining graph
-applications. Graph correctness uses the canonical simple undirected input; arbitrary raw matrix
+predicate of Appendix D.4, Proposition D.3. The continuation below supplies variable input
+cardinality bounds. Size distributions, general finite/cofinite rules, labeled partition matrices
+and the remaining graph applications are separate. Graph correctness uses the canonical simple undirected input; arbitrary raw matrix
 shapes have total polynomial construction/global space without an additional graph-admission claim.
 Run `scripts/build.sh ComplexityTests.PaperEndpoints.IndependentDomination` from the root.
 The [complete checked client](../../ComplexityTests/PaperEndpoints/IndependentDomination.lean)
 checks empty/isolated/edge/path/triangle/star graphs, original counts and exact query budgets.
 Its small exhaustive oracle is a test instrument, not the production counting algorithm.
+
+### Independent domination with signed binary input cardinality bounds
+
+Import `Complexity.Computability.Complexity.FineGrained.IndependentDominationInterval` and open
+`Cslib.Logic.PL.IndependentDominationInterval.Signed`. `ofGraph G lo hi` retains the canonical
+simple undirected adjacency matrix and adds two signed binary input bounds. The accepted original
+selections satisfy $\mathrm{lo}\le |S|\le\mathrm{hi}$. Set both bounds equal for an exact-size
+count, or use lower bound zero for Appendix D.4, Proposition D.3's input upper-bound problem.
+Negative upper bounds and reversed intervals reject; negative lower bounds impose no restriction.
+The empty-graph branch checks whether the interval contains zero and writes its answer directly.
+
+`CardinalityInterval.generate` caps each binary threshold at one more than the original unary
+vertex declaration before calling the existing linear population-count circuit generator.
+`FunctionalCNF.write` traverses its explicit gates and writes full truth-table clauses and output
+units. The functional extension proof gives exactly one accepted gate trace per original selection
+inside the interval, and none outside. In particular the tested weight counts original vertices,
+not true gate variables. The two thresholds share their input wires and introduce
+$a\le952(v+1)$ auxiliary variables and at most $2+2856(v+1)$ clauses of width three.
+There is no search over gate assignments or loop of length equal to a binary cutoff.
+
+The natural-bound `build` appends this formula to the edge exclusions and keeps the original
+closed-neighborhood DNFs. `representation` proves exact original-selection count correspondence.
+For $v\ge1$, `query_budget` gives two actual queries with $N=2v+a-1$, width three and at most
+$3v^2+2+2856(v+1)$ clauses each. Signed normalization is executable and polynomial in the full
+encoded length. `Signed.exists_count_sharp_certificate` composes normalization, the empty branch,
+gate/query writing, sequential counting and reconstruction into one actual native certificate:
+global polynomial workspace and $L^{O(1)}2^{O(\eta(v))}$ time. The real-eta version applies for
+$v\ge16$; the rounded certificate includes every smaller graph. Constants are uniform over both
+input bounds. The fixed-linear rescaling charges $2v+a$, retaining the single loglog factor.
+
+From the checkout root run
+`scripts/build.sh ComplexityTests.PaperEndpoints.IndependentDominationInterval`.
+The [complete graph client](../../ComplexityTests/PaperEndpoints/IndependentDominationInterval.lean)
+computes edge/path/triangle/isolated/empty cases, overlapping neighborhoods, impossible intervals,
+negative bounds, huge binary cutoffs, actual query metadata and direct empty dispatch.
+The [cardinality client](../../ComplexityTests/PaperEndpoints/CardinalityInterval.lean) checks
+unique-trace evaluation and constant-size generation at out-of-range 512/1024-bit thresholds.
+Small test oracles enumerate original selections only; production uses the proved sharp counter.
+
+These are native word/resource certificates on explicit framed encodings, with unary declarations,
+binary references and signed binary bounds. They do not add a fresh bit-transition machine
+simulation or arbitrary untrusted-byte graph admission. General finite/cofinite degree-rule and
+labeled partition constructors, the other Corollary 7.4 applications, induced-matching size
+distributions, upper-domination marking counts, witness/optimum extraction and ALL-main remain open.
 
 ## Known Limitations
 
