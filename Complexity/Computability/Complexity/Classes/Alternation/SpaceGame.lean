@@ -8,7 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Classes.Alternation.Space
-public import Complexity.Computability.Circuit.Boolean.Tableau.ValueGame
+public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.WordGame
+import Complexity.Computability.Circuit.Boolean.Tableau.ValueGame
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.StreamFold
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.BitString
@@ -79,11 +80,11 @@ private theorem tidy_of_polySpace {α β : Type} {encIn : α ↪ List Bool} {enc
 variable {α : Type} {enc : α ↪ List Bool}
 
 /-- **Word games with a polynomial-space update are in `APSPACE`.** Let the initial position `I a`
-be polynomial-space computable, and let the update `U` be computed on the positions
-`u :: b :: r` reachable from `I a` (with any move `b`) by a polynomial-space computable `F`, through
-some encoding `encPos` of typed positions. Let every position reachable from `I a` have length at
-most `ℓ a`, polynomial in the instance, and let every play from `I a` end. Then the problem of
-whether the existential player wins from `I a` is in `APSPACE`. -/
+be polynomial-space computable, and let the update `U` be computed by a polynomial-space computable
+`F`, through some encoding `encPos` of typed positions, on every word `u :: b :: r` such that
+`u :: x :: r` is reachable from `I a` for some `x` (and `b` is any move). Let every position
+reachable from `I a` have length at most `ℓ a`, polynomial in the instance, and let every play from
+`I a` end. Then the problem of whether the existential player wins from `I a` is in `APSPACE`. -/
 theorem mem_APSPACE_of_wins_polySpace {π : Type} {encPos : π ↪ List Bool} {A : Set α}
     {I : α → List Bool} {U : List Bool → List Bool} {F : π → List Bool} {ℓ : α → ℕ}
     (hI : ComputableInPolySpace I enc encBits)
@@ -257,7 +258,7 @@ theorem EXP_subset_APSPACE : EXP enc ⊆ APSPACE enc := by
   have hJM := budget_prod hx (budget_prod hT
     (budget_prod hM (budget_const (encB := encBool) true hin)))
   have hI := ComputableInPolySpace.of_inSpace hBs
-    (budget_comp_linear (emit_inSpace tm) hJ)
+    (budget_comp_linear (position_inSpace tm) hJ)
   have hℓ := (ComputableInPolySpace.of_inSpace hBs hJM).polyBounded_length.add
     (PolyBounded.const 2)
   have hNM (a : α) : N a < M a := outWire_lt (k := k) (State := State) _ _
@@ -265,17 +266,17 @@ theorem EXP_subset_APSPACE : EXP enc ⊆ APSPACE enc := by
     (U := update tm encClaim) hI ((ComputableInPolySpace.of_inSpace
       (PolyBounded.self) (step_inSpace tm))) hℓ ?_ ?_ ?_ ?_
   · intro a u x r b hr
-    obtain ⟨w', v, -, he⟩ := reach_emit (tm := tm) encClaim (hNM a) hr
-    obtain ⟨-, rfl⟩ := emit_eq_cons he.symm
-    exact ⟨pos u b (enc a, T a, w', v), encPos_pos _ _ _, by rw [step_pos, update_emit_cons]⟩
+    obtain ⟨w', v, -, he⟩ := reach_position (tm := tm) encClaim (hNM a) hr
+    obtain ⟨-, rfl⟩ := position_eq_cons he.symm
+    exact ⟨pos u b (enc a, T a, w', v), encPos_pos _ _ _, by rw [step_pos, update_position_cons]⟩
   · intro a w hr
-    obtain ⟨w', v, hw', rfl⟩ := reach_emit (tm := tm) encClaim (hNM a) hr
-    refine (length_emit_le _).trans ?_
+    obtain ⟨w', v, hw', rfl⟩ := reach_position (tm := tm) encClaim (hNM a) hr
+    refine (length_position_le _).trans ?_
     simp only [encPair_apply, Nat.add_le_add_iff_right]
     exact length_encClaim_mono hw'.le
-  · exact fun a => ⟨N a, ends_emit (tm := tm) encClaim (enc a) (T a) (N a) (hNM a) true⟩
+  · exact fun a => ⟨N a, ends_position (tm := tm) encClaim (enc a) (T a) (N a) (hNM a) true⟩
   · intro a
-    rw [wins_emit_iff (enc a) (T a) (N a) (hNM a) true]
+    rw [wins_position_iff (enc a) (T a) (N a) (hNM a) true]
     have hnT : (enc a).length < 2 * T a := by
       have : n a < 2 ^ n a := Nat.lt_two_pow_self
       have : 2 ^ n a ≤ T a := Nat.pow_le_pow_right (by norm_num) (by simp only [E]; omega)

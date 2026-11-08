@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import Complexity.Computability.Circuit.Boolean.Tableau.ValueGame
 import Complexity.Computability.Complexity.Classes.Alternation.SpaceGame
 import Complexity.Computability.Complexity.Classes.Inclusions
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -134,17 +135,17 @@ variable {k : ℕ} {State : Type} [Fintype State] [DecidableEq State]
 
 /-- A claim about a tableau wire is won exactly when the opposite claim is lost. -/
 example (x : List Bool) (T w : ℕ) (hw : w < x.length + numGates k State T) :
-    Wins (update tm encClaim) (emit tm encClaim (x, T, w, true)) ↔
-      ¬ Wins (update tm encClaim) (emit tm encClaim (x, T, w, false)) := by
-  rw [wins_emit_iff x T w hw, wins_emit_iff x T w hw]
+    Wins (update tm encClaim) (position tm encClaim (x, T, w, true)) ↔
+      ¬ Wins (update tm encClaim) (position tm encClaim (x, T, w, false)) := by
+  rw [wins_position_iff x T w hw, wins_position_iff x T w hw]
   cases val tm T x w <;> simp
 
 /-- The true claim about an input wire is won, the false one lost. -/
 example (x : List Bool) (T i : ℕ) (hi : i < x.length) :
-    Wins (update tm encClaim) (emit tm encClaim (x, T, i, x[i])) ∧
-      ¬ Wins (update tm encClaim) (emit tm encClaim (x, T, i, !x[i])) := by
+    Wins (update tm encClaim) (position tm encClaim (x, T, i, x[i])) ∧
+      ¬ Wins (update tm encClaim) (position tm encClaim (x, T, i, !x[i])) := by
   have hw : i < x.length + numGates k State T := by omega
-  rw [wins_emit_iff x T i hw, wins_emit_iff x T i hw, val_input tm hi]
+  rw [wins_position_iff x T i hw, wins_position_iff x T i hw, val_input tm hi]
   simp
 
 end ValueGame
