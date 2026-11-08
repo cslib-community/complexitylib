@@ -933,8 +933,19 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `Algorithms/Lean/Query/Arith/Karatsuba`. Integer Karatsuba as De Morgan circuits for the full
   `2w`-bit product, with `O(w ^ log₂ 3)` gates, is in `Circuit/Boolean/Karatsuba`. Open: smaller
   constants, logarithmic or polylogarithmic depth, uniform generation, and a native or word-RAM
-  realization; Toom–Cook (`O(n ^ log₃ 5)` for Toom-3) and FFT-based multiplication over rings
-  with suitable roots of unity; and lower bounds such as rank `3` for the two-term product tensor.
+  realization; Toom–Cook (`O(n ^ log₃ 5)` for Toom-3); and lower bounds such as rank `3` for the
+  two-term product tensor.
+- **Fast Fourier transform and FFT multiplication**
+  ([#2979](https://github.com/cslib-community/complexitylib/issues/2979)): the radix-2
+  Cooley–Tukey transform over any commutative ring with `ω ^ (2 ^ k) = -1`, with exactly
+  `(n / 2) log₂ n` multiplications and `n log₂ n` additions, its inverse, the convolution theorem
+  and `O(n log n)` polynomial multiplication, is in `Algorithms/Lean/Query/Arith/FFT` and
+  `Foundations/Algebra/DFT`. Open: arbitrary lengths on coefficient lists (zero padding to a power
+  of two) with a list-level `UpperBound`; the transform as an arithmetic circuit of size
+  `O(n log n)` and depth `O(log n)`; rings without suitable roots of unity (Schönhage–Strassen over
+  `R[x] / (x ^ m + 1)` and the `O(n log n log log n)` integer bound); mixed-radix and Bluestein
+  transforms; and lower bounds such as Morgenstern's `Ω(n log n)` for bounded-coefficient linear
+  circuits.
 - **Real-algebraic decision procedures:** port the Sturm–Tarski query evaluator, recursive
   evaluator, implicit arithmetic, native space certificates and the ETR upper bound from
   [lean-canny](https://github.com/SamuelSchlesinger/lean-canny).

@@ -63,7 +63,27 @@ lake build Complexity.Algorithms.Lean.Query.Arith.Karatsuba.Cost \
   Complexity.Algorithms.Lean.Query.Arith.Karatsuba.Correctness ComplexityTests.Karatsuba
 ```
 
-**Not certified here.** Integer Karatsuba as Boolean circuits is a separate development, described in [Integer multiplication circuits](circuits-and-formulas.md#integer-multiplication-circuits). Also not certified here: a native or word-RAM implementation, Toom–Cook and FFT-based multiplication, and lower bounds on the number of multiplications for polynomial products; see [ROADMAP.md](../../ROADMAP.md).
+**Not certified here.** Integer Karatsuba as Boolean circuits is a separate development, described in [Integer multiplication circuits](circuits-and-formulas.md#integer-multiplication-circuits). Also not certified here: a native or word-RAM implementation, Toom–Cook (FFT multiplication is in [the next section](#fast-fourier-transform)), and lower bounds on the number of multiplications for polynomial products; see [ROADMAP.md](../../ROADMAP.md).
+
+## Fast Fourier transform
+
+[DFT.lean](../../Complexity/Foundations/Algebra/DFT.lean) defines `Cslib.dft ω a`, the evaluation of the coefficient vector `a : Fin n → R` at `1, ω, …, ω ^ (n - 1)` over any commutative ring. Mathlib's `ZMod.dft` is complex-valued, built on `ZMod.stdAddChar`. The module proves the cyclic convolution theorem `dft_cyclicConv` (only `ω ^ n = 1` is needed), the inversion formula `dft_dft_neg`, the Cooley–Tukey splitting `dft_eq_add_of_lt` / `dft_eq_sub_of_le`, and `cyclicConv_coeff`, which identifies cyclic convolution with polynomial multiplication when `natDegree p + natDegree q < n`. Inversion needs a *principal* root of unity ([Principal.lean](../../Complexity/Foundations/RingTheory/RootsOfUnity/Principal.lean)): the geometric sums of `ω ^ l` must vanish for `0 < l < n`. In an integral domain primitive roots are principal (`IsPrimitiveRoot.isPrincipalRoot`), and a principal root is primitive whenever `(n : R) ≠ 0` (`IsPrincipalRoot.isPrimitiveRoot`). In general neither implies the other: `4` is a primitive square root of unity in `ZMod 15` but not principal (`1 + 4 ≠ 0`), and `1` is a principal square root of unity in `ZMod 2` but not primitive. The radix-2 hypothesis `ω ^ (2 ^ k) = -1` makes `ω` principal of order `2 ^ (k + 1)` in every commutative ring, with no unit or domain assumption (`IsPrincipalRoot.of_pow_two_pow_eq_neg_one`).
+
+[FFT/Defs.lean](../../Complexity/Algorithms/Lean/Query/Arith/FFT/Defs.lean) writes the recursive radix-2 transform `Cslib.Query.fft` in the arithmetic query model `FreeM (ArithQuery α)`. Ring operations are queries, while index arithmetic, the even/odd split and reading a supplied twiddle table `w : ℕ → α` are free. Correctness ([FFT/Correctness.lean](../../Complexity/Algorithms/Lean/Query/Arith/FFT/Correctness.lean)) assumes `w j = ω ^ j` on the needed range. `Cslib.Query.fftMul` instead builds its table with `2 ^ k - 1` charged multiplications from `ω` and `nInv = (2 ^ (k + 1))⁻¹`. The program's branching depends only on lengths, so the costs ([FFT/Cost.lean](../../Complexity/Algorithms/Lean/Query/Arith/FFT/Cost.lean)) are exact under every oracle:
+
+- the transform of length `n = 2 ^ k` makes exactly `(n / 2) log₂ n` multiplications and `n log₂ n` additions and subtractions (`cost_fft`, `cost_fft_two_pow`);
+- FFT multiplication of length `N = 2 ^ (k + 1)` makes `(3 / 2) N log₂ N + (5 / 2) N - 1` multiplications and `3 N log₂ N` additive operations (`cost_fftMul`), at most `7 N log₂ N` queries (`countQueries_fftMul_le`, packaged as `fftMul_upperBound`).
+
+Under `ω ^ (2 ^ k) = -1` and `nInv * 2 ^ (k + 1) = 1`, `eval_fftMul` computes the cyclic convolution. `eval_fftMul_coeff` and `eval_fftMul_eq_mul` give the coefficients of `p * q`, and the polynomial `p * q` itself, when `natDegree p + natDegree q < N`. In an integral domain a primitive `2 ^ (k + 1)`-th root of unity satisfies the hypothesis (`eval_fft_of_isPrimitiveRoot`).
+
+Complete client: [FFT.lean](../../ComplexityTests/FFT.lean). It checks number-theoretic transforms and products over `ZMod 17` at lengths `4` and `8`, a wrap-around product, and the `Complex.I` instance. It also has a counterexample over `ZMod 15` showing that `ω ^ (2 ^ k) = -1` cannot be dropped, and exact query counts under honest and dishonest oracles. Build it with
+
+```bash
+lake build Complexity.Algorithms.Lean.Query.Arith.FFT.Cost \
+  Complexity.Algorithms.Lean.Query.Arith.FFT.Correctness ComplexityTests.FFT
+```
+
+**Not certified here.** These are operation counts in the algebraic query model, not bit complexity and not a circuit size or depth bound. Lengths are fixed powers of two, with no list-level padding wrapper. Rings without suitable roots of unity (Schönhage–Strassen), other radices and FFT lower bounds are open; see [ROADMAP.md](../../ROADMAP.md).
 
 ## Rational formulas and hitting lists
 
