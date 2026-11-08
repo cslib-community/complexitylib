@@ -184,6 +184,11 @@ Oded Goldreich. *On the Cook–Mertz Tree Evaluation procedure*. ECCC TR24-109, 
 
 Oded Goldreich. *Foundations of Cryptography, Volume 2: Basic Applications*. Cambridge University Press, 2004. https://doi.org/10.1017/CBO9780511721656 . Author's chapter listing and draft availability: https://www.wisdom.weizmann.ac.il/~oded/foc-vol2.html . Author page checked; the full published chapter was not independently audited here.
 
+<a id="gomoryhu61"></a>
+## gomoryhu61
+
+Ralph E. Gomory and T. C. Hu. “Multi-Terminal Network Flows.” *Journal of the Society for Industrial and Applied Mathematics* 9(4), 551–570, 1961. https://doi.org/10.1137/0109047 . Bibliographic metadata checked through the publisher record; the article body was not inspected in this pass. The manual cites it for cut-equivalent (Gomory–Hu) trees and the triangle inequality for minimum cut values, as described in [Schrijver 2003](#schrijver03), Section 15.4.
+
 <a id="grs12"></a>
 ## grs12
 
@@ -193,6 +198,11 @@ Arpita Ghosh, Tim Roughgarden and Mukund Sundararajan. *Universally Utility-Maxi
 ## gsw13
 
 Craig Gentry, Amit Sahai, Brent Waters. “Homomorphic Encryption from Learning with Errors: Conceptually-Simpler, Asymptotically-Faster, Attribute-Based.” *CRYPTO 2013*, LNCS 8042, 75–92. https://doi.org/10.1007/978-3-642-40041-4_5 ; authors' full-version record https://eprint.iacr.org/2013/340 . Metadata/abstract checked; PDF fetch was blocked in this source pass.
+
+<a id="gusfield90"></a>
+## gusfield90
+
+Dan Gusfield. “Very Simple Methods for All Pairs Network Flow Analysis.” *SIAM Journal on Computing* 19(1), 143–155, 1990. https://doi.org/10.1137/0219009 . Bibliographic metadata checked through the publisher record; the article body was not inspected in this pass. Cited only for the variant of the Gomory–Hu construction without contraction, which is not formalized.
 
 <a id="hartmanis1968"></a>
 ## hartmanis1968
@@ -378,6 +388,11 @@ Tim Roughgarden. *Intrinsic Robustness of the Price of Anarchy*. Journal of the 
 ## roughgardentardos02
 
 Tim Roughgarden and Éva Tardos. *How Bad Is Selfish Routing?* Journal of the ACM 49(2), 236–259, 2002. https://doi.org/10.1145/506147.506153 . The author's version of 5 December 2001 was consulted on 2026-11-07 for Section 2.1, Definition 2.1, Lemma 2.2, Theorem 4.5 and Figure 3; locators follow that version.
+
+<a id="schrijver03"></a>
+## schrijver03
+
+Alexander Schrijver. *Combinatorial Optimization: Polyhedra and Efficiency*. Algorithms and Combinatorics 24, Springer, 2003. Cited for Gomory–Hu trees (Chapter 15, “Connectivity and Gomory–Hu trees”, Section 15.4) from secondary descriptions of the table of contents only; the book was not inspected, and theorem and page locators are unverified.
 
 <a id="schrijver17"></a>
 ## schrijver17

@@ -158,6 +158,37 @@ The specification `ApproximateMembership.spec U n ε` enforces strict set validi
 
 The Karger–Stein endpoint uses one fixed 24-register program, `O(n² log n)` worst-case steps and `O(n²)` matrix scratch per tree, with success at least `1/(floorlog₂(n)+15)`. Repetition gives minimum-cut **value** with failure at most `1/(2n)` in `O(n² log³ n)`. It does not enumerate all minimum cuts or attain the source's sparse-space formulation. The threshold is an integer inequality rather than a literal square-root expression; the abstract labels the implementation and proof adaptations.
 
+## Gomory–Hu trees
+
+Import `Complexity.Algorithms.Lean.GomoryHu.WeightedCut` ([source](../../Complexity/Algorithms/Lean/GomoryHu/WeightedCut.lean)). The declarations live in `Cslib.Algorithms.Lean.GomoryHu` and `Cslib.WeightedCut`. This is a theorem-level development: there is no algorithm and no running time. For a weighted multigraph `W : V → V → ℕ` with `IsMultigraph W`, `minCutBetween W s t` is the minimum `s`–`t` cut weight `λ(s, t)` ([source](../../Complexity/Foundations/Combinatorics/WeightedCut/MinCutBetween.lean)). `Network.Flow.IsMaxFlow.value_eq_minCutBetween` identifies it with the value of a maximum `s`–`t` flow in the network with capacities `W`, using the existing max-flow min-cut theorem. The same file proves:
+
+- the triangle inequality `min_le_minCutBetween`: `min (λ(u, v)) (λ(v, w)) ≤ λ(u, w)` for `u ≠ w`;
+- its consequence `minCutBetween_eq_of_lt`;
+- submodularity of `cutWeight W` (`cutWeight_union_add_cutWeight_inter_le`);
+- posimodularity of `cutWeight W` (`cutWeight_sdiff_add_cutWeight_sdiff_le`).
+
+The general theory, in [Basic.lean](../../Complexity/Algorithms/Lean/GomoryHu/Basic.lean) and [Existence.lean](../../Complexity/Algorithms/Lean/GomoryHu/Existence.lean), works for any set function `f : Finset V → β` with values in a linearly ordered cancellative commutative monoid. Three definitions carry it:
+
+- `IsMinCutBetween f s t X`: `X` contains `s`, misses `t` and minimizes `f`.
+- `edgeSide T u v`: the vertices reachable from `u` in `T` once the edge `uv` is deleted.
+- `IsGomoryHuTree f T`: `T` is a spanning tree and, for every tree edge `uv`, `edgeSide T u v` is a minimum `u`–`v` cut. This is the cut-equivalent tree of [Gomory and Hu][gomoryhu61] ([Schrijver 2003][schrijver03], Section 15.4).
+
+`exists_isGomoryHuTree` proves existence for every symmetric (`f Xᶜ = f X`) submodular `f` on a nonempty finite `V`, and `exists_isGomoryHuTree_cutWeight` is the graph case. The proof follows Gomory and Hu's recursion without contracting vertices. It splits the terminals along a minimum cut, uses `IsMinCutBetween.inter` to uncross the minimum cuts on each side into that side, and joins the two partial trees built recursively with one edge. Three consequences follow:
+
+- `IsGomoryHuTree.exists_isMinCutBetween_of_isPath`: some edge on the `s`–`t` tree path has a side that is a minimum `s`–`t` cut.
+- `IsGomoryHuTree.isLeast_minCutBetween`: flow-equivalence. `λ(s, t)` is the least `λ(u, v)` over the edges `uv` of the tree path.
+- `card_image_minCutBetween_le`: there are at most `Fintype.card V - 1` distinct values `λ(s, t)` with `s ≠ t`.
+
+To check a candidate tree, first compute its edge sides with `edgeSide_eq_of_forall_adj`: if `S` contains `u`, misses `v` and no other tree edge crosses `S`, then `edgeSide T u v = S`. Then decide the minimum-cut conditions. The [tests](../../ComplexityTests/GomoryHu.lean) do this for the path `0 - 1 - 2 - 3` on a five-edge graph. They also refute a star, and a path for another graph, as Gomory–Hu trees.
+
+Limitations:
+
+- Weights are natural numbers.
+- The construction with `n - 1` maximum-flow calls is not formalized, whether in Gomory and Hu's form or in [Gusfield][gusfield90]'s variant without contraction; neither is its running time.
+- Minimum cuts are not enumerated.
+
+[#3320](https://github.com/cslib-community/complexitylib/issues/3320) tracks the remaining work.
+
 ## Bipartite matching and Hopcroft–Karp
 
 Import `Complexity.Algorithms.Lean.MaxFlow.HopcroftKarp` ([Complexity/Algorithms/Lean/MaxFlow/HopcroftKarp.lean](../../Complexity/Algorithms/Lean/MaxFlow/HopcroftKarp.lean)). It is a native `TimeM ℕ` program, not a RAM-model program. It takes `G : Fin m × Fin r → Bool` and candidate neighbour lists `adj` with `BipAdjValid G adj` (every edge of `G` occurs in `adj`; extra candidates only cost time). `hopcroftKarpM_correct` gives a maximum matching (`IsMaxMatching`), a minimum König cover (`IsMinVertexCover`), equal sizes, and at most `2 * Nat.sqrt ν` augmenting phases, where `ν` is the maximum matching size. `hopcroftKarpM_time_le` bounds the charged steps by `(2 * Nat.sqrt ν + 1) * (7 * m + 3 * r + 1 + 4 * bipAdjSteps adj) + m + 3 * r`. Ticks are charged per entry of each allocated table (mate, matched-left, layer and visited tables), per mate entry scanned to mark matched left vertices, per left vertex examined when seeding BFS layer `0`, per expanded BFS layer, per frontier left vertex and candidate edge inspected by the BFS, per DFS root and candidate edge scanned by the DFS, per rematched right vertex, and per step of the final matching and cover extraction. Vector reads and writes, list cons, `Finset` insertion, `ℕ`/`Option` comparisons and edge queries `G (u, v)` are free primitives inside those charged steps, as in the Edmonds–Karp solver (the module docstring's "Cost model and limitations" gives the per-phase breakdown). Converting the input into `adj` is not charged. `hopcroftKarpDenseM` uses every pair as a candidate, giving `O(m r √(min m r))`. The [checked client](../../ComplexityTests/HopcroftKarp.lean) builds `adj` for small graphs, discharges `BipAdjValid` by `decide`, evaluates complete runs, and applies `hopcroftKarpM_correct` and `hopcroftKarpDenseM_time_le`.
@@ -765,9 +796,12 @@ The numeric values above are transcriptions of checked source statements, not re
 [clrs09]: ../sources.md#clrs09
 [floyd62]: ../sources.md#floyd62
 [freivalds79]: ../sources.md#freivalds79
+[gomoryhu61]: ../sources.md#gomoryhu61
+[gusfield90]: ../sources.md#gusfield90
 [hierholzer73]: ../sources.md#hierholzer73
 [kortevygen18]: ../sources.md#kortevygen18
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
+[schrijver03]: ../sources.md#schrijver03
 [schrijver17]: ../sources.md#schrijver17
 [vww18]: ../sources.md#vww18
 [thorup13]: ../sources.md#thorup13
