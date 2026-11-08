@@ -4886,6 +4886,7 @@ public import Complexity.GameTheory.Congestion.Hedge
 public import Complexity.GameTheory.Congestion.Nonatomic
 public import Complexity.GameTheory.Congestion.PigouBound
 public import Complexity.GameTheory.Congestion.Stability
+public import Complexity.GameTheory.Congestion.StrongNash
 public import Complexity.GameTheory.Mechanism.Bayesian
 public import Complexity.GameTheory.Mechanism.CriticalBid
 public import Complexity.GameTheory.Mechanism.FirstPrice
@@ -4905,6 +4906,7 @@ public import Complexity.GameTheory.Strategic.NoRegret
 public import Complexity.GameTheory.Strategic.Potential
 public import Complexity.GameTheory.Strategic.Smooth
 public import Complexity.GameTheory.Strategic.Stability
+public import Complexity.GameTheory.Strategic.StrongNash
 public import Complexity.Init
 public import Complexity.Languages.Probabilistic.Basic
 public import Complexity.Languages.Probabilistic.BitString

@@ -4,7 +4,7 @@
 
 This page covers finite strategic games in cost-minimization form, potential games, atomic and
 nonatomic congestion games, price-of-anarchy and price-of-stability bounds, fair cost-sharing
-games, no-regret (Hedge) dynamics, and bimatrix games with the Lemke–Howson parity argument. All
+games, strong Nash equilibria, no-regret (Hedge) dynamics, and bimatrix games with the Lemke–Howson parity argument. All
 of it is mathematics about real-valued costs or payoffs. No machine model is involved, and
 equilibrium computation carries no resource claim [complexitylib][complexitylib].
 
@@ -166,6 +166,37 @@ shows that everyone opting out, of social cost `H k`, is the unique pure Nash eq
 works. The source's network has extra zero-cost edges; they change no player's cost and are
 omitted.
 
+## Strong Nash equilibria
+
+[Strategic/StrongNash.lean](../../Complexity/GameTheory/Strategic/StrongNash.lean) defines
+coalitional deviations (Lecture #15, Definition 3.1 of [roughgarden13cs364a][roughgarden13cs364a]).
+`IsBeneficialDeviation G s A t` says that at `A.piecewise t s`, where the coalition `A` plays as in
+`t` and the others as in `s`, no member of `A` pays more and some member pays less. `IsStrongNash s`
+says that no coalition has one. A strong Nash equilibrium is a pure Nash equilibrium
+(`IsStrongNash.isPureNash`) and is weakly Pareto optimal (`IsStrongNash.not_pareto`).
+`IsStrongNash.exists_cost_le` is the form used in proofs: against any joint deviation of a nonempty
+coalition, some member does not gain.
+
+[Congestion/StrongNash.lean](../../Complexity/GameTheory/Congestion/StrongNash.lean) proves the
+theorem of [epsteinFeldmanMansour09][epsteinFeldmanMansour09] (Lecture #15, Theorem 3.2): **every
+strong Nash equilibrium of a `k`-player fair cost-sharing game costs at most `H k` times the
+optimum** (`socialCost_fairCostSharing_le_harmonic_mul_of_isStrongNash`). Unlike the
+price-of-stability bound, it covers every strong Nash equilibrium, but it does not assert that one
+exists. The proof follows displays (5)–(8) of the lecture. It peels members off the grand
+coalition, uses that the players outside a coalition only lower a member's shares, and telescopes
+the coalition's Rosenthal potential. The proof only needs latencies that are nonincreasing on loads
+`≥ 1`, so `socialCost_le_rosenthalPotential_of_isStrongNash` states it for every such congestion
+game: a strong Nash equilibrium costs at most Rosenthal's potential of every profile. For `ε > 0`,
+everyone opting out is the unique strong Nash equilibrium of the opt-out game
+(`isStrongNash_optOut_iff`), so `H k` is tight (`exists_isStrongNash_optOut_mul_lt`).
+
+When all players share the strategy set and the resource map, as in a network with a common source
+and sink, strong Nash equilibria exist and are optimal (Exercise Set #8, Exercise 67).
+Everyone playing a cheapest strategy is a strong Nash equilibrium
+(`isStrongNash_fairCostSharing_const`), and every strong Nash equilibrium is a social optimum
+(`socialCost_fairCostSharing_le_of_isStrongNash`). `exists_isStrongNash_fairCostSharing_const`
+packages both.
+
 ## Nonatomic selfish routing
 
 [Congestion/Nonatomic.lean](../../Complexity/GameTheory/Congestion/Nonatomic.lean) models
@@ -310,6 +341,18 @@ the following price-of-stability instances:
 - the opt-out game with three players. It also checks that `isPureNash_optOut_iff` fails for
   `ε = 0`.
 
+[ComplexityTests/GameTheory/StrongNash.lean](../../ComplexityTests/GameTheory/StrongNash.lean)
+checks strong Nash equilibria on the same games:
+
+- the bad equilibria of the coordination and VHS-or-Betamax games are not strong, and the good ones
+  are;
+- the `H 2` bound for VHS or Betamax, and the strong Nash equilibrium of the three-player opt-out
+  game with the `H 3` bound and its tightness;
+- with `ε = 0`, everyone opting out is a pure Nash equilibrium of the two-player opt-out game but
+  not a strong one;
+- a game with an increasing latency whose strong Nash equilibrium costs more than Rosenthal's
+  potential, so the nonincreasing-latency hypothesis cannot be dropped.
+
 [ComplexityTests/GameTheory/Bimatrix.lean](../../ComplexityTests/GameTheory/Bimatrix.lean) checks
 the three equilibria of von Stengel's `3 × 2` example (3.3). It shows that the identity
 coordination game is nondegenerate, so `IsNondegenerate.odd_ncard_isNash` applies. The zero game
@@ -327,8 +370,10 @@ weighted congestion games are not formalized. For the Pigou bound, the tight low
 [roughgarden03][roughgarden03] for classes without the constant functions (diverse classes on
 parallel links, Theorem 4.5, and inhomogeneous classes on unions of paths, Theorem 4.9) and the
 M/M/1 and M/G/1 delay functions of its Section 5 are not formalized. Nor are the tight price of
-stability of affine congestion games (below `2`), strong Nash equilibria and their price of
-anarchy, and price-of-stability bounds for undirected network design. The same holds for the
+stability of affine congestion games (below `2`), the existence of strong Nash equilibria beyond
+common strategy sets (the network classes of [epsteinFeldmanMansour09][epsteinFeldmanMansour09]),
+the network of Lecture #15, Figure 4, which has none, and price-of-stability bounds for undirected
+network design. The same holds for the
 Monderer–Shapley isomorphism between potential games and congestion games (Theorems 2.8 and 3.2)
 and for the complexity of finding equilibria (PLS- and PPAD-completeness). These are ROADMAP
 directions under [#2900](https://github.com/cslib-community/complexitylib/issues/2900). Two-player
@@ -341,6 +386,7 @@ cited in the Monderer–Shapley and Roughgarden papers; their own texts were not
 
 [anshelevichDKTWR08]: ../sources.md#anshelevichdktwr08
 [complexitylib]: ../sources.md#complexitylib
+[epsteinFeldmanMansour09]: ../sources.md#epsteinfeldmanmansour09
 [lemkehowson64]: ../sources.md#lemkehowson64
 [mondererShapley96]: ../sources.md#monderershapley96
 [rosenthal73]: ../sources.md#rosenthal73
