@@ -272,6 +272,40 @@ outside ports, empty selections, nullary tables, and malformed guards. Native op
 certificates remain those of `PolyTime.CSP.Table`. Whole-instance blossom contraction/lifting,
 solver correctness, native solver cost and the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
 
+## Prefix-valid walks and augmentation
+
+Import `Complexity.Logics.Propositional.CSP.Edge.Augmenting` for Boolean occurrence-label
+optimization. `CSP.defects` counts distinct occurring variables carrying unequal endpoint labels;
+`CSP.IsOptimalLabeling` requires validity and minimum defect count among all valid labels.
+Valid labels with zero defects are equivalent to a model of the original CSP, using `false`
+on nonoccurring variables. `EdgeInstance` supplies the exact-two/distinct-constraint condition.
+`EdgeInstance.EvenConstraints` states that each relation on its actual ordered scope positions
+is an even delta-matroid; local common parity may be odd and may differ between constraints.
+
+A `CSP.Walk` stores a starting variable and a list of incidence pairs. Its `IsWalk` predicate
+requires linked constraint steps and no reused incidence, while allowing repeated constraint
+positions and closed trails. `IsFWalk` requires distinct endpoints, consistent internal variables,
+and validity after every variable-ended prefix. Final validity alone is insufficient. An
+augmenting walk has two defective endpoints. Its flip is valid, and
+`Walk.IsAugmenting.card_defects_flip_add_two` proves that it removes exactly two defects. Prefix validity and the
+partner-transition lemmas connect these paths to the original indexed occurrence model.
+
+`EdgeInstance.augmentingWalk` implements the two phases of Lemma 31 in
+Kazda–Kolmogorov–Rolínek, arXiv:1602.03124v6, printed p. 0:15. Given valid `f,g` with fewer
+defects in `g`, it repairs comparison-only defects and follows remaining disagreements using
+deterministic positional scans. Its specification returns an augmenting walk starting away
+from an arbitrary specified variable; that variable may still be the endpoint. The combined
+number of local exchanges is at most half the initial occurrence Hamming distance. This is an
+exchange-count bound, not a native-machine runtime bound. `isOptimalLabeling_iff_no_augmentingWalk`
+then characterizes optimality without assuming a solver.
+
+[Augmenting-walk tests](../../ComplexityTests/EdgeCSPWalk.lean) include doubled equality
+constraints, actual returned paths, odd unsatisfiable units, repeated constraint positions,
+empty/nullary cases, sparse labels, and a trail whose final flip is valid but an intermediate
+prefix is invalid. The routine takes an improving comparison labeling as input: finding that
+labeling, or finding an augmenting walk without it, still needs the DAG/forest/blossom search.
+Its native runtime certificate and the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+
 ## Algebraic proof systems
 
 Nullstellensatz (NS) certificates and Polynomial Calculus (PC) proofs use coefficients in a
