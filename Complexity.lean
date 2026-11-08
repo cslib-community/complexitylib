@@ -1335,6 +1335,7 @@ public import Complexity.Computability.Circuit.Quantum.Basic
 public import Complexity.Computability.Circuit.Quantum.Classical
 public import Complexity.Computability.Circuit.Quantum.Code
 public import Complexity.Computability.Circuit.Quantum.Counter
+public import Complexity.Computability.Circuit.Quantum.HadamardLayer
 public import Complexity.Computability.Circuit.Quantum.Output
 public import Complexity.Computability.Circuit.Quantum.OutputSupport
 public import Complexity.Computability.Circuit.Quantum.Parallel
@@ -1659,6 +1660,7 @@ public import Complexity.Computability.Complexity.Classes.Promise.Time
 public import Complexity.Computability.Complexity.Classes.Promise.Time.Verifier
 public import Complexity.Computability.Complexity.Classes.QMA
 public import Complexity.Computability.Complexity.Classes.QMA.Amplification
+public import Complexity.Computability.Complexity.Classes.QMA.MA
 public import Complexity.Computability.Complexity.Classes.QMA.NP
 public import Complexity.Computability.Complexity.Classes.RP
 public import Complexity.Computability.Complexity.Classes.RP.Closure
