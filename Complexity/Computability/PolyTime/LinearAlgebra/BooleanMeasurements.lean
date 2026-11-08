@@ -131,7 +131,7 @@ theorem evalBoolRow_polyTime :
 /-- Evaluate a runtime matrix on a runtime Boolean word with polynomial native costs. -/
 theorem evalBoolMatrix_polyTime :
     ComputableInPolyTime (fun p : List (List ℤ) × List Bool => evalBoolMatrix p.1 p.2)
-      (encPair (encList (encList encIntBin)) encBits) (encList encIntBin) := by
+      (encPair encIntTable encBits) (encList encIntBin) := by
   let ei := encPair (encList (encList encIntBin)) encBits
   have hM := ComputableInPolyTime.fst (encList (encList encIntBin)) encBits
   have hy := ComputableInPolyTime.snd (encList (encList encIntBin)) encBits
@@ -186,7 +186,7 @@ theorem search_eq_none_iff (matOf : C → List (List ℤ)) (targetOf : C → Lis
 word encodings, using the supplied polynomial matrix/target projections. -/
 theorem test_polyTime {encC : C ↪ List Bool}
     {matOf : C → List (List ℤ)} {targetOf : C → List ℤ}
-    (hM : ComputableInPolyTime matOf encC (encList (encList encIntBin)))
+    (hM : ComputableInPolyTime matOf encC encIntTable)
     (ht : ComputableInPolyTime targetOf encC (encList encIntBin)) :
     ComputableInPolyTime (test matOf targetOf) (encPair encC encBits) encBool := by
   have hc := ComputableInPolyTime.fst encC encBits
@@ -239,7 +239,7 @@ private theorem optionBits_polyTime :
 charged workspace in the full runtime context/width encoding, including both codec boundaries. -/
 theorem exists_computableInO_search {encC : C ↪ List Bool}
     {matOf : C → List (List ℤ)} {targetOf : C → List ℤ}
-    (hM : ComputableInPolyTime matOf encC (encList (encList encIntBin)))
+    (hM : ComputableInPolyTime matOf encC encIntTable)
     (ht : ComputableInPolyTime targetOf encC (encList encIntBin)) :
     ∃ overhead workspace : C × ℕ → ℕ,
       PolyBounded (fun p => (encPair encC encUnary p).length) overhead ∧
@@ -275,7 +275,7 @@ independent resource bounds above once, before any runtime context/width input. 
 boundaries are included. -/
 noncomputable def searchCertificate {encC : C ↪ List Bool}
     {matOf : C → List (List ℤ)} {targetOf : C → List ℤ}
-    (hM : ComputableInPolyTime matOf encC (encList (encList encIntBin)))
+    (hM : ComputableInPolyTime matOf encC encIntTable)
     (ht : ComputableInPolyTime targetOf encC (encList encIntBin)) :
     NativeCertificate (search matOf targetOf) (encPair encC encUnary) (encOption encBits) :=
   let h := exists_computableInO_search hM ht
@@ -286,7 +286,7 @@ noncomputable def searchCertificate {encC : C ↪ List Bool}
 /-- The exported certificate's actual charged workspace is polynomial in the full input. -/
 theorem polyBounded_searchCertificate_space {encC : C ↪ List Bool}
     {matOf : C → List (List ℤ)} {targetOf : C → List ℤ}
-    (hM : ComputableInPolyTime matOf encC (encList (encList encIntBin)))
+    (hM : ComputableInPolyTime matOf encC encIntTable)
     (ht : ComputableInPolyTime targetOf encC (encList encIntBin)) :
     PolyBounded (fun p => (encPair encC encUnary p).length) (searchCertificate hM ht).space :=
   (exists_computableInO_search hM ht).choose_spec.choose_spec.2.1
@@ -295,7 +295,7 @@ theorem polyBounded_searchCertificate_space {encC : C ↪ List Bool}
 count. Its encoded output is charged to its separate polynomial workspace bound. -/
 theorem exists_polyBounded_searchCertificate_time {encC : C ↪ List Bool}
     {matOf : C → List (List ℤ)} {targetOf : C → List ℤ}
-    (hM : ComputableInPolyTime matOf encC (encList (encList encIntBin)))
+    (hM : ComputableInPolyTime matOf encC encIntTable)
     (ht : ComputableInPolyTime targetOf encC (encList encIntBin)) :
     ∃ overhead : C × ℕ → ℕ,
       PolyBounded (fun p => (encPair encC encUnary p).length) overhead ∧
