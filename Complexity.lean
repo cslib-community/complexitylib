@@ -12,9 +12,12 @@ public import Complexity.Algorithms.ExactTriangle.PieceBounds
 public import Complexity.Algorithms.ExactTriangle.Splitting
 public import Complexity.Algorithms.ExactTriangle.Weights
 public import Complexity.Algorithms.ExactTriangle.Witnesses
+public import Complexity.Algorithms.Lean.BellmanFord.Basic
 public import Complexity.Algorithms.Lean.BinPacking.Basic
 public import Complexity.Algorithms.Lean.BinPacking.FirstFit
 public import Complexity.Algorithms.Lean.BinPacking.NextFit
+public import Complexity.Algorithms.Lean.DFS.Basic
+public import Complexity.Algorithms.Lean.DFS.TopologicalSort
 public import Complexity.Algorithms.Lean.Dijkstra.Client
 public import Complexity.Algorithms.Lean.Dijkstra.Cost
 public import Complexity.Algorithms.Lean.Dijkstra.Memory

@@ -1132,6 +1132,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   residual-network and duality machinery. Remaining matching directions: the decomposition of
   `M ⊕ M*` into vertex-disjoint augmenting paths, general (non-bipartite) matching with blossoms,
   and a sparse Hopcroft–Karp entry point that also charges construction of the adjacency lists.
+- **Graph search and shortest paths** ([#3053](https://github.com/cslib-community/complexitylib/issues/3053)):
+  after `TimeM` depth-first search, topological sort and Bellman–Ford
+  (`Algorithms/Lean/{DFS,BellmanFord}`), strongly connected components in linear time with the
+  linear-time 2-SAT algorithm as a client of the `TwoSAT` problem module; the Bellman–Ford
+  predecessor tree; and bridges from Bellman–Ford to Dijkstra's distances and to the matrix
+  shortest-path model.
 - **Matroids:** matroid intersection with explicit oracle and implementation costs, beyond the
   weighted greedy algorithm and its independence-oracle interface.
 - **Submodular optimization:** further constraints and approximation bounds beyond the
