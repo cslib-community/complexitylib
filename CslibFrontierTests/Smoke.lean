@@ -26,4 +26,8 @@ example := @Turing.MultiTapeTM.computableInTimeAndSpace_id
 /-- The free monad the program layer is built on. -/
 example := @PFunctor.FreeM
 
+/-- A two-step program in the upstream free monad evaluates to its value. -/
+example : ((PFunctor.FreeM.pure 2 : PFunctor.FreeM ⟨PUnit, fun _ => PUnit⟩ ℕ) >>= fun n =>
+    PFunctor.FreeM.pure (n + 1)) = PFunctor.FreeM.pure 3 := rfl
+
 end ComplexityTests

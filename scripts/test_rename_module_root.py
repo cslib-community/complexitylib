@@ -182,7 +182,7 @@ class TextRules(unittest.TestCase):
             lake build @cslib-frontier CslibFrontier:docs CslibFrontierTests
             lake -d docbuild update cslib-frontier
             rg -n 'x' CslibFrontier CslibFrontierTests
-            "name": "cslib-frontier",
+            "name": "«cslib-frontier»",
             """))
 
     def test_excluded_strings_stay(self) -> None:
@@ -198,6 +198,32 @@ class TextRules(unittest.TestCase):
         kept = f'x = "Complexity/"  # {r.PRAGMA}\ny = "Complexity/"\n'
         self.assertEqual(rewrite("scripts/x.py", kept),
                          f'x = "Complexity/"  # {r.PRAGMA}\ny = "CslibFrontier/"\n')
+
+    def test_catalogue_entries_keep_their_namespaces(self) -> None:
+        import json
+        catalogue = {"entries": [
+            {"id": "a", "module": "ComplexityAbstracts.AAbstract", "foundations": ["ComplexityAbstracts.F"]},
+            {"id": "b", "module": "ComplexityAbstracts.BAbstract",
+             "namespace": "ComplexityTests.Abstracts.BAbstract"}]}
+        text = json.dumps(catalogue, indent=2, ensure_ascii=False) + "\n"
+        paths = PATHS + ["abstracts/ComplexityAbstracts/AAbstract.lean",
+                         "abstracts/ComplexityAbstracts/BAbstract.lean",
+                         "abstracts/ComplexityAbstracts/F.lean"]
+        rewriter = r.Rewriter(r.Inventory.from_paths(paths))
+        out = rewriter.rewrite("abstracts/catalogue.json", text)
+        self.assertEqual(json.loads(out)["entries"], [
+            {"id": "a", "module": "CslibFrontierAbstracts.AAbstract",
+             "namespace": "ComplexityAbstracts.AAbstract",
+             "foundations": ["CslibFrontierAbstracts.F"]},
+            {"id": "b", "module": "CslibFrontierAbstracts.BAbstract",
+             "namespace": "ComplexityTests.Abstracts.BAbstract"}])
+        self.assertEqual(rewriter.rewrite("abstracts/catalogue.json", out), out)
+
+    def test_fixups_apply_once(self) -> None:
+        text = "x\n/-- The free monad the program layer is built on. -/\nexample := @PFunctor.FreeM\n"
+        once = rewrite("CslibFrontierTests/Smoke.lean", text)
+        self.assertIn("A two-step program", once)
+        self.assertEqual(rewrite("CslibFrontierTests/Smoke.lean", once), once)
 
     def test_tooling(self) -> None:
         text = textwrap.dedent(r"""
@@ -369,8 +395,10 @@ class RestackMode(GitRepo):
             "Complexity/E.lean": lean("Complexity.A", body="-- see Complexity/B/C.lean\n"),
             "Complexity.lean": aggregate("Complexity.A", "Complexity.B.C", "Complexity.E"),
             "ComplexityTests/E.lean": "import Complexity.E\n"})
+        old = self.git("rev-parse", "HEAD")
         self.assertEqual(self.restack("pr", rename), 0)
         head = self.git("rev-parse", "HEAD")
+        self.assertEqual(r.verify_carry(self.repo, old, head, None, "main"), (True, []))
         parents = self.git("rev-list", "--parents", "-n", "1", head).split()[1:]
         self.assertEqual(parents[1], rename)
         self.assertEqual(self.git("rev-list", "--parents", "-n", "1", parents[0]).split()[2], pre)
@@ -388,6 +416,13 @@ class RestackMode(GitRepo):
         # Running it again is a no-op.
         self.assertEqual(self.restack("pr", rename), 0)
         self.assertEqual(self.git("rev-parse", "HEAD"), head)
+        # A change made while restacking is reported.
+        edited = self.show(head, "CslibFrontier/E.lean").replace("-- see", "-- now see")
+        changed = self.commit("edit", {"CslibFrontier/E.lean": edited})
+        ok, report = r.verify_carry(self.repo, old, changed, None, "main")
+        self.assertFalse(ok)
+        self.assertIn("--- CslibFrontier/E.lean", report)
+        self.assertIn("    +-- now see CslibFrontier/B/C.lean", report)
 
     def test_conflict_with_a_hand_edit_is_left_for_a_person(self) -> None:
         fork, _, rename = self.flag_day()
@@ -413,8 +448,10 @@ class RestackMode(GitRepo):
                                          "Complexity.F")})
         self.assertEqual(self.restack("lower", rename), 0)
         lower = self.git("rev-parse", "HEAD")
+        upper = self.git("rev-parse", "upper")
         self.assertEqual(self.restack("upper", lower), 0)
         head = self.git("rev-parse", "HEAD")
+        self.assertEqual(r.verify_carry(self.repo, upper, head, lower, "main"), (True, []))
         self.assertEqual(self.git("rev-list", "--parents", "-n", "1", head).split()[2], lower)
         self.assertEqual(self.show(head, "CslibFrontier/F.lean"), lean("CslibFrontier.E"))
         self.assertEqual(self.show(head, "CslibFrontier.lean"), aggregate(
@@ -423,6 +460,18 @@ class RestackMode(GitRepo):
         self.assertEqual(self.git("diff", "--name-only", lower, head), "CslibFrontier.lean\n"
                          "CslibFrontier/F.lean".strip())
 
+
+class Batch(unittest.TestCase):
+    def test_stacked_pull_requests_follow_their_base(self) -> None:
+        import flagday_restack as fr
+        infos = [{"number": n, "headRefName": head, "baseRefName": base, "isCrossRepository": False}
+                 for n, head, base in ((3, "c", "b"), (1, "a", "main"), (2, "b", "a"),
+                                       (4, "d", "main"))]
+        self.assertEqual([i["number"] for i in fr.stack_order(infos)], [1, 2, 3, 4])
+        fork = {"isCrossRepository": True, "maintainerCanModify": False}
+        self.assertIsNone(fr.push_url("o/r", fork))
+        self.assertEqual(fr.push_url("o/r", {"isCrossRepository": False}),
+                         "https://github.com/o/r.git")
 
 if __name__ == "__main__":
     unittest.main()

@@ -30,6 +30,9 @@
  "CslibFrontier/Computability/Complexity/Classes/IP/TQBF/Words.lean": {
   "encList (encPair encNat encUnary)": 3
  },
+ "CslibFrontier/Computability/Complexity/Classes/LogSpace/Randomized/PairedPorts.lean": {
+  "encPair ?1 (encPair encNat encNat)": 3
+ },
  "CslibFrontier/Computability/Complexity/Classes/P/WordRAM.lean": {
   "encPair encUnary (encPi encNat)": 4
  },
@@ -68,6 +71,9 @@
  },
  "CslibFrontier/Computability/MCSP/SuccinctNP.lean": {
   "encPair encUnary (encList (encPair encBits encBool))": 3
+ },
+ "CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/ConfigurationGraph/FairCoin/PairedPorts/LogSpace.lean": {
+  "encPair encBits (encPair encNat encNat)": 3
  },
  "CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Fold.lean": {
   "encPair (encPair ?1 ?2) ?3": 4

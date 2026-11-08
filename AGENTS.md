@@ -475,7 +475,8 @@ head. After the merge, regenerate the import aggregates with `lake exe mk_all`, 
 A branch that forked before the module root was renamed from Complexity to CslibFrontier is
 restacked with `python3 scripts/rename_module_root.py --restack` (from a checkout of current
 `main`; `--onto` names the restacked head of a lower stacked branch). It merges the rename and
-converts the branch's own module names and paths. See the script's documentation.
+converts the branch's own module names and paths; `--verify-carry` compares the result with
+the approved head. See the script's documentation.
 
 A restack keeps its approval when `python3 scripts/check_restack.py <approved head> <new head>`
 passes and CI passes at the new head. The script replays the approved change onto the `main` that

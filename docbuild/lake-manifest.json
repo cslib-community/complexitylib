@@ -13,7 +13,7 @@
    "configFile": "lakefile.lean"},
   {"type": "path",
    "scope": "",
-   "name": "cslib-frontier",
+   "name": "«cslib-frontier»",
    "manifestFile": "lake-manifest.json",
    "inherited": false,
    "dir": "..",

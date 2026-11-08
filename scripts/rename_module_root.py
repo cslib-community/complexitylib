@@ -48,17 +48,26 @@ pre-rename counterpart `PRE` is the nearest first-parent ancestor of `--onto` wi
    resolve and commit them, then run it again.
 2. Merge `--onto`. Git's rename detection would carry the branch's edits to renamed files, but
    the rename rewrote every import line, so a branch that edits an import block would conflict
-   with it. The tree is therefore computed as a three-way merge of already converted trees: base
-   `apply(PRE)`, ours `apply(HEAD)` and theirs `--onto`. Apply mode is deterministic and acts on
-   each file alone, so `apply(HEAD)` differs from `apply(PRE)` exactly by the branch's own
-   changes, converted, and `--onto` differs from `apply(PRE)` by the hand edits of the rename
-   commit (and any later commits). Only those can conflict.
-3. Apply mode runs again on the result as a safety net (it is normally a no-op), and the
-   aggregates are regenerated.
-4. The merge is committed with parents HEAD and `--onto`. When files conflict, the merge is left
+   with it. The tree is therefore a three-way merge of converted trees: base `apply(PRE)`, ours
+   `apply(HEAD)` and theirs `--onto`. `apply(PRE)` is computed once in a temporary worktree and
+   cached; `apply(HEAD)` is `apply(PRE)` with only the files that HEAD changes relative to `PRE`
+   converted (paths mapped, contents rewritten), so it differs from the base exactly by the
+   branch's own changes, and `--onto` differs from it by the rename commit's hand edits (and any
+   later commits). Only those can conflict. The aggregates are regenerated.
+3. The merge is committed with parents HEAD and `--onto`. When files conflict, the merge is left
    in progress with conflict markers instead: resolve, `git add` and `git commit`.
-5. A summary lists the branch's changed files and those needing attention: conflicts, and
-   remaining old-root tokens in the branch's changed files.
+4. A summary lists remaining old-root tokens in the branch's changed files.
+The result is computed without a checkout (`compute_restack`), which `flagday_restack.py` uses to
+restack many pull requests.
+
+Carry-forward check:
+
+    python3 scripts/rename_module_root.py --verify-carry OLD_HEAD NEW_HEAD [--onto BASE]
+
+compares the change OLD_HEAD made relative to its merge base with the pre-rename `main`,
+converted as apply mode would, with the change NEW_HEAD makes relative to BASE (default: its merge
+base with `origin/main`), as multisets of added and removed lines per renamed path, ignoring the
+aggregates. It prints `CARRY OK` when they agree, otherwise the differing lines, and exits 1.
 
 The tool never pushes, fetches or rewrites existing commits. Converted trees are cached in the Git
 directory (`rename-module-root/`), keyed by commit and by this script's own digest.
@@ -75,6 +84,7 @@ import shutil
 import subprocess
 import sys
 import tomllib
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -120,9 +130,91 @@ URL_ONLY = ("manual/development-history/", "manual/data/")
 # Tooling sources: their dotted root tokens are module names even for nonexistent (fixture) modules.
 TOOLING_SUFFIXES = (".py", ".sh", ".cjs", ".js", ".yml", ".yaml")
 PRAGMA = "rename-module-root: keep"
+# Edits that complete the rename and that no rule makes, as (path after the rename, text after the
+# rules, replacement). Each applies once, when its text is present and its replacement is not.
+FIXUPS = (
+    ("README.md", "The package is named `complexitylib`; imports begin",
+     "The package is named `cslib-frontier`; imports begin"),
+    ("README.md", "\ncd complexitylib\n", "\ncd cslib-frontier\n"),
+    ("README.md",
+     "Community. Downstream projects using that package name should change it to `complexitylib`; "
+     "Lean\nimports remain unchanged.",
+     "Community. The repository was later renamed from `complexitylib` to `cslib-frontier`, with "
+     "the\nLake package renamed to match and the module root renamed from Complexity to "
+     "CslibFrontier.\nDownstream projects should require `cslib-frontier` and import "
+     "`CslibFrontier.*` modules;\ndeclaration names did not change."),
+    ("guide/CslibFrontierGuide/FirstSteps.lean", "The package is named `complexitylib`, and",
+     "The package is named `cslib-frontier`, and"),
+    ("AGENTS.md",
+     "`merge=union` result, which keeps deleted imports and can misorder added ones.\n",
+     "`merge=union` result, which keeps deleted imports and can misorder added ones.\n\n"
+     "A branch that forked before the module root was renamed from Complexity to CslibFrontier is\n"
+     "restacked with `python3 scripts/rename_module_root.py --restack` (from a checkout of current\n"
+     "`main`; `--onto` names the restacked head of a lower stacked branch). It merges the rename "
+     "and\nconverts the branch's own module names and paths; `--verify-carry` compares the result "
+     "with\nthe approved head. See the script's documentation.\n"),
+    ("CslibFrontierTests/Smoke.lean",
+     "/-- The free monad the program layer is built on. -/\nexample := @PFunctor.FreeM\n",
+     "/-- The free monad the program layer is built on. -/\nexample := @PFunctor.FreeM\n\n"
+     "/-- A two-step program in the upstream free monad evaluates to its value. -/\n"
+     "example : ((PFunctor.FreeM.pure 2 : PFunctor.FreeM ⟨PUnit, fun _ => PUnit⟩ ℕ) >>= fun n =>\n"
+     "    PFunctor.FreeM.pure (n + 1)) = PFunctor.FreeM.pure 3 := rfl\n"),
+    ("abstracts/CslibFrontierAbstracts/Check.lean",
+     "      let isLocalRepo := (`CslibFrontier).isPrefixOf owner || "
+     "(`CslibFrontierTests).isPrefixOf owner ||\n        (`CslibFrontierAbstracts).isPrefixOf owner",
+     "      let isLocalRepo := (`CslibFrontier).isPrefixOf owner ||\n"
+     "        (`CslibFrontierTests).isPrefixOf owner || (`CslibFrontierAbstracts).isPrefixOf owner"),
+    # The comparator's statement modules move; their declarations keep their namespace.
+    ("scripts/check_comparator.py", '    namespace = f"CslibFrontierComparator.{name}"\n',
+     "    # The statement modules moved to the `CslibFrontierComparator` root; their declarations\n"
+     "    # keep the `ComplexityComparator` namespace.  (rename-module-root: keep)\n"
+     '    namespace = f"ComplexityComparator.{name}"  # rename-module-root: keep\n'
+     '    package = f"CslibFrontierComparator.{name}"\n'),
+    ("scripts/check_comparator.py", "public import {namespace}.Statements",
+     "public import {package}.Statements"),
+    ("scripts/check_comparator.py", '"solution_module": f"{namespace}.Solution",',
+     '"solution_module": f"{package}.Solution",'),
+    # Test fixtures that name test modules or messages that no rule recognizes.
+    ("scripts/test_audit_queries.py", 'test_refs={"ComplexityTests.A"}),',
+     'test_refs={"CslibFrontierTests.A"}),'),
+    ("scripts/test_audit_queries.py", '"tests ComplexityTests.A",', '"tests CslibFrontierTests.A",'),
+    ("scripts/test_build_abstracts.py",
+     "f\"namespace CslibFrontierTests.Abstracts.{module.rsplit('.', 1)[-1]}\\n\"\n",
+     "f\"namespace ComplexityTests.Abstracts.{module.rsplit('.', 1)[-1]}\\n\"  "
+     "# rename-module-root: keep\n"),
+    ("scripts/test_build_abstracts.py",
+     "f\"end CslibFrontierTests.Abstracts.{module.rsplit('.', 1)[-1]}\\n\")\n",
+     "f\"end ComplexityTests.Abstracts.{module.rsplit('.', 1)[-1]}\\n\")  "
+     "# rename-module-root: keep\n"),
+    ("scripts/test_check_docs.py", '"Missing modules in documentation database: Complexity")',
+     '"Missing modules in documentation database: CslibFrontier")'),
+    ("scripts/test_check_docs.py", '"Missing module in search index: Complexity")',
+     '"Missing module in search index: CslibFrontier")'),
+    ("scripts/test_check_docs.py", '"Missing module page: Complexity")',
+     '"Missing module page: CslibFrontier")'),
+    ("scripts/test_check_docs.py", "<summary>Complexity (<a href=",
+     "<summary>CslibFrontier (<a href="),
+    ("scripts/test_lean_outputs.py",
+     '"ComplexityTests.T": ["CslibFrontier.B"], "CslibFrontier.B": [],\n'
+     '                           "ComplexityTests.Stale": []})\n'
+     '        glob = lambda root: ["ComplexityTests.T"] if root == "CslibFrontierTests" else []\n'
+     '        self.assertEqual(sorted(lo.load_ileans(self.reference, glob=glob)),\n'
+     '                         ["CslibFrontier.B", "ComplexityTests.T"])\n'
+     '        self.assertEqual(lo.root_modules(glob),\n'
+     '                         ["CslibFrontier", "ComplexityTests.T", "CslibFrontierAbstracts"])',
+     '"CslibFrontierTests.T": ["CslibFrontier.B"], "CslibFrontier.B": [],\n'
+     '                           "CslibFrontierTests.Stale": []})\n'
+     '        glob = lambda root: ["CslibFrontierTests.T"] if root == "CslibFrontierTests" else []\n'
+     '        self.assertEqual(sorted(lo.load_ileans(self.reference, glob=glob)),\n'
+     '                         ["CslibFrontier.B", "CslibFrontierTests.T"])\n'
+     '        self.assertEqual(lo.root_modules(glob),\n'
+     '                         ["CslibFrontier", "CslibFrontierTests.T", "CslibFrontierAbstracts"])'),
+    ("scripts/test_upstream.py", '"Complexity..Init", "Complexity./Init"',
+     '"CslibFrontier..Init", "CslibFrontier./Init"'),
+)
 # Roots that tooling fixtures use for nonexistent modules. The others (`ComplexityTests.*`, ...)
 # are also namespaces of test and abstract declarations, so only existing modules are renamed.
-FIXTURE_ROOTS = ("Complexity", "ComplexityAbstracts")
+FIXTURE_ROOTS = ("Complexity", "ComplexityAbstracts", "ComplexityComparatorChallenges")
 
 # Module name components; a `'` after a token makes it a Lean identifier, not a module name.
 IDENT = r"[A-Za-z_][A-Za-z0-9_]*"
@@ -148,7 +240,8 @@ URL_RULES = (
 )
 PACKAGE_RULES = (
     (re.compile(r'(?<=name = ")complexitylib(?=")'), NEW_PACKAGE),
-    (re.compile(r'(?<="name": ")complexitylib(?=")'), NEW_PACKAGE),
+    # Lake reads manifest names as `Name`s and writes a hyphenated one with guillemets.
+    (re.compile(r'(?<="name": ")complexitylib(?=")'), f"«{NEW_PACKAGE}»"),
     (re.compile(r"(?<![\w/.-])@complexitylib(?![\w-])"), "@" + NEW_PACKAGE),
 )
 UPDATE_LINE = re.compile(r"\blake\b[^\n]*\bupdate\b")
@@ -236,6 +329,9 @@ def lean_regions(text: str):
 # Mathlib's `linter.style.longLine` limit, which the library's `mathlibStandardSet` enables.
 MAX_LINE = 100
 LIST_ITEM = re.compile(r"[ \t]*(?:/-[-!]?[ \t]*)?(?:[-*+][ \t]+|\d+[.)][ \t]+)?")
+# A path in a code span, written as its module name when its line cannot be wrapped otherwise.
+PATH_SPAN = re.compile(r"`((?:" + "|".join(new for _, new, src in ROOTS if not src)
+                       + r")(?:/[A-Za-z_][A-Za-z0-9_]*)+)\.lean`")
 # A continuation must not start a new Markdown block.
 BLOCK_START = re.compile(r"(?:[-*+][ \t]|\d+[.)][ \t]|#|>|\||```|=+$|-+$|-/)")
 
@@ -270,7 +366,10 @@ def wrap_lengthened_lines(before: str, after: str) -> str:
                 guard_msgs_follows(after, offset - len(line) - 1, kind)):
             out.append(line)
             continue
-        out += wrap_line(line)
+        pieces = wrap_line(line)
+        if any(len(piece) > MAX_LINE for piece in pieces):
+            pieces = wrap_line(PATH_SPAN.sub(lambda m: f"`{m[1].replace('/', '.')}`", line))
+        out += pieces
     return "\n".join(out)
 
 
@@ -305,6 +404,28 @@ def wrap_line(line: str) -> list[str]:
         lines.append(line[:cut].rstrip())
         line = prefix + rest
     return lines + [line]
+
+
+def keep_abstract_namespaces(before: str, after: str) -> str:
+    """Keep each catalogue entry's namespace. `build_abstracts.py` takes an entry's namespace from
+    its module when it has none, and modules are renamed while namespaces are not, so an entry
+    whose module is renamed records its old namespace explicitly."""
+    try:
+        old, new = json.loads(before), json.loads(after)
+    except ValueError:
+        return after
+    if json.dumps(old, indent=2, ensure_ascii=False) + "\n" != before:
+        return after  # an unknown layout; leave the text rules' result
+    for old_entry, new_entry in zip(old.get("entries", []), new.get("entries", [])):
+        if "namespace" in old_entry:
+            new_entry["namespace"] = old_entry["namespace"]
+        elif old_entry.get("module") != new_entry.get("module"):
+            items = list(new_entry.items())
+            at = next((i for i, (k, _) in enumerate(items) if k == "foundations"), len(items))
+            items.insert(at, ("namespace", old_entry["module"]))
+            new_entry.clear()
+            new_entry.update(items)
+    return json.dumps(new, indent=2, ensure_ascii=False) + "\n"
 
 
 class Rewriter:
@@ -393,6 +514,11 @@ class Rewriter:
         new = self.rewrite_lines(text, lambda t: self.rewrite_roots(path, t))
         if path.endswith(".lean") and new != text:
             new = wrap_lengthened_lines(text, new)
+        if path.endswith("abstracts/catalogue.json"):
+            new = keep_abstract_namespaces(text, new)
+        for fixup_path, old, replacement in FIXUPS:
+            if fixup_path == path and replacement not in new and old in new:
+                new = new.replace(old, replacement, 1)
         return new
 
     @staticmethod
@@ -569,36 +695,41 @@ def rewrite_files(repo: Path, files: list[str], rewriter: Rewriter) -> list[str]
     return changed
 
 
-def lake_libraries(repo: Path) -> list[dict]:
-    config = tomllib.loads((repo / "lakefile.toml").read_text())
-    return [lib for lib in config.get("lean_lib", []) if isinstance(lib, dict)]
-
-
-def regenerate_aggregates(repo: Path) -> list[str]:
-    """Write what `lake exe mk_all` writes: for each root of each `lean_lib`, the sorted imports
-    of every module below it, in the style of the existing file. Returns the changed files."""
-    files = tracked(repo)
-    changed = []
-    for lib in lake_libraries(repo):
+def aggregate_specs(lakefile: str) -> list[tuple[str, str, str]]:
+    """For each root of each `lean_lib`: its aggregate, the directory of its modules, and the
+    library's source directory prefix."""
+    specs = []
+    for lib in tomllib.loads(lakefile).get("lean_lib", []):
+        if not isinstance(lib, dict):
+            continue
         src = lib.get("srcDir", ".").strip("/")
         prefix = "" if src in ("", ".") else src + "/"
         for root in lib.get("roots", [lib.get("name")]):
-            if not root:
-                continue
-            aggregate = f"{prefix}{root.replace('.', '/')}.lean"
-            target = repo / aggregate
-            if not target.is_file():
-                continue
-            below = f"{prefix}{root.replace('.', '/')}/"
-            modules = sorted(p[len(prefix):-5].replace("/", ".") for p in files
-                             if p.startswith(below) and p.endswith(".lean")
-                             and (repo / p).is_file())
+            if root:
+                stem = prefix + root.replace(".", "/")
+                specs.append((stem + ".lean", stem + "/", prefix))
+    return specs
+
+
+def render_aggregate(existing: str, files, below: str, prefix: str) -> str:
+    """What `lake exe mk_all` writes: the sorted imports of every module below the root, in the
+    style (module with `public import`, or plain `import`) of the existing file."""
+    modules = sorted(p[len(prefix):-5].replace("/", ".") for p in files
+                     if p.startswith(below) and p.endswith(".lean"))
+    if existing.lstrip().startswith("module"):
+        return MODULE_PREAMBLE + "".join(f"public import {m}\n" for m in modules)
+    return "".join(f"import {m}\n" for m in modules)
+
+
+def regenerate_aggregates(repo: Path) -> list[str]:
+    """Regenerate the aggregates of the checkout. Returns the changed files."""
+    files = [p for p in tracked(repo) if (repo / p).is_file()]
+    changed = []
+    for aggregate, below, prefix in aggregate_specs((repo / "lakefile.toml").read_text()):
+        target = repo / aggregate
+        if target.is_file():
             existing = target.read_text()
-            module_style = existing.lstrip().startswith("module")
-            if module_style:
-                content = MODULE_PREAMBLE + "".join(f"public import {m}\n" for m in modules)
-            else:
-                content = "".join(f"import {m}\n" for m in modules)
+            content = render_aggregate(existing, files, below, prefix)
             if content != existing:
                 target.write_text(content)
                 changed.append(aggregate)
@@ -606,18 +737,20 @@ def regenerate_aggregates(repo: Path) -> list[str]:
 
 
 def aggregate_paths(repo: Path) -> set[str]:
-    paths = set()
-    for lib in lake_libraries(repo):
-        src = lib.get("srcDir", ".").strip("/")
-        prefix = "" if src in ("", ".") else src + "/"
-        for root in lib.get("roots", [lib.get("name")]):
-            if root:
-                paths.add(f"{prefix}{root.replace('.', '/')}.lean")
-    return paths
+    return {spec[0] for spec in aggregate_specs((repo / "lakefile.toml").read_text())}
 
 
-def apply(repo: Path, mk_all: bool = False, quiet: bool = False) -> list[str]:
-    """Rename the roots of the checkout at `repo` and rewrite its files. Returns changed paths."""
+ENCODING_RATCHET = "scripts/check_encoding_readability.py"
+
+
+def apply(repo: Path, mk_all: bool = False, quiet: bool = False,
+          record_encodings: bool = False) -> list[str]:
+    """Rename the roots of the checkout at `repo` and rewrite its files. Returns changed paths.
+
+    With `record_encodings`, the encoding-readability baseline is then updated for every module
+    (`--update-baseline --allow-increase`): the rename touches every module, so a pull request
+    check would enforce the baseline in all of them, including any drift that `main` has
+    accumulated since a module was last changed."""
     files = tracked(repo)
     rewriter = Rewriter(Inventory.from_paths(files))
     moves = move_roots(repo, files)
@@ -632,6 +765,16 @@ def apply(repo: Path, mk_all: bool = False, quiet: bool = False) -> list[str]:
         if result.returncode != 0:
             raise ToolError(f"lake exe mk_all changed files or failed:\n{result.stdout}"
                             f"{result.stderr}")
+    if record_encodings and (repo / ENCODING_RATCHET).is_file():
+        before = (repo / "scripts/encoding_readability_baseline.json").read_bytes()
+        result = subprocess.run([sys.executable, "-B", ENCODING_RATCHET, "--all",
+                                 "--update-baseline", "--allow-increase"], cwd=repo,
+                                capture_output=True, text=True)
+        if result.returncode != 0:
+            raise ToolError(f"{ENCODING_RATCHET} --update-baseline failed:\n"
+                            f"{result.stdout}{result.stderr}")
+        if (repo / "scripts/encoding_readability_baseline.json").read_bytes() != before:
+            changed.append("scripts/encoding_readability_baseline.json")
     git(repo, "add", "-u")
     if not quiet:
         print(f"moved {len(moves)} files, rewrote {len(set(changed))} files")
@@ -744,134 +887,283 @@ def merge_drivers() -> list[str]:
             "-c", f"merge.bibkeys.driver=python3 {scripts / 'resolve_bib_conflict.py'} --driver %O %A %B"]
 
 
-def residual_report(repo: Path, paths: list[str]) -> list[str]:
-    rewriter = Rewriter(Inventory.from_paths(tracked(repo)))
+def map_path(path: str) -> str:
+    """The path of `path` after the rename."""
+    for old, new, src in ROOTS:
+        base = f"{src}/" if src else ""
+        if path.startswith(f"{base}{old}/"):
+            return f"{base}{new}/{path[len(base) + len(old) + 1:]}"
+        if path == f"{base}{old}.lean":
+            return f"{base}{new}.lean"
+    return path
+
+
+def tree_entries(repo: Path, rev: str) -> dict[str, tuple[str, str]]:
+    """Path -> (mode, object) for every file of `rev`."""
+    out = git(repo, "ls-tree", "-r", "-z", "--full-tree", rev).stdout
+    entries = {}
+    for record in out.split("\0"):
+        if record:
+            meta, path = record.split("\t", 1)
+            mode, _, oid = meta.split()
+            entries[path] = (mode, oid)
+    return entries
+
+
+def blob_text(repo: Path, oid: str) -> str | None:
+    data = subprocess.run(["git", "-C", str(repo), "cat-file", "blob", oid], capture_output=True,
+                          check=True).stdout
+    if b"\0" in data:
+        return None
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+
+
+def write_blob(repo: Path, text: str) -> str:
+    return git(repo, "hash-object", "-w", "--stdin", input=text).stdout.strip()
+
+
+class ScratchIndex:
+    """A temporary index in the Git directory, for building trees without a checkout."""
+
+    def __init__(self, repo: Path, tree: str):
+        self.repo = repo
+        self.path = state_dir(repo) / f"index-{os.getpid()}-{id(self)}"
+        self.env = {"GIT_INDEX_FILE": str(self.path)}
+        self.git("read-tree", tree)
+
+    def git(self, *args: str, input: str | None = None) -> subprocess.CompletedProcess[str]:
+        return git(self.repo, *args, env=self.env, input=input)
+
+    def files(self) -> list[str]:
+        return list(dict.fromkeys(p for p in self.git("ls-files", "-z").stdout.split("\0") if p))
+
+    def update(self, entries: list[str]) -> None:
+        if entries:
+            self.git("update-index", "--index-info", input="".join(e + "\n" for e in entries))
+
+    def regenerate_aggregates(self) -> None:
+        files = self.files()
+        if "lakefile.toml" not in files:
+            return
+        entries = []
+        for aggregate, below, prefix in aggregate_specs(self.git("show", ":lakefile.toml").stdout):
+            if aggregate in files:
+                existing = self.git("show", f":{aggregate}").stdout
+                content = render_aggregate(existing, files, below, prefix)
+                if content != existing:
+                    entries.append(f"100644 {write_blob(self.repo, content)}\t{aggregate}")
+        self.update(entries)
+
+    def write_tree(self) -> str:
+        return self.git("write-tree").stdout.strip()
+
+    def close(self) -> None:
+        self.path.unlink(missing_ok=True)
+
+
+def regenerate_tree_aggregates(repo: Path, tree: str) -> str:
+    index = ScratchIndex(repo, tree)
+    try:
+        index.regenerate_aggregates()
+        return index.write_tree()
+    finally:
+        index.close()
+
+
+def convert_changes(repo: Path, pre: str, pre_converted: str, commit: str) -> str:
+    """The tree of `apply(commit)`, built from the cached `apply(pre)` by converting only the
+    files that differ between `pre` and `commit`. The files `commit` does not change keep their
+    converted form in `apply(pre)`, so only the branch's own changes differ."""
+    changes = git(repo, "diff", "--name-status", "--no-renames", "-z", pre, commit).stdout
+    fields = [f for f in changes.split("\0") if f]
+    pairs = list(zip(fields[0::2], fields[1::2]))
+    entries_of = tree_entries(repo, commit)
+    rewriter = Rewriter(Inventory.from_paths(entries_of))
+    removals, additions = [], []
+    for status, path in pairs:
+        target = map_path(path)
+        if status == "D":
+            removals.append(f"0 {'0' * 40}\t{target}")
+            continue
+        mode, oid = entries_of[path]
+        if mode in ("100644", "100755"):
+            text = blob_text(repo, oid)
+            if text is not None:
+                converted = rewriter.rewrite(target, text)
+                if converted != text:
+                    oid = write_blob(repo, converted)
+        additions.append(f"{mode} {oid}\t{target}")
+    index = ScratchIndex(repo, pre_converted)
+    try:
+        index.update(removals)
+        index.update(additions)
+        index.regenerate_aggregates()
+        return index.write_tree()
+    finally:
+        index.close()
+
+
+def merge_trees(repo: Path, ours: str, theirs: str, base: str | None = None,
+                attributes: str | None = None) -> tuple[str, list[str]]:
+    """`git merge-tree` of two commits (and an explicit base commit). Returns the result tree,
+    whose conflicted files carry conflict markers, and the conflicted-stage entries."""
+    args = [*merge_drivers()]
+    if attributes:
+        args += ["-c", f"attr.tree={attributes}"]
+    args += ["merge-tree", "--write-tree", "-z"]
+    if base:
+        args.append(f"--merge-base={base}")
+    result = git(repo, *args, ours, theirs, check=False)
+    if result.returncode not in (0, 1):
+        raise ToolError(f"git merge-tree failed:\n{result.stderr.strip()}")
+    fields = result.stdout.split("\0")
+    stages = []
+    for entry in fields[1:]:
+        if not entry:
+            break
+        stages.append(entry)  # "<mode> <object> <stage>\t<path>"
+    return fields[0], stages
+
+
+def staged_paths(stages: list[str]) -> list[str]:
+    return sorted({s.split("\t", 1)[1] for s in stages})
+
+
+@dataclass
+class Restack:
+    status: str            # "clean", "up-to-date", "conflict"
+    head: str              # the restacked head (HEAD when not clean)
+    onto: str
+    pre: str = ""
+    stage: str = ""        # where a conflict arose: "pre" or "rename"
+    merged_pre: str = ""   # the merge of `pre` into the branch, when it was clean
+    tree: str = ""         # the merged tree, with conflict markers on a conflict
+    stages: list[str] = field(default_factory=list)
+    conflicts: list[str] = field(default_factory=list)
+
+
+def compute_restack(repo: Path, head: str, onto: str, trailer: str = "") -> Restack:
+    """Restack `head` onto the post-rename commit `onto` without touching any checkout or ref.
+    On success the result is an unreferenced merge commit with parents (the branch, merged with
+    the pre-rename counterpart if needed) and `onto`."""
+    if not has_path(repo, onto, MARKER):
+        raise ToolError(f"{onto[:12]} is not a post-rename commit")
+    if is_ancestor(repo, onto, head):
+        return Restack("up-to-date", head, onto)
+    if has_path(repo, head, MARKER):
+        raise ToolError(f"{head[:12]} is already post-rename; merge newer commits with git merge")
+    pre = pre_rename_counterpart(repo, onto)
+    signature = f"\n\n{trailer}\n" if trailer else "\n"
+    branch = head
+    if not is_ancestor(repo, pre, head):
+        tree, stages = merge_trees(repo, head, pre, attributes=pre)
+        aggregates = {spec[0] for spec in aggregate_specs(
+            git(repo, "show", f"{pre}:lakefile.toml").stdout)}
+        conflicts = [p for p in staged_paths(stages) if p not in aggregates]
+        if conflicts:
+            return Restack("conflict", head, onto, pre, "pre", tree=tree, stages=stages,
+                           conflicts=conflicts)
+        tree = regenerate_tree_aggregates(repo, tree)
+        message = f"Merge {pre[:12]} (main before the module-root rename){signature}"
+        branch = git(repo, "commit-tree", tree, "-p", head, "-p", pre, "-F", "-",
+                     input=message).stdout.strip()
+    base = converted_tree(repo, pre)
+    ours = convert_changes(repo, pre, base, branch)
+    tree, stages = merge_trees(repo, scratch_commit(repo, ours), onto,
+                               base=scratch_commit(repo, base), attributes=onto)
+    aggregates = {spec[0] for spec in aggregate_specs(
+        git(repo, "show", f"{onto}:lakefile.toml").stdout)}
+    conflicts = [p for p in staged_paths(stages) if p not in aggregates]
+    if conflicts:
+        return Restack("conflict", head, onto, pre, "rename", branch, tree, stages, conflicts)
+    tree = regenerate_tree_aggregates(repo, tree)
+    message = (f"Merge the module-root rename ({onto[:12]})\n\n"
+               f"Restacked with scripts/rename_module_root.py --restack: the branch's changes,\n"
+               f"with module names and paths converted, merged with the renamed tree.{signature}")
+    new = git(repo, "commit-tree", tree, "-p", branch, "-p", onto, "-F", "-",
+              input=message).stdout.strip()
+    return Restack("clean", new, onto, pre, merged_pre=branch, tree=tree)
+
+
+def resolve_onto(repo: Path, onto_ref: str | None, upstream: str) -> str:
+    return rev(repo, onto_ref) if onto_ref else find_rename_commit(repo, upstream)
+
+
+def residual_report(repo: Path, rev_: str, paths: list[str]) -> list[str]:
+    entries = tree_entries(repo, rev_)
+    rewriter = Rewriter(Inventory.from_paths(entries))
     lines = []
     for path in paths:
-        full = repo / path
-        if not full.is_file():
+        if path not in entries or entries[path][0] not in ("100644", "100755"):
             continue
-        try:
-            text = full.read_text()
-        except (UnicodeDecodeError, OSError):
+        text = blob_text(repo, entries[path][1])
+        if text is None:
             continue
         for line, where, category, token in rewriter.residue(path, text):
-            if category in ("dotted name, not a module",) or \
+            if category == "dotted name, not a module" or \
                     (category == "bare word" and where != "code" and token != OLD_LIB):
                 lines.append(f"{path}:{line}: {where}: {category}: {token}")
     return lines
 
 
-def restack(repo: Path, onto_ref: str | None, upstream: str, mk_all: bool) -> int:
+def restack(repo: Path, onto_ref: str | None, upstream: str, mk_all: bool,
+            trailer: str = "") -> int:
+    """Restack the checked-out branch; see the module documentation."""
     if git(repo, "status", "--porcelain", "--untracked-files=no").stdout.strip():
         raise ToolError("the working tree has uncommitted changes")
     gitdir = Path(git(repo, "rev-parse", "--path-format=absolute", "--git-dir").stdout.strip())
     if (gitdir / "MERGE_HEAD").exists():
         raise ToolError("a merge is in progress; commit or abort it first")
     head = rev(repo, "HEAD")
-    onto = rev(repo, onto_ref) if onto_ref else find_rename_commit(repo, upstream)
-    if not has_path(repo, onto, MARKER):
-        raise ToolError(f"--onto {onto[:12]} is not a post-rename commit")
-    branch = git(repo, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    onto = resolve_onto(repo, onto_ref, upstream)
     if is_ancestor(repo, onto, head):
         print(f"{onto[:12]} is already merged; converting any remaining old names.")
         changed = apply(repo, mk_all=mk_all, quiet=True)
         if changed:
-            git(repo, "commit", "-q", "-m", "chore: convert remaining module names to "
-                f"{NEW_LIB}\n\nscripts/rename_module_root.py --restack")
+            git(repo, "commit", "-q", "-F", "-", input=(
+                f"chore: convert remaining module names to {NEW_LIB}\n\n"
+                f"scripts/rename_module_root.py --restack\n" + (f"\n{trailer}\n" if trailer else "")))
             print(f"committed conversions of {len(changed)} files")
         return 0
-    if has_path(repo, head, MARKER):
-        raise ToolError("HEAD is already post-rename; merge the newer commit with plain git merge")
-    pre = pre_rename_counterpart(repo, onto)
-    print(f"branch {branch} at {head[:12]}; onto {onto[:12]}; pre-rename counterpart {pre[:12]}")
-
-    # 1. The pre-rename counterpart.
-    if not is_ancestor(repo, pre, head):
-        result = git(repo, *merge_drivers(), "merge", "--no-ff", "--no-edit", "-m",
-                     f"Merge {pre[:12]} (main before the module-root rename) into {branch}", pre,
-                     check=False)
-        if result.returncode != 0:
-            conflicts = unmerged(repo)
-            aggregates = aggregate_paths(repo)
-            if not conflicts:
-                raise ToolError(f"merging {pre[:12]} failed:\n{result.stderr.strip()}")
-            if set(conflicts) <= aggregates:
-                regenerate_aggregates_from_worktree(repo, conflicts)
-                git(repo, "commit", "-q", "--no-edit")
-            else:
-                print("Merging the pre-rename main conflicts in:")
-                for path in conflicts:
-                    print(f"  {path}")
-                print("Resolve, `git add` and `git commit` this merge, then run --restack again.")
-                return 3
-        head = rev(repo, "HEAD")
-        print(f"merged the pre-rename main: {head[:12]}")
-
-    # 2. The rename, as a three-way merge of converted trees.
-    base_tree = converted_tree(repo, pre)
-    ours_tree = converted_tree(repo, head)
-    onto_tree = git(repo, "rev-parse", f"{onto}^{{tree}}").stdout.strip()
-    # Git before 2.45 merges only commits, so the converted trees are wrapped in parentless ones.
-    base_commit, ours_commit = (scratch_commit(repo, t) for t in (base_tree, ours_tree))
-    merge = git(repo, *merge_drivers(), "-c", f"attr.tree={onto_tree}", "merge-tree",
-                "--write-tree", "-z", f"--merge-base={base_commit}", ours_commit, onto,
-                check=False)
-    if merge.returncode not in (0, 1):
-        raise ToolError(f"git merge-tree failed:\n{merge.stderr.strip()}")
-    fields = merge.stdout.split("\0")
-    result_tree = fields[0]
-    stages = []
-    for entry in fields[1:]:
-        if not entry:
-            break
-        stages.append(entry)  # "<mode> <object> <stage>\t<path>"
-
-    git(repo, "merge", "--no-ff", "--no-commit", "-s", "ours", onto, check=True,
-        env={"GIT_MERGE_AUTOEDIT": "no"})
-    git(repo, "read-tree", "-u", "--reset", result_tree)
-    conflicted = sorted({s.split("\t", 1)[1] for s in stages})
-    aggregates = aggregate_paths(repo)
-    if stages:
-        git(repo, "update-index", "--index-info",
-            input="".join(f"0 {'0' * 40}\t{p}\n" for p in conflicted)
-            + "".join(f"{s}\n" for s in stages))
-    real_conflicts = [p for p in conflicted if p not in aggregates]
-    agg_conflicts = [p for p in conflicted if p in aggregates]
-    if agg_conflicts:
-        regenerate_aggregates_from_worktree(repo, agg_conflicts)
-
-    # 3. Safety net and aggregates.
-    if not real_conflicts:
-        extra = apply(repo, mk_all=mk_all, quiet=True)
-        message = (f"Merge the module-root rename ({onto[:12]}) into {branch}\n\n"
-                   f"Restacked with scripts/rename_module_root.py --restack: the branch's changes,\n"
-                   f"with module names and paths converted, merged with the renamed tree.\n")
-        git(repo, "commit", "-q", "--no-verify", "-F", "-", input=message)
-        if extra:
-            print("note: the safety-net conversion changed these files (review them):")
-            for path in extra:
-                print(f"  {path}")
-    head2 = rev(repo, "HEAD") if not real_conflicts else None
-
-    # 4. Summary.
-    changed = git(repo, "diff", "--name-only", "-z", onto, "HEAD" if head2 else "--").stdout
-    changed_paths = sorted({p for p in changed.split("\0") if p})
-    print(f"\nThe branch changes {len(changed_paths)} files relative to {onto[:12]}.")
-    attention = residual_report(repo, changed_paths)
-    if real_conflicts:
-        print("\nCONFLICTS (the merge is in progress; resolve, `git add`, `git commit`):")
-        for path in real_conflicts:
+    result = compute_restack(repo, head, onto, trailer)
+    print(f"HEAD {head[:12]}; onto {onto[:12]}; pre-rename counterpart {result.pre[:12]}")
+    if result.status == "clean":
+        git(repo, "merge", "-q", "--ff-only", result.head)
+        changed = git(repo, "diff", "--name-only", "-z", onto, "HEAD").stdout
+        paths = sorted(p for p in changed.split("\0") if p)
+        print(f"restacked: {result.head}\nThe branch changes {len(paths)} files relative to "
+              f"{onto[:12]}.")
+        attention = residual_report(repo, "HEAD", paths)
+        if attention:
+            print("Old-root tokens left in the branch's files (check whether they name modules):")
+            for line in attention:
+                print(f"  {line}")
+        return 0
+    if result.stage == "pre":
+        # Repeat the merge in the checkout, so that a person resolves it there.
+        git(repo, *merge_drivers(), "merge", "--no-ff", "--no-edit", result.pre, check=False)
+        print("Merging the pre-rename main conflicts in:")
+        for path in unmerged(repo) or result.conflicts:
             print(f"  {path}")
-    if agg_conflicts:
-        print("\nregenerated aggregates: " + ", ".join(agg_conflicts))
-    if attention:
-        print("\nOld-root tokens left in the branch's files (check whether they name modules):")
-        for line in attention:
-            print(f"  {line}")
-    if head2:
-        print(f"\nrestacked: {head2}")
-    return 4 if real_conflicts else 0
+        print("Resolve, `git add` and `git commit` this merge, then run --restack again.")
+        return 3
+    if result.merged_pre != head:
+        git(repo, "merge", "-q", "--ff-only", result.merged_pre)
+    git(repo, "merge", "--no-ff", "--no-commit", "-s", "ours", onto)
+    git(repo, "read-tree", "-u", "--reset", result.tree)
+    git(repo, "update-index", "--index-info",
+        input="".join(f"0 {'0' * 40}\t{p}\n" for p in staged_paths(result.stages))
+        + "".join(f"{s}\n" for s in result.stages))
+    aggregates = [p for p in staged_paths(result.stages) if p not in result.conflicts]
+    if aggregates:
+        regenerate_aggregates_from_worktree(repo, aggregates)
+    print("CONFLICTS (the merge is in progress; resolve, `git add`, `git commit`):")
+    for path in result.conflicts:
+        print(f"  {path}")
+    return 4
 
 
 def regenerate_aggregates_from_worktree(repo: Path, paths: list[str]) -> None:
@@ -886,6 +1178,77 @@ def regenerate_aggregates_from_worktree(repo: Path, paths: list[str]) -> None:
     git(repo, "add", "--", *paths)
 
 
+# --- Approval carry-forward ----------------------------------------------------------------------
+
+def line_delta(before: str | None, after: str | None) -> tuple[Counter, Counter]:
+    old = Counter((before or "").split("\n")) if before is not None else Counter()
+    new = Counter((after or "").split("\n")) if after is not None else Counter()
+    return new - old, old - new
+
+
+def file_text(repo: Path, entries: dict[str, tuple[str, str]], path: str) -> str | None:
+    if path not in entries:
+        return None
+    mode, oid = entries[path]
+    if mode not in ("100644", "100755"):
+        return f"<{mode} {oid}>"
+    text = blob_text(repo, oid)
+    return f"<binary {oid}>" if text is None else text
+
+
+def deltas(repo: Path, base: str, head: str, convert: bool) -> dict[str, tuple[Counter, Counter]]:
+    """Per (renamed) path, the lines that `head` adds and removes relative to `base`, as
+    multisets. With `convert`, both sides are first converted as apply mode would."""
+    changed = git(repo, "diff", "--name-only", "--no-renames", "-z", base, head).stdout
+    paths = sorted({p for p in changed.split("\0") if p})
+    base_entries, head_entries = tree_entries(repo, base), tree_entries(repo, head)
+    rewriters = (Rewriter(Inventory.from_paths(base_entries)),
+                 Rewriter(Inventory.from_paths(head_entries)))
+    out: dict[str, tuple[Counter, Counter]] = {}
+    for path in paths:
+        target = map_path(path) if convert else path
+        texts = [file_text(repo, base_entries, path), file_text(repo, head_entries, path)]
+        if convert:
+            texts = [t if t is None or t.startswith("<") else rw.rewrite(target, t)
+                     for t, rw in zip(texts, rewriters)]
+        added, removed = line_delta(*texts)
+        previous = out.get(target, (Counter(), Counter()))
+        out[target] = (previous[0] + added, previous[1] + removed)
+    return out
+
+
+def verify_carry(repo: Path, old_head: str, new_head: str, onto_ref: str | None,
+                 upstream: str) -> tuple[bool, list[str]]:
+    """Whether the restacked `new_head` makes exactly the converted change of `old_head`."""
+    base_new = rev(repo, onto_ref) if onto_ref else \
+        git(repo, "merge-base", new_head, upstream).stdout.strip()
+    if not has_path(repo, base_new, MARKER):
+        raise ToolError(f"{base_new[:12]}, the base of {new_head[:12]}, is not post-rename")
+    pre = pre_rename_counterpart(repo, base_new)
+    base_old = git(repo, "merge-base", old_head, pre).stdout.strip()
+    aggregates = {spec[0] for spec in aggregate_specs(
+        git(repo, "show", f"{new_head}:lakefile.toml").stdout)}
+    old = deltas(repo, base_old, old_head, convert=True)
+    new = deltas(repo, base_new, new_head, convert=False)
+    report = []
+    for path in sorted(set(old) | set(new)):
+        if path in aggregates:
+            continue
+        o_add, o_rem = old.get(path, (Counter(), Counter()))
+        n_add, n_rem = new.get(path, (Counter(), Counter()))
+        if (o_add, o_rem) == (n_add, n_rem):
+            continue
+        report.append(f"--- {path}")
+        for sign, only, label in (("+", o_add - n_add, "added only at the old head"),
+                                  ("+", n_add - o_add, "added only at the new head"),
+                                  ("-", o_rem - n_rem, "removed only at the old head"),
+                                  ("-", n_rem - o_rem, "removed only at the new head")):
+            if only:
+                report.append(f"  {label}:")
+                report += [f"    {sign}{line}" for line in sorted(only.elements())]
+    return not report, report
+
+
 # --- Command line --------------------------------------------------------------------------------
 
 def main(argv: list[str] | None = None) -> int:
@@ -895,7 +1258,12 @@ def main(argv: list[str] | None = None) -> int:
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--restack", action="store_true", help="merge the rename into this branch")
     mode.add_argument("--report", action="store_true", help="list the old-root tokens that remain")
-    parser.add_argument("--onto", help="post-rename commit to merge (default: the rename commit)")
+    mode.add_argument("--verify-carry", nargs=2, metavar=("OLD_HEAD", "NEW_HEAD"),
+                      help="check that NEW_HEAD, the restacked OLD_HEAD, makes the same change")
+    parser.add_argument("--onto", help="restack: the post-rename commit to merge (default: the "
+                        "rename commit); verify-carry: the base of NEW_HEAD (default: its merge "
+                        "base with --upstream)")
+    parser.add_argument("--trailer", default="", help="restack: a trailer for the merge commits")
     parser.add_argument("--upstream", default="origin/main",
                         help="where to find the rename commit (default: origin/main)")
     mk = parser.add_mutually_exclusive_group()
@@ -907,8 +1275,13 @@ def main(argv: list[str] | None = None) -> int:
         if args.report:
             return report(repo)
         if args.restack:
-            return restack(repo, args.onto, args.upstream, args.mk_all)
-        apply(repo, mk_all=not args.no_mk_all)
+            return restack(repo, args.onto, args.upstream, args.mk_all, args.trailer)
+        if args.verify_carry:
+            old, new = (rev(repo, r) for r in args.verify_carry)
+            ok, lines = verify_carry(repo, old, new, args.onto, args.upstream)
+            print("\n".join(lines + [f"CARRY {'OK' if ok else 'DIFF'} {old} {new}"]))
+            return 0 if ok else 1
+        apply(repo, mk_all=not args.no_mk_all, record_encodings=True)
         return 0
     except ToolError as error:
         print(f"error: {error}", file=sys.stderr)

@@ -50,8 +50,8 @@ def prepare(suite: str) -> Path:
         raise ValueError(f"generated source directory must not contain symlinks: {GENERATED}")
     GENERATED.mkdir(parents=True, exist_ok=True)
     name, theorems = SUITES[suite]
-    # The statement modules moved to the `CslibFrontierComparator` root; their declarations keep
-    # the `ComplexityComparator` namespace.  (rename-module-root: keep)
+    # The statement modules moved to the `CslibFrontierComparator` root; their declarations
+    # keep the `ComplexityComparator` namespace.  (rename-module-root: keep)
     namespace = f"ComplexityComparator.{name}"  # rename-module-root: keep
     package = f"CslibFrontierComparator.{name}"
     challenge = f"CslibFrontierComparatorChallenges.{name}"

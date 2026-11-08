@@ -66,8 +66,8 @@ jobs:
         run: python3 scripts/check_docs.py --trim --guide
       - name: Add the guide to the site
         run: cp -R guide/.lake/build/site/html-multi docbuild/.lake/build/doc/guide
-      # GitHub Pages serves 404.html for missing paths; it redirects pages of the old `CslibFrontier`
-      # module root to `CslibFrontier`.
+      # GitHub Pages serves 404.html for missing paths. It sends API pages that the
+      # module-root rename moved to their new addresses.
       - name: Add the not-found page
         run: cp docbuild/404.html docbuild/.lake/build/doc/404.html
       - if: github.ref != 'refs/heads/main'
