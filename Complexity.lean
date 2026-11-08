@@ -3964,6 +3964,7 @@ public import Complexity.Foundations.Combinatorics.SimpleGraph.CliqueCover
 public import Complexity.Foundations.Combinatorics.SimpleGraph.EvenEdges
 public import Complexity.Foundations.Combinatorics.SimpleGraph.GreedyColoring
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
+public import Complexity.Foundations.Combinatorics.SimpleGraph.ProperColoring
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Rado
 public import Complexity.Foundations.Combinatorics.SimpleGraph.SymmDiff
 public import Complexity.Foundations.Combinatorics.SmallSubsets
@@ -4860,6 +4861,7 @@ public import Complexity.Probability.LocalLemma
 public import Complexity.Probability.LoomisWhitney
 public import Complexity.Probability.MarkovChain.Basic
 public import Complexity.Probability.MarkovChain.Coloring
+public import Complexity.Probability.MarkovChain.Coloring.Ratio
 public import Complexity.Probability.MarkovChain.Coupling
 public import Complexity.Probability.MarkovChain.Metropolis
 public import Complexity.Probability.MarkovChain.Mixing

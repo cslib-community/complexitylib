@@ -1229,8 +1229,10 @@ densities (expected revenue equals expected virtual welfare; Vickrey with a rese
   Metropolis chains and path coupling, with the lazy hypercube walk
   (`Probability/BitString/LazyRandomWalk`, #2857) and Glauber dynamics for `q > 2Δ` colorings
   (`Probability/MarkovChain/Coloring`, #2933) as clients. Extend with conductance,
-  canonical-path and spectral-gap arguments, and with the reduction from approximately counting
-  colorings to sampling them with the Glauber chain. Implement Metropolis sampling for encoded
+  canonical-path and spectral-gap arguments. For the reduction from approximately counting
+  colorings to sampling them, frozen-boundary Glauber dynamics and the ratio bound are in place
+  (`Probability/MarkovChain/Coloring/Ratio`); finish with the product estimator and its
+  second-moment analysis (#3003). Implement Metropolis sampling for encoded
   rational target weights, charging initialization, arithmetic and every transition, with support and
   mixing hypotheses explicit.
 - **FPRAS and almost-uniform sampling:** an almost-uniform sampling (FPAUS) interface with
