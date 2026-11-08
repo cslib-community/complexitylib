@@ -14,14 +14,19 @@ import ComplexityTests.GameTheory.Stability
   "both `false`" is not strong (both players gain by switching together to "both `true`"), and
   "both `true`" is strong.
 * The VHS-or-Betamax fair cost-sharing game: the bad pure Nash equilibrium "all VHS" is not strong
-  ([Roughgarden2013CS364A], Lecture #15, Section 3), while "all Betamax" is strong, as the
-  common-strategy-set theorem predicts; and every strong Nash equilibrium is optimal.
+  ([Roughgarden2013CS364A], Lecture #15, Section 3), directly and through the common-strategy-set
+  correspondence `isStrongNash_fairCostSharing_iff` (it is not of minimum cost), while
+  "all Betamax" is strong, as the common-strategy-set theorems predict; and every strong Nash
+  equilibrium is optimal.
 * The opt-out game: for `ε = 1/10` and three players, everyone opting out is a strong Nash
   equilibrium of cost `H 3 = 11/6`, within the `H 3` bound of the optimum `11/10`; everyone sharing
-  is not strong. With `ε = 0` and two players, everyone opting out is still a pure Nash equilibrium
-  but not a strong one, so `isStrongNash_optOut_true` needs `0 < ε`.
-* The nonincreasing-latency hypothesis of `socialCost_le_rosenthalPotential_of_isStrongNash` is
-  needed: with two players forced onto one resource of latency `n ↦ n`, the only profile is a
+  is not strong. Separately, the tightness theorem refutes the factor `9/5 < H 3` for some
+  three-player opt-out game.
+* The two notions of strong equilibrium differ: with `ε = 0` and two players, everyone opting out is
+  a pure Nash equilibrium and a strong equilibrium (`IsStrongEquilibrium`), but not a strong Nash
+  equilibrium (`IsStrongNash`). In particular `isStrongNash_optOut_true` needs `0 < ε`.
+* The nonincreasing-latency hypothesis of `socialCost_le_rosenthalPotential_of_isStrongEquilibrium`
+  is needed: with two players forced onto one resource of latency `n ↦ n`, the only profile is a
   strong Nash equilibrium of social cost `4`, above its Rosenthal potential `3`.
 -/
 
@@ -83,6 +88,15 @@ example : vhs.toCostGame.IsStrongNash (fun _ => true) ∧
     fun s t hs => socialCost_fairCostSharing_le_of_isStrongNash (R := fun b => {b}) vhs_cost_nonneg
       hs t⟩
 
+/-- Through the common-strategy-set correspondence: "all VHS" costs `2`, more than the `3/2` of
+"all Betamax", so it is not a strong Nash equilibrium. -/
+example : ¬ vhs.toCostGame.IsStrongNash fun _ => false := by
+  rw [vhs, isStrongNash_fairCostSharing_iff (R := fun b => {b}) vhs_cost_nonneg]
+  intro h
+  have h' := h fun _ => true
+  rw [socialCost_fairCostSharing_const, socialCost_fairCostSharing_const] at h'
+  norm_num at h'
+
 /-- The `H 2 = 3/2` strong price-of-anarchy bound applies to the VHS-or-Betamax game. -/
 example (s : Fin 2 → Bool) (hs : vhs.toCostGame.IsStrongNash s) (t : Fin 2 → Bool) :
     vhs.toCostGame.socialCost s ≤ 3 / 2 * vhs.toCostGame.socialCost t := by
@@ -102,27 +116,19 @@ example : (optOut 3 (1 / 10)).toCostGame.IsStrongNash (fun _ => true) ∧
   rw [isStrongNash_optOut_iff (by norm_num)] at h
   simpa using congrFun h 0
 
-theorem optOutCost_nonneg {ε : ℝ} (hε : 0 ≤ ε) (k : ℕ) : ∀ e, 0 ≤ optOutCost k ε e
-  | some _ => by
-    rw [optOutCost]
-    positivity
-  | none => by
-    rw [optOutCost]
-    linarith
-
 /-- The strong price-of-anarchy theorem at the opt-out game: the strong Nash equilibrium of cost
 `H 3 = 11/6` is within the factor `H 3` of the optimum `11/10`. -/
 example : (optOut 3 (1 / 10)).toCostGame.socialCost (fun _ => true)
     ≤ harmonic 3 * (optOut 3 (1 / 10)).toCostGame.socialCost fun _ => false := by
   have h := socialCost_fairCostSharing_le_harmonic_mul_of_isStrongNash
-    (optOutCost_nonneg (by norm_num : (0 : ℝ) ≤ 1 / 10) 3)
+    (optOutCost_nonneg (k := 3) (by norm_num : (0 : ℝ) ≤ 1 / 10))
     (isStrongNash_optOut_true (by norm_num)) (fun _ => false)
   rwa [Fintype.card_fin, ← optOut_def] at h
 
-/-- The tightness theorem: the factor `9/5 < H 3` fails for strong Nash equilibria of some
-three-player opt-out game. -/
+/-- The tightness theorem: the factor `9/5 < H 3` fails for strong Nash equilibria, and for strong
+equilibria, of some three-player opt-out game. -/
 example : ∃ ε > 0, (optOut 3 ε).toCostGame.IsStrongNash (fun _ => true) ∧
-    ∀ s, (optOut 3 ε).toCostGame.IsStrongNash s →
+    ∀ s, (optOut 3 ε).toCostGame.IsStrongEquilibrium s →
       9 / 5 * (optOut 3 ε).toCostGame.socialCost (fun _ => false)
         < (optOut 3 ε).toCostGame.socialCost s :=
   exists_isStrongNash_optOut_mul_lt (by norm_num) (by rw [harmonic_three]; norm_num)
@@ -149,6 +155,31 @@ example : (optOut 2 0).toCostGame.IsPureNash (fun _ => true) ∧
     fin_cases i <;> norm_num
   · rw [optOut_cost, optOut_cost, hc]
     norm_num
+
+/-- With `ε = 0` and two players, everyone opting out is nevertheless a strong equilibrium: no
+nonempty coalition has a joint deviation from which *every* member strictly gains. Player `1` pays
+`1/2` when opting out and at least `1/2` at every profile, and if player `1` keeps opting out then
+player `0` pays `1` whatever it does. With the previous example, this separates
+`IsStrongEquilibrium` from `IsStrongNash`. -/
+example : (optOut 2 0).toCostGame.IsStrongEquilibrium fun _ => true := by
+  rw [CostGame.isStrongEquilibrium_iff]
+  intro A hA t
+  by_cases h1 : (1 : Fin 2) ∈ A
+  · refine ⟨1, h1, ?_⟩
+    simp only [optOut_cost, Finset.card_filter, Fin.sum_univ_two]
+    generalize A.piecewise t (fun _ => true) 0 = a
+    generalize A.piecewise t (fun _ => true) 1 = b
+    cases a <;> cases b <;> norm_num
+  · have h0 : (0 : Fin 2) ∈ A := by
+      obtain ⟨j, hj⟩ := hA
+      fin_cases j
+      · exact hj
+      · exact absurd hj h1
+    have hu1 : A.piecewise t (fun _ => true) 1 = true := Finset.piecewise_eq_of_notMem _ _ _ h1
+    refine ⟨0, h0, ?_⟩
+    simp only [optOut_cost, Finset.card_filter, Fin.sum_univ_two, hu1]
+    generalize A.piecewise t (fun _ => true) 0 = a
+    cases a <;> norm_num
 
 /-! ### The nonincreasing-latency hypothesis is needed -/
 

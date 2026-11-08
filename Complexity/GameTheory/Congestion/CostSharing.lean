@@ -66,6 +66,10 @@ zero-cost edges from each source to the meeting point; they change no player's c
   `Cslib.GameTheory.CongestionGame.sum_div_card_le_cost_fairCostSharing`: the social cost is at
   least the cost of any player's resources, and each player pays at least a `1 / k` share of the
   cost of its resources.
+* `Cslib.GameTheory.CongestionGame.cost_fairCostSharing_const`,
+  `Cslib.GameTheory.CongestionGame.socialCost_fairCostSharing_const`: when all players share one
+  strategy set and resource map and play the same strategy `p`, each pays `c(R p) / k` and the
+  social cost is `c(R p)`.
 * `Cslib.GameTheory.CongestionGame.socialCost_le_rosenthalPotential_fairCostSharing`,
   `Cslib.GameTheory.CongestionGame.rosenthalPotential_fairCostSharing_le_harmonic_mul`
   ([TardosWexler2007], Lemma 19.8): `socialCost s ≤ Φ s ≤ H k * socialCost s`.
@@ -79,6 +83,8 @@ zero-cost edges from each source to the meeting point; they change no player's c
   player opts out, some sharing player `j` pays more than its private cost `1 / (j + 1)`.
 * `Cslib.GameTheory.CongestionGame.isPureNash_optOut_iff`: for `ε > 0` the unique pure Nash
   equilibrium of the opt-out game is that every player opts out.
+* `Cslib.GameTheory.CongestionGame.optOutCost_nonneg`: for `ε ≥ 0` its resource costs are
+  nonnegative.
 * `Cslib.GameTheory.CongestionGame.socialCost_optOut_true`,
   `Cslib.GameTheory.CongestionGame.socialCost_optOut_false`: its social costs `H k` and `1 + ε`.
 * `Cslib.GameTheory.CongestionGame.exists_forall_isPureNash_optOut_mul_lt` ([Roughgarden2013CS364A],
@@ -213,6 +219,35 @@ theorem sum_div_card_le_cost_fairCostSharing (hc : ∀ e, 0 ≤ c e) (s : ∀ i,
   refine div_le_div_of_nonneg_left (hc e) (by exact_mod_cast hpos) ?_
   exact_mod_cast (Finset.card_filter_le _ _).trans_eq Finset.card_univ
 
+section Common
+
+variable {P : Type*} {R : P → Finset E}
+
+/-- When all players have the strategy set `P` and the resource map `R` and all play the same
+strategy `p`, each pays the share `(∑ e ∈ R p, c e) / k` of the cost of `R p`, where
+`k = Fintype.card ι`. -/
+theorem cost_fairCostSharing_const (p : P) (i : ι) :
+    (fairCostSharing (fun (_ : ι) => R) c).toCostGame.cost i (fun _ => p)
+      = (∑ e ∈ R p, c e) / Fintype.card ι := by
+  rw [toCostGame_cost, fairCostSharing_resources, Finset.sum_div]
+  refine Finset.sum_congr rfl fun e he => ?_
+  have hload : (fairCostSharing (fun (_ : ι) => R) c).load (fun _ => p) e = Fintype.card ι := by
+    unfold load
+    rw [Finset.filter_true_of_mem fun j _ => by rwa [fairCostSharing_resources], Finset.card_univ]
+  rw [fairCostSharing_latency, hload]
+
+/-- When all players have the strategy set `P` and the resource map `R` and all play the same
+strategy `p`, the social cost is the cost of `R p` (with at least one player). -/
+theorem socialCost_fairCostSharing_const [Nonempty ι] (p : P) :
+    (fairCostSharing (fun (_ : ι) => R) c).toCostGame.socialCost (fun _ => p)
+      = ∑ e ∈ R p, c e := by
+  rw [CostGame.socialCost, Finset.sum_congr rfl fun i _ => cost_fairCostSharing_const c p i,
+    Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+  have hk : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
+  rw [mul_div_cancel₀ _ hk.ne']
+
+end Common
+
 variable [DecidableEq ι] [Finite E] [∀ i, Finite (S i)]
 
 /-- **The price of stability of fair cost-sharing games is at most `H k`** [AnshelevichDKTWR2008]
@@ -286,6 +321,16 @@ variable {k : ℕ} {ε : ℝ}
 `optOutCost k ε`. -/
 theorem optOut_def : optOut k ε = fairCostSharing (optOutResources k) (optOutCost k ε) := by
   rw [optOut]
+
+/-- For `ε ≥ 0` the resource costs of the opt-out game are nonnegative, the hypothesis of the
+`H k` bounds for fair cost-sharing games. -/
+theorem optOutCost_nonneg (hε : 0 ≤ ε) : ∀ e, 0 ≤ optOutCost k ε e
+  | some _ => by
+    rw [optOutCost]
+    positivity
+  | none => by
+    rw [optOutCost]
+    linarith
 
 private theorem optOut_resources (i : Fin k) (b : Bool) :
     (optOut k ε).resources i b = if b then {some i} else {none} := by

@@ -9,7 +9,6 @@ module
 
 public import Complexity.GameTheory.Congestion.CostSharing
 public import Complexity.GameTheory.Strategic.StrongNash
-import Complexity.Foundations.NumberTheory.Harmonic
 import Mathlib.Algebra.BigOperators.Field
 import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
@@ -26,8 +25,14 @@ Lecture #15, Theorem 3.2). Unlike the price-of-stability bound
 equilibrium, but it does not assert that one exists, and in general none need exist
 ([Roughgarden2013CS364A], Lecture #15, Section 4 and Figure 4).
 
+The proof uses only that no nonempty coalition has a joint deviation from which *every* member
+strictly gains. We therefore prove the bound for strong equilibria (`CostGame.IsStrongEquilibrium`)
+and obtain the Lecture #15 statement for strong Nash equilibria (`CostGame.IsStrongNash`, where a
+deviation counts if no member loses and some member gains) through
+`CostGame.IsStrongNash.isStrongEquilibrium`.
+
 The proof ([Roughgarden2013CS364A], Lecture #15, proof of Theorem 3.2) peels players off the grand
-coalition. Fix a strong Nash equilibrium `s` and any profile `t`. A nonempty coalition `A` does not
+coalition. Fix a strong equilibrium `s` and any profile `t`. A nonempty coalition `A` does not all
 gain by jointly switching to `t`, so some member `i ∈ A` has
 `cost i s ≤ cost i (A.piecewise t s)` (display (5)). When latencies are nonincreasing in the load,
 the players outside `A` only help `i`, so `cost i (A.piecewise t s)` is at most the cost of `i` at
@@ -38,34 +43,41 @@ that latencies are nonincreasing in the load, so we state it for every atomic co
 that property and specialize it to fair cost sharing, where `Φ t ≤ H k * socialCost t`.
 
 The opt-out game shows that `H k` is tight: for `ε > 0`, everyone opting out is a strong Nash
-equilibrium ([Roughgarden2013CS364A], Lecture #15, Section 3), indeed the only one.
+equilibrium ([Roughgarden2013CS364A], Lecture #15, Section 3), and it is the only strong
+equilibrium.
 
 When all players share one strategy set `P` and one resource map `R` (in a network, a common
 source and a common sink), strong Nash equilibria exist and are optimal ([Roughgarden2013CS364A],
 Exercise Set #8, Exercise 67): everyone playing a cheapest strategy is a strong Nash equilibrium,
 and at a costlier profile the grand coalition gains by switching to a cheapest strategy played in
-it or in the optimum.
+it or in the optimum. This uses the Pareto optimality of strong Nash equilibria, so it is stated
+for `IsStrongNash`. Conversely, a minimum-cost profile is a strong Nash equilibrium: everyone always
+pays at least `OPT / k`, and at an optimum nobody pays more. Together these give the exercise's
+one-to-one correspondence between strong Nash equilibria and minimum-cost outcomes.
 
 ## Main results
 
-* `Cslib.GameTheory.CongestionGame.socialCost_le_rosenthalPotential_of_isStrongNash`: in an atomic
-  congestion game whose latencies are nonincreasing in the load (on loads `≥ 1`), every strong Nash
-  equilibrium costs at most Rosenthal's potential of every profile.
+* `Cslib.GameTheory.CongestionGame.socialCost_le_rosenthalPotential_of_isStrongEquilibrium`: in
+  an atomic congestion game whose latencies are nonincreasing in the load (on loads `≥ 1`), every
+  strong equilibrium costs at most Rosenthal's potential of every profile.
 * `Cslib.GameTheory.CongestionGame.socialCost_fairCostSharing_le_harmonic_mul_of_isStrongNash`
   ([EpsteinFeldmanMansour2009]; [Roughgarden2013CS364A], Lecture #15, Theorem 3.2): **every strong
   Nash equilibrium of a `k`-player fair cost-sharing game costs at most `H k` times the optimum**.
-* `Cslib.GameTheory.CongestionGame.isStrongNash_fairCostSharing_const`,
-  `Cslib.GameTheory.CongestionGame.socialCost_fairCostSharing_le_of_isStrongNash`,
+  The same bound for every strong equilibrium is
+  `socialCost_fairCostSharing_le_harmonic_mul_of_isStrongEquilibrium`.
+* `Cslib.GameTheory.CongestionGame.isStrongNash_fairCostSharing_iff`,
   `Cslib.GameTheory.CongestionGame.exists_isStrongNash_fairCostSharing_const`
   ([Roughgarden2013CS364A], Exercise Set #8, Exercise 67): with a common strategy set and resource
-  map, everyone playing a cheapest strategy is a strong Nash equilibrium and every strong Nash
-  equilibrium is optimal.
+  map, the strong Nash equilibria are exactly the minimum-cost profiles, and everyone playing a
+  cheapest strategy is one (`isStrongNash_fairCostSharing_const`).
 * `Cslib.GameTheory.CongestionGame.isStrongNash_optOut_true`,
-  `Cslib.GameTheory.CongestionGame.isStrongNash_optOut_iff`: for `ε > 0`, the unique strong Nash
-  equilibrium of the opt-out game is that every player opts out.
+  `Cslib.GameTheory.CongestionGame.isStrongNash_optOut_iff`,
+  `Cslib.GameTheory.CongestionGame.isStrongEquilibrium_optOut_iff`: for `ε > 0`, the unique strong
+  Nash equilibrium, and the unique strong equilibrium, of the opt-out game is that every player opts
+  out.
 * `Cslib.GameTheory.CongestionGame.exists_isStrongNash_optOut_mul_lt` ([Roughgarden2013CS364A],
   Lecture #15, Section 3): **`H k` cannot be lowered**: for every `r < H k` some opt-out game has a
-  strong Nash equilibrium, and every strong Nash equilibrium costs more than `r` times the optimum.
+  strong Nash equilibrium, and every strong equilibrium costs more than `r` times the optimum.
 
 ## References
 
@@ -152,11 +164,11 @@ private theorem cost_piecewise_le (hC : ∀ e, AntitoneOn (C.latency e) (Set.Ici
 variable {C}
 
 /-- The telescoping step of the proof of [Roughgarden2013CS364A], Lecture #15, Theorem 3.2: the
-total cost of the members of any coalition `A` at a strong Nash equilibrium `s` is at most the
+total cost of the members of any coalition `A` at a strong equilibrium `s` is at most the
 coalition's potential at `t`. -/
-private theorem sum_cost_le_coalitionPotential_of_isStrongNash [Fintype E]
+private theorem sum_cost_le_coalitionPotential_of_isStrongEquilibrium [Fintype E]
     (hC : ∀ e, AntitoneOn (C.latency e) (Set.Ici 1)) {s : ∀ i, S i}
-    (hs : C.toCostGame.IsStrongNash s) (t : ∀ i, S i) (A : Finset ι) :
+    (hs : C.toCostGame.IsStrongEquilibrium s) (t : ∀ i, S i) (A : Finset ι) :
     ∑ i ∈ A, C.toCostGame.cost i s ≤ C.coalitionPotential A t := by
   induction A using Finset.strongInduction with
   | H A ih =>
@@ -169,33 +181,51 @@ private theorem sum_cost_le_coalitionPotential_of_isStrongNash [Fintype E]
       rw [← Finset.sum_erase_add _ _ hi, C.coalitionPotential_eq hi t]
       linarith [C.cost_piecewise_le hC hi t s]
 
-/-- **Strong Nash equilibria cost at most Rosenthal's potential** in congestion games with
+/-- **Strong equilibria cost at most Rosenthal's potential** in congestion games with
 nonincreasing latencies ([Roughgarden2013CS364A], Lecture #15, proof of Theorem 3.2, displays
-(5)–(8), there for fair cost sharing): if every latency is nonincreasing on loads `≥ 1`, then every
-strong Nash equilibrium `s` has `socialCost s ≤ Φ t` for every profile `t`, where `Φ` is
-Rosenthal's potential. -/
-theorem socialCost_le_rosenthalPotential_of_isStrongNash [Fintype E]
+(5)–(8), there for strong Nash equilibria of fair cost-sharing games): if every latency is
+nonincreasing on loads `≥ 1`, then every strong equilibrium `s` (no nonempty coalition has a joint
+deviation from which every member strictly gains) has `socialCost s ≤ Φ t` for every profile `t`,
+where `Φ` is Rosenthal's potential. Every strong Nash equilibrium is a strong equilibrium
+(`CostGame.IsStrongNash.isStrongEquilibrium`). -/
+theorem socialCost_le_rosenthalPotential_of_isStrongEquilibrium [Fintype E]
     (hC : ∀ e, AntitoneOn (C.latency e) (Set.Ici 1)) {s : ∀ i, S i}
-    (hs : C.toCostGame.IsStrongNash s) (t : ∀ i, S i) :
+    (hs : C.toCostGame.IsStrongEquilibrium s) (t : ∀ i, S i) :
     C.toCostGame.socialCost s ≤ C.rosenthalPotential t := by
-  have h := sum_cost_le_coalitionPotential_of_isStrongNash hC hs t Finset.univ
+  have h := sum_cost_le_coalitionPotential_of_isStrongEquilibrium hC hs t Finset.univ
   rwa [coalitionPotential_univ] at h
+
+/-- **The price of anarchy of strong equilibria in fair cost-sharing games is at most `H k`**
+([Roughgarden2013CS364A], Lecture #15, proof of Theorem 3.2): in a fair cost-sharing game with
+`k = Fintype.card ι` players and nonnegative resource costs, every strong equilibrium `s` (no
+nonempty coalition has a joint deviation from which every member strictly gains) has
+`socialCost s ≤ H k * socialCost t` for every profile `t`. The Lecture #15 statement for strong
+Nash equilibria is `socialCost_fairCostSharing_le_harmonic_mul_of_isStrongNash`. -/
+theorem socialCost_fairCostSharing_le_harmonic_mul_of_isStrongEquilibrium [Finite E]
+    {resources : ∀ i, S i → Finset E} {c : E → ℝ} (hc : ∀ e, 0 ≤ c e) {s : ∀ i, S i}
+    (hs : (fairCostSharing resources c).toCostGame.IsStrongEquilibrium s) (t : ∀ i, S i) :
+    (fairCostSharing resources c).toCostGame.socialCost s
+      ≤ harmonic (Fintype.card ι) * (fairCostSharing resources c).toCostGame.socialCost t := by
+  have := Fintype.ofFinite E
+  exact (socialCost_le_rosenthalPotential_of_isStrongEquilibrium
+    (antitoneOn_latency_fairCostSharing resources hc) hs t).trans
+    (rosenthalPotential_fairCostSharing_le_harmonic_mul resources c hc t)
 
 /-- **The price of anarchy of strong Nash equilibria in fair cost-sharing games is at most `H k`**
 [EpsteinFeldmanMansour2009] ([Roughgarden2013CS364A], Lecture #15, Theorem 3.2): in a fair
 cost-sharing game with `k = Fintype.card ι` players and nonnegative resource costs, every strong
 Nash equilibrium `s` has `socialCost s ≤ H k * socialCost t` for every profile `t`. The bound
-holds for every strong Nash equilibrium, but strong Nash equilibria need not exist.
+holds for every strong Nash equilibrium, but strong Nash equilibria need not exist. It holds more
+generally for strong equilibria
+(`socialCost_fairCostSharing_le_harmonic_mul_of_isStrongEquilibrium`), and
 `exists_isStrongNash_optOut_mul_lt` shows that `H k` cannot be lowered. -/
 theorem socialCost_fairCostSharing_le_harmonic_mul_of_isStrongNash [Finite E]
     {resources : ∀ i, S i → Finset E} {c : E → ℝ} (hc : ∀ e, 0 ≤ c e) {s : ∀ i, S i}
     (hs : (fairCostSharing resources c).toCostGame.IsStrongNash s) (t : ∀ i, S i) :
     (fairCostSharing resources c).toCostGame.socialCost s
-      ≤ harmonic (Fintype.card ι) * (fairCostSharing resources c).toCostGame.socialCost t := by
-  have := Fintype.ofFinite E
-  exact (socialCost_le_rosenthalPotential_of_isStrongNash
-    (antitoneOn_latency_fairCostSharing resources hc) hs t).trans
-    (rosenthalPotential_fairCostSharing_le_harmonic_mul resources c hc t)
+      ≤ harmonic (Fintype.card ι) * (fairCostSharing resources c).toCostGame.socialCost t :=
+  socialCost_fairCostSharing_le_harmonic_mul_of_isStrongEquilibrium hc
+    (CostGame.IsStrongNash.isStrongEquilibrium hs) t
 
 end Cslib.GameTheory.CongestionGame
 
@@ -208,18 +238,6 @@ variable {ι : Type*} {S : ι → Type*} {E : Type*} [Fintype ι] [DecidableEq E
 
 variable {P : Type*} {R : P → Finset E}
 
-/-- When every player plays the same strategy `p` of a common strategy set, each pays the share
-`(∑ e ∈ R p, c e) / k` of the cost of `R p`. -/
-theorem cost_fairCostSharing_const (p : P) (i : ι) :
-    (fairCostSharing (fun (_ : ι) => R) c).toCostGame.cost i (fun _ => p)
-      = (∑ e ∈ R p, c e) / Fintype.card ι := by
-  rw [toCostGame_cost, fairCostSharing_resources, Finset.sum_div]
-  refine Finset.sum_congr rfl fun e he => ?_
-  have hload : (fairCostSharing (fun (_ : ι) => R) c).load (fun _ => p) e = Fintype.card ι := by
-    unfold load
-    rw [Finset.filter_true_of_mem fun j _ => by rwa [fairCostSharing_resources], Finset.card_univ]
-  rw [fairCostSharing_latency, hload]
-
 /-- **Everyone playing a cheapest strategy is a strong Nash equilibrium** when all players share
 the strategy set `P` and the resource map `R` ([Roughgarden2013CS364A], Exercise Set #8,
 Exercise 67, the network case of a common source and a common sink): each player pays
@@ -230,7 +248,7 @@ theorem isStrongNash_fairCostSharing_const [DecidableEq ι] (hc : ∀ e, 0 ≤ c
   rintro A t ⟨-, i, -, hlt⟩
   have hge := sum_div_card_le_cost_fairCostSharing (fun (_ : ι) => R) c hc
     (A.piecewise t fun _ => p) i
-  rw [cost_fairCostSharing_const] at hlt
+  rw [cost_fairCostSharing_const c] at hlt
   have hmono : (∑ e ∈ R p, c e) / Fintype.card ι
       ≤ (∑ e ∈ R (A.piecewise t (fun _ => p) i), c e) / Fintype.card ι :=
     div_le_div_of_nonneg_right (hp _) (Nat.cast_nonneg _)
@@ -265,7 +283,7 @@ theorem socialCost_fairCostSharing_le_of_isStrongNash [DecidableEq ι] [Finite E
     hq _ (Finset.mem_union_right _ (Finset.mem_image_of_mem t (Finset.mem_univ j₀)))
   have hlow : ∀ i, (fairCostSharing (fun (_ : ι) => R) c).toCostGame.cost i (fun _ => q)
       ≤ (fairCostSharing (fun (_ : ι) => R) c).toCostGame.cost i s := fun i => by
-    rw [cost_fairCostSharing_const]
+    rw [cost_fairCostSharing_const c]
     exact (div_le_div_of_nonneg_right (hqs i) (Nat.cast_nonneg _)).trans
       (sum_div_card_le_cost_fairCostSharing (fun (_ : ι) => R) c hc s i)
   refine hs.not_pareto (fun _ => q) ⟨hlow, ?_⟩
@@ -275,19 +293,70 @@ theorem socialCost_fairCostSharing_le_of_isStrongNash [DecidableEq ι] [Finite E
       = (fairCostSharing (fun (_ : ι) => R) c).toCostGame.socialCost s :=
     Finset.sum_congr rfl fun i _ => le_antisymm (hlow i) (hno i)
   have hconst : (fairCostSharing (fun (_ : ι) => R) c).toCostGame.socialCost (fun _ => q)
-      ≤ ∑ e ∈ R q, c e := by
-    rw [CostGame.socialCost, Finset.sum_congr rfl fun i _ => cost_fairCostSharing_const q i,
-      Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
-    have hk : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos_iff.2 ⟨j₀⟩
-    rw [mul_div_cancel₀ _ hk.ne']
+      = ∑ e ∈ R q, c e :=
+    have : Nonempty ι := ⟨j₀⟩
+    socialCost_fairCostSharing_const c q
   have ht := sum_le_socialCost_fairCostSharing (fun (_ : ι) => R) c hc t j₀
   linarith
+
+/-- **Minimum-cost profiles are strong Nash equilibria when all players share the strategy set**
+([Roughgarden2013CS364A], Exercise Set #8, Exercise 67, the network case of a common source and a
+common sink): in a fair cost-sharing game with nonnegative costs in which every player has the
+strategy set `P` and the resource map `R`, a profile `s` of minimum social cost is a strong Nash
+equilibrium. At every profile a player with strategy `p` pays at least `c(R p) / k`, and
+everyone playing `p` costs `c(R p)`, so every player always pays at least `socialCost s / k`.
+The costs at `s` sum to `socialCost s`, so at `s` every player pays at most `socialCost s / k`, and
+no player can pay less at any profile. -/
+theorem isStrongNash_fairCostSharing_of_le [DecidableEq ι] (hc : ∀ e, 0 ≤ c e) {s : ι → P}
+    (hs : ∀ t, (fairCostSharing (fun (_ : ι) => R) c).toCostGame.socialCost s
+      ≤ (fairCostSharing (fun (_ : ι) => R) c).toCostGame.socialCost t) :
+    (fairCostSharing (fun (_ : ι) => R) c).toCostGame.IsStrongNash s := by
+  rintro A t ⟨-, i, -, hlt⟩
+  have : Nonempty ι := ⟨i⟩
+  have hk : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
+  have hlow : ∀ (u : ι → P) (j : ι),
+      (fairCostSharing (fun (_ : ι) => R) c).toCostGame.socialCost s / Fintype.card ι
+        ≤ (fairCostSharing (fun (_ : ι) => R) c).toCostGame.cost j u := fun u j => by
+    refine le_trans ?_ (sum_div_card_le_cost_fairCostSharing (fun (_ : ι) => R) c hc u j)
+    refine div_le_div_of_nonneg_right ?_ (Nat.cast_nonneg _)
+    have h := hs fun _ => u j
+    rwa [socialCost_fairCostSharing_const] at h
+  have hsplit := Finset.add_sum_erase Finset.univ
+    (fun j => (fairCostSharing (fun (_ : ι) => R) c).toCostGame.cost j s) (Finset.mem_univ i)
+  have hrest := Finset.card_nsmul_le_sum (Finset.univ.erase i)
+    (fun j => (fairCostSharing (fun (_ : ι) => R) c).toCostGame.cost j s) _
+    (fun j _ => hlow s j)
+  rw [Finset.card_erase_of_mem (Finset.mem_univ i), Finset.card_univ, nsmul_eq_mul,
+    Nat.cast_sub Fintype.card_pos, Nat.cast_one] at hrest
+  have hkey : (Fintype.card ι : ℝ)
+      * ((fairCostSharing (fun (_ : ι) => R) c).toCostGame.socialCost s / Fintype.card ι)
+      = (fairCostSharing (fun (_ : ι) => R) c).toCostGame.socialCost s :=
+    mul_div_cancel₀ _ hk.ne'
+  have hsc : (fairCostSharing (fun (_ : ι) => R) c).toCostGame.socialCost s
+      = ∑ j, (fairCostSharing (fun (_ : ι) => R) c).toCostGame.cost j s := by
+    rw [CostGame.socialCost]
+  have hu := hlow (A.piecewise t s) i
+  linarith
+
+/-- **Strong Nash equilibria are exactly the minimum-cost profiles when all players share the
+strategy set** ([Roughgarden2013CS364A], Exercise Set #8, Exercise 67, the network case of a
+common source and a common sink): in a fair cost-sharing game with nonnegative costs in which every
+player has the strategy set `P` and the resource map `R`, a profile is a strong Nash equilibrium if
+and only if it has minimum social cost. -/
+theorem isStrongNash_fairCostSharing_iff [DecidableEq ι] [Finite E] (hc : ∀ e, 0 ≤ c e)
+    (s : ι → P) :
+    (fairCostSharing (fun (_ : ι) => R) c).toCostGame.IsStrongNash s ↔
+      ∀ t, (fairCostSharing (fun (_ : ι) => R) c).toCostGame.socialCost s
+        ≤ (fairCostSharing (fun (_ : ι) => R) c).toCostGame.socialCost t :=
+  ⟨fun hs t => socialCost_fairCostSharing_le_of_isStrongNash hc hs t,
+    isStrongNash_fairCostSharing_of_le hc⟩
 
 /-- **Strong Nash equilibria exist and are optimal when all players share the strategy set**
 ([Roughgarden2013CS364A], Exercise Set #8, Exercise 67): a fair cost-sharing game with
 nonnegative costs, a common nonempty finite strategy set `P` and a common resource map `R` has a
 strong Nash equilibrium (everyone plays a cheapest strategy), and every strong Nash equilibrium is a
-social optimum, so the price of anarchy of strong Nash equilibria is `1`. -/
+social optimum, so the price of anarchy of strong Nash equilibria is `1`. These are the
+consequences the exercise draws from the correspondence `isStrongNash_fairCostSharing_iff`. -/
 theorem exists_isStrongNash_fairCostSharing_const [DecidableEq ι] [Finite E] [Finite P]
     [Nonempty P] (hc : ∀ e, 0 ≤ c e) :
     ∃ p, (fairCostSharing (fun (_ : ι) => R) c).toCostGame.IsStrongNash (fun _ => p) ∧
@@ -333,15 +402,26 @@ theorem isStrongNash_optOut_iff (hε : 0 < ε) (s : Fin k → Bool) :
   rintro rfl
   exact isStrongNash_optOut_true hε
 
+/-- **The opt-out game has a unique strong equilibrium** for `ε > 0`: every player opts out. A
+strong equilibrium is a pure Nash equilibrium, and the pure Nash equilibrium is unique
+(`isPureNash_optOut_iff`). -/
+theorem isStrongEquilibrium_optOut_iff (hε : 0 < ε) (s : Fin k → Bool) :
+    (optOut k ε).toCostGame.IsStrongEquilibrium s ↔ s = fun _ => true := by
+  refine ⟨fun hs => (isPureNash_optOut_iff hε s).1 hs.isPureNash, ?_⟩
+  rintro rfl
+  exact (isStrongNash_optOut_true hε).isStrongEquilibrium
+
 /-- **The bound `H k` is tight for strong Nash equilibria** ([Roughgarden2013CS364A], Lecture #15,
 Section 3: the opt-out game has a strong Nash equilibrium of cost `H k` times the optimum): for
 `k ≥ 1` players and every `r < H k` there is `ε > 0` such that the opt-out game `optOut k ε` has a
-strong Nash equilibrium (everyone opting out), and every strong Nash equilibrium `s` has
-`socialCost s > r * socialCost s'` for the profile `s'` in which every player shares. So
-`socialCost_fairCostSharing_le_harmonic_mul_of_isStrongNash` fails with `r` in place of `H k`. -/
+strong Nash equilibrium (everyone opting out), and every strong equilibrium `s`, in particular every
+strong Nash equilibrium, has `socialCost s > r * socialCost s'` for the profile `s'` in which every
+player shares. So neither `socialCost_fairCostSharing_le_harmonic_mul_of_isStrongNash` nor
+`socialCost_fairCostSharing_le_harmonic_mul_of_isStrongEquilibrium` holds with `r` in place of
+`H k`. -/
 theorem exists_isStrongNash_optOut_mul_lt (hk : k ≠ 0) {r : ℝ} (hr : r < harmonic k) :
     ∃ ε > 0, (optOut k ε).toCostGame.IsStrongNash (fun _ => true) ∧
-      ∀ s, (optOut k ε).toCostGame.IsStrongNash s →
+      ∀ s, (optOut k ε).toCostGame.IsStrongEquilibrium s →
         r * (optOut k ε).toCostGame.socialCost (fun _ => false)
           < (optOut k ε).toCostGame.socialCost s := by
   obtain ⟨ε, hε, h⟩ := exists_forall_isPureNash_optOut_mul_lt hk hr
