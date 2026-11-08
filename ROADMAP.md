@@ -864,9 +864,13 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   NEXP. `SymAnd/ACC0.lean` defines the `SYM ∘ AND` circuit `Circuit.toSymAnd` of every circuit
   with `MOD_m` gates, `m > 0`, and proves that it computes the same function with polylogarithmic
   fan-in and quasi-polynomial size, with explicit bounds (Yao; Beigel–Tarui, Theorem 1.1); every
-  language of `AC0Mod m` (any `m`) and of `ACC0` follows. Still open: a machine computing that
-  circuit in quasi-polynomial time, Williams's fast `SYM ∘ AND` evaluation and ACC-SAT algorithm,
-  a fine nondeterministic time hierarchy, and the `E^NP` and NEXP lower bounds.
+  language of `AC0Mod m` (any `m`) and of `ACC0` follows. `SymAnd/Evaluate.lean` proves Williams's
+  Evaluation Lemma in the unit-cost `TimeM` model: Yates's fast zeta transform gives the truth
+  table of a `SYM ∘ AND` circuit with `s` gates, whose symmetric gate costs `T`, in
+  `(n + 2)(2^n + (s + 1)(T + 1))` ticks
+  ([#3023](https://github.com/cslib-community/complexitylib/issues/3023)). Still open: a machine
+  computing that circuit in quasi-polynomial time, a Turing-machine or word-RAM evaluator, the
+  ACC-SAT algorithm, a fine nondeterministic time hierarchy, and the `E^NP` and NEXP lower bounds.
 - **Circuit lower bounds from refuting ETH** ([#1539]): `E^NP ⊄ SIZE(O(n))`, and a language in
   `E^NP` whose fan-in-two circuits need more than `c n √log n` gates infinitely often, by
   Williams's witness-circuit argument with the library's #CircuitSAT counters. `E^NP` is defined,

@@ -75,7 +75,9 @@ public import Complexity.Algorithms.Lean.Sort.Bitonic.ZeroOne
 public import Complexity.Algorithms.Lean.Submodular.Basic
 public import Complexity.Algorithms.Lean.Submodular.Greedy
 public import Complexity.Algorithms.Lean.TSP.MSTTour
+public import Complexity.Algorithms.Lean.TimeM.Loops
 public import Complexity.Algorithms.Lean.VertexCover.Matching
+public import Complexity.Algorithms.Lean.Yates
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Alphabets
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.BandBounds
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Batch
@@ -1068,6 +1070,7 @@ public import Complexity.Computability.Circuit.Boolean.Substitution
 public import Complexity.Computability.Circuit.Boolean.SymAnd
 public import Complexity.Computability.Circuit.Boolean.SymAnd.ACC0
 public import Complexity.Computability.Circuit.Boolean.SymAnd.Collapse
+public import Complexity.Computability.Circuit.Boolean.SymAnd.Evaluate
 public import Complexity.Computability.Circuit.Boolean.SymAnd.Mobius
 public import Complexity.Computability.Circuit.Boolean.SymAnd.Restrict
 public import Complexity.Computability.Circuit.Boolean.Synthesis
@@ -3884,6 +3887,7 @@ public import Complexity.Foundations.BooleanAnalysis.SparseIncidence
 public import Complexity.Foundations.BooleanAnalysis.SparseReplacementDesign
 public import Complexity.Foundations.BooleanAnalysis.SpectralSample
 public import Complexity.Foundations.BooleanAnalysis.StableInfluence
+public import Complexity.Foundations.BooleanAnalysis.SubsetZeta
 public import Complexity.Foundations.BooleanAnalysis.Symmetrization
 public import Complexity.Foundations.BooleanAnalysis.Tribes
 public import Complexity.Foundations.BooleanAnalysis.TribesInfluence
