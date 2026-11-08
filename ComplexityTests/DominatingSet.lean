@@ -82,7 +82,7 @@ example : (junk, 2) ∉ DominatingSet := fun h => by
 
 /-! ### The reduction from vertex cover -/
 
--- Only the edge between distinct declared vertices is proper.
+-- Only edges between distinct declared vertices are proper.
 example : VertexCover.properEdges path = [(0, 1), (1, 2)] := by decide
 example : VertexCover.properEdges junk = [] := by decide
 
@@ -111,8 +111,8 @@ example : VertexCover.toDominatingSet (edgeIso, 1) ∈ DominatingSet :=
   (VertexCover.toDominatingSet_mem_iff _).2
     (mem_VertexCover_iff.2 ⟨{0}, by decide, VertexCover.isCover_eq_true_iff.1 (by decide), rfl⟩)
 
--- No vertex cover is empty when there is an edge, so no two vertices dominate the graph of the
--- path.
+-- No vertex cover is empty when there is an edge, so no single vertex (target `0 + 1`) dominates
+-- the graph of the path.
 example : VertexCover.toDominatingSet (path, 0) ∉ DominatingSet := by
   rw [VertexCover.toDominatingSet_mem_iff, mem_VertexCover_iff]
   rintro ⟨S, -, hS, hcard⟩
