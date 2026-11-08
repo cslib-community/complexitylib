@@ -4939,6 +4939,8 @@ public import Complexity.GameTheory.Mechanism.VCG
 public import Complexity.GameTheory.Mechanism.Vickrey
 public import Complexity.GameTheory.Mechanism.VirtualValue
 public import Complexity.GameTheory.SocialChoice.Arrow
+public import Complexity.GameTheory.SocialChoice.GibbardSatterthwaite
+public import Complexity.GameTheory.SocialChoice.Ranking
 public import Complexity.GameTheory.Strategic.Basic
 public import Complexity.GameTheory.Strategic.Hedge
 public import Complexity.GameTheory.Strategic.Mixed

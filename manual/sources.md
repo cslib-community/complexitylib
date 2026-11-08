@@ -396,6 +396,11 @@ Oded Goldreich, Shafi Goldwasser, Silvio Micali. “How to Construct Random Func
 
 Oded Goldreich, Shafi Goldwasser, Eric Lehman, Dana Ron and Alex Samorodnitsky. *Testing Monotonicity*. Combinatorica 20(3), 301–337, 2000. https://doi.org/10.1007/s004930070011 . Bibliographic metadata checked against the Crossref record on 2026-11-08. The journal version is paywalled, and the author-hosted pages could not be reached (connection reset), so the text was not inspected and no theorem locator is claimed. The manual attributes the edge tester for Boolean functions on the hypercube to this paper, as [roughgarden15cc](#roughgarden15cc) does.
 
+<a id="gibbard73"></a>
+## gibbard73
+
+Allan Gibbard. "Manipulation of Voting Schemes: A General Result." *Econometrica* 41(4), 587–601, 1973. https://doi.org/10.2307/1914083 . Bibliographic data from secondary search summaries on 2026-11-08 UTC; the paper was not inspected. [Nisan, *Introduction to Mechanism Design*](#nisan07), p. 239, credits the theorem to Gibbard (1973) and Satterthwaite (1975); Nisan's own statement (Theorem 9.8) is the form for rules onto at least three alternatives. The range form (at least three possible outcomes), formalized as the main theorem, is the standard statement in secondary accounts and was not checked against the original; no theorem number is claimed.
+
 <a id="gilbertpollak68"></a>
 ## gilbertpollak68
 
@@ -732,6 +737,11 @@ Dov Monderer and Lloyd S. Shapley. *Potential Games*. Games and Economic Behavio
 
 Robin A. Moser and Gábor Tardos. “A Constructive Proof of the General Lovász Local Lemma.” *Journal of the ACM* 57(2), Article 11, 2010. https://doi.org/10.1145/1667053.1667060 . Open version: arXiv:0903.0544v3, https://arxiv.org/abs/0903.0544 . Theorems 1.1–1.4, the Section 2 definitions of the log and witness trees, Lemma 2.1 and the Section 3 counting argument (Lemma 3.1) were checked against the arXiv v3 PDF (dated 20 May 2009) on 2026-11-08. The JACM article numbering was not checked against the typeset journal version.
 
+<a id="mullersatterthwaite77"></a>
+## mullersatterthwaite77
+
+Eitan Muller and Mark A. Satterthwaite. "The Equivalence of Strong Positive Association and Strategy-Proofness." *Journal of Economic Theory* 14(2), 412–418, 1977. https://doi.org/10.1016/0022-0531(77)90140-5 . Bibliographic data from secondary search summaries on 2026-11-08 UTC; the paper was not inspected. It is cited, from secondary accounts, for the equivalence of strategy-proofness and Maskin monotonicity (strong positive association) and for the theorem that a Maskin monotone rule with at least three outcomes is dictatorial. The library proves both through [Nisan](#nisan07)'s argument; no theorem number is claimed.
+
 <a id="nagamochiibaraki92"></a>
 ## nagamochiibaraki92
 
@@ -751,6 +761,11 @@ Moni Naor and Moti Yung. “Universal One-Way Hash Functions and their Cryptogra
 ## nisan92
 
 Noam Nisan. *Pseudorandom Generators for Space-Bounded Computation*. Combinatorica 12(4), 449–461, 1992. DOI: [10.1007/BF01305237](https://doi.org/10.1007/BF01305237). The publisher copy is paywalled and was not consulted, so its theorem numbering is unverified. The statement was checked against S. Vadhan, *Pseudorandomness* (2012), §8.2.1, and P. Hatami and W. Hoza, *Paradigms for Unconditional Pseudorandom Generators* (2024), Definition 1.5 and §3.2. The Lean proof is the library's own derivation of the hashing argument in expectation form.
+
+<a id="nisan07"></a>
+## nisan07
+
+Noam Nisan. "Introduction to Mechanism Design (for Computer Scientists)." Chapter 9 of Noam Nisan, Tim Roughgarden, Éva Tardos and Vijay V. Vazirani (eds.), *Algorithmic Game Theory*, Cambridge University Press, 2007, 209–242. https://doi.org/10.1017/CBO9780511800481.011 . A university-hosted PDF of the book was consulted on 2026-11-08 for §9.2 (pp. 211–215): Definition 9.1 (social welfare and social choice functions), Definition 9.4 (manipulation and incentive compatibility), Definition 9.5 and Proposition 9.6 (one-voter monotonicity is equivalent to incentive compatibility), Definition 9.7 (dictator), Theorem 9.8 (Gibbard–Satterthwaite, for rules onto at least three alternatives), Definition 9.9 (moving a set `S` to the top, and the induced social welfare function), and the proof of Lemmas 9.10 and 9.11 (the claim that the outcome lies in `S`, transitivity, unanimity and IIA). The library's proof follows this reduction; its main theorem assumes three alternatives in the range rather than onto, which needs an extension of rankings of the range to all alternatives.
 
 <a id="nisanwigderson94"></a>
 ## nisanwigderson94
@@ -871,6 +886,11 @@ Tim Roughgarden and Éva Tardos. "Introduction to the Inefficiency of Equilibria
 ## sakszhou99
 
 Michael Saks and Shiyu Zhou. *BP_H SPACE(S) ⊆ DSPACE(S^{3/2})*. Journal of Computer and System Sciences 58(2), 376–403, 1999. https://doi.org/10.1006/jcss.1998.1616 . The publisher copy is paywalled and was not consulted, so its internal numbering (including the Lemma 5.4 cited by Chattopadhyay–Liao) is unverified. The iteration is formalized from the presentation of Chattopadhyay and Liao (2020), Appendix A.1.
+
+<a id="satterthwaite75"></a>
+## satterthwaite75
+
+Mark A. Satterthwaite. "Strategy-Proofness and Arrow's Conditions: Existence and Correspondence Theorems for Voting Procedures and Social Welfare Functions." *Journal of Economic Theory* 10(2), 187–217, 1975. https://doi.org/10.1016/0022-0531(75)90050-2 . Bibliographic data from secondary search summaries on 2026-11-08 UTC; the paper was not inspected. Cited, with [Gibbard](#gibbard73), for the Gibbard–Satterthwaite theorem; no theorem number is claimed.
 
 <a id="schoenebeck08"></a>
 ## schoenebeck08
