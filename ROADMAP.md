@@ -640,9 +640,11 @@ index links to canonical definitions rather than keeping a second set.
   `Cslib.Circuits.Program` straight-line programs with `s`-pebble black pebbling. Bennett's
   reversible game and its exact prices on the path, `⌈log₂ (v + 2)⌉` (visiting) and
   `⌈log₂ (v + 1)⌉ + 1` (persistent), are in `Pebbling/ReversiblePath.lean`
-  ([#3163](https://github.com/cslib-community/complexitylib/issues/3163)). Next: black-white
-  pebbling; the full reachable-configuration characterization and the reversible time–space and
-  erasure trade-offs of Li–Tromp–Vitányi
+  ([#3163](https://github.com/cslib-community/complexitylib/issues/3163)), and the
+  Li–Tromp–Vitányi characterization of every reachable configuration (their Theorem 1 and
+  Corollary 1) is in `Pebbling/ReversiblePathReachable.lean`. Next: black-white pebbling; the
+  reversible time–space trade-offs (is `3 ^ k` optimal for `k + 1` pebbles?) and the erasure
+  trade-off of Li–Tromp–Vitányi
   ([#3199](https://github.com/cslib-community/complexitylib/issues/3199));
   the Hopcroft–Paul–Valiant `O(n / log n)` pebbling of bounded-indegree DAGs and the matching
   Paul–Tarjan–Celoni `Ω(n / log n)` family; Gilbert–Tarjan and Lengauer–Tarjan time–space
@@ -858,10 +860,12 @@ universe size, not supplied as unverified input tables. In dependency order:
   `Primcodable` bridge from Mathlib `L.Sentence` that transfers the results to Mathlib syntax
   ([#2886](https://github.com/cslib-community/complexitylib/issues/2886)).
 - **Logic and automata on words**, after Büchi–Elgot–Trakhtenbrot for finite words (MSO =
-  regular) and FO[<] ⊊ MSO via EVEN
-  ([#2885](https://github.com/cslib-community/complexitylib/issues/2885)): FO[<] = star-free =
-  aperiodic (McNaughton–Papert, Schützenberger; star-free ⇒ FO is
-  [#3075](https://github.com/cslib-community/complexitylib/issues/3075));
+  regular), FO[<] ⊊ MSO via EVEN
+  ([#2885](https://github.com/cslib-community/complexitylib/issues/2885)) and star-free ⇒ FO[<]
+  ([#3075](https://github.com/cslib-community/complexitylib/issues/3075)): the converse FO[<] ⇒
+  star-free over a finite alphabet (McNaughton–Papert), by composition of rank-k types, and
+  star-free = aperiodic (Schützenberger), from cslib's syntactic monoid, with decidability of
+  first-order definability for regular languages;
   closure of regular languages under homomorphic images, upstream to cslib; the non-elementary
   lower bound on formula-to-automaton translation; Büchi's theorem for ω-words (S1S) over
   cslib's ω-regular languages; and MSO on trees: finite trees and tree automata
@@ -1250,9 +1254,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   Tanner-code distance bound in `Complexity/Foundations/Combinatorics/Expander/TannerCode.lean`.
 - **Channel coding** ([#3304](https://github.com/cslib-community/complexitylib/issues/3304)):
   achievability for the binary symmetric channel (random codes with nearest codeword decoding at
-  every rate below `1 - h₂(p)`, maximal error `≤ 10 exp (-δ n)`) is in place. Remaining: the
-  converse (weak, via Fano, and strong: every code of rate above capacity has error bounded
-  away from zero), general discrete memoryless channels with mutual-information capacity,
+  every rate below `1 - h₂(p)`, maximal error `≤ 10 exp (-δ n)`) and the weak converse (via
+  Fano's inequality: above capacity the average error of every code is bounded away from zero)
+  are in place. Remaining: the strong converse (Wolfowitz: the error tends to `1` above
+  capacity), general discrete memoryless channels with mutual-information capacity (the chain
+  rule for `n` channel uses and the data-processing inequality), channels with feedback,
   explicit and efficiently decodable capacity-achieving codes (Forney concatenation, polar
   codes), and the link to list decoding.
 - **Locally decodable codes** ([#2929](https://github.com/cslib-community/complexitylib/issues/2929)):
@@ -1333,7 +1339,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   `t_q lg(t_u / t_q) = Ω(lg n)` information-transfer trade-off; and reductions to dynamic
   connectivity.
 - **Streaming and sketching:** native time and space bounds for Count-Min, including hash-seed
-  storage and evaluation; the AMS sketch for `F₀`, the AMS `F_k` estimator for streams of unknown
+  storage and evaluation; the AMS sketch for `F₀`; for distinct elements
+  ([#3340](https://github.com/cslib-community/complexitylib/issues/3340)), the median amplification
+  and `Solves` statement for the k-minimum-values sketch, the space-optimal `F₀` estimators
+  (Bar-Yossef et al. Theorems 2–3, Kane–Nelson–Woodruff `O(ε⁻² + log n)`) and the
+  `Ω(ε⁻²)` and `Ω(log n)` lower bounds for approximate `F₀`; the AMS `F_k` estimator for
+  streams of unknown
   length (reservoir sampling), and the `n^{Ω(1)}` lower bounds for `F_k` with `k ≥ 6`; `ProbComp`
   samplers and native realizations of the AMS sketches; CountSketch, turnstile updates, and
   heavy-hitter recovery; multi-pass communication-to-streaming transfers with pass counts.
@@ -1497,6 +1508,16 @@ each statement against the numbered result. Organize modules by subject, not cha
   exponentiation, and the classical reductions from factoring and discrete logarithms;
   certify uniform circuit generation and polynomial gate bounds alongside correctness.
 
+- **Nonlocal games** ([#3313](https://github.com/cslib-community/complexitylib/issues/3313)):
+  beyond CHSH and Tsirelson's bound in the finite-dimensional tensor-product model, give general
+  XOR games Tsirelson's vector characterization and its semidefinite program (Cleve–Høyer–Toner–
+  Watrous, Theorem 4 and Proposition 5) and the Grothendieck-constant bound on the quantum
+  advantage (Theorem 7); mixed shared states and the commuting-operator model, with the inclusion
+  of the tensor-product value; parallel repetition of entangled games, alongside the classical theorem
+  ([#886](https://github.com/cslib-community/complexitylib/issues/886)); rigidity (self-testing)
+  of the CHSH strategy; and the entangled-prover class `MIP*`, toward the optional
+  [MIP* = RE](#optional-landmark-projects) project.
+
 ### Differential privacy and adaptive data analysis
 
 - Dataset adjacency and `(ε, δ)`-differential privacy for probabilistic programs, with
@@ -1601,6 +1622,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   [#3285](https://github.com/cslib-community/complexitylib/issues/3285)): the Gomory–Hu or
   Gusfield construction with `n - 1` maximum-flow calls as a `TimeM` program over Edmonds–Karp,
   with its running-time bound, and real-valued capacities.
+- **Push–relabel maximum flow** ([#3373](https://github.com/cslib-community/complexitylib/issues/3373)):
+  remaining after preflows, valid labelings, optimality at termination with a gap minimum cut, the
+  operation bounds of the generic Goldberg–Tarjan algorithm and a verified executable scheduler
+  (`Algorithms/Lean/MaxFlow/{Preflow,PushRelabel}`): a charged `TimeM` version with current-arc
+  scanning (`O(|V|² |E|)`), the FIFO and relabel-to-front rules (`O(|V|³)`), highest-label
+  selection (`O(|V|² √|E|)`), gap and global-relabelling heuristics, and dynamic trees
+  (`O(|V| |E| log(|V|² / |E|))`).
 - **Menger's theorem** ([#3409](https://github.com/cslib-community/complexitylib/issues/3409)):
   remaining after the two-terminal arc, edge and vertex forms for finite digraphs and simple
   graphs, derived from integral max-flow/min-cut via flow decomposition

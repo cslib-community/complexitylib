@@ -316,11 +316,12 @@ private theorem sum_pick [DecidableEq α] (d : α → ℕ) {l : List α} (hl : l
     · subst hba; simp [hl.1]
     · simp [hba, Ne.symm hba]
 
-/-- Total number of leaves at depth `k`. -/
+/-- Number of labelled depth-`k` positions, i.e. those at or below a leaf. -/
 private def total [Fintype α] (t : ℕ → α → ℕ) (k : ℕ) : ℕ := ∑ a, t k a
 
-/-- Label of position `y` at depth `k`: `none` for an internal node. Depth `k` lists the old leaves
-(each duplicated from depth `k - 1`), then the new leaves, then the internal nodes. -/
+/-- Label of position `y` at depth `k`: `none` for an internal node. Depth `k` lists the positions
+below earlier leaves (each duplicated from depth `k - 1`), then the new leaves, then the internal
+nodes. -/
 private noncomputable def label [Fintype α] (t : ℕ → α → ℕ) : ℕ → ℕ → Option α
   | 0, y => pick (t 0) Finset.univ.toList y
   | k + 1, y =>
@@ -483,10 +484,12 @@ private theorem run_node [DecidableEq α] (hmono : ∀ k a, 2 * t k a ≤ t (k +
     simp only [e1, e2, e3, Nat.cast_ofNat]
     ring
 
-/-- A tree in which `t k a` of the `2 ^ k` depth-`k` positions lie at or below a leaf labelled `a`.
-A leaf at depth `j ≤ k` accounts for `2 ^ (k - j)` of them, so `t k a / 2 ^ k` is the probability
-of having output `a` within `k` flips. The depth-`k` positions are ordered so that positions below
-leaves of depth `< k` come first, then the new leaves of depth `k`, then the internal nodes. -/
+/-- A tree in which `t k a` of the `2 ^ k` depth-`k` positions lie at or below a leaf labelled `a`,
+provided `t` is inherited (`2 * t k a ≤ t (k + 1) a`) and fits the Kraft-type budget
+`∑ₐ t k a ≤ 2 ^ k` (see `run_ofCounts`). A leaf at depth `j ≤ k` accounts for `2 ^ (k - j)` of them,
+so `t k a / 2 ^ k` is the probability of having output `a` within `k` flips. The depth-`k` positions
+are ordered so that positions below leaves of depth `< k` come first, then the new leaves of depth
+`k`, then the internal nodes. -/
 noncomputable def ofCounts (t : ℕ → α → ℕ) : DDGTree α := node t 0 0
 
 /-- If the counts are inherited along each level (`2 * t k a ≤ t (k + 1) a`: both children of a
