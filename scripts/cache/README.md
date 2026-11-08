@@ -246,8 +246,10 @@ not automatic provisioning. There is no SSH upload or S3 service dependency.
 
 The deployed MIT origin is **https://complexitycache.csail.mit.edu**. The
 [dated deployment status](../../tools/cache-origin/README.md#mit-deployment-status) records the
-installed source and completed host checks. A real-build publication/cold restore and integration
-approval remain; keep MIT CI publication disabled and GCS readers active during these checks.
+installed source and completed host checks. As of November 7, 2026, main CI publishes real builds
+successfully to MIT and GCS, and `cache-server-publish` is restricted to `main`. GCS remains the
+default reader. A real MIT cold restore, recovery exercise and separate reader-cutover approval
+remain before changing that default.
 
 After all required Lean checks, `publish.py stage` records the exact clean producer revision
 and SHA-256 inventory once. GCS and the separate MIT publisher job consume those same staged bytes.
@@ -275,15 +277,16 @@ explain this boundary and cleanup of **both origins, Actions caches/handoffs and
 before rebuilding with restoration disabled. The GCS-only trust description above applies until
 the explicit reader cutover.
 
-Before activation, commission the actual server: verify TLS, upload authentication, Unix-socket
-permissions, service restart, storage limits and GC; prove concurrent conflicting uploads cannot
-replace a key; test unauthorized PUT and all DELETE requests; then cold-restore a real build through
-the public HTTPS origin. CI checks the same nginx routes over loopback TLS, but cannot establish
+For a new installation, commission the actual server before enabling publication: verify TLS,
+upload authentication, Unix-socket permissions, service restart, storage limits and GC; prove
+concurrent conflicting uploads cannot replace a key; test unauthorized PUT and all DELETE requests.
+Before reader cutover, cold-restore a real build through the public HTTPS origin and exercise
+recovery. CI checks the same nginx routes over loopback TLS, but cannot establish
 the target host's identity, permissions or disk configuration.
 
 A repository administrator can prepare the GitHub environment `cache-server-publish`, restrict it
-to `main`, and configure the following using the privately supplied publisher password. Keep the
-publication switch disabled until the commissioning evidence and integration are approved.
+to `main`, and configure the following using the privately supplied publisher password. On a new
+installation, keep publication disabled until the commissioning evidence and integration are approved.
 
 | Kind | Name |
 |---|---|

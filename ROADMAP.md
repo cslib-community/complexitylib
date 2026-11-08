@@ -465,9 +465,12 @@ index links to canonical definitions rather than keeping a second set.
   each reduction's resource bound.
 - **Abstract (Blum) complexity** ([#2866]): Blum complexity measures over Mathlib's
   `Nat.Partrec.Code`, with the `evaln` fuel instance, Borodin's gap theorem for the
-  almost-everywhere classes (also with a two-argument stretch), recursive relatedness and Blum's
-  speedup theorem, are in `Computability/BlumComplexity`. Remaining: the McCreight–Meyer union
-  theorem, the compression theorem and honesty, effective forms of speedup such as Blum's
+  almost-everywhere classes (also with a two-argument stretch), recursive relatedness, Blum's
+  speedup theorem, and arbitrarily complex functions with the resulting strict hierarchy of
+  classes, are in `Computability/BlumComplexity`. Remaining: the McCreight–Meyer union theorem;
+  Blum's compression theorem in its running-time form (a single computable `h` such that every
+  total `φ_i` has `C_{Φ_i} ⊂ C_{n ↦ h n (Φ_i n)}`; the value form with `φ_i` in place of `Φ_i`
+  is false, by the gap theorem); honesty; effective forms of speedup such as Blum's
   pseudo-speedup, which computes a faster program for a finite variant of `f` (M. Blum, *On
   effective procedures for speeding up algorithms*, J. ACM 18(2), 1971), and Blum measures for
   native multitape time and space through a Gödel-numbering bridge from native descriptions.
@@ -614,13 +617,21 @@ index links to canonical definitions rather than keeping a second set.
 - **Immunity** ([#2899](https://github.com/cslib-community/complexitylib/issues/2899)): after
   `IsImmune`/`IsBiImmune`, a `P`-bi-immune set in `E` (`Classes/Immune/Construction.lean`) and
   Berman's theorem that `≤ᵖₘ`-complete sets for `E`/`EXP` are not `P`-immune
-  (`Classes/Immune/Complete.lean`): a constructed `≤ᵖₘ`-complete problem for `E` and `EXP` (such as
-  bounded halting), so that Berman's hypothesis has a library witness; a SAT-free home for the
-  machine enumeration of `Ladner/Basic.lean` shared by Ladner and the immunity modules;
+  (`Classes/Immune/Complete.lean`), witnessed by bounded halting with a binary time bound
+  (`Problems/BoundedHalting.lean`, [#3002](https://github.com/cslib-community/complexitylib/issues/3002)):
+  a SAT-free home for the machine enumeration of `Ladner/Basic.lean` shared by Ladner and the
+  immunity modules;
   `DTIME(t)`-bi-immune sets in larger time classes for general constructible `t`, the remaining
   Balcázar–Schöning results, complexity cores (Lynch; Orponen and Schöning) and their sizes for
   hard sets (Juedes and Lutz), almost-everywhere hardness, and measure strengthenings (almost every
   set in `E` is `P`-bi-immune, Mayordomo).
+- **Exponential-time complete problems**
+  ([#3002](https://github.com/cslib-community/complexitylib/issues/3002)): after bounded halting
+  with a binary time bound (`E`- and `EXP`-complete, `Problems/BoundedHalting.lean`) and Book's
+  separations (`E ⊊ EXP`, `E ≠ NP`, `E ≠ PSPACE`, `Classes/EXP/Separation.lean`): succinct
+  versions of `P`- and `NP`-complete problems (succinct circuit value for `EXP`, succinct SAT for
+  `NEXP`), generalized games complete for `EXP`, nondeterministic bounded halting for `NE`/`NEXP`,
+  and the isomorphism and density structure of `E`-complete sets.
 
 ### Average-case complexity
 
@@ -717,10 +728,11 @@ universe size, not supplied as unverified input tables. In dependency order:
   lower bound on formula-to-automaton translation; Büchi's theorem for ω-words (S1S) over
   cslib's ω-regular languages; and MSO on trees: finite trees and tree automata
   (Thatcher–Wright, Doner) and Rabin's theorem for infinite trees (S2S).
-- **Asymptotic probabilities:** extend the graph 0-1 law for `G(n, 1/2)` to arbitrary finite
-  relational vocabularies, constant edge probabilities and unlabelled structures; construct the
-  countable random (Rado) graph; then the Kolaitis–Vardi laws for fixed-point and finite-variable
-  infinitary logics, and the Shelah–Spencer laws for sparse random graphs.
+- **Asymptotic probabilities:** extend the graph 0-1 law for `G(n, 1/2)` and its Rado-graph
+  transfer to arbitrary finite relational vocabularies
+  ([#2967](https://github.com/cslib-community/complexitylib/issues/2967)), constant edge
+  probabilities and unlabelled structures; then the Kolaitis–Vardi laws for fixed-point and
+  finite-variable infinitary logics, and the Shelah–Spencer laws for sparse random graphs.
 - **Dynamic descriptive complexity:** dynamic programs and update semantics with explicit
   initialization, auxiliary relations and domain conventions; invariant-preservation rules and
   reachability in DynFO as a target. Relate logical update restrictions to the stateful-algorithm
@@ -959,15 +971,28 @@ each statement against the numbered result. Organize modules by subject, not cha
   transfers with pass counts.
 - **Learning:** machine-certified running times for the LMN and Kushilevitz–Mansour learners;
   distributional problems and reductions, samplability, average-to-worst-case connections,
-  PAC/agnostic/SQ learning, learning lower bounds, compression and refutation. For realizable
+  PAC/agnostic learning, learning lower bounds, compression and refutation. For realizable
   PAC learning ([#2868](https://github.com/cslib-community/complexitylib/issues/2868)), extend
   the countable-domain VC ε-net upper bound `O((d log (1/ε) + log (1/δ))/ε)` to general
-  well-behaved classes over measurable domains. Give the
-  computational–statistical gap program concrete clients: an SQ oracle with tolerance and query
-  costs, statistical-dimension lower bounds for a specified planted problem, and corresponding
+  well-behaved classes over measurable domains. Statistical queries
+  ([#2910](https://github.com/cslib-community/complexitylib/issues/2910)): the deterministic SQ
+  model has correlational and SQ-dimension query lower bounds, including parities. Remaining:
+  simulating SQ learners from random examples, without noise and under random classification
+  noise (Kearns's Theorems 1 and 3); the low-degree algorithm as an SQ algorithm; randomized SQ
+  learners; and Feldman's statistical dimension for a specified planted problem, with matching
   sample and runtime upper bounds. Develop low-degree likelihood-ratio and sum-of-squares
   comparisons where justified, distinguishing restricted-model bounds from unrestricted
   computational hardness. Use the [distributional framework](#average-case-complexity).
+- **Online learning in the mistake-bound model**
+  ([#2908](https://github.com/cslib-community/complexitylib/issues/2908)): the realizable model,
+  the halving algorithm, the Littlestone dimension with the standard optimal algorithm (optimal
+  mistake bound equals Littlestone dimension), the VC comparison with the threshold gap, and
+  Novikoff's perceptron bound are in `MachineLearning/OnlineLearning/MistakeBound`. Remaining:
+  Winnow and attribute-efficient learning of disjunctions (Littlestone 1988, Theorem 7); randomized
+  learners and the agnostic setting, with Littlestone-dimension regret bounds
+  (Ben-David–Pál–Shalev-Shwartz 2009); multiclass and real-valued analogues; online-to-batch
+  conversion into the PAC framework; and running-time bounds, since the standard optimal algorithm
+  is a noncomputable specification.
 - **Property and distribution testing:** independent repetition of Boolean local tests and BLR
   linearity testing have explicit decision-tree query bounds. Uniformity testing has matching
   `Θ(√n / ε²)` sample bounds for `ε ≤ 1/2` on even domains: the collision tester and Paninski's
@@ -1056,9 +1081,11 @@ Coordinate native graph-algorithm work with [CSLib's graph-algorithm directions]
 reusing graph and matroid foundations and the shared data-structure interfaces.
 
 - **Flows and matching:** a native augmenting-path algorithm with charged runtime (integral
-  max-flow/min-cut and a `TimeM` Edmonds–Karp solver are in `Algorithms/Lean/MaxFlow`); then
-  minimum-cost flow and weighted bipartite matching through common residual-network and duality
-  machinery.
+  max-flow/min-cut, a `TimeM` Edmonds–Karp solver and Hopcroft–Karp bipartite matching are in
+  `Algorithms/Lean/MaxFlow`); then minimum-cost flow and weighted bipartite matching through common
+  residual-network and duality machinery. Remaining matching directions: the decomposition of
+  `M ⊕ M*` into vertex-disjoint augmenting paths, general (non-bipartite) matching with blossoms,
+  and a sparse Hopcroft–Karp entry point that also charges construction of the adjacency lists.
 - **Matroids:** matroid intersection with explicit oracle and implementation costs, beyond the
   weighted greedy algorithm and its independence-oracle interface.
 - **Submodular optimization:** further constraints and approximation bounds beyond the
@@ -1080,6 +1107,30 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Adaptive search trees:** working-set and dynamic-finger bounds for splay trees, and a BST
   access-and-rotation model with Wilber-style lower bounds. State dynamic optimality as a
   conjectural research target with explicit strategy and sequence quantifiers.
+- **Optimal stopping:** `Probability/OptimalStopping/*` covers the rank-based secretary problem
+  (exact cutoff-rule success, optimality among all rank-based rules, `1/e` bounds and limit) and
+  the single-threshold `½` prophet inequality for independent discrete (`PMF`) laws, with
+  tightness ([#2913](https://github.com/cslib-community/complexitylib/issues/2913)). Extend to
+  the i.i.d. `1 - 1/e` and `≈0.745` bounds, prophet secretary and random-order models, matroid
+  and multiple-choice prophet inequalities, the full-information secretary problem, existence of
+  medians of the maximum, randomized rules as mixtures, and the posted-price mechanism corollary.
+
+### Algorithmic game theory ([#2900](https://github.com/cslib-community/complexitylib/issues/2900))
+
+- **Computing equilibria:** PLS-completeness of finding a pure Nash equilibrium of a congestion
+  game (Fabrikant–Papadimitriou–Talwar) through an explicit local-search problem interface and
+  succinct game encodings; polynomial-time algorithms for symmetric network congestion games;
+  exponentially long better-response paths. Mixed Nash equilibria of finite games
+  (Nash's theorem) and PPAD-completeness of computing them.
+- **Equilibrium concepts and dynamics:** mixed and correlated equilibria between pure Nash and
+  coarse correlated equilibria; no-regret dynamics converging to coarse correlated equilibria,
+  connecting multiplicative-weights regret bounds to the robust price of anarchy; convergence time
+  of better-response dynamics in potential games.
+- **Price of anarchy:** Wardrop equilibrium existence and essential uniqueness for continuous
+  nondecreasing latencies (Beckmann's convex potential); the Pigou bound for general latency
+  classes and polynomial latencies of bounded degree; Braess's paradox; weighted and
+  mixed-strategy atomic congestion games; the Monderer–Shapley characterization of potential games
+  as congestion games.
 
 ### Mechanism design ([#2947](https://github.com/cslib-community/complexitylib/issues/2947))
 
@@ -1124,11 +1175,13 @@ finite outcome sets are in `GameTheory/Mechanism`. Remaining directions:
   prerequisite #2738), growing extension-field arithmetic, raw-bit adversarial transport (#2744)
   and fresh-session amplification remain separate endpoints.
 - **Markov-chain sampling:** `Probability/MarkovChain/*` provides discrete kernels,
-  stationarity, reversibility, total-variation mixing times, Markovian couplings and reversible
-  Metropolis chains, with the lazy hypercube walk as client
-  (`Probability/BitString/LazyRandomWalk`, #2857). Extend with path coupling, conductance,
-  canonical-path and spectral-gap arguments. Implement Metropolis sampling for encoded rational
-  target weights, charging initialization, arithmetic and every transition, with support and
+  stationarity, reversibility, total-variation mixing times, Markovian couplings, reversible
+  Metropolis chains and path coupling, with the lazy hypercube walk
+  (`Probability/BitString/LazyRandomWalk`, #2857) and Glauber dynamics for `q > 2Δ` colorings
+  (`Probability/MarkovChain/Coloring`, #2933) as clients. Extend with conductance,
+  canonical-path and spectral-gap arguments, and with the reduction from approximately counting
+  colorings to sampling them with the Glauber chain. Implement Metropolis sampling for encoded
+  rational target weights, charging initialization, arithmetic and every transition, with support and
   mixing hypotheses explicit.
 - **FPRAS and almost-uniform sampling:** an almost-uniform sampling (FPAUS) interface with
   explicit output-distribution error alongside the FPRAS interface, and sampling/counting
@@ -1151,6 +1204,13 @@ finite outcome sets are in `GameTheory/Mechanism`. Remaining directions:
   MAX-CUT or combinatorial-construction clients of the certified greedy choice rule
   (`Cslib.PessimisticEstimator.greedy_spec`). Preserve the quantitative guarantee when converting
   an existence argument into a deterministic or randomized algorithm.
+- **Small sample spaces** ([#2935](https://github.com/cslib-community/complexitylib/issues/2935)):
+  searching a `k`-wise independent space finds an assignment as good as a uniformly random one on
+  clauses of at least `k` distinct literals (`exists_two_pow_mul_countUnsat_le`). The
+  polynomial-time search is certified only for the three-wise parity space. Remaining: a runtime
+  certificate for searching the trinomial-field space
+  (`exists_assignments_two_pow_mul_countUnsat_le`) for fixed `k > 3`. Further directions are
+  small-bias and almost `k`-wise independent spaces and their clients.
 
 ## Machines, RAM and data structures
 
