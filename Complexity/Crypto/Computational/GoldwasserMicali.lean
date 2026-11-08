@@ -1205,7 +1205,11 @@ theorem advantage_publicKeyWordGame_le_qr (maxLen : ℕ → ℕ) {setup : ℕ �
   ring
 
 /-- **Multi-bit Goldwasser–Micali IND-CPA security** (`Encryption.INDCPAOn`) under
-`QuadraticResiduosityHard` for any unary polynomial-time length schedule `maxLen`. -/
+`QuadraticResiduosityHard` for any unary polynomial-time length schedule `maxLen`, with the same
+key hypotheses as `indcpa_goldwasserMicali`: `n`-bit prime growth and a sampled generator
+`keyGen gen` whose public-key marginal is computationally indistinguishable from
+`publicKeyLaw setup`. The lossy quadratic-residue keys `qrPublicKeyLaw` occur only inside the
+proof. -/
 theorem indcpaOn_goldwasserMicali_bits {maxLen : ℕ → ℕ}
     (hmax : ComputableInPolyTime maxLen encUnary encUnary)
     {setup : ℕ → PMF ModulusDesc} {gen : ℕ → ProbComp KeyDesc}

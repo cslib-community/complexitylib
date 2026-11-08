@@ -392,14 +392,14 @@ For Goldwasser–Micali public-key encryption under `QuadraticResiduosityHard`, 
 ([katzlindell20][katzlindell20], §15.4.4, Definition 15.14, Construction 15.28, Theorem 15.29, and
 Exercises 15.11–15.12; checked instances are in
 [`ComplexityTests/Crypto/GoldwasserMicali.lean`](../../ComplexityTests/Crypto/GoldwasserMicali.lean)).
-`KeyDesc` bundles distinct odd primes `(p, q)` (`2 < p, q`) with `z_unit ∈ positiveNonresidues p q`
-(`KeyDesc.ofBlum` specializes to Blum primes `p % 4 = 3`, `q % 4 = 3` with `z = N - 1`, Exercise
+`KeyDesc` bundles distinct odd primes `(p, q)` (`2 < p, q`) with a residue `z < p * q`
+representing an element of `positiveNonresidues p q` (`KeyDesc.ofBlum` specializes to Blum primes `p % 4 = 3`, `q % 4 = 3` with `z = N - 1`, Exercise
 15.12), and `keyGen gen` wraps an abstract generator `gen : ℕ → ProbComp KeyDesc` (prime and
 nonresidue sampling are not constructed) emitting `pk = encPair encNat encNat (N, z)` and
 `sk = encPair encNat encNat (p, q)` (`isPPTOn_keyGen`). `encrypt` draws randomness via
 `ProbComp.sampleModNat (n + |N|) N` with `unitOrOne N` to output `encNat ((z^m * r^2) mod N)`
 (`isPPTOn_encrypt`), `decrypt` tests quadratic residuosity modulo `p` and `q` via Euler's criterion
-`powMod p (c % p) ((p - 1) / 2)` (`computableInPolyTime_decrypt`, `decrypt_encrypt`), and
+`powMod p c ((p - 1) / 2)` (`computableInPolyTime_decrypt`, `decrypt_encrypt`), and
 `mulCiphertexts` multiplies ciphertexts modulo `N` (`computableInPolyTime_mulCiphertexts`,
 `decrypt_mulCiphertexts`). As with Paillier, distributional XOR homomorphism and re-randomization
 (Definition 15.14, Exercise 15.11) hold on the ideal unit-sampling law `idealEncrypt`
