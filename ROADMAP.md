@@ -464,6 +464,9 @@ index links to canonical definitions rather than keeping a second set.
   The nonselfdual branch also supplies arbitrary-arity minor constructions and their actual
   original-language one-in-three gadget; disequality needs only absence of the six Schaefer
   operations. Their geometric realization and native hardness transfer remain unproved.
+  Fresh chronological forest search now derives terminal f-DAGs, valid augmentations and
+  source-strength prepared blossoms from its actual execution; fresh exhaustion proves
+  optimality. Whole-blossom contraction/lifting and recursive native solving remain open.
 
 - **Boolean Schaefer dichotomy** ([#2822](https://github.com/cslib-community/complexitylib/issues/2822)):
   the stack proves native polynomial-time tractability for all six common-polymorphism cases
