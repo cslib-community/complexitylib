@@ -1394,7 +1394,6 @@ theorem idCompressorPerm_involutive (s T : ℕ) (θ : IdCompressorSeed s T) :
     Function.Involutive (idCompressorPerm s T θ) := by
   exact feistelPair_involutive (idCompressorRound s T θ)
 
-@[simp]
 theorem recoverLeft_idCompressorHead (s T : ℕ) (θ : IdCompressorSeed s T)
     (x : Fin (2 ^ s) × Fin T) :
     recoverLeft (idCompressorRound s T θ) (idCompressorHead s T θ x) x.2 = x.1 := by
