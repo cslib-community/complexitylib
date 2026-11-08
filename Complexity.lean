@@ -1499,6 +1499,8 @@ public import Complexity.Computability.Circuit.Quantum.Parallel
 public import Complexity.Computability.Circuit.Quantum.PathNetwork
 public import Complexity.Computability.Circuit.Quantum.PathNetworkPolyTime
 public import Complexity.Computability.Circuit.Quantum.PathSum
+public import Complexity.Computability.Circuit.Quantum.PhaseCode
+public import Complexity.Computability.Circuit.Quantum.RealEncoding
 public import Complexity.Computability.Circuit.Quantum.Reversible
 public import Complexity.Computability.Circuit.Quantum.SuperdenseCoding
 public import Complexity.Computability.Circuit.Quantum.Teleportation
@@ -1654,6 +1656,7 @@ public import Complexity.Computability.Complexity.Classes.BQP.Classical
 public import Complexity.Computability.Complexity.Classes.BQP.ConstantGap
 public import Complexity.Computability.Complexity.Classes.BQP.Counting
 public import Complexity.Computability.Complexity.Classes.BQP.OutputGap
+public import Complexity.Computability.Complexity.Classes.BQP.PhaseGates
 public import Complexity.Computability.Complexity.Classes.BQP.Sampling
 public import Complexity.Computability.Complexity.Classes.BQP.Sampling.Resources
 public import Complexity.Computability.Complexity.Classes.BQP.Sampling.Seeded
