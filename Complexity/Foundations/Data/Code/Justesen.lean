@@ -124,8 +124,7 @@ theorem sum_range_choose_mul_four_pow_le (ℓ r : ℕ) :
     have hjr := Nat.lt_succ_iff.1 (mem_range.1 hj)
     calc ℓ.choose j * 4 ^ ℓ = ℓ.choose j * (4 ^ j * 4 ^ (ℓ - j)) := by
           rw [← pow_add, Nat.add_sub_cancel' hjℓ]
-      _ ≤ ℓ.choose j * (4 ^ r * 4 ^ (ℓ - j)) :=
-          Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ (Nat.pow_le_pow_right (by norm_num) hjr))
+      _ ≤ ℓ.choose j * (4 ^ r * 4 ^ (ℓ - j)) := by gcongr
       _ = 4 ^ r * (1 ^ j * 4 ^ (ℓ - j) * ℓ.choose j) := by ring
   -- the binomial expansion of `5 ^ ℓ`, whose terms beyond `ℓ` vanish
   have htail : ∑ j ∈ range (r + 1), 1 ^ j * 4 ^ (ℓ - j) * ℓ.choose j ≤ 5 ^ ℓ := by

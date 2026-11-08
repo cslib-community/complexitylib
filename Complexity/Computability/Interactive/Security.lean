@@ -108,8 +108,7 @@ theorem CloseTo.symm {α : Type} {μ ν : PMF α} {ε : ℝ≥0∞} (h : CloseTo
       Cslib.Probability.PMF.toOuterMeasure_add_compl_ennreal ν event
     _ = μ.toOuterMeasure event + μ.toOuterMeasure eventᶜ :=
       (Cslib.Probability.PMF.toOuterMeasure_add_compl_ennreal μ event).symm
-    _ ≤ μ.toOuterMeasure event + (ν.toOuterMeasure eventᶜ + ε) :=
-      add_le_add le_rfl hc
+    _ ≤ μ.toOuterMeasure event + (ν.toOuterMeasure eventᶜ + ε) := by gcongr
     _ = μ.toOuterMeasure event + ε + ν.toOuterMeasure eventᶜ := by
       rw [add_comm _ ε, add_assoc]
 
