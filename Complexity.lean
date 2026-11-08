@@ -3089,6 +3089,7 @@ public import Complexity.Computability.StreamArithmetic.QueryTree
 public import Complexity.Computability.Streaming.AMS
 public import Complexity.Computability.Streaming.Basic
 public import Complexity.Computability.Streaming.Communication
+public import Complexity.Computability.Streaming.DistinctElements
 public import Complexity.Computability.Streaming.Distinctness
 public import Complexity.Computability.Streaming.FkEstimator
 public import Complexity.Computability.Streaming.Frequency
@@ -4252,6 +4253,7 @@ public import Complexity.Foundations.Data.Finset.KthLargest.Moment
 public import Complexity.Foundations.Data.Finset.KthLargest.Stability
 public import Complexity.Foundations.Data.Finset.KthLargest.Truncation
 public import Complexity.Foundations.Data.Finset.Lowest
+public import Complexity.Foundations.Data.Finset.LowestInsert
 public import Complexity.Foundations.Data.Finset.LowestMax
 public import Complexity.Foundations.Data.Finset.Markov
 public import Complexity.Foundations.Data.Finset.Median
