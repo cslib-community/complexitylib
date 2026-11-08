@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.PostCorrespondence.Basic
+public import Complexity.Foundations.Data.List.UnaryCode
 import Complexity.Foundations.Data.List.Append
 
 /-!
@@ -109,52 +110,22 @@ theorem MInstance.solvable_subst_iff {c : α → List β}
     · simp only [MInstance.subst, Domino.subst, tops_map_subst, bottoms_map_subst,
         ← List.flatMap_append, heq]
 
-theorem flatMap_singleton_injective {f : α → β} (hf : Function.Injective f) :
-    Function.Injective fun w : List α => w.flatMap fun a => [f a] := by
-  intro u v h
-  simp only [← List.map_eq_flatMap] at h
-  exact List.map_injective_iff.mpr hf h
-
 /-! ### A binary code -/
 
-/-- The unary code of a natural number: `n` letters `true` followed by `false`. Distinct
-sequences of numbers have distinct concatenated codes. -/
-def unaryCode (n : ℕ) : List Bool := List.replicate n true ++ [false]
-
-theorem flatMap_unaryCode_injective : Function.Injective fun w : List ℕ => w.flatMap unaryCode := by
-  intro u
-  induction u with
-  | nil =>
-    rintro (_ | ⟨n, v⟩) h
-    · rfl
-    · simp [unaryCode] at h
-  | cons m u ih =>
-    rintro (_ | ⟨n, v⟩) h
-    · simp [unaryCode] at h
-    · simp only [List.flatMap_cons, unaryCode, List.append_assoc, List.singleton_append] at h
-      obtain ⟨rfl, hx⟩ := List.replicate_true_append_false_inj h
-      rw [ih hx]
-
-theorem primrec_unaryCode : Primrec unaryCode := by
-  have : Primrec fun n => (List.range n).map fun _ => true :=
-    Primrec.list_map Primrec.list_range (Primrec.const true).to₂
-  refine (Primrec.list_append.comp this (Primrec.const [false])).of_eq fun n => ?_
-  rw [unaryCode, List.map_const', List.length_range]
-
 /-- The binary code of a letter of an encodable alphabet: the unary code of its encoding. -/
-def boolCode [Encodable α] (a : α) : List Bool := unaryCode (Encodable.encode a)
+def boolCode [Encodable α] (a : α) : List Bool := List.unaryCode (Encodable.encode a)
 
 theorem flatMap_boolCode_injective [Encodable α] :
     Function.Injective fun w : List α => w.flatMap boolCode := by
   intro u v h
-  have h' : (u.map Encodable.encode).flatMap unaryCode =
-      (v.map Encodable.encode).flatMap unaryCode := by
+  have h' : (u.map Encodable.encode).flatMap List.unaryCode =
+      (v.map Encodable.encode).flatMap List.unaryCode := by
     rw [List.flatMap_map, List.flatMap_map]
     exact h
-  exact List.map_injective_iff.mpr Encodable.encode_injective (flatMap_unaryCode_injective h')
+  exact List.map_injective_iff.mpr Encodable.encode_injective (List.flatMap_unaryCode_injective h')
 
 theorem primrec_boolCode [Primcodable α] : Primrec (boolCode : α → List Bool) :=
-  primrec_unaryCode.comp Primrec.encode
+  List.primrec_unaryCode.comp Primrec.encode
 
 section Primrec
 
@@ -195,7 +166,7 @@ private def pairCode (a b : α) (x : Bool) : List α := [if x then a else b]
 
 private theorem flatMap_pairCode_injective {a b : α} (hab : a ≠ b) :
     Function.Injective fun w : List Bool => w.flatMap (pairCode a b) := by
-  refine flatMap_singleton_injective (f := fun x : Bool => if x then a else b) ?_
+  refine List.flatMap_singleton_injective (f := fun x : Bool => if x then a else b) ?_
   intro x y h
   cases x <;> cases y <;> simp_all [Ne.symm hab]
 

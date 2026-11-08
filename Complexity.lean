@@ -4609,6 +4609,7 @@ public import Complexity.Foundations.Data.List.SelectDistinct
 public import Complexity.Foundations.Data.List.SortedCount
 public import Complexity.Foundations.Data.List.SumIndicator
 public import Complexity.Foundations.Data.List.TwoBitTable
+public import Complexity.Foundations.Data.List.UnaryCode
 public import Complexity.Foundations.Data.Matrix.Binary
 public import Complexity.Foundations.Data.Matrix.IntegerBits
 public import Complexity.Foundations.Data.Matrix.PairChunks
