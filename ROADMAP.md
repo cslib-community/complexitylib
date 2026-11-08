@@ -456,7 +456,9 @@ In order:
   session identifiers and concurrent executions; prove a composition theorem with efficient
   simulators and explicit setup, corruption and communication assumptions. Then develop
   selected adaptive-corruption and non-malleability applications, alongside the static-malicious
-  OT target.
+  OT target. The universal composition theorem for one subroutine instance, with static
+  corruptions and call-budgeted participants, is in
+  `Complexity/Crypto/Protocols/UC/Composition.lean`; several and concurrent sessions remain.
 - **Quantum-secure cryptography:** uniform quantum-efficient distinguishers, computational
   indistinguishability with quantum side information, and security reductions for concrete
   constructions. Connect the quantum-computation and lattice tracks through these adversary
