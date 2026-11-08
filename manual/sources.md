@@ -39,6 +39,16 @@ Richard Bellman. "On a Routing Problem." *Quarterly of Applied Mathematics* 16(1
 
 Charles H. Bennett. *Time/Space Trade-Offs for Reversible Computation*. SIAM Journal on Computing 18(4), 766–776, 1989. https://doi.org/10.1137/0218053 . Bibliographic metadata only; the paper was not inspected in this pass. The manual credits it with the recursive checkpointing strategy as described in [ltv98](#ltv98), Sections 6 and 7.
 
+<a id="berge57"></a>
+## berge57
+
+Claude Berge. *Two Theorems in Graph Theory*. Proceedings of the National Academy of Sciences of the United States of America 43(9), 842–844, 1957. https://doi.org/10.1073/pnas.43.9.842 . Bibliographic metadata only; the primary text was not inspected. The manual attributes to this paper the augmenting-path characterization of maximum matchings (Theorem 1) as reported by [schrijver17](#schrijver17), Section 3.2.
+
+<a id="berge58"></a>
+## berge58
+
+Claude Berge. *Sur le couplage maximum d'un graphe*. Comptes Rendus Hebdomadaires des Séances de l'Académie des Sciences 247, 258–259, 1958. Bibliographic data from secondary bibliographies; the note was not inspected, and no theorem number is claimed. The manual attributes to it the Tutte–Berge formula, following [schrijver17](#schrijver17), Section 5.1.
+
 <a id="bermanhartmanis75"></a>
 ## bermanhartmanis75
 
@@ -457,7 +467,7 @@ Michael Saks and Shiyu Zhou. *BP_H SPACE(S) ⊆ DSPACE(S^{3/2})*. Journal of Com
 <a id="schrijver17"></a>
 ## schrijver17
 
-Alexander Schrijver. *A Course in Combinatorial Optimization*. Lecture notes, version of March 23, 2017. https://homepages.cwi.nl/~lex/files/dict.pdf . The author-hosted PDF was consulted on 2026-11-08 UTC for Section 10.4 (Lemma 10.2), Section 10.5 (Example 10.5a, displays (23)–(25) and (27), Theorems 10.6, 10.7 and 10.9) and Exercise 10.22; the matroid intersection modules cite these locators. The corresponding chapter of Schrijver's 2003 monograph (Chapter 41) is cited in the library from secondary descriptions only; its theorem and page locators are unverified.
+Alexander Schrijver. *A Course in Combinatorial Optimization*. Lecture notes, version of March 23, 2017. https://homepages.cwi.nl/~lex/files/dict.pdf . The author-hosted PDF was consulted on 2026-11-08 UTC for Section 10.4 (Lemma 10.2), Section 10.5 (Example 10.5a, displays (23)–(25) and (27), Theorems 10.6, 10.7 and 10.9) and Exercise 10.22; the matroid intersection modules cite these locators. It was also consulted on 2026-11-08 UTC for Section 3.2 (display (6) and Theorem 3.2), Section 5.1 (Theorem 5.1 and Corollary 5.1a) and Theorem 5.2; the general-matching modules `Berge` and `TutteBerge` cite these locators. The corresponding chapter of Schrijver's 2003 monograph (Chapter 41) is cited in the library from secondary descriptions only; its theorem and page locators are unverified.
 
 <a id="schummervohra07"></a>
 ## schummervohra07

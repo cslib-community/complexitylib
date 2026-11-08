@@ -11,6 +11,7 @@ public import Complexity.Init
 public import Mathlib.Combinatorics.SimpleGraph.Matching
 public import Mathlib.Combinatorics.SimpleGraph.Paths
 public import Mathlib.Data.Set.Card
+import Complexity.Foundations.Combinatorics.SimpleGraph.SymmDiff
 import Mathlib.Combinatorics.SimpleGraph.DegreeSum
 
 /-!
@@ -226,11 +227,13 @@ end IsAugmentingPath
 
 /-! ### The symmetric difference of two matchings -/
 
-/-- The symmetric difference of two matchings alternates with respect to the first one. -/
+/-- The symmetric difference of two matchings alternates with respect to the first one. This
+generalizes Mathlib's `Subgraph.IsPerfectMatching.isAlternating_symmDiff_left` from perfect
+matchings to arbitrary matchings. -/
 theorem IsMatching.isAlternating_symmDiff (hM : M.IsMatching) (hM' : M'.IsMatching) :
     (M.spanningCoe ∆ M'.spanningCoe).IsAlternating M.spanningCoe := by
   intro v w w' hww' hvw hvw'
-  rw [symmDiff_def] at hvw hvw'
+  rw [SimpleGraph.symmDiff_adj] at hvw hvw'
   simp only [spanningCoe_adj] at hvw hvw' ⊢
   constructor
   · intro h h'
@@ -249,8 +252,8 @@ theorem IsMatching.exists_neighborSet_symmDiff_eq_singleton (hM' : M'.IsMatching
     ∃ b, (M.spanningCoe ∆ M'.spanningCoe).neighborSet x = {b} := by
   obtain ⟨b, hb, hb'⟩ := hM' hx'
   refine ⟨b, Set.ext fun y => ?_⟩
-  rw [SimpleGraph.mem_neighborSet, symmDiff_def, Set.mem_singleton_iff]
-  simp only [SimpleGraph.sup_adj, SimpleGraph.sdiff_adj, spanningCoe_adj]
+  rw [SimpleGraph.mem_neighborSet, SimpleGraph.symmDiff_adj, Set.mem_singleton_iff]
+  simp only [spanningCoe_adj]
   constructor
   · rintro (⟨h, -⟩ | ⟨h, -⟩)
     · exact absurd (M.edge_vert h) hx
@@ -272,8 +275,8 @@ theorem IsMatching.xor_of_odd_ncard_neighborSet_symmDiff (hM : M.IsMatching)
     have hN : (M.spanningCoe ∆ M'.spanningCoe).neighborSet x =
         if a = b then ∅ else {a, b} := by
       ext y
-      rw [SimpleGraph.mem_neighborSet, symmDiff_def]
-      simp only [SimpleGraph.sup_adj, SimpleGraph.sdiff_adj, spanningCoe_adj]
+      rw [SimpleGraph.mem_neighborSet, SimpleGraph.symmDiff_adj]
+      simp only [spanningCoe_adj]
       split_ifs with hab
       · subst hab
         simp only [Set.mem_empty_iff_false, iff_false]
@@ -298,9 +301,8 @@ theorem IsMatching.xor_of_odd_ncard_neighborSet_symmDiff (hM : M.IsMatching)
   · exfalso
     have hN : (M.spanningCoe ∆ M'.spanningCoe).neighborSet x = ∅ := by
       ext y
-      rw [SimpleGraph.mem_neighborSet, symmDiff_def]
-      simp only [SimpleGraph.sup_adj, SimpleGraph.sdiff_adj, spanningCoe_adj,
-        Set.mem_empty_iff_false, iff_false]
+      rw [SimpleGraph.mem_neighborSet, SimpleGraph.symmDiff_adj]
+      simp only [spanningCoe_adj, Set.mem_empty_iff_false, iff_false]
       rintro (⟨h, -⟩ | ⟨h, -⟩)
       · exact hx (M.edge_vert h)
       · exact hx' (M'.edge_vert h)
@@ -373,8 +375,9 @@ theorem IsMatching.exists_isAugmentingPath_of_ncard_lt [Finite V] (hM : M.IsMatc
 /-! ### Maximum matchings and Berge's lemma -/
 
 /-- `M` is a maximum matching of `G`: a matching with at least as many edges as every matching of
-`G`. Edges are counted with `Set.encard`, so the definition also makes sense for infinite
-graphs. -/
+`G`. Edges are counted with `Set.encard`. The definition needs no finiteness hypothesis, but it
+is coarse on infinite graphs, where every matching with infinitely many edges is maximum. The
+results below assume `[Finite V]`. -/
 structure IsMaximumMatching (M : G.Subgraph) : Prop where
   isMatching : M.IsMatching
   maximum : ∀ M' : G.Subgraph, M'.IsMatching → M'.edgeSet.encard ≤ M.edgeSet.encard
@@ -394,6 +397,8 @@ theorem IsMatching.ncard_verts_eq_two_mul [Finite V] (hM : M.IsMatching) :
   rw [← Nat.card_coe_set_eq, Nat.card_eq_fintype_card, hsum, ← image_coe_edgeSet_coe M,
     Set.ncard_image_of_injective _ (Sym2.map.injective Subtype.val_injective)]
 
+/-- In a finite graph, maximality of a matching may be tested by comparing edge counts with
+`Set.ncard`. -/
 theorem isMaximumMatching_iff_ncard [Finite V] :
     M.IsMaximumMatching ↔
       M.IsMatching ∧ ∀ M' : G.Subgraph, M'.IsMatching → M'.edgeSet.ncard ≤ M.edgeSet.ncard := by

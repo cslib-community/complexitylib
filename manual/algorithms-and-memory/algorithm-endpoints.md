@@ -181,9 +181,9 @@ These results are about matchings in arbitrary finite graphs, not necessarily bi
 - `Subgraph.augment M p`: `M ∆ E(p)`;
 - `Subgraph.IsMaximumMatching`: a matching with at least as many edges, counted by `Set.encard`, as every matching.
 
-`IsAugmentingPath.isMatching_augment` and `ncard_verts_augment` show that augmenting gives a matching covering two more vertices. `IsMatching.isMaximumMatching_iff_forall_not_isAugmentingPath` is Berge's lemma for finite graphs ([Berge1957], Theorem 1; [Schrijver2017], Theorem 3.2). It is proved from `IsMatching.exists_isAugmentingPath_of_ncard_lt`, using the odd-degree vertices of a component of `M ∆ M'`. `exists_isMaximumMatching` gives a maximum matching of a finite graph, and `IsPerfectMatching.isMaximumMatching` shows that perfect matchings are maximum. The bipartite Berge theorem in `MaxFlow/AugmentingPath` is a separate statement in its own model; neither is derived from the other.
+`IsAugmentingPath.isMatching_augment` and `ncard_verts_augment` show that augmenting gives a matching covering two more vertices. `IsMatching.isMaximumMatching_iff_forall_not_isAugmentingPath` is Berge's lemma for finite graphs ([Berge 1957][berge57], Theorem 1; [Schrijver's lecture notes][schrijver17], Theorem 3.2). It is proved from `IsMatching.exists_isAugmentingPath_of_ncard_lt`, using the odd-degree vertices of a component of `M ∆ M'`. `exists_isMaximumMatching` gives a maximum matching of a finite graph, and `IsPerfectMatching.isMaximumMatching` shows that perfect matchings are maximum. The bipartite Berge theorem in `MaxFlow/AugmentingPath` is a separate statement in its own model; neither is derived from the other.
 
-[Complexity/Foundations/Combinatorics/SimpleGraph/TutteBerge.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/TutteBerge.lean) proves the Tutte–Berge formula ([Berge1958]; [Schrijver2017], Theorem 5.1) with vertex counts, writing `o(G - U)` as `((⊤ : G.Subgraph).deleteVerts U).coe.oddComponents.ncard`:
+[Complexity/Foundations/Combinatorics/SimpleGraph/TutteBerge.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/TutteBerge.lean) proves the Tutte–Berge formula ([Berge 1958][berge58]; [Schrijver's lecture notes][schrijver17], Theorem 5.1) with vertex counts, writing `o(G - U)` as `((⊤ : G.Subgraph).deleteVerts U).coe.oddComponents.ncard`:
 - `IsMatching.ncard_verts_add_ncard_oddComponents_le` (weak duality): `|V(M)| + o(G - U) ≤ |V| + |U|`.
 - `exists_isMatching_ncard_verts_add_ncard_oddComponents_eq` (strong duality) is derived from Mathlib's `SimpleGraph.tutte` by adjoining `d` universal vertices, where `d` is the maximum deficiency.
 - `IsMatching.isMaximumMatching_iff_exists_ncard_verts_add_ncard_oddComponents_eq`: a single `U` certifies that a matching is maximum.
@@ -195,7 +195,7 @@ The [checked instances](../../ComplexityTests/GeneralMatching.lean) cover three 
 - On the star `K_{1,3}`, `U = {0}` certifies the matching `{01}`.
 
 Still open ([#3337](https://github.com/cslib-community/complexitylib/issues/3337)):
-- Edmonds' blossom-contraction lemma ([Schrijver2017], Theorem 5.2);
+- Edmonds' blossom-contraction lemma ([Schrijver's lecture notes][schrijver17], Theorem 5.2);
 - an executable blossom algorithm with its `O(|V|²|E|)` bound;
 - the Gallai–Edmonds decomposition.
 
@@ -857,6 +857,8 @@ The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root 
 
 The numeric values above are transcriptions of checked source statements, not results of new execution benchmarks. The source-reference audit checks locations and digests; it does not rerun Lean or prove asymptotic summaries. The full Haskell/Lean runtime behavior, allocator, operating system and hardware are outside these idealized RAM models.
 
+[berge57]: ../sources.md#berge57
+[berge58]: ../sources.md#berge58
 [complexitylib]: ../sources.md#complexitylib
 [clrs09]: ../sources.md#clrs09
 [floyd62]: ../sources.md#floyd62

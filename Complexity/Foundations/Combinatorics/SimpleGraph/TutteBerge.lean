@@ -85,7 +85,8 @@ variable {M : G.Subgraph}
 /-! ### Weak duality -/
 
 /-- Every odd component of `G - U` contains a vertex that `M` leaves uncovered or matches into
-`U`. -/
+`U`. This generalizes Mathlib's `ConnectedComponent.odd_matches_node_outside` from perfect
+matchings to arbitrary matchings. -/
 theorem IsMatching.exists_of_mem_oddComponents [Finite V] (hM : M.IsMatching) {U : Set V}
     (c : ((⊤ : G.Subgraph).deleteVerts U).coe.ConnectedComponent)
     (hc : c ∈ ((⊤ : G.Subgraph).deleteVerts U).coe.oddComponents) :
