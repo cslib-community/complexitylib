@@ -551,6 +551,12 @@ index links to canonical definitions rather than keeping a second set.
   mean-prefix bound remain open; range/true means do not establish root
   regularity or the error recurrence. Paired raw differences, full-coordinate conditional walks, summed noise, compression, strong recursive
   induction and native logarithmic workspace/class equality remain required.
+  The Saks–Zhou iteration as pure mathematics (random-shift rounding, Lemmas A.3 and A.4 of
+  Chattopadhyay–Liao in exact density form) is
+  [#3247](https://github.com/cslib-community/complexitylib/issues/3247). It is a milestone of
+  [#474](https://github.com/cslib-community/complexitylib/issues/474). Still open: instantiating
+  its offline power with Nisan's generator, and the space-bounded realization giving
+  `BPL ⊆ L^{3/2}`.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a
   logspace reduction.
 - **Williams's `TIME[t] ⊆ SPACE[√(t log t)]`** ([#888]): the native implicit
@@ -851,10 +857,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **W-hierarchy** ([#2966](https://github.com/cslib-community/complexitylib/issues/2966)):
   `W[t]` by fpt-reduction to weighted satisfiability of circuits of weft at most `t` and bounded
   depth, with `FPT ⊆ W[t] ⊆ W[t+1]`; `IndependentSet` and `Clique` are in `W[1]`. Remaining: the
-  W[1]-hardness of `Clique` (fpt-reduction from `WCS 1 d`; Kleene evaluation and the weft-one
-  certificates are in place; remaining is the graph construction, which encodes the exact-weight
-  constraint problem left after fixing the claims, each check reading at most `2 ^ d` inputs, as a
-  `Clique` instance), then `W[t] ⊆ XP`,
+  W[1]-hardness of `Clique` (fpt-reduction from `WCS 1 d`; Kleene evaluation, the weft-one
+  certificates and the certificate-and-bracket graph with its correctness are in place; remaining
+  are the polynomial-time bound of the graph construction and the fpt-reduction), then
+  `W[t] ⊆ XP`,
   W[2]-completeness of Dominating Set, short Turing machine acceptance, `W[P]` and the A-hierarchy.
 - **Exponential-time SAT** ([#894]): Schöning, PPZ and PPSZ run on the randomized word RAM with
   exact laws, amplification and time bounds (PPSZ's round count takes an input bound
@@ -1561,9 +1567,14 @@ Bayes–Nash characterization with revenue equivalence and the symmetric first-p
 - **Moser–Tardos resampling:** `Logics/Propositional/CNF/Moser*` runs Moser's `k`-SAT
   resampling algorithm on an explicit tape and bounds its resamplings by entropy compression when
   every clause shares a variable with fewer than `2 ^ (k - 3)` others
-  ([#2879](https://github.com/cslib-community/complexitylib/issues/2879)). Extend it to the
-  variable form of the Local Lemma under `e p (d + 1) ≤ 1` (witness trees, sharper expected
-  bounds), with native sampling and event-detection costs. The Kolmogorov form of the argument
+  ([#2879](https://github.com/cslib-community/complexitylib/issues/2879)).
+  `Probability/MoserTardos` proves the general variable form (Moser–Tardos Theorem 1.2): under the
+  asymmetric local-lemma hypothesis, every valid selection rule resamples `A` at most
+  `x(A) / (1 - x(A))` times in expectation, and the algorithm terminates almost surely
+  ([#3096](https://github.com/cslib-community/complexitylib/issues/3096)). Derive the symmetric
+  `e p (d + 1) ≤ 1` form and the `k`-SAT instance from it, prove the parallel and derandomized
+  versions (Theorems 1.3–1.4) and the lopsided form, and add native sampling and event-detection
+  costs. The Kolmogorov form of the argument
   is relative to an explicit decoder
   ([#3043](https://github.com/cslib-community/complexitylib/issues/3043)); implement the decoder
   as a multi-tape machine taking the formula to transfer it to the conditional universal

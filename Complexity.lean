@@ -1927,6 +1927,8 @@ public import Complexity.Computability.Complexity.Parameterized.Kernelization
 public import Complexity.Computability.Complexity.Parameterized.VertexCover
 public import Complexity.Computability.Complexity.Parameterized.VertexCover.BussKernel
 public import Complexity.Computability.Complexity.Parameterized.WHierarchy
+public import Complexity.Computability.Complexity.Parameterized.WHierarchy.Clique.Bracket
+public import Complexity.Computability.Complexity.Parameterized.WHierarchy.Clique.Graph
 public import Complexity.Computability.Complexity.Parameterized.WHierarchy.IndependentSet
 public import Complexity.Computability.Complexity.Problems.BipartitePerfectMatching
 public import Complexity.Computability.Complexity.Problems.BipartitePerfectMatching.Membership
@@ -1946,6 +1948,7 @@ public import Complexity.Computability.Complexity.Problems.CircuitValue.Compilat
 public import Complexity.Computability.Complexity.Problems.CircuitValue.Completeness
 public import Complexity.Computability.Complexity.Problems.CircuitValue.Writer
 public import Complexity.Computability.Complexity.Problems.Clique
+public import Complexity.Computability.Complexity.Problems.Clique.OfAdj
 public import Complexity.Computability.Complexity.Problems.CliqueCover
 public import Complexity.Computability.Complexity.Problems.Coloring
 public import Complexity.Computability.Complexity.Problems.CountingSAT
@@ -2477,6 +2480,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Poly
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Lex
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.ListsUpTo
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Matrix.Binary
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -3916,6 +3920,7 @@ public import Complexity.Foundations.Analysis.Lattice.Schwartz
 public import Complexity.Foundations.Analysis.LpNorm
 public import Complexity.Foundations.Analysis.LpNormMeasure
 public import Complexity.Foundations.Analysis.MarkovBrothersInequality
+public import Complexity.Foundations.Analysis.Normed.Ring.PowSub
 public import Complexity.Foundations.Analysis.RootError
 public import Complexity.Foundations.Analysis.RowCompression
 public import Complexity.Foundations.Analysis.RowCompression.BoundedCap
@@ -4288,6 +4293,7 @@ public import Complexity.Foundations.Data.List.Fold
 public import Complexity.Foundations.Data.List.FoldlIdx
 public import Complexity.Foundations.Data.List.Last
 public import Complexity.Foundations.Data.List.Lex
+public import Complexity.Foundations.Data.List.ListsUpTo
 public import Complexity.Foundations.Data.List.Lookup
 public import Complexity.Foundations.Data.List.OfFn
 public import Complexity.Foundations.Data.List.Perm
@@ -4455,6 +4461,7 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.Moore
 public import Complexity.Foundations.LinearAlgebra.Matrix.PairedPorts
 public import Complexity.Foundations.LinearAlgebra.Matrix.PartialDerivatives
 public import Complexity.Foundations.LinearAlgebra.Matrix.PilotCorrection
+public import Complexity.Foundations.LinearAlgebra.Matrix.PowPerturbation
 public import Complexity.Foundations.LinearAlgebra.Matrix.Rank
 public import Complexity.Foundations.LinearAlgebra.Matrix.RectPermanent
 public import Complexity.Foundations.LinearAlgebra.Matrix.Rigidity
@@ -4581,6 +4588,7 @@ public import Complexity.Foundations.Probability.HierarchySourceSampling
 public import Complexity.Foundations.Probability.HierarchyTaskData
 public import Complexity.Foundations.Probability.HierarchyTaskMeans
 public import Complexity.Foundations.Probability.HierarchyTasks
+public import Complexity.Foundations.Probability.InfinitePi
 public import Complexity.Foundations.Probability.InitialPilotCompleted
 public import Complexity.Foundations.Probability.InitialPilotCorrection
 public import Complexity.Foundations.Probability.InitialPilotCorrectionMean
@@ -5118,6 +5126,8 @@ public import Complexity.Probability.MinEntropy.Flat
 public import Complexity.Probability.MinEntropy.LeftoverHash
 public import Complexity.Probability.Minimax
 public import Complexity.Probability.Minimax.Value
+public import Complexity.Probability.MoserTardos
+public import Complexity.Probability.MoserTardos.Witness
 public import Complexity.Probability.OptimalStopping.Basic
 public import Complexity.Probability.OptimalStopping.Prophet
 public import Complexity.Probability.OptimalStopping.ProphetIID
@@ -5175,6 +5185,8 @@ public import Complexity.Probability.RejectionSampling
 public import Complexity.Probability.Resilience
 public import Complexity.Probability.Rewinding
 public import Complexity.Probability.Rewinding.Consistency
+public import Complexity.Probability.SaksZhou
+public import Complexity.Probability.SaksZhou.Snap
 public import Complexity.Probability.Shearer
 public import Complexity.Probability.SmallBias
 public import Complexity.Probability.SmallBias.Powering
