@@ -1144,6 +1144,14 @@ each statement against the numbered result. Organize modules by subject, not cha
 
 ## Pseudorandomness, coding and Boolean analysis
 
+- **Improved sparse expanders**
+  ([#3348](https://github.com/cslib-community/complexitylib/issues/3348)): construct simple
+  degree-two/three cores and their matching-path extensions, connect their generalized
+  eigenvector equations to normalized spectral expansion, and formalize explicit core families
+  and the density-sequence asymptotic coefficient approaching `π² / 8`. For lossless expansion,
+  construct the equivariant regular subgraph and prove full row rank through the orbit-matrix
+  and prime-power-group argument. Finite spectral certificates, conditional cut-rank bounds,
+  and transfer for a supplied subgraph do not complete these construction endpoints.
 - **Derandomization from hardness:** the infinitely-often variant, and the EXP ⊄ P/poly endpoint
   of Babai, Fortnow, Nisan and Wigderson.
 - **Extractors** ([#895]) beyond Chor–Goldreich: two-source extractors for lower min-entropy,
