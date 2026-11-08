@@ -62,6 +62,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `sbp` | [SBP](machines-and-classes/verifiers-counting-interaction.md) | counting-acceptance |
 | `bpppath` | [BPPpath](machines-and-classes/verifiers-counting-interaction.md) | counting-acceptance |
 | `fpras` | [FPRAS approximate counting](machines-and-classes/verifiers-counting-interaction.md) | approximate-counting |
+| `fpaus` | [FPAUS almost uniform sampling](machines-and-classes/verifiers-counting-interaction.md) | approximate-counting |
 | `deterministic-oracle` | [Efficient deterministic oracle program](machines-and-classes/verifiers-counting-interaction.md) | oracle-verifier |
 | `counting-oracle` | [#P function-bit oracle](machines-and-classes/verifiers-counting-interaction.md) | oracle-verifier |
 | `ma` | [Merlin-Arthur verifier](machines-and-classes/verifiers-counting-interaction.md) | interactive |
@@ -187,6 +188,8 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `comparison-tree` | [Monotone/separable comparison queries](circuits-logic-and-other-models/index.md) | information-access |
 | `randomized-query` | [Finite-support randomized decision trees](circuits-logic-and-other-models/index.md) | information-access |
 | `distributional-query` | [Distributional decision-tree complexity](circuits-logic-and-other-models/index.md) | information-access |
+| `cell-probe` | [Adaptive cell-probe trees and deterministic schemes](circuits-logic-and-other-models/query-and-communication.md) | information-access |
+| `randomized-cell-probe` | [Internal-coin cell-probe schemes and zero-error Yao averaging](circuits-logic-and-other-models/query-and-communication.md) | information-access |
 | `quantum-query` | [Phase-oracle quantum query algorithms](circuits-logic-and-other-models/index.md) | quantum |
 | `deterministic-communication` | [Two-party bit communication trees](circuits-logic-and-other-models/index.md) | communication |
 | `local-oriented-cycle` | [Deterministic LOCAL algorithms on oriented cycles](circuits-logic-and-other-models/query-and-communication.md) | distributed |
