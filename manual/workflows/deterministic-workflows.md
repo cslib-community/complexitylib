@@ -146,6 +146,25 @@ uses the fact that setting a variable does not lengthen the encoded formula. The
 instance and a formula with an empty clause, where the `1 / 2` bound fails without its
 hypothesis. Build it with `scripts/build.sh ComplexityTests.JohnsonMaxSAT`.
 
+When the averaging argument uses only `k`-wise independence, you can search a small sample
+space instead of fixing bits one by one. For satisfiability,
+[KWiseIndependent.lean](../../Complexity/Logics/Propositional/CNF/KWiseIndependent.lean) takes a
+family `h` with `IsKWiseIndependentHash k h` and a labelling `e` of the variables that is
+injective on `φ.vars`. `exists_two_pow_mul_countUnsat_le` then gives a seed `i` with
+`2 ^ k * φ.countUnsat (h i ∘ e) ≤ φ.length` whenever every clause has at least `k` distinct
+literals. [ParitySearch.lean](../../Complexity/Logics/Propositional/CNF/ParitySearch.lean)
+instantiates it for `k ≤ 3` with the three-wise parity hash
+`LinearHash.isKWiseIndependentHash_dotProduct_cons_true`, labelling each variable by the binary
+digits of its position. `paritySearch` folds `betterCandidate` over
+the fewer than `4n` candidate assignments, and
+[ParitySearch/PolyTime.lean](../../Complexity/Logics/Propositional/CNF/ParitySearch/PolyTime.lean)
+certifies the running time with `foldlWithInput_of_bounded_growth`. Every candidate is a
+sublist of the variable list, which bounds the fold's growth. The
+[ParitySearchMaxSAT client](../../ComplexityTests/ParitySearchMaxSAT.lean) evaluates the
+candidate lists. It also shows that the parity space is not four-wise independent and that the
+guarantee fails for clauses of four literals. Build it with
+`scripts/build.sh ComplexityTests.ParitySearchMaxSAT`.
+
 **When it fails:** if the round inequality holds only on reachable states, strengthen the
 invariant rather than the estimate. Clauses with complementary literals, for example, make
 Johnson's weight strictly pessimistic, but the inequality still holds for every partial
