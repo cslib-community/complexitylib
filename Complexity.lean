@@ -66,6 +66,8 @@ public import Complexity.Algorithms.Lean.Knapsack.ProfitDP
 public import Complexity.Algorithms.Lean.Kruskal.Basic
 public import Complexity.Algorithms.Lean.Kruskal.SimpleGraph
 public import Complexity.Algorithms.Lean.LempelZiv.DistinctParsing
+public import Complexity.Algorithms.Lean.LempelZiv.LZ77
+public import Complexity.Algorithms.Lean.LempelZiv.LZ77Count
 public import Complexity.Algorithms.Lean.LempelZiv.LZ78
 public import Complexity.Algorithms.Lean.LempelZiv.LZ78Bits
 public import Complexity.Algorithms.Lean.LempelZiv.LZ78Count

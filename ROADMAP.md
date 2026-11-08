@@ -1335,11 +1335,14 @@ each statement against the numbered result. Organize modules by subject, not cha
   Trevisan and Kerenidis–de Wolf exponential bounds for two-query codes.
 - **Lempel–Ziv compression** ([#3312](https://github.com/cslib-community/complexitylib/issues/3312)):
   LZ78 incremental parsing, its lossless pair and bit codes, the distinct-parsing bound and the
-  worst-case length `⌈log₂ k⌉ n (1 + o(1))` are in `Algorithms/Lean/LempelZiv`. Remaining:
-  asymptotic optimality for stationary ergodic sources (Ziv's inequality, compression ratio tending
-  to the entropy rate, which needs stationary-process infrastructure), LZ77 and sliding-window
-  variants, and the links to Kolmogorov complexity and finite-state compressibility (Lempel–Ziv
-  complexity). Machine-level or `TimeM` costs of the parser are a separate endpoint.
+  worst-case length `⌈log₂ k⌉ n (1 + o(1))` are in `Algorithms/Lean/LempelZiv`. So are LZ77
+  sliding-window parsing with its lossless triple code, the optimality and uniqueness of the
+  exhaustive history (Lempel–Ziv complexity) and `#LZ77 ≤ #LZ78`
+  ([#3518](https://github.com/cslib-community/complexitylib/issues/3518)). Remaining: asymptotic
+  optimality for stationary ergodic sources (Ziv's inequality, compression ratio tending to the
+  entropy rate, which needs stationary-process infrastructure), bit-level LZ77 codes with a bounded
+  lookahead, and the links to Kolmogorov complexity and finite-state compressibility. Machine-level
+  or `TimeM` costs of the parsers are a separate endpoint.
 - **Boolean analysis:** hypercontractivity beyond `p ≤ 2 ≤ q` and its further applications
   (small-set expansion, the Level-k inequalities); coverage of O'Donnell's *Analysis of Boolean
   Functions* ([#2131](https://github.com/cslib-community/complexitylib/issues/2131)), including the
