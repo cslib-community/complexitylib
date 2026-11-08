@@ -399,7 +399,7 @@ theorem completionTime_mean {Ω : Type} [Fintype Ω]
         (fun ω => ∑' n, f n ω) := by
       filter_upwards [hfinite] with ω hω
       lift completionTime I ρ proposal ω to ℕ using hω with k hk
-      simpa only [WithTop.untopD_coe, WithTop.untopD_natCast, Nat.cast_id] 
+      simpa only [WithTop.untopD_coe, WithTop.untopD_natCast, Nat.cast_id]
         using (tsum_issued_eq I ρ proposal ω k hk.symm).symm
     rw [integral_congr_ae hpath, ← integral_tsum_of_summable_integral_norm hfi hs]
     congr 1
