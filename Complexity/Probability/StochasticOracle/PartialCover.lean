@@ -131,6 +131,19 @@ theorem certified_union_bound {ρ : ℝ} {C P : Finset J}
   rw [← hcharge, mul_add]
   linarith
 
+/-- Local retention never introduces a candidate absent from the starting family
+and the actually proposed families. Extracted from the selection-policy client. -/
+theorem retain_subset (ρ : ℝ) (C : Finset J) (ps : List (Finset J)) :
+    I.retain ρ C ps ⊆ C ∪ ps.foldr (· ∪ ·) ∅ := by
+  classical
+  induction ps generalizing C with
+  | nil => simp [Instance.retain]
+  | cons P ps ih =>
+    simp only [Instance.retain]
+    split_ifs
+    · simpa only [List.foldr_cons, union_assoc] using ih (C ∪ P)
+    · exact (ih C).trans (by intro j hj; simp only [mem_union, List.foldr_cons] at *; tauto)
+
 /-- Any starting invariant is preserved by the actual accept/reject processing loop. -/
 theorem retain_bound {ρ : ℝ} (ps : List (Finset J)) (C : Finset J)
     (hC : I.cost C ≤ ρ * ∑ e ∈ I.covered C, I.dual e) :

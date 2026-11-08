@@ -185,7 +185,20 @@ event satisfies both the success-level cost lower bound and the refined binomial
 tail. Zero external deadline forbids accepted nonempty covers without extra
 envelopes. Correlated/canceled two-batch and successful-output clients instantiate
 the actual latency and joint bounds. This uses external interface duration, not
-compiled physical timers. Native optimum/envelope comparison through a uniformly
+compiled physical timers.
+The upper selector's rational local phase now has one uniform finite-control binary
+native machine over runtime incidence rows, binary rational weights/dual prices and
+proposal lists. It computes normalization, coverage differences, exact local tests,
+retention, a completion decision and the original source output mask. Native loop
+state-size/resource certificates and real-valued retention/certificate/provenance
+correspondence are derived. The actual open native local phase terminates and
+preserves all previously received oracle memory, token bills and external duration.
+A correlated source-report client constructs its local input from actual proposals;
+this construction is currently a semantic serialization, not a native raw-channel
+parser or tape handoff. Copying/parsing the variable-length raw report (including
+unbounded invoice metadata) and implementing the adaptive query/stop/output loop
+remain open. This local phase is not a realized uniform upper oracle policy.
+Native optimum/envelope comparison through a uniformly
 realized successful upper selector, source
 subinstance/role/residual/external-machine encodings and exact source stopping
 conventions remain open. In particular, the upper productivity contract excludes

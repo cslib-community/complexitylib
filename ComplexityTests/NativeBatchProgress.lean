@@ -37,7 +37,8 @@ def coverInstance : Instance Unit (Fin 1) where
   dual_nonneg := by intro _; norm_num
   dual_feasible := by intro _; norm_num
 
-private theorem first_proposals (u : Bool) :
+/-- Completed proposals from the actual first batch, excluding its canceled call. -/
+theorem first_proposals (u : Bool) :
     proposals 1 (firstReceipt u).report = [if u then {0} else ∅] := by
   cases u <;> norm_num [proposals, firstReceipt, ConcurrentBatch.observe, paths,
     CallTrace.report, CallTrace.response, limits, first, List.ofFn_succ,

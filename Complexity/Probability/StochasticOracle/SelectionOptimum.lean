@@ -45,17 +45,6 @@ retained completion and return the actual locally certified retained family. -/
     then Distribution.pure none else (select h).map some
   output h := Distribution.pure (selected I ρ (proposals O) h)
 
-omit [Fintype J] in
-private theorem retain_subset (I : Instance E J) (ρ : ℝ) (C : Finset J)
-    (ps : List (Finset J)) : I.retain ρ C ps ⊆ C ∪ ps.foldr (· ∪ ·) ∅ := by
-  induction ps generalizing C with
-  | nil => simp [Instance.retain]
-  | cons P ps ih =>
-    simp only [Instance.retain]
-    split_ifs
-    · simpa only [List.foldr_cons, union_assoc] using ih (C ∪ P)
-    · exact (ih C).trans (by intro j hj; simp only [mem_union, List.foldr_cons] at *; tauto)
-
 /-- The constructed upper policy is genuinely selection-only. -/
 theorem retaining_admissible (O : Oracle B R J) (I : Instance E J) (ρ : ℝ)
     (select : List (Record B R) → Distribution B ℝ) :
@@ -65,7 +54,7 @@ theorem retaining_admissible (O : Oracle B R J) (I : Instance E J) (ρ : ℝ)
     induction h with
     | nil => simp [selected, available]
     | cons x h ih =>
-      apply (retain_subset I ρ _ _).trans
+      apply (I.retain_subset ρ _ _).trans
       exact union_subset (ih.trans subset_union_right) subset_union_left
   intro h _ C hC
   have he : C = selected I ρ (proposals O) h := by

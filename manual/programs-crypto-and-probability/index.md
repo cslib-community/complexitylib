@@ -1470,6 +1470,67 @@ also check that a physical allowance can be smaller than the independent turn gu
 These deadlines exclude local computation time, as in the paper. Compiled physical
 clock semantics and the infinite-instruction path-cost limit remain separate.
 
+### Uniform native local certification and retention
+
+Import `Complexity.Probability.StochasticOracle.NativeRetention.Execution`. The
+[complete local-phase client](../../ComplexityTests/NativeRetention.lean) contains
+runtime data, checked dual feasibility, accepting/rejecting proposal cases and a
+connection to an actual correlated source receipt. From a warm checkout, run:
+
+```bash
+scripts/build.sh ComplexityTests.NativeRetention ComplexityTests.StochasticOracleSelectionPolicy
+```
+
+`NativeRetention.Input` contains incidence rows, candidate weights, element dual
+prices, the local factor and chronological decoded proposal lists. Its encoding
+uses unary element/candidate indices and binary rationals. The dual vector's length
+defines the finite ground; missing rows are empty and missing numeric entries are
+zero. Normalization discards duplicate and out-of-range candidate indices. No
+native machine, acceptance table, claimed output family or resource certificate is an
+input field. `certified`, `step`, `retain`, `complete` and `output` compute the local
+operations by list scans and exact rational arithmetic.
+
+`computable_decision` compiles the completion decision and retained mask uniformly
+for all runtime sizes. The fold's accumulator bound is derived from the enumerated
+candidate universe. `compiled` extracts a fixed binary finite-control machine from
+the proved native composition certificate; machine existence is proved, not an
+assumption supplied by a caller. The executable list algorithm can be evaluated;
+the proof-extracted machine is not an exported transition-table artifact. Its
+polynomial local time and space are measured in the entire encoded local input,
+including every proposal occurrence and rational bit. This is not a runtime bound
+on a full oracle policy or on reading an unbounded oracle reply.
+
+`Valid` expresses standard nonnegative-weight/dual and dual-feasibility promises,
+not a desired output property. The native program does not read these proofs or
+receive a precomputed local acceptance table. `instanceOf` interprets the runtime
+rows as the real-valued set-cover instance. `certified_eq` and `retain_eq` prove
+exact agreement with the original local dual test and retention operator.
+`retained_provenance` proves that no unproposed candidate is introduced.
+`complete_eq` derives ground coverage from the computed completion test, and
+`completed_output` derives the actual family's dual-weight guarantee. The shared
+`PartialCover.Instance.retain_subset` lemma is now reused by the behavioral
+selection-policy admission proof rather than remaining private there.
+
+`output_encode` and `decode_output` identify the emitted mask with the existing
+source family codec. `native` embeds the compiled local code as an ordinary open
+PTM. `terminal_local` proves actual unbounded native termination and decoded output
+against any stateful oracle, without a termination premise. `terminal_cover`
+assembles this execution with the coverage and certificate when the computed
+completion decision is true. All existing oracle memory and both resource meters
+remain exactly unchanged; no oracle call is issued by the local computation.
+
+The source client serializes proposals from an actual canonical concurrent report,
+excluding canceled calls. It checks the two correlated output/completion cases and
+runs the generated local machine with the existing source memory, including its
+cancellation invoice. This serialization is currently a semantic data conversion.
+The local theorem starts with `encInput` already on its input tape: copying and
+parsing the raw native reply, handing off native tapes, selecting the next whole
+batch, stopping at the source budget/deadline and returning the final cover still
+require a constructed native loop. The current local phase must not be used as an
+assumed successful upper-policy witness for the optimum comparison. No finite
+response/metadata approximation is introduced, and the caller must not treat an
+offline proposal list as an actual oracle policy.
+
 The source native optimum/envelope comparison still needs that uniformly successful
 upper realization, along with source WSC subinstance/role and residual-label codecs
 and external PTM encodings. A latent scenario is never assumed publicly visible.
