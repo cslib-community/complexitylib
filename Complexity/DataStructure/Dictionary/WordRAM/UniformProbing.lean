@@ -13,6 +13,7 @@ public import Complexity.DataStructure.Dictionary.UniformProbing
 public import Complexity.DataStructure.HashFamily.WordRAM.DoubleTabulation
 public import Complexity.Computability.WordRAM.ExactNotation
 public import Complexity.DataStructure.WordRAM.Randomized.StateTransition
+import Complexity.Computability.WordRAM.SymbolicExec.Call
 import all Complexity.DataStructure.Dictionary.DoubleHashing
 import Complexity.Probability.PMF.Expect
 
@@ -595,18 +596,9 @@ theorem allocSpan_execWithin {w base c_exp n_max : ℕ} {x : Data 16}
       x₁.mem = x.mem ∧
       x₁.regs regBase = base ∧
       x₁.regs regV = base + space c_exp n_max := by
-  have hfit_sp : Fits w (space c_exp n_max) := hS.of_le (by omega)
-  set s1 := x.set regBase base
-  have e1 : Exec w (.op (.copy regBase regV) : Code .exact 16) x s1 1 := by
-    simpa [s1, hfr] using (Exec.copy (B := .exact) (w := w) (d := regBase) (s := regV) (x := x))
-  set s2 := s1.set regCond (space c_exp n_max)
-  have e2 : Exec w (.op (.const regCond (space c_exp n_max)) : Code .exact 16) s1 s2 1 :=
-    Exec.const hfit_sp
-  set s3 := s2.set regV (base + space c_exp n_max)
-  have e3 : Exec w (.op (.exactBin .add regV regBase regCond) : Code .exact 16) s2 s3 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, s2, s1]) hS
-  exact ⟨s3, (e1.seq (e2.seq e3)).within, rfl,
-    by simp +decide [s3, s2, s1], by simp +decide [s3]⟩
+  unfold allocSpan
+  wram_exec [hfr]
+  wram_simp
 
 theorem fits_of_space {w base c_exp n_max : ℕ} (hS : Fits w (base + space c_exp n_max)) :
     Fits w (base + singleTabSpace c_exp n_max) ∧
@@ -653,14 +645,8 @@ theorem initMidCode_exec {w base c_exp n_max : ℕ} {d : Data 16}
     (hbase : d.regs regBase = base) (hS : Fits w (base + space c_exp n_max)) :
     Exec w (initMidCode c_exp n_max) d (initMidData base c_exp n_max d) 2 := by
   obtain ⟨hfit_btab, _, _, _, _, _, _, _, _⟩ := fits_of_space hS
-  have hfit_tab : Fits w (singleTabSpace c_exp n_max) := hfit_btab.of_le (by omega)
-  set s1 := d.set regCond (singleTabSpace c_exp n_max)
-  have e1 : Exec w (.op (.const regCond (singleTabSpace c_exp n_max)) : Code .exact 16) d s1 1 :=
-    Exec.const hfit_tab
-  set s2 := s1.set regBase (base + singleTabSpace c_exp n_max)
-  have e2 : Exec w (.op (.exactBin .add regBase regBase regCond) : Code .exact 16) s1 s2 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, s1, hbase]) hfit_btab
-  exact e1.seq e2
+  unfold initMidCode initMidData
+  wram_exec [hbase]
 
 /-- Deterministic 2-instruction glue restoring `regBase` from `base + singleTabSpace c_exp n_max`
 back to `base`. -/
@@ -677,15 +663,8 @@ theorem initPostCode_exec {w base c_exp n_max : ℕ} {d : Data 16}
     (hS : Fits w (base + space c_exp n_max)) :
     Exec w (initPostCode c_exp n_max) d (initPostData base c_exp n_max d) 2 := by
   obtain ⟨hfit_btab, _, _, _, _, _, _, _, _⟩ := fits_of_space hS
-  have hfit_tab : Fits w (singleTabSpace c_exp n_max) := hfit_btab.of_le (by omega)
-  have hfit_base : Fits w base := hfit_btab.of_le (by omega)
-  set s1 := d.set regCond (singleTabSpace c_exp n_max)
-  have e1 : Exec w (.op (.const regCond (singleTabSpace c_exp n_max)) : Code .exact 16) d s1 1 :=
-    Exec.const hfit_tab
-  set s2 := s1.set regBase base
-  have e2 : Exec w (.op (.exactBin .sub regBase regBase regCond) : Code .exact 16) s1 s2 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, s1, hbase]) hfit_base
-  exact e1.seq e2
+  unfold initPostCode initPostData
+  wram_exec [hbase]
 
 /-- Complete randomized setup program `initSetup c_exp n_max`: resamples the primary Double
 Tabulation seed at `[base, base + singleTabSpace c_exp n_max)` and the stride Double Tabulation
@@ -1092,78 +1071,15 @@ theorem probeCheckCode_execWithin {w base c_exp U n_max : ℕ} {d : Data 16}
       ∀ r : Fin 16, r ≠ regAddr → r ≠ regCond → d'.regs r = d.regs r := by
   have hslot_lt := slot.isLt
   have hsp : space c_exp n_max = slotOffset c_exp n_max + 3 * numBuckets n_max := rfl
-  have hfit_0 : Fits w 0 := hS.of_le (by omega)
-  have hfit_1 : Fits w 1 := hS.of_le (by omega)
-  let sBase := base + slotOffset c_exp n_max
-  let m := numBuckets n_max
-  have hfit_a0 : Fits w (sBase + slot.val) := hS.of_le (by omega)
-  have hfit_a1 : Fits w (sBase + slot.val + m) := hS.of_le (by omega)
-  set s1 := d.set regAddr (sBase + slot.val)
-  have e1 : Exec w (.op (.exactBin .add regAddr regSlotBase regSlot) : Code .exact 16) d s1 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, hsbase, hslot, sBase]) hfit_a0
-  let usedVal := d.mem (sBase + slot.val)
-  set s2 := s1.set regCond usedVal
-  have e2 : Exec w (.op (.load regCond regAddr) : Code .exact 16) s1 s2 1 := by
-    simpa +decide [s2, s1, usedVal] using
-      (Exec.load (B := .exact) (w := w) (d := regCond) (a := regAddr) (x := s1))
-  rcases (hwf slot).1 with hused0 | hused1
-  · have hc : (Cond.eq regCond regZero).Holds s2 := by
-      simp +decide [Cond.Holds, s2, s1, usedVal, sBase, hused0, hzero]
-    set s3 := s2.set regCond 0
-    have e3 : Exec w (.op (.const regCond 0) : Code .exact 16) s2 s3 1 := Exec.const hfit_0
-    have hnot_mem : slot ∉ otherOccupiedSlots (extractSlots base c_exp U n_max d.mem) u := by
-      rw [mem_otherOccupiedSlots_extractSlots_iff hwf]
-      omega
-    refine ⟨s3,
-      (e1.within.seq (e2.within.seq (ExecWithin.branch_pos hc e3.within))).mono (by omega),
-      rfl, ?_, ?_⟩
-    · simp +decide [s3, hnot_mem]
-    · intro r hr1 hr2
-      simp [s3, s2, s1, Data.set, Function.update_of_ne hr2, Function.update_of_ne hr1]
-  · have hc : ¬(Cond.eq regCond regZero).Holds s2 := by
-      simp +decide [Cond.Holds, s2, s1, usedVal, sBase, hused1, hzero]
-    set s3 := s2.set regAddr (sBase + slot.val + m)
-    have e3 : Exec w (.op (.exactBin .add regAddr regAddr regM) : Code .exact 16) s2 s3 1 :=
-      Exec.alu (by simp +decide [StandardOp.evalExact, s2, s1, hm, m]) hfit_a1
-    have haddr_eq : sBase + slot.val + m = sBase + m + slot.val := by omega
-    let keyVal := d.mem (sBase + m + slot.val)
-    set s4 := s3.set regCond keyVal
-    have e4 : Exec w (.op (.load regCond regAddr) : Code .exact 16) s3 s4 1 := by
-      simpa +decide [s4, s3, s2, s1, haddr_eq, keyVal] using
-        (Exec.load (B := .exact) (w := w) (d := regCond) (a := regAddr) (x := s3))
-    by_cases hkey : keyVal = u.val
-    · have hc2 : (Cond.eq regCond regU).Holds s4 := by
-        simp +decide [Cond.Holds, s4, s3, s2, s1, hkey, hu]
-      set s5 := s4.set regCond 0
-      have e5 : Exec w (.op (.const regCond 0) : Code .exact 16) s4 s5 1 := Exec.const hfit_0
-      have hnot_mem : slot ∉ otherOccupiedSlots (extractSlots base c_exp U n_max d.mem) u := by
-        rw [mem_otherOccupiedSlots_extractSlots_iff hwf]
-        exact fun h => h.2 hkey
-      refine ⟨s5,
-        (e1.within.seq (e2.within.seq
-          (ExecWithin.branch_neg hc
-            (e3.within.seq (e4.within.seq (ExecWithin.branch_pos hc2 e5.within)))))).mono
-          (by omega),
-        rfl, ?_, ?_⟩
-      · simp +decide [s5, hnot_mem]
-      · intro r hr1 hr2
-        simp [s5, s4, s3, s2, s1, Data.set, Function.update_of_ne hr2, Function.update_of_ne hr1]
-    · have hc2 : ¬(Cond.eq regCond regU).Holds s4 := by
-        simp +decide [Cond.Holds, s4, s3, s2, s1, hkey, hu]
-      set s5 := s4.set regCond 1
-      have e5 : Exec w (.op (.const regCond 1) : Code .exact 16) s4 s5 1 := Exec.const hfit_1
-      have hmem : slot ∈ otherOccupiedSlots (extractSlots base c_exp U n_max d.mem) u := by
-        rw [mem_otherOccupiedSlots_extractSlots_iff hwf]
-        exact ⟨hused1, hkey⟩
-      refine ⟨s5,
-        (e1.within.seq (e2.within.seq
-          (ExecWithin.branch_neg hc
-            (e3.within.seq (e4.within.seq (ExecWithin.branch_neg hc2 e5.within)))))).mono
-          (by omega),
-        rfl, ?_, ?_⟩
-      · simp +decide [s5, hmem]
-      · intro r hr1 hr2
-        simp [s5, s4, s3, s2, s1, Data.set, Function.update_of_ne hr2, Function.update_of_ne hr1]
+  have hused := (hwf slot).1
+  have haddr : base + slotOffset c_exp n_max + slot.val + numBuckets n_max =
+      base + slotOffset c_exp n_max + numBuckets n_max + slot.val := by omega
+  unfold probeCheckCode
+  wram_exec [hsbase, hslot, hm, hzero, hu, haddr]
+  all_goals
+    refine ⟨?_, ?_, fun r hr₁ hr₂ => ?_⟩
+    all_goals wram_simp [mem_otherOccupiedSlots_extractSlots_iff hwf]
+  all_goals split_ifs <;> omega
 
 /-- One iteration of the probe loop (`≤ 11` instructions): advances `regSlot` by `regStride` modulo
 `numBuckets n_max` (`regMaskM`) and runs `probeCheckCode`. -/
@@ -1234,61 +1150,40 @@ theorem probeLoop_execWithin_aux {w base c_exp U n_max : ℕ} (θ : Seed c_exp n
       exact ite_eq_left_iff.mpr (fun h => False.elim (h hmem_i))
     have hc : (Cond.lt regZero regCond).Holds d := by
       simp [Cond.Holds, hzero, hcond1]
-    let slot_i := probePerm θ u ⟨i, hi_lt⟩
-    let slot_next := probePerm θ u ⟨i + 1, hi1_lt⟩
     have hsp : space c_exp n_max = slotOffset c_exp n_max + 3 * numBuckets n_max := rfl
-    have hfit_add : Fits w (slot_i.val + (strideHash θ u).val) := by
-      have := slot_i.isLt
-      have := (strideHash θ u).isLt
-      exact hS.of_le (by omega)
-    have hfit_next : Fits w slot_next.val := by
-      have := slot_next.isLt
-      exact hS.of_le (by omega)
-    set s1 := d.set regSlot (slot_i.val + (strideHash θ u).val)
-    have e1 : Exec w (.op (.exactBin .add regSlot regSlot regStride) : Code .exact 16) d s1 1 :=
-      Exec.alu (by simp +decide [StandardOp.evalExact, hslot, hstride, slot_i]) hfit_add
-    set s2 := s1.set regSlot slot_next.val
-    have e2 : Exec w (.op (.exactBin .and regSlot regSlot regMaskM) : Code .exact 16) s1 s2 1 := by
-      refine Exec.alu ?_ hfit_next
-      have hs1_slot : s1.regs regSlot = slot_i.val + (strideHash θ u).val := by
-        simp +decide [s1]
-      have hs1_mask : s1.regs regMaskM = numBuckets n_max - 1 := by
-        simp +decide [s1, hmask]
-      change some (s1.regs regSlot &&& s1.regs regMaskM) = some slot_next.val
-      rw [hs1_slot, hs1_mask]
-      exact congrArg some (val_probePerm_succ θ u hi1_lt).symm
-    have hwf_s2 : SlotArrayWF base c_exp U n_max s2.mem := by simpa [s2, s1, hmem] using hwf
-    obtain ⟨s3, e3, hs3_mem, hs3_cond, hs3_regs⟩ :=
-      probeCheckCode_execWithin hS hwf_s2 u slot_next
-        (by simp +decide [s2, s1, hsbase])
-        (by simp +decide [s2])
-        (by simp +decide [s2, s1, hm])
-        (by simp +decide [s2, s1, hzero])
-        (by simp +decide [s2, s1, hu])
-    have eStep : ExecWithin w probeStepCode d s3 11 :=
-      (e1.within.seq (e2.within.seq e3)).mono (by omega)
-    have hs2_mem_eq : s2.mem = mem := hmem
-    have hs3_mem_eq : s3.mem = mem := hs3_mem.trans hs2_mem_eq
-    have hs3_slot : s3.regs regSlot = slot_next.val := by
-      rw [hs3_regs regSlot (by decide) (by decide)]
-      simp +decide [s2]
-    have hs3_cond' : s3.regs regCond = (if slot_next ∈ O then 1 else 0) := by
-      rw [hs2_mem_eq] at hs3_cond
-      exact hs3_cond
+    have := (probePerm θ u ⟨i, hi_lt⟩).isLt
+    have := (probePerm θ u ⟨i + 1, hi1_lt⟩).isLt
+    have := (strideHash θ u).isLt
+    obtain ⟨s3, eStep, hs3_mem, hs3_slot, hs3_cond, hs3_regs⟩ : ∃ s3,
+        ExecWithin w probeStepCode d s3 11 ∧ s3.mem = mem ∧
+        s3.regs regSlot = (probePerm θ u ⟨i + 1, hi1_lt⟩).val ∧
+        s3.regs regCond = (if probePerm θ u ⟨i + 1, hi1_lt⟩ ∈ O then 1 else 0) ∧
+        ∀ r : Fin 16, r ≠ regSlot → r ≠ regAddr → r ≠ regCond → s3.regs r = d.regs r := by
+      unfold probeStepCode
+      wram_exec [hslot, hstride, hmask, ← val_probePerm_succ θ u hi1_lt]
+      refine WP.of_spec (probeCheckCode_execWithin hS ?_ u (probePerm θ u ⟨i + 1, hi1_lt⟩)
+        ?_ ?_ ?_ ?_ ?_) ?_
+      · wram_simp [hmem]
+        exact hwf
+      all_goals wram_simp [hmem, hsbase, hm, hzero, hu]
+      rintro s3 ⟨hs3_mem, hs3_cond, hs3_regs⟩
+      refine ⟨hs3_mem, ?_, hs3_cond, fun r h₁ h₂ h₃ => ?_⟩
+      · rw [hs3_regs _ (by decide) (by decide)]
+        wram_simp
+      · rw [hs3_regs r h₂ h₃]
+        wram_simp
     obtain ⟨d', eRec, hd'_mem, hd'_slot, hd'_regs⟩ :=
-      ih (i + 1) hi1_lt s3 (by omega) hs3_mem_eq
-        (by rw [hs3_regs regSlotBase (by decide) (by decide)]; simp +decide [s2, s1, hsbase])
-        (by rw [hs3_regs regMaskM (by decide) (by decide)]; simp +decide [s2, s1, hmask])
-        (by rw [hs3_regs regStride (by decide) (by decide)]; simp +decide [s2, s1, hstride])
-        (by rw [hs3_regs regM (by decide) (by decide)]; simp +decide [s2, s1, hm])
-        (by rw [hs3_regs regZero (by decide) (by decide)]; simp +decide [s2, s1, hzero])
-        (by rw [hs3_regs regU (by decide) (by decide)]; simp +decide [s2, s1, hu])
-        hs3_slot
-        hs3_cond'
+      ih (i + 1) hi1_lt s3 (by omega) hs3_mem
+        (by rw [hs3_regs _ (by decide) (by decide) (by decide), hsbase])
+        (by rw [hs3_regs _ (by decide) (by decide) (by decide), hmask])
+        (by rw [hs3_regs _ (by decide) (by decide) (by decide), hstride])
+        (by rw [hs3_regs _ (by decide) (by decide) (by decide), hm])
+        (by rw [hs3_regs _ (by decide) (by decide) (by decide), hzero])
+        (by rw [hs3_regs _ (by decide) (by decide) (by decide), hu])
+        hs3_slot hs3_cond
     refine ⟨d', (ExecWithin.loop_iter hc eStep eRec).mono (by omega), hd'_mem, hd'_slot, ?_⟩
     intro r hr_slot hr_addr hr_cond
-    rw [hd'_regs r hr_slot hr_addr hr_cond, hs3_regs r hr_addr hr_cond]
-    simp [s2, s1, Data.set, Function.update_of_ne hr_slot]
+    rw [hd'_regs r hr_slot hr_addr hr_cond, hs3_regs r hr_slot hr_addr hr_cond]
 
 /-- Deterministic 3-instruction glue between the primary and stride `DoubleTabulation.evalCode`
 calls: saves `(primaryHash θ u).val` from `regAddr` into `regSave` and advances `regBase` by
