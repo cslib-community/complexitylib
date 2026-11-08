@@ -880,6 +880,7 @@ public import Complexity.Computability.Circuit.Arithmetic.Adjugate
 public import Complexity.Computability.Circuit.Arithmetic.CircuitLowerBound
 public import Complexity.Computability.Circuit.Arithmetic.DepthThree
 public import Complexity.Computability.Circuit.Arithmetic.Determinant
+public import Complexity.Computability.Circuit.Arithmetic.DeterminantalComplexity
 public import Complexity.Computability.Circuit.Arithmetic.Encoding
 public import Complexity.Computability.Circuit.Arithmetic.Encoding.Check
 public import Complexity.Computability.Circuit.Arithmetic.EvaluationTime
@@ -1512,9 +1513,11 @@ public import Complexity.Computability.Communication.Lifting.Partition
 public import Complexity.Computability.Communication.Lifting.Simulation
 public import Complexity.Computability.Communication.NOF.Cube
 public import Complexity.Computability.Communication.NOF.Discrepancy
+public import Complexity.Computability.Communication.NOF.ExactlyN
 public import Complexity.Computability.Communication.NOF.GeneralizedInnerProduct
 public import Complexity.Computability.Communication.NOF.Protocol
 public import Complexity.Computability.Communication.NOF.Randomized
+public import Complexity.Computability.Communication.NOF.Transcript
 public import Complexity.Computability.Communication.NOF.TwoParty
 public import Complexity.Computability.Communication.Newman
 public import Complexity.Computability.Communication.Nondeterministic.Basic
@@ -1832,6 +1835,7 @@ public import Complexity.Computability.Complexity.Classes.Space.Closure
 public import Complexity.Computability.Complexity.Classes.Space.GeneralizedGeography
 public import Complexity.Computability.Complexity.Classes.Space.GeneralizedGeography.Membership
 public import Complexity.Computability.Complexity.Classes.Space.GeneralizedGeography.Reduction
+public import Complexity.Computability.Complexity.Classes.Space.Image
 public import Complexity.Computability.Complexity.Classes.Space.Nondeterministic
 public import Complexity.Computability.Complexity.Classes.Space.Savitch
 public import Complexity.Computability.Complexity.Classes.Space.TM2
@@ -1994,6 +1998,8 @@ public import Complexity.Computability.Complexity.ImmermanVardi.Tableau.Step
 public import Complexity.Computability.Complexity.Parameterized
 public import Complexity.Computability.Complexity.Parameterized.Clique
 public import Complexity.Computability.Complexity.Parameterized.ColorCoding
+public import Complexity.Computability.Complexity.Parameterized.Compression
+public import Complexity.Computability.Complexity.Parameterized.CrossComposition
 public import Complexity.Computability.Complexity.Parameterized.Distillation
 public import Complexity.Computability.Complexity.Parameterized.Kernelization
 public import Complexity.Computability.Complexity.Parameterized.VertexCover
@@ -2465,6 +2471,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.TwoPow
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.ZipFold
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigOLe
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BoundedSearch
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.BitString
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.BitString.Cut
@@ -4155,6 +4162,7 @@ public import Complexity.Foundations.Combinatorics.Bregman
 public import Complexity.Foundations.Combinatorics.BudgetTuples
 public import Complexity.Foundations.Combinatorics.CentralBinomial
 public import Complexity.Foundations.Combinatorics.DepthReduction
+public import Complexity.Foundations.Combinatorics.Digraph.MatrixTree
 public import Complexity.Foundations.Combinatorics.Expander.AffineFamily
 public import Complexity.Foundations.Combinatorics.Expander.AffinePlane
 public import Complexity.Foundations.Combinatorics.Expander.AffineTower
@@ -4458,6 +4466,7 @@ public import Complexity.Foundations.Data.MvPolynomial.Catalecticant
 public import Complexity.Foundations.Data.MvPolynomial.CoefficientDegree
 public import Complexity.Foundations.Data.MvPolynomial.DualNumber
 public import Complexity.Foundations.Data.MvPolynomial.Hessian
+public import Complexity.Foundations.Data.MvPolynomial.HessianChainRule
 public import Complexity.Foundations.Data.MvPolynomial.HessianRank
 public import Complexity.Foundations.Data.MvPolynomial.PartialDerivatives
 public import Complexity.Foundations.Data.MvPolynomial.PowerSum
@@ -4598,7 +4607,10 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.Derivation
 public import Complexity.Foundations.LinearAlgebra.Matrix.FactorialTruncation
 public import Complexity.Foundations.LinearAlgebra.Matrix.Farkas
 public import Complexity.Foundations.LinearAlgebra.Matrix.FourierMotzkin
+public import Complexity.Foundations.LinearAlgebra.Matrix.HessianDeterminant
+public import Complexity.Foundations.LinearAlgebra.Matrix.HessianPermanent
 public import Complexity.Foundations.LinearAlgebra.Matrix.Kronecker
+public import Complexity.Foundations.LinearAlgebra.Matrix.Laplacian
 public import Complexity.Foundations.LinearAlgebra.Matrix.Lindsey
 public import Complexity.Foundations.LinearAlgebra.Matrix.LinearProgramming
 public import Complexity.Foundations.LinearAlgebra.Matrix.ListProd
@@ -4827,6 +4839,7 @@ public import Complexity.Foundations.RingTheory.CyclicIntRing
 public import Complexity.Foundations.RingTheory.CyclicIntRing.Coefficients
 public import Complexity.Foundations.RingTheory.GaloisRing
 public import Complexity.Foundations.RingTheory.RootsOfUnity.Principal
+public import Complexity.Foundations.Syntax.PrefixParser
 public import Complexity.GameTheory.Bimatrix.Basic
 public import Complexity.GameTheory.Bimatrix.BestResponsePolytope
 public import Complexity.GameTheory.Bimatrix.LemkeHowson
@@ -4834,6 +4847,7 @@ public import Complexity.GameTheory.Congestion.Affine
 public import Complexity.GameTheory.Congestion.Basic
 public import Complexity.GameTheory.Congestion.Hedge
 public import Complexity.GameTheory.Congestion.Nonatomic
+public import Complexity.GameTheory.Congestion.PigouBound
 public import Complexity.GameTheory.Mechanism.Bayesian
 public import Complexity.GameTheory.Mechanism.CriticalBid
 public import Complexity.GameTheory.Mechanism.FirstPrice
