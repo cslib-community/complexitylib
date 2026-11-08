@@ -37,9 +37,9 @@ open Cslib.Algorithms.Lean.EditDistance
 
 /-! ### Unit costs (Levenshtein) -/
 
-example : dist Costs.unit kitten sitting = 3 := by decide
-example : dist Costs.unit flaw lawn = 2 := by decide
-example : dist Costs.unit kitten kitten = 0 := by decide
+example : editDist Costs.unit kitten sitting = 3 := by decide
+example : editDist Costs.unit flaw lawn = 2 := by decide
+example : editDist Costs.unit kitten kitten = 0 := by decide
 
 /-- The traceback on kitten/sitting: two replacements and an insertion. -/
 example : optScript Costs.unit kitten sitting =
@@ -53,14 +53,14 @@ example : optScript Costs.unit flaw lawn =
 /-- A script of cost `3` from kitten to sitting is optimal: no script costs less. -/
 example (s : EditScript Char) (hs : s.src = kitten) (ht : s.tgt = sitting) :
     3 ≤ s.cost Costs.unit := by
-  have h := (isLeast_dist Costs.unit kitten sitting).2 ⟨s, hs, ht, rfl⟩
-  rwa [show dist Costs.unit kitten sitting = 3 by decide] at h
+  have h := (isLeast_editDist Costs.unit kitten sitting).2 ⟨s, hs, ht, rfl⟩
+  rwa [show editDist Costs.unit kitten sitting = 3 by decide] at h
 
 /-! ### Empty words -/
 
-example : dist Costs.unit ([] : List Char) [] = 0 := by decide
-example : dist Costs.unit [] sitting = 7 := by decide
-example : dist Costs.unit kitten [] = 6 := by decide
+example : editDist Costs.unit ([] : List Char) [] = 0 := by decide
+example : editDist Costs.unit [] sitting = 7 := by decide
+example : editDist Costs.unit kitten [] = 6 := by decide
 example : optScript Costs.unit [] ['a', 'b'] = [.ins 'a', .ins 'b'] := by decide
 example : optScript Costs.unit ['a', 'b'] [] = [.del 'a', .del 'b'] := by decide
 
@@ -73,20 +73,20 @@ example : optScript Costs.unit ['a', 'b'] [] = [.del 'a', .del 'b'] := by decide
   sub a b := if a = b then 0 else 4
 
 /-- A replacement (`4`) is cheaper than a deletion and an insertion (`5`). -/
-example : dist skewed ['a'] ['b'] = 4 := by decide
+example : editDist skewed ['a'] ['b'] = 4 := by decide
 /-- Swapping two letters: insert, keep, delete (`5`) beats two replacements (`8`). -/
-example : dist skewed ['a', 'b'] ['b', 'a'] = 5 := by decide
+example : editDist skewed ['a', 'b'] ['b', 'a'] = 5 := by decide
 example : optScript skewed ['a', 'b'] ['b', 'a'] = [.del 'a', .sub 'b' 'b', .ins 'a'] := by
   decide
 /-- The distance is not symmetric for these costs. -/
-example : dist skewed ['a'] [] = 3 ∧ dist skewed [] ['a'] = 2 := by decide
+example : editDist skewed ['a'] [] = 3 ∧ editDist skewed [] ['a'] = 2 := by decide
 
 /-! ### Cost of the algorithm -/
 
-example : (distM Costs.unit kitten sitting).ret = 3 := by decide
+example : (editDistM Costs.unit kitten sitting).ret = 3 := by decide
 /-- `(6 + 1) (7 + 1) = 56` table entries. -/
-example : (distM Costs.unit kitten sitting).time = 56 := by decide
-example : (distM Costs.unit ([] : List Char) []).time = 1 := by decide
+example : (editDistM Costs.unit kitten sitting).time = 56 := by decide
+example : (editDistM Costs.unit ([] : List Char) []).time = 1 := by decide
 
 /-! ### Longest common subsequence -/
 
@@ -110,11 +110,19 @@ example (z : List Char) (hx : z <+ clrsX) (hy : z <+ clrsY) : z.length ≤ 4 := 
   have h := length_le_lcsLength hx hy
   rwa [show lcsLength clrsX clrsY = 4 by decide] at h
 
-/-- The duality `dist Costs.indel x y + 2 · lcsLength x y = |x| + |y|`: `5 + 2 · 4 = 7 + 6`. -/
-example : dist Costs.indel clrsX clrsY = 5 := by decide
-example : dist Costs.indel kitten sitting = 5 := by
-  have h := dist_indel_add_two_mul kitten sitting
+/-- The duality `editDist Costs.indel x y + 2 · lcsLength x y = |x| + |y|`: `5 + 2 · 4 = 7 + 6`. -/
+example : editDist Costs.indel clrsX clrsY = 5 := by decide
+example : editDist Costs.indel kitten sitting = 5 := by
+  have h := editDist_indel_add_two_mul kitten sitting
   rw [show lcsLength kitten sitting = 4 by decide] at h
   simpa [kitten, sitting] using h
+
+/-- `optScript Costs.indel` may return a replacement by a different letter, at cost `2`; a script
+without one (delete, then insert) costs the same. -/
+example : optScript Costs.indel ['a'] ['b'] = [.sub 'a' 'b'] := by decide
+example : ∃ s : EditScript Char, s.IsIndel ∧ s.src = ['a'] ∧ s.tgt = ['b'] ∧
+    s.cost Costs.indel = 2 := by
+  have h := (isLeast_editDist_indel ['a'] ['b']).1
+  rwa [show editDist Costs.indel ['a'] ['b'] = 2 by decide] at h
 
 end ComplexityTests.EditDistance

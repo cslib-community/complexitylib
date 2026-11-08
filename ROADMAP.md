@@ -2048,13 +2048,14 @@ pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
   `Algorithms/Lean/EditDistance` has the Wagner–Fischer table under arbitrary letter costs. It is
   the least cost of an edit script (alignment, trace), with an optimal script by traceback. It
   also has the LCS table, the greatest length of a common subsequence, with a witness. The two
-  are related by `dist indel + 2 · lcsLength = |x| + |y|`. Both cost exactly `(|x| + 1)(|y| + 1)`
-  in `TimeM`. Remaining: for unit costs, the metric axioms and the equivalence with the least
-  number of single-letter edits at arbitrary positions (and, for general costs, Wagner–Fischer's
-  equivalence of traces with edit sequences under their cost conditions); Hirschberg's
-  linear-space recovery of an optimal alignment with `O(|x| |y|)` cost (Kleinberg–Tardos §6.7); a
-  machine-level polynomial-time computation; Ukkonen's and Myers' `O((|x| + |y|) d)`
-  algorithms for distance `d`; the Masek–Paterson four-Russians speedup; and `OV` hardness
+  are related by `editDist indel + 2 · lcsLength = |x| + |y|`, and `editDist indel` is the
+  insertion–deletion distance. Both cost exactly `(|x| + 1)(|y| + 1)` in `TimeM`. Remaining: for
+  unit costs, the metric axioms and the equivalence with the least number of single-letter edits
+  at arbitrary positions (and, for general costs, Wagner–Fischer's equivalence of traces with edit
+  sequences under their cost conditions); Hirschberg's linear-space recovery of an optimal
+  alignment with `O(|x| |y|)` cost (Kleinberg–Tardos §6.7); a machine-level polynomial-time
+  computation; Ukkonen's and Myers' `O((|x| + |y|) d)` algorithms for distance `d`; the
+  Masek–Paterson four-Russians speedup; and `OV` hardness
   ([#3037](https://github.com/cslib-community/complexitylib/issues/3037)).
 
 ## Machines, RAM and data structures
