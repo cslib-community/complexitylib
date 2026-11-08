@@ -57,7 +57,7 @@ theorem isPolyTime_composeEnumerated [Finite α] [Fintype Γ]
     {graph : Input → Graph (α → α → Bool)}
     (hgraph : ComputableInPolyTime graph input (encoding constraintEncoding)) :
     ComputableInPolyTime (fun x => impl.composeEnumerated (graph x))
-      input (encoding (encPi (encPi encBool))) := by
+      input (encoding encConstraintTable) := by
   let := Fintype.ofFinite α
   have hconvert : ComputableInPolyTime (id : (α → α → Bool) → _)
       constraintEncoding (encPi (encPi encBool)) := .of_finite _

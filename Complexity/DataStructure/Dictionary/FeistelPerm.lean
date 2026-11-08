@@ -931,10 +931,7 @@ theorem le_two_pow_mul_childRouterCharBits {c T : ℕ} (hc : 1 ≤ c) :
     have hlt := Nat.mod_lt (LT + c - 1) hc
     rw [Nat.mul_comm]
     omega
-  have hle_exp : LT ≤ c * childRouterCharBits c T := by
-    dsimp only [childRouterCharBits]
-    rw [hmax_c, Nat.mul_comm]
-    exact hdiv.trans (Nat.mul_le_mul_right c (le_max_right 1 _))
+  have hle_exp : LT ≤ c * childRouterCharBits c T := by grind [childRouterCharBits, Nat.mul_comm]
   calc T ≤ max T 2 := le_max_left T 2
     _ ≤ 2 ^ LT := Nat.le_pow_clog (by decide) _
     _ ≤ 2 ^ (c * childRouterCharBits c T) := Nat.pow_le_pow_right (by decide) hle_exp

@@ -13,6 +13,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Paddi
 import Complexity.Crypto.Computational.Pseudoentropy.SeedExtraction
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Probabilistic.LinearHash
+import Complexity.Languages.Probabilistic.Norm
 import Complexity.Tactic.PPT
 
 /-!
@@ -115,8 +116,7 @@ theorem SamplablePair.SeedRealization.extract_word_observations {pair : Samplabl
   have hentropy (n : ℕ) : entropy (ProbComp.eval (source n)) =
       entropy ((pair.joint n).map Prod.fst) := by
     rw [show ProbComp.eval (source n) = ((pair.joint n).map Prod.fst).map (observe n) by
-      simp only [source, ProbComp.eval_map, pair.eval_latentSample, PMF.map_comp,
-        Function.comp_def]]
+      simp only [pmf_norm, source, pair.eval_latentSample]]
     apply entropy_map_of_injOn
     intro x hx y hy hxy
     exact (pair.encode n).injective
@@ -124,8 +124,7 @@ theorem SamplablePair.SeedRealization.extract_word_observations {pair : Samplabl
   have h := seededHash_replicate_indistinguishable source saved.length inverseSlack outputBits
     (by
       intro n value hvalue
-      simp only [source, ProbComp.eval_map, pair.eval_latentSample,
-        ← saved.output_distribution, PMF.map_comp, Function.comp_def] at hvalue ⊢
+      simp only [pmf_norm, source, pair.eval_latentSample, ← saved.output_distribution] at hvalue ⊢
       simpa [BitString, Real.logb_pow] using
         uniform_map_mass_ge (fun bits => observe n (saved.output n bits).1) value hvalue)
     (fun n => ProbComp.uniform (BitString (outputBits n * (count n * (2 * bound n + 1)))))
@@ -143,15 +142,14 @@ theorem SamplablePair.SeedRealization.extract_word_observations {pair : Samplabl
   intro n
   have hpublic : ProbComp.eval (padWord (bound n) <$> (Prod.fst <$> pair.sample n)) =
       ProbComp.eval (List.ofFn <$> source n) := by
-    simp only [ProbComp.eval_map, pair.eval_sample, source, pair.eval_latentSample,
-      PMF.map_comp, Function.comp_def]
+    simp only [pmf_norm, pair.eval_sample, source, pair.eval_latentSample]
     apply map_congr_on_support
     intro result hresult
     exact (ofFn_ofList (length_padWord (hbound n result.1
       ((PMF.mem_support_map_iff _ _ _).mpr ⟨result, hresult, rfl⟩)))).symm
   have hreal := LinearHash.eval_extract_replicate (source n) (count n) (outputBits n)
   rw [ProbComp.eval_bind, ← ProbComp.eval_replicate_congr hpublic] at hreal
-  simp only [OracleComp.replicate_map, ProbComp.eval_map, PMF.bind_map, Function.comp_def] at hreal
+  simp only [pmf_norm, OracleComp.replicate_map] at hreal
   have hrealTest := congrArg (fun law => law.bind (test n)) hreal
   simp only [PMF.bind_map, Function.comp_def] at hrealTest
   dsimp only
@@ -214,7 +212,7 @@ theorem SamplablePair.SeedRealization.extract_word_seeds {pair : SamplablePair}
     (fun n result => test n (result.1, List.ofFn result.2.1, List.ofFn result.2.2)) trivial
   apply h.congr
   intro n
-  simp only [count, extractWordSeeds, ProbComp.eval_bind, eval_extractMatrixLabels,
-    eval_extractMatrixLabelsIdeal, PMF.bind_map, PMF.bind_bind, Function.comp_def]
+  simp only [pmf_norm, count, extractWordSeeds, eval_extractMatrixLabels,
+    eval_extractMatrixLabelsIdeal]
 
 end Cslib.Crypto.Pseudoentropy

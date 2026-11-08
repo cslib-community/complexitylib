@@ -727,8 +727,11 @@ index links to canonical definitions rather than keeping a second set.
   query machines are proved, with arbitrary saved outer state/output continuations and an additive
   native space bound. Generic extraction from existing native machines and ordinary logspace
   word-function certificates is proved, with streaming output and workspace-derived saved-state
-  bounds. Preparing supplied headers from live query generators, regenerating answer words and
-  the resource-certified suffix loop remain open;
+  bounds. Runtime frames can now be generated from ordinary tail/compact-metadata programs and
+  consumed through actual recomputation composition, with caller-input header/virtual-length
+  bounds. Live local-query suffix extraction uses the existing counter-program API; a certified
+  general ceiling-logarithmic cut computation is still required. Unbounded answer-stream
+  generation (including its native oracle contract) and the resource-certified suffix loop remain open;
   bounded and many-one self-reducibility specializations; concrete complete self-reducible
   problems (Theorem 3.5); Section 4
   bounded/logarithmic-query results and
@@ -992,12 +995,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `coNP ⊆ NP/poly`, in the class-wise form over a polynomial equivalence relation; polynomial
   compressions, OR-cross-composition and the Bodlaender–Jansen–Kratsch theorem ruling out
   polynomial kernels and compressions unless `coNP ⊆ NP/poly`; k-Path has no polynomial kernel
-  or compression unless `coNP ⊆ NP/poly`, by an OR-cross-composition from Hamiltonian path.
+  or compression unless `coNP ⊆ NP/poly`, by an OR-cross-composition from Hamiltonian path;
+  k-Path is `NP`-complete.
   Remaining ([#3266](https://github.com/cslib-community/complexitylib/issues/3266)): further
-  concrete lower bounds (Clique parameterized by vertex cover); k-Path in `NP`; moving the
-  single-copy pendant gadget and `LongPath_npHard` from `Parameterized/LongPathKernel.lean` to a
-  `Problems/LongPath` hardness module beside the other `NP`-hardness results;
-  cross-compositions of bounded cost and the complementary witness lemma; Yap's collapse
+  concrete lower bounds (Clique parameterized by vertex cover); cross-compositions of bounded cost and the complementary witness lemma; Yap's collapse
   `coNP ⊆ NP/poly → PH = Σ₃`; AND-composition (Drucker).
 - **Color coding** ([#2870](https://github.com/cslib-community/complexitylib/issues/2870)):
   colorful k-Path is in `FPT` by the dynamic programming over color sets. Remaining: random
@@ -1390,6 +1391,13 @@ each statement against the numbered result. Organize modules by subject, not cha
   `BinomialRandomGraph/IsolatedVertices.lean`. Remaining: the limit `e ^ (-e ^ (-c))` at
   `p = (log n + c) / n` (the Poisson limit of the number of isolated vertices), the hitting-time
   theorem, and the translation to `G(n, m)`.
+- **Random graph thresholds** ([#3275](https://github.com/cslib-community/complexitylib/issues/3275)):
+  for Mathlib's binomial random graph `G(n, p)`, the first-moment `0`-statement for every fixed
+  subgraph and the triangle threshold `p = 1 / n` (both moments, explicit bounds) are in
+  `Foundations/Probability/Combinatorics/BinomialRandomGraph`. Remaining: the second-moment
+  `1`-statement for balanced graphs at `n ^ (-v / e)` and Bollobás's general threshold
+  `n ^ (-1 / m(H))`, Janson's inequality and the Poisson limit at the threshold. The connectivity
+  threshold `log n / n` is the item above.
 - **Explicit Ramsey graphs** ([#3041](https://github.com/cslib-community/complexitylib/issues/3041)):
   strongly explicit graphs with no `k`-clique and no `k`-independent set, on more vertices than
   Frankl–Wilson's `k ^ Θ(log k / log log k)`, toward Erdős's existential `2 ^ (k / 2)`: the
@@ -1792,13 +1800,19 @@ each statement against the numbered result. Organize modules by subject, not cha
   and an optimal dual solution read off the final dictionary are in `Algorithms/Lean/Simplex`
   ([#3370](https://github.com/cslib-community/complexitylib/issues/3370)), as is the Klee–Minty
   lower bound: Dantzig's rule makes exactly `2ⁿ - 1` pivots on the `n`-dimensional Klee–Minty
-  program ([#3441](https://github.com/cslib-community/complexitylib/issues/3441)). Remaining: a
-  polynomial-time LP algorithm (ellipsoid or interior point) with bit complexity and intermediate
-  precision accounted for; and LP optimization as a search problem with rational outputs. For the
-  simplex method: Phase I (an initial feasible dictionary or an infeasibility certificate);
-  exponential lower bounds for other pivoting rules, such as Bland's rule on Klee–Minty-type
-  programs (Avis–Chvátal 1978); smoothed analysis (Spielman–Teng); strongly polynomial special
-  cases; and a costed implementation.
+  program ([#3441](https://github.com/cslib-community/complexitylib/issues/3441)). The geometric
+  core of the central-cut ellipsoid method over exact reals is in
+  `Foundations/Analysis/Convex/Ellipsoid` and `Algorithms/Ellipsoid/Basic`
+  ([#3240](https://github.com/cslib-community/complexitylib/issues/3240)): half-ellipsoid
+  containment, the volume ratio `exp (-1 / (2 (n + 1)))` and the iteration bound against a strong
+  separation oracle. Remaining: a polynomial-time LP algorithm (ellipsoid or interior point) with
+  bit complexity and intermediate precision accounted for; and LP optimization as a search problem
+  with rational outputs. For the ellipsoid route that means a finite-precision update with its
+  rounding error, a volume lower bound for full-dimensional rational polytopes, the reduction of
+  feasibility to that case, and a machine-level running-time bound. For the simplex method: Phase I
+  (an initial feasible dictionary or an infeasibility certificate); exponential lower bounds for
+  other pivoting rules, such as Bland's rule on Klee–Minty-type programs (Avis–Chvátal 1978);
+  smoothed analysis (Spielman–Teng); strongly polynomial special cases; and a costed implementation.
 - **Extension complexity** ([#3258](https://github.com/cslib-community/complexitylib/issues/3258)):
   nonnegative rank, slack matrices, extended formulations with free equations, Yannakakis's
   factorization theorem `xc P = rank₊ S` for nontrivial polytopes, and the rectangle covering bound

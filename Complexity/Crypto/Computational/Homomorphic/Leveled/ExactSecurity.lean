@@ -280,11 +280,9 @@ theorem eval_exactLinkAdversary (depth capacity : ℕ → ℕ)
     simp only [dite_eq_left_of_eq_true (eq_true hpos), ↓reduceIte, bind_assoc, ProbComp.eval_bind,
       ProbComp.eval_uniform, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
     rw [PMF.bind_comm]
-    congr 1
-    funext i
+    congr 1 with i : 1
     rw [PMF.bind_comm]
-    congr 1
-    funext j
+    congr 1 with j : 1
     simpa only [Encryption.game, Encryption.gameOn, ↓reduceIte,
       linkAdversaryAt, ProbComp.eval_bind, PMF.monad_pure_eq_pure] using
       E.eval_linkAdversaryAt (fun _ => depth n - i.val - 1) (fun _ => i.val)
@@ -350,8 +348,7 @@ theorem advantage_bind_sampleModNat_fin_le (width M : ℕ) [NeZero M] (k : ℕ �
         ((ProbComp.eval (sampleModNat width M)).map (Nat.cast : ℕ → ZMod M)).bind
           (fun r : ZMod M => k r.val) := by
     rw [PMF.bind_map, eval_sampleModNat, PMF.bind_map, PMF.bind_map]
-    congr 1
-    funext x
+    congr 1 with x : 1
     simp only [Function.comp_def, ZMod.val_natCast,
       Nat.mod_eq_of_lt (Nat.mod_lt x.val (NeZero.pos M))]
   have hunif :
@@ -885,8 +882,7 @@ theorem eval_exactLeveledAdversary (E : Scheme) (depth capacity : ℕ → ℕ)
   simp only [dite_eq_left_of_eq_true (eq_true hpos), ↓reduceIte, bind_assoc, ProbComp.eval_bind,
     ProbComp.eval_uniform]
   rw [PMF.bind_comm]
-  congr 1
-  funext hop
+  congr 1 with hop : 1
   by_cases h0 : hop.val = 0
   · simp only [h0, ↓reduceIte]
     simpa only [Encryption.game, Encryption.gameOn, ↓reduceIte, ProbComp.eval_bind] using

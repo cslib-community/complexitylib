@@ -245,8 +245,7 @@ private theorem eval_flatLeveledAdversary (E : Scheme) (attempts depth capacity 
   dsimp only [Encryption.game, Encryption.gameOn, flatLeveledAdversary]
   simp only [bind_assoc, ProbComp.eval_bind]
   rw [PMF.bind_comm]
-  congr 1
-  funext index
+  congr 1 with index : 1
   cases index with
   | none =>
     simp [leveledAdversary, rejectLeveledChoice, ProbComp.eval_bind]

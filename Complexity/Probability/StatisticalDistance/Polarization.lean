@@ -223,8 +223,7 @@ theorem exists_polarization {α β : ℝ} (hβ : 0 ≤ β) (hβα : β < α ^ 2)
         _ = (8 : ℝ) ^ j := by rw [← pow_mul, mul_comm, pow_mul]; norm_num
         _ ≤ (2 ^ b * A) ^ j := pow_le_pow_left₀ (by norm_num) hfar j
         _ = ((2 ^ (b * j) : ℕ) : ℝ) * A ^ j := by push_cast; rw [mul_pow, ← pow_mul]
-        _ ≤ ((2 ^ (b * j) : ℕ) : ℝ) * dist p₀ p₁ ^ (2 * (m * j)) :=
-          mul_le_mul_of_nonneg_left hdpow (by positivity)
+        _ ≤ ((2 ^ (b * j) : ℕ) : ℝ) * dist p₀ p₁ ^ (2 * (m * j)) := by gcongr
     have hcube : 2 * (k + 1 : ℝ) ≤ (k + 1) ^ 3 / 2 := by
       have : 0 ≤ ((k : ℝ) - 1) * (k + 1) * (k + 3) := by
         apply mul_nonneg (mul_nonneg _ _) _ <;> linarith
