@@ -27,11 +27,14 @@ the value at each index. Values need not be distinct: mapping a list retains eve
   ordered enumerations.
 * `List.productIndexEquiv`: the positions of a list product as pairs of positions, with the right
   coordinate varying fastest.
+* `List.appendIndexEquiv`: the positions of `left ++ right` as the positions of `left` followed by
+  those of `right`.
 * `List.Enumeration.reindex`: rename indices without changing the list.
 
 ## Main results
 
 * `List.Enumeration.get_eq`: lookup at a position equals evaluation at its corresponding index.
+* `List.appendIndexEquiv_lt_iff`: positions of `left` precede positions of `right`.
 -/
 
 @[expose] public section
@@ -76,6 +79,51 @@ private theorem get_productIndexEquiv_symm (left : List α) (right : List β)
       rw [getElem_append_right hoff]
       simpa only [length_map, Nat.mul_add, Nat.mul_one, ← Nat.add_assoc,
         Nat.add_sub_cancel, get_eq_getElem] using h
+
+/-- The positions of `left ++ right`: the positions of `left`, followed by those of `right` shifted
+by `left.length`. -/
+def appendIndexEquiv (left right : List α) :
+    Fin left.length ⊕ Fin right.length ≃ Fin (left ++ right).length :=
+  finSumFinEquiv.trans (finCongr length_append.symm)
+
+@[simp] theorem val_appendIndexEquiv_inl (left right : List α) (i : Fin left.length) :
+    (appendIndexEquiv left right (.inl i) : ℕ) = i := by
+  simp [appendIndexEquiv]
+
+@[simp] theorem val_appendIndexEquiv_inr (left right : List α) (j : Fin right.length) :
+    (appendIndexEquiv left right (.inr j) : ℕ) = left.length + j := by
+  simp [appendIndexEquiv]
+
+theorem getElem_appendIndexEquiv_inl (left right : List α) (i : Fin left.length) :
+    (left ++ right)[appendIndexEquiv left right (.inl i)] = left[i] := by
+  simp only [Fin.getElem_fin, val_appendIndexEquiv_inl]
+  exact getElem_append_left i.2
+
+theorem getElem_appendIndexEquiv_inr (left right : List α) (j : Fin right.length) :
+    (left ++ right)[appendIndexEquiv left right (.inr j)] = right[j] := by
+  simp only [Fin.getElem_fin, val_appendIndexEquiv_inr]
+  rw [getElem_append_right (by omega)]
+  simp
+
+/-- The order of the positions of `left ++ right` is the lexicographic order of the sum: positions
+of `left` precede positions of `right`. -/
+theorem appendIndexEquiv_lt_iff (left right : List α) :
+    ∀ x y : Fin left.length ⊕ Fin right.length,
+      appendIndexEquiv left right x < appendIndexEquiv left right y ↔
+        Sum.Lex (· < ·) (· < ·) x y
+  | .inl i, .inl j => by
+    rw [Sum.lex_inl_inl, Fin.lt_def, Fin.lt_def, val_appendIndexEquiv_inl,
+      val_appendIndexEquiv_inl]
+  | .inl i, .inr j => by
+    rw [Fin.lt_def, val_appendIndexEquiv_inl, val_appendIndexEquiv_inr]
+    exact iff_of_true (by omega) (Sum.Lex.sep _ _)
+  | .inr i, .inl j => by
+    rw [Fin.lt_def, val_appendIndexEquiv_inl, val_appendIndexEquiv_inr]
+    exact iff_of_false (by omega) Sum.lex_inr_inl
+  | .inr i, .inr j => by
+    rw [Sum.lex_inr_inr, Fin.lt_def, Fin.lt_def, val_appendIndexEquiv_inr,
+      val_appendIndexEquiv_inr]
+    omega
 
 /-- An ordered enumeration of occurrences, allowing different indices to have the same value. -/
 structure Enumeration (xs : List α) (f : ι → α) where
