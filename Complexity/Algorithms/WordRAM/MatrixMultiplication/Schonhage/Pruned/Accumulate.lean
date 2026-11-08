@@ -11,6 +11,7 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Prune
 public import Complexity.Computability.WordRAM.Heap
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Complete native accumulation over a distinct parent list
@@ -128,8 +129,8 @@ theorem exec_accumulateLoop {w N capacity : ℕ} (x : Data registers) (input : �
       (input (y.regs index)) (by rw [hb]; exact hread (y.regs index) y hk.le ⟨hmem, hf⟩ _ hk)
       ((hf one (by decide)).trans h1) ((hf nine (by decide)).trans h9)
       ((hf ten (by decide)).trans h10) (fun _ => hleft) hright
-      (hw.of_le (by omega)) (hw.of_le (by rw [hb]; omega))
-      (hw.of_le (by rw [hv]; omega)) (hw.of_le (by rw [hcptr]; omega)) (hw.of_le (by omega))
+      (by fits) (by fits)
+      (by fits) (by fits) (by fits)
     refine ⟨z, hz, ⟨?_, fun i hi => (hregs i hi).trans (hf i hi)⟩, hi⟩
     have hnext : written (y.regs index + 1) =
         if selected true (x.regs term) (input (y.regs index)) then

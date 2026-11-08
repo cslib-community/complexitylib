@@ -11,6 +11,7 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Calla
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Pointer.Readback
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxProduct.Exec
 import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Exec
+import Complexity.Tactic.Fits
 
 /-!
 # Pointer-gather product core
@@ -96,7 +97,6 @@ theorem exec_core {W b m t N s r q : ℕ}
     (by rw [head 3 (by decide) (by decide)]; rfl)
     (by rw [head 4 (by decide) (by decide)]; rfl)
     hthreshold ht hN (hfit.of_le (by omega))
-  have hphysical : Fits W (b + 4 * windowSize N qs.length + 1024) := hfit.of_le (by omega)
   have hspan : QueriedProduct.snapshotBase (21 * m) m N qs.length +
       QueriedProduct.inputEnd m N qs.length < windowSize N qs.length := by
     have hsnap : QueriedProduct.snapshotBase (21 * m) m N qs.length +
@@ -157,7 +157,7 @@ theorem exec_core {W b m t N s r q : ℕ}
       (view (sourceWidth N qs.length) b g) p (BoxProduct.snapshotTimeBound (21 * m) m t qs) := by
     simpa only [htwo] using hp
   obtain ⟨y, hy, ym, yf, _⟩ := exec_source hp' (by decide) gvbound g
-    ⟨rfl, gb, gM⟩ (setup_fits hphysical).1
+    ⟨rfl, gb, gM⟩ (setup_fits (by fits)).1
     (hfit.of_le (by change b + windowSize N qs.length ≤ _; omega))
   refine ⟨y, (hu.seq (hg.seq hy)).mono (by unfold coreTime; omega),
     ym.base_eq, ym.modulus_eq, ym.regs _ |>.trans pp.inputSize,

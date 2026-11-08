@@ -11,6 +11,7 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Prune
 public import Complexity.Computability.WordRAM.Heap
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Returning queried values in the actual input order
@@ -89,11 +90,11 @@ theorem exec_report {w N capacity : ℕ} (x : Data registers) (codes : ℕ → �
     have hval' : y.mem (y.regs values + codes k) = value := by
       rw [hv]
       exact hvalue (codes k) (hcodes k hk)
-    have hqa : Fits w (y.regs queries + k) := hw.of_le (by rw [hq]; dsimp [k]; omega)
+    have hqa : Fits w (y.regs queries + k) := by fits
     have hva : Fits w (y.regs values + codes k) :=
       hw.of_le (by rw [hv]; have := hcodes k hk; omega)
-    have hoa : Fits w (y.regs output + k) := hw.of_le (by rw [ho]; dsimp [k]; omega)
-    have hki : Fits w (k + 1) := hw.of_le (by dsimp [k]; omega)
+    have hoa : Fits w (y.regs output + k) := by fits
+    have hki : Fits w (k + 1) := by fits
     have hz : ExecWithin w reportStep y z 7 := by
       ram_eval [reportStep, z, k, value, hread', hval', h1', hqa, hva, hoa, hki,
         index, address, query, temporary, queries, values, output, one, Fin.mk.injEq]

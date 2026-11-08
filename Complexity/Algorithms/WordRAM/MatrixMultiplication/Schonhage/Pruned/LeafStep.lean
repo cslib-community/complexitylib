@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Frame
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Leaf
+import Complexity.Tactic.Fits
 
 /-!
 # The terminal case of the actual pruned-query controller
@@ -71,9 +72,9 @@ theorem exec_leafStep {w p : ℕ} {a b : ℤ} (ha : GenericRAM.Signed.Fits w a)
   obtain ⟨y, hy, hymem, hyl, hym, hya, hyreg⟩ := exec_leaf ha hb hab u hu0 hu1
     (by simpa only [humem, huA, hup'] using hleft)
     (by simpa only [humem, huB, hup'] using hright)
-    (hw.of_le (by rw [huA, hup']; omega))
-    (hw.of_le (by rw [huB, hup']; omega))
-    (hw.of_le (by rw [hud]; omega))
+    (by fits)
+    (by fits)
+    (by fits)
   have hentry : ExecWithin (w + 2) enter u y 25 :=
     hy.branch_pos (by simpa only [Cond.holds_eq, hud, fixed inputDepth (by decide)] using hd)
   have hbranch : ExecWithin (w + 2)

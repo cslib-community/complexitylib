@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxQuery.Program
+import Complexity.Tactic.Fits
 
 /-!
 # Actual five-word query-stack operations
@@ -67,13 +68,13 @@ theorem exec_push {w F n k c u e p : ℕ} (x : Data registers)
       y.mem = writeTask F n k c u e p x.mem ∧
       (∀ i, ¬PushLocal i → y.regs i = x.regs i) := by
   let a := F + n * 5
-  have hfn : Fits w (n * 5) := hfit.of_le (by omega)
-  have hfa : Fits w a := hfit.of_le (by dsimp only [a]; omega)
-  have hf1 : Fits w (a + 1) := hfit.of_le (by dsimp only [a]; omega)
-  have hf2 : Fits w (a + 1 + 1) := hfit.of_le (by dsimp only [a]; omega)
-  have hf3 : Fits w (a + 1 + 1 + 1) := hfit.of_le (by dsimp only [a]; omega)
-  have hf4 : Fits w (a + 1 + 1 + 1 + 1) := hfit.of_le (by dsimp only [a]; omega)
-  have hfnext : Fits w (n + 1) := hfit.of_le (by omega)
+  have hfn : Fits w (n * 5) := by fits
+  have hfa : Fits w a := by fits
+  have hf1 : Fits w (a + 1) := by fits
+  have hf2 : Fits w (a + 1 + 1) := by fits
+  have hf3 : Fits w (a + 1 + 1 + 1) := by fits
+  have hf4 : Fits w (a + 1 + 1 + 1 + 1) := by fits
+  have hfnext : Fits w (n + 1) := by fits
   let z0 := (x.set Reg.cursor (n * 5)).set Reg.cursor a
   let z1 := (z0.write a k).set Reg.cursor (a + 1)
   let z2 := (z1.write (a + 1) c).set Reg.cursor (a + 1 + 1)
@@ -113,13 +114,13 @@ theorem exec_pop {w F n k c u e p : ℕ} (x : Data registers)
       y.regs Reg.stars = e ∧ y.regs Reg.power = p ∧ y.mem = x.mem ∧
       (∀ i, ¬PopLocal i → y.regs i = x.regs i) := by
   let a := F + n * 5
-  have hfn : Fits w n := hfit.of_le (by omega)
-  have hfm : Fits w (n * 5) := hfit.of_le (by omega)
-  have hfa : Fits w a := hfit.of_le (by dsimp only [a]; omega)
-  have hf1 : Fits w (a + 1) := hfit.of_le (by dsimp only [a]; omega)
-  have hf2 : Fits w (a + 1 + 1) := hfit.of_le (by dsimp only [a]; omega)
-  have hf3 : Fits w (a + 1 + 1 + 1) := hfit.of_le (by dsimp only [a]; omega)
-  have hf4 : Fits w (a + 1 + 1 + 1 + 1) := hfit.of_le (by dsimp only [a]; omega)
+  have hfn : Fits w n := by fits
+  have hfm : Fits w (n * 5) := by fits
+  have hfa : Fits w a := by fits
+  have hf1 : Fits w (a + 1) := by fits
+  have hf2 : Fits w (a + 1 + 1) := by fits
+  have hf3 : Fits w (a + 1 + 1 + 1) := by fits
+  have hf4 : Fits w (a + 1 + 1 + 1 + 1) := by fits
   have hu' : x.mem (a + 1 + 1) = u := by simpa [a, Nat.add_assoc] using hu
   have he' : x.mem (a + 1 + 1 + 1) = e := by simpa [a, Nat.add_assoc] using he
   have hp' : x.mem (a + 1 + 1 + 1 + 1) = p := by simpa [a, Nat.add_assoc] using hp

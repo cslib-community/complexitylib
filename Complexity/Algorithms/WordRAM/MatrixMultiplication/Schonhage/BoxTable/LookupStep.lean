@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTable.Program
+import Complexity.Tactic.Fits
 
 /-!
 # Actual cube-digit lookup step
@@ -64,17 +65,17 @@ theorem exec_lookupDigit {w L k C d s f c v : ℕ} (x : Data registers)
     rw [pow_succ]
     have := Nat.mul_le_mul_right (10 ^ k) hdn
     omega
-  have hfa : Fits w (C + k) := hfit.of_le (by omega)
-  have hfl : Fits w (k + 1) := hfit.of_le (by omega)
-  have hfs : Fits w (s + 1) := hfit.of_le (by omega)
-  have hff : Fits w (f + 1) := hfit.of_le (by omega)
-  have hf0 : Fits w 0 := hfit.of_le (Nat.zero_le _)
-  have hf1 : Fits w 1 := hfit.of_le (by omega)
-  have hfm : Fits w (digit * 10 ^ k) := hfit.of_le (by omega)
-  have hfc : Fits w (c + digit * 10 ^ k) := hfit.of_le (by omega)
+  have hfa : Fits w (C + k) := by fits
+  have hfl : Fits w (k + 1) := by fits
+  have hfs : Fits w (s + 1) := by fits
+  have hff : Fits w (f + 1) := by fits
+  have hf0 : Fits w 0 := by fits
+  have hf1 : Fits w 1 := by fits
+  have hfm : Fits w (digit * 10 ^ k) := by fits
+  have hfc : Fits w (c + digit * 10 ^ k) := by fits
   have hfp : Fits w (10 ^ k * 10) := by
     rw [← pow_succ]
-    exact hfit.of_le (by omega)
+    fits
   let loaded := (x.set Reg.address (C + k)).set Reg.digit d
   let checked := loaded.set Reg.temporary (x.regs Reg.temporary)
   let starred := (((checked.set Reg.temporary (x.regs Reg.temporary)).set

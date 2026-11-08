@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Memory
+import Complexity.Tactic.Fits
 
 /-!
 # Charged native return and term-advance transitions
@@ -42,8 +43,8 @@ theorem exec_pop {w : ℕ} (x : Data registers) (h0 : x.regs nil = 0)
       y.regs mode = (if x.regs level = 0 then x.regs mode else 2) ∧
       y.regs active = (if x.regs level = 0 then 0 else x.regs active) ∧
       (∀ i, ¬PopLocal i → y.regs i = x.regs i) := by
-  have h2 : Fits w 2 := hw.of_le (by omega)
-  have hd : Fits w (x.regs level - 1) := hw.of_le (by omega)
+  have h2 : Fits w 2 := by fits
+  have hd : Fits w (x.regs level - 1) := by fits
   by_cases hroot : x.regs level = 0
   · let y := x.set active 0
     have he : ExecWithin w pop x y 2 := by
@@ -72,8 +73,8 @@ theorem exec_storeTerm {w : ℕ} (x : Data registers) (h1 : x.regs one = 1)
     ∃ y, ExecWithin w storeTerm x y 4 ∧ y.regs mode = 1 ∧
       y.mem = Function.update x.mem (x.regs frame + 3) (x.regs term) ∧
       (∀ i, i ≠ address → i ≠ mode → y.regs i = x.regs i) := by
-  have hmode : Fits w 1 := hf.of_le (by omega)
-  have hadd : Fits w (x.regs frame + 3) := hf.of_le (by omega)
+  have hmode : Fits w 1 := by fits
+  have hadd : Fits w (x.regs frame + 3) := by fits
   let y := ((((x.set address (x.regs frame + 4)).set address (x.regs frame + 3)).write
     (x.regs frame + 3) (x.regs term)).set mode 1)
   have hsub : x.regs frame + 4 - 1 = x.regs frame + 3 := by omega

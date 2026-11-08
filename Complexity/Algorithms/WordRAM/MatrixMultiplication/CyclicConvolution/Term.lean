@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.CyclicConvolution.Program
 public import Complexity.Foundations.RingTheory.CyclicIntRing.Coefficients
+import Complexity.Tactic.Fits
 
 /-!
 # Charged native cyclic-coefficient multiplication and accumulation
@@ -48,8 +49,7 @@ theorem exec_selectPartner {w : ℕ} (x : Data 32)
       x.regs Reg.coefficient from by omega, ↓reduceIte] using
         ExecWithin.branch_pos (cond := .lt Reg.coefficient Reg.index)
           (by simpa only [Cond.holds_lt] using h) he
-  · have hs : Fits w (x.regs Reg.coefficient - x.regs Reg.index) :=
-      hfit.of_le (by omega)
+  · have hs : Fits w (x.regs Reg.coefficient - x.regs Reg.index) := by fits
     have he : ExecWithin w
         (ram[ Reg.partner ← Reg.coefficient - Reg.index ]) x
         (x.set Reg.partner (x.regs Reg.coefficient - x.regs Reg.index)) 1 := by

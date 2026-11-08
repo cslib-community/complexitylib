@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxQuery.Stack
+import Complexity.Tactic.Fits
 
 /-!
 # Native computation of query-prefix children
@@ -51,10 +52,10 @@ theorem exec_indexedSetup {w c u e p : ℕ} (d : Fin 9) (x : Data registers)
       (∀ i, ¬ChildSetupLocal i → y.regs i = x.regs i) := by
   have hd : d.val ≤ 8 := by omega
   have hdm : d.val * p ≤ 9 * p := Nat.mul_le_mul_right p (by omega)
-  have hfd : Fits w d.val := hfit.of_le (by omega)
-  have hfm : Fits w (d.val * p) := hfit.of_le (by omega)
-  have hfc : Fits w (c + d.val * p) := hfit.of_le (by omega)
-  have hfu : Fits w (u + 1) := hfit.of_le (by omega)
+  have hfd : Fits w d.val := by fits
+  have hfm : Fits w (d.val * p) := by fits
+  have hfc : Fits w (c + d.val * p) := by fits
+  have hfu : Fits w (u + 1) := by fits
   let y := ((((x.set Reg.temporary d.val).set Reg.temporary (d.val * p)).set
     Reg.childCode (c + d.val * p)).set Reg.childUsed (u + 1)).set Reg.childStars e
   have hy : ExecWithin w (indexedSetup d) x y 5 := by
@@ -74,9 +75,9 @@ theorem exec_p0Setup {w c u e p : ℕ} (x : Data registers)
     ∃ y, ExecWithin w p0Setup x y 6 ∧ y.regs Reg.childCode = c + 9 * p ∧
       y.regs Reg.childUsed = u ∧ y.regs Reg.childStars = (if u = 0 then e + 1 else e) ∧
       y.mem = x.mem ∧ (∀ i, ¬ChildSetupLocal i → y.regs i = x.regs i) := by
-  have hfm : Fits w (9 * p) := hfit.of_le (by omega)
-  have hfc : Fits w (c + 9 * p) := hfit.of_le (by omega)
-  have hfe : Fits w (e + 1) := hfit.of_le (by omega)
+  have hfm : Fits w (9 * p) := by fits
+  have hfc : Fits w (c + 9 * p) := by fits
+  have hfe : Fits w (e + 1) := by fits
   let y := (((x.set Reg.temporary (9 * p)).set Reg.childCode (c + 9 * p)).set
     Reg.childUsed u).set Reg.childStars (if u = 0 then e + 1 else e)
   have hy : ExecWithin w p0Setup x y 6 := by
@@ -98,8 +99,8 @@ theorem exec_privateSetup {w c u e p d : ℕ} (x : Data registers) (hd : d ≤ 9
       y.regs Reg.childUsed = u ∧ y.regs Reg.childStars = e ∧ y.mem = x.mem ∧
       (∀ i, ¬ChildSetupLocal i → y.regs i = x.regs i) := by
   have hdm : d * p ≤ 9 * p := Nat.mul_le_mul_right p hd
-  have hfm : Fits w (d * p) := hfit.of_le (by omega)
-  have hfc : Fits w (c + d * p) := hfit.of_le (by omega)
+  have hfm : Fits w (d * p) := by fits
+  have hfc : Fits w (c + d * p) := by fits
   let y := (((x.set Reg.temporary (d * p)).set Reg.childCode (c + d * p)).set
     Reg.childUsed u).set Reg.childStars e
   have hy : ExecWithin w privateSetup x y 4 := by
@@ -131,10 +132,10 @@ theorem exec_expandSetup {w q k p : ℕ} (x : Data registers)
       (∀ i, ¬ExpandSetupLocal i → y.regs i = x.regs i) := by
   have hdiv : q / p ≤ q := Nat.div_le_self _ _
   have hmod : q / p % 10 < 10 := Nat.mod_lt _ (by decide)
-  have hfd : Fits w (q / p) := hfit.of_le (by omega)
-  have hfm : Fits w (q / p % 10) := hfit.of_le (by omega)
-  have hfk : Fits w (k + 1) := hfit.of_le (by omega)
-  have hfp : Fits w (p * 10) := hfit.of_le (by omega)
+  have hfd : Fits w (q / p) := by fits
+  have hfm : Fits w (q / p % 10) := by fits
+  have hfk : Fits w (k + 1) := by fits
+  have hfp : Fits w (p * 10) := by fits
   let y := (((x.set Reg.digit (q / p)).set Reg.digit (q / p % 10)).set
     Reg.depth (k + 1)).set Reg.childPower (p * 10)
   have hy : ExecWithin w expandSetup x y 4 := by

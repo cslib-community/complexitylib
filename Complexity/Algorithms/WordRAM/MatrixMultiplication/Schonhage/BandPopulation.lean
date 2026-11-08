@@ -11,6 +11,7 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandP
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.MaskTable
 
 import Complexity.Computability.WordRAM.CountingLoop
+import Complexity.Tactic.Fits
 
 /-!
 # Charged native binary-mask population scans
@@ -38,7 +39,7 @@ theorem exec_population {w : ℕ} (L a : ℕ) (x : Data 96)
       y.regs population = MaskTable.population L a ∧ y.mem = x.mem ∧
       (∀ i, i ≠ residue → i ≠ population → i ≠ counter → i ≠ digit →
         y.regs i = x.regs i) := by
-  have hzero : Fits w 0 := hfit.of_le (by omega)
+  have hzero : Fits w 0 := by fits
   let start := ((x.set residue a).set population 0).set counter 0
   let P (j : ℕ) (y : Data 96) : Prop :=
     y.mem = x.mem ∧ y.regs levels = L ∧ y.regs one = 1 ∧ y.regs two = 2 ∧
@@ -59,12 +60,10 @@ theorem exec_population {w : ℕ} (L a : ℕ) (x : Data 96)
       rw [show L - y.regs counter = (L - (y.regs counter + 1)) + 1 by omega,
         population_succ]
     have hpop := population_le L a
-    have hfpop : Fits w (y.regs population + y.regs residue % 2) :=
-      hfit.of_le (by omega)
-    have hfmod : Fits w (y.regs residue % 2) := hfit.of_le (by omega)
-    have hfdiv : Fits w (y.regs residue / 2) :=
-      hfit.of_le ((Nat.div_le_self _ _).trans (by omega))
-    have hfnext : Fits w (y.regs counter + 1) := hfit.of_le (by omega)
+    have hfpop : Fits w (y.regs population + y.regs residue % 2) := by fits
+    have hfmod : Fits w (y.regs residue % 2) := by fits
+    have hfdiv : Fits w (y.regs residue / 2) := by fits
+    have hfnext : Fits w (y.regs counter + 1) := by fits
     let z := (((y.set digit (y.regs residue % 2)).set population
       (y.regs population + y.regs residue % 2)).set residue (y.regs residue / 2)).set
       counter (y.regs counter + 1)

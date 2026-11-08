@@ -10,6 +10,7 @@ module
 import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.Quadrant
 public import Complexity.Computability.WordRAM.Signed.ArrayArithmetic.Exec
+import Complexity.Tactic.Fits
 
 /-!
 # Native in-place Strassen product accumulation
@@ -44,7 +45,7 @@ theorem exec_accumulate {w q t A B : ℕ} (subtract : Bool) (x : Data 64) (u v :
       ∀ i, 32 ≤ i.val → i ≠ Reg.temporary → y.regs i = x.regs i := by
   have hqfit : Fits (w + 2) (x.regs Reg.output + 4 * x.regs Reg.quarter + 4) := by
     rw [hq]
-    exact hw.of_le (by omega)
+    fits
   obtain ⟨s, hs, hsm, hsrc, hsr⟩ := exec_quadrant Reg.output Reg.operandA x (by decide) ht hqfit
   have hhigh (i : Fin 64) (hi : 32 ≤ i.val) (htemp : i ≠ Reg.temporary) :
       s.regs i = x.regs i := hsr i (by intro he; subst i; contradiction) htemp
@@ -80,9 +81,9 @@ theorem exec_accumulate {w q t A B : ℕ} (subtract : Bool) (x : Data 64) (u v :
       hzl hbound hu hv
       (by intro j hj; rw [hzm, hza]; exact hout j hj)
       (by intro j hj; rw [hzm, hzb]; exact hprod j hj)
-      (by rw [hza]; exact hw.of_le (by omega))
-      (by rw [hzb]; exact hw.of_le (by omega))
-      (by rw [hzo]; exact hw.of_le (by omega))
+      (by rw [hza]; fits)
+      (by rw [hzb]; fits)
+      (by rw [hzo]; fits)
       (Or.inr (Or.inr (hza.trans hzo.symm)))
       (by
         rw [hzb, hzo]

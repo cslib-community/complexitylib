@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxQuery.Program
+import Complexity.Tactic.Fits
 
 /-!
 # Actual native query addends
@@ -78,11 +79,11 @@ theorem exec_boxAddend {w D V T c e r : ℕ} {a : ℤ} (x : Data registers)
     (hfit : Fits w (D + V + e * T + c + r + 10)) :
     ∃ y, ExecWithin w boxAddend x y 7 ∧ y.regs Signed.right = Signed.encode a ∧
       y.mem = x.mem ∧ (∀ i, ¬LeafLocal i → y.regs i = x.regs i) := by
-  have hf0 : Fits w (e * T) := hfit.of_le (by omega)
-  have hf1 : Fits w (e * T + c) := hfit.of_le (by omega)
-  have hfD : Fits w (D + (e * T + c)) := hfit.of_le (by omega)
-  have hfr : Fits w r := hfit.of_le (by omega)
-  have hfV : Fits w (V + r) := hfit.of_le (by omega)
+  have hf0 : Fits w (e * T) := by fits
+  have hf1 : Fits w (e * T + c) := by fits
+  have hfD : Fits w (D + (e * T + c)) := by fits
+  have hfr : Fits w r := by fits
+  have hfV : Fits w (V + r) := by fits
   let y := (((((((x.set Reg.temporary (e * T)).set Reg.temporary (e * T + c)).set
     BoxTable.Reg.address (D + (e * T + c))).set BoxTable.Reg.childRank (r + 1)).set
     BoxTable.Reg.childRank r).set BoxTable.Reg.address (V + r)).set
@@ -141,8 +142,8 @@ theorem exec_leaf {w D V AA BB T c e d t r : ℕ} {a b v z : ℤ} (x : Data regi
   · obtain ⟨u, hu, hvu, hum, huf⟩ := exec_lowAddend x ha hb hab
       (by simpa only [hAA, hc] using (hlow hdt).1)
       (by simpa only [hBB, hc] using (hlow hdt).2)
-      (hfit.of_le (by rw [hAA, hc]; omega))
-      (hfit.of_le (by rw [hBB, hc]; omega))
+      (by fits)
+      (by fits)
     have hua : u.regs Reg.answer = Signed.encode z := by
       exact (hu.regs_eq (by decide : lowAddend.Preserves Reg.answer)).trans hacc
     obtain ⟨y, hy, hya, hym, _⟩ := exec_addAnswer u hz hab hua hvu

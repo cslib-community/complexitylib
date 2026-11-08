@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Encoding
 public import Complexity.Foundations.Algebra.FiniteMagnitude
 import Mathlib.Tactic.Ring
+import Complexity.Tactic.Fits
 
 /-!
 # Native execution of the encoding forms
@@ -66,7 +67,7 @@ theorem exec_summand {w : ℕ} (x : Data 32) (s : Fin 7) (c a v : ℤ) (base n :
       intro i _ _ hi _
       simp only [Data.set_regs, Function.update_of_ne hi]
   all_goals
-    have hs : Fits (w + 2) s.val := hseven.of_le (by omega)
+    have hs : Fits (w + 2) s.val := by fits
     have hmul : Fits (w + 2) (s.val * n) := haddr.of_le (by nlinarith [s.isLt])
     have hsum : Fits (w + 2) (base + s.val * n) := haddr.of_le (by nlinarith [s.isLt])
     let z := ((((x.set temporary s.val).set address (s.val * n)).set address
@@ -202,7 +203,7 @@ theorem exec_dispatch {w : ℕ} (hw : 0 < w) (side : Bool) (rows : List (Fin 10)
   | cons q rest ih =>
     let z := x.set temporary q.val
     have hz : ExecWithin (B := .standard) (w + 2) (ram[ temporary ← #q.val ]) x z 1 :=
-      ExecWithin.const (hten.of_le (by omega))
+      ExecWithin.const (by fits)
     have hzf : FormFrame x z := by
       refine ⟨rfl, ?_⟩
       intro i _ _ _ hi
@@ -217,7 +218,7 @@ theorem exec_dispatch {w : ℕ} (hw : 0 < w) (side : Bool) (rows : List (Fin 10)
     by_cases hqt : t = q
     · subst t
       obtain ⟨y, he, hacc, hf⟩ := exec_form hw side q z B base n v hzb hzn hzm hB hv
-        hfit haddr (hten.of_le (by decide))
+        hfit haddr (by fits)
       refine ⟨y, ?_, hacc, hzf.trans hf⟩
       apply (hz.seq (ExecWithin.branch_pos ?_ he)).mono
       · simp only [List.length_cons]

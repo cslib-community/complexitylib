@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.Frame
 import Mathlib.Tactic.FinCases
+import Complexity.Tactic.Fits
 
 /-!
 # Native Strassen child layout and explicit frame push
@@ -37,13 +38,12 @@ theorem exec_locateChild {w : ℕ} (x : Data 64) (h1 : x.regs Reg.one = 1)
       y.regs Reg.childDepth = x.regs Reg.depth - 1 ∧
       ∀ i, i ≠ Reg.quarter → i ≠ Reg.formA → i ≠ Reg.formB → i ≠ Reg.product →
         i ≠ Reg.childScratch → i ≠ Reg.childDepth → y.regs i = x.regs i := by
-  have hq : Fits w (x.regs Reg.size / 4) := hw.of_le (by omega)
-  have hf : Fits w (x.regs Reg.scratch + x.regs Reg.size / 4) := hw.of_le (by omega)
-  have hp : Fits w (x.regs Reg.scratch + x.regs Reg.size / 4 + x.regs Reg.size / 4) :=
-    hw.of_le (by omega)
+  have hq : Fits w (x.regs Reg.size / 4) := by fits
+  have hf : Fits w (x.regs Reg.scratch + x.regs Reg.size / 4) := by fits
+  have hp : Fits w (x.regs Reg.scratch + x.regs Reg.size / 4 + x.regs Reg.size / 4) := by fits
   have hs : Fits w (x.regs Reg.scratch + x.regs Reg.size / 4 +
       x.regs Reg.size / 4 + x.regs Reg.size / 4) := hw.of_le (by omega)
-  have hd : Fits w (x.regs Reg.depth - 1) := hw.of_le (by omega)
+  have hd : Fits w (x.regs Reg.depth - 1) := by fits
   refine ⟨?locatedState, ?locateRun, ?locateMem, ?locatedQuarter, ?locatedA, ?locatedB,
     ?locatedProduct, ?locatedScratch, ?locatedDepth, ?locatedRegs⟩
   case locateRun =>
@@ -94,10 +94,10 @@ theorem exec_push {w : ℕ} (phase : Fin 8) (x : Data 64)
       y.mem (x.regs Reg.frame + 6) = phase.val ∧
       (∀ a, a < x.regs Reg.frame + 6 ∨ x.regs Reg.frame + 14 ≤ a → y.mem a = x.mem a) ∧
       ∀ i, ¬PushLocal i → y.regs i = x.regs i := by
-  have h6 : Fits w 6 := hw.of_le (by omega)
-  have hphase : Fits w phase.val := hw.of_le (by omega)
-  have hparent : Fits w (x.regs Reg.frame + 6) := hw.of_le (by omega)
-  have hchild : Fits w (x.regs Reg.frame + 7) := hw.of_le (by omega)
+  have h6 : Fits w 6 := by fits
+  have hphase : Fits w phase.val := by fits
+  have hparent : Fits w (x.regs Reg.frame + 6) := by fits
+  have hchild : Fits w (x.regs Reg.frame + 7) := by fits
   let r := x.write (x.regs Reg.frame + 6) phase.val
   let s := (((((((((((r.set Reg.tag 6).set Reg.address (x.regs Reg.frame + 6)).set
     Reg.phase phase.val).set Reg.frame (x.regs Reg.frame + 7)).set Reg.inputA

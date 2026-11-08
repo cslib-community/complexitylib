@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted.ScatterWrite
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted.CountStep
+import Complexity.Tactic.Fits
 
 /-!
 # One computed wanted-query scatter
@@ -64,9 +65,9 @@ theorem exec_scatterStep {w L m N Q n : ℕ} (hm : m ≤ L) (pairs : ℕ → ℕ
   have hend := memoryLimit_eq L m N Q
   have h10 := Nat.zero_le (10 ^ L)
   have h2 := Nat.zero_le (2 ^ L)
-  have hn2 : Fits w (n * 2) := hl.of_le (by omega)
-  have ha : Fits w (n * 2 + 5) := hl.of_le (by omega)
-  have ha1 : Fits w (n * 2 + 5 + 1) := hl.of_le (by omega)
+  have hn2 : Fits w (n * 2) := by fits
+  have ha : Fits w (n * 2 + 5) := by fits
+  have ha1 : Fits w (n * 2 + 5 + 1) := by fits
   have hI : x.mem (n * 2 + 5) = I.val :=
     (congrArg x.mem (by omega : n * 2 + 5 = 5 + 2 * n)).trans hinput.1
   have hJ : x.mem (n * 2 + 5 + 1) = J.val :=

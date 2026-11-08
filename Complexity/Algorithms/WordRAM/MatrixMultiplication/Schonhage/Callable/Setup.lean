@@ -10,6 +10,7 @@ module
 import Complexity.Computability.WordRAM.Power.Rename
 import Complexity.Computability.WordRAM.RegisterFrame
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Callable.Program
+import Complexity.Tactic.Fits
 
 /-!
 # Computed virtual width and register normalization
@@ -62,16 +63,14 @@ theorem exec_setup {W b N Q : ℕ} (x : Data 163) (hb : x.regs Reg.base = b)
   obtain ⟨hw, hS, hwidth⟩ := setup_fits hfit
   have hc : Nat.clog 2 (N + Q + 3) ≤ sourceWidth N Q := by unfold sourceWidth; omega
   have h0 : Fits W 0 := fits_zero _
-  have h2 : Fits W 2 := hfit.of_le (by omega)
-  have h3 : Fits W 3 := hfit.of_le (by omega)
-  have h4 : Fits W 4 := hfit.of_le (by omega)
-  have h128 : Fits W 128 := hfit.of_le (by omega)
-  have hb3 : Fits W (b + 3) := hfit.of_le (by omega)
-  have hb4 : Fits W (b + 4) := hfit.of_le (by omega)
-  have hsum : Fits W (N + Q) := hfit.of_le (by omega)
-  have hsize : Fits W (N + Q + 3) := hfit.of_le (by omega)
-  have hs1 : Fits W (N + Q + 3 + 1) := hfit.of_le (by omega)
-  have hc1 : Fits W (Nat.clog 2 (N + Q + 3) + 1) := hfit.of_le (by omega)
+  have h2 : Fits W 2 := by fits
+  have h3 : Fits W 3 := by fits
+  have h4 : Fits W 4 := by fits
+  have h128 : Fits W 128 := by fits
+  have hb3 : Fits W (b + 3) := by fits
+  have hb4 : Fits W (b + 4) := by fits
+  have hsum : Fits W (N + Q) := by fits
+  have hsize : Fits W (N + Q + 3) := by fits
   have hexp : Fits W (128 * Nat.clog 2 (N + Q + 3)) := by
     apply hfit.of_le
     change sourceWidth N Q ≤ _
@@ -91,8 +90,8 @@ theorem exec_setup {W b N Q : ℕ} (x : Data 163) (hb : x.regs Reg.base = b)
     case memory => rfl
     case base => simpa +decide [Reg.base, Function.update_apply] using hb
   obtain ⟨l, hl, lr, lm, lo, lt⟩ := NatClog.exec_rename clogBank clogBank_injective s h2
-    (by change Fits W (s.regs Reg.result + 1); rw [ss]; exact hs1)
-    (by change Fits W (Nat.clog 2 (s.regs Reg.result) + 1); rw [ss]; exact hc1)
+    (by change Fits W (s.regs Reg.result + 1); rw [ss]; fits)
+    (by change Fits W (Nat.clog 2 (s.regs Reg.result) + 1); rw [ss]; fits)
   have lc : l.regs Reg.second = Nat.clog 2 (N + Q + 3) := by
     change l.regs Reg.second = Nat.clog 2 (s.regs Reg.result) at lr
     simpa only [ss] using lr

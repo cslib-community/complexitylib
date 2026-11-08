@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted.PackProgram
 import Mathlib.Tactic.Linarith
+import Complexity.Tactic.Fits
 
 /-!
 # Execution of the native wanted-output digit loop
@@ -94,16 +95,16 @@ theorem exec_packBody {w L M R C : ℕ} (x : Data 16) (hx : PackProgress L M R C
   have hbit : Fits w (x.regs mask % 2) := hfit.of_le (by
     have := Nat.mod_lt (x.regs mask) (by decide : 0 < 2)
     omega)
-  have hpfit : Fits w (x.regs power * 10) := hfit.of_le (by omega)
-  have hjfit : Fits w (x.regs level + 1) := hfit.of_le (by omega)
+  have hpfit : Fits w (x.regs power * 10) := by fits
+  have hjfit : Fits w (x.regs level + 1) := by fits
   have hrest : L - x.regs level = L - (x.regs level + 1) + 1 := by omega
   by_cases hb : x.regs mask % 2 = 0
   · let d := (x.regs row % 3) * 3 + x.regs col % 3
     have hd : d < 9 := by dsimp [d]; omega
-    have hrd : Fits w (x.regs row % 3) := hfit.of_le (by omega)
-    have hr3 : Fits w (x.regs row % 3 * 3) := hfit.of_le (by omega)
-    have hcd : Fits w (x.regs col % 3) := hfit.of_le (by omega)
-    have hdf : Fits w d := hfit.of_le (by omega)
+    have hrd : Fits w (x.regs row % 3) := by fits
+    have hr3 : Fits w (x.regs row % 3 * 3) := by fits
+    have hcd : Fits w (x.regs col % 3) := by fits
+    have hdf : Fits w d := by fits
     have hrq : Fits w (x.regs row / 3) := hfit.of_le
       ((Nat.div_le_self _ _).trans (by have := hx.row_le; omega))
     have hcq : Fits w (x.regs col / 3) := hfit.of_le
@@ -149,8 +150,8 @@ theorem exec_packBody {w L M R C : ℕ} (x : Data 16) (hx : PackProgress L M R C
       nlinarith only [hv]
     · change L - (x.regs level + 1) < L - x.regs level
       omega
-  · have h9 : Fits w 9 := hfit.of_le (by omega)
-    have hmul : Fits w (9 * x.regs power) := hfit.of_le (by omega)
+  · have h9 : Fits w 9 := by fits
+    have hmul : Fits w (9 * x.regs power) := by fits
     have hadd : Fits w (x.regs code + 9 * x.regs power) := hfit.of_le (by
       have := hx.code_lt
       omega)
@@ -190,7 +191,7 @@ theorem exec_pack {w : ℕ} (L M R C : ℕ) (x : Data 16)
     (hC : x.regs col = C) (hfit : Fits w (M + R + C + L + 32 * 10 ^ L + 32)) :
     ∃ y, ExecWithin w packCode x y (15 * L + 10) ∧
       y.regs code = pack L M R C ∧ y.regs depth = L ∧ y.mem = x.mem := by
-  have hf (v : ℕ) (hv : v ≤ 10) : Fits w v := hfit.of_le (by omega)
+  have hf (v : ℕ) (hv : v ≤ 10) : Fits w v := by fits
   let start := ((((((((x.set one 1).set two 2).set three 3).set ten 10).set nine 9).set
     code 0).set level 0).set power 1)
   have hs : ExecWithin w packHead x start 8 := by

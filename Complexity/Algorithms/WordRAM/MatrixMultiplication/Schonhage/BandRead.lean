@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandParameters
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandMemory
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandSplit
+import Complexity.Tactic.Fits
 
 /-!
 # Guarded native matrix reads for band arrays
@@ -107,13 +108,12 @@ theorem exec_readCell {w L m N : ℕ} (side : Bool) (a : Fin (7 ^ L)) (β : ℕ)
       nlinarith only [h7, Nat.zero_le L, Nat.zero_le N, Nat.zero_le (N * D m),
         Nat.zero_le (2 ^ L), Nat.zero_le (10 ^ L)])
     have hqbound : q ≤ p.mask + 1 := MaskTable.lookup_le L m p.mask
-    have hqfit : Fits w (q - 1) := hlocal.of_le (by have := hp.1; omega)
-    have hbfit : Fits w b := hlocal.of_le (by have := hbounds.2.1; omega)
-    have hβfit : Fits w (β * K0 L m) := hlocal.of_le (by have := hbounds.1; omega)
-    have hblockfit : Fits w (β * K0 L m + b) := hlocal.of_le (by have := hbounds.2.1; omega)
-    have hrowfit : Fits w ((β * K0 L m + b) * N0 L m) :=
-      hlocal.of_le (by have := hbounds.2.2.1; omega)
-    have hrfit : Fits w r := hlocal.of_le (by have := hbounds.2.2.2; dsimp [r]; omega)
+    have hqfit : Fits w (q - 1) := by fits
+    have hbfit : Fits w b := by fits
+    have hβfit : Fits w (β * K0 L m) := by fits
+    have hblockfit : Fits w (β * K0 L m + b) := by fits
+    have hrowfit : Fits w ((β * K0 L m + b) * N0 L m) := by fits
+    have hrfit : Fits w r := by fits
     let v := ((((((u.set rank (q - 1)).set block b).set temporary (β * K0 L m)).set
       block (β * K0 L m + b)).set row ((β * K0 L m + b) * N0 L m)).set row r)
     by_cases hr : r < N
@@ -121,10 +121,10 @@ theorem exec_readCell {w L m N : ℕ} (side : Bool) (a : Fin (7 ^ L)) (β : ℕ)
       have hinput : Fits w (inputEnd m N) :=
         (memory_fits hfit).of_le (input_le_memoryEnd L m N)
       have hnd : Fits w (N * D m) := hinput.of_le (by unfold inputEnd; omega)
-      have hleftMul : Fits w (r * D m) := hnd.of_le (by omega)
-      have hleftAdd : Fits w (r * D m + p.inner) := hnd.of_le hleft.le
-      have hrightMul : Fits w (p.inner * N) := hnd.of_le (by omega)
-      have hrightAdd : Fits w (p.inner * N + r) := hnd.of_le hright.le
+      have hleftMul : Fits w (r * D m) := by fits
+      have hleftAdd : Fits w (r * D m + p.inner) := by fits
+      have hrightMul : Fits w (p.inner * N) := by fits
+      have hrightAdd : Fits w (p.inner * N + r) := by fits
       have hrightOff : Fits w (p.inner * N + r + N * D m) :=
         hinput.of_le (by unfold inputEnd; omega)
       have hleftFour : Fits w (r * D m + p.inner + 4) :=

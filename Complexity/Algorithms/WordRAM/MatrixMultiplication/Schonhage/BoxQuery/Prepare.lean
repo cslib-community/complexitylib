@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxQuery.InputLayout
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxQuery.Memory
+import Complexity.Tactic.Fits
 
 /-!
 # Actual query preparation from original input words
@@ -32,9 +33,9 @@ theorem exec_inputHeaders {w L m t Q : ℕ} (x : Data registers)
     ∃ y, ExecWithin w inputHeaders x y 8 ∧ y.regs BoxTable.Reg.levels = L ∧
       y.regs BoxTable.Reg.inner = m ∧ y.regs BoxTable.Reg.threshold = t ∧
       y.regs Reg.query = Q ∧ y.mem = x.mem := by
-  have h1 : Fits w 1 := hfit.of_le (by decide)
-  have h2 : Fits w 2 := hfit.of_le (by decide)
-  have h3 : Fits w 3 := hfit.of_le (by decide)
+  have h1 : Fits w 1 := by fits
+  have h2 : Fits w 2 := by fits
+  have h3 : Fits w 3 := by fits
   let a := (((((x.set BoxTable.Reg.address 1).set BoxTable.Reg.levels L).set
     BoxTable.Reg.address 2).set BoxTable.Reg.inner m).set BoxTable.Reg.address 3).set
       BoxTable.Reg.threshold t
@@ -75,9 +76,9 @@ theorem exec_loadInput {w L m t Q : ℕ} (x : Data registers)
   have cQ : c.regs Reg.query = Q :=
     (cf _ (by decide) (by decide) (by decide)).trans
       ((bf _ (by decide) (by decide) (by decide) (by decide) (by decide)).trans aQ)
-  have hf5 : Fits w 5 := hfit.of_le (by omega)
-  have hfB : Fits w (5 + 10 ^ L) := hfit.of_le (by omega)
-  have hfD : Fits w (5 + 10 ^ L + 10 ^ L) := hfit.of_le (by omega)
+  have hf5 : Fits w 5 := by fits
+  have hfB : Fits w (5 + 10 ^ L) := by fits
+  have hfD : Fits w (5 + 10 ^ L + 10 ^ L) := by fits
   let y := ((c.set BoxTable.Reg.arrayA 5).set BoxTable.Reg.arrayB (5 + 10 ^ L)).set
     BoxTable.Reg.directory (5 + 10 ^ L + 10 ^ L)
   have hd : ExecWithin w inputPointers c y 3 := by

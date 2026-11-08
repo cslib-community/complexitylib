@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTable.Program
+import Complexity.Tactic.Fits
 
 /-!
 # Native compact-table reads and signed arithmetic
@@ -43,9 +44,9 @@ theorem exec_loadRecord {w R j c e p : ℕ} (x : Data registers)
     ∃ y, ExecWithin w loadRecord x y 7 ∧ y.regs Reg.completion = c ∧
       y.regs Reg.stars = e ∧ y.regs Reg.starPower = p ∧ y.mem = x.mem ∧
       (∀ i, ¬RecordLocal i → y.regs i = x.regs i) := by
-  have hf0 : Fits w (j * 3) := hfit.of_le (by omega)
-  have hf1 : Fits w (R + j * 3) := hfit.of_le (by omega)
-  have hf2 : Fits w (R + j * 3 + 1) := hfit.of_le (by omega)
+  have hf0 : Fits w (j * 3) := by fits
+  have hf1 : Fits w (R + j * 3) := by fits
+  have hf2 : Fits w (R + j * 3 + 1) := by fits
   have hf3 : Fits w (R + j * 3 + 1 + 1) := by simpa only [Nat.add_assoc] using hfit
   have hp' : x.mem (R + j * 3 + 1 + 1) = p := by simpa only [Nat.add_assoc] using hp
   let y := (((((((x.set Reg.address (j * 3)).set Reg.address (R + j * 3)).set
@@ -133,16 +134,16 @@ theorem exec_addChild {w D V c e T p d r : ℕ} {a b : ℤ}
     (Nat.mul_le_mul_left e hTpos)
   have hcc : cc ≤ c := Nat.sub_le ..
   have hcs : cs ≤ e * T + c := Nat.add_le_add hmt hcc
-  have hf9 : Fits (w + 2) (9 - d) := hfit.of_le (by omega)
-  have hfmp : Fits (w + 2) ((9 - d) * p) := hfit.of_le (by omega)
-  have hfcc : Fits (w + 2) cc := hfit.of_le (by omega)
-  have hfe : Fits (w + 2) (e - 1) := hfit.of_le (by omega)
-  have hfmt : Fits (w + 2) ((e - 1) * T) := hfit.of_le (by omega)
-  have hfcs : Fits (w + 2) cs := hfit.of_le (by omega)
-  have hfD : Fits (w + 2) (D + cs) := hfit.of_le (by omega)
-  have hfr : Fits (w + 2) r := hfit.of_le (by omega)
-  have hfV : Fits (w + 2) (V + r) := hfit.of_le (by omega)
-  have hfd : Fits (w + 2) (d + 1) := hfit.of_le (by omega)
+  have hf9 : Fits (w + 2) (9 - d) := by fits
+  have hfmp : Fits (w + 2) ((9 - d) * p) := by fits
+  have hfcc : Fits (w + 2) cc := by fits
+  have hfe : Fits (w + 2) (e - 1) := by fits
+  have hfmt : Fits (w + 2) ((e - 1) * T) := by fits
+  have hfcs : Fits (w + 2) cs := by fits
+  have hfD : Fits (w + 2) (D + cs) := by fits
+  have hfr : Fits (w + 2) r := by fits
+  have hfV : Fits (w + 2) (V + r) := by fits
+  have hfd : Fits (w + 2) (d + 1) := by fits
   let z := ((((((((((((x.set Reg.temporary (9 - d)).set Reg.temporary ((9 - d) * p)).set
     Reg.childCode cc).set Reg.childSlot (e - 1)).set Reg.childSlot ((e - 1) * T)).set
     Reg.childSlot cs).set Reg.address (D + cs)).set Reg.childRank (r + 1)).set

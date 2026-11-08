@@ -10,6 +10,7 @@ module
 import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.Quadrant
 public import Complexity.Computability.WordRAM.Signed.ArrayArithmetic.Exec
+import Complexity.Tactic.Fits
 
 /-!
 # Actual two-quadrant Strassen operand forms
@@ -46,7 +47,7 @@ theorem exec_arithmeticForm {w q t₁ t₂ A : ℕ} (base dst : Fin 64) (sign : 
       ∀ i, 32 ≤ i.val → i ≠ Reg.temporary → y.regs i = x.regs i := by
   have hqfit : Fits (w + 2) (x.regs base + 4 * x.regs Reg.quarter + 4) := by
     rw [hq]
-    exact hw.of_le (by omega)
+    fits
   obtain ⟨r, hr, hrmem, hra, hrr⟩ := exec_quadrant base Reg.operandA x hbt ht₁ hqfit
   have hrhigh (i : Fin 64) (hi : 32 ≤ i.val) (htemp : i ≠ Reg.temporary) :
       r.regs i = x.regs i := hrr i (by intro he; subst i; contradiction) htemp
@@ -92,9 +93,9 @@ theorem exec_arithmeticForm {w q t₁ t₂ A : ℕ} (base dst : Fin 64) (sign : 
       (fun j hj => hu _ (by omega)) (fun j hj => hu _ (by omega))
       (by intro j hj; rw [hzm, hza, Nat.add_assoc]; exact hinput _ (by omega))
       (by intro j hj; rw [hzm, hzb, Nat.add_assoc]; exact hinput _ (by omega))
-      (by rw [hza]; exact hw.of_le (by omega))
-      (by rw [hzb]; exact hw.of_le (by omega))
-      (by rw [hzo]; exact hw.of_le (by omega))
+      (by rw [hza]; fits)
+      (by rw [hzb]; fits)
+      (by rw [hzo]; fits)
       (by
         rw [hza, hzo]
         rcases hsep with h | h

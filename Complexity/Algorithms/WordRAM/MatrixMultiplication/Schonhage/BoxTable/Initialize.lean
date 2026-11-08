@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTable.InputLayout
+import Complexity.Tactic.Fits
 
 /-!
 # Native box-table input adaptation
@@ -28,8 +29,8 @@ theorem exec_inputHeaders {w L m t : ℕ} (x : Data registers)
     (hfit : Fits w 3) :
     ∃ y, ExecWithin w inputHeaders x y 6 ∧ y.regs Reg.levels = L ∧
       y.regs Reg.inner = m ∧ y.regs Reg.threshold = t ∧ y.mem = x.mem := by
-  have h1 : Fits w 1 := hfit.of_le (by decide)
-  have h2 : Fits w 2 := hfit.of_le (by decide)
+  have h1 : Fits w 1 := by fits
+  have h2 : Fits w 2 := by fits
   let y := (((((x.set Reg.address 1).set Reg.levels L).set Reg.address 2).set
     Reg.inner m).set Reg.address 3).set Reg.threshold t
   have he : ExecWithin w inputHeaders x y 6 := by
@@ -60,9 +61,9 @@ theorem exec_loadInput {w L m t : ℕ} (x : Data registers)
   have ct : c.regs Reg.threshold = t :=
     (cf _ (by decide) (by decide) (by decide)).trans
       ((bf _ (by decide) (by decide) (by decide) (by decide) (by decide)).trans ath)
-  have hf4 : Fits w 4 := hfit.of_le (by omega)
-  have hfB : Fits w (4 + 10 ^ L) := hfit.of_le (by omega)
-  have hfD : Fits w (4 + 10 ^ L + 10 ^ L) := hfit.of_le (by omega)
+  have hf4 : Fits w 4 := by fits
+  have hfB : Fits w (4 + 10 ^ L) := by fits
+  have hfD : Fits w (4 + 10 ^ L + 10 ^ L) := by fits
   let y := ((c.set Reg.arrayA 4).set Reg.arrayB (4 + 10 ^ L)).set
     Reg.directory (4 + 10 ^ L + 10 ^ L)
   have hd : ExecWithin w inputPointers c y 3 := by
