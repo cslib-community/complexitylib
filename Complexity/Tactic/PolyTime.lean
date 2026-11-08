@@ -963,7 +963,7 @@ open Lean Meta Elab Tactic in
 /-- Replace local encoding `let`s by their values in the goal and in the hypotheses that mention
 them, so that the spelled-out encodings of certificates and rules match. Other local definitions
 keep their names. -/
-meta def Internal.unfoldEncodingLets : TacticM Unit := withMainContext do
+private meta def Internal.unfoldEncodingLets : TacticM Unit := withMainContext do
   let mut lets : Array FVarId := #[]
   for decl in ← getLCtx do
     if decl.isLet && !decl.isImplementationDetail && (← isEncodingType decl.type) then
@@ -1012,7 +1012,7 @@ open Lean Meta Elab Tactic in
 /-- Add the certificates stored in fields of local structures (schemes, admissibility
 structures, conjunctions) as local facts that composition can use directly. Facts already in
 the context are not repeated. -/
-meta def Internal.exposeFieldCertificates : TacticM Unit := withMainContext do
+private meta def Internal.exposeFieldCertificates : TacticM Unit := withMainContext do
   let mut goal ← getMainGoal
   for decl in ← getLCtx do
     if decl.isImplementationDetail || decl.isLet then continue
