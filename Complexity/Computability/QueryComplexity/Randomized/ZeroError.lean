@@ -46,6 +46,7 @@ coin tosses select a deterministic tree.
   correct.
 * `Cslib.QueryComplexity.zeroErrorComplexity_le`: an always-correct randomized tree bounds `R₀`.
 * `Cslib.QueryComplexity.zeroErrorComplexity_le_complexity`: `R₀(f) ≤ D(f)`.
+* `Cslib.QueryComplexity.one_le_zeroErrorComplexity`: `1 ≤ R₀(f)` for nonconstant `f`.
 
 ## References
 
@@ -54,7 +55,7 @@ coin tosses select a deterministic tree.
 * [R. Motwani, P. Raghavan, *Randomized Algorithms*][MotwaniRaghavan95]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 
@@ -134,7 +135,9 @@ variable {ι β : Type*} {f : (ι → Bool) → β}
 
 /-- The zero-error (Las Vegas) randomized decision tree complexity `R₀(f)`: the least `c` such
 that some randomized decision tree computing `f` with error `0` makes at most `c` queries in
-expectation on every input. -/
+expectation on every input. It is the junk value `0` (`Real.sInf_empty`) when no decision tree
+computes `f`, which cannot happen over finitely many variables
+(`QueryComplexity.zeroErrorComplexity_le_complexity`). -/
 noncomputable def zeroErrorComplexity (f : (ι → Bool) → β) : ℝ :=
   sInf {c | ∃ μ : RandomizedDecisionTree ι β, μ.Computes 0 f ∧ ∀ x, μ.expectedCost x ≤ c}
 
@@ -158,6 +161,26 @@ theorem zeroErrorComplexity_le_complexity [Finite ι] (f : (ι → Bool) → β)
   refine zeroErrorComplexity_le (computes_single ht le_rfl) fun x => ?_
   rw [expectedCost_single, ← hd]
   exact Nat.cast_le.2 (t.cost_le_depth x)
+
+/-- A nonconstant function needs at least one query in expectation: `1 ≤ R₀(f)`. Every tree
+computing `f` is a node, so it makes at least one query on every input. -/
+theorem one_le_zeroErrorComplexity [Finite ι] (hf : ∃ x y, f x ≠ f y) :
+    1 ≤ zeroErrorComplexity f := by
+  obtain ⟨t, ht, -⟩ := DecisionTree.exists_computes_depth_eq_complexity f
+  refine le_csInf ⟨t.depth, StdSimplex.single t, computes_single ht le_rfl, fun x => by
+    rw [expectedCost_single]
+    exact Nat.cast_le.2 (t.cost_le_depth x)⟩ ?_
+  rintro c ⟨μ, hμ, hc⟩
+  obtain ⟨t, ht, hle⟩ :=
+    StdSimplex.exists_mem_support_le_sum_mul μ fun t => (t.cost fun _ => false : ℝ)
+  refine le_trans ?_ (hle.trans (hc fun _ => false))
+  cases t with
+  | leaf b =>
+    obtain ⟨x, y, hxy⟩ := hf
+    exact absurd ((computes_zero_iff.1 hμ _ ht x).symm.trans (computes_zero_iff.1 hμ _ ht y)) hxy
+  | node i t₀ t₁ =>
+    simp only [DecisionTree.cost, DecisionTree.weightedCost_node, Nat.cast_add, Nat.cast_one]
+    exact le_add_of_nonneg_left (Nat.cast_nonneg _)
 
 end QueryComplexity
 

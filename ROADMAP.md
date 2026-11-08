@@ -948,10 +948,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   separations, and randomized lifting.
 - **Randomized query complexity of game trees**
   ([#3060](https://github.com/cslib-community/complexitylib/issues/3060)): the AND–OR tree on
-  `n = 4 ^ k` leaves is evasive and the directional algorithm gives `R₀ ≤ n ^ (log₄ 3)`.
-  Remaining: the matching Saks–Wigderson lower bound `R₀ = Ω(n ^ 0.7537…)` for the NAND tree via
-  Yao's principle for expected cost, Monte Carlo (bounded-error) bounds for the same trees, and
-  Saks–Wigderson's general read-once formula and game-tree (MIN/MAX over integer leaves) results.
+  `n = 4 ^ k` leaves is evasive, and the directional algorithm gives Motwani–Raghavan's
+  `R₀ ≤ n ^ (log₄ 3)` and Snir's sharp `R₀ = O(n ^ (log₂ α))`, `α = (1 + √33) / 4`, `≈ n ^ 0.7537`.
+  Remaining: the Saks–Wigderson lower bound `R₀ = Ω(n ^ (log₂ α))` for the NAND tree, which would
+  match the upper bound, via Yao's principle for expected cost; Monte Carlo (bounded-error) bounds
+  for the same trees; and Saks–Wigderson's general read-once formula and game-tree (MIN/MAX over
+  integer leaves) results.
 - Multiparty protocols, discrepancy and information complexity, direct-sum and direct-product
   results, and reductions to streaming, sketching and cell-probe lower bounds.
 - **Streaming and sketching:** native time and space bounds for Count-Min, including hash-seed

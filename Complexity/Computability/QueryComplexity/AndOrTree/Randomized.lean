@@ -29,7 +29,15 @@ the subtrees and `v₀`, `v₁` their values, it is `(E₀ + E₁ + [v₀] E₁ 
 induction on `0`- and `1`-valued subtrees, the expected cost is at most `3 ^ k` at depth `2k`, and
 at depth `2k + 1` at most `(3 / 2) 3 ^ k` on value `true` and `2 · 3 ^ k` on value `false`
 (`QueryComplexity.NandTree.expectedCost_directional_le`)
-[Motwani and Raghavan, Section 2.1][MotwaniRaghavan95], [Snir][Snir1985].
+[Motwani and Raghavan, Theorem 2.1][MotwaniRaghavan95].
+
+The same recurrence gives the sharp rate of the directional algorithm, due to Snir
+[Snir][Snir1985]. Let `α = (1 + √33) / 4 ≈ 1.6861` be the positive root of `2 α² = α + 4`
+(`QueryComplexity.NandTree.directionalRate`). By a single induction, the expected cost at depth
+`d` is at most `α ^ d` on value `true` and `(α - 1 / 2) α ^ d` on value `false`
+(`QueryComplexity.NandTree.expectedCost_directional_le_cond_rate`). So the NAND tree on `n = 2 ^ d`
+leaves has `R₀ ≤ (α - 1 / 2) n ^ (log₂ α)`, with `log₂ α ≈ 0.7537`
+(`QueryComplexity.zeroErrorComplexity_nandTree_le_rate`).
 
 The OR–AND tree of depth `2k` is the NAND tree, and the AND–OR tree `T_{2,k}` of Motwani and
 Raghavan, with AND at the root, is its dual, evaluated by the dual trees
@@ -37,11 +45,13 @@ Raghavan, with AND at the root, is its dual, evaluated by the dual trees
 leaves the zero-error randomized complexity is at most `3 ^ k = n ^ (log₄ 3) ≈ n ^ 0.793`
 (`QueryComplexity.zeroErrorComplexity_andOrTree_le`,
 `QueryComplexity.zeroErrorComplexity_andOrTree_le_rpow`), below the deterministic complexity `n`
-(`QueryComplexity.zeroErrorComplexity_andOrTree_lt_complexity`).
+(`QueryComplexity.zeroErrorComplexity_andOrTree_lt_complexity`). The sharp rate gives
+`R₀(T_{2,k}) ≤ (α - 1 / 2) n ^ (log₂ α)`
+(`QueryComplexity.zeroErrorComplexity_andOrTree_le_rpow_rate`).
 
-Saks and Wigderson [Saks and Wigderson][SaksWigderson1986] showed that the directional algorithm
-is optimal for the NAND tree among zero-error algorithms, so `R₀ = Θ(n ^ 0.7537…)` there; that
-lower bound is not formalized here.
+Saks and Wigderson [Saks and Wigderson][SaksWigderson1986] proved the matching lower bound
+`R₀ = Ω(n ^ (log₂ α))` for the NAND tree, so the directional algorithm is optimal up to a
+constant factor. That lower bound is not formalized here.
 
 ## Main definitions
 
@@ -52,6 +62,9 @@ lower bound is not formalized here.
 
 * `Cslib.QueryComplexity.NandTree.expectedCost_directional_succ`: the expected-cost recurrence.
 * `Cslib.QueryComplexity.NandTree.expectedCost_directional_le`: the `3 ^ k` bound.
+* `Cslib.QueryComplexity.NandTree.expectedCost_directional_le_cond_rate`: the sharp `α ^ d` bound.
+* `Cslib.QueryComplexity.zeroErrorComplexity_nandTree_le_rate`: `R₀ ≤ (α - 1 / 2) α ^ d` for the
+  NAND tree of depth `d`.
 * `Cslib.QueryComplexity.exists_computes_zero_expectedCost_andOrTree_le`: an always-correct
   randomized decision tree for `T_{2,k}` with at most `3 ^ k` expected queries on every input.
 * `Cslib.QueryComplexity.zeroErrorComplexity_andOrTree_lt_complexity`: `R₀(T_{2,k}) < D(T_{2,k})`
@@ -65,7 +78,7 @@ lower bound is not formalized here.
   game trees*][SaksWigderson1986]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.QueryComplexity
 
@@ -77,7 +90,7 @@ namespace NandTree
 
 /-- The coin tosses of the directional algorithm on the NAND tree of depth `d`: at depth `d + 1`,
 which child to evaluate first, and the coin tosses for the two subtrees. -/
-def DirectionalCoins : ℕ → Type
+@[expose] def DirectionalCoins : ℕ → Type
   | 0 => Unit
   | d + 1 => Bool × DirectionalCoins d × DirectionalCoins d
 
@@ -94,7 +107,7 @@ instance instInhabitedDirectionalCoins : (d : ℕ) → Inhabited (DirectionalCoi
     inferInstanceAs (Inhabited (Bool × DirectionalCoins d × DirectionalCoins d))
 
 /-- The coins at depth `d + 1`: which child goes first, and the coins of the two subtrees. -/
-def coinsEquiv (d : ℕ) :
+@[expose] def coinsEquiv (d : ℕ) :
     DirectionalCoins (d + 1) ≃ Bool × DirectionalCoins d × DirectionalCoins d :=
   Equiv.refl _
 
@@ -116,7 +129,7 @@ theorem cost_nandThen {ι : Type*} (l r : DecisionTree ι Bool) (x : ι → Bool
 /-- The directional algorithm on the NAND tree of depth `d` for fixed coin tosses: at a node,
 evaluate the left child first if the node's coin is `false`, and the right child first
 otherwise. -/
-def directionalTree : (d : ℕ) → DirectionalCoins d → DecisionTree (Fin d → Bool) Bool
+@[expose] def directionalTree : (d : ℕ) → DirectionalCoins d → DecisionTree (Fin d → Bool) Bool
   | 0, _ => .node Fin.elim0 (.leaf false) (.leaf true)
   | d + 1, ω =>
     let t₀ := (directionalTree d (coinsEquiv d ω).2.1).mapQueries (Fin.cons false)
@@ -219,10 +232,10 @@ theorem expectedCost_directional_succ (d : ℕ) (x : (Fin (d + 1) → Bool) → 
       Fintype.expect_const] <;>
     ring
 
-/-- **The `3 ^ k` bound** [Motwani and Raghavan, Section 2.1][MotwaniRaghavan95], [Snir][Snir1985],
-by joint induction over the values of the subtrees: the directional algorithm makes at most
-`3 ^ k` queries in expectation at depth `2k`, and at depth `2k + 1` at most `(3 / 2) 3 ^ k` if the
-value is `true` and `2 · 3 ^ k` if it is `false`. -/
+/-- **The `3 ^ k` bound** [Motwani and Raghavan, Theorem 2.1][MotwaniRaghavan95], by joint
+induction over the values of the subtrees: the directional algorithm makes at most `3 ^ k` queries
+in expectation at depth `2k`, and at depth `2k + 1` at most `(3 / 2) 3 ^ k` if the value is `true`
+and `2 · 3 ^ k` if it is `false`. -/
 theorem expectedCost_directional_le (k : ℕ) :
     (∀ x, (directional (2 * k)).expectedCost x ≤ 3 ^ k) ∧
       ∀ x, (directional (2 * k + 1)).expectedCost x ≤
@@ -259,6 +272,84 @@ theorem expectedCost_directional_le (k : ℕ) :
       simp only [Bool.cond_false, Bool.cond_true, Bool.and_false, Bool.and_true, Bool.not_false,
         Bool.not_true, add_zero] <;> linarith
 
+/-! ### The sharp rate -/
+
+/-- The growth rate `α = (1 + √33) / 4 ≈ 1.6861` per level of the directional algorithm on the
+NAND tree: the positive root of `2 α² = α + 4`. -/
+noncomputable def directionalRate : ℝ := (1 + √33) / 4
+
+private theorem five_lt_sqrt_33 : 5 < √(33 : ℝ) := by
+  rw [show (5 : ℝ) = √25 by rw [show (25 : ℝ) = 5 ^ 2 by norm_num, Real.sqrt_sq (by norm_num)]]
+  exact Real.sqrt_lt_sqrt (by norm_num) (by norm_num)
+
+private theorem sqrt_33_lt_six : √(33 : ℝ) < 6 := by
+  rw [show (6 : ℝ) = √36 by rw [show (36 : ℝ) = 6 ^ 2 by norm_num, Real.sqrt_sq (by norm_num)]]
+  exact Real.sqrt_lt_sqrt (by norm_num) (by norm_num)
+
+/-- `2 α² = α + 4`. -/
+theorem two_mul_directionalRate_sq : 2 * directionalRate ^ 2 = directionalRate + 4 := by
+  have h := Real.sq_sqrt (show (0 : ℝ) ≤ 33 by norm_num)
+  rw [directionalRate]
+  linear_combination h / 8
+
+theorem three_halves_lt_directionalRate : 3 / 2 < directionalRate := by
+  rw [directionalRate]
+  linarith [five_lt_sqrt_33]
+
+theorem directionalRate_lt_seven_fourths : directionalRate < 7 / 4 := by
+  rw [directionalRate]
+  linarith [sqrt_33_lt_six]
+
+/-- `α ^ 2 < 3`, so the sharp rate improves on the `3 ^ k` bound at even depth `2k`. -/
+theorem directionalRate_sq_lt_three : directionalRate ^ 2 < 3 := by
+  linarith [two_mul_directionalRate_sq, directionalRate_lt_seven_fourths]
+
+/-- **The sharp bound for the directional algorithm**, after Snir [Snir][Snir1985]: with
+`α = directionalRate`, the expected cost at depth `d` is at most `α ^ d` on value `true` and
+`(α - 1 / 2) α ^ d` on value `false`. With `A = α ^ d`, the induction step needs
+`α A ≥ (α - 1 / 2) A` when both subtrees are `false`, `α A = (α - 1 / 2) A + A / 2` when one
+subtree is `false`, and `(α - 1 / 2) α A = 2 A` when both are `true` (`2 α² = α + 4`). -/
+theorem expectedCost_directional_le_cond_rate (d : ℕ) (x : (Fin d → Bool) → Bool) :
+    (directional d).expectedCost x ≤
+      cond (nandTree d x) (directionalRate ^ d)
+        ((directionalRate - 1 / 2) * directionalRate ^ d) := by
+  have hα := three_halves_lt_directionalRate
+  have hα2 := two_mul_directionalRate_sq
+  induction d with
+  | zero =>
+    rw [expectedCost_directional_zero, nandTree_zero, pow_zero]
+    cases x Fin.elim0
+    · simp only [Bool.cond_false, mul_one]
+      linarith
+    · simp only [Bool.cond_true, le_refl]
+  | succ d ih =>
+    rw [expectedCost_directional_succ, nandTree_succ, pow_succ]
+    have h₀ := ih fun p => x (Fin.cons false p)
+    have h₁ := ih fun p => x (Fin.cons true p)
+    have hA : (0 : ℝ) ≤ directionalRate ^ d := pow_nonneg (by linarith) d
+    have hTT : (directionalRate - 1 / 2) * (directionalRate ^ d * directionalRate) =
+        2 * directionalRate ^ d := by
+      linear_combination (directionalRate ^ d / 2) * hα2
+    have hFF : (directionalRate - 1 / 2) * directionalRate ^ d ≤
+        directionalRate ^ d * directionalRate := by
+      nlinarith
+    revert h₀ h₁
+    cases nandTree d (fun p => x (Fin.cons false p)) <;>
+      cases nandTree d (fun p => x (Fin.cons true p)) <;>
+      simp only [Bool.cond_false, Bool.cond_true, Bool.false_and, Bool.and_false, Bool.true_and,
+        Bool.not_false, Bool.not_true, add_zero] <;> intro h₀ h₁ <;> nlinarith
+
+/-- The sharp bound on every input: at most `(α - 1 / 2) α ^ d` expected queries at depth `d`. -/
+theorem expectedCost_directional_le_rate (d : ℕ) (x : (Fin d → Bool) → Bool) :
+    (directional d).expectedCost x ≤ (directionalRate - 1 / 2) * directionalRate ^ d := by
+  have h := expectedCost_directional_le_cond_rate d x
+  have hα := three_halves_lt_directionalRate
+  have hA : (0 : ℝ) ≤ directionalRate ^ d := pow_nonneg (by linarith) d
+  cases hv : nandTree d x <;> rw [hv] at h
+  · exact h
+  · rw [Bool.cond_true] at h
+    nlinarith
+
 end NandTree
 
 open NandTree
@@ -271,21 +362,30 @@ theorem exists_computes_zero_expectedCost_orAndTree_le (k : ℕ) :
   ⟨directional (2 * k), orAndTree_eq_nandTree k ▸ directional_computes (2 * k),
     (expectedCost_directional_le k).1⟩
 
-/-- **The AND–OR tree has a zero-error randomized decision tree with `3 ^ k` expected queries**
-[Motwani and Raghavan, Section 2.1][MotwaniRaghavan95]: the directional algorithm, run on the dual
-trees (`DecisionTree.dual`) to evaluate AND at the root, computes `T_{2,k}` without error and makes
-at most `3 ^ k` queries in expectation on every input. -/
-theorem exists_computes_zero_expectedCost_andOrTree_le (k : ℕ) :
+/-- The directional algorithm run on the dual trees (`DecisionTree.dual`), which evaluates AND at
+the root, computes `T_{2,k}` without error, with the expected cost of the directional algorithm on
+the complemented input. -/
+private theorem exists_computes_zero_andOrTree_of_directional {k : ℕ} {c : ℝ}
+    (hc : ∀ x, (directional (2 * k)).expectedCost x ≤ c) :
     ∃ μ : RandomizedDecisionTree (Fin (2 * k) → Bool) Bool,
-      μ.Computes 0 (andOrTree k) ∧ ∀ x, μ.expectedCost x ≤ 3 ^ k := by
+      μ.Computes 0 (andOrTree k) ∧ ∀ x, μ.expectedCost x ≤ c := by
   refine ⟨uniformMixture fun ω => (directionalTree (2 * k) ω).dual,
     computes_uniformMixture fun ω x => ?_, fun x => ?_⟩
   · rw [DecisionTree.eval_dual, eval_directionalTree, andOrTree_eq_not_orAndTree,
       orAndTree_eq_nandTree]
-  · have h := (expectedCost_directional_le k).1 fun p => !x p
+  · have h := hc fun p => !x p
     rw [directional, expectedCost_uniformMixture] at h
     rw [expectedCost_uniformMixture]
     simpa only [DecisionTree.cost_dual] using h
+
+/-- **The AND–OR tree has a zero-error randomized decision tree with `3 ^ k` expected queries**
+[Motwani and Raghavan, Theorem 2.1][MotwaniRaghavan95]: the directional algorithm, run on the dual
+trees (`DecisionTree.dual`) to evaluate AND at the root, computes `T_{2,k}` without error and makes
+at most `3 ^ k` queries in expectation on every input. -/
+theorem exists_computes_zero_expectedCost_andOrTree_le (k : ℕ) :
+    ∃ μ : RandomizedDecisionTree (Fin (2 * k) → Bool) Bool,
+      μ.Computes 0 (andOrTree k) ∧ ∀ x, μ.expectedCost x ≤ 3 ^ k :=
+  exists_computes_zero_andOrTree_of_directional (expectedCost_directional_le k).1
 
 /-- `R₀(T_{2,k}) ≤ 3 ^ k`. -/
 theorem zeroErrorComplexity_andOrTree_le (k : ℕ) : zeroErrorComplexity (andOrTree k) ≤ 3 ^ k :=
@@ -314,5 +414,31 @@ theorem zeroErrorComplexity_andOrTree_lt_complexity {k : ℕ} (hk : k ≠ 0) :
 theorem zeroErrorComplexity_orAndTree_le (k : ℕ) : zeroErrorComplexity (orAndTree k) ≤ 3 ^ k :=
   let ⟨_, hμ, hc⟩ := exists_computes_zero_expectedCost_orAndTree_le k
   zeroErrorComplexity_le hμ hc
+
+/-- **The sharp rate for the NAND tree** [Snir][Snir1985]: `R₀ ≤ (α - 1 / 2) α ^ d` on the NAND tree
+of depth `d`, that is `(α - 1 / 2) n ^ (log₂ α) ≈ n ^ 0.7537` on `n = 2 ^ d` leaves. -/
+theorem zeroErrorComplexity_nandTree_le_rate (d : ℕ) :
+    zeroErrorComplexity (nandTree d) ≤ (directionalRate - 1 / 2) * directionalRate ^ d :=
+  zeroErrorComplexity_le (directional_computes d) (expectedCost_directional_le_rate d)
+
+/-- The sharp rate for the AND–OR tree: `R₀(T_{2,k}) ≤ (α - 1 / 2) α ^ (2k)`. -/
+theorem zeroErrorComplexity_andOrTree_le_rate (k : ℕ) :
+    zeroErrorComplexity (andOrTree k) ≤ (directionalRate - 1 / 2) * directionalRate ^ (2 * k) :=
+  let ⟨_, hμ, hc⟩ :=
+    exists_computes_zero_andOrTree_of_directional (expectedCost_directional_le_rate (2 * k))
+  zeroErrorComplexity_le hμ hc
+
+/-- The sharp rate for `T_{2,k}` on `n = 4 ^ k` leaves: `R₀ ≤ (α - 1 / 2) n ^ (log₂ α)`, where
+`log₂ α ≈ 0.7537`. -/
+theorem zeroErrorComplexity_andOrTree_le_rpow_rate (k : ℕ) :
+    zeroErrorComplexity (andOrTree k) ≤
+      (directionalRate - 1 / 2) * ((4 : ℝ) ^ k) ^ Real.logb 2 directionalRate := by
+  have hα : 0 < directionalRate := by linarith [three_halves_lt_directionalRate]
+  have h : ((4 : ℝ) ^ k) ^ Real.logb 2 directionalRate = directionalRate ^ (2 * k) := by
+    rw [show (4 : ℝ) ^ k = (2 : ℝ) ^ (2 * k) by rw [pow_mul]; norm_num, ← Real.rpow_natCast,
+      ← Real.rpow_mul (by norm_num), mul_comm, Real.rpow_mul (by norm_num),
+      Real.rpow_logb (by norm_num) (by norm_num) hα, Real.rpow_natCast]
+  rw [h]
+  exact zeroErrorComplexity_andOrTree_le_rate k
 
 end Cslib.QueryComplexity

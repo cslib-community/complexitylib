@@ -117,7 +117,7 @@ theorem andOrTree_eq_not_orAndTree (k : ℕ) (x : (Fin (2 * k) → Bool) → Boo
 
 /-- An input to the NAND tree of depth `d + 1` is a pair of inputs to its two subtrees of depth
 `d`. -/
-def splitInput (d : ℕ) : ((Fin (d + 1) → Bool) → Bool) ≃
+private def splitInput (d : ℕ) : ((Fin (d + 1) → Bool) → Bool) ≃
     ((Fin d → Bool) → Bool) × ((Fin d → Bool) → Bool) where
   toFun x := (fun p => x (Fin.cons false p), fun p => x (Fin.cons true p))
   invFun yz q := cond (q 0) (yz.2 (Fin.tail q)) (yz.1 (Fin.tail q))
