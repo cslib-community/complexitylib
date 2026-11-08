@@ -16,8 +16,8 @@ public import Complexity.Computability.Complexity.Classes.P.Countable
 A set `X` is a **complexity core** of `A` for a class `C` of sets
 (`Cslib.Complexity.IsComplexityCore`) when every member of `C` that lies inside `A`, or inside its
 complement, meets `X` in a finite set.
-No member of `C` decides `A` correctly on more than finitely many instances of `X`, even if it is
-only required to answer one way. For `C = P` and decidable `A`, these are the polynomial complexity
+A member of `C` that accepts only instances in `A`, or only instances outside `A`, accepts only
+finitely many instances of `X`. For `C = P` and decidable `A`, these are the polynomial complexity
 cores of [Lynch][Lynch1975]: every machine deciding `A` runs in superpolynomial time on all but
 finitely many instances of `X`. The machine form is in
 `Complexity.Computability.Complexity.Classes.Immune.PolyTimeCore`. Cores were studied further by
