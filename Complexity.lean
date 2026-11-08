@@ -5350,6 +5350,7 @@ public import Complexity.Privacy.DifferentialPrivacy.ExponentialMechanism
 public import Complexity.Privacy.DifferentialPrivacy.Hamming
 public import Complexity.Privacy.DifferentialPrivacy.Packing
 public import Complexity.Privacy.DifferentialPrivacy.PrivacyLoss
+public import Complexity.Privacy.DifferentialPrivacy.RandomReconstruction
 public import Complexity.Privacy.DifferentialPrivacy.RandomizedResponse
 public import Complexity.Privacy.DifferentialPrivacy.Reconstruction
 public import Complexity.Privacy.DifferentialPrivacy.SmallUniverse
