@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.WordRAM.Realization.Loop
 public import Complexity.Computability.WordRAM.Realization.Random
 
+import Complexity.Computability.WordRAM.SymbolicExec
 /-!
 # Runtime-bounded loops with private coins
 
@@ -187,43 +188,31 @@ theorem iterate (input : δ ↪ (Fin k → ℕ)) (output : σ ↪ (Fin l → ℕ
         let t := v.set one 1
         let y' := t.set ctr j
         have ht : ExecWithin (B := .exact) w (.op (.const one 1)) v t 1 := ExecWithin.const h1
-        have htc : t.regs ctr = j + 1 := by
-          rw [show t.regs ctr = v.regs ctr from Function.update_of_ne hco _ _]
-          exact hvctr
+        have htc : t.regs ctr = j + 1 := by wram_simp [t, hvctr]
         have htone : t.regs one = 1 := by simp [t, Data.set]
         have hdec : ExecWithin w (.op (.exactBin .sub ctr ctr one)) t y' 1 := by
-          apply ExecWithin.op
-          rw [Op.eval_exactBin, htc, htone]
-          simp only [BinOp.evalExact, Nat.le_add_left, ↓reduceIte, Nat.add_sub_cancel,
-            Option.bind_some]
-          exact Data.put_of_fits hjfit
+          wram_exec [htc, htone]
         have hobs : obs y' =
             ((fun i : Fin l => u.regs (bt (Fin.castAdd (n + 1) i))), memoryState frontier u) := by
           refine Prod.ext (funext fun i => ?_) (Memory.State.ext hvm ?_)
           · change (t.set ctr j).regs (st i) = _
-            simp only [t, Data.set]
-            rw [Function.update_of_ne (hregst _ (by simp [counterSlot]) i),
-              Function.update_of_ne (hregst _ (by simp [oneSlot]) i), hvs]
+            wram_simp [t, st, one, ctr]
+            exact hvs i
           · change (t.set ctr j).regs frontier = u.regs frontier
-            rw [show (t.set ctr j).regs frontier = t.regs frontier from
-              Function.update_of_ne (hf (counterSlot l n)).symm _ _,
-              show t.regs frontier = v.regs frontier from
-                Function.update_of_ne (hf (oneSlot l n)).symm _ _,
-              hvf frontier (fun i => hf _)]
+            wram_simp [t]
+            exact hvf frontier fun i => hf _
         rw [← hobs]
         refine ExecRandLaw.of_execWithin (hv'.seq (ht.seq hdec)) ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
         · exact (hv'.seq (ht.seq hdec)).bounded hub
         · intro i
-          simp only [y', t, Data.set]
-          rw [Function.update_of_ne (hd _ _), Function.update_of_ne (hd _ _),
-            hvf _ (fun _ => (hd _ _).symm), huf _ (hs _) (fun _ => (hd _ _).symm)]
+          wram_simp [y', t]
+          rw [hvf _ fun _ => (hd _ _).symm, huf _ (hs _) fun _ => (hd _ _).symm]
           exact hye i
-        · simp [y', Data.set]
-        · simp [y', t, Data.set, hct.symm, hzo, hvzero]
+        · wram_simp [y']
+        · wram_simp [y', t, hvzero]
         · intro i hif htmp
-          simp only [y', t, Data.set]
-          rw [Function.update_of_ne (htmp _).symm, Function.update_of_ne (htmp _).symm,
-            hvf _ (fun _ => htmp _), huf _ hif (fun _ => htmp _)]
+          wram_simp [y', t]
+          rw [hvf _ fun _ => htmp _, huf _ hif fun _ => htmp _]
           exact hyQ i hif htmp
         · rw [hobs]
           exact husup
@@ -285,8 +274,7 @@ theorem iterate (input : δ ↪ (Fin k → ℕ)) (output : σ ↪ (Fin l → ℕ
     rw [haf _ (fun _ => (hd _ _).symm)]
     exact hfuel
   have hc : ExecWithin (B := .exact) w (.op (.copy ctr (src ⟨k + l, by omega⟩))) a b 1 := by
-    simpa only [hafuel] using
-      (ExecWithin.copy (B := .exact) (w := w) (d := ctr) (s := src ⟨k + l, by omega⟩) (x := a))
+    wram_exec [hafuel]
   have hz : ExecWithin (B := .exact) w (.op (.const zero 0)) b z 1 :=
     ExecWithin.const (fits_zero w)
   have hIz : I fuel a₀ s₀ z := by
@@ -294,27 +282,20 @@ theorem iterate (input : δ ↪ (Fin k → ℕ)) (output : σ ↪ (Fin l → ℕ
     · apply Memory.State.ext
       · exact ham
       · change (b.set zero 0).regs frontier = x.regs frontier
-        rw [show (b.set zero 0).regs frontier = b.regs frontier from
-          Function.update_of_ne (hf (zeroSlot l n)).symm _ _,
-          show b.regs frontier = a.regs frontier from
-            Function.update_of_ne (hf (counterSlot l n)).symm _ _,
-          haf frontier (fun i => hf _)]
+        wram_simp [b]
+        exact haf frontier fun i => hf _
     · intro i
-      simp only [z, b, Data.set]
-      rw [Function.update_of_ne (hd _ _), Function.update_of_ne (hd _ _),
-        haf _ (fun _ => (hd _ _).symm)]
+      wram_simp [z, b]
+      rw [haf _ fun _ => (hd _ _).symm]
       exact henv i
     · intro i
-      simp only [z, b, Data.set]
-      rw [Function.update_of_ne (hregst _ (by simp [zeroSlot]) i),
-        Function.update_of_ne (hregst _ (by simp [counterSlot]) i), has]
-      exact hstate i
-    · simp [z, b, Data.set, hct]
-    · simp [z, Data.set]
+      wram_simp [z, b, st, zero, ctr]
+      exact (has i).trans (hstate i)
+    · wram_simp [z, b]
+    · wram_simp [z]
     · intro i hif htmp
-      simp only [z, b, Data.set]
-      rw [Function.update_of_ne (htmp _).symm,
-        Function.update_of_ne (htmp _).symm, haf _ (fun _ => htmp _)]
+      wram_simp [z, b]
+      exact haf _ fun _ => htmp _
   have hloop := ExecRandLaw.seq_det ha (ExecRandLaw.seq_det hc (ExecRandLaw.seq_det hz
     (key fuel a₀ s₀ z hIz)))
   refine hloop.mono (fun _ h => h) ?_ le_rfl

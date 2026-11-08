@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.WordRAM.GhostLoop
 public import Complexity.Computability.WordRAM.Realization.Witness
 public import Complexity.Computability.WordRAM.RegisterCopy
+import Complexity.Computability.WordRAM.SymbolicExec
 
 /-!
 # Bounded memory-client loops
@@ -309,9 +310,7 @@ theorem Witness.loopEmit_spec (input : δ ↪ (Fin k → ℕ)) (output : σ ↪ 
       rw [haf _ (fun _ => (hd _ _).symm)]
       exact hfuel
     have hc : ExecWithin (B := .exact) w (.op (.copy ctr (src ⟨k + l, by omega⟩))) a b 1 := by
-      simpa only [hafuel] using
-        (ExecWithin.copy (B := .exact) (w := w) (d := ctr)
-          (s := src ⟨k + l, by omega⟩) (x := a))
+      wram_exec [hafuel]
     have hz : ExecWithin (B := .exact) w (.op (.const zero 0)) b z 1 :=
       ExecWithin.const (fits_zero w)
     let I : ℕ → (σ × Memory.State) → Data r → Prop := fun j q y =>
@@ -326,27 +325,20 @@ theorem Witness.loopEmit_spec (input : δ ↪ (Fin k → ℕ)) (output : σ ↪ 
       · apply Memory.State.ext
         · exact ham
         · change (b.set zero 0).regs frontier = x.regs frontier
-          rw [show (b.set zero 0).regs frontier = b.regs frontier from
-            Function.update_of_ne (hf (zeroSlot l n)).symm _ _,
-            show b.regs frontier = a.regs frontier from
-              Function.update_of_ne (hf (counterSlot l n)).symm _ _,
-            haf frontier (fun i => hf _)]
+          wram_simp [b]
+          exact haf frontier fun i => hf _
       · intro i
-        simp only [z, b, Data.set]
-        rw [Function.update_of_ne (hd _ _), Function.update_of_ne (hd _ _),
-          haf _ (fun _ => (hd _ _).symm)]
+        wram_simp [z, b]
+        rw [haf _ fun _ => (hd _ _).symm]
         exact henv i
       · intro i
-        simp only [z, b, Data.set]
-        rw [Function.update_of_ne (hregst _ (by simp [zeroSlot]) i),
-          Function.update_of_ne (hregst _ (by simp [counterSlot]) i), has]
-        exact hstate i
-      · simp [z, b, Data.set, hct]
-      · simp [z, Data.set]
+        wram_simp [z, b, st, zero, ctr]
+        exact (has i).trans (hstate i)
+      · wram_simp [z, b]
+      · wram_simp [z]
       · intro i hif htmp
-        simp only [z, b, Data.set]
-        rw [Function.update_of_ne (htmp _).symm,
-          Function.update_of_ne (htmp _).symm, haf _ (fun _ => htmp _)]
+        wram_simp [z, b]
+        exact haf _ fun _ => htmp _
     have hbody : ∀ j q y, I (j + 1) q y →
         (Cond.lt zero ctr).Holds y ∧ ∃ y',
           ExecWithin w (loopBody emit frontier src tmp) y y'
@@ -383,17 +375,11 @@ theorem Witness.loopEmit_spec (input : δ ↪ (Fin k → ℕ)) (output : σ ↪ 
       let y' := t.set ctr j
       have ht : ExecWithin (B := .exact) w (.op (.const one 1)) v t 1 :=
         ExecWithin.const h1
-      have htc : t.regs ctr = j + 1 := by
-        rw [show t.regs ctr = v.regs ctr from Function.update_of_ne hco _ _]
-        exact hvctr
+      have htc : t.regs ctr = j + 1 := by wram_simp [t, hvctr]
       have htone : t.regs one = 1 := by simp [t, Data.set]
       have hjfit : Fits w j := (hyb.1 ctr).of_le (by omega)
       have hdec : ExecWithin w (.op (.exactBin .sub ctr ctr one)) t y' 1 := by
-        apply ExecWithin.op
-        rw [Op.eval_exactBin, htc, htone]
-        simp only [BinOp.evalExact, Nat.le_add_left, ↓reduceIte, Nat.add_sub_cancel,
-          Option.bind_some]
-        exact Data.put_of_fits hjfit
+        wram_exec [htc, htone]
       refine ⟨y', ?_, ?_⟩
       · exact (hu.seq (hv'.seq (ht.seq hdec))).mono (by omega)
       · refine ⟨(hu.seq (hv'.seq (ht.seq hdec))).bounded hyb, ?_, ?_, ?_, ?_, ?_,
@@ -401,31 +387,24 @@ theorem Witness.loopEmit_spec (input : δ ↪ (Fin k → ℕ)) (output : σ ↪ 
         · apply Memory.State.ext
           · exact hvm.trans (congrArg Memory.State.mem hum)
           · change (t.set ctr j).regs frontier = _
-            rw [show (t.set ctr j).regs frontier = t.regs frontier from
-              Function.update_of_ne (hf (counterSlot l n)).symm _ _,
-              show t.regs frontier = v.regs frontier from
-                Function.update_of_ne (hf (oneSlot l n)).symm _ _,
-              hvf frontier (fun i => hf _)]
+            wram_simp [t]
+            rw [hvf frontier fun i => hf _]
             exact congrArg Memory.State.frontier hum
         · intro i
-          simp only [y', t, Data.set]
-          rw [Function.update_of_ne (hd _ _), Function.update_of_ne (hd _ _),
-            hvf _ (fun _ => (hd _ _).symm), huf _ (hs _) (fun _ => (hd _ _).symm)]
+          wram_simp [y', t]
+          rw [hvf _ fun _ => (hd _ _).symm, huf _ (hs _) fun _ => (hd _ _).symm]
           exact hye i
         · intro i
-          simp only [y', t, Data.set]
-          rw [Function.update_of_ne (hregst _ (by simp [counterSlot]) i),
-            Function.update_of_ne (hregst _ (by simp [oneSlot]) i), hvs, huo]
-          rfl
-        · simp [y', Data.set]
-        · simp [y', t, Data.set, hct.symm, hzo, hvzero]
+          wram_simp [y', t, st, one, ctr]
+          exact (hvs i).trans (huo _)
+        · wram_simp [y']
+        · wram_simp [y', t, hvzero]
         · have hrest := hvparts.2
           rw [clientState_width w, clientResult_width w] at hrest
           exact hrest
         · intro i hif htmp
-          simp only [y', t, Data.set]
-          rw [Function.update_of_ne (htmp _).symm, Function.update_of_ne (htmp _).symm,
-            hvf _ (fun _ => htmp _), huf _ hif (fun _ => htmp _)]
+          wram_simp [y', t]
+          rw [hvf _ fun _ => htmp _, huf _ hif fun _ => htmp _]
           exact hyframe i hif htmp
     obtain ⟨y, hy, hIy⟩ := ExecWithin.loop_invariant_state_additive I (iterationStep body d₀)
       (fun q => memoryCost (body (d₀, q.1)) q.2 + work (d₀, q.1) q.2)
