@@ -29,7 +29,7 @@ The proof diagonalizes against the martingale. Let `d` be a p-martingale with ap
 `dhat`. The diagonal sequence (`Cslib.Complexity.Measure.diagBits`) extends the current prefix
 `w` by the bit `b` whose approximation `dhat (|w| + 2, w b)` is smaller
 (`Cslib.Complexity.Measure.diagStep`). Since `d w` is the average of `d (w0)` and `d (w1)`, the
-capital grows by at most `2 ^ (-(|w| + 1))` at that step, so it stays below `d λ + 1` along the
+capital grows by at most `2 ^ (-(|w| + 1))` at that step, so it stays below `d z + 1` along the
 whole sequence (`Cslib.Complexity.Measure.le_of_diagBits`), and `d` fails on the language
 `Cslib.Complexity.Measure.diagLanguage` with that characteristic sequence. The first `n` bits of
 the sequence take `n` polynomial-time steps on words of length below `n`, so membership of `y`,
@@ -49,7 +49,7 @@ consequence is formalized here.
 
 ## Main results
 
-* `Cslib.Complexity.Measure.le_of_diagBits`: the martingale stays below `d λ + 1` along the
+* `Cslib.Complexity.Measure.le_of_diagBits`: the martingale stays below `d z + 1` along the
   diagonal sequence.
 * `Cslib.Complexity.Measure.diagLanguage_mem_E`: the diagonal language is in `E`.
 * `Cslib.Complexity.Measure.IsPMartingale.exists_mem_cylinder_inter_E_notMem_successSet`,

@@ -117,7 +117,7 @@ example : DTIME encBits (fun n => 2 ^ (2 * n)) ⊂ E encBits := DTIME_ssubset_E 
 
 /-- A finite set of languages in `E` has p-measure zero. -/
 example : HasPMeasureZero {∅, Set.univ} := by
-  refine hasPMeasureZero_of_finite (Set.toFinite _) fun A hA => ?_
+  refine (Set.toFinite _).hasPMeasureZero fun A hA => ?_
   rcases hA with rfl | rfl
   · exact P_subset_E (Set.finite_empty.mem_P)
   · exact P_subset_E univ_mem_P

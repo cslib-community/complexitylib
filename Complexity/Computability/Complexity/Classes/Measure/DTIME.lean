@@ -25,7 +25,7 @@ For each `k`, the class `DTIME (2 ^ (k * n))` has p-measure zero, hence measure 
 With the Measure Conservation Theorem this separates every such class from `E`
 (`Cslib.Complexity.Measure.DTIME_ssubset_E`). Every finite set of languages in `E`, in particular
 every singleton, has p-measure zero (`Cslib.Complexity.Measure.hasPMeasureZero_singleton`,
-`Cslib.Complexity.Measure.hasPMeasureZero_of_finite`) [Lutz, Lemma 3.12][Lutz1992], and so does
+`Set.Finite.hasPMeasureZero`) [Lutz, Lemma 3.12(a)][Lutz1992], and so does
 `P` (`Cslib.Complexity.Measure.hasPMeasureZero_P`).
 
 The martingale (`Cslib.Complexity.Measure.TimeMartingale.martingale`) is the weighted sum, over
@@ -44,9 +44,12 @@ Since `2 ^ |s_j| ≤ j + 1`, the time bound at `s_j` is at most `(j + 1) ^ (k + 
 on are correct, and the capital along the characteristic sequence of `A` is at least
 `4 ^ (n - i) / 2 ^ n`, which is unbounded.
 
-Lutz derives the measure zero of `DTIME (2 ^ (k * n))` from the measure zero of p-countable
-unions of p-measure-zero classes [Lutz, Lemmas 3.10 and 3.12][Lutz1992]; the weighted sum above is
-that argument specialized to the enumeration of the time-bounded machines.
+Lutz does not state this result for `DTIME (2 ^ (k * n))` explicitly. It follows from
+[Lutz, Lemma 3.12(b)][Lutz1992], by which every p-countable subset of `E` has p-measure zero,
+because `DTIME (2 ^ (k * n))` lies in the p-countable class of languages decided by the clocked
+machines, together with the closure under subsets of [Lutz, Lemma 3.10][Lutz1992]. The proof of
+Lemma 3.12(b) sums one martingale per enumerated language. The weighted sum above is that argument
+specialized to the clocked machines.
 
 ## Main definitions
 
@@ -63,7 +66,7 @@ that argument specialized to the enumeration of the time-bounded machines.
   and measure zero in `E`.
 * `Cslib.Complexity.Measure.DTIME_ssubset_E`: `DTIME (2 ^ (k * n)) ⊂ E`.
 * `Cslib.Complexity.Measure.hasPMeasureZero_singleton`,
-  `Cslib.Complexity.Measure.hasPMeasureZero_of_finite`: finite sets of languages in `E` have
+  `Set.Finite.hasPMeasureZero`: finite sets of languages in `E` have
   p-measure zero.
 * `Cslib.Complexity.Measure.hasPMeasureZero_P`: `P` has p-measure zero.
 
@@ -335,8 +338,9 @@ theorem hasPMeasureZero_singleton {A : Set (List Bool)} (hA : A ∈ E encBits) :
   obtain ⟨k, hk⟩ := mem_E_iff.mp hA
   exact (hasPMeasureZero_DTIME k).mono (Set.singleton_subset_iff.mpr hk)
 
-/-- **Every finite set of languages in `E` has p-measure zero** [Lutz, Lemma 3.12][Lutz1992]. -/
-theorem hasPMeasureZero_of_finite {X : Set (Set (List Bool))} (hX : X.Finite)
+/-- **Every finite set of languages in `E` has p-measure zero** [Lutz, Lemma 3.12(a)][Lutz1992].
+-/
+theorem _root_.Set.Finite.hasPMeasureZero {X : Set (Set (List Bool))} (hX : X.Finite)
     (hXE : X ⊆ E encBits) : HasPMeasureZero X := by
   have h := hasPMeasureZero_biUnion hX fun A hA => hasPMeasureZero_singleton (hXE hA)
   rwa [Set.biUnion_of_singleton] at h

@@ -28,7 +28,8 @@ A **martingale** (`Cslib.Complexity.Measure.IsMartingale`) is a nonnegative func
 `d : {0,1}* → ℝ` with `d w = (d (w0) + d (w1)) / 2`: the capital of a gambler betting on the
 successive bits of a hidden sequence with fair payoffs. It **succeeds** on `A` when its capital
 along the prefixes of the characteristic sequence of `A` is unbounded, equivalently has limit
-superior `∞` (`Cslib.Complexity.Measure.successSet`, `Cslib.Complexity.Measure.mem_successSet_iff`).
+superior `∞` (`Cslib.Complexity.Measure.successSet`,
+`Cslib.Complexity.Measure.mem_successSet_iff_limsup`).
 
 A **p-martingale** (`Cslib.Complexity.Measure.IsPMartingale`) is a martingale with a
 polynomial-time approximation: a function `dhat : ℕ × {0,1}* → ℕ`, computable in time polynomial
@@ -289,8 +290,9 @@ private theorem abs_shiftRight_add_sub_le {r a b : ℕ} {x y : ℝ}
   rw [div_sub' hP.ne', abs_div, abs_of_pos hP, div_le_div_iff_of_pos_right hP, abs_le]
   constructor <;> nlinarith
 
-/-- **A sum of p-martingales is a p-martingale** [Lutz, Lemma 3.10][Lutz1992]: approximate both
-summands to precision `r + 2` and round the sum to precision `r`. -/
+/-- **A sum of p-martingales is a p-martingale** (cf. the proof of [Lutz, Lemma 3.10][Lutz1992],
+which sums density systems): approximate both summands to precision `r + 2` and round the sum to
+precision `r`. -/
 theorem IsPMartingale.add {d d' : List Bool → ℝ} (hd : IsPMartingale d) (hd' : IsPMartingale d') :
     IsPMartingale (d + d') where
   isMartingale := hd.isMartingale.add hd'.isMartingale
