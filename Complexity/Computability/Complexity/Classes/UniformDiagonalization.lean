@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Classes.Ladner.PolyTime
+public import Complexity.Computability.Complexity.Classes.P.Countable
 public import Complexity.Computability.Complexity.Reduction
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Clocked
 import Complexity.Computability.Complexity.Classes.Immune
@@ -456,12 +457,6 @@ theorem exists_mem_P_ite_notMem {C₁ C₂ : Set (Set (List Bool))}
   exact ⟨G, hG, fun ⟨i, hi⟩ => (hne i).1 hi.symm, fun ⟨i, hi⟩ => (hne i).2 hi.symm⟩
 
 /-! ### The mixed set -/
-
-/-- Problems in `P` are decidable. -/
-theorem isDecidable_of_mem_P {α : Type} {enc : α ↪ List Bool} {A : Set α} (h : A ∈ P enc) :
-    IsDecidable A enc :=
-  let ⟨f, hf, hA⟩ := h
-  isDecidable_iff.mpr ⟨f, hf.isComputable, hA⟩
 
 /-- **The mixed set is decidable** when `G`, `A₁` and `A₂` are. -/
 theorem isDecidable_ite {α : Type} {enc : α ↪ List Bool} {G A₁ A₂ : Set α}
