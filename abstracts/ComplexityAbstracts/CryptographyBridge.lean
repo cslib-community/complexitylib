@@ -75,7 +75,7 @@ theorem strictPPT_iff {α β : Type} {a : α ↪ List Bool} {b : β ↪ List Boo
         using (hlaw x).symm
   · rintro ⟨program, hp, hlaw⟩
     obtain ⟨c, d, evaluate, hevaluate, heq⟩ := hp.exists_seeded_evaluator
-    exact ⟨c, d, evaluate, polyTime_iff.mpr hevaluate,
+    exact ⟨c, d, evaluate, hevaluate,
       fun x => (hlaw x).symm.trans (heq x)⟩
 
 theorem indistinguishable_iff {X Y : ℕ → PMF (List Bool)} :

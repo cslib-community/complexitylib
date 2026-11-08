@@ -7,6 +7,7 @@ Authors: Anthropic, PBC, Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.SymbolicExec.CanonicalCall
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Parameters
 public import Complexity.Algorithms.WordRAM.ThreeSum.Fill
 public import Complexity.Computability.WordRAM.RegisterFrame
@@ -198,56 +199,24 @@ theorem exec_prepare {w : ℕ} (κ : ℕ) (x : Data 64)
           5 * Nat.sqrt (x.mem 0) + 24) ∧
       Parameters (x.mem 0) ((x.mem 0 + 2) ^ κ) y ∧
       y.regs inst = 0 ∧ y.regs found = 0 ∧ y.mem = x.mem := by
-  let N := x.mem 0
-  let U := (N + 2) ^ κ
-  obtain ⟨p, hp, hout, hm⟩ := ChanHe.Parameters.exec κ (x.comap parameterRegisters) hbudget
-  let a := p.extend parameterRegisters x
-  have ha := hp.rename parameter_injective
-  have han : a.regs parameterLen = N :=
-    (parameter_injective.extend_apply _ _ ChanHe.Parameters.len).trans hout.len
-  have hau : a.regs parameterUpper = U :=
-    (parameter_injective.extend_apply _ _ ChanHe.Parameters.magnitude).trans hout.magnitude
-  have ham : a.mem = x.mem := hm
   have h1 : Fits w 1 := hfill.of_le (by omega)
-  let b := a.set len N |>.set upper U |>.set base 1 |>.set one 1
-    |>.set sqrtArg N
-  have hb : ExecWithin w setup a b 5 := by
-    ram_eval [setup, b, han, hau, h1, parameterLen, parameterUpper, len, upper, base,
-      one, sqrtArg, Fin.mk.injEq]
-  have hbn : b.regs sqrtArg = N := by simp [b]
-  have hsqrt : Fits w (4 * b.regs sqrtArg + 4) := hbudget.of_le (by
-    rw [hbn]
-    change 4 * N + 4 ≤ ChanHe.Parameters.Math.budget N U
-    dsimp [ChanHe.Parameters.Math.budget]
-    omega)
-  obtain ⟨c, hc, hcr, -, hcm, -⟩ := NatSqrt.exec_rename sqrtRegisters sqrt_injective b hsqrt
-  have hpres (i : Fin 64) (hi : 34 ≤ i.val) : c.regs i = b.regs i := by
-    apply hc.regs_eq
-    apply Code.preserves_rename_of_forall_ne
-    intro j he
-    have hv := congrArg Fin.val he
-    dsimp only [sqrtRegisters] at hv
-    have := j.isLt
+  unfold prepare setup
+  wram_exec
+  wram_call (ChanHe.Parameters.exec κ _ hbudget) canonical parameter_injective with
+    a ⟨hout, ham⟩
+  wram_exec [parameterRegisters, ChanHe.Parameters.len, ChanHe.Parameters.magnitude,
+    hout.len, hout.magnitude, h1]
+  wram_call (NatSqrt.exec _ (by
+    wram_simp [NatSqrt.arg, sqrtRegisters]
+    exact hbudget.of_le (by dsimp [ChanHe.Parameters.Math.budget]; omega))) canonical
+    sqrt_injective with c ⟨hcr, _, hcm, _⟩
+  wram_call (exec_layout_at _
+    (by wram_simp) (by wram_simp) (by wram_simp) (by wram_simp)
+    (by wram_simp [sqrtRegisters, NatSqrt.root, hcr, NatSqrt.arg])
+    hsize hfill) with y ⟨hparams, hi, hf, hym⟩
+  refine ⟨?_, hparams, hi, hf, ?_⟩
+  · wram_simp [NatSqrt.arg, sqrtRegisters]
     omega
-  have hcr' : c.regs sqrtRoot = Nat.sqrt N := by
-    change c.regs sqrtRoot = Nat.sqrt (b.regs sqrtArg) at hcr
-    simpa only [hbn] using hcr
-  have hc' : ExecWithin w (NatSqrt.program.rename sqrtRegisters) b c
-      (5 * Nat.sqrt N + 7) := by
-    change ExecWithin w _ b c (5 * Nat.sqrt (b.regs sqrtArg) + 7) at hc
-    simpa only [hbn] using hc
-  obtain ⟨y, hy, hparams, hi, hf, hym⟩ := exec_layout_at (N := N) (U := U) c
-    ((hpres len (by decide)).trans (by
-      simp +decide [b, N, U, len, sqrtArg, one, base, upper]))
-    ((hpres upper (by decide)).trans (by
-      simp +decide [b, N, U, upper, sqrtArg, one, base]))
-    ((hpres base (by decide)).trans (by simp +decide [b, base, sqrtArg, one]))
-    ((hpres one (by decide)).trans (by simp +decide [b, one, sqrtArg]))
-    hcr' hsize hfill
-  refine ⟨y, ?_, hparams, hi, hf, hym.trans (hcm.trans ham)⟩
-  convert ha.seq (hb.seq (hc'.seq hy)) using 1
-  · rfl
-  · simp only [Data.comap_mem, N]
-    omega
+  · wram_simp [hym, hcm, ham]
 
 end Cslib.Algorithms.WordRAM.ThreeSum.Host

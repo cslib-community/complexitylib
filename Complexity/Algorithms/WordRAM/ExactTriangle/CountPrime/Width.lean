@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CountPrime.Input
+import Complexity.Computability.WordRAM.Admission
 
 /-!
 # Original-input physical admission for the complete native counter
@@ -49,14 +50,12 @@ theorem admission_fits (n p A : ℕ) :
           (3 + 2 * (n * n))) := by
   let E := envelope n p A
   let k := Nat.clog 2 E
-  have hp : E ≤ 2 ^ k := Nat.le_pow_clog (by decide) E
   have hm : magnitudeBudget p (Nat.clog 2 n) A < 2 ^ k :=
-    (show magnitudeBudget p (Nat.clog 2 n) A < E by dsimp only [E, envelope]; omega).trans_le hp
-  have hb : addressBudget n p (Nat.clog 2 n) (3 + 3 * (n * n)) 3 (3 + n * n)
-      (3 + 2 * (n * n)) < 2 ^ k :=
-    (show addressBudget n p (Nat.clog 2 n) (3 + 3 * (n * n)) 3 (3 + n * n)
-      (3 + 2 * (n * n)) < E by dsimp only [E, envelope]; omega).trans_le hp
-  refine ⟨⟨by omega, ?_, ?_⟩, (show Fits k _ from hb).mono (by
+    fits_of_lt_clog_le (B := E) (by dsimp only [E, envelope]; omega) (le_refl _)
+  have hb : Fits k (addressBudget n p (Nat.clog 2 n) (3 + 3 * (n * n)) 3 (3 + n * n)
+      (3 + 2 * (n * n))) :=
+    fits_of_lt_clog_le (B := E) (by dsimp only [E, envelope]; omega) (le_refl _)
+  refine ⟨⟨by omega, ?_, ?_⟩, hb.mono (by
     dsimp only [admissionWidth, k, E]; omega)⟩
   · simp only [Nat.add_sub_cancel]
     exact (neg_nonpos.mpr (by positivity)).trans (Int.natCast_nonneg _)

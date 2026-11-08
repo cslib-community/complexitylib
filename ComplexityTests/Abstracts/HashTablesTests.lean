@@ -66,6 +66,7 @@ example : upOpCharge = 13 * 2 ^ 320000 + 13739 := by
   unfold upOpCharge regimeThreshold
   rw [h, Nat.add_assoc]
 example : upSpace 4 ≤ upSpaceFactor * (4 + 1) := uniformProbingSpace_le 4
+example : upLargeOpCharge = 13778 := rfl
 
 -- Table 4: Cuckoo Hashing (`n_max = 4, U = 4`)
 example : cuckooMaxEvictions 4 = 24 := by decide
@@ -94,15 +95,15 @@ lemma cuckooInitSteps_4_4 : cuckooInitSteps 4 4 = 1131 := by
 
 example : cuckooSpaceFactor = 7699050 := rfl
 example : cuckooEvalHashBound = 427126092003 := rfl
-example : cuckooGetStepsBound = 854252184109 := rfl
-example : cuckooGetCharge = 854252184111 := rfl
+example : cuckooQueryStepsBound = 854252184109 := rfl
+example : cuckooQueryCharge = 854252184111 := rfl
 example : cuckooEvictIterBound = 854252184173 := rfl
 example : cuckooInsertBaseBound = 854252184154 := rfl
 example : cuckooResampleAtBaseFactor = 38400295 := rfl
 example : cuckooRehashAmortizedBound = 2562833357400 := rfl
 example : cuckooInsertCharge = 27336684332552 := rfl
 example : cuckooSpace 4 ≤ cuckooSpaceFactor * (4 + 1) := cuckooSpace_le 4
-example : cuckooOpCharge (.get (⟨0, by decide⟩ : Fin 4)) ≤ cuckooInsertCharge :=
+example : cuckooOpCharge (.query (⟨0, by decide⟩ : Fin 4)) ≤ cuckooInsertCharge :=
   cuckooOpCharge_le _
 example : cuckooOpCharge (.insert (⟨0, by decide⟩ : Fin 4) 5) ≤ cuckooInsertCharge :=
   cuckooOpCharge_le _
@@ -124,15 +125,15 @@ example (sampleState : DictState 4) :
   rintro rfl
   decide
 
-/-- Six-operation sequence (`insert 0 5`, `insert 1 3`, `insert 0 7`, `get 0`, `get 1`, `get 2`)
-on `Fin 4`, exercising two distinct keys, an overwrite, two hits, and a miss. -/
+/-- Six-operation sequence (`insert 0 5`, `insert 1 3`, `insert 0 7`, `query 0`, `query 1`,
+`query 2`) on `Fin 4`, exercising two distinct keys, an overwrite, two hits, and a miss. -/
 def sampleOps : List (DictOp 4) :=
   [ .insert ⟨0, by decide⟩ 5,
     .insert ⟨1, by decide⟩ 3,
     .insert ⟨0, by decide⟩ 7,
-    .get ⟨0, by decide⟩,
-    .get ⟨1, by decide⟩,
-    .get ⟨2, by decide⟩ ]
+    .query ⟨0, by decide⟩,
+    .query ⟨1, by decide⟩,
+    .query ⟨2, by decide⟩ ]
 
 lemma validDictHistory_sampleOps : ValidDictHistory 8 4 (emptyDict 4) sampleOps := by
   refine ⟨⟨Or.inl (by decide), by decide⟩,
@@ -211,8 +212,50 @@ theorem nonvacuous_uniformProbing :
   obtain ⟨Seed, μ_init, hinit, hsupp, hseq⟩ :=
     hexec 4 8 64 0 (by decide) (by decide) hfit_U (by decide)
       (fun _ => 0) (fun _ => 0) (wordBounded_zero 16) rfl (fun _ _ _ => rfl)
-  obtain ⟨μ_final, T_ops, hops, hbound⟩ := hseq sampleOps validDictHistory_sampleOps
+  obtain ⟨μ_final, T_ops, hops, hbound, -⟩ := hseq sampleOps validDictHistory_sampleOps
   exact ⟨p_init, p_op, Seed, μ_init, μ_final, T_ops, hinit, hsupp, hops, hbound⟩
+
+/-- `sampleOps` stores only two keys, so it is also valid at capacity `regimeThreshold`. -/
+lemma validDictHistory_sampleOps_large :
+    ValidDictHistory 8 regimeThreshold (emptyDict 4) sampleOps := by
+  have h : ∀ n : ℕ, n < 4 → n < regimeThreshold := fun _ hn => hn.trans lt_regimeThreshold_4
+  exact ⟨⟨Or.inl (h _ (by decide)), by decide⟩,
+    ⟨Or.inl (h _ (by decide)), by decide⟩,
+    ⟨Or.inr (by decide), by decide⟩,
+    trivial, trivial, trivial, trivial⟩
+
+lemma four_le_max_pow (N : ℕ) : 4 ≤ max N 4 ^ 4 :=
+  (le_max_right N 4).trans (Nat.le_self_pow (by decide) _)
+
+/-- Non-vacuity of the threshold-free conjunct of `uniformProbing`: at capacity
+`n_max = regimeThreshold`, with a word width `w = upSpace regimeThreshold + 4` large enough for the
+table, `sampleOps` runs in at most `upLargeOpCharge = 13778` expected instructions per operation. -/
+theorem nonvacuous_uniformProbing_large :
+    let w := upSpace regimeThreshold + 4
+    ∃ (p_op : List (Instr 16))
+      (Seed : Type) (μ_init μ_final : PMF (CoupledState Seed 16)) (T_ops : ℝ≥0∞),
+      ExecDictOps w p_op true
+        ⟨0, by decide⟩ ⟨12, by decide⟩ ⟨13, by decide⟩ ⟨14, by decide⟩ ⟨12, by decide⟩
+        0 (upSpace regimeThreshold) (emptyDict 4) sampleOps μ_init μ_final T_ops ∧
+      (upInitSteps regimeThreshold : ℝ≥0∞) + T_ops ≤
+        ((upInitSteps regimeThreshold + sampleOps.length * upLargeOpCharge : ℕ) : ℝ≥0∞) := by
+  intro w
+  have h16 : 16 ≤ 2 ^ w :=
+    (Nat.pow_le_pow_right (by decide) (Nat.le_add_left 4 _) : 2 ^ 4 ≤ 2 ^ w)
+  have hU : 4 ≤ max regimeThreshold 4 ^ 4 := four_le_max_pow regimeThreshold
+  have hsp : 0 + upSpace regimeThreshold < 2 ^ w := by
+    rw [Nat.zero_add]
+    exact Nat.lt_two_pow_self.trans_le (Nat.pow_le_pow_right (by decide) (Nat.le_add_right _ 4))
+  have hfit_U : ∀ u : Fin 4, u.val < 2 ^ w :=
+    fun u => u.isLt.trans_le ((by decide : 4 ≤ 16).trans h16)
+  have hbdd : WordBounded w (fun (_ : Fin 16) => 0) (fun _ => 0) :=
+    ⟨fun _ => Nat.two_pow_pos w, fun _ => Nat.two_pow_pos w⟩
+  obtain ⟨_, p_op, hexec⟩ := uniformProbing regimeThreshold
+  obtain ⟨Seed, μ_init, -, -, hseq⟩ :=
+    hexec 4 8 w 0 hU hsp hfit_U ((by decide : 8 < 16).trans_le h16) (fun _ => 0) (fun _ => 0)
+      hbdd rfl (fun _ _ _ => rfl)
+  obtain ⟨μ_final, T_ops, hops, -, hlarge⟩ := hseq sampleOps validDictHistory_sampleOps_large
+  exact ⟨p_op, Seed, μ_init, μ_final, T_ops, hops, hlarge le_rfl⟩
 
 /-- Initial register bank for `cuckooHashing` at `(n_max, U, base) = (4, 4, 0)`. -/
 def cuckooTestReg : Fin 19 → ℕ

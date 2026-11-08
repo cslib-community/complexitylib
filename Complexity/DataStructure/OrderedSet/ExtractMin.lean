@@ -42,7 +42,7 @@ variable {α : Type} [LinearOrder α]
   match result with
   | none => pure none
   | some x =>
-    let _ ← PFunctor.FreeM.lift (P := (spec α).signature) (.erase x)
+    let _ ← PFunctor.FreeM.lift (P := (spec α).signature) (.delete x)
     pure (some x)
 
 /-- The deletion argument and operation history depend on the observed minimum. -/
@@ -50,7 +50,7 @@ theorem extractMin_run (s : Finset α) :
     (spec α).runClient s extractMin =
       match least s with
       | none => (none, s, [.minimum])
-      | some x => (some x, s.erase x, [.minimum, .erase x]) := by
+      | some x => (some x, s.erase x, [.minimum, .delete x]) := by
   simp only [extractMin, StateTransitionSpec.runClient_lift_bind', spec]
   cases least s <;> rfl
 

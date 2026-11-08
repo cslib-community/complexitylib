@@ -41,8 +41,9 @@ This does not require an error estimate for the preceding global prefix.
 This supplies the small-heavy-set sentinel comparison in the proof of
 [OpenAI2026LogSpace, Section 8.3, Lemma 8.3]. The concrete output comparison, including upper
 saturation and the branch with at least `K` large true entries, is supplied by
-`Complexity.Foundations.Probability.PolynomialAtomRows.Relative`. Sentinels are analytical
-devices, not objects stored by the compression algorithm.
+`Complexity.Foundations.Analysis.RowCompression.SaturatedRoot`, specialized to polynomial
+outputs in `Complexity.Foundations.Probability.PolynomialAtomRows.Relative`. Sentinels are
+analytical devices, not objects stored by the compression algorithm.
 
 ## Main definitions
 

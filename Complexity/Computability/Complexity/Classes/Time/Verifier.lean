@@ -9,15 +9,12 @@ module
 
 public import Complexity.Computability.Complexity.Classes.Time
 import Complexity.Computability.Complexity.Classes.NP.Nondeterministic
+import Complexity.Computability.Complexity.Classes.Time.SampleVerify
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.ResourceFacts
-import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Composition
-import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.PairSampler
 import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayInput
-import Complexity.Computability.Machines.Turing.MultiTape.Run
 import Complexity.Probability.BitString
-import Complexity.Probability.PMF.Bind
 
 /-!
 # Nondeterministic time through verifiers, with explicit bounds
@@ -33,14 +30,12 @@ two directions here keep it.
   `{a | ∃ w, w.length = ℓ a ∧ V (a, w) = true}` lies in `NTIME enc t` whenever
   `(enc a).length + Tℓ a + T (a, w)` is within `O(t (enc a).length)` on certificates of that
   length. The certificate length may depend on the instance, not only on its encoded length.
-  The machine is the nondeterministic reading of a closed fair-coin composition:
-  - a deterministic machine writes `frame (enc a)` followed by `ℓ` ones;
-  - the fixed sampler `Turing.MultiTapePTM.pairSampler` copies the framed instance and replaces
-    the ones by fair coins;
-  - a deterministic machine runs the verifier.
-
-  Its computation paths are exactly the coin replays, so it accepts exactly when some
-  certificate is accepted, and every branch halts within the composed clock.
+  The machine is the nondeterministic reading of the sample-and-verify machine
+  (`Cslib.Complexity.exists_machine_sampleVerify`), a closed fair-coin composition that writes
+  `frame (enc a)` followed by `ℓ` ones, replaces the ones by fair coins with the fixed sampler
+  `Turing.MultiTapePTM.pairSampler`, and runs the verifier. Its computation paths are exactly the
+  coin replays, so it accepts exactly when some certificate is accepted, and every branch halts
+  within the clock.
 * **Verifiers from nondeterministic time** (`Cslib.Complexity.exists_verifier_of_mem_NTIME`).
   A problem in `NTIME enc t` has a verifier that is computable in linear time on encoded pairs:
   check that the certificate, read as coins of the choice table
@@ -81,116 +76,25 @@ theorem setOf_exists_mem_NTIME {V : α × List Bool → Bool} {ℓ : α → ℕ}
     (hV : ComputableInO V (encPair enc encBits) encBool T S)
     (ht : ∀ a w, w.length = ℓ a → (enc a).length + Tℓ a + T (a, w) ≤ C * t (enc a).length + C) :
     {a | ∃ w : List Bool, w.length = ℓ a ∧ V (a, w) = true} ∈ NTIME enc t := by
-  -- the deterministic preparation and the verifier, as machines
-  obtain ⟨c₁, ⟨k₁, Q₁, _, tm₁, h₁⟩, -⟩ :=
-    (ComputableInO.of_eq (f := fun a : α => a) (encIn := enc) (encMid := enc) fun _ => rfl).prod hℓ
-  obtain ⟨c₃, ⟨k₃, Q₃, _, tm₃, h₃⟩, -⟩ := hV
-  let L (a : α) : ℕ := ℓ a
-  let u (a : α) : List Bool := frame (enc a) ++ List.replicate (L a) true
-  let t₁ (a : α) : ℕ := c₁ * ((enc a).length + Tℓ a + 1)
-  let t₂ (a : α) : ℕ := (u a).length + 1
-  let t₃ (a : α) : ℕ := c₃ * (C * t (enc a).length + C + 1)
-  have hrun₁ (a : α) := (h₁ a).runFrom_of_le (le_refl (t₁ a))
-  have hlen₁ (a : α) : (u a).length ≤ t₁ a := (h₁ a).length_output_le
-  -- the first phase writes the framed instance and the unary certificate length
-  let M₁ : MultiTapePTM k₁ Bool Q₁ := MultiTapePTM.ofDeterministic tm₁
-  have hfirst₁ (a : α) : ∀ final ∈ (ProbComp.eval
-      (M₁.runClosedConfigFrom (t₁ a) (M₁.initialConfig (enc a)))).support,
-      final.tapes.state = none := by
-    intro final hfinal
-    rw [MultiTapePTM.eval_runClosedConfigFrom_ofDeterministic, PMF.mem_support_pure_iff] at hfinal
-    subst hfinal
-    exact (hrun₁ a).1
-  have hout₁ (a : α) : ProbComp.eval (M₁.runClosed (t₁ a) (enc a)) = PMF.pure (u a) := by
-    rw [MultiTapePTM.eval_runClosed_ofDeterministic, (hrun₁ a).2]
-    rfl
-  -- the sampler copies the framed instance and guesses the certificate
-  have hsecond₁ (a : α) : ∀ word ∈ (ProbComp.eval (M₁.runClosed (t₁ a) (enc a))).support,
-      ∀ final ∈ (ProbComp.eval (MultiTapePTM.pairSampler.runClosedConfigFrom (t₂ a)
-        (MultiTapePTM.pairSampler.initialConfig word))).support, final.tapes.state = none := by
-    intro word hword
-    rw [hout₁ a, PMF.mem_support_pure_iff] at hword
-    subst hword
-    exact MultiTapePTM.pairSampler_halted (enc a) (List.replicate (L a) true)
-  let P₁₂ := MultiTapePTM.pairSampler.comp M₁ false
-  let t₁₂ (a : α) : ℕ := t₁ a + (t₁ a + 4 + t₂ a)
-  have heval₁₂ (a : α) : ProbComp.eval (P₁₂.runClosed (t₁₂ a) (enc a)) =
-      (BitString.uniformList (L a)).map (frame (enc a) ++ ·) := by
-    rw [MultiTapePTM.eval_comp M₁ MultiTapePTM.pairSampler false (enc a) (t₁ a) (t₂ a)
-      (hfirst₁ a) (hsecond₁ a), hout₁ a, Probability.PMF.monad_bind_eq_bind, PMF.pure_bind]
-    simpa only [List.length_replicate, u] using
-      MultiTapePTM.eval_pairSampler (enc a) (List.replicate (L a) true)
-  have hhalt₁₂ (a : α) := MultiTapePTM.comp_halted M₁ MultiTapePTM.pairSampler false (enc a)
-    (t₁ a) (t₂ a) (hfirst₁ a) (hsecond₁ a)
-  -- the verifier runs on every guessed pair within the uniform clock `t₃`
-  let M₃ : MultiTapePTM k₃ Bool Q₃ := MultiTapePTM.ofDeterministic tm₃
-  have hrun₃ (a : α) (w : List Bool) (hw : w.length = L a) :=
-    (h₃ (a, w)).runFrom_of_le (J := t₃ a) (Nat.mul_le_mul_left c₃ (by
-      have := ht a w hw
-      omega))
-  have hword (a : α) {word : List Bool}
-      (hword : word ∈ (ProbComp.eval (P₁₂.runClosed (t₁₂ a) (enc a))).support) :
-      ∃ w : List Bool, w.length = L a ∧ word = encPair enc encBits (a, w) := by
-    rw [heval₁₂ a] at hword
-    obtain ⟨w, hw, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hword
-    exact ⟨w, BitString.mem_support_uniformList_iff.mp hw, rfl⟩
-  have hsecond₂ (a : α) : ∀ word ∈ (ProbComp.eval (P₁₂.runClosed (t₁₂ a) (enc a))).support,
-      ∀ final ∈ (ProbComp.eval (M₃.runClosedConfigFrom (t₃ a) (M₃.initialConfig word))).support,
-      final.tapes.state = none := by
-    intro word hw final hfinal
-    obtain ⟨w, hwlen, rfl⟩ := hword a hw
-    rw [MultiTapePTM.eval_runClosedConfigFrom_ofDeterministic, PMF.mem_support_pure_iff] at hfinal
-    subst hfinal
-    exact (hrun₃ a w hwlen).1
-  let P := M₃.comp P₁₂ false
-  let total (a : α) : ℕ := t₁₂ a + (t₁₂ a + 4 + t₃ a)
-  -- the nondeterministic reading decides the problem
-  have hdec : P.toNTM.DecidesInTime enc
-      {a | ∃ w : List Bool, w.length = ℓ a ∧ V (a, w) = true} total := by
-    intro a
-    have htime : P.toNTM.RunsInTime (enc a) (total a) := P.runsInTime_toNTM
-      (MultiTapePTM.comp_halted P₁₂ M₃ false (enc a) (t₁₂ a) (t₃ a) (hhalt₁₂ a) (hsecond₂ a))
-    refine ⟨htime, ?_⟩
-    rw [MultiTapeNTM.accepts_iff_exists_time_eq htime,
-      P.exists_computationPath_toNTM_iff (P := fun cfg => cfg.output = [true])]
-    have hiff : (∃ final ∈ (ProbComp.eval (P.runClosedConfigFrom (total a)
-        (P.initialConfig (enc a)))).support, final.tapes.output = [true]) ↔
-        [true] ∈ (ProbComp.eval (P.runClosed (total a) (enc a))).support := by
-      rw [MultiTapePTM.runClosed_eq_map, ProbComp.eval_map, PMF.mem_support_map_iff]
-    rw [hiff, MultiTapePTM.eval_comp P₁₂ M₃ false (enc a) (t₁₂ a) (t₃ a) (hhalt₁₂ a)
-      (hsecond₂ a), Probability.PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff]
-    constructor
-    · rintro ⟨w, hw, hV⟩
-      refine ⟨encPair enc encBits (a, w), ?_, ?_⟩
-      · rw [heval₁₂ a]
-        exact (PMF.mem_support_map_iff _ _ _).mpr
-          ⟨w, BitString.mem_support_uniformList_iff.mpr hw, rfl⟩
-      · rw [MultiTapePTM.eval_runClosed_ofDeterministic, (hrun₃ a w hw).2, PMF.mem_support_pure_iff]
-        simp [hV]
-    · rintro ⟨word, hw, hacc⟩
-      obtain ⟨w, hwlen, rfl⟩ := hword a hw
-      rw [MultiTapePTM.eval_runClosed_ofDeterministic, (hrun₃ a w hwlen).2,
-        PMF.mem_support_pure_iff] at hacc
-      exact ⟨w, hwlen, by simpa using hacc⟩
-  -- the composed clock is within `O(t)`
-  refine ⟨(6 * c₁ + c₃) * C, (6 * c₁ + c₃) * (C + 1) + 14, _, _, inferInstance, P.toNTM,
-    hdec.mono fun a => ?_⟩
-  set X := C * t (enc a).length + C + 1
-  have hX₁ : t₁ a ≤ c₁ * X := Nat.mul_le_mul_left c₁ (by
-    have := ht a (List.replicate (L a) false) (List.length_replicate ..)
-    omega)
-  have htotal : total a ≤ 6 * t₁ a + 14 + t₃ a := by
-    have := hlen₁ a
-    simp only [total, t₁₂, t₂]
-    omega
-  have hX₃ : t₃ a = c₃ * X := rfl
-  calc total a ≤ 6 * (c₁ * X) + 14 + c₃ * X := by
-        have := Nat.mul_le_mul_left 6 hX₁
-        rw [hX₃] at htotal
-        omega
-    _ = (6 * c₁ + c₃) * C * t (enc a).length + ((6 * c₁ + c₃) * (C + 1) + 14) := by
-        simp only [X]
-        ring
+  obtain ⟨c₁, c₂, k, State, hfinite, machine, hmachine⟩ := exists_machine_sampleVerify hℓ hV ht
+  refine ⟨c₁, c₂, k, State, hfinite, machine.toNTM, fun a => ?_⟩
+  -- the nondeterministic reading accepts exactly when some sampled string is accepted
+  have htime : machine.toNTM.RunsInTime (enc a) (c₁ * t (enc a).length + c₂) :=
+    machine.runsInTime_toNTM (hmachine a).1
+  refine ⟨htime, ?_⟩
+  rw [MultiTapeNTM.accepts_iff_exists_time_eq htime,
+    machine.exists_computationPath_toNTM_iff (P := fun cfg => cfg.output = [true])]
+  set T := c₁ * t (enc a).length + c₂
+  have hiff : (∃ final ∈ (ProbComp.eval (machine.runClosedConfigFrom T
+      (machine.initialConfig (enc a)))).support, final.tapes.output = [true]) ↔
+      [true] ∈ (ProbComp.eval (machine.runClosed T (enc a))).support := by
+    rw [MultiTapePTM.runClosed_eq_map, ProbComp.eval_map, PMF.mem_support_map_iff]
+  rw [hiff, (hmachine a).2, PMF.mem_support_map_iff]
+  constructor
+  · rintro ⟨w, hw, hVw⟩
+    exact ⟨w, BitString.mem_support_uniformList_iff.mpr hw, by rw [hVw]⟩
+  · rintro ⟨w, hw, hVw⟩
+    exact ⟨w, BitString.mem_support_uniformList_iff.mp hw, by simpa using hVw⟩
 
 /-- **A linear-time verifier for nondeterministic time.** A problem in `NTIME enc t` has a
 verifier computable in linear time on encoded pairs. For a constant `c`, every certificate length

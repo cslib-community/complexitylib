@@ -6,7 +6,7 @@ Authors: Erik Demaine
 
 -- upstream: local-only (tests)
 
-import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime
+import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime
 import Mathlib.Data.List.GetD
 
 /-!
@@ -33,10 +33,10 @@ private theorem prime : 3 ∈ Nat.sqrtPrimeWindow (D 2) :=
 
 /-- The complete actual program returns one and an original witness on all-zero input. -/
 private theorem initialized_zero (N : ℕ) (hgeo : D 2 ^ 18 ≤ N) : ∃ y : Data 416, ∃ t : ℕ,
-    Runs (width N 0) (FixedPrime.program.program FixedPrime.Reg.found)
+    Runs (width N 0) (StreamingFixedPrime.program.program FixedPrime.Reg.found)
       (State.init (PreparationInput.input N (D 2) 1 3 (weights N 0)))
-      ⟨FixedPrime.program.size, y⟩ t ∧
-    Executes (width N 0) (FixedPrime.program.program FixedPrime.Reg.found)
+      ⟨StreamingFixedPrime.program.size, y⟩ t ∧
+    Executes (width N 0) (StreamingFixedPrime.program.program FixedPrime.Reg.found)
       (State.init (PreparationInput.input N (D 2) 1 3 (weights N 0))) 1 (t + 1) ∧
     y.regs FixedPrime.Reg.found = 1 ∧ y.regs FixedPrime.Reg.scans ≤ 1 ∧
     ∃ u v c : Fin N,
@@ -48,8 +48,8 @@ private theorem initialized_zero (N : ℕ) (hgeo : D 2 ^ 18 ≤ N) : ∃ y : Dat
     have he := List.eq_of_mem_replicate hz
     subst z
     decide
-  obtain ⟨hi, a, ha, hout, y, t, ht, hr, he, yb, yf, ys, yiff, yw, frame, regs⟩ :=
-    FixedPrime.runs_input (m := 2) (n := N) (g := 1) (p := 3) (A := 0)
+  obtain ⟨hi, a, hout, y, t, ht, hr, he, yb, yf, ys, yiff, yw, frame⟩ :=
+    StreamingFixedPrime.runs_input (m := 2) (n := N) (g := 1) (p := 3) (A := 0)
       (W := width N 0) (weights N 0) (by simp only [weights, List.length_replicate])
       (by decide) (by decide) prime hgeo hmag le_rfl
   let V := fun q => (weights N 0).getD q 0
@@ -83,10 +83,10 @@ private theorem initialized_one (N : ℕ) (hgeo : D 2 ^ 18 ≤ N) :
       (fun b c => V (N * N + pairIndex (b, c)))
       (fun u c => V (2 * (N * N) + pairIndex (u, c))) 3
     ∃ y : Data 416, ∃ t : ℕ,
-      Runs (width N 1) (FixedPrime.program.program FixedPrime.Reg.found)
+      Runs (width N 1) (StreamingFixedPrime.program.program FixedPrime.Reg.found)
         (State.init (PreparationInput.input N (D 2) 1 3 (weights N 1)))
-        ⟨FixedPrime.program.size, y⟩ t ∧
-      Executes (width N 1) (FixedPrime.program.program FixedPrime.Reg.found)
+        ⟨StreamingFixedPrime.program.size, y⟩ t ∧
+      Executes (width N 1) (StreamingFixedPrime.program.program FixedPrime.Reg.found)
         (State.init (PreparationInput.input N (D 2) 1 3 (weights N 1))) 0 (t + 1) ∧
       y.regs FixedPrime.Reg.found = 0 ∧ y.regs FixedPrime.Reg.scans ≤ F := by
   have hmag : ∀ z ∈ weights N 1, z.natAbs ≤ 1 := by
@@ -94,8 +94,8 @@ private theorem initialized_one (N : ℕ) (hgeo : D 2 ^ 18 ≤ N) :
     have he := List.eq_of_mem_replicate hz
     subst z
     decide
-  obtain ⟨hi, a, ha, hout, y, t, ht, hr, he, yb, yf, ys, yiff, yw, frame, regs⟩ :=
-    FixedPrime.runs_input (m := 2) (n := N) (g := 1) (p := 3) (A := 1)
+  obtain ⟨hi, a, hout, y, t, ht, hr, he, yb, yf, ys, yiff, yw, frame⟩ :=
+    StreamingFixedPrime.runs_input (m := 2) (n := N) (g := 1) (p := 3) (A := 1)
       (W := width N 1) (weights N 1) (by simp only [weights, List.length_replicate])
       (by decide) (by decide) prime hgeo hmag le_rfl
   let V := fun q => (weights N 1).getD q 0
@@ -127,10 +127,10 @@ private theorem initialized_one (N : ℕ) (hgeo : D 2 ^ 18 ≤ N) :
 
 
 example : ∃ y : Data 416, ∃ t : ℕ,
-    Runs (width side 0) (FixedPrime.program.program FixedPrime.Reg.found)
+    Runs (width side 0) (StreamingFixedPrime.program.program FixedPrime.Reg.found)
       (State.init (PreparationInput.input side (D 2) 1 3 (weights side 0)))
-      ⟨FixedPrime.program.size, y⟩ t ∧
-    Executes (width side 0) (FixedPrime.program.program FixedPrime.Reg.found)
+      ⟨StreamingFixedPrime.program.size, y⟩ t ∧
+    Executes (width side 0) (StreamingFixedPrime.program.program FixedPrime.Reg.found)
       (State.init (PreparationInput.input side (D 2) 1 3 (weights side 0))) 1 (t + 1) ∧
     y.regs FixedPrime.Reg.found = 1 ∧ y.regs FixedPrime.Reg.scans ≤ 1 ∧
     ∃ u v c : Fin side,
@@ -145,10 +145,10 @@ example :
       (fun b c => V (side * side + pairIndex (b, c)))
       (fun u c => V (2 * (side * side) + pairIndex (u, c))) 3
     ∃ y : Data 416, ∃ t : ℕ,
-      Runs (width side 1) (FixedPrime.program.program FixedPrime.Reg.found)
+      Runs (width side 1) (StreamingFixedPrime.program.program FixedPrime.Reg.found)
         (State.init (PreparationInput.input side (D 2) 1 3 (weights side 1)))
-        ⟨FixedPrime.program.size, y⟩ t ∧
-      Executes (width side 1) (FixedPrime.program.program FixedPrime.Reg.found)
+        ⟨StreamingFixedPrime.program.size, y⟩ t ∧
+      Executes (width side 1) (StreamingFixedPrime.program.program FixedPrime.Reg.found)
         (State.init (PreparationInput.input side (D 2) 1 3 (weights side 1))) 0 (t + 1) ∧
       y.regs FixedPrime.Reg.found = 0 ∧ y.regs FixedPrime.Reg.scans ≤ F :=
   initialized_one side (by decide)

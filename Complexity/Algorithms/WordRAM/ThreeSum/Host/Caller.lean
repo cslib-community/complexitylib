@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Loop
+import Complexity.Computability.WordRAM.SymbolicExec.CanonicalCall
 
 /-!
 # Caller-owned Convolution-3SUM input and workspace
@@ -70,39 +71,33 @@ theorem exec_prepare_at {w N U src workspace : ℕ} (x : Data 64)
     have := congrArg Fin.val h
     dsimp only [sqrtRegisters] at this
     omega
-  obtain ⟨b, he, hr, _, hm, _⟩ := NatSqrt.exec_rename sqrtRegisters hsi a
+  obtain ⟨small, he, hr, _, hm, _⟩ := NatSqrt.exec (a.comap sqrtRegisters)
     (by change Fits w (4 * a.regs sqrtArg + 4); rw [han]; exact hsqrt)
-  change ExecWithin w _ a b (5 * Nat.sqrt (a.regs sqrtArg) + 7) at he
-  rw [han] at he
-  have hbr (i : Fin 64) (hi : 34 ≤ i.val) : b.regs i = a.regs i := by
-    apply he.regs_eq
-    apply Code.preserves_rename_of_forall_ne
-    intro j hj
-    have := congrArg Fin.val hj
-    dsimp only [sqrtRegisters] at this
-    have := j.isLt
-    omega
+  let b := small.extend sqrtRegisters a
+  have hcall : ExecWithin w (NatSqrt.program.rename sqrtRegisters) a b
+      (5 * Nat.sqrt N + 7) := by
+    have hcall := he.rename hsi
+    change ExecWithin w _ a b (5 * Nat.sqrt (a.regs sqrtArg) + 7) at hcall
+    simpa only [han] using hcall
+  change small.regs NatSqrt.root = Nat.sqrt (a.regs sqrtArg) at hr
+  rw [han] at hr
   have hr' : b.regs sqrtRoot = Nat.sqrt N := by
-    change b.regs sqrtRoot = Nat.sqrt (a.regs sqrtArg) at hr
-    simpa only [han] using hr
+    wram_simp [b, NatSqrt.root, hr]
   have hw : N + (workspace - N) = workspace := by omega
   obtain ⟨c, hc, hp, hi, hf, hmem⟩ :=
     exec_layout_at (N := N) (U := U) (src := workspace - N) b
-    ((hbr len (by decide)).trans (by simp +decide [a, hN, len, sqrtArg, one, base, savedSource]))
-    ((hbr upper (by decide)).trans
-      (by simp +decide [a, hU, upper, sqrtArg, one, base, savedSource]))
-    ((hbr base (by decide)).trans (by simp +decide [a, base, sqrtArg, one]))
-    ((hbr one (by decide)).trans (by simp +decide [a, one, sqrtArg])) hr'
-    (by simpa only [hw] using hsize) hfill
+      (by wram_simp [b, a, hN]) (by wram_simp [b, a, hU])
+      (by wram_simp [b, a]) (by wram_simp [b, a]) hr'
+      (by simpa only [hw] using hsize) hfill
   rw [hw] at hp
-  have hsaved : c.regs savedSource = src :=
-    (hc.regs_eq (by decide)).trans ((hbr savedSource (by decide)).trans
-      (by simp +decide [a, savedSource, base, one, sqrtArg]))
+  have hsaved : c.regs savedSource = src := by
+    rw [hc.regs_eq (by decide)]
+    wram_simp [b, a]
   let y := c.set base src
   have hy : ExecWithin w restoreSource c y 1 := by
     simpa only [restoreSource, hsaved] using
       (ExecWithin.copy (x := c) (d := base) (s := savedSource))
-  refine ⟨y, (ha.seq (he.seq (hc.seq hy))).mono ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨y, (ha.seq (hcall.seq (hc.seq hy))).mono ?_, ?_, ?_, ?_, ?_⟩
   · omega
   · constructor <;> simp +decide [y, Data.set_regs,
       len, upper, base, matAB, matBC, matAC, free, side, stop, filler, encodedFiller, one,

@@ -286,6 +286,89 @@ theorem clmul_step (a b : ℕ) :
   · simp
   · rw [clmul, ite_eq_right hb]
 
+/-- Step recurrence for `clmul u v` using `(v &&& 1) * u`:
+`((v &&& 1) * u) ^^^ (clmul u (v >>> 1) <<< 1) = clmul u v`. -/
+theorem clmul_eq_bit_mul_xor (u v : ℕ) :
+    ((v &&& 1) * u) ^^^ (clmul u (v >>> 1) <<< 1) = clmul u v := by
+  rw [clmul_step u v]
+  congr 1
+  have hand : v &&& 1 = v % 2 := Nat.and_two_pow_sub_one_eq_mod v 1
+  rw [hand]
+  rcases Nat.mod_two_eq_zero_or_one v with h0 | h1
+  · simp [h0]
+  · simp [h1]
+
+/-- Splitting a natural number `a` into its low `c` bits (`a &&& (2 ^ c - 1)`) and shifted high
+bits (`(a >>> c) <<< c`) via bitwise XOR. -/
+theorem and_xor_shiftRight_shiftLeft (a c : ℕ) :
+    (a &&& (2 ^ c - 1)) ^^^ ((a >>> c) <<< c) = a := by
+  apply Nat.eq_of_testBit_eq
+  intro i
+  rw [Nat.testBit_xor, Nat.testBit_and, Nat.testBit_two_pow_sub_one,
+    Nat.testBit_shiftLeft, Nat.testBit_shiftRight]
+  by_cases h : i < c
+  · have hge : ¬ c ≤ i := not_le.mpr h
+    simp [h, hge]
+  · have hge : c ≤ i := le_of_not_gt h
+    simp [h, hge, Nat.add_sub_of_le hge]
+
+/-- Bitwise decomposition of `idx < 2 ^ (2 * c)` into high `c`-bit chunk `u = idx >>> c` and low
+`c`-bit chunk `v = idx &&& (2 ^ c - 1)`, together with properties of
+`prevIdx = (u <<< c) + (v >>> 1)`. -/
+theorem clmulTab_index_props {c idx : ℕ} (hidx : idx < 2 ^ (2 * c)) :
+    let u := idx >>> c
+    let v := idx &&& (2 ^ c - 1)
+    let prevIdx := (u <<< c) + (v >>> 1)
+    u < 2 ^ c ∧
+    v < 2 ^ c ∧
+    (u <<< c) + v = idx ∧
+    prevIdx ≤ idx ∧
+    (v ≠ 0 → prevIdx < idx) ∧
+    (v = 0 → prevIdx = idx) ∧
+    prevIdx >>> c = u ∧
+    prevIdx &&& (2 ^ c - 1) = v >>> 1 := by
+  intro u v prevIdx
+  have hpow_pos : 0 < 2 ^ c := Nat.two_pow_pos c
+  have hu_eq : u = idx / 2 ^ c := Nat.shiftRight_eq_div_pow idx c
+  have hv_eq : v = idx % 2 ^ c := Nat.and_two_pow_sub_one_eq_mod idx c
+  have hu_lt : u < 2 ^ c := by
+    rw [hu_eq]
+    apply Nat.div_lt_of_lt_mul
+    rwa [← pow_add, ← two_mul]
+  have hv_lt : v < 2 ^ c := by
+    rw [hv_eq]
+    exact Nat.mod_lt idx hpow_pos
+  have huv_eq : (u <<< c) + v = idx := by
+    rw [Nat.shiftLeft_eq, hu_eq, hv_eq, Nat.div_add_mod' idx (2 ^ c)]
+  have hv_shr : v >>> 1 = v / 2 := Nat.shiftRight_eq_div_pow v 1
+  have hv_shr_lt : v >>> 1 < 2 ^ c := by
+    rw [hv_shr]
+    exact Nat.lt_of_le_of_lt (Nat.div_le_self v 2) hv_lt
+  have hprev_eq : prevIdx = u * 2 ^ c + (v >>> 1) := by
+    dsimp only [prevIdx]
+    rw [Nat.shiftLeft_eq]
+  have hprev_le : prevIdx ≤ idx := by
+    have : v >>> 1 ≤ v := by rw [hv_shr]; exact Nat.div_le_self v 2
+    dsimp only [prevIdx]
+    omega
+  have hprev_lt : v ≠ 0 → prevIdx < idx := by
+    intro hv0
+    have : v >>> 1 < v := by rw [hv_shr]; omega
+    dsimp only [prevIdx]
+    omega
+  have hprev_zero : v = 0 → prevIdx = idx := by
+    intro hv0
+    have : v >>> 1 = 0 := by rw [hv_shr, hv0]
+    dsimp only [prevIdx]
+    omega
+  have hprev_u : prevIdx >>> c = u := by
+    rw [Nat.shiftRight_eq_div_pow, hprev_eq, Nat.add_comm,
+      Nat.add_mul_div_right _ _ hpow_pos, Nat.div_eq_of_lt hv_shr_lt, zero_add]
+  have hprev_v : prevIdx &&& (2 ^ c - 1) = v >>> 1 := by
+    rw [Nat.and_two_pow_sub_one_eq_mod, hprev_eq, Nat.add_comm,
+      Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hv_shr_lt]
+  exact ⟨hu_lt, hv_lt, huv_eq, hprev_le, hprev_lt, hprev_zero, hprev_u, hprev_v⟩
+
 /-- **`clmul` computes polynomial multiplication over `ZMod 2`**. -/
 @[simp]
 theorem polyOfCode_clmul (a b : ℕ) :

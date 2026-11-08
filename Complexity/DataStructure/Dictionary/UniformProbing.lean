@@ -74,11 +74,11 @@ In [CLRS2009], third edition, Section 11.4:
   `Cslib.DataStructure.Dictionary.UniformProbing.probeCount`: pure open-addressed table of `m`
   slots and
   per-key probe count.
-* `Cslib.DataStructure.Dictionary.UniformProbing.tableGet`,
+* `Cslib.DataStructure.Dictionary.UniformProbing.tableQuery`,
   `Cslib.DataStructure.Dictionary.UniformProbing.tableInsert`,
   `Cslib.DataStructure.Dictionary.UniformProbing.tableStep`,
   `Cslib.DataStructure.Dictionary.UniformProbing.runTable`,
-  `Cslib.DataStructure.Dictionary.UniformProbing.TableRep`: open-addressed `get`/`insert`
+  `Cslib.DataStructure.Dictionary.UniformProbing.TableRep`: open-addressed `query`/`insert`
   operations and
   representation invariant linking `Table U m` to `Dictionary.State U`.
 
@@ -909,10 +909,10 @@ theorem TableRep.apply_targetSlot {U m : ℕ} {π : Fin U → Equiv.Perm (Fin m)
     obtain ⟨_, hTj⟩ := hrep.key_spec u v hsu
     exact hTj
 
-/-- Pure open-addressed lookup `tableGet hm π T u` when `0 < m`: inspects slot
+/-- Pure open-addressed lookup `tableQuery hm π T u` when `0 < m`: inspects slot
 `π u ⟨min (missedProbes (otherOccupiedSlots T u) (π u)) (m - 1), _⟩` and returns `some v` if it
 contains `(u, v)`, else `none`. -/
-def tableGet {U m : ℕ} (hm : 0 < m) (π : Fin U → Equiv.Perm (Fin m)) (T : Table U m)
+def tableQuery {U m : ℕ} (hm : 0 < m) (π : Fin U → Equiv.Perm (Fin m)) (T : Table U m)
     (u : Fin U) : Option ℕ :=
   let idx := min (missedProbes (otherOccupiedSlots T u) (π u)) (m - 1)
   match T (π u ⟨idx, by omega⟩) with
@@ -938,16 +938,16 @@ theorem tableInsert_eq_update_targetSlot {U m : ℕ} (hm : 0 < m) (π : Fin U �
   dsimp only [tableInsert, targetSlot]
   rw [hslot]
 
-/-- Under `TableRep π s T` and `(otherOccupiedSlots T u).card < m`, `tableGet hm π T u = s u`. -/
-theorem TableRep.tableGet_eq {U m : ℕ} (hm : 0 < m) {π : Fin U → Equiv.Perm (Fin m)}
+/-- Under `TableRep π s T` and `(otherOccupiedSlots T u).card < m`, `tableQuery hm π T u = s u`. -/
+theorem TableRep.tableQuery_eq {U m : ℕ} (hm : 0 < m) {π : Fin U → Equiv.Perm (Fin m)}
     {s : Dictionary.State U} {T : Table U m} (hrep : TableRep π s T) (u : Fin U)
     (hO : (otherOccupiedSlots T u).card < m) :
-    tableGet hm π T u = s u := by
+    tableQuery hm π T u = s u := by
   have hlt : missedProbes (otherOccupiedSlots T u) (π u) < m :=
     missedProbes_lt_of_card_lt hO (π u)
   have hmin : min (missedProbes (otherOccupiedSlots T u) (π u)) (m - 1) =
       missedProbes (otherOccupiedSlots T u) (π u) := Nat.min_eq_left (by omega)
-  dsimp only [tableGet]
+  dsimp only [tableQuery]
   have hslot : (⟨min (missedProbes (otherOccupiedSlots T u) (π u)) (m - 1), by omega⟩ : Fin m) =
       probeSlotIndex (otherOccupiedSlots T u) (π u) hO := Fin.ext hmin
   rw [hslot]
@@ -1108,7 +1108,7 @@ theorem TableRep.probeCount_tableInsert_of_isSome {U m : ℕ} (hm : 0 < m)
 def tableStep {U m : ℕ} (hm : 0 < m) (π : Fin U → Equiv.Perm (Fin m)) (T : Table U m)
     (o : Dictionary.Op U) : Table U m × (Dictionary.spec U 0 0).Result o :=
   match o with
-  | .get u => (T, tableGet hm π T u)
+  | .query u => (T, tableQuery hm π T u)
   | .insert u v => (tableInsert hm π T u v, ())
 
 /-- Execute a sequence of `Dictionary.Op U` operations on `T` under permutation family `π`. -/
@@ -1149,7 +1149,7 @@ theorem tableRep_runTableFrom {U V n_max m : ℕ} (hm : 0 < m) (hcap : n_max ≤
     have hs' : (Dictionary.dom ((Dictionary.spec U V n_max).stepFn s o).1).card ≤ n_max :=
       Dictionary.card_dom_step_le_of_valid hs hvh.1
     cases o with
-    | get u =>
+    | query u =>
       exact ih hrep hs' hvh.2
     | insert u v =>
       have hO : (otherOccupiedSlots T u).card < m :=
@@ -1179,7 +1179,7 @@ theorem probeCount_runTableFrom_of_isSome {U V n_max m : ℕ} (hm : 0 < m) (hcap
     have hs' : (Dictionary.dom ((Dictionary.spec U V n_max).stepFn s o).1).card ≤ n_max :=
       Dictionary.card_dom_step_le_of_valid hs hvh.1
     cases o with
-    | get u =>
+    | query u =>
       exact ih hrep hs' hw hvh.2
     | insert u v =>
       have hO : (otherOccupiedSlots T u).card < m :=
@@ -1248,7 +1248,7 @@ theorem runTableFrom_update_eq {U m : ℕ} (hm : 0 < m) (π : Fin U → Equiv.Pe
       (∀ v, Dictionary.Op.insert u v ∉ ops) →
       runTableFrom hm (Function.update π u σ) T ops = runTableFrom hm π T ops
   | [], _ => rfl
-  | .get _ :: _, hno => by
+  | .query _ :: _, hno => by
     dsimp only [runTableFrom, tableStep]
     exact runTableFrom_update_eq hm π u σ T fun v hv => hno v (List.mem_cons_of_mem _ hv)
   | .insert w v :: _, hno => by
@@ -1267,7 +1267,7 @@ private theorem isSome_run_of_isSome {U V n_max : ℕ} {u : Fin U} :
     ∀ (l : List (Dictionary.Op U)) {s₀ : Dictionary.State U},
       (s₀ u).isSome → (((Dictionary.spec U V n_max).run s₀ l).1 u).isSome
   | [], _, h => h
-  | .get _ :: l, _, h => isSome_run_of_isSome l h
+  | .query _ :: l, _, h => isSome_run_of_isSome l h
   | .insert w _ :: l, s₀, h => by
     apply isSome_run_of_isSome l (s₀ := ((Dictionary.spec U V n_max).stepFn s₀ (.insert w _)).1)
     dsimp only [Dictionary.spec, Dictionary.step, StateTransitionSpec.stepFn]
@@ -1303,8 +1303,8 @@ theorem not_mem_insert_of_run_eq_none {U V n_max : ℕ} {u : Fin U} :
 /-- **Theorem 11.6 (pp. 274–275) & Corollary 11.7 (p. 275) of [CLRS2009], third edition, over
 `PMF.uniformOfFintype`**:
 for any valid operation history `ops` reaching state `s` with `(Dictionary.dom s).card < m` and any
-absent key `u` (`s u = none`), the expected number of probes made by an unsuccessful lookup `get u`
-or fresh-key insertion `insert u v` on `runTable hm π ops` over
+absent key `u` (`s u = none`), the expected number of probes made by an unsuccessful lookup
+`query u` or fresh-key insertion `insert u v` on `runTable hm π ops` over
 `π ← PMF.uniformOfFintype (Fin U → Equiv.Perm (Fin m))` is at most
 `m / (m - (Dictionary.dom s).card)` (`≤ 2` when `2 * (Dictionary.dom s).card ≤ m`). -/
 theorem expect_probeCount_of_eq_none_le {U V n_max m : ℕ} (hm : 0 < m) (hcap : n_max ≤ m)

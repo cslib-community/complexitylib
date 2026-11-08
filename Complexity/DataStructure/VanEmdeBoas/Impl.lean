@@ -17,7 +17,7 @@ public import Mathlib.Order.Fin.Basic
 # Stateful ordered-set realization by recursive van Emde Boas trees
 
 This module realizes the shared `Cslib.DataStructure.OrderedSet.spec (Fin (universeSize d))`
-interface (`contains`, `insert`, `erase`, `minimum`, `successor`) using recursive minimum-excluded
+interface (`contains`, `insert`, `delete`, `minimum`, `successor`) using recursive minimum-excluded
 van Emde Boas trees `Tree d` over the bounded universe `Fin (universeSize d)` of size
 `universeSize d = 2 ^ (2 ^ d)`, and supplies an active-recursive-call depth certificate
 `callDepthBound` of `d + 1` per operation ([Demaine2015VanEmdeBoas], pp. 4–5; [CLRS2009],
@@ -463,7 +463,7 @@ tree, result, and active recursive-call count. -/
   match o with
   | .contains x => (t, t.member x.val, t.memberVisits x.val)
   | .insert x => (t.insert x.val, (), t.insertVisits x.val)
-  | .erase x => (t.erase x.val, (), t.eraseVisits x.val)
+  | .delete x => (t.erase x.val, (), t.eraseVisits x.val)
   | .minimum => (t, t.finMinimum, t.minimumVisits)
   | .successor x => (t, t.finSuccessor x, t.successorVisits x.val)
 
@@ -508,7 +508,7 @@ theorem rep_empty (d : ℕ) : Rep (∅ : Finset (Fin (universeSize d))) (Tree.em
       | insert x =>
         cases he
         exact ⟨rfl, Tree.valid_insert ht x.isLt, Tree.finElements_insert ht x⟩
-      | erase x =>
+      | delete x =>
         cases he
         exact ⟨rfl, Tree.valid_erase ht x.val, Tree.finElements_erase ht x⟩
       | minimum =>
@@ -529,7 +529,7 @@ theorem exec_visits_le {t t' : Tree d} {o : Op (Fin (universeSize d))}
   cases o with
   | contains x => cases he; exact Tree.memberVisits_le t x.val
   | insert x => cases he; exact Tree.insertVisits_le t x.val
-  | erase x => cases he; exact Tree.eraseVisits_le t x.val
+  | delete x => cases he; exact Tree.eraseVisits_le t x.val
   | minimum => cases he; exact Tree.minimumVisits_le t
   | successor x => cases he; exact Tree.successorVisits_le t x.val
 

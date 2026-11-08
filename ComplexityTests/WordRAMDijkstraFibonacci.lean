@@ -1,24 +1,28 @@
 /-
-Copyright (c) 2026 Renfei Zhou. All rights reserved.
+Copyright (c) 2026 Renfei Zhou, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Renfei Zhou
+Authors: Renfei Zhou, Samuel Schlesinger
 -/
 
 module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.Dijkstra.Fibonacci
+import Complexity.Algorithms.Lean.Dijkstra.Native.Fibonacci
 
 /-!
-# Non-vacuity and interpreter checks for Dijkstra's algorithm with a Fibonacci heap
+# Native Fibonacci-Dijkstra nonvacuity and whole-state checks
 
-Exercises `fibDijkstra`, `fibonacciSpec`, `fibonacciLinearSpec`, and `fibonacciStatement` on
-concrete graphs with parallel edges, multi-hop relaxations, and unreachable vertices.
+The original parallel-edge, shorter multi-hop, unreachable and sparse-edgeless cases use one
+native flat-program witness. The actual source interpreter fixes their distances and allocated
+frontiers; the native runs retain that complete source state. The old implementation's literal
+coefficient `640` is not carried over to the native program.
 -/
 
 @[expose] public section
 
 open Cslib Cslib.WordRAM Cslib.Algorithms.WordRAM.Dijkstra
+open Cslib.Algorithms.Lean.Dijkstra.Native
 
 namespace WordRAMDijkstraFibonacciTests
 
@@ -32,23 +36,8 @@ def graph : ListInstance where
 
 theorem fits_graph : Fits 10 (8 * (graph.n + graph.m + 2) * (graph.maxWeight + 2)) := by decide
 
-/-- Non-vacuity of `fibonacciLinearSpec` (`O(m + n log n)`) on `graph`. -/
-example : ∃ t steps, Runs 10 (fibDijkstra.program OuterReg.zero) (.init graph.encode) t steps ∧
-    (∃ v, step 10 (fibDijkstra.program OuterReg.zero) t = .halt v) ∧
-    steps + 1 ≤ 640 * (4 + 3 * 2) ∧
-    t.data.mem (graph.outAddr graph.source) = 1 := by
-  obtain ⟨t, steps, hr, hh, hle, hd⟩ := fibonacciLinearSpec graph 10 fits_graph
-  have hm : graph.m = 4 := by decide
-  have hn : graph.n = 3 := rfl
-  have hlog : Nat.log 2 graph.n = 1 := Nat.log_eq_of_pow_le_of_lt_pow (by decide) (by decide)
-  rw [hm, hlog, hn] at hle
-  refine ⟨t, steps, hr, hh, hle, ?_⟩
-  rw [hd]
-  exact (congrArg encodeDist (graph.toInstance.dist_self graph.toInstance.source)).trans
-    (by simp [encodeDist])
-
-/-- Five vertices and no edges (`m = 0`): `fibonacciSpec` bounds total instructions by
-`640 * (0 + min 5 1 * 3) = 1920`, strictly sharper than `640 * (0 + 5 * 3) = 9600`. -/
+/-- Five vertices without edges: the sharper reachable bound contains only one logarithmic
+term, while the textbook bound contains five. -/
 def sparseEdgeless : ListInstance where
   n := 5
   adj := fun _ => []
@@ -58,41 +47,89 @@ theorem fits_sparseEdgeless :
     Fits 10 (8 * (sparseEdgeless.n + sparseEdgeless.m + 2) * (sparseEdgeless.maxWeight + 2)) := by
   decide
 
-example : ∃ t steps,
-    Runs 10 (fibDijkstra.program OuterReg.zero) (.init sparseEdgeless.encode) t steps ∧
-    (∃ v, step 10 (fibDijkstra.program OuterReg.zero) t = .halt v) ∧
-    steps + 1 ≤ 640 * 3 ∧
-    t.data.mem (sparseEdgeless.outAddr sparseEdgeless.source) = 1 := by
-  obtain ⟨t, steps, hr, hh, hle, hd⟩ := fibonacciSpec sparseEdgeless 10 fits_sparseEdgeless
-  have hm : sparseEdgeless.m = 0 := by decide
-  have hn : sparseEdgeless.n = 5 := rfl
-  have hlog : Nat.log 2 sparseEdgeless.n = 2 :=
-    Nat.log_eq_of_pow_le_of_lt_pow (by decide) (by decide)
-  rw [hm, hlog, hn] at hle
-  refine ⟨t, steps, hr, hh, by omega, ?_⟩
-  rw [hd]
-  exact (congrArg encodeDist
-    (sparseEdgeless.toInstance.dist_self sparseEdgeless.toInstance.source)).trans
-    (by simp [encodeDist])
-
-/-- Concrete interpreter execution of `fibDijkstra` on `graph`: produces encoded distances
-`[1, 4, 2]` within the `640 * (4 + 3 * 2) = 6400` step bound of `fibDijkstra_spec`. -/
-example : ((fibDijkstra.eval 10 32 (.init graph.encode)).map fun yn =>
-    ((List.finRange 3).map fun v => yn.1.mem (graph.outAddr v), decide (yn.2 ≤ 6400))) =
-    some ([1, 4, 2], true) := by
-  decide +kernel
-
-/-- Concrete interpreter execution of `fibDijkstra` on an edgeless `2`-vertex graph: produces
-`[1, 0]` (`0` for unreachable vertex `1`) within `640 * (0 + 1 * 2) = 1280` steps. -/
+/-- Two vertices and no edges; vertex `1` is unreachable from source `0`. -/
 def edgeless : ListInstance where
   n := 2
   adj := ![[], []]
   source := 0
 
-example : ((fibDijkstra.eval 10 32 (.init edgeless.encode)).map fun yn =>
-    ((List.finRange 2).map fun v => yn.1.mem (edgeless.outAddr v), decide (yn.2 ≤ 1280))) =
-    some ([1, 0], true) := by
+private theorem graph_source_result :
+    ((List.finRange graph.n).map fun v =>
+      ((DataStructure.Memory.spec 10).clientState
+        (DataStructure.Memory.State.init graph.encode) Fibonacci.run).mem (graph.outAddr v)) =
+        [1, 4, 2] ∧
+      ((DataStructure.Memory.spec 10).clientState
+        (DataStructure.Memory.State.init graph.encode) Fibonacci.run).frontier = 50 := by
   decide +kernel
+
+private theorem edgeless_source_result :
+    ((List.finRange edgeless.n).map fun v =>
+      ((DataStructure.Memory.spec 10).clientState
+        (DataStructure.Memory.State.init edgeless.encode) Fibonacci.run).mem (edgeless.outAddr v)) =
+        [1, 0] ∧
+      ((DataStructure.Memory.spec 10).clientState
+        (DataStructure.Memory.State.init edgeless.encode) Fibonacci.run).frontier = 31 := by
+  decide +kernel
+
+private theorem sparse_source_result :
+    ((List.finRange sparseEdgeless.n).map fun v =>
+      ((DataStructure.Memory.spec 10).clientState
+        (DataStructure.Memory.State.init sparseEdgeless.encode) Fibonacci.run).mem
+        (sparseEdgeless.outAddr v)) = [1, 0, 0, 0, 0] ∧
+      ((DataStructure.Memory.spec 10).clientState
+        (DataStructure.Memory.State.init sparseEdgeless.encode) Fibonacci.run).frontier = 64 := by
+  decide +kernel
+
+private def NativeCase {r : ℕ} (prog : Program .exact r) (pc K : ℕ) (frontier : Fin r)
+    (G : ListInstance) (bound : ℕ) (distances : List ℕ) (endFrontier : ℕ) : Prop :=
+  ∃ (y : Data r) (steps : ℕ), Runs 10 prog (.init G.encode) ⟨pc, y⟩ steps ∧
+    step 10 prog ⟨pc, y⟩ = .halt 0 ∧ steps + 1 ≤ K * bound ∧
+    Realization.memoryState frontier y =
+      (DataStructure.Memory.spec 10).clientState (DataStructure.Memory.State.init G.encode)
+        Fibonacci.run ∧
+    ((List.finRange G.n).map fun v => y.mem (G.outAddr v)) = distances ∧
+    y.regs frontier = endFrontier
+
+/-- The same native program and clock factor handle all three original graph cases, preserving
+whole memory/frontier. In particular the edgeless five-vertex case uses the sharper `K*3`
+bound, rather than the textbook `K*15`. No emitter is chosen after seeing a runtime graph. -/
+example : ∃ r K pc, ∃ prog : Program .exact r, ∃ frontier : Fin r,
+    NativeCase prog pc K frontier graph 10 [1, 4, 2] 50 ∧
+    NativeCase prog pc K frontier edgeless 2 [1, 0] 31 ∧
+    NativeCase prog pc K frontier sparseEdgeless 3 [1, 0, 0, 0, 0] 64 := by
+  obtain ⟨r, K, pc, prog, frontier, he⟩ :=
+    Fibonacci.exists_program_state
+  refine ⟨r, K, pc, prog, frontier, ?_, ?_, ?_⟩
+  · obtain ⟨y, steps, hr, hh, hm, ht, _⟩ := he graph 10 fits_graph
+    have hn : graph.m + min graph.n (graph.m + 1) * (Nat.log 2 graph.n + 1) = 10 := by
+      decide +kernel
+    rw [hn] at ht
+    refine ⟨y, steps, hr, hh, ht, ?_, ?_, ?_⟩
+    · with_reducible exact hm
+    · exact (congrArg (fun m : ℕ → ℕ =>
+        (List.finRange graph.n).map fun v => m (graph.outAddr v))
+        (congrArg DataStructure.Memory.State.mem hm)).trans graph_source_result.1
+    · exact (congrArg DataStructure.Memory.State.frontier hm).trans graph_source_result.2
+  · obtain ⟨y, steps, hr, hh, hm, ht, _⟩ := he edgeless 10 (by decide)
+    have hn : edgeless.m + min edgeless.n (edgeless.m + 1) *
+        (Nat.log 2 edgeless.n + 1) = 2 := by decide +kernel
+    rw [hn] at ht
+    refine ⟨y, steps, hr, hh, ht, ?_, ?_, ?_⟩
+    · with_reducible exact hm
+    · exact (congrArg (fun m : ℕ → ℕ =>
+        (List.finRange edgeless.n).map fun v => m (edgeless.outAddr v))
+        (congrArg DataStructure.Memory.State.mem hm)).trans edgeless_source_result.1
+    · exact (congrArg DataStructure.Memory.State.frontier hm).trans edgeless_source_result.2
+  · obtain ⟨y, steps, hr, hh, hm, ht, _⟩ := he sparseEdgeless 10 fits_sparseEdgeless
+    have hn : sparseEdgeless.m + min sparseEdgeless.n (sparseEdgeless.m + 1) *
+        (Nat.log 2 sparseEdgeless.n + 1) = 3 := by decide +kernel
+    rw [hn] at ht
+    refine ⟨y, steps, hr, hh, ht, ?_, ?_, ?_⟩
+    · with_reducible exact hm
+    · exact (congrArg (fun m : ℕ → ℕ =>
+        (List.finRange sparseEdgeless.n).map fun v => m (sparseEdgeless.outAddr v))
+        (congrArg DataStructure.Memory.State.mem hm)).trans sparse_source_result.1
+    · exact (congrArg DataStructure.Memory.State.frontier hm).trans sparse_source_result.2
 
 /-- Non-vacuity of `fibonacciStatement` (`O(m + n log n)`) on `graph`. -/
 example : ∃ r, ∃ p : Program .exact r, ∃ K t steps,

@@ -38,12 +38,10 @@ machine.
 
 ## Syntax in the imports
 
-The library's Dijkstra programs and priority queues (`BinaryHeap` and `FibonacciHeap`) are written
-in the word-RAM program syntax of `Complexity/Computability/WordRAM/Notation.lean` and its
-exact-basis variant `Complexity/Computability/WordRAM/ExactNotation.lean`, so the imports of the
-library theorems bring both files in (`LogLinear` and `Fibonacci` → `GenericPQ` →
-`PriorityQueue.WordRAM.Basic` → `ExactNotation` → `Notation`). All their syntax rules,
-`macro_rules` and
+Both native heap theorems realize the existing Dijkstra client over framed memory refinements.
+They import the word-RAM syntax of
+`Complexity/Computability/WordRAM/Notation.lean` and its exact-basis variant
+`Complexity/Computability/WordRAM/ExactNotation.lean`. Their syntax rules, `macro_rules` and
 tactics are scoped to `Cslib.WordRAM`. Only the syntax category `wramStmt` and the syntax
 abbreviation `wramBlock` are global, since Lean cannot scope them, and outside `Cslib.WordRAM`
 `wramStmt` has no rules. `DijkstraAbstract.lean` does not open `Cslib.WordRAM`, so none of this

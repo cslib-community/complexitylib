@@ -145,3 +145,24 @@ example : ∃ y : Data 400, ∃ t S : ℕ,
   initialized_zero side le_rfl
 
 end ComplexityTests.WordRAMExactTriangleRecordWitness
+
+namespace ComplexityTests.WordRAMExactTriangleRecordWitness
+
+open Cslib.WordRAM Cslib.Algorithms.WordRAM.ExactTriangle
+
+-- Repeated occurrences remain two charged candidates on failure. The consumer retains
+-- arbitrary dirty unused memory and the selected ordinal in register 64.
+private def repeatedFixture : Data 400 :=
+  { fixture false false with
+    mem := fun a => if a = queryBase + 3 then side - 2
+      else if a = answers + 91 then 123 else (fixture false false).mem a }
+
+private def observeRepeated : Option (List ℕ) :=
+  (RecordWitness.consume.eval 512 64 repeatedFixture).map fun (y, _) =>
+    [y.regs RecordWitness.Reg.found, y.regs RecordWitness.Reg.scans,
+      y.regs RecordWitness.Reg.index, y.regs (RecordWitness.productBank 64),
+      y.mem (answers + 91), y.mem (queryBase + 3)]
+
+#guard observeRepeated == some ([0, 2, 2, 0, 123, side - 2])
+
+end ComplexityTests.WordRAMExactTriangleRecordWitness

@@ -34,7 +34,7 @@ operation.
 
 ## Main definitions
 
-* `Cslib.DataStructure.Dictionary.Op`: dictionary operations (`get`, `insert`).
+* `Cslib.DataStructure.Dictionary.Op`: dictionary operations (`query`, `insert`).
 * `Cslib.DataStructure.Dictionary.State`, `empty`, `dom`: abstract map state, empty dictionary,
   and finite set of present keys.
 * `Cslib.DataStructure.Dictionary.ValuesBounded`: invariant that all stored values lie below `V`.
@@ -64,7 +64,7 @@ namespace Cslib.DataStructure.Dictionary
 /-- Lookup and insertion operations on a dictionary over keys `Fin U` and natural-number values. -/
 inductive Op (U : ℕ) where
   /-- Look up the value associated with key `u`, if present. -/
-  | get (u : Fin U)
+  | query (u : Fin U)
   /-- Associate key `u` with value `v`, inserting `u` if absent or overwriting its value if
   present. -/
   | insert (u : Fin U) (v : ℕ)
@@ -89,17 +89,17 @@ def ValuesBounded {U : ℕ} (V : ℕ) (s : State U) : Prop :=
 
 /-- Return type for each `Op U`. -/
 abbrev Op.Result {U : ℕ} : Op U → Type
-  | .get _ => Option ℕ
+  | .query _ => Option ℕ
   | .insert _ _ => Unit
 
 /-- Pure transition function for dictionary operations. -/
 abbrev step {U : ℕ} (s : State U) : (o : Op U) → State U × o.Result
-  | .get u => (s, s u)
+  | .query u => (s, s u)
   | .insert u v => (Function.update s u (some v), ())
 
 /-- Admissibility precondition for dictionary operations. -/
 abbrev valid {U : ℕ} (V n_max : ℕ) (s : State U) : Op U → Prop
-  | .get _ => True
+  | .query _ => True
   | .insert u v => ((dom s).card < n_max ∨ (s u).isSome) ∧ v < V
 
 /-- Bounded-capacity dictionary specification over key universe `Fin U`, value bound `V`, and
@@ -179,7 +179,7 @@ theorem card_dom_step_le_of_valid {U V n_max : ℕ} {s : State U} {o : Op U}
     (hs : (dom s).card ≤ n_max) (hval : (spec U V n_max).valid s o) :
     (dom ((spec U V n_max).stepFn s o).1).card ≤ n_max := by
   cases o with
-  | get u => exact hs
+  | query u => exact hs
   | insert u v =>
     rcases hval.1 with hlt | hisSome
     · have hle := card_dom_insert_le s u v
@@ -215,7 +215,7 @@ theorem valuesBounded_step_of_valid {U V n_max : ℕ} {s : State U} {o : Op U}
     (hs : ValuesBounded V s) (hval : (spec U V n_max).valid s o) :
     ValuesBounded V ((spec U V n_max).stepFn s o).1 := by
   cases o with
-  | get u => exact hs
+  | query u => exact hs
   | insert u v =>
     intro x w hxw
     dsimp only [spec, StateTransitionSpec.stepFn, step] at hxw

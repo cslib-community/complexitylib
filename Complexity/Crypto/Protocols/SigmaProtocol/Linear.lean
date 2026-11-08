@@ -219,25 +219,26 @@ noncomputable def chaumPedersen (g : G) : SigmaProtocol (ZMod q) (G × G × G) (
 
 /-- The Chaum–Pedersen verification equations `z • g = t₁ + c • v` and `z • u = t₂ + c • w`
 ([BonehShoup2023], Section 19.5.2). -/
-@[simp] theorem chaumPedersen_accepts_iff {s : G × G × G} {t : G × G} {c : C} {z : ZMod q} :
-    (chaumPedersen ι g).Accepts s t c z ↔
-      z • g = t.1 + ι c • s.2.1 ∧ z • s.1 = t.2 + ι c • s.2.2 := by
+@[simp] theorem chaumPedersen_accepts_iff {u v w : G} {t : G × G} {c : C} {z : ZMod q} :
+    (chaumPedersen ι g).Accepts (u, v, w) t c z ↔
+      z • g = t.1 + ι c • v ∧ z • u = t.2 + ι c • w := by
   simp [chaumPedersen, Prod.ext_iff]
 
 /-- Theorem 19.10 of [BonehShoup2023]: completeness. -/
 theorem chaumPedersen_complete :
-    (chaumPedersen ι g).Complete fun β s => β • g = s.2.1 ∧ β • s.1 = s.2.2 :=
+    (chaumPedersen ι g).Complete fun β (u, v, w) => β • g = v ∧ β • u = w :=
   (linear_complete _ _ ι).mono fun _ _ h => by simpa [Prod.ext_iff] using h
 
 /-- Theorem 19.10 of [BonehShoup2023]: special soundness. -/
 theorem chaumPedersen_specialSoundness [Fact q.Prime] :
-    (chaumPedersen ι g).SpecialSoundness (fun β s => β • g = s.2.1 ∧ β • s.1 = s.2.2)
+    (chaumPedersen ι g).SpecialSoundness
+      (fun β (u, v, w) => β • g = v ∧ β • u = w)
       (linearExtract ι) :=
   (linear_specialSoundness _ _ ι).mono fun _ _ h => by simpa [Prod.ext_iff] using h
 
 /-- Theorem 19.10 of [BonehShoup2023]: special honest-verifier zero knowledge. -/
 theorem chaumPedersen_specialHVZK :
-    (chaumPedersen ι g).SpecialHVZK (fun β s => β • g = s.2.1 ∧ β • s.1 = s.2.2)
+    (chaumPedersen ι g).SpecialHVZK (fun β (u, v, w) => β • g = v ∧ β • u = w)
       (linearSimulate (fun s => (LinearMap.toSpanSingleton (ZMod q) G g).prod
         (LinearMap.toSpanSingleton (ZMod q) G s.1)) Prod.snd ι) :=
   (linear_specialHVZK _ _ ι).mono fun _ _ h => by simpa [Prod.ext_iff] using h

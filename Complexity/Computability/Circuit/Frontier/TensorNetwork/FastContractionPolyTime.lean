@@ -125,10 +125,7 @@ theorem slotBits_polyTime : ComputableInPolyTime (fun q : ℕ × ℕ => slotBits
       (((ComputableInPolyTime.fst encUnary encUnary).comp (ComputableInPolyTime.fst _ _)).prod
         (ComputableInPolyTime.snd _ _)))
   have hterms : ComputableInPolyTime (fun q : ℕ × ℕ => (List.range (q.2 + 1)).map (taper q.1))
-      (encPair encUnary encUnary) (encList encNat) :=
-    ComputableInPolyTime.mapWithInput (f := fun q j => taper q.1 j)
-      (ComputableInPolyTime.range.comp
-        (ComputableInPolyTime.unary_add' hd (ComputableInPolyTime.const 1))) hterm
+      (encPair encUnary encUnary) (encList encNat) := by fun_prop
   have hsum := (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.binary_sum).comp hterms
   have hval (q : ℕ × ℕ) : slotBits q.1 q.2 = 2 * ((List.range (q.2 + 1)).map (taper q.1)).sum := by
     simp only [slotBits, prefixBits, sum_range_eq_list]
@@ -174,15 +171,13 @@ theorem leafSize_polyTime : ComputableInPolyTime leafSize encUnary encUnary :=
 /-- **The degree bound is polynomial-time**: `2 ^ (9 ⌊log₂ s⌋ / 10 + 2)` in binary from `s` in
 unary. -/
 theorem degreeBound_polyTime : ComputableInPolyTime degreeBound encUnary encNat := by
-  have hb := ComputableInPolyTime.unary_to_binary
-  have hlog := ComputableInPolyTime.binary_log_two.comp hb
+  have hlog : ComputableInPolyTime (fun m => Nat.log 2 m) encUnary encUnary :=
+    ComputableTidilyInPolyTime.computableInPolyTime (ComputableTidilyInPolyTime.unary_log_const 2)
   have he : ComputableInPolyTime (fun m => 9 * Nat.log 2 m / 10 + 2) encUnary encUnary :=
-    ComputableInPolyTime.binary_to_unary_bounded
-      (ComputableInPolyTime.binary_add.comp ((ComputableInPolyTime.binary_div.comp
-        ((ComputableInPolyTime.binary_mul' (ComputableInPolyTime.const 9) (hb.comp hlog)).prod
-          (ComputableInPolyTime.const 10))).prod (ComputableInPolyTime.const 2)))
-      (ComputableInPolyTime.unary_add' hlog (ComputableInPolyTime.const 2)) fun m => by
-        simp only [Function.comp_apply]; omega
+    ComputableInPolyTime.unary_add'
+      ((ComputableInPolyTime.unary_div_const 10).comp
+        (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 9) hlog))
+      (ComputableInPolyTime.const 2)
   exact ComputableInPolyTime.binary_two_pow.comp he
 
 end Cslib.Circuits.Frontier.ContractionSchedule
@@ -234,8 +229,11 @@ theorem vertices_polyTime : ComputableInPolyTime (fun x : Call T => x.net.vertic
 /-! ### The schedule of a call -/
 
 /-- The number of label coordinates is polynomial-time. -/
-theorem slots_polyTime : ComputableInPolyTime slots (encCall encT) encUnary :=
-  slotBits_polyTime.comp (scale_polyTime.prod (depth_polyTime encT))
+theorem slots_polyTime : ComputableInPolyTime slots (encCall encT) encUnary := by
+  have h := slotBits_polyTime.comp (scale_polyTime.prod (depth_polyTime encT))
+  refine h.of_enc_eq fun a => ?_
+  dsimp only [Function.comp_apply]
+  rfl
 
 /-- `2 ^ a ≤ s + 1` at every call. -/
 theorem two_pow_slots_le (x : Call T) : 2 ^ slots x ≤ x.scale + 1 := two_pow_slotBits_le _ _
@@ -320,11 +318,7 @@ theorem nodes_polyTime : ComputableInPolyTime nodes (encCall encT) (encList encU
     (step_polyTime.comp hx) hk
   have htest : ComputableInPolyTime (fun q : Call T × ℕ =>
       decide (q.2 ≠ 2 ^ slots q.1 ∧ 0 < mult (slots q.1) (levels q.1) (step q.1) q.2))
-      (encPair (encCall encT) encUnary) encBool :=
-    (ComputableInPolyTime.bool_and' (ComputableInPolyTime.bool_not.comp
-      (ComputableInPolyTime.decide_eq' hk hL))
-      (ComputableInPolyTime.unary_lt' (ComputableInPolyTime.const 0) hmult)).of_enc_eq fun q => by
-      simp only [Function.comp_apply, Bool.decide_and, decide_not]
+      (encPair (encCall encT) encUnary) encBool := by fun_prop
   have h := ComputableInPolyTime.filterWithInput
     (test := fun (x : Call T) k =>
       decide (k ≠ 2 ^ slots x ∧ 0 < mult (slots x) (levels x) (step x) k))
@@ -347,7 +341,8 @@ theorem nodeLevel_polyTime :
       (encPair (encCall encT) encUnary) encUnary := by
   have h := level_polyTime.comp
       ((ComputableInPolyTime.fst (encCall encT) encUnary).prod node_polyTime)
-  exact h
+  refine h.of_enc_eq fun a => ?_
+  dsimp only [Function.comp_apply]
 
 /-- The number `2 ^ (v₂ t + 1)` of tiles of the `i`-th node is polynomial-time, in unary. -/
 theorem tiles_polyTime :
@@ -418,10 +413,7 @@ theorem weights_polyTime :
   have hj := ComputableInPolyTime.snd (encPair (encCall encT) encUnary) encUnary
   have hpj := hp.comp (ComputableInPolyTime.fst (encPair (encCall encT) encUnary) encUnary)
   have hf : ComputableInPolyTime (fun r : (Call T × ℕ) × ℕ => r.2 % nodePrec r.1.1 r.1.2 + 1)
-      (encPair (encPair (encCall encT) encUnary) encUnary) encNat := by
-    have h := ComputableInPolyTime.unary_to_binary.comp (ComputableInPolyTime.unary_add'
-      (ComputableInPolyTime.unary_mod.comp (hj.prod hpj)) (ComputableInPolyTime.const 1))
-    exact h
+      (encPair (encPair (encCall encT) encUnary) encUnary) encNat := by fun_prop
   have h := ComputableInPolyTime.mapWithInput
     (f := fun (q : Call T × ℕ) j => j % nodePrec q.1 q.2 + 1)
     (ComputableInPolyTime.range.comp hlen) hf
@@ -444,11 +436,7 @@ theorem digits_polyTime :
   have hk := (ComputableInPolyTime.snd encUnary encUnary).comp
     (ComputableInPolyTime.fst (encPair encUnary encUnary) encUnary)
   have hf : ComputableInPolyTime (fun r : (ℕ × ℕ) × ℕ => if r.1.2.testBit r.2 then 1 else 0)
-      (encPair (encPair encUnary encUnary) encUnary) encNat := by
-    have h := ComputableInPolyTime.ite (encMid := encNat) (ComputableInPolyTime.binary_testBit
-      (ComputableInPolyTime.unary_to_binary.comp hk) (ComputableInPolyTime.snd _ _))
-      (ComputableInPolyTime.const 1) (ComputableInPolyTime.const 0)
-    exact h
+      (encPair (encPair encUnary encUnary) encUnary) encNat := by fun_prop
   have h := ComputableInPolyTime.mapWithInput
     (f := fun (q : ℕ × ℕ) i => if q.2.testBit i then 1 else 0)
     (ComputableInPolyTime.range.comp (ComputableInPolyTime.fst encUnary encUnary)) hf
@@ -624,8 +612,7 @@ theorem next_polyTime
     ComputableInPolyTime (fun p : Call T × Frame => (scheme ev mk).next p.1 p.2)
       (encPair (encCall encT) encFrame) (encOption (encCall encT)) := by
   have hc : ComputableInPolyTime (fun p : Call T × Frame => p.2.1) (encPair (encCall encT) encFrame)
-      (encOption ChildCursor.encState) :=
-    (ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd (encCall encT) encFrame)
+      (encOption ChildCursor.encState) := by fun_prop
   have hbody : ComputableInPolyTime (fun r : (Call T × Frame) × State => some (child r.1.1 mk r.2))
       (encPair (encPair (encCall encT) encFrame) ChildCursor.encState)
         (encOption (encCall encT)) := by
@@ -651,10 +638,8 @@ private abbrev encAbsorbIn (encT : T ↪ List Bool) : AbsorbIn T ↪ List Bool :
 
 /-- The call of an input of `absorb`. -/
 private theorem absorbCall_polyTime :
-    ComputableInPolyTime (fun r : AbsorbIn T => r.1.1.1) (encAbsorbIn encT) (encCall encT) :=
-  (ComputableInPolyTime.fst (encCall encT) encFrame).comp
-    ((ComputableInPolyTime.fst _ encValue).comp
-    (ComputableInPolyTime.fst _ ChildCursor.encState))
+    ComputableInPolyTime (fun r : AbsorbIn T => r.1.1.1) (encAbsorbIn encT) (encCall encT) := by
+  fun_prop
 
 /-- The state of an input of `absorb`. -/
 private theorem absorbState_polyTime :
@@ -710,17 +695,13 @@ private theorem absorbAcc_polyTime :
   have hN := wide_polyTime.comp hx
   have hfl := fl_polyTime.comp hx
   have hacc : ComputableInPolyTime (fun r : AbsorbIn T => r.1.1.2.2) (encAbsorbIn encT)
-      (encPair (encList encNat) (encPair (encList encNat) (encList (encList encNat)))) :=
-    (ComputableInPolyTime.snd _ _).comp ((ComputableInPolyTime.snd (encCall encT) encFrame).comp
-      ((ComputableInPolyTime.fst _ encValue).comp
-        (ComputableInPolyTime.fst _ ChildCursor.encState)))
+      (encPair (encList encNat) (encPair (encList encNat) (encList (encList encNat)))) := by
+    fun_prop
   have hprod := (ComputableInPolyTime.fst _ _).comp hacc
   have hsum := (ComputableInPolyTime.fst _ _).comp ((ComputableInPolyTime.snd _ _).comp hacc)
   have hstored := (ComputableInPolyTime.snd _ _).comp ((ComputableInPolyTime.snd _ _).comp hacc)
   have hy : ComputableInPolyTime (fun r : AbsorbIn T => r.1.2.2) (encAbsorbIn encT)
-      (encList encNat) :=
-    (ComputableInPolyTime.snd encUnary (encList encNat)).comp ((ComputableInPolyTime.snd _ _).comp
-      (ComputableInPolyTime.fst _ ChildCursor.encState))
+      (encList encNat) := by fun_prop
   have hpy := computableInPolyTime_mul hN hfl hprod hy
   have hnew := computableInPolyTime_add hN hfl hsum hpy
   have hone := computableInPolyTime_one hfl
@@ -751,9 +732,7 @@ private theorem absorbAcc_polyTime :
     cases BudgetTuples.budgetNext (weights r.1.1.1 r.2.1) (nodePrec r.1.1.1 r.2.1) r.2.2.2.1 <;> rfl
   have hg : ComputableInPolyTime (fun r : AbsorbIn T => decide (r.2.2.2.2 + 1 < 64))
       (encAbsorbIn encT)
-      encBool :=
-    ComputableInPolyTime.unary_lt' (ComputableInPolyTime.unary_add' (stateGroup_polyTime.comp hc)
-      (ComputableInPolyTime.const 1)) (ComputableInPolyTime.const 64)
+      encBool := by fun_prop
   have h := ComputableInPolyTime.ite hg (hpy.prod (hsum.prod hstored))
     (ComputableInPolyTime.ite hlast (hone.prod (hzero.prod (ComputableInPolyTime.listAppend' hstored
       (ComputableInPolyTime.cons' hnew (ComputableInPolyTime.const [])))))
@@ -767,12 +746,10 @@ theorem absorb_polyTime :
       (fun p : (Call T × Frame) × (ℕ × List ℕ) => (scheme ev mk).absorb p.1.1 p.1.2 p.2)
       (encPair (encPair (encCall encT) encFrame) encValue) encFrame := by
   have hc : ComputableInPolyTime (fun p : (Call T × Frame) × (ℕ × List ℕ) => p.1.2.1)
-      (encPair (encPair (encCall encT) encFrame) encValue) (encOption ChildCursor.encState) :=
-    (ComputableInPolyTime.fst _ _).comp ((ComputableInPolyTime.snd (encCall encT) encFrame).comp
-      (ComputableInPolyTime.fst _ encValue))
+      (encPair (encPair (encCall encT) encFrame) encValue) (encOption ChildCursor.encState) := by
+    fun_prop
   have hfallback : ComputableInPolyTime (fun p : (Call T × Frame) × (ℕ × List ℕ) => p.1.2)
-      (encPair (encPair (encCall encT) encFrame) encValue) encFrame :=
-    (ComputableInPolyTime.snd (encCall encT) encFrame).comp (ComputableInPolyTime.fst _ encValue)
+      (encPair (encPair (encCall encT) encFrame) encValue) encFrame := by fun_prop
   have hbody : ComputableInPolyTime (fun r : AbsorbIn T =>
       ((cursorNext (weights r.1.1.1) (nodePrec r.1.1.1) (nodes r.1.1.1).length (numPoints r.1.1.1)
         64 r.2, absorbAt (weights r.1.1.1) (nodePrec r.1.1.1) 64
@@ -795,13 +772,12 @@ theorem finish_polyTime :
   have hx := ComputableInPolyTime.fst (encCall encT) encFrame
   have hV : ComputableInPolyTime (fun p : Call T × Frame => p.2.2.2.2)
       (encPair (encCall encT) encFrame)
-      (encList (encList encNat)) :=
-    (ComputableInPolyTime.snd _ _).comp ((ComputableInPolyTime.snd _ _).comp
-      ((ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.snd (encCall encT) encFrame)))
+      (encList (encList encNat)) := by fun_prop
   have htab : ComputableInPolyTime (fun p : Call T × Frame => table p.1 p.2.2.2.2)
       (encPair (encCall encT) encFrame) (encList (encList (encList encNat))) := by
     have h := table_polyTime.comp (hx.prod hV)
-    exact h
+    refine h.of_enc_eq fun a => ?_
+    dsimp only [Function.comp_apply]
   have hrec := computableInPolyTime_recover (prec_polyTime.comp hx) (shift_polyTime.comp hx)
     (fl_polyTime.comp hx) (slots_polyTime.comp hx) (twoPowSlots_polyTime.comp hx)
     (levels_polyTime.comp hx) (step_polyTime.comp hx) (points_polyTime.comp hx) htab
@@ -846,16 +822,19 @@ theorem nativeMk_polyTime :
   have hi : ComputableInPolyTime (fun q : Call T × State => level q.1 ((nodes q.1).getD q.2.1 0))
       (encPair (encCall encT) ChildCursor.encState) encUnary := by
     have h := nodeLevel_polyTime.comp (hx.prod ht)
-    exact h
+    refine h.of_enc_eq fun a => ?_
+    dsimp only [Function.comp_apply]
   have hT : ComputableInPolyTime
       (fun q : Call T × State => 2 ^ (level q.1 ((nodes q.1).getD q.2.1 0) + 1))
       (encPair (encCall encT) ChildCursor.encState) encUnary := by
     have h := tiles_polyTime.comp (hx.prod ht)
-    exact h
+    refine h.of_enc_eq fun a => ?_
+    dsimp only [Function.comp_apply]
   have hpt : ComputableInPolyTime (fun q : Call T × State => nodePrec q.1 q.2.1)
       (encPair (encCall encT) ChildCursor.encState) encUnary := by
     have h := nodePrec_polyTime.comp (hx.prod ht)
-    exact h
+    refine h.of_enc_eq fun a => ?_
+    dsimp only [Function.comp_apply]
   have hnode : ComputableInPolyTime
       (fun q : Call T × State => node (slots q.1) ((nodes q.1).getD q.2.1 0))
       (encPair (encCall encT) ChildCursor.encState) encIntBin := by

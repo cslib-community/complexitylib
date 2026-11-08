@@ -41,8 +41,8 @@ polynomial key-universe exponent `c_exp = 4` (`U ≤ max n_max 4 ^ 4` where requ
 
 ## Scope, program parameterization, and cost accounting
 
-- **Insert-only bounded capacity:** All four tables implement `DictOp U` (`get` and `insert` with
-  overwrite) up to `n_max` distinct keys (`ValidDictHistory V n_max`). Key deletion (`erase`) is
+- **Insert-only bounded capacity:** All four tables implement `DictOp U` (`query` and `insert` with
+  overwrite) up to `n_max` distinct keys (`ValidDictHistory V n_max`). Key deletion (`delete`) is
   not supported, unlike the dynamic dictionaries in `[PaghPaghRuzic2009]` and `[PaghRodler2004]`.
 - **Program dependence:** In each headline theorem, the existential over the initializer and
   operation programs `∃ (p_init p_op : List (Instr r))` is placed outside the universal quantifiers
@@ -70,6 +70,19 @@ polynomial key-universe exponent `c_exp = 4` (`U ≤ max n_max 4 ^ 4` where requ
   `∃ (Seed : Type) (μ_init : PMF (CoupledState Seed r))` produced by `p_init` is quantified
   **before** `∀ ops : List (DictOp U)`, and `ops` is fixed before the random choices of `p_init`
   and `p_op`.
+- **Threshold-derived constants:** In `uniformProbing` and `cuckooHashing` the per-operation
+  charges `upOpCharge`, `cuckooQueryCharge` and `cuckooInsertCharge` do not depend on `n_max`,
+  but below `regimeThreshold = 2 ^ 320000` they only cap quantities that grow with `n_max`.
+  `upOpCharge` allows `13` instructions for each of `regimeThreshold` probes, a cap on the
+  deterministic probe count `n_max + 1`. The cuckoo charges price every hash evaluation at the
+  largest polynomial degree used below the threshold (`cuckooKBound = 3840026`). These `O(1)`
+  bounds are therefore asymptotic statements, met trivially at realizable capacities: a linear
+  scan of the stored keys at up to `13` instructions per key stays within `upOpCharge` for every
+  `n_max < regimeThreshold`, and the cuckoo charges (more than `8 * 10 ^ 11` instructions per
+  operation) exceed a linear scan's cost for capacities up to about `10 ^ 10`. For uniform probing,
+  `uniformProbing` also states the threshold-free bound: when `n_max ≥ regimeThreshold`, at most
+  `3` expected probes give at most `upLargeOpCharge = 13778` expected instructions per operation.
+  No analogous threshold-free charge is stated for cuckoo hashing.
 
 A reader only needs to inspect the definitions and theorem statements in this file to verify that
 the formalization proves the intended mathematical claims; Lean verifies the proofs through
@@ -214,26 +227,26 @@ def dictDom {U : ℕ} (s : DictState U) : Finset (Fin U) :=
   Finset.univ.filter fun u => (s u).isSome
 
 /-- Operations on a dictionary over key universe `Fin U`:
-- `get u`: look up key `u : Fin U`;
+- `query u`: look up key `u : Fin U`;
 - `insert u v`: insert or overwrite key `u : Fin U` with value `v : ℕ`. -/
 inductive DictOp (U : ℕ) : Type where
-  | get (u : Fin U) : DictOp U
+  | query (u : Fin U) : DictOp U
   | insert (u : Fin U) (v : ℕ) : DictOp U
 
 /-- Apply one dictionary operation `o : DictOp U` to abstract state `s : DictState U`:
-- `get u` leaves `s` unchanged;
+- `query u` leaves `s` unchanged;
 - `insert u v` updates `s` at `u` to `some v`. -/
 def stepDict {U : ℕ} (s : DictState U) : DictOp U → DictState U
-  | .get _ => s
+  | .query _ => s
   | .insert u v => Function.update s u (some v)
 
 /-- Admissibility of a single dictionary operation `o : DictOp U` on state `s` under value bound `V`
 and capacity `n_max`:
-- `get u` is always admissible;
+- `query u` is always admissible;
 - `insert u v` requires `v < V` and either `(dictDom s).card < n_max` (room for a new key) or
   `(s u).isSome` (overwriting an existing key). -/
 def validDictOp {U : ℕ} (V n_max : ℕ) (s : DictState U) : DictOp U → Prop
-  | .get _ => True
+  | .query _ => True
   | .insert u v => ((dictDom s).card < n_max ∨ (s u).isSome) ∧ v < V
 
 /-- Admissibility of an oblivious operation sequence `ops : List (DictOp U)` starting from state `s`
@@ -288,24 +301,24 @@ def ExecProgramDist {r : ℕ} (w : ℕ) (p : Program r) (outReg : Fin r)
 /-- Calling-convention register assignment for a dictionary operation `o : DictOp U` on an
 `r`-register Word-RAM with scratch-clearing flag `clearScratch`, base-address register `baseReg`,
 operation-tag register `tagReg`, key register `keyReg`, and value register `valReg`:
-- `tagReg` receives `0` for `get u` and `1` for `insert u v`;
+- `tagReg` receives `0` for `query u` and `1` for `insert u v`;
 - `keyReg` receives `u.val`;
-- `valReg` receives `v` for `insert u v` (and `0` for `get u`);
+- `valReg` receives `v` for `insert u v` (and `0` for `query u`);
 - every other register `i` is zeroed when `clearScratch && decide (i ≠ baseReg)` and preserved
   (`reg i`) otherwise. -/
 def prepareDictRegs {r U : ℕ} (clearScratch : Bool) (baseReg tagReg keyReg valReg : Fin r)
     (o : DictOp U) (reg : Fin r → ℕ) (i : Fin r) : ℕ :=
   if i = tagReg then
     match o with
-    | .get _ => 0
+    | .query _ => 0
     | .insert _ _ => 1
   else if i = keyReg then
     match o with
-    | .get u => u.val
+    | .query u => u.val
     | .insert u _ => u.val
   else if i = valReg then
     match o with
-    | .get _ => 0
+    | .query _ => 0
     | .insert _ v => v
   else if clearScratch && decide (i ≠ baseReg) then
     0
@@ -319,12 +332,12 @@ def decodeLookup (w_out : ℕ) : Option ℕ :=
 
 /-- Output correctness of a post-operation register bank `reg` for operation `o : DictOp U`
 against pre-operation dictionary state `s : DictState U` with output register `outReg`:
-- for `get u`, `decodeLookup (reg outReg) = s u`;
+- for `query u`, `decodeLookup (reg outReg) = s u`;
 - for `insert u v`, the unit return needs no output-register check (`True`). -/
 def OpOutputCorrect {r U : ℕ} (outReg : Fin r) (s : DictState U)
     (o : DictOp U) (reg : Fin r → ℕ) : Prop :=
   match o with
-  | .get u => decodeLookup (reg outReg) = s u
+  | .query u => decodeLookup (reg outReg) = s u
   | .insert _ _ => True
 
 /-- Sequential multi-operation execution of a history `ops : List (DictOp U)` by the Word-RAM
@@ -408,7 +421,7 @@ before any operation sequence `ops`) such that:
   `stepDict` and `OpOutputCorrect` at every step;
 - the total expected executed body instruction count satisfies
   `16 + T_ops ≤ 16 + 73 * ops.length` (`O(1)` initialization and `73 = O(1)` expected executed
-  instructions per `get` or `insert`, excluding caller argument preparation and dispatch; no bound
+  instructions per `query` or `insert`, excluding caller argument preparation and dispatch; no bound
   is stated on static code length).
 
 References: `[CLRS2009]` (3rd ed., Sections 11.2 and 11.3.3, Theorem 11.3 and Corollary 11.4);
@@ -453,7 +466,7 @@ theorem chainedHashing :
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
       simp_all [AluOp.eval, Comp.bind, Comp.eval,
         ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
-    ⟨DictOp, @DictOp.get, @DictOp.insert, @DictOp.rec,
+    ⟨DictOp, @DictOp.query, @DictOp.insert, @DictOp.rec,
       @stepDict, @validDictOp, @ValidDictHistory,
       RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
       CoupledState, @CoupledState.mk, @CoupledState.seed, @CoupledState.reg, @CoupledState.mem,
@@ -630,7 +643,7 @@ theorem linearProbing :
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
       simp_all [AluOp.eval, Comp.bind, Comp.eval,
         ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
-    ⟨DictOp, @DictOp.get, @DictOp.insert, @DictOp.rec,
+    ⟨DictOp, @DictOp.query, @DictOp.insert, @DictOp.rec,
       @stepDict, @validDictOp, @ValidDictHistory,
       RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
       CoupledState, @CoupledState.mk, @CoupledState.seed, @CoupledState.reg, @CoupledState.mem,
@@ -648,7 +661,8 @@ theorem linearProbing :
 
 /-- Double-tabulation threshold `2 ^ 320000` (`doubleTabThreshold 4`) at `c_exp = 4`, corresponding
 to character bit-width `charBits n_max ≥ 4 * (8 + 48 * 4) ^ 2 = 160000`. Note that constants
-derived from `regimeThreshold` in uniform probing and cuckoo hashing are astronomically large. -/
+derived from `regimeThreshold` in uniform probing and cuckoo hashing are astronomically large; see
+the threshold-derived constants note in the module documentation. -/
 def regimeThreshold : ℕ :=
   2 ^ 320000
 
@@ -714,9 +728,18 @@ def upHashEvalSteps : ℕ :=
 `13 * regimeThreshold + upHashEvalSteps + 8 = 13 * 2 ^ 320000 + 13739` for uniform probing at
 `c_exp = 4` (independent of `n_max` and `U`; astronomically large because the unconditional
 all-`n_max` probe bound uses `regimeThreshold = 2 ^ 320000` below the double-tabulation
-threshold). -/
+threshold). Below that threshold it only caps the deterministic probe count `n_max + 1`, so a
+linear scan of the stored keys at up to `13` instructions per key also meets it. The
+threshold-free charge for `n_max ≥ regimeThreshold` is `upLargeOpCharge`. -/
 def upOpCharge : ℕ :=
   13 * regimeThreshold + upHashEvalSteps + 8
+
+/-- Expected per-operation instruction charge `13 * 3 + upHashEvalSteps + 8 = 13778` for uniform
+probing at `c_exp = 4` once `n_max ≥ regimeThreshold`: at most `3` expected probes at `13`
+instructions each, the two Double Tabulation evaluations (`upHashEvalSteps`), and `8` instructions
+of overhead. It does not depend on `regimeThreshold`, `n_max` or `U`. -/
+def upLargeOpCharge : ℕ :=
+  13 * 3 + upHashEvalSteps + 8
 
 /-- **Uniform Probing via Odd-Stride Double Hashing** (`UniformProbing.seq_expected_amortized`,
 specialized to `c_exp = 4`):
@@ -735,9 +758,14 @@ memory in `[base, base + upSpace n_max)`, there exists an initial coupled distri
   `stepDict` and `OpOutputCorrect` at every step;
 - the total expected executed body instruction count satisfies
   `upInitSteps n_max + T_ops ≤ upInitSteps n_max + ops.length * upOpCharge`
-  (`upOpCharge = 13 * 2 ^ 320000 + 13739 = O(1)` expected executed instructions per `get` or
+  (`upOpCharge = 13 * 2 ^ 320000 + 13739 = O(1)` expected executed instructions per `query` or
   `insert`, independent of `n_max` and `U`, excluding caller argument preparation and dispatch; no
-  bound is stated on static code length).
+  bound is stated on static code length). Below `regimeThreshold` this charge only caps the
+  deterministic probe count, so the bound is met trivially at every realizable `n_max`;
+- for `n_max ≥ regimeThreshold`, the same execution also satisfies
+  `upInitSteps n_max + T_ops ≤ upInitSteps n_max + ops.length * upLargeOpCharge`
+  (`upLargeOpCharge = 13778` expected executed instructions per operation, from at most `3`
+  expected probes; this constant does not depend on `regimeThreshold`).
 
 References: `[CLRS2009]` (3rd ed., Section 11.4, pp. 269–277); `[SchmidtSiegel1990]` (STOC 1990,
 pp. 224–234; NYU Courant Technical Report `TR1995-687`, May 1995, pp. 1–2, 4–7, 37–39);
@@ -771,7 +799,10 @@ theorem uniformProbing :
                     base (upSpace n_max) (emptyDict U) ops
                     μ_init μ_final T_ops ∧
                   (upInitSteps n_max : ℝ≥0∞) + T_ops ≤
-                    ((upInitSteps n_max + ops.length * upOpCharge : ℕ) : ℝ≥0∞) :=
+                    ((upInitSteps n_max + ops.length * upOpCharge : ℕ) : ℝ≥0∞) ∧
+                  (regimeThreshold ≤ n_max →
+                    (upInitSteps n_max : ℝ≥0∞) + T_ops ≤
+                      ((upInitSteps n_max + ops.length * upLargeOpCharge : ℕ) : ℝ≥0∞)) :=
   ComplexityAbstracts.HashTablesBridge.uniformProbing
     ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr,
       @AluOp.rec, AluOp.eval,
@@ -785,7 +816,7 @@ theorem uniformProbing :
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
       simp_all [AluOp.eval, Comp.bind, Comp.eval,
         ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
-    ⟨DictOp, @DictOp.get, @DictOp.insert, @DictOp.rec,
+    ⟨DictOp, @DictOp.query, @DictOp.insert, @DictOp.rec,
       @stepDict, @validDictOp, @ValidDictHistory,
       RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
       CoupledState, @CoupledState.mk, @CoupledState.seed, @CoupledState.reg, @CoupledState.mem,
@@ -798,7 +829,7 @@ theorem uniformProbing :
       fun _ _ _ _ _ _ _ _ => rfl, fun _ _ _ _ _ _ _ _ _ => rfl,
       fun _ _ _ _ => Iff.rfl, fun _ _ _ _ _ => Iff.rfl,
       @ExecDictOps.nil, @ExecDictOps.cons⟩
-    regimeThreshold upHashEvalSteps upOpCharge rfl rfl rfl
+    regimeThreshold upHashEvalSteps upOpCharge upLargeOpCharge rfl rfl rfl rfl
 
 /-! ## Table 4: Pagh–Rodler Cuckoo Hashing (`CuckooHashing.lean`) -/
 
@@ -880,18 +911,22 @@ function (`h₁` or `h₂`) at `c_exp = 4` under `U ≤ max n_max 4 ^ 4` (with `
 def cuckooEvalHashBound : ℕ :=
   max (((11 * 100 + 12) * 100 + 30) * cuckooKBound + 19) (doubleTabEvalSteps 8 64) + 4
 
-/-- Worst-case deterministic instruction bound `2 * (cuckooEvalHashBound + 36) + 31 = 854252184109`
-for the two-probe `get` subprogram at `c_exp = 4`. -/
-def cuckooGetStepsBound : ℕ :=
+/-- Instruction allowance `2 * (cuckooEvalHashBound + 36) + 31 = 854252184109` for the two-probe
+`query` subprogram at `c_exp = 4`, an ingredient of `cuckooQueryCharge`. This abstract asserts no
+worst-case bound for the subprogram. -/
+def cuckooQueryStepsBound : ℕ :=
   2 * (cuckooEvalHashBound + 36) + 31
 
-/-- Worst-case deterministic instruction bound `cuckooGetStepsBound + 2 = 854252184111` for a
-`get` operation via `p_op` at `c_exp = 4`. -/
-def cuckooGetCharge : ℕ :=
-  cuckooGetStepsBound + 2
+/-- Expected instruction charge `cuckooQueryStepsBound + 2 = 854252184111` for a `query` operation
+via `p_op` at `c_exp = 4`. `cuckooHashing` asserts it only through the expected total cost of an
+operation sequence (`ExecProgramDist` bounds `expectedTime`); no worst-case bound for a single
+query is stated. -/
+def cuckooQueryCharge : ℕ :=
+  cuckooQueryStepsBound + 2
 
-/-- Worst-case deterministic instruction bound `2 * (cuckooEvalHashBound + 54) + 59 = 854252184173`
-for a single two-table cuckoo displacement round at `c_exp = 4`. -/
+/-- Instruction allowance `2 * (cuckooEvalHashBound + 54) + 59 = 854252184173` for a single
+two-table cuckoo displacement round at `c_exp = 4`, an ingredient of `cuckooInsertCharge`. This
+abstract asserts no worst-case bound for a round. -/
 def cuckooEvictIterBound : ℕ :=
   2 * (cuckooEvalHashBound + 54) + 59
 
@@ -920,18 +955,18 @@ def cuckooInsertCharge : ℕ :=
   2 * (cuckooInsertBaseBound + 3 + 3 * cuckooEvictIterBound + 4 * cuckooRehashAmortizedBound)
 
 /-- Per-operation expected instruction charge for cuckoo hashing at `c_exp = 4`:
-`cuckooGetCharge` (`854252184111`) for `get` and `cuckooInsertCharge` (`27336684332552`) for
+`cuckooQueryCharge` (`854252184111`) for `query` and `cuckooInsertCharge` (`27336684332552`) for
 `insert`, both independent of `n_max` and `U`. -/
 def cuckooOpCharge {U : ℕ} : DictOp U → ℕ
-  | .get _ => cuckooGetCharge
+  | .query _ => cuckooQueryCharge
   | .insert _ _ => cuckooInsertCharge
 
 /-- For every dictionary operation `o : DictOp U`, `cuckooOpCharge o ≤ cuckooInsertCharge`. -/
 theorem cuckooOpCharge_le {U : ℕ} (o : DictOp U) :
     cuckooOpCharge o ≤ cuckooInsertCharge :=
   ComplexityAbstracts.HashTablesBridge.cuckooOpCharge_le
-    DictOp @DictOp.get @DictOp.insert @DictOp.rec
-    cuckooEvalHashBound cuckooGetStepsBound cuckooGetCharge
+    DictOp @DictOp.query @DictOp.insert @DictOp.rec
+    cuckooEvalHashBound cuckooQueryStepsBound cuckooQueryCharge
     cuckooEvictIterBound cuckooInsertBaseBound cuckooRehashAmortizedBound
     cuckooInsertCharge
     rfl rfl rfl rfl
@@ -956,12 +991,14 @@ that:
   `stepDict` and `OpOutputCorrect` at every step;
 - the total expected executed body instruction count satisfies both the operation-sensitive bound
   `cuckooInitSteps n_max U + T_ops ≤ cuckooInitSteps n_max U + (ops.map cuckooOpCharge).sum`
-  (`cuckooGetCharge = 854252184111` per `get`, `cuckooInsertCharge = 27336684332552` per `insert`)
+  (`cuckooQueryCharge = 854252184111` per `query`,
+  `cuckooInsertCharge = 27336684332552` per `insert`)
   and the uniform per-operation bound
   `cuckooInitSteps n_max U + T_ops ≤ cuckooInitSteps n_max U + ops.length * cuckooInsertCharge`
   (independent of `n_max` and `U`, excluding caller argument preparation and dispatch; no bound is
   stated on static code length; constants reflect `cuckooKBound = 3840026` from the
-  double-tabulation threshold `regimeThreshold = 2 ^ 320000`).
+  double-tabulation threshold `regimeThreshold = 2 ^ 320000`, so at realizable capacities these
+  bounds are met trivially; see the threshold-derived constants note in the module documentation).
 
 References: `[PaghRodler2004]` (8 Dec 2003 author manuscript / *J. Algorithms* 51(2):122–144, 2004,
 Section 2.3 "Analysis", manuscript pp. 6–10: Lemma 1 p. 7, Eq. (3) p. 9, rehash analysis pp. 9–10);
@@ -1016,7 +1053,7 @@ theorem cuckooHashing :
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
       simp_all [AluOp.eval, Comp.bind, Comp.eval,
         ComplexityAbstracts.HashFamiliesBridge.compCallsAtMost, stepRand, runRand])
-    ⟨DictOp, @DictOp.get, @DictOp.insert, @DictOp.rec,
+    ⟨DictOp, @DictOp.query, @DictOp.insert, @DictOp.rec,
       @stepDict, @validDictOp, @ValidDictHistory,
       RegMem, @RegMem.mk, @RegMem.reg, @RegMem.mem,
       CoupledState, @CoupledState.mk, @CoupledState.seed, @CoupledState.reg, @CoupledState.mem,
@@ -1036,7 +1073,7 @@ theorem cuckooHashing :
     cuckooMaxEvictions cuckooK cuckooKBound
     cuckooSingleHashSpace cuckooHashPairSpace cuckooSpace cuckooSpaceFactor
     cuckooResampleSingleSteps cuckooInitSteps
-    cuckooEvalHashBound cuckooGetStepsBound cuckooGetCharge
+    cuckooEvalHashBound cuckooQueryStepsBound cuckooQueryCharge
     cuckooEvictIterBound cuckooInsertBaseBound cuckooResampleAtBaseFactor
     cuckooRehashAmortizedBound cuckooInsertCharge
     rfl (fun _ => rfl) (fun _ => rfl) (fun _ => rfl)
@@ -1048,7 +1085,10 @@ theorem cuckooHashing :
     rfl rfl rfl rfl rfl rfl rfl rfl
     @cuckooOpCharge (fun _ => rfl) (fun _ _ => rfl)
 
-/-- info: abstract audit passed for `ComplexityAbstracts.HashTablesAbstract`: 416 root declarations -/
+/--
+info: abstract audit passed for `ComplexityAbstracts.HashTablesAbstract`: 417 root
+declarations
+-/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityAbstracts.HashTablesAbstract
 

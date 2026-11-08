@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Composition.Recompute
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Option

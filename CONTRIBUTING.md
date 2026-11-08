@@ -27,7 +27,11 @@ related mechanical fixes when they share a contract and validation; split at ind
 boundaries rather than creating a PR per cleanup. Include a checked client for a new API and
 instances showing that bundled hypotheses can be met. Preserve
 the original authors and licenses when porting code; cite mathematical sources in module
-docstrings through [references.bib](references.bib), whose entries stay sorted by key.
+docstrings through [references.bib](references.bib), whose entries stay sorted by key. Two
+branches that add entries between the same neighbours conflict as text;
+`scripts/resolve_bib_conflict.py` merges the file entry by entry and refuses when both sides
+changed one entry. To have `git merge` use it for `references.bib`, run once per clone:
+`git config merge.bibkeys.driver 'python3 scripts/resolve_bib_conflict.py --driver %O %A %B'`.
 
 Develop against representative clients and state the public contract: model or encodings,
 mathematical behavior, and resource or security claim. Test automation on ordinary expressions,
@@ -54,7 +58,9 @@ Mathlib's standard linter set already enforces the mechanical part; reviews enfo
 4. **Automation as API.** Curate `simp`, `grind` and `fun_prop` sets so routine facts follow
    without unfolding; a fact that repeatedly needs plumbing signals a missing lemma or interface.
 5. **Definitions and proofs.** Definitions are terms where possible. Proofs keep their logical
-   progression visible: `simp only` mid-proof, and no large terminal `simpa` hiding the argument.
+   progression visible: `simp only` mid-proof (a `simp` closed at once by `omega`, `linarith` or
+   a similar finishing tactic counts as terminal), and no large terminal `simpa` hiding the
+   argument.
 6. **Placement.** No duplicates; small topic modules; clients import what they use.
 7. **Documentation.** Definitions and theorems are documented, citing sources; module docstrings
    list the actual public API; each area has a chapter in the guide.
@@ -79,7 +85,42 @@ preference:
 
 The rewritten form should stay definitionally equal to the old one, so that clients and automation
 (`fun_prop`, `@[program_certificate]`) keep working. Single projections (`p.1`) and
-destructuring inside proofs (`obtain ⟨⟨d, x⟩, c⟩ := s`) are fine.
+destructuring inside proofs (`obtain ⟨⟨d, x⟩, c⟩ := s`) are fine. "Composed projections" means
+point-free composition such as `Prod.fst ∘ Prod.snd`; respelling `p.2.1` as `Prod.fst (Prod.snd p)`
+or naming a tail with `let rest := p.2` does not name anything.
+
+Two places keep projections, as standing exceptions:
+
+- **Conclusions that automation looks up by head.** Destructuring turns the function into a
+  `match` auxiliary, so `@[program_certificate]` and efficiency-key lookups no longer find the
+  certificate. Keep the projection form there.
+- **Section `variable` hypotheses in `module` files.** On the current toolchain a destructuring
+  lambda in a section `variable` of a `public section` elaborates to `sorry`, with only a warning
+  ([#1764](https://github.com/cslib-community/complexitylib/issues/1764)). Use projections there,
+  or bind the hypothesis in the theorem's own signature.
+
+**Readable encodings** ([#1656](https://github.com/cslib-community/complexitylib/issues/1656)).
+An encoding is part of what a statement claims, so statements show it; they should not make the
+reader parse the same nested encoding again and again. Name a compound encoding that recurs in a
+module's statements with a documented, reducible `abbrev`, give domain encodings their own names,
+declare field-tuple structure encodings with `enc_structure`, and keep unary versus binary,
+representations and framing visible in the name or its docstring. For example, the query-machine
+certificates take
+`ComputableInSpace M.next (encStateRead encS) encS fun p => (encStateRead encS p).length`
+rather than restating `encPair encS (encOption encBool)` twice; `encStateRead` is documented as a
+state paired with the bit read, with the state framed. Because the name is reducible, the
+statement is definitionally unchanged, and `enc_len`, `fun_prop` and the combinators' simp lemmas
+see through it; syntactic tools such as `omega` do not. New and changed statements follow the
+exact rules in [AGENTS.md](AGENTS.md#encodings-in-statements); the encoding-readability lint
+checks the repetition rule. Abstracts stay fully spelled out.
+
+To sweep an area, `python3 scripts/check_encoding_readability.py --list Complexity/Logics` lists
+its repeated compound encodings with their declarations, ignoring the baseline, and the local
+notations that abbreviate a compound encoding. A sweep must leave every statement unchanged:
+compare each changed public declaration's type with its type on `main`, either after
+`Lean.Meta.deltaExpand` of the new names and of the reducible type synonyms they mention, or with
+`isDefEq` at reducible transparency. Expanding only the new names is not enough: a coercion's type
+argument can read `CNF V` on one side and `List (List (V × Bool))` on the other.
 
 Improving an interface never weakens the mathematics: keep the models, encodings, independent
 resource bounds and nonvacuity of the results it touches.
@@ -169,13 +210,20 @@ the root checkout and, when `<branch>` exists only on `origin`, checks it out tr
 `origin/<branch>`). Pass `--source-only` to skip the initial copy; the
 [cache guide](scripts/cache/README.md#automatic-restoration) explains bootstrap and dependency costs.
 Run `python3 scripts/check_hygiene.py` to audit `-- upstream:` markers,
-forbidden proof tokens, `set_option` justifications, the key order of `references.bib` and that
-every docstring citation key has an entry there
+forbidden proof tokens, `set_option` justifications, the key order of `references.bib`, that
+every docstring citation key has an entry there and that `ROADMAP.md` adds no `[#N]:` link
+definitions
 (pass `--check-simp` to also run the heuristic check for non-terminal bare `simp` calls in
 candidate modules). After a build,
 `python3 scripts/check_changed_files.py` checks the files your branch adds or changes: each name
 listed in a module docstring's "Main …" sections must exist, and a new test file must do more
-than restate signatures with `example … := name`. CI runs both. On pull requests CI also runs
+than restate signatures with `example … := name`. CI runs both, and also
+`python3 scripts/check_encoding_readability.py`, the ratchet on repeated compound encodings in
+public statements ([#1656](https://github.com/cslib-community/complexitylib/issues/1656)). It
+enforces its baseline only in the modules a pull request changes, and merge groups only report,
+so `main` can drift above the baseline; the next change to a drifted module names the encoding
+or records it with `--update-baseline --allow-increase`. Its docstring gives the rule and the
+options. On pull requests CI also runs
 `python3 scripts/parallel_defs.py`, an advisory notice (it never fails) that lists new or changed
 public definitions sharing a large anonymized subterm with an existing one, or merely renaming one.
 With `--theorems` it lists new or changed theorems, private ones included, whose statement another
@@ -214,14 +262,22 @@ findings without requiring a duplicate local run.
 Keep each fact in one maintained location. The README explains the purpose and points to useful
 entry points; module docstrings explain the mathematics and API; checked Lean examples show usage.
 ROADMAP lists open directions only; status and progress live on issues and PRs, so a PR does not
-edit ROADMAP unless it opens or closes a direction. UPSTREAM records coordination and exceptional
-integration decisions, while source markers record module status. Batch measurements and
-validation/review evidence belong in commit or PR descriptions.
+edit ROADMAP unless it opens or closes a direction. Write a new issue or PR link in ROADMAP inline,
+as `[#N](https://github.com/cslib-community/complexitylib/issues/N)`, rather than as a
+`[#N]: …` reference definition appended to the end of the file: such appended lines conflict
+between PRs in the merge queue, and `scripts/check_hygiene.py` rejects new ones. UPSTREAM records
+coordination and exceptional integration decisions, while source markers record module status.
+Batch measurements and validation/review evidence belong in commit or PR descriptions.
 Link to these sources instead of repeating them in new guides. Add a separate document only when
 it provides useful explanation that does not already have a suitable home.
 
-The guide (`guide/`) is the narrative path into the library: a chapter per area, written as a
-newcomer should meet it, with checked Lean examples whose names link to the API documentation.
+The [Operator's Manual](manual/README.md) is the substantial codebase reference for human and
+agent contributors: installation, first use, tactics, models and resource conventions, design
+and proof patterns, development procedures and troubleshooting. The short
+[Agent Operator's Manual](manual/AGENT_OPERATORS.md) explains to humans how to direct agents,
+choose roles, assign work and judge review and handoffs. The Operator's Manual's tutorial layer
+includes the guide (`guide/`): a chapter per area, written as a newcomer
+should meet it, with checked Lean examples whose names link to the API documentation.
 When a chapter needs proof plumbing or a missing lemma, improve the library rather than
 documenting around it.
 
@@ -235,6 +291,58 @@ and the same with `-d guide`. When changing the Lean toolchain, also update the 
 version, and run `MATHLIB_NO_CACHE_ON_UPDATE=1 lake -d docbuild update doc-gen4` and
 `MATHLIB_NO_CACHE_ON_UPDATE=1 lake -d guide update verso`. Commit the refreshed lockfiles and
 run the documentation checks and builds.
+
+### Maintaining the manuals
+
+Every change must assess its effect on both manuals. Changes to a model,
+encoding, theorem hypothesis or bound, public API, import, tactic, dependency, build command or
+development procedure must update the affected instructions and reference material in the same
+change. Changes to agent roles, delegation, review, coordination or human direction must update
+the affected Agent Operator's Manual instructions too. If no edit is needed for one or both
+manuals, give a short, concrete reason in the PR's Manual impact
+section, or in the commit description when there is no PR. This assessment is required; needless
+text changes are not. Update the assessment when the scope changes, and keep its evidence in one
+place.
+
+Write the Operator's Manual as a user manual in the ordinary sense: a human with basic Lean,
+editor and terminal skills
+should be able to set up the library, complete a first example, choose an appropriate model,
+apply its API, diagnose a failed attempt, validate a change and prepare it for review. Assume no
+agent tools or prior conversation. Each procedure should state its prerequisites and starting
+point, give the necessary commands or code with their context, describe the expected result,
+and explain how to check it and recover from likely failures. Include the model, encoding and
+resource conventions that affect the user's choice, and explain particular proof considerations
+where they teach a reusable method or a model boundary. Agents should be able to consult this
+maintained account without repeating the investigation or relying on earlier conversations.
+Keep the Agent Operator's Manual short and directed at the person driving the agents; put
+participant procedures in the Operator's Manual and historical evidence in its supplement.
+Place a new section where its topic belongs in a chapter rather than at the end: sections that
+concurrent PRs append at the same place conflict in the merge queue.
+
+Keep executable Lean examples in `ComplexityTests/` or the checked Verso guide and link their
+complete source, including imports and local context. Use checked excerpts rather than a second
+independently maintained copy. Check new or changed examples with Lean; source comparison alone
+does not establish that an example elaborates. The live checker and its controls are required
+in CI and in both full and quick `scripts/check.sh` runs. For documentation-only validation, run
+`python3 scripts/check_operator_manual.py` and `python3 scripts/test_operator_manual.py`
+directly; they use only Python and need no generated data or publishing tools. See the manual's
+build instructions for PDF generation; inspect affected rendered pages when changing its content
+or rendering. The **Operator's Manual PDFs** workflow builds both books for pull requests that
+change the manual or its scripts, so rendered pages can be inspected without local TeX tools.
+Generated LaTeX, PDFs and research exports stay untracked; retain their scripts and
+maintained source inputs. Keep historical measurements and transcript evidence explicitly dated;
+do not present their frozen counts as current library state.
+
+Impact on both manuals is a mandatory part of independent review before integration, and
+coordinators are responsible for ensuring that this review happens. The reviewer checks
+the assessment against the final revision, including the reason for no edit when applicable.
+For an affected procedure, follow the documented starting point, inspect or run the example and
+its validation as appropriate, and check that a human can understand the outcome and next step.
+Check relevant API names, imports, assumptions, resource bounds, source credit and recovery
+instructions, as well as affected role, delegation and handoff guidance. Record the verdict with
+the existing code review; an additional reviewer is needed
+only for an uncovered question. Compilation, excerpt checks and a completed PR field do not by
+themselves establish that the manual is usable or correct.
 
 ## Maintaining the headline abstracts
 

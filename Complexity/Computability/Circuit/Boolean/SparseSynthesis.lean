@@ -130,18 +130,18 @@ private theorem indicatorBound_le {p h k l K a t : ℕ} (hh : h ≤ p) (hk : k �
       Nat.mul_le_mul (by omega) (by omega)
     have h₂ : (2 ^ k + 1) ^ K * (K + 1) ≤ G * (p + 1) := Nat.mul_le_mul hbank (by omega)
     unfold sparseTableBound
-    nlinarith
+    nlinarith only [h₁, h₂, hlG, hG]
   have hhash : (k + l) * (4 * (2 * p) + 1) ≤ (16 * p ^ 2 + 2 * p) * G := by
     have := Nat.mul_le_mul hkl (le_refl (4 * (2 * p) + 1))
-    nlinarith
+    nlinarith only [this, hG]
   have hfilter : (k + l) * (4 * (2 * p) + 1) + sparseTableBound k l K (2 ^ p) + 1 ≤
-      2 ^ p / K + (16 * p ^ 2 + 11 * p + 9) * G := by nlinarith
+      2 ^ p / K + (16 * p ^ 2 + 11 * p + 9) * G := by nlinarith only [hhash, htable, hG]
   have hfilters := Nat.mul_le_mul_left t hfilter
   rw [mul_add] at hfilters
   have ht' : t * ((16 * p ^ 2 + 11 * p + 9) * G) ≤ (p + 1) * ((16 * p ^ 2 + 11 * p + 9) * G) :=
     Nat.mul_le_mul_right _ ht
   have hcube : (p + 1) * (16 * p ^ 2 + 11 * p + 9) + (4 * p + 6) ≤ 32 * (p + 1) ^ 3 := by
-    nlinarith
+    nlinarith only []
   have hres' := Nat.mul_le_mul_right (2 * (2 * p) + 2) hres
   have hcubeG := Nat.mul_le_mul_right G hcube
   unfold indicatorBound
@@ -174,15 +174,15 @@ private theorem partialBound_le {p h k l J w : ℕ} (hh : h ≤ p) (hk : k ≤ p
     have h₁ : (2 ^ k + 2 ^ l) * (2 * (k + l) + 1) ≤ (2 * G) * (4 * p + 1) :=
       Nat.mul_le_mul (by omega) (by omega)
     unfold partialTableBound
-    nlinarith
+    nlinarith only [h₁, hbank, hlG, hG, hwJ]
   have hhash : (k + l) * (4 * (2 * p) + 1) ≤ (16 * p ^ 2 + 2 * p) * G := by
     have := Nat.mul_le_mul hkl (le_refl (4 * (2 * p) + 1))
-    nlinarith
+    nlinarith only [this, hG]
   have hcoll' := Nat.mul_le_mul_right (2 * (2 * p) + 2) hcoll
-  have hcube : 16 * p ^ 2 + 14 * p + 15 ≤ 32 * (p + 1) ^ 3 := by nlinarith
+  have hcube : 16 * p ^ 2 + 14 * p + 15 ≤ 32 * (p + 1) ^ 3 := by nlinarith only []
   have hcubeG := Nat.mul_le_mul_right G hcube
   unfold partialBound
-  nlinarith
+  nlinarith only [htable, hhash, hcoll', hcubeG, hG]
 
 /-- `c (v / d) ≤ L v` when `c ≤ L d`. -/
 private theorem mul_div_le_mul {c L d : ℕ} (v : ℕ) (h : c ≤ L * d) : c * (v / d) ≤ L * v :=
@@ -298,7 +298,9 @@ private theorem eventually_complexity_le (P : ℕ) :
       ∀ u : BooleanFunction (2 * p),
         P * p * complexityOn interpretation D (single u) ≤ (P + 1) * 2 ^ p := by
   obtain ⟨q, hq⟩ : ∃ q, q = 32 * (P + 1) := ⟨_, rfl⟩
-  have hq6 : 4 * q + 6 ≤ q ^ 2 := by subst hq; nlinarith
+  have hq6 : 4 * q + 6 ≤ q ^ 2 := by
+    have : 32 ≤ q := by omega
+    nlinarith only [this]
   obtain ⟨c, hc⟩ : ∃ c, c + 4 * q + 6 = q ^ 2 := ⟨q ^ 2 - (4 * q + 6), by omega⟩
   obtain ⟨H, hH⟩ := eventually_atTop.mp
     (Nat.eventually_mul_pow_le_pow (3456 * P * q ^ 8) 4 Nat.one_lt_two)
@@ -313,8 +315,8 @@ private theorem eventually_complexity_le (P : ℕ) :
   have hhp : h ≤ p := le_trans (Nat.le_mul_of_pos_left h hq2) hlo
   have hp1 : 1 ≤ p := by omega
   have herr : 2 * P * p * (32 * (p + 1) ^ 3 * 2 ^ (p - h)) ≤ 2 ^ p := by
-    have hpq : p ≤ 2 * q ^ 2 * h := by nlinarith
-    have hpq' : p + 1 ≤ 3 * q ^ 2 * h := by nlinarith
+    have hpq : p ≤ 2 * q ^ 2 * h := by nlinarith only [hhi, (by omega : 1 ≤ h)]
+    have hpq' : p + 1 ≤ 3 * q ^ 2 * h := by nlinarith only [hhi, (by omega : 1 ≤ h)]
     have hpoly : 2 * P * p * (32 * (p + 1) ^ 3) ≤ 3456 * P * q ^ 8 * h ^ 4 :=
       calc 2 * P * p * (32 * (p + 1) ^ 3)
           ≤ 2 * P * (2 * q ^ 2 * h) * (32 * (3 * q ^ 2 * h) ^ 3) := by gcongr
@@ -428,7 +430,7 @@ private theorem eventually_mul_dist_complexity_le (P : ℕ) :
   have hgates : P * (5 * #O) ≤ 2 ^ p := by
     have := Nat.mul_le_mul_left (5 * P) hO
     simp only [pow_one] at hsmall
-    nlinarith
+    nlinarith only [this, hsmall]
   calc P * Nat.dist (complexity interpretation f) (complexity interpretation g)
       ≤ P * (complexity interpretation (single fun x => decide (x ∈ D)) +
           ∑ i, complexityOn interpretation D
@@ -481,7 +483,7 @@ theorem dist_complexity_single_le (ε : ℝ) (hε : 0 < ε) :
   have hnat : P * Nat.dist (complexity interpretation (single f))
       (complexity interpretation (single g)) ≤ (1 * P + 2) * 2 ^ p := by
     have := Nat.mul_le_mul_left P hdist
-    nlinarith
+    nlinarith only [this, hind, hsmall]
   simpa using hP _ (2 ^ p) hnat
 
 /-- **Exact hardness survives sparse errors.** For every `ε > 0` and all large `p`, if a
@@ -568,7 +570,7 @@ private theorem card_computableFunctions_lt {p : ℕ} (hp : 4 ≤ p) :
     (card_computableFunctions_mul_factorial_le (p + p) s)
   have hexp : p + (2 * p + 5) * s + (p + 1) < p * 2 ^ p := by
     rw [hs]
-    nlinarith
+    nlinarith only [hp, hs1]
   calc #(computableFunctions (p + p) s)
       ≤ (s + 1) * (5 * (p + p + s + 1) ^ 2) ^ s * (p + p + s) := hcount
     _ ≤ 2 ^ p * (2 ^ (2 * p + 5)) ^ s * 2 ^ (p + 1) := by

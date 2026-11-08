@@ -166,14 +166,7 @@ private theorem computableInPolyTime_fanInCheck (encOp : σ.Op ↪ List Bool) (m
       ((snd encUnary (Circuit.encCode encOp)).comp (computableInPolyTime_toRaw encOp m))
   have htest : ComputableInPolyTime
       (fun p : (Σ n, Circuit σ n m) × (σ.Op × List ℕ) => decide (p.2.2.length ≤ k))
-      (encPair (Circuit.encCircuit encOp m) (Circuit.encGate encOp)) encBool := by
-    have hlen : ComputableInPolyTime
-        (fun p : (Σ n, Circuit σ n m) × (σ.Op × List ℕ) => p.2.2.length)
-        (encPair (Circuit.encCircuit encOp m) (Circuit.encGate encOp)) encUnary :=
-      (length_list encNat).comp
-        ((snd encOp (encList encNat)).comp
-          (snd (Circuit.encCircuit encOp m) (Circuit.encGate encOp)))
-    exact unary_le' hlen (const k)
+      (encPair (Circuit.encCircuit encOp m) (Circuit.encGate encOp)) encBool := by fun_prop
   exact allWithInput hgates htest
 
 private theorem computableInPolyTime_linearSizeCheck (encOp : σ.Op ↪ List Bool) (m C : ℕ) :
@@ -189,8 +182,7 @@ private theorem computableInPolyTime_linearSizeCheck (encOp : σ.Op ↪ List Boo
       ((fst (encList (Circuit.encGate encOp)) (encList encNat)).comp
         ((snd encUnary (Circuit.encCode encOp)).comp hraw))
   have hrhs : ComputableInPolyTime (fun c : Σ n, Circuit σ n m => C * c.1 + C)
-      (Circuit.encCircuit encOp m) encUnary :=
-    unary_add.comp ((unary_mul.comp ((const C).prod hn)).prod (const C))
+      (Circuit.encCircuit encOp m) encUnary := by fun_prop
   exact unary_le' hsize hrhs
 
 private theorem computableInPolyTime_reachStep (encOp : σ.Op ↪ List Bool) :
@@ -202,41 +194,26 @@ private theorem computableInPolyTime_reachStep (encOp : σ.Op ↪ List Bool) :
   let encS :=
     encPair (encPair encUnary (encList encNat)) (encPair (Circuit.encGate encOp) encUnary)
   have hseen : ComputableInPolyTime
-      (fun p : (ℕ × List ℕ) × ((σ.Op × List ℕ) × ℕ) => p.1.2) encS (encList encNat) :=
-    (fst (encPair encUnary (encList encNat)) (encPair (Circuit.encGate encOp) encUnary)).snd'
+      (fun p : (ℕ × List ℕ) × ((σ.Op × List ℕ) × ℕ) => p.1.2) encS (encList encNat) := by fun_prop
   have htarget : ComputableInPolyTime
-      (fun p : (ℕ × List ℕ) × ((σ.Op × List ℕ) × ℕ) => p.1.1 + p.2.2) encS encNat := by
-    have hn :=
-      (fst (encPair encUnary (encList encNat)) (encPair (Circuit.encGate encOp) encUnary)).fst'
-    have hj :=
-      (snd (encPair encUnary (encList encNat)) (encPair (Circuit.encGate encOp) encUnary)).snd'
-    exact unary_to_binary.comp (unary_add.comp (hn.prod hj))
+      (fun p : (ℕ × List ℕ) × ((σ.Op × List ℕ) × ℕ) => p.1.1 + p.2.2) encS encNat := by fun_prop
   have hany : ComputableInPolyTime
       (fun p : (ℕ × List ℕ) × ((σ.Op × List ℕ) × ℕ) => p.1.2.any (· == p.1.1 + p.2.2))
-      encS encBool :=
-    anyWithInput hseen ((snd encS encNat).beq (htarget.comp (fst encS encNat)))
+      encS encBool := by fun_prop
   have hargs : ComputableInPolyTime
-      (fun p : (ℕ × List ℕ) × ((σ.Op × List ℕ) × ℕ) => p.2.1.2) encS (encList encNat) :=
-    (snd encOp (encList encNat)).comp
-      (snd (encPair encUnary (encList encNat)) (encPair (Circuit.encGate encOp) encUnary)).fst'
+      (fun p : (ℕ × List ℕ) × ((σ.Op × List ℕ) × ℕ) => p.2.1.2) encS (encList encNat) := by fun_prop
   exact hany.ite (listAppend' hargs hseen) hseen
 
 private theorem computableInPolyTime_reachWiresRaw (encOp : σ.Op ↪ List Bool) :
     ComputableInPolyTime (fun r : RawCode σ => Compiler.reachWiresCode r.1 r.2)
       (encRaw encOp) (encList encNat) := by
-  have hn : ComputableInPolyTime (fun r : RawCode σ => r.1) (encRaw encOp) encUnary :=
-    fst encUnary (Circuit.encCode encOp)
+  have hn : ComputableInPolyTime (fun r : RawCode σ => r.1) (encRaw encOp) encUnary := by fun_prop
   have hgates : ComputableInPolyTime (fun r : RawCode σ => r.2.1)
-      (encRaw encOp) (encList (Circuit.encGate encOp)) :=
-    (fst (encList (Circuit.encGate encOp)) (encList encNat)).comp
-      (snd encUnary (Circuit.encCode encOp))
+      (encRaw encOp) (encList (Circuit.encGate encOp)) := by fun_prop
   have houts : ComputableInPolyTime (fun r : RawCode σ => r.2.2)
-      (encRaw encOp) (encList encNat) :=
-    (snd (encList (Circuit.encGate encOp)) (encList encNat)).comp
-      (snd encUnary (Circuit.encCode encOp))
+      (encRaw encOp) (encList encNat) := by fun_prop
   have hlist : ComputableInPolyTime (fun r : RawCode σ => r.2.1.zipIdx.reverse)
-      (encRaw encOp) (encList (encPair (Circuit.encGate encOp) encUnary)) :=
-    listReverseWithInput ((computableInPolyTime_zipIdx (Circuit.encGate encOp)).comp hgates)
+      (encRaw encOp) (encList (encPair (Circuit.encGate encOp) encUnary)) := by fun_prop
   refine foldlWith_of_bounded_growth hn hlist houts (computableInPolyTime_reachStep encOp)
     (growth := fun r => (encList (Circuit.encGate encOp) r.2.1).length)
     hgates.polyBounded_length fun r seen gj hmem => ?_
@@ -258,26 +235,18 @@ private theorem computableInPolyTime_toCSPRaw (encOp : σ.Op ↪ List Bool) (m :
       (encRaw encOp) (encCSP (encCircuitRel encOp m) encNat) := by
   have hreach := computableInPolyTime_reachWiresRaw encOp
   have hgates : ComputableInPolyTime (fun r : RawCode σ => r.2.1.zipIdx)
-      (encRaw encOp) (encList (encPair (Circuit.encGate encOp) encUnary)) :=
-    (computableInPolyTime_zipIdx (Circuit.encGate encOp)).comp
-      ((fst (encList (Circuit.encGate encOp)) (encList encNat)).comp
-        (snd encUnary (Circuit.encCode encOp)))
+      (encRaw encOp) (encList (encPair (Circuit.encGate encOp) encUnary)) := by fun_prop
   let encGJ := encPair (Circuit.encGate encOp) encUnary
   let encRG := encPair (encRaw encOp) encGJ
   have hwireNat : ComputableInPolyTime
-      (fun p : RawCode σ × ((σ.Op × List ℕ) × ℕ) => p.1.1 + p.2.2) encRG encNat :=
-    unary_to_binary.comp (unary_add.comp
-      (((fst encUnary (Circuit.encCode encOp)).comp (fst (encRaw encOp) encGJ)).prod
-        ((snd (Circuit.encGate encOp) encUnary).comp (snd (encRaw encOp) encGJ))))
+      (fun p : RawCode σ × ((σ.Op × List ℕ) × ℕ) => p.1.1 + p.2.2) encRG encNat := by fun_prop
   have hreachP : ComputableInPolyTime
       (fun p : RawCode σ × ((σ.Op × List ℕ) × ℕ) => Compiler.reachWiresCode p.1.1 p.1.2)
-      encRG (encList encNat) :=
-    hreach.comp (fst (encRaw encOp) encGJ)
+      encRG (encList encNat) := by fun_prop
   have hpred : ComputableInPolyTime
       (fun p : RawCode σ × ((σ.Op × List ℕ) × ℕ) =>
         (Compiler.reachWiresCode p.1.1 p.1.2).any (· == p.1.1 + p.2.2))
-      encRG encBool :=
-    anyWithInput hreachP ((snd encRG encNat).beq (hwireNat.comp (fst encRG encNat)))
+      encRG encBool := by fun_prop
   have hfilt := filterWithInput
     (test := fun (r : RawCode σ) gj => (Compiler.reachWiresCode r.1 r.2).any (· == r.1 + gj.2))
     hgates hpred
@@ -286,35 +255,12 @@ private theorem computableInPolyTime_toCSPRaw (encOp : σ.Op ↪ List Bool) (m :
         (r.2.1.zipIdx.filter fun gj =>
           (Compiler.reachWiresCode r.1 r.2).any (· == r.1 + gj.2)).map
           fun gj => ((Sum.inl gj.1.1 : Compiler.CircuitRel σ m), (r.1 + gj.2) :: gj.1.2))
-      (encRaw encOp) (encCSP (encCircuitRel encOp m) encNat) := by
-    refine mapWithInput hfilt ?_
-    have hop : ComputableInPolyTime
-        (fun p : RawCode σ × ((σ.Op × List ℕ) × ℕ) =>
-          (Sum.inl p.2.1.1 : Compiler.CircuitRel σ m))
-        encRG (encCircuitRel encOp m) :=
-      (ComputableInPolyTime.sumInl encOp (encFinEnum (Fin m))).comp
-        ((fst encOp (encList encNat)).comp
-          ((fst (Circuit.encGate encOp) encUnary).comp (snd (encRaw encOp) encGJ)))
-    have hargs : ComputableInPolyTime
-        (fun p : RawCode σ × ((σ.Op × List ℕ) × ℕ) => p.2.1.2)
-        encRG (encList encNat) :=
-      (snd encOp (encList encNat)).comp
-        ((fst (Circuit.encGate encOp) encUnary).comp (snd (encRaw encOp) encGJ))
-    exact hop.prod (hwireNat.cons' hargs)
+      (encRaw encOp) (encCSP (encCircuitRel encOp m) encNat) := by fun_prop
   have houtCons : ComputableInPolyTime
       (fun r : RawCode σ =>
         (List.finRange m).map fun o =>
           ((Sum.inr o : Compiler.CircuitRel σ m), [r.2.2.getD o.val 0]))
-      (encRaw encOp) (encCSP (encCircuitRel encOp m) encNat) := by
-    have houts : ComputableInPolyTime (fun r : RawCode σ => r.2.2)
-        (encRaw encOp) (encList encNat) :=
-      (snd (encList (Circuit.encGate encOp)) (encList encNat)).comp
-        (snd encUnary (Circuit.encCode encOp))
-    refine computableInPolyTime_mapConst (List.finRange m) fun o _ => ?_
-    have hw : ComputableInPolyTime (fun r : RawCode σ => r.2.2.getD o.val 0)
-        (encRaw encOp) encNat :=
-      (listGetD 0).comp (houts.prod (const o.val))
-    exact (const (Sum.inr o : Compiler.CircuitRel σ m)).prod (hw.cons' (const []))
+      (encRaw encOp) (encCSP (encCircuitRel encOp m) encNat) := by fun_prop
   exact listAppend' hgCons houtCons
 
 private theorem computableInPolyTime_reachGateCountRaw (encOp : σ.Op ↪ List Bool) :
@@ -322,26 +268,18 @@ private theorem computableInPolyTime_reachGateCountRaw (encOp : σ.Op ↪ List B
       (encRaw encOp) encUnary := by
   have hreach := computableInPolyTime_reachWiresRaw encOp
   have hgates : ComputableInPolyTime (fun r : RawCode σ => r.2.1.zipIdx)
-      (encRaw encOp) (encList (encPair (Circuit.encGate encOp) encUnary)) :=
-    (computableInPolyTime_zipIdx (Circuit.encGate encOp)).comp
-      ((fst (encList (Circuit.encGate encOp)) (encList encNat)).comp
-        (snd encUnary (Circuit.encCode encOp)))
+      (encRaw encOp) (encList (encPair (Circuit.encGate encOp) encUnary)) := by fun_prop
   let encGJ := encPair (Circuit.encGate encOp) encUnary
   let encRG := encPair (encRaw encOp) encGJ
   have hwireNat : ComputableInPolyTime
-      (fun p : RawCode σ × ((σ.Op × List ℕ) × ℕ) => p.1.1 + p.2.2) encRG encNat :=
-    unary_to_binary.comp (unary_add.comp
-      (((fst encUnary (Circuit.encCode encOp)).comp (fst (encRaw encOp) encGJ)).prod
-        ((snd (Circuit.encGate encOp) encUnary).comp (snd (encRaw encOp) encGJ))))
+      (fun p : RawCode σ × ((σ.Op × List ℕ) × ℕ) => p.1.1 + p.2.2) encRG encNat := by fun_prop
   have hreachP : ComputableInPolyTime
       (fun p : RawCode σ × ((σ.Op × List ℕ) × ℕ) => Compiler.reachWiresCode p.1.1 p.1.2)
-      encRG (encList encNat) :=
-    hreach.comp (fst (encRaw encOp) encGJ)
+      encRG (encList encNat) := by fun_prop
   have hpred : ComputableInPolyTime
       (fun p : RawCode σ × ((σ.Op × List ℕ) × ℕ) =>
         (Compiler.reachWiresCode p.1.1 p.1.2).any (· == p.1.1 + p.2.2))
-      encRG encBool :=
-    anyWithInput hreachP ((snd encRG encNat).beq (hwireNat.comp (fst encRG encNat)))
+      encRG encBool := by fun_prop
   exact countPWithInput hgates hpred
 
 /-- Compiling a circuit over `σ` to its reachable-wire Boolean CSP `Compiler.toCSP c.2` takes

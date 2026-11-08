@@ -29,7 +29,7 @@ These native composition and invariant proofs are original.
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 
-open Cslib.WordRAM Cslib.DataStructure
+open Cslib.WordRAM
 open Cslib.Algorithms.ThreeSum.ChanHe (Node)
 
 /-- Popping a skipped entry executes the complete native body and preserves every part of the
@@ -56,22 +56,9 @@ theorem skip_transition {a : Arena} {w : ℕ} {target : List Node}
   have hbody := body_skip hy hloaded hcontrols.2.2.2.2.2.2.2.2.2.1 hskip
   have hmem (p : ℕ) (hp : p < a.stack ∨ a.stack + a.capacity ≤ p) : y.mem p = x.mem p := by
     apply hframe
-    simp only [Stack.WordRAM.footprint, Block.mem_footprint, Block.Owns]
+    simp only [WordStack.footprint, Block.mem_footprint, Block.Owns]
     omega
-  have hstep : Math.step (Nat.primesLE a.m) a.Λ e.task (es.map Entry.task) =
-      (es.map Entry.task, none) := by
-    by_cases hf : e.fuel = 0
-    · simp only [Math.step, Entry.task, hf]
-    · have hempty : e.task.empty := by
-        simp only [Math.Task.empty, Entry.task, List.toFinset_eq_empty_iff]
-        rcases hskip with hf' | h₀ | h₁ | h₂
-        · exact (hf hf').elim
-        · exact Or.inl (List.eq_nil_of_length_eq_zero h₀)
-        · exact Or.inr (Or.inl (List.eq_nil_of_length_eq_zero h₁))
-        · exact Or.inr (Or.inr (List.eq_nil_of_length_eq_zero h₂))
-      cases he : e.fuel with
-      | zero => exact (hf he).elim
-      | succ f => simp only [Math.step, show e.task.fuel = f + 1 from he, hempty, ↓reduceIte]
+  have hstep := Entry.step_of_skip (Nat.primesLE a.m) a.Λ e es hskip
   have hdec := Math.potential_step (Nat.primesLE a.m) a.Λ e.task (es.map Entry.task)
   rw [hstep] at hdec
   change (Cursor.mk es ns).work + 1 ≤ (Cursor.mk (e :: es) ns).work at hdec

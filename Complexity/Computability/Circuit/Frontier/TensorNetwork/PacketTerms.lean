@@ -15,6 +15,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Envelope
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryDivision
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryPrimitives
@@ -25,6 +26,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListP
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLoops
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptionPrimitives
+import Complexity.Tactic.OptionMatch
 import Mathlib.Data.List.GetD
 
 /-!
@@ -73,6 +75,8 @@ bounds: time `exp(O(L log s))` and polynomial space.
 ## Main results
 
 * `Cslib.Circuits.Frontier.NativePacket.twoVal_polyTime`: the `2`-adic valuation.
+* `Cslib.Circuits.Frontier.NativePacket.PacketCtx.mk_polyTime`: construction from certified fields
+  with the existing unary/binary packet encoding.
 * `Cslib.Circuits.Frontier.NativePacket.kernelValueList_polyTime`,
   `Cslib.Circuits.Frontier.NativePacket.crossRatioList_polyTime`: kernel values and cross ratios.
 * `Cslib.Circuits.Frontier.NativePacket.rowTermList_polyTime`: the row terms.
@@ -94,11 +98,13 @@ bounds: time `exp(O(L log s))` and polynomial space.
 namespace Cslib.Circuits.Frontier
 
 /-- The subring `ℤ_(2)` of rationals with odd denominator. -/
-local notation "ℤ₍₂₎" => Valuation.integer (Rat.padicValuation 2)
+local macro "ℤ₍₂₎" : term => `(Valuation.integer (Rat.padicValuation 2))
 
 namespace NativePacket
 
 open GaloisRingArith TensorNetwork Turing.MultiTapeTM Cslib.GenericRAM
+
+attribute [local irreducible] ComputableInPolyTime
 
 /-! ### The `2`-adic valuation by halving -/
 
@@ -182,14 +188,6 @@ section PolyTime
 
 variable {α : Type} {encIn : α ↪ List Bool}
 
-private theorem intBin_natAbs' :
-    ComputableInPolyTime Int.natAbs encIntBin encNat :=
-  .of_tidy ComputableTidilyInPolyTime.intBin_natAbs
-
-private theorem intBin_isNeg' :
-    ComputableInPolyTime (fun z : ℤ => decide (z < 0)) encIntBin encBool :=
-  .of_tidy ComputableTidilyInPolyTime.intBin_isNeg
-
 /-- **The `2`-adic valuation is polynomial-time**, on binary integers, in unary. -/
 theorem twoVal_polyTime : ComputableInPolyTime twoVal encIntBin encUnary := by
   let encS := encPair encNat (encPair encUnary encBool)
@@ -218,8 +216,10 @@ theorem twoVal_polyTime : ComputableInPolyTime twoVal encIntBin encUnary := by
   have hfold := ComputableInPolyTime.foldlWithInput_of_bounded_growth
     (encA := encUnary) (encL := encList encUnary)
     (step := fun _ s _ => twoValStep s)
-    (intBin_natAbs'.prod ((ComputableInPolyTime.const 0).prod (ComputableInPolyTime.const false)))
-    ⟨ComputableInPolyTime.range.comp (ComputableInPolyTime.binary_size.comp intBin_natAbs'),
+    (ComputableInPolyTime.intBin_natAbs.prod
+      ((ComputableInPolyTime.const 0).prod (ComputableInPolyTime.const false)))
+    ⟨ComputableInPolyTime.range.comp
+      (ComputableInPolyTime.binary_size.comp ComputableInPolyTime.intBin_natAbs),
       hstep, inferInstance, inferInstance⟩
     (growth := fun _ => 2) ⟨PolyBounded.const 2, fun z s _ _ => ?_⟩
   · refine ((ComputableInPolyTime.fst encUnary encBool).comp
@@ -272,38 +272,24 @@ section PolyTime
 
 variable {α : Type} {encIn : α ↪ List Bool}
 
-private theorem intBin_natAbs'' :
-    ComputableInPolyTime Int.natAbs encIntBin encNat :=
-  .of_tidy ComputableTidilyInPolyTime.intBin_natAbs
-
-private theorem intBin_isNeg'' :
-    ComputableInPolyTime (fun z : ℤ => decide (z < 0)) encIntBin encBool :=
-  .of_tidy ComputableTidilyInPolyTime.intBin_isNeg
-
-private theorem intBin_signMagnitude' :
-    ComputableInPolyTime (fun p : Bool × ℕ => if p.1 then -(p.2 : ℤ) else p.2)
-      (encPair encBool encNat) encIntBin :=
-  .of_tidy ComputableTidilyInPolyTime.intBin_signMagnitude
-
-private theorem two_pow' {k : α → ℕ} (hk : ComputableInPolyTime k encIn encUnary) :
-    ComputableInPolyTime (fun x => 2 ^ k x) encIn encNat :=
-  (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.binary_two_pow).comp hk
-
 /-- The odd part of a binary integer. -/
 theorem oddPart_polyTime {z : α → ℤ} (hz : ComputableInPolyTime z encIn encIntBin) :
     ComputableInPolyTime (fun x => z x / 2 ^ twoVal (z x)) encIn encIntBin := by
-  have habs := intBin_natAbs''.comp hz
+  have habs := ComputableInPolyTime.intBin_natAbs.comp hz
   have hv := twoVal_polyTime.comp hz
-  refine (intBin_signMagnitude'.comp ((intBin_isNeg''.comp hz).prod
-    (ComputableInPolyTime.binary_div.comp (habs.prod (two_pow' hv))))).of_enc_eq fun x => ?_
+  refine (ComputableInPolyTime.intBin_signMagnitude.comp
+    ((ComputableInPolyTime.intBin_isNeg.comp hz).prod
+      (ComputableInPolyTime.binary_div.comp
+        (habs.prod (ComputableInPolyTime.binary_two_pow.comp hv))))).of_enc_eq fun x => ?_
   simp only [Function.comp_apply, decide_eq_true_eq, ediv_two_pow_twoVal (z x)]
 
 /-- The residue modulo `2 ^ p` of a binary integer, with `p` in unary. -/
 theorem residue_polyTime {n : α → ℤ} {p : α → ℕ}
     (hn : ComputableInPolyTime n encIn encIntBin) (hp : ComputableInPolyTime p encIn encUnary) :
     ComputableInPolyTime (fun x => (n x % 2 ^ p x).toNat) encIn encNat :=
-  (ComputableInPolyTime.intBin_emodNat' hn (two_pow' hp)).of_enc_eq fun x => by
-    simp only [Nat.cast_pow, Nat.cast_ofNat]
+  (ComputableInPolyTime.intBin_emodNat' hn
+    (ComputableInPolyTime.binary_two_pow.comp hp)).of_enc_eq fun x => by
+    simp only [Function.comp_apply, Nat.cast_pow, Nat.cast_ofNat]
 
 /-- An integer as a constant coefficient list, from its residue. -/
 theorem intConst_polyTime {p : α → ℕ} {fl : α → List ℕ} {n : α → ℤ}
@@ -325,7 +311,8 @@ theorem intConst_two_pow_polyTime {p : α → ℕ} {fl : α → List ℕ} {k : �
     ComputableInPolyTime (fun x => intConst (p x) (fl x) ((2 : ℤ) ^ k x)) encIn
       (encList encNat) :=
   intConst_polyTime hfl ((ComputableInPolyTime.binary_mod.comp
-    ((two_pow' hk).prod (two_pow' hp))).of_enc_eq fun x => by
+    ((ComputableInPolyTime.binary_two_pow.comp hk).prod
+      (ComputableInPolyTime.binary_two_pow.comp hp))).of_enc_eq fun x => by
       simp only [Function.comp_apply, toNat_two_pow_emod])
 
 /-- The constant list of a binary natural number. -/
@@ -335,7 +322,7 @@ theorem intConst_natCast_polyTime {p : α → ℕ} {fl : α → List ℕ} {m : �
     (hm : ComputableInPolyTime m encIn encNat) :
     ComputableInPolyTime (fun x => intConst (p x) (fl x) (m x : ℤ)) encIn (encList encNat) :=
   intConst_polyTime hfl ((ComputableInPolyTime.binary_mod.comp
-    (hm.prod (two_pow' hp))).of_enc_eq fun x => by
+    (hm.prod (ComputableInPolyTime.binary_two_pow.comp hp))).of_enc_eq fun x => by
       simp only [Function.comp_apply, toNat_natCast_emod])
 
 /-- The constant list of the odd part of a binary integer. -/
@@ -610,7 +597,8 @@ theorem modeValueList_polyTime {p : α → ℕ} {fl : α → List ℕ} {i : α �
   have h2 := ComputableInPolyTime.snd encIn (encPair encNat encBool)
   have hc := (ComputableInPolyTime.fst encNat encBool).comp h2
   have hbit := (ComputableInPolyTime.snd encNat encBool).comp h2
-  have hT := two_pow' (ComputableInPolyTime.unary_add' (hi.comp h1) (ComputableInPolyTime.const 1))
+  have hT := ComputableInPolyTime.binary_two_pow.comp
+    (ComputableInPolyTime.unary_add' (hi.comp h1) (ComputableInPolyTime.const 1))
   have hzero := computableInPolyTime_tabulate (g := fun _ _ => 0)
     ((ComputableInPolyTime.length_list encNat).comp (hfl.comp h1)) (ComputableInPolyTime.const 0)
   have hpow := computableInPolyTime_pow (hp.comp h1) (hfl.comp h1)
@@ -650,12 +638,6 @@ theorem rowTermList_polyTime {p : α → ℕ} {fl : α → List ℕ} {a L i nb :
   have hx := (ComputableInPolyTime.fst encNat encBool).comp hr
   have hbit := (ComputableInPolyTime.snd encNat encBool).comp hr
   have hloc := localFormList_polyTime hp hfl ha hL ht hcols hx hζ
-  have hnone : ComputableInPolyTime (fun z => if (r z).2 then
-      localFormList (p z) (fl z) (a z) (L z) (t z) (cols z) (r z).1 (ζ z) else
-      sub (p z) (fl z) (one (fl z)) (localFormList (p z) (fl z) (a z) (L z) (t z) (cols z)
-        (r z).1 (ζ z))) encIn (encList encNat) :=
-    ComputableInPolyTime.ite hbit hloc
-      (computableInPolyTime_sub hp hfl (computableInPolyTime_one hfl) hloc)
   have h1 := ComputableInPolyTime.fst encIn encNat
   have hk := ComputableInPolyTime.snd encIn encNat
   have hnb' := ComputableInPolyTime.unary_to_binary.comp (hnb.comp h1)
@@ -666,26 +648,18 @@ theorem rowTermList_polyTime {p : α → ℕ} {fl : α → List ℕ} {a L i nb :
     (hi.comp h1) (ht.comp h1) (hdiffer.comp h1) (hx.comp h1) hy hexp (hζ.comp h1)
   have hzero := computableInPolyTime_tabulate (g := fun _ _ => 0)
     ((ComputableInPolyTime.length_list encNat).comp (hfl.comp h1)) (ComputableInPolyTime.const 0)
-  have hsome : ComputableInPolyTime (fun q : α × ℕ => if nb q.1 = 0 then zero (fl q.1) else
-      if (r q.1).2 then modeCoeffList (p q.1) (fl q.1) (a q.1) (L q.1) (i q.1) (t q.1)
-        (differ q.1) (r q.1).1 (q.2 / nb q.1) (q.2 % nb q.1) (ζ q.1)
-      else neg (p q.1) (fl q.1) (modeCoeffList (p q.1) (fl q.1) (a q.1) (L q.1) (i q.1) (t q.1)
-        (differ q.1) (r q.1).1 (q.2 / nb q.1) (q.2 % nb q.1) (ζ q.1)))
-      (encPair encIn encNat) (encList encNat) := by
-    refine (ComputableInPolyTime.ite (ComputableInPolyTime.beq (hnb.comp h1)
+  unfold rowTermList
+  option_match_to_elim
+  refine ComputableInPolyTime.optionElimWithInput ho (ComputableInPolyTime.ite hbit hloc
+    (computableInPolyTime_sub hp hfl (computableInPolyTime_one hfl) hloc))
+    ((ComputableInPolyTime.ite (ComputableInPolyTime.beq (hnb.comp h1)
       (ComputableInPolyTime.const 0)) hzero (ComputableInPolyTime.ite (hbit.comp h1) hcoef
-        (computableInPolyTime_neg (hp.comp h1) (hfl.comp h1) hcoef))).of_enc_eq fun q => ?_
-    by_cases h0 : nb q.1 = 0
-    · simp [h0, GaloisRingArith.zero]
-    · have hmin : min (nb q.1) (q.2 % nb q.1) = q.2 % nb q.1 :=
-        min_eq_right (Nat.mod_lt _ (Nat.pos_of_ne_zero h0)).le
-      simp only [h0, beq_iff_eq, ↓reduceIte, Function.comp_apply, hmin]
-  refine (ComputableInPolyTime.optionElimWithInput (body := fun z k => if nb z = 0 then zero (fl z)
-      else if (r z).2 then modeCoeffList (p z) (fl z) (a z) (L z) (i z) (t z) (differ z) (r z).1
-        (k / nb z) (k % nb z) (ζ z)
-      else neg (p z) (fl z) (modeCoeffList (p z) (fl z) (a z) (L z) (i z) (t z) (differ z) (r z).1
-        (k / nb z) (k % nb z) (ζ z))) ho hnone hsome).of_enc_eq fun z => ?_
-  cases o z <;> rfl
+        (computableInPolyTime_neg (hp.comp h1) (hfl.comp h1) hcoef))).of_enc_eq fun q => ?_)
+  by_cases h0 : nb q.1 = 0
+  · simp [h0, GaloisRingArith.zero]
+  · have hmin : min (nb q.1) (q.2 % nb q.1) = q.2 % nb q.1 :=
+      min_eq_right (Nat.mod_lt _ (Nat.pos_of_ne_zero h0)).le
+    simp only [h0, beq_iff_eq, ↓reduceIte, Function.comp_apply, hmin]
 
 end PolyTime
 
@@ -748,6 +722,30 @@ abbrev encProd : (ℕ × List ℕ) × ((ℕ × ℕ) × ((ℕ × ℕ) × (ℤ × 
 /-- **The encoding of a packet context**: the counts in unary, `t` in binary sign-magnitude
 form, and the lists in binary. -/
 def enc : PacketCtx ↪ List Bool := encOfEquiv equivProd encProd
+
+/-- Construct a packet context from polynomial-time fields, using its existing encoding:
+counts are unary, the grid point is in binary sign-magnitude form, and list entries are binary. -/
+@[fun_prop]
+theorem mk_polyTime {δ : Type} {encIn : δ ↪ List Bool}
+    {p a L i tiles nb : δ → ℕ} {fl ζ : δ → List ℕ} {t : δ → ℤ}
+    {e₁ e₂ differ : δ → Bool} {cols : δ → List (ℕ × Bool)}
+    (hp : ComputableInPolyTime p encIn encUnary)
+    (hfl : ComputableInPolyTime fl encIn (encList encNat))
+    (ha : ComputableInPolyTime a encIn encUnary)
+    (hL : ComputableInPolyTime L encIn encUnary)
+    (hi : ComputableInPolyTime i encIn encUnary)
+    (htiles : ComputableInPolyTime tiles encIn encUnary)
+    (ht : ComputableInPolyTime t encIn encIntBin)
+    (hnb : ComputableInPolyTime nb encIn encUnary)
+    (he₁ : ComputableInPolyTime e₁ encIn encBool)
+    (he₂ : ComputableInPolyTime e₂ encIn encBool)
+    (hdiffer : ComputableInPolyTime differ encIn encBool)
+    (hcols : ComputableInPolyTime cols encIn (encList (encPair encNat encBool)))
+    (hζ : ComputableInPolyTime ζ encIn (encList encNat)) :
+    ComputableInPolyTime (fun x => PacketCtx.mk (p x) (fl x) (a x) (L x) (i x) (tiles x)
+      (t x) (nb x) (e₁ x) (e₂ x) (differ x) (cols x) (ζ x)) encIn enc :=
+  ((hp.prod hfl).prod ((ha.prod hL).prod ((hi.prod htiles).prod (ht.prod
+    (hnb.prod ((he₁.prod (he₂.prod hdiffer)).prod (hcols.prod hζ))))))).of_enc_eq fun _ => rfl
 
 private theorem toProd_polyTime : ComputableInPolyTime equivProd enc encProd :=
   ComputableInPolyTime.of_eq fun _ => rfl
@@ -1062,133 +1060,97 @@ theorem entryCertificate_le :
           ((encEntryInput q).length + (targetModes q.1).length + Rv + 2) ^ K ∧
         entryCertificate.space q ≤
           K * ((encEntryInput q).length + (targetModes q.1).length + Rv + 2) ^ K := by
-  obtain ⟨K₁, hK₁⟩ := CoeffScheme.Terms.valueCertificate_le packetTerms_polyTime
-  have hM := NativeCertificate.ofPolyTime_isPolynomial mulFinal_polyTime
+  let cI := NativeCertificate.ofPolyTime (ComputableInPolyTime.id' (encIn := encEntryInput))
+  let cN := NativeCertificate.ofPolyTime node_polyTime
+  let cP := NativeCertificate.ofPolyTime sourceProduct_polyTime
+  let cM := NativeCertificate.ofPolyTime mulFinal_polyTime
+  let encMul := encPair encEntryInput (encPair (encList encNat) (encList encNat))
+  let overhead (z : (PacketCtx × (List (ℕ × Bool) × List ℕ)) × (List ℕ × List ℕ)) :=
+    cI.time z.1 + cI.space z.1 + (cN.time z.1 + cN.space z.1) +
+      (cP.time z.1 + cP.space z.1) + (cM.time z + cM.space z)
+  have hq := (ComputableInPolyTime.fst encEntryInput
+    (encPair (encList encNat) (encList encNat))).polyBounded_length
   have hI := NativeCertificate.ofPolyTime_isPolynomial
     (ComputableInPolyTime.id' (encIn := encEntryInput))
   have hN := NativeCertificate.ofPolyTime_isPolynomial node_polyTime
   have hP := NativeCertificate.ofPolyTime_isPolynomial sourceProduct_polyTime
-  obtain ⟨cm, dm, hmt⟩ := hM.1.exists_le
-  obtain ⟨cm', dm', hms⟩ := hM.2.exists_le
-  obtain ⟨ci, di, hit⟩ := hI.1.exists_le
-  obtain ⟨ci', di', his⟩ := hI.2.exists_le
-  obtain ⟨cn, dn, hnt⟩ := hN.1.exists_le
-  obtain ⟨cn', dn', hns⟩ := hN.2.exists_le
-  obtain ⟨cp, dp, hpt⟩ := hP.1.exists_le
-  obtain ⟨cp', dp', hps⟩ := hP.2.exists_le
-  obtain ⟨D, hD⟩ : ∃ D, D = K₁ + dm + dm' + di + di' + dn + dn' + dp + dp' := ⟨_, rfl⟩
-  obtain ⟨G, hG⟩ : ∃ G, G = K₁ + cm * 8 ^ dm + cm' * 8 ^ dm' + ci + ci' + cn + cn' + cp + cp' :=
-    ⟨_, rfl⟩
-  refine ⟨G + D, fun q Rv hRv => ?_⟩
-  obtain ⟨n, hn⟩ : ∃ n, n = (encEntryInput q).length := ⟨_, rfl⟩
-  obtain ⟨m, hm⟩ : ∃ m, m = (targetModes q.1).length := ⟨_, rfl⟩
-  obtain ⟨Z, hZ⟩ : ∃ Z, Z = n + m + Rv + 2 := ⟨_, rfl⟩
-  rw [← hn, ← hm, ← hZ]
-  have hZ1 : 1 ≤ Z := by omega
-  have hpowZ {a b : ℕ} (hab : a ≤ b) : Z ^ a ≤ Z ^ b := Nat.pow_le_pow_right hZ1 hab
-  have hP1 : 1 ≤ (m + 2) ^ q.2.1.length := Nat.one_le_pow _ _ (by omega)
-  -- The node is no longer than the input: binary exponents are shorter than unary ones.
-  have hnode : (CoeffScheme.Terms.encNode PacketCtx.enc (encPair encNat encBool) q).length ≤ n := by
-    rw [hn]
-    obtain ⟨c, rows, β⟩ := q
+  have hM := NativeCertificate.ofPolyTime_isPolynomial mulFinal_polyTime
+  have hover : PolyBounded (fun z => (encMul z).length) overhead :=
+    ((((hI.1.add hI.2).comp hq).add ((hN.1.add hN.2).comp hq)).add
+      ((hP.1.add hP.2).comp hq)).add (hM.1.add hM.2)
+  obtain ⟨c, d, hover⟩ := hover.exists_le
+  obtain ⟨K₁, hK₁⟩ := CoeffScheme.Terms.valueCertificate_le packetTerms_polyTime
+  have hpoly : PolyBounded id (fun Z : ℕ => c * (8 * Z) ^ d + K₁ * Z ^ K₁) :=
+    ((PolyBounded.const c).mul (((PolyBounded.const 8).mul .self).pow d)).add
+      ((PolyBounded.const K₁).mul (PolyBounded.self.pow K₁))
+  obtain ⟨K, hK⟩ := hpoly.exists_le_self_pow
+  refine ⟨K, fun q Rv hRv => ?_⟩
+  let Z := (encEntryInput q).length + (targetModes q.1).length + Rv + 2
+  let E := ((targetModes q.1).length + 2) ^ q.2.1.length
+  let z := (q, (packetTerms.value q.1 q.2.1 q.2.2, sourceProduct q.1 q.2.2))
+  have hE : 1 ≤ E := Nat.one_le_pow _ _ (by omega)
+  have hnode : (CoeffScheme.Terms.encNode PacketCtx.enc (encPair encNat encBool) q).length ≤
+      (encEntryInput q).length := by
+    obtain ⟨ctx, rows, β⟩ := q
     have hβ : (encList encNat β).length ≤ (encList encUnary β).length := by
       simp only [length_encList]
       refine List.sum_le_sum fun k _ => ?_
       have : (encNat k).length ≤ k := by
         change k.bits.length ≤ k
         rw [Nat.size_eq_bits_len]
-        exact (Nat.size_le.mpr (Nat.lt_two_pow_self)).trans le_rfl
+        exact (Nat.size_le.mpr Nat.lt_two_pow_self).trans le_rfl
       simp only [encUnary_apply, List.length_replicate]
       omega
     simp only [length_encPair]
     omega
-  have hval := hK₁ q (Rv) (by simpa [packetTerms] using hRv)
-  simp only [packetTerms] at hval
-  rw [← hm] at hval
-  obtain ⟨hvt, hvs⟩ := hval
-  -- The polynomial parts.
-  have hpoly {c d e : ℕ} (hle : e ≤ n + 1) (hd : d ≤ D) : c * e ^ d ≤ c * Z ^ D :=
-    Nat.mul_le_mul_left _ ((Nat.pow_le_pow_left (by omega) _).trans (hpowZ hd))
-  have hZn : (CoeffScheme.Terms.encNode PacketCtx.enc (encPair encNat encBool) q).length +
-      m + Rv + 2 ≤ Z := by omega
-  have hvalT : (CoeffScheme.Terms.valueCertificate packetTerms_polyTime).time q ≤
-      K₁ * (m + 2) ^ q.2.1.length * Z ^ D :=
-    hvt.trans (Nat.mul_le_mul_left _ ((Nat.pow_le_pow_left hZn _).trans (hpowZ (by omega))))
-  have hvalS : (CoeffScheme.Terms.valueCertificate packetTerms_polyTime).space q ≤ K₁ * Z ^ D :=
-    hvs.trans (Nat.mul_le_mul_left _ ((Nat.pow_le_pow_left hZn _).trans (hpowZ (by omega))))
-  -- The final multiplication reads the input and two reduced lists.
   have hred1 := hRv _ (reduced_value packetTerms q.1 q.2.1 q.2.2)
   have hred2 := hRv _ (reduced_sourceProduct q.1 q.2.2)
-  have hmulIn : (encPair encEntryInput (encPair (encList encNat) (encList encNat))
-      (q, (packetTerms.value q.1 q.2.1 q.2.2, sourceProduct q.1 q.2.2))).length + 1 ≤ 8 * Z := by
+  have hmul : (encMul z).length + 1 ≤ 8 * Z := by
     have e1 := length_encPair (enc₁ := encEntryInput)
-      (enc₂ := encPair (encList encNat) (encList encNat))
-      (q, (packetTerms.value q.1 q.2.1 q.2.2, sourceProduct q.1 q.2.2))
-    have e2 := length_encPair (enc₁ := encList encNat) (enc₂ := encList encNat)
-      (packetTerms.value q.1 q.2.1 q.2.2, sourceProduct q.1 q.2.2)
-    simp only [packetTerms] at hred1 e1 e2 ⊢
-    rw [e1, e2, ← hn]
+      (enc₂ := encPair (encList encNat) (encList encNat)) z
+    have e2 := length_encPair (enc₁ := encList encNat) (enc₂ := encList encNat) z.2
+    simp only [encMul, z, packetTerms] at hred1 e1 e2 ⊢
+    dsimp only [Z]
     omega
-  have hmulT : (NativeCertificate.ofPolyTime mulFinal_polyTime).time
-      (q, (packetTerms.value q.1 q.2.1 q.2.2, sourceProduct q.1 q.2.2)) ≤ cm * 8 ^ dm * Z ^ D :=
-    (hmt _).trans (by
-      calc cm * (_ + 1) ^ dm ≤ cm * (8 * Z) ^ dm :=
-            Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hmulIn _)
-        _ = cm * 8 ^ dm * Z ^ dm := by rw [Nat.mul_pow]; ring
-        _ ≤ cm * 8 ^ dm * Z ^ D := Nat.mul_le_mul_left _ (hpowZ (by omega)))
-  have hmulS : (NativeCertificate.ofPolyTime mulFinal_polyTime).space
-      (q, (packetTerms.value q.1 q.2.1 q.2.2, sourceProduct q.1 q.2.2)) ≤ cm' * 8 ^ dm' * Z ^ D :=
-    (hms _).trans (by
-      calc cm' * (_ + 1) ^ dm' ≤ cm' * (8 * Z) ^ dm' :=
-            Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hmulIn _)
-        _ = cm' * 8 ^ dm' * Z ^ dm' := by rw [Nat.mul_pow]; ring
-        _ ≤ cm' * 8 ^ dm' * Z ^ D := Nat.mul_le_mul_left _ (hpowZ (by omega)))
-  have hit' := (hit q).trans (hpoly (c := ci) (by omega) (show di ≤ D by omega))
-  have his' := (his q).trans (hpoly (c := ci') (by omega) (show di' ≤ D by omega))
-  have hnt' := (hnt q).trans (hpoly (c := cn) (by omega) (show dn ≤ D by omega))
-  have hns' := (hns q).trans (hpoly (c := cn') (by omega) (show dn' ≤ D by omega))
-  have hpt' := (hpt q).trans (hpoly (c := cp) (by omega) (show dp ≤ D by omega))
-  have hps' := (hps q).trans (hpoly (c := cp') (by omega) (show dp' ≤ D by omega))
-  have hWK : Z ^ D ≤ Z ^ (G + D) := hpowZ (by omega)
-  obtain ⟨P, hPdef⟩ : ∃ P, P = (m + 2) ^ q.2.1.length := ⟨_, rfl⟩
-  rw [← hPdef] at hP1 hvalT ⊢
-  have htime : entryCertificate.time q =
-      (NativeCertificate.ofPolyTime ComputableInPolyTime.id').time q +
-        ((NativeCertificate.ofPolyTime node_polyTime).time q +
-          (CoeffScheme.Terms.valueCertificate packetTerms_polyTime).time q +
-          (NativeCertificate.ofPolyTime sourceProduct_polyTime).time q) +
-        (NativeCertificate.ofPolyTime mulFinal_polyTime).time
-          (q, (packetTerms.value q.1 q.2.1 q.2.2, sourceProduct q.1 q.2.2)) := rfl
-  have hspace : entryCertificate.space q =
-      (NativeCertificate.ofPolyTime ComputableInPolyTime.id').space q +
-        ((NativeCertificate.ofPolyTime node_polyTime).space q +
-          (CoeffScheme.Terms.valueCertificate packetTerms_polyTime).space q +
-          (NativeCertificate.ofPolyTime sourceProduct_polyTime).space q) +
-        (NativeCertificate.ofPolyTime mulFinal_polyTime).space
-          (q, (packetTerms.value q.1 q.2.1 q.2.2, sourceProduct q.1 q.2.2)) := rfl
+  have ho : overhead z ≤ c * (8 * Z) ^ d :=
+    (hover z).trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hmul _))
+  have hv := hK₁ q Rv (by simpa only [packetTerms] using hRv)
+  have hz : (CoeffScheme.Terms.encNode PacketCtx.enc (encPair encNat encBool) q).length +
+      (targetModes q.1).length + Rv + 2 ≤ Z := by dsimp only [Z]; omega
+  have hvt : (CoeffScheme.Terms.valueCertificate packetTerms_polyTime).time q ≤
+      E * (K₁ * Z ^ K₁) := by
+    calc
+      _ ≤ K₁ * E * Z ^ K₁ :=
+        hv.1.trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hz K₁))
+      _ = _ := by ring
+  have hvs : (CoeffScheme.Terms.valueCertificate packetTerms_polyTime).space q ≤
+      K₁ * Z ^ K₁ :=
+    hv.2.trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hz K₁))
+  have htotal := hK Z (by dsimp only [id, Z]; omega)
+  change c * (8 * Z) ^ d + K₁ * Z ^ K₁ ≤ K * Z ^ K at htotal
+  have ht : entryCertificate.time q ≤ E * (overhead z + K₁ * Z ^ K₁) := by
+    have hrest : cI.time q + cN.time q + cP.time q + cM.time z ≤ overhead z := by
+      dsimp only [overhead, z]
+      omega
+    have hscaled := hrest.trans (Nat.le_mul_of_pos_left _ hE)
+    change cI.time q + (cN.time q +
+      (CoeffScheme.Terms.valueCertificate packetTerms_polyTime).time q + cP.time q) +
+      cM.time z ≤ _
+    nlinarith
+  have hs : entryCertificate.space q ≤ overhead z + K₁ * Z ^ K₁ := by
+    have hrest : cI.space q + cN.space q + cP.space q + cM.space z ≤ overhead z := by
+      dsimp only [overhead, z]
+      omega
+    change cI.space q + (cN.space q +
+      (CoeffScheme.Terms.valueCertificate packetTerms_polyTime).space q + cP.space q) +
+      cM.space z ≤ _
+    omega
   constructor
-  · rw [htime]
-    have e : G * (P * Z ^ D) = P * (K₁ * Z ^ D) + P * ((G - K₁) * Z ^ D) := by
-      rw [← Nat.mul_add, ← Nat.add_mul, Nat.add_sub_cancel' (by omega)]; ring
-    have h1 : cm * 8 ^ dm * Z ^ D + ci * Z ^ D + cn * Z ^ D + cp * Z ^ D ≤
-        P * ((G - K₁) * Z ^ D) := by
-      have : cm * 8 ^ dm * Z ^ D + ci * Z ^ D + cn * Z ^ D + cp * Z ^ D =
-          (cm * 8 ^ dm + ci + cn + cp) * Z ^ D := by ring
-      rw [this]
-      exact (Nat.mul_le_mul_right _ (by omega)).trans (Nat.le_mul_of_pos_left _ hP1)
-    calc _ ≤ K₁ * P * Z ^ D + (cm * 8 ^ dm * Z ^ D + ci * Z ^ D + cn * Z ^ D + cp * Z ^ D) := by
-          omega
-      _ ≤ G * (P * Z ^ D) := by
-          have : K₁ * P * Z ^ D = P * (K₁ * Z ^ D) := by ring
-          omega
-      _ ≤ (G + D) * P * Z ^ (G + D) := by
-          rw [show (G + D) * P * Z ^ (G + D) = (G + D) * (P * Z ^ (G + D)) by ring]
-          exact Nat.mul_le_mul (by omega) (Nat.mul_le_mul_left _ hWK)
-  · rw [hspace]
-    calc _ ≤ K₁ * Z ^ D + cm' * 8 ^ dm' * Z ^ D + ci' * Z ^ D + cn' * Z ^ D + cp' * Z ^ D := by
-          omega
-      _ = (K₁ + cm' * 8 ^ dm' + ci' + cn' + cp') * Z ^ D := by ring
-      _ ≤ (G + D) * Z ^ (G + D) := Nat.mul_le_mul (by omega) hWK
+  · exact (ht.trans (Nat.mul_le_mul_left E
+      (show overhead z + K₁ * Z ^ K₁ ≤ K * Z ^ K by omega))).trans_eq (by
+      dsimp only [E, Z]; ring)
+  · change entryCertificate.space q ≤ K * Z ^ K
+    exact hs.trans (by omega)
 
 end Certificate
 
@@ -1288,84 +1250,57 @@ theorem vertexCertificate_le :
         vertexCertificate.space q ≤ K * ((encPair encPacketDesc encBits q).length +
           (targetModes q.1.1).length + Rv + 2) ^ K := by
   obtain ⟨K₀, hK₀⟩ := entryCertificate_le
-  have hI := NativeCertificate.ofPolyTime_isPolynomial entryInput_polyTime
-  obtain ⟨ci, di, hit⟩ := hI.1.exists_le
-  obtain ⟨ci', di', his⟩ := hI.2.exists_le
-  obtain ⟨cl, dl, hlen⟩ := (ComputableInPolyTime.polyBounded_length entryInput_polyTime).exists_le
-  obtain ⟨D, hD⟩ : ∃ D, D = (dl + 1) * K₀ + di + di' := ⟨_, rfl⟩
-  obtain ⟨G, hG⟩ : ∃ G, G = K₀ * (cl + 1) ^ K₀ + ci + ci' := ⟨_, rfl⟩
-  refine ⟨G + D, fun q Rv hRv => ?_⟩
-  obtain ⟨n, hn⟩ : ∃ n, n = (encPair encPacketDesc encBits q).length := ⟨_, rfl⟩
-  obtain ⟨m, hm⟩ : ∃ m, m = (targetModes q.1.1).length := ⟨_, rfl⟩
-  obtain ⟨Z, hZ⟩ : ∃ Z, Z = n + m + Rv + 2 := ⟨_, rfl⟩
-  rw [← hn, ← hm, ← hZ]
-  have hZ1 : 1 ≤ Z := by omega
-  have hpowZ {a b : ℕ} (hab : a ≤ b) : Z ^ a ≤ Z ^ b := Nat.pow_le_pow_right hZ1 hab
-  obtain ⟨P, hPdef⟩ : ∃ P, P = (m + 2) ^ (sidePorts q.1.2.1 q.2 true).length := ⟨_, rfl⟩
-  rw [← hPdef]
-  have hP1 : 1 ≤ P := hPdef ▸ Nat.one_le_pow _ _ (by omega)
-  have hentry := hK₀ ((({ q.1.1 with cols := sidePorts q.1.2.1 q.2 false } : PacketCtx),
-    (sidePorts q.1.2.1 q.2 true, q.1.2.2))) Rv hRv
-  -- The input of the entry is polynomially long.
-  have hin := hlen q
-  rw [← hn] at hin
-  obtain ⟨n', hn'⟩ : ∃ n', n' = (encEntryInput ((({ q.1.1 with
-    cols := sidePorts q.1.2.1 q.2 false } : PacketCtx), (sidePorts q.1.2.1 q.2 true,
-      q.1.2.2)))).length := ⟨_, rfl⟩
-  rw [← hn'] at hin hentry
-  have hZ' : n' + m + Rv + 2 ≤ (cl + 1) * Z ^ (dl + 1) := by
-    have h1 : cl * (n + 1) ^ dl ≤ cl * Z ^ (dl + 1) :=
-      Nat.mul_le_mul_left _ ((Nat.pow_le_pow_left (by omega) _).trans (hpowZ (by omega)))
-    have h2 : Z ≤ Z ^ (dl + 1) := by
-      calc Z = Z ^ 1 := (pow_one Z).symm
-        _ ≤ Z ^ (dl + 1) := hpowZ (by omega)
-    have e : (cl + 1) * Z ^ (dl + 1) = cl * Z ^ (dl + 1) + Z ^ (dl + 1) := by ring
+  let cI := NativeCertificate.ofPolyTime entryInput_polyTime
+  let prepare (q : PacketDesc × List Bool) :=
+    (({ q.1.1 with cols := sidePorts q.1.2.1 q.2 false } : PacketCtx),
+      (sidePorts q.1.2.1 q.2 true, q.1.2.2))
+  let size (x : (PacketDesc × List Bool) × (ℕ × ℕ)) :=
+    (encPair encPacketDesc encBits x.1).length + x.2.1 + x.2.2 + 2
+  let bound (x : (PacketDesc × List Bool) × (ℕ × ℕ)) :=
+    cI.time x.1 + cI.space x.1 +
+      K₀ * ((encEntryInput (prepare x.1)).length + x.2.1 + x.2.2 + 2) ^ K₀
+  have hbase : PolyBounded size (fun x => (encPair encPacketDesc encBits x.1).length) :=
+    PolyBounded.self.mono fun x => by dsimp only [size]; omega
+  have hm : PolyBounded size (fun x => x.2.1) :=
+    PolyBounded.self.mono fun x => by dsimp only [size]; omega
+  have hr : PolyBounded size (fun x => x.2.2) :=
+    PolyBounded.self.mono fun x => by dsimp only [size]; omega
+  have hi := NativeCertificate.ofPolyTime_isPolynomial entryInput_polyTime
+  have hlen := entryInput_polyTime.polyBounded_length.comp hbase
+  have hb : PolyBounded size bound :=
+    ((hi.1.add hi.2).comp hbase).add
+      ((PolyBounded.const K₀).mul ((((hlen.add hm).add hr).add (.const 2)).pow K₀))
+  obtain ⟨K, hK⟩ := hb.exists_le_self_pow
+  refine ⟨K, fun q Rv hRv => ?_⟩
+  let x := (q, ((targetModes q.1.1).length, Rv))
+  let E := ((targetModes q.1.1).length + 2) ^ (sidePorts q.1.2.1 q.2 true).length
+  have hE : 1 ≤ E := Nat.one_le_pow _ _ (by omega)
+  have hbound := hK x (by dsimp only [size, x]; omega)
+  have hv := hK₀ (prepare q) Rv hRv
+  have ht : vertexCertificate.time q ≤ E * bound x := by
+    have hscaled : cI.time q ≤ E * (cI.time q + cI.space q) :=
+      (Nat.le_add_right _ _).trans (Nat.le_mul_of_pos_left _ hE)
+    have hvt : entryCertificate.time (prepare q) ≤
+        E * (K₀ * ((encEntryInput (prepare q)).length + (targetModes q.1.1).length + Rv + 2) ^
+          K₀) := by
+      calc
+        _ ≤ K₀ * E * ((encEntryInput (prepare q)).length + (targetModes q.1.1).length + Rv + 2) ^
+            K₀ := hv.1
+        _ = _ := by ring
+    change cI.time q + entryCertificate.time (prepare q) ≤ _
+    dsimp only [bound, x]
+    nlinarith
+  have hs : vertexCertificate.space q ≤ bound x := by
+    have hvs : entryCertificate.space (prepare q) ≤
+        K₀ * ((encEntryInput (prepare q)).length + (targetModes q.1.1).length + Rv + 2) ^ K₀ :=
+      hv.2
+    change cI.space q + entryCertificate.space (prepare q) ≤ _
+    dsimp only [bound, x]
     omega
-  have hZK : (n' + m + Rv + 2) ^ K₀ ≤ (cl + 1) ^ K₀ * Z ^ D := by
-    calc (n' + m + Rv + 2) ^ K₀ ≤ ((cl + 1) * Z ^ (dl + 1)) ^ K₀ := Nat.pow_le_pow_left hZ' _
-      _ = (cl + 1) ^ K₀ * Z ^ ((dl + 1) * K₀) := by rw [Nat.mul_pow, ← pow_mul]
-      _ ≤ (cl + 1) ^ K₀ * Z ^ D := Nat.mul_le_mul_left _ (hpowZ (by omega))
-  have het : entryCertificate.time ((({ q.1.1 with cols := sidePorts q.1.2.1 q.2 false } :
-      PacketCtx), (sidePorts q.1.2.1 q.2 true, q.1.2.2))) ≤
-      K₀ * P * (n' + m + Rv + 2) ^ K₀ := by
-    rw [hPdef, hm]; exact hentry.1
-  have hes : entryCertificate.space ((({ q.1.1 with cols := sidePorts q.1.2.1 q.2 false } :
-      PacketCtx), (sidePorts q.1.2.1 q.2 true, q.1.2.2))) ≤ K₀ * (n' + m + Rv + 2) ^ K₀ := by
-    rw [hm]; exact hentry.2
-  have hit' : (NativeCertificate.ofPolyTime entryInput_polyTime).time q ≤ ci * Z ^ D :=
-    (hit q).trans (Nat.mul_le_mul_left _ ((Nat.pow_le_pow_left (by omega) _).trans
-      (hpowZ (by omega))))
-  have his' : (NativeCertificate.ofPolyTime entryInput_polyTime).space q ≤ ci' * Z ^ D :=
-    (his q).trans (Nat.mul_le_mul_left _ ((Nat.pow_le_pow_left (by omega) _).trans
-      (hpowZ (by omega))))
-  have hWK : Z ^ D ≤ Z ^ (G + D) := hpowZ (by omega)
-  have htime : vertexCertificate.time q =
-      (NativeCertificate.ofPolyTime entryInput_polyTime).time q +
-      entryCertificate.time ((({ q.1.1 with cols := sidePorts q.1.2.1 q.2 false } : PacketCtx),
-        (sidePorts q.1.2.1 q.2 true, q.1.2.2))) := rfl
-  have hspace : vertexCertificate.space q =
-      (NativeCertificate.ofPolyTime entryInput_polyTime).space q +
-      entryCertificate.space ((({ q.1.1 with cols := sidePorts q.1.2.1 q.2 false } : PacketCtx),
-        (sidePorts q.1.2.1 q.2 true, q.1.2.2))) := rfl
   constructor
-  · rw [htime]
-    have h1 : K₀ * P * (n' + m + Rv + 2) ^ K₀ ≤ P * (K₀ * (cl + 1) ^ K₀ * Z ^ D) := by
-      calc K₀ * P * (n' + m + Rv + 2) ^ K₀ ≤ K₀ * P * ((cl + 1) ^ K₀ * Z ^ D) :=
-            Nat.mul_le_mul_left _ hZK
-        _ = P * (K₀ * (cl + 1) ^ K₀ * Z ^ D) := by ring
-    have h2 : ci * Z ^ D ≤ P * (ci * Z ^ D) := Nat.le_mul_of_pos_left _ hP1
-    have e : P * (K₀ * (cl + 1) ^ K₀ * Z ^ D) + P * (ci * Z ^ D) ≤ P * (G * Z ^ D) := by
-      rw [← Nat.mul_add, ← Nat.add_mul]
-      exact Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ (by omega))
-    calc _ ≤ P * (G * Z ^ D) := by omega
-      _ ≤ (G + D) * P * Z ^ (G + D) := by
-          rw [show (G + D) * P * Z ^ (G + D) = P * ((G + D) * Z ^ (G + D)) by ring]
-          exact Nat.mul_le_mul_left _ (Nat.mul_le_mul (by omega) hWK)
-  · rw [hspace]
-    have h1 : K₀ * (n' + m + Rv + 2) ^ K₀ ≤ K₀ * (cl + 1) ^ K₀ * Z ^ D := by
-      rw [Nat.mul_assoc]; exact Nat.mul_le_mul_left _ hZK
-    calc _ ≤ (K₀ * (cl + 1) ^ K₀ + ci') * Z ^ D := by rw [Nat.add_mul]; omega
-      _ ≤ (G + D) * Z ^ (G + D) := Nat.mul_le_mul (by omega) hWK
+  · exact (ht.trans (Nat.mul_le_mul_left E hbound)).trans_eq (by
+      dsimp only [size, x, E]; ring)
+  · exact hs.trans hbound
 
 /-- **The entry of a packet vertex is the packet entry** at the row and column ports read from
 its bits. -/

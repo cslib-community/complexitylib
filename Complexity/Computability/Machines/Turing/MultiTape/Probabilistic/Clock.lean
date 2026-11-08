@@ -62,9 +62,9 @@ theorem run_interpret_runConfigFrom_withClock_add (machine : MultiTapePTM k Bool
     (hstop : tape (position + budget) ≠ some true) :
     (OracleComp.interpret oracle
       (machine.withClock.runConfigFrom coin query (2 * budget + 1 + padding)
-        (Clock.config cfg tape position false))).run s =
+        (AuxiliaryTape.config cfg tape position false))).run s =
       ((OracleComp.interpret oracle (machine.runConfigFrom coin query budget cfg)).run s).map
-        (fun (final, s') => (Clock.stopped final tape (position + budget), s')) := by
+        (fun (final, s') => (AuxiliaryTape.stopped final tape (position + budget), s')) := by
   apply MultiTapeMachine.run_interpret_runConfigFrom_withClock_add machine
     (fun choices => choices <$> coin) (fun _ _ => by rw [Functor.map_map]; rfl)
     query oracle ?_ cfg tape position budget padding s hbudget hstop

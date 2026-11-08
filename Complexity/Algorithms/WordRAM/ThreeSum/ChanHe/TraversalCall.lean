@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalProgram
 import Complexity.Algorithms.ThreeSum.ChanHe.SelectorBounds
+import Complexity.Computability.WordRAM.Call
 
 /-!
 # Actual native argument delivery in the Chan–He traversal
@@ -139,13 +140,6 @@ private theorem kernel_injective : Function.Injective kernel := by
   intro i j h
   exact Fin.ext (congrArg (fun i : Fin 128 => i.val) h)
 
-private theorem extend_kernel_regs (y : Data 64) (x : Data 128) (i : Fin 128)
-    (hi : 64 ≤ i.val) : (y.extend kernel x).regs i = x.regs i := by
-  change Function.extend kernel y.regs x.regs i = x.regs i
-  apply Function.extend_apply'
-  rintro ⟨j, hj⟩
-  exact kernel_ne hi j hj.symm
-
 /-- Actual argument delivery and complete two-prime computation inside the traversal's fixed
 register file. The mathematical filters may fail; their default-one selections are still bounded.
 The bitmap/count are the outputs of the separate native prime-table routine. -/
@@ -189,7 +183,8 @@ theorem callModulus_exec {w : ℕ} (x : Data 128) (values : Fin 3 → ℕ → �
     dsimp only [Modulus.budget]
     omega
   have ha := prepareModulus_exec x hhist
-  obtain ⟨b, hb, _, hprefix, _, hout⟩ := Modulus.exec z values hm hmod hbudget hcard hbefore
+  obtain ⟨y, hb, ⟨_, hprefix, _, hout⟩, hframe⟩ := ExecWithin.rename_post kernel_injective
+    (Modulus.exec z values hm hmod hbudget hcard hbefore
     hbitmap
     (by intro j i hi; exact hvalues j i ((hn j) ▸ hi))
     (by intro j; change z.regs (CountCall.source j) + z.regs (CountCall.length j) ≤ x.regs heap
@@ -208,19 +203,16 @@ theorem callModulus_exec {w : ℕ} (x : Data 128) (values : Fin 3 → ℕ → �
         omega)
     (by intro j i hi; change x.mem (z.regs (CountCall.source j) + i) = _
         rw [hs j]; exact hinput j i ((hn j) ▸ hi))
-    (by intro j; simpa only [hn j] using hinj j)
-  let y := b.extend kernel a
+    (by intro j; simpa only [hn j] using hinj j))
   have hout' : y.regs (kernel Modulus.output) = Cslib.Algorithms.ThreeSum.ChanHe.modulus
       (Nat.primesLE (x.regs limit)) (x.regs digits)
       ((Finset.range (x.regs (arrayLength 0))).image (values 0))
       ((Finset.range (x.regs (arrayLength 1))).image (values 1))
       ((Finset.range (x.regs (arrayLength 2))).image (values 2)) := by
-    change Function.extend kernel b.regs a.regs (kernel Modulus.output) = _
-    rw [kernel_injective.extend_apply]
-    simpa only [hn, hzm, hzd] using hout
-  refine ⟨y, ha.within.seq (hb.rename kernel_injective), ?_, ?_, hout', ?_⟩
+    simpa only [Data.comap_regs, hn, hzm, hzd] using hout
+  refine ⟨y, ha.within.seq hb, ?_, ?_, hout', ?_⟩
   · intro i hi
-    exact (extend_kernel_regs b a i hi).trans (modulusState_preserves x i hi)
+    exact (hframe i (fun j => (kernel_ne hi j).symm)).trans (modulusState_preserves x i hi)
   · intro p hp
     exact hprefix p hp
   · rw [hout']
@@ -253,19 +245,20 @@ theorem callNode_exec {w : ℕ} (x : Data 128) (values : Fin 3 → ℕ → ℤ)
     fin_cases j <;> rfl
   have hinj' (j : Fin 3) : Set.InjOn (values j) (↑(Finset.range (L.n j)) : Set ℕ) := by
     simpa only [hn] using hinj j
-  obtain ⟨b, hb, hmem, _⟩ := NodePacking.exec z values hM hN hwidth
+  obtain ⟨b, hb, ⟨hmem, _⟩, hframe⟩ := ExecWithin.rename_post kernel_injective
+    (NodePacking.exec z values hM hN hwidth
     (by intro j; rw [hs j]; change x.regs (arraySource j) + L.n j ≤ x.regs heap
         rw [hn j]; exact hsrc j)
     (by intro j i hi; exact hbdd j i ((hn j) ▸ hi))
     (by intro j i hi; change x.mem (z.regs (NodePacking.source j) + i) = _
-        rw [hs j]; exact hinput j i ((hn j) ▸ hi)) hinj'
-  refine ⟨b.extend kernel a, ?_, ?_, ?_⟩
+        rw [hs j]; exact hinput j i ((hn j) ▸ hi)) hinj')
+  refine ⟨b, ?_, ?_, ?_⟩
   · simpa only [Nat.add_assoc] using
-      (prepareNode_exec (w := w + 2) x).within.seq (hb.rename kernel_injective)
-  · change NodePacking.Output L values z.mem b.mem
+      (prepareNode_exec (w := w + 2) x).within.seq hb
+  · simp only [Data.comap_mem] at hmem
     rw [hmem]
     exact NodePacking.memory_output L values z.mem hM hN hinj'
   · intro i hi
-    exact (extend_kernel_regs b a i hi).trans (nodeState_preserves x i hi)
+    exact (hframe i (fun j => (kernel_ne hi j).symm)).trans (nodeState_preserves x i hi)
 
 end Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal

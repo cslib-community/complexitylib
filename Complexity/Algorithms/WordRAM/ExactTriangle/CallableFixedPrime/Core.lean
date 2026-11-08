@@ -12,7 +12,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Par
 public import Complexity.Computability.WordRAM.MemoryWindow
 
 /-!
-# Actual translated fixed-prime solver execution
+# Actual translated box-backed fixed-prime solver execution
 
 This internal stage composes the proved original-input source execution with the existing
 memory-window compiler. The caller's real setup supplies normalized source registers and the
@@ -61,7 +61,7 @@ theorem exec_compiled {W b m n g p total : ℕ} (values : List ℤ)
     ∃ a : Data 64,
       Instances.Output n (D m) g p V
         (.init (PreparationInput.input n (D m) g p values)) a ∧
-      ∃ y, ExecWithin W (MemoryWindow.compile FixedPrime.program) x y
+      ∃ y, ExecWithin W (MemoryWindow.compile StreamingFixedPrime.program) x y
           (3 * FixedPrime.timeBound (m := m) hn g p values a.mem) ∧
         (y.regs (FixedPrime.Reg.found.castAdd 3) = 0 ∨
           y.regs (FixedPrime.Reg.found.castAdd 3) = 1) ∧
@@ -94,7 +94,7 @@ theorem exec_compiled {W b m n g p total : ℕ} (values : List ℤ)
     (by simpa only [htwo] using source_admission n (D m) g p total) v vi
   rw [htwo] at hs
   obtain ⟨a, hout, z, hz, zf, zs, ziff, zw, -⟩ := hs
-  obtain ⟨y, hy, hm', hf⟩ := MemoryWindow.execWithin hz FixedPrime.program_not_readsWidth
+  obtain ⟨y, hy, hm', hf⟩ := MemoryWindow.execWithin hz StreamingFixedPrime.program_not_readsWidth
     vb (show MemoryWindow.Matches (sourceWidth n (D m) g p total) b v x from
       ⟨rfl, hb, hm⟩) hw hfit
   refine ⟨a, hout, y, hy, ?_, ?_, ?_, ?_, hf⟩

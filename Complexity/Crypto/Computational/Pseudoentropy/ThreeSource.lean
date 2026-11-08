@@ -8,10 +8,13 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+public import Complexity.Crypto.Computational.Nonuniform.Basic
 public import Complexity.Crypto.Computational.Pseudoentropy.WordExtraction
 public import Complexity.Crypto.Computational.Pseudoentropy.WordSeedExtraction
+import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Repeat
-import Complexity.Tactic.PPT
+import Complexity.Computability.Probabilistic.Sampling
+import Complexity.Tactic.PolyTime.Init
 
 /-!
 # Combining the three pseudoentropy extractors
@@ -34,11 +37,14 @@ only to the security argument; the efficient test handles all indices uniformly.
 * `ThreeSource.isPolyTime_seedLength`, `ThreeSource.isPolyTime_outputLength`: extraction ledger
   lengths are computable in polynomial time.
 * `ThreeSource.replace_remaining`, `ThreeSource.replace_observations`,
-  `ThreeSource.replace_indexed_labels`: hybrid reductions replacing each source component with
-  uniform bits.
+  `ThreeSource.replace_indexed_labels_withAdvice`, `ThreeSource.replace_indexed_labels`: hybrid
+  reductions replacing each source component with uniform bits.
 * `ThreeSource.isPPTOn_extract`: the composed program has a strict PPT certificate.
-* `SamplablePair.HasGap.extract_indexed_three`: uniform security for any valid candidate choice.
-* `SamplablePair.HasGap.extract_three`: the single-candidate computational interface.
+* `SamplablePair.HasGapWithAdvice.extract_indexed_three`,
+  `SamplablePair.HasGap.extract_indexed_three`: security for any valid candidate choice relative
+  to fixed advice and in the uniform case.
+* `SamplablePair.HasGapWithAdvice.extract_three`, `SamplablePair.HasGap.extract_three`: the
+  single-candidate computational interface.
 
 ## References
 
@@ -58,11 +64,17 @@ namespace Cslib.Crypto.Pseudoentropy.ThreeSource
 
 open Probability BitString Turing.MultiTapeTM
 
+/-- The observation word of a labeled seeded sample `((observation, label), seed)`. -/
+abbrev sampleObservation {Obs Label Seed : Type*} (s : (Obs × Label) × Seed) : Obs := s.1.1
+
+/-- The label of a labeled seeded sample `((observation, label), seed)`. -/
+abbrev sampleLabel {Obs Label Seed : Type*} (s : (Obs × Label) × Seed) : Label := s.1.2
+
 /-- Finish the first two components by hashing observations and retaining the label hash. -/
 noncomputable def finish (bound observationBits : ℕ)
     (middle : List (List Bool) × List Bool × List Bool) : ProbComp (List Bool) := do
   let first ← extractWordObservations bound observationBits middle.1
-  return first ++ (middle.2.1 ++ middle.2.2)
+  return first ++ (extractedSeed middle ++ extractedDigest middle)
 
 /-- The last observation hash composes with a certified intermediate result. -/
 theorem isPPTOn_finish {α : Type} {input : α ↪ List Bool} {bound observationBits : α → ℕ}
@@ -71,9 +83,11 @@ theorem isPPTOn_finish {α : Type} {input : α ↪ List Bool} {bound observation
     (hobservation : ComputableInPolyTime observationBits input encUnary)
     (hmiddle : ComputableInPolyTime middle input
       (encPair (encList encBits) (encPair encBits encBits))) :
-    IsPPTOn input encBits (fun a => finish (bound a) (observationBits a) (middle a)) := by
-  unfold finish
-  ppt
+    IsPPTOn input encBits (fun a => finish (bound a) (observationBits a) (middle a)) :=
+  let hmid := (ComputableInPolyTime.fst input encBits).trans hmiddle.snd'
+  (isPPTOn_extractWordObservations hbound hobservation hmiddle.fst').bind_with
+    (ComputableInPolyTime.bitsAppend (.snd input encBits)
+      (ComputableInPolyTime.bitsAppend hmid.fst' hmid.snd')).isPPTOn
 
 attribute [program_certificate] isPPTOn_finish
 
@@ -84,7 +98,7 @@ noncomputable def extract (count seedBits bound observationBits labelBits remain
   let third ← extractWordSeeds count seedBits remainingBits samples
   let middle ← extractWordLabels count labelBits third.1
   let front ← finish bound observationBits middle
-  return front ++ (third.2.1 ++ third.2.2)
+  return front ++ (extractedSeed third ++ extractedDigest third)
 
 /-- The complete three-component program is PPT from ordinary sampler and size certificates. -/
 theorem isPPTOn_extract {α : Type} {input : α ↪ List Bool}
@@ -99,52 +113,25 @@ theorem isPPTOn_extract {α : Type} {input : α ↪ List Bool}
     (hlabel : ComputableInPolyTime labelBits input encUnary)
     (hremaining : ComputableInPolyTime remainingBits input encUnary) :
     IsPPTOn input encBits (fun a => extract (count a) (seedBits a) (bound a)
-      (observationBits a) (labelBits a) (remainingBits a) (source a)) := by
-  let samplesEncoding := encList (encPair (encPair encBits encBool) encBits)
-  let thirdEncoding := encPair (encList (encPair encBits encBool)) (encPair encBits encBits)
-  let middleEncoding := encPair (encList encBits) (encPair encBits encBits)
-  have hsamples := hsource.replicate hcount
-  have hparam := ComputableInPolyTime.fst input samplesEncoding
-  have hsampleValue := ComputableInPolyTime.snd input samplesEncoding
-  have hthird := isPPTOn_extractWordSeeds (hcount.comp hparam) (hseed.comp hparam)
-    (hremaining.comp hparam) hsampleValue
-  have houter := ComputableInPolyTime.fst (encPair input samplesEncoding) thirdEncoding
-  have hthirdValue := ComputableInPolyTime.snd (encPair input samplesEncoding) thirdEncoding
-  have hroot := hparam.comp houter
-  have hmiddle := isPPTOn_extractWordLabels (hcount.comp hroot) (hlabel.comp hroot)
-    hthirdValue.fst'
-  have hretained := ComputableInPolyTime.fst
-    (encPair (encPair input samplesEncoding) thirdEncoding) middleEncoding
-  have hmiddleValue := ComputableInPolyTime.snd
-    (encPair (encPair input samplesEncoding) thirdEncoding) middleEncoding
-  have hfinish := isPPTOn_finish (hbound.comp (hroot.comp hretained))
-    (hobservation.comp (hroot.comp hretained)) hmiddleValue
-  have hlastOuter := ComputableInPolyTime.fst
-    (encPair (encPair (encPair input samplesEncoding) thirdEncoding) middleEncoding) encBits
-  have hfront := ComputableInPolyTime.snd
-    (encPair (encPair (encPair input samplesEncoding) thirdEncoding) middleEncoding) encBits
-  have hlastThird := (hthirdValue.comp hretained).comp hlastOuter
-  have hjoin := ComputableInPolyTime.bitsAppend hfront
-    (ComputableInPolyTime.bitsAppend hlastThird.snd'.fst' hlastThird.snd'.snd')
-  have hlast := hfinish.map_with
-    (f := fun p front => front ++ (p.1.2.2.1 ++ p.1.2.2.2)) hjoin
-  have hmiddleBody := hmiddle.bind_with
-    (second := fun p middle => do
-      let front ← finish (bound p.1.1) (observationBits p.1.1) middle
-      pure (front ++ (p.2.2.1 ++ p.2.2.2))) (by
-      simpa only [Function.comp_def, bind_pure_comp] using hlast)
-  have hthirdBody := hthird.bind_with
-    (second := fun p third => do
-      let middle ← extractWordLabels (count p.1) (labelBits p.1) third.1
-      let front ← finish (bound p.1) (observationBits p.1) middle
-      pure (front ++ (third.2.1 ++ third.2.2))) (by
-      simpa only [Function.comp_def] using hmiddleBody)
-  simpa only [extract, samplesEncoding, thirdEncoding, middleEncoding, Function.comp_def] using
-    hsamples.bind_with (second := fun a samples => do
-      let third ← extractWordSeeds (count a) (seedBits a) (remainingBits a) samples
-      let middle ← extractWordLabels (count a) (labelBits a) third.1
-      let front ← finish (bound a) (observationBits a) middle
-      pure (front ++ (third.2.1 ++ third.2.2))) hthirdBody
+      (observationBits a) (labelBits a) (remainingBits a) (source a)) :=
+  let eSamples := encList (encPair (encPair encBits encBool) encBits)
+  let eThird := encPair (encList (encPair encBits encBool)) (encPair encBits encBits)
+  let eMid := encPair (encList encBits) (encPair encBits encBits)
+  let hparam := ComputableInPolyTime.fst input eSamples
+  let hthird := isPPTOn_extractWordSeeds (hparam.trans hcount) (hparam.trans hseed)
+    (hparam.trans hremaining) (.snd input eSamples)
+  let hroot := (ComputableInPolyTime.fst (encPair input eSamples) eThird).fst'
+  let hthirdVal := ComputableInPolyTime.snd (encPair input eSamples) eThird
+  let hmiddle := isPPTOn_extractWordLabels (hroot.trans hcount) (hroot.trans hlabel) hthirdVal.fst'
+  let hroot3 := (ComputableInPolyTime.fst (encPair (encPair input eSamples) eThird) eMid).fst'.fst'
+  let hfinish := isPPTOn_finish (hroot3.trans hbound) (hroot3.trans hobservation) (.snd _ eMid)
+  let hlastThird :=
+    (ComputableInPolyTime.fst (encPair (encPair (encPair input eSamples) eThird) eMid)
+      encBits).fst'.snd'
+  let hlast := hfinish.bind_with
+    (ComputableInPolyTime.bitsAppend (.snd _ encBits)
+      (ComputableInPolyTime.bitsAppend hlastThird.snd'.fst' hlastThird.snd'.snd')).isPPTOn
+  (hsource.replicate hcount).bind_with (hthird.bind_with (hmiddle.bind_with hlast))
 
 attribute [program_certificate] isPPTOn_extract
 
@@ -177,7 +164,7 @@ def outputLength (count seedBits bound observationBits labelBits remainingBits :
 The statement also covers zero-sized components and malformed retained seeds. -/
 theorem length_extract (count seedBits bound observationBits labelBits remainingBits : ℕ)
     (source : ProbComp ((List Bool × Bool) × List Bool))
-    (hbound : ∀ sample ∈ (ProbComp.eval source).support, sample.1.1.length ≤ bound)
+    (hbound : ∀ sample ∈ (ProbComp.eval source).support, (sampleObservation sample).length ≤ bound)
     {output : List Bool} (houtput : output ∈ (ProbComp.eval
       (extract count seedBits bound observationBits labelBits remainingBits source)).support) :
     output.length = outputLength count seedBits bound observationBits labelBits remainingBits := by
@@ -222,16 +209,23 @@ include hcount hseed hbound hobservation hlabel hremaining
 /-- The exact seed ledger can be computed in unary from efficient dimensions. -/
 theorem isPolyTime_seedLength :
     ComputableInPolyTime (fun a => seedLength (count a) (seedBits a) (bound a)
-      (observationBits a) (labelBits a) (remainingBits a)) input encUnary := by
-  unfold seedLength
-  polytime
+      (observationBits a) (labelBits a) (remainingBits a)) input encUnary :=
+  let hcs := hcount.unary_mul' hseed
+  let hobs := hobservation.unary_mul'
+    (hcount.unary_mul' (((ComputableInPolyTime.const 2).unary_mul' hbound).unary_add' (.const 1)))
+  hcs.unary_add'
+    ((hremaining.unary_mul' hcs).unary_add' ((hlabel.unary_mul' hcount).unary_add' hobs))
 
 /-- The exact output ledger can be computed in unary from efficient dimensions. -/
 theorem isPolyTime_outputLength :
     ComputableInPolyTime (fun a => outputLength (count a) (seedBits a) (bound a)
-      (observationBits a) (labelBits a) (remainingBits a)) input encUnary := by
-  unfold outputLength
-  polytime
+      (observationBits a) (labelBits a) (remainingBits a)) input encUnary :=
+  let hcs := hcount.unary_mul' hseed
+  let hobs := hobservation.unary_mul'
+    (hcount.unary_mul' (((ComputableInPolyTime.const 2).unary_mul' hbound).unary_add' (.const 1)))
+  ((hobs.unary_add' hobservation).unary_add'
+    ((hlabel.unary_mul' hcount).unary_add' hlabel)).unary_add'
+    ((hremaining.unary_mul' hcs).unary_add' hremaining)
 
 end Lengths
 
@@ -255,7 +249,7 @@ theorem eval_ideal_remaining
       let third ← extractMatrixLabelsIdeal source count (count * seedBits) remainingBits
       let middle ← extractWordLabels count labelBits third.1
       let front ← finish bound observationBits middle
-      return front ++ (third.2.1 ++ third.2.2)) =
+      return front ++ (extractedSeed third ++ extractedDigest third)) =
       ProbComp.eval (withoutSeeds count seedBits bound observationBits labelBits remainingBits
         source) := by
   simpa only [withoutSeeds, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
@@ -362,6 +356,94 @@ structure Efficient (candidates bound inverseSlack densityBound : ℕ → ℕ)
   density_isPolyTime : ComputableInPolyTime densityBound encUnary encUnary
 
 open Probability.PMF Filter in
+/-- Indexed label extraction relative to fixed advice remains secure when the test computes the
+observation hash and supplies the independent third component. Only the proof uses the chosen
+valid index. -/
+theorem replace_indexed_labels_withAdvice {pair : SamplablePair} {gap : ℕ → ℝ}
+    {advice : ℕ → List Bool} (hpair : pair.HasGapWithAdvice gap advice)
+    (saved : pair.SeedRealization) (choose : ℕ → ℕ)
+    {candidates bound inverseSlack densityBound : ℕ → ℕ}
+    {observationBits labelBits remainingBits numerator : ℕ → ℕ → ℕ}
+    (efficient : ThreeSource.Efficient candidates bound inverseSlack densityBound
+      observationBits labelBits remainingBits numerator)
+    (hchoose : ∀ᶠ n in atTop, choose n < candidates n)
+    (hvalid : ∀ᶠ n in atTop, 0 < numerator n (choose n) ∧
+      numerator n (choose n) ≤ dyadicSize (densityBound n) ∧
+      (numerator n (choose n) : ℝ) / dyadicSize (densityBound n) ≤
+        conditionalEntropy (pair.joint n) + gap n)
+    (hbudget : ∀ᶠ n in atTop,
+      labelBits n (choose n) +
+        2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
+        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+          ((numerator n (choose n) : ℝ) / dyadicSize (densityBound n)))
+    (adversary : ℕ × List Bool → ℕ → List Bool → ProbComp Bool)
+    (hadversary : IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
+      encBool (fun input => adversary input.1.1 input.1.2 input.2)) :
+    let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
+    Negligible (fun n => Game.advantage
+      (ProbComp.eval (withoutSeeds (count n) (saved.length n) (bound n)
+        (observationBits n (choose n))
+        (labelBits n (choose n)) (remainingBits n (choose n)) (pair.sample n) >>=
+          adversary (n, advice n) (choose n)))
+      (ProbComp.eval (withoutLabels (count n) (saved.length n) (bound n)
+        (observationBits n (choose n))
+        (labelBits n (choose n)) (remainingBits n (choose n)) (Prod.fst <$> pair.sample n) >>=
+          adversary (n, advice n) (choose n)))) := by
+  let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
+  have hcount := ExtractionSchedule.isPolyTime_count .id' saved.length_isPolyTime
+    efficient.slack_isPolyTime
+  let test (a : ℕ × List Bool) (i : ℕ)
+      (middle : List (List Bool) × List Bool × List Bool) : ProbComp Bool := do
+    let front ← finish (bound a.1) (observationBits a.1 i) middle
+    let suffix ← BitString.sampleList
+      (remainingBits a.1 i * (count a.1 * saved.length a.1) + remainingBits a.1 i)
+    adversary a i (front ++ suffix)
+  let eAI := encPair (encPair encUnary encBits) encUnary
+  let eMid := encPair (encList encBits) (encPair encBits encBits)
+  let eIn := encPair eAI eMid
+  have hni := (ComputableInPolyTime.fst eAI eMid).fst'.fst'.prod
+    (ComputableInPolyTime.fst eAI eMid).snd'
+  have hfinish := isPPTOn_finish
+    ((ComputableInPolyTime.fst eAI eMid).fst'.fst'.trans efficient.bound_isPolyTime)
+    (hni.trans efficient.observation_isPolyTime) (.snd eAI eMid)
+  have hrem := ((ComputableInPolyTime.fst eIn encBits).trans hni).trans
+    efficient.remaining_isPolyTime
+  have hcs := (ComputableInPolyTime.fst eIn encBits).fst'.fst'.fst'.trans
+    (hcount.unary_mul' saved.length_isPolyTime)
+  have hsuffix := ((hrem.unary_mul' hcs).unary_add' hrem).sampleList
+  have hp1 := ComputableInPolyTime.fst (encPair eIn encBits) encBits
+  have hadv := hadversary.preprocess
+    (hp1.fst'.fst'.prod (ComputableInPolyTime.bitsAppend hp1.snd' (.snd _ encBits)))
+  have htest : IsPPTOn eIn encBool (fun ((a, i), middle) => test a i middle) :=
+    (show (fun ((a, i), middle) => test a i middle) = (fun p => test p.1.1 p.1.2 p.2) from rfl) ▸
+      (hfinish.bind_with (hsuffix.bind_with hadv) :
+        IsPPTOn eIn encBool (fun p => test p.1.1 p.1.2 p.2))
+  have h := hpair.extract_indexed_word_labels saved choose efficient.candidates_isPolyTime
+    efficient.label_isPolyTime efficient.slack_isPolyTime efficient.numerator_isPolyTime
+    efficient.density_isPolyTime hchoose hvalid hbudget test htest
+  have hideal (a : ℕ × List Bool) (i : ℕ) :
+      ProbComp.eval (extractWordLabelsIdeal (Prod.fst <$> pair.sample a.1) (count a.1)
+        (labelBits a.1 i) >>= test a i) =
+      ProbComp.eval (withoutLabels (count a.1) (saved.length a.1) (bound a.1)
+        (observationBits a.1 i) (labelBits a.1 i) (remainingBits a.1 i)
+        (Prod.fst <$> pair.sample a.1) >>=
+          adversary a i) := by
+    have heq := congrArg (fun distribution : PMF (List Bool) => distribution.bind (fun front =>
+      ProbComp.eval (do
+        let suffix ← BitString.sampleList
+          (remainingBits a.1 i * (count a.1 * saved.length a.1) + remainingBits a.1 i)
+        adversary a i (front ++ suffix))))
+      (eval_ideal_labels (count a.1) (bound a.1) (observationBits a.1 i) (labelBits a.1 i)
+        (Prod.fst <$> pair.sample a.1))
+    simpa only [test, withoutLabels, ProbComp.eval_bind, ProbComp.eval_pure,
+      PMF.bind_bind, PMF.pure_bind] using heq
+  apply h.congr
+  intro n
+  rw [hideal (n, advice n)]
+  simp only [count, test, withoutSeeds, ProbComp.eval_bind, ProbComp.eval_pure,
+    PMF.bind_bind, PMF.pure_bind]
+
+open Probability.PMF Filter in
 /-- Indexed label extraction remains secure when the test computes the observation hash and
 supplies the independent third component. Only the proof uses the chosen valid index. -/
 theorem replace_indexed_labels {pair : SamplablePair} {gap : ℕ → ℝ} (hpair : pair.HasGap gap)
@@ -393,60 +475,86 @@ theorem replace_indexed_labels {pair : SamplablePair} {gap : ℕ → ℝ} (hpair
         (observationBits n (choose n))
         (labelBits n (choose n)) (remainingBits n (choose n)) (Prod.fst <$> pair.sample n) >>=
           adversary n (choose n)))) := by
-  have hcandidates := efficient.candidates_isPolyTime.tidy
-  have hbound := efficient.bound_isPolyTime.tidy
-  have hobservation := efficient.observation_isPolyTime.tidy
-  have hlabel := efficient.label_isPolyTime.tidy
-  have hremaining := efficient.remaining_isPolyTime.tidy
-  have hslack := efficient.slack_isPolyTime.tidy
-  have hnumerator := efficient.numerator_isPolyTime.tidy
-  have hdensity := efficient.density_isPolyTime.tidy
-  let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
-  have hlength := saved.length_isPolyTime.tidy
-  have hcount : ComputableTidilyInPolyTime count encUnary encUnary :=
-    (ExtractionSchedule.isPolyTime_count (.of_tidy (by fun_prop)) (.of_tidy hlength) (.of_tidy
-      hslack)).tidy
-  let test (n i : ℕ) (middle : List (List Bool) × List Bool × List Bool) : ProbComp Bool := do
-    let front ← finish (bound n) (observationBits n i) middle
-    let suffix ← BitString.sampleList
-      (remainingBits n i * (count n * saved.length n) + remainingBits n i)
-    adversary n i (front ++ suffix)
-  have htest : IsPPTOn (encPair (encPair encUnary encUnary)
-      (encPair (encList encBits) (encPair encBits encBits)))
-      encBool (fun input => test input.1.1 input.1.2 input.2) := by
-    dsimp only [test]
-    apply IsPPTOn.bind_with (left := encBits) (by fun_prop)
-    apply IsPPTOn.bind_with (left := encBits) (by fun_prop)
-    ppt
-  have h := hpair.extract_indexed_word_labels saved choose (.of_tidy hcandidates) (.of_tidy
-    hlabel) (.of_tidy hslack) (.of_tidy hnumerator)
-    (.of_tidy hdensity) hchoose hvalid hbudget test htest
-  have hideal (n i : ℕ) :
-      ProbComp.eval (extractWordLabelsIdeal (Prod.fst <$> pair.sample n) (count n)
-        (labelBits n i) >>= test n i) =
-      ProbComp.eval (withoutLabels (count n) (saved.length n) (bound n)
-        (observationBits n i) (labelBits n i) (remainingBits n i) (Prod.fst <$> pair.sample n) >>=
-          adversary n i) := by
-    have heq := congrArg (fun distribution : PMF (List Bool) => distribution.bind (fun front =>
-      ProbComp.eval (do
-        let suffix ← BitString.sampleList
-          (remainingBits n i * (count n * saved.length n) + remainingBits n i)
-        adversary n i (front ++ suffix))))
-      (eval_ideal_labels (count n) (bound n) (observationBits n i) (labelBits n i)
-        (Prod.fst <$> pair.sample n))
-    simpa only [test, withoutLabels, ProbComp.eval_bind, ProbComp.eval_pure,
-      PMF.bind_bind, PMF.pure_bind] using heq
-  apply h.congr
-  intro n
-  rw [hideal]
-  simp only [count, test, withoutSeeds, ProbComp.eval_bind, ProbComp.eval_pure,
-    PMF.bind_bind, PMF.pure_bind]
+  let p0 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary) encBits
+  have hprepare := (p0.fst'.fst'.prod p0.snd').prod (.snd _ encBits)
+  have htest : IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
+      encBool (fun ((a, i), word) => adversary a.1 i word) :=
+    (show (fun ((a, i), word) => adversary a.1 i word) =
+        (fun x : ((ℕ × List Bool) × ℕ) × List Bool => adversary x.1.1.1 x.1.2 x.2) from rfl) ▸
+      hadversary.preprocess hprepare
+  have h := replace_indexed_labels_withAdvice
+    (SamplablePair.hasGap_iff_hasGapWithAdvice_nil.mp hpair) saved choose efficient hchoose
+    hvalid hbudget (fun a i => adversary a.1 i) htest
+  dsimp only at h ⊢
+  exact h
 
 end Cslib.Crypto.Pseudoentropy.ThreeSource
 
 namespace Cslib.Crypto.Pseudoentropy
 
 open Probability Probability.PMF BitString Filter Turing.MultiTapeTM
+
+/-- A valid candidate in an efficient polynomial-size family passes the complete three-source
+game argument relative to fixed advice. The candidate may vary arbitrarily with the parameter;
+one efficient indexed test handles the entire family. All three entropy budgets are needed only at
+the chosen candidate. -/
+theorem SamplablePair.HasGapWithAdvice.extract_indexed_three {pair : SamplablePair} {gap : ℕ → ℝ}
+    {advice : ℕ → List Bool} (hpair : pair.HasGapWithAdvice gap advice)
+    (saved : pair.SeedRealization) (choose : ℕ → ℕ)
+    {candidates bound inverseSlack densityBound : ℕ → ℕ}
+    {observationBits labelBits remainingBits numerator : ℕ → ℕ → ℕ}
+    (efficient : ThreeSource.Efficient candidates bound inverseSlack densityBound
+      observationBits labelBits remainingBits numerator)
+    (hfits : ∀ n observation, observation ∈ ((pair.joint n).map Prod.fst).support →
+      (pair.encode n observation).length ≤ bound n)
+    (hchoose : ∀ᶠ n in atTop, choose n < candidates n)
+    (hvalid : ∀ᶠ n in atTop, 0 < numerator n (choose n) ∧
+      numerator n (choose n) ≤ dyadicSize (densityBound n) ∧
+      (numerator n (choose n) : ℝ) / dyadicSize (densityBound n) ≤
+        conditionalEntropy (pair.joint n) + gap n)
+    (hfirst : ∀ᶠ n in atTop, observationBits n (choose n) = 0 ∨
+      observationBits n (choose n) +
+        2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
+        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+          entropy ((pair.joint n).map Prod.fst))
+    (hmiddle : ∀ᶠ n in atTop,
+      labelBits n (choose n) +
+        2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
+        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+          ((numerator n (choose n) : ℝ) / dyadicSize (densityBound n)))
+    (hlast : ∀ᶠ n in atTop, remainingBits n (choose n) = 0 ∨
+      remainingBits n (choose n) +
+        2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
+        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+          (saved.length n - entropy ((pair.joint n).map Prod.fst) -
+            conditionalEntropy (pair.joint n)))
+    (test : ℕ × List Bool → ℕ → List Bool → ProbComp Bool)
+    (htest : IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
+      encBool (fun ((a, i), word) => test a i word)) :
+    let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
+    Negligible (fun n => Game.advantage
+      (ProbComp.eval (ThreeSource.extract (count n) (saved.length n) (bound n)
+        (observationBits n (choose n))
+        (labelBits n (choose n)) (remainingBits n (choose n)) (saved.sampleWithSeed n) >>=
+          test (n, advice n) (choose n)))
+      (ProbComp.eval (BitString.sampleList (ThreeSource.outputLength
+        (count n) (saved.length n) (bound n)
+        (observationBits n (choose n)) (labelBits n (choose n)) (remainingBits n (choose n))) >>=
+          test (n, advice n) (choose n)))) := by
+  let continuation := fun n word => ProbComp.eval (test (n, advice n) (choose n) word)
+  have third := (ThreeSource.replace_remaining saved bound inverseSlack
+    (fun n => observationBits n (choose n)) (fun n => labelBits n (choose n))
+    (fun n => remainingBits n (choose n)) hlast) continuation trivial
+  have middle := ThreeSource.replace_indexed_labels_withAdvice hpair saved choose efficient
+    hchoose hvalid hmiddle test htest
+  have first := (ThreeSource.replace_observations saved bound inverseSlack
+    (fun n => observationBits n (choose n)) (fun n => labelBits n (choose n))
+    (fun n => remainingBits n (choose n)) hfits hfirst) continuation trivial
+  simp only [ProbComp.eval_bind, BitString.eval_sampleList, continuation] at third middle first ⊢
+  apply negligible_of_le (third.add (middle.add first))
+  intro n
+  exact (Game.advantage_triangle _ _ _).trans
+    (add_le_add le_rfl (Game.advantage_triangle _ _ _))
 
 /-- A valid candidate in an efficient polynomial-size family passes the complete three-source
 game argument. The candidate may vary arbitrarily with the parameter; one efficient indexed test
@@ -482,7 +590,7 @@ theorem SamplablePair.HasGap.extract_indexed_three {pair : SamplablePair} {gap :
             conditionalEntropy (pair.joint n)))
     (test : ℕ → ℕ → List Bool → ProbComp Bool)
     (htest : IsPPTOn (encPair (encPair encUnary encUnary) encBits)
-      encBool (fun input => test input.1.1 input.1.2 input.2)) :
+      encBool (fun ((n, i), word) => test n i word)) :
     let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
     Negligible (fun n => Game.advantage
       (ProbComp.eval (ThreeSource.extract (count n) (saved.length n) (bound n)
@@ -493,20 +601,71 @@ theorem SamplablePair.HasGap.extract_indexed_three {pair : SamplablePair} {gap :
         (count n) (saved.length n) (bound n)
         (observationBits n (choose n)) (labelBits n (choose n)) (remainingBits n (choose n))) >>=
           test n (choose n)))) := by
-  let continuation := fun n word => ProbComp.eval (test n (choose n) word)
-  have third := (ThreeSource.replace_remaining saved bound inverseSlack
-    (fun n => observationBits n (choose n)) (fun n => labelBits n (choose n))
-    (fun n => remainingBits n (choose n)) hlast) continuation trivial
-  have middle := ThreeSource.replace_indexed_labels hpair saved choose efficient
-    hchoose hvalid hmiddle test htest
-  have first := (ThreeSource.replace_observations saved bound inverseSlack
-    (fun n => observationBits n (choose n)) (fun n => labelBits n (choose n))
-    (fun n => remainingBits n (choose n)) hfits hfirst) continuation trivial
-  simp only [ProbComp.eval_bind, BitString.eval_sampleList, continuation] at third middle first ⊢
-  apply negligible_of_le (third.add (middle.add first))
-  intro n
-  exact (Game.advantage_triangle _ _ _).trans
-    (add_le_add le_rfl (Game.advantage_triangle _ _ _))
+  let p0 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary) encBits
+  have hprepare := (p0.fst'.fst'.prod p0.snd').prod (.snd _ encBits)
+  have htest' : IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
+      encBool (fun ((a, i), word) => test a.1 i word) :=
+    (show (fun ((a, i), word) => test a.1 i word) =
+        (fun x : ((ℕ × List Bool) × ℕ) × List Bool => test x.1.1.1 x.1.2 x.2) from rfl) ▸
+      htest.preprocess hprepare
+  have h := (SamplablePair.hasGap_iff_hasGapWithAdvice_nil.mp hpair).extract_indexed_three
+    saved choose efficient hfits hchoose hvalid hfirst hmiddle hlast
+    (fun a i => test a.1 i) htest'
+  dsimp only at h ⊢
+  exact h
+
+/-- The three-source construction is computationally uniform relative to fixed advice under its
+three entropy budgets. The schedules must be computed by uniform polynomial-time algorithms.
+`ThreeSource.Seeded` implements this ensemble deterministically with an exact seed budget, and
+`EntropyGrid` supplies budgets for which some candidate is valid. -/
+theorem SamplablePair.HasGapWithAdvice.extract_three {pair : SamplablePair} {gap : ℕ → ℝ}
+    {advice : ℕ → List Bool} (hpair : pair.HasGapWithAdvice gap advice)
+    (saved : pair.SeedRealization)
+    {bound inverseSlack observationBits labelBits remainingBits numerator densityBound : ℕ → ℕ}
+    (efficient : ThreeSource.Efficient (fun _ => 1) bound inverseSlack densityBound
+      (fun n _ => observationBits n) (fun n _ => labelBits n)
+      (fun n _ => remainingBits n) (fun n _ => numerator n))
+    (hfits : ∀ n observation, observation ∈ ((pair.joint n).map Prod.fst).support →
+      (pair.encode n observation).length ≤ bound n)
+    (hvalid : ∀ᶠ n in atTop, 0 < numerator n ∧ numerator n ≤ dyadicSize (densityBound n) ∧
+      (numerator n : ℝ) / dyadicSize (densityBound n) ≤
+        conditionalEntropy (pair.joint n) + gap n)
+    (hfirst : ∀ᶠ n in atTop, observationBits n = 0 ∨
+      observationBits n + 2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
+        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+          entropy ((pair.joint n).map Prod.fst))
+    (hmiddle : ∀ᶠ n in atTop,
+      labelBits n + 2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
+        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+          ((numerator n : ℝ) / dyadicSize (densityBound n)))
+    (hlast : ∀ᶠ n in atTop, remainingBits n = 0 ∨
+      remainingBits n + 2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
+        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+          (saved.length n - entropy ((pair.joint n).map Prod.fst) -
+            conditionalEntropy (pair.joint n))) :
+    let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
+    IndistinguishableWithAdvice advice
+      (fun n => ProbComp.eval (ThreeSource.extract (count n) (saved.length n) (bound n)
+        (observationBits n) (labelBits n) (remainingBits n) (saved.sampleWithSeed n)))
+      (fun n => uniformList (ThreeSource.outputLength (count n) (saved.length n) (bound n)
+        (observationBits n) (labelBits n) (remainingBits n))) := by
+  dsimp only
+  intro adversary hadversary
+  let p0 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary) encBits
+  have hprepare := p0.fst'.prod (.snd _ encBits)
+  have htest : IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
+      encBool (fun ((a, _), word) => adversary (a, word)) :=
+    (show (fun ((a, _), word) => adversary (a, word)) =
+        (fun x : ((ℕ × List Bool) × ℕ) × List Bool => adversary (x.1.1, x.2)) from rfl) ▸
+      hadversary.preprocess hprepare
+  have h := hpair.extract_indexed_three saved (fun _ => 0)
+    (candidates := fun _ => 1) (observationBits := fun n _ => observationBits n)
+    (labelBits := fun n _ => labelBits n) (remainingBits := fun n _ => remainingBits n)
+    (numerator := fun n _ => numerator n) efficient hfits
+    (Eventually.of_forall (by intro n; decide))
+    hvalid hfirst hmiddle hlast (fun a _ word => adversary (a, word)) htest
+  simpa only [distinguishingGame, PMF.monad_bind_eq_bind, ProbComp.eval_bind,
+    BitString.eval_sampleList] using h
 
 /-- The three-source construction is computationally uniform under its three entropy budgets.
 The schedules must be computed by uniform polynomial-time algorithms. `ThreeSource.Seeded`
@@ -541,16 +700,9 @@ theorem SamplablePair.HasGap.extract_three {pair : SamplablePair} {gap : ℕ →
       (fun n => ProbComp.eval (ThreeSource.extract (count n) (saved.length n) (bound n)
         (observationBits n) (labelBits n) (remainingBits n) (saved.sampleWithSeed n)))
       (fun n => uniformList (ThreeSource.outputLength (count n) (saved.length n) (bound n)
-        (observationBits n) (labelBits n) (remainingBits n))) := by
-  dsimp only
-  intro adversary hadversary
-  have h := hpair.extract_indexed_three saved (fun _ => 0)
-    (candidates := fun _ => 1) (observationBits := fun n _ => observationBits n)
-    (labelBits := fun n _ => labelBits n) (remainingBits := fun n _ => remainingBits n)
-    (numerator := fun n _ => numerator n) efficient hfits
-    (Eventually.of_forall (by intro n; decide))
-    hvalid hfirst hmiddle hlast (fun n _ => adversary n) (by ppt)
-  simpa only [distinguishingGame, PMF.monad_bind_eq_bind, ProbComp.eval_bind,
-    BitString.eval_sampleList] using h
+        (observationBits n) (labelBits n) (remainingBits n))) :=
+  computationallyIndistinguishable_iff_indistinguishableWithAdvice_nil.mpr
+    ((SamplablePair.hasGap_iff_hasGapWithAdvice_nil.mp hpair).extract_three saved efficient
+      hfits hvalid hfirst hmiddle hlast)
 
 end Cslib.Crypto.Pseudoentropy

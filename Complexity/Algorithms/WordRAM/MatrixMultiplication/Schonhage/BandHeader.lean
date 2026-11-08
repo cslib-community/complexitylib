@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Power.Rename
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandProgram
 
 /-!
@@ -33,19 +34,14 @@ theorem exec_powerCode {w : ℕ} (v b n : Fin 96)
     ∃ y, ExecWithin w (powerCode v b n) x y (4 * M + 5) ∧
       y.regs v = B ^ M ∧ y.regs one = 1 ∧ y.mem = x.mem ∧
       (∀ i, i ≠ v → i ≠ counter → i ≠ one → y.regs i = x.regs i) := by
-  obtain ⟨z, hz, hv, _, ho, hm, _, _⟩ :=
-    Power.exec B M hB (x.comap (powerRegisters v b n)) hb hn hfit
-  have he := hz.rename hinj
-  refine ⟨z.extend (powerRegisters v b n) x, he, ?_, ?_, hm, ?_⟩
-  · have h := congrArg (fun d : Data 5 => d.regs Power.value) (Data.comap_extend hinj z x)
-    exact h.trans hv
-  · have h := congrArg (fun d : Data 5 => d.regs Power.one) (Data.comap_extend hinj z x)
-    exact h.trans ho
-  · intro i hv hc ho
-    apply he.regs_eq
-    simp [Power.program, Power.body, Code.rename, Code.Preserves, Op.rename, Op.dest, Op.bin,
-      powerRegisters, Power.value, Power.counter, Power.base, Power.exponent, Power.one,
-      Ne.symm hv, Ne.symm hc, Ne.symm ho]
+  obtain ⟨y, he, hv, _, ho, hm, _, _, -⟩ :=
+    Power.exec_rename (powerRegisters v b n) hinj B M hB x hb hn hfit
+  refine ⟨y, he, hv, ho, hm, ?_⟩
+  intro i hv hc ho
+  apply he.regs_eq
+  simp [Power.program, Power.body, Code.rename, Code.Preserves, Op.rename, Op.dest, Op.bin,
+    powerRegisters, Power.value, Power.counter, Power.base, Power.exponent, Power.one,
+    Ne.symm hv, Ne.symm hc, Ne.symm ho]
 
 /-- Scalar parameters loaded from the three actual input headers and small constants. -/
 structure BasicParameters (L m N : ℕ) (x : Data 96) : Prop where

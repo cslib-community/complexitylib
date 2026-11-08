@@ -11,6 +11,7 @@ public import Complexity.Computability.Complexity.Parameterized
 public import Complexity.Computability.Complexity.Classes.Time
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 import Complexity.Computability.Complexity.Classes.Hierarchy
+import Complexity.Computability.Machines.Turing.MultiTape.HaltsAt
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain

@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import Complexity.Computability.WordRAM.Call
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Product.Admission
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Product.Memory
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandFlat
@@ -57,26 +58,25 @@ public theorem exec_bands {w L m N Q A : ℕ} (hw : 0 < w) (hm : m ≤ L)
         Bool.false_eq_true, ↓reduceIte]
     · exact hX _ _
     · exact hY _ _
-  obtain ⟨z, he, _, hv, _, _, hf⟩ := BandPreparation.exec hw hm (x.comap bank) hL hmemory hN
-    (BandPreparation.matrixValues X Y) hmat (A : ℤ) (by positivity) hbound
-    (magnitude_admissions hw hmag).1 (producer_fits hfit).1
-  let y := z.extend bank x
+  obtain ⟨y, he, ⟨_, hv, _, _, hf⟩, outside⟩ :=
+    ExecWithin.rename_post bank_injective (BandPreparation.exec hw hm (x.comap bank) hL hmemory hN
+      (BandPreparation.matrixValues X Y) hmat (A : ℤ) (by positivity) hbound
+      (magnitude_admissions hw hmag).1 (producer_fits hfit).1)
   have hframe (i : Fin 160) (hi : 96 ≤ i.val) : y.regs i = x.regs i := by
-    have hnot : ¬∃ j, bank j = i := by
-      rintro ⟨j, hj⟩
-      have hv := congrArg (fun r : Fin 160 => r.val) hj
-      change j.val = i.val at hv
-      omega
-    exact Function.extend_apply' _ _ _ hnot
-  refine ⟨y, he.rename bank_injective, hp.reframe hframe, ?_, ?_, ?_⟩
+    apply outside
+    intro j hj
+    have hv := congrArg (fun r : Fin 160 => r.val) hj
+    change j.val = i.val at hv
+    omega
+  refine ⟨y, he, hp.reframe hframe, ?_, ?_, ?_⟩
   · intro β hβ τ
-    change z.mem _ = _
-    simpa only [BandPreparation.catalogueValue_left hm X (BandPreparation.matrixValues X Y false)
+    simpa only [Data.comap_mem,
+      BandPreparation.catalogueValue_left hm X (BandPreparation.matrixValues X Y false)
       (by intro i k; simp [BandPreparation.matrixValues])] using
         hv false β hβ (Encoding.leafIndex τ).val (Encoding.leafIndex τ).isLt
   · intro β hβ τ
-    change z.mem _ = _
-    simpa only [BandPreparation.catalogueValue_right hm Y (BandPreparation.matrixValues X Y true)
+    simpa only [Data.comap_mem,
+      BandPreparation.catalogueValue_right hm Y (BandPreparation.matrixValues X Y true)
       (by intro k i; simp [BandPreparation.matrixValues])] using
         hv true β hβ (Encoding.leafIndex τ).val (Encoding.leafIndex τ).isLt
   · intro a ha

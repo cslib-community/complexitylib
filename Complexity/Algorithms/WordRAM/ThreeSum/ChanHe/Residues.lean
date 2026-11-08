@@ -11,6 +11,8 @@ public import Complexity.Computability.WordRAM.Signed.Arithmetic
 public import Complexity.Computability.WordRAM.Copy
 import Mathlib.Tactic.NormNum
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Native Euclidean residue arrays
 
@@ -98,19 +100,15 @@ theorem exec {w M : ℕ} (x : Data 16) (values : ℕ → ℤ) (hM : 0 < M)
     ∃ y, ExecWithin (w + 2) program x y (23 * x.regs len + 4) ∧
       y.mem = memory x.mem values M (x.regs dst) (x.regs len) ∧
       (∀ i, 9 ≤ i.val ∧ i.val ≤ 12 → y.regs i = x.regs i) := by
-  let I (y : Data 16) : Prop :=
+  let P (j : ℕ) (y : Data 16) : Prop :=
     (∀ i, 9 ≤ i.val ∧ i.val ≤ 12 → y.regs i = x.regs i) ∧ y.regs one = 1 ∧
-      y.regs idx ≤ x.regs len ∧
-      y.mem = memory x.mem values M (x.regs dst) (y.regs idx)
-  have hbody (y : Data 16) (hy : I y) (hc : (Cond.lt idx len).Holds y) :
-      ∃ z, ExecWithin (w + 2) body y z 21 ∧ I z ∧
-        x.regs len - z.regs idx < x.regs len - y.regs idx := by
-    obtain ⟨hr, ho, hi, hm⟩ := hy
-    have hl := hr len (by decide)
+      y.mem = memory x.mem values M (x.regs dst) j
+  have hbody (y : Data 16) (hy : P (y.regs idx) y) (hlt : y.regs idx < x.regs len) :
+      ∃ z, ExecWithin (w + 2) body y z 21 ∧ P (y.regs idx + 1) z ∧ z.regs idx = y.regs idx + 1 := by
+    obtain ⟨hr, ho, hm⟩ := hy
     have hsrc := hr src (by decide)
     have hdst := hr dst (by decide)
     have hmod' := hr modulus (by decide)
-    have hlt : y.regs idx < x.regs len := by simpa only [Cond.holds_lt, hl] using hc
     have hread : y.mem (y.regs src + y.regs idx) = encode (values (y.regs idx)) := by
       rw [hm, hsrc]
       simp only [memory, show ¬(x.regs dst ≤ x.regs src + y.regs idx ∧
@@ -154,7 +152,7 @@ theorem exec {w M : ℕ} (x : Data 16) (values : ℕ → ℤ) (hM : 0 < M)
         ram_eval [htwo, hrem, hb, hn, hzo, two, result, addr, dst, idx, one, Fin.mk.injEq]
       exact (hp.seq (hz.seq htail))
     case inv =>
-      refine ⟨?_, ?_, ?_, ?_⟩
+      refine ⟨?_, ?_, ?_⟩
       · intro i hi
         have hip : p.regs i = y.regs i := by
           have hia : i ≠ addr := by intro h; subst i; norm_num [addr] at hi
@@ -170,35 +168,26 @@ theorem exec {w M : ℕ} (x : Data 16) (values : ℕ → ℤ) (hM : 0 < M)
           Function.update_of_ne hii, Function.update_of_ne hit, Function.update_of_ne hir]
           using (hzr i hi.1).trans (hip.trans (hr i hi))
       · simpa +decide [Function.update_apply] using hzo
-      · simpa +decide [Function.update_apply, hzi, hzo] using Nat.succ_le_of_lt hlt
-      · simp only [Data.set_mem, Data.write_mem, Data.set_regs, Function.update_apply]
+      · simp only [Data.set_mem, Data.write_mem]
         rw [hdecode, hzmem]
         change Function.update y.mem (z.regs dst + z.regs idx)
           (values (y.regs idx) % (M : ℤ)).toNat = _
         rw [hm, hzd, hzi, ← memory_succ]
-        rfl
     case decrease =>
-      change x.regs len - (z.regs idx + 1) < x.regs len - y.regs idx
+      change z.regs idx + 1 = y.regs idx + 1
       rw [hzi]
-      omega
   let x₀ := (x.set idx 0).set one 1
-  have hx₀ : I x₀ := by
-    refine ⟨?_, ?_, ?_, ?_⟩
+  have hx₀ : P (x₀.regs idx) x₀ := by
+    refine ⟨?_, ?_, ?_⟩
     · intro i hi
       have hio : i ≠ one := by intro h; subst i; norm_num [one] at hi
       have hii : i ≠ idx := by intro h; subst i; norm_num [idx] at hi
       simp only [x₀, Data.set_regs, Function.update_of_ne hio, Function.update_of_ne hii]
     · simp [x₀]
     · simp +decide [x₀, idx, one]
-    · simp +decide [x₀, idx, one]
-  obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I
-    (fun y => x.regs len - y.regs idx) hbody hx₀
-  obtain ⟨hr, ho, hi, hm⟩ := hy
-  have hl := hr len (by decide)
-  have hend : y.regs idx = x.regs len := by
-    simp only [Cond.holds_lt, hl] at hc
-    omega
-  refine ⟨y, ?_, by simpa only [hend] using hm, hr⟩
+  obtain ⟨y, he, ⟨hr, _, hm⟩, _⟩ := ExecWithin.loop_count P
+    (fun _ hy => hy.1 len (by decide)) hbody (by simp +decide [x₀, idx, one]) hx₀
+  refine ⟨y, ?_, hm, hr⟩
   have h1 : Fits (w + 2) 1 := (show Fits 2 1 from by decide).mono (by omega)
   have hinit : ExecWithin (B := .standard) (w + 2) (ram[ idx ← #0; one ← #1 ]) x x₀ 2 := by
     ram_eval [x₀, h1]

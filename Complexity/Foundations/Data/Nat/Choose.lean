@@ -28,6 +28,9 @@ most a `q ^ (-d)` fraction of the `k`-subsets when the ground set has at least `
 descending factorials and binomial coefficients grow at least as fast as powers on larger ground
 sets (`Nat.descFactorial_mul_pow_le`, `Nat.choose_mul_pow_le`), which gives the block-avoidance
 estimate `2 ^ r * C(b * m - m, b * r) ≤ C(b * m, b * r)` (`Nat.two_pow_mul_choose_sub_le`).
+Shrinking the ground set from `m` to `d` shrinks the number of `s`-subsets by at most
+`((m + 1 - s) / (d + 1 - s)) ^ s` (`Nat.pow_mul_choose_le_choose_mul_pow`), the estimate behind
+the Kővári–Sós–Turán bound.
 
 ## Main results
 
@@ -36,6 +39,8 @@ estimate `2 ^ r * C(b * m - m, b * r) ≤ C(b * m, b * r)` (`Nat.two_pow_mul_cho
   binomial coefficients.
 * `Nat.choose_sub_mul_pow_le`, `Nat.pow_mul_choose_sub_le_choose_of_mul_le`: lowering the subset
   size scales the binomial coefficient.
+* `Nat.pow_mul_choose_le_choose_mul_pow`: shrinking the ground set shrinks the binomial
+  coefficient by at most a power.
 * `Nat.descFactorial_mul_pow_le`, `Nat.choose_mul_pow_le`, `Nat.choose_mul_sub_mul_pow_le`,
   `Nat.two_mul_pred_pow_le`, `Nat.two_pow_mul_choose_sub_le`: power comparisons and the
   block-avoidance binomial estimate.
@@ -143,6 +148,48 @@ theorem choose_mul_pow_le {a s : ℕ} (has : a ≤ s) (k : ℕ) :
     _ ≤ a ^ k * s.descFactorial k := descFactorial_mul_pow_le has k
     _ = a ^ k * (k.factorial * s.choose k) := by rw [descFactorial_eq_factorial_mul_choose]
     _ = k.factorial * (s.choose k * a ^ k) := by ring
+
+/-- Descending factorials on a smaller ground set:
+`(d + 1 - s) ^ k m^{(k)} ≤ d^{(k)} (m + 1 - s) ^ k` for `k ≤ s ≤ d ≤ m`, since
+`(d + 1 - s) (m - i) ≤ (d - i) (m + 1 - s)` for `i < s`. -/
+private theorem pow_mul_descFactorial_le_descFactorial_mul_pow {d m s : ℕ} (hsd : s ≤ d)
+    (hdm : d ≤ m) {k : ℕ} (hks : k ≤ s) :
+    (d + 1 - s) ^ k * m.descFactorial k ≤ d.descFactorial k * (m + 1 - s) ^ k := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    have hk : (d + 1 - s) * (m - k) ≤ (d - k) * (m + 1 - s) := by
+      obtain ⟨j, rfl⟩ : ∃ j, s = k + 1 + j := ⟨s - k - 1, by omega⟩
+      obtain ⟨a, rfl⟩ : ∃ a, d = k + 1 + j + a := ⟨d - (k + 1 + j), by omega⟩
+      obtain ⟨b, rfl⟩ : ∃ b, m = k + 1 + j + a + b := ⟨m - (k + 1 + j + a), by omega⟩
+      rw [show k + 1 + j + a + 1 - (k + 1 + j) = a + 1 by omega,
+        show k + 1 + j + a + b - k = 1 + j + a + b by omega,
+        show k + 1 + j + a - k = 1 + j + a by omega,
+        show k + 1 + j + a + b + 1 - (k + 1 + j) = a + b + 1 by omega]
+      nlinarith [Nat.zero_le (b * j)]
+    rw [descFactorial_succ, descFactorial_succ, pow_succ, pow_succ]
+    calc (d + 1 - s) ^ k * (d + 1 - s) * ((m - k) * m.descFactorial k)
+        = (d + 1 - s) ^ k * m.descFactorial k * ((d + 1 - s) * (m - k)) := by ring
+      _ ≤ d.descFactorial k * (m + 1 - s) ^ k * ((d - k) * (m + 1 - s)) :=
+          Nat.mul_le_mul (ih (by omega)) hk
+      _ = (d - k) * d.descFactorial k * ((m + 1 - s) ^ k * (m + 1 - s)) := by ring
+
+/-- Shrinking the ground set from `m` to `d ≤ m` shrinks the number of `s`-subsets by at most
+`((m + 1 - s) / (d + 1 - s)) ^ s`: `(d + 1 - s) ^ s C(m, s) ≤ C(d, s) (m + 1 - s) ^ s`. -/
+theorem pow_mul_choose_le_choose_mul_pow {d m s : ℕ} (hdm : d ≤ m) :
+    (d + 1 - s) ^ s * m.choose s ≤ d.choose s * (m + 1 - s) ^ s := by
+  rcases Nat.lt_or_ge d s with hds | hsd
+  · rcases Nat.eq_zero_or_pos s with rfl | hs
+    · simp
+    · rw [show d + 1 - s = 0 by omega, zero_pow hs.ne', zero_mul]
+      exact Nat.zero_le _
+  refine Nat.le_of_mul_le_mul_left ?_ (factorial_pos s)
+  have h := pow_mul_descFactorial_le_descFactorial_mul_pow hsd hdm le_rfl
+  rw [descFactorial_eq_factorial_mul_choose, descFactorial_eq_factorial_mul_choose] at h
+  calc s.factorial * ((d + 1 - s) ^ s * m.choose s)
+      = (d + 1 - s) ^ s * (s.factorial * m.choose s) := by ring
+    _ ≤ s.factorial * d.choose s * (m + 1 - s) ^ s := h
+    _ = s.factorial * (d.choose s * (m + 1 - s) ^ s) := by ring
 
 /-- `C(b * m - m, k) * b ^ k ≤ C(b * m, k) * (b - 1) ^ k`. -/
 theorem choose_mul_sub_mul_pow_le (b m k : ℕ) :

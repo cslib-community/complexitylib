@@ -10,10 +10,12 @@ module
 public import Complexity.Languages.Probabilistic.BoundedUniform
 public import Complexity.Computability.Probabilistic.UniformNat
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Repeat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
-import Complexity.Tactic.PPT
+import Complexity.Tactic.PolyTime.Init
 
 /-!
 # Strict fair-bit implementations of bounded sampling
@@ -46,12 +48,13 @@ theorem isPPTOn_sampleUniformInterval {α : Type} {input : α ↪ List Bool}
     (hbound : ComputableInPolyTime bound input encUnary)
     (hattempts : ComputableInPolyTime attempts input encUnary) :
     IsPPTOn input (encOption encUnary)
-      (fun a => sampleUniformInterval (bound a) (attempts a)) := by
-  have hs := (isPPTOn_sampleBoundedIndex hbound).replicate hattempts
-  have hfind : ComputableInPolyTime
-      (fun p : α × List ℕ => p.2.find? (fun value => decide (value < bound p.1)))
-      (encPair input (encList encUnary)) (encOption encUnary) := by fun_prop
-  exact hs.map_with hfind
+      (fun a => sampleUniformInterval (bound a) (attempts a)) :=
+  let e1 := encPair input (encList encUnary)
+  ((isPPTOn_sampleBoundedIndex hbound).replicate hattempts).map_with
+    (ComputableInPolyTime.findWithInput (.snd input (encList encUnary))
+      (ComputableInPolyTime.unary_lt' (.snd e1 encUnary)
+        (((ComputableInPolyTime.fst e1 encUnary).trans (.fst input (encList encUnary))).trans
+          hbound)))
 
 /-- Binary bounds need only a unary sampling width and attempt count. The width is the existing
 sampler's computed `log₂ bound + 1`, not a unary copy of `bound`; exponential cryptographic
@@ -65,23 +68,20 @@ theorem isPPTOn_sampleUniformInterval_binary {α : Type} {input : α ↪ List Bo
     (hwidth_eq : ∀ a, width a = Nat.log 2 (bound a) + 1) :
     IsPPTOn input (encOption encNat)
       (fun a => sampleUniformInterval (bound a) (attempts a)) := by
-  have hleft := hbound.comp (ComputableInPolyTime.fst input encNat)
+  have hleft := (ComputableInPolyTime.fst input encNat).trans hbound
   have hright := ComputableInPolyTime.snd input encNat
   have hmin : ComputableInPolyTime (fun p : α × ℕ => min (bound p.1) p.2)
-      (encPair input encNat) encNat := by
-    have hle := ComputableInPolyTime.binary_le' hleft hright
-    convert hle.ite hleft hright using 1
-    funext p
-    simp only [min_def, Function.comp_def, decide_eq_true_eq]
-  have hs : IsPPTOn input encNat (fun a => sampleBoundedIndex (bound a)) := by
-    apply ((isPPTOn_sampleBinaryNat.preprocess hwidth).map_with
-      (f := fun a value => min (bound a) value) hmin).congr
-    intro a
-    rw [sampleBoundedIndex_eq_binary, ← hwidth_eq a]
-  have hfind : ComputableInPolyTime
-      (fun p : α × List ℕ => p.2.find? (fun value => decide (value < bound p.1)))
-      (encPair input (encList encNat)) (encOption encNat) := by fun_prop
-  exact (hs.replicate hattempts).map_with hfind
+      (encPair input encNat) encNat :=
+    ((ComputableInPolyTime.binary_le' hleft hright).ite hleft hright).of_enc_eq fun _ => by
+      simp only [min_def, decide_eq_true_eq]
+  have hs : IsPPTOn input encNat (fun a => sampleBoundedIndex (bound a)) :=
+    ((isPPTOn_sampleBinaryNat.preprocess hwidth).map_with hmin).congr fun a => by
+      rw [sampleBoundedIndex_eq_binary, ← hwidth_eq a]
+  let e1 := encPair input (encList encNat)
+  exact (hs.replicate hattempts).map_with
+    (ComputableInPolyTime.findWithInput (.snd input (encList encNat))
+      (ComputableInPolyTime.binary_lt' (.snd e1 encNat)
+        (((ComputableInPolyTime.fst e1 encNat).trans (.fst input (encList encNat))).trans hbound)))
 
 /-- A runtime-varying integer box is sampled in uniform strict PPT when the numerical radius,
 dimension and per-coordinate attempt budget are efficiently supplied in unary. The full
@@ -92,63 +92,38 @@ theorem isPPTOn_sampleIntegerBox {α : Type} {input : α ↪ List Bool}
     (hradius : ComputableInPolyTime radius input encUnary)
     (hdimension : ComputableInPolyTime dimension input encUnary)
     (hattempts : ComputableInPolyTime attempts input encUnary) :
-    IsPPTOn input (encOption (encList encInt))
-      (fun a => sampleIntegerBox (radius a) (dimension a) (attempts a)) := by
-  have hb : ComputableInPolyTime (fun a => 2 * radius a + 1) input encUnary := by fun_prop
-  have hs := isPPTOn_sampleUniformInterval hb hattempts
-  have hcoordinate : ComputableInPolyTime
-      (fun p : α × Option ℕ => p.2.elim none (fun (i : ℕ) => some ((i : ℤ) - radius p.1)))
-      (encPair input (encOption encUnary)) (encOption encInt) := by
-    apply ComputableInPolyTime.optionElimWithInput (by fun_prop) (by fun_prop)
-    have hrad : ComputableInPolyTime
-        (fun p : (α × Option ℕ) × ℕ => radius p.1.1)
-        (encPair (encPair input (encOption encUnary)) encUnary) encUnary := by
-      fun_prop
-    have hz : ComputableInPolyTime (fun q : ℕ × ℕ => (q.1 : ℤ) - q.2)
-        (encPair encUnary encUnary) encInt := by
-      have hfst := ComputableInPolyTime.fst encUnary encUnary
-      have hsnd := ComputableInPolyTime.snd encUnary encUnary
-      have hpos : ComputableInPolyTime (fun q : ℕ × ℕ => ((q.1 - q.2 : ℕ) : ℤ))
-          (encPair encUnary encUnary) encInt :=
-        (ComputableInPolyTime.bitsCons (ComputableInPolyTime.const false)
-          (ComputableInPolyTime.unary_sub.comp (hfst.prod hsnd))).of_enc_eq fun _ => rfl
-      have hneg : ComputableInPolyTime (fun q : ℕ × ℕ => Int.negSucc (q.2 - q.1 - 1))
-          (encPair encUnary encUnary) encInt :=
-        (ComputableInPolyTime.bitsCons (ComputableInPolyTime.const true)
-          (ComputableInPolyTime.unary_sub.comp
-            ((ComputableInPolyTime.unary_sub.comp (hsnd.prod hfst)).prod
-              (ComputableInPolyTime.const 1)))).of_enc_eq fun _ => rfl
-      have heq (q : ℕ × ℕ) : (q.1 : ℤ) - q.2 =
-          if decide (q.2 ≤ q.1) then ((q.1 - q.2 : ℕ) : ℤ) else Int.negSucc (q.2 - q.1 - 1) := by
-        split_ifs with hq <;> simp_all only [decide_eq_true_eq] <;> lia
-      simpa only [← heq] using (ComputableInPolyTime.unary_le' hsnd hfst).ite hpos hneg
-    exact (ComputableInPolyTime.optionSome encInt).comp
-      (hz.comp ((ComputableInPolyTime.snd _ _).prod hrad))
-  have hcollect : ComputableInPolyTime collectBox
-      (encList (encOption encInt)) (encOption (encList encInt)) := by
-    unfold collectBox
-    fun_prop
-  exact ((hs.map_with hcoordinate).replicate hdimension).map hcollect
+    IsPPTOn input (encOption (encList encIntUnary))
+      (fun a => sampleIntegerBox (radius a) (dimension a) (attempts a)) :=
+  let e1 := encPair input (encOption encUnary)
+  let e2 := encOption encIntUnary
+  let hb := ((ComputableInPolyTime.const 2).unary_mul' hradius).unary_add' (.const 1)
+  let hcoord := ComputableInPolyTime.optionElimWithInput
+    (body := fun (p : α × Option ℕ) (i : ℕ) => some ((i : ℤ) - radius p.1))
+    (.snd input (encOption encUnary)) (.const none)
+    (((ComputableInPolyTime.snd e1 encUnary).prod
+      (((ComputableInPolyTime.fst e1 encUnary).trans (.fst input (encOption encUnary))).trans
+        hradius)).trans (ComputableInPolyTime.int_natCast_sub.trans (.optionSome encIntUnary)))
+  let e3 := encList e2; let p2 := ComputableInPolyTime.snd e3 e2
+  let hcollect : ComputableInPolyTime collectBox e3 (encOption (encList encIntUnary)) :=
+    (ComputableInPolyTime.allWithInput .id' p2.optionIsSome).ite
+      ((ComputableInPolyTime.mapWithInput .id' (p2.optionGetDWithInput (.const 0))).trans
+        (.optionSome (encList encIntUnary))) (.const none)
+  (((isPPTOn_sampleUniformInterval hb hattempts).map_with hcoord).replicate
+    hdimension).map hcollect
 
 /-- The complete framed optional output has a direct linear bound in dimension and unary
 radius; failure encodes as the empty word. -/
 theorem length_enc_sampleIntegerBox {radius dimension attempts : ℕ}
     {result : Option (List ℤ)}
     (h : result ∈ (ProbComp.eval (sampleIntegerBox radius dimension attempts)).support) :
-    (encOption (encList encInt) result).length ≤ dimension * (2 * radius + 3) + 1 := by
+    (encOption (encList encIntUnary) result).length ≤ dimension * (2 * radius + 3) + 1 := by
   cases result with
   | none => simp
   | some out =>
     obtain ⟨hlen, hbox⟩ := sampleIntegerBox_support h
-    have heach (z : ℤ) (hz : z ∈ out) : (encInt z).length ≤ radius + 1 := by
-      obtain ⟨hlo, hhi⟩ := hbox z hz
-      rw [length_encInt]
-      split_ifs <;> omega
-    have hlist := length_encList_le encInt out heach
-    rw [hlen] at hlist
-    simp only [encOption_some, List.length_cons]
-    have harith : 2 * (radius + 1) + 1 = 2 * radius + 3 := by omega
-    rw [harith] at hlist
-    omega
+    have hlist := length_encList_le (b := radius + 1) encIntUnary out fun z hz => by
+      obtain ⟨_, _⟩ := hbox z hz; rw [length_encIntUnary]; split_ifs <;> omega
+    rw [hlen, show 2 * (radius + 1) + 1 = 2 * radius + 3 by omega] at hlist
+    simp only [encOption_some, List.length_cons]; omega
 
 end Cslib.Probability

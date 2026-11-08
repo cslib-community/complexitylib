@@ -13,6 +13,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedComp
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
+import Complexity.Tactic.EncLen
 
 /-!
 # The time hierarchy with a polylogarithmic gap
@@ -91,9 +92,7 @@ private theorem computableInO_verdict_linear :
   all_goals
     have h₁ := length_le_encPair_left (encList encUnary) encBool r
     have h₂ : (encList encUnary [eBit true]).length = 3 := rfl
-    simp only [Function.comp_apply, length_encPair, encBool_apply, List.length_singleton,
-      h₂] at h₁ ⊢
-    omega
+    enc_len [Function.comp_apply, h₂] at h₁ ⊢
 
 /-- The numeric core of the resources of the clocked diagonal with the `O(t log t)` universal
 machine, for the exponent `E` of its overhead: for an input of length `n` with a short framed
@@ -184,8 +183,7 @@ theorem exists_computableInO_timeDiagonal_polylog : ∃ k, ∀ {J : ℕ → ℕ}
       (listMax_le fun a ha => ?_) ?_
     · obtain ⟨b, -, rfl⟩ := List.mem_map.mp ha
       cases b <;> decide
-    · simp only [length_encPair, descLen]
-      omega
+    · enc_len [descLen]
   refine (h.mono ((K + 1) * (cO + 1) + 2) (fun x => ?_) fun x => ?_).computableInO
   all_goals
     have hO := hcO x

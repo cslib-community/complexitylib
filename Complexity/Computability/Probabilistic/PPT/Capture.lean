@@ -29,7 +29,8 @@ efficient deterministic concatenation.
 * `Cslib.Probability.IsPPTOn.pair`: retain efficiently computed data alongside a sampled result.
 * `Cslib.Probability.IsPPTOn.bind_with`: a monadic continuation may capture the original input.
 * `Cslib.Probability.IsPPTOn.map_with`: a deterministic callback may capture the original input.
-* `Cslib.Probability.IsPPTOn.cond`, `Cslib.Probability.IsPPTOn.ite`: efficient branch selection.
+* `Cslib.Probability.IsPPTOn.cond`, `Cslib.Probability.IsPPTOn.cond'`,
+  `Cslib.Probability.IsPPTOn.ite`, `Cslib.Probability.IsPPTOn.ite'`: efficient branch selection.
 
 ## References
 
@@ -112,5 +113,24 @@ theorem IsPPTOn.ite {condition : α → Prop} [∀ a, Decidable (condition a)]
     (hyes : IsPPTOn input left yes) (hno : IsPPTOn input left no) :
     IsPPTOn input left (fun a => if condition a then yes a else no a) := by
   simpa only [decide_eq_true_eq] using hyes.cond hcondition hno
+
+/-- `Cslib.Probability.IsPPTOn.cond` with a plain polynomial-time condition. -/
+@[fun_prop]
+theorem IsPPTOn.cond' {condition : α → Bool} {yes no : α → ProbComp β}
+    (hcondition : ComputableInPolyTime condition input encBool)
+    (hyes : IsPPTOn input left yes) (hno : IsPPTOn input left no) :
+    IsPPTOn input left (fun a => if condition a then yes a else no a) := by
+  apply IsOraclePPTOn.isPPTOn
+  simpa only [apply_ite] using IsOraclePPTOn.cond' hcondition
+    (hyes.isOraclePPTOn (Operation := Empty)) (hno.isOraclePPTOn (Operation := Empty))
+
+/-- `Cslib.Probability.IsPPTOn.ite` with a plain polynomial-time decision. -/
+@[fun_prop]
+theorem IsPPTOn.ite' {condition : α → Prop} [∀ a, Decidable (condition a)]
+    {yes no : α → ProbComp β}
+    (hcondition : ComputableInPolyTime (fun a => decide (condition a)) input encBool)
+    (hyes : IsPPTOn input left yes) (hno : IsPPTOn input left no) :
+    IsPPTOn input left (fun a => if condition a then yes a else no a) := by
+  simpa only [decide_eq_true_eq] using hyes.cond' hcondition hno
 
 end Cslib.Probability
