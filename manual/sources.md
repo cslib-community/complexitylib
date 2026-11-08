@@ -311,6 +311,11 @@ Lance Fortnow and Rahul Santhanam. "Infeasibility of Instance Compression and Su
 
 Rūsiņš Freivalds. "Fast Probabilistic Algorithms." *Mathematical Foundations of Computer Science 1979*, Lecture Notes in Computer Science 74, 57–69. https://doi.org/10.1007/3-540-09526-8_5 . Bibliographic data from the DOI record, checked 2026-11-07; the full text was not inspected. The manual attributes only the random-vector matrix-product check to this paper.
 
+<a id="friezekaronski2016"></a>
+## friezekaronski2016
+
+Alan Frieze and Michał Karoński. *Introduction to Random Graphs*. Cambridge University Press, 2016. https://doi.org/10.1017/CBO9781316339831 . Inspected the author-hosted version dated August 7, 2026 (https://www.math.cmu.edu/~af1p/BOOK.pdf), §4.1, Theorem 4.1 and its proof. The theorem is stated for `G_m` with `m = n (log n + c_n) / 2`; the proof works in `G(n, p)` with `p = (log n + c) / n`, and the text later cites it for "`G(n, p)` is connected w.h.p. for `np − log n → ∞`". The book attributes the theorem to Erdős and Rényi, "On random graphs I", *Publ. Math. Debrecen* 6 (1959), 290–297; that paper was not inspected. The publisher's ISBN and DOI are from catalogue records.
+
 <a id="gentry09"></a>
 ## gentry09
 

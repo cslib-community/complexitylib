@@ -1276,6 +1276,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   (Theorems 3 and 4) and extractor (Theorem 1) are not yet formalized;
   condensers, limited independence, explicit expanders and space-bounded generators, with finite
   guarantees separate from uniform construction and decoding costs.
+- **Random graph connectivity** ([#3485](https://github.com/cslib-community/complexitylib/issues/3485)):
+  for Mathlib's binomial random graph `G(n, p)`, connectivity with high probability when
+  `n p - log n → ∞` (union bound over cuts, explicit bound `35 n exp (-(n p))`) is in
+  `Foundations/Probability/Combinatorics/BinomialRandomGraph/Connectivity.lean`. Remaining: the
+  lower half (`n p - log n → -∞`, isolated vertices by the second moment), the limit
+  `e ^ (-e ^ (-c))` at `p = (log n + c) / n`, and the hitting-time theorem.
 - **Explicit Ramsey graphs** ([#3041](https://github.com/cslib-community/complexitylib/issues/3041)):
   strongly explicit graphs with no `k`-clique and no `k`-independent set, on more vertices than
   Nagy's `C(k - 1, 3)`, toward Erdős's existential `2 ^ (k / 2)`: Frankl–Wilson's
