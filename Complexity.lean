@@ -1588,6 +1588,7 @@ public import Complexity.Computability.Complexity.Classes.Alternation.Space
 public import Complexity.Computability.Complexity.Classes.Alternation.SpaceGame
 public import Complexity.Computability.Complexity.Classes.Alternation.TQBF
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin
+public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Advice
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Amplification
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Collapse
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.Games
