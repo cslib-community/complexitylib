@@ -87,6 +87,39 @@ example (ψ : Qubits (andCoinVerifier.witnessLength 0)) (hψ : ‖ψ‖ = 1) :
   rw [card_andCoin eval_one_nil, two_pow_eval_one_nil]
   split_ifs <;> norm_num
 
+/-- On one qubit, the equal superposition of the two basis states has weight `1 / 2` on each. -/
+private theorem norm_sq_plus {m : ℕ} (hm : m = 1) (y : Fin m → Bool) :
+    ‖((((Real.sqrt 2)⁻¹ : ℝ) : ℂ) • (ket (fun _ => false) + ket (fun _ => true)) :
+      Qubits m).ofLp y‖ ^ 2 = 1 / 2 := by
+  subst hm
+  have h1 : (ket (fun _ => false) + ket (fun _ => true) : Qubits 1).ofLp y = 1 := by
+    rw [show y = fun _ => y 0 from funext fun i => by rw [Subsingleton.elim i 0]]
+    generalize y 0 = b
+    cases b <;> simp [funext_iff]
+  rw [WithLp.ofLp_smul, Pi.smul_apply, smul_eq_mul, h1, mul_one, Complex.norm_real,
+    Real.norm_eq_abs, sq_abs, inv_pow, Real.sq_sqrt (by norm_num), one_div]
+
+/-- Weight `1 / 2` on each proof, and acceptance `1 / 2` on the proof `1` only. -/
+private theorem sum_half_indicator {m : ℕ} (hm : m = 1) :
+    ∑ y : Fin m → Bool, (1 / 2 : ℝ) * (((if y = fun _ => true then 1 else 0 : ℕ) : ℝ) / 2) =
+      1 / 4 := by
+  subst hm
+  rw [Fintype.sum_eq_single (fun _ => true) fun y hy => by simp [hy]]
+  norm_num
+
+-- The equal superposition `(|0⟩ + |1⟩) / √2` of the two proofs is accepted with probability
+-- exactly `1 / 4`, the average of `0` and `1 / 2` with weights `1 / 2`: no interference.
+example : andCoinVerifier.acceptProb []
+    ((((Real.sqrt 2)⁻¹ : ℝ) : ℂ) • (ket (fun _ => false) + ket (fun _ => true)) :
+      Qubits ((1 : Polynomial ℕ).eval ([] : List Bool).length)) = 1 / 4 := by
+  refine (UniformVerifierFamily.acceptProb_ofMA andCoinFamily 1 1 [] (fun w => andCoin ([], w))
+    (fun w _ => acceptProb_andCoinFamily w) _).trans ?_
+  calc _ = ∑ y : Fin ((1 : Polynomial ℕ).eval ([] : List Bool).length) → Bool,
+        (1 / 2 : ℝ) * (((if y = fun _ => true then 1 else 0 : ℕ) : ℝ) / 2) :=
+        sum_congr rfl fun y _ => by
+          rw [norm_sq_plus eval_one_nil, card_andCoin eval_one_nil, two_pow_eval_one_nil]
+    _ = 1 / 4 := sum_half_indicator eval_one_nil
+
 /-! ### The containments -/
 
 private theorem head_mem_P : {w : List Bool | w.headD false = true} ∈ P encBits :=
