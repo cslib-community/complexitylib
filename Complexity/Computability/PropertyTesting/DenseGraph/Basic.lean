@@ -112,6 +112,12 @@ theorem acceptProb_eq {n : ℕ} (T : Tester n) (G : SimpleGraph (Fin n)) :
         true).toReal := by
   rw [acceptProb]
 
+/-- The adjacency oracle answers the query `(u, v)` with the adjacency bit. -/
+theorem adjOracle_apply {V : Type} (G : SimpleGraph V) [DecidableRel G.Adj] (u v : V) :
+    adjOracle G (u, v) = PMF.pure (decide (G.Adj u v)) := by
+  rw [adjOracle]
+  congr
+
 /-- The edit distance of two graphs on the same vertex set: the number of vertex pairs that are
 an edge of exactly one of them. -/
 noncomputable def editDist {V : Type*} (G H : SimpleGraph V) : ℕ :=
@@ -164,6 +170,15 @@ theorem editDist_self (G : SimpleGraph V) : editDist G G = 0 := by
 
 theorem editDist_comm (G H : SimpleGraph V) : editDist G H = editDist H G := by
   rw [editDist, editDist, symmDiff_comm]
+
+/-- Relabelling both graphs by the same bijection preserves their edit distance. -/
+theorem editDist_comap_equiv {W : Type*} (e : V ≃ W) (G H : SimpleGraph W) :
+    editDist (G.comap e) (H.comap e) = editDist G H := by
+  have h : symmDiff (G.comap e) (H.comap e) = (symmDiff G H).comap e := by
+    ext a b
+    simp [SimpleGraph.symmDiff_adj]
+  rw [editDist, editDist, h]
+  exact Nat.card_congr (Iso.comap e (symmDiff G H)).mapEdgeSet
 
 /-- On a finite vertex set the edit distance is the size of the symmetric difference of the edge
 sets. -/
@@ -291,6 +306,16 @@ theorem acceptProb_nonneg {n : ℕ} (T : Tester n) (G : SimpleGraph (Fin n)) :
 theorem acceptProb_pure {n : ℕ} (b : Bool) (G : SimpleGraph (Fin n)) :
     acceptProb (pure b : Tester n) G = if b then 1 else 0 := by
   cases b <;> simp [acceptProb]
+
+/-- A one-sided tester never rejects a graph with the property. -/
+theorem IsOneSidedTester.evalWith_false_eq_zero {n : ℕ} {P : SimpleGraph (Fin n) → Prop}
+    {T : Tester n} {ε : ℝ} {q : ℕ} (hT : IsOneSidedTester T P ε q) {H : SimpleGraph (Fin n)}
+    (hH : P H) :
+    OracleComp.evalWith (OracleComp.sumHandler ProbComp.unifOracle (adjOracle H)) T false = 0 := by
+  have h := hT.accept H hH
+  rw [acceptProb_eq, ENNReal.toReal_eq_one_iff, PMF.apply_eq_one_iff] at h
+  rw [PMF.apply_eq_zero_iff, h]
+  simp
 
 /-- Independent repetition multiplies acceptance probabilities. -/
 theorem acceptProb_repeatAll {n : ℕ} (T : Tester n) (G : SimpleGraph (Fin n)) (k : ℕ) :

@@ -47,6 +47,7 @@ of native weighted-threshold circuits.
 * `Cslib.DecisionTree.leafCount_le_two_pow_depth`: a tree of depth `d` has at most `2 ^ d` leaves.
 * `Cslib.DecisionTree.leafCount_le_sum_choose_rank`: a tree of depth `d` and rank `r` has at most
   `∑ j ≤ r, d.choose j` leaves.
+* `Cslib.DecisionTree.two_pow_rank_le_leafCount`: a tree of rank `r` has at least `2 ^ r` leaves.
 * `Cslib.DecisionTree.IsDecisionList.rank_le_one`: every decision list has rank at most `1`.
 * `Cslib.DecisionTree.leafCount_le_sum_choose_energy`: a tree of depth `d` and energy `e` has at
   most `∑ j ≤ e, d.choose j` leaves.
@@ -200,10 +201,30 @@ def rank : DecisionTree ι β → ℕ
 theorem rank_leaf (b : β) : (leaf b : DecisionTree ι β).rank = 0 :=
   rfl
 
-private theorem rank_node (i : ι) (left right : DecisionTree ι β) :
+/-- The rank of a node: the larger rank of its subtrees, plus one if they are equal. -/
+theorem rank_node (i : ι) (left right : DecisionTree ι β) :
     (node i left right).rank =
       if left.rank = right.rank then left.rank + 1 else max left.rank right.rank :=
   rfl
+
+/-- The left subtree has rank at most that of the node. -/
+theorem rank_left_le_rank_node (i : ι) (left right : DecisionTree ι β) :
+    left.rank ≤ (node i left right).rank := by
+  rw [rank_node]
+  split_ifs <;> omega
+
+/-- The right subtree has rank at most that of the node. -/
+theorem rank_right_le_rank_node (i : ι) (left right : DecisionTree ι β) :
+    right.rank ≤ (node i left right).rank := by
+  rw [rank_node]
+  split_ifs <;> omega
+
+/-- The rank of a node is monotone in the ranks of its subtrees. -/
+theorem rank_node_le_rank_node {i j : ι} {left right left' right' : DecisionTree ι β}
+    (hl : left.rank ≤ left'.rank) (hr : right.rank ≤ right'.rank) :
+    (node i left right).rank ≤ (node j left' right').rank := by
+  rw [rank_node, rank_node]
+  split_ifs <;> omega
 
 /-- Relabelling queries preserves the rank. -/
 @[simp]
@@ -220,6 +241,23 @@ theorem rank_le_depth (t : DecisionTree ι β) : t.rank ≤ t.depth := by
   | node _ left right ihl ihr =>
     simp only [rank, depth_node]
     split_ifs <;> omega
+
+/-- A decision tree of rank `r` has at least `2 ^ r` structural leaves: it embeds a complete binary
+tree of height `r`. -/
+theorem two_pow_rank_le_leafCount (t : DecisionTree ι β) : 2 ^ t.rank ≤ t.leafCount := by
+  induction t with
+  | leaf => simp [leafCount]
+  | node _ left right ihl ihr =>
+    rw [rank_node, leafCount]
+    split_ifs with h
+    · rw [pow_succ, mul_two]
+      rw [← h] at ihr
+      omega
+    · rcases le_total left.rank right.rank with h' | h'
+      · rw [max_eq_right h']
+        omega
+      · rw [max_eq_left h']
+        omega
 
 /-- A decision tree of rank at most `r` and depth at most `d` has at most
 `∑ j ∈ Finset.range (r + 1), d.choose j` structural leaves. -/

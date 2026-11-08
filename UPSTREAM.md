@@ -780,6 +780,19 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   that a clique lies in a bag (an alternative to Helly), `minDegree_le_treewidth`,
   `treewidth_le_one_iff` and `treewidth_cycleGraph`. Renaming to match an unmerged PR is not
   required.
+* **Oracle codes.** `Foundations/Computability/RecursiveInCode` overlaps the open Mathlib PR
+  [mathlib4#38973](https://github.com/leanprover-community/mathlib4/pull/38973) (hyeoniuwu,
+  co-authored by Tanner Duve; `Mathlib/Computability/SingleOracle/*`), which proposes oracle codes
+  `Oracle.Single.Code` with an `oracle` constructor, `eval`, a relativized `evaln` with
+  `evaln_bound`, `evaln_mono`, `evaln_sound`, `evaln_complete` and `eval_eq_rfindOpt`, codes for
+  `evaln` and `eval`, the jump (`K0_eq_K`, `not_jump_le`) and a bridge to `RecursiveIn`. Nothing
+  was ported from it. The designs differ: the local `Nat.RecursiveIn.Code` builds on merged
+  Mathlib's `Nat.RecursiveIn` with partial oracles (`exists_code`), and its `evaln` runs against a
+  finite prefix `List ℕ` (`evaln_take`, `exists_use`), whereas #38973 uses total oracles, its own
+  reducibility and an `evaln` relative to the whole oracle. Upstreaming must reconcile with
+  #38973 rather than compete with it; the prefix-based `evaln`, the use principle and
+  `KleenePost` are the parts it lacks. Its oracle `evaln` code and jump are a possible route to
+  the Kleene–Post bound `A, B ≤ᵀ ∅′` ([#3379](https://github.com/cslib-community/complexitylib/issues/3379)).
 
 These are coordination references, not a second record of live PR status. Check the relevant
 upstream discussion before starting or submitting overlapping work.
@@ -823,14 +836,17 @@ agreement during upstream review.
 | `Foundations/BooleanAnalysis/{Bernoulli,CoordinateSampling,Fibers,HarmonicTransform,LightPatterns,MirrorSets}`, `Foundations/Analysis/HarmonicMean` | Consider Mathlib probability APIs; generic finite-type `harmonicMean` is split into `Foundations/Analysis/HarmonicMean` (#317). |
 | `Foundations/BooleanAnalysis/HadamardTester` | Consider the PCP hierarchy. |
 | `Foundations/Combinatorics/CentralBinomial` | Consider Mathlib's `Data/Nat/Choose/Central` (`Nat.centralBinom_sq_mul_le`) and `Combinatorics/Choose`. |
+| `Foundations/Combinatorics/Bregman`, `Foundations/Analysis/SpecialFunctions/LogSum` | Mathlib candidates: Brégman's bound on perfect matchings of a bipartite relation and on the permanent of a 0/1 matrix, with its equality case, beside `Combinatorics/` and `LinearAlgebra/Matrix/Permanent`; the finite-set convexity inequality `Real.sum_mul_log_div_card_le` beside `Analysis/SpecialFunctions/Log/NegMulLog`. No Mathlib result was found under `permanent`, `Bregman` or `Minc`. |
 | `Foundations/Combinatorics/InclusionMatrix` | Mathlib candidate: Gottlieb's full-rank theorem for subset inclusion matrices over fields where `1, …, #U` are nonzero, with its double-counting lemmas; consider `Combinatorics/SetFamily`. |
 | `Foundations/Combinatorics/{FiniteCover,Hoeffding,Hypergeometric,PowersetTail,Sunflower}` | Consider Mathlib combinatorics; probabilistic-method lemmas belong near `Combinatorics/Probabilistic`. |
 | `Foundations/Data/Finset/Expect` | Product-type expectation helpers extracted from `Foundations/Combinatorics/Expander/Products` (#317); Mathlib candidates. |
 | `Foundations/Data/Finset/Markov` | Mathlib candidate: `Algebra/Order/BigOperators/Group/Finset` (`Finset.card_filter_mul_le_sum`, `Finset.mul_card_filter_le_sum`). |
 | `Foundations/Data/Finset/OrderGlue` | #1545 resolves the generic naming follow-up from #1496 after native bands stabilized in #1536: order-embedding/subset/complement terminology, Mathlib's `orderEmbOfFin_mem`/`range_orderEmbOfFin` and ordinary substitution in place of five redundant wrappers, and migration of finite tensor clients with checked native band clients. Retain this focused topic module. |
 | `Foundations/Data/Matrix/Permanent` | Mathlib candidate: Laplace expansion of the permanent along row and column 0, beside `LinearAlgebra/Matrix/Permanent` (mirroring `Matrix.det_succ_row_zero`). |
+| `Foundations/Data/Matrix/Permanent/ZeroOne` | Mathlib candidate beside `LinearAlgebra/Matrix/Permanent`: the permanent of a 0/1 natural-number matrix counts the permutations along its one-entries. |
 | `Foundations/LinearAlgebra/{Rank,Matrix/CutRank,Matrix/Lindsey}` | Mathlib candidates: `LinearAlgebra/Dimension/LinearMap` and `LinearAlgebra/Matrix/Rank`; placement of Lindsey's lemma needs agreement. |
-| `Foundations/LinearAlgebra/Matrix/{FourierMotzkin,Farkas,LinearProgramming}` | Mathlib candidates: polyhedral Farkas' lemma and LP duality over any linearly ordered field, proved by Fourier–Motzkin elimination. Mathlib's `ProperCone.hyperplane_separation` is topological (closed cones in real locally convex spaces, so not `ℚ`), and at the current pin `PointedCone.dual`/`DualFG` have no Farkas or Minkowski–Weyl theorem. Upstream review should decide whether to restate these as `PointedCone.DualFG`/`FG` duality. The 2023–24 LP pull requests `leanprover-community/mathlib4` 7386, 9693, 10026 and 10159 (all closed) and Dvořák–Kolmogorov's `duality` repository (`DvorakKolmogorov2024`, cited in the modules) take different approaches; nothing was vendored. |
+| `Foundations/Analysis/Normed/Ring/PowSub`, `Foundations/LinearAlgebra/Matrix/PowPerturbation` | Mathlib candidates: `norm_pow_sub_pow_le_of_norm_le_one` (`‖a ^ m - b ^ m‖ ≤ m ‖a - b‖` when `‖a‖, ‖b‖ ≤ 1` in a seminormed ring) beside `norm_pow_le'` in `Analysis/Normed/Ring/Basic`; its row-sum form `Matrix.sum_abs_pow_sub_pow_le` and `Matrix.sum_pow_apply_le_one` beside the `linfty_opNorm` lemmas in `Analysis/Matrix/Normed`. No Mathlib pow-difference bound was found under `norm_pow_sub_pow`, `Commute.geom_sum₂_mul` or `linfty_opNorm`. |
+| `Foundations/LinearAlgebra/Matrix/{FourierMotzkin,Farkas,LinearProgramming,BasicSolution}` | Mathlib candidates: polyhedral Farkas' lemma and LP duality over any linearly ordered field, proved by Fourier–Motzkin elimination, and basic solutions with Cramer-rule size bounds for integer systems (`BasicSolution`). Mathlib's `ProperCone.hyperplane_separation` is topological (closed cones in real locally convex spaces, so not `ℚ`), and at the current pin `PointedCone.dual`/`DualFG` have no Farkas or Minkowski–Weyl theorem. Upstream review should decide whether to restate these as `PointedCone.DualFG`/`FG` duality. The 2023–24 LP pull requests `leanprover-community/mathlib4` 7386, 9693, 10026 and 10159 (all closed) and Dvořák–Kolmogorov's `duality` repository (`DvorakKolmogorov2024`, cited in the modules) take different approaches; nothing was vendored. |
 | `Probability/PairwiseIndependentHash/Shift` | Consider integration into `PairwiseIndependentHash`. |
 | `Probability/PairwiseIndependentHash/Toeplitz` | Move `Matrix.toeplitz` to Mathlib beside `LinearAlgebra/Matrix/Circulant`. |
 | `Probability/ApproximateCounting/Relative` | Extract the natural-number root lemmas to Mathlib. |

@@ -49,6 +49,8 @@ measures, functions of disjoint sets of coordinates are independent
   `P(X ≤ 0) ≤ Var X / (E X) ^ 2` for square integrable `X` with `E X > 0`.
 * `ProbabilityTheory.measureReal_forall_notMem_le`: the second moment method for a count of
   measurable events with positive mean `S`, stated through the pair probabilities `P(A k ∩ A l)`.
+* `ProbabilityTheory.exists_measurable_comp_restrict`: a measurable function of finitely many
+  coordinates factors measurably through the restriction to them.
 * `ProbabilityTheory.indepFun_pi_of_dependsOn`, `ProbabilityTheory.indepSet_pi_of_dependsOn`:
   functions and events of disjoint sets of coordinates are independent under a product measure.
 * `ProbabilityTheory.measureReal_pi_le_abs_sum_indicator_sub_le`: the deviation bound for local
@@ -203,7 +205,7 @@ variable {ι : Type*} [Fintype ι] {Ω : ι → Type*} [∀ i, MeasurableSpace (
 omit [Fintype ι] in
 /-- A measurable function of the coordinates in a finite set `S` factors measurably through the
 restriction to `S`: freeze the other coordinates at `ω₀`. -/
-private theorem exists_measurable_comp_restrict {β : Type*} [MeasurableSpace β]
+theorem exists_measurable_comp_restrict {β : Type*} [MeasurableSpace β]
     {f : (Π i, Ω i) → β} (hf : Measurable f) {S : Finset ι} (hfS : DependsOn f (S : Set ι))
     (ω₀ : Π i, Ω i) : ∃ g : (Π i : S, Ω i) → β, Measurable g ∧ f = g ∘ fun ω (i : S) => ω i := by
   classical

@@ -345,12 +345,9 @@ theorem two_div_le_toOuterMeasure_karger {n : ℕ} (hn : 2 ≤ n) {W₀ : Fin n 
       (spec.toRandomized.withCoins.run karger ⟨n, W₀⟩).toOuterMeasure {x | x.1 = minCut W₀} := by
   obtain ⟨s, rfl⟩ : ∃ s, n = 2 + s := ⟨n - 2, by omega⟩
   obtain ⟨C, hC, hCmin⟩ := exists_minCut_achiever (by rw [Fintype.card_fin]; omega) W₀
-  have hid : pullbackCut id C = C := by
-    ext x
-    simp [mem_pullbackCut]
   have hsurv := survives_contractTimes le_rfl hmin s (isContractionOf_id hW₀) hC
-    (by rw [hid, hCmin])
-  rw [hid] at hsurv
+    (by rw [pullbackCut_id, hCmin])
+  rw [pullbackCut_id] at hsurv
   rw [run_karger, Nat.add_sub_cancel_left, show (2 : ℝ≥0∞) / ((2 + s) * (2 + s - 1) : ℕ) =
     ((2 * (2 - 1) : ℕ) : ℝ≥0∞) / ((2 + s) * (2 + s - 1) : ℕ) * 1 by norm_num]
   refine Probability.PMF.toOuterMeasure_bind_ge_mul_ennreal _ _ _ _ hsurv
