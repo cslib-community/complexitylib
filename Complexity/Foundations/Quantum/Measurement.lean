@@ -34,6 +34,7 @@ query index (`Complexity/Computability/QueryComplexity/Quantum/Search.lean`).
 ## Main results
 
 * `Cslib.Quantum.measureProb_univ`: the outcome probabilities sum to `‖ψ‖²`.
+* `Cslib.Quantum.measureProb_compl`: the outcomes outside a set have the remaining probability.
 * `Cslib.Quantum.measureProb_ket`: a basis state is measured with certainty.
 * `Cslib.Quantum.measure_toOuterMeasure_apply`: the measurement probabilities are `measureProb`.
 
@@ -79,6 +80,18 @@ theorem measureProb_ket [DecidableEq ι] (x : ι) (S : Finset ι) :
 theorem measureProb_le_measureProb_univ [Fintype ι] (ψ : EuclideanSpace ℂ ι) (S : Finset ι) :
     measureProb ψ S ≤ measureProb ψ univ :=
   sum_le_sum_of_subset_of_nonneg (subset_univ S) fun _ _ _ => by positivity
+
+theorem measureProb_mono (ψ : EuclideanSpace ℂ ι) {S T : Finset ι} (h : S ⊆ T) :
+    measureProb ψ S ≤ measureProb ψ T :=
+  sum_le_sum_of_subset_of_nonneg h fun _ _ _ => by positivity
+
+/-- The outcomes outside `S` have the remaining probability. -/
+theorem measureProb_compl [Fintype ι] [DecidableEq ι] (ψ : EuclideanSpace ℂ ι) (S : Finset ι) :
+    measureProb ψ Sᶜ = ‖ψ‖ ^ 2 - measureProb ψ S := by
+  have h := sum_add_sum_compl S fun y => ‖ψ.ofLp y‖ ^ 2
+  rw [← measureProb_univ]
+  simp only [measureProb] at h ⊢
+  linarith
 
 /-- Outcome probabilities scale with the squared modulus of a scalar. -/
 theorem measureProb_smul (c : ℂ) (ψ : EuclideanSpace ℂ ι) (S : Finset ι) :
