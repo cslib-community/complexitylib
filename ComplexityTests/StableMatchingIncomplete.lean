@@ -82,8 +82,8 @@ example : (fun p => rural.deferredAcceptance p) = ![some 0, none] ∧
 
 /-- Pairing proposer `1` with receiver `1` is not individually rational, so this perfect matching
 is not stable. -/
-example : ¬ rural.IsIndividuallyRational (PartialMatching.ofInjective ![some 0, some 1] (by decide))
-    ∧ ¬ rural.IsStable (PartialMatching.ofInjective ![some 0, some 1] (by decide)) := by
+example : ¬ rural.IsIndividuallyRational (PartialMatching.ofInjOn ![some 0, some 1] (by decide))
+    ∧ ¬ rural.IsStable (PartialMatching.ofInjOn ![some 0, some 1] (by decide)) := by
   decide
 
 /-- Proposer `1` and receiver `1` are unmatched in every stable matching of `rural`. -/

@@ -29,8 +29,6 @@ unmatched.
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.StableMatching.PartialMatching.ofInjective`: a computable partial
-  matching from a partial map that is injective where defined.
 * `IncompleteInstance.step`, `IncompleteInstance.run`: one rejection step and the state after
   `k` steps.
 * `IncompleteInstance.finalState`: the state after `totalLength` steps, which is fixed.
@@ -67,38 +65,6 @@ model.
 public section
 
 namespace Cslib.Algorithms.Lean.StableMatching
-
-namespace PartialMatching
-
-variable {m n : ℕ}
-
-/-- A computable partial matching from a partial map `f` that is injective where defined: the
-inverse of receiver `r` is the first proposer that `f` sends to `r`. -/
-@[expose] def ofInjective (f : Fin m → Option (Fin n))
-    (hf : ∀ p q r, f p = some r → f q = some r → p = q) : PartialMatching m n where
-  toFun := f
-  invFun r := (List.finRange m).find? fun p => decide (f p = some r)
-  inv p r := by
-    constructor
-    · intro h
-      have := List.find?_some h
-      simpa using this
-    · intro h
-      cases hfind : (List.finRange m).find? fun p => decide (f p = some r) with
-      | none =>
-        have := List.find?_eq_none.1 hfind p (List.mem_finRange p)
-        simp only [decide_eq_true_eq] at this
-        exact absurd h this
-      | some q =>
-        have hq := List.find?_some hfind
-        simp only [decide_eq_true_eq] at hq
-        rw [hf q p r hq h]
-
-@[simp] theorem ofInjective_apply (f : Fin m → Option (Fin n))
-    (hf : ∀ p q r, f p = some r → f q = some r → p = q) (p : Fin m) :
-    ofInjective f hf p = f p := rfl
-
-end PartialMatching
 
 namespace IncompleteInstance
 
@@ -306,7 +272,7 @@ theorem target_finalState_inj (p q : Fin m) (r : Fin n) (hp : I.target I.finalSt
 /-- The proposer-proposing deferred-acceptance matching: each proposer is matched to the receiver
 it proposes to in the final state, and is unmatched if its list is exhausted. -/
 @[expose] def deferredAcceptance : PartialMatching m n :=
-  PartialMatching.ofInjective (I.target I.finalState) I.target_finalState_inj
+  PartialMatching.ofInjOn (I.target I.finalState) I.target_finalState_inj
 
 theorem deferredAcceptance_apply (p : Fin m) :
     I.deferredAcceptance p = (I.propPref p)[I.finalState p]? := rfl

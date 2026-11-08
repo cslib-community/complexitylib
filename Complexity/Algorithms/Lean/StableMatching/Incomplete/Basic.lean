@@ -27,7 +27,7 @@ A matching is individually rational when every matched agent finds its partner a
 pair `(p, r)` blocks it when each strictly prefers the other to its outcome in the matching
 (being unmatched included); a matching is stable when it is individually rational and has no
 blocking pair. Gusfield and Irving treat this setting as stable marriage with incomplete lists
-([GusfieldIrving1989], Section 1.4).
+([GusfieldIrving1989], Section 1.4; locator from secondary sources, unverified).
 
 Preferences are lists `propPref p : List (Fin n)` and `recvPref r : List (Fin m)`. An outcome
 `o : Option (Fin n)` of proposer `p` has rank `propRank p o`: the position of the receiver in
@@ -44,7 +44,9 @@ special case of equal sides and complete lists (see
 * `Cslib.Algorithms.Lean.StableMatching.IncompleteInstance`: a two-sided market with strict,
   possibly incomplete preference lists.
 * `Cslib.Algorithms.Lean.StableMatching.PartialMatching`: a partial matching `Fin m ≃. Fin n`;
-  `PartialMatching.matchedProposers`, `PartialMatching.matchedReceivers`: its matched agents.
+  `PartialMatching.matchedProposers`, `PartialMatching.matchedReceivers`: its matched agents;
+  `PartialMatching.ofInjOn`: a computable partial matching from a partial map that is injective
+  on its domain.
 * `IncompleteInstance.propRank`, `IncompleteInstance.recvRank`: ranks of outcomes, with
   `none` ranked below every acceptable partner.
 * `IncompleteInstance.IsIndividuallyRational`, `IncompleteInstance.IsBlockingPair`,
@@ -132,6 +134,33 @@ theorem card_matchedReceivers (μ : PartialMatching m n) :
   refine Subtype.ext (μ.inj (b := (μ p).get (mem_matchedProposers.1 hp)) ?_ ?_)
   · exact Option.get_mem _
   · rw [h]; exact Option.get_mem _
+
+/-- A computable partial matching from a partial map `f` that is injective on its domain (the
+proposers where `f` is `some`): the inverse of receiver `r` is the first proposer that `f` sends
+to `r`. -/
+@[expose] def ofInjOn (f : Fin m → Option (Fin n))
+    (hf : ∀ p q r, f p = some r → f q = some r → p = q) : PartialMatching m n where
+  toFun := f
+  invFun r := (List.finRange m).find? fun p => decide (f p = some r)
+  inv p r := by
+    constructor
+    · intro h
+      have := List.find?_some h
+      simpa using this
+    · intro h
+      cases hfind : (List.finRange m).find? fun p => decide (f p = some r) with
+      | none =>
+        have := List.find?_eq_none.1 hfind p (List.mem_finRange p)
+        simp only [decide_eq_true_eq] at this
+        exact absurd h this
+      | some q =>
+        have hq := List.find?_some hfind
+        simp only [decide_eq_true_eq] at hq
+        rw [hf q p r hq h]
+
+@[simp] theorem ofInjOn_apply (f : Fin m → Option (Fin n))
+    (hf : ∀ p q r, f p = some r → f q = some r → p = q) (p : Fin m) :
+    ofInjOn f hf p = f p := rfl
 
 end PartialMatching
 

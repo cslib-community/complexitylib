@@ -1588,10 +1588,10 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   lattice, the blocking lemma, strategy-proofness, and Roth's impossibility theorem for three
   agents per side) and its incomplete-list extension in `StableMatching/Incomplete` (unequal
   sides, deferred acceptance, optimality, and the one-to-one rural hospitals theorem): Roth's
-  theorem for every `n ≥ 3` by padding the witness, the lattice and blocking lemma for incomplete
-  lists, many-to-one college admissions with the capacitated rural hospitals theorem, ties,
-  rotations and the stable-matching poset, stable roommates, and a charged native implementation
-  in `O(n^2)` time.
+  theorem for every `n ≥ 3` by padding the witness, the lattice, blocking lemma and incentive
+  (strategy-proofness) results for incomplete lists, many-to-one college admissions with the
+  capacitated rural hospitals theorem, ties, rotations and the stable-matching poset, stable
+  roommates, and a charged native implementation in `O(n^2)` time.
 - **Housing markets and top trading cycles** ([#3286](https://github.com/cslib-community/complexitylib/issues/3286)):
   beyond the Shapley–Scarf development in `Algorithms/Lean/HousingMarket` (TTC as the unique
   strict-core and competitive allocation, individual rationality, Pareto efficiency and
