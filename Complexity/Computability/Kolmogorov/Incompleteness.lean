@@ -19,7 +19,7 @@ import Mathlib.Data.Set.Finite.List
 A statement `n ≤ C(x)` ("`x` has complexity at least `n`") is true for infinitely many `n`,
 because the complexity is unbounded. Chaitin's incompleteness theorem says that every computably
 enumerable collection of such statements that contains only true ones has bounded `n`. More
-precisely, the bound is the complexity of an enumerator of the collection plus a constant
+precisely, the bound is the complexity of a code semi-deciding the collection plus a constant
 [Chaitin][Chaitin1974], [Li and Vitányi, Chapter 2][LiVitanyi2019]. The proof is Berry's paradox:
 the program "the first `x` in the collection with `n` above my own length" would describe, with
 `|p|` bits, an object of complexity above `|p| + O(1)`.
@@ -64,8 +64,9 @@ write `C`; this file has no prefix-free version.
   `Cslib.Kolmogorov.DescriptionMethod.MinorizesPartrec.finite_of_rePred_of_subset_length_le`: the
   incompressible strings, `|x| ≤ C(x)`, form an infinite set with no infinite r.e. subset.
 * `Cslib.Kolmogorov.DescriptionMethod.infinite_setOf_size_le_complexity_universal`,
-  `Cslib.Kolmogorov.DescriptionMethod.finite_of_rePred_of_subset_size_le`: the same for natural
-  numbers under `universal`, with the binary length `Nat.size x` in place of `|x|`.
+  `Cslib.Kolmogorov.DescriptionMethod.finite_of_rePred_of_subset_size_le_complexity_universal`:
+  the same for natural numbers under `universal`, with the binary length `Nat.size x` in place of
+  `|x|`.
 
 ## References
 
@@ -346,8 +347,8 @@ theorem infinite_setOf_size_le_complexity_universal :
 
 /-- **Immunity for natural numbers.** Every r.e. set of natural numbers whose binary length is at
 most their plain complexity is finite. -/
-theorem finite_of_rePred_of_subset_size_le {A : Set ℕ} (hA : REPred (· ∈ A))
-    (hsub : A ⊆ {x | x.size ≤ universal.complexity x}) : A.Finite :=
+theorem finite_of_rePred_of_subset_size_le_complexity_universal {A : Set ℕ}
+    (hA : REPred (· ∈ A)) (hsub : A ⊆ {x | x.size ≤ universal.complexity x}) : A.Finite :=
   minorizesPartrec_universal.finite_of_rePred computable_size
     (fun n => (Set.finite_lt_nat (2 ^ n)).subset fun _ hx => Nat.size_le.mp hx) hA
     fun x hx => by

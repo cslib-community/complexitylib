@@ -72,11 +72,13 @@ example : IsImmune {B | REPred (· ∈ B)}
 -- The numbers whose binary length is at most their complexity are immune to the r.e. sets.
 example : IsImmune {B | REPred (· ∈ B)} {x : ℕ | x.size ≤ universal.complexity x} :=
   ⟨infinite_setOf_size_le_complexity_universal, fun _ hB hBA =>
-    finite_of_rePred_of_subset_size_le hB hBA⟩
+    finite_of_rePred_of_subset_size_le_complexity_universal hB hBA⟩
 
--- For `literal`, which does not minorize partial recursive decoders, every string is
--- incompressible, and the r.e. set of all strings is infinite.
-example : {x : List Bool | (x.length : ℕ∞) ≤ literal.ecomplexity x} = Set.univ := by
-  ext; simp
+-- Immunity fails for `literal`, which does not minorize partial recursive decoders: every string
+-- is incompressible, and the r.e. set of all strings is infinite.
+example : ¬ IsImmune {B | REPred (· ∈ B)}
+    {x : List Bool | (x.length : ℕ∞) ≤ literal.ecomplexity x} := fun ⟨_, h⟩ =>
+  Set.infinite_univ (h Set.univ (ComputablePred.to_re ⟨fun _ => isTrue trivial,
+    (Computable.const true).of_eq fun _ => rfl⟩ |>.of_eq fun _ => by simp) (fun x _ => by simp))
 
 end ComplexityTests.KolmogorovIncompleteness

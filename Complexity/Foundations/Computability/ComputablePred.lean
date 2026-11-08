@@ -8,7 +8,6 @@ module
 -- upstream: candidate (Mathlib, `Mathlib/Computability/RE.lean`)
 
 public import Complexity.Init
-public import Mathlib.Computability.PartrecCode
 public import Mathlib.Computability.RE
 
 /-!
