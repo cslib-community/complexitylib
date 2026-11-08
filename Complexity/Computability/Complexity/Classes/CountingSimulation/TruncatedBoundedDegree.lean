@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.TruncatedEntry
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TruncatedPolynomialEntries
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Polynomial truncation on bounded-degree networks
@@ -82,11 +83,7 @@ theorem truncBoundedDegreeCertificate_bound
   obtain ⟨pg, hpg, -, hgle⟩ := exists_mono_poly_cert (truncSmallSize_polyTime (encT := encT) k)
   let M := (k + 1) ^ 10 + 2
   let F : ℕ → ℕ := fun n => pg n + KT * (n + 1) ^ KT + KD * 2 ^ M * (n + 1) ^ KD
-  have hFp : PolyBounded id F :=
-    ((PolyBounded.of_polynomiallyBounded id hpg).add
-      ((PolyBounded.const KT).mul ((PolyBounded.self.add (PolyBounded.const 1)).pow KT))).add
-      ((PolyBounded.const (KD * 2 ^ M)).mul
-        ((PolyBounded.self.add (PolyBounded.const 1)).pow KD))
+  have hFp : PolyBounded id F := by growth_poly
   obtain ⟨aF, dF, hF⟩ := hFp.exists_le
   refine ⟨aF + dF + KT, fun P ℓ r G hs hrows hv hk hP hPD hℓ hℓD => ?_⟩
   set n := (encTrunc encT (P, ℓ, r, G)).length

@@ -20,6 +20,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelOnWords
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimePrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Run
 import Mathlib.Data.Set.Finite.List
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Word games in `APSPACE`, and `APSPACE = EXP`
@@ -167,12 +168,8 @@ theorem mem_APSPACE_of_wins_polySpace {π : Type} {encPos : π ↪ List Bool} {A
       PolyBounded.of_forall_le cI dI fun _ => le_rfl
     have hpowU : PolyBounded (fun a => (enc a).length) fun a => cU * (ℓ a + 1) ^ dU :=
       (PolyBounded.of_forall_le (size := id) cU dU fun _ => le_rfl).comp hℓ
-    have hsP : PolyBounded (fun a => (enc a).length) sP :=
-      (((hpowI.add ((PolyBounded.const 2).mul hlenI)).add (.const kI)).add (.const 4)).add
-        (.const _)
-    have hsR : PolyBounded (fun a => (enc a).length) sR :=
-      (((hpowU.add ((PolyBounded.const 10).mul hℓ)).add (.const _)).add (.const _)).add
-        (.const 40)
+    have hsP : PolyBounded (fun a => (enc a).length) sP := by growth_poly
+    have hsR : PolyBounded (fun a => (enc a).length) sR := by growth_poly
     refine ((PolyBounded.const K).mul (((PolyBounded.const 2).mul
       ((hsP.add hsR).add (.const 1))).add (.const 1))).mono fun a => ?_
     exact Nat.mul_le_mul_left _ (by omega)
@@ -249,9 +246,7 @@ theorem EXP_subset_APSPACE : EXP enc ⊆ APSPACE enc := by
     budget_natAdd hn (budget_natAdd (budget_const 2 hin)
       (budget_natMul (budget_natAdd hT (budget_const 1 hin))
         (blockSize_inSpace (k := k) (State := State) hT hin)))
-  have hBs : PolyBounded (fun a => (enc a).length) Bs := by
-    have hn' : PolyBounded (fun a => (enc a).length) n := PolyBounded.self
-    exact hn'.add ((((hn'.pow d).add (.const c₁)).add (.const c₂)).add hn')
+  have hBs : PolyBounded (fun a => (enc a).length) Bs := by growth_poly
   have hJ := budget_prod hx (budget_prod hT
     (budget_prod hN (budget_const (encB := encBool) true hin)))
   have hJM := budget_prod hx (budget_prod hT

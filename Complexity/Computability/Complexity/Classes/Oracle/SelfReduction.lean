@@ -17,6 +17,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Probabilistic.Oracle.Composition
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # The self-reduction of `SAT` relative to an oracle
@@ -212,9 +213,7 @@ theorem computableInPolyTimeWithOracle_selfReduce (A : Set (List Bool)) :
   have hcount : ComputableInPolyTime (fun φ : CNF ℕ => φ.vars.length) encCNF encUnary :=
     (ComputableInPolyTime.length_list _).comp computableInPolyTime_vars
   have hsize : PolyBounded (fun φ => (encCNF φ).length)
-      (fun φ => (encUnary φ.vars.length).length * (4 * (encCNF φ).length + 5)) :=
-    hcount.polyBounded_length.mul (((PolyBounded.const 4).mul
-      (PolyBounded.of_forall_le 1 1 fun φ => by simp)).add (.const 5))
+      (fun φ => (encUnary φ.vars.length).length * (4 * (encCNF φ).length + 5)) := by growth_poly
   have hit := IsOraclePPTOn.iterateWith_spec' (input := encCNF)
     (stateEncoding := encList (encPair encNat encBool))
     (count := fun φ => φ.vars.length) (initial := fun _ => [])

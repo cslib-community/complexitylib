@@ -23,6 +23,7 @@ import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Foundations.Analysis.ENNRealFraction
 import Complexity.Probability.PMF.Map
 import Mathlib.Data.Set.Finite.List
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Time classes
@@ -330,12 +331,7 @@ theorem BPTIME_mono_of_eventually_le {enc : α ↪ List Bool} {t₁ t₂ : ℕ �
 
 /-- A bound `O(n ^ k)` is polynomially bounded. -/
 private theorem polyBounded_linear_pow (enc : α ↪ List Bool) (c₁ c₂ k : ℕ) :
-    PolyBounded (fun a => (enc a).length) fun a => c₁ * (enc a).length ^ k + c₂ :=
-  .of_forall_le (c₁ + c₂) k fun a => by
-    have h₁ : (enc a).length ^ k ≤ ((enc a).length + 1) ^ k :=
-      Nat.pow_le_pow_left (Nat.le_succ _) k
-    have h₂ : 1 ≤ ((enc a).length + 1) ^ k := Nat.one_le_pow _ _ (Nat.succ_pos _)
-    nlinarith
+    PolyBounded (fun a => (enc a).length) fun a => c₁ * (enc a).length ^ k + c₂ := by growth_poly
 
 /-- **`P` is the union of the classes `DTIME (n ^ k)`**, the definition of `P` in the classes
 proposed upstream [Arora and Barak, Definition 1.13][AroraBarak09]. -/

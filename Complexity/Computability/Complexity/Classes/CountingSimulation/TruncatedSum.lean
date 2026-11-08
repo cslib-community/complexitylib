@@ -14,6 +14,7 @@ import Complexity.Foundations.Data.List.OfFn
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Mathlib.Algebra.BigOperators.ModEq
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Summing the truncated contractions of a computed family of networks
@@ -231,23 +232,14 @@ theorem exists_truncSum_certificate {Adm : ℕ → ℕ → ℕ × DescribedNetwo
   let Lo : C → ℕ := fun c => cO * (Sp c + 1)
   let Lp : C → ℕ := fun c => 2 * pSL (Lo c) + 1 + lm c
   let U : C → ℕ := fun c => pB (Lq c) + pS (Lo c) + pF (Lq c) + pM (Lp c) + Sp c
-  have hLq : PolyBounded L Lq :=
-    (((PolyBounded.const 2).mul PolyBounded.self).add (PolyBounded.const 1)).add hlkp
+  have hLq : PolyBounded L Lq := by growth_poly
   have hLb : PolyBounded L Lb := (PolyBounded.of_polynomiallyBounded id hpBL).comp hLq
-  have hSp : PolyBounded L Sp :=
-    (PolyBounded.const K₀).mul ((hLb.add (PolyBounded.const 1)).pow K₀)
+  have hSp : PolyBounded L Sp := by growth_poly
   have hLo : PolyBounded L Lo := (PolyBounded.const cO).mul (hSp.add (PolyBounded.const 1))
-  have hLp : PolyBounded L Lp :=
-    (((PolyBounded.const 2).mul ((PolyBounded.of_polynomiallyBounded id hpSL).comp hLo)).add
-      (PolyBounded.const 1)).add hlmp
-  have hU : PolyBounded L U :=
-    (((((PolyBounded.of_polynomiallyBounded id hpB).comp hLq).add
-      ((PolyBounded.of_polynomiallyBounded id hpS).comp hLo)).add
-      ((PolyBounded.of_polynomiallyBounded id hpF).comp hLq)).add
-      ((PolyBounded.of_polynomiallyBounded id hpM).comp hLp)).add hSp
+  have hLp : PolyBounded L Lp := by growth_poly
+  have hU : PolyBounded L U := by growth_poly
   let W : C → ℕ := fun c => a * (L c + 1) ^ d + U c
-  have hW : PolyBounded L W :=
-    ((PolyBounded.const a).mul ((PolyBounded.self.add (PolyBounded.const 1)).pow d)).add hU
+  have hW : PolyBounded L W := by growth_poly
   obtain ⟨a', d', hWad⟩ := hW.exists_le
   refine ⟨a' + d' + K₀, fun c hs hgood => ?_⟩
   set E := 2 ^ (K₀ * s c / Nat.sqrt (Nat.log 2 (s c))) with hE

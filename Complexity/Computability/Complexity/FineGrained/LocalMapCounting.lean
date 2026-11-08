@@ -17,6 +17,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Preimage counting and self-reduction for constant-locality Boolean maps
@@ -1218,40 +1219,26 @@ public theorem exists_localMapPreimageFinder_declared (k : ℕ) :
   have hB_poly : PolyBounded size B :=
     (((PolyBounded.const 2).mul
       (computableInPolyTime_toDeclaredCNF k).polyBounded_length).add (.const 1)).add hn_poly
-  have hM_poly : PolyBounded size M :=
-    (PolyBounded.const p_mk).mul ((hB_poly.add (.const 1)).pow q_mk)
-  have hQ_poly : PolyBounded size Q :=
-    hB_poly.add (((hB_poly.add (.const 1)).pow d_mk).add
-      ((PolyBounded.const a).mul ((hM_poly.add (.const 1)).pow b)))
+  have hM_poly : PolyBounded size M := by growth_poly
+  have hQ_poly : PolyBounded size Q := by growth_poly
   have hencNat_n_le (q : LocalMap × List Bool) :
       (encNat q.1.numVars).length ≤ size q := by
     have h1 : (encNat q.1.numVars).length ≤ q.1.numVars := by
       simpa only [encNat_apply, Nat.size_eq_bits_len] using Nat.size_le_self q.1.numVars
     exact h1.trans (numVars_le_length_encLocalMapQuery q)
-  have hencNat_poly : PolyBounded size (fun q => (encNat q.1.numVars).length) :=
-    PolyBounded.self.mono hencNat_n_le
+  have hencNat_poly : PolyBounded size (fun q => (encNat q.1.numVars).length) := by growth_poly
   let R_poly (q : LocalMap × List Bool) : ℕ :=
     B q + (B q + 1) ^ d_mk + c * (M q + 1) ^ e + c
-  have hR_poly : PolyBounded size R_poly :=
-    ((hB_poly.add ((hB_poly.add (.const 1)).pow d_mk)).add
-      ((PolyBounded.const c).mul ((hM_poly.add (.const 1)).pow e))).add (.const c)
+  have hR_poly : PolyBounded size R_poly := by growth_poly
   let T_poly (q : LocalMap × List Bool) : ℕ :=
     (size q + 1) ^ dn + (size q + 1) ^ di +
       (q.1.numVars + 1) * (R_poly q + B q + ((encNat q.1.numVars).length + 1) ^ 2) +
       (B q + 1) ^ df
-  have hT_poly : PolyBounded size T_poly :=
-    ((((PolyBounded.self.add (.const 1)).pow dn).add
-      ((PolyBounded.self.add (.const 1)).pow di)).add
-      ((hn_poly.add (.const 1)).mul
-        ((hR_poly.add hB_poly).add ((hencNat_poly.add (.const 1)).pow 2)))).add
-      ((hB_poly.add (.const 1)).pow df)
+  have hT_poly : PolyBounded size T_poly := by growth_poly
   let S_poly (q : LocalMap × List Bool) : ℕ :=
     (size q + 1) ^ dn + (size q + 1) ^ di + Q q + B q +
       (encNat q.1.numVars).length + (B q + 1) ^ df
-  have hS_poly : PolyBounded size S_poly :=
-    ((((((PolyBounded.self.add (.const 1)).pow dn).add
-      ((PolyBounded.self.add (.const 1)).pow di)).add hQ_poly).add hB_poly).add
-      hencNat_poly).add ((hB_poly.add (.const 1)).pow df)
+  have hS_poly : PolyBounded size S_poly := by growth_poly
   obtain ⟨C_T, d_T, hCT⟩ := hT_poly.exists_le
   obtain ⟨C_S, d_S, hCS⟩ := hS_poly.exists_le
   refine ⟨_, _, A, 2 * C_T + 1, d_T, C_S, d_S, hcomp, fun q => ?_, fun q => ?_⟩

@@ -14,6 +14,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Output
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Games of polynomially many moves are in `AP`
@@ -195,10 +196,8 @@ theorem IsGameVerifier.mem_AP
   set g : α → List Bool := fun a => frame (List.replicate (L a) true) ++ enc a with hg_def
   have hg : ComputableInPolyTime g enc encBits :=
     (hL.prod ComputableInPolyTime.id').of_enc_eq fun _ => rfl
-  have hLb : PolyBounded (fun a => (enc a).length) L := by
-    simpa only [encUnary_apply, List.length_replicate] using hL.polyBounded_length
-  have hgl : PolyBounded (fun a => (enc a).length) fun a => (g a).length :=
-    hg.polyBounded_length
+  have hLb : PolyBounded (fun a => (enc a).length) L := by growth_poly
+  have hgl : PolyBounded (fun a => (enc a).length) fun a => (g a).length := by growth_poly
   have hV' : ComputableInPolyTime (fun x : List Bool × α => V (x.2, x.1))
       (encPair encBits enc) encBool :=
     hV.comp ((ComputableInPolyTime.snd encBits enc).prod
@@ -206,8 +205,7 @@ theorem IsGameVerifier.mem_AP
   obtain ⟨cg, dg, k₁, S₁, _, Tg, hTg⟩ := Internal.NormalForm.polyTime hg
   obtain ⟨cv, dv, k₂, S₂, _, Tv, hTv⟩ := Internal.NormalForm.polyTime hV'
   let tg : α → ℕ := fun a => cg * ((enc a).length + 1) ^ dg
-  have htg : PolyBounded (fun a => (enc a).length) tg :=
-    PolyBounded.of_forall_le cg dg fun _ => le_rfl
+  have htg : PolyBounded (fun a => (enc a).length) tg := by growth_poly
   -- the machine
   have hk₁ : k₁ + 1 ≤ k₁ + 1 + (k₂ + 2) := by omega
   have hk₂ : k₂ + 2 ≤ k₁ + 1 + (k₂ + 2) := by omega

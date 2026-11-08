@@ -12,6 +12,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.CSPBinaryW
 public import Complexity.Computability.Complexity.FineGrained.ContractionPartitionFunction
 import Complexity.Logics.Propositional.CSP.Vars
 import Mathlib.Data.Fintype.BigOperators
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Native weighted counting with polynomially many weight bits
@@ -175,10 +176,7 @@ theorem certificate_bound :
   obtain ⟨q, hq, -, hfallback⟩ := exists_mono_poly_cert
     (ContractionPartitionFunction.computableInPolyTime_fallback encRel)
   let Q : ℕ → ℕ := fun n => p n + q n + H * (n + 1) ^ H
-  have hQ : PolyBounded id Q :=
-    ((PolyBounded.of_polynomiallyBounded id hp).add
-      (PolyBounded.of_polynomiallyBounded id hq)).add
-      ((PolyBounded.const H).mul ((PolyBounded.self.add (PolyBounded.const 1)).pow H))
+  have hQ : PolyBounded id Q := by growth_poly
   obtain ⟨C, e, hCe⟩ := hQ.exists_le
   refine ⟨A, C, e, fun F => ?_⟩
   let n := (encCSP encRel encNat F).length

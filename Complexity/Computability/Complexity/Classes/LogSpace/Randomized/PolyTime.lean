@@ -17,6 +17,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Randomized logarithmic space is within polynomial time
@@ -312,11 +313,7 @@ theorem BPL_subset_P : BPL enc ⊆ P enc := by
       generalize 10 + 2 * Nat.card (Option State) + 200 * k = B at *
       nlinarith [Nat.zero_le (B * c), Nat.zero_le (B * (enc a).length),
         Nat.zero_le (B * c * (enc a).length)]
-    have hbound : PolyBounded (fun a => (enc a).length) bound := by
-      refine (PolyBounded.of_forall_le (2 * 2 ^ D) D fun a => ?_).mul
-        ((((PolyBounded.const 2).mul ((((PolyBounded.const 2).mul hviewBound).add
-          (.const 1)).add (hT.polyBounded.add (.const 1)))).add (.const 1)))
-      rw [mul_pow, ← mul_assoc]
+    have hbound : PolyBounded (fun a => (enc a).length) bound := by growth_poly
     have hstates : ∀ a, ∀ i ≤ T a, (encList (encPair encFiniteCfg encNat)
         ((countRound M)^[i] ((views a).map fun view => (view, M.viewAcceptCount 0 view)))).length
           ≤ bound a := by

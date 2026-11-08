@@ -14,6 +14,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bo
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.OPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.ResourceFacts
+import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Polynomial compressions
@@ -138,11 +139,9 @@ theorem IsCompression.computableInPolyTime_comp {encC : γ ↪ List Bool} {κ : 
     exact .of_bounds hc (c + 1) (fun b => by nlinarith) (fun b => by nlinarith)
       fun b => (hK'.length_le b).trans (by nlinarith)
   obtain ⟨d, e, hgd⟩ := hg.exists_degree
-  have hlen : PolyBounded (fun a => (enc a).length) fun a => (encB (g a)).length :=
-    hgd.2.polyBounded
+  have hlen : PolyBounded (fun a => (enc a).length) fun a => (encB (g a)).length := by growth_poly
   have hTg : PolyBounded (fun a => (enc a).length)
-      fun a => T ((encB (g a)).length + κ (g a)) :=
-    (PolyBounded.of_polynomiallyBounded id hT).comp (hlen.add hκ)
+      fun a => T ((encB (g a)).length + κ (g a)) := by growth_poly
   have hgO := hgd.inO
   refine (hKO.comp hgO).computableInPolyTime ?_ ?_ <;>
     exact (PolyBounded.of_forall_le 1 d fun a => by simp).add hTg
