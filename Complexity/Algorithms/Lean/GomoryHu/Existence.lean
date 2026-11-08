@@ -50,6 +50,7 @@ public section
 namespace Cslib.Algorithms.Lean.GomoryHu
 
 open Cslib.Algorithms.Lean.Submodular
+open SimpleGraph (edgeSide mem_edgeSide)
 
 variable {V : Type*} {β : Type*}
 

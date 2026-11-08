@@ -4,13 +4,17 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import Complexity.MachineLearning.Rademacher.Classification
 import Complexity.MachineLearning.Rademacher.Generalization
 import Complexity.MachineLearning.Rademacher.GrowthFunction
 
 /-! Checks for Rademacher complexity: a single function has complexity `0`; the two constants
 `±1` on a one-point sample have complexity exactly `1`, against Massart's bound `√(2 log 2)`; the
 finite-class generalization bound and the data-dependent bound give nontrivial guarantees for
-explicit parameters; and the VC bounds apply to the class of all binary functions on `Bool`. -/
+explicit parameters; and the VC bounds apply to the class of all binary functions on `Bool`. For
+binary classification, the 0-1 loss class of the two constant classifiers on one labeled point has
+complexity exactly `1 / 2`, a single classifier gives Hoeffding's bound, and the VC and agnostic ERM
+bounds give nontrivial guarantees for all binary classifiers on `Bool` with `65536` examples. -/
 
 namespace ComplexityTests.RademacherComplexity
 
@@ -185,5 +189,109 @@ example (c : Bool → Bool) {m : ℕ} (S : Fin m → Bool) :
     empiricalRademacherComplexity (signClass {c}) S = 0 := by
   rw [signClass_singleton]
   exact empiricalRademacherComplexity_singleton _ _
+
+/-! ### Binary classification -/
+
+/-- The two constant classifiers on `Unit`. -/
+def consts : ConceptClass Unit Bool := {fun _ => false, fun _ => true}
+
+theorem signClass_consts : signClass consts = pm := by
+  ext f
+  simp only [mem_signClass, consts, Set.mem_insert_iff, Set.mem_singleton_iff, pm]
+  constructor
+  · rintro ⟨c, rfl | rfl, rfl⟩ <;> simp
+  · rintro (rfl | rfl)
+    · exact ⟨_, Or.inl rfl, rfl⟩
+    · exact ⟨_, Or.inr rfl, by funext; simp⟩
+
+/-- [MohriRostamizadehTalwalkar2018, Lemma 3.4] on one labeled point: the 0-1 losses of the two
+constant classifiers have empirical Rademacher complexity `1 / 2`, half that of `{±1}`. -/
+example (y : Bool) :
+    empiricalRademacherComplexity (bitClass (lossClass consts)) ![((), y)] = 1 / 2 := by
+  rw [empiricalRademacherComplexity_bitClass_lossClass, signClass_consts]
+  have : (fun i => (![((), y)] i).1) = ![()] := funext fun i => rfl
+  rw [this, empiricalRademacherComplexity_pm]
+
+/-- A single classifier: the 0-1 loss class has Rademacher complexity `0`. -/
+example (D : PMF (Bool × Bool)) (c : Bool → Bool) (m : ℕ) :
+    rademacherComplexity D (bitClass (lossClass {c})) m = 0 := by
+  rw [rademacherComplexity_bitClass_lossClass, signClass_singleton, rademacherComplexity_singleton,
+    zero_div]
+
+/-- For a single classifier, (3.17) is Hoeffding's upper tail: `err_D(c) > err_S(c) +
+√(log (1 / δ) / (2 m))` with probability at most `δ`. -/
+example (D : PMF (Bool × Bool)) (c : Bool → Bool) {m : ℕ} (hm : 0 < m) {δ : ℝ} (hδ : 0 < δ) :
+    ((Cslib.Probability.PMF.pi fun _ : Fin m => D).toOuterMeasure
+      {S | (empiricalMiscount c S : ℝ) / m + √(Real.log (1 / δ) / (2 * m)) <
+        (D.toOuterMeasure {p | c p.1 ≠ p.2}).toReal}).toReal ≤ δ := by
+  have h := rademacherComplexity_classification_bound D hm {c} hδ
+  simp only [signClass_singleton, rademacherComplexity_singleton, add_zero, Set.mem_singleton_iff,
+    exists_eq_left] at h
+  exact h
+
+/-- `√(2 (2 log (e m / 2)) / m) ≤ 1 / 32` for `m = 65536`. -/
+theorem vc_term_le :
+    √(2 * ((2 : ℕ) * Real.log (Real.exp 1 * (65536 : ℕ) / (2 : ℕ))) / (65536 : ℕ)) ≤ 1 / 32 := by
+  have hlog2 : Real.log 2 ≤ 1 := by
+    linarith [Real.log_le_sub_one_of_pos (by norm_num : (0 : ℝ) < 2)]
+  have hlog : Real.log (Real.exp 1 * (65536 : ℕ) / (2 : ℕ)) ≤ 16 := by
+    rw [show Real.exp 1 * (65536 : ℕ) / (2 : ℕ) = Real.exp 1 * 2 ^ 15 by push_cast; ring,
+      Real.log_mul (Real.exp_pos 1).ne' (by norm_num), Real.log_exp, Real.log_pow]
+    push_cast
+    linarith
+  refine sqrt_le_of_le_sq (by norm_num) ?_
+  push_cast at hlog ⊢
+  nlinarith
+
+/-- [MohriRostamizadehTalwalkar2018, Corollary 3.19] with `d = 2`, `m = 65536` and `δ = 1 / 20`:
+with probability at least `19 / 20`, every binary classifier on `Bool` has true error at most its
+empirical error plus `0.06`. -/
+example (D : PMF (Bool × Bool)) :
+    ((Cslib.Probability.PMF.pi fun _ : Fin 65536 => D).toOuterMeasure
+      {S | ∃ h : Bool → Bool, (empiricalMiscount h S : ℝ) / 65536 + 6 / 100 <
+        (D.toOuterMeasure {p | h p.1 ≠ p.2}).toReal}).toReal ≤ 1 / 20 := by
+  have hδ : √(Real.log (1 / (1 / 20)) / (2 * (65536 : ℕ))) ≤ 2 / 100 := by
+    have : Real.log (1 / (1 / 20)) ≤ 19 := by
+      rw [one_div_one_div]
+      linarith [Real.log_le_sub_one_of_pos (by norm_num : (0 : ℝ) < 20)]
+    refine sqrt_le_of_le_sq (by norm_num) ?_
+    push_cast
+    nlinarith
+  refine le_trans (ENNReal.toReal_mono (Cslib.Probability.PMF.toOuterMeasure_ne_top _ _)
+    ((Cslib.Probability.PMF.pi fun _ : Fin 65536 => D).toOuterMeasure.mono ?_))
+    (vc_classification_bound D (C := Set.univ) (d := 2) (fun W _ => by simpa using W.card_le_univ)
+      (by norm_num) (by norm_num) (by norm_num : (0 : ℝ) < 1 / 20))
+  rintro S ⟨h, hlt⟩
+  refine ⟨h, Set.mem_univ h, ?_⟩
+  have := vc_term_le
+  push_cast at this hδ hlt ⊢
+  linarith
+
+/-- Agnostic learning by ERM with `d = 2`, `m = 65536` and `δ = 1 / 20`: with probability at least
+`19 / 20`, an empirical risk minimizer over all binary classifiers on `Bool` has true error within
+`0.08` of every classifier, in particular of a Bayes-optimal one. -/
+example (D : PMF (Bool × Bool)) {A : Learner Bool Bool 65536} (hA : IsERM A Set.univ) :
+    ((Cslib.Probability.PMF.pi fun _ : Fin 65536 => D).toOuterMeasure
+      {S | ∃ c : Bool → Bool, (D.toOuterMeasure {p | c p.1 ≠ p.2}).toReal + 8 / 100 <
+        (D.toOuterMeasure {p | A S p.1 ≠ p.2}).toReal}).toReal ≤ 1 / 20 := by
+  have hδ : √(2 * Real.log (2 / (1 / 20)) / (65536 : ℕ)) ≤ 4 / 100 := by
+    have : Real.log (2 / (1 / 20)) ≤ 39 := by
+      norm_num only
+      linarith [Real.log_le_sub_one_of_pos (by norm_num : (0 : ℝ) < 40)]
+    refine sqrt_le_of_le_sq (by norm_num) ?_
+    push_cast
+    nlinarith
+  refine le_trans (ENNReal.toReal_mono (Cslib.Probability.PMF.toOuterMeasure_ne_top _ _)
+    ((Cslib.Probability.PMF.pi fun _ : Fin 65536 => D).toOuterMeasure.mono ?_))
+    (hA.vc_agnostic_bound D (d := 2) (fun W _ => by simpa using W.card_le_univ) (by norm_num)
+      (by norm_num) (by norm_num : (0 : ℝ) < 1 / 20))
+  rintro S ⟨c, hlt⟩
+  refine ⟨c, Set.mem_univ c, ?_⟩
+  have := vc_term_le
+  push_cast at this hδ hlt ⊢
+  linarith
+
+/-- Empirical risk minimizers over all binary classifiers on `Bool` exist. -/
+example : ∃ A : Learner Bool Bool 65536, IsERM A Set.univ := exists_isERM Set.univ_nonempty
 
 end ComplexityTests.RademacherComplexity

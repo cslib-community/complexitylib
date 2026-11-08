@@ -10,6 +10,20 @@
 
 [Complexity/DataStructure/Online/SkiRental.lean](../../Complexity/DataStructure/Online/SkiRental.lean) instantiates the online problem for rent-or-buy. Each request is a ski day, the state records whether the skis are owned, buying cannot be undone, a rented day costs `1` and buying costs `B`. Offline schedules live in the same model, so the optimum on `n` days is `min n B` (`exists_optimal_schedule`, `min_le_scheduleCost`). `cost_rentThenBuy` computes the cost of every rent-then-buy threshold strategy exactly. The break-even strategy (`breakEven`, rent for `B - 1` days) satisfies `B * ALG ≤ (2B - 1) * OPT` against every valid offline schedule (`breakEven_mul_cost_le`). This is ratio `2 - 1/B` with no additive constant, stated cross-multiplied because the predicates take natural coefficients. `exists_witness` stops skiing on the day an arbitrary deterministic strategy buys, or after `2B - 1` days. `exists_ratio_violation_of_lt` then rules out every rational ratio below `2 - 1/B`. The break-even strategy is `(1, B - 1)`-competitive (`breakEven_isCompetitive_one`), so with an additive constant the factor-`1` question is trivial; the meaningful ratio has no additive constant. The rent-or-buy framing is credited to [karlin88][karlin88]; [borodinelyaniv98][borodinelyaniv98] is the textbook pointer.
 
+## Randomized strategies and randomized ski rental
+
+[Complexity/DataStructure/Online/Randomized.lean](../../Complexity/DataStructure/Online/Randomized.lean) adds randomized strategies against an **oblivious adversary**, which fixes the whole request sequence before any coin is tossed. A `RandStrategy P` is a `PMF (DetStrategy P)`, a **discrete (countably supported) mixture** of deterministic strategies whose coins are all drawn before the first request. Against an oblivious adversary, drawing the coins up front is equivalent to tossing them online whenever the induced law on deterministic strategies is countably supported. That always holds for ski rental, where every strategy is a threshold in `ℕ ∪ {∞}`, so the model loses nothing there. Algorithms that toss fresh independent coins at unboundedly many steps, such as the marking algorithm for paging, generally induce a non-atomic law. They need a behavioural or bounded-horizon variant of `RandStrategy` before they can be stated.
+
+`RandStrategy.expectedCost` is `∑' A, μ A * A.cost s₀ reqs` in `ℝ≥0∞`. `RandStrategy.expectedCost_map` computes it for strategies built by `PMF.map` from a parametrization. `RandStrategy.IsCompetitive μ c b` asks for `E[ALG] ≤ c * OPT + b` against every valid offline schedule, with `c b : ℝ≥0∞`, so irrational ratios can be stated. Point masses recover the deterministic notions (`expectedCost_pure`, `isCompetitive_pure_iff`). `RandStrategy.exists_le_mul_expectedCost` is the easy direction of Yao's principle [yao77][yao77]. Let `ν` be a distribution on indices, each naming a request sequence and a benchmark `g i`. Suppose the `ν`-mean of `g` is finite and at most `b` times every deterministic strategy's `ν`-mean cost. Then every randomized strategy has an index in the support of `ν` with `g i ≤ b * E[cost]`. The averaging lemmas of [Minimax](../../Complexity/Probability/Minimax.lean) bound an outcome from above by a mean, so they do not give this direction. Adaptive adversaries, which see the strategy's earlier actions, are not modelled.
+
+[SkiRental/Randomized.lean](../../Complexity/DataStructure/Online/SkiRental/Randomized.lean) settles the randomized ratio of the discrete ski-rental problem above. **Ratio:** `randomizedRatio B = 1 / (1 - (1 - 1/B)^B) = B^B / (B^B - (B-1)^B)` (`randomizedRatio_eq`), which is `4/3` at `B = 2` and `27/19` at `B = 3`. It is at most `e/(e-1)` (`randomizedRatio_le`) and tends to `e/(e-1)` (`tendsto_randomizedRatio`); monotonicity in `B` is not proved. For every `B ≥ 2` it is below the deterministic `2 - 1/B` (`randomizedRatio_lt_two_sub`).
+
+**Upper bound.** The equalizing strategy `randomRentThenBuy B` rents for `t < B` days and then buys, drawing `t` with weight `buyWeight B t = (B-1)^(B-1-t) * B^t`. That weight is proportional to `(1 - 1/B)^(B-1-t)` (`buyWeight_eq`), so the strategy buys on day `i` with probability proportional to `(1 - 1/B)^(B-i)`. Its expected cost on `n` days is exactly `randomizedRatio B * min n B` (`expectedCost_randomRentThenBuy`). Hence `randomRentThenBuy_isCompetitive` (ratio `randomizedRatio B`, additive constant `0`) and `randomRentThenBuy_isCompetitive_exp` (ratio `e/(e-1)`).
+
+**Lower bound.** `adversary B` skis `k + 1` days with weight `(B-1)^k * B^(B-2-k)` for each `k < B - 1`, and `2B - 1` days with weight `(B-1)^(B-1)`. On these lengths every deterministic strategy acts like a rent-then-buy strategy (`SkiRental.exists_rentThenBuy_cost_eq`), including one that never buys. Each such strategy pays on average at least `randomizedRatio B` times the mean optimum (`le_sum_advWeight_mul_cost`, `sum_advWeight_mul_min`). Yao's principle then gives `exists_randomized_witness`: a sequence with `OPT ≥ 1` and `randomizedRatio B * OPT ≤ E[ALG]`. By `not_isCompetitive_of_lt`, no randomized strategy is `(c, 0)`-competitive for any `c < randomizedRatio B`.
+
+**Scope.** As in the deterministic case, ratios carry no additive constant for fixed `B`. The asymptotic form, that no `c < e/(e-1)` works with any fixed additive constant once `B` is large, is not formalized. The model is discrete, with an integer price `B ≥ 1` and one request per ski day, and the adversary is oblivious. The continuous-time rent-or-buy problem is not formalized. The equalizing strategy and the `e/(e-1)` ratio are credited to [karlin94][karlin94], with [borodinelyaniv98][borodinelyaniv98] as the textbook pointer. The [test file](../../ComplexityTests/SkiRentalRandomized.lean) checks the `B = 2` and `B = 3` distributions and adversaries with their exact rational ratios, the break-even point mass, and the `5/4 < 4/3` lower bound.
+
 ## List update and move-to-front
 
 [Complexity/DataStructure/ListUpdate/Basic.lean](../../Complexity/DataStructure/ListUpdate/Basic.lean) takes as configurations the arrangements of a finite universe (`IsArrangement`). Moving from `s` to `s'` while serving `r` costs `inversions s s' + (s'.idxOf r + 1)`: the Kendall tau distance, paid as exchanges, plus the access position. The module docstring explains, informally, why this is the cheapest Sleator–Tarjan implementation of the step with paid and free exchanges. `scheduleCost_eq_accessCost_add_exchangeCost` splits a schedule's cost into its access and rearrangement parts. [MoveToFront.lean](../../Complexity/DataStructure/ListUpdate/MoveToFront.lean) proves Sleator–Tarjan Theorem 1 with different initial lists, using the inversion potential (`inversions_moveToFront_le`, `mtf_cost_add_inversions_add_length_le`). Corollaries: `mtf_isCompetitive` (factor `2`, no additive constant) and `mtf_isCompetitiveAnyInit` (additive `n(n-1)/2`) [sleatortarjan85][sleatortarjan85].
@@ -31,6 +45,17 @@ The metric is number of page faults. The recency-list Lean implementation is not
 [KServer/LowerBound](../../Complexity/DataStructure/KServer/LowerBound.lean) proves the Manasse–McGeoch–Sleator lower bound (Theorem 6 with `h = k` and Corollary 7) [manassemcgeochsleator90][manassemcgeochsleator90]. `lazify` turns any strategy into one that moves at most one server, only to an uncovered request, at no greater cost. The adversary requests the point of a fixed `(k+1)`-point set that the lazy simulation leaves uncovered. The `k` offline shadow schedules `shadowStates` together pay the request path once, plus the initial distances (`sum_holeCost`). `exists_ratio_violation` rules out every rational ratio `p/q < k` with any additive constant, from any `k` distinct initial points with a further point available. `not_isCompetitive_of_lt` and `not_isCompetitiveAnyInit_of_lt` state the integer form on any metric with `k + 1` distinct points. The source's comparison with `h < k` offline servers (`k/(k-h+1)`) is not formalized.
 
 [KServer/DoubleCoverage](../../Complexity/DataStructure/KServer/DoubleCoverage.lean) defines Double Coverage on the integer line. `dcStep` sorts the configuration, moves the outer server for an outer request or the two neighbouring servers toward an inner request, and restores the labels. The potential is `k·matchCost + Σ_{i<j}|s_i - s_j|` (doubled as `2k·matchCost + pairSum`, since `pairSum` counts ordered pairs). `dcStep_amortized_offline` is the step inequality `2·cost_DC + Δ(2Φ) ≤ 2k·cost_OPT`. `doubleCoverage_cost_le` bounds the cost by `k·OPT + k·matchCost s₀ s_off + Σ_{i<j}|s₀ i - s₀ j|` against offline schedules from any start, and `doubleCoverage_isCompetitiveFrom` gives ratio `k` from every initial configuration with that additive spread. This is the Chrobak–Karloff–Payne–Vishwanathan theorem [chrobakkarloffpaynevishwanathan91][chrobakkarloffpaynevishwanathan91], restricted to integer points. With the lower bound, the deterministic ratio on the line is exactly `k` from any start with distinct servers, with a per-start additive constant. Double Coverage is not competitive with one additive constant for every start: from `0, 10` the requests `5, 0` cost it `15` against an offline `5`, and scaling the instance defeats any fixed constant. The [test file](../../ComplexityTests/KServer.lean) computes a three-server Double Coverage run, an offline schedule and the additive constant. It also checks the uniform-metric lower bound, that Double Coverage from `0, 1, …, k-1` is not `(k-1)`-competitive, and the two-server instance above.
+
+## Online bin packing
+
+[BinPacking/Online](../../Complexity/Algorithms/Lean/BinPacking/Online.lean) models deterministic online bin packing outside the `Problem` interface. An `OnlinePacker C` chooses a bin for the next item from the items seen so far and the current bins. If the chosen bin has no room, or none is chosen, the item opens a new last bin (`onlineInsert`), so every rule gives a valid packing (`OnlinePacker.isPacking_run`). Two facts drive lower bounds against all online packers. First, the packing of `l₁ ++ l₂` continues that of `l₁` (`OnlinePacker.run_append`). Second, items failing a predicate leave the number of bins with an item satisfying it unchanged (`OnlinePacker.countP_any_runFrom`). `run_firstFitPacker` identifies First Fit as an online packer.
+
+[BinPacking/OnlineLowerBound](../../Complexity/Algorithms/Lean/BinPacking/OnlineLowerBound.lean) proves Yao's lower bound `3/2` for deterministic online bin packing, stated in the abstract of [yao80][yao80], with the item types as reported in [baloghbekesidosaepsteinlevin18][baloghbekesidosaepsteinlevin18].
+- The input has capacity `41` and three phases of `6m` items of sizes `6`, `14` and `21`. These sizes give the same 20 feasible bin patterns as `1/7 + ε`, `1/3 + ε` and `1/2 + ε` with capacity `1`.
+- `OnlinePacker.yao_lower_bound`: after one of the phases, every online packer uses at least `3/2` times the optimum, exactly. The optima are `m`, `3m` and `6m` (`isPacking_yao₁`, `le_length_of_isPacking_yao₁`, and so on).
+- The proof is an explicit LP dual certificate: the weights `1`, `2`, `2` (`yaoWeight`) and the per-bin inequality `weight b ≤ 2 + 2·[b has a 6] + 2·[b has a 6 or a 14]` (`sum_map_yaoWeight_le`), which `omega` checks against all 20 feasible patterns.
+- `exists_optimal_three_mul_le` and `exists_ratio_violation_of_lt` state the bound against an optimal packing, for every rational ratio below `3/2` and every additive constant. `four_thirds_lower_bound` is the two-phase `4/3`, with its optima `3m` and `6m` (`isPacking_twoPhase₁`, `le_length_of_isPacking_twoPhase₁`, and so on).
+- The [test file](../../ComplexityTests/BinPackingOnline.lean) enumerates the 20 patterns and runs First Fit on the input. It also checks an online packer that follows the LP optimum and attains `3/2` after every phase for `m = 8`, so the constant is the best this input gives. Its last examples pair `run_firstFitPacker` with `ten_mul_length_firstFit_le` to show the online upper bound `10 * FF ≤ 17 * OPT + 8`, so the library brackets the best deterministic asymptotic ratio between `3/2` and `17/10`.
 
 ## Count-Min: a stored streaming sketch
 
@@ -77,7 +102,7 @@ While a copy holds fewer than `t` keys, it reports their number, which is exactl
 
 The error analysis uses `Finset.forall_mem_lowest_iff`: the `t` lowest hash values of `d ≥ t` items are all below `K` exactly when at least `t` items hash below `K`. The number of such items has variance at most its mean, so Chebyshev's inequality bounds each tail. `dens_abs_kmvEstimate_sub_gt_le` gives a per-copy failure probability `Pr[|estimate − d| > εd] ≤ 2/(tε²)` for `0 < ε ≤ 1` and `d ≤ M`: the upper tail contributes `(1+ε)/(tε²)` and the lower tail `(1−ε)/(tε²)`. The source instead bounds each tail by `1/6` with `t = ⌈96/ε²⌉`.
 
-With `6 ≤ tε²` one copy fails with probability at most `1/3`. The amplified bound for the median of `2r` copies (the median trick) and the `Solves` statement for the relation `|Y − F₀| ≤ εF₀` are not yet formalized ([#3340](https://github.com/cslib-community/complexitylib/issues/3340)).
+With `6 ≤ tε²` one copy fails with probability at most `1/3`. The median trick (`Cslib.Probability.dens_abs_median_sub_gt_le`, in [MedianOfMeans.lean](../../Complexity/Probability/MedianOfMeans.lean)) amplifies this: `dens_kmvSketch_error_le` shows that the median of `2r` copies misses `F₀` by more than `εF₀` with probability at most `(8/9)^r`. `solves_kmv` packages the result as `(kmv h t (2r)).Solves δ (fun s Y => |Y − F₀ s| ≤ ε F₀ s) m` whenever `(8/9)^r ≤ δ` and `m ≤ M`. The bound `m ≤ M` on the stream length only serves to guarantee `d ≤ M`.
 
 Ties between hash values are broken by the item, so the source's `1/m` collision term and its requirement `M = m³` disappear; only `d ≤ M` is needed.
 
@@ -89,6 +114,37 @@ For fixed seeds, the reachable states of a copy are determined by the at most `t
 With `t = ⌈6/ε²⌉` and `c = 2r = O(log(1/δ))`, this is the `O(ε⁻² log(1/δ) log n)` memory of Theorem 1. The bound complements the `Ω(n)` lower bounds for exact and for deterministic approximate `F₀` (`le_of_solves_freqMoment`, `Algorithm.le_of_approx_freqMoment` with `k = 0`). The matching `Ω(ε⁻²)` lower bound is not formalized.
 
 The [test file](../../ComplexityTests/StreamingDistinctElements.lean) runs the sketch with a fixed hash on a concrete stream. It applies the error bound to the affine maps over `ZMod 31`, a pairwise independent family with a 10-bit seed, and instantiates the memory bounds with 240 and 260 bits. It also shows two failure cases: a constant hash overestimates `F₀` by a factor `2`, and `t = 0` always answers `0`.
+
+## Heavy hitters: Misra–Gries and the Count-Sketch
+
+[Complexity/Computability/Streaming/MisraGries.lean](../../Complexity/Computability/Streaming/MisraGries.lean) implements the deterministic Misra–Gries summary `misraGries k` [misragries82][misragries82]. It stores its at most `k` counters as a multiset whose multiplicities are the counters. Reading an item increments its counter if it has one or if fewer than `k` counters are in use, and otherwise decrements every counter. Each decrement discards `k + 1` distinct stream items, which gives the following statements:
+
+- `MisraGries.run_le_count` and `MisraGries.mul_count_sub_run_add_card_le` give `f̂_a ≤ f_a` and `(k + 1)(f_a − f̂_a) + m̂ ≤ m`, where `m̂` is the sum of the counters. This is Theorem 1.3.1 with the sharpening of Exercise 1-1 of [chakrabarti25][chakrabarti25].
+- `MisraGries.count_sub_div_le_run` is the real form `f_a − m/(k+1) ≤ f̂_a`.
+- `MisraGries.mem_state_of_length_lt_mul_count` says every item with `f_a > m/(k+1)` keeps a counter. This is the deterministic heavy-hitters guarantee.
+- `MisraGries.toFinset_state_one_eq` is the one-counter majority case.
+- `MisraGries.spaceLE_misraGries` bounds the memory: `(n(m+1)+1)^k ≤ 2^b` reachable states suffice on streams of at most `m` items over a universe of `n` items.
+
+Chakrabarti's parameter `k` allows `k − 1` counters, so `misraGries k` is his algorithm with parameter `k + 1`.
+
+[Complexity/Probability/KWiseIndependent/CountSketch.lean](../../Complexity/Probability/KWiseIndependent/CountSketch.lean) analyzes one row of the Count-Sketch [charikar04][charikar04] for arbitrary real weights. The bucket family `h` must be two-universal, and the sign family `ε ∘ g` must be independent of it, pairwise independent and of mean zero. Under these hypotheses:
+
+- the estimate is unbiased (`CountSketch.expect_sum_ite_mul_sign_mul_sign`);
+- the collision noise has second moment at most `∑_{b≠a} f_b²/w` (`CountSketch.expect_sq_sum_ite_mul_sign_le`);
+- by Chebyshev, a row misses by more than `t` with probability at most `1/3` once `3∑_{b≠a} f_b² ≤ wt²` (`CountSketch.dens_abs_sum_ite_mul_sign_gt_le`).
+
+These are equations (5.1)–(5.6) of [chakrabarti25][chakrabarti25]. Only an upper bound on collision probabilities is assumed.
+
+The amplification step is the median trick `dens_abs_median_sub_gt_le`, added to [MedianOfMeans.lean](../../Complexity/Probability/MedianOfMeans.lean): if a single estimate misses with probability at most `1/3`, the median of `2r` independent estimates misses with probability at most `(8/9)^r`. `dens_abs_medianOfMeans_sub_gt_le` is now derived from it.
+
+[Complexity/Computability/Streaming/CountSketch.lean](../../Complexity/Computability/Streaming/CountSketch.lean) assembles `2r` rows into the streaming algorithm `countSketch`, and `countSketchRandom` draws its seeds uniformly. Its results:
+
+- `dens_countSketch_error_gt_le` and `solves_countSketchRandom` answer every fixed point query `a` within `ε‖f_{−a}‖₂` with error `δ`, once `3 ≤ wε²` and `(8/9)^r ≤ δ`.
+- `solves_countSketchRandom_freqMoment` gives the same with the bound `ε√F₂`.
+- `spaceLE_countSketchRandom` charges `(2m+1)^(2rw) ≤ 2^b` under the public-coin convention.
+- `exists_injOn_iUnion_reachable_countSketch` gives the bound with the seeds stored, `(|ι||κ|)^(2r)(2m+1)^(2rw) ≤ 2^b`.
+
+The [test file](../../ComplexityTests/StreamingHeavyHitters.lean) checks concrete Misra–Gries runs, including one where the error `m/(k+1)` is attained. It also instantiates the Count-Sketch hypotheses with the trinomial hash families, and shows that one bucket with a constant sign reports the stream length instead of the frequency.
 
 ## MinHash and locality-sensitive hashing
 
@@ -108,6 +164,23 @@ The [test file](../../ComplexityTests/LocalitySensitiveHash.lean) contains:
 - banding numerics for `r = 5`, `b = 20` (`sCurve 5 20 0.8 > 0.9996`, `sCurve 5 20 0.2 < 0.007`);
 - a bit-sampling family on `Fin 8 → Bool`, banded to `(0.9965, 0.48)` and amplified with `exists_banded`;
 - a negative example: the same family is not `(7/8, 1/4)`-sensitive.
+
+### Approximate near neighbours
+
+[DataStructure/NearNeighbor/LSH.lean](../../Complexity/DataStructure/NearNeighbor/LSH.lean) builds the `(c, r)`-approximate near-neighbour structure of Indyk and Motwani [indykmotwani98][indykmotwani98] [harpeledindykmotwani12][harpeledindykmotwani12] on top of these families. There are `L` tables keyed by `g (s j)`, with the seeds `s : Fin L → ι` drawn from `PMF.iid ν L`. `candidates g s P q` lists the points of `P` colliding with `q`, table by table and with repetitions. `query g far s T P q` scans the first `T` candidates and returns the first one that is not far from `q`, where `far` is a decidable relation.
+
+The results:
+
+- **Soundness.** Every answer is a point of `P` not far from `q` (`query_eq_some`).
+- **Exact failure bound** (`toOuterMeasure_query_eq_none_le`). Suppose `x₀ ∈ P` is not far from `q` and collides with it with probability at least `P₁`, and every far point of `P` collides with probability at most `P₂ ≥ 0`. Then for `T > 0` the query returns `none` with probability at most `(1 − P₁)^L + L|P|P₂/T`. The first term is the event that `x₀` collides with `q` in no table, using independence of the tables (`PMF.toOuterMeasure_iid_forall`). The second is Markov's inequality for the number of far candidates (`le_countP_candidates`, `tsum_iid_mul_countP_candidates_le`). That bound uses only the marginal law of each table (`PMF.toOuterMeasure_iid_eval`).
+- **AND tables** (`toOuterMeasure_query_andHash_eq_none_le`). For a `(p₁, p₂)`-sensitive family with `0 ≤ p₂ < p₁` and `g = andHash hash k`, and some point of `P` near `q`, the bound is `(1 − p₁^k)^L + L|P|p₂^k/T`.
+- **Explicit parameters** (`toOuterMeasure_query_numTables_eq_none_le`). Assume `0 < p₂ < p₁ ≤ 1`, and take `n = |P|`, `ρ = rho p₁ p₂ = log(1/p₁)/log(1/p₂)`, `k = numHashes n p₂ = ⌈log n / log(1/p₂)⌉₊`, `L = numTables n p₁ p₂ = ⌈n^ρ/p₁⌉₊` and `T = 3L`. Then `n p₂^k ≤ 1` (`mul_pow_numHashes_le`) and `L p₁^k ≥ 1` (`one_le_numTables_mul_pow`), so the query fails with probability at most `e⁻¹ + 1/3 < 0.71`. Stopping after `3L` candidates is the scanning rule of Indyk and Motwani [indykmotwani98][indykmotwani98], as presented by Andoni and Indyk [andoniindyk08][andoniindyk08], §2.4 ("Strategy 1", p. 119). This is the static structure; [harpeledindykmotwani12][harpeledindykmotwani12], Theorem 3.4, also supports insertions and deletions.
+- **Repetition.** `queryRepeat` runs `R` independent structures, and all of them fail with probability at most `(e⁻¹ + 1/3)^R` (`toOuterMeasure_queryRepeat_numTables_eq_none_le`).
+- **What is bounded.** The query inspects at most `min T (L|P|)` candidates, so it tests `far` at most `T = 3L` times (`length_take_candidates_le`, `length_candidates_le`). The parameters satisfy `k < log n / log(1/p₂) + 1` and `L < n^ρ/p₁ + 1` (`numHashes_lt`, `numTables_lt`), with `0 ≤ ρ < 1` (`rho_nonneg`, `rho_lt_one`). No declaration counts operations. The counts of a bucketed implementation, namely `kL` base-hash evaluations per query and `nL` stored entries, are not formalized: `candidates` describes a bucket by filtering `P`, so it evaluates each table hash on all of `P`.
+
+[NearNeighbor/Hamming.lean](../../Complexity/DataStructure/NearNeighbor/Hamming.lean) specializes to bit sampling on words of length `d` with `0 < r`, `1 < c` and `cr < d`. `rho_one_sub_le` proves `ρ(1 − r/d, 1 − cr/d) ≤ 1/c` by concavity of `log`. `toOuterMeasure_query_bitSampling_eq_none_le` is the Hamming-space guarantee, and `numTables_bitSampling_lt` gives `L < n^{1/c}/p₁ + 1`.
+
+The [test file](../../ComplexityTests/NearNeighbor.lean) runs the query on `Fin 8` with two bit-extraction tables. With `T ≤ 2` two far candidates exhaust the budget; with `T = 3` the near point is returned. It also runs `queryRepeat`, evaluates `e⁻¹ + 1/3 < 1` and `(e⁻¹ + 1/3)^10 < 0.03`, computes `numHashes 16 (1/2) = 4`, and instantiates the Hamming-space theorem on three words in `Fin 8 → Bool`.
 
 ## Native streaming folds
 
@@ -141,33 +214,40 @@ The proof goes through the moment generating function rather than Achlioptas's e
 
 The four meanings of “streaming” here should not be conflated: an input-list fold, an accurate stored probabilistic sketch, the abstract one-pass memory model with communication lower bounds, and a native machine scan with measured workspace.
 
-The abstract model counts reachable memory states and imposes no uniformity or time bound on updates. Its randomized lower bounds are for error at most `1/2` with public randomness that is not charged to the memory, and the AMS sketches have no `ProbComp` sampler or machine realization. The `F_k` estimator assumes that the stream length is known in advance; the source's reservoir-sampling variant for unknown lengths is not formalized. Multi-pass algorithms, turnstile updates and CountSketch are not formalized. The Proposition 3.7 bound is stated for streams of at most `N/8` items rather than the source's `n/2`, and the Proposition 3.8 bound for a universe of `3n` items (`Fin n × Fin 3`) rather than `n`, so that the threshold `2n` does not depend on the inputs.
+The abstract model counts reachable memory states and imposes no uniformity or time bound on updates. Its randomized lower bounds are for error at most `1/2` with public randomness that is not charged to the memory, and the AMS sketches have no `ProbComp` sampler or machine realization. The `F_k` estimator assumes that the stream length is known in advance; the source's reservoir-sampling variant for unknown lengths is not formalized. Multi-pass algorithms and turnstile updates as stream items are not formalized. The Count-Sketch guarantees are for a query fixed before the seeds, not for adaptively chosen queries. Neither heavy-hitter algorithm has a `ProbComp` sampler or machine realization. Recovery of all heavy hitters over the universe, merging of Misra–Gries summaries and heavy-hitter space lower bounds are not formalized. The Proposition 3.7 bound is stated for streams of at most `N/8` items rather than the source's `n/2`, and the Proposition 3.8 bound for a universe of `3n` items (`Fin n × Fin 3`) rather than `n`, so that the threshold `2n` does not depend on the inputs.
 
-The k-minimum-values sketch for `F₀` has no `ProbComp` sampler or machine realization either, and its error is bounded only for a single copy: the median amplification and the `Solves` statement are open. Its error analysis needs a pairwise independent family into `Fin M` with at least as many values as distinct items. The space-optimal estimators for `F₀` (Bar-Yossef et al., Theorems 2–3; Kane–Nelson–Woodruff's `O(ε⁻² + log n)`) are not formalized, and neither are the `Ω(ε⁻²)` and `Ω(log n)` lower bounds for approximate `F₀`.
+The k-minimum-values sketch for `F₀` has no `ProbComp` sampler or machine realization either. Its error analysis needs a pairwise independent family into `Fin M` with at least as many values as distinct items. The space-optimal estimators for `F₀` (Bar-Yossef et al., Theorems 2–3; Kane–Nelson–Woodruff's `O(ε⁻² + log n)`) are not formalized, and neither are the `Ω(ε⁻²)` and `Ω(log n)` lower bounds for approximate `F₀`.
 
 No automatic native realization of the Count-Min sketch was identified in its four source modules.
 
-The locality-sensitive hashing modules prove information-theoretic statements only. The following are not formalized:
+The locality-sensitive hashing modules prove probabilistic statements only. The near-neighbour structure bounds the parameters `k`, `L` and `ρ` and the number of inspected candidates, but no declaration counts hash evaluations, stored entries or time. Its buckets are described by filtering the point set, so the following are not formalized:
 
-- the `(c, r)`-approximate near-neighbour data structure with query time `n^ρ`, where `ρ = log(1/p₁)/log(1/p₂)`;
-- the cost of evaluating or storing the hashes;
+- a dictionary from hash values to buckets, its word-RAM lookup time, the `n^ρ` query time, and the time to build the tables;
+- the cost of one hash evaluation or distance test, and the bits needed to store the seeds;
+- dynamic insertions and deletions, and the reduction from approximate nearest neighbour to the `(c, r)` problem;
 - SimHash, p-stable LSH, and LSH lower bounds;
 - MinHash over smaller min-wise independent families: it uses a uniform permutation of the whole universe.
 
 The Johnson–Lindenstrauss development covers only dense `±1` matrices: the sparse `{-√3, 0, √3}` distribution of Achlioptas, Gaussian and spherical projections, fast and sparse JL transforms, the optimal Larsen–Nelson lower bound, a `ProbComp` sampler and any native cost for applying the projection are not formalized.
 
-The online interface surveyed is deterministic; randomized competitive analysis would need additional adversary/expectation definitions, so the randomized ski-rental bound `e/(e-1)` and randomized list update (BIT, COMB) are open. List update covers access requests only; insertions and deletions are not modelled.
+Randomized online strategies are modelled only against the oblivious adversary (`RandStrategy`); adaptive-online and adaptive-offline adversaries are not. Randomized list update (BIT, COMB) and randomized paging (the marking algorithm, the `H_k` bound) are open, as is continuous-time ski rental. List update covers access requests only; insertions and deletions are not modelled.
 
 The optimal-stopping modules are semantic probability statements over deterministic rules, with randomization only through explicit coin observations. They do not charge the rules' computation and are not phrased through the online `Problem` interface.
 
 The `k`-server modules use natural-number distances, so Double Coverage is proved on the integer line rather than the real line. Double Coverage on trees, the work-function algorithm's `2k-1` bound, the `k`-server conjecture, randomized `k`-server and an algorithm computing the offline optimum are not formalized, and the Lean step functions carry no time bounds.
 
+Online bin packing is modelled by `OnlinePacker`, not through `Problem`/`DetStrategy`, and only deterministic packers are covered. For deterministic packers, the formalized bounds bracket the best asymptotic competitive ratio in `[3/2, 17/10]`: Yao's lower bound, and First Fit's upper bound through `run_firstFitPacker`. The stronger lower bounds (Brown–Liang `1.536`, van Vliet `1.5401`, Balogh–Békési–Galambos `248/161`, and the fully adaptive constructions) are not formalized. Neither are the better online upper bounds of Harmonic-type algorithms, or randomized lower bounds.
+
 [achlioptas03]: ../sources.md#achlioptas03
 [alonmatiasszegedy99]: ../sources.md#alonmatiasszegedy99
+[andoniindyk08]: ../sources.md#andoniindyk08
+[baloghbekesidosaepsteinlevin18]: ../sources.md#baloghbekesidosaepsteinlevin18
 [bjkst02]: ../sources.md#bjkst02
 [borodinelyaniv98]: ../sources.md#borodinelyaniv98
 [broder97]: ../sources.md#broder97
+[chakrabarti25]: ../sources.md#chakrabarti25
 [charikar02]: ../sources.md#charikar02
+[charikar04]: ../sources.md#charikar04
 [chrobakkarloffpaynevishwanathan91]: ../sources.md#chrobakkarloffpaynevishwanathan91
 [complexitylib]: ../sources.md#complexitylib
 [cormode05]: ../sources.md#cormode05
@@ -178,6 +258,10 @@ The `k`-server modules use natural-number distances, so Double Coverage is prove
 [irani91]: ../sources.md#irani91
 [johnsonlindenstrauss84]: ../sources.md#johnsonlindenstrauss84
 [karlin88]: ../sources.md#karlin88
+[karlin94]: ../sources.md#karlin94
 [leskovecrajaramanullman20]: ../sources.md#leskovecrajaramanullman20
 [manassemcgeochsleator90]: ../sources.md#manassemcgeochsleator90
+[misragries82]: ../sources.md#misragries82
 [sleatortarjan85]: ../sources.md#sleatortarjan85
+[yao77]: ../sources.md#yao77
+[yao80]: ../sources.md#yao80

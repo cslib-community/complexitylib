@@ -60,6 +60,10 @@ soundness/completeness and eventual-feasibility bridges to `ReplacementParams`.
   `Cslib.Complexity.SubexponentialSAT.ParameterCheck.chooseBeta`,
   `Cslib.Complexity.SubexponentialSAT.ParameterCheck.computeScheduleParams`: Section 5.5 and full
   Section 4.7 parameter selectors.
+* `Cslib.Complexity.SubexponentialSAT.ParameterCheck.encReplacementParams`,
+  `Cslib.Complexity.SubexponentialSAT.ParameterCheck.encSizeParams`,
+  `Cslib.Complexity.SubexponentialSAT.ParameterCheck.encTailParams`: role names for the encodings of
+  the parameter schedule, the size parameters and the binomial-tail parameters.
 * `Cslib.Complexity.SubexponentialSAT.ParameterCheck.binomTailTerm`,
   `Cslib.Complexity.SubexponentialSAT.ParameterCheck.binomTailNumerator`,
   `Cslib.Complexity.SubexponentialSAT.ParameterCheck.checkBinomTail`,
@@ -510,6 +514,23 @@ open ComputableInPolyTime
 
 attribute [local irreducible] ComputableInPolyTime
 
+/-- The parameter schedule `(λ, ν, r, Q, R, A₀)` computed by `computeScheduleParams`, all in binary:
+the framed `λ`, `ν`, `r`, `Q` and `R` in turn, then `A₀`. -/
+abbrev encReplacementParams : ℕ × ℕ × ℕ × ℕ × ℕ × ℕ ↪ List Bool :=
+  encPair encNat (encPair encNat (encPair encNat (encPair encNat (encPair encNat encNat))))
+
+/-- The size parameters `(((n, M), b), wmax)` of `checkReplacementFeasible` and
+`checkScheduleFeasible`, all in binary and nested to the left: `wmax` follows the framed
+`((n, M), b)`, `b` follows the framed `(n, M)`, and `M` follows the framed `n`. -/
+abbrev encSizeParams : ((ℕ × ℕ) × ℕ) × ℕ ↪ List Bool :=
+  encPair (encPair (encPair encNat encNat) encNat) encNat
+
+/-- The binomial-tail parameters `(((Q, r), A₀), R)` of `binomTailNumerator`, with `Q` in unary and
+`r`, `A₀` and `R` in binary, nested to the left: `R` follows the framed `((Q, r), A₀)`, `A₀`
+follows the framed `(Q, r)`, and `r` follows the framed unary `Q`. -/
+abbrev encTailParams : ((ℕ × ℕ) × ℕ) × ℕ ↪ List Bool :=
+  encPair (encPair (encPair encUnary encNat) encNat) encNat
+
 /-! #### Internal plain building blocks -/
 
 private theorem clog_two_le_size (n : ℕ) : Nat.clog 2 n ≤ n.size :=
@@ -669,7 +690,7 @@ private theorem computableInPolyTime_binomTailTerm :
 theorem computableInPolyTime_binomTailNumerator :
     ComputableInPolyTime
       (fun ((((Q, r), A₀), R) : ((ℕ × ℕ) × ℕ) × ℕ) => binomTailNumerator Q r A₀ R)
-      (encPair (encPair (encPair encUnary encNat) encNat) encNat) encNat := by
+      encTailParams encNat := by
   unfold binomTailNumerator
   let enc3 := encPair (encPair encUnary encNat) encNat; let encIn := encPair enc3 encNat
   have hlist : ComputableInPolyTime
@@ -712,8 +733,7 @@ theorem computableInPolyTime_checkBinomTail :
     ComputableInPolyTime
       (fun ((((((Q, r), A₀), R), b), lam) : ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) =>
         checkBinomTail Q r A₀ R b lam)
-      (encPair (encPair (encPair (encPair (encPair encUnary encNat) encNat) encNat) encNat) encNat)
-      encBool := by
+      (encPair (encPair encTailParams encNat) encNat) encBool := by
   let enc4 := encPair (encPair (encPair encUnary encNat) encNat) encNat
   let enc5 := encPair enc4 encNat
   have hp5 := fst enc5 encNat; have hp4 := hp5.fst'
@@ -761,8 +781,8 @@ theorem computableInPolyTime_checkReplacementFeasible :
       (fun (((((((((n, M), b), wmax), lam), Q), r), A₀), R) :
           (((((((ℕ × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) =>
         checkReplacementFeasible n M b wmax lam Q r A₀ R)
-      (encPair (encPair (encPair (encPair (encPair (encPair (encPair (encPair encNat encNat)
-        encNat) encNat) encNat) encUnary) encNat) encNat) encNat) encBool := by
+      (encPair (encPair (encPair (encPair (encPair encSizeParams encNat) encUnary) encNat) encNat)
+        encNat) encBool := by
   have h8 := fst encFeasible8 encNat
   have h7 := h8.fst'; have h6 := h7.fst'; have h5 := h6.fst'
   have h4 := h5.fst'; have h3 := h4.fst'; have h2 := h3.fst'
@@ -786,8 +806,8 @@ theorem computableInPolyTime_checkReplacementFeasible_unary :
       (fun (((((((((n, M), b), wmax), lam), Q), r), A₀), R) :
           (((((((ℕ × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) =>
         checkReplacementFeasible n M b wmax lam Q r A₀ R)
-      (encPair (encPair (encPair (encPair (encPair (encPair (encPair (encPair encNat encNat)
-        encNat) encNat) encNat) encUnary) encUnary) encNat) encNat) encBool := by
+      (encPair (encPair (encPair (encPair (encPair encSizeParams encNat) encUnary) encUnary) encNat)
+        encNat) encBool := by
   let enc8 := encPair (encPair (encPair (encPair (encPair (encPair (encPair encNat encNat) encNat)
     encNat) encNat) encUnary) encUnary) encNat
   have h8 := fst enc8 encNat; have h7 := h8.fst'; have h6 := h7.fst'; have h5 := h6.fst'
@@ -813,7 +833,7 @@ theorem computableInPolyTime_checkReplacementFeasible_apply {α : Type} {encIn :
 pairs `(β, n)`. -/
 theorem computableInPolyTime_computeScheduleParams :
     ComputableInPolyTime (fun p : ℕ × ℕ => computeScheduleParams p.1 p.2) (encPair encNat encNat)
-      (encPair encNat (encPair encNat (encPair encNat (encPair encNat (encPair encNat encNat))))) :=
+      encReplacementParams :=
   let hn := snd encNat encNat
   (binary_clog_two_nat.comp hn).prod ((nu_pt.comp hn).prod
     ((computableInPolyTime_numGroups.comp hn).prod
@@ -824,7 +844,7 @@ theorem computableInPolyTime_computeScheduleParams_apply {α : Type} {encIn : α
     {fβ fn : α → ℕ} (hβ : ComputableInPolyTime fβ encIn encNat)
     (hn : ComputableInPolyTime fn encIn encNat) :
     ComputableInPolyTime (fun x => computeScheduleParams (fβ x) (fn x)) encIn
-      (encPair encNat (encPair encNat (encPair encNat (encPair encNat (encPair encNat encNat))))) :=
+      encReplacementParams :=
   (computableInPolyTime_computeScheduleParams.comp (hβ.prod hn)).of_enc_eq fun _ => rfl
 
 private theorem computableInPolyTime_checkScheduleFeasible_binary :
@@ -863,10 +883,7 @@ theorem computableInPolyTime_scheduleAndCheck_binary :
     ComputableInPolyTime
       (fun (((((n, M), b), wmax), β) : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ) =>
         (computeScheduleParams β n, checkScheduleFeasible n M b wmax β))
-      (encPair (encPair (encPair (encPair encNat encNat) encNat) encNat) encNat)
-      (encPair
-        (encPair encNat (encPair encNat (encPair encNat (encPair encNat (encPair encNat encNat)))))
-        encBool) := by
+      (encPair encSizeParams encNat) (encPair encReplacementParams encBool) := by
   let enc4 := encPair (encPair (encPair encNat encNat) encNat) encNat
   exact (computableInPolyTime_computeScheduleParams.comp
     ((snd enc4 encNat).prod ((((fst enc4 encNat).fst').fst').fst'))).prod
@@ -885,9 +902,7 @@ theorem computableInPolyTime_scheduleAndCheck_unary :
           checkReplacementFeasible n M b wmax lam Q r A₀ R,
           checkScheduleFeasible n M b wmax β))
       (encPair (encPair (encPair (encPair encUnary encNat) encNat) encNat) encNat)
-      (encPair
-        (encPair encNat (encPair encNat (encPair encNat (encPair encNat (encPair encNat encNat)))))
-        (encPair encBool encBool)) := by
+      (encPair encReplacementParams (encPair encBool encBool)) := by
   let enc4 := encPair (encPair (encPair encUnary encNat) encNat) encNat
   have h4 := fst enc4 encNat; have h3 := h4.fst'; have h2 := h3.fst'
   have hn := unary_to_binary.comp h2.fst'; have hM := h2.snd'; have hb := h3.snd'
