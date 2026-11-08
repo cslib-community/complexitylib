@@ -82,7 +82,7 @@ We formalize the transform and its collision-extraction reduction at two levels:
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*][BonehShoup2023],
   Section 8.4 (Figure 8.5 and Theorem 8.3).
-* [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020], Section 5.2.
+* [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020], Section 6.2.
 -/
 
 @[expose] public section
