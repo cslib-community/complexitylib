@@ -1218,6 +1218,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   residual-network and duality machinery. Remaining matching directions: the decomposition of
   `M ⊕ M*` into vertex-disjoint augmenting paths, general (non-bipartite) matching with blossoms,
   and a sparse Hopcroft–Karp entry point that also charges construction of the adjacency lists.
+- **Algebraic matching** ([#3052](https://github.com/cslib-community/complexitylib/issues/3052)):
+  remaining after Edmonds' determinant criterion and Lovász's randomized test for bipartite
+  graphs (`Algorithms/Matching/Edmonds`): the Mulmuley–Vazirani–Vazirani core (isolating weights
+  and reading the matching off the adjugate), Tutte's matrix for general graphs, a machine-level
+  running-time certificate for the determinant test, and an RNC implementation.
 - **Graph search and shortest paths** ([#3053](https://github.com/cslib-community/complexitylib/issues/3053)):
   after `TimeM` depth-first search, topological sort and Bellman–Ford
   (`Algorithms/Lean/{DFS,BellmanFord}`), strongly connected components in linear time with the
