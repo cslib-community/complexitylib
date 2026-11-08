@@ -26,7 +26,8 @@ the size of every tree-like refutation (`Cslib.Logic.PL.CNF.Derivation.potential
 This is the potential form of the asymmetric Prover–Delayer game of Beyersdorff, Galesi and Lauria
 [BeyersdorffGalesiLauria2010, Theorem 1]: if Delayer can secure `p` points in the `(c₀, c₁)`-game,
 with `1 / c₀ + 1 / c₁ = 1`, then every tree-like refutation has at least `2 ^ p` nodes. A Delayer
-strategy guaranteeing a multiplicative score `2 ^ p` from each position gives a potential, and the
+strategy guaranteeing `p` points gives a real-valued splitting potential with value `2 ^ p` at the
+empty assignment, and its ceiling, of value `⌈2 ^ p⌉`, is a potential in the sense used here; the
 proof of their theorem is the induction above. Splitting with `μ ρ ≤ μ ρ[v ↦ b]` at a variable whose
 value Delayer chooses as `b` is a special case of the split inequality.
 

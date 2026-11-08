@@ -15,14 +15,16 @@ import Mathlib.Combinatorics.Enumerative.DoubleCounting
 # Tree-like resolution lower bound for the pigeonhole principle
 
 Every tree-like resolution refutation of the weak pigeonhole formula `PHP^m_n`, `m > n`, has at
-least `(n + 1 - h) ^ h` nodes for every `h`, a bound that is nontrivial for `h ≤ n`
-(`Cslib.Logic.PL.CNF.Derivation.pow_le_size_pigeonhole`). At `h = n / 2` this is the
+least `(n + 1 - h) ^ h` nodes for every `h`, a bound that is positive for `h ≤ n` and nontrivial
+for `0 < h < n` (`Cslib.Logic.PL.CNF.Derivation.pow_le_size_pigeonhole`). At `h = n / 2` this is the
 `(n / 2 + 1) ^ (n / 2) = 2 ^ Ω(n log n)` bound of Beyersdorff, Galesi and Lauria
 [BeyersdorffGalesiLauria2010, Theorem 2]
 (`Cslib.Logic.PL.CNF.Derivation.pow_half_le_size_pigeonhole`), which they obtain from an asymmetric
-Prover–Delayer game; the bound `2 ^ Θ(n log n)` was first proved by Iwama and Miyazaki
-[IwamaMiyazaki1999] and by Dantchev and Riis [DantchevRiis2001]. It improves on the bound
-`2 ^ (n / 24)` that Haken's theorem gives for `m = n + 1`
+Prover–Delayer game as a simpler proof of the lower bound of Dantchev and Riis [DantchevRiis2001],
+who showed that the tree-like size is `2 ^ Θ(n log n)` for every `m > n`. Iwama and Miyazaki
+[IwamaMiyazaki1999] had earlier shown that tree-like resolution is superpolynomially slower than
+general resolution on the pigeonhole principle (their paper was not inspected here). The bound
+improves on the bound `2 ^ (n / 24)` that Haken's theorem gives for `m = n + 1`
 (`Cslib.Logic.PL.CNF.Derivation.two_pow_le_size_pigeonhole`), and holds for every number of
 pigeons. The same bound applies to DPLL search trees: a decision tree finding a falsified clause of
 `PHP^m_n` has more than `(n + 1 - h) ^ h / 2` leaves
@@ -32,11 +34,11 @@ pigeons. The same bound applies to DPLL search trees: a decision tree finding a 
 matching of pigeons to holes. For an unmatched pigeon `i`, let `p_i` be the number of holes that
 are unoccupied but excluded for `i` by `ρ`, and `d_i = n + 1 - h - p_i` (truncated at `0`). With
 `k` matched pigeons, the potential of `ρ` is the least product `∏_{i ∈ U} d_i` over sets `U` of
-`h - k` unmatched pigeons; it is `(n + 1 - h) ^ h` at the empty assignment. It splits at every
-unset variable `(i, j)`
-(`Cslib.Logic.PL.CNF.Derivation.potential_le_size`): if `i` is matched or `j` occupied, setting
-`(i, j)` to `false` changes nothing; otherwise setting it to `false` lowers `d_i` by one and setting
-it to `true` matches `i`, which removes the factor `d_i` and can only raise the other `d`'s. A
+`h - k` unmatched pigeons; it is `(n + 1 - h) ^ h` at the empty assignment. As
+`Cslib.Logic.PL.CNF.Derivation.potential_le_size` requires, it splits at every unset variable
+`(i, j)`: if `i` is matched or `j` occupied, setting `(i, j)` to `false` changes nothing; otherwise
+setting it to `false` lowers `d_i` by one and setting it to `true` matches `i`, which removes the
+factor `d_i` and can only raise the other `d`'s. A
 pigeon clause is falsified only when the pigeon is unmatched and every unoccupied hole is excluded
 for it, so either `h` pigeons are matched (potential `1`) or `d_i = 0` (potential `0`); a hole
 clause is never falsified by a matching. Their theorem uses `h = n / 2` and assigns a pigeon to a
