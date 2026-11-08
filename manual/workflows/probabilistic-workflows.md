@@ -142,8 +142,12 @@ If the chain is confined to a set `C` closed under `P` and does not mix on all o
 only for neighbors in `C`, and bound the distance from starts in `C`, for a stationary law
 supported in `C`. The client is Glauber dynamics with a frozen boundary,
 `glauberColoringOn G q U hU`, which recolors only vertices of `U`. On the proper colorings
-`frozenColorings G q U b` that agree with `b` off `U`, `dist_glauberColoringOn_frozen_le_of_le`
-gives the sampling time of Levin and Peres, (14.23). For approximate counting,
+`G.frozenColorings q U b` that agree with `b` off `U`, `dist_glauberColoringOn_frozen_le_of_le`
+gives the sampling time of Levin and Peres, (14.23). It needs `2Δ < q`, `|U| ≤ n`, a start `x`
+that agrees with `b` off `U`, a nonempty `G.frozenColorings q U b` (from `mem_frozenColorings_self`
+when `b` is proper), `0 < δ` and `t ≥ ((q - Δ) / (q - 2Δ)) n (log n - log δ)`, and gives distance
+at most `δ` to the uniform law on `G.frozenColorings q U b`; `dist_glauberColoringOn_edge` in the
+checks below instantiates it. For approximate counting,
 [Coloring/Ratio.lean](../../Complexity/Probability/MarkovChain/Coloring/Ratio.lean) proves their
 Lemma 14.16, `inv_exp_mul_le_card_frozenColorings_erase_div`: freezing one more vertex keeps at
 least a `1 / (e q)` fraction of the colorings.
