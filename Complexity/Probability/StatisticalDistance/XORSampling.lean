@@ -26,8 +26,8 @@ samplers [SahaiVadhan2003, §3]. The XOR construction also commutes with images 
 
 ## Main definitions
 
-* `Cslib.Probability.PMF.parityComplete`: the completion of `j` bits to `j + 1` bits of parity `c`.
-* `Cslib.Probability.PMF.parityCompleteEquiv`: completion as an equivalence onto the selectors of
+* `Cslib.BitString.parityComplete`: the completion of `j` bits to `j + 1` bits of parity `c`.
+* `Cslib.BitString.parityCompleteEquiv`: completion as an equivalence onto the selectors of
   parity `c`.
 
 ## Main results
@@ -45,23 +45,7 @@ samplers [SahaiVadhan2003, §3]. The XOR construction also commutes with images 
 
 @[expose] public section
 
-namespace Cslib.Probability.PMF
-
-/-- **Naturality of the XOR construction**: mapping both distributions by `g` maps every
-coordinate of the construction by `g`. -/
-theorem xorMix_map {α β : Type*} [Fintype α] [Fintype β] (p₀ p₁ : PMF α) (g : α → β) (k : ℕ)
-    (c : Bool) :
-    xorMix (p₀.map g) (p₁.map g) k c = (xorMix p₀ p₁ k c).map (fun x i => g (x i)) := by
-  unfold xorMix
-  split_ifs with h
-  · rw [PMF.map_bind]
-    congr 1
-    funext b
-    rw [← pi_map]
-    congr 1
-    funext i
-    cases b i <;> rfl
-  · rw [← pi_map]
+namespace Cslib.BitString
 
 /-- The completion of `j` bits `r` to the `j + 1` bits of parity `c` extending them: the last bit
 is `c ⊕ parity r`. -/
@@ -91,6 +75,28 @@ def parityCompleteEquiv (c : Bool) (j : ℕ) :
     rw [← Fin.snoc_init_self b, parity_snoc] at hb
     rw [← hb]
     cases parity j (Fin.init b) <;> cases b (Fin.last j) <;> rfl
+
+end Cslib.BitString
+
+namespace Cslib.Probability.PMF
+
+open BitString
+
+/-- **Naturality of the XOR construction**: mapping both distributions by `g` maps every
+coordinate of the construction by `g`. -/
+theorem xorMix_map {α β : Type*} [Fintype α] [Fintype β] (p₀ p₁ : PMF α) (g : α → β) (k : ℕ)
+    (c : Bool) :
+    xorMix (p₀.map g) (p₁.map g) k c = (xorMix p₀ p₁ k c).map (fun x i => g (x i)) := by
+  unfold xorMix
+  split_ifs with h
+  · rw [PMF.map_bind]
+    congr 1
+    funext b
+    rw [← pi_map]
+    congr 1
+    funext i
+    cases b i <;> rfl
+  · rw [← pi_map]
 
 /-- Completing uniform bits to parity `c` gives a uniform bit string of parity `c`. -/
 theorem uniformOfFintype_map_parityComplete (c : Bool) (j : ℕ)

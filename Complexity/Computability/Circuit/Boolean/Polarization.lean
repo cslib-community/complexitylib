@@ -25,11 +25,11 @@ of `C₀` and `C₁`, up to the flattening of tuples of outputs into one bit str
 
 The XOR construction on `j + 1` coordinates (`xorMixCircuit C₀ C₁ j c`) reads `j` selector bits
 `r` and `j + 1` blocks of `n` data bits. A chain of exclusive-or gadgets computes the last
-selector `c ⊕ parity r`, completing `r` to `parityComplete c r` (`xorMixStage`). Coordinate `i`
-then runs `C₁` or `C₀` on data block `i` according to selector bit `i`, through a multiplexer
-(`xorMixBlock`). On uniform inputs the selectors are uniform among the strings of parity `c` and
-the data blocks are independent uniform seeds, so the output distribution is the XOR construction
-`xorMix` (`outputDist_xorMixCircuit`). Independent copies are `Circuit.replicate`
+selector `c ⊕ parity r`, completing `r` to `BitString.parityComplete c r` (`xorMixStage`).
+Coordinate `i` then runs `C₁` or `C₀` on data block `i` according to selector bit `i`, through a
+multiplexer (`xorMixBlock`). On uniform inputs the selectors are uniform among the strings of
+parity `c` and the data blocks are independent uniform seeds, so the output distribution is the XOR
+construction `xorMix` (`outputDist_xorMixCircuit`). Independent copies are `Circuit.replicate`
 (`Circuit.outputDist_replicate`), and the polarization construction alternates the two
 (`polarizeCircuit`, `outputDist_polarizeCircuit`). Flattening is injective, so the polarized
 circuits are exactly as far apart as the polarized distributions
@@ -109,7 +109,7 @@ def xorMixStageWire (j n : ℕ) (i : Fin (j + 1)) (t : Fin (n + 1)) :
 
 /-- The selection stage of the XOR construction: from `j` selector bits `r` and `j + 1` data
 blocks of `n` bits, output `j + 1` blocks of `n + 1` bits, block `i` being bit `i` of
-`parityComplete c r` followed by data block `i`. -/
+`BitString.parityComplete c r` followed by data block `i`. -/
 def xorMixStage (c : Bool) (j n : ℕ) : Circuit signature (j + (j + 1) * n) ((j + 1) * (n + 1)) :=
   ⟨xorChainProgram c j (Fin.castAdd _), fun o =>
     xorMixStageWire j n (finProdFinEquiv.symm o).1 (finProdFinEquiv.symm o).2⟩
@@ -120,7 +120,7 @@ theorem block_eval_xorMixStage (c : Bool) {j n : ℕ} (r : BitString j)
     (d : Fin (j + 1) → BitString n) :
     BitString.block ((xorMixStage c j n).eval interpretation
         (Fin.append r (BitString.blocksEquiv.symm d))) =
-      fun i => Fin.cons (parityComplete c r i) (d i) := by
+      fun i => Fin.cons (BitString.parityComplete c r i) (d i) := by
   funext i t
   rw [BitString.block_apply]
   simp only [Circuit.eval, xorMixStage, Function.comp_apply, Equiv.symm_apply_apply]
@@ -130,12 +130,12 @@ theorem block_eval_xorMixStage (c : Bool) {j n : ℕ} (r : BitString j)
     induction i using Fin.lastCases with
     | last =>
       simp only [xorMixStageWire, Fin.cases_zero, Fin.lastCases_last]
-      rw [trace_xorChainProgram, parityComplete, Fin.snoc_last]
+      rw [trace_xorChainProgram, BitString.parityComplete, Fin.snoc_last]
       congr 2
       funext a
       simp
     | cast i' =>
-      simp [xorMixStageWire, parityComplete]
+      simp [xorMixStageWire, BitString.parityComplete]
   | succ t' =>
     simp [xorMixStageWire]
 
@@ -170,12 +170,12 @@ def xorMixCircuit {n m : ℕ} (C₀ C₁ : Circuit signature n m) (j : ℕ) (c :
   ((xorMixBlock C₀ C₁).replicate (j + 1)).comp (xorMixStage c j n)
 
 /-- Output block `i` of `xorMixCircuit C₀ C₁ j c` on selector bits `r` and data blocks `d` is
-`C₁ (d i)` or `C₀ (d i)`, according to bit `i` of `parityComplete c r`. -/
+`C₁ (d i)` or `C₀ (d i)`, according to bit `i` of `BitString.parityComplete c r`. -/
 theorem eval_xorMixCircuit {n m : ℕ} (C₀ C₁ : Circuit signature n m) (j : ℕ) (c : Bool)
     (r : BitString j) (d : Fin (j + 1) → BitString n) :
     BitString.block ((xorMixCircuit C₀ C₁ j c).eval interpretation
         (Fin.append r (BitString.blocksEquiv.symm d))) =
-      fun i => bif parityComplete c r i then C₁.eval interpretation (d i)
+      fun i => bif BitString.parityComplete c r i then C₁.eval interpretation (d i)
         else C₀.eval interpretation (d i) := by
   rw [xorMixCircuit, Circuit.eval_comp, Circuit.eval_replicate, block_blockMap,
     block_eval_xorMixStage]

@@ -19,7 +19,8 @@ the Polarization Lemma on instances applied to both.
 
 namespace ComplexityTests.StatisticalDifference
 
-open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Complexity Cslib.Probability.PMF
+open Cslib Cslib.BitString Cslib.Circuits Cslib.Circuits.Boolean Cslib.Complexity
+open Cslib.Probability.PMF
 
 /-! ### Completion to a parity -/
 
