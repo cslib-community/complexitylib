@@ -473,10 +473,9 @@ index links to canonical definitions rather than keeping a second set.
   of `Φ_i` is false, by the gap theorem); the McCreight–Meyer honesty and naming theorems
   ([#3234](https://github.com/cslib-community/complexitylib/issues/3234): every `C_t` equals
   `C_{t'}` for an `h`-honest `t'`, with one computable `h` for all `t`, or for the cost `Φ_e` of a
-  total program; the 1969 paper is paywalled and the open Hartmanis–Hopcroft survey is an image
-  scan, so neither formulation has been checked against a source); effective forms of speedup
-  such as Blum's pseudo-speedup, which computes a faster program for a finite variant of `f` (M. Blum, *On
-  effective procedures for speeding up algorithms*, J. ACM 18(2), 1971), and Blum measures for
+  total program); effective forms of speedup such as Blum's pseudo-speedup, which computes a
+  faster program for a finite variant of `f` (M. Blum, *On effective procedures for speeding up
+  algorithms*, J. ACM 18(2), 1971), and Blum measures for
   native multitape time and space through a Gödel-numbering bridge from native descriptions.
 - **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
   degrees `1 ≤ a < b`, in deterministic and in nondeterministic time, and the `O(t log t)`

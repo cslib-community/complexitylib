@@ -9,6 +9,8 @@ module
 
 public import Complexity.Computability.BlumComplexity.Basic
 import Complexity.Computability.BlumComplexity.Cancellation
+import Mathlib.Algebra.Order.SuccPred.PartialSups
+import Mathlib.Order.SuccPred.Nat
 
 /-!
 # The union theorem
@@ -17,13 +19,13 @@ For every Blum complexity measure `Φ` and every uniformly computable family of 
 `T 0, T 1, …` that increases pointwise in the index, there is a single computable bound `t` with
 `C_t = ⋃ i, C_{T i}`. This is the union theorem, attributed to McCreight and Meyer
 [McCreight and Meyer, *Classes of computable functions defined by bounds on
-computation*][McCreightMeyer1969]. For example, a union of polynomial classes is the class of one
-computable bound, which is necessarily not a polynomial.
+computation*][McCreightMeyer1969].
 
 ## Construction
 
-The proof is a cancellation run (`Cslib.BlumComplexity.Cancellation.canc`) without the recursion
-theorem; it is not taken from the source. Requirement `p = ⟪j, i⟫` with `j ≤ i` is *eligible* at
+The proof does not use the recursion theorem. It was written independently using the library's
+cancellation run (`Cslib.BlumComplexity.Cancellation.canc`) and has not been compared with the
+source's construction. Requirement `p = ⟪j, i⟫` with `j ≤ i` is *eligible* at
 stage `y` when the program numbered `j` does not halt on `y` within cost `T i y`. By Blum's second
 axiom (`Cslib.BlumComplexity.BlumMeasure.computablePred_cost_le`), eligibility is decidable. At
 each stage the least eligible requirement not cancelled earlier is cancelled, and the bound is
@@ -47,9 +49,9 @@ content for every program, including programs that diverge somewhere: a program 
 
 `union_theorem` assumes `T i n ≤ T (i + 1) n` for all `i` and `n`. `union_theorem_of_eventuallyLE`
 only assumes `T i ≤ T (i + 1)` almost everywhere, and `union_theorem_of_directed` only assumes that
-any two bounds are dominated almost everywhere by a third. Both reduce to `union_theorem` through
-the running maximum of the family. The exact hypotheses of the source have not been checked
-against the paper.
+the family is directed under almost-everywhere domination (`Directed (· ≤ᶠ[atTop] ·) T`). Both are
+derived here from `union_theorem`, applied to the partial suprema `partialSups (T · n)` of the
+family. The exact hypotheses of the source have not been checked against the paper.
 
 ## Main results
 
@@ -177,46 +179,34 @@ private theorem exists_index (T : ℕ → ℕ → ℕ) (c : Code) (N : ℕ)
   simp only [ofNat_encode] at hE
   exact hE (hidx ▸ hN y hNy)
 
-/-- The running maximum `max (T 0 n) … (T i n)`. -/
-private def runMax (T : ℕ → ℕ → ℕ) (i n : ℕ) : ℕ :=
-  Nat.rec (motive := fun _ => ℕ) (T 0 n) (fun k s => max s (T (k + 1) n)) i
-
-private theorem runMax_succ (T : ℕ → ℕ → ℕ) (i n : ℕ) :
-    runMax T (i + 1) n = max (runMax T i n) (T (i + 1) n) := rfl
-
-private theorem le_runMax (T : ℕ → ℕ → ℕ) (i n : ℕ) : T i n ≤ runMax T i n := by
-  cases i with
-  | zero => exact le_rfl
-  | succ i => exact runMax_succ T i n ▸ le_max_right _ _
-
-private theorem computable_runMax {T : ℕ → ℕ → ℕ} (hT : Computable₂ T) :
-    Computable₂ (runMax T) :=
-  Computable.nat_rec (f := fun p : ℕ × ℕ => p.1) (g := fun p => T 0 p.2)
+/-- The partial suprema `max (T 0 n) … (T i n)` of a uniformly computable family are uniformly
+computable. -/
+private theorem computable_partialSups {T : ℕ → ℕ → ℕ} (hT : Computable₂ T) :
+    Computable₂ fun i n => partialSups (fun k => T k n) i := by
+  refine (Computable.nat_rec (f := fun p : ℕ × ℕ => p.1) (g := fun p => T 0 p.2)
     (h := fun p q => max q.2 (T (q.1 + 1) p.2)) Computable.fst
     (hT.comp (Computable.const 0) Computable.snd)
     (Primrec.nat_max.to_comp.comp (Computable.snd.comp Computable.snd)
       (hT.comp (Computable.succ.comp (Computable.fst.comp Computable.snd))
-        (Computable.snd.comp Computable.fst))).to₂
-
-/-- In a directed family, every running maximum is dominated almost everywhere by a member. -/
-private theorem exists_runMax_le {T : ℕ → ℕ → ℕ}
-    (hdir : ∀ i j, ∃ k, T i ≤ᶠ[atTop] T k ∧ T j ≤ᶠ[atTop] T k) (i : ℕ) :
-    ∃ k, runMax T i ≤ᶠ[atTop] T k := by
+        (Computable.snd.comp Computable.fst))).to₂).of_eq fun p => ?_
+  obtain ⟨i, n⟩ := p
+  dsimp only
   induction i with
-  | zero => exact ⟨0, EventuallyLE.refl _ _⟩
+  | zero => exact (partialSups_zero _).symm
+  | succ i ih => rw [partialSups_add_one (ι := ℕ), ← ih]
+
+/-- In a directed family, every partial supremum is dominated almost everywhere by a member. -/
+private theorem exists_partialSups_le {T : ℕ → ℕ → ℕ} (hdir : Directed (· ≤ᶠ[atTop] ·) T)
+    (i : ℕ) : ∃ k, (fun n => partialSups (fun k => T k n) i) ≤ᶠ[atTop] T k := by
+  induction i with
+  | zero => exact ⟨0, Eventually.of_forall fun n => (partialSups_zero _).le⟩
   | succ i ih =>
     obtain ⟨k, hk⟩ := ih
     obtain ⟨k', h1, h2⟩ := hdir k (i + 1)
     refine ⟨k', ?_⟩
     filter_upwards [hk, h1, h2] with n hn h1n h2n
-    rw [runMax_succ]
-    exact max_le (hn.trans h1n) h2n
-
-/-- A total program's cost is bounded by `b` at `n` exactly when some value of its cost is. -/
-private theorem forall_iff_exists_of_total {f : ℕ → ℕ} {c : Code} (hc : ∀ n, f n ∈ c.eval n)
-    (b : ℕ → ℕ) (n : ℕ) : (∀ m ∈ Φ.cost c n, m ≤ b n) ↔ ∃ m ∈ Φ.cost c n, m ≤ b n := by
-  obtain ⟨m, hm⟩ := Part.dom_iff_mem.1 (Φ.dom_cost_of_total hc n)
-  exact ⟨fun h => ⟨m, hm, h m hm⟩, fun ⟨m', hm', h⟩ m'' hm'' => Part.mem_unique hm' hm'' ▸ h⟩
+    rw [partialSups_add_one (ι := ℕ)]
+    exact sup_le (hn.trans h1n) h2n
 
 end UnionBound
 
@@ -255,30 +245,31 @@ theorem union_theorem {T : ℕ → ℕ → ℕ} (hT : Computable₂ T)
     (Set.iUnion_subset fun i => complexityClass_mono (hle i))⟩
   obtain ⟨c, hc, hev⟩ := mem_complexityClass.1 hf
   have hev' : ∀ᶠ n in atTop, ∃ m ∈ Φ.cost c n, m ≤ t n :=
-    hev.mono fun n hn => (forall_iff_exists_of_total Φ hc t n).1 hn
+    hev.mono fun n hn => (Φ.forall_mem_cost_iff_exists_of_total hc n).1 hn
   obtain ⟨i, hi⟩ := hcls c hev'
   exact Set.mem_iUnion.2 ⟨i, mem_complexityClass.2
-    ⟨c, hc, hi.mono fun n hn => (forall_iff_exists_of_total Φ hc _ n).2 hn⟩⟩
+    ⟨c, hc, hi.mono fun n hn => (Φ.forall_mem_cost_iff_exists_of_total hc n).2 hn⟩⟩
 
-/-- **The union theorem** for a directed family [McCreightMeyer1969]. If any two bounds of a
-uniformly computable family `T` are dominated almost everywhere by a third, some computable `t`
-has `C_t = ⋃ i, C_{T i}`. -/
+/-- **The union theorem** for a directed family. If any two bounds of a uniformly computable family
+`T` are dominated almost everywhere by a third, some computable `t` has
+`C_t = ⋃ i, C_{T i}`. This variant is derived here from `union_theorem`, applied to the partial
+suprema of the family. -/
 theorem union_theorem_of_directed {T : ℕ → ℕ → ℕ} (hT : Computable₂ T)
-    (hdir : ∀ i j, ∃ k, T i ≤ᶠ[atTop] T k ∧ T j ≤ᶠ[atTop] T k) :
+    (hdir : Directed (· ≤ᶠ[atTop] ·) T) :
     ∃ t : ℕ → ℕ, Computable t ∧ Φ.complexityClass t = ⋃ i, Φ.complexityClass (T i) := by
-  obtain ⟨t, ht, -, heq⟩ := Φ.union_theorem (computable_runMax hT)
-    fun i n => (runMax_succ T i n).symm ▸ le_max_left _ _
+  obtain ⟨t, ht, -, heq⟩ := Φ.union_theorem (computable_partialSups hT)
+    fun i n => partialSups_monotone (fun k => T k n) (Nat.le_succ i)
   refine ⟨t, ht, heq.trans (Set.Subset.antisymm (Set.iUnion_subset fun i => ?_)
     (Set.iUnion_subset fun i => ?_))⟩
-  · obtain ⟨k, hk⟩ := exists_runMax_le hdir i
+  · obtain ⟨k, hk⟩ := exists_partialSups_le hdir i
     exact (complexityClass_mono hk).trans (Set.subset_iUnion (fun k => Φ.complexityClass (T k)) k)
-  · refine (complexityClass_mono ?_).trans
-      (Set.subset_iUnion (fun k => Φ.complexityClass (runMax T k)) i)
-    exact Eventually.of_forall fun n => le_runMax T i n
+  · refine (complexityClass_mono ?_).trans (Set.subset_iUnion
+      (fun k => Φ.complexityClass fun n => partialSups (fun k => T k n) k) i)
+    exact Eventually.of_forall fun n => le_partialSups (fun k => T k n) i
 
-/-- **The union theorem** for a family that increases almost everywhere [McCreightMeyer1969]. If
-`T i ≤ T (i + 1)` almost everywhere for every `i`, some computable `t` has
-`C_t = ⋃ i, C_{T i}`. -/
+/-- **The union theorem** for a family that increases almost everywhere. If `T i ≤ T (i + 1)`
+almost everywhere for every `i`, some computable `t` has `C_t = ⋃ i, C_{T i}`. This variant is
+derived here from `union_theorem_of_directed`. -/
 theorem union_theorem_of_eventuallyLE {T : ℕ → ℕ → ℕ} (hT : Computable₂ T)
     (hmono : ∀ i, T i ≤ᶠ[atTop] T (i + 1)) :
     ∃ t : ℕ → ℕ, Computable t ∧ Φ.complexityClass t = ⋃ i, Φ.complexityClass (T i) := by
