@@ -29,12 +29,13 @@ proof sketch quantifies over a split point `x` only, which leaves this case impl
 With `not_foDefinable_even` this gives [Libkin, Corollary 7.27][Libkin2004]: even length is
 regular but not star-free (over a one-letter alphabet, `(aa)*`), over any nonempty alphabet.
 
-The converse, FO ⇒ star-free, holds over a finite alphabet [Libkin, Theorem 7.26][Libkin2004] and
-is not formalized here. It fails over an infinite alphabet, where `{ε}` is first-order definable
-but not star-free (`exists_foDefinable_not_isStarFree`). This is an elementary remark outside the
-finite-alphabet setting of the cited sources, not a result taken from them. For the connections
-between automata, logical definability and circuit complexity, Libkin refers to Straubing's book
-[Straubing1994].
+The converse, FO ⇒ star-free, holds over a finite alphabet [Libkin, Theorem 7.26][Libkin2004]:
+it is `FODefinable.isStarFree` in the module `WordMSO.McNaughtonPapert`, which combines both
+directions into `foDefinable_iff_isStarFree`. It fails over an infinite alphabet, where `{ε}` is
+first-order definable but not star-free (`exists_foDefinable_not_isStarFree`). This is an
+elementary remark outside the finite-alphabet setting of the cited sources, not a result taken from
+them. For the connections between automata, logical definability and circuit complexity, Libkin
+refers to Straubing's book [Straubing1994].
 
 ## Main definitions
 
