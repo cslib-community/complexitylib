@@ -5563,6 +5563,7 @@ public import Complexity.Probability.StatisticalDistance.XOR
 public import Complexity.Probability.StatisticalDistance.XORSampling
 public import Complexity.Probability.Uniform
 public import Complexity.Probability.UniformNat
+public import Complexity.Probability.UniformOrder
 public import Complexity.Probability.UniversalHash
 public import Complexity.Tactic.EncLen
 public import Complexity.Tactic.FOOperator
