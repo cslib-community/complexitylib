@@ -1396,6 +1396,14 @@ each statement against the numbered result. Organize modules by subject, not cha
   length (reservoir sampling), and the `n^{Ω(1)}` lower bounds for `F_k` with `k ≥ 6`; `ProbComp`
   samplers and native realizations of the AMS sketches; CountSketch, turnstile updates, and
   heavy-hitter recovery; multi-pass communication-to-streaming transfers with pass counts.
+- **Locality-sensitive hashing**
+  ([#3361](https://github.com/cslib-community/complexitylib/issues/3361)): the following are in
+  place: Broder's MinHash theorem, sensitive families, exact AND/OR/banding collision laws, the
+  S-curve gap, and bit sampling for the Hamming distance. Next: the `(c, r)`-approximate
+  near-neighbour data structure with `n^ρ` query time, where `ρ = log(1/p₁)/log(1/p₂)`, with
+  space and hash-evaluation costs. Remaining: SimHash, p-stable LSH for `ℓ_p` distances, MinHash
+  over min-wise independent families smaller than the symmetric group, and LSH lower bounds
+  (O'Donnell–Wu–Zhou; source to be verified before citing).
 - **Dimension reduction** ([#2996](https://github.com/cslib-community/complexitylib/issues/2996)):
   extend the Johnson–Lindenstrauss lemma for dense `±1` sign matrices to Achlioptas's sparse
   `{-√3, 0, √3}` distribution, Gaussian and spherical projections, and fast and sparse JL
