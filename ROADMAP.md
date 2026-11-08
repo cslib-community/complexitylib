@@ -649,11 +649,11 @@ index links to canonical definitions rather than keeping a second set.
   schemes (instances of probability zero obstruct a literal equivalence), randomized
   average-case classes, and `(L, U) ∈ AvgP` implying `L ∈ E`-style consequences. Reuse the
   specialized Liu–Pass hardness notions through further proved bridges.
-- **Levin completeness:** a distributional bounded-halting problem complete for `DistNP`
-  (Bogdanov–Trevisan Theorem 19, via the compression of Claim 20) under the existing dominating
-  reductions, followed by a separately scoped extension to samplable distributions
-  (Impagliazzo–Levin). Connect the framework to one-way functions, learning and the
-  metacomplexity track ([#798]), preserving the distribution and reduction conventions.
+- **Completeness beyond computable ensembles** ([#2865](https://github.com/cslib-community/complexitylib/issues/2865)): extend the bounded-halting completeness for
+  `DistNP` to samplable distributions (Impagliazzo–Levin, `SampNP`), and bridge the verifier-form
+  bounded halting problem to a nondeterministic machine model. Connect the framework to one-way
+  functions, learning and the metacomplexity track ([#798]), preserving the distribution and
+  reduction conventions.
 
 ### Counting and modular classes
 
