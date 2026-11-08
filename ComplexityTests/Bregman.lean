@@ -50,10 +50,11 @@ example : (U₂.permanent : ℝ) <
     ∏ i, ((∑ j, U₂ i j).factorial : ℝ) ^ (1 / ((∑ j, U₂ i j : ℕ) : ℝ)) := by
   have hU : U₂.permanent = 1 := by decide
   have hs : (∑ j, U₂ 0 j) = 2 ∧ (∑ j, U₂ 1 j) = 1 := by decide
-  rw [hU, Fin.prod_univ_two, hs.1, hs.2]
-  norm_num [Nat.factorial]
-  rw [← Real.sqrt_eq_rpow]
-  exact Real.lt_sqrt (by norm_num) |>.2 (by norm_num)
+  have h2 : ((2 : ℕ).factorial : ℝ) ^ (1 / ((2 : ℕ) : ℝ)) = √2 := by
+    rw [Real.sqrt_eq_rpow]; norm_num [Nat.factorial]
+  have h1 : ((1 : ℕ).factorial : ℝ) ^ (1 / ((1 : ℕ) : ℝ)) = 1 := by norm_num
+  rw [hU, Fin.prod_univ_two, hs.1, hs.2, h2, h1, mul_one, Nat.cast_one]
+  exact Real.lt_sqrt zero_le_one |>.2 (by norm_num)
 
 example : (U₂.permanent : ℝ) ≤
     ∏ i, ((∑ j, U₂ i j).factorial : ℝ) ^ (1 / ((∑ j, U₂ i j : ℕ) : ℝ)) :=
@@ -67,6 +68,10 @@ example : Z₂.permanent = 0 := by decide
 example : ((∑ j, Z₂ 0 j).factorial : ℝ) ^ (1 / ((∑ j, Z₂ 0 j : ℕ) : ℝ)) = 1 := by
   have : (∑ j, Z₂ 0 j) = 0 := by decide
   simp [this]
+
+example : (Z₂.permanent : ℝ) ≤
+    ∏ i, ((∑ j, Z₂ i j).factorial : ℝ) ^ (1 / ((∑ j, Z₂ i j : ℕ) : ℝ)) :=
+  permanent_le_prod_factorial_rpow fun i j => by fin_cases i <;> fin_cases j <;> decide
 
 /-- The block-diagonal matrix of `K_{2,2} ⊕ K_{1,1}`, with blocks `{0, 1}` and `{2}`. -/
 def B₃ : Matrix (Fin 3) (Fin 3) ℕ := !![1, 1, 0; 1, 1, 0; 0, 0, 1]
@@ -84,6 +89,11 @@ example : (B₃.permanent : ℝ) =
 def R₄ : Matrix (Fin 4) (Fin 4) ℕ := !![1, 1, 0, 0; 1, 1, 0, 0; 0, 0, 1, 1; 0, 0, 1, 1]
 
 example : R₄.permanent = 4 := by decide
+
+/-- The regular bound for `R₄` evaluates to `2! ^ (4 / 2) = 4`. -/
+example : ((2 : ℕ).factorial : ℝ) ^ ((Fintype.card (Fin 4) : ℝ) / (2 : ℕ)) = 4 := by
+  rw [Fintype.card_fin, show ((4 : ℕ) : ℝ) / (2 : ℕ) = (2 : ℕ) by norm_num, Real.rpow_natCast]
+  norm_num [Nat.factorial]
 
 example :
     (R₄.permanent : ℝ) ≤ ((2 : ℕ).factorial : ℝ) ^ ((Fintype.card (Fin 4) : ℝ) / (2 : ℕ)) :=
