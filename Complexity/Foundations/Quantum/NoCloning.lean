@@ -150,8 +150,10 @@ theorem inner_eq_zero_or_eq_of_clone (U : E ⊗[ℂ] E →ₗᵢ[ℂ] E ⊗[ℂ]
 
 /-- **No-cloning** [Wootters, Zurek][WoottersZurek1982], [Dieks][Dieks1982], ancilla-free and up
 to nonzero factors: if `dim E ≥ 2`, no linear map `L` of `E ⊗ E` maps `ψ ⊗ e` to a nonzero
-multiple of `ψ ⊗ ψ` for every unit state `ψ`, whatever the blank state `e`. In dimension `1` such
-a map exists, so the hypothesis `1 < Module.rank ℂ E` is needed. -/
+multiple of `ψ ⊗ ψ` for every unit state `ψ`, whatever the blank state `e`. In dimension `1`, for
+every nonzero blank `e`, the identity is such a map (with factor `e / ψ`), so the hypothesis
+`1 < Module.rank ℂ E` is needed for this form. Without the factor, no linear cloner exists even in
+dimension `1`: cloning both `ψ` and `-ψ` forces `ψ ⊗ ψ = -(ψ ⊗ ψ)`. -/
 theorem not_exists_linearMap_clone_smul (h : 1 < Module.rank ℂ E) (e : E) :
     ¬ ∃ (L : E ⊗[ℂ] E →ₗ[ℂ] E ⊗[ℂ] E) (c : E → ℂ),
       ∀ ψ : E, ‖ψ‖ = 1 → c ψ ≠ 0 ∧ L (ψ ⊗ₜ e) = c ψ • ψ ⊗ₜ ψ := by

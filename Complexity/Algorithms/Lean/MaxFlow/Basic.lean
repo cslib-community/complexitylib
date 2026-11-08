@@ -63,6 +63,8 @@ Chapter I, Sections 4–8; [CLRS2009], Sections 26.1–26.2, Theorem 26.6).
   `s`-`t` cut equals `f.value`.
 * `Cslib.Algorithms.Lean.MaxFlow.Network.Flow.value_le_cutCapacity`: weak duality
   (`f.value ≤ cutCapacity S` for every feasible flow `f` and `s`-`t` cut `S`).
+* `Cslib.Algorithms.Lean.MaxFlow.Network.Flow.value_eq_cutCapacity_of_resCap_eq_zero`: a flow with
+  no residual capacity leaving a cut has the cut's capacity as value.
 * `Cslib.Algorithms.Lean.MaxFlow.Network.Flow.isMaxFlow_iff_not_exists_augmentingPath` and
   `isMaxFlow_iff_exists_cut_value_eq`: Ford–Fulkerson optimality characterizations.
 * `Cslib.Algorithms.Lean.MaxFlow.Network.exists_maxFlow_eq_minCut`: existence of an integral
@@ -873,33 +875,35 @@ theorem reachableCut_isCut (f : N.Flow) (hno : ¬ ∃ p, f.IsAugmentingPath p) :
   rw [f.mem_reachableCut_iff, ← f.exists_augmentingPath_iff_resReachable]
   exact hno
 
-theorem value_eq_cutCapacity_reachableCut [DecidableEq V] (f : N.Flow)
-    (hno : ¬ ∃ p, f.IsAugmentingPath p) :
-    f.value = (N.cutCapacity f.reachableCut : ℤ) := by
-  have hcut := f.reachableCut_isCut hno
-  rw [f.value_eq_netFlow_across_cut hcut]
-  have hsat : ∀ u ∈ f.reachableCut, ∀ v ∈ Finset.univ \ f.reachableCut,
-      f u v = N.cap u v ∧ f v u = 0 := by
+/-- A flow with no residual capacity from a cut `S` to its complement saturates every arc leaving
+`S` and carries nothing into `S`, so its value is `N.cutCapacity S`. -/
+theorem value_eq_cutCapacity_of_resCap_eq_zero [DecidableEq V] (f : N.Flow) {S : Finset V}
+    (hS : N.IsCut S) (h0 : ∀ u ∈ S, ∀ v ∈ Finset.univ \ S, f.resCap u v = 0) :
+    f.value = (N.cutCapacity S : ℤ) := by
+  rw [f.value_eq_netFlow_across_cut hS]
+  have hsat : ∀ u ∈ S, ∀ v ∈ Finset.univ \ S, f u v = N.cap u v ∧ f v u = 0 := by
     intro u hu v hv
-    have hu_r : f.ResReachable N.s u := (f.mem_reachableCut_iff u).mp hu
-    have hv_nr : ¬ f.ResReachable N.s v := by
-      rw [Finset.mem_sdiff, f.mem_reachableCut_iff] at hv
-      exact hv.2
-    have hzero : f.resCap u v = 0 := by
-      by_contra hpos
-      exact hv_nr (hu_r.tail (Nat.pos_of_ne_zero hpos))
-    unfold resCap at hzero
+    have hz := h0 u hu v hv
+    unfold resCap at hz
     have hle := f.le_cap u v
     omega
-  have hfwd : (∑ u ∈ f.reachableCut, ∑ v ∈ Finset.univ \ f.reachableCut, (f u v : ℤ)) =
-      ∑ u ∈ f.reachableCut, ∑ v ∈ Finset.univ \ f.reachableCut, (N.cap u v : ℤ) :=
+  have hfwd : (∑ u ∈ S, ∑ v ∈ Finset.univ \ S, (f u v : ℤ)) =
+      ∑ u ∈ S, ∑ v ∈ Finset.univ \ S, (N.cap u v : ℤ) :=
     Finset.sum_congr rfl fun u hu => Finset.sum_congr rfl fun v hv => by
       rw [(hsat u hu v hv).1]
-  have hbwd : (∑ u ∈ f.reachableCut, ∑ v ∈ Finset.univ \ f.reachableCut, (f v u : ℤ)) = 0 :=
+  have hbwd : (∑ u ∈ S, ∑ v ∈ Finset.univ \ S, (f v u : ℤ)) = 0 :=
     Finset.sum_eq_zero fun u hu => Finset.sum_eq_zero fun v hv => by
       simp [(hsat u hu v hv).2]
   rw [hfwd, hbwd, sub_zero]
   simp only [cutCapacity, Nat.cast_sum]
+
+theorem value_eq_cutCapacity_reachableCut [DecidableEq V] (f : N.Flow)
+    (hno : ¬ ∃ p, f.IsAugmentingPath p) :
+    f.value = (N.cutCapacity f.reachableCut : ℤ) := by
+  refine f.value_eq_cutCapacity_of_resCap_eq_zero (f.reachableCut_isCut hno) fun u hu v hv => ?_
+  rw [Finset.mem_sdiff, f.mem_reachableCut_iff] at hv
+  by_contra hpos
+  exact hv.2 (((f.mem_reachableCut_iff u).mp hu).tail (Nat.pos_of_ne_zero hpos))
 
 /-- **Ford–Fulkerson augmenting-path characterization** ([FordFulkerson1956], Theorem 1,
 pp. 400–402; [CLRS2009], Theorem 26.6, p. 723, `(1) ↔ (2)`): when `N.s ≠ N.t`, a feasible flow `f`
