@@ -151,7 +151,14 @@ uniform inputs, defined in
   `encSDInstance` encodes the input and output counts in unary, followed by both circuit codes.
   `SDInstance.computableInPolyTime_polarize` makes `x.polarize (lam x) (ell x) (k x)`
   polynomial-time whenever the three parameters are polynomial-time with unary output.
-  `SDInstance.exists_polarize_computableInPolyTime` packages this with the Polarization Lemma. Use
+  `SDInstance.computableInPolyTime_polarize_comp` is the general form. There the instance and the
+  parameters are polynomial-time functions of any encoded input; `computableInPolyTime_polarize_log`
+  specializes it to the parameters of `SDInstance.exists_polarize`.
+  `SDInstance.exists_computableInPolyTime_polarize_unary` is the source's form, with the error
+  parameter `k` a separate unary input: one map on `encPair encSDInstance encUnary` with error
+  `(1/2)^(k + 1)`.
+  `SDInstance.exists_polarize_computableInPolyTime` instead takes `k = K x` for a function `K` of
+  the instance. Use
   `obtain ⟨m, b, hm, h⟩ := …`, then `h K hK` for any polynomial-time unary `K`. It returns the
   polynomial-time certificate and the two distance bounds with error `(1/2)^(K x + 1)`.
   Two corollaries cover the common cases. With `K x` the encoded length,

@@ -12,7 +12,9 @@ import ComplexityTests.StatisticalDifference
 Checked instances: the raw code of two copies of a one-gate circuit, its agreement with
 `Circuit.replicate`, the gate count of the multiplexer code, a polynomial-time polarization map
 with fixed parameters, the reduction from `SD^{2/3,1/3}` to `SD^{9/10,1/10}` applied to a far and a
-near instance, and the length-indexed polarization applied to the same instances.
+near instance, the length-indexed polarization applied to the same instances, the polarization
+with the error parameter in unary applied to them for every `k`, and a polynomial-time
+polarization of a computed instance with a computed parameter.
 -/
 
 namespace ComplexityTests.StatisticalDifferencePolyTime
@@ -90,5 +92,26 @@ example : ∃ f : SDInstance → SDInstance, ComputableInPolyTime f encSDInstanc
     (β := 1 / 3) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
   exact ⟨f, hf, (h far).1 (by rw [far_distance]; norm_num),
     (h near).2 (by rw [near_distance]; norm_num)⟩
+
+/-! ### The error parameter in unary -/
+
+/-- With the error parameter `k` a separate unary input, as in the source, the far instance
+polarizes to distance at least `1 - 2⁻⁽ᵏ⁺¹⁾` and the near instance to distance at most
+`2⁻⁽ᵏ⁺¹⁾`, for every `k`. -/
+example : ∃ f : SDInstance × ℕ → SDInstance,
+    ComputableInPolyTime f (encPair encSDInstance encUnary) encSDInstance ∧
+    ∀ k : ℕ, 1 - (1 / 2 : ℝ) ^ (k + 1) ≤ (f (far, k)).distance ∧
+      (f (near, k)).distance ≤ (1 / 2 : ℝ) ^ (k + 1) := by
+  obtain ⟨f, hf, h⟩ := SDInstance.exists_computableInPolyTime_polarize_unary (α := 2 / 3)
+    (β := 1 / 3) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  exact ⟨f, hf, fun k => ⟨(h far k).1 (by rw [far_distance]; norm_num),
+    (h near k).2 (by rw [near_distance]; norm_num)⟩⟩
+
+/-- Polarization of a computed instance with computed parameters: polarizing the first component
+of a pair, with the second component as the number of outer coordinates, is polynomial-time. -/
+example : ComputableInPolyTime (fun p : SDInstance × ℕ => p.1.polarize 1 2 p.2)
+    (encPair encSDInstance encUnary) encSDInstance :=
+  SDInstance.computableInPolyTime_polarize_comp (ComputableInPolyTime.fst _ _)
+    (ComputableInPolyTime.const 1) (ComputableInPolyTime.const 2) (ComputableInPolyTime.snd _ _)
 
 end ComplexityTests.StatisticalDifferencePolyTime
