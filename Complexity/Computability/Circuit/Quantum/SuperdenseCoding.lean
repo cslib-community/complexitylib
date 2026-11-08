@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Circuit.Quantum.GateMatrix
 public import Complexity.Foundations.Quantum.Bell
 public import Complexity.Foundations.Quantum.Bipartite
+public import Complexity.Foundations.Quantum.Register
 
 /-!
 # Superdense coding
@@ -67,16 +68,13 @@ theorem superdenseEncoding_mulVec (a b : Bool) (v : Bool → ℂ) (c : Bool) :
 /-- Bob's decoding in superdense coding: a CNOT controlled by Alice's qubit, then a Hadamard on
 Alice's qubit. -/
 noncomputable def superdenseDecoding : unitaryGroup (Bool × Bool) ℂ :=
-  ⟨(hadamardMatrix ⊗ₖ 1) * cnotMatrix,
-    mul_mem (kronecker_mem_unitary hadamardMatrix_mem_unitaryGroup (one_mem _))
-      cnotMatrix_mem_unitaryGroup⟩
+  onFirst ⟨hadamardMatrix, hadamardMatrix_mem_unitaryGroup⟩ *
+    ⟨cnotMatrix, cnotMatrix_mem_unitaryGroup⟩
 
 /-- The state Bob measures in superdense coding of `(a, b)`: the Bell state after Alice's encoding
 on her half and Bob's decoding. -/
 noncomputable def superdenseState (a b : Bool) : EuclideanSpace ℂ (Bool × Bool) :=
-  unitaryEquiv superdenseDecoding
-    (unitaryEquiv ⟨(superdenseEncoding a b : Matrix Bool Bool ℂ) ⊗ₖ 1,
-      kronecker_mem_unitary (superdenseEncoding a b).2 (one_mem _)⟩ bell)
+  unitaryEquiv superdenseDecoding (unitaryEquiv (onFirst (superdenseEncoding a b)) bell)
 
 theorem norm_superdenseState (a b : Bool) : ‖superdenseState a b‖ = 1 := by
   rw [superdenseState, LinearIsometryEquiv.norm_map, LinearIsometryEquiv.norm_map, norm_bell]
@@ -88,9 +86,9 @@ theorem superdenseState_eq (a b : Bool) :
     rw [← Complex.ofReal_mul, ← mul_inv, Real.mul_self_sqrt (by norm_num)]
     norm_num
   ext ⟨x, y⟩
-  simp only [superdenseState, superdenseDecoding, unitaryEquiv_apply, ← mulVec_mulVec,
-    kronecker_one_mulVec, hadamardMatrix_mulVec, cnotMatrix_mulVec, superdenseEncoding_mulVec,
-    bell_apply]
+  simp only [superdenseState, superdenseDecoding, unitaryEquiv_apply, Submonoid.coe_mul,
+    coe_onFirst, ← mulVec_mulVec, kronecker_one_mulVec, hadamardMatrix_mulVec, cnotMatrix_mulVec,
+    superdenseEncoding_mulVec, bell_apply]
   cases a <;> cases b <;> cases x <;> cases y <;>
     simp only [WithLp.ofLp_smul, Pi.smul_apply, ket_apply, smul_eq_mul, Bool.bne_true,
       Bool.bne_false, Bool.not_false, Bool.not_true, Bool.and_true, Bool.and_false,

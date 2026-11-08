@@ -1344,12 +1344,14 @@ each statement against the numbered result. Organize modules by subject, not cha
   reductions.
 
 - **Quantum information primitives**
-  ([#3329](https://github.com/cslib-community/complexitylib/issues/3329)): beyond pure-state
-  no-cloning, single-qubit teleportation and superdense coding, prove Holevo's bound (in
-  particular, superdense coding is optimal) and Nayak's bound for quantum random access codes.
-  Both need density matrices, von Neumann entropy and mutual information. With channel semantics,
-  prove no-cloning for mixed states, no-broadcasting, and teleportation of half of an entangled
-  state (entanglement swapping).
+  ([#3329](https://github.com/cslib-community/complexitylib/issues/3329)): beyond pure-state,
+  ancilla-free no-cloning, single-qubit teleportation and superdense coding, prove the
+  Wootters–Zurek form of no-cloning with an input-dependent apparatus register (by the same
+  linearity argument) and teleportation of one half of an entangled state, as in entanglement
+  swapping (a pure-state statement). Prove Holevo's bound (in particular, superdense coding is
+  optimal) and Nayak's bound for quantum random access codes; both need density matrices, von
+  Neumann entropy and mutual information. With channel semantics, prove no-cloning for mixed
+  states and no-broadcasting.
 
 - **Quantum query separations**
   ([#2991](https://github.com/cslib-community/complexitylib/issues/2991)): beyond the decision
