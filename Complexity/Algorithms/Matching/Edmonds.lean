@@ -24,8 +24,9 @@ in the variables `V × V`, is nonzero exactly when `G` has a perfect matching
 ring. In the Leibniz expansion every permutation `σ` gives the monomial `∏ v, X (v, σ v)` when its
 pairs are all edges and `0` otherwise. Without a perfect matching every term vanishes. With one,
 `σ`, evaluating at the indicator of the pairs `(v, σ v)` turns the matrix into the permutation
-matrix of `σ`, of determinant `sign σ ≠ 0`. This is Edmonds' observation that underlies Lovász's
-randomized matching algorithm [Lovasz1979] [Motwani and Raghavan, Section 7.3][MotwaniRaghavan95].
+matrix of `σ`, of determinant `sign σ ≠ 0`. This is Edmonds' observation [Edmonds1967] that
+underlies Lovász's randomized matching algorithm [Lovasz1979]
+[Motwani and Raghavan, Section 7.3][MotwaniRaghavan95].
 
 The randomized test substitutes values `r : V × V → R` for the indeterminates
 (`Cslib.Algorithms.Matching.edmondsEval G r`) and checks whether the determinant is nonzero. Its
@@ -53,6 +54,7 @@ since the determinant has total degree at most `|V|`.
 
 ## References
 
+* [J. Edmonds, *Systems of distinct representatives and linear algebra*][Edmonds1967]
 * [L. Lovász, *On determinants, matchings, and random algorithms*][Lovasz1979]
 * [R. Motwani and P. Raghavan, *Randomized Algorithms*, Section 7.3][MotwaniRaghavan95]
 -/
@@ -146,9 +148,9 @@ theorem det_edmondsMatrix_ne_zero [Nontrivial R] {G : V × V → Bool}
   rw [edmondsEval_indicator hσ, det_permutation, h, map_zero] at this
   rcases Int.units_eq_one_or (Perm.sign σ) with hs | hs <;> simp [hs] at this
 
-/-- **Edmonds' criterion**: over a nontrivial commutative ring, the determinant of the Edmonds
-matrix of a bipartite graph is a nonzero polynomial exactly when the graph has a perfect
-matching. -/
+/-- **Edmonds' criterion** [Edmonds1967]: over a nontrivial commutative ring, the determinant of
+the Edmonds matrix of a bipartite graph is a nonzero polynomial exactly when the graph has a
+perfect matching. -/
 theorem det_edmondsMatrix_ne_zero_iff [Nontrivial R] {G : V × V → Bool} :
     (edmondsMatrix (R := R) G).det ≠ 0 ↔ HasPerfectMatching G :=
   ⟨fun h => by_contra fun hG => h (det_edmondsMatrix_eq_zero hG), det_edmondsMatrix_ne_zero⟩
