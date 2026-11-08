@@ -14,6 +14,14 @@
 
 The metric is number of page faults. The recency-list Lean implementation is not claimed to take constant RAM time per request. This is competitive resource analysis over a state-transition model.
 
+## The k-server problem
+
+[KServer/Basic](../../Complexity/DataStructure/KServer/Basic.lean) instantiates the online `Problem` with `k` servers on a metric whose distances are natural numbers (`NatMetric`). A configuration is a labeled tuple `Fin k → α`, a request is a point, a transition must put some server on the request, and its cost `moveCost` is the summed per-server distance. Coincident servers are allowed. Relabeling is free, so the cheapest move to a configuration's multiset is the minimum-cost perfect matching `matchCost` (`matchCostAlong_eq_moveCost`), and the offline optimum is that of the source's multiset formulation. `NatMetric.line` is the integer line and `NatMetric.uniform` the uniform metric, on which `k`-server is paging up to the cost convention.
+
+[KServer/LowerBound](../../Complexity/DataStructure/KServer/LowerBound.lean) proves the Manasse–McGeoch–Sleator lower bound (Theorem 6 with `h = k` and Corollary 7) [manassemcgeochsleator90][manassemcgeochsleator90]. `lazify` turns any strategy into one that moves at most one server, only to an uncovered request, at no greater cost. The adversary requests the point of a fixed `(k+1)`-point set that the lazy simulation leaves uncovered. The `k` offline shadow schedules `shadowStates` together pay the request path once, plus the initial distances (`sum_holeCost`). `exists_ratio_violation` rules out every rational ratio `p/q < k` with any additive constant, from any `k` distinct initial points with a further point available. `not_isCompetitive_of_lt` and `not_isCompetitiveAnyInit_of_lt` state the integer form on any metric with `k + 1` distinct points. The source's comparison with `h < k` offline servers (`k/(k-h+1)`) is not formalized.
+
+[KServer/DoubleCoverage](../../Complexity/DataStructure/KServer/DoubleCoverage.lean) defines Double Coverage on the integer line. `dcStep` sorts the configuration, moves the outer server for an outer request or the two neighbouring servers toward an inner request, and restores the labels. The potential is `k·matchCost + Σ_{i<j}|s_i - s_j|` (doubled as `2k·matchCost + pairSum`, since `pairSum` counts ordered pairs). `dcStep_amortized_offline` is the step inequality `2·cost_DC + Δ(2Φ) ≤ 2k·cost_OPT`. `doubleCoverage_cost_le` bounds the cost by `k·OPT + k·matchCost s₀ s_off + Σ_{i<j}|s₀ i - s₀ j|` against offline schedules from any start, and `doubleCoverage_isCompetitiveFrom` gives ratio `k` from every initial configuration with that additive spread. This is the Chrobak–Karloff–Payne–Vishwanathan theorem [chrobakkarloffpaynevishwanathan91][chrobakkarloffpaynevishwanathan91], restricted to integer points. With the lower bound, the deterministic ratio on the line is exactly `k`. The [test file](../../ComplexityTests/KServer.lean) computes a three-server Double Coverage run, an offline schedule and the additive constant, and checks the uniform-metric lower bound and that Double Coverage is not `(k-1)`-competitive.
+
 ## Count-Min: a stored streaming sketch
 
 [Complexity/DataStructure/CountMin/Basic.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/DataStructure/CountMin/Basic.lean) models a weighted insertion stream `List (X × Nat)`. Each update increments one bucket in each row of a vector-of-vectors counter table; a query takes the minimum row counter. The exact bucket invariant proves no underestimation, each counter's bound by total mass, and entrywise merge agreement with stream concatenation.
@@ -79,7 +87,11 @@ The online interface surveyed is deterministic; randomized competitive analysis 
 
 The optimal-stopping modules are semantic probability statements over deterministic rules: they do not charge the rules' computation and are not phrased through the online `Problem` interface.
 
+The `k`-server modules use natural-number distances, so Double Coverage is proved on the integer line rather than the real line. Double Coverage on trees, the work-function algorithm's `2k-1` bound, the `k`-server conjecture, randomized `k`-server and an algorithm computing the offline optimum are not formalized, and the Lean step functions carry no time bounds.
+
 [alonmatiasszegedy99]: ../sources.md#alonmatiasszegedy99
+[chrobakkarloffpaynevishwanathan91]: ../sources.md#chrobakkarloffpaynevishwanathan91
 [complexitylib]: ../sources.md#complexitylib
 [cormode05]: ../sources.md#cormode05
+[manassemcgeochsleator90]: ../sources.md#manassemcgeochsleator90
 [sleatortarjan85]: ../sources.md#sleatortarjan85
