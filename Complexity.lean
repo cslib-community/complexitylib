@@ -1881,10 +1881,10 @@ public import Complexity.Computability.Complexity.Parameterized.ColorCoding
 public import Complexity.Computability.Complexity.Parameterized.Kernelization
 public import Complexity.Computability.Complexity.Parameterized.VertexCover
 public import Complexity.Computability.Complexity.Parameterized.VertexCover.BussKernel
-public import Complexity.Computability.Complexity.Problems.BipartitePerfectMatching
-public import Complexity.Computability.Complexity.Problems.BipartitePerfectMatching.Membership
 public import Complexity.Computability.Complexity.Parameterized.WHierarchy
 public import Complexity.Computability.Complexity.Parameterized.WHierarchy.IndependentSet
+public import Complexity.Computability.Complexity.Problems.BipartitePerfectMatching
+public import Complexity.Computability.Complexity.Problems.BipartitePerfectMatching.Membership
 public import Complexity.Computability.Complexity.Problems.BoundedHalting
 public import Complexity.Computability.Complexity.Problems.CSP.Affine
 public import Complexity.Computability.Complexity.Problems.CSP.Basic
