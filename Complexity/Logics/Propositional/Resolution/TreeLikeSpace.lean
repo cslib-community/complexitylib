@@ -21,18 +21,22 @@ unsatisfiable formula `F` has `tree-size(F) ≥ 2 ^ space(F) - 1`.
 The proof in that survey pebbles a tree-like refutation with `d + 1` pebbles, where `d` is the
 height of the largest complete binary tree embedded in it. This is the **Horton–Strahler number**
 of the derivation (`Cslib.Logic.PL.CNF.Derivation.strahler`): `0` at a leaf, and at a resolution
-step the larger of the numbers of the two premises, plus one if they are equal. To derive the
-conclusion, derive first the premise of larger number, keep it, and derive the other
+step the larger of the numbers of the two premises, plus one if they are equal. It is the
+Ehrenfeucht–Haussler rank (`Cslib.DecisionTree.rank`) of the decision tree of the derivation
+(`Cslib.Logic.PL.CNF.Derivation.strahler_eq_rank_toDecisionTree`). To derive the conclusion, derive
+first the premise of larger number, keep it, and derive the other
 (`Cslib.Logic.PL.CNF.Derivation.exists_configLTS_mTr`). A derivation of Strahler number `r` embeds
 a complete binary tree of height `r`, so it has at least `2 ^ (r + 1) - 1` nodes
-(`Cslib.Logic.PL.CNF.Derivation.two_pow_strahler_add_one_le`).
+(`Cslib.Logic.PL.CNF.Derivation.two_pow_strahler_add_one_le`, from
+`Cslib.DecisionTree.two_pow_rank_le_leafCount`).
 
-**Convention.** The pebble game of the survey lets an inference move a pebble from a premise to the
-resolvent, so `x ∧ ¬x` is refuted with two pebbles. Configurations here
-(`Cslib.Logic.PL.CNF.configLTS`) keep both premises while they add the resolvent, as in Filmus,
-Lauria, Mikša, Nordström and Vinyals [FilmusLauriaMiksaNordstromVinyals2014], so `x ∧ ¬x` needs
-clause space `3` (`Cslib.Logic.PL.CNF.RefutableInSpace.three_le`), and every bound below is one
-larger than its counterpart in the survey:
+**Convention.** The pebble game of the survey [Torán, Definition 7 and Lemma 8][Toran2004] lets an
+inference shift a pebble from a premise to the resolvent, so `x ∧ ¬x` is refuted with two pebbles.
+Configurations here (`Cslib.Logic.PL.CNF.configLTS`) keep both premises while they add the
+resolvent, as in Filmus, Lauria, Mikša, Nordström and Vinyals
+[FilmusLauriaMiksaNordstromVinyals2014], so `x ∧ ¬x` needs clause space `3`
+(`Cslib.Logic.PL.CNF.RefutableInSpace.three_le`), and every bound below is one larger than its
+counterpart in the survey:
 
 * a tree-like refutation of Strahler number `r` gives clause space `r + 2`
   (`Cslib.Logic.PL.CNF.Derivation.refutableInSpace`), as the complete binary tree of height `h ≥ 1`
@@ -56,6 +60,8 @@ The original paper of Esteban and Torán was not inspected for this formalizatio
 
 ## Main results
 
+* `Cslib.Logic.PL.CNF.Derivation.strahler_eq_rank_toDecisionTree`: the Strahler number is the
+  Ehrenfeucht–Haussler rank of the decision tree of the derivation.
 * `Cslib.Logic.PL.CNF.Derivation.two_pow_strahler_add_one_le`: `2 ^ (r + 1) ≤ S + 1`.
 * `Cslib.Logic.PL.CNF.Derivation.exists_configLTS_mTr`,
   `Cslib.Logic.PL.CNF.Derivation.refutableInSpace`: clause space at most `r + 2`.
@@ -92,7 +98,9 @@ namespace Derivation
 
 /-- The **Horton–Strahler number** of a tree-like derivation: `0` at a leaf, and at a resolution
 step the larger of the numbers of the two premises, plus one if they are equal. It is the height of
-the largest complete binary tree embedded in the derivation [Torán, Theorem 9][Toran2004]. -/
+the largest complete binary tree embedded in the derivation [Torán, Theorem 9][Toran2004], and the
+Ehrenfeucht–Haussler rank `Cslib.DecisionTree.rank` of the decision tree of the derivation
+(`Cslib.Logic.PL.CNF.Derivation.strahler_eq_rank_toDecisionTree`). -/
 def strahler : {c : Clause V} → φ.Derivation c → ℕ
   | _, mem _ => 0
   | _, resolvent _ d₁ d₂ _ _ =>
@@ -107,23 +115,23 @@ theorem strahler_resolvent {c₁ c₂ : Clause V} (v : V) (d₁ : φ.Derivation 
     (resolvent v d₁ d₂ hv₁ hv₂).strahler =
       if d₁.strahler = d₂.strahler then d₁.strahler + 1 else max d₁.strahler d₂.strahler := rfl
 
-/-- A tree-like derivation of Strahler number `r` has at least `2 ^ (r + 1) - 1` nodes. -/
-theorem two_pow_strahler_add_one_le : {c : Clause V} → (d : φ.Derivation c) →
-    2 ^ (d.strahler + 1) ≤ d.size + 1
-  | _, mem _ => by simp
-  | _, resolvent v d₁ d₂ hv₁ hv₂ => by
-    have h₁ := two_pow_strahler_add_one_le d₁
-    have h₂ := two_pow_strahler_add_one_le d₂
-    rw [strahler_resolvent, size_resolvent]
-    split_ifs with h
-    · rw [← h] at h₂
-      have := pow_succ 2 (d₁.strahler + 1)
-      omega
-    · rcases le_total d₁.strahler d₂.strahler with h' | h'
-      · rw [max_eq_right h']
-        omega
-      · rw [max_eq_left h']
-        omega
+/-- The Strahler number of a tree-like derivation is the Ehrenfeucht–Haussler rank of its decision
+tree. -/
+theorem strahler_eq_rank_toDecisionTree : {c : Clause V} → (d : φ.Derivation c) →
+    d.strahler = d.toDecisionTree.rank
+  | _, mem _ => rfl
+  | _, resolvent v d₁ d₂ _ _ => by
+    rw [strahler_resolvent, strahler_eq_rank_toDecisionTree d₁, strahler_eq_rank_toDecisionTree d₂]
+    rfl
+
+/-- A tree-like derivation of Strahler number `r` has at least `2 ^ (r + 1) - 1` nodes: its decision
+tree has at least `2 ^ r` leaves (`Cslib.DecisionTree.two_pow_rank_le_leafCount`). -/
+theorem two_pow_strahler_add_one_le {c : Clause V} (d : φ.Derivation c) :
+    2 ^ (d.strahler + 1) ≤ d.size + 1 := by
+  have h₁ := d.toDecisionTree.two_pow_rank_le_leafCount
+  have h₂ := d.two_mul_leafCount_toDecisionTree
+  rw [strahler_eq_rank_toDecisionTree, pow_succ]
+  omega
 
 /-! ### Clause space -/
 
@@ -178,8 +186,9 @@ theorem refutableInSpace (d : φ.Derivation []) : φ.RefutableInSpace (d.strahle
     Finset.mem_insert_self _ _⟩
 
 /-- **Esteban and Torán's bound** [Torán, Theorem 9][Toran2004] [EstebanToran2001]: a tree-like
-refutation of `S` nodes gives clause space `log₂ (S + 1) + 1`. The survey's bound, for a pebble game
-that moves a pebble from a premise to the resolvent, is one less. -/
+refutation of `S` nodes gives clause space `log₂ (S + 1) + 1`. The space of the survey, for a pebble
+game that shifts a pebble from a premise to the resolvent, is at most one less than clause space
+here, so its bound `log₂ (S + 1)` implies this one. -/
 theorem refutableInSpace_log (d : φ.Derivation []) :
     φ.RefutableInSpace (Nat.log 2 (d.size + 1) + 1) :=
   d.refutableInSpace.mono <| by
@@ -189,7 +198,8 @@ theorem refutableInSpace_log (d : φ.Derivation []) :
 /-- **Esteban and Torán's bound** [Torán, Theorem 9][Toran2004] [EstebanToran2001], as a lower bound
 on tree-like size: if `φ` is not refutable in clause space `s`, every tree-like refutation of `φ`
 has at least `2 ^ s - 1` nodes. The survey states `tree-size(F) ≥ 2 ^ space(F) - 1` for a pebble
-game that moves a pebble from a premise to the resolvent, where space is one less. -/
+game that shifts a pebble from a premise to the resolvent, whose space is at most one less than
+clause space here. -/
 theorem two_pow_le_size_add_one (d : φ.Derivation []) {s : ℕ} (h : ¬ φ.RefutableInSpace s) :
     2 ^ s ≤ d.size + 1 := by
   have hs : s ≤ d.strahler + 1 := by
@@ -271,7 +281,7 @@ theorem exists_derivation_strahler_le (h : ¬ φ.Satisfiable) :
   exact ⟨d, hd⟩
 
 /-- **Every unsatisfiable formula on `n` variables is refutable in clause space `n + 2`**: the bound
-`n + 1` of [Torán, Section 4][Toran2004], for a pebble game that moves a pebble from a premise to
+`n + 1` of [Torán, Section 4][Toran2004], for a pebble game that shifts a pebble from a premise to
 the resolvent, in the convention of `Cslib.Logic.PL.CNF.configLTS`. -/
 theorem refutableInSpace_of_not_satisfiable (h : ¬ φ.Satisfiable) :
     φ.RefutableInSpace (#φ.vars.toFinset + 2) := by

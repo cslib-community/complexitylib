@@ -10,10 +10,11 @@ import Complexity.Logics.Propositional.Resolution.TseitinSpace
 /-!
 # Tests: clause space of tree-like refutations
 
-Strahler numbers and sizes of tree-like refutations of `x ∧ ¬x` and of the complete formula on two
-variables; Esteban and Torán's bound, attained by `x ∧ ¬x`; the bound `n + 2` for formulas on `n`
-variables, attained for `n = 1`; and a tree-like size lower bound for the hard Tseitin family from
-its clause-space lower bound.
+Strahler numbers and sizes of tree-like refutations of `x ∧ ¬x`, of the complete formula on two
+variables, and of a unit-propagation chain, where the Strahler bound beats the logarithmic bound;
+the Strahler number as a decision-tree rank; Esteban and Torán's bound, attained by `x ∧ ¬x`; the
+bound `n + 2` for formulas on `n` variables, attained for `n = 1`; and a tree-like size lower bound
+for the hard Tseitin family from its clause-space lower bound.
 -/
 
 namespace ComplexityTests.ProofComplexity.TreeLikeSpace
@@ -68,6 +69,35 @@ private def dκ : κ.Derivation [] :=
 example : dκ.size = 7 ∧ dκ.strahler = 2 := ⟨rfl, rfl⟩
 
 example : κ.RefutableInSpace 4 := dκ.refutableInSpace_log
+
+/-- The Strahler number is the rank of the decision tree of the derivation. -/
+example : dκ.toDecisionTree.rank = 2 := by
+  rw [← CNF.Derivation.strahler_eq_rank_toDecisionTree]; rfl
+
+/-! ### A unit-propagation chain -/
+
+/-- `x₀ ∧ (x₀ → x₁) ∧ (x₁ → x₂) ∧ ¬x₂`. -/
+private def χ : CNF ℕ :=
+  [[(0, true)], [(0, false), (1, true)], [(1, false), (2, true)], [(2, false)]]
+
+/-- Unit propagation along the chain: each step resolves the current unit clause with the next
+implication, so every resolution step has a leaf premise. -/
+private def dχ : χ.Derivation [] :=
+  (CNF.Derivation.resolvent 2
+    (CNF.Derivation.resolvent 1
+      (CNF.Derivation.resolvent 0 (.mem (c := [(0, true)]) (by decide))
+        (.mem (c := [(0, false), (1, true)]) (by decide)) (by decide) (by decide))
+      (.mem (c := [(1, false), (2, true)]) (by decide)) (by decide) (by decide))
+    (.mem (c := [(2, false)]) (by decide)) (by decide) (by decide) : χ.Derivation _)
+
+/-- A caterpillar of `7` nodes: unequal premises keep the Strahler number at `1`. -/
+example : dχ.size = 7 ∧ dχ.strahler = 1 := ⟨rfl, rfl⟩
+
+/-- The Strahler bound gives clause space `3`, which is optimal, while the logarithmic bound only
+gives `log₂ 8 + 1 = 4`. -/
+example : χ.RefutableInSpace 3 ∧ ¬ χ.RefutableInSpace 2 ∧ Nat.log 2 (dχ.size + 1) + 1 = 4 :=
+  ⟨dχ.refutableInSpace, fun h => absurd (h.three_le (by decide)) (by decide),
+    by rw [show dχ.size + 1 = 2 ^ 3 from rfl, Nat.log_pow (by norm_num)]⟩
 
 /-! ### Tree-like size from clause space -/
 
