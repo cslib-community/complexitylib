@@ -960,10 +960,12 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   derandomization.
 - **Packing approximation**
   ([#2964](https://github.com/cslib-community/complexitylib/issues/2964)): the asymptotic
-  approximation scheme for bin packing of Fernandez de la Vega and Lueker, First Fit's `17/10`
-  bound, First Fit Decreasing's `11/9` bound and Lawler's faster knapsack FPTAS, building on the
-  knapsack FPTAS and Next Fit and First Fit (`Algorithms/Lean/{Knapsack,BinPacking}`) and the
-  `3/2` bin-packing hardness (`PCP/Approximation/BinPacking`).
+  approximation scheme for bin packing of Fernandez de la Vega and Lueker, Dósa and Sgall's
+  absolute bound `FF ≤ ⌊17/10 * OPT⌋` for First Fit and their matching lower-bound instances,
+  First Fit Decreasing's `11/9` bound and Lawler's faster knapsack FPTAS, building on the knapsack
+  FPTAS, Next Fit, First Fit's `17/10 * OPT + 4/5` bound
+  (`Algorithms/Lean/{Knapsack,BinPacking}`) and the `3/2` bin-packing hardness
+  (`PCP/Approximation/BinPacking`).
 - **Scheduling:** beyond Graham's list-scheduling, LPT and precedence bounds in
   `Algorithms/Lean/Scheduling`: real-valued processing times with precedences, Graham's anomaly
   instances as checked examples, a general tight family for LPT, the Hochbaum–Shmoys PTAS for

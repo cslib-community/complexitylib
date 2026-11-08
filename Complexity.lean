@@ -21,6 +21,7 @@ public import Complexity.Algorithms.Lean.Assignment.Basic
 public import Complexity.Algorithms.Lean.BellmanFord.Basic
 public import Complexity.Algorithms.Lean.BinPacking.Basic
 public import Complexity.Algorithms.Lean.BinPacking.FirstFit
+public import Complexity.Algorithms.Lean.BinPacking.FirstFitWeight
 public import Complexity.Algorithms.Lean.BinPacking.NextFit
 public import Complexity.Algorithms.Lean.CYK.Basic
 public import Complexity.Algorithms.Lean.DFS.Basic
