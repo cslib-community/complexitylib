@@ -216,6 +216,31 @@ The specification `ApproximateMembership.spec U n ε` enforces strict set validi
 
 The Karger–Stein endpoint uses one fixed 24-register program, `O(n² log n)` worst-case steps and `O(n²)` matrix scratch per tree, with success at least `1/(floorlog₂(n)+15)`. Repetition gives minimum-cut **value** with failure at most `1/(2n)` in `O(n² log³ n)`. It does not enumerate all minimum cuts or attain the source's sparse-space formulation. The threshold is an integer inequality rather than a literal square-root expression; the abstract labels the implementation and proof adaptations.
 
+### Deterministic minimum cut: Stoer–Wagner
+
+Import `Complexity.Algorithms.Lean.StoerWagner.Basic` ([Basic.lean](../../Complexity/Algorithms/Lean/StoerWagner/Basic.lean)). It uses the weighted multigraphs of `Cslib.WeightedCut` (`W : Fin n → Fin n → ℕ`, symmetric with zero diagonal) and Karger's contraction (`contractMatrix`, `contractPart`). The algorithm follows [Stoer and Wagner][stoerwagner97].
+
+- **MA orderings:** [MAOrdering.lean](../../Complexity/Foundations/Combinatorics/WeightedCut/MAOrdering.lean) defines `attachWeight W A x = ∑ a ∈ A, W a x`, maximum adjacency orderings (`IsMAOrdering`, decidable) and maximum adjacency search `maSearch`, with ties broken by list order. `cutWeight_singleton_le_of_isMAOrdering` is the MA-ordering lemma ([Nagamochi and Ibaraki][nagamochiibaraki92]; the cut-of-the-phase lemma of [Stoer and Wagner][stoerwagner97]). If an MA ordering ends with `s, t`, then `{t}` weighs at most every vertex set containing exactly one of `s` and `t`. The proof is an induction over the prefixes of the ordering. `cutWeight_singleton_eq_minCutBetween_of_isMAOrdering` restates it as `cutWeight W {t} = minCutBetween W s t`, using the minimum `s`–`t` cut weight shared with the Gomory–Hu development. `maSearch_spec` shows that the search produces an MA ordering.
+- **Phase recursion:** `cutWeight_contractCut` shows that merging `t` into `s` preserves the cuts that do not separate them. `minCut_eq_min_contractMatrix` says that `minCut W` is the minimum of the weight of a minimum `s`–`t` cut and the `minCut` after the merge. `minCut_eq_min_minCutBetween` states it as `minCut W = min (minCutBetween W s t) (minCut (contractMatrix W s t))`. `minCut_eq_min_of_isMAOrdering` applies this to one phase.
+- **Algorithm:** `stoerWagner W` returns a `CutResult` with one side of a cut and its weight. It is structurally recursive (`run`, with fuel in `maSearch`), so `decide` evaluates it. `stoerWagner_spec`: for `2 ≤ n` and `IsMultigraph W`, the side is a non-trivial cut whose weight is the answered weight, which equals `minCut W`.
+- **Cost:** `stoerWagnerM` adds `TimeM.tick` charges to the same program, and `ret_stoerWagnerM` shows that it returns the same result. `time_stoerWagnerM_le` bounds the time by `n ^ 3 + 4 n ^ 2`, and the tests pin the charged time `509` on the 8-vertex example. The unit-cost model is an array implementation; for a phase on `m` supervertices of a graph on `n` vertices:
+  - initializing the keys costs `m`;
+  - a search step over `r` candidates costs `2 r − 1`;
+  - recording a cut of the phase costs `m + n`;
+  - a merge costs `4 m + n + 1`: merging row and column `t` into `s`, moving row and column `m − 1` into the freed slot, relabelling the original vertices, and one comparison.
+
+  The charges are annotations; they are not derived from the Lean evaluation, which uses closures.
+
+The [checked examples](../../ComplexityTests/StoerWagner.lean) test three graphs against brute force over all vertex sets. The first is a weighted 4-cycle. The second is the 8-vertex example graph of [Stoer and Wagner][stoerwagner97], with edge weights from a secondary reproduction (Wikipedia's article). It has minimum cut `4`, and search from its vertex `2` gives the ordering `2, 3, 4, 7, 8, 6, 5, 1` of the worked example's first phase, with cut of the phase `5`. The third is the Boost Graph Library example, which asserts minimum cut weight `7`. The examples also show that an ordering without the MA property can end in a pair whose last-vertex cut is not minimal. They cover a disconnected graph and `n = 0, 1, 2`. Not formalized:
+- the `O(n m + n² log n)` priority-queue version;
+- real weights (rational weights need scaling);
+- enumeration of all minimum cuts;
+- Nagamochi–Ibaraki sparse certificates;
+- Karger's near-linear algorithm;
+- Queyranne's symmetric submodular minimization ([#3369](https://github.com/cslib-community/complexitylib/issues/3369)).
+
+The contraction API comes from the randomized Karger module, so this deterministic module imports its probability dependencies; [#3403](https://github.com/cslib-community/complexitylib/issues/3403) tracks moving it into `WeightedCut`.
+
 ## Gomory–Hu trees
 
 Import `Complexity.Algorithms.Lean.GomoryHu.WeightedCut` ([source](../../Complexity/Algorithms/Lean/GomoryHu/WeightedCut.lean)). The declarations live in `Cslib.Algorithms.Lean.GomoryHu` and `Cslib.WeightedCut`. This is a theorem-level development: there is no algorithm and no running time. For a weighted multigraph `W : V → V → ℕ` with `IsMultigraph W`, `minCutBetween W s t` is the minimum `s`–`t` cut weight `λ(s, t)` ([source](../../Complexity/Foundations/Combinatorics/WeightedCut/MinCutBetween.lean)). `Network.Flow.IsMaxFlow.value_eq_minCutBetween` identifies it with the value of a maximum `s`–`t` flow in the network with capacities `W`, using the existing max-flow min-cut theorem. [MinCutBetween.lean](../../Complexity/Foundations/Combinatorics/WeightedCut/MinCutBetween.lean) also proves:
@@ -1008,6 +1033,19 @@ Import `Complexity.Computability.Complexity.Problems.TSP.Christofides` ([source]
 
 `minPerfectMatching` is exhaustive search over `(2k − 1)!!` matchings, with optimality proved by `sum_minPerfectMatching_le`. So these results certify the approximation ratio, not a polynomial running time. Edmonds' weighted matching algorithm ([Edmonds][edmonds65]) and any machine-level certificate remain open. The [examples](../../ComplexityTests/TSPChristofides.lean) run the algorithm on a four-city star whose three perfect matchings cost `5`, `6` and `6`; exhaustive search picks the cheapest. The Euler circuit `[0, 1, 2, 0, 3, 0]` is shortcut to an optimal tour of length `11`. The examples also instantiate the general bound with Kruskal's tree, and check the empty and one-city instances.
 
+## String algorithms
+
+String algorithms are written in `Cslib.Algorithms.Lean.TimeM` and charge one tick per character comparison. Array reads and writes, index arithmetic, allocation and list/array conversions are free. Exact matching against a single pattern is Knuth–Morris–Pratt ([source](../../Complexity/Algorithms/Lean/KMP/Search.lean)). It makes at most `2 * (|p| - 1) + 2 * |t|` comparisons (`kmpSearchM_time_le`), and `mem_kmpMatchesList_iff` characterizes its output.
+
+Suffix arrays index one text for many patterns. Import `Complexity.Algorithms.Lean.SuffixArray.Basic`, `.Kasai` and `.Search` ([Basic](../../Complexity/Algorithms/Lean/SuffixArray/Basic.lean), [Kasai](../../Complexity/Algorithms/Lean/SuffixArray/Kasai.lean), [Search](../../Complexity/Algorithms/Lean/SuffixArray/Search.lean)). The alphabet is any `LinearOrder`, ordered with Mathlib's lexicographic order on lists, so a proper prefix comes before the words that extend it. No end-of-word sentinel is assumed, and only the nonempty suffixes `w.drop i` with `i < |w|` are listed.
+
+- **Specification.** `IsSuffixArray w sa` says that `sa` is a permutation of `List.range w.length` whose suffixes strictly increase [Manber and Myers][manbermyers93]. `IsSuffixArray.unique` shows that suffix arrays are unique. `suffixArray w` sorts the positions by their suffixes with `List.mergeSort`, and `isSuffixArray_suffixArray` proves it correct. This reference construction is uncharged and not linear-time.
+- **LCP array.** `lcpArray w sa` has `0` at rank `0` and the longest-common-prefix length (`lcpLen`) of the suffixes of ranks `r - 1` and `r` at rank `r > 0`. `IsSuffixArray.getElem_lcpArray_sub_one_le` is the height lemma `lcp[rank[i + 1]] ≥ lcp[rank[i]] - 1` of [Kasai et al.][kasai01].
+- **Kasai et al.'s algorithm.** `kasaiM w sa` visits positions in text order. It extends each common prefix from the previous length minus one. `ret_kasaiM` and `kasai_eq_lcpArray` show that it returns `lcpArray` whenever `sa` is a suffix array. `kasaiM_time_le` bounds its cost by `2 * |w|` comparisons for every input, valid suffix array or not. Building the rank array is uncharged.
+- **Pattern search.** `searchM w sa p` runs two binary searches (`lowerBoundM`, in `Complexity.Algorithms.Lean.BinarySearch`) and returns a rank interval `[lo, hi)`. Each probe compares `p` with at most `|p|` characters of a suffix. `searchM_spec` shows that the suffix of rank `r` starts with `p` exactly when `lo ≤ r < hi`, so the occurrences form a contiguous interval of the suffix array. `mem_occurrences` turns this into membership of text positions. `searchM_time_le` bounds the cost by `2 * |p| * (⌊log₂ |sa|⌋ + 1)` comparisons. This is the plain `O(|p| log n)` search. The `O(|p| + log n)` search, which reuses precomputed LCP information between probes, is not formalized.
+
+For the empty pattern the search returns every position `i < |w|`. KMP also reports the position `|w|` of the empty suffix. The [examples](../../ComplexityTests/SuffixArray.lean) check `banana` and `mississippi`: the suffix and LCP arrays, the comparison counts, and agreement with KMP on several patterns. They also include a kernel-checked suffix array with its uniqueness, a rejected non-sorted permutation, and absent and empty patterns. Linear-time construction (SA-IS, DC3), LCP-accelerated search and suffix trees remain open ([ROADMAP](../../ROADMAP.md#string-algorithms)).
+
 ## Tree Evaluation
 
 The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root of an explicitly table-encoded perfect binary tree in native independent workspace `O(log n · log log n)` for positive value length and height. The output is not charged to workspace, and the theorem leaves time existential. The same page distinguishes borrowed-register restoration and fan-in/packed procedure variants.
@@ -1033,10 +1071,13 @@ The numeric values above are transcriptions of checked source statements, not re
 [gusfield90]: ../sources.md#gusfield90
 [hierholzer73]: ../sources.md#hierholzer73
 [hmu06]: ../sources.md#hmu06
+[kasai01]: ../sources.md#kasai01
 [kasami65]: ../sources.md#kasami65
 [kortevygen18]: ../sources.md#kortevygen18
 [lll82]: ../sources.md#lll82
+[manbermyers93]: ../sources.md#manbermyers93
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
+[nagamochiibaraki92]: ../sources.md#nagamochiibaraki92
 [roth82]: ../sources.md#roth82
 [rothpostlewaite77]: ../sources.md#rothpostlewaite77
 [roughgarden13cs364a]: ../sources.md#roughgarden13cs364a
@@ -1045,6 +1086,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [schummervohra07]: ../sources.md#schummervohra07
 [shapleyscarf74]: ../sources.md#shapleyscarf74
 [sipser13]: ../sources.md#sipser13
+[stoerwagner97]: ../sources.md#stoerwagner97
 [vww18]: ../sources.md#vww18
 [thorup13]: ../sources.md#thorup13
 [wattenhofer16]: ../sources.md#wattenhofer16
