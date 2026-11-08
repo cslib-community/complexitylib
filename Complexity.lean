@@ -1328,6 +1328,7 @@ public import Complexity.Computability.Circuit.Monotone.KarchmerWigderson
 public import Complexity.Computability.Circuit.Monotone.Set
 public import Complexity.Computability.Circuit.Monotone.Synthesis
 public import Complexity.Computability.Circuit.Parallel
+public import Complexity.Computability.Circuit.Pebbling
 public import Complexity.Computability.Circuit.Pi
 public import Complexity.Computability.Circuit.Pointwise
 public import Complexity.Computability.Circuit.Program
@@ -2807,6 +2808,7 @@ public import Complexity.Computability.PCP.TwoProverGame
 public import Complexity.Computability.Pebbling.Basic
 public import Complexity.Computability.Pebbling.BinaryTree
 public import Complexity.Computability.Pebbling.Blocking
+public import Complexity.Computability.Pebbling.Map
 public import Complexity.Computability.Pebbling.Pyramid
 public import Complexity.Computability.PolyTime.BitString.InitialTestsSearch
 public import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceCounter
