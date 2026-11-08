@@ -8,7 +8,6 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.Combinatorics.Multigraph
-public import Mathlib.Order.SymmDiff
 
 /-!
 # The cut space of a multigraph
@@ -18,8 +17,9 @@ of edges (`Cslib.Multigraph.edgeCut_symmDiff`): an edge leaves `S ∆ T` exactly
 `S` and `T` but not both. This and `Cslib.Multigraph.mem_edgeCut_of_ends_eq` are the `Finset` forms
 of Mathlib's `Graph.edgeCut_symmDiff` and `Graph.IsLink.mem_edgeCut_iff`, through
 `Cslib.Multigraph.coe_edgeCut_eq_toGraph_edgeCut`. The edge cut of a single vertex consists of the
-edges at it other than self-loops (`Cslib.Multigraph.edgeCut_singleton`). So the edge cuts form an
-`𝔽₂`-vector space, the *cut space*, spanned by the sets of edges at the vertices. On a connected
+edges at it other than self-loops (`Cslib.Multigraph.edgeCut_singleton`). So, informally, the edge
+cuts form an `𝔽₂`-vector space, the *cut space*, spanned by the sets of edges at the vertices; this
+structure is not formalized here. On a connected
 multigraph the only sets with no edge leaving them are `∅` and the set of all vertices
 (`Cslib.Multigraph.eq_empty_or_eq_univ_of_edgeCut_eq_empty`).
 
@@ -27,7 +27,7 @@ A set `S` that fewer than `e(G)` edges leave (`Cslib.Multigraph.minBalancedCut`)
 so it has fewer than a third or more than two thirds of the vertices. If moreover `S` has at most
 two thirds of the vertices, it has fewer than a third of them
 (`Cslib.Multigraph.three_mul_card_lt_of_card_edgeCut_lt`). This dichotomy is how expansion enters
-the polynomial calculus degree lower bound for Tseitin formulas.
+degree lower bounds for Tseitin formulas in algebraic proof systems such as polynomial calculus.
 
 ## Main results
 
