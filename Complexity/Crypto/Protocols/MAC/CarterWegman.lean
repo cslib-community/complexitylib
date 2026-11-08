@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Probabilistic.LinearHash
 public import Complexity.Crypto.Computational.MAC
 public import Complexity.Crypto.Computational.PseudorandomFunction
+public import Complexity.Crypto.Encoding
 public import Complexity.Foundations.Data.BitString.List.Operations
 public import Complexity.Languages.Probabilistic.Simulation
 public import Complexity.Probability.BitString.LinearHash
@@ -188,6 +189,9 @@ This module formalizes:
   `Cslib.Crypto.Protocols.CarterWegman.probPadTest`,
   `Cslib.Crypto.Protocols.CarterWegman.wordProbPadTest`: arbitrary-pad one-time Carter–Wegman
   experiment and its induced `PMF` and `ProbComp` pad distinguishers.
+* `Cslib.Crypto.Protocols.CarterWegman.encForgeInput`,
+  `Cslib.Crypto.Protocols.CarterWegman.encPadsInput`: the encodings of the forgery program's input
+  and of the pad-list test's input.
 * `Cslib.Crypto.Protocols.CarterWegman.prfPadDist`,
   `Cslib.Crypto.Protocols.CarterWegman.prfOneTimeGame`,
   `Cslib.Crypto.Protocols.CarterWegman.prfOneTimeStrongGame`,
@@ -371,7 +375,7 @@ private theorem computableInPolyTime_hash3 {γ : Type} {encIn : γ ↪ List Bool
     {hash : ℕ → List Bool → List Bool → List Bool}
     (hhash : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     {n : γ → ℕ} {k m : γ → List Bool}
     (hn : ComputableInPolyTime n encIn encUnary)
     (hk : ComputableInPolyTime k encIn encBits)
@@ -1221,6 +1225,12 @@ theorem isOraclePPT_prfPadDistinguisher
     (prepare := fun p : (ℕ × List Bool) × List Bool => (p.1.1, p.2))
     (by fun_prop)).isOraclePPTOn)
 
+/-- Input `(1ⁿ, m, t)` of the forgery program of `wordProbPadTest`: the security parameter `n` in
+unary, then the queried message and its tag as bit words. The parameter and the message are
+framed. -/
+abbrev encForgeInput : ℕ × List Bool × List Bool ↪ List Bool :=
+  encPair encUnary (encPair encBits encBits)
+
 /-- Executable `ProbComp` one-time pad test induced by a uniform word-level hash-key sampler `seed`,
 hash evaluator `hash`, signing query `query`, and forgery program `forge`: at security parameter `n`
 and pad `r : BitString n`, it runs `probPadTest` with digest `BitString.ofList n (hash n k m)` and
@@ -1260,10 +1270,9 @@ theorem isPPTOn_wordProbPadTest
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
       (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     (hquery : IsPPTOn encUnary encBits query)
-    (hforge : IsPPTOn (encPair encUnary (encPair encBits encBits))
-      (encPair encBits encBits) (fun (n, m, t) => forge n m t)) :
+    (hforge : IsPPTOn encForgeInput (encPair encBits encBits) (fun (n, m, t) => forge n m t)) :
     IsPPTOn (encPair encUnary encBits) encBool
       (fun p : ℕ × List Bool =>
         wordProbPadTest seed hash query forge p.1 (BitString.ofList p.1 p.2)) := by
@@ -1299,10 +1308,9 @@ theorem isOraclePPT_prfPadDistinguisher_wordProbPadTest
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
       (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     (hquery : IsPPTOn encUnary encBits query)
-    (hforge : IsPPTOn (encPair encUnary (encPair encBits encBits))
-      (encPair encBits encBits) (fun (n, m, t) => forge n m t)) :
+    (hforge : IsPPTOn encForgeInput (encPair encBits encBits) (fun (n, m, t) => forge n m t)) :
     IsOraclePPT encBool (prfPadDistinguisher (wordProbPadTest seed hash query forge)) :=
   isOraclePPT_prfPadDistinguisher (isPPTOn_wordProbPadTest hseed hhash hquery hforge)
 
@@ -1366,10 +1374,9 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.negligible_prfOneTimeGame_wordP
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
       (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     (hquery : IsPPTOn encUnary encBits query)
-    (hforge : IsPPTOn (encPair encUnary (encPair encBits encBits))
-      (encPair encBits encBits) (fun (n, m, t) => forge n m t)) :
+    (hforge : IsPPTOn encForgeInput (encPair encBits encBits) (fun (n, m, t) => forge n m t)) :
     Negligible (fun n =>
       Game.succProbability
         (prfOneTimeGame (ProbComp.eval (seed n)) family n
@@ -1396,10 +1403,9 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.negligible_prfOneTimeStrongGame
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
       (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     (hquery : IsPPTOn encUnary encBits query)
-    (hforge : IsPPTOn (encPair encUnary (encPair encBits encBits))
-      (encPair encBits encBits) (fun (n, m, t) => forge n m t)) :
+    (hforge : IsPPTOn encForgeInput (encPair encBits encBits) (fun (n, m, t) => forge n m t)) :
     Negligible (fun n =>
       Game.succProbability
         (prfOneTimeStrongGame (ProbComp.eval (seed n)) family n
@@ -1666,6 +1672,11 @@ def prfPadCollectStep (n : ℕ) (nonce : ℕ → ℕ → List Bool) (pads : List
   (fun reply => pads ++ [reply]) <$>
     (List.take n <$> ProbOracleComp.query ((), nonce n pads.length))
 
+/-- Input `(1ⁿ, pads)` of the pad-list test of `prfMultiPadDistinguisher`: the security parameter
+`n` in unary, framed, then the collected pad words, each framed. -/
+abbrev encPadsInput : ℕ × List (List Bool) ↪ List Bool :=
+  encPair encUnary (encList encBits)
+
 /-- Multi-query PRF `OracleDistinguisher` for a query budget `Q : ℕ → ℕ`, nonce schedule
 `nonce : ℕ → ℕ → List Bool`, and pad-sequence test
 `test : (k : ℕ) → (ℕ → BitString k) → ProbComp Bool`: at security parameter `n`, collect `Q n`
@@ -1847,7 +1858,7 @@ theorem isOraclePPT_prfMultiPadDistinguisher
     (hQ : ComputableInPolyTime Q encUnary encUnary)
     (hnonce : ComputableInPolyTime (fun p : ℕ × ℕ => nonce p.1 p.2)
       (encPair encUnary encUnary) encBits)
-    (htest : IsPPTOn (encPair encUnary (encList encBits)) encBool
+    (htest : IsPPTOn encPadsInput encBool
       (fun p : ℕ × List (List Bool) =>
         test p.1 (fun i => BitString.ofList p.1 (p.2.getD i [])))) :
     IsOraclePPT encBool (prfMultiPadDistinguisher Q nonce test) := by
@@ -1919,7 +1930,7 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.negligible_prfCounterSlotGame
     (hQ : ComputableInPolyTime Q encUnary encUnary)
     (hnonce : ComputableInPolyTime (fun p : ℕ × ℕ => nonce p.1 p.2)
       (encPair encUnary encUnary) encBits)
-    (htest_ppt : IsPPTOn (encPair encUnary (encList encBits)) encBool
+    (htest_ppt : IsPPTOn encPadsInput encBool
       (fun p : ℕ × List (List Bool) =>
         test p.1 (fun i => BitString.ofList p.1 (p.2.getD i [])))) :
     Negligible (fun n =>
@@ -1954,7 +1965,7 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.negligible_prfCounterGame
     (hQ : ComputableInPolyTime Q encUnary encUnary)
     (hnonce : ComputableInPolyTime (fun p : ℕ × ℕ => nonce p.1 p.2)
       (encPair encUnary encUnary) encBits)
-    (htest_ppt : IsPPTOn (encPair encUnary (encList encBits)) encBool
+    (htest_ppt : IsPPTOn encPadsInput encBool
       (fun p : ℕ × List (List Bool) =>
         test p.1 (fun i => BitString.ofList p.1 (p.2.getD i [])))) :
     Negligible (fun n =>
@@ -1986,7 +1997,7 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.negligible_prfCounterStrongGame
     (hQ : ComputableInPolyTime Q encUnary encUnary)
     (hnonce : ComputableInPolyTime (fun p : ℕ × ℕ => nonce p.1 p.2)
       (encPair encUnary encUnary) encBits)
-    (htest_ppt : IsPPTOn (encPair encUnary (encList encBits)) encBool
+    (htest_ppt : IsPPTOn encPadsInput encBool
       (fun p : ℕ × List (List Bool) =>
         test p.1 (fun i => BitString.ofList p.1 (p.2.getD i [])))) :
     Negligible (fun n =>
@@ -2867,7 +2878,7 @@ noncomputable def carterWegmanNonceMAC (msgLen : ℕ → ℕ)
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
       (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     (hfamily : ComputableInPolyTime
       (fun p : List Bool × List Bool => family p.1 p.2)
       (encPair encBits encBits) encBits) : NonceMACScheme where
@@ -3008,7 +3019,7 @@ theorem isOraclePPT_prfNonceToPrfDistinguisher
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
       (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     (hadversary : IsOraclePPT (encPair (encPair encBits encBits) encBits) adversary) :
     IsOraclePPT encBool (prfNonceToPrfDistinguisher msgLen seed hash adversary) := by
   have hhandler : IsOraclePPTOn
@@ -3095,7 +3106,7 @@ theorem eval_prfRealGame_prfNonceToPrfDistinguisher
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
       (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     (hfamily : ComputableInPolyTime
       (fun p : List Bool × List Bool => family p.1 p.2)
       (encPair encBits encBits) encBits)
@@ -3422,7 +3433,7 @@ theorem sufCmaGame_carterWegmanNonceMAC_toReal_le
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
       (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     (hfamily : ComputableInPolyTime
       (fun p : List Bool × List Bool => family p.1 p.2)
       (encPair encBits encBits) encBits)
@@ -3470,7 +3481,7 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.sufCma_carterWegmanNonceMAC
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
       (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     {ε : ℕ → ℝ≥0}
     (hh : ∀ n, IsDeltaUniversalHash (ProbComp.eval (seed n))
       (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m))) (ε n))
@@ -3499,7 +3510,7 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.eufCma_carterWegmanNonceMAC
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
       (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     {ε : ℕ → ℝ≥0}
     (hh : ∀ n, IsDeltaUniversalHash (ProbComp.eval (seed n))
       (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m))) (ε n))
@@ -4575,7 +4586,7 @@ noncomputable def carterWegmanRandomMAC (msgLen : ℕ → ℕ)
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
       (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     (hfamily : ComputableInPolyTime
       (fun p : List Bool × List Bool => family p.1 p.2)
       (encPair encBits encBits) encBits) : MACScheme where
@@ -4694,7 +4705,7 @@ private theorem isOraclePPTOn_cwRandomNonceLogHandler
     (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
     (hhash : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encBits encBits)) encBits) :
+      (encKeyedInput encBits) encBits) :
     IsOraclePPTOn
       (encPair (encPair (encPair encUnary encBits) encBits)
         (encPair (encPair (encFinite Unit) encBits)
@@ -4746,7 +4757,7 @@ private theorem isOraclePPTOn_cwRandomNonceCheck
     (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
     (hhash : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encBits encBits)) encBits) :
+      (encKeyedInput encBits) encBits) :
     IsOraclePPTOn
       (encPair (encPair (encPair encUnary encBits) encBits)
         (encPair (encPair encBits encBits) (encList (encPair encBits encBits))))
@@ -4775,7 +4786,7 @@ theorem isOraclePPT_prfRandomNonceToPrfDistinguisher
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
       (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
     IsOraclePPT encBool (prfRandomNonceToPrfDistinguisher msgLen seed hash adversary) := by
   have hhandler := isOraclePPTOn_cwRandomNonceLogHandler hmsgLen hhash
@@ -4840,7 +4851,7 @@ theorem eval_prfRealGame_prfRandomNonceToPrfDistinguisher
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
       (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     (hfamily : ComputableInPolyTime
       (fun p : List Bool × List Bool => family p.1 p.2)
       (encPair encBits encBits) encBits)
@@ -5183,7 +5194,7 @@ theorem sufCmaGame_carterWegmanRandomMAC_toReal_le
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
       (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     (hfamily : ComputableInPolyTime
       (fun p : List Bool × List Bool => family p.1 p.2)
       (encPair encBits encBits) encBits)
@@ -5241,7 +5252,7 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.sufCma_carterWegmanRandomMAC
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
       (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     {ε : ℕ → ℝ≥0}
     (hh : ∀ n, IsDeltaUniversalHash (ProbComp.eval (seed n))
       (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m))) (ε n))
@@ -5286,7 +5297,7 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.eufCma_carterWegmanRandomMAC
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
       (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     {ε : ℕ → ℝ≥0}
     (hh : ∀ n, IsDeltaUniversalHash (ProbComp.eval (seed n))
       (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m))) (ε n))
@@ -5305,7 +5316,7 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.oneTimeEUFCMA_carterWegmanRando
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
       (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     {ε : ℕ → ℝ≥0}
     (hh : ∀ n, IsDeltaUniversalHash (ProbComp.eval (seed n))
       (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m))) (ε n))
@@ -5539,7 +5550,7 @@ theorem isPPTOn_linearHashSeed {msgLen : ℕ → ℕ}
 theorem computableInPolyTime_linearHashWordHash :
     ComputableInPolyTime
       (fun ((n, k, m) : ℕ × List Bool × List Bool) => BitString.LinearHash.wordHash n k m)
-      (encPair encUnary (encPair encBits encBits)) encBits := by
+      (encKeyedInput encBits) encBits := by
   fun_prop
 
 /-- Under a uniform `(n * msgLen n)`-bit seed `BitString.sampleList (n * msgLen n)`, the executable

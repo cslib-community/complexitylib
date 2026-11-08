@@ -21,6 +21,8 @@ proves the first identity for products with coordinate-dependent events.
 
 ## Main results
 
+* `Cslib.Probability.PMF.iid_map_eval`, `Cslib.Probability.PMF.toOuterMeasure_iid_eval`: each
+  coordinate is distributed as `μ`.
 * `Cslib.Probability.PMF.toOuterMeasure_iid_forall`: every draw lands in `E`.
 * `Cslib.Probability.PMF.toOuterMeasure_iid_exists`: some draw lands in `E`.
 -/
@@ -64,6 +66,32 @@ theorem toOuterMeasure_iid_forall (μ : PMF α) (E : Set α) :
     by_cases ha : a ∈ E
     · rw [Set.indicator_of_mem ha, Set.indicator_of_mem ha]
     · rw [Set.indicator_of_notMem ha, Set.indicator_of_notMem ha, mul_zero, zero_mul]
+
+/-- Each coordinate of `k` independent draws from `μ` is distributed as `μ`. -/
+theorem iid_map_eval (μ : PMF α) : ∀ {k : ℕ} (j : Fin k), (iid μ k).map (fun v => v j) = μ
+  | 0, j => j.elim0
+  | k + 1, j => by
+    rw [iid, monad_bind_eq_bind, PMF.map_bind]
+    refine Fin.cases ?_ (fun j => ?_) j
+    · have h (a : α) : ((iid μ k).map (Fin.cons a)).map (fun v : Fin (k + 1) → α => v 0) =
+          PMF.pure a := by
+        rw [PMF.map_comp]
+        exact PMF.map_const _ _
+      simp only [h]
+      exact PMF.bind_pure μ
+    · have h (a : α) : ((iid μ k).map (Fin.cons a)).map (fun v : Fin (k + 1) → α => v j.succ) =
+          μ := by
+        rw [PMF.map_comp]
+        exact iid_map_eval μ j
+      simp only [h]
+      exact PMF.bind_const μ μ
+
+/-- The `j`-th of `k` independent draws from `μ` lands in `E` with probability `μ(E)`. -/
+theorem toOuterMeasure_iid_eval (μ : PMF α) {k : ℕ} (j : Fin k) (E : Set α) :
+    (iid μ k).toOuterMeasure {v | v j ∈ E} = μ.toOuterMeasure E := by
+  have h := PMF.toOuterMeasure_map_apply (fun v : Fin k → α => v j) (iid μ k) E
+  rw [iid_map_eval] at h
+  exact h.symm
 
 /-- At least one of `k` independent draws from `μ` lands in `E` with probability
 `1 - (1 - μ(E)) ^ k`. -/

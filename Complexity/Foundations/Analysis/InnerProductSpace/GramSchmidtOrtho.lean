@@ -194,26 +194,28 @@ theorem norm_gramSchmidt_le (f : ι → E) (i : ι) : ‖gramSchmidt 𝕜 f i‖
   nlinarith [norm_nonneg (f i), norm_nonneg (gramSchmidt 𝕜 f i),
     sq_nonneg ‖f i - gramSchmidt 𝕜 f i‖]
 
+/-- `⟪f*ᵢ, ∑ⱼ cⱼ fⱼ⟫ = cᵢ ‖f*ᵢ‖²` for integer coefficients that vanish above `i`. -/
+theorem inner_gramSchmidt_sum_zsmul [Fintype ι] (f : ι → E) (c : ι → ℤ) {i : ι}
+    (hc : ∀ j, i < j → c j = 0) :
+    ⟪gramSchmidt 𝕜 f i, ∑ j, c j • f j⟫ = (c i : 𝕜) * (‖gramSchmidt 𝕜 f i‖ : 𝕜) ^ 2 := by
+  rw [inner_sum, Finset.sum_eq_single i]
+  · rw [← Int.cast_smul_eq_zsmul 𝕜, inner_smul_right, inner_gramSchmidt_self_right]
+  · intro j _ hji
+    rw [← Int.cast_smul_eq_zsmul 𝕜, inner_smul_right]
+    rcases lt_or_gt_of_ne hji with h | h
+    · rw [gramSchmidt_inv_triangular 𝕜 f h, mul_zero]
+    · rw [hc j h, Int.cast_zero, zero_mul]
+  · intro h
+    exact absurd (Finset.mem_univ i) h
+
 /-- If `x = ∑ cⱼ fⱼ` with integer coefficients whose last nonzero entry is at `i`, then
 `‖f*ᵢ‖ ≤ ‖x‖`. -/
 theorem norm_gramSchmidt_le_norm_sum_zsmul [Fintype ι] (f : ι → E) (c : ι → ℤ) {i : ι}
     (hci : c i ≠ 0) (hc : ∀ j, i < j → c j = 0) :
     ‖gramSchmidt 𝕜 f i‖ ≤ ‖∑ j, c j • f j‖ := by
   set x := ∑ j, c j • f j with hx
-  have hx' : x = ∑ j, (c j : 𝕜) • f j := by
-    rw [hx]
-    exact Finset.sum_congr rfl fun j _ => (Int.cast_smul_eq_zsmul 𝕜 (c j) (f j)).symm
-  have hinner : ⟪gramSchmidt 𝕜 f i, x⟫ = (c i : 𝕜) * (‖gramSchmidt 𝕜 f i‖ : 𝕜) ^ 2 := by
-    rw [hx', inner_sum]
-    simp only [inner_smul_right]
-    rw [Finset.sum_eq_single i]
-    · rw [inner_gramSchmidt_self_right]
-    · intro j _ hji
-      rcases lt_or_gt_of_ne hji with h | h
-      · rw [gramSchmidt_inv_triangular 𝕜 f h, mul_zero]
-      · rw [hc j h, Int.cast_zero, zero_mul]
-    · intro h
-      exact absurd (Finset.mem_univ i) h
+  have hinner : ⟪gramSchmidt 𝕜 f i, x⟫ = (c i : 𝕜) * (‖gramSchmidt 𝕜 f i‖ : 𝕜) ^ 2 :=
+    inner_gramSchmidt_sum_zsmul f c hc
   have hcs := norm_inner_le_norm (𝕜 := 𝕜) (gramSchmidt 𝕜 f i) x
   rw [hinner, norm_mul, norm_pow, RCLike.norm_ofReal, abs_norm] at hcs
   have hc1 : (1 : ℝ) ≤ ‖(c i : 𝕜)‖ := by

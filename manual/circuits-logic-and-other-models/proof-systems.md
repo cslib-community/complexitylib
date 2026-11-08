@@ -195,7 +195,7 @@ for feasible `x,y` disagreeing at `i`, some disagreeing coordinate `j` makes
 have the same parity, which may be odd; it forces `j ≠ i`. Twists and coordinate equivalences
 preserve these properties, and feasible tuples are connected by feasible two-coordinate flips.
 The four-coordinate lemmas isolate local exchange consequences used by the paper's blossom
-proof; they do not prove its forest or contraction invariants.
+proof; they do not prove its full forest or whole-blossom contraction invariants.
 
 [Difference tests](../../ComplexityTests/CyclicDifference.lean) show that ternary NAE maps to
 an even delta-matroid of three weight-two tuples. [Exchange tests](../../ComplexityTests/DeltaMatroid.lean)
@@ -228,8 +228,8 @@ strict width decrease and nonincrease of the full encoded table size. `Table.exa
 constructs the new connector relation in native polynomial time from a scope list: the list's
 length pays for quadratic output. There is no polynomial-output claim from a binary arity alone.
 The zero-connector relation is empty. [Table tests](../../ComplexityTests/CSPTable.lean) cover
-malformed widths, repeated rows, contraction cases and framed size calculations. Delta-matroid
-preservation and whole-blossom correctness are not consequences of these table-operation lemmas.
+malformed widths, repeated rows, contraction cases and framed size calculations. These operation lemmas provide the executable and quantitative layer; the mathematical closure
+is supplied separately below. Whole-blossom correctness still remains unproved.
 
 `Problems.Graph.RotationSystem` represents edge ends by edge-list position and a Boolean side.
 Loops have two distinct ends, and parallel edges retain separate positions. Vertex rotations
@@ -243,6 +243,68 @@ and [constraint-order tests](../../ComplexityTests/CSPRotationSystem.lean).
 Rotations alone do not impose genus zero. These modules prove no planar recognition, geometric
 realization, planar reduction, edge solver or dichotomy. In particular, isolated vertices require
 separate treatment in a future embedding model. The full objective remains [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+
+## Delta-matroid composition and local contraction closure
+
+`Complexity.Foundations.Data.BitString.DeltaMatroid.Composition` proves direct products,
+elimination of equal coordinate pairs, and relational composition. `IsDeltaMatroid.comp` and
+`IsEvenDeltaMatroid.comp` join relations on `ι ⊕ κ` and `κ ⊕ τ` along the finite shared `κ`
+coordinates, then remove those coordinates. Both require a nonempty composed relation:
+nonempty inputs alone do not guarantee compatible shared values. Empty external coordinate
+types are allowed. The proof uses successive one-sided exchanges, without assuming simultaneous
+exchange. This maps Proposition 6 and its parity corollary in Kazda–Kolmogorov–Rolínek,
+arXiv:1602.03124v6, printed pp. 0:4–0:5, with output nonemptiness made explicit.
+
+`Complexity.Logics.Propositional.CSP.Table.DeltaMatroid` connects this mathematics to the actual
+guarded table semantics. `Table.isEvenDeltaMatroid_contract` requires the original declared-arity
+table relation to be even and `Table.canContract table reference positions = true`. The latter
+supplies the feasible reference and distinct in-range internal positions; the reference witnesses
+nonemptiness of the output internally. The proof preserves outside-coordinate order and the
+final connector, using composition with a proved star gadget that permits zero internal changes
+or one internal change paired with a true connector. No blossom or solver hypothesis appears.
+Unlike strict width decrease, closure requires no lower bound of two on the selected positions.
+
+`Table.isEvenDeltaMatroid_exactlyOne` proves closure for every nonempty connector scope, with odd
+common parity. The empty-scope relation is rejected under the nonempty delta-matroid convention.
+[Composition and contraction tests](../../ComplexityTests/DeltaMatroidComposition.lean) cover
+incompatible shared coordinates, empty external coordinates, arbitrary scope lengths, ordered
+outside ports, empty selections, nullary tables, and malformed guards. Native operation and size
+certificates remain those of `PolyTime.CSP.Table`. Whole-instance blossom contraction/lifting,
+solver correctness, native solver cost and the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+
+## Prefix-valid walks and augmentation
+
+Import `Complexity.Logics.Propositional.CSP.Edge.Augmenting` for Boolean occurrence-label
+optimization. `CSP.defects` counts distinct occurring variables carrying unequal endpoint labels;
+`CSP.IsOptimalLabeling` requires validity and minimum defect count among all valid labels.
+Valid labels with zero defects are equivalent to a model of the original CSP, using `false`
+on nonoccurring variables. `EdgeInstance` supplies the exact-two/distinct-constraint condition.
+`EdgeInstance.EvenConstraints` states that each relation on its actual ordered scope positions
+is an even delta-matroid; local common parity may be odd and may differ between constraints.
+
+A `CSP.Walk` stores a starting variable and a list of incidence pairs. Its `IsWalk` predicate
+requires linked constraint steps and no reused incidence, while allowing repeated constraint
+positions and closed trails. `IsFWalk` requires distinct endpoints, consistent internal variables,
+and validity after every variable-ended prefix. Final validity alone is insufficient. An
+augmenting walk has two defective endpoints. Its flip is valid, and
+`Walk.IsAugmenting.card_defects_flip_add_two` proves that it removes exactly two defects. Prefix validity and the
+partner-transition lemmas connect these paths to the original indexed occurrence model.
+
+`EdgeInstance.augmentingWalk` implements the two phases of Lemma 31 in
+Kazda–Kolmogorov–Rolínek, arXiv:1602.03124v6, printed p. 0:15. Given valid `f,g` with fewer
+defects in `g`, it repairs comparison-only defects and follows remaining disagreements using
+deterministic positional scans. Its specification returns an augmenting walk starting away
+from an arbitrary specified variable; that variable may still be the endpoint. The combined
+number of local exchanges is at most half the initial occurrence Hamming distance. This is an
+exchange-count bound, not a native-machine runtime bound. `isOptimalLabeling_iff_no_augmentingWalk`
+then characterizes optimality without assuming a solver.
+
+[Augmenting-walk tests](../../ComplexityTests/EdgeCSPWalk.lean) include doubled equality
+constraints, actual returned paths, odd unsatisfiable units, repeated constraint positions,
+empty/nullary cases, sparse labels, and a trail whose final flip is valid but an intermediate
+prefix is invalid. The routine takes an improving comparison labeling as input: finding that
+labeling, or finding an augmenting walk without it, still needs the DAG/forest/blossom search.
+Its native runtime certificate and the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
 
 ## Three resolution representations
 
@@ -259,6 +321,12 @@ A tree-like derivation yields a decision tree that finds a clause falsified by t
 ## Major lower bounds and interpolation
 
 [The pigeonhole development](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/Pigeonhole.lean) formalizes Haken's exponential lower bound for `PHP^(n+1)_n`, using a simplified Beame–Pitassi-style argument. Its explicit finite endpoint gives at least `2^floor(n/24)` proof lines. Source documentation explains the critical-assignment measure and greedy restriction sequence. The result also lower-bounds tree-like resolution through the line/tree bridge.
+
+[The tree-like pigeonhole module](../../Complexity/Logics/Propositional/Resolution/TreeLikePigeonhole.lean) proves a much stronger bound for tree-like refutations: `2 ^ Ω(n log n)`, for every number of pigeons `m > n`. This is Theorem 2 of Beyersdorff, Galesi and Lauria ([beyersdorffgalesilauria10]), which gives a simpler proof of the lower bound in Dantchev and Riis's result that tree-like size is `2 ^ Θ(n log n)` for all `m > n`. Import `Complexity.Logics.Propositional.Resolution.TreeLikePigeonhole`. `CNF.Derivation.pow_le_size_pigeonhole h` gives at least `(n + 1 - h) ^ h` nodes for every `h`, and `pow_half_le_size_pigeonhole` specializes it to BGL's `(n / 2 + 1) ^ (n / 2)`. `CNF.pow_lt_two_mul_leafCount_pigeonhole` turns the bound into more than `(n + 1 - h) ^ h / 2` leaves for DPLL search trees. Only the explicit bound for each `h` is formalized; the asymptotic `2 ^ Ω(n log n)` is not stated in Lean. The parameter `h` mildly generalizes BGL's fixed threshold `n / 2` and, informally, gives `n ^ ((1 - o(1)) n)` for `h ≈ n - n / ln n`.
+
+The method lives in [the Prover–Delayer module](../../Complexity/Logics/Propositional/Resolution/ProverDelayer.lean). `Clause.FalsifiedBy ρ c` says that a partial assignment `ρ : V → Option Bool` sets every literal of `c` to false. `CNF.Derivation.potential_le_size` takes a potential `μ` that splits at every unset variable (`μ ρ ≤ μ ρ[v ↦ 0] + μ ρ[v ↦ 1]`) and is at most `1` where a clause of the formula is falsified. It then bounds every tree-like derivation of a clause falsified by `ρ` below by `μ ρ` nodes. This is BGL's Theorem 1 in potential form, with no explicit game: a Delayer strategy that scores `p` points gives such a potential with value `⌈2 ^ p⌉` at the empty assignment.
+
+The [checked examples](../../ComplexityTests/ProofComplexity/TreeLikePigeonhole.lean) cover a falsified and a non-falsified clause, a two-valued potential for `x ∧ ¬x`, and a five-node refutation of `PHP^2_1`. They instantiate the bound for `PHP^5_4` and `PHP^100_4`, show that `h = 7` beats `h = n / 2` at `n = 10`, and compare with Haken's bound at `n = 48`. Check them with `scripts/build.sh ComplexityTests.ProofComplexity.TreeLikePigeonhole`.
 
 [The Ben-Sasson–Wigderson tradeoff](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/SizeWidth.lean) says that a CNF of initial width k on N variables with an s-line refutation has a refutation of width at most `k + 2 sqrt(2 N log s) + 2`. The contrapositive form yields an exponential line lower bound from a width lower bound. These constants and the logarithm/real square-root convention are explicit in the theorem.
 
@@ -395,6 +463,7 @@ The [checked examples](../../ComplexityTests/ProofComplexity/SumOfSquares.lean) 
 This section inventories resolution, including clause space, cutting planes, semantic derivations, Frege proofs, sum-of-squares and their syntax clients. It does not reclassify PCPs or interactive proofs as resolution proof systems; their verifier and protocol models have separate owners. The endpoint statements and model conventions are source-inspected, while every proof body and every original lower-bound paper has not been independently checked in this worker pass.
 
 [barak-steurer16]: ../sources.md#barak-steurer16
+[beyersdorffgalesilauria10]: ../sources.md#beyersdorffgalesilauria10
 [complexitylib]: ../sources.md#complexitylib
 [cookreckhow79]: ../sources.md#cookreckhow79
 [grigoriev01]: ../sources.md#grigoriev01

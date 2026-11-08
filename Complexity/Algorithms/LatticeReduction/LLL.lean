@@ -97,6 +97,10 @@ theorem intToEuclidean_injective : Function.Injective (intToEuclidean (m := m)) 
 noncomputable def realRows (B : Vector (Vector ℤ m) n) : Fin n → EuclideanSpace ℝ (Fin m) :=
   intToEuclidean ∘ rows B
 
+theorem realRows_eq_intToEuclidean (B : Vector (Vector ℤ m) n) (i : Fin n) :
+    realRows B i = intToEuclidean (rows B i) := by
+  simp only [realRows, Function.comp_apply]
+
 theorem realRows_apply (B : Vector (Vector ℤ m) n) (i : Fin n) :
     realRows B i = ratToEuclidean fun k => (B[i][k] : ℚ) := by
   simp only [realRows, Function.comp_apply, intToEuclidean_eq_ratToEuclidean, rows]
@@ -118,6 +122,16 @@ theorem span_realRows (B : Vector (Vector ℤ m) n) :
       (Submodule.span ℤ (Set.range (rows B))).map intToEuclidean := by
   rw [realRows, Set.range_comp, Submodule.span_image]
 
+/-- An integer combination of the rows of `B`, embedded in `ℝᵐ`, lies in the lattice spanned by
+`realRows B`. -/
+theorem mem_span_realRows_of_eq_sum {B : Vector (Vector ℤ m) n} {v : Fin m → ℤ} {e : Fin n → ℤ}
+    (h : v = ∑ i, e i • rows B i) :
+    intToEuclidean v ∈ Submodule.span ℤ (Set.range (realRows B)) := by
+  rw [span_realRows]
+  refine Submodule.mem_map_of_mem ?_
+  rw [h]
+  exact Submodule.sum_mem _ fun i _ => Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, rfl⟩)
+
 /-- The rows of `B` cast to `ℚ`. -/
 def castRows (B : Vector (Vector ℤ m) n) : Vector (Vector ℚ m) n :=
   B.map fun v => v.map (Int.cast : ℤ → ℚ)
@@ -129,6 +143,11 @@ def gramSchmidtRows (B : Vector (Vector ℤ m) n) : Vector (Vector ℚ m) n :=
 /-- `G` holds the Gram–Schmidt vectors of the rows of `B`. -/
 def IsGramSchmidtRows (G : Vector (Vector ℚ m) n) (B : Vector (Vector ℤ m) n) : Prop :=
   ∀ j : Fin n, ratToEuclidean (fun k : Fin m => G[j][k]) = gramSchmidt ℝ (realRows B) j
+
+theorem IsGramSchmidtRows.ratToEuclidean_eq {G : Vector (Vector ℚ m) n}
+    {B : Vector (Vector ℤ m) n} (hG : IsGramSchmidtRows G B) (j : Fin n) :
+    ratToEuclidean (fun k : Fin m => G[j][k]) = gramSchmidt ℝ (realRows B) j :=
+  hG j
 
 theorem isGramSchmidtRows_gramSchmidtRows (B : Vector (Vector ℤ m) n) :
     IsGramSchmidtRows (gramSchmidtRows B) B := by

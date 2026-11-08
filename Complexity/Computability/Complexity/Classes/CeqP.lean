@@ -32,7 +32,7 @@ machine characterization is assumed.
 ## References
 
 * [L. Fortnow, *Counting Complexity*][Fortnow1997], Classifications 4.5 and 4.8–4.9,
-  Corollaries 4.10–4.11.
+  Corollaries 4.10, 4.11 and 4.13.
 
 * [S. Fenner, L. Fortnow, S. Kurtz, *Gap-definable counting classes*][FennerFortnowKurtz1994]
 -/
@@ -86,7 +86,8 @@ theorem inter_mem_CeqP (hA : A ∈ CeqP enc) (hB : B ∈ CeqP enc) : A ∩ B ∈
     have h₂ := sq_nonneg (g a)
     constructor <;> nlinarith
 
-/-- `C=P ⊆ PP`: for integer `g`, the gap `1 - g²` is positive precisely at its zeros. -/
+/-- `C=P ⊆ PP` [Fortnow, Corollary 4.13][Fortnow1997]: for integer `g`, the gap `1 - g²` is
+positive precisely at its zeros. -/
 theorem CeqP_subset_PP : CeqP enc ⊆ PP enc := by
   rintro A ⟨g, hg, hA⟩
   refine mem_PP_iff_exists_GapP.mpr
