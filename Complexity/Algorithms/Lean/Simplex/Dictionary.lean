@@ -515,7 +515,7 @@ theorem ray_nonneg {s : ι} (hs : s ∉ D.basis) (h : ∀ i ∈ D.basis, 0 ≤ D
   · rw [D.ray_of_mem hi hs]; exact h i hi
   · rw [D.ray_of_notMem hi his]; rfl
 
-/-- **Unboundedness certificate** ([Chvatal1983], Chapter 2): if a nonbasic variable of a
+/-- **Unboundedness certificate** ([Chvatal1983], Chapters 2–3): if a nonbasic variable of a
 feasible dictionary has a positive reduced cost and no row bounds its increase, the objective is
 unbounded on the feasible set. -/
 theorem not_bddAbove_value (hD : D.Feasible) {s : ι} (hs : s ∉ D.basis)

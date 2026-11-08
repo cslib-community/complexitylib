@@ -22,7 +22,9 @@ These kernel-checked examples (using no `native_decide`) exercise
    `max 5x₁ + 4x₂ + 3x₃` subject to `2x₁ + 3x₂ + x₃ ≤ 5`, `4x₁ + x₂ + 2x₃ ≤ 11`,
    `3x₁ + 4x₂ + 2x₃ ≤ 8`, `x ≥ 0`. Bland's rule reaches the optimum `13` at `x = (2, 0, 1)` in two
    pivots, and `simplex_slackDictionary_spec` turns the run into the statement that `13` is the
-   maximum. The dual certificate `y = (1, 0, 1)` read off the final dictionary is checked.
+   maximum. The dual solution `slackDual` read off the final dictionary evaluates to
+   `y = (1, 0, 1)`, and `isLeast_dotProduct_slackDual` turns the run into the statement that `13`
+   is the dual minimum.
 2. Chvátal's cycling example ([Chvatal1983], Chapter 3):
    `max 10x₁ - 57x₂ - 9x₃ - 24x₄` subject to
    `x₁/2 - 11x₂/2 - 5x₃/2 + 9x₄ ≤ 0`, `x₁/2 - 3x₂/2 - x₃/2 + x₄ ≤ 0`, `x₁ ≤ 1`, `x ≥ 0`. With
@@ -88,7 +90,7 @@ theorem b₁_nonneg : 0 ≤ b₁ := by
   intro i; fin_cases i <;> simp [b₁]
 
 /-- The run certifies that `13` is the optimum of Chvátal's introductory example. -/
-theorem isGreatest_chvatal : IsGreatest ((c₁ ⬝ᵥ ·) '' {x | A₁ *ᵥ x ≤ b₁ ∧ 0 ≤ x}) 13 := by
+theorem isGreatest_chvatal : IsGreatest ((c₁ ⬝ᵥ ·) '' {x | 0 ≤ x ∧ A₁ *ᵥ x ≤ b₁}) 13 := by
   have hrun : optimum? (slackDictionary A₁ b₁ c₁).simplex = some ({0, 2, 4}, 13) := by
     decide +kernel
   rcases simplex_slackDictionary_spec A₁ b₁ c₁ b₁_nonneg with
@@ -100,17 +102,31 @@ theorem isGreatest_chvatal : IsGreatest ((c₁ ⬝ᵥ ·) '' {x | A₁ *ᵥ x �
   · rw [hD] at hrun
     simp only [optimum?, reduceCtorEq] at hrun
 
-/-- The negated reduced costs of the slacks in the final dictionary are `(1, 0, 1)`, the dual
-certificate of `exists_dual_of_simplex_slackDictionary_eq_optimal`. -/
-example : (final? (slackDictionary A₁ b₁ c₁).simplex).map
-    (fun D => fun i : Fin 3 => -D.objCoeff (Fin.natAdd 3 i)) = some ![1, 0, 1] := by
+/-- The dual solution read off the final dictionary, the negated reduced costs of the slacks, is
+`(1, 0, 1)`. -/
+example : (final? (slackDictionary A₁ b₁ c₁).simplex).map (·.slackDual) = some ![1, 0, 1] := by
   decide +kernel
 
-/-- The dual certificate is dual feasible with value `13`. -/
+/-- Independently of the run: `(1, 0, 1)` is dual feasible with value `13`. -/
 example : c₁ ≤ ![(1 : ℚ), 0, 1] ᵥ* A₁ ∧ ![(1 : ℚ), 0, 1] ⬝ᵥ b₁ = 13 := by
   refine ⟨fun k => ?_, ?_⟩
   · fin_cases k <;> norm_num [c₁, A₁, vecMul, dotProduct, Fin.sum_univ_succ]
   · norm_num [b₁, dotProduct, Fin.sum_univ_succ]
+
+/-- The run certifies that `(1, 0, 1)` is dual feasible and that `13` is the minimum of the dual
+program of Chvátal's introductory example. -/
+theorem isLeast_chvatal_dual :
+    ![(1 : ℚ), 0, 1] ∈ {y | 0 ≤ y ∧ c₁ ≤ y ᵥ* A₁} ∧
+      IsLeast ((· ⬝ᵥ b₁) '' {y | 0 ≤ y ∧ c₁ ≤ y ᵥ* A₁}) 13 := by
+  have hrun : (final? (slackDictionary A₁ b₁ c₁).simplex).map (fun D => (D.slackDual, D.objConst))
+      = some (![1, 0, 1], 13) := by
+    decide +kernel
+  rcases h : (slackDictionary A₁ b₁ c₁).simplex with D | ⟨D, s⟩ | D
+  · rw [h] at hrun
+    simp only [final?, Option.map_some, Option.some.injEq, Prod.mk.injEq] at hrun
+    rw [← hrun.1, ← hrun.2]
+    exact isLeast_dotProduct_slackDual A₁ b₁ c₁ b₁_nonneg h
+  all_goals rw [h] at hrun; simp only [final?, Option.map_none, reduceCtorEq] at hrun
 
 /-! ### 2. Chvátal's cycling example -/
 

@@ -1497,8 +1497,8 @@ each statement against the numbered result. Organize modules by subject, not cha
   infeasible outcomes and complementary slackness over any linearly ordered field are in
   `Foundations/LinearAlgebra/Matrix/{FourierMotzkin,Farkas,LinearProgramming}`. The simplex
   method on dictionaries with Bland's rule, its no-cycling theorem, termination within
-  `N.choose m - 1` pivots, the optimality and unboundedness certificates and a dual certificate
-  read off the final dictionary are in `Algorithms/Lean/Simplex`
+  `N.choose m - 1` pivots, the optimality and unboundedness certificates and an optimal dual
+  solution read off the final dictionary are in `Algorithms/Lean/Simplex`
   ([#3370](https://github.com/cslib-community/complexitylib/issues/3370)). Remaining:
   rational input and output encodings; bit-size bounds on basic solutions and Farkas
   certificates (Cramer's rule with the Hadamard bound), giving LP feasibility in NP ∩ coNP with

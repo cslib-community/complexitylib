@@ -59,6 +59,9 @@ number of basic variables, at most `N.choose m` bases occur, where `N = Fintype.
 
 ## Main definitions
 
+* `Cslib.Algorithms.Lean.Simplex.minOpt`: the smallest element of a finite set, as an `Option`.
+* `Cslib.Algorithms.Lean.Simplex.Step`, `Cslib.Algorithms.Lean.Simplex.Outcome`: the decision of
+  one simplex step and the result of a run.
 * `Cslib.Algorithms.Lean.Simplex.Dictionary.blandEntering`,
   `Cslib.Algorithms.Lean.Simplex.Dictionary.blandLeaving`,
   `Cslib.Algorithms.Lean.Simplex.Dictionary.blandStep`: Bland's rule.
@@ -91,7 +94,9 @@ public section
 
 namespace Cslib.Algorithms.Lean.Simplex
 
-/-- The smallest element of a finite set, if any. -/
+/-- The smallest element of a finite set, if any. This is Mathlib's `Finset.min` with the result
+in `Option ι` rather than `WithTop ι`; the simplex step matches on it directly, and the worked
+examples evaluate it with `decide +kernel`. -/
 @[expose] def minOpt {ι : Type*} [LinearOrder ι] (s : Finset ι) : Option ι :=
   if h : s.Nonempty then some (s.min' h) else none
 
