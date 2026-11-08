@@ -34,6 +34,7 @@ it [Jukna, Chapter 14][Jukna2012].
 * `Cslib.DecisionTree`: decision trees.
 * `Cslib.DecisionTree.eval`, `Cslib.DecisionTree.depth`, `Cslib.DecisionTree.queries`.
 * `Cslib.DecisionTree.mapQueries`: relabel queries without changing the tree shape.
+* `Cslib.DecisionTree.map`: relabel the leaves of a decision tree.
 * `Cslib.DecisionTree.complexity`: the decision tree complexity of a function.
 
 ## Main results
@@ -115,6 +116,23 @@ theorem depth_mapQueries {κ : Type*} (f : ι → κ) (t : DecisionTree ι β) :
   induction t with
   | leaf => rfl
   | node i left right ihl ihr => simp [mapQueries, ihl, ihr]
+
+/-- Relabel the leaves of a decision tree. -/
+def map {γ : Type*} (f : β → γ) : DecisionTree ι β → DecisionTree ι γ
+  | leaf b => leaf (f b)
+  | node i t₀ t₁ => node i (t₀.map f) (t₁.map f)
+
+@[simp] theorem eval_map {γ : Type*} (f : β → γ) (t : DecisionTree ι β) (x : ι → Bool) :
+    (t.map f).eval x = f (t.eval x) := by
+  induction t with
+  | leaf b => rfl
+  | node i t₀ t₁ ih₀ ih₁ => cases h : x i <;> simp [map, h, ih₀, ih₁]
+
+@[simp] theorem depth_map {γ : Type*} (f : β → γ) (t : DecisionTree ι β) :
+    (t.map f).depth = t.depth := by
+  induction t with
+  | leaf b => rfl
+  | node i t₀ t₁ ih₀ ih₁ => simp [map, ih₀, ih₁]
 
 section Queries
 
