@@ -25,6 +25,34 @@ namespace Cslib.Complexity.Graph.RotationSystem
 
 open Equiv RotationCertificate CornerFaces
 
+/-- Reinterpret literally equal listed graphs by retaining their edge indices and end bits. -/
+@[expose] def graphEqDartEquiv {G H : Graph} (h : G = H) : Dart G ≃ Dart H :=
+  (finCongr (congrArg (fun K : Graph => K.2.length) h)).prodCongr (Equiv.refl Bool)
+
+/-- Equality transport changes no actual endpoint. -/
+theorem vertex_graphEqDartEquiv {G H : Graph} (h : G = H) (d : Dart G) :
+    (graphEqDartEquiv h d).vertex = d.vertex := by
+  cases h
+  rfl
+
+/-- Equality transport retains the literal indexed edge position. -/
+theorem val_graphEqDartEquiv {G H : Graph} (h : G = H) (d : Dart G) :
+    (graphEqDartEquiv h d).1.val = d.1.val := by
+  cases h
+  rfl
+
+/-- Equality transport retains the original end tag. -/
+theorem side_graphEqDartEquiv {G H : Graph} (h : G = H) (d : Dart G) :
+    (graphEqDartEquiv h d).2 = d.2 := by
+  cases h
+  rfl
+
+/-- Equality transport commutes with reversing the indexed edge. -/
+theorem reverse_graphEqDartEquiv {G H : Graph} (h : G = H) (d : Dart G) :
+    graphEqDartEquiv h d.reverse = (graphEqDartEquiv h d).reverse := by
+  cases h
+  rfl
+
 /-- Reindex actual darts without changing the vertex-fiber partition. -/
 @[expose] def transport {G H : Graph} (r : RotationSystem G) (e : Dart G ≃ Dart H)
     (hv : ∀ a b, (e a).vertex = (e b).vertex ↔ a.vertex = b.vertex) : RotationSystem H where

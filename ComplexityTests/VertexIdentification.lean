@@ -42,10 +42,16 @@ example : Graph.RotationCertificate.verifyGenusZero
 example : Nat.card (ComponentFace
       (edgeRotation.mergeVertices (0, false) (0, true) (by decide)) 0) =
     Nat.card (ComponentFace edgeRotation 0) + 1 := by
-  have hself : Graph.RotationCertificate.SameComponent edge 0 0 := .refl (by decide)
-  simpa [mergeDartEquiv, mergeGraph, Graph.Dart.vertex, Graph.edgeEndpoint, hself] using
-    card_componentFace_mergeVertices edgeRotation (by decide) (0, false) (0, true)
-      (by decide) (by decide +kernel) (0, false)
+  have h := card_componentFace_mergeVertices edgeRotation (by decide) (0, false) (0, true)
+    (by decide) (by decide +kernel) (0, false)
+  rw [vertex_mergeDartEquiv] at h
+  have hv : Graph.Dart.vertex (G := edge) (0, false) = 0 := by decide
+  have ht : Graph.Dart.vertex (G := edge) (0, true) = 1 := by decide
+  have hself : Graph.RotationCertificate.SameComponent edge
+      (Graph.Dart.vertex (G := edge) (0, false))
+      (Graph.Dart.vertex (G := edge) (0, false)) := .refl (by decide)
+  rw [ite_eq_left hself] at h
+  simpa only [hv, ht, Function.update_of_ne (by decide : (0 : ℕ) ≠ 1), id_eq] using h
 
 -- The generic genus proof retains the separately declared point at 8.
 example : (edgeRotation.mergeVertices (0, false) (0, true) (by decide)).NumericalGenusZero := by

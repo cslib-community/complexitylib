@@ -8,8 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.VertexFibers
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Relabel
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.CycleSplice
-import Mathlib.Data.List.GetD
 
 /-!
 # Identifying two distinct incident vertices at specified corners
@@ -28,28 +28,16 @@ open Equiv CycleSplice
 
 /-- Identify the second corner's vertex with the first, retaining all listed edge positions. -/
 @[expose] def mergeGraph {G : Graph} (h k : Dart G) : Graph :=
-  let f := Function.update id k.vertex h.vertex
-  (G.1.map f, G.2.map (Prod.map f f))
+  G.relabel (Function.update id k.vertex h.vertex)
 
 /-- Merging vertex names retains the actual indexed edge/end occurrence. -/
 @[expose] def mergeDartEquiv {G : Graph} (h k : Dart G) : Dart G ≃ Dart (mergeGraph h k) :=
-  (finCongr (show G.2.length = (mergeGraph h k).2.length by simp [mergeGraph])).prodCongr
-    (Equiv.refl Bool)
+  Dart.relabelEquiv G (Function.update id k.vertex h.vertex)
 
 /-- Literal endpoint renaming at each retained indexed end. -/
 @[simp] theorem vertex_mergeDartEquiv {G : Graph} (h k d : Dart G) :
-    (mergeDartEquiv h k d).vertex = Function.update id k.vertex h.vertex d.vertex := by
-  rcases d with ⟨i, b⟩
-  change (if b then ((G.2.map (Prod.map (Function.update id k.vertex h.vertex)
-    (Function.update id k.vertex h.vertex))).getD i.val (0, 0)).2 else
-    ((G.2.map (Prod.map (Function.update id k.vertex h.vertex)
-      (Function.update id k.vertex h.vertex))).getD i.val (0, 0)).1) = _
-  rw [List.getD_eq_getElem _ _ (by simpa only [List.length_map] using i.isLt),
-    List.getElem_map]
-  change _ = Function.update id k.vertex h.vertex
-    (if b then (G.2.getD i.val (0, 0)).2 else (G.2.getD i.val (0, 0)).1)
-  rw [List.getD_eq_getElem _ _ i.isLt]
-  cases b <;> rfl
+    (mergeDartEquiv h k d).vertex = Function.update id k.vertex h.vertex d.vertex :=
+  Dart.vertex_relabelEquiv G (Function.update id k.vertex h.vertex) d
 
 private theorem incident_merge_spec {G : Graph} (h k : Dart G) (hk : h.vertex ≠ k.vertex)
     (v : IncidentVertex (mergeGraph h k)) :

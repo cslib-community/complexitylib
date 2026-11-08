@@ -28,14 +28,8 @@ open Equiv RotationCertificate CornerFaces
 /-- Original declared endpoints remain declared under the actual name update. -/
 theorem mergeGraph_endpoints_declared {G : Graph} (h k : Dart G)
     (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) :
-    ∀ v ∈ (mergeGraph h k).incidenceVertices, v ∈ (mergeGraph h k).1 := by
-  intro v hv
-  obtain ⟨edge, he, hv⟩ := List.mem_flatMap.mp hv
-  obtain ⟨old, ho, rfl⟩ := List.mem_map.mp he
-  simp only [List.mem_cons, List.not_mem_nil, or_false, Prod.map_fst, Prod.map_snd] at hv
-  rcases hv with rfl | rfl
-  · exact List.mem_map_of_mem (hG old.1 (List.mem_flatMap.mpr ⟨old, ho, by simp⟩))
-  · exact List.mem_map_of_mem (hG old.2 (List.mem_flatMap.mpr ⟨old, ho, by simp⟩))
+    ∀ v ∈ (mergeGraph h k).incidenceVertices, v ∈ (mergeGraph h k).1 :=
+  G.endpoints_declared_relabel (Function.update id k.vertex h.vertex) hG
 
 private theorem sameComponent_of_merge_vertex_eq {G : Graph} (h k a b : Dart G)
     (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (hc : SameComponent G h.vertex k.vertex)

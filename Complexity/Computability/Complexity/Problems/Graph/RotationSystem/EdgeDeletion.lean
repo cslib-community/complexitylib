@@ -37,6 +37,24 @@ open Equiv CycleSplice
     (finCongr (show (lastEdgeGraph G u v).2.length = G.2.length + 1 by
       simp [lastEdgeGraph])) (Equiv.refl Bool)).trans (appendedDartEquiv G.2.length)
 
+/-- The two indexed ends of the last listed edge, including when the old graph has no darts. -/
+@[expose] def lastEdgeDart (G : Graph) (u v : ℕ) (b : Bool) : Dart (lastEdgeGraph G u v) :=
+  (lastEdgeDartEquiv G u v).symm (if b then none else some none)
+
+/-- The last two actual endpoints are exactly the supplied names. -/
+@[simp] theorem vertex_lastEdgeDart (G : Graph) (u v : ℕ) (b : Bool) :
+    (lastEdgeDart G u v b).vertex = if b then v else u := by
+  cases b
+  · change ((G.2 ++ [(u, v)]).getD G.2.length (0, 0)).1 = u
+    simp
+  · change ((G.2 ++ [(u, v)]).getD G.2.length (0, 0)).2 = v
+    simp
+
+/-- Reversal interchanges the two last indexed ends. -/
+theorem reverse_lastEdgeDart (G : Graph) (u v : ℕ) (b : Bool) :
+    (lastEdgeDart G u v b).reverse = lastEdgeDart G u v (!b) := by
+  cases b <;> rfl
+
 /-- Retain an old dart, without changing its edge-list index or end. -/
 @[expose] def retainedLastEdgeDart (G : Graph) (u v : ℕ) (d : Dart G) :
     Dart (lastEdgeGraph G u v) := (lastEdgeDartEquiv G u v).symm (some (some d))
