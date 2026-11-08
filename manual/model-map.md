@@ -62,6 +62,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `sbp` | [SBP](machines-and-classes/verifiers-counting-interaction.md) | counting-acceptance |
 | `bpppath` | [BPPpath](machines-and-classes/verifiers-counting-interaction.md) | counting-acceptance |
 | `fpras` | [FPRAS approximate counting](machines-and-classes/verifiers-counting-interaction.md) | approximate-counting |
+| `fpaus` | [FPAUS almost uniform sampling](machines-and-classes/verifiers-counting-interaction.md) | approximate-counting |
 | `deterministic-oracle` | [Efficient deterministic oracle program](machines-and-classes/verifiers-counting-interaction.md) | oracle-verifier |
 | `counting-oracle` | [#P function-bit oracle](machines-and-classes/verifiers-counting-interaction.md) | oracle-verifier |
 | `ma` | [Merlin-Arthur verifier](machines-and-classes/verifiers-counting-interaction.md) | interactive |
@@ -81,6 +82,9 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `ppp` | [PPP](machines-and-classes/search-and-promises.md) | total-search-principle |
 | `ppad` | [PPAD](machines-and-classes/search-and-promises.md) | total-search-principle |
 | `ppa` | [PPA](machines-and-classes/search-and-promises.md) | total-search-principle |
+| `ppads` | [PPADS](machines-and-classes/search-and-promises.md) | total-search-principle |
+| `eopl` | [EOPL](machines-and-classes/search-and-promises.md) | total-search-principle |
+| `sopl` | [SOPL](machines-and-classes/search-and-promises.md) | total-search-principle |
 | `promise-completion` | [Disjoint promise and completion lift](machines-and-classes/search-and-promises.md) | promise |
 | `promise-randomized` | [Direct randomized promise verifier](machines-and-classes/search-and-promises.md) | promise |
 | `primrec` | [Mathlib primitive-recursive typed functions](machines-and-classes/computability-and-description.md) | computability |
@@ -187,6 +191,8 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `comparison-tree` | [Monotone/separable comparison queries](circuits-logic-and-other-models/index.md) | information-access |
 | `randomized-query` | [Finite-support randomized decision trees](circuits-logic-and-other-models/index.md) | information-access |
 | `distributional-query` | [Distributional decision-tree complexity](circuits-logic-and-other-models/index.md) | information-access |
+| `cell-probe` | [Adaptive cell-probe trees and deterministic schemes](circuits-logic-and-other-models/query-and-communication.md) | information-access |
+| `randomized-cell-probe` | [Internal-coin cell-probe schemes and zero-error Yao averaging](circuits-logic-and-other-models/query-and-communication.md) | information-access |
 | `quantum-query` | [Phase-oracle quantum query algorithms](circuits-logic-and-other-models/index.md) | quantum |
 | `deterministic-communication` | [Two-party bit communication trees](circuits-logic-and-other-models/index.md) | communication |
 | `local-oriented-cycle` | [Deterministic LOCAL algorithms on oriented cycles](circuits-logic-and-other-models/query-and-communication.md) | distributed |
@@ -216,6 +222,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `resolution-tree` | [Tree-like resolution derivations](circuits-logic-and-other-models/index.md) | proof-systems |
 | `cutting-planes-lines` | [Cutting planes proofs as ordered lists of integer inequalities](circuits-logic-and-other-models/index.md) | proof-systems |
 | `semantic-derivation` | [Semantic derivations: sequences of sets of assignments, each initial, everything, or containing the intersection of two earlier ones](circuits-logic-and-other-models/index.md) | proof-systems |
+| `frege-lines` | [Hilbert-style Frege proofs as ordered lists of formulas; implicational completeness not yet formalized](circuits-logic-and-other-models/index.md) | proof-systems |
 | `pac` | [General deterministic PAC framework](circuits-logic-and-other-models/index.md) | learning |
 | `randomized-pac` | [Randomized agnostic PAC framework](circuits-logic-and-other-models/index.md) | learning |
 | `uniform-learning` | [Uniform-distribution Boolean sample learning](circuits-logic-and-other-models/index.md) | learning |

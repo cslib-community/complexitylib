@@ -8,6 +8,7 @@ module
 -- upstream: candidate (Mathlib, `Mathlib/Data/Nat/Basic.lean`)
 
 public import Complexity.Init
+import Mathlib.Algebra.Order.Ring.Abs
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -27,6 +28,12 @@ and bounds by exponentials.
 * `Nat.mul_add_one_pow_le`: `(R + 1) * d ≤ M → R * (M + 1) ^ d ≤ (R + 1) * M ^ d`.
 * `Nat.sq_le_two_pow`: `4 ≤ s → s ^ 2 ≤ 2 ^ s`.
 * `Nat.pow_le_two_pow`: `1 ≤ D → 4 * D ^ 2 ≤ b → b ^ D ≤ 2 ^ b`.
+* `Nat.succ_pow_sub_pow_le`: `(c + 1) ^ (j + 1) - c ^ (j + 1) ≤ (j + 1) * (c + 1) ^ j`.
+
+## References
+
+* [N. Alon, Y. Matias, M. Szegedy, *The space complexity of approximating the frequency
+  moments*, proof of Theorem 2.1][AlonMatiasSzegedy1999]
 -/
 
 @[expose] public section
@@ -130,5 +137,22 @@ theorem pow_le_two_pow {D b : ℕ} (hD : 1 ≤ D) (hb : 4 * D ^ 2 ≤ b) :
     _ ≤ (2 ^ s) ^ D := Nat.pow_le_pow_left (sq_le_two_pow hs4) D
     _ = 2 ^ (s * D) := (Nat.pow_mul 2 s D).symm
     _ ≤ 2 ^ b := Nat.pow_le_pow_right (by decide) (Nat.div_mul_le_self b D)
+
+/-- Consecutive `(j + 1)`-th powers differ by at most `(j + 1) (c + 1) ^ j`, the case `a = b + 1`
+of `a ^ k - b ^ k ≤ (a - b) k a ^ (k - 1)` [AlonMatiasSzegedy1999, proof of Theorem 2.1]; a
+specialization of Mathlib's `abs_pow_sub_pow_le`. -/
+theorem succ_pow_sub_pow_le (c j : ℕ) :
+    (c + 1) ^ (j + 1) - c ^ (j + 1) ≤ (j + 1) * (c + 1) ^ j := by
+  have h := abs_pow_sub_pow_le ((c : ℤ) + 1) (c : ℤ) (j + 1)
+  have hle : c ^ (j + 1) ≤ (c + 1) ^ (j + 1) := Nat.pow_le_pow_left (Nat.le_succ c) _
+  have hc : (0 : ℤ) ≤ c := Int.natCast_nonneg c
+  have hmax : max |(c : ℤ) + 1| |(c : ℤ)| = (c : ℤ) + 1 := by
+    rw [abs_of_nonneg (by linarith), abs_of_nonneg hc]
+    exact max_eq_left (by linarith)
+  rw [hmax, add_sub_cancel_left, abs_one, one_mul, Nat.add_sub_cancel,
+    abs_of_nonneg (sub_nonneg.2 (pow_le_pow_left₀ hc (by linarith) _))] at h
+  zify [hle]
+  push_cast at h ⊢
+  linarith
 
 end Nat
