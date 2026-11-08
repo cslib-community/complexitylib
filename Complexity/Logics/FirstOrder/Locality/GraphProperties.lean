@@ -18,7 +18,9 @@ import Complexity.Foundations.ModelTheory.Graph
 Hanf locality ([Libkin, Theorem 4.12][Libkin2004], `realize_sentence_iff_of_nbhdIso`) says that
 finite structures whose points can be matched by a bijection preserving radius-`(3 ^ n - 1) / 2`
 neighborhoods satisfy the same sentences of quantifier rank at most `n`. This module applies it to
-cycles and paths, following [Libkin, §4.1, Figure 4.2 and Corollary 4.13][Libkin2004].
+cycles and paths. For connectivity this follows [Libkin, §4.1, Figure 4.2 (p. 48), with Theorem 4.12
+and the remark following Corollary 4.13 (p. 52)][Libkin2004]; for acyclicity and trees it answers
+[Libkin, Exercise 4.6 (p. 63)][Libkin2004].
 
 In a cycle on at least `2r + 2` vertices, and in the interior of a long path, the radius-`r`
 neighborhood of every vertex is a path on `2r + 1` vertices centered at it
@@ -39,16 +41,22 @@ The consequences are quantitative forms of the nondefinability of these properti
 quantifier rank `q` that holds in exactly the connected graphs on a finite vertex type `V` forces
 `|V| ≤ 2 · 3 ^ q + 1` (`card_le_of_realize_iff_connected`), and one that holds in exactly the trees,
 or exactly the acyclic graphs, on `V` forces `|V| ≤ 2 · 3 ^ q` (`card_le_of_realize_iff_isTree`,
-`card_le_of_realize_iff_isAcyclic`). The constants come from Hanf's radius `(3 ^ q - 1) / 2`; they
-are not claimed to be sharp.
+`card_le_of_realize_iff_isAcyclic`). For `q ≥ 1` all three improve to `|V| < 2 · 3 ^ q`
+(`card_lt_of_realize_iff_connected`, `card_lt_of_realize_iff_isTree`,
+`card_lt_of_realize_iff_isAcyclic`), by comparing `P_{a+b}` with `P_a ⊕ C_b` for `a = 3 ^ q - 1`.
+The hypothesis `q ≥ 1` is needed for acyclicity: every graph on two vertices is acyclic, so the
+rank-`0` sentence `⊤` defines acyclicity on a two-element type. The constants come from Hanf's
+radius `(3 ^ q - 1) / 2`; they are not claimed to be sharp.
 
 The unbounded statements follow at once. For trees this is [Libkin, Exercise 4.6][Libkin2004]:
 being a tree is not first-order definable on finite graphs (`not_exists_sentence_isTree`). For
 connectivity and acyclicity the library already has the statements, proved by
 Ehrenfeucht–Fraïssé games: `Cslib.Logic.FO.Connectivity.not_exists_sentence_connected` and
-`Cslib.Logic.FO.GraphProperties.not_exists_sentence_isAcyclic`. The game-free derivations of these
-from the bounds here, which [Libkin, Corollary 4.13][Libkin2004] and Exercise 4.6 ask for, are
-checked in the test module `ComplexityTests.FOLocalityGraphProperties` rather than restated.
+`Cslib.Logic.FO.GraphProperties.not_exists_sentence_isAcyclic`. Their game-free derivations from
+the bounds here are checked in the test module `ComplexityTests.FOLocalityGraphProperties` rather
+than restated. For connectivity this is the game-free proof of [Libkin, §4.1, Figure 4.2, with
+Theorem 4.12 and the remark following Corollary 4.13][Libkin2004]; for acyclicity it is what
+[Libkin, Exercise 4.6][Libkin2004] asks for.
 
 All sentences range over the pure graph vocabulary `FirstOrder.Language.graph`, with no built-in
 order or arithmetic, and graphs are Mathlib's `SimpleGraph`s with the properties
@@ -66,13 +74,17 @@ order or arithmetic, and graphs are Mathlib's `SimpleGraph`s with the properties
 * `Cslib.Logic.FO.Locality.card_le_of_realize_iff_connected`,
   `Cslib.Logic.FO.Locality.card_le_of_realize_iff_isTree`,
   `Cslib.Logic.FO.Locality.card_le_of_realize_iff_isAcyclic`: the quantitative bounds.
+* `Cslib.Logic.FO.Locality.card_lt_of_realize_iff_connected`,
+  `Cslib.Logic.FO.Locality.card_lt_of_realize_iff_isTree`,
+  `Cslib.Logic.FO.Locality.card_lt_of_realize_iff_isAcyclic`: the sharper bounds for positive
+  quantifier rank.
 * `Cslib.Logic.FO.Locality.not_exists_sentence_isTree`: being a tree is not first-order definable
   [Libkin, Exercise 4.6][Libkin2004].
 
 ## References
 
-* [L. Libkin, *Elements of Finite Model Theory*][Libkin2004], §4.1 (Figure 4.2), Corollary 4.13
-  and Exercise 4.6.
+* [L. Libkin, *Elements of Finite Model Theory*][Libkin2004], §4.1 (Figure 4.2, p. 48),
+  Theorem 4.12 and the remark following Corollary 4.13 (p. 52), and Exercise 4.6 (p. 63).
 -/
 
 public section
@@ -173,7 +185,7 @@ theorem realize_cycleGraph_iff_sum {n a b : ℕ} (ha : 3 ^ n < a) (hb : 3 ^ n < 
 /-- Transfer along a bijection `V ≃ Fin (a + b)`: if `φ` holds in exactly the graphs on `V` with
 property `P`, `P` holds for a copy of `G₁` and fails for a copy of `G₂`, then `φ` distinguishes
 `G₁` from `G₂`. -/
-private theorem not_realize_iff_of_transfer {V : Type*} {a b : ℕ} (e : V ≃ Fin (a + b))
+private theorem not_realize_iff_of_transfer {a b : ℕ} (e : V ≃ Fin (a + b))
     {φ : Language.graph.Sentence} {P : SimpleGraph V → Prop}
     (hφ : ∀ G : SimpleGraph V, (letI := G.structure; V ⊨ φ) ↔ P G)
     (G₁ : SimpleGraph (Fin (a + b))) (G₂ : SimpleGraph (Fin a ⊕ Fin b))
@@ -183,11 +195,12 @@ private theorem not_realize_iff_of_transfer {V : Type*} {a b : ℕ} (e : V ≃ F
   h₂ ((hφ _).1 ((Iso.comap _ G₂).realize_sentence_iff φ |>.2
     (h.1 ((Iso.comap e G₁).realize_sentence_iff φ |>.1 ((hφ _).2 h₁)))))
 
-/-- **Connectivity needs quantifier rank `log₃` of the size** (the Hanf-locality proof of
-[Libkin, Corollary 4.13][Libkin2004] that connectivity is not first-order, made quantitative): if
-a sentence `φ` of the language of graphs holds in exactly the connected simple graphs on a finite
-vertex type `V`, then `|V| ≤ 2 · 3 ^ q + 1` where `q` is the quantifier rank of `φ`. -/
-theorem card_le_of_realize_iff_connected {V : Type*} [Finite V] {φ : Language.graph.Sentence}
+/-- **Connectivity needs quantifier rank `log₃` of the size** (the Hanf-locality proof that
+connectivity is not first-order, [Libkin, §4.1, Figure 4.2, with Theorem 4.12 and the remark
+following Corollary 4.13][Libkin2004], made quantitative): if a sentence `φ` of the language of
+graphs holds in exactly the connected simple graphs on a finite vertex type `V`, then
+`|V| ≤ 2 · 3 ^ q + 1` where `q` is the quantifier rank of `φ`. -/
+theorem card_le_of_realize_iff_connected [Finite V] {φ : Language.graph.Sentence}
     (hφ : ∀ G : SimpleGraph V, (letI := G.structure; V ⊨ φ) ↔ G.Connected) :
     Nat.card V ≤ 2 * 3 ^ quantifierRank φ + 1 := by
   by_contra! hV
@@ -314,10 +327,10 @@ private theorem not_isAcyclic_sum_cycleGraph {G : SimpleGraph V} {b : ℕ} (hb :
     ¬ (G ⊕g cycleGraph b).IsAcyclic := fun h =>
   isAcyclic_iff_free_cycleGraph.1 h b hb (Embedding.sumInr (G := G) (H := cycleGraph b)).isContained
 
-/-- A sentence that holds in exactly the graphs on `V` with property `P`, where `P` holds for
-copies of `P_{a+b}` and fails for copies of `P_a ⊕ C_b` whenever `b ≥ 3`, forces
-`|V| ≤ 2 · 3 ^ q`, `q` the quantifier rank. -/
-private theorem card_le_of_path {V : Type*} [Finite V] {φ : Language.graph.Sentence}
+/-- If `φ` holds in exactly the graphs on `V` with property `P`, and `P` holds for every copy of
+`P_{a+b}` and fails for every copy of `P_a ⊕ C_b` with `b ≥ 3`, then `|V| ≤ 2 · 3 ^ q`, where `q`
+is the quantifier rank of `φ`. -/
+private theorem card_le_of_path [Finite V] {φ : Language.graph.Sentence}
     {P : SimpleGraph V → Prop} (hφ : ∀ G : SimpleGraph V, (letI := G.structure; V ⊨ φ) ↔ P G)
     (hP : ∀ {n} (e : V ≃ Fin n), 1 ≤ n → P ((pathGraph n).comap e))
     (hP' : ∀ {a b} (e : V ≃ Fin a ⊕ Fin b), 3 ≤ b → ¬ P ((pathGraph a ⊕g cycleGraph b).comap e)) :
@@ -332,10 +345,31 @@ private theorem card_le_of_path {V : Type*} [Finite V] {φ : Language.graph.Sent
   exact not_realize_iff_of_transfer e hφ _ _ (hP e (by omega)) (hP' _ (by omega))
     (realize_pathGraph_iff_sum (by omega) (by omega) le_rfl)
 
+/-- The sharper form of `card_le_of_path` for quantifier rank `q ≥ 1`: if `P` holds for every copy
+of `P_{a+b}` and fails for every copy of `P_a ⊕ C_b` with `a ≥ 1` and `b ≥ 3`, then
+`|V| < 2 · 3 ^ q`. -/
+private theorem card_lt_of_path [Finite V] {φ : Language.graph.Sentence}
+    (hq : 1 ≤ quantifierRank φ) {P : SimpleGraph V → Prop}
+    (hφ : ∀ G : SimpleGraph V, (letI := G.structure; V ⊨ φ) ↔ P G)
+    (hP : ∀ {n} (e : V ≃ Fin n), 1 ≤ n → P ((pathGraph n).comap e))
+    (hP' : ∀ {a b} (e : V ≃ Fin a ⊕ Fin b), 1 ≤ a → 3 ≤ b →
+      ¬ P ((pathGraph a ⊕g cycleGraph b).comap e)) :
+    Nat.card V < 2 * 3 ^ quantifierRank φ := by
+  by_contra! hV
+  have := Fintype.ofFinite V
+  have h3 : 3 ≤ 3 ^ quantifierRank φ := by
+    simpa only [pow_one] using Nat.pow_le_pow_right (by decide : 0 < 3) hq
+  obtain ⟨b, hb⟩ : ∃ b, Nat.card V = (3 ^ quantifierRank φ - 1) + b :=
+    ⟨Nat.card V - (3 ^ quantifierRank φ - 1), by omega⟩
+  let e : V ≃ Fin ((3 ^ quantifierRank φ - 1) + b) :=
+    Fintype.equivFinOfCardEq (Nat.card_eq_fintype_card.symm.trans hb)
+  exact not_realize_iff_of_transfer e hφ _ _ (hP e (by omega)) (hP' _ (by omega) (by omega))
+    (realize_pathGraph_iff_sum (by omega) (by omega) le_rfl)
+
 /-- **Being a tree needs quantifier rank `log₃` of the size** ([Libkin, Exercise 4.6][Libkin2004],
 made quantitative): if a sentence `φ` of the language of graphs holds in exactly the trees on a
 finite vertex type `V`, then `|V| ≤ 2 · 3 ^ q` where `q` is the quantifier rank of `φ`. -/
-theorem card_le_of_realize_iff_isTree {V : Type*} [Finite V] {φ : Language.graph.Sentence}
+theorem card_le_of_realize_iff_isTree [Finite V] {φ : Language.graph.Sentence}
     (hφ : ∀ G : SimpleGraph V, (letI := G.structure; V ⊨ φ) ↔ G.IsTree) :
     Nat.card V ≤ 2 * 3 ^ quantifierRank φ :=
   card_le_of_path hφ
@@ -345,12 +379,48 @@ theorem card_le_of_realize_iff_isTree {V : Type*} [Finite V] {φ : Language.grap
 /-- **Acyclicity needs quantifier rank `log₃` of the size** ([Libkin, Exercise 4.6][Libkin2004],
 made quantitative): if a sentence `φ` of the language of graphs holds in exactly the acyclic graphs
 on a finite vertex type `V`, then `|V| ≤ 2 · 3 ^ q` where `q` is the quantifier rank of `φ`. -/
-theorem card_le_of_realize_iff_isAcyclic {V : Type*} [Finite V] {φ : Language.graph.Sentence}
+theorem card_le_of_realize_iff_isAcyclic [Finite V] {φ : Language.graph.Sentence}
     (hφ : ∀ G : SimpleGraph V, (letI := G.structure; V ⊨ φ) ↔ G.IsAcyclic) :
     Nat.card V ≤ 2 * 3 ^ quantifierRank φ :=
   card_le_of_path hφ
     (fun e _ => (Iso.comap e _).isAcyclic_iff.2 (isAcyclic_pathGraph _))
     (fun e hb h => not_isAcyclic_sum_cycleGraph hb ((Iso.comap e _).isAcyclic_iff.1 h))
+
+/-- **The sharper bound for connectivity**: if a sentence `φ` of quantifier rank `q ≥ 1` holds in
+exactly the connected simple graphs on a finite vertex type `V`, then `|V| < 2 · 3 ^ q`. The proof
+compares `P_{a+b}` with `P_a ⊕ C_b` instead of `C_{a+b}` with `C_a ⊕ C_b`. -/
+theorem card_lt_of_realize_iff_connected [Finite V] {φ : Language.graph.Sentence}
+    (hq : 1 ≤ quantifierRank φ)
+    (hφ : ∀ G : SimpleGraph V, (letI := G.structure; V ⊨ φ) ↔ G.Connected) :
+    Nat.card V < 2 * 3 ^ quantifierRank φ :=
+  card_lt_of_path hq hφ
+    (fun e hn => (Iso.comap e _).connected_iff.2 (isTree_pathGraph.2 (by omega)).connected)
+    (fun {a b} e ha hb h => by
+      have : Nonempty (Fin a) := ⟨⟨0, ha⟩⟩
+      have : Nonempty (Fin b) := ⟨⟨0, by omega⟩⟩
+      exact not_connected_sum ((Iso.comap e _).connected_iff.1 h))
+
+/-- **The sharper bound for trees**: if a sentence `φ` of quantifier rank `q ≥ 1` holds in exactly
+the trees on a finite vertex type `V`, then `|V| < 2 · 3 ^ q`. -/
+theorem card_lt_of_realize_iff_isTree [Finite V] {φ : Language.graph.Sentence}
+    (hq : 1 ≤ quantifierRank φ)
+    (hφ : ∀ G : SimpleGraph V, (letI := G.structure; V ⊨ φ) ↔ G.IsTree) :
+    Nat.card V < 2 * 3 ^ quantifierRank φ :=
+  card_lt_of_path hq hφ
+    (fun e hn => (Iso.comap e _).isTree_iff.2 (isTree_pathGraph.2 (by omega)))
+    (fun e _ hb h => not_isAcyclic_sum_cycleGraph hb ((Iso.comap e _).isTree_iff.1 h).isAcyclic)
+
+/-- **The sharper bound for acyclicity**: if a sentence `φ` of quantifier rank `q ≥ 1` holds in
+exactly the acyclic graphs on a finite vertex type `V`, then `|V| < 2 · 3 ^ q`. The hypothesis
+`q ≥ 1` is needed: every graph on two vertices is acyclic, so the rank-`0` sentence `⊤` defines
+acyclicity on a two-element type. -/
+theorem card_lt_of_realize_iff_isAcyclic [Finite V] {φ : Language.graph.Sentence}
+    (hq : 1 ≤ quantifierRank φ)
+    (hφ : ∀ G : SimpleGraph V, (letI := G.structure; V ⊨ φ) ↔ G.IsAcyclic) :
+    Nat.card V < 2 * 3 ^ quantifierRank φ :=
+  card_lt_of_path hq hφ
+    (fun e _ => (Iso.comap e _).isAcyclic_iff.2 (isAcyclic_pathGraph _))
+    (fun e _ hb h => not_isAcyclic_sum_cycleGraph hb ((Iso.comap e _).isAcyclic_iff.1 h))
 
 /-- **Being a tree is not first-order definable** on finite graphs, even on graphs with at least
 `t` vertices: no sentence of the language of graphs holds in exactly the trees among the finite

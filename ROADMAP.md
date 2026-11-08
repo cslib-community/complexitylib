@@ -832,11 +832,9 @@ universe size, not supplied as unverified input tables. In dependency order:
   ([locality track](https://github.com/cslib-community/complexitylib/issues/3015)), add Gaifman's
   normal form theorem, further nondefinability applications of locality (Libkin's balanced binary
   trees and transitive closure, then planarity, Hamiltonicity and `k`-colorability for `k ≥ 3`),
-  games
-  for vocabularies with constants, and pebble games with their finite-variable equivalence
-  theorems; then
-  counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Connect
-  the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
+  games for vocabularies with constants, and pebble games with their finite-variable equivalence
+  theorems; then counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style
+  separations. Connect the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
 - **Color refinement and Weisfeiler–Leman:** building on
   [color refinement](Complexity/Foundations/Combinatorics/SimpleGraph/ColorRefinement.lean)
   (stabilization, the coarsest equitable partition and soundness of the 1-WL isomorphism test,

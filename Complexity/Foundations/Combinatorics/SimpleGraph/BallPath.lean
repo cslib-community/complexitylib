@@ -33,9 +33,8 @@ The radius-`r` balls of the cycle graph `cycleGraph N` with `N ≥ 2r + 2` are b
 (`SimpleGraph.exists_isBallPath_pathGraph`). The bound `N ≥ 2r + 2` is needed: in `cycleGraph 3`
 the radius-`1` ball is the whole triangle, which is not a path.
 
-These descriptions are the cycle-graph distance computations behind the Hanf-locality proofs that
-connectivity, acyclicity and being a tree are not first-order definable
-(`Complexity.Logics.FirstOrder.Locality.GraphProperties`).
+These descriptions are the cycle-graph distance computations behind Hanf-locality proofs that
+connectivity, acyclicity and being a tree are not first-order definable.
 
 ## Main definitions
 

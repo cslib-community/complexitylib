@@ -17,11 +17,16 @@ public import Complexity.Logics.FirstOrder.Locality.GraphProperties
   Hanf-equivalent at radius `4 = (3 ^ 2 - 1) / 2`, so they satisfy the same sentences of
   quantifier rank at most `2`; only the first is connected. So no sentence of rank at most `2`
   defines connectivity on `20`-vertex graphs. Likewise the path `P_18` and `P_8 ⊕ C_10` satisfy
-  the same rank-`2` sentences, and only the first is a tree.
+  the same rank-`2` sentences, and only the first is a tree, so with the sharper bound for positive
+  quantifier rank no sentence of rank at most `2` defines the trees on `18`-vertex graphs.
+* **The sharper bound needs positive rank.** Every graph on two vertices is acyclic, so the rank-`0`
+  sentence `⊤` defines acyclicity on `Fin 2`, and `|V| < 2 · 3 ^ q` fails there.
 * **Alternative proofs.** The Ehrenfeucht–Fraïssé theorems
   `Cslib.Logic.FO.Connectivity.not_exists_sentence_connected` and
   `Cslib.Logic.FO.GraphProperties.not_exists_sentence_isAcyclic` follow from the Hanf-locality
-  bounds, without games ([Libkin, Corollary 4.13 and Exercise 4.6][Libkin2004]).
+  bounds, without games: for connectivity as in [Libkin, §4.1, Figure 4.2, with Theorem 4.12
+  and the remark following Corollary 4.13][Libkin2004], and for acyclicity as
+  [Libkin, Exercise 4.6][Libkin2004] asks.
 * **Ball paths.** Balls in a cycle of length at least `2r + 2` and in a path are ball paths. The
   bound `2r + 2` is needed: the radius-`1` ball of the triangle is the whole triangle, which has
   no ball path. -/
@@ -74,14 +79,32 @@ example {φ : Language.graph.Sentence} (hφ : quantifierRank φ ≤ 2) :
       (letI := (pathGraph 8 ⊕g cycleGraph 10).structure; (Fin 8 ⊕ Fin 10) ⊨ φ) :=
   realize_pathGraph_iff_sum (by norm_num) (by norm_num) hφ
 
-/-- No sentence of quantifier rank at most `2` defines the trees on `19`-vertex graphs. -/
+/-- No sentence of quantifier rank at most `2` defines the trees on `18`-vertex graphs: rank `0`
+is excluded by `card_le_of_realize_iff_isTree`, ranks `1` and `2` by the sharper
+`card_lt_of_realize_iff_isTree`. -/
 example {φ : Language.graph.Sentence} (hφ : quantifierRank φ ≤ 2) :
-    ¬ ∀ G : SimpleGraph (Fin 19), (letI := G.structure; Fin 19 ⊨ φ) ↔ G.IsTree := by
+    ¬ ∀ G : SimpleGraph (Fin 18), (letI := G.structure; Fin 18 ⊨ φ) ↔ G.IsTree := by
   intro h
-  have := card_le_of_realize_iff_isTree h
   have h3 : 3 ^ quantifierRank φ ≤ 3 ^ 2 := Nat.pow_le_pow_right (by norm_num) hφ
-  rw [Nat.card_fin] at this
-  omega
+  rcases Nat.eq_zero_or_pos (quantifierRank φ) with h0 | hq
+  · have := card_le_of_realize_iff_isTree h
+    rw [Nat.card_fin, h0] at this
+    omega
+  · have := card_lt_of_realize_iff_isTree hq h
+    rw [Nat.card_fin] at this
+    omega
+
+/-- **The sharper bound needs positive rank**: every graph on two vertices is acyclic, so `⊤`, of
+quantifier rank `0`, defines acyclicity on `Fin 2`, although `2 < 2 · 3 ^ 0` fails. -/
+example : quantifierRank (⊤ : Language.graph.Sentence) = 0 ∧
+    (∀ G : SimpleGraph (Fin 2), (letI := G.structure; Fin 2 ⊨ (⊤ : Language.graph.Sentence)) ↔
+      G.IsAcyclic) ∧ ¬ Nat.card (Fin 2) < 2 * 3 ^ 0 := by
+  refine ⟨quantifierRank_top, fun G => ?_, by simp⟩
+  let := G.structure
+  refine iff_of_true (Sentence.realize_top _) ?_
+  refine IsAcyclic.anti le_top ?_
+  rw [← pathGraph_two_eq_top]
+  exact isAcyclic_pathGraph 2
 
 /-! ### Alternative proofs without games -/
 
