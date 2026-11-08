@@ -1218,7 +1218,11 @@ finite outcome sets are in `GameTheory/Mechanism`. Remaining directions:
   every clause shares a variable with fewer than `2 ^ (k - 3)` others
   ([#2879](https://github.com/cslib-community/complexitylib/issues/2879)). Extend it to the
   variable form of the Local Lemma under `e p (d + 1) ≤ 1` (witness trees, sharper expected
-  bounds), with native sampling and event-detection costs.
+  bounds), with native sampling and event-detection costs. The Kolmogorov form of the argument
+  is relative to an explicit decoder
+  ([#3043](https://github.com/cslib-community/complexitylib/issues/3043)); implement the decoder
+  as a multi-tape machine taking the formula to transfer it to the conditional universal
+  complexity `condPlain`.
 - **Conditional expectations and pessimistic estimators:** algorithmic alteration, and coloring,
   MAX-CUT or combinatorial-construction clients of the certified greedy choice rule
   (`Cslib.PessimisticEstimator.greedy_spec`). Preserve the quantitative guarantee when converting

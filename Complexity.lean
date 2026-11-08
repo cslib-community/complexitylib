@@ -4614,6 +4614,7 @@ public import Complexity.Logics.Propositional.CNF.Johnson
 public import Complexity.Logics.Propositional.CNF.Johnson.PolyTime
 public import Complexity.Logics.Propositional.CNF.KWiseIndependent
 public import Complexity.Logics.Propositional.CNF.KWiseIndependent.Trinomial
+public import Complexity.Logics.Propositional.CNF.LocalLemma
 public import Complexity.Logics.Propositional.CNF.Majority
 public import Complexity.Logics.Propositional.CNF.ModelCount
 public import Complexity.Logics.Propositional.CNF.ModelCount.Declared
@@ -4621,6 +4622,7 @@ public import Complexity.Logics.Propositional.CNF.ModelCount.DenseRelabel
 public import Complexity.Logics.Propositional.CNF.ModelCount.Relabel
 public import Complexity.Logics.Propositional.CNF.Moser
 public import Complexity.Logics.Propositional.CNF.Moser.Compression
+public import Complexity.Logics.Propositional.CNF.Moser.Kolmogorov
 public import Complexity.Logics.Propositional.CNF.Moser.Probability
 public import Complexity.Logics.Propositional.CNF.NotAllEqual
 public import Complexity.Logics.Propositional.CNF.NotAllEqual.ThreeOccurrence
