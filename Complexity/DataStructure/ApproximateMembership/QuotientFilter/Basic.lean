@@ -778,59 +778,25 @@ theorem FilterInv.clusterLen_sub_one_le_sum_scaleOverload
   set ℓ := hinv.clusterLen hS_lt q
   set k₀ := ℓ - 1
   have hℓ_eq : ℓ = a + t := rfl
-  have hℓ_le_S : ℓ ≤ #S := hinv.clusterLen_le_card hS_lt q
   have hcard_J : #(S.filter fun x => h i x ∈ cyclicInterval b₀ q a ℓ) = ℓ :=
     hinv.card_filter_quot_mem_cyclicInterval_eq hS_lt q
-  by_cases hk₀ : 1 ≤ k₀
-  · by_cases ht_pos : 1 ≤ t
-    · set j := Nat.log 2 k₀ + 1
-      have hj_ge_one : 1 ≤ j := Nat.le_add_left 1 _
-      have h2j1_le : 2 ^ (j - 1) ≤ k₀ := Nat.pow_log_le_self 2 (by omega)
-      have hk₀_lt_2j : k₀ < 2 ^ j := Nat.lt_pow_succ_log_self (by decide) k₀
-      have hℓ_le_2j : ℓ ≤ 2 ^ j := by omega
-      have ha_lt_2j : a < 2 ^ j := by omega
-      have hj_le_b : j ≤ b₀ := by
-        have hpow_lt : 2 ^ (j - 1) < 2 ^ b₀ := by omega
-        have hj1_lt : j - 1 < b₀ := (Nat.pow_lt_pow_iff_right (by decide)).mp hpow_lt
-        omega
-      have hj_mem : j ∈ Finset.Icc 1 b₀ := Finset.mem_Icc.mpr ⟨hj_ge_one, hj_le_b⟩
-      have hov : scaleOverload b₀ h (S.erase u) u j i := by
-        dsimp only [scaleOverload]
-        change 2 ^ (j - 1) ≤ #((S.erase u).filter fun x => h i x ∈ scaleWindow b₀ q j)
-        have hsub : cyclicInterval b₀ q a ℓ ⊆ scaleWindow b₀ q j :=
-          cyclicInterval_subset_scaleWindow q ha_lt_2j hℓ_le_2j
-        have herase_card :
-            ℓ - 1 ≤ #((S.erase u).filter fun x => h i x ∈ cyclicInterval b₀ q a ℓ) := by
-          have h1 : (S.erase u).filter (fun x => h i x ∈ cyclicInterval b₀ q a ℓ) =
-              (S.filter fun x => h i x ∈ cyclicInterval b₀ q a ℓ).erase u := by
-            ext x
-            simp only [Finset.mem_filter, Finset.mem_erase]
-            tauto
-          rw [h1]
-          have hpred :
-              #(S.filter fun x => h i x ∈ cyclicInterval b₀ q a ℓ) - 1 ≤
-                #((S.filter fun x => h i x ∈ cyclicInterval b₀ q a ℓ).erase u) :=
-            Finset.pred_card_le_card_erase
-          omega
-        have hfilter :
-            #((S.erase u).filter fun x => h i x ∈ cyclicInterval b₀ q a ℓ) ≤
-              #((S.erase u).filter fun x => h i x ∈ scaleWindow b₀ q j) := by
-          refine Finset.card_le_card fun x hx => ?_
-          simp only [Finset.mem_filter] at hx ⊢
-          exact ⟨hx.1, hsub hx.2⟩
-        omega
-      calc (k₀ : ℝ) ≤ (2 ^ j : ℝ) := by exact_mod_cast hk₀_lt_2j.le
-        _ = (2 ^ j : ℝ) * (if scaleOverload b₀ h (S.erase u) u j i then (1 : ℝ) else 0) := by
-            simp [hov]
-        _ ≤ ∑ r ∈ Finset.Icc 1 b₀,
-              (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0) := by
-            refine Finset.single_le_sum
-              (f := fun r =>
-                (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0))
-              (fun r _ => ?_) hj_mem
-            split_ifs <;> positivity
-    · have ht0 : t = 0 := by omega
-      have hfull_q : st.isFull q = false := by
+  rcases Nat.eq_zero_or_pos k₀ with hk0 | hk₀
+  · rw [hk0, Nat.cast_zero]
+    refine Finset.sum_nonneg fun r _ => ?_
+    split_ifs <;> positivity
+  -- `c` counts the other keys hashed into the cluster around `q`.
+  set c := #((S.erase u).filter fun x => h i x ∈ cyclicInterval b₀ q a ℓ)
+  have hc_ge : k₀ ≤ c := by
+    have hpred := Finset.pred_card_le_card_erase
+      (s := S.filter fun x => h i x ∈ cyclicInterval b₀ q a ℓ) (a := u)
+    rw [← Finset.filter_erase] at hpred
+    omega
+  have hc_le : c ≤ #S := (Finset.card_filter_le _ _).trans Finset.card_erase_le
+  -- Bucket `q` sits at offset `a ≤ c` in the cluster: if `q`'s slot is empty (`t = 0`) then
+  -- `u ∉ S` and `c = ℓ = a`, and otherwise `a ≤ ℓ - 1 ≤ c`.
+  have ha_le_c : a ≤ c := by
+    rcases Nat.eq_zero_or_pos t with ht0 | ht_pos
+    · have hfull_q : st.isFull q = false := by
         have h1 := hinv.isFull_probeSlot_fwdLen hS_lt q
         change st.isFull (probeSlot b₀ q t) = false at h1
         rw [ht0, probeSlot_zero] at h1
@@ -838,57 +804,43 @@ theorem FilterInv.clusterLen_sub_one_le_sum_scaleOverload
       have hocc_q : st.isOcc q = false := (hinv.empty_slot q hfull_q).1
       have hu_notMem : u ∉ S := by
         intro hu_mem
-        have hrun_ne : bucketRun S (h i) rem q ≠ [] := by
-          intro hnil
-          have := (bucketRun_eq_nil_iff S (h i) rem q).mp hnil u hu_mem
-          exact this rfl
-        have hocc_true : st.isOcc q = true := by
-          rw [hinv.isOcc_eq q]
-          cases h : bucketRun S (h i) rem q
-          · exact absurd h hrun_ne
-          · rfl
-        rw [hocc_q] at hocc_true
-        cases hocc_true
-      have herase_eq : S.erase u = S := Finset.erase_eq_of_notMem hu_notMem
-      set j := Nat.log 2 ℓ + 1
-      have hj_ge_one : 1 ≤ j := Nat.le_add_left 1 _
-      have h2j1_le : 2 ^ (j - 1) ≤ ℓ := Nat.pow_log_le_self 2 (by omega)
-      have hℓ_lt_2j : ℓ < 2 ^ j := Nat.lt_pow_succ_log_self (by decide) ℓ
-      have ha_lt_2j : a < 2 ^ j := by omega
-      have hj_le_b : j ≤ b₀ := by
-        have hpow_lt : 2 ^ (j - 1) < 2 ^ b₀ := by omega
-        have hj1_lt : j - 1 < b₀ := (Nat.pow_lt_pow_iff_right (by decide)).mp hpow_lt
-        omega
-      have hj_mem : j ∈ Finset.Icc 1 b₀ := Finset.mem_Icc.mpr ⟨hj_ge_one, hj_le_b⟩
-      have hov : scaleOverload b₀ h (S.erase u) u j i := by
-        dsimp only [scaleOverload]
-        rw [herase_eq]
-        change 2 ^ (j - 1) ≤ #(S.filter fun x => h i x ∈ scaleWindow b₀ q j)
-        have hsub : cyclicInterval b₀ q a ℓ ⊆ scaleWindow b₀ q j :=
-          cyclicInterval_subset_scaleWindow q ha_lt_2j hℓ_lt_2j.le
-        have hfilter :
-            #(S.filter fun x => h i x ∈ cyclicInterval b₀ q a ℓ) ≤
-              #(S.filter fun x => h i x ∈ scaleWindow b₀ q j) := by
-          refine Finset.card_le_card fun x hx => ?_
-          simp only [Finset.mem_filter] at hx ⊢
-          exact ⟨hx.1, hsub hx.2⟩
-        omega
-      calc (k₀ : ℝ) ≤ (2 ^ j : ℝ) := by
-            have : k₀ ≤ 2 ^ j := by omega
-            exact_mod_cast this
-        _ = (2 ^ j : ℝ) * (if scaleOverload b₀ h (S.erase u) u j i then (1 : ℝ) else 0) := by
-            simp [hov]
-        _ ≤ ∑ r ∈ Finset.Icc 1 b₀,
-              (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0) := by
-            refine Finset.single_le_sum
-              (f := fun r =>
-                (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0))
-              (fun r _ => ?_) hj_mem
-            split_ifs <;> positivity
-  · have hk0 : k₀ = 0 := by omega
-    rw [hk0, Nat.cast_zero]
-    refine Finset.sum_nonneg fun r _ => ?_
-    split_ifs <;> positivity
+        have h1 := hinv.isOcc_eq q
+        cases hrun : bucketRun S (h i) rem q with
+        | nil => exact (bucketRun_eq_nil_iff S (h i) rem q).mp hrun u hu_mem rfl
+        | cons x xs => simp [hrun, hocc_q] at h1
+      have hc_eq : c = ℓ := by
+        dsimp only [c]
+        rw [Finset.erase_eq_of_notMem hu_notMem, hcard_J]
+      omega
+    · omega
+  -- The dyadic scale `j` of `c` is overloaded and contributes `2 ^ j > k₀` to the sum.
+  set j := Nat.log 2 c + 1
+  have h2j1_le : 2 ^ (j - 1) ≤ c := Nat.pow_log_le_self 2 (by omega)
+  have hc_lt_2j : c < 2 ^ j := Nat.lt_pow_succ_log_self (by decide) c
+  have hj_mem : j ∈ Finset.Icc 1 b₀ := by
+    have hpow_lt : 2 ^ (j - 1) < 2 ^ b₀ := by omega
+    have hj1_lt : j - 1 < b₀ := (Nat.pow_lt_pow_iff_right (by decide)).mp hpow_lt
+    exact Finset.mem_Icc.mpr ⟨Nat.le_add_left 1 _, by omega⟩
+  have hov : scaleOverload b₀ h (S.erase u) u j i := by
+    dsimp only [scaleOverload]
+    change 2 ^ (j - 1) ≤ #((S.erase u).filter fun x => h i x ∈ scaleWindow b₀ q j)
+    have hsub : cyclicInterval b₀ q a ℓ ⊆ scaleWindow b₀ q j :=
+      cyclicInterval_subset_scaleWindow q (by omega) (by omega)
+    have hfilter : c ≤ #((S.erase u).filter fun x => h i x ∈ scaleWindow b₀ q j) := by
+      refine Finset.card_le_card fun x hx => ?_
+      simp only [Finset.mem_filter] at hx ⊢
+      exact ⟨hx.1, hsub hx.2⟩
+    omega
+  calc (k₀ : ℝ) ≤ (2 ^ j : ℝ) := by exact_mod_cast (show k₀ ≤ 2 ^ j by omega)
+    _ = (2 ^ j : ℝ) * (if scaleOverload b₀ h (S.erase u) u j i then (1 : ℝ) else 0) := by
+        simp [hov]
+    _ ≤ ∑ r ∈ Finset.Icc 1 b₀,
+          (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0) := by
+        refine Finset.single_le_sum
+          (f := fun r =>
+            (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0))
+          (fun r _ => ?_) hj_mem
+        split_ifs <;> positivity
 
 /-! ## Section 5: Pure membership query and fingerprint-collision characterization -/
 
@@ -930,6 +882,7 @@ theorem IntervalValid.queryCluster_eq_true_iff {U b f : ℕ} {S : Finset (Fin U)
   have hS_a1_le : S_a1 ≤ ℓ := by
     rw [← hinv.runOffset_eq]
     exact runOffset_mono S quot rem o ha1
+  -- Bucket `a`'s run occupies the slots `[S_a, S_a1)` of the remainder stream.
   have hslice :
       (((List.range ℓ).map (fun i => st.remAt (probeSlot b o i))).drop S_a).take
           (bucketRun S quot rem (probeSlot b o a)).length =
@@ -940,72 +893,50 @@ theorem IntervalValid.queryCluster_eq_true_iff {U b f : ℕ} {S : Finset (Fin U)
           List.range ℓ = List.range (a + 1) ++ (List.range (ℓ - (a + 1))).map (a + 1 + ·) := by
         rw [← List.range_add, Nat.add_sub_of_le ha1]
       rw [h1, List.range_succ, List.append_assoc, List.singleton_append]
-    rw [hrem_list, hr, List.flatMap_append, List.flatMap_cons]
     have hlen_pref :
-        ((List.range a).flatMap (fun j => bucketRun S quot rem (probeSlot b o j))).length =
-          S_a := by
-      have hmap :
-          (List.range a).flatMap (fun j => bucketRun S quot rem (probeSlot b o j)) =
-            ((List.range a).flatMap
-              (fun j => taggedRun (bucketRun S quot rem (probeSlot b o j)))).map Prod.snd := by
-        simp [List.map_flatMap, map_snd_taggedRun]
-      rw [hmap, List.length_map]
-      rfl
-    rw [← hlen_pref, List.drop_append_of_le_length le_rfl, List.drop_length,
-      List.nil_append, List.take_append_of_le_length le_rfl, List.take_length]
+        ((List.range a).flatMap (fun j => bucketRun S quot rem (probeSlot b o j))).length = S_a := by
+      simp [S_a, runOffset, List.length_flatMap, length_taggedRun]
+    rw [hrem_list, hr, List.flatMap_append, List.flatMap_cons, ← hlen_pref,
+      List.drop_append_of_le_length le_rfl, List.drop_length, List.nil_append,
+      List.take_append_of_le_length le_rfl, List.take_length]
+  set xs := bucketRun S quot rem (probeSlot b o a)
+  set L := ((List.range ℓ).map (fun i => st.remAt (probeSlot b o i)) |>.drop S_a).take xs.length
+  have hlen_L : L.length = xs.length := by
+    simp only [L, List.length_take, List.length_drop, List.length_map, List.length_range]
+    omega
+  -- Slot `i` belongs to bucket `a`'s run exactly when the query's counter test accepts it.
+  have hslot : ∀ i < ℓ, (S_a ≤ i ∧ i < S_a1 ↔
+      occBefore st o a < runsBefore st o (i + 1) ∧
+        runsBefore st o (i + 1) ≤ occBefore st o (a + 1)) := by
+    intro i hi
+    have h₁ := hinv.lt_runOffset_iff hocc (by omega : a ≤ ℓ) hi
+    have h₂ := hinv.lt_runOffset_iff hocc ha1 hi
+    omega
+  simp only [queryCluster, queryAnyPrefix, Bool.and_eq_true, List.any_eq_true, List.mem_range,
+    decide_eq_true_eq]
   constructor
-  · intro hq
-    simp only [queryCluster, queryAnyPrefix, Bool.and_eq_true, List.any_eq_true, List.mem_range,
-      decide_eq_true_eq] at hq
-    obtain ⟨_, i, hi_lt, ⟨hi_gt, hi_le⟩, rfl⟩ := hq
-    have hge_Sa : S_a ≤ i := by
-      have hiff := hinv.lt_runOffset_iff hocc (by omega : a ≤ ℓ) hi_lt
-      omega
-    have hlt_Sa1 : i < S_a1 := (hinv.lt_runOffset_iff hocc ha1 hi_lt).mpr hi_le
-    rw [← hslice]
-    set xs := (List.range ℓ).map (fun s => st.remAt (probeSlot b o s))
-    have hlen_xs : xs.length = ℓ := by simp [xs]
-    have hlen_take : ((xs.drop S_a).take (S_a1 - S_a)).length = S_a1 - S_a := by
-      rw [List.length_take, List.length_drop, hlen_xs]
-      omega
-    have hmem : st.remAt (probeSlot b o i) ∈ (xs.drop S_a).take (S_a1 - S_a) := by
-      have hget : ((xs.drop S_a).take (S_a1 - S_a))[i - S_a]'(by omega) =
-          st.remAt (probeSlot b o i) := by
-        rw [List.getElem_take, List.getElem_drop, List.getElem_map, List.getElem_range]
-        congr 2
-        omega
-      rw [← hget]
-      exact List.getElem_mem _
-    have hsub : S_a1 - S_a = (bucketRun S quot rem (probeSlot b o a)).length := by omega
-    rw [← hsub]
-    exact hmem
+  · rintro ⟨_, i, hi_lt, hcnt, rfl⟩
+    obtain ⟨hge, hlt⟩ := (hslot i hi_lt).mpr hcnt
+    have hget : L[i - S_a]'(by omega) = st.remAt (probeSlot b o i) := by
+      simp only [L, List.getElem_take, List.getElem_drop, List.getElem_map, List.getElem_range,
+        Nat.add_sub_of_le hge]
+    rw [← hslice, ← hget]
+    exact List.getElem_mem _
   · intro hmem
-    have hne : bucketRun S quot rem (probeSlot b o a) ≠ [] :=
-      List.ne_nil_of_mem hmem
+    rw [← hslice] at hmem
+    obtain ⟨d, hd_lt, hd_eq⟩ := List.getElem_of_mem hmem
+    change d < L.length at hd_lt
+    change L[d] = r at hd_eq
+    simp only [L, List.getElem_take, List.getElem_drop, List.getElem_map,
+      List.getElem_range] at hd_eq
     have hocc_true : st.isOcc (probeSlot b o a) = true := by
+      have hne : xs ≠ [] := List.ne_nil_of_length_pos (by omega)
       rw [hocc]
       cases h : bucketRun S quot rem (probeSlot b o a)
       · exact absurd h hne
       · rfl
-    rw [← hslice] at hmem
-    set xs := (List.range ℓ).map (fun s => st.remAt (probeSlot b o s))
-    obtain ⟨d, hd_lt, hd_eq⟩ := List.getElem_of_mem hmem
-    rw [List.length_take, List.length_drop, List.length_map, List.length_range] at hd_lt
-    have hd_len : d < (bucketRun S quot rem (probeSlot b o a)).length :=
-      lt_of_lt_of_le hd_lt (Nat.min_le_left _ _)
-    rw [List.getElem_take, List.getElem_drop, List.getElem_map, List.getElem_range] at hd_eq
-    set i := S_a + d
-    have hi_lt : i < ℓ := by omega
-    have hi_not_lt_Sa : ¬(i < S_a) := by omega
-    have hi_lt_Sa1 : i < S_a1 := by omega
-    have hi_gt : occBefore st o a < runsBefore st o (i + 1) := by
-      have hiff := hinv.lt_runOffset_iff hocc (by omega : a ≤ ℓ) hi_lt
-      omega
-    have hi_le : runsBefore st o (i + 1) ≤ occBefore st o (a + 1) :=
-      (hinv.lt_runOffset_iff hocc ha1 hi_lt).mp hi_lt_Sa1
-    simp only [queryCluster, queryAnyPrefix, Bool.and_eq_true, List.any_eq_true, List.mem_range,
-      decide_eq_true_eq]
-    exact ⟨hocc_true, i, hi_lt, ⟨hi_gt, hi_le⟩, hd_eq⟩
+    exact ⟨hocc_true, S_a + d, by omega, (hslot (S_a + d) (by omega)).mp ⟨by omega, by omega⟩,
+      hd_eq⟩
 
 /-- Pure membership query on `st : FilterState b f` under `hinv : FilterInv n S quot rem st`. -/
 @[expose] noncomputable def FilterInv.querySlot {U b f n : ℕ} {S : Finset (Fin U)}
