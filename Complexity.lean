@@ -1332,9 +1332,11 @@ public import Complexity.Computability.Circuit.Monotone.KarchmerWigderson
 public import Complexity.Computability.Circuit.Monotone.Set
 public import Complexity.Computability.Circuit.Monotone.Synthesis
 public import Complexity.Computability.Circuit.Parallel
+public import Complexity.Computability.Circuit.Pebbling
 public import Complexity.Computability.Circuit.Pi
 public import Complexity.Computability.Circuit.Pointwise
 public import Complexity.Computability.Circuit.Program
+public import Complexity.Computability.Circuit.Quantum.AcceptOperator
 public import Complexity.Computability.Circuit.Quantum.Basic
 public import Complexity.Computability.Circuit.Quantum.Classical
 public import Complexity.Computability.Circuit.Quantum.Code
@@ -1517,6 +1519,10 @@ public import Complexity.Computability.Complexity.Classes.DP
 public import Complexity.Computability.Complexity.Classes.EXP
 public import Complexity.Computability.Complexity.Classes.EXP.Padding
 public import Complexity.Computability.Complexity.Classes.EXP.Separation
+public import Complexity.Computability.Complexity.Classes.FPAUS
+public import Complexity.Computability.Complexity.Classes.FPAUS.Counting
+public import Complexity.Computability.Complexity.Classes.FPAUS.FPRAS
+public import Complexity.Computability.Complexity.Classes.FPAUS.SelfReducible
 public import Complexity.Computability.Complexity.Classes.FPRAS
 public import Complexity.Computability.Complexity.Classes.FewP
 public import Complexity.Computability.Complexity.Classes.FewP.Machine
@@ -1573,6 +1579,7 @@ public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.Re
 public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.Transducer
 public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure
 public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Compile
+public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Counting
 public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Loop
 public import Complexity.Computability.Complexity.Classes.LogSpace.PolyTime
 public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized
@@ -1663,6 +1670,7 @@ public import Complexity.Computability.Complexity.Classes.Promise.Time
 public import Complexity.Computability.Complexity.Classes.Promise.Time.Verifier
 public import Complexity.Computability.Complexity.Classes.QMA
 public import Complexity.Computability.Complexity.Classes.QMA.Amplification
+public import Complexity.Computability.Complexity.Classes.QMA.Counting
 public import Complexity.Computability.Complexity.Classes.QMA.NP
 public import Complexity.Computability.Complexity.Classes.RP
 public import Complexity.Computability.Complexity.Classes.RP.Closure
@@ -2804,6 +2812,7 @@ public import Complexity.Computability.PCP.TwoProverGame
 public import Complexity.Computability.Pebbling.Basic
 public import Complexity.Computability.Pebbling.BinaryTree
 public import Complexity.Computability.Pebbling.Blocking
+public import Complexity.Computability.Pebbling.Map
 public import Complexity.Computability.Pebbling.Pyramid
 public import Complexity.Computability.PolyTime.BitString.InitialTestsSearch
 public import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceCounter
@@ -2887,6 +2896,8 @@ public import Complexity.Computability.Probabilistic.Sampling.F4
 public import Complexity.Computability.Probabilistic.Selection
 public import Complexity.Computability.Probabilistic.Traverse
 public import Complexity.Computability.Probabilistic.UniformNat
+public import Complexity.Computability.PropertyTesting.DenseGraph.Basic
+public import Complexity.Computability.PropertyTesting.DenseGraph.TriangleFree
 public import Complexity.Computability.PropertyTesting.Distribution.Basic
 public import Complexity.Computability.PropertyTesting.Distribution.ClosenessCollision
 public import Complexity.Computability.PropertyTesting.Distribution.IdentityReduction
@@ -4490,6 +4501,7 @@ public import Complexity.Foundations.Probability.TrueSampleMeans
 public import Complexity.Foundations.Quantum.HadamardTransform
 public import Complexity.Foundations.Quantum.Measurement
 public import Complexity.Foundations.Quantum.Measurement.Overlap
+public import Complexity.Foundations.Quantum.Measurement.Restrict
 public import Complexity.Foundations.Quantum.TensorPower
 public import Complexity.Foundations.Relation.Acyclic
 public import Complexity.Foundations.Relation.InductiveCounting
@@ -4644,12 +4656,17 @@ public import Complexity.Logics.FirstOrder.QuantifierFree
 public import Complexity.Logics.FirstOrder.QuantifierRank
 public import Complexity.Logics.FirstOrder.Raw.Basic
 public import Complexity.Logics.FirstOrder.Raw.FinSat
+public import Complexity.Logics.FirstOrder.Raw.Graph
+public import Complexity.Logics.FirstOrder.Raw.Interpret
 public import Complexity.Logics.FirstOrder.Raw.Primrec
+public import Complexity.Logics.FirstOrder.Raw.Sentence
+public import Complexity.Logics.FirstOrder.Raw.Uniformize
 public import Complexity.Logics.FirstOrder.Reduction
 public import Complexity.Logics.FirstOrder.Reduction.Nontrivial
 public import Complexity.Logics.FirstOrder.Reduction.QuantifierFree
 public import Complexity.Logics.FirstOrder.Subformula
 public import Complexity.Logics.FirstOrder.Trakhtenbrot.Arithmetic
+public import Complexity.Logics.FirstOrder.Trakhtenbrot.Binary
 public import Complexity.Logics.FirstOrder.Trakhtenbrot.Evaln
 public import Complexity.Logics.FirstOrder.Trakhtenbrot.Undecidability
 public import Complexity.Logics.FirstOrder.Tuple
@@ -4830,6 +4847,7 @@ public import Complexity.MachineLearning.PACLearning.FiniteClass
 public import Complexity.MachineLearning.PACLearning.GrowthFunction
 public import Complexity.MachineLearning.PACLearning.Realizable
 public import Complexity.MachineLearning.PACLearning.RealizableSample
+public import Complexity.MachineLearning.PACLearning.VCDimension
 public import Complexity.MachineLearning.PACLearning.VCUpperBound
 public import Complexity.MachineLearning.StatisticalQuery.Basic
 public import Complexity.MachineLearning.StatisticalQuery.LowerBound
