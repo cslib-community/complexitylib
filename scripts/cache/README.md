@@ -107,8 +107,11 @@ following builds while preserving the public cache's authorization boundary.
   code), hashes and traces. It omits only `ir/**/*.setup.json` and `ir/**/*.irsetup.json`: Lake's
   transient compiler setup inputs. Lake writes these inside a compilation action and does not
   require them to reuse completed modules. Other JSON files are retained. File-type/link checks
-  still cover omitted entries; the 100,000-file, 4 GiB unpacked and 1 GiB compressed payload limits
-  are unchanged. Packing reports retained and omitted counts/sizes, including on a limit miss.
+  still cover omitted entries. The payload limits are 300,000 files, 12 GiB unpacked and 4 GiB
+  compressed; a full build measured 101,848 files, 4.64 GB and 1.67 GB on November 8, 2026. The
+  earlier 100,000-file, 4 GiB and 1 GiB limits had been outgrown, which silently disabled the
+  handoff. Packing reports retained and omitted counts/sizes, and in Actions a limit miss or any
+  other unavailable handoff is a workflow warning on the run summary.
 - **Kill switch.** Setting the repository variable `DISABLE_BUILD_HANDOFF` to `1` or `true`
   (`gh variable set DISABLE_BUILD_HANDOFF --body 1`) disables both merge-group staging and `main`
   restoration without a commit; `scripts/cache_handoff.py` also honors `DISABLE_BUILD_HANDOFF` in
