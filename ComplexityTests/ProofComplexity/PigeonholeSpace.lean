@@ -105,7 +105,7 @@ example : (∃ s, (CNF.pigeonholeExt 6 5).RefutableInSpace s) ∧
 `3`-CNF with no refutation of width `3`, so Duplicator wins with `4` pebbles. -/
 example (m : ℕ) : Nonempty (CNF.DuplicatorStrategy (CNF.pigeonholeExt m 4) 4) :=
   (CNF.DuplicatorStrategy.nonempty_iff_not_refutableInWidth
-    fun _ hc => CNF.width_le_three_of_mem_pigeonholeExt hc).2
+    fun _ hc => (Nat.lt_succ_of_le (CNF.width_le_three_of_mem_pigeonholeExt hc)).ne).2
     (CNF.not_refutableInWidth_pigeonholeExt m 3)
 
 /-- The space bound straight from the strategy: `n + 1` pebbles on a `3`-CNF give clause space at
