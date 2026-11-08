@@ -1021,11 +1021,9 @@ each statement against the numbered result. Organize modules by subject, not cha
   results, and reductions to streaming, sketching and cell-probe lower bounds.
 - **Streaming and sketching:** native time and space bounds for Count-Min, including hash-seed
   storage and evaluation; the AMS sketches for `F₀` and `F_k` with `k > 2` and the `n^{Ω(1)}`
-  lower bounds for `F_k` with `k ≥ 6`; the remaining `Ω(n)` lower bounds of Alon–Matias–Szegedy
-  §3 for deterministic approximation and randomized exact computation of `F_k` with `k ≠ 1`
-  (Propositions 3.7 and 3.8); `ProbComp` samplers and native realizations of the AMS `F₂` sketch;
-  CountSketch, turnstile updates, and heavy-hitter recovery; multi-pass communication-to-streaming
-  transfers with pass counts.
+  lower bounds for `F_k` with `k ≥ 6`; `ProbComp` samplers and native realizations of the AMS `F₂`
+  sketch; CountSketch, turnstile updates, and heavy-hitter recovery; multi-pass
+  communication-to-streaming transfers with pass counts.
 - **Learning:** machine-certified running times for the LMN and Kushilevitz–Mansour learners;
   distributional problems and reductions, samplability, average-to-worst-case connections,
   PAC/agnostic learning, learning lower bounds, compression and refutation. For realizable

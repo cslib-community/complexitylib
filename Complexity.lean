@@ -2966,6 +2966,8 @@ public import Complexity.Computability.Streaming.Basic
 public import Complexity.Computability.Streaming.Communication
 public import Complexity.Computability.Streaming.Distinctness
 public import Complexity.Computability.Streaming.Frequency
+public import Complexity.Computability.Streaming.GraphStream
+public import Complexity.Computability.Streaming.MomentLowerBound
 public import Complexity.Computability.TreeEval.Ary.Basic
 public import Complexity.Computability.TreeEval.Ary.CookMertz
 public import Complexity.Computability.TreeEval.Ary.Descending
