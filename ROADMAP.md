@@ -723,12 +723,16 @@ universe size, not supplied as unverified input tables. In dependency order:
 - A witness-carrying reduction structure once a client needs one, for example size bounds for
   Cook–Levin.
 - **Logical lower-bound methods:** building on the Ehrenfeucht–Fraïssé games for relational
-  vocabularies and the [nondefinability of connectivity](Complexity/Logics/FirstOrder/EhrenfeuchtFraisse/Connectivity.lean)
-  by interpretation from finite linear orders, add games for vocabularies with constants, pebble
-  games with their finite-variable equivalence theorems, Hanf and Gaifman locality, and further
-  nondefinability results such as acyclicity of finite graphs; then
-  counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Connect
-  the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
+  vocabularies and the nondefinability of
+  [connectivity](Complexity/Logics/FirstOrder/EhrenfeuchtFraisse/Connectivity.lean),
+  [bipartiteness and acyclicity](Complexity/Logics/FirstOrder/EhrenfeuchtFraisse/GraphProperties.lean)
+  by interpretation from finite linear orders, add Hanf and Gaifman locality
+  ([locality track](https://github.com/cslib-community/complexitylib/issues/3015)) and use it for
+  further graph nondefinability results, such as planarity, Hamiltonicity and `k`-colorability
+  for `k ≥ 3`. Then add games for vocabularies with constants, pebble games with their
+  finite-variable equivalence theorems, and counting and fixed-point expressiveness, including
+  Cai–Fürer–Immerman-style separations. Connect the methods to the ordered capture theorems,
+  where FO(≤, BIT) defines EVEN.
 - **Undecidability in the finite:** Trakhtenbrot's theorem holds for raw relational sentences
   over unboundedly many symbols of arity at most three. Next, sharpen it to a fixed vocabulary
   and then to a single binary relation (Libkin, Theorem 9.2), and add a computable `Primcodable`
