@@ -146,19 +146,54 @@ uniform inputs, defined in
   the number of copies, and `k` as the outer argument, so there are `k + 1` outer coordinates.
   `StatisticalDifference.exists_mapsTo_polarize` states the result as `Set.MapsTo` into
   `StatisticalDifference (1 - (1/2)^(k+1)) ((1/2)^(k+1))`, for `k ≠ 0`.
+- **Polynomial-time polarization.** Import
+  [Problems/StatisticalDifference/PolyTime.lean](../../Complexity/Computability/Complexity/Problems/StatisticalDifference/PolyTime.lean).
+  `encSDInstance` encodes the input and output counts in unary, followed by both circuit codes.
+  `SDInstance.computableInPolyTime_polarize` makes `x.polarize (lam x) (ell x) (k x)`
+  polynomial-time whenever the three parameters are polynomial-time with unary output.
+  `SDInstance.computableInPolyTime_polarize_comp` is the general form. There the instance and the
+  parameters are polynomial-time functions of any encoded input; `computableInPolyTime_polarize_log`
+  specializes it to the parameters of `SDInstance.exists_polarize`.
+  `SDInstance.exists_computableInPolyTime_polarize_unary` is the source's form, with the error
+  parameter `k` a separate unary input: one map on `encPair encSDInstance encUnary` with error
+  `(1/2)^(k + 1)`.
+  `SDInstance.exists_polarize_computableInPolyTime` instead takes `k = K x` for a function `K` of
+  the instance. Use
+  `obtain ⟨m, b, hm, h⟩ := …`, then `h K hK` for any polynomial-time unary `K`. It returns the
+  polynomial-time certificate and the two distance bounds with error `(1/2)^(K x + 1)`.
+  Two corollaries cover the common cases. With `K x` the encoded length,
+  `SDInstance.exists_computableInPolyTime_polarize_length` gives error `(1/2)^(|x| + 1)`. With `K`
+  constant, `StatisticalDifference.polyTimeReducible` is a `PromiseProblem.PolyTimeReducible`
+  from `SD^{α,β}` to `SD^{α',β'}`, for all constants `0 < β' < α' < 1`.
+  The raw code generators behind the certificate are in
+  [Circuit/Boolean/Polarization/PolyTime.lean](../../Complexity/Computability/Circuit/Boolean/Polarization/PolyTime.lean).
+  Each generator has a `_code` lemma stating exact agreement with the typed circuit.
+  `polarizeCode` builds on `replicateCode`, from
+  [CodeReplication.lean](../../Complexity/Computability/Circuit/Boolean/CodeReplication.lean),
+  and on `muxCode`, from
+  [Comparison/PolyTime.lean](../../Complexity/Computability/Circuit/Boolean/Comparison/PolyTime.lean).
 
-This is the semantic half of the reduction only. Polynomial-time computability of the
-polarization map on encoded instances, with `k` growing with the instance length, is not formalized
-yet. Neither is SZK. [Issue #3205](https://github.com/cslib-community/complexitylib/issues/3205)
-tracks both. The checked clients in
-[StatisticalDifference.lean](../../ComplexityTests/StatisticalDifference.lean) cover:
+The thresholds are constants with `0 ≤ β < α² ≤ 1`, and the circuits are De Morgan circuits with
+common input and output counts. SZK itself is not formalized yet;
+[issue #3205](https://github.com/cslib-community/complexitylib/issues/3205) tracks it. The checked
+clients in [StatisticalDifference.lean](../../ComplexityTests/StatisticalDifference.lean) cover:
 
 - parity completion;
 - the XOR circuit on two constant circuits;
 - a far instance and a near instance against `SD^{2/3,1/3}`;
 - both instances pushed through the Polarization Lemma.
 
-Run `scripts/build.sh ComplexityTests.StatisticalDifference`.
+The clients in
+[StatisticalDifferencePolyTime.lean](../../ComplexityTests/StatisticalDifferencePolyTime.lean)
+cover:
+
+- a concrete replicated code and its typed agreement;
+- the multiplexer gate count;
+- the reduction from `SD^{2/3,1/3}` to `SD^{9/10,1/10}` on the far and the near instance;
+- the length-indexed polarization on the same instances.
+
+Run `scripts/build.sh ComplexityTests.StatisticalDifference` and
+`scripts/build.sh ComplexityTests.StatisticalDifferencePolyTime`.
 
 ## Bound the mixing time of a finite Markov chain
 
@@ -1870,6 +1905,64 @@ from the repository root to check them; the monomial clients are in
 `ComplexityTests.GaussianNoiseOperator`.
 
 Smoothness of `U_ρ f` for `|ρ| < 1` (Proposition 11.16) is not formalized.
+
+## Compare bits with Gaussians by the invariance principle
+
+Import
+[`Complexity.Foundations.BooleanAnalysis.Invariance`](../../Complexity/Foundations/BooleanAnalysis/Invariance.lean)
+for functions on the cube, or
+[`Complexity.Foundations.Probability.Multilinear.Invariance`](../../Complexity/Foundations/Probability/Multilinear/Invariance.lean)
+for formal multilinear polynomials. Open `ProbabilityTheory` (and `Cslib.BitString` for the cube).
+A formal multilinear polynomial is its coefficient function `c : Finset ι → ℝ`;
+`multilinearEval c z = ∑ S, c S * ∏ i ∈ S, z i` and `multilinearInfluence c i = ∑ S ∋ i, c S ^ 2`.
+Degree at most `k` is the hypothesis `∀ S, k < #S → c S = 0`. The variables are independent with
+laws `μ i : Measure ℝ`, through `Measure.pi μ`, and `HasInvarianceMoments (μ i)` is O'Donnell's
+Hypothesis 11.65: mean `0`, second moment `1`, third moment `0` and fourth moment at most `9`. Its
+first field, `memLp_four : MemLp id 4 μ`, also requires the fourth moment to be finite, so that the
+moment integrals are meaningful. The structure does not include `IsProbabilityMeasure`; the
+theorems take `[∀ i, IsProbabilityMeasure (μ i)]` as a separate instance argument.
+`hasInvarianceMoments_gaussianReal` and `hasInvarianceMoments_rademacher` supply it for standard
+Gaussians and uniform random signs.
+
+- `abs_integral_comp_multilinearEval_sub_le` is the Basic Invariance Principle (O'Donnell, §11.6,
+  eq. (11.29)): for `ψ` that is `C⁴` with `|iteratedDeriv 4 ψ| ≤ C`, the expectations of
+  `ψ (multilinearEval c ·)` under `Measure.pi μ` and `Measure.pi ν` differ by at most
+  `C / 12 * 9 ^ k * ∑ t, multilinearInfluence c t ^ 2`.
+- `abs_integral_comp_multilinearEval_sub_le_of_influence_le` is Corollary 11.67. It assumes
+  `∑ S with S ≠ ∅, c S ^ 2 ≤ 1` (variance at most one) and `multilinearInfluence c t ≤ ε` for every
+  `t`, together with `0 ≤ ε`, and bounds the difference by `C / 12 * k * 9 ^ k * ε`.
+- `abs_integral_comp_multilinearEval_sub_le_of_contDiff_three` is the `C³` form
+  `C / 3 * 3 ^ k * ∑ t, multilinearInfluence c t ^ ((3 : ℝ) / 2)`. It is the analogue, under
+  Hypothesis 11.65, of Remark 11.66, whose hypothesis is `(2, 3, ρ)`-hypercontractivity instead.
+- On the cube, `abs_expect_comp_sub_integral_comp_multilinearEval_le` and its `_of_influence_le` and
+  `_of_contDiff_three` forms compare `𝔼 x, ψ (f x)` at uniform bits with
+  `∫ y, ψ (multilinearEval (fourierCoeff f) y) ∂Measure.pi μ`. They assume `totalDegree f ≤ k`
+  and use `influence i f` and the variance `𝔼 x, (f x - 𝔼 y, f y) ^ 2`. The translation goes
+  through `integral_pi_rademacher`, `multilinearEval_fourierCoeff_signVal` and
+  `multilinearInfluence_fourierCoeff`.
+
+The proof is the replacement method. `MeasureTheory.abs_integral_pi_sub_le_sum` in
+[`PiUpdate`](../../Complexity/Foundations/MeasureTheory/Integral/PiUpdate.lean) telescopes over the
+hybrids `Measure.pi (s.piecewise ν μ)` and applies to any integrand. The Bonami Lemma for these
+variables, `integral_multilinearEval_pow_four_le`, is in
+[`Multilinear/Bonami`](../../Complexity/Foundations/Probability/Multilinear/Bonami.lean). It covers
+only the case `B ≤ 9` with variance `1` of Corollary 9.6. Cauchy–Schwarz for real integrals,
+`MeasureTheory.sq_integral_mul_le`, needs no sign condition. It is in
+[`Integral/CauchySchwarz`](../../Complexity/Foundations/MeasureTheory/Integral/CauchySchwarz.lean)
+with `MeasureTheory.integrable_pow_of_memLp` and `MeasureTheory.integrable_abs_pow_of_memLp`, which
+give integrability of the moments of order `j ≤ n` of a variable in `Lⁿ`.
+
+The checked [`MultilinearInvariance.lean` clients](../../ComplexityTests/MultilinearInvariance.lean)
+cover Hypothesis 11.65 for Gaussians and signs and its failure for a point mass, and bits versus
+Gaussians for any function of two bits with `ψ = cos` (`C⁴`) and `ψ = sin` (`C³`). They also show
+that a degree-`0` polynomial has exactly equal expectations. Run
+`scripts/build.sh ComplexityTests.MultilinearInvariance` from the repository root to check them.
+
+The test function must be smooth. The following are not formalized: the Lipschitz form
+(Corollary 11.68) and the Lévy-distance form (Corollary 11.70); the forms for functions with small
+high-degree tails, including noise-stable functions (Corollary 11.69), and cdf-closeness through
+the Carbery–Wright theorem (Theorem 11.71); the general Invariance Principle with
+hypercontractive ensembles; and Majority Is Stablest.
 
 ## Evaluate a multi-component conditional walk via validated words
 
