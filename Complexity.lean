@@ -106,6 +106,9 @@ public import Complexity.Algorithms.Lean.MaxFlow.Preflow
 public import Complexity.Algorithms.Lean.MaxFlow.PushRelabel
 public import Complexity.Algorithms.Lean.MaxFlow.WeightedMatching
 public import Complexity.Algorithms.Lean.MergeSort.Comparator
+public import Complexity.Algorithms.Lean.OptimalBST.Basic
+public import Complexity.Algorithms.Lean.OptimalBST.Knuth
+public import Complexity.Algorithms.Lean.OptimalBST.Yao
 public import Complexity.Algorithms.Lean.Query.Arith.FFT.Correctness
 public import Complexity.Algorithms.Lean.Query.Arith.FFT.Cost
 public import Complexity.Algorithms.Lean.Query.Arith.FFT.Defs
