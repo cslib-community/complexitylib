@@ -1927,6 +1927,8 @@ public import Complexity.Computability.Complexity.Parameterized.Kernelization
 public import Complexity.Computability.Complexity.Parameterized.VertexCover
 public import Complexity.Computability.Complexity.Parameterized.VertexCover.BussKernel
 public import Complexity.Computability.Complexity.Parameterized.WHierarchy
+public import Complexity.Computability.Complexity.Parameterized.WHierarchy.Clique.Bracket
+public import Complexity.Computability.Complexity.Parameterized.WHierarchy.Clique.Graph
 public import Complexity.Computability.Complexity.Parameterized.WHierarchy.IndependentSet
 public import Complexity.Computability.Complexity.Problems.BipartitePerfectMatching
 public import Complexity.Computability.Complexity.Problems.BipartitePerfectMatching.Membership
@@ -1946,6 +1948,7 @@ public import Complexity.Computability.Complexity.Problems.CircuitValue.Compilat
 public import Complexity.Computability.Complexity.Problems.CircuitValue.Completeness
 public import Complexity.Computability.Complexity.Problems.CircuitValue.Writer
 public import Complexity.Computability.Complexity.Problems.Clique
+public import Complexity.Computability.Complexity.Problems.Clique.OfAdj
 public import Complexity.Computability.Complexity.Problems.CliqueCover
 public import Complexity.Computability.Complexity.Problems.Coloring
 public import Complexity.Computability.Complexity.Problems.CountingSAT
@@ -2477,6 +2480,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Poly
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Lex
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.ListsUpTo
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Matrix.Binary
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -4285,6 +4289,7 @@ public import Complexity.Foundations.Data.List.Fold
 public import Complexity.Foundations.Data.List.FoldlIdx
 public import Complexity.Foundations.Data.List.Last
 public import Complexity.Foundations.Data.List.Lex
+public import Complexity.Foundations.Data.List.ListsUpTo
 public import Complexity.Foundations.Data.List.Lookup
 public import Complexity.Foundations.Data.List.OfFn
 public import Complexity.Foundations.Data.List.Perm
