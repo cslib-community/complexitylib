@@ -1845,6 +1845,7 @@ public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Pr
 public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler
 public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Faces
 public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Graph
+public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Nullary
 public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Rotation
 public import Complexity.Computability.Complexity.Problems.CSP.Schaefer
 public import Complexity.Computability.Complexity.Problems.CSP.SelfDualThreeSAT
@@ -2793,6 +2794,17 @@ public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
 public import Complexity.Computability.PolyTime.CSP.AffineTemplate
 public import Complexity.Computability.PolyTime.CSP.Boolean
 public import Complexity.Computability.PolyTime.CSP.CNFTemplate
+public import Complexity.Computability.PolyTime.CSP.CyclicDifference.BlackCounts
+public import Complexity.Computability.PolyTime.CSP.CyclicDifference.FaceParity
+public import Complexity.Computability.PolyTime.CSP.CyclicDifference.Native
+public import Complexity.Computability.PolyTime.CSP.CyclicDifference.Parity
+public import Complexity.Computability.PolyTime.CSP.CyclicDifference.Program
+public import Complexity.Computability.PolyTime.CSP.CyclicDifference.Rotation
+public import Complexity.Computability.PolyTime.CSP.CyclicDifference.Semantics
+public import Complexity.Computability.PolyTime.CSP.CyclicDifference.Size
+public import Complexity.Computability.PolyTime.CSP.CyclicDifference.Spec
+public import Complexity.Computability.PolyTime.CSP.CyclicDifference.WhiteChains
+public import Complexity.Computability.PolyTime.CSP.CyclicDifference.WhiteFaces
 public import Complexity.Computability.PolyTime.CSP.Edge.Augmenting
 public import Complexity.Computability.PolyTime.CSP.Edge.Buffer
 public import Complexity.Computability.PolyTime.CSP.Edge.Forest.Agreement
@@ -4019,6 +4031,7 @@ public import Complexity.Foundations.Data.BitString.List.Binary
 public import Complexity.Foundations.Data.BitString.List.Operations
 public import Complexity.Foundations.Data.BitString.List.Positions
 public import Complexity.Foundations.Data.BitString.List.Vote
+public import Complexity.Foundations.Data.BitString.ListParity
 public import Complexity.Foundations.Data.BitString.PadBlocks
 public import Complexity.Foundations.Data.BitString.Parity
 public import Complexity.Foundations.Data.BitString.Parity.DotProduct
@@ -4688,6 +4701,7 @@ public import Complexity.Logics.Propositional.CSP.Edge.Walk.Visits
 public import Complexity.Logics.Propositional.CSP.ExactlyOne
 public import Complexity.Logics.Propositional.CSP.HardCore
 public import Complexity.Logics.Propositional.CSP.Occurrence
+public import Complexity.Logics.Propositional.CSP.Occurrence.Count
 public import Complexity.Logics.Propositional.CSP.Occurrence.Enumeration
 public import Complexity.Logics.Propositional.CSP.PartitionFunction
 public import Complexity.Logics.Propositional.CSP.Permanent
@@ -4704,7 +4718,9 @@ public import Complexity.Logics.Propositional.CSP.PrimitivePositive
 public import Complexity.Logics.Propositional.CSP.PrimitivePositive.Composition
 public import Complexity.Logics.Propositional.CSP.PrimitivePositive.Operations
 public import Complexity.Logics.Propositional.CSP.Table
+public import Complexity.Logics.Propositional.CSP.Table.CyclicDifference
 public import Complexity.Logics.Propositional.CSP.Table.DeltaMatroid
+public import Complexity.Logics.Propositional.CSP.Table.ParityChain
 public import Complexity.Logics.Propositional.CSP.ToBoolean
 public import Complexity.Logics.Propositional.CSP.ToCNF
 public import Complexity.Logics.Propositional.CSP.ToCNF.Count

@@ -465,6 +465,10 @@ index links to canonical definitions rather than keeping a second set.
   The actual ordered incidence-to-polygon bridge now preserves every face and component
   and proves the numerical Euler equivalence under positive actual scopes. Its abstract
   rotation maps still need native and geometric compilation.
+  A native compiler now maps supplied checked ordered numerical rotations to explicit-table
+  even edge CSPs, handling nullaries internally and using linear parity chains. It proves
+  guarded SAT equivalence, complete framed encoded-output polynomiality and occurrence-based
+  combinatorial bounds; bare recognition and the general edge solver remain open.
   Arbitrary-arity cyclic-obstruction normalization now supplies an ordered finite recipe,
   its actual primitive-positive gadget and combinatorial size bounds; geometric realization
   of those operations and the planar hardness/solver assembly remain outstanding.

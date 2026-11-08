@@ -255,8 +255,9 @@ cancel over `ZMod 2`, while parallel column positions stay distinct. Finite perm
 transport is shared through `Complexity.Foundations.GroupTheory.Perm.Doubled`.
 
 These are combinatorial duality and lifting results, reconstructing the graph prerequisite in
-Dvořák–Kupec, §3, printed p. 439. Geometric realization, bare rotation recognition, native
-compilation, the full cyclic-difference CSP reduction and recursive edge solving remain open
+Dvořák–Kupec, §3, printed p. 439. The checked compiler below supplies the native
+supplied-certificate CSP reduction. Geometric realization, bare rotation recognition and
+recursive edge solving remain open
 under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
 
 ## Ordered incidence-to-polygon rotations
@@ -293,8 +294,50 @@ at its source in `Problems.CSP.Incidence`, with its name and certificate clients
 
 This reconstructs the finite maps behind Dvořák–Kupec's ordered face model, printed p. 434.
 `polygonGraph` is an explicit list construction; abstract rotation/equivalence inverses are
-proof data. Native compilation, geometric realization, bare recognition and the complete
+proof data. The supplied-certificate compiler below supplies a native executable stage.
+Geometric realization, bare recognition and the complete
 planar CSP reduction/solver remain open under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+
+## Checked cyclic-difference edge compiler
+
+Import `Complexity.Computability.PolyTime.CSP.CyclicDifference.Spec` for
+`Cslib.Complexity.CSP.CyclicCompiler.compile_spec`, and `.Size` for its bounds.
+For a fixed finite Boolean language, call `compile arity sem (F, cert)` on the original
+list CSP and a supplied ordered numerical rotation certificate. The two static hypotheses
+are self-complementarity of every canonical relation and the even-delta-matroid property
+of each **nonempty** relation's cyclic-difference image. Empty symbols are allowed.
+
+The same compiler has ordinary native polynomial time on all raw inputs. Its output is
+an `EdgeInstance`, with exact table/scope widths and nonempty even delta-matroid constraints.
+Target satisfiability is equivalent to source satisfiability together with
+`WellFormed arity F` and `verifyRotationCertificate F cert = true`.
+Malformed scopes, invalid certificates and occurring empty relations reject to two
+incompatible nonempty unary pins. True nullaries disappear internally; false nullaries
+reject. `Primal.Nullary` proves the required face/Euler bridge without a positive-scope
+premise on the source. Repeated arguments, identical constraints and disconnected inputs
+retain positional identity.
+
+Input encoding is `encCSPRotationCertificate encRel encNat`: the framed CSP followed by
+the certificate, whose successor indices are binary. Output uses `encCSP encTable encNat`,
+including explicit rows, binary arities/names and list/pair framing. Language preprocessing
+may depend exponentially on fixed arity; it is not a uniform algorithm on language descriptions.
+White boundaries use width-three parity chains: a boundary of length `k ≥ 4` yields
+`k−2` constraints and `k−3` auxiliaries, avoiding exponential white truth tables.
+
+With `C` source constraints and `M` actual occurrences, every raw output has at most
+`C+M+2` constraints and `4M+2` ports, with names below `2M+1`.
+`polyBounded_length_compile` proves polynomiality of the complete framed output length;
+these counts alone are not its runtime certificate. The [compiler tests](../../ComplexityTests/CSPCyclicCompiler.lean)
+execute SAT/UNSAT NAE examples, long boundaries, nullaries, malformed and toroidal rotations,
+and binary labels/indices up to `2^250`.
+
+The compiler reuses the now-public runtime helpers `orbitBool_polyTime`,
+`faceTable_polyTime` and `argumentNextIndex_polyTime`, preserving their statements,
+proofs and local automation. This implements the supplied numerical-certificate stage of
+Dvořák–Kupec §3, printed pp. 439–440, Lemma 5/Corollary 4/Theorem 2; bounded scans and
+parity-chain implementation are original. Geometric realization, bare recognition,
+the edge solver and the full planar dichotomy remain open under
+[#3091](https://github.com/cslib-community/complexitylib/issues/3091).
 
 ## Delta-matroid composition and local contraction closure
 
