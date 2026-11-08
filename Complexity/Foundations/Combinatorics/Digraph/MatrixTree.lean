@@ -360,8 +360,8 @@ a vertex `r`, the determinant of the reduced Laplacian of `G`, the out-degree ma
 adjacency matrix with the row and column of `r` deleted, is the number of spanning
 in-arborescences `T ≤ G` rooted at `r` (arcs directed towards `r`). Loops of `G` do not
 contribute. -/
-theorem det_laplacian_adjMatrix_submatrix_eq_natCard_isInArborescence (G : Digraph V)
-    [DecidableRel G.Adj] (r : V) :
+theorem det_laplacian_adjMatrix_submatrix_eq_natCard_isInArborescence (R : Type*) [CommRing R]
+    (G : Digraph V) [DecidableRel G.Adj] (r : V) :
     ((G.adjMatrix R).laplacian.submatrix (Subtype.val : {v // v ≠ r} → V) Subtype.val).det =
       Nat.card {T : Digraph V // T ≤ G ∧ T.IsInArborescence r} := by
   classical

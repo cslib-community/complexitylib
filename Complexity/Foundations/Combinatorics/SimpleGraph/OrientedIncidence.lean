@@ -25,9 +25,17 @@ The Gram matrix of this orientation is the Laplacian: `N * Nᵀ = G.lapMatrix �
 column with a vertex function `f` gives the difference of the values of `f` at the two endpoints
 (`SimpleGraph.sum_mul_orientedIncMatrix`).
 
+For edge weights `w : Sym2 V → R`, the weighted adjacency matrix `SimpleGraph.weightedAdjMatrix G w`
+has entry `w s(u, v)` at adjacent `u`, `v`. The weighted Gram identity
+`N * diagonal w * Nᵀ = (G.weightedAdjMatrix w).laplacian`
+(`SimpleGraph.orientedIncMatrix_map_mul_diagonal_mul_transpose`) generalizes
+`SimpleGraph.orientedIncMatrix_mul_transpose`, which is its case of all weights `1`; here
+`Matrix.laplacian` is the diagonal matrix of row sums minus the matrix.
+
 ## Main definitions
 
 * `SimpleGraph.orientedIncMatrix`: the oriented incidence matrix.
+* `SimpleGraph.weightedAdjMatrix`: the weighted adjacency matrix.
 
 ## Main results
 
@@ -36,6 +44,11 @@ column with a vertex function `f` gives the difference of the values of `f` at t
 * `SimpleGraph.orientedIncMatrix_mul_self`, `SimpleGraph.orientedIncMatrix_mul_of_ne`: products
   of two entries in one column.
 * `SimpleGraph.orientedIncMatrix_mul_transpose`: `N * Nᵀ = G.lapMatrix ℤ`.
+* `SimpleGraph.weightedAdjMatrix_one`, `SimpleGraph.lapMatrix_eq_laplacian_adjMatrix`,
+  `SimpleGraph.lapMatrix_eq_laplacian_weightedAdjMatrix`: the adjacency matrix is the weighted
+  adjacency matrix with all weights `1`, and `G.lapMatrix R` is the Laplacian of either.
+* `SimpleGraph.orientedIncMatrix_map_mul_diagonal_mul_transpose`: the weighted Gram identity
+  `N * diagonal w * Nᵀ = (G.weightedAdjMatrix w).laplacian`.
 -/
 
 public section
@@ -159,14 +172,26 @@ theorem orientedIncMatrix_mul_transpose :
         intro hx
         exact absurd (hx ▸ x.2 : s(u, w) ∈ G.edgeSet) hadj
 
+omit [Fintype V] [DecidableEq V] in
+/-- The adjacency matrix of `G` is its weighted adjacency matrix with all weights `1`. -/
+theorem weightedAdjMatrix_one (R : Type*) [Zero R] [One R] :
+    G.weightedAdjMatrix (fun _ => (1 : R)) = G.adjMatrix R := by
+  ext u v
+  rw [weightedAdjMatrix_apply, adjMatrix_apply]
+
+/-- The Laplacian of `G` is the Laplacian (`Matrix.laplacian`) of its adjacency matrix. -/
+theorem lapMatrix_eq_laplacian_adjMatrix (R : Type*) [AddCommGroupWithOne R] :
+    G.lapMatrix R = (G.adjMatrix R).laplacian := by
+  ext u v
+  rw [laplacian_apply]
+  simp only [lapMatrix, degMatrix, adjMatrix_apply, Matrix.sub_apply, diagonal_apply,
+    Finset.sum_boole, ← card_neighborFinset_eq_degree, neighborFinset_eq_filter]
+
 /-- The Laplacian of `G` is the Laplacian (`Matrix.laplacian`) of its weighted adjacency matrix
 with all weights `1`. -/
 theorem lapMatrix_eq_laplacian_weightedAdjMatrix (R : Type*) [AddCommGroupWithOne R] :
     G.lapMatrix R = (G.weightedAdjMatrix fun _ => (1 : R)).laplacian := by
-  ext u v
-  rw [laplacian_apply]
-  simp only [weightedAdjMatrix_apply, lapMatrix, degMatrix, adjMatrix_apply, Matrix.sub_apply,
-    diagonal_apply, Finset.sum_boole, ← card_neighborFinset_eq_degree, neighborFinset_eq_filter]
+  rw [weightedAdjMatrix_one, lapMatrix_eq_laplacian_adjMatrix]
 
 /-- **The weighted Laplacian is a weighted Gram matrix of the oriented incidence matrix**:
 `N * diagonal w * Nᵀ` is the Laplacian of the weighted adjacency matrix `G.weightedAdjMatrix w`,

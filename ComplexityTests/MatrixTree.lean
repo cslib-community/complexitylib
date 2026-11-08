@@ -93,7 +93,7 @@ example {R : Type*} [CommRing R] (A : Matrix (Fin 3) (Fin 3) R) :
 
 -- The complete digraph on `Fin 3`, loops included, has `3` arborescences rooted at `0`.
 example : Nat.card {T : Digraph (Fin 3) // T ≤ ⊤ ∧ T.IsInArborescence 0} = 3 := by
-  have h := det_laplacian_adjMatrix_submatrix_eq_natCard_isInArborescence (R := ℤ)
+  have h := det_laplacian_adjMatrix_submatrix_eq_natCard_isInArborescence ℤ
     (⊤ : Digraph (Fin 3)) 0
   rw [det_laplacian_submatrix_zero] at h
   simp only [adjMatrix_apply, top_adj, ite_true] at h
@@ -108,7 +108,7 @@ instance : DecidableRel cycle3.Adj := fun v w => inferInstanceAs (Decidable (w =
 
 -- The `3`-cycle has exactly one arborescence rooted at `0`: `1 → 2`, `2 → 0`.
 example : Nat.card {T : Digraph (Fin 3) // T ≤ cycle3 ∧ T.IsInArborescence 0} = 1 := by
-  have h := det_laplacian_adjMatrix_submatrix_eq_natCard_isInArborescence (R := ℤ) cycle3 0
+  have h := det_laplacian_adjMatrix_submatrix_eq_natCard_isInArborescence ℤ cycle3 0
   rw [det_laplacian_submatrix_zero] at h
   have h10 : ¬ cycle3.Adj 1 0 := by decide
   have h12 : cycle3.Adj 1 2 := by decide
@@ -129,7 +129,7 @@ instance : DecidableRel outStar.Adj := fun v w => inferInstanceAs (Decidable (v 
 
 -- The out-star has no in-arborescence rooted at `0`.
 example : Nat.card {T : Digraph (Fin 3) // T ≤ outStar ∧ T.IsInArborescence 0} = 0 := by
-  have h := det_laplacian_adjMatrix_submatrix_eq_natCard_isInArborescence (R := ℤ) outStar 0
+  have h := det_laplacian_adjMatrix_submatrix_eq_natCard_isInArborescence ℤ outStar 0
   rw [det_laplacian_submatrix_zero] at h
   have h10 : ¬ outStar.Adj 1 0 := by decide
   have h12 : ¬ outStar.Adj 1 2 := by decide
@@ -192,7 +192,7 @@ example : (∀ w, ¬ twoCycle.Adj 0 w) ∧ ∀ v, v ≠ 0 → ∃! w, twoCycle.A
 -- ... but it is not one, since no in-arborescence rooted at `0` lies below it.
 example : ¬ twoCycle.IsInArborescence 0 := by
   intro hT
-  have h := det_laplacian_adjMatrix_submatrix_eq_natCard_isInArborescence (R := ℤ) twoCycle 0
+  have h := det_laplacian_adjMatrix_submatrix_eq_natCard_isInArborescence ℤ twoCycle 0
   rw [det_laplacian_submatrix_zero] at h
   have h10 : ¬ twoCycle.Adj 1 0 := by decide
   have h12 : twoCycle.Adj 1 2 := by decide
