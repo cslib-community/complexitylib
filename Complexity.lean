@@ -4669,6 +4669,8 @@ public import Complexity.Logics.Propositional.CuttingPlanes.Resolution
 public import Complexity.Logics.Propositional.CuttingPlanes.Separation
 public import Complexity.Logics.Propositional.DNF
 public import Complexity.Logics.Propositional.DNF.ModelCount
+public import Complexity.Logics.Propositional.Frege
+public import Complexity.Logics.Propositional.Frege.Resolution
 public import Complexity.Logics.Propositional.Parity
 public import Complexity.Logics.Propositional.Parity.DepthThree
 public import Complexity.Logics.Propositional.Pigeonhole
