@@ -2214,6 +2214,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Poly
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.RotationMap.TowerTable
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.RotationMap.TowerTable.Family
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.RotationMap.Walk
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.SelfDelimiting
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Sum
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Tape
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Window
@@ -4409,6 +4410,7 @@ public import Complexity.Probability.StochasticOracle.NativeResidualOneTurn
 public import Complexity.Probability.StochasticOracle.NativeRetention
 public import Complexity.Probability.StochasticOracle.NativeRetention.Correctness
 public import Complexity.Probability.StochasticOracle.NativeRetention.Execution
+public import Complexity.Probability.StochasticOracle.NativeRetention.Packets
 public import Complexity.Probability.StochasticOracle.NativeRetention.Selector
 public import Complexity.Probability.StochasticOracle.PartialCover
 public import Complexity.Probability.StochasticOracle.PartialCoverGreedy

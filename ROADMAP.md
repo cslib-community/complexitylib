@@ -194,8 +194,7 @@ state-size/resource certificates and real-valued retention/certificate/provenanc
 correspondence are derived. The actual open native local phase terminates and
 preserves all previously received oracle memory, token bills and external duration.
 A correlated source-report client constructs its local input from actual proposals;
-the local machine still starts from prepared data rather than a native raw-channel
-parser or tape handoff. A complete `OracleComp` selector program now composes
+the original local machine starts from prepared decoded data. A complete `OracleComp` selector program now composes
 preformed batch selection, full raw responses, exact rational retention, completion
 stopping and source-mask output. Its derived joint law and actual guarded-source
 admission preserve hidden-state correlation, provenance, cancellation invoices and
@@ -208,9 +207,20 @@ initial buffer. General actual native `seq` composition now preserves unbounded
 terminal laws, including divergent phases, without common phase clocks; a reader
 can hand its real buffer to arbitrary native continuation code. These laws follow
 from native instructions and stopped limits, not a supplied representation.
-This is not yet a uniform native upper oracle policy: the raw packet parser,
-rewind/framing/input preparation for the rational retention phase, native scheduler
-realization and adaptive query/stop/output loop still need concrete composition.
+One uniform native raw-history processor now parses every concurrent opportunity,
+skips canceled calls and arbitrary invoice metadata, checks original mask lengths
+and performs exact rational retention/completion/output. Its polynomial local
+clock is derived in all encoded runtime bytes, even malformed huge length headers.
+For every actual guarded raw-program run, native parsing agrees with the source
+decoder without a supplied source-validity premise. Actual native local stopping
+and the joint word/memory law preserve hidden correlation, provenance and both
+resource ledgers; a correlated two-query client derives the successful native local
+output from actual source execution. The processor starts with an encoded raw
+history on its input tape. This is not yet a uniform native upper oracle policy:
+rewind/framing/input preparation from the live reader buffer, native scheduler
+realization and the repeated adaptive query/stop/output loop still need concrete
+composition. The raw-program/native-local joint-law composition is not a theorem
+that one native online machine implements that composition.
 The strict oracle-PPT compiler's input-only clock and bounded-prefix query do not
 supply that realization. Native productive continuation, quantitative upper bounds
 and a successful output from that same compiled selector remain to be assembled.

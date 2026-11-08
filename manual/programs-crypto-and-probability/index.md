@@ -1654,9 +1654,35 @@ instructions. `NativeQueryAll.terminal_then` specializes this to full-reply read
 continuation code. These are compiler theorems, not assumed source-validity or
 machine-to-program representation contracts.
 
-The continuation must still rewind/frame the buffer and execute a parser before
-using it as the retention machine's encoded input. The full native scheduler and
-adaptive stop/output loop are not realized by these theorems. Consequently they do
+Import `Complexity.Probability.StochasticOracle.NativeRetention.Packets` for
+native processing of full raw histories. Its `Work` input contains original rational
+rows/certificate data, a unary opportunity count and the newest-first raw response
+words. It ignores any initial decoded proposal list. `computable_decision` compiles
+slot scanning, source-mask validation, rational local certification/retention and
+the computed completion flag/mask as one native algorithm. Local time and workspace
+are polynomial in the encoded runtime bytes, including invoice metadata.
+The original total self-delimiting decoder is computed by capping each numerical
+length at the remaining payload: huge malformed headers require no huge unary
+counter and do not change `take`/`drop` results.
+
+`Packets.assemble_run` derives parser agreement on every supported actual guarded
+program history, with arbitrary closed randomized scheduling and correlated oracle
+state. It makes no claim of agreement on arbitrary malformed report words.
+`terminal_run` proves actual unbounded native local stopping and the identical
+computed flag/mask. `run_native_law` gives the exact joint law of actual raw program
+execution followed by that native local computation, preserving all hidden state
+and resource observations. The
+[correlated two-query client](../../ComplexityTests/NativeRetentionSelector.lean)
+checks both complementary-cover branches, cancellation billing, ignored fabricated
+proposals, rejection and empty ground. From the same warm starting point, run:
+
+```bash
+scripts/build.sh ComplexityTests.NativeRetentionSelector
+```
+
+These native computations start with `encWork` on the input tape. The continuation
+must still rewind/frame the live reader buffer and prepare that ABI. The full
+native scheduler and adaptive stop/output loop are not realized by these theorems. Consequently they do
 not yet supply the native upper success, tail-sum cost or common-oracle optimum
 comparison. An optional terminal value `none` records divergence; it is not a
 halted failure and must not be assigned a zero accrued prefix bill. The existing

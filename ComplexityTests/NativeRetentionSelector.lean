@@ -5,6 +5,7 @@ Authors: Christian Reitwiessner
 -/
 
 import Complexity.Probability.StochasticOracle.NativeRetention.Selector
+import Complexity.Probability.StochasticOracle.NativeRetention.Packets
 import Complexity.Probability.StochasticOracle.NativeRetention.Execution
 import Mathlib.Tactic
 
@@ -311,6 +312,68 @@ example {Private : Type} (env : Environment Unit Private) (memory : Memory Unit 
   rw [PMF.bind_bind]
   simp only [PMF.pure_bind]
   rfl
+
+/-- The actual correlated two-query program supplies the native processor's
+history. Neither a decoded proposal list nor desired completion is an input. -/
+private theorem run_two (bit : Bool) :
+    execute (environment limits sample) (Selector.run choose input 2) (memoryZero bit) =
+      PMF.pure (stateTwo bit, memoryTwo bit) := by
+  rw [run_joint]
+  change ((PMF.pure (Selector.initial, memoryZero bit)).bind
+    (transition (environment limits sample) choose input) |>.bind
+      (transition (environment limits sample) choose input)) = _
+  rw [PMF.pure_bind, first_step, PMF.pure_bind, second_step]
+
+/-- Actual native processing of both full correlated concurrent receipts halts
+with the computed successful mask, cancellation invoice and same hidden state.
+The remaining online native buffer/loop handoff is not assumed by this test. -/
+example (bit : Bool) :
+    let w : Packets.Work := ⟨input, 3, (stateTwo bit).history⟩
+    ∃ t, NativeUnboundedExecution.terminal Packets.native (environment limits sample)
+        (Packets.start w (memoryTwo bit)) =
+          PMF.pure (some (Packets.done w (memoryTwo bit) t)) ∧
+      (Packets.done w (memoryTwo bit) t).config.tapes.output =
+        (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encBool Turing.MultiTapeTM.encBits)
+          (true, [true,true]) ∧
+      (Packets.done w (memoryTwo bit) t).memory = memoryTwo bit := by
+  have hs : (stateTwo bit, memoryTwo bit) ∈
+      (execute (environment limits sample) (Selector.run choose input 2)
+        ⟨ConcurrentBatch.initial bit, []⟩).support := by
+    rw [show (⟨ConcurrentBatch.initial bit, []⟩ : Memory Unit (ServerState 3 Bool)) =
+      memoryZero bit from rfl, run_two, PMF.mem_support_pure_iff]
+  obtain ⟨t, ht, ho, hm⟩ :=
+    Packets.terminal_run limits sample choose input 2 bit (stateTwo bit) (memoryTwo bit) hs
+  refine ⟨t, ht, ?_, hm⟩
+  rw [data_two] at ho
+  have hc : (complete { input with proposals :=
+      [if bit then [0] else [1], if bit then [1] else [0]] },
+      output { input with proposals :=
+        [if bit then [0] else [1], if bit then [1] else [0]] }) = (true, [true,true]) := by
+    cases bit <;> norm_num [complete, output, retain, NativeRetention.step, certified, newly,
+      covered, NativeRetention.normalize, population, ground, cost, price, input, List.range_succ]
+  simpa only [hc] using ho
+
+/-- Malformed enormous numerical length headers do not create a unary-time
+assumption. The exact original decoder is used on all words by the native code. -/
+example : Turing.MultiTapeTM.ComputableInPolyTime
+    Cslib.Kolmogorov.decodeSelfDelimiting Turing.MultiTapeTM.encBits
+    (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encBits Turing.MultiTapeTM.encBits) :=
+  Turing.MultiTapeTM.ComputableInPolyTime.decodeSelfDelimiting
+
+/-- Empty ground completes without any packet; fabricated initial proposals are
+ignored. A nonempty uncovered ground still fails without a real response. -/
+example : Packets.decision ⟨⟨[], [], [], 1, [[99]]⟩, 3, []⟩ = (true, []) := by
+  norm_num [Packets.decision, Packets.assemble, complete, output, ground, population,
+    covered, retain]
+
+example : Packets.decision ⟨input, 3, []⟩ = (false, [false,false]) := by
+  norm_num [Packets.decision, Packets.assemble, complete, output, ground, population,
+    covered, retain, input, List.range_succ]
+
+/-- Actual rejected packets add no family to the native retained decision. -/
+example : Packets.decision ⟨input, 3, [rejection.word]⟩ = (false, [false,false]) := by
+  norm_num [Packets.decision, Packets.assemble, Packets.families_rejected, complete, output,
+    ground, population, covered, retain, input, List.range_succ]
 
 end
 end ComplexityTests.NativeRetentionSelector
