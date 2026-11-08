@@ -21,11 +21,13 @@ import Complexity.Computability.Complexity.Problems.IntegerProgramming
 import Complexity.Computability.Complexity.Problems.JobSequencing
 import Complexity.Computability.Complexity.Problems.Knapsack
 import Complexity.Computability.Complexity.Problems.MaxCut
+import Complexity.Computability.Complexity.Problems.MaxTwoSAT
 import Complexity.Computability.Complexity.Problems.Partition
 import Complexity.Computability.Complexity.Problems.PlanarPositiveOneInThreeSAT
 import Complexity.Computability.Complexity.Problems.PlanarThreeSATThree
 import Complexity.Computability.Complexity.Problems.SubsetSum
 import Complexity.Computability.Complexity.Problems.TSP
+import Complexity.Computability.Complexity.Problems.TwoSAT.Completeness
 import Complexity.Computability.Complexity.Problems.ThreeSAT
 import Complexity.Computability.Complexity.Problems.ThreeSATThree
 import Complexity.Computability.Complexity.Problems.VertexCover
@@ -258,6 +260,14 @@ Here is the tree, with the reduction for each edge and the completeness theorem 
   3SAT to exact 3SAT ({name}`polyTimeReducible_ThreeSAT_ExactThreeSAT`,
   {name}`ExactThreeSAT_npComplete`) and to subset sum ({name}`polyTimeReducible_ThreeSAT_SubsetSum`,
   {name}`SubsetSum_npComplete`).
+* 3SAT reduces to maximum 2-satisfiability ({name}`polyTimeReducible_ThreeSAT_MaxTwoSAT`,
+  {name}`MaxTwoSAT_npComplete`): given clauses of at most two literals and a binary target `K`,
+  can some assignment satisfy `K` of them? Each clause of three literals becomes the ten-clause
+  gadget of Garey, Johnson and Stockmeyer ({name}`MaxTwoSAT.gadget`) with a fresh variable. An
+  assignment satisfies at most seven of its clauses, and exactly seven for the best value of the
+  fresh variable when the source clause holds ({name}`MaxTwoSAT.countP_gadget`). Short clauses
+  are first padded by repetition through {name}`toExactThreeSAT`. Plain 2-satisfiability, by
+  contrast, is in `NL` ({name}`TwoSAT.mem_NL`).
 * 3SAT reduces to {name}`ThreeSATThree` via {name}`toThreeSATThree`
   ({name}`ThreeSATThree_npComplete`). Its clauses have at most three literals, including binary
   clauses, and every variable has at most three literal occurrences. Repetitions within a clause

@@ -984,6 +984,15 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   tables and its composition with that lemma and with `exists_GapLabelCover_npHard` (Theorem 5.4),
   the composition with the four-clause reduction (Theorem 6.1, imperfect completeness), and
   Håstad's separate test for satisfiable formulas (Theorem 6.5).
+- **MAX 2-SAT** ([#3481](https://github.com/cslib-community/complexitylib/issues/3481)): the
+  decision problem is NP-complete by the Garey–Johnson–Stockmeyer ten-clause gadget
+  (`Problems/MaxTwoSAT`). Remaining: APX-hardness with explicit inapproximability constants,
+  and a reduction from MAX 2-SAT to unweighted MAX CUT (the library's `MaxCut` is weighted and
+  reduces from `Partition`). Unit-weight Steiner tree in graphs (Garey and Johnson ND12, locator
+  from secondary sources), by reduction from vertex cover through a root adjacent to every
+  vertex and one terminal per edge adjacent to its endpoints, is a nearby uncovered
+  NP-completeness entry for the Karp audit
+  ([#2904](https://github.com/cslib-community/complexitylib/issues/2904)).
 - The FGLSS clique-hardness reduction and its amplification, retaining the exact gap and
   reduction runtime.
 - Gap and approximation-preserving reductions, APX/PTAS/FPTAS, inapproximability consequences of
