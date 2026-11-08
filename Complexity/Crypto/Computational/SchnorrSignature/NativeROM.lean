@@ -200,7 +200,7 @@ so in particular for the shared memoized oracle at every typed cache. The error 
 through a common continuation; no assumption about a coupling is needed. -/
 theorem closeTo_runWith_schnorrROMSign (n : ℕ) (x : ZMod (F.order d)) (u : F.Carrier d)
     (msg : List Bool) (state : Store) :
-    Interactive.CloseTo
+    CloseTo
       (((F.schnorrWordROMScheme d hm).signCoins (x, u) msg).bind fun coins =>
         (OracleComp.runWith reply ((F.schnorrWordROMScheme d hm).sign (x, u) msg coins)
           state).map (Prod.map (encPair encBits encBits) id))

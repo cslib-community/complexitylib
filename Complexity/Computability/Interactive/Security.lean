@@ -64,7 +64,7 @@ PPT simulator over an indexed family of reductions.
 namespace Cslib.Interactive
 
 open scoped ENNReal
-open Spec
+open Spec Probability
 
 variable {ιP ιV : Type} {oP : OracleSpec ιP} {oV : OracleSpec ιV} {s : Spec}
   {StmtIn WitIn StmtOut WitOut : Type}
@@ -74,13 +74,6 @@ def language {Stmt Wit : Type} (rel : Stmt → Wit → Prop) : Set Stmt := {x | 
 
 /-- The trivial relation that proof systems reduce to: acceptance. -/
 def Accept : Unit → Unit → Prop := fun _ _ => True
-
-export Cslib.Probability (CloseTo)
-
-namespace CloseTo
-export Cslib.Probability.CloseTo (refl mono symm map trans bind_left bind_right bind
-  abs_toReal_sub_le of_le_apply)
-end CloseTo
 
 /-! ### Completeness, soundness and knowledge soundness -/
 

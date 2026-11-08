@@ -62,9 +62,3 @@ theorem eval_replicate {α : Type} {prog₁ prog₂ : ProbComp α} {ε : ℝ≥0
   exact h.iid_replicate k
 
 end Cslib.Probability.CloseTo
-
-namespace Cslib.Interactive.CloseTo
-
-export Cslib.Probability.CloseTo (iid iid_replicate eval_replicate)
-
-end Cslib.Interactive.CloseTo

@@ -35,7 +35,7 @@ of uniform on `ZMod q` (`closeTo_uniform_sampleExp`). Consequently:
 
 * **Per-conversation statistical closeness**:
   * A strict-PPT simulated conversation `schnorrSimulatedTranscript` (using `schnorrSimulateWord` on
-    the public key without the secret key) is within statistical distance (`Interactive.CloseTo`)
+    the public key without the secret key) is within statistical distance (`CloseTo`)
     `1 / 2 ^ n` of an ideal honest conversation `schnorrHonestTranscript`
     (`closeTo_schnorrHonestTranscript_simulated`).
   * A strict-PPT honest conversation `schnorrRealTranscript` (where the honest prover also samples
@@ -88,8 +88,8 @@ of uniform on `ZMod q` (`closeTo_uniform_sampleExp`). Consequently:
 
 ## Main results
 
-* `Cslib.Interactive.CloseTo.iid`, `Cslib.Interactive.CloseTo.iid_replicate`,
-  `Cslib.Interactive.CloseTo.eval_replicate`: statistical closeness of `k` independent draws and
+* `Cslib.Probability.CloseTo.iid`, `Cslib.Probability.CloseTo.iid_replicate`,
+  `Cslib.Probability.CloseTo.eval_replicate`: statistical closeness of `k` independent draws and
   `OracleComp.replicate` runs without finiteness assumptions.
 * `Cslib.Crypto.PrimeOrderGroupFamily.closeTo_schnorrRealTranscript_honest`,
   `Cslib.Crypto.PrimeOrderGroupFamily.closeTo_schnorrHonestTranscript_simulated`,
