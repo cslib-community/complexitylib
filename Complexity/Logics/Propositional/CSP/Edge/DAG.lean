@@ -37,6 +37,8 @@ feasibility of that constraint's tuple.
 
 * `DAG.IsFDAG.subgraph`: Observation 33, including isolated nodes.
 * `DAG.IsFDAG.acyclic`: the directed incidence graph is acyclic.
+* `DAG.Ordered.exists_injective_numbering`: a checked finite tie-breaking justification of
+  the source's total-order formulation, including isolated nodes.
 
 No construction of Algorithm 1's forest, improving comparison labeling, or solver is assumed.
 -/
@@ -59,10 +61,15 @@ abbrev Node (F : CSP Rel V) := V ⊕ Copy F
 
 /-- An indexed incidence, its timestamp, and its orientation (`true` means variable to copy). -/
 structure Arc (F : CSP Rel V) where
+  /-- Original constraint and ordered argument position of this incidence. -/
   occurrence : Occurrence F
+  /-- Timestamp identifying the copied constraint endpoint. -/
   time : ℕ
+  /-- `true` orients the incidence from its variable toward its constraint copy. -/
   incoming : Bool
-  deriving DecidableEq
+
+instance : DecidableEq (Arc F) := fun ⟨o, t, i⟩ ⟨p, s, j⟩ =>
+  decidable_of_iff (o = p ∧ t = s ∧ i = j) (by simp only [Arc.mk.injEq])
 
 namespace Arc
 
@@ -97,8 +104,11 @@ end DAG
 
 /-- A finite directed incidence graph with explicit support for isolated nodes. -/
 structure DAG (F : CSP Rel V) where
+  /-- Supported actual variables, retaining isolated roots. -/
   vars : Finset V
+  /-- Supported positional constraint copies, retaining isolated copies. -/
   copies : Finset (DAG.Copy F)
+  /-- Used original incidences with their timestamps and orientations. -/
   arcs : Finset (DAG.Arc F)
 
 namespace DAG
@@ -128,14 +138,22 @@ namespace DAG
 /-- All six invariant conditions in KKR Definition 32, with base validity explicit. -/
 structure IsFDAG (sem : Rel → List Bool → Bool) (f : OccurrenceLabeling F Bool)
     (T : DAG F) : Prop where
+  /-- The reference labeling satisfies every original positional constraint. -/
   valid : ValidLabeling sem f
+  /-- Condition 1: every indexed arc has both endpoints in the support. -/
   supported : T.Supported
+  /-- Condition 2: an original incidence is used at most once, in one orientation and copy. -/
   unique : ∀ a ∈ T.arcs, ∀ b ∈ T.arcs, a.occurrence = b.occurrence → a = b
+  /-- Condition 3: a variable has at most one incoming arc. -/
   indegree : ∀ a ∈ T.arcs, ∀ b ∈ T.arcs,
     a.incoming = false → b.incoming = false → a.occurrence.var = b.occurrence.var → a = b
+  /-- Condition 4: timestamps are globally distinct and extend to a topological order. -/
   ordered : T.Ordered
+  /-- Condition 5: an incoming port exchanges feasibly with any port at its copy. -/
   feasible : ∀ a ∈ T.arcs, ∀ b ∈ T.arcs,
     a.incoming = true → a.copy = b.copy → ValidLabeling sem (pairFlip f a.occurrence b.occurrence)
+  /-- Condition 6: an old incoming port cannot exchange with a later-used port of the same
+  original constraint. -/
   noShortcut : ∀ a ∈ T.arcs, ∀ b ∈ T.arcs, a.incoming = true →
     a.occurrence.1 = b.occurrence.1 → a.time < b.time →
     ¬ ValidLabeling sem (pairFlip f a.occurrence b.occurrence)
@@ -227,6 +245,37 @@ theorem ordered_iff_acyclic {T : DAG F} (h : T.Supported) : T.Ordered ↔
   · rintro ⟨ht, ha⟩
     obtain ⟨rank, _, hr⟩ := ha.exists_rank T.nodes (fun _ _ => h.orderRelation)
     exact ⟨ht, rank, hr⟩
+
+/-- Break rank ties on the finite support without changing any required strict comparison.
+The resulting injective natural numbering induces the source's strict total order on supported
+nodes. This also accounts for isolated nodes, whose original ranks may all have been equal. -/
+theorem Ordered.exists_injective_numbering {T : DAG F} (h : T.Ordered) :
+    ∃ number : {x : Node F // x ∈ T.nodes} ↪ ℕ,
+      ∀ x y, T.orderRelation x.val y.val → number x < number y := by
+  classical
+  obtain ⟨rank, hr⟩ := h.2
+  let S := {x : Node F // x ∈ T.nodes}
+  let enum := Fintype.equivFin S
+  let width := Fintype.card S + 1
+  let number : S → ℕ := fun x => rank x.val * width + (enum x).val
+  have hen : ∀ x, (enum x).val < width := fun x =>
+    Nat.lt_trans (enum x).isLt (Nat.lt_succ_self _)
+  have hinj : Function.Injective number := by
+    intro x y he
+    have hm := congrArg (fun n => n % width) he
+    have hmod : ∀ z, number z % width = (enum z).val := by
+      intro z
+      simp [number, Nat.add_mod, Nat.mod_eq_of_lt (hen z)]
+    rw [hmod, hmod] at hm
+    exact enum.injective (Fin.ext hm)
+  refine ⟨⟨number, hinj⟩, ?_⟩
+  intro x y hxy
+  have hlt := hr x.val y.val hxy
+  have hmul := Nat.mul_le_mul_right width (Nat.succ_le_of_lt hlt)
+  have hx := hen x
+  change rank x.val * width + (enum x).val < rank y.val * width + (enum y).val
+  rw [Nat.succ_mul] at hmul
+  omega
 
 end DAG
 
