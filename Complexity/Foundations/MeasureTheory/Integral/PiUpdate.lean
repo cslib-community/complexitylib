@@ -26,6 +26,8 @@ coordinates of the original sample. This avoids reindexing `ι` as `{i} ⊕ {j /
 * `MeasureTheory.measurePreserving_update`: resampling coordinate `i` preserves `Measure.pi μ`.
 * `MeasureTheory.integral_integral_update`: for integrable `F`,
   `∫ v, ∫ z, F (update v i z) ∂μ i ∂Measure.pi μ = ∫ v, F v ∂Measure.pi μ`.
+* `MeasureTheory.integral_integral_update_swap`: the same with the coordinate `i` integrated last,
+  `∫ z, ∫ v, F (update v i z) ∂Measure.pi μ ∂μ i = ∫ v, F v ∂Measure.pi μ`.
 -/
 
 public section
@@ -79,5 +81,16 @@ theorem integral_integral_update {E : Type*} [NormedAddCommGroup E] [NormedSpace
   rw [← integral_prod _ hint]
   conv_rhs => rw [← hΦ.map_eq]
   rw [integral_map hΦ.measurable.aemeasurable (by rw [hΦ.map_eq]; exact hF.aestronglyMeasurable)]
+
+/-- **Fubini over one coordinate, outer form.** Integrating `F` against a product of probability
+measures is the same as first fixing coordinate `i` to `z`, averaging over the other coordinates,
+and then integrating over `z ∼ μ i`. -/
+theorem integral_integral_update_swap {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    {F : (∀ j, X j) → E} (hF : Integrable F (Measure.pi μ)) (i : ι) :
+    ∫ z, ∫ v, F (Function.update v i z) ∂Measure.pi μ ∂μ i = ∫ v, F v ∂Measure.pi μ := by
+  have hint : Integrable (Function.uncurry fun (v : ∀ j, X j) (z : X i) =>
+      F (Function.update v i z)) ((Measure.pi μ).prod (μ i)) :=
+    (measurePreserving_update μ i).integrable_comp_of_integrable hF
+  rw [← integral_integral_swap hint, integral_integral_update μ hF i]
 
 end MeasureTheory
