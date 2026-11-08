@@ -517,8 +517,7 @@ theorem BlockCipher.eval_strongPRPRealGame_liftForwardDistinguisher (E : BlockCi
   refine PMF.bind_congr_on_support _ _ _ fun key hkey => ?_
   have hkeyLen : key.length = E.keyLen n := BitString.length_of_mem_support_uniformList hkey
   rw [eval_interpret_liftForwardDistinguisher]
-  congr 2
-  funext request
+  congr 2 with request : 1
   simp only [BlockCipher.strongPRPOracle, BlockCipher.prpOracle, Bool.false_eq_true, ↓reduceIte]
   split_ifs with hq
   · rw [List.take_of_length_le (E.length_encrypt n key _ hkeyLen hq).le]
@@ -532,11 +531,9 @@ theorem eval_strongPRPIdealGame_liftForwardDistinguisher (blockLen : ℕ → ℕ
       ProbComp.eval (prpIdealGame blockLen adversary n) := by
   simp only [strongPRPIdealGame, prpIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
     ProbOracleComp.eval_interpret, ProbComp.eval_pure]
-  congr 1
-  funext π
+  congr 1 with π : 1
   rw [eval_interpret_liftForwardDistinguisher]
-  congr 2
-  funext request
+  congr 2 with request : 1
   simp only [strongRandomPermOracle, randomPermOracle, randomFunctionOracle, Bool.false_eq_true,
     ↓reduceIte]
   split_ifs

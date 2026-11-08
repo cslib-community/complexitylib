@@ -91,8 +91,7 @@ theorem truncDirectCertificate_le_of_isPolynomial
   · calc (truncDirectCertificate entry ce).time (P, ℓ, r, G)
         ≤ Kd * (n + E n + 1) ^ Kd * 2 ^ G.numEdges * (E n + 1) := hT
       _ = F n * 2 ^ G.numEdges := by simp only [F]; ring
-      _ ≤ (aF + dF) * (n + 1) ^ (aF + dF) * 2 ^ G.numEdges :=
-        Nat.mul_le_mul_right _ hbound
+      _ ≤ (aF + dF) * (n + 1) ^ (aF + dF) * 2 ^ G.numEdges := by gcongr
   · calc (truncDirectCertificate entry ce).space (P, ℓ, r, G)
         ≤ Kd * (n + E n + 1) ^ Kd := hS
       _ ≤ F n := Nat.le_mul_of_pos_right _ (by omega)

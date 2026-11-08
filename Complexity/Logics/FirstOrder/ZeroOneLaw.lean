@@ -9,6 +9,7 @@ module
 
 public import Complexity.Logics.FirstOrder.Reduction
 public import Complexity.Logics.FirstOrder.ZeroOneLaw.ExtensionProbability
+public import Complexity.Logics.FirstOrder.ZeroOneLaw.Transfer
 import Mathlib.Topology.Algebra.Monoid
 import Mathlib.Topology.Order.Basic
 
@@ -33,6 +34,10 @@ between `1` and `0`) or an even number of edges (probability exactly `1/2` for `
 
 ## Main results
 
+* `Cslib.Logic.FO.graph.randomGraphProb_satisfies_eq`: satisfaction probability in `G(n, 1/2)`
+  matches sentence probability on graph structures.
+* `Cslib.Logic.FO.graph.tendsto_randomGraphProb_finset`: every finite subset of the theory of the
+  random graph holds almost surely.
 * `Cslib.Logic.FO.graph.isSatisfiable_randomGraphTheory`: the theory of the random graph is
   satisfiable.
 * `Cslib.Logic.FO.graph.isComplete_randomGraphTheory`: it is complete.
@@ -62,53 +67,70 @@ open FirstOrder Language Structure Cardinal CategoryTheory
 
 namespace Cslib.Logic.FO.graph
 
+/-- The sequence of uniform random graph distributions mapped to first-order graph structures. -/
+noncomputable def randomGraphStructure (n : ℕ) : PMF (Language.graph.Structure (Fin n)) :=
+  (randomGraph n).map SimpleGraph.structure
+
+/-- The probability that `G(n, 1/2)` satisfies a first-order sentence `φ` equals the sentence
+probability under the pushforward distribution on graph structures. -/
+theorem randomGraphProb_satisfies_eq (n : ℕ) (φ : Language.graph.Sentence) :
+    randomGraphProb n (fun G => Satisfies G φ) = sentenceProb (randomGraphStructure n) φ := by
+  rw [sentenceProb_def, structProb_def, randomGraphStructure, PMF.toOuterMeasure_map_apply,
+    randomGraphProb_def]
+  rfl
+
+/-- The probability that `G(n, 1/2)` satisfies a property of its structure equals the structure
+probability under the pushforward distribution on graph structures. -/
+theorem randomGraphProb_structure_eq (n : ℕ) (P : Language.graph.Structure (Fin n) → Prop) :
+    randomGraphProb n (fun G => P G.structure) = structProb (randomGraphStructure n) P := by
+  rw [structProb_def, randomGraphStructure, PMF.toOuterMeasure_map_apply, randomGraphProb_def]
+  rfl
+
+/-- Every sentence of the theory of the random graph holds in `G(n, 1/2)` with probability tending
+to `1`. -/
+theorem tendsto_randomGraphProb_of_mem_randomGraphTheory {φ : Language.graph.Sentence}
+    (h : φ ∈ randomGraphTheory) :
+    Filter.Tendsto (fun n => randomGraphProb n fun G => Satisfies G φ) Filter.atTop (nhds 1) := by
+  rcases mem_randomGraphTheory.1 h with hφ | ⟨k, s, rfl⟩
+  · have h : ∀ n, randomGraphProb n (fun G => ¬Satisfies G φ) = 0 := fun n => by
+      have : (fun G : SimpleGraph (Fin n) => ¬Satisfies G φ) = fun _ => False :=
+        funext fun G => propext (iff_false_intro (not_not_intro
+          (satisfies_of_mem_simpleGraph G hφ)))
+      rw [this, randomGraphProb_false]
+    have h1 : (fun n => randomGraphProb n fun G => Satisfies G φ) = fun _ => 1 := by
+      funext n
+      have := randomGraphProb_not n fun G => Satisfies G φ
+      rw [h n] at this
+      linarith
+    rw [h1]
+    exact tendsto_const_nhds
+  · exact tendsto_randomGraphProb_extensionAxiom k s
+
+/-- Every sentence of the theory of the random graph holds in `randomGraphStructure` with
+probability tending to `1`. -/
+theorem tendsto_sentenceProb_randomGraphStructure {φ : Language.graph.Sentence}
+    (h : φ ∈ randomGraphTheory) :
+    Filter.Tendsto (fun n => sentenceProb (randomGraphStructure n) φ) Filter.atTop (nhds 1) := by
+  simp only [← randomGraphProb_satisfies_eq]
+  exact tendsto_randomGraphProb_of_mem_randomGraphTheory h
+
 /-- Every finite subset of the theory of the random graph holds in `G(n, 1/2)` with probability
 tending to `1`. -/
 theorem tendsto_randomGraphProb_finset (T₀ : Finset Language.graph.Sentence)
     (hT₀ : (T₀ : Language.graph.Theory) ⊆ randomGraphTheory) :
     Filter.Tendsto (fun n => randomGraphProb n fun G => ∀ φ ∈ T₀, Satisfies G φ)
       Filter.atTop (nhds 1) := by
-  have hfail : ∀ φ ∈ T₀, Filter.Tendsto (fun n => randomGraphProb n fun G => ¬Satisfies G φ)
-      Filter.atTop (nhds 0) := by
-    intro φ hφ
-    rcases mem_randomGraphTheory.1 (hT₀ hφ) with hφ | ⟨k, s, rfl⟩
-    · -- The simple-graph axioms hold in every graph.
-      have h : ∀ n, randomGraphProb n (fun G => ¬Satisfies G φ) = 0 := fun n => by
-        have : (fun G : SimpleGraph (Fin n) => ¬Satisfies G φ) = fun _ => False :=
-          funext fun G => propext (iff_false_intro (not_not_intro
-            (satisfies_of_mem_simpleGraph G hφ)))
-        rw [this, randomGraphProb_false]
-      simp only [h]
-      exact tendsto_const_nhds
-    · have := (tendsto_randomGraphProb_extensionAxiom k s).const_sub 1
-      simp only [sub_self, ← randomGraphProb_not] at this
-      exact this
-  have hsum := tendsto_finsetSum T₀ hfail
-  simp only [Finset.sum_const_zero] at hsum
-  -- Union bound over the finitely many sentences of `T₀`.
-  have hbad : Filter.Tendsto
-      (fun n => randomGraphProb n fun G => ¬∀ φ ∈ T₀, Satisfies G φ) Filter.atTop (nhds 0) := by
-    refine squeeze_zero (fun n => randomGraphProb_nonneg _ _) (fun n => ?_) hsum
-    refine (randomGraphProb_mono fun G hG => ?_).trans (randomGraphProb_exists_le n T₀ _)
-    push Not at hG
-    exact hG
-  have := hbad.const_sub 1
-  simp only [sub_zero, randomGraphProb_not, sub_sub_cancel] at this
-  exact this
+  have h := tendsto_structProb_forall_finset randomGraphStructure T₀ fun φ hφ =>
+    tendsto_sentenceProb_randomGraphStructure (hT₀ hφ)
+  simp only [← randomGraphProb_structure_eq] at h
+  exact h
 
 /-- The theory of the random graph is satisfiable. By compactness it suffices that each finite
 subset has a model, and a finite subset holds in `G(n, 1/2)` with positive probability for large
 `n`. -/
-theorem isSatisfiable_randomGraphTheory : randomGraphTheory.IsSatisfiable := by
-  rw [Theory.isSatisfiable_iff_isFinitelySatisfiable]
-  intro T₀ hT₀
-  obtain ⟨n, hn, hn1⟩ := ((tendsto_randomGraphProb_finset T₀ hT₀).eventually
-    (lt_mem_nhds (show (0 : ℝ) < 1 from one_pos))).and (Filter.eventually_ge_atTop 1) |>.exists
-  obtain ⟨G, hG⟩ := exists_of_randomGraphProb_pos hn
-  let := G.structure
-  have : Nonempty (Fin n) := ⟨⟨0, hn1⟩⟩
-  have : Fin n ⊨ (T₀ : Language.graph.Theory) := (Theory.model_iff _).2 fun φ hφ => hG φ hφ
-  exact Theory.Model.isSatisfiable (Fin n)
+theorem isSatisfiable_randomGraphTheory : randomGraphTheory.IsSatisfiable :=
+  isSatisfiable_of_tendsto_sentenceProb randomGraphStructure
+    fun _ => tendsto_sentenceProb_randomGraphStructure
 
 /-- The theory of the random graph is complete, by the Łoś–Vaught test: it is satisfiable, has
 no finite models and is `ℵ₀`-categorical in a countable language [Fagin1976]
@@ -128,24 +150,18 @@ to `1`. -/
 theorem tendsto_randomGraphProb_of_models {φ : Language.graph.Sentence}
     (h : randomGraphTheory ⊨ᵇ φ) :
     Filter.Tendsto (fun n => randomGraphProb n fun G => Satisfies G φ) Filter.atTop (nhds 1) := by
-  obtain ⟨T₀, hT₀, hφ⟩ := Theory.models_iff_finset_models.1 h
-  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' (tendsto_randomGraphProb_finset T₀ hT₀)
-    tendsto_const_nhds ?_ (Filter.Eventually.of_forall fun n => randomGraphProb_le_one _ _)
-  filter_upwards [Filter.eventually_ge_atTop 1] with n hn
-  refine randomGraphProb_mono fun G hG => ?_
-  let := G.structure
-  have : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
-  have : Fin n ⊨ (T₀ : Language.graph.Theory) := (Theory.model_iff _).2 fun ψ hψ => hG ψ hψ
-  exact hφ.realize_sentence (Fin n)
+  have h1 := tendsto_sentenceProb_of_models randomGraphStructure
+    (fun _ => tendsto_sentenceProb_randomGraphStructure) h
+  simpa only [randomGraphProb_satisfies_eq] using h1
 
 /-- A sentence refuted by the theory of the random graph holds in `G(n, 1/2)` with probability
 tending to `0`. -/
 theorem tendsto_randomGraphProb_of_models_not {φ : Language.graph.Sentence}
     (h : randomGraphTheory ⊨ᵇ φ.not) :
     Filter.Tendsto (fun n => randomGraphProb n fun G => Satisfies G φ) Filter.atTop (nhds 0) := by
-  have := (tendsto_randomGraphProb_of_models h).const_sub 1
-  simp only [satisfies_not, randomGraphProb_not, sub_sub_cancel, sub_self] at this
-  exact this
+  have h0 := tendsto_sentenceProb_of_models_not randomGraphStructure
+    (fun _ => tendsto_sentenceProb_randomGraphStructure) h
+  simpa only [randomGraphProb_satisfies_eq] using h0
 
 /-- **The 0-1 law for first-order logic on graphs** (Glebskiĭ–Kogan–Liogon'kiĭ–Talanov; Fagin).
 For every first-order sentence `φ` in the language of graphs, the probability that the uniform
@@ -155,26 +171,26 @@ theorem zero_one_law (φ : Language.graph.Sentence) :
     Filter.Tendsto (fun n => randomGraphProb n fun G => Satisfies G φ) Filter.atTop (nhds 0) ∨
       Filter.Tendsto (fun n => randomGraphProb n fun G => Satisfies G φ) Filter.atTop
         (nhds 1) := by
-  rcases isComplete_randomGraphTheory.2 φ with h | h
-  · exact Or.inr (tendsto_randomGraphProb_of_models h)
-  · exact Or.inl (tendsto_randomGraphProb_of_models_not h)
+  have h := zero_one_law_of_isComplete randomGraphStructure isComplete_randomGraphTheory
+    (fun _ => tendsto_sentenceProb_randomGraphStructure) φ
+  simpa only [randomGraphProb_satisfies_eq] using h
 
 /-- A sentence holds almost surely exactly when it is a consequence of the theory of the random
 graph [Fagin1976]. -/
 theorem tendsto_randomGraphProb_one_iff (φ : Language.graph.Sentence) :
     Filter.Tendsto (fun n => randomGraphProb n fun G => Satisfies G φ) Filter.atTop (nhds 1) ↔
       randomGraphTheory ⊨ᵇ φ := by
-  refine ⟨fun h1 => (isComplete_randomGraphTheory.2 φ).resolve_right fun hn => ?_,
-    tendsto_randomGraphProb_of_models⟩
-  exact zero_ne_one (tendsto_nhds_unique (tendsto_randomGraphProb_of_models_not hn) h1)
+  have h := tendsto_sentenceProb_one_iff_of_isComplete randomGraphStructure
+    isComplete_randomGraphTheory (fun _ => tendsto_sentenceProb_randomGraphStructure) φ
+  simpa only [randomGraphProb_satisfies_eq] using h
 
 /-- A sentence fails almost surely exactly when the theory of the random graph refutes it. -/
 theorem tendsto_randomGraphProb_zero_iff (φ : Language.graph.Sentence) :
     Filter.Tendsto (fun n => randomGraphProb n fun G => Satisfies G φ) Filter.atTop (nhds 0) ↔
       randomGraphTheory ⊨ᵇ φ.not := by
-  refine ⟨fun h0 => (isComplete_randomGraphTheory.2 φ).resolve_left fun hp => ?_,
-    tendsto_randomGraphProb_of_models_not⟩
-  exact zero_ne_one (tendsto_nhds_unique h0 (tendsto_randomGraphProb_of_models hp))
+  have h := tendsto_sentenceProb_zero_iff_of_isComplete randomGraphStructure
+    isComplete_randomGraphTheory (fun _ => tendsto_sentenceProb_randomGraphStructure) φ
+  simpa only [randomGraphProb_satisfies_eq] using h
 
 /-! ### Properties that are not first-order definable -/
 

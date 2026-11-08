@@ -171,8 +171,7 @@ theorem eval_spliceEncryptedKeyLink_eq_map_coins (E : Scheme)
       back (rest.drop ((capacity - 1) * encCoins))))]
   simp only [spliceEncryptedKeyLink, ProbComp.eval_bind, ProbComp.eval_pure,
     hfront, hmiddle, hback, PMF.bind_map, Function.comp_def]
-  congr 1
-  funext first
+  congr 1 with first : 1
   rw [BitString.uniformList_bind_split _ _ (fun second third =>
     PMF.pure (front first ++ middle second :: back third))]
 

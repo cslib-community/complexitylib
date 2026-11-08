@@ -97,12 +97,10 @@ theorem eval_linkAdversaryAt (beforeCount afterCount bitIndex : ℕ → ℕ)
       PMF.bind_bind, PMF.pure_bind]
     apply Probability.PMF.bind_congr_on_support
     intro next hnext
-    congr 1
-    funext before
+    congr 1 with before : 1
     apply Probability.PMF.bind_congr_on_support
     intro predecessor hpredecessor
-    congr 1
-    funext after
+    congr 1 with after : 1
     simp only [hwidth predecessor hpredecessor, hi, ↓reduceIte,
       ProbComp.eval_pure, PMF.pure_bind]
     simpa only [ProbComp.eval_bind] using
@@ -111,12 +109,10 @@ theorem eval_linkAdversaryAt (beforeCount afterCount bitIndex : ℕ → ℕ)
         ((hwidth next hnext).trans (hwidth predecessor hpredecessor).symm)
   · rw [ite_eq_right hi]
     rw [← PMF.bind_const (ProbComp.eval (E.keyGen n)) (PMF.pure false)]
-    congr 1
-    funext next
+    congr 1 with next : 1
     rw [← PMF.bind_const
       (ProbComp.eval (OracleComp.replicate (beforeCount n) (E.keyGen n))) (PMF.pure false)]
-    congr 1
-    funext before
+    congr 1 with before : 1
     rw [← PMF.bind_const (ProbComp.eval (E.keyGen n)) (PMF.pure false)]
     apply Probability.PMF.bind_congr_on_support
     intro predecessor hpredecessor
@@ -135,13 +131,11 @@ theorem eval_linkAdversary (depth capacity : ℕ → ℕ)
     ProbComp.eval_bind, eval_sampleDyadicIndex, PMF.bind_map, Function.comp_def,
     keyChainHybridGame]
   rw [PMF.bind_comm]
-  congr 1
-  funext i
+  congr 1 with i : 1
   rw [PMF.bind_comm]
   by_cases hi : i.val < depth n
   · simp only [hi, ↓reduceIte]
-    congr 1
-    funext j
+    congr 1 with j : 1
     simpa only [Encryption.game, Encryption.gameOn, ↓reduceIte,
       linkAdversaryAt, ProbComp.eval_bind, PMF.monad_pure_eq_pure] using
       E.eval_linkAdversaryAt (fun _ => depth n - i.val - 1) (fun _ => i.val)

@@ -722,8 +722,7 @@ private theorem term_le {c a b d D z : ℕ} (hd : d ≤ D) :
   calc c * (a * z + b) ^ d ≤ c * ((a + b) * (z + 1)) ^ d :=
         Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by nlinarith) _)
     _ = c * (a + b) ^ d * (z + 1) ^ d := by rw [Nat.mul_pow]; ring
-    _ ≤ c * (a + b) ^ d * (z + 1) ^ D :=
-        Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (Nat.succ_pos _) hd)
+    _ ≤ c * (a + b) ^ d * (z + 1) ^ D := by gcongr
 
 /-- **The resources of direct summation over described networks.** There is `K` such that, for
 an input `(q, d)` of length `n` with `m` edges and `k` vertices, if the evaluator takes time at

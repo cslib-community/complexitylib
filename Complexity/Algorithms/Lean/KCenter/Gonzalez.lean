@@ -190,10 +190,7 @@ theorem nodup_gonzalez [Zero α] (hself : ∀ x, d x x = 0) (hpos : ∀ x y, x �
   induction k with
   | zero => exact List.nodup_nil
   | succ k ih =>
-    have hP : P ≠ [] := by
-      rintro rfl
-      rw [List.toFinset_nil, Finset.card_empty] at hk
-      omega
+    have hP : P ≠ [] := by grind [List.toFinset_nil, Finset.card_empty]
     rw [gonzalez_succ]
     unfold farthestStep
     match hm : P.argmax (centerDist d (gonzalez d P k).toFinset) with

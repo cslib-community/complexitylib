@@ -160,8 +160,7 @@ theorem runWith_schnorrROMSign (n : ℕ) (x : ZMod (F.order d)) (u : F.Carrier d
             (Prod.map (encPair encBits encBits) id) := by
   unfold schnorrROMSign
   rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample, PMF.bind_map, PMF.bind_map]
-  congr 1
-  funext r
+  congr 1 with r : 1
   have hnonce : (r % F.order d).bits = F.encScalar d (r : ZMod (F.order d)) := by
     simp only [encScalar, Function.Embedding.coeFn_mk, encNat_apply, ZMod.val_natCast]
   simp only [Function.comp_def, hnonce, schnorrCommitBits_encScalar,
@@ -169,8 +168,7 @@ theorem runWith_schnorrROMSign (n : ℕ) (x : ZMod (F.order d)) (u : F.Carrier d
     ProbOracleComp.runWith_pure, PMF.bind_map,
     PMF.map_comp, schnorrWordROMScheme_sign,
     OracleComp.runWith_map, OracleComp.runWith_query]
-  congr 1
-  funext answer
+  congr 1 with answer : 1
   rcases answer with ⟨c, st⟩
   have hc : (List.ofFn c).take m = List.ofFn c := List.take_of_length_le (by simp)
   simp [hc, schnorrSignCoins_encScalar, Prod.map_apply]
@@ -188,8 +186,7 @@ theorem runWith_schnorrROMVerify (u : F.Carrier d) (msg sig : List Bool) (state 
     ProbOracleComp.runWith_query, ProbOracleComp.runWith_pure,
     PMF.bind_map, PMF.map_comp,
     schnorrWordROMScheme_verify, OracleComp.runWith_map, OracleComp.runWith_query]
-  congr 1
-  funext answer
+  congr 1 with answer : 1
   rcases answer with ⟨c, st⟩
   have hc : (List.ofFn c).take m = List.ofFn c := List.take_of_length_le (by simp)
   simp [hc, Prod.map_apply]
