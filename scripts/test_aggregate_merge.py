@@ -162,6 +162,17 @@ class AggregateMergeTests(unittest.TestCase):
         self.assertEqual(report["status"], "limitation", report)
         self.assertEqual(report["default_conflicts"], ["Complexity.lean"])
 
+    def test_tracked_leanagg_default_merge_is_the_neutral_one(self):
+        # No driver is configured in the temporary repository, so `main`'s tracked attribute
+        # gives the neutral text merge, and the case that union verifies is only a limitation.
+        self.write(".gitattributes", "Complexity.lean merge=leanagg\n")
+        self.base = self.commit("leanagg base")
+        prefix, source = self.additions()
+        _, report = self.report(prefix, source)
+        self.assertEqual(report["status"], "limitation", report)
+        self.assertEqual(report["default_conflicts"], ["Complexity.lean"])
+        self.assertEqual(report["default_merge_tree"], report["neutral_tree"])
+
     def test_another_conflicted_file_is_rejected_even_with_union_for_it(self):
         self.write(".gitattributes", "Complexity.lean merge=union\n*.md merge=union\n")
         self.write("shared.md", "base\n")

@@ -9,14 +9,17 @@ commit that NEW is based on, using `git merge-tree`. That replay is what the mer
 queue would build from the approved head on that `main`. NEW passes when its tree equals the replay
 exactly: every path, mode and byte. The only exceptions are the `mk_all` aggregates (`AGGREGATES`).
 Each one in NEW passes exactly when it is what `lake exe mk_all` writes for NEW's own tree: the
-sorted imports of every module below the library root that NEW's `lakefile.toml` names, in the
-style (`module` with `public import`, or plain `import`) of the replay's version. The replay's
-aggregate is not a reference, since a merge can keep deleted imports or misorder added ones, and
-CI's `lake exe mk_all --check` pins the content anyway. When that content cannot be derived (an
-unsupported Lake layout, a symbolic link, or a module path that `mk_all` would escape), the
-aggregate is compared with the replay like any other file, and the result says so. A replay
-conflict on any other file, and any other difference, is reported, so moving, reordering or
-editing the PR's lines during a conflict resolution never passes.
+sorted imports of every module below the library root that NEW's `lakefile.toml` names. The style
+(`module` with `public import`, or plain `import`) is taken three-way from the first lines of the
+aggregate in the approved change's base, the new base and APPROVED: the style they all share, or
+APPROVED's when the approved change switches it (which the result reports), and otherwise the
+replay's. The replay's aggregate is not a reference, since a merge can keep deleted imports or
+misorder added ones, and CI's `lake exe mk_all --check` pins the content anyway. When that content
+cannot be derived (an unsupported Lake layout, a symbolic link, a module path that `mk_all` would
+escape, or a style left to a replay that conflicted on its first line), the aggregate is compared
+with the replay like any other file, and the result says so. A replay conflict on any other file,
+and any other difference, is reported, so moving, reordering or editing the PR's lines during a
+conflict resolution never passes.
 
 Bases: NEW is based on its merge base with `--base` (default `origin/main`; run `git fetch origin`
 first, since a stale ref only produces a false "differs"). APPROVED is based on its merge base
@@ -280,28 +283,56 @@ def canonical_aggregate(entries: dict[str, str], source: str, directory: str,
     return (MODULE_PREAMBLE if module_style else b"") + imports + b"\n"
 
 
-def module_style(content: bytes) -> bool:
-    """Whether an aggregate is module-style, which `mk_all` infers from the file's header."""
+def module_style(content: bytes) -> bool | None:
+    """Whether an aggregate is module-style, which `mk_all` infers from the file's header, or
+    `None` when its first line is a conflict marker."""
     first = content.split(b"\n", 1)[0]
     if CONFLICT_MARKER.match(first):
-        raise Underivable("the replay conflicted in its header")
+        return None
     return re.match(rb"module(\s|$)", first) is not None
 
 
-def check_aggregates(root: Path, replayed: str, new: str
-                     ) -> tuple[list[str], dict[str, list[str]], dict[str, str]]:
+def aggregate_style(versions: tuple[bytes | None, bytes | None, bytes | None],
+                    replayed: bytes) -> tuple[bool, bool]:
+    """Whether `mk_all` should write an aggregate in module style, and whether the approved change
+    switches its style.
+
+    `versions` are the aggregate in the approved change's base, the new base and the approved head
+    (`None` where it is missing), and the style is taken three-way from their first lines. When
+    every version present agrees, that is the style. When the approved change switches it, the
+    approved head's style wins. Otherwise the style is the replay's own, which is not known when
+    the replay conflicted on its first line. A restack cannot switch the style in any case."""
+    styles = [None if version is None else module_style(version) for version in versions]
+    present = [style for style, version in zip(styles, versions) if version is not None]
+    if None not in present and len(set(present)) == 1:
+        return present[0], False
+    base, _, approved = styles
+    if base is not None and approved is not None and base != approved:
+        return approved, True
+    style = module_style(replayed)
+    if style is None:
+        raise Underivable("the replay conflicted in its header, and its base, new base and "
+                          "approved versions do not settle the module style")
+    return style, False
+
+
+def check_aggregates(root: Path, sides: tuple[str, str, str], replayed: str, new: str
+                     ) -> tuple[list[str], dict[str, list[str]], dict[str, str], dict[str, str]]:
     """Sort the aggregates in the new head into those that are exactly what `mk_all` writes for its
     tree, those that are not (with a diff from that content), and those whose content cannot be
-    derived (with the reason). The style is the replay's, so a restack cannot switch it."""
+    derived (with the reason). Also name the style of each aggregate whose style the approved
+    change switches. `sides` are the approved change's base, the new base and the approved head,
+    from which `aggregate_style` takes the style, so a restack cannot switch it."""
     entries = tree_entries(root, new)
     present = [path for path in AGGREGATES if path in entries]
     canonical: list[str] = []
     wrong: dict[str, list[str]] = {}
     underivable: dict[str, str] = {}
+    switched: dict[str, str] = {}
     try:
         roots = library_roots(root, new, entries)
     except Underivable as error:
-        return canonical, wrong, {path: str(error) for path in present}
+        return canonical, wrong, {path: str(error) for path in present}, switched
     for path in present:
         replayed_content = blob(root, replayed, path)
         try:
@@ -309,10 +340,14 @@ def check_aggregates(root: Path, replayed: str, new: str
                 raise Underivable("`lakefile.toml` names no library root that `mk_all` writes here")
             if replayed_content is None:
                 raise Underivable("the replay has no such file to take the module style from")
-            expected = canonical_aggregate(entries, *roots[path], module_style(replayed_content))
+            base, onto, approved = (blob(root, side, path) for side in sides)
+            style, switch = aggregate_style((base, onto, approved), replayed_content)
+            expected = canonical_aggregate(entries, *roots[path], style)
         except Underivable as error:
             underivable[path] = str(error)
             continue
+        if switch:
+            switched[path] = "module" if style else "plain"
         actual = blob(root, new, path)
         if actual == expected and entries[path] == "100644":
             canonical.append(path)
@@ -322,7 +357,7 @@ def check_aggregates(root: Path, replayed: str, new: str
                                     f"mk_all/{path}", f"new/{path}", lineterm="", n=1)
         mode = [] if entries[path] == "100644" else [f"new mode {entries[path]}, not 100644"]
         wrong[path] = excerpt(mode + list(diff))
-    return canonical, wrong, underivable
+    return canonical, wrong, underivable, switched
 
 
 def excerpt(lines: list[str]) -> list[str]:
@@ -367,7 +402,8 @@ def main(argv: list[str] | None = None) -> int:
         differing = [] if replayed == new_tree else changed_paths(root, replayed, new_tree)
         if replayed != new_tree and not differing:
             raise GitError("the trees differ but no differing path was found")
-        canonical, wrong, underivable = check_aggregates(root, replayed, new)
+        canonical, wrong, underivable, switched = check_aggregates(
+            root, (approved_base, new_base, approved), replayed, new)
     except GitError as error:
         print(f"check_restack: {error}", file=sys.stderr)
         return 2
@@ -384,6 +420,8 @@ def main(argv: list[str] | None = None) -> int:
                 f"replay: {', '.join(accepted)}" if accepted else "")
         note += "".join(f"; {path} compared with the replay only, since its `mk_all` content "
                         f"could not be derived: {reason}" for path, reason in underivable.items())
+        note += "".join(f"; the approved change switches {path} to {style} style"
+                        for path, style in switched.items())
         print(f"Restack check: identical to the approved change: {heads}{note}. "
               f"Command: python3 scripts/check_restack.py {approved} {new}"
               + (f" --approved-base {args.approved_base}" if args.approved_base else "")
@@ -394,6 +432,8 @@ def main(argv: list[str] | None = None) -> int:
         if path in wrong:
             reason = ("not what `lake exe mk_all` writes for the new head's tree; "
                       "regenerate it with `lake exe mk_all`")
+            if path in switched:
+                reason += f" in {switched[path]} style, which the approved change switches it to"
         else:
             reason = ("the replay conflicted here; review how it was resolved" if path in conflicts
                       else "the new head differs from the replayed approved change")

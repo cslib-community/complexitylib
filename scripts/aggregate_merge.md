@@ -39,6 +39,12 @@ deleted imports. A conflict or a noncanonical result reports a limitation: the s
 refresh the source branch through the usual reviewed process.
 The tool never proposes an alternative queue API or enables a merge driver.
 
+As a result, a prefix that tracks `merge=leanagg`, as `main` does, can never be `verified`: its
+ordinary merge is the same text merge as the neutral one, which the verifier requires to conflict
+on `Complexity.lean`, so the report is a `limitation` at best. Only a prefix that still tracks
+`merge=union` can reach `verified`. For restacks, `scripts/check_restack.py` checks the aggregates
+canonically (see [AGENTS.md](../AGENTS.md#restacks)).
+
 Git operations use a temporary bare repository/index/object directory populated by an ordinary
 local `file://` fetch. It has its own common directory, no alternates or shallow boundary, and
 no object inode shared with the source. These properties are checked. Fetching complete history
