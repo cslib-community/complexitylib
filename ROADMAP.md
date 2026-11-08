@@ -1758,6 +1758,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   linear-time 2-SAT algorithm as a client of the `TwoSAT` problem module; the Bellman–Ford
   predecessor tree; and bridges from Bellman–Ford to Dijkstra's distances and to the matrix
   shortest-path model.
+- **Minimum-cost arborescences** ([#3526](https://github.com/cslib-community/complexitylib/issues/3526)):
+  remaining after the Chu–Liu/Edmonds contraction algorithm with its correctness theorem, for
+  costs in any linearly ordered additive commutative monoid (`Algorithms/Lean/Arborescence`,
+  [#3491](https://github.com/cslib-community/complexitylib/issues/3491)): a charged `TimeM`
+  version (`O(n m)`), Tarjan's `O(m log n)` and the Gabow–Galil–Spencer–Tarjan
+  `O(m + n log n)` implementations, Edmonds' optimum branchings, and the branching polytope.
 - **Matroids:** Edmonds' matroid intersection theorem, the exchange-graph augmenting-path step,
   König's theorem via partition matroids and a verified executable solver with exact
   independence-oracle query counts are in `Algorithms/Lean/Matroid/Intersection` and

@@ -1084,6 +1084,26 @@ Import `Complexity.Algorithms.Lean.SteinerTree.Metric` ([source](../../Complexit
 
 The [examples](../../ComplexityTests/SteinerTree.lean) take a star metric with centre `0` at distance `1` from three terminals that are `2` apart. Kruskal's tree on the terminals costs `4`, while the optimum through the Steiner point is exactly `3`, so the sharp bound `3 · 4 = 2 · 2 · 3` is attained. Two counterexamples show that the hypotheses are needed. Without the triangle inequality the tree costs `20` against `3`. With a repeated terminal (constant cost `5`, terminals `[1, 1]`) it costs `5` against `0`. Here the diagonal cost `δ 1 1 = 5` is positive. On the star graph `K_{1,3}`, every Steiner subgraph for the leaves contains the whole star, and `kmbEdges` returns exactly the star for every choice of walks. On a triangle with one edge of weight `10`, the heuristic never uses that edge to join its endpoints. Remaining work is listed in the [ROADMAP](../../ROADMAP.md#combinatorial-optimization): the leaf bound, Robins–Zelikovsky and Byrka et al., NP-hardness, and a running-time certificate.
 
+## Minimum-cost arborescences: Chu–Liu/Edmonds
+
+Import `Complexity.Algorithms.Lean.Arborescence.ChuLiuEdmonds` ([source](../../Complexity/Algorithms/Lean/Arborescence/ChuLiuEdmonds.lean)). The declarations live in `Cslib.Algorithms.Lean.Arborescence`. The input is a finite digraph `G : Digraph V` with decidable arcs on a `FinEnum` vertex type, a root `r`, and arc costs `c : V → V → β` in a linearly ordered additive commutative monoid such as `ℕ`, `ℤ` or `ℚ`; negative costs are allowed. A spanning in-arborescence (arcs directed towards the root) is represented by its parent function `p`. `IsInArborescenceParent G.Adj r p` says that `p r = r`, that `v → p v` is an arc of `G` for every `v ≠ r`, and that iterating `p` reaches `r` from every vertex. Its cost is `parentCost c r p = ∑ v ≠ r, c v (p v)`. `isInArborescenceParent_iff` and `exists_parentDigraph_eq` identify these parent functions with the spanning in-arborescences `T ≤ G` of `Digraph.IsInArborescence`, the notion counted by the directed matrix-tree theorem.
+
+`edmonds G c r` is the cycle-contraction algorithm of [Chu and Liu][chuliu65] and [Edmonds][edmonds67b]. Every non-root vertex selects a cheapest arc to another vertex. If the selection has no cycle, it is returned. Otherwise a cycle `C` of the selection is contracted onto one of its vertices, keeping the vertex type: arcs into `C` become arcs into that vertex, at the cost of the cheapest arc into `C`. The cost of leaving `C` towards `w` is the cheapest `c x w` plus the selected arcs of the other vertices of `C` (`exitCost`), with no subtraction, so `ℕ` costs work. The contracted instance is solved recursively and expanded with `expandParent`. The results are:
+
+- `edmonds_spec`: if `edmonds G c r = some p`, then `p` is a spanning in-arborescence of `G` rooted at `r` and `parentCost c r p ≤ parentCost c r t` for every other one `t`; if it is `none`, there is none.
+- `edmonds_eq_none_iff`: the algorithm fails exactly when `G` has no spanning in-arborescence rooted at `r`.
+- `edmonds_optimal`: the same optimality over digraphs `T ≤ G` with `T.IsInArborescence r`, measured by the arc cost `arcCost T c`.
+- `edmondsOut_spec`: `edmondsOut` handles out-arborescences (arcs `p v → v` directed away from the root, Edmonds' orientation) by reversing arcs and costs.
+
+The proof has two halves. `expandParent_spec` shows that an arborescence of the contracted instance expands to one of the original instance of exactly the same cost. `exists_contract_le` is the exchange argument: every arborescence of the original instance contracts to one of at most the same cost. In it, the vertex of `C` closest to the root keeps its arc out of `C`. Each contraction strictly shrinks the set `liveVertices`, so `|V|` rounds of recursion suffice. The [examples](../../ComplexityTests/ChuLiuEdmonds.lean) run the algorithm by `decide` on a four-vertex digraph whose cheapest arcs contain a 2-cycle. They also check the same instance with negative `ℤ` costs and in the out-arborescence orientation, a digraph with no arborescence, and a single vertex.
+
+Limitations:
+
+- No running time is charged. The algorithm recomputes every cheapest arc after each contraction. Neither Tarjan's `O(m log n)` implementation nor the Gabow–Galil–Spencer–Tarjan `O(m + n log n)` implementation is formalized.
+- Optimum branchings (maximum-weight forests, Edmonds' Theorem 1) and the branching polytope (his Theorem 2) are not formalized.
+
+[#3526](https://github.com/cslib-community/complexitylib/issues/3526) tracks the remaining work.
+
 ## String algorithms
 
 String algorithms are written in `Cslib.Algorithms.Lean.TimeM` and charge one tick per character comparison. Array reads and writes, index arithmetic, allocation and list/array conversions are free. Exact matching against a single pattern is Knuth–Morris–Pratt ([source](../../Complexity/Algorithms/Lean/KMP/Search.lean)). It makes at most `2 * (|p| - 1) + 2 * |t|` comparisons (`kmpSearchM_time_le`), and `mem_kmpMatchesList_iff` characterizes its output.
@@ -1140,10 +1160,12 @@ The numeric values above are transcriptions of checked source statements, not re
 [bfprt73]: ../sources.md#bfprt73
 [ccpv11]: ../sources.md#ccpv11
 [christofides76]: ../sources.md#christofides76
+[chuliu65]: ../sources.md#chuliu65
 [clrs09]: ../sources.md#clrs09
 [coverthomas06]: ../sources.md#coverthomas06
 [dinic70]: ../sources.md#dinic70
 [edmonds65]: ../sources.md#edmonds65
+[edmonds67b]: ../sources.md#edmonds67b
 [fks84]: ../sources.md#fks84
 [floyd62]: ../sources.md#floyd62
 [fnw78]: ../sources.md#fnw78
