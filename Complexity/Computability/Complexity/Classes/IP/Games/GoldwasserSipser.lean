@@ -10,8 +10,10 @@ module
 public import Complexity.Init
 public import Complexity.Computability.Complexity.Classes.IP.Games.Emulation
 public import Complexity.Computability.Complexity.Classes.IP.Games.Repetition
+public import Complexity.Computability.Complexity.Classes.NP.Advice
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin.RoundCollapse
 
+import Complexity.Computability.Complexity.Classes.ArthurMerlin.Advice
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -24,10 +26,10 @@ import Complexity.Foundations.Data.Nat.Asymptotics
 # Private coins versus public coins: `IP[k] ⊆ AM[k + 2]`
 
 The theorem of [Goldwasser and Sipser][GoldwasserSipser1986] that private coins can be replaced
-by public coins with two extra moves, [Arora and Barak][AroraBarak09] (Theorem 8.8 of the January
-2007 draft). A private-coin game verifier of `IPGameClass enc π` becomes a public-coin game
-verifier of `AMGameClass enc (Emulation.pattern (π ++ [.verifier]))`: every verifier move
-becomes an Arthur move and a Merlin move, and the coins are revealed by a last verifier move.
+by public coins with two extra moves, [Arora and Barak, Theorem 8.8][AroraBarak07]. A private-coin
+game verifier of `IPGameClass enc π` becomes a public-coin game verifier of
+`AMGameClass enc (Emulation.pattern (π ++ [.verifier]))`: every verifier move becomes an Arthur
+move and a Merlin move, and the coins are revealed by a last verifier move.
 
 The proof applies the emulation of `Complexity.Computability.Complexity.Classes.IP.Games.Emulation`
 to the count of accepted coins:
@@ -67,6 +69,7 @@ an odd `k`; there the bound `k + 2` comes from round collapse.
 * `Cslib.Complexity.IPGameClass_subset_AMGameClass`: **private coins versus public coins**.
 * `Cslib.Complexity.IPk_subset_AMk`: `IP[k] ⊆ AM[k + 2]`.
 * `Cslib.Complexity.IPk_eq_AM`: `IP[k] = AM` for `k ≥ 2`.
+* `Cslib.Complexity.IPGameClass_subset_NPPoly`: private-coin games are in `NP/poly`.
 
 ## References
 
@@ -74,7 +77,8 @@ an odd `k`; there the bound `k + 2` comes from round collapse.
   complexity classes*][BabaiMoran1988]
 * [S. Goldwasser, M. Sipser, *Private coins versus public coins in interactive proof
   systems*][GoldwasserSipser1986]
-* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
+* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, web draft of January
+  2007][AroraBarak07]
 -/
 
 @[expose] public section
@@ -325,8 +329,9 @@ theorem countFrom_revealPayoff_eq_countAt (enc : α ↪ List Bool) (G : List (IP
 `ρ(n)` coins, where `n` is the length of the encoded instance: it runs
 `Cslib.Complexity.Emulation.check` with `B(n)` bits of claims, padding `Z(n)`, the default
 threshold and the initial claim `ρ(n) - T(n)`, on the shape `G` followed by a verifier move that
-reveals the coins. With a yes/no gap `2 ^ T(n)` the initial claim is `log₂` of the count on a
-member, up to a factor `3 ^ T(n) / 4 ^ T(n)`. -/
+reveals the coins. With `T(n)` parallel copies of a verifier accepting two thirds of the coins on
+a member, the initial claim `κ` satisfies the one-sided bound `2 ^ κ ≤ (3 / 4) ^ T(n) N` for the
+count `N`. -/
 def amVerifier (enc : α ↪ List Bool) (G : List (IPMove × Polynomial ℕ)) (ρ B Z T : Polynomial ℕ)
     (msg : α × List Bool × ℕ × List Bool → List Bool) (dec : α × List Bool × List Bool → Bool)
     (x : α × List Bool) : Bool :=
@@ -426,7 +431,7 @@ private theorem eventually_mul_pow_mul_two_pow_le (D d : ℕ) :
     _ ≤ 3 ^ r := h89'
 
 /-- **Private coins versus public coins** [Goldwasser and Sipser][GoldwasserSipser1986],
-[Arora and Barak][AroraBarak09] (Theorem 8.8 of the January 2007 draft): a problem with a
+[Arora and Barak, Theorem 8.8][AroraBarak07]: a problem with a
 polynomial-time private-coin game verifier of pattern `π` has a polynomial-time public-coin game
 verifier in which every verifier move becomes an Arthur move followed by a Merlin move, followed
 by one more Arthur move and Merlin move. -/
@@ -532,7 +537,7 @@ theorem IPGameClass_subset_AM {enc : α ↪ List Bool} (π : List IPMove) :
   (IPGameClass_subset_AMGameClass π).trans (AMGameClass_subset_AM _)
 
 /-- **`IP[k] ⊆ AM[k + 2]`** [Goldwasser and Sipser][GoldwasserSipser1986], [Arora and
-Barak][AroraBarak09] (Theorem 8.8 of the January 2007 draft), for every constant `k`. The proof
+Barak, Theorem 8.8][AroraBarak07], for every constant `k`. The proof
 goes through round collapse [Babai and Moran][BabaiMoran1988]: with adjacent Merlin moves merged,
 the pattern of the emulation has `k + 2` moves for an even `k` and `k + 3` moves for an odd `k`. -/
 theorem IPk_subset_AMk {enc : α ↪ List Bool} (k : ℕ) : IPk enc k ⊆ AMk enc (k + 2) := by
@@ -543,5 +548,12 @@ theorem IPk_subset_AMk {enc : α ↪ List Bool} (k : ℕ) : IPk enc k ⊆ AMk en
 [Babai and Moran][BabaiMoran1988]. -/
 theorem IPk_eq_AM {enc : α ↪ List Bool} {k : ℕ} (hk : 2 ≤ k) : IPk enc k = AM enc :=
   le_antisymm (IPGameClass_subset_AM _) (by rw [← AMk_eq_AM hk]; exact AMk_subset_IPk k)
+
+/-- **Private-coin games are in `NP/poly`**: a problem with a polynomial-time private-coin game
+verifier of any fixed pattern is in `AM` (`Cslib.Complexity.IPGameClass_subset_AM`), which is
+contained in `NP/poly` (`Cslib.Complexity.AM_subset_NPPoly`). In particular `IP[k] ⊆ NP/poly`. -/
+theorem IPGameClass_subset_NPPoly {enc : α ↪ List Bool} (π : List IPMove) :
+    IPGameClass enc π ⊆ NPPoly enc :=
+  (IPGameClass_subset_AM π).trans AM_subset_NPPoly
 
 end Cslib.Complexity

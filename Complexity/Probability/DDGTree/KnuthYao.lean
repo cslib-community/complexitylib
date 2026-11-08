@@ -9,6 +9,7 @@ module
 
 public import Complexity.Probability.DDGTree
 public import Complexity.Probability.Entropy
+import Complexity.Probability.PMF.ToReal
 import Mathlib.Analysis.SpecificLimits.Basic
 
 /-!
@@ -266,11 +267,6 @@ noncomputable def knuthYaoCounts (p : PMF α) (k : ℕ) (a : α) : ℕ :=
 noncomputable def knuthYao (p : PMF α) : DDGTree α := ofCounts (knuthYaoCounts p)
 
 omit [Fintype α] in
-private theorem toReal_mem_Icc (p : PMF α) (a : α) : (p a).toReal ∈ Set.Icc (0 : ℝ) 1 :=
-  ⟨ENNReal.toReal_nonneg,
-    ENNReal.toReal_le_of_le_ofReal zero_le_one (by simpa using p.coe_le_one a)⟩
-
-omit [Fintype α] in
 private theorem knuthYaoCounts_mono (p : PMF α) (k : ℕ) (a : α) :
     2 * knuthYaoCounts p k a ≤ knuthYaoCounts p (k + 1) a := by
   unfold knuthYaoCounts
@@ -340,7 +336,7 @@ theorem entropy_le_sum_knuthYaoCost (p : PMF α) :
     PMF.entropy p ≤ ∑ a, knuthYaoCost (p a).toReal := by
   rw [PMF.entropy_eq_sum_surprisal]
   exact Finset.sum_le_sum fun a _ => negMulLogb_le_knuthYaoCost ENNReal.toReal_nonneg
-    (toReal_mem_Icc p a).2
+    (PMF.toReal_apply_le_one p a)
 
 theorem sum_knuthYaoCost_lt_entropy_add_two (p : PMF α) :
     ∑ a, knuthYaoCost (p a).toReal < PMF.entropy p + 2 := by
@@ -349,10 +345,10 @@ theorem sum_knuthYaoCost_lt_entropy_add_two (p : PMF α) :
   have h2 : ∑ a, 2 * (p a).toReal = 2 := by rw [← Finset.mul_sum, PMF.sum_toReal, mul_one]
   rw [← h2, ← Finset.sum_add_distrib]
   refine Finset.sum_lt_sum
-    (fun a _ => knuthYaoCost_le_negMulLogb_add ENNReal.toReal_nonneg (toReal_mem_Icc p a).2)
+    (fun a _ => knuthYaoCost_le_negMulLogb_add ENNReal.toReal_nonneg (PMF.toReal_apply_le_one p a))
     ⟨a₀, Finset.mem_univ _, knuthYaoCost_lt_negMulLogb_add
       (ENNReal.toReal_pos ((p.mem_support_iff a₀).mp ha₀) (p.apply_ne_top a₀))
-      (toReal_mem_Icc p a₀).2⟩
+      (PMF.toReal_apply_le_one p a₀)⟩
 
 /-- Stochastic dominance: for every tree generating `p` and every `n`, the Knuth–Yao tree is at
 least as likely to have stopped within `n` flips. -/
@@ -427,10 +423,10 @@ theorem expectedFlips_knuthYao_eq_entropy_iff (p : PMF α) :
     (PMF.entropy_nonneg p), PMF.entropy_eq_sum_surprisal]
   simp only [PMF.surprisal]
   rw [eq_comm, Finset.sum_eq_sum_iff_of_le fun a _ =>
-      negMulLogb_le_knuthYaoCost ENNReal.toReal_nonneg (toReal_mem_Icc p a).2]
+      negMulLogb_le_knuthYaoCost ENNReal.toReal_nonneg (PMF.toReal_apply_le_one p a)]
   simp only [Finset.mem_univ, true_implies]
   refine forall_congr' fun a => ?_
-  rw [eq_comm, knuthYaoCost_eq_negMulLogb_iff ENNReal.toReal_nonneg (toReal_mem_Icc p a).2,
+  rw [eq_comm, knuthYaoCost_eq_negMulLogb_iff ENNReal.toReal_nonneg (PMF.toReal_apply_le_one p a),
     PMF.mem_support_iff]
   constructor
   · rintro (h | ⟨m, hm⟩) hpa

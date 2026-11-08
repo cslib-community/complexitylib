@@ -53,6 +53,8 @@ scopes normalized to `List.replicate Q 0`; auxiliary tables cap at `min D_cap (r
   `Cslib.LinearAlgebra.ReplacementDesignData.lookupReplacementRow`,
   `Cslib.LinearAlgebra.constructedReplacementDesign`,
   `Cslib.LinearAlgebra.ReplacementDesignData.Refines`.
+* `Cslib.LinearAlgebra.encVarSets`: the encoding of lists of variable sets, such as scopes, with
+  binary entries. Schedule words use `Cslib.LinearAlgebra.encSchedules` from `CopyPlacement`.
 
 ## Main results
 
@@ -525,14 +527,18 @@ def ReplacementDesignData.equivTuple : ReplacementDesignData ≃ ReplacementDesi
   left_inv d := by cases d; rfl
   right_inv _ := rfl
 
+/-- Lists of variable sets with indices in binary, such as factor scopes or the groups of a
+partition: the concatenation of the framed sets, each set the concatenation of its framed variable
+indices, each encoded by `encNat`. This is the layout `encList (encList encNat)` of
+`encSchedules` and `Cslib.Complexity.encSparseEquation`; the name records the role. -/
+abbrev encVarSets : List (List ℕ) ↪ List Bool :=
+  encList (encList encNat)
+
 /-- Standard multi-tape Turing machine encoding of `ReplacementDesignTuple`. -/
 def encReplacementDesignTuple : ReplacementDesignTuple ↪ List Bool :=
-  encPair (encPair (encList (encList (encList encNat)))
-      (encPair (encList (encList encNat)) (encList (encPair encNat encNat))))
-    (encPair (encPair encNat (encPair (encList (encPair encNat encNat))
-        (encList (encList encIntBin))))
-      (encPair (encList (encList (encList (encList encIntBin))))
-        (encPair encIntBin (encList (encList (encList encIntBin))))))
+  encPair (encPair (encList encVarSets) (encPair encSchedules (encList (encPair encNat encNat))))
+    (encPair (encPair encNat (encPair encCopyPlacements encIntTable))
+      (encPair (encList (encList encIntTable)) (encPair encIntBin (encList encIntTable))))
 
 /-- Standard multi-tape Turing machine encoding of `ReplacementDesignData`. -/
 def encReplacementDesignData : ReplacementDesignData ↪ List Bool :=
@@ -576,17 +582,17 @@ private theorem rdb_two_mul_unary :
 /-- Compositional plain polynomial-time certificate for `withNeutralScopesList`. -/
 @[fun_prop] theorem computableInPolyTime_withNeutralScopesListWithInput
     {scopes : Input → List (List ℕ)} {n_free : Input → ℕ}
-    (hscopes : ComputableInPolyTime scopes encIn (encList (encList encNat)))
+    (hscopes : ComputableInPolyTime scopes encIn encVarSets)
     (hn : ComputableInPolyTime n_free encIn encUnary) :
     ComputableInPolyTime (fun x => withNeutralScopesList (scopes x) (n_free x))
-      encIn (encList (encList encNat)) := by
+      encIn encVarSets := by
   exact listAppend' hscopes
     (mapWithInput (range.comp hn) (cons' (unary_to_binary.comp (snd encIn encUnary)) (const [])))
 
 /-- `withNeutralScopesList` is computable in polynomial time with `n_free` in `encUnary`. -/
 @[fun_prop] theorem computableInPolyTime_withNeutralScopesList :
     ComputableInPolyTime (fun p : List (List ℕ) × ℕ => withNeutralScopesList p.1 p.2)
-      (encPair (encList (encList encNat)) encUnary) (encList (encList encNat)) := by
+      (encPair encVarSets encUnary) encVarSets := by
   exact computableInPolyTime_withNeutralScopesListWithInput (fst _ _) (snd _ _)
 
 private theorem rdb_canonicalScopeVars {n_free : Input → ℕ} {s : Input → List ℕ}
@@ -604,7 +610,7 @@ private theorem rdb_canonicalScopeVars {n_free : Input → ℕ} {s : Input → L
 @[fun_prop] theorem computableInPolyTime_scopeIncidencesList
     {n_free : Input → ℕ} {scopes : Input → List (List ℕ)}
     (hn : ComputableInPolyTime n_free encIn encUnary)
-    (hscopes : ComputableInPolyTime scopes encIn (encList (encList encNat))) :
+    (hscopes : ComputableInPolyTime scopes encIn encVarSets) :
     ComputableInPolyTime (fun x => scopeIncidencesList (n_free x) (scopes x))
       encIn (encList (encPair encNat encNat)) := by
   exact flatMapWithInput (range.comp ((length_list (encList encNat)).comp hscopes)) <|
@@ -632,9 +638,9 @@ private theorem rdb_normalizeScheduleWord
     {n_free Q r : Input → ℕ} {schedVar : Input → List (List ℕ)}
     (hn : ComputableInPolyTime n_free encIn encUnary) (hQ : ComputableInPolyTime Q encIn encUnary)
     (hr : ComputableInPolyTime r encIn encNat)
-    (hsched : ComputableInPolyTime schedVar encIn (encList (encList encNat))) :
+    (hsched : ComputableInPolyTime schedVar encIn encSchedules) :
     ComputableInPolyTime (fun x => normalizeVarSchedules (n_free x) (Q x) (r x) (schedVar x))
-      encIn (encList (encList encNat)) := by
+      encIn encSchedules := by
   exact mapWithInput (range.comp hn) <|
     rdb_normalizeScheduleWord (hQ.comp (fst _ _)) (hr.comp (fst _ _))
       ((listGetD []).comp ((hsched.comp (fst encIn encUnary)).prod (snd encIn encUnary)))
@@ -643,11 +649,11 @@ private theorem rdb_normalizeScheduleWord
     {n_free Q r : Input → ℕ} {scopes schedScope : Input → List (List ℕ)}
     (hn : ComputableInPolyTime n_free encIn encUnary) (hQ : ComputableInPolyTime Q encIn encUnary)
     (hr : ComputableInPolyTime r encIn encNat)
-    (hscopes : ComputableInPolyTime scopes encIn (encList (encList encNat)))
-    (hsched : ComputableInPolyTime schedScope encIn (encList (encList encNat))) :
+    (hscopes : ComputableInPolyTime scopes encIn encVarSets)
+    (hsched : ComputableInPolyTime schedScope encIn encSchedules) :
     ComputableInPolyTime
       (fun x => normalizeScopeSchedules (n_free x) (Q x) (r x) (scopes x) (schedScope x))
-      encIn (encList (encList encNat)) := by
+      encIn encSchedules := by
   have hempty := (listIsEmpty (encA := encNat)).comp
     (rdb_canonicalScopeVars (hn.comp (fst encIn encUnary))
       ((listGetD []).comp ((hscopes.comp (fst encIn encUnary)).prod (snd encIn encUnary))))
@@ -662,9 +668,9 @@ private theorem rdb_normalizeScheduleWord
     {n_free Q r : Input → ℕ} {scopes schedVar schedScope : Input → List (List ℕ)}
     (hn : ComputableInPolyTime n_free encIn encUnary) (hQ : ComputableInPolyTime Q encIn encUnary)
     (hr : ComputableInPolyTime r encIn encNat)
-    (hscopes : ComputableInPolyTime scopes encIn (encList (encList encNat)))
-    (hschedVar : ComputableInPolyTime schedVar encIn (encList (encList encNat)))
-    (hschedScope : ComputableInPolyTime schedScope encIn (encList (encList encNat))) :
+    (hscopes : ComputableInPolyTime scopes encIn encVarSets)
+    (hschedVar : ComputableInPolyTime schedVar encIn encSchedules)
+    (hschedScope : ComputableInPolyTime schedScope encIn encSchedules) :
     ComputableInPolyTime
       (fun x => incidenceLabelsList (n_free x) (Q x) (r x) (scopes x) (schedVar x) (schedScope x))
       encIn (encList encNat) := by
@@ -692,11 +698,11 @@ private theorem computableInPolyTime_equivTuple_symm :
 
 @[fun_prop] theorem computableInPolyTime_varGroups {d : Input → ReplacementDesignData}
     (hd : ComputableInPolyTime d encIn encReplacementDesignData) :
-    ComputableInPolyTime (fun x => (d x).varGroups) encIn (encList (encList (encList encNat))) := by
+    ComputableInPolyTime (fun x => (d x).varGroups) encIn (encList encVarSets) := by
   exact (computableInPolyTime_equivTuple.comp hd).fst'.fst'
 @[fun_prop] theorem computableInPolyTime_factorGroups {d : Input → ReplacementDesignData}
     (hd : ComputableInPolyTime d encIn encReplacementDesignData) :
-    ComputableInPolyTime (fun x => (d x).factorGroups) encIn (encList (encList encNat)) := by
+    ComputableInPolyTime (fun x => (d x).factorGroups) encIn encSchedules := by
   exact (computableInPolyTime_equivTuple.comp hd).fst'.snd'.fst'
 @[fun_prop] theorem computableInPolyTime_incidences {d : Input → ReplacementDesignData}
     (hd : ComputableInPolyTime d encIn encReplacementDesignData) :
@@ -708,18 +714,18 @@ private theorem computableInPolyTime_equivTuple_symm :
   exact (computableInPolyTime_equivTuple.comp hd).snd'.fst'.fst'
 @[fun_prop] theorem computableInPolyTime_placements {d : Input → ReplacementDesignData}
     (hd : ComputableInPolyTime d encIn encReplacementDesignData) :
-    ComputableInPolyTime (fun x => (d x).placements) encIn (encList (encPair encNat encNat)) := by
+    ComputableInPolyTime (fun x => (d x).placements) encIn encCopyPlacements := by
   exact (computableInPolyTime_equivTuple.comp hd).snd'.fst'.snd'.fst'
 @[fun_prop] theorem computableInPolyTime_measurementMatrix {d : Input → ReplacementDesignData}
     (hd : ComputableInPolyTime d encIn encReplacementDesignData) :
     ComputableInPolyTime (fun x => (d x).measurementMatrix)
-      encIn (encList (encList encIntBin)) := by
+      encIn encIntTable := by
   exact (computableInPolyTime_equivTuple.comp hd).snd'.fst'.snd'.snd'
 @[fun_prop] theorem computableInPolyTime_groupMeasurementMatrices
     {d : Input → ReplacementDesignData}
     (hd : ComputableInPolyTime d encIn encReplacementDesignData) :
     ComputableInPolyTime (fun x => (d x).groupMeasurementMatrices)
-      encIn (encList (encList (encList (encList encIntBin)))) := by
+      encIn (encList (encList encIntTable)) := by
   exact (computableInPolyTime_equivTuple.comp hd).snd'.snd'.fst'
 @[fun_prop] theorem computableInPolyTime_denom {d : Input → ReplacementDesignData}
     (hd : ComputableInPolyTime d encIn encReplacementDesignData) :
@@ -728,7 +734,7 @@ private theorem computableInPolyTime_equivTuple_symm :
 @[fun_prop] theorem computableInPolyTime_replacementRows {d : Input → ReplacementDesignData}
     (hd : ComputableInPolyTime d encIn encReplacementDesignData) :
     ComputableInPolyTime (fun x => (d x).replacementRows)
-      encIn (encList (encList (encList encIntBin))) := by
+      encIn (encList encIntTable) := by
   exact (computableInPolyTime_equivTuple.comp hd).snd'.snd'.snd'.snd'
 
 /-- **Lemma 4.7 polynomial-time certificate (`buildReplacementDesignData`)**:
@@ -740,9 +746,9 @@ private theorem computableInPolyTime_equivTuple_symm :
     (hD : ComputableInPolyTime D_cap encIn encUnary)
     (hQ : ComputableInPolyTime Q encIn encUnary) (hr : ComputableInPolyTime r encIn encUnary)
     (hA₀ : ComputableInPolyTime A₀ encIn encUnary) (hR : ComputableInPolyTime R encIn encUnary)
-    (hscopes : ComputableInPolyTime scopes encIn (encList (encList encNat)))
-    (hschedVar : ComputableInPolyTime schedVar encIn (encList (encList encNat)))
-    (hschedScope : ComputableInPolyTime schedScope encIn (encList (encList encNat))) :
+    (hscopes : ComputableInPolyTime scopes encIn encVarSets)
+    (hschedVar : ComputableInPolyTime schedVar encIn encSchedules)
+    (hschedScope : ComputableInPolyTime schedScope encIn encSchedules) :
     ComputableInPolyTime
       (fun x => buildReplacementDesignData (n_free x) (D_cap x) (Q x) (r x) (A₀ x) (R x)
         (scopes x) (schedVar x) (schedScope x)) encIn encReplacementDesignData := by
@@ -803,7 +809,7 @@ private theorem computableInPolyTime_equivTuple_symm :
     (hdata : ComputableInPolyTime data encIn encReplacementDesignData)
     (hf : ComputableInPolyTime f encIn encNat) (hv : ComputableInPolyTime v encIn encNat) :
     ComputableInPolyTime (fun x => (data x).lookupReplacementRow (f x) (v x))
-      encIn (encList (encList encIntBin)) := by
+      encIn encIntTable := by
   have hincs := computableInPolyTime_incidences hdata
   have hrows := computableInPolyTime_replacementRows hdata
   unfold ReplacementDesignData.lookupReplacementRow
