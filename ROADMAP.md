@@ -827,9 +827,12 @@ universe size, not supplied as unverified input tables. In dependency order:
   [connectivity](Complexity/Logics/FirstOrder/EhrenfeuchtFraisse/Connectivity.lean),
   [bipartiteness and acyclicity](Complexity/Logics/FirstOrder/EhrenfeuchtFraisse/GraphProperties.lean)
   by interpretation from finite linear orders, and on [Hanf and Gaifman locality](Complexity/Logics/FirstOrder/Locality/Hanf.lean)
+  with its [game-free proofs](Complexity/Logics/FirstOrder/Locality/GraphProperties.lean) that
+  connectivity, acyclicity and being a tree are not definable
   ([locality track](https://github.com/cslib-community/complexitylib/issues/3015)), add Gaifman's
-  normal form theorem, nondefinability applications of locality (Libkin's balanced binary trees
-  and transitive closure, then planarity, Hamiltonicity and `k`-colorability for `k ≥ 3`), games
+  normal form theorem, further nondefinability applications of locality (Libkin's balanced binary
+  trees and transitive closure, then planarity, Hamiltonicity and `k`-colorability for `k ≥ 3`),
+  games
   for vocabularies with constants, and pebble games with their finite-variable equivalence
   theorems; then
   counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Connect

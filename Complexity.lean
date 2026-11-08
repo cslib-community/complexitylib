@@ -4211,6 +4211,7 @@ public import Complexity.Foundations.Combinatorics.SetPartition.JoinMatrix
 public import Complexity.Foundations.Combinatorics.SharedSummaries
 public import Complexity.Foundations.Combinatorics.ShiftColoring
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Acyclic
+public import Complexity.Foundations.Combinatorics.SimpleGraph.BallPath
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Berge
 public import Complexity.Foundations.Combinatorics.SimpleGraph.CliqueCover
 public import Complexity.Foundations.Combinatorics.SimpleGraph.ColorRefinement
@@ -4592,6 +4593,7 @@ public import Complexity.Foundations.MeasureTheory.Integral.PiUpdate
 public import Complexity.Foundations.MeasureTheory.Measure.TotalVariation.Map
 public import Complexity.Foundations.MeasureTheory.Measure.TotalVariation.Mixture
 public import Complexity.Foundations.ModelTheory.Basic
+public import Complexity.Foundations.ModelTheory.Graph
 public import Complexity.Foundations.NumberTheory.AKS.Coefficients
 public import Complexity.Foundations.NumberTheory.AKS.Correctness
 public import Complexity.Foundations.NumberTheory.AKS.Criterion
@@ -4860,6 +4862,7 @@ public import Complexity.Logics.FirstOrder.Interpretation.Tagged
 public import Complexity.Logics.FirstOrder.Interpretation.Tuple
 public import Complexity.Logics.FirstOrder.Interpretation.Unit
 public import Complexity.Logics.FirstOrder.Locality.Gaifman
+public import Complexity.Logics.FirstOrder.Locality.GraphProperties
 public import Complexity.Logics.FirstOrder.Locality.Hanf
 public import Complexity.Logics.FirstOrder.Operator.Basic
 public import Complexity.Logics.FirstOrder.Operator.Definability
