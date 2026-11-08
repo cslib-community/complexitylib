@@ -9,6 +9,7 @@ module
 
 public import Complexity.Probability.IID
 public import Cslib.Probability.StatisticalDistance
+import Complexity.Probability.IID.Occurrence
 import Complexity.Probability.PMF
 import Complexity.Probability.StatisticalDistance.Event
 
@@ -33,7 +34,11 @@ distributions (`IsTester.bind_pi`): a tester for `P'` run on the mapped samples 
 A *`k`-sample closeness tester* (`IsClosenessTester`) receives `k` independent samples of each of
 two unknown distributions `p` and `q` (`acceptProb₂`). It must accept with probability at least
 `2 / 3` when `p = q` and with probability at most `1 / 3` when `p` and `q` are at statistical
-distance at least `ε` [Canonne][Canonne2020].
+distance at least `ε` [Canonne][Canonne2020]. A two-sample rule run on both sample tuples passed
+independently through a randomized map `F` accepts `p, q` with the probability that the rule
+accepts `p.bind F, q.bind F` (`acceptProb₂_bind_pi`). With `m + k` samples of each distribution,
+the acceptance probability averages, over the first `m` samples of each, the acceptance
+probability of the rule on the other `k` (`acceptProb₂_append`).
 
 ## Main definitions
 
@@ -54,6 +59,9 @@ distance at least `ε` [Canonne][Canonne2020].
   randomized map of the samples.
 * `Cslib.DistributionTesting.acceptProb₂_pure`, `acceptProb₂_pure_eq_one_sub`: deterministic
   two-sample rules.
+* `Cslib.DistributionTesting.acceptProb₂_bind_pi`: two-sample reductions along a randomized map.
+* `Cslib.DistributionTesting.acceptProb₂_append`: conditioning on the first samples of each
+  distribution.
 
 ## References
 
@@ -98,6 +106,19 @@ theorem acceptProb₂_eq {k : ℕ} (T : (Fin k → α) → (Fin k → α) → PM
     acceptProb₂ T p q = (((iid p k).bind fun x => (iid q k).bind fun y => T x y) true).toReal := by
   rw [acceptProb₂]
 
+/-- Two-sample acceptance probabilities are nonnegative. -/
+theorem acceptProb₂_nonneg {k : ℕ} (T : (Fin k → α) → (Fin k → α) → PMF Bool) (p q : PMF α) :
+    0 ≤ acceptProb₂ T p q := by
+  rw [acceptProb₂_eq]
+  exact ENNReal.toReal_nonneg
+
+/-- Two-sample acceptance probabilities are at most one. -/
+theorem acceptProb₂_le_one {k : ℕ} (T : (Fin k → α) → (Fin k → α) → PMF Bool) (p q : PMF α) :
+    acceptProb₂ T p q ≤ 1 := by
+  rw [acceptProb₂_eq]
+  exact ENNReal.toReal_le_of_le_ofReal zero_le_one
+    (ENNReal.ofReal_one.symm ▸ PMF.coe_le_one _ true)
+
 /-- `T` is a `k`-sample closeness tester with proximity `ε`: given `k` independent samples of each
 of two unknown distributions, it accepts with probability at least `2 / 3` when they are equal and
 with probability at most `1 / 3` when they are at statistical distance at least `ε`. -/
@@ -109,6 +130,48 @@ structure IsClosenessTester [Fintype α] {k : ℕ} (T : (Fin k → α) → (Fin 
 section Fintype
 
 variable [Fintype α]
+
+/-- The two-sample acceptance probability as an expectation over both sample tuples. -/
+theorem acceptProb₂_eq_sum {k : ℕ} (T : (Fin k → α) → (Fin k → α) → PMF Bool) (p q : PMF α) :
+    acceptProb₂ T p q =
+      ∑ x, ∑ y, (iid p k x).toReal * (iid q k y).toReal * (T x y true).toReal := by
+  rw [acceptProb₂_eq, bind_apply_toReal]
+  refine sum_congr rfl fun x _ => ?_
+  rw [bind_apply_toReal, mul_sum]
+  refine sum_congr rfl fun y _ => ?_
+  ring
+
+/-- **Conditioning on the first samples.** With `m + k` samples of each distribution, the
+acceptance probability averages, over the first `m` samples `x₁, y₁` of each, the acceptance
+probability of the rule with `x₁, y₁` fixed on the other `k` samples. -/
+theorem acceptProb₂_append {m k : ℕ} (T : (Fin (m + k) → α) → (Fin (m + k) → α) → PMF Bool)
+    (p q : PMF α) :
+    acceptProb₂ T p q = ∑ x₁, ∑ y₁, (iid p m x₁).toReal * (iid q m y₁).toReal *
+      acceptProb₂ (fun x₂ y₂ => T (Fin.append x₁ x₂) (Fin.append y₁ y₂)) p q := by
+  rw [acceptProb₂_eq_sum]
+  simp only [acceptProb₂_eq_sum, mul_sum]
+  calc ∑ x, ∑ y, (iid p (m + k) x).toReal * (iid q (m + k) y).toReal * (T x y true).toReal
+      = ∑ x, (iid p (m + k) x).toReal * ∑ y, (iid q (m + k) y).toReal *
+          (T x y true).toReal := by
+        refine sum_congr rfl fun x _ => ?_
+        rw [mul_sum]
+        refine sum_congr rfl fun y _ => ?_
+        ring
+    _ = ∑ x₁, (iid p m x₁).toReal * ∑ x₂, (iid p k x₂).toReal * ∑ y₁, (iid q m y₁).toReal *
+          ∑ y₂, (iid q k y₂).toReal * (T (Fin.append x₁ x₂) (Fin.append y₁ y₂) true).toReal := by
+        rw [sum_iid_add_mul]
+        refine sum_congr rfl fun x₁ _ => ?_
+        congr 1
+        refine sum_congr rfl fun x₂ _ => ?_
+        rw [sum_iid_add_mul]
+    _ = _ := by
+        simp only [mul_sum]
+        refine sum_congr rfl fun x₁ _ => ?_
+        rw [sum_comm]
+        refine sum_congr rfl fun y₁ _ => ?_
+        refine sum_congr rfl fun x₂ _ => ?_
+        refine sum_congr rfl fun y₂ _ => ?_
+        ring
 
 /-- A deterministic two-sample decision rule accepts with the probability of its acceptance
 region. -/
@@ -205,6 +268,21 @@ theorem acceptProb_bind_pi [Finite α] [Finite β] {k : ℕ} (F : α → PMF β)
     (T : (Fin k → β) → PMF Bool) (p : PMF α) :
     acceptProb (fun x => (pi fun i => F (x i)).bind T) p = acceptProb T (p.bind F) := by
   rw [acceptProb_eq, acceptProb_eq, iid_bind, PMF.bind_bind]
+
+/-- Running a two-sample decision rule on both sample tuples passed independently through a
+randomized map `F` accepts `p, q` with the probability that the rule accepts `p.bind F, q.bind F`.
+-/
+theorem acceptProb₂_bind_pi [Finite α] [Finite β] {k : ℕ} (F : α → PMF β)
+    (T : (Fin k → β) → (Fin k → β) → PMF Bool) (p q : PMF α) :
+    acceptProb₂ (fun x y => (pi fun i => F (x i)).bind fun x' =>
+        (pi fun i => F (y i)).bind fun y' => T x' y') p q =
+      acceptProb₂ T (p.bind F) (q.bind F) := by
+  rw [acceptProb₂_eq, acceptProb₂_eq, iid_bind, iid_bind]
+  simp only [PMF.bind_bind]
+  congr 2
+  congr 1
+  funext x
+  rw [PMF.bind_comm]
 
 /-- **Reduction along a randomized map.** If `F` sends every member of `P` into `P'` and every
 distribution `ε`-far from `P` to one `ε'`-far from `P'`, then a `k`-sample tester for `P'` with

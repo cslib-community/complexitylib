@@ -63,4 +63,29 @@ example (Q : PromiseProblem (List Bool))
     Q ∈ promiseClass (PP encBits) :=
   PromiseQMA_subset_promiseClass_PP (by norm_num) hQ
 
+/-! ### An inverse-polynomial gap -/
+
+-- Completeness `1` and soundness `s n = 1 - 1 / (n + 1)`, with `q n = n + 1` and
+-- `σ n = 2 n = 2 q n s n` exactly.
+theorem mul_one_sub_inv (n : ℕ) : ((n : ℝ) + 1) * (1 - 1 / ((n : ℝ) + 1)) = n := by
+  have : ((n : ℝ) + 1) ≠ 0 := by positivity
+  field_simp
+  ring
+
+theorem mem_promiseClass_PP_of_gap (Q : PromiseProblem (List Bool))
+    (hQ : Q ∈ PromiseQMA (fun _ => 1) (fun n => 1 - 1 / ((n : ℝ) + 1)) encBits) :
+    Q ∈ promiseClass (PP encBits) := by
+  refine PromiseQMA_subset_promiseClass_PP_of_gap (q := fun n => n + 1) (σ := fun n => 2 * n)
+    (by fun_prop) (by fun_prop) (fun n => ?_) (fun n => ?_) (fun n => ?_) hQ
+  all_goals
+    have := mul_one_sub_inv n
+    push_cast
+    linarith
+
+-- The verifier `readWitness`, which places `HeadOrEmpty` in `QMA(1, 0)`, meets this gap.
+example : PromiseProblem.ofSet HeadOrEmpty ∈ promiseClass (PP encBits) :=
+  mem_promiseClass_PP_of_gap _ (PromiseQMA_mono (fun _ => le_rfl)
+    (fun n => sub_nonneg.2 (div_le_one_of_le₀ (by linarith) (by positivity)))
+    headOrEmpty_mem_PromiseQMA)
+
 end ComplexityTests.QMACounting

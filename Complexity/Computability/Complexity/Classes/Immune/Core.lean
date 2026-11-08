@@ -39,7 +39,8 @@ contains the finite sets and is closed under union, a set not in `C` has an infi
 `n ≤ i`. `P` is such a class (`Cslib.Complexity.countable_P`), so problems outside `P` have
 infinite cores inside them (`Cslib.Complexity.exists_infinite_isComplexityCore_P_subset`). Compared
 with Lynch's lemma, the core is proper, which is stronger, but it is chosen without regard to
-decidability: that it can be taken recursive when the set is recursive is not formalized here.
+decidability. For decidable problems on bit strings, a delayed diagonalization chooses it decidable
+(`Cslib.Complexity.exists_infinite_isDecidable_isPolyTimeCore`, in `Immune.RecursiveCore`).
 
 ## Main definitions
 
@@ -195,7 +196,8 @@ variable {β : Type} {enc : β ↪ List Bool} {A X : Set β}
 
 /-- **Problems outside `P` have infinite cores** ([Lynch, Lemma 1][Lynch1975], proper-core
 strengthening): a problem outside `P` has an infinite core for `P` inside it. Unlike Lynch's core,
-this one is not claimed to be recursive. -/
+this one is not claimed to be recursive; for a decidable core of a decidable problem on bit strings,
+see `Cslib.Complexity.exists_infinite_isDecidable_isPolyTimeCore`. -/
 theorem exists_infinite_isComplexityCore_P_subset (hA : A ∉ P enc) :
     ∃ X ⊆ A, X.Infinite ∧ IsComplexityCore (P enc) A X :=
   exists_infinite_isComplexityCore_subset (countable_P enc) (fun _ hF => hF.mem_P)
