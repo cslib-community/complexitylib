@@ -647,8 +647,10 @@ index links to canonical definitions rather than keeping a second set.
   game on the tableau of a polynomial-time machine (`Tableau.ValueGame`, which gives
   `APSPACE = EXP`) in logarithmic space. This needs a word game machine whose round reads the
   input from the input tape and keeps only the `O(log n)`-bit wire claim on its work tape. Once it
-  is proved, add `AL = P` to the alternation abstract, which states `AP = PSPACE` and
-  `APSPACE = EXP` ([#3135](https://github.com/cslib-community/complexitylib/issues/3135)).
+  is proved, add `AL = P` to the
+  [alternation abstract](abstracts/ComplexityAbstracts/AlternationAbstract.lean), which states
+  `AP = PSPACE` and `APSPACE = EXP`, as part of
+  [#2873](https://github.com/cslib-community/complexitylib/issues/2873).
 - **Pebble games and space lower bounds**
   ([#2995](https://github.com/cslib-community/complexitylib/issues/2995)): the black pebble game
   on a `Digraph`, the path-blocking lower-bound engine, and the exact prices `h + 2` of the
