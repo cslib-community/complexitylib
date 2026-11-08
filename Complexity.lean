@@ -1492,6 +1492,7 @@ public import Complexity.Computability.Circuit.Quantum.Approximation
 public import Complexity.Computability.Circuit.Quantum.Basic
 public import Complexity.Computability.Circuit.Quantum.Classical
 public import Complexity.Computability.Circuit.Quantum.Code
+public import Complexity.Computability.Circuit.Quantum.Controlled
 public import Complexity.Computability.Circuit.Quantum.Counter
 public import Complexity.Computability.Circuit.Quantum.GateMatrix
 public import Complexity.Computability.Circuit.Quantum.HadamardLayer
@@ -1502,6 +1503,7 @@ public import Complexity.Computability.Circuit.Quantum.PathNetwork
 public import Complexity.Computability.Circuit.Quantum.PathNetworkPolyTime
 public import Complexity.Computability.Circuit.Quantum.PathSum
 public import Complexity.Computability.Circuit.Quantum.PhaseCode
+public import Complexity.Computability.Circuit.Quantum.PhaseOracle
 public import Complexity.Computability.Circuit.Quantum.RealEncoding
 public import Complexity.Computability.Circuit.Quantum.Reversible
 public import Complexity.Computability.Circuit.Quantum.SuperdenseCoding
@@ -4796,6 +4798,7 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.Transvection
 public import Complexity.Foundations.LinearAlgebra.Matrix.UniformGram
 public import Complexity.Foundations.LinearAlgebra.Matrix.Vertex
 public import Complexity.Foundations.LinearAlgebra.PivotSpace
+public import Complexity.Foundations.LinearAlgebra.PlaneRotation
 public import Complexity.Foundations.LinearAlgebra.Rank
 public import Complexity.Foundations.LinearAlgebra.ReplacementDesign
 public import Complexity.Foundations.LinearAlgebra.Tensor.Amplify

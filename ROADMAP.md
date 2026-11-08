@@ -1673,7 +1673,9 @@ each statement against the numbered result. Organize modules by subject, not cha
   universality of `{Λ(P(i)), H}`, Solovay–Kitaev and polynomial-time synthesis (the exact real
   simulation of controlled phase gates, `mem_BQP_iff_phase`, is done); for QMA ([#2876](https://github.com/cslib-community/complexitylib/issues/2876)), error
   reduction from an inverse-polynomial gap, strong error reduction that keeps the witness length,
-  `QMA ⊆ A₀PP`, mixed witnesses, QCMA and the local Hamiltonian problem; related query,
+  `QMA ⊆ A₀PP`, mixed witnesses, QCMA and the local Hamiltonian problem; BQP with arbitrary
+  elementary gates through Shi's constructive synthesis of real rotations
+  ([#3350](https://github.com/cslib-community/complexitylib/issues/3350)); related query,
   communication and interactive classes, with amplification, containments and complete problems.
   Supply the
   [quantum adversary models](#concurrent-and-quantum-security) needed by cryptographic
