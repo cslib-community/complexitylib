@@ -2998,6 +2998,7 @@ public import Complexity.Computability.Streaming.AMS
 public import Complexity.Computability.Streaming.Basic
 public import Complexity.Computability.Streaming.Communication
 public import Complexity.Computability.Streaming.Distinctness
+public import Complexity.Computability.Streaming.FkEstimator
 public import Complexity.Computability.Streaming.Frequency
 public import Complexity.Computability.Streaming.GraphStream
 public import Complexity.Computability.Streaming.MomentLowerBound
@@ -4139,6 +4140,7 @@ public import Complexity.Foundations.Data.Finset.OffDiag
 public import Complexity.Foundations.Data.Finset.OrderGlue
 public import Complexity.Foundations.Data.Finset.OrderedFilter
 public import Complexity.Foundations.Data.Finset.PaleyZygmund
+public import Complexity.Foundations.Data.Finset.PowerSum
 public import Complexity.Foundations.Data.Finset.Quantile
 public import Complexity.Foundations.Data.Finset.Quotient
 public import Complexity.Foundations.Data.Finset.Sampling
