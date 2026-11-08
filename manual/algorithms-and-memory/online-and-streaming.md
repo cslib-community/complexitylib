@@ -32,6 +32,17 @@ The metric is number of page faults. The recency-list Lean implementation is not
 
 [KServer/DoubleCoverage](../../Complexity/DataStructure/KServer/DoubleCoverage.lean) defines Double Coverage on the integer line. `dcStep` sorts the configuration, moves the outer server for an outer request or the two neighbouring servers toward an inner request, and restores the labels. The potential is `k·matchCost + Σ_{i<j}|s_i - s_j|` (doubled as `2k·matchCost + pairSum`, since `pairSum` counts ordered pairs). `dcStep_amortized_offline` is the step inequality `2·cost_DC + Δ(2Φ) ≤ 2k·cost_OPT`. `doubleCoverage_cost_le` bounds the cost by `k·OPT + k·matchCost s₀ s_off + Σ_{i<j}|s₀ i - s₀ j|` against offline schedules from any start, and `doubleCoverage_isCompetitiveFrom` gives ratio `k` from every initial configuration with that additive spread. This is the Chrobak–Karloff–Payne–Vishwanathan theorem [chrobakkarloffpaynevishwanathan91][chrobakkarloffpaynevishwanathan91], restricted to integer points. With the lower bound, the deterministic ratio on the line is exactly `k` from any start with distinct servers, with a per-start additive constant. Double Coverage is not competitive with one additive constant for every start: from `0, 10` the requests `5, 0` cost it `15` against an offline `5`, and scaling the instance defeats any fixed constant. The [test file](../../ComplexityTests/KServer.lean) computes a three-server Double Coverage run, an offline schedule and the additive constant. It also checks the uniform-metric lower bound, that Double Coverage from `0, 1, …, k-1` is not `(k-1)`-competitive, and the two-server instance above.
 
+## Online bin packing
+
+[BinPacking/Online](../../Complexity/Algorithms/Lean/BinPacking/Online.lean) models deterministic online bin packing outside the `Problem` interface. An `OnlinePacker C` chooses a bin for the next item from the items seen so far and the current bins. If the chosen bin has no room, or none is chosen, the item opens a new last bin (`onlineInsert`), so every rule gives a valid packing (`OnlinePacker.isPacking_run`). Two facts drive lower bounds against all online packers. First, the packing of `l₁ ++ l₂` continues that of `l₁` (`OnlinePacker.run_append`). Second, items failing a predicate leave the number of bins with an item satisfying it unchanged (`OnlinePacker.countP_any_runFrom`). `run_firstFitPacker` identifies First Fit as an online packer.
+
+[BinPacking/OnlineLowerBound](../../Complexity/Algorithms/Lean/BinPacking/OnlineLowerBound.lean) proves Yao's lower bound `3/2` for deterministic online bin packing, stated in the abstract of [yao80][yao80], with the item types as reported in [baloghbekesidosaepsteinlevin18][baloghbekesidosaepsteinlevin18].
+- The input has capacity `41` and three phases of `6m` items of sizes `6`, `14` and `21`. These sizes give the same 20 feasible bin patterns as `1/7 + ε`, `1/3 + ε` and `1/2 + ε` with capacity `1`.
+- `OnlinePacker.yao_lower_bound`: after one of the phases, every online packer uses at least `3/2` times the optimum, exactly. The optima are `m`, `3m` and `6m` (`isPacking_yao₁`, `le_length_of_isPacking_yao₁`, and so on).
+- The proof is an explicit LP dual certificate: the weights `1`, `2`, `2` (`yaoWeight`) and the per-bin inequality `weight b ≤ 2 + 2·[b has a 6] + 2·[b has a 6 or a 14]` (`sum_map_yaoWeight_le`), which `omega` checks against all 20 feasible patterns.
+- `exists_optimal_three_mul_le` and `exists_ratio_violation_of_lt` state the bound against an optimal packing, for every rational ratio below `3/2` and every additive constant. `four_thirds_lower_bound` is the two-phase `4/3`, with its optima `3m` and `6m` (`isPacking_twoPhase₁`, `le_length_of_isPacking_twoPhase₁`, and so on).
+- The [test file](../../ComplexityTests/BinPackingOnline.lean) enumerates the 20 patterns and runs First Fit on the input. It also checks an online packer that follows the LP optimum and attains `3/2` after every phase for `m = 8`, so the constant is the best this input gives. Its last examples pair `run_firstFitPacker` with `ten_mul_length_firstFit_le` to show the online upper bound `10 * FF ≤ 17 * OPT + 8`, so the library brackets the best deterministic asymptotic ratio between `3/2` and `17/10`.
+
 ## Count-Min: a stored streaming sketch
 
 [Complexity/DataStructure/CountMin/Basic.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/DataStructure/CountMin/Basic.lean) models a weighted insertion stream `List (X × Nat)`. Each update increments one bucket in each row of a vector-of-vectors counter table; a query takes the minimum row counter. The exact bucket invariant proves no underestimation, each counter's bound by total mass, and entrywise merge agreement with stream concatenation.
@@ -90,6 +101,37 @@ With `t = ⌈6/ε²⌉` and `c = 2r = O(log(1/δ))`, this is the `O(ε⁻² log(
 
 The [test file](../../ComplexityTests/StreamingDistinctElements.lean) runs the sketch with a fixed hash on a concrete stream. It applies the error bound to the affine maps over `ZMod 31`, a pairwise independent family with a 10-bit seed, and instantiates the memory bounds with 240 and 260 bits. It also shows two failure cases: a constant hash overestimates `F₀` by a factor `2`, and `t = 0` always answers `0`.
 
+## Heavy hitters: Misra–Gries and the Count-Sketch
+
+[Complexity/Computability/Streaming/MisraGries.lean](../../Complexity/Computability/Streaming/MisraGries.lean) implements the deterministic Misra–Gries summary `misraGries k` [misragries82][misragries82]. It stores its at most `k` counters as a multiset whose multiplicities are the counters. Reading an item increments its counter if it has one or if fewer than `k` counters are in use, and otherwise decrements every counter. Each decrement discards `k + 1` distinct stream items, which gives the following statements:
+
+- `MisraGries.run_le_count` and `MisraGries.mul_count_sub_run_add_card_le` give `f̂_a ≤ f_a` and `(k + 1)(f_a − f̂_a) + m̂ ≤ m`, where `m̂` is the sum of the counters. This is Theorem 1.3.1 with the sharpening of Exercise 1-1 of [chakrabarti25][chakrabarti25].
+- `MisraGries.count_sub_div_le_run` is the real form `f_a − m/(k+1) ≤ f̂_a`.
+- `MisraGries.mem_state_of_length_lt_mul_count` says every item with `f_a > m/(k+1)` keeps a counter. This is the deterministic heavy-hitters guarantee.
+- `MisraGries.toFinset_state_one_eq` is the one-counter majority case.
+- `MisraGries.spaceLE_misraGries` bounds the memory: `(n(m+1)+1)^k ≤ 2^b` reachable states suffice on streams of at most `m` items over a universe of `n` items.
+
+Chakrabarti's parameter `k` allows `k − 1` counters, so `misraGries k` is his algorithm with parameter `k + 1`.
+
+[Complexity/Probability/KWiseIndependent/CountSketch.lean](../../Complexity/Probability/KWiseIndependent/CountSketch.lean) analyzes one row of the Count-Sketch [charikar04][charikar04] for arbitrary real weights. The bucket family `h` must be two-universal, and the sign family `ε ∘ g` must be independent of it, pairwise independent and of mean zero. Under these hypotheses:
+
+- the estimate is unbiased (`CountSketch.expect_sum_ite_mul_sign_mul_sign`);
+- the collision noise has second moment at most `∑_{b≠a} f_b²/w` (`CountSketch.expect_sq_sum_ite_mul_sign_le`);
+- by Chebyshev, a row misses by more than `t` with probability at most `1/3` once `3∑_{b≠a} f_b² ≤ wt²` (`CountSketch.dens_abs_sum_ite_mul_sign_gt_le`).
+
+These are equations (5.1)–(5.6) of [chakrabarti25][chakrabarti25]. Only an upper bound on collision probabilities is assumed.
+
+The amplification step is the median trick `dens_abs_median_sub_gt_le`, added to [MedianOfMeans.lean](../../Complexity/Probability/MedianOfMeans.lean): if a single estimate misses with probability at most `1/3`, the median of `2r` independent estimates misses with probability at most `(8/9)^r`. `dens_abs_medianOfMeans_sub_gt_le` is now derived from it.
+
+[Complexity/Computability/Streaming/CountSketch.lean](../../Complexity/Computability/Streaming/CountSketch.lean) assembles `2r` rows into the streaming algorithm `countSketch`, and `countSketchRandom` draws its seeds uniformly. Its results:
+
+- `dens_countSketch_error_gt_le` and `solves_countSketchRandom` answer every fixed point query `a` within `ε‖f_{−a}‖₂` with error `δ`, once `3 ≤ wε²` and `(8/9)^r ≤ δ`.
+- `solves_countSketchRandom_freqMoment` gives the same with the bound `ε√F₂`.
+- `spaceLE_countSketchRandom` charges `(2m+1)^(2rw) ≤ 2^b` under the public-coin convention.
+- `exists_injOn_iUnion_reachable_countSketch` gives the bound with the seeds stored, `(|ι||κ|)^(2r)(2m+1)^(2rw) ≤ 2^b`.
+
+The [test file](../../ComplexityTests/StreamingHeavyHitters.lean) checks concrete Misra–Gries runs, including one where the error `m/(k+1)` is attained. It also instantiates the Count-Sketch hypotheses with the trinomial hash families, and shows that one bucket with a constant sign reports the stream length instead of the frequency.
+
 ## MinHash and locality-sensitive hashing
 
 [Probability/LocalitySensitiveHash.lean](../../Complexity/Probability/LocalitySensitiveHash.lean) works with keyed families `hash : ι → X → Y` with seed law `seed : PMF ι`, as for universal hashing. `collisionProb seed hash x x'` is the real probability that `x` and `x'` collide. It differs from `PMF.collisionProbability`, the probability that two independent samples of one law agree. `IsLocalitySensitive prob near far p₁ p₂` says that near pairs collide with probability at least `p₁` and far pairs with probability at most `p₂`. With `near := d ≤ r₁` and `far := r₂ ≤ d` this is the `(r₁, r₂, p₁, p₂)`-sensitive family of Indyk and Motwani [indykmotwani98][indykmotwani98] [harpeledindykmotwani12][harpeledindykmotwani12]. Every `ε`-universal family with `ε ≠ ⊤` is `(=, ≠, 1, ε)`-sensitive (`IsUniversalHash.isLocalitySensitive`). Independent repetitions use `PMF.iid`, and the collision laws are exact:
@@ -141,7 +183,7 @@ The proof goes through the moment generating function rather than Achlioptas's e
 
 The four meanings of “streaming” here should not be conflated: an input-list fold, an accurate stored probabilistic sketch, the abstract one-pass memory model with communication lower bounds, and a native machine scan with measured workspace.
 
-The abstract model counts reachable memory states and imposes no uniformity or time bound on updates. Its randomized lower bounds are for error at most `1/2` with public randomness that is not charged to the memory, and the AMS sketches have no `ProbComp` sampler or machine realization. The `F_k` estimator assumes that the stream length is known in advance; the source's reservoir-sampling variant for unknown lengths is not formalized. Multi-pass algorithms, turnstile updates and CountSketch are not formalized. The Proposition 3.7 bound is stated for streams of at most `N/8` items rather than the source's `n/2`, and the Proposition 3.8 bound for a universe of `3n` items (`Fin n × Fin 3`) rather than `n`, so that the threshold `2n` does not depend on the inputs.
+The abstract model counts reachable memory states and imposes no uniformity or time bound on updates. Its randomized lower bounds are for error at most `1/2` with public randomness that is not charged to the memory, and the AMS sketches have no `ProbComp` sampler or machine realization. The `F_k` estimator assumes that the stream length is known in advance; the source's reservoir-sampling variant for unknown lengths is not formalized. Multi-pass algorithms and turnstile updates as stream items are not formalized. The Count-Sketch guarantees are for a query fixed before the seeds, not for adaptively chosen queries. Neither heavy-hitter algorithm has a `ProbComp` sampler or machine realization. Recovery of all heavy hitters over the universe, merging of Misra–Gries summaries and heavy-hitter space lower bounds are not formalized. The Proposition 3.7 bound is stated for streams of at most `N/8` items rather than the source's `n/2`, and the Proposition 3.8 bound for a universe of `3n` items (`Fin n × Fin 3`) rather than `n`, so that the threshold `2n` does not depend on the inputs.
 
 The k-minimum-values sketch for `F₀` has no `ProbComp` sampler or machine realization either, and its error is bounded only for a single copy: the median amplification and the `Solves` statement are open. Its error analysis needs a pairwise independent family into `Fin M` with at least as many values as distinct items. The space-optimal estimators for `F₀` (Bar-Yossef et al., Theorems 2–3; Kane–Nelson–Woodruff's `O(ε⁻² + log n)`) are not formalized, and neither are the `Ω(ε⁻²)` and `Ω(log n)` lower bounds for approximate `F₀`.
 
@@ -162,12 +204,17 @@ The optimal-stopping modules are semantic probability statements over determinis
 
 The `k`-server modules use natural-number distances, so Double Coverage is proved on the integer line rather than the real line. Double Coverage on trees, the work-function algorithm's `2k-1` bound, the `k`-server conjecture, randomized `k`-server and an algorithm computing the offline optimum are not formalized, and the Lean step functions carry no time bounds.
 
+Online bin packing is modelled by `OnlinePacker`, not through `Problem`/`DetStrategy`, and only deterministic packers are covered. For deterministic packers, the formalized bounds bracket the best asymptotic competitive ratio in `[3/2, 17/10]`: Yao's lower bound, and First Fit's upper bound through `run_firstFitPacker`. The stronger lower bounds (Brown–Liang `1.536`, van Vliet `1.5401`, Balogh–Békési–Galambos `248/161`, and the fully adaptive constructions) are not formalized. Neither are the better online upper bounds of Harmonic-type algorithms, or randomized lower bounds.
+
 [achlioptas03]: ../sources.md#achlioptas03
 [alonmatiasszegedy99]: ../sources.md#alonmatiasszegedy99
+[baloghbekesidosaepsteinlevin18]: ../sources.md#baloghbekesidosaepsteinlevin18
 [bjkst02]: ../sources.md#bjkst02
 [borodinelyaniv98]: ../sources.md#borodinelyaniv98
 [broder97]: ../sources.md#broder97
+[chakrabarti25]: ../sources.md#chakrabarti25
 [charikar02]: ../sources.md#charikar02
+[charikar04]: ../sources.md#charikar04
 [chrobakkarloffpaynevishwanathan91]: ../sources.md#chrobakkarloffpaynevishwanathan91
 [complexitylib]: ../sources.md#complexitylib
 [cormode05]: ../sources.md#cormode05
@@ -180,4 +227,6 @@ The `k`-server modules use natural-number distances, so Double Coverage is prove
 [karlin88]: ../sources.md#karlin88
 [leskovecrajaramanullman20]: ../sources.md#leskovecrajaramanullman20
 [manassemcgeochsleator90]: ../sources.md#manassemcgeochsleator90
+[misragries82]: ../sources.md#misragries82
 [sleatortarjan85]: ../sources.md#sleatortarjan85
+[yao80]: ../sources.md#yao80
