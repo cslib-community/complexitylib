@@ -47,7 +47,7 @@ The monotonicity of roots is stated for the *largest* optimal root. It uses canc
 ## References
 
 * [D. E. Knuth, *Optimum binary search trees*][Knuth1971]
-* [F. F. Yao, *Efficient dynamic programming using quadrangle inequalities*][Yao1980]
+* [F. F. Yao, *Efficient dynamic programming using quadrangle inequalities*][Yao1980b]
 -/
 
 public section

@@ -61,7 +61,7 @@ costs at most `2 n` (`time_diagM_knuth_le`).
 ## References
 
 * [D. E. Knuth, *Optimum binary search trees*][Knuth1971]
-* [F. F. Yao, *Efficient dynamic programming using quadrangle inequalities*][Yao1980]
+* [F. F. Yao, *Efficient dynamic programming using quadrangle inequalities*][Yao1980b]
 * [Cormen, Leiserson, Rivest and Stein, *Introduction to Algorithms*, Section 15.5][CLRS2009]
 -/
 
