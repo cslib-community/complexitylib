@@ -15,7 +15,8 @@ import Mathlib.Tactic.IntervalCases
 # Register evaluation of a pyramid-shaped program
 
 The De Morgan program `pyr` computes `(x₀ ∧ x₁) ∧ (x₁ ∧ x₂)` with three inputs and three gates.
-Its computation DAG is the pyramid `Π_2`, so by Cook's theorem it needs exactly four registers.
+Its computation DAG is the pyramid `Π_2`, so by Cook's theorem it needs exactly four registers
+when every gate value goes into a fresh register (three under Savage's sliding rule).
 An explicit four-register evaluation computes the right value, and three registers do not
 suffice for any interpretation.
 -/
@@ -74,19 +75,22 @@ theorem wireEquiv_adj (u v : Wire 3 3) :
   simp only [pyramid_adj, Program.dag_adj]
   decide
 
+/-- `wireEquiv` as a relation isomorphism between the computation DAG of `pyr` and `Π_2`. -/
+def wireIso : pyr.dag.Adj ≃r (pyramid 2).Adj := ⟨wireEquiv, wireEquiv_adj _ _⟩
+
 /-- Three registers do not suffice to evaluate the output of `pyr`, for any interpretation,
 input and initial register contents. -/
 example {U : Type} (I : Interpretation Boolean.signature U) (x : Fin 3 → U)
     (r₀ : Wire 3 3 → U) : ¬ pyr.EvaluatesInRegisters I x r₀ 3 (.gate 2) := by
   rw [Program.evaluatesInRegisters_iff_blackPebblable,
-    ← blackPebblable_map_equiv_iff wireEquiv wireEquiv_adj]
+    ← blackPebblable_relIso_iff wireIso]
   intro h
   exact absurd (PyramidVertex.le_of_blackPebblable (by decide) h) (by decide)
 
 /-- The least number of registers evaluating the output of `pyr` is four. -/
 example {U : Type} (I : Interpretation Boolean.signature U) (x : Fin 3 → U)
     (r₀ : Wire 3 3 → U) : sInf {s | pyr.EvaluatesInRegisters I x r₀ s (.gate 2)} = 4 := by
-  rw [Program.sInf_evaluatesInRegisters, ← blackPebblingPrice_map_equiv wireEquiv wireEquiv_adj]
+  rw [Program.sInf_evaluatesInRegisters, ← blackPebblingPrice_relIso wireIso]
   exact blackPebblingPrice_pyramid_top (by decide)
 
 /-- A four-register evaluation over the Booleans holds the true output value. -/
@@ -95,7 +99,7 @@ example : ∃ ms d, (pyr.registerLTS Boolean.interpretation ![true, false, true]
   have h : pyr.EvaluatesInRegisters Boolean.interpretation ![true, false, true] (fun _ => false) 4
       (.gate 2) := by
     rw [Program.evaluatesInRegisters_iff_blackPebblable,
-      ← blackPebblable_map_equiv_iff wireEquiv wireEquiv_adj]
+      ← blackPebblable_relIso_iff wireIso]
     exact blackPebblable_pyramid (PyramidVertex.top 2)
   obtain ⟨ms, d, hd, hw, hv⟩ := h.exists_eq_trace
   exact ⟨ms, d, hd, hw, hv.trans (by decide)⟩

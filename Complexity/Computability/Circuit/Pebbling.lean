@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Pebbling.Basic
-public import Cslib.Computability.Circuit.Program
+public import Complexity.Computability.Circuit.Program
 
 /-!
 # Register evaluation of straight-line programs is black pebbling
@@ -25,7 +25,10 @@ the same moves, and conversely every black pebbling is an evaluation from any in
 contents. This is the reading of the pebble game in [Savage1998], Section 10.1, where a pebble
 on a vertex means that its value is held in a register, placing a pebble on an input reads it,
 placing one on a gate computes it, and removing one erases the value. Inputs occupy registers,
-as in that model.
+as in that model. A gate's value always goes into a fresh register, the gate's own: there is no
+sliding, as in the black pebble game of `Cslib.Pebbling.blackPebbleGame`. Savage also allows the
+result to be placed on (or moved to) the register of an argument, and under that rule the
+register count of every gate that reads at least one wire is one lower.
 
 ## Main definitions
 
@@ -56,36 +59,6 @@ namespace Cslib.Circuits
 
 variable {σ : Signature} {n g : ℕ}
 
-/-- The rank of a wire: `0` for an input and `j + 1` for gate `j`. -/
-private def Wire.rank : Wire n g → ℕ
-  | .input _ => 0
-  | .gate j => j.val + 1
-
-private theorem Wire.rank_castSucc (w : Wire n g) : w.castSucc.rank = w.rank := by
-  cases w <;> rfl
-
-/-- Every wire read by gate `j` is an input or an earlier gate. -/
-private theorem Program.rank_le_of_mem_range (p : Program σ n g) (j : Fin g) :
-    ∀ w ∈ Set.range (p.lines j).wires, w.rank ≤ j.val := by
-  induction p with
-  | empty => exact Fin.elim0 j
-  | @gate g p line ih =>
-    induction j using Fin.lastCases with
-    | last =>
-      rw [Program.lines_gate_last]
-      rintro _ ⟨k, rfl⟩
-      change (Wire.Renaming.castSucc (line.wires k)).rank ≤ (Fin.last g).val
-      rw [Wire.Renaming.castSucc_apply, Wire.rank_castSucc, Fin.val_last]
-      cases line.wires k with
-      | input i => exact Nat.zero_le g
-      | gate j' => exact j'.isLt
-    | cast j =>
-      rw [Program.lines_gate_castSucc]
-      rintro _ ⟨k, rfl⟩
-      change (Wire.Renaming.castSucc ((p.lines j).wires k)).rank ≤ (Fin.castSucc j).val
-      rw [Wire.Renaming.castSucc_apply, Wire.rank_castSucc, Fin.val_castSucc]
-      exact ih j _ ⟨k, rfl⟩
-
 /-- The computation DAG of a straight-line program: the argument wires of a gate are its
 predecessors, and the inputs are sources. -/
 def Program.dag (p : Program σ n g) : Digraph (Wire n g) where
@@ -109,15 +82,11 @@ theorem Program.dag_adj {p : Program σ n g} {u v : Wire n g} :
   rintro ⟨j, k, hj, -⟩
   cases hj
 
-private theorem Program.rank_lt_of_dag_adj {p : Program σ n g} {u v : Wire n g}
-    (h : p.dag.Adj u v) : u.rank < v.rank := by
-  obtain ⟨j, k, rfl, rfl⟩ := h
-  have := p.rank_le_of_mem_range j _ ⟨k, rfl⟩
-  change _ < j.val + 1
-  omega
-
+/-- The computation DAG of a program is acyclic: every wire is accessible, by induction along
+the program order. -/
 theorem Program.wellFounded_dag (p : Program σ n g) : WellFounded p.dag.Adj :=
-  Subrelation.wf (fun h => p.rank_lt_of_dag_adj h) (InvImage.wf Wire.rank wellFounded_lt)
+  ⟨p.wire_induction (fun _ => ⟨_, fun _ ⟨_, _, h, _⟩ => nomatch h⟩)
+    fun j ih => ⟨_, fun _ hu => by obtain ⟨k, rfl⟩ := Program.dag_adj_gate.1 hu; exact ih k⟩⟩
 
 end Cslib.Circuits
 
@@ -129,7 +98,9 @@ variable {σ : Signature} {n g : ℕ} {U : Type*}
 
 /-- One step of register evaluation of `p`. A configuration is the set of occupied registers,
 one per wire, and their contents. Loading an input reads it, computing a gate requires its
-argument wires to be held, and any register can be freed. -/
+argument wires to be held, and any register can be freed. A computed gate value goes into a fresh
+register (no sliding onto an argument's register), so register counts at gates that read at
+least one wire are one higher than under Savage's sliding rule. -/
 inductive Program.RegisterStep (p : Program σ n g) (I : Interpretation σ U) (x : Fin n → U) :
     Finset (Wire n g) × (Wire n g → U) → Move (Wire n g) →
       Finset (Wire n g) × (Wire n g → U) → Prop where
@@ -137,7 +108,8 @@ inductive Program.RegisterStep (p : Program σ n g) (I : Interpretation σ U) (x
   | load {C : Finset (Wire n g)} {r : Wire n g → U} (i : Fin n) :
       Program.RegisterStep p I x (C, r) (.place (.input i))
         (insert (.input i) C, Function.update r (.input i) (x i))
-  /-- Compute a gate from the held registers of its argument wires. -/
+  /-- Compute a gate from the held registers of its argument wires, into the gate's own fresh
+register. -/
   | compute {C : Finset (Wire n g)} {r : Wire n g → U} (j : Fin g)
       (h : ∀ k, (p.lines j).wires k ∈ C) :
       Program.RegisterStep p I x (C, r) (.place (.gate j))
@@ -150,6 +122,10 @@ inductive Program.RegisterStep (p : Program σ n g) (I : Interpretation σ U) (x
 def Program.registerLTS (p : Program σ n g) (I : Interpretation σ U) (x : Fin n → U) (s : ℕ) :
     LTS (Finset (Wire n g) × (Wire n g → U)) (Move (Wire n g)) where
   Tr c m d := p.RegisterStep I x c m d ∧ d.1.card ≤ s
+
+theorem Program.registerLTS_tr {p : Program σ n g} {I : Interpretation σ U} {x : Fin n → U}
+    {s : ℕ} {c d : Finset (Wire n g) × (Wire n g → U)} {m : Move (Wire n g)} :
+    (p.registerLTS I x s).Tr c m d ↔ p.RegisterStep I x c m d ∧ d.1.card ≤ s := Iff.rfl
 
 end Cslib.Circuits
 
