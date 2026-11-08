@@ -1,9 +1,9 @@
-# Cache dashboard prototype
+# Cache dashboard
 
-This is a local prototype for the MIT origin, developed and committed without a PR or push.
 The public page is a static nginx site at `/`; a five-minute systemd timer exports aggregate
-statistics to `/stats.json`. It adds no database, API listener or cache administration route.
-The cache publisher and reader protocol stay unchanged.
+statistics to `/stats.json` using the origin's existing bounded usage journal. It adds no
+database, API listener or cache administration route. The cache publisher and reader protocol
+stay unchanged.
 
 ## What the numbers mean
 
@@ -20,21 +20,24 @@ The cache publisher and reader protocol stay unchanged.
   not exact accounting. Recent deliberate benchmark downloads also appear in the totals.
 - Storage sharing compares the sum of compressed artifacts referenced by every retained build
   with the unique artifacts actually stored. The prominent sharing factor is the former
-  divided by the latter; saved bytes appear beside it. It does not estimate uncompressed build size or
-  compilation time saved. Disk usage includes staging and upload buffers as well as artifacts.
+  divided by the latter; saved bytes appear beside it. It does not estimate uncompressed build
+  size or compilation time saved. Disk usage includes staging and upload buffers as well as artifacts.
 - GC counts and removed bytes come from successful applied collections. Bytes cover removed
   artifact/mapping payloads, excluding directory metadata and abandoned staging directories.
   Historical collections without byte accounting show an unavailable value.
 
-## Install from a reviewed local commit
+## Install from a reviewed revision
 
-Transfer the exact local source bundle over the existing authenticated deployment connection;
-verify its digest and recorded Git revision. A public GitHub push is unnecessary. Preserve a
-private rollback copy of the current binary, nginx configuration and any existing dashboard
-files. Build the Linux Go binary on the separate builder if the GC reporting changes are new;
-do not run Lean or compile on the cache VM. Preserve the mounted store and permanent lock.
+Start with an installed origin and its [bounded usage journal](OPERATIONS.md#usage-statistics).
+Check out the reviewed Git revision on the deployment builder and transfer its files over the
+authenticated deployment connection, recording their digests. Preserve a private rollback copy
+of the current binary, nginx configuration and any existing dashboard files. Build and install
+the Linux Go binary from that revision if the GC reporting changes are new; use the existing
+origin update procedure. Do not run Lean or compile on the cache VM. Preserve the mounted store
+and permanent lock.
 
-Install these root-owned files:
+Install these root-owned files. Static assets and their parent directory must be readable by
+nginx (`0755` for directories, `0644` for files):
 
 | Source | Destination | Mode |
 |---|---|---|
@@ -47,7 +50,9 @@ source are not served. The service creates `/var/lib/cache-dashboard/`, which co
 bounded public aggregate JSON. It runs with a read-only view of the cache, restricted write
 access, a 128 MiB memory ceiling and a 90-second timeout. A busy store keeps the previous storage
 snapshot rather than waiting on the publication lock. A failed collector leaves the last good
-JSON in place; the page marks old data stale. The prototype adds no new email notifications.
+JSON in place; the page marks old data stale. The dashboard adds no email notifications.
+The shared storage scan has a five-second budget; a coincident publication may need to retry
+while that scan holds the lock.
 
 Merge only the dashboard locations from `examples/nginx.conf` into the existing host site,
 preserving actual TLS paths, upload authentication, limits, temporary directories and usage/error
@@ -55,7 +60,13 @@ journal sinks. Serve exactly `/`, `/app.js`, `/style.css` and `/stats.json`; oth
 remain 404. Dashboard routes accept only GET/HEAD. Their aliases point outside the cache's
 artifact namespace. The HTML policy permits only same-origin scripts, styles and data requests.
 
+From the reviewed repository root on the host, after saving rollback copies:
+
 ```bash
+sudo install -d -o root -g root -m 0755 /usr/local/share/cache-dashboard /usr/local/libexec
+sudo install -o root -g root -m 0644 tools/cache-origin/dashboard/{index.html,app.js,style.css} /usr/local/share/cache-dashboard/
+sudo install -o root -g root -m 0644 tools/cache-origin/dashboard/collect.py /usr/local/libexec/cache-dashboard-collect.py
+sudo install -o root -g root -m 0644 tools/cache-origin/examples/cache-dashboard.{service,timer} /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemd-analyze verify cache-dashboard.service cache-dashboard.timer
 sudo systemctl start cache-dashboard.service
@@ -73,10 +84,24 @@ publication still work. Confirm the collector's peak memory and runtime on the a
 ## Rollback
 
 Disable/stop only `cache-dashboard.timer`, wait for its owned collector process to stop, restore
-the saved nginx configuration, run `nginx -t` and reload nginx. Remove only this prototype's
+the saved nginx configuration, run `nginx -t` and reload nginx. Remove only the dashboard's
 installed assets/unit files and aggregate output after checking their ownership. Restore the
 saved Go binary if rolling back the reporting addition as well. Do not remove build artifacts,
 replace `state/lock`, change credentials, alter the data filesystem or reset journal history.
 
-The Operator's Manual reaches this page through the origin runbook. Agent roles and handoffs
-are unchanged; the Agent Operator's Manual needs no update for this prototype.
+## Local validation
+
+The collector uses only Python's standard library; production requires Linux. From the repository
+root, run:
+
+```bash
+python3 -B -m unittest discover -s scripts -p 'test_cache_dashboard.py'
+node --check tools/cache-origin/dashboard/app.js
+node scripts/test_cache_dashboard_frontend.cjs
+```
+
+The frontend check uses `dashboard/preview-data.json` as development data. Never install that
+fixture on the web server. For collector testing with actual journals, run the installed oneshot
+and inspect its JSON; preserve the existing store and lock. The HTTP origin CI job also exercises
+all four dashboard routes through nginx. Both manuals retain the same roles and handoffs;
+the Operator's Manual reaches this procedure through the origin runbook.

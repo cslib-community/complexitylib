@@ -20,7 +20,7 @@ See the [security contract, incident recovery and milestone scope](SECURITY.md) 
 The [operator runbook](OPERATIONS.md) covers identities, credentials, limits, email alerts and updates.
 It also covers [usage statistics](OPERATIONS.md#usage-statistics): a separate bounded journal of
 downloads, misses, response bytes and durations, with commands to inspect and summarize requests.
-The [dashboard prototype](DASHBOARD.md) presents aggregate traffic, storage, publication and GC
+The [dashboard](DASHBOARD.md) presents aggregate traffic, storage, publication and GC
 statistics as a static public page without changing artifact uploads or downloads.
 
 ## MIT deployment status
