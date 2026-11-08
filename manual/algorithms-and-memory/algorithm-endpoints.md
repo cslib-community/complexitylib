@@ -178,6 +178,18 @@ Like Bellman–Ford, this is a pure Lean function with a `TimeM` cost model, not
 
 The [CYK examples](../../ComplexityTests/Algorithms/Lean/CYK.lean) decide accepted and rejected words, including the empty word, for `{aⁿbⁿ}` and for balanced parentheses with `S → ε`, using `decide`, and check exact tick counts. This is the algorithm of [Sipser, Theorem 7.16][sipser13] (every context-free language is in P) **only for grammars already in Chomsky normal form**. Conversion of arbitrary grammars, a machine-level `ComputableInPolyTime` decider, Valiant's subcubic parsing, the pumping lemma, and CFG emptiness and universality are not formalized ([ROADMAP](../../ROADMAP.md#structure-time-and-space), [#3303](https://github.com/cslib-community/complexitylib/issues/3303)).
 
+## Edit distance and longest common subsequence
+
+Like CYK, these are pure Lean functions with a `TimeM` cost model, not machine programs.
+
+- **Tables over pairs of suffixes.** Import `Complexity.Algorithms.Lean.EditDistance.Grid` ([source](../../Complexity/Algorithms/Lean/EditDistance/Grid.lean)). A `GridDP` holds the four rules of a table indexed by pairs of suffixes of two words: the corner, the two borders, and the interior entry from its three neighbours. `GridDP.value` fills the table row by row, and the row of `a :: x` is computed from the row of `x` alone. The textbook tables are indexed by prefixes. Indexing by suffixes is the same program run on the reversed words. `value_cons_cons` and the border lemmas restate the rules. `ret_valueM` and `time_valueM` show that the `TimeM` version returns `value` and costs exactly `(|x| + 1) (|y| + 1)`. One unit is charged per entry, and an entry is one rule application to neighbours at the heads of the current and previous rows. `TimeM` does not track space, so the two-row space bound is only a property of the definition.
+- **Edit distance (Wagner–Fischer).** Import `Complexity.Algorithms.Lean.EditDistance.Basic` ([source](../../Complexity/Algorithms/Lean/EditDistance/Basic.lean)). `Costs α` gives arbitrary natural-number costs `del`, `ins` and `sub`. `Costs.unit` gives the Levenshtein distance. `Costs.indel` charges `1` per insertion or deletion and `2` per replacement by a different letter; such replacements are allowed, and `optScript Costs.indel` may return them. An `EditScript` is a list of operations `del a`, `ins b`, `sub a b`, with `src`, `tgt` and `cost`. This is an alignment, or a trace in the sense of [Wagner and Fischer][wagnerfischer74]. `editDist C x y` is the table entry, with the recurrence `editDist_cons_cons` (see also [CLRS, Problem 15-5][clrs09] and [Kleinberg and Tardos, Section 6.6][kleinbergtardos06]). `isLeast_editDist` says that `editDist C x y` is the least cost of a script from `x` to `y`. The lower bound is `editDist_le_cost`. `optScript` reads an optimal script off the table (`src_optScript`, `tgt_optScript`, `cost_optScript`). `ret_editDistM` and `time_editDistM` show that the algorithm costs exactly `(|x| + 1) (|y| + 1)`.
+- **Longest common subsequence.** Import `Complexity.Algorithms.Lean.EditDistance.LCS` ([source](../../Complexity/Algorithms/Lean/EditDistance/LCS.lean)). `lcsLength x y` is the table of [CLRS, Section 15.4][clrs09], whose recurrence is `lcsLength_cons_cons` (Theorem 15.1). Subsequences are `List.Sublist`. `isGreatest_lcsLength` says that `lcsLength x y` is the greatest length of a common subsequence. The upper bound is `length_le_lcsLength`, and `lcs` reads a witness off the table (`lcs_spec`). `editDist_indel_add_two_mul` is the duality `editDist Costs.indel x y + 2 · lcsLength x y = |x| + |y|`. `isLeast_editDist_indel` shows that replacements gain nothing under `Costs.indel`: `splitSubs` turns each into a deletion and an insertion at the same cost, so `editDist Costs.indel x y` is also the least cost of a script without them (`EditScript.IsIndel`), the insertion–deletion distance. `ret_lcsLengthM` and `time_lcsLengthM` give the exact cost `(|x| + 1) (|y| + 1)`.
+
+The [examples](../../ComplexityTests/Algorithms/Lean/EditDistance.lean) use `decide`. They check kitten/sitting (`3`, with its traceback), flaw/lawn (`2`), and empty words. They check costs that are neither unit nor symmetric, where a replacement beats a deletion plus an insertion but a swap does not. They check the strings of the running example of CLRS Section 15.4 (`lcsLength = 4`), a replacement returned by `optScript Costs.indel` next to an equal-cost script without it, and the exact tick counts.
+
+**Scope.** Costs are arbitrary: no triangle inequality or symmetry is assumed. The theorem is the trace (alignment) form of Wagner–Fischer. The equivalence with sequences of edit operations applied at arbitrary positions, which Wagner and Fischer prove under their cost conditions, is not formalized. For unit costs, neither the metric properties nor the characterization as the least number of single-letter edits is formalized. Also not formalized: Hirschberg's linear-space recovery of an optimal alignment, a machine-level `ComputableInPolyTime` statement, and the `OV` hardness of edit distance and LCS ([#3472](https://github.com/cslib-community/complexitylib/issues/3472), [#3037](https://github.com/cslib-community/complexitylib/issues/3037)).
+
 ## Optimal binary search trees and the Knuth–Yao speedup
 
 Like CYK, these are pure Lean functions with `TimeM` cost models that fill a triangular table by interval length; they are not machine programs. Import `Complexity.Algorithms.Lean.OptimalBST.Knuth`.
@@ -257,6 +269,24 @@ The specification `ApproximateMembership.spec U n ε` enforces strict set validi
 [abstracts/ComplexityAbstracts/KargerMinCutAbstract.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/KargerMinCutAbstract.lean) treats weighted undirected multigraphs, `n≥2`, fitted total doubled edge weight and word widths sufficient for workspace/trial counters. A single contraction trial is one fixed 16-register program: `42*n²+12*n+21` worst-case instructions and at most `n-2` random calls, always returning a genuine nontrivial cut value. When minimum cut is positive, it succeeds with probability at least `2/(n*(n-1))`.
 
 The Karger–Stein endpoint uses one fixed 24-register program, `O(n² log n)` worst-case steps and `O(n²)` matrix scratch per tree, with success at least `1/(floorlog₂(n)+15)`. Repetition gives minimum-cut **value** with failure at most `1/(2n)` in `O(n² log³ n)`. It does not enumerate all minimum cuts or attain the source's sparse-space formulation. The threshold is an integer inequality rather than a literal square-root expression; the abstract labels the implementation and proof adaptations.
+
+### Each minimum cut, and the number of minimum cuts
+
+Import `Complexity.Algorithms.Lean.Karger.MinCutCount` ([MinCutCount.lean](../../Complexity/Algorithms/Lean/Karger/MinCutCount.lean)). The contraction structure `Karger.spec` keeps only the weight matrix, so `karger` answers a weight, not a cut. Following [Karger and Stein, Section 2][kargerstein96], `trackedSpec n` also keeps the block of original vertices merged into each supervertex (`TrackedGraph`). Blocks are contracted by `Cslib.WeightedCut.contractBlocks` ([Blocks.lean](../../Complexity/Foundations/Combinatorics/WeightedCut/Blocks.lean)), which agrees with `contractPart` on the fibres of a supervertex map (`contractBlocks_pullbackCut`).
+
+- **Bookkeeping:** `map_run_trackedSpec` shows that forgetting the blocks maps every run over `trackedSpec n` to the run of the same client over `spec`. It is an instance of `Cslib.ProbOracleComp.run_interpret_map_state` with `TrackedGraph.toGraph` as the state representation. Statements about the answers and the weight matrices of `spec` therefore transfer to `trackedSpec n`. Statements about the blocks, such as the survival bound `trackedSurvives_contractTimes`, need their own proofs.
+- **Output cut:** one run of `karger` also outputs the block of supervertex `1` of the last two (`TrackedGraph.side`); `cutLaw W₀` is its law. On a multigraph (`IsMultigraph W₀`) with `n ≥ 2` vertices, `answer_eq_cutWeight_side` shows the output cut is non-trivial and the answer is its weight; `answerLaw_eq_map_cutLaw` states this as `answerLaw ⟨n, W₀⟩ = (cutLaw W₀).map (cutWeight W₀)`.
+- **Per-cut bound** (Theorem 2.2 of the source): `two_div_le_cutLaw`. If also `0 < minCut W₀`, each fixed minimum cut `{C, Cᶜ}` (with `C` non-trivial, which forces `n ≥ 2`) is output with probability at least `2 / (n (n - 1)) = 1 / C(n, 2)`. The proof reruns the survival induction over the blocks (`trackedSurvives_contractTimes`): a cut that survives to two supervertices is the output cut, up to complement.
+- **Count:** `card_minCuts_le_choose_two`. Each run outputs one cut, so the events for distinct minimum cuts are disjoint and their probabilities sum to at most `1`. A connected multigraph therefore has at most `n.choose 2` minimum cuts, counted by the side `C` with `x₀ ∉ C` and `cutWeight W₀ C = minCut W₀`. The bound is due to Dinitz, Karzanov and Lomonosov (1976); the proof is the one in [Karger and Stein][kargerstein96].
+
+The [checked examples](../../ComplexityTests/KargerMinCutCount.lean) count by brute force the `C(4, 2) = 6` minimum cuts of the unit 4-cycle, where the bound is tight, and the `C(5, 2) = 10` minimum cuts of the unit 5-cycle. They also instantiate both theorems on the 4-cycle. The empty graph on four vertices has `7` non-trivial minimum cuts. The filter, which then also contains `∅`, has `8 > C(4, 2)` elements, so `0 < minCut W₀` is needed.
+
+Not formalized:
+- the `O((2n)^(2α))` bound on `α`-minimal cuts (Theorem 8.4 of the source);
+- the enumeration and the cactus representation of all minimum cuts;
+- the per-cut bound for the recursive Karger–Stein algorithm.
+
+The tracked development duplicates part of `Karger/Contraction.lean`; [#3539](https://github.com/cslib-community/complexitylib/issues/3539) tracks deriving the untracked theorems from it.
 
 ### Deterministic minimum cut: Stoer–Wagner
 
@@ -1270,8 +1300,10 @@ The numeric values above are transcriptions of checked source statements, not re
 [gusfield90]: ../sources.md#gusfield90
 [hierholzer73]: ../sources.md#hierholzer73
 [hmu06]: ../sources.md#hmu06
+[kargerstein96]: ../sources.md#kargerstein96
 [kasai01]: ../sources.md#kasai01
 [kasami65]: ../sources.md#kasami65
+[kleinbergtardos06]: ../sources.md#kleinbergtardos06
 [kmb81]: ../sources.md#kmb81
 [knuth71]: ../sources.md#knuth71
 [kortevygen18]: ../sources.md#kortevygen18
@@ -1295,6 +1327,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [stoerwagner97]: ../sources.md#stoerwagner97
 [vww18]: ../sources.md#vww18
 [thorup13]: ../sources.md#thorup13
+[wagnerfischer74]: ../sources.md#wagnerfischer74
 [wattenhofer16]: ../sources.md#wattenhofer16
 [williamsonshmoys11]: ../sources.md#williamsonshmoys11
 [yao80b]: ../sources.md#yao80b
