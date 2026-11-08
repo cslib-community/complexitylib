@@ -136,6 +136,13 @@ preserves packed witnesses and collisions, but does not charge generation,
 counting, class access or reuse. The alternative streaming compactor is not wired
 into `CompactExecution`; preserve that path's cubic filter charge. A sorted-list
 component is progress toward the source model, not its global resource theorem.
+`SourceQuarter.run`
+now composes actual original-input preparation, projected first-quarter generation,
+packed-chain evaluation and sorting. Its quarter time/peak-space certificate
+charges every generated prefix and bit-machine temporary. It supplies a sharp
+quarter component, not full class enumeration or a whole-instance witness/miss
+endpoint. Keep inverse generation, class counts/matching, smaller-side retention,
+reuse/release and global computed-balance bit resources explicit in the next handoff.
 
 ## Correct course and hand work over
 

@@ -2225,6 +2225,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Spac
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.SpaceInTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Streaming
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.StreamingFilter
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.StreamingFlatMap
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Translate
 public import Complexity.Computability.Machines.Turing.MultiTape.Configuration
 public import Complexity.Computability.Machines.Turing.MultiTape.Counting
@@ -2964,8 +2965,10 @@ public import Complexity.Cryptanalysis.AddXNORProgramTemplate
 public import Complexity.Cryptanalysis.AddXNORReachability
 public import Complexity.Cryptanalysis.AddXNORRuns
 public import Complexity.Cryptanalysis.AddXNORSearch
+public import Complexity.Cryptanalysis.AddXNORSortedQuarterMachine
 public import Complexity.Cryptanalysis.AddXNORSortedRecords
 public import Complexity.Cryptanalysis.AddXNORSource
+public import Complexity.Cryptanalysis.AddXNORSourceQuarter
 public import Complexity.Cryptanalysis.AddXNORSpectrum
 public import Complexity.Cryptanalysis.AddXNORStripping
 public import Complexity.Cryptanalysis.AddXNORSubsetSum

@@ -246,9 +246,17 @@ where `B` includes actual maximum record/payload width and `Q` is a fixed
 monotone polynomial. Every prefix's record volume and workspace are bounded.
 `AddXNORSortedRecords` derives original projected-quarter and forward retained-class
 membership, packed-witness recovery and physical widths, preserving collisions.
-This sorts already materialized lists; charged source quarter/class generation,
-counting, lookup/merge access, smaller-side composition and arena reuse remain
-open. A real streaming default filter also removes whole-list accumulator copying,
+Those sorting observers consume already materialized lists. `SourceQuarter.run`
+now integrates real original-input cut/seed/depth/projection, packed-index generation,
+chain evaluation and sorting for the first projected quarter. One uniform machine
+has time and charged prefix-peak space `(2^k+1)Q(I+1)` for fixed polynomial `Q`,
+original input bit length `I` and computed `k=(N-1)/4`. Original packed-witness
+correctness and an input-wire bound polynomial in `N,m` are derived. This route
+bypasses sparse RAM interpretation/cubic compaction for the quarter stages.
+Charged inverse-quarter generation, full class enumeration/counting/matching,
+sorted access/probing, smaller-side retained lists and arena reuse/release still
+remain open; the complete old uniform execution keeps its old costs. A real
+streaming default filter also removes whole-list accumulator copying,
 with `O(I+(n+1)P(B))` time and `O(I+P(B))` charged space. It is an alternative
 component, not installed in the existing cubic-filter uniform execution. Those
 old charges must remain in any composed execution bound.

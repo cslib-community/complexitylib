@@ -1380,6 +1380,41 @@ including nonzero defaults. It is **not installed in `CompactExecution`**; that
 path's cubic filter and general interpreter overhead remain charged. These new
 components do not prove the source's global sharp time or peak-space bounds.
 
+`SourceQuarter.run` closes that materialized-list boundary for the **first
+projected quarter**. It starts with the original `Source.encoding` input, executes
+`Source.prepare` to compute the cut, first-operand seed and capped depth, and
+projects the actual seed/operands. `SortedQuarterMachine` generates each packed
+index by a runtime loop of streaming doublings, evaluates its original chain with
+certified modular addition/XNOR and packed decoding, and invokes the uniform radix
+sorter. It uses the tape primitives directly, bypassing sparse RAM interpretation
+and its cubic compaction for this route. The generation loop derives the record
+count, binary width and wire volume at every prefix; callback and sort certificates
+charge all simultaneous input/output and transient buffers.
+
+`SourceQuarter.run_computable` proves time **and charged peak bit space**
+$O((2^k+1)Q(I+1))$, for one fixed monotone polynomial $Q$, original input wire
+length $I$, $q=N-1$ and computed `k = q / 4`. No executable, generated
+list, traversal or desired resource bound is supplied as a premise.
+`original_correct` connects every sorted record to its original full-width packed
+quarter witness and projected state. For admitted $p≤m$,
+`original_input_length` bounds the original wire by
+$6m+3+(q+1)(2m+1)$; thus this first-quarter component has the source's
+$O^*(2^k)$ time/space with the polynomial bit overhead explicit. Empty/zero-width
+quarters and colliding states retain all indices. This is **not a whole-instance
+witness or exhaustive-miss algorithm**: inverse-quarter generation, class counts,
+matching, smaller-side full-state retention, access/probing and reuse/release still
+need the charged sorted-list composition. The existing complete `CompactExecution`
+path and all its cubic filter/interpreter costs remain unchanged. Neither global
+source resource bound nor 733 ALL-main is concluded here.
+
+From the repository root, build
+`lake build Complexity.Cryptanalysis.AddXNORSourceQuarter`, then run
+`lake env lean ComplexityTests/AddXNORSortedQuarterMachine.lean`. The
+[integrated client](../../ComplexityTests/AddXNORSortedQuarterMachine.lean) starts
+from original operands, checks a real non-self-inverse addition quarter, stable
+full-state/projected collisions, computed seed/depth/cut, capped/zero widths and
+empty inputs, and instantiates the arbitrary-input machine/resource theorem.
+
 From the repository root, build
 `lake build Complexity.Cryptanalysis.AddXNORSortedRecords`, then run
 `lake env lean ComplexityTests/AddXNORSortedRecords.lean`. The
