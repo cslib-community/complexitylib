@@ -31,12 +31,24 @@ dictates every pair of alternatives other than `b`, and the extremely pivotal vo
 different alternatives coincide, so `n` dictates every pair.
 
 **Scope.** Voters' rankings are strict, so the domain consists of all profiles of linear orders;
-society's ranking may contain ties. Strict-valued rules are covered by composing with
-`Ranking.toWeakRanking`. The set of alternatives may be infinite: the theorem only needs three
-distinct alternatives. The electorate must be finite; with infinitely many voters, rules defined
-from a nonprincipal ultrafilter satisfy Pareto and IIA without a dictator (Fishburn 1970), which
-is not formalized here. The tests show that the hypothesis of three alternatives is needed:
-majority rule for three voters on two alternatives is Pareto, IIA and not dictatorial.
+society's ranking may contain ties. Excluding individual indifference makes the theorem formally
+stronger, not weaker: Pareto and IIA are only assumed on the smaller domain of strict profiles, so
+the theorem applies to more rules. The version in which voters may also be indifferent follows
+from this one by a short IIA reduction, which is not formalized here. Strict-valued rules are
+covered by composing with `Ranking.toWeakRanking`. The set of alternatives may be infinite: the
+theorem only needs three distinct alternatives. The electorate must be finite; with infinitely
+many voters, rules defined from a nonprincipal ultrafilter satisfy Pareto and IIA without a
+dictator (Fishburn 1970), which is not formalized here. The tests show that the hypotheses of
+three alternatives and of IIA are needed: majority rule for three voters on two alternatives is
+Pareto, IIA and not dictatorial, and the Borda count for two voters on three alternatives is
+Pareto and not dictatorial (so, by the theorem, not IIA).
+
+**Representation.** Rankings are bundled structures holding one relation, not instances of
+Mathlib's `LinearOrder`. A profile assigns different orders on the same type `A` to different
+voters, and the proof builds new rankings pointwise (`Ranking.toTop`, `Ranking.toBottom`).
+Typeclass-carried orders, which also hold decidability and `min`/`max` data, would make both
+awkward. Bridge instances (`IsStrictTotalOrder A r.Prefers`, `IsPreorder A R.AtLeast`,
+`Std.Total R.AtLeast`) give access to Mathlib's unbundled order API.
 
 ## Main definitions
 
@@ -71,7 +83,7 @@ namespace Cslib.GameTheory.SocialChoice
 
 /-- A **ranking** of the alternatives `A`: a strict linear order, read `r.Prefers a b` as
 "`a` is ranked above `b`". -/
-structure Ranking (A : Type*) where
+@[ext] structure Ranking (A : Type*) where
   /-- `Prefers a b`: the alternative `a` is ranked strictly above `b`. -/
   Prefers : A → A → Prop
   irrefl : ∀ a, ¬ Prefers a a
@@ -105,6 +117,13 @@ theorem prefers_of_not_prefers {a b : A} (hab : a ≠ b) (h : ¬ r.Prefers a b) 
 theorem not_prefers_iff {a b : A} (hab : a ≠ b) : ¬ r.Prefers a b ↔ r.Prefers b a :=
   ⟨r.prefers_of_not_prefers hab, r.asymm⟩
 
+instance isStrictTotalOrder (r : Ranking A) : IsStrictTotalOrder A r.Prefers where
+  irrefl := r.irrefl
+  trans := r.trans
+  trichotomous a b hab hba := by
+    by_contra h
+    exact (r.total a b h).elim hab hba
+
 /-- The reverse ranking. -/
 def reverse : Ranking A where
   Prefers a b := r.Prefers b a
@@ -137,10 +156,10 @@ def toTop (b : A) : Ranking A where
 def toBottom (b : A) : Ranking A := (r.reverse.toTop b).reverse
 
 /-- `b` is ranked above every other alternative. -/
-def IsTop (b : A) : Prop := ∀ x, x ≠ b → r.Prefers b x
+@[expose] def IsTop (b : A) : Prop := ∀ x, x ≠ b → r.Prefers b x
 
 /-- `b` is ranked below every other alternative. -/
-def IsBottom (b : A) : Prop := ∀ x, x ≠ b → r.Prefers x b
+@[expose] def IsBottom (b : A) : Prop := ∀ x, x ≠ b → r.Prefers x b
 
 theorem toTop_prefers_of_ne {b x y : A} (hx : x ≠ b) (hy : y ≠ b) :
     (r.toTop b).Prefers x y ↔ r.Prefers x y := by
@@ -198,9 +217,15 @@ namespace WeakRanking
 variable (R : WeakRanking A)
 
 /-- The strict part of a weak ranking: `a` is ranked strictly above `b`. -/
-def Prefers (a b : A) : Prop := ¬ R.AtLeast b a
+@[expose] def Prefers (a b : A) : Prop := ¬ R.AtLeast b a
 
 theorem refl (a : A) : R.AtLeast a a := (R.total a a).elim id id
+
+instance isPreorder (R : WeakRanking A) : IsPreorder A R.AtLeast where
+  refl := R.refl
+  trans := R.trans
+
+instance instTotal (R : WeakRanking A) : Std.Total R.AtLeast := ⟨R.total⟩
 
 theorem atLeast_of_prefers {a b : A} (h : R.Prefers a b) : R.AtLeast a b :=
   (R.total a b).resolve_right h
@@ -215,15 +240,15 @@ theorem prefers_trans {a b c : A} (hab : R.Prefers a b) (hbc : R.Prefers b c) :
   fun hca => hbc (R.trans _ _ _ hca (R.atLeast_of_prefers hab))
 
 /-- `b` is ranked strictly above every other alternative. -/
-def IsTop (b : A) : Prop := ∀ x, x ≠ b → R.Prefers b x
+@[expose] def IsTop (b : A) : Prop := ∀ x, x ≠ b → R.Prefers b x
 
 /-- `b` is ranked strictly below every other alternative. -/
-def IsBottom (b : A) : Prop := ∀ x, x ≠ b → R.Prefers x b
+@[expose] def IsBottom (b : A) : Prop := ∀ x, x ≠ b → R.Prefers x b
 
 end WeakRanking
 
 /-- A ranking, viewed as a weak ranking with no ties. -/
-def Ranking.toWeakRanking (r : Ranking A) : WeakRanking A where
+@[expose] def Ranking.toWeakRanking (r : Ranking A) : WeakRanking A where
   AtLeast a b := a = b ∨ r.Prefers a b
   total a b := by
     by_cases h : a = b
@@ -235,6 +260,9 @@ def Ranking.toWeakRanking (r : Ranking A) : WeakRanking A where
     · exact Or.inr hbc
     · exact Or.inr hab
     · exact Or.inr (r.trans _ _ _ hab hbc)
+
+@[simp] theorem Ranking.toWeakRanking_atLeast (r : Ranking A) {a b : A} :
+    r.toWeakRanking.AtLeast a b ↔ a = b ∨ r.Prefers a b := Iff.rfl
 
 @[simp] theorem Ranking.toWeakRanking_prefers (r : Ranking A) {a b : A} :
     r.toWeakRanking.Prefers a b ↔ r.Prefers a b := by
@@ -257,24 +285,24 @@ namespace SocialWelfareFunction
 variable {V : Type*} (F : SocialWelfareFunction V A)
 
 /-- **Weak Pareto** (unanimity): if every voter ranks `a` above `b`, so does society. -/
-def IsPareto : Prop :=
+@[expose] def IsPareto : Prop :=
   ∀ (P : Profile V A) (a b : A), (∀ i, (P i).Prefers a b) → (F P).Prefers a b
 
 /-- **Independence of irrelevant alternatives**: society's comparison of `a` and `b` depends
 only on the voters' comparisons of `a` and `b`. -/
-def IsIIA : Prop :=
+@[expose] def IsIIA : Prop :=
   ∀ (P Q : Profile V A) (a b : A), (∀ i, ((P i).Prefers a b ↔ (Q i).Prefers a b)) →
     ((F P).AtLeast a b ↔ (F Q).AtLeast a b)
 
 /-- Voter `i` is a **dictator** for `F`: whenever `i` ranks `a` above `b`, so does society. -/
-def IsDictator (i : V) : Prop :=
+@[expose] def IsDictator (i : V) : Prop :=
   ∀ (P : Profile V A) (a b : A), (P i).Prefers a b → (F P).Prefers a b
 
 /-- `F` is **dictatorial** if it has a dictator. -/
-def IsDictatorial : Prop := ∃ i, F.IsDictator i
+@[expose] def IsDictatorial : Prop := ∃ i, F.IsDictator i
 
 /-- The **dictatorship** of voter `i`: society adopts `i`'s ranking. -/
-def dictatorship (i : V) : SocialWelfareFunction V A := fun P => (P i).toWeakRanking
+@[expose] def dictatorship (i : V) : SocialWelfareFunction V A := fun P => (P i).toWeakRanking
 
 theorem isDictator_dictatorship (i : V) : (dictatorship (A := A) i).IsDictator i :=
   fun P _ _ h => (P i).toWeakRanking_prefers.mpr h

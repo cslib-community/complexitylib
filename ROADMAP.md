@@ -1424,8 +1424,9 @@ pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
   least three alternatives, for example by Reny's side-by-side proof (Economics Letters 70, 2001),
   sharing the pivotal-voter infrastructure with Arrow's theorem.
 - **Characterizations:** May's theorem (majority rule is the only anonymous, neutral, positively
-  responsive rule on two alternatives); Arrow's theorem with individual weak orders; the
-  infinite-electorate counterexample from a nonprincipal ultrafilter (Fishburn 1970).
+  responsive rule on two alternatives); derive the individual-weak-order corollary of Arrow's
+  theorem (by an IIA reduction to strict profiles); the infinite-electorate counterexample from a
+  nonprincipal ultrafilter (Fishburn 1970).
 - **Quantitative Arrow:** Kalai's Fourier-analytic bound on the probability of a Condorcet
   paradox and its robust version via FKN, tracked under
   [#2131](https://github.com/cslib-community/complexitylib/issues/2131).

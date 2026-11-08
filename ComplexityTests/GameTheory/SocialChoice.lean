@@ -4,17 +4,35 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.GameTheory.SocialChoice.Arrow
-import Mathlib.Data.Fintype.Card
+module
+-- upstream: candidate
+
+public import Complexity.GameTheory.SocialChoice.Arrow
+public import Mathlib.Algebra.BigOperators.Fin
+public import Mathlib.Algebra.Order.BigOperators.Group.Finset
+public import Mathlib.Data.Fin.VecNotation
+import Mathlib.Data.Fintype.EquivFin
 
 /-!
 # Arrow's theorem clients
 
-Each hypothesis of Arrow's theorem is checked against a rule that drops it. Dictatorship satisfies
-weak Pareto and IIA, so the theorem is not vacuous. With three voters and only two alternatives,
-majority rule satisfies weak Pareto and IIA but is not dictatorial, so three alternatives are
-needed. The rule that ranks every alternative equally satisfies IIA but not weak Pareto.
+This is a `module` importing the public surface of `Complexity.GameTheory.SocialChoice.Arrow`,
+so it checks that clients can use the exposed definitions.
+
+Dictatorship satisfies weak Pareto and IIA, so the theorem is not vacuous. Three of Arrow's
+hypotheses are each checked against a rule that drops it:
+
+* With three voters and only two alternatives, majority rule satisfies weak Pareto and IIA but is
+  not dictatorial, so three alternatives are needed.
+* With two voters and three alternatives, the Borda count is weakly Pareto and not dictatorial,
+  so IIA is needed; by the theorem, the Borda count violates IIA.
+* The rule that ranks every alternative equally satisfies IIA but not weak Pareto.
+
+Finiteness of the electorate is also necessary, but the infinite-electorate counterexample is not
+formalized.
 -/
+
+@[expose] public section
 
 namespace ComplexityTests.GameTheory.SocialChoice
 
@@ -140,6 +158,110 @@ example : majority.IsPareto ∧ majority.IsIIA ∧ ¬ majority.IsDictatorial :=
   ⟨majority_isPareto, majority_isIIA, fun ⟨i, hi⟩ => majority_not_isDictator i hi⟩
 
 end Majority
+
+/-! ### The Borda count: IIA is needed -/
+
+section Borda
+
+open Classical in
+/-- The Borda score of `a` for two voters and three alternatives: the number of pairs `(i, x)`
+such that voter `i` ranks `a` above `x`. -/
+noncomputable def bordaScore (P : Profile (Fin 2) (Fin 3)) (a : Fin 3) : ℕ :=
+  ∑ i, (Finset.univ.filter fun x => (P i).Prefers a x).card
+
+/-- The Borda count: alternatives are ranked by Borda score, with ties. -/
+noncomputable def borda : SocialWelfareFunction (Fin 2) (Fin 3) := fun P =>
+  { AtLeast := fun a b => bordaScore P b ≤ bordaScore P a
+    total := fun _ _ => le_total _ _
+    trans := fun _ _ _ hab hbc => hbc.trans hab }
+
+theorem borda_prefers {P : Profile (Fin 2) (Fin 3)} {a b : Fin 3} :
+    (borda P).Prefers a b ↔ bordaScore P b < bordaScore P a :=
+  not_le
+
+/-- If every voter ranks `a` above `b`, each voter ranks `a` above strictly more alternatives
+than `b`. -/
+theorem borda_isPareto : borda.IsPareto := by
+  classical
+  intro P a b h
+  rw [borda_prefers]
+  unfold bordaScore
+  refine Finset.sum_lt_sum_of_nonempty Finset.univ_nonempty fun i _ =>
+    Finset.card_lt_card ((Finset.ssubset_iff_of_subset fun x hx => ?_).2 ⟨b, ?_, ?_⟩)
+  · simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hx ⊢
+    exact (P i).trans _ _ _ (h i) hx
+  · simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+    exact h i
+  · simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+    exact (P i).irrefl b
+
+open Classical in
+/-- A ranking of three alternatives places the two alternatives other than `a` below or above
+`a`. -/
+theorem card_below_add_card_above (r : Ranking (Fin 3)) (a : Fin 3) :
+    (Finset.univ.filter fun x => r.Prefers a x).card +
+      (Finset.univ.filter fun x => r.Prefers x a).card = 2 := by
+  have hsplit : (Finset.univ.filter fun x => ¬ r.Prefers a x) =
+      insert a (Finset.univ.filter fun x => r.Prefers x a) := by
+    ext x
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_insert]
+    by_cases hx : x = a
+    · subst hx
+      exact iff_of_true (r.irrefl x) (Or.inl rfl)
+    · rw [r.not_prefers_iff (Ne.symm hx)]
+      exact ⟨Or.inr, fun h => h.resolve_left hx⟩
+  have hnotMem : a ∉ Finset.univ.filter fun x => r.Prefers x a := by
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+    exact r.irrefl a
+  have h := Finset.card_filter_add_card_filter_not (s := Finset.univ) (p := fun x => r.Prefers a x)
+  rw [hsplit, Finset.card_insert_of_notMem hnotMem, Finset.card_univ, Fintype.card_fin] at h
+  omega
+
+/-- When voter `1` reverses voter `0`'s ranking, every alternative has Borda score `2`. -/
+theorem bordaScore_reverse (r : Ranking (Fin 3)) (a : Fin 3) :
+    bordaScore ![r, r.reverse] a = 2 := by
+  unfold bordaScore
+  rw [Fin.sum_univ_two]
+  convert card_below_add_card_above r a using 4
+  · simp only [Matrix.cons_val_zero]
+  · simp only [Matrix.cons_val_one, Matrix.cons_val_zero, Ranking.reverse_prefers]
+
+/-- No voter is a dictator for the Borda count: in a profile where the voters hold opposite
+rankings, society is indifferent between all alternatives. -/
+theorem borda_not_isDictator (i : Fin 2) : ¬ borda.IsDictator i := by
+  intro hi
+  obtain ⟨r⟩ := Ranking.nonempty (Fin 3)
+  have hnone : ∀ a b, ¬ (borda ![r, r.reverse]).Prefers a b := fun a b h => by
+    rw [borda_prefers, bordaScore_reverse, bordaScore_reverse] at h
+    exact lt_irrefl _ h
+  rcases (![r, r.reverse] i).total 0 1 (by decide) with h | h
+  · exact hnone _ _ (hi _ _ _ h)
+  · exact hnone _ _ (hi _ _ _ h)
+
+/-- The Borda count is weakly Pareto and not dictatorial, so by Arrow's theorem it violates IIA. -/
+theorem borda_not_isIIA : ¬ borda.IsIIA := fun hI =>
+  let ⟨i, hi⟩ := isDictatorial_of_three_le_card borda_isPareto hI (by simp)
+  borda_not_isDictator i hi
+
+/-- With two voters and three alternatives, the Borda count is weakly Pareto and not
+dictatorial: Arrow's theorem needs IIA. -/
+example : borda.IsPareto ∧ ¬ borda.IsIIA ∧ ¬ borda.IsDictatorial :=
+  ⟨borda_isPareto, borda_not_isIIA, fun ⟨i, hi⟩ => borda_not_isDictator i hi⟩
+
+end Borda
+
+/-! ### Mathlib order API through the bridge instances -/
+
+example (r : Ranking (Fin 3)) (a b : Fin 3) : r.Prefers a b ∨ a = b ∨ r.Prefers b a :=
+  trichotomous a b
+
+example (R : WeakRanking (Fin 3)) (a b c : Fin 3) (hab : R.AtLeast a b) (hbc : R.AtLeast b c) :
+    R.AtLeast a c :=
+  _root_.trans hab hbc
+
+example (r : Ranking (Fin 3)) (a b : Fin 3) :
+    r.toWeakRanking.AtLeast a b ↔ a = b ∨ r.Prefers a b := by
+  simp
 
 /-! ### Universal indifference: weak Pareto is needed -/
 

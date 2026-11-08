@@ -150,6 +150,15 @@ alternatives `A`.
   ranking as a weak ranking without ties.
 - A `SocialWelfareFunction V A` maps every profile `V → Ranking A` to a `WeakRanking A`. Every
   profile of strict rankings is admissible (unrestricted domain); voters cannot be indifferent.
+  This makes Arrow's theorem formally stronger, not weaker: Pareto and IIA are only assumed on
+  strict profiles, so more rules are covered. The version in which voters may be indifferent
+  follows by a short IIA reduction, which is not formalized.
+
+Rankings are bundled structures, not `LinearOrder` instances, because a profile puts different
+orders on the same type and the proof builds rankings pointwise. The bridge instances
+`IsStrictTotalOrder A r.Prefers`, `IsPreorder A R.AtLeast` and `Std.Total R.AtLeast` give access to
+Mathlib's unbundled order API. The axioms and the strict part of a weak ranking are `@[expose]`d,
+so clients can unfold them.
 
 The axioms are `IsPareto` (weak Pareto: if every voter strictly prefers `a` to `b`, so does
 society), `IsIIA` (society's `AtLeast a b` depends only on each voter's `Prefers a b`;
@@ -196,12 +205,19 @@ The [checked examples](../../ComplexityTests/GameTheory/MechanismDesign.lean) sh
 - Knapsack feasibility holds and fails on small inputs, and the existence theorems are
   nonvacuous.
 
-The [social choice examples](../../ComplexityTests/GameTheory/SocialChoice.lean) test each
-hypothesis of Arrow's theorem against a rule that drops it. Dictatorship is weakly Pareto and IIA,
-so the theorem is not vacuous. With three voters and two alternatives, pairwise majority rule is
-weakly Pareto, IIA and not dictatorial, so three alternatives are needed. Universal indifference
-is IIA but not weakly Pareto. The examples also apply the theorem to three voters and three
-alternatives, and to a rule with strict social rankings.
+The [social choice examples](../../ComplexityTests/GameTheory/SocialChoice.lean) are a `module`
+that uses only the public surface of the Arrow module. Dictatorship is weakly Pareto and IIA, so
+the theorem is not vacuous. Three hypotheses are each tested against a rule that drops it:
+
+- With three voters and two alternatives, pairwise majority rule is weakly Pareto, IIA and not
+  dictatorial, so three alternatives are needed.
+- With two voters and three alternatives, the Borda count is weakly Pareto and not dictatorial:
+  when the two voters hold opposite rankings, every alternative has Borda score `2`. By Arrow's
+  theorem the Borda count therefore violates IIA, so IIA is needed.
+- Universal indifference is IIA but not weakly Pareto.
+
+The examples also apply the theorem to three voters and three alternatives, and to a rule with
+strict social rankings.
 
 The [optimal-auction examples](../../ComplexityTests/GameTheory/OptimalAuction.lean) use
 `U[0, 1]`, which has reserve price `1/2`. With two bidders, bids `(0.3, 0.4)` do not sell. On
@@ -232,6 +248,7 @@ computational cost of allocation rules. See `ROADMAP.md` and issues #2947 and #3
 
 For social choice, only Arrow's theorem for strict individual rankings is formalized. A finite
 electorate is necessary, but the infinite-electorate counterexample built from a nonprincipal
-ultrafilter (Fishburn 1970) is not formalized. Also not formalized are individual weak orders,
-the Gibbard–Satterthwaite theorem, May's theorem, quantitative (Kalai) versions of Arrow's theorem
-and the complexity of winner determination and manipulation. See `ROADMAP.md` and issue #3282.
+ultrafilter (Fishburn 1970) is not formalized. Also not formalized are the corollary for
+individual weak orders, the Gibbard–Satterthwaite theorem, May's theorem, quantitative (Kalai)
+versions of Arrow's theorem and the complexity of winner determination and manipulation. See
+`ROADMAP.md` and issue #3282.
