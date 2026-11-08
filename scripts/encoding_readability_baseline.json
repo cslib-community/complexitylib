@@ -75,11 +75,6 @@
   "encPair (encPair encUnary encBits) ?1": 6,
   "encPair encNat (encPair encUnary ?1)": 4
  },
- "Complexity/Computability/GenericRAM/Native/BooleanSearch.lean": {
-  "encOption (encList encBool)": 3,
-  "encPair ?1 (encList encBool)": 4,
-  "encPair ?1 (encOption (encList encBool))": 3
- },
  "Complexity/Computability/GenericRAM/Native/HeavyBranchFold.lean": {
   "encList (encList (encList encNat))": 4,
   "encList (encList encNat)": 4,
