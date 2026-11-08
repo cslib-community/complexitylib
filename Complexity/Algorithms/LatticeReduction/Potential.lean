@@ -226,16 +226,24 @@ theorem gramSchmidtCoeff_update_sub_smul (b : Fin n → E) {i j : Fin n} (hji : 
   rw [← Int.cast_smul_eq_zsmul ℝ, inner_sub_right, inner_smul_right]
   ring
 
+/-- Subtracting `round μᵢⱼ` times `bⱼ` makes `|μᵢⱼ| ≤ 1/2`, provided `b*ⱼ ≠ 0`. -/
+theorem abs_gramSchmidtCoeff_round_le_of_ne_zero {b : Fin n → E} {i j : Fin n}
+    (hj : gramSchmidt ℝ b j ≠ 0) (hji : j < i) :
+    |gramSchmidtCoeff ℝ (Function.update b i
+        (b i - round (gramSchmidtCoeff ℝ b i j) • b j)) i j| ≤ 1 / 2 := by
+  rw [gramSchmidtCoeff_update_sub_smul b hji, gramSchmidtCoeff_self ℝ hj, mul_one]
+  exact abs_sub_round _
+
 /-- Subtracting `round μᵢⱼ` times `bⱼ` makes `|μᵢⱼ| ≤ 1/2`, for linearly independent `b`. -/
 theorem abs_gramSchmidtCoeff_round_le {b : Fin n → E} (hli : LinearIndependent ℝ b) {i j : Fin n}
     (hji : j < i) :
     |gramSchmidtCoeff ℝ (Function.update b i
-        (b i - round (gramSchmidtCoeff ℝ b i j) • b j)) i j| ≤ 1 / 2 := by
-  rw [gramSchmidtCoeff_update_sub_smul b hji,
-    gramSchmidtCoeff_self ℝ (gramSchmidt_ne_zero j hli), mul_one]
-  exact abs_sub_round _
+        (b i - round (gramSchmidtCoeff ℝ b i j) • b j)) i j| ≤ 1 / 2 :=
+  abs_gramSchmidtCoeff_round_le_of_ne_zero (gramSchmidt_ne_zero j hli) hji
 
-/-- An exchange step: swap `bᵢ` and `bᵢ₊₁` when condition (1.5) fails at `i`. -/
+/-- An exchange step: swap `bᵢ` and `bᵢ₊₁` when condition (1.5) fails at `i`. This allows any
+such `i`, so it is more general than Case 1 of [LenstraLenstraLovasz1982], which swaps only at the
+current stage and after (1.18); the potential argument needs only the failure of (1.5). -/
 @[expose] def IsSwapStep (δ : ℝ) (b c : Fin n → E) : Prop :=
   ∃ i j : Fin n, (j : ℕ) = i + 1 ∧ ¬ ExchangeCondAt δ b i j ∧ c = b ∘ Equiv.swap i j
 
