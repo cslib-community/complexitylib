@@ -4222,6 +4222,7 @@ public import Complexity.Foundations.Data.Finset.SymmDiff
 public import Complexity.Foundations.Data.Finset.Tournament
 public import Complexity.Foundations.Data.Finset.UniqueTail
 public import Complexity.Foundations.Data.Finset.Variance
+public import Complexity.Foundations.Data.Finsupp.OddSupport
 public import Complexity.Foundations.Data.Fintype.RestrictInjective
 public import Complexity.Foundations.Data.Hamming
 public import Complexity.Foundations.Data.Hamming.Expansion
@@ -4781,6 +4782,10 @@ public import Complexity.Logics.FirstOrder.ZeroOneLaw.Transfer
 public import Complexity.Logics.FirstOrder.ZeroOneLaw.UniformStructure
 public import Complexity.Logics.Polymorphism
 public import Complexity.Logics.Polymorphism.BooleanClone
+public import Complexity.Logics.Propositional.Algebraic.SumOfSquares.Basic
+public import Complexity.Logics.Propositional.Algebraic.SumOfSquares.Parity
+public import Complexity.Logics.Propositional.Algebraic.SumOfSquares.Tseitin
+public import Complexity.Logics.Propositional.Algebraic.SumOfSquares.TseitinExpander
 public import Complexity.Logics.Propositional.CNF
 public import Complexity.Logics.Propositional.CNF.Coding
 public import Complexity.Logics.Propositional.CNF.Compact
@@ -4898,6 +4903,7 @@ public import Complexity.Logics.Propositional.Frege
 public import Complexity.Logics.Propositional.Frege.Resolution
 public import Complexity.Logics.Propositional.Parity
 public import Complexity.Logics.Propositional.Parity.DepthThree
+public import Complexity.Logics.Propositional.ParitySystem
 public import Complexity.Logics.Propositional.Pigeonhole
 public import Complexity.Logics.Propositional.QBF
 public import Complexity.Logics.Propositional.QBF.Arithmetization
