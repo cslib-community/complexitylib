@@ -142,6 +142,22 @@ Arbitrary unitary matrices are semantic objects. The [GateCode](https://github.c
 
 [BQP](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/BQP.lean#L69) uses one such family for a language under a supplied injective instance encoding: every encoded member is accepted with probability at least two thirds, and every encoded nonmember with probability at most one third. Polynomial circuit size follows from the native polynomial-time generator. The model and its gate-set convention are owned here.
 
+**Controlled phase gates.** [PhaseCode.lean](../../Complexity/Computability/Circuit/Quantum/PhaseCode.lean) adds the phase gate `S = diag(1, i)`, the controlled phase gate `Λ(S)` and their inverses. A code `(true, (inv, t, cs))` names the gate on qubits `t :: cs`, with at most one control; `(false, g)` is an ordinary gate code. A `UniformPhaseCircuitFamily` over the extended set has the same uniformity, width, input and acceptance conventions as a `UniformCircuitFamily`. [`mem_BQP_iff_phase`](../../Complexity/Computability/Complexity/Classes/BQP/PhaseGates.lean) shows that both kinds of families define the same `BQP`.
+
+The proof is an exact simulation, not an approximation. [The real encoding](../../Complexity/Computability/Circuit/Quantum/RealEncoding.lean) adds one last qubit and stores the amplitude `a + ib` of `|x⟩` as `a` on `|x 0⟩` and `b` on `|x 1⟩`. Real gates act on such states unchanged. Each controlled phase gate becomes four gates on the extra qubit: `H`, then a CNOT or Toffoli gate controlled by the phase gate's qubits, then `H` and the same flip again. The inverse uses the reversed sequence.
+
+`UniformPhaseCircuitFamily.realify` performs this translation in polynomial time, with at most four gates per gate. `acceptProb_realify` gives equal acceptance probabilities on every input. More generally, `PhaseGateCode.onesProb_toRealCodes` preserves the probability of every event on the original qubits. The time classes and `QMA` have not yet been restated for the extended set.
+
+This is the reduction step in Aharonov's proof that Toffoli and Hadamard are computationally universal (arXiv:quant-ph/0301040, Theorem 2). Its other inputs, Kitaev's universality of `{Λ(S), H}` and the Solovay–Kitaev theorem, are tracked in [#3350](https://github.com/cslib-community/complexitylib/issues/3350).
+
+To place a language in `BQP` with phase gates:
+
+1. Define a `UniformPhaseCircuitFamily`.
+2. Compute its acceptance probability, using `PlacedGate.eval_ctrlPhase_ket` for the phase gates.
+3. Apply `mem_BQP_iff_phase.mpr`.
+
+The [checked client](../../ComplexityTests/QuantumRealEncoding.lean) does this for the first-bit language. It also checks that the real simulation maps `|1 0⟩` to `|1 1⟩`, which records `S|1⟩ = i|1⟩`. Build it with `lake build ComplexityTests.QuantumRealEncoding`.
+
 The parameterized time classes add an explicit gate bound. In each row below there exist natural constants `c1,c2` and one uniform family whose circuit at **every** length n has at most `c1*t(n)+c2` gates. Acceptance conditions apply to encoded instances; they do not impose a language specification on bitstrings outside the encoding's image.
 
 | Class | Acceptance on an encoded instance |
@@ -155,7 +171,7 @@ The postselected probability is the joint probability for qubits zero and one di
 
 All four definitions retain the **polynomial-time generator ceiling**, whatever t is. Consequently [BQTIME is contained in BQP for every t](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/BQP/Time.lean#L142), and [BQP equals the union over bounds `t(n)=n^k`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/BQP/Time.lean#L147). A superpolynomial t therefore does not turn these definitions into general quantum time classes. Exact acceptance gives both positive acceptance and bounded error with the same gate bound. The exact and positive-acceptance conventions concern this particular finite gate set; approximate gate simulation would not preserve exact zero probabilities. The cited quantum-Turing-machine results `NQP = coC_=P` and `PostBQP = PP` are not proved by this time-class module.
 
-These models connect to tensor networks through [the path-network construction](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Quantum/PathNetwork.lean). Their machine-class bridge expresses acceptance as a GapP function divided by `2^h`, with h the number of Hadamard gates, and proves [BQP contained in native AWPP and hence PP](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/BQP/Counting.lean#L149). The [machine counting account](../machines-and-classes/verifiers-counting-interaction.md) owns those target classes. The library cites the bounded-error equivalence with broader elementary gate sets but does not formalize the required universality and Solovay–Kitaev simulation in this interface.
+These models connect to tensor networks through [the path-network construction](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Quantum/PathNetwork.lean). Their machine-class bridge expresses acceptance as a GapP function divided by `2^h`, with h the number of Hadamard gates, and proves [BQP contained in native AWPP and hence PP](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/BQP/Counting.lean#L149). The [machine counting account](../machines-and-classes/verifiers-counting-interaction.md) owns those target classes. Beyond the controlled phase gates above, the library cites the bounded-error equivalence with arbitrary elementary gate sets but does not formalize the required universality and Solovay–Kitaev simulation ([#3350](https://github.com/cslib-community/complexitylib/issues/3350)).
 
 ## Quantum verifiers and QMA
 

@@ -1309,7 +1309,11 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Quantum computation** ([#896]): channel semantics and approximation costs alongside the
   circuit and measurement semantics, reusing suitable quantum foundations rather than
   incompatible models, and a bridge between the query and circuit models; complete problems for
-  BQP; for QMA ([#2876](https://github.com/cslib-community/complexitylib/issues/2876)), error
+  BQP; gate-set universality
+  ([#3350](https://github.com/cslib-community/complexitylib/issues/3350)): `BQP` over arbitrary
+  elementary gates equals `BQP` over Hadamard, NOT, CNOT and Toffoli, which needs Kitaev's
+  universality of `{Λ(P(i)), H}`, Solovay–Kitaev and polynomial-time synthesis (the exact real
+  simulation of controlled phase gates, `mem_BQP_iff_phase`, is done); for QMA ([#2876](https://github.com/cslib-community/complexitylib/issues/2876)), error
   reduction from an inverse-polynomial gap, strong error reduction that keeps the witness length,
   `QMA ⊆ A₀PP`, mixed witnesses, QCMA and the local Hamiltonian problem; related query,
   communication and interactive classes, with amplification, containments and complete problems.
