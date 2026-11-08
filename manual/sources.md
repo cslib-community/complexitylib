@@ -94,6 +94,11 @@ Dimitri P. Bertsekas. *Network Optimization: Continuous and Discrete Models*. At
 
 Manuel Blum, Robert W. Floyd, Vaughan Pratt, Ronald L. Rivest and Robert E. Tarjan. *Time Bounds for Selection*. Journal of Computer and System Sciences 7(4), 448–461, 1973. https://doi.org/10.1016/S0022-0000(73)80033-9 . Bibliographic metadata and the abstract's `5.4305 n` comparison bound for `PICK` were checked through secondary search results on 2026-11-08; the paper's text was not read. The manual attributes to this paper only the median-of-medians selection algorithm and that constant. The groups-of-five accounting in the Lean files follows the presentation in [clrs09](#clrs09), Section 9.3, which was not checked against the printed book.
 
+<a id="bhr12"></a>
+## bhr12
+
+Mihir Bellare, Viet Tung Hoang, Phillip Rogaway. "Foundations of Garbled Circuits." *Proceedings of the 2012 ACM Conference on Computer and Communications Security (CCS '12)*, 784–796, 2012. https://doi.org/10.1145/2382196.2382279 . Full version: Cryptology ePrint Archive, Report 2012/265. Bibliographic data from the DOI record and secondary listings. The ePrint copy returned HTTP 403 and the ACM page sat behind a bot challenge in this pass, so no theorem or definition numbers are claimed. The garbling-scheme syntax and simulation-based privacy with topology side information are cited at paper level only.
+
 <a id="bjkst02"></a>
 ## bjkst02
 
@@ -108,6 +113,11 @@ Manuel Blum. *A Machine-Independent Theory of the Complexity of Recursive Functi
 ## bm15
 
 Markus Bläser and Bodo Manthey. *Smoothed Complexity Theory*. ACM Transactions on Computation Theory 7(2), Article 6, 2015; preliminary version in MFCS 2012. https://doi.org/10.1145/2656210 ; arXiv:1202.1936. Read in arXiv v2 (29 June 2012) on 2026-11-08. §5, in the paragraph before Theorem 5.2, attributes `DistNP ⊆ Avg-P ⇒ NE = E` to Ben-David, Chor, Goldreich and Luby. Journal metadata checked against the Crossref record.
+
+<a id="bmr90"></a>
+## bmr90
+
+Donald Beaver, Silvio Micali, Phillip Rogaway. "The Round Complexity of Secure Protocols." *Proceedings of the 22nd Annual ACM Symposium on Theory of Computing (STOC '90)*, 503–513, 1990. https://doi.org/10.1145/100216.100287 . Bibliographic data from the DOI record and secondary listings, cited as the usual source of the point-and-permute technique. The full text was not inspected in this pass.
 
 <a id="bodlaenderjansenkratsch2014"></a>
 ## bodlaenderjansenkratsch2014
@@ -255,6 +265,11 @@ Sanjoy Dasgupta, Anupam Gupta. “An Elementary Proof of a Theorem of Johnson an
 ## dilworth1950
 
 Robert P. Dilworth. "A Decomposition Theorem for Partially Ordered Sets." *Annals of Mathematics* 51(1), 161–166, 1950. https://doi.org/10.2307/1969503 . Bibliographic metadata from search summaries, checked on 2026-11-08; the paper is paywalled and was not inspected. The library attributes to it only the finite case of the decomposition theorem, whose formal statement follows [Schrijver's lecture notes](#schrijver17), Theorem 7.6.
+
+<a id="dinic70"></a>
+## dinic70
+
+E. A. Dinic. “Algorithm for Solution of a Problem of Maximum Flow in Networks with Power Estimation.” *Soviet Mathematics Doklady* 11, 1277–1280 (1970). This original paper was not consulted. The bibliographic data come from secondary citations, and the manual attributes to it only the level-network and blocking-flow method and its phase bound, as these are standardly described. Yefim Dinitz's historical account, “Dinitz' Algorithm: The Original Version and Even's Version” (in *Theoretical Computer Science: Essays in Memory of Shimon Even*, LNCS 3895, 218–240, Springer, 2006, https://doi.org/10.1007/11685654_10 ; bibliographic data checked against the Crossref record on 2026-11-08), is cited in the module docstrings for the history. Its text was not inspected: the author-hosted PDF's text layer could not be extracted.
 
 <a id="dinur2007"></a>
 ## dinur2007
@@ -581,6 +596,11 @@ Yanyi Liu and Rafael Pass. *On One-way Functions and Kolmogorov Complexity*. FOC
 
 Arjen K. Lenstra, Hendrik W. Lenstra Jr. and László Lovász. "Factoring Polynomials with Rational Coefficients." *Mathematische Annalen* 261, 515–534, 1982. https://doi.org/10.1007/BF01457454 . Inspected the author-hosted scan https://www.math.leidenuniv.nl/~hwl/PUBLICATIONS/1982f/art.pdf on 2026-11-08: §1, conditions (1.4)–(1.5) and the remark after (1.5), Proposition (1.6) and the remark after it, Proposition (1.11), the algorithm (1.15)–(1.21), the swap formulas (1.22) and the termination argument (1.23)–(1.26).
 
+<a id="lp09"></a>
+## lp09
+
+Yehuda Lindell, Benny Pinkas. "A Proof of Security of Yao's Protocol for Two-Party Computation." *Journal of Cryptology* 22(2), 161–188, 2009. https://doi.org/10.1007/s00145-008-9036-8 . Metadata checked at the publisher. The full text is paywalled and ePrint 2004/175 returned HTTP 403 in this pass, so theorem and section locators are not claimed.
+
 <a id="ltv98"></a>
 ## ltv98
 
@@ -681,6 +701,11 @@ OpenAI. *The Exponential Time Hypothesis is False*. Manuscript dated 17 October 
 
 Giovanni Pighizzini. "Nondeterministic One-Tape Off-Line Turing Machines and Their Time Complexity." arXiv:0905.1271v1 [cs.FL], 2009. https://arxiv.org/abs/0905.1271v1 . The v1 text was read for §1, Theorem 1 (§3: crossing sequences of bounded length imply regularity, stated for nondeterministic machines under the weak measure), and the opening of §4 with Theorem 3 (attribution of the deterministic `n log n` bound to Trakhtenbrot, Hartmanis and Kobayashi). The arXiv record says the paper was to appear in the *Journal of Automata, Languages and Combinatorics*; secondary indexes place it in volume 14 (2009), pp. 107–124. The journal version was not inspected.
 
+<a id="post46"></a>
+## post46
+
+Emil L. Post. "A Variant of a Recursively Unsolvable Problem." *Bulletin of the American Mathematical Society* 52(4), 264–268, 1946. https://doi.org/10.1090/S0002-9904-1946-08555-9 . Bibliographic metadata only. The publisher's PDF returned an access error and was not inspected. It is cited as the origin of the correspondence problem and its unsolvability, as in [sipser13](#sipser13), §5.2.
+
 <a id="radhakrishnan97"></a>
 ## radhakrishnan97
 
@@ -759,7 +784,7 @@ Grant Schoenebeck. *Linear Level Lasserre Lower Bounds for Certain k-CSPs*. 49th
 <a id="schrijver03"></a>
 ## schrijver03
 
-Alexander Schrijver. *Combinatorial Optimization: Polyhedra and Efficiency*. Algorithms and Combinatorics 24, Springer, 2003. Cited for Gomory–Hu trees. The locator (Chapter 15, “Connectivity and Gomory–Hu trees”, Section 15.4) is taken from secondary descriptions of the table of contents only: the book itself was not inspected, and no theorem or page locator is claimed.
+Alexander Schrijver. *Combinatorial Optimization: Polyhedra and Efficiency*. Algorithms and Combinatorics 24, Springer, 2003. Cited for Gomory–Hu trees. The locator (Chapter 15, “Connectivity and Gomory–Hu trees”, Section 15.4) is taken from secondary descriptions of the table of contents only: the book itself was not inspected, and no theorem or page locator is claimed. It is also cited for Dinitz's algorithm: the locator Section 10.6 (on Dinitz's `O(n²m)` maximum-flow algorithm) was likewise taken from secondary descriptions of the table of contents.
 
 <a id="schrijver17"></a>
 ## schrijver17
@@ -789,7 +814,7 @@ Lloyd Shapley and Herbert Scarf. *On Cores and Indivisibility*. Journal of Mathe
 <a id="sipser13"></a>
 ## sipser13
 
-Michael Sipser. *Introduction to the Theory of Computation*, third edition. Cengage Learning, 2013. Cited for Definition 2.8 (Chomsky normal form: rules `A → BC` and `A → a`, with `S → ε` permitted for the start variable `S`, and `S` forbidden on every right-hand side; the library's `ChomskyNormalFormGrammar` imposes the latter restriction only when `S → ε` is present) and Theorem 7.16 ("Every context-free language is a member of P", proved by the CYK dynamic program). Both locators were checked against secondary course material, not the printed book.
+Michael Sipser. *Introduction to the Theory of Computation*, third edition. Cengage Learning, 2013. Cited for Definition 2.8 (Chomsky normal form: rules `A → BC` and `A → a`, with `S → ε` permitted for the start variable `S`, and `S` forbidden on every right-hand side; the library's `ChomskyNormalFormGrammar` imposes the latter restriction only when `S → ε` is present) and Theorem 7.16 ("Every context-free language is a member of P", proved by the CYK dynamic program). Both locators were checked against secondary course material, not the printed book. Also cited for §5.2 and Theorem 5.15 (Post's correspondence problem is undecidable, proved through the modified problem MPCP by a reduction from `A_TM`). That locator was checked against secondary summaries, not the printed book.
 
 <a id="sleatortarjan85"></a>
 ## sleatortarjan85
@@ -860,6 +885,11 @@ David P. Williamson and David B. Shmoys. *The Design of Approximation Algorithms
 ## yekhanin12
 
 Sergey Yekhanin. *Locally Decodable Codes*. Foundations and Trends in Theoretical Computer Science 6(3), 139–255, 2012. https://doi.org/10.1561/0400000030 . Definition 6.1 and Lemma 6.2 (§6.1.1, private information retrieval from perfectly smooth codes) were checked on 2026-11-08 against the author's draft at https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/LDC_now.pdf ; the numbering of the published monograph was not checked.
+
+<a id="yao86"></a>
+## yao86
+
+Andrew Chi-Chih Yao. "How to Generate and Exchange Secrets (Extended Abstract)." *27th Annual Symposium on Foundations of Computer Science (FOCS 1986)*, 162–167, 1986. https://doi.org/10.1109/SFCS.1986.25 . Bibliographic data from the DOI record and secondary listings, cited as the customary origin of garbled circuits. The full text was not inspected in this pass.
 
 <a id="younger67"></a>
 ## younger67

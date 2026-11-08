@@ -375,6 +375,14 @@ families and full-input native runtime.
   accounting for approximate unit sampling) is proved as `DCR.indcpaOn_paillier` for a supplied
   generator whose primes have at least `n` bits (hypothesis `hsize`); native balanced-modulus
   generation remains open.
+- **Garbled circuits and Yao's protocol**
+  ([#3236](https://github.com/cslib-community/complexitylib/issues/3236)): point-and-permute
+  garbling of arbitrary-basis circuits with exact correctness and concrete simulation privacy is
+  in `Crypto/Primitives/Garbling`. The bound is the sum of `n + size` PRF advantages, and each
+  reduction makes at most one query per table slot. Next: Yao's semi-honest two-party protocol
+  with an ideal OT oracle in the MPC framework, which needs an advantage-bounded semi-honest
+  notion. After that: the asymptotic PPT statement from the word-level `PseudorandomFunction`,
+  then free-XOR and half-gates.
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
@@ -520,6 +528,16 @@ index links to canonical definitions rather than keeping a second set.
   (`S(5) = 47,176,870`, verified by the bbchallenge Coq proof) as a cross-check;
   independence of busy beaver values from ZFC (Aaronson–Yedidia); and the connection to Chaitin's
   `Ω`.
+- **Post's correspondence problem** ([#3387](https://github.com/cslib-community/complexitylib/issues/3387)):
+  PCP and MPCP are undecidable over `Bool` and over every alphabet with two distinct letters,
+  as `¬ComputablePred` predicates on `Primcodable` instances
+  (`Computability/PostCorrespondence`). The proof reduces `ComputablePred.halting_problem` through
+  a universal `TM0` machine, Sipser's computation-history MPCP instance, and MPCP → PCP with a
+  start marker. Remaining: decidability of unary PCP and of PCP with two dominoes
+  (Ehrenfeucht–Karhumäki–Rozenberg, 1982); undecidability with a bounded number of dominoes (five,
+  Neary, 2015); a reduction from the acceptance problem of an arbitrary machine as in Sipser; and
+  consumers: ambiguity of context-free grammars, emptiness of the intersection of two context-free
+  languages, CFG universality, and mortality of 3×3 integer matrices (Paterson, 1970).
 - **Degrees of unsolvability** ([#3379](https://github.com/cslib-community/complexitylib/issues/3379)):
   oracle codes for Mathlib's `RecursiveIn` with stage-bounded evaluation, the use principle and
   the equivalence `f ≤ᵀ g ↔ ∃ c, Code.eval g c = f`, and the incomparability part of the
@@ -1716,6 +1734,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   (`Algorithms/Matching/MVV`), and Tutte's determinant criterion with the same test for general
   graphs (`Algorithms/Matching/Tutte`): MVV for general graphs (its Pfaffian form), a machine-level
   running-time certificate for the determinant test, and an RNC implementation.
+- **Blocking-flow maximum flow** ([#3328](https://github.com/cslib-community/complexitylib/issues/3328)):
+  after level networks, the Dinitz phase lemma, the `|V| - 1` phase bound and a verified executable
+  Dinitz solver with a greedy blocking-flow search (`Algorithms/Lean/MaxFlow/{LevelGraph,Dinitz}`),
+  a charged `TimeM` version with the current-arc depth-first blocking-flow search (`O(|V| |E|)`
+  per phase, `O(|V|^2 |E|)` overall); Sleator–Tarjan dynamic trees (`O(|V| |E| log |V|)`); the
+  Even–Tarjan unit-capacity bounds `O(|E| · min(|V|^{2/3}, |E|^{1/2}))`; Karzanov's `O(|V|^3)`
+  preflows and push–relabel.
 - **Auction algorithms** ([#3317](https://github.com/cslib-community/complexitylib/issues/3317)):
   remaining after Bertsekas's Gauss–Seidel auction for square, complete integer assignment
   instances (`Algorithms/Lean/Assignment`: `ε`-complementary slackness, termination within

@@ -82,9 +82,11 @@ public import Complexity.Algorithms.Lean.MaxFlow.Basic
 public import Complexity.Algorithms.Lean.MaxFlow.BipartiteMatching
 public import Complexity.Algorithms.Lean.MaxFlow.ChainCover
 public import Complexity.Algorithms.Lean.MaxFlow.Dilworth
+public import Complexity.Algorithms.Lean.MaxFlow.Dinitz
 public import Complexity.Algorithms.Lean.MaxFlow.EdmondsKarp
 public import Complexity.Algorithms.Lean.MaxFlow.HopcroftKarp
 public import Complexity.Algorithms.Lean.MaxFlow.Hungarian
+public import Complexity.Algorithms.Lean.MaxFlow.LevelGraph
 public import Complexity.Algorithms.Lean.MaxFlow.Preflow
 public import Complexity.Algorithms.Lean.MaxFlow.PushRelabel
 public import Complexity.Algorithms.Lean.MaxFlow.WeightedMatching
@@ -1497,8 +1499,10 @@ public import Complexity.Computability.Circuit.SumOfTerms.Basic
 public import Complexity.Computability.Circuit.SumOfTerms.Coverage
 public import Complexity.Computability.Circuit.Support
 public import Complexity.Computability.Circuit.Synthesis
+public import Complexity.Computability.Circuit.Topology
 public import Complexity.Computability.Circuit.Unfolding
 public import Complexity.Computability.Circuit.Weft
+public import Complexity.Computability.Circuit.WireNumber
 public import Complexity.Computability.Circuit.Wiring
 public import Complexity.Computability.Communication.Amplification
 public import Complexity.Computability.Communication.BinarySearch
@@ -1522,9 +1526,9 @@ public import Complexity.Computability.Communication.NOF.Cube
 public import Complexity.Computability.Communication.NOF.Discrepancy
 public import Complexity.Computability.Communication.NOF.ExactlyN
 public import Complexity.Computability.Communication.NOF.GeneralizedInnerProduct
+public import Complexity.Computability.Communication.NOF.Leaf
 public import Complexity.Computability.Communication.NOF.Protocol
 public import Complexity.Computability.Communication.NOF.Randomized
-public import Complexity.Computability.Communication.NOF.Transcript
 public import Complexity.Computability.Communication.NOF.TwoParty
 public import Complexity.Computability.Communication.Newman
 public import Complexity.Computability.Communication.Nondeterministic.Basic
@@ -2023,7 +2027,9 @@ public import Complexity.Computability.Complexity.Problems.CSP.Basic
 public import Complexity.Computability.Complexity.Problems.CSP.Constant
 public import Complexity.Computability.Complexity.Problems.CSP.Hardness
 public import Complexity.Computability.Complexity.Problems.CSP.Horn
+public import Complexity.Computability.Complexity.Problems.CSP.Incidence
 public import Complexity.Computability.Complexity.Problems.CSP.Majority
+public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
 public import Complexity.Computability.Complexity.Problems.CSP.Schaefer
 public import Complexity.Computability.Complexity.Problems.CSP.SelfDualThreeSAT
 public import Complexity.Computability.Complexity.Problems.ChromaticNumber
@@ -2053,6 +2059,7 @@ public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalPath
 public import Complexity.Computability.Complexity.Problems.Graph.PerfectMatching
 public import Complexity.Computability.Complexity.Problems.Graph.PerfectMatchingPolyTime
 public import Complexity.Computability.Complexity.Problems.Graph.Ports
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem
 public import Complexity.Computability.Complexity.Problems.Graph.SpanningTrees
 public import Complexity.Computability.Complexity.Problems.Graph.VertexColors
 public import Complexity.Computability.Complexity.Problems.GraphIsomorphism
@@ -3025,6 +3032,7 @@ public import Complexity.Computability.PolyTime.CSP.Boolean
 public import Complexity.Computability.PolyTime.CSP.CNFTemplate
 public import Complexity.Computability.PolyTime.CSP.Gadget
 public import Complexity.Computability.PolyTime.CSP.Gadget.Size
+public import Complexity.Computability.PolyTime.CSP.Table
 public import Complexity.Computability.PolyTime.CSP.ToCNF
 public import Complexity.Computability.PolyTime.CSP.Vars
 public import Complexity.Computability.PolyTime.CommonCountingAccum
@@ -3049,6 +3057,12 @@ public import Complexity.Computability.PolyTime.PacketPacking
 public import Complexity.Computability.PolyTime.ParityFactorEval
 public import Complexity.Computability.PolyTime.SparseMonomialJet
 public import Complexity.Computability.PolyTime.ZMod.ModulusSwitch
+public import Complexity.Computability.PostCorrespondence.Basic
+public import Complexity.Computability.PostCorrespondence.Modified
+public import Complexity.Computability.PostCorrespondence.OfTM0
+public import Complexity.Computability.PostCorrespondence.Rewrite
+public import Complexity.Computability.PostCorrespondence.Substitution
+public import Complexity.Computability.PostCorrespondence.Undecidable
 public import Complexity.Computability.Probabilistic.Adaptive
 public import Complexity.Computability.Probabilistic.AffineHash
 public import Complexity.Computability.Probabilistic.BoundedUniform
@@ -3681,6 +3695,9 @@ public import Complexity.Crypto.Negligible.Basic
 public import Complexity.Crypto.Negligible.Dyadic
 public import Complexity.Crypto.Primitives.BlockCipher.CBCMAC
 public import Complexity.Crypto.Primitives.BlockCipher.Modes
+public import Complexity.Crypto.Primitives.Garbling.Basic
+public import Complexity.Crypto.Primitives.Garbling.Privacy
+public import Complexity.Crypto.Primitives.PRF.Finite
 public import Complexity.Crypto.Primitives.PRG.Circuit
 public import Complexity.Crypto.Primitives.PRG.Game
 public import Complexity.Crypto.Primitives.PRG.NextBit
@@ -4903,6 +4920,7 @@ public import Complexity.Languages.Probabilistic.Oracle.Interaction
 public import Complexity.Languages.Probabilistic.Oracle.QueryCount
 public import Complexity.Languages.Probabilistic.Oracle.Simulation
 public import Complexity.Languages.Probabilistic.Oracle.Support
+public import Complexity.Languages.Probabilistic.Oracle.Tabulate
 public import Complexity.Languages.Probabilistic.Oracle.Transcript
 public import Complexity.Languages.Probabilistic.Presample
 public import Complexity.Languages.Probabilistic.QueriesWith
@@ -5117,9 +5135,11 @@ public import Complexity.Logics.Propositional.CSP.Boolean
 public import Complexity.Logics.Propositional.CSP.CNFTemplate
 public import Complexity.Logics.Propositional.CSP.ExactlyOne
 public import Complexity.Logics.Propositional.CSP.HardCore
+public import Complexity.Logics.Propositional.CSP.Occurrence
 public import Complexity.Logics.Propositional.CSP.PartitionFunction
 public import Complexity.Logics.Propositional.CSP.Permanent
 public import Complexity.Logics.Propositional.CSP.PrimitivePositive
+public import Complexity.Logics.Propositional.CSP.Table
 public import Complexity.Logics.Propositional.CSP.ToBoolean
 public import Complexity.Logics.Propositional.CSP.ToCNF
 public import Complexity.Logics.Propositional.CSP.ToCNF.Count

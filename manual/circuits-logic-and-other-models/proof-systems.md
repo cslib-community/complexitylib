@@ -194,6 +194,47 @@ include odd exactly-one relations, the empty-coordinate case, and failures of ex
 These mathematical prerequisites provide no planar embedding algorithm, edge-CSP solver or
 planar complexity dichotomy yet. The full remaining objective is [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
 
+## Occurrences, explicit tables and ordered incidence rotations
+
+`Complexity.Logics.Propositional.CSP.Occurrence` indexes arguments by constraint position and
+scope position, preserving repeated variables and identical constraints. `ValidLabeling` checks
+each ordered local tuple; `ConsistentLabeling` requires agreement at all occurrences of a variable.
+Given a supplied `outside : D`, their conjunction is equivalent to the existing CSP
+satisfiability predicate. Reconstruction assigns `outside` to every nonoccurring variable; the
+domain-value hypothesis is necessary when the domain may be empty. `EdgeInstance`
+requires exactly two occurrences per occurring variable, in distinct constraints, and supplies a
+partner involution. Its endpoint agreement is equivalent to global consistency. The native
+`Cslib.Complexity.CSP.incidenceGraph` in `Problems.CSP.Incidence` reuses the existing listed graph
+and positive-CNF adapter. It retains one edge per argument, dense variable vertices followed by
+constraint-position vertices, and a native polynomial construction with binary source labels.
+See [occurrence and incidence tests](../../ComplexityTests/CSPOccurrence.lean).
+
+`Complexity.Computability.PolyTime.CSP.Table` supplies `CSP.Table` as an explicit, potentially
+infinite relation alphabet for the same CSP lists. Arity is binary; accepted rows are doubly
+framed Boolean lists, including duplicate rows. Width errors reject every row. The local
+`Table.contract` retains rows with zero or one deviation from a feasible reference on selected
+internal positions, projects outside positions in their original order, and appends the connector
+bit. Its row count cannot increase; at least two distinct in-range internal positions imply
+strict width decrease and nonincrease of the full encoded table size. `Table.exactlyOne`
+constructs the new connector relation in native polynomial time from a scope list: the list's
+length pays for quadratic output. There is no polynomial-output claim from a binary arity alone.
+The zero-connector relation is empty. [Table tests](../../ComplexityTests/CSPTable.lean) cover
+malformed widths, repeated rows, contraction cases and framed size calculations. Delta-matroid
+preservation and whole-blossom correctness are not consequences of these table-operation lemmas.
+
+`Problems.Graph.RotationSystem` represents edge ends by edge-list position and a Boolean side.
+Loops have two distinct ends, and parallel edges retain separate positions. Vertex rotations
+have exactly one cycle per nonempty endpoint fiber. Face orbits use reversal followed by inverse
+rotation and include fixed-point orbits. `Problems.CSP.RotationSystem` maps ordered arguments to
+these ends and states `RespectsArgumentOrder`: the rotation at a constraint follows cyclic scope
+order. Mirroring a ternary constraint can violate that order. Nullary constraints have no argument
+ends, so this order condition is vacuous for them. See [graph rotation tests](../../ComplexityTests/RotationSystem.lean)
+and [constraint-order tests](../../ComplexityTests/CSPRotationSystem.lean).
+
+Rotations alone do not impose genus zero. These modules prove no planar recognition, geometric
+realization, planar reduction, edge solver or dichotomy. In particular, isolated vertices require
+separate treatment in a future embedding model. The full objective remains [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+
 ## Three resolution representations
 
 | Representation | What it supplies | Cost |
