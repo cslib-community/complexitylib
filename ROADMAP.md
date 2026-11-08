@@ -853,7 +853,8 @@ universe size, not supplied as unverified input tables. In dependency order:
   ([#2885](https://github.com/cslib-community/complexitylib/issues/2885)) and star-free ⇒ FO[<]
   ([#3075](https://github.com/cslib-community/complexitylib/issues/3075)): the converse FO[<] ⇒
   star-free over a finite alphabet (McNaughton–Papert), by composition of rank-k types, and
-  star-free = aperiodic (Schützenberger), from cslib's syntactic monoid;
+  star-free = aperiodic (Schützenberger), from cslib's syntactic monoid, with decidability of
+  first-order definability for regular languages;
   closure of regular languages under homomorphic images, upstream to cslib; the non-elementary
   lower bound on formula-to-automaton translation; Büchi's theorem for ω-words (S1S) over
   cslib's ω-regular languages; and MSO on trees: finite trees and tree automata
