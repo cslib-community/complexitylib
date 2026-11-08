@@ -662,6 +662,11 @@ Lean development team. *Validating a Lean Proof*, The Lean Language Reference, a
 
 Carlton E. Lemke and Joseph T. Howson, Jr. "Equilibrium Points of Bimatrix Games." *Journal of the Society for Industrial and Applied Mathematics* 12(2), 413–423, 1964. https://doi.org/10.1137/0112033 . Bibliographic data from the DOI record and secondary summaries; the paper's text was not consulted. It is cited only as the origin of the algorithm. Locators for the formalized statements follow [vonstengel07](#vonstengel07).
 
+<a id="lempelziv76"></a>
+## lempelziv76
+
+Abraham Lempel and Jacob Ziv. "On the Complexity of Finite Sequences." *IEEE Transactions on Information Theory* 22(1), 75–81, 1976. https://doi.org/10.1109/TIT.1976.1055501 . Bibliographic data from the DOI record. The paper's text was not inspected (it is paywalled). The definitions of reproduction, production, history and exhaustive history, and the statements that the exhaustive history is unique and has the fewest components (so that the complexity `c(S)` is its number of components), were taken from secondary summaries. No theorem numbers are cited.
+
 <a id="leskovecrajaramanullman20"></a>
 ## leskovecrajaramanullman20
 
@@ -1056,6 +1061,11 @@ Andrew Chi-Chih Yao. "How to Generate and Exchange Secrets (Extended Abstract)."
 ## younger67
 
 Daniel H. Younger. "Recognition and Parsing of Context-Free Languages in Time n³." *Information and Control* 10(2), 189–208, 1967. https://doi.org/10.1016/S0019-9958(67)80007-X . Bibliographic metadata was checked on 2026-11-08; the article body was not inspected. It is cited, with [Kasami 1965](#kasami65), as an original source of the CYK algorithm.
+
+<a id="zivlempel77"></a>
+## zivlempel77
+
+Jacob Ziv and Abraham Lempel. "A Universal Algorithm for Sequential Data Compression." *IEEE Transactions on Information Theory* 23(3), 337–343, 1977. https://doi.org/10.1109/TIT.1977.1055714 . Bibliographic data from the DOI record and secondary summaries. It is cited as the origin of the sliding-window code that writes each phrase as (pointer, length, next symbol). The paper's text was not inspected, and its bounded lookahead and fixed-width codewords are not formalized.
 
 <a id="zivlempel78"></a>
 ## zivlempel78
