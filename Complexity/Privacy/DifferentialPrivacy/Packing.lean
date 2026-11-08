@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Privacy.DifferentialPrivacy.Hamming
+import Complexity.Probability.PMF.Union
 
 /-!
 # Packing lower bounds for differential privacy
@@ -29,8 +30,8 @@ Hamming distance `m` of the centre give `|J| · p ≤ exp (m ε) + |J| · ∑ i 
 privacy (`DifferentiallyPrivate.card_mul_le_of_hammingDist_le_of_pure`).
 `DifferentiallyPrivate.log_two_mul_le_of_hammingDist_le` is the form of [DworkRoth2014,
 Lemma 8.4]: `2 ^ s` datasets at pairwise Hamming distance at most `Δ` with success probability
-`1 / 2` force `ε ≥ ln 2 · (s - 1) / Δ`. Dwork and Roth measure distance by the `ℓ₁` distance
-between histograms; here datasets are tuples of rows compared by Hamming distance.
+at least `1 / 2` force `ε ≥ ln 2 · (s - 1) / Δ`. Dwork and Roth measure distance by the `ℓ₁`
+distance between histograms; here datasets are tuples of rows compared by Hamming distance.
 
 The application is the lower bound for one-way marginals [DworkRoth2014, Theorem 8.7]. A dataset
 of `n` rows in `{0, 1} ^ k` has `k` one-way marginals (`oneWayMarginals`), the number of rows
@@ -73,18 +74,6 @@ universe u v
 
 variable {D : Type u} {R : Type v}
 
-/-- Probabilities of pairwise disjoint events add up to at most `1`. -/
-private theorem sum_toOuterMeasure_le_one {α ι : Type*} (q : PMF α)
-    (J : Finset ι) {B : ι → Set α} (hB : (J : Set ι).PairwiseDisjoint B) :
-    ∑ j ∈ J, q.toOuterMeasure (B j) ≤ 1 := by
-  calc ∑ j ∈ J, q.toOuterMeasure (B j)
-      = ∑' a, ∑ j ∈ J, (B j).indicator q a := by
-        simp only [PMF.toOuterMeasure_apply]
-        exact (Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable).symm
-    _ = q.toOuterMeasure (⋃ j ∈ J, B j) := by
-        rw [PMF.toOuterMeasure_apply, Finset.indicator_biUnion J B hB]
-    _ ≤ 1 := Probability.PMF.toOuterMeasure_le_one q _
-
 namespace DifferentiallyPrivate
 
 variable {Adj : D → D → Prop} {M : D → PMF R} {ε : ℝ} {δ : ℝ≥0∞}
@@ -105,7 +94,7 @@ theorem card_mul_le {ι : Type*} (h : DifferentiallyPrivate Adj M ε δ) (J : Fi
         rw [Finset.sum_add_distrib, Finset.mul_sum, Finset.sum_const, nsmul_eq_mul]
     _ ≤ ENNReal.ofReal (Real.exp ε) * 1 + J.card * δ := by
         gcongr
-        exact sum_toOuterMeasure_le_one (M x₀) J hB
+        exact Probability.PMF.sum_toOuterMeasure_le_one (M x₀) J hB
     _ = ENNReal.ofReal (Real.exp ε) + J.card * δ := by rw [mul_one]
 
 variable {ι X : Type*} [Fintype ι] [DecidableEq X] {M : (ι → X) → PMF R}

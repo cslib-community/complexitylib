@@ -38,10 +38,14 @@ for `n` rows. If `G` lands within Hamming distance `t` of the truth with probabi
 Applied to the reconstruction adversary: if an `(ε, δ)`-private mechanism answers all `2 ^ n`
 subset-count queries with distortion at most `E` with probability at least `q` on every database,
 then `(1 + exp ε) (n - 4 E) q ≤ n (exp ε + δ)`
-(`DifferentiallyPrivate.mul_card_sub_mul_le_of_subsetCountsWithin`). With probability one the
-distortion is at least `n (1 - δ) / (4 (1 + exp ε))`
-(`DifferentiallyPrivate.card_mul_one_sub_le_of_subsetCountsWithin`), linear in `n`. In particular
-exact answers are not `(ε, δ)`-private for any `δ < 1`.
+(`DifferentiallyPrivate.mul_card_sub_mul_le_of_subsetCountsWithin`). If the answers have
+distortion at most `E` with probability one on every database, then
+`E ≥ n (1 - δ) / (4 (1 + exp ε))`
+(`DifferentiallyPrivate.card_mul_one_sub_le_of_subsetCountsWithin`), which is linear in `n`.
+This bounds the distortion that can be guaranteed uniformly over all databases, not the distortion
+on a particular one: a constant mechanism is `(0, 0)`-private and answers exactly on the database
+it was built from. In particular, exact answers on every database are not `(ε, δ)`-private for any
+`δ < 1` once `n ≥ 1`.
 
 ## Main definitions
 
@@ -327,10 +331,12 @@ theorem mul_card_sub_mul_le_of_subsetCountsWithin (h : DifferentiallyPrivate Ham
   gcongr
 
 /-- **Private answers to all subset-count queries have linear distortion.** If an
-`(ε, δ)`-private mechanism for Hamming adjacency on databases of `n` rows always answers all
-subset-count queries with distortion at most `E`, then `n (1 - δ) ≤ 4 E (1 + exp ε)`. For
-`ε = δ = 0` the distortion is at least `n / 8`, and exact answers (`E = 0`) are not
-`(ε, δ)`-private for `δ < 1` once `n ≥ 1`. -/
+`(ε, δ)`-private mechanism for Hamming adjacency on databases of `n` rows answers all subset-count
+queries with distortion at most `E` with probability one on every database, then
+`n (1 - δ) ≤ 4 E (1 + exp ε)`, that is, `E ≥ n (1 - δ) / (4 (1 + exp ε))`. For `ε = δ = 0` this
+forces `E ≥ n / 8`. The bound is on a distortion guaranteed uniformly over all databases: on a
+single database a constant mechanism, which is `(0, 0)`-private, can answer exactly. Exact answers
+on every database (`E = 0`) are not `(ε, δ)`-private for `δ < 1` once `n ≥ 1`. -/
 theorem card_mul_one_sub_le_of_subsetCountsWithin (h : DifferentiallyPrivate HammingAdjacent M ε δ)
     (hδ : δ ≠ ⊤) (ans : R → Finset ι → ℝ) {E : ℝ}
     (hE : ∀ d, (M d).toOuterMeasure {o | SubsetCountsWithin (ans o) d E} = 1) :
