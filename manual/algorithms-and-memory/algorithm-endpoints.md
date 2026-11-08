@@ -13,6 +13,21 @@ These results are clients of the RAM and specification models, not additional ex
 
 Quickselect receives the index followed by the array; an invalid index has an explicit eight-step, no-write, no-randomness behavior returning zero. The expected costs are machine instruction counts. They do not price the `rand` instruction as an exact strict-PPT finite-coin sampler.
 
+### Deterministic selection in the comparison model
+
+Import `Complexity.Algorithms.Lean.Query.Select.Correctness` and `Complexity.Algorithms.Lean.Query.Select.Cost`. [Defs.lean](../../Complexity/Algorithms/Lean/Query/Select/Defs.lean) defines `Cslib.Query.select k xs`, the groups-of-five median-of-medians algorithm in cslib's comparison-query model `FreeM (LEQuery α)`, the model of `Cslib.Query.mergeSort`. Every comparison `a ≤ b` is an oracle query and list manipulation is free. The program sorts lists of at most `selectCutoff = 730` elements with `mergeSort`. For a longer list it takes the lower median of each group of five, selects the median of these medians recursively as the pivot, partitions three ways (below, equivalent to and above the pivot) and recurses into the part holding rank `k` [BFPRT 1973][bfprt73], [CLRS 9.3][clrs09]. The three-way partition makes the algorithm correct for total preorders with ties. Before recursing into a side, the program checks without comparisons that the side has at most `selectSideBound n` elements, and returns `none` otherwise. Under an oracle implementing a total preorder the check always passes. It makes the recursion well founded and lets the comparison bound hold for every oracle.
+
+| Declaration | Statement |
+|---|---|
+| `select_isOrderStatistic`, `eval_select_eq_none` | under an oracle implementing a total preorder `r`, `select k xs` returns an element of rank `k` when `k < xs.length`, and `none` otherwise. No antisymmetry is assumed |
+| `eval_select_eq_getElem?_mergeSort` | in a linear order, `select k xs` returns `xs.mergeSort[k]?` |
+| `length_filter_lt_le_selectSideBound`, `length_filter_gt_le_selectSideBound` | the median-of-medians counting bound: if the pivot has rank `⌊(g−1)/2⌋` among the `g = ⌈n/5⌉` group medians, at most `n − 3⌊(g−1)/2⌋ − 1` elements lie strictly on either side of it |
+| `select_countQueries_le`, `select_upperBound` | `select k` makes at most `37 n` comparisons under every oracle, as `UpperBound (select k) List.length (37 * ·)` |
+
+The cost proof solves `T(n) ≤ 8n/5 + T(⌈n/5⌉) + 2n + T(selectSideBound n)` by strong induction. Sorting the groups costs `8n/5` (`medians_countQueries_le`), the partition costs `2n` (`partition3_countQueries_le`), and the base case costs `n⌈log₂ n⌉ ≤ 10n`. The group cost uses [CountBound.lean](../../Complexity/Algorithms/Lean/Query/Sort/Merge/CountBound.lean), which sharpens cslib's merge bound: a merge makes at most `|xs| + |ys| − 1` comparisons (`merge_countQueries_le_sub_one`), so `mergeSort` sorts five elements with at most `8` (`mergeSortCountBound_five`). Ranks are stated with `List.IsOrderStatistic` in [OrderStatistic.lean](../../Complexity/Foundations/Data/List/OrderStatistic.lean): at most `k` elements lie strictly below `y` and more than `k` lie at or below it. `List.isOrderStatistic_iff_mergeSort` identifies the rank-`k` element of a linear order with `xs.mergeSort[k]`. The [tests](../../ComplexityTests/QuerySelect.lean) run lists longer than the cutoff, duplicates, out-of-range ranks, a preorder with ties and a dishonest oracle.
+
+The constant `37` comes from this simple accounting. Blum, Floyd, Pratt, Rivest and Tarjan refine the algorithm (`PICK`) to at most `5.4305 n` comparisons [BFPRT 1973][bfprt73]; that constant is not formalized. Group sizes other than five, the comparison lower bounds (`n − 1` for the minimum, `⌈3n/2⌉ − 2` for the minimum and maximum together, and the selection lower bounds) and a word-RAM implementation also remain open; see `ROADMAP.md`.
+
 ## Shortest paths and priority queues
 
 [abstracts/ComplexityAbstracts/DijkstraAbstract.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/DijkstraAbstract.lean) represents directed weighted multigraphs by adjacency lists with natural weights; parallel edges and self-loops are allowed. Output distance is an extended natural, encoded as zero for infinity and `d+1` for a finite distance. The word condition is `8*(n+m+2)*(W+2) < 2^w`.
@@ -130,6 +145,15 @@ These are pure Lean functions on adjacency lists, with `TimeM` cost models (as f
 
 The [DFS examples](../../ComplexityTests/DFS.lean) include a triangle and a self-loop, on which topological sort is not a topological order. The [Bellman–Ford examples](../../ComplexityTests/BellmanFord.lean) include a negative edge, a reachable negative cycle and an unreachable one, with exact tick counts. Strongly connected components and linear-time 2-SAT are tracked in [#3053](https://github.com/cslib-community/complexitylib/issues/3053).
 
+## Context-free membership and CYK
+
+Like Bellman–Ford, this is a pure Lean function with a `TimeM` cost model, not a machine program.
+
+- **Grammars in Chomsky normal form.** Import `Complexity.Computability.Languages.ChomskyNormalForm` ([source](../../Complexity/Computability/Languages/ChomskyNormalForm.lean)). A `ChomskyNormalFormGrammar` has a list of rules `A → a` (`leaf`) and `A → B C` (`node`), and a flag `nilRule` for the rule `S → ε`. Sipser's definition [Sipser, Definition 2.8][sipser13] forbids the start symbol on every right-hand side; the bundled invariant forbids it only when `nilRule` is set, so Hopcroft, Motwani and Ullman's `ε`-free form, with the start symbol allowed on right-hand sides, is covered too. `toCFG` reads the grammar as a Mathlib `ContextFreeGrammar`, and every statement is about Mathlib's `Derives` and `language` for it. `derives_iff_of_ne_nil` describes the derivations of a nonempty word by a first rule and a split. It rests on `ContextFreeGrammar.derives_append_iff` in [Foundations/Computability/ContextFreeGrammar.lean](../../Complexity/Foundations/Computability/ContextFreeGrammar.lean), which splits a derivation from `u ++ v` into derivations from `u` and from `v`.
+- **CYK.** Import `Complexity.Algorithms.Lean.CYK.Basic` ([source](../../Complexity/Algorithms/Lean/CYK/Basic.lean)). `cyk G w` fills the table of nonterminals deriving each subword, level by level, following [Kasami][kasami65], [Younger][younger67] and [Hopcroft, Motwani and Ullman, Section 7.4.4][hmu06]. `mem_table_iff` says that each cell lists exactly the nonterminals deriving its subword. `cyk_eq_true_iff` says that `cyk G w = true` iff `w ∈ G.toCFG.language`, and `decidableMemLanguage` makes membership decidable. `time_cykM` gives the exact cost `(|R| + 1) (n + C(n + 1, 3))` for `|R|` rules and a word of length `n`, and `time_cykM_le` bounds it by `(|R| + 1) (n + 1)³`. One unit is charged per rule examined in each scan, and per split point (or letter) read. Table reads and writes, cell membership tests and insertions are constant-time steps, as on a RAM holding an array of nonterminal sets. Insertion skips nonterminals already present, and `nodup_table_and_length_le` shows that every cell is a list without repetitions of at most `|R|` nonterminals. The pure `cyk` is a specification for proofs and `decide`, not a fast executable (its table is a chain of function updates); the cost statements concern `cykM`.
+
+The [CYK examples](../../ComplexityTests/Algorithms/Lean/CYK.lean) decide accepted and rejected words, including the empty word, for `{aⁿbⁿ}` and for balanced parentheses with `S → ε`, using `decide`, and check exact tick counts. This is the algorithm of [Sipser, Theorem 7.16][sipser13] (every context-free language is in P) **only for grammars already in Chomsky normal form**. Conversion of arbitrary grammars, a machine-level `ComputableInPolyTime` decider, Valiant's subcubic parsing, the pumping lemma, and CFG emptiness and universality are not formalized ([ROADMAP](../../ROADMAP.md#structure-time-and-space), [#3303](https://github.com/cslib-community/complexitylib/issues/3303)).
+
 ## Hash families and dictionaries
 
 [abstracts/ComplexityAbstracts/HashTablesAbstract.lean](../../abstracts/ComplexityAbstracts/HashTablesAbstract.lean) selects four expected-amortized dictionary implementations: multiply-shift chained hashing, five-wise linear probing, odd-stride uniform probing and cuckoo hashing. Each supports `query` and `insert` with overwrite, up to bounded distinct-key capacity. **Deletion is not included.** The operation list is fixed before initialization randomness; these are oblivious-sequence guarantees.
@@ -146,6 +170,40 @@ Across capacities the stated space is at most `(k+9232)*(capacity+1)` words, eva
 
 The specification `Dynamic.spec U V n_max` ([Complexity/DataStructure/Dictionary/Dynamic/Spec.lean](../../Complexity/DataStructure/Dictionary/Dynamic/Spec.lean)) supports `query u`, `insert u v` (for key `u : Fin U` and value `v < V`), and `delete u` while the active key set `Dictionary.dom s` has size `#(Dictionary.dom s) ≤ n_max`. For `n_max ≤ U`, initialization draws one hash seed, and every operation keeps that seed unchanged. The seed marginal stays exact (`seedSlack = 1`) against the uniform seed distribution. No persistent flag is kept to latch hash or overflow failures across operations. Each bucket's item count and expected extra collision or overflow probes (`probeExcess`) per operation depend only on the current active key set. The physical chain order and the division of a bucket's items between fixed-size full slabs and the shared tail pool under lazy promotion and demotion thresholds depend on operation history. The single memory block `[base, base + Succinct.space U V w n_max)` uses at most `Dynamic.succinctWords 81 213 U V w n_max` words (the information-theoretic baseline `OPT(U, V, n_max)` plus `81 * n_max * ⌈log₂ ⌈log₂ (max n_max 4)⌉⌉` bits, packed into `w`-bit words, plus `213` words) without requiring a polynomial bound on `U`. Initialization runs in `initTime ≤ Succinct.initSteps U n_max + 1 ≤ 31 * n_max + 1092` expected body instructions (`Succinct.initTime_impl_le`), where body instructions count executed instructions inside the subroutine excluding caller argument setup and the final `halt`. At the `Memory.Prog` level ([Complexity/DataStructure/Dictionary/WordRAM/SuccinctHash.lean](../../Complexity/DataStructure/Dictionary/WordRAM/SuccinctHash.lean)), `queryWithHashProg_dict_spec`, `insertWithHashProg_dict_spec`, and `deleteWithHashProg_dict_spec` bound per-seed amortized `memoryCost` (the `Memory.Prog` instruction count) by `26 + 8 * probeExcess`, `184 + 8 * probeExcess`, and `270 + 8 * probeExcess` with potential `66 * slotPotential`, where `slotPotential` sums the per-bucket slab-hysteresis potentials. In turn, `tsum_uniform_probeExcess_reducedPolyHash_le_five` bounds expected `probeExcess` by `5`. At the compiled Word-RAM level ([Complexity/DataStructure/Dictionary/WordRAM/SuccinctDispatch.lean](../../Complexity/DataStructure/Dictionary/WordRAM/SuccinctDispatch.lean)), the five generic `Memory.Prog` subroutines (`extractQuotGenProg`, `queryWithHashGenProg`, `insertWithHashGenProg`, `deletePrepWithHashGenProg`, `deleteFinishWithHashGenProg`) do not depend on `(U, V, w, n_max)`. The full program `subroutineCode U V w n_max` depends on `(U, V, w, n_max)` only through the `space` constant in `allocSpan` (the bump-allocator step that advances the frontier register by `space`), the 36-instruction parameter-loading prefix `loadParamsCode`, and the hash code. It does not depend on `base`. Consequently, both the register budget `Succinct.rSuccinct` (`≥ 292`) and the per-operation charge `Succinct.chargeVal = 313 * Succinct.opFactor + 284725` (where `Succinct.opFactor` is the maximum of `1` and the five parameter-free subroutines' `Realizes.factor` instruction-per-memory-step constants) are universal `O(1)` constants independent of `(U, V, w, n_max)`, `base`, and `ops.length`. Theorem `Succinct.seq_expected_amortized` bounds expected total body instructions across any valid oblivious sequence `ops` (fixed before initialization) by `initTime + ops.length * Succinct.chargeVal`. No theorem bounds static code size. The hash (`ReducedKWise`) and bit-packed accessors (`BitPackedArray`) are hand-written `WordRAM.Code` primitives. The deterministic bucket, slab, tail, chain, and Feistel bit-extraction subroutines ([Complexity/DataStructure/Dictionary/WordRAM/SuccinctProg.lean](../../Complexity/DataStructure/Dictionary/WordRAM/SuccinctProg.lean) to [Complexity/DataStructure/Dictionary/WordRAM/SuccinctHash.lean](../../Complexity/DataStructure/Dictionary/WordRAM/SuccinctHash.lean)) are `Memory.Prog` programs lowered by `realize`. Because `ReducedKWise` has no `Realizes` certificate, the top-level dispatcher ([Complexity/DataStructure/Dictionary/WordRAM/SuccinctDispatch.lean](../../Complexity/DataStructure/Dictionary/WordRAM/SuccinctDispatch.lean)) is hand-written `WordRAM.Code`. Before calling `Succinct.seq_expected_amortized`, verify `0 < w`, `n_max ≤ U`, `Fits w U` (`U < 2 ^ w`), `Fits w V` (`V < 2 ^ w`), `Fits w (base + Succinct.space U V w n_max)`, word-bounded initial machine state `x.Bounded w` (all initial registers and memory cells hold `< 2 ^ w`), `x.regs Succinct.frontierReg = base`, zeroed initial memory on `[base, base + Succinct.space U V w n_max)`, and `(Dynamic.spec U V n_max).ValidHistory (Dictionary.empty U) ops` for an oblivious sequence `ops` fixed before initialization.
 
+### FKS two-level perfect hashing (static, abstract cost model)
+
+Import `Complexity.DataStructure.Dictionary.PerfectHashing.Construction` ([Construction.lean](../../Complexity/DataStructure/Dictionary/PerfectHashing/Construction.lean)), which re-exports the table layer. [ComplexityTests/PerfectHashing.lean](../../ComplexityTests/PerfectHashing.lean) is a complete checked client: it instantiates a family, builds and checks a concrete table, and applies the construction theorems.
+
+[Complexity/DataStructure/Dictionary/PerfectHashing/Table.lean](../../Complexity/DataStructure/Dictionary/PerfectHashing/Table.lean) and [Construction.lean](../../Complexity/DataStructure/Dictionary/PerfectHashing/Construction.lean) formalize the static dictionary of Fredman, Komlós and Szemerédi [fks84][fks84] in the form of CLRS 3rd ed., Section 11.5 [clrs09][clrs09]. That account uses an arbitrary universal family; FKS's own `k x mod p mod s` family and their `n + o(n)` refinement are not formalized. A `PerfectHashing.Family X` gives, for each range `r`, a seed law `seed r` and functions `hash r s : X → Fin (r + 1)`. Every theorem about the construction assumes `∀ r, IsTwoUniversal (F.seed r) (F.hash r)` and a duplicate-free key list (`keys.Nodup`). The `Valid` conditions are: `n` top buckets (top range `n - 1`), `∑ b_j² ≤ 4n`, a block of exactly `b_j²` cells for each nonempty bucket, and secondary hashes injective on their buckets.
+
+- **Correctness and probes.** `PerfectHashing.lookup F x` is an `OracleComp` that reads memory cells and depends only on the family and the key. `runLookup_memory` proves it answers `decide (x ∈ keys)` on the laid-out `memory D keys` whenever the secondary hashes are injective. `isQueryBounded_lookup` bounds every lookup by `3` reads on any memory (hash evaluation is not charged).
+- **Space.** The table is counted in **typed cells**, not words or bits: a cell holds one key, one seed, or one block address with one seed. The cell bound is an `O(n)`-word bound only for families whose seeds fit in `O(1)` words. No such family is formalized yet; a seed of the uniform-function family in the tests is a whole function table. A valid table occupies exactly `n + 1 + ∑ b_j²` cells for `n ≥ 1` (`size_eq`), at most `5n + 2` (`size_le`), and every later cell is empty (`memory_of_size_le`).
+- **Construction.** `PerfectHashing.build F fuel keys` is an `OracleComp` over `buildSpec F`. Its calls are `draw r` (a fresh seed) and `eval r s x` (one hash value). Every table in the support of the honest run is `Valid` (`valid_of_mem_support_build`), so it answers correctly and fits in `5n + 2` cells. The cost model is **abstract**: `expectedCost` with `drawCost` or `evalCost` counts seed draws or hash evaluations. Bucketing, success tests and layout are free local computation, and no word-RAM time is claimed. Each level retries at most `fuel` times (`OracleComp.retry`) and the run returns `none` when a level runs out. For `n ≥ 1` keys, failure has probability at most `(n + 1)·2^{-fuel}` (`evalWith_build_none_le`, stated with `keys.length - 1 + 2`). The construction makes at most `2(n + 1)` expected draws (`expectedCost_build_draw_le`) and at most `4n` expected evaluations (`expectedCost_build_eval_le`), uniformly in `fuel`. There is no unbounded Las Vegas form.
+
+The probability core is in [Complexity/Probability/HashFamily/Collisions.lean](../../Complexity/Probability/HashFamily/Collisions.lean):
+
+- `sum_card_filter_sq`: the identity `∑_j b_j² = n + #ordered collisions`;
+- `IsUniversalHash.tsum_orderedCollisionCount_le`: at most `n(n - 1)ε` expected ordered colliding pairs, which is `2·C(n,2)ε`;
+- `IsTwoUniversal.toOuterMeasure_not_injOn_le`: `Pr[not injective] ≤ 1/2` when `n² ≤ m`;
+- `IsTwoUniversal.toOuterMeasure_four_mul_lt_sum_card_filter_sq_le`: `Pr[4n < ∑_j b_j²] ≤ 1/2` when `n ≤ m`.
+
+CLRS states the last two for `m = n²` and `m = n` with strict bounds (`< 1/2`, and `≥ 4n`). The non-strict forms here are the ones the construction's tests use. Markov's inequality for a `PMF` is `Cslib.Probability.PMF.mul_toOuterMeasure_le_tsum` in [Complexity/Probability/PMF/Markov.lean](../../Complexity/Probability/PMF/Markov.lean).
+
+The generic retry combinator, with its geometric failure and cost bounds, is in [Complexity/Languages/Probabilistic/Retry.lean](../../Complexity/Languages/Probabilistic/Retry.lean). That file also has the product-of-programs lemmas (`expectedCost_pi`, union bound `toOuterMeasure_evalWith_pi_exists_le`). The [checked examples](../../ComplexityTests/PerfectHashing.lean) cover:
+
+- the uniform-function family (`isDeltaUniversalHash_uniformOfFintype`);
+- a three-key table in `Fin 8` with every lookup and its size checked by `decide`;
+- a broken table whose lookup fails;
+- a top seed that fails the `4n` test;
+- a successful construction run.
+
+Remaining work ([#3276](https://github.com/cslib-community/complexitylib/issues/3276)) includes:
+
+- dynamic perfect hashing;
+- a word-RAM realization and a bridge to `w`-bit cell probes;
+- the FKS family itself, and the deterministic construction;
+- the Fredman–Komlós lower bound on description size.
+
 ## Approximate membership filters
 
 Import `Complexity.DataStructure.ApproximateMembership.WordRAM.QuotientFilter` ([Complexity/DataStructure/ApproximateMembership/WordRAM/QuotientFilter.lean](../../Complexity/DataStructure/ApproximateMembership/WordRAM/QuotientFilter.lean)) and construct `QuotientFilter.implOfEps` (for target error `ε ≠ 0` via `epsLog ε`) or `QuotientFilter.impl` (for dyadic error `(1 / 2) ^ k`); see [ComplexityTests/WordRAMQuotientFilter.lean](../../ComplexityTests/WordRAMQuotientFilter.lean) for a complete checked client and [abstracts/ComplexityAbstracts/ApproximateMembershipAbstract.lean](../../abstracts/ComplexityAbstracts/ApproximateMembershipAbstract.lean) for the self-contained formal abstract.
@@ -157,6 +215,37 @@ The specification `ApproximateMembership.spec U n ε` enforces strict set validi
 [abstracts/ComplexityAbstracts/KargerMinCutAbstract.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/KargerMinCutAbstract.lean) treats weighted undirected multigraphs, `n≥2`, fitted total doubled edge weight and word widths sufficient for workspace/trial counters. A single contraction trial is one fixed 16-register program: `42*n²+12*n+21` worst-case instructions and at most `n-2` random calls, always returning a genuine nontrivial cut value. When minimum cut is positive, it succeeds with probability at least `2/(n*(n-1))`.
 
 The Karger–Stein endpoint uses one fixed 24-register program, `O(n² log n)` worst-case steps and `O(n²)` matrix scratch per tree, with success at least `1/(floorlog₂(n)+15)`. Repetition gives minimum-cut **value** with failure at most `1/(2n)` in `O(n² log³ n)`. It does not enumerate all minimum cuts or attain the source's sparse-space formulation. The threshold is an integer inequality rather than a literal square-root expression; the abstract labels the implementation and proof adaptations.
+
+## Gomory–Hu trees
+
+Import `Complexity.Algorithms.Lean.GomoryHu.WeightedCut` ([source](../../Complexity/Algorithms/Lean/GomoryHu/WeightedCut.lean)). The declarations live in `Cslib.Algorithms.Lean.GomoryHu` and `Cslib.WeightedCut`. This is a theorem-level development: there is no algorithm and no running time. For a weighted multigraph `W : V → V → ℕ` with `IsMultigraph W`, `minCutBetween W s t` is the minimum `s`–`t` cut weight `λ(s, t)` ([source](../../Complexity/Foundations/Combinatorics/WeightedCut/MinCutBetween.lean)). `Network.Flow.IsMaxFlow.value_eq_minCutBetween` identifies it with the value of a maximum `s`–`t` flow in the network with capacities `W`, using the existing max-flow min-cut theorem. [MinCutBetween.lean](../../Complexity/Foundations/Combinatorics/WeightedCut/MinCutBetween.lean) also proves:
+
+- the triangle inequality `min_le_minCutBetween`: `min (λ(u, v)) (λ(v, w)) ≤ λ(u, w)` for `u ≠ w`;
+- its consequence `minCutBetween_eq_of_lt`;
+- submodularity of `cutWeight W` (`cutWeight_union_add_cutWeight_inter_le`);
+- posimodularity of `cutWeight W` (`cutWeight_sdiff_add_cutWeight_sdiff_le`).
+
+The general theory, in [Basic.lean](../../Complexity/Algorithms/Lean/GomoryHu/Basic.lean) and [Existence.lean](../../Complexity/Algorithms/Lean/GomoryHu/Existence.lean), works for any set function `f : Finset V → β` with values in a linearly ordered cancellative commutative monoid. Three definitions carry it:
+
+- `IsMinCutBetween f s t X`: `X` contains `s`, misses `t` and minimizes `f`.
+- `edgeSide T u v`: the vertices reachable from `u` in `T` once the edge `uv` is deleted.
+- `IsGomoryHuTree f T`: `T` is a spanning tree and, for every tree edge `uv`, `edgeSide T u v` is a minimum `u`–`v` cut. This is the cut-equivalent tree of [Gomory and Hu][gomoryhu61] ([Schrijver 2003][schrijver03], Section 15.4).
+
+`exists_isGomoryHuTree` proves existence for every symmetric (`f Xᶜ = f X`) submodular `f` on a nonempty finite `V`, and `exists_isGomoryHuTree_cutWeight` is the graph case. Gomory and Hu treat graphs only; the symmetric submodular form is the standard abstraction of their proof, which uses only these two properties. The proof follows Gomory and Hu's recursion without contracting vertices. It splits the terminals along a minimum cut, uses `IsMinCutBetween.inter` to uncross the minimum cuts on each side into that side, and joins the two partial trees built recursively with one edge. Three consequences follow:
+
+- `IsGomoryHuTree.exists_isMinCutBetween_of_isPath`: some edge on the `s`–`t` tree path has a side that is a minimum `s`–`t` cut.
+- `IsGomoryHuTree.isLeast_minCutBetween`: flow-equivalence. `λ(s, t)` is the least `λ(u, v)` over the edges `uv` of the tree path.
+- `card_image_minCutBetween_le`: there are at most `Fintype.card V - 1` distinct values `λ(s, t)` with `s ≠ t`.
+
+To check a candidate tree, first compute its edge sides with `edgeSide_eq_of_forall_adj`: if `S` contains `u`, misses `v` and no other tree edge crosses `S`, then `edgeSide T u v = S`. Then decide the minimum-cut conditions. The [tests](../../ComplexityTests/GomoryHu.lean) do this for the path `0 - 1 - 2 - 3` on a five-edge graph. They also refute a star, and a path for another graph, as Gomory–Hu trees.
+
+Limitations:
+
+- Weights are natural numbers.
+- The construction with `n - 1` maximum-flow calls is not formalized, whether in Gomory and Hu's form or in [Gusfield][gusfield90]'s variant without contraction; neither is its running time.
+- Minimum cuts are not enumerated.
+
+[#3320](https://github.com/cslib-community/complexitylib/issues/3320) tracks the remaining work.
 
 ## Bipartite matching and Hopcroft–Karp
 
@@ -819,6 +908,16 @@ Import `Complexity.Foundations.LinearAlgebra.Matrix.LinearProgramming` ([LinearP
 
 The [checked examples](../../ComplexityTests/Foundations/LinearAlgebra/Matrix/LinearProgramming.lean) give an infeasible system with its certificate, a feasible system with no certificate, an empty system, programs with values `3` and `22 / 5`, and an unbounded program with infeasible dual. Not formalized: bit-size bounds on solutions and certificates, membership of rational LP feasibility in NP ∩ coNP, and any polynomial-time LP algorithm ([ROADMAP](../../ROADMAP.md#optimization-and-duality)).
 
+## LLL-reduced bases and lattice basis reduction
+
+Import `Complexity.Algorithms.LatticeReduction.Potential` ([Reduced.lean](../../Complexity/Algorithms/LatticeReduction/Reduced.lean), [Potential.lean](../../Complexity/Algorithms/LatticeReduction/Potential.lean)). This is mathematics with no machine model or running time, following [Lenstra, Lenstra and Lovász, §1][lll82]. A family `b : Fin n → E` lives in an arbitrary real inner product space (for example `EuclideanSpace ℝ (Fin m)`). Its Gram–Schmidt vectors are Mathlib's `gramSchmidt ℝ b`, and its coefficients are `gramSchmidtCoeff ℝ b i j = ⟪b*ⱼ, bᵢ⟫ / ‖b*ⱼ‖²` ([GramSchmidtOrtho.lean](../../Complexity/Foundations/Analysis/InnerProductSpace/GramSchmidtOrtho.lean), a Mathlib candidate). The lattice is `Submodule.span ℤ (Set.range b)`.
+
+- **Reduced bases and Proposition (1.11):** `IsReduced δ b` is size reduction (1.4) together with the exchange condition (1.5), where the constant `3/4` is replaced by `δ`. `IsReduced.norm_sq_le` proves `‖b₀‖² ≤ (4/(4δ-1))ⁿ ‖x‖²` for `b : Fin (n + 1) → E`, `1/4 < δ ≤ 1` and every nonzero lattice vector `x`. `IsReduced.norm_le_sqrt_two_pow_mul` is the case `δ = 3/4`, `‖b₀‖ ≤ (√2)ⁿ ‖x‖`. Neither statement assumes linear independence.
+- **Steps:** `IsSizeStep` (`bᵢ ← bᵢ - r bⱼ`, `j < i`, `r ∈ ℤ`) keeps the lattice and every Gram–Schmidt vector. `abs_gramSchmidtCoeff_round_le` shows that rounding `μᵢⱼ` gives `|μᵢⱼ| ≤ 1/2`. `IsSwapStep δ` swaps `bᵢ, bᵢ₊₁` when (1.5) fails, and `gramSchmidt_swap_self` is the swap formula (1.22).
+- **Potential:** `gramPrefixDet b k = ∏_{j<k} ‖b*ⱼ‖²` equals the Gram determinant of the first `k` vectors (`gramPrefixDet_eq_det`, via `det_gram_eq_prod_norm_gramSchmidt_sq`). `potential b` is their product `D`. `IsSwapStep.potential_lt` proves `D' < δ D`. For linearly independent `b` with integral inner products (`HasIntegralGram`, e.g. `bᵢ ∈ ℤᵐ`) and `‖bᵢ‖² ≤ B`, `one_le_potential` and `potential_le` give `1 ≤ D ≤ B^{n(n-1)/2}`. Along any run of `IsStep`s, `inv_pow_swapCount_le` and `swapCount_le` bound the number of exchange steps by `(n(n-1)/2) log B / log (1/δ)`.
+
+The [checked examples](../../ComplexityTests/Algorithms/LatticeReduction.lean) show that the standard basis of `ℤ²` is `3/4`-reduced and apply the SVP bound to it. They also show that `(e₀, e₀ + e₁)` is not size reduced, and that swapping `(2 e₀, e₀ + e₁)` is an exchange step taking the potential from `4` to `2 < (3/4) · 4`. Not formalized: an executable LLL algorithm, the count of size-reduction steps, the arithmetic and bit-size bounds of (1.26), and a polynomial-time statement ([ROADMAP](../../ROADMAP.md#optimization-and-duality)).
+
 ## Goemans–Williamson MAX-CUT rounding
 
 Import `Complexity.Algorithms.Lean.MaxCut.GoemansWilliamson` ([GoemansWilliamson.lean](../../Complexity/Algorithms/Lean/MaxCut/GoemansWilliamson.lean)). This analyzes random-hyperplane rounding of a given vector solution of the MAX-CUT semidefinite relaxation [Goemans and Williamson, Sections 2–3][goemanswilliamson95]. The rounding is an expectation under Mathlib's exact `stdGaussian`; no SDP solver, finite-precision sampler or running time is involved. A weighted multigraph is a `Fintype` of edges `ι` with `ends : ι → V × V` and weights `w : ι → ℝ`. `cutValue ends w side` is the weight of a cut and `sdpValue ends w v = ∑ e, w e * (1 - ⟪v (ends e).1, v (ends e).2⟫) / 2` is the relaxation's objective at a vector assignment `v : V → F`. `hyperplaneSide v r i = decide (0 ≤ ⟪v i, r⟫)` is the rounded cut. The source draws `r` uniformly from the sphere; the side depends only on the direction of `r`, so a standard Gaussian gives the same distribution.
@@ -840,6 +939,16 @@ Import `Complexity.Algorithms.Lean.Freivalds` ([Complexity/Algorithms/Lean/Freiv
 - **Soundness:** `eval_verify_true_le` bounds acceptance of an incorrect product by `(1/|S|)^k`, given that `s ↦ d * e s` is injective for every nonzero `d`. With `0`/`1` vectors (`bit`) this hypothesis holds over every ring and `eval_verify_bool_true_le` gives `(1/2)^k`; for `k = 1` this is Theorem 1.4 of [Mitzenmacher and Upfal][mitzenmacherupfal17]. Over a finite field with uniform vectors, `eval_verify_field_true_le` gives `(1/|F|)^k`.
 
 The probability core is in [Complexity/Probability/Freivalds.lean](../../Complexity/Probability/Freivalds.lean). It contains the counting bound `card_filter_mulVec_eq_mul_card_le`, its `k`-vector form, and `isUniversalHash_mulVec`, which states `M ↦ M *ᵥ (e ∘ x)` as a `1/|S|`-universal family under the existing `IsUniversalHash` predicate. The [checked examples](../../ComplexityTests/Freivalds.lean) include several things. One is a `2 × 2` product that one vector misses and another exposes. Another is a `1 × 1` instance whose acceptance probability is exactly `1/2`, which shows the `0`/`1` bound is attained. A third is a `ZMod 4` instance where the encoding `id` fails the injectivity hypothesis and the counting bound fails with it. The randomized verifier is not a machine program: Karp–Rabin fingerprinting, rolling-hash matching, the fingerprint equality protocol and bit-level costs remain open ([ROADMAP](../../ROADMAP.md#randomized-verification-and-fingerprinting)).
+
+## Luby's randomized maximal independent set
+
+Import `Complexity.Algorithms.Lean.LubyMIS` ([Complexity/Algorithms/Lean/LubyMIS.lean](../../Complexity/Algorithms/Lean/LubyMIS.lean)). It formalizes the random-priority variant of Luby's algorithm, Algorithm 7.12 ("Fast MIS 2") of [Wattenhofer][wattenhofer16], which the source attributes to Métivier, Robson, Saheb-Djahromi and Zemmari. The graph is a Mathlib `SimpleGraph V` on a finite type, and the target is Mathlib's `Maximal G.IsIndepSet`. A `State` holds the chosen and the live vertices. `phase` is a `ProbComp` that draws a uniform ranking `σ : V ≃ Fin (card V)`, a uniform random permutation. It then takes the deterministic `step`: every live vertex that ranks below all its live neighbours joins (`joiners`), and the joiners and their neighbours stop being live. `run k` iterates `phase` `k` times from the all-live state (`OracleComp.iterate`), and `lubyMIS k` answers the chosen set. Probabilities are statements about `ProbComp.eval`.
+
+- **Correctness:** `isIndepSet_of_mem_support_lubyMIS` says that every output is independent after any number of phases. `Invariant.maximal_iff` says that a reachable chosen set is maximal exactly when nothing is live. `maximal_of_mem_support_lubyMIS` says that after any `k ≥ card V` phases every output is maximal, because the least-ranked live vertex always joins. `liveGraph L` is Mathlib's `(G.induce L).spanningCoe` (`liveGraph_eq_spanningCoe_induce`).
+- **Edge removal:** `two_mul_expect_liveEdges_phase_le` says that one phase keeps at most half the live edges in expectation (Lemma 7.14). It follows from the counting form `two_mul_sum_liveEdges_step_le`, a sum over all rankings, and from `card_filter_least_mul_card`: a fixed vertex of a set `S` ranks least on `S` for exactly `1/|S|` of the rankings.
+- **Round bounds:** iterating gives `two_pow_mul_expect_liveEdges_run_le`, at most `|E| / 2^k` expected live edges after `k` phases. Markov's inequality then gives `two_pow_mul_toOuterMeasure_live_nonempty_le`. If `|E| ≤ 2^m`, `toOuterMeasure_not_maximal_lubyMIS_le` says that `m + t + 1` phases fail to give a maximal independent set with probability at most `2^-t`. `one_sub_le_toOuterMeasure_maximal_lubyMIS` and its `_clog` and `_card` forms state this as success at least `1 - 2^-t`, with `m` instantiated to `⌈log₂ |E|⌉` and to `2⌈log₂ n⌉`. `toOuterMeasure_not_maximal_lubyMIS_le_inv_pow` bounds the failure probability after `(c + 2)⌈log₂ n⌉ + 1` phases by `n^-c`.
+
+The source draws independent reals in `[0, 1]`. Restricted to the live vertices, a uniform ranking has the same law as the order of those reals, but this equivalence is not formalized. The source gets its high-probability bound from Lemma 7.14 by a Chernoff argument (Corollary 7.18). Here the `O(log n)` bound comes from the first moment, with explicit constants. Theorem 7.15, the expected number of phases, is not formalized. The model is a centralized simulation of the synchronous phases, not a LOCAL message-passing algorithm. Messages, the rounds inside a phase and per-vertex views are not modelled, so it is not connected to the oriented-cycle LOCAL model of [Distributed rounds in the LOCAL model](../circuits-logic-and-other-models/query-and-communication.md#distributed-rounds-in-the-local-model). Luby's original marking algorithm with pairwise independence, its NC derandomization, Ghaffari's `O(log Δ) + poly(log log n)` bound and the Kuhn–Moscibroda–Wattenhofer lower bounds remain open; see `ROADMAP.md`. The [checked examples](../../ComplexityTests/Algorithms/Lean/LubyMIS.lean) run the phases on the paths with three and four vertices and on the triangle. They show that a phase need not remove every edge, count the live edges left on the four-vertex path over all `24` rankings, and show that the intermediate chosen set is not maximal. They also instantiate the Las Vegas statement nonvacuously and check one instance of the high-probability bound.
 
 ## Euler circuits in multigraphs
 
@@ -871,21 +980,32 @@ The numeric values above are transcriptions of checked source statements, not re
 [complexitylib]: ../sources.md#complexitylib
 [bertsekas88]: ../sources.md#bertsekas88
 [bertsekas98]: ../sources.md#bertsekas98
+[bfprt73]: ../sources.md#bfprt73
 [christofides76]: ../sources.md#christofides76
 [clrs09]: ../sources.md#clrs09
 [edmonds65]: ../sources.md#edmonds65
+[fks84]: ../sources.md#fks84
 [floyd62]: ../sources.md#floyd62
 [freivalds79]: ../sources.md#freivalds79
 [goemanswilliamson95]: ../sources.md#goemanswilliamson95
+[gomoryhu61]: ../sources.md#gomoryhu61
+[gusfield90]: ../sources.md#gusfield90
 [hierholzer73]: ../sources.md#hierholzer73
+[hmu06]: ../sources.md#hmu06
+[kasami65]: ../sources.md#kasami65
 [kortevygen18]: ../sources.md#kortevygen18
+[lll82]: ../sources.md#lll82
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
 [roth82]: ../sources.md#roth82
 [rothpostlewaite77]: ../sources.md#rothpostlewaite77
 [roughgarden13cs364a]: ../sources.md#roughgarden13cs364a
+[schrijver03]: ../sources.md#schrijver03
 [schrijver17]: ../sources.md#schrijver17
 [schummervohra07]: ../sources.md#schummervohra07
 [shapleyscarf74]: ../sources.md#shapleyscarf74
+[sipser13]: ../sources.md#sipser13
 [vww18]: ../sources.md#vww18
 [thorup13]: ../sources.md#thorup13
+[wattenhofer16]: ../sources.md#wattenhofer16
 [williamsonshmoys11]: ../sources.md#williamsonshmoys11
+[younger67]: ../sources.md#younger67
