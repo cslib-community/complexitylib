@@ -51,6 +51,12 @@ class RealNginxCacheTests(unittest.TestCase):
         self.store = self.root / "store"
         self.store.mkdir()
         (self.store / "nginx-tmp").mkdir()
+        self.dashboard = self.root / "dashboard"
+        self.dashboard.mkdir()
+        (self.dashboard / "index.html").write_text("<!doctype html><title>Cache dashboard fixture</title>")
+        (self.dashboard / "app.js").write_text("'use strict';")
+        (self.dashboard / "style.css").write_text("body { margin: 0; }")
+        (self.dashboard / "stats.json").write_text('{"schema":1}')
         self.socket = self.root / "origin.sock"
         self.cert, key = self.root / "cert.pem", self.root / "key.pem"
         subprocess.run(["openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1",
@@ -93,6 +99,8 @@ class RealNginxCacheTests(unittest.TestCase):
             "/etc/letsencrypt/live/cache.example.edu/privkey.pem": nginx_string(key),
             "/srv/cache-origin/public": nginx_string(self.store / "public"),
             "/srv/cache-origin/nginx-tmp": nginx_string(self.store / "nginx-tmp"),
+            "/usr/local/share/cache-dashboard": nginx_string(self.dashboard),
+            "/var/lib/cache-dashboard/stats.json": nginx_string(self.dashboard / "stats.json"),
             "/etc/nginx/cache-publish.htpasswd": nginx_string(password_file),
             "http://unix:/run/cache-origin/http.sock": nginx_string(f"http://unix:{self.socket}"),
             # Keep the real syslog options/tags. Changing only the transport
@@ -148,7 +156,7 @@ class RealNginxCacheTests(unittest.TestCase):
 
     def nginx_ready(self):
         try:
-            return self.request("GET", "/")[0] == 404
+            return self.request("GET", "/")[0] == 200
         except (URLError, OSError):
             return False
 
@@ -301,7 +309,7 @@ class RealNginxCacheTests(unittest.TestCase):
         head = self.request("HEAD", shared)
         self.assertEqual(head[:2], (200, b""))
         self.assertEqual(head[2]["Content-Length"], str(len(b"shared")))
-        for path in ("/", f"/a0/{SCOPE}/", "/private"):
+        for path in (f"/a0/{SCOPE}/", "/private"):
             self.assertEqual(self.request("GET", path)[0], 404)
         self.assertEqual(self.request("DELETE", shared)[0], 403)
         self.assertEqual(self.request("DELETE", path_a, credentials=credentials)[0], 403)
@@ -350,6 +358,22 @@ class RealNginxCacheTests(unittest.TestCase):
         # Usage still counts rejected requests without flooding the error sink.
         records = self.usage_records()
         self.assertTrue(any(r["status"] == "429" and r["method"] == "PUT" for r in records))
+
+    def test_dashboard_is_static_read_only_and_confined(self):
+        status, html, headers = self.request("GET", "/")
+        self.assertEqual(status, 200)
+        self.assertIn(b"Cache dashboard fixture", html)
+        self.assertIn("script-src 'self'", headers["Content-Security-Policy"])
+        self.assertEqual(headers["X-Content-Type-Options"], "nosniff")
+        self.assertEqual(self.request("GET", "/stats.json")[:2], (200, b'{"schema":1}'))
+        self.assertEqual(self.request("GET", "/stats.json")[2]["Cache-Control"], "no-store")
+        self.assertIn("javascript", self.request("GET", "/app.js")[2]["Content-Type"])
+        self.assertIn("text/css", self.request("GET", "/style.css")[2]["Content-Type"])
+        self.assertEqual(self.request("HEAD", "/stats.json")[:2], (200, b""))
+        for path in ("/", "/stats.json", "/app.js", "/style.css"):
+            self.assertEqual(self.request("PUT", path, b"replacement")[0], 403)
+        for path in ("/collect.py", "/preview-data.json", "/dashboard/", "/state", "/stats.json/extra"):
+            self.assertEqual(self.request("GET", path)[0], 404)
 
     def hold_upload(self, source_ip="127.0.0.1"):
         tls = ssl.create_default_context(cafile=str(self.cert))
