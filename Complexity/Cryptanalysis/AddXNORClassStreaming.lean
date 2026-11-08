@@ -66,15 +66,21 @@ def sideInput (input : Input) (right : Bool) : SortedQuarterMachine.Input :=
 
 /-- One full state and its packed word, computed directly from original operands. -/
 def row (input : Input) (right : Bool) (u : ℕ) : ℕ × ℕ :=
+  let source := input.1
+  let parameters := source.1
+  let width := parameters.1
   let r := SortedQuarterMachine.record (sideInput input right) u
-  if right then SortedMeet.reflect input.1.1.1 r else r
+  if right then SortedMeet.reflect width r else r
 
 /-- Binary packed-counter limit; no enumerated list is constructed. -/
 def limit (input : Input) (right : Bool) : ℕ := 2 ^ (sideInput input right).2.length
 
 /-- The actual computed low-bit comparison. -/
 def accepts (input : Input) (right : Bool) (u : ℕ) : Bool :=
-  decide ((row input right u).1 % 2 ^ input.2.1 = input.2.2)
+  let parameters := input.2
+  let depth := parameters.1
+  let selectedClass := parameters.2
+  decide ((row input right u).1 % 2 ^ depth = selectedClass)
 
 /-- Semantic observer for a counter prefix; the machine does not build this range. -/
 def records (input : Input) (right : Bool) (n : ℕ) : List (ℕ × ℕ) :=
@@ -116,7 +122,10 @@ def collect (input : Input) (right : Bool) : List (ℕ × ℕ) :=
 
 /-- The selected full-state class is sorted by the existing uniform radix machine. -/
 def retain (input : Input) (right : Bool) : List (ℕ × ℕ) :=
-  RadixSort.sort (input.1.1.1, collect input right)
+  let source := input.1
+  let parameters := source.1
+  let width := parameters.1
+  RadixSort.sort (width, collect input right)
 
 private theorem count_prefix (input : Input) (right : Bool) (n : ℕ) :
     (countStep input right)^[n] (0, 0) = (n, (records input right n).length) := by
@@ -788,7 +797,11 @@ def solve (input : SortedMeet.Input × ℕ) : Option (List Bool) :=
 
 /-- Original cut/seed/zero target and computed capped projection depth. -/
 def prepare (input : Source.Input) : SortedMeet.Input × ℕ :=
-  (SortedMeet.prepare input, (Source.prepare input).1.1.2)
+  let source := Source.prepare input
+  let endpoints := source.1
+  let parameters := endpoints.1
+  let depth := parameters.2
+  (SortedMeet.prepare input, depth)
 
 /-- The count-only balance prepass precedes all retention; output includes its computed value. -/
 def run (input : Source.Input) : ℕ × Option (List Bool) :=
