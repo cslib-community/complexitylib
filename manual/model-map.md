@@ -201,6 +201,8 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `publiccoin` | [Public-coin communication](circuits-logic-and-other-models/index.md) | communication |
 | `privatecoin` | [Private-coin communication](circuits-logic-and-other-models/index.md) | communication |
 | `nondet-communication` | [Nondeterministic rectangle-cover communication](circuits-logic-and-other-models/index.md) | communication |
+| `nof-communication` | [Number-on-forehead multiparty bit trees](circuits-logic-and-other-models/query-and-communication.md) | communication |
+| `nof-publiccoin` | [Public-coin number-on-forehead communication](circuits-logic-and-other-models/query-and-communication.md) | communication |
 | `fo` | [Mathlib first-order syntax and finite relational structures](circuits-logic-and-other-models/index.md) | finite-logic |
 | `fo-interpretation` | [Tuple-domain first-order interpretations](circuits-logic-and-other-models/index.md) | finite-logic |
 | `tagged-interpretation` | [Tagged interpretations with varying tuple dimensions](circuits-logic-and-other-models/index.md) | finite-logic |
