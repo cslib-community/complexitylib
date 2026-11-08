@@ -43,7 +43,7 @@ If a small change causes a large rebuild, inspect its imports and exported inter
 
 ## Distinguish the checks that passed
 
-A focused build, quick changed-client check, whole-library build, six-gate run, axiom audit, abstract audit and comparator run have different scopes. Record the actual command and revision. Quick mode can fall back to the full suite; inspect its report. The [contribution chapter](contributing.md) specifies integration requirements.
+A focused build, quick changed-client check, whole-library build, six-gate run and axiom audit have different scopes. Record the actual command and revision. Quick mode can fall back to the full suite; inspect its report. The [contribution chapter](contributing.md) specifies integration requirements.
 
 If generated API documentation alone is stale after a module was removed, use the targeted cleanup in [the README](../../README.md#build-the-documentation). A library-wide clean discards unrelated warm outputs and does not repair an incorrect statement.
 

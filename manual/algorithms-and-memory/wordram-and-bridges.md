@@ -193,7 +193,7 @@ conditional but still uses the delivered-argument, body-only calling convention 
 This explicit route does not retain concrete witnesses through every bind, loop or
 randomized constructor. Existing existential Backend clients remain available through the
 choice fallback. Fixed-resource Karger endpoints still need their own compatible emitter and
-resource proofs; no selected abstract bound follows from this example.
+resource proofs; no fixed-resource Karger bound follows from this example.
 
 ### Retain scalar code and share its scratch bank
 

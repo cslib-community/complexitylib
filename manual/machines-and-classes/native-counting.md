@@ -2,6 +2,8 @@
 
 The snapshot contains an unconditional native-machine theorem for exact fixed-width CNF counting, followed by the declarations `not_ETH`, `not_SETH`, and `satExponent_eq_zero`. These endpoints exercise the library's encodings, compositional cost calculus, algebraic algorithms, and statement-presentation machinery together. This chapter describes the actual contracts and their source correspondence. It is not an independent audit of every mathematical argument in their implementation. [complexitylib][complexitylib]
 
+Several links below point to the snapshot's curated formal abstract and bridge for this endpoint. The abstracts were retired on 2026-11-08; the current statements are those of [CountingNativeEndpoint.lean](../../Complexity/Computability/Complexity/FineGrained/CountingNativeEndpoint.lean) and [CountingNativeModelCount.lean](../../Complexity/Computability/Complexity/FineGrained/CountingNativeModelCount.lean), which the bridge applied.
+
 ## Inputs, outputs and uniformity
 
 A formula is a list of clauses; each clause is a list of natural-number variable labels paired with Boolean polarities. Repeated literals and clauses are allowed. Width counts literal occurrences, including repetitions. `numVars` counts distinct occurring variables, independent of the largest label. The output `modelCount` counts satisfying assignments on those occurring variables; setting all other variables to false supplies a total assignment for evaluation. [Displayed formula semantics](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/SubexponentialSATAbstract.lean#L64)
@@ -53,9 +55,9 @@ The library also retains [ETH-conditional Partial MCSP results](../circuits-logi
 
 ## Credit and assurance boundary
 
-The abstract headers credit OpenAI, Samuel Schlesinger and Anton Kovsharov. The provenance docstring describes the joint port under issue #1226, including Erik Demaine and contributing Codex, Claude and Jetski workers, and credits Christian Reitwiessner for machine and encoding foundations. These are source-declared credits, not measured labor shares.
+At the snapshot, the abstract headers credited OpenAI, Samuel Schlesinger and Anton Kovsharov. The provenance docstrings described the joint port under issue #1226, including Erik Demaine and contributing Codex, Claude and Jetski workers, and credited Christian Reitwiessner for machine and encoding foundations. These are source-declared credits, not measured labor shares.
 
-The dedicated abstract makes formula semantics, encodings, resource predicates and hypotheses visible, and its bridge transfers the native declarations without adding a mathematical premise. [Comparator contracts](../design-and-assurance/assurance.md) separately restate selected counting and ETH statements. This review read the endpoint, bridge and abstract and checked the manuscript's relevant statement. It did not rerun Lean, comparator, every constituent proof, or a specialist external review of the claimed refutation. This source-level account and the recorded CI evidence do not assert mathematical consensus.
+At the snapshot, the dedicated abstract made formula semantics, encodings, resource predicates and hypotheses visible, and its bridge transferred the native declarations without adding a mathematical premise; [comparator contracts](../design-and-assurance/assurance.md#retired-formal-abstracts-and-comparator-contracts) separately restated selected counting and ETH statements. Both mechanisms were retired on 2026-11-08. This review read the endpoint, bridge and abstract and checked the manuscript's relevant statement. It did not rerun Lean, comparator, every constituent proof, or a specialist external review of the claimed refutation. This source-level account and the recorded CI evidence do not assert mathematical consensus.
 
 [complexitylib]: ../sources.md#complexitylib
 [impagliazzo01]: ../sources.md#impagliazzo01

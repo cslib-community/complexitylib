@@ -4,7 +4,7 @@ Complexitylib combines several mathematical models through explicit interpretati
 
 - [Architecture and design decisions](architecture.md): semantic layers, encoding, resource accounting, module boundaries, and migration.
 - [Proof automation and client interfaces](automation.md): certificate search, loop rules, circuit construction, logical synthesis and stateful refinement.
-- [Assurance, abstracts and trust](assurance.md): builds, axiom audits, independently stated contracts, semantic review and curated presentation.
+- [Assurance and trust](assurance.md): builds, axiom audits, the results registry, semantic review and the retired formal abstracts and comparator contracts.
 - [Upstream reuse and source credit](upstream-and-credit.md): dependency identity, copied code, general mathematics, original contributions and attribution.
 
 ## Architectural reading order

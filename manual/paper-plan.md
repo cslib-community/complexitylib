@@ -9,7 +9,7 @@ The strongest organizing claim is that Complexitylib makes complexity-theoretic 
 3. **The model atlas.** Organize machines, circuits, information-access models, logics, probabilistic games and RAM/specification models by what they compute and charge. Put the full [model map](model-map.md) and declaration links in supplementary material.
 4. **Major theorems and bridges.** Select representative endpoints with their limiting hypotheses. Include model equivalences and simulations alongside celebrated named theorems, because those bridges explain how the library fits together.
 5. **Proof engineering.** Describe named certificates, loop invariants, circuit sharing, stateful refinement, modules, upstream reuse and API migration. Use source-linked examples and bounded before/after refactors.
-6. **Assurance.** Separate proof checking, axioms, formal abstracts, comparator contracts, semantic review and source correspondence. State what was checked at the chosen revision.
+6. **Assurance.** Separate proof checking, axioms, semantic review and source correspondence. State what was checked at the chosen revision; if it predates 2026-11-08, also cover the formal abstracts and comparator contracts and why they were retired.
 7. **Automated development study.** Present the record-selection method, units and denominators before throughput figures. Combine timing with examples of human steering, failures, recovery and infrastructure work. Preserve the desktop coverage limitation if unresolved.
 8. **Limitations and research directions.** Distinguish open mathematical endpoints, unproved tight simulation bounds, unsupported model equivalences, implementation limitations and evidence missing from the empirical study.
 

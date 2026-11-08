@@ -1205,7 +1205,7 @@ Justin Thaler. *Proofs, Arguments, and Zero-Knowledge*. Foundations and Trends i
 <a id="thorup13"></a>
 ## thorup13
 
-Mikkel Thorup. “Simple Tabulation, Fast Expanders, Double Tabulation, and High Independence.” *FOCS 2013*, 90–99. https://doi.org/10.1109/FOCS.2013.18 ; author preprint https://arxiv.org/abs/1311.3121v2 . Bibliographic record checked; the formalization's quantitative adaptation is grounded in the pinned abstract and library source.
+Mikkel Thorup. “Simple Tabulation, Fast Expanders, Double Tabulation, and High Independence.” *FOCS 2013*, 90–99. https://doi.org/10.1109/FOCS.2013.18 ; author preprint https://arxiv.org/abs/1311.3121v2 . Bibliographic record checked; the formalization's quantitative adaptation is grounded in the formal abstract at the pinned revision (since retired) and the library source.
 
 <a id="toda1991"></a>
 ## toda1991

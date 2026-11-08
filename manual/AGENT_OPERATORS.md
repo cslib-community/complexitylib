@@ -79,8 +79,8 @@ Assign review to an agent that did not design or implement the change. For examp
 > Independently review PR `<number>` at its current revision. Read the actual definitions and
 > statements. Check the mathematical claim, API and representative client, including the model,
 > encodings, hypotheses and resource bounds. Review the impact on both manuals and any affected
-> formal abstract. Report concrete findings and a verdict, stating what you checked and what
-> remains uncertain.
+> results-inventory entry. Report concrete findings and a verdict, stating what you checked and
+> what remains uncertain.
 
 Lean validation establishes the checked statements under their definitions and dependencies.
 Review must also judge whether those statements express the intended mathematics and whether

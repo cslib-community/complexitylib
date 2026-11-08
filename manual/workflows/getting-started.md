@@ -45,9 +45,7 @@ The package is `complexitylib`; imports start with `Complexity.`. Most declarati
 | `Complexity/` | Definitions, semantics, resource predicates and theorems |
 | `ComplexityTests/` | Small clients, edge cases, failure guards and regressions |
 | `guide/` | Explanatory chapters with Lean examples |
-| `abstracts/ComplexityAbstracts/` | Selected readable statements and their bridges |
-| `abstracts/catalogue.json` | Headline selection, not the whole API |
-| `results/` | Result and reference inventory beyond the selected abstracts |
+| `results/` and `ComplexityResults/` | Checked inventory of named results and their sources, linked to the API documentation |
 | `ROADMAP.md` | Outstanding directions and incomplete endpoints |
 | `UPSTREAM.md` and source markers | CSLib coordination and local-copy status |
 
