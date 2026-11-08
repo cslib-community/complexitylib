@@ -14,6 +14,7 @@ public import Complexity.Logics.Propositional.CNF.ParityTests
 public import Mathlib.Data.Finset.SymmDiff
 public import Mathlib.Data.ZMod.Basic
 import Complexity.Foundations.Data.BitString.ZModTwo
+import Complexity.Logics.Propositional.CNF.Eval
 
 /-!
 # Polynomial compilation of CNF parity tests over `𝔽₂`
@@ -233,18 +234,13 @@ theorem Clause.sum_falsifyMonomials (c : Clause V) (σ : V → Bool) :
     rw [hpos_sum, monomial_apply]
     have hfals : c.eval σ = false ↔
         (∀ v ∈ pos, σ v = false) ∧ (∀ v ∈ neg, σ v = true) := by
-      rw [← Bool.not_eq_true, Clause.eval_eq_true_iff]
+      rw [Clause.eval_eq_false_iff]
       constructor
       · intro h
-        refine ⟨fun v hv => ?_, fun v hv => ?_⟩
-        · exact Bool.eq_false_iff.mpr fun hσ => h ⟨(v, true), hmem_pos.mp hv, hσ⟩
-        · exact Bool.eq_true_of_not_eq_false fun hσ => h ⟨(v, false), hmem_neg.mp hv, hσ⟩
-      · rintro ⟨hp, hn⟩ ⟨⟨v, b⟩, hl, hσ⟩
-        cases b
-        · rw [hn v (hmem_neg.mpr hl)] at hσ
-          exact Bool.false_ne_true hσ.symm
-        · rw [hp v (hmem_pos.mpr hl)] at hσ
-          exact Bool.false_ne_true hσ
+        exact ⟨fun v hv => h _ (hmem_pos.mp hv), fun v hv => h _ (hmem_neg.mp hv)⟩
+      · rintro ⟨hp, hn⟩ ⟨v, _ | _⟩ hl
+        · exact hn v (hmem_neg.mpr hl)
+        · exact hp v (hmem_pos.mpr hl)
     split_ifs with hp hn
     · rw [hfals.mpr ⟨hp, hn⟩]
       decide

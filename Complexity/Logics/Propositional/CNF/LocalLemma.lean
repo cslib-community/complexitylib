@@ -9,6 +9,7 @@ module
 
 public import Complexity.Logics.Propositional.CNF.Moser
 public import Complexity.Probability.LocalLemma
+import Complexity.Logics.Propositional.CNF.Eval
 
 /-!
 # The Lovász Local Lemma for `k`-SAT

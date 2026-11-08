@@ -10,6 +10,7 @@ module
 public import Complexity.Logics.Propositional.CNF.ExactDistinct
 public import Mathlib.Data.Fintype.Card
 public import Mathlib.Data.List.FinRange
+import Complexity.Logics.Propositional.CNF.Eval
 
 /-!
 # Moser's resampling algorithm for `k`-SAT
@@ -73,20 +74,6 @@ public section
 namespace Cslib.Logic.PL
 
 open Finset
-
-/-- A clause is false exactly when each of its literals is read against its polarity. -/
-theorem Clause.eval_eq_false_iff {V : Type*} (σ : V → Bool) (c : Clause V) :
-    c.eval σ = false ↔ ∀ l ∈ c, σ l.1 = !l.2 := by
-  rw [← Bool.not_eq_true, Clause.eval_eq_true_iff]
-  simp only [not_exists, not_and]
-  refine forall₂_congr fun l _ => ?_
-  cases σ l.1 <;> cases l.2 <;> simp
-
-/-- A clause only depends on the values of its variables. -/
-theorem Clause.eval_congr {V : Type*} {σ τ : V → Bool} {c : Clause V}
-    (h : ∀ l ∈ c, σ l.1 = τ l.1) : c.eval σ = c.eval τ := by
-  rw [Bool.eq_iff_iff, Clause.eval_eq_true_iff, Clause.eval_eq_true_iff]
-  exact exists_congr fun l => and_congr_right fun hl => by rw [h l hl]
 
 namespace Moser
 

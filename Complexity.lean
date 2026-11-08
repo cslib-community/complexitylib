@@ -5244,6 +5244,7 @@ public import Complexity.Logics.Propositional.CNF.Compact
 public import Complexity.Logics.Propositional.CNF.Compact.ModelCount
 public import Complexity.Logics.Propositional.CNF.Compact.Relabel
 public import Complexity.Logics.Propositional.CNF.Encoding
+public import Complexity.Logics.Propositional.CNF.Eval
 public import Complexity.Logics.Propositional.CNF.ExactDistinct
 public import Complexity.Logics.Propositional.CNF.ExactOne
 public import Complexity.Logics.Propositional.CNF.ExactOne.BlockBounds
