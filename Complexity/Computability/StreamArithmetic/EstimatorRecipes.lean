@@ -1080,7 +1080,9 @@ noncomputable def invOneAddScaledFixed {Op : Type u} {Struct : Type v}
       exact mul_coeffs_le_of_bounds (T := invTpl) hwA hwB hwC hwI
         (sameCoeffs_invScaledNormFixed ⟨rfl, rfl, rfl, rfl⟩)
     · exact ⟨Nat.zero_le _, Nat.zero_le _, Nat.zero_le _, le_max_left 8 _⟩
-  have hTree : m + 1 ≤ (κ + 1) * d := by grind
+  have hTree : m + 1 ≤ (κ + 1) * d := by
+    rw [Nat.add_mul, Nat.one_mul]
+    exact Nat.add_le_add hm hd
   let avgRaw := balancedAvgRecipe d hd (m + 1) (κ + 1) hTree children cA cB cC cInt
     (fun i => by dsimp only [children]; split_ifs <;> rfl)
     (fun i => by obtain ⟨ha, _, _, _⟩ := hChildBounds i; exact ha)
@@ -1093,7 +1095,9 @@ noncomputable def invOneAddScaledFixed {Op : Type u} {Struct : Type v}
       split_ifs <;> exact hR)
   let shiftedF := avgF.shiftClip ((m : ℤ) + 2) (κ + 2) (by
     have h2 : 2 ≤ 2 * d := Nat.le_mul_of_pos_right 2 hd
-    have hm2 : m + 2 ≤ (κ + 2) * d := by grind
+    have hm2 : m + 2 ≤ (κ + 2) * d := by
+      rw [Nat.add_mul]
+      exact Nat.add_le_add hm h2
     exact_mod_cast hm2)
   shiftedF.congrVal
     (fun val sEnv => 1 / (1 + Max.max 0 ((2 : ℝ) ^ m * R.targetVal val sEnv)))
@@ -1106,7 +1110,9 @@ noncomputable def invOneAddScaledFixed {Op : Type u} {Struct : Type v}
         · rw [max_eq_left hq0, mul_zero,
             max_eq_left (mul_nonpos_of_nonneg_of_nonpos (by positivity) hq0)]
       set w := 1 + Max.max (0 : ℝ) ((2 : ℝ) ^ m * q)
-      have hw_lo : 1 ≤ w := by grind
+      have hw_lo : 1 ≤ w := by
+        dsimp only [w]
+        linarith [le_max_left (0 : ℝ) ((2 : ℝ) ^ m * q)]
       have hw_hi : w ≤ (2 : ℝ) ^ (m + 1) := by
         have hmax_le1 : Max.max (0 : ℝ) q ≤ 1 := max_le zero_le_one hq_hi
         have hu_le : Max.max (0 : ℝ) ((2 : ℝ) ^ m * q) ≤ (2 : ℝ) ^ m := by
