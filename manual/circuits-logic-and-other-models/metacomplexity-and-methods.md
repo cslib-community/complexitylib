@@ -1199,10 +1199,60 @@ constant term, empty and contradictory systems, and the zero-variable dispatch. 
 the exact truncated-ring bridge, negative semantic hypotheses and a genuine sparse family with
 both the original answer and actual native resource certificate.
 
-This finishes original-count correctness of the incidence branch solver. High-incidence
-branching, every parity query, sharper sparsification, array/contraction exponent absorption and
-weighted eta-time rescaling remain to compose. No extra log-log factor has been discarded;
-the older complete counter still has that factor. Common-occurrence weighted rows, arbitrary
-ragged raw rows, table/graph endpoints, full Theorem 7.1 and ALL-main remain open. The source is
-OpenAI2026ETH Appendix D.3, Lemma D.2, PDF pp.55–56, particularly the per-test coefficient,
-free-variable weight and contraction-sum paragraphs.
+This finishes original-count correctness of the incidence branch solver. The next section
+composes its sharper resource bound and high-incidence branching. The source is OpenAI2026ETH
+Appendix D.3, Lemma D.2, PDF pp.55–56, particularly the per-test coefficient, free-variable
+weight and contraction-sum paragraphs.
+
+### Run the sharper normalized sparse-system counter
+
+Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceSparseCounter`
+and open `Cslib.Circuits.Frontier.IncidenceNetwork`. `countSparse k (n, sys)` computes the
+source high-incidence variables, streams their assignments, and uses the certified incidence
+solver on reduced systems. The direct contradiction and tautology branches retain their
+binary outputs. `countSparse_eq_rootCount` counts original assignments at every size under
+canonicality, declaration and listed degree at most $k$.
+
+`validSystem` computes those semantic checks in polynomial binary time. `countChecked` uses
+the incidence solver when valid and returns zero otherwise. Its global output bound follows
+from proved original-count correctness. This supplies the streaming accumulator bound;
+no counter or desired runtime contract is assumed. Only validation routines are reused from
+the older interpolation-counter module; its counting algorithm is not called.
+
+`exists_countSparse_real_sharp_certificate` certifies one actual native machine. For fixed
+$k,c$ and all sufficiently large $n$, assume at most $cn$ equations and at most
+$\lceil\log_2 n\rceil^c$ monomials per equation, as well as the semantic hypotheses above.
+No input bound on scopes or occurrences is needed. With $L$ the full unary-size/binary-index
+encoding length, its native certificate time bound is
+$$D(L+1)^D 2^{6D\eta(n)},\qquad
+  \eta(n)=\frac{n\log_2\log_2 n}{\sqrt{\log_2 n}},$$
+and its peak space at most $D(L+1)^D$. The constant and threshold depend only on $k,c$. Native certificate time and charged space
+include encoded output and hold up to fixed machine constants.
+The certificate charges validation, branch construction, every reduced-system call, network
+writing, contraction, binary reconstruction and summation. Its rounded counterpart is
+`exists_countSparse_sharp_certificate`.
+
+The numerical modules `LogLogSqrtLog` and `LogLogSqrtLogReal` make the rounding explicit.
+The complete array exponent $\sqrt n(C+\lceil\log_2 n\rceil)$ is eventually bounded by
+`Nat.logLogSqrtLogScale n`; the padded contraction size is reduced to the same scale.
+For $n\ge16$, this rounded scale is at most $6\eta(n)$. For a fixed linear enlargement
+$N\le Cn$ and $n\ge\max(16,C)$, it is at most $120C\eta(n)$. These proved numerical
+comparisons support the weighted plan's variable bound; they are not a supplied CNF runtime.
+
+From the repository root run
+`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceSparseCounter`.
+The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceSparseCounter.lean)
+checks a genuinely heavy variable with both a reduced incidence-solver call and a contradictory
+branch, the original answer, invalid-input rejection, zero-variable cases, a numerical rounding
+instance, linear rescaling and a nonempty all-size sparse family with the real resource certificate.
+
+The general-density CNF endpoint is still open. Next instantiate `SparseCNFLeafCounter` with
+`countSparse`, validate every compiled greedy candidate and charge the actual candidate traversal.
+Then use the Appendix D.3 p.57 sparsification schedule $\sigma=1/\lceil\sqrt\lambda\rceil$.
+The older `SparseCountingScale` schedule has $\nu^2$ in its group-count denominator, so its
+tree bound cannot be relabeled with the sharper exponent. Native tree traversal, bounded-size
+fallback, weighted binary reconstruction and full runtime composition remain to connect.
+The existing complete CNF/weighted counter still has its extra log-log factor. Common-occurrence
+weighted input, arbitrary ragged weighted rows, table/graph, full Lemma 3.2/Theorem 7.1 and
+ALL-main gaps remain. The source for the completed normalized sparse-system step is
+OpenAI2026ETH Appendix D.3, Lemma D.2, PDF pp.54–57.

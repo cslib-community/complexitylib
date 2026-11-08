@@ -1152,6 +1152,8 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceP
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceRankSum
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceSelectionSum
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceSelections
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceSharpResources
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceSparseCounter
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceWireDecoding
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceWireRanks
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IntegralCoordinates
@@ -3744,6 +3746,8 @@ public import Complexity.Foundations.Data.Nat.Factorial
 public import Complexity.Foundations.Data.Nat.Fields
 public import Complexity.Foundations.Data.Nat.IntermediateValue
 public import Complexity.Foundations.Data.Nat.Log
+public import Complexity.Foundations.Data.Nat.LogLogSqrtLog
+public import Complexity.Foundations.Data.Nat.LogLogSqrtLogReal
 public import Complexity.Foundations.Data.Nat.LogRpow
 public import Complexity.Foundations.Data.Nat.Morton
 public import Complexity.Foundations.Data.Nat.OddMulMod

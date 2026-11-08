@@ -1197,10 +1197,32 @@ large admissible sparse branches and on the direct zero-variable branch.
 The checked client now derives numeric original counts, including interleaved
 and repeated rows, nonlinear/constant equations and declared free variables.
 
-Remaining core work is the complete sharper-counter high-incidence branching,
-every parity query, sharper sparsification, actual array/contraction exponent
-absorption and weighted eta-time rescaling. The array multiplier remains explicit;
-this semantic milestone does not assert the full source eta bound. The old
-complete counter still retains its extra log-log factor. Common-occurrence
-weighted rows, arbitrary variable-length raw rows, tables, graphs, Theorem 7.1
-and ALL-main retain their broader limits.
+`IncidenceSharpResources` now absorbs the actual degree-array multiplier and
+native padded-size exponent into the single-loglog scale, with explicit rounding
+comparison to the unshifted real base-two `n loglog n / sqrt(log n)`.
+`IncidenceSparseCounter.countSparse` composes the actual native solver with computed
+high-incidence branching. A polynomial semantic guard derives its global output
+bound from proved count correctness; no counter oracle or runtime premise is
+supplied. `countSparse_eq_rootCount` is exact for every size on canonical,
+declared, degree-bounded input. `exists_countSparse_real_sharp_certificate` proves
+actual polynomial original-input space and `poly(L)*2^O_{k,c}(eta(n))` time for all
+sufficiently large normalized sparse systems with at most c*n equations and
+clog₂(n)^c monomials per equation, without an input occurrence bound. Branch
+length/encoding transfer, all reduced solver costs and binary accumulation are
+charged. General natural/real estimates also prove fixed linear query-variable
+rescaling without adding an iterated-log factor.
+
+Remaining core work is every actual greedy parity query and the sharper
+sparsification composition for arbitrary-density CNFs. Instantiate
+`SparseCNFLeafCounter` with the new `countSparse`, prove all compiled candidate
+systems satisfy its sparse-system hypotheses, and derive the actual callback and
+greedy-enumeration budgets. Appendix D.3 (PDF p.57) uses sigma=1/ceil(sqrt(lambda))
+for the counting sparsifier. The old `SparseCountingScale` instead uses
+`ReplacementParams.numGroups` with nu² in its denominator; its tree exponent
+cannot be reused as a single-loglog bound. Then compose native traversal,
+small-dimension fallback and weighted binary reconstruction/eta rescaling.
+The older complete interpolation counter still retains its extra loglog factor;
+only the new normalized sparse-system path has the sharper proved bound.
+Common-occurrence weighted rows, arbitrary variable-length weighted raw rows,
+table/graph endpoints, full Lemma 3.2/Theorem 7.1, other-paper objectives and
+ALL-main remain open.
