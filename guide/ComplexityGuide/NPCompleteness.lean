@@ -35,6 +35,9 @@ import Complexity.Computability.Complexity.Problems.XORSAT
 import Complexity.Computability.PolyTime.CSP.Gadget
 import Complexity.Logics.Polymorphism.BooleanClone
 import Complexity.Logics.Propositional.CNF.Majority
+import Complexity.Computability.Complexity.Problems.CSP.Incidence
+import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
+import Complexity.Computability.PolyTime.CSP.Table
 import Complexity.Foundations.Data.BitString.CyclicDifference
 import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
 import Complexity.Tactic.PolyTime
@@ -61,6 +64,9 @@ development imports the problems it uses. The first examples need only these:
 ```
 import Complexity.Computability.Complexity.CookLevin.Completeness
 import Complexity.Computability.Complexity.Problems.Clique
+import Complexity.Computability.Complexity.Problems.CSP.Incidence
+import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
+import Complexity.Computability.PolyTime.CSP.Table
 import Complexity.Foundations.Data.BitString.CyclicDifference
 import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
 import Complexity.Tactic.PolyTime
@@ -659,3 +665,40 @@ Twists, coordinate transport and feasible two-bit connectivity are also proved.
 The difference tests show that ternary NAE has an even delta-matroid difference
 relation. These are mathematical prerequisites; a planar embedding algorithm,
 general edge-CSP solver and full planar dichotomy remain to be formalized.
+
+
+# Indexed CSP and Table Operations
+
+{name}`Cslib.Logic.PL.CSP.Occurrence` preserves constraint and scope positions,
+including repeated variables and identical constraints. Consistent valid local
+labels reconstruct precisely a global CSP model. The native incidence graph
+retains one edge per argument; it never expands sparse binary names to a range.
+
+{name}`Cslib.Logic.PL.CSP.Table` is an explicit relation alphabet for the same CSP
+lists. Its semantics rejects malformed row widths. Local contraction projects
+outside coordinates and appends a connector bit for zero or one internal
+change. The local native certificate does not yet prove blossom correctness.
+Exactly-one generation takes a scope list whose length funds its quadratic
+output:
+
+```lean
+open Cslib.Logic.PL.CSP Cslib.Complexity.CSP in
+example (scope : List ℕ) (hs : scope ≠ []) :
+    ∃ row, (Table.exactlyOne scope).sem row = true :=
+  (Table.exists_sem_exactlyOne scope).mpr
+    (List.length_pos_iff.mpr hs)
+```
+
+```lean
+open Cslib.Complexity Cslib.Logic.PL.CSP
+  Cslib.Complexity.CSP Turing.MultiTapeTM in
+example : ComputableInPolyTime (Table.exactlyOne (V := ℕ))
+    (encList encNat) encTable :=
+  computableInPolyTime_tableExactlyOne
+```
+
+{name}`Cslib.Complexity.Graph.RotationSystem` retains indexed ends of loops and
+parallel edges, all face orbits including fixed points, and cyclic vertex orders.
+{name}`Cslib.Complexity.CSP.RespectsArgumentOrder` requires the constraint-side
+rotation to follow the scope's cyclic order. This rotation structure imposes no
+genus-zero condition and supplies no planarity recognizer or solver.
