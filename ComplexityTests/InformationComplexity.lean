@@ -10,7 +10,8 @@ import Complexity.Computability.Communication.Information
 Regression clients for information cost: Alice announcing her bit costs nothing internally on
 perfectly correlated inputs but one bit externally (so `internalInfoCost ≤ externalInfoCost` can
 be strict), the two costs agree on independent inputs, both are at most the depth, and the
-information complexity of a relation solved by a protocol that reveals nothing new is `0`.
+information complexity of a relation solved by a protocol that reveals nothing new is `0`, while
+its deterministic communication complexity is `1`.
 -/
 
 open Cslib Cslib.Communication Cslib.Probability Cslib.Probability.PMF
@@ -83,8 +84,23 @@ example : internalInfoCost (announce.transcriptLaw indep) =
 example : internalInfoCost (announce.transcriptLaw indep) ≤ 1 :=
   (announce.internalInfoCost_le_depth indep).trans_eq (by simp [announce])
 
+/-- Every deterministic protocol computing Alice's bit sends at least one bit, and `announce`
+sends one. -/
+example : Protocol.ecomplexity (fun (x : Bool) (_ : Bool) (z : Bool) => z = x) Set.univ
+    Set.univ = 1 := by
+  refine le_antisymm ((Protocol.ecomplexity_le_depth announce_solves).trans (by simp [announce]))
+    (Protocol.le_ecomplexity_iff.mpr fun p hp => ?_)
+  cases p with
+  | output z =>
+    have h1 := hp true trivial true trivial
+    have h2 := hp false trivial false trivial
+    simp only [Protocol.run_output] at h1 h2
+    exact absurd (h1.symm.trans h2) (by decide)
+  | alice _ _ _ => simp
+  | bob _ _ _ => simp
+
 /-- Computing Alice's bit on perfectly correlated inputs has information complexity `0`, although
-it needs one bit of communication. -/
+every deterministic protocol computing it sends at least one bit (previous example). -/
 example : PublicCoin.infoComplexity 0 (fun x _ z => z = x) Set.univ Set.univ diag = 0 := by
   refine le_antisymm ?_ bot_le
   refine (PublicCoin.infoComplexity_le_protocol announce_solves le_rfl diag).trans_eq ?_

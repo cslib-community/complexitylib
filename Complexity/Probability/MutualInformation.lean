@@ -54,9 +54,18 @@ the form `mutualInfo (ν.map fun ω => (A ω, B ω))`. In this form:
 * `Cslib.Probability.PMF.condMutualInfo_map_le_mutualInfo`: `I(A; B | C) ≤ I((C, A); B)`.
 * `Cslib.Probability.PMF.condMutualInfo_eq_zero_of_apply_eq_mul`,
   `Cslib.Probability.PMF.condMutualInfo_map_eq_zero_of_determined`,
-  `Cslib.Probability.PMF.mutualInfo_bind_map_prodMk`: vanishing criteria.
+  `Cslib.Probability.PMF.mutualInfo_bind_map_prodMk`: vanishing criteria;
+  `Cslib.Probability.PMF.mutualInfo_eq_zero_iff`: `I(A; B) = 0` exactly for independent pairs.
 * `Cslib.Probability.PMF.conditionalSnd_map_prodMk_apply`,
   `Cslib.Probability.PMF.eq_of_mem_support_conditionalSnd_map`: conditioning on an observation.
+
+## Implementation notes
+
+The entropy chain rule `entropy_map_prodMk_eq_add_sum` and the conditioning lemmas
+`map_fst_map_prodMk`, `conditionalSnd_map_prodMk_apply` and
+`eq_of_mem_support_conditionalSnd_map` do not mention mutual information. They live here because
+the chain rules are their only clients so far; they could move to `Probability.Entropy` and
+`Probability.Conditioning` when other modules need them.
 
 ## References
 
@@ -93,6 +102,14 @@ theorem mutualInfo_le_entropy_map_snd [Finite α] [Finite β] (joint : PMF (α �
   have := entropy_map_le joint Prod.fst
   rw [mutualInfo]
   linarith
+
+/-- The mutual information vanishes exactly for independent pairs, whose joint law is the product
+of its marginals. -/
+theorem mutualInfo_eq_zero_iff [Finite α] [Finite β] (joint : PMF (α × β)) :
+    mutualInfo joint = 0 ↔
+      joint = (joint.map Prod.fst).bind fun a => (joint.map Prod.snd).map (a, ·) := by
+  rw [← entropy_eq_entropy_map_fst_add_entropy_map_snd_iff, mutualInfo]
+  constructor <;> intro h <;> linarith
 
 /-- Entropy does not see an injective re-encoding `G = e ∘ F` that holds on the support. -/
 theorem entropy_map_eq_of_comp [Finite α] [Finite β] (ν : PMF Ω) {F : Ω → α} {G : Ω → β}

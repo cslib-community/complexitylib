@@ -47,10 +47,15 @@ identity `I(T; X Y) - (I(T; X | Y) + I(T; Y | X)) = I(X; Y) - I(X; Y | T)`
 (`externalInfoCost_sub_internalInfoCost`) together with the inequality.
 
 `PublicCoin.infoComplexity` is the least internal information cost of a public-coin protocol
-solving a relation with error `ε` on every pair of inputs from `A × B`. Braverman and Rao instead
-bound the error on inputs drawn from `μ`, and also allow private coins. So this variant, with a
-stricter error requirement over a smaller class of protocols, is at least theirs, and it is at
-most the public-coin communication complexity (`PublicCoin.infoComplexity_le_ecomplexity`).
+solving a relation with error `ε` on every pair of inputs from `A × B`. It is at most the
+public-coin communication complexity (`PublicCoin.infoComplexity_le_ecomplexity`). Braverman and
+Rao instead bound the error on inputs drawn from `μ`, which they take to be supported on the input
+domain, and also allow private coins. For `μ` supported on `A × B`, worst-case error at most `ε`
+gives error at most `ε` on inputs drawn from `μ`, so `infoComplexity` (a stricter error requirement
+over a smaller class of protocols) is an upper bound on their information complexity. Without
+that hypothesis it is not: inputs outside `A × B` carry no correctness requirement. For
+`A = B = ∅`, a protocol that sends nothing and outputs a fixed answer solves every relation, so
+the information complexity is `0` under every `μ`.
 
 ## Main definitions
 
@@ -68,10 +73,13 @@ most the public-coin communication complexity (`PublicCoin.infoComplexity_le_eco
   `Cslib.Communication.PrivateCoin.internalInfoCost_le_externalInfoCost`,
   `Cslib.Communication.PublicCoin.internalInfoCost_le_externalInfoCost`: internal at most external.
 * `Cslib.Communication.Protocol.externalInfoCost_le_depth` and its private- and public-coin
-  versions, and the corresponding `internalInfoCost_le_depth`: information at most communication
-  [Braverman and Rao, Lemma 3.14][BravermanRao2011].
+  versions, and the corresponding `internalInfoCost_le_depth`: information at most communication.
+  The internal bound is [Braverman and Rao, Lemma 3.14][BravermanRao2011], strengthened by going
+  through `internalInfoCost ≤ externalInfoCost`; their proof bounds each transmitted bit's two
+  terms by `1` using the same per-bit independence.
 * `Cslib.Communication.PublicCoin.infoComplexity_le_ecomplexity`: information complexity is at
-  most communication complexity.
+  most communication complexity; `Cslib.Communication.PublicCoin.le_infoComplexity_iff`: lower
+  bounds on information complexity are lower bounds on the cost of every solving protocol.
 * `Cslib.Communication.externalInfoCost_sub_internalInfoCost`: the information identity.
 * `Cslib.Communication.Protocol.internalInfoCost_eq_externalInfoCost` and its private- and
   public-coin versions: equality for independent inputs
@@ -561,12 +569,16 @@ namespace PublicCoin
 variable [Finite X] [Finite Y]
 
 /-- The internal information cost of a public-coin protocol: the average over the public coins
-of the internal information cost of the deterministic protocol they select. -/
+of the internal information cost of the deterministic protocol they select. It is valued in
+`ℝ≥0∞`, like `PublicCoin.depth` and the public-coin communication complexity, so that the average
+over a countable support needs no summability side condition; the deterministic costs are real and
+enter through `ENNReal.ofReal`. -/
 noncomputable def internalInfoCost (π : PublicCoin X Y Z) (μ : PMF (X × Y)) : ℝ≥0∞ :=
   ∑' p, π p * ENNReal.ofReal (Communication.internalInfoCost (p.transcriptLaw μ))
 
 /-- The external information cost of a public-coin protocol: the average over the public coins
-of the external information cost of the deterministic protocol they select. -/
+of the external information cost of the deterministic protocol they select, valued in `ℝ≥0∞`
+like `PublicCoin.internalInfoCost`. -/
 noncomputable def externalInfoCost (π : PublicCoin X Y Z) (μ : PMF (X × Y)) : ℝ≥0∞ :=
   ∑' p, π p * ENNReal.ofReal (Communication.externalInfoCost (p.transcriptLaw μ))
 
@@ -618,7 +630,9 @@ theorem internalInfoCost_eq_externalInfoCost (π : PublicCoin X Y Z) (μ : PMF (
 /-- The **information complexity** of `R` on `A × B` with error `ε` on inputs drawn from `μ`: the
 least internal information cost of a public-coin protocol solving `R` with error at most `ε` on
 every pair of inputs from `A × B`, or `⊤` if there is none. Braverman and Rao bound the error on
-inputs drawn from `μ` and also allow private coins, so this is an upper bound on their notion. -/
+inputs drawn from `μ` and also allow private coins, so for `μ` supported on `A × B` this is an
+upper bound on their information complexity. Inputs outside `A × B` carry no correctness
+requirement, so without that hypothesis it can be smaller. -/
 noncomputable def infoComplexity (ε : ℝ) (R : X → Y → Z → Prop) (A : Set X) (B : Set Y)
     (μ : PMF (X × Y)) : ℝ≥0∞ :=
   ⨅ π : {π : PublicCoin X Y Z // π.Solves ε R A B}, π.1.internalInfoCost μ
@@ -627,6 +641,14 @@ theorem infoComplexity_le_internalInfoCost {π : PublicCoin X Y Z} {ε : ℝ}
     {R : X → Y → Z → Prop} {A : Set X} {B : Set Y} (h : π.Solves ε R A B) (μ : PMF (X × Y)) :
     infoComplexity ε R A B μ ≤ π.internalInfoCost μ :=
   iInf_le (fun π : {π : PublicCoin X Y Z // π.Solves ε R A B} => π.1.internalInfoCost μ) ⟨π, h⟩
+
+/-- Lower bounds on information complexity are lower bounds on the internal information cost of
+every public-coin protocol solving the relation, including when there is none. -/
+theorem le_infoComplexity_iff {c : ℝ≥0∞} {ε : ℝ} {R : X → Y → Z → Prop} {A : Set X} {B : Set Y}
+    {μ : PMF (X × Y)} :
+    c ≤ infoComplexity ε R A B μ ↔
+      ∀ π : PublicCoin X Y Z, π.Solves ε R A B → c ≤ π.internalInfoCost μ := by
+  simp only [infoComplexity, le_iInf_iff, Subtype.forall]
 
 /-- A deterministic protocol solving `R` bounds the information complexity by its internal
 information cost. -/

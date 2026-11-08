@@ -1101,9 +1101,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   information cost of deterministic, private-coin and public-coin protocols, with
   `IC ≤ IC^ext ≤ CC` and equality on product inputs. Remaining: distributional-error information
   complexity; additivity and the direct-sum theorem `IC_{μⁿ}(fⁿ) = n · IC_μ(f)`
-  (Braverman–Rao); information equals amortized communication; and the
-  Bar-Yossef–Jayram–Kumar–Sivakumar `Ω(n)` disjointness lower bound via the information cost of
-  AND.
+  (Braverman–Rao), whose embedding needs private sampling from conditional marginals of `μ`,
+  beyond the uniform dyadic tapes of `PrivateCoin`; information equals amortized communication;
+  and the Bar-Yossef–Jayram–Kumar–Sivakumar `Ω(n)` disjointness lower bound via the information
+  cost of AND, which needs conditional information cost under a non-product `μ` with an auxiliary
+  variable that makes the inputs conditionally independent.
 - Multiparty protocols, discrepancy, direct-product results, and reductions to streaming,
   sketching and cell-probe lower bounds.
 - **Streaming and sketching:** native time and space bounds for Count-Min, including hash-seed
