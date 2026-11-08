@@ -75,7 +75,7 @@ theorem hψ : StrongConvexOn K 1 ψ := by
 theorem hℓ (t : ℕ) : ConvexOn ℝ K (ℓ t) := by
   convert convexOn_id K_convex using 1
   funext y
-  show ⟪(1 : ℝ), y⟫ = y
+  change ⟪(1 : ℝ), y⟫ = y
   rw [real_inner, one_mul]
 
 theorem isFTRL_xrun : IsFTRL K ψ ℓ xrun :=
