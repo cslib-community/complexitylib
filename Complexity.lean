@@ -5625,6 +5625,7 @@ public import Complexity.Probability.SmallBias.Powering
 public import Complexity.Probability.SmallBias.Random
 public import Complexity.Probability.Split
 public import Complexity.Probability.StatisticalDistance
+public import Complexity.Probability.StatisticalDistance.CloseTo
 public import Complexity.Probability.StatisticalDistance.ClosedForm
 public import Complexity.Probability.StatisticalDistance.Coupling
 public import Complexity.Probability.StatisticalDistance.DirectProduct
