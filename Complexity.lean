@@ -1881,6 +1881,7 @@ public import Complexity.Computability.Complexity.Problems.ElementDistinctness
 public import Complexity.Computability.Complexity.Problems.ExactThreeSAT
 public import Complexity.Computability.Complexity.Problems.GeneralizedGeography
 public import Complexity.Computability.Complexity.Problems.Graph
+public import Complexity.Computability.Complexity.Problems.Graph.ClosedPassages.Loop
 public import Complexity.Computability.Complexity.Problems.Graph.DartConnectivity
 public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalDrawing
 public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalDrawing.Encoding
@@ -1888,6 +1889,11 @@ public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalLayou
 public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalPath
 public import Complexity.Computability.Complexity.Problems.Graph.PerfectMatching
 public import Complexity.Computability.Complexity.Problems.Graph.PerfectMatchingPolyTime
+public import Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing
+public import Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Germs
+public import Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Neighborhood
+public import Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Points
+public import Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Star
 public import Complexity.Computability.Complexity.Problems.Graph.Ports
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Certificate
@@ -1911,6 +1917,7 @@ public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.IntersectionParity
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.PermutationCycles
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Basic
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Relabel
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Star
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Transport
@@ -4316,6 +4323,10 @@ public import Complexity.Foundations.Geometry.Orthogonal.Separation
 public import Complexity.Foundations.Geometry.Orthogonal.Simple
 public import Complexity.Foundations.Geometry.Orthogonal.Subdivision
 public import Complexity.Foundations.Geometry.Orthogonal.Trim
+public import Complexity.Foundations.Geometry.Polygonal.Germs
+public import Complexity.Foundations.Geometry.Polygonal.Neighborhood
+public import Complexity.Foundations.Geometry.Polygonal.Route
+public import Complexity.Foundations.Geometry.Polygonal.Segment
 public import Complexity.Foundations.GroupTheory.Perm.CycleSurgery
 public import Complexity.Foundations.GroupTheory.Perm.Doubled
 public import Complexity.Foundations.GroupTheory.Perm.Fin

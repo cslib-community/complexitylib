@@ -44,6 +44,11 @@ import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.CornerG
 import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.VertexMergeGenus
 import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.EdgeContractionGenus
 import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Declarations
+import Complexity.Computability.Complexity.Problems.Graph.ClosedPassages.Loop
+import Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Germs
+import Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Neighborhood
+import Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Points
+import Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Star
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler
 import Complexity.Computability.PolyTime.CSP.Table
 import Complexity.Computability.PolyTime.CSP.CyclicDifference.Size
@@ -967,6 +972,113 @@ For permutation-only proofs, import `Complexity.Foundations.GroupTheory.Perm.Ins
 `CycleSurgery` or `SelectedOrbits`. The APIs live in `Equiv.Perm.Insertion`,
 `Equiv.Perm.CycleSurgery` and `Equiv.Perm.SelectedOrbits`, with no graph dependency.
 `ComplexityTests/PermutationSurgery.lean` is a complete standalone client.
+
+# Polygonal Geometry Prerequisites
+
+These prerequisites do not prove equivalence between numerical genus zero and
+geometric realization. The missing steps are an explicit noninterlacing bouquet
+drawing, geometric restoration of nonloop contractions by directed contiguous
+vertex splits, and the finite segment-to-face-color converse with subdivision
+and suppression. Topological taming, indexed FZ versus DK set conventions and
+source comparison, frozen-switch completeness, Hanani–Tutte recognition and the
+full #3091 endpoint remain open.
+
+The ordinary imports at the start of this chapter include
+`Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Germs`,
+`Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Neighborhood`,
+`Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Points`,
+`Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Star` and
+`Complexity.Computability.Complexity.Problems.Graph.ClosedPassages.Loop`.
+They expose the following clients without `import all`.
+
+`Cslib.Polygonal.Route` lists `bends + 2` complex points and has `bends + 1`
+actual real affine segments. `eval i t` tests every real `t` in `[0,1]`;
+`support` is their union. `IsSimple` permits equal global parameters at adjacent
+junctions and first/last endpoint closure, excluding all other contacts.
+A one-segment loop therefore fails simplicity:
+
+```lean
+open Cslib.Polygonal in
+example (z : ℂ) : ¬(Route.line z z).IsSimple := by
+  rw [Route.isSimple_line_iff]
+  exact not_not.mpr rfl
+```
+
+`Graph.PolygonalDrawing G` uses the existing natural-number vertex names and
+listed edge occurrences. Its data are vertex coordinates, one route per edge
+position and endpoint equations; it stores no numerical genus or geometry
+provider. `IsEmbedding` requires distinct declared names to have distinct points,
+simple routes, declared-vertex contacts only at their corresponding ends, and
+contacts of different routes only at common named ends. Undeclared names are
+unconstrained. Repeated declarations name the same point; identical edge pairs
+keep separate routes; a loop retains two end parameters and outgoing germs.
+
+```lean
+open Cslib.Complexity Graph in
+example : (PolygonalDrawing.star 20).IsEmbedding :=
+  PolygonalDrawing.star_isEmbedding 20
+
+open Cslib.Complexity Graph in
+example (r : RotationSystem ([7, 7, 100], [])) :
+    (PolygonalDrawing.points [7, 7, 100]).IsEmbedding ∧
+      (PolygonalDrawing.points [7, 7, 100]).Realizes r :=
+  ⟨PolygonalDrawing.points_isEmbedding _,
+    PolygonalDrawing.points_realizes _ r⟩
+```
+
+`star_isEmbedding n` works at every degree, including zero. It asserts no
+arbitrary-degree star realization theorem. `points_realizes` covers every
+rotation of the edgeless graph, including sparse and repeated declarations.
+For any embedding, equal directions at one vertex force equal darts, even
+when the darts are the two ends of one loop:
+
+```lean
+open Cslib.Complexity Graph in
+example {G : Graph} {D : PolygonalDrawing G} (hD : D.IsEmbedding)
+    (a b : Dart G) (hv : a.vertex = b.vertex)
+    (hdir : D.direction a = D.direction b) : a = b :=
+  hD.directions_injective a b hv hdir
+```
+
+`IsEmbedding.exists_vertex_ball hD v hv` constructs a positive-radius ball
+about a declared vertex. Every route segment meeting that ball is a first
+segment starting at `v` or a last segment ending at `v`. The proof separates
+finitely many compact real segments internally; it supplies neither a
+topological disk theorem nor a vertex-splitting patch.
+
+`PolygonalDrawing.Realizes r` is separate from `IsEmbedding`. It requires
+nonzero germs, injective incident directions and, for distinct incident
+`a,b,c`, the literal equivalence
+`sbtw (D.direction c) (D.direction b) (D.direction a) ↔
+b ∈ r.rotationInterval a c`. Reversing Mathlib's counterclockwise angle
+betweenness makes forward `rotate` clockwise in the fixed complex plane;
+reflection is not allowed. The existing `faceNext = rotate⁻¹ ∘ reversal`
+(`σ⁻¹ α`) retains its right-side face convention.
+
+The extracted `ClosedPassages.loop e he` pairs the two actual ends of a listed
+loop, with support `fun i => decide (i = e)`. The numerical noninterlacing
+corollary retains the explicit declared-endpoint guard `hG`:
+
+```lean
+open Cslib.Complexity Graph in
+example {G : Graph} (r : RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (hr : r.NumericalGenusZero) (e f : Fin G.2.length) (hef : e ≠ f)
+    (he : (Dart.vertex (G := G) (e, false)) = Dart.vertex (e, true))
+    (hf : (Dart.vertex (G := G) (f, false)) = Dart.vertex (f, true)) :
+    ¬r.Alternates (e, false) (e, true) (f, false) (f, true) :=
+  r.not_alternates_loops hG hr e f hef he hf
+```
+
+This needs no connectedness or degree bound and constructs no drawing.
+`ComplexityTests/PolygonalDrawing.lean` checks actual bridge, closed-loop and
+parallel-digon realizations, star embeddings at degrees 0, 5 and 20, sparse
+isolates, clockwise sign and reverse-order rejection.
+`ComplexityTests/PolygonalDrawingAudit.lean` audits stored declarations and
+environment linters; `ComplexityTests/RotationIntersection.lean` uses the
+extracted loop constructor in finite parity clients. These are original
+geometric constructions, with no DK, FKP or Hanani–Tutte formalization,
+coordinate bit bound or native runtime claim.
 
 # Ordered Incidence-to-Polygon Rotations
 

@@ -471,6 +471,19 @@ index links to canonical definitions rather than keeping a second set.
   nonloop last-edge contraction. Directed blocks, duplicate declarations, splitting
   components and isolated-point conventions are explicit; face-even extension premises
   are discharged internally. These operations assert no geometric or runtime endpoint.
+  Preserved geometric prerequisites now use actual real affine segment routes in the complex
+  plane, with declared-name separation, loop closure and endpoint-only contacts. Incident
+  directions are injective, and positive-radius vertex segment neighborhoods are constructed
+  internally. Arbitrary-degree stars embed; arbitrary-degree star realization is not proved.
+  Edgeless sparse/repeated declarations realize every rotation. Literal clockwise germ order
+  fixes orientation without reflection; numerical noninterlacing of distinct loops retains hG.
+  The full numerical-genus / polygonal-realization bridge still needs three proofs: an explicit
+  noninterlacing bouquet drawing, geometric restoration of nonloop contractions by directed
+  contiguous vertex splits, and a finite segment-to-face-color converse with subdivision and
+  suppression. The vertex ball is not a topological disk or splitting patch. Topological taming,
+  indexed FZ versus DK set conventions and source comparison, frozen-switch completeness and
+  Hanani–Tutte recognition remain open. These original prerequisites assert no DK/FKP/HT
+  formalization, coordinate bit bound or native runtime theorem and do not complete #3091.
   The actual ordered incidence-to-polygon bridge now preserves every face and component
   and proves the numerical Euler equivalence under positive actual scopes. Its abstract
   rotation maps still need native and geometric compilation.
