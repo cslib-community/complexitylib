@@ -194,7 +194,7 @@ jobs:
           vars.DISABLE_BUILD_HANDOFF != '1' && vars.DISABLE_BUILD_HANDOFF != 'true' &&
           steps.handoff-measurement-result.outputs.bypass_restore != 'true'
         continue-on-error: true
-        timeout-minutes: 3
+        timeout-minutes: 10
         env:
           GH_TOKEN: ${{ github.token }}
           DISABLE_BUILD_HANDOFF: ${{ vars.DISABLE_BUILD_HANDOFF }}
@@ -318,14 +318,14 @@ jobs:
           github.event_name == 'merge_group' &&
           vars.DISABLE_BUILD_HANDOFF != '1' && vars.DISABLE_BUILD_HANDOFF != 'true'
         continue-on-error: true
-        timeout-minutes: 3
+        timeout-minutes: 10
         env:
           DISABLE_BUILD_HANDOFF: ${{ vars.DISABLE_BUILD_HANDOFF }}
         run: python3 -B scripts/cache_handoff.py pack --output "$RUNNER_TEMP/lean-handoff"
       - name: Upload merge-group build outputs
         if: github.event_name == 'merge_group' && steps.cache-handoff.outputs.artifact-name != ''
         continue-on-error: true
-        timeout-minutes: 3
+        timeout-minutes: 10
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ steps.cache-handoff.outputs.artifact-name }}

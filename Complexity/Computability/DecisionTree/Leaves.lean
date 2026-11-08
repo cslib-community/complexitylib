@@ -47,6 +47,7 @@ of native weighted-threshold circuits.
 * `Cslib.DecisionTree.leafCount_le_two_pow_depth`: a tree of depth `d` has at most `2 ^ d` leaves.
 * `Cslib.DecisionTree.leafCount_le_sum_choose_rank`: a tree of depth `d` and rank `r` has at most
   `∑ j ≤ r, d.choose j` leaves.
+* `Cslib.DecisionTree.two_pow_rank_le_leafCount`: a tree of rank `r` has at least `2 ^ r` leaves.
 * `Cslib.DecisionTree.IsDecisionList.rank_le_one`: every decision list has rank at most `1`.
 * `Cslib.DecisionTree.leafCount_le_sum_choose_energy`: a tree of depth `d` and energy `e` has at
   most `∑ j ≤ e, d.choose j` leaves.
@@ -220,6 +221,23 @@ theorem rank_le_depth (t : DecisionTree ι β) : t.rank ≤ t.depth := by
   | node _ left right ihl ihr =>
     simp only [rank, depth_node]
     split_ifs <;> omega
+
+/-- A decision tree of rank `r` has at least `2 ^ r` structural leaves: it embeds a complete binary
+tree of height `r`. -/
+theorem two_pow_rank_le_leafCount (t : DecisionTree ι β) : 2 ^ t.rank ≤ t.leafCount := by
+  induction t with
+  | leaf => simp [leafCount]
+  | node _ left right ihl ihr =>
+    rw [rank_node, leafCount]
+    split_ifs with h
+    · rw [pow_succ, mul_two]
+      rw [← h] at ihr
+      omega
+    · rcases le_total left.rank right.rank with h' | h'
+      · rw [max_eq_right h']
+        omega
+      · rw [max_eq_left h']
+        omega
 
 /-- A decision tree of rank at most `r` and depth at most `d` has at most
 `∑ j ∈ Finset.range (r + 1), d.choose j` structural leaves. -/

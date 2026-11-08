@@ -111,6 +111,20 @@ theorem card_matchedRight (hM : IsMatching G M) : (matchedRight M).card = M.card
   subst hv
   rw [hM.2.2 u₁ u₂ v₁ h₁ h₂]
 
+omit [DecidableEq L] [DecidableEq R] in
+/-- A matching has at most as many edges as there are left vertices. -/
+theorem IsMatching.card_le_card_left [Fintype L] (hM : IsMatching G M) :
+    M.card ≤ Fintype.card L := by
+  classical
+  exact card_matchedLeft hM ▸ Finset.card_le_univ (matchedLeft M)
+
+omit [DecidableEq L] [DecidableEq R] in
+/-- A matching has at most as many edges as there are right vertices. -/
+theorem IsMatching.card_le_card_right [Fintype R] (hM : IsMatching G M) :
+    M.card ≤ Fintype.card R := by
+  classical
+  exact card_matchedRight hM ▸ Finset.card_le_univ (matchedRight M)
+
 end Matched
 
 section Layers
@@ -254,7 +268,7 @@ private theorem card_altLeft_succ (hM : IsMatching G M) (j : ℕ) :
   · have h1 : (Finset.univ \ matchedLeft M).card + M.card = Fintype.card L := by
       rw [Finset.card_sdiff_of_subset (Finset.subset_univ _), Finset.card_univ,
         card_matchedLeft hM]
-      have := card_matchedLeft hM ▸ Finset.card_le_univ (matchedLeft M)
+      have := hM.card_le_card_left
       omega
     have hinjL : Set.InjOn Prod.fst (M.filter fun e => e.2 ∈ altRight G M j : Set (L × R)) := by
       rintro ⟨u₁, v₁⟩ h₁ ⟨u₂, v₂⟩ h₂ (hu : u₁ = u₂)
