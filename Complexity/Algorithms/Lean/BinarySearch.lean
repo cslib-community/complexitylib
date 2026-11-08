@@ -12,7 +12,7 @@ public import Cslib.Algorithms.Lean.TimeM
 public import Mathlib.Data.Nat.Log
 
 /-!
-# Binary search for the boundary of a monotone test
+# Binary search for the boundary of an antitone test
 
 `lowerBoundM t lo hi` finds, by bisection, the first index of `[lo, hi)` at which a Boolean test
 `t : ℕ → TimeM ℕ Bool` fails, assuming `t` holds on an initial segment of the interval and fails
@@ -28,7 +28,8 @@ whatever `t` charges, and index arithmetic is free.
 * `Cslib.Algorithms.Lean.lowerBoundM_spec`: if `t` is antitone on `[lo, hi)`, the result `k`
   satisfies `lo ≤ k ≤ max lo hi`, `t` holds on `[lo, k)` and fails on `[k, hi)`.
 * `Cslib.Algorithms.Lean.lowerBoundM_time_le`: if every probe costs at most `c`, the search costs
-  at most `c * (Nat.log 2 (hi - lo) + 1)`, i.e. it makes at most `⌊log₂ (hi - lo)⌋ + 1` probes.
+  at most `c * (Nat.log 2 (hi - lo) + 1)`; with unit-cost probes, at most `⌊log₂ (hi - lo)⌋ + 1`
+  probes.
 -/
 
 public section
@@ -99,7 +100,8 @@ private theorem log_two_mul_add_one_le {k k' : ℕ} (hpos : 0 < k') (h2 : 2 * k'
   omega
 
 /-- **Cost of binary search.** If every probe costs at most `c`, then `lowerBoundM` costs at most
-`c * (Nat.log 2 (hi - lo) + 1)`: it probes at most `⌊log₂ (hi - lo)⌋ + 1` times. -/
+`c * (Nat.log 2 (hi - lo) + 1)`. With a test that charges one tick per probe (`c = 1`), this says
+that bisection probes at most `⌊log₂ (hi - lo)⌋ + 1` times. -/
 theorem lowerBoundM_time_le (t : ℕ → TimeM ℕ Bool) {c : ℕ} (hc : ∀ m, (t m).time ≤ c)
     (lo hi : ℕ) : (lowerBoundM t lo hi).time ≤ c * (Nat.log 2 (hi - lo) + 1) := by
   suffices h : (lowerBoundM t lo hi).time ≤ c * Nat.log 2 (2 * (hi - lo)) by

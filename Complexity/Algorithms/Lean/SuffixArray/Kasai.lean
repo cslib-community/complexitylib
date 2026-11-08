@@ -27,7 +27,7 @@ of character comparisons is linear.
 * **Indexing:** `0`-based positions and ranks, as in `Cslib.Algorithms.Lean.SuffixArray.Basic`;
   the result has `lcp[0] = 0`.
 * **Rank array:** `rankArray w.size sa.toList` stores `r` at position `sa[r]`, the inverse
-  permutation of `sa` (the source's `Rank` array).
+  permutation of `sa`.
 * **Resource bounds:** `TimeM ℕ` counts exact character comparisons rather than asymptotic RAM
   steps; the bound `2 * |w|` holds for every input pair `(w, sa)`, valid suffix array or not.
 
@@ -39,8 +39,8 @@ of character comparisons is linear.
   (`sa[r]!`, `rk[i]!`, `Array.set!`), allocation of the output array, integer arithmetic, loop
   control and the conversions in the list wrapper `kasai`.
 
-A call to `extendM` starting from a common prefix `h` makes `ret - h + 1` comparisons, at most one
-of them a mismatch; the potential `min h (|w| - i)` then telescopes to at most `2 * |w|`
+A call to `extendM` starting from a common prefix `h` makes at most `ret - h + 1` comparisons, at
+most one of them a mismatch; the potential `min h (|w| - i)` then telescopes to at most `2 * |w|`
 comparisons in total (`kasaiM_time_le`).
 
 ## Main definitions

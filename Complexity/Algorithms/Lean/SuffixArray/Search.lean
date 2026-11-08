@@ -221,7 +221,8 @@ def search (w : List α) (sa : List ℕ) (p : List α) : ℕ × ℕ :=
 
 /-- The starting positions of the occurrences of `p` in `w`, listed in suffix-array order. -/
 def occurrences (w : List α) (sa : List ℕ) (p : List α) : List ℕ :=
-  (sa.take (search w sa p).2).drop (search w sa p).1
+  let r := search w sa p
+  (sa.take r.2).drop r.1
 
 /-- Binary search over the suffix array performs at most `2 * |p| * (⌊log₂ |sa|⌋ + 1)`
 character comparisons. -/
@@ -328,10 +329,11 @@ theorem search_spec {w : List α} {sa : List ℕ} (hsa : IsSuffixArray w sa) (p 
 nonempty suffix). -/
 theorem mem_occurrences {w : List α} {sa : List ℕ} (hsa : IsSuffixArray w sa) (p : List α)
     {i : ℕ} : i ∈ occurrences w sa p ↔ i < w.length ∧ p <+: w.drop i := by
+  rw [show occurrences w sa p = (sa.take (search w sa p).2).drop (search w sa p).1 from rfl]
   obtain ⟨hlohi, hhi, hspec⟩ := search_spec hsa p
   set lo := (search w sa p).1
   set hi := (search w sa p).2
-  rw [occurrences, List.mem_iff_getElem]
+  rw [List.mem_iff_getElem]
   constructor
   · rintro ⟨k, hk, rfl⟩
     simp only [List.length_drop, List.length_take] at hk

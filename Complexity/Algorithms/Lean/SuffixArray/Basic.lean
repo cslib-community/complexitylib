@@ -9,9 +9,8 @@ module
 
 public import Complexity.Init
 public import Mathlib.Data.List.Lex
-public import Mathlib.Data.List.Perm.Basic
 import Complexity.Foundations.Data.List.Lex
-import Mathlib.Data.List.Sort
+import Mathlib.Data.List.Nodup
 
 /-!
 # Suffix arrays and LCP arrays
@@ -41,7 +40,7 @@ et al.'s linear-time LCP construction (`[KasaiLeeArimuraArikawaPark2001]`).
 
 ## Main results
 
-* `Cslib.Algorithms.Lean.SuffixArray.IsSuffixArray.eq`: suffix arrays are unique.
+* `Cslib.Algorithms.Lean.SuffixArray.IsSuffixArray.unique`: suffix arrays are unique.
 * `Cslib.Algorithms.Lean.SuffixArray.isSuffixArray_suffixArray`: the sorting construction is the
   suffix array.
 * `Cslib.Algorithms.Lean.SuffixArray.IsSuffixArray.lt_iff_drop_lt`: rank order is suffix order.
@@ -69,7 +68,7 @@ variable {α : Type*}
 /-! ## Longest common prefix -/
 
 /-- Length of the longest common prefix of `u` and `v`. -/
-@[expose] def lcpLen [DecidableEq α] : List α → List α → ℕ
+def lcpLen [DecidableEq α] : List α → List α → ℕ
   | a :: u, b :: v => if a = b then lcpLen u v + 1 else 0
   | _, _ => 0
 
@@ -84,7 +83,8 @@ variable [DecidableEq α]
   cases u <;> rfl
 
 theorem lcpLen_cons_cons (a b : α) (u v : List α) :
-    lcpLen (a :: u) (b :: v) = if a = b then lcpLen u v + 1 else 0 := rfl
+    lcpLen (a :: u) (b :: v) = if a = b then lcpLen u v + 1 else 0 := by
+  rw [lcpLen]
 
 @[simp] theorem lcpLen_cons_cons_self (a : α) (u v : List α) :
     lcpLen (a :: u) (a :: v) = lcpLen u v + 1 := by
@@ -232,7 +232,7 @@ theorem isSuffixArray_iff :
       sa.Perm (List.range w.length) ∧ sa.Pairwise fun i j => w.drop i < w.drop j :=
   ⟨fun h => ⟨h.perm, h.sorted⟩, fun h => ⟨h.1, h.2⟩⟩
 
-instance : Decidable (IsSuffixArray w sa) :=
+instance instDecidableIsSuffixArray : Decidable (IsSuffixArray w sa) :=
   decidable_of_iff _ isSuffixArray_iff.symm
 
 namespace IsSuffixArray
@@ -270,7 +270,7 @@ theorem lt_iff_drop_lt (h : IsSuffixArray w sa) {r r' : ℕ} (hr : r < sa.length
     exact lt_irrefl _ hlt
 
 /-- Suffix arrays are unique. -/
-theorem eq {sa' : List ℕ} (h : IsSuffixArray w sa) (h' : IsSuffixArray w sa') : sa = sa' :=
+theorem unique {sa' : List ℕ} (h : IsSuffixArray w sa) (h' : IsSuffixArray w sa') : sa = sa' :=
   List.Perm.eq_of_pairwise (le := fun i j => w.drop i < w.drop j)
     (fun _ _ _ _ hab hba => absurd (lt_trans hab hba) (lt_irrefl _))
     h.sorted h'.sorted (h.perm.trans h'.perm.symm)
@@ -285,7 +285,7 @@ end IsSuffixArray
 /-! ## The reference construction -/
 
 /-- The suffix array computed by sorting the positions `0, …, |w| - 1` by their suffixes. -/
-@[expose] def suffixArray (w : List α) : List ℕ :=
+def suffixArray (w : List α) : List ℕ :=
   (List.range w.length).mergeSort fun i j => decide (w.drop i ≤ w.drop j)
 
 omit [LinearOrder α] in
@@ -317,7 +317,7 @@ theorem isSuffixArray_suffixArray (w : List α) : IsSuffixArray w (suffixArray w
 
 /-- A list is a suffix array of `w` iff it is `suffixArray w`. -/
 theorem isSuffixArray_iff_eq_suffixArray : IsSuffixArray w sa ↔ sa = suffixArray w :=
-  ⟨fun h => h.eq (isSuffixArray_suffixArray w), fun h => h ▸ isSuffixArray_suffixArray w⟩
+  ⟨fun h => h.unique (isSuffixArray_suffixArray w), fun h => h ▸ isSuffixArray_suffixArray w⟩
 
 end SuffixArray
 
@@ -329,7 +329,7 @@ variable [DecidableEq α]
 
 /-- The LCP array of `w` with respect to the positions `sa`: entry `0` is `0` and entry `r > 0`
 is the length of the longest common prefix of the suffixes at `sa[r - 1]` and `sa[r]`. -/
-@[expose] def lcpArray (w : List α) : List ℕ → List ℕ
+def lcpArray (w : List α) : List ℕ → List ℕ
   | [] => []
   | i :: sa => 0 :: List.zipWith (fun j k => lcpLen (w.drop j) (w.drop k)) (i :: sa) sa
 

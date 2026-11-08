@@ -62,7 +62,7 @@ private def mississippi : List Char := "mississippi".toList
 -- Uniqueness: a kernel-checked suffix array of `banana` is the only one.
 example (sa : List ℕ) (h : IsSuffixArray ['b', 'a', 'n', 'a', 'n', 'a'] sa) :
     sa = [5, 3, 1, 0, 4, 2] :=
-  h.eq (by decide)
+  h.unique (by decide)
 
 /-! ## LCP arrays and Kasai et al.'s algorithm -/
 
