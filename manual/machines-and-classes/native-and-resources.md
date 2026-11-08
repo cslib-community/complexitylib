@@ -32,6 +32,26 @@ The common extension [MultiTapeMachine](https://github.com/cslib-community/compl
 
 The specialization to no channels and `Id` is [step-exactly equivalent to the deterministic machine](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Machine/Equivalence.lean#L74); `Set` gives [the nondeterministic machine](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Machine/Equivalence.lean#L79). A clocked run is itself a program, through [runConfigFrom, runFrom and run](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Machine/Program.lean#L59), linking operational semantics to the free-program chapter.
 
+## Search a bounded witness space
+
+Import `Complexity.Computability.Machines.Turing.MultiTape.Complexity.BoundedSearch` for
+`ComputableInO.exists_bits` ([source](../../Complexity/Computability/Machines/Turing/MultiTape/Complexity/BoundedSearch.lean)).
+Supply a Boolean test on `(context, word)` and independent uniform time and space bounds `T` and
+`S` over words of the runtime unary width `n`. The result supplies polynomial bookkeeping `P`:
+time is `O((2^n + 1) * (P + T))`, and charged space is `O(P + S)`. No polynomial-time assumption
+on the test is needed. The machine streams candidates; the enumeration list appears only in its
+specification. The retained context and candidate contribute to the bookkeeping, so this is not
+a logarithmic-workspace transducer theorem.
+
+For class membership, `setOf_exists_mem_PSPACE` applies this rule to a PSPACE test.
+`bounded_image_mem_PSPACE` in
+[Space.Image](../../Complexity/Computability/Complexity/Classes/Space/Image.lean) searches source
+words under a unary polynomial-time bound computed from the output. The forward function may
+have collisions, and the bound is required only on accepted source words. No efficient inverse
+is required. The [checked clients](../../ComplexityTests/BoundedSearch.lean) cover width zero,
+failed search, and a constant image map whose accepted source words alone satisfy the bound.
+Run `scripts/build.sh ComplexityTests.BoundedSearch` from a prepared checkout to check them.
+
 ## Choice changes semantics
 
 | Native variant | Choice representation | What a branch means | Main uses |
