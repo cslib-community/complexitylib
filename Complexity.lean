@@ -5302,6 +5302,7 @@ public import Complexity.Probability.PMF.Markov
 public import Complexity.Probability.PMF.Option
 public import Complexity.Probability.PMF.Option.Bind
 public import Complexity.Probability.PMF.TailQuantile
+public import Complexity.Probability.PMF.ToReal
 public import Complexity.Probability.PMF.TwoBranch
 public import Complexity.Probability.PMF.Uniform
 public import Complexity.Probability.PMF.UniformBound
