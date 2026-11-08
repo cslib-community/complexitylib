@@ -29,8 +29,31 @@ uniform pairs of vertices `(x k, y k)`, all independent. It queries the `m (2 s 
 coloured with two colours (`bipAccept`). A bipartite graph is always accepted, since a proper
 2-colouring of the graph restricts to the observed edges.
 
-Soundness follows the Goldreich–Goldwasser–Ron argument. A colouring `χ` of the sampled vertices
-forces a colour on every vertex with a sampled neighbour, the colour opposite to that neighbour's.
+## Source mapping
+
+The query pattern, with a vertex sample `U` and pairs each checked against `U` and against each
+other, is that of [Goldreich, Goldwasser and Ron, §6.1.1, p. 683][GoldreichGoldwasserRon1998]. The
+soundness argument follows their §6.1 (Theorem 6.1.2, Claims 6.1.4 and 6.1.6, pp. 679–683): a
+2-partition of `U` forces a partition of the vertices with a neighbour in `U`, and a far graph
+leaves many violating pairs under every such forced partition. Their factor-two distance
+convention is §5.1, pp. 675–676. The open book draft of April 26, 2017 (§8.3.1, Algorithm 8.7 and
+Lemma 8.8, pp. 174–177; the published book is [Goldreich][Goldreich2017], Chapter 8) presents the
+same high-degree coverage argument.
+
+*Adaptation in the coverage step.* GGR take `|U| = O(log (1 / (ε δ)) / ε)` so that, with high
+probability, `U` dominates all but few high-degree vertices. The result is
+`O(log² (1 / (ε δ)) / ε³)` queries. Here the coverage step is replaced by an expectation bound. The
+expected degree mass of the vertices with no neighbour in `U` is at most `n² / (s + 1)`
+(`sum_uncoveredDegree_le`, from `d (n - d) ^ s ≤ n ^ (s + 1) / (s + 1)`). Markov's inequality then
+suffices at constant confidence, so `s = ⌈12 / ε⌉` works and the logarithmic factors disappear.
+This refinement of the analysis is ours; we do not know of an exact source for it and claim no
+novelty for it. It gives no asymptotic improvement over the `Õ(ε⁻²)` bound of
+[Alon and Krivelevich][AlonKrivelevich2002].
+
+## Proof outline
+
+A colouring `χ` of the sampled vertices forces a colour on every vertex with a sampled neighbour,
+the colour opposite to that neighbour's.
 If the tester accepts, some `χ` leaves every sampled pair `(x k, y k)` outside the set of *bad*
 pairs: edges between two vertices with sampled neighbours that receive the same forced colour.
 Extending the forced colouring arbitrarily, an `ε`-far graph has more than `2 ε n²` ordered
