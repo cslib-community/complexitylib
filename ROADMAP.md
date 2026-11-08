@@ -468,6 +468,16 @@ index links to canonical definitions rather than keeping a second set.
   `output.numVars + output.length ≤ C * input.length`, for a language-dependent constant.
   Symmetric and larger-domain dichotomies are outside the current scope.
 
+- **Context-free languages** ([#3303](https://github.com/cslib-community/complexitylib/issues/3303)):
+  CYK decides membership for grammars already in Chomsky normal form, correct against Mathlib's
+  `ContextFreeGrammar.Derives`, with exact `TimeM` cost `O(n³ · |G|)`
+  (`Algorithms/Lean/CYK`). Next: conversion of an arbitrary `ContextFreeGrammar` to Chomsky
+  normal form with its size blow-up, giving decidability of every context-free language; a
+  machine-level `ComputableInPolyTime` decider for a fixed grammar, completing CFL ⊆ P (Sipser,
+  Theorem 7.16); Valiant's subcubic parsing via Boolean matrix multiplication; the pumping
+  lemma for context-free languages and non-context-freeness of `{aⁿbⁿcⁿ}`; and CFG emptiness
+  (in P) versus universality (undecidable).
+
 - Time, space and exponential hierarchies; oracle, advice, unambiguous and promise classes;
   completeness, padding, self-reducibility, relativization and oracle separations, preserving
   each reduction's resource bound.
