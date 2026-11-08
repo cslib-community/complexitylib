@@ -83,8 +83,7 @@ rectangles, split off one of two fair bits, and relabel two point masses injecti
 ## Polarize statistical distance
 
 Sahai and Vadhan's polarization of statistical distance (Sahai–Vadhan 2003, §3) is formalized on
-explicit distributions over finite types, with the half-L1 `dist` above. Lemma numbers in that
-source have not been checked against a copy of the paper.
+explicit distributions over finite types, with the half-L1 `dist` above.
 
 - **XOR construction.** Import
   [StatisticalDistance/XOR.lean](../../Complexity/Probability/StatisticalDistance/XOR.lean).
@@ -101,11 +100,13 @@ source have not been checked against a copy of the paper.
   [StatisticalDistance/Polarization.lean](../../Complexity/Probability/StatisticalDistance/Polarization.lean).
   `polarize p₀ p₁ λ ℓ k c` applies the XOR construction on `k` coordinates to `ℓ` independent
   copies of the XOR construction on `λ` coordinates. `dist_polarize_le` bounds its distance by
-  `(ℓ δ^λ)^k`, and `one_sub_mul_exp_le_dist_polarize` bounds it below by
+  `(ℓ δ^λ)^k`, and `one_sub_two_mul_mul_exp_le_dist_polarize` bounds it below by
   `1 - 2 k exp (-ℓ δ^(2λ) / 2)`. For constant thresholds `0 ≤ β < α² ≤ 1`,
   `exists_polarization` provides constants `m ≠ 0` and `b`. With these, `λ = m (⌊log₂ k⌋ + 1)` and
   `ℓ = 2 ^ (b (⌊log₂ k⌋ + 1))` are polynomially bounded in `k`. Distance `≥ α` then becomes
-  `≥ 1 - 2⁻ᵏ`, and distance `≤ β` becomes `≤ 2⁻ᵏ`.
+  `≥ 1 - 2⁻ᵏ`, and distance `≤ β` becomes `≤ 2⁻ᵏ`. Use it as
+  `obtain ⟨m, b, hm, hlam, hell, h⟩ := exists_polarization hβ hβα hα hα1`, then
+  `(h p₀ p₁ k).1` for the far side and `(h p₀ p₁ k).2` for the near side.
 
 The circuit-level Statistical Difference problem and its polynomial-time polarization map are not
 formalized yet; [issue #3205](https://github.com/cslib-community/complexitylib/issues/3205) tracks

@@ -12,6 +12,7 @@ public import Complexity.Probability.StatisticalDistance.DirectProduct
 public import Complexity.Probability.StatisticalDistance.XOR
 import Complexity.Foundations.Data.Nat.Log
 import Complexity.Probability.StatisticalDistance.Product
+import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Analysis.SpecialFunctions.Exp
 import Mathlib.Tactic.GCongr
 import Mathlib.Tactic.Linarith
@@ -32,13 +33,16 @@ distance is either at least `1 - 2⁻ᵏ` or at most `2⁻ᵏ`. It alternates th
 
 For `δ = dist p₀ p₁` the distance of the polarized pair is at most `(ℓ δ^λ)^k`
 (`dist_polarize_le`) and, for `λ, k ≥ 1`, at least `1 - 2 k exp (-ℓ δ^(2λ) / 2)`
-(`one_sub_mul_exp_le_dist_polarize`). With `λ = m (⌊log₂ k⌋ + 1)` and `ℓ = 2 ^ (b (⌊log₂ k⌋ + 1))`
-for constants `m, b` depending only on `α` and `β`, both parameters are polynomial in `k` and the
-two bounds give the error `2⁻ᵏ` on each side (`exists_polarization`).
+(`one_sub_two_mul_mul_exp_le_dist_polarize`). With `λ = m (⌊log₂ k⌋ + 1)` and
+`ℓ = 2 ^ (b (⌊log₂ k⌋ + 1))` for constants `m, b` depending only on `α` and `β`, both parameters
+are polynomial in `k` and the two bounds give the error `2⁻ᵏ` on each side
+(`exists_polarization`). Clients obtain the constants with
+`obtain ⟨m, b, hm, hlam, hell, h⟩ := exists_polarization hβ hβα hα hα1`.
 
 This file works with explicit distributions on finite types. The efficient version on pairs of
 circuits, where the polarized pair is computed from the input pair in polynomial time, is not
-formalized here.
+formalized here. The source is cited by section only: the lemma numbers in [SahaiVadhan2003] have
+not been checked against a copy of the paper.
 
 ## Main definitions
 
@@ -47,7 +51,7 @@ formalized here.
 ## Main results
 
 * `Cslib.Probability.PMF.dist_polarize_le`: the upper bound `(ℓ δ^λ)^k`.
-* `Cslib.Probability.PMF.one_sub_mul_exp_le_dist_polarize`: the lower bound
+* `Cslib.Probability.PMF.one_sub_two_mul_mul_exp_le_dist_polarize`: the lower bound
   `1 - 2 k exp (-ℓ δ^(2λ) / 2)`.
 * `Cslib.Probability.PMF.exists_polarization`: the Polarization Lemma with polynomially bounded
   parameters, for constant thresholds `0 ≤ β < α² ≤ 1`.
@@ -80,7 +84,7 @@ theorem dist_polarize_le {Ω : Type*} [Fintype Ω] (p₀ p₁ : PMF Ω) (lam ell
 
 /-- **Polarization, lower bound**: for `λ, k ≥ 1` the polarized pair is at distance at least
 `1 - 2 k exp (-ℓ δ^(2λ) / 2)`, where `δ = dist p₀ p₁`. -/
-theorem one_sub_mul_exp_le_dist_polarize {Ω : Type*} [Fintype Ω] (p₀ p₁ : PMF Ω) {lam : ℕ}
+theorem one_sub_two_mul_mul_exp_le_dist_polarize {Ω : Type*} [Fintype Ω] (p₀ p₁ : PMF Ω) {lam : ℕ}
     (hlam : lam ≠ 0) (ell : ℕ) {k : ℕ} (hk : k ≠ 0) :
     1 - 2 * k * Real.exp (-(ell * dist p₀ p₁ ^ (2 * lam)) / 2) ≤
       dist (polarize p₀ p₁ lam ell k false) (polarize p₀ p₁ lam ell k true) := by
@@ -99,12 +103,6 @@ theorem one_sub_mul_exp_le_dist_polarize {Ω : Type*} [Fintype Ω] (p₀ p₁ : 
   · -- Otherwise the left side is negative.
     have : 1 - 2 * k * e ≤ 0 := by nlinarith
     exact this.trans (pow_nonneg dist_nonneg k)
-
-/-- `exp (-1) ≤ 1 / 2`. -/
-private theorem exp_neg_one_le_half : Real.exp (-1) ≤ 1 / 2 := by
-  have h := Real.add_one_le_exp 1
-  rw [Real.exp_neg, ← one_div]
-  exact one_div_le_one_div_of_le (by norm_num) (by linarith)
 
 /-- `2 k (1 / 2) ^ (2 k + 2) ≤ (1 / 2) ^ k`. -/
 private theorem two_mul_half_pow_le (k : ℕ) :
@@ -210,7 +208,8 @@ theorem exists_polarization {α β : ℝ} (hβ : 0 ≤ β) (hβα : β < α ^ 2)
   have hk1 : (1 : ℝ) ≤ k := Nat.one_le_cast.2 (Nat.one_le_iff_ne_zero.2 hk)
   constructor
   · intro hd
-    refine le_trans ?_ (one_sub_mul_exp_le_dist_polarize p₀ p₁ (Nat.mul_ne_zero hm0 hj0) _ hk)
+    refine le_trans ?_
+      (one_sub_two_mul_mul_exp_le_dist_polarize p₀ p₁ (Nat.mul_ne_zero hm0 hj0) _ hk)
     refine sub_le_sub_left ?_ 1
     -- The exponent is at least `(k + 1) ^ 3`.
     have hX : (k + 1 : ℝ) ^ 3 ≤
@@ -237,7 +236,7 @@ theorem exists_polarization {α β : ℝ} (hβ : 0 ≤ β) (hβα : β < α ^ 2)
             linarith
         _ = Real.exp (-1) ^ (2 * k + 2) := Real.exp_nat_mul _ _
         _ ≤ (1 / 2) ^ (2 * k + 2) :=
-          pow_le_pow_left₀ (Real.exp_pos _).le exp_neg_one_le_half _
+          pow_le_pow_left₀ (Real.exp_pos _).le Real.exp_neg_one_lt_half.le _
     calc 2 * (k : ℝ) * Real.exp (-(((2 ^ (b * j) : ℕ) : ℝ) * dist p₀ p₁ ^ (2 * (m * j))) / 2)
         ≤ 2 * k * (1 / 2) ^ (2 * k + 2) :=
           mul_le_mul_of_nonneg_left hexp (by positivity)

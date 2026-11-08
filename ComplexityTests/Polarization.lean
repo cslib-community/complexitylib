@@ -5,12 +5,14 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Probability.StatisticalDistance.Polarization
+import Mathlib.Analysis.Complex.ExponentialBounds
 
 /-! # Polarization of statistical distance
 
 Checked instances of the XOR Lemma, the direct-product lower bound and the Polarization Lemma on
 Boolean distributions: a uniform bit against a point mass, two disjoint point masses, the failure
-of the XOR identity at `k = 0`, and the constant thresholds `α = 2/3`, `β = 1/3`.
+of the XOR identity at `k = 0`, and the constant thresholds `α = 2/3`, `β = 1/3`, applied to a
+concrete far pair and a concrete near pair.
 -/
 
 namespace ComplexityTests.Polarization
@@ -60,10 +62,7 @@ example : dist (xorMix (PMF.pure false) (PMF.pure true) 0 false)
 example : 7 / 8 ≤ dist (iid U 32) (iid (PMF.pure true) 32) := by
   have h := one_sub_two_mul_exp_le_dist_iid U (PMF.pure true) 32
   rw [dist_U_pure] at h
-  have he : Real.exp (-1) ≤ 1 / 2 := by
-    have := Real.add_one_le_exp 1
-    rw [Real.exp_neg, ← one_div]
-    exact one_div_le_one_div_of_le (by norm_num) (by linarith)
+  have he : Real.exp (-1) ≤ 1 / 2 := Real.exp_neg_one_lt_half.le
   have h4 : Real.exp (-((32 : ℕ) * (1 / 2 : ℝ) ^ 2) / 2) = Real.exp (-1) ^ 4 := by
     rw [← Real.exp_nat_mul]
     norm_num
@@ -102,5 +101,30 @@ example : ∃ m b : ℕ, m ≠ 0 ∧
 example : (2 / 3 : ℝ) ≤ dist (PMF.pure false) (PMF.pure true) ∧ dist U U ≤ (1 / 3 : ℝ) := by
   rw [dist_pure_false_true, dist_self]
   norm_num
+
+-- The conclusion of the Polarization Lemma on a concrete far pair: at `α = 2/3`, `β = 1/3`, the
+-- disjoint point masses polarize to distance at least `1 - 2⁻³ = 7/8` at `k = 3`.
+example : ∃ lam ell : ℕ, 7 / 8 ≤
+    dist (polarize (PMF.pure false) (PMF.pure true) lam ell 3 false)
+      (polarize (PMF.pure false) (PMF.pure true) lam ell 3 true) := by
+  obtain ⟨m, b, -, -, -, h⟩ :=
+    exists_polarization (α := 2 / 3) (β := 1 / 3) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num)
+  refine ⟨_, _, le_of_eq_of_le ?_ ((h (PMF.pure false) (PMF.pure true) 3).1 ?_)⟩
+  · norm_num
+  · rw [dist_pure_false_true]
+    norm_num
+
+-- The conclusion on a concrete near pair: a uniform bit against itself polarizes to distance at
+-- most `2⁻³ = 1/8` at `k = 3`.
+example : ∃ lam ell : ℕ,
+    dist (polarize U U lam ell 3 false) (polarize U U lam ell 3 true) ≤ 1 / 8 := by
+  obtain ⟨m, b, -, -, -, h⟩ :=
+    exists_polarization (α := 2 / 3) (β := 1 / 3) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num)
+  refine ⟨_, _, le_of_le_of_eq ((h U U 3).2 ?_) ?_⟩
+  · rw [dist_self]
+    norm_num
+  · norm_num
 
 end ComplexityTests.Polarization
