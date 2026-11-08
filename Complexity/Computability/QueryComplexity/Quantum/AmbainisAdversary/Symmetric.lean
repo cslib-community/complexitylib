@@ -11,6 +11,7 @@ public import Complexity.Computability.QueryComplexity.Quantum.AmbainisAdversary
 public import Complexity.Foundations.Data.BitString.Parity
 public import Complexity.Foundations.Data.BitString.Sign
 public import Complexity.Foundations.Data.BitString.Threshold
+import Complexity.Foundations.Quantum.Measurement.Overlap
 
 /-!
 # Bounded-error parity, threshold functions and majority by the adversary method
@@ -212,11 +213,7 @@ theorem one_sub_mul_card_le_four_mul_of_majority (U : ℕ → State N W →ₗ�
     (h : ∀ x, |measureProb (run U ψ₀ x T) S - bitVal ℝ (majority N x)| ≤ ε) (hε : 2 * ε ≤ 1) :
     (1 - 2 * √(ε * (1 - ε))) * N ≤ 4 * T := by
   have hth := one_sub_mul_sqrt_le_two_mul_of_threshold U hψ₀ T S (k := (N + 1) / 2) h hε
-  have hε0 : 0 ≤ ε := (abs_nonneg _).trans (h fun _ => false)
-  have hc : 0 ≤ 1 - 2 * √(ε * (1 - ε)) := by
-    have : √(ε * (1 - ε)) ≤ 1 / 2 :=
-      (Real.sqrt_le_left (by norm_num)).2 (by nlinarith [sq_nonneg (1 - 2 * ε)])
-    linarith
+  have hc := one_sub_two_mul_sqrt_nonneg ε
   -- `N / 2 ≤ √(k (N + 1 - k))` for `k = ⌈N / 2⌉`
   have hsq : (N : ℝ) / 2 ≤ √(((N + 1) / 2 : ℕ) * (N + 1 - ((N + 1) / 2 : ℕ))) := by
     refine Real.le_sqrt_of_sq_le ?_
