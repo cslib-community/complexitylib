@@ -640,9 +640,11 @@ index links to canonical definitions rather than keeping a second set.
   `Cslib.Circuits.Program` straight-line programs with `s`-pebble black pebbling. Bennett's
   reversible game and its exact prices on the path, `⌈log₂ (v + 2)⌉` (visiting) and
   `⌈log₂ (v + 1)⌉ + 1` (persistent), are in `Pebbling/ReversiblePath.lean`
-  ([#3163](https://github.com/cslib-community/complexitylib/issues/3163)). Next: black-white
-  pebbling; the full reachable-configuration characterization and the reversible time–space and
-  erasure trade-offs of Li–Tromp–Vitányi
+  ([#3163](https://github.com/cslib-community/complexitylib/issues/3163)), and the
+  Li–Tromp–Vitányi characterization of every reachable configuration (their Theorem 1 and
+  Corollary 1) is in `Pebbling/ReversiblePathReachable.lean`. Next: black-white pebbling; the
+  reversible time–space trade-offs (is `3 ^ k` optimal for `k + 1` pebbles?) and the erasure
+  trade-off of Li–Tromp–Vitányi
   ([#3199](https://github.com/cslib-community/complexitylib/issues/3199));
   the Hopcroft–Paul–Valiant `O(n / log n)` pebbling of bounded-indegree DAGs and the matching
   Paul–Tarjan–Celoni `Ω(n / log n)` family; Gilbert–Tarjan and Lengauer–Tarjan time–space
