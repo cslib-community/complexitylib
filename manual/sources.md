@@ -821,6 +821,11 @@ Adi Shamir. “IP = PSPACE.” *Journal of the ACM* 39(4), 869–877 (1992). DOI
 
 Lloyd Shapley and Herbert Scarf. *On Cores and Indivisibility*. Journal of Mathematical Economics 1(1), 23–37, 1974. https://doi.org/10.1016/0304-4068(74)90033-0 . Bibliographic metadata only; the publisher's text is paywalled and was not inspected. The housing market model and the top trading cycles algorithm (credited there to David Gale) are attributed to it as in [roughgarden13cs364a](#roughgarden13cs364a), Lecture #9, §3, and [schummervohra07](#schummervohra07), §10.6 (which lists the pages as 23–28; the Crossref record was not rechecked). The housing-market modules also attribute to it the competitive allocation at round-size prices (`isCompetitive_ttc`), from memory of the literature; this attribution is unverified.
 
+<a id="shi03"></a>
+## shi03
+
+Yaoyun Shi. "Both Toffoli and Controlled-NOT Need Little Help to Do Universal Quantum Computing." *Quantum Information and Computation* 3(1), 84–92, 2003. https://doi.org/10.26421/QIC3.1-7 ; arXiv version (v2, titled "Both Toffoli and Controlled-NOT need little help to do universal quantum computation") https://arxiv.org/abs/quant-ph/0205115 . The arXiv v2 PDF was read on 2026-11-08 UTC for §2 (the notation `U[A]` for a gate on chosen qubits), §4 (Propositions 4.1 and 4.2, Definition 4.3, Lemmas 4.4 and 4.5, Algorithm 2, Theorem 4.6) and Figure 1. The library's controlled circuits, phase oracles, reflection about zero and plane rotation follow the proof of Lemma 4.5 in §4.2. With the Hadamard gate, `σ_z = H σ_x H` holds exactly, so §4.1 is not used. Journal pagination is taken from the bibliographic record.
+
 <a id="sipser13"></a>
 ## sipser13
 
