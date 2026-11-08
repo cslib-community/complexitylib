@@ -21,6 +21,7 @@ public import Complexity.Algorithms.LatticeReduction.Reduced
 public import Complexity.Algorithms.Lean.AhoCorasick.Basic
 public import Complexity.Algorithms.Lean.AhoCorasick.KMP
 public import Complexity.Algorithms.Lean.AhoCorasick.Search
+public import Complexity.Algorithms.Lean.Arborescence.ChuLiuEdmonds
 public import Complexity.Algorithms.Lean.Assignment.Auction
 public import Complexity.Algorithms.Lean.Assignment.Basic
 public import Complexity.Algorithms.Lean.BellmanFord.Basic
@@ -4246,6 +4247,7 @@ public import Complexity.Foundations.Combinatorics.Bregman
 public import Complexity.Foundations.Combinatorics.BudgetTuples
 public import Complexity.Foundations.Combinatorics.CentralBinomial
 public import Complexity.Foundations.Combinatorics.DepthReduction
+public import Complexity.Foundations.Combinatorics.Digraph.Arborescence
 public import Complexity.Foundations.Combinatorics.Digraph.MatrixTree
 public import Complexity.Foundations.Combinatorics.Expander.AffineFamily
 public import Complexity.Foundations.Combinatorics.Expander.AffinePlane
