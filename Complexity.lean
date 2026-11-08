@@ -3000,6 +3000,12 @@ public import Complexity.Computability.PolyTime.PacketPacking
 public import Complexity.Computability.PolyTime.ParityFactorEval
 public import Complexity.Computability.PolyTime.SparseMonomialJet
 public import Complexity.Computability.PolyTime.ZMod.ModulusSwitch
+public import Complexity.Computability.PostCorrespondence.Basic
+public import Complexity.Computability.PostCorrespondence.Modified
+public import Complexity.Computability.PostCorrespondence.OfTM0
+public import Complexity.Computability.PostCorrespondence.Rewrite
+public import Complexity.Computability.PostCorrespondence.Substitution
+public import Complexity.Computability.PostCorrespondence.Undecidable
 public import Complexity.Computability.Probabilistic.Adaptive
 public import Complexity.Computability.Probabilistic.AffineHash
 public import Complexity.Computability.Probabilistic.BoundedUniform
