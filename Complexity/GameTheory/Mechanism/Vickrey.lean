@@ -41,8 +41,11 @@ whose critical bid is the highest other bid. Consequently the Vickrey payment is
 * `SingleParameter.Vickrey.isWelfareMaximizing_allocation`: Lecture 2, Theorem 5.1 (2).
 * `SingleParameter.Vickrey.mechanism_payment_eq_myersonPayment`: the second-price payment is
   Myerson's payment for the highest-bidder allocation rule.
+* `SingleParameter.Vickrey.mechanism_isNormalized`: a zero bid pays zero.
 * `SingleParameter.Vickrey.exists_wins`, `SingleParameter.Vickrey.Wins.unique`: with at least one
   bidder there is exactly one winner.
+* `SingleParameter.Vickrey.wins_comp_iff`, `SingleParameter.Vickrey.allocation_comp`: the winner
+  does not change when all bids are transformed by the same strictly increasing map.
 
 ## References
 
@@ -108,6 +111,24 @@ theorem Wins.update_of_le {b : ι → ℝ} {i : ι} {z z' : ℝ} (h : Wins (Func
   have := h j hj
   rw [Function.update_self, Function.update_of_ne hj] at this ⊢
   exact ⟨this.1.trans hzz', fun hlt => (this.2 hlt).trans_le hzz'⟩
+
+/-- Winning is invariant under a strictly increasing transformation of all bids. -/
+theorem wins_comp_iff {φ : ℝ → ℝ} (hφ : StrictMono φ) {b : ι → ℝ} {i : ι} :
+    Wins (fun j => φ (b j)) i ↔ Wins b i := by
+  refine forall_congr' fun j => imp_congr_right fun _ => ?_
+  rw [hφ.le_iff_le, hφ.lt_iff_lt]
+
+/-- The highest-bidder allocation is invariant under a strictly increasing transformation of all
+bids. -/
+theorem allocation_comp {φ : ℝ → ℝ} (hφ : StrictMono φ) (b : ι → ℝ) (i : ι) :
+    allocation (fun j => φ (b j)) i = allocation b i := by
+  by_cases h : Wins b i
+  · rw [allocation_eq_one_iff.2 h, allocation_eq_one_iff.2 ((wins_comp_iff hφ).2 h)]
+  · rw [allocation_eq_zero_iff.2 h, allocation_eq_zero_iff.2 (mt (wins_comp_iff hφ).1 h)]
+
+/-- With a single bidder, that bidder always wins. -/
+theorem wins_of_subsingleton [Subsingleton ι] (b : ι → ℝ) (i : ι) : Wins b i :=
+  fun j hj => absurd (Subsingleton.elim j i) hj
 
 /-- The highest-bidder allocation rule is monotone. -/
 theorem isMonotone_allocation : IsMonotone (allocation (ι := ι)) := by
@@ -220,6 +241,12 @@ theorem mechanism_payment_eq_myersonPayment {b : ι → ℝ} (hb : 0 ≤ b) (i :
     mechanism.payment b i = myersonPayment allocation b i := by
   rw [← criticalBidMechanism_allocation]
   exact criticalBid_mul_eq_myersonPayment isMonotone_allocation isBinary_allocation hb i
+
+/-- In the Vickrey auction a zero bid pays zero. -/
+theorem mechanism_isNormalized : (mechanism (ι := ι)).IsNormalized := by
+  intro i b hb
+  rw [mechanism_payment_eq_myersonPayment (update_nonneg hb i le_rfl)]
+  exact myerson_isNormalized _ i b hb
 
 theorem allocation_mem_singleItemFeasible (b : ι → ℝ) :
     allocation b ∈ singleItemFeasible := by

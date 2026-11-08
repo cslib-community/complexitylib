@@ -48,6 +48,38 @@ up a budget of `t > m + c` resamplings. The
 recovered tape and its description, and a formula where only the existential bound applies;
 check them with `scripts/build.sh ComplexityTests.Moser`.
 
+The general Moser–Tardos theorem for the variable form of the Local Lemma is in
+`Complexity.Probability.MoserTardos` [mosertardos10]. The setting is finitely many independent
+variables `σ v ∼ μ v` and finitely many measurable events `A i`, each depending (in Mathlib's
+`DependsOn` sense) only on the variables in a finite set `vbl i`. The algorithm's randomness is
+the table `MoserTardos.table μ` of independent samples `T (v, n)`, where `T (v, n)` is the value
+of `v` after its `n`-th resampling. A selection rule `sel T w : Option ι` picks the next event
+after the log `w`. It may depend on the whole table, and it is *valid* when it only picks events
+that occur. Assume `x i ∈ [0, 1)` and `Pr[A i] ≤ x i ∏ j ∈ Γ i, (1 - x j)`, where `Γ i`
+contains every other event sharing a variable with `A i`. Under this hypothesis, Theorem 1.2 of
+the paper is `MoserTardos.lintegral_resamplings_le`: for every valid rule the expected number of
+resamplings of `A i` is at most `x i / (1 - x i)`. The rule need not be measurable, so this `∫⁻`
+is a lower integral. `exists_measurable_ge_resamplings` closes the gap: one measurable function
+with the same bound dominates the count under every valid rule, so the bound also holds for the
+outer expectation. The total over all events is `lintegral_sum_resamplings_le`. Almost sure
+termination is `ae_exists_run_eq_none`. `ae_exists_forall_notMem_run` says that a valid rule
+that stops only when no event occurs almost surely reaches an assignment avoiding every event;
+`ae_exists_forall_notMem_run_greedy` is the greedy case. The existential corollary is
+`exists_forall_notMem`. The witness trees of the proof are recorded as finite sets of
+`(label, depth)` pairs in `Complexity.Probability.MoserTardos.Witness`. Lemma 2.1 is
+`proper_witness`, the coupling `check_witness`, `measure_check_eq_prod` and, combined,
+`table_witness_le`. Here `Proper` is the level independence proved inside Lemma 2.1(i), which
+implies the paper's properness. The paper's Galton–Watson counting is replaced by a depth
+induction, `sum_prod_shapes_le`. The model counts resamplings; it does not charge for sampling or
+for detecting occurring events. Theorems 1.3 (the parallel version) and 1.4 (the deterministic
+version) and the lopsided form are not formalized. The
+[checked examples](../../ComplexityTests/MoserTardos.lean) give one fair coin, where the bound is
+`x / (1 - x) = 1`, two dependent events on three coins that meet the hypothesis with equality, an
+impossible event with `x = 0`, two complementary events for which no `x` satisfies the
+hypothesis, and a concrete valid log on a fixed table whose witness tree is computed by `decide`
+and passes its check. Check them with
+`scripts/build.sh ComplexityTests.MoserTardos`.
+
 Support-based CNF model counting counts assignments to variables that occur. Declared-universe counting instead fixes a larger variable set and can include free choices for unused variables. The library supplies relabeling and exact gadget-counting bridges, so a reduction claiming preservation of counts must specify which convention it preserves. This distinction is particularly relevant to dense relabeling and the [native fixed-width counting endpoint](../machines-and-classes/native-counting.md).
 
 [Constraint](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/CSP.lean#L69) has a relation alphabet and constraints consisting of a relation label plus a variable list. Semantics evaluates the label on the corresponding list of domain values. Arity is not enforced by the relation's type; a fixed-arity interpretation is an additional condition. Boolean/CNF translations and partition-function clients instantiate this generic semantic interface.
@@ -156,13 +188,15 @@ A tree-like derivation yields a decision tree that finds a clause falsified by t
 
 [The Tseitin-expander result](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/TseitinExpander.lean) combines a graph-expansion width lower bound with that tradeoff. It gives a family of linear-variable, constant-width unsatisfiable CNFs requiring exponentially many proof lines. The expansion witnesses are obtained nonconstructively from counting, and the source explicitly says so: existence of a hard family is proved, while an efficient explicit expander/formula generator is not supplied by that endpoint.
 
+[The cut space of a multigraph](../../Complexity/Foundations/Combinatorics/Multigraph/CutSpace.lean) holds the edge-cut algebra that Tseitin lower bounds beyond resolution (polynomial calculus, SOS) are meant to use. Import `Complexity.Foundations.Combinatorics.Multigraph.CutSpace`. `Multigraph.edgeCut_symmDiff` sends a symmetric difference of vertex sets to the symmetric difference of their edge cuts, and `Multigraph.edgeCut_singleton` identifies the cut of one vertex with its edges other than self-loops. On a connected multigraph, `Multigraph.eq_empty_or_eq_univ_of_edgeCut_eq_empty` says that only `∅` and the set of all vertices have empty cuts. `Multigraph.three_mul_card_lt_of_card_edgeCut_lt` is the expansion dichotomy: a set of at most two thirds of the vertices that fewer than `e(G)` edges leave has fewer than a third of them. The [checked examples](../../ComplexityTests/Foundations/Combinatorics/Multigraph/CutSpace.lean) show that connectivity and the two-thirds hypothesis cannot be dropped; check them with `scripts/build.sh ComplexityTests.Foundations.Combinatorics.Multigraph.CutSpace`.
+
 Interpolation modules extract circuits separating the two sides of a refuted conjunction. Monotone extraction supports clique/coloring lower-bound applications, and a separate polynomial-time file addresses encoded extraction. The distinction between semantic existence of an interpolant and a native efficient extraction algorithm follows the same design pattern as circuits and finite-model logic. See [interpolation](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/Interpolation.lean), [monotone extraction](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/Interpolation/MonotoneExtraction.lean) and [native extraction](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/Resolution/Interpolation/PolyTime.lean).
 
 [Semantic derivations](../../Complexity/Logics/Propositional/SemanticDerivation.lean) formalize Krajíček's communication route to interpolation, which is not tied to one proof system. Import `Complexity.Logics.Propositional.SemanticDerivation`. A line is a set of assignments, and `IsSemanticRefutation (initSets 𝒜 ℬ) D` says that each of the `k` lines of `D` is either a cylinder over an initial set, everything, or contains the intersection of two earlier lines, and that some line is `∅`. `IsSemanticRefutation.exists_dagProtocol` turns such a refutation into a dag-like Karchmer–Wigderson protocol with `k` inner nodes and communication `2 t`. This requires two per-line costs to be at most `t`: deciding whether the mixed assignment `(v, q, r)` lies in each line, and finding a coordinate at each `𝒜`-cylinder. For shared variables of type `Fin n`, `exists_circuit` and `exists_monotone_circuit` then give a separating circuit with at most `(k · 2 ^ (2 t) + 1) · 2 ^ (2 t + 1)` gates. The `_of_commComplexity_le` forms state this for lines with Krajíček's `CC` and `MCC_U` at most `t`; the monotone form assumes the models of `𝒜` are upward closed. This sharpens the bounds of Theorem 5.1, `(k + 2 n) · 2 ^ O(t)` and, in the monotone case, `(k + n) · 2 ^ O(t)`: the `2 n` answer nodes of the source's protocol are leaves here and cost nothing. `lt_of_forall_lt_size` is the transfer to line lower bounds. Only the monotone case for the `𝒜` side is stated. Cutting planes is the first proof-system client (see below); resolution refutations are not yet translated into semantic refutations. The [checked examples](../../ComplexityTests/ProofComplexity/SemanticDerivation.lean) apply every form to a three-line refutation of `x₀ = 1` against `x₀ = 0`; check them with `scripts/build.sh ComplexityTests.ProofComplexity.SemanticDerivation`.
 
 ## Clause space
 
-Import `Complexity.Logics.Propositional.Resolution.SpaceWidth` for the definitions and the inequality, or `Complexity.Logics.Propositional.Resolution.TseitinSpace` for the Tseitin corollaries.
+Import `Complexity.Logics.Propositional.Resolution.SpaceWidth` for the definitions and the inequality, `Complexity.Logics.Propositional.Resolution.TseitinSpace` for the Tseitin corollaries, or `Complexity.Logics.Propositional.Resolution.TreeLikeSpace` for tree-like refutations.
 
 [Configuration-style resolution](../../Complexity/Logics/Propositional/Resolution/Space.lean) follows Esteban and Torán. It keeps a `Finset` of clauses in memory, and each move (`ConfigMove`) changes it by one of three rules (`CNF.ConfigStep`): download a clause of the formula, add the resolvent of two clauses in memory, or erase a clause. The resolution rule is that of `CNF.IsProof`, with no weakening. `CNF.configLTS φ s` is the cslib `LTS` of these moves, restricted to configurations of at most `s` clauses. It follows the same pattern as the pebbling library's `Cslib.Pebbling.blackPebbleGame`.
 
@@ -185,11 +219,17 @@ The proof keeps Atserias and Dalmau's Duplicator strategy, the partial assignmen
 
 As with the size bound, the expanders come from a counting argument.
 
-The [checked examples](../../ComplexityTests/ProofComplexity/Space.lean) refute `x ∧ ¬x` in space `3` and show that space `2` is impossible. They also give a five-line refutation that erasure keeps in space `3`, and a formula with a width-`3` clause on which the inequality is attained: `k = s = 3`, width `3` and not `2`. Check them with `scripts/build.sh ComplexityTests.ProofComplexity.Space`.
+[The tree-like module](../../Complexity/Logics/Propositional/Resolution/TreeLikeSpace.lean) proves Esteban and Torán's bound: clause space is at most logarithmic in tree-like size. The statement is taken from Torán's survey (Bulletin of the EATCS 83, 2004, Theorem 9), which states `tree-size(F) ≥ 2 ^ space(F) - 1`. The original paper was not inspected. The survey's pebble game (Definition 7, identified with its space by Lemma 8) lets an inference shift a pebble from a premise to the resolvent, so its space is at most one less than clause space here. `CNF.configLTS` keeps both premises, so every bound here is one larger:
+
+- `Derivation.strahler` is the Horton–Strahler number of a tree-like derivation, the height of the largest complete binary tree embedded in it. It is the Ehrenfeucht–Haussler rank `Cslib.DecisionTree.rank` of the derivation's decision tree `Derivation.toDecisionTree` (`Derivation.strahler_eq_rank_toDecisionTree`). `Derivation.two_pow_strahler_add_one_le` gives `2 ^ (r + 1) ≤ S + 1` for a derivation of `S` nodes, from `DecisionTree.two_pow_rank_le_leafCount` (a tree of rank `r` has at least `2 ^ r` leaves).
+- `Derivation.refutableInSpace` gives clause space `r + 2`: derive the premise of larger number first and keep it. This matches the black pebbling price `h + 2` of the complete binary tree of height `h ≥ 1` in `Complexity/Computability/Pebbling/BinaryTree.lean`.
+- `Derivation.refutableInSpace_log` gives clause space `log₂ (S + 1) + 1`. Its contrapositive, `Derivation.two_pow_le_size_add_one`, turns `¬ RefutableInSpace s` into `2 ^ s ≤ S + 1`; `x ∧ ¬x` attains it.
+- `CNF.refutableInSpace_of_not_satisfiable` refutes every unsatisfiable formula on `n` variables in clause space `n + 2`, the survey's `n + 1`. It splits on a variable (`CNF.exists_derivation_strahler_le`), lifting tree-like refutations of the restrictions with `Derivation.exists_of_restrict`.
+
+The [checked examples](../../ComplexityTests/ProofComplexity/Space.lean) refute `x ∧ ¬x` in space `3` and show that space `2` is impossible. They also give a five-line refutation that erasure keeps in space `3`, and a formula with a width-`3` clause on which the inequality is attained: `k = s = 3`, width `3` and not `2`. Check them with `scripts/build.sh ComplexityTests.ProofComplexity.Space`. The [tree-like examples](../../ComplexityTests/ProofComplexity/TreeLikeSpace.lean) compute Strahler numbers, show that `x ∧ ¬x` attains both the Esteban–Torán bound and the bound `n + 2`, and turn the Tseitin space bound into tree-like size at least `2 ^ 121 - 1`. On a unit-propagation chain with a 7-node refutation, the Strahler bound gives the optimal space `3` where the logarithmic bound gives `4`. Check them with `scripts/build.sh ComplexityTests.ProofComplexity.TreeLikeSpace`.
 
 Not yet formalized:
 
-- the Esteban–Torán bound of clause space by the logarithm of tree-like size;
 - total and variable space;
 - time–space trade-offs and pebbling formulas;
 - the polynomial-calculus analogue, degree versus space, which is open.
@@ -238,3 +278,4 @@ This section inventories resolution, including clause space, cutting planes, sem
 
 [complexitylib]: ../sources.md#complexitylib
 [cookreckhow79]: ../sources.md#cookreckhow79
+[mosertardos10]: ../sources.md#mosertardos10
