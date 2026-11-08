@@ -24,7 +24,7 @@ import Mathlib.Tactic.Positivity
 
 `k` independent draws from two distributions at statistical distance `δ` are at distance at least
 `1 - 2 exp (-k δ² / 2)` (`one_sub_two_mul_exp_le_dist_iid`). This is the lower half of the
-Direct Product Lemma of Sahai and Vadhan [SahaiVadhan2003, §3]; the upper half,
+Direct Product Lemma of Sahai and Vadhan [SahaiVadhan2003, Lemma 3.4]; the upper half,
 `dist (iid μ k) (iid ν k) ≤ k δ`, is `Cslib.Probability.PMF.dist_iid_le`.
 
 The distinguisher counts the coordinates that fall in the event `S` on which `μ` is more likely
@@ -50,9 +50,9 @@ namespace Cslib.Probability.PMF
 
 variable {α : Type*} [Fintype α]
 
-/-- **Direct product lower bound** [SahaiVadhan2003, §3]: `k` independent draws from `μ` and from
-`ν` are at statistical distance at least `1 - 2 exp (-k δ² / 2)`, where `δ = dist μ ν`. Together
-with `dist_iid_le` this is the Direct Product Lemma. -/
+/-- **Direct product lower bound** [SahaiVadhan2003, Lemma 3.4]: `k` independent draws from `μ` and
+from `ν` are at statistical distance at least `1 - 2 exp (-k δ² / 2)`, where `δ = dist μ ν`.
+Together with `dist_iid_le` this is the Direct Product Lemma. -/
 theorem one_sub_two_mul_exp_le_dist_iid (μ ν : PMF α) (k : ℕ) :
     1 - 2 * Real.exp (-(k * dist μ ν ^ 2) / 2) ≤ dist (iid μ k) (iid ν k) := by
   classical
