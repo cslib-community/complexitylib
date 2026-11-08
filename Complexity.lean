@@ -1829,6 +1829,7 @@ public import Complexity.Computability.Complexity.Problems.CSP.Horn
 public import Complexity.Computability.Complexity.Problems.CSP.Incidence
 public import Complexity.Computability.Complexity.Problems.CSP.Majority
 public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
+public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 public import Complexity.Computability.Complexity.Problems.CSP.Schaefer
 public import Complexity.Computability.Complexity.Problems.CSP.SelfDualThreeSAT
 public import Complexity.Computability.Complexity.Problems.ChromaticNumber
@@ -1854,6 +1855,7 @@ public import Complexity.Computability.Complexity.Problems.Graph.PerfectMatching
 public import Complexity.Computability.Complexity.Problems.Graph.PerfectMatchingPolyTime
 public import Complexity.Computability.Complexity.Problems.Graph.Ports
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Certificate
 public import Complexity.Computability.Complexity.Problems.Graph.VertexColors
 public import Complexity.Computability.Complexity.Problems.GraphIsomorphism
 public import Complexity.Computability.Complexity.Problems.Hamiltonian
@@ -2779,6 +2781,7 @@ public import Complexity.Computability.PolyTime.GaloisRingArithmetic
 public import Complexity.Computability.PolyTime.GaloisRingInterpolation
 public import Complexity.Computability.PolyTime.GaloisRingSeries
 public import Complexity.Computability.PolyTime.GaloisRingUnits
+public import Complexity.Computability.PolyTime.Graph.RotationSystem
 public import Complexity.Computability.PolyTime.GreedyLabelSchedule
 public import Complexity.Computability.PolyTime.GreedySlotScore
 public import Complexity.Computability.PolyTime.Int.DotProduct

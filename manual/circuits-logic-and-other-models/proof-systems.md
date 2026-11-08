@@ -188,9 +188,36 @@ order. Mirroring a ternary constraint can violate that order. Nullary constraint
 ends, so this order condition is vacuous for them. See [graph rotation tests](../../ComplexityTests/RotationSystem.lean)
 and [constraint-order tests](../../ComplexityTests/CSPRotationSystem.lean).
 
-Rotations alone do not impose genus zero. These modules prove no planar recognition, geometric
-realization, planar reduction, edge solver or dichotomy. In particular, isolated vertices require
-separate treatment in a future embedding model. The full objective remains [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+A rotation structure alone does not impose genus zero. The finite-certificate layer in
+`Problems.CSP.RotationSystem.Certificate` checks a supplied rotation table: one binary successor
+index for each of the graph's `2m` indexed darts. It checks exact length, declared endpoints,
+permutation and equality of successor orbits with endpoint fibers, then decodes an accepted table
+to the existing rotation structure. Constraint successors must also follow the original cyclic
+scope order. A mirrored ternary rotation can pass the graph check and fail this order check.
+
+`Graph.RotationSystem.NumericalGenusZero` requires `V + F = E + 2` independently in every edge
+component. It counts distinct vertices, listed edges and all face orbits, including singleton
+orbits; every face stays within one component. An isolated declared vertex uses the separate
+point convention `V = 1, E = 0, F = 1`, without creating a dart. The native graph checker is
+`Graph.RotationCertificate.verifyGenusZero`. Its completeness theorem
+`exists_bounded_certificate_iff` requires declared endpoints and supplies a certificate of at most
+`10 * (N + 1)^2` bits, where `N` is the graph's complete `encGraph` bit length.
+
+The native CSP checker `CSP.verifyRotationCertificate` combines numerical genus zero with
+`RespectsArgumentOrder`. `CSP.exists_bounded_rotationCertificate_iff` proves both directions of
+certificate completeness, and `CSP.polyBounded_rotationCertificateBound` bounds its certificate
+size polynomially in the source CSP encoding. `CSP.computableInPolyTime_verifyRotationCertificate`
+uses `encCSPRotationCertificate encRel encV`, pairing the original framed CSP with the framed
+successor table. The native cost proof covers malformed tables and enormous binary labels or
+indices; only actual list lengths fund iteration. See the [graph certificate tests](../../ComplexityTests/RotationCertificate.lean)
+and [ordered CSP certificate tests](../../ComplexityTests/CSPRotationCertificate.lean).
+
+These are finite encoding and numerical-verification results. Geometric realization, identifying
+the outer face across disconnected components, bare-instance recognition/construction, planar
+duality and the edge solver remain open. Exact relation-arity and satisfiability guards are
+separate: a false nullary relation passes the port-order check. Rejection of a supplied toroidal
+rotation does not prove that its graph is nonplanar. The full objective remains
+[#3091](https://github.com/cslib-community/complexitylib/issues/3091).
 
 ## Delta-matroid composition and local contraction closure
 
