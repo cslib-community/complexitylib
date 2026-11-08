@@ -10,6 +10,7 @@ module
 public import Complexity.MachineLearning.PACLearning.EpsilonNet
 public import Complexity.MachineLearning.PACLearning.RealizableSample
 import Complexity.MachineLearning.PACLearning.ERM
+import Complexity.MachineLearning.PACLearning.VCDimension
 
 /-! # The VC upper bound for realizable PAC learning on countable domains
 
@@ -181,7 +182,7 @@ theorem sampleComplexity_realizableDistributions_le_of_hasFiniteVCDim {C : Conce
     sampleComplexity IsPACLearnerFor C ε δ (realizableDistributions C) ≤
       ⌈vcSampleSize (vcDim C) ε.val δ.val⌉₊ :=
   Nat.sInf_le (isPACLearnerFor_realizableDistributions_of_vcSampleSize_le
-    (fun W hW => le_csSup hC ⟨W, rfl, hW⟩) (Nat.le_ceil _))
+    (fun _ hW => hW.card_le_vcDim hC) (Nat.le_ceil _))
 
 /-- **Finite VC dimension implies realizable PAC learnability** on a countable domain
 [BlumerEhrenfeuchtHausslerWarmuth1989, Theorem 2.1]. -/
