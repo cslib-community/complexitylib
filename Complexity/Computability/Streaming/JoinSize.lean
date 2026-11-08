@@ -418,7 +418,8 @@ private def joinStates (W : Finset (Fin (2 * r) → Fin k → ι)) (m : ℕ) :
 
 private theorem card_joinStates (W : Finset (Fin (2 * r) → Fin k → ι)) (m : ℕ) :
     #(joinStates W m) = #W * ((2 * m + 1) ^ 2) ^ (2 * r * k) := by
-  rw [joinStates, card_map, card_product, card_product, card_piFinset_Icc, ← mul_pow, ← sq]
+  rw [joinStates, card_map, card_product, card_product, card_piFinset_Icc, Fintype.card_fin,
+    Fintype.card_fin, ← mul_pow, ← sq]
 
 private theorem state_mem_joinStates (hsgn : ∀ y, |sgn y| ≤ 1)
     {W : Finset (Fin (2 * r) → Fin k → ι)} {ω : Fin (2 * r) → Fin k → ι} (hω : ω ∈ W) {m : ℕ}

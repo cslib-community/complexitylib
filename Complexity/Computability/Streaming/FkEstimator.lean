@@ -448,11 +448,8 @@ theorem dens_fkSketch_error_le {n : ℕ} (hk : k ≠ 0) {η : ℝ} (hη : 0 < η
 theorem errorProb_fkEstimator [NeZero m] (R : List α → ℝ → Prop) (s : List α)
     [DecidablePred fun ω : Fin (2 * r) → Fin K → Fin m => ¬R s ((fkSketch k m r K ω).run s)] :
     (fkEstimator α k m r K).errorProb R s =
-      dens {ω : Fin (2 * r) → Fin K → Fin m | ¬R s ((fkSketch k m r K ω).run s)} := by
-  unfold Randomized.errorProb fkEstimator
-  rw [PMF.toOuterMeasure_map_apply, nnratCast_dens]
-  exact Probability.PMF.toOuterMeasure_uniformOfFintype_toReal
-    {ω : Fin (2 * r) → Fin K → Fin m | ¬R s ((fkSketch k m r K ω).run s)}
+      dens {ω : Fin (2 * r) → Fin K → Fin m | ¬R s ((fkSketch k m r K ω).run s)} :=
+  Randomized.errorProb_map_uniformOfFintype _ R s
 
 /-- **The AMS sketch solves `F_k` estimation** [AlonMatiasSzegedy1999, Theorem 2.1]: for items
 from a universe of size `n`, if `k ≠ 0`, `η > 0`, `(3 k) ^ k n ^ (k - 1) ≤ (K η²) ^ k` and

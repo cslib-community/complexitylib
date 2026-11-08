@@ -80,15 +80,6 @@ namespace Cslib.Streaming
 open Finset Probability
 open scoped BigOperators
 
-/-- A sum of at most unit integers is bounded by the number of terms. -/
-private theorem abs_sum_map_le {α : Type*} {f : α → ℤ} (hf : ∀ a, |f a| ≤ 1) (s : List α) :
-    |(s.map f).sum| ≤ s.length := by
-  induction s with
-  | nil => simp
-  | cons a s ih =>
-    rw [List.map_cons, List.sum_cons, List.length_cons, Nat.cast_succ]
-    exact (abs_add_le _ _).trans (by linarith [hf a])
-
 variable {ι α Y : Type*}
 
 /-- The memory of the AMS sketch with `2 r` groups of `k` tug-of-war counters: a seed and a counter
@@ -213,11 +204,8 @@ theorem dens_amsSketch_error_le [Fintype ι] [DecidableEq α] [Fintype Y] [Decid
 theorem errorProb_ams [Fintype ι] [Nonempty ι] (R : List α → ℝ → Prop) (s : List α)
     [DecidablePred fun ω : Fin (2 * r) → Fin k → ι => ¬R s ((amsSketch h sgn r k ω).run s)] :
     (ams h sgn r k).errorProb R s =
-      dens {ω : Fin (2 * r) → Fin k → ι | ¬R s ((amsSketch h sgn r k ω).run s)} := by
-  unfold Randomized.errorProb ams
-  rw [PMF.toOuterMeasure_map_apply, nnratCast_dens]
-  exact Probability.PMF.toOuterMeasure_uniformOfFintype_toReal
-    {ω : Fin (2 * r) → Fin k → ι | ¬R s ((amsSketch h sgn r k ω).run s)}
+      dens {ω : Fin (2 * r) → Fin k → ι | ¬R s ((amsSketch h sgn r k ω).run s)} :=
+  Randomized.errorProb_map_uniformOfFintype _ R s
 
 /-- **The AMS sketch solves `F₂` estimation** [AlonMatiasSzegedy1999, Theorem 2.2]: with a
 four-wise independent family of signs of mean zero, `6 ≤ k η²` and `(8 / 9) ^ r ≤ δ`, the
@@ -240,14 +228,6 @@ theorem mem_Icc_state_amsSketch_snd (hsgn : ∀ y, |sgn y| ≤ 1) (ω : Fin (2 *
   exact abs_le.1 ((abs_sum_map_le (fun a => hsgn (h (ω i l) a)) s).trans
     (by exact_mod_cast hs : ((s.length : ℕ) : ℤ) ≤ m))
 
-/-- The number of values of `2 r k` counters in `[-m, m]`. -/
-theorem card_piFinset_Icc (m : ℕ) :
-    (Fintype.piFinset fun _ : Fin (2 * r) => Fintype.piFinset fun _ : Fin k =>
-      Icc (-(m : ℤ)) m).card = (2 * m + 1) ^ (2 * r * k) := by
-  have : (↑m + 1 - -(m : ℤ)).toNat = 2 * m + 1 := by omega
-  simp only [Fintype.card_piFinset, Int.card_Icc, this, prod_const, card_univ, Fintype.card_fin]
-  rw [← pow_mul, mul_comm k]
-
 /-- **The memory of the randomized AMS sketch** [AlonMatiasSzegedy1999, Theorem 2.2]: every sketch
 it draws uses at most `b` bits of memory on streams of at most `m` items when
 `(2 m + 1) ^ (2 r k) ≤ 2 ^ b`. Under the public-coin convention of `Cslib.Streaming.Randomized`
@@ -266,7 +246,9 @@ theorem spaceLE_ams [Fintype ι] [Nonempty ι] (hsgn : ∀ y, |sgn y| ≤ 1) {m 
     rw [mem_coe, mem_product, Fintype.mem_piFinset]
     refine ⟨?_, fun i => Fintype.mem_piFinset.2 fun l => mem_Icc_state_amsSketch_snd hsgn ω hs i l⟩
     rw [state_amsSketch, mem_singleton]
-  · rwa [card_product, card_singleton, one_mul, card_piFinset_Icc]
+  · rw [card_product, card_singleton, one_mul, card_piFinset_Icc, Fintype.card_fin,
+      Fintype.card_fin]
+    exact hb
 
 /-- **The memory of the AMS sketch with its seeds stored** [AlonMatiasSzegedy1999, Theorem 2.2]:
 on streams of at most `m` items, the states reachable from all seeds together have a single
@@ -286,9 +268,9 @@ theorem exists_injOn_iUnion_reachable_amsSketch [Fintype ι] (hsgn : ∀ y, |sgn
     rw [mem_coe, mem_product, Fintype.mem_piFinset]
     exact ⟨mem_univ _, fun i => Fintype.mem_piFinset.2 fun l =>
       mem_Icc_state_amsSketch_snd hsgn ω hs i l⟩
-  · rw [card_product, card_piFinset_Icc, card_univ, Fintype.card_pi, prod_const, card_univ,
-      Fintype.card_fin, Fintype.card_pi, prod_const, card_univ, Fintype.card_fin, ← pow_mul,
-      mul_comm k, ← mul_pow]
+  · rw [card_product, card_piFinset_Icc, Fintype.card_fin, Fintype.card_fin, card_univ,
+      Fintype.card_pi, prod_const, card_univ, Fintype.card_fin, Fintype.card_pi, prod_const,
+      card_univ, Fintype.card_fin, ← pow_mul, mul_comm k, ← mul_pow]
     exact hb
 
 end Cslib.Streaming
