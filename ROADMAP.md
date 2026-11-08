@@ -558,6 +558,16 @@ index links to canonical definitions rather than keeping a second set.
   and registry does not complete that broader scope.
   For Cook–Mertz itself: malformed-input handling and the refined
   `O(ℓ + H log(ℓ + 2))` parameter bound remain open ([#2855]).
+- **Time–space lower bounds for nondeterministic linear time**
+  ([#2896](https://github.com/cslib-community/complexitylib/issues/2896)): simultaneous
+  `TISP(t, s)`, two-quantifier alternating time `Σ₂TIME(t)` (bridged to `Σ₂ᵖ`) and the slowdown
+  lemma `NTIME(n) ⊆ DTIME(t') ⇒ Σ₂TIME(t) ⊆ NTIME(t'(O(t)))` are in
+  [`TimeSpace/Slowdown.lean`](Complexity/Computability/Complexity/Classes/TimeSpace/Slowdown.lean).
+  Still open: the speedup lemma `TISP(t, s) ⊆ Σ₂TIME(...)` by guessing configurations of the
+  universal machine, and the Arora–Barak lower bound `NTIME(n) ⊄ TISP(n^1.2, n^0.2)` with the
+  Lipton–Viglas `n^(√2 − ε)` form. Beyond these: the `√(t·s)` windowed speedup, the golden-ratio
+  deterministic bound of Fortnow, Lipton, van Melkebeek and Viglas, and the transfer to SAT. The
+  transfer needs a quasi-linear-size Cook–Levin reduction.
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
   bounds for sublinear space, distinct from polynomial-space simulation.
 - **Alternating space, `EXP ⊆ APSPACE` and `P ⊆ AL`**
