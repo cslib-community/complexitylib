@@ -135,13 +135,48 @@ Flows are functions `f : P → ℝ`, and the definitions are:
   Definition 2.1 for continuous nondecreasing latencies (Lemma 2.2), in particular for the affine
   latencies of the `4/3` theorem.
 
-The main results:
+The module proves the variational inequality `IsWardrop.cost_le_sum_mul_pathLatency` and
+`cost_nonneg`. Existence of Wardrop flows is not proved; every bound below is about any given one.
 
-- `IsWardrop.cost_le_sum_mul_pathLatency`: the variational inequality.
-- `IsWardrop.cost_le`: with nonnegative affine latencies, a Wardrop flow costs at most `4/3` times
-  any feasible flow (Theorem 4.5). Existence of Wardrop flows is not proved; the theorem is about
-  any given one.
-- `exists_cost_eq_four_thirds_mul`: Pigou's example attains `4/3`.
+### The Pigou bound
+
+[Congestion/PigouBound.lean](../../Complexity/GameTheory/Congestion/PigouBound.lean) proves
+Roughgarden's theorem that the price of anarchy depends only on the class of latency functions,
+not on the network [roughgarden03][roughgarden03]. It follows the presentation of
+[roughgarden13cs364a][roughgarden13cs364a], Lecture #11. A *Pigou-like network*,
+`pigouNetwork c r`, routes `r` units over two parallel links with latencies `c` and the constant
+`c r`. `pigouRatio c r x` is the ratio `r c(r) / (x c(x) + (r - x) c(r))`. The *Pigou bound*
+`pigouBound C : ℝ≥0∞` is its supremum over `c ∈ C` and `r, x ≥ 0`. It lives in `ℝ≥0∞` because it
+can be infinite, as it is for polynomials of unbounded degree. The main results:
+
+- `IsWardrop.cost_le_toReal_pigouBound_mul` (Lecture #11, Theorem 3.3): suppose every resource
+  latency lies in `C` and is nonnegative and nondecreasing on `[0, ∞)`, and `pigouBound C ≠ ⊤`.
+  Then a Wardrop flow costs at most `(pigouBound C).toReal` times any feasible flow, with any
+  number of commodities and any resource sets. Continuity is not needed.
+- `IsWardrop.cost_le_mul_of_forall_mul_le`: the same proof for any `α ≥ 0` that satisfies the
+  edgewise inequality `r c(r) ≤ α (x c(x) + (r - x) c(r))`. Use it for a class whose bound you
+  know but have not computed as a supremum.
+- `exists_lt_cost_of_lt_pigouBound` and `pigouBound_le_ofReal_iff` ([roughgarden03][roughgarden03],
+  Theorem 4.2): suppose also that `C` contains every nonnegative constant function. Then
+  Pigou-like networks come arbitrarily close to `pigouBound C`, so it is the exact worst-case price
+  of anarchy over all games with latencies in `C`.
+- `pigouBound_polynomialLatencies` (Proposition 5.1): `polynomialLatencies d` is the class of
+  polynomials of degree at most `d` with nonnegative coefficients, and its bound is
+  `(1 - d (d+1)^{-(d+1)/d})⁻¹`. `pigouBound_le_ofReal_inv_one_sub` reduces such computations to the
+  inequality `x (c(r) - c(x)) ≤ β r c(r)`.
+- `IsWardrop.cost_le_of_mem_polynomialLatencies` is the resulting price-of-anarchy bound.
+  `exists_cost_eq_mul_of_mem_polynomialLatencies` attains it with Pigou's `x ^ d` network.
+- `IsWardrop.cost_le` and `exists_cost_eq_four_thirds_mul` are the affine case `d = 1`: a bound of
+  `4/3` (Theorem 4.5 of [roughgardenTardos02][roughgardenTardos02]), attained by Pigou's example.
+  `HasAffineLatencies.latency_mem_polynomialLatencies` and `pigouBound_polynomialLatencies_one`
+  connect the two.
+
+To bound a new latency class, first prove that its members are nonnegative and nondecreasing on
+`[0, ∞)`. Then bound `pigouBound C` with `pigouBound_le` or `pigouBound_le_ofReal_inv_one_sub`,
+and apply `IsWardrop.cost_le_toReal_pigouBound_mul`. To show the bound is tight, use
+`pigouNetwork`, `pigouNetwork_cost`, `pigouNetwork_isWardrop` and `pigouNetwork_isFeasible`.
+The Pigou bound uses Lean's `a / 0 = 0`. That changes nothing unless every function of `C`
+vanishes on `(0, ∞)` (see `one_le_pigouBound`).
 
 ## Working with the API
 
@@ -151,7 +186,11 @@ so do the counting in `ℕ` and transfer it with `Nat.cast_le` or `exact_mod_cas
 [ComplexityTests/GameTheory/Congestion.lean](../../ComplexityTests/GameTheory/Congestion.lean)
 shows the pattern on a two-player, two-link game with price of anarchy `4/3`. It also checks that
 quadratic latencies are not affine, that `5/2` and `4/3` cannot be lowered, and Wardrop and
-non-Wardrop flows. [ComplexityTests/GameTheory/Strategic.lean](../../ComplexityTests/GameTheory/Strategic.lean)
+non-Wardrop flows. [ComplexityTests/GameTheory/PigouBound.lean](../../ComplexityTests/GameTheory/PigouBound.lean)
+checks Pigou's ratio `4/3`, the Pigou bounds `1` and `4/3` for degrees `0` and `1`, and a
+quadratic network whose equilibrium costs `8/5` times a feasible flow, more than the affine bound.
+It also checks that polynomials of unbounded degree have an infinite Pigou bound, and it applies
+the tightness theorem. [ComplexityTests/GameTheory/Strategic.lean](../../ComplexityTests/GameTheory/Strategic.lean)
 checks the following:
 
 - the Monderer–Shapley Prisoner's Dilemma with its exact potential;
@@ -166,7 +205,11 @@ price-of-anarchy bound to the two-link game for every horizon.
 ## Known Limitations
 
 Mixed Nash and correlated equilibria (with swap regret), existence of Wardrop flows, and weighted
-congestion games are not formalized. The same holds for the Monderer–Shapley isomorphism between
+congestion games are not formalized. For the Pigou bound, the tight lower bounds of
+[roughgarden03][roughgarden03] for classes without the constant functions (diverse classes on
+parallel links, Theorem 4.5, and inhomogeneous classes on unions of paths, Theorem 4.9) and the
+M/M/1 and M/G/1 delay functions of its Section 5 are not formalized.
+The same holds for the Monderer–Shapley isomorphism between
 potential games and congestion games (Theorems 2.8 and 3.2) and for the complexity of finding
 equilibria (PLS- and PPAD-completeness). These are ROADMAP directions under
 [#2900](https://github.com/cslib-community/complexitylib/issues/2900). Hedge dynamics are
@@ -178,6 +221,7 @@ cited in the Monderer–Shapley and Roughgarden papers; their own texts were not
 [complexitylib]: ../sources.md#complexitylib
 [mondererShapley96]: ../sources.md#monderershapley96
 [rosenthal73]: ../sources.md#rosenthal73
+[roughgarden03]: ../sources.md#roughgarden03
 [roughgarden13cs364a]: ../sources.md#roughgarden13cs364a
 [roughgarden15]: ../sources.md#roughgarden15
 [roughgardenTardos02]: ../sources.md#roughgardentardos02

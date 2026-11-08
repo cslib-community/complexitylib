@@ -11,17 +11,12 @@ public import Complexity.Init
 public import Mathlib.Algebra.BigOperators.Group.Finset.Defs
 public import Mathlib.Basic.Real.Basic
 public import Mathlib.Data.Fintype.Basic
-import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
-import Mathlib.Data.Fin.VecNotation
 import Mathlib.Data.Fintype.EquivFin
-import Mathlib.Tactic.FinCases
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.NormNum
 
 /-!
-# Selfish routing: nonatomic congestion games with affine latencies
+# Selfish routing: nonatomic congestion games
 
 In a **nonatomic congestion game** a continuum of infinitesimal players routes traffic. There is a
 finite set `P` of paths. Each path `p` belongs to a commodity `commodity p` and uses the finite set
@@ -37,11 +32,10 @@ equilibrium** (a flow at Nash equilibrium, [RoughgardenTardos2002], Definition 2
 carrying flow is a shortest path of its commodity; for continuous nondecreasing latencies this is
 the characterization of [RoughgardenTardos2002], Lemma 2.2, which we take as the definition.
 
-The main result is the theorem of Roughgarden and Tardos ([RoughgardenTardos2002], Theorem 4.5):
-with affine latencies `latency e x = a e * x + b e`, `a e, b e ≥ 0`, the cost of a Wardrop
-equilibrium is at most `4/3` times the cost of every feasible flow. Pigou's example
-([RoughgardenTardos2002], Figure 3) shows that `4/3` cannot be improved
-(`exists_cost_eq_four_thirds_mul`).
+The variational inequality proved here is the first step of every price-of-anarchy bound. The
+bounds themselves are in `Complexity.GameTheory.Congestion.PigouBound`: the Pigou bound for an
+arbitrary class of latencies, its value for polynomials of bounded degree, and the `4/3` theorem
+for affine latencies ([RoughgardenTardos2002], Theorem 4.5).
 
 ## Main definitions
 
@@ -55,13 +49,11 @@ equilibrium is at most `4/3` times the cost of every feasible flow. Pigou's exam
 
 * `Cslib.GameTheory.NonatomicCongestionGame.cost_eq_sum_edgeFlow`: the cost is
   `∑ e, edgeFlow f e * latency e (edgeFlow f e)`.
+* `Cslib.GameTheory.NonatomicCongestionGame.cost_nonneg`: nonnegative flows and latencies have
+  nonnegative cost.
 * `Cslib.GameTheory.NonatomicCongestionGame.IsWardrop.cost_le_sum_mul_pathLatency`: the
   variational inequality `cost f ≤ ∑ p, g p * pathLatency f p` for a Wardrop equilibrium `f` and a
   feasible flow `g`.
-* `Cslib.GameTheory.NonatomicCongestionGame.IsWardrop.cost_le` ([RoughgardenTardos2002],
-  Theorem 4.5): the price of anarchy of selfish routing with affine latencies is at most `4/3`.
-* `Cslib.GameTheory.NonatomicCongestionGame.exists_cost_eq_four_thirds_mul`
-  ([RoughgardenTardos2002], Figure 3): Pigou's example attains `4/3`.
 
 ## References
 
@@ -131,6 +123,12 @@ theorem cost_eq_sum_edgeFlow [Fintype E] (f : P → ℝ) :
     G.cost f = ∑ e, G.edgeFlow f e * G.latency e (G.edgeFlow f e) :=
   G.sum_mul_sum_resources f _
 
+/-- A nonnegative flow has nonnegative cost when the latencies are nonnegative on `[0, ∞)`. -/
+theorem cost_nonneg (hl : ∀ e x, 0 ≤ x → 0 ≤ G.latency e x) {f : P → ℝ} (hf : ∀ p, 0 ≤ f p) :
+    0 ≤ G.cost f :=
+  Finset.sum_nonneg fun p _ => mul_nonneg (hf p) <| Finset.sum_nonneg fun e _ =>
+    hl e _ <| Finset.sum_nonneg fun q _ => hf q
+
 variable {G}
 
 /-- **The variational inequality** for Wardrop equilibria: if `f` is a Wardrop equilibrium and
@@ -172,71 +170,6 @@ theorem IsWardrop.cost_le_sum_mul_pathLatency [DecidableEq K] {f g : P → ℝ}
       exact (Finset.sum_eq_zero_iff_of_nonneg fun p _ => hg.1 p).1 hsum
     rw [Finset.sum_eq_zero fun p hp => by rw [hf0 p hp, zero_mul],
       Finset.sum_eq_zero fun p hp => by rw [hg0 p hp, zero_mul]]
-
-/-- **The price of anarchy of selfish routing with affine latencies is at most `4/3`**
-([RoughgardenTardos2002], Theorem 4.5): if the latencies are affine with nonnegative coefficients,
-`f` is a Wardrop equilibrium and `g` is a feasible flow, then `cost f ≤ 4/3 * cost g`. -/
-theorem IsWardrop.cost_le [DecidableEq K] [Finite E] (hG : G.HasAffineLatencies)
-    {f g : P → ℝ} (hf : G.IsWardrop f) (hg : G.IsFeasible g) :
-    G.cost f ≤ 4 / 3 * G.cost g := by
-  have := Fintype.ofFinite E
-  obtain ⟨a, b, ha, hb, hl⟩ := hG
-  have hvi := hf.cost_le_sum_mul_pathLatency hg
-  simp only [pathLatency] at hvi
-  rw [G.sum_mul_sum_resources g, G.cost_eq_sum_edgeFlow] at hvi
-  rw [G.cost_eq_sum_edgeFlow, G.cost_eq_sum_edgeFlow]
-  have hfe : ∀ e, 0 ≤ G.edgeFlow f e := fun e => Finset.sum_nonneg fun p _ => hf.1.1 p
-  have key : ∀ e, G.edgeFlow g e * G.latency e (G.edgeFlow f e)
-      ≤ G.edgeFlow g e * G.latency e (G.edgeFlow g e)
-        + 1 / 4 * (G.edgeFlow f e * G.latency e (G.edgeFlow f e)) := by
-    intro e
-    rw [hl, hl]
-    nlinarith [mul_nonneg (ha e) (sq_nonneg (G.edgeFlow g e - G.edgeFlow f e / 2)),
-      mul_nonneg (hb e) (hfe e)]
-  have hsum := Finset.sum_le_sum fun e (_ : e ∈ Finset.univ) => key e
-  rw [Finset.sum_add_distrib, ← Finset.mul_sum] at hsum
-  linarith
-
-/-- **Pigou's example** ([RoughgardenTardos2002], Figure 3): one unit of traffic on two parallel
-links, with latency `x` on link `0` and constant latency `1` on link `1`. -/
-private def pigou : NonatomicCongestionGame Unit (Fin 2) (Fin 2) where
-  commodity _ := ()
-  resources p := {p}
-  rate _ := 1
-  latency e x := if e = 0 then x else 1
-
-private theorem pigou_edgeFlow (f : Fin 2 → ℝ) (e : Fin 2) : pigou.edgeFlow f e = f e := by
-  simp [edgeFlow, pigou, Finset.filter_eq]
-
-private theorem pigou_pathLatency (f : Fin 2 → ℝ) (p : Fin 2) :
-    pigou.pathLatency f p = if p = 0 then f 0 else 1 := by
-  simp only [pathLatency, pigou_edgeFlow]
-  fin_cases p <;> simp [pigou]
-
-private theorem pigou_cost (f : Fin 2 → ℝ) : pigou.cost f = f 0 * f 0 + f 1 := by
-  simp only [cost, pigou_pathLatency]
-  simp [Fin.sum_univ_two]
-
-/-- **The bound `4/3` is attained** by Pigou's example ([RoughgardenTardos2002], Figure 3): there
-is a nonatomic congestion game with affine latencies, a Wardrop equilibrium `f` and a feasible flow
-`g` with `cost f = 4/3 * cost g > 0`. So the constant in `IsWardrop.cost_le` cannot be improved. -/
-theorem exists_cost_eq_four_thirds_mul :
-    ∃ (G : NonatomicCongestionGame Unit (Fin 2) (Fin 2)) (f g : Fin 2 → ℝ),
-      G.HasAffineLatencies ∧ G.IsWardrop f ∧ G.IsFeasible g ∧ 0 < G.cost g ∧
-        G.cost f = 4 / 3 * G.cost g := by
-  refine ⟨pigou, ![1, 0], ![1 / 2, 1 / 2], ⟨![1, 0], ![0, 1], ?_, ?_, ?_⟩, ⟨⟨?_, ?_⟩, ?_⟩,
-    ⟨?_, ?_⟩, ?_, ?_⟩
-  · intro e; fin_cases e <;> norm_num
-  · intro e; fin_cases e <;> norm_num
-  · intro e x; fin_cases e <;> simp [pigou]
-  · intro p; fin_cases p <;> norm_num
-  · intro k; simp [pigou, Fin.sum_univ_two]
-  · intro p q _ hp
-    fin_cases p <;> fin_cases q <;> simp_all [pigou_pathLatency]
-  · intro p; fin_cases p <;> norm_num
-  · intro k; norm_num [pigou, Fin.sum_univ_two]
-  · rw [pigou_cost]; norm_num
-  · rw [pigou_cost, pigou_cost]; norm_num
 
 end NonatomicCongestionGame
 
