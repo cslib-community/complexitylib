@@ -1099,7 +1099,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   PAC/agnostic learning, learning lower bounds, compression and refutation. For realizable
   PAC learning ([#2868](https://github.com/cslib-community/complexitylib/issues/2868)), extend
   the countable-domain VC ε-net upper bound `O((d log (1/ε) + log (1/δ))/ε)` to general
-  well-behaved classes over measurable domains. Statistical queries
+  well-behaved classes over measurable domains. Agnostic PAC learning of finite classes by ERM is
+  in place. For infinite classes
+  ([#3005](https://github.com/cslib-community/complexitylib/issues/3005)), prove uniform
+  convergence from the growth function by symmetrization, then agnostic learnability of finite
+  VC classes, first on countable domains, then at the sharp `O((d + log (1/δ))/ε²)` rate.
+  Statistical queries
   ([#2910](https://github.com/cslib-community/complexitylib/issues/2910)): the deterministic SQ
   model has correlational and SQ-dimension query lower bounds, including parities, the
   noise-free block simulation from random examples with a fixed-distribution PAC corollary, and

@@ -4904,6 +4904,7 @@ public import Complexity.MachineLearning.OnlineLearning.MultiplicativeWeights
 public import Complexity.MachineLearning.OnlineLearning.OnlineGradientDescent
 public import Complexity.MachineLearning.OnlineLearning.WeightedMajority
 public import Complexity.MachineLearning.OnlineLearning.ZeroSum
+public import Complexity.MachineLearning.PACLearning.AgnosticFiniteClass
 public import Complexity.MachineLearning.PACLearning.DoubleSample
 public import Complexity.MachineLearning.PACLearning.ERM
 public import Complexity.MachineLearning.PACLearning.EpsilonNet
@@ -4911,6 +4912,7 @@ public import Complexity.MachineLearning.PACLearning.FiniteClass
 public import Complexity.MachineLearning.PACLearning.GrowthFunction
 public import Complexity.MachineLearning.PACLearning.Realizable
 public import Complexity.MachineLearning.PACLearning.RealizableSample
+public import Complexity.MachineLearning.PACLearning.UniformConvergence
 public import Complexity.MachineLearning.PACLearning.VCDimension
 public import Complexity.MachineLearning.PACLearning.VCUpperBound
 public import Complexity.MachineLearning.StatisticalQuery.Basic
