@@ -1555,10 +1555,9 @@ densities (expected revenue equals expected virtual welfare; Vickrey with a rese
   cycles, Cole–Vishkin and Linial's `log*` bound, the bridge to Mathlib's `cycleGraph` colourings
   and the `Θ(log* n)` bounds for maximal independent sets on cycles exist
   (`Complexity/Computability/Distributed/OrientedCycle/`). For LCL problems without inputs on
-  directed cycles (Chang–Studený–Suomela, Table 1), the `O(1)`/`Ω(log* n)` gap and the
-  `Θ(log* n)` bound for problems with a flexible state exist (`OrientedCycle/LCL/`). Open: the
-  `Ω(n)` lower bound for problems without a flexible state
-  ([#3009](https://github.com/cslib-community/complexitylib/issues/3009)), a tight
+  directed cycles (Chang–Studený–Suomela, Table 1), the full `O(1)`/`Θ(log* n)`/`Θ(n)`
+  classification exists (`OrientedCycle/LCL/`,
+  [#3009](https://github.com/cslib-community/complexitylib/issues/3009)). Open: a tight
   `½ log* n + O_|L|(1)` upper bound for flexible problems, LCLs with inputs, on paths (directed
   or undirected) and on undirected cycles, general graphs with port numbering, Linial's `O(Δ²)` colouring and
   `(Δ + 1)`-colouring/MIS on bounded-degree graphs, CONGEST message bounds, randomized LOCAL
