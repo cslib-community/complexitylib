@@ -1064,7 +1064,17 @@ each statement against the numbered result. Organize modules by subject, not cha
   match the upper bound, via Yao's principle for expected cost; Monte Carlo (bounded-error) bounds
   for the same trees; and Saks–Wigderson's general read-once formula and game-tree (MIN/MAX over
   integer leaves) results.
-- Multiparty protocols, discrepancy and information complexity, direct-sum and direct-product
+- **Number-on-forehead multiparty protocols**
+  ([#3197](https://github.com/cslib-community/complexitylib/issues/3197)): `NOF.Protocol`,
+  public-coin NOF protocols, cylinder intersections and the multiparty discrepancy bound
+  `2 γ ≤ 2 ^ c disc_ν(f)`, with the two-player case matching the two-party discrepancy. Next: the
+  Chung–Raz cube bound `disc(f) ^ (2 ^ k) ≤ E(f)` and the Babai–Nisan–Szegedy lower bound
+  `Ω(n / 4 ^ k)` for generalized inner product. Remaining: Raz's sharper `Ω(n / 2 ^ k)` analysis
+  of generalized inner product and Grolmusz's matching `O(k n / 2 ^ k)` protocol; matrix
+  multiplication and NOF disjointness lower bounds; and applications to `ACC⁰` and
+  branching-program lower bounds. A two-party companion is the Aho–Ullman–Yannakakis bound
+  `D(f) = O(N⁰(f) N¹(f))` relating deterministic and nondeterministic communication.
+- Multiparty number-in-hand protocols, information complexity, direct-sum and direct-product
   results, and reductions to streaming, sketching and cell-probe lower bounds.
 - **Streaming and sketching:** native time and space bounds for Count-Min, including hash-seed
   storage and evaluation; the AMS sketches for `F₀` and `F_k` with `k > 2` and the `n^{Ω(1)}`
