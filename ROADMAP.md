@@ -225,12 +225,26 @@ polynomial of the maximum complete encoded prefix state, with no clock multiplie
 in simultaneous workspace. Parking, source/packet preparation and output
 materialization are separately charged. This is a uniform bit-computability
 bridge with explicit overhead, not the source's sharp asymptotic result.
-The total metadata
-reader's default/extra-field behavior is not full malformed-input validation.
-Association-list scans and retained zero bindings also prevent transferring the
-native computed-balance live-space and sharp time bounds to source bit resources.
-Source sorted-list lookup, compact reuse, sharp bit-machine resources and the
-seed-at-first-operand/zero-target specialization remain open. No source global bit asymptotic is claimed. Small-operand resources,
+The original runtime interpreter still retains zero bindings. The separate
+`CompactExecution` implementation now filters at initialization and after every
+actual native step, preserving exact normalized prefix semantics and output.
+Its real compactor has cubic scan time and linear workspace in its input wire.
+`original_compact_encoding` and `original_compact_trajectory` derive a bound on
+every retained prefix using computed-balance native support and physical word and
+address widths, including arbitrarily long post-halt parking. This is a changed
+implementation, not a live-support bound asserted for the old sparse execution.
+`Source.prepareCertificate` additionally computes the paper's consecutive
+`k,k,k,q-3k` cut from one operand list, first operand seed, zero target and explicit
+`min(p,m,k)` projection depth. Its single uniform source machine proves exhaustive
+absence or an original-order witness; admitted depths make the cap inert, and all
+quarter remainders are handled. `compact_trajectory_bound` connects its actual
+prepared packet to the retained-prefix bound.
+The total metadata reader's defaults and empty/malformed raw input handling are
+not a full source-input validator. Association-list scan time and polynomial
+internal interpreter workspace remain; filtering and a retained encoding bound
+do not prove sharp source bit time/peak space. Specialized sorted-list or otherwise
+resource-faithful access, transient/output workspace bounds and sharp bit resources
+remain open. No source global bit asymptotic is claimed. Small-operand resources,
 reduction multiplicity and
 sparsification refinements, and repaired ideal-model bounds remain open as well.
 These components do not close Lemma 8/Theorem 7 or 733 ALL-main. Earlier component

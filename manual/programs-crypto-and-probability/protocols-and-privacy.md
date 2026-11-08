@@ -1316,13 +1316,50 @@ runtime program fields. These are bounds up to a uniform machine constant;
 parking, packet preparation and the output-reading loop carry their additional
 certified profiles. The latter charges every output cell, including unwritten zeros.
 
-This closes uniform execution, without claiming sharp source asymptotics.
-Full sparse encoding includes retained zero bindings and can grow with elapsed
-instructions; native computed-balance live support does not bound it. Specialized
-sorted-list lookup/reuse and sharp source bit-time/peak-space bounds remain open,
-as do the source's seed-at-first-operand/zero-target specialization and the other
-733 ALL-main endpoints. Native computed-balance bounds remain intact. Full
-malformed-bitstream validation is not asserted.
+The original uniform implementation retains zero bindings, so its full encoding
+can grow with elapsed instructions. The separate `CompactExecution` path now
+**executes** `SparseMemory.compact` at initialization and after every interpreter
+round. `step_compact` and `iterate_compactRound` prove exact normalization of each
+native prefix, preserving labels, registers, faults, returns and total memory.
+The real filtering machine has cubic scan time and linear workspace in its input
+wire; it deletes explicit default bindings, including nonzero defaults.
+
+`CompactExecution.original_compact_encoding` derives a retained-state bound from
+computed-balance native support and physical word/address width, for every clock,
+including arbitrary parking after early exit. `original_compact_trajectory` bounds
+the complete program/width/state maximum used by the actual compacting certificate.
+For support allowance $S$, the state wire is bounded by
+`stateBound 40 L W S`, where $L$ is the program's label bound and $W$ its derived
+physical width. Here $S$ is `peakCells` at actual `computedBalance`, plus native
+witness serialization work. It is no longer the number of historical stores.
+`compactClocked_time` and `compactClocked_space` retain all interpreter and filter
+charges. **This encoding bound is not a sharp bit-machine workspace theorem:**
+association-list scans and the interpreter's polynomial workspace overhead persist.
+Sorted-list/resource-faithful access, sharp bit time and sharp peak workspace remain
+open, alongside the other 733 ALL-main endpoints.
+
+`Source.prepareCertificate` receives unary width/requested depth and one framed
+binary operand list (`Source.encoding`). It computes the first operand as seed,
+zero target and the consecutive cut $k,k,k,q-3k$, where $q=N-1$ and
+$k=⌊q/4⌋$; the fourth quarter retains every remainder. Effective depth is
+$\min(p,m,k)$, and `prepare_ofWords_admitted` proves the cap inert when
+$p\le m$ and $p\le k$. These are computed fields, not seed/quarter advice.
+`Source.original_machine` composes source preparation with compacting execution,
+actual memory output and witness decoding; one machine precedes all original input
+parameters. `compact_trajectory_bound` connects that actual prepared packet to the
+derived prefix encoding bound. Correctness is stated for a nonempty typed word
+list; empty/malformed raw input validation is not asserted. This completes the
+source operand/seed/target/cut convention bridge, not Theorem 7's sharp resources.
+
+From the repository root, build `lake build Complexity.Cryptanalysis.AddXNORSource`,
+then run `lake env lean ComplexityTests/AddXNORCompactExecution.lean`. The
+[complete compact/source client](../../ComplexityTests/AddXNORCompactExecution.lean)
+checks that three historical zero stores and the zero input header consume four
+bindings in the old interpreter but none in the actual compacting loop. It also
+checks nonzero overwrites/defaults, all quarter residues, depth capping, a colliding
+source hit with addition/XNOR, an empty-tail miss and a bound for arbitrary parked
+prefixes. For sharp-resource work, inspect the internal round/output-reader
+workspace profiles as well as the retained-state encoding bound.
 
 From the repository root, build
 `lake build Complexity.Cryptanalysis.AddXNORUniformExecution`, then run

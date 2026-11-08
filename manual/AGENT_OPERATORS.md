@@ -123,7 +123,12 @@ For example, `AddXNORUniformExecution.original_machine` quantifies one machine b
 all original inputs; `Interpreter.clocked_resources` charges its full encoded
 prefix trajectory and binary clock. Its uniformity proof does not turn native live
 support into a bound on retained sparse zero bindings or supply source sorted-list
-asymptotics. Keep that remaining objective visible when handing this milestone over.
+asymptotics. The separate compacting implementation now really deletes those
+bindings and derives a prefix encoding bound; that still does not bound internal
+interpreter/scan workspace sharply. Check the executed normalization and transient
+workspace, not just the retained wire. `AddXNORSource` computes the source's single
+operand list cut, seed and zero target, with explicit projection caps. Keep sharp
+bit time/peak space and the other remaining objectives visible in handoffs.
 
 ## Correct course and hand work over
 

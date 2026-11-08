@@ -1904,6 +1904,8 @@ public import Complexity.Computability.GenericRAM.Simulation.Finite
 public import Complexity.Computability.GenericRAM.Simulation.Run
 public import Complexity.Computability.GenericRAM.Simulation.Turing
 public import Complexity.Computability.GenericRAM.SparseMemory.Basic
+public import Complexity.Computability.GenericRAM.SparseMemory.Compact
+public import Complexity.Computability.GenericRAM.SparseMemory.CompactTuring
 public import Complexity.Computability.GenericRAM.SparseMemory.Turing
 public import Complexity.Computability.Geometry.Orthogonal.Encoding
 public import Complexity.Computability.Geometry.Orthogonal.Subdivision
@@ -2778,6 +2780,9 @@ public import Complexity.Computability.WordRAM.Glue
 public import Complexity.Computability.WordRAM.Glue.Basic
 public import Complexity.Computability.WordRAM.Heap
 public import Complexity.Computability.WordRAM.InputArray
+public import Complexity.Computability.WordRAM.Interpreter.Compact
+public import Complexity.Computability.WordRAM.Interpreter.CompactBounds
+public import Complexity.Computability.WordRAM.Interpreter.CompactRun
 public import Complexity.Computability.WordRAM.Interpreter.Output
 public import Complexity.Computability.WordRAM.Interpreter.Refinement
 public import Complexity.Computability.WordRAM.Interpreter.Run
@@ -2785,6 +2790,7 @@ public import Complexity.Computability.WordRAM.Interpreter.Step
 public import Complexity.Computability.WordRAM.Invariance
 public import Complexity.Computability.WordRAM.ListArray
 public import Complexity.Computability.WordRAM.ListOutput
+public import Complexity.Computability.WordRAM.ListOutput.Prefixes
 public import Complexity.Computability.WordRAM.MapOp
 public import Complexity.Computability.WordRAM.MemoryView
 public import Complexity.Computability.WordRAM.MemoryWindow
@@ -2888,6 +2894,7 @@ public import Complexity.Cryptanalysis.AddXNORChain
 public import Complexity.Cryptanalysis.AddXNORChainReverse
 public import Complexity.Cryptanalysis.AddXNORClassEnumeration
 public import Complexity.Cryptanalysis.AddXNORClasses
+public import Complexity.Cryptanalysis.AddXNORCompactExecution
 public import Complexity.Cryptanalysis.AddXNORCounting
 public import Complexity.Cryptanalysis.AddXNORDecay
 public import Complexity.Cryptanalysis.AddXNORDecision
@@ -2953,6 +2960,7 @@ public import Complexity.Cryptanalysis.AddXNORProgramTemplate
 public import Complexity.Cryptanalysis.AddXNORReachability
 public import Complexity.Cryptanalysis.AddXNORRuns
 public import Complexity.Cryptanalysis.AddXNORSearch
+public import Complexity.Cryptanalysis.AddXNORSource
 public import Complexity.Cryptanalysis.AddXNORSpectrum
 public import Complexity.Cryptanalysis.AddXNORStripping
 public import Complexity.Cryptanalysis.AddXNORSubsetSum
