@@ -11,6 +11,7 @@ public import Cslib.Probability.StatisticalDistance
 public import Complexity.Probability.Conditioning
 public import Mathlib.Analysis.Real.Sqrt
 import Complexity.Probability.PMF.Map
+import Complexity.Probability.PMF.ToReal
 
 /-!
 # Collision probability
@@ -66,9 +67,7 @@ theorem collisionProbability_nonneg (p : PMF α) : 0 ≤ collisionProbability p 
 private theorem summable_collision (p : PMF α) : Summable (fun a => (p a).toReal ^ 2) := by
   apply Summable.of_nonneg_of_le (fun _ => sq_nonneg _) _ (summable_toReal p)
   intro a
-  have h := ENNReal.toReal_mono ENNReal.one_ne_top (p.coe_le_one a)
-  simp only [ENNReal.toReal_one] at h
-  nlinarith [ENNReal.toReal_nonneg (a := p a)]
+  nlinarith [ENNReal.toReal_nonneg (a := p a), toReal_apply_le_one p a]
 
 /-- The sum of squared masses is exactly the success probability of comparing independent draws,
 using any equality decision procedure. -/
@@ -111,8 +110,7 @@ theorem collisionProbability_le_of_mass_le (p : PMF α) {bound : ℝ}
 
 /-- The collision probability is at most `1`. -/
 theorem collisionProbability_le_one (p : PMF α) : collisionProbability p ≤ 1 :=
-  collisionProbability_le_of_mass_le p fun a =>
-    ENNReal.toReal_le_of_le_ofReal zero_le_one (ENNReal.ofReal_one.symm ▸ PMF.coe_le_one p a)
+  collisionProbability_le_of_mass_le p fun a => toReal_apply_le_one p a
 
 /-- The squared mass of each point is at most the collision probability. -/
 theorem toReal_sq_le_collisionProbability (p : PMF α) (a : α) :
