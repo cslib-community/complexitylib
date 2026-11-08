@@ -80,6 +80,14 @@ The [checked clients](../../ComplexityTests/PMFConditioning.lean) condition two 
 rectangles, split off one of two fair bits, and relabel two point masses injectively. Run
 `scripts/build.sh ComplexityTests.PMFConditioning`.
 
+Real-valued probabilities lie in `[0, 1]`. The lower bound is `ENNReal.toReal_nonneg`; for the
+upper bound, import [PMF/ToReal.lean](../../Complexity/Probability/PMF/ToReal.lean) and use
+`PMF.toReal_apply_le_one μ a` for an outcome or `PMF.toOuterMeasure_toReal_le_one μ s` for an
+event, rather than converting `μ a ≤ 1` through `ENNReal.toReal` by hand. The `Pr[e]` notation
+module re-exports this file, so `Pr[e] ≤ 1` is `PMF.toReal_apply_le_one _ true`; the
+[checked examples](../../ComplexityTests/ProbabilityNotation.lean) bound a program and a set event.
+Run `scripts/build.sh ComplexityTests.ProbabilityNotation`.
+
 ## Count the fair coins used by an exact sampler
 
 Import [DDGTree.lean](../../Complexity/Probability/DDGTree.lean) to describe an exact sampler as
@@ -108,7 +116,7 @@ entropy bounds ([Knuth–Yao 1976](../sources.md#knuthyao76);
 
 To compute the optimal cost for a concrete `p`, rewrite with `expectedFlips_knuthYao` to
 `∑ₐ knuthYaoCost (p a).toReal`. Then use `knuthYaoCost_inv_two_pow` for dyadic masses, or sum the
-truncation errors `truncErr` directly. To build a tree from a leaf profile, use `ofCounts t`. In
+truncation errors `truncErr` directly. To build a tree from a count profile, use `ofCounts t`. In
 that tree, `t k a` of the `2 ^ k` depth-`k` positions lie at or below a leaf labelled `a`; a leaf at
 depth `j ≤ k` counts `2 ^ (k - j)` times. Equivalently, `t k a / 2 ^ k` is the probability of having
 output `a` within `k` flips (`run_ofCounts`). The profile must be inherited,
@@ -613,8 +621,8 @@ recursion accepts any constant up to `21`. The final bound has Holenstein's cons
 
 To use the bound for concrete answer types, compute the exponent: rewrite the product of the
 cardinalities as a power of two and apply `Real.logb_rpow`. For CHSH, `|A| |B| = 4` and the
-exponent is `n / 2`. The [CHSH client](../../ComplexityTests/TwoProverGame.lean) proves that
-CHSH has value `3/4`, and the [parallel repetition clients](../../ComplexityTests/ParallelRepetition.lean)
+exponent is `n / 2`. [CHSH.lean](../../Complexity/Computability/PCP/TwoProverGame/CHSH.lean)
+proves that CHSH has value `3/4` (`TwoProverGame.value_chsh`), and the [parallel repetition clients](../../ComplexityTests/ParallelRepetition.lean)
 derive `(3/4)^n ≤ v(CHSHⁿ) ≤ (1 - (1/4)³ / 6000)^{n / 2}`. They also show that the value of the
 repetition tends to zero for every game of value below one, and apply Lemma 6.5 with nothing
 conditioned, which gives a coordinate won with probability at most `G.value`. Run
@@ -2022,6 +2030,11 @@ and open `Cslib.Probability` to express `t` steps of the lazy conditional produc
 retention slices and a free-bit torus `(ZMod M)^H` on the ambient space
 `ComponentSpace H M P = (∀ j, FrameChannel (P j) H 1) × (Fin H → ZMod M)` (Section 6.1, Lemma 6.3,
 items 1–4 of [OpenAI's logspace preprint](../sources.md#openai-logspace26)).
+The results on the slice `ComponentSlice H M P L y` (`componentWordWrap_mem`,
+`componentWordPerm_wrap_eq` and the two walk identities below) need the instances
+`[∀ j, Fact (P j).Prime]` and `[∀ j, NeZero (L j)]` and a proof `hL : ∀ j, L j ≤ P j`, which also
+fixes the reindexing `componentEquiv M hL y` in their statements; the checked clients below show
+how to discharge them for concrete `P` and `L`.
 
 - Each step label `ComponentLazyStep H J` has `4 * (J + 1) * H^2` choices (`card_componentLazyStep`),
   and each candidate wrap vector lies in `affineWrapBox H = {-3, …, 3}^H` of size `7^H`
@@ -2031,15 +2044,20 @@ items 1–4 of [OpenAI's logspace preprint](../sources.md#openai-logspace26)).
   expectations (`expect_componentWordPerm`).
 - Retained identifiers `y` enter only through the endpoint wrap test `IsValidComponentWord`: on
   `ComponentSlice H M P L y`, a unique wrap word in `(affineWrapBox H)^t` survives
-  (`existsUnique_isValidComponentWord`, `componentWordWrap_mem`) and matches the exact slice walk
-  trajectory (`componentWordPerm_wrap_eq`), so averaging over move words `w` and summing over
-  wrap words `z` without dividing by `(7^H)^t` equals `walk^t`
-  (`walk_pow_componentMove_eq_expect_word`, and iteratively `walk_pow_componentMove_eq_iterate`).
+  (`existsUnique_isValidComponentWord`, `componentWordWrap_mem`). It reaches the endpoint
+  `(G.pow t).neighbor A w` of the walk along `w` (`componentWordPerm_wrap_eq`), where
+  `G = (ofPerms (componentMove H M P L)).lazy.reindex (componentEquiv M hL y).symm` is the
+  reindexed lazy product multigraph and `G.pow t` is its `t`-th power from
+  [`Expander/Power.lean`](../../Complexity/Foundations/Combinatorics/Expander/Power.lean). So
+  averaging over move words `w` and summing over wrap words `z` without dividing by `(7^H)^t`
+  equals `walk^t` (`walk_pow_componentMove_eq_expect_word`, and iteratively
+  `walk_pow_componentMove_eq_iterate`).
 
 The checked [`ProductValidatedWords.lean` clients](../../ComplexityTests/ProductValidatedWords.lean)
-verify concrete alphabet sizes and step wraps on two channels (`𝔽₅`, `𝔽₇`) plus `(ZMod 8)^3` and
-combine `walk_pow_componentMove_eq_expect_word` with `ComponentGap` and `SliceFourthMoment` to
-bound the `L²` and `L⁴` central moments of the explicit validated-word estimator. Run
+verify concrete alphabet sizes and step wraps on two channels, over `ZMod 5` and `ZMod 7`, plus the
+torus `(ZMod 8)^3`. They check that a one-step word reaches the one-step neighbor, and combine
+`walk_pow_componentMove_eq_expect_word` with `ComponentGap` and `SliceFourthMoment` to bound the
+`L²` and `L⁴` central moments of the explicit validated-word estimator. Run
 `scripts/build.sh ComplexityTests.ProductValidatedWords` from the repository root to check them.
 This module covers items 1–4 (distributional and combinatorial word identities); explicit machine
 or streaming space realization (the post-item space bound of Lemma 6.3) is separate.

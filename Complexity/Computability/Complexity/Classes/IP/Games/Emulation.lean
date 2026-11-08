@@ -21,7 +21,7 @@ import Complexity.Foundations.Data.BitString.WordCount
 # Public coins emulate a count over private coins
 
 The emulation of private coins by public coins of [Goldwasser and Sipser][GoldwasserSipser1986]
-([Arora and Barak][AroraBarak09], Theorem 8.8 of the January 2007 draft), for an arbitrary `0`/`1`
+([Arora and Barak, Theorem 8.8][AroraBarak07]), for an arbitrary `0`/`1`
 payoff. Let `g` be a private-coin game shape (`Cslib.Complexity.IPMove`) and
 `V : List Bool → Bool` a payoff on complete transcripts. The count
 `Cslib.Complexity.IPGame.count g V` sums over the verifier's messages and maximises over the
@@ -33,10 +33,10 @@ At a verifier move of `n` bits, Arthur sends the seed of an affine hash to `B` b
 `b ≤ B` of `true` bits in a block of `B` bits, a message `m` of `n` bits and padding `z` of `Z`
 bits. The claim `b` says that the continuation after `m` has count at least `2 ^ b`. With the
 current claim `κ`, Merlin's answer must hash to zero and the first `Z + κ - (b + K)` bits of `z`
-must be `false`: the padded set of messages whose continuations are worth `2 ^ b` has about
-`2 ^ (κ + K)` elements when the claim `κ` is honest. At a prover move Merlin sends the prover's
-message. At the end Arthur accepts when the last claim is `0` and `V` accepts the transcript
-(`Cslib.Complexity.Emulation.check`).
+must be `false`: when the claim `κ` is honest, about `2 ^ (κ - b)` messages have continuations
+worth `2 ^ b`, each padded in `2 ^ (b + K - κ)` ways, so the padded set has about `2 ^ K`
+elements. At a prover move Merlin sends the prover's message. At the end Arthur accepts when the
+last claim is `0` and `V` accepts the transcript (`Cslib.Complexity.Emulation.check`).
 
 * **Soundness** (`Cslib.Complexity.Emulation.value_le`): for `B ≤ K`, `μ > 0` and an initial
   claim `κ ≤ K`, the value is at most `c (B + 1) 2 ^ K / (μ 2 ^ B) + μ ^ c N / 2 ^ κ`, where `c`
@@ -74,7 +74,8 @@ counts, which removes the separate normalisation of the set lower bound protocol
 
 * [S. Goldwasser, M. Sipser, *Private coins versus public coins in interactive proof
   systems*][GoldwasserSipser1986]
-* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
+* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, web draft of January
+  2007][AroraBarak07]
 -/
 
 @[expose] public section
@@ -493,11 +494,6 @@ private theorem count_ofFn_lt (B β : ℕ) (hβ : β ≤ B) :
   rw [h, List.count_append, List.count_replicate_self, List.count_replicate]
   simp
 
-private theorem geom_two_add_one (k : ℕ) : ∑ i ∈ range k, 2 ^ i + 1 = 2 ^ k := by
-  induction k with
-  | zero => rfl
-  | succ k ih => rw [sum_range_succ, pow_succ]; omega
-
 /-- A number below `2 ^ (B + 1)` is at most the sum of the powers of two below it. -/
 private theorem le_sum_two_pow (B x : ℕ) (hx : x < 2 ^ (B + 1)) :
     x ≤ ∑ β ∈ range (B + 1), if 2 ^ β ≤ x then 2 ^ β else 0 := by
@@ -514,8 +510,7 @@ private theorem le_sum_two_pow (B x : ℕ) (hx : x < 2 ^ (B + 1)) :
     ext β
     simp only [mem_filter, mem_range, hiff]
     omega
-  rw [hsplit]
-  have := geom_two_add_one (Nat.log 2 x + 1)
+  rw [hsplit, Nat.geomSum_eq le_rfl]
   have := Nat.lt_pow_succ_log_self (b := 2) (by norm_num) x
   omega
 
