@@ -15,8 +15,8 @@ public import Complexity.Algorithms.Lean.EdgeCSP.Forest.Growth
 The search of [KazdaKolmogorovRolinek2018], arXiv:1602.03124v6, Algorithm 1
 step 2 (printed p. 10), exhausts exactly when every incidence of every visited variable has
 been used. This is a theorem about a fresh executable run, without a search-completeness
-hypothesis. It does not by itself establish Lemma 45: f-walk validity depends on prefixes,
-so that lemma additionally needs the even-delta-matroid bad-walk argument of Section 6.4.
+hypothesis. `Forest.Optimality` combines this coverage with even-delta-matroid exchange
+and a counting argument to prove Lemma 45 for a fresh exhausted run.
 
 ## Main results
 
