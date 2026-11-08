@@ -41,6 +41,9 @@ private theorem ot_row (values : Fin 4 → Bool) (index : Fin 4) :
 private theorem answer_one (value : Bool) : (Fin.cases () (fun _ : Fin 1 => value) :
     (i : Fin 2) → ot14Spec.Answer () i) 1 = value := rfl
 
+-- The deterministic runs below are checked by computation: `World.eval` is rewritten to the
+-- evaluation of the closed handler program, whose run reduces to `pure` by `rfl`.
+
 -- One row can be consumed only once. Slot 3 uses the same parity component as slot 1.
 example : (world 1).eval (do
     let before ← select 3
@@ -54,10 +57,9 @@ example : (world 1).eval (do
     return (before, first, again, after, view)) =
     pure (none, some true, none, none,
       ((Phased.Observation.receipt, .opened true), some (true, [false, true]))) := by
-  simp [Interactive.World.eval, send, select, inspect, ProbOracleComp.runWith_bind,
-    world, handler, OracleComp.sumHandler, Store.send, Session.advance, Session.initial,
-    Store.observations, Store.readOpening, Session.receipt, Session.observation, Session.opening,
-    openPairs, ot_row, answer_one, table, fin4ToBoolPair]
+  rw [Interactive.World.eval, ← ProbOracleComp.eval_run_interpret_eq_runWith,
+    ← ProbComp.eval_map]
+  rfl
 
 -- A second pending row aborts instead of overwriting the first; a pending seal also aborts.
 example : (world 1).eval (do
@@ -66,9 +68,9 @@ example : (world 1).eval (do
     let late ← select 0
     let view ← inspect
     return (late, view)) = pure (none, ((Phased.Observation.idle, .aborted), none)) := by
-  simp [Interactive.World.eval, send, select, inspect, ProbOracleComp.runWith_bind,
-    world, handler, OracleComp.sumHandler, Store.send, Session.advance, Session.initial,
-    Store.observations, Store.readOpening, Session.receipt, Session.observation]
+  rw [Interactive.World.eval, ← ProbOracleComp.eval_run_interpret_eq_runWith,
+    ← ProbComp.eval_map]
+  rfl
 
 example : (world 1).eval (do
     send (.table (table false false), [])
@@ -76,9 +78,9 @@ example : (world 1).eval (do
     let late ← select 0
     let view ← inspect
     return (late, view)) = pure (none, ((Phased.Observation.idle, .aborted), none)) := by
-  simp [Interactive.World.eval, send, select, inspect, ProbOracleComp.runWith_bind,
-    world, handler, OracleComp.sumHandler, Store.send, Session.advance, Session.initial,
-    Store.observations, Store.readOpening, Session.receipt, Session.observation]
+  rw [Interactive.World.eval, ← ProbOracleComp.eval_run_interpret_eq_runWith,
+    ← ProbComp.eval_map]
+  rfl
 
 -- An early opening is ignored. Repeated seal, post-seal table, and post-opening abort cannot
 -- replace the first released bit; zero rows still produce the actual opened-bit observation.
@@ -90,10 +92,9 @@ example : (world 0).eval (do
     send (.open true, [])
     send (.abort, [])
     inspect) = pure ((Phased.Observation.receipt, .opened true), some (true, [])) := by
-  simp [Interactive.World.eval, send, inspect, ProbOracleComp.runWith_bind,
-    world, handler, OracleComp.sumHandler, Store.send, Session.advance, Session.initial,
-    Store.observations, Store.readOpening, Session.receipt, Session.observation, Session.opening,
-    openPairs]
+  rw [Interactive.World.eval, ← ProbOracleComp.eval_run_interpret_eq_runWith,
+    ← ProbComp.eval_map]
+  rfl
 
 -- A malformed first attempt is terminal and remains readable, even after a valid retry.
 example : (world 0).eval (do
@@ -105,10 +106,9 @@ example : (world 0).eval (do
     return (first, second)) = pure
       (((Phased.Observation.receipt, .aborted), some (true, [false])),
         ((Phased.Observation.receipt, .aborted), some (true, [false]))) := by
-  simp [Interactive.World.eval, send, inspect, ProbOracleComp.runWith_bind,
-    world, handler, OracleComp.sumHandler, Store.send, Session.advance, Session.initial,
-    Store.observations, Store.readOpening, Session.receipt, Session.observation, Session.opening,
-    openPairs]
+  rw [Interactive.World.eval, ← ProbOracleComp.eval_run_interpret_eq_runWith,
+    ← ProbComp.eval_map]
+  rfl
 
 -- Even an unreachable malformed store cannot enable selection after sealing.
 example : handler 1 (.inr (.select 0))
@@ -131,10 +131,9 @@ example : (world 1).eval (do
     let view ← inspect
     return (late, view)) =
     pure (none, ((Phased.Observation.receipt, .aborted), some (true, [false, true]))) := by
-  simp [Interactive.World.eval, send, select, inspect, ProbOracleComp.runWith_bind,
-    world, handler, OracleComp.sumHandler, Store.send, Session.advance, Session.initial,
-    Store.observations, Store.readOpening, Session.receipt, Session.observation, Session.opening,
-    openPairs, ot_row, answer_one, table, fin4ToBoolPair]
+  rw [Interactive.World.eval, ← ProbOracleComp.eval_run_interpret_eq_runWith,
+    ← ProbComp.eval_map]
+  rfl
 
 private def commands : List (SenderOperation × List Bool) → WordOracleComp SenderOperation Unit
   | [] => pure ()
