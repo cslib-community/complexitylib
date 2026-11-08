@@ -1470,6 +1470,49 @@ concluded. Integrating the efficient projected-quarter generator/counting/access
 route and replacing polynomial retained-list callback overhead remain necessary.
 The older `SortedMeet` and compacting interpreter implementations are unchanged.
 
+`BatchedAccess.run` refines retained-class access with an actual **bounded
+sorted-batch route**. Its capacity is the computed retained occurrence count
+$c_g+1$. Accepted opposite records enter a buffer; a full buffer is radix-sorted
+and matched against the retained class using `SortedMatch`, then released.
+`finish` also tests the final partial batch. The next class starts with a fresh
+buffer; a found hit suppresses subsequent batch searches. Every hit retains
+original packed witnesses in either orientation, and `original_correct` proves
+original-input witness soundness and exhaustive miss. A valid witness can differ
+from `ClassStreaming`'s choice because batch order changes which collision is
+encountered first.
+
+`source_buffer_bound` derives that every live buffer contains fewer than $c_g+1$
+records. `recordWork_bound` and `total_recordWork` bound the cumulative full-batch
+and final-batch **record-volume budget** by $4d_g+2(c_g+1)+1$, where $d_g$ is the
+number of opposite occurrences fed. This charges retained records again at each
+flush; it is not an assumed constant-time dictionary. The implementation uses
+structural linear framed insertion for retention and buffers. Only scalar and
+single-record inputs enter polynomial callbacks, excluding growing retained or
+probe arrays. The composed uniform machine certificates separately include all
+sort/scan buffers, intermediate tapes, initialization and readback.
+
+**The volume bound is not a bit-time bound.** The current counter combinator
+copies captured retained/buffer state between rounds, and linear list insertion
+copies the growing buffer. These costs remain in `sourceCertificate.time/space`;
+a factor comparable to retained size times streamed words can therefore persist
+in bit time even though no per-record dictionary search is executed. The source
+class/count generation still repeats half-word scans. No sharp global time or
+peak-space theorem is concluded, and retained volume alone does not discharge
+all auxiliary-space obligations. Efficient projected-quarter joins/count tables,
+a producer that writes batch records without whole-state copying, persistent
+retained tapes across batches, and the final simultaneous resource proof remain
+open. This is an original batching refinement of the source's membership stage;
+the older ClassStreaming/SortedMeet/CompactExecution routes remain unchanged.
+
+From the repository root, build
+`lake build Complexity.Cryptanalysis.AddXNORBatchedAccess`, then run
+`lake env lean ComplexityTests/AddXNORBatchedAccess.lean`. The
+[batched access client](../../ComplexityTests/AddXNORBatchedAccess.lean) executes
+full-batch hits, missed-batch release followed by a partial-batch hit, early-hit
+parking, both computed orientations, duplicates, empty/zero-width cases and the
+complete original-input uniform machine. It also checks actual capacity validity
+and instantiates the separate record-volume theorem.
+
 From the repository root, build
 `lake build Complexity.Cryptanalysis.AddXNORClassStreaming`, then run
 `lake env lean ComplexityTests/AddXNORClassStreaming.lean`. The

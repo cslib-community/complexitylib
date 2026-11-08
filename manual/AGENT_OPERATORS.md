@@ -167,6 +167,18 @@ quarter-join/count-table realization. Handoffs must retain that time gap and the
 unproved sharp global bit peak-space bound, even though full half-space arrays
 are absent from this implementation.
 
+`BatchedAccess.run` now sorts/matches bounded opposite-side batches with capacity
+computed as retained count plus one, then clears them, including a final partial
+flush. Retention and buffer insertion use structural linear machines; polynomial
+callbacks operate on scalars or original-input/single-record data. Its actual
+uniform original-input certificate includes all phase buffers and readback.
+Do not turn the amortized record-volume bound into a bit-time theorem: the
+current counter machine copies captured retained state and the growing buffer,
+so the pair-count envelope can persist through copying even without per-record
+lookup. Repeated class/count scans and the simultaneous global bit-resource proof
+also remain open. Preserve these charges when requesting producer/consumer fusion
+or persistent retained tapes; the old implementations have not changed.
+
 ## Correct course and hand work over
 
 When an agent drifts, name the mismatch: the theorem became conditional, the model changed, the

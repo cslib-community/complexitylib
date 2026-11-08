@@ -276,7 +276,18 @@ This implementation scans every half word for each class and uses linear lookup;
 callbacks still charge polynomial workspace in their retained input. It does not
 prove the sharp source global bounds. Efficient projected-quarter joins, actual
 DP count tables, resource-faithful class access and linear auxiliary workspace
-remain to be integrated, rather than inferred from retained list size. A real
+remain to be integrated, rather than inferred from retained list size.
+`BatchedAccess` now computes capacity from actual retained counts, buffers opposite
+occurrences, radix-sorts/matches full batches, releases them and flushes the final
+partial batch. Its original-input witness/miss and one uniform machine are proved.
+Retention/buffering use structural linear insertion, avoiding polynomial callbacks
+on complete retained arrays. A derived record-volume amortization includes every
+retained reread at a flush. It is not a bit-time theorem: the actual counter loop
+still copies captured retained/buffer state, and insertion copies growing buffers.
+Those costs, repeated class/count scans, efficient projected-quarter joins and
+persistent-tape producer/access composition remain open before sharp global time
+and simultaneous peak space can be concluded. Earlier implementations and all
+their costs are unchanged. A real
 streaming default filter also removes whole-list accumulator copying,
 with `O(I+(n+1)P(B))` time and `O(I+P(B))` charged space. It is an alternative
 component, not installed in the existing cubic-filter uniform execution. Those
