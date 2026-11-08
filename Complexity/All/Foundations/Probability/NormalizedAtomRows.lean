@@ -1,0 +1,26 @@
+module  -- shake: keep-all --deprecated_module: ignore
+-- upstream: local-only (project scaffolding)
+
+public import Complexity.Foundations.Probability.NormalizedAtomRows.ActualMoment
+public import Complexity.Foundations.Probability.NormalizedAtomRows.BoundedLoss
+public import Complexity.Foundations.Probability.NormalizedAtomRows.ChildRootReserve
+public import Complexity.Foundations.Probability.NormalizedAtomRows.ClippedTail
+public import Complexity.Foundations.Probability.NormalizedAtomRows.CommonEnvelope
+public import Complexity.Foundations.Probability.NormalizedAtomRows.FiniteEnvelopePayment
+public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstMeanError
+public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstPayment
+public import Complexity.Foundations.Probability.NormalizedAtomRows.FirstSignal
+public import Complexity.Foundations.Probability.NormalizedAtomRows.Integrated
+public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanBias
+public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanEvent
+public import Complexity.Foundations.Probability.NormalizedAtomRows.MeanTail
+public import Complexity.Foundations.Probability.NormalizedAtomRows.Moment
+public import Complexity.Foundations.Probability.NormalizedAtomRows.Output
+public import Complexity.Foundations.Probability.NormalizedAtomRows.Request
+public import Complexity.Foundations.Probability.NormalizedAtomRows.RequestSharp
+public import Complexity.Foundations.Probability.NormalizedAtomRows.ReserveOutput
+public import Complexity.Foundations.Probability.NormalizedAtomRows.RootReserveOutput
+public import Complexity.Foundations.Probability.NormalizedAtomRows.SecondEnvelope
+public import Complexity.Foundations.Probability.NormalizedAtomRows.SecondSignal
+public import Complexity.Foundations.Probability.NormalizedAtomRows.Sharp
+public import Complexity.Foundations.Probability.NormalizedAtomRows.TwoMask

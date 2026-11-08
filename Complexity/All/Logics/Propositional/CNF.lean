@@ -1,0 +1,47 @@
+module  -- shake: keep-all --deprecated_module: ignore
+-- upstream: local-only (project scaffolding)
+
+public import Complexity.Logics.Propositional.CNF.Coding
+public import Complexity.Logics.Propositional.CNF.Compact
+public import Complexity.All.Logics.Propositional.CNF.Compact
+public import Complexity.Logics.Propositional.CNF.Encoding
+public import Complexity.Logics.Propositional.CNF.ExactDistinct
+public import Complexity.Logics.Propositional.CNF.ExactOne
+public import Complexity.All.Logics.Propositional.CNF.ExactOne
+public import Complexity.Logics.Propositional.CNF.ExactTests
+public import Complexity.Logics.Propositional.CNF.ExactThree
+public import Complexity.All.Logics.Propositional.CNF.ExactThree
+public import Complexity.Logics.Propositional.CNF.ExactlyOne
+public import Complexity.Logics.Propositional.CNF.Gadgets
+public import Complexity.Logics.Propositional.CNF.Horn
+public import Complexity.All.Logics.Propositional.CNF.Horn
+public import Complexity.Logics.Propositional.CNF.ImplicationChain
+public import Complexity.Logics.Propositional.CNF.ImplicationCycle
+public import Complexity.Logics.Propositional.CNF.Johnson
+public import Complexity.All.Logics.Propositional.CNF.Johnson
+public import Complexity.Logics.Propositional.CNF.KWiseIndependent
+public import Complexity.All.Logics.Propositional.CNF.KWiseIndependent
+public import Complexity.Logics.Propositional.CNF.LocalLemma
+public import Complexity.Logics.Propositional.CNF.Majority
+public import Complexity.Logics.Propositional.CNF.ModelCount
+public import Complexity.All.Logics.Propositional.CNF.ModelCount
+public import Complexity.Logics.Propositional.CNF.Moser
+public import Complexity.All.Logics.Propositional.CNF.Moser
+public import Complexity.Logics.Propositional.CNF.NotAllEqual
+public import Complexity.All.Logics.Propositional.CNF.NotAllEqual
+public import Complexity.Logics.Propositional.CNF.Occurrence
+public import Complexity.Logics.Propositional.CNF.Parity
+public import Complexity.Logics.Propositional.CNF.ParitySearch
+public import Complexity.All.Logics.Propositional.CNF.ParitySearch
+public import Complexity.Logics.Propositional.CNF.ParityTests
+public import Complexity.All.Logics.Propositional.CNF.Planar
+public import Complexity.Logics.Propositional.CNF.PolyTime
+public import Complexity.Logics.Propositional.CNF.PolynomialTests
+public import Complexity.Logics.Propositional.CNF.SparseDesignCounter
+public import Complexity.Logics.Propositional.CNF.SparseParityCounter
+public import Complexity.Logics.Propositional.CNF.ThreeCNF
+public import Complexity.All.Logics.Propositional.CNF.ThreeCNF
+public import Complexity.Logics.Propositional.CNF.ThreeOccurrence
+public import Complexity.All.Logics.Propositional.CNF.ThreeOccurrence
+public import Complexity.Logics.Propositional.CNF.TwoCNF
+public import Complexity.Logics.Propositional.CNF.UnsatVal

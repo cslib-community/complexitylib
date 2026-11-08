@@ -1,0 +1,43 @@
+module  -- shake: keep-all --deprecated_module: ignore
+-- upstream: local-only (project scaffolding)
+
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.AcceptCount
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.BlockNetwork
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Blocks
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Clock
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Closed
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape
+public import Complexity.All.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Composition
+public import Complexity.All.Computability.Machines.Turing.MultiTape.Probabilistic.Composition
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Deterministic
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ExplicitBlockNetwork
+public import Complexity.All.Computability.Machines.Turing.MultiTape.Probabilistic.ExplicitBlockNetwork
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ExtendTapes
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.HaltedReplay
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.InputFromTape
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.IntervalCount
+public import Complexity.All.Computability.Machines.Turing.MultiTape.Probabilistic.IntervalCount
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.IntervalSimulation
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.IntervalTensor
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.IterateWhile
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Loop
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.OrElse
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Oracle
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.OutputPrefix
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.OutputToTape
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.PairSampler
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.PolynomialClock
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.PrefixLocality
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.QueryBounds
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.QueryTake
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay
+public import Complexity.All.Computability.Machines.Turing.MultiTape.Probabilistic.Replay
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayInput
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.RunsWords
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Sampling
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Sequential
+public import Complexity.All.Computability.Machines.Turing.MultiTape.Probabilistic.Sequential
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.SingleOracle
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Tidy
+public import Complexity.All.Computability.Machines.Turing.MultiTape.Probabilistic.Tidy

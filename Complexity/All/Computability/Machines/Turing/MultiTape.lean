@@ -1,0 +1,41 @@
+module  -- shake: keep-all --deprecated_module: ignore
+-- upstream: local-only (project scaffolding)
+
+public import Complexity.Computability.Machines.Turing.MultiTape.Alternating
+public import Complexity.All.Computability.Machines.Turing.MultiTape.Alternating
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation
+public import Complexity.All.Computability.Machines.Turing.MultiTape.BlockComputation
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputationTree
+public import Complexity.Computability.Machines.Turing.MultiTape.BlockTrace
+public import Complexity.All.Computability.Machines.Turing.MultiTape.Combinators
+public import Complexity.All.Computability.Machines.Turing.MultiTape.Complexity
+public import Complexity.Computability.Machines.Turing.MultiTape.Configuration
+public import Complexity.Computability.Machines.Turing.MultiTape.Counting
+public import Complexity.All.Computability.Machines.Turing.MultiTape.Counting
+public import Complexity.Computability.Machines.Turing.MultiTape.Deterministic
+public import Complexity.All.Computability.Machines.Turing.MultiTape.Encodings
+public import Complexity.Computability.Machines.Turing.MultiTape.Feature
+public import Complexity.Computability.Machines.Turing.MultiTape.FiniteConfiguration
+public import Complexity.Computability.Machines.Turing.MultiTape.Halting
+public import Complexity.All.Computability.Machines.Turing.MultiTape.Halting
+public import Complexity.Computability.Machines.Turing.MultiTape.HaltsAt
+public import Complexity.All.Computability.Machines.Turing.MultiTape.Internal
+public import Complexity.Computability.Machines.Turing.MultiTape.Locality
+public import Complexity.Computability.Machines.Turing.MultiTape.Machine
+public import Complexity.All.Computability.Machines.Turing.MultiTape.Machine
+public import Complexity.Computability.Machines.Turing.MultiTape.Map
+public import Complexity.Computability.Machines.Turing.MultiTape.Nondeterministic
+public import Complexity.Computability.Machines.Turing.MultiTape.OutView
+public import Complexity.All.Computability.Machines.Turing.MultiTape.Plumbing
+public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic
+public import Complexity.All.Computability.Machines.Turing.MultiTape.Probabilistic
+public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds
+public import Complexity.All.Computability.Machines.Turing.MultiTape.ResourceBounds
+public import Complexity.Computability.Machines.Turing.MultiTape.Run
+public import Complexity.Computability.Machines.Turing.MultiTape.SingleTape
+public import Complexity.Computability.Machines.Turing.MultiTape.Space
+public import Complexity.All.Computability.Machines.Turing.MultiTape.StepMachine
+public import Complexity.Computability.Machines.Turing.MultiTape.TapeLemmas
+public import Complexity.Computability.Machines.Turing.MultiTape.TrackedRun
+public import Complexity.All.Computability.Machines.Turing.MultiTape.Universal

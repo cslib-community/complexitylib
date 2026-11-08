@@ -1,0 +1,41 @@
+module  -- shake: keep-all --deprecated_module: ignore
+-- upstream: local-only (project scaffolding)
+
+public import Complexity.Foundations.Data.Nat.ArithmeticProgression
+public import Complexity.Foundations.Data.Nat.Asymptotics
+public import Complexity.Foundations.Data.Nat.BinarySize
+public import Complexity.Foundations.Data.Nat.Bits
+public import Complexity.All.Foundations.Data.Nat.Bitwise
+public import Complexity.Foundations.Data.Nat.Card
+public import Complexity.Foundations.Data.Nat.CeilDiv
+public import Complexity.Foundations.Data.Nat.CeilQuarter
+public import Complexity.Foundations.Data.Nat.Choose
+public import Complexity.All.Foundations.Data.Nat.Choose
+public import Complexity.Foundations.Data.Nat.Div
+public import Complexity.Foundations.Data.Nat.Doubling
+public import Complexity.Foundations.Data.Nat.Factorial
+public import Complexity.Foundations.Data.Nat.Fields
+public import Complexity.Foundations.Data.Nat.HalvingRecurrence
+public import Complexity.Foundations.Data.Nat.IntermediateValue
+public import Complexity.Foundations.Data.Nat.IterLog
+public import Complexity.Foundations.Data.Nat.Log
+public import Complexity.Foundations.Data.Nat.LogRpow
+public import Complexity.Foundations.Data.Nat.LogStar
+public import Complexity.Foundations.Data.Nat.LogTwoRpow
+public import Complexity.Foundations.Data.Nat.Morton
+public import Complexity.Foundations.Data.Nat.OddMulMod
+public import Complexity.Foundations.Data.Nat.OfDigits
+public import Complexity.All.Foundations.Data.Nat.PolynomialBound
+public import Complexity.Foundations.Data.Nat.Power
+public import Complexity.Foundations.Data.Nat.Prime
+public import Complexity.Foundations.Data.Nat.Primrec
+public import Complexity.Foundations.Data.Nat.Radix
+public import Complexity.All.Foundations.Data.Nat.Radix
+public import Complexity.Foundations.Data.Nat.RadixUpdate
+public import Complexity.Foundations.Data.Nat.RecursionTree
+public import Complexity.Foundations.Data.Nat.ResidueSum
+public import Complexity.Foundations.Data.Nat.SqrtLog
+public import Complexity.All.Foundations.Data.Nat.SqrtLog
+public import Complexity.Foundations.Data.Nat.SqrtRatio
+public import Complexity.Foundations.Data.Nat.Subexponential
+public import Complexity.Foundations.Data.Nat.SummationByParts

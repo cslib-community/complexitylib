@@ -1,0 +1,42 @@
+module  -- shake: keep-all --deprecated_module: ignore
+-- upstream: local-only (project scaffolding)
+
+public import Complexity.Foundations.Data.BitString.Affine
+public import Complexity.Foundations.Data.BitString.AffineSubspace
+public import Complexity.Foundations.Data.BitString.Agree
+public import Complexity.Foundations.Data.BitString.AgreeExpect
+public import Complexity.Foundations.Data.BitString.Basic
+public import Complexity.Foundations.Data.BitString.Binary
+public import Complexity.Foundations.Data.BitString.Block
+public import Complexity.Foundations.Data.BitString.Combination
+public import Complexity.Foundations.Data.BitString.Convolution
+public import Complexity.Foundations.Data.BitString.Counter
+public import Complexity.Foundations.Data.BitString.CoverCoding
+public import Complexity.Foundations.Data.BitString.Enumeration
+public import Complexity.Foundations.Data.BitString.Flip
+public import Complexity.Foundations.Data.BitString.HalfSplit
+public import Complexity.Foundations.Data.BitString.Hamming
+public import Complexity.Foundations.Data.BitString.InitialTests
+public import Complexity.Foundations.Data.BitString.Isolation
+public import Complexity.Foundations.Data.BitString.List
+public import Complexity.All.Foundations.Data.BitString.List
+public import Complexity.Foundations.Data.BitString.PadBlocks
+public import Complexity.Foundations.Data.BitString.Parity
+public import Complexity.All.Foundations.Data.BitString.Parity
+public import Complexity.Foundations.Data.BitString.ParityInterpolation
+public import Complexity.Foundations.Data.BitString.ParityTestBounds
+public import Complexity.Foundations.Data.BitString.ParityTests
+public import Complexity.Foundations.Data.BitString.PartialAssignment
+public import Complexity.All.Foundations.Data.BitString.PartialAssignment
+public import Complexity.Foundations.Data.BitString.Positions
+public import Complexity.Foundations.Data.BitString.Prefix
+public import Complexity.Foundations.Data.BitString.Propagation
+public import Complexity.Foundations.Data.BitString.ShortMembers
+public import Complexity.Foundations.Data.BitString.ShortWords
+public import Complexity.Foundations.Data.BitString.Sign
+public import Complexity.Foundations.Data.BitString.Sum
+public import Complexity.Foundations.Data.BitString.Support
+public import Complexity.Foundations.Data.BitString.Threshold
+public import Complexity.Foundations.Data.BitString.Weight
+public import Complexity.Foundations.Data.BitString.WordCount
+public import Complexity.Foundations.Data.BitString.ZModTwo

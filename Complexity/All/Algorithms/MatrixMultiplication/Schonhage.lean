@@ -1,0 +1,31 @@
+module  -- shake: keep-all --deprecated_module: ignore
+-- upstream: local-only (project scaffolding)
+
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Alphabets
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.BandBounds
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Batch
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.BoxPartition
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.BoxTradeoff
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.BoxTradeoffEncoding
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.BoxTradeoffExponent
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.BoxTradeoffParameters
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.BoxValues
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Boxes
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.BoxesFromLeaves
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.CoordinateTransform
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Cubes
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Full
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Identity
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Layout
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Levels
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Magnitude
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.MaskTable
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Orders
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Parameters
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Pruned
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.PrunedCounts
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.QueryDigits
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Sparse
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.SplitDigits
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.ThinProduct
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Tiling

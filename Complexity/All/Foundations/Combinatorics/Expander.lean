@@ -1,0 +1,44 @@
+module  -- shake: keep-all --deprecated_module: ignore
+-- upstream: local-only (project scaffolding)
+
+public import Complexity.Foundations.Combinatorics.Expander.AffineFamily
+public import Complexity.Foundations.Combinatorics.Expander.AffinePlane
+public import Complexity.Foundations.Combinatorics.Expander.AffineTower
+public import Complexity.Foundations.Combinatorics.Expander.Basic
+public import Complexity.Foundations.Combinatorics.Expander.BoxProduct
+public import Complexity.Foundations.Combinatorics.Expander.Cayley
+public import Complexity.Foundations.Combinatorics.Expander.Cheeger
+public import Complexity.Foundations.Combinatorics.Expander.Connected
+public import Complexity.Foundations.Combinatorics.Expander.Contraction
+public import Complexity.Foundations.Combinatorics.Expander.ElementaryMove
+public import Complexity.Foundations.Combinatorics.Expander.Existence
+public import Complexity.Foundations.Combinatorics.Expander.Family
+public import Complexity.Foundations.Combinatorics.Expander.FourthMoment
+public import Complexity.Foundations.Combinatorics.Expander.Hitting
+public import Complexity.Foundations.Combinatorics.Expander.Hom
+public import Complexity.Foundations.Combinatorics.Expander.IteratedProd
+public import Complexity.Foundations.Combinatorics.Expander.KilledWalk
+public import Complexity.Foundations.Combinatorics.Expander.Lazy
+public import Complexity.Foundations.Combinatorics.Expander.Loops
+public import Complexity.Foundations.Combinatorics.Expander.LowerBound
+public import Complexity.Foundations.Combinatorics.Expander.Mixing
+public import Complexity.Foundations.Combinatorics.Expander.Multigraph
+public import Complexity.Foundations.Combinatorics.Expander.PairShearTranslation
+public import Complexity.Foundations.Combinatorics.Expander.Perm
+public import Complexity.Foundations.Combinatorics.Expander.PiProduct
+public import Complexity.Foundations.Combinatorics.Expander.Power
+public import Complexity.Foundations.Combinatorics.Expander.Random
+public import Complexity.Foundations.Combinatorics.Expander.Reindex
+public import Complexity.Foundations.Combinatorics.Expander.Reingold
+public import Complexity.Foundations.Combinatorics.Expander.RelativeShearTranslation
+public import Complexity.Foundations.Combinatorics.Expander.Replacement
+public import Complexity.Foundations.Combinatorics.Expander.ShearTranslation
+public import Complexity.Foundations.Combinatorics.Expander.SimpleGraph
+public import Complexity.Foundations.Combinatorics.Expander.SlotGraph
+public import Complexity.Foundations.Combinatorics.Expander.Spectrum
+public import Complexity.Foundations.Combinatorics.Expander.TannerCode
+public import Complexity.Foundations.Combinatorics.Expander.Tensor
+public import Complexity.Foundations.Combinatorics.Expander.Tower
+public import Complexity.Foundations.Combinatorics.Expander.TowerFamily
+public import Complexity.Foundations.Combinatorics.Expander.Walk
+public import Complexity.Foundations.Combinatorics.Expander.Zigzag
