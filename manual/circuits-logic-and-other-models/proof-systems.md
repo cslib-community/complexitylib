@@ -257,8 +257,8 @@ transport is shared through `Complexity.Foundations.GroupTheory.Perm.Doubled`.
 
 These are combinatorial duality and lifting results, reconstructing the graph prerequisite in
 Dvořák–Kupec, §3, printed p. 439. The checked compiler below supplies the native
-supplied-certificate CSP reduction. Geometric realization, bare rotation recognition and
-recursive edge solving remain open
+supplied-certificate CSP reduction, followed by the complete native edge solver below.
+Geometric realization, bare rotation recognition and final planar assembly remain open
 under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
 
 ## Ordered incidence-to-polygon rotations

@@ -843,8 +843,8 @@ example {G : Graph} (r : Graph.RotationSystem G) (spin : ℕ → Bool) :
 `ComplexityTests/RotationDual.lean` contains concrete bridge, loop, digon,
 torus and disconnected sparse-name cases. These are finite combinatorial
 results. The checked compiler below provides the native supplied-certificate
-CSP reduction. Geometric realization, bare recognition and recursive solving
-remain open.
+CSP reduction, followed by the complete native edge solver below. Geometric
+realization, bare recognition and final planar assembly remain open.
 
 
 # Ordered Incidence-to-Polygon Rotations
@@ -1075,7 +1075,8 @@ example {Rel V : Type} {F : CSP Rel V} {w : Walk F}
 Arbitrary f-walk reversal need not preserve prefix validity, even for even
 delta-matroid relations. Operation tests give a counterexample. These results
 feed the fresh forest search and whole-instance contraction/lifting below.
-Native recursive solving and the full planar dichotomy remain open.
+The complete native edge solver follows those layers. Geometric recognition
+and the full planar dichotomy remain open.
 
 
 # Fresh Forest Search
@@ -1210,8 +1211,8 @@ count-preserving preparation for a blossom. This is a native fresh-search routin
 without an improving comparison input. The existing augmentation API is preserved
 through the shared buffer module. `ComplexityTests/EdgeCSPForestNative.lean` checks
 actual executions, including an end-to-end valid augmentation to zero defects.
-The next entry supplies mathematical whole-blossom contraction/lifting. Native
-recursive solving, geometric recognition and the full planar dichotomy remain open.
+The next entries supply whole-blossom contraction/lifting and the complete
+native edge solver. Geometric recognition and the full planar dichotomy remain open.
 
 
 # Whole-Instance Blossom Contraction and Lifting
