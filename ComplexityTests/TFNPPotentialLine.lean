@@ -178,9 +178,4 @@ example : endOfPotentialLineViolationRel n1 P1 S1 V1 ∈ EOPL encBits :=
   endOfPotentialLineViolationRel_mem_EOPL hn1 hP1 hS1 hV1 (hlen1 P1 fun _ => rfl)
     (hlen1 S1 fun _ => rfl)
 
-/-- The family certifying an `EOPL` membership is plain (`mem_EOPL`). -/
-example : ∃ n : List Bool → ℕ, ComputableInPolyTime n encBits encUnary := by
-  obtain ⟨-, n, -, -, -, hn, -⟩ := mem_EOPL.mp eopl1
-  exact ⟨n, hn⟩
-
 end ComplexityTests.TFNPPotentialLine

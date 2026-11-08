@@ -23,7 +23,8 @@ search problems reducible to *End-of-Potential-Line*: a directed graph of in-deg
 at most `1`, presented by predecessor and successor maps `P, S`, carries a potential `V` that
 strictly increases along every edge, and one must find a sink or a proper source other than the
 distinguished source `0 ^ n`. `SOPL` [Göös et al.][GoosEtAl2022] is its sink-only variant,
-*Sink-of-Potential-Line*.
+*Sink-of-Potential-Line*, suggested by [Göös, Kamath, Robere and
+Sokolov][GoosKamathRobereSokolov2019] and named and studied in [Göös et al.][GoosEtAl2022].
 
 ## Presentation
 
@@ -102,6 +103,8 @@ satisfies both conditions, and its (R1)/(R2) solutions are exactly the strings `
   Line*][FearnleyGordonMehtaSavani2020]
 * [M. Göös, A. Hollender, S. Jain, G. Maystre, W. Pires, R. Robere, R. Tao, *Further Collapses in
   TFNP*][GoosEtAl2022]
+* [M. Göös, P. Kamath, R. Robere, D. Sokolov, *Adventures in Monotone Complexity and
+  TFNP*][GoosKamathRobereSokolov2019]
 -/
 
 @[expose] public section
@@ -345,7 +348,7 @@ theorem endOfPotentialLineRel_of_violation {x : List Bool}
       rw [potentialPred_of_false (hasPotentialIn_zeroVertex n P S V a),
         potentialSucc_of_true hout, potentialPred_of_true hin] at h
       obtain ⟨-, -, hS0, hV⟩ := hasPotentialOut_eq_true_iff.mp hout
-      simp only [hout, not_true_eq_false, and_false, ne_eq, not_true_eq_false, false_or] at h
+      simp only [hout, not_true_eq_false, and_false, ne_eq, false_or] at h
       rcases h with h | h
       · exact h (hasPotentialOut_eq_true_iff.mp hout).1
       · exact absurd h.2.2 (Nat.not_le.mpr hV)
@@ -643,7 +646,8 @@ def EOPL (enc : α ↪ List Bool) : Set (α → List Bool → Prop) :=
 
 /-- **Sink of Potential Line (`SOPL`)** [Göös et al.][GoosEtAl2022]: `FNP` search problems
 search-reducible to finding a sink of a uniform polynomial-time potential-line family
-`sinkOfPotentialLineRel n P S V`. -/
+`sinkOfPotentialLineRel n P S V`. This sink-only variant of `EOPL` was suggested by [Göös, Kamath,
+Robere and Sokolov][GoosKamathRobereSokolov2019]. -/
 def SOPL (enc : α ↪ List Bool) : Set (α → List Bool → Prop) :=
   {R | R ∈ FNP enc ∧ ∃ (n : α → ℕ) (P S : α × List Bool → List Bool) (V : α × List Bool → ℕ),
     ComputableInPolyTime n enc encUnary ∧
@@ -900,23 +904,23 @@ theorem exists_potentialBound (hn : ComputableInPolyTime n enc encUnary)
 
 /-- Whether `u` lies on a potential line: `u = 0 ^ (n a)` or `u` has a potential-increasing incoming
 edge. -/
-def onPotentialLine (n : α → ℕ) (P S : α × List Bool → List Bool) (V : α × List Bool → ℕ)
+private def onPotentialLine (n : α → ℕ) (P S : α × List Bool → List Bool) (V : α × List Bool → ℕ)
     (p : α × List Bool) : Bool :=
   decide (p.2 = zeroVertex (n p.1)) || hasPotentialIn n P S V p.1 p.2
 
 /-- The neighbor map of the local-search family simulating a sink-of-potential-line family: follow
 the pruned successor on a potential line, and jump to `0 ^ (n a)` off it. -/
-def soplNeighbor (n : α → ℕ) (P S : α × List Bool → List Bool) (V : α × List Bool → ℕ)
+private def soplNeighbor (n : α → ℕ) (P S : α × List Bool → List Bool) (V : α × List Bool → ℕ)
     (p : α × List Bool) : List Bool :=
   if onPotentialLine n P S V p then potentialSucc n P S V p else zeroVertex (n p.1)
 
 /-- The cost of the local-search family simulating a sink-of-potential-line family with potentials
 below `B`: `B - V` on a potential line, and `B + 1` off it. -/
-def soplCost (B : α → ℕ) (n : α → ℕ) (P S : α × List Bool → List Bool) (V : α × List Bool → ℕ)
-    (p : α × List Bool) : ℕ :=
+private def soplCost (B : α → ℕ) (n : α → ℕ) (P S : α × List Bool → List Bool)
+    (V : α × List Bool → ℕ) (p : α × List Bool) : ℕ :=
   if onPotentialLine n P S V p then B p.1 - V p else B p.1 + 1
 
-theorem length_soplNeighbor (hS : ∀ u, u.length = n a → (S (a, u)).length = n a)
+private theorem length_soplNeighbor (hS : ∀ u, u.length = n a → (S (a, u)).length = n a)
     (hu : u.length = n a) : (soplNeighbor n P S V (a, u)).length = n a := by
   unfold soplNeighbor
   split_ifs
@@ -924,7 +928,7 @@ theorem length_soplNeighbor (hS : ∀ u, u.length = n a → (S (a, u)).length = 
   · exact length_zeroVertex _
 
 /-- Local optima of the simulating local-search family are sinks of the potential line. -/
-theorem sinkOfPotentialLineRel_of_localOptRel {B : α → ℕ}
+private theorem sinkOfPotentialLineRel_of_localOptRel {B : α → ℕ}
     (hB : ∀ u, u.length = n a → V (a, u) < B a)
     (hS : ∀ u, u.length = n a → (S (a, u)).length = n a)
     (h : localOptRel n (soplNeighbor n P S V) (soplCost B n P S V) a u) :
@@ -948,7 +952,7 @@ theorem sinkOfPotentialLineRel_of_localOptRel {B : α → ℕ}
     simp only [soplCost, soplNeighbor, hon, Bool.false_eq_true, ↓reduceIte, hz] at hle
     omega
 
-theorem computableInPolyTime_onPotentialLine
+private theorem computableInPolyTime_onPotentialLine
     (hn : ComputableInPolyTime n enc encUnary)
     (hP : ComputableInPolyTime P (encPair enc encBits) encBits)
     (hS : ComputableInPolyTime S (encPair enc encBits) encBits)
