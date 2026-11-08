@@ -44,8 +44,8 @@ in the sense above (`IsStarFree.one`, `IsStarFree.of_finite`).
   star-free languages are regular.
 * `Cslib.Language.StarFreeExpression.replicate_mem_or_notMem`: on the powers of a letter that does
   not occur in an expression, its language is all or nothing.
-* `Cslib.Language.IsStarFree.zero`, `char`, `add`, `compl`, `mul`, `top`, `inf`: closure
-  properties.
+* `Cslib.Language.IsStarFree.zero`, `char`, `add`, `compl`, `mul`, `top`, `inf`, `iSup`, `iInf`:
+  closure properties, the last two for finite unions and intersections.
 * `Cslib.Language.IsStarFree.setOf_length_eq_one`, `Cslib.Language.IsStarFree.one`,
   `Cslib.Language.IsStarFree.singleton`, `Cslib.Language.IsStarFree.of_finite`: over a finite
   alphabet, the words of length one, `{ε}`, every one-word language and every finite language are
@@ -237,6 +237,27 @@ theorem inf {L M : _root_.Language α} (hL : IsStarFree L) (hM : IsStarFree M) :
       rcases (Language.mem_add _ _ x).1 hx with h | h
       exacts [h hL, h hM]
   exact h ▸ (hL.compl.add hM.compl).compl
+
+/-- A finite union of star-free languages is star-free. -/
+theorem iSup {ι : Type*} [Finite ι] {L : ι → _root_.Language α} (hL : ∀ i, IsStarFree (L i)) :
+    IsStarFree (⨆ i, L i) := by
+  classical
+  have := Fintype.ofFinite ι
+  have key : ∀ s : Finset ι, IsStarFree (s.sup L) := by
+    intro s
+    induction s using Finset.induction_on with
+    | empty => exact zero
+    | insert i s _ ih =>
+      rw [Finset.sup_insert]
+      exact (hL i).add ih
+  rw [← Finset.sup_univ_eq_iSup]
+  exact key Finset.univ
+
+/-- A finite intersection of star-free languages is star-free. -/
+theorem iInf {ι : Type*} [Finite ι] {L : ι → _root_.Language α} (hL : ∀ i, IsStarFree (L i)) :
+    IsStarFree (⨅ i, L i) := by
+  rw [← compl_compl (⨅ i, L i), compl_iInf]
+  exact (IsStarFree.iSup fun i => (hL i).compl).compl
 
 /-- Star-free languages are regular. -/
 theorem isRegular {L : _root_.Language α} (h : IsStarFree L) : L.IsRegular :=
