@@ -2868,6 +2868,8 @@ public import Complexity.Computability.PCP.Approximation.MaxExactThreeSAT
 public import Complexity.Computability.PCP.Approximation.MaxThreeSAT
 public import Complexity.Computability.PCP.Approximation.ParitySearch
 public import Complexity.Computability.PCP.Approximation.ThreeXOR
+public import Complexity.Computability.PCP.Approximation.UniqueGames.Propagation
+public import Complexity.Computability.PCP.Approximation.UniqueGames.PropagationTime
 public import Complexity.Computability.PCP.AssignmentTester
 public import Complexity.Computability.PCP.AssignmentTester.Selection
 public import Complexity.Computability.PCP.Completeness
