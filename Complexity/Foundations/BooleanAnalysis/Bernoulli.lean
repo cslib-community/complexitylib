@@ -59,6 +59,9 @@ power `h` (`bernoulliAverage_lowerSet_pow_le`). This transference principle appe
   `Cslib.BitString.bernoulliAverage_weight`: the probability that a coordinate is selected,
   that some coordinate is, that some coordinate of a given set is, and the expected number of
   selected coordinates.
+* `Cslib.BitString.bernoulliWeight_eq_pow_mul_pow`, `Cslib.BitString.bernoulliAverage_comp_weight`,
+  `Cslib.BitString.bernoulliAverage_lt_weight`: the weight of a random mask is binomially
+  distributed, with upper tail `∑_{r < k ≤ n} C(n, k) p ^ k (1 - p) ^ (n - k)`.
 * `Cslib.BitString.bernoulliAverage_bernoulliAverage_eq_sum`: the law of a coordinatewise
   image of two independent masks.
 * `Cslib.BitString.bernoulliAverage_union`: unions of independent masks.
@@ -154,6 +157,17 @@ theorem bernoulliWeight_split {ι : Type*} [Fintype ι] (p : ℝ) (s x : ι → 
       bernoulliWeight p (fun i : {i // s i ≠ true} => x i) :=
   (Fintype.prod_subtype_mul_prod_subtype (fun i => s i = true)
     (fun i => if x i then p else 1 - p)).symm
+
+/-- The probability of a mask is `p ^ |s| (1 - p) ^ (|ι| - |s|)`, where `|s|` is its weight. -/
+theorem bernoulliWeight_eq_pow_mul_pow {ι : Type*} [Fintype ι] (p : ℝ) (s : ι → Bool) :
+    bernoulliWeight p s = p ^ weight s * (1 - p) ^ (Fintype.card ι - weight s) := by
+  classical
+  rw [bernoulliWeight, ← prod_filter_mul_prod_filter_not univ (fun i => s i = true)]
+  rw [prod_congr rfl (fun i hi => ite_eq_left (mem_filter.mp hi).2),
+    prod_congr rfl (fun i hi => ite_eq_right (mem_filter.mp hi).2), prod_const, prod_const]
+  congr 2
+  rw [← card_filter_eq_false_eq_card_sub_weight]
+  congr 1
 
 section
 
@@ -332,6 +346,29 @@ theorem bernoulliAverage_weight (p : ℝ) :
   simp only [bernoulliAverage] at hc
   simp_rw [hc]
   simp
+
+/-- The weight of a mask of rate `p` is binomially distributed: the expectation of a function of
+the weight is its average against `C(n, k) p ^ k (1 - p) ^ (n - k)`, where `n = |ι|`. -/
+theorem bernoulliAverage_comp_weight (p : ℝ) (g : ℕ → ℝ) :
+    bernoulliAverage p (fun s : ι → Bool => g (weight s)) =
+      ∑ k ∈ range (Fintype.card ι + 1),
+        ((Fintype.card ι).choose k : ℝ) * p ^ k * (1 - p) ^ (Fintype.card ι - k) * g k := by
+  rw [bernoulliAverage, ← sum_fiberwise_of_maps_to (g := weight)
+    (t := range (Fintype.card ι + 1)) (fun s _ => mem_range.mpr (Nat.lt_succ_of_le (weight_le s)))]
+  refine sum_congr rfl fun k _ => ?_
+  rw [sum_congr rfl fun s hs => by rw [bernoulliWeight_eq_pow_mul_pow, (mem_filter.mp hs).2],
+    sum_const, card_filter_weight_eq, nsmul_eq_mul]
+  ring
+
+/-- A mask of rate `p` has more than `r` coordinates with probability
+`∑_{r < k ≤ n} C(n, k) p ^ k (1 - p) ^ (n - k)`, the upper tail of the binomial distribution. -/
+theorem bernoulliAverage_lt_weight (p : ℝ) (r : ℕ) :
+    bernoulliAverage p (fun s : ι → Bool => if r < weight s then 1 else 0) =
+      ∑ k ∈ range (Fintype.card ι + 1) with r < k,
+        ((Fintype.card ι).choose k : ℝ) * p ^ k * (1 - p) ^ (Fintype.card ι - k) := by
+  rw [sum_filter]
+  exact (bernoulliAverage_comp_weight p fun k => if r < k then 1 else 0).trans
+    (sum_congr rfl fun k _ => by split_ifs <;> ring)
 
 /-- A mask of rate `p` meets the coordinates selected by `s` with probability
 `1 - (1 - p) ^ |s|`. -/
