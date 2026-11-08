@@ -154,6 +154,18 @@ Like Bellman–Ford, this is a pure Lean function with a `TimeM` cost model, not
 
 The [CYK examples](../../ComplexityTests/Algorithms/Lean/CYK.lean) decide accepted and rejected words, including the empty word, for `{aⁿbⁿ}` and for balanced parentheses with `S → ε`, using `decide`, and check exact tick counts. This is the algorithm of [Sipser, Theorem 7.16][sipser13] (every context-free language is in P) **only for grammars already in Chomsky normal form**. Conversion of arbitrary grammars, a machine-level `ComputableInPolyTime` decider, Valiant's subcubic parsing, the pumping lemma, and CFG emptiness and universality are not formalized ([ROADMAP](../../ROADMAP.md#structure-time-and-space), [#3303](https://github.com/cslib-community/complexitylib/issues/3303)).
 
+## Edit distance and longest common subsequence
+
+Like CYK, these are pure Lean functions with a `TimeM` cost model, not machine programs.
+
+- **Tables over pairs of suffixes.** Import `Complexity.Algorithms.Lean.EditDistance.Grid` ([source](../../Complexity/Algorithms/Lean/EditDistance/Grid.lean)). A `GridDP` holds the four rules of a table indexed by pairs of suffixes of two words: the corner, the two borders, and the interior entry from its three neighbours. `GridDP.value` fills the table row by row, and the row of `a :: x` is computed from the row of `x` alone. The textbook tables are indexed by prefixes. Indexing by suffixes is the same program run on the reversed words. `value_cons_cons` and the border lemmas restate the rules. `ret_valueM` and `time_valueM` show that the `TimeM` version returns `value` and costs exactly `(|x| + 1) (|y| + 1)`. One unit is charged per entry, and an entry is one rule application to neighbours at the heads of the current and previous rows. `TimeM` does not track space, so the two-row space bound is only a property of the definition.
+- **Edit distance (Wagner–Fischer).** Import `Complexity.Algorithms.Lean.EditDistance.Basic` ([source](../../Complexity/Algorithms/Lean/EditDistance/Basic.lean)). `Costs α` gives arbitrary natural-number costs `del`, `ins` and `sub`. `Costs.unit` gives the Levenshtein distance. `Costs.indel` allows only insertions and deletions, so a replacement by a different letter costs `2`. An `EditScript` is a list of operations `del a`, `ins b`, `sub a b`, with `src`, `tgt` and `cost`. This is an alignment, or a trace in the sense of [Wagner and Fischer][wagnerfischer74]. `dist C x y` is the table entry, with the recurrence `dist_cons_cons` (see also [CLRS, Problem 15-5][clrs09] and [Kleinberg and Tardos, Section 6.6][kleinbergtardos06]). `isLeast_dist` says that `dist C x y` is the least cost of a script from `x` to `y`. The lower bound is `dist_le_cost`. `optScript` reads an optimal script off the table (`src_optScript`, `tgt_optScript`, `cost_optScript`). `ret_distM` and `time_distM` show that the algorithm costs exactly `(|x| + 1) (|y| + 1)`.
+- **Longest common subsequence.** Import `Complexity.Algorithms.Lean.EditDistance.LCS` ([source](../../Complexity/Algorithms/Lean/EditDistance/LCS.lean)). `lcsLength x y` is the table of [CLRS, Section 15.4][clrs09], whose recurrence is `lcsLength_cons_cons` (Theorem 15.1). Subsequences are `List.Sublist`. `isGreatest_lcsLength` says that `lcsLength x y` is the greatest length of a common subsequence. The upper bound is `length_le_lcsLength`, and `lcs` reads a witness off the table (`lcs_spec`). `dist_indel_add_two_mul` is the duality `dist Costs.indel x y + 2 · lcsLength x y = |x| + |y|`. `ret_lcsLengthM` and `time_lcsLengthM` give the exact cost `(|x| + 1) (|y| + 1)`.
+
+The [examples](../../ComplexityTests/Algorithms/Lean/EditDistance.lean) use `decide`. They check kitten/sitting (`3`, with its traceback), flaw/lawn (`2`), and empty words. They check costs that are neither unit nor symmetric, where a replacement beats a deletion plus an insertion but a swap does not. They check the strings of the running example of CLRS Section 15.4 (`lcsLength = 4`), and the exact tick counts.
+
+**Scope.** Costs are arbitrary: no triangle inequality or symmetry is assumed. The theorem is the trace (alignment) form of Wagner–Fischer. The equivalence with sequences of edit operations applied at arbitrary positions, which Wagner and Fischer prove under their cost conditions, is not formalized. For unit costs, neither the metric properties nor the characterization as the least number of single-letter edits is formalized. Also not formalized: Hirschberg's linear-space recovery of an optimal alignment, a machine-level `ComputableInPolyTime` statement, and the `OV` hardness of edit distance and LCS ([#3472](https://github.com/cslib-community/complexitylib/issues/3472), [#3037](https://github.com/cslib-community/complexitylib/issues/3037)).
+
 ## Hash families and dictionaries
 
 [abstracts/ComplexityAbstracts/HashTablesAbstract.lean](../../abstracts/ComplexityAbstracts/HashTablesAbstract.lean) selects four expected-amortized dictionary implementations: multiply-shift chained hashing, five-wise linear probing, odd-stride uniform probing and cuckoo hashing. Each supports `query` and `insert` with overwrite, up to bounded distinct-key capacity. **Deletion is not included.** The operation list is fixed before initialization randomness; these are oblivious-sequence guarantees.
@@ -1115,6 +1127,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [hmu06]: ../sources.md#hmu06
 [kasai01]: ../sources.md#kasai01
 [kasami65]: ../sources.md#kasami65
+[kleinbergtardos06]: ../sources.md#kleinbergtardos06
 [kortevygen18]: ../sources.md#kortevygen18
 [lll82]: ../sources.md#lll82
 [manbermyers93]: ../sources.md#manbermyers93
@@ -1131,6 +1144,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [stoerwagner97]: ../sources.md#stoerwagner97
 [vww18]: ../sources.md#vww18
 [thorup13]: ../sources.md#thorup13
+[wagnerfischer74]: ../sources.md#wagnerfischer74
 [wattenhofer16]: ../sources.md#wattenhofer16
 [williamsonshmoys11]: ../sources.md#williamsonshmoys11
 [younger67]: ../sources.md#younger67

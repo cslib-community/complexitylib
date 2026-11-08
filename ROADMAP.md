@@ -964,9 +964,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   three is done for general `m` (`FineGrained.Diameter`, the `OV` form of Roditty–Vassilevska
   Williams Theorem 9). Remaining: the `(3/2 - ε)`-approximation corollary for diameter; the
   sparse-graph `m ^ (2 - ε)` statement, which needs the low-dimension form of `OVH` (dimension
-  `c log N`, from `SETH` with sparsification); the quadratic dynamic programs for longest common
-  subsequence and edit distance, and their `OV` hardness by alignment gadgets (Backurs–Indyk;
-  Abboud–Backurs–Vassilevska Williams; Bringmann–Künnemann).
+  `c log N`, from `SETH` with sparsification); the `OV` hardness of longest common subsequence
+  and edit distance by alignment gadgets (Backurs–Indyk; Abboud–Backurs–Vassilevska Williams;
+  Bringmann–Künnemann). Their quadratic dynamic programs are in `Algorithms/Lean/EditDistance`
+  ([#3472](https://github.com/cslib-community/complexitylib/issues/3472)).
 
 ### Approximation and PCP
 
@@ -1993,6 +1994,19 @@ pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
   applications such as longest repeated substring and the Burrows–Wheeler transform. Once a second
   client appears (Z-function, LCP-accelerated search), move `lcpLen` and its lemmas to a
   `Foundations/Data/List` module in the `List` namespace.
+- **Edit distance and longest common subsequence**
+  ([#3472](https://github.com/cslib-community/complexitylib/issues/3472)):
+  `Algorithms/Lean/EditDistance` has the Wagner–Fischer table under arbitrary letter costs. It is
+  the least cost of an edit script (alignment, trace), with an optimal script by traceback. It
+  also has the LCS table, the greatest length of a common subsequence, with a witness. The two
+  are related by `dist indel + 2 · lcsLength = |x| + |y|`. Both cost exactly `(|x| + 1)(|y| + 1)`
+  in `TimeM`. Remaining: for unit costs, the metric axioms and the equivalence with the least
+  number of single-letter edits at arbitrary positions (and, for general costs, Wagner–Fischer's
+  equivalence of traces with edit sequences under their cost conditions); Hirschberg's
+  linear-space recovery of an optimal alignment with `O(|x| |y|)` cost (Kleinberg–Tardos §6.7); a
+  machine-level polynomial-time computation; Ukkonen's and Myers' `O((|x| + |y|) d)`
+  algorithms for distance `d`; the Masek–Paterson four-Russians speedup; and `OV` hardness
+  ([#3037](https://github.com/cslib-community/complexitylib/issues/3037)).
 
 ## Machines, RAM and data structures
 
