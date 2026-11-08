@@ -875,7 +875,8 @@ open Cslib.Complexity in
 example {G : Graph} (r : Graph.RotationSystem G)
     (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (hgenus : r.NumericalGenusZero)
     {x y : Fin G.2.length → Bool} (P : Graph.ClosedPassages G x)
-    (Q : Graph.ClosedPassages G y) (hdisj : ∀ e, x e = true → y e = true → False) :
+    (Q : Graph.ClosedPassages G y)
+    (hdisj : ∀ e, x e = true → y e = true → False) :
     r.intersectionParity P Q = false :=
   r.intersectionParity_eq_false hG hgenus P Q hdisj
 ```
