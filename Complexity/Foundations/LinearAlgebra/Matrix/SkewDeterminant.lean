@@ -8,8 +8,9 @@ module
 -- upstream: candidate (Mathlib `LinearAlgebra/Matrix/Determinant/Basic.lean`)
 
 public import Complexity.Init
-public import Complexity.Foundations.GroupTheory.Perm.ReverseCycle
+public import Mathlib.GroupTheory.Perm.Cycle.Type
 public import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+import Complexity.Foundations.GroupTheory.Perm.ReverseCycle
 
 /-!
 # Odd cycles cancel in the determinant of a skew-symmetric matrix

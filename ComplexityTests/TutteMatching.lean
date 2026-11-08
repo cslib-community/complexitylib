@@ -8,10 +8,14 @@ module
 -- upstream: local-only (tests of the Tutte matrix criterion)
 
 import Complexity.Algorithms.Matching.Tutte
+import Complexity.Foundations.Combinatorics.SimpleGraph.PermMatching
+import Complexity.Foundations.LinearAlgebra.Matrix.SkewDeterminant
+import Mathlib.GroupTheory.Perm.Fin
 
 /-! The Tutte matrix of small simple graphs, checked as a `module` client: the single edge `K₂`
-(determinant `r²`, detection from `{0, 1, 2}`, the probability bound), the triangle and the star
-`K₁,₃` (no perfect matching, so the determinant vanishes at all values), and the skew-symmetric
+(determinant `r²`, detection from `{0, 1, 2}`, the probability bound `2 / 3`), `K₄` (a perfect
+matching extracted from the rotation of `Fin 4`, a single even cycle, then detected), the triangle
+(singular at all values) and the star `K₁,₃` (zero Tutte polynomial), and the skew-symmetric
 determinant lemmas on a `3 × 3` alternating matrix and a `1 × 1` matrix over `ZMod 2`, which is
 skew-symmetric but not alternating. -/
 
@@ -45,6 +49,36 @@ example : (tutteMatrix (R := ℤ) (⊤ : SimpleGraph (Fin 2))).det ≠ 0 :=
 example : ∃ r : Sym2 (Fin 2) → ℤ, (∀ e, r e ∈ ({0, 1, 2} : Finset ℤ)) ∧
     (tutteEval (⊤ : SimpleGraph (Fin 2)) r).det ≠ 0 :=
   exists_det_tutteEval_ne_zero _ top_two_isPerfectMatching.choose_spec (by decide)
+
+/-- Over `{0, 1, 2}`, the Tutte matrix of `K₂` is singular with probability at most `2 / 3`. -/
+example : #{r ∈ Fintype.piFinset fun _ : Sym2 (Fin 2) => ({0, 1, 2} : Finset ℤ) |
+      (tutteEval (⊤ : SimpleGraph (Fin 2)) r).det = 0} / (3 ^ 3 : ℚ≥0) ≤ 2 / 3 := by
+  have h := card_det_tutteEval_eq_zero_div_le _ top_two_isPerfectMatching.choose_spec
+    ({0, 1, 2} : Finset ℤ)
+  have h3 : #({0, 1, 2} : Finset ℤ) = 3 := by decide
+  have hs : Fintype.card (Sym2 (Fin 2)) = 3 := by decide
+  simpa [h3, hs] using h
+
+/-! ### The complete graph on four vertices -/
+
+/-- The rotation of `Fin 4` moves every vertex to a neighbour in `K₄` and is a single `4`-cycle,
+so it gives a perfect matching of `K₄`. -/
+theorem top_four_isPerfectMatching : ∃ M : (⊤ : SimpleGraph (Fin 4)).Subgraph,
+    M.IsPerfectMatching := by
+  refine SimpleGraph.exists_isPerfectMatching_of_perm (finRotate 4) (fun v => ?_) ?_
+  · rw [SimpleGraph.top_adj, ne_comm]
+    exact Equiv.Perm.mem_support.1 (by simp [support_finRotate])
+  · rw [cycleType_finRotate (n := 2)]
+    simp only [Multiset.mem_singleton, forall_eq]
+    decide
+
+/-- Its Tutte determinant is a nonzero polynomial, and values from `{0, 1, 2, 3, 4}` detect the
+perfect matching. -/
+example : (tutteMatrix (R := ℤ) (⊤ : SimpleGraph (Fin 4))).det ≠ 0 ∧
+    ∃ r : Sym2 (Fin 4) → ℤ, (∀ e, r e ∈ ({0, 1, 2, 3, 4} : Finset ℤ)) ∧
+      (tutteEval (⊤ : SimpleGraph (Fin 4)) r).det ≠ 0 :=
+  ⟨(det_tutteMatrix_ne_zero_iff _).2 top_four_isPerfectMatching,
+    exists_det_tutteEval_ne_zero _ top_four_isPerfectMatching.choose_spec (by decide)⟩
 
 /-! ### Graphs without a perfect matching -/
 

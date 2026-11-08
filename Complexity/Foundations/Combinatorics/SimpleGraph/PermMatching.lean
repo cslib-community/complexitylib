@@ -8,8 +8,9 @@ module
 -- upstream: candidate (Mathlib `Combinatorics/SimpleGraph/Matching.lean`)
 
 public import Complexity.Init
-public import Complexity.Foundations.GroupTheory.Perm.ReverseCycle
 public import Mathlib.Combinatorics.SimpleGraph.Matching
+public import Mathlib.GroupTheory.Perm.Cycle.Type
+import Complexity.Foundations.GroupTheory.Perm.ReverseCycle
 import Mathlib.Data.ZMod.Basic
 
 /-!

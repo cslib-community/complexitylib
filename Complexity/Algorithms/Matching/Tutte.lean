@@ -8,11 +8,13 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Foundations.Combinatorics.SimpleGraph.PermMatching
-public import Complexity.Foundations.Data.MvPolynomial.SchwartzZippel
-public import Complexity.Foundations.LinearAlgebra.Matrix.SkewDeterminant
+public import Mathlib.Algebra.MvPolynomial.Degrees
+public import Mathlib.Combinatorics.SimpleGraph.Matching
+public import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+import Complexity.Foundations.Combinatorics.SimpleGraph.PermMatching
+import Complexity.Foundations.Data.MvPolynomial.SchwartzZippel
+import Complexity.Foundations.LinearAlgebra.Matrix.SkewDeterminant
 import Mathlib.Algebra.MvPolynomial.CommRing
-import Mathlib.Algebra.MvPolynomial.Degrees
 
 /-!
 # The Tutte matrix and the randomized perfect-matching test for general graphs
@@ -20,10 +22,13 @@ import Mathlib.Algebra.MvPolynomial.Degrees
 A finite simple graph `G` on a linearly ordered vertex type `V` has the *Tutte matrix*
 `Cslib.Algorithms.Matching.tutteMatrix G`: its entry `(i, j)` is `X s(i, j)` when `ij` is an edge
 and `i < j`, `-X s(i, j)` when `ij` is an edge and `j < i`, and `0` otherwise, with one
-indeterminate per unordered pair. It is skew-symmetric. **Tutte's theorem**: its determinant is a
-nonzero polynomial exactly when `G` has a perfect matching
-(`Cslib.Algorithms.Matching.det_tutteMatrix_ne_zero_iff`), over every nontrivial commutative ring
-[Tutte1947] [Motwani and Raghavan, Section 7.3][MotwaniRaghavan95].
+indeterminate per unordered pair. It is skew-symmetric. **Tutte's matrix theorem**: its
+determinant is a nonzero polynomial exactly when `G` has a perfect matching
+(`Cslib.Algorithms.Matching.det_tutteMatrix_ne_zero_iff`) [Tutte1947]
+[Motwani and Raghavan, Section 7.3][MotwaniRaghavan95]. The sources state it over a field; the
+statement here holds over every nontrivial commutative ring, a generality of this formalization
+that the same proof gives. It is distinct from Tutte's combinatorial criterion in terms of odd
+components, which Mathlib has as `SimpleGraph.tutte`.
 
 In the Leibniz expansion of a skew-symmetric determinant the permutations with an odd cycle cancel
 (`Matrix.det_eq_sum_even_cycleType_of_transpose_eq_neg`). A surviving nonzero term is a permutation
@@ -47,8 +52,8 @@ by the Schwartz–Zippel lemma.
 
 ## Main results
 
-* `Cslib.Algorithms.Matching.det_tutteMatrix_ne_zero_iff`: Tutte's theorem, the determinant is
-  nonzero exactly when the graph has a perfect matching.
+* `Cslib.Algorithms.Matching.det_tutteMatrix_ne_zero_iff`: Tutte's matrix theorem, the
+  determinant is nonzero exactly when the graph has a perfect matching.
 * `Cslib.Algorithms.Matching.det_tutteEval_eq_zero`: no false positives.
 * `Cslib.Algorithms.Matching.card_det_tutteEval_eq_zero_div_le`: false negatives with probability
   at most `|V| / |S|`.
@@ -196,8 +201,10 @@ theorem det_tutteMatrix_ne_zero [Nontrivial R] {M : G.Subgraph} (hM : M.IsPerfec
   · intro h
     exact absurd (mem_univ p) h
 
-/-- **Tutte's theorem**: over a nontrivial commutative ring, the determinant of the Tutte matrix of
-a simple graph is a nonzero polynomial exactly when the graph has a perfect matching. -/
+/-- **Tutte's matrix theorem** [Tutte1947]: the determinant of the Tutte matrix of a simple graph
+is a nonzero polynomial exactly when the graph has a perfect matching. The sources state it over a
+field; this formalization proves it over every nontrivial commutative ring. For Tutte's
+combinatorial criterion (odd components) see Mathlib's `SimpleGraph.tutte`. -/
 theorem det_tutteMatrix_ne_zero_iff [Nontrivial R] :
     (tutteMatrix (R := R) G).det ≠ 0 ↔ ∃ M : G.Subgraph, M.IsPerfectMatching :=
   ⟨fun h => by_contra fun hG => h (det_tutteMatrix_eq_zero G hG),
