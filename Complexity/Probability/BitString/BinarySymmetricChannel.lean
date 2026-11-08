@@ -191,9 +191,14 @@ variable {M : Type*}
 
 /-- The probability that the decoder `D` fails to recover the message `m` when its codeword
 `E m` is sent through `BSC_p`. -/
-@[expose] noncomputable def decodingError (p : I) (E : M → ι → Bool) (D : (ι → Bool) → M) (m : M) :
-    ℝ :=
+noncomputable def decodingError (p : I) (E : M → ι → Bool) (D : (ι → Bool) → M) (m : M) : ℝ :=
   ((bsc p (E m)).toOuterMeasure {y | D y ≠ m}).toReal
+
+/-- The error probability is the probability, under the channel output on `E m`, that `D` does not
+return `m`. -/
+theorem decodingError_eq (p : I) (E : M → ι → Bool) (D : (ι → Bool) → M) (m : M) :
+    decodingError p E D m = ((bsc p (E m)).toOuterMeasure {y | D y ≠ m}).toReal := by
+  rw [decodingError]
 
 /-- `D` decodes `E` to a nearest codeword: the codeword of the decoded message is at least as close
 to the received word as every other codeword. For `p ≤ 1 / 2` this is maximum-likelihood decoding

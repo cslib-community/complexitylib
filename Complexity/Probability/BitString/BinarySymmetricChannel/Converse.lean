@@ -179,6 +179,7 @@ theorem logb_card_le_add_fano [Fintype M] [Nonempty M] (p : I) (E : M → ι →
     rw [← Finset.mul_sum, ENNReal.toReal_mul,
       ENNReal.toReal_sum (fun m _ => toOuterMeasure_ne_top _ _), Finset.expect_eq_sum_div_card,
       Finset.card_univ, ENNReal.toReal_inv, ENNReal.toReal_natCast, inv_mul_eq_div]
+    simp only [decodingError_eq]
     rfl
   have hI := mutualInfo_bind_bsc_le p (Probability.PMF.uniformOfFintype M) E
   have hF := conditionalEntropy_le_binEntropy_add_mul_logb
@@ -207,7 +208,9 @@ theorem one_sub_expect_decodingError_mul_logb_card_le [Fintype M] [Nonempty M] (
       Fintype.card ι * (1 - Real.binEntropy p / Real.log 2) + 1 := by
   have h := logb_card_le_add_fano p E D
   set Pe := 𝔼 m, decodingError p E D m
-  have hPe0 : 0 ≤ Pe := Finset.expect_nonneg fun m _ => ENNReal.toReal_nonneg
+  have hPe0 : 0 ≤ Pe := Finset.expect_nonneg fun m _ => by
+    rw [decodingError_eq]
+    exact ENNReal.toReal_nonneg
   have hh : Real.binEntropy Pe / Real.log 2 ≤ 1 := by
     rw [div_le_one (Real.log_pos one_lt_two)]
     exact Real.binEntropy_le_log_two

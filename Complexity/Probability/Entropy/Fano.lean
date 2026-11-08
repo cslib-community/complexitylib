@@ -16,10 +16,12 @@ import Mathlib.Analysis.Convex.Jensen
 # Fano's inequality
 
 **Fano's inequality** bounds the entropy left in a hidden value by the probability that it is
-guessed wrongly [Cover and Thomas, Theorem 2.10.1][CoverThomas2006]. If an estimator `g` recovers a
-value `X : α` from an observation `Y` except with probability `Pe = Pr[g Y ≠ X]`, then
-`H(X | Y) ≤ h₂(Pe) + Pe log₂ (|α| - 1)`, where `h₂(e) = Real.binEntropy e / Real.log 2` is the
-binary entropy in bits. Joint laws list the observation first, as for
+guessed wrongly [Cover and Thomas, Theorem 2.10.1 and the remark following it][CoverThomas2006].
+If an estimator `g` recovers a value `X : α` from an observation `Y` except with probability
+`Pe = Pr[g Y ≠ X]`, then `H(X | Y) ≤ h₂(Pe) + Pe log₂ (|α| - 1)`, where
+`h₂(e) = Real.binEntropy e / Real.log 2` is the binary entropy in bits. This is the sharper
+`|α| - 1` form of the remark, for deterministic estimators `g Y` with values in `α`; it implies the
+theorem's `Pe log₂ |α|` form for them. Joint laws list the observation first, as for
 `Cslib.Probability.PMF.conditionalEntropy`.
 
 The proof averages the unconditional inequality `H(q) ≤ h₂(1 - q a) + (1 - q a) log₂ (|α| - 1)`,
@@ -112,10 +114,11 @@ theorem entropy_le_binEntropy_add_mul_logb [Fintype α] (q : PMF α) (a : α) :
     ← add_div (Real.negMulLog e + Real.negMulLog (q a).toReal)]
   exact div_le_div_of_nonneg_right (by linarith) hlog.le
 
-/-- **Fano's inequality** [Cover and Thomas, Theorem 2.10.1][CoverThomas2006]: for a joint law of
-an observation `Y : β` and a hidden value `X : α`, listed observation first, and an estimator
-`g : β → α` erring with probability `Pe = Pr[g Y ≠ X]`,
-`H(X | Y) ≤ h₂(Pe) + Pe log₂ (|α| - 1)`. -/
+/-- **Fano's inequality** [Cover and Thomas, Theorem 2.10.1 and the remark following
+it][CoverThomas2006]: for a joint law of an observation `Y : β` and a hidden value `X : α`, listed
+observation first, and an estimator `g : β → α` erring with probability `Pe = Pr[g Y ≠ X]`,
+`H(X | Y) ≤ h₂(Pe) + Pe log₂ (|α| - 1)`. This is the sharper `|α| - 1` form, for deterministic
+estimators with values in `α`. -/
 theorem conditionalEntropy_le_binEntropy_add_mul_logb [Finite β] [Fintype α]
     (joint : PMF (β × α)) (g : β → α) :
     conditionalEntropy joint ≤
