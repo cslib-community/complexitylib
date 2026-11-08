@@ -434,11 +434,15 @@ In order:
 ### Private information retrieval ([#3251](https://github.com/cslib-community/complexitylib/issues/3251))
 
 - **Information-theoretic PIR:** `Crypto/Protocols/PIR` covers one-round schemes with perfect
-  correctness and single-server privacy, the subcube schemes with the rows transformation, and
-  schemes from perfectly smooth decoders. It also has the single-server bound with and without
-  interaction, and the two-server linear-summation bound with its tight even-set scheme (CGKS
-  Section 5, [#3426](https://github.com/cslib-community/complexitylib/issues/3426)). Next targets:
-  - the covering-code two-server scheme with `O(n^{1/3})` bits (CGKS Section 3.3);
+  correctness and single-server privacy, the subcube schemes with the rows transformation, the
+  covering-code schemes for balanced covers (CGKS Section 3.3,
+  [#3451](https://github.com/cslib-community/complexitylib/issues/3451)), and schemes from
+  perfectly smooth decoders. It also has the single-server bound with and without interaction,
+  and the two-server linear-summation bound with its tight even-set scheme (CGKS Section 5,
+  [#3426](https://github.com/cslib-community/complexitylib/issues/3426)). Next targets:
+  - variable-length answers, so that unbalanced covers meet CGKS Theorem 1 exactly;
+  - the rest of CGKS Section 3.3: radius-`2` covering codes, the other dimensions of Figure 1,
+    the asymptotic lower estimate and server time;
   - `t`-private schemes against coalitions;
   - block retrieval;
   - the converse from schemes to smooth codes (Katz–Trevisan);
@@ -1215,12 +1219,16 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   [`Arithmetic/Adjugate`](Complexity/Computability/Circuit/Arithmetic/Adjugate.lean), which needs
   a circuit model with division.
 - **Determinantal complexity**
-  ([#3384](https://github.com/cslib-community/complexitylib/issues/3384)): the Mignon–Ressayre
+  ([#3384](https://github.com/cslib-community/complexitylib/issues/3384),
+  [#3476](https://github.com/cslib-community/complexitylib/issues/3476)): the Mignon–Ressayre
   bound `n² ≤ 2 · dc(perm_n)` is proved in
   [`Arithmetic/DeterminantalComplexity`](Complexity/Computability/Circuit/Arithmetic/DeterminantalComplexity.lean)
-  over every field of characteristic zero or of characteristic at least `n`. Remaining:
-  Valiant's universality (every polynomial has a determinantal representation, so `dc` is finite)
-  and Grenet's upper bound `dc(perm_n) ≤ 2ⁿ - 1`; the Cai–Chen–Li extension to every
+  over every field of characteristic zero or of characteristic at least `n`, and Grenet's upper
+  bound `dc(perm_n) ≤ 2ⁿ - 1` over every commutative ring. Remaining: Valiant's universality
+  (every polynomial is a projection of a determinant of size linear in its formula size), which
+  can reuse the branching-program step
+  [`Matrix/BranchingProgramDeterminant`](Complexity/Foundations/LinearAlgebra/Matrix/BranchingProgramDeterminant.lean);
+  the Cai–Chen–Li extension to every
   characteristic other than two; Yabe's real bound `dc(perm_n) ≥ (n - 1)² + 1` through
   Sylvester's law of inertia; and border determinantal complexity in the geometric complexity
   theory programme (Landsberg–Manivel–Ressayre).
@@ -1641,7 +1649,9 @@ each statement against the numbered result. Organize modules by subject, not cha
   ([#3201](https://github.com/cslib-community/complexitylib/issues/3201)): reconstruction from
   `O(n)` random `±1` queries with `o(√n)` error (Dwork–Roth Theorem 8.2), and `(ε, δ)` lower
   bounds via fingerprinting codes. The transfer of Theorem 8.8 to add/remove adjacency on
-  histograms (group privacy with `ε` doubled) is a small open follow-up.
+  histograms is a small open follow-up: group privacy doubles `ε` (covering Dwork–Roth's
+  `ε ≤ 1 / 40` with noise `min(k, d) / (2048 ε)`), and the query must be extended from weight-`n`
+  histograms to `ℕ ^ d` (McShane in `ℓ₁` with constant `1 / 2`).
 
 ## Algorithms and optimization
 

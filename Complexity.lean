@@ -1437,6 +1437,7 @@ public import Complexity.Computability.Circuit.Pi
 public import Complexity.Computability.Circuit.Pointwise
 public import Complexity.Computability.Circuit.Program
 public import Complexity.Computability.Circuit.Quantum.AcceptOperator
+public import Complexity.Computability.Circuit.Quantum.Approximation
 public import Complexity.Computability.Circuit.Quantum.Basic
 public import Complexity.Computability.Circuit.Quantum.Classical
 public import Complexity.Computability.Circuit.Quantum.Code
@@ -1597,6 +1598,7 @@ public import Complexity.Computability.Complexity.Classes.BPPpath
 public import Complexity.Computability.Complexity.Classes.BQP
 public import Complexity.Computability.Complexity.Classes.BQP.Amplification
 public import Complexity.Computability.Complexity.Classes.BQP.Classical
+public import Complexity.Computability.Complexity.Classes.BQP.ConstantGap
 public import Complexity.Computability.Complexity.Classes.BQP.Counting
 public import Complexity.Computability.Complexity.Classes.BQP.OutputGap
 public import Complexity.Computability.Complexity.Classes.BQP.Sampling
@@ -3742,6 +3744,7 @@ public import Complexity.Crypto.Protocols.MPC.OTCommitment.World
 public import Complexity.Crypto.Protocols.MPC.PolyTime
 public import Complexity.Crypto.Protocols.MPC.SharedMul
 public import Complexity.Crypto.Protocols.PIR.Basic
+public import Complexity.Crypto.Protocols.PIR.CoveringCode
 public import Complexity.Crypto.Protocols.PIR.Cube
 public import Complexity.Crypto.Protocols.PIR.Interactive
 public import Complexity.Crypto.Protocols.PIR.LinearSummation
@@ -4631,6 +4634,7 @@ public import Complexity.Foundations.LinearAlgebra.FreeAlgebra
 public import Complexity.Foundations.LinearAlgebra.ImageSparsification
 public import Complexity.Foundations.LinearAlgebra.Interpolation
 public import Complexity.Foundations.LinearAlgebra.KernelVector
+public import Complexity.Foundations.LinearAlgebra.Matrix.BranchingProgramDeterminant
 public import Complexity.Foundations.LinearAlgebra.Matrix.CauchyBinet
 public import Complexity.Foundations.LinearAlgebra.Matrix.ClosedSubmatrix
 public import Complexity.Foundations.LinearAlgebra.Matrix.CoinStep
@@ -4641,6 +4645,7 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.Derivation
 public import Complexity.Foundations.LinearAlgebra.Matrix.FactorialTruncation
 public import Complexity.Foundations.LinearAlgebra.Matrix.Farkas
 public import Complexity.Foundations.LinearAlgebra.Matrix.FourierMotzkin
+public import Complexity.Foundations.LinearAlgebra.Matrix.GrenetPermanent
 public import Complexity.Foundations.LinearAlgebra.Matrix.HessianDeterminant
 public import Complexity.Foundations.LinearAlgebra.Matrix.HessianPermanent
 public import Complexity.Foundations.LinearAlgebra.Matrix.IsotropicPosition

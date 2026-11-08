@@ -75,4 +75,30 @@ enc_inductive eColor : Color where
 
 example : eColor .blue = [true, true] := by simp [eColor_apply, eColor_toSum]
 
+/-! A single constructor: no sum tag, and the payload is the encoding. -/
+
+inductive Wrap where
+  | wrap (n : ℕ) (b : Bool)
+
+enc_inductive eWrap : Wrap where
+  | wrap : encUnary, encBool
+
+example (n : ℕ) (b : Bool) : eWrap (.wrap n b) = encPair encUnary encBool (n, b) := by
+  simp [eWrap_apply, eWrap_toSum]
+
+example : ComputableInO (fun p : ℕ × Bool => Wrap.wrap p.1 p.2) (encPair encUnary encBool) eWrap
+    (fun p => 2 * ((encPair encUnary encBool p).length + 1))
+    fun p => 2 * ((encPair encUnary encBool p).length + 1) := by
+  refine .mono (by fun_prop) 4 (fun p => ?_) fun p => ?_ <;>
+  · simp only [length_encPair]
+    omega
+
+example : ComputableInO (fun p : Unit × Wrap => eWrap_elim p.2 fun q => q.1)
+    (encPair encUnit eWrap) encUnary
+    (fun p => 1 * (encPair encUnit eWrap p).length +
+      eWrap_elim p.2 fun q => (encPair encUnit (encPair encUnary encBool) (p.1, q)).length)
+    fun p => 1 * (encPair encUnit eWrap p).length +
+      eWrap_elim p.2 fun q => (encPair encUnit (encPair encUnary encBool) (p.1, q)).length :=
+  eWrap_elim_inO ((ComputableInDegree.snd encUnit (encPair encUnary encBool)).fst').inO_one
+
 end ComplexityTests.InductiveEncoding
