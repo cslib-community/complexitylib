@@ -44,13 +44,17 @@ the minimax theorem (`QueryComplexity.exists_computes_of_forall_exists_distribut
 Post-processing the output with a function `g` (`RandomizedDecisionTree.mapOutput`) makes no
 further queries and errs against `g ∘ f` at most as often as the original tree errs against `f`
 (`RandomizedDecisionTree.errorProb_mapOutput_le`); so lower bounds for computing `g ∘ f` are lower
-bounds for computing `f`.
+bounds for computing `f`. More generally, a transformation `φ` of the drawn tree
+(`RandomizedDecisionTree.mapTree`), such as appending a verification to every leaf, adds the
+queries that `φ` adds (`RandomizedDecisionTree.depth_mapTree_le`) and no error when `φ` preserves
+correctness (`RandomizedDecisionTree.errorProb_mapTree_le`).
 
 ## Main definitions
 
 * `Cslib.RandomizedDecisionTree`: randomized decision trees, as finitely supported distributions
   over decision trees, with `RandomizedDecisionTree.depth`, `RandomizedDecisionTree.errorProb` and
   `RandomizedDecisionTree.Computes`.
+* `Cslib.RandomizedDecisionTree.mapTree`: transforming the drawn tree.
 * `Cslib.RandomizedDecisionTree.mapOutput`: post-processing the output.
 * `Cslib.DecisionTree.distributionalError`: the error of a decision tree on inputs drawn from a
   distribution.
@@ -59,6 +63,9 @@ bounds for computing `f`.
 ## Main results
 
 * `Cslib.RandomizedDecisionTree.Computes.exists_distributionalError_le`: the averaging argument.
+* `Cslib.RandomizedDecisionTree.depth_mapTree_le`,
+  `Cslib.RandomizedDecisionTree.errorProb_mapTree_le`: transforming the drawn tree adds the queries
+  of the transformation and no error when it preserves correctness.
 * `Cslib.RandomizedDecisionTree.depth_mapOutput_le`,
   `Cslib.RandomizedDecisionTree.errorProb_mapOutput_le`: post-processing adds no queries and no
   error.
@@ -225,36 +232,71 @@ theorem Computes.exists_distributionalError_le (h : μ.Computes ε f)
   rw [hswap]
   exact StdSimplex.sum_mul_le_of_forall_le fun x _ => h x
 
+/-! ### Transforming the drawn tree -/
+
+/-- Transform the tree drawn from `μ` by `φ`: draw a tree `t` from `μ` and run `φ t`. -/
+noncomputable def mapTree {γ : Type*} (φ : DecisionTree ι β → DecisionTree ι γ)
+    (μ : RandomizedDecisionTree ι β) : RandomizedDecisionTree ι γ :=
+  StdSimplex.map φ μ
+
+/-- Every tree that `mapTree φ μ` can draw is `φ t` for a tree `t` that `μ` can draw. -/
+theorem exists_of_mem_support_mapTree {γ : Type*} {φ : DecisionTree ι β → DecisionTree ι γ}
+    {u : DecisionTree ι γ} (hu : u ∈ (mapTree φ μ).weights.support) :
+    ∃ t ∈ μ.weights.support, φ t = u := by
+  classical
+  exact Finset.mem_image.mp
+    (Finsupp.mapDomain_support (by simpa [mapTree, StdSimplex.weights_map] using hu))
+
+/-- If `φ` adds at most `d` queries to every tree, then so does `mapTree φ`. -/
+theorem depth_mapTree_le {γ : Type*} (φ : DecisionTree ι β → DecisionTree ι γ)
+    (μ : RandomizedDecisionTree ι β) {d : ℕ} (hφ : ∀ t, (φ t).depth ≤ t.depth + d) :
+    (mapTree φ μ).depth ≤ μ.depth + d := by
+  refine depth_le_iff.mpr fun u hu => ?_
+  obtain ⟨t, ht, rfl⟩ := exists_of_mem_support_mapTree hu
+  exact (hφ t).trans (Nat.add_le_add_right (depth_le_depth ht) d)
+
+/-- If `φ` turns every tree that outputs `f x` on `x` into one that outputs `g x` on `x`, then
+`mapTree φ μ` errs against `g` on `x` at most as often as `μ` errs against `f`. -/
+theorem errorProb_mapTree_le {γ : Type*} (φ : DecisionTree ι β → DecisionTree ι γ)
+    (μ : RandomizedDecisionTree ι β) (f : (ι → Bool) → β) (g : (ι → Bool) → γ) (x : ι → Bool)
+    (hφ : ∀ t : DecisionTree ι β, t.eval x = f x → (φ t).eval x = g x) :
+    (mapTree φ μ).errorProb g x ≤ μ.errorProb f x := by
+  classical
+  rw [errorProb_eq_sum, errorProb_eq_sum, mapTree, StdSimplex.weights_map,
+    Finsupp.sum_mapDomain_index (fun _ => zero_mul _) fun _ _ _ => add_mul _ _ _]
+  refine Finset.sum_le_sum fun t _ => mul_le_mul_of_nonneg_left ?_ (μ.weights_nonneg t)
+  by_cases h : t.eval x = f x
+  · simp [h, hφ t h]
+  · split_ifs <;> norm_num
+
+/-- If `φ` turns every tree into one that outputs `g x` on `x`, then `mapTree φ μ` never errs
+against `g` on `x`. -/
+theorem errorProb_mapTree_eq_zero {γ : Type*} (φ : DecisionTree ι β → DecisionTree ι γ)
+    (μ : RandomizedDecisionTree ι β) (g : (ι → Bool) → γ) (x : ι → Bool)
+    (hφ : ∀ t : DecisionTree ι β, (φ t).eval x = g x) : (mapTree φ μ).errorProb g x = 0 :=
+  errorProb_eq_zero_iff.mpr fun u hu => by
+    obtain ⟨t, -, rfl⟩ := exists_of_mem_support_mapTree hu
+    exact hφ t
+
 /-! ### Post-processing the output -/
 
 /-- Post-process the output of a randomized decision tree with `g`: draw a tree from `μ` and
 relabel its leaves with `g` (`DecisionTree.map`). -/
 noncomputable def mapOutput {γ : Type*} (g : β → γ) (μ : RandomizedDecisionTree ι β) :
     RandomizedDecisionTree ι γ :=
-  StdSimplex.map (DecisionTree.map g) μ
+  mapTree (DecisionTree.map g) μ
 
 /-- Post-processing makes no further queries. -/
 theorem depth_mapOutput_le {γ : Type*} (g : β → γ) (μ : RandomizedDecisionTree ι β) :
     (mapOutput g μ).depth ≤ μ.depth := by
-  classical
-  refine depth_le_iff.mpr fun t ht => ?_
-  obtain ⟨t', ht', rfl⟩ := Finset.mem_image.mp
-    (Finsupp.mapDomain_support (by simpa [mapOutput, StdSimplex.weights_map] using ht))
-  rw [DecisionTree.depth_map]
-  exact depth_le_depth ht'
+  simpa [mapOutput] using depth_mapTree_le (DecisionTree.map g) μ (d := 0) fun t => by simp
 
 /-- **Post-processing does not increase the error**: the tree drawn from `mapOutput g μ` errs
 against `g ∘ f` at most as often as the tree drawn from `μ` errs against `f`. -/
 theorem errorProb_mapOutput_le {γ : Type*} (g : β → γ) (μ : RandomizedDecisionTree ι β)
     (f : (ι → Bool) → β) (x : ι → Bool) :
-    (mapOutput g μ).errorProb (g ∘ f) x ≤ μ.errorProb f x := by
-  classical
-  rw [errorProb_eq_sum, errorProb_eq_sum, mapOutput, StdSimplex.weights_map,
-    Finsupp.sum_mapDomain_index (fun _ => zero_mul _) fun _ _ _ => add_mul _ _ _]
-  refine Finset.sum_le_sum fun t _ => mul_le_mul_of_nonneg_left ?_ (μ.weights_nonneg t)
-  by_cases h : t.eval x = f x
-  · simp [h]
-  · split_ifs <;> norm_num
+    (mapOutput g μ).errorProb (g ∘ f) x ≤ μ.errorProb f x :=
+  errorProb_mapTree_le _ μ f _ x fun t ht => by simp [ht]
 
 end RandomizedDecisionTree
 

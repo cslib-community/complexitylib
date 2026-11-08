@@ -13,10 +13,12 @@ import Complexity.Foundations.Data.BitString.Parity.DotProduct
 /-!
 # Simon's algorithm finds the hidden string
 
-The **search version of Simon's problem** ([Simon][Simon1997], [de Wolf, §3.2][deWolf2019]) asks
+The **search version of Simon's problem** ([Simon][Simon1997], [de Wolf, §3.1][deWolf2019]) asks
 for the hidden string `s` itself, for `f : {0,1}^n → {0,1}^n` with the promise that `f(a) = f(b)`
-exactly when `b ∈ {a, a ⊕ s}` (`Cslib.QueryComplexity.SimonPromise`). As in
-`Complexity/Computability/QueryComplexity/Quantum/Simon.lean`, the input is the truth table
+exactly when `b ∈ {a, a ⊕ s}` (`Cslib.QueryComplexity.SimonPromise`). de Wolf §3.1 promises
+`s ≠ 0`. Here the quantum algorithm is analyzed on every promise input, including `s = 0`
+(injective `f`), where the correct output is `0`; this is stronger than the problem with `s ≠ 0`.
+As in `Complexity/Computability/QueryComplexity/Quantum/Simon.lean`, the input is the truth table
 `X : Fin N → Bool` of the `N = n 2^n` output bits of `f`, and queries are bit queries.
 
 **The algorithm.** Simon's algorithm with `m` rounds (`Cslib.Quantum.simonAlg`) measures `m` rows
@@ -36,14 +38,18 @@ orthogonal to all `m` rows of exactly `2^{nm} / 4^m` row matrices
 (`Cslib.BitString.card_kernel_pair`). A union bound over the `2^n - 2` strings `w`
 gives failure probability at most `(2^n - 1) / 2^m` again
 (`Cslib.Quantum.measureProb_not_simonDetermines_le`). So the algorithm finds `s` with probability
-at least `1 - (2^n - 1) / 2^m` on every promise input (`Cslib.Quantum.measureProb_simonFound`), and
-with `m = n + 2` rounds, `n (n + 2)` bit queries find `s` with probability above `3/4`
-(`Cslib.Quantum.simonAlg_search_spec`).
+at least `1 - (2^n - 1) / 2^m` on every promise input
+(`Cslib.Quantum.le_measureProb_simonFound`), and with `m = n + 2` rounds, `n (n + 2)` bit queries
+find `s` with probability above `3/4` (`Cslib.Quantum.simonAlg_search_spec`).
 
-**The separation.** Every randomized decision tree finding `s` with error `1/3` decides Simon's
-problem after answering whether its output is nonzero, so it has depth `q` with `2^n ≤ q²`
-(`Cslib.QueryComplexity.simon_search_two_pow_le_depth_sq`). This gives the exponential separation
-for the search version (`Cslib.Quantum.simon_search_separation`). Both sides count bit queries.
+**The separation.** Every randomized decision tree that finds `s` with error `1/3` on the promise
+inputs with `s ≠ 0`, with no requirement when `s = 0`, has depth `q` with `2^n ≤ (q + 2n)²`
+(`Cslib.QueryComplexity.simon_search_ne_zero_two_pow_le_sq`): appending the `2n` bit queries that
+check its output decides Simon's problem. This gives the exponential separation for the search
+problem of de Wolf §3.1 (`Cslib.Quantum.simon_search_separation`), with the quantum side also
+correct when `s = 0`. Both sides count bit queries. If the classical tree is also required to
+output `0` when `s = 0`, the bound is `2^n ≤ q²`
+(`Cslib.QueryComplexity.simon_search_two_pow_le_depth_sq`).
 
 **Source mapping.** de Wolf §3.2 repeats the subroutine `O(n)` times until the measured rows span
 `s^⊥`, then solves the linear system. Here the `m` rounds run side by side in one bit-query
@@ -64,16 +70,17 @@ not formalized.
   `m` rows have at most `2^m` elements.
 * `Cslib.Quantum.measureProb_not_simonDetermines_le`: the rows fail to determine `s ≠ 0` with
   probability at most `(2^n - 1) / 2^m`.
-* `Cslib.Quantum.measureProb_simonFound`: Simon's algorithm finds `s` with probability at least
+* `Cslib.Quantum.le_measureProb_simonFound`: Simon's algorithm finds `s` with probability at least
   `1 - (2^n - 1) / 2^m`.
 * `Cslib.Quantum.simonAlg_search_spec`: `n (n + 2)` bit queries find `s` with probability above
   `3/4`.
-* `Cslib.Quantum.simon_search_separation`: the exponential separation for the search version.
+* `Cslib.Quantum.simon_search_separation`: the exponential separation for the search problem with
+  `s ≠ 0`.
 
 ## References
 
 * [D. R. Simon, *On the Power of Quantum Computation*][Simon1997]
-* [R. de Wolf, *Quantum Computing: Lecture Notes*][deWolf2019], §3.2
+* [R. de Wolf, *Quantum Computing: Lecture Notes*][deWolf2019], §3.1 and §3.2
 -/
 
 public section
@@ -87,13 +94,13 @@ variable {N n m : ℕ}
 /-! ### The classical post-processing -/
 
 /-- The nonzero strings orthogonal to every row `z_r` of the row matrix `zs`. -/
-def simonSolutions (zs : Fin m × Fin n → Bool) : Finset (Fin n → Bool) :=
+@[expose] def simonSolutions (zs : Fin m × Fin n → Bool) : Finset (Fin n → Bool) :=
   univ.filter fun w => w ≠ 0 ∧ ∀ r, Function.curry zs r ⬝ᵥ w = false
 
 /-- **The classical post-processing of Simon's algorithm**: the unique nonzero string orthogonal to
 every measured row (the sum of the one-element set `Cslib.Quantum.simonSolutions zs`), or `0` if
 there is none or more than one. It searches all `2^n` strings and makes no queries. -/
-def simonSolve (zs : Fin m × Fin n → Bool) : Fin n → Bool :=
+@[expose] def simonSolve (zs : Fin m × Fin n → Bool) : Fin n → Bool :=
   if #(simonSolutions zs) = 1 then ∑ w ∈ simonSolutions zs, w else 0
 
 /-- The measured rows `zs` **determine** the hidden string `s`: the strings orthogonal to every row
@@ -248,45 +255,37 @@ theorem measureProb_not_simonDetermines_le (E : Fin N ≃ (Fin n → Bool) × Fi
   have hpos : (0 : ℝ) ≤ 2 ^ m := by positivity
   nlinarith [mul_le_mul_of_nonneg_left hT' hpos]
 
-/-- The probability of `S` is at least one minus that of a set `T` containing the complement of `S`,
-for a unit state. -/
-private theorem one_sub_le_measureProb {ι : Type*} [Fintype ι] {ψ : EuclideanSpace ℂ ι}
-    (hψ : measureProb ψ univ = 1) {S T : Finset ι} (hST : ∀ p, p ∉ S → p ∈ T) :
-    1 - measureProb ψ T ≤ measureProb ψ S := by
-  classical
-  have hsplit := sum_add_sum_compl S fun p => ‖ψ.ofLp p‖ ^ 2
-  have hcT : measureProb ψ Sᶜ ≤ measureProb ψ T :=
-    sum_le_sum_of_subset_of_nonneg (fun p hp => hST p (mem_compl.mp hp)) fun _ _ _ => by
-      positivity
-  simp only [measureProb] at hψ hcT ⊢
-  linarith
-
 /-- **Simon's algorithm finds the hidden string**: on every promise input, including `s = 0`, the
 post-processing of the measured rows outputs `s` with probability at least `1 - (2^n - 1) / 2^m`.
 -/
-theorem measureProb_simonFound (E : Fin N ≃ (Fin n → Bool) × Fin n) (i₀ : Fin N)
+theorem le_measureProb_simonFound (E : Fin N ≃ (Fin n → Bool) × Fin n) (i₀ : Fin N)
     {X : Fin N → Bool} {s : Fin n → Bool} (hX : SimonPromise (simonFun E X) s) :
     1 - (2 ^ n - 1) / 2 ^ m ≤
       measureProb (run (simonAlg m E i₀) (simonInit i₀) X (m * n)) (simonFound m s) := by
   classical
-  have h1 : measureProb (run (simonAlg m E i₀) (simonInit i₀) X (m * n)) univ = 1 := by
-    rw [measureProb_univ, norm_run, norm_simonInit, one_pow]
+  -- the failure probability is at most that of a set `T` containing every failure
+  have hfail : ∀ T, (simonFound m s)ᶜ ⊆ T → measureProb (run (simonAlg m E i₀) (simonInit i₀) X
+      (m * n)) T ≤ (2 ^ n - 1) / 2 ^ m → 1 - (2 ^ n - 1) / 2 ^ m ≤
+      measureProb (run (simonAlg m E i₀) (simonInit i₀) X (m * n)) (simonFound m s) := by
+    intro T hT hTle
+    have hc := measureProb_compl (run (simonAlg m E i₀) (simonInit i₀) X (m * n)) (simonFound m s)
+    rw [norm_run, norm_simonInit, one_pow] at hc
+    linarith [measureProb_mono (run (simonAlg m E i₀) (simonInit i₀) X (m * n)) hT]
   by_cases hs : s = 0
   · subst hs
     have hf := (simonPromise_zero_iff _).mp hX
-    refine le_trans ?_ (one_sub_le_measureProb h1 (T := simonAccept m n) fun p hp => ?_)
-    · linarith [measureProb_simonAlg_le_of_injective (m := m) E i₀ hf]
-    · rw [mem_simonFound] at hp
-      by_contra hacc
-      refine hp (simonSolve_eq fun w => ⟨fun hw => Or.inl ?_, ?_⟩)
-      · by_contra hw0
-        exact hacc (mem_simonAccept.mpr ⟨w, hw0, hw⟩)
-      · rintro (rfl | rfl) <;> exact fun r => by simp [Bool.zero_eq_false]
-  · refine le_trans ?_ (one_sub_le_measureProb h1
-      (T := univ.filter fun p => ¬SimonDetermines p.2.2.1 s) fun p hp => ?_)
-    · linarith [measureProb_not_simonDetermines_le (m := m) E i₀ hX hs]
-    · rw [mem_simonFound] at hp
-      exact mem_filter.mpr ⟨mem_univ _, fun hd => hp (simonSolve_eq hd)⟩
+    refine hfail (simonAccept m n) (fun p hp => ?_)
+      (measureProb_simonAlg_le_of_injective (m := m) E i₀ hf)
+    rw [mem_compl, mem_simonFound] at hp
+    by_contra hacc
+    refine hp (simonSolve_eq fun w => ⟨fun hw => Or.inl ?_, ?_⟩)
+    · by_contra hw0
+      exact hacc (mem_simonAccept.mpr ⟨w, hw0, hw⟩)
+    · rintro (rfl | rfl) <;> exact fun r => by simp [Bool.zero_eq_false]
+  · refine hfail (univ.filter fun p => ¬SimonDetermines p.2.2.1 s) (fun p hp => ?_)
+      (measureProb_not_simonDetermines_le (m := m) E i₀ hX hs)
+    rw [mem_compl, mem_simonFound] at hp
+    exact mem_filter.mpr ⟨mem_univ _, fun hd => hp (simonSolve_eq hd)⟩
 
 /-- **Simon's algorithm solves the search version with `n (n + 2)` bit queries**: from a unit
 initial state, with `n + 2` rounds, the post-processing of the measured rows outputs the hidden
@@ -296,26 +295,28 @@ theorem simonAlg_search_spec (E : Fin N ≃ (Fin n → Bool) × Fin n) (i₀ : F
       ∀ X s, SimonPromise (simonFun E X) s →
         3 / 4 < measureProb (run (simonAlg (n + 2) E i₀) (simonInit i₀) X ((n + 2) * n))
           (simonFound (n + 2) s) := by
-  refine ⟨norm_simonInit _, fun X s hX => lt_of_lt_of_le ?_ (measureProb_simonFound E i₀ hX)⟩
+  refine ⟨norm_simonInit _, fun X s hX => lt_of_lt_of_le ?_ (le_measureProb_simonFound E i₀ hX)⟩
   have h : ((2 : ℝ) ^ n - 1) / 2 ^ (n + 2) < 1 / 4 := by
     rw [div_lt_iff₀ (by positivity), pow_add]
     linarith
   linarith
 
-/-- **The exponential quantum–classical separation for the search version of Simon's problem**,
-in the bit-query model on the truth table `X : Fin N → Bool` of `f : {0,1}^n → {0,1}^n`, for
-`n ≥ 1`: Simon's algorithm with classical post-processing finds the hidden string with `n (n + 2)`
-queries and probability above `3/4`, while every randomized decision tree finding it with error
-`1/3` (as the restriction to the promise inputs of a total function `S`) has depth `q` with
-`2^n ≤ q²`. -/
+/-- **The exponential quantum–classical separation for the search version of Simon's problem**
+([de Wolf, §3.1][deWolf2019]), in the bit-query model on the truth table `X : Fin N → Bool` of
+`f : {0,1}^n → {0,1}^n`, for `n ≥ 1`: Simon's algorithm with classical post-processing finds the
+hidden string with `n (n + 2)` queries and probability above `3/4` on every promise input,
+including `s = 0`, while every randomized decision tree finding it with error `1/3` only on the
+promise inputs with `s ≠ 0` (as the restriction of a total function `S`) has depth `q` with
+`2^n ≤ (q + 2n)²`. -/
 theorem simon_search_separation (E : Fin N ≃ (Fin n → Bool) × Fin n) (i₀ : Fin N) (hn : 1 ≤ n) :
     (∀ X s, SimonPromise (simonFun E X) s →
       3 / 4 < measureProb (run (simonAlg (n + 2) E i₀) (simonInit i₀) X ((n + 2) * n))
         (simonFound (n + 2) s)) ∧
     ∀ (μ : RandomizedDecisionTree (Fin N) (Fin n → Bool)) (S : (Fin N → Bool) → Fin n → Bool),
-      (∀ X s, SimonPromise (simonFun E X) s → S X = s) →
-      (∀ X s, SimonPromise (simonFun E X) s → μ.errorProb S X ≤ 1 / 3) →
-      2 ^ n ≤ μ.depth ^ 2 :=
-  ⟨(simonAlg_search_spec E i₀).2, fun μ S hS hμ => simon_search_two_pow_le_depth_sq E μ S hS hμ hn⟩
+      (∀ X s, SimonPromise (simonFun E X) s → s ≠ 0 → S X = s) →
+      (∀ X s, SimonPromise (simonFun E X) s → s ≠ 0 → μ.errorProb S X ≤ 1 / 3) →
+      2 ^ n ≤ (μ.depth + 2 * n) ^ 2 :=
+  ⟨(simonAlg_search_spec E i₀).2,
+    fun μ S hS hμ => simon_search_ne_zero_two_pow_le_sq E μ S hS hμ hn⟩
 
 end Cslib.Quantum

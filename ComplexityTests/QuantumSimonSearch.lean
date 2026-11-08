@@ -7,8 +7,9 @@ Authors: Samuel Schlesinger
 import Complexity.Computability.QueryComplexity.Quantum.SimonSearch
 
 /-! The search version of Simon's problem: the classical post-processing on concrete row matrices,
-the fiber bound, Simon's algorithm on concrete inputs with `n = 1`, and nonvacuity of the
-hypotheses of the classical search lower bound. -/
+including its ambiguous branch, Simon's algorithm on concrete inputs with `n = 1`, and nonvacuity
+of the hypotheses of the classical search lower bounds, with a total function separating the
+problem with `s ≠ 0` from the variant that also requires the output `0` when `s = 0`. -/
 
 namespace ComplexityTests.QuantumSimonSearch
 
@@ -48,14 +49,13 @@ example (s : Fin 2 → Bool) : ¬SimonDetermines (fun _ : Fin 0 × Fin 2 => fals
   revert s
   decide
 
-/-! ### The fiber bound -/
+-- The ambiguous branch: with no rows and `n = 2`, all three nonzero strings are solutions, so the
+-- post-processing outputs `0`, which is wrong when the hidden string is `11`.
+example : #(simonSolutions (fun _ : Fin 0 × Fin 2 => false)) = 3 := by decide
 
--- With `n = 1` the constant function hides `s = 1`: each row has two preimages, so each fiber of
--- the rowwise function has at most `2^m` elements.
-example {N m : ℕ} (E : Fin N ≃ (Fin 1 → Bool) × Fin 1) (X : Fin N → Bool)
-    (hX : SimonPromise (simonFun E X) fun _ => true) (ys : Fin m × Fin 1 → Bool) :
-    #{a | simonG (m := m) E X a = ys} ≤ 2 ^ m :=
-  card_simonG_fiber_le hX ys
+example : simonSolve (fun _ : Fin 0 × Fin 2 => false) = 0 := by decide
+
+example : simonSolve (fun _ : Fin 0 × Fin 2 => false) ≠ fun _ => true := by decide
 
 /-! ### Simon's algorithm with `n = 1` -/
 
@@ -85,7 +85,7 @@ example :
 example (m : ℕ) :
     1 - 1 / 2 ^ m ≤ measureProb (run (simonAlg m E1 0) (simonInit 0) (simonInput E1 id) (m * 1))
       (simonFound m 0) := by
-  have h := measureProb_simonFound (m := m) E1 0 (s := 0) (by
+  have h := le_measureProb_simonFound (m := m) E1 0 (s := 0) (by
     rw [simonFun_simonInput]
     exact (simonPromise_zero_iff _).mpr Function.injective_id)
   norm_num at h ⊢
@@ -124,11 +124,37 @@ example {N n : ℕ} (E : Fin N ≃ (Fin n → Bool) × Fin n) (hn : 1 ≤ n) :
   rw [← hd]
   exact simon_search_two_pow_le_depth_sq E μ _ (hiddenString_spec E) (fun X _ _ => hμ X) hn
 
-/-! ### Post-processing randomized decision trees -/
+/-! ### The search problem with a nonzero hidden string
 
--- Relabelling the leaves of a deterministic tree keeps its depth and error.
-example {ι β γ : Type*} (g : β → γ) (t : DecisionTree ι β) :
-    (RandomizedDecisionTree.mapOutput g (Convexity.StdSimplex.single t)).depth ≤ t.depth := by
-  simpa using RandomizedDecisionTree.depth_mapOutput_le g (Convexity.StdSimplex.single t)
+A total function may find every nonzero hidden string and output anything on the injective inputs.
+Such a function satisfies the hypothesis of `simon_search_ne_zero_two_pow_le_sq`, but not that of
+`simon_search_two_pow_le_depth_sq`, which also requires the output `0` when `s = 0`. -/
+
+/-- The hidden string of `f` if it is nonzero, and `11…1` otherwise. -/
+noncomputable def hiddenStringOrOnes {N n : ℕ} (E : Fin N ≃ (Fin n → Bool) × Fin n)
+    (X : Fin N → Bool) : Fin n → Bool :=
+  if hiddenString E X = 0 then fun _ => true else hiddenString E X
+
+theorem hiddenStringOrOnes_spec {N n : ℕ} (E : Fin N ≃ (Fin n → Bool) × Fin n)
+    (X : Fin N → Bool) (s : Fin n → Bool) (hX : SimonPromise (simonFun E X) s) (hs : s ≠ 0) :
+    hiddenStringOrOnes E X = s := by
+  simp [hiddenStringOrOnes, hiddenString_spec E X s hX, hs]
+
+-- On the injective input `id` with `n = 1` it does not output `0`.
+example : hiddenStringOrOnes E1 (simonInput E1 id) ≠ 0 := by
+  have h : hiddenString E1 (simonInput E1 id) = 0 := hiddenString_spec _ _ _ (by
+    rw [simonFun_simonInput]
+    exact (simonPromise_zero_iff _).mpr Function.injective_id)
+  simp only [hiddenStringOrOnes, h, ↓reduceIte]
+  decide
+
+-- The lower bound for the problem with `s ≠ 0` applies to it.
+example {N n : ℕ} (E : Fin N ≃ (Fin n → Bool) × Fin n) (hn : 1 ≤ n) :
+    2 ^ n ≤ (randomizedComplexity (1 / 3) (hiddenStringOrOnes E) + 2 * n) ^ 2 := by
+  obtain ⟨μ, hμ, hd⟩ := exists_computes_depth_eq_randomizedComplexity (ε := 1 / 3) (by norm_num)
+    (hiddenStringOrOnes E)
+  rw [← hd]
+  exact simon_search_ne_zero_two_pow_le_sq E μ _ (hiddenStringOrOnes_spec E)
+    (fun X _ _ _ => hμ X) hn
 
 end ComplexityTests.QuantumSimonSearch
