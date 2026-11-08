@@ -2117,16 +2117,15 @@ pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
   charged suffix comparator);
   Manber–Myers `O(|p| + log n)` search with precomputed LCP information; suffix trees (Ukkonen or
   McCreight construction) and their equivalence with suffix arrays plus LCP arrays; and
-  applications such as longest repeated substring and the Burrows–Wheeler transform. `lcpLen` and
-  its lemmas are now `List.lcpLen` in `Foundations/Data/List/CommonPrefix`, shared with the
-  Z-algorithm.
+  applications such as longest repeated substring and the Burrows–Wheeler transform.
 - **Z-algorithm** ([#3516](https://github.com/cslib-community/complexitylib/issues/3516)):
   `Algorithms/Lean/ZFunction` has the Z-function specification, Gusfield's Z-algorithm with exact
   values and at most `2|s| - 3` character comparisons on every input, and exact matching through
   the Z-function of `p ++ t`, equal to the KMP output with at most `2(|p| + |t|) - 3` comparisons.
   Remaining: a general proof that `a ^ (n - 1) b` attains `2n - 3` (checked for small `n`); the
-  linear conversions between Z-values and the KMP prefix function; and applications such as
-  Main–Lorentz repetition finding.
+  linear conversions between Z-values and the KMP prefix function; applications such as
+  Main–Lorentz repetition finding; and moving the common-prefix extension `extendM`, now shared
+  by Kasai and the Z-algorithm, from `SuffixArray/Kasai` to a small shared string module.
 - **Multi-pattern matching** ([#3358](https://github.com/cslib-community/complexitylib/issues/3358)):
   Aho–Corasick with states represented by their strings, valid failure and output tables from
   the level-order construction, exact reporting of all occurrences, the scan bound of the

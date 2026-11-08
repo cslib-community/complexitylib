@@ -30,7 +30,8 @@ one mismatch, so the total number of comparisons is linear.
 * **Box:** `[l, r)` is half-open. Gusfield's box `[l, r]` is closed and `1`-indexed. Initially
   `l = r = 0`, the empty box.
 * **Resource bounds:** `TimeM ℕ` counts exact character comparisons. The bound `2 * |s| - 3`
-  holds for every input and is sharper than the `O(|s|)` of `[Gusfield1997]`, Theorem 1.4.2.
+  (natural subtraction, so `0` for `|s| ≤ 1`) holds for every input and makes explicit the linear
+  bound of `[Gusfield1997]`, Section 1.4.
   It is attained by `a ^ (n - 1) b` for `n ≥ 2`; this is checked for small `n` in the tests.
 
 ## Cost Model

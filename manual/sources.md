@@ -470,7 +470,7 @@ Dan Gusfield. “Very Simple Methods for All Pairs Network Flow Analysis.” *SI
 <a id="gusfield97"></a>
 ## gusfield97
 
-Dan Gusfield. *Algorithms on Strings, Trees, and Sequences: Computer Science and Computational Biology.* Cambridge University Press, 1997. https://doi.org/10.1017/CBO9780511574931 . Bibliographic metadata checked through the publisher record, and section titles through a table of contents; the book body was not inspected in this pass. Cited for the Z-values and Z-boxes of §1.3, the linear-time Z algorithm of §1.4 (stated there as `O(|S|)` time), and exact matching through the Z-values of `P$T` in §1.5.
+Dan Gusfield. *Algorithms on Strings, Trees, and Sequences: Computer Science and Computational Biology.* Cambridge University Press, 1997. https://doi.org/10.1017/CBO9780511574931 . Bibliographic metadata checked through the publisher record, and section titles through a table of contents; the book body was not inspected in this pass. Cited for the Z-values and Z-boxes of §1.3, the linear-time Z algorithm of §1.4, and exact matching through the Z-values of `P$T` in §1.5; these locators come from the section titles. Theorem numbers and the precise statements in the body were not checked.
 
 <a id="harpeledindykmotwani12"></a>
 ## harpeledindykmotwani12

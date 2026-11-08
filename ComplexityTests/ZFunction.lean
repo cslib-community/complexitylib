@@ -61,7 +61,8 @@ example : zFunction [0, 0, 1] = [3, 1, 0] := by
 #guard (zAlgorithmM "aaab".toList.toArray).time = 5
 #guard (zAlgorithmM "aaaab".toList.toArray).time = 7
 #guard (zAlgorithmM "aaaaaaaaab".toList.toArray).time = 2 * 10 - 3
--- A constant word: `n - 1` matches, then every position is copied.
+-- A constant word: `n - 1` matches, then every later extension starts at the end of the word and
+-- costs nothing.
 #guard (zAlgorithmM "aaaaaaaa".toList.toArray).time = 7
 #guard (zAlgorithmM gusfield.toArray).time ≤ 2 * 11 - 3
 #guard (zAlgorithmM ([] : List Char).toArray).time = 0
