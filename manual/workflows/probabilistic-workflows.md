@@ -207,6 +207,26 @@ degree at most `1` in each variable, so over an integral domain any `S` with two
 perfect matching (not formalized). Run
 `scripts/build.sh ComplexityTests.EdmondsMatching`.
 
+To find the matching rather than only detect it, import
+[Matching/MVV.lean](../../Complexity/Algorithms/Matching/MVV.lean), the algebraic core of
+Mulmuley, Vazirani and Vazirani for bipartite graphs. `weightedEdmonds G w` is the Edmonds matrix
+over `ℤ` at the values `2 ^ w (i, j)`. When `IsUniqueMinMatching G w σ₀` holds,
+`matchingWeight_eq_padicValInt_det` recovers the weight `W` of `σ₀` as the `2`-adic valuation of
+the determinant, and `apply_eq_iff_not_two_pow_succ_dvd_mul_adjugate` gives
+`σ₀ i = j ↔ ¬ 2 ^ (W + 1) ∣ B i j * adj(B) j i`. The procedure itself is the named relation
+`mvvOutput G w`, and `mvvOutput_iff_apply_eq` says that on isolating weights it outputs exactly
+`σ₀`. Edge weights are functions `Edges G → Fin N`, read as `1, …, N` by `extendWeight`.
+`half_le_dens_exists_isUniqueMinMatching` applies the isolation lemma when `2 |E| ≤ N`, and
+`half_le_dens_mvv` states that `MVVSucceeds G (extendWeight w)` (the output is a perfect matching)
+holds for at least half of the weight functions. Module clients work through the characterization
+lemmas `isUniqueMinMatching_iff`, `matchingWeight_def`, `mvvOutput_iff`, `mvvSucceeds_iff`,
+`mem_matchingEdges`, `extendWeight_of_edge` and `extendWeight_of_not_edge`. MVV state the
+determinant lemmas for the Tutte matrix of a general graph; general graphs and the parallel
+determinant and inverse computations are not formalized. The
+[checked clients](../../ComplexityTests/MVVMatching.lean), a `module`, recover the identity
+matching on `K₂,₂` from the determinant `-12` and show that equal weights make the determinant
+vanish. Run `scripts/build.sh ComplexityTests.MVVMatching`.
+
 ## Compose local embeddings and extract a strategy
 
 Import [CorrelatedSampling/Embeddability.lean](../../Complexity/Probability/CorrelatedSampling/Embeddability.lean)
@@ -409,8 +429,18 @@ CHSH has value `3/4`, and the [parallel repetition clients](../../ComplexityTest
 derive `(3/4)^n ≤ v(CHSHⁿ) ≤ (1 - (1/4)³ / 6000)^{n / 2}`. They also show that the value of the
 repetition tends to zero for every game of value below one, and apply Lemma 6.5 with nothing
 conditioned, which gives a coordinate won with probability at most `G.value`. Run
-`scripts/build.sh ComplexityTests.ParallelRepetition`. The library does not yet use
-the theorem for small-soundness Label Cover
+`scripts/build.sh ComplexityTests.ParallelRepetition`.
+
+For Label Cover, import
+[LabelCover/Repetition.lean](../../Complexity/Computability/PCP/Approximation/LabelCover/Repetition.lean)
+and apply `LabelCoverRepetition.one_sub_unsatVal_pow_le hsimple hβγ hε k`. Its premises are that the
+instance is simple (`Graph.IsSimple`, decidable), that `2 ≤ |β| |γ|` and that `ε` is at most the
+unsatisfied value of the instance. The conclusion bounds the satisfied proportion of the `k`-fold
+repetition `LabelCoverRepetition.pow k g`. The bound does not require the edge list to be nonempty
+or well formed. The [Label Cover repetition clients](../../ComplexityTests/LabelCoverRepetition.lean)
+compute the numbering of a two-fold repetition, separate simple from non-simple instances, and
+bound the repetitions of an instance of value `1/2` by `(1 - (1/2)³ / 6000)^{k / 2}`. NP-hardness of
+small-soundness Label Cover is not yet derived
 ([#886](https://github.com/cslib-community/complexitylib/issues/886)).
 
 ## Project a continuous Gaussian density
