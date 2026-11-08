@@ -926,10 +926,12 @@ public import Complexity.Computability.Circuit.Boolean.CarrySave.PolyTime
 public import Complexity.Computability.Circuit.Boolean.CarrySave.Reduce
 public import Complexity.Computability.Circuit.Boolean.CarrySave.Reduce.PolyTime
 public import Complexity.Computability.Circuit.Boolean.CodeComposition
+public import Complexity.Computability.Circuit.Boolean.CodeReplication
 public import Complexity.Computability.Circuit.Boolean.CodeSubstitution
 public import Complexity.Computability.Circuit.Boolean.CodeTemplate
 public import Complexity.Computability.Circuit.Boolean.CompareSwap
 public import Complexity.Computability.Circuit.Boolean.Comparison
+public import Complexity.Computability.Circuit.Boolean.Comparison.PolyTime
 public import Complexity.Computability.Circuit.Boolean.Conondeterministic
 public import Complexity.Computability.Circuit.Boolean.ConstDepth
 public import Complexity.Computability.Circuit.Boolean.Continuity
@@ -1081,6 +1083,7 @@ public import Complexity.Computability.Circuit.Boolean.PPoly
 public import Complexity.Computability.Circuit.Boolean.PPolyHard
 public import Complexity.Computability.Circuit.Boolean.Parity
 public import Complexity.Computability.Circuit.Boolean.Polarization
+public import Complexity.Computability.Circuit.Boolean.Polarization.PolyTime
 public import Complexity.Computability.Circuit.Boolean.PolynomialTime
 public import Complexity.Computability.Circuit.Boolean.PopulationCount
 public import Complexity.Computability.Circuit.Boolean.PopulationCount.PolyTime
@@ -2091,6 +2094,7 @@ public import Complexity.Computability.Complexity.Problems.SharpDNF.KarpLubyMadr
 public import Complexity.Computability.Complexity.Problems.SharpSAT
 public import Complexity.Computability.Complexity.Problems.SharpThreeSAT
 public import Complexity.Computability.Complexity.Problems.StatisticalDifference
+public import Complexity.Computability.Complexity.Problems.StatisticalDifference.PolyTime
 public import Complexity.Computability.Complexity.Problems.SubsetSum
 public import Complexity.Computability.Complexity.Problems.SubsetSum.Digits
 public import Complexity.Computability.Complexity.Problems.SubsetSum.Mask

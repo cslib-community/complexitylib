@@ -758,13 +758,14 @@ index links to canonical definitions rather than keeping a second set.
   statistical and perfect zero knowledge.
 - **Statistical zero knowledge** ([#3205](https://github.com/cslib-community/complexitylib/issues/3205)):
   the Sahai–Vadhan polarization of statistical distance is available on explicit finite
-  distributions, and on pairs of circuit samplers as a map on Statistical Difference instances
-  (`Problems/StatisticalDifference.lean`). Instances there are pairs of De Morgan circuits with a
-  common input count and a common output count; padding general pairs to that form is open. Next
-  come the polynomial-time computability of that map on encoded instances, with error `2^-|x|`,
-  honest-verifier SZK with `SD` in it, `SD` being SZK-complete, Entropy Difference
-  (Goldreich–Vadhan), closure under complement (Okamoto), and `SZK ⊆ AM ∩ coAM` (Fortnow;
-  Aiello–Håstad).
+  distributions, and on pairs of circuit samplers as a polynomial-time map on encoded Statistical
+  Difference instances, with error `2^-(|x|+1)`. It gives polynomial-time reductions from every
+  `SD^{α,β}` with `β < α²` to every `SD^{α',β'}` with `0 < β' < α' < 1`
+  (`Problems/StatisticalDifference/PolyTime.lean`), for constant thresholds. Instances are pairs
+  of De Morgan circuits with a common input count and a common output count; padding general
+  pairs to that form is open. Next come honest-verifier SZK with `SD` in it, `SD` being
+  SZK-complete, Entropy Difference (Goldreich–Vadhan), closure under complement (Okamoto), and
+  `SZK ⊆ AM ∩ coAM` (Fortnow; Aiello–Håstad).
 
 ### Descriptive complexity and first-order reductions
 

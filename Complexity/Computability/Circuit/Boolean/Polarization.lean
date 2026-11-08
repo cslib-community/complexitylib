@@ -37,9 +37,9 @@ circuits are exactly as far apart as the polarized distributions
 
 The numbers of coordinates are passed as predecessors, `lam` for `lam + 1` inner coordinates and
 `k` for `k + 1` outer coordinates. The XOR construction needs at least one coordinate, and this
-keeps the circuit types free of subtraction. Every circuit here has an explicit structure, but
-their sizes and the polynomial-time computability of the map `(C₀, C₁) ↦ polarizeCircuit C₀ C₁ …`
-are not formalized here.
+keeps the circuit types free of subtraction. Every circuit here has an explicit structure. Their
+codes are generated in polynomial time by `Boolean.Polarization.PolyTime`
+(`computableInPolyTime_polarizeCode`); their sizes are not stated separately.
 
 ## Main definitions
 
