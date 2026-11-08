@@ -21,9 +21,10 @@ import Mathlib.Data.List.GetD
 This file builds, from a circuit of weft at most `1` and depth at most `d` and a weight `k`, a
 graph and a clique size (`WCS.toClique`), and shows that the graph has a clique of that size
 exactly when the circuit has a satisfying input with `k` ones (`WCS.toClique_mem_Clique_iff`).
-This is the graph construction behind the `W[1]`-hardness of `Clique`
-[Cygan et al., Chapter 13][CyganEtAl2015] [DowneyFellows1999], in a form adapted to the
-certificates of `Cslib.Circuits.Boolean.Unbounded.WeftOne`.
+This is the core of the `W[1]`-hardness of `Clique` [Cygan et al., Chapter 13][CyganEtAl2015]
+[DowneyFellows1999]. The certificate-and-bracket graph is an original construction of this library,
+built on the certificates of `Cslib.Circuits.Boolean.Unbounded.WeftOne`; the cited sources prove the
+theorem through their own reduction. The chapter locator has not been checked against the book.
 
 Write `n` for the number of inputs and `kk = min (n + 1) k`. The vertices are of two kinds.
 
@@ -55,6 +56,8 @@ holds on the selected input, which therefore satisfies the circuit.
 
 * `Cslib.Complexity.WCS.toClique_mem_Clique_iff`: the graph has a clique of the size exactly
   when the circuit has a satisfying input with `k` ones.
+* `Cslib.Complexity.WCS.ToClique.mem_Clique_of_eval`,
+  `Cslib.Complexity.WCS.ToClique.satisfiableWithWeight_of_mem_Clique`: the two directions.
 
 ## References
 

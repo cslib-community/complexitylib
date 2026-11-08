@@ -22,7 +22,8 @@ Fix `kk` positions `u 0 < u 1 < ⋯ < u (kk - 1)` of an input of length `n`; the
 positions set is the input with weight `kk` they select. A *bracket* is a list of pairs `(j, s)`,
 read as "the `j`-th selected position is `s`". This file shows that brackets of bounded size
 describe enough of the selected input for evaluating circuits of small depth, which is the core
-of the reduction from weft-one circuits to `Clique`.
+of the reduction from weft-one circuits to `Clique`. Brackets are an original device of this
+library.
 
 `know kk P s` is what the bracket `P` tells about position `s`: `some true` when `P` names `s`,
 `some false` when `P` names two consecutive selected positions around `s` (or the first selected
