@@ -4470,6 +4470,7 @@ public import Complexity.Foundations.LinearAlgebra.Matrix.TimeLayer.Fin
 public import Complexity.Foundations.LinearAlgebra.Matrix.Toeplitz
 public import Complexity.Foundations.LinearAlgebra.Matrix.Transvection
 public import Complexity.Foundations.LinearAlgebra.Matrix.UniformGram
+public import Complexity.Foundations.LinearAlgebra.Matrix.Vertex
 public import Complexity.Foundations.LinearAlgebra.PivotSpace
 public import Complexity.Foundations.LinearAlgebra.Rank
 public import Complexity.Foundations.LinearAlgebra.ReplacementDesign
@@ -4664,6 +4665,9 @@ public import Complexity.Foundations.RingTheory.CyclicIntRing
 public import Complexity.Foundations.RingTheory.CyclicIntRing.Coefficients
 public import Complexity.Foundations.RingTheory.GaloisRing
 public import Complexity.Foundations.RingTheory.RootsOfUnity.Principal
+public import Complexity.GameTheory.Bimatrix.Basic
+public import Complexity.GameTheory.Bimatrix.BestResponsePolytope
+public import Complexity.GameTheory.Bimatrix.LemkeHowson
 public import Complexity.GameTheory.Congestion.Affine
 public import Complexity.GameTheory.Congestion.Basic
 public import Complexity.GameTheory.Congestion.Hedge

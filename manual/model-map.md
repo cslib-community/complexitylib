@@ -313,6 +313,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `atomic-congestion-game` | [Atomic congestion games with Rosenthal's potential](algorithms-and-memory/strategic-games.md) | game-theory |
 | `nonatomic-routing` | [Nonatomic selfish routing and Wardrop flows](algorithms-and-memory/strategic-games.md) | game-theory |
 | `hedge-dynamics` | [No-regret (Hedge) dynamics in finite games and their price of anarchy](algorithms-and-memory/strategic-games.md) | game-theory |
+| `bimatrix-game` | [Bimatrix games, best response polytopes and the Lemke–Howson parity argument](algorithms-and-memory/strategic-games.md) | game-theory |
 | `retroactive-rebuild` | [Timeline editing by reset and replay](algorithms-and-memory/memory-specifications.md) | state-transition |
 | `catalytic-restoring-operations` | [Borrowed-register and key-table restoration](algorithms-and-memory/catalytic-and-tree-evaluation.md) | catalytic-operations |
 | `tree-evaluation-binary` | [Explicit binary Tree Evaluation](algorithms-and-memory/catalytic-and-tree-evaluation.md) | tree-evaluation |

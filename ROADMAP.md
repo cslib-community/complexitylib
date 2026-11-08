@@ -1460,6 +1460,14 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   succinct game encodings; polynomial-time algorithms for symmetric network congestion games;
   exponentially long better-response paths. Mixed Nash equilibria of finite games
   (Nash's theorem) and PPAD-completeness of computing them.
+- **Bimatrix games and Lemke–Howson:** `GameTheory/Bimatrix/*` proves the undirected parity
+  argument, so a nondegenerate bimatrix game has an odd number of Nash equilibria
+  ([#3334](https://github.com/cslib-community/complexitylib/issues/3334)). Remaining: two-player
+  Nash in PPAD. This needs an orientation of the Lemke–Howson paths (Shapley's index), bit-size
+  bounds on the rational vertices, an encoding of games as a TFNP search problem, and a
+  polynomial-time pivoting map into the end-of-line principle. Also remaining: degenerate games
+  (lexicographic perturbation), the Lemke–Howson path as an algorithm, and the Savani–von Stengel
+  exponential lower bound.
 - **Equilibrium concepts and dynamics:** mixed and correlated equilibria between pure Nash and
   coarse correlated equilibria; swap regret and convergence to correlated equilibria, extending
   the Hedge dynamics of [#3034](https://github.com/cslib-community/complexitylib/issues/3034);
