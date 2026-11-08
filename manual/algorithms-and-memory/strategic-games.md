@@ -4,9 +4,9 @@
 
 This page covers finite strategic games in cost-minimization form, potential games, atomic and
 nonatomic congestion games, price-of-anarchy and price-of-stability bounds, fair cost-sharing
-games, and no-regret (Hedge) dynamics. All of it is
-mathematics about real-valued costs. No machine model is involved, and equilibrium computation
-carries no resource claim [complexitylib][complexitylib].
+games, no-regret (Hedge) dynamics, and bimatrix games with the Lemke–Howson parity argument. All
+of it is mathematics about real-valued costs or payoffs. No machine model is involved, and
+equilibrium computation carries no resource claim [complexitylib][complexitylib].
 
 ## The strategic-game layer
 
@@ -187,6 +187,60 @@ The main results:
   any given one.
 - `exists_cost_eq_four_thirds_mul`: Pigou's example attains `4/3`.
 
+## Bimatrix games and the Lemke–Howson parity argument
+
+[Bimatrix/Basic.lean](../../Complexity/GameTheory/Bimatrix/Basic.lean) defines
+`BimatrixGame M N`, a two-player game with payoff matrices `A B : Matrix M N ℝ`. Unlike
+`CostGame`, players maximize payoffs, following von Stengel [vonstengel07][vonstengel07]. Mixed
+strategies are plain vectors with `IsMixedStrategy x` (nonnegative, summing to `1`), as in
+`Strategic/Mixed.lean`; `isMixedStrategy_iff_mem_range_weights` identifies them with the weights of
+`Convexity.StdSimplex`. The module defines best responses, `IsNash` and `IsNondegenerate`, the
+source's Definition 3.2: no mixed strategy with support of size `k` has more than `k` pure best
+responses. It proves the best response condition (`isBestResponse₁_iff`, Proposition 3.1) and the
+equal support sizes of equilibria of nondegenerate games (`IsNash.ncard_support_eq`,
+Proposition 3.3). Adding a constant to all payoffs (`addConst`) changes neither the equilibria nor
+nondegeneracy.
+
+The combinatorial core lives in two layers:
+
+- [Foundations/LinearAlgebra/Matrix/Vertex.lean](../../Complexity/Foundations/LinearAlgebra/Matrix/Vertex.lean)
+  is game-free polyhedral API for a system `A *ᵥ x ≤ b` over a linearly ordered field. It has tight
+  rows (`tightRows`), vertices as basic feasible solutions (`IsVertex`), nondegenerate systems
+  (at most `card ι` tight rows at a feasible point) and adjacency. For a nondegenerate system with
+  recession cone `{0}`, a feasible point with `card ι` tight rows is a vertex
+  (`isVertex_of_card_tightRows`). Dropping any tight row `l` of a vertex leads to a unique other
+  vertex keeping the remaining rows tight (`IsVertex.exists_pivot`, `IsVertex.eq_of_erase_subset`,
+  packaged as `pivotVertex`). The adjacent vertices are exactly these pivots
+  (`vertexAdj_iff_exists_pivotVertex`).
+- [Bimatrix/LemkeHowson.lean](../../Complexity/GameTheory/Bimatrix/LemkeHowson.lean) takes two such
+  systems whose rows share a label set `κ` with `card κ = card ι₁ + card ι₂`. For a missing label
+  `k`, `LemkeHowson.graph` is a `SimpleGraph` on the `k`-almost completely labelled vertex pairs
+  (`LemkeHowson.Node`). Completely labelled nodes have degree `1` and all others degree `2`
+  (`ncard_neighborSet_of_completelyLabeled`, `ncard_neighborSet_of_not_completelyLabeled`). By the
+  handshake lemma, the number of completely labelled vertex pairs is even
+  (`even_ncard_completelyLabeled`).
+
+[Bimatrix/BestResponsePolytope.lean](../../Complexity/GameTheory/Bimatrix/BestResponsePolytope.lean)
+instantiates this with the best response polytopes `P = {x ≥ 0, Bᵀ x ≤ 1}` and
+`Q = {A y ≤ 1, y ≥ 0}` of the source's (3.6), with labels `M ⊕ N` (`matP`, `rhsP`, `matQ`,
+`rhsQ`). Nondegeneracy of the game makes both systems nondegenerate
+(`IsNondegenerate.isNondegenerateSystem_matP`), and positive payoffs make them bounded. For
+positive payoffs, `setOf_completelyLabeled_eq` shows that the completely labelled vertex pairs are
+`(0, 0)` and the Nash equilibria rescaled by the inverse equilibrium payoffs (`toPolytopes`). The
+source assumes (3.5) (`A` and `Bᵀ` nonnegative without zero columns); the library instead shifts
+payoffs to be positive with `exists_addConst_pos`. The headline is
+`IsNondegenerate.odd_ncard_isNash`: a nondegenerate bimatrix game (with `M` and `N` nonempty) has
+an odd number of Nash equilibria, the source's Corollary 3.7. `IsNondegenerate.exists_isNash` and
+`IsNondegenerate.finite_setOf_isNash` follow, so `hG.exists_isNash` works for
+`hG : G.IsNondegenerate`. Existence here is the special case of Nash's theorem for nondegenerate
+bimatrix games only. The name `BimatrixGame.exists_isNash` is kept free for the general theorem.
+The algorithm is due to Lemke and Howson [lemkehowson64][lemkehowson64].
+
+Only the undirected parity argument is formalized. The Lemke–Howson path is not run as an
+algorithm, and nothing is said about its length. There is no orientation of the paths and no bit
+sizes of the rational vertices. Games are not encoded as a TFNP search problem, so this does not
+show that two-player Nash is in PPAD.
+
 ## Working with the API
 
 A small instance is a structure literal. Pure Nash conditions over finite strategy sets can often
@@ -216,22 +270,35 @@ the following price-of-stability instances:
 - the opt-out game with three players. It also checks that `isPureNash_optOut_iff` fails for
   `ε = 0`.
 
+[ComplexityTests/GameTheory/Bimatrix.lean](../../ComplexityTests/GameTheory/Bimatrix.lean) checks
+the three equilibria of von Stengel's `3 × 2` example (3.3). It shows that the identity
+coordination game is nondegenerate, so `IsNondegenerate.odd_ncard_isNash` applies. The zero game
+is degenerate, and its infinitely many equilibria show that the hypothesis cannot be dropped. The
+file also checks a vertex and a non-vertex of an interval and a degenerate system. Finally, the
+artificial pair `(0, 0)` has degree `1` in the Lemke–Howson graph of the shifted coordination
+game.
+
 ## Known Limitations
 
-Mixed Nash and correlated equilibria (with swap regret), existence of Wardrop flows, and weighted
-congestion games are not formalized. Nor are the tight price of stability of affine congestion
-games (below `2`), strong Nash equilibria and their price of anarchy, and price-of-stability
-bounds for undirected network design. The same holds for the Monderer–Shapley isomorphism between
-potential games and congestion games (Theorems 2.8 and 3.2) and for the complexity of finding
-equilibria (PLS- and PPAD-completeness). These are ROADMAP directions under
-[#2900](https://github.com/cslib-community/complexitylib/issues/2900). Hedge dynamics are
-full-information and deterministic: they work with expected costs, not sampled play or bandit
-feedback, and only time-average guarantees are proved, not last-iterate convergence.
+Mixed Nash equilibria are formalized only for bimatrix games. Their existence is proved only for
+nondegenerate bimatrix games, through the parity argument above; Nash's theorem for general finite
+games is not formalized. Correlated equilibria (with swap regret), existence of Wardrop flows, and
+weighted congestion games are not formalized. Nor are the tight price of stability of affine
+congestion games (below `2`), strong Nash equilibria and their price of anarchy, and
+price-of-stability bounds for undirected network design. The same holds for the Monderer–Shapley
+isomorphism between potential games and congestion games (Theorems 2.8 and 3.2) and for the
+complexity of finding equilibria (PLS- and PPAD-completeness). These are ROADMAP directions under
+[#2900](https://github.com/cslib-community/complexitylib/issues/2900). Two-player Nash in PPAD,
+degenerate bimatrix games and the Lemke–Howson algorithm are tracked in
+[#3391](https://github.com/cslib-community/complexitylib/issues/3391).
+Hedge dynamics are full-information and deterministic: they work with expected costs, not sampled
+play or bandit feedback, and only time-average guarantees are proved, not last-iterate convergence.
 The theorems of Rosenthal, Christodoulou–Koutsoupias and Awerbuch–Azar–Epstein are attributed as
 cited in the Monderer–Shapley and Roughgarden papers; their own texts were not consulted.
 
 [anshelevichDKTWR08]: ../sources.md#anshelevichdktwr08
 [complexitylib]: ../sources.md#complexitylib
+[lemkehowson64]: ../sources.md#lemkehowson64
 [mondererShapley96]: ../sources.md#monderershapley96
 [rosenthal73]: ../sources.md#rosenthal73
 [roughgarden13cs364a]: ../sources.md#roughgarden13cs364a
@@ -239,3 +306,4 @@ cited in the Monderer–Shapley and Roughgarden papers; their own texts were not
 [roughgardenTardos02]: ../sources.md#roughgardentardos02
 [roughgardenTardos07]: ../sources.md#roughgardentardos07
 [tardosWexler07]: ../sources.md#tardoswexler07
+[vonstengel07]: ../sources.md#vonstengel07
