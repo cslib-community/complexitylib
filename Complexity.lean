@@ -1513,6 +1513,10 @@ public import Complexity.Computability.Complexity.Classes.DP
 public import Complexity.Computability.Complexity.Classes.EXP
 public import Complexity.Computability.Complexity.Classes.EXP.Padding
 public import Complexity.Computability.Complexity.Classes.EXP.Separation
+public import Complexity.Computability.Complexity.Classes.FPAUS
+public import Complexity.Computability.Complexity.Classes.FPAUS.Counting
+public import Complexity.Computability.Complexity.Classes.FPAUS.FPRAS
+public import Complexity.Computability.Complexity.Classes.FPAUS.SelfReducible
 public import Complexity.Computability.Complexity.Classes.FPRAS
 public import Complexity.Computability.Complexity.Classes.FewP
 public import Complexity.Computability.Complexity.Classes.FewP.Machine
