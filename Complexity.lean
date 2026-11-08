@@ -4659,10 +4659,14 @@ public import Complexity.Foundations.Probability.SourceRelease
 public import Complexity.Foundations.Probability.SpectralPayment
 public import Complexity.Foundations.Probability.StochasticAtom
 public import Complexity.Foundations.Probability.TrueSampleMeans
+public import Complexity.Foundations.Quantum.Bell
+public import Complexity.Foundations.Quantum.Bipartite
 public import Complexity.Foundations.Quantum.HadamardTransform
 public import Complexity.Foundations.Quantum.Measurement
 public import Complexity.Foundations.Quantum.Measurement.Overlap
 public import Complexity.Foundations.Quantum.Measurement.Restrict
+public import Complexity.Foundations.Quantum.NoCloning
+public import Complexity.Foundations.Quantum.Pauli
 public import Complexity.Foundations.Quantum.TensorPower
 public import Complexity.Foundations.Relation.Acyclic
 public import Complexity.Foundations.Relation.InductiveCounting
