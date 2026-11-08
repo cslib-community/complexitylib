@@ -4039,12 +4039,15 @@ public import Complexity.DataStructure.CountMin.Program
 public import Complexity.DataStructure.Dictionary.CuckooHashing
 public import Complexity.DataStructure.Dictionary.DoubleHashing
 public import Complexity.DataStructure.Dictionary.Dynamic.Spec
+public import Complexity.DataStructure.Dictionary.DynamicMatching
 public import Complexity.DataStructure.Dictionary.FeistelPerm
 public import Complexity.DataStructure.Dictionary.FeistelQuotient
 public import Complexity.DataStructure.Dictionary.Memory
+public import Complexity.DataStructure.Dictionary.Minimap
 public import Complexity.DataStructure.Dictionary.PerfectHashing.Construction
 public import Complexity.DataStructure.Dictionary.PerfectHashing.Table
 public import Complexity.DataStructure.Dictionary.Spec
+public import Complexity.DataStructure.Dictionary.Spillover
 public import Complexity.DataStructure.Dictionary.SuccinctBucket
 public import Complexity.DataStructure.Dictionary.UniformProbing
 public import Complexity.DataStructure.Dictionary.WordRAM.BitPackedArray
