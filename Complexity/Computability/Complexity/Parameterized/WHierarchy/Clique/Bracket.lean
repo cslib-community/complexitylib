@@ -215,9 +215,18 @@ theorem pairOk_iff (p q : ℕ × ℕ) :
 def consistent (P Q : List (ℕ × ℕ)) : Bool :=
   P.all fun p => Q.all fun q => pairOk p q
 
+theorem pairOk_comm (p q : ℕ × ℕ) : pairOk p q = pairOk q p := by
+  rw [Bool.eq_iff_iff, pairOk_iff, pairOk_iff]
+  constructor <;> rintro ⟨h₁, h₂⟩ <;> constructor <;> omega
+
 theorem consistent_iff {P Q : List (ℕ × ℕ)} :
     consistent P Q = true ↔ ∀ p ∈ P, ∀ q ∈ Q, pairOk p q = true := by
   simp only [consistent, List.all_eq_true]
+
+theorem consistent_comm (P Q : List (ℕ × ℕ)) : consistent P Q = consistent Q P := by
+  rw [Bool.eq_iff_iff, consistent_iff, consistent_iff]
+  exact ⟨fun h q hq p hp => pairOk_comm p q ▸ h p hp q hq,
+    fun h p hp q hq => pairOk_comm q p ▸ h q hq p hp⟩
 
 /-! ### Polynomial time -/
 

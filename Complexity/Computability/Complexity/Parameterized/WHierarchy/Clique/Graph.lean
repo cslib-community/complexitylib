@@ -12,6 +12,8 @@ public import Complexity.Computability.Complexity.Parameterized.WHierarchy
 public import Complexity.Computability.Complexity.Parameterized.WHierarchy.Clique.Bracket
 public import Complexity.Computability.Complexity.Problems.Clique.OfAdj
 public import Complexity.Foundations.Data.List.ListsUpTo
+import Mathlib.Data.Finset.Sort
+import Mathlib.Data.List.GetD
 
 /-!
 # The graph of a circuit of weft one
@@ -130,5 +132,136 @@ open ToClique
 /-- **The graph of a circuit of weft one and a weight**, with its clique size. -/
 def toClique {d : ℕ} (x : WeftCircuit 1 d × ℕ) : Graph × ℕ :=
   (graph d x.1.1.1 x.1.1.2.code.1 (x.1.1.2.outputs 0).toNat x.2, size d x.1.1.1 x.2)
+
+namespace ToClique
+
+/-! ### Basic facts -/
+
+theorem mem_claimUniverse {n L : ℕ} {c : ℕ × Bool} : c ∈ claimUniverse n L ↔ c.1 < n + L := by
+  obtain ⟨w, b⟩ := c
+  cases b <;> simp [claimUniverse]
+
+theorem mem_certs {d n : ℕ} {gates : List (Unbounded.Op × List ℕ)} {o : ℕ}
+    {cl : List (ℕ × Bool)} :
+    cl ∈ certs d n gates o ↔ cl.length ≤ 2 ^ d ∧ (∀ c ∈ cl, c.1 < n + gates.length) ∧
+      WeftOne.claimsValid d n gates o cl = true := by
+  simp only [certs, List.mem_filter, List.mem_listsUpTo, mem_claimUniverse, and_assoc]
+
+theorem mem_pairs {n kk : ℕ} {p : ℕ × ℕ} : p ∈ pairs n kk ↔ p.1 < kk ∧ p.2 < n := by
+  obtain ⟨j, s⟩ := p
+  simp [pairs]
+
+theorem mem_brackets {d n kk : ℕ} {P : List (ℕ × ℕ)} :
+    P ∈ brackets d n kk ↔ P.length ≤ 2 ^ (d + 1) ∧ ∀ p ∈ P, p.1 < kk ∧ p.2 < n := by
+  simp only [brackets, List.mem_listsUpTo, mem_pairs]
+
+theorem mem_classes {d kk : ℕ} {C : List ℕ} :
+    C ∈ classes d kk ↔ C.length ≤ 2 ^ (d + 1) ∧ ∀ j ∈ C, j < kk := by
+  simp only [classes, List.mem_listsUpTo, List.mem_range]
+
+theorem nodup_classes (d kk : ℕ) : (classes d kk).Nodup :=
+  List.nodup_listsUpTo List.nodup_range _
+
+theorem mem_vertices {d n kk : ℕ} {gates : List (Unbounded.Op × List ℕ)} {o : ℕ} {v : Vertex} :
+    v ∈ vertices d n kk gates o ↔ (v.1 = true ∧ v.2.2 = [] ∧ v.2.1 ∈ certs d n gates o) ∨
+      (v.1 = false ∧ v.2.1 = [] ∧ v.2.2 ∈ brackets d n kk) := by
+  obtain ⟨b, cl, P⟩ := v
+  simp only [vertices, List.mem_append, List.mem_map, Prod.mk.injEq]
+  constructor
+  · rintro (⟨cl', h, rfl, rfl, rfl⟩ | ⟨P', h, rfl, rfl, rfl⟩)
+    · exact Or.inl ⟨rfl, rfl, h⟩
+    · exact Or.inr ⟨rfl, rfl, h⟩
+  · rintro (⟨rfl, rfl, h⟩ | ⟨rfl, rfl, h⟩)
+    · exact Or.inl ⟨cl, h, rfl, rfl, rfl⟩
+    · exact Or.inr ⟨P, h, rfl, rfl, rfl⟩
+
+theorem vadj_self (n kk : ℕ) (gates : List (Unbounded.Op × List ℕ)) (v : Vertex) :
+    vadj n kk gates v v = false := by
+  obtain ⟨b, cl, P⟩ := v
+  cases b <;> simp [vadj]
+
+theorem vadj_certs (n kk : ℕ) (gates : List (Unbounded.Op × List ℕ)) (cl cl' : List (ℕ × Bool))
+    (P P' : List (ℕ × ℕ)) : vadj n kk gates (true, cl, P) (true, cl', P') = false := by
+  simp [vadj]
+
+theorem vadj_cert_bracket (n kk : ℕ) (gates : List (Unbounded.Op × List ℕ))
+    (cl : List (ℕ × Bool)) (P : List (ℕ × ℕ)) :
+    (vadj n kk gates (true, cl, []) (false, [], P) ||
+      vadj n kk gates (false, [], P) (true, cl, [])) = !refutes n kk gates cl P := by
+  simp [vadj]
+
+theorem vadj_brackets_iff (n kk : ℕ) (gates : List (Unbounded.Op × List ℕ))
+    (P Q : List (ℕ × ℕ)) :
+    (vadj n kk gates (false, [], P) (false, [], Q) ||
+      vadj n kk gates (false, [], Q) (false, [], P)) = true ↔
+      P.map Prod.fst ≠ Q.map Prod.fst ∧ consistent P Q = true := by
+  rw [consistent_comm] at *
+  simp only [vadj, Bool.false_eq_true, ↓reduceIte, Bool.not_false, Bool.true_and,
+    Bool.or_eq_true, Bool.and_eq_true, bne_iff_ne, ne_eq]
+  rw [consistent_comm Q P]
+  constructor
+  · rintro (⟨h₁, h₂⟩ | ⟨h₁, h₂⟩)
+    · exact ⟨h₁, h₂⟩
+    · exact ⟨fun h => h₁ h.symm, h₂⟩
+  · rintro ⟨h₁, h₂⟩
+    exact Or.inl ⟨h₁, h₂⟩
+
+/-! ### Refutation -/
+
+theorem length_knowList (n kk : ℕ) (P : List (ℕ × ℕ)) : (knowList n kk P).length = n := by
+  simp [knowList]
+
+theorem getD_knowList {n kk : ℕ} (P : List (ℕ × ℕ)) {s : ℕ} (hs : s < n) :
+    (knowList n kk P).getD s none = know kk P s := by
+  simp [knowList, List.getD_eq_getElem?_getD, hs]
+
+/-- A bracket whose partial input approximates `x` does not refute claims whose checks hold
+on `x`. -/
+theorem refutes_eq_false {n kk : ℕ} {gates : List (Unbounded.Op × List ℕ)}
+    (h : Program.IsCodeFrom Unbounded.signature n 0 gates) {x : List Bool} {P : List (ℕ × ℕ)}
+    (hx : List.Forall₂ Approx (knowList n kk P) x) {cl : List (ℕ × Bool)}
+    (hchecks : ∀ e ∈ cl.flatMap (WeftOne.claimChecks n gates),
+      (evalCode Unbounded.interpretation false x gates).getD e.1 false = e.2) :
+    refutes n kk gates cl P = false := by
+  rw [refutes, List.any_eq_false]
+  intro e he hbad
+  have happ := approx_kleeneEval hx (length_eq_arity_of_isCodeFrom h) e.1
+  rw [beq_iff_eq] at hbad
+  rw [hbad] at happ
+  have := happ _ rfl
+  rw [hchecks e he] at this
+  cases e.2 <;> simp at this
+
+/-- The partial input of a bracket approximates `x` when every defined answer is right. -/
+theorem forall₂_knowList {n kk : ℕ} {P : List (ℕ × ℕ)} {x : List Bool} (hx : x.length = n)
+    (h : ∀ s < n, ∀ b, know kk P s = some b → b = x.getD s false) :
+    List.Forall₂ Approx (knowList n kk P) x := by
+  rw [List.forall₂_iff_get]
+  refine ⟨by simp [knowList, hx], fun i h₁ h₂ => ?_⟩
+  intro b hb
+  simp only [knowList, List.get_eq_getElem, List.getElem_map, List.getElem_range] at hb
+  have hi : i < n := by simpa [knowList] using h₁
+  rw [h i hi b hb, List.get_eq_getElem, List.getD_eq_getElem _ _ (by omega)]
+
+/-- A finite set of naturals is the image of a function increasing on `[0, T.card)`. -/
+theorem exists_strictMonoOn_enum (T : Finset ℕ) :
+    ∃ u : ℕ → ℕ, StrictMonoOn u (Set.Iio T.card) ∧
+      ∀ s, s ∈ T ↔ ∃ i < T.card, u i = s := by
+  classical
+  let e := T.orderEmbOfFin rfl
+  refine ⟨fun j => if h : j < T.card then e ⟨j, h⟩ else 0, ?_, fun s => ?_⟩
+  · intro i hi j hj hij
+    simp only [Set.mem_Iio] at hi hj
+    simp only [hi, hj, dite_true]
+    exact e.strictMono (Fin.mk_lt_mk.2 hij)
+  · constructor
+    · intro hs
+      obtain ⟨i, hi⟩ := (Finset.range_orderEmbOfFin T rfl ▸ hs : s ∈ Set.range e)
+      exact ⟨i.1, i.2, by simp only [i.2, dite_true, Fin.eta]; exact hi⟩
+    · rintro ⟨i, hi, rfl⟩
+      simp only [hi, dite_true]
+      exact Finset.orderEmbOfFin_mem T rfl _
+
+end ToClique
 
 end Cslib.Complexity.WCS
