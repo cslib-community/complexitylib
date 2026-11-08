@@ -390,24 +390,24 @@ theorem exists_det_scheme_randomInit_test :
         ∑' ops, (PMF.pure seq : PMF (List CounterOp)) ops *
           randomInitScheme.expectedSeqProbes ops := by
   intro seq
+  have hstep : ∀ o, (randomInitScheme.step o).IsCoinFree :=
+    fun _ => RandProbeTree.isCoinFree_ofProbeTree _
   have hcorr : ∀ ops ∈ ({seq} : Set (List CounterOp)),
       ∀ tr ∈ ((randomInitScheme.runSeq ops).map Prod.fst).support, GoodWriteRead ops tr := by
     intro ops hops tr htr
     rw [Set.mem_singleton_iff] at hops
     subst hops
-    simp only [Randomized.Scheme.runSeq, randomInitScheme, PMF.mem_support_map_iff,
-      PMF.mem_support_bind_iff] at htr
-    obtain ⟨_, ⟨m₀, _, z, hz, rfl⟩, rfl⟩ := htr
-    simp only [Randomized.Scheme.runFrom_cons, Randomized.Scheme.runFrom_nil,
-      RandProbeTree.run_ofProbeTree, counterIndexed, ProbeTree.run_write, ProbeTree.run_read,
-      PMF.pure_bind, PMF.pure_map, PMF.mem_support_pure_iff] at hz
-    rcases hz with rfl
+    rw [randomInitScheme.runSeq_eq_schemeLaw_bind hstep] at htr
+    simp only [Randomized.Scheme.schemeLaw, PMF.mem_support_map_iff,
+      PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at htr
+    obtain ⟨_, ⟨_, ⟨m₀, _, rfl⟩, rfl⟩, rfl⟩ := htr
     intro _
-    simp [Function.update_self]
+    simp only [Scheme.runSeq, IndexedScheme.runSeq, Scheme.toIndexed,
+      randomInitScheme, counterIndexed, seq]
+    congr 2
   obtain ⟨D_det, _, hgood, hcost⟩ :=
     randomInitScheme.exists_det_scheme_le_expectedSeqProbes
-      (fun o => RandProbeTree.isCoinFree_ofProbeTree _)
-      {seq} GoodWriteRead hcorr (PMF.pure seq)
+      hstep {seq} GoodWriteRead hcorr (PMF.pure seq)
   exact ⟨D_det, hgood, hcost⟩
 
 end ComplexityTests.CellProbe

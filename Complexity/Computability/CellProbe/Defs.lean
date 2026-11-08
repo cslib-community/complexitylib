@@ -178,20 +178,16 @@ inductive ProbeOp (S w : ℕ) : Type where
   | write (cell : Fin S) (val : Fin (2 ^ w))
   deriving DecidableEq, Repr
 
-/-- Equivalence between `ProbeOp S w` and `Fin S ⊕ (Fin S × Fin (2 ^ w))`. -/
-private def ProbeOp.equivSum (S w : ℕ) :
-    ProbeOp S w ≃ Fin S ⊕ (Fin S × Fin (2 ^ w)) where
-  toFun
-    | .read i => .inl i
-    | .write i v => .inr (i, v)
-  invFun
-    | .inl i => .read i
-    | .inr (i, v) => .write i v
-  left_inv q := by cases q <;> rfl
-  right_inv s := by rcases s with i | ⟨i, v⟩ <;> rfl
-
 instance (S w : ℕ) : Fintype (ProbeOp S w) :=
-  Fintype.ofEquiv _ (ProbeOp.equivSum S w).symm
+  Fintype.ofEquiv (Fin S ⊕ (Fin S × Fin (2 ^ w)))
+    { toFun := fun
+        | .inl i => .read i
+        | .inr (i, v) => .write i v
+      invFun := fun
+        | .read i => .inl i
+        | .write i v => .inr (i, v)
+      left_inv := fun s => by rcases s with i | ⟨i, v⟩ <;> rfl
+      right_inv := fun q => by cases q <;> rfl }
 
 /-- Response type of a single cell probe: `Fin (2 ^ w)` for a read, `PUnit` for a write. -/
 abbrev ProbeOp.Result {S w : ℕ} : ProbeOp S w → Type
