@@ -65,6 +65,7 @@ the classes closed under polynomial-time reductions, such as `NP` and `PSPACE`, 
   is acceptance within the step bound.
 * `Cslib.Complexity.BoundedHalting.mem_E`, `Cslib.Complexity.BoundedHalting.mem_EXP`: bounded
   halting is in `E`, hence in `EXP`.
+* `Cslib.Complexity.BoundedHalting.isDecidable`: bounded halting is decidable.
 * `Cslib.Complexity.BoundedHalting.polyTimeReducible`: every problem decided within time
   `c₁ * 2 ^ p n + c₂`, with `p` polynomial-time, reduces to bounded halting.
 * `Cslib.Complexity.BoundedHalting.polyTimeComplete_E`,
@@ -168,6 +169,11 @@ theorem mem_E : BoundedHalting ∈ E encBits := by
 /-- **Bounded halting is in `EXP`.** -/
 theorem mem_EXP : BoundedHalting ∈ EXP encBits :=
   E_subset_EXP mem_E
+
+/-- **Bounded halting is decidable**, since it is in `E`. -/
+theorem isDecidable : IsDecidable BoundedHalting encBits := by
+  obtain ⟨k, c₁, c₂, s, h⟩ := Set.mem_iUnion.mp mem_E
+  exact ⟨_, _, h⟩
 
 /-- **Exponential-time problems reduce to bounded halting.** A problem decided within time
 `c₁ * 2 ^ p n + c₂` on instances of encoded length `n`, where `p` is computable in polynomial time

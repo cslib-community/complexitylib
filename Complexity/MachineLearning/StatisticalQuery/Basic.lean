@@ -64,6 +64,8 @@ values (`Cslib.BitString.signVal`); it is `1 - 2 · disagreement D f g`
 * `Cslib.MachineLearning.StatisticalQuery.corr_eq_one_sub_two_mul_disagreement`.
 * `Cslib.MachineLearning.StatisticalQuery.Learns.learnsStateless`: a learner against adaptive
   answers is a learner against answer functions.
+* `Cslib.MachineLearning.StatisticalQuery.Learns.mono`: learning is monotone in the class, the
+  tolerance and the error.
 
 ## References
 
@@ -156,5 +158,13 @@ theorem Learns.learnsStateless {A : Algorithm X} {D : PMF X}
     {C : PACLearning.ConceptClass X Bool} {τ ε : ℝ} (h : Learns A D C τ ε) :
     LearnsStateless A D C τ ε := fun c hc _ hanswer =>
   h c hc _ (OracleComp.interpret_id_mem_supportWith hanswer A)
+
+/-- Learning is monotone: a smaller class, a smaller tolerance and a larger error. -/
+theorem Learns.mono {A : Algorithm X} {D : PMF X} {C C' : PACLearning.ConceptClass X Bool}
+    {τ τ' ε ε' : ℝ} (h : Learns A D C τ ε) (hC : C' ⊆ C) (hτ : τ' ≤ τ) (hε : ε ≤ ε') :
+    Learns A D C' τ' ε' := by
+  intro c hc g hg
+  have hsub : ∀ φ, valid D c τ' φ ⊆ valid D c τ φ := fun _ _ ha => le_trans ha hτ
+  exact (h c (hC hc) g (OracleComp.supportWith_mono hsub A hg)).trans hε
 
 end Cslib.MachineLearning.StatisticalQuery
