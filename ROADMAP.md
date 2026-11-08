@@ -1185,8 +1185,7 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   preparation, uniformly constructing the linear-size decoder and checker, and completing the
   nondeterministic simulation for the full separation theorem.
 - Uniform and nonuniform NC, AC and TC, circuit-to-machine bridges, algorithm-to-lower-bound
-  arguments, and barriers such as natural proofs and algebrization. NC simulation of unrestricted
-  `TCⁱ` needs Muroga's threshold weight-bounding theorem.
+  arguments, and barriers such as natural proofs and algebrization.
 - Formula lower bounds beyond Andreev's, following Jukna; Raz–Wigderson's monotone depth bound for
   matching on general graphs.
 - **Monotone circuits versus P:** Razborov's `n ^ Ω(log n)` monotone bound for bipartite perfect

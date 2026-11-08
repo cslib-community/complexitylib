@@ -1045,6 +1045,7 @@ public import Complexity.Computability.Circuit.Boolean.HardnessAmplification.Wor
 public import Complexity.Computability.Circuit.Boolean.Hastad
 public import Complexity.Computability.Circuit.Boolean.Hastad.Sharp
 public import Complexity.Computability.Circuit.Boolean.Hierarchy
+public import Complexity.Computability.Circuit.Boolean.IntThreshold
 public import Complexity.Computability.Circuit.Boolean.Iteration
 public import Complexity.Computability.Circuit.Boolean.Iteration.Active
 public import Complexity.Computability.Circuit.Boolean.Iteration.AffineController
@@ -1205,6 +1206,7 @@ public import Complexity.Computability.Circuit.Boolean.SymAnd.Mobius
 public import Complexity.Computability.Circuit.Boolean.SymAnd.Restrict
 public import Complexity.Computability.Circuit.Boolean.Synthesis
 public import Complexity.Computability.Circuit.Boolean.TC0
+public import Complexity.Computability.Circuit.Boolean.TCSubsetNC
 public import Complexity.Computability.Circuit.Boolean.Tableau.Basic
 public import Complexity.Computability.Circuit.Boolean.Tableau.Correct
 public import Complexity.Computability.Circuit.Boolean.Tableau.Decoder.Assembly
@@ -1248,6 +1250,7 @@ public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Pending
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Potential
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.RandomRestriction
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.ScalarActivity
+public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.SmallWeights
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.SupportBound
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.SupportBoundAsymptotics
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.ThresholdCounting
