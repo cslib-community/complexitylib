@@ -7,11 +7,10 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.MachineLearning.OnlineLearning.MistakeBound.SOA
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.VCDimension
 public import Complexity.MachineLearning.OnlineLearning.MistakeBound.Winnow
+import Complexity.MachineLearning.PACLearning.VCDimension
 import Mathlib.Data.Fintype.EquivFin
-import Mathlib.Data.Nat.Log
 
 /-!
 # Optimal mistake bounds for monotone disjunctions
@@ -27,7 +26,7 @@ The construction splits `k 2^r ≤ n` of the variables into `k` groups indexed b
 containing `t`. For a set `U` of instances, the disjunction that takes from each group `j` the
 variable indexed by `{t | (j, t) ∈ U}` is `1` exactly on `U`.
 
-Together with WINNOW1's upper bound (`mistakes_winnow_two_div_card_le`), for `1 ≤ k ≤ n` the
+Together with WINNOW1's upper bound (`mistakeBound_winnow_two_div_le`), for `1 ≤ k ≤ n` the
 optimal mistake bound of `k`-literal monotone disjunctions lies between `k ⌊log₂ (n / k)⌋` and
 `2 k log₂ (n / k) + 3 k` (`optimalMistakeBound_monotoneDisjunctions_le`). For `1 ≤ k` and
 `2 k ≤ n` both are `Θ(k log (n / k))`, so WINNOW1 with `α = 2`, `θ = n / k` is optimal up to a
@@ -35,6 +34,10 @@ constant factor. The upper bound needs `1 ≤ k`: for `k = 0` the threshold `n /
 WINNOW1 can err on the constant-false target although `2 k log₂ (n / k) + 3 k = 0`. For
 `k > n` the class is empty and both bounds hold trivially. The source
 also states a second lower bound in terms of `k (1 + log₂ (n / k))`; it is not formalized here.
+
+No separate class of disjunctions of *at most* `k` variables is needed. Theorem 7 holds per
+sequence for every target `R` (`mistakes_winnow_le`), so it covers `|R| ≤ k` directly, and the
+lower bounds transfer to any larger class by `optimalMistakeBound_mono`.
 
 ## Main results
 
@@ -44,8 +47,10 @@ also states a second lower bound in terms of `k (1 + log₂ (n / k))`; it is not
   dimension is at least `k ⌊log₂ (n / k)⌋`.
 * `Cslib.MachineLearning.OnlineLearning.MistakeBound.le_optimalMistakeBound_monotoneDisjunctions`:
   `k ⌊log₂ (n / k)⌋ ≤ opt(C_k)`.
+* `Cslib.MachineLearning.OnlineLearning.MistakeBound.mistakeBound_winnow_two_div_le`: WINNOW1
+  with `α = 2`, `θ = n / k` makes at most `2 k log₂ (n / k) + 3 k` mistakes on `C_k`, for `1 ≤ k`.
 * `Cslib.MachineLearning.OnlineLearning.MistakeBound.optimalMistakeBound_monotoneDisjunctions_le`:
-  `opt(C_k) ≤ 2 k log₂ (n / k) + 3 k` for `1 ≤ k`, attained by WINNOW1.
+  `opt(C_k) ≤ 2 k log₂ (n / k) + 3 k` for `1 ≤ k`.
 
 ## References
 
@@ -146,31 +151,34 @@ theorem le_vcDim_monotoneDisjunctions (n k : ℕ) :
     k * Nat.log 2 (n / k) ≤ vcDim (monotoneDisjunctions n k) := by
   by_cases hkn : k ≤ n
   · obtain ⟨W, hW, hsh⟩ := setShatters_monotoneDisjunctions (mul_two_pow_log_div_le hkn)
-    refine le_csSup ⟨Fintype.card (Fin n → Bool), ?_⟩ ⟨W, hW, hsh⟩
-    rintro m ⟨V, rfl, -⟩
-    exact Finset.card_le_univ V
+    exact hW ▸ hsh.card_le_vcDim (PACLearning.hasFiniteVCDim_of_finite _)
   · simp [Nat.div_eq_of_lt (not_le.mp hkn)]
 
 /-- **Littlestone's lower bound** [Littlestone1988, §5, Theorem 8]: every deterministic learner
 makes at least `k ⌊log₂ (n / k)⌋` mistakes on some sequence labelled by a disjunction of exactly `k`
 of `n` variables. -/
 theorem le_optimalMistakeBound_monotoneDisjunctions (n k : ℕ) :
-    ((k * Nat.log 2 (n / k) : ℕ) : ℕ∞) ≤ optimalMistakeBound (monotoneDisjunctions n k) := by
-  rw [optimalMistakeBound_eq_littlestoneDim]
-  exact le_littlestoneDim_monotoneDisjunctions n k
+    ((k * Nat.log 2 (n / k) : ℕ) : ℕ∞) ≤ optimalMistakeBound (monotoneDisjunctions n k) :=
+  (le_littlestoneDim_monotoneDisjunctions n k).trans (littlestoneDim_le_optimalMistakeBound _)
 
-/-- The matching upper bound: WINNOW1 with `α = 2` and `θ = n / k` makes at most
-`2 k log₂ (n / k) + 3 k` mistakes on the disjunctions of exactly `1 ≤ k` variables. With the lower
-bound `le_optimalMistakeBound_monotoneDisjunctions`, the optimal mistake bound is
-`Θ(k log (n / k))` for `1 ≤ k` and `2 k ≤ n`. For `k > n` the class is empty. -/
-theorem optimalMistakeBound_monotoneDisjunctions_le {k : ℕ} (hk : 1 ≤ k) (tie : Bool) :
-    optimalMistakeBound (monotoneDisjunctions n k) ≤
-      mistakeBound (winnow 2 (n / k) tie) (monotoneDisjunctions n k) ∧
+/-- WINNOW1 with `α = 2` and `θ = n / k` makes at most `2 k log₂ (n / k) + 3 k` mistakes on the
+disjunctions of exactly `1 ≤ k` variables. -/
+theorem mistakeBound_winnow_two_div_le {k : ℕ} (hk : 1 ≤ k) (tie : Bool) :
     mistakeBound (winnow 2 (n / k) tie) (monotoneDisjunctions n k) ≤
       (⌊2 * k * Real.logb 2 (n / k) + 3 * k⌋₊ : ℕ) := by
-  refine ⟨optimalMistakeBound_le _ _, mistakeBound_le_iff.mpr fun S hS => ?_⟩
+  refine mistakeBound_le_iff.mpr fun S hS => ?_
   obtain ⟨c, hc, hcS⟩ := realizable_iff.mp hS
   obtain ⟨R, rfl, rfl⟩ := mem_monotoneDisjunctions.mp hc
   exact_mod_cast Nat.le_floor (mistakes_winnow_two_div_card_le tie R hk S hcS)
+
+/-- The matching upper bound: the optimal mistake bound of the disjunctions of exactly `1 ≤ k`
+variables is at most `2 k log₂ (n / k) + 3 k`, attained by WINNOW1
+(`mistakeBound_winnow_two_div_le`). With the lower bound
+`le_optimalMistakeBound_monotoneDisjunctions`, the optimal mistake bound is `Θ(k log (n / k))` for
+`1 ≤ k` and `2 k ≤ n`. For `k > n` the class is empty. -/
+theorem optimalMistakeBound_monotoneDisjunctions_le {k : ℕ} (hk : 1 ≤ k) :
+    optimalMistakeBound (monotoneDisjunctions n k) ≤
+      (⌊2 * k * Real.logb 2 (n / k) + 3 * k⌋₊ : ℕ) :=
+  (optimalMistakeBound_le _ _).trans (mistakeBound_winnow_two_div_le hk false)
 
 end Cslib.MachineLearning.OnlineLearning.MistakeBound

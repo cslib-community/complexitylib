@@ -22,6 +22,12 @@ by the caller.
 
 ## Main results
 
+* `Turing.MultiTapeNTM.ConfigurationGraph.and_inSpace`,
+  `Turing.MultiTapeNTM.ConfigurationGraph.readRegisters_budget`,
+  `Turing.MultiTapeNTM.ConfigurationGraph.valid_budget`,
+  `Turing.MultiTapeNTM.ConfigurationGraph.nextRegisters_budget`,
+  `Turing.MultiTapeNTM.ConfigurationGraph.matchesEntry_budget`,
+  `Turing.MultiTapeNTM.ConfigurationGraph.fitsB_budget`: register-level space-budget routines.
 * `Turing.MultiTapeNTM.ConfigurationGraph.queryIndex_budget`: compute the only input query.
 * `Turing.MultiTapeNTM.ConfigurationGraph.edgeWithSymbol_budget`: evaluate an edge locally.
 * `Turing.MultiTapeNTM.ConfigurationGraph.bad_budget`: recognize an accepting halted vertex.
@@ -38,7 +44,8 @@ open MultiTapeTM ComputableInSpace
 
 variable {α : Type} {enc : α ↪ List Bool} {S : α → ℕ}
 
-private theorem and_inSpace {f g : α → Bool}
+/-- Boolean conjunction preserves a common space budget. -/
+theorem and_inSpace {f g : α → Bool}
     (hf : ComputableInSpace f enc encBool S) (hg : ComputableInSpace g enc encBool S) :
     ComputableInSpace (fun a => f a && g a) enc encBool S :=
   budget_finite (fun p : Bool × Bool => p.1 && p.2) (budget_prod hf hg)
@@ -68,7 +75,7 @@ variable {k : ℕ} {State : Type} [Fintype State]
   {B n u v : α → ℕ} {symbol : α → Option Bool}
 
 /-- Reading any fixed register preserves a common space budget. -/
-private theorem readRegisters_budget (hB : ComputableInSpace B enc encNat S)
+theorem readRegisters_budget (hB : ComputableInSpace B enc encNat S)
     (hu : ComputableInSpace u enc encNat S) (i : Register k) :
     ComputableInSpace (fun a => readRegisters (B a) (u a) i) enc encNat S :=
   budget_comp_linear (component_inSpace i) (budget_prod hB hu)
@@ -79,7 +86,8 @@ theorem vertexBound_budget (hB : ComputableInSpace B enc encNat S)
     ComputableInSpace (fun a => vertexBound (k := k) (B a)) enc encNat S :=
   budget_natPow hB hin (Fintype.card (Register k))
 
-private theorem valid_budget (hB : ComputableInSpace B enc encNat S)
+/-- Syntactic validity of a packed ID preserves a common space budget. -/
+theorem valid_budget (hB : ComputableInSpace B enc encNat S)
     (hn : ComputableInSpace n enc encNat S)
     (hu : ComputableInSpace u enc encNat S)
     (hin : (fun a => (enc a).length) ≼ S) :
@@ -111,7 +119,8 @@ private theorem inputSymbol_budget {p : α → ℕ}
   simpa only [inputSymbol, Bool.or_eq_true, decide_eq_true_eq] using
     budget_ite hc (budget_const none hin) hs
 
-private theorem nextRegisters_budget {r : α → Register k → ℕ}
+/-- Updating any fixed register by a fixed native action preserves a common space budget. -/
+theorem nextRegisters_budget {r : α → Register k → ℕ}
     (hn : ComputableInSpace n enc encNat S)
     (hr : ∀ i, ComputableInSpace (fun a => r a i) enc encNat S)
     (hin : (fun a => (enc a).length) ≼ S) (act : Action k Bool State) (i : Register k) :
@@ -152,7 +161,8 @@ private theorem nextRegisters_budget {r : α → Register k → ℕ}
       | exact budget_natDiv (hr _) hthree
       | exact budget_natAdd hh (budget_natMul hthree (hr _))
 
-private theorem matchesEntry_budget {r : α → Register k → ℕ}
+/-- Checking whether decoded registers match a fixed table entry preserves a common space budget. -/
+theorem matchesEntry_budget {r : α → Register k → ℕ}
     (hn : ComputableInSpace n enc encNat S)
     (hr : ∀ i, ComputableInSpace (fun a => r a i) enc encNat S)
     (hs : ComputableInSpace symbol enc (encOption encBool) S)
@@ -170,7 +180,8 @@ private theorem matchesEntry_budget {r : α → Register k → ℕ}
   rw [List.map_ofFn]
   rfl
 
-private theorem fitsB_budget {r : α → Register k → ℕ}
+/-- Checking that every register fits below the radix preserves a common space budget. -/
+theorem fitsB_budget {r : α → Register k → ℕ}
     (hB : ComputableInSpace B enc encNat S)
     (hr : ∀ i, ComputableInSpace (fun a => r a i) enc encNat S)
     (hin : (fun a => (enc a).length) ≼ S) :
