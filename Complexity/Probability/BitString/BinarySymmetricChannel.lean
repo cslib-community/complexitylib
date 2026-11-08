@@ -9,11 +9,14 @@ module
 
 public import Complexity.Init
 public import Complexity.Foundations.BooleanAnalysis.Bernoulli
-public import Complexity.Probability.Product
+public import Mathlib.Analysis.Complex.Exponential
+public import Mathlib.InformationTheory.Hamming
+public import Mathlib.Probability.ProbabilityMassFunction.Basic
 public import Mathlib.Topology.UnitInterval
 import Complexity.Foundations.Combinatorics.BinomialTail
 import Complexity.Foundations.Data.BitString.Basic
 import Complexity.Probability.PMF.Event
+import Complexity.Probability.Product
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 

@@ -9,6 +9,8 @@ module
 
 public import Complexity.Init
 public import Mathlib.Analysis.SpecialFunctions.BinaryEntropy
+-- `import all` only to unfold `Real.qaryEntropy`, whose body Mathlib does not expose; an upstream
+-- `Real.qaryEntropy_def` lemma would make it unnecessary.
 import all Mathlib.Analysis.SpecialFunctions.BinaryEntropy
 import Complexity.Foundations.Combinatorics.BinomialTail
 import Mathlib.Algebra.BigOperators.Field

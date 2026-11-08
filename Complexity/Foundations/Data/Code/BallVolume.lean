@@ -7,8 +7,10 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Data.Code.HammingBound
+public import Complexity.Init
 public import Mathlib.Analysis.SpecialFunctions.BinaryEntropy
+public import Mathlib.InformationTheory.Hamming
+import Complexity.Foundations.Data.Code.HammingBound
 import Complexity.Foundations.Data.Nat.Choose.Entropy
 
 /-!

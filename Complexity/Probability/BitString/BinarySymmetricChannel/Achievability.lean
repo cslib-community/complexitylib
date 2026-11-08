@@ -49,7 +49,7 @@ most `2 (T + (2 K - 1) |B(n, r)| / 2 ^ n)` for every nearest codeword decoder
 For the asymptotic statement take `r = ⌊ρ n⌋` with `p < ρ < 1 / 2` and `R < 1 - h₂(ρ)`.
 Hoeffding's inequality bounds `T` by `exp (-2 (ρ - p) ^ 2 n)` and the entropy bound
 `Cslib.sum_choose_le_exp_mul_binEntropy` bounds `|B(n, r)|` by `exp (n h(ρ))`, so codes with
-`2 ^ ⌈R n⌉` codewords have maximal error at most `10 exp (-δ n)` for an explicit `δ > 0`
+`2 ^ ⌈R n⌉₊` codewords have maximal error at most `10 exp (-δ n)` for an explicit `δ > 0`
 (`Cslib.BitString.exists_pos_forall_exists_code_decodingError_le_exp`) and hence at most any `ε > 0`
 for all large `n` (`Cslib.BitString.eventually_exists_code_decodingError_le`).
 
@@ -65,6 +65,8 @@ formalized here.
   size and radius.
 * `Cslib.BitString.exists_pos_forall_exists_code_decodingError_le_exp`: achievability with an
   exponentially small maximal error.
+* `Cslib.BitString.exists_pos_forall_exists_isNearestDecoder_decodingError_le_exp`: the same, in
+  the source's form with an encoder and a decoder.
 * `Cslib.BitString.eventually_exists_code_decodingError_le`: achievability, asymptotic form.
 
 ## References
@@ -332,19 +334,19 @@ private theorem sum_filter_lt_choose_mul_pow_le {n r : ℕ} (p : I) {ρ : ℝ} (
     (hr : ρ * n < r + 1) :
     ∑ k ∈ range (n + 1) with r < k, (n.choose k : ℝ) * p ^ k * (1 - p) ^ (n - k) ≤
       Real.exp (-(2 * (ρ - p) ^ 2 * n)) := by
-  rcases Nat.eq_zero_or_pos n with rfl | hn
-  · rw [Nat.zero_add, range_one, filter_singleton, ite_eq_right (Nat.not_lt_zero r), sum_empty]
-    exact (Real.exp_pos _).le
   have hp0 : (0 : ℝ) ≤ p := p.2.1
-  have hn' : (0 : ℝ) < n := by exact_mod_cast hn
-  have ht : (ρ - p) * n ≤ (r + 1 : ℝ) - n * p := by linarith
-  have h0 : 0 ≤ (ρ - p) * n := mul_nonneg (by linarith) hn'.le
-  have h := bscNoise_toOuterMeasure_lt_weight_toReal_le (ι := Fin n) p
-    (r := r) (by rw [Fintype.card_fin]; nlinarith)
-  rw [bscNoise_toOuterMeasure_lt_weight_toReal, Fintype.card_fin] at h
-  refine h.trans (Real.exp_le_exp.mpr ?_)
-  rw [neg_mul, neg_div, neg_le_neg_iff, le_div_iff₀ hn']
-  nlinarith [mul_le_mul ht ht h0 (h0.trans ht)]
+  have hp1 : (0 : ℝ) ≤ 1 - p := sub_nonneg.mpr p.2.2
+  have h0 : 0 ≤ (ρ - p) * n := mul_nonneg (by linarith) n.cast_nonneg
+  refine (sum_le_sum_of_subset_of_nonneg (fun k hk => ?_) fun k _ _ => by positivity).trans
+    ((sum_filter_le_sub_choose_mul_pow_le n p.2.1 p.2.2 h0).trans_eq ?_)
+  · obtain ⟨hk, hrk⟩ := mem_filter.mp hk
+    refine mem_filter.mpr ⟨hk, ?_⟩
+    have : (r + 1 : ℝ) ≤ k := by exact_mod_cast hrk
+    linarith
+  · rcases eq_or_ne (n : ℝ) 0 with hn | hn
+    · rw [hn, mul_zero, mul_zero, zero_pow two_ne_zero, mul_zero, zero_div, neg_zero]
+    · congr 1
+      field_simp
 
 open Filter Topology in
 /-- **Shannon's noisy-channel coding theorem for the binary symmetric channel, achievability**
@@ -431,6 +433,21 @@ theorem exists_pos_forall_exists_code_decodingError_le_exp (p : I) (hp : (p : �
     Real.exp_le_exp.mpr (neg_le_neg (mul_le_mul_of_nonneg_right (min_le_right _ _) hn))
   linarith
 
+/-- **Shannon's noisy-channel coding theorem for the binary symmetric channel, achievability**, in
+the encoder–decoder form of [Guruswami, Rudra and Sudan, Theorem 6.3.1(1)][GuruswamiRudraSudan2019]:
+for `0 ≤ p < 1 / 2` and every rate `R < 1 - h₂(p)` there is `δ > 0` such that for every length `n`
+some encoder `E` with `2 ^ ⌈R n⌉₊` codewords and a nearest-codeword decoder `D` for it have
+maximal error probability at most `10 exp (-δ n)`. -/
+theorem exists_pos_forall_exists_isNearestDecoder_decodingError_le_exp (p : I)
+    (hp : (p : ℝ) < 1 / 2) {R : ℝ} (hR : R < 1 - Real.binEntropy p / Real.log 2) :
+    ∃ δ > 0, ∀ n : ℕ, ∃ (E : Fin (2 ^ ⌈R * n⌉₊) → BitString n) (D : BitString n → _),
+      IsNearestDecoder E D ∧ ∀ k, decodingError p E D k ≤ 10 * Real.exp (-(δ * n)) := by
+  obtain ⟨δ, hδ, h⟩ := exists_pos_forall_exists_code_decodingError_le_exp p hp hR
+  refine ⟨δ, hδ, fun n => ?_⟩
+  obtain ⟨E, hE⟩ := h n
+  obtain ⟨D, hD⟩ := exists_isNearestDecoder E
+  exact ⟨E, D, hD, hE D hD⟩
+
 open Filter Topology in
 /-- **Shannon's noisy-channel coding theorem for the binary symmetric channel, achievability**,
 in its asymptotic form: for `0 ≤ p < 1 / 2`, every rate `R < 1 - h₂(p)` and every `ε > 0`, for all
@@ -447,6 +464,5 @@ theorem eventually_exists_code_decodingError_le (p : I) (hp : (p : ℝ) < 1 / 2)
   filter_upwards [hlim.eventually (eventually_le_nhds hε)] with n hn
   obtain ⟨E, hE⟩ := h n
   exact ⟨E, fun D hD k => (hE D hD k).trans hn⟩
-
 
 end Cslib.BitString
