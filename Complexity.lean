@@ -3679,6 +3679,7 @@ public import Complexity.DataStructure.OrderedSet.Spec
 public import Complexity.DataStructure.Paging.Basic
 public import Complexity.DataStructure.Paging.LRU
 public import Complexity.DataStructure.Paging.LowerBound
+public import Complexity.DataStructure.PrefixSums.CellProbe.LowerBound
 public import Complexity.DataStructure.PrefixSums.WordRAM.Dynamic
 public import Complexity.DataStructure.PrefixSums.WordRAM.Query
 public import Complexity.DataStructure.PrefixSums.WordRAM.Tree
