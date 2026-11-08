@@ -875,8 +875,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `Resolution/Space.lean`, `SpaceWidth.lean` and `TseitinSpace.lean` cover configuration-style
   clause space, the Atserias–Dalmau inequality (Atserias–Dalmau Theorem 3) with the constant
   `W ≤ s + k - 3` of Filmus–Lauria–Mikša–Nordström–Vinyals Theorem 1, and linear clause space for
-  Tseitin formulas on expanders. Next:
-  - the Esteban–Torán upper bound by tree-like size;
+  Tseitin formulas on expanders. `TreeLikeSpace.lean`
+  ([#3229](https://github.com/cslib-community/complexitylib/issues/3229)) bounds clause space by
+  the Strahler number and the logarithm of tree-like size (Esteban–Torán), and by `n + 2` on `n`
+  variables. Next:
   - space lower bounds for the pigeonhole principle and random `k`-CNFs through width;
   - total and variable space;
   - time–space trade-offs for pebbling formulas, building on `Complexity/Computability/Pebbling`;
