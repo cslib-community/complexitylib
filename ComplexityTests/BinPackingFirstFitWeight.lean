@@ -22,7 +22,8 @@ These kernel-checked examples (using no `native_decide`) exercise
    overfull property `pairwise_firstFit`: `[[5], [3, 3]]` has the second property but not the
    first, and First Fit never returns it.
 3. The small instances of [Dósa and Sgall, Section 4][DosaSgall2013]: `i` items each of sizes
-   `18`, `41` and `61` in nondecreasing order, with capacity `120`, so `OPT = i`. For `i = 3`
+   `18`, `41` and `61` in nondecreasing order, with capacity `120` (their sizes `1/6 - 2δ`,
+   `1/3 + δ` and `1/2 + δ` with `δ = 1/120`), so `OPT = i`. For `i = 3`
    First Fit uses `5` bins, exactly the bound `⌊(17 * 3 + 8) / 10⌋ = 5` of
    `ten_mul_length_firstFit_le`. For `i = 9` it uses `15` bins, a ratio `5/3 > 3/2` beyond the
    reach of any bound of the form `3/2 * OPT + c` with `c < 3/2`, and within `⌈17/10 * 9⌉ = 16`.
