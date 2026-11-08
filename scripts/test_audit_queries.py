@@ -77,7 +77,7 @@ class HelperTests(unittest.TestCase):
 
 
 def declaration(name: str, line: int, sort: str = "theorem", **refs) -> dict:
-    return {"name": name, "module": "Complexity.A", "path": "A.lean", "role": "decl",
+    return {"name": name, "module": "CslibFrontier.A", "path": "A.lean", "role": "decl",
             "range": [line, 0, line, 1, line, 8, line, 9], "sort": sort, "local_uses": 0,
             "implicit": [], "lib_refs": set(), "test_refs": set(), "abstract_refs": set(),
             **refs}
@@ -86,41 +86,41 @@ def declaration(name: str, line: int, sort: str = "theorem", **refs) -> dict:
 class QueryTests(unittest.TestCase):
     def setUp(self) -> None:
         self.decls = {
-            "A.used": declaration("A.used", 3, lib_refs={"Complexity.B", "Complexity.C"},
+            "A.used": declaration("A.used", 3, lib_refs={"CslibFrontier.B", "CslibFrontier.C"},
                                   test_refs={"ComplexityTests.A"}),
             "A.local": declaration("A.local", 5, local_uses=2, implicit=["simp"]),
             "A.none": declaration("A.none", 7, sort="definition"),
-            "A.tested": declaration("A.tested", 9, abstract_refs={"ComplexityAbstracts.X"}),
+            "A.tested": declaration("A.tested", 9, abstract_refs={"CslibFrontierAbstracts.X"}),
         }
-        self.decls["B.used"] = {**declaration("B.used", 4), "module": "Complexity.B",
+        self.decls["B.used"] = {**declaration("B.used", 4), "module": "CslibFrontier.B",
                                 "path": "B.lean"}
 
     def test_references_list_users_by_role(self) -> None:
-        self.assertEqual(aq.reference_lines(self.decls, ["Complexity/A.lean"], unused=False), [
-            "Complexity/A.lean:3: A.used (theorem): library Complexity.B, Complexity.C; "
+        self.assertEqual(aq.reference_lines(self.decls, ["CslibFrontier/A.lean"], unused=False), [
+            "CslibFrontier/A.lean:3: A.used (theorem): library CslibFrontier.B, CslibFrontier.C; "
             "tests ComplexityTests.A",
-            "Complexity/A.lean:5: A.local (theorem): only its own module "
+            "CslibFrontier/A.lean:5: A.local (theorem): only its own module "
             "[used implicitly through simp?]",
-            "Complexity/A.lean:7: A.none (definition): nowhere",
-            "Complexity/A.lean:9: A.tested (theorem): abstracts ComplexityAbstracts.X",
+            "CslibFrontier/A.lean:7: A.none (definition): nowhere",
+            "CslibFrontier/A.lean:9: A.tested (theorem): abstracts CslibFrontierAbstracts.X",
         ])
 
     def test_unused_keeps_declarations_no_other_module_names(self) -> None:
         for decl in self.decls.values():
             decl["category"] = ("outside" if decl["lib_refs"] else "tests_only"
                                 if decl["test_refs"] or decl["abstract_refs"] else "unreferenced")
-        lines = aq.reference_lines(self.decls, ["Complexity/"], unused=True)
+        lines = aq.reference_lines(self.decls, ["CslibFrontier/"], unused=True)
         self.assertEqual([line.split(": ")[1].split()[0] for line in lines],
                          ["A.local", "A.none", "B.used"])
 
     def test_duplicates_with_a_member_under_a_prefix(self) -> None:
-        groups = [{"kind": "thm", "members": [("Complexity.A", "A.used"),
-                                              ("Complexity.B", "B.used")]}]
-        expected = ["alpha-equivalent statements:", "  Complexity/A.lean:3: A.used",
-                    "  Complexity/B.lean:4: B.used"]
+        groups = [{"kind": "thm", "members": [("CslibFrontier.A", "A.used"),
+                                              ("CslibFrontier.B", "B.used")]}]
+        expected = ["alpha-equivalent statements:", "  CslibFrontier/A.lean:3: A.used",
+                    "  CslibFrontier/B.lean:4: B.used"]
         self.assertEqual(aq.duplicate_lines(groups, self.decls, []), expected)
-        self.assertEqual(aq.duplicate_lines(groups, self.decls, ["Complexity/B"]), expected)
-        self.assertEqual(aq.duplicate_lines(groups, self.decls, ["Complexity/C"]), [])
+        self.assertEqual(aq.duplicate_lines(groups, self.decls, ["CslibFrontier/B"]), expected)
+        self.assertEqual(aq.duplicate_lines(groups, self.decls, ["CslibFrontier/C"]), [])
 
     def test_command_line(self) -> None:
         for decl in self.decls.values():
@@ -131,8 +131,8 @@ class QueryTests(unittest.TestCase):
                 mock.patch.object(aq, "annotate_headers"), \
                 mock.patch.object(aq, "collect_references"), mock.patch.object(aq, "classify"), \
                 contextlib.redirect_stdout(out):
-            self.assertEqual(aq.main(["references", "--unused", "Complexity/B.lean"]), 0)
-        self.assertEqual(out.getvalue(), "Complexity/B.lean:4: B.used (theorem): nowhere\n")
+            self.assertEqual(aq.main(["references", "--unused", "CslibFrontier/B.lean"]), 0)
+        self.assertEqual(out.getvalue(), "CslibFrontier/B.lean:4: B.used (theorem): nowhere\n")
         for argv in (["references"], ["duplicates", "--unused"]):
             with self.subTest(argv=argv), self.assertRaises(SystemExit), \
                     contextlib.redirect_stderr(io.StringIO()):
