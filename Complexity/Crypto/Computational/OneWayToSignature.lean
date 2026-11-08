@@ -619,10 +619,6 @@ private theorem map_bool_apply_true {α : Type*} (p : PMF α) (P : α → Bool) 
   refine tsum_congr fun a => ?_
   cases P a <;> simp
 
-private theorem ennreal_tsum_finsetSum {α ι : Type*} (s : Finset ι) (g : ι → α → ℝ≥0∞) :
-    (∑' a, ∑ i ∈ s, g i a) = ∑ i ∈ s, ∑' a, g i a :=
-  Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable
-
 private theorem map_true_le_sum_of_pointwise {β : Type*} {m : ℕ}
     (p : PMF β) (win : β → Bool) (q : ℕ → PMF β) (invWin : ℕ → β → Bool)
     (h : ∀ x, p x * (if win x then 1 else 0) ≤
@@ -632,7 +628,7 @@ private theorem map_true_le_sum_of_pointwise {β : Type*} {m : ℕ}
       ∑ j : Fin (dyadicSize m), if j.val < m then ((q j.val).map (invWin j.val)) true else 0 := by
   rw [map_bool_apply_true]
   refine (tsum_le_tsum h).trans ?_
-  rw [ennreal_tsum_finsetSum]
+  rw [Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable]
   refine le_of_eq (Finset.sum_congr rfl fun j _ => ?_)
   split_ifs
   · exact (map_bool_apply_true _ _).symm
@@ -657,7 +653,7 @@ private theorem bind_map_true_le_sum {α β : Type*} {m : ℕ} (μ : PMF α)
     · exact mul_le_mul_right (map_true_le_sum_of_pointwise _ _ _ _ (hpt w hw)) (μ w)
     · simp [(PMF.apply_eq_zero_iff μ w).mpr hw]
   refine h1.trans ?_
-  rw [ennreal_tsum_finsetSum]
+  rw [Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable]
   refine Finset.sum_le_sum fun j _ => ?_
   split_ifs with hj
   · rw [← htrial j.val hj, PMF.bind_apply]

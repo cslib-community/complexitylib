@@ -15,6 +15,7 @@ public import Complexity.Crypto.Encoding
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Foundations.Data.BitString.List.Operations
+import Complexity.Languages.Probabilistic.Norm
 import Complexity.Probability.PMF.Bind
 import Complexity.Tactic.PolyTime
 import Complexity.Tactic.PPT
@@ -779,9 +780,8 @@ theorem evenMansourProbRealGame_eq_coinLaw_bind
       (PMF.uniformOfFintype (G × G)).map fun k => (π, k)
   have hcoins := ProbOracleComp.table_bind_interpret_eq_coinLaw_bind μ
     (fun p => evalTwoPermsQuery (EvenMansour.evenMansourEquiv p.1 p.2.1 p.2.2) p.1) program
-  simp only [μ, evenMansourProbRealGame, EvenMansour.evenMansourRealGame,
-    EvenMansour.evalEvenMansour, evalProbTwoPerms, Probability.PMF.monad_bind_eq_bind,
-    Probability.PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.bind_map, Function.comp_def,
+  simp only [pmf_norm, μ, evenMansourProbRealGame, EvenMansour.evenMansourRealGame,
+    EvenMansour.evalEvenMansour, evalProbTwoPerms,
     interpret_evalTwoPermsQuery_eq_pure_evalTwoPerms] at hcoins ⊢
   exact hcoins
 
@@ -798,9 +798,8 @@ theorem singleKeyEvenMansourProbRealGame_eq_coinLaw_bind
       (PMF.uniformOfFintype G).map fun k => (π, k)
   have hcoins := ProbOracleComp.table_bind_interpret_eq_coinLaw_bind μ
     (fun p => evalTwoPermsQuery (EvenMansour.singleKeyEvenMansourEquiv p.1 p.2) p.1) program
-  simp only [μ, singleKeyEvenMansourProbRealGame, EvenMansour.singleKeyEvenMansourRealGame,
-    EvenMansour.evalEvenMansour, evalProbTwoPerms, Probability.PMF.monad_bind_eq_bind,
-    Probability.PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.bind_map, Function.comp_def,
+  simp only [pmf_norm, μ, singleKeyEvenMansourProbRealGame,
+    EvenMansour.singleKeyEvenMansourRealGame, EvenMansour.evalEvenMansour, evalProbTwoPerms,
     interpret_evalTwoPermsQuery_eq_pure_evalTwoPerms] at hcoins ⊢
   exact hcoins
 
@@ -818,9 +817,8 @@ theorem evenMansourProbIdealGame_eq_coinLaw_bind
       (PMF.uniformOfFintype (Equiv.Perm G)).map fun π => (E, π)
   have hcoins := ProbOracleComp.table_bind_interpret_eq_coinLaw_bind μ
     (fun p => evalTwoPermsQuery p.1 p.2) program
-  simp only [μ, evenMansourProbIdealGame, EvenMansour.evenMansourIdealGame, evalProbTwoPerms,
-    Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure, PMF.bind_bind,
-    PMF.bind_map, Function.comp_def, interpret_evalTwoPermsQuery_eq_pure_evalTwoPerms] at hcoins ⊢
+  simp only [pmf_norm, μ, evenMansourProbIdealGame, EvenMansour.evenMansourIdealGame,
+    evalProbTwoPerms, interpret_evalTwoPermsQuery_eq_pure_evalTwoPerms] at hcoins ⊢
   exact hcoins
 
 /-- **Randomized two-key Even–Mansour PRP security in the ideal-permutation model**
@@ -1243,9 +1241,8 @@ private def twoKeyEquiv (n : ℕ) : BitString (2 * n) ≃ BitString n × BitStri
 theorem eval_evenMansourWordRealGame (adversary : EvenMansourDistinguisher) (n : ℕ) :
     ProbComp.eval (evenMansourWordRealGame adversary n) =
       evenMansourProbRealGame (evenMansourWordAdapter n (adversary n [])) := by
-  simp only [evenMansourWordRealGame, evenMansourProbRealGame, ProbComp.eval_bind,
-    ProbComp.eval_uniform, BitString.eval_sampleList, ProbOracleComp.eval_interpret,
-    ProbComp.eval_pure, Probability.PMF.monad_bind_eq_bind]
+  simp only [pmf_norm, evenMansourWordRealGame, evenMansourProbRealGame, ProbComp.eval_uniform,
+    BitString.eval_sampleList, ProbOracleComp.eval_interpret]
   congr 1 with π : 1
   rw [← PMF.uniformOfFintype_map_equiv (twoKeyEquiv n), PMF.bind_map, BitString.uniformList,
     PMF.bind_map]
@@ -1260,9 +1257,8 @@ theorem eval_evenMansourWordRealGame (adversary : EvenMansourDistinguisher) (n :
 theorem eval_singleKeyEvenMansourWordRealGame (adversary : EvenMansourDistinguisher) (n : ℕ) :
     ProbComp.eval (singleKeyEvenMansourWordRealGame adversary n) =
       singleKeyEvenMansourProbRealGame (evenMansourWordAdapter n (adversary n [])) := by
-  simp only [singleKeyEvenMansourWordRealGame, singleKeyEvenMansourProbRealGame, ProbComp.eval_bind,
-    ProbComp.eval_uniform, BitString.eval_sampleList, ProbOracleComp.eval_interpret,
-    ProbComp.eval_pure, Probability.PMF.monad_bind_eq_bind]
+  simp only [pmf_norm, singleKeyEvenMansourWordRealGame, singleKeyEvenMansourProbRealGame,
+    ProbComp.eval_uniform, BitString.eval_sampleList, ProbOracleComp.eval_interpret]
   congr 1 with π : 1
   rw [BitString.uniformList, PMF.bind_map]
   congr 1 with k : 1
@@ -1276,9 +1272,8 @@ theorem eval_singleKeyEvenMansourWordRealGame (adversary : EvenMansourDistinguis
 theorem eval_evenMansourWordIdealGame (adversary : EvenMansourDistinguisher) (n : ℕ) :
     ProbComp.eval (evenMansourWordIdealGame adversary n) =
       evenMansourProbIdealGame (evenMansourWordAdapter n (adversary n [])) := by
-  simp only [evenMansourWordIdealGame, evenMansourProbIdealGame, ProbComp.eval_bind,
-    ProbComp.eval_uniform, ProbOracleComp.eval_interpret, ProbComp.eval_pure,
-    Probability.PMF.monad_bind_eq_bind, evalProbTwoPerms_evenMansourWordAdapter]
+  simp only [pmf_norm, evenMansourWordIdealGame, evenMansourProbIdealGame, ProbComp.eval_uniform,
+    ProbOracleComp.eval_interpret, evalProbTwoPerms_evenMansourWordAdapter]
 
 /-- **Word-oracle two-key Even–Mansour security bound** ([EvenMansour1997];
 [BonehShoup2023], Theorem 4.14): any word-oracle distinguisher making at most `Q_e` cipher queries
