@@ -154,23 +154,6 @@
  "Complexity/Crypto/Computational/Encryption/Hybrid/CompositionCCA.lean": {
   "encPair encUnary (encPair encBits encBits)": 3
  },
- "Complexity/Crypto/Computational/GMW/PolyTime.lean": {
-  "encList (encPair encNat encBool)": 3,
-  "encPair encBits (encList encBits)": 5,
-  "encPair encBits (encPair encUnary encBits)": 3,
-  "encPair encUnary (encPair ?1 encBits)": 7
- },
- "Complexity/Crypto/Computational/GMW/Sequential.lean": {
-  "encPair encUnary (encPair ?1 encBits)": 5,
-  "encPair encUnary (encPair encUnary encFiniteConfig)": 3
- },
- "Complexity/Crypto/Computational/GMW/Sequential/Simulator.lean": {
-  "encPair encUnary (encPair ?1 encBits)": 5
- },
- "Complexity/Crypto/Computational/GMW/Simulator.lean": {
-  "encPair (encPair encUnary (encPair ?1 encBits)) encBits": 3,
-  "encPair encUnary (encPair ?1 encBits)": 5
- },
  "Complexity/Crypto/Computational/Homomorphic/FixedKey/Security.lean": {
   "encPair encUnary (encPair encBits encBool)": 3
  },
@@ -223,22 +206,5 @@
  },
  "Complexity/Crypto/Computational/TargetCollisionResistant.lean": {
   "encPair encUnary (encPair encBits encBits)": 9
- },
- "Complexity/Crypto/Computational/ZeroKnowledge.lean": {
-  "encPair encUnary (encPair ?1 encBits)": 4
- },
- "Complexity/Crypto/Computational/ZeroKnowledge/AuxClock.lean": {
-  "encPair ?1 (encPair ?2 encBits)": 3
- },
- "Complexity/Crypto/Protocols/SigmaProtocol/Computational.lean": {
-  "encPair ?1.index (encPair encBits encBits)": 3
- },
- "Complexity/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Efficient.lean": {
-  "encOption (encPair encBits encBits)": 4,
-  "encPair encLyubashevskyParams (encPair encBits encBits)": 3
- },
- "Complexity/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Signature/Efficient.lean": {
-  "encOption (encPair encBits encBits)": 3,
-  "encPair encLyubashevskySignInput (encList encIntBin)": 3
  }
 }

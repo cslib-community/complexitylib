@@ -807,11 +807,11 @@ index links to canonical definitions rather than keeping a second set.
   approximate counting.
 - **Exact counting by determinants**
   ([#3081](https://github.com/cslib-community/complexitylib/issues/3081)): Kirchhoff's
-  matrix-tree theorem (with polynomial-time spanning-tree counting), its weighted form and Tutte's
-  directed (arborescence) form are done. Remaining: the BEST theorem for Eulerian circuits,
-  polynomial-time counting of arborescences and of weighted spanning trees, and Kasteleyn's
-  Pfaffian method for perfect matchings of planar graphs, in contrast with permanent
-  #P-completeness.
+  matrix-tree theorem (with polynomial-time spanning-tree counting), its weighted form, Tutte's
+  directed (arborescence) form and the BEST theorem for Eulerian circuits of multidigraphs are
+  done. Remaining: polynomial-time counting of arborescences, of weighted spanning trees and of
+  Eulerian circuits, the root independence of the BEST count, and Kasteleyn's Pfaffian method
+  for perfect matchings of planar graphs, in contrast with permanent #P-completeness.
 - For composite moduli
   ([#3495](https://github.com/cslib-community/complexitylib/issues/3495)): the prime-power
   collapse `Mod_{p^e}P = Mod_pP` is done. Remaining: union closure for every modulus through
@@ -917,11 +917,11 @@ universe size, not supplied as unverified input tables. In dependency order:
 - **Logic and automata on words**, after Büchi–Elgot–Trakhtenbrot for finite words (MSO =
   regular), FO[<] ⊊ MSO via EVEN
   ([#2885](https://github.com/cslib-community/complexitylib/issues/2885)) and star-free ⇒ FO[<]
-  ([#3075](https://github.com/cslib-community/complexitylib/issues/3075)): the converse FO[<] ⇒
-  star-free over a finite alphabet (McNaughton–Papert,
-  [#3469](https://github.com/cslib-community/complexitylib/issues/3469)), by composition of
-  rank-k types, and star-free = aperiodic (Schützenberger), from cslib's syntactic monoid, with
-  decidability of first-order definability for regular languages;
+  ([#3075](https://github.com/cslib-community/complexitylib/issues/3075)), with the converse over a
+  finite alphabet (McNaughton–Papert,
+  [#3469](https://github.com/cslib-community/complexitylib/issues/3469)): star-free = aperiodic
+  (Schützenberger), from cslib's syntactic monoid, with decidability of first-order definability
+  for regular languages;
   closure of regular languages under homomorphic images, upstream to cslib; the non-elementary
   lower bound on formula-to-automaton translation; Büchi's theorem for ω-words (S1S) over
   cslib's ω-regular languages; and MSO on trees: finite trees and tree automata
@@ -976,6 +976,16 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   matching or Kőnig cover in the machine model) and the resulting `IsKernelization` of the encoded
   `VertexCover` with `O(k)` vertices, the LP-based `2k` kernel by Nemhauser–Trotter, and the
   expansion lemma (`q`-expansions) with its kernels.
+- **Iterative compression** ([#3456](https://github.com/cslib-community/complexitylib/issues/3456)):
+  odd cycle transversal on `SimpleGraph` with the compression lemma, a minimum vertex separator by
+  vertex splitting and Edmonds–Karp, and the `TimeM` algorithm `octM` in `O(3^k · n^6)`.
+  Remaining: Hüffner's `O(3^k · k m n)` and `O(3^k · m n)` (at most `k + 1` augmenting paths on
+  adjacency lists, then incremental flow updates), encoded `OddCycleTransversal ∈ FPT` on
+  multi-tape machines, the `O*(2.3146^k)` LP-based algorithm
+  (Lokshtanov–Narayanaswamy–Raman–Ramanujan–Saurabh), feedback vertex set and directed variants
+  by iterative compression; once Menger's theorem
+  ([#3413](https://github.com/cslib-community/complexitylib/pull/3413)) lands, the bridge
+  `MaxFlow.IsVertexSeparator G u v T ↔ u ∉ T ∧ v ∉ T ∧ G.IsSeparator {u} {v} T`.
 - **Kernelization lower bounds**
   ([#3210](https://github.com/cslib-community/complexitylib/issues/3210)): `NP/poly`, and the
   Fortnow–Santhanam theorem that an OR-distillation of an `NP`-hard problem gives
@@ -1000,6 +1010,13 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   `W[1] = FPT` exactly when `Clique` is in `FPT`. Remaining
   ([#3256](https://github.com/cslib-community/complexitylib/issues/3256)): `W[t] ⊆ XP`,
   W[2]-completeness of Dominating Set, short Turing machine acceptance, `W[P]` and the A-hierarchy.
+- **Exact exponential algorithms** ([#3013](https://github.com/cslib-community/complexitylib/issues/3013)):
+  the Bellman–Held–Karp dynamic program for TSP, correct against brute force in `n² · 2ⁿ`
+  unit-cost operations and deciding `TSP` and `HamCycle`, is in `Algorithms/Lean/TSP/HeldKarp`.
+  Remaining: inclusion–exclusion counting of Hamiltonian paths (Karp; Bax) in `2ⁿ · poly(n)` time
+  and polynomial space, with the space bound in a model that measures it; machine-level
+  certificates for these algorithms; and further exact algorithms such as subset convolution and
+  inclusion–exclusion colouring.
 - **Exponential-time SAT** ([#894]): Schöning, PPZ and PPSZ run on the randomized word RAM with
   exact laws, amplification and time bounds (PPSZ's round count takes an input bound
   `a / b ≥ 1 - qbar k h`); Schöning has a curated abstract. Optional remainder: PPZ and PPSZ
@@ -1343,8 +1360,20 @@ each statement against the numbered result. Organize modules by subject, not cha
 
 ## Pseudorandomness, coding and Boolean analysis
 
+- **Improved sparse expanders**
+  ([#3348](https://github.com/cslib-community/complexitylib/issues/3348)): construct simple
+  degree-two/three cores and their matching-path extensions, connect their generalized
+  eigenvector equations to normalized spectral expansion, and formalize explicit core families
+  and the density-sequence asymptotic coefficient approaching `π² / 8`. For lossless expansion,
+  construct the equivariant regular subgraph and prove full row rank through the orbit-matrix
+  and prime-power-group argument. Finite spectral certificates, conditional cut-rank bounds,
+  and transfer for a supplied subgraph do not complete these construction endpoints.
 - **Derandomization from hardness:** the infinitely-often variant, and the EXP ⊄ P/poly endpoint
   of Babai, Fortnow, Nisan and Wigderson.
+- **Hard-core lemma** ([#3557](https://github.com/cslib-community/complexitylib/issues/3557)):
+  the measure and set forms are in place for nonuniform De Morgan circuits, with density `δ` from
+  hardness `δ`. Open: Holenstein's optimal density (a set of density `δ` from hardness `δ / 2`,
+  his Lemma 2.1), the uniform hard-core lemma, and sharper size losses from smooth boosting.
 - **Extractors** ([#895]) beyond Chor–Goldreich: two-source extractors for lower min-entropy,
   where the `t`-wise independent parts of Chattopadhyay–Zuckerman's Theorem 4.1 are formalized with
   exponent `O(d²)` in place of their `3 d + 6` (the almost `t`-wise independent parts are not), with
@@ -1505,7 +1534,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   streams of unknown
   length (reservoir sampling), and the `n^{Ω(1)}` lower bounds for `F_k` with `k ≥ 6`; `ProbComp`
   samplers and native realizations of the AMS sketches and the Count-Sketch; turnstile updates as
-  stream items (the Count-Sketch row analysis already allows real weights), merging of Misra–Gries
+  stream items (the Count-Sketch row analysis already allows real weights; the tug-of-war join
+  signature, [#3551](https://github.com/cslib-community/complexitylib/issues/3551), is insert-only
+  and needs them for the deletions of Alon–Gibbons–Matias–Szegedy), the signature-size lower bound
+  for join sizes (Alon–Gibbons–Matias–Szegedy Theorem 4.3), merging of Misra–Gries
   summaries, heavy-hitter recovery over the whole universe (dyadic or group-testing schemes) and
   space lower bounds for heavy hitters; multi-pass communication-to-streaming transfers with pass
   counts.
@@ -1648,10 +1680,14 @@ each statement against the numbered result. Organize modules by subject, not cha
   ancilla-free no-cloning, single-qubit teleportation and superdense coding, prove the
   Wootters–Zurek form of no-cloning with an input-dependent apparatus register (by the same
   linearity argument) and teleportation of one half of an entangled state, as in entanglement
-  swapping (a pure-state statement). Prove Holevo's bound (in particular, superdense coding is
-  optimal) and Nayak's bound for quantum random access codes; both need density matrices, von
-  Neumann entropy and mutual information. With channel semantics, prove no-cloning for mixed
-  states and no-broadcasting.
+  swapping (a pure-state statement). Building on the density matrices, partial traces,
+  no-signalling and quantum one-time pad of
+  [#3490](https://github.com/cslib-community/complexitylib/issues/3490), prove that `2n` key bits
+  are necessary to encrypt `n` qubits (Ambainis–Mosca–Tapp–de Wolf), Holevo's bound (in
+  particular, superdense coding is optimal) and Nayak's bound for quantum random access codes. All
+  three need von Neumann entropy (AMTW's Theorem 5.3 uses it; the weaker key-count bound
+  `N ≥ 4ⁿ` may admit a dimension argument), and the last two also need mutual information. With
+  channel semantics (CPTP maps), prove no-cloning for mixed states and no-broadcasting.
 
 - **Quantum query separations**
   ([#2991](https://github.com/cslib-community/complexitylib/issues/2991)): beyond the decision
@@ -1757,11 +1793,22 @@ each statement against the numbered result. Organize modules by subject, not cha
   exponential lower bounds for other pivoting rules, such as Bland's rule on Klee–Minty-type
   programs (Avis–Chvátal 1978); smoothed analysis (Spielman–Teng); strongly polynomial special
   cases; and a costed implementation.
+- **Extension complexity** ([#3258](https://github.com/cslib-community/complexitylib/issues/3258)):
+  nonnegative rank, slack matrices, extended formulations with free equations, Yannakakis's
+  factorization theorem `xc P = rank₊ S` for nontrivial polytopes, and the rectangle covering bound
+  `N¹(supp M) ≤ ⌈log₂ rank₊ M⌉` are in `Foundations/LinearAlgebra/Matrix/NonnegRank`,
+  `Foundations/Analysis/Convex/ExtendedFormulation` and
+  `Communication/Nondeterministic/{CoverNumber,ExtensionComplexity}`. Remaining: the facet
+  form of the theorem (an extension with `r` facets); exponential lower bounds for the
+  correlation, cut, stable-set and TSP polytopes (Fiorini–Massar–Pokutta–Tiwary–de Wolf), for
+  instance through Kaibel–Weltge's `(3/2)^n` rectangle-cover bound for unique disjointness;
+  semidefinite and conic extensions; and Rothvoß's lower bound for the perfect matching polytope.
 - **Lattice basis reduction** ([#3235](https://github.com/cslib-community/complexitylib/issues/3235)):
   `δ`-reduced bases, the LLL approximation `‖b₁‖² ≤ (4/(4δ-1))^{n-1} ‖x‖²` (paper indexing,
   `n` vectors) to the shortest vector (Lenstra–Lenstra–Lovász Proposition (1.11)), the potential
   argument bounding the number of exchange steps by `O(n² log B)` for integral Gram matrices, and
-  an executable LLL (`δ = 3/4`, exact rational Gram–Schmidt) on integer bases whose output is
+  an executable LLL (exact rational Gram–Schmidt; `δ = 3/4`, and `lllWith δ` for any rational
+  `0 < δ < 1` with an explicit `⌈δ/(1-δ)⌉`-scaled round budget) on integer bases whose output is
   reduced and spans the same lattice are in `Algorithms/LatticeReduction`, over Gram–Schmidt
   facts in `Foundations/Analysis/InnerProductSpace/GramSchmidtOrtho`. Babai's nearest-plane
   algorithm ([#3486](https://github.com/cslib-community/complexitylib/issues/3486)) is there too:
@@ -1769,10 +1816,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   executable LLL-then-round algorithm on integer bases and targets that solves CVP within `2^{n/2}`.
   Remaining: a cost model for the executable LLL with the `O(n⁴ log B)` arithmetic-operation bound
   (the current version recomputes Gram–Schmidt every round) and the `O(n log B)` bit-size bound of
-  (1.26), then `ComputableInPolyTime` statements for LLL and Babai; an executable reduction with
-  `δ` near `1` (at `δ = 1` the abstract bound already gives Babai's factor `2 (2/√3)ⁿ⁻¹` for
-  `1`-reduced bases, but `lll` fixes `δ = 3/4`) and rational targets for Babai; then applications
-  (simultaneous Diophantine approximation, polynomial factorization over `ℚ`).
+  (1.26), then `ComputableInPolyTime` statements for LLL and Babai; running Babai over
+  `lllWith δ` for `δ` near `1` (at `δ = 1` the abstract bound already gives Babai's factor
+  `2 (2/√3)ⁿ⁻¹` for `1`-reduced bases, but `babai` uses `lll`, which fixes `δ = 3/4`) and
+  rational targets for Babai; then applications (simultaneous Diophantine approximation,
+  polynomial factorization over `ℚ`).
 - **Separation and optimization:** a precise oracle interface and a separation–optimization
   equivalence with its representation, accuracy and well-boundedness hypotheses. Extend to
   convex optimization through explicit oracle and numerical-error contracts.
@@ -1966,13 +2014,15 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Comparison selection** ([#3279](https://github.com/cslib-community/complexitylib/issues/3279)):
   groups-of-five median-of-medians selection in cslib's comparison-query model, correct for
   total preorders and making at most `37 n` comparisons under every oracle, is in
-  `Algorithms/Lean/Query/Select`. Remaining: sharper constants for the same algorithm (a
-  six-comparison median of five, and reusing the group comparisons in the partition); the
-  `5.4305 n` bound of Blum, Floyd, Pratt, Rivest and Tarjan for their refined `PICK` and Dor and
-  Zwick's `2.95 n` median bound; group-size variants such as groups of three or seven;
-  comparison lower bounds (`n − 1` for the minimum, `⌈3n/2⌉ − 2` for the minimum and maximum
-  together, and lower bounds for the median); and a word-RAM implementation with charged
-  instruction counts.
+  `Algorithms/Lean/Query/Select`. The comparison lower bounds `n − 1` for the minimum and
+  `⌈3n/2⌉ − 2` for the minimum and maximum together (Pohl's adversary), with matching algorithms,
+  are in `Algorithms/Lean/Query/Select/MinMax`. Remaining: sharper constants for the same
+  algorithm (a six-comparison median of five, and reusing the group comparisons in the
+  partition); the `5.4305 n` bound of Blum, Floyd, Pratt, Rivest and Tarjan for their refined
+  `PICK` and Dor and Zwick's `2.95 n` median bound; group-size variants such as groups of three
+  or seven; further comparison lower bounds (Kislitsyn's `n + ⌈log₂ n⌉ − 2` for the second
+  smallest, and lower bounds for the median and for general ranks, such as the `2n − o(n)` of
+  Bent and John); and a word-RAM implementation with charged instruction counts.
 
 ### Online algorithms and competitive analysis
 
@@ -2052,8 +2102,9 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   networks for latency classes without the constant functions (parallel links and unions of paths)
   and the M/M/1 and M/G/1 delay bounds (Roughgarden 2003, Theorems 4.5 and 4.9 and Section 5); the
   tight price of stability of affine congestion games, below the potential-method bound `2`;
-  strong Nash equilibria of fair cost-sharing games and their price of anarchy; price-of-stability
-  bounds for undirected and weighted network design; Braess's paradox; weighted and mixed-strategy
+  existence of strong Nash equilibria of fair cost-sharing games in special network classes
+  (Epstein–Feldman–Mansour 2009) and a network without one; price-of-stability bounds for
+  undirected and weighted network design; Braess's paradox; weighted and mixed-strategy
   atomic congestion games; the Monderer–Shapley characterization of potential games as congestion
   games.
 
@@ -2166,10 +2217,10 @@ Arrow's theorem). Remaining directions:
 - **FPRAS and almost-uniform sampling:** `Classes/FPRAS` and `Classes/FPAUS` give the two
   interfaces, and `Classes/FPAUS/FPRAS` proves FPAUS ⇒ FPRAS for one-bit self-reducible
   witness families ([#3039](https://github.com/cslib-community/complexitylib/issues/3039)).
-  `Classes/FPAUS/Sampler` proves the output-law half of the converse: the Jerrum–Valiant–Vazirani
-  sampler built from an approximate counter is within statistical distance `2 ^ (-q)` of uniform.
-  Certify that sampler as strict PPT when the counter is an FPRAS, giving the class inclusion
-  FPRAS ⇒ FPAUS. Allow self-reductions fixing several symbols per step, and instantiate both
+  `Classes/FPAUS/Sampler` and `Classes/FPAUS/OfFPRAS` prove the converse FPRAS ⇒ FPAUS (the
+  Jerrum–Valiant–Vazirani sampler, with its output law and strict PPT certificate), so the two
+  classes agree on these families. Allow self-reductions fixing several symbols per step,
+  formalize Sinclair and Jerrum's reduction from polynomial-error counting, and instantiate both
   directions for concrete relations such as DNF assignments.
 - Extend to randomized approximate counting for matchings and permanents of nonnegative
   rational matrices through explicit mixing and reduction theorems. Reuse the coupling and
