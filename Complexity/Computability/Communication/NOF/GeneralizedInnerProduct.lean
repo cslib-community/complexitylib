@@ -9,9 +9,10 @@ module
 
 public import Complexity.Computability.Communication.NOF.Cube
 public import Mathlib.Algebra.Ring.BooleanRing
-public import Mathlib.Analysis.Complex.Exponential
 public import Mathlib.Data.Matrix.Mul
+import Complexity.Foundations.Data.Finset.Expect
 import Complexity.Foundations.Data.Finset.ExpectPi
+import Mathlib.Analysis.Complex.Exponential
 
 /-!
 # The generalized inner product
@@ -35,7 +36,7 @@ Boolean ring. So the cube expectation of `GIP` equals its bias `𝔼 (-1) ^ GIP`
 protocol with error `1 / 2 - γ` sending `c` bits has
 `(2 γ) ^ (2 ^ k) ≤ 2 ^ (c 2 ^ k) (1 - 2 / 2 ^ k) ^ n`
 (`NOF.PublicCoin.pow_le_of_ecomplexityFun_gip_le`). For error `1 / 3` this gives
-`2 n ≤ 4 ^ k (c + 2)` (`NOF.PublicCoin.two_mul_le_four_pow_mul_of_ecomplexityFun_gip_le`), and
+`2 n < 4 ^ k (c + 2)` (`NOF.PublicCoin.two_mul_lt_four_pow_mul_of_ecomplexityFun_gip_le`), and
 deterministic protocols give `2 n ≤ 4 ^ k c`
 (`NOF.Protocol.two_mul_le_four_pow_mul_of_ecomplexityFun_gip_le`).
 
@@ -51,7 +52,7 @@ sees nothing.
 * `Cslib.Communication.NOF.cubeExpectation_gip`, `Cslib.Communication.NOF.expect_signVal_gip`: the
   cube expectation of the generalized inner product is its bias `(1 - 2 / 2 ^ k) ^ n`.
 * `Cslib.Communication.NOF.discrepancy_gip_pow_le`: `disc(GIP) ^ (2 ^ k) ≤ (1 - 2 / 2 ^ k) ^ n`.
-* `Cslib.Communication.NOF.PublicCoin.two_mul_le_four_pow_mul_of_ecomplexityFun_gip_le`,
+* `Cslib.Communication.NOF.PublicCoin.two_mul_lt_four_pow_mul_of_ecomplexityFun_gip_le`,
   `Cslib.Communication.NOF.Protocol.two_mul_le_four_pow_mul_of_ecomplexityFun_gip_le`: the
   Babai–Nisan–Szegedy lower bound `Ω(n / 4 ^ k)`.
 
@@ -247,25 +248,30 @@ theorem PublicCoin.pow_le_of_ecomplexityFun_gip_le [Nonempty ι] {n c : ℕ} {γ
 omit [DecidableEq ι] in
 /-- **Babai–Nisan–Szegedy lower bound for the generalized inner product** [BabaiNisanSzegedy1992]:
 public-coin NOF protocols of `k ≥ 1` players holding `n` bits each that compute the generalized
-inner product with error at most `1 / 3`, sending at most `c` bits, have `2 n ≤ 4 ^ k (c + 2)`:
-`R_{1/3}(GIP) = Ω(n / 4 ^ k)`. -/
-theorem PublicCoin.two_mul_le_four_pow_mul_of_ecomplexityFun_gip_le [Nonempty ι] {n c : ℕ}
+inner product with error at most `1 / 3`, sending at most `c` bits, have `2 n < 4 ^ k (c + 2)`:
+`R_{1/3}(GIP) = Ω(n / 4 ^ k)`. The proof gives `2 n ≤ 4 ^ k (c + 3 / 2)`, from `3 ≤ exp (3 / 2)`. -/
+theorem PublicCoin.two_mul_lt_four_pow_mul_of_ecomplexityFun_gip_le [Nonempty ι] {n c : ℕ}
     (h : PublicCoin.ecomplexityFun (1 / 3) (gip : (ι → BitString n) → Bool) ≤ c) :
-    2 * n ≤ 4 ^ Fintype.card ι * (c + 2) := by
+    2 * n < 4 ^ Fintype.card ι * (c + 2) := by
   have h' : PublicCoin.ecomplexityFun (1 / 2 - 1 / 6) (gip : (ι → BitString n) → Bool) ≤ c := by
     rw [show (1 : ℝ) / 2 - 1 / 6 = 1 / 3 by norm_num]
     exact h
   have hp := PublicCoin.pow_le_of_ecomplexityFun_gip_le (by norm_num) h'
-  have hm : (2 * (1 / 6 : ℝ))⁻¹ ≤ Real.exp 2 := by
-    rw [show (2 * (1 / 6 : ℝ))⁻¹ = 3 by norm_num]
-    linarith [Real.add_one_le_exp 2]
+  have hm : (2 * (1 / 6 : ℝ))⁻¹ ≤ Real.exp (3 / 2) := by
+    have h34 : (7 / 4 : ℝ) ≤ Real.exp (3 / 4) := by linarith [Real.add_one_le_exp (3 / 4)]
+    rw [show (2 * (1 / 6 : ℝ))⁻¹ = 3 by norm_num, show (3 / 2 : ℝ) = 3 / 4 + 3 / 4 by norm_num,
+      Real.exp_add]
+    nlinarith
   have := two_mul_le_of_pow_le Fintype.card_ne_zero (by norm_num) hm hp
-  exact_mod_cast this
+  have hk : (0 : ℝ) < 4 ^ Fintype.card ι := by positivity
+  have hlt : 2 * (n : ℝ) < 4 ^ Fintype.card ι * (c + 2) := by nlinarith
+  exact_mod_cast hlt
 
 omit [DecidableEq ι] in
 /-- **Deterministic protocols for the generalized inner product**: a deterministic NOF protocol of
 `k ≥ 1` players holding `n` bits each computing the generalized inner product exactly, sending at
-most `c` bits, has `2 n ≤ 4 ^ k c`. -/
+most `c` bits, has `2 n ≤ 4 ^ k c`. This cannot be strict: with `n = 0` the function is constant
+and `c = 0`. -/
 theorem Protocol.two_mul_le_four_pow_mul_of_ecomplexityFun_gip_le [Nonempty ι] {n c : ℕ}
     (h : Protocol.ecomplexityFun (gip : (ι → BitString n) → Bool) ≤ c) :
     2 * n ≤ 4 ^ Fintype.card ι * c := by

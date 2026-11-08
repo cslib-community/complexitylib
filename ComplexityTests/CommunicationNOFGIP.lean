@@ -48,7 +48,7 @@ and error `1 / 3`. -/
 example {c : ℕ}
     (h : PublicCoin.ecomplexityFun (1 / 3) (gip : (Fin 3 → BitString 1000) → Bool) ≤ c) :
     30 ≤ c := by
-  have := PublicCoin.two_mul_le_four_pow_mul_of_ecomplexityFun_gip_le h
+  have := PublicCoin.two_mul_lt_four_pow_mul_of_ecomplexityFun_gip_le h
   norm_num at this
   omega
 
@@ -58,6 +58,30 @@ example (n : ℕ) :
     Protocol.ecomplexityFun (gip : (Fin 3 → BitString n) → Bool) ≤ n + 1 :=
   Protocol.ecomplexityFun_le_succ (X := fun _ : Fin 3 => BitString n) (i := 0) (j := 1)
     (by decide) (fun v => v ⟨0, by decide⟩) id (fun _ => rfl) gip
+
+/-- The public-coin hypothesis of the lower bound is satisfiable: running the trivial deterministic
+protocol gives `R_{1/3}(GIP) ≤ n + 1`. -/
+example (n : ℕ) :
+    PublicCoin.ecomplexityFun (1 / 3) (gip : (Fin 3 → BitString n) → Bool) ≤ n + 1 :=
+  (PublicCoin.ecomplexityFun_le_protocol (by norm_num)).trans
+    (Protocol.ecomplexityFun_le_succ (X := fun _ : Fin 3 => BitString n) (i := 0) (j := 1)
+      (by decide) (fun v => v ⟨0, by decide⟩) id (fun _ => rfl) gip)
+
+/-- So for three players with `1000` bits each, `R_{1/3}(GIP)` lies between `30` and `1001`. -/
+example :
+    30 ≤ PublicCoin.ecomplexityFun (1 / 3) (gip : (Fin 3 → BitString 1000) → Bool) ∧
+      PublicCoin.ecomplexityFun (1 / 3) (gip : (Fin 3 → BitString 1000) → Bool) ≤ 1001 := by
+  have hup : PublicCoin.ecomplexityFun (1 / 3) (gip : (Fin 3 → BitString 1000) → Bool) ≤
+      1000 + 1 :=
+    (PublicCoin.ecomplexityFun_le_protocol (by norm_num)).trans
+      (Protocol.ecomplexityFun_le_succ (X := fun _ : Fin 3 => BitString 1000) (i := 0) (j := 1)
+        (by decide) (fun v => v ⟨0, by decide⟩) id (fun _ => rfl) gip)
+  refine ⟨?_, hup⟩
+  obtain ⟨c, hc⟩ := ENat.ne_top_iff_exists.mp (ne_top_of_le_ne_top (by decide) hup)
+  have := PublicCoin.two_mul_lt_four_pow_mul_of_ecomplexityFun_gip_le hc.symm.le
+  norm_num at this
+  rw [← hc]
+  exact_mod_cast (by omega : 30 ≤ c)
 
 /-- **One player sees nothing**: a public-coin protocol of a single player for the generalized
 inner product of `n ≥ 1` bits cannot have error below `1 / 2`, at any cost. -/

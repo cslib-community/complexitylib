@@ -8,8 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Communication.NOF.Discrepancy
-public import Complexity.Foundations.Data.Finset.ExpectResample
 public import Mathlib.Data.Finset.Piecewise
+import Complexity.Foundations.Data.Finset.ExpectResample
 import Mathlib.Algebra.BigOperators.Group.Finset.Powerset
 import Mathlib.Algebra.Order.BigOperators.Expect
 import Mathlib.Tactic.Positivity
@@ -22,9 +22,9 @@ players: the input that agrees with `b` on the players of `S` and with `a` on th
 expectation* `E(f)` of `f : (∀ i, X i) → Bool` is the average over independent uniform `a` and `b`
 of the product of the signs `(-1) ^ f` at the corners (`NOF.cubeExpectation`). The cube bound
 says that with `k ≥ 1` players the discrepancy of `f` under the uniform distribution satisfies
-`disc(f) ^ (2 ^ k) ≤ E(f)` (`NOF.discrepancy_uniformOfFintype_pow_le`). It goes back to Babai,
-Nisan and Szegedy [BabaiNisanSzegedy1992], and is the criterion of Chung [Chung1990] and Raz
-[Raz2000] in the form used here [Jukna, Section 5.6][Jukna2012]. So to bound the discrepancy, and
+`disc(f) ^ (2 ^ k) ≤ E(f)` (`NOF.discrepancy_uniformOfFintype_pow_le`). This is the BNS–Chung
+criterion [BabaiNisanSzegedy1992][Chung1990], in the proof of Raz [Raz2000]; see also
+[Jukna, Section 5.6][Jukna2012]. So to bound the discrepancy, and
 with it the communication complexity of `f` (`NOF.PublicCoin.two_mul_le_two_pow_mul_discrepancy`),
 it suffices to compute the cube expectation.
 
@@ -88,8 +88,8 @@ private theorem piecewise_insert_update_update {S : Finset ι} {j : ι} (hj : j 
 depending on `x i`, over the players `i ∈ T`, is controlled by the averages of products of `F`
 over the `2 ^ |T|` corners `S.piecewise b a`, `S ⊆ T`, of a random cube. -/
 theorem pow_expect_mul_prod_le (T : Finset ι) (F : (∀ i, X i) → ℝ)
-    (g : ι → (∀ i, X i) → ℝ) (hg : ∀ i x (e : X i), g i (update x i e) = g i x)
-    (hg1 : ∀ i x, |g i x| ≤ 1) :
+    (g : ι → (∀ i, X i) → ℝ) (hg : ∀ i ∈ T, ∀ x (e : X i), g i (update x i e) = g i x)
+    (hg1 : ∀ i ∈ T, ∀ x, |g i x| ≤ 1) :
     (𝔼 x, F x * ∏ i ∈ T, g i x) ^ (2 ^ #T) ≤
       𝔼 a, 𝔼 b, ∏ S ∈ T.powerset, F (S.piecewise b a) := by
   induction T using Finset.induction_on generalizing F g with
@@ -106,7 +106,7 @@ theorem pow_expect_mul_prod_le (T : Finset ι) (F : (∀ i, X i) → ℝ)
       refine Finset.expect_congr rfl fun x _ => ?_
       rw [Finset.mul_expect]
       refine Finset.expect_congr rfl fun c _ => ?_
-      rw [prod_insert hj, hg j x c]
+      rw [prod_insert hj, hg j (mem_insert_self j T) x c]
       ring
     -- Cauchy–Schwarz, with `g j ^ 2 ≤ 1`.
     have hcs : (𝔼 x, F x * ∏ i ∈ insert j T, g i x) ^ 2 ≤
@@ -118,7 +118,7 @@ theorem pow_expect_mul_prod_le (T : Finset ι) (F : (∀ i, X i) → ℝ)
       · simp
       · refine Finset.expect_le Finset.univ_nonempty fun x _ => ?_
         rw [← sq_abs]
-        exact pow_le_one₀ (abs_nonneg _) (hg1 j x)
+        exact pow_le_one₀ (abs_nonneg _) (hg1 j (mem_insert_self j T) x)
     -- Expanding the square over two independent copies `c`, `d` of player `j`'s part.
     have hexp : 𝔼 x, (𝔼 c : X j, F (update x j c) * ∏ i ∈ T, g i (update x j c)) ^ 2 =
         𝔼 c : X j, 𝔼 d : X j, 𝔼 x, (F (update x j c) * F (update x j d)) *
@@ -142,13 +142,16 @@ theorem pow_expect_mul_prod_le (T : Finset ι) (F : (∀ i, X i) → ℝ)
           (F (update (S.piecewise b a) j c) * F (update (S.piecewise b a) j d)) := by
       intro c d
       refine ih (fun x => F (update x j c) * F (update x j d))
-        (fun i x => g i (update x j c) * g i (update x j d)) (fun i x e => ?_) (fun i x => ?_)
+        (fun i x => g i (update x j c) * g i (update x j d)) (fun i hi x e => ?_)
+        (fun i hi x => ?_)
       · by_cases hij : i = j
         · subst hij
           simp only [update_idem]
-        · rw [update_comm hij e c x, update_comm hij e d x, hg i, hg i]
+        · rw [update_comm hij e c x, update_comm hij e d x, hg i (mem_insert_of_mem hi),
+            hg i (mem_insert_of_mem hi)]
       · rw [abs_mul]
-        exact (mul_le_mul (hg1 i _) (hg1 i _) (abs_nonneg _) zero_le_one).trans_eq (one_mul 1)
+        have h1 := hg1 i (mem_insert_of_mem hi)
+        exact (mul_le_mul (h1 _) (h1 _) (abs_nonneg _) zero_le_one).trans_eq (one_mul 1)
     -- Resampling player `j`'s part of both corners `a` and `b` of the cube.
     have hcube : 𝔼 c : X j, 𝔼 d : X j, 𝔼 a, 𝔼 b, ∏ S ∈ T.powerset,
           (F (update (S.piecewise b a) j c) * F (update (S.piecewise b a) j d)) =
@@ -191,7 +194,8 @@ inputs `a` and `b`, of the product of the signs `(-1) ^ f` at the `2 ^ k` corner
 noncomputable def cubeExpectation (f : (∀ i, X i) → Bool) : ℝ :=
   𝔼 a, 𝔼 b, ∏ S : Finset ι, signVal (f (S.piecewise b a))
 
-/-- **The cube bound** [BabaiNisanSzegedy1992][Chung1990][Raz2000]: with at least one player, the
+/-- **The cube bound**, the BNS–Chung criterion [BabaiNisanSzegedy1992][Chung1990] in the proof of
+Raz [Raz2000]: with at least one player, the
 discrepancy of `f` under the uniform distribution satisfies `disc(f) ^ (2 ^ k) ≤ E(f)`, for `k` the
 number of players and `E(f)` the cube expectation. With no players the only cylinder intersection
 is the set of all inputs, and the bound fails for the constant `true`. -/
@@ -219,7 +223,7 @@ theorem discrepancy_uniformOfFintype_pow_le [Nonempty ι] [∀ i, Nonempty (X i)
   rw [hsum]
   have h := pow_expect_mul_prod_le univ (fun x => signVal (f x))
     (fun i x => if φ i (view i x) = true then (1 : ℝ) else 0)
-    (fun i x e => by rw [view_update_self]) (fun i x => by split_ifs <;> simp)
+    (fun i _ x e => by rw [view_update_self]) (fun i _ x => by split_ifs <;> simp)
   rw [card_univ, powerset_univ] at h
   exact h
 
