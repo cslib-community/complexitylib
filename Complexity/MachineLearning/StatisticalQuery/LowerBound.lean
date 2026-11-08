@@ -41,8 +41,8 @@ The bound assumes only `LearnsStateless`, so it applies to every learner (`Learn
 and to queries with values in `[-1, 1]`, which include the predicates of [Kearns1998].
 When only the one-sided bound `corr D (f i) (f j) ≤ γ` holds, the first term doubles
 (`StatisticalQuery.LearnsStateless.card_le_of_corr_le`). Take `γ = 1 / d` for `d = |κ|`, so that
-the one-sided statistical query dimension, as printed in [Reyzin, Definition 11][Reyzin2020], is at
-least `d` (`StatisticalQuery.sqDimOneSided` in
+the one-sided variant of the statistical query dimension [Reyzin, Definition 11][Reyzin2020], which
+drops the absolute value, is at least `d` (`StatisticalQuery.sqDimOneSided` in
 `Complexity/MachineLearning/StatisticalQuery/Dimension.lean`). Requiring
 accuracy `τ`, that is `1 - 2 ε ≥ τ`, as in [Reyzin, Theorem 12][Reyzin2020], gives
 `d τ ^ 2 - 1 ≤ 2 q + 1`
@@ -335,8 +335,8 @@ theorem LearnsStateless.card_le_of_corr_le {κ : Type} [Fintype κ] {D : PMF X}
 [Reyzin, Theorem 12][Reyzin2020], which assumes only accuracy `τ`
 (`LearnsStateless.card_mul_sq_sub_one_le_two_mul_add_one`). If `C` contains
 `d ≥ 2` concepts with pairwise correlations at most `1 / d` under `D`, so that the one-sided
-statistical query dimension of `C` under `D`, as printed in [Reyzin, Definition 11][Reyzin2020], is
-at least `d`, then a
+variant of the statistical query dimension [Reyzin, Definition 11][Reyzin2020] of `C` under `D`,
+which drops the absolute value, is at least `d`, then a
 learner learning `C` exactly under `D` from at most `q` queries of tolerance `τ ≥ 0` has
 `d τ ^ 2 - 1 ≤ 2 q`, Reyzin's query count. -/
 theorem LearnsStateless.card_mul_sq_sub_one_le_two_mul {κ : Type} [Fintype κ] {D : PMF X}

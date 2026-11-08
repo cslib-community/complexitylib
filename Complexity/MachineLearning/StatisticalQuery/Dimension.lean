@@ -20,10 +20,12 @@ import Mathlib.Tactic.TFAE
 
 The statistical query dimension `sqDim D C` of a concept class `C` under a distribution `D` is the
 largest `d` such that `C` contains `d` concepts whose pairwise correlations under `D` have absolute
-value at most `1 / d`. This is the absolute-correlation notion of [BlumEtAl1994, Definition 2],
-which uses the threshold `1 / d ^ 3`, normalized to the threshold `1 / d`. The variant
-`sqDimOneSided D C` bounds the correlations only from above, `corr D f g ≤ 1 / d`, as printed in
-[Reyzin, Definition 11][Reyzin2020]. It is at least `sqDim D C` (`sqDim_le_sqDimOneSided`) and at
+value at most `1 / d` [Reyzin, Definition 11][Reyzin2020]. [BlumEtAl1994, Definition 2] uses the
+threshold `1 / d ^ 3` instead; its dimension `d₃` and this one `d₁` satisfy
+`d₃ ≤ d₁ < (d₃ + 1) ^ 3`, so polynomial boundedness does not depend on the normalization. The
+one-sided variant `sqDimOneSided D C` bounds the correlations only from above,
+`corr D f g ≤ 1 / d`. This is the hypothesis that Szörényi's argument for the lower bound of
+[Reyzin, Theorem 12][Reyzin2020] uses. It is at least `sqDim D C` (`sqDim_le_sqDimOneSided`) and at
 most `18 (sqDim D C + 1) ^ 3` (`sqDimOneSided_le`), so the two notions are polynomially related.
 The dimension controls weak learning from statistical queries [BlumEtAl1994, §5]:
 
@@ -37,8 +39,8 @@ The dimension controls weak learning from statistical queries [BlumEtAl1994, §5
 * **Upper bound.** For `d = sqDim D C` there is a learner making at most `d` queries, each a
   correlational query `E_D [g (x) · y]` (in `±1` values) for a concept `g ∈ C`, that learns `C`
   under `D` with tolerance `τ` and error `1/2 - 1/(2 (d + 1)) + τ`, for every `τ`
-  (`exists_learns_sqDim`). This is the analogue of [BlumEtAl1994, Theorem 13] and of
-  [Reyzin, Observation 23][Reyzin2020] for this normalization.
+  (`exists_learns_sqDim`). This is [Reyzin, Observation 23][Reyzin2020], the analogue of
+  [BlumEtAl1994, Theorem 13] for the threshold `1 / d`.
 * **Characterization.** For a sequence of classes `C n` under distributions `D n`, `sqDim (D n)
   (C n)` is polynomially bounded if and only if `sqDimOneSided (D n) (C n)` is, if and only if
   `C n` is weakly learnable from polynomially many statistical queries of inverse-polynomial
@@ -111,11 +113,16 @@ variable {X : Type} [Fintype X]
 /-! ### The statistical query dimension -/
 
 /-- The **statistical query dimension** of `C` under `D`: the largest `d` such that `C` contains
-`d` distinct concepts whose pairwise correlations under `D` have absolute value at most `1 / d`.
-This is [BlumEtAl1994, Definition 2] with the threshold `1 / d` in place of `1 / d ^ 3`. The
-one-sided variant `sqDimOneSided`, the notion printed as [Reyzin, Definition 11][Reyzin2020], is
-at least this dimension and at most `18 (sqDim D C + 1) ^ 3` (`sqDim_le_sqDimOneSided`,
-`sqDimOneSided_le`). -/
+`d` distinct concepts whose pairwise correlations under `D` have absolute value at most `1 / d`
+[Reyzin, Definition 11][Reyzin2020], for a fixed distribution.
+
+[BlumEtAl1994, Definition 2] uses the threshold `1 / d ^ 3` instead. Its dimension `d₃` and this
+one `d₁` satisfy `d₃ ≤ d₁ < (d₃ + 1) ^ 3`. A `d₃`-family is a `d₁`-family, since
+`1 / d ^ 3 ≤ 1 / d`. Any `k = d₃ + 1` members of a `d₁`-family with `d₁ ≥ k ^ 3` would have
+pairwise correlations of absolute value at most `1 / k ^ 3`. So polynomial boundedness does not
+depend on the normalization; this elementary relation is not formalized. The one-sided variant
+`sqDimOneSided` is at least this dimension and at most `18 (sqDim D C + 1) ^ 3`
+(`sqDim_le_sqDimOneSided`, `sqDimOneSided_le`). -/
 noncomputable def sqDim (D : PMF X) (C : PACLearning.ConceptClass X Bool) : ℕ :=
   sSup {d | ∃ F : Finset (X → Bool), (F : Set (X → Bool)) ⊆ C ∧ F.card = d ∧
     (F : Set (X → Bool)).Pairwise fun f g => |corr D f g| ≤ 1 / d}
@@ -176,10 +183,12 @@ theorem one_le_sqDim {D : PMF X} {C : PACLearning.ConceptClass X Bool} (hC : C.N
 /-! ### The one-sided variant -/
 
 /-- The **one-sided statistical query dimension** of `C` under `D`: the largest `d` such that `C`
-contains `d` distinct concepts whose pairwise correlations under `D` are at most `1 / d`. This is
-the statistical query dimension as printed in [Reyzin, Definition 11][Reyzin2020], which bounds
-`⟨f_i, f_j⟩_D` from above only. It is at least `sqDim D C` (`sqDim_le_sqDimOneSided`) and at most
-`18 (sqDim D C + 1) ^ 3` (`sqDimOneSided_le`). -/
+contains `d` distinct concepts whose pairwise correlations under `D` are at most `1 / d`. This
+variant of [Reyzin, Definition 11][Reyzin2020] drops the absolute value. Szörényi's argument for the
+lower bound of [Reyzin, Theorem 12][Reyzin2020] uses only this upper bound on the correlations, so
+the lower bound holds for it (`LearnsStateless.sqDimOneSided_mul_sq_le`). It is at least
+`sqDim D C` (`sqDim_le_sqDimOneSided`) and at most `18 (sqDim D C + 1) ^ 3`
+(`sqDimOneSided_le`). -/
 noncomputable def sqDimOneSided (D : PMF X) (C : PACLearning.ConceptClass X Bool) : ℕ :=
   sSup {d | ∃ F : Finset (X → Bool), (F : Set (X → Bool)) ⊆ C ∧ F.card = d ∧
     (F : Set (X → Bool)).Pairwise fun f g => corr D f g ≤ 1 / d}
@@ -393,8 +402,8 @@ theorem learns_corrLearner {D : PMF X} {C : PACLearning.ConceptClass X Bool}
 
 /-! ### The weak learner and the lower bound -/
 
-/-- **Weak learning from the statistical query dimension**: the analogue of
-[BlumEtAl1994, Theorem 13] and [Reyzin, Observation 23][Reyzin2020] for `sqDim`. For
+/-- **Weak learning from the statistical query dimension** [Reyzin, Observation 23][Reyzin2020],
+the analogue of [BlumEtAl1994, Theorem 13] for the threshold `1 / d`. For
 `d = sqDim D C` there is a learner making at most `d` queries, each the correlational query of a
 concept of `C`, that learns `C` under `D` with tolerance `τ` and error `1/2 - 1/(2 (d + 1)) + τ`,
 for every `τ`. Its hypotheses are concepts of `C` or their negations. -/
@@ -453,7 +462,8 @@ dimension**: `sqDimOneSided D C ≤ 18 (sqDim D C + 1) ^ 3`. The weak learner of
 `exists_learns_sqDim` with tolerance `τ = 1 / (3 (d + 1))` has accuracy `τ`, so the one-sided lower
 bound `LearnsStateless.sqDimOneSided_mul_sq_le` applies with `d` queries. -/
 theorem sqDimOneSided_le (D : PMF X) (C : PACLearning.ConceptClass X Bool) :
-    (sqDimOneSided D C : ℝ) ≤ 18 * ((sqDim D C : ℝ) + 1) ^ 3 := by
+    sqDimOneSided D C ≤ 18 * (sqDim D C + 1) ^ 3 := by
+  suffices h : (sqDimOneSided D C : ℝ) ≤ 18 * ((sqDim D C : ℝ) + 1) ^ 3 by exact_mod_cast h
   obtain ⟨A, hq, -, hA⟩ := exists_learns_sqDim D C
   set d : ℝ := (sqDim D C : ℝ) with hd
   have hd0 : 0 ≤ d := Nat.cast_nonneg _
