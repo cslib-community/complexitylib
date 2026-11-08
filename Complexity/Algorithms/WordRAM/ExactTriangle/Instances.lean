@@ -37,11 +37,15 @@ it does not choose a prime, evaluate their queried products or decide ExactTrian
 ## Main results
 
 * `Instances.exec_at`: complete native execution from the original header and weight arrays.
+* `Instances.exec_at_with_prefix`: complete execution together with the post-catalogue/setup
+  state shared with one-slot streaming callers.
+* `Instances.exec_visit`: single-record chunk/piece construction step.
 
 `PreparationInput` supplies the initialized flat-program interface and derived width bounds;
 `PreparationBounds` proves the preparation time bound in the source's parameter regime.
-Code-stage definitions are exposed for kernel-checked interpreter clients.
-Proof helpers are private.
+Code-stage definitions and single-visit invariants (`pairInput`, `visit_preserves`,
+`budget_covers_loop`) are exposed for interpreter and streaming clients; internal proof helpers are
+private.
 
 ## References
 
@@ -263,7 +267,7 @@ theorem budget_covers_loop {n D g p K H B : ℕ}
   omega
 
 /-- Execute the shared catalogue-to-instance setup, charging all twenty-six instructions. -/
-theorem exec_setup {w : ℕ} (x : Data 64) (n D p B H K desc out : ℕ)
+private theorem exec_setup {w : ℕ} (x : Data 64) (n D p B H K desc out : ℕ)
     (hn : x.regs 16 = n) (hp : x.regs 17 = p) (hB : x.regs 28 = B)
     (hH : x.regs 29 = H) (hK : x.regs 21 = K) (hd : x.regs 18 = desc)
     (hout : x.regs 22 = out) (hD : x.mem 1 = D)
@@ -1026,9 +1030,8 @@ private theorem output_of_loop {n D g p : ℕ} (values : ℕ → ℤ)
     · exact Or.inr (by rw [hvK]; omega)
 
 /-- Execute just the real catalogue and setup. The returned state is ready for logical
-chunk/piece visits but contains no instance records. This prefix is shared by standalone
-preparation and immediate one-slot consumption. Its bound excludes any final halt. -/
-theorem exec_prefix {w : ℕ} (n D g p : ℕ) (values : ℕ → ℤ) (initial : Data 64)
+chunk/piece visits but contains no instance records. Its bound excludes any final halt. -/
+private theorem exec_prefix {w : ℕ} (n D g p : ℕ) (values : ℕ → ℤ) (initial : Data 64)
     (hDHeader : initial.mem 1 = D) (hgHeader : initial.mem 2 = g)
     (hnHeader : initial.mem 3 = n) (hpHeader : initial.mem 4 = p)
     (hinput : ∀ q < 3 * (n * n), initial.mem (5 + q) = Signed.encode (values q))

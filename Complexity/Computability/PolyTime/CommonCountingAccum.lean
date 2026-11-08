@@ -94,6 +94,7 @@ open ComputableTidilyInO (length_encNat_mono)
 
 attribute [local irreducible] ComputableInPolyTime
 
+-- Local performance shortcut: bypass repeated `Module ℚ≥0`/`Module ℚ` instance searches.
 private local instance (priority := 10000) {A B : Type*} [NonAssocSemiring A] [NonAssocSemiring B] :
     AddMonoidHomClass (A →+* B) A B := RingHomClass.toAddMonoidHomClass
 
@@ -286,6 +287,7 @@ theorem rowEntry_extractCoordNodeJets_of_lt (J u : ℕ) (nodeJets : List JetRows
     rowEntry (extractCoordNodeJets J u nodeJets) i j = rowEntry nodeJets[i] j u := by
   rw [extractCoordNodeJets, rowEntry_tabulateTable_of_lt _ hi hj, List.getD_eq_getElem _ _ hi]
 
+-- Local performance shortcut: resolve `Fin` bounds directly without `Std.Rcc.mem_iff` scans.
 local macro_rules | `(tactic| get_elem_tactic_extensible) => `(tactic| exact Fin.isLt _)
 
 /-- Under `hlen` and `hclear`, `extractCoordNodeJets` gives the `Ω`-scaled `(i, j)` Taylor

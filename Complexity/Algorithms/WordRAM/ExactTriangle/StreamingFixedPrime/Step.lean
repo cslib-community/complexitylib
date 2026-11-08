@@ -14,11 +14,13 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Ad
 import Complexity.Computability.WordRAM.RegisterFrame
 
 /-!
-# Box-backed charged ordinal delivery, concrete call and native return
+# One-slot record construction, call, heap reset and return
 
-This internal step theorem composes the actual copy, unchanged full record computation and
-native scan/flag/counter return. The selected finite index is proved from the runtime ordinal;
-it is not an additional input field or a supplied algorithm.
+`exec_step` composes one streaming loop body: constructing the next logical chunk/piece record in
+the single physical slot (`construct`), selecting constant physical ordinal zero (`select`),
+running the box-product and original-weight verifier (`FixedPrime.record`), resetting the heap
+pointer to `Instances.output` (`reset`), and updating the scan counter, witness flag and early-stop
+limit (`FixedPrime.receive`).
 -/
 
 public section

@@ -12,12 +12,12 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Calla
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBox.Pointer.Exec
 
 /-!
-# Native prepared-record calls to the improved box product
+# Native prepared-record calls to the pointer-gather box product
 
-The existing decoder initializes scalar headers and the ordinary threshold. A new native front
-gathers the external raw matrices and interleaved occurrences directly into the computed protected
-snapshot. Both old staging passes are replaced by this one gather; source offsets and physical
-pointers occupy distinct banks within the existing 320-register budget.
+`prepare` decodes the selected record and writes the five scalar header words and box threshold.
+`invoke` delivers physical pointers to `PointerBoxProduct.program`, which gathers the external raw
+matrices and interleaved query occurrences directly into the computed protected snapshot; source
+offsets and physical pointers occupy distinct banks within the 320-register budget.
 -/
 
 public section

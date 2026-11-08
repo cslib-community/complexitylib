@@ -50,7 +50,7 @@ open Probability Turing.MultiTapeTM
 
 /-- Gate indices are binary; the wire count is unary and every listed gate is charged. -/
 def encInput : Input ↪ List Bool :=
-  encPair encUnary (encPair (encList (encPair encNat (encPair encNat encNat))) encBits)
+  encPair encUnary (encList (encPair encNat (encPair encNat encNat)))
 
 /-- The key and every receiver tag are explicitly encoded. -/
 def encShare {F : Type} (eF : F ↪ List Bool) : Share F ↪ List Bool :=
@@ -100,10 +100,10 @@ theorem computableInPolyTime_checkValue
       (encPair encInput (encPair (encShare eF) (encPair (encList eF) (encList eF)))) eF := by
   let e := encPair encInput (encPair (encShare eF) (encPair (encList eF) (encList eF)))
   let gateEnc := encPair encNat (encPair encNat encNat)
-  have hg : ComputableInPolyTime (fun p : Input × Share F × List F × List F => p.1.2.1)
+  have hg : ComputableInPolyTime (fun p : Input × Share F × List F × List F => p.1.2)
       e (encList gateEnc) := by unfold e encInput; fun_prop
   have hr : ComputableInPolyTime (fun p : Input × Share F × List F × List F =>
-      weights p.1.2.1.length p.2.2.2) e (encList eF) :=
+      weights p.1.2.length p.2.2.2) e (encList eF) :=
     computableInPolyTime_weights ((ComputableInPolyTime.length_list gateEnc).comp hg)
       (by unfold e; fun_prop)
   have hz := (ComputableInPolyTime.zip gateEnc eF).comp (hg.prod hr)
@@ -220,9 +220,9 @@ theorem isPPTOn_simulate (sample : ProbComp F) (receiver : Receiver F I First St
   apply hfinish.preprocess (prepare := fun p :
       (((((I × F) × List F) × State) × List F) × (List F × State)) × F =>
     (p.1.1.1.1.1.1, (p.1.1.1.1.1.2, p.1.1.1.1.2), p.1.1.2,
-      weights (layout p.1.1.1.1.1.1).2.1.length p.1.2.1, p.1.2.2,
+      weights (layout p.1.1.1.1.1.1).2.length p.1.2.1, p.1.2.2,
       (p.2, checkValue (layout p.1.1.1.1.1.1) (p.1.1.1.1.1.2, p.1.1.1.1.2) p.1.1.2
-        (weights (layout p.1.1.1.1.1.1).2.1.length p.1.2.1) - p.2 * p.1.1.1.1.1.2)))
+        (weights (layout p.1.1.1.1.1.1).2.length p.1.2.1) - p.2 * p.1.1.1.1.1.2)))
   let e1 := encPair eInput eF
   let e2 := encPair e1 (encList eF)
   let e3 := encPair e2 eState
@@ -239,7 +239,7 @@ theorem isPPTOn_simulate (sample : ProbComp F) (receiver : Receiver F I First St
   have hshare := hdelta.prod hq
   have hshape := hlayout.comp hinput
   have hlen := (ComputableInPolyTime.length_list
-    (encPair encNat (encPair encNat encNat))).comp hshape.snd'.fst'
+    (encPair encNat (encPair encNat encNat))).comp hshape.snd'
   have hr := computableInPolyTime_weights hlen hraw
   have hvalue := hc.comp (hshape.prod (hshare.prod (hd.prod hr)))
   have hreply := ha.prod (hsub.comp (hvalue.prod (hmul.comp (ha.prod hdelta))))

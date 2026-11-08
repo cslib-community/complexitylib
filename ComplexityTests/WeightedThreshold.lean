@@ -6,11 +6,13 @@ Authors: Samuel Schlesinger, Christian Reitwiessner
 
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Andreev
+import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevApproxMajority
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevAverage
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevLowerBound
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold.RandomRestriction
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold.ThresholdCounting
 import Complexity.Computability.Circuit.Boolean.Threshold.Parity
+import Complexity.Foundations.Combinatorics.ApproximateMajority
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Tactic.FinCases
 
@@ -164,13 +166,13 @@ example : ∃ x y : Fin 1 → Bool,
     exact Bool.false_ne_true (congrFun h 0)
 
 -- Exact depth-two weighted threshold circuit for Andreev's function at `b = 2, m = 2` (`8` bits):
--- 80 bottom gates, 81 total gates, depth at most 2, and mixed truth-table evaluation where
+-- 48 bottom gates, 49 total gates, depth at most 2, and mixed truth-table evaluation where
 -- changing block parities changes the selected truth-table entry.
 example :
     (andreevCircuit 2 2).Computes interpretation (single (Boolean.andreev 2 2)) ∧
-    (andreevCircuit 2 2).size = 81 ∧
+    (andreevCircuit 2 2).size = 49 ∧
     (andreevCircuit 2 2).depth ≤ 2 ∧
-    (andreevCircuit 2 2).wireCount ≤ 720 ∧
+    (andreevCircuit 2 2).wireCount ≤ 432 ∧
     (andreevCircuit 2 2).eval interpretation
       (fun i => decide (i = 1 ∨ i = 2 ∨ i = 4)) 0 = true ∧
     (andreevCircuit 2 2).eval interpretation
@@ -369,5 +371,23 @@ example (β : Fin 2 → ℝ) : #{g : BitString 2 → Bool | IsThresholdShift β 
 example : andreevWeightTail 14 1 (andreevWeightScale 14 1)
     (((14 : ℕ) + 2 : ℝ) * Real.sqrt ((2 : ℝ) ^ 14)) ≤ (1 / 2 : ℝ) ^ 20 :=
   andreevWeightTail_scale_le 14 (by decide)
+
+/-- A strict-majority vote of an odd number `t` of depth-two circuits computing Andreev's function
+has strictly more than `t / 2` correct members, so the top fan-in bound applies. -/
+example {b m t s : ℕ} (hm : 0 < m) (hmN : m ≤ 2 ^ b) (ht : Odd t)
+    (hb : 3 * ((b : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ b) ≤ 1 / (2 * t))
+    (C : Fin t → Circuit signature (2 ^ b + b * m) 1) (hd : ∀ i, (C i).depth ≤ 2)
+    (hs : ∀ i, (C i).size ≤ s)
+    (hcomp : ∀ w,
+      strictMajority t (fun i => (C i).eval interpretation w 0) = Boolean.andreev b m w) :
+    (m : ℝ) * (2 : ℝ) ^ b ≤
+      576 * ((b : ℝ) + 2) * (t : ℝ) ^ 2 * (s : ℝ) * Real.sqrt ((2 ^ b + b * m : ℕ) : ℝ) :=
+  size_ge_of_majorityVote_andreev_of_le_two_pow hm hmN hb C hd hs fun w =>
+    lt_two_mul_card_filter_eq_of_strictMajority_eq ht (hcomp w)
+
+-- With an even number of votes, a tie outputs `false`, so a correct strict-majority vote need not
+-- have a strict majority of correct votes.
+example : strictMajority 2 ![true, false] = false ∧
+    ¬ 2 < 2 * #{i | ![true, false] i = false} := by decide
 
 end WeightedThresholdTests

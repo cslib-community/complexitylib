@@ -19,6 +19,6 @@ provide the logarithmic admission and polynomial word envelopes from original sc
 
 The canonical solver is `StreamingFixedPrime`: it computes the catalogue, constructs and
 consumes one physical slot at a time, and verifies original signed weights before success.
-The superseded materialized controller and its program-specific execution certificates have
-been retired. The independent `Instances` producer and record product/witness APIs remain.
+The independent `Instances` all-record producer and standalone record product/witness APIs are
+separate modules.
 -/

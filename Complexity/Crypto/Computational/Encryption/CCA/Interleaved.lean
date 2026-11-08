@@ -22,6 +22,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pl
 import Complexity.Computability.Probabilistic.Adaptive
 import Complexity.Computability.Probabilistic.Oracle.Composition
 import Complexity.Computability.Probabilistic.Oracle.Substitution
+import Complexity.Crypto.Computational.Encryption.DecryptionBound
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Crypto.Negligible.Dyadic
 import Complexity.Languages.Probabilistic.Oracle.Simulation
@@ -2833,21 +2834,7 @@ theorem INDCCA2On.indcca2InterleavedOn {Msg Out : Type} [Inhabited Msg]
     (h : INDCCA2On valid encMsg encOut keyGen encrypt decrypt) :
     INDCCA2InterleavedOn valid encMsg encOut keyGen encrypt decrypt := by
   intro adversary hA
-  obtain ⟨ck, dk, hlenKey⟩ := hkeyGen.length_le
-  obtain ⟨cd, dd, hlenDec⟩ := hdecrypt.tidy.polyBounded_length.exists_le
-  let decBound : ℕ → List Bool → ℕ :=
-    fun n req => cd * (2 * n + 2 * (ck * (n + 1) ^ dk) + req.length + 5) ^ dd
-  have hdecBoundPoly :
-      ComputableInPolyTime (fun p : ℕ × List Bool => decBound p.1 p.2)
-        (encPair encUnary encBits) encUnary := by
-    dsimp only [decBound]; exact ComputableInPolyTime.of_tidy (by fun_prop)
-  have hdecBound (n : ℕ) (keys : List Bool × List Bool)
-      (hkeys : keys ∈ (ProbComp.eval (keyGen n)).support) (req : List Bool) :
-      (encOption encOut (decrypt n keys.2 req)).length ≤ decBound n req := by
-    have hk := hlenKey n keys hkeys
-    have hd := hlenDec (n, keys.2, req)
-    simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply] at hk hd
-    exact hd.trans (Nat.mul_le_mul_left cd (Nat.pow_le_pow_left (by omega) dd))
+  obtain ⟨decBound, hdecBoundPoly, hdecBound⟩ := exists_decryption_length_bound hkeyGen hdecrypt
   obtain ⟨cq, dq, hlenQ⟩ := hA.numRounds.tidy.polyBounded_length.exists_le
   let Q : ℕ → ℕ := fun n => cq * (n + 1) ^ dq
   have hQPoly : ComputableInPolyTime Q encUnary encUnary := by

@@ -5,17 +5,22 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.PCP.TwoProverGame
+import Complexity.Probability.PMF.Filter
+import Complexity.Probability.PMF.Map
 
 /-! # Two-prover one-round games
 
-The CHSH game: the constant strategies win with probability `3/4`, so its value is at least `3/4`
-and the value of its `n`-fold repetition is at least `(3/4)^n`. A game that accepts every answer
-has value one.
+The CHSH game: the constant strategies win with probability `3/4` and no deterministic strategy
+wins with more, so its value is `3/4`, and the value of its `n`-fold repetition is at least
+`(3/4)^n`. A game that accepts every answer has value one. Strategy extraction on the one-fold
+repetition, where the questions embed exactly, bounds every strategy of `chsh.pow 1` by the value
+of CHSH.
 -/
 
 namespace ComplexityTests.TwoProverGame
 
-open Cslib.PCP
+open Cslib.PCP Cslib.Probability.CorrelatedSampling
+open scoped Cslib.Probability.PMF
 
 /-- The **CHSH game**: uniform questions `x, y`, accepted when `a xor b = x && y`. -/
 noncomputable def chsh : TwoProverGame Bool Bool Bool Bool where
@@ -27,7 +32,21 @@ theorem winProb_chsh_const : chsh.winProb (fun _ => false) (fun _ => false) = 3 
   simp [chsh, Cslib.Probability.PMF.uniformOfFintype_apply, Fintype.sum_prod_type]
   norm_num
 
-example : 3 / 4 ≤ chsh.value := winProb_chsh_const ▸ chsh.winProb_le_value _ _
+/-- Every deterministic strategy for CHSH loses on at least one of the four questions. -/
+theorem winProb_chsh_le (ha hb : Bool → Bool) : chsh.winProb ha hb ≤ 3 / 4 := by
+  rw [TwoProverGame.winProb, Cslib.Probability.PMF.toOuterMeasure_apply_toReal]
+  simp only [chsh, Cslib.Probability.PMF.uniformOfFintype_apply, Fintype.sum_prod_type,
+    Fintype.sum_bool, Set.mem_ofPred_eq, Fintype.card_prod, Fintype.card_bool]
+  rcases Bool.eq_false_or_eq_true (ha true) with h1 | h1 <;>
+  rcases Bool.eq_false_or_eq_true (ha false) with h2 | h2 <;>
+  rcases Bool.eq_false_or_eq_true (hb true) with h3 | h3 <;>
+  rcases Bool.eq_false_or_eq_true (hb false) with h4 | h4 <;>
+  simp [h1, h2, h3, h4] <;> norm_num
+
+/-- The value of CHSH is `3/4`. -/
+theorem value_chsh : chsh.value = 3 / 4 :=
+  le_antisymm (ciSup_le fun ha => ciSup_le fun hb => winProb_chsh_le ha hb)
+    (winProb_chsh_const ▸ chsh.winProb_le_value _ _)
 
 example (n : ℕ) : (3 / 4 : ℝ) ^ n ≤ (chsh.pow n).value := by
   rw [← winProb_chsh_const, ← chsh.winProb_pow n]
@@ -43,5 +62,30 @@ example : always.value = 1 := by
   have : always.winProb (fun _ => true) (fun _ => true) = 1 := by
     simp [TwoProverGame.winProb, always]
   exact this ▸ always.winProb_le_value _ _
+
+-- Strategy extraction with `C = ∅` on the one-fold repetition: each party copies its question,
+-- so the questions embed exactly, and every strategy of `chsh.pow 1` wins with probability at
+-- most `chsh.value`.
+example (ha : (Fin 1 → Bool) → Fin 1 → Bool) (hb : (Fin 1 → Bool) → Fin 1 → Bool) :
+    (chsh.pow 1).winProb ha hb ≤ chsh.value := by
+  have hC : ∃ q ∈ chsh.winsOn ha hb ∅, q ∈ (chsh.pow 1).questions.support := by
+    obtain ⟨q, hq⟩ := (chsh.pow 1).questions.support_nonempty
+    exact ⟨q, by simp, hq⟩
+  have hpi : Cslib.Probability.PMF.pi (fun _ : Fin 1 => chsh.questions) =
+      chsh.questions.map (Equiv.funUnique (Fin 1) (Bool × Bool)).symm := by
+    ext u
+    rw [Cslib.Probability.PMF.map_equiv_apply, Cslib.Probability.PMF.pi_apply, Fin.prod_univ_one]
+    rfl
+  have hemb : IsEmbeddable chsh.questions
+      (((chsh.pow 1).questions.filter (chsh.winsOn ha hb ∅) hC).map
+        fun (x, y) => ((x 0, y 0), (x, y))) 0 := by
+    refine IsEmbeddable.of_dist_le (PMF.pure ()) (fun x _ _ => x) (fun y _ _ => y) (le_of_eq ?_)
+    rw [dist_eq_zero, Cslib.Probability.PMF.filter_eq_self_of_support_subset _ _ _ (by simp),
+      TwoProverGame.pow, hpi]
+    simp only [PMF.pure_map, PMF.map_comp]
+    rfl
+  have h := chsh.winProbOn_insert_le ha hb ∅ 0 hC hemb
+  rwa [TwoProverGame.winProbOn_empty, one_mul, add_zero,
+    show insert (0 : Fin 1) ∅ = Finset.univ by decide, TwoProverGame.winProbOn_univ] at h
 
 end ComplexityTests.TwoProverGame

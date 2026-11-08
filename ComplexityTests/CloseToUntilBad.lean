@@ -46,6 +46,26 @@ example : CloseTo
       rfl)
   exact h.mono (by simp)
 
+/-- Input-dependent continuation errors via `CloseTo.bind_right_tsum` give `1 / 4` (averaging `0`
+on `false` and `1 / 2` on `true`), sharper than constant-error `CloseTo.bind_right` (`1 / 2`). -/
+example : CloseTo
+    ((PMF.uniformOfFintype Bool).bind fun b =>
+      if b then PMF.uniformOfFintype Bool else PMF.pure false)
+    ((PMF.uniformOfFintype Bool).bind fun _ => PMF.pure false) (1 / 4) := by
+  refine (CloseTo.bind_right_tsum (err := fun b => if b then (1 / 2 : ℝ≥0∞) else 0)
+    (PMF.uniformOfFintype Bool) fun b _ => ?_).mono ?_
+  · cases b
+    · simp
+    · intro event
+      simp only [↓reduceIte, PMF.toOuterMeasure_apply]
+      by_cases h0 : false ∈ event <;> by_cases h1 : true ∈ event <;>
+        norm_num [tsum_bool, PMF.uniformOfFintype_apply, h0, h1]
+  · rw [tsum_bool]
+    simp only [PMF.uniformOfFintype_apply, Fintype.card_bool, Nat.cast_ofNat, Bool.false_eq_true,
+      ↓reduceIte, mul_zero, zero_add, one_div]
+    rw [← ENNReal.mul_inv (Or.inl (by norm_num)) (Or.inl (by norm_num))]
+    norm_num
+
 open Cslib.Crypto.Protocols Cslib.Crypto.Protocols.SigmaProtocol Cslib.Crypto.Protocols.ROMSignature
 open Cslib.OracleComp
 

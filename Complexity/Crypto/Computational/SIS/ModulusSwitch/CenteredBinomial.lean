@@ -39,7 +39,8 @@ hardness assumption, security reduction, or complete native encryption certifica
 
 The native sampling clients use unary dimensions/widths, signed binary CBD samples and binary
 uniform samples below the power-of-two modulus. The modular sampling identities are semantic;
-certification of complete encryption and decryption remains separate.
+native encryption, switched-decryption assembly and seed codecs remain separate (unswitched key
+generation and decryption are certified in `SIS/ModuleEncryption/Native`).
 -/
 
 public section

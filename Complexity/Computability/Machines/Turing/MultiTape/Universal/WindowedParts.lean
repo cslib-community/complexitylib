@@ -45,8 +45,8 @@ open ComputableInO
 
 /-! ### Sizes -/
 
-private lemma one_le_length_encInt (z : ℤ) : 1 ≤ (encInt z).length := by
-  rw [length_encInt]; split_ifs <;> omega
+private lemma one_le_length_encIntUnary (z : ℤ) : 1 ≤ (encIntUnary z).length := by
+  rw [length_encIntUnary]; split_ifs <;> omega
 
 private lemma length_encList_drop_le {α : Type} (enc : α ↪ List Bool) (l : List α) (i : ℕ) :
     (encList enc (l.drop i)).length ≤ (encList enc l).length :=
@@ -55,19 +55,19 @@ private lemma length_encList_drop_le {α : Type} (enc : α ↪ List Bool) (l : L
 /-- Cutting does not lengthen a window. -/
 private lemma length_eTape_cut_le (r : ℕ) (t : Tape) :
     (eTape (cut r t)).length ≤ (eTape t).length := by
-  have h₁ := one_le_length_encInt t.head
+  have h₁ := one_le_length_encIntUnary t.head
   have h₂ := length_encList_take_le eSym t.left r
   have h₃ := length_encList_take_le eSym t.right (r + 1)
-  simp only [cut, eTape_apply, length_encPair, encInt_zero, List.length_singleton]
+  simp only [cut, eTape_apply, length_encPair, encIntUnary_zero, List.length_singleton]
   omega
 
 /-- Pasting gives a window no longer than the two windows together. -/
 private lemma length_eTape_paste_le (r : ℕ) (o i : Tape) :
     (eTape (paste r o i)).length ≤ (eTape o).length + (eTape i).length := by
-  have h₁ := one_le_length_encInt o.head
+  have h₁ := one_le_length_encIntUnary o.head
   have h₂ := length_encList_drop_le eSym o.left r
   have h₃ := length_encList_drop_le eSym o.right (r + 1)
-  simp only [paste, eTape_apply, length_encPair, encInt_zero, List.length_singleton,
+  simp only [paste, eTape_apply, length_encPair, encIntUnary_zero, List.length_singleton,
     encList_append, List.length_append]
   omega
 
