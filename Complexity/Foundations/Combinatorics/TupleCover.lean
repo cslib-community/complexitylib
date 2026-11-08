@@ -30,11 +30,14 @@ elements, so fewer than `(|R| / 2) ^ t` tuples are mapped to `y`, and the fewer 
 account for fewer than `|R| ^ t` tuples, which is all of them. Removing the covered elements and
 repeating on the rest takes at most `⌊log₂ |R|⌋ + 1` rounds.
 
-This is the counting at the heart of the theorem of Fortnow and Santhanam that `NP`-hard problems
-have no OR-distillation unless `coNP ⊆ NP/poly`, and of the complementary witness lemma of Dell and
-van Melkebeek [BodlaenderJansenKratsch2014, Lemma 1]: `R` is a set of no-instances, `F` compresses
-a tuple of no-instances into a short no-instance, and the covering values form the advice. See
-`Complexity.Computability.Complexity.Parameterized.Distillation`.
+This is the counting behind the theorem of Fortnow and Santhanam that `NP`-hard problems have no
+OR-distillation unless `coNP ⊆ NP/poly` [BodlaenderJansenKratsch2014, Theorem 2], in the case of
+compression to fewer than `t` bits: `R` is a set of no-instances, `F` compresses a tuple of
+no-instances into a short no-instance, and the covering values form the advice. See
+`Complexity.Computability.Complexity.Parameterized.Distillation`. The complementary witness lemma
+of Dell and van Melkebeek [BodlaenderJansenKratsch2014, Lemma 1] allows compression to
+`O(t log t)` bits; that case needs a cover by a number of values polynomial in `t`, not the halving
+argument, and is not formalized here.
 
 ## Main results
 

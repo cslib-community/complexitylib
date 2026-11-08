@@ -51,7 +51,7 @@ example : SAT ∈ NPPoly encCNF ∧ SATᶜ ∈ coNPPoly encCNF ∧
 /-- "Some entry is `true`" is an OR-distillation of `{true}` into `{true}` with size bound `1`. -/
 theorem isORDistillation_any :
     IsORDistillation encBool encBool {true} {true} (fun l => l.any id) fun _ => 1 := by
-  refine ⟨?_, fun l => ?_, fun _ l _ => by simp⟩
+  refine ⟨?_, fun l _ => ?_, fun _ l _ _ => by simp⟩
   · exact anyWithInput (id' (encIn := encList encBool))
       (snd _ _)
   · simp

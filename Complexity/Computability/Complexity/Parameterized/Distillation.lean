@@ -26,14 +26,14 @@ import Mathlib.Data.List.OfFn
 # OR-distillation and `coNP ⊆ NP/poly`
 
 A *weak OR-distillation* of a problem `A` into a problem `B`
-[BodlaenderJansenKratsch2014, Definition 4] (`Cslib.Complexity.IsORDistillation`) maps a list of
-instances of `A`, in polynomial time, to one instance of `B` that is a yes-instance exactly when
-some entry of the list is, and whose length is bounded by a polynomially bounded function of the
-largest length of an entry, whatever the length of the list. Fortnow and Santhanam proved that no
-`NP`-hard problem has one unless `coNP ⊆ NP/poly`
+[BodlaenderJansenKratsch2014, Definition 4] (`Cslib.Complexity.IsORDistillation`) maps a nonempty
+list of instances of `A`, in polynomial time, to one instance of `B` that is a yes-instance exactly
+when some entry of the list is, and whose length is bounded by a polynomially bounded function of
+the largest length of an entry, whatever the length of the list. Fortnow and Santhanam proved that
+no `NP`-hard problem has one unless `coNP ⊆ NP/poly`: this is the `NP ⊆ coNP/poly` conclusion of
 [BodlaenderJansenKratsch2014, Theorem 2] (`Cslib.Complexity.coNP_subset_NPPoly_of_orDistillation`,
-with `Cslib.Complexity.NPPoly`); Yap's theorem turns this into a collapse of the polynomial
-hierarchy to its third level, which is not formalized here.
+with `Cslib.Complexity.NPPoly`). Its other conclusion, the collapse of the polynomial hierarchy to
+its third level by Yap's theorem, is not formalized here.
 
 The proof is a counting argument. Fix a length `n`, and compress lists of `t(n)` no-instances of
 length `n` to words shorter than `t(n)`. Fewer than `2 ^ t(n)` such words exist, so
@@ -64,9 +64,10 @@ along the reduction (`Cslib.Complexity.IsPolyEquivalence.comap`).
 The distillation is computed in time polynomial in the length `t + 2 (|x₁| + ⋯ + |xₜ|)` of the
 encoded list `[x₁, …, xₜ]` (`Turing.MultiTapeTM.encList`, `Turing.MultiTapeTM.length_encList`);
 [BodlaenderJansenKratsch2014, Definition 4] bounds the time by a polynomial in `∑ |xᵢ|`. A bound
-polynomial in `∑ |xᵢ|` is also polynomial in the encoded length, so the hypothesis here is weaker,
-and the theorem correspondingly stronger; the two agree up to the polynomial when no instance has
-the empty encoding, as then `t ≤ ∑ |xᵢ|`.
+polynomial in `∑ |xᵢ|` is also polynomial in the encoded length, so the time hypothesis here is
+weaker, and the theorem correspondingly stronger; the two agree up to the polynomial when no
+instance has the empty encoding, as then `t ≤ ∑ |xᵢ|`. The OR property and the length bound are
+required only for nonempty lists, as Definition 4 concerns `t ≥ 1` instances.
 
 ## Main definitions
 
@@ -92,7 +93,7 @@ the empty encoding, as then `t ≤ ∑ |xᵢ|`.
   NP*][FortnowSanthanam2011]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
@@ -119,16 +120,18 @@ structure IsPolyEquivalence (enc : α ↪ List Bool) (r : α × α → Bool) : P
 
 /-- `f` is a *weak OR-distillation* of `A` into `B` with size bound `s`
 [BodlaenderJansenKratsch2014, Definition 4]: it maps lists of instances of `A` in polynomial time to
-instances of `B`, such that `f l ∈ B` exactly when some entry of `l` is in `A`, and the output has
-length at most `s n` when every entry has length at most `n`. -/
+instances of `B`, such that for every nonempty list `l`, `f l ∈ B` exactly when some entry of `l`
+is in `A`, and the output has length at most `s n` when every entry has length at most `n`. The
+value of `f` on the empty list is unconstrained. -/
 structure IsORDistillation (encA : α ↪ List Bool) (encB : β ↪ List Bool) (A : Set α) (B : Set β)
     (f : List α → β) (s : ℕ → ℕ) : Prop where
   /-- The distillation is computable in polynomial time. -/
   polyTime : ComputableInPolyTime f (encList encA) encB
-  /-- The output is a yes-instance exactly when some entry is. -/
-  mem_iff : ∀ l, f l ∈ B ↔ ∃ a ∈ l, a ∈ A
-  /-- The output length is bounded by a function of the largest length of an entry. -/
-  length_le : ∀ n l, (∀ a ∈ l, (encA a).length ≤ n) → (encB (f l)).length ≤ s n
+  /-- On a nonempty list, the output is a yes-instance exactly when some entry is. -/
+  mem_iff : ∀ l, l ≠ [] → (f l ∈ B ↔ ∃ a ∈ l, a ∈ A)
+  /-- On a nonempty list, the output length is bounded by a function of the largest length of an
+  entry. -/
+  length_le : ∀ n l, l ≠ [] → (∀ a ∈ l, (encA a).length ≤ n) → (encB (f l)).length ≤ s n
 
 end Defs
 
@@ -265,7 +268,8 @@ private theorem exists_orCompression_advice {r : α × α → Bool}
 
 /-- **Compressing lists of equivalent instances puts the complement in `NP/poly`**, in the
 class-wise form of [BodlaenderJansenKratsch2014, Theorem 6] of the theorem of Fortnow and Santhanam
-[BodlaenderJansenKratsch2014, Theorem 2]. Let `r` be a polynomial equivalence relation, and let
+(the `NP ⊆ coNP/poly` conclusion of [BodlaenderJansenKratsch2014, Theorem 2]). Let `r` be a
+polynomial equivalence relation, and let
 `f : List α → β` be computable in polynomial time, with `f l ∈ B` exactly when some entry of `l` is
 in `A` for every nonempty list `l` of pairwise related instances. If, for a polynomially bounded
 `t`, every list of `t n` pairwise related instances of length `n` is mapped to an instance of `B`
@@ -344,8 +348,9 @@ theorem compl_mem_NPPoly_of_orCompression (D : Decoder enc) {r : α × α → Bo
         hr.equivalence.trans (hr.equivalence.symm (hrel b hb)) (hrel b' hb')
       exact hnot ((hOR l (List.ne_nil_of_mem hal) hpair).2 ⟨a, hal, haA⟩)
 
-/-- **Fortnow–Santhanam for compressions of equivalent instances**
-[BodlaenderJansenKratsch2014, Theorems 2 and 6]: if an `NP`-hard problem `A` has a polynomial-time
+/-- **Fortnow–Santhanam for compressions of equivalent instances**, the `NP ⊆ coNP/poly`
+conclusion of [BodlaenderJansenKratsch2014, Theorem 2] in the class-wise form of
+[BodlaenderJansenKratsch2014, Theorem 6]: if an `NP`-hard problem `A` has a polynomial-time
 map `f` with the OR property on nonempty lists of instances equivalent under a polynomial
 equivalence relation `r`, which maps every list of `t n` equivalent instances of length at most `n`
 to an instance of length less than `t n`, for a polynomially bounded `t`, then `coNP ⊆ NP/poly`. -/
@@ -383,22 +388,28 @@ parses the lists of instances in certificates. -/
 theorem IsORDistillation.compl_mem_NPPoly (D : Decoder enc) {f : List α → β} {s : ℕ → ℕ}
     (h : IsORDistillation enc encB A B f s) (hs : PolynomiallyBounded s) : Aᶜ ∈ NPPoly enc :=
   compl_mem_NPPoly_of_orCompression D (isPolyEquivalence_const_true enc) h.polyTime
-    (fun l _ _ => h.mem_iff l) (t := fun n => s n + 1) (by fun_prop)
-    fun n l _ hl _ => Nat.lt_succ_of_le (h.length_le n l fun a ha => (hl a ha).le)
+    (fun l hl _ => h.mem_iff l hl) (t := fun n => s n + 1) (by fun_prop)
+    fun n l hlen hl _ => Nat.lt_succ_of_le (h.length_le n l (List.ne_nil_of_length_pos
+      (by rw [hlen]; exact Nat.succ_pos _)) fun a ha => (hl a ha).le)
 
-/-- **Fortnow–Santhanam** [BodlaenderJansenKratsch2014, Theorem 2]: if an `NP`-hard problem has an
-OR-distillation into any problem, with a polynomially bounded size bound, then `coNP ⊆ NP/poly`,
-for every encoding of instances. -/
+/-- **Fortnow–Santhanam**, the `NP ⊆ coNP/poly` conclusion of
+[BodlaenderJansenKratsch2014, Theorem 2], stated as `coNP ⊆ NP/poly`: if an `NP`-hard problem has
+an OR-distillation into any problem, with a polynomially bounded size bound, then
+`coNP ⊆ NP/poly`, for every encoding of instances. The collapse of the polynomial hierarchy that
+Theorem 2 derives from it by Yap's theorem is not formalized. -/
 theorem coNP_subset_NPPoly_of_orDistillation (hA : NPHard enc A) {f : List α → β} {s : ℕ → ℕ}
     (h : IsORDistillation enc encB A B f s) (hs : PolynomiallyBounded s) {γ : Type}
     (encC : γ ↪ List Bool) : coNP encC ⊆ NPPoly encC :=
   coNP_subset_NPPoly_of_orCompression hA (isPolyEquivalence_const_true enc) h.polyTime
-    (fun l _ _ => h.mem_iff l) (t := fun n => s n + 1) (by fun_prop)
-    (fun n l _ hl _ => Nat.lt_succ_of_le (h.length_le n l hl)) encC
+    (fun l hl _ => h.mem_iff l hl) (t := fun n => s n + 1) (by fun_prop)
+    (fun n l hlen hl _ => Nat.lt_succ_of_le (h.length_le n l (List.ne_nil_of_length_pos
+      (by rw [hlen]; exact Nat.succ_pos _)) hl)) encC
 
-/-- **Fortnow–Santhanam**, in the form `NP ⊆ coNP/poly` of [BodlaenderJansenKratsch2014, Theorem 2]:
-if an `NP`-hard problem has an OR-distillation into any problem, with a polynomially bounded size
-bound, then `NP ⊆ coNP/poly`, for every encoding of instances. -/
+/-- **Fortnow–Santhanam**, the `NP ⊆ coNP/poly` conclusion of
+[BodlaenderJansenKratsch2014, Theorem 2]: if an `NP`-hard problem has an OR-distillation into any
+problem, with a polynomially bounded size bound, then `NP ⊆ coNP/poly`, for every encoding of
+instances. The collapse of the polynomial hierarchy that Theorem 2 derives from it by Yap's theorem
+is not formalized. -/
 theorem NP_subset_coNPPoly_of_orDistillation (hA : NPHard enc A) {f : List α → β} {s : ℕ → ℕ}
     (h : IsORDistillation enc encB A B f s) (hs : PolynomiallyBounded s) {γ : Type}
     (encC : γ ↪ List Bool) : NP encC ⊆ coNPPoly encC :=
