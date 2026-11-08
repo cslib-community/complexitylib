@@ -156,28 +156,33 @@ theorem exists_size (c : ℕ) : ∃ C n₀ : ℕ, ∀ n, n₀ ≤ n → ∀ (K :
     · have hinc : numInc sys ≤ c * n * lam ^ c :=
         (List.sum_le_length_nsmul _ _ fun x hx => by
           obtain ⟨eq, heq, rfl⟩ := List.mem_map.mp hx
-          exact hS eq heq).trans (by simp only [List.length_map, smul_eq_mul]; nlinarith)
-      have hR : numInc sys + K ≤ (c * lam ^ c + 1) * K := by nlinarith
+          exact hS eq heq).trans (by
+            simp only [List.length_map, smul_eq_mul]
+            exact Nat.mul_le_mul_right _ hsys)
+      have hR : numInc sys + K ≤ (c * lam ^ c + 1) * K := by
+        linarith [Nat.mul_le_mul_left (c * lam ^ c) hnK]
       have hW := numWires_le hJ hl hR
       have hlog : Nat.clog 2 (3 * (c * lam ^ c + 1)) ≤ (A + c) * nu := by
         refine Nat.clog_le_of_le_pow ?_
         have hlamle : lam ≤ 2 ^ nu := Nat.le_pow_clog one_lt_two _
         have hA : 3 * c + 3 ≤ 2 ^ A := Nat.le_pow_clog one_lt_two _
-        calc 3 * (c * lam ^ c + 1) ≤ (3 * c + 3) * lam ^ c := by nlinarith
+        calc 3 * (c * lam ^ c + 1) ≤ (3 * c + 3) * lam ^ c := by linarith
           _ ≤ 2 ^ A * (2 ^ nu) ^ c := Nat.mul_le_mul hA (Nat.pow_le_pow_left hlamle _)
           _ = 2 ^ (A + nu * c) := by rw [← pow_mul, ← pow_add]
-          _ ≤ 2 ^ ((A + c) * nu) := Nat.pow_le_pow_right (by norm_num) (by nlinarith)
+          _ ≤ 2 ^ ((A + c) * nu) := Nat.pow_le_pow_right (by norm_num)
+            (by linarith [Nat.le_mul_of_pos_right A (by omega : 0 < nu)])
       have hJJ := Nat.ceilQuarter_mul_self_le hn1
       calc numWires J sys d ≤ J * J + K * Nat.clog 2 (3 * (c * lam ^ c + 1)) := hW
         _ ≤ 4 * n + c * n * ((A + c) * nu) := Nat.add_le_add hJJ (Nat.mul_le_mul hKn hlog)
-        _ ≤ (4 + c * (A + c)) * (n * nu) := by nlinarith
+        _ ≤ (4 + c * (A + c)) * (n * nu) := by
+          linarith [Nat.le_mul_of_pos_right n (by omega : 0 < nu)]
     · exact Nat.zero_le _
   have hE : (lemmaNetwork K n sys d).2.numEdges = max (mainWires J K sys d) (sizeParam n) :=
     numEdges_network
   refine ⟨hE ▸ le_max_right _ _, ?_, ?_, ?_⟩
   · rw [hE, hs]
     refine max_le (hM.trans (Nat.mul_le_mul_right _ (by omega))) ?_
-    nlinarith
+    exact Nat.le_mul_of_pos_left _ (by omega)
   · have hV := length_vertices_network (P := n + 1) (ℓ := n + 1) (J := J) (K := K)
       (s := sizeParam n) (n := n) (sys := sys) (d := d)
     change (network (n + 1) (n + 1) J K (sizeParam n) n sys d).2.vertices.length ≤ _

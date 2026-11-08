@@ -124,7 +124,7 @@ theorem length_enc_inr_le {fl : List ℕ} {m P k : ℕ} {d : PacketDesc} (h : Pa
         _ ≤ B := hB
   rw [length_encSum]
   simp only [Sum.elim_inr, encPacketDesc, length_encPair]
-  nlinarith
+  linarith
 
 /-- **The encoded length of a call** is at most `64 (B + 1) ^ 3 + 2 B R` when its scale, depth,
 bound, precision, number of edges, number of vertices, modulus length, the binary length of its
@@ -151,7 +151,7 @@ theorem length_encCall_le {x : Call T} {B R : ℕ} (hs : x.scale ≤ B) (hd : x.
   have h2 : B * (2 * (2 * (B * (2 * B + 1)) + 1 + R) + 1) =
       8 * B ^ 3 + 4 * B ^ 2 + 3 * B + 2 * B * R := by ring
   rw [h2] at hvs
-  nlinarith
+  linarith [Nat.zero_le (B ^ 2), Nat.zero_le (B ^ 3)]
 
 /-! ### Values -/
 
@@ -278,13 +278,13 @@ theorem length_encFrame_le {o : Option ChildCursor.State} {acc : ChildCursor.Acc
         (Nat.mul_le_mul_right _ h3)
       simp only [encOption, Function.Embedding.coeFn_mk, Option.elim_some, List.length_cons,
         ChildCursor.encState, length_encPair, encUnary_apply, List.length_replicate]
-      nlinarith
+      linarith
   have hstored := (length_encList_le (encList encNat) (B := B * (2 * B + 1)) fun y hy =>
     hred y (hacc.2.2 y hy)).trans (Nat.mul_le_mul_right _ hst')
   have h1 := hred _ hacc.1
   have h2 := hred _ hacc.2.1
   simp only [encFrame, length_encPair]
-  nlinarith
+  linarith
 
 end Frames
 
@@ -313,7 +313,7 @@ theorem active_numbers (ha : active x = true) (hM : x.edges ≤ x.scale) :
   · unfold numPoints
     have : x.edges * (2 * 2 ^ slots x - 1) ≤ x.scale * (2 * x.scale) :=
       Nat.mul_le_mul hM (by omega)
-    nlinarith
+    linarith
   · calc (packing x).2.1 ≤ x.edges * (2 ^ slots x) ^ 12 :=
           NativeChild.numPackets_nativeParentPacking_le _ _ _
       _ ≤ x.scale * x.scale := Nat.mul_le_mul hM h12
@@ -464,7 +464,8 @@ theorem Shape.length_le (ev : T → List Bool → List ℕ) (h₀s : x₀.scale 
   have hP1 : P + 1 ≤ (m + 1) ^ 5 * (P + 1) := Nat.le_mul_of_pos_left _ (by positivity)
   have hmP : 2 * (m + 1) * (P + 1) ≤ 256 * (m + 1) ^ 5 * (P + 1) := by
     have : (m + 1) * (P + 1) ≤ (m + 1) ^ 5 * (P + 1) := Nat.mul_le_mul_right _ hm5
-    nlinarith
+    rw [Nat.mul_assoc 2, Nat.mul_assoc 256]
+    exact Nat.mul_le_mul (by norm_num) this
   have hmZ : 2 * (m + 1) ≤ Z := by
     have : 2 * (m + 1) ≤ 2 * (m + 1) * (P + 1) := Nat.le_mul_of_pos_right _ (by omega)
     omega
@@ -507,7 +508,9 @@ theorem Shape.length_le (ev : T → List Bool → List ℕ) (h₀s : x₀.scale 
     rw [h.fl_eq] at hv
     have : x₀.fl.length * (2 * (x.prec + 1) + 1) ≤ Z * (2 * Z + 1) :=
       Nat.mul_le_mul hflZ (by omega)
-    have : Z * (2 * Z + 1) ≤ 3 * (Z + 1) ^ 2 := by nlinarith
+    have : Z * (2 * Z + 1) ≤ 3 * (Z + 1) ^ 2 :=
+      (Nat.mul_le_mul (Nat.le_add_right Z 1) (by omega : 2 * Z + 1 ≤ 3 * (Z + 1))).trans_eq
+        (by ring)
     omega
   · have hM : x.edges ≤ x.scale := by
       have := edges_lt_bound_of_active ha
