@@ -4,9 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger, Christian Reitwiessner
 -/
 
-import Complexity.Foundations.Analysis.RowCompression.BoundedCap
-import Complexity.Foundations.Analysis.RowCompression.SaturatedRoot
-import Complexity.Foundations.Probability.PolynomialAtomCutoffs
+import Complexity.Computability.LogSpaceDerandomization.RowCompression.BoundedCap
+import Complexity.Computability.LogSpaceDerandomization.RowCompression.SaturatedRoot
+import Complexity.Computability.LogSpaceDerandomization.PolynomialAtomCutoffs
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.NormNum

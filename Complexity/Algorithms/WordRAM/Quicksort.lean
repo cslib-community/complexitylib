@@ -14,6 +14,7 @@ public import Complexity.Computability.WordRAM.Notation
 public import Complexity.Computability.WordRAM.Randomized.Expected
 public import Complexity.Computability.WordRAM.Time
 public import Complexity.Foundations.NumberTheory.Harmonic
+import Complexity.Computability.WordRAM.SymbolicExec
 import Mathlib.Data.List.Sort
 import Mathlib.Data.Rat.BigOperators
 import Mathlib.Data.Rat.Cast.Order
@@ -726,75 +727,32 @@ private theorem partStep_lt {w vlo vhi vpiv : ℕ} {mem₀ : ℕ → ℕ} {x : D
     ∃ y, ExecWithin w partStep x y 9 ∧
       PartInv w vlo vhi vpiv mem₀ y ∧ y.regs gt - y.regs cur < x.regs gt - x.regs cur := by
   have h1 := hI.lo_le_lt; have h2 := hI.lt_le_cur; have h3 := hI.gt_le_hi
-  have h1' : vlo ≤ x.regs 9 := h1
-  have h2' : x.regs 9 ≤ x.regs 10 := h2
-  have h3' : x.regs 11 ≤ vhi := h3
-  have hcg' : x.regs 10 < x.regs 11 := hcg
-  have hgt_eq : x.regs gt = x.regs 11 := rfl
-  set x₁ := x.set val (x.mem (x.regs cur))
-  have e_load : ExecWithin (B := .standard) w (.op (.load val cur)) x x₁ 1 := ExecWithin.load
-  have hc_pos : (Cond.lt val piv).Holds x₁ := by
-    simp [Cond.holds_lt, x₁, hI.piv_eq, hlt_piv]
-  have eswap := (swapCells_exec (w := w) (a := lt) (b := cur) (v1 := val) (v2 := val2) (x := x₁)
-    (by decide) (by decide) (by decide) (by decide) (by decide)).within
-  set x₂ : Data 16 :=
-    ⟨Function.update (Function.update x₁.regs val (x₁.mem (x₁.regs lt))) val2
-      (x₁.mem (x₁.regs cur)), swapMem x₁.mem (x₁.regs lt) (x₁.regs cur)⟩
-  have hlt2 : x₂.regs lt = x.regs lt := by simp [x₂, x₁]
-  have hcur2 : x₂.regs cur = x.regs cur := by simp [x₂, x₁]
-  have hone2 : x₂.regs one = 1 := by simp [x₂, x₁, hI.one_eq]
-  have e_lt : ExecWithin w (.op (.bin .add lt lt one)) x₂ (x₂.set lt (x.regs lt + 1)) 1 := by
-    simpa [hlt2, hone2, BinOp.eval] using ExecWithin.bin (w := w) (f := .add) (d := lt)
-      (i := lt) (j := one) (x := x₂)
-      (hI.fits_hi.of_le (by simp [hlt2, hone2, BinOp.eval]; omega))
-  set x₃ := x₂.set lt (x.regs lt + 1)
-  have hcur3 : x₃.regs cur = x.regs cur := by simp [x₃, hcur2]
-  have hone3 : x₃.regs one = 1 := by simp [x₃, hone2]
-  have e_cur : ExecWithin w (.op (.bin .add cur cur one)) x₃ (x₃.set cur (x.regs cur + 1)) 1 := by
-    simpa [hcur3, hone3, BinOp.eval] using ExecWithin.bin (w := w) (f := .add) (d := cur)
-      (i := cur) (j := one) (x := x₃)
-      (hI.fits_hi.of_le (by simp [hcur3, hone3, BinOp.eval]; omega))
-  set y := x₃.set cur (x.regs cur + 1)
-  have e_step : ExecWithin w partStep x y 9 :=
-    (e_load.seq (ExecWithin.branch_pos hc_pos (eswap.seq (e_lt.seq e_cur)))).mono (by omega)
-  have hymem : y.mem = swapMem x.mem (x.regs lt) (x.regs cur) := by simp [y, x₃, x₂, x₁]
-  have hperm_y : (memSlice vlo vhi y.mem).Perm (memSlice vlo vhi mem₀) := by
-    rw [hymem]
-    exact (memSlice_swap_perm ⟨by omega, by omega⟩ ⟨by omega, by omega⟩ x.mem).trans hI.perm
-  have hmod_y : Modifies (Finset.Ico vlo vhi) mem₀ y.mem := by
-    rw [hymem]
-    simpa only [Finset.union_idempotent] using hI.modifies.trans
+  have hfit (v : ℕ) (hv : v ≤ vhi) : Fits w v := hI.fits_hi.of_le hv
+  refine WP.exists_execWithin ?_
+  unfold partStep swapCells
+  wram_exec [hI.piv_eq, hI.one_eq, hlt_piv, hfit]
+  refine ⟨⟨?_, ?_, ?_, ?_, hI.fits_hi, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩
+  all_goals wram_simp [hI.one_eq, hI.lo_eq, hI.hi_eq, hI.piv_eq, Data.write_mem]
+  all_goals try simp only [← swapMem.eq_1]
+  any_goals omega
+  · exact (memSlice_swap_perm ⟨by omega, by omega⟩ ⟨by omega, by omega⟩ x.mem).trans hI.perm
+  · simpa only [Finset.union_idempotent] using hI.modifies.trans
       (modifies_swapMem (lo := vlo) (hi := vhi) (p := x.regs lt) (q := x.regs cur)
         ⟨by omega, by omega⟩ ⟨by omega, by omega⟩ x.mem)
-  refine ⟨y, e_step, ?_, ?_⟩
-  · refine ⟨by simp [y, x₃, hone2], by simp [y, x₃, x₂, x₁, hI.lo_eq],
-      by simp [y, x₃, x₂, x₁, hI.hi_eq], by simp [y, x₃, x₂, x₁, hI.piv_eq], hI.fits_hi,
-      by simp [y, x₃]; omega, by simp [y, x₃]; omega, by simp [y, x₃, x₂, x₁]; omega,
-      by simp [y, x₃, x₂, x₁]; omega, hperm_y, hmod_y, ?_, ?_, ?_⟩
-    · intro a ha1 ha2
-      simp only [y, x₃, Data.set_regs, Function.update_of_ne (by decide : lt ≠ cur),
-        Function.update_self] at ha2
-      rw [hymem]
-      rcases eq_or_lt_of_le (Nat.le_of_lt_succ ha2) with rfl | halt
-      · simpa using hlt_piv
-      · rw [swapMem_of_ne (by omega) (by omega)]
-        exact hI.lt_zone a ha1 halt
-    · intro a ha1 ha2
-      simp only [y, x₃, Data.set_regs, Function.update_of_ne (by decide : lt ≠ cur),
-        Function.update_self] at ha1 ha2
-      rw [hymem]
-      rcases eq_or_lt_of_le (Nat.le_of_lt_succ ha2) with rfl | hacur
-      · rw [swapMem_right]
-        exact hI.eq_zone (x.regs lt) le_rfl (by omega)
-      · rw [swapMem_of_ne (by omega) (by omega)]
-        exact hI.eq_zone a (by omega) hacur
-    · intro a ha1 ha2
-      simp only [y, x₃, x₂, x₁, Data.set_regs, Function.update_of_ne (by decide : gt ≠ cur),
-        Function.update_of_ne (by decide : gt ≠ lt), Function.update_of_ne (by decide : gt ≠ val2),
-        Function.update_of_ne (by decide : gt ≠ val)] at ha1
-      rw [hymem, swapMem_of_ne (by omega) (by omega)]
-      exact hI.gt_zone a ha1 ha2
-  · simp [y, x₃, x₂, x₁]; omega
+  · intro a ha1 ha2
+    rcases eq_or_lt_of_le (Nat.le_of_lt_succ ha2) with rfl | halt
+    · simpa using hlt_piv
+    · rw [swapMem_of_ne (by omega) (by omega)]
+      exact hI.lt_zone a ha1 halt
+  · intro a ha1 ha2
+    rcases eq_or_lt_of_le (Nat.le_of_lt_succ ha2) with rfl | hacur
+    · rw [swapMem_right]
+      exact hI.eq_zone (x.regs lt) le_rfl (by omega)
+    · rw [swapMem_of_ne (by omega) (by omega)]
+      exact hI.eq_zone a (by omega) hacur
+  · intro a ha1 ha2
+    rw [swapMem_of_ne (by omega) (by omega)]
+    exact hI.gt_zone a ha1 ha2
 
 private theorem partStep_gt {w vlo vhi vpiv : ℕ} {mem₀ : ℕ → ℕ} {x : Data 16}
     (hI : PartInv w vlo vhi vpiv mem₀ x) (hcg : x.regs cur < x.regs gt)
@@ -802,70 +760,30 @@ private theorem partStep_gt {w vlo vhi vpiv : ℕ} {mem₀ : ℕ → ℕ} {x : D
     ∃ y, ExecWithin w partStep x y 9 ∧
       PartInv w vlo vhi vpiv mem₀ y ∧ y.regs gt - y.regs cur < x.regs gt - x.regs cur := by
   have h1 := hI.lo_le_lt; have h2 := hI.lt_le_cur; have h3 := hI.gt_le_hi
-  have h1' : vlo ≤ x.regs 9 := h1
-  have h2' : x.regs 9 ≤ x.regs 10 := h2
-  have h3' : x.regs 11 ≤ vhi := h3
-  have hcg' : x.regs 10 < x.regs 11 := hcg
-  have hgt_eq : x.regs gt = x.regs 11 := rfl
-  set x₁ := x.set val (x.mem (x.regs cur))
-  have e_load : ExecWithin (B := .standard) w (.op (.load val cur)) x x₁ 1 := ExecWithin.load
-  have hc_neg : ¬(Cond.lt val piv).Holds x₁ := by
-    simp [Cond.holds_lt, x₁, hI.piv_eq, hnlt]
-  have hc2_pos : (Cond.lt piv val).Holds x₁ := by
-    simp [Cond.holds_lt, x₁, hI.piv_eq, hgt_piv]
-  have hgt1 : x₁.regs gt = x.regs gt := by simp [x₁]
-  have hone1 : x₁.regs one = 1 := by simp [x₁, hI.one_eq]
-  have e_gt : ExecWithin w (.op (.bin .sub gt gt one)) x₁ (x₁.set gt (x.regs gt - 1)) 1 := by
-    simpa [hgt1, hone1, BinOp.eval] using ExecWithin.bin (w := w) (f := .sub) (d := gt)
-      (i := gt) (j := one) (x := x₁)
-      (hI.fits_hi.of_le (by simp [hgt1, hone1, BinOp.eval]; omega))
-  set x₂ := x₁.set gt (x.regs gt - 1)
-  have eswap := (swapCells_exec (w := w) (a := cur) (b := gt) (v1 := val) (v2 := val2) (x := x₂)
-    (by decide) (by decide) (by decide) (by decide) (by decide)).within
-  set y : Data 16 :=
-    ⟨Function.update (Function.update x₂.regs val (x₂.mem (x₂.regs cur))) val2
-      (x₂.mem (x₂.regs gt)), swapMem x₂.mem (x₂.regs cur) (x₂.regs gt)⟩
-  have e_step : ExecWithin w partStep x y 9 :=
-    (e_load.seq (ExecWithin.branch_neg hc_neg
-      (ExecWithin.branch_pos hc2_pos (e_gt.seq eswap)))).mono (by omega)
-  have hymem : y.mem = swapMem x.mem (x.regs cur) (x.regs gt - 1) := by simp [y, x₂, x₁]
-  have hperm_y : (memSlice vlo vhi y.mem).Perm (memSlice vlo vhi mem₀) := by
-    rw [hymem]
-    exact (memSlice_swap_perm ⟨by omega, by omega⟩ ⟨by omega, by omega⟩ x.mem).trans hI.perm
-  have hmod_y : Modifies (Finset.Ico vlo vhi) mem₀ y.mem := by
-    rw [hymem]
-    simpa only [Finset.union_idempotent] using hI.modifies.trans
+  have hfit (v : ℕ) (hv : v ≤ vhi) : Fits w v := hI.fits_hi.of_le hv
+  refine WP.exists_execWithin ?_
+  unfold partStep swapCells
+  wram_exec [hI.piv_eq, hI.one_eq, hnlt, hgt_piv, hfit]
+  refine ⟨⟨?_, ?_, ?_, ?_, hI.fits_hi, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩
+  all_goals wram_simp [hI.one_eq, hI.lo_eq, hI.hi_eq, hI.piv_eq, Data.write_mem]
+  all_goals try simp only [← swapMem.eq_1]
+  any_goals omega
+  · exact (memSlice_swap_perm ⟨by omega, by omega⟩ ⟨by omega, by omega⟩ x.mem).trans hI.perm
+  · simpa only [Finset.union_idempotent] using hI.modifies.trans
       (modifies_swapMem (lo := vlo) (hi := vhi) (p := x.regs cur) (q := x.regs gt - 1)
         ⟨by omega, by omega⟩ ⟨by omega, by omega⟩ x.mem)
-  refine ⟨y, e_step, ?_, ?_⟩
-  · refine ⟨by simp [y, x₂, x₁, hI.one_eq], by simp [y, x₂, x₁, hI.lo_eq],
-      by simp [y, x₂, x₁, hI.hi_eq], by simp [y, x₂, x₁, hI.piv_eq], hI.fits_hi,
-      by simp [y, x₂, x₁]; omega, by simp [y, x₂, x₁]; omega, by simp [y, x₂, x₁]; omega,
-      by simp [y, x₂, x₁]; omega, hperm_y, hmod_y, ?_, ?_, ?_⟩
-    · intro a ha1 ha2
-      simp only [y, x₂, x₁, Data.set_regs, Function.update_of_ne (by decide : lt ≠ val2),
-        Function.update_of_ne (by decide : lt ≠ val),
-        Function.update_of_ne (by decide : lt ≠ gt)] at ha2
-      rw [hymem, swapMem_of_ne (by omega) (by omega)]
-      exact hI.lt_zone a ha1 ha2
-    · intro a ha1 ha2
-      simp only [y, x₂, x₁, Data.set_regs, Function.update_of_ne (by decide : lt ≠ val2),
-        Function.update_of_ne (by decide : lt ≠ val), Function.update_of_ne (by decide : lt ≠ gt),
-        Function.update_of_ne (by decide : cur ≠ val2),
-        Function.update_of_ne (by decide : cur ≠ val),
-        Function.update_of_ne (by decide : cur ≠ gt)] at ha1 ha2
-      rw [hymem, swapMem_of_ne (by omega) (by omega)]
-      exact hI.eq_zone a ha1 ha2
-    · intro a ha1 ha2
-      simp only [y, x₂, x₁, Data.set_regs, Function.update_of_ne (by decide : gt ≠ val2),
-        Function.update_of_ne (by decide : gt ≠ val), Function.update_self] at ha1
-      rw [hymem]
-      rcases eq_or_lt_of_le ha1 with h_eq | h_gt
-      · subst h_eq
-        simpa using hgt_piv
-      · rw [swapMem_of_ne (by omega) (by omega)]
-        exact hI.gt_zone a (by omega) ha2
-  · simp [y, x₂, x₁]; omega
+  · intro a ha1 ha2
+    rw [swapMem_of_ne (by omega) (by omega)]
+    exact hI.lt_zone a ha1 ha2
+  · intro a ha1 ha2
+    rw [swapMem_of_ne (by omega) (by omega)]
+    exact hI.eq_zone a ha1 ha2
+  · intro a ha1 ha2
+    rcases eq_or_lt_of_le ha1 with h_eq | h_gt
+    · subst h_eq
+      simpa using hgt_piv
+    · rw [swapMem_of_ne (by omega) (by omega)]
+      exact hI.gt_zone a (by omega) ha2
 
 private theorem partStep_eq {w vlo vhi vpiv : ℕ} {mem₀ : ℕ → ℕ} {x : Data 16}
     (hI : PartInv w vlo vhi vpiv mem₀ x) (hcg : x.regs cur < x.regs gt)
@@ -873,33 +791,21 @@ private theorem partStep_eq {w vlo vhi vpiv : ℕ} {mem₀ : ℕ → ℕ} {x : D
     ∃ y, ExecWithin w partStep x y 9 ∧
       PartInv w vlo vhi vpiv mem₀ y ∧ y.regs gt - y.regs cur < x.regs gt - x.regs cur := by
   have h1 := hI.lo_le_lt; have h2 := hI.lt_le_cur; have h3 := hI.gt_le_hi
-  simp only [lt, cur, gt] at h1 h2 h3 hcg
-  set x₁ := x.set val (x.mem (x.regs cur))
-  have e_load : ExecWithin (B := .standard) w (.op (.load val cur)) x x₁ 1 := ExecWithin.load
-  have hc_neg : ¬(Cond.lt val piv).Holds x₁ := by simp [Cond.holds_lt, x₁, hI.piv_eq, hnlt]
-  have hc2_neg : ¬(Cond.lt piv val).Holds x₁ := by simp [Cond.holds_lt, x₁, hI.piv_eq, hngt]
-  have hcur1 : x₁.regs cur = x.regs cur := by simp [x₁]
-  have hone1 : x₁.regs one = 1 := by simp [x₁, hI.one_eq]
-  have e_cur : ExecWithin w (.op (.bin .add cur cur one)) x₁ (x₁.set cur (x.regs cur + 1)) 1 := by
-    simpa [hcur1, hone1, BinOp.eval] using ExecWithin.bin (w := w) (f := .add) (d := cur)
-      (i := cur) (j := one) (x := x₁)
-      (hI.fits_hi.of_le (by simp [hcur1, hone1, BinOp.eval]; omega))
-  set y := x₁.set cur (x.regs cur + 1)
-  have e_step : ExecWithin w partStep x y 9 :=
-    (e_load.seq (ExecWithin.branch_neg hc_neg
-      (ExecWithin.branch_neg hc2_neg e_cur))).mono (by omega)
-  refine ⟨y, e_step, ?_, ?_⟩
-  · refine ⟨by simp [y, x₁, hI.one_eq], by simp [y, x₁, hI.lo_eq], by simp [y, x₁, hI.hi_eq],
-      by simp [y, x₁, hI.piv_eq], hI.fits_hi, by simp [y, x₁]; omega, by simp [y, x₁]; omega,
-      by simp [y, x₁]; omega, by simp [y, x₁]; omega, hI.perm, hI.modifies, hI.lt_zone, ?_,
-      hI.gt_zone⟩
-    intro a ha1 ha2
-    simp only [y, x₁, Data.set_regs, Function.update_of_ne (by decide : lt ≠ cur),
-      Function.update_of_ne (by decide : lt ≠ val), Function.update_self] at ha1 ha2
+  have hfit (v : ℕ) (hv : v ≤ vhi) : Fits w v := hI.fits_hi.of_le hv
+  refine WP.exists_execWithin ?_
+  unfold partStep
+  wram_exec [hI.piv_eq, hI.one_eq, hnlt, hngt, hfit]
+  refine ⟨⟨?_, ?_, ?_, ?_, hI.fits_hi, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩
+  all_goals wram_simp [hI.one_eq, hI.lo_eq, hI.hi_eq, hI.piv_eq]
+  any_goals omega
+  · exact hI.perm
+  · exact hI.modifies
+  · exact hI.lt_zone
+  · intro a ha1 ha2
     rcases eq_or_lt_of_le (Nat.le_of_lt_succ ha2) with rfl | hacur
-    · simp only [y, x₁, Data.set_mem]; omega
+    · omega
     · exact hI.eq_zone a ha1 hacur
-  · simp [y, x₁]; omega
+  · exact hI.gt_zone
 
 /-- Full 3-way partition loop executes within `11 * (vhi - vlo) + 2` instructions and exits with
 `cur = gt`. -/
@@ -956,61 +862,29 @@ theorem pushIfNonTrivial_spec {w n : ℕ} {a b : Fin 16} {x : Data 16}
         (if x.regs a + 2 ≤ x.regs b then readStack n x ++ [(x.regs a, x.regs b)]
          else readStack n x) ∧
       Modifies (Finset.Ico (n + 1) (3 * n + 1)) x.mem y.mem := by
-  set va := x.regs a
-  set vb := x.regs b
-  set k := x.regs sp
-  set x₁ := x.set tmp (va + 2)
-  have e₁ : ExecWithin w (.op (.bin .add tmp a two)) x x₁ 1 := by
-    simpa [x₁, va, htwo, BinOp.eval] using ExecWithin.bin (w := w) (f := .add) (d := tmp)
-      (i := a) (j := two) (x := x)
-      (hfit_all.of_le (by simp [htwo, BinOp.eval]; omega))
-  by_cases hcond : vb < va + 2
-  · have hc_pos : (Cond.lt b tmp).Holds x₁ := by simp [Cond.holds_lt, x₁, hb_tmp, vb, hcond]
-    have e_nop : ExecWithin (B := .standard) w (.op (.copy sp sp)) x₁ (x₁.set sp (x₁.regs sp)) 1 :=
-      ExecWithin.copy
-    set y := x₁.set sp (x₁.regs sp)
-    refine ⟨y, (e₁.seq (ExecWithin.branch_pos hc_pos e_nop)).mono (by omega), ?_, ?_⟩
-    · have hnot : ¬va + 2 ≤ vb := by omega
-      simp only [hnot, ↓reduceIte]
-      exact readStack_congr (by simp [y, x₁]) (fun _ _ => rfl)
-    · exact Modifies.refl _ _
-  · have hge : va + 2 ≤ vb := by omega
-    have hk_lt : k < n := hcap hge
-    have hk6 : x.regs 6 = k := rfl
-    have hc_neg : ¬(Cond.lt b tmp).Holds x₁ := by simp [Cond.holds_lt, x₁, hb_tmp, vb, hcond]
-    have ew₁ := (writeAt_exec (w := w) (tmp := tmp) (ptr := stackLo) (idx := sp) (src := a)
-      (x := x₁) ha_tmp (hfit_all.of_le (by simp [x₁, hsLo, hk6]; omega))).within
-    set x₂ := (x₁.set tmp (x₁.regs stackLo + x₁.regs sp)).write
-      (x₁.regs stackLo + x₁.regs sp) (x₁.regs a)
-    have ew₂ := (writeAt_exec (w := w) (tmp := tmp) (ptr := stackHi) (idx := sp) (src := b)
-      (x := x₂) hb_tmp (hfit_all.of_le (by simp [x₂, x₁, hsHi, hk6]; omega))).within
-    set x₃ := (x₂.set tmp (x₂.regs stackHi + x₂.regs sp)).write
-      (x₂.regs stackHi + x₂.regs sp) (x₂.regs b)
-    have hsp3 : x₃.regs sp = k := by simp [x₃, x₂, x₁, k]
-    have hone3 : x₃.regs one = 1 := by simp [x₃, x₂, x₁, hone]
-    have e_inc : ExecWithin w (.op (.bin .add sp sp one)) x₃ (x₃.set sp (k + 1)) 1 := by
-      simpa [hsp3, hone3, BinOp.eval] using ExecWithin.bin (w := w) (f := .add) (d := sp)
-        (i := sp) (j := one) (x := x₃)
-        (hfit_all.of_le (by simp [hsp3, hone3, BinOp.eval]; omega))
-    set y := x₃.set sp (k + 1)
-    have hymem : y.mem = Function.update (Function.update x.mem (n + 1 + k) va)
-        (2 * n + 1 + k) vb := by
-      simp [y, x₃, x₂, x₁, hsLo, hsHi, ha_tmp, hb_tmp, va, vb, k]
-    refine ⟨y, (e₁.seq (ExecWithin.branch_neg hc_neg (ew₁.seq (ew₂.seq e_inc)))).mono (by omega),
-      ?_, ?_⟩
-    · simp only [hge, ↓reduceIte]
-      have hsp_y : y.regs sp = k + 1 := by simp [y]
-      rw [readStack, hsp_y, List.range_succ, List.map_append, List.map_singleton]
+  have hfit (v : ℕ) (hv : v ≤ 3 * n + 3) : Fits w v := hfit_all.of_le hv
+  refine WP.exists_execWithin ?_
+  unfold pushIfNonTrivial writeAt
+  by_cases hge : x.regs a + 2 ≤ x.regs b
+  · have hk_lt : x.regs sp < n := hcap hge
+    have hnlt : ¬x.regs b < x.regs a + 2 := by omega
+    wram_exec [htwo, hone, hsLo, hsHi, hnlt, hfit]
+    refine ⟨?_, fun addr haddr => ?_⟩
+    · simp only [hge, ↓reduceIte, readStack]
+      wram_simp [Data.write_mem, hsLo, hsHi]
+      rw [List.range_succ, List.map_append, List.map_singleton]
       congr 1
-      · simp only [readStack, k]
-        refine List.map_congr_left fun i hi => ?_
+      · refine List.map_congr_left fun i hi => ?_
         rw [List.mem_range] at hi
-        rw [hymem, Function.update_of_ne (by omega), Function.update_of_ne (by omega),
+        rw [Function.update_of_ne (by omega), Function.update_of_ne (by omega),
           Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
-      · rw [hymem, Function.update_self, Function.update_of_ne (by omega), Function.update_self]
-    · intro addr haddr
-      rw [Finset.mem_Ico] at haddr
-      rw [hymem, Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
+      · rw [Function.update_self, Function.update_of_ne (by omega), Function.update_self]
+    · rw [Finset.mem_Ico] at haddr
+      wram_simp
+  · have hlt : x.regs b < x.regs a + 2 := by omega
+    wram_exec [htwo, hlt, hfit]
+    simp only [hge, ↓reduceIte]
+    exact ⟨readStack_congr (by wram_simp) fun _ _ => rfl, Modifies.refl _ _⟩
 
 /-! ## Global outer-loop invariant and preservation across 3-way partition -/
 

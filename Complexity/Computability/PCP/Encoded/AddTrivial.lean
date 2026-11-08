@@ -116,19 +116,14 @@ theorem WellFormed.addLoops {g : Graph C} (hg : g.WellFormed) (truth : C) :
   obtain ⟨v, hv, rfl⟩ := List.mem_map.mp hp
   exact ⟨List.mem_range.mp hv, List.mem_range.mp hv⟩
 
-/-- The ordered concatenation of edge lists numbers their disjoint union. -/
-def appendEdgeEquiv (left right : List (Edge C)) :
-    Fin left.length ⊕ Fin right.length ≃ Fin (left ++ right).length :=
-  finSumFinEquiv.trans (finCongr (List.length_append ..).symm)
-
 /-- Appending edge records interprets as the union of the corresponding constraint graphs,
 with the canonical enumeration of their disjoint edge sets. -/
 theorem toGraph_append (vertices : ℕ) (left right : List (Edge C))
     (eval : C → α → α → Bool) :
-    ((Graph.mk vertices (left ++ right)).toGraph eval).comap (appendEdgeEquiv left right) =
+    ((Graph.mk vertices (left ++ right)).toGraph eval).comap (List.appendIndexEquiv left right) =
       ((Graph.mk vertices left).toGraph eval).union ((Graph.mk vertices right).toGraph eval) := by
   ext (i | i) <;>
-    simp [toGraph, ConstraintGraph.comap, ConstraintGraph.union, appendEdgeEquiv,
+    simp [toGraph, ConstraintGraph.comap, ConstraintGraph.union, List.appendIndexEquiv,
       List.get_eq_getElem, List.getElem_append_left, List.getElem_append_right]
 
 /-- Appending universally accepting constraints preserves satisfiability. -/
@@ -136,9 +131,9 @@ theorem satisfiable_addTrivial_iff (g : Graph C) (eval : C → α → α → Boo
     (truth : C) (htruth : ∀ a b, eval truth a b = true) (extra : List (ℕ × ℕ)) :
     ((g.addTrivial truth extra).toGraph eval).Satisfiable ↔ (g.toGraph eval).Satisfiable := by
   rw [← ConstraintGraph.satisfiable_comap_iff ((g.addTrivial truth extra).toGraph eval)
-    (appendEdgeEquiv g.edges (extra.map fun p => ⟨p.1, p.2, truth⟩)).surjective]
+    (List.appendIndexEquiv g.edges (extra.map fun p => ⟨p.1, p.2, truth⟩)).surjective]
   rw [show ((g.addTrivial truth extra).toGraph eval).comap
-      (appendEdgeEquiv g.edges (extra.map fun p => ⟨p.1, p.2, truth⟩)) =
+      (List.appendIndexEquiv g.edges (extra.map fun p => ⟨p.1, p.2, truth⟩)) =
       (g.toGraph eval).union
         ((Graph.mk g.vertices (extra.map fun p => ⟨p.1, p.2, truth⟩)).toGraph eval) from
     toGraph_append g.vertices g.edges _ eval]
@@ -161,7 +156,7 @@ theorem unsatVal_addTrivial (g : Graph C) (eval : C → α → α → Bool)
   rw [← ConstraintGraph.unsatVal_comap_equiv
     ((Graph.mk g.vertices
       (g.edges ++ extra.map fun p => Edge.mk p.1 p.2 truth)).toGraph eval)
-    (appendEdgeEquiv g.edges (extra.map fun p => ⟨p.1, p.2, truth⟩)), toGraph_append]
+    (List.appendIndexEquiv g.edges (extra.map fun p => ⟨p.1, p.2, truth⟩)), toGraph_append]
   rw [ConstraintGraph.unsatVal_union_of_forall_rel]
   · simp
   · intro i a b

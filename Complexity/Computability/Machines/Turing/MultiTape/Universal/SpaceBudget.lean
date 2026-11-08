@@ -65,11 +65,10 @@ The fold reuses the parts of the in-place fold (`Turing.MultiTapeTM.Universal.fo
 `Turing.MultiTapeTM.Universal.stepAt`, `Turing.MultiTapeTM.Universal.foldEnd`) on the state of the
 in-place fold, and its proof of computability adapts that of
 `Turing.MultiTapeTM.Universal.computableTidilyInTimeAndSpace_universal_inPlace`, by Christian
-Reitwiessner. The events of the input, the extraction of the parts the initial state reads, the
-bounds on the countdown and the simplified time bound restate private lemmas and the extracting
-transducer of the module
-`Complexity.Computability.Machines.Turing.MultiTape.Universal.InPlace` for the
-encoding `Turing.MultiTapeTM.Universal.eInS`, whose input ends in a budget.
+Reitwiessner. The events of the input (`Turing.MultiTapeTM.Universal.inTr_events_frame`) and the
+parts the initial state reads (`Turing.MultiTapeTM.Universal.extractT_run_frame`) are those of the
+in-place fold, since the encoding `Turing.MultiTapeTM.Universal.eInS` only appends a budget to the
+number of steps.
 
 ## References
 
@@ -220,13 +219,6 @@ lemma streamState_foldNextS (s : SSt) (l : List Bool) (j : ℕ) :
     streamState s foldNextS l j = ((s.1.1, (s.1.2.1, (l.take j).foldl scan s.1.2.2)), s.2) :=
   List.foldl_hom (fun a => ((s.1.1, (s.1.2.1, a)), s.2)) (fun _ _ => rfl)
 
--- restated from the module `Universal.InPlace`, where it is private
-lemma stepAt_scan' (c : SCfg) (r : ℕ) :
-    stepAt ((d, c), (r, (events x).foldl scan (c.inputPos, 0))) =
-      if r = 0 then (c, none) else step d x c := by
-  rw [stepAt, step_eq_stepWith, inputSymbol_scan]
-  rfl
-
 /-- **The passes within the budget** follow the run within the budget, as long as steps are
 left. -/
 private theorem passState_foldS (t i : ℕ) :
@@ -242,153 +234,22 @@ private theorem passState_foldS (t i : ℕ) :
     have hP := length_budgetStep_iterate_le d x b (min i t)
     rcases Nat.lt_or_ge i t with h | h
     · rw [show min (i + 1) t = min i t + 1 by omega, Function.iterate_succ_apply']
-      rw [foldEndS, stepAt_scan', budgetStep]
-      simp only [show t - i ≠ 0 by omega, ↓reduceIte, foldEnd, stepAt_scan']
+      rw [foldEndS, stepAt_scan d x, budgetStep]
+      simp only [show t - i ≠ 0 by omega, ↓reduceIte, foldEnd, stepAt_scan d x]
       split_ifs <;> simp only [Prod.mk.injEq, true_and, and_true] <;> omega
     · rw [show min (i + 1) t = min i t by omega]
-      rw [foldEndS, stepAt_scan']
-      simp only [show t - i = 0 by omega, ↓reduceIte, foldEnd, stepAt_scan', Option.toList_none,
+      rw [foldEndS, stepAt_scan d x]
+      simp only [show t - i = 0 by omega, ↓reduceIte, foldEnd, stepAt_scan d x, Option.toList_none,
         List.append_nil, List.take_of_length_le hP]
       split_ifs <;> simp only [Prod.mk.injEq, true_and, and_true] <;> omega
 
-/-! ### The events of the input, and the parts of the input the initial state reads
-
-The lemmas of this section restate private lemmas of the module
-`Complexity.Computability.Machines.Turing.MultiTape.Universal.InPlace` for the encoding
-`Turing.MultiTapeTM.Universal.eInS`, whose input ends in a budget. -/
-
-lemma inTr_run_frame (w v : List Bool) :
-    inTr.run .descMarker (frame w ++ v) = inTr.run .marker v := by
-  induction w with
-  | nil => rfl
-  | cons b w ih => cases b <;> exact ih
-
-lemma inTr_run_steps (v : List Bool) : inTr.run .steps v = (.steps, []) := by
-  induction v with
-  | nil => rfl
-  | cons b v ih => exact congrArg (fun p : InState × List Bool => (p.1, p.2)) ih
-
-lemma inTr_run_symbol (n : ℕ) (v : List Bool) :
-    inTr.run .marker (doubled (frame (List.replicate n true)) ++ v) =
-      ((inTr.run .marker v).1, tok n ++ (inTr.run .marker v).2) := by
-  induction n with
-  | zero => rfl
-  | succ n ih =>
-    rw [List.replicate_succ, frame_cons, doubled_cons, doubled_cons]
-    change ((inTr.run .marker (doubled (frame (List.replicate n true)) ++ v)).1,
-      true :: (inTr.run .marker (doubled (frame (List.replicate n true)) ++ v)).2) = _
-    rw [ih]
-    simp [tok, List.replicate_succ]
+/-! ### The events of the input -/
 
 /-- The events of the encoded input of `budgetedUniversal` are the events of the symbols of `x`. -/
-private theorem events_eInS (t : ℕ) : inTr.events (eInS (d, x, t, b)) = events x := by
-  have hx : ∀ v, inTr.run .marker (doubled (encList encUnary x) ++ v) =
-      ((inTr.run .marker v).1, events x ++ (inTr.run .marker v).2) := by
-    intro v
-    induction x with
-    | nil => simp [events]
-    | cons n x ih =>
-      rw [encList_cons, doubled_append, List.append_assoc, encUnary_apply, inTr_run_symbol, ih]
-      simp [events]
-  rw [Translator.events, show eInS (d, x, t, b) = frame (eDesc d) ++ (frame (encList encUnary x) ++
-    encPair encNat encUnary (t, b)) from rfl, show inTr.q₀ = .descMarker from rfl, inTr_run_frame,
-    frame_eq_doubled, List.append_assoc, hx, List.singleton_append]
-  change events x ++ (inTr.run .steps (encPair encNat encUnary (t, b))).2 = events x
-  rw [inTr_run_steps, List.append_nil]
-
-/-- Copies the framed description, drops the framed input and copies the rest: a copy of the
-private transducer `extractT` of the module
-`Complexity.Computability.Machines.Turing.MultiTape.Universal.InPlace`. -/
-def extractS : Transducer Bool ExState where
-  q₀ := .descMarker
-  step
-    | .descMarker, true => (.descBit, [true])
-    | .descMarker, false => (.marker, [false])
-    | .descBit, b => (.descMarker, [b])
-    | .marker, true => (.bit, [])
-    | .marker, false => (.steps, [])
-    | .bit, _ => (.marker, [])
-    | .steps, b => (.steps, [b])
-  final _ := []
-  length_step_le q b := by cases q <;> cases b <;> simp
-  length_final_le _ := by simp
-
-lemma extractS_run (t : ℕ) :
-    extractS.run extractS.q₀ (eInS (d, x, t, b)) =
-      encPair eDesc (encPair encNat encUnary) (d, t, b) := by
-  have h₁ (w v : List Bool) :
-      extractS.run .descMarker (frame w ++ v) = frame w ++ extractS.run .marker v := by
-    induction w with
-    | nil => rfl
-    | cons b w ih => exact congrArg (fun l => true :: b :: l) ih
-  have h₂ (w v : List Bool) : extractS.run .marker (frame w ++ v) = extractS.run .steps v := by
-    induction w with
-    | nil => rfl
-    | cons b w ih => exact ih
-  have h₃ (w : List Bool) : extractS.run .steps w = w := by
-    induction w with
-    | nil => rfl
-    | cons b w ih => exact congrArg (b :: ·) ih
-  simp only [eInS, encPair_apply, show extractS.q₀ = .descMarker from rfl, h₁, h₂, h₃]
+private theorem events_eInS (t : ℕ) : inTr.events (eInS (d, x, t, b)) = events x :=
+  inTr_events_frame _ _ _
 
 /-! ### The size of the states -/
-
--- restated from the module `Universal.InPlace`, where it is private
-lemma foldl_scan_replicate' (k cur j : ℕ) :
-    (List.replicate j true).foldl scan (k, cur) = (k, if k = 1 then cur + j else cur) := by
-  induction j generalizing cur with
-  | zero => simp
-  | succ j ih =>
-    rw [List.replicate_succ, List.foldl_cons]
-    simp only [scan, ↓reduceIte, ih]
-    split_ifs <;> simp
-    omega
-
--- restated from the module `Universal.InPlace`, where it is private
-lemma scan_zero' (l : List Bool) (cur : ℕ) : l.foldl scan (0, cur) = (0, cur) := by
-  induction l with
-  | nil => rfl
-  | cons b l ih => cases b <;> simp [scan, ih]
-
--- restated from the module `Universal.InPlace`, where it is private
-lemma scan_take_tok' (n k cur j : ℕ) :
-    (((tok n).take j).foldl scan (k, cur)).1 ≤ k ∧
-      (((tok n).take j).foldl scan (k, cur)).2 ≤ cur + n ∧
-      ((((tok n).take j).foldl scan (k, cur)).2 = cur ∨ k = 1) := by
-  rcases Nat.lt_or_ge n j with h | h
-  · rw [List.take_of_length_le (by simp [tok]; omega), scan_tok]
-    split_ifs <;> simp_all
-  · rw [tok, List.take_append_of_le_length (by simpa using h), List.take_replicate,
-      Nat.min_eq_left h, foldl_scan_replicate']
-    split_ifs <;> simp_all
-
--- restated from the module `Universal.InPlace`, where it is private
-/-- Along the events of the input, the countdown does not go up and the symbol read stays within
-the largest symbol. -/
-lemma scan_take' (x : List ℕ) (k cur j : ℕ) :
-    (((events x).take j).foldl scan (k, cur)).1 ≤ k ∧
-      (((events x).take j).foldl scan (k, cur)).2 ≤ cur + x.foldr max 0 := by
-  induction x generalizing k cur j with
-  | nil => simp [events]
-  | cons n x ih =>
-    rw [events, List.map_cons, List.flatten_cons, ← events, List.take_append, List.foldl_append]
-    obtain ⟨h₁, h₂, h₃⟩ := scan_take_tok' n k cur j
-    set p := ((tok n).take j).foldl scan (k, cur)
-    obtain ⟨h₄, h₅⟩ := ih p.1 p.2 (j - (tok n).length)
-    simp only [Prod.mk.eta] at h₄ h₅
-    refine ⟨h₄.trans h₁, ?_⟩
-    rcases h₃ with h₃ | rfl
-    · simp only [List.foldr_cons] at h₅ ⊢
-      omega
-    · rcases Nat.lt_or_ge j (tok n).length with hj | hj
-      · rw [Nat.sub_eq_zero_of_le hj.le]
-        simp only [List.take_zero, List.foldl_nil, List.foldr_cons]
-        omega
-      · have hp : p = (0, cur + n) := by
-          simp only [p, List.take_of_length_le hj, scan_tok, ↓reduceIte]
-        rw [hp, scan_zero']
-        simp only [List.foldr_cons]
-        omega
 
 /-- A bound on the states of the fold within the budget `b`: the description, a configuration
 within the budget or the initial one, the number of steps and the position of the input head in
@@ -414,7 +275,7 @@ private lemma length_eSSt_le (t i j : ℕ) :
     · exact le_max_right _ _
     · exact hb'.trans (le_max_left _ _)
   have hpos : (run d x j').inputPos ≤ x.length + 1 := (inv_iterate d x j').1.inputPos
-  obtain ⟨hk, hcur⟩ := scan_take' x (run d x j').inputPos 0 j
+  obtain ⟨hk, hcur⟩ := scan_take x (run d x j').inputPos 0 j
   have hr := ComputableTidilyInO.length_encNat_mono (show t - i ≤ t by omega)
   have hk' := ComputableTidilyInO.length_encNat_mono (hk.trans hpos)
   have ho := length_encList_le encUnary (((stepOut d x)^[j'] (init d, [])).2.take 2)
@@ -467,9 +328,9 @@ private lemma foldInitS_inO : ComputableTidilyInO foldInitS eInS eSSt
     (fun i => (eInS i).length +
       ((encPair eDesc (encPair encNat encUnary) (i.1, i.2.2)).length + 1) ^ 2)
     fun i => (encPair eDesc (encPair encNat encUnary) (i.1, i.2.2)).length + 1 := by
-  have hext := ComputableTidilyInO.of_transducer extractS (f := fun i : Desc × List ℕ × ℕ × ℕ =>
-    (i.1, i.2.2)) (encIn := eInS) (encOut := encPair eDesc (encPair encNat encUnary))
-    fun i => (extractS_run i.1 i.2.1 i.2.2.2 i.2.2.1).symm
+  have hext := ComputableTidilyInO.of_transducer extractT (f := fun i : Desc × List ℕ × ℕ × ℕ =>
+    (i.1, i.2.2)) (encIn := eInS) (encOut := encPair eDesc (encPair encNat encUnary)) fun i =>
+    (extractT_run_frame (eDesc i.1) (encList encUnary i.2.1) (encPair encNat encUnary i.2.2)).symm
   have hd := fst eDesc (encPair encNat encUnary)
   have hr := snd eDesc (encPair encNat encUnary)
   have hg := ((hd.prod (init_inO.comp hd)).prod
@@ -643,35 +504,6 @@ lemma length_eSSt_le' (t i j : ℕ) :
   rw [events_eInS]
   exact length_eSSt_le d x b t i j
 
--- restated from the module `Universal.InPlace`, where it is private
-/-- The time of the universal machine within a budget, simplified. -/
-lemma final_time' (c N t L P E : ℕ) (hP : P ≤ L) (hE : E ≤ L) :
-    c * (N + (P + 1) ^ 2 + (E + 1) ^ 3 + (t - 1 + 1) * (N + (N + 1) * (9 * (L + 1) ^ 3 + L + 1)))
-      ≤ 20 * c * ((t + 1) * (N + 1) ^ 2 * (L + 1) ^ 3) := by
-  have hA : 1 ≤ (L + 1) ^ 3 := Nat.one_le_pow _ _ (by omega)
-  have h₁ : (P + 1) ^ 2 ≤ (L + 1) ^ 3 :=
-    (Nat.pow_le_pow_left (by omega) 2).trans (Nat.pow_le_pow_right (by omega) (by omega))
-  have h₂ : (E + 1) ^ 3 ≤ (L + 1) ^ 3 := Nat.pow_le_pow_left (by omega) 3
-  have h₃ : L + 1 ≤ (L + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
-  have h₄ : t - 1 + 1 ≤ t + 1 := by omega
-  rw [Nat.mul_assoc 20, Nat.mul_left_comm 20 c]
-  refine Nat.mul_le_mul_left c ?_
-  set Y := (L + 1) ^ 3
-  set Z := (N + 1) ^ 2 * Y
-  have hN : N + 1 ≤ (N + 1) ^ 2 := Nat.le_self_pow (by norm_num) _
-  have hz₁ : (N + 1) * Y ≤ Z := Nat.mul_le_mul_right _ hN
-  have hz₂ : N + 1 ≤ (N + 1) * Y := Nat.le_mul_of_pos_right _ hA
-  have hz₃ : Y ≤ (N + 1) * Y := Nat.le_mul_of_pos_left _ (by omega)
-  have hz₄ : Z ≤ (t + 1) * Z := Nat.le_mul_of_pos_left _ (by omega)
-  have h₅ : N + (N + 1) * (9 * Y + L + 1) ≤ 11 * Z := by
-    have := Nat.mul_le_mul_left (N + 1) (show 9 * Y + L + 1 ≤ 10 * Y by omega)
-    rw [show (N + 1) * (10 * Y) = 10 * ((N + 1) * Y) by ring] at this
-    omega
-  calc _ ≤ N + Y + Y + (t + 1) * (11 * Z) := by gcongr
-    _ = N + Y + Y + 11 * ((t + 1) * Z) := by ring
-    _ ≤ 20 * ((t + 1) * Z) := by omega
-    _ = 20 * ((t + 1) * (N + 1) ^ 2 * Y) := by ring
-
 local instance : FinEnum InState :=
   FinEnum.ofList [.descMarker, .descBit, .marker, .bit, .digitMarker, .digit, .steps]
     fun q => by cases q <;> decide
@@ -750,7 +582,7 @@ public theorem computableTidilyInTimeAndSpace_budgetedUniversal : ∃ c,
       omega
     have hE := length_eSSt_le' d x b t (t - 1 + 1) 0
     rw [streamState_zero] at hE
-    exact final_time' c _ t _ _ _ hP hE
+    exact final_time c _ t _ _ _ hP hE
   · have hP : (encPair eDesc (encPair encNat encUnary) (d, t, b)).length ≤
         budgetSpace (d, x, t, b) := by
       simp only [length_encPair, encUnary_apply, List.length_replicate, budgetSpace, descLen]

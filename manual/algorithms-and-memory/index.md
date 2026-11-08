@@ -9,11 +9,13 @@ The survey baseline is `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. Definitions a
 - [RAM variants](ram-variants.md): unbounded natural registers, unit/logarithmic cost, generic partial operations, exact real/prime-field arithmetic and native representation obligations.
 - [Word-RAM and proved bridges](wordram-and-bridges.md): instruction semantics, uniformity, output conventions, randomized execution, expected time, and actual Turing simulations.
 - [Memory and state-transition specifications](memory-specifications.md): relational adaptive clients, refinement, amortization, memory charges, native callable contracts, framing and traces.
-- [Online and streaming models](online-and-streaming.md): demand paging, competitive analysis, Count-Min and native streaming folds.
-- [Strategic games, congestion and the price of anarchy](strategic-games.md): cost games, potential games, Rosenthal's theorem, smoothness and coarse correlated equilibria, and the `5/2` and `4/3` price-of-anarchy bounds.
+- [Online and streaming models](online-and-streaming.md): demand paging, competitive analysis, splay-tree amortized bounds (balance, static optimality, static finger, working set), Count-Min and native streaming folds.
+- [Strategic games, congestion and the price of anarchy](strategic-games.md): cost games, potential games, Rosenthal's theorem, smoothness and coarse correlated equilibria, the `5/2` and `4/3` price-of-anarchy bounds, and the odd number of Nash equilibria of nondegenerate bimatrix games (Lemke–Howson).
 - [Borrowed registers and native Tree Evaluation](catalytic-and-tree-evaluation.md): exact restoration, explicit gate-table inputs, Cook–Mertz workspace, and fan-in/packed variants.
-- [Representative algorithm endpoints](algorithm-endpoints.md): what the formal abstracts prove about sorting/selection, shortest paths, heaps, hashing and minimum cut, the classical approximation bounds for set cover, vertex cover and metric TSP, Freivalds' costed randomized matrix-product verifier, Euler circuits in multigraphs, and Farkas' lemma and LP duality over ordered fields.
+- [Representative algorithm endpoints](algorithm-endpoints.md): what the formal abstracts and algorithm modules prove, their cost models (some charge no running time) and their limitations. The page's section headings list the algorithms covered.
 - [Mechanism design](mechanism-design.md): single-parameter mechanisms, Myerson's Lemma, Vickrey and knapsack auctions, VCG, Myerson's optimal auction, Bayes–Nash equilibrium, revenue equivalence and the first-price auction; incentive properties only, with no running time charged. The same page covers social welfare functions and Arrow's impossibility theorem.
+
+<!-- Maintenance: keep the "Representative algorithm endpoints" entry above generic. To add an algorithm, add a section to algorithm-endpoints.md where its topic belongs; do not append topics to this entry, because concurrent appends to one line conflict in the merge queue. -->
 
 ## Taxonomy
 

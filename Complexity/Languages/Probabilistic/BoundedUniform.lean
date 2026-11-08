@@ -11,6 +11,7 @@ public import Complexity.Languages.Probabilistic.UniformNat
 public import Complexity.Languages.Probabilistic.Repeat
 import Complexity.Probability.Option
 import Complexity.Probability.PMF.Option.Bind
+import Complexity.Probability.PMF.ToReal
 import Mathlib.Data.Fintype.Fin
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Positivity
@@ -613,9 +614,7 @@ private theorem optional_test_error {α : Type} (μ : PMF (Option α)) (ν : PMF
     linarith
   let u := ((ν.map (fun out => test (some out))) true).toReal
   have hu0 : 0 ≤ u := ENNReal.toReal_nonneg
-  have hu1 : u ≤ 1 := by
-    simpa only [ENNReal.toReal_one] using ENNReal.toReal_mono ENNReal.one_ne_top
-      ((ν.map (fun out => test (some out))).coe_le_one true)
+  have hu1 : u ≤ 1 := PMF.toReal_apply_le_one _ true
   have hf0 : 0 ≤ (μ none).toReal := ENNReal.toReal_nonneg
   have hfirst : (if test none then μ none else 0) ≠ (⊤ : ℝ≥0∞) := by
     split_ifs

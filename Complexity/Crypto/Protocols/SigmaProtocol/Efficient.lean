@@ -60,6 +60,8 @@ negligible function, `EfficientSpecialHVZK.exists_computationalSpecialHVZK` deri
 ## Main definitions
 
 * `SigmaProtocol.Encoding`: word encodings of an indexed family of Sigma protocols.
+* `SigmaProtocol.encSimulatorInput`: the encoding of a simulator program's input
+  `(i, statement, challenge)`.
 * `SigmaProtocol.ExtractorRealizedBy`, `SigmaProtocol.SimulatorRealizedBy`: a word function or
   program computes an extractor or simulator family on encodings.
 * `SigmaProtocol.EfficientSpecialSoundness`: special soundness with a polynomial-time extractor.
@@ -111,6 +113,12 @@ def ExtractorRealizedBy (enc : Encoding I Y T C Z) (encW : ∀ i, W i ↪ List B
   ∀ i y t c z c' z', f (i, enc.statement i y, enc.commitment i t, enc.challenge i c,
     enc.response i z, enc.challenge i c', enc.response i z') = encW i (extract i y t c z c' z')
 
+/-- Input `(i, y, c)` of a word program realizing a special HVZK simulator: the index `i` encoded by
+`encI`, then the encoded statement and the encoded challenge as bit words. The index and the
+statement are framed. -/
+abbrev encSimulatorInput (encI : I ↪ List Bool) : I × List Bool × List Bool ↪ List Bool :=
+  encPair encI (encPair encBits encBits)
+
 /-- The program `program` realizes the simulator family `simulate` on encodings up to statistical
 distance `δ`: on the index, the encoded statement and the encoded challenge, its output is within
 `δ i` of the encoded commitment and response sampled by `simulate i`. -/
@@ -144,7 +152,7 @@ structure EfficientSpecialHVZK (P : ∀ i, SigmaProtocol (X i) (Y i) (T i) (C i)
   /-- `simulate i` is a perfect special HVZK simulator at every index. -/
   specialHVZK : ∀ i, (P i).SpecialHVZK (R i) (simulate i)
   /-- One uniform strict PPT program realizes the simulator family up to `δ`. -/
-  realized : ∃ program, IsPPTOn (encPair enc.index (encPair encBits encBits))
+  realized : ∃ program, IsPPTOn (encSimulatorInput enc.index)
     (encPair encBits encBits) program ∧ SimulatorRealizedBy enc simulate program δ
 
 variable {P : ∀ i, SigmaProtocol (X i) (Y i) (T i) (C i) (Z i)} {R : ∀ i, X i → Y i → Prop}
