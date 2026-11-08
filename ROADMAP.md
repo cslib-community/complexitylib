@@ -592,10 +592,16 @@ index links to canonical definitions rather than keeping a second set.
   on a `Digraph`, the path-blocking lower-bound engine, and the exact prices `h + 2` of the
   complete binary tree and the pyramid (Cook) are in `Complexity/Computability/Pebbling`, and
   `Complexity/Computability/Circuit/Pebbling.lean` identifies `s`-register evaluation of
-  `Cslib.Circuits.Program` straight-line programs with `s`-pebble black pebbling. Next:
-  black-white and reversible pebbling; the Hopcroft–Paul–Valiant `O(n / log n)` pebbling of
-  bounded-indegree DAGs and the matching Paul–Tarjan–Celoni `Ω(n / log n)` family;
-  Gilbert–Tarjan and Lengauer–Tarjan time–space trade-offs, including for register evaluation.
+  `Cslib.Circuits.Program` straight-line programs with `s`-pebble black pebbling. Bennett's
+  reversible game and its exact prices on the path, `⌈log₂ (v + 2)⌉` (visiting) and
+  `⌈log₂ (v + 1)⌉ + 1` (persistent), are in `Pebbling/ReversiblePath.lean`
+  ([#3163](https://github.com/cslib-community/complexitylib/issues/3163)). Next: black-white
+  pebbling; the full reachable-configuration characterization and the reversible time–space and
+  erasure trade-offs of Li–Tromp–Vitányi
+  ([#3199](https://github.com/cslib-community/complexitylib/issues/3199));
+  the Hopcroft–Paul–Valiant `O(n / log n)` pebbling of bounded-indegree DAGs and the matching
+  Paul–Tarjan–Celoni `Ω(n / log n)` family; Gilbert–Tarjan and Lengauer–Tarjan time–space
+  trade-offs, including for register evaluation.
 - **Deeper consequences of a Boolean-hierarchy collapse:** Kadin's sparse `S` with
   `coNP ⊆ NP^S`, and the collapse of `PH` into `P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`, which follows from
   results of Wagner and of Chang and Kadin, not from Kadin's 1988 argument (see his erratum).
