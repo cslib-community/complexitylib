@@ -1453,6 +1453,14 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   rectangular and sparse weighted bipartite matching, general (non-bipartite) matching with
   blossoms (weighted and unweighted), and a sparse Hopcroft–Karp entry point that also charges
   construction of the adjacency lists.
+- **Chain decompositions** ([#3371](https://github.com/cslib-community/complexitylib/issues/3371)):
+  Mirsky's theorem (`Foundations/Order/Mirsky`), Dilworth's theorem by Fulkerson's reduction to
+  König's theorem, and a Hopcroft–Karp minimum chain cover with an `O(n^{5/2})` charged bound
+  (`Algorithms/Lean/MaxFlow/{Dilworth,ChainCover}`) are done for finite posets. Remaining: the
+  Greene–Kleitman theorem on `k`-chain and `k`-antichain families, Dilworth's theorem for infinite
+  posets of finite width (compactness), the perfect-graph view (comparability graphs and their
+  complements are perfect), weighted versions, and a sparse entry point that charges building
+  the comparability lists.
 - **Algebraic matching** ([#3052](https://github.com/cslib-community/complexitylib/issues/3052)):
   remaining after Edmonds' determinant criterion and Lovász's randomized test for bipartite
   graphs (`Algorithms/Matching/Edmonds`), the bipartite Mulmuley–Vazirani–Vazirani core

@@ -56,6 +56,8 @@ public import Complexity.Algorithms.Lean.MaxCut.GoemansWilliamsonCutWeight
 public import Complexity.Algorithms.Lean.MaxFlow.AugmentingPath
 public import Complexity.Algorithms.Lean.MaxFlow.Basic
 public import Complexity.Algorithms.Lean.MaxFlow.BipartiteMatching
+public import Complexity.Algorithms.Lean.MaxFlow.ChainCover
+public import Complexity.Algorithms.Lean.MaxFlow.Dilworth
 public import Complexity.Algorithms.Lean.MaxFlow.EdmondsKarp
 public import Complexity.Algorithms.Lean.MaxFlow.HopcroftKarp
 public import Complexity.Algorithms.Lean.MaxFlow.Hungarian
@@ -4074,6 +4076,7 @@ public import Complexity.Foundations.Combinatorics.BinomialTail
 public import Complexity.Foundations.Combinatorics.BudgetTuples
 public import Complexity.Foundations.Combinatorics.CentralBinomial
 public import Complexity.Foundations.Combinatorics.DepthReduction
+public import Complexity.Foundations.Combinatorics.ErdosSzekeres
 public import Complexity.Foundations.Combinatorics.Expander.AffineFamily
 public import Complexity.Foundations.Combinatorics.Expander.AffinePlane
 public import Complexity.Foundations.Combinatorics.Expander.AffineTower
@@ -4563,6 +4566,7 @@ public import Complexity.Foundations.NumberTheory.SqrtPrimeWindow
 public import Complexity.Foundations.Order.BooleanSubalgebra
 public import Complexity.Foundations.Order.Changes
 public import Complexity.Foundations.Order.FiniteFixedPoint
+public import Complexity.Foundations.Order.Mirsky
 public import Complexity.Foundations.Order.UpperLower
 public import Complexity.Foundations.Probability.AtomCutoffs
 public import Complexity.Foundations.Probability.ColumnDetector

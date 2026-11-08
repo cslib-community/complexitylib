@@ -139,6 +139,11 @@ CSLib contributors. *CSLib*, pinned dependency snapshot `254e30e6d4299c51323aaea
 
 Marek Cygan, Fedor V. Fomin, Łukasz Kowalik, Daniel Lokshtanov, Dániel Marx, Marcin Pilipczuk, Michał Pilipczuk, and Saket Saurabh. *Parameterized Algorithms*. Springer, 2015. [DOI](https://doi.org/10.1007/978-3-319-21275-3). Inspected the authors' companion PDF dated 2016-05-30: Definitions 1.2–1.3 (p. 13), Definition 2.1 (pp. 18–19), Lemma 2.2 (p. 20), and Section 2.2.1 (pp. 21–22); accessed 2026-11-02. The color-coding locators Section 5.2 and Lemma 5.5, and the fpt-reduction locator Section 13.1, used in [parameterized complexity](machines-and-classes/parameterized-complexity.md), were not re-inspected.
 
+<a id="dilworth1950"></a>
+## dilworth1950
+
+Robert P. Dilworth. "A Decomposition Theorem for Partially Ordered Sets." *Annals of Mathematics* 51(1), 161–166, 1950. https://doi.org/10.2307/1969503 . Bibliographic metadata from search summaries, checked on 2026-11-08; the paper is paywalled and was not inspected. The library attributes to it only the finite case of the decomposition theorem, whose formal statement follows [Schrijver's lecture notes](#schrijver17), Theorem 7.6.
+
 <a id="dinur2007"></a>
 ## dinur2007
 
@@ -162,7 +167,7 @@ Paul Erdős. “Some Remarks on the Theory of Graphs.” *Bulletin of the Americ
 <a id="erdosszekeres1935"></a>
 ## erdosszekeres1935
 
-Paul Erdős and George Szekeres. “A Combinatorial Problem in Geometry.” *Compositio Mathematica* 2, 463–470, 1935. http://www.numdam.org/item/CM_1935__2__463_0/ . The graph-theoretic Ramsey theorem and its induction, pp. 465–467, give the upper bound `R(k, l) ≤ C(k + l − 2, k − 1)`; the agent review of the introducing PR checked pp. 466–467 against the Numdam PDF.
+Paul Erdős and George Szekeres. “A Combinatorial Problem in Geometry.” *Compositio Mathematica* 2, 463–470, 1935. http://www.numdam.org/item/CM_1935__2__463_0/ . The graph-theoretic Ramsey theorem and its induction, pp. 465–467, give the upper bound `R(k, l) ≤ C(k + l − 2, k − 1)`; the agent review of the introducing PR checked pp. 466–467 against the Numdam PDF. The monotone subsequence theorem (the Theorem on p. 467 for `n` points and its `f(i, k) = (i − 1)(k − 1) + 1` form with the matching construction on p. 468, where equal values may count as increasing or decreasing) was checked against the same PDF on 2026-11-08 for `Complexity.Foundations.Combinatorics.ErdosSzekeres`.
 
 <a id="erickson24"></a>
 ## erickson24
@@ -183,6 +188,11 @@ Zhiyuan Fan, Jiatu Li, and Tianqi Yang. *The Exact Complexity of Pseudorandom Fu
 ## freivalds79
 
 Rūsiņš Freivalds. "Fast Probabilistic Algorithms." *Mathematical Foundations of Computer Science 1979*, Lecture Notes in Computer Science 74, 57–69. https://doi.org/10.1007/3-540-09526-8_5 . Bibliographic data from the DOI record, checked 2026-11-07; the full text was not inspected. The manual attributes only the random-vector matrix-product check to this paper.
+
+<a id="fulkerson1956"></a>
+## fulkerson1956
+
+D. R. Fulkerson. "Note on Dilworth's Decomposition Theorem for Partially Ordered Sets." *Proceedings of the American Mathematical Society* 7(4), 701–702, 1956. https://doi.org/10.1090/S0002-9939-1956-0078334-6 . Bibliographic metadata from search summaries, checked on 2026-11-08. The publisher PDF returned HTTP 403 and was not inspected. The Dilworth module credits this note with the reduction of Dilworth's theorem to König's theorem through the bipartite graph of the strict order, following the customary attribution; the paper's own formulation is unverified.
 
 <a id="gentry09"></a>
 ## gentry09
@@ -359,6 +369,11 @@ Mathlib contributors. *Mathlib*, pinned source `69552756cd8a2d2d48763cf7279fd814
 
 Edward M. McCreight and Albert R. Meyer. *Classes of Computable Functions Defined by Bounds on Computation: Preliminary Report*. Proceedings of the First Annual ACM Symposium on Theory of Computing (STOC '69), 79–88, 1969. https://doi.org/10.1145/800169.805423 . Bibliographic metadata checked on 2026-11-08; the paper is behind the ACM paywall and was not inspected. The manual attributes the union, naming and honesty theorems to it, following the customary attribution; Odifreddi's textbook [odifreddi99](#odifreddi99) attributes the Naming Theorem VII.3.6 and the Union Theorem VII.3.7 to it. The paper's own theorem numbers and exact hypotheses are unverified. Odifreddi states the union theorem for a uniformly recursive sequence `t_n` with `t_n(x) ≤ t_{n+1}(x)` for all `n` and `x`, which is the hypothesis of `union_theorem`. Secondary accounts state the union theorem for a recursively enumerable "self-bounded" set of bounds, in which every finite subset is dominated almost everywhere by a member; this would match `union_theorem_of_directed`, but it has not been checked against the paper, so the library derives the directed and almost-everywhere variants from the pointwise `union_theorem`. The open survey by Hartmanis and Hopcroft (Cornell TR70-59, https://hdl.handle.net/1813/5918) is an image scan that was not read in this pass.
 
+<a id="mirsky1971"></a>
+## mirsky1971
+
+L. Mirsky. "A Dual of Dilworth's Decomposition Theorem." *The American Mathematical Monthly* 78(8), 876–877, 1971. https://doi.org/10.1080/00029890.1971.11992886 . Bibliographic metadata from search summaries, checked on 2026-11-08; the paper is paywalled and was not inspected. The library attributes to it only the finite chain–antichain duality, whose formal statement and height-function proof follow [Schrijver's lecture notes](#schrijver17), Theorem 7.5.
+
 <a id="mitzenmacherupfal17"></a>
 ## mitzenmacherupfal17
 
@@ -472,7 +487,7 @@ Michael Saks and Shiyu Zhou. *BP_H SPACE(S) ⊆ DSPACE(S^{3/2})*. Journal of Com
 <a id="schrijver17"></a>
 ## schrijver17
 
-Alexander Schrijver. *A Course in Combinatorial Optimization*. Lecture notes, version of March 23, 2017. https://homepages.cwi.nl/~lex/files/dict.pdf . The author-hosted PDF was consulted on 2026-11-08 UTC for Section 10.4 (Lemma 10.2), Section 10.5 (Example 10.5a, displays (23)–(25) and (27), Theorems 10.6, 10.7 and 10.9) and Exercise 10.22; the matroid intersection modules cite these locators. The corresponding chapter of Schrijver's 2003 monograph (Chapter 41) is cited in the library from secondary descriptions only; its theorem and page locators are unverified.
+Alexander Schrijver. *A Course in Combinatorial Optimization*. Lecture notes, version of March 23, 2017. https://homepages.cwi.nl/~lex/files/dict.pdf . The author-hosted PDF was consulted on 2026-11-08 UTC for Section 10.4 (Lemma 10.2), Section 10.5 (Example 10.5a, displays (23)–(25) and (27), Theorems 10.6, 10.7 and 10.9) and Exercise 10.22; the matroid intersection modules cite these locators. Section 7.3 (display (17), Theorems 7.5 and 7.6) was consulted on 2026-11-08 for the Mirsky and Dilworth modules. The corresponding chapter of Schrijver's 2003 monograph (Chapter 41) is cited in the library from secondary descriptions only; its theorem and page locators are unverified.
 
 <a id="schummervohra07"></a>
 ## schummervohra07
