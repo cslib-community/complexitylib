@@ -45,7 +45,8 @@ et al.'s linear-time LCP construction (`[KasaiLeeArimuraArikawaPark2001]`).
 * `Cslib.Algorithms.Lean.SuffixArray.isSuffixArray_suffixArray`: the sorting construction is the
   suffix array.
 * `Cslib.Algorithms.Lean.SuffixArray.IsSuffixArray.lt_iff_drop_lt`: rank order is suffix order.
-* `Cslib.Algorithms.Lean.SuffixArray.lcpLen_le_lcpLen_of_le_of_le_left` and `_right`: a list
+* `Cslib.Algorithms.Lean.SuffixArray.lcpLen_le_lcpLen_of_le_of_le_left` and
+  `Cslib.Algorithms.Lean.SuffixArray.lcpLen_le_lcpLen_of_le_of_le_right`: a list
   lexicographically between two others shares their longest common prefix.
 * `Cslib.Algorithms.Lean.SuffixArray.IsSuffixArray.getElem_lcpArray_sub_one_le`: the height lemma
   `lcp[rank[i + 1]] ≥ lcp[rank[i]] - 1` of `[KasaiLeeArimuraArikawaPark2001]`, stated for ranks
