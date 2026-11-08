@@ -13,6 +13,7 @@ import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Expect
 import Complexity.Probability.PMF.Map
+import Complexity.Tactic.Fits
 
 /-!
 # Word-RAM Hash-Family Implementation Interface
@@ -344,7 +345,7 @@ theorem arguments_fit (H : Impl B r_core k_init w base U m params)
     (o : HashFamily.Op U) (i : Fin (r_core + 5))
     (hi : H.subroutineCode.input i = true) :
     Fits w (H.encode o i) := by
-  have hfit0 : Fits w 0 := H.fits_space.of_le (Nat.zero_le _)
+  have hfit0 : Fits w 0 := by fits
   rcases of_decide_eq_true hi with rfl | rfl <;> cases o with
   | resample => exact hfit0
   | eval u =>
@@ -551,7 +552,7 @@ private theorem step_resample_subroutineCode
   let x_z := x_prep.set (zeroReg r_core) 0
   have he_z : ExecCodeDist (B := B) w (.op (.const (zeroReg r_core) 0))
       x_prep (PMF.pure x_z) 1 := by
-    simpa [x_z] using ExecCodeDist.of_exec (Exec.const (H.fits_space.of_le (Nat.zero_le _)))
+    simpa [x_z] using ExecCodeDist.of_exec (Exec.const (by fits))
   have hx_z : x_z.Bounded w := he_z.bounded hx_prep x_z (by simp)
   have hc_pos : (Cond.eq (opReg r_core) (zeroReg r_core)).Holds x_z := by
     have hne : opReg r_core ≠ zeroReg r_core := by
@@ -627,7 +628,7 @@ private theorem step_eval_subroutineCode
   let x_z := x_prep.set (zeroReg r_core) 0
   have he_z : ExecCodeDist (B := B) w (.op (.const (zeroReg r_core) 0))
       x_prep (PMF.pure x_z) 1 := by
-    simpa [x_z] using ExecCodeDist.of_exec (Exec.const (H.fits_space.of_le (Nat.zero_le _)))
+    simpa [x_z] using ExecCodeDist.of_exec (Exec.const (by fits))
   have hx_z : x_z.Bounded w := he_z.bounded hx_prep x_z (by simp)
   have hc_neg : ¬(Cond.eq (opReg r_core) (zeroReg r_core)).Holds x_z := by
     have hne : opReg r_core ≠ zeroReg r_core := by
