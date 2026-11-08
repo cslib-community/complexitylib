@@ -810,7 +810,11 @@ index links to canonical definitions rather than keeping a second set.
   polynomial-time counting of arborescences and of weighted spanning trees, and Kasteleyn's
   Pfaffian method for perfect matchings of planar graphs, in contrast with permanent
   #P-completeness.
-- For composite moduli: the prime-power collapse `Mod_{p^e}P = Mod_pP` and union closure.
+- For composite moduli
+  ([#3495](https://github.com/cslib-community/complexitylib/issues/3495)): the prime-power
+  collapse `Mod_{p^e}P = Mod_pP` is done. Remaining: union closure for every modulus through
+  Hertrampf's characterization of `Mod_{jk}P` for coprime `j, k` (Beigel–Gill, Theorem 32 and
+  Corollary 35).
   Complement closure for moduli that are not prime powers is open, and relativizing proofs
   cannot give it (Barrington–Beigel–Rudich), so it is not a library direction.
 - Target-relativized `LWPP^A`, `WPP^A` and `SBP^A` with `FP^A` targets; adaptive WPP closure and
