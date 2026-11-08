@@ -91,15 +91,22 @@ theorem norm_sq_bHalf_one : ‖bHalf 1‖ ^ 2 = 5 / 4 := by
     EuclideanSpace.inner_single_left]
   norm_num
 
+theorem norm_bHalf_zero : ‖bHalf 0‖ = 1 := by
+  simp only [bHalf, Matrix.cons_val_zero, PiLp.norm_single, norm_one]
+
 /-- `(e₀, ½ e₀ + e₁)` is `3/4`-reduced with the extreme size coefficient `μ₁₀ = 1/2`. -/
 theorem isReduced_bHalf : IsReduced (3 / 4) bHalf := by
   refine ⟨fun i j hji => ?_, fun i j hij => ?_⟩
-  · fin_cases i <;> fin_cases j <;> simp at hji
-    simp only [Fin.mk_one, Fin.zero_eta, gramSchmidtCoeff_bHalf]
+  · have hlt := Fin.lt_def.1 hji
+    obtain rfl : i = 1 := Fin.ext (by have := i.isLt; simp only [Fin.val_one]; omega)
+    obtain rfl : j = 0 := Fin.ext <| by
+      simp only [Fin.val_one] at hlt; simp only [Fin.val_zero]; omega
+    rw [gramSchmidtCoeff_bHalf]
     norm_num
-  · fin_cases i <;> fin_cases j <;> simp at hij
-    simp only [Fin.mk_one, Fin.zero_eta, exchangeCondAt_two_iff, norm_sq_bHalf_one]
-    simp [bHalf, PiLp.norm_single]
+  · obtain rfl : j = 1 := Fin.ext (by have := j.isLt; simp only [Fin.val_one]; omega)
+    obtain rfl : i = 0 := Fin.ext <| by
+      simp only [Fin.val_one] at hij; simp only [Fin.val_zero]; omega
+    rw [exchangeCondAt_two_iff, norm_sq_bHalf_one, norm_bHalf_zero]
     norm_num
 
 /-! ### A basis that is not size reduced -/

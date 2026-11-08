@@ -22,7 +22,10 @@ Each round of `Cslib.Algorithms.LatticeReduction.lllLoop δ` at stage `0 < k < n
 Gram–Schmidt rows (`Cslib.Algorithms.LatticeReduction.gramSchmidtRows`), achieves `|μₖ,ₖ₋₁| ≤ 1/2`
 by one rounding step (1.18), and then either swaps `bₖ₋₁, bₖ` and steps back when the exchange
 condition (1.5) fails (Case 1, (1.19)), or size-reduces the rest of row `k` (1.21) and advances
-(Case 2, (1.20)). The source indexes the basis from `1`; stage `k` here is `k + 1` there.
+(Case 2, (1.20)). The source indexes the basis from `1`; stage `k` here is stage `k + 1` of the
+source. Unlike (1.18) and (1.21), which reduce only when `|μᵢⱼ| > 1/2`, each size-reduction step
+subtracts `⌊μᵢⱼ⌉ bⱼ` unconditionally; this is a no-op when `|μᵢⱼ| < 1/2`, and at `μᵢⱼ = 1/2` it
+replaces `μᵢⱼ` by `-1/2`.
 
 `Cslib.Algorithms.LatticeReduction.lll` runs the loop with `δ = 3/4` for
 `n + 2 (3 (⌊log₂ B⌋ + 1) · n(n-1)/2 + 1)` rounds, where `B = ∑ᵢ ‖bᵢ‖²`. The proof that this is
@@ -37,7 +40,8 @@ enough is the potential argument of (1.23)–(1.26): every swap divides `D = ∏
 
 ## Main results
 
-* `Cslib.Algorithms.LatticeReduction.lllLoop_spec`: the loop invariant, for any `δ > 0`.
+* `Cslib.Algorithms.LatticeReduction.lllLoop_spec`: the loop invariant, for any `δ > 0` (its
+  hypotheses can hold only for `δ < 1`).
 * `Cslib.Algorithms.LatticeReduction.isReduced_lll`: on linearly independent rows the output is
   `3/4`-reduced and linearly independent.
 * `Cslib.Algorithms.LatticeReduction.span_lll`: the output spans the same lattice.
@@ -79,8 +83,8 @@ noncomputable def intToEuclidean : (Fin m → ℤ) →ₗ[ℤ] EuclideanSpace �
   map_add' v w := by ext k; simp
   map_smul' r v := by ext k; simp
 
-theorem intToEuclidean_eq_toEuclidean (v : Fin m → ℤ) :
-    intToEuclidean v = toEuclidean fun k => (v k : ℚ) := by
+theorem intToEuclidean_eq_ratToEuclidean (v : Fin m → ℤ) :
+    intToEuclidean v = ratToEuclidean fun k => (v k : ℚ) := by
   ext k; simp [intToEuclidean]
 
 theorem intToEuclidean_injective : Function.Injective (intToEuclidean (m := m)) := by
@@ -94,12 +98,12 @@ noncomputable def realRows (B : Vector (Vector ℤ m) n) : Fin n → EuclideanSp
   intToEuclidean ∘ rows B
 
 theorem realRows_apply (B : Vector (Vector ℤ m) n) (i : Fin n) :
-    realRows B i = toEuclidean fun k => (B[i][k] : ℚ) := by
-  simp only [realRows, Function.comp_apply, intToEuclidean_eq_toEuclidean, rows]
+    realRows B i = ratToEuclidean fun k => (B[i][k] : ℚ) := by
+  simp only [realRows, Function.comp_apply, intToEuclidean_eq_ratToEuclidean, rows]
 
 theorem inner_realRows (B : Vector (Vector ℤ m) n) (i j : Fin n) :
     inner ℝ (realRows B i) (realRows B j) = ((dotProduct (rows B i) (rows B j) : ℤ) : ℝ) := by
-  rw [realRows_apply, realRows_apply, inner_toEuclidean]
+  rw [realRows_apply, realRows_apply, inner_ratToEuclidean]
   simp [dotProduct, rows]
 
 theorem norm_sq_realRows (B : Vector (Vector ℤ m) n) (i : Fin n) :
@@ -124,12 +128,12 @@ def gramSchmidtRows (B : Vector (Vector ℤ m) n) : Vector (Vector ℚ m) n :=
 
 /-- `G` holds the Gram–Schmidt vectors of the rows of `B`. -/
 def IsGramSchmidtRows (G : Vector (Vector ℚ m) n) (B : Vector (Vector ℤ m) n) : Prop :=
-  ∀ j : Fin n, toEuclidean (fun k : Fin m => G[j][k]) = gramSchmidt ℝ (realRows B) j
+  ∀ j : Fin n, ratToEuclidean (fun k : Fin m => G[j][k]) = gramSchmidt ℝ (realRows B) j
 
 theorem isGramSchmidtRows_gramSchmidtRows (B : Vector (Vector ℤ m) n) :
     IsGramSchmidtRows (gramSchmidtRows B) B := by
   intro j
-  have h : (fun l : Fin n => toEuclidean fun k : Fin m => (castRows B)[l][k]) = realRows B := by
+  have h : (fun l : Fin n => ratToEuclidean fun k : Fin m => (castRows B)[l][k]) = realRows B := by
     funext l
     rw [realRows_apply]
     simp [castRows]
@@ -172,7 +176,8 @@ theorem realRows_subRow (B : Vector (Vector ℤ m) n) (i j : Fin n) (r : ℤ) :
       Function.update (realRows B) i (realRows B i - r • realRows B j) := by
   simp only [realRows, rows_subRow, Function.comp_update, map_sub, map_zsmul, Function.comp_apply]
 
-/-- One size-reduction step `bᵢ ← bᵢ - ⌊μᵢⱼ⌉ bⱼ` ([LenstraLenstraLovasz1982], (1.18)). -/
+/-- One size-reduction step `bᵢ ← bᵢ - ⌊μᵢⱼ⌉ bⱼ` ([LenstraLenstraLovasz1982], (1.18)), performed
+unconditionally (the source performs it only when `|μᵢⱼ| > 1/2`). -/
 def reduceStep (G : Vector (Vector ℚ m) n) (B : Vector (Vector ℤ m) n) (i j : Fin n) :
     Vector (Vector ℤ m) n :=
   subRow B i j (round (gsCoeff G B i j))
@@ -317,8 +322,8 @@ instance (δ : ℚ) (G : Vector (Vector ℚ m) n) (B : Vector (Vector ℤ m) n) 
 theorem IsGramSchmidtRows.exchangeCondQ_iff {G : Vector (Vector ℚ m) n} {B : Vector (Vector ℤ m) n}
     (hG : IsGramSchmidtRows G B) (δ : ℚ) {i j : Fin n} (hij : i < j) :
     exchangeCondQ δ G B i j ↔ ExchangeCondAt (δ : ℝ) (realRows B) i j := by
-  rw [ExchangeCondAt, norm_sq_gramSchmidt_add_smul _ hij, ← hG i, ← hG j, norm_sq_toEuclidean,
-    norm_sq_toEuclidean, ← hG.cast_gsCoeff, exchangeCondQ]
+  rw [ExchangeCondAt, norm_sq_gramSchmidt_add_smul _ hij, ← hG i, ← hG j, norm_sq_ratToEuclidean,
+    norm_sq_ratToEuclidean, ← hG.cast_gsCoeff, exchangeCondQ]
   constructor <;> intro h
   · exact_mod_cast h
   · exact_mod_cast h
@@ -402,7 +407,7 @@ theorem PrefixReduced.succ {δ : ℝ} {b : Fin n → E} {k : ℕ} (hb : PrefixRe
 end Prefix
 
 /-- The LLL loop ([LenstraLenstraLovasz1982], (1.15)–(1.21)) with parameter `δ` in place of
-`3/4`, for at most `fuel` rounds, at stage `k` (`k` here is `k - 1` in the source). For `0 < k < n`
+`3/4`, for at most `fuel` rounds, at stage `k` (stage `k + 1` of the source). For `0 < k < n`
 it computes the Gram–Schmidt rows, achieves `|μₖ,ₖ₋₁| ≤ 1/2` (1.18), and then either swaps
 `bₖ₋₁, bₖ` and steps back (Case 1, when (1.5) fails at `(k - 1, k)`) or size-reduces the rest of
 row `k` (1.21) and advances (Case 2). Each round costs `O(n² m)` rational operations. -/
@@ -437,7 +442,8 @@ theorem span_lllLoop (δ : ℚ) : ∀ (fuel : ℕ) (B : Vector (Vector ℤ m) n)
     · rfl
 
 /-- Invariant of the LLL loop: with `0 < δ`, the potential below `δ⁻¹ ^ s` and enough fuel, the
-loop returns a `δ`-reduced linearly independent family. -/
+loop returns a `δ`-reduced linearly independent family. Since the potential of linearly
+independent integer rows is at least `1`, the hypotheses can hold only for `δ < 1`. -/
 theorem lllLoop_spec {δ : ℚ} (hδ0 : 0 < δ) : ∀ (fuel : ℕ) (B : Vector (Vector ℤ m) n) (k s : ℕ),
     LinearIndependent ℝ (realRows B) → PrefixReduced (δ : ℝ) (realRows B) k →
     potential (realRows B) < ((δ : ℝ)⁻¹) ^ s → n - k + 2 * s ≤ fuel →
@@ -592,11 +598,12 @@ theorem span_lll (B : Vector (Vector ℤ m) n) :
 
 theorem norm_sq_intToEuclidean (v : Fin m → ℤ) :
     ‖intToEuclidean v‖ ^ 2 = ((dotProduct v v : ℤ) : ℝ) := by
-  rw [intToEuclidean_eq_toEuclidean, norm_sq_toEuclidean]
+  rw [intToEuclidean_eq_ratToEuclidean, norm_sq_ratToEuclidean]
   simp [dotProduct]
 
-/-- [LenstraLenstraLovasz1982], (1.11) for the output of LLL: `|b₁|² ≤ 2ⁿ⁻¹ |x|²` for every
-nonzero lattice vector `x` (with `n + 1` rows here). -/
+/-- For `n + 1` linearly independent integer rows, the first output row satisfies
+`|b₀|² ≤ 2ⁿ |x|²` for every nonzero `x` in the lattice. This is (1.11) of
+[LenstraLenstraLovasz1982], `|b₁|² ≤ 2ⁿ⁻¹ |x|²` for `n` vectors in the source's indexing. -/
 theorem dotProduct_lll_zero_le (B : Vector (Vector ℤ m) (n + 1))
     (hB : LinearIndependent ℝ (realRows B)) {x : Fin m → ℤ}
     (hx : x ∈ Submodule.span ℤ (Set.range (rows B))) (hx0 : x ≠ 0) :
