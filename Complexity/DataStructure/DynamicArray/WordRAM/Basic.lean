@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.WordRAM.Copy
 public import Complexity.Computability.WordRAM.Dynamic
 public import Complexity.DataStructure.StateTransition.Amortized
+import Complexity.Computability.WordRAM.SymbolicExec
 
 /-!
 # Doubling arrays on the word RAM
@@ -176,91 +177,37 @@ theorem grow_exec {w : ℕ} (x : Data 12) (h1 : Fits w 1)
       y.regs frontier = x.regs frontier + 2 * x.regs cap ∧
       (∀ i < x.regs len, y.mem (y.regs ptr + i) = x.mem (x.regs ptr + i)) ∧
       (∀ a, a < x.regs frontier ∨ x.regs frontier + 2 * x.regs cap ≤ a → y.mem a = x.mem a) := by
-  let b := x.set count (2 * x.regs cap)
-  have hb : ExecWithin w (.op (.bin .add count cap cap)) x b 1 := by
-    have := ExecWithin.bin (x := x) (f := .add) (d := count) (i := cap) (j := cap)
-      (hw.of_le (by simp only [BinOp.eval]; omega))
-    simpa [b, two_mul] using this
-  have ha := alloc_exec (x := b) (frontier := frontier) (count := count)
-    (result := dest) (cur := idx) (zero := zero) (one := one) (by decide) h1
-    (by simpa +decide [b, Function.update_apply] using hw)
-  let a : Data 12 :=
-    ⟨Function.update (Function.update (Function.update (Function.update (Function.update
-        b.regs zero 0) one 1) dest (b.regs frontier)) frontier
-          (b.regs frontier + b.regs count)) idx (b.regs frontier + b.regs count),
-      clear b.mem (b.regs frontier) (b.regs count)⟩
-  have has : a.regs ptr = x.regs ptr := by simp +decide [a, b]
-  have had : a.regs dest = x.regs frontier := by simp +decide [a, b]
-  have hal : a.regs len = x.regs len := by simp +decide [a, b]
-  have hac : a.regs count = 2 * x.regs cap := by simp +decide [a, b]
+  unfold grow
+  wram_exec
+  refine WP.of_execWithin (alloc_exec (by decide) h1 (by wram_simp; fits)).within ?_
+  refine WP.name fun a ha => ?_
+  have has : a.regs ptr = x.regs ptr := by wram_simp [ha, Function.update_of_ne]
+  have had : a.regs dest = x.regs frontier := by
+    wram_simp [ha, Function.update_of_ne, Function.update_self]
+  have hal : a.regs len = x.regs len := by wram_simp [ha, Function.update_of_ne]
+  have hac : a.regs count = 2 * x.regs cap := by
+    wram_simp [ha, Function.update_of_ne]
+    omega
   have haf : a.regs frontier = x.regs frontier + 2 * x.regs cap := by
-    simp +decide [a, b]
-  obtain ⟨z, hz, hzm⟩ := copy_exec a h1
-    (hw.of_le (by rw [has, hal]; omega))
-    (hw.of_le (by rw [had, hal]; omega)) (by rw [has, hal, had]; exact hp)
-  have hzd : z.regs dest = x.regs frontier :=
-    (hz.regs_eq (by decide)).trans had
-  have hzc : z.regs count = 2 * x.regs cap :=
-    (hz.regs_eq (by decide)).trans hac
+    wram_simp [ha, Function.update_of_ne, Function.update_self]
+    omega
+  have ham : a.mem = clear x.mem (x.regs frontier) (x.regs cap + x.regs cap) := by
+    wram_simp [ha]
+  obtain ⟨z, hz, hzm⟩ := copy_exec a h1 (by rw [has, hal]; fits) (by rw [had, hal]; fits)
+    (by rw [has, hal, had]; exact hp)
+  have hzd : z.regs dest = x.regs frontier := (hz.regs_eq (by decide)).trans had
+  have hzc : z.regs count = 2 * x.regs cap := (hz.regs_eq (by decide)).trans hac
   have hzf : z.regs frontier = x.regs frontier + 2 * x.regs cap :=
     (hz.regs_eq (by decide)).trans haf
-  let y := (z.set ptr (z.regs dest)).set cap (z.regs count)
-  have hfinish : ExecWithin (B := .standard) w (ram[ptr ← dest; cap ← count]) z y 2 := by
-    simpa +decide [y, Function.update_apply] using
-      (ExecWithin.copy (B := .standard) (x := z) (d := ptr) (s := dest)).seq
-        (ExecWithin.copy (B := .standard) (d := cap) (s := count))
-  refine ⟨y, ?_, ?_, ?_, ?_, ?_, ?_⟩
-  · have he := hb.seq (ha.within.seq (hz.seq hfinish))
-    convert he using 1
-    · rfl
-    · simp only [hal]
-      simp +decide only [b, Data.set_regs, Function.update_apply, ↓reduceIte]
-      omega
-  · simp +decide [y, hzd]
-  · simp [y, hzc]
-  · simpa +decide [y, Function.update_apply] using hzf
-  · intro i hi
-    have hread := ArrayCopy.copyPrefix_read (mem := a.mem) (src := a.regs ptr)
-      (dst := a.regs dest) (by simpa [hal] using hi)
-    have hclear : a.mem (x.regs ptr + i) = x.mem (x.regs ptr + i) := by
-      apply clear_of_not_owns
-      simp only [Block.Owns, b, Data.set_regs, Function.update_apply]
-      simp +decide only [↓reduceIte]
-      omega
-    simpa +decide [y, Function.update_apply, hzd, hzm, has, had, hal] using hread.trans hclear
-  · intro addr haddr
-    have hout : z.mem addr = a.mem addr := by
-      rw [hzm]
-      apply ArrayCopy.copyPrefix_outside
-      rw [had, hal]
-      omega
-    have hclear : a.mem addr = x.mem addr := by
-      apply clear_of_not_owns
-      simp only [Block.Owns, b, Data.set_regs, Function.update_apply]
-      simp +decide only [↓reduceIte]
-      omega
-    simpa [y] using hout.trans hclear
-
-/-- Four-instruction suffix of `program`: set `one ← #1`, write `arg` at `ptr + len`, and
-increment `len`. -/
-private theorem appendTail_exec {w : ℕ} (z : Data 12) (h1 : Fits w 1)
-    (haddr : Fits w (z.regs ptr + z.regs len)) (hlen : Fits w (z.regs len + 1)) :
-    let y := (((z.set one 1).set addr (z.regs ptr + z.regs len)).write
-      (z.regs ptr + z.regs len) (z.regs arg)).set len (z.regs len + 1)
-    Exec w (ram[one ← #1; ⟪writeAt addr ptr len arg⟫; len ← len + one]) z y 4 := by
-  intro y
-  let z₁ := z.set one 1
-  let z₂ := (z₁.set addr (z.regs ptr + z.regs len)).write (z.regs ptr + z.regs len) (z.regs arg)
-  have e₁ : Exec (B := .standard) w (.op (.const one 1)) z z₁ 1 := Exec.const h1
-  have e₂ : Exec w (writeAt addr ptr len arg) z₁ z₂ 2 := by
-    simpa +decide [z₁, z₂, Data.set, Data.write, Function.update_apply] using
-      writeAt_exec (x := z₁) (tmp := addr) (ptr := ptr) (idx := len) (src := arg)
-        (by decide) (by simpa +decide [z₁, Data.set] using haddr)
-  have e₃ : Exec w (.op (.bin .add len len one)) z₂ y 1 := by
-    have hbin := Exec.bin (x := z₂) (f := .add) (d := len) (i := len) (j := one)
-      (by simpa +decide [z₂, z₁, Data.set, Data.write, BinOp.eval] using hlen)
-    simpa +decide [y, z₂, z₁, Data.set, Data.write, BinOp.eval] using hbin
-  exact e₁.seq (e₂.seq e₃)
+  wram_exec
+  refine WP.of_execWithin hz ?_
+  wram_exec [hzd, hzc]
+  refine ⟨?_, ?_, ?_, fun i hi => ?_, fun b hb => ?_⟩
+  all_goals wram_simp [hzf, hzm]
+  · rw [← had, ← has, ArrayCopy.copyPrefix_read (by omega), ham]
+    exact clear_of_not_owns (by simp only [Block.Owns]; omega)
+  · rw [ArrayCopy.copyPrefix_outside (by omega), ham]
+    exact clear_of_not_owns (by simp only [Block.Owns]; omega)
 
 /-- Appending a word preserves the doubling-array invariant, modifies only cells in
 `[x.regs ptr, y.regs frontier)` (hence only within `[0, y.regs frontier)`), and satisfies the
@@ -279,127 +226,43 @@ theorem append_exec {w : ℕ} {vs : List ℕ} {x : Data 12} (hr : Rep vs x)
   have hptr_eq := hr.pointer_eq
   have hfront_eq := hr.frontier_eq
   have h1 : Fits w 1 := hw.of_le (by omega)
-  by_cases hc : (Cond.eq len cap).Holds x
-  · have hfull : x.regs len = x.regs cap := hc
-    have hp : x.regs ptr + x.regs len ≤ x.regs frontier := by omega
-    obtain ⟨z, hz, hz_ptr, hz_cap, hz_front, hz_copy, hz_frame⟩ :=
-      grow_exec x h1 hfull hp hw
+  unfold program writeAt
+  wram_exec
+  case pos =>
+    obtain ⟨z, ⟨t, ht, hz⟩, hz_ptr, hz_cap, hz_front, hz_copy, hz_frame⟩ :=
+      grow_exec x h1 hc (by omega) hw
     have hz_len : z.regs len = x.regs len := hz.regs_eq (by decide)
     have hz_arg : z.regs arg = x.regs arg := hz.regs_eq (by decide)
-    have hif : ExecWithin w (ram[if len = cap then [ ⟪grow⟫ ] else [ temp ← temp ]])
-        x z (15 * x.regs cap + 15) := hz.branch_pos hc
-    have haddr : Fits w (z.regs ptr + z.regs len) := hw.of_le (by omega)
-    have hlen : Fits w (z.regs len + 1) := hw.of_le (by omega)
-    let y := (((z.set one 1).set addr (z.regs ptr + z.regs len)).write
-      (z.regs ptr + z.regs len) (z.regs arg)).set len (z.regs len + 1)
-    have htail : Exec w (ram[one ← #1; ⟪writeAt addr ptr len arg⟫; len ← len + one]) z y 4 :=
-      appendTail_exec z h1 haddr hlen
-    obtain ⟨n, hn, he⟩ := hif.seq htail.within
-    have hy_len : y.regs len = vs.length + 1 := by
-      simp +decide [y, Data.set, Data.write, hz_len, hlen_eq]
-    have hy_cap : y.regs cap = 2 * x.regs cap := by
-      simpa +decide [y, Data.set, Data.write] using hz_cap
-    have hy_ptr : y.regs ptr = x.regs frontier := by
-      simpa +decide [y, Data.set, Data.write] using hz_ptr
-    have hy_front : y.regs frontier = x.regs frontier + 2 * x.regs cap := by
-      simpa +decide [y, Data.set, Data.write] using hz_front
-    have hy_mem : y.mem = Function.update z.mem (z.regs ptr + z.regs len) (z.regs arg) := rfl
-    refine ⟨y, n, he, ?_, ?_, ?_, ?_⟩
-    · refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-      · simpa [List.length_append] using hy_len
-      · omega
-      · simp only [List.length_append, List.length_singleton]
-        omega
-      · simp only [List.length_append, List.length_singleton]
-        omega
-      · omega
-      · omega
-      · intro i
-        by_cases hi : i.val < vs.length
-        · have hne : z.regs ptr + i.val ≠ z.regs ptr + z.regs len := by omega
-          have hmem : y.mem (y.regs ptr + i.val) = z.mem (z.regs ptr + i.val) := by
-            rw [hy_mem, hy_ptr, ← hz_ptr, Function.update_of_ne hne]
-          have hcopy := hz_copy i.val (by omega)
-          have horig := hr.contents ⟨i.val, hi⟩
-          change y.mem (y.regs ptr + i.val) = (vs ++ [x.regs arg])[i.val]
-          rw [hmem, hcopy, List.getElem_append_left hi]
-          exact horig
-        · have hi_eq : i.val = vs.length := by
-            have := i.isLt
-            simp only [List.length_append, List.length_singleton] at this
-            omega
-          have hmem : y.mem (y.regs ptr + i.val) = x.regs arg := by
-            rw [hy_mem, hy_ptr, ← hz_ptr, hi_eq, ← hlen_eq, ← hz_len, Function.update_self, hz_arg]
-          change y.mem (y.regs ptr + i.val) = (vs ++ [x.regs arg])[i.val]
-          rw [hmem]
-          simp [hi_eq]
+    refine WP.Exact.of_exec hz ?_
+    wram_exec [hz_ptr, hz_len, hz_arg]
+    refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, fun i => ?_⟩, ?_, ?_, ?_⟩
+    all_goals wram_simp [hz_ptr, hz_cap, hz_front, potential, List.length_append,
+      List.length_singleton, hlen_eq]
+    any_goals omega
+    · have := i.isLt
+      simp only [List.length_append, List.length_singleton] at this
+      by_cases hi : i.val < vs.length
+      · wram_simp
+        rw [← hz_ptr, hz_copy _ (by omega)]
+        exact (hr.contents ⟨i, hi⟩).trans (List.getElem_append_left hi).symm
+      · wram_simp
+        simp [show i.val = vs.length by omega]
     · intro a ha
-      have hne : a ≠ z.regs ptr + z.regs len := by omega
-      have hmem : y.mem a = z.mem a := by
-        rw [hy_mem, Function.update_of_ne hne]
-      rw [hmem]
+      wram_simp
       exact hz_frame a (by omega)
-    · simp only [potential, List.length_append, List.length_singleton, hy_cap]
-      omega
-    · simp only [potential, List.length_append, List.length_singleton, hy_cap]
-      omega
-  · have hlt : vs.length < x.regs cap := by
-      change ¬x.regs len = x.regs cap at hc
-      omega
-    have hcopy_temp : Exec (B := .standard) w (.op (.copy temp temp)) x x 1 := by
-      simpa [Data.set] using (Exec.copy (w := w) (x := x) (d := temp) (s := temp))
-    have hif : Exec w (ram[if len = cap then [ ⟪grow⟫ ] else [ temp ← temp ]]) x x 3 :=
-      Exec.branch_neg hc hcopy_temp
-    have haddr : Fits w (x.regs ptr + x.regs len) := hw.of_le (by omega)
-    have hlen : Fits w (x.regs len + 1) := hw.of_le (by omega)
-    let y := (((x.set one 1).set addr (x.regs ptr + x.regs len)).write
-      (x.regs ptr + x.regs len) (x.regs arg)).set len (x.regs len + 1)
-    have htail : Exec w (ram[one ← #1; ⟪writeAt addr ptr len arg⟫; len ← len + one]) x y 4 :=
-      appendTail_exec x h1 haddr hlen
-    have he : Exec w program x y 7 := hif.seq htail
-    have hy_len : y.regs len = vs.length + 1 := by
-      simp +decide [y, Data.set, Data.write, hlen_eq]
-    have hy_cap : y.regs cap = x.regs cap := by
-      simp +decide [y, Data.set, Data.write]
-    have hy_ptr : y.regs ptr = x.regs ptr := by
-      simp +decide [y, Data.set, Data.write]
-    have hy_front : y.regs frontier = x.regs frontier := by
-      simp +decide [y, Data.set, Data.write]
-    have hy_mem : y.mem = Function.update x.mem (x.regs ptr + x.regs len) (x.regs arg) := rfl
-    refine ⟨y, 7, he, ?_, ?_, ?_, ?_⟩
-    · refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-      · simpa [List.length_append] using hy_len
-      · omega
-      · simp only [List.length_append, List.length_singleton]
-        omega
-      · simp only [List.length_append, List.length_singleton]
-        omega
-      · omega
-      · omega
-      · intro i
-        by_cases hi : i.val < vs.length
-        · have hne : x.regs ptr + i.val ≠ x.regs ptr + x.regs len := by omega
-          have hmem : y.mem (y.regs ptr + i.val) = x.mem (x.regs ptr + i.val) := by
-            rw [hy_mem, hy_ptr, Function.update_of_ne hne]
-          change y.mem (y.regs ptr + i.val) = (vs ++ [x.regs arg])[i.val]
-          rw [hmem, List.getElem_append_left hi]
-          exact hr.contents ⟨i.val, hi⟩
-        · have hi_eq : i.val = vs.length := by
-            have := i.isLt
-            simp only [List.length_append, List.length_singleton] at this
-            omega
-          have hmem : y.mem (y.regs ptr + i.val) = x.regs arg := by
-            rw [hy_mem, hy_ptr, hi_eq, ← hlen_eq, Function.update_self]
-          change y.mem (y.regs ptr + i.val) = (vs ++ [x.regs arg])[i.val]
-          rw [hmem]
-          simp [hi_eq]
+  case neg =>
+    refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, fun i => ?_⟩, ?_, ?_, ?_⟩
+    all_goals wram_simp [potential, List.length_append, List.length_singleton, hlen_eq]
+    any_goals omega
+    · have := i.isLt
+      simp only [List.length_append, List.length_singleton] at this
+      by_cases hi : i.val < vs.length
+      · wram_simp
+        exact (hr.contents ⟨i, hi⟩).trans (List.getElem_append_left hi).symm
+      · wram_simp
+        simp [show i.val = vs.length by omega]
     · intro a ha
-      have hne : a ≠ x.regs ptr + x.regs len := by omega
-      rw [hy_mem, Function.update_of_ne hne]
-    · simp only [potential, List.length_append, List.length_singleton, hy_cap]
-      omega
-    · simp only [potential, List.length_append, List.length_singleton, hy_cap]
-      omega
+      wram_simp
 
 /-- Indexed read returns `vs[x.regs arg]` in `temp` in two instructions without changing the
 representation, memory, or potential. -/
@@ -432,47 +295,15 @@ theorem init_exec {w : ℕ} (x : Data 12) (h1 : Fits w 1) :
     ∃ y, Exec w initProgram x y 15 ∧
       Rep [] y ∧ y.regs frontier = 1 ∧ potential [] y = 0 ∧
       y.mem 0 = 0 ∧ (∀ a, 1 ≤ a → y.mem a = x.mem a) := by
-  let x₁ := x.set frontier 0
-  let x₂ := x₁.set count 1
-  let x₃ := x₂.set len 0
-  have e₁ : Exec (B := .standard) w (.op (.const frontier 0)) x x₁ 1 :=
-    Exec.const (fits_zero w)
-  have e₂ : Exec (B := .standard) w (.op (.const count 1)) x₁ x₂ 1 :=
-    Exec.const h1
-  have e₃ : Exec (B := .standard) w (.op (.const len 0)) x₂ x₃ 1 :=
-    Exec.const (fits_zero w)
-  have ha := alloc_exec (x := x₃) (frontier := frontier) (count := count)
-    (result := ptr) (cur := idx) (zero := zero) (one := one) (by decide) h1
-    (by simpa +decide [x₃, x₂, x₁, Data.set] using h1)
-  let x₄ : Data 12 :=
-    ⟨Function.update (Function.update (Function.update (Function.update (Function.update
-        x₃.regs zero 0) one 1) ptr (x₃.regs frontier)) frontier
-          (x₃.regs frontier + x₃.regs count)) idx (x₃.regs frontier + x₃.regs count),
-      clear x₃.mem (x₃.regs frontier) (x₃.regs count)⟩
-  let y := x₄.set cap (x₄.regs count)
-  have e₅ : Exec (B := .standard) w (.op (.copy cap count)) x₄ y 1 := Exec.copy
-  have he : Exec w initProgram x y 15 := by
-    have hseq := e₁.seq (e₂.seq (e₃.seq (ha.seq e₅)))
-    convert hseq using 1
-    · rfl
-    · simp +decide [x₃, x₂, x₁, Data.set]
-  refine ⟨y, he, ?_, ?_, ?_, ?_, ?_⟩
-  · refine ⟨?_, ?_, ?_, ?_, ?_, ?_, fun i => Fin.elim0 i⟩
-    · simp +decide [y, x₄, x₃, x₂, x₁, Data.set]
-    · simp +decide [y, x₄, x₃, x₂, x₁, Data.set]
-    · simp +decide [y, x₄, x₃, x₂, x₁, Data.set]
-    · simp +decide [y, x₄, x₃, x₂, x₁, Data.set]
-    · simp +decide [y, x₄, x₃, x₂, x₁, Data.set]
-    · simp +decide [y, x₄, x₃, x₂, x₁, Data.set]
-  · simp +decide [y, x₄, x₃, x₂, x₁, Data.set]
-  · simp +decide [potential, y, x₄, x₃, x₂, x₁, Data.set]
-  · simp +decide [y, x₄, x₃, x₂, x₁, Data.set, clear]
-  · intro a ha'
-    have hno : ¬(Block.mk 0 1).Owns a := by
-      simp only [Block.Owns]
-      omega
-    simpa +decide [y, x₄, x₃, x₂, x₁, Data.set] using
-      clear_of_not_owns (m := x.mem) hno
+  unfold initProgram
+  wram_exec
+  refine WP.Exact.of_exec (alloc_exec (by decide) h1 (by wram_simp; exact h1)) ?_
+  wram_exec [Function.update_of_ne, Function.update_self]
+  refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, fun i => Fin.elim0 i⟩, ?_, ?_, ?_, fun a ha => ?_⟩
+  all_goals wram_simp [Function.update_of_ne, Function.update_self, potential, clear,
+    List.length_nil]
+  · omega
+  · exact ite_eq_right_iff.mpr fun _ => by omega
 
 /-! ## Connection to `Cslib.DataStructure` and `Cslib.DataStructure.Amortized` -/
 
@@ -571,8 +402,6 @@ theorem dispatch_exec {w : ℕ} (h1 : Fits w 1) {vs : List ℕ} {x : Data 12}
     (implementation w).prepare_bounded hr.bounded (fun i _ => arguments_fit h1 o hv i)
   have hx₀_rep : Rep vs x₀ := prepare_rep hr.rep w o
   let x₁ := x₀.set zero 0
-  have e₀ : Exec (B := .standard) w (.op (.const zero 0)) x₀ x₁ 1 :=
-    Exec.const (fits_zero w)
   have hx₁_rep : Rep vs x₁ := by
     refine ⟨?_, ?_, hx₀_rep.length_le, hx₀_rep.capacity_le, ?_, ?_, ?_⟩
     · simpa +decide [x₁, Data.set] using hx₀_rep.length_eq
@@ -583,42 +412,36 @@ theorem dispatch_exec {w : ℕ} (h1 : Fits w 1) {vs : List ℕ} {x : Data 12}
       simpa +decide [x₁, Data.set] using hx₀_rep.contents i
   have hpot₁ : potential vs x₁ = potential vs x := by
     simp +decide [potential, x₁, x₀, Data.set, implementation, DynamicProgram.prepare]
+  refine WP.Exact.bounded hx₀_bounded ?_
+  unfold dispatch
   cases o with
   | append v =>
-    have hcond : (Cond.eq dest zero).Holds x₁ := by
-      change x₁.regs dest = x₁.regs zero
-      simp +decide [x₁, x₀, Data.set, implementation, DynamicProgram.prepare]
     have harg : x₁.regs arg = v := by
       simp +decide [x₁, x₀, Data.set, implementation, DynamicProgram.prepare]
     have hw : Fits w (x₁.regs frontier + 2 * x₁.regs cap) := by
       have hle := hx₁_rep.frontier_add_two_cap_le
       exact hv.2.of_le (by omega)
     obtain ⟨y, n, he, hy_rep, hy_frame, hy_pot, _⟩ := append_exec hx₁_rep hw
-    have hrun : Exec w dispatch x₀ y (1 + (n + 1)) :=
-      e₀.seq (Exec.branch_pos hcond he)
     rw [harg] at hy_rep hy_pot
-    refine ⟨y, 1 + (n + 1), hrun, rfl, ⟨hrun.bounded hx₀_bounded, hy_rep⟩, ?_, ?_⟩
-    · intro a ha
-      exact hy_frame a (.inr ha)
-    · simp only [charge]
-      omega
+    have hdest : ((implementation w).prepare (.append v) x).regs dest = 0 := by
+      simp +decide [implementation, DynamicProgram.prepare]
+    wram_exec [hdest]
+    refine WP.Exact.of_exec he fun hb => ⟨rfl, ⟨hb, hy_rep⟩, fun a ha => hy_frame a (.inr ha), ?_⟩
+    simp only [charge]
+    omega
   | get idx =>
     have hfront : Fits w (x₁.regs frontier) := by
       simpa +decide [x₁, x₀, Data.set, implementation, DynamicProgram.prepare] using
         hr.bounded.1 frontier
-    have hcond : ¬(Cond.eq dest zero).Holds x₁ := by
-      change ¬x₁.regs dest = x₁.regs zero
-      simp +decide [x₁, x₀, Data.set, implementation, DynamicProgram.prepare]
     have harg : x₁.regs arg = idx := by
       simp +decide [x₁, x₀, Data.set, implementation, DynamicProgram.prepare]
     obtain ⟨y, he, htemp, hy_rep, hy_mem, hy_pot⟩ :=
       get_exec hx₁_rep (by rw [harg]; exact hv.1) hfront
-    have hrun : Exec w dispatch x₀ y (1 + (2 + 2)) :=
-      e₀.seq (Exec.branch_neg hcond he)
-    refine ⟨y, 5, hrun, ?_, ⟨hrun.bounded hx₀_bounded, hy_rep⟩, ?_, ?_⟩
+    have hdest : ((implementation w).prepare (.get idx) x).regs dest = 1 := by
+      simp +decide [implementation, DynamicProgram.prepare]
+    wram_exec [hdest]
+    refine WP.Exact.of_exec he fun hb => ⟨?_, ⟨hb, hy_rep⟩, fun a _ => congrFun hy_mem a, ?_⟩
     · simp [implementation, htemp, harg, spec]
-    · intro a _
-      exact congrFun hy_mem a
     · simp only [charge]
       omega
 
