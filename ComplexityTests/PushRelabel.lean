@@ -24,7 +24,8 @@ Kernel-checked examples (without `native_decide`) for preflows, push and relabel
    push to `3`; after the relabel it can push to `3`, and a two-step run is checked.
 3. **Edge cases:** antiparallel arcs, an unreachable sink, an arc `s → t` alone, and `N.s = N.t`
    (no operations, zero flow); the invariant `PushRelabel.State.Inv` holds initially and needs
-   `N.s ≠ N.t`.
+   `N.s ≠ N.t`. On the arc `s → t` alone the empty run admits no operation, which instantiates
+   `isMaxFlow_isMinCut_of_isRun`; `maxOps_le` is instantiated on the CLRS network.
 -/
 
 public section
@@ -127,6 +128,24 @@ def directNet : Network (Fin 2) where
 
 example : (pushRelabel directNet).flow.value = 7 ∧ (pushRelabel directNet).ops = [] := by
   decide
+
+/-- On `directNet` no operation is admissible initially, so the empty run already stops. -/
+theorem directNet_stop : ∀ o, ¬ ((init directNet).run []).Admissible o := by
+  have hp : ∀ u v : Fin 2, ¬ (init directNet).flow.CanPush (init directNet).height u v := by
+    decide
+  have hr : ∀ u : Fin 2, ¬ (init directNet).flow.CanRelabel (init directNet).height u := by
+    decide
+  rintro (⟨u, v⟩ | u)
+  · exact hp u v
+  · exact hr u
+
+/-- `isMaxFlow_isMinCut_of_isRun` applies to the stopped empty run on `directNet`. -/
+example : directNet.IsMinCut (Network.Preflow.gapCut ((init directNet).run []).height) :=
+  (isMaxFlow_isMinCut_of_isRun (by decide) (os := []) trivial directNet_stop).choose_spec.2.1
+
+example : maxOps clrsNet ≤ 4 * 6 ^ 2 * (1 + clrsNet.posArcs.card) := maxOps_le clrsNet
+
+example : clrsNet.posArcs.card = 10 := by decide
 
 /-- `N.s = N.t`: the algorithm does nothing and no state satisfies the invariant. -/
 def loopNet : Network (Fin 2) where

@@ -89,6 +89,14 @@ noncomputable def twoServer : Scheme ι Bool Unit (ι → Bool) Bool where
 
 variable {ι}
 
+theorem answer_twoServer (σ : Bool) (x a : ι → Bool) :
+    (twoServer ι).answer σ x a = hadamardCode x a := by
+  rfl
+
+theorem reconstruct_twoServer (i : ι) (r : Unit) (a : Bool → Bool) :
+    (twoServer ι).reconstruct i r a = a false + a true := by
+  rfl
+
 /-- Each server of the two-server scheme receives a uniform set, whatever the index. -/
 theorem eval_serverQuery_twoServer (σ : Bool) (i : ι) :
     ProbComp.eval ((twoServer ι).serverQuery σ i) = PMF.uniformOfFintype (ι → Bool) := by

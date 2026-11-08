@@ -91,7 +91,7 @@ private theorem DuplicatorStrategy.exists_satisfies {p : ℕ} (S : DuplicatorStr
     {σ : V → Bool} {d : Finset V} (hσ : S.Mem σ d) {A : Clause V} (hA : A ∈ φ)
     (hdA : d.card + A.width ≤ p) :
     ∃ σ' d', S.Mem σ' d' ∧ d ⊆ d' ∧ (∀ x ∈ d, σ' x = σ x) ∧ Satisfies σ' d' A := by
-  obtain ⟨σ', hσ', hag⟩ := S.extendSet hσ (A.toFinset.image Prod.fst)
+  obtain ⟨σ', hσ', hag⟩ := S.exists_extend_union hσ (A.toFinset.image Prod.fst)
     ((Nat.add_le_add_left Finset.card_image_le _).trans hdA)
   refine ⟨σ', _, hσ', Finset.subset_union_left, hag, ?_⟩
   by_contra hns

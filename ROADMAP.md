@@ -426,14 +426,19 @@ In order:
 ### Private information retrieval ([#3251](https://github.com/cslib-community/complexitylib/issues/3251))
 
 - **Information-theoretic PIR:** `Crypto/Protocols/PIR` covers one-round schemes with perfect
-  correctness and single-server privacy, the one-round single-server bound, the subcube schemes
-  with the rows transformation, the covering-code schemes for balanced covers (CGKS Section 3.3,
+  correctness and single-server privacy, the subcube schemes with the rows transformation, the
+  covering-code schemes for balanced covers (CGKS Section 3.3,
   [#3451](https://github.com/cslib-community/complexitylib/issues/3451)), and schemes from
-  perfectly smooth decoders. Next targets are variable-length answers for unbalanced covers, the
-  remaining parts of CGKS Section 3.3 (radius-`2` covering codes, the other dimensions of Figure 1,
-  the asymptotic lower estimate and server time), the multi-round single-server bound, `t`-private
-  schemes against coalitions, block retrieval, the converse from schemes to smooth codes
-  (Katz–Trevisan), and two-server lower bounds.
+  perfectly smooth decoders. It also has the single-server bound with and without interaction,
+  and the two-server linear-summation bound with its tight even-set scheme (CGKS Section 5,
+  [#3426](https://github.com/cslib-community/complexitylib/issues/3426)). Next targets:
+  - variable-length answers, so that unbalanced covers meet CGKS Theorem 1 exactly;
+  - the rest of CGKS Section 3.3: radius-`2` covering codes, the other dimensions of Figure 1,
+    the asymptotic lower estimate and server time;
+  - `t`-private schemes against coalitions;
+  - block retrieval;
+  - the converse from schemes to smooth codes (Katz–Trevisan);
+  - lower bounds for general two-server schemes.
 
 ### Concurrent and quantum security
 
@@ -777,9 +782,10 @@ index links to canonical definitions rather than keeping a second set.
   #P-completeness; modular and counting hierarchies; the oracle-algorithm form of Stockmeyer's
   approximate counting.
 - **Exact counting by determinants**
-  ([#3081](https://github.com/cslib-community/complexitylib/issues/3081)): beyond polynomial-time
-  spanning-tree counting through Kirchhoff's matrix-tree theorem, the weighted and directed
-  (arborescence) matrix-tree theorems, the BEST theorem for Eulerian circuits, and Kasteleyn's
+  ([#3081](https://github.com/cslib-community/complexitylib/issues/3081)): Kirchhoff's
+  matrix-tree theorem (with polynomial-time spanning-tree counting), its weighted form and Tutte's
+  directed (arborescence) form are done. Remaining: the BEST theorem for Eulerian circuits,
+  polynomial-time counting of arborescences and of weighted spanning trees, and Kasteleyn's
   Pfaffian method for perfect matchings of planar graphs, in contrast with permanent
   #P-completeness.
 - For composite moduli: the prime-power collapse `Mod_{p^e}P = Mod_pP` and union closure.
@@ -794,9 +800,10 @@ index links to canonical definitions rather than keeping a second set.
 
 - **MIP = NEXP** ([#892]): `NEXP ⊆ MIP₂` through the BFL multilinearity test and arithmetization
   of exponential-time tableaux; an efficient GKR verifier under log-space uniformity.
-- **Oracle-model `IP[k]`**: oracle-PPT `IP` verifiers with at most `k` queries give exactly the
-  count-based `IPk` (coin fixing and padding to `k` rounds), which carries `IPk_eq_AM` to the
-  oracle model; `IP[k(n)] ⊆ AM[k(n) + 2]` for patterns that depend on the input length.
+- **Oracle-model `IP[k]`** ([#3425](https://github.com/cslib-community/complexitylib/issues/3425)):
+  oracle-PPT `IP` verifiers with at most `k` queries give exactly the count-based `IPk` (coin
+  fixing and padding to `k` rounds), which carries `IPk_eq_AM` to the oracle model;
+  `IP[k(n)] ⊆ AM[k(n) + 2]` for patterns that depend on the input length.
 - The Babai–Moran speedup `AM[2 t(n)] = AM[t(n)]` for polynomially many rounds (patterns that
   depend on the input length), interactive-machine characterizations of Arthur–Merlin classes, and
   statistical and perfect zero knowledge.
@@ -928,10 +935,12 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Kernelization lower bounds**
   ([#3210](https://github.com/cslib-community/complexitylib/issues/3210)): `NP/poly`, and the
   Fortnow–Santhanam theorem that an OR-distillation of an `NP`-hard problem gives
-  `coNP ⊆ NP/poly`, in the class-wise form over a polynomial equivalence relation. Remaining:
-  OR-cross-composition, polynomial compressions and the Bodlaender–Jansen–Kratsch theorem ruling
-  out polynomial kernels unless `coNP ⊆ NP/poly`; concrete lower bounds (k-Path, Clique
-  parameterized by vertex cover); Yap's collapse `coNP ⊆ NP/poly → PH = Σ₃`; AND-composition
+  `coNP ⊆ NP/poly`, in the class-wise form over a polynomial equivalence relation; polynomial
+  compressions, OR-cross-composition and the Bodlaender–Jansen–Kratsch theorem ruling out
+  polynomial kernels and compressions unless `coNP ⊆ NP/poly`. Remaining
+  ([#3266](https://github.com/cslib-community/complexitylib/issues/3266)): concrete lower bounds
+  (k-Path, Clique parameterized by vertex cover); cross-compositions of bounded cost and the
+  complementary witness lemma; Yap's collapse `coNP ⊆ NP/poly → PH = Σ₃`; AND-composition
   (Drucker).
 - **Color coding** ([#2870](https://github.com/cslib-community/complexitylib/issues/2870)):
   colorful k-Path is in `FPT` by the dynamic programming over color sets. Remaining: random
@@ -1001,10 +1010,12 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   derandomization.
 - **Packing approximation**
   ([#2964](https://github.com/cslib-community/complexitylib/issues/2964)): the asymptotic
-  approximation scheme for bin packing of Fernandez de la Vega and Lueker, First Fit's `17/10`
-  bound, First Fit Decreasing's `11/9` bound and Lawler's faster knapsack FPTAS, building on the
-  knapsack FPTAS and Next Fit and First Fit (`Algorithms/Lean/{Knapsack,BinPacking}`) and the
-  `3/2` bin-packing hardness (`PCP/Approximation/BinPacking`).
+  approximation scheme for bin packing of Fernandez de la Vega and Lueker, Dósa and Sgall's
+  absolute bound `FF ≤ ⌊17/10 * OPT⌋` for First Fit and their matching lower-bound instances,
+  First Fit Decreasing's `11/9` bound and Lawler's faster knapsack FPTAS, building on the knapsack
+  FPTAS, Next Fit, First Fit's `17/10 * OPT + 4/5` bound
+  (`Algorithms/Lean/{Knapsack,BinPacking}`) and the `3/2` bin-packing hardness
+  (`PCP/Approximation/BinPacking`).
 - **Scheduling:** beyond Graham's list-scheduling, LPT and precedence bounds in
   `Algorithms/Lean/Scheduling`: real-valued processing times with precedences, Graham's anomaly
   instances as checked examples, a general tight family for LPT, the Hochbaum–Shmoys PTAS for
@@ -1028,8 +1039,8 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   strategies (Atserias–Dalmau Lemma 3) and width and clause space at least `n` for the extended
   `3`-CNF pigeonhole formula with `n` holes. The converse, Atserias–Dalmau Lemma 2
   ([#3375](https://github.com/cslib-community/complexitylib/issues/3375)), gives their Theorem 2
-  for formulas of narrow clauses, and the space–width inequality is proved from any Duplicator
-  strategy. Next:
+  for formulas without clauses of width exactly `w + 1`, and the space–width inequality is proved
+  from any Duplicator strategy. Next:
   - space lower bounds for the wide pigeonhole formula and random `k`-CNFs;
   - total and variable space;
   - time–space trade-offs for pebbling formulas, building on `Complexity/Computability/Pebbling`;
@@ -1172,6 +1183,16 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   determinant through the adjugate circuits of
   [`Arithmetic/Adjugate`](Complexity/Computability/Circuit/Arithmetic/Adjugate.lean), which needs
   a circuit model with division.
+- **Determinantal complexity**
+  ([#3384](https://github.com/cslib-community/complexitylib/issues/3384)): the Mignon–Ressayre
+  bound `n² ≤ 2 · dc(perm_n)` is proved in
+  [`Arithmetic/DeterminantalComplexity`](Complexity/Computability/Circuit/Arithmetic/DeterminantalComplexity.lean)
+  over every field of characteristic zero or of characteristic at least `n`. Remaining:
+  Valiant's universality (every polynomial has a determinantal representation, so `dc` is finite)
+  and Grenet's upper bound `dc(perm_n) ≤ 2ⁿ - 1`; the Cai–Chen–Li extension to every
+  characteristic other than two; Yabe's real bound `dc(perm_n) ≥ (n - 1)² + 1` through
+  Sylvester's law of inertia; and border determinantal complexity in the geometric complexity
+  theory programme (Landsberg–Manivel–Ressayre).
 - **The matrix multiplication exponent** (ω ≤ 9/4): Pass's constructive proof
   (arXiv:2610.28627v2) of OpenAI's bound is formalized over every field of characteristic zero:
   for every `τ > 9/4` an exact bilinear algorithm for some `v × v` multiplication with fewer than
@@ -1343,9 +1364,13 @@ each statement against the numbered result. Organize modules by subject, not cha
   public-coin NOF protocols, cylinder intersections and the multiparty discrepancy bound
   `2 γ ≤ 2 ^ c disc_ν(f)`, with the two-player case matching the two-party discrepancy; the cube
   bound `disc(f) ^ (2 ^ k) ≤ E(f)` and the Babai–Nisan–Szegedy lower bound `Ω(n / 4 ^ k)` for
-  generalized inner product. Remaining: the sharper `Ω(n / 2 ^ k)` bound for
-  generalized inner product (source to be verified before citing) and Grolmusz's `O(k n / 2 ^ k)`
-  protocol; matrix multiplication (Raz) and NOF disjointness lower bounds; and applications to
+  generalized inner product; leaves as cylinder intersections (the star lemma) and the
+  Chandra–Furst–Lipton lower bound `D(Exactly-N) → ∞` for three players via Mathlib's corners
+  theorem ([#3424](https://github.com/cslib-community/complexitylib/issues/3424)). Remaining: the
+  sharper `Ω(n / 2 ^ k)` bound for generalized inner product (source to be verified before citing)
+  and Grolmusz's `O(k n / 2 ^ k)` protocol; for Exactly-N, the converse from corner-free colorings,
+  upper bounds from Behrend's construction, quantitative corners bounds and the `k`-player version;
+  matrix multiplication (Raz) and NOF disjointness lower bounds; and applications to
   `ACC⁰` and branching-program lower bounds. A two-party companion is the Aho–Ullman–Yannakakis bound
   `D(f) = O(N⁰(f) N¹(f))` relating deterministic and nondeterministic communication.
 - Multiparty number-in-hand protocols, direct-product results, and reductions to streaming,
@@ -1565,11 +1590,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   `Ω(k / ε)` bound for one-way marginals and the Dinur–Nissim reconstruction attack, with its
   consequence that the distortion a private mechanism can guarantee on every database for all
   subset-count queries is linear in the number of rows, are in `Privacy/DifferentialPrivacy`
-  (Dwork–Roth Chapter 8). Remaining
+  (Dwork–Roth Chapter 8), and so is De's `Ω(min(k, d) / ε)` bound over a small universe
+  (Theorem 8.8) for row-replacement adjacency. Remaining
   ([#3201](https://github.com/cslib-community/complexitylib/issues/3201)): reconstruction from
-  `O(n)` random `±1` queries with `o(√n)` error (Dwork–Roth Theorem 8.2), De's
-  `Ω(min(k, d) / ε)` bound over a small universe (Theorem 8.8), and `(ε, δ)` lower bounds via
-  fingerprinting codes.
+  `O(n)` random `±1` queries with `o(√n)` error (Dwork–Roth Theorem 8.2), and `(ε, δ)` lower
+  bounds via fingerprinting codes. The transfer of Theorem 8.8 to add/remove adjacency on
+  histograms (group privacy with `ε` doubled) is a small open follow-up.
 
 ## Algorithms and optimization
 
@@ -1635,13 +1661,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   beyond Karger's and Karger–Stein's randomized algorithms (`Algorithms/WordRAM/Karger`) and the
   deterministic Stoer–Wagner algorithm with the maximum adjacency ordering lemma and an `O(n³)`
   `TimeM` bound on natural-number weights (`Algorithms/Lean/StoerWagner`,
-  `WeightedCut/MAOrdering`): the `O(n m + n² log n)` priority-queue version, real weights,
+  `WeightedCut/MAOrdering`), both built on the probability-free contraction API of
+  `WeightedCut/Contraction`: the `O(n m + n² log n)` priority-queue version, real weights,
   Nagamochi–Ibaraki sparse certificates for `k`-edge-connectivity,
   Karger's near-linear minimum cut algorithm, and Queyranne's minimization of symmetric submodular
-  functions (which generalizes the maximum adjacency argument to hypergraph cuts). Moving the
-  contraction API (`contractMatrix`, `contractPart`, `contractCut`) from `WordRAM/Karger` into
-  `WeightedCut` ([#3403](https://github.com/cslib-community/complexitylib/issues/3403)) would let
-  both algorithms share one foundation.
+  functions (which generalizes the maximum adjacency argument to hypergraph cuts).
 - **Gomory–Hu trees** ([#3320](https://github.com/cslib-community/complexitylib/issues/3320)):
   remaining after the existence theorem for cut-equivalent trees of symmetric submodular set
   functions and weighted undirected graphs, with flow-equivalence, the minimum-cut triangle
@@ -1793,8 +1817,10 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   last-iterate convergence of no-regret dynamics; bandit feedback and sampled play; convergence
   time of better-response dynamics in potential games.
 - **Price of anarchy:** Wardrop equilibrium existence and essential uniqueness for continuous
-  nondecreasing latencies (Beckmann's convex potential); the Pigou bound for general latency
-  classes and polynomial latencies of bounded degree; the price of stability by the potential
+  nondecreasing latencies (Beckmann's convex potential); beyond the Pigou bound, worst-case
+  networks for latency classes without the constant functions (parallel links and unions of paths)
+  and the M/M/1 and M/G/1 delay bounds (Roughgarden 2003, Theorems 4.5 and 4.9 and Section 5); the
+  price of stability by the potential
   method, including the `H_k` bound for network cost-sharing games
   ([#3035](https://github.com/cslib-community/complexitylib/issues/3035)); Braess's paradox;
   weighted and mixed-strategy atomic congestion games; the Monderer–Shapley characterization of
