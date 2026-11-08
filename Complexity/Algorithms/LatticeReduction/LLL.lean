@@ -97,6 +97,10 @@ theorem intToEuclidean_injective : Function.Injective (intToEuclidean (m := m)) 
 noncomputable def realRows (B : Vector (Vector ℤ m) n) : Fin n → EuclideanSpace ℝ (Fin m) :=
   intToEuclidean ∘ rows B
 
+theorem realRows_eq_intToEuclidean (B : Vector (Vector ℤ m) n) (i : Fin n) :
+    realRows B i = intToEuclidean (rows B i) := by
+  simp only [realRows, Function.comp_apply]
+
 theorem realRows_apply (B : Vector (Vector ℤ m) n) (i : Fin n) :
     realRows B i = ratToEuclidean fun k => (B[i][k] : ℚ) := by
   simp only [realRows, Function.comp_apply, intToEuclidean_eq_ratToEuclidean, rows]
@@ -129,6 +133,11 @@ def gramSchmidtRows (B : Vector (Vector ℤ m) n) : Vector (Vector ℚ m) n :=
 /-- `G` holds the Gram–Schmidt vectors of the rows of `B`. -/
 def IsGramSchmidtRows (G : Vector (Vector ℚ m) n) (B : Vector (Vector ℤ m) n) : Prop :=
   ∀ j : Fin n, ratToEuclidean (fun k : Fin m => G[j][k]) = gramSchmidt ℝ (realRows B) j
+
+theorem IsGramSchmidtRows.ratToEuclidean_eq {G : Vector (Vector ℚ m) n}
+    {B : Vector (Vector ℤ m) n} (hG : IsGramSchmidtRows G B) (j : Fin n) :
+    ratToEuclidean (fun k : Fin m => G[j][k]) = gramSchmidt ℝ (realRows B) j :=
+  hG j
 
 theorem isGramSchmidtRows_gramSchmidtRows (B : Vector (Vector ℤ m) n) :
     IsGramSchmidtRows (gramSchmidtRows B) B := by

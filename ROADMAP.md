@@ -1605,10 +1605,14 @@ each statement against the numbered result. Organize modules by subject, not cha
   argument bounding the number of exchange steps by `O(n² log B)` for integral Gram matrices, and
   an executable LLL (`δ = 3/4`, exact rational Gram–Schmidt) on integer bases whose output is
   reduced and spans the same lattice are in `Algorithms/LatticeReduction`, over Gram–Schmidt
-  facts in `Foundations/Analysis/InnerProductSpace/GramSchmidtOrtho`. Remaining: a cost model for
-  the executable LLL with the `O(n⁴ log B)` arithmetic-operation bound (the current version
-  recomputes Gram–Schmidt every round) and the `O(n log B)` bit-size bound of (1.26), then a
-  `ComputableInPolyTime` statement; then applications (simultaneous Diophantine approximation,
+  facts in `Foundations/Analysis/InnerProductSpace/GramSchmidtOrtho`. Babai's nearest-plane
+  algorithm ([#3486](https://github.com/cslib-community/complexitylib/issues/3486)) is there too:
+  the abstract bound `‖x - y‖² ≤ (∑_{i<n} (4/(4δ-1))ⁱ) ‖x - v‖²` for `δ`-reduced bases, and an
+  executable LLL-then-round algorithm on integer bases and targets that solves CVP within `2^{n/2}`.
+  Remaining: a cost model for the executable LLL with the `O(n⁴ log B)` arithmetic-operation bound
+  (the current version recomputes Gram–Schmidt every round) and the `O(n log B)` bit-size bound of
+  (1.26), then `ComputableInPolyTime` statements for LLL and Babai; the `√(4/3)ⁿ`-type refinement
+  and rational targets for Babai; then applications (simultaneous Diophantine approximation,
   polynomial factorization over `ℚ`).
 - **Separation and optimization:** a precise oracle interface and a separation–optimization
   equivalence with its representation, accuracy and well-boundedness hypotheses. Extend to

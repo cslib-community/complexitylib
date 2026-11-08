@@ -29,6 +29,11 @@ Noga Alon, Yossi Matias, Mario Szegedy. “The Space Complexity of Approximating
 
 Noga Alon, Raphael Yuster, Uri Zwick. "Color-Coding." *Journal of the ACM* 42(4), 844–856, 1995. https://doi.org/10.1145/210332.210337 . Bibliographic data from the DOI record. The locator Lemma 3.1 (colorful paths by dynamic programming over color sets) was taken from secondary descriptions; the full text was not inspected in this pass.
 
+<a id="babai86"></a>
+## babai86
+
+László Babai. "On Lovász' Lattice Reduction and the Nearest Lattice Point Problem." *Combinatorica* 6(1), 1–13, 1986. https://doi.org/10.1007/BF02579403 . Not inspected (no open version was used); cited bibliographically as the origin of the nearest-plane algorithm. The formalization follows [regev04](#regev04).
+
 <a id="barak-steurer16"></a>
 ## barak-steurer16
 
@@ -630,6 +635,11 @@ Jaikumar Radhakrishnan. "An Entropy Proof of Bregman's Theorem." *Journal of Com
 ## rado62
 
 Tibor Radó. *On Non-Computable Functions*. The Bell System Technical Journal 41(3), 877–884, 1962. https://doi.org/10.1002/j.1538-7305.1962.tb00480.x ; scan at https://archive.org/details/bstj41-3-877 . Read in the archive.org text on 2026-11-08: Section V, Theorem (`Σ(n)` eventually exceeds every computable `f`, so `Σ` is not computable), proved with an auxiliary computable majorant of `f`; Section VI defines the shift function `S(n)` and derives the same domination from `S(n) ≥ Σ(n)`.
+
+<a id="regev04"></a>
+## regev04
+
+Oded Regev. *Lattices in Computer Science*, Lecture 3: "CVP Algorithm" (scribe: E. Kaplan). Lecture notes, Tel Aviv University, Fall 2004. https://cims.nyu.edu/~regev/teaching/lattices_fall_2004/ln/cvp.pdf . Inspected on 2026-11-08: §1 (the nearest-plane algorithm with `δ = 3/4` LLL, input `B ∈ ℤ^{m×n}`, `t ∈ ℤᵐ`), Claims 4–5, and Lemma 6 (`‖x − t‖ ≤ 2^{n/2} ‖y − t‖` for the output `x` and a closest lattice point `y`). The notes attribute the factor `2 (2/√3)ⁿ` to Babai's algorithm and present `2^{n/2}` for simplicity.
 
 <a id="reingold2008"></a>
 ## reingold2008
