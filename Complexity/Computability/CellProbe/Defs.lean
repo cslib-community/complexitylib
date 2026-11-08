@@ -9,7 +9,6 @@ module
 
 public import Complexity.Init
 public import Complexity.Languages.Probabilistic.QueryCount
-public import Complexity.Computability.DecisionTree.Cost
 public import Mathlib.Data.Fintype.Pi
 public import Mathlib.Data.Nat.Log
 
@@ -22,7 +21,17 @@ with no persistent registers across operations). Each operation is answered by a
 read/write decision tree (`ProbeTree S w α := OracleComp (@ProbeOp.Result S w) α`) whose internal
 nodes either read a cell `i : Fin S` (branching `2 ^ w` ways on its `w`-bit content) or overwrite a
 cell `i : Fin S` with a `w`-bit value, while all local computation between probes is uncharged.
-Both reads and writes cost `1` probe.
+Both reads and writes cost `1` probe: reading and then writing the same cell costs `2` probes here
+versus `1` step in Miltersen's combined read-and-assign decision-assignment tree
+([Miltersen1999], §1.2), so probe counts agree within a factor of `2`.
+
+Allowing an arbitrary fixed initial memory `Scheme.init` (or `IndexedScheme.init`) adds no power
+over all-zero initial memory `zeroMem`, because each operation's decision tree can XOR-mask cell
+reads and writes against the fixed initial memory at zero extra probe cost ([Miltersen1999], §1.3).
+In `IndexedScheme`, `step` receives the operation index `t : ℕ` for free without maintaining an
+in-memory counter, so deterministic lower bounds paired with coin-fixing over operation sequences
+must be proved against `IndexedScheme`. For the read-only embedding of static Boolean
+`DecisionTree`s into `ProbeTree S 1 α`, see `Complexity.Computability.CellProbe.DecisionTree`.
 
 ## Main definitions
 
@@ -37,8 +46,6 @@ Both reads and writes cost `1` probe.
   `Cslib.CellProbe.ProbeTree.probedCells`, `Cslib.CellProbe.ProbeTree.depth`,
   `Cslib.CellProbe.ProbeTree.padCells`: deterministic adaptive cell-probe trees, stateful execution,
   probe counts, probed-cell sets, worst-case depth, and cell padding.
-* `Cslib.CellProbe.ProbeTree.ofDecisionTree`: read-only 1-bit embedding of static Boolean
-  `DecisionTree`s into `ProbeTree S 1 α`.
 * `Cslib.CellProbe.Scheme`, `Cslib.CellProbe.IndexedScheme`, `Cslib.CellProbe.Scheme.toIndexed`:
   time-invariant and step-indexed deterministic cell-probe schemes over arbitrary operation
   signatures `(Op, Result)`.
@@ -55,18 +62,17 @@ Both reads and writes cost `1` probe.
 * `Cslib.CellProbe.ProbeTree.card_probedCells_le_probes`,
   `Cslib.CellProbe.ProbeTree.probes_le_depth`: cardinality of distinct probed cells is bounded by
   pathwise probes, which is bounded by structural tree depth.
-* `Cslib.CellProbe.ProbeTree.run_eq_of_eq_on_probedCells`: locality and replay — memories agreeing
-  on `t.probedCells m₁` produce identical outputs, probe counts, probed-cell sets, and post-memory
-  values on `t.probedCells m₁`, while cells outside `t.probedCells m₁` remain unchanged.
+* `Cslib.CellProbe.ProbeTree.nextMem_eq_of_notMem_probedCells`,
+  `Cslib.CellProbe.ProbeTree.run_eq_of_eq_on_probedCells`: frame and locality/replay — unprobed
+  cells retain their initial values, and memories agreeing on `t.probedCells m₁` produce identical
+  outputs, probe counts, probed-cell sets, and post-memory values on `t.probedCells m₁`.
 * `Cslib.CellProbe.ProbeTree.card_le_pow_depth`,
-  `Cslib.CellProbe.ProbeTree.clog_le_depth_of_injective`: information-theoretic counting lower bound
-  `K ≤ (2 ^ w) ^ t.depth` (`⌈log_{2^w} K⌉ ≤ t.depth`) for any tree distinguishing `K` memory states.
-* `Cslib.CellProbe.ProbeTree.run_ofDecisionTree`,
-  `Cslib.CellProbe.ProbeTree.probes_ofDecisionTree`,
-  `Cslib.CellProbe.ProbeTree.depth_ofDecisionTree`: exact output, pathwise cost, and structural
-  depth agreement for `ProbeTree.ofDecisionTree`.
-* `Cslib.CellProbe.IndexedScheme.runInterval_eq_of_eq_on_probedCellsInterval`: multi-operation
-  interval lift of `ProbeTree.run_eq_of_eq_on_probedCells`.
+  `Cslib.CellProbe.ProbeTree.clog_le_depth_of_injective`: `2 ^ w`-ary decision-tree leaf-counting
+  lower bound `K ≤ (2 ^ w) ^ t.depth` (`⌈log_{2^w} K⌉ ≤ t.depth`) for any tree distinguishing `K`
+  memory states ([Miltersen1999], §2.1).
+* `Cslib.CellProbe.IndexedScheme.nextMem_runInterval_eq_of_notMem_probedCellsInterval`,
+  `Cslib.CellProbe.IndexedScheme.runInterval_eq_of_eq_on_probedCellsInterval`: multi-operation
+  interval lifts of the frame and locality/replay theorems.
 
 ## References
 
@@ -548,15 +554,14 @@ theorem nextMem_eq_of_notMem_probedCells (t : ProbeTree S w α) (m : Mem S w) {i
 
 /-- **Locality and replay for deterministic `ProbeTree`s:** if `m₂` agrees with `m₁` on
 `t.probedCells m₁`, then executing `t` from `m₂` produces the exact same return value, probe count,
-probed-cell set, and post-memory contents on `t.probedCells m₁`, while cells outside
-`t.probedCells m₁` remain unchanged in `(t.run m₁).2`. -/
+probed-cell set, and post-memory contents on `t.probedCells m₁` (for cells outside
+`t.probedCells m₁`, see `nextMem_eq_of_notMem_probedCells`). -/
 theorem run_eq_of_eq_on_probedCells (t : ProbeTree S w α) {m₁ m₂ : Mem S w}
     (h : ∀ i ∈ t.probedCells m₁, m₂ i = m₁ i) :
     (t.run m₂).1 = (t.run m₁).1 ∧
       t.probes m₂ = t.probes m₁ ∧
       t.probedCells m₂ = t.probedCells m₁ ∧
-      (∀ i ∈ t.probedCells m₁, (t.run m₂).2 i = (t.run m₁).2 i) ∧
-      (∀ i ∉ t.probedCells m₁, (t.run m₁).2 i = m₁ i) := by
+      (∀ i ∈ t.probedCells m₁, (t.run m₂).2 i = (t.run m₁).2 i) := by
   induction t generalizing m₁ m₂ with
   | pure a =>
     simp
@@ -567,8 +572,8 @@ theorem run_eq_of_eq_on_probedCells (t : ProbeTree S w α) {m₁ m₂ : Mem S w}
       have hj : m₂ j = m₁ j := h j (Finset.mem_insert_self j _)
       have hsub : ∀ i ∈ probedCells (cont (m₁ j)) m₁, m₂ i = m₁ i :=
         fun i hi => h i (Finset.mem_insert_of_mem hi)
-      obtain ⟨hout, hpr, hcells, hmem_in, _⟩ := ih (m₁ j) hsub
-      refine ⟨?_, ?_, ?_, ?_, fun i hi => nextMem_eq_of_notMem_probedCells _ m₁ hi⟩
+      obtain ⟨hout, hpr, hcells, hmem_in⟩ := ih (m₁ j) hsub
+      refine ⟨?_, ?_, ?_, ?_⟩
       · change (run (cont (m₂ j)) m₂).1 = (run (cont (m₁ j)) m₁).1
         rw [hj, hout]
       · change 1 + probes (cont (m₂ j)) m₂ = 1 + probes (cont (m₁ j)) m₁
@@ -600,8 +605,8 @@ theorem run_eq_of_eq_on_probedCells (t : ProbeTree S w α) {m₁ m₂ : Mem S w}
         · subst hij; simp [m₁', m₂']
         · simp only [m₁', m₂', Function.update_of_ne hij]
           exact h i (Finset.mem_insert_of_mem hi)
-      obtain ⟨hout, hpr, hcells, hmem_in, _⟩ := ih PUnit.unit hsub
-      refine ⟨hout, ?_, ?_, ?_, fun i hi => nextMem_eq_of_notMem_probedCells _ m₁ hi⟩
+      obtain ⟨hout, hpr, hcells, hmem_in⟩ := ih PUnit.unit hsub
+      refine ⟨hout, ?_, ?_, ?_⟩
       · change 1 + probes (cont PUnit.unit) m₂' = 1 + probes (cont PUnit.unit) m₁'
         rw [hpr]
       · change insert j (probedCells (cont PUnit.unit) m₂') =
@@ -623,8 +628,9 @@ theorem run_eq_of_eq_on_probedCells (t : ProbeTree S w α) {m₁ m₂ : Mem S w}
 
 /-! ### Information-theoretic counting lower bound -/
 
-/-- **Cell-probe branching counting bound:** if `t : ProbeTree S w α` produces distinct return
-values across `(enc x)` for all `x ∈ I`, then `I.card ≤ (2 ^ w) ^ t.depth`. -/
+/-- **`2 ^ w`-ary decision-tree counting bound ([Miltersen1999], §2.1):** if `t : ProbeTree S w α`
+produces distinct return values across `(enc x)` for all `x ∈ I`, then
+`I.card ≤ (2 ^ w) ^ t.depth`. -/
 theorem card_le_pow_depth {ι : Type*} (t : ProbeTree S w α) (I : Finset ι) (enc : ι → Mem S w)
     (hinj : Set.InjOn (fun x => (t.run (enc x)).1) ↑I) :
     I.card ≤ (2 ^ w) ^ t.depth := by
@@ -667,20 +673,22 @@ theorem card_le_pow_depth {ι : Type*} (t : ProbeTree S w α) (I : Finset ι) (e
         (Nat.pow_le_pow_right (Nat.two_pow_pos w) (Nat.le_succ _))
 
 /-- If `t : ProbeTree S w α` distinguishes every input of a finite type `ι` via `enc : ι → Mem S w`,
-then `Fintype.card ι ≤ (2 ^ w) ^ t.depth`. -/
+then `Fintype.card ι ≤ (2 ^ w) ^ t.depth` ([Miltersen1999], §2.1). -/
 theorem card_le_pow_depth_of_injective {ι : Type*} [Fintype ι] (t : ProbeTree S w α)
     (enc : ι → Mem S w) (hinj : Function.Injective (fun x => (t.run (enc x)).1)) :
     Fintype.card ι ≤ (2 ^ w) ^ t.depth := by
   simpa only [Finset.card_univ] using
     t.card_le_pow_depth Finset.univ enc (hinj.injOn)
 
-/-- Information-theoretic worst-case cell-probe lower bound `⌈log_{2^w} |ι|⌉ ≤ t.depth` when `0 < w`
-and `t` distinguishes all inputs of `ι`. -/
-theorem clog_le_depth_of_injective {ι : Type*} [Fintype ι] (t : ProbeTree S w α) (hw : 0 < w)
+/-- Information-theoretic worst-case cell-probe lower bound `⌈log_{2^w} |ι|⌉ ≤ t.depth` whenever
+`t` distinguishes all inputs of `ι` (for `w = 0`, `Nat.clog 1 _ = 0`). -/
+theorem clog_le_depth_of_injective {ι : Type*} [Fintype ι] (t : ProbeTree S w α)
     (enc : ι → Mem S w) (hinj : Function.Injective (fun x => (t.run (enc x)).1)) :
     Nat.clog (2 ^ w) (Fintype.card ι) ≤ t.depth := by
-  have hb : 1 < 2 ^ w := Nat.one_lt_two_pow hw.ne'
-  exact (Nat.clog_le_iff_le_pow hb).mpr (t.card_le_pow_depth_of_injective enc hinj)
+  rcases Nat.eq_zero_or_pos w with rfl | hw
+  · simp
+  · exact (Nat.clog_le_iff_le_pow (Nat.one_lt_two_pow hw.ne')).mpr
+      (t.card_le_pow_depth_of_injective enc hinj)
 
 /-! ### Cell padding on `ProbeTree` -/
 
@@ -739,109 +747,6 @@ theorem depth_padCells (h : S ≤ S') (t : ProbeTree S w α) :
       change depth (padCells h (cont PUnit.unit)) + 1 = _
       rw [ih PUnit.unit]
       rfl
-
-end ProbeTree
-
-/-! ### Static 1-bit `DecisionTree` read-only adapter -/
-
-/-- View a 1-bit cell memory `Mem S 1` (`Fin S → Fin 2`) as a Boolean assignment `Fin S → Bool`
-(`0 ↦ false`, `1 ↦ true`). -/
-@[expose] def memToBool {S : ℕ} (m : Mem S 1) : Fin S → Bool :=
-  fun i => (m i).1 == 1
-
-/-- Encode a Boolean assignment `x : Fin S → Bool` as a 1-bit cell memory `Mem S 1`
-(`false ↦ 0`, `true ↦ 1`). -/
-@[expose] def boolToMem {S : ℕ} (x : Fin S → Bool) : Mem S 1 :=
-  fun i => cond (x i) ⟨1, by decide⟩ ⟨0, by decide⟩
-
-@[simp]
-theorem memToBool_boolToMem {S : ℕ} (x : Fin S → Bool) :
-    memToBool (boolToMem x) = x := by
-  funext i
-  cases hx : x i <;> simp [memToBool, boolToMem, hx]
-
-@[simp]
-theorem boolToMem_memToBool {S : ℕ} (m : Mem S 1) :
-    boolToMem (memToBool m) = m := by
-  funext i
-  cases hmi : m i with
-  | mk v hv =>
-    have hv2 : v = 0 ∨ v = 1 := by omega
-    rcases hv2 with rfl | rfl <;> simp [memToBool, boolToMem, hmi]
-
-namespace ProbeTree
-
-/-- Embed a static Boolean `DecisionTree (Fin S) α` as a read-only 1-bit `ProbeTree S 1 α`. -/
-@[expose] def ofDecisionTree {S : ℕ} {α : Type} : DecisionTree (Fin S) α → ProbeTree S 1 α
-  | .leaf a => pure a
-  | .node i ifFalse ifTrue => do
-      let v ← read i
-      if v.1 == 1 then ofDecisionTree ifTrue else ofDecisionTree ifFalse
-
-@[simp]
-theorem run_ofDecisionTree {S : ℕ} {α : Type} (t : DecisionTree (Fin S) α) (m : Mem S 1) :
-    (ofDecisionTree t).run m = (t.eval (memToBool m), m) := by
-  induction t with
-  | leaf a => rfl
-  | node i ifFalse ifTrue ihF ihT =>
-    change (if (m i).1 == 1 then ofDecisionTree ifTrue else ofDecisionTree ifFalse).run m =
-      (cond (memToBool m i) (ifTrue.eval (memToBool m)) (ifFalse.eval (memToBool m)), m)
-    cases hbit : memToBool m i
-    · simp only [memToBool] at hbit
-      simp [hbit, ihF]
-    · simp only [memToBool] at hbit
-      simp [hbit, ihT]
-
-@[simp]
-theorem probes_ofDecisionTree {S : ℕ} {α : Type} (t : DecisionTree (Fin S) α) (m : Mem S 1) :
-    (ofDecisionTree t).probes m = t.cost (memToBool m) := by
-  induction t with
-  | leaf a => rfl
-  | node i ifFalse ifTrue ihF ihT =>
-    change 1 + (if (m i).1 == 1 then ofDecisionTree ifTrue
-      else ofDecisionTree ifFalse).probes m =
-      cond (memToBool m i) (ifTrue.cost (memToBool m)) (ifFalse.cost (memToBool m)) + 1
-    cases hbit : memToBool m i
-    · simp only [memToBool] at hbit
-      simp only [hbit, Bool.false_eq_true, ↓reduceIte, ihF, Bool.cond_false]
-      omega
-    · simp only [memToBool] at hbit
-      simp only [hbit, ↓reduceIte, ihT, Bool.cond_true]
-      omega
-
-@[simp]
-theorem probedCells_ofDecisionTree {S : ℕ} {α : Type} (t : DecisionTree (Fin S) α) (m : Mem S 1) :
-    (ofDecisionTree t).probedCells m = t.queries (memToBool m) := by
-  induction t with
-  | leaf a => rfl
-  | node i ifFalse ifTrue ihF ihT =>
-    change insert i ((if (m i).1 == 1 then ofDecisionTree ifTrue
-      else ofDecisionTree ifFalse).probedCells m) =
-      insert i (cond (memToBool m i) (ifTrue.queries (memToBool m)) (ifFalse.queries (memToBool m)))
-    cases hbit : memToBool m i
-    · simp only [memToBool] at hbit
-      simp [hbit, ihF]
-    · simp only [memToBool] at hbit
-      simp [hbit, ihT]
-
-@[simp]
-theorem depth_ofDecisionTree {S : ℕ} {α : Type} (t : DecisionTree (Fin S) α) :
-    (ofDecisionTree t).depth = t.depth := by
-  induction t with
-  | leaf a => rfl
-  | node i ifFalse ifTrue ihF ihT =>
-    change (Finset.univ : Finset (Fin (2 ^ 1))).sup (fun v : Fin (2 ^ 1) =>
-      (if v.1 == 1 then ofDecisionTree ifTrue else ofDecisionTree ifFalse).depth) + 1 =
-      max ifFalse.depth ifTrue.depth + 1
-    have huniv : (Finset.univ : Finset (Fin (2 ^ 1))) = {⟨0, by decide⟩, ⟨1, by decide⟩} := by
-      ext ⟨v, hv⟩
-      simp only [Finset.mem_univ, Finset.mem_insert, Finset.mem_singleton, Fin.ext_iff, true_iff]
-      omega
-    rw [huniv]
-    simp only [Finset.sup_insert, Finset.sup_singleton]
-    have h0 : ((⟨0, by decide⟩ : Fin (2 ^ 1)).1 == 1) = false := rfl
-    have h1 : ((⟨1, by decide⟩ : Fin (2 ^ 1)).1 == 1) = true := rfl
-    simp only [h0, Bool.false_eq_true, ↓reduceIte, h1, ihF, ihT, Nat.max_def]
 
 end ProbeTree
 
@@ -1019,11 +924,17 @@ theorem nextMem_runInterval_eq_of_notMem_probedCellsInterval (D : IndexedScheme 
     rw [ih (t₀ + 1) ((D.step t₀ o).run m).2 hi.2,
       (D.step t₀ o).nextMem_eq_of_notMem_probedCells m hi.1]
 
+/-- Cells outside `D.probedCellsSeq ops` retain `D.init` in `(D.runSeq ops).2`. -/
+theorem nextMem_runSeq_eq_of_notMem_probedCellsSeq (D : IndexedScheme Op Result cells w)
+    (ops : List Op) {i : Fin cells} (hi : i ∉ D.probedCellsSeq ops) :
+    (D.runSeq ops).2 i = D.init i :=
+  D.nextMem_runInterval_eq_of_notMem_probedCellsInterval 0 D.init ops hi
+
 /-- **Multi-step interval locality and replay:** if `m₂` agrees with `m₁` on
 `D.probedCellsInterval t₀ m₁ ops`, then simulating `ops` from `(t₀, m₂)` produces the exact same
 transcript, probe count, probed-cell set, and post-memory contents on
-`D.probedCellsInterval t₀ m₁ ops`, while cells outside `D.probedCellsInterval t₀ m₁ ops` remain
-equal to `m₁` after `(t₀, m₁)`. -/
+`D.probedCellsInterval t₀ m₁ ops` (for cells outside `D.probedCellsInterval t₀ m₁ ops`, see
+`nextMem_runInterval_eq_of_notMem_probedCellsInterval`). -/
 theorem runInterval_eq_of_eq_on_probedCellsInterval (D : IndexedScheme Op Result cells w)
     (t₀ : ℕ) {m₁ m₂ : Mem cells w} (ops : List Op)
     (h : ∀ i ∈ D.probedCellsInterval t₀ m₁ ops, m₂ i = m₁ i) :
@@ -1031,14 +942,13 @@ theorem runInterval_eq_of_eq_on_probedCellsInterval (D : IndexedScheme Op Result
       D.probesInterval t₀ m₂ ops = D.probesInterval t₀ m₁ ops ∧
       D.probedCellsInterval t₀ m₂ ops = D.probedCellsInterval t₀ m₁ ops ∧
       (∀ i ∈ D.probedCellsInterval t₀ m₁ ops,
-        (D.runInterval t₀ m₂ ops).2 i = (D.runInterval t₀ m₁ ops).2 i) ∧
-      (∀ i ∉ D.probedCellsInterval t₀ m₁ ops, (D.runInterval t₀ m₁ ops).2 i = m₁ i) := by
+        (D.runInterval t₀ m₂ ops).2 i = (D.runInterval t₀ m₁ ops).2 i) := by
   induction ops generalizing t₀ m₁ m₂ with
   | nil => simp
   | cons o rest ih =>
     have hstep : ∀ i ∈ (D.step t₀ o).probedCells m₁, m₂ i = m₁ i :=
       fun i hi => h i (Finset.mem_union_left _ hi)
-    obtain ⟨hout₁, hpr₁, hcells₁, hmem_in₁, hmem_out₁⟩ :=
+    obtain ⟨hout₁, hpr₁, hcells₁, hmem_in₁⟩ :=
       (D.step t₀ o).run_eq_of_eq_on_probedCells hstep
     have hrest : ∀ i ∈ D.probedCellsInterval (t₀ + 1) ((D.step t₀ o).run m₁).2 rest,
         ((D.step t₀ o).run m₂).2 i = ((D.step t₀ o).run m₁).2 i := by
@@ -1046,11 +956,11 @@ theorem runInterval_eq_of_eq_on_probedCellsInterval (D : IndexedScheme Op Result
       by_cases hi₁ : i ∈ (D.step t₀ o).probedCells m₁
       · exact hmem_in₁ i hi₁
       · have hi₁' : i ∉ (D.step t₀ o).probedCells m₂ := by rwa [hcells₁]
-        rw [(D.step t₀ o).nextMem_eq_of_notMem_probedCells m₂ hi₁', hmem_out₁ i hi₁]
+        rw [(D.step t₀ o).nextMem_eq_of_notMem_probedCells m₂ hi₁',
+          (D.step t₀ o).nextMem_eq_of_notMem_probedCells m₁ hi₁]
         exact h i (Finset.mem_union_right _ hi)
-    obtain ⟨hout₂, hpr₂, hcells₂, hmem_in₂, _⟩ := ih (t₀ + 1) hrest
-    refine ⟨?_, ?_, ?_, ?_,
-      fun i hi => D.nextMem_runInterval_eq_of_notMem_probedCellsInterval t₀ m₁ (o :: rest) hi⟩
+    obtain ⟨hout₂, hpr₂, hcells₂, hmem_in₂⟩ := ih (t₀ + 1) hrest
+    refine ⟨?_, ?_, ?_, ?_⟩
     · simp only [runInterval_cons, hout₁, hout₂]
     · simp only [probesInterval_cons, hpr₁, hpr₂]
     · simp only [probedCellsInterval_cons, hcells₁, hcells₂]
@@ -1238,13 +1148,24 @@ theorem probesFrom_cons (P : Scheme Op Result cells w) (m : Mem cells w) (o : Op
   change P.toIndexed.probesInterval 0 m (o :: ops) = _
   rw [IndexedScheme.probesInterval_cons, toIndexed_step, toIndexed_probesInterval_eq]
 
+/-- Cells outside `P.probedCellsFrom m ops` are unchanged in `(P.runFrom m ops).2`. -/
+theorem nextMem_runFrom_eq_of_notMem_probedCellsFrom (P : Scheme Op Result cells w)
+    (m : Mem cells w) (ops : List Op) {i : Fin cells} (hi : i ∉ P.probedCellsFrom m ops) :
+    (P.runFrom m ops).2 i = m i :=
+  P.toIndexed.nextMem_runInterval_eq_of_notMem_probedCellsInterval 0 m ops hi
+
+/-- Cells outside `P.probedCellsSeq ops` retain `P.init` in `(P.runSeq ops).2`. -/
+theorem nextMem_runSeq_eq_of_notMem_probedCellsSeq (P : Scheme Op Result cells w)
+    (ops : List Op) {i : Fin cells} (hi : i ∉ P.probedCellsSeq ops) :
+    (P.runSeq ops).2 i = P.init i :=
+  P.toIndexed.nextMem_runSeq_eq_of_notMem_probedCellsSeq ops hi
+
 theorem runFrom_eq_of_eq_on_probedCellsFrom (P : Scheme Op Result cells w) {m₁ m₂ : Mem cells w}
     (ops : List Op) (h : ∀ i ∈ P.probedCellsFrom m₁ ops, m₂ i = m₁ i) :
     (P.runFrom m₂ ops).1 = (P.runFrom m₁ ops).1 ∧
       P.probesFrom m₂ ops = P.probesFrom m₁ ops ∧
       P.probedCellsFrom m₂ ops = P.probedCellsFrom m₁ ops ∧
-      (∀ i ∈ P.probedCellsFrom m₁ ops, (P.runFrom m₂ ops).2 i = (P.runFrom m₁ ops).2 i) ∧
-      (∀ i ∉ P.probedCellsFrom m₁ ops, (P.runFrom m₁ ops).2 i = m₁ i) :=
+      (∀ i ∈ P.probedCellsFrom m₁ ops, (P.runFrom m₂ ops).2 i = (P.runFrom m₁ ops).2 i) :=
   P.toIndexed.runInterval_eq_of_eq_on_probedCellsInterval 0 ops h
 
 @[simp]

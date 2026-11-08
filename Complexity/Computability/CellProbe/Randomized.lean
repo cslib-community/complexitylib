@@ -15,21 +15,28 @@ import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Expect
 
 /-!
-# Randomized Cell-Probe Trees, Schemes, and Yao Coin-Fixing
+# Randomized Cell-Probe Trees, Schemes, and Yao Averaging
 
 This file extends `Cslib.CellProbe` with internal-coin randomized cell-probe trees
 (`RandProbeTree S w α := ProbOracleComp (@ProbeOp.Result S w) α`), randomized cell-probe schemes
-(`Randomized.Scheme`), and Yao's minimax coin-fixing reductions [Yao1977; Yao1981; Miltersen1999].
+(`Randomized.Scheme`), and Yao averaging (the easy direction of Yao's principle) for zero-error
+randomized schemes [Yao1977; Yao1981; Miltersen1999].
 
 Private coin draws (`unifSpec`) incur `0` cell probes, while each cell read or write incurs `1`
 probe. Because every `ProbeOp.Result q` is finite (`Fin (2 ^ w)` or `PUnit`),
 `ProbOracleComp.coinLaw` and `ProbOracleComp.fixCoins` represent any `RandProbeTree` as a finite
-mixture of deterministic `ProbeTree`s (`RandProbeTree.run_eq_coinLaw_bind_fixCoins`), and
-`Cslib.Probability.PMF.exists_mem_support_le_tsum_mul` /
-`Cslib.Probability.PMF.exists_mem_support_tsum_mul_le` yield deterministic `IndexedScheme`s (and
-time-invariant `Scheme`s when operations draw no private coins) preserving sequence correctness on
-an arbitrary correctness domain `S_corr` while matching or beating expected probe count under any
-input sequence distribution `ν_hard`.
+mixture of deterministic `ProbeTree`s (`RandProbeTree.run_eq_coinLaw_bind_fixCoins`). Averaging
+over coin-fixed deterministic schemes via
+`Cslib.Probability.PMF.exists_mem_support_tsum_mul_le_tsum_mul` and
+`Cslib.Probability.PMF.exists_mem_support_tsum_mul_le` (the easy direction of Yao's principle,
+not a minimax theorem) converts any **zero-error** randomized scheme `P` into a deterministic
+`IndexedScheme` (or a time-invariant `CellProbe.Scheme` when per-operation trees draw no private
+coins) that preserves sequence correctness across an arbitrary set `correctSeqs` of oblivious
+operation sequences while incurring at most `P`'s expected probes under a fixed input sequence
+distribution `hardDist`. Bounded-error (Monte Carlo) schemes and adaptive sequence adversaries are
+not covered by these zero-error oblivious-sequence reductions, and deterministic lower bounds
+paired with `exists_det_indexedScheme_le_expectedSeqProbes` must hold against `IndexedScheme`
+(whose `step` receives the operation index `t : ℕ` for free).
 
 ## Main definitions
 
@@ -49,7 +56,7 @@ input sequence distribution `ν_hard`.
 * `Cslib.CellProbe.Randomized.Scheme.fixIndexedScheme`,
   `Cslib.CellProbe.Randomized.Scheme.indexedSchemeLaw`,
   `Cslib.CellProbe.Randomized.Scheme.schemeLaw`: coin-fixed deterministic scheme laws over a finite
-  horizon `M_corr` and finite operation alphabet `opsAlphabet : Finset Op` (or coin-free steps).
+  `horizon` and finite operation alphabet `opsAlphabet : Finset Op` (or coin-free steps).
 
 ## Main results
 
@@ -58,16 +65,18 @@ input sequence distribution `ν_hard`.
   `RandProbeTree` reproduces its exact joint `(output, postMem, probes)` law and expected probes.
 * `Cslib.CellProbe.Randomized.Scheme.runSeq_eq_indexedSchemeLaw_bind`,
   `Cslib.CellProbe.Randomized.Scheme.expectedSeqProbes_eq_indexedSchemeLaw_tsum`: multi-step
-  coin-fixing equivalence over `Fin M_corr × ↥opsAlphabet`.
+  coin-fixing equivalence over `Fin horizon × ↥opsAlphabet`.
 * `Cslib.CellProbe.Randomized.Scheme.exists_det_indexedScheme_le_expectedSeqProbes`,
   `Cslib.CellProbe.Randomized.Scheme.exists_det_indexedScheme_tsum_mul_le`,
   `Cslib.CellProbe.Randomized.Scheme.exists_det_indexedScheme_le_expectedSeqProbes_of_fintype`:
-  Yao's minimax coin-fixing reduction producing a deterministic `IndexedScheme` in the coin-law
-  support that satisfies `Good ops (D_det.runSeq ops).1` for all `ops ∈ S_corr` and incurs at most
-  the expected probes of `P` over `ν_hard`.
-* `Cslib.CellProbe.Randomized.Scheme.exists_det_scheme_le_expectedSeqProbes`: public-seed /
-  coin-free-step specialization producing a time-invariant deterministic `CellProbe.Scheme` without
-  needing `opsAlphabet` or `M_corr`.
+  Yao averaging (easy direction) for zero-error schemes against oblivious operation sequences,
+  producing a deterministic `IndexedScheme` in the coin-law support that satisfies
+  `Good ops (D_det.runSeq ops).1` for all `ops ∈ correctSeqs` and incurs at most the expected
+  probes of `P` over `hardDist`.
+* `Cslib.CellProbe.Randomized.Scheme.exists_det_scheme_le_expectedSeqProbes`:
+  random-initial-memory / coin-free-step specialization producing a time-invariant deterministic
+  `CellProbe.Scheme` without needing `opsAlphabet` or `horizon` (where randomness lives only in
+  `init` and operations observe it only by probing cells).
 
 ## References
 
@@ -463,7 +472,7 @@ theorem expectedProbes_padCells (h : S ≤ S') (t : RandProbeTree S w α) (m : M
 
 end RandProbeTree
 
-/-! ### Randomized cell-probe schemes and Yao coin-fixing reductions -/
+/-! ### Randomized cell-probe schemes and Yao averaging for zero-error schemes -/
 
 namespace Randomized
 
@@ -577,19 +586,19 @@ theorem expectedSeqProbes_padCells (h : cells ≤ cells') (P : Scheme Op Result 
     (P.padCells h).expectedSeqProbes ops = P.expectedSeqProbes ops := by
   simp only [expectedSeqProbes, runSeq_padCells]
 
-/-! #### Multi-step private-coin fixing over `Fin M_corr × ↥opsAlphabet` -/
+/-! #### Multi-step private-coin fixing over `Fin horizon × ↥opsAlphabet` -/
 
 /-- Fix an initial memory `m₀` and an array `Ω` of step-and-operation-indexed private coin trees
-over `Fin M_corr × ↥opsAlphabet` into a deterministic `IndexedScheme` (returning `pure default`
-outside the horizon `M_corr` or outside `opsAlphabet`). -/
+over `Fin horizon × ↥opsAlphabet` into a deterministic `IndexedScheme` (returning `pure default`
+outside `horizon` or outside `opsAlphabet`). -/
 @[expose] def fixIndexedScheme [DecidableEq Op] [∀ o, Inhabited (Result o)]
-    (P : Scheme Op Result cells w) (M_corr : ℕ) (opsAlphabet : Finset Op)
+    (P : Scheme Op Result cells w) (horizon : ℕ) (opsAlphabet : Finset Op)
     (m₀ : Mem cells w)
-    (Ω : ∀ idx : Fin M_corr × ↥opsAlphabet, ProbOracleComp.Coins (P.step idx.2.1)) :
+    (Ω : ∀ idx : Fin horizon × ↥opsAlphabet, ProbOracleComp.Coins (P.step idx.2.1)) :
     IndexedScheme Op Result cells w where
   init := m₀
   step t o :=
-    if ht : t < M_corr then
+    if ht : t < horizon then
       if ho : o ∈ opsAlphabet then
         ProbOracleComp.fixCoins (P.step o) (Ω (⟨t, ht⟩, ⟨o, ho⟩))
       else
@@ -599,25 +608,25 @@ outside the horizon `M_corr` or outside `opsAlphabet`). -/
 
 /-- Product distribution over deterministic `IndexedScheme`s obtained by sampling `m₀ ← P.init`
 and independent private coins `ProbOracleComp.coinLaw (P.step o)` for each `(t, o)` in
-`Fin M_corr × ↥opsAlphabet`. -/
+`Fin horizon × ↥opsAlphabet`. -/
 @[expose] noncomputable def indexedSchemeLaw [DecidableEq Op] [∀ o, Inhabited (Result o)]
-    (P : Scheme Op Result cells w) (M_corr : ℕ) (opsAlphabet : Finset Op) :
+    (P : Scheme Op Result cells w) (horizon : ℕ) (opsAlphabet : Finset Op) :
     PMF (IndexedScheme Op Result cells w) :=
   P.init.bind fun m₀ =>
-    (Probability.PMF.pi fun idx : Fin M_corr × ↥opsAlphabet =>
+    (Probability.PMF.pi fun idx : Fin horizon × ↥opsAlphabet =>
       ProbOracleComp.coinLaw (P.step idx.2.1)).map
-      (P.fixIndexedScheme M_corr opsAlphabet m₀)
+      (P.fixIndexedScheme horizon opsAlphabet m₀)
 
 private theorem runFrom_eq_pi_bind_runInterval [DecidableEq Op] [∀ o, Inhabited (Result o)]
-    (P : Scheme Op Result cells w) (M_corr : ℕ) (opsAlphabet : Finset Op)
+    (P : Scheme Op Result cells w) (horizon : ℕ) (opsAlphabet : Finset Op)
     (m₀ m : Mem cells w) (t₀ : ℕ) (ops : List Op)
-    (p : ∀ idx : Fin M_corr × ↥opsAlphabet, PMF (ProbOracleComp.Coins (P.step idx.2.1)))
-    (hlen : t₀ + ops.length ≤ M_corr)
+    (p : ∀ idx : Fin horizon × ↥opsAlphabet, PMF (ProbOracleComp.Coins (P.step idx.2.1)))
+    (hlen : t₀ + ops.length ≤ horizon)
     (halph : ∀ o ∈ ops, o ∈ opsAlphabet)
-    (hfresh : ∀ (t : Fin M_corr) (o : ↥opsAlphabet),
+    (hfresh : ∀ (t : Fin horizon) (o : ↥opsAlphabet),
       t₀ ≤ t.1 → p (t, o) = ProbOracleComp.coinLaw (P.step o.1)) :
     (Probability.PMF.pi p).bind (fun Ω =>
-      let D := P.fixIndexedScheme M_corr opsAlphabet m₀ Ω
+      let D := P.fixIndexedScheme horizon opsAlphabet m₀ Ω
       PMF.pure (D.runInterval t₀ m ops, D.probesInterval t₀ m ops)) =
       P.runFrom m ops := by
   induction ops generalizing t₀ m p with
@@ -625,16 +634,16 @@ private theorem runFrom_eq_pi_bind_runInterval [DecidableEq Op] [∀ o, Inhabite
     simp [runFrom]
   | cons o rest ih =>
     simp only [List.length_cons] at hlen
-    have ht₀ : t₀ < M_corr := by omega
+    have ht₀ : t₀ < horizon := by omega
     have ho : o ∈ opsAlphabet := halph o List.mem_cons_self
-    set idx₀ : Fin M_corr × ↥opsAlphabet := (⟨t₀, ht₀⟩, ⟨o, ho⟩)
+    set idx₀ : Fin horizon × ↥opsAlphabet := (⟨t₀, ht₀⟩, ⟨o, ho⟩)
     rw [← Probability.PMF.pi_bind_update p idx₀, PMF.bind_bind]
     have hp₀ : p idx₀ = ProbOracleComp.coinLaw (P.step o) :=
       hfresh ⟨t₀, ht₀⟩ ⟨o, ho⟩ le_rfl
     rw [hp₀]
     have hstep : ∀ ω₀ : ProbOracleComp.Coins (P.step o),
         (Probability.PMF.pi (Function.update p idx₀ (PMF.pure ω₀))).bind (fun Ω =>
-          let D := P.fixIndexedScheme M_corr opsAlphabet m₀ Ω
+          let D := P.fixIndexedScheme horizon opsAlphabet m₀ Ω
           PMF.pure (D.runInterval t₀ m (o :: rest), D.probesInterval t₀ m (o :: rest))) =
         let d₀ : ProbeTree cells w (Result o) := ProbOracleComp.fixCoins (P.step o) ω₀
         (P.runFrom (d₀.run m).2 rest).map fun ((tr, m''), p₂) =>
@@ -647,28 +656,28 @@ private theorem runFrom_eq_pi_bind_runInterval [DecidableEq Op] [∀ o, Inhabite
         fun ((tr, m''), p₂) => ((⟨o, (d₀.run m).1⟩ :: tr, m''), d₀.probes m + p₂)
       have hcongr :
           (Probability.PMF.pi p').bind (fun Ω =>
-            let D := P.fixIndexedScheme M_corr opsAlphabet m₀ Ω
+            let D := P.fixIndexedScheme horizon opsAlphabet m₀ Ω
             PMF.pure (D.runInterval t₀ m (o :: rest), D.probesInterval t₀ m (o :: rest))) =
           (Probability.PMF.pi p').bind (fun Ω =>
-            let D := P.fixIndexedScheme M_corr opsAlphabet m₀ Ω
+            let D := P.fixIndexedScheme horizon opsAlphabet m₀ Ω
             PMF.pure (f₀ (D.runInterval (t₀ + 1) (d₀.run m).2 rest,
               D.probesInterval (t₀ + 1) (d₀.run m).2 rest))) := by
         refine Probability.PMF.bind_congr_on_support (Probability.PMF.pi p') _ _ fun Ω hΩ => ?_
         have hΩ₀ : Ω idx₀ = ω₀ := by
           have hmem := (Probability.PMF.mem_support_pi_iff p' Ω).mp hΩ idx₀
           simpa only [p', Function.update_self, PMF.mem_support_pure_iff] using hmem
-        have hDstep : (P.fixIndexedScheme M_corr opsAlphabet m₀ Ω).step t₀ o = d₀ := by
+        have hDstep : (P.fixIndexedScheme horizon opsAlphabet m₀ Ω).step t₀ o = d₀ := by
           simp only [fixIndexedScheme, ht₀, ↓reduceDIte, ho, idx₀] at hΩ₀ ⊢
           rw [hΩ₀]
         simp only [IndexedScheme.runInterval_cons, IndexedScheme.probesInterval_cons, hDstep, f₀]
       rw [hcongr]
       have hmap :
           (Probability.PMF.pi p').bind (fun Ω =>
-            let D := P.fixIndexedScheme M_corr opsAlphabet m₀ Ω
+            let D := P.fixIndexedScheme horizon opsAlphabet m₀ Ω
             PMF.pure (f₀ (D.runInterval (t₀ + 1) (d₀.run m).2 rest,
               D.probesInterval (t₀ + 1) (d₀.run m).2 rest))) =
           ((Probability.PMF.pi p').bind (fun Ω =>
-            let D := P.fixIndexedScheme M_corr opsAlphabet m₀ Ω
+            let D := P.fixIndexedScheme horizon opsAlphabet m₀ Ω
             PMF.pure (D.runInterval (t₀ + 1) (d₀.run m).2 rest,
               D.probesInterval (t₀ + 1) (d₀.run m).2 rest))).map f₀ := by
         rw [PMF.map_bind]
@@ -687,18 +696,18 @@ private theorem runFrom_eq_pi_bind_runInterval [DecidableEq Op] [∀ o, Inhabite
     refine congrArg (PMF.bind (ProbOracleComp.coinLaw (P.step o))) (funext fun ω₀ => ?_)
     simp only [PMF.pure_bind]
 
-/-- Sampling `D ← P.indexedSchemeLaw M_corr opsAlphabet` and running `D` deterministically on any
-sequence `ops` of length `≤ M_corr` over `opsAlphabet` reproduces the exact `(transcript, probes)`
+/-- Sampling `D ← P.indexedSchemeLaw horizon opsAlphabet` and running `D` deterministically on any
+sequence `ops` of length `≤ horizon` over `opsAlphabet` reproduces the exact `(transcript, probes)`
 distribution `P.runSeq ops`. -/
 theorem runSeq_eq_indexedSchemeLaw_bind [DecidableEq Op] [∀ o, Inhabited (Result o)]
-    (P : Scheme Op Result cells w) {M_corr : ℕ} {opsAlphabet : Finset Op} {ops : List Op}
-    (hlen : ops.length ≤ M_corr) (halph : ∀ o ∈ ops, o ∈ opsAlphabet) :
+    (P : Scheme Op Result cells w) {horizon : ℕ} {opsAlphabet : Finset Op} {ops : List Op}
+    (hlen : ops.length ≤ horizon) (halph : ∀ o ∈ ops, o ∈ opsAlphabet) :
     P.runSeq ops =
-      (P.indexedSchemeLaw M_corr opsAlphabet).bind fun D =>
+      (P.indexedSchemeLaw horizon opsAlphabet).bind fun D =>
         PMF.pure ((D.runSeq ops).1, D.seqProbes ops) := by
   simp only [runSeq, indexedSchemeLaw, PMF.bind_bind, PMF.bind_map, Function.comp_def]
   refine congrArg (PMF.bind P.init) (funext fun m₀ => ?_)
-  have hpi := P.runFrom_eq_pi_bind_runInterval M_corr opsAlphabet m₀ m₀ 0 ops
+  have hpi := P.runFrom_eq_pi_bind_runInterval horizon opsAlphabet m₀ m₀ 0 ops
     (fun idx => ProbOracleComp.coinLaw (P.step idx.2.1))
     (by omega) halph (fun _ _ _ => rfl)
   rw [← hpi, PMF.map_bind]
@@ -708,12 +717,12 @@ theorem runSeq_eq_indexedSchemeLaw_bind [DecidableEq Op] [∀ o, Inhabited (Resu
   rfl
 
 /-- Expected sequence probes of `P` on `ops` equals the `indexedSchemeLaw`-average of
-`D.seqProbes ops` whenever `ops.length ≤ M_corr` and `∀ o ∈ ops, o ∈ opsAlphabet`. -/
+`D.seqProbes ops` whenever `ops.length ≤ horizon` and `∀ o ∈ ops, o ∈ opsAlphabet`. -/
 theorem expectedSeqProbes_eq_indexedSchemeLaw_tsum [DecidableEq Op] [∀ o, Inhabited (Result o)]
-    (P : Scheme Op Result cells w) {M_corr : ℕ} {opsAlphabet : Finset Op} {ops : List Op}
-    (hlen : ops.length ≤ M_corr) (halph : ∀ o ∈ ops, o ∈ opsAlphabet) :
+    (P : Scheme Op Result cells w) {horizon : ℕ} {opsAlphabet : Finset Op} {ops : List Op}
+    (hlen : ops.length ≤ horizon) (halph : ∀ o ∈ ops, o ∈ opsAlphabet) :
     P.expectedSeqProbes ops =
-      ∑' D, (P.indexedSchemeLaw M_corr opsAlphabet) D * (D.seqProbes ops : ℝ≥0∞) := by
+      ∑' D, (P.indexedSchemeLaw horizon opsAlphabet) D * (D.seqProbes ops : ℝ≥0∞) := by
   rw [expectedSeqProbes, P.runSeq_eq_indexedSchemeLaw_bind hlen halph,
     Probability.PMF.tsum_bind_mul]
   exact tsum_congr fun _ => congrArg (_ * ·) (RandProbeTree.tsum_pure_snd _)
@@ -721,11 +730,11 @@ theorem expectedSeqProbes_eq_indexedSchemeLaw_tsum [DecidableEq Op] [∀ o, Inha
 private theorem good_of_mem_support_law {SchemeType : Type*}
     (P : Scheme Op Result cells w) (μ : PMF SchemeType)
     (evalSeq : SchemeType → List Op → List (Sigma Result) × ℕ)
-    (S_corr : Set (List Op)) (Good : List Op → List (Sigma Result) → Prop)
-    (hcorr : ∀ ops ∈ S_corr, ∀ tr ∈ ((P.runSeq ops).map Prod.fst).support, Good ops tr)
-    (hlaw : ∀ ops ∈ S_corr, P.runSeq ops = μ.bind fun D => PMF.pure (evalSeq D ops))
+    (correctSeqs : Set (List Op)) (Good : List Op → List (Sigma Result) → Prop)
+    (hcorr : ∀ ops ∈ correctSeqs, ∀ tr ∈ ((P.runSeq ops).map Prod.fst).support, Good ops tr)
+    (hlaw : ∀ ops ∈ correctSeqs, P.runSeq ops = μ.bind fun D => PMF.pure (evalSeq D ops))
     {D_det : SchemeType} (hD_mem : D_det ∈ μ.support) :
-    ∀ ops ∈ S_corr, Good ops (evalSeq D_det ops).1 := by
+    ∀ ops ∈ correctSeqs, Good ops (evalSeq D_det ops).1 := by
   intro ops hops
   have hmap : (P.runSeq ops).map Prod.fst = μ.map (fun D => (evalSeq D ops).1) := by
     rw [hlaw ops hops, PMF.map_bind]
@@ -735,78 +744,74 @@ private theorem good_of_mem_support_law {SchemeType : Type*}
   rw [hmap, PMF.mem_support_map_iff]
   exact ⟨D_det, hD_mem, rfl⟩
 
-/-- **Yao's Minimax Coin-Fixing Reduction (`IndexedScheme` over explicit finite `opsAlphabet`):**
-Suppose `opsAlphabet : Finset Op` is a finite set of admissible operations, `S_corr` is any set of
-operation sequences of length `≤ M_corr` over `opsAlphabet` on which every supported transcript of
-`P.runSeq ops` satisfies `Good ops`, and `ν_hard : PMF (List Op)` is any sequence distribution
-supported on sequences of length `≤ M_corr` over `opsAlphabet`.
+/-- **Yao averaging (easy direction) for zero-error schemes (`IndexedScheme` over explicit finite
+`opsAlphabet`):** Suppose `opsAlphabet : Finset Op` is a finite set of admissible operations,
+`correctSeqs` is any set of oblivious operation sequences of length `≤ horizon` over `opsAlphabet`
+on which **every** supported transcript of `P.runSeq ops` satisfies `Good ops` (zero-error;
+bounded-error Monte Carlo schemes are not covered), and `hardDist : PMF (List Op)` is any fixed
+sequence distribution supported on sequences of length `≤ horizon` over `opsAlphabet`.
 
 Then there exists a single deterministic `D_det : IndexedScheme Op Result cells w` in the support
-of `P.indexedSchemeLaw M_corr opsAlphabet` that satisfies `Good ops (D_det.runSeq ops).1` for
-**every** `ops ∈ S_corr` and incurs expected probes over `ν_hard` at most that of `P`. -/
+of `P.indexedSchemeLaw horizon opsAlphabet` that satisfies `Good ops (D_det.runSeq ops).1` for
+every `ops ∈ correctSeqs` and incurs expected probes over `hardDist` at most that of `P`. -/
 theorem exists_det_indexedScheme_le_expectedSeqProbes
     [DecidableEq Op] [∀ o, Inhabited (Result o)]
     (P : Scheme Op Result cells w)
-    (opsAlphabet : Finset Op) (M_corr : ℕ)
-    (S_corr : Set (List Op))
-    (hS_corr : ∀ ops ∈ S_corr, ops.length ≤ M_corr ∧ ∀ o ∈ ops, o ∈ opsAlphabet)
+    (opsAlphabet : Finset Op) (horizon : ℕ)
+    (correctSeqs : Set (List Op))
+    (hcorrectSeqs : ∀ ops ∈ correctSeqs, ops.length ≤ horizon ∧ ∀ o ∈ ops, o ∈ opsAlphabet)
     (Good : List Op → List (Sigma Result) → Prop)
-    (hcorr : ∀ ops ∈ S_corr, ∀ tr ∈ ((P.runSeq ops).map Prod.fst).support, Good ops tr)
-    (ν_hard : PMF (List Op))
-    (hν_hard : ∀ ops ∈ ν_hard.support, ops.length ≤ M_corr ∧ ∀ o ∈ ops, o ∈ opsAlphabet) :
-    ∃ D_det ∈ (P.indexedSchemeLaw M_corr opsAlphabet).support,
-      (∀ ops ∈ S_corr, Good ops (D_det.runSeq ops).1) ∧
-      (∑' ops, ν_hard ops * (D_det.seqProbes ops : ℝ≥0∞)) ≤
-        ∑' ops, ν_hard ops * P.expectedSeqProbes ops := by
-  set μ := P.indexedSchemeLaw M_corr opsAlphabet
+    (hcorr : ∀ ops ∈ correctSeqs, ∀ tr ∈ ((P.runSeq ops).map Prod.fst).support, Good ops tr)
+    (hardDist : PMF (List Op))
+    (hhardDist : ∀ ops ∈ hardDist.support, ops.length ≤ horizon ∧ ∀ o ∈ ops, o ∈ opsAlphabet) :
+    ∃ D_det ∈ (P.indexedSchemeLaw horizon opsAlphabet).support,
+      (∀ ops ∈ correctSeqs, Good ops (D_det.runSeq ops).1) ∧
+      (∑' ops, hardDist ops * (D_det.seqProbes ops : ℝ≥0∞)) ≤
+        ∑' ops, hardDist ops * P.expectedSeqProbes ops := by
+  set μ := P.indexedSchemeLaw horizon opsAlphabet
   obtain ⟨D_det, hD_mem, hD_le⟩ :=
-    Probability.PMF.exists_mem_support_le_tsum_mul μ
-      (fun D => ∑' ops, ν_hard ops * (D.seqProbes ops : ℝ≥0∞))
+    Probability.PMF.exists_mem_support_tsum_mul_le_tsum_mul μ hardDist
+      (fun D ops => (D.seqProbes ops : ℝ≥0∞))
   refine ⟨D_det, hD_mem, P.good_of_mem_support_law μ
-    (fun D ops => ((D.runSeq ops).1, D.seqProbes ops)) S_corr Good hcorr
-    (fun ops hops => P.runSeq_eq_indexedSchemeLaw_bind (hS_corr ops hops).1 (hS_corr ops hops).2)
-    hD_mem, hD_le.trans ?_⟩
-  calc
-    (∑' D, μ D * ∑' ops, ν_hard ops * (D.seqProbes ops : ℝ≥0∞))
-      = ∑' ops, ν_hard ops * ∑' D, μ D * (D.seqProbes ops : ℝ≥0∞) := by
-          simp only [← ENNReal.tsum_mul_left]
-          rw [tsum_comm]
-          exact tsum_congr fun ops => tsum_congr fun D => by ring
-    _ ≤ ∑' ops, ν_hard ops * P.expectedSeqProbes ops := by
-          refine tsum_le_tsum fun ops => ?_
-          by_cases hops : ops ∈ ν_hard.support
-          · obtain ⟨hlen, halph⟩ := hν_hard ops hops
-            rw [← P.expectedSeqProbes_eq_indexedSchemeLaw_tsum hlen halph]
-          · simp [(PMF.apply_eq_zero_iff ν_hard ops).mpr hops]
+    (fun D ops => ((D.runSeq ops).1, D.seqProbes ops)) correctSeqs Good hcorr
+    (fun ops hops =>
+      P.runSeq_eq_indexedSchemeLaw_bind (hcorrectSeqs ops hops).1 (hcorrectSeqs ops hops).2)
+    hD_mem, hD_le.trans (tsum_le_tsum fun ops => ?_)⟩
+  by_cases hops : ops ∈ hardDist.support
+  · obtain ⟨hlen, halph⟩ := hhardDist ops hops
+    rw [← P.expectedSeqProbes_eq_indexedSchemeLaw_tsum hlen halph]
+  · simp [(PMF.apply_eq_zero_iff hardDist ops).mpr hops]
 
-/-- Uniform-budget Yao averaging corollary directly via
-`Cslib.Probability.PMF.exists_mem_support_tsum_mul_le`: if `P.expectedSeqProbes ops ≤ ε` for every
-`ops ∈ ν_hard.support`, then some `D_det ∈ (P.indexedSchemeLaw M_corr opsAlphabet).support`
-satisfies `Good` on `S_corr` and has average probe count `≤ ε` under `ν_hard`. -/
+/-- Uniform-budget Yao averaging (easy direction) for zero-error schemes against oblivious
+operation sequences (`Cslib.Probability.PMF.exists_mem_support_tsum_mul_le`): if
+`P.expectedSeqProbes ops ≤ ε` for every `ops ∈ hardDist.support`, then some
+`D_det ∈ (P.indexedSchemeLaw horizon opsAlphabet).support` satisfies `Good` on `correctSeqs` and
+has average probe count `≤ ε` under `hardDist`. -/
 theorem exists_det_indexedScheme_tsum_mul_le
     [DecidableEq Op] [∀ o, Inhabited (Result o)]
     (P : Scheme Op Result cells w)
-    (opsAlphabet : Finset Op) (M_corr : ℕ)
-    (S_corr : Set (List Op))
-    (hS_corr : ∀ ops ∈ S_corr, ops.length ≤ M_corr ∧ ∀ o ∈ ops, o ∈ opsAlphabet)
+    (opsAlphabet : Finset Op) (horizon : ℕ)
+    (correctSeqs : Set (List Op))
+    (hcorrectSeqs : ∀ ops ∈ correctSeqs, ops.length ≤ horizon ∧ ∀ o ∈ ops, o ∈ opsAlphabet)
     (Good : List Op → List (Sigma Result) → Prop)
-    (hcorr : ∀ ops ∈ S_corr, ∀ tr ∈ ((P.runSeq ops).map Prod.fst).support, Good ops tr)
-    (ν_hard : PMF (List Op))
-    (hν_hard : ∀ ops ∈ ν_hard.support, ops.length ≤ M_corr ∧ ∀ o ∈ ops, o ∈ opsAlphabet)
-    {ε : ℝ≥0∞} (hε : ∀ ops ∈ ν_hard.support, P.expectedSeqProbes ops ≤ ε) :
-    ∃ D_det ∈ (P.indexedSchemeLaw M_corr opsAlphabet).support,
-      (∀ ops ∈ S_corr, Good ops (D_det.runSeq ops).1) ∧
-      (∑' ops, ν_hard ops * (D_det.seqProbes ops : ℝ≥0∞)) ≤ ε := by
-  set μ := P.indexedSchemeLaw M_corr opsAlphabet
+    (hcorr : ∀ ops ∈ correctSeqs, ∀ tr ∈ ((P.runSeq ops).map Prod.fst).support, Good ops tr)
+    (hardDist : PMF (List Op))
+    (hhardDist : ∀ ops ∈ hardDist.support, ops.length ≤ horizon ∧ ∀ o ∈ ops, o ∈ opsAlphabet)
+    {ε : ℝ≥0∞} (hε : ∀ ops ∈ hardDist.support, P.expectedSeqProbes ops ≤ ε) :
+    ∃ D_det ∈ (P.indexedSchemeLaw horizon opsAlphabet).support,
+      (∀ ops ∈ correctSeqs, Good ops (D_det.runSeq ops).1) ∧
+      (∑' ops, hardDist ops * (D_det.seqProbes ops : ℝ≥0∞)) ≤ ε := by
+  set μ := P.indexedSchemeLaw horizon opsAlphabet
   obtain ⟨D_det, hD_mem, hD_le⟩ :=
-    Probability.PMF.exists_mem_support_tsum_mul_le μ ν_hard
+    Probability.PMF.exists_mem_support_tsum_mul_le μ hardDist
       (fun D ops => (D.seqProbes ops : ℝ≥0∞)) (ε := ε) fun ops hops => by
-        obtain ⟨hlen, halph⟩ := hν_hard ops hops
+        obtain ⟨hlen, halph⟩ := hhardDist ops hops
         rw [← P.expectedSeqProbes_eq_indexedSchemeLaw_tsum hlen halph]
         exact hε ops hops
   exact ⟨D_det, hD_mem, P.good_of_mem_support_law μ
-    (fun D ops => ((D.runSeq ops).1, D.seqProbes ops)) S_corr Good hcorr
-    (fun ops hops => P.runSeq_eq_indexedSchemeLaw_bind (hS_corr ops hops).1 (hS_corr ops hops).2)
+    (fun D ops => ((D.runSeq ops).1, D.seqProbes ops)) correctSeqs Good hcorr
+    (fun ops hops =>
+      P.runSeq_eq_indexedSchemeLaw_bind (hcorrectSeqs ops hops).1 (hcorrectSeqs ops hops).2)
     hD_mem, hD_le⟩
 
 /-- `[Fintype Op]` convenience wrapper for `exists_det_indexedScheme_le_expectedSeqProbes`,
@@ -814,23 +819,23 @@ instantiating `opsAlphabet := Finset.univ`. -/
 theorem exists_det_indexedScheme_le_expectedSeqProbes_of_fintype
     [Fintype Op] [DecidableEq Op] [∀ o, Inhabited (Result o)]
     (P : Scheme Op Result cells w)
-    (M_corr : ℕ)
-    (S_corr : Set (List Op))
-    (hS_corr : ∀ ops ∈ S_corr, ops.length ≤ M_corr)
+    (horizon : ℕ)
+    (correctSeqs : Set (List Op))
+    (hcorrectSeqs : ∀ ops ∈ correctSeqs, ops.length ≤ horizon)
     (Good : List Op → List (Sigma Result) → Prop)
-    (hcorr : ∀ ops ∈ S_corr, ∀ tr ∈ ((P.runSeq ops).map Prod.fst).support, Good ops tr)
-    (ν_hard : PMF (List Op))
-    (hν_hard : ∀ ops ∈ ν_hard.support, ops.length ≤ M_corr) :
-    ∃ D_det ∈ (P.indexedSchemeLaw M_corr Finset.univ).support,
-      (∀ ops ∈ S_corr, Good ops (D_det.runSeq ops).1) ∧
-      (∑' ops, ν_hard ops * (D_det.seqProbes ops : ℝ≥0∞)) ≤
-        ∑' ops, ν_hard ops * P.expectedSeqProbes ops :=
-  P.exists_det_indexedScheme_le_expectedSeqProbes Finset.univ M_corr S_corr
-    (fun ops hops => ⟨hS_corr ops hops, fun _ _ => Finset.mem_univ _⟩)
-    Good hcorr ν_hard
-    (fun ops hops => ⟨hν_hard ops hops, fun _ _ => Finset.mem_univ _⟩)
+    (hcorr : ∀ ops ∈ correctSeqs, ∀ tr ∈ ((P.runSeq ops).map Prod.fst).support, Good ops tr)
+    (hardDist : PMF (List Op))
+    (hhardDist : ∀ ops ∈ hardDist.support, ops.length ≤ horizon) :
+    ∃ D_det ∈ (P.indexedSchemeLaw horizon Finset.univ).support,
+      (∀ ops ∈ correctSeqs, Good ops (D_det.runSeq ops).1) ∧
+      (∑' ops, hardDist ops * (D_det.seqProbes ops : ℝ≥0∞)) ≤
+        ∑' ops, hardDist ops * P.expectedSeqProbes ops :=
+  P.exists_det_indexedScheme_le_expectedSeqProbes Finset.univ horizon correctSeqs
+    (fun ops hops => ⟨hcorrectSeqs ops hops, fun _ _ => Finset.mem_univ _⟩)
+    Good hcorr hardDist
+    (fun ops hops => ⟨hhardDist ops hops, fun _ _ => Finset.mem_univ _⟩)
 
-/-! #### Public-seed / coin-free-step specialization (`CellProbe.Scheme`) -/
+/-! #### Random-initial-memory / coin-free-step specialization (`CellProbe.Scheme`) -/
 
 /-- Distribution over time-invariant deterministic `CellProbe.Scheme`s induced by `P.init` when
 every per-operation probe tree `P.step o` makes no private coin draws (`IsCoinFree`). -/
@@ -869,38 +874,34 @@ theorem expectedSeqProbes_eq_schemeLaw_tsum (P : Scheme Op Result cells w)
   rw [expectedSeqProbes, P.runSeq_eq_schemeLaw_bind hstep ops, Probability.PMF.tsum_bind_mul]
   exact tsum_congr fun _ => congrArg (_ * ·) (RandProbeTree.tsum_pure_snd _)
 
-/-- **Public-seed / coin-free-step Yao reduction (`CellProbe.Scheme`):** when `P` only uses
-randomness at initialization (`∀ o, (P.step o).IsCoinFree`), there exists a time-invariant
-deterministic `D_det : CellProbe.Scheme Op Result cells w` in `(P.schemeLaw hstep).support`
-preserving `Good` on all `ops ∈ S_corr` and incurring at most `P`'s expected probes over `ν_hard`
-— without requiring `[DecidableEq Op]`, `opsAlphabet`, or a horizon `M_corr`. -/
+/-- **Random-initial-memory / coin-free-step Yao averaging (`CellProbe.Scheme`):** when randomness
+lives only in initial memory `P.init` and per-operation trees draw no private coins
+(`∀ o, (P.step o).IsCoinFree`, so operations observe `P.init` only by probing cells), zero-error
+averaging against oblivious operation sequences yields a time-invariant deterministic
+`D_det : CellProbe.Scheme Op Result cells w` in `(P.schemeLaw hstep).support` preserving `Good` on
+all `ops ∈ correctSeqs` and incurring at most `P`'s expected probes over `hardDist` — without
+requiring `[DecidableEq Op]`, `opsAlphabet`, or `horizon` (bounded-error schemes are not
+covered). -/
 theorem exists_det_scheme_le_expectedSeqProbes
     (P : Scheme Op Result cells w)
     (hstep : ∀ o, (P.step o).IsCoinFree)
-    (S_corr : Set (List Op))
+    (correctSeqs : Set (List Op))
     (Good : List Op → List (Sigma Result) → Prop)
-    (hcorr : ∀ ops ∈ S_corr, ∀ tr ∈ ((P.runSeq ops).map Prod.fst).support, Good ops tr)
-    (ν_hard : PMF (List Op)) :
+    (hcorr : ∀ ops ∈ correctSeqs, ∀ tr ∈ ((P.runSeq ops).map Prod.fst).support, Good ops tr)
+    (hardDist : PMF (List Op)) :
     ∃ D_det ∈ (P.schemeLaw hstep).support,
-      (∀ ops ∈ S_corr, Good ops (D_det.runSeq ops).1) ∧
-      (∑' ops, ν_hard ops * (D_det.seqProbes ops : ℝ≥0∞)) ≤
-        ∑' ops, ν_hard ops * P.expectedSeqProbes ops := by
+      (∀ ops ∈ correctSeqs, Good ops (D_det.runSeq ops).1) ∧
+      (∑' ops, hardDist ops * (D_det.seqProbes ops : ℝ≥0∞)) ≤
+        ∑' ops, hardDist ops * P.expectedSeqProbes ops := by
   set μ := P.schemeLaw hstep
   obtain ⟨D_det, hD_mem, hD_le⟩ :=
-    Probability.PMF.exists_mem_support_le_tsum_mul μ
-      (fun D => ∑' ops, ν_hard ops * (D.seqProbes ops : ℝ≥0∞))
+    Probability.PMF.exists_mem_support_tsum_mul_le_tsum_mul μ hardDist
+      (fun D ops => (D.seqProbes ops : ℝ≥0∞))
   refine ⟨D_det, hD_mem, P.good_of_mem_support_law μ
-    (fun D ops => ((D.runSeq ops).1, D.seqProbes ops)) S_corr Good hcorr
+    (fun D ops => ((D.runSeq ops).1, D.seqProbes ops)) correctSeqs Good hcorr
     (fun ops _ => P.runSeq_eq_schemeLaw_bind hstep ops) hD_mem, hD_le.trans ?_⟩
-  calc
-    (∑' D, μ D * ∑' ops, ν_hard ops * (D.seqProbes ops : ℝ≥0∞))
-      = ∑' ops, ν_hard ops * ∑' D, μ D * (D.seqProbes ops : ℝ≥0∞) := by
-          simp only [← ENNReal.tsum_mul_left]
-          rw [tsum_comm]
-          exact tsum_congr fun ops => tsum_congr fun D => by ring
-    _ ≤ ∑' ops, ν_hard ops * P.expectedSeqProbes ops := by
-          refine tsum_le_tsum fun ops => ?_
-          rw [← P.expectedSeqProbes_eq_schemeLaw_tsum hstep ops]
+  exact le_of_eq (tsum_congr fun ops =>
+    congrArg (hardDist ops * ·) (P.expectedSeqProbes_eq_schemeLaw_tsum hstep ops).symm)
 
 end Scheme
 

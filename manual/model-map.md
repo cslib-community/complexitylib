@@ -188,7 +188,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `randomized-query` | [Finite-support randomized decision trees](circuits-logic-and-other-models/index.md) | information-access |
 | `distributional-query` | [Distributional decision-tree complexity](circuits-logic-and-other-models/index.md) | information-access |
 | `cell-probe` | [Adaptive cell-probe trees and deterministic schemes](circuits-logic-and-other-models/query-and-communication.md) | information-access |
-| `randomized-cell-probe` | [Internal-coin cell-probe schemes and Yao coin-fixing](circuits-logic-and-other-models/query-and-communication.md) | information-access |
+| `randomized-cell-probe` | [Internal-coin cell-probe schemes and zero-error Yao averaging](circuits-logic-and-other-models/query-and-communication.md) | information-access |
 | `quantum-query` | [Phase-oracle quantum query algorithms](circuits-logic-and-other-models/index.md) | quantum |
 | `deterministic-communication` | [Two-party bit communication trees](circuits-logic-and-other-models/index.md) | communication |
 | `local-oriented-cycle` | [Deterministic LOCAL algorithms on oriented cycles](circuits-logic-and-other-models/query-and-communication.md) | distributed |

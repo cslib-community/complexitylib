@@ -9,24 +9,27 @@ module
 
 public import Complexity.Init
 public import Complexity.Computability.CellProbe.Defs
+public import Complexity.Computability.CellProbe.DecisionTree
 public import Complexity.Computability.CellProbe.Randomized
 import Complexity.Probability.PMF.Expect
 
 /-!
-# Cell-Probe Model, Locality, Decision-Tree Adapter, Counting Bound, and Yao Coin-Fixing Tests
+# Cell-Probe Model, Locality, Decision-Tree Adapter, Counting Bound, and Yao Averaging Tests
 
 Kernel-checked concrete instances and non-vacuity witnesses for `Cslib.CellProbe`:
 
 1. Adaptive read/write `ProbeTree` execution, `run_eq_of_eq_on_probedCells`, and multi-step
-   `IndexedScheme.runInterval_eq_of_eq_on_probedCellsInterval` on distinct memories `m₁ ≠ m₂`.
+   `IndexedScheme.runInterval_eq_of_eq_on_probedCellsInterval` /
+   `nextMem_runInterval_eq_of_notMem_probedCellsInterval` on distinct memories `m₁ ≠ m₂`.
 2. Static 1-bit `DecisionTree` adapter (`ProbeTree.ofDecisionTree`) agreement on output, pathwise
    `probes`, `probedCells`, and structural `depth`.
 3. Tight information-theoretic cell-probe lower bound (`3 ≤ t.depth` for every `t : ProbeTree 3 2`
-   distinguishing `K = 17` memory states, matched by an explicit depth-`3` decoder).
-4. Randomized `RandProbeTree` coin-fixing and Yao's minimax reduction
+   distinguishing `K = 17` memory states, matched by an explicit depth-`3` decoder, plus `w = 0`).
+4. Randomized `RandProbeTree` coin-fixing and zero-error Yao averaging
    (`Randomized.Scheme.exists_det_indexedScheme_le_expectedSeqProbes`) over an infinite operation
-   type `TestOp` with explicit finite `opsAlphabet` and correctness domain `S_corr` strictly larger
-   than `ν_hard.support`, plus the public-seed `exists_det_scheme_le_expectedSeqProbes` reduction.
+   type `InfDictOp` with explicit finite `opsAlphabet` and oblivious correctness domain
+   `correctSeqs` strictly larger than `hardDist.support`, plus the random-initial-memory /
+   coin-free-step `exists_det_scheme_le_expectedSeqProbes` specialization.
 -/
 
 public section
@@ -84,7 +87,7 @@ example :
       (∀ i ∈ adaptiveProg.probedCells memA,
         (adaptiveProg.run memB).2 i = (adaptiveProg.run memA).2 i) := by
   have hagree : ∀ i ∈ adaptiveProg.probedCells memA, memB i = memA i := by decide
-  obtain ⟨hout, hpr, hcells, hmem_in, _⟩ := adaptiveProg.run_eq_of_eq_on_probedCells hagree
+  obtain ⟨hout, hpr, hcells, hmem_in⟩ := adaptiveProg.run_eq_of_eq_on_probedCells hagree
   refine ⟨?_, hagree, hout, hpr, hcells, hmem_in⟩
   intro heq
   have h3 : memA 3 = memB 3 := congrFun heq 3
@@ -118,14 +121,14 @@ example :
       (counterIndexed.runInterval 5 m₁ slice).2 2 = 3 := by
   intro m₁ m₂ slice
   have hagree : ∀ i ∈ counterIndexed.probedCellsInterval 5 m₁ slice, m₂ i = m₁ i := by decide
-  obtain ⟨hout, hpr, _, _, hout_frame⟩ :=
+  obtain ⟨hout, hpr, _, _⟩ :=
     counterIndexed.runInterval_eq_of_eq_on_probedCellsInterval 5 slice hagree
   refine ⟨?_, by decide, hout, ?_, ?_⟩
   · intro heq
     have h2 : m₁ 2 = m₂ 2 := congrFun heq 2
     revert h2; decide
   · rw [hpr]; decide
-  · exact hout_frame 2 (by decide)
+  · exact counterIndexed.nextMem_runInterval_eq_of_notMem_probedCellsInterval 5 m₁ slice (by decide)
 
 /-! ### 3. Static 1-bit `DecisionTree` read-only adapter -/
 
@@ -176,9 +179,15 @@ theorem decode17Tree_correct :
 theorem depth_ge_three_of_distinguishes_17 {α : Type} (t : ProbeTree 3 2 α)
     (hinj : Function.Injective (fun x : Fin 17 => (t.run (enc17 x)).1)) :
     3 ≤ t.depth := by
-  have hclog := t.clog_le_depth_of_injective (by decide : 0 < 2) enc17 hinj
+  have hclog := t.clog_le_depth_of_injective enc17 hinj
   have heq : Nat.clog (2 ^ 2) (Fintype.card (Fin 17)) = 3 := by decide
   rwa [heq] at hclog
+
+-- `w = 0` boundary check: `clog_le_depth_of_injective` needs no `0 < w` hypothesis.
+example {α : Type} (t : ProbeTree 3 0 α)
+    (hinj : Function.Injective (fun _ : Fin 1 => (t.run (zeroMem 3 0)).1)) :
+    Nat.clog (2 ^ 0) (Fintype.card (Fin 1)) ≤ t.depth :=
+  t.clog_le_depth_of_injective (fun _ => zeroMem 3 0) hinj
 
 example (t : ProbeTree 3 2 (Fin 17)) (hdec : ∀ x : Fin 17, (t.run (enc17 x)).1 = x) :
     17 ≤ (2 ^ 2) ^ t.depth ∧ 3 ≤ t.depth := by
@@ -187,7 +196,7 @@ example (t : ProbeTree 3 2 (Fin 17)) (hdec : ∀ x : Fin 17, (t.run (enc17 x)).1
   exact ⟨by simpa using t.card_le_pow_depth_of_injective enc17 hinj,
     depth_ge_three_of_distinguishes_17 t hinj⟩
 
-/-! ### 5. `RandProbeTree` coin-fixing and Yao's minimax over an infinite `Op` type -/
+/-! ### 5. `RandProbeTree` coin-fixing and zero-error Yao averaging over an infinite `Op` type -/
 
 /-- Coin-flipping probe tree: draw a uniform bit `b ∈ Fin 2`; on `0` return `0` in `0` probes,
 on `1` read cell `0` and write cell `1` (`2` probes), giving exact `expectedProbes = 1`. -/
@@ -334,46 +343,48 @@ theorem randDictScheme_zero_error (ops : List InfDictOp)
   subst hm₀
   exact randDictScheme_runFrom_good (zeroMem 2 2) ops hz
 
-/-- Non-vacuous Yao coin-fixing check: `S_corr` contains single-step decode queries `[.query 0]`,
-`[.query 1]` OUTSIDE `ν_hard.support = {[.insert 0 3, .query 0]}`, over infinite `InfDictOp`! -/
+/-- Non-vacuous zero-error Yao averaging check: `correctSeqs` contains single-step decode queries
+`[.query 0]`, `[.query 1]` OUTSIDE `hardDist.support = {[.insert 0 3, .query 0]}`, over infinite
+`InfDictOp`. -/
 theorem exists_det_indexedScheme_infDict_test :
-    let S_corr : Set (List InfDictOp) :=
+    let correctSeqs : Set (List InfDictOp) :=
       {[.query 0], [.query 1], [.insert 0 3, .query 0]}
-    let ν_hard : PMF (List InfDictOp) := PMF.pure [.insert 0 3, .query 0]
+    let hardDist : PMF (List InfDictOp) := PMF.pure [.insert 0 3, .query 0]
     ∃ D_det : IndexedScheme InfDictOp InfDictResult 2 2,
-      (∀ ops ∈ S_corr, GoodInfDict ops (D_det.runSeq ops).1) ∧
-      (∑' ops, ν_hard ops * (D_det.seqProbes ops : ℝ≥0∞)) ≤
-        ∑' ops, ν_hard ops * randDictScheme.expectedSeqProbes ops := by
-  intro S_corr ν_hard
-  have hS : ∀ ops ∈ S_corr, ops.length ≤ 2 ∧ ∀ o ∈ ops, o ∈ validInfDictOps := by
+      (∀ ops ∈ correctSeqs, GoodInfDict ops (D_det.runSeq ops).1) ∧
+      (∑' ops, hardDist ops * (D_det.seqProbes ops : ℝ≥0∞)) ≤
+        ∑' ops, hardDist ops * randDictScheme.expectedSeqProbes ops := by
+  intro correctSeqs hardDist
+  have hS : ∀ ops ∈ correctSeqs, ops.length ≤ 2 ∧ ∀ o ∈ ops, o ∈ validInfDictOps := by
     intro ops hops
-    simp only [S_corr, Set.mem_insert_iff, Set.mem_singleton_iff] at hops
+    simp only [correctSeqs, Set.mem_insert_iff, Set.mem_singleton_iff] at hops
     rcases hops with rfl | rfl | rfl <;> refine ⟨by decide, ?_⟩ <;>
       intro o ho <;> revert o ho <;> decide
-  have hν : ∀ ops ∈ ν_hard.support, ops.length ≤ 2 ∧ ∀ o ∈ ops, o ∈ validInfDictOps := by
+  have hν : ∀ ops ∈ hardDist.support, ops.length ≤ 2 ∧ ∀ o ∈ ops, o ∈ validInfDictOps := by
     intro ops hops
     rw [PMF.mem_support_pure_iff] at hops
     subst hops
     exact ⟨by decide, fun o ho => by revert o ho; decide⟩
   obtain ⟨D_det, _, hgood, hcost⟩ :=
     randDictScheme.exists_det_indexedScheme_le_expectedSeqProbes
-      validInfDictOps 2 S_corr hS GoodInfDict
-      (fun ops _ tr htr => randDictScheme_zero_error ops htr) ν_hard hν
+      validInfDictOps 2 correctSeqs hS GoodInfDict
+      (fun ops _ tr htr => randDictScheme_zero_error ops htr) hardDist hν
   exact ⟨D_det, hgood, hcost⟩
 
-/-- Public-seed coin-free-step Yao specialization (`exists_det_scheme_le_expectedSeqProbes`):
-uniformly random initial memory `init` paired with the coin-free `counterIndexed` operations. -/
-noncomputable def publicSeedScheme : Randomized.Scheme CounterOp CounterResult 3 2 where
+/-- Random-initial-memory / coin-free-step Yao averaging specialization
+(`exists_det_scheme_le_expectedSeqProbes`): uniformly random initial memory `init` paired with the
+coin-free `counterIndexed` operations (observed only by probing cells). -/
+noncomputable def randomInitScheme : Randomized.Scheme CounterOp CounterResult 3 2 where
   init := Probability.PMF.uniformOfFintype (Mem 3 2)
   step o := RandProbeTree.ofProbeTree (counterIndexed.step 0 o)
 
-theorem exists_det_scheme_publicSeed_test :
+theorem exists_det_scheme_randomInit_test :
     ∃ D_det : Scheme CounterOp CounterResult 3 2,
       (∑' ops, (PMF.pure [.query 0] : PMF (List CounterOp)) ops * (D_det.seqProbes ops : ℝ≥0∞)) ≤
         ∑' ops, (PMF.pure [.query 0] : PMF (List CounterOp)) ops *
-          publicSeedScheme.expectedSeqProbes ops := by
+          randomInitScheme.expectedSeqProbes ops := by
   obtain ⟨D_det, _, _, hcost⟩ :=
-    publicSeedScheme.exists_det_scheme_le_expectedSeqProbes
+    randomInitScheme.exists_det_scheme_le_expectedSeqProbes
       (fun o => RandProbeTree.isCoinFree_ofProbeTree _)
       Set.univ (fun _ _ => True) (fun _ _ _ _ => trivial) (PMF.pure [.query 0])
   exact ⟨D_det, hcost⟩
