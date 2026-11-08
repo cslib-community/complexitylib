@@ -209,6 +209,11 @@ Stephen A. Cook, Robert A. Reckhow. “The Relative Efficiency of Propositional 
 
 Graham Cormode, S. Muthukrishnan. “An Improved Data Stream Summary: The Count-Min Sketch and its Applications.” *Journal of Algorithms* 55(1), 58–75, 2005. https://doi.org/10.1016/j.jalgor.2003.12.001 ; author PDF https://www.cs.ox.ac.uk/people/graham.cormode/pubs/papers/cm-full.pdf . Sections 3–4.1 and fixed point-query guarantee consulted.
 
+<a id="correaschulzstiermoses04"></a>
+## correaschulzstiermoses04
+
+José R. Correa, Andreas S. Schulz and Nicolás E. Stier-Moses. *Selfish Routing in Capacitated Networks*. Mathematics of Operations Research 29(4), 961–976, 2004. https://doi.org/10.1287/moor.1040.0098 . Bibliographic metadata only; the publisher's text is paywalled and no open author's version was found, so it was not inspected and no locator in it is cited. Following [roughgarden13cs364a](#roughgarden13cs364a), Lecture #11, Theorem 3.3, which credits it, `Complexity/GameTheory/Congestion/PigouBound.lean` cites it for the Pigou-bound theorem in the generality formalized there.
+
 <a id="coverthomas06"></a>
 ## coverthomas06
 
@@ -651,10 +656,15 @@ Alvin E. Roth. *Incentive Compatibility in a Market with Indivisible Goods*. Eco
 
 Alvin E. Roth and Andrew Postlewaite. *Weak versus Strong Domination in a Market with Indivisible Goods*. Journal of Mathematical Economics 4(2), 131–137, 1977. https://doi.org/10.1016/0304-4068(77)90004-0 . Bibliographic metadata only; the publisher's text is paywalled and was not inspected, so no theorem number is cited. The housing-market modules attribute to it, as the standard primary reference and without a verified locator, the uniqueness of the strict-core (weak-domination) allocation and its agreement with the competitive allocation; neither [schummervohra07](#schummervohra07) nor [roughgarden13cs364a](#roughgarden13cs364a), Lecture #9, cites it.
 
+<a id="roughgarden03"></a>
+## roughgarden03
+
+Tim Roughgarden. *The Price of Anarchy is Independent of the Network Topology*. Journal of Computer and System Sciences 67(2), 341–364, 2003. https://doi.org/10.1016/S0022-0000(03)00044-8 . The author's version of 23 December 2002 (https://theory.stanford.edu/~tim/papers/indep.pdf) was consulted on 2026-11-08 for Section 2.4, Definitions 2.5 and 3.1–3.3, Theorem 3.8, Lemma 4.1, Theorem 4.2, Proposition 5.1 and Remark 5.2; locators follow that version. Its anarchy value is defined through marginal costs for latencies with `x c(x)` convex, and Proposition 5.1 takes the degree `p ≥ 1`. The library uses the equivalent Pigou-ratio definition of [roughgarden13cs364a](#roughgarden13cs364a), Lecture #11, (2), which needs no convexity, and includes `d = 0`.
+
 <a id="roughgarden13cs364a"></a>
 ## roughgarden13cs364a
 
-Tim Roughgarden. *CS364A: Algorithmic Game Theory*, lecture notes, Stanford University, Fall 2013. https://theory.stanford.edu/~tim/f13/f13.html . Lecture #17, "No-Regret Dynamics" (18 November 2013), was consulted on 2026-11-07 for Definition 1.2, §3, Proposition 3.1, Remark 3.2, Corollary 3.3 and footnote 1. Lecture #9, "Beyond Quasi-Linearity" (21 October 2013), was consulted on 2026-11-08 for §3 (the top trading cycle algorithm, Theorems 3.1 and 3.2). Its core is defined by strict blocking, for which only the existence half of Theorem 3.2 holds; a checked three-agent market in `ComplexityTests/HousingMarket.lean` has a second core allocation.
+Tim Roughgarden. *CS364A: Algorithmic Game Theory*, lecture notes, Stanford University, Fall 2013. https://theory.stanford.edu/~tim/f13/f13.html . Lecture #17, "No-Regret Dynamics" (18 November 2013), was consulted on 2026-11-07 for Definition 1.2, §3, Proposition 3.1, Remark 3.2, Corollary 3.3 and footnote 1. Lecture #9, "Beyond Quasi-Linearity" (21 October 2013), was consulted on 2026-11-08 for §3 (the top trading cycle algorithm, Theorems 3.1 and 3.2). Its core is defined by strict blocking, for which only the existence half of Theorem 3.2 holds; a checked three-agent market in `ComplexityTests/HousingMarket.lean` has a second core allocation. Lecture #11, "Selfish Routing and the Price of Anarchy" (28 October 2013), was consulted on 2026-11-08 for Definition 3.2, the Pigou bound (2), Theorem 3.3, Table 1 and the proof in §5.
 
 <a id="roughgarden15"></a>
 ## roughgarden15
