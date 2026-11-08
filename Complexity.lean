@@ -1771,6 +1771,8 @@ public import Complexity.Computability.Complexity.Classes.MIP.OptimalProver
 public import Complexity.Computability.Complexity.Classes.Measure.Basic
 public import Complexity.Computability.Complexity.Classes.Measure.Conservation
 public import Complexity.Computability.Complexity.Classes.Measure.DTIME
+public import Complexity.Computability.Complexity.Classes.MIP.Oracularization
+public import Complexity.Computability.Complexity.Classes.MIP.Repetition
 public import Complexity.Computability.Complexity.Classes.ModP
 public import Complexity.Computability.Complexity.Classes.ModP.GapP
 public import Complexity.Computability.Complexity.Classes.ModP.PrimePower
@@ -1816,6 +1818,7 @@ public import Complexity.Computability.Complexity.Classes.P.Slices
 public import Complexity.Computability.Complexity.Classes.P.WordRAM
 public import Complexity.Computability.Complexity.Classes.PCP
 public import Complexity.Computability.Complexity.Classes.PCP.NP
+public import Complexity.Computability.Complexity.Classes.PCP.Oracle
 public import Complexity.Computability.Complexity.Classes.PCP.ZeroRandomness
 public import Complexity.Computability.Complexity.Classes.PH
 public import Complexity.Computability.Complexity.Classes.PH.Closure

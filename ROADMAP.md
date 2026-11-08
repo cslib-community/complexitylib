@@ -826,8 +826,10 @@ index links to canonical definitions rather than keeping a second set.
 
 ### Interactive proofs
 
-- **MIP = NEXP** ([#892]): `NEXP ⊆ MIP₂` through the BFL multilinearity test and arithmetization
-  of exponential-time tableaux; an efficient GKR verifier under log-space uniformity.
+- **MIP = NEXP** ([#892]): oracularization `PCPPoly ⊆ MIP₂` is proved
+  (`Cslib.Complexity.PCPPoly_subset_MIP₂`); remaining is `NEXP ⊆ PCPPoly` through the BFL
+  multilinearity test and arithmetization of exponential-time tableaux; an efficient GKR verifier
+  under log-space uniformity.
 - **Oracle-model `IP[k]`** ([#3425](https://github.com/cslib-community/complexitylib/issues/3425)):
   oracle-PPT `IP` verifiers with at most `k` queries give exactly the count-based `IPk` (coin
   fixing and padding to `k` rounds), which carries `IPk_eq_AM` to the oracle model;

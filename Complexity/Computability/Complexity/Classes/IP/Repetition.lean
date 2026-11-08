@@ -67,7 +67,7 @@ def sequentialRepeat : ℕ → WordOracleComp Operation Bool → WordOracleComp 
 
 /-- Running `rest` after an accepting run of `round` is accepted with the probability of `rest`
 from each final prover state of an accepting run, averaged over those states. -/
-private theorem acceptProb_bind_ite (P : Prover Operation)
+theorem acceptProb_bind_ite (P : Prover Operation)
     (round rest : WordOracleComp Operation Bool) :
     acceptProb (do let ok ← round; if ok then rest else pure false) P =
       ∑' s, P.run round P.init (true, s) * acceptProb rest { P with init := s } := by

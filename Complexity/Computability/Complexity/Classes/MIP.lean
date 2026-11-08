@@ -10,6 +10,8 @@ module
 public import Complexity.Computability.Complexity.Classes.MIP.Defs
 public import Complexity.Computability.Complexity.Classes.MIP.OptimalProver
 public import Complexity.Computability.Complexity.Classes.MIP.NEXP
+public import Complexity.Computability.Complexity.Classes.MIP.Oracularization
+public import Complexity.Computability.Complexity.Classes.MIP.Repetition
 
 /-!
 # Multiprover interactive proofs (`MIP₂` and `MIP`)
@@ -31,8 +33,14 @@ This umbrella module re-exports the multiprover interactive proof development:
   upper bounds
   `MIP_subset_NEXP : MIP enc ⊆ NEXP enc` and `MIP₂_subset_NEXP : MIP₂ enc ⊆ NEXP enc`.
 
-The converse inclusion `NEXP ⊆ MIP₂` (Babai–Fortnow–Lund multilinearity testing and
-arithmetization of `NEXP` verification tableaux) remains open.
+* `Complexity.Computability.Complexity.Classes.MIP.Repetition`: sequential repetition against
+  non-communicating provers (`acceptProb_sequentialRepeat_independent_le`).
+* `Complexity.Computability.Complexity.Classes.MIP.Oracularization`: probabilistically checkable
+  proofs against a proof oracle become two-prover interactive proofs,
+  `PCPPoly_subset_MIP₂ : PCPPoly enc ⊆ MIP₂ enc`.
+
+The converse inclusion `NEXP ⊆ MIP₂` reduces to `NEXP ⊆ PCPPoly` (Babai–Fortnow–Lund
+multilinearity testing and arithmetization of `NEXP` verification tableaux), which remains open.
 
 ## References
 
