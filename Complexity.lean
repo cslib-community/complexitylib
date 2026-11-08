@@ -4080,6 +4080,7 @@ public import Complexity.Foundations.Combinatorics.SetPartition.Basic
 public import Complexity.Foundations.Combinatorics.SetPartition.JoinMatrix
 public import Complexity.Foundations.Combinatorics.SharedSummaries
 public import Complexity.Foundations.Combinatorics.ShiftColoring
+public import Complexity.Foundations.Combinatorics.SimpleGraph.Acyclic
 public import Complexity.Foundations.Combinatorics.SimpleGraph.CliqueCover
 public import Complexity.Foundations.Combinatorics.SimpleGraph.EvenEdges
 public import Complexity.Foundations.Combinatorics.SimpleGraph.GreedyColoring
@@ -4092,6 +4093,9 @@ public import Complexity.Foundations.Combinatorics.SimpleGraph.Ramsey.Basic
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Ramsey.Erdos
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Ramsey.Nagy
 public import Complexity.Foundations.Combinatorics.SimpleGraph.SymmDiff
+public import Complexity.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Basic
+public import Complexity.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Bounds
+public import Complexity.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Rooted
 public import Complexity.Foundations.Combinatorics.SmallSubsets
 public import Complexity.Foundations.Combinatorics.Sperner
 public import Complexity.Foundations.Combinatorics.SubsetPairCount
