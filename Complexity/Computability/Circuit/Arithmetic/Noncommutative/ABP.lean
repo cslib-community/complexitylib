@@ -54,6 +54,7 @@ The displayed statement of Theorem 11.2 in Saptharishi's survey leaves out the f
 * `Cslib.Circuits.Arithmetic.NoncommABP.nisanMatrix_eq_mul`: the factorization through a layer.
 * `Cslib.Circuits.Arithmetic.NoncommABP.rank_nisanMatrix_le_width`: the width lower bound.
 * `Cslib.Circuits.Arithmetic.NoncommABP.sum_rank_nisanMatrix_le_size`: the size lower bound.
+* `Cslib.Circuits.Arithmetic.NoncommABP.width_le_size`: every layer is at most the size.
 
 ## References
 
@@ -126,6 +127,11 @@ omit [Fintype X] in
 /-- The size: the number of vertices in layers `0, …, d`, the sink included. -/
 @[expose] def size : ℕ :=
   ∑ k ∈ Finset.range (d + 1), A.width k
+
+omit [Fintype X] in
+/-- Every layer has at most `size` vertices. -/
+theorem width_le_size {k : ℕ} (hk : k ≤ d) : A.width k ≤ A.size :=
+  Finset.single_le_sum (fun _ _ => Nat.zero_le _) (Finset.mem_range.mpr (Nat.lt_succ_of_le hk))
 
 /-- The source computes `1`. -/
 theorem pre_zero (j : Fin (A.width 0)) : A.pre 0 j = 1 := by
