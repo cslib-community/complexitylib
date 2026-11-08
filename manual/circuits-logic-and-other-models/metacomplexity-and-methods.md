@@ -428,7 +428,8 @@ The `BinaryFrontend.compile` continuation below now supplies the complete actual
 constructor and sharp counting resource endpoint for the explicit promised table encoding.
 The rational kernel's own coefficient-growth theorem is not implied by the binary backend.
 The weighted-row endpoint later in this chapter is also certified; the independent-domination
-frontends below cover independent domination and directed kernels, with other graph endpoints open.
+frontends below cover independent domination, directed kernels and perfect matching cuts; other
+graph endpoints remain open.
 
 The listing resource bound is promise-restricted. Without `DimensionOne`, take
 one width-$w$ table containing the all-zero tuple, all-one tuple and all $w$
@@ -697,11 +698,68 @@ Tiny exhaustive query oracles are tests only; production certificates use the pr
 
 The general Corollary 7.2 degree rules and Theorem 7.3 labeled partitions remain open. Of the six
 Corollary 7.4 predicates, independent-domination counting with size bounds and kernel counting/
-decision are covered; maximum induced matching, perfect matching cut, upper domination and
-dominating induced matching remain open.
+decision are covered here. The continuation below covers Perfect Matching Cut; maximum induced
+matching, upper domination and dominating induced matching remain open.
 Complete witness/optimum extraction is still separate. Corollary 7.5 needs the induced-matching
 bijection and distribution iterator/resources; Proposition 7.6 needs its actual set–marking versus
 set-count constructions. These graph milestones do not complete ALL-main.
+
+### Perfect matching cuts with labeled sides
+
+Import `Complexity.Computability.Complexity.FineGrained.PerfectMatchingCut` and open
+`Cslib.Logic.PL.PerfectMatchingCut`. Reuse `IndependentDomination.ofGraph G`, `Input` and
+`encInput` for the canonical explicit simple-undirected adjacency matrix on `Fin v`: the vertex
+declaration is unary and Boolean cells are framed. The new `upper`, `conditions` and `build`
+actually traverse that matrix. Distinct neighbor pairs write both width-three upper clauses;
+each vertex has a positive and a negative singleton-term neighborhood condition. `build_polytime`
+charges the triple loops, matrix lookups, binary indices and every literal write. It enumerates
+neighbor pairs, without enumerating partitions or matchings.
+
+`SimpleGraph.crossingSubgraph G side` contains **all** original edges whose Boolean side labels
+differ, on all original vertices. `SimpleGraph.IsPerfectMatchingCut G side` requires this spanning
+subgraph to be a Mathlib perfect matching and requires both labeled sides to be nonempty. This is
+the source's Perfect Matching Cut problem, not an arbitrary perfect matching that contains some
+cut. On a nonempty graph, `finite_semantics` proves that the actual constraints hold precisely for
+this predicate: the upper clauses allow at most one opposite neighbor, and the two signed
+conditions require at least one. Each Boolean assignment specifies exactly one labeled partition;
+swapping labels counts separately. No claim about unordered-cut counts is implicit.
+
+For $v\ge1$, `query_count` and `query_budget` prove exactly two ordinary queries with
+$N=3v-1$, width three and at most $10v^3$ clauses each. The upper part has at most $2v^3$ clauses;
+there are exactly $2v$ coverage conditions and at most $2v(v+1)$ terms in total. Ordered neighbor
+pairs may duplicate clauses, without changing the count or source polynomial bound.
+`run` rejects the empty graph before constructing any constraints or invoking its continuation:
+the vacuous per-vertex condition at zero vertices is not a partition into two nonempty sides.
+`plan_count` concerns nonempty inputs; complete counting certificates include this empty branch.
+
+`exists_count_sharp_certificate` instantiates the proved general-density DNF counter and composes
+actual dispatch/construction, sequential query calls, subtraction and reconstruction. The output is
+the exact labeled-cut count, with global polynomial workspace and
+$L^{O(1)}2^{O(\eta(v))}$ native time. `exists_decide_sharp_certificate` additionally charges
+binary positivity inspection using the count's proved output/space bound. The real-eta versions
+use $\eta(v)=v\log\log v/\sqrt{\log v}$ for $v\ge16$, with rounded versions at every size.
+The proved fixed-linear rescaling is from $3v$, retaining one loglog. These are Proposition D.2
+(PDF p. 34) and its Corollary 7.4 decision specialization (p. 26), in the existing native
+word/resource model. Raw construction/global space are total; graph correctness and sharp time
+use canonical matrices. Arbitrary-byte graph admission, succinct declarations, unordered quotients,
+a fresh bit-transition simulation and complete witness extraction are separate.
+
+From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.PerfectMatchingCut`.
+The [complete checked client](../../ComplexityTests/PaperEndpoints/PerfectMatchingCut.lean) executes
+empty, isolated, edge, path, disjoint-edge, cycle and dense cases, with original labeled selections
+and actual written queries. A complete four-vertex graph and a six-cycle have perfect matchings but
+no perfect matching cut. Concrete two-vertex examples check both a proper cut and a rejected
+one-sided assignment. The direct empty branch bypasses a fake continuation, and 32-vertex query
+metadata is computed without partition enumeration. Tiny exhaustive oracles are tests only;
+production certificates instantiate the proved sharp counter.
+
+Corollary 7.2's general sigma-rho rules and Theorem 7.3's fixed labeled degree matrices/per-class
+bounds remain open. Of the six Corollary 7.4 predicates, independent-domination counting with size
+bounds, kernel counting/decision and labeled perfect-matching-cut counting/decision are covered.
+Maximum induced matching, upper domination, dominating induced matching, complete witness/optimum
+recovery, Corollary 7.5's bijection/distribution iterator and Proposition 7.6's marking/set-count
+constructions remain open. This concrete bipartition endpoint does not complete the general
+partition theorem or ALL-main.
 
 ## Known Limitations
 
