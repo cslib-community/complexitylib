@@ -174,7 +174,15 @@ The algorithmic layer is stated on explicit objects. `IsExchSource`, `IsExchSink
 
 `Complexity.Algorithms.Lean.Matroid.Intersection.Konig` ([Complexity/Algorithms/Lean/Matroid/Intersection/Konig.lean](../../Complexity/Algorithms/Lean/Matroid/Intersection/Konig.lean)) connects this to the bipartite matching vocabulary above. `unitPartitionMatroid f` is the free matroid pulled back along `f`, in which a set is independent when `f` is injective on it. `isMatching_iff_isCommonIndep` identifies matchings of `G : L × R → Bool` with common independent subsets of `bipartiteEdges G` for the `Prod.fst` and `Prod.snd` partition matroids (Example 10.5a). `exists_maxMatching_separatorCover` derives König's theorem from Edmonds' theorem (Exercise 10.22). The cover is read off from the separator, and its minimality uses the existing matching/cover weak duality. The flow-based König theorem `exists_maxMatching_eq_minVertexCover` remains the primary statement; the tests recover its form from the matroid route.
 
-This is a theorem-level milestone. There is no executable matroid-intersection solver yet, and no independence-oracle query count or `TimeM` bound; that remaining work is tracked in [#2018](https://github.com/cslib-community/complexitylib/issues/2018). Weighted matroid intersection and infinite ground sets are not treated.
+The executable solver is in `Complexity.Algorithms.Lean.Matroid.Intersection.Solver` ([Complexity/Algorithms/Lean/Matroid/Intersection/Solver.lean](../../Complexity/Algorithms/Lean/Matroid/Intersection/Solver.lean)). Its independence tests are effectful, `Finset α → m Bool` for a monad `m`. One phase (`exchTablesM`) computes the sources, sinks and arcs of the exchange digraph of the current `I` by tests. It then runs a multi-source breadth-first search, `Cslib.Reachability.findWalk` ([Complexity/Algorithms/Reachability/ShortestWalk.lean](../../Complexity/Algorithms/Reachability/ShortestWalk.lean)). The search returns either a shortest source-to-sink walk (`isShortestSrcTgtWalk_of_findWalk_eq_inl`) or the reachable vertices, which form a separator (`isSrcTgtSeparator_of_findWalk_eq_inr`). `maxCommonIndepM` runs at most `n + 1` phases from `∅` on the `n` distinct candidates and returns `(I, U)`, where `U` is the set of unreachable candidates. `maxCommonIndep` is the same program with Boolean tests (`maxCommonIndepM_pure`). For tests that decide `M₁` and `M₂`, `maxCommonIndep_spec` (Theorem 10.8) shows that `I` is a maximum common independent subset of `es.toFinset` and that `U ⊆ es.toFinset` satisfies `I.card = M₁.eRk U + M₂.eRk (es.toFinset \ U)`, so `U` is a checkable optimality certificate. Breadth-first search and list bookkeeping are pure host computation. The tests are issued with core `List.filterM`. The general facts about it are `List.filterM_pure` and `Cslib.IsMonadHom.map_filterM` in [Complexity/Foundations/Control/Monad/FilterM.lean](../../Complexity/Foundations/Control/Monad/FilterM.lean), and `Cslib.FreeM.countQueries_filterM` in [Complexity/Algorithms/Lean/Query/FreeM/FilterM.lean](../../Complexity/Algorithms/Lean/Query/FreeM/FilterM.lean).
+
+`Complexity.Algorithms.Lean.Query.Matroid.Intersection` ([Complexity/Algorithms/Lean/Query/Matroid/Intersection.lean](../../Complexity/Algorithms/Lean/Query/Matroid/Intersection.lean)) runs the solver in `FreeM (IndepPairQuery α)`. Here `IndepPairQuery α = IndepQuery α ⊕ IndepQuery α`, one independence oracle per matroid, and `IndepPairQuery.left`/`right`/`pair` split and join oracles. Only the independence tests are counted. `eval_matroidIntersection_spec` is the correctness theorem for oracles with `ImplementsMatroid (left oracle) M₁` and `ImplementsMatroid (right oracle) M₂`. On `n` distinct candidates a phase from `I` makes exactly `2(n - |I|)(1 + |I|)` queries (`countQueries_exchTablesM_of_nodup`). For every oracle, even one that implements no matroid, `matroidIntersection_upperBound` gives a `Cslib.Query.UpperBound` of `2n(n + 1)²` in the list length. For oracles implementing matroids, `countQueries_matroidIntersection` gives the exact count `∑_{r=0}^{ν} 2(n - r)(1 + r)`, where `ν` is the size of the output, and `countQueries_matroidIntersection_le` bounds it by `2n(ν + 1)²`. These counts describe this implementation, which rebuilds the exchange digraph in every phase. The source states only polynomial running time. The [solver tests](../../ComplexityTests/MatroidIntersectionSolver.lean) check:
+- shortest-walk and separator outcomes of the search;
+- a bipartite matching run that needs a three-vertex augmenting walk, with 20 queries;
+- a colourful-forest run (a graphic matroid against a colour partition matroid) that exchanges an edge, with 40 queries;
+- the correctness theorem at `Type 1`.
+
+`TimeM` costs for the host computation (the search, the list filters and the symmetric difference) are not charged yet; that remaining work is tracked in [#2018](https://github.com/cslib-community/complexitylib/issues/2018). Weighted matroid intersection and infinite ground sets are not treated.
 
 ## Stable matching
 
@@ -207,6 +215,48 @@ model are integers, and Graham's anomaly instances are not formalized.
 [ComplexityTests/Scheduling.lean](../../ComplexityTests/Scheduling.lean) checks the tight
 instances, nonvacuity of `IsGreedy`, a feasible schedule that is not greedy, and a zero-length
 self-loop showing that the critical-chain theorem needs well-founded precedences.
+
+## Divide-and-conquer recurrences
+
+[MasterTheorem.lean](../../Complexity/Foundations/Data/Nat/MasterTheorem.lean) solves divide-and-conquer cost recurrences over `ℕ` with explicit constants. `Nat.DivideConquerBound T a b n₀ T₀ f` has two parts:
+
+- The base bound: `T n ≤ T₀` for `n ≤ n₀`.
+- The recursive step: for `n > n₀`, every `S` that bounds `T` on `[0, ⌈n/b⌉]` gives `T n ≤ a S + f n`.
+
+So a cost function with floor and ceiling splits, or several subproblems of size at most `⌈n/b⌉`, satisfies it directly. Monotonicity is not required and the recurrence need not be an equality. To prove `step` for a concrete recurrence:
+
+1. Unfold one level with `rw`. If the definition's pattern match does not rewrite cleanly, state the one-level equation first.
+2. Instantiate `hS` at each subproblem size, proving each `m ≤ (n + b - 1) / b` with `omega`.
+3. Normalize `c * n ^ d` with `simp only`.
+4. Close the goal with `omega`.
+
+The clients below follow this recipe.
+
+`DivideConquerBound` itself imposes no condition on `a`, `b` or `n₀`, and without further hypotheses the conclusions below can fail. For example, `T n = n` with `a = b = n₀ = T₀ = 1` and `c = d = 0` satisfies the contract, because `⌈n/1⌉ = n`, yet case 2 would give `T 2 ≤ 1`.
+
+`DivideConquerBound.le_sum` unrolls the recursion for `a ≥ 1` and monotone `f`. For `f n = c n ^ d` the three cases follow. All three statements in the table assume `a ≥ 1`, `b ≥ 2` and `n₀ ≥ 1`:
+
+| Case | Lean statement | Bound |
+|---|---|---|
+| `a > b ^ d` | `sub_mul_le_pow_clog` | `(a - b ^ d) T n ≤ ((a - b ^ d) T₀ + c n₀ ^ d b ^ d) a ^ ⌈log_b n⌉` |
+| `a = b ^ d` | `le_mul_pow_mul_clog` | `T n ≤ (b n) ^ d (T₀ + c n₀ ^ d ⌈log_b n⌉)` for `n ≠ 0` |
+| `a < b ^ d` | `pow_sub_mul_le_mul_pow` | `(b ^ d - a) T n ≤ ((b ^ d - a) T₀ + c n₀ ^ d b ^ d) (b n) ^ d` for `n ≠ 0` |
+
+[MasterTheoremAsymptotics.lean](../../Complexity/Foundations/Data/Nat/MasterTheoremAsymptotics.lean) turns these into `O(n ^ log_b a)`, `O(n ^ d log n)` and `O(n ^ d)` as Mathlib `IsBigO` statements (`isBigO_rpow`, `isBigO_pow_mul_log`, `isBigO_pow`). In case 1 it also gives an explicit real-power bound (`le_mul_rpow`). The conversions are the base-`b` lemmas `Nat.pow_clog_le_mul_rpow_logb` and `Nat.clog_le_two_mul_logb` in [LogTwoRpow.lean](../../Complexity/Foundations/Data/Nat/LogTwoRpow.lean), whose base-`2` cases are used by Karatsuba. Mathlib's `Mathlib.Computability.AkraBazzi` proves the more general Akra–Bazzi `Θ` bound, but it needs an equality recurrence over `ℝ` with positive base values. The statements here give upper bounds only. Case 3 is proved for polynomial `f`, not under the general regularity condition. Applied to cslib's merge-sort count, case 2 gives `2 n ⌈log₂ n⌉`, which is weaker by the factor `b` than cslib's own `n ⌈log₂ n⌉`. The halving lemma `Nat.add_mul_two_pow_clog_le_of_halving` ([HalvingRecurrence.lean](../../Complexity/Foundations/Data/Nat/HalvingRecurrence.lean)) remains the sharper tool for `b = 2`. It carries a subtracted lower-order term through the induction, which the Karatsuba addition count needs (`addCount_add_le_pow_clog`).
+
+The checked client [MasterTheorem.lean](../../ComplexityTests/MasterTheorem.lean) applies the theorem to:
+
+- cslib's `timeMergeSortRec`;
+- Karatsuba's `mulCount`, recovering `mulCount_le_pow_clog`;
+- a Strassen-shaped `7 T(⌈n/2⌉) + n²`, giving `O(n ^ log₂ 7)`;
+- a binary-search recurrence;
+- a base-`3` case-3 recurrence.
+
+It also refutes the hypothesis for `n²`. Build with
+
+```bash
+lake build Complexity.Foundations.Data.Nat.MasterTheoremAsymptotics ComplexityTests.MasterTheorem
+```
 
 ## Other clients and classification
 
