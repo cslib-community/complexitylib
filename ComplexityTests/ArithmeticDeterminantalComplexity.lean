@@ -136,6 +136,10 @@ example (n : ℕ) : (n : ℕ∞) ^ 2 ≤ 2 * determinantalComplexity (genericMat
   ⟨sq_le_two_mul_determinantalComplexity_permanent_of_charZero n,
     determinantalComplexity_permanent_le n⟩
 
+/-- At `n = 0` the bound is `2⁰ - 1 = 0`: the empty permanent is `1`, the empty determinant. -/
+example : determinantalComplexity (genericMatrix ℚ 0).permanent ≤ 0 :=
+  determinantalComplexity_permanent_le 0
+
 /-- Grenet's projection holds over every commutative ring, for example `ℤ` and `ZMod 2`. -/
 example : IsProjection (genericMatrix ℤ 3).permanent (genericMatrix ℤ 7).det :=
   isProjection_permanent_det_two_pow_sub_one 3
