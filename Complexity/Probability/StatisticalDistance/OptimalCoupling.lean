@@ -175,8 +175,7 @@ theorem CoupledWithin.dist_bind_le [Finite α] [Fintype β] {μ ν : PMF α} {ε
     _ = (ω.toOuterMeasure {p | p.1 ≠ p.2}).toReal * D := by
         rw [toOuterMeasure_apply_toReal, Finset.sum_mul]
         exact Finset.sum_congr rfl fun p _ => by split_ifs <;> rfl
-    _ ≤ ε.toReal * D :=
-        mul_le_mul_of_nonneg_right (ENNReal.toReal_mono hε hω) hD0
+    _ ≤ ε.toReal * D := by gcongr
 
 /-- Running a common kernel `K` moves two distributions at most their statistical distance times
 the largest distance `D` between two rows of `K`. -/

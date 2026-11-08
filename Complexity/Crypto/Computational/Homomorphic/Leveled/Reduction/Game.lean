@@ -219,11 +219,9 @@ theorem eval_leveledAdversary (E : Scheme) (depth capacity : ℕ → ℕ)
   dsimp only [Encryption.game, Encryption.gameOn]
   simp only [leveledAdversary_choose, bind_assoc, ProbComp.eval_bind, ProbComp.eval_uniform]
   rw [PMF.bind_comm]
-  congr 1
-  funext first
+  congr 1 with first : 1
   rw [PMF.bind_comm]
-  congr 1
-  funext second
+  congr 1 with second : 1
   cases first <;> cases second
   · simp only [Bool.false_eq_true, ↓reduceIte]
     simpa only [Encryption.game, Encryption.gameOn, ↓reduceIte, ProbComp.eval_bind] using
@@ -233,20 +231,17 @@ theorem eval_leveledAdversary (E : Scheme) (depth capacity : ℕ → ℕ)
       eval_tagLeveledChoice_false_true E depth capacity adversary bit n
   · simp only [Bool.false_eq_true, ↓reduceIte, ProbComp.eval_bind, PMF.bind_bind]
     rw [PMF.bind_comm]
-    congr 1
-    funext keepLink
+    congr 1 with keepLink : 1
     cases keepLink
     · simp only [Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure, PMF.pure_bind]
       rw [← PMF.bind_const (ProbComp.eval (sampleDyadicCoin (capacity n) 1)) (PMF.pure false)]
       rw [PMF.bind_comm]
-      congr 1
-      funext _
+      congr 1 with _ : 1
       simpa only [ProbComp.eval_bind] using
         eval_rejectLeveledChoice E depth capacity adversary bit n
     · simp only [↓reduceIte]
       rw [PMF.bind_comm]
-      congr 1
-      funext keepBit
+      congr 1 with keepBit : 1
       cases keepBit
       · simp only [Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure, PMF.pure_bind]
         simpa only [ProbComp.eval_bind] using

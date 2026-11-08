@@ -153,9 +153,7 @@ theorem getElem?_profitStep (T : List (Option (List ι))) (a : ι) (q : ℕ) :
           List.getD_eq_getElem?_getD, List.getElem?_eq_getElem (by omega)]
         rfl
     rw [hX, hY]
-  · have hlen : (T ++ List.replicate (p a) none).length ≤ q := by
-      simp only [List.length_append, List.length_replicate]
-      omega
+  · have hlen : (T ++ List.replicate (p a) none).length ≤ q := by grind
     rw [ite_eq_right hq, List.getElem?_eq_none hlen]
 
 private theorem getD_eq_some {T : List (Option (List ι))} {q : ℕ} {s : List ι}

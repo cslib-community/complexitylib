@@ -470,10 +470,7 @@ theorem exists_witness_of_card_eq {k : Nat} (hk : 0 < k) {pages : List α}
       (problem α k).ValidSchedule s₀ reqs offStates ∧
       A.cost s₀ reqs = k * m ∧
       (problem α k).scheduleCost s₀ reqs offStates ≤ m := by
-  have hpne : pages ≠ [] := by
-    intro h
-    rw [h, List.length_nil] at hlen
-    omega
+  have hpne : pages ≠ [] := by grind
   set p₀ := pages.head hpne
   set reqs := adversaryRequests p₀ pages A s₀ (k * m)
   set offStates := offlineLookahead k p₀ pages s₀ reqs
@@ -510,10 +507,7 @@ theorem exists_ratio_violation_of_lt {k : Nat} (hk : 0 < k) {pages : List α}
     ∃ reqs offStates,
       (problem α k).ValidSchedule s₀ reqs offStates ∧
         p * (problem α k).scheduleCost s₀ reqs offStates + b < q * A.cost s₀ reqs := by
-  have hpne : pages ≠ [] := by
-    intro h
-    rw [h, List.length_nil] at hlen
-    omega
+  have hpne : pages ≠ [] := by grind
   set p₀ := pages.head hpne
   set m := p * k + b + 1
   set reqs := adversaryRequests p₀ pages A s₀ (k * m)
