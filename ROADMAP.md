@@ -1173,12 +1173,16 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   [`Arithmetic/Adjugate`](Complexity/Computability/Circuit/Arithmetic/Adjugate.lean), which needs
   a circuit model with division.
 - **Determinantal complexity**
-  ([#3384](https://github.com/cslib-community/complexitylib/issues/3384)): the Mignon–Ressayre
+  ([#3384](https://github.com/cslib-community/complexitylib/issues/3384),
+  [#3476](https://github.com/cslib-community/complexitylib/issues/3476)): the Mignon–Ressayre
   bound `n² ≤ 2 · dc(perm_n)` is proved in
   [`Arithmetic/DeterminantalComplexity`](Complexity/Computability/Circuit/Arithmetic/DeterminantalComplexity.lean)
-  over every field of characteristic zero or of characteristic at least `n`. Remaining:
-  Valiant's universality (every polynomial has a determinantal representation, so `dc` is finite)
-  and Grenet's upper bound `dc(perm_n) ≤ 2ⁿ - 1`; the Cai–Chen–Li extension to every
+  over every field of characteristic zero or of characteristic at least `n`, and Grenet's upper
+  bound `dc(perm_n) ≤ 2ⁿ - 1` over every commutative ring. Remaining: Valiant's universality
+  (every polynomial is a projection of a determinant of size linear in its formula size), which
+  can reuse the branching-program step
+  [`Matrix/BranchingProgramDeterminant`](Complexity/Foundations/LinearAlgebra/Matrix/BranchingProgramDeterminant.lean);
+  the Cai–Chen–Li extension to every
   characteristic other than two; Yabe's real bound `dc(perm_n) ≥ (n - 1)² + 1` through
   Sylvester's law of inertia; and border determinantal complexity in the geometric complexity
   theory programme (Landsberg–Manivel–Ressayre).
