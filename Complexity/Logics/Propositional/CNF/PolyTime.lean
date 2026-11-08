@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Logics.Propositional.CNF.Compact
+public import Complexity.Logics.Propositional.CNF.Encoding
 public import Complexity.Logics.Propositional.CNF.ExactlyOne
 public import Complexity.Logics.Propositional.CNF.ModelCount
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
@@ -22,7 +23,8 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pl
 
 The clause and formula constructors used by reductions to satisfiability are polynomial-time
 for any fixed encoding of their variables. Literals use `encPair`, and clauses and formulas use
-`encList`. Specializing the variable encoding to binary naturals gives the encoding of `SAT`.
+`encList` (`Cslib.Logic.PL.encClause`, `Cslib.Logic.PL.encCNFOver`). Specializing the variable
+encoding to binary naturals gives the encoding of `SAT`.
 
 These results certify the existing constructors, including the ordered-pair implementation of
 exactly-one constraints. They apply to empty lists and lists with repeated variables. Relabelling
@@ -82,7 +84,7 @@ theorem Literal.computableInPolyTime_negate (enc : V ↪ List Bool) :
 @[fun_prop]
 theorem Clause.computableInPolyTime_impLits (enc : V ↪ List Bool) :
     ComputableInPolyTime (fun p : List (Literal V) × V => Clause.impLits p.1 p.2)
-      (encPair (encList (encPair enc encBool)) enc) (encList (encPair enc encBool)) := by
+      (encPair (encClause enc) enc) (encClause enc) := by
   unfold Clause.impLits
   fun_prop
 
@@ -90,7 +92,7 @@ theorem Clause.computableInPolyTime_impLits (enc : V ↪ List Bool) :
 @[fun_prop]
 theorem Clause.computableInPolyTime_imp (enc : V ↪ List Bool) :
     ComputableInPolyTime (fun p : List V × V => Clause.imp p.1 p.2)
-      (encPair (encList enc) enc) (encList (encPair enc encBool)) := by
+      (encPair (encList enc) enc) (encClause enc) := by
   unfold Clause.imp
   fun_prop
 
@@ -99,7 +101,7 @@ theorem Clause.computableInPolyTime_imp (enc : V ↪ List Bool) :
 theorem Clause.computableInPolyTime_relabel {f : V → W}
     (hf : ComputableInPolyTime f encV encW) :
     ComputableInPolyTime (Clause.relabel f)
-      (encList (encPair encV encBool)) (encList (encPair encW encBool)) :=
+      (encClause encV) (encClause encW) :=
   map ((hf.comp (fst encV encBool)).prod (snd encV encBool))
 
 /-- Relabelling a formula is polynomial-time whenever the renaming function is. -/
@@ -107,29 +109,28 @@ theorem Clause.computableInPolyTime_relabel {f : V → W}
 theorem CNF.computableInPolyTime_relabel {f : V → W}
     (hf : ComputableInPolyTime f encV encW) :
     ComputableInPolyTime (CNF.relabel f)
-      (encList (encList (encPair encV encBool)))
-      (encList (encList (encPair encW encBool))) :=
+      (encCNFOver encV) (encCNFOver encW) :=
   map (Clause.computableInPolyTime_relabel hf)
 
 /-- List the variables of a formula in order, including repetitions. -/
 @[fun_prop]
 theorem CNF.computableInPolyTime_vars (enc : V ↪ List Bool) :
     ComputableInPolyTime (CNF.vars (V := V))
-      (encList (encList (encPair enc encBool))) (encList enc) := by
+      (encCNFOver enc) (encList enc) := by
   unfold CNF.vars
   fun_prop
 
 /-- The number of literals in a polynomial-time clause, in unary, is polynomial-time. -/
 theorem Clause.computableInPolyTime_length {α : Type} {input : α ↪ List Bool}
     {c : α → Clause V}
-    (hc : ComputableInPolyTime c input (encList (encPair encV encBool))) :
+    (hc : ComputableInPolyTime c input (encClause encV)) :
     ComputableInPolyTime (fun a => (c a).length) input encUnary :=
   (length_list (encPair encV encBool)).comp hc
 
 /-- The number of clauses in a polynomial-time formula, in unary, is polynomial-time. -/
 theorem CNF.computableInPolyTime_length {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF V}
-    (hφ : ComputableInPolyTime φ input (encList (encList (encPair encV encBool)))) :
+    (hφ : ComputableInPolyTime φ input (encCNFOver encV)) :
     ComputableInPolyTime (fun a => (φ a).length) input encUnary :=
   (length_list (encList (encPair encV encBool))).comp hφ
 
@@ -137,7 +138,7 @@ theorem CNF.computableInPolyTime_length {α : Type} {input : α ↪ List Bool}
 polynomial-time. -/
 theorem CNF.computableInPolyTime_vars_length {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF V}
-    (hφ : ComputableInPolyTime φ input (encList (encList (encPair encV encBool)))) :
+    (hφ : ComputableInPolyTime φ input (encCNFOver encV)) :
     ComputableInPolyTime (fun a => (φ a).vars.length) input encUnary :=
   (length_list encV).comp ((PL.CNF.computableInPolyTime_vars encV).comp hφ)
 
@@ -146,7 +147,7 @@ polynomial-time. -/
 @[fun_prop]
 theorem CNF.computableInPolyTime_distinctVars [DecidableEq V] (enc : V ↪ List Bool) :
     ComputableInPolyTime (CNF.distinctVars (V := V))
-      (encList (encList (encPair enc encBool))) (encList enc) := by
+      (encCNFOver enc) (encList enc) := by
   have hrep : ComputableInPolyTime (fun n => List.replicate n true) encUnary encBits :=
     of_eq fun _ => rfl
   unfold CNF.distinctVars Cslib.Complexity.selectDistinct
@@ -156,7 +157,7 @@ theorem CNF.computableInPolyTime_distinctVars [DecidableEq V] (enc : V ↪ List 
 @[fun_prop]
 theorem CNF.computableInPolyTime_numVars [DecidableEq V] (enc : V ↪ List Bool) :
     ComputableInPolyTime (CNF.numVars (V := V))
-      (encList (encList (encPair enc encBool))) encUnary := by
+      (encCNFOver enc) encUnary := by
   have e : (CNF.numVars (V := V)) = fun φ => φ.distinctVars.length :=
     funext fun φ => (CNF.length_distinctVars φ).symm
   rw [e]
@@ -170,7 +171,7 @@ def encOccurrence (enc : V ↪ List Bool) : Occurrence V ↪ List Bool :=
 @[fun_prop]
 theorem computableInPolyTime_occurrences (enc : V ↪ List Bool) :
     ComputableInPolyTime (occurrences (V := V))
-      (encList (encList (encPair enc encBool))) (encList (encOccurrence enc)) := by
+      (encCNFOver enc) (encList (encOccurrence enc)) := by
   unfold occurrences encOccurrence
   fun_prop
 
@@ -180,7 +181,7 @@ polynomial-time. -/
 theorem CNF.computableInPolyTime_eval_bitsAssignment [DecidableEq V] (enc : V ↪ List Bool) :
     ComputableInPolyTime
       (fun p : (CNF V × List V) × ℕ => p.1.1.eval (bitsAssignment p.1.2 p.2))
-      (encPair (encPair (encList (encList (encPair enc encBool))) (encList enc)) encNat)
+      (encPair (encPair (encCNFOver enc) (encList enc)) encNat)
       encBool := by
   have e : (fun p : (CNF V × List V) × ℕ => p.1.1.eval (bitsAssignment p.1.2 p.2)) =
       fun p => p.1.1.eval fun v => p.2.bits.getD (p.1.2.idxOf v) false := by
@@ -195,7 +196,7 @@ theorem CNF.computableInPolyTime_eval_bitsAssignment [DecidableEq V] (enc : V �
 @[fun_prop]
 theorem CNF.computableInPolyTime_atLeastOne (enc : V ↪ List Bool) :
     ComputableInPolyTime (CNF.atLeastOne (V := V))
-      (encList enc) (encList (encList (encPair enc encBool))) := by
+      (encList enc) (encCNFOver enc) := by
   unfold CNF.atLeastOne
   fun_prop
 
@@ -204,14 +205,14 @@ The list may contain repeated variables. -/
 @[fun_prop]
 theorem CNF.computableInPolyTime_atMostOne [DecidableEq V] (enc : V ↪ List Bool) :
     ComputableInPolyTime (CNF.atMostOne (V := V))
-      (encList enc) (encList (encList (encPair enc encBool))) := by
+      (encList enc) (encCNFOver enc) := by
   fun_prop [CNF.atMostOne]
 
 /-- Construct exactly-one constraints in polynomial time, including for empty or repeated lists. -/
 @[fun_prop]
 theorem CNF.computableInPolyTime_exactlyOne [DecidableEq V] (enc : V ↪ List Bool) :
     ComputableInPolyTime (CNF.exactlyOne (V := V))
-      (encList enc) (encList (encList (encPair enc encBool))) := by
+      (encList enc) (encCNFOver enc) := by
   unfold CNF.exactlyOne
   fun_prop
 
@@ -220,8 +221,7 @@ Its output indices use unary encoding and are bounded by the input's number of o
 @[fun_prop]
 theorem CNF.isPolyTime_compact [DecidableEq V] (enc : V ↪ List Bool) :
     ComputableInPolyTime (CNF.compact (V := V))
-      (encList (encList (encPair enc encBool)))
-      (encList (encList (encPair encUnary encBool))) := by
+      (encCNFOver enc) (encCNFOver encUnary) := by
   unfold CNF.compact CNF.relabel Clause.relabel Prod.map
   fun_prop
 

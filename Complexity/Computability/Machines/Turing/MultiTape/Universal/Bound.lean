@@ -77,13 +77,16 @@ lemma write_le {e : Key × Act} (he : e ∈ d.table) {ta : TapeAct} (hta : ta �
   simp only [eAct_apply, length_encPair] at *
   omega
 
-lemma q₀_le : d.q₀ ≤ descLen d := by
+/-- The initial state of a description is within its length. -/
+public lemma q₀_le : d.q₀ ≤ descLen d := by
   simp only [descLen, eDesc_apply, length_encPair, encUnary_apply, List.length_replicate]; omega
 
-lemma tapes_le : d.tapes ≤ descLen d := by
+/-- The number of work tapes of a description is within its length. -/
+public lemma tapes_le : d.tapes ≤ descLen d := by
   simp only [descLen, eDesc_apply, length_encPair, encUnary_apply, List.length_replicate]; omega
 
-lemma table_le : d.table.length ≤ descLen d := by
+/-- The number of transitions of a description is within its length. -/
+public lemma table_le : d.table.length ≤ descLen d := by
   have := length_le_length_encList (encPair eKey eAct) d.table
   simp only [descLen, eDesc_apply, length_encPair] at this ⊢
   omega

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import argparse
 from collections import defaultdict, deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 import os
 from pathlib import Path
@@ -20,10 +20,22 @@ class FullCheck(Exception):
     """The change cannot safely use the bounded quick-check path."""
 
 
+# Data files that no Lean gate reads, each with the source-only check that does read it. A change
+# to one runs that check (with `{base}`, the merge base) instead of falling back to all six gates.
+# Any other non-Lean change, including every Python change under `scripts/`, still falls back.
+DATA_CHECKS = {
+    # Read only by its ratchet, which needs no build (`.github/workflows/lean_action_ci.yml`).
+    "scripts/encoding_readability_baseline.json": (
+        "encoding readability ratchet",
+        [sys.executable, "-B", "scripts/check_encoding_readability.py", "--base", "{base}"]),
+}
+
+
 @dataclass
 class Plan:
     base: str
     targets: list[str]
+    checks: list[tuple[str, list[str]]] = field(default_factory=list)  # (label, command)
 
 
 @dataclass
@@ -184,8 +196,11 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
     for status, path in changes:
         if status not in {"A", "M"}:
             raise FullCheck(f"deleted, renamed or unusual change: {path}")
-        if not path.endswith(".lean"):
+        if not path.endswith(".lean") and path not in DATA_CHECKS:
             raise FullCheck(f"non-Lean change: {path}")
+    checks = [(label, [base if part == "{base}" else part for part in command])
+              for path, (label, command) in DATA_CHECKS.items() if path in {p for _, p in changes}]
+    changes = [(status, path) for status, path in changes if path not in DATA_CHECKS]
     modules, aggregates, roots, on_demand = source_modules(root)
     visible = set(git(root, "ls-files", "-z").split("\0")) | {p for _, p in changes}
     # Ignored sources of a library with empty default facets are generated inputs, such as the
@@ -234,7 +249,7 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
                 affected.add(consumer)
                 queue.append(consumer)
     # Traverse aggregates above: a real client importing one must never disappear from the plan.
-    return Plan(base, sorted((affected - aggregates) | executable_targets))
+    return Plan(base, sorted((affected - aggregates) | executable_targets), checks)
 
 
 def run_check(root: Path, command: list[str], label: str) -> int:
@@ -268,6 +283,10 @@ def main(argv: list[str] | None = None, root: Path | None = None) -> int:
     print(f"Quick check against merge base {plan.base}; {len(plan.targets)} affected build targets.",
           flush=True)
     print("This is not full validation: global test, lint, style and init-import gates are skipped.", flush=True)
+    for label, command in plan.checks:
+        status = run_check(root, command, label)
+        if status:
+            return status
     if not plan.targets:
         print("No Lean source changes; checking import aggregates only.", flush=True)
     for offset in range(0, len(plan.targets), 100):
