@@ -4428,6 +4428,7 @@ public import Complexity.Foundations.Data.List.Filter
 public import Complexity.Foundations.Data.List.FilterMap
 public import Complexity.Foundations.Data.List.Fold
 public import Complexity.Foundations.Data.List.FoldlIdx
+public import Complexity.Foundations.Data.List.IsSortedLT
 public import Complexity.Foundations.Data.List.Last
 public import Complexity.Foundations.Data.List.Lex
 public import Complexity.Foundations.Data.List.ListsUpTo

@@ -18,7 +18,8 @@ import Mathlib.Tactic.NormNum.Prime
   family satisfies the other hypotheses, but `6 > C(4, 4)`.
 * The near-pencil on four points (one triple and the three pairs through the remaining point),
   pairwise meeting in one point, is a nonuniform instance of the bound `∑_{i ≤ 1} C(4, i) = 5`.
-* The Frankl–Wilson graph for `p = 2`: `56 < R(9, 9)`; adjacency and recognition on names.
+* The Frankl–Wilson graph for `p = 2`: `56 < R(9, 9)`; adjacency and recognition on names, and the
+  strict-sortedness test `List.isSortedLT`.
 -/
 
 open Finset SimpleGraph Cslib.ExplicitRamsey
@@ -97,6 +98,12 @@ example : franklWilsonIsLabel (2, [0, 5, 5]) = false := by decide
 example : franklWilsonIsLabel (2, [0, 5]) = false := by decide
 
 example : isSubsetLabel (10, 2, [3, 9]) = true := by decide
+
+example : [1, 4, 6].isSortedLT = true := by decide
+
+example : [1, 4, 4].isSortedLT = false := by decide
+
+example : ([] : List ℕ).isSortedLT = true := by decide
 
 example : subsetAdj (3, 2, [1, 2], [2, 4]) = true := by decide
 

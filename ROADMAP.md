@@ -1251,10 +1251,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   two-source disperser and extractor constructions of Barak–Rao–Shaltiel–Wigderson, Cohen,
   Chattopadhyay–Zuckerman and Li, with the disperser connection of
   [#895](https://github.com/cslib-community/complexitylib/issues/895). Also open here: Frankl and
-  Wilson's modular intersection theorem in its inclusion-matrix form, without the polynomial-method
-  side condition `|L| ≤ d mod p`. Keep the clique and independence bounds separate from the
-  polynomial-time recognition and adjacency certificates on vertex names. An explicit graph on
-  `2 ^ Ω(k)` vertices is open.
+  Wilson's modular intersection theorem in its inclusion-matrix form (reportedly `|L| ≤ d`),
+  beyond the restricted form `|L| ≤ d mod p` of the triangular polynomial argument. Keep the
+  clique and independence bounds separate from the polynomial-time recognition and adjacency
+  certificates on vertex names. An explicit graph on `2 ^ Ω(k)` vertices is open.
 - **Codes:** Guruswami–Sudan list decoding and local decoding, keeping interpolation,
   list-size/agreement guarantees and decoding runtime as separate obligations; concrete
   list-decodable codes for Nisan–Wigderson.

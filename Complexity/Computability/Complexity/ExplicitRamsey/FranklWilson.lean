@@ -14,6 +14,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Bool
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Bits
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pair
+public import Complexity.Foundations.Data.List.IsSortedLT
 public import Mathlib.Data.Finset.Sort
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
@@ -79,26 +80,10 @@ open Finset SimpleGraph Turing.MultiTapeTM
 
 namespace Cslib.ExplicitRamsey
 
-/-- Whether each entry of a list of naturals is less than the next. -/
-@[expose] def isStrictlyIncreasing (l : List ℕ) : Bool :=
-  (l.zip l.tail).all fun e => decide (e.1 < e.2)
-
-theorem isStrictlyIncreasing_iff (l : List ℕ) : isStrictlyIncreasing l = true ↔ l.SortedLT := by
-  rw [List.sortedLT_iff_isChain]
-  induction l with
-  | nil => simp [isStrictlyIncreasing]
-  | cons a l ih =>
-    cases l with
-    | nil => simp [isStrictlyIncreasing]
-    | cons b l =>
-      rw [List.isChain_cons_cons, ← ih]
-      simp only [isStrictlyIncreasing, List.tail_cons, List.zip_cons_cons, List.all_cons,
-        Bool.and_eq_true, decide_eq_true_eq]
-
 /-- Recognizes names of `d`-subsets of `Fin n`: strictly increasing lists of length `d` with
 entries below `n`. The input is `(n, d, l)`. -/
 @[expose] def isSubsetLabel (q : ℕ × ℕ × List ℕ) : Bool :=
-  decide (q.2.2.length = q.2.1) && isStrictlyIncreasing q.2.2 &&
+  decide (q.2.2.length = q.2.1) && q.2.2.isSortedLT &&
     q.2.2.all fun x => decide (x < q.1)
 
 /-- Frankl–Wilson adjacency on names: whether the number of entries of the first name occurring in
@@ -146,7 +131,7 @@ theorem range_subsetLabel (n d : ℕ) :
     Set.range (subsetLabel (n := n) (d := d)) = {l | isSubsetLabel (n, d, l) = true} := by
   ext l
   simp only [Set.mem_range, Set.mem_ofPred_eq, isSubsetLabel, Bool.and_eq_true, decide_eq_true_eq,
-    isStrictlyIncreasing_iff, List.all_eq_true]
+    List.isSortedLT_iff, List.all_eq_true]
   constructor
   · rintro ⟨s, rfl⟩
     refine ⟨⟨?_, sortedLT_subsetLabel s⟩, fun x hx => ?_⟩
@@ -204,7 +189,7 @@ theorem franklWilsonGraph_adj_iff_franklWilsonAdj {p : ℕ}
 theorem computableInPolyTime_isSubsetLabel :
     ComputableInPolyTime isSubsetLabel (encPair encNat (encPair encNat (encList encNat)))
       encBool := by
-  unfold isSubsetLabel isStrictlyIncreasing
+  unfold isSubsetLabel List.isSortedLT
   fun_prop
 
 /-- Adjacency on names is polynomial time in the binary lengths of `p`, `d` and the two names. -/
@@ -218,7 +203,7 @@ theorem computableInPolyTime_subsetAdj :
 the prime `p`. -/
 theorem computableInPolyTime_franklWilsonIsLabel :
     ComputableInPolyTime franklWilsonIsLabel (encPair encNat (encList encNat)) encBool := by
-  unfold franklWilsonIsLabel isSubsetLabel isStrictlyIncreasing
+  unfold franklWilsonIsLabel isSubsetLabel List.isSortedLT
   fun_prop
 
 /-- Adjacency in the Frankl–Wilson graph is polynomial time on names, uniformly in the prime `p`. -/

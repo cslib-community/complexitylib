@@ -174,7 +174,7 @@ theorem choose_lt_ramseyNumber_franklWilson (p : ℕ) [hp : Fact p.Prime] :
 /-- The Frankl–Wilson parameters grow superpolynomially: with `k = C(p³, p - 1) + 1`,
 `k ^ c < C(p³, p² - 1)` whenever `p ≥ 6 c + 3`. The proof uses `k ≤ p ^ (3 p)` and
 `(p - 1) ^ (p² - 1) ≤ C(p³, p² - 1)`. -/
-theorem pow_lt_choose_franklWilson {p c : ℕ} (hpc : 6 * c + 3 ≤ p) :
+private theorem pow_lt_choose_franklWilson {p c : ℕ} (hpc : 6 * c + 3 ≤ p) :
     ((p ^ 3).choose (p - 1) + 1) ^ c < (p ^ 3).choose (p ^ 2 - 1) := by
   have hp3 : 3 ≤ p := by omega
   -- `k ≤ (p³) ^ p`.
