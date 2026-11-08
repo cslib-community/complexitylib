@@ -29,6 +29,8 @@ complexity certificates. Trailing false symbols are ignored, and the empty word 
 ## Main results
 
 * `Turing.MultiTapeTM.bits_ofBits`: normalize a word by removing its trailing false symbols.
+* `Turing.MultiTapeTM.length_encNat_ofBits_le`: a word read as a number has at most as many
+  binary digits as the word.
 * `Turing.MultiTapeTM.bits_add_two_pow`: the binary digits of `x + 2 ^ W`, for `x < 2 ^ W`, are
   the `W` low-order digits of `x` (`Cslib.BitString.lowBits`) followed by a one.
 -/
@@ -54,6 +56,11 @@ theorem bits_ofBits (w : List Bool) : (ofBits w).bits = w.rdropWhile (!·) := by
         simp [h₀, List.rdropWhile_singleton]
       · simp only [Nat.bits_eq_nil_iff, h₀, ↓reduceIte]
         rfl
+
+/-- A word read as a number has at most as many binary digits as the word. -/
+theorem length_encNat_ofBits_le (w : List Bool) : (encNat (ofBits w)).length ≤ w.length := by
+  rw [encNat_apply, bits_ofBits]
+  exact (List.rdropWhile_prefix _ _).length_le
 
 /-- A trailing one adds `2 ^ |w|` to the value of a word. -/
 private theorem foldr_bit_one_eq (w : List Bool) :
