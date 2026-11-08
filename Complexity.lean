@@ -1428,6 +1428,7 @@ public import Complexity.Computability.Circuit.Pi
 public import Complexity.Computability.Circuit.Pointwise
 public import Complexity.Computability.Circuit.Program
 public import Complexity.Computability.Circuit.Quantum.AcceptOperator
+public import Complexity.Computability.Circuit.Quantum.Approximation
 public import Complexity.Computability.Circuit.Quantum.Basic
 public import Complexity.Computability.Circuit.Quantum.Classical
 public import Complexity.Computability.Circuit.Quantum.Code
@@ -1583,6 +1584,7 @@ public import Complexity.Computability.Complexity.Classes.BPPpath
 public import Complexity.Computability.Complexity.Classes.BQP
 public import Complexity.Computability.Complexity.Classes.BQP.Amplification
 public import Complexity.Computability.Complexity.Classes.BQP.Classical
+public import Complexity.Computability.Complexity.Classes.BQP.ConstantGap
 public import Complexity.Computability.Complexity.Classes.BQP.Counting
 public import Complexity.Computability.Complexity.Classes.BQP.OutputGap
 public import Complexity.Computability.Complexity.Classes.BQP.Sampling
