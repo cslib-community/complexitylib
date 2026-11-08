@@ -67,6 +67,29 @@ There are two ways to prove a new streaming lower bound. The first starts from a
 
 [Complexity/Computability/Streaming/FkEstimator.lean](../../Complexity/Computability/Streaming/FkEstimator.lean) implements the AMS estimator for every `F_k` with `k ≥ 1` from Theorem 2.1 [alonmatiasszegedy99][alonmatiasszegedy99]. The basic estimator `fkBasicEstimate` samples a position `p` and sets `X = m(r^k − (r−1)^k)`, where `r = suffixCount s p` counts the occurrences of the item `a_p` at positions `q ≥ p`. Telescoping gives `expect_fkBasicEstimate` (`𝔼X = F_k`). The bound `(c+1)^k − c^k ≤ k(c+1)^(k−1)` (`Nat.succ_pow_sub_pow_le`) gives `expect_fkBasicEstimate_sq_le` (`𝔼X² ≤ kF₁F_{2k−1}`). The source's power-sum fact `F₁F_{2k−1} ≤ n^(1−1/k)F_k²` is `Finset.sum_mul_sum_pow_le` in [Finset/PowerSum.lean](../../Complexity/Foundations/Data/Finset/PowerSum.lean), raised to the `k`-th power to avoid real exponents. `fkSketch` keeps a step counter and, for each of `2rK` copies, a sampled position, the item there and its count. Its answer is the median of means of the basic estimator (`run_fkSketch_eq_medianOfMeans`). As in the source's main argument, the stream length `m` is fixed in advance: positions are drawn from `Fin m` and the guarantees are for streams of exactly `m` items. `dens_fkSketch_error_le` and `solves_fkEstimator` give error `(8/9)^r` for relative accuracy `η` when `(3k)^k n^(k−1) ≤ (Kη²)^k`. `solves_fkEstimator_of_rpow` takes the hypothesis in the form `3k·n^(1−1/k) ≤ Kη²`. The group size `3k·n^(1−1/k)/η²` replaces the source's `8k·n^(1−1/k)/λ²`, because the median step uses the `(8/9)^r` bound of `MedianOfMeans.lean` instead of a Chernoff bound. For memory, `spaceLE_fkEstimator` does not charge the positions, while `exists_injOn_iUnion_reachable_fkSketch` stores them (`m^(2rK)(M+1)((n+1)(M+1))^(2rK) ≤ 2^b`). Together they give the `O(rK(log n + log m))` memory of Theorem 2.1. The [test file](../../ComplexityTests/StreamingFkEstimator.lean) evaluates the basic estimator on the stream `0, 1, 0`, shows that `k = 0` must be excluded, and instantiates the error and memory bounds.
 
+## Distinct elements: the k-minimum-values sketch
+
+[Complexity/Computability/Streaming/DistinctElements.lean](../../Complexity/Computability/Streaming/DistinctElements.lean) implements the first algorithm of Bar-Yossef, Jayram, Kumar, Sivakumar and Trevisan [bjkst02][bjkst02] (Section 2, Theorem 1). It estimates the number of distinct items `F₀ = #s.toFinset` (`freqMoment_zero`).
+
+Each copy of `kmvSketch` hashes the items with a pairwise independent family `h θ : α → Fin M` and keeps the `t` lowest keys `kmvKey h θ a = (h θ a, a)` in lexicographic order. Selection by `Finset.lowest` can be maintained online (`Finset.lowest_insert_lowest`, in [Finset/LowestInsert.lean](../../Complexity/Foundations/Data/Finset/LowestInsert.lean)). So `state_kmvSketch` shows that after the stream `s` a copy holds the `t` lowest keys of the distinct items of `s`.
+
+While a copy holds fewer than `t` keys, it reports their number, which is exactly `F₀` (`run_kmvSketch_of_card_lt`). Otherwise it reports `tM/(v+1)`, where `v` is the largest hash value it keeps (`kmvEstimate`). The sketch answers the median over its copies, and `kmv` draws the seeds uniformly.
+
+The error analysis uses `Finset.forall_mem_lowest_iff`: the `t` lowest hash values of `d ≥ t` items are all below `K` exactly when at least `t` items hash below `K`. The number of such items has variance at most its mean, so Chebyshev's inequality bounds each tail. `dens_abs_kmvEstimate_sub_gt_le` gives a per-copy failure probability `Pr[|estimate − d| > εd] ≤ 2/(tε²)` for `0 < ε ≤ 1` and `d ≤ M`: the upper tail contributes `(1+ε)/(tε²)` and the lower tail `(1−ε)/(tε²)`. The source instead bounds each tail by `1/6` with `t = ⌈96/ε²⌉`.
+
+With `6 ≤ tε²` one copy fails with probability at most `1/3`. The amplified bound for the median of `2r` copies (the median trick) and the `Solves` statement for the relation `|Y − F₀| ≤ εF₀` are not yet formalized ([#3340](https://github.com/cslib-community/complexitylib/issues/3340)).
+
+Ties between hash values are broken by the item, so the source's `1/m` collision term and its requirement `M = m³` disappear; only `d ≤ M` is needed.
+
+For fixed seeds, the reachable states of a copy are determined by the at most `t` items behind its keys. The memory bounds therefore depend neither on the stream length nor on `M`:
+
+- under the public-coin convention, `spaceLE_kmv` shows that every drawn sketch uses `b` bits whenever `(n+1)^(ct) ≤ 2^b`, for a universe of `n` items;
+- `exists_injOn_iUnion_reachable_kmvSketch` gives one `b`-bit encoding with the seeds stored as well, whenever `(|ι|(n+1)^t)^c ≤ 2^b`.
+
+With `t = ⌈6/ε²⌉` and `c = 2r = O(log(1/δ))`, this is the `O(ε⁻² log(1/δ) log n)` memory of Theorem 1. The bound complements the `Ω(n)` lower bounds for exact and for deterministic approximate `F₀` (`le_of_solves_freqMoment`, `Algorithm.le_of_approx_freqMoment` with `k = 0`). The matching `Ω(ε⁻²)` lower bound is not formalized.
+
+The [test file](../../ComplexityTests/StreamingDistinctElements.lean) runs the sketch with a fixed hash on a concrete stream. It applies the error bound to the affine maps over `ZMod 31`, a pairwise independent family with a 10-bit seed, and instantiates the memory bounds with 240 and 260 bits. It also shows two failure cases: a constant hash overestimates `F₀` by a factor `2`, and `t = 0` always answers `0`.
+
 ## MinHash and locality-sensitive hashing
 
 [Probability/LocalitySensitiveHash.lean](../../Complexity/Probability/LocalitySensitiveHash.lean) works with keyed families `hash : ι → X → Y` with seed law `seed : PMF ι`, as for universal hashing. `collisionProb seed hash x x'` is the real probability that `x` and `x'` collide. It differs from `PMF.collisionProbability`, the probability that two independent samples of one law agree. `IsLocalitySensitive prob near far p₁ p₂` says that near pairs collide with probability at least `p₁` and far pairs with probability at most `p₂`. With `near := d ≤ r₁` and `far := r₂ ≤ d` this is the `(r₁, r₂, p₁, p₂)`-sensitive family of Indyk and Motwani [indykmotwani98][indykmotwani98] [harpeledindykmotwani12][harpeledindykmotwani12]. Every `ε`-universal family with `ε ≠ ⊤` is `(=, ≠, 1, ε)`-sensitive (`IsUniversalHash.isLocalitySensitive`). Independent repetitions use `PMF.iid`, and the collision laws are exact:
@@ -120,6 +143,8 @@ The four meanings of “streaming” here should not be conflated: an input-list
 
 The abstract model counts reachable memory states and imposes no uniformity or time bound on updates. Its randomized lower bounds are for error at most `1/2` with public randomness that is not charged to the memory, and the AMS sketches have no `ProbComp` sampler or machine realization. The `F_k` estimator assumes that the stream length is known in advance; the source's reservoir-sampling variant for unknown lengths is not formalized. Multi-pass algorithms, turnstile updates and CountSketch are not formalized. The Proposition 3.7 bound is stated for streams of at most `N/8` items rather than the source's `n/2`, and the Proposition 3.8 bound for a universe of `3n` items (`Fin n × Fin 3`) rather than `n`, so that the threshold `2n` does not depend on the inputs.
 
+The k-minimum-values sketch for `F₀` has no `ProbComp` sampler or machine realization either, and its error is bounded only for a single copy: the median amplification and the `Solves` statement are open. Its error analysis needs a pairwise independent family into `Fin M` with at least as many values as distinct items. The space-optimal estimators for `F₀` (Bar-Yossef et al., Theorems 2–3; Kane–Nelson–Woodruff's `O(ε⁻² + log n)`) are not formalized, and neither are the `Ω(ε⁻²)` and `Ω(log n)` lower bounds for approximate `F₀`.
+
 No automatic native realization of the Count-Min sketch was identified in its four source modules.
 
 The locality-sensitive hashing modules prove information-theoretic statements only. The following are not formalized:
@@ -139,6 +164,7 @@ The `k`-server modules use natural-number distances, so Double Coverage is prove
 
 [achlioptas03]: ../sources.md#achlioptas03
 [alonmatiasszegedy99]: ../sources.md#alonmatiasszegedy99
+[bjkst02]: ../sources.md#bjkst02
 [borodinelyaniv98]: ../sources.md#borodinelyaniv98
 [broder97]: ../sources.md#broder97
 [charikar02]: ../sources.md#charikar02
