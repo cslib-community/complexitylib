@@ -103,6 +103,23 @@ executor is removed, while Model/Trees/Forest, PQCode and the execution core sti
 MinPQ/FibonacciHeapBridge remain. F2, its abstract-space decision and general whole-client
 transfer remain open; the selected abstract statements are unchanged.
 
+### All-pairs shortest paths and the (min,+) product
+
+Import `Complexity.Algorithms.Lean.Query.ShortestPaths.MinPlus` for the two reductions and `Complexity.Algorithms.Lean.Query.Arith.FloydWarshall` for Floyd–Warshall; both import the pure walk and matrix-power theory in `Complexity.Algorithms.ShortestPaths`.
+
+These results use the query model `FreeM`, not the word RAM. A weighted digraph on `Fin n` is a matrix over `MinTropical R`, where `R` is any `LinearOrderedAddCommMonoidWithTop`, for example `WithTop ℤ` with negative weights. The tropical `0 = ⊤` means no edge, `*` adds weights and `+` takes minima, so the matrix product is the (min,+) product. [Walk.lean](../../Complexity/Algorithms/ShortestPaths/Walk.lean) defines `walkWeight`, `NoNegCycle` (every closed walk has weight at least `0`) and `IsShortestDistances W D` (each `D i j` is the greatest lower bound of the weights of the walks from `i` to `j`). [Power.lean](../../Complexity/Algorithms/ShortestPaths/Power.lean) proves `isShortestDistances_one_add_pow`: `(1 + W) ^ k` is the distance matrix for every `k ≥ n - 1` when there are no negative cycles. It also proves the negative-cycle test `noNegCycle_iff_one_le_one_add_pow_diag`, which makes `NoNegCycle` decidable [CLRS 25.1][clrs09].
+
+The programs are generic in the entry type, so they combine weights only through `ArithQuery` queries: `.mul` adds weights and `.add` compares them. Correctness theorems assume an oracle that answers `.add` and `.mul` honestly. Cost theorems hold under every oracle. Indexing, `withOneDiag` and building the tripartite matrix are pure code, which `FreeM` does not charge.
+
+| Declaration | Statement |
+|---|---|
+| `Cslib.Query.floydWarshall`, `cost_floydWarshall`, `isShortestDistances_floydWarshall` | Floyd–Warshall with pivots `0, …, n−1` makes exactly `n³` additions and `n³` multiplications and returns the distance matrix [Floyd 1962][floyd62], [CLRS 25.2][clrs09]. The pure lemma `Cslib.Algorithms.ShortestPaths.isShortestDistances_foldl_fwStep` proves the relaxation correct for every pivot list that contains each vertex, in any order |
+| `Cslib.Query.schoolbookMatMul`, `cost_schoolbookMatMul` | the (min,+) product with `n²·(n·cMul + (n−1)·cAdd)` cost |
+| `Cslib.Query.apspBySquaring`, `isShortestDistances_apspBySquaring`, `cost_apspBySquaring_le` | APSP from any product subroutine `mp` with `⌈log₂(n−1)⌉` calls, so cost `⌈log₂(n−1)⌉·t` when each call costs at most `t` |
+| `Cslib.Query.minPlusViaAPSP`, `eval_minPlusViaAPSP`, `cost_minPlusViaAPSP` | the (min,+) product from one call of any APSP subroutine that is correct on `3n`-vertex graphs without negative cycles, at exactly the cost of that call |
+
+The two reductions are in [MinPlus.lean](../../Complexity/Algorithms/Lean/Query/ShortestPaths/MinPlus.lean), and the [tests](../../ComplexityTests/ShortestPaths.lean) run all programs on a graph with a negative edge. Together they show that a cost-`T(n)` algorithm for either problem gives one for the other with cost `⌈log₂(n−1)⌉·T(n)` or `T(3n)`. This is the starting point of the APSP class of [Vassilevska Williams and Williams][vww18]. The negative-triangle equivalence and the other problems in that class are not formalized. Neither is a word-RAM realization with bit-length costs, so no statement here concerns subcubic running time.
+
 ## Depth-first search, topological sort and Bellman–Ford
 
 These are pure Lean functions on adjacency lists, with `TimeM` cost models (as for Kruskal and Edmonds–Karp), not machine programs.
@@ -739,8 +756,10 @@ The numeric values above are transcriptions of checked source statements, not re
 
 [complexitylib]: ../sources.md#complexitylib
 [clrs09]: ../sources.md#clrs09
+[floyd62]: ../sources.md#floyd62
 [freivalds79]: ../sources.md#freivalds79
 [goemanswilliamson95]: ../sources.md#goemanswilliamson95
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
+[vww18]: ../sources.md#vww18
 [thorup13]: ../sources.md#thorup13
 [williamsonshmoys11]: ../sources.md#williamsonshmoys11
