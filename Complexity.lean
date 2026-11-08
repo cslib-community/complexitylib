@@ -2770,8 +2770,10 @@ public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
 public import Complexity.Computability.PolyTime.CSP.AffineTemplate
 public import Complexity.Computability.PolyTime.CSP.Boolean
 public import Complexity.Computability.PolyTime.CSP.CNFTemplate
+public import Complexity.Computability.PolyTime.CSP.Edge.Augmenting
 public import Complexity.Computability.PolyTime.CSP.Gadget
 public import Complexity.Computability.PolyTime.CSP.Gadget.Size
+public import Complexity.Computability.PolyTime.CSP.Occurrence
 public import Complexity.Computability.PolyTime.CSP.Table
 public import Complexity.Computability.PolyTime.CSP.ToCNF
 public import Complexity.Computability.PolyTime.CSP.Vars
@@ -4649,6 +4651,7 @@ public import Complexity.Logics.Propositional.CSP.Edge.Walk.Operations
 public import Complexity.Logics.Propositional.CSP.ExactlyOne
 public import Complexity.Logics.Propositional.CSP.HardCore
 public import Complexity.Logics.Propositional.CSP.Occurrence
+public import Complexity.Logics.Propositional.CSP.Occurrence.Enumeration
 public import Complexity.Logics.Propositional.CSP.PartitionFunction
 public import Complexity.Logics.Propositional.CSP.Permanent
 public import Complexity.Logics.Propositional.CSP.Planar.Crossover

@@ -279,7 +279,30 @@ constraints, actual returned paths, odd unsatisfiable units, repeated constraint
 empty/nullary cases, sparse labels, and a trail whose final flip is valid but an intermediate
 prefix is invalid. The routine takes an improving comparison labeling as input: finding that
 labeling, or finding an augmenting walk without it, still needs the DAG/forest/blossom search.
-Its native runtime certificate and the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+The full solver and planar dichotomy remain open under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+
+For explicit tables, import `Complexity.Computability.PolyTime.CSP.Edge.Augmenting`.
+In `Cslib.Complexity.CSP.EdgeAugmenting`, `Input` contains the original `CSP Table Nat`,
+two occurrence-bit buffers and the excluded starting variable. `encInput` frames every field;
+table arities, source names and output walk indices are binary. Internal scan positions are unary.
+`computableInPolyTime_run` proves ordinary native polynomial time in the complete encoded input,
+including malformed tables and buffers. Iteration depends on actual lists, never the largest name.
+
+`run_eq` identifies the finite output with the existing mathematical routine whenever both buffer
+lengths equal the occurrence count. `run_spec` additionally takes the edge-instance and even
+relation hypotheses, valid original/comparison labels and a strict defect improvement; it returns
+an actual existing `Walk`, its decoder equation, augmentation correctness and the combined
+half-Hamming exchange bound. `none` is a helper failure or width rejection, not an unsatisfiability
+answer. [Native augmentation tests](../../ComplexityTests/EdgeCSPAugmentingNative.lean) exercise
+returned paths, both phases, width rejection, empty/nullary constraints and sparse binary names.
+The supplied improving comparison remains necessary; forest/blossom search and the full solver
+are still open.
+
+The reusable scan lives in `CSP.Occurrence.Enumeration`: `incidenceList` and
+`occurrences_eq_map_incidenceList` connect typed occurrences to the existing ordered record list.
+`PolyTime.CSP.Occurrence` supplies `encOccurrenceRecord` and
+`computableInPolyTime_occurrences` without importing graph construction. Both incidence graphs
+and the native augmentation compiler use that same enumeration and certificate.
 
 ## Timestamped f-DAGs and local surgery
 

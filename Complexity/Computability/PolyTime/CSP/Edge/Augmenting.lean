@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.PolyTime.CSP.Table
+public import Complexity.Computability.PolyTime.CSP.Occurrence
 public import Complexity.Logics.Propositional.CSP.Edge.Augmenting
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -81,12 +82,9 @@ enc_structure encWalkCode : WalkCode where
 
 /-- Positional occurrence records use unary constraint and scope positions and a binary name.
 Both positions are framed; the name is the last field. -/
-private abbrev encRecord := encPair encUnary (encPair encUnary encNat)
+private abbrev encRecord := encOccurrenceRecord encNat
 
 private abbrev Record := ℕ × ℕ × ℕ
-
-private def records (F : CSP Table ℕ) : List Record :=
-  F.zipIdx.flatMap fun c => c.1.2.zipIdx.map fun v => (c.2, v.2, v.1)
 
 /-- Global position in the actual incidence list, with no dependence on the variable's value. -/
 @[expose] def occurrenceIndex {F : CSP Table ℕ} (o : Occurrence F) : ℕ :=
@@ -102,14 +100,14 @@ The default makes this total even for a short buffer. -/
   ⟨w.start, w.steps.map fun (o, p) => (occurrenceIndex o, occurrenceIndex p)⟩
 
 private def readRecord (F : CSP Table ℕ) (bits : List Bool) (o : Record) : Bool :=
-  bits.getD ((records F).idxOf o) false
+  bits.getD ((CSP.occurrences F).idxOf o) false
 
 private def valid (F : CSP Table ℕ) (bits : List Bool) : Bool :=
   F.zipIdx.all fun c => c.1.1.sem
     (c.1.2.zipIdx.map fun v => readRecord F bits (c.2, v.2, v.1))
 
 private def inconsistent (F : CSP Table ℕ) (bits : List Bool) (v : ℕ) : Bool :=
-  ((records F).product (records F)).any fun a =>
+  ((CSP.occurrences F).product (CSP.occurrences F)).any fun a =>
     decide (a.1.2.2 = v) && decide (a.2.2.2 = v) &&
       (readRecord F bits a.1 != readRecord F bits a.2)
 
@@ -120,30 +118,31 @@ private def distance (f g : List Bool) : ℕ :=
   (f.zip g).countP fun a => a.1 != a.2
 
 private def repairPair (F : CSP Table ℕ) (f g : List Bool) : Option (Record × Record) :=
-  ((records F).product (records F)).find? fun a =>
+  ((CSP.occurrences F).product (CSP.occurrences F)).find? fun a =>
     decide (a.1.1 = a.2.1) && decide (a.1 ≠ a.2) &&
       (readRecord F g a.1 != readRecord F f a.1) &&
       (readRecord F g a.2 != readRecord F f a.2) &&
       !inconsistent F f a.1.2.2 && inconsistent F g a.1.2.2 &&
-      valid F (flip g [(records F).idxOf a.1, (records F).idxOf a.2])
+      valid F (flip g [(CSP.occurrences F).idxOf a.1, (CSP.occurrences F).idxOf a.2])
 
 private def repairStep (input : Input) (state : List Bool × ℕ) : List Bool × ℕ :=
   (repairPair input.body input.labels state.1).elim state fun a =>
-    (flip state.1 [(records input.body).idxOf a.1, (records input.body).idxOf a.2], state.2 + 1)
+    (flip state.1 [(CSP.occurrences input.body).idxOf a.1,
+      (CSP.occurrences input.body).idxOf a.2], state.2 + 1)
 
 /-- First phase on finite buffers. The unary clock counts actual occurrence disagreements. -/
 def repair (input : Input) : List Bool × ℕ :=
   (repairStep input)^[distance input.labels input.comparison] (input.comparison, 0)
 
 private def findStart (input : Input) (g : List Bool) : Option Record :=
-  (records input.body).find? fun o => decide (o.2.2 ≠ input.excluded) &&
+  (CSP.occurrences input.body).find? fun o => decide (o.2.2 ≠ input.excluded) &&
     inconsistent input.body input.labels o.2.2 && !inconsistent input.body g o.2.2
 
 private def flipped (input : Input) (w : WalkCode) : List Bool :=
   flip input.labels (w.steps.flatMap fun a => [a.1, a.2])
 
 private def recordAt (F : CSP Table ℕ) (i : ℕ) : Record :=
-  (records F).getD i (0, 0, 0)
+  (CSP.occurrences F).getD i (0, 0, 0)
 
 private def finish (input : Input) (w : WalkCode) : ℕ :=
   w.steps.reverse.head?.elim w.start fun a => (recordAt input.body a.2).2.2
@@ -151,19 +150,19 @@ private def finish (input : Input) (w : WalkCode) : ℕ :=
 private def walkPair (input : Input) (g : List Bool) (w : WalkCode) :
     Option (Record × Record) :=
   let current := flipped input w
-  ((records input.body).product (records input.body)).find? fun a =>
+  ((CSP.occurrences input.body).product (CSP.occurrences input.body)).find? fun a =>
     decide (a.1.2.2 = finish input w) && decide (a.1.1 = a.2.1) && decide (a.1 ≠ a.2) &&
       (readRecord input.body current a.1 != readRecord input.body g a.1) &&
       (readRecord input.body current a.2 != readRecord input.body g a.2) &&
-      valid input.body (flip current [(records input.body).idxOf a.1,
-        (records input.body).idxOf a.2])
+      valid input.body (flip current [(CSP.occurrences input.body).idxOf a.1,
+        (CSP.occurrences input.body).idxOf a.2])
 
 private def walkStep (input : Input) (g : List Bool)
     (state : WalkCode × Bool) : WalkCode × Bool :=
   if state.2 then state else
     (walkPair input g state.1).elim state fun a =>
-      (⟨state.1.start, state.1.steps ++ [((records input.body).idxOf a.1,
-        (records input.body).idxOf a.2)]⟩,
+      (⟨state.1.start, state.1.steps ++ [((CSP.occurrences input.body).idxOf a.1,
+        (CSP.occurrences input.body).idxOf a.2)]⟩,
         inconsistent input.body input.labels a.2.2.2)
 
 /-- Second phase on finite buffers. A stopped bit preserves the first reached original defect;
@@ -175,8 +174,8 @@ def buildWalk (input : Input) (g : List Bool) (start : ℕ) : Option WalkCode :=
 /-- Total finite implementation of the two phases. Both buffers must have exactly the actual
 occurrence count; malformed widths reject before either phase. -/
 def run (input : Input) : Option WalkCode :=
-  if input.labels.length = (records input.body).length ∧
-      input.comparison.length = (records input.body).length then
+  if input.labels.length = (CSP.occurrences input.body).length ∧
+      input.comparison.length = (CSP.occurrences input.body).length then
     let fixed := (repair input).1
     (findStart input fixed).elim none fun o => buildWalk input fixed o.2.2
   else none
@@ -224,10 +223,9 @@ private theorem poly_idxOf {α β : Type} [DecidableEq β]
 
 attribute [local fun_prop] poly_zipIdx poly_product poly_idxOf
 
-private theorem poly_records : ComputableInPolyTime records (encCSP encTable encNat)
-    (encList encRecord) := by
-  unfold records
-  fun_prop
+private theorem poly_records : ComputableInPolyTime (CSP.occurrences (Rel := Table) (V := ℕ))
+    (encCSP encTable encNat) (encList encRecord) :=
+  computableInPolyTime_occurrences encTable encNat
 
 attribute [local fun_prop] poly_records
 
@@ -237,7 +235,7 @@ private theorem poly_readRecord :
       (encPair (encPair (encCSP encTable encNat) (encList encBool)) encRecord) encBool := by
   unfold readRecord
   have hindex : ComputableInPolyTime
-      (fun p : (CSP Table ℕ × List Bool) × Record => (records p.1.1).idxOf p.2)
+      (fun p : (CSP Table ℕ × List Bool) × Record => (CSP.occurrences p.1.1).idxOf p.2)
       (encPair (encPair (encCSP encTable encNat) (encList encBool)) encRecord) encUnary :=
     poly_idxOf (poly_records.comp (by fun_prop)) (by fun_prop)
   have hlist : ComputableInPolyTime
@@ -465,9 +463,9 @@ private theorem poly_buildWalk :
         ((ComputableInPolyTime.snd (encPair encInput (encList encBool)) encNat).prod
           (ComputableInPolyTime.const []))).prod (ComputableInPolyTime.const false)).tidy)
       poly_walkStep.tidy
-      (growth := fun p => (records p.1.1.body).length * 12 + 6)
+      (growth := fun p => (CSP.occurrences p.1.1.body).length * 12 + 6)
     · have hr : ComputableInPolyTime
-          (fun p : (Input × List Bool) × ℕ => (records p.1.1.body).length)
+          (fun p : (Input × List Bool) × ℕ => (CSP.occurrences p.1.1.body).length)
           (encPair (encPair encInput (encList encBool)) encNat) encUnary := by fun_prop
       exact (hr.polyBounded.mul (.const 12)).add (.const 6)
     · intro p state
@@ -478,9 +476,9 @@ private theorem poly_buildWalk :
         | none => simp [walkStep, hs, hp]
         | some a =>
           rcases a with ⟨o, q⟩
-          have ho : (records p.1.1.body).idxOf o ≤ (records p.1.1.body).length :=
+          have ho : (CSP.occurrences p.1.1.body).idxOf o ≤ (CSP.occurrences p.1.1.body).length :=
             List.idxOf_le_length
-          have hq : (records p.1.1.body).idxOf q ≤ (records p.1.1.body).length :=
+          have hq : (CSP.occurrences p.1.1.body).idxOf q ≤ (CSP.occurrences p.1.1.body).length :=
             List.idxOf_le_length
           simp only [walkStep, hs, hp, Option.elim_some]
           simp only [length_encPair, encWalkCodeWork_apply, length_encList,
@@ -538,30 +536,9 @@ private theorem zipIdx_eq_ofFn {α : Type} (l : List α) :
   · intro i hi hj
     simp
 
-private theorem records_eq (F : CSP Table ℕ) :
-    records F = (incidenceList F).map Occurrence.record := by
-  unfold records incidenceList
-  rw [zipIdx_eq_ofFn]
-  simp only [List.flatMap, List.map_flatten, List.map_ofFn, Function.comp_def]
-  congr 1
-  apply congrArg List.ofFn
-  funext i
-  rw [zipIdx_eq_ofFn, List.map_ofFn]
-  rfl
-
-private theorem incidenceList_nodup (F : CSP Table ℕ) : (incidenceList F).Nodup := by
-  apply List.Nodup.of_map (f := Occurrence.record)
-  rw [← records_eq]
-  have he : records F = F.occurrences := by
-    simp only [records, CSP.occurrences, Cslib.Logic.PL.occurrences, varCNF,
-      List.zipIdx_map, List.flatMap_map, List.map_flatMap, List.map_map, Function.comp_def,
-      Prod.map, id_eq]
-  rw [he]
-  exact occurrences_nodup F
-
 private theorem record_index {F : CSP Table ℕ} (o : Occurrence F) :
-    (records F).idxOf o.record = occurrenceIndex o := by
-  rw [records_eq]
+    (CSP.occurrences F).idxOf o.record = occurrenceIndex o := by
+  rw [occurrences_eq_map_incidenceList]
   simp only [List.idxOf, List.findIdx_map, occurrenceIndex]
   congr 1
   funext p
@@ -626,14 +603,14 @@ private theorem inconsistent_eq (F : CSP Table ℕ) (bits : List Bool) (v : ℕ)
   constructor
   · rintro ⟨⟨a, b⟩, hab, ht⟩
     obtain ⟨ha, hb⟩ := List.mem_product.mp hab
-    rw [records_eq] at ha hb
+    rw [occurrences_eq_map_incidenceList] at ha hb
     obtain ⟨o, _, rfl⟩ := List.mem_map.mp ha
     obtain ⟨p, _, rfl⟩ := List.mem_map.mp hb
     simp only [Bool.and_eq_true, decide_eq_true_eq, bne_iff_ne, read_record] at ht
     exact ⟨o, p, ht.1.1, ht.1.2, ht.2⟩
   · rintro ⟨o, p, ho, hp, hd⟩
     refine ⟨(o.record, p.record), List.mem_product.mpr ?_, ?_⟩
-    · rw [records_eq]
+    · rw [occurrences_eq_map_incidenceList]
       exact ⟨List.mem_map.mpr ⟨o, mem_incidenceList o, rfl⟩,
         List.mem_map.mpr ⟨p, mem_incidenceList p, rfl⟩⟩
     · change (decide (o.var = v) && decide (p.var = v) &&
@@ -691,10 +668,11 @@ private theorem distance_eq {F : CSP Table ℕ} (f g : List Bool)
   congr 1
 
 private theorem pairs_records (F : CSP Table ℕ) :
-    (records F).product (records F) =
+    (CSP.occurrences F).product (CSP.occurrences F) =
       ((incidenceList F).product (incidenceList F)).map
         (fun (o, p) => (o.record, p.record)) := by
-  simp [records_eq, List.product, List.flatMap_map, List.map_flatMap, List.map_map,
+  simp [occurrences_eq_map_incidenceList, List.product, List.flatMap_map,
+    List.map_flatMap, List.map_map,
     Function.comp_def]
 
 private theorem repairPair_eq (F : CSP Table ℕ) (f g : List Bool)
@@ -715,7 +693,8 @@ private theorem repairPair_eq (F : CSP Table ℕ) (f g : List Bool)
     (readRecord F g o.record != readRecord F f o.record) &&
     (readRecord F g p.record != readRecord F f p.record) &&
     !inconsistent F f o.var && inconsistent F g o.var &&
-    valid F (flip g [(records F).idxOf o.record, (records F).idxOf p.record]) = true) ↔ _
+    valid F (flip g [(CSP.occurrences F).idxOf o.record,
+      (CSP.occurrences F).idxOf p.record]) = true) ↔ _
   simp only [Bool.and_eq_true, decide_eq_true_eq, bne_iff_ne,
     read_record, record_index, valid_eq, inconsistent_eq,
     hne, Fin.val_inj, EdgeInstance.RepairMove]
@@ -750,7 +729,8 @@ private theorem repair_iter (input : Input) (n : ℕ) (g : List Bool) (k : ℕ)
           (labeling input.body input.labels) (labeling input.body g))).map
           (fun (a : Occurrence input.body × Occurrence input.body) =>
             (a.1.record, a.2.record))).elim (g, k) fun a =>
-            (flip g [(records input.body).idxOf a.1, (records input.body).idxOf a.2], k + 1) := by
+            (flip g [(CSP.occurrences input.body).idxOf a.1,
+              (CSP.occurrences input.body).idxOf a.2], k + 1) := by
       simp only [repairStep, repairPair_eq _ _ _ hg]
     rw [hstep]
     cases hs : EdgeInstance.findPair input.body (EdgeInstance.RepairMove Table.sem
@@ -776,7 +756,7 @@ private theorem repair_iter (input : Input) (n : ℕ) (g : List Bool) (k : ℕ)
 private theorem recordAt_index {F : CSP Table ℕ} (o : Occurrence F) :
     recordAt F (occurrenceIndex o) = o.record := by
   have hi := occurrenceIndex_lt o
-  simp [recordAt, records_eq, List.getD_eq_getElem?_getD,
+  simp [recordAt, occurrences_eq_map_incidenceList, List.getD_eq_getElem?_getD,
     getElem?_occurrenceIndex]
 
 private theorem flipped_eq (input : Input) (w : Walk input.body)
@@ -820,7 +800,8 @@ private theorem walkPair_eq (input : Input) (g : List Bool) (w : Walk input.body
     (readRecord input.body (flipped input (code w)) o.record != readRecord input.body g o.record) &&
     (readRecord input.body (flipped input (code w)) p.record != readRecord input.body g p.record) &&
     valid input.body (flip (flipped input (code w))
-      [(records input.body).idxOf o.record, (records input.body).idxOf p.record]) = true) ↔ _
+      [(CSP.occurrences input.body).idxOf o.record,
+        (CSP.occurrences input.body).idxOf p.record]) = true) ↔ _
   simp only [Bool.and_eq_true, decide_eq_true_eq, bne_iff_ne, read_record,
     record_index, valid_eq, hne, Fin.val_inj, finish_eq, EdgeInstance.WalkMove]
   simp only [List.map_cons, List.map_nil, List.toFinset_cons, List.toFinset_nil,
@@ -847,8 +828,8 @@ private theorem buildWalk_iter (input : Input) (g : List Bool) (n : ℕ)
         ((EdgeInstance.findPair input.body (EdgeInstance.WalkMove Table.sem
           (labeling input.body g) (w.flip (labeling input.body input.labels)) w.finish)).map
           (fun a => (a.1.record, a.2.record))).elim (code w, false) fun a =>
-            (⟨(code w).start, (code w).steps ++ [((records input.body).idxOf a.1,
-              (records input.body).idxOf a.2)]⟩,
+            (⟨(code w).start, (code w).steps ++ [((CSP.occurrences input.body).idxOf a.1,
+              (CSP.occurrences input.body).idxOf a.2)]⟩,
               inconsistent input.body input.labels a.2.2.2) := by
       simp only [walkStep, Bool.false_eq_true, ite_false, walkPair_eq _ _ _ hlen]
     rw [hstep]
@@ -877,7 +858,7 @@ private theorem findStart_eq (input : Input) (g : List Bool) :
       (EdgeInstance.findStart input.body (labeling input.body input.labels)
         (labeling input.body g) input.excluded).map Occurrence.record := by
   unfold findStart EdgeInstance.findStart
-  rw [records_eq, List.find?_map]
+  rw [occurrences_eq_map_incidenceList, List.find?_map]
   congr 2
   funext o
   apply Bool.eq_iff_iff.mpr
@@ -904,7 +885,7 @@ theorem run_eq (input : Input)
         (hammingDist (labeling input.body input.labels)
           (labeling input.body input.comparison)) (labeling input.body input.comparison)).1 := by
     simpa only [repair, distance_eq _ _ hf hg] using hr.1
-  simp only [run, records_eq, List.length_map, hf, hg, and_self, ite_true,
+  simp only [run, occurrences_eq_map_incidenceList, List.length_map, hf, hg, and_self, ite_true,
     findStart_eq, EdgeInstance.augmentingWalk, ← he]
   cases hs : EdgeInstance.findStart input.body (labeling input.body input.labels)
       (labeling input.body (repair input).1) input.excluded with
@@ -994,7 +975,7 @@ theorem run_steps_length_le (input : Input) {w : WalkCode} (hw : run input = som
 theorem run_eq_none_of_length (input : Input)
     (h : input.labels.length ≠ (incidenceList input.body).length ∨
       input.comparison.length ≠ (incidenceList input.body).length) : run input = none := by
-  simp only [run, records_eq, List.length_map]
+  simp only [run, occurrences_eq_map_incidenceList, List.length_map]
   split
   · exact (h.elim (fun hn => hn ‹_ ∧ _›.1) (fun hn => hn ‹_ ∧ _›.2)).elim
   · rfl
