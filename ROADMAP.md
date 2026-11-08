@@ -1235,7 +1235,15 @@ each statement against the numbered result. Organize modules by subject, not cha
   (small-set expansion, the Level-k inequalities); coverage of O'Donnell's *Analysis of Boolean
   Functions* ([#2131](https://github.com/cslib-community/complexitylib/issues/2131)), including the
   book-form statements of its Chapter 9 (the KKL edge-isoperimetric theorem, and Friedgut's junta
-  theorem with its spectral concentration).
+  theorem with its spectral concentration). For Chapter 11, the Basic Invariance Principle under
+  Hypothesis 11.65 and Corollary 11.67 are in place
+  ([#3242](https://github.com/cslib-community/complexitylib/issues/3242)). Remaining: Corollary 9.6
+  for general `B`; the Invariance Principle for `(2, 3, ρ)`-hypercontractive ensembles
+  (Remark 11.66); the step from smooth test functions to the Lipschitz form (Corollary 11.68) and
+  the Lévy-distance form (Corollary 11.70); the forms for functions with small high-degree tails,
+  including noise-stable functions (Corollary 11.69), and cdf-closeness to Gaussians through the
+  Carbery–Wright theorem (Theorem 11.71); and Majority Is Stablest through Borell's isoperimetric
+  theorem.
 - **Resource-bounded measure and dimension:** martingales and gales with explicit computation
   budgets, their success sets, and measure and dimension within complexity classes; connect
   quantitative randomness to the Kolmogorov-complexity development. State the resource bounds

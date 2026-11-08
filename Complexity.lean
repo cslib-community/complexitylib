@@ -3954,6 +3954,7 @@ public import Complexity.Foundations.Algebra.Tropical
 public import Complexity.Foundations.Analysis.Asymptotics.CostBound
 public import Complexity.Foundations.Analysis.Asymptotics.Exponential
 public import Complexity.Foundations.Analysis.BernoulliInequality
+public import Complexity.Foundations.Analysis.Calculus.Taylor
 public import Complexity.Foundations.Analysis.Convex.FirstOrder
 public import Complexity.Foundations.Analysis.ENNRealFraction
 public import Complexity.Foundations.Analysis.ENNRealTsum
@@ -4044,6 +4045,7 @@ public import Complexity.Foundations.BooleanAnalysis.Hypercontractivity.TwoPoint
 public import Complexity.Foundations.BooleanAnalysis.Hypercube
 public import Complexity.Foundations.BooleanAnalysis.IncidenceExpansion
 public import Complexity.Foundations.BooleanAnalysis.Influence
+public import Complexity.Foundations.BooleanAnalysis.Invariance
 public import Complexity.Foundations.BooleanAnalysis.KahnKalaiLinial
 public import Complexity.Foundations.BooleanAnalysis.LevelWeight
 public import Complexity.Foundations.BooleanAnalysis.LightPatterns
@@ -4568,6 +4570,7 @@ public import Complexity.Foundations.MeasureTheory.Constructions.BorelSpace.Orde
 public import Complexity.Foundations.MeasureTheory.Group.ConvolutionDensity
 public import Complexity.Foundations.MeasureTheory.Group.FundamentalDomain
 public import Complexity.Foundations.MeasureTheory.Group.QuotientDensity
+public import Complexity.Foundations.MeasureTheory.Integral.CauchySchwarz
 public import Complexity.Foundations.MeasureTheory.Integral.IntervalPrimitive
 public import Complexity.Foundations.MeasureTheory.Integral.Pi
 public import Complexity.Foundations.MeasureTheory.Integral.PiUpdate
@@ -4625,6 +4628,7 @@ public import Complexity.Foundations.Probability.Gaussian.DiscreteTail
 public import Complexity.Foundations.Probability.Gaussian.Fourier
 public import Complexity.Foundations.Probability.Gaussian.MassBounds
 public import Complexity.Foundations.Probability.Gaussian.Measure
+public import Complexity.Foundations.Probability.Gaussian.Moments
 public import Complexity.Foundations.Probability.Gaussian.Multivariate
 public import Complexity.Foundations.Probability.Gaussian.NoiseOperator
 public import Complexity.Foundations.Probability.Gaussian.NoiseSemigroup
@@ -4672,6 +4676,9 @@ public import Complexity.Foundations.Probability.InitialPilotCorrection
 public import Complexity.Foundations.Probability.InitialPilotCorrectionMean
 public import Complexity.Foundations.Probability.InitialPilotDetector
 public import Complexity.Foundations.Probability.InitialPilotScore
+public import Complexity.Foundations.Probability.Multilinear.Basic
+public import Complexity.Foundations.Probability.Multilinear.Bonami
+public import Complexity.Foundations.Probability.Multilinear.Invariance
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ActualMoment
 public import Complexity.Foundations.Probability.NormalizedAtomRows.BoundedLoss
 public import Complexity.Foundations.Probability.NormalizedAtomRows.ChildRootReserve
