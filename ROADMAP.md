@@ -899,11 +899,9 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   families.
 - **W-hierarchy** ([#2966](https://github.com/cslib-community/complexitylib/issues/2966)):
   `W[t]` by fpt-reduction to weighted satisfiability of circuits of weft at most `t` and bounded
-  depth, with `FPT ⊆ W[t] ⊆ W[t+1]`; `IndependentSet` and `Clique` are in `W[1]`. Remaining: the
-  W[1]-hardness of `Clique` (fpt-reduction from `WCS 1 d`; Kleene evaluation, the weft-one
-  certificates and the certificate-and-bracket graph with its correctness are in place; remaining
-  are the polynomial-time bound of the graph construction and the fpt-reduction), then
-  `W[t] ⊆ XP`,
+  depth, with `FPT ⊆ W[t] ⊆ W[t+1]`; `IndependentSet` and `Clique` are `W[1]`-complete, and
+  `W[1] = FPT` exactly when `Clique` is in `FPT`. Remaining
+  ([#3256](https://github.com/cslib-community/complexitylib/issues/3256)): `W[t] ⊆ XP`,
   W[2]-completeness of Dominating Set, short Turing machine acceptance, `W[P]` and the A-hierarchy.
 - **Exponential-time SAT** ([#894]): Schöning, PPZ and PPSZ run on the randomized word RAM with
   exact laws, amplification and time bounds (PPSZ's round count takes an input bound
@@ -1235,7 +1233,15 @@ each statement against the numbered result. Organize modules by subject, not cha
   (small-set expansion, the Level-k inequalities); coverage of O'Donnell's *Analysis of Boolean
   Functions* ([#2131](https://github.com/cslib-community/complexitylib/issues/2131)), including the
   book-form statements of its Chapter 9 (the KKL edge-isoperimetric theorem, and Friedgut's junta
-  theorem with its spectral concentration).
+  theorem with its spectral concentration). For Chapter 11, the Basic Invariance Principle under
+  Hypothesis 11.65 and Corollary 11.67 are in place
+  ([#3242](https://github.com/cslib-community/complexitylib/issues/3242)). Remaining: Corollary 9.6
+  for general `B`; the Invariance Principle for `(2, 3, ρ)`-hypercontractive ensembles
+  (Remark 11.66); the step from smooth test functions to the Lipschitz form (Corollary 11.68) and
+  the Lévy-distance form (Corollary 11.70); the forms for functions with small high-degree tails,
+  including noise-stable functions (Corollary 11.69), and cdf-closeness to Gaussians through the
+  Carbery–Wright theorem (Theorem 11.71); and Majority Is Stablest through Borell's isoperimetric
+  theorem.
 - **Resource-bounded measure and dimension:** martingales and gales with explicit computation
   budgets, their success sets, and measure and dimension within complexity classes; connect
   quantitative randomness to the Kolmogorov-complexity development. State the resource bounds
@@ -1355,6 +1361,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   with `q` queries for a property closed under relabelling becomes a canonical one-sided tester
   that samples at most `2q` vertices and decides on the induced subgraph (Goldreich–Trevisan,
   one-sided half; [#3180](https://github.com/cslib-community/complexitylib/issues/3180)).
+  Monotonicity of Boolean functions on the hypercube `{0,1}ⁿ` has the
+  Goldreich–Goldwasser–Lehman–Ron–Samorodnitsky edge tester: by squashing along each coordinate, a
+  function ε-far from monotone violates at least an `ε / n` fraction of the edges, so `⌈2n / ε⌉`
+  edge trials (`2⌈2n / ε⌉` queries) reject with probability at least `2/3`, and monotone functions
+  always pass ([#3257](https://github.com/cslib-community/complexitylib/issues/3257)).
   Remaining: the matching `Ω(n^{2/3} ε^{-4/3} + √n ε^{-2})` closeness lower bound, further access
   models, the odd-domain lower bound, instance-optimal identity testing, tolerant and
   structured-property distribution testing; in the dense graph model, `H`-freeness for general `H`
@@ -1362,7 +1373,9 @@ each statement against the numbered result. Organize modules by subject, not cha
   with `poly(1/ε)` queries, the two-sided half of Goldreich–Trevisan (canonical testers with `O(q)`
   sample vertices and `O(q²)` queries), and deciding by the property itself when it is closed
   under induced subgraphs (their Proposition D.2, due to Alon) or is a graph partition property
-  (Corollary 5.9); further query and sample lower bounds.
+  (Corollary 5.9); for monotonicity, the `Ω(√n)` lower bound for non-adaptive one-sided testers
+  (Fischer et al. 2002), larger ranges and hypergrids, and the directed-isoperimetry path testers
+  with `Õ(√n / ε²)` queries (Khot–Minzer–Safra); further query and sample lower bounds.
 - **Kolmogorov complexity and metacomplexity** ([#798], [#884]): the near-linear threshold regime
   of Liu–Pass Theorem 3.1 (c), hardness for every polynomial `t(n) ≥ (1 + ε)n` rather than above a
   polynomial threshold, which needs a rate-1 efficient conditional EP-PRG running in `n + O(n^c)`
@@ -1571,6 +1584,19 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   `3/2`, and possibly the Karlin–Klein–Oveis Gharan `3/2 - 10^{-36}` improvement as a long-range
   target. LP-based and primal–dual analyses of the same problems belong to the primal–dual
   approximation direction under Optimization and duality.
+
+### Sorting and selection
+
+- **Comparison selection** ([#3279](https://github.com/cslib-community/complexitylib/issues/3279)):
+  groups-of-five median-of-medians selection in cslib's comparison-query model, correct for
+  total preorders and making at most `37 n` comparisons under every oracle, is in
+  `Algorithms/Lean/Query/Select`. Remaining: sharper constants for the same algorithm (a
+  six-comparison median of five, and reusing the group comparisons in the partition); the
+  `5.4305 n` bound of Blum, Floyd, Pratt, Rivest and Tarjan for their refined `PICK` and Dor and
+  Zwick's `2.95 n` median bound; group-size variants such as groups of three or seven;
+  comparison lower bounds (`n − 1` for the minimum, `⌈3n/2⌉ − 2` for the minimum and maximum
+  together, and lower bounds for the median); and a word-RAM implementation with charged
+  instruction counts.
 
 ### Online algorithms and competitive analysis
 

@@ -13,6 +13,21 @@ These results are clients of the RAM and specification models, not additional ex
 
 Quickselect receives the index followed by the array; an invalid index has an explicit eight-step, no-write, no-randomness behavior returning zero. The expected costs are machine instruction counts. They do not price the `rand` instruction as an exact strict-PPT finite-coin sampler.
 
+### Deterministic selection in the comparison model
+
+Import `Complexity.Algorithms.Lean.Query.Select.Correctness` and `Complexity.Algorithms.Lean.Query.Select.Cost`. [Defs.lean](../../Complexity/Algorithms/Lean/Query/Select/Defs.lean) defines `Cslib.Query.select k xs`, the groups-of-five median-of-medians algorithm in cslib's comparison-query model `FreeM (LEQuery α)`, the model of `Cslib.Query.mergeSort`. Every comparison `a ≤ b` is an oracle query and list manipulation is free. The program sorts lists of at most `selectCutoff = 730` elements with `mergeSort`. For a longer list it takes the lower median of each group of five, selects the median of these medians recursively as the pivot, partitions three ways (below, equivalent to and above the pivot) and recurses into the part holding rank `k` [BFPRT 1973][bfprt73], [CLRS 9.3][clrs09]. The three-way partition makes the algorithm correct for total preorders with ties. Before recursing into a side, the program checks without comparisons that the side has at most `selectSideBound n` elements, and returns `none` otherwise. Under an oracle implementing a total preorder the check always passes. It makes the recursion well founded and lets the comparison bound hold for every oracle.
+
+| Declaration | Statement |
+|---|---|
+| `select_isOrderStatistic`, `eval_select_eq_none` | under an oracle implementing a total preorder `r`, `select k xs` returns an element of rank `k` when `k < xs.length`, and `none` otherwise. No antisymmetry is assumed |
+| `eval_select_eq_getElem?_mergeSort` | in a linear order, `select k xs` returns `xs.mergeSort[k]?` |
+| `length_filter_lt_le_selectSideBound`, `length_filter_gt_le_selectSideBound` | the median-of-medians counting bound: if the pivot has rank `⌊(g−1)/2⌋` among the `g = ⌈n/5⌉` group medians, at most `n − 3⌊(g−1)/2⌋ − 1` elements lie strictly on either side of it |
+| `select_countQueries_le`, `select_upperBound` | `select k` makes at most `37 n` comparisons under every oracle, as `UpperBound (select k) List.length (37 * ·)` |
+
+The cost proof solves `T(n) ≤ 8n/5 + T(⌈n/5⌉) + 2n + T(selectSideBound n)` by strong induction. Sorting the groups costs `8n/5` (`medians_countQueries_le`), the partition costs `2n` (`partition3_countQueries_le`), and the base case costs `n⌈log₂ n⌉ ≤ 10n`. The group cost uses [CountBound.lean](../../Complexity/Algorithms/Lean/Query/Sort/Merge/CountBound.lean), which sharpens cslib's merge bound: a merge makes at most `|xs| + |ys| − 1` comparisons (`merge_countQueries_le_sub_one`), so `mergeSort` sorts five elements with at most `8` (`mergeSortCountBound_five`). Ranks are stated with `List.IsOrderStatistic` in [OrderStatistic.lean](../../Complexity/Foundations/Data/List/OrderStatistic.lean): at most `k` elements lie strictly below `y` and more than `k` lie at or below it. `List.isOrderStatistic_iff_mergeSort` identifies the rank-`k` element of a linear order with `xs.mergeSort[k]`. The [tests](../../ComplexityTests/QuerySelect.lean) run lists longer than the cutoff, duplicates, out-of-range ranks, a preorder with ties and a dishonest oracle.
+
+The constant `37` comes from this simple accounting. Blum, Floyd, Pratt, Rivest and Tarjan refine the algorithm (`PICK`) to at most `5.4305 n` comparisons [BFPRT 1973][bfprt73]; that constant is not formalized. Group sizes other than five, the comparison lower bounds (`n − 1` for the minimum, `⌈3n/2⌉ − 2` for the minimum and maximum together, and the selection lower bounds) and a word-RAM implementation also remain open; see `ROADMAP.md`.
+
 ## Shortest paths and priority queues
 
 [abstracts/ComplexityAbstracts/DijkstraAbstract.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/DijkstraAbstract.lean) represents directed weighted multigraphs by adjacency lists with natural weights; parallel edges and self-loops are allowed. Output distance is an extended natural, encoded as zero for infinity and `d+1` for a finite distance. The word condition is `8*(n+m+2)*(W+2) < 2^w`.
@@ -959,6 +974,7 @@ The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root 
 The numeric values above are transcriptions of checked source statements, not results of new execution benchmarks. The source-reference audit checks locations and digests; it does not rerun Lean or prove asymptotic summaries. The full Haskell/Lean runtime behavior, allocator, operating system and hardware are outside these idealized RAM models.
 
 [complexitylib]: ../sources.md#complexitylib
+[bfprt73]: ../sources.md#bfprt73
 [christofides76]: ../sources.md#christofides76
 [clrs09]: ../sources.md#clrs09
 [edmonds65]: ../sources.md#edmonds65
