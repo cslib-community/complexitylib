@@ -140,19 +140,12 @@ example : (nisanMatrix 1 1 g).rank = 2 := by
   rw [nisanMatrix_g, Matrix.rank_one, Fintype.card_fun, Fintype.card_fin, Fintype.card_fin]
   rfl
 
-private theorem rank_outer (k : ℕ) (hk : k = 0 ∨ k = 2) : (nisanMatrix k (2 - k) g).rank = 1 := by
-  have hk' : k + (2 - k) = 2 := by omega
-  have hf : g.IsHomogeneous (k + (2 - k)) := by rw [hk']; exact isHomogeneous_g
-  refine le_antisymm ?_ (one_le_rank_nisanMatrix hf g_ne_zero)
-  rcases hk with rfl | rfl
-  · exact (Matrix.rank_le_card_height _).trans (by simp)
-  · exact (Matrix.rank_le_card_width _).trans (by simp)
-
 /-- The least ABP size for `x₀ x₀ + x₁ x₁` is `1 + 2 + 1 = 4`. -/
 example : IsLeast {s | ∃ A : NoncommABP ℚ (Fin 2) 2, A.polynomial = g ∧ A.size = s} 4 := by
   have h := NoncommABP.isLeast_size isHomogeneous_g g_ne_zero two_ne_zero
   rw [Finset.sum_range_succ, Finset.sum_range_succ, Finset.sum_range_one,
-    rank_outer 0 (Or.inl rfl), rank_outer 2 (Or.inr rfl), show 2 - 1 = 1 from rfl, nisanMatrix_g,
+    rank_nisanMatrix_zero_left isHomogeneous_g g_ne_zero,
+    rank_nisanMatrix_zero_right isHomogeneous_g g_ne_zero, show 2 - 1 = 1 from rfl, nisanMatrix_g,
     Matrix.rank_one, Fintype.card_fun, Fintype.card_fin, Fintype.card_fin] at h
   exact h
 
