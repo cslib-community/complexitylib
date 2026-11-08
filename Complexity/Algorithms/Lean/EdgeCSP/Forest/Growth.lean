@@ -19,6 +19,7 @@ They record local port conditions, not an assumed f-DAG or an optimality oracle.
 ## Main results
 
 * `search_grown`: all completed expansions in a fresh executable search have local certificates.
+* `Grown.outgoing_not_root`: discovered variables are not initial roots.
 -/
 
 public section
@@ -95,6 +96,18 @@ inductive Grown (sem : Rel → List Bool → Bool) (f : OccurrenceLabeling F Boo
       (feasible : ∀ o ∈ e.outputs, o ∈ partners sem f e.input)
       (saturated : ∀ o ∈ partners sem f e.input, o ∈ e.outputs ++ es.outgoing) :
       Grown sem f rs (e :: es)
+
+/-- Every discovery variable is a nonroot, including across repeated constraint copies. -/
+theorem Grown.outgoing_not_root {sem : Rel → List Bool → Bool}
+    {f : OccurrenceLabeling F Bool} {rs : List V} {es : Log F}
+    (hg : Grown sem f rs es) {o : Occurrence F}
+    (ho : o ∈ es.outgoing) : o.var ∉ rs := by
+  induction hg with
+  | nil => simp [Log.outgoing] at ho
+  | @cons es e hp hv hu hf hn hfe hsat ih =>
+    rcases List.mem_append.mp ho with ho | ho
+    · exact fun hr => hf o ho (Or.inl hr)
+    · exact ih ho
 
 /-- A real continuing scan, together with the selected frontier incidence, supplies all local
 conditions of a growth certificate. No forest/DAG correctness is assumed. -/

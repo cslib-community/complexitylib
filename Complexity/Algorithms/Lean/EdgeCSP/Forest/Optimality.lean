@@ -40,16 +40,6 @@ open Finset BitString DAG
 
 variable {Rel V : Type*} {F : CSP Rel V} [DecidableEq V]
 
-private theorem outgoing_not_root {sem : Rel → List Bool → Bool}
-    {f : OccurrenceLabeling F Bool} {rs : List V} {es : Log F}
-    (hg : Grown sem f rs es) {o : Occurrence F} (ho : o ∈ es.outgoing) : o.var ∉ rs := by
-  induction hg with
-  | nil => simp [Log.outgoing] at ho
-  | @cons es e hp hv hu hf hn hfe hs ih =>
-    rcases List.mem_append.mp ho with ho | ho
-    · exact fun hr => hf o ho (Or.inl hr)
-    · exact ih ho
-
 private theorem outgoing_injective {sem : Rel → List Bool → Bool}
     {f : OccurrenceLabeling F Bool} {rs : List V} {es : Log F}
     (hg : Grown sem f rs es) {a b : Occurrence F}
@@ -58,18 +48,6 @@ private theorem outgoing_injective {sem : Rel → List Bool → Bool}
     rw [← Log.children_eq_map_outgoing]
     exact hg.children_nodup
   exact List.inj_on_of_nodup_map hn ha hb he
-
-omit [DecidableEq V] in
-private theorem outgoing_of_arc (es : Log F) {a : Arc F}
-    (ha : a ∈ es.arcs) (hi : a.incoming = false) : a.occurrence ∈ es.outgoing := by
-  induction es with
-  | nil => simp [Log.arcs] at ha
-  | cons e es ih =>
-    simp only [Log.arcs, List.mem_cons, List.mem_append, List.mem_map] at ha
-    rcases ha with rfl | ⟨o, ho, rfl⟩ | ha
-    · cases hi
-    · exact List.mem_append_left _ ho
-    · exact List.mem_append_right _ (ih ha)
 
 private theorem incoming_saturated {sem : Rel → List Bool → Bool}
     {f : OccurrenceLabeling F Bool} {rs : List V} {es : Log F}
@@ -83,10 +61,10 @@ private theorem incoming_saturated {sem : Rel → List Bool → Bool}
   obtain ⟨c, hc, rfl⟩ := List.mem_map.mp ham
   have hci : c.incoming = true := by
     cases hi : c.incoming
-    · exact (hao (List.mem_toFinset.mpr (outgoing_of_arc es hc hi))).elim
+    · exact (hao (List.mem_toFinset.mpr (Log.mem_outgoing_of_arc hc hi))).elim
     · rfl
   obtain ⟨d, hd, he, hi, _⟩ := hg.saturated hc hci hb
-  exact List.mem_toFinset.mpr (he ▸ outgoing_of_arc es hd hi)
+  exact List.mem_toFinset.mpr (he ▸ Log.mem_outgoing_of_arc hd hi)
 
 /-- Count changes by constraint positions, applying the local exchange bound on each actual
 scope. The incoming and outgoing sets here are finite positional port sets. -/
@@ -242,7 +220,7 @@ theorem search_exhausted_isOptimalLabeling (sem : Rel → List Bool → Bool)
   have hIO : Disjoint I O := disjoint_left.mpr fun _ hi ho => (mem_sdiff.mp hi).2 ho
   have hroot (o : Occurrence F) (hi : Inconsistent f o.var) : o ∈ I := by
     refine mem_sdiff.mpr ⟨List.mem_toFinset.mpr (hc o (Or.inl ((mem_roots f _).mpr hi))), ?_⟩
-    exact fun ho => outgoing_not_root hg (List.mem_toFinset.mp ho) ((mem_roots f _).mpr hi)
+    exact fun ho => hg.outgoing_not_root (List.mem_toFinset.mp ho) ((mem_roots f _).mpr hi)
   have hout (o : Occurrence F) (ho : o ∈ O) :
       hF.partner o ∈ I ∧ ¬ Inconsistent f o.var := by
     have hom := List.mem_toFinset.mp ho
@@ -254,7 +232,7 @@ theorem search_exhausted_isOptimalLabeling (sem : Rel → List Bool → Bool)
       exact hF.partner_ne o (outgoing_injective hg hom (List.mem_toFinset.mp hp)
         (hF.partner_variable o))
     · intro hi
-      exact outgoing_not_root hg hom ((mem_roots f _).mpr hi)
+      exact hg.outgoing_not_root hom ((mem_roots f _).mpr hi)
   refine ⟨hf, fun g hvalid => ?_⟩
   have hlocal := local_changes_le hF hM hf hvalid I O hIO
     (fun _ ha _ hb => incoming_saturated hg ha hb)
