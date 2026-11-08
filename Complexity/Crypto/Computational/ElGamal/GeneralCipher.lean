@@ -16,6 +16,7 @@ import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Crypto.Game.Statistical
 import Complexity.Crypto.Negligible.Basic
+import Complexity.Languages.Probabilistic.Norm
 import Complexity.Probability.PMF
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.StatisticalDistance
@@ -311,8 +312,8 @@ theorem hashedElGamalCPAGame_eq_hashedElGamalCipherCPAGame (setup : ℕ → PMF 
     F.hashedElGamalCPAGame setup H adversary bit n =
       F.hashedElGamalCipherCPAGame setup H
         (fun _ pad m => pure (Cslib.BitString.listXor pad.length [pad, m])) adversary bit n := by
-  simp only [hashedElGamalCPAGame, hashedElGamalCipherCPAGame, hashedElGamalCipherCPAGameOn,
-    ↓reduceIte, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.pure_bind]
+  simp only [pmf_norm, hashedElGamalCPAGame, hashedElGamalCipherCPAGame,
+    hashedElGamalCipherCPAGameOn, ↓reduceIte]
 
 /-- **Game 1** for general-cipher Hashed ElGamal ([BonehShoup2023], Section 11.5.2, proof of
 Theorem 11.5, p. 450): replace the Diffie–Hellman shared element `(α * β) • g` with an independent
@@ -381,10 +382,8 @@ theorem hashedElGamalCipherCPAGame_restrict {Msg : Type}
     (adversary : Encryption.AdversaryOf Msg) (bit : Bool) (n : ℕ) :
     F.hashedElGamalCipherCPAGame setup H encryptSym (adversary.restrict valid) bit n =
       F.hashedElGamalCipherCPAGameOn valid setup H encryptSym adversary bit n := by
-  simp only [hashedElGamalCipherCPAGame, hashedElGamalCipherCPAGameOn,
-    Encryption.AdversaryOf.restrict, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind,
-    List.headD_cons, List.tail_cons]
+  simp only [pmf_norm, hashedElGamalCipherCPAGame, hashedElGamalCipherCPAGameOn,
+    Encryption.AdversaryOf.restrict, ↓reduceIte, List.headD_cons, List.tail_cons]
   congr 1; funext d
   congr 1; funext α
   congr 1; funext choice
@@ -401,10 +400,8 @@ theorem hashedElGamalCipherIdealDDHGame_restrict {Msg : Type}
     (adversary : Encryption.AdversaryOf Msg) (bit : Bool) (n : ℕ) :
     F.hashedElGamalCipherIdealDDHGame setup H encryptSym (adversary.restrict valid) bit n =
       F.hashedElGamalCipherIdealDDHGameOn valid setup H encryptSym adversary bit n := by
-  simp only [hashedElGamalCipherIdealDDHGame, hashedElGamalCipherIdealDDHGameOn,
-    Encryption.AdversaryOf.restrict, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind,
-    List.headD_cons, List.tail_cons]
+  simp only [pmf_norm, hashedElGamalCipherIdealDDHGame, hashedElGamalCipherIdealDDHGameOn,
+    Encryption.AdversaryOf.restrict, ↓reduceIte, List.headD_cons, List.tail_cons]
   congr 1; funext d
   congr 1; funext α
   congr 1; funext choice
@@ -421,10 +418,8 @@ theorem hashedElGamalCipherUniformKeyGame_restrict {Msg : Type}
     (adversary : Encryption.AdversaryOf Msg) (bit : Bool) (n : ℕ) :
     F.hashedElGamalCipherUniformKeyGame setup keyLen encryptSym (adversary.restrict valid) bit n =
       F.hashedElGamalCipherUniformKeyGameOn valid setup keyLen encryptSym adversary bit n := by
-  simp only [hashedElGamalCipherUniformKeyGame, hashedElGamalCipherUniformKeyGameOn,
-    Encryption.AdversaryOf.restrict, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind,
-    List.headD_cons, List.tail_cons]
+  simp only [pmf_norm, hashedElGamalCipherUniformKeyGame, hashedElGamalCipherUniformKeyGameOn,
+    Encryption.AdversaryOf.restrict, ↓reduceIte, List.headD_cons, List.tail_cons]
   congr 1; funext d
   congr 1; funext α
   congr 1; funext choice
@@ -770,9 +765,8 @@ private theorem ddhRealGame_hashedElGamalCipherToDDHHiddenBitDistinguisher {Msg 
       (PMF.uniformOfFintype Bool).bind fun bit =>
         (F.hashedElGamalCipherCPAGame setup H encryptSym adversary bit n).map
           (fun guess => guess ^^ bit) := by
-  simp only [← ddhRealGame_hashedElGamalCipherToDDHDistinguisher, ddhRealGame,
-    hashedElGamalCipherToDDHHiddenBitDistinguisher, ProbComp.eval_bind, ProbComp.eval_uniform,
-    ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind]
+  simp only [pmf_norm, ← ddhRealGame_hashedElGamalCipherToDDHDistinguisher, ddhRealGame,
+    hashedElGamalCipherToDDHHiddenBitDistinguisher, ProbComp.eval_uniform]
   conv_lhs =>
     enter [2, d, 2, α]
     rw [PMF.bind_comm]
@@ -791,9 +785,8 @@ private theorem ddhIdealGame_hashedElGamalCipherToDDHHiddenBitDistinguisher {Msg
       (PMF.uniformOfFintype Bool).bind fun bit =>
         (F.hashedElGamalCipherIdealDDHGame setup H encryptSym adversary bit n).map
           (fun guess => guess ^^ bit) := by
-  simp only [← ddhIdealGame_hashedElGamalCipherToDDHDistinguisher, ddhIdealGame,
-    hashedElGamalCipherToDDHHiddenBitDistinguisher, ProbComp.eval_bind, ProbComp.eval_uniform,
-    ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind]
+  simp only [pmf_norm, ← ddhIdealGame_hashedElGamalCipherToDDHDistinguisher, ddhIdealGame,
+    hashedElGamalCipherToDDHHiddenBitDistinguisher, ProbComp.eval_uniform]
   conv_lhs =>
     enter [2, d, 2, α, 2, β]
     rw [PMF.bind_comm]
@@ -815,9 +808,8 @@ private theorem kdfRealGame_hashedElGamalCipherToKDFHiddenBitDistinguisher {Msg 
       (PMF.uniformOfFintype Bool).bind fun bit =>
         (F.hashedElGamalCipherIdealDDHGame setup H encryptSym adversary bit n).map
           (fun guess => guess ^^ bit) := by
-  simp only [← kdfRealGame_hashedElGamalCipherToKDFDistinguisher, kdfRealGame,
-    hashedElGamalCipherToKDFHiddenBitDistinguisher, ProbComp.eval_bind, ProbComp.eval_uniform,
-    ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind]
+  simp only [pmf_norm, ← kdfRealGame_hashedElGamalCipherToKDFDistinguisher, kdfRealGame,
+    hashedElGamalCipherToKDFHiddenBitDistinguisher, ProbComp.eval_uniform]
   conv_lhs =>
     enter [2, d, 2, α, 2, β]
     rw [PMF.bind_comm]
@@ -839,9 +831,8 @@ private theorem kdfIdealGame_hashedElGamalCipherToKDFHiddenBitDistinguisher {Msg
       (PMF.uniformOfFintype Bool).bind fun bit =>
         (F.hashedElGamalCipherUniformKeyGame setup keyLen encryptSym adversary bit n).map
           (fun guess => guess ^^ bit) := by
-  simp only [← kdfIdealGame_hashedElGamalCipherToKDFDistinguisher, kdfIdealGame,
-    hashedElGamalCipherToKDFHiddenBitDistinguisher, ProbComp.eval_bind, ProbComp.eval_uniform,
-    ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind]
+  simp only [pmf_norm, ← kdfIdealGame_hashedElGamalCipherToKDFDistinguisher, kdfIdealGame,
+    hashedElGamalCipherToKDFHiddenBitDistinguisher, ProbComp.eval_uniform]
   conv_lhs =>
     enter [2, d, 2, α, 2, β]
     rw [PMF.bind_comm]
@@ -1110,12 +1101,10 @@ theorem advantage_hashedElGamalCipherUniformKeyGameOn_demKeyGameOn_le {Msg : Typ
         (ProbComp.eval (F.sampleExp n d)).bind fun a =>
           (ProbComp.eval (F.sampleExp n d)).bind fun b =>
             k d (a : ZMod (F.order d)) (b : ZMod (F.order d)) := by
-    simp only [Encryption.demKeyGameOn, hashedElGamalCipherToDEMAdversary,
-      Encryption.AdversaryOf.restrict, ProbComp.eval_bind, ProbComp.eval_pure,
-      Cslib.BitString.eval_sampleList, apply_ite ProbComp.eval,
-      PMF.bind_bind, PMF.pure_bind, encPair_apply, encBits_apply,
-      unframe_frame_append, dropFrame_frame_append, List.headD_cons, List.tail_cons,
-      encodeElGamalPublicKey_eq_encode, k]
+    simp only [pmf_norm, Encryption.demKeyGameOn, hashedElGamalCipherToDEMAdversary,
+      Encryption.AdversaryOf.restrict, Cslib.BitString.eval_sampleList, apply_ite ProbComp.eval,
+      encPair_apply, encBits_apply, unframe_frame_append, dropFrame_frame_append, List.headD_cons,
+      List.tail_cons, encodeElGamalPublicKey_eq_encode, k]
     rw [PMF.bind_comm]
     congr 1; funext d
     rw [PMF.bind_comm]
@@ -1521,8 +1510,7 @@ noncomputable def seededSetupProb (setupProb : ℕ → ProbComp F.Desc)
     (seedLen : ℕ → F.Desc → ℕ) (n : ℕ) :
     ProbComp.eval (F.seededSetupProb setupProb seedLen n) =
       F.seededSetup (fun m => ProbComp.eval (setupProb m)) seedLen n := by
-  simp only [seededSetupProb, seededSetup, ProbComp.eval_bind, ProbComp.eval_pure,
-    Cslib.BitString.eval_sampleList, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+  simp only [pmf_norm, seededSetupProb, seededSetup, Cslib.BitString.eval_sampleList]
 
 /-- `F.seededSetupProb setupProb seedLen` is uniform strict PPT whenever `setupProb` is uniform
 strict PPT and `seedLen` is computable in polynomial time in unary. -/
