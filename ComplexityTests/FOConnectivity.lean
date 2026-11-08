@@ -13,15 +13,15 @@ public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
 
 The step-two graph on `Fin 5` is connected and on `Fin 4` it is not. Two concrete adjacencies, a
 step-two graph on a linear order other than `Fin m`, and the pullback of a concrete graph sentence
-along the interpretation are checked. A client derives that disconnectedness is not first-order
-definable either. -/
+along the interpretation defined by `stepTwoArcFormula` are checked. A client derives that
+disconnectedness is not first-order definable either. -/
 
 @[expose] public section
 
 namespace Cslib.Tests.FOConnectivity
 
 open FirstOrder Language Structure
-open Cslib.Logic.FO Cslib.Logic.FO.Connectivity
+open Cslib.Logic.FO Cslib.Logic.FO.DefinedGraph Cslib.Logic.FO.Connectivity
 
 /-- On `Fin 5` the step-two graph is the cycle `0 - 2 - 4 - 1 - 3 - 0`, which is connected. -/
 example : (stepTwoGraph (Fin 5)).Connected :=
@@ -60,10 +60,10 @@ instance (m : ℕ) : Language.order.OrderedStructure (Fin m) := ⟨fun _ => Iff.
 noncomputable def noIsolated : Language.graph.Sentence :=
   ∀' ∃' (adj.boundedFormula₂ &0 &1)
 
-/-- The pullback of `noIsolated` along `stepTwoInterp` holds in the order `Fin 5`: every element
-`x` is adjacent to `x + 2` in the step-two graph. -/
-example : Fin 5 ⊨ stepTwoInterp.onSentence noIsolated := by
-  rw [realize_onSentence_stepTwoInterp]
+/-- The pullback of `noIsolated` along the interpretation defined by `stepTwoArcFormula` holds in
+the order `Fin 5`: every element `x` is adjacent to `x + 2` in the step-two graph. -/
+example : Fin 5 ⊨ (graphInterp (stepTwoArcFormula 0 1)).onSentence noIsolated := by
+  rw [realize_onSentence_graphInterp, ← stepTwoGraph_eq_definedGraph]
   simp only [noIsolated, Sentence.Realize, Formula.Realize, BoundedFormula.realize_all,
     BoundedFormula.realize_ex, BoundedFormula.realize_rel₂]
   intro x
