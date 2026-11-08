@@ -13,16 +13,17 @@ open Verso.Genre Manual
 
 set_option pp.rawOnError true
 
-#doc (Manual) "A Guide to Complexitylib" =>
+#doc (Manual) "A Guide to cslib-frontier" =>
 %%%
-shortTitle := "Complexitylib guide"
+shortTitle := "cslib-frontier guide"
 %%%
 
-Complexitylib is a Lean 4 library of computational complexity theory, built on [CSLib][cslib] and
-Mathlib. This guide introduces the library one area at a time, in the order a newcomer needs it:
-what the objects are, how to state an ordinary claim, and how to prove one. Every Lean example is
-elaborated against the library when the guide is built, so an example that no longer matches the
-library fails the build.
+cslib-frontier is the frontier formalization library for [CSLib][cslib], built on CSLib and
+Mathlib; its scope is computer science generally, from algorithms and data structures to
+complexity, cryptography and logic. This guide introduces the library one area at a time, in the
+order a newcomer needs it: what the objects are, how to state an ordinary claim, and how to prove
+one. Every Lean example is elaborated against the library when the guide is built, so an example
+that no longer matches the library fails the build.
 
 Names in the examples link to the [API documentation][api], which lists every declaration with its
 docstring and source. Other entry points:
