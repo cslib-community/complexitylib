@@ -283,8 +283,9 @@ The full solver and planar dichotomy remain open under [#3091](https://github.co
 
 For explicit tables, import `Complexity.Computability.PolyTime.CSP.Edge.Augmenting`.
 In `Cslib.Complexity.CSP.EdgeAugmenting`, `Input` contains the original `CSP Table Nat`,
-two occurrence-bit buffers and the excluded starting variable. `encInput` frames every field;
-table arities, source names and output walk indices are binary. Internal scan positions are unary.
+two occurrence-bit buffers and the excluded starting variable. `encInput` frames the CSP and
+both buffers; the final excluded variable is binary without an additional frame. Table arities,
+source names and output walk indices are binary. Internal scan positions are unary.
 `computableInPolyTime_run` proves ordinary native polynomial time in the complete encoded input,
 including malformed tables and buffers. Iteration depends on actual lists, never the largest name.
 
