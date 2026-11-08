@@ -99,9 +99,20 @@ are preserved. `NativeResidualOneTurn` derives the one-turn cost lower bound for
 concrete admitted protocol class, normalizing unproposed failed outputs without
 strengthening successful-output-only provenance. A native two-bit client checks a
 nontrivial 1/3 posterior, encoding, halting/padding and source-instance cost/admission.
-This is not a decomposition of arbitrary open PTMs: unrestricted local stopping,
-arbitrary-turn/private-storage/query encoding, general response alphabets and upper
-realization are still missing. Unrestricted Theorems 5/6 and ALL-main remain incomplete.
+`NativeOpenExecution` now derives actual multi-query open-native transition/path
+laws, retaining full work tapes, communication channels, oracle private state and
+raw query/reply/resource history. General discrete PMF disintegration and
+`ObservedProcess` construct complete-public-history behavioral kernels without
+finite private-state/observation alphabets. `NativeOpenSelection` preserves the
+joint path/success/bill/duration law under successful-output-only provenance,
+including failed fabricated outputs and accepted empty covers. A real native
+work-tape/answer-dependent two-query client derives correlated execution, early
+stopping, bill 5 and duration 19/4; an infinite-hidden-type client checks full
+observed-history conditioning. These are clocked, instruction-indexed discrete
+semantics. Source oracle-turn epoch extraction through silent local computation,
+unbounded local stopping, general measurable laws, native batch/query/output
+encoding and upper realization remain missing. Unrestricted Theorems 5/6 and
+ALL-main remain incomplete.
 Theorem 4's native resource/asymptotic/hardness claims also remain open. Neither the
 policy LP nor the binary-input two-batch savings FPTAS supplies those missing claims.
 

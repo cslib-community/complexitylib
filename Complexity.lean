@@ -2607,6 +2607,8 @@ public import Complexity.Computability.Probabilistic.Finite
 public import Complexity.Computability.Probabilistic.LinearHash
 public import Complexity.Computability.Probabilistic.Memoize
 public import Complexity.Computability.Probabilistic.NativeOneTurn
+public import Complexity.Computability.Probabilistic.NativeOpenExecution
+public import Complexity.Computability.Probabilistic.NativeOpenSelection
 public import Complexity.Computability.Probabilistic.Oracle
 public import Complexity.Computability.Probabilistic.Oracle.Composition
 public import Complexity.Computability.Probabilistic.Oracle.Iteration
@@ -4319,9 +4321,11 @@ public import Complexity.Probability.MinEntropy.LeftoverHash
 public import Complexity.Probability.Minimax
 public import Complexity.Probability.PMF
 public import Complexity.Probability.PMF.Bind
+public import Complexity.Probability.PMF.Disintegration
 public import Complexity.Probability.PMF.Event
 public import Complexity.Probability.PMF.Expect
 public import Complexity.Probability.PMF.Map
+public import Complexity.Probability.PMF.ObservedProcess
 public import Complexity.Probability.PMF.TwoBranch
 public import Complexity.Probability.PMF.Uniform
 public import Complexity.Probability.PMF.UniformBound

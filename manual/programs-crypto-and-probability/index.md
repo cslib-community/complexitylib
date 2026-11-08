@@ -955,3 +955,94 @@ these obligations; no unrestricted theorem or ALL-main completion is claimed.
 The Agent Operator's Manual needs no change because ownership, human direction,
 review and validation procedures are unchanged. No curated abstract depends on
 these new modules or selects this bounded bridge as a headline.
+
+
+### Submission 191: actual multi-query open execution and public path representation
+
+Import `Complexity.Computability.Probabilistic.NativeOpenExecution` for actual
+open native execution and `Complexity.Computability.Probabilistic.NativeOpenSelection`
+for successful-output provenance. The complete [native open client](../../ComplexityTests/NativeOpenExecution.lean)
+and [observed-process client](../../ComplexityTests/ObservedProcess.lean) include
+all imports, state definitions, transition tables and local proofs.
+
+`execute` interprets the existing `MultiTapePTM.runConfigFrom` against a stateful
+history-dependent handler. `World` retains the actual native work tapes, control,
+query buffers and answer heads, together with the oracle's private state and
+complete raw query/reply/resource history. Private work-tape storage is not
+exported as an output packet. The theorems apply to arbitrary native tables;
+finite control and channels give the ordinary encoded-PTM instances, as in the
+client. `Environment` can inspect all earlier events and shared private state.
+Its jointly sampled `Reply` supplies the installed word, nonnegative token charge
+and external duration. There is no response/charge independence premise or
+finite-alphabet approximation. These are discrete PMF laws, including countably
+supported infinite response or private-state spaces, rather than arbitrary
+nonatomic measurable distributions.
+
+`step` uses the actual transition table and a fresh private fair coin. An ordinary
+instruction changes only native configuration; an actual query passes its real
+buffer to the handler, installs that reply, and records exactly that observation.
+`execute_one` proves equality with the native interpreter. `execute_add` proves
+pause/resume of the entire correlated joint state, and `execute_eq_stateLaw`
+identifies all finite native executions with the resulting hidden-state process.
+No representation equality is supplied as a hypothesis.
+
+For public conditioning, `PMF.posterior` reuses pinned cslib's positive-observation
+`PMF.posteriorDist` and adds a harmless prior completion on null observations. `ObservedProcess.privateLaw`
+retains the hidden state and complete observed prefix. `nextHistory` constructs
+a kernel from the posterior on that complete prefix; `public_eq_observed` proves
+equality of entire public path laws. Conditioning merely on the current observed
+item can lose private correlations, so this API retains earlier observations.
+`execute_public_paths` identifies entire public path laws with actual native
+one-instruction checkpoints retaining full configurations and oracle memory.
+`execute_history_law` connects their public process to the whole actual raw query
+history. This process is indexed by native instructions and
+includes silent local steps; it is not yet indexed by source oracle turns.
+
+`tokenBill` and `elapsed` sum the charges and external durations on the same
+recorded events. `execute_trace` proves that actual histories extend their
+retained prefix and add at most one query per native instruction.
+`execute_resources` derives the new bill/duration sums and their monotonicity;
+no total-bill bound or integrability is assumed. If an external operation encodes
+a whole concurrent batch, its reported duration is that batch's parallel duration.
+A source application must still verify that batch/query/cutoff encoding contract.
+Local native instructions contribute neither tokens nor external duration.
+`execute_halted` and `execute_padding` stop all subsequent queries/resources once
+native control actually halts. `execute_public_score` preserves extended
+nonnegative expectations, which may be infinite.
+
+`NativeOpenSelection.result` reads a decoded result only after actual native
+halting, so exhausting a clock at a live configuration cannot accept an output
+prefix. `View.halted` and `Outcome.halted` separately preserve actual native
+stopping, so a live prefix differs from a halted failure even when both have
+no accepted output. `proposals` parses valid candidates from actual answer words.
+`SelectionOnly` imposes provenance only for successful outputs on supported native
+runs. `normalized` discards unproposed failed families using `none`; it preserves
+the distinction between failure and a successful `some empty` on an empty ground
+instance. `normalized_provenance` derives provenance for retained outputs, and
+`behavioral_outcome_law` proves the complete native/public joint law of query
+history, stopping, acceptance, accumulated bill and physical duration after normalization.
+Native parsers/codecs and the acceptance criterion remain explicit semantic
+parameters; this result does not compile the source upper selector.
+
+The native client keeps a sampled bit on a real work tape. The first call samples
+a second hidden bit, and later replies repeat it from oracle private state.
+Native control combines the work bit and first answer to choose an early halt
+or the next query. The full configuration/oracle/history law is proved, including
+work-tape retention across both calls. Actual expected bill is $5$ and physical
+duration $19/4$, with supported native halting and stable larger clocks.
+A decoder produces valid successful outputs on some paths and an unproposed
+fabricated family only on failed paths; successful-output provenance and the
+joint behavioral law are checked. Live prefixes and zero-query accepted empty
+covers exercise the stopping/failure distinction. The second client uses an
+infinite hidden type: an observed bit disappears and later reappears, with exact
+correlated public path probabilities and harmless null-history completion.
+
+The remaining source bridge must extract actual next-query/halting epochs,
+collapse silent local computation, handle unbounded local stopping and connect
+source turn/deadline constraints to the existing Theorem 5/6 policy accounting.
+General measurable laws, source opportunity/batch/query/output encodings,
+canonical-label recovery and uniform upper-selector realization remain open.
+Theorem 4's native resource/asymptotic/hardness gaps also remain. Neither
+unrestricted Theorems 5/6 nor ALL-main is complete. No selected abstract model or
+statement changes. The Agent Operator's Manual requires no edit because human
+direction, ownership, review and validation procedures are unchanged.
