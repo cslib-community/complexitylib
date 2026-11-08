@@ -21,13 +21,16 @@ work with arbitrary maps `x : V → Fin q`, proper or not, rather than with the 
 `SimpleGraph.properColorings` of proper `q`-colorings, and the colors allowed at a vertex,
 `SimpleGraph.allowedColors`: those absent from its neighbors. At most `Δ` colors are excluded
 (`SimpleGraph.sub_maxDegree_le_card_allowedColors`), and recoloring a vertex of a proper coloring
-with an allowed color keeps it proper (`SimpleGraph.IsProperColoring.update_of_mem`).
+with an allowed color keeps it proper (`SimpleGraph.IsProperColoring.update_of_mem`). The proper
+colorings agreeing with a fixed coloring `b` off a vertex set `U`, `SimpleGraph.frozenColorings`,
+are the state spaces of the approximate counting algorithm of [LevinPeres2017], Section 14.4.2.
 
 ## Main definitions
 
 * `SimpleGraph.IsProperColoring`: adjacent vertices have different colors.
 * `SimpleGraph.allowedColors`: the colors absent from the neighbors of a vertex.
 * `SimpleGraph.properColorings`: the finset of proper `q`-colorings.
+* `SimpleGraph.frozenColorings`: the proper colorings agreeing with `b` off `U`.
 
 ## Main results
 
@@ -36,10 +39,13 @@ with an allowed color keeps it proper (`SimpleGraph.IsProperColoring.update_of_m
 * `SimpleGraph.sub_maxDegree_le_card_allowedColors`: at least `q - Δ` colors are allowed.
 * `SimpleGraph.properColorings_nonempty`: proper colorings exist when `Δ < q`.
 * `SimpleGraph.IsProperColoring.update_of_mem`: recoloring with an allowed color.
+* `SimpleGraph.frozenColorings_univ`, `SimpleGraph.frozenColorings_empty`,
+  `SimpleGraph.frozenColorings_erase`: nothing frozen, everything frozen, and freezing one more
+  vertex.
 
 ## References
 
-* [LevinPeres2017], Sections 3.1 and 3.3.1.
+* [LevinPeres2017], Sections 3.1, 3.3.1 and 14.4.2.
 -/
 
 public section
@@ -124,7 +130,52 @@ theorem properColorings_nonempty (hq : G.maxDegree < q) : (G.properColorings q).
   obtain ⟨C⟩ := G.colorable_of_maxDegree_lt hq
   exact ⟨C, (mem_properColorings G).2 fun u v huv => C.valid huv⟩
 
+/-- The proper colorings agreeing with `b` off `U`, the state space `X_k` of [LevinPeres2017],
+Section 14.4.2, when `U` is the set of the first `k` vertices. -/
+def frozenColorings (q : ℕ) (U : Finset V) (b : V → Fin q) : Finset (V → Fin q) :=
+  Finset.univ.filter fun x => G.IsProperColoring x ∧ ∀ u ∉ U, x u = b u
+
 variable {G}
+
+theorem mem_frozenColorings {U : Finset V} {b x : V → Fin q} :
+    x ∈ frozenColorings G q U b ↔ G.IsProperColoring x ∧ ∀ u ∉ U, x u = b u := by
+  simp [frozenColorings]
+
+theorem mem_frozenColorings_self {U : Finset V} {b : V → Fin q} (hb : G.IsProperColoring b) :
+    b ∈ frozenColorings G q U b :=
+  mem_frozenColorings.2 ⟨hb, fun _ _ => rfl⟩
+
+theorem frozenColorings_univ (b : V → Fin q) :
+    frozenColorings G q Finset.univ b = G.properColorings q := by
+  ext x
+  simp [mem_frozenColorings, mem_properColorings]
+
+/-- With every vertex frozen, only `b` itself remains. -/
+theorem frozenColorings_empty {b : V → Fin q} (hb : G.IsProperColoring b) :
+    frozenColorings G q ∅ b = {b} := by
+  ext x
+  simp only [mem_frozenColorings, Finset.notMem_empty, not_false_eq_true, forall_const,
+    Finset.mem_singleton]
+  constructor
+  · rintro ⟨-, h⟩
+    exact funext h
+  · rintro rfl
+    exact ⟨hb, fun _ => rfl⟩
+
+/-- Freezing one more vertex `v` at its color in `b` keeps the colorings with `x v = b v`. -/
+theorem frozenColorings_erase (U : Finset V) (b : V → Fin q) (v : V) :
+    frozenColorings G q (U.erase v) b = (frozenColorings G q U b).filter fun x => x v = b v := by
+  ext x
+  simp only [Finset.mem_filter, mem_frozenColorings, Finset.mem_erase, not_and_or, not_not,
+    ne_eq]
+  constructor
+  · rintro ⟨hx, hb⟩
+    exact ⟨⟨hx, fun u hu => hb u (Or.inr hu)⟩, hb v (Or.inl rfl)⟩
+  · rintro ⟨⟨hx, hb⟩, hv⟩
+    refine ⟨hx, fun u hu => ?_⟩
+    rcases hu with rfl | hu
+    · exact hv
+    · exact hb u hu
 
 /-- Recoloring a vertex of a proper coloring with an allowed color gives a proper coloring. -/
 theorem IsProperColoring.update_of_mem {x : V → Fin q} (hx : G.IsProperColoring x) {w : V}

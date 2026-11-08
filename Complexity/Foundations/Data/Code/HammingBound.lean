@@ -12,6 +12,7 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Sigma
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.Fintype.Powerset
+import Mathlib.Data.Nat.Choose.Bounds
 import Mathlib.Data.Nat.Choose.Sum
 import Mathlib.Tactic.GCongr
 import Mathlib.Tactic.NormNum
@@ -45,6 +46,8 @@ balls of radius less than `⌈L / 2⌉` have at most `8 ^ L` words, so some code
 * `Cslib.Code.card_filter_hammingDist_eq`: the size of a Hamming sphere.
 * `Cslib.Code.card_filter_hammingDist_le_eq_sum`: the size of a Hamming ball, as a sum of sphere
   sizes.
+* `Cslib.Code.card_filter_hammingDist_le_le_pow`: a Hamming ball of radius `r` over `q` letters at
+  `n` positions has at most `(n (q - 1) + 1) ^ r` words.
 * `Cslib.Code.card_mul_card_filter_hammingDist_le_le_prod`: the Hamming bound.
 * `Cslib.Code.card_mul_sum_choose_le_of_two_mul_lt_minDist`: the Hamming bound over a `q`-letter
   alphabet.
@@ -126,6 +129,21 @@ theorem card_filter_hammingDist_le_eq_sum (x : ∀ i, β i) (r : ℕ) :
     simp
   · intro i _ j _ hij
     exact disjoint_left.2 fun y hi hj => hij ((mem_filter.1 hi).2.symm.trans (mem_filter.1 hj).2)
+
+/-- Over an alphabet of `q` letters at each of `n` positions, a Hamming ball of radius `r` has at
+most `(n (q - 1) + 1) ^ r` words: by the binomial theorem this dominates
+`∑_{j ≤ r} C(n, j) (q - 1) ^ j`. -/
+theorem card_filter_hammingDist_le_le_pow {q : ℕ} (hq : ∀ i, Fintype.card (β i) = q)
+    (x : ∀ i, β i) (r : ℕ) :
+    #{y : ∀ i, β i | hammingDist x y ≤ r} ≤ (Fintype.card ι * (q - 1) + 1) ^ r := by
+  rw [card_filter_hammingDist_le_eq_sum, add_pow]
+  refine sum_le_sum fun j hj => ?_
+  rw [card_filter_hammingDist_eq_choose_mul_pow hq x j, one_pow, mul_one, mul_pow]
+  calc (Fintype.card ι).choose j * (q - 1) ^ j
+      ≤ Fintype.card ι ^ j * (q - 1) ^ j :=
+        Nat.mul_le_mul_right _ (Nat.choose_le_pow _ j)
+    _ ≤ Fintype.card ι ^ j * (q - 1) ^ j * r.choose j :=
+        Nat.le_mul_of_pos_right _ (Nat.choose_pos (Nat.lt_succ_iff.mp (mem_range.mp hj)))
 
 /-- **The Hamming bound**: a code of minimum distance more than `2 r` has at most `∏ i, |β i|`
 words in all of its balls of radius `r` together. -/
