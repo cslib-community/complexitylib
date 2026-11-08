@@ -203,6 +203,19 @@ theorem labeling_map (F : CSP Table ℕ) (f : OccurrenceLabeling F Bool) :
   funext o
   simp [labeling, occurrenceIndex, mem_incidenceList o]
 
+/-- An exact-width occurrence buffer is recovered by materializing its positional labeling
+in incidence-list order. Width is the actual number of occurrences, not a declared arity. -/
+theorem buffer_eq {F : CSP Table ℕ} (bits : List Bool)
+    (hlen : bits.length = (incidenceList F).length) :
+    bits = (incidenceList F).map (labeling F bits) := by
+  apply List.ext_getElem
+  · simpa using hlen
+  · intro i hi hj
+    have ho : i < (incidenceList F).length := by omega
+    have he := (incidenceList_nodup F).idxOf_getElem i ho
+    simp only [List.getElem_map, labeling, occurrenceIndex, he,
+      List.getD_eq_getElem _ _ hi]
+
 /-- Projection of an existing walk followed by positional decoding recovers its occurrences. -/
 theorem getElem?_occurrenceIndex {F : CSP Table ℕ} (o : Occurrence F) :
     (incidenceList F)[occurrenceIndex o]? = some o := by

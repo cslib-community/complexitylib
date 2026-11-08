@@ -112,11 +112,17 @@ private def findStart (input : Input) (g : List Bool) : Option Record :=
 private def flipped (input : Input) (w : WalkCode) : List Bool :=
   flip input.labels (w.steps.flatMap fun a => [a.1, a.2])
 
-private def recordAt (F : CSP Table ℕ) (i : ℕ) : Record :=
+/-- Read an actual incidence record at a global position, defaulting to `(0, 0, 0)` when
+that position is outside the finite original occurrence list. -/
+@[expose] def recordAt (F : CSP Table ℕ) (i : ℕ) : Record :=
   (CSP.occurrences F).getD i (0, 0, 0)
 
-private def finish (input : Input) (w : WalkCode) : ℕ :=
-  w.steps.reverse.head?.elim w.start fun a => (recordAt input.body a.2).2.2
+/-- Read the last output port's original variable. An empty walk retains its original start;
+an invalid last position uses the same zero-record default as `recordAt`. -/
+@[expose] def finish (input : Input) (w : WalkCode) : ℕ :=
+  w.steps.reverse.head?.elim w.start fun (_, output) =>
+    let (_, _, vertex) := recordAt input.body output
+    vertex
 
 private def walkPair (input : Input) (g : List Bool) (w : WalkCode) :
     Option (Record × Record) :=
@@ -409,17 +415,6 @@ theorem decode_code {F : CSP Table ℕ} (w : Walk F) : decode F (code w) = some 
       (List.mapM_pure (m := Option) (l := steps) (f := id))
   simp [decode, code, List.mapM_map, Function.comp_def, getElem?_occurrenceIndex, hm]
 
-private theorem buffer_eq {F : CSP Table ℕ} (bits : List Bool)
-    (hlen : bits.length = (incidenceList F).length) :
-    bits = (incidenceList F).map (labeling F bits) := by
-  apply List.ext_getElem
-  · simpa using hlen
-  · intro i hi hj
-    have ho : i < (incidenceList F).length := by omega
-    have he := (incidenceList_nodup F).idxOf_getElem i ho
-    simp only [List.getElem_map, labeling, occurrenceIndex, he,
-      List.getD_eq_getElem _ _ hi]
-
 private theorem distance_eq {F : CSP Table ℕ} (f g : List Bool)
     (hf : f.length = (incidenceList F).length)
     (hg : g.length = (incidenceList F).length) :
@@ -518,7 +513,9 @@ private theorem repair_iter (input : Input) (n : ℕ) (g : List Bool) (k : ℕ)
         EdgeInstance.repair, hs, hl,
         Nat.add_assoc, Nat.add_comm 1] using hi
 
-private theorem recordAt_index {F : CSP Table ℕ} (o : Occurrence F) :
+/-- Looking up the binary position of an actual occurrence recovers its exact positional
+record, including both original local coordinates and its original variable name. -/
+theorem recordAt_index {F : CSP Table ℕ} (o : Occurrence F) :
     recordAt F (occurrenceIndex o) = o.record := by
   have hi := occurrenceIndex_lt o
   simp [recordAt, occurrences_eq_map_incidenceList, List.getD_eq_getElem?_getD,
@@ -533,7 +530,9 @@ private theorem flipped_eq (input : Input) (w : Walk input.body)
   rw [flipped, he, labeling_flip _ _ hlen]
   rfl
 
-private theorem finish_eq (input : Input) (w : Walk input.body) :
+/-- The finite binary-position endpoint of an encoded actual walk is exactly its original
+mathematical endpoint, including the length-zero fallback. -/
+theorem finish_eq (input : Input) (w : Walk input.body) :
     finish input (code w) = w.finish := by
   rcases w with ⟨r, s⟩
   induction s using List.reverseRecOn with
