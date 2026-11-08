@@ -2547,6 +2547,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finit
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame.Lookup
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Inductive
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.IntBinary
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.IntBinary.Decode
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
