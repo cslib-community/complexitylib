@@ -149,6 +149,32 @@ Outputs use the same `IsMatching`/`VertexCover` vocabulary as the Edmonds–Karp
 
 The combinatorial layer is [Complexity/Algorithms/Lean/MaxFlow/AugmentingPath.lean](../../Complexity/Algorithms/Lean/MaxFlow/AugmentingPath.lean). It contains Berge's theorem (`isMaxMatching_iff_forall_not_isAugmentingPath`), the phase lemma (`IsMaximalLayeredAugmentation.noShortAug_augment`) and the phase bound (`IsPhaseRun.le_two_mul_sqrt`). These proofs use a layered counting lemma, `card_mul_le_of_noShortAug`, instead of decomposing `M ⊕ M*` into disjoint augmenting paths; that decomposition is not formalized.
 
+## Scheduling bounds
+
+[Complexity/Algorithms/Lean/Scheduling/](../../Complexity/Algorithms/Lean/Scheduling/) contains
+classical makespan bounds as mathematical statements about schedules. These are not runtime claims.
+`IdenticalMachines.lean` models `P || C_max`: an assignment `σ : Fin n → Fin m` of jobs with
+processing times `p : Fin n → α` (an ordered field for the ratio theorems). `IsListSchedule p σ`
+is Graham's rule that each job goes to a least-loaded machine over the earlier jobs.
+`listSchedule` computes such an assignment. `IsListSchedule.makespan_le_optMakespan` proves
+`C ≤ (2 - 1/m) · OPT`, and `IsListSchedule.makespan_grahamTight` shows that the ratio is
+attained for every `m`. `LPT.lean` defines `lptSchedule`, which applies `listSchedule` after
+sorting by `lptOrder`, and proves `makespan_lptSchedule_le`: `C ≤ (4/3 - 1/(3m)) · OPT`.
+
+`Precedence.lean` models `P | prec | C_max` in discrete time. Start times are `s : J → ℕ`,
+processing times are natural numbers and `prec` is any relation; the bounds assume it is
+well-founded. `IsFeasible` and `IsGreedy` are predicates on
+schedules. `exists_isGreedy` constructs a greedy schedule for well-founded precedences and
+positive processing times. `IsGreedy.exists_chain` is Graham's critical chain.
+`IsGreedy.mul_makespan_le_of_le` is Graham's 1966 anomaly theorem. `Brent.lean` defines the
+critical-path `span` and proves the work and span laws, the greedy bound
+`m · T ≤ ∑ p + (m - 1) · span`, and Brent's lemma for unit-time DAGs
+(`exists_isFeasible_mul_makespan_le`). Two limitations apply: processing times in the precedence
+model are integers, and Graham's anomaly instances are not formalized.
+[ComplexityTests/Scheduling.lean](../../ComplexityTests/Scheduling.lean) checks the tight
+instances, nonvacuity of `IsGreedy`, a feasible schedule that is not greedy, and a zero-length
+self-loop showing that the critical-chain theorem needs well-founded precedences.
+
 ## Other clients and classification
 
 The source tree also contains native integer arithmetic, multiword circuit evaluation, matrix multiplication, primality/counting, predecessor structures, 3SUM/exact-triangle routines and randomized SAT algorithms. These broaden coverage of the machine library; they should be catalogued through the complete module census without counting each as a new model. In particular, a bounded frontend or a conditional transfer theorem should not be presented as completion of an unresolved fine-grained endpoint. The current `ROADMAP.md` and selected abstracts are better evidence of endpoint disposition than a directory name.
