@@ -136,10 +136,8 @@ theorem collisionProb_triangle (seed : PMF ι) (hash : ι → X → Y) (x y z : 
     have hset : {i | hash i a = hash i b}ᶜ = {i | hash i a ≠ hash i b} := rfl
     rw [hset] at h
     linarith
-  rw [hcompl, hcompl, hcompl, ← ENNReal.toReal_add (PMF.toOuterMeasure_ne_top _ _)
-    (PMF.toOuterMeasure_ne_top _ _)]
-  refine ENNReal.toReal_mono (ENNReal.add_ne_top.2 ⟨PMF.toOuterMeasure_ne_top _ _,
-    PMF.toOuterMeasure_ne_top _ _⟩) ?_
+  rw [hcompl, hcompl, hcompl]
+  refine ENNReal.toReal_le_add ?_ (PMF.toOuterMeasure_ne_top _ _) (PMF.toOuterMeasure_ne_top _ _)
   have hsub : {i | hash i x ≠ hash i z} ⊆
       {i | hash i x ≠ hash i y} ∪ {i | hash i y ≠ hash i z} := by
     intro i hi
