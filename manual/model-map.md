@@ -82,6 +82,9 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `ppp` | [PPP](machines-and-classes/search-and-promises.md) | total-search-principle |
 | `ppad` | [PPAD](machines-and-classes/search-and-promises.md) | total-search-principle |
 | `ppa` | [PPA](machines-and-classes/search-and-promises.md) | total-search-principle |
+| `ppads` | [PPADS](machines-and-classes/search-and-promises.md) | total-search-principle |
+| `eopl` | [EOPL](machines-and-classes/search-and-promises.md) | total-search-principle |
+| `sopl` | [SOPL](machines-and-classes/search-and-promises.md) | total-search-principle |
 | `promise-completion` | [Disjoint promise and completion lift](machines-and-classes/search-and-promises.md) | promise |
 | `promise-randomized` | [Direct randomized promise verifier](machines-and-classes/search-and-promises.md) | promise |
 | `primrec` | [Mathlib primitive-recursive typed functions](machines-and-classes/computability-and-description.md) | computability |
@@ -198,6 +201,8 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `publiccoin` | [Public-coin communication](circuits-logic-and-other-models/index.md) | communication |
 | `privatecoin` | [Private-coin communication](circuits-logic-and-other-models/index.md) | communication |
 | `nondet-communication` | [Nondeterministic rectangle-cover communication](circuits-logic-and-other-models/index.md) | communication |
+| `nof-communication` | [Number-on-forehead multiparty bit trees](circuits-logic-and-other-models/query-and-communication.md) | communication |
+| `nof-publiccoin` | [Public-coin number-on-forehead communication](circuits-logic-and-other-models/query-and-communication.md) | communication |
 | `fo` | [Mathlib first-order syntax and finite relational structures](circuits-logic-and-other-models/index.md) | finite-logic |
 | `fo-interpretation` | [Tuple-domain first-order interpretations](circuits-logic-and-other-models/index.md) | finite-logic |
 | `tagged-interpretation` | [Tagged interpretations with varying tuple dimensions](circuits-logic-and-other-models/index.md) | finite-logic |
@@ -219,6 +224,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `resolution-tree` | [Tree-like resolution derivations](circuits-logic-and-other-models/index.md) | proof-systems |
 | `cutting-planes-lines` | [Cutting planes proofs as ordered lists of integer inequalities](circuits-logic-and-other-models/index.md) | proof-systems |
 | `semantic-derivation` | [Semantic derivations: sequences of sets of assignments, each initial, everything, or containing the intersection of two earlier ones](circuits-logic-and-other-models/index.md) | proof-systems |
+| `frege-lines` | [Hilbert-style Frege proofs as ordered lists of formulas; implicational completeness not yet formalized](circuits-logic-and-other-models/index.md) | proof-systems |
 | `pac` | [General deterministic PAC framework](circuits-logic-and-other-models/index.md) | learning |
 | `randomized-pac` | [Randomized agnostic PAC framework](circuits-logic-and-other-models/index.md) | learning |
 | `uniform-learning` | [Uniform-distribution Boolean sample learning](circuits-logic-and-other-models/index.md) | learning |
