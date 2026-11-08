@@ -28,9 +28,15 @@ The tactic fails on a goal that is not a word-size bound, naming the plain `omeg
 right call, and when `omega` cannot close the unfolded goal, showing that goal and saying whether
 any hypothesis `Fits w v` was found.
 
+The simplification procedure `Cslib.WordRAM.reduceFits` rewrites `Fits w v` to `True` when `omega`
+proves it from the hypotheses that mention `Fits` alone, so that a `simp` call deciding whether
+written values fit a word, as in `ram_eval`, needs no named `Fits` facts. It leaves the other
+hypotheses out to keep its cost independent of the length of the context.
+
 ## Main definitions
 
 * `fits`: prove `Fits w v`, or `v < 2 ^ w`, by `omega` from the word-size facts in context.
+* `Cslib.WordRAM.reduceFits`: the same proof, from the `Fits` hypotheses, as a `simp` procedure.
 -/
 
 public meta section
@@ -82,6 +88,56 @@ def powerFacts (es : Array Expr) : MetaM (Array Hypothesis) := do
     unless ← isDefEq type (← inferType value) do return none
     return some { userName := `this, type, value }
 
+/-- The most hypotheses that mention `Fits` for which `prove?` tries `omega`. Beyond it, as in
+proofs that state one generated fact per written value, `prove?` only looks for a hypothesis of the
+same statement: `omega` over many large facts, once per value written, would cost more than the
+statements save. -/
+def maxFacts : ℕ := 16
+
+/-- The heartbeats `prove?` may spend on one bound, in thousands, as for `maxHeartbeats`: a bound
+that `omega` does not settle quickly, for instance through case splits on divisions, is left to
+the given simp lemmas rather than slowing every evaluation, which may try hundreds of bounds. -/
+def maxHeartbeats : ℕ := 200
+
+/-- A proof of the word-size bound `target` by `omega` from the hypotheses that mention `Fits`,
+unfolded, or `none`. Unlike `fits` it uses no other hypotheses and adds no positivity facts, so
+that its cost does not grow with a long context; it runs inside `simp` (`reduceFits`), possibly
+on every value a program writes. -/
+def prove? (target : Expr) : MetaM (Option Expr) := do
+  let target ← instantiateMVars target
+  unless isWordBound target.cleanupAnnotations do return none
+  let target' := target.cleanupAnnotations
+  let exact? ← (← getLCtx).findDeclRevM? fun d => do
+    if d.isImplementationDetail then return none
+    return if (← instantiateMVars d.type).cleanupAnnotations == target' then some d.toExpr else none
+  if exact?.isSome then return exact?
+  let count ← (← getLCtx).foldlM (init := 0) fun n d =>
+    return if !d.isImplementationDetail && mentionsFits d.type then n + 1 else n
+  if count == 0 || count > maxFacts then return none
+  let facts ← fitsHypotheses
+  let saved ← saveState
+  let budget (x : MetaM (Option Expr)) : MetaM (Option Expr) :=
+    withCurrHeartbeats <| withTheReader Core.Context
+      (fun ctx => { ctx with maxHeartbeats := maxHeartbeats * 1000 }) x
+  let attempt : MetaM (Option Expr) := do
+    let unfolded ← unfoldFits target
+    let proofs ← facts.mapM fun h => mkExpectedTypeHint h.value h.type
+    let g ← mkFreshExprSyntheticOpaqueMVar unfolded
+    let some g' ← g.mvarId!.falseOrByContra | throwError "fits: no goal"
+    g'.withContext do
+      let some neg := (← getLCtx).lastDecl | throwError "fits: no negated goal"
+      Lean.Elab.Tactic.Omega.omega (neg.toExpr :: proofs.toList) g'
+    return some (← mkExpectedTypeHint (← instantiateMVars g) target)
+  tryCatchRuntimeEx (budget attempt) fun _ => do
+    saved.restore
+    return none
+
+/-- Rewrite a word-size bound `Fits w v` to `True` when `prove?` proves it. -/
+def reduceFitsStep : Simp.Simproc := fun e => do
+  unless e.isAppOfArity ``Cslib.WordRAM.Fits 2 do return .continue
+  let some h ← prove? e | return .continue
+  return .done { expr := mkConst ``True, proof? := some (← mkEqTrue h) }
+
 /-- `fits` proves a word-size bound `Fits w v`, or `v < 2 ^ w`, by linear arithmetic. It unfolds
 `Fits` in the goal and in each hypothesis that mentions it, and runs `omega`; hypotheses are found
 by their statements, whatever their names.
@@ -119,5 +175,18 @@ elab_rules : tactic
         bounds on them with `fits [h]`.\n{g}\n{ex.toMessageData}"
 
 end Cslib.Tactic.Fits
+
+end
+
+public section
+
+namespace Cslib.WordRAM
+
+/-- `simp` procedure that rewrites a word-size bound `Fits w v` to `True` when `omega` proves it
+from the hypotheses `Fits w' v'` in context. `ram_eval` and `ram_exact_eval` use it to decide
+which written values fit a word. -/
+simproc_decl reduceFits (Fits _ _) := Cslib.Tactic.Fits.reduceFitsStep
+
+end Cslib.WordRAM
 
 end

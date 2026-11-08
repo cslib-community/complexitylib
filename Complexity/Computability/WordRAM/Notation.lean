@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.WordRAM.Structured
+public import Complexity.Tactic.Fits
 
 /-!
 # Notation for structured word-RAM programs
@@ -48,9 +49,10 @@ identifiers: `ram` and `width` remain ordinary names.
   `Cslib.WordRAM.Code.eval` on `c` and `x` with `simp`, allowing each loop `n` iterations (default
   `0`, for loop-free code), and closes the goal when the result is `y` within (exactly, for `Exec`)
   `T` instructions; with `y` a metavariable, it determines `y`. Which constants and results fit a
-  word is decided for numerals and otherwise taken from the given simp lemmas, stated with
-  `Cslib.WordRAM.Fits`. Programs given by name are unfolded by passing their definitions among the
-  simp lemmas, as in `ram_eval [myProgram, h]`.
+  word is decided for numerals, by `omega` from the `Fits` hypotheses in context
+  (`Cslib.WordRAM.reduceFits`), so that a bound implied by a fact such as `Fits w (base + n)`
+  needs no statement of its own, or else by the given simp lemmas. Programs given by name are
+  unfolded by passing their definitions among the simp lemmas, as in `ram_eval [myProgram, h]`.
 
 ## References
 
@@ -162,8 +164,9 @@ scoped macro_rules
   | `(ram_stmt% ⟪$c⟫) => `(($c : Cslib.WordRAM.Code _ _))
 
 /-- Symbolically execute structured code on a goal `ExecWithin w c x y T` or `Exec w c x y T`,
-allowing each loop the given number of iterations (default `0`), and deciding with the given simp
-lemmas which written numbers fit a word. -/
+allowing each loop the given number of iterations (default `0`). Whether a written number fits a
+word is decided by `omega` from the `Fits` hypotheses in context (`Cslib.WordRAM.reduceFits`),
+or by the given simp lemmas. -/
 scoped syntax (name := ramEval) "ram_eval" (ppSpace num)? (" [" Lean.Parser.Tactic.simpArg,* "]")? :
   tactic
 
@@ -180,7 +183,7 @@ scoped macro_rules
             Cslib.WordRAM.Op.eval_load, Cslib.WordRAM.Op.eval_store, Cslib.WordRAM.Op.eval_bin,
             Cslib.WordRAM.Op.eval_width, Cslib.WordRAM.Basis.standard_interp_bin,
             Cslib.WordRAM.Basis.standard_interp_width, Cslib.WordRAM.Data.put,
-            Cslib.WordRAM.fits_zero,
+            Cslib.WordRAM.fits_zero, Cslib.WordRAM.reduceFits,
             Cslib.WordRAM.BinOp.eval, Cslib.WordRAM.Cond.holds_eq, Cslib.WordRAM.Cond.holds_lt,
             Cslib.WordRAM.Data.set_regs, Cslib.WordRAM.Data.set_mem,
             Cslib.WordRAM.Data.write_regs, Cslib.WordRAM.Data.write_mem, Function.update_self,
@@ -198,7 +201,7 @@ scoped macro_rules
           Cslib.WordRAM.Op.eval_load, Cslib.WordRAM.Op.eval_store, Cslib.WordRAM.Op.eval_bin,
           Cslib.WordRAM.Op.eval_width, Cslib.WordRAM.Basis.standard_interp_bin,
           Cslib.WordRAM.Basis.standard_interp_width, Cslib.WordRAM.Data.put,
-          Cslib.WordRAM.fits_zero,
+          Cslib.WordRAM.fits_zero, Cslib.WordRAM.reduceFits,
           Cslib.WordRAM.BinOp.eval, Cslib.WordRAM.Cond.holds_eq, Cslib.WordRAM.Cond.holds_lt,
           Cslib.WordRAM.Data.set_regs, Cslib.WordRAM.Data.set_mem,
           Cslib.WordRAM.Data.write_regs, Cslib.WordRAM.Data.write_mem, Function.update_self,

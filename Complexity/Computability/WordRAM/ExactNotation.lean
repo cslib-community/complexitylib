@@ -95,8 +95,9 @@ scoped macro_rules
 
 /-- Symbolically execute structured code over the exact basis on a goal `ExecWithin w c x y T` or
 `Exec w c x y T`, allowing each loop the given number of iterations (default `0`), and deciding
-with the given simp lemmas which written numbers fit a word, which subtractions stay at or above
-zero, and which divisors are nonzero. -/
+with the given simp lemmas which subtractions stay at or above zero and which divisors are
+nonzero. Whether a written number fits a word is decided by `omega` from the `Fits` hypotheses
+in context (`Cslib.WordRAM.reduceFits`), or by the given simp lemmas. -/
 scoped syntax (name := ramExactEval)
   "ram_exact_eval" (ppSpace num)? (" [" Lean.Parser.Tactic.simpArg,* "]")? : tactic
 
@@ -113,7 +114,8 @@ scoped macro_rules
             Cslib.WordRAM.Op.eval_load, Cslib.WordRAM.Op.eval_store,
             Cslib.WordRAM.Op.eval_exactBin, Cslib.WordRAM.Op.eval_exactWidth,
             Cslib.WordRAM.Basis.exact_interp_bin, Cslib.WordRAM.Basis.exact_interp_width,
-            Cslib.WordRAM.Data.put, Cslib.WordRAM.fits_zero, Cslib.WordRAM.BinOp.evalExact,
+            Cslib.WordRAM.Data.put, Cslib.WordRAM.fits_zero, Cslib.WordRAM.reduceFits,
+            Cslib.WordRAM.BinOp.evalExact,
             Cslib.WordRAM.Cond.holds_eq, Cslib.WordRAM.Cond.holds_lt,
             Cslib.WordRAM.Data.set_regs, Cslib.WordRAM.Data.set_mem,
             Cslib.WordRAM.Data.write_regs, Cslib.WordRAM.Data.write_mem, Function.update_self,
@@ -131,7 +133,8 @@ scoped macro_rules
           Cslib.WordRAM.Op.eval_load, Cslib.WordRAM.Op.eval_store,
           Cslib.WordRAM.Op.eval_exactBin, Cslib.WordRAM.Op.eval_exactWidth,
           Cslib.WordRAM.Basis.exact_interp_bin, Cslib.WordRAM.Basis.exact_interp_width,
-          Cslib.WordRAM.Data.put, Cslib.WordRAM.fits_zero, Cslib.WordRAM.BinOp.evalExact,
+          Cslib.WordRAM.Data.put, Cslib.WordRAM.fits_zero, Cslib.WordRAM.reduceFits,
+          Cslib.WordRAM.BinOp.evalExact,
           Cslib.WordRAM.Cond.holds_eq, Cslib.WordRAM.Cond.holds_lt,
           Cslib.WordRAM.Data.set_regs, Cslib.WordRAM.Data.set_mem,
           Cslib.WordRAM.Data.write_regs, Cslib.WordRAM.Data.write_mem, Function.update_self,
