@@ -399,23 +399,6 @@ theorem one_sub_two_mul_sqrt_mul_sqrt_le_two_mul_mul_sqrt {ψ₀ : State N W} (h
     fun p hp i _ => Nat.mul_le_mul (hl p hp i) (hl' p hp i)
   simpa only [Nat.cast_mul] using this
 
-/-- If `x` and `y` are at Hamming distance one and differ at `i`, then `y` is `x` with bit `i`
-flipped. -/
-private theorem eq_update_of_hammingDist_eq_one {x y : BitString N} (h : hammingDist x y = 1)
-    {i : Fin N} (hi : x i ≠ y i) : y = update x i (!x i) := by
-  obtain ⟨j, hj, hother⟩ := hammingDist_eq_one_iff.1 h
-  have hij : i = j := by
-    by_contra hne
-    exact hi (hother i hne)
-  subst hij
-  funext k
-  by_cases hk : k = i
-  · subst hk
-    rw [update_self]
-    cases hx : x k <;> cases hy : y k <;> simp_all
-  · rw [update_of_ne hk]
-    exact (hother k hk).symm
-
 /-- **The adversary bound across single bit flips**, the case `l = l' = 1` of [Ambainis2002],
 Theorem 2, in which the related pairs are the neighbors `(x, x ⊕ eᵢ)` with `x ∈ A` and
 `x ⊕ eᵢ ∈ B`: let a `T`-query algorithm with a unit initial state end, on every such pair, in
@@ -444,7 +427,7 @@ theorem one_sub_mul_sqrt_le_two_mul_of_neighbors {ψ₀ : State N W} (hψ₀ : �
     intro p hp
     obtain ⟨hpA, hpB, hd⟩ := mem_hammingEdges.1 hp
     obtain ⟨i, hi, -⟩ := hammingDist_eq_one_iff.1 hd
-    have hp2 := eq_update_of_hammingDist_eq_one hd hi
+    have hp2 := (update_not_eq_of_hammingDist_le_one hd.le hi).symm
     rw [hp2] at hpB ⊢
     exact hδ p.1 hpA i hpB
   -- at most one pair from each end differs at a given coordinate
@@ -453,18 +436,18 @@ theorem one_sub_mul_sqrt_le_two_mul_of_neighbors {ψ₀ : State N W} (hψ₀ : �
     refine card_le_one.2 fun q hq r hr => ?_
     obtain ⟨hqR, hqi, hq1⟩ := mem_filter.1 hq
     obtain ⟨hrR, hri, hr1⟩ := mem_filter.1 hr
-    have hq2 := eq_update_of_hammingDist_eq_one (mem_hammingEdges.1 hqR).2.2 hqi
-    have hr2 := eq_update_of_hammingDist_eq_one (mem_hammingEdges.1 hrR).2.2 hri
+    have hq2 := (update_not_eq_of_hammingDist_le_one (mem_hammingEdges.1 hqR).2.2.le hqi).symm
+    have hr2 := (update_not_eq_of_hammingDist_le_one (mem_hammingEdges.1 hrR).2.2.le hri).symm
     exact Prod.ext (hq1.trans hr1.symm) (by rw [hq2, hr2, hq1, hr1])
   have hl' : ∀ p ∈ R, ∀ i, #{q ∈ R | q.1 i ≠ q.2 i ∧ q.2 = p.2} ≤ 1 := by
     intro p _ i
     refine card_le_one.2 fun q hq r hr => ?_
     obtain ⟨hqR, hqi, hq2⟩ := mem_filter.1 hq
     obtain ⟨hrR, hri, hr2⟩ := mem_filter.1 hr
-    have hq1 := eq_update_of_hammingDist_eq_one
-      ((hammingDist_comm _ _).trans (mem_hammingEdges.1 hqR).2.2) (Ne.symm hqi)
-    have hr1 := eq_update_of_hammingDist_eq_one
-      ((hammingDist_comm _ _).trans (mem_hammingEdges.1 hrR).2.2) (Ne.symm hri)
+    have hq1 := (update_not_eq_of_hammingDist_le_one
+      ((hammingDist_comm _ _).trans (mem_hammingEdges.1 hqR).2.2).le (Ne.symm hqi)).symm
+    have hr1 := (update_not_eq_of_hammingDist_le_one
+      ((hammingDist_comm _ _).trans (mem_hammingEdges.1 hrR).2.2).le (Ne.symm hri)).symm
     exact Prod.ext (by rw [hq1, hr1, hq2, hr2]) (hq2.trans hr2.symm)
   -- every input has its neighbors as partners
   have hdeg : ∀ p ∈ R, m ≤ #{q ∈ R | q.1 = p.1} := by

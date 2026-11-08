@@ -19,6 +19,7 @@ is not a Gomory–Hu tree of a second graph with a heavy edge `02`.
 namespace ComplexityTests.GomoryHu
 
 open Cslib.WeightedCut Cslib.Algorithms.Lean.GomoryHu
+open SimpleGraph (edgeSide edgeSide_eq_of_forall_adj)
 
 /-- The weighted graph on `Fin 4` with edges `01:4`, `12:2`, `23:3`, `02:1`, `13:1`. -/
 private def W : Fin 4 → Fin 4 → ℕ := fun u v =>
