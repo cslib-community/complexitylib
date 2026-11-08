@@ -27,7 +27,11 @@ related mechanical fixes when they share a contract and validation; split at ind
 boundaries rather than creating a PR per cleanup. Include a checked client for a new API and
 instances showing that bundled hypotheses can be met. Preserve
 the original authors and licenses when porting code; cite mathematical sources in module
-docstrings through [references.bib](references.bib), whose entries stay sorted by key.
+docstrings through [references.bib](references.bib), whose entries stay sorted by key. Two
+branches that add entries between the same neighbours conflict as text;
+`scripts/resolve_bib_conflict.py` merges the file entry by entry and refuses when both sides
+changed one entry. To have `git merge` use it for `references.bib`, run once per clone:
+`git config merge.bibkeys.driver 'python3 scripts/resolve_bib_conflict.py --driver %O %A %B'`.
 
 Develop against representative clients and state the public contract: model or encodings,
 mathematical behavior, and resource or security claim. Test automation on ordinary expressions,
@@ -205,7 +209,13 @@ definitions
 candidate modules). After a build,
 `python3 scripts/check_changed_files.py` checks the files your branch adds or changes: each name
 listed in a module docstring's "Main …" sections must exist, and a new test file must do more
-than restate signatures with `example … := name`. CI runs both. On pull requests CI also runs
+than restate signatures with `example … := name`. CI runs both, and also
+`python3 scripts/check_encoding_readability.py`, the ratchet on repeated compound encodings in
+public statements ([#1656](https://github.com/cslib-community/complexitylib/issues/1656)). It
+enforces its baseline only in the modules a pull request changes, and merge groups only report,
+so `main` can drift above the baseline; the next change to a drifted module names the encoding
+or records it with `--update-baseline --allow-increase`. Its docstring gives the rule and the
+options. On pull requests CI also runs
 `python3 scripts/parallel_defs.py`, an advisory notice (it never fails) that lists new or changed
 public definitions sharing a large anonymized subterm with an existing one, or merely renaming one.
 With `--theorems` it lists new or changed theorems, private ones included, whose statement another
@@ -298,6 +308,8 @@ where they teach a reusable method or a model boundary. Agents should be able to
 maintained account without repeating the investigation or relying on earlier conversations.
 Keep the Agent Operator's Manual short and directed at the person driving the agents; put
 participant procedures in the Operator's Manual and historical evidence in its supplement.
+Place a new section where its topic belongs in a chapter rather than at the end: sections that
+concurrent PRs append at the same place conflict in the merge queue.
 
 Keep executable Lean examples in `ComplexityTests/` or the checked Verso guide and link their
 complete source, including imports and local context. Use checked excerpts rather than a second
