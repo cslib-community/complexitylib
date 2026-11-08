@@ -13,9 +13,12 @@ import Mathlib.Analysis.Complex.ExponentialBounds
 * `signDot` on concrete sign vectors.
 * `AnswersWithin` holds for exact answers and fails for answers that are off by one on the only
   query.
-* Theorem 8.2's failure probability is below `1` for `20` queries per row at `η = 1 / 2`.
-* The source's constant fails at `α = 0`: for every choice of `10` queries on `2` rows, two
-  databases at Hamming distance `2` both answer `7 / 10` of the queries exactly.
+* Theorem 8.2's failure probability is below `1` for `20` queries per row at `η = 1 / 2`, both
+  with the corrected constant and in Dwork and Roth's form at `α = 1 / 2`.
+* The source's constant fails for small `α`: for every choice of `10` queries on `2` rows, two
+  databases at Hamming distance `2` both answer `7 / 10` of the queries exactly, and at
+  `α = 1 / 20`, `η = 1 / 5` every attack errs in at least one position, more than
+  `(2 α / η) ^ 2 = 1 / 4`.
 * The privacy consequence is not vacuous. There are `1500` queries on `60` rows that no
   `(1, 0)`-private mechanism answers exactly on `3 / 4` of them with probability one.
 -/
@@ -55,14 +58,10 @@ example : ¬ AnswersWithin (fun _ : Fin 1 => (![false] : Fin 1 → Bool)) (fun _
 
 /-! ### The failure probability -/
 
-/-- With `20` queries per row and `η = 1 / 2`, the attack fails with probability below `1` for
-any `α ≥ 0`, since `η b / 4 = 5 / 2 > ln 3`. -/
-example (n : ℕ) (hn : 0 < n) (α : ℝ) (hα : 0 ≤ α) :
-    (Probability.PMF.uniformOfFintype (Fin (20 * n) → Fin n → Bool)).toOuterMeasure
-        {A | ∃ (d : Fin n → Bool) (y : Fin (20 * n) → ℝ), AnswersWithin A y d α (1 / 2) ∧
-          ((α + 1) / (1 / 2)) ^ 2 ≤ hammingDist (reconstructSigned A α (1 / 2) y) d} < 1 := by
-  refine (toOuterMeasure_exists_le_hammingDist_reconstructSigned_le (b := 20) hα (by norm_num)
-    (by simp only [Fintype.card_fin, Nat.cast_mul, Nat.cast_ofNat, le_refl])).trans_lt ?_
+/-- `η b / 4 = 5 / 2 > ln 3` for `b = 20` and `η = 1 / 2`, so the bound is below `1`. -/
+private theorem exp_lt_one_of_card_pos (n : ℕ) (hn : 0 < n) :
+    ENNReal.ofReal (Real.exp (-((Fintype.card (Fin n) : ℝ) * (1 / 2 * 20 / 4 - Real.log 3)))) <
+      1 := by
   rw [ENNReal.ofReal_lt_one, Real.exp_lt_one_iff]
   have hlog : Real.log 3 < 5 / 2 := by
     have := Real.log_le_sub_one_of_pos (show (0 : ℝ) < 3 by norm_num)
@@ -72,7 +71,31 @@ example (n : ℕ) (hn : 0 < n) (α : ℝ) (hα : 0 ≤ α) :
     exact_mod_cast hn
   nlinarith
 
-/-! ### The constant at `α = 0` -/
+/-- With `20` queries per row and `η = 1 / 2`, the attack fails with probability below `1` for
+every `α`. At `α = 0` the error bound is `((0 + 1) / (1 / 2)) ^ 2 = 4`. -/
+example (n : ℕ) (hn : 0 < n) (α : ℝ) :
+    (Probability.PMF.uniformOfFintype (Fin (20 * n) → Fin n → Bool)).toOuterMeasure
+        {A | ∃ (d : Fin n → Bool) (y : Fin (20 * n) → ℝ), AnswersWithin A y d α (1 / 2) ∧
+          ((⌊α⌋₊ + 1 : ℝ) / (1 / 2)) ^ 2 ≤ hammingDist (reconstructSigned A α (1 / 2) y) d} <
+      1 :=
+  (toOuterMeasure_exists_le_hammingDist_reconstructSigned_le (b := 20) (by norm_num)
+    (by simp only [Fintype.card_fin, Nat.cast_mul, Nat.cast_ofNat, le_refl])).trans_lt
+    (exp_lt_one_of_card_pos n hn)
+
+/-- Dwork and Roth's form at `α = 1 / 2`, `η = 1 / 2`: except with probability below `1`, the
+adversary errs in at most `(2 α / η) ^ 2 = 4` positions. -/
+example (n : ℕ) (hn : 0 < n) :
+    (Probability.PMF.uniformOfFintype (Fin (20 * n) → Fin n → Bool)).toOuterMeasure
+        {A | ∃ (d : Fin n → Bool) (y : Fin (20 * n) → ℝ), AnswersWithin A y d (1 / 2) (1 / 2) ∧
+          ((2 : ℝ) * (1 / 2) / (1 / 2)) ^ 2 <
+            hammingDist (reconstructSigned A (1 / 2) (1 / 2) y) d} <
+      1 :=
+  (toOuterMeasure_exists_lt_hammingDist_reconstructSigned_le_of_half_le (ι := Fin n)
+    (κ := Fin (20 * n)) (α := 1 / 2) (η := 1 / 2) (b := 20) le_rfl (by norm_num)
+    (by simp only [Fintype.card_fin, Nat.cast_mul, Nat.cast_ofNat, le_refl])).trans_lt
+    (exp_lt_one_of_card_pos n hn)
+
+/-! ### The constant for small `α` -/
 
 /-- Whatever the `10` queries on `2` rows, two databases at Hamming distance `2` both answer
 `7 / 10` of them exactly. Dwork and Roth's `(2 α / η) ^ 2` would be `0` here. -/
@@ -83,11 +106,21 @@ example (A : Fin 10 → Fin 2 → Bool) :
     (show (0 : Fin 2) ≠ 1 by decide) A (by simp)
   exact ⟨y, c, d, hc, hd, by rw [h2]; norm_num⟩
 
-/-- The corrected constant `((α + 1) / η) ^ 2 = 25` at `α = 0`, `η = 1 / 5` exceeds the distance
-`2` of that example, and agrees with the source's `(2 α / η) ^ 2` from `α ≥ 1` on. -/
-example (α η : ℝ) (hα : 1 ≤ α) (hη : 0 < η) : ((α + 1) / η) ^ 2 ≤ (2 * α / η) ^ 2 := by
-  gcongr
-  linarith
+/-- At `α = 1 / 20`, `η = 1 / 5`, every attack on these `10` queries errs in at least one
+position on some database with fitting answers, more than Dwork and Roth's
+`(2 α / η) ^ 2 = 1 / 4`. -/
+example (A : Fin 10 → Fin 2 → Bool) (attack : (Fin 10 → ℝ) → Fin 2 → Bool) :
+    ∃ (d : Fin 2 → Bool) (y : Fin 10 → ℝ), AnswersWithin A y d (1 / 20) (1 / 5) ∧
+      (1 / 4 : ℝ) < hammingDist (attack y) d := by
+  obtain ⟨d, y, hd, h⟩ := exists_answersWithin_lt_hammingDist
+    (show (0 : Fin 2) ≠ 1 by decide) A (by simp) (α := 1 / 20) (η := 1 / 5) (by norm_num)
+    (by norm_num) le_rfl (by norm_num) attack
+  exact ⟨d, y, hd, by norm_num at h ⊢; linarith⟩
+
+/-- The corrected constant `((⌊α⌋₊ + 1) / η) ^ 2 = 25` at `α = 0`, `η = 1 / 5` exceeds the
+distance `2` of the first example. -/
+example : ((⌊(0 : ℝ)⌋₊ + 1 : ℝ) / (1 / 5)) ^ 2 = 25 := by
+  norm_num
 
 /-! ### Differential privacy -/
 
@@ -100,7 +133,7 @@ example : ∃ A : Fin 1500 → Fin 60 → Bool, ∀ (M : (Fin 60 → Bool) → P
     have := Real.log_le_sub_one_of_pos (show (0 : ℝ) < 3 by norm_num)
     linarith
   obtain ⟨A, hA⟩ := DifferentiallyPrivate.exists_forall_card_mul_one_sub_le_of_answersWithin
-    (ι := Fin 60) (κ := Fin 1500) (α := 0) (η := 1 / 4) le_rfl (by norm_num)
+    (ι := Fin 60) (κ := Fin 1500) (α := 0) (η := 1 / 4) (by norm_num)
     (by simp only [Fintype.card_fin]; nlinarith)
   refine ⟨A, fun M hM hall => ?_⟩
   have h := hA M 1 0 id hM ENNReal.zero_ne_top hall

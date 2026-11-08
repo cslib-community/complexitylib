@@ -1643,12 +1643,15 @@ each statement against the numbered result. Organize modules by subject, not cha
   (Dwork–Roth Chapter 8), and so is De's `Ω(min(k, d) / ε)` bound over a small universe
   (Theorem 8.8) for row-replacement adjacency. So is the reconstruction attack from `O(n)` random
   `±1` queries (Theorem 8.2), which rules out private error `o(√n)` on a `1 / 2 + η` fraction; its
-  constant `((α + 1) / η) ^ 2` corrects the source's `(2 α / η) ^ 2` for `α < 1`. Remaining
+  constant `((⌊α⌋₊ + 1) / η) ^ 2` gives the source's `(2 α / η) ^ 2` for `α ≥ 1 / 2`, and the
+  source's constant fails for `2 α < η ≤ 1 / 5`; `η / 2 ≤ α < 1 / 2` is open. Remaining
   ([#3201](https://github.com/cslib-community/complexitylib/issues/3201)): `(ε, δ)` lower
   bounds via fingerprinting codes. The transfer of Theorem 8.8 to add/remove adjacency on
   histograms is a small open follow-up: group privacy doubles `ε` (covering Dwork–Roth's
   `ε ≤ 1 / 40` with noise `min(k, d) / (2048 ε)`), and the query must be extended from weight-`n`
-  histograms to `ℕ ^ d` (McShane in `ℓ₁` with constant `1 / 2`).
+  histograms to `ℕ ^ d` (McShane in `ℓ₁` with constant `1 / 2`). Small cleanups: move `signDot`
+  next to `Cslib.BitString.signVal` with its Hamming-distance identity, and expose the
+  window-counting anti-concentration lemma in `Combinatorics/LittlewoodOfford`.
 
 ## Algorithms and optimization
 

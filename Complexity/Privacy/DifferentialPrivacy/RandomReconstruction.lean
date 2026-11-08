@@ -23,47 +23,54 @@ answers `y : κ → ℝ` are within `α` of the truth on at least a `1 / 2 + η`
 when `(1 / 2 + η) m ≤ #{j | |y j - signDot (A j) d| ≤ α}` (`AnswersWithin A y d α η`). The other
 answers are arbitrary.
 
-**Theorem ([DworkRoth2014, Theorem 8.2]).** Draw `m ≥ b n` uniformly random `±1` queries on `n`
-rows. Except with probability at most `exp (-n (η b / 4 - ln 3))` over the queries, the following
-holds for every database `d` and all answers within `α` on a `1 / 2 + η` fraction: the adversary
-(`reconstructSigned`) recovers `d` in all but fewer than `((α + 1) / η) ^ 2` positions
-(`toOuterMeasure_exists_le_hammingDist_reconstructSigned_le`). The adversary outputs any database
-whose answers are also within `α` on a `1 / 2 + η` fraction; the true database is a candidate. The
-good event depends only on the queries, so the guarantee holds against every curator, including
-one that sees the queries before answering.
+**Theorem ([DworkRoth2014, Theorem 8.2], with a corrected constant).** Draw `m ≥ b n` uniformly
+random `±1` queries on `n` rows. Except with probability at most `exp (-n (η b / 4 - ln 3))` over
+the queries, the following holds for every database `d` and all answers within `α` on a
+`1 / 2 + η` fraction: the adversary (`reconstructSigned`) recovers `d` in all but fewer than
+`((⌊α⌋₊ + 1) / η) ^ 2` positions (`toOuterMeasure_exists_le_hammingDist_reconstructSigned_le`).
+The adversary outputs any database whose answers are also within `α` on a `1 / 2 + η` fraction;
+the true database is a candidate. The good event depends only on the queries, so the guarantee
+holds against every curator, including one that sees the queries before answering. Dwork and Roth
+credit the attack to Dwork, McSherry and Talwar [DworkRoth2014, §8.3].
 
 The proof follows Dwork and Roth. Two databases `c`, `d` that both fit the answers agree with them
 on a common `2 η` fraction of the queries, where `|signDot v c - signDot v d| ≤ 2 α`. The difference
 is `2 ∑ i, signVal (v i) z i` for the disagreement pattern `z : ι → SignType`. If `z` has at least
 `k` nonzero entries, the Erdős–Littlewood–Offord bound
-(`Combinatorics.LittlewoodOfford.card_filter_sum_bool_Ico_le_two_pow_div_sqrt`) bounds the chance
-that a random query lands in this window by `(α + 1) / √(k + 1)`. That is at most `η` once
-`k ≥ ((α + 1) / η) ^ 2`. Chernoff (`Probability.PMF.pi_sum_ge_one_add_mul_of_le_one`) bounds the
-chance that a fixed such `z` survives `m` independent queries by `exp (-η m / 3)`. A union bound
-over the `3 ^ n` patterns gives `3 ^ n exp (-η m / 3)` (`toOuterMeasure_reconstructionFails_le`).
-That is at most Dwork and Roth's `exp (-n (η b / 4 - ln 3))`.
+(`Combinatorics.LittlewoodOfford.card_filter_sum_bool_Ico_le_two_pow_div_sqrt`), applied to
+`⌊α⌋₊ + 1` unit windows, bounds the chance that a random query lands in this window by
+`(⌊α⌋₊ + 1) / √(k + 1)`. That is at most `η` once `k ≥ ((⌊α⌋₊ + 1) / η) ^ 2`. Chernoff
+(`Probability.PMF.pi_sum_ge_one_add_mul_of_le_one`) bounds the chance that a fixed such `z`
+survives `m` independent queries by `exp (-η m / 3)`. A union bound over the `3 ^ n` patterns
+gives `3 ^ n exp (-η m / 3)` (`toOuterMeasure_reconstructionFails_le`). That is at most Dwork and
+Roth's `exp (-n (η b / 4 - ln 3))`.
 
-**The constant.** Dwork and Roth state `(2 α / η) ^ 2`.
-* **For `α ≥ 1`** we have `α + 1 ≤ 2 α`, so `((α + 1) / η) ^ 2 ≤ (2 α / η) ^ 2`. Here the theorem
-  above implies their statement.
-* **For `α < 1`** their constant is false. At `α = 0` it would demand exact reconstruction.
+**The constant.** Dwork and Roth state `(2 α / η) ^ 2` for every `α`.
+* **For `α ≥ 1 / 2`** we have `⌊α⌋₊ + 1 ≤ 2 α`, so the theorem above implies their statement
+  (`toOuterMeasure_exists_lt_hammingDist_reconstructSigned_le_of_half_le`).
+* **For small `α`** their statement is false.
   `exists_answersWithin_answersWithin_hammingDist_eq_two` shows that whatever the `m ≥ 10` queries
-  on at least two rows, two databases at Hamming distance `2` can both answer a `1 / 2 + 1 / 5`
-  fraction of them exactly with the same answers. The `+ 1` corrects the source's constant; it is
-  not claimed as a new result. Dwork and Roth's application of their Lemma 8.3 drops the `+ 1` of
-  its bound `(ℓ + 1) / √k`. A sum `∑ i, v_i z_i` over `k` nonzero terms has the parity of `k`,
-  and the window `[-α, α]` holds at most `⌊α⌋ + 1` values of each parity. Even for `α < 1` it
-  holds `0`, which such a sum hits with probability of order `1 / √k` when `k` is even.
+  on at least two rows, two databases at Hamming distance `2` both answer a `1 / 2 + 1 / 5`
+  fraction of them exactly with the same answers. Hence (`exists_answersWithin_lt_hammingDist`),
+  whenever `η ≤ 1 / 5` and `2 α < η`, every attack errs in at least one position on some database
+  with fitting answers, while `(2 α / η) ^ 2 < 1`.
+* **Why.** Dwork and Roth's application of their Lemma 8.3 drops the `+ 1` of its bound
+  `(ℓ + 1) / √k`. A sum `∑ i, v_i z_i` over `k` nonzero terms has the parity of `k`, and the
+  window `[-α, α]` holds at most `⌊α⌋₊ + 1` values of each parity. Their count `2 α` is enough
+  exactly when `⌊α⌋₊ + 1 ≤ 2 α`, that is, `α ≥ 1 / 2`. Whether their constant holds for
+  `η / 2 ≤ α < 1 / 2` is not settled here.
 
-**Differential privacy.** The consequence for differential privacy is a standard derivation,
-following Dwork and Roth's remark that lower bounds for preventing blatant non-privacy apply to
-every differentially private mechanism [DworkRoth2014, §8.1]. Fix queries `A` for which
-reconstruction does not fail; they exist once `3 ln 3 · n < η m`
-(`exists_not_reconstructionFails`). Let `M` be an `(ε, δ)`-private mechanism for Hamming adjacency
-whose answers are within `α` on a `1 / 2 + η` fraction with probability at least `q` on every
-database. Then `(1 + exp ε) (n - ((α + 1) / η) ^ 2) q ≤ n (exp ε + δ)`
+Using `⌊α⌋₊ + 1` corrects the source's constant. It is not claimed as a new result.
+
+**Differential privacy.** The consequence for differential privacy is a standard derivation. It
+follows Dwork and Roth's remark that if differential privacy is meaningful, then lower bounds for
+preventing blatant non-privacy also apply to every differentially private mechanism
+[DworkRoth2014, §8.1]. Fix queries `A` for which reconstruction does not fail; they exist once
+`3 ln 3 · n < η m` (`exists_not_reconstructionFails`). Let `M` be an `(ε, δ)`-private mechanism
+for Hamming adjacency whose answers are within `α` on a `1 / 2 + η` fraction with probability at
+least `q` on every database. Then `(1 + exp ε) (n - ((⌊α⌋₊ + 1) / η) ^ 2) q ≤ n (exp ε + δ)`
 (`DifferentiallyPrivate.mul_card_sub_mul_le_of_answersWithin`). With probability one this gives
-`α + 1 ≥ η √(n (1 - δ) / (1 + exp ε))`
+`⌊α⌋₊ + 1 ≥ η √(n (1 - δ) / (1 + exp ε))`
 (`DifferentiallyPrivate.exists_forall_card_mul_one_sub_le_of_answersWithin`). So linearly many
 `±1` queries cannot all be answered privately with error `o(√n)` on a `1 / 2 + η` fraction.
 
@@ -84,13 +91,16 @@ ignore efficiency here.
   most `3 ^ n exp (-η m / 3)`.
 * `Cslib.Privacy.hammingDist_reconstructSigned_lt`,
   `Cslib.Privacy.toOuterMeasure_exists_le_hammingDist_reconstructSigned_le`: reconstruction in all
-  but `((α + 1) / η) ^ 2` positions [DworkRoth2014, Theorem 8.2].
+  but `((⌊α⌋₊ + 1) / η) ^ 2` positions [DworkRoth2014, Theorem 8.2].
+* `Cslib.Privacy.toOuterMeasure_exists_lt_hammingDist_reconstructSigned_le_of_half_le`: Dwork and
+  Roth's form, with `(2 α / η) ^ 2`, for `α ≥ 1 / 2`.
 * `Cslib.Privacy.exists_not_reconstructionFails`: good queries exist once `3 ln 3 · n < η m`.
 * `Cslib.Privacy.DifferentiallyPrivate.mul_card_sub_mul_le_of_answersWithin`,
   `Cslib.Privacy.DifferentiallyPrivate.exists_forall_card_mul_one_sub_le_of_answersWithin`: private
   answers to linearly many `±1` queries have error `Ω(√n)`.
-* `Cslib.Privacy.exists_answersWithin_answersWithin_hammingDist_eq_two`: the source's constant
-  `(2 α / η) ^ 2` fails at `α = 0`.
+* `Cslib.Privacy.exists_answersWithin_answersWithin_hammingDist_eq_two`,
+  `Cslib.Privacy.exists_answersWithin_lt_hammingDist`: the source's constant `(2 α / η) ^ 2` fails
+  for `2 α < η ≤ 1 / 5`.
 
 ## References
 
@@ -135,6 +145,22 @@ theorem answersWithin_signDot (A : κ → ι → Bool) (d : ι → Bool) {α η 
   have : (0 : ℝ) ≤ Fintype.card κ := Nat.cast_nonneg _
   nlinarith
 
+/-- Fitting answers is monotone: a larger error `α` and a smaller fraction `1 / 2 + η` are easier
+to meet. -/
+theorem AnswersWithin.mono {A : κ → ι → Bool} {y : κ → ℝ} {d : ι → Bool} {α α' η η' : ℝ}
+    (h : AnswersWithin A y d α η) (hα : α ≤ α') (hη : η' ≤ η) : AnswersWithin A y d α' η' := by
+  rw [answersWithin_iff] at h ⊢
+  have hsub : ({j | |y j - signDot (A j) d| ≤ α} : Finset κ) ⊆
+      ({j | |y j - signDot (A j) d| ≤ α'} : Finset κ) := by
+    intro j hj
+    simp only [mem_filter, mem_univ, true_and] at hj ⊢
+    exact hj.trans hα
+  have hcard : (#({j | |y j - signDot (A j) d| ≤ α} : Finset κ) : ℝ) ≤
+      #({j | |y j - signDot (A j) d| ≤ α'} : Finset κ) := by
+    exact_mod_cast card_le_card hsub
+  have : (0 : ℝ) ≤ Fintype.card κ := Nat.cast_nonneg _
+  nlinarith
+
 /-! ### Anti-concentration and the bad event for one pattern -/
 
 /-- The pattern of disagreement of `c` with `d`: `0` where they agree and the sign of `c`
@@ -161,11 +187,11 @@ private theorem card_ne_zero_diffPattern (c d : ι → Bool) :
   cases c i <;> cases d i <;> simp
 
 /-- **Anti-concentration** (Erdős–Littlewood–Offord): for a pattern `z` with `k` nonzero
-entries, at most a `(α + 1) / √(k + 1)` fraction of the queries `v` have
-`|∑ i, v_i z_i| ≤ α`. The window `[-α, α]` is covered by `⌊α⌋ + 1` unit windows. -/
-private theorem card_abs_sum_le [DecidableEq ι] (z : ι → SignType) {α : ℝ} (hα : 0 ≤ α) :
+entries, at most a `(⌊α⌋₊ + 1) / √(k + 1)` fraction of the queries `v` have
+`|∑ i, v_i z_i| ≤ α`. The window `[-α, α]` is covered by `⌊α⌋₊ + 1` unit windows. -/
+private theorem card_abs_sum_le [DecidableEq ι] (z : ι → SignType) (α : ℝ) :
     (#{v : ι → Bool | |∑ i, signVal (v i) * (z i : ℝ)| ≤ α} : ℝ) ≤
-      (α + 1) * 2 ^ Fintype.card ι / Real.sqrt (#{i | z i ≠ 0} + 1) := by
+      (⌊α⌋₊ + 1) * 2 ^ Fintype.card ι / Real.sqrt (#{i | z i ≠ 0} + 1) := by
   classical
   set a : ι → ℝ := fun i => (z i : ℝ)
   set g : (ι → Bool) → ℝ := fun v => ∑ i, a i * (v i).toNat
@@ -175,9 +201,6 @@ private theorem card_abs_sum_le [DecidableEq ι] (z : ι → SignType) {α : ℝ
   have hN : α < N := by
     simp only [N, Nat.cast_add, Nat.cast_one]
     exact Nat.lt_floor_add_one α
-  have hN' : (N : ℝ) ≤ α + 1 := by
-    simp only [N, Nat.cast_add, Nat.cast_one]
-    linarith [Nat.floor_le hα]
   have hsum : ∀ v : ι → Bool, ∑ i, signVal (v i) * a i = Z - 2 * g v := by
     intro v
     simp only [Z, g, mul_sum, ← sum_sub_distrib]
@@ -214,16 +237,16 @@ private theorem card_abs_sum_le [DecidableEq ι] (z : ι → SignType) {α : ℝ
   rw [sum_const, card_range, nsmul_eq_mul] at hcover hsub
   refine hsub.trans (hcover.trans ?_)
   rw [mul_div_assoc, sum_const, card_range, nsmul_eq_mul]
-  gcongr
+  simp only [N, Nat.cast_add, Nat.cast_one, le_refl]
 
-/-- For a pattern with at least `((α + 1) / η) ^ 2` nonzero entries, at most an `η` fraction of
-the queries `v` have `|∑ i, v_i z_i| ≤ α`. -/
-private theorem card_abs_sum_le_mul [DecidableEq ι] (z : ι → SignType) {α η : ℝ} (hα : 0 ≤ α)
-    (hη : 0 < η) (hz : ((α + 1) / η) ^ 2 ≤ #{i | z i ≠ 0}) :
+/-- For a pattern with at least `((⌊α⌋₊ + 1) / η) ^ 2` nonzero entries, at most an `η` fraction
+of the queries `v` have `|∑ i, v_i z_i| ≤ α`. -/
+private theorem card_abs_sum_le_mul [DecidableEq ι] (z : ι → SignType) {α η : ℝ}
+    (hη : 0 < η) (hz : ((⌊α⌋₊ + 1 : ℝ) / η) ^ 2 ≤ #{i | z i ≠ 0}) :
     (#{v : ι → Bool | |∑ i, signVal (v i) * (z i : ℝ)| ≤ α} : ℝ) ≤
       η * 2 ^ Fintype.card ι := by
-  refine (card_abs_sum_le z hα).trans ?_
-  have hsqrt : (α + 1) / η ≤ Real.sqrt (#{i | z i ≠ 0} + 1) :=
+  refine (card_abs_sum_le z α).trans ?_
+  have hsqrt : (⌊α⌋₊ + 1 : ℝ) / η ≤ Real.sqrt (#{i | z i ≠ 0} + 1) :=
     Real.le_sqrt_of_sq_le (by linarith)
   have hpos : 0 < Real.sqrt (#{i | z i ≠ 0} + 1) := Real.sqrt_pos.2 (by positivity)
   rw [div_le_iff₀ hpos]
@@ -236,10 +259,10 @@ fraction of them, `|∑ i, v_i z_i| ≤ α`. -/
 private def PatternBad (A : κ → ι → Bool) (z : ι → SignType) (α η : ℝ) : Prop :=
   2 * η * Fintype.card κ ≤ #{j | |∑ i, signVal (A j i) * (z i : ℝ)| ≤ α}
 
-/-- **Chernoff.** A pattern with at least `((α + 1) / η) ^ 2` nonzero entries survives `m`
+/-- **Chernoff.** A pattern with at least `((⌊α⌋₊ + 1) / η) ^ 2` nonzero entries survives `m`
 independent uniformly random queries with probability at most `exp (-η m / 3)`. -/
 private theorem toOuterMeasure_patternBad_le [DecidableEq ι] [DecidableEq κ] (z : ι → SignType)
-    {α η : ℝ} (hα : 0 ≤ α) (hη : 0 < η) (hz : ((α + 1) / η) ^ 2 ≤ #{i | z i ≠ 0}) :
+    {α η : ℝ} (hη : 0 < η) (hz : ((⌊α⌋₊ + 1 : ℝ) / η) ^ 2 ≤ #{i | z i ≠ 0}) :
     (Probability.PMF.uniformOfFintype (κ → ι → Bool)).toOuterMeasure
         {A | PatternBad A z α η} ≤
       ENNReal.ofReal (Real.exp (-(η * Fintype.card κ / 3))) := by
@@ -258,7 +281,7 @@ private theorem toOuterMeasure_patternBad_le [DecidableEq ι] [DecidableEq κ] (
         Fintype.card_fun, Fintype.card_bool, Nat.cast_pow, Nat.cast_ofNat, ENNReal.toReal_pow,
         ENNReal.toReal_ofNat, mul_ite, mul_one, mul_zero]
       rw [← sum_filter, sum_const, nsmul_eq_mul]
-      have hc := card_abs_sum_le_mul z hα hη hz
+      have hc := card_abs_sum_le_mul z hη hz
       have h2 : (0 : ℝ) < 2 ^ Fintype.card ι := by positivity
       rw [← div_eq_mul_inv, div_le_iff₀ h2]
       simpa only [bad] using hc
@@ -310,11 +333,17 @@ private theorem patternBad_diffPattern {A : κ → ι → Bool} {y : κ → ℝ}
 
 /-! ### The attack -/
 
-/-- The queries `A` fail: two databases at Hamming distance at least `((α + 1) / η) ^ 2` both
-answer at least a `1 / 2 + η` fraction of them to within `α`, with the same answers `y`. -/
+/-- The queries `A` fail: two databases at Hamming distance at least `((⌊α⌋₊ + 1) / η) ^ 2`
+both answer at least a `1 / 2 + η` fraction of them to within `α`, with the same answers `y`. -/
 def ReconstructionFails (A : κ → ι → Bool) (α η : ℝ) : Prop :=
   ∃ (y : κ → ℝ) (c d : ι → Bool), AnswersWithin A y c α η ∧ AnswersWithin A y d α η ∧
-    ((α + 1) / η) ^ 2 ≤ hammingDist c d
+    ((⌊α⌋₊ + 1 : ℝ) / η) ^ 2 ≤ hammingDist c d
+
+/-- Unfolding `ReconstructionFails`. -/
+theorem reconstructionFails_iff {A : κ → ι → Bool} {α η : ℝ} :
+    ReconstructionFails A α η ↔ ∃ (y : κ → ℝ) (c d : ι → Bool), AnswersWithin A y c α η ∧
+      AnswersWithin A y d α η ∧ ((⌊α⌋₊ + 1 : ℝ) / η) ^ 2 ≤ hammingDist c d :=
+  Iff.rfl
 
 private theorem three_pow_eq_ofReal_exp (n : ℕ) :
     (3 : ℝ≥0∞) ^ n = ENNReal.ofReal (Real.exp (n * Real.log 3)) := by
@@ -325,13 +354,13 @@ private theorem three_pow_eq_ofReal_exp (n : ℕ) :
 `±1` queries on `n` rows, the queries fail with probability at most `3 ^ n exp (-η m / 3)`: a
 Chernoff bound for each disagreement pattern and a union bound over the `3 ^ n` patterns. -/
 theorem toOuterMeasure_reconstructionFails_le [DecidableEq ι] [DecidableEq κ] {α η : ℝ}
-    (hα : 0 ≤ α) (hη : 0 < η) :
+    (hη : 0 < η) :
     (Probability.PMF.uniformOfFintype (κ → ι → Bool)).toOuterMeasure
         {A | ReconstructionFails A α η} ≤
       3 ^ Fintype.card ι * ENNReal.ofReal (Real.exp (-(η * Fintype.card κ / 3))) := by
   classical
   set E : (ι → SignType) → Set (κ → ι → Bool) := fun z =>
-    {A | ((α + 1) / η) ^ 2 ≤ #{i | z i ≠ 0} ∧ PatternBad A z α η}
+    {A | ((⌊α⌋₊ + 1 : ℝ) / η) ^ 2 ≤ #{i | z i ≠ 0} ∧ PatternBad A z α η}
   have hcover : {A : κ → ι → Bool | ReconstructionFails A α η} ⊆ ⋃ z, E z := by
     rintro A ⟨y, c, d, hc, hd, hcd⟩
     refine Set.mem_iUnion.2 ⟨diffPattern c d, ?_, patternBad_diffPattern hc hd⟩
@@ -340,10 +369,10 @@ theorem toOuterMeasure_reconstructionFails_le [DecidableEq ι] [DecidableEq κ] 
   have hE : ∀ z, (Probability.PMF.uniformOfFintype (κ → ι → Bool)).toOuterMeasure (E z) ≤
       ENNReal.ofReal (Real.exp (-(η * Fintype.card κ / 3))) := by
     intro z
-    by_cases hz : ((α + 1) / η) ^ 2 ≤ #{i | z i ≠ 0}
+    by_cases hz : ((⌊α⌋₊ + 1 : ℝ) / η) ^ 2 ≤ #{i | z i ≠ 0}
     · exact ((Probability.PMF.uniformOfFintype _).toOuterMeasure.mono
         (show E z ⊆ {A | PatternBad A z α η} from fun A hA => hA.2)).trans
-        (toOuterMeasure_patternBad_le z hα hη hz)
+        (toOuterMeasure_patternBad_le z hη hz)
     · have : E z = ∅ := Set.eq_empty_of_forall_notMem fun A hA => hz hA.1
       rw [this, MeasureTheory.measure_empty]
       exact bot_le
@@ -366,33 +395,33 @@ databases. -/
 noncomputable def reconstructSigned (A : κ → ι → Bool) (α η : ℝ) (y : κ → ℝ) : ι → Bool :=
   if h : ∃ c, AnswersWithin A y c α η then h.choose else fun _ => false
 
-/-- On queries that do not fail, the adversary errs in fewer than `((α + 1) / η) ^ 2` positions
-whenever the answers are within `α` on a `1 / 2 + η` fraction. -/
+/-- On queries that do not fail, the adversary errs in fewer than `((⌊α⌋₊ + 1) / η) ^ 2`
+positions whenever the answers are within `α` on a `1 / 2 + η` fraction. -/
 theorem hammingDist_reconstructSigned_lt {A : κ → ι → Bool} {α η : ℝ}
     (hA : ¬ ReconstructionFails A α η) {y : κ → ℝ} {d : ι → Bool}
     (hd : AnswersWithin A y d α η) :
-    (hammingDist (reconstructSigned A α η y) d : ℝ) < ((α + 1) / η) ^ 2 := by
+    (hammingDist (reconstructSigned A α η y) d : ℝ) < ((⌊α⌋₊ + 1 : ℝ) / η) ^ 2 := by
   have hex : ∃ c, AnswersWithin A y c α η := ⟨d, hd⟩
   rw [reconstructSigned, dite_eq_left hex]
   by_contra hfar
   exact hA ⟨y, hex.choose, d, hex.choose_spec, hd, not_lt.1 hfar⟩
 
-/-- **[DworkRoth2014, Theorem 8.2].** Draw `m ≥ b n` uniformly random `±1` queries on `n` rows.
-Except with probability at most `exp (-n (η b / 4 - ln 3))` over the queries, the following holds
-for every database `d` and all answers `y` that are within `α` of the truth on at least a
-`1 / 2 + η` fraction of the queries: the adversary's output differs from `d` in fewer than
-`((α + 1) / η) ^ 2` positions. For `α ≥ 1` this implies Dwork and Roth's bound `(2 α / η) ^ 2`.
-For `α < 1` their bound is false (`exists_answersWithin_answersWithin_hammingDist_eq_two`), and
-`((α + 1) / η) ^ 2` corrects it. -/
+/-- **[DworkRoth2014, Theorem 8.2], with a corrected constant.** Draw `m ≥ b n` uniformly random
+`±1` queries on `n` rows. Except with probability at most `exp (-n (η b / 4 - ln 3))` over the
+queries, the following holds for every database `d` and all answers `y` that are within `α` of the
+truth on at least a `1 / 2 + η` fraction of the queries: the adversary's output differs from `d`
+in fewer than `((⌊α⌋₊ + 1) / η) ^ 2` positions. For `α ≥ 1 / 2` this implies Dwork and Roth's
+bound `(2 α / η) ^ 2`
+(`toOuterMeasure_exists_lt_hammingDist_reconstructSigned_le_of_half_le`). For small `α` their
+bound is false (`exists_answersWithin_lt_hammingDist`). -/
 theorem toOuterMeasure_exists_le_hammingDist_reconstructSigned_le [DecidableEq ι]
-    [DecidableEq κ] {α η b : ℝ} (hα : 0 ≤ α) (hη : 0 < η)
-    (hm : b * Fintype.card ι ≤ Fintype.card κ) :
+    [DecidableEq κ] {α η b : ℝ} (hη : 0 < η) (hm : b * Fintype.card ι ≤ Fintype.card κ) :
     (Probability.PMF.uniformOfFintype (κ → ι → Bool)).toOuterMeasure
         {A | ∃ (d : ι → Bool) (y : κ → ℝ), AnswersWithin A y d α η ∧
-          ((α + 1) / η) ^ 2 ≤ hammingDist (reconstructSigned A α η y) d} ≤
+          ((⌊α⌋₊ + 1 : ℝ) / η) ^ 2 ≤ hammingDist (reconstructSigned A α η y) d} ≤
       ENNReal.ofReal (Real.exp (-(Fintype.card ι * (η * b / 4 - Real.log 3)))) := by
   refine ((Probability.PMF.uniformOfFintype _).toOuterMeasure.mono ?_).trans
-    ((toOuterMeasure_reconstructionFails_le hα hη).trans ?_)
+    ((toOuterMeasure_reconstructionFails_le (α := α) hη).trans ?_)
   · rintro A ⟨d, y, hd, hfar⟩
     by_contra hA
     exact absurd (hammingDist_reconstructSigned_lt hA hd) (not_lt.2 hfar)
@@ -403,17 +432,44 @@ theorem toOuterMeasure_exists_le_hammingDist_reconstructSigned_le [DecidableEq �
     have hκ : (0 : ℝ) ≤ Fintype.card κ := Nat.cast_nonneg _
     nlinarith
 
+private theorem floor_add_one_le_two_mul {α : ℝ} (hα : 1 / 2 ≤ α) : (⌊α⌋₊ + 1 : ℝ) ≤ 2 * α := by
+  rcases lt_or_ge α 1 with h1 | h1
+  · rw [Nat.floor_eq_zero.2 h1, Nat.cast_zero]
+    linarith
+  · linarith [Nat.floor_le (show 0 ≤ α by linarith)]
+
+/-- **[DworkRoth2014, Theorem 8.2] in Dwork and Roth's form, for `α ≥ 1 / 2`.** Draw `m ≥ b n`
+uniformly random `±1` queries on `n` rows. Except with probability at most
+`exp (-n (η b / 4 - ln 3))` over the queries, for every database `d` and all answers `y` within
+`α` on at least a `1 / 2 + η` fraction of the queries, the adversary's output agrees with `d` in
+all but at most `(2 α / η) ^ 2` entries. Here `⌊α⌋₊ + 1 ≤ 2 α`. For small `α` the statement is
+false (`exists_answersWithin_lt_hammingDist`). -/
+theorem toOuterMeasure_exists_lt_hammingDist_reconstructSigned_le_of_half_le [DecidableEq ι]
+    [DecidableEq κ] {α η b : ℝ} (hα : 1 / 2 ≤ α) (hη : 0 < η)
+    (hm : b * Fintype.card ι ≤ Fintype.card κ) :
+    (Probability.PMF.uniformOfFintype (κ → ι → Bool)).toOuterMeasure
+        {A | ∃ (d : ι → Bool) (y : κ → ℝ), AnswersWithin A y d α η ∧
+          (2 * α / η) ^ 2 < hammingDist (reconstructSigned A α η y) d} ≤
+      ENNReal.ofReal (Real.exp (-(Fintype.card ι * (η * b / 4 - Real.log 3)))) := by
+  refine ((Probability.PMF.uniformOfFintype _).toOuterMeasure.mono ?_).trans
+    (toOuterMeasure_exists_le_hammingDist_reconstructSigned_le (α := α) hη hm)
+  rintro A ⟨d, y, hd, hfar⟩
+  refine ⟨d, y, hd, le_trans ?_ hfar.le⟩
+  have h := floor_add_one_le_two_mul hα
+  have h0 : (0 : ℝ) ≤ (⌊α⌋₊ + 1 : ℝ) / η := div_nonneg (by positivity) hη.le
+  exact pow_le_pow_left₀ h0 (div_le_div_of_nonneg_right h hη.le) 2
+
 /-- **Good queries exist.** If `3 ln 3 · n < η m`, some `m` queries on `n` rows do not fail: no two
-databases at Hamming distance at least `((α + 1) / η) ^ 2` answer at least a `1 / 2 + η` fraction
-of them to within `α` with the same answers. -/
-theorem exists_not_reconstructionFails {α η : ℝ} (hα : 0 ≤ α) (hη : 0 < η)
+databases at Hamming distance at least `((⌊α⌋₊ + 1) / η) ^ 2` answer at least a `1 / 2 + η`
+fraction of them to within `α` with the same answers. -/
+theorem exists_not_reconstructionFails {α η : ℝ} (hη : 0 < η)
     (hm : 3 * Real.log 3 * Fintype.card ι < η * Fintype.card κ) :
     ∃ A : κ → ι → Bool, ¬ ReconstructionFails A α η := by
   classical
   by_contra hall
   have hall' : ∀ A : κ → ι → Bool, ReconstructionFails A α η :=
     fun A => Classical.not_not.1 fun hA => hall ⟨A, hA⟩
-  have h := toOuterMeasure_reconstructionFails_le (ι := ι) (κ := κ) hα hη
+  have h := toOuterMeasure_reconstructionFails_le (ι := ι) (κ := κ) (α := α) hη
   have huniv : {A : κ → ι → Bool | ReconstructionFails A α η} = Set.univ :=
     Set.eq_univ_of_forall hall'
   rw [huniv, (PMF.toOuterMeasure_apply_eq_one_iff _ _).2 (Set.subset_univ _)] at h
@@ -430,17 +486,17 @@ variable {R : Type*} {M : (ι → Bool) → PMF R} {ε : ℝ} {δ : ℝ≥0∞}
 (for example from `exists_not_reconstructionFails`), and let `M` be `(ε, δ)`-private for Hamming
 adjacency on databases of `n` rows, with outputs from which `ans` reads answers to the queries.
 If on every database the answers are within `α` on at least a `1 / 2 + η` fraction of the queries
-with probability at least `q`, then `(1 + exp ε) (n - ((α + 1) / η) ^ 2) q ≤ n (exp ε + δ)`.
+with probability at least `q`, then `(1 + exp ε) (n - ((⌊α⌋₊ + 1) / η) ^ 2) q ≤ n (exp ε + δ)`.
 This combines the attack of [DworkRoth2014, Theorem 8.2] with
 `DifferentiallyPrivate.mul_card_sub_mul_le` (a standard derivation; see [DworkRoth2014, §8.1]). -/
 theorem mul_card_sub_mul_le_of_answersWithin (h : DifferentiallyPrivate HammingAdjacent M ε δ)
     (hδ : δ ≠ ⊤) {A : κ → ι → Bool} {α η : ℝ} (hA : ¬ ReconstructionFails A α η)
     (ans : R → κ → ℝ) {q : ℝ} (hq0 : 0 ≤ q)
     (hq : ∀ d, ENNReal.ofReal q ≤ (M d).toOuterMeasure {o | AnswersWithin A (ans o) d α η}) :
-    (1 + Real.exp ε) * (Fintype.card ι - ((α + 1) / η) ^ 2) * q ≤
+    (1 + Real.exp ε) * (Fintype.card ι - ((⌊α⌋₊ + 1 : ℝ) / η) ^ 2) * q ≤
       Fintype.card ι * (Real.exp ε + δ.toReal) := by
   classical
-  set t := ⌊((α + 1) / η) ^ 2⌋₊
+  set t := ⌊((⌊α⌋₊ + 1 : ℝ) / η) ^ 2⌋₊
   have hG := (h.map fun o => reconstructSigned A α η (ans o)).mul_card_sub_mul_le (t := t)
     (q := ENNReal.ofReal q)
     fun d => (hq d).trans (by
@@ -455,8 +511,9 @@ theorem mul_card_sub_mul_le_of_answersWithin (h : DifferentiallyPrivate HammingA
     ENNReal.toReal_ofReal (Real.exp_pos ε).le, ENNReal.toReal_natCast, ENNReal.toReal_natCast,
     ENNReal.toReal_one] at hreal
   refine le_trans ?_ hreal
-  have hsub : (Fintype.card ι : ℝ) - ((α + 1) / η) ^ 2 ≤ ((Fintype.card ι - t : ℕ) : ℝ) := by
-    have ht : (t : ℝ) ≤ ((α + 1) / η) ^ 2 := Nat.floor_le (by positivity)
+  have hsub : (Fintype.card ι : ℝ) - ((⌊α⌋₊ + 1 : ℝ) / η) ^ 2 ≤
+      ((Fintype.card ι - t : ℕ) : ℝ) := by
+    have ht : (t : ℝ) ≤ ((⌊α⌋₊ + 1 : ℝ) / η) ^ 2 := Nat.floor_le (by positivity)
     rcases le_total t (Fintype.card ι) with htn | htn
     · rw [Nat.cast_sub htn]
       linarith
@@ -470,16 +527,17 @@ theorem mul_card_sub_mul_le_of_answersWithin (h : DifferentiallyPrivate HammingA
 `±1` queries on databases of `n` rows with the following property. Every `(ε, δ)`-private
 mechanism for Hamming adjacency whose answers are within `α` on at least a `1 / 2 + η` fraction of
 the queries, with probability one on every database, satisfies
-`n (1 - δ) ≤ ((α + 1) / η) ^ 2 (1 + exp ε)`. So `α + 1 ≥ η √(n (1 - δ) / (1 + exp ε))`, and error
-`o(√n)` is impossible. This is a standard derivation from [DworkRoth2014, Theorem 8.2] (see
+`n (1 - δ) ≤ ((⌊α⌋₊ + 1) / η) ^ 2 (1 + exp ε)`. So
+`⌊α⌋₊ + 1 ≥ η √(n (1 - δ) / (1 + exp ε))`, and error `o(√n)` is impossible. This is a standard
+derivation from [DworkRoth2014, Theorem 8.2] (see
 [DworkRoth2014, §8.1]). -/
-theorem exists_forall_card_mul_one_sub_le_of_answersWithin {α η : ℝ} (hα : 0 ≤ α) (hη : 0 < η)
+theorem exists_forall_card_mul_one_sub_le_of_answersWithin {α η : ℝ} (hη : 0 < η)
     (hm : 3 * Real.log 3 * Fintype.card ι < η * Fintype.card κ) :
     ∃ A : κ → ι → Bool, ∀ {R : Type*} (M : (ι → Bool) → PMF R) (ε : ℝ) (δ : ℝ≥0∞)
       (ans : R → κ → ℝ), DifferentiallyPrivate HammingAdjacent M ε δ → δ ≠ ⊤ →
       (∀ d, (M d).toOuterMeasure {o | AnswersWithin A (ans o) d α η} = 1) →
-      Fintype.card ι * (1 - δ.toReal) ≤ ((α + 1) / η) ^ 2 * (1 + Real.exp ε) := by
-  obtain ⟨A, hA⟩ := exists_not_reconstructionFails (ι := ι) (κ := κ) hα hη hm
+      Fintype.card ι * (1 - δ.toReal) ≤ ((⌊α⌋₊ + 1 : ℝ) / η) ^ 2 * (1 + Real.exp ε) := by
+  obtain ⟨A, hA⟩ := exists_not_reconstructionFails (ι := ι) (κ := κ) (α := α) hη hm
   refine ⟨A, fun M ε δ ans h hδ hM => ?_⟩
   have := h.mul_card_sub_mul_le_of_answersWithin hδ hA ans zero_le_one fun d => by
     rw [hM d, ENNReal.ofReal_one]
@@ -549,7 +607,8 @@ private theorem exists_answersWithin_zero_of_le_two_mul {A : κ → ι → Bool}
 the `m ≥ 10` queries on at least two rows, there are answers `y` and two databases at Hamming
 distance `2` that both answer at least a `1 / 2 + 1 / 5` fraction of the queries exactly. So no
 attack reconstructs to within `(2 · 0 / η) ^ 2 = 0` positions at `η = 1 / 5`, for any number of
-queries. An additive term as in `((α + 1) / η) ^ 2` is needed. -/
+queries. An additive term as in `((⌊α⌋₊ + 1) / η) ^ 2` is needed; see
+`exists_answersWithin_lt_hammingDist` for all `α` with `2 α < η ≤ 1 / 5`. -/
 theorem exists_answersWithin_answersWithin_hammingDist_eq_two {i₁ i₂ : ι}
     (hi : i₁ ≠ i₂) (A : κ → ι → Bool) (hm : 10 ≤ Fintype.card κ) :
     ∃ (y : κ → ℝ) (c d : ι → Bool), AnswersWithin A y c 0 (1 / 5) ∧
@@ -599,5 +658,32 @@ theorem exists_answersWithin_answersWithin_hammingDist_eq_two {i₁ i₂ : ι}
     ext i
     simp only [mem_filter, mem_univ, true_and, mem_insert, mem_singleton]
     by_cases h1 : i = i₁ <;> by_cases h2 : i = i₂ <;> simp_all
+
+/-- **[DworkRoth2014, Theorem 8.2] fails for small `α`.** Let `0 ≤ α`, `0 < η ≤ 1 / 5` and
+`2 α < η`, so that Dwork and Roth's `(2 α / η) ^ 2` is below `1`. Whatever the `m ≥ 10` queries on
+at least two rows and whatever the attack, some database `d` has answers within `α` on a
+`1 / 2 + η` fraction of the queries from which the attack errs in at least one position, more
+than `(2 α / η) ^ 2`. -/
+theorem exists_answersWithin_lt_hammingDist {i₁ i₂ : ι} (hi : i₁ ≠ i₂) (A : κ → ι → Bool)
+    (hm : 10 ≤ Fintype.card κ) {α η : ℝ} (hα : 0 ≤ α) (hη : 0 < η) (hη5 : η ≤ 1 / 5)
+    (hαη : 2 * α < η) (attack : (κ → ℝ) → ι → Bool) :
+    ∃ (d : ι → Bool) (y : κ → ℝ), AnswersWithin A y d α η ∧
+      (2 * α / η) ^ 2 < hammingDist (attack y) d := by
+  obtain ⟨y, c, d, hc, hd, h2⟩ := exists_answersWithin_answersWithin_hammingDist_eq_two hi A hm
+  have hc' := hc.mono hα hη5
+  have hd' := hd.mono hα hη5
+  have hlt : (2 * α / η) ^ 2 < 1 := by
+    have h0 : 0 ≤ 2 * α / η := div_nonneg (by linarith) hη.le
+    have h1 : 2 * α / η < 1 := (div_lt_one hη).2 hαη
+    nlinarith
+  by_cases hac : attack y = c
+  · refine ⟨d, y, hd', ?_⟩
+    rw [hac, h2]
+    push_cast
+    linarith
+  · refine ⟨c, y, hc', ?_⟩
+    have h1 : 1 ≤ hammingDist (attack y) c := Nat.one_le_iff_ne_zero.2 (hammingDist_ne_zero.2 hac)
+    have h1' : (1 : ℝ) ≤ hammingDist (attack y) c := by exact_mod_cast h1
+    linarith
 
 end Cslib.Privacy
