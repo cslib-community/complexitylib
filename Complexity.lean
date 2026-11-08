@@ -42,6 +42,9 @@ public import Complexity.Algorithms.Lean.Dijkstra.Native.Fibonacci.Cost
 public import Complexity.Algorithms.Lean.Dijkstra.Native.Fibonacci.Memory
 public import Complexity.Algorithms.Lean.Dijkstra.Native.Source
 public import Complexity.Algorithms.Lean.Dijkstra.Native.Word
+public import Complexity.Algorithms.Lean.EditDistance.Basic
+public import Complexity.Algorithms.Lean.EditDistance.Grid
+public import Complexity.Algorithms.Lean.EditDistance.LCS
 public import Complexity.Algorithms.Lean.Euler.Circuit
 public import Complexity.Algorithms.Lean.Euler.Handshake
 public import Complexity.Algorithms.Lean.Freivalds
