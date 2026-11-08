@@ -15,9 +15,12 @@ import Mathlib.Data.Fintype.EquivFin
 # The `3t + 1` node bound for Byzantine agreement
 
 No deterministic synchronous protocol on `n` processes solves Byzantine agreement against `t`
-Byzantine faults when `2 ≤ n ≤ 3t`, in any number of rounds
+Byzantine faults when `2 ≤ n ≤ 3t`, for any fixed decision round `R`
 [Fischer, Lynch and Merritt, Theorem 1 and §3.1][FischerLynchMerritt1985]. The bound was first
 proved by [Pease, Shostak and Lamport, §4][PeaseShostakLamport1980] for interactive consistency.
+Protocols whose decision round depends on the run are not covered; for finite message types they
+decide within a uniform bound by König's lemma, so nothing is lost there
+(see `Complexity.Computability.Distributed.Byzantine.Basic`).
 
 The proof is the covering argument of Fischer, Lynch and Merritt. Split the processes into groups
 `A`, `B`, `C` of at most `t` processes each. Take two copies of the network, the first with all
@@ -62,8 +65,8 @@ variable {P S M : Type*} [DecidableEq P] [Fintype P] (π : Protocol P S M)
 
 /-- **The covering argument** [Fischer, Lynch and Merritt, §3.1][FischerLynchMerritt1985]. If the
 processes split, by `g`, into three groups of at most `t` processes, the first containing `a` and
-the last containing `c`, then no protocol solves Byzantine agreement against `t` faults, in any
-number of rounds. The middle group may be empty. -/
+the last containing `c`, then no protocol solves Byzantine agreement against `t` faults, for any
+fixed decision round `R`. The middle group may be empty. -/
 theorem not_solvesByzantineAgreement_of_partition {t R : ℕ} (g : P → Fin 3)
     (hcard : ∀ k, ({i | g i = k} : Finset P).card ≤ t) {a c : P} (ha : g a = 0) (hc : g c = 2) :
     ¬ π.SolvesByzantineAgreement t R := by
@@ -119,9 +122,10 @@ theorem not_solvesByzantineAgreement_of_partition {t R : ℕ} (g : P → Fin 3)
 
 /-- **No Byzantine agreement with `n ≤ 3t` processes**
 [Fischer, Lynch and Merritt, Theorem 1][FischerLynchMerritt1985]: a protocol on `n` processes with
-`2 ≤ n ≤ 3t` does not solve Byzantine agreement against `t` faults, in any number of rounds. The
-processes `0, …, n - 1` are split by residue modulo `3`, so that `0` and `1` lie in the first and
-last group. -/
+`2 ≤ n ≤ 3t` does not solve Byzantine agreement against `t` faults, for any fixed decision round
+`R`. Protocols whose decision round depends on the run are not covered; for finite message types
+this loses nothing (König's lemma). The processes `0, …, n - 1` are split by residue modulo `3`,
+so that `0` and `1` lie in the first and last group. -/
 theorem not_solvesByzantineAgreement {t R : ℕ} (h2 : 2 ≤ Fintype.card P)
     (h3 : Fintype.card P ≤ 3 * t) : ¬ π.SolvesByzantineAgreement t R := by
   let e := Fintype.equivFin P
@@ -149,7 +153,8 @@ theorem not_solvesByzantineAgreement {t R : ℕ} (h2 : 2 ≤ Fintype.card P)
     rfl
 
 /-- **The hexagon argument** [Fischer, Lynch and Merritt, §3.1][FischerLynchMerritt1985]: three
-processes do not solve Byzantine agreement against one fault, in any number of rounds. -/
+processes do not solve Byzantine agreement against one fault, for any fixed decision round
+`R`. -/
 theorem not_solvesByzantineAgreement_three {S M : Type*} (π : Protocol (Fin 3) S M) (R : ℕ) :
     ¬ π.SolvesByzantineAgreement 1 R :=
   π.not_solvesByzantineAgreement_of_partition (t := 1) id (by decide) (a := 0) (c := 2) rfl rfl

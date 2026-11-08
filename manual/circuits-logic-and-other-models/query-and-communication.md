@@ -204,12 +204,18 @@ on inputs `x : P → Bool` when the processes in `F : Finset P` are faulty. In r
 `j` sends `adv r j i` to `i`, arbitrarily and possibly differently to different recipients.
 `Protocol.decision π F adv x R i` is the decision after `R` rounds. Runs are deterministic, so a
 fixed table `adv` is as strong as an adaptive or rushing adversary: the messages such an adversary
-sends on a given input form a table. `SolvesByzantineAgreement t R` requires, for every `F` with at
-most `t` processes, every `adv` and every `x`, *agreement* (all correct processes decide alike) and
-*validity* (if every correct process has input `v`, every correct process decides `v`). Decisions
-are read after exactly `R` rounds, which is how termination is expressed; a protocol that decides
-earlier keeps its state. To prove that a protocol solves the problem, unfold `Protocol.decision`
-and `Protocol.state` round by round, as `om1_heard` and `om1_report` in
+sends on a given input form a table. `Protocol.adaptiveState_eq_state` checks this for a rushing
+adversary `strat r σ j i` that sees the global state `σ` after `r` rounds, and
+`SolvesByzantineAgreement.adaptive` transfers agreement and validity to such adversaries.
+`SolvesByzantineAgreement t R` requires, for every `F` with at most `t` processes, every `adv` and
+every `x`, *agreement* (all correct processes decide alike) and *validity* (if every correct
+process has input `v`, every correct process decides `v`). Decisions are read after exactly `R`
+rounds, which is how termination is expressed; a protocol that decides earlier keeps its state.
+Protocols whose decision round depends on the run are not covered. For finite `P` and `Msg` this
+loses nothing, since by König's lemma they decide within a bound uniform over all runs, but for
+infinite `Msg` a fixed `R` is strictly narrower than eventual decision. To prove that a protocol
+solves the problem, unfold `Protocol.decision` and `Protocol.state` round by round, as
+`om1_heard` and `om1_report` in
 [OralMessages.lean](../../Complexity/Computability/Distributed/Byzantine/OralMessages.lean) do.
 
 Impossibility proofs use the covering lemma `Protocol.state_eq_coverState`. A covering network is
@@ -218,33 +224,37 @@ node `nbr a j` that sends to `a` in the role of process `j`; `Protocol.coverStat
 the correct processes embed into the network by `e`, keeping their code, inputs and mutual wiring,
 and every faulty process sends to a correct `i` what the network shows `e i`, then every correct
 `i` is in the state of `e i` after every round. This lemma packages the Locality and Fault axioms of
-Fischer, Lynch and Merritt (PODC 1985, §2) for this model; to use it, supply the network and check
-the four hypotheses, usually by `rfl`.
+Fischer, Lynch and Merritt (PODC 1985, §2) for this model. To use it, supply the network and check
+the four hypotheses: `hlabel`, `hinput` and `hadv` are usually `rfl`, and `hnbr` is the
+combinatorial content.
 
 [Byzantine/NodeBound.lean](../../Complexity/Computability/Distributed/Byzantine/NodeBound.lean)
 proves their Theorem 1 (§3.1): `Protocol.not_solvesByzantineAgreement` says that no protocol on
-`n` processes with `2 ≤ n ≤ 3t` solves Byzantine agreement against `t` faults, in any number of
-rounds. `Protocol.not_solvesByzantineAgreement_three` is the hexagon case `n = 3`, `t = 1`. Both
-follow from `Protocol.not_solvesByzantineAgreement_of_partition`, which needs a map `g : P → Fin 3`
-whose fibres have at most `t` elements, with `g a = 0` and `g c = 2` for some `a`, `c`. The proof
-glues two copies of the network, with inputs `0` and `1`, crossing the edges between the groups `0`
-and `2`. Unlike the paper, the middle group may be empty, so `n = 2` is included. For `n ≤ 1`
-agreement is trivial: `Protocol.solvesByzantineAgreement_ownInput` decides the own input.
+`n` processes with `2 ≤ n ≤ 3t` solves Byzantine agreement against `t` faults, for any fixed
+decision round `R`. `Protocol.not_solvesByzantineAgreement_three` is the hexagon case `n = 3`,
+`t = 1`. Both follow from `Protocol.not_solvesByzantineAgreement_of_partition`, which needs a
+map `g : P → Fin 3` whose fibres have at most `t` elements, with `g a = 0` and `g c = 2` for some
+`a`, `c`. The proof glues two copies of the network, with inputs `0` and `1`, crossing the edges
+between the groups `0` and `2`. Unlike the paper, the middle group may be empty, so `n = 2` is
+included. For `n ≤ 1` agreement is trivial: `Protocol.solvesByzantineAgreement_ownInput` (in
+`Byzantine/Basic.lean`) decides the own input.
 
 [Byzantine/OralMessages.lean](../../Complexity/Computability/Distributed/Byzantine/OralMessages.lean)
 gives the matching upper bound for one fault. `om1` sends inputs in round 1 and relays them in
 round 2. A process estimates the input of each `k` by the strict majority of the relays from the
 processes `j ≠ k`, and decides the strict majority of these estimates, ties going to `false`.
 `solvesByzantineAgreement_om1` proves that it tolerates one fault among `n ≥ 4` processes in any
-`R ≥ 2` rounds. This is the single-fault procedure of Pease, Shostak and Lamport (JACM 1980, §2)
-followed by a majority vote, as in `OM(1)` of Lamport, Shostak and Pease (TOPLAS 1982, Theorem 1).
+`R ≥ 2` rounds. This is the single-fault procedure of Pease, Shostak and Lamport (JACM 1980, §2;
+there for `n = 4`), generalized to `n ≥ 4` and followed by a majority vote, as in `OM(1)` of
+Lamport, Shostak and Pease (TOPLAS 1982, Theorem 1).
 `exists_solvesByzantineAgreement_one_iff` combines the bounds: for `R ≥ 2`, `n` processes can
 tolerate one fault exactly when `n ≤ 1` or `n ≥ 4`. The statement quantifies over `S M : Type`.
 
 [Checked examples](../../ComplexityTests/Computability/Distributed/Byzantine.lean) show a leader
 protocol that solves the fault-free problem and fails against a faulty leader that tells different
 processes different things. They also run `om1` on four processes against an equivocating process,
-with mixed and with unanimous inputs, and instantiate the node bound at `n = 2` and `n = 6`.
+with mixed and with unanimous inputs, and against a rushing process, and instantiate the node bound
+at `n = 2` and `n = 6`.
 
 Only static faults on the complete graph with Boolean inputs are covered. The connectivity bound
 `κ ≥ 2t + 1` (Fischer, Lynch and Merritt, §3.2), the general upper bound for `n > 3t` (`OM(t)` or

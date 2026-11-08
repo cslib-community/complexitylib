@@ -1592,7 +1592,8 @@ densities (expected revenue equals expected virtual welfare; Vickrey with a rese
   bound `κ ≥ 2t + 1` on general graphs (Fischer–Lynch–Merritt §3.2), the upper bound for all
   `n > 3t` (`OM(t)` or exponential information gathering), the `t + 1` round lower bound
   (Fischer–Lynch), authenticated (signed-message) agreement for any `n > t`, weak agreement,
-  approximate agreement and clock synchronization bounds, and randomized agreement.
+  the Byzantine firing squad (Fischer–Lynch–Merritt §5), approximate agreement and clock
+  synchronization bounds, and randomized agreement.
 
 ## Coverage and reuse
 

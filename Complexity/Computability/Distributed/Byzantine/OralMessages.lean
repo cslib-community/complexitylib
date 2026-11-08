@@ -22,9 +22,9 @@ and decides the strict majority of `w`, ties going to `false`.
 With at most one fault, a correct `k` is reported correctly by at least `n - 2 > (n - 1) / 2`
 relays, so every correct process computes `w k = x k`; a faulty `k` is relayed only by correct
 processes, so all correct processes compute the same `w k`. Agreement follows, and validity because
-at least `n - 1 > n / 2` entries of `w` are correct inputs. This is the single-fault interactive
-consistency procedure of [Pease, Shostak and Lamport, §2][PeaseShostakLamport1980] followed by a
-majority vote, as in the oral messages algorithm `OM(1)`
+at least `n - 1 > n / 2` entries of `w` are correct inputs. This is the single-fault procedure of
+[Pease, Shostak and Lamport, §2][PeaseShostakLamport1980] (there for `n = 4`), generalized to
+`n ≥ 4` and followed by a majority vote, as in the oral messages algorithm `OM(1)`
 [Lamport, Shostak and Pease, §3, Theorem 1][LamportShostakPease1982], except that a process
 estimates its own input from the relays as it does every other.
 
@@ -34,13 +34,10 @@ against one fault in `R ≥ 2` rounds exactly when `n ≤ 1` or `n ≥ 4`.
 
 ## Main definitions
 
-* `Cslib.Distributed.Byzantine.Protocol.ownInput`: decide the own input, without communication.
 * `Cslib.Distributed.Byzantine.om1`: two-round agreement against one fault.
 
 ## Main results
 
-* `Cslib.Distributed.Byzantine.Protocol.solvesByzantineAgreement_ownInput`: a single process
-  solves Byzantine agreement against any number of faults.
 * `Cslib.Distributed.Byzantine.solvesByzantineAgreement_om1`: `om1` tolerates one fault among
   `n ≥ 4` processes in any `R ≥ 2` rounds.
 * `Cslib.Distributed.Byzantine.exists_solvesByzantineAgreement_one_iff`: the single-fault case
@@ -59,26 +56,7 @@ namespace Cslib.Distributed.Byzantine
 
 open Finset BitString
 
-/-- The protocol in which every process decides its own input without communicating. -/
-@[expose] def Protocol.ownInput (P : Type*) : Protocol P Bool Unit where
-  init _ b := b
-  send _ _ _ _ := ()
-  update _ _ s _ := s
-  output _ s := s
-
-/-- On at most one process, deciding the own input solves Byzantine agreement against any number
-of faults in any number of rounds. -/
-theorem Protocol.solvesByzantineAgreement_ownInput {P : Type*} [DecidableEq P] [Subsingleton P]
-    (t R : ℕ) : (Protocol.ownInput P).SolvesByzantineAgreement t R := by
-  have hstate : ∀ F adv x r i, (Protocol.ownInput P).state F adv x r i = x i := by
-    intro F adv x r i
-    induction r with
-    | zero => rfl
-    | succ r ih => exact ih
-  refine ⟨fun F _ adv x i _ j _ => by rw [Subsingleton.elim i j], fun F _ adv x v hv i hi => ?_⟩
-  rw [Protocol.decision, hstate]
-  exact hv i hi
-
+/-- `strictMajorityOn` depends only on the votes in `s`. -/
 private theorem strictMajorityOn_congr {ι : Type*} {s : Finset ι} {f g : ι → Bool}
     (h : ∀ i ∈ s, f i = g i) : strictMajorityOn s f = strictMajorityOn s g := by
   unfold strictMajorityOn
@@ -144,9 +122,11 @@ private theorem om1_report (F : Finset P) (adv : ℕ → P → P → P → Bool)
     ((om1 P).state F adv x 2 i).report j k = ((om1 P).state F adv x 1 j).heard k := by
   simp only [Protocol.state, om1, hj, ite_false]
 
-/-- **Oral messages against one fault** [Pease, Shostak and Lamport, §2][PeaseShostakLamport1980],
-[Lamport, Shostak and Pease, Theorem 1][LamportShostakPease1982]: `om1` solves Byzantine
-agreement against one fault among `n ≥ 4` processes in any `R ≥ 2` rounds. -/
+/-- **Oral messages against one fault**: `om1` solves Byzantine agreement against one fault among
+`n ≥ 4` processes in any `R ≥ 2` rounds. It is the single-fault procedure of
+[Pease, Shostak and Lamport, §2][PeaseShostakLamport1980] (there for `n = 4`), generalized to
+`n ≥ 4`, followed by the majority vote of `OM(1)`
+[Lamport, Shostak and Pease, Theorem 1][LamportShostakPease1982]. -/
 theorem solvesByzantineAgreement_om1 (hn : 4 ≤ Fintype.card P) {R : ℕ} (hR : 2 ≤ R) :
     (om1 P).SolvesByzantineAgreement 1 R := by
   obtain ⟨R, rfl⟩ := Nat.exists_eq_add_of_le' hR

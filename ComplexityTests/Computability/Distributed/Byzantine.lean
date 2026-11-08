@@ -8,8 +8,8 @@ import Complexity.Computability.Distributed.Byzantine.OralMessages
 
 /-! Byzantine agreement: a leader protocol that solves the fault-free case and fails against one
 equivocating fault, the trivial one-process protocol, the covering lemma for the trivial cover,
-concrete equivocation runs of `om1` on four processes, and instances of the node bound and of the
-single-fault characterization. -/
+concrete equivocation and rushing runs of `om1` on four processes, and instances of the node bound
+and of the single-fault characterization. -/
 
 namespace ComplexityTests.Distributed.Byzantine
 
@@ -91,6 +91,30 @@ example : ∀ i : Fin 3, (om1 (Fin 4)).decision {3} equivocate (fun _ => true) 2
 
 example : (om1 (Fin 4)).SolvesByzantineAgreement 1 2 :=
   solvesByzantineAgreement_om1 (by simp) le_rfl
+
+/-! ### `om1` against a rushing process -/
+
+/-- Process `3` sees the global state before choosing its messages: in round 1 it claims the
+negation of the recipient's input, and in round 2 the negation of what the recipient heard from
+process `0`. -/
+def rushing : ℕ → (Fin 4 → OM1State (Fin 4)) → Fin 4 → Fin 4 → Fin 4 → Bool :=
+  fun r σ _ i _ => if r = 0 then !(σ i).input else !((σ i).heard 0)
+
+-- With unanimous inputs `true`, process `3` claims input `false` to process `0` in round 1, yet
+-- the correct processes still decide `true`.
+example : ((om1 (Fin 4)).adaptiveState {3} rushing (fun _ => true) 1 0).heard 3 = false := by
+  decide
+
+example : ∀ i : Fin 3, (om1 (Fin 4)).output i.castSucc
+    ((om1 (Fin 4)).adaptiveState {3} rushing (fun _ => true) 2 i.castSucc) = true := by
+  decide
+
+-- In general, agreement against `rushing` follows from agreement against fixed tables.
+example (x : Fin 4 → Bool) (i j : Fin 4) (hi : i ∉ ({3} : Finset (Fin 4)))
+    (hj : j ∉ ({3} : Finset (Fin 4))) :
+    (om1 (Fin 4)).output i ((om1 (Fin 4)).adaptiveState {3} rushing x 2 i) =
+      (om1 (Fin 4)).output j ((om1 (Fin 4)).adaptiveState {3} rushing x 2 j) :=
+  ((solvesByzantineAgreement_om1 (by simp) le_rfl).adaptive (by decide) rushing x).1 i hi j hj
 
 /-! ### The node bound -/
 

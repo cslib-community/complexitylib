@@ -24,7 +24,8 @@ The processes in a set `F` are *faulty*: in round `r + 1` a faulty process `j` s
 `i`, arbitrarily and possibly differently to different recipients. `Protocol.state` and
 `Protocol.decision` give the resulting run. Since runs are deterministic, quantifying over a fixed
 table `adv` loses nothing against adaptive (even rushing) adversaries: the messages an adaptive
-adversary sends in the run on a given input form such a table.
+adversary sends in the run on a given input form such a table. `Protocol.adaptiveState_eq_state`
+checks this for a rushing adversary that sees the global state before choosing its messages.
 
 `Protocol.SolvesByzantineAgreement t R` asks that, whenever at most `t` processes are faulty, the
 correct processes' decisions after `R` rounds satisfy
@@ -33,7 +34,10 @@ correct processes' decisions after `R` rounds satisfy
 * *validity*: if all correct processes have input `v`, they decide `v`.
 
 Termination is built in: decisions are read off after round `R`. A protocol that decides earlier
-can keep its state unchanged in later rounds.
+can keep its state unchanged in later rounds. Protocols whose decision round depends on the run
+are not covered. For finite `P` and `Msg` this loses nothing, since by König's lemma such a
+protocol decides within a bound uniform over all runs, but for infinite `Msg` a fixed `R` is
+strictly narrower than eventual decision.
 
 `Protocol.coverState` runs the protocol on a *covering network*, in which every node runs the code
 of some process and receives the message of process `j` from a designated neighbour. The covering
@@ -47,15 +51,23 @@ and is the engine of the impossibility proofs in
 
 * `Cslib.Distributed.Byzantine.Protocol`: synchronous deterministic protocols.
 * `Cslib.Distributed.Byzantine.Protocol.state`, `Protocol.decision`: runs with Byzantine faults.
+* `Cslib.Distributed.Byzantine.Protocol.adaptiveState`: runs against a rushing adversary.
 * `Cslib.Distributed.Byzantine.Protocol.SolvesByzantineAgreement`: agreement and validity
   against at most `t` Byzantine faults after `R` rounds.
+* `Cslib.Distributed.Byzantine.Protocol.ownInput`: decide the own input, without communication.
 * `Cslib.Distributed.Byzantine.Protocol.coverState`: runs on covering networks.
 
 ## Main results
 
-* `Cslib.Distributed.Byzantine.Protocol.state_eq_coverState`: the covering lemma.
+* `Cslib.Distributed.Byzantine.Protocol.adaptiveState_eq_state`: a rushing adversary is no
+  stronger than a fixed message table.
+* `Cslib.Distributed.Byzantine.Protocol.SolvesByzantineAgreement.adaptive`: agreement and
+  validity hold against rushing adversaries.
 * `Cslib.Distributed.Byzantine.Protocol.SolvesByzantineAgreement.mono`: tolerating `t` faults
   implies tolerating fewer.
+* `Cslib.Distributed.Byzantine.Protocol.solvesByzantineAgreement_ownInput`: a single process
+  solves Byzantine agreement against any number of faults.
+* `Cslib.Distributed.Byzantine.Protocol.state_eq_coverState`: the covering lemma.
 
 ## References
 
@@ -119,6 +131,57 @@ theorem SolvesByzantineAgreement.mono {π : Protocol P S M} {t t' R : ℕ}
     (h : π.SolvesByzantineAgreement t R) (ht : t' ≤ t) : π.SolvesByzantineAgreement t' R where
   agreement F hF := h.agreement F (hF.trans ht)
   validity F hF := h.validity F (hF.trans ht)
+
+/-- The state of process `i` after `r` rounds against a *rushing* adversary: in round `r + 1` a
+faulty `j` sends `strat r σ j i` to `i`, where `σ` is the global state after `r` rounds, which
+determines the messages of the correct processes in round `r + 1`. -/
+@[expose] def adaptiveState (F : Finset P) (strat : ℕ → (P → S) → P → P → M) (x : P → Bool) :
+    ℕ → P → S
+  | 0, i => π.init i (x i)
+  | r + 1, i => π.update r i (adaptiveState F strat x r i)
+      (fun j => if j ∈ F then strat r (adaptiveState F strat x r) j i
+        else π.send r j (adaptiveState F strat x r j) i)
+
+/-- A rushing adversary is no stronger than a fixed table: the run against `strat` is the run
+against the table of the messages that `strat` sends in it. -/
+theorem adaptiveState_eq_state (F : Finset P) (strat : ℕ → (P → S) → P → P → M) (x : P → Bool) :
+    ∀ r, π.adaptiveState F strat x r =
+      π.state F (fun r j i => strat r (π.adaptiveState F strat x r) j i) x r
+  | 0 => rfl
+  | r + 1 => by
+    funext i
+    simp only [adaptiveState, state]
+    rw [← adaptiveState_eq_state F strat x r]
+
+/-- Agreement and validity hold against rushing adversaries as well. -/
+theorem SolvesByzantineAgreement.adaptive {π : Protocol P S M} {t R : ℕ}
+    (h : π.SolvesByzantineAgreement t R) {F : Finset P} (hF : F.card ≤ t)
+    (strat : ℕ → (P → S) → P → P → M) (x : P → Bool) :
+    (∀ i ∉ F, ∀ j ∉ F, π.output i (π.adaptiveState F strat x R i) =
+      π.output j (π.adaptiveState F strat x R j)) ∧
+    ∀ v, (∀ i ∉ F, x i = v) → ∀ i ∉ F, π.output i (π.adaptiveState F strat x R i) = v := by
+  rw [π.adaptiveState_eq_state F strat x R]
+  exact ⟨h.agreement F hF _ x, h.validity F hF _ x⟩
+
+/-- The protocol in which every process decides its own input without communicating. -/
+@[expose] def ownInput (P : Type*) : Protocol P Bool Unit where
+  init _ b := b
+  send _ _ _ _ := ()
+  update _ _ s _ := s
+  output _ s := s
+
+/-- On at most one process, deciding the own input solves Byzantine agreement against any number
+of faults, with any decision round `R`. -/
+theorem solvesByzantineAgreement_ownInput {P : Type*} [DecidableEq P] [Subsingleton P]
+    (t R : ℕ) : (ownInput P).SolvesByzantineAgreement t R := by
+  have hstate : ∀ F adv x r i, (ownInput P).state F adv x r i = x i := by
+    intro F adv x r i
+    induction r with
+    | zero => rfl
+    | succ r ih => exact ih
+  refine ⟨fun F _ adv x i _ j _ => by rw [Subsingleton.elim i j], fun F _ adv x v hv i hi => ?_⟩
+  rw [decision, hstate]
+  exact hv i hi
 
 /-- The state of node `a` of a covering network after `r` rounds. Node `a` runs the code of
 process `label a` on input `input a`, and receives the message of process `j` from node
