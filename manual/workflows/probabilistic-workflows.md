@@ -144,7 +144,8 @@ directions: `mixingTime_le_of_distToStationary_le` for `≤`, and
 Import [Matching/Edmonds.lean](../../Complexity/Algorithms/Matching/Edmonds.lean). A bipartite
 graph is `G : V × V → Bool` on a finite type `V` of left and right vertices, the representation
 of `Cslib.Circuits.BipartiteMatching.HasPerfectMatching`. `edmondsMatrix G` has the indeterminate
-`X (i, j)` at each edge and `0` elsewhere. `det_edmondsMatrix_ne_zero_iff` is Edmonds' criterion:
+`X (i, j)` at each edge and `0` elsewhere. `det_edmondsMatrix_ne_zero_iff` is Edmonds' criterion
+(Edmonds 1967):
 over any nontrivial commutative ring, the determinant is a nonzero polynomial exactly when `G` has
 a perfect matching. The randomized test of Lovász evaluates `edmondsEval G r`, the same matrix
 with values `r : V × V → R`. Its error is one-sided: `det_edmondsEval_eq_zero` gives determinant
@@ -162,7 +163,10 @@ degree of a determinant of polynomials. Use them for other symbolic-determinant 
 
 The [checked clients](../../ComplexityTests/EdmondsMatching.lean) compute the `2 × 2`
 determinant of the complete graph, apply the test to a graph whose right vertex `1` is
-unmatched, and show that `|V| < |S|` cannot be relaxed to `|V| ≤ |S|`. Run
+unmatched, and show that values from the one-element set `{0}` miss the matching of a single edge.
+The bound `|V| < |S|` comes from Schwartz–Zippel and is not sharp in general: the determinant has
+degree at most `1` in each variable, so over an integral domain any `S` with two elements detects a
+perfect matching (not formalized). Run
 `scripts/build.sh ComplexityTests.EdmondsMatching`.
 
 ## Compose local embeddings and extract a strategy
