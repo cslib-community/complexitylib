@@ -588,7 +588,40 @@ boundary writer. `executableQuery_eval` proves pointwise agreement with
 count recovery. Width is at most `d+2`; the row candidate budgets are polynomial
 for fixed `d`. Run `scripts/build.sh ComplexityTests.WeightedExecutable` from the
 repository root to check concrete mixed-sign, overweight, duplicate-row and
-boundary-query examples. These executable writers do not replace the
-noncomputable direct branches in `CountingPlan`. Composed binary construction
-time/space, a sharp executable global clause-count bound, and graph endpoints
-remain unproved; the candidate-count theorem alone is not a runtime certificate.
+boundary-query examples. These row/query writers are used by the executable
+all-cases assembler below.
+Candidate and output bounds alone are not runtime certificates.
+
+
+Import `Complexity.Logics.Propositional.CNF.WeightedExecution` to execute the
+complete original-input dispatcher. `executableOriginalCountingPlan R hd` takes
+finite occurrence rows and a bound on their computed normalized demands. It
+computes aggregation, constant extraction, interval rejection, complementation,
+capping, the integer affine system, Gram row selection, consistency and rational
+candidate Booleanity. Only declared dimension at most one enumerates assignments.
+Other direct branches return zero, one or `2^n` from the computed tests; positive
+deficient rank writes the two queries on selected actual capped rows.
+
+The returned `CountingPlan` certifies exact counting on every declared variable,
+at most `2*n-2` query variables, width `d+2` and `countingBudget n d` clauses.
+`executableBase_keys_injective` proves that canonical signed lists deduplicate
+as signed finite sets, recovering the sharp global polynomial clause budget.
+`executableOriginalCountingPlan_count` proves agreement with the reviewed
+mathematical plan's count; query ordering may differ. No rank, basis, consistency,
+output or runtime conclusion is supplied by the caller. The API also handles
+`d=0`, beyond the source's stated `d>=1` scope.
+
+From the repository root run `scripts/build.sh ComplexityTests.WeightedExecution`.
+The [complete client](../../ComplexityTests/WeightedExecution.lean) checks actual
+returned constructors and direct answers, full-rank Boolean and fractional
+candidates, inconsistency, duplicate partial-rank rows, repeated opposite
+polarities, empty input and rank zero. A test-only exhaustive oracle checks
+small emitted queries; it is not used by the dispatcher.
+
+This is an executable finite-input algorithm with correctness and output budgets,
+not a composed multitape binary time/peak-space theorem. The common occurrence
+length representation has no encoded ragged-input adapter here. Binary encoding
+and resource certification for original normalization, whole-pipeline resource
+composition, advertised counting runtime,
+full table frontend and graph endpoints remain open. Theorem 7.1 and ALL-main
+therefore remain incomplete.

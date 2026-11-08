@@ -927,14 +927,26 @@ The all-cases mathematical assembler now normalizes the original occurrence inpu
 dispatches direct branches using computed tests, and composes selected actual capped
 rows with global queries in positive deficient rank. Exact full-input count recovery,
 the 2r-2 variable cap, width d+2 and a global polynomial clause budget are certified.
-Executable all-cases assembly, composed encoded runtime/space and graph endpoints
-remain open; Theorem 7.1 and ALL-main are not completed by this mathematical plan.
+Composed encoded runtime/space and graph endpoints remain open; Theorem 7.1 and
+ALL-main are not completed by this mathematical plan.
 
 The bounded-list weighted query writer now executes equations (24)–(25) using
 only bounded-length sublists of canonical finite supports. Exact binomial
 candidate counts, fixed-bound polynomial domination, literal widths, global
 list deduplication, pointwise correspondence to `globalQuery` and exact counting
-are proved. The all-cases plan remains mathematical: executable direct-branch
-replacement, encoded normalization/materialization, composed binary runtime and
-space, the sharp executable global clause budget and graph endpoints remain open.
+are proved. The separate executable all-cases continuation is described below;
+encoded normalization/materialization, composed binary runtime/space and graph endpoints
+remain open.
 This continuation does not complete Theorem 7.1 or ALL-main.
+
+
+The original-input bounded-demand dispatcher now executes normalization/capping,
+computed Gram rank/consistency/candidate tests and every direct/query branch.
+It reuses `CountingPlan` with exact full-variable count recovery, at most `2n-2`
+query variables, width `d+2` and the sharp fixed-demand polynomial clause budget.
+Canonical signed-list key injectivity supplies that budget for actual global
+deduplication. Concrete clients inspect computed constructors and counts.
+Executable finite-input correctness does not complete the source's resource
+theorem: encoded ragged original-input normalization, whole-pipeline binary time
+and peak space, advertised counting runtime, full table frontend and graph
+endpoints remain open. No ALL-main completion or issue closure follows.
