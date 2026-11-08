@@ -71,19 +71,19 @@ private theorem idxOf_ofFn_perm (σ : Equiv.Perm (Fin n)) (a : Fin n) :
   conv_lhs => rw [← hget]
   exact (List.nodup_ofFn.2 σ.injective).idxOf_getElem _ hlen
 
-@[simp] theorem toIncompleteInstance_propRank_some (p r : Fin n) :
+theorem toIncompleteInstance_propRank_some (p r : Fin n) :
     I.toIncompleteInstance.propRank p (some r) = (I.propRank p r).val :=
   idxOf_ofFn_perm _ r
 
-@[simp] theorem toIncompleteInstance_recvRank_some (r p : Fin n) :
+theorem toIncompleteInstance_recvRank_some (r p : Fin n) :
     I.toIncompleteInstance.recvRank r (some p) = (I.recvRank r p).val :=
   idxOf_ofFn_perm _ p
 
-@[simp] theorem toIncompleteInstance_propRank_none (p : Fin n) :
+theorem toIncompleteInstance_propRank_none (p : Fin n) :
     I.toIncompleteInstance.propRank p none = n :=
   List.length_ofFn
 
-@[simp] theorem toIncompleteInstance_recvRank_none (r : Fin n) :
+theorem toIncompleteInstance_recvRank_none (r : Fin n) :
     I.toIncompleteInstance.recvRank r none = n :=
   List.length_ofFn
 
