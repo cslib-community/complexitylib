@@ -51,7 +51,7 @@ theorem coord_socialCost (s : Fin 2 → Bool) : coord.socialCost s = 2 * coordCo
 /-- "Both `false`" is a pure Nash equilibrium: a unilateral deviation creates a mismatch. -/
 theorem coord_isPureNash_false : coord.IsPureNash fun _ => false := by
   intro i a
-  show coordCost (fun _ => false) ≤ coordCost (Function.update (fun _ => false) i a)
+  change coordCost (fun _ => false) ≤ coordCost (Function.update (fun _ => false) i a)
   fin_cases i <;> cases a <;> simp [coordCost] <;> norm_num
 
 /-- "Both `false`" costs twice the optimum "both `true`": the price of anarchy is at least `2`. -/
@@ -72,10 +72,10 @@ example : ∃ s, coord.IsPureNash s ∧ ∀ s', coord.socialCost s ≤ 1 * coord
 also optimal. -/
 example : ∃ t, Relation.ReflTransGen (flip coord.Improves) (fun _ => true) t ∧ coord.IsPureNash t ∧
     coord.socialCost t ≤ 2 := by
-  obtain ⟨t, hpath, ht, hle⟩ :=
-    coord_isExactPotential.isGeneralizedOrdinalPotential.exists_reflTransGen_isPureNash_socialCost_le
-      zero_le_two (B := 1 / 2) (fun s => (coord_socialCost s).le)
-      (fun s => by rw [coord_socialCost]; linarith) (fun _ => true)
+  have hpot := coord_isExactPotential.isGeneralizedOrdinalPotential
+  obtain ⟨t, hpath, ht, hle⟩ := hpot.exists_reflTransGen_isPureNash_socialCost_le
+    zero_le_two (B := 1 / 2) (fun s => (coord_socialCost s).le)
+    (fun s => by rw [coord_socialCost]; linarith) (fun _ => true)
   refine ⟨t, hpath, ht, ?_⟩
   have h1 : coord.socialCost (fun _ => true) = 2 := by
     rw [coord_socialCost]
@@ -148,9 +148,8 @@ theorem vhs_isPureNash (b : Bool) : vhs.toCostGame.IsPureNash fun _ => b := by
   intro i a
   rw [vhs_cost, vhs_cost]
   have hc : ∀ (b a : Bool), (Finset.univ.filter fun j => (fun _ : Fin 2 => b) j = b).card = 2 ∧
-      (Finset.univ.filter fun j =>
-        Function.update (fun _ : Fin 2 => b) i a j = Function.update (fun _ : Fin 2 => b) i a i).card
-        = if a = b then 2 else 1 := by
+      (Finset.univ.filter fun j => Function.update (fun _ : Fin 2 => b) i a j
+        = Function.update (fun _ : Fin 2 => b) i a i).card = if a = b then 2 else 1 := by
     revert i
     decide
   obtain ⟨h1, h2⟩ := hc b a
