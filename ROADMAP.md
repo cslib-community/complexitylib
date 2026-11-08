@@ -1353,6 +1353,14 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   `3/2`, and possibly the Karlin–Klein–Oveis Gharan `3/2 - 10^{-36}` improvement as a long-range
   target. LP-based and primal–dual analyses of the same problems belong to the primal–dual
   approximation direction under Optimization and duality.
+- **Steiner tree** ([#3309](https://github.com/cslib-community/complexitylib/issues/3309)):
+  remaining after the MST 2-approximation, both metric and on graphs through the metric completion,
+  with the sharp factor `2 (1 - 1/|R|)` (`Algorithms/Lean/SteinerTree`). Next: Kou–Markowsky–Berman's
+  leaf bound `2 (1 - 1/ℓ)` and their pruning steps; Zelikovsky's `11/6` and Robins–Zelikovsky's
+  `1.55` greedy algorithms; the Byrka–Grandoni–Rothvoß–Sanità LP-rounding bounds (`1.694` in
+  Williamson–Shmoys Section 12.3, and `ln 4 + ε`); NP-hardness of the decision version (Karp, within
+  [#2904](https://github.com/cslib-community/complexitylib/issues/2904)); and a polynomial-time
+  certificate for the heuristic with an executable shortest-path oracle.
 
 ### Online algorithms and competitive analysis
 
