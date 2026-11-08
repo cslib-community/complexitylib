@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import Complexity.Computability.Machines.Turing.SingleTape.BoundedCrossings
 import Complexity.Computability.Machines.Turing.SingleTape.Palindrome
 
 /-!
@@ -81,6 +82,25 @@ example : ((stayer.absInit ([] ++ [false])).run 1).state = none ∧
 /-- Nonvacuity of `DecidesByHeadInTime`: `stayer` decides within one step the words whose first
 letter is `true`, answering with the symbol it leaves under the head. -/
 example : stayer.DecidesByHeadInTime id {w : List Bool | w.head? = some true} true fun _ => 1 := by
+  intro w
+  refine ⟨⟨none, BiTape.mk₁ (w.map id)⟩, RelatesWithinSteps.single ?_, rfl, ?_⟩
+  · simp only [TransitionRelation, step, initCfg, stayer, List.map_id]
+    rw [BiTape.write_head_self]
+    rfl
+  · simp only [BiTape.head_mk₁, List.map_id]
+    exact Iff.rfl
+
+/-- `stayer` never moves, so it crosses no input boundary. -/
+lemma stayer_crossings (w : List Bool) (b : ℕ) (hb : 1 ≤ b) :
+    (stayer.absInit w).crossings (b : ℤ) 1 = [] := by
+  have hb' : (0 : ℤ) < b := by exact_mod_cast hb
+  simp [AbsCfg.crossings, AbsCfg.next, absInit, stayer, moveShift, IsLeftOf]
+
+/-- Nonvacuity of `isRegular_of_crossings_le`: `stayer` satisfies its hypotheses with `K = 0`,
+so the language of words starting with `true` is regular. -/
+example : Language.IsRegular ({w : List Bool | w.head? = some true} : Language Bool) := by
+  refine isRegular_of_crossings_le (tm := stayer) (ι := id) (yes := true) (T := fun _ => 1) ?_ 0
+    fun w b hb _ => by simp [stayer_crossings _ b hb]
   intro w
   refine ⟨⟨none, BiTape.mk₁ (w.map id)⟩, RelatesWithinSteps.single ?_, rfl, ?_⟩
   · simp only [TransitionRelation, step, initCfg, stayer, List.map_id]
