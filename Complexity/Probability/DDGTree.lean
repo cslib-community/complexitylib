@@ -38,12 +38,14 @@ fail to halt with positive probability.
 * `Cslib.Probability.DDGTree.run`: the outcome after reading `n` fair bits, or `none`.
 * `Cslib.Probability.DDGTree.outputProb`, `.Generates`: the distribution of the eventual output.
 * `Cslib.Probability.DDGTree.expectedFlips`: the expected number of fair bits read.
-* `Cslib.Probability.DDGTree.ofCounts`: a tree with prescribed numbers of leaves at each depth.
+* `Cslib.Probability.DDGTree.ofCounts`: a tree with a prescribed number of depth-`k` positions
+  lying at or below a leaf labelled `a`, for every depth `k` and outcome `a`.
 
 ## Main results
 
 * `Cslib.Probability.DDGTree.run_ofCounts`: `ofCounts t` stops with outcome `a` within `n` flips
-  with probability `t n a / 2 ^ n`, under the Kraft-type budget `∑ₐ t n a ≤ 2 ^ n`.
+  with probability `t n a / 2 ^ n`, provided the counts are inherited (`2 * t k a ≤ t (k + 1) a`)
+  and fit the Kraft-type budget `∑ₐ t k a ≤ 2 ^ k`.
 * `Cslib.Probability.DDGTree.expectedFlips_eq_tsum_mul`: tail-sum formula for the expected
   stopping time.
 * `Cslib.Probability.DDGTree.tendsto_run_none_of_generates`: generators of finite distributions halt
@@ -481,14 +483,16 @@ private theorem run_node [DecidableEq α] (hmono : ∀ k a, 2 * t k a ≤ t (k +
     simp only [e1, e2, e3, Nat.cast_ofNat]
     ring
 
-/-- A tree with `t k a` leaves labelled `a` at depth at most `k`. The depth-`k` positions are
-ordered so that leaves inherited from depth `k - 1` come first, then new leaves, then internal
-nodes. -/
+/-- A tree in which `t k a` of the `2 ^ k` depth-`k` positions lie at or below a leaf labelled `a`.
+A leaf at depth `j ≤ k` accounts for `2 ^ (k - j)` of them, so `t k a / 2 ^ k` is the probability
+of having output `a` within `k` flips. The depth-`k` positions are ordered so that positions below
+leaves of depth `< k` come first, then the new leaves of depth `k`, then the internal nodes. -/
 noncomputable def ofCounts (t : ℕ → α → ℕ) : DDGTree α := node t 0 0
 
-/-- If the counts double along each level (`2 * t k a ≤ t (k + 1) a`, i.e. leaves are inherited)
-and fit at every depth (`∑ₐ t k a ≤ 2 ^ k`, a Kraft-type budget), then `ofCounts t` reaches a leaf
-labelled `a` within `n` flips with probability exactly `t n a / 2 ^ n`. -/
+/-- If the counts are inherited along each level (`2 * t k a ≤ t (k + 1) a`: both children of a
+position at or below an `a`-leaf are again such positions) and fit at every depth
+(`∑ₐ t k a ≤ 2 ^ k`, a Kraft-type budget), then `ofCounts t` reaches a leaf labelled `a` within
+`n` flips with probability exactly `t n a / 2 ^ n`. -/
 theorem run_ofCounts (hmono : ∀ k a, 2 * t k a ≤ t (k + 1) a)
     (hkraft : ∀ k, ∑ a, t k a ≤ 2 ^ k) (n : ℕ) (a : α) :
     (ofCounts t).run n (some a) = t n a / 2 ^ n := by

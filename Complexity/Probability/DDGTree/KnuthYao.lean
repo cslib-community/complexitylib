@@ -18,12 +18,12 @@ Every DDG tree generating a distribution `p` on a finite type reads at least `H(
 expectation, and the Knuth–Yao tree `knuthYao p` reads fewer than `H(p) + 2`
 ([KnuthYao1976]; [CoverThomas2006], Theorems 5.11.1 and 5.11.3).
 
-`knuthYao p` places a leaf labelled `a` at depth `k` exactly when the `k`-th binary digit of `p a`
-is `1`. Equivalently, it has `⌊2ᵏ p a⌋` leaves labelled `a` at depth at most `k`. Its stopping time
-is stochastically smallest. For every generating tree `T` and every `n`,
-`P(T_KY > n) ≤ P(T > n)`, because after `n` fair bits `T` can only have produced `a` with dyadic
-probability `c / 2 ⁿ ≤ p a`, so `c ≤ ⌊2ⁿ p a⌋`. Hence `knuthYao p` minimizes the expected number of
-flips. Its expected cost is `∑ₐ ν(p a)`, where
+`knuthYao p` places a leaf labelled `a` at depth `k` exactly when the `k`-th binary digit
+`⌊2ᵏ p a⌋ mod 2` of `p a` is `1`. Equivalently, it outputs `a` within `k` flips with probability
+`⌊2ᵏ p a⌋ / 2ᵏ`. Its stopping time is stochastically smallest. For every generating tree `T` and
+every `n`, `P(T_KY > n) ≤ P(T > n)`, because after `n` fair bits `T` can only have produced `a`
+with dyadic probability `c / 2ⁿ ≤ p a`, so `c ≤ ⌊2ⁿ p a⌋`. Hence `knuthYao p` minimizes the
+expected number of flips. Its expected cost is `∑ₐ ν(p a)`, where
 `ν(x) = ∑ₙ (x - ⌊2ⁿ x⌋ / 2ⁿ)` is the sum of the binary-truncation errors of `x`. The bounds
 `x log₂ (1 / x) ≤ ν(x) < x log₂ (1 / x) + 2x` for `0 < x ≤ 1` then give both entropy bounds.
 Equality `ν(x) = x log₂ (1 / x)` holds exactly when `x` is `0` or a power of `1/2`, which
@@ -255,13 +255,20 @@ end Real
 
 variable {α : Type*} [Fintype α]
 
-/-- Leaves of the Knuth–Yao tree labelled `a` at depth at most `k`: `⌊2ᵏ p a⌋`. -/
+/-- The number `⌊2ᵏ p a⌋` of depth-`k` positions of the Knuth–Yao tree lying at or below a leaf
+labelled `a` (a leaf at depth `j ≤ k` counts `2 ^ (k - j)` times). Equivalently, `⌊2ᵏ p a⌋ / 2ᵏ`
+is the probability that the tree outputs `a` within `k` flips. -/
 noncomputable def knuthYaoCounts (p : PMF α) (k : ℕ) (a : α) : ℕ :=
   ⌊(2 : ℝ) ^ k * (p a).toReal⌋₊
 
-/-- The Knuth–Yao tree of `p`: a leaf labelled `a` at depth `k` for each binary digit `1` at
-position `k` of `p a`. -/
+/-- The Knuth–Yao tree of `p`: a leaf labelled `a` at depth `k` for each binary digit
+`⌊2ᵏ p a⌋ mod 2 = 1` of `p a` (position `0` is the units digit, so `p a = 1` gives a root leaf). -/
 noncomputable def knuthYao (p : PMF α) : DDGTree α := ofCounts (knuthYaoCounts p)
+
+omit [Fintype α] in
+private theorem toReal_mem_Icc (p : PMF α) (a : α) : (p a).toReal ∈ Set.Icc (0 : ℝ) 1 :=
+  ⟨ENNReal.toReal_nonneg,
+    ENNReal.toReal_le_of_le_ofReal zero_le_one (by simpa using p.coe_le_one a)⟩
 
 omit [Fintype α] in
 private theorem knuthYaoCounts_mono (p : PMF α) (k : ℕ) (a : α) :
@@ -331,25 +338,21 @@ theorem expectedFlips_knuthYao (p : PMF α) :
 
 theorem entropy_le_sum_knuthYaoCost (p : PMF α) :
     PMF.entropy p ≤ ∑ a, knuthYaoCost (p a).toReal := by
-  have hle (a : α) : (p a).toReal ≤ 1 :=
-    ENNReal.toReal_le_of_le_ofReal zero_le_one (by simpa using p.coe_le_one a)
   rw [PMF.entropy_eq_sum_surprisal]
   exact Finset.sum_le_sum fun a _ => negMulLogb_le_knuthYaoCost ENNReal.toReal_nonneg
-    (hle a)
+    (toReal_mem_Icc p a).2
 
 theorem sum_knuthYaoCost_lt_entropy_add_two (p : PMF α) :
     ∑ a, knuthYaoCost (p a).toReal < PMF.entropy p + 2 := by
-  have hle (a : α) : (p a).toReal ≤ 1 :=
-    ENNReal.toReal_le_of_le_ofReal zero_le_one (by simpa using p.coe_le_one a)
   rw [PMF.entropy_eq_sum_surprisal]
   obtain ⟨a₀, ha₀⟩ := p.support_nonempty
   have h2 : ∑ a, 2 * (p a).toReal = 2 := by rw [← Finset.mul_sum, PMF.sum_toReal, mul_one]
   rw [← h2, ← Finset.sum_add_distrib]
   refine Finset.sum_lt_sum
-    (fun a _ => knuthYaoCost_le_negMulLogb_add ENNReal.toReal_nonneg (hle a))
+    (fun a _ => knuthYaoCost_le_negMulLogb_add ENNReal.toReal_nonneg (toReal_mem_Icc p a).2)
     ⟨a₀, Finset.mem_univ _, knuthYaoCost_lt_negMulLogb_add
       (ENNReal.toReal_pos ((p.mem_support_iff a₀).mp ha₀) (p.apply_ne_top a₀))
-      (hle a₀)⟩
+      (toReal_mem_Icc p a₀).2⟩
 
 /-- Stochastic dominance: for every tree generating `p` and every `n`, the Knuth–Yao tree is at
 least as likely to have stopped within `n` flips. -/
@@ -419,17 +422,15 @@ private theorem toReal_eq_inv_two_pow_iff {x : ℝ≥0∞} (hx : x ≠ ⊤) (m :
 theorem expectedFlips_knuthYao_eq_entropy_iff (p : PMF α) :
     (knuthYao p).expectedFlips = ENNReal.ofReal (PMF.entropy p) ↔
       ∀ a ∈ p.support, ∃ m : ℕ, p a = 2⁻¹ ^ m := by
-  have hle (a : α) : (p a).toReal ≤ 1 :=
-    ENNReal.toReal_le_of_le_ofReal zero_le_one (by simpa using p.coe_le_one a)
   rw [expectedFlips_knuthYao, ENNReal.ofReal_eq_ofReal_iff
     (Finset.sum_nonneg fun a _ => knuthYaoCost_nonneg ENNReal.toReal_nonneg)
     (PMF.entropy_nonneg p), PMF.entropy_eq_sum_surprisal]
   simp only [PMF.surprisal]
   rw [eq_comm, Finset.sum_eq_sum_iff_of_le fun a _ =>
-      negMulLogb_le_knuthYaoCost ENNReal.toReal_nonneg (hle a)]
+      negMulLogb_le_knuthYaoCost ENNReal.toReal_nonneg (toReal_mem_Icc p a).2]
   simp only [Finset.mem_univ, true_implies]
   refine forall_congr' fun a => ?_
-  rw [eq_comm, knuthYaoCost_eq_negMulLogb_iff ENNReal.toReal_nonneg (hle a),
+  rw [eq_comm, knuthYaoCost_eq_negMulLogb_iff ENNReal.toReal_nonneg (toReal_mem_Icc p a).2,
     PMF.mem_support_iff]
   constructor
   · rintro (h | ⟨m, hm⟩) hpa

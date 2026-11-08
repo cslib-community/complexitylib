@@ -71,18 +71,19 @@ noncomputable def dyadic3 : PMF (Fin 3) :=
   PMF.ofFintype (fun i => 2⁻¹ ^ (if i = 0 then 1 else 2)) (by
     simp only [Fin.sum_univ_three, Fin.isValue, ite_true, Fin.one_eq_zero_iff, OfNat.ofNat_ne_one,
       ite_false, Fin.reduceEq]
-    rw [← ENNReal.inv_pow]
-    norm_num
-    rw [← ENNReal.inv_two_add_inv_two, add_assoc, ← two_mul, pow_two, ← mul_assoc,
-      ENNReal.mul_inv_cancel (by simp) (by simp), one_mul])
+    rw [pow_one, add_assoc, ← two_mul, pow_two, ← mul_assoc,
+      ENNReal.mul_inv_cancel two_ne_zero ENNReal.ofNat_ne_top, one_mul,
+      ENNReal.inv_two_add_inv_two])
 
 example : (knuthYao dyadic3).expectedFlips = 3 / 2 := by
-  rw [expectedFlips_knuthYao]
+  have h : (3 / 2 : ℝ≥0∞) = ENNReal.ofReal (3 / 2) := by
+    rw [ENNReal.ofReal_div_of_pos (by norm_num)]
+    norm_num
+  rw [expectedFlips_knuthYao, h]
+  congr 1
   simp only [dyadic3, PMF.ofFintype_apply, ENNReal.toReal_pow, ENNReal.toReal_inv,
     ENNReal.toReal_ofNat, knuthYaoCost_inv_two_pow, Fin.sum_univ_three]
   norm_num
-  rw [show (3 / 2 : ℝ≥0∞) = ENNReal.ofReal (3 / 2) by
-    rw [ENNReal.ofReal_div_of_pos (by norm_num)]; norm_num]
 
 /-- The Knuth–Yao tree meets the entropy bound with equality on a dyadic distribution. -/
 example : (knuthYao dyadic3).expectedFlips = ENNReal.ofReal (PMF.entropy dyadic3) :=
