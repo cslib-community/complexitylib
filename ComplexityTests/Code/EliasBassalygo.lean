@@ -12,7 +12,9 @@ import Complexity.Foundations.Data.Code.EliasBassalygo
 For binary codes of length ten and minimum distance four, the Hamming bound at radius one gives
 `|C| ≤ 1024 / 11`, that is at most `93` codewords. The q-ary Johnson radius allows radius two,
 beyond half the minimum distance, where the Elias–Bassalygo bound gives `|C| 56 8 ≤ 1024 40`, that
-is at most `91` codewords. (The largest such code has `40` codewords.)
+is at most `91` codewords. The comparison is with the Hamming bound only: at these parameters the
+shortened Plotkin bound gives the stronger `64` (`ComplexityTests/Code/Plotkin.lean`). The largest
+such code has `40` codewords.
 -/
 
 namespace ComplexityTests.Code.EliasBassalygo

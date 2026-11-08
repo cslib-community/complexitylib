@@ -38,12 +38,13 @@ double counting behind the Plotkin bound (`Cslib.Code.sum_sum_hammingDist_add_su
 gives, for `q e ≤ (q - 1) n`,
 `M ((q - 1) (n - e) ^ 2 + e ^ 2 - (q - 1) n (n - d)) ≤ (q - 1) n d`
 (`Cslib.Code.card_filter_hammingDist_le_mul_le_of_mul_le`): the **q-ary Johnson bound**
-[GuruswamiRudraSudan2019, Theorem 7.3.1 and Exercise 7.7]. If `d ≤ (1 - 1 / q) n`, its
-hypotheses hold exactly when `e / n < J_q(d / n)`, where
-`J_q(δ) = (1 - 1 / q) (1 - √(1 - q δ / (q - 1)))`; for larger `d` they hold whenever
-`q e ≤ (q - 1) n`. A ball of such a radius then contains at most
-`(q - 1) n d` codewords (`Cslib.Code.card_filter_hammingDist_le_le_of_mul_le`), within the list size
-`q d n` of the source. As `q` grows, `J_q(δ)` decreases to the alphabet-free radius `1 - √(1 - δ)`.
+[GuruswamiRudraSudan2019, Theorem 7.3.1], which the source proves for `q = 2` and leaves to its
+Exercise 7.7 for general `q`. If `d ≤ (1 - 1 / q) n`, its hypotheses hold exactly when
+`e / n < J_q(d / n)`, where `J_q(δ) = (1 - 1 / q) (1 - √(1 - q δ / (q - 1)))`; for larger `d` they
+hold whenever `q e ≤ (q - 1) n`. A ball of such a radius then contains at most `(q - 1) n d`
+codewords (`Cslib.Code.card_filter_hammingDist_le_le_of_mul_le`): the radius of Exercise 7.7, with
+a list size within the `q d n` of Theorem 7.3.1 (Exercise 7.7 states `2 q n`). As `q` grows,
+`J_q(δ)` decreases to the alphabet-free radius `1 - √(1 - δ)`.
 
 ## Main results
 
@@ -365,10 +366,11 @@ private theorem card_filter_hammingDist_le_mul_le_of_mul_le_int [Nonempty α]
     nlinarith
   linarith
 
-/-- **The q-ary Johnson bound**, in agreement form [GuruswamiRudraSudan2019, Theorem 7.3.1 and
-Exercise 7.7]: for a code of length `n` and minimum distance at least `d` over `q` letters, and a
-radius `e` with `q e ≤ (q - 1) n`, the number `M` of codewords within distance `e` of a word `w`
-satisfies `M ((q - 1) (n - e) ^ 2 + e ^ 2 - (q - 1) n (n - d)) ≤ (q - 1) n d`. It bounds `M` when
+/-- **The q-ary Johnson bound**, in agreement form [GuruswamiRudraSudan2019, Theorem 7.3.1, at the
+radius of Exercise 7.7 for general `q`]: for a code of length `n` and minimum distance at least `d`
+over `q` letters, and a radius `e` with `q e ≤ (q - 1) n`, the number `M` of codewords within
+distance `e` of a word `w` satisfies
+`M ((q - 1) (n - e) ^ 2 + e ^ 2 - (q - 1) n (n - d)) ≤ (q - 1) n d`. It bounds `M` when
 `(q - 1) n (n - d) < (q - 1) (n - e) ^ 2 + e ^ 2` and says nothing otherwise. The hypothesis
 `q e ≤ (q - 1) n` cannot be dropped: for `q = 2` and `e = d = n` the ball is the whole space. -/
 theorem card_filter_hammingDist_le_mul_le_of_mul_le [Nonempty α] {C : Finset (ι → α)} {d : ℕ}
@@ -420,11 +422,12 @@ theorem card_filter_hammingDist_le_mul_le_of_mul_le [Nonempty α] {C : Finset (�
     nlinarith
   exact_mod_cast hgoal
 
-/-- **The q-ary Johnson bound** on list sizes [GuruswamiRudraSudan2019, Theorem 7.3.1 and
-Exercise 7.7]: if `q e ≤ (q - 1) n` and `(q - 1) n (n - d) < (q - 1) (n - e) ^ 2 + e ^ 2`, that is
-if `e / n < J_q(d / n)` when `d ≤ (1 - 1 / q) n`, a Hamming ball of radius `e` contains at most
-`(q - 1) n d` codewords of a code of length `n` and minimum distance at least `d` over `q`
-letters. -/
+/-- **The q-ary Johnson bound** on list sizes [GuruswamiRudraSudan2019, Theorem 7.3.1, at the
+radius of Exercise 7.7 for general `q`]: if `q e ≤ (q - 1) n` and
+`(q - 1) n (n - d) < (q - 1) (n - e) ^ 2 + e ^ 2`, that is if `e / n < J_q(d / n)` when
+`d ≤ (1 - 1 / q) n`, a Hamming ball of radius `e` contains at most `(q - 1) n d` codewords of a code
+of length `n` and minimum distance at least `d` over `q` letters. The list size `(q - 1) n d` is
+within the `q d n` of Theorem 7.3.1 (Exercise 7.7 states `2 q n`). -/
 theorem card_filter_hammingDist_le_le_of_mul_le [Nonempty α] {C : Finset (ι → α)} {d e : ℕ}
     (hd : (d : ℕ∞) ≤ minDist (C : Set (ι → α)))
     (he : Fintype.card α * e ≤ (Fintype.card α - 1) * Fintype.card ι)

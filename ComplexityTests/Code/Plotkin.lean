@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import Complexity.Foundations.Data.Code.Hadamard
 import Complexity.Foundations.Data.Code.Plotkin
+import Complexity.Foundations.Data.Code.Plotkin.Asymptotic
 import Mathlib.Data.ZMod.Defs
 
 /-!
@@ -20,6 +21,9 @@ Codes that attain the Plotkin bound with equality:
 * the ternary code `{(a, b, a + b)}` of length three and distance two, at relative distance
   `1 - 1 / q`: the bound `q n` is `9`;
 * the binary even-weight code of length four and distance two: the bound `2 n` is `8`.
+
+The asymptotic Plotkin bound applies to the binary repetition codes, of relative distance one: at
+`δ = 1 / 2` it bounds their rate by `o(1)`.
 -/
 
 namespace ComplexityTests.Code.Plotkin
@@ -147,5 +151,34 @@ example (C : Finset (Fin 10 → Bool)) (hC : ((4 : ℕ) : ℕ∞) ≤ minDist (C
     #C ≤ 64 := by
   have h := card_mul_sub_le_pow_mul_of_le_minDist hC (m := 7) (by decide)
   simpa using h
+
+/-! ### The asymptotic Plotkin bound -/
+
+/-- The binary repetition code of length `n + 1`. -/
+private def repetition (n : ℕ) : Finset (Fin (n + 1) → Bool) := {fun _ => false, fun _ => true}
+
+private theorem hammingDist_repetition (n : ℕ) :
+    ∀ x ∈ repetition n, ∀ y ∈ repetition n, x ≠ y → hammingDist x y = n + 1 := by
+  intro x hx y hy hxy
+  simp only [repetition, mem_insert, mem_singleton] at hx hy
+  rcases hx with rfl | rfl <;> rcases hy with rfl | rfl
+  · exact absurd rfl hxy
+  · simp [hammingDist]
+  · simp [hammingDist]
+  · exact absurd rfl hxy
+
+/-- The repetition codes have relative distance `1 ≥ δ = 1 / 2 = 1 - 1 / q`, so the asymptotic
+Plotkin bound gives `log_2 |C| ≤ ε n` eventually, for every `ε > 0`. -/
+example {ε : ℝ} (hε : 0 < ε) :
+    ∀ᶠ n in Filter.atTop, Real.logb (Fintype.card Bool) #(repetition n) ≤
+      (1 - Fintype.card Bool / (Fintype.card Bool - 1) * (1 / 2) + ε) *
+        Fintype.card (Fin (n + 1)) :=
+  eventually_logb_card_le_of_le_hammingDist (ιs := fun n => Fin (n + 1)) (by norm_num)
+    (by norm_num)
+    (fun n x hx y hy hxy => by
+      rw [hammingDist_repetition n x hx y hy hxy, Fintype.card_fin]
+      push_cast
+      linarith)
+    (by simpa using Filter.tendsto_add_atTop_nat 1) hε
 
 end ComplexityTests.Code.Plotkin
