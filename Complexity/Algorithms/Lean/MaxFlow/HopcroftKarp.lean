@@ -1434,7 +1434,9 @@ end DfsDriver
 
 section ApplyEdges
 
-private theorem vget_foldl_apply (mate : Vector (Option (Fin m)) r) (es : List (Fin m × Fin r))
+/-- Rematching along an edge list with distinct right ends: `v` is matched to `u` afterwards iff
+`(u, v)` is in the list, or `v` is not rematched and was matched to `u` before. -/
+theorem vget_foldl_apply (mate : Vector (Option (Fin m)) r) (es : List (Fin m × Fin r))
     (hnd : (es.map Prod.snd).Nodup) (u : Fin m) (v : Fin r) :
     vget (es.foldl (fun mt e => vset mt e.2 (some e.1)) mate) v = some u ↔
       (u, v) ∈ es ∨ (v ∉ es.map Prod.snd ∧ vget mate v = some u) := by
@@ -1460,7 +1462,8 @@ private theorem vget_foldl_apply (mate : Vector (Option (Fin m)) r) (es : List (
     · rw [vget_vset_ne mate _ (Ne.symm hvb)]
       simp only [List.mem_cons, Prod.mk.injEq, hvb, and_false, false_or, List.map_cons]
 
-private theorem mateMatching_applyEdges (mate : Vector (Option (Fin m)) r)
+/-- Rematching a mate table along a compatible edge list realizes `augment`. -/
+theorem mateMatching_applyEdges (mate : Vector (Option (Fin m)) r)
     (es : List (Fin m × Fin r))
     (hnd : (es.map Prod.snd).Nodup)
     (hcompat : ∀ u v, (u, v) ∈ mateMatching mate →
@@ -1745,7 +1748,8 @@ end Loop
 
 section Extract
 
-private theorem mem_foldl_hkMatchingStep (mate : Vector (Option (Fin m)) r) (l : List (Fin r))
+/-- Membership in the matching extracted from a mate table. -/
+theorem mem_foldl_hkMatchingStep (mate : Vector (Option (Fin m)) r) (l : List (Fin r))
     (a : Finset (Fin m × Fin r)) (u : Fin m) (v : Fin r) :
     (u, v) ∈ l.foldl (hkMatchingStep mate) a ↔ (u, v) ∈ a ∨ (v ∈ l ∧ vget mate v = some u) := by
   induction l generalizing a with
