@@ -229,6 +229,11 @@ Carl Hierholzer. “Ueber die Möglichkeit, einen Linienzug ohne Wiederholung un
 
 Johan Håstad, Russell Impagliazzo, Leonid A. Levin, Michael Luby. “A Pseudorandom Generator from Any One-Way Function.” *SIAM Journal on Computing* 28(4), 1364–1396, 1999. https://doi.org/10.1137/S0097539793244708 . Publisher abstract checked; full article not independently audited.
 
+<a id="hmu06"></a>
+## hmu06
+
+John E. Hopcroft, Rajeev Motwani and Jeffrey D. Ullman. *Introduction to Automata Theory, Languages, and Computation*, third edition. Addison-Wesley, 2006. ISBN 0-321-45536-3. Cited for Section 7.4.4 ("Testing Membership in a CFL"), the CYK algorithm for grammars in Chomsky normal form. The section number and title were checked against secondary course material, not the printed book.
+
 <a id="holenstein06"></a>
 ## holenstein06
 
@@ -253,6 +258,11 @@ Russell Impagliazzo and Ramamohan Paturi. *On the Complexity of k-SAT*. Journal 
 ## impagliazzowigderson97
 
 Russell Impagliazzo and Avi Wigderson. *P = BPP if E Requires Exponential Circuits: Derandomizing the XOR Lemma*. Proceedings of the 29th Annual ACM Symposium on Theory of Computing, 220–229, 1997. DOI: [10.1145/258533.258590](https://doi.org/10.1145/258533.258590). ACM metadata checked by the coordinated source pass on 2026-11-02; no complete literature proof audit is asserted.
+
+<a id="kasami65"></a>
+## kasami65
+
+Tadao Kasami. *An Efficient Recognition and Syntax-Analysis Algorithm for Context-Free Languages*. Scientific Report AFCRL-65-758, Air Force Cambridge Research Laboratory, Bedford, MA, 1965. Bibliographic metadata was checked against secondary sources on 2026-11-08; the report was not inspected. It is cited, with [Younger 1967](#younger67), as an original source of the CYK algorithm.
 
 <a id="katzlindell20"></a>
 ## katzlindell20
@@ -394,6 +404,11 @@ Alexander Schrijver. *A Course in Combinatorial Optimization*. Lecture notes, ve
 
 Adi Shamir. “IP = PSPACE.” *Journal of the ACM* 39(4), 869–877 (1992). DOI: https://doi.org/10.1145/146585.146609. Original-paper scan inspected: https://crypto.cs.mcgill.ca/~crepeau/COMP647/2007/TOPIC01/Shamir-IP=PSPACE.pdf.
 
+<a id="sipser13"></a>
+## sipser13
+
+Michael Sipser. *Introduction to the Theory of Computation*, third edition. Cengage Learning, 2013. Cited for Definition 2.8 (Chomsky normal form, with the rule `S → ε` permitted for the start variable) and Theorem 7.16 ("Every context-free language is a member of P", proved by the CYK dynamic program). Both locators were checked against secondary course material, not the printed book.
+
 <a id="sleatortarjan85"></a>
 ## sleatortarjan85
 
@@ -438,3 +453,8 @@ R. Ryan Williams. *Simulating Time With Square-Root Space*. arXiv:2502.17779v1 (
 ## williamsonshmoys11
 
 David P. Williamson and David B. Shmoys. *The Design of Approximation Algorithms*. Cambridge University Press, 2011. https://doi.org/10.1017/CBO9780511921735 . Section 1.6 (Algorithm 1.2, Theorems 1.11 and 1.12) and the Chapter 1 Chapter Notes attribution of the greedy set-cover analysis to Chvátal (Mathematics of Operations Research 4(3), 233–235, 1979, https://doi.org/10.1287/moor.4.3.233) were checked against the authors' electronic edition at https://www.designofapproxalgs.com on 2026-11-07, as were Section 2.4 (Lemma 2.10, Theorems 2.11 and 2.12) and the Chapter 2 Chapter Notes, which attribute nearest addition and its analysis to Rosenkrantz, Stearns and Lewis (1977) and call the double-tree algorithm folklore.
+
+<a id="younger67"></a>
+## younger67
+
+Daniel H. Younger. "Recognition and Parsing of Context-Free Languages in Time n³." *Information and Control* 10(2), 189–208, 1967. https://doi.org/10.1016/S0019-9958(67)80007-X . Bibliographic metadata was checked on 2026-11-08; the article body was not inspected. It is cited, with [Kasami 1965](#kasami65), as an original source of the CYK algorithm.

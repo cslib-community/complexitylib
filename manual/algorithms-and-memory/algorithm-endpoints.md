@@ -130,6 +130,15 @@ These are pure Lean functions on adjacency lists, with `TimeM` cost models (as f
 
 The [DFS examples](../../ComplexityTests/DFS.lean) include a triangle and a self-loop, on which topological sort is not a topological order. The [Bellman–Ford examples](../../ComplexityTests/BellmanFord.lean) include a negative edge, a reachable negative cycle and an unreachable one, with exact tick counts. Strongly connected components and linear-time 2-SAT are tracked in [#3053](https://github.com/cslib-community/complexitylib/issues/3053).
 
+## Context-free membership and CYK
+
+Like Bellman–Ford, this is a pure Lean function with a `TimeM` cost model, not a machine program.
+
+- **Grammars in Chomsky normal form.** Import `Complexity.Computability.Languages.ChomskyNormalForm` ([source](../../Complexity/Computability/Languages/ChomskyNormalForm.lean)). A `ChomskyNormalFormGrammar` has a list of rules `A → a` (`leaf`) and `A → B C` (`node`), and a flag `nilRule` for the rule `S → ε` [Sipser, Definition 2.8][sipser13]. With that flag set, the bundled invariant forbids the start symbol on right-hand sides. `toCFG` reads the grammar as a Mathlib `ContextFreeGrammar`, and every statement is about Mathlib's `Derives` and `language` for it. `derives_iff_of_ne_nil` describes the derivations of a nonempty word by a first rule and a split. It rests on `ContextFreeGrammar.derives_append_iff` in [Foundations/Computability/ContextFreeGrammar.lean](../../Complexity/Foundations/Computability/ContextFreeGrammar.lean), which splits a derivation from `u ++ v` into derivations from `u` and from `v`.
+- **CYK.** Import `Complexity.Algorithms.Lean.CYK.Basic` ([source](../../Complexity/Algorithms/Lean/CYK/Basic.lean)). `cyk G w` fills the table of nonterminals deriving each subword, level by level, following [Kasami][kasami65], [Younger][younger67] and [Hopcroft, Motwani and Ullman, Section 7.4.4][hmu06]. `mem_table_iff` says that each cell lists exactly the nonterminals deriving its subword. `cyk_eq_true_iff` says that `cyk G w = true` iff `w ∈ G.toCFG.language`, and `decidableMemLanguage` makes membership decidable. `time_cykM` gives the exact cost `(|R| + 1) (n + C(n + 1, 3))` for `|R|` rules and a word of length `n`, and `time_cykM_le` bounds it by `(|R| + 1) (n + 1)³`. One unit is charged per rule examined in each scan, and per split point (or letter) read. Table reads and writes, cell membership tests and insertions are constant-time steps, as on a RAM holding an array of nonterminal sets.
+
+The [CYK examples](../../ComplexityTests/Algorithms/Lean/CYK.lean) decide accepted and rejected words, including the empty word, for `{aⁿbⁿ}` and for balanced parentheses with `S → ε`, using `decide`, and check exact tick counts. This is the algorithm of [Sipser, Theorem 7.16][sipser13] (every context-free language is in P) **only for grammars already in Chomsky normal form**. Conversion of arbitrary grammars, a machine-level `ComputableInPolyTime` decider, Valiant's subcubic parsing, the pumping lemma, and CFG emptiness and universality are not formalized ([ROADMAP](../../ROADMAP.md#structure-time-and-space), [#3303](https://github.com/cslib-community/complexitylib/issues/3303)).
+
 ## Hash families and dictionaries
 
 [abstracts/ComplexityAbstracts/HashTablesAbstract.lean](../../abstracts/ComplexityAbstracts/HashTablesAbstract.lean) selects four expected-amortized dictionary implementations: multiply-shift chained hashing, five-wise linear probing, odd-stride uniform probing and cuckoo hashing. Each supports `query` and `insert` with overwrite, up to bounded distinct-key capacity. **Deletion is not included.** The operation list is fixed before initialization randomness; these are oblivious-sequence guarantees.
@@ -766,9 +775,13 @@ The numeric values above are transcriptions of checked source statements, not re
 [floyd62]: ../sources.md#floyd62
 [freivalds79]: ../sources.md#freivalds79
 [hierholzer73]: ../sources.md#hierholzer73
+[hmu06]: ../sources.md#hmu06
+[kasami65]: ../sources.md#kasami65
 [kortevygen18]: ../sources.md#kortevygen18
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
 [schrijver17]: ../sources.md#schrijver17
+[sipser13]: ../sources.md#sipser13
 [vww18]: ../sources.md#vww18
 [thorup13]: ../sources.md#thorup13
 [williamsonshmoys11]: ../sources.md#williamsonshmoys11
+[younger67]: ../sources.md#younger67
