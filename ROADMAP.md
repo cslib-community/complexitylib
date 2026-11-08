@@ -1758,7 +1758,8 @@ each statement against the numbered result. Organize modules by subject, not cha
   `δ`-reduced bases, the LLL approximation `‖b₁‖² ≤ (4/(4δ-1))^{n-1} ‖x‖²` (paper indexing,
   `n` vectors) to the shortest vector (Lenstra–Lenstra–Lovász Proposition (1.11)), the potential
   argument bounding the number of exchange steps by `O(n² log B)` for integral Gram matrices, and
-  an executable LLL (`δ = 3/4`, exact rational Gram–Schmidt) on integer bases whose output is
+  an executable LLL (exact rational Gram–Schmidt; `δ = 3/4`, and `lllWith δ` for any rational
+  `0 < δ < 1` with an explicit `⌈δ/(1-δ)⌉`-scaled round budget) on integer bases whose output is
   reduced and spans the same lattice are in `Algorithms/LatticeReduction`, over Gram–Schmidt
   facts in `Foundations/Analysis/InnerProductSpace/GramSchmidtOrtho`. Babai's nearest-plane
   algorithm ([#3486](https://github.com/cslib-community/complexitylib/issues/3486)) is there too:
@@ -1766,10 +1767,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   executable LLL-then-round algorithm on integer bases and targets that solves CVP within `2^{n/2}`.
   Remaining: a cost model for the executable LLL with the `O(n⁴ log B)` arithmetic-operation bound
   (the current version recomputes Gram–Schmidt every round) and the `O(n log B)` bit-size bound of
-  (1.26), then `ComputableInPolyTime` statements for LLL and Babai; an executable reduction with
-  `δ` near `1` (at `δ = 1` the abstract bound already gives Babai's factor `2 (2/√3)ⁿ⁻¹` for
-  `1`-reduced bases, but `lll` fixes `δ = 3/4`) and rational targets for Babai; then applications
-  (simultaneous Diophantine approximation, polynomial factorization over `ℚ`).
+  (1.26), then `ComputableInPolyTime` statements for LLL and Babai; running Babai over
+  `lllWith δ` for `δ` near `1` (at `δ = 1` the abstract bound already gives Babai's factor
+  `2 (2/√3)ⁿ⁻¹` for `1`-reduced bases, but `babai` uses `lll`, which fixes `δ = 3/4`) and
+  rational targets for Babai; then applications (simultaneous Diophantine approximation,
+  polynomial factorization over `ℚ`).
 - **Separation and optimization:** a precise oracle interface and a separation–optimization
   equivalence with its representation, accuracy and well-boundedness hypotheses. Extend to
   convex optimization through explicit oracle and numerical-error contracts.
