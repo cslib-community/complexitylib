@@ -194,6 +194,47 @@ include odd exactly-one relations, the empty-coordinate case, and failures of ex
 These mathematical prerequisites provide no planar embedding algorithm, edge-CSP solver or
 planar complexity dichotomy yet. The full remaining objective is [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
 
+## Occurrences, explicit tables and ordered incidence rotations
+
+`Complexity.Logics.Propositional.CSP.Occurrence` indexes arguments by constraint position and
+scope position, preserving repeated variables and identical constraints. `ValidLabeling` checks
+each ordered local tuple; `ConsistentLabeling` requires agreement at all occurrences of a variable.
+Given a supplied `outside : D`, their conjunction is equivalent to the existing CSP
+satisfiability predicate. Reconstruction assigns `outside` to every nonoccurring variable; the
+domain-value hypothesis is necessary when the domain may be empty. `EdgeInstance`
+requires exactly two occurrences per occurring variable, in distinct constraints, and supplies a
+partner involution. Its endpoint agreement is equivalent to global consistency. The native
+`Cslib.Complexity.CSP.incidenceGraph` in `Problems.CSP.Incidence` reuses the existing listed graph
+and positive-CNF adapter. It retains one edge per argument, dense variable vertices followed by
+constraint-position vertices, and a native polynomial construction with binary source labels.
+See [occurrence and incidence tests](../../ComplexityTests/CSPOccurrence.lean).
+
+`Complexity.Computability.PolyTime.CSP.Table` supplies `CSP.Table` as an explicit, potentially
+infinite relation alphabet for the same CSP lists. Arity is binary; accepted rows are doubly
+framed Boolean lists, including duplicate rows. Width errors reject every row. The local
+`Table.contract` retains rows with zero or one deviation from a feasible reference on selected
+internal positions, projects outside positions in their original order, and appends the connector
+bit. Its row count cannot increase; at least two distinct in-range internal positions imply
+strict width decrease and nonincrease of the full encoded table size. `Table.exactlyOne`
+constructs the new connector relation in native polynomial time from a scope list: the list's
+length pays for quadratic output. There is no polynomial-output claim from a binary arity alone.
+The zero-connector relation is empty. [Table tests](../../ComplexityTests/CSPTable.lean) cover
+malformed widths, repeated rows, contraction cases and framed size calculations. Delta-matroid
+preservation and whole-blossom correctness are not consequences of these table-operation lemmas.
+
+`Problems.Graph.RotationSystem` represents edge ends by edge-list position and a Boolean side.
+Loops have two distinct ends, and parallel edges retain separate positions. Vertex rotations
+have exactly one cycle per nonempty endpoint fiber. Face orbits use reversal followed by inverse
+rotation and include fixed-point orbits. `Problems.CSP.RotationSystem` maps ordered arguments to
+these ends and states `RespectsArgumentOrder`: the rotation at a constraint follows cyclic scope
+order. Mirroring a ternary constraint can violate that order. Nullary constraints have no argument
+ends, so this order condition is vacuous for them. See [graph rotation tests](../../ComplexityTests/RotationSystem.lean)
+and [constraint-order tests](../../ComplexityTests/CSPRotationSystem.lean).
+
+Rotations alone do not impose genus zero. These modules prove no planar recognition, geometric
+realization, planar reduction, edge solver or dichotomy. In particular, isolated vertices require
+separate treatment in a future embedding model. The full objective remains [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+
 ## Three resolution representations
 
 | Representation | What it supplies | Cost |
@@ -237,7 +278,7 @@ Import `Complexity.Logics.Propositional.Resolution.SpaceWidth` for the definitio
 
 The proof works for any Duplicator strategy. `DuplicatorStrategy.add_three_le` says that if Duplicator wins the existential `p`-pebble game on a formula whose clauses have width at most `k`, every refutation needs clause space `s` with `p + 3 ≤ s + k`. This is their Lemma 5 with the constant that yields Filmus et al.'s; the source's own constant is not quoted. `add_four_le` applies it to the strategy that Atserias and Dalmau's Lemma 2 builds from `¬ RefutableInWidth w` (below), when no clause has width `w + 1`. Otherwise `w < k`, and `RefutableInSpace.three_le` is enough.
 
-[The existential pebble module](../../Complexity/Logics/Propositional/Resolution/ExistentialPebble.lean) exports the game and its characterization of width. Import `Complexity.Logics.Propositional.Resolution.ExistentialPebble`. A partial assignment is a total assignment `σ` read on a finite set `d`, and `CNF.Falsifies σ d c` says that every literal of `c` is on a variable of `d` and false under `σ`. `CNF.DuplicatorStrategy φ k` is Atserias and Dalmau's Definition 2: a nonempty family of such assignments on at most `k` variables that falsify no clause of `φ`, closed under restriction, and extendable to any variable from fewer than `k` variables. `DuplicatorStrategy.not_refutableInWidth` is their Lemma 3 in the library's width convention: a strategy with `w + 1` pebbles rules out `RefutableInWidth w`. Conversely, `DuplicatorStrategy.ofNotRefutableInWidth` is their Lemma 2: if no clause has width exactly `w + 1` and there is no refutation of width `w`, the partial assignments on at most `w + 1` variables that falsify no clause derivable within width `w` form a strategy with `w + 1` pebbles. Wider clauses cannot be falsified on `w + 1` variables. Together they give their Theorem 2 as `DuplicatorStrategy.nonempty_iff_not_refutableInWidth`, for formulas without clauses of width `w + 1`. Those clauses must be excluded: `(x₀ ∨ x₁ ∨ x₂) ∧ ¬x₀ ∧ ¬x₁ ∧ ¬x₂` has no refutation of width `2`, but Spoiler wins with `3` pebbles. `DuplicatorStrategy.extendSet` extends a position on `d` to `d ∪ e` when `|d| + |e|` is at most the number of pebbles. The source's side conditions and pebble counts are not quoted, because its symbols do not extract. The game has nothing to do with the black pebble game of `Complexity/Computability/Pebbling`.
+[The existential pebble module](../../Complexity/Logics/Propositional/Resolution/ExistentialPebble.lean) exports the game and its characterization of width. Import `Complexity.Logics.Propositional.Resolution.ExistentialPebble`. A partial assignment is a total assignment `σ` read on a finite set `d`, and `CNF.Falsifies σ d c` says that every literal of `c` is on a variable of `d` and false under `σ`. `CNF.DuplicatorStrategy φ k` is Atserias and Dalmau's Definition 2: a nonempty family of such assignments on at most `k` variables that falsify no clause of `φ`, closed under restriction, and extendable to any variable from fewer than `k` variables. `DuplicatorStrategy.not_refutableInWidth` is their Lemma 3 in the library's width convention: a strategy with `w + 1` pebbles rules out `RefutableInWidth w`. Conversely, `DuplicatorStrategy.ofNotRefutableInWidth` is their Lemma 2: if no clause has width exactly `w + 1` and there is no refutation of width `w`, the partial assignments on at most `w + 1` variables that falsify no clause derivable within width `w` form a strategy with `w + 1` pebbles. Wider clauses cannot be falsified on `w + 1` variables. Together they give their Theorem 2 as `DuplicatorStrategy.nonempty_iff_not_refutableInWidth`, for formulas without clauses of width `w + 1`. Those clauses must be excluded: `(x₀ ∨ x₁ ∨ x₂) ∧ ¬x₀ ∧ ¬x₁ ∧ ¬x₂` has no refutation of width `2`, but Spoiler wins with `3` pebbles. `DuplicatorStrategy.exists_extend_union` extends a position on `d` to `d ∪ e` when `|d| + |e|` is at most the number of pebbles. The source's side conditions and pebble counts are not quoted, because its symbols do not extract. The game has nothing to do with the black pebble game of `Complexity/Computability/Pebbling`.
 
 [The pigeonhole space module](../../Complexity/Logics/Propositional/Resolution/PigeonholeSpace.lean) applies it to Atserias and Dalmau's Section 5 example. Import `Complexity.Logics.Propositional.Resolution.PigeonholeSpace`.
 

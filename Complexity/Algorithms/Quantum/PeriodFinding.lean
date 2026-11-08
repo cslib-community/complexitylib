@@ -13,6 +13,7 @@ public import Complexity.Foundations.Quantum.Register
 public import Complexity.Foundations.Data.ZMod.Multiples
 public import Complexity.Probability.PMF.Uniform
 import Complexity.Foundations.Analysis.Fourier.ZModMultiples
+import Complexity.Foundations.Quantum.Bipartite
 import Complexity.Foundations.Data.Nat.Totient
 
 /-!
@@ -325,17 +326,12 @@ otherwise. -/
 theorem HasExactPeriod.periodFindingOutcome_apply {f : ZMod N → S} {r : ℕ}
     (h : HasExactPeriod f r) (y : ZMod N) :
     periodFindingOutcome f y = if N / r ∣ y.val then (r : ENNReal)⁻¹ else 0 := by
-  rw [periodFindingOutcome, PMF.map_apply, tsum_fintype, Fintype.sum_prod_type,
-    sum_eq_single y]
-  · simp only [ite_true, measure_apply]
-    rw [← ENNReal.ofReal_sum_of_nonneg fun _ _ => by positivity,
-      h.sum_norm_periodState_apply_sq]
-    split_ifs
-    · rw [ENNReal.ofReal_inv_of_pos (Nat.cast_pos.mpr h.pos), ENNReal.ofReal_natCast]
-    · exact ENNReal.ofReal_zero
-  · intro x _ hx
-    exact sum_eq_zero fun s _ => ite_eq_right (Ne.symm hx)
-  · intro hy; exact absurd (mem_univ y) hy
+  rw [periodFindingOutcome, measure_map_fst_apply, EuclideanSpace.norm_sq_eq]
+  simp only [condState_apply]
+  rw [h.sum_norm_periodState_apply_sq]
+  split_ifs
+  · rw [ENNReal.ofReal_inv_of_pos (Nat.cast_pos.mpr h.pos), ENNReal.ofReal_natCast]
+  · exact ENNReal.ofReal_zero
 
 /-- **Exact period finding**, as an equality of distributions: the measured value is uniformly
 distributed on the `r` multiples of `N / r`. -/
