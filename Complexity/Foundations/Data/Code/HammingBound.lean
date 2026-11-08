@@ -12,6 +12,10 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Sigma
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.Fintype.Powerset
+import Mathlib.Data.Nat.Choose.Sum
+import Mathlib.Tactic.GCongr
+import Mathlib.Tactic.NormNum
+import Mathlib.Tactic.Positivity
 
 /-!
 # Hamming balls, the Hamming bound and the Gilbert–Varshamov bound
@@ -31,7 +35,10 @@ code of minimum distance at least `d` has at least `q ^ n / V` words, where `V` 
 ball of radius `d - 1`: the **Gilbert–Varshamov bound**
 (`Cslib.Code.exists_le_minDist_and_prod_le_card_mul_card_filter_hammingDist_lt`,
 `Cslib.Code.exists_le_minDist_and_pow_le_card_mul_sum_choose`) [Gilbert1952], by Gilbert's greedy
-argument; Varshamov proved the same bound for linear codes [Varshamov1957].
+argument; Varshamov proved the same bound for linear codes [Varshamov1957]. Over `16` letters the
+balls of radius less than `⌈L / 2⌉` have at most `8 ^ L` words, so some code of length `L` has
+`2 ^ L` words any two of which differ in at least half of the positions
+(`Cslib.Code.exists_two_pow_le_card_and_le_two_mul_hammingDist`).
 
 ## Main results
 
@@ -45,6 +52,8 @@ argument; Varshamov proved the same bound for linear codes [Varshamov1957].
   Gilbert–Varshamov bound.
 * `Cslib.Code.exists_le_minDist_and_pow_le_card_mul_sum_choose`: the Gilbert–Varshamov bound over a
   `q`-letter alphabet.
+* `Cslib.Code.exists_two_pow_le_card_and_le_two_mul_hammingDist`: `2 ^ L` words of length `L` over
+  `16` letters, any two differing in at least half of the positions.
 
 ## References
 
@@ -220,5 +229,48 @@ theorem exists_le_minDist_and_pow_le_card_mul_sum_choose {q : ℕ}
   refine ⟨C, hCd, ?_⟩
   rwa [card_filter_hammingDist_lt_eq_sum hd, sum_congr rfl fun j _ =>
     card_filter_hammingDist_eq_choose_mul_pow hq x₀ j, hprod] at hC
+
+/-- Over `16` letters, the balls of radius less than `⌈L / 2⌉` have at most `8 ^ L` words: each
+sphere of radius `j < ⌈L / 2⌉` has `C(L, j) 15 ^ j ≤ C(L, j) 4 ^ L` words. -/
+private theorem sum_range_choose_mul_fifteen_pow_le (L : ℕ) :
+    ∑ j ∈ range ((L + 1) / 2), L.choose j * 15 ^ j ≤ 8 ^ L := by
+  calc ∑ j ∈ range ((L + 1) / 2), L.choose j * 15 ^ j
+      ≤ ∑ j ∈ range ((L + 1) / 2), L.choose j * 4 ^ L := by
+        refine sum_le_sum fun j hj => Nat.mul_le_mul_left _ ?_
+        have hj' : 2 * j ≤ L := by
+          have := mem_range.1 hj
+          omega
+        calc 15 ^ j ≤ 16 ^ j := Nat.pow_le_pow_left (by norm_num) j
+          _ = 4 ^ (2 * j) := by rw [pow_mul]; norm_num
+          _ ≤ 4 ^ L := Nat.pow_le_pow_right (by norm_num) hj'
+    _ = (∑ j ∈ range ((L + 1) / 2), L.choose j) * 4 ^ L := by rw [sum_mul]
+    _ ≤ (∑ j ∈ range (L + 1), L.choose j) * 4 ^ L := by
+        gcongr
+        omega
+    _ = 8 ^ L := by
+        rw [Nat.sum_range_choose, ← mul_pow]
+        norm_num
+
+/-- **A code of rate `1 / 4` and relative distance `1 / 2`**: some code of length `L` over `16`
+letters has at least `2 ^ L` words, any two of which differ in at least half of the positions. By
+the Gilbert–Varshamov bound, since the balls of radius less than `⌈L / 2⌉` have at most `8 ^ L`
+words. -/
+theorem exists_two_pow_le_card_and_le_two_mul_hammingDist (L : ℕ) :
+    ∃ C : Finset (Fin L → Fin 16), 2 ^ L ≤ #C ∧
+      ∀ x ∈ C, ∀ y ∈ C, x ≠ y → L ≤ 2 * hammingDist x y := by
+  rcases Nat.eq_zero_or_pos L with rfl | hL
+  · exact ⟨{fun i => i.elim0}, by simp, by simp⟩
+  obtain ⟨C, hCd, hC⟩ := exists_le_minDist_and_pow_le_card_mul_sum_choose
+    (ι := Fin L) (β := fun _ => Fin 16) (q := 16) (fun _ => Fintype.card_fin 16)
+    (d := (L + 1) / 2) (by omega)
+  rw [Fintype.card_fin] at hC
+  refine ⟨C, ?_, fun x hx y hy hxy => ?_⟩
+  · have h := hC.trans (Nat.mul_le_mul_left #C (sum_range_choose_mul_fifteen_pow_le L))
+    have h16 : (16 : ℕ) ^ L = 2 ^ L * 8 ^ L := by rw [← mul_pow]; norm_num
+    rw [h16] at h
+    exact Nat.le_of_mul_le_mul_right h (by positivity)
+  · have h' : (L + 1) / 2 ≤ hammingDist x y := by
+      exact_mod_cast le_minDist_iff.1 hCd x hx y hy hxy
+    omega
 
 end Cslib.Code
