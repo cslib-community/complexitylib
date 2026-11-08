@@ -844,6 +844,20 @@ Import `Complexity.Computability.Complexity.Problems.TSP.Christofides` ([source]
 
 `minPerfectMatching` is exhaustive search over `(2k − 1)!!` matchings, with optimality proved by `sum_minPerfectMatching_le`. So these results certify the approximation ratio, not a polynomial running time. Edmonds' weighted matching algorithm ([Edmonds][edmonds65]) and any machine-level certificate remain open. The [examples](../../ComplexityTests/TSPChristofides.lean) run the algorithm on a four-city star whose three perfect matchings cost `5`, `6` and `6`; exhaustive search picks the cheapest. The Euler circuit `[0, 1, 2, 0, 3, 0]` is shortcut to an optimal tour of length `11`. The examples also instantiate the general bound with Kruskal's tree, and check the empty and one-city instances.
 
+## String algorithms
+
+String algorithms are written in `Cslib.Algorithms.Lean.TimeM` and charge one tick per character comparison. Array reads and writes, index arithmetic and list/array conversions are free. Exact matching against a single pattern is Knuth–Morris–Pratt ([source](../../Complexity/Algorithms/Lean/KMP/Search.lean)). It makes at most `2 * (|p| - 1) + 2 * |t|` comparisons (`kmpSearchM_time_le`), and `mem_kmpMatchesList_iff` characterizes its output.
+
+### Palindromes and Manacher's algorithm
+
+Import `Complexity.Algorithms.Lean.Palindrome.Basic` and `.Manacher` ([Basic](../../Complexity/Algorithms/Lean/Palindrome/Basic.lean), [Manacher](../../Complexity/Algorithms/Lean/Palindrome/Manacher.lean)). A word of length `n` has `2n + 1` centers `c = 0, …, 2n`: odd `c` is the letter at position `c / 2` and even `c` is the gap before it. The factor `w.extract a b` has center `a + b`. `radius w c` is the largest `k` such that `w.extract (c / 2 - k) ((c + 1) / 2 + k)` is a palindrome (Mathlib's `List.Palindrome`), and it is `0` for `c > 2n`. These are the even and odd maximal radii of [Apostolico, Breslauer and Galil, Section 1][apostolicobreslauergalil95], `0`-indexed and merged into one sequence. No sentinel letters are interleaved.
+
+- **Specification.** `palindrome_extract_iff_le_radius` says that for `a ≤ b ≤ n` the factor `w.extract a b` is a palindrome iff `b - a ≤ 2 * radius w (a + b) + (a + b) % 2`. `longestPalindrome w` is the maximal palindrome about a center maximizing that length. `length_le_longestPalindrome`, `palindrome_longestPalindrome` and `longestPalindrome_isInfix` show that it is a longest palindromic factor. `palindrome_take_iff` reads the palindromic prefixes off the radii: `w.take k` is a palindrome iff `radius w k = k / 2`. The list lemmas behind these (`List.palindrome_extract_iff`, `List.Palindrome.extract_reflect` and others) are in [Palindrome.lean](../../Complexity/Foundations/Data/List/Palindrome.lean).
+- **Mirror lemma.** `min_radius_mirror` is the step of the algorithm. If the maximal palindrome about `C` ends at `R`, then for `c ≥ C` the radii about `c` and about `2C - c` agree after truncating both at `R - (c + 1) / 2`.
+- **Algorithm.** `manacherM w` ([Manacher][manacher75]) scans the centers left to right, keeping the center whose palindrome reaches furthest right. It reuses the mirrored radius when that radius is below the truncation; otherwise `extendM` compares letters outward. `manacher_eq` shows that `manacher w` is exactly `Array.ofFn (radius w.toList ·)` over the `2 * w.size + 1` centers. `manacherM_time_le` bounds the cost by `3 * w.size` comparisons: each successful comparison moves the right end of the furthest palindrome, and each of the `2n` centers makes at most one failed comparison. The bound is close to the worst case: the examples check that `a b^(n - 2) c` costs `3n - 6` comparisons for `n = 10` and `n = 20` (the count for general `n` is not proved). `longestPalindromeM` returns the interval of `longestPalindrome` within the same bound (`extract_longestPalindromeM`, `longestPalindromeM_time_le`).
+
+The [examples](../../ComplexityTests/Manacher.lean) check the radii of `abacaba`, `abba`, `aaaa`, `abcd` (all `0`), the empty word and a one-letter word by `decide` through `manacher_eq`, as well as comparison counts, one extension phase, the longest palindrome of `xabacabay`, and a palindromic and a non-palindromic prefix. Manacher's original algorithm is on-line: it reports the palindromic prefixes as letters arrive. That formulation, palindromic trees (eertrees) and parallel algorithms are not formalized ([ROADMAP](../../ROADMAP.md#string-algorithms)).
+
 ## Tree Evaluation
 
 The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root of an explicitly table-encoded perfect binary tree in native independent workspace `O(log n · log log n)` for positive value length and height. The output is not charged to workspace, and the theorem leaves time existential. The same page distinguishes borrowed-register restoration and fan-in/packed procedure variants.
@@ -853,6 +867,7 @@ The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root 
 The numeric values above are transcriptions of checked source statements, not results of new execution benchmarks. The source-reference audit checks locations and digests; it does not rerun Lean or prove asymptotic summaries. The full Haskell/Lean runtime behavior, allocator, operating system and hardware are outside these idealized RAM models.
 
 [complexitylib]: ../sources.md#complexitylib
+[apostolicobreslauergalil95]: ../sources.md#apostolicobreslauergalil95
 [christofides76]: ../sources.md#christofides76
 [clrs09]: ../sources.md#clrs09
 [edmonds65]: ../sources.md#edmonds65
@@ -861,6 +876,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [goemanswilliamson95]: ../sources.md#goemanswilliamson95
 [hierholzer73]: ../sources.md#hierholzer73
 [kortevygen18]: ../sources.md#kortevygen18
+[manacher75]: ../sources.md#manacher75
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
 [roth82]: ../sources.md#roth82
 [rothpostlewaite77]: ../sources.md#rothpostlewaite77

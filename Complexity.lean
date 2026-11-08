@@ -61,6 +61,8 @@ public import Complexity.Algorithms.Lean.MaxFlow.HopcroftKarp
 public import Complexity.Algorithms.Lean.MaxFlow.Hungarian
 public import Complexity.Algorithms.Lean.MaxFlow.WeightedMatching
 public import Complexity.Algorithms.Lean.MergeSort.Comparator
+public import Complexity.Algorithms.Lean.Palindrome.Basic
+public import Complexity.Algorithms.Lean.Palindrome.Manacher
 public import Complexity.Algorithms.Lean.Query.Arith.FFT.Correctness
 public import Complexity.Algorithms.Lean.Query.Arith.FFT.Cost
 public import Complexity.Algorithms.Lean.Query.Arith.FFT.Defs
@@ -4342,6 +4344,7 @@ public import Complexity.Foundations.Data.List.Lex
 public import Complexity.Foundations.Data.List.ListsUpTo
 public import Complexity.Foundations.Data.List.Lookup
 public import Complexity.Foundations.Data.List.OfFn
+public import Complexity.Foundations.Data.List.Palindrome
 public import Complexity.Foundations.Data.List.Perm
 public import Complexity.Foundations.Data.List.Range
 public import Complexity.Foundations.Data.List.RowMajor

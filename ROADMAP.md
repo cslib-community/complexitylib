@@ -1692,6 +1692,18 @@ pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
   `O(log n)` equality protocol in `Communication/Randomized`. Native machine or RAM realizations
   with bit-level arithmetic costs are a separate endpoint.
 
+### String algorithms
+
+- **Palindromes** ([#3372](https://github.com/cslib-community/complexitylib/issues/3372)):
+  `Algorithms/Lean/Palindrome` has the maximal palindromic radii at all `2|w| + 1` centers, the
+  characterization of palindromic factors and prefixes by the radii, a longest palindromic factor,
+  and Manacher's algorithm with exact radii and at most `3|w|` character comparisons. Remaining:
+  Manacher's on-line formulation (reporting palindromic prefixes as letters arrive, with a
+  per-letter amortized bound); palindromic trees (eertrees) and counting distinct palindromic
+  factors (at most `|w| + 1`); the parallel algorithms of Apostolico, Breslauer and Galil; and the
+  Z-algorithm (Gusfield, Sections 1.3–1.4) with a `2|w|` comparison bound, reusing `lcpLen` from
+  the suffix-array work once that has a shared home.
+
 ## Machines, RAM and data structures
 
 - **Efficient universal simulation** ([#800]): the clocked universal function runs in time
