@@ -56,7 +56,10 @@ structure Expansion (F : CSP Rel V) where
   input : Occurrence F
   /-- Actual output ports inserted by step 4a, in scan order. -/
   outputs : List (Occurrence F)
-  deriving DecidableEq
+
+omit [DecidableEq V] in
+instance : DecidableEq (Expansion F) := fun ⟨input, outputs⟩ ⟨input', outputs'⟩ =>
+  decidable_of_iff (input = input' ∧ outputs = outputs') (by simp only [Expansion.mk.injEq])
 
 /-- Expansion records in reverse chronological order. Timestamps count older records. -/
 abbrev Log (F : CSP Rel V) := List (Expansion F)
@@ -223,7 +226,11 @@ structure Meeting (F : CSP Rel V) where
   current : Expansion F
   /-- Feasible output already visited, with no predecessor at this original constraint. -/
   output : Occurrence F
-  deriving DecidableEq
+
+instance : DecidableEq (Meeting F) :=
+  fun ⟨roots, older, current, output⟩ ⟨roots', older', current', output'⟩ =>
+    decidable_of_iff (roots = roots' ∧ older = older' ∧ current = current' ∧ output = output')
+      (by simp only [Meeting.mk.injEq])
 
 namespace Meeting
 
@@ -262,7 +269,16 @@ inductive ScanResult (F : CSP Rel V) where
   | continued (outputs : List (Occurrence F))
   /-- First previously visited partner that is not skipped by source step 4b. -/
   | meeting (outputs : List (Occurrence F)) (output : Occurrence F)
-  deriving DecidableEq
+
+omit [DecidableEq V] in
+instance : DecidableEq (ScanResult F)
+  | .continued outputs, .continued outputs' =>
+    decidable_of_iff (outputs = outputs') (by simp only [ScanResult.continued.injEq])
+  | .meeting outputs output, .meeting outputs' output' =>
+    decidable_of_iff (outputs = outputs' ∧ output = output')
+      (by simp only [ScanResult.meeting.injEq])
+  | .continued _, .meeting _ _ => isFalse (by intro h; cases h)
+  | .meeting _ _, .continued _ => isFalse (by intro h; cases h)
 
 /-- Scan step 4 in positional order. `outputs` contains the children already inserted at
 this copy; they participate in both the visited and same-original-parent tests. -/
@@ -284,7 +300,20 @@ inductive Result (F : CSP Rel V) where
   | augment (meeting : Meeting F)
   /-- First meeting within one rooted tree. -/
   | blossom (meeting : Meeting F)
-  deriving DecidableEq
+
+instance : DecidableEq (Result F)
+  | .exhausted log, .exhausted log' =>
+    decidable_of_iff (log = log') (by simp only [Result.exhausted.injEq])
+  | .augment meeting, .augment meeting' =>
+    decidable_of_iff (meeting = meeting') (by simp only [Result.augment.injEq])
+  | .blossom meeting, .blossom meeting' =>
+    decidable_of_iff (meeting = meeting') (by simp only [Result.blossom.injEq])
+  | .exhausted _, .augment _ => isFalse (by intro h; cases h)
+  | .exhausted _, .blossom _ => isFalse (by intro h; cases h)
+  | .augment _, .exhausted _ => isFalse (by intro h; cases h)
+  | .augment _, .blossom _ => isFalse (by intro h; cases h)
+  | .blossom _, .exhausted _ => isFalse (by intro h; cases h)
+  | .blossom _, .augment _ => isFalse (by intro h; cases h)
 
 /-- Run steps 2–5. The remaining incidence list is the termination measure; each continuation
 erases the selected input, regardless of any newly discovered children. The final filter only
