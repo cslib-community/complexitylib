@@ -811,6 +811,7 @@ public import Complexity.Computability.BlumComplexity.RecursiveRelatedness
 public import Complexity.Computability.BlumComplexity.Speedup
 public import Complexity.Computability.BranchingProgram.MonoidProgram
 public import Complexity.Computability.BranchingProgram.PolyLength
+public import Complexity.Computability.BranchingProgram.ReadOnce
 public import Complexity.Computability.Catalytic.Comparison
 public import Complexity.Computability.CellProbe.Chronogram
 public import Complexity.Computability.CellProbe.DecisionTree
@@ -2959,6 +2960,7 @@ public import Complexity.Computability.Probabilistic.Selection
 public import Complexity.Computability.Probabilistic.Traverse
 public import Complexity.Computability.Probabilistic.UniformNat
 public import Complexity.Computability.PropertyTesting.DenseGraph.Basic
+public import Complexity.Computability.PropertyTesting.DenseGraph.Canonical
 public import Complexity.Computability.PropertyTesting.DenseGraph.TriangleFree
 public import Complexity.Computability.PropertyTesting.Distribution.Basic
 public import Complexity.Computability.PropertyTesting.Distribution.ClosenessCollision
@@ -3546,6 +3548,8 @@ public import Complexity.Crypto.Primitives.BlockCipher.Modes
 public import Complexity.Crypto.Primitives.PRG.Circuit
 public import Complexity.Crypto.Primitives.PRG.Game
 public import Complexity.Crypto.Primitives.PRG.NextBit
+public import Complexity.Crypto.Primitives.PRG.Nisan
+public import Complexity.Crypto.Primitives.PRG.Nisan.Bits
 public import Complexity.Crypto.Primitives.PRG.NisanWigderson
 public import Complexity.Crypto.Primitives.PRG.NisanWigderson.Circuit
 public import Complexity.Crypto.Primitives.PRG.NisanWigderson.Derandomization
@@ -4248,6 +4252,7 @@ public import Complexity.Foundations.Data.List.EraseDupsBy
 public import Complexity.Foundations.Data.List.Filter
 public import Complexity.Foundations.Data.List.FilterMap
 public import Complexity.Foundations.Data.List.Fold
+public import Complexity.Foundations.Data.List.FoldlIdx
 public import Complexity.Foundations.Data.List.Last
 public import Complexity.Foundations.Data.List.Lex
 public import Complexity.Foundations.Data.List.Lookup
@@ -5003,6 +5008,7 @@ public import Complexity.Probability.BitString.List.All
 public import Complexity.Probability.BitString.List.Vote
 public import Complexity.Probability.BitString.SubsetSum
 public import Complexity.Probability.BitString.SubsetSum.Matrix
+public import Complexity.Probability.BitString.ToeplitzHash
 public import Complexity.Probability.BoundedDifferences
 public import Complexity.Probability.Chernoff
 public import Complexity.Probability.Coding.PrefixFreeEntropy
@@ -5096,6 +5102,7 @@ public import Complexity.Probability.PairwiseIndependentHash.FrameRetention
 public import Complexity.Probability.PairwiseIndependentHash.FrameSubstitution
 public import Complexity.Probability.PairwiseIndependentHash.HeavyCount
 public import Complexity.Probability.PairwiseIndependentHash.HierarchyChannels
+public import Complexity.Probability.PairwiseIndependentHash.Mixing
 public import Complexity.Probability.PairwiseIndependentHash.Retention
 public import Complexity.Probability.PairwiseIndependentHash.RetentionChannel
 public import Complexity.Probability.PairwiseIndependentHash.RowFourthMoment

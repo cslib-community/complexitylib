@@ -519,8 +519,11 @@ index links to canonical definitions rather than keeping a second set.
   separately: their broader collapse is conditional on the explicit circuit-hardness assumption,
   with resetting-error and time regimes distinguished from KMPS's unconditional results.
 - **Randomized logspace** ([#459], [#474]): two-sided `BPL` amplification, the random-walk proof
-  of `USTCON ∈ RL` (membership already follows from `L_subset_RL` and `USTCON_mem_L`), Nisan's
-  generator, `BPL ⊆ L²` and Saks–Zhou. The preprint route to native `RL = L` remains open in
+  of `USTCON ∈ RL` (membership already follows from `L_subset_RL` and `USTCON_mem_L`), the
+  space-efficient computability of Nisan's generator and the bridge from configuration graphs to
+  read-once programs (its fooling theorem for read-once branching programs is
+  [#3187](https://github.com/cslib-community/complexitylib/issues/3187)), `BPL ⊆ L²` and
+  Saks–Zhou. The preprint route to native `RL = L` remains open in
   [#1444](https://github.com/cslib-community/complexitylib/issues/1444). Its estimator work in
   [#1721](https://github.com/cslib-community/complexitylib/issues/1721) has an integer-grid slack
   schedule with endpointwise telescoping and summable available-scale precision payments.
@@ -1200,19 +1203,25 @@ each statement against the numbered result. Organize modules by subject, not cha
   ([#3122](https://github.com/cslib-community/complexitylib/issues/3122)). In the dense graph
   (adjacency-matrix) model, triangle-freeness has a one-sided tester whose query bound depends
   only on `ε`, through Mathlib's triangle removal lemma
-  ([#3036](https://github.com/cslib-community/complexitylib/issues/3036)). Monotonicity of Boolean
-  functions on the hypercube `{0,1}ⁿ` has the Goldreich–Goldwasser–Lehman–Ron–Samorodnitsky edge
-  tester: by squashing along each coordinate, a function ε-far from monotone violates at least an
-  `ε / n` fraction of the edges, so `⌈2n / ε⌉` edge trials (`2⌈2n / ε⌉` queries) reject with
-  probability at least `2/3`, and monotone functions always pass
-  ([#3257](https://github.com/cslib-community/complexitylib/issues/3257)). Remaining: the matching
-  `Ω(n^{2/3} ε^{-4/3} + √n ε^{-2})` closeness lower bound, further access models, the odd-domain
-  lower bound, instance-optimal identity testing, tolerant and structured-property distribution
-  testing; in the dense graph model, `H`-freeness for general `H` (it needs a general removal
-  lemma), bipartiteness and `k`-colourability with `poly(1/ε)` queries, and canonical
-  (non-adaptive sampling) testers; for monotonicity, the `Ω(√n)` lower bound for non-adaptive
-  one-sided testers (Fischer et al. 2002), larger ranges and hypergrids, and the directed-isoperimetry
-  path testers with `Õ(√n / ε²)` queries (Khot–Minzer–Safra); further query and sample lower bounds.
+  ([#3036](https://github.com/cslib-community/complexitylib/issues/3036)). Every one-sided tester
+  with `q` queries for a property closed under relabelling becomes a canonical one-sided tester
+  that samples at most `2q` vertices and decides on the induced subgraph (Goldreich–Trevisan,
+  one-sided half; [#3180](https://github.com/cslib-community/complexitylib/issues/3180)).
+  Monotonicity of Boolean functions on the hypercube `{0,1}ⁿ` has the
+  Goldreich–Goldwasser–Lehman–Ron–Samorodnitsky edge tester: by squashing along each coordinate, a
+  function ε-far from monotone violates at least an `ε / n` fraction of the edges, so `⌈2n / ε⌉`
+  edge trials (`2⌈2n / ε⌉` queries) reject with probability at least `2/3`, and monotone functions
+  always pass ([#3257](https://github.com/cslib-community/complexitylib/issues/3257)).
+  Remaining: the matching `Ω(n^{2/3} ε^{-4/3} + √n ε^{-2})` closeness lower bound, further access
+  models, the odd-domain lower bound, instance-optimal identity testing, tolerant and
+  structured-property distribution testing; in the dense graph model, `H`-freeness for general `H`
+  (it needs a general removal lemma), bipartiteness and `k`-colourability with `poly(1/ε)`
+  queries, the two-sided half of Goldreich–Trevisan (canonical testers with `O(q)` sample vertices
+  and `O(q²)` queries), and deciding by the property itself when it is closed under induced
+  subgraphs (their Proposition D.2, due to Alon) or is a graph partition property (Corollary 5.9);
+  for monotonicity, the `Ω(√n)` lower bound for non-adaptive one-sided testers (Fischer et al.
+  2002), larger ranges and hypergrids, and the directed-isoperimetry path testers with
+  `Õ(√n / ε²)` queries (Khot–Minzer–Safra); further query and sample lower bounds.
 - **Kolmogorov complexity and metacomplexity** ([#798], [#884]): the near-linear threshold regime
   of Liu–Pass Theorem 3.1 (c), hardness for every polynomial `t(n) ≥ (1 + ε)n` rather than above a
   polynomial threshold, which needs a rate-1 efficient conditional EP-PRG running in `n + O(n^c)`
