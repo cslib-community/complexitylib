@@ -1779,6 +1779,7 @@ public import Complexity.Computability.Complexity.Classes.Toda.Isolation
 public import Complexity.Computability.Complexity.Classes.UP
 public import Complexity.Computability.Complexity.Classes.UP.Machine
 public import Complexity.Computability.Complexity.Classes.US
+public import Complexity.Computability.Complexity.Classes.UniformDiagonalization
 public import Complexity.Computability.Complexity.Classes.ValiantVazirani
 public import Complexity.Computability.Complexity.Classes.ValiantVazirani.Collapse
 public import Complexity.Computability.Complexity.Classes.ValiantVazirani.Reduction
@@ -2735,6 +2736,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.TrackedRun
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bit
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bound
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Clocked
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Complexity
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Correct
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Decode

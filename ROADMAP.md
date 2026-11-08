@@ -631,7 +631,12 @@ index links to canonical definitions rather than keeping a second set.
   bounded/logarithmic-query results and
   separations, and Section 5 mitoticity/diagonalization. The additional parity-logspace
   application needs a native path-counting class and complement closure.
-- **Uniform diagonalization** (Schöning), which generalizes Ladner's theorem.
+- **Uniform diagonalization** ([#3142](https://github.com/cslib-community/complexitylib/issues/3142)):
+  after Schöning's theorem for recursively presentable classes closed under finite variations, with
+  the reductions of the mixed set and `P` as an instance (`Classes/UniformDiagonalization.lean`):
+  a recursive presentation of the polynomial-time degree of a decidable set outside `P`, hence
+  Ladner's density theorem and an `NP`-intermediate problem below every `NP`-complete one if
+  `P ≠ NP`; other presentable classes (`NP`, `PSPACE`, the polynomial hierarchy levels).
 - **Selectivity and downward self-reducibility:** downward self-reducible sets lie in PSPACE,
   self-reducible P-selective sets lie in P, and P-selective sets are not `≤ₜₜᵖ`-hard for NP unless
   P = NP.
