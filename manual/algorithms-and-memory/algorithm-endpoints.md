@@ -216,6 +216,31 @@ The specification `ApproximateMembership.spec U n ε` enforces strict set validi
 
 The Karger–Stein endpoint uses one fixed 24-register program, `O(n² log n)` worst-case steps and `O(n²)` matrix scratch per tree, with success at least `1/(floorlog₂(n)+15)`. Repetition gives minimum-cut **value** with failure at most `1/(2n)` in `O(n² log³ n)`. It does not enumerate all minimum cuts or attain the source's sparse-space formulation. The threshold is an integer inequality rather than a literal square-root expression; the abstract labels the implementation and proof adaptations.
 
+### Deterministic minimum cut: Stoer–Wagner
+
+Import `Complexity.Algorithms.Lean.StoerWagner.Basic` ([Basic.lean](../../Complexity/Algorithms/Lean/StoerWagner/Basic.lean)). It uses the weighted multigraphs of `Cslib.WeightedCut` (`W : Fin n → Fin n → ℕ`, symmetric with zero diagonal) and Karger's contraction (`contractMatrix`, `contractPart`). The algorithm follows [Stoer and Wagner][stoerwagner97].
+
+- **MA orderings:** [MAOrdering.lean](../../Complexity/Foundations/Combinatorics/WeightedCut/MAOrdering.lean) defines `attachWeight W A x = ∑ a ∈ A, W a x`, maximum adjacency orderings (`IsMAOrdering`, decidable) and maximum adjacency search `maSearch`, with ties broken by list order. `cutWeight_singleton_le_of_isMAOrdering` is the MA-ordering lemma ([Nagamochi and Ibaraki][nagamochiibaraki92]; the cut-of-the-phase lemma of [Stoer and Wagner][stoerwagner97]). If an MA ordering ends with `s, t`, then `{t}` weighs at most every vertex set containing exactly one of `s` and `t`. The proof is an induction over the prefixes of the ordering. `cutWeight_singleton_eq_minCutBetween_of_isMAOrdering` restates it as `cutWeight W {t} = minCutBetween W s t`, using the minimum `s`–`t` cut weight shared with the Gomory–Hu development. `maSearch_spec` shows that the search produces an MA ordering.
+- **Phase recursion:** `cutWeight_contractCut` shows that merging `t` into `s` preserves the cuts that do not separate them. `minCut_eq_min_contractMatrix` says that `minCut W` is the minimum of the weight of a minimum `s`–`t` cut and the `minCut` after the merge. `minCut_eq_min_minCutBetween` states it as `minCut W = min (minCutBetween W s t) (minCut (contractMatrix W s t))`. `minCut_eq_min_of_isMAOrdering` applies this to one phase.
+- **Algorithm:** `stoerWagner W` returns a `CutResult` with one side of a cut and its weight. It is structurally recursive (`run`, with fuel in `maSearch`), so `decide` evaluates it. `stoerWagner_spec`: for `2 ≤ n` and `IsMultigraph W`, the side is a non-trivial cut whose weight is the answered weight, which equals `minCut W`.
+- **Cost:** `stoerWagnerM` adds `TimeM.tick` charges to the same program, and `ret_stoerWagnerM` shows that it returns the same result. `time_stoerWagnerM_le` bounds the time by `n ^ 3 + 4 n ^ 2`, and the tests pin the charged time `509` on the 8-vertex example. The unit-cost model is an array implementation; for a phase on `m` supervertices of a graph on `n` vertices:
+  - initializing the keys costs `m`;
+  - a search step over `r` candidates costs `2 r − 1`;
+  - recording a cut of the phase costs `m + n`;
+  - a merge costs `4 m + n + 1`: merging row and column `t` into `s`, moving row and column `m − 1` into the freed slot, relabelling the original vertices, and one comparison.
+
+  The charges are annotations; they are not derived from the Lean evaluation, which uses closures.
+
+The [checked examples](../../ComplexityTests/StoerWagner.lean) test three graphs against brute force over all vertex sets. The first is a weighted 4-cycle. The second is the 8-vertex example graph of [Stoer and Wagner][stoerwagner97], with edge weights from a secondary reproduction (Wikipedia's article). It has minimum cut `4`, and search from its vertex `2` gives the ordering `2, 3, 4, 7, 8, 6, 5, 1` of the worked example's first phase, with cut of the phase `5`. The third is the Boost Graph Library example, which asserts minimum cut weight `7`. The examples also show that an ordering without the MA property can end in a pair whose last-vertex cut is not minimal. They cover a disconnected graph and `n = 0, 1, 2`. Not formalized:
+- the `O(n m + n² log n)` priority-queue version;
+- real weights (rational weights need scaling);
+- enumeration of all minimum cuts;
+- Nagamochi–Ibaraki sparse certificates;
+- Karger's near-linear algorithm;
+- Queyranne's symmetric submodular minimization ([#3369](https://github.com/cslib-community/complexitylib/issues/3369)).
+
+The contraction API comes from the randomized Karger module, so this deterministic module imports its probability dependencies; [#3403](https://github.com/cslib-community/complexitylib/issues/3403) tracks moving it into `WeightedCut`.
+
 ## Gomory–Hu trees
 
 Import `Complexity.Algorithms.Lean.GomoryHu.WeightedCut` ([source](../../Complexity/Algorithms/Lean/GomoryHu/WeightedCut.lean)). The declarations live in `Cslib.Algorithms.Lean.GomoryHu` and `Cslib.WeightedCut`. This is a theorem-level development: there is no algorithm and no running time. For a weighted multigraph `W : V → V → ℕ` with `IsMultigraph W`, `minCutBetween W s t` is the minimum `s`–`t` cut weight `λ(s, t)` ([source](../../Complexity/Foundations/Combinatorics/WeightedCut/MinCutBetween.lean)). `Network.Flow.IsMaxFlow.value_eq_minCutBetween` identifies it with the value of a maximum `s`–`t` flow in the network with capacities `W`, using the existing max-flow min-cut theorem. [MinCutBetween.lean](../../Complexity/Foundations/Combinatorics/WeightedCut/MinCutBetween.lean) also proves:
@@ -312,6 +337,22 @@ The executable solver is in `Complexity.Algorithms.Lean.Matroid.Intersection.Sol
 Import `Complexity.Algorithms.Lean.StableMatching.Incentives` (which also brings in `Basic`, `DeferredAcceptance` and `Blocking`) and `Complexity.Algorithms.Lean.StableMatching.Lattice`; the declarations live in the namespace `Cslib.Algorithms.Lean.StableMatching`. This is a pure Lean development, not a RAM client. An `Instance n` has `n` proposers and `n` receivers with strict complete preference lists (`Fin n → Equiv.Perm (Fin n)`, rank `0` most preferred); a `Matching n` is a permutation, and `IsStable` means no blocking pair. `Instance.deferredAcceptance` is a total, `decide`-evaluable implementation of proposer-proposing deferred acceptance whose state is the vector of rejection counts. The modules prove stability of the output, the bound `proposals_le : I.proposals ≤ n ^ 2 - n + 1`, proposer-optimality and receiver-pessimality, the distributive lattice `Instance.Stable I` with deferred acceptance as `⊤` and its receiver-proposing dual as `⊥`, the blocking lemma `exists_isBlockingPair_of_lt`, weak Pareto optimality, and coalitional strategy-proofness for proposers (`not_forall_mem_propRank_lt_of_isStable`). Roth's impossibility theorem `MatchingMechanism.not_isStable_and_strategyProof` is proved for three agents on each side (`MatchingMechanism 3`), with the checked witness `MatchingMechanism.rothInstance`. That suffices for the existential impossibility; the statement for every `n ≥ 3` is not formalized.
 
 The cost measure is the number of proposals, a property of the algorithm's trace rather than of a machine model; no Word-RAM or Turing implementation is certified. Incomplete lists, ties, unequal sides and many-to-one markets are not modeled; [#2990](https://github.com/cslib-community/complexitylib/issues/2990) tracks these directions. [ComplexityTests/StableMatching.lean](../../ComplexityTests/StableMatching.lean) contains the checked instances.
+
+## Assignment problem: Bertsekas's auction algorithm
+
+Import `Complexity.Algorithms.Lean.Assignment.Auction` ([Complexity/Algorithms/Lean/Assignment/Auction.lean](../../Complexity/Algorithms/Lean/Assignment/Auction.lean)); the declarations live in the namespace `Cslib.Algorithms.Lean.Assignment`. This is a pure Lean development, not a RAM client. The input is an integer cost matrix `c : Fin n × Fin n → ℤ` on the complete bipartite graph, and an assignment is a permutation `σ : Equiv.Perm (Fin n)` of cost `∑ i, c (i, σ i)`, to be minimized. `auction c ε` is the Gauss–Seidel auction of [Bertsekas][bertsekas88] in the cost form of [Bertsekas][bertsekas98], §7.1.1: an unassigned person bids for an object of least reduced cost `c (i, j) + p j`, raising its price by the gap to the second least reduced cost plus `ε`, and evicts the previous owner. Unassigned persons are kept on a stack. Fuel `bidBound n (costSpread c) ε` is computed from the data, so the function is total and `decide`-evaluable.
+
+- **Invariant:** `AuctionInv.bidStep` is Prop. 7.1: each bid preserves `ε`-complementary slackness for the partial assignment (the `AuctionInv.epsCS` field, stated for assigned pairs). The complete-assignment form `IsEpsCompSlack` is recovered for the output by `isEpsCompSlack_auctionPerm`.
+- **Termination:** `auction_free` gives termination with every person assigned. `bids_auction_le` bounds the number of bids by `bidBound n C ε = n (C + ε) / ε + 1` whenever every row cost range `c (i, k) - c (i, j)` is at most `C`. The proof uses the explicit measure `n (C + ε) - ∑ j, p j` (`sum_price_bidStep`, `AuctionInv.price_le`) in place of the book's argument by contradiction for Prop. 7.2.
+- **Quality:** `auctionPerm c hε` is the output. `sum_auctionPerm_le` shows that it is within `n * ε` of every permutation (Props. 1.4 and 7.2). `sum_auctionPerm_le_rowPotential` turns the final prices into the feasible dual `(rowPotential c p, -p)` certifying this.
+- **Exactness:** `scaledAuction c` runs the auction on `(n + 1) * c` with `ε = 1`, and `scaledAuctionPerm c` is its assignment. `sum_scaledAuctionPerm_le` proves it optimal, and `bids_scaledAuction_le` bounds the bids by `n ((n + 1) C + 1) + 1`.
+
+The general layer [Complexity/Algorithms/Lean/Assignment/Basic.lean](../../Complexity/Algorithms/Lean/Assignment/Basic.lean) states `ε`-complementary slackness, weak duality over permutations and the `n ε` bound for any finite index type and ordered additive group. The cost measure is the number of bids: the `O(n)` scan per bid is not charged and there is no `TimeM` accounting. The bound is pseudo-polynomial, linear in `C / ε`. The `ε`-scaling version with its `O(n A log (n C))` bound (Prop. 7.3), the Jacobi, reverse and asymmetric auctions, rectangular or sparse instances, and a bridge to the potentials of the [Hungarian method](#assignment-problem-and-the-hungarian-method) are open; [#3317](https://github.com/cslib-community/complexitylib/issues/3317) tracks these directions. [ComplexityTests/AuctionAssignment.lean](../../ComplexityTests/AuctionAssignment.lean) contains the checked instances:
+
+- a `3 × 3` optimum checked against all six permutations, with its dual certificate;
+- a `2 × 2` instance on which the unscaled auction is suboptimal, showing that the scaling is needed;
+- Bertsekas's price war (Figs. 1.12–1.14), whose bid count grows with `C / ε`;
+- the cases `n = 0` and `n = 1`.
 
 ## Housing markets and top trading cycles
 
@@ -910,6 +951,16 @@ Two more classical approximation algorithms are stated as plain inequalities aga
 
 The [vertex-cover examples](../../ComplexityTests/VertexCoverApproximation.lean) pin the optimum of a path and a star exactly, so the factor `2` is attained. The [TSP examples](../../ComplexityTests/TSPApproximation.lean) include a matrix violating the triangle inequality where the tour costs `202` against a tour of cost `4`, so the metric hypothesis cannot be dropped. Concrete TSP runs first pin the sorted edge list with `simp [sortEdges_cons_cons]`, because `List.mergeSort` does not reduce in the kernel. No machine running time is certified for the TSP tour yet; that needs a polynomial-time certificate for Kruskal's algorithm on encoded matrices.
 
+## Metric k-center: Gonzalez's 2-approximation and the dominating-set gap
+
+Import `Complexity.Algorithms.Lean.KCenter.Gonzalez` ([source](../../Complexity/Algorithms/Lean/KCenter/Gonzalez.lean)) and `Complexity.Algorithms.Lean.KCenter.DominatingSet` ([source](../../Complexity/Algorithms/Lean/KCenter/DominatingSet.lean)). Like the set-cover and TSP algorithms above, these are pure Lean functions analyzed for solution quality, with no running time. A distance is any `d : V → V → α` into a linear order. The definitions are in [KCenter/Basic.lean](../../Complexity/Algorithms/Lean/KCenter/Basic.lean): `centerDist d S v : WithTop α` is the distance from `v` to its nearest center in `S` (`⊤` when `S` is empty), `radius d S` is the largest such distance over a finite nonempty `V`, and `optRadius d k` is the least radius of a center set with at most `k` points. This is the k-center problem of Section 2.2 of [Williamson and Shmoys][williamsonshmoys11].
+
+- **Gonzalez's algorithm.** `gonzalez d P k` is Algorithm 2.1 of Williamson and Shmoys, which their chapter notes attribute to Gonzalez (1985). Over a candidate list `P` it runs `k` rounds of `farthestStep`. Each round appends the first point of `P` maximizing `centerDist` to the centers chosen so far (`List.argmax`), so the first center is the head of `P`. `length_gonzalez` gives exactly `k` centers when `P` is nonempty. `nodup_gonzalez` makes them distinct when `d` vanishes exactly on the diagonal and `P` has at least `k` distinct points.
+- **The ratio.** `radius_gonzalez_le_two_mul` is Theorem 2.3: if `d` is symmetric and satisfies the triangle inequality, `P` lists every point and `optRadius d k ≤ r`, the radius is at most `2 * r`. The bound is stated against every upper bound `r` on the optimum, which avoids multiplication in `WithTop α`; `radius_gonzalez_le_two_mul_optRadius` specializes it to the finite optimum when `k ≥ 1`. Unlike Williamson and Shmoys, it does not assume `d i i = 0`. The proof is a packing argument instead of their cluster argument. If a point were farther than `2r` from every center, then the centers and that point would be `k + 1` points pairwise farther than `2r` apart (`IsFarthestFirst.pairwise_lt`). `length_le_card_of_pairwise_lt` shows that `k` centers covering within `r` cannot cover such points. The analysis holds for every farthest-first traversal (`IsFarthestFirst`), whatever its first point or tie-breaking. `centerDist_gonzalez_le_two_mul` also allows the competing centers to lie outside `P`.
+- **The gap behind Theorem 2.4.** `domDist G` gives a simple graph the metric with `0` on the diagonal, `1` on edges and `2` elsewhere. `radius_domDist_le_one_iff` shows that a center set has radius at most `1` exactly when it is a `SimpleGraph.IsDominatingSet` ([Complexity/Foundations/Combinatorics/SimpleGraph/DominatingSet.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/DominatingSet.lean)). `optRadius_domDist_le_one_iff` and `optRadius_domDist_eq_two` then give an optimum of `1` or `2`, depending on whether a dominating set of at most `k` vertices exists. `isDominatingSet_of_radius_le_mul` and `exists_isDominatingSet_iff_of_radius_le_mul` show that a `ρ`-approximate solution with `ρ < 2` and at most `k` centers is dominating exactly when such a set exists, so it decides dominating set. Williamson and Shmoys attribute the hardness to Hsu and Nemhauser (1979). Only this combinatorial core is formalized. The statement that a polynomial-time `(2 - ε)`-approximation implies `P = NP` would also need NP-hardness of dominating set on the library's encoded graphs and a polynomial-time certificate for the map from graphs to distance matrices.
+
+The [k-center examples](../../ComplexityTests/KCenter.lean) run Gonzalez on three points of a line at `0, 1, 2` with one center. It picks the endpoint and has radius `2`, while the middle point has radius `1`, so the factor `2` is attained. The same tight instance appears on the path `0 - 1 - 2` with `domDist`, where Gonzalez's center does not dominate, so the gap needs `ρ < 2`. A symmetric distance violating the triangle inequality makes Gonzalez pay `100` against an optimum of `1`. A distance vanishing between distinct points makes it repeat a center. The Hochbaum–Shmoys threshold algorithm, k-supplier and k-median are open ([ROADMAP](../../ROADMAP.md#combinatorial-optimization)).
+
 ## Linear-programming duality over ordered fields
 
 Import `Complexity.Foundations.LinearAlgebra.Matrix.LinearProgramming` ([LinearProgramming.lean](../../Complexity/Foundations/LinearAlgebra/Matrix/LinearProgramming.lean)). This is mathematics with no machine model or running time. For a matrix `A : Matrix ι κ K` over any linearly ordered field `K` (so `ℚ` is included), the primal program maximizes `c ⬝ᵥ x` subject to `A *ᵥ x ≤ b` and the dual minimizes `y ⬝ᵥ b` subject to `0 ≤ y` and `y ᵥ* A = c`. Programs are plain matrix data; there is no bundled LP structure and no encoding.
@@ -982,6 +1033,19 @@ Import `Complexity.Computability.Complexity.Problems.TSP.Christofides` ([source]
 
 `minPerfectMatching` is exhaustive search over `(2k − 1)!!` matchings, with optimality proved by `sum_minPerfectMatching_le`. So these results certify the approximation ratio, not a polynomial running time. Edmonds' weighted matching algorithm ([Edmonds][edmonds65]) and any machine-level certificate remain open. The [examples](../../ComplexityTests/TSPChristofides.lean) run the algorithm on a four-city star whose three perfect matchings cost `5`, `6` and `6`; exhaustive search picks the cheapest. The Euler circuit `[0, 1, 2, 0, 3, 0]` is shortcut to an optimal tour of length `11`. The examples also instantiate the general bound with Kruskal's tree, and check the empty and one-city instances.
 
+## String algorithms
+
+String algorithms are written in `Cslib.Algorithms.Lean.TimeM` and charge one tick per character comparison. Array reads and writes, index arithmetic, allocation and list/array conversions are free. Exact matching against a single pattern is Knuth–Morris–Pratt ([source](../../Complexity/Algorithms/Lean/KMP/Search.lean)). It makes at most `2 * (|p| - 1) + 2 * |t|` comparisons (`kmpSearchM_time_le`), and `mem_kmpMatchesList_iff` characterizes its output.
+
+Suffix arrays index one text for many patterns. Import `Complexity.Algorithms.Lean.SuffixArray.Basic`, `.Kasai` and `.Search` ([Basic](../../Complexity/Algorithms/Lean/SuffixArray/Basic.lean), [Kasai](../../Complexity/Algorithms/Lean/SuffixArray/Kasai.lean), [Search](../../Complexity/Algorithms/Lean/SuffixArray/Search.lean)). The alphabet is any `LinearOrder`, ordered with Mathlib's lexicographic order on lists, so a proper prefix comes before the words that extend it. No end-of-word sentinel is assumed, and only the nonempty suffixes `w.drop i` with `i < |w|` are listed.
+
+- **Specification.** `IsSuffixArray w sa` says that `sa` is a permutation of `List.range w.length` whose suffixes strictly increase [Manber and Myers][manbermyers93]. `IsSuffixArray.unique` shows that suffix arrays are unique. `suffixArray w` sorts the positions by their suffixes with `List.mergeSort`, and `isSuffixArray_suffixArray` proves it correct. This reference construction is uncharged and not linear-time.
+- **LCP array.** `lcpArray w sa` has `0` at rank `0` and the longest-common-prefix length (`lcpLen`) of the suffixes of ranks `r - 1` and `r` at rank `r > 0`. `IsSuffixArray.getElem_lcpArray_sub_one_le` is the height lemma `lcp[rank[i + 1]] ≥ lcp[rank[i]] - 1` of [Kasai et al.][kasai01].
+- **Kasai et al.'s algorithm.** `kasaiM w sa` visits positions in text order. It extends each common prefix from the previous length minus one. `ret_kasaiM` and `kasai_eq_lcpArray` show that it returns `lcpArray` whenever `sa` is a suffix array. `kasaiM_time_le` bounds its cost by `2 * |w|` comparisons for every input, valid suffix array or not. Building the rank array is uncharged.
+- **Pattern search.** `searchM w sa p` runs two binary searches (`lowerBoundM`, in `Complexity.Algorithms.Lean.BinarySearch`) and returns a rank interval `[lo, hi)`. Each probe compares `p` with at most `|p|` characters of a suffix. `searchM_spec` shows that the suffix of rank `r` starts with `p` exactly when `lo ≤ r < hi`, so the occurrences form a contiguous interval of the suffix array. `mem_occurrences` turns this into membership of text positions. `searchM_time_le` bounds the cost by `2 * |p| * (⌊log₂ |sa|⌋ + 1)` comparisons. This is the plain `O(|p| log n)` search. The `O(|p| + log n)` search, which reuses precomputed LCP information between probes, is not formalized.
+
+For the empty pattern the search returns every position `i < |w|`. KMP also reports the position `|w|` of the empty suffix. The [examples](../../ComplexityTests/SuffixArray.lean) check `banana` and `mississippi`: the suffix and LCP arrays, the comparison counts, and agreement with KMP on several patterns. They also include a kernel-checked suffix array with its uniqueness, a rejected non-sorted permutation, and absent and empty patterns. Linear-time construction (SA-IS, DC3), LCP-accelerated search and suffix trees remain open ([ROADMAP](../../ROADMAP.md#string-algorithms)).
+
 ## Tree Evaluation
 
 The [Cook–Mertz endpoint](catalytic-and-tree-evaluation.md) computes the root of an explicitly table-encoded perfect binary tree in native independent workspace `O(log n · log log n)` for positive value length and height. The output is not charged to workspace, and the theorem leaves time existential. The same page distinguishes borrowed-register restoration and fan-in/packed procedure variants.
@@ -993,6 +1057,8 @@ The numeric values above are transcriptions of checked source statements, not re
 [berge57]: ../sources.md#berge57
 [berge58]: ../sources.md#berge58
 [complexitylib]: ../sources.md#complexitylib
+[bertsekas88]: ../sources.md#bertsekas88
+[bertsekas98]: ../sources.md#bertsekas98
 [bfprt73]: ../sources.md#bfprt73
 [christofides76]: ../sources.md#christofides76
 [clrs09]: ../sources.md#clrs09
@@ -1005,10 +1071,13 @@ The numeric values above are transcriptions of checked source statements, not re
 [gusfield90]: ../sources.md#gusfield90
 [hierholzer73]: ../sources.md#hierholzer73
 [hmu06]: ../sources.md#hmu06
+[kasai01]: ../sources.md#kasai01
 [kasami65]: ../sources.md#kasami65
 [kortevygen18]: ../sources.md#kortevygen18
 [lll82]: ../sources.md#lll82
+[manbermyers93]: ../sources.md#manbermyers93
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
+[nagamochiibaraki92]: ../sources.md#nagamochiibaraki92
 [roth82]: ../sources.md#roth82
 [rothpostlewaite77]: ../sources.md#rothpostlewaite77
 [roughgarden13cs364a]: ../sources.md#roughgarden13cs364a
@@ -1017,6 +1086,7 @@ The numeric values above are transcriptions of checked source statements, not re
 [schummervohra07]: ../sources.md#schummervohra07
 [shapleyscarf74]: ../sources.md#shapleyscarf74
 [sipser13]: ../sources.md#sipser13
+[stoerwagner97]: ../sources.md#stoerwagner97
 [vww18]: ../sources.md#vww18
 [thorup13]: ../sources.md#thorup13
 [wattenhofer16]: ../sources.md#wattenhofer16
