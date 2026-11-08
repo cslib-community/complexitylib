@@ -8,7 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.SingleTape.CrossingSequence
-public import Mathlib.Computability.MyhillNerode
+public import Mathlib.Computability.DFA
+import Mathlib.Computability.MyhillNerode
 import Mathlib.Data.Set.Finite.List
 import Mathlib.Data.Set.Finite.Powerset
 
@@ -28,9 +29,12 @@ splice `u'` with `v` using `cut_and_paste_run`. The spliced run scans the symbol
 `u ++ v` or that of the run on `u' ++ v'`, and both equal the one recorded in the tag. Tags are
 sets of pairs drawn from a finite set, so there are finitely many left quotients.
 
-Pighizzini states the nondeterministic analogue as [Pighizzini2009, Theorem 1] and calls it
-probably folklore; his proof builds a finite automaton whose states are the bounded crossing
-sequences. Here the machine is deterministic and the automaton comes from Myhill–Nerode instead.
+Pighizzini proves a related criterion for nondeterministic machines as [Pighizzini2009, Theorem 1]
+and calls it probably folklore; his proof builds a finite automaton whose states are the bounded
+crossing sequences. The hypotheses are incomparable with the ones here: his bound covers every
+boundary, including those in the blank region, but only the accepting computations, while the
+bound here covers only the boundaries inside the input, on every input. Here the machine is
+deterministic and the automaton comes from Myhill–Nerode instead.
 
 ## Main results
 
