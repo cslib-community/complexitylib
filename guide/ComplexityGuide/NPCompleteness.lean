@@ -21,11 +21,13 @@ import Complexity.Computability.Complexity.Problems.IntegerProgramming
 import Complexity.Computability.Complexity.Problems.JobSequencing
 import Complexity.Computability.Complexity.Problems.Knapsack
 import Complexity.Computability.Complexity.Problems.MaxCut
+import Complexity.Computability.Complexity.Problems.MaxTwoSAT
 import Complexity.Computability.Complexity.Problems.Partition
 import Complexity.Computability.Complexity.Problems.PlanarPositiveOneInThreeSAT
 import Complexity.Computability.Complexity.Problems.PlanarThreeSATThree
 import Complexity.Computability.Complexity.Problems.SubsetSum
 import Complexity.Computability.Complexity.Problems.TSP
+import Complexity.Computability.Complexity.Problems.TwoSAT.Completeness
 import Complexity.Computability.Complexity.Problems.ThreeSAT
 import Complexity.Computability.Complexity.Problems.ThreeSATThree
 import Complexity.Computability.Complexity.Problems.VertexCover
@@ -38,6 +40,9 @@ import Complexity.Computability.Complexity.Problems.XORSAT
 import Complexity.Computability.PolyTime.CSP.Gadget
 import Complexity.Logics.Polymorphism.BooleanClone
 import Complexity.Logics.Propositional.CNF.Majority
+import Complexity.Computability.Complexity.Problems.CSP.Incidence
+import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
+import Complexity.Computability.PolyTime.CSP.Table
 import Complexity.Foundations.Data.BitString.CyclicDifference
 import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
 import Complexity.Tactic.PolyTime
@@ -64,6 +69,9 @@ development imports the problems it uses. The first examples need only these:
 ```
 import Complexity.Computability.Complexity.CookLevin.Completeness
 import Complexity.Computability.Complexity.Problems.Clique
+import Complexity.Computability.Complexity.Problems.CSP.Incidence
+import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
+import Complexity.Computability.PolyTime.CSP.Table
 import Complexity.Foundations.Data.BitString.CyclicDifference
 import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
 import Complexity.Tactic.PolyTime
@@ -258,6 +266,17 @@ Here is the tree, with the reduction for each edge and the completeness theorem 
   3SAT to exact 3SAT ({name}`polyTimeReducible_ThreeSAT_ExactThreeSAT`,
   {name}`ExactThreeSAT_npComplete`) and to subset sum ({name}`polyTimeReducible_ThreeSAT_SubsetSum`,
   {name}`SubsetSum_npComplete`).
+* 3SAT reduces to maximum 2-satisfiability ({name}`polyTimeReducible_ThreeSAT_MaxTwoSAT`,
+  {name}`MaxTwoSAT_npComplete`): given clauses of at most two literals and a binary target `K`,
+  can some assignment satisfy `K` of them? Each clause of three literals becomes the ten-clause
+  gadget of Garey, Johnson and Stockmeyer ({name}`MaxTwoSAT.gadget`) with a fresh variable, whose
+  satisfied clauses depend only on four truth values ({name}`MaxTwoSAT.countP_gadget`). An
+  assignment satisfies at most seven of them ({name}`MaxTwoSAT.gadgetScore_le`), seven when the
+  source clause holds and the fresh variable is the majority of its literals
+  ({name}`MaxTwoSAT.gadgetScore_majority`), and at most six when it fails
+  ({name}`MaxTwoSAT.gadgetScore_false_le`). Short clauses
+  are first padded by repetition through {name}`toExactThreeSAT`. Plain 2-satisfiability, by
+  contrast, is in `NL` ({name}`TwoSAT.mem_NL`).
 * 3SAT reduces to {name}`ThreeSATThree` via {name}`toThreeSATThree`
   ({name}`ThreeSATThree_npComplete`). Its clauses have at most three literals, including binary
   clauses, and every variable has at most three literal occurrences. Repetitions within a clause
@@ -670,3 +689,51 @@ Twists, coordinate transport and feasible two-bit connectivity are also proved.
 The difference tests show that ternary NAE has an even delta-matroid difference
 relation. These are mathematical prerequisites; a planar embedding algorithm,
 general edge-CSP solver and full planar dichotomy remain to be formalized.
+
+
+# Indexed CSP and Table Operations
+
+{name}`Cslib.Logic.PL.CSP.Occurrence` preserves constraint and scope positions,
+including repeated variables and identical constraints. Given a supplied value
+`outside : D`, consistent valid local labels reconstruct precisely a global CSP
+model. Reconstruction uses `outside` at nonoccurring variables; this hypothesis
+matters when the domain may be empty. The native incidence graph retains one
+edge per argument; it never expands sparse binary names to a range.
+
+```lean
+open Cslib.Logic.PL in
+example {Rel V D : Type} (sem : Rel → List D → Bool)
+    (F : CSP Rel V) (outside : D) :
+    F.Satisfiable sem ↔ ∃ l : F.OccurrenceLabeling D,
+      CSP.ValidLabeling sem l ∧ CSP.ConsistentLabeling l :=
+  CSP.satisfiable_iff_exists_labeling sem outside
+```
+
+{name}`Cslib.Logic.PL.CSP.Table` is an explicit relation alphabet for the same CSP
+lists. Its semantics rejects malformed row widths. Local contraction projects
+outside coordinates and appends a connector bit for zero or one internal
+change. The local native certificate does not yet prove blossom correctness.
+Exactly-one generation takes a scope list whose length funds its quadratic
+output:
+
+```lean
+open Cslib.Logic.PL.CSP Cslib.Complexity.CSP in
+example (scope : List ℕ) (hs : scope ≠ []) :
+    ∃ row, (Table.exactlyOne scope).sem row = true :=
+  (Table.exists_sem_exactlyOne scope).mpr
+    (List.length_pos_iff.mpr hs)
+```
+
+```lean
+open Cslib.Complexity Cslib.Logic.PL.CSP
+  Cslib.Complexity.CSP Turing.MultiTapeTM in
+example : ComputableInPolyTime (Table.exactlyOne (V := ℕ))
+    (encList encNat) encTable :=
+  computableInPolyTime_tableExactlyOne
+```
+
+{name}`Cslib.Complexity.Graph.RotationSystem` retains indexed ends of loops and
+parallel edges, all face orbits including fixed points, and cyclic vertex orders.
+{name}`Cslib.Complexity.CSP.RespectsArgumentOrder` requires the constraint-side
+rotation to follow the scope's cyclic order. This rotation structure imposes no
+genus-zero condition and supplies no planarity recognizer or solver.

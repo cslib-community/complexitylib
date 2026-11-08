@@ -13,17 +13,19 @@ public import Complexity.Algorithms.Lean.BinPacking.Basic
 # First Fit
 
 First Fit keeps every bin open. It places each item into the first bin with enough room, opening
-a new last bin when no bin has room. Any two bins it returns are jointly overfull: whichever was
-opened later received its first item only because that item did not fit into the earlier one
-(`Cslib.Algorithms.Lean.BinPacking.pairwise_firstFit`). So First Fit uses fewer than twice as many
-bins as any packing (`Cslib.Algorithms.Lean.BinPacking.length_firstFit_lt`), that is at most
-`2 * OPT - 1` bins, a slight sharpening of the bound `2 * OPT + 1` of
+a new last bin when no bin has room. So every item of a bin did not fit into any earlier bin,
+even into that bin's final contents
+(`Cslib.Algorithms.Lean.BinPacking.pairwise_forall_lt_sum_add_firstFit`), and as no bin is empty
+(`Cslib.Algorithms.Lean.BinPacking.ne_nil_of_mem_firstFit`), any two bins it returns are jointly
+overfull (`Cslib.Algorithms.Lean.BinPacking.pairwise_firstFit`). So First Fit uses fewer than
+twice as many bins as any packing (`Cslib.Algorithms.Lean.BinPacking.length_firstFit_lt`), that
+is at most `2 * OPT - 1` bins, a slight sharpening of the bound `2 * OPT + 1` of
 [Williamson and Shmoys, Section 3.3][WilliamsonShmoys2011] by the same pairing argument. Johnson's
 thesis [Johnson][Johnson1973] analyses Next Fit and First Fit; by the notes to Chapter 3 of
 Williamson and Shmoys, their First Fit argument uses the thesis's analysis of Next Fit. The
 asymptotic bound `17/10 * OPT + 2` of
-[Johnson, Demers, Ullman, Garey and Graham][JohnsonDemersUllmanGareyGraham1974] is not formalized
-here.
+[Johnson, Demers, Ullman, Garey and Graham][JohnsonDemersUllmanGareyGraham1974], sharpened to
+`17/10 * OPT + 4/5`, is in `Complexity.Algorithms.Lean.BinPacking.FirstFitWeight`.
 
 ## Main definitions
 
@@ -33,6 +35,9 @@ here.
 ## Main results
 
 * `Cslib.Algorithms.Lean.BinPacking.isPacking_firstFit`: First Fit returns a packing.
+* `Cslib.Algorithms.Lean.BinPacking.pairwise_forall_lt_sum_add_firstFit`: every item of a later
+  bin of First Fit overflows every earlier bin.
+* `Cslib.Algorithms.Lean.BinPacking.ne_nil_of_mem_firstFit`: First Fit opens no empty bin.
 * `Cslib.Algorithms.Lean.BinPacking.pairwise_firstFit`: any two bins of First Fit are jointly
   overfull.
 * `Cslib.Algorithms.Lean.BinPacking.length_firstFit_lt`: First Fit uses fewer than twice as many
@@ -93,28 +98,37 @@ theorem mem_firstFitInsert {C a : ℕ} :
         · exact Or.inr (Or.inl ⟨b', List.mem_cons_of_mem _ hb', hfit, rfl⟩)
         · exact Or.inr (Or.inr rfl)
 
-private theorem pairwise_firstFitInsert {C a : ℕ} :
-    ∀ {bins : List (List ℕ)}, bins.Pairwise (fun b b' => C < b.sum + b'.sum) →
-      (firstFitInsert C a bins).Pairwise (fun b b' => C < b.sum + b'.sum)
+private theorem pairwise_forall_lt_sum_add_firstFitInsert {C a : ℕ} :
+    ∀ {bins : List (List ℕ)}, bins.Pairwise (fun b b' => ∀ c ∈ b', C < b.sum + c) →
+      (firstFitInsert C a bins).Pairwise (fun b b' => ∀ c ∈ b', C < b.sum + c)
   | [], _ => by simp [firstFitInsert]
   | b :: bs, h => by
     rw [List.pairwise_cons] at h
     simp only [firstFitInsert]
     split_ifs with hb
     · rw [List.pairwise_cons]
-      refine ⟨fun c hc => ?_, h.2⟩
-      have := h.1 c hc
+      refine ⟨fun c hc x hx => ?_, h.2⟩
+      have := h.1 c hc x hx
       simp only [List.sum_append, List.sum_cons, List.sum_nil]
       omega
     · rw [List.pairwise_cons]
-      refine ⟨fun c hc => ?_, pairwise_firstFitInsert h.2⟩
+      refine ⟨fun c hc x hx => ?_, pairwise_forall_lt_sum_add_firstFitInsert h.2⟩
       rcases mem_firstFitInsert hc with hc | ⟨b', hb', _, rfl⟩ | rfl
-      · exact h.1 c hc
-      · have := h.1 b' hb'
-        simp only [List.sum_append, List.sum_cons, List.sum_nil]
+      · exact h.1 c hc x hx
+      · rcases List.mem_append.1 hx with hx | hx
+        · exact h.1 b' hb' x hx
+        · rw [List.mem_singleton] at hx
+          omega
+      · rw [List.mem_singleton] at hx
         omega
-      · simp only [List.sum_cons, List.sum_nil]
-        omega
+
+private theorem ne_nil_of_mem_firstFitInsert {C a : ℕ} {bins : List (List ℕ)}
+    (h : ∀ b ∈ bins, b ≠ []) : ∀ c ∈ firstFitInsert C a bins, c ≠ [] := by
+  intro c hc
+  rcases mem_firstFitInsert hc with hc | ⟨b, _, _, rfl⟩ | rfl
+  · exact h c hc
+  · simp
+  · simp
 
 private theorem sum_le_of_mem_firstFitInsert {C a : ℕ} {bins : List (List ℕ)}
     (hbins : ∀ b ∈ bins, b.sum ≤ C) (ha : a ≤ C) :
@@ -128,15 +142,17 @@ private theorem sum_le_of_mem_firstFitInsert {C a : ℕ} {bins : List (List ℕ)
 private theorem foldl_firstFitInsert_spec (C : ℕ) :
     ∀ (l : List ℕ) (acc : List (List ℕ)),
       (l.foldl (fun bins a => firstFitInsert C a bins) acc).flatten ~ acc.flatten ++ l ∧
-      (acc.Pairwise (fun b b' => C < b.sum + b'.sum) →
+      (acc.Pairwise (fun b b' => ∀ c ∈ b', C < b.sum + c) →
         (l.foldl (fun bins a => firstFitInsert C a bins) acc).Pairwise
-          (fun b b' => C < b.sum + b'.sum)) ∧
+          (fun b b' => ∀ c ∈ b', C < b.sum + c)) ∧
+      ((∀ b ∈ acc, b ≠ []) → ∀ b ∈ l.foldl (fun bins a => firstFitInsert C a bins) acc, b ≠ []) ∧
       ((∀ a ∈ l, a ≤ C) → (∀ b ∈ acc, b.sum ≤ C) →
         ∀ b ∈ l.foldl (fun bins a => firstFitInsert C a bins) acc, b.sum ≤ C)
   | [], acc => by simp
   | a :: l, acc => by
-    obtain ⟨h1, h2, h3⟩ := foldl_firstFitInsert_spec C l (firstFitInsert C a acc)
-    refine ⟨?_, fun h => h2 (pairwise_firstFitInsert h), fun hl hacc => h3
+    obtain ⟨h1, h2, h3, h4⟩ := foldl_firstFitInsert_spec C l (firstFitInsert C a acc)
+    refine ⟨?_, fun h => h2 (pairwise_forall_lt_sum_add_firstFitInsert h),
+      fun h => h3 (ne_nil_of_mem_firstFitInsert h), fun hl hacc => h4
       (fun x hx => hl x (List.mem_cons_of_mem _ hx))
       (sum_le_of_mem_firstFitInsert hacc (hl a List.mem_cons_self))⟩
     rw [List.foldl_cons]
@@ -148,15 +164,30 @@ private theorem foldl_firstFitInsert_spec (C : ℕ) :
 theorem perm_flatten_firstFit (C : ℕ) (l : List ℕ) : (firstFit C l).flatten ~ l := by
   simpa [firstFit] using (foldl_firstFitInsert_spec C l []).1
 
+/-- **The First Fit rule**: every item of a bin opened later did not fit into an earlier bin,
+even into that bin's final contents. -/
+theorem pairwise_forall_lt_sum_add_firstFit (C : ℕ) (l : List ℕ) :
+    (firstFit C l).Pairwise (fun b b' => ∀ c ∈ b', C < b.sum + c) :=
+  (foldl_firstFitInsert_spec C l []).2.1 List.Pairwise.nil
+
+/-- First Fit opens no empty bin. -/
+theorem ne_nil_of_mem_firstFit {C : ℕ} {l : List ℕ} {b : List ℕ} (hb : b ∈ firstFit C l) :
+    b ≠ [] :=
+  (foldl_firstFitInsert_spec C l []).2.2.1 (by simp) b hb
+
 /-- Any two bins of First Fit are jointly overfull. -/
 theorem pairwise_firstFit (C : ℕ) (l : List ℕ) :
     (firstFit C l).Pairwise (fun b b' => C < b.sum + b'.sum) :=
-  (foldl_firstFitInsert_spec C l []).2.1 List.Pairwise.nil
+  (pairwise_forall_lt_sum_add_firstFit C l).imp_of_mem fun _ hb' h => by
+    obtain ⟨c, hc⟩ := List.exists_mem_of_ne_nil _ (ne_nil_of_mem_firstFit hb')
+    have := h c hc
+    have := List.le_sum_of_mem hc
+    omega
 
 /-- First Fit returns a packing whenever every item fits into a bin. -/
 theorem isPacking_firstFit {C : ℕ} {l : List ℕ} (hl : ∀ a ∈ l, a ≤ C) :
     IsPacking C l (firstFit C l) :=
-  ⟨perm_flatten_firstFit C l, (foldl_firstFitInsert_spec C l []).2.2 hl (by simp)⟩
+  ⟨perm_flatten_firstFit C l, (foldl_firstFitInsert_spec C l []).2.2.2 hl (by simp)⟩
 
 /-- **First Fit is a 2-approximation**: on a nonempty list of items it uses fewer than twice as
 many bins as any packing, that is at most `2 * OPT - 1` bins. -/

@@ -8,7 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Languages.StarFree
-public import Complexity.Logics.SecondOrder.WordMSO.Separation
+public import Complexity.Logics.SecondOrder.WordMSO.FirstOrder
+import Complexity.Logics.SecondOrder.WordMSO.Separation
 
 /-!
 # Star-free languages are first-order definable
@@ -43,10 +44,14 @@ refers to Straubing's book [Straubing1994].
 
 ## Main results
 
+* `Cslib.Logic.WordMSO.isFO_starFreeSentence`: the translation is first-order.
 * `Cslib.Logic.WordMSO.starFreeSentence_language`: it defines the language of the expression.
 * `Cslib.Language.IsStarFree.foDefinable`: star-free languages are first-order definable.
+* `Cslib.Language.IsStarFree.exists_sentence`: a star-free language is the language of a Mathlib
+  first-order sentence over the word vocabulary.
 * `Cslib.Logic.WordMSO.not_isStarFree_even`, `Cslib.Logic.WordMSO.exists_isRegular_not_isStarFree`:
   even length is regular but not star-free.
+* `Cslib.Logic.WordMSO.foDefinable_one`: `{ε}` is first-order definable.
 * `Cslib.Logic.WordMSO.exists_foDefinable_not_isStarFree`: over an infinite alphabet, some
   first-order definable language is not star-free.
 

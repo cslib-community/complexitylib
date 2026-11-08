@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Communication.NOF.Discrepancy
+public import Complexity.Computability.Communication.NOF.Protocol
 
 /-!
 # Leaves of number-on-forehead protocols
@@ -22,8 +22,9 @@ The basic structural fact is the **star lemma** (`NOF.Protocol.leaf_eq_of_view_e
 for every player `i` some input `y i`, which player `i` cannot tell apart from `q`, reaches the leaf
 `l`. Then `q` reaches `l` too. At each node the speaker writes the same bit on `q` as on their own
 witness, and all the witnesses take the same branch. Equivalently, the inputs reaching a leaf form
-a cylinder intersection (`NOF.Protocol.isCylinderIntersection_leaf`). This is what makes
-Ramsey-type lower bounds work: a leaf containing the corners of a "star" contains its center.
+a cylinder intersection (`NOF.Protocol.isCylinderIntersection_leaf`, in the discrepancy module).
+This is what makes Ramsey-type lower bounds work: a leaf containing the corners of a "star"
+contains its center.
 
 ## Main definitions
 
@@ -35,7 +36,6 @@ Ramsey-type lower bounds work: a leaf containing the corners of a "star" contain
 * `Cslib.Communication.NOF.Protocol.leafCount_le_two_pow_depth`: at most `2 ^ depth` leaves.
 * `Cslib.Communication.NOF.Protocol.run_eq_of_leaf_eq`: inputs at the same leaf get the same output.
 * `Cslib.Communication.NOF.Protocol.leaf_eq_of_view_eq`: the star lemma.
-* `Cslib.Communication.NOF.Protocol.isCylinderIntersection_leaf`: leaves are cylinder intersections.
 
 ## References
 
@@ -71,12 +71,12 @@ def leaf : (p : Protocol X Z) → (∀ i, X i) → Fin p.leafCount
     (speak i send p₀ p₁).leafCount = p₀.leafCount + p₁.leafCount :=
   rfl
 
-theorem leaf_output (z : Z) (x : ∀ i, X i) :
+@[simp] theorem leaf_output (z : Z) (x : ∀ i, X i) :
     (output z : Protocol X Z).leaf x = ⟨0, Nat.one_pos⟩ := by
   rw [leaf]
   rfl
 
-theorem leaf_speak (i : ι) (send : View X i → Bool) (p₀ p₁ : Protocol X Z) (x : ∀ i, X i) :
+@[simp] theorem leaf_speak (i : ι) (send : View X i → Bool) (p₀ p₁ : Protocol X Z) (x : ∀ i, X i) :
     (speak i send p₀ p₁).leaf x =
       cond (send (view i x)) (Fin.natAdd p₀.leafCount (p₁.leaf x))
         (Fin.castAdd p₁.leafCount (p₀.leaf x)) := by
@@ -150,22 +150,5 @@ theorem leaf_eq_of_view_eq (p : Protocol X Z) {q : ∀ i, X i} {y : ι → ∀ i
         · rw [hk j, hq] at hj
           exact absurd hj (by decide)
       exact leaf_speak_eq_iff.mpr (Or.inl ⟨hq, (hk i).trans hq, ih₁ h₁ i⟩)
-
-/-- **Leaves are cylinder intersections**: the inputs reaching a given leaf form a cylinder
-intersection. -/
-theorem isCylinderIntersection_leaf [DecidableEq ι] (p : Protocol X Z) (l : Fin p.leafCount) :
-    IsCylinderIntersection {x | p.leaf x = l} := by
-  -- The `i`-th cylinder: the inputs that player `i` cannot tell apart from one reaching `l`.
-  refine ⟨fun i => {x | ∃ y, p.leaf y = l ∧ view i y = view i x}, fun i x a => ?_, ?_⟩
-  · simp only [Set.mem_ofPred_eq, view_update_self]
-  · ext x
-    simp only [Set.mem_ofPred_eq, Set.mem_iInter]
-    refine ⟨fun hx i => ⟨x, hx, rfl⟩, fun hx => ?_⟩
-    choose y hy hview using hx
-    rcases isEmpty_or_nonempty ι with hι | ⟨⟨i⟩⟩
-    · -- With no players a protocol is a single leaf.
-      have h1 := p.leafCount_eq_one_of_isEmpty
-      exact Fin.ext (by have := (p.leaf x).isLt; have := l.isLt; omega)
-    · rw [p.leaf_eq_of_view_eq hview (fun j j' => (hy j).trans (hy j').symm) i, hy i]
 
 end Cslib.Communication.NOF.Protocol

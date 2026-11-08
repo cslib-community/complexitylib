@@ -32,18 +32,26 @@ in the sense above (`IsStarFree.one`, `IsStarFree.of_finite`).
 
 * `Cslib.Language.StarFreeExpression`: star-free expressions.
 * `Cslib.Language.StarFreeExpression.matches'`: the language denoted by an expression.
+* `Cslib.Language.StarFreeExpression.matchEpsilon`: whether an expression matches the empty word,
+  computed structurally.
+* `Cslib.Language.StarFreeExpression.letters`: the letters occurring in an expression.
 * `Cslib.Language.IsStarFree`: some star-free expression denotes the language.
 
 ## Main results
 
+* `Cslib.Language.StarFreeExpression.matchEpsilon_iff`: `matchEpsilon` decides `[] ∈ e.matches'`.
 * `Cslib.Language.StarFreeExpression.isRegular_matches'`, `Cslib.Language.IsStarFree.isRegular`:
   star-free languages are regular.
+* `Cslib.Language.StarFreeExpression.replicate_mem_or_notMem`: on the powers of a letter that does
+  not occur in an expression, its language is all or nothing.
 * `Cslib.Language.IsStarFree.zero`, `char`, `add`, `compl`, `mul`, `top`, `inf`, `iSup`, `iInf`:
   closure properties, the last two for finite unions and intersections.
-* `Cslib.Language.IsStarFree.one`, `Cslib.Language.IsStarFree.singleton`,
-  `Cslib.Language.IsStarFree.of_finite`: over a finite alphabet, `{ε}`, every one-word language
-  and every finite language are star-free.
-* `Cslib.Language.isStarFree_one_iff`: `{ε}` is star-free if and only if the alphabet is finite.
+* `Cslib.Language.IsStarFree.setOf_length_eq_one`, `Cslib.Language.IsStarFree.one`,
+  `Cslib.Language.IsStarFree.singleton`, `Cslib.Language.IsStarFree.of_finite`: over a finite
+  alphabet, the words of length one, `{ε}`, every one-word language and every finite language are
+  star-free.
+* `Cslib.Language.not_isStarFree_one`, `Cslib.Language.isStarFree_one_iff`: `{ε}` is star-free if
+  and only if the alphabet is finite.
 
 ## References
 

@@ -22,6 +22,15 @@ satisfiable and unsatisfiable instances, and applications of these endpoints. Ru
 `scripts/build.sh ComplexityTests.NAEAndEUThreeSAT` from the repository root to check them;
 successful compilation confirms the displayed theorem types and examples.
 
+For maximum 2-satisfiability, import `Complexity.Computability.Complexity.Problems.MaxTwoSAT` and
+use `MaxTwoSAT_npComplete`. An instance `(φ, K)` is encoded by `encPair encCNF encNat`, so the
+target `K` is binary. Every clause has at most two literals, unit clauses included, and clauses
+are counted with multiplicity: `(φ, K) ∈ MaxTwoSAT` when some assignment satisfies at least `K`
+entries of the list `φ`. The [checked examples](../../ComplexityTests/MaxTwoSAT.lean) cover the
+Garey–Johnson–Stockmeyer gadget table, an unsatisfiable 2-CNF formula that is a yes-instance for a
+smaller target, and the reduction on satisfiable and unsatisfiable inputs; check them with
+`scripts/build.sh ComplexityTests.MaxTwoSAT`.
+
 For sparse exact `k`-CNFs, import `Complexity.Logics.Propositional.CNF.Moser.Probability`.
 Formulas are `φ : CNF (Fin n)` on the variables `Fin n`, with `m = φ.length` clauses.
 `CNF.IsExactDistinct k` requires exactly `k` literals over distinct variables in every clause, and
@@ -194,6 +203,47 @@ include odd exactly-one relations, the empty-coordinate case, and failures of ex
 These mathematical prerequisites provide no planar embedding algorithm, edge-CSP solver or
 planar complexity dichotomy yet. The full remaining objective is [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
 
+## Occurrences, explicit tables and ordered incidence rotations
+
+`Complexity.Logics.Propositional.CSP.Occurrence` indexes arguments by constraint position and
+scope position, preserving repeated variables and identical constraints. `ValidLabeling` checks
+each ordered local tuple; `ConsistentLabeling` requires agreement at all occurrences of a variable.
+Given a supplied `outside : D`, their conjunction is equivalent to the existing CSP
+satisfiability predicate. Reconstruction assigns `outside` to every nonoccurring variable; the
+domain-value hypothesis is necessary when the domain may be empty. `EdgeInstance`
+requires exactly two occurrences per occurring variable, in distinct constraints, and supplies a
+partner involution. Its endpoint agreement is equivalent to global consistency. The native
+`Cslib.Complexity.CSP.incidenceGraph` in `Problems.CSP.Incidence` reuses the existing listed graph
+and positive-CNF adapter. It retains one edge per argument, dense variable vertices followed by
+constraint-position vertices, and a native polynomial construction with binary source labels.
+See [occurrence and incidence tests](../../ComplexityTests/CSPOccurrence.lean).
+
+`Complexity.Computability.PolyTime.CSP.Table` supplies `CSP.Table` as an explicit, potentially
+infinite relation alphabet for the same CSP lists. Arity is binary; accepted rows are doubly
+framed Boolean lists, including duplicate rows. Width errors reject every row. The local
+`Table.contract` retains rows with zero or one deviation from a feasible reference on selected
+internal positions, projects outside positions in their original order, and appends the connector
+bit. Its row count cannot increase; at least two distinct in-range internal positions imply
+strict width decrease and nonincrease of the full encoded table size. `Table.exactlyOne`
+constructs the new connector relation in native polynomial time from a scope list: the list's
+length pays for quadratic output. There is no polynomial-output claim from a binary arity alone.
+The zero-connector relation is empty. [Table tests](../../ComplexityTests/CSPTable.lean) cover
+malformed widths, repeated rows, contraction cases and framed size calculations. Delta-matroid
+preservation and whole-blossom correctness are not consequences of these table-operation lemmas.
+
+`Problems.Graph.RotationSystem` represents edge ends by edge-list position and a Boolean side.
+Loops have two distinct ends, and parallel edges retain separate positions. Vertex rotations
+have exactly one cycle per nonempty endpoint fiber. Face orbits use reversal followed by inverse
+rotation and include fixed-point orbits. `Problems.CSP.RotationSystem` maps ordered arguments to
+these ends and states `RespectsArgumentOrder`: the rotation at a constraint follows cyclic scope
+order. Mirroring a ternary constraint can violate that order. Nullary constraints have no argument
+ends, so this order condition is vacuous for them. See [graph rotation tests](../../ComplexityTests/RotationSystem.lean)
+and [constraint-order tests](../../ComplexityTests/CSPRotationSystem.lean).
+
+Rotations alone do not impose genus zero. These modules prove no planar recognition, geometric
+realization, planar reduction, edge solver or dichotomy. In particular, isolated vertices require
+separate treatment in a future embedding model. The full objective remains [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+
 ## Three resolution representations
 
 | Representation | What it supplies | Cost |
@@ -222,7 +272,7 @@ Interpolation modules extract circuits separating the two sides of a refuted con
 
 ## Clause space
 
-Import `Complexity.Logics.Propositional.Resolution.SpaceWidth` for the definitions and the inequality, `Complexity.Logics.Propositional.Resolution.TseitinSpace` for the Tseitin corollaries, `Complexity.Logics.Propositional.Resolution.TreeLikeSpace` for tree-like refutations, or `Complexity.Logics.Propositional.Resolution.PigeonholeSpace` for Duplicator strategies and the pigeonhole bounds.
+Import `Complexity.Logics.Propositional.Resolution.SpaceWidth` for the definitions and the inequality, `Complexity.Logics.Propositional.Resolution.TseitinSpace` for the Tseitin corollaries, `Complexity.Logics.Propositional.Resolution.TreeLikeSpace` for tree-like refutations and DPLL trees, `Complexity.Logics.Propositional.Resolution.PigeonholeSpace` for Duplicator strategies and the extended pigeonhole bounds, or `Complexity.Logics.Propositional.Resolution.WidePigeonholeSpace` for the exact clause space of the wide pigeonhole formula.
 
 [Configuration-style resolution](../../Complexity/Logics/Propositional/Resolution/Space.lean) follows Esteban and Torán. It keeps a `Finset` of clauses in memory, and each move (`ConfigMove`) changes it by one of three rules (`CNF.ConfigStep`): download a clause of the formula, add the resolvent of two clauses in memory, or erase a clause. The resolution rule is that of `CNF.IsProof`, with no weakening. `CNF.configLTS φ s` is the cslib `LTS` of these moves, restricted to configurations of at most `s` clauses. It follows the same pattern as the pebbling library's `Cslib.Pebbling.blackPebbleGame`.
 
@@ -245,7 +295,15 @@ The proof works for any Duplicator strategy. `DuplicatorStrategy.add_three_le` s
 - `CNF.pigeonholeExtStrategy m n` is Duplicator's strategy on `EPHP^m_{n+1}` with `n + 1` pebbles: the partial assignments that agree with a placement of pigeons that is injective on the pebbled pigeons.
 - So with `n + 1` holes there is no refutation of width `n` (`not_refutableInWidth_pigeonholeExt`). Stated per hole count, every refutation of `EPHP^m_n` has width at least `n` (`le_of_refutableInWidth_pigeonholeExt`) and clause space at least `n` (`le_of_refutableInSpace_pigeonholeExt`, through `RefutableInSpace.add_four_le` with `k = 3`). The number of pigeons is arbitrary.
 
-The mathematical symbols of the available copy of Atserias and Dalmau's paper do not extract. So neither their exact clauses nor the pebble count of their Lemma 6 is quoted; the encoding, the strategy and these constants are ours. The clause space of the wide formula `PHP^m_n` itself, proved by Alekhnovich, Ben-Sasson, Razborov and Wigderson, is not treated, and their paper was not inspected.
+The mathematical symbols of the available copy of Atserias and Dalmau's paper do not extract. So neither their exact clauses nor the pebble count of their Lemma 6 is quoted; the encoding, the strategy and these constants are ours. Alekhnovich, Ben-Sasson, Razborov and Wigderson also proved pigeonhole space lower bounds; their paper was not inspected.
+
+[The wide pigeonhole module](../../Complexity/Logics/Propositional/Resolution/WidePigeonholeSpace.lean) gives the exact clause space of `PHP^m_n` itself. Import `Complexity.Logics.Propositional.Resolution.WidePigeonholeSpace`. [Torán's survey][toran04] (Section 4) states resolution space exactly `n + 1` for `m > n`, whatever the number of pigeons. It credits this to Torán's CSL 1999 paper, which was not inspected, so the proofs are reconstructions. The survey's numbers are for a pebble game that may shift a pebble from a premise to the resolvent. Both bounds here are proved directly for `CNF.configLTS`, which keeps both premises, and the value is `n + 2`, one extra clause:
+
+- `CNF.add_two_le_of_refutableInSpace_pigeonhole`: for `0 < n`, every refutation in clause space `s` has `n + 2 ≤ s`. The proof is an invariant on configurations: they are implied by a partial matching (`Cslib.Circuits.BipartiteMatching.IsMatching`; every matching containing it satisfies each clause) except perhaps for one pigeon clause. A clause implied by a matching is implied by at most one of its pairs, so with at most `n` clauses a hole is free for the exceptional pigeon clause, and no matching implies `[]`.
+- `CNF.refutableInSpace_pigeonhole`: for `n < m`, a refutation in clause space `n + 2`. An explicit DPLL tree queries each pigeon in the free holes, then the later pigeons in the hole found. It has rank at most `n`, and `DecisionTree.FindsFalsifiedClause.refutableInSpace` turns a DPLL tree of rank `r` into clause space `r + 2`. This uses the rank bound of `DecisionTree.FindsFalsifiedClause.exists_derivation_rank_le`.
+- `CNF.refutableInSpace_pigeonhole_iff` combines the two for `0 < n < m`.
+
+The clauses of `PHP^m_n` have width `n`, so the Atserias–Dalmau inequality gives nothing for it. With no holes, `PHP^m_0` contains the empty clause for `m ≥ 1` and is refutable in clause space `1`. The [checked examples](../../ComplexityTests/ProofComplexity/WidePigeonholeSpace.lean) give clause space exactly `3` for `PHP^2_1`, exactly `7` for `PHP^1000_5`, and exactly `5` for every `PHP^m_3` with `m > 3`. They also refute `PHP^1_0` in clause space `1` and `x ∧ ¬x` from a rank-`1` DPLL tree. Check them with `scripts/build.sh ComplexityTests.ProofComplexity.WidePigeonholeSpace`.
 
 [The Tseitin module](../../Complexity/Logics/Propositional/Resolution/TseitinSpace.lean) combines this with the width bound of Ben-Sasson and Wigderson:
 
@@ -259,6 +317,7 @@ As with the size bound, the expanders come from a counting argument.
 
 - `Derivation.strahler` is the Horton–Strahler number of a tree-like derivation, the height of the largest complete binary tree embedded in it. It is the Ehrenfeucht–Haussler rank `Cslib.DecisionTree.rank` of the derivation's decision tree `Derivation.toDecisionTree` (`Derivation.strahler_eq_rank_toDecisionTree`). `Derivation.two_pow_strahler_add_one_le` gives `2 ^ (r + 1) ≤ S + 1` for a derivation of `S` nodes, from `DecisionTree.two_pow_rank_le_leafCount` (a tree of rank `r` has at least `2 ^ r` leaves).
 - `Derivation.refutableInSpace` gives clause space `r + 2`: derive the premise of larger number first and keep it. This matches the black pebbling price `h + 2` of the complete binary tree of height `h ≥ 1` in `Complexity/Computability/Pebbling/BinaryTree.lean`.
+- `DecisionTree.FindsFalsifiedClause.refutableInSpace` gives clause space `r + 2` from a DPLL tree of Ehrenfeucht–Haussler rank `r`, through `DecisionTree.FindsFalsifiedClause.exists_derivation_rank_le` (in `Resolution/TreeLike.lean`): the tree-like refutation built from a DPLL tree has decision tree of rank at most that of the DPLL tree.
 - `Derivation.refutableInSpace_log` gives clause space `log₂ (S + 1) + 1`. Its contrapositive, `Derivation.two_pow_le_size_add_one`, turns `¬ RefutableInSpace s` into `2 ^ s ≤ S + 1`; `x ∧ ¬x` attains it.
 - `CNF.refutableInSpace_of_not_satisfiable` refutes every unsatisfiable formula on `n` variables in clause space `n + 2`, the survey's `n + 1`. It splits on a variable (`CNF.exists_derivation_strahler_le`), lifting tree-like refutations of the restrictions with `Derivation.exists_of_restrict`.
 
@@ -266,7 +325,7 @@ The [checked examples](../../ComplexityTests/ProofComplexity/Space.lean) refute 
 
 Not yet formalized:
 
-- clause space of the wide pigeonhole formula and of random `k`-CNFs;
+- clause space of random `k`-CNFs;
 - total and variable space;
 - time–space trade-offs and pebbling formulas;
 - the polynomial-calculus analogue, degree versus space, which is open.
@@ -311,7 +370,7 @@ Two Boolean-analysis lemmas from the subset-sum degree lower bound of Impagliazz
 
 ## Sum-of-squares
 
-Import `Complexity.Logics.Propositional.Algebraic.SumOfSquares.TseitinExpander` for everything below, or the smaller modules `SumOfSquares.Basic`, `SumOfSquares.Parity` and `SumOfSquares.Tseitin` under `Complexity.Logics.Propositional.Algebraic`.
+Import `Complexity.Logics.Propositional.Algebraic.SumOfSquares.TseitinExpander` for the equational system and the parity lower bounds, or the smaller modules `SumOfSquares.Basic`, `SumOfSquares.Parity` and `SumOfSquares.Tseitin` under `Complexity.Logics.Propositional.Algebraic`. Import `SumOfSquares.Pigeonhole` for Positivstellensatz refutations with inequalities, or the smaller modules `SumOfSquares.Positivstellensatz` and `SumOfSquares.CNF`.
 
 [The basic module](../../Complexity/Logics/Propositional/Algebraic/SumOfSquares/Basic.lean) defines sum-of-squares (Positivstellensatz) refutations over an ordered commutative ring `R`. `SOS.Refutation F d` refutes the equations `f = 0`, `f ∈ F` (a list of `MvPolynomial σ R`) by an identity `∑ᵢ gᵢ fᵢ + ∑ₖ cₖ sₖ² = -1` with weights `cₖ ≥ 0` in `R`. Degree is counted per term: every product `gᵢ fᵢ` has total degree at most `d` and every `2 deg sₖ ≤ d`. Over `ℝ` or `ℚ`, or any ring in which every nonnegative element is a sum of squares, the weights can be absorbed into the squares without raising the degree; over a general ordered ring they make the proof system stronger. `SOS.RefutableInDegree F d` says such a refutation exists (`refutableInDegree_iff`, `Refutation.refutableInDegree`). Boolean or `±1` axioms are not built in; an encoding lists them in `F`. `SOS.PseudoExpectation F d` is a linear map `Ẽ` with `Ẽ 1 = 1`, `Ẽ (s²) ≥ 0` for `2 deg s ≤ d`, and `Ẽ (q f) = 0` for `f ∈ F` and `deg (q f) ≤ d`. These follow [Barak and Steurer][barak-steurer16], lecture "The sos algorithm over general domains": Definition 1 and the remark after Theorem 2 for refutations, and Definitions 5 and 7 for pseudo-expectations. The pseudo-expectation condition here asks `Ẽ (q f) = 0` for every multiplier `q`, not only for sums of squares. `PseudoExpectation.not_refutableInDegree` is the easy direction of the duality (Theorem 8 of that lecture with `f = -1`; Theorem 19 of the lecture "Mathematical definitions"): over a strictly ordered ring, a degree-`d` pseudo-expectation rules out degree-`d` refutations. `PseudoExpectation.ofEval` is evaluation at a common zero, and `RefutableInDegree.not_exists_eval_eq_zero` is soundness. To build an explicit refutation, use `RefutableInDegree.of_list` with a list of pairs `(g, f)`. The converse of the duality (hyperplane separation) is not formalized.
 
@@ -320,6 +379,14 @@ Import `Complexity.Logics.Propositional.Algebraic.SumOfSquares.TseitinExpander` 
 [The parity module](../../Complexity/Logics/Propositional/Algebraic/SumOfSquares/Parity.lean) gives the `±1` encoding `ParitySystem.toPolys R P`: `∏_{i ∈ S} Xᵢ - (-1)^b` for every equation and `Xᵢ² - 1` for every variable. `exists_eval_eq_zero_iff` says its common zeros in a strictly ordered field are the satisfying assignments. `ParitySystem.pseudoExpectation` is the construction of [Schoenebeck][schoenebeck08], Lemma 13, defined whenever `¬ P.Derives d ∅ true`. It sends `∏_{i ∈ T} Xᵢ` to `(-1)^c` if `⊕_T x = c` is derivable in width `d`, and to `0` otherwise (`parityValue`, `pseudoExpectation_prod_X`). General monomials are first reduced modulo `Xᵢ² = 1` through `Finsupp.oddSupport`. Positive semidefiniteness is `sum_sum_mul_parityValue_nonneg`: the classes of "`A ∆ B` is derivable" split the moment matrix into rank-one blocks. `not_sos_refutableInDegree_toPolys` is the resulting lower bound: no width-`d` derivation of `0 = 1` implies no SOS refutation of degree at most `d`. This is a statement about the sum-of-squares proof system with this pseudo-expectation. Schoenebeck's Lasserre vector solution is not constructed. The author's copy consulted (December 2008) states Lemma 13 for the `w/2`-th round of Lasserre, and round `r` constrains moments of degree up to `2 r`; versions of the paper differ on this constant, as recorded in the source entry.
 
 [The Tseitin module](../../Complexity/Logics/Propositional/Algebraic/SumOfSquares/Tseitin.lean) shows `not_derives_tseitin_empty_true`: below width `e(G)` (`Multigraph.minBalancedCut`), derivations from a Tseitin system on a connected multigraph stay among cuts of sets smaller than a third of the vertices, so they never reach `0 = 1`. Grigoriev's theorem follows. `Tseitin.minBalancedCut_le_of_sos_refutableInDegree` says that a degree-`d` refutation of the `±1` encoding of a Tseitin system on a connected multigraph has `e(G) ≤ d`, over every strictly ordered commutative ring. [The expander module](../../Complexity/Logics/Propositional/Algebraic/SumOfSquares/TseitinExpander.lean) gives `h(G) |V| / 3 ≤ d` for rotation maps (`Tseitin.edgeExpansion_mul_card_div_three_le_of_sos_refutableInDegree`). Its family `ParitySystem.exists_forall_sos_refutableInDegree_le` has, for `n ≥ 2`, `n` equations of at most `120` variables on at most `120 n` variables, and every refutation has `n ≤ 18000 d`. The linear bound is Grigoriev's; the constants `120` and `18000` come from the library's expanders (`RotationMap.expander`, `RotationMap.le_edgeExpansion_expander`, edge expansion at least `1 / 6000`), not from the source. The expanders are obtained non-constructively. Barak and Steurer's lecture "Higher-degree integrality gaps", Lemma 24, states the Tseitin case for `(1 + ε)`-vertex-expanding `d`-regular graphs with all charges `1` and the `0/1` encoding (degree `n / 4`). The theorem here measures expansion by `e(G)`, allows any multigraph and charges, and uses the `±1` encoding. Random `3`-XOR (Barak and Steurer, Theorem 2), Grigoriev's knapsack bound and the `0/1` encoding are not treated. [Grigoriev's paper][grigoriev01] was not consulted, so its locator is unverified. The relevant statements were checked against Schoenebeck's Lemma 13 and Barak and Steurer's lecture "Higher-degree integrality gaps", Lemmas 7 and 24 and Theorem 2.
+
+[The Positivstellensatz module](../../Complexity/Logics/Propositional/Algebraic/SumOfSquares/Positivstellensatz.lean) (namespace `Cslib.Logic.PL.SOS.Psatz`) adds inequality constraints. `Psatz.Refutation I E d` refutes `f ≥ 0` for `f ∈ I` and `g = 0` for `g ∈ E` (sets of polynomials) by an identity `∑ⱼ hⱼ gⱼ + ∑ₖ cₖ sₖ² ∏_{f ∈ Sₖ} f = -1`, with finite `Sₖ ⊆ I` and `cₖ ≥ 0`. A summand is a `Psatz.Summand` (`factors`, `weight`, `base`). Degree is counted per summand: every `hⱼ gⱼ` has total degree at most `d`, and every summand has formal degree `2 deg sₖ + ∑_{f ∈ Sₖ} deg f` (`Summand.degree`) at most `d`. The formal degree bounds the total degree (`Summand.totalDegree_toPoly_le`). Over a domain the two are equal for nonzero summands (`Summand.totalDegree_toPoly`). This is [Barak and Steurer][barak-steurer16], lecture "The sos algorithm over general domains", Definition 1, with equations added as multiples `h g` of any sign, as in `SOS.Refutation`. `Psatz.PseudoExpectation I E d` asks `Ẽ (s² ∏_{f ∈ S} f) ≥ 0` for finite `S ⊆ I` of formal degree at most `d` (Definition 7 with `ℓ = 0`), and `PseudoExpectation.not_refutableInDegree` is the easy duality. `RefutableInDegree.not_exists_eval` is soundness. Build refutations with `RefutableInDegree.of_sum` from finite families of equation terms and summands. `SOS.RefutableInDegree.psatz` and `Psatz.refutableInDegree_empty_iff` identify the equational system with the case `I = ∅`, and `SOS.PseudoExpectation.psatz` carries pseudo-expectations over.
+
+[The CNF module](../../Complexity/Logics/Propositional/Algebraic/SumOfSquares/CNF.lean) encodes a CNF through its cutting-planes inequalities. `Ineq.toPoly` sends `∑ᵥ aᵥ xᵥ ≥ b` to `∑ᵥ aᵥ Xᵥ - b`. `Psatz.cnfIneqs φ` contains the polynomials of `Clause.toIneq` for the clauses of `φ`, together with the box constraints `Xᵥ` and `1 - Xᵥ`. `Psatz.booleanAxioms V R` contains `Xᵥ² - Xᵥ`. This is the translation (2.4)–(2.6) of [Grigoriev, Hirsch and Pasechnik][grigorievhirschpasechnik02], with the Boolean axioms as equations. `Psatz.exists_feasible_iff` says that over a strictly ordered ring the common solutions are the satisfying assignments, and `not_satisfiable_of_refutableInDegree` is soundness for CNFs. In degree `1` the Boolean axioms impose nothing (`eq_zero_of_totalDegree_mul_le_one`). So a fractional point of the box that satisfies the clause inequalities is a degree-`1` pseudo-expectation (`degreeOnePseudoExpectation`), and it rules out degree-`1` refutations (`not_refutableInDegree_one_of_eval_nonneg`).
+
+[The pigeonhole module](../../Complexity/Logics/Propositional/Algebraic/SumOfSquares/Pigeonhole.lean) proves `Psatz.refutableInDegree_two_pigeonhole`: for `m > n`, `PHP^m_n` has a refutation of degree `2` over every strictly ordered commutative ring. The identity is `∑ᵢ Pᵢ + ∑ⱼ (1 - ∑ᵢ xᵢⱼ)² + ∑ⱼ ∑_{i ≠ i'} xᵢⱼ Hᵢᵢ'ⱼ + (m - n - 1) + (m - 2) ∑ᵢⱼ (xᵢⱼ² - xᵢⱼ) = -1`, with pigeon inequalities `Pᵢ = ∑ⱼ xᵢⱼ - 1` and hole inequalities `Hᵢᵢ'ⱼ = 1 - xᵢⱼ - xᵢ'ⱼ`. For `m = n + 1` it is Example 2.1 of Grigoriev, Hirsch and Pasechnik, stated there as a static `LS₊` proof; the summand `m - n - 1` covers `m > n + 1`. Over a strictly ordered field and for `n ≥ 2`, the point `xᵢⱼ = 1 / n` satisfies every inequality (`eval_inv_nonneg_of_mem_cnfIneqs_pigeonhole`), so there is no refutation of degree `1` (`not_refutableInDegree_one_pigeonhole`). `refutableInDegree_pigeonhole_iff` combines both: for `n ≥ 2`, a refutation of degree at most `d` exists exactly when `n < m` and `2 ≤ d`. Separately, resolution refutations of `PHP^{n+1}_n` have size at least `2^(n/24)` (`CNF.two_pow_le_of_refutableInSize_pigeonhole`). These are two facts about two different proof systems. The module bounds degree only, and it makes no claim about refutation size or about simulations. The Positivstellensatz calculus (the dynamic, derivation-based system), the converse duality and size measures are not formalized.
+
+The [Positivstellensatz examples](../../ComplexityTests/ProofComplexity/Positivstellensatz.lean) check the following. `PHP³₂` has a degree-`2` refutation over `ℤ` and `ℚ`, none of degree `1` over `ℚ`, and refutability in degree `d` exactly when `2 ≤ d`. Its degree-`1` pseudo-expectation, evaluation at `1/2`, is fractional, so `Psatz.PseudoExpectation` is inhabited for an unsatisfiable system. `PHP²₁` has an explicit degree-`1` refutation, so `n ≥ 2` is needed. `PHP¹₀` has a degree-`0` refutation, and the satisfiable `PHP²₂` has none of any degree. The equation `1 = 0` gives a refutation with `I = ∅`. Check them with `scripts/build.sh ComplexityTests.ProofComplexity.Positivstellensatz`.
 
 The [checked examples](../../ComplexityTests/ProofComplexity/SumOfSquares.lean) treat the triangle with one charged vertex. It is unsatisfiable, width-`2` derivations reach `0 = 1`, and Schoenebeck's pseudo-expectation of degree `1` exists, so `SOS.PseudoExpectation` is inhabited for an unsatisfiable system. There is no refutation of degree `1`. An explicit refutation of degree `2`, with one square of weight `2`, shows that `e(G) ≤ d` is attained. With two charged vertices the system is satisfiable, and point evaluation rules out refutations of every degree. On `K₄`, Schoenebeck's pseudo-expectation of degree `3` exists, so there is no refutation of degree `3`. Check them with `scripts/build.sh ComplexityTests.ProofComplexity.SumOfSquares`.
 
@@ -331,5 +398,7 @@ This section inventories resolution, including clause space, cutting planes, sem
 [complexitylib]: ../sources.md#complexitylib
 [cookreckhow79]: ../sources.md#cookreckhow79
 [grigoriev01]: ../sources.md#grigoriev01
+[grigorievhirschpasechnik02]: ../sources.md#grigorievhirschpasechnik02
 [mosertardos10]: ../sources.md#mosertardos10
 [schoenebeck08]: ../sources.md#schoenebeck08
+[toran04]: ../sources.md#toran04
