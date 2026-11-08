@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Algorithms.Lean.Arborescence.ChuLiuEdmonds
+import Mathlib.Data.Fin.VecNotation
 
 /-!
 # Tests for the Chu–Liu/Edmonds algorithm
@@ -12,7 +13,8 @@ import Complexity.Algorithms.Lean.Arborescence.ChuLiuEdmonds
 Exercise `Cslib.Algorithms.Lean.Arborescence.edmonds` on the digraph on `Fin 4` with arcs
 `1→0:10`, `2→0:5`, `1→2:1`, `2→1:1`, `3→1:2`, `2→3:0`, `3→2:4`, rooted at `0`:
 
-* the cheapest arcs `1→2`, `2→1`, `3→1` contain the cycle `1 ⇄ 2`, so the algorithm contracts it;
+* the cheapest arcs are `1→2`, `2→3`, `3→1` (the selection `[0, 2, 3, 1]`), a `3`-cycle, so the
+  algorithm contracts it;
 * the result is the parent array `[0, 2, 0, 1]` (arcs `1→2`, `2→0`, `3→1`) of cost `8`, hence
   (by `edmonds_spec`) every spanning in-arborescence rooted at `0` costs at least `8`; the
   arborescence `[0, 0, 0, 1]` costs `17`;
@@ -44,7 +46,12 @@ private def cost : Fin 4 → Fin 4 → ℕ := fun u w =>
 /-- The optimal parent array `[0, 2, 0, 1]`. -/
 private def opt : Fin 4 → Fin 4 := ![0, 2, 0, 1]
 
-/-- The cheapest arcs out of the non-root vertices contain a cycle, so `edmonds` contracts. -/
+/-- The cheapest arcs out of the non-root vertices are `1→2`, `2→3` and `3→1`. -/
+example : (List.finRange 4).map (cheapestParent (fun u w => decide (G.Adj u w)) cost 0) =
+    [0, 2, 3, 1] := by
+  decide
+
+/-- They contain a cycle, so `edmonds` contracts. -/
 example : findCycle 0 (cheapestParent (fun u w => decide (G.Adj u w)) cost 0) ≠ none := by
   decide
 
@@ -65,8 +72,8 @@ example : IsInArborescenceParent G.Adj 0 ![0, 0, 0, 1] ∧ parentCost cost 0 ![0
 
 /-- The digraph form: the digraph of the output is a spanning in-arborescence of `G` of arc
 cost `8`. -/
-example : (parentDigraph 0 opt).IsInArborescence 0 ∧ parentDigraph 0 opt ≤ G ∧
-    arcCost (parentDigraph 0 opt) cost = 8 := by
+example : (Digraph.parentDigraph 0 opt).IsInArborescence 0 ∧ Digraph.parentDigraph 0 opt ≤ G ∧
+    arcCost (Digraph.parentDigraph 0 opt) cost = 8 := by
   obtain ⟨h1, h2, -⟩ := edmonds_optimal (G := G) (c := cost) (r := 0) (p := opt) (by decide)
   exact ⟨h1, h2, by rw [arcCost_parentDigraph]; decide⟩
 

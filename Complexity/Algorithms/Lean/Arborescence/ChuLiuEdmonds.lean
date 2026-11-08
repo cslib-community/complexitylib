@@ -8,11 +8,15 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Foundations.Combinatorics.Digraph.MatrixTree
+public import Complexity.Foundations.Combinatorics.Digraph.Arborescence
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.Algebra.Order.Monoid.Defs
 public import Mathlib.Data.FinEnum
-public import Mathlib.Data.Fintype.Pigeonhole
+public import Mathlib.Data.Fintype.Prod
 public import Mathlib.Data.List.MinMax
-public import Mathlib.Dynamics.PeriodicPts.Lemmas
+public import Mathlib.Dynamics.PeriodicPts.Defs
+import Complexity.Foundations.Combinatorics.FunctionalGraph
+import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
 /-!
 # Minimum-cost arborescences: the Chu–Liu/Edmonds algorithm
@@ -27,8 +31,9 @@ An in-arborescence is represented by its parent function `p : V → V`: `p r = r
 of `G` for `v ≠ r`, and every vertex reaches `r` by iterating `p`
 (`Cslib.Algorithms.Lean.Arborescence.IsInArborescenceParent`). Its cost is
 `∑ v ≠ r, c v (p v)`. Parent functions correspond exactly to the spanning in-arborescences
-`T ≤ G` of `Digraph.IsInArborescence` (`isInArborescenceParent_iff`, `exists_parentDigraph_eq`),
-and `edmonds_optimal` states optimality directly over those digraphs. Out-arborescences (arcs
+`T ≤ G` of `Digraph.IsInArborescence` (`isInArborescenceParent_iff`, built on the parent-function
+API `Digraph.parentDigraph` of `Complexity.Foundations.Combinatorics.Digraph.Arborescence`), and
+`edmonds_optimal` states optimality directly over those digraphs. Out-arborescences (arcs
 directed away from the root, Edmonds' convention) are handled by reversing the arcs
 (`edmondsOut_spec`).
 
@@ -57,14 +62,16 @@ The contracted cost of leaving the cycle includes the selected costs of the othe
 rather than subtracting the selected cost of the leaving vertex as in the usual presentation with
 reduced costs. This is the same up to a constant, and needs no subtraction, so the costs may lie in
 an ordered monoid such as `ℕ`. Contraction strictly shrinks the set of vertices with an arc to a
-vertex other than themselves and the root (`liveVertices_ssubset`), so `|V|` rounds of recursion
-suffice (`edmonds` runs `edmondsAux` with fuel `FinEnum.card V`).
+vertex other than themselves and the root, so `|V|` levels of recursion suffice (`edmonds` runs
+`edmondsAux` with fuel `FinEnum.card V`).
 
 ## Main definitions
 
 * `Cslib.Algorithms.Lean.Arborescence.IsInArborescenceParent`: parent functions of spanning
   in-arborescences.
 * `Cslib.Algorithms.Lean.Arborescence.parentCost`: the cost of a parent function.
+* `Cslib.Algorithms.Lean.Arborescence.arcCost`: the arc cost of a digraph, to state optimality over
+  `Digraph.IsInArborescence` (with `Digraph.parentDigraph`, the digraph of a parent function).
 * `Cslib.Algorithms.Lean.Arborescence.edmonds`: the Chu–Liu/Edmonds algorithm.
 * `Cslib.Algorithms.Lean.Arborescence.edmondsOut`: the same for out-arborescences.
 
@@ -84,19 +91,25 @@ suffice (`edmonds` runs `edmondsAux` with fuel `FinEnum.card V`).
 
 [Edmonds1967Branchings] treats spanning arborescences with arcs directed away from a prescribed
 root, maximum or minimum weight, real weights. Section 2 reduces optimum spanning arborescences to
-optimum branchings, and Theorem 1 (Section 4) is the algorithm for optimum branchings: select the
-best arc into each node and contract cycles. [ChuLiu1965] gives the same contraction algorithm for
-shortest arborescences (not inspected here). [Schrijver2003], Section 52.1 ("Finding a shortest
-r-arborescence"), is a textbook locator (from the table of contents; not inspected). This module
-proves the rooted minimum-cost spanning arborescence version directly, for in-arborescences, with
-costs in any linearly ordered additive commutative monoid; `edmondsOut_spec` is Edmonds'
-orientation.
+optimum branchings. Theorem 1, stated in Section 3, asserts a *good* (polynomially bounded)
+algorithm for optimum branchings; Section 4 gives the algorithm, which selects the best arc into
+each node and contracts cycles, and its proof. This module proves correctness and optimality of
+that cycle-contraction algorithm, specialised to rooted minimum-cost spanning arborescences. It
+does not prove the polynomial-time content of Theorem 1 (see Limitations). [ChuLiu1965] gives the
+same contraction algorithm for shortest arborescences (not inspected here). [Schrijver2003],
+Section 52.1 ("Finding a shortest r-arborescence"), is a textbook locator (from the table of
+contents; not inspected). The theorems here are for in-arborescences, with costs in any linearly
+ordered additive commutative monoid; `edmondsOut_spec` is Edmonds' orientation.
 
 ## Limitations
 
-No running-time bound is proved. The recursion recomputes all cheapest arcs after each
-contraction, `O(n)` rounds of `O(n²)` work on a dense instance; Tarjan's `O(m log n)` and the
-Gabow–Galil–Spencer–Tarjan `O(m + n log n)` implementations are not formalized. Optimum
+`edmonds` is executable but not efficient, and no running-time bound is proved. Each level of the
+recursion receives the contracted arcs and costs as closures over those of the previous level,
+without memoisation, so evaluating one contracted arc or cost re-evaluates the previous level many
+times, and the worst-case running time is exponential in the number of nested contractions. A
+polynomial version, such as the `O(n m)` bound, needs materialised per-level arc and cost tables;
+Tarjan's `O(m log n)` and the Gabow–Galil–Spencer–Tarjan `O(m + n log n)` implementations are not
+formalized either. Optimum
 branchings (forests of maximum weight, Edmonds' Theorem 1 itself) and the branching polytope
 (Edmonds' Theorem 2) are not treated.
 
@@ -143,63 +156,16 @@ theorem IsInArborescenceParent.ne {R : V → V → Prop} {r : V} {p : V → V}
 
 section Bridge
 
-/-- The digraph of a parent function: the arcs `v → p v` for `v ≠ r`. The proof of the directed
-matrix-tree theorem (`Digraph.det_laplacian_submatrix_eq_finsum_isInArborescence`) uses a private
-analogue indexed by `{v // v ≠ r}`. -/
-def parentDigraph (r : V) (p : V → V) : Digraph V where
-  Adj v w := v ≠ r ∧ p v = w
-
-instance [DecidableEq V] (r : V) (p : V → V) : DecidableRel (parentDigraph r p).Adj :=
-  fun v w => inferInstanceAs (Decidable (v ≠ r ∧ p v = w))
-
-theorem parentDigraph_adj {r : V} {p : V → V} {v w : V} :
-    (parentDigraph r p).Adj v w ↔ v ≠ r ∧ p v = w := Iff.rfl
+open Digraph
 
 /-- Parent functions of spanning in-arborescences of `G` are exactly the parent functions whose
 digraph is a spanning in-arborescence (`Digraph.IsInArborescence`) contained in `G`. -/
 theorem isInArborescenceParent_iff {G : Digraph V} {r : V} {p : V → V} (hr : p r = r) :
     IsInArborescenceParent G.Adj r p ↔
       (parentDigraph r p).IsInArborescence r ∧ parentDigraph r p ≤ G := by
-  constructor
-  · intro h
-    refine ⟨⟨fun w hw => hw.1 rfl, fun v hv => ⟨p v, ⟨hv, rfl⟩, fun w hw => hw.2.symm⟩,
-      fun v => ?_⟩, fun v w hvw => hvw.2 ▸ h.adj v hvw.1⟩
-    obtain ⟨n, hn⟩ := h.reach v
-    induction n generalizing v with
-    | zero =>
-      rw [Function.iterate_zero_apply] at hn
-      rw [hn]
-    | succ n ih =>
-      by_cases hv : v = r
-      · rw [hv]
-      · rw [Function.iterate_succ_apply] at hn
-        exact Relation.ReflTransGen.head ⟨hv, rfl⟩ (ih (p v) hn)
-  · rintro ⟨hT, hTG⟩
-    refine ⟨hr, fun v hv => hTG ⟨hv, rfl⟩, fun v => ?_⟩
-    have := hT.reachable v
-    induction this using Relation.ReflTransGen.head_induction_on with
-    | refl => exact ⟨0, rfl⟩
-    | head hab _ ih =>
-      obtain ⟨n, hn⟩ := ih
-      obtain ⟨-, rfl⟩ := hab
-      exact ⟨n + 1, by rw [Function.iterate_succ_apply, hn]⟩
-
-/-- Every spanning in-arborescence `T` rooted at `r` is the digraph of a parent function. -/
-theorem exists_parentDigraph_eq {T : Digraph V} {r : V} (hT : T.IsInArborescence r) :
-    ∃ p : V → V, p r = r ∧ parentDigraph r p = T := by
-  classical
-  let p : V → V := fun v => if hv : v = r then r else (hT.existsUnique_adj v hv).choose
-  have hp : ∀ v (hv : v ≠ r), T.Adj v (p v) := fun v hv => by
-    simp only [p, dite_eq_right hv]
-    exact (hT.existsUnique_adj v hv).choose_spec.1
-  refine ⟨p, by simp [p], ?_⟩
-  ext v w
-  constructor
-  · rintro ⟨hv, rfl⟩
-    exact hp v hv
-  · intro hvw
-    have hv : v ≠ r := fun h => hT.not_adj_root w (h ▸ hvw)
-    exact ⟨hv, (hT.existsUnique_adj v hv).unique (hp v hv) hvw⟩
+  rw [isInArborescence_parentDigraph_iff]
+  exact ⟨fun h => ⟨h.reach, fun v w hvw => hvw.2 ▸ h.adj v hvw.1⟩,
+    fun h => ⟨hr, fun v hv => h.2 ⟨hv, rfl⟩, h.1⟩⟩
 
 /-- The arc cost `∑_{v → w ∈ T} c v w` of a digraph. -/
 def arcCost [Fintype V] [AddCommMonoid β] (T : Digraph V) [DecidableRel T.Adj]
@@ -208,13 +174,13 @@ def arcCost [Fintype V] [AddCommMonoid β] (T : Digraph V) [DecidableRel T.Adj]
 
 /-- The arc cost of the digraph of a parent function is its cost. -/
 theorem arcCost_parentDigraph [Fintype V] [DecidableEq V] [AddCommMonoid β] (r : V) (p : V → V)
-    (c : V → V → β) : arcCost (parentDigraph r p) c = parentCost c r p := by
+    (c : V → V → β) : arcCost (Digraph.parentDigraph r p) c = parentCost c r p := by
   unfold arcCost parentCost
   have himg : (Finset.univ.erase r).image (fun v => (v, p v)) =
-      Finset.univ.filter (fun e : V × V => (parentDigraph r p).Adj e.1 e.2) := by
+      Finset.univ.filter (fun e : V × V => (Digraph.parentDigraph r p).Adj e.1 e.2) := by
     ext ⟨v, w⟩
     simp only [Finset.mem_image, Finset.mem_erase, Finset.mem_univ, and_true,
-      Finset.mem_filter, true_and, parentDigraph_adj, Prod.mk.injEq]
+      Finset.mem_filter, true_and, Digraph.parentDigraph_adj, Prod.mk.injEq]
     constructor
     · rintro ⟨u, hu, rfl, rfl⟩
       exact ⟨hu, rfl⟩
@@ -267,12 +233,12 @@ variable [FinEnum V] (r : V)
   (FinEnum.toList V).find? fun x =>
     x != r && (List.range (FinEnum.card V)).any fun k => f^[k + 1] x == x
 
-theorem findCycle_some {f : V → V} {x : V} (h : findCycle r f = some x) :
+private theorem findCycle_some {f : V → V} {x : V} (h : findCycle r f = some x) :
     x ≠ r ∧ ∃ k < FinEnum.card V, f^[k + 1] x = x := by
   have := List.find?_some h
   simpa [List.any_eq_true] using this
 
-theorem findCycle_none {f : V → V} (h : findCycle r f = none) {x : V} (hx : x ≠ r) {k : ℕ}
+private theorem findCycle_none {f : V → V} (h : findCycle r f = none) {x : V} (hx : x ≠ r) {k : ℕ}
     (hk : k < FinEnum.card V) : f^[k + 1] x ≠ x := by
   have := List.find?_eq_none.mp h x (FinEnum.mem_toList x)
   simp only [bne_iff_ne, ne_eq, List.any_eq_true, List.mem_range, beq_iff_eq,
@@ -282,25 +248,16 @@ theorem findCycle_none {f : V → V} (h : findCycle r f = none) {x : V} (hx : x 
 /-- If `f` has no cycle avoiding `r`, then every vertex reaches `r` by iterating `f`. -/
 theorem reach_of_findCycle_none {f : V → V} (h : findCycle r f = none) (v : V) :
     ∃ n, f^[n] v = r := by
-  have key : ∀ i j, i < j → f^[i] v = f^[j] v → ∃ n, f^[n] v = r := by
-    intro i j hij he
-    refine ⟨i, ?_⟩
-    by_contra hy
-    have hper : Function.IsPeriodicPt f (j - i) (f^[i] v) := by
-      change f^[j - i] (f^[i] v) = f^[i] v
-      rw [← Function.iterate_add_apply, Nat.sub_add_cancel hij.le]
-      exact he.symm
-    have hpos := hper.minimalPeriod_pos (by omega)
-    have hle : Function.minimalPeriod f (f^[i] v) ≤ FinEnum.card V := by
-      rw [FinEnum.card_eq_fintypeCard]
-      exact Function.minimalPeriod_le_card
-    apply findCycle_none r h hy (k := Function.minimalPeriod f (f^[i] v) - 1) (by omega)
-    rw [Nat.sub_add_cancel hpos]
-    exact Function.isPeriodicPt_minimalPeriod f _
-  obtain ⟨i, j, hne, he⟩ := Finite.exists_ne_map_eq_of_infinite fun n : ℕ => f^[n] v
-  rcases lt_or_gt_of_ne hne with h' | h'
-  · exact key i j h' he
-  · exact key j i h' he.symm
+  obtain ⟨n, hn⟩ := Cslib.FunctionalGraph.exists_iterate_mem_periodicPts f v
+  refine ⟨n, ?_⟩
+  by_contra hy
+  have hpos := Function.minimalPeriod_pos_of_mem_periodicPts hn
+  have hle : Function.minimalPeriod f (f^[n] v) ≤ FinEnum.card V := by
+    rw [FinEnum.card_eq_fintypeCard]
+    exact Function.minimalPeriod_le_card
+  apply findCycle_none r h hy (k := Function.minimalPeriod f (f^[n] v) - 1) (by omega)
+  rw [Nat.sub_add_cancel hpos]
+  exact Function.isPeriodicPt_minimalPeriod f _
 
 /-- The orbit of `x0` under `f`; the cycle through `x0` when `x0` is periodic. -/
 @[expose] def cycleOf (f : V → V) (x0 : V) : Finset V :=
@@ -417,26 +374,26 @@ becomes the cheapest arc into `C`. -/
 variable {a c f C x0 r}
 
 omit [AddCommMonoid β] [LinearOrder β] in
-theorem contractAdj_rep_iff (hx0 : x0 ∈ C) {w : V} :
+private theorem contractAdj_rep_iff (hx0 : x0 ∈ C) {w : V} :
     contractAdj a C x0 r x0 w = true ↔ w ∉ C ∧ ∃ x ∈ C, a x w = true := by
   simp [contractAdj, hx0, List.any_eq_true, FinEnum.mem_toList]
 
 omit [AddCommMonoid β] [LinearOrder β] in
-theorem contractAdj_mem_iff {u w : V} (hu : u ∈ C) (hux : u ≠ x0) :
+private theorem contractAdj_mem_iff {u w : V} (hu : u ∈ C) (hux : u ≠ x0) :
     contractAdj a C x0 r u w = true ↔ w = r := by
   simp [contractAdj, hu, hux]
 
 omit [AddCommMonoid β] [LinearOrder β] in
-theorem contractAdj_out_mem_iff {u w : V} (hu : u ∉ C) (hw : w ∈ C) :
+private theorem contractAdj_out_mem_iff {u w : V} (hu : u ∉ C) (hw : w ∈ C) :
     contractAdj a C x0 r u w = true ↔ w = x0 ∧ ∃ y ∈ C, a u y = true := by
   simp [contractAdj, hu, hw, List.any_eq_true, FinEnum.mem_toList]
 
 omit [AddCommMonoid β] [LinearOrder β] in
-theorem contractAdj_out_out_iff {u w : V} (hu : u ∉ C) (hw : w ∉ C) :
+private theorem contractAdj_out_out_iff {u w : V} (hu : u ∉ C) (hw : w ∉ C) :
     contractAdj a C x0 r u w = true ↔ a u w = true := by
   simp [contractAdj, hu, hw]
 
-theorem bestExit_spec {w : V} (h : ∃ x ∈ C, a x w = true) :
+private theorem bestExit_spec {w : V} (h : ∃ x ∈ C, a x w = true) :
     ∃ x, bestExit a c f C w = some x ∧ x ∈ C ∧ a x w = true ∧
       ∀ y ∈ C, a y w = true → exitCost c f C x w ≤ exitCost c f C y w := by
   obtain ⟨y, hy, hyw⟩ := h
@@ -451,7 +408,7 @@ theorem bestExit_spec {w : V} (h : ∃ x ∈ C, a x w = true) :
     List.le_of_mem_argmin (by simp [FinEnum.mem_toList, hz, hzw]) hx⟩
 
 omit [AddCommMonoid β] in
-theorem bestEntry_spec {u : V} (h : ∃ y ∈ C, a u y = true) :
+private theorem bestEntry_spec {u : V} (h : ∃ y ∈ C, a u y = true) :
     ∃ y, bestEntry a c C u = some y ∧ y ∈ C ∧ a u y = true ∧
       ∀ z ∈ C, a u z = true → c u y ≤ c u z := by
   obtain ⟨y, hy, hyw⟩ := h
@@ -710,10 +667,10 @@ variable [FinEnum V]
 
 /-- The vertices other than `r` with an arc to a vertex other than themselves and `r`. Contraction
 strictly shrinks this set (`liveVertices_ssubset`). -/
-def liveVertices (a : V → V → Bool) (r : V) : Finset V :=
+private def liveVertices (a : V → V → Bool) (r : V) : Finset V :=
   Finset.univ.filter fun v => v ≠ r ∧ ∃ w, w ≠ v ∧ w ≠ r ∧ a v w = true
 
-theorem liveVertices_ssubset {a : V → V → Bool} {f : V → V} {C : Finset V} {x0 r : V}
+private theorem liveVertices_ssubset {a : V → V → Bool} {f : V → V} {C : Finset V} {x0 r : V}
     (hfC : ∀ y ∈ C, f y ∈ C) (hfa : ∀ y ∈ C, a y (f y) = true ∧ f y ≠ y)
     (hx0 : x0 ∈ C) (hrC : r ∉ C) :
     liveVertices (contractAdj a C x0 r) r ⊂ liveVertices a r := by
@@ -736,7 +693,7 @@ theorem liveVertices_ssubset {a : V → V → Bool} {f : V → V} {C : Finset V}
     obtain ⟨-, w, -, hwr, hadj⟩ := (Finset.mem_filter.mp h).2
     exact hwr ((contractAdj_mem_iff hz (hfa x0 hx0).2).mp hadj)
 
-theorem liveVertices_card_lt (a : V → V → Bool) (r : V) :
+private theorem liveVertices_card_lt (a : V → V → Bool) (r : V) :
     (liveVertices a r).card < FinEnum.card V := by
   rw [FinEnum.card_eq_fintypeCard, ← Finset.card_univ]
   refine Finset.card_lt_card ⟨Finset.subset_univ _, fun h => ?_⟩
@@ -759,7 +716,7 @@ arcs; return them if they form no cycle, otherwise contract a cycle, recurse and
     else none
 
 /-- Correctness of `edmondsAux` with enough fuel. -/
-theorem edmondsAux_spec [IsOrderedAddMonoid β] (r : V) :
+private theorem edmondsAux_spec [IsOrderedAddMonoid β] (r : V) :
     ∀ (n : ℕ) (a : V → V → Bool) (c : V → V → β), (liveVertices a r).card < n →
       (∀ p, edmondsAux r n a c = some p →
         IsInArborescenceParent (fun u w => a u w = true) r p ∧
@@ -852,7 +809,7 @@ theorem edmondsAux_spec [IsOrderedAddMonoid β] (r : V) :
 variable [IsOrderedAddMonoid β] {G : Digraph V} [DecidableRel G.Adj] {c : V → V → β} {r : V}
 
 omit [FinEnum V] in
-theorem isInArborescenceParent_decide {R : V → V → Prop} [DecidableRel R] {p : V → V} :
+private theorem isInArborescenceParent_decide {R : V → V → Prop} [DecidableRel R] {p : V → V} :
     IsInArborescenceParent (fun u w => decide (R u w) = true) r p ↔
       IsInArborescenceParent R r p := by
   simp only [decide_eq_true_eq]
@@ -882,13 +839,13 @@ theorem edmonds_eq_none_iff :
 of `p` is a spanning in-arborescence of `G` rooted at `r` (`Digraph.IsInArborescence`), and its
 arc cost is at most that of every spanning in-arborescence `T ≤ G` rooted at `r`. -/
 theorem edmonds_optimal {p : V → V} (hp : edmonds G c r = some p) :
-    (parentDigraph r p).IsInArborescence r ∧ parentDigraph r p ≤ G ∧
+    (Digraph.parentDigraph r p).IsInArborescence r ∧ Digraph.parentDigraph r p ≤ G ∧
       ∀ (T : Digraph V) [DecidableRel T.Adj], T.IsInArborescence r → T ≤ G →
-        arcCost (parentDigraph r p) c ≤ arcCost T c := by
+        arcCost (Digraph.parentDigraph r p) c ≤ arcCost T c := by
   obtain ⟨hpa, hmin⟩ := edmonds_spec.1 p hp
   obtain ⟨h1, h2⟩ := (isInArborescenceParent_iff hpa.root).mp hpa
   refine ⟨h1, h2, fun T _ hT hTG => ?_⟩
-  obtain ⟨t, htr, rfl⟩ := exists_parentDigraph_eq hT
+  obtain ⟨t, htr, rfl⟩ := hT.exists_parentDigraph_eq
   have := hmin t ((isInArborescenceParent_iff htr).mpr ⟨hT, hTG⟩)
   rw [arcCost_parentDigraph]
   convert this using 1
