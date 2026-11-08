@@ -3797,6 +3797,7 @@ public import Complexity.DataStructure.CountMin.Program
 public import Complexity.DataStructure.Dictionary.CuckooHashing
 public import Complexity.DataStructure.Dictionary.DoubleHashing
 public import Complexity.DataStructure.Dictionary.Dynamic.Spec
+public import Complexity.DataStructure.Dictionary.FeistelPerm
 public import Complexity.DataStructure.Dictionary.FeistelQuotient
 public import Complexity.DataStructure.Dictionary.Memory
 public import Complexity.DataStructure.Dictionary.PerfectHashing.Construction
@@ -5314,6 +5315,7 @@ public import Complexity.Probability.IID.Occurrence
 public import Complexity.Probability.Isolation
 public import Complexity.Probability.JohnsonLindenstrauss
 public import Complexity.Probability.KWiseIndependent
+public import Complexity.Probability.KWiseIndependent.Concentration
 public import Complexity.Probability.KWiseIndependent.Coupling
 public import Complexity.Probability.KWiseIndependent.DoubleTabulation
 public import Complexity.Probability.KWiseIndependent.Polynomial
