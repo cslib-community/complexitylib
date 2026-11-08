@@ -336,13 +336,11 @@ theorem runWith_world_liftProver (scheme : Scheme PK SK M Sig Query Digest) (sk 
     ProbOracleComp.runWith (world scheme sk).impl
       (Interactive.liftProver (oV := fun _ : Query => Digest) prog) cache =
     ProbOracleComp.runWith (forgerWorldImpl scheme sk) prog cache := by
-  unfold ProbOracleComp.runWith OracleComp.runWith Interactive.liftProver world
-  rw [OracleComp.interpret_interpret]
-  congr 2
-  funext q
-  cases q with
-  | inl n => simp [sumHandler, OracleComp.interpret_query]
-  | inr q => simp [sumHandler, ProbOracleComp.query, OracleComp.interpret_query]
+  simp only [Interactive.liftProver, ← ProbOracleComp.sample_unifFin,
+    ProbOracleComp.runWith_interpret_sumHandler]
+  congr 1
+  funext q s
+  simp [sumHandler]
 
 /-- Running a lifted verifier computation in `world scheme sk` reduces to interpreting it against
 `oracle Digest`. -/
@@ -351,11 +349,10 @@ theorem runWith_world_liftVerify (scheme : Scheme PK SK M Sig Query Digest) (sk 
     (cache : List (Query × Digest)) :
     ProbOracleComp.runWith (world scheme sk).impl (liftVerify (M := M) (Sig := Sig) prog) cache =
     (interpret (oracle Digest) prog).run cache := by
-  unfold ProbOracleComp.runWith OracleComp.runWith liftVerify world
-  rw [OracleComp.interpret_interpret]
+  rw [liftVerify, ProbOracleComp.runWith_interpret, OracleComp.runWith]
   congr 2
-  funext x
-  simp [sumHandler, ProbOracleComp.query, OracleComp.interpret_query]
+  funext x s
+  simp [world, sumHandler]
 
 /-- Running `runLoggedForger (liftOracleForger prog)` against `forgerWorldImpl scheme sk` and
 projecting the logged `(message, signature)` pairs to their first components reproduces
@@ -368,57 +365,15 @@ theorem runWith_world_runLoggedForger_liftOracleForger
       (runLoggedForger (liftOracleForger prog)) cache).map
         (fun ⟨⟨msig, pairs⟩, cache'⟩ => (msig, (cache', pairs.map Prod.fst))) =
     (interpret (handler scheme sk) prog).run (cache, []) := by
-  unfold ProbOracleComp.runWith OracleComp.runWith runLoggedForger
-  rw [ProbOracleComp.run_interpret_run_interpret, PMF.map_comp]
-  unfold liftOracleForger
-  rw [OracleComp.interpret_interpret]
-  have hsim := OracleComp.run_interpret_map_state
-    (oracle := fun q (state : List (M × Sig) × List (Query × Digest)) =>
-      ((OracleComp.interpret
-        (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (forgerWorldImpl scheme sk))
-        ((logSigning q).run state.1)).run state.2).map
-          (fun ⟨⟨a, b⟩, c⟩ => (a, b, c)))
-    (oracle' := handler scheme sk)
+  rw [runLoggedForger, ProbOracleComp.runWith_run_interpret, PMF.map_comp, liftOracleForger,
+    ProbOracleComp.runWith_interpret]
+  refine OracleComp.run_interpret_map_state (oracle' := handler scheme sk)
     (represent := fun (state : List (M × Sig) × List (Query × Digest)) =>
-      (state.2, state.1.map Prod.fst))
-    (step := by
-      intro q ⟨pairs, curCache⟩
-      change (((OracleComp.interpret (m := StateT (List (Query × Digest)) PMF)
-        (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (forgerWorldImpl scheme sk))
-        (logSigning q pairs)).run curCache).map (fun ⟨⟨a, b⟩, c⟩ => (a, b, c))).map
-          (fun ⟨a, s'⟩ => (a, s'.2, s'.1.map Prod.fst)) =
-        handler scheme sk q (curCache, pairs.map Prod.fst)
-      cases q with
-      | inl m =>
-        simp only [logSigning, handler, forgerWorldImpl, sumHandler, ProbOracleComp.query,
-          OracleComp.interpret_bind, OracleComp.interpret_pure, OracleComp.interpret_query,
-          StateT.run_bind, StateT.run_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-          PMF.map_bind, PMF.pure_map, List.map_cons]
-        rw [StateT.run, PMF.bind_bind]
-      | inr x =>
-        simp only [logSigning, handler, forgerWorldImpl, sumHandler, ProbOracleComp.query,
-          OracleComp.interpret_bind, OracleComp.interpret_pure, OracleComp.interpret_query,
-          StateT.run_bind, StateT.run_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-          PMF.map_bind, PMF.pure_map]
-        rfl)
-    prog ([], cache)
-  have hq :
-      (fun q =>
-        OracleComp.interpret
-          (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) fun q state =>
-            ((OracleComp.interpret
-              (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
-                (forgerWorldImpl scheme sk))
-              ((logSigning q).run state.1)).run state.2).map (fun ⟨⟨a, b⟩, c⟩ => (a, b, c)))
-          (ProbOracleComp.query q)) =
-      (fun q (state : List (M × Sig) × List (Query × Digest)) =>
-        ((OracleComp.interpret
-          (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (forgerWorldImpl scheme sk))
-          ((logSigning q).run state.1)).run state.2).map (fun ⟨⟨a, b⟩, c⟩ => (a, b, c))) := by
-    funext q
-    simp [ProbOracleComp.query, OracleComp.interpret_query, sumHandler]
-  rw [hq]
-  exact hsim
+      (state.2, state.1.map Prod.fst)) (step := fun q ⟨pairs, curCache⟩ => ?_) (program := prog)
+    (s := ([], cache))
+  rw [ProbOracleComp.runWith_query]
+  cases q <;> simp [logSigning, handler, forgerWorldImpl, sumHandler, StateT.run, PMF.map,
+    Function.comp_def]
 
 /-- Evaluating `worldRealize` on any `ProbOracleComp` forger in `world scheme sk` matches running
 `runLoggedForger forger` against `forgerWorldImpl scheme sk` and then running `scheme.verify` on
