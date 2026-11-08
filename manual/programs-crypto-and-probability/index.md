@@ -698,13 +698,42 @@ expectation at most `c*r/p`. Its inputs explicitly require nonnegative charges
 and the all-history conditional mean envelope; no total-bill bound, integrability
 or termination is assumed. The complete client checks response-dependent costs
 under the correlated law and the empty-ground, `p=1` endpoint.
-Selected-batch disintegration, physical latency, deadline/certification composition
+
+For the weaker source envelope, import
+`Complexity.Probability.StochasticOracle.AdaptiveReachable`.
+`Reachable law h` means that every response in the transcript was sampled with
+positive conditional probability from its preceding history.
+`ae_responseHistory_reachable` proves that all prefixes of the original infinite
+process satisfy this condition almost surely. The comparison recursion removes
+zero-weight summands directly; kernels and the infinite process law are unchanged.
+No desired equality with a replacement law is an input.
+`binomial_le_completion_reachable` and `ae_eventually_complete_reachable` require
+productivity only on supported histories where the retained cover is incomplete.
+`totalStoppedBill_integrable_le_reachable` takes a nonnegative raw charge and its
+conditional mean bound only on these issued histories, and stops billing pointwise
+at completion. It derives actual total finiteness, real integrability and the same
+`c*r/p` expectation bound.
+
+`selectedBatchLaw` explicitly samples a batch from a history-dependent table and
+then samples its response, retaining both in the transcript. Its joint weights
+factor as selection mass times response mass; `selectedBatchLaw_conditional`
+recovers the response table by conditioning on a positive-mass selected batch.
+The proved tower identity and supported-batch mean bounds compose in
+`selectedBatch_totalStoppedBill`. No condition is imposed on null batches. This is
+finite discrete disintegration, not a general measurable-space disintegration theorem.
+The [complete reachable-history client](../../ComplexityTests/StochasticOracleAdaptiveReachable.lean)
+uses a correlated response law with a null response that poisons subsequent kernels
+and charges. It checks that both old all-history envelopes fail at that unreachable
+history, while actual finite completion, a.s. completion and total-cost conclusions
+hold. It also checks the selected-batch envelope and the full composed batch/response
+total-cost theorem with a deliberately bad null batch.
+Physical latency, deadline/certification composition
 and the universal selection-only policy theorem remain open. The
 pathwise dual certificate is proved, but its joint stopped resource event is not.
 
-The remaining Theorem 5 obligations above, including stopped execution and universal
+The remaining Theorem 5 obligations above, including joint stopped resource events and universal
 policy composition, are open. Theorem 4's native runtime/hardness and
-Theorem 6's residual construction and universal optimum remain open. Neither this
-lemma nor its client changes the curated abstract catalogue. The Agent Operator's
+Theorem 6's residual construction and universal optimum remain open. None of these
+components or clients changes the curated abstract catalogue. The Agent Operator's
 Manual requires no edit: ownership, review, validation and human direction are
 unchanged.

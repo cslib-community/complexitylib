@@ -61,8 +61,13 @@ monotone convergence proves almost-sure finiteness, real integrability and expec
 at most `c*r/p` from explicit nonnegativity and conditional cost bounds.
 Response-dependent correlated billing and empty-ground/certain-productivity clients
 exercise the bridge.
-Selected-batch disintegration, joint latency/certification and universal policy/resource
-composition remain open; Theorem 6 needs the actual dual-certified residual
+`AdaptiveReachable` now derives finite completion/binomial and stopped-bill bounds,
+a.s. completion and total-bill integrability from positive-probability issued-history
+envelopes. Its actual selected-batch joint law has proved factorization, positive-batch
+conditioning and tower/envelope composition; null histories and batches impose no
+productivity/cost envelope. An unreachable poisoned-history correlated client checks
+that the old all-history envelopes really fail. Finite alphabets remain required.
+Joint latency/certification and universal policy/resource composition remain open; Theorem 6 needs the actual dual-certified residual
 construction, universal one/two-turn optimum and adaptivity ratio. These are remaining main
 claims, not supplied by the policy LP or the binary-input two-batch savings FPTAS.
 

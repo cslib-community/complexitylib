@@ -4369,6 +4369,7 @@ public import Complexity.Probability.StochasticOracle.AdaptiveBinomial
 public import Complexity.Probability.StochasticOracle.AdaptiveComparison
 public import Complexity.Probability.StochasticOracle.AdaptiveLowerCost
 public import Complexity.Probability.StochasticOracle.AdaptivePath
+public import Complexity.Probability.StochasticOracle.AdaptiveReachable
 public import Complexity.Probability.StochasticOracle.AdaptiveSelection
 public import Complexity.Probability.StochasticOracle.CutoffFamilies
 public import Complexity.Probability.StochasticOracle.ExecutionFeasibility
