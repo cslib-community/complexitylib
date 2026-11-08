@@ -1178,17 +1178,24 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 ### Mechanism design ([#2947](https://github.com/cslib-community/complexitylib/issues/2947))
 
 Single-parameter mechanisms with Myerson's Lemma for arbitrary monotone allocation rules, the
-Vickrey auction, knapsack auctions with welfare-maximizing rules, and Groves/VCG mechanisms over
-finite outcome sets are in `GameTheory/Mechanism`. Remaining directions:
+Vickrey auction, knapsack auctions with welfare-maximizing rules, Groves/VCG mechanisms over
+finite outcome sets, and Myerson's optimal auction for independent regular distributions with
+densities (expected revenue equals expected virtual welfare; Vickrey with a reserve price) are in
+`GameTheory/Mechanism`. Remaining directions:
 
 - **Single-parameter corollaries:** the sponsored-search payment formula (rank-by-bid
   allocation with slot click-through rates) and the greedy knapsack rule with its monotonicity
   and ½-approximation. State allocation algorithms with charged running time, so that
   approximation and truthfulness are both proved for an actual algorithm.
-- **Revenue maximization:** Bayesian single-parameter environments with independent priors,
-  expected revenue equals expected virtual welfare, and Myerson's optimal auction for regular
-  distributions. Begin with finitely supported or density-based distributions, whichever the
-  probability API supports better, and keep regularity and ironing explicit.
+- **Revenue maximization beyond the regular DSIC case:** ironing for irregular distributions;
+  regular distributions (Lecture 5, Definition 3.1) whose virtual valuation is unbounded below at
+  `0`, such as `f(v) = 2v` on `[0, 1]`, which the endpoint convention of `IsRegular` excludes (this
+  needs an explicit treatment of zero bids);
+  optimality among Bayesian incentive-compatible mechanisms (interim allocation rules, the
+  revelation principle); revenue equivalence and the symmetric first-price equilibrium
+  `b(v) = (n - 1) v / n` for i.i.d. uniform values; a measurable virtual-welfare maximizer for a
+  finite feasible set, removing the measurability hypothesis; and distributions without a bounded
+  density (atoms, unbounded support).
 - **Multi-parameter characterizations:** Groves mechanisms as the only DSIC welfare maximizers
   on rich valuation domains (Green–Laffont, Holmström), and limits of VCG such as revenue
   monotonicity and collusion.

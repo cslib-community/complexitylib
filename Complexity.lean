@@ -4281,7 +4281,9 @@ public import Complexity.Foundations.MeasureTheory.Constructions.BorelSpace.Orde
 public import Complexity.Foundations.MeasureTheory.Group.ConvolutionDensity
 public import Complexity.Foundations.MeasureTheory.Group.FundamentalDomain
 public import Complexity.Foundations.MeasureTheory.Group.QuotientDensity
+public import Complexity.Foundations.MeasureTheory.Integral.IntervalPrimitive
 public import Complexity.Foundations.MeasureTheory.Integral.Pi
+public import Complexity.Foundations.MeasureTheory.Integral.PiUpdate
 public import Complexity.Foundations.MeasureTheory.Measure.TotalVariation.Map
 public import Complexity.Foundations.MeasureTheory.Measure.TotalVariation.Mixture
 public import Complexity.Foundations.ModelTheory.Basic
@@ -4459,9 +4461,12 @@ public import Complexity.GameTheory.Congestion.Nonatomic
 public import Complexity.GameTheory.Mechanism.CriticalBid
 public import Complexity.GameTheory.Mechanism.Knapsack
 public import Complexity.GameTheory.Mechanism.Myerson
+public import Complexity.GameTheory.Mechanism.OptimalAuction
+public import Complexity.GameTheory.Mechanism.Revenue
 public import Complexity.GameTheory.Mechanism.SingleParameter
 public import Complexity.GameTheory.Mechanism.VCG
 public import Complexity.GameTheory.Mechanism.Vickrey
+public import Complexity.GameTheory.Mechanism.VirtualValue
 public import Complexity.GameTheory.Strategic.Basic
 public import Complexity.GameTheory.Strategic.Hedge
 public import Complexity.GameTheory.Strategic.Mixed
