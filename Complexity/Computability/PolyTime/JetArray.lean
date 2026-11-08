@@ -34,7 +34,7 @@ formulas and commutative-ring laws on `(J, ℓ)`-shaped arrays, establishes `ℓ
 binary bit-length bounds for truncated 2D convolution, and certifies that every operation is
 computable in polynomial time on multi-tape Turing machines
 (`Turing.MultiTapeTM.ComputableInPolyTime`) with dimensions `(J, ℓ)` in unary and coefficient
-tables in `encList (encList encIntBin)`.
+tables in `Cslib.encIntTable`, whose entries are binary.
 
 ## Main definitions
 
@@ -47,6 +47,7 @@ tables in `encList (encList encIntBin)`.
 * `Cslib.convEntry`, `Cslib.convJet`: truncated 2D Cauchy product in `O(J^2 ℓ^2)` integer
   operations.
 * `Cslib.jetL1Norm`: the `ℓ₁` coefficient norm `∑ |c_{j, u}|` of a list of rows.
+* `Cslib.encJetWithDims`: the encoding of a jet array together with its unary dimensions.
 
 ## Main results
 
@@ -771,13 +772,19 @@ attribute [local irreducible] ComputableInPolyTime
 
 variable {α : Type} {encIn : α ↪ List Bool}
 
+/-- A jet array with its dimensions in unary: the pair `((J, ℓ), A)`. The dimension pair is framed,
+and inside it the unary `J` is framed again before the unary `ℓ`; the array `A` follows, encoded by
+`encIntTable` with binary entries. -/
+abbrev encJetWithDims : (ℕ × ℕ) × List (List ℤ) ↪ List Bool :=
+  encPair (encPair encUnary encUnary) encIntTable
+
 /-- `zeroJet` is computable in polynomial time for unary `(J, ℓ)`. -/
 @[fun_prop]
 theorem computableInPolyTime_zeroJet {J ℓ : α → ℕ}
     (hJ : ComputableInPolyTime J encIn encUnary)
     (hℓ : ComputableInPolyTime ℓ encIn encUnary) :
     ComputableInPolyTime (fun x => zeroJet (J x) (ℓ x))
-      encIn (encList (encList encIntBin)) :=
+      encIn encIntTable :=
   computableInPolyTime_tabulateTable hJ hℓ (.const 0)
 
 /-- `constJet` is computable in polynomial time for unary `(J, ℓ)` and binary `c`. -/
@@ -786,7 +793,7 @@ theorem computableInPolyTime_constJet {J ℓ : α → ℕ} {c : α → ℤ}
     (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary)
     (hc : ComputableInPolyTime c encIn encIntBin) :
     ComputableInPolyTime (fun x => constJet (J x) (ℓ x) (c x))
-      encIn (encList (encList encIntBin)) := by
+      encIn encIntTable := by
   refine computableInPolyTime_tabulateTable hJ hℓ ?_
   rw [show (fun p : (α × ℕ) × ℕ => if p.1.2 = 0 ∧ p.2 = 0 then c p.1.1 else 0) =
       fun p => if (p.1.2 == 0 && p.2 == 0) then c p.1.1 else 0 by funext; simp]
@@ -796,7 +803,7 @@ theorem computableInPolyTime_constJet {J ℓ : α → ℕ} {c : α → ℤ}
 @[fun_prop]
 theorem computableInPolyTime_zJet {J ℓ : α → ℕ}
     (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary) :
-    ComputableInPolyTime (fun x => zJet (J x) (ℓ x)) encIn (encList (encList encIntBin)) := by
+    ComputableInPolyTime (fun x => zJet (J x) (ℓ x)) encIn encIntTable := by
   refine computableInPolyTime_tabulateTable hJ hℓ ?_
   rw [show (fun p : (α × ℕ) × ℕ => if p.1.2 = 1 ∧ p.2 = 0 then (1 : ℤ) else 0) =
       fun p => if (p.1.2 == 1 && p.2 == 0) then 1 else 0 by funext; simp]
@@ -806,7 +813,7 @@ theorem computableInPolyTime_zJet {J ℓ : α → ℕ}
 @[fun_prop]
 theorem computableInPolyTime_vJet {J ℓ : α → ℕ}
     (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary) :
-    ComputableInPolyTime (fun x => vJet (J x) (ℓ x)) encIn (encList (encList encIntBin)) := by
+    ComputableInPolyTime (fun x => vJet (J x) (ℓ x)) encIn encIntTable := by
   refine computableInPolyTime_tabulateTable hJ hℓ ?_
   rw [show (fun p : (α × ℕ) × ℕ => if p.1.2 = 0 ∧ p.2 = 1 then (1 : ℤ) else 0) =
       fun p => if (p.1.2 == 0 && p.2 == 1) then 1 else 0 by funext; simp]
@@ -816,28 +823,28 @@ theorem computableInPolyTime_vJet {J ℓ : α → ℕ}
 @[fun_prop]
 theorem computableInPolyTime_addJet {J ℓ : α → ℕ} {A B : α → List (List ℤ)}
     (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary)
-    (hA : ComputableInPolyTime A encIn (encList (encList encIntBin)))
-    (hB : ComputableInPolyTime B encIn (encList (encList encIntBin))) :
+    (hA : ComputableInPolyTime A encIn encIntTable)
+    (hB : ComputableInPolyTime B encIn encIntTable) :
     ComputableInPolyTime (fun x => addJet (J x) (ℓ x) (A x) (B x))
-      encIn (encList (encList encIntBin)) :=
+      encIn encIntTable :=
   computableInPolyTime_tabulateTable hJ hℓ (by fun_prop)
 
 /-- `negJet` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_negJet {J ℓ : α → ℕ} {A : α → List (List ℤ)}
     (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary)
-    (hA : ComputableInPolyTime A encIn (encList (encList encIntBin))) :
-    ComputableInPolyTime (fun x => negJet (J x) (ℓ x) (A x)) encIn (encList (encList encIntBin)) :=
+    (hA : ComputableInPolyTime A encIn encIntTable) :
+    ComputableInPolyTime (fun x => negJet (J x) (ℓ x) (A x)) encIn encIntTable :=
   computableInPolyTime_tabulateTable hJ hℓ (by fun_prop)
 
 /-- `subJet` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_subJet {J ℓ : α → ℕ} {A B : α → List (List ℤ)}
     (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary)
-    (hA : ComputableInPolyTime A encIn (encList (encList encIntBin)))
-    (hB : ComputableInPolyTime B encIn (encList (encList encIntBin))) :
+    (hA : ComputableInPolyTime A encIn encIntTable)
+    (hB : ComputableInPolyTime B encIn encIntTable) :
     ComputableInPolyTime (fun x => subJet (J x) (ℓ x) (A x) (B x))
-      encIn (encList (encList encIntBin)) :=
+      encIn encIntTable :=
   computableInPolyTime_tabulateTable hJ hℓ (by fun_prop)
 
 /-- `smulJet` is computable in polynomial time. -/
@@ -845,18 +852,18 @@ theorem computableInPolyTime_subJet {J ℓ : α → ℕ} {A B : α → List (Lis
 theorem computableInPolyTime_smulJet {J ℓ : α → ℕ} {c : α → ℤ} {A : α → List (List ℤ)}
     (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary)
     (hc : ComputableInPolyTime c encIn encIntBin)
-    (hA : ComputableInPolyTime A encIn (encList (encList encIntBin))) :
+    (hA : ComputableInPolyTime A encIn encIntTable) :
     ComputableInPolyTime (fun x => smulJet (J x) (ℓ x) (c x) (A x))
-      encIn (encList (encList encIntBin)) :=
+      encIn encIntTable :=
   computableInPolyTime_tabulateTable hJ hℓ (by fun_prop)
 
 /-- `shiftZJet` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_shiftZJet {J ℓ : α → ℕ} {A : α → List (List ℤ)}
     (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary)
-    (hA : ComputableInPolyTime A encIn (encList (encList encIntBin))) :
+    (hA : ComputableInPolyTime A encIn encIntTable) :
     ComputableInPolyTime (fun x => shiftZJet (J x) (ℓ x) (A x))
-      encIn (encList (encList encIntBin)) := by
+      encIn encIntTable := by
   refine computableInPolyTime_tabulateTable hJ hℓ ?_
   rw [show (fun p : (α × ℕ) × ℕ =>
         if p.1.2 = 0 then (0 : ℤ) else rowEntry (A p.1.1) (p.1.2 - 1) p.2) =
@@ -867,9 +874,9 @@ theorem computableInPolyTime_shiftZJet {J ℓ : α → ℕ} {A : α → List (Li
 @[fun_prop]
 theorem computableInPolyTime_shiftVJet {J ℓ : α → ℕ} {A : α → List (List ℤ)}
     (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary)
-    (hA : ComputableInPolyTime A encIn (encList (encList encIntBin))) :
+    (hA : ComputableInPolyTime A encIn encIntTable) :
     ComputableInPolyTime (fun x => shiftVJet (J x) (ℓ x) (A x))
-      encIn (encList (encList encIntBin)) := by
+      encIn encIntTable := by
   refine computableInPolyTime_tabulateTable hJ hℓ ?_
   rw [show (fun p : (α × ℕ) × ℕ =>
         if p.2 = 0 then (0 : ℤ) else rowEntry (A p.1.1) p.1.2 (p.2 - 1)) =
@@ -879,8 +886,8 @@ theorem computableInPolyTime_shiftVJet {J ℓ : α → ℕ} {A : α → List (Li
 /-- Computing a single truncated 2D convolution coefficient `convEntry` is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_convEntry {A B : α → List (List ℤ)} {j u : α → ℕ}
-    (hA : ComputableInPolyTime A encIn (encList (encList encIntBin)))
-    (hB : ComputableInPolyTime B encIn (encList (encList encIntBin)))
+    (hA : ComputableInPolyTime A encIn encIntTable)
+    (hB : ComputableInPolyTime B encIn encIntTable)
     (hj : ComputableInPolyTime j encIn encUnary) (hu : ComputableInPolyTime u encIn encUnary) :
     ComputableInPolyTime (fun x => convEntry (A x) (B x) (j x) (u x)) encIn encIntBin := by
   unfold convEntry
@@ -891,30 +898,29 @@ dense `List (List ℤ)` arrays over `encIntBin`. -/
 @[fun_prop]
 theorem computableInPolyTime_convJet {J ℓ : α → ℕ} {A B : α → List (List ℤ)}
     (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary)
-    (hA : ComputableInPolyTime A encIn (encList (encList encIntBin)))
-    (hB : ComputableInPolyTime B encIn (encList (encList encIntBin))) :
+    (hA : ComputableInPolyTime A encIn encIntTable)
+    (hB : ComputableInPolyTime B encIn encIntTable) :
     ComputableInPolyTime (fun x => convJet (J x) (ℓ x) (A x) (B x))
-      encIn (encList (encList encIntBin)) :=
+      encIn encIntTable :=
   computableInPolyTime_tabulateTable hJ hℓ (by fun_prop)
 
 /-- Direct polynomial-time certificate for `zeroJet`. -/
 theorem zeroJet_polytime :
     ComputableInPolyTime (fun p : ℕ × ℕ => zeroJet p.1 p.2)
-      (encPair encUnary encUnary) (encList (encList encIntBin)) := by fun_prop
+      (encPair encUnary encUnary) encIntTable := by fun_prop
 
 /-- Direct polynomial-time certificate for `constJet`. -/
 theorem constJet_polytime :
     ComputableInPolyTime
       (fun (((J, ℓ), c) : (ℕ × ℕ) × ℤ) => constJet J ℓ c)
-      (encPair (encPair encUnary encUnary) encIntBin) (encList (encList encIntBin)) :=
+      (encPair (encPair encUnary encUnary) encIntBin) encIntTable :=
   show ComputableInPolyTime (fun p : (ℕ × ℕ) × ℤ => constJet p.1.1 p.1.2 p.2) _ _ by fun_prop
 
 /-- Direct polynomial-time certificate for `addJet`. -/
 theorem addJet_polytime :
     ComputableInPolyTime
       (fun ((((J, ℓ), a), b) : ((ℕ × ℕ) × List (List ℤ)) × List (List ℤ)) => addJet J ℓ a b)
-      (encPair (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-        (encList (encList encIntBin))) (encList (encList encIntBin)) :=
+      (encPair encJetWithDims encIntTable) encIntTable :=
   show ComputableInPolyTime
     (fun p : ((ℕ × ℕ) × List (List ℤ)) × List (List ℤ) => addJet p.1.1.1 p.1.1.2 p.1.2 p.2)
     _ _ by fun_prop
@@ -923,8 +929,7 @@ theorem addJet_polytime :
 theorem negJet_polytime :
     ComputableInPolyTime
       (fun (((J, ℓ), a) : (ℕ × ℕ) × List (List ℤ)) => negJet J ℓ a)
-      (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-      (encList (encList encIntBin)) :=
+      encJetWithDims encIntTable :=
   show ComputableInPolyTime (fun p : (ℕ × ℕ) × List (List ℤ) => negJet p.1.1 p.1.2 p.2)
     _ _ by fun_prop
 
@@ -932,8 +937,7 @@ theorem negJet_polytime :
 theorem subJet_polytime :
     ComputableInPolyTime
       (fun ((((J, ℓ), a), b) : ((ℕ × ℕ) × List (List ℤ)) × List (List ℤ)) => subJet J ℓ a b)
-      (encPair (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-        (encList (encList encIntBin))) (encList (encList encIntBin)) :=
+      (encPair encJetWithDims encIntTable) encIntTable :=
   show ComputableInPolyTime
     (fun p : ((ℕ × ℕ) × List (List ℤ)) × List (List ℤ) => subJet p.1.1.1 p.1.1.2 p.1.2 p.2)
     _ _ by fun_prop
@@ -942,8 +946,7 @@ theorem subJet_polytime :
 theorem smulJet_polytime :
     ComputableInPolyTime
       (fun ((((J, ℓ), c), a) : ((ℕ × ℕ) × ℤ) × List (List ℤ)) => smulJet J ℓ c a)
-      (encPair (encPair (encPair encUnary encUnary) encIntBin) (encList (encList encIntBin)))
-      (encList (encList encIntBin)) :=
+      (encPair (encPair (encPair encUnary encUnary) encIntBin) encIntTable) encIntTable :=
   show ComputableInPolyTime
     (fun p : ((ℕ × ℕ) × ℤ) × List (List ℤ) => smulJet p.1.1.1 p.1.1.2 p.1.2 p.2)
     _ _ by fun_prop
@@ -952,8 +955,7 @@ theorem smulJet_polytime :
 theorem shiftZJet_polytime :
     ComputableInPolyTime
       (fun (((J, ℓ), a) : (ℕ × ℕ) × List (List ℤ)) => shiftZJet J ℓ a)
-      (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-      (encList (encList encIntBin)) :=
+      encJetWithDims encIntTable :=
   show ComputableInPolyTime (fun p : (ℕ × ℕ) × List (List ℤ) => shiftZJet p.1.1 p.1.2 p.2)
     _ _ by fun_prop
 
@@ -961,8 +963,7 @@ theorem shiftZJet_polytime :
 theorem shiftVJet_polytime :
     ComputableInPolyTime
       (fun (((J, ℓ), a) : (ℕ × ℕ) × List (List ℤ)) => shiftVJet J ℓ a)
-      (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-      (encList (encList encIntBin)) :=
+      encJetWithDims encIntTable :=
   show ComputableInPolyTime (fun p : (ℕ × ℕ) × List (List ℤ) => shiftVJet p.1.1 p.1.2 p.2)
     _ _ by fun_prop
 
@@ -970,8 +971,7 @@ theorem shiftVJet_polytime :
 theorem convJet_polytime :
     ComputableInPolyTime
       (fun ((((J, ℓ), a), b) : ((ℕ × ℕ) × List (List ℤ)) × List (List ℤ)) => convJet J ℓ a b)
-      (encPair (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-        (encList (encList encIntBin))) (encList (encList encIntBin)) :=
+      (encPair encJetWithDims encIntTable) encIntTable :=
   show ComputableInPolyTime
     (fun p : ((ℕ × ℕ) × List (List ℤ)) × List (List ℤ) => convJet p.1.1.1 p.1.1.2 p.1.2 p.2)
     _ _ by fun_prop

@@ -18,14 +18,19 @@ Two unit states with a large overlap give nearly the same probability to every s
 This is how an adversary argument turns a bound on overlaps into a bound on the success
 probability of a measurement. In particular, states that a measurement tells apart with error
 `ε ≤ 1/2` have overlap at most `2√(ε(1-ε))`
-(`Cslib.Quantum.norm_inner_le_two_mul_sqrt_of_measureProb`, [Ambainis2002], Lemma 1).
+(`Cslib.Quantum.norm_inner_le_two_mul_sqrt_of_measureProb`, [Ambainis2002], Lemma 1). Since
+`1 - |⟨ψ, φ⟩|² ≤ ‖ψ - φ‖²`, the probability of every set of outcomes also moves by at most the
+distance between the states (`Cslib.Quantum.abs_measureProb_sub_le_norm_sub`).
 
 ## Main results
 
 * `Cslib.Quantum.norm_inner_sq_add_sq_measureProb_sub_le_one`: `|⟨ψ, φ⟩|² + (p - q)² ≤ 1`.
+* `Cslib.Quantum.abs_measureProb_sub_le_norm_sub`: `|P_ψ(S) - P_φ(S)| ≤ ‖ψ - φ‖` for unit states.
 * `Cslib.Quantum.norm_inner_le_two_mul_sqrt_of_measureProb`: `|⟨ψ, φ⟩| ≤ 2√(ε(1-ε))` when a
   measurement accepts `ψ` with probability at least `1 - ε` and `φ` with probability at most
   `ε ≤ 1/2`.
+* `Cslib.Quantum.one_sub_two_mul_sqrt_nonneg`: the resulting factor `1 - 2√(ε(1-ε))` is
+  nonnegative.
 
 ## References
 
@@ -97,6 +102,23 @@ theorem norm_inner_sq_add_sq_measureProb_sub_le_one {ι : Type*} [Fintype ι]
     nlinarith [sq_nonneg (a * b' - a' * b)]
   linarith
 
+/-- **Nearby states give nearby measurement probabilities**: for unit states `ψ` and `φ` and a set
+`S` of outcomes, `|P_ψ(S) - P_φ(S)| ≤ ‖ψ - φ‖`. By the overlap bound,
+`(P_ψ(S) - P_φ(S))² ≤ 1 - |⟨ψ, φ⟩|² ≤ 2 - 2 |⟨ψ, φ⟩| ≤ 2 - 2 Re ⟨ψ, φ⟩ = ‖ψ - φ‖²`. -/
+theorem abs_measureProb_sub_le_norm_sub {ι : Type*} [Fintype ι]
+    {ψ φ : EuclideanSpace ℂ ι} (hψ : ‖ψ‖ = 1) (hφ : ‖φ‖ = 1) (S : Finset ι) :
+    |measureProb ψ S - measureProb φ S| ≤ ‖ψ - φ‖ := by
+  have hov := norm_inner_sq_add_sq_measureProb_sub_le_one hψ hφ S
+  have hnorm : ‖ψ - φ‖ ^ 2 = 2 - 2 * RCLike.re (inner ℂ ψ φ) := by
+    rw [@norm_sub_sq ℂ, hψ, hφ]
+    ring
+  have hre : RCLike.re (inner ℂ ψ φ) ≤ ‖inner ℂ ψ φ‖ := RCLike.re_le_norm _
+  have hle : ‖inner ℂ ψ φ‖ ≤ 1 := by
+    simpa [hψ, hφ] using norm_inner_le_norm (𝕜 := ℂ) ψ φ
+  have hsq : (measureProb ψ S - measureProb φ S) ^ 2 ≤ ‖ψ - φ‖ ^ 2 := by
+    nlinarith [norm_nonneg (inner ℂ ψ φ)]
+  exact abs_le_of_sq_le_sq hsq (norm_nonneg _)
+
 /-- **Distinguishable states have small overlap** [Ambainis2002], Lemma 1: if a measurement
 accepts the unit state `ψ` with probability at least `1 - ε` and the unit state `φ` with
 probability at most `ε ≤ 1/2`, then `|⟨ψ, φ⟩| ≤ 2√(ε(1-ε))`. -/
@@ -117,5 +139,11 @@ theorem norm_inner_le_two_mul_sqrt_of_measureProb {ι : Type*} [Fintype ι]
   refine (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 ?_
   rw [hc]
   nlinarith
+
+/-- The factor `1 - 2√(ε(1-ε))` of the adversary bounds is nonnegative, as `ε (1 - ε) ≤ 1/4`. -/
+theorem one_sub_two_mul_sqrt_nonneg (ε : ℝ) : 0 ≤ 1 - 2 * √(ε * (1 - ε)) := by
+  have : √(ε * (1 - ε)) ≤ 1 / 2 :=
+    (Real.sqrt_le_left (by norm_num)).2 (by nlinarith [sq_nonneg (1 - 2 * ε)])
+  linarith
 
 end Cslib.Quantum

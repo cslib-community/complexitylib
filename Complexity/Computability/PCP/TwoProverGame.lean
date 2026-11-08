@@ -11,6 +11,7 @@ public import Complexity.Probability.Product
 public import Complexity.Probability.CorrelatedSampling.Embeddability
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Filter
+import Complexity.Probability.PMF.ToReal
 import Complexity.Probability.StatisticalDistance.Event
 
 /-!
@@ -85,9 +86,8 @@ noncomputable def value : ℝ := ⨆ (ha : X → A) (hb : Y → B), G.winProb ha
 
 theorem winProb_nonneg (ha : X → A) (hb : Y → B) : 0 ≤ G.winProb ha hb := ENNReal.toReal_nonneg
 
-theorem winProb_le_one (ha : X → A) (hb : Y → B) : G.winProb ha hb ≤ 1 := by
-  simpa [winProb] using
-    ENNReal.toReal_mono ENNReal.one_ne_top (Cslib.Probability.PMF.toOuterMeasure_le_one _ _)
+theorem winProb_le_one (ha : X → A) (hb : Y → B) : G.winProb ha hb ≤ 1 :=
+  Cslib.Probability.PMF.toOuterMeasure_toReal_le_one _ _
 
 section Finite
 

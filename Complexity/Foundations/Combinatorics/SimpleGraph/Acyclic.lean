@@ -32,6 +32,7 @@ finite tree is brought into that format.
 
 * `SimpleGraph.IsTree.pathTo`, `SimpleGraph.IsTree.parent`: rooting a tree.
 * `SimpleGraph.parentTree`: the tree of a parent array.
+* `SimpleGraph.parentGraph`: the graph of a parent function on any vertex type.
 
 ## Main results
 
@@ -39,6 +40,7 @@ finite tree is brought into that format.
 * `SimpleGraph.parentTree_isTree`: a parent array with `p i < i` for `i ≠ 0` gives a tree.
 * `SimpleGraph.eq_of_preconnected_parentTree`: a preconnected set in a parent-array tree has a
   unique topmost vertex.
+* `SimpleGraph.parentTree_eq_parentGraph`: the two parent graphs agree when `p 0 = 0`.
 -/
 
 public section
@@ -116,6 +118,32 @@ end IsTree
 `p i < i` for every `i ≠ 0` this is a tree rooted at `0` (`parentTree_isTree`). -/
 def parentTree {n : ℕ} (p : Fin (n + 1) → Fin (n + 1)) : SimpleGraph (Fin (n + 1)) :=
   SimpleGraph.fromRel fun i j => i ≠ 0 ∧ p i = j
+
+/-- The graph of a parent function `p : ι → ι` on any vertex type: `x` and `y` are adjacent when one
+is the parent of the other. Fixed points of `p` (roots) give no self-loops. Unlike `parentTree`,
+there is no fixed root and no order condition; when `p 0 = 0` the two graphs agree
+(`parentTree_eq_parentGraph`). -/
+def parentGraph (p : ι → ι) : SimpleGraph ι :=
+  SimpleGraph.fromRel fun x y => p x = y
+
+theorem parentGraph_adj {p : ι → ι} {x y : ι} :
+    (parentGraph p).Adj x y ↔ x ≠ y ∧ (p x = y ∨ p y = x) := by
+  simp [parentGraph, fromRel_adj]
+
+/-- A parent array whose root `0` is its own parent has the same graph as its parent function. -/
+theorem parentTree_eq_parentGraph {n : ℕ} {p : Fin (n + 1) → Fin (n + 1)} (h0 : p 0 = 0) :
+    parentTree p = parentGraph p := by
+  ext i j
+  rw [parentTree, parentGraph, fromRel_adj, fromRel_adj]
+  refine and_congr_right fun hij => ⟨?_, ?_⟩
+  · rintro (⟨-, h⟩ | ⟨-, h⟩)
+    · exact Or.inl h
+    · exact Or.inr h
+  · rintro (h | h)
+    · refine Or.inl ⟨fun hi => hij ?_, h⟩
+      rw [← h, hi, h0]
+    · refine Or.inr ⟨fun hj => hij ?_, h⟩
+      rw [← h, hj, h0]
 
 section ParentArray
 
