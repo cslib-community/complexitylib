@@ -66,7 +66,7 @@ In [LiLiangYuZhou2024] (`arXiv:2310.20536v1`):
   `feistelHead` with probability `1 / 2 ^ s`, giving non-injectivity probability
   `≤ #S * (#S - 1) / (2 * 2 ^ s) ≤ (#S) ^ 2 / (2 * 2 ^ s) ≤ (#S) ^ 2 / 2 ^ s` (and
   `≤ 2 / n_next ^ 2` when `n_bar ^ 2 * n_next ^ 2 ≤ 4 * 2 ^ s`). Instantiating `f` unconditionally
-  via `2`-wise trinomial polynomial hashing (`IdCompressorSeed T s`, `trinomialPolyHash`) uses
+  via `2`-wise trinomial polynomial hashing (`IdCompressorSeed s T`, `trinomialPolyHash`) uses
   `2 * trinomialDeg T s ≤ 6 * max ⌈log₂ max(T, 2)⌉ (max s 1) = O(s + log T)` seed bits.
 * **Adaptations and scope**:
   - Instead of invoking Theorem B.4 ([LiLiangYuZhou2024], PDF p. 42 / printed p. 41;
@@ -570,6 +570,14 @@ theorem card_childRouterSeed (c q b s : ℕ) :
 def childRouterRound (c q b s T : ℕ) (θ : ChildRouterSeed c q b s) : Fin T → Fin (2 ^ s) :=
   doubleTabHash c (2 * q * c) b T s θ.1 θ.2
 
+theorem childRouterRound_eq (c q b s T : ℕ) (θ : ChildRouterSeed c q b s) :
+    childRouterRound c q b s T θ = doubleTabHash c (2 * q * c) b T s θ.1 θ.2 := by
+  rfl
+
+theorem childRouterRound_apply (c q b s T : ℕ) (θ : ChildRouterSeed c q b s) (z : Fin T) :
+    childRouterRound c q b s T θ z = doubleTabHash c (2 * q * c) b T s θ.1 θ.2 z := by
+  rfl
+
 /-- Child-router Feistel permutation on `Fin (2 ^ s) × Fin T` (`Corollary B.5`). -/
 def childRouterPerm (c q b s T : ℕ) (θ : ChildRouterSeed c q b s) :
     Equiv.Perm (Fin (2 ^ s) × Fin T) :=
@@ -903,8 +911,8 @@ def childRouterCharBits (c T : ℕ) : ℕ :=
 def childRouterRep (ε_inv α_inv : ℕ) : ℕ :=
   childRouterChars ε_inv * max α_inv 1 + 2
 
-/-- Constant `O_{ε_inv, α_inv}(1)` factor in `(childRouterSeedBits ...) ^ ε_inv ≤ C * (2 ^ s * T)`.
--/
+/-- Constant `O_{ε_inv, α_inv}(1)` factor in
+`(childRouterSeedBits ...) ^ max ε_inv 1 ≤ C * (2 ^ s * T)`. -/
 def childRouterSpaceConst (ε_inv α_inv : ℕ) : ℕ :=
   let c := childRouterChars ε_inv
   let q := childRouterRep ε_inv α_inv
@@ -919,10 +927,21 @@ private def childRouterMinB (ε_inv α_inv : ℕ) : ℕ :=
   let D := 2 * c * q
   max (4 * c * d ^ q * (c * (6 * A + 8)) ^ D) (4 * (D + 1) ^ 2)
 
-/-- Explicit input-cardinality threshold above which `Corollary B.5` / `Lemma 5.1` parameters
-satisfy `4 * #S * doubleTabCodeBound ... ≤ 2 ^ ((q - 1) * b)` automatically. -/
+/-- Explicit input-cardinality threshold such that whenever `2 ^ s * T ≤ T ^ max α_inv 1` and
+`childRouterThreshold ε_inv α_inv ≤ #S`, the `Corollary B.5` / `Lemma 5.1` parameters satisfy
+`4 * #S * doubleTabCodeBound ... ≤ 2 ^ ((q - 1) * b)`. -/
 def childRouterThreshold (ε_inv α_inv : ℕ) : ℕ :=
   2 ^ (childRouterChars ε_inv * max α_inv 1 * childRouterMinB ε_inv α_inv)
+
+theorem childRouterThreshold_eq (ε_inv α_inv : ℕ) :
+    let c := childRouterChars ε_inv
+    let A := c * max α_inv 1
+    let q := childRouterRep ε_inv α_inv
+    let d := 2 * q * c
+    let D := 2 * c * q
+    childRouterThreshold ε_inv α_inv =
+      2 ^ (A * max (4 * c * d ^ q * (c * (6 * A + 8)) ^ D) (4 * (D + 1) ^ 2)) := by
+  rfl
 
 /-- Explicit threshold `s₀ = 2100 ^ 3` above which `#S ≥ 2 ^ s * s ^ 4` implies
 `2 ^ s * (150 * childRouterHalfInd #S) ^ 3 ≤ #S` ([LiLiangYuZhou2024], `arXiv:2310.20536v1`,
@@ -1361,6 +1380,14 @@ theorem idCompressorSeedBits_le (s T : ℕ) :
 /-- `2`-wise trinomial polynomial round function `Fin T → Fin (2 ^ s)`. -/
 noncomputable def idCompressorRound (s T : ℕ) (θ : IdCompressorSeed s T) : Fin T → Fin (2 ^ s) :=
   trinomialPolyHash (trinomialStep T s) 2 T s θ
+
+theorem idCompressorRound_eq (s T : ℕ) (θ : IdCompressorSeed s T) :
+    idCompressorRound s T θ = trinomialPolyHash (trinomialStep T s) 2 T s θ := by
+  rfl
+
+theorem idCompressorRound_apply (s T : ℕ) (θ : IdCompressorSeed s T) (z : Fin T) :
+    idCompressorRound s T θ z = trinomialPolyHash (trinomialStep T s) 2 T s θ z := by
+  rfl
 
 /-- Compressed `s`-bit ID head `feistelHead (idCompressorRound s T θ) x`. -/
 noncomputable def idCompressorHead (s T : ℕ) (θ : IdCompressorSeed s T)

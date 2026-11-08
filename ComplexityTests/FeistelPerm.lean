@@ -353,4 +353,17 @@ theorem idCompressorBit_fin2_pow_40 (S : Finset (Fin (2 ^ 40))) :
       (#S : ℝ) ^ 2 / (2 * (2 ^ 24 : ℝ)) :=
   dens_not_injOn_idCompressorBit_le (by decide) S
 
+/-- Public bridge connecting `childRouterPerm` and `idCompressorHead` / `idCompressorPerm` to the
+underlying `doubleTabHash` and `trinomialPolyHash` round functions from outside `FeistelPerm`. -/
+theorem round_hash_bridge (c q b s T : ℕ) (θ_ch : ChildRouterSeed c q b s)
+    (θ_id : IdCompressorSeed s T) (x : Fin (2 ^ s) × Fin T) :
+    childRouterPerm c q b s T θ_ch x =
+      (x.1 ^^^ doubleTabHash c (2 * q * c) b T s θ_ch.1 θ_ch.2 x.2, x.2) ∧
+    idCompressorHead s T θ_id x =
+      x.1 ^^^ trinomialPolyHash (trinomialStep T s) 2 T s θ_id x.2 ∧
+    idCompressorPerm s T θ_id x =
+      (x.1 ^^^ trinomialPolyHash (trinomialStep T s) 2 T s θ_id x.2, x.2) := by
+  simp only [childRouterPerm_apply, feistelPair, feistelHead, childRouterRound_apply,
+    idCompressorHead_apply, idCompressorPerm_apply, idCompressorRound_apply, and_self]
+
 end ComplexityTests.FeistelPerm
