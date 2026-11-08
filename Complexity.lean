@@ -4044,6 +4044,8 @@ public import Complexity.DataStructure.CountMin.Basic
 public import Complexity.DataStructure.CountMin.LinearHash
 public import Complexity.DataStructure.CountMin.Probability
 public import Complexity.DataStructure.CountMin.Program
+public import Complexity.DataStructure.Dictionary.CellProbe.HardDist
+public import Complexity.DataStructure.Dictionary.CellProbe.MetaTree
 public import Complexity.DataStructure.Dictionary.CuckooHashing
 public import Complexity.DataStructure.Dictionary.DoubleHashing
 public import Complexity.DataStructure.Dictionary.Dynamic.Spec
