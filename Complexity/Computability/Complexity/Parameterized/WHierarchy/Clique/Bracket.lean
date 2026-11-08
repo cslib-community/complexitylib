@@ -22,8 +22,10 @@ Fix `kk` positions `u 0 < u 1 < ⋯ < u (kk - 1)` of an input of length `n`; the
 positions set is the input with weight `kk` they select. A *bracket* is a list of pairs `(j, s)`,
 read as "the `j`-th selected position is `s`". This file shows that brackets of bounded size
 describe enough of the selected input for evaluating circuits of small depth, which is the core
-of the reduction from weft-one circuits to `Clique`. Brackets are an original device of this
-library.
+of the reduction from weft-one circuits to `Clique`. Brackets, as lists of pairs, are this
+library's formulation. Certifying an unselected position by the consecutive selected positions
+around it follows the classical gap technique of the standard proof [DowneyFellows1999]
+[FlumGrohe2006]; the locators have not been checked.
 
 `know kk P s` is what the bracket `P` tells about position `s`: `some true` when `P` names `s`,
 `some false` when `P` names two consecutive selected positions around `s` (or the first selected
@@ -48,6 +50,11 @@ Two brackets are *consistent* (`consistent`) when their pairs are pairwise compa
 * `Cslib.Complexity.WCS.ToClique.computableInPolyTime_know`,
   `Cslib.Complexity.WCS.ToClique.computableInPolyTime_consistent`: both tests are
   polynomial-time.
+
+## References
+
+* [R. G. Downey, M. R. Fellows, *Parameterized Complexity*][DowneyFellows1999]
+* [J. Flum, M. Grohe, *Parameterized Complexity Theory*][FlumGrohe2006]
 -/
 
 @[expose] public section
@@ -261,10 +268,6 @@ theorem computableInPolyTime_know {kk s : γ → ℕ} {P : γ → List (ℕ × �
     (hP : ComputableInPolyTime P encIn (encList (encPair encUnary encUnary)))
     (hs : ComputableInPolyTime s encIn encUnary) :
     ComputableInPolyTime (fun a => know (kk a) (P a) (s a)) encIn (encOption encBool) := by
-  have hkk' := hkk.tidy
-  have hP' := hP.tidy
-  have hs' := hs.tidy
-  refine ComputableInPolyTime.of_tidy ?_
   simp only [know_eq]
   fun_prop
 
@@ -273,9 +276,6 @@ theorem computableInPolyTime_consistent {P Q : γ → List (ℕ × ℕ)}
     (hP : ComputableInPolyTime P encIn (encList (encPair encUnary encUnary)))
     (hQ : ComputableInPolyTime Q encIn (encList (encPair encUnary encUnary))) :
     ComputableInPolyTime (fun a => consistent (P a) (Q a)) encIn encBool := by
-  have hP' := hP.tidy
-  have hQ' := hQ.tidy
-  refine ComputableInPolyTime.of_tidy ?_
   unfold consistent pairOk
   fun_prop
 
