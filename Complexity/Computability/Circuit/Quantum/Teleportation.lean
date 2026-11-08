@@ -105,7 +105,7 @@ theorem teleportState_apply (ψ : EuclideanSpace ℂ Bool) (a b c : Bool) :
     norm_num
   rw [← hs]
   simp only [teleportState, teleportUnitary, unitaryEquiv_apply, Submonoid.coe_mul, coe_onFirst,
-    ← mulVec_mulVec, kronecker_one_mulVec, hadamardMatrix_mulVec, cnotMatrix_mulVec,
+    ← mulVec_mulVec, kronecker_one_mulVec_apply, hadamardMatrix_mulVec, cnotMatrix_mulVec,
     teleportInput_apply, bell_apply]
   cases a <;> cases b <;> cases c <;> simp <;> ring
 

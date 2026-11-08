@@ -68,6 +68,7 @@ the selection is not an exhaustive API reference.
 * [The PCP theorem](abstracts/ComplexityAbstracts/PCPAbstract.lean): NP proofs can be checked with logarithmic randomness and constantly many nonadaptive queries.
 * [Fagin: logic captures NP](abstracts/ComplexityAbstracts/FaginAbstract.lean): Existential second-order logic captures precisely the isomorphism-invariant NP properties of finite relational structures.
 * [Savitch: NPSPACE equals PSPACE](abstracts/ComplexityAbstracts/SavitchAbstract.lean): Nondeterminism does not enlarge polynomial space.
+* [Chandra–Kozen–Stockmeyer: AP equals PSPACE and APSPACE equals EXP](abstracts/ComplexityAbstracts/AlternationAbstract.lean): Alternation trades one exponential between time and space: alternating polynomial time is deterministic polynomial space, and alternating polynomial space is deterministic exponential time.
 * [Reingold: undirected reachability is in L](abstracts/ComplexityAbstracts/USTCONAbstract.lean): Undirected graph connectivity can be decided with logarithmic work space.
 * [Immerman–Szelepcsényi: nondeterministic space is closed under complement](abstracts/ComplexityAbstracts/ImmermanSzelepcsenyiAbstract.lean): Nondeterministic space at least logarithmic is closed under complement; in particular NL equals coNL.
 * [Shamir: IP equals PSPACE](abstracts/ComplexityAbstracts/ShamirAbstract.lean): Interaction and randomness give a polynomial-time verifier the power of polynomial space.
