@@ -20,8 +20,8 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pl
 
 k-Path (`Cslib.Complexity.LongPath`), parameterized by the number `k` of vertices of the path,
 has no polynomial kernel and no polynomial compression unless `coNP ⊆ NP/poly`. Bodlaender,
-Jansen and Kratsch attribute the kernel lower bound to Bodlaender, Downey, Fellows and Hermelin
-[BodlaenderJansenKratsch2014, Section 1][BodlaenderDowneyFellowsHermelin2009]; the theorem number
+Jansen and Kratsch [BodlaenderJansenKratsch2014, Section 1] attribute the kernel lower bound to
+Bodlaender, Downey, Fellows and Hermelin [BodlaenderDowneyFellowsHermelin2009]; the theorem number
 in the latter is not verified here. This file derives it from the cross-composition theorem
 [BodlaenderJansenKratsch2014, Corollary 2] (`Cslib.Complexity.not_hasPolyKernel_LongPath`,
 `Cslib.Complexity.not_hasPolyCompression_LongPath`), with `coNP ⊄ NP/poly` an explicit
@@ -44,8 +44,10 @@ two pendant vertices, whose only neighbors are the copies of `s` and `t`, so rem
 a Hamiltonian path from `s` to `t`; conversely, the pendant vertices extend a Hamiltonian path
 (`Cslib.Complexity.HamPath.toLongPath_mem_iff`). The target is at most two more than the length
 of an encoded entry, independent of the number of entries. The labels use positions, which are
-bounded by the encoded length, because `Nat.pair` is computed in polynomial time on unary inputs
-only. On one instance the construction is a polynomial-time reduction, so k-Path is `NP`-hard
+bounded by the encoded length, because the library's pairing rule
+`Turing.MultiTapeTM.ComputableInPolyTime.unary_pair` takes unary arguments and a vertex name,
+written in binary, can be exponentially larger than its encoding. On one instance the
+construction is a polynomial-time reduction, so k-Path is `NP`-hard
 (`Cslib.Complexity.LongPath_npHard`).
 
 Instances are encoded as `encPair encGraph encNat`, with the target in binary, as for
@@ -58,6 +60,9 @@ alone. Membership of k-Path in `NP` is not proved here.
 
 ## Main definitions
 
+* `Cslib.Complexity.HamPath.copyLabel`: the label of a vertex in copy `i`.
+* `Cslib.Complexity.HamPath.pendantCopy`: copy `i` of a graph with the two pendant vertices.
+* `Cslib.Complexity.HamPath.pendantUnion`: the disjoint union of the pendant copies of a list.
 * `Cslib.Complexity.HamPath.toLongPath`: the cross-composition of `HamPath` into k-Path.
 
 ## Main results

@@ -14,9 +14,9 @@ Hamiltonian path from `1` to `2`, while the same two vertices without the edge, 
 an undeclared start `5`, have none. Lists of these related instances give yes- and no-instances of
 k-Path according to whether some entry is a yes-instance, and an undeclared start does not spoil a
 yes-entry. The empty list gives a no-instance, outside the scope of the OR property. Equal length
-is a polynomial equivalence relation on bit strings by `IsPolyEquivalence.of_key`. The hypotheses
-of the cross-composition theorem hold for k-Path, so the kernel lower bound is conditional only on
-`coNP ⊄ NP/poly`.
+is a polynomial equivalence relation on bit strings by `IsPolyEquivalence.of_key`, and so is
+equality of unary numbers. The hypotheses of the cross-composition theorem hold for k-Path, so the
+kernel lower bound is conditional only on `coNP ⊄ NP/poly`.
 -/
 
 namespace ComplexityTests.LongPathKernel
@@ -105,10 +105,9 @@ example : IsPolyEquivalence encBits fun p : List Bool × List Bool =>
     decide (p.1.length = p.2.length) :=
   IsPolyEquivalence.of_key length_bits
 
-/-- Equality of unary numbers relates `3` to itself and not to `4`. -/
-example : (fun p : ℕ × ℕ => decide (p.1 = p.2)) (3, 3) = true ∧
-    (fun p : ℕ × ℕ => decide (p.1 = p.2)) (3, 4) = false := by
-  decide
+/-- Equality of unary numbers is a polynomial equivalence relation. -/
+example : IsPolyEquivalence encUnary fun p : ℕ × ℕ => decide (p.1 = p.2) :=
+  isPolyEquivalence_eq_unary
 
 /-! ### The hypotheses of the cross-composition theorem -/
 
