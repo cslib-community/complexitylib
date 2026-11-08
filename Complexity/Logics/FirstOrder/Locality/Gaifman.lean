@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Init
 public import Mathlib.Combinatorics.SimpleGraph.Metric
 public import Mathlib.ModelTheory.Graph
 import Mathlib.Tactic.FinCases
@@ -30,11 +31,12 @@ it composes, inverts and restricts without subtype bookkeeping.
 
 The combinatorial facts of [Libkin, Lemma 4.8][Libkin2004] are proved here:
 
+* `IsNbhdIso.mono`: a neighborhood isomorphism of radius `r` is one of every radius `d ≤ r`;
 * `IsNbhdIso.restrict`: a neighborhood isomorphism of radius `r` restricts to the radius-`d`
   neighborhood of any tuple inside the radius-`l` ball, when `l + d ≤ r`;
-* `IsNbhdIso.snoc`: isomorphisms of radius-`r` neighborhoods of tuples that lie at distance more
-  than `2r + 1` from one another combine into an isomorphism of the neighborhoods of the
-  concatenated tuples;
+* `IsNbhdIso.snoc`: a radius-`r` neighborhood isomorphism of the tuples and one of a single point
+  lying at distance more than `2r + 1` from the tuple (on both sides) combine into one of the
+  tuples with that point added;
 
 together with `IsNbhdIso.symm`, `IsNbhdIso.trans` and `IsNbhdIso.refl`.
 
@@ -52,8 +54,8 @@ relations and equality.
 
 * `Cslib.Logic.FO.Locality.gaifmanGraph_structure`: the Gaifman graph of a simple graph, viewed as
   a structure of Mathlib's language of graphs, is the graph itself.
-* `Cslib.Logic.FO.Locality.IsNbhdIso.restrict`, `Cslib.Logic.FO.Locality.IsNbhdIso.snoc`:
-  [Libkin, Lemma 4.8][Libkin2004].
+* `Cslib.Logic.FO.Locality.IsNbhdIso.mono`, `Cslib.Logic.FO.Locality.IsNbhdIso.restrict`,
+  `Cslib.Logic.FO.Locality.IsNbhdIso.snoc`: [Libkin, Lemma 4.8][Libkin2004].
 
 ## References
 
@@ -122,11 +124,11 @@ section Distance
 
 variable {V : Type*} {G : SimpleGraph V}
 
-theorem edist_le_one_of_adj {x y : V} (h : G.Adj x y) : G.edist x y ≤ 1 :=
+private theorem edist_le_one_of_adj {x y : V} (h : G.Adj x y) : G.edist x y ≤ 1 :=
   SimpleGraph.edist_le_one_iff_adj_or_eq.2 (.inl h)
 
 /-- The first step of a path of length at most `s + 1`. -/
-theorem exists_adj_of_edist_le_succ {x y : V} {s : ℕ} (h : G.edist x y ≤ (s + 1 : ℕ)) :
+private theorem exists_adj_of_edist_le_succ {x y : V} {s : ℕ} (h : G.edist x y ≤ (s + 1 : ℕ)) :
     x = y ∨ ∃ z, G.Adj x z ∧ G.edist z y ≤ s := by
   have hne : G.edist x y ≠ ⊤ := ne_top_of_le_ne_top (ENat.natCast_ne_top _) h
   obtain ⟨p, hp⟩ := SimpleGraph.exists_walk_of_edist_ne_top hne
@@ -139,8 +141,9 @@ theorem exists_adj_of_edist_le_succ {x y : V} {s : ℕ} (h : G.edist x y ≤ (s 
 
 /-- Points within distance `r` of two points at distance more than `2r + 1` are neither equal nor
 adjacent. -/
-theorem one_lt_edist_of_far {a c y z : V} {r : ℕ} (hac : ((2 * r + 1 : ℕ) : ℕ∞) < G.edist a c)
-    (hy : G.edist a y ≤ r) (hz : G.edist c z ≤ r) : 1 < G.edist y z := by
+private theorem one_lt_edist_of_far {a c y z : V} {r : ℕ}
+    (hac : ((2 * r + 1 : ℕ) : ℕ∞) < G.edist a c) (hy : G.edist a y ≤ r)
+    (hz : G.edist c z ≤ r) : 1 < G.edist y z := by
   by_contra hyz
   rw [not_lt] at hyz
   rw [SimpleGraph.edist_comm] at hz
@@ -196,12 +199,6 @@ theorem ball_snoc {k r : ℕ} (a : Fin k → M) (c : M) :
     ball L (Fin.snoc a c : Fin (k + 1) → M) r = ball L a r ∪ ball L (fun _ : Fin 1 => c) r :=
   Set.ext fun _ => mem_ball_snoc
 
-theorem snoc_mem {k : ℕ} {S : Set M} {x : Fin k → M} {c : M} (hx : ∀ i, x i ∈ S) (hc : c ∈ S)
-    (j : Fin (k + 1)) : (Fin.snoc x c : Fin (k + 1) → M) j ∈ S := by
-  induction j using Fin.lastCases with
-  | last => simpa using hc
-  | cast i => simpa using hx i
-
 /-! ### Isomorphisms of neighborhoods -/
 
 variable (L) in
@@ -218,7 +215,12 @@ structure IsNbhdIso {k : ℕ} (r : ℕ) (a : Fin k → M) (b : Fin k → N) (h :
     (RelMap R (h ∘ t) ↔ RelMap R t)
 
 variable (L) in
-/-- The radius-`r` neighborhoods of `a` in `M` and of `b` in `N` are isomorphic. -/
+/-- The radius-`r` neighborhoods of `a` in `M` and of `b` in `N` are isomorphic.
+
+The isomorphism is encoded by a function `M → N`, so for the empty tuple (`k = 0`, where both
+balls are empty) `NbhdIso L r a b` holds exactly when there is some function `M → N`: if `M` is
+empty and `N` is not, it holds but `NbhdIso L r b a` does not. The main results only use tuples of
+positive length, where this asymmetry does not arise. -/
 def NbhdIso {k : ℕ} (r : ℕ) (a : Fin k → M) (b : Fin k → N) : Prop :=
   ∃ h : M → N, IsNbhdIso L r a b h
 

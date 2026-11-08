@@ -161,17 +161,12 @@ points with isomorphic radius-`d` neighborhoods. -/
 theorem hanfEquiv_zero_iff {d : ℕ} {a : Fin 0 → M} {b : Fin 0 → N} :
     HanfEquiv L d a b ↔
       ∃ f : M ≃ N, ∀ c, NbhdIso L d (fun _ : Fin 1 => c) (fun _ : Fin 1 => f c) := by
-  have hM : ∀ x : M, (Fin.snoc a x : Fin 1 → M) = fun _ => x := fun x => funext fun i => by
-    induction i using Fin.lastCases with
-    | last => exact Fin.snoc_last (α := fun _ => M) _ _
-    | cast j => exact j.elim0
-  have hN : ∀ y : N, (Fin.snoc b y : Fin 1 → N) = fun _ => y := fun y => funext fun i => by
-    induction i using Fin.lastCases with
-    | last => exact Fin.snoc_last (α := fun _ => N) _ _
-    | cast j => exact j.elim0
-  simp only [hanfEquiv_iff, hM, hN]
+  simp only [hanfEquiv_iff, Fin.snoc_zero]
 
-/-- Hanf-equivalent tuples in a nonempty structure have isomorphic neighborhoods. -/
+/-- Hanf-equivalent tuples in a nonempty structure have isomorphic neighborhoods
+([Libkin, Lemma 4.4][Libkin2004], third item). Nonemptiness is needed: two empty structures that
+disagree on a nullary relation are Hanf-equivalent at every radius, but their neighborhoods of the
+empty tuple are not isomorphic. -/
 theorem HanfEquiv.nbhdIso [Nonempty M] {k d : ℕ} {a : Fin k → M} {b : Fin k → N}
     (H : HanfEquiv L d a b) : NbhdIso L d a b := by
   obtain ⟨f, hf⟩ := H
@@ -180,6 +175,12 @@ theorem HanfEquiv.nbhdIso [Nonempty M] {k d : ℕ} {a : Fin k → M} {b : Fin k 
     (fun i => mem_ball_snoc.2 (.inl (mem_ball_self a 0 i))) (by omega)
   have hb : h ∘ a = b := funext fun i => by simpa using Hh.map_tuple i.castSucc
   exact (hb ▸ this).nbhdIso
+
+private theorem snoc_mem {k : ℕ} {S : Set M} {x : Fin k → M} {c : M} (hx : ∀ i, x i ∈ S)
+    (hc : c ∈ S) (j : Fin (k + 1)) : (Fin.snoc x c : Fin (k + 1) → M) j ∈ S := by
+  induction j using Fin.lastCases with
+  | last => simpa using hc
+  | cast i => simpa using hx i
 
 /-- Points with isomorphic radius-`d` neighborhoods. -/
 private def ptSetoid [Nonempty M] (d : ℕ) : Setoid M where
