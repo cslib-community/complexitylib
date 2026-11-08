@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Computability.PropertyTesting.DenseGraph.Basic
 public import Cslib.Probability.PMF
+public import Mathlib.Combinatorics.SimpleGraph.Copy
 public import Mathlib.Combinatorics.SimpleGraph.Maps
 import Complexity.Foundations.Combinatorics.SimpleGraph.SymmDiff
 import Complexity.Languages.Probabilistic.RandomPermutation
@@ -83,6 +84,8 @@ sits at its first positions.
 * `Cslib.DenseGraphTesting.IsInvariant`: a property of graphs on `Fin n` closed under relabelling.
 * `Cslib.DenseGraphTesting.InducedOf`: a graph that is an induced subgraph of some graph with a
   given property.
+* `Cslib.DenseGraphTesting.queryInduced`: query all pairs among a sequence of vertices and return
+  the induced labelled graph.
 * `Cslib.DenseGraphTesting.canonicalTester`: sample a uniform set of vertices, query the induced
   subgraph and decide by a fixed property.
 
@@ -90,6 +93,8 @@ sits at its first positions.
 
 * `Cslib.DenseGraphTesting.IsFar.comap`: relabelling preserves the distance to an invariant
   property.
+* `Cslib.DenseGraphTesting.isInvariant_inducedOf`: the decision property `InducedOf P` is closed
+  under relabelling.
 * `Cslib.DenseGraphTesting.acceptProb_canonicalTester`: the acceptance probability of a canonical
   tester.
 * `Cslib.DenseGraphTesting.acceptProb_canonicalTester_eq_one_iff`: a canonical tester is perfectly
@@ -135,11 +140,16 @@ theorem isInvariant_iff {n : ℕ} {P : SimpleGraph (Fin n) → Prop} :
 /-- The labelled graph `K` on `Fin s` is an induced subgraph of some graph on `Fin n` with property
 `P`. This is the decision property of the canonical tester. -/
 def InducedOf {n s : ℕ} (P : SimpleGraph (Fin n) → Prop) (K : SimpleGraph (Fin s)) : Prop :=
-  ∃ H, P H ∧ Nonempty (K ↪g H)
+  ∃ H, P H ∧ K ⊴ H
 
 theorem inducedOf_iff {n s : ℕ} {P : SimpleGraph (Fin n) → Prop} {K : SimpleGraph (Fin s)} :
-    InducedOf P K ↔ ∃ H, P H ∧ Nonempty (K ↪g H) :=
+    InducedOf P K ↔ ∃ H, P H ∧ K ⊴ H :=
   Iff.rfl
+
+/-- The decision property `InducedOf P` is itself closed under relabelling, whatever `P` is. -/
+theorem isInvariant_inducedOf {n s : ℕ} (P : SimpleGraph (Fin n) → Prop) :
+    IsInvariant (InducedOf (s := s) P) :=
+  fun π _ ⟨H, hH, ⟨f⟩⟩ => ⟨H, hH, ⟨f.comp (Embedding.comap π.toEmbedding _)⟩⟩
 
 theorem IsInvariant.comap_iff {n : ℕ} {P : SimpleGraph (Fin n) → Prop} (hP : IsInvariant P)
     (π : Equiv.Perm (Fin n)) (G : SimpleGraph (Fin n)) : P (G.comap π) ↔ P G := by
@@ -161,21 +171,6 @@ theorem IsFar.comap {n : ℕ} {P : SimpleGraph (Fin n) → Prop} (hP : IsInvaria
       funext fun x => π.symm_apply_apply x, comap_id]
   rw [h₂, editDist_comap_equiv]
   exact h₁
-
-/-! ### Sampling a uniform permutation -/
-
-/-- A uniformly random permutation of `Fin n`, drawn with one call to the uniform sampler. -/
-noncomputable def unifPerm (n : ℕ) : ProbComp (Equiv.Perm (Fin n)) :=
-  have h : Fintype.card (Equiv.Perm (Fin n)) = (n.factorial - 1) + 1 := by
-    rw [Fintype.card_perm, Fintype.card_fin]
-    have := Nat.factorial_pos n
-    omega
-  (Fintype.equivFinOfCardEq h).symm <$> ProbComp.unifFin (n.factorial - 1)
-
-theorem eval_unifPerm (n : ℕ) :
-    ProbComp.eval (unifPerm n) = PMF.uniformOfFintype (Equiv.Perm (Fin n)) := by
-  rw [unifPerm, ProbComp.eval_map, ProbComp.eval_unifFin]
-  exact Probability.PMF.uniformOfFintype_map_equiv _
 
 /-! ### Querying an induced subgraph -/
 
@@ -283,7 +278,7 @@ induced labelled graph on `Fin s` has property `D` [Goldreich and Trevisan,
 uniform `s`-set of vertices. -/
 noncomputable def canonicalTester (n s : ℕ) (hs : s ≤ n) (D : SimpleGraph (Fin s) → Prop)
     [DecidablePred D] : Tester n := do
-  let σ ← ProbOracleComp.sample (unifPerm n)
+  let σ ← ProbOracleComp.sample (ProbComp.uniform (Equiv.Perm (Fin n)))
   let K ← queryInduced s fun i => σ (Fin.castLE hs i)
   pure (decide (D K))
 
@@ -292,7 +287,8 @@ theorem isQueryBounded_canonicalTester (n s : ℕ) (hs : s ≤ n) (D : SimpleGra
     [DecidablePred D] :
     ProbOracleComp.IsQueryBounded (canonicalTester n s hs D) (s.choose 2) := by
   rw [canonicalTester]
-  exact ((ProbOracleComp.IsQueryBounded.sample (spec := pairSpec (Fin n)) (unifPerm n)).bind
+  exact ((ProbOracleComp.IsQueryBounded.sample (spec := pairSpec (Fin n))
+    (ProbComp.uniform (Equiv.Perm (Fin n)))).bind
     fun σ => (isQueryBounded_queryInduced s fun i => σ (Fin.castLE hs i)).bind (m := 0)
       fun K => .pure _ 0).mono (by omega)
 
@@ -303,7 +299,8 @@ theorem acceptProb_canonicalTester (n s : ℕ) (hs : s ≤ n) (D : SimpleGraph (
     acceptProb (canonicalTester n s hs D) G =
       ((PMF.uniformOfFintype (Equiv.Perm (Fin n))).toOuterMeasure
         {σ | D (G.comap fun i => σ (Fin.castLE hs i))}).toReal := by
-  rw [acceptProb_eq, canonicalTester, OracleComp.evalWith_bind, evalWith_sample, eval_unifPerm]
+  rw [acceptProb_eq, canonicalTester, OracleComp.evalWith_bind, evalWith_sample,
+    ProbComp.eval_uniform]
   simp only [OracleComp.evalWith_bind, evalWith_queryInduced, PMF.pure_bind,
     OracleComp.evalWith_pure]
   have h : ((PMF.uniformOfFintype (Equiv.Perm (Fin n))).bind fun σ =>
@@ -347,20 +344,6 @@ theorem acceptProb_canonicalTester_eq_one_iff {n s : ℕ} (hs : s ≤ n)
     exact h H hH (Probability.PMF.mem_support_uniformOfFintype ρ)
   · intro h G hG σ _
     exact h _ ⟨G, hG, ⟨Embedding.comap ((Fin.castLEEmb hs).trans σ.toEmbedding) G⟩⟩
-
-/-- A one-sided tester never rejects a graph with the property. -/
-theorem IsOneSidedTester.evalWith_false_eq_zero {n : ℕ} {P : SimpleGraph (Fin n) → Prop}
-    {T : Tester n} {ε : ℝ} {q : ℕ} (hT : IsOneSidedTester T P ε q) {H : SimpleGraph (Fin n)}
-    (hH : P H) :
-    OracleComp.evalWith (OracleComp.sumHandler ProbComp.unifOracle (adjOracle H)) T false = 0 := by
-  have h1 := hT.accept H hH
-  rw [acceptProb_eq] at h1
-  have h2 := Probability.PMF.toReal_true_add_toReal_false
-    (OracleComp.evalWith (OracleComp.sumHandler ProbComp.unifOracle (adjOracle H)) T)
-  rw [h1] at h2
-  have h3 : (OracleComp.evalWith (OracleComp.sumHandler ProbComp.unifOracle (adjOracle H)) T
-      false).toReal = 0 := by linarith
-  rwa [ENNReal.toReal_eq_zero_iff, or_iff_left (PMF.apply_ne_top _ _)] at h3
 
 /-! ### Lazy relabelling caches
 

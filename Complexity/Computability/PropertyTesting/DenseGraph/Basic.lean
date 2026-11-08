@@ -307,6 +307,16 @@ theorem acceptProb_pure {n : ℕ} (b : Bool) (G : SimpleGraph (Fin n)) :
     acceptProb (pure b : Tester n) G = if b then 1 else 0 := by
   cases b <;> simp [acceptProb]
 
+/-- A one-sided tester never rejects a graph with the property. -/
+theorem IsOneSidedTester.evalWith_false_eq_zero {n : ℕ} {P : SimpleGraph (Fin n) → Prop}
+    {T : Tester n} {ε : ℝ} {q : ℕ} (hT : IsOneSidedTester T P ε q) {H : SimpleGraph (Fin n)}
+    (hH : P H) :
+    OracleComp.evalWith (OracleComp.sumHandler ProbComp.unifOracle (adjOracle H)) T false = 0 := by
+  have h := hT.accept H hH
+  rw [acceptProb_eq, ENNReal.toReal_eq_one_iff, PMF.apply_eq_one_iff] at h
+  rw [PMF.apply_eq_zero_iff, h]
+  simp
+
 /-- Independent repetition multiplies acceptance probabilities. -/
 theorem acceptProb_repeatAll {n : ℕ} (T : Tester n) (G : SimpleGraph (Fin n)) (k : ℕ) :
     acceptProb (repeatAll T k) G = acceptProb T G ^ k := by

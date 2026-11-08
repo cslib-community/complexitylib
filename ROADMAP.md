@@ -1109,8 +1109,9 @@ each statement against the numbered result. Organize modules by subject, not cha
   only on `ε`, through Mathlib's triangle removal lemma
   ([#3036](https://github.com/cslib-community/complexitylib/issues/3036)). Every one-sided tester
   with `q` queries for a property closed under relabelling becomes a canonical one-sided tester
-  that samples `2q` vertices and decides on the induced subgraph (Goldreich–Trevisan, one-sided
-  half; [#3180](https://github.com/cslib-community/complexitylib/issues/3180)). Remaining: the optimal
+  that samples at most `2q` vertices and decides on the induced subgraph (Goldreich–Trevisan,
+  one-sided half; [#3180](https://github.com/cslib-community/complexitylib/issues/3180)).
+  Remaining: the optimal
   `O(n^{2/3} ε^{-4/3} + √n ε^{-2})` closeness tester by flattening and its matching lower bound,
   further access models, the odd-domain lower bound, instance-optimal identity testing, tolerant
   and structured-property distribution testing; in the dense graph model, `H`-freeness for general
