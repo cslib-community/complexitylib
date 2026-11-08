@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-public import Complexity.Probability.StochasticOracle.AdaptiveReachable
+public import Complexity.Probability.StochasticOracle.AdaptiveStopping
 public import ComplexityTests.StochasticOracleAdaptiveSelection
 import Mathlib.Tactic
 
@@ -212,5 +212,183 @@ theorem batch_total_cost :
         norm_num [batchResponse, law, hn, hs, charge, pair_mean])
   norm_num at ht
   exact ht
+
+/-- First-completion mean is the actual survival series, and is at most four,
+even though the poisoned null-history kernel violates the old envelope. -/
+theorem stopping_mean :
+    (∀ᵐ ω ∂responseMeasure law, completionTime toy 1 proposals ω ≠ ⊤) ∧
+    Integrable (fun ω => (((completionTime toy 1 proposals ω).untopD 0 : ℕ) : ℝ))
+      (responseMeasure law) ∧
+    (∫ ω, (((completionTime toy 1 proposals ω).untopD 0 : ℕ) : ℝ) ∂responseMeasure law) =
+      ∑' n : ℕ, (responseMeasure law).real
+        {ω | (n : WithTop ℕ) < completionTime toy 1 proposals ω} ∧
+    (∫ ω, (((completionTime toy 1 proposals ω).untopD 0 : ℕ) : ℝ) ∂responseMeasure law) ≤ 4 := by
+  have h := completionTime_mean toy 1 proposals law 1 1 (by norm_num [toy])
+    ⟨1 / 4, by norm_num, by norm_num⟩ (by norm_num) (fun h hh _ => envelope h hh)
+  norm_num at h
+  exact h
+
+/-- The actual capped index also has the correct exact finite mean: one issued
+turn surely and another only after the first failure, of probability three quarters. -/
+theorem capped_mean :
+    (∫ ω, (cappedTime toy 1 proposals 2 ω : ℝ) ∂responseMeasure law) = (7 / 4 : ℝ) := by
+  rw [cappedTime_mean]
+  simp_rw [completionTime_survival toy 1 proposals law]
+  have hx (h : List (Option Bool)) :
+      (if toy.covered (selected toy 1 proposals h) = toy.ground then (0 : ℝ) else 1) =
+        if some true ∈ h then 0 else 1 := by
+    rw [selected_eq]
+    by_cases hh : some true ∈ h <;> simp [hh, Instance.covered, toy]
+  simp_rw [hx]
+  norm_num [Finset.sum_range_succ, historyExpectation, law, pair_mean]
+
+/-- Response-dependent physical durations; null histories have arbitrarily bad latency. -/
+@[expose] def duration (h : List (Option Bool)) (x : Option Bool) : ℝ :=
+  if none ∈ h then 1000 else if x = some true then 2 else 3
+
+/-- Completion, actual returned-cover certification and deadline six occur jointly
+with probability at least 7/16 in the two-turn correlated execution. -/
+theorem joint_deadline :
+    (7 / 16 : ℝ) ≤ (responseMeasure law).real (jointSuccess toy 1 proposals duration 2 6) := by
+  have h := binomial_le_jointSuccess toy 1 proposals law 1 1 2 (by norm_num [toy])
+    ⟨1 / 4, by norm_num, by norm_num⟩ (fun h hh _ => envelope h hh) duration 3 6
+    (by norm_num) (by
+      intro h hh _ x _
+      have hn := reachable_no_none hh
+      simp only [duration, hn, ite_false]
+      split_ifs <;> norm_num) (by norm_num)
+  have hi := bernoulliExpectation_eq_integral
+    ⟨(1 / 4 : ℝ), by norm_num, by norm_num⟩ (fun k => if 1 ≤ k then (1 : ℝ) else 0) 2 0
+  norm_num [bernoulliExpectation] at hi
+  rw [← hi] at h
+  exact h
+
+/-- Actual response charges at the same capped stopping index have the finite
+source token bound; the expectation concerns the physically stopped execution. -/
+theorem capped_cost :
+    (∫ ω, accruedBill charge (responseHistory ω (cappedTime toy 1 proposals 2 ω))
+      ∂responseMeasure law) ≤ (7 / 2 : ℝ) := by
+  have h := expected_cost_at_capped toy 1 proposals law 1 1 2 (by norm_num [toy])
+    ⟨1 / 4, by norm_num, by norm_num⟩ (fun h hh _ => envelope h hh) charge 2 (by norm_num)
+    (by
+      intro h hh _
+      have hn := reachable_no_none hh
+      by_cases hs : some true ∈ h <;> norm_num [law, hn, hs, charge, pair_mean])
+  have h0 := binomialFailure_eq_complement ⟨(1 / 4 : ℝ), by norm_num, by norm_num⟩ 1 0
+  have h1 := binomialFailure_eq_complement ⟨(1 / 4 : ℝ), by norm_num, by norm_num⟩ 1 1
+  have hi0 := bernoulliExpectation_eq_integral
+    ⟨(1 / 4 : ℝ), by norm_num, by norm_num⟩ (fun k => if 1 ≤ k then (1 : ℝ) else 0) 0 0
+  have hi1 := bernoulliExpectation_eq_integral
+    ⟨(1 / 4 : ℝ), by norm_num, by norm_num⟩ (fun k => if 1 ≤ k then (1 : ℝ) else 0) 1 0
+  simp only [Nat.zero_add] at hi0 hi1
+  rw [← hi0] at h0
+  rw [← hi1] at h1
+  norm_num [bernoulliExpectation] at h0 h1
+  norm_num [Finset.sum_range_succ, h0, h1] at h
+  exact h
+
+/-- A first successful response returns the actual singleton cover after one turn,
+with duration two rather than the two-turn budget bound of six. -/
+theorem early_output :
+    let ω : ℕ → Option Bool := fun _ => some true
+    cappedTime toy 1 proposals 2 ω = 1 ∧
+      stoppedOutput toy 1 proposals 2 ω = {()} ∧
+      physicalDuration toy 1 proposals duration 2 ω = 2 := by
+  let ω : ℕ → Option Bool := fun _ => some true
+  have hr1 : residualProcess toy 1 proposals 1 ω = 0 := by
+    have hh : responseHistory ω 1 = [some true] := by simp [responseHistory, ω]
+    rw [residualProcess, hh, AdaptiveSelection.residual, selected_eq]
+    simp [Instance.covered, toy]
+  have hr0 : residualProcess toy 1 proposals 0 ω = 1 := by
+    rw [residualProcess]
+    simp only [responseHistory, List.ofFn_zero, List.reverse_nil,
+      AdaptiveSelection.residual, selected_eq]
+    simp [Instance.covered, toy]
+  have hk : cappedTime toy 1 proposals 2 ω = 1 := by
+    apply le_antisymm
+    · exact hittingBtwn_le_of_mem (u := residualProcess toy 1 proposals)
+        (s := {0}) (n := 0) (m := 2) (i := 1) (ω := ω) (by omega) (by omega) hr1
+    · by_contra ht
+      have hz : cappedTime toy 1 proposals 2 ω = 0 := by omega
+      have hc := hittingBtwn_mem_set_of_hittingBtwn_lt
+        (u := residualProcess toy 1 proposals) (s := {0}) (n := 0) (m := 2) (ω := ω)
+      have hlt : hittingBtwn (residualProcess toy 1 proposals) {0} 0 2 ω < 2 := by
+        change cappedTime toy 1 proposals 2 ω < 2
+        omega
+      have hzero := hc hlt
+      change residualProcess toy 1 proposals (cappedTime toy 1 proposals 2 ω) ω = 0 at hzero
+      rw [hz, hr0] at hzero
+      omega
+  refine ⟨hk, ?_, ?_⟩
+  · simp [stoppedOutput, hk, responseHistory, selected_eq, ω]
+  · simp [physicalDuration, hk, responseHistory, accruedBill, duration, ω]
+
+/-- The zero turn budget has no hidden response or latency charge. -/
+example (ω : ℕ → Option Bool) : cappedTime toy 1 proposals 0 ω = 0 ∧
+    physicalDuration toy 1 proposals duration 0 ω = 0 := by
+  have h := cappedTime_le toy 1 proposals 0 ω
+  have hz : cappedTime toy 1 proposals 0 ω = 0 := by omega
+  simp [hz, physicalDuration, responseHistory, accruedBill]
+
+/-- Certain supported productivity gives a unit stopping-mean bound; no
+independence assumption or stopping-time expectation is supplied. -/
+example : (∫ ω, (((completionTime toy 1 proposals ω).untopD 0 : ℕ) : ℝ)
+    ∂responseMeasure (fun _ => Distribution.pure (some true))) ≤ 1 := by
+  have h := completionTime_mean toy 1 proposals (fun _ => Distribution.pure (some true))
+    1 1 (by norm_num [toy]) ⟨1, by norm_num, by norm_num⟩ (by norm_num) (by
+      intro h _ _
+      simp [Distribution.mean_pure, productive_eq])
+  simpa using h.2.2.2
+
+/-- Empty ground stops at index zero, including zero budget and deadline. -/
+example (ω : ℕ → Option Bool) :
+    let I : Instance Unit Unit :=
+      { toy with
+        ground := ∅
+        sets := fun _ => ∅
+        sets_subset := by simp
+        dual_feasible := by simp [toy] }
+    completionTime I 1 proposals ω = 0 := by
+  dsimp only
+  apply le_antisymm
+  · apply (completionTime_le_iff _ 1 proposals ω 0).mpr
+    ext e
+    simp [Instance.covered]
+  · exact bot_le
+
+/-- The same physical joint theorem accepts actual selected-batch envelopes and
+conditional duration contracts; null batches and poisoned null histories remain unconstrained. -/
+theorem batch_joint_deadline :
+    (7 / 16 : ℝ) ≤ (responseMeasure
+      (selectedBatchLaw (fun _ => Distribution.pure true) batchResponse)).real
+      (jointSuccess toy 1 batchProposals (fun h x => duration (h.map Prod.snd) x.2) 2 6) := by
+  have h := binomial_le_jointSuccess toy 1 batchProposals
+    (selectedBatchLaw (fun _ => Distribution.pure true) batchResponse) 1 1 2
+    (by norm_num [toy]) ⟨1 / 4, by norm_num, by norm_num⟩ (by
+      intro h hh _
+      apply selectedBatchLaw_mean_lower
+      intro b hb
+      have hb' : b = true := by cases b <;> simp_all [Distribution.pure]
+      subst b
+      have he (x : Option Bool) : productive toy 1 batchProposals 1 h (true, x) =
+          productive toy 1 proposals 1 (h.map Prod.snd) x := by
+        simp only [productive, AdaptiveSelection.residual, batch_selected, List.map_cons]
+        apply decide_eq_decide.mpr
+        rfl
+      simp only [batchResponse, ite_true, he]
+      exact envelope _ (batch_reachable hh))
+    (fun h x => duration (h.map Prod.snd) x.2) 3 6 (by norm_num) (by
+      intro h hh _ x hx
+      apply selectedBatch_duration_bound (fun _ => Distribution.pure true) batchResponse h
+        (fun h x => duration (h.map Prod.snd) x.2) 3 _ x hx
+      intro b _ y _
+      have hn := reachable_no_none (batch_reachable hh)
+      simp only [duration, hn, ite_false]
+      split_ifs <;> norm_num) (by norm_num)
+  have hi := bernoulliExpectation_eq_integral
+    ⟨(1 / 4 : ℝ), by norm_num, by norm_num⟩ (fun k => if 1 ≤ k then (1 : ℝ) else 0) 2 0
+  norm_num [bernoulliExpectation] at hi
+  rw [← hi] at h
+  exact h
 
 end StochasticOracleAdaptiveReachableTests

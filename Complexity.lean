@@ -4371,6 +4371,7 @@ public import Complexity.Probability.StochasticOracle.AdaptiveLowerCost
 public import Complexity.Probability.StochasticOracle.AdaptivePath
 public import Complexity.Probability.StochasticOracle.AdaptiveReachable
 public import Complexity.Probability.StochasticOracle.AdaptiveSelection
+public import Complexity.Probability.StochasticOracle.AdaptiveStopping
 public import Complexity.Probability.StochasticOracle.CutoffFamilies
 public import Complexity.Probability.StochasticOracle.ExecutionFeasibility
 public import Complexity.Probability.StochasticOracle.FullCover

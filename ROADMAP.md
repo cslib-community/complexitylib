@@ -67,7 +67,14 @@ envelopes. Its actual selected-batch joint law has proved factorization, positiv
 conditioning and tower/envelope composition; null histories and batches impose no
 productivity/cost envelope. An unreachable poisoned-history correlated client checks
 that the old all-history envelopes really fail. Finite alphabets remain required.
-Joint latency/certification and universal policy/resource composition remain open; Theorem 6 needs the actual dual-certified residual
+`AdaptiveStopping` now reuses Mathlib hitting times for measurable first/capped
+completion indices, proves the actual survival-series mean and `r/p` bound, and
+connects capped physical execution with stopped accounting. Supported per-response
+latency contracts give a measurable joint deadline/completion/dual-certificate event
+with the binomial probability lower bound; actual capped token cost has the finite
+survival bound. Correlated, null-history, early-stop, zero-budget/empty-ground and
+`p=1` clients check these interfaces. Universal selection-only policy/lower-cost and
+matching-envelope assembly and encoded machine resources remain open; Theorem 6 needs the actual dual-certified residual
 construction, universal one/two-turn optimum and adaptivity ratio. These are remaining main
 claims, not supplied by the policy LP or the binary-input two-batch savings FPTAS.
 

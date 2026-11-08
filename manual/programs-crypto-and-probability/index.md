@@ -569,8 +569,9 @@ these obligations; the accounting lemma below does **not** complete the theorem.
   $u$ turns. Certified success is at least $\Pr[\mathrm{Bin}(u,p_-)\ge r_a]$.
   Expected cost is at most
   $c_+\sum_{t=0}^{u-1}\Pr[\mathrm{Bin}(t,p_-)<r_a]$
-  and hence at most $c_+\min(u,r_a/p_-)$. Reached-turn probabilities, stopping,
-  and the infinite-execution stopping-time interpretation remains to be derived.
+  and hence at most $c_+\min(u,r_a/p_-)$. The finite-alphabet upper-policy
+  stopping, physical deadline and certificate composition is now provided below;
+  a universal selection-only machine realization remains separate.
 - Universal lower assumptions quantify over every selection-only policy's reached
   histories and selected batches. Revealed progress means growth of the union of
   **all valid proposed sets**, including unretained proposals. Its conditional
@@ -727,12 +728,43 @@ and charges. It checks that both old all-history envelopes fail at that unreacha
 history, while actual finite completion, a.s. completion and total-cost conclusions
 hold. It also checks the selected-batch envelope and the full composed batch/response
 total-cost theorem with a deliberately bad null batch.
-Physical latency, deadline/certification composition
-and the universal selection-only policy theorem remain open. The
-pathwise dual certificate is proved, but its joint stopped resource event is not.
+Import `Complexity.Probability.StochasticOracle.AdaptiveStopping` for actual stopping
+and physical resources. `completionTime` reuses Mathlib's first hitting time of
+zero residual, preserving infinity for a nonterminating path. It is measurable,
+and `completionTime_le_iff` identifies each finite stopping event with the actual
+completion cylinder. `completionTime_survival` identifies its real survival
+probabilities with finite accounting. `cappedTime_mean` identifies the finite
+expectation exactly with the truncated actual survival sum. `completionTime_mean` derives a.s. finiteness,
+real integrability, the exact sum of actual survival probabilities and the mean
+bound `r/p`. Its real representative uses `untopD 0` on the separately proved null
+set of infinite indices; finiteness or a stopping mean is never an input.
 
-The remaining Theorem 5 obligations above, including joint stopped resource events and universal
-policy composition, are open. Theorem 4's native runtime/hardness and
+`cappedTime` stops at completion or the turn budget. `stoppedOutput` is the retained
+family at that index; `physicalDuration` adds the actual supplied turn durations
+only up to it. `accruedBill_at_capped` identifies actual stopped execution with the
+finite stopped-bill observable. `physicalDuration_le` derives the physical bound
+from nonnegative per-response durations bounded by `ℓ` only on supported issued
+responses. `selectedBatch_duration_bound` transfers per-selected-batch contracts
+to the actual joint response law; it needs no constraint on null batches/responses.
+No independence or desired total-duration bound is assumed.
+
+`jointSuccess` is one measurable event: the actual stopped family covers the ground,
+passes the local feasible-dual cost certificate, and is available by the physical
+deadline. `binomial_le_jointSuccess` derives its probability lower bound from the
+reachable productivity envelope, per-turn physical contract and budget condition
+`u*ℓ ≤ D`. `stoppedOutput_approx` compares this certified output with every integral
+cover when `ρ ≥ 0`. `integrable_cost_at_capped` and `expected_cost_at_capped` give
+integrability and the finite binomial survival cost bound for that same execution.
+These are semantic physical durations supplied by the turn model, without an encoded
+machine runtime/space certificate. They do not require a deterministic stopping horizon
+for the uncapped process. The complete client above checks a mean bound of four,
+exact capped mean `7/4`, joint two-turn deadline/certification probability at least `7/16`, capped response
+cost at most `7/2`, an actual early singleton output of duration two, zero turn
+budget, empty ground and `p=1`. A full batch/response joint client retains the
+selected batch and tolerates poisoned null histories and a null batch.
+
+The remaining Theorem 5 universal selection-only/lower-cost and matching-envelope
+composition, general measurable-alphabet realization and encoded machine resources are open. Theorem 4's native runtime/hardness and
 Theorem 6's residual construction and universal optimum remain open. None of these
 components or clients changes the curated abstract catalogue. The Agent Operator's
 Manual requires no edit: ownership, review, validation and human direction are
