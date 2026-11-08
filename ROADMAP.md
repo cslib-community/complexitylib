@@ -142,7 +142,7 @@ Containments, separations, closure properties, complete problems and reductions 
 ### Structure, time and space
 
 - **Planar Boolean CSP dichotomy** ([#3091](https://github.com/cslib-community/complexitylib/issues/3091)): extend the native Boolean classification to ordered planar instances of arbitrary fixed relation arity, preserving individual incidence occurrences and cyclic argument order.
-  The endpoint proves the embedding and recognition interface, the cyclic-difference reduction, the even delta-matroid edge-CSP algorithm and planar hardness transfer internally, including the additional self-complementary tractable family.
+  The endpoint must prove the embedding and recognition interface, the cyclic-difference reduction, the even delta-matroid edge-CSP algorithm and planar hardness transfer internally, including the additional self-complementary tractable family.
   Supplied-embedding or matching-realizable-only milestones leave it open.
 - **Boolean Schaefer dichotomy** ([#2822](https://github.com/cslib-community/complexitylib/issues/2822)): for every fixed finite Boolean constraint language of any fixed arity, native polynomial-time tractability in the six common-polymorphism cases and native NP-completeness otherwise, including empty and nullary relations.
   Hardness uses a native 3SAT reduction with `output.numVars + output.length ≤ C * input.length` for a language-dependent constant.
@@ -297,7 +297,7 @@ Define logspace and DLOGTIME uniformity with explicit gate-address, direct-conne
 
 ### Proof complexity
 
-- **Proof space** ([#3200](https://github.com/cslib-community/complexitylib/issues/3200)): clause, total and variable space for resolution, with the Atserias–Dalmau inequality, linear clause space for Tseitin formulas on expanders, tree-like space bounds (Esteban–Torán, [#3229](https://github.com/cslib-community/complexitylib/issues/3229)), and space lower bounds for the wide pigeonhole formula and random `k`-CNFs ([#3321](https://github.com/cslib-community/complexitylib/issues/3321)).
+- **Proof space** ([#3200](https://github.com/cslib-community/complexitylib/issues/3200)): clause, total and variable space for resolution, with the Atserias–Dalmau inequality, linear clause space for Tseitin formulas on expanders, tree-like space bounds (Esteban–Torán, [#3229](https://github.com/cslib-community/complexitylib/issues/3229)), and space lower bounds for the extended ([#3321](https://github.com/cslib-community/complexitylib/issues/3321)) and wide pigeonhole formulas and random `k`-CNFs.
   Also Atserias–Dalmau Lemma 2 as a public `DuplicatorStrategy`.
   Also time–space trade-offs for pebbling formulas and degree versus space in polynomial calculus.
 - **Polynomial calculus, sum-of-squares and DPLL:** polynomial calculus and sum-of-squares, and certified DPLL solver runtimes.
@@ -369,6 +369,8 @@ Organize modules by subject, not chapter.
   Keep these bounds separate from polynomial-time recognition and adjacency certificates.
   An explicit graph on `2 ^ Ω(k)` vertices is open.
 - **Codes**: Guruswami–Sudan list decoding and local decoding, keeping interpolation, list-size/agreement guarantees and decoding runtime as separate obligations; concrete list-decodable codes for Nisan–Wigderson.
+- **Upper bounds on code size** ([#3280](https://github.com/cslib-community/complexitylib/issues/3280)): the Singleton, Hamming, Plotkin (with its asymptotic form), alphabet-free and q-ary Johnson, and Elias–Bassalygo bounds, including the asymptotic Elias–Bassalygo bound `R ≤ 1 - H_q(J_q(δ)) + o(1)` through the volume lower bound `q ^ (H_q(e / n) n - o(n))` for q-ary Hamming balls.
+  Also the McEliece–Rodemich–Rumsey–Welch linear-programming bound (Delsarte's linear program and Krawtchouk polynomials).
 - **Expander codes** ([#3278](https://github.com/cslib-community/complexitylib/issues/3278)): Sipser–Spielman codes of bipartite vertex expanders with rate, distance and flip decoding; lossless expanders, probabilistic or explicit (Capalbo–Reingold–Vadhan–Wigderson), making expander codes asymptotically good; a machine-model linear-time decoder; Spielman's linear-time encodable codes; and Zémor's decoding of Tanner codes on spectral expanders.
 - **Locally decodable codes** ([#2929](https://github.com/cslib-community/complexitylib/issues/2929)): query-bounded decoders, the Hadamard code, and lower bounds through Katz–Trevisan smoothing for every adaptive decoder and the matching/XOR normal form: the one-query bound, the Katz–Trevisan bound `n ≥ Ω(k^{q/(q-1)})` with explicit `(δ, ε, q)` dependence, and the Goldreich–Karloff–Schulman–Trevisan and Kerenidis–de Wolf exponential bounds for two-query codes.
 - **Boolean analysis** ([#2131](https://github.com/cslib-community/complexitylib/issues/2131)): coverage of O'Donnell's *Analysis of Boolean Functions*, including the book-form statements of its Chapter 9 (the KKL edge-isoperimetric theorem, and Friedgut's junta theorem with its spectral concentration).
@@ -459,7 +461,7 @@ Coordinate native graph-algorithm work with [CSLib's graph-algorithm directions]
   A charged native implementation should run in `O(n^2)` time.
 - **Housing markets and top trading cycles** ([#3286](https://github.com/cslib-community/complexitylib/issues/3286)): the Shapley–Scarf model with TTC as the unique strict-core and competitive allocation, individually rational, Pareto efficient and strategy-proof; house allocation with existing tenants (Abdulkadiroğlu–Sönmez), Ma's characterization of TTC, group strategy-proofness, indifferences (top trading absorbing sets), and a charged `O(n^2)` TTC.
 - **Classical approximation algorithms** ([#2869](https://github.com/cslib-community/complexitylib/issues/2869)): greedy set cover, maximal-matching vertex cover and the MST tour for metric TSP, with machine-level polynomial-time certificates for greedy set cover and for Kruskal-based TSP tours on encoded matrices, and Christofides' `3/2` for metric TSP ([#3055](https://github.com/cslib-community/complexitylib/issues/3055)) with a polynomial-time minimum-weight perfect matching (Edmonds' blossom) and a tightness family approaching `3/2`.
-  Karlin–Klein–Oveis Gharan's `3/2 - 10^{-36}` is a long-range target.
+  Karlin–Klein–Oveis Gharan's `3/2 - 10^{-36}` is possibly a long-range target.
   LP-based and primal–dual analyses belong to the primal–dual direction.
 
 ### Online algorithms and competitive analysis

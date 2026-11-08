@@ -4267,6 +4267,7 @@ public import Complexity.Foundations.Data.Code.AsymptoticallyGood
 public import Complexity.Foundations.Data.Code.Basic
 public import Complexity.Foundations.Data.Code.BerlekampWelch
 public import Complexity.Foundations.Data.Code.Concatenation
+public import Complexity.Foundations.Data.Code.EliasBassalygo
 public import Complexity.Foundations.Data.Code.ExpanderCode
 public import Complexity.Foundations.Data.Code.FlipDecoding
 public import Complexity.Foundations.Data.Code.Hadamard
@@ -4283,6 +4284,8 @@ public import Complexity.Foundations.Data.Code.LowDegreeExtension.Constant
 public import Complexity.Foundations.Data.Code.LowDegreeExtension.UnitSum
 public import Complexity.Foundations.Data.Code.Multilinearity
 public import Complexity.Foundations.Data.Code.MultilinearitySoundness
+public import Complexity.Foundations.Data.Code.Plotkin
+public import Complexity.Foundations.Data.Code.Plotkin.Asymptotic
 public import Complexity.Foundations.Data.Code.ReedMuller
 public import Complexity.Foundations.Data.Code.ReedSolomon
 public import Complexity.Foundations.Data.Code.SelfCorrection
