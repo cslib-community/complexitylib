@@ -14,6 +14,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Optio
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Unary
 public import Mathlib.Algebra.Order.Archimedean.Real.Basic
 import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Map
 
 /-!
 # Fully polynomial almost uniform samplers
@@ -52,6 +53,10 @@ left unconstrained. The requirements stay separate:
 * `Cslib.Complexity.uniformWitness_toOuterMeasure_some`: the probability of an event of witnesses
   is its relative cardinality.
 * `Cslib.Interactive.CloseTo.abs_toReal_sub_le`: closeness bounds real probability differences.
+* `Cslib.Interactive.CloseTo.of_le_apply`: a law dominating `(1 - ε) ν` pointwise is
+  `ε`-close to `ν`.
+* `Cslib.Complexity.closeTo_uniformWitness_of_le`: pointwise lower bounds `(1 - ε) / |W|` on the
+  witnesses give closeness to `uniformWitness W`.
 
 ## References
 
@@ -137,4 +142,73 @@ theorem CloseTo.abs_toReal_sub_le {β : Type} {μ ν : PMF β} {ε : ℝ} (hε :
   rw [abs_le]
   constructor <;> linarith
 
+/-- A law dominating `(1 - ε) ν` pointwise is within statistical distance `ε` of `ν`. -/
+theorem CloseTo.of_le_apply {β : Type} {μ ν : PMF β} {ε : ℝ} (hε : 0 ≤ ε)
+    (h : ∀ b, ENNReal.ofReal (1 - ε) * ν b ≤ μ b) :
+    CloseTo μ ν (ENNReal.ofReal ε) := by
+  refine CloseTo.symm fun E => ?_
+  have hle : ENNReal.ofReal (1 - ε) * ν.toOuterMeasure E ≤ μ.toOuterMeasure E := by
+    rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply, ← ENNReal.tsum_mul_left]
+    refine tsum_le_tsum fun b => ?_
+    by_cases hb : b ∈ E
+    · simp only [Set.indicator_of_mem hb]
+      exact h b
+    · simp only [Set.indicator_of_notMem hb, mul_zero, le_refl]
+  have hν := Cslib.Probability.PMF.toOuterMeasure_le_one ν E
+  rcases le_or_gt 1 ε with hε1 | hε1
+  · exact hν.trans ((ENNReal.one_le_ofReal.2 hε1).trans le_add_self)
+  calc ν.toOuterMeasure E
+      = ENNReal.ofReal (1 - ε) * ν.toOuterMeasure E + ENNReal.ofReal ε * ν.toOuterMeasure E := by
+        rw [← add_mul, ← ENNReal.ofReal_add (by linarith) hε, sub_add_cancel, ENNReal.ofReal_one,
+          one_mul]
+    _ ≤ μ.toOuterMeasure E + ENNReal.ofReal ε :=
+        add_le_add hle (mul_le_of_le_one_right zero_le hν)
+
 end Cslib.Interactive
+
+namespace Cslib.Complexity
+
+open Cslib.Probability
+
+/-- **Closeness to the uniform witness law from pointwise lower bounds.** A law on optional
+witnesses giving every witness of `W` probability at least `(1 - ε) / |W|`, and no witness at all
+when `W` is empty, is within statistical distance `ε` of `uniformWitness W`. -/
+theorem closeTo_uniformWitness_of_le {μ : PMF (Option (List Bool))} {W : Finset (List Bool)}
+    {ε : ℝ} (hε : 0 ≤ ε)
+    (hle : ∀ v ∈ W, ENNReal.ofReal ((1 - ε) / W.card) ≤ μ (some v))
+    (hempty : W = ∅ → ∀ v, μ (some v) = 0) :
+    Interactive.CloseTo μ (uniformWitness W) (ENNReal.ofReal ε) := by
+  rcases W.eq_empty_or_nonempty with hW | hW
+  · have hμ : μ = PMF.pure none := by
+      have hnone : μ none = 1 := by
+        rw [PMF.apply_eq_one_iff]
+        refine Set.eq_singleton_iff_nonempty_unique_mem.2 ⟨μ.support_nonempty, fun o ho => ?_⟩
+        cases o with
+        | none => rfl
+        | some v => exact absurd (hempty hW v) ((PMF.mem_support_iff _ _).1 ho)
+      ext o
+      cases o with
+      | none => simp [hnone]
+      | some v => simp [hempty hW v]
+    rw [hμ, hW, uniformWitness_empty]
+    exact (Interactive.CloseTo.refl _).mono zero_le
+  · refine Interactive.CloseTo.of_le_apply hε fun o => ?_
+    rw [uniformWitness_of_nonempty hW]
+    cases o with
+    | none =>
+      have : (PMF.uniformOfFinset W hW).map some none = 0 := by
+        simp [PMF.map_apply]
+      rw [this, mul_zero]
+      exact zero_le
+    | some v =>
+      rw [Probability.PMF.map_apply_of_injective _ (Option.some_injective _)]
+      by_cases hv : v ∈ W
+      · refine le_trans ?_ (hle v hv)
+        simp only [Probability.PMF.uniformOfFinset_apply, hv, ↓reduceIte]
+        rw [← ENNReal.ofReal_natCast, ← ENNReal.ofReal_inv_of_pos
+          (by exact_mod_cast Finset.card_pos.2 hW), ← ENNReal.ofReal_mul' (by positivity),
+          div_eq_mul_inv]
+      · simp only [Probability.PMF.uniformOfFinset_apply, hv, ↓reduceIte, mul_zero]
+        exact zero_le
+
+end Cslib.Complexity

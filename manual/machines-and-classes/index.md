@@ -12,7 +12,7 @@ The underlying cslib machine contributes read-only input, two-way work tapes, ap
 - [Search relations and promises](search-and-promises.md) covers FNP/TFNP, PLS/PPP/PPAD/PPA and promises, with their distinct totality contracts.
 - [Major endpoints and quantitative boundaries](endpoints-and-hierarchies.md) records completeness, containment, hierarchy, and oracle results with their actual scope.
 - [Native exact counting and SAT endpoints](native-counting.md) records the unconditional fixed-width counter, encodings, independent resource bounds, manuscript mapping and ETH/SETH consequences.
-- [Computability and description methods](computability-and-description.md) covers universal descriptions, halting, Rice, partial recursion, Kolmogorov models, and their different clocks.
+- [Computability and description methods](computability-and-description.md) covers universal descriptions, halting, Rice, partial recursion, Post's correspondence problem, Kolmogorov models, and their different clocks.
 - [Parameterized complexity and kernelization](parameterized-complexity.md) covers FPT/XP quantifiers, parameter-respecting reductions, kernel contracts and the native vertex-cover kernel.
 - [Reductions and information access](reductions.md) covers many-one refinements, polynomial-time and logspace truth tables, adaptive oracle reductions, autoreducibility and fine-grained transfer.
 - The [model map](../model-map.md) links each model or acceptance/resource variant to its explanatory chapter.

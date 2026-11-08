@@ -375,6 +375,14 @@ families and full-input native runtime.
   accounting for approximate unit sampling) is proved as `DCR.indcpaOn_paillier` for a supplied
   generator whose primes have at least `n` bits (hypothesis `hsize`); native balanced-modulus
   generation remains open.
+- **Garbled circuits and Yao's protocol**
+  ([#3236](https://github.com/cslib-community/complexitylib/issues/3236)): point-and-permute
+  garbling of arbitrary-basis circuits with exact correctness and concrete simulation privacy is
+  in `Crypto/Primitives/Garbling`. The bound is the sum of `n + size` PRF advantages, and each
+  reduction makes at most one query per table slot. Next: Yao's semi-honest two-party protocol
+  with an ideal OT oracle in the MPC framework, which needs an advantage-bounded semi-honest
+  notion. After that: the asymptotic PPT statement from the word-level `PseudorandomFunction`,
+  then free-XOR and half-gates.
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
@@ -520,6 +528,16 @@ index links to canonical definitions rather than keeping a second set.
   (`S(5) = 47,176,870`, verified by the bbchallenge Coq proof) as a cross-check;
   independence of busy beaver values from ZFC (Aaronson–Yedidia); and the connection to Chaitin's
   `Ω`.
+- **Post's correspondence problem** ([#3387](https://github.com/cslib-community/complexitylib/issues/3387)):
+  PCP and MPCP are undecidable over `Bool` and over every alphabet with two distinct letters,
+  as `¬ComputablePred` predicates on `Primcodable` instances
+  (`Computability/PostCorrespondence`). The proof reduces `ComputablePred.halting_problem` through
+  a universal `TM0` machine, Sipser's computation-history MPCP instance, and MPCP → PCP with a
+  start marker. Remaining: decidability of unary PCP and of PCP with two dominoes
+  (Ehrenfeucht–Karhumäki–Rozenberg, 1982); undecidability with a bounded number of dominoes (five,
+  Neary, 2015); a reduction from the acceptance problem of an arbitrary machine as in Sipser; and
+  consumers: ambiguity of context-free grammars, emptiness of the intersection of two context-free
+  languages, CFG universality, and mortality of 3×3 integer matrices (Paterson, 1970).
 - **Degrees of unsolvability** ([#3379](https://github.com/cslib-community/complexitylib/issues/3379)):
   oracle codes for Mathlib's `RecursiveIn` with stage-bounded evaluation, the use principle and
   the equivalence `f ≤ᵀ g ↔ ∃ c, Code.eval g c = f`, and the incomparability part of the
@@ -857,13 +875,14 @@ universe size, not supplied as unverified input tables. In dependency order:
   [connectivity](Complexity/Logics/FirstOrder/EhrenfeuchtFraisse/Connectivity.lean),
   [bipartiteness and acyclicity](Complexity/Logics/FirstOrder/EhrenfeuchtFraisse/GraphProperties.lean)
   by interpretation from finite linear orders, and on [Hanf and Gaifman locality](Complexity/Logics/FirstOrder/Locality/Hanf.lean)
+  with its [game-free proofs](Complexity/Logics/FirstOrder/Locality/GraphProperties.lean) that
+  connectivity, acyclicity and being a tree are not definable
   ([locality track](https://github.com/cslib-community/complexitylib/issues/3015)), add Gaifman's
-  normal form theorem, nondefinability applications of locality (Libkin's balanced binary trees
-  and transitive closure, then planarity, Hamiltonicity and `k`-colorability for `k ≥ 3`), games
-  for vocabularies with constants, and pebble games with their finite-variable equivalence
-  theorems; then
-  counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style separations. Connect
-  the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
+  normal form theorem, further nondefinability applications of locality (Libkin's balanced binary
+  trees and transitive closure, then planarity, Hamiltonicity and `k`-colorability for `k ≥ 3`),
+  games for vocabularies with constants, and pebble games with their finite-variable equivalence
+  theorems; then counting and fixed-point expressiveness, including Cai–Fürer–Immerman-style
+  separations. Connect the methods to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
 - **Color refinement and Weisfeiler–Leman:** building on
   [color refinement](Complexity/Foundations/Combinatorics/SimpleGraph/ColorRefinement.lean)
   (stabilization, the coarsest equitable partition and soundness of the 1-WL isomorphism test,
@@ -1052,18 +1071,23 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   - total and variable space;
   - time–space trade-offs for pebbling formulas, building on `Complexity/Computability/Pebbling`;
   - degree versus space in polynomial calculus.
-- **Sum-of-squares** ([#3260](https://github.com/cslib-community/complexitylib/issues/3260)):
+- **Sum-of-squares** ([#3260](https://github.com/cslib-community/complexitylib/issues/3260),
+  [#3423](https://github.com/cslib-community/complexitylib/issues/3423)):
   `Algebraic/SumOfSquares/` has degree-`d` refutations and pseudo-expectations with the easy
   duality direction, Schoenebeck's pseudo-expectation for parity systems with no width-`d`
   derivation of `0 = 1` (Schoenebeck Lemma 13), and Grigoriev's bound `e(G) ≤ d` for Tseitin
-  parity systems, with a linear-degree expander family. Next:
+  parity systems, with a linear-degree expander family. It also has Positivstellensatz
+  refutations with inequality constraints and products of constraints, the cutting-planes
+  encoding of CNFs, and degree `2` exactly for the pigeonhole principle (Grigoriev–Hirsch–Pasechnik
+  Example 2.1). Next:
   - the converse duality, by hyperplane separation, and the Lasserre/Sherali–Adams hierarchies with
     a bridge to the proof system;
-  - Grigoriev's `Ω(n)` bound for random `3`-XOR (Barak–Steurer Theorem 2), through expansion of
-    random hypergraphs, and Schoenebeck's gaps for CSPs implied by XOR;
-  - the `0/1` encoding and Grigoriev's knapsack bound;
-  - the full Positivstellensatz calculus with inequality constraints and products of constraints,
-    and its relation to the equational form here;
+  - Grigoriev's `Ω(n)` bound for random `3`-XOR (Barak–Steurer Theorem 2): first the deterministic
+    half, that `3`-XOR systems on expanding hypergraphs have no narrow derivation of `0 = 1`, then
+    expansion of random hypergraphs, and Schoenebeck's gaps for CSPs implied by XOR;
+  - the `0/1` encoding and Grigoriev's knapsack bound, through pseudo-expectations;
+  - the dynamic Positivstellensatz calculus and the Lovász–Schrijver systems of
+    Grigoriev–Hirsch–Pasechnik, compared with the static form here;
   - size–degree relations for sum-of-squares, and size lower bounds.
 - Polynomial calculus, and certified DPLL solver runtimes.
 - **Frege** ([#3069](https://github.com/cslib-community/complexitylib/issues/3069)): implicational
@@ -1384,11 +1408,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   sketching and cell-probe lower bounds.
 - **Sign-rank and unbounded error**
   ([#3262](https://github.com/cslib-community/complexitylib/issues/3262)): the Paturi–Simon
-  characterization is done. Remaining: sign-rank lower bounds, namely Forster's bound
-  `signRank(H_n) ≥ 2^{n/2}` for Hadamard matrices (needs isotropic position), the
-  Alon–Frankl–Rödl counting bound, `signRank(EQ) = 3` on four or more inputs, and the
-  Razborov–Sherstov exponential sign-rank bound for an AC⁰ function, separating `Σ₂^cc` from
-  `UPP^cc`.
+  characterization and Forster's spectral lower bound (with approximate isotropic position) are
+  done, giving `signRank(IPₙ) ≥ 2^{n/2}` and `UPP(IPₙ) ≥ ⌈n / 2⌉`. Remaining: Forster's exact
+  isotropic-position lemma, the Alon–Frankl–Rödl counting bound, `signRank(EQ) = 3` on four or
+  more inputs, and the Razborov–Sherstov exponential sign-rank bound for an AC⁰ function,
+  separating `Σ₂^cc` from `UPP^cc`.
 - **Dynamic cell-probe lower bounds**
   ([#3207](https://github.com/cslib-community/complexitylib/issues/3207)): the Fredman–Saks
   chronogram bound for dynamic prefix parity, `log_β n ≤ 128 t_q + 1` with
@@ -1718,6 +1742,13 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   (`Algorithms/Matching/MVV`), and Tutte's determinant criterion with the same test for general
   graphs (`Algorithms/Matching/Tutte`): MVV for general graphs (its Pfaffian form), a machine-level
   running-time certificate for the determinant test, and an RNC implementation.
+- **Blocking-flow maximum flow** ([#3328](https://github.com/cslib-community/complexitylib/issues/3328)):
+  after level networks, the Dinitz phase lemma, the `|V| - 1` phase bound and a verified executable
+  Dinitz solver with a greedy blocking-flow search (`Algorithms/Lean/MaxFlow/{LevelGraph,Dinitz}`),
+  a charged `TimeM` version with the current-arc depth-first blocking-flow search (`O(|V| |E|)`
+  per phase, `O(|V|^2 |E|)` overall); Sleator–Tarjan dynamic trees (`O(|V| |E| log |V|)`); the
+  Even–Tarjan unit-capacity bounds `O(|E| · min(|V|^{2/3}, |E|^{1/2}))`; Karzanov's `O(|V|^3)`
+  preflows and push–relabel.
 - **Auction algorithms** ([#3317](https://github.com/cslib-community/complexitylib/issues/3317)):
   remaining after Bertsekas's Gauss–Seidel auction for square, complete integer assignment
   instances (`Algorithms/Lean/Assignment`: `ε`-complementary slackness, termination within
@@ -1860,11 +1891,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   nondecreasing latencies (Beckmann's convex potential); beyond the Pigou bound, worst-case
   networks for latency classes without the constant functions (parallel links and unions of paths)
   and the M/M/1 and M/G/1 delay bounds (Roughgarden 2003, Theorems 4.5 and 4.9 and Section 5); the
-  price of stability by the potential
-  method, including the `H_k` bound for network cost-sharing games
-  ([#3035](https://github.com/cslib-community/complexitylib/issues/3035)); Braess's paradox;
-  weighted and mixed-strategy atomic congestion games; the Monderer–Shapley characterization of
-  potential games as congestion games.
+  tight price of stability of affine congestion games, below the potential-method bound `2`;
+  strong Nash equilibria of fair cost-sharing games and their price of anarchy; price-of-stability
+  bounds for undirected and weighted network design; Braess's paradox; weighted and mixed-strategy
+  atomic congestion games; the Monderer–Shapley characterization of potential games as congestion
+  games.
 
 ### Mechanism design ([#2947](https://github.com/cslib-community/complexitylib/issues/2947))
 
@@ -1973,8 +2004,11 @@ pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
   arithmetic and every transition, with support and mixing hypotheses explicit.
 - **FPRAS and almost-uniform sampling:** `Classes/FPRAS` and `Classes/FPAUS` give the two
   interfaces, and `Classes/FPAUS/FPRAS` proves FPAUS ⇒ FPRAS for one-bit self-reducible
-  witness families (#3039). Prove the converse FPRAS ⇒ FPAUS with Jerrum–Valiant–Vazirani
-  rejection sampling, allow self-reductions fixing several symbols per step, and instantiate both
+  witness families ([#3039](https://github.com/cslib-community/complexitylib/issues/3039)).
+  `Classes/FPAUS/Sampler` proves the output-law half of the converse: the Jerrum–Valiant–Vazirani
+  sampler built from an approximate counter is within statistical distance `2 ^ (-q)` of uniform.
+  Certify that sampler as strict PPT when the counter is an FPRAS, giving the class inclusion
+  FPRAS ⇒ FPAUS. Allow self-reductions fixing several symbols per step, and instantiate both
   directions for concrete relations such as DNF assignments.
 - Extend to randomized approximate counting for matchings and permanents of nonnegative
   rational matrices through explicit mixing and reduction theorems. Reuse the coupling and
