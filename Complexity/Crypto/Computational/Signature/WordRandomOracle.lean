@@ -38,6 +38,8 @@ certify their native realization or the complete forking reduction.
 * `Cslib.Crypto.Protocols.ROMSignature.wordQuery`: exact Boolean channel routing.
 * `Cslib.Crypto.Protocols.ROMSignature.routeWordProgram`: retain private sampling while routing.
 * `Cslib.Crypto.Protocols.ROMSignature.savedCoinForger`: the existing explicit-coin forger model.
+* `Cslib.Crypto.Protocols.ROMSignature.encReplayInput`: the encoding of a saved-coin replay's
+  input.
 
 ## Main results
 
@@ -123,6 +125,12 @@ theorem polynomiallyBounded_savedCoinBudget (c d keyC keyD : ℕ) :
   unfold savedCoinBudget
   fun_prop
 
+/-- Input `(1ⁿ, pk, tape)` of a saved-coin replay (`savedWordReplay`): the security parameter `n`
+in unary, then the public key and the saved coin tape as bit words. The parameter and the public
+key are framed. -/
+abbrev encReplayInput : ℕ × List Bool × List Bool ↪ List Bool :=
+  encPair encUnary (encPair encBits encBits)
+
 /-- Guard the public input, truncate the saved tape, and decode the output, with the original
 external channels supplied explicitly. Malformed output uses the existing total pair decoder. -/
 def savedWordReplay {k : ℕ} {Control Query : Type} {spec : OracleSpec Query}
@@ -140,7 +148,7 @@ def savedWordReplay {k : ℕ} {Control Query : Type} {spec : OracleSpec Query}
 including the security parameter, public key, and arbitrary saved tape. -/
 @[fun_prop] theorem isOraclePPTOn_savedWordReplay {k : ℕ} {Control : Type} [Finite Control]
     (machine : MultiTapePTM k Bool Control Bool) (c d keyC keyD : ℕ) :
-    IsOraclePPTOn (encPair encUnary (encPair encBits encBits)) (encPair encBits encBits)
+    IsOraclePPTOn encReplayInput (encPair encBits encBits)
       (savedWordReplay machine (fun op word => ProbOracleComp.query (op, word)) c d keyC keyD) := by
   unfold savedWordReplay
   apply IsOraclePPTOn.ite'
@@ -268,7 +276,7 @@ theorem exists_savedCoinForger
     (hprogram : IsOraclePPT (encPair encBits encBits) program) :
     ∃ (k : ℕ) (Control : Type) (_ : Finite Control)
       (machine : MultiTapePTM k Bool Control Bool) (c d keyC keyD : ℕ),
-      IsOraclePPTOn (encPair encUnary (encPair encBits encBits)) (encPair encBits encBits)
+      IsOraclePPTOn encReplayInput (encPair encBits encBits)
         (savedWordReplay machine (fun op word => ProbOracleComp.query (op, word)) c d keyC keyD) ∧
       ∀ n keys, keys ∈ (ProbComp.eval (gen n)).support →
         ∀ (Digest : Type) (digestEncoding : Digest ↪ List Bool) (Store : Type)
@@ -306,7 +314,7 @@ theorem exists_eufCmaGame_savedCoinForger {gen : ℕ → ProbComp (List Bool × 
     (hprogram : IsOraclePPT (encPair encBits encBits) program) :
     ∃ (k : ℕ) (Control : Type) (_ : Finite Control)
       (machine : MultiTapePTM k Bool Control Bool) (c d keyC keyD : ℕ),
-      IsOraclePPTOn (encPair encUnary (encPair encBits encBits)) (encPair encBits encBits)
+      IsOraclePPTOn encReplayInput (encPair encBits encBits)
         (savedWordReplay machine (fun op word => ProbOracleComp.query (op, word)) c d keyC keyD) ∧
       ∀ n (Digest : Type) [Fintype Digest] [Nonempty Digest]
         (digestEncoding : Digest ↪ List Bool)

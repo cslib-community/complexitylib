@@ -10,9 +10,9 @@ import ComplexityAbstracts.AndreevThresholdAbstract
 
 /-! # Concrete clients and non-vacuity checks for the Andreev threshold-circuit abstract
 
-Checks the public evaluation, wire and Andreev definitions, the exact upper-bound witness on
-8 bits, positive improved gate and wire lower bounds for an actual circuit on 32568 bits, and
-positive top fan-in bounds for an actual three-member majority vote on 521344 bits.
+Checks the public evaluation, wire and Andreev definitions, the exact upper-bound witness and its
+gate weights on 8 bits, positive improved gate and wire lower bounds for an actual circuit on
+32568 bits, and positive top fan-in bounds for an actual three-member majority vote on 521344 bits.
 -/
 
 namespace ComplexityTests.Abstracts.AndreevThresholdTests
@@ -34,14 +34,20 @@ example (b m : ℕ) :
   rfl
 
 /-- At `b = 2, m = 2` (`n = 8` bits), `exact_upper_bound` gives a depth-two weighted threshold
-circuit of `49` gates (`48` bottom gates and `1` top gate) and at most `432` active wires computing
-`andreev 2 2` on all `256` inputs. -/
+circuit of `49` gates and at most `432` active wires computing `andreev 2 2` on all `256` inputs.
+Each gate reads only inputs, with integer weights in `{-2, …, 2}`, or only gates, with odd integer
+weights of absolute value below `16`. -/
 example :
     ∃ c : ThrCircuit 8,
       c.depth ≤ 2 ∧
       c.size = 49 ∧
       ComplexityAbstracts.AndreevThresholdAbstract.wireCount c ≤ 432 ∧
-      (∀ x, evaluate c x = ComplexityAbstracts.AndreevThresholdAbstract.andreev 2 2 x) :=
+      (∀ x, evaluate c x = ComplexityAbstracts.AndreevThresholdAbstract.andreev 2 2 x) ∧
+      ∀ gate : Fin c.size,
+        ((∀ a, ∃ i, (c.program.lines gate).wires a = Wire.input i) ∧
+          ∀ a, ∃ z : ℤ, |z| ≤ 2 ∧ (c.program.lines gate).op.weight a = z) ∨
+        ((∀ a, ∃ g, (c.program.lines gate).wires a = Wire.gate g) ∧
+          ∀ a, ∃ z : ℤ, Odd z ∧ |z| < 16 ∧ (c.program.lines gate).op.weight a = z) :=
   exact_upper_bound 2 2
 
 /-- The improved explicit bounds are nonvacuous on an actual circuit: at `b = 14, m = 1156`
@@ -54,7 +60,7 @@ example : ∃ c : ThrCircuit (2 ^ 14 + 14 * 1156),
     (Real.sqrt_eq_iff_eq_sq (by norm_num) (by norm_num)).mpr (by norm_num)
   have hε : 3 * (((14 : ℕ) : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ 14) ≤ (1 / 2 : ℝ) := by
     rw [hsqrt14]; norm_num
-  obtain ⟨c, hd, _, _, hcomp⟩ := exact_upper_bound 14 1156
+  obtain ⟨c, hd, _, _, hcomp, -⟩ := exact_upper_bound 14 1156
   have hgate := exact_gate_lower_bound (b := 14) (m := 1156) (by decide) (by decide) hε c hd hcomp
   have hwire := exact_wire_lower_bound (b := 14) (m := 1156) (by decide) (by decide) hε c hd hcomp
   have hsqrt_n : Real.sqrt (((2 ^ 14 + 14 * 1156 : ℕ) : ℝ)) ≤ 181 :=

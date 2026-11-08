@@ -1,13 +1,14 @@
 /-
 Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Josha Dekker, Devon Tuma, Kexing Ying, Samuel Schlesinger
+Authors: Josha Dekker, Devon Tuma, Kexing Ying, Samuel Schlesinger, Karn Seth
 -/
 
 module
 -- upstream: candidate (addition to `Cslib/Probability/PMF.lean`)
 
 public import Complexity.Probability.PMF
+public import Mathlib.Data.Fintype.Pi
 
 /-!
 # Uniform distributions and resampling
@@ -30,8 +31,12 @@ the overwritten string and the old part together determine `(a, b)`.
 * `Cslib.Probability.PMF.mem_support_uniformOfFintype`: every value has positive uniform mass.
 * `Cslib.Probability.PMF.uniformOfFintype_finset_map_val`: subtype and finite-set uniform
   laws agree.
-* `Cslib.Probability.PMF.uniformOfFintype_prod_map_fst`: the first component of a uniform pair is
-  uniform.
+* `Cslib.Probability.PMF.uniformOfFintype_prod_map_fst`,
+  `Cslib.Probability.PMF.uniformOfFintype_bind_map`: the first component of a uniform pair is
+  uniform, and mapping over two independent uniform draws is mapping over a uniform pair.
+* `Cslib.Probability.PMF.uniformOfFintype_pi_map_restrict`,
+  `Cslib.Probability.PMF.uniformOfFintype_pi_bind_restrict`: restricting a uniform dependent
+  function to a finite subset gives the uniform distribution on that subset.
 * `Cslib.Probability.PMF.uniformOfFintype_bind_map_fst_equiv`,
   `Cslib.Probability.PMF.uniformOfFintype_bind_bind_fst_equiv`: resampling along an equivalence.
 * `Cslib.Probability.PMF.toOuterMeasure_uniformOfFinset`,
@@ -84,6 +89,38 @@ theorem uniformOfFintype_prod_map_fst :
         funext a
         exact PMF.map_const _ _
     _ = _ := PMF.bind_pure _
+
+/-- Mapping a curried binary function over two independent uniform draws is equivalent to
+mapping the uncurried function over a uniform pair. Iterating this rewrite collapses `n`-ary
+chains of independent uniform draws into a single `uniformOfFintype` over a nested product. -/
+theorem uniformOfFintype_bind_map (f : α → β → γ) :
+    ((uniformOfFintype α).bind fun a => (uniformOfFintype β).map fun b => f a b) =
+      (uniformOfFintype (α × β)).map (fun p => f p.1 p.2) := by
+  rw [← uniformOfFintype_prod, PMF.map_bind]
+  simp [PMF.map_comp, Function.comp_def]
+
+/-- Restricting a uniform dependent function on `ι` to `I : Finset ι` gives the uniform
+distribution on `(i : I) → π i`. -/
+theorem uniformOfFintype_pi_map_restrict {ι : Type*} [Fintype ι] [DecidableEq ι]
+    {π : ι → Type*} [∀ i, Fintype (π i)] [∀ i, Nonempty (π i)] (I : Finset ι) :
+    (uniformOfFintype (∀ i, π i)).map I.restrict = uniformOfFintype ((i : I) → π i) := by
+  let e := Equiv.piEquivPiSubtypeProd (fun i => i ∈ I) π
+  calc (uniformOfFintype (∀ i, π i)).map I.restrict
+      = ((uniformOfFintype (∀ i, π i)).map e).map Prod.fst := by
+          rw [PMF.map_comp]; rfl
+    _ = (uniformOfFintype (((i : I) → π i) × ((j : {j // j ∉ I}) → π j))).map Prod.fst := by
+          rw [uniformOfFintype_map_equiv e]
+    _ = uniformOfFintype ((i : I) → π i) := uniformOfFintype_prod_map_fst
+
+/-- Binding a uniform dependent function on `ι` to a continuation that depends only on its
+restriction to `I : Finset ι` is equivalent to sampling uniformly on `(i : I) → π i`. -/
+theorem uniformOfFintype_pi_bind_restrict {ι : Type*} [Fintype ι] [DecidableEq ι]
+    {π : ι → Type*} [∀ i, Fintype (π i)] [∀ i, Nonempty (π i)]
+    (I : Finset ι) (f : ((i : I) → π i) → PMF ε) :
+    ((uniformOfFintype (∀ i, π i)).bind fun a => f (I.restrict a)) =
+      (uniformOfFintype ((i : I) → π i)).bind f := by
+  rw [← uniformOfFintype_pi_map_restrict I, PMF.bind_map]
+  rfl
 
 variable [Fintype γ] [Nonempty γ] [Finite δ]
 

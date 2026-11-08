@@ -6,23 +6,47 @@ Authors: Samuel Schlesinger
 import VersoManual
 import Complexity.Computability.Complexity.CookLevin.Completeness
 import Complexity.Computability.Complexity.Problems.CircuitSAT
+import Complexity.Computability.Complexity.Problems.ChromaticNumber
 import Complexity.Computability.Complexity.Problems.Clique
+import Complexity.Computability.Complexity.Problems.CliqueCover
 import Complexity.Computability.Complexity.Problems.Coloring
+import Complexity.Computability.Complexity.Problems.DominatingSet
 import Complexity.Computability.Complexity.Problems.ExactThreeSAT
+import Complexity.Computability.Complexity.Problems.FeedbackArcSet
+import Complexity.Computability.Complexity.Problems.FeedbackVertexSet
 import Complexity.Computability.Complexity.Problems.NAEThreeSAT
 import Complexity.Computability.Complexity.Problems.Hamiltonian.Directed
 import Complexity.Computability.Complexity.Problems.Hamiltonian.Undirected
 import Complexity.Computability.Complexity.Problems.IntegerProgramming
+import Complexity.Computability.Complexity.Problems.JobSequencing
 import Complexity.Computability.Complexity.Problems.Knapsack
+import Complexity.Computability.Complexity.Problems.MaxCut
+import Complexity.Computability.Complexity.Problems.MaxTwoSAT
 import Complexity.Computability.Complexity.Problems.Partition
 import Complexity.Computability.Complexity.Problems.PlanarPositiveOneInThreeSAT
 import Complexity.Computability.Complexity.Problems.PlanarThreeSATThree
 import Complexity.Computability.Complexity.Problems.SubsetSum
 import Complexity.Computability.Complexity.Problems.TSP
+import Complexity.Computability.Complexity.Problems.TwoSAT.Completeness
 import Complexity.Computability.Complexity.Problems.ThreeSAT
 import Complexity.Computability.Complexity.Problems.ThreeSATThree
 import Complexity.Computability.Complexity.Problems.VertexCover
+import Complexity.Computability.Complexity.Problems.CSP.Constant
+import Complexity.Computability.Complexity.Problems.CSP.Majority
+import Complexity.Computability.Complexity.Problems.CSP.Hardness
+import Complexity.Computability.Complexity.Problems.CSP.Schaefer
+import Complexity.Computability.Complexity.Problems.HornSAT
+import Complexity.Computability.Complexity.Problems.XORSAT
+import Complexity.Computability.PolyTime.CSP.Gadget
+import Complexity.Logics.Polymorphism.BooleanClone
 import Complexity.Logics.Propositional.CNF.Majority
+import Complexity.Computability.Complexity.Problems.CSP.Incidence
+import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
+import Complexity.Computability.PolyTime.CSP.Table
+import Complexity.Logics.Propositional.CSP.Edge.Augmenting
+import Complexity.Logics.Propositional.CSP.Table.DeltaMatroid
+import Complexity.Foundations.Data.BitString.CyclicDifference
+import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
 import Complexity.Tactic.PolyTime
 
 open Verso.Genre Manual
@@ -47,6 +71,13 @@ development imports the problems it uses. The first examples need only these:
 ```
 import Complexity.Computability.Complexity.CookLevin.Completeness
 import Complexity.Computability.Complexity.Problems.Clique
+import Complexity.Computability.Complexity.Problems.CSP.Incidence
+import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
+import Complexity.Computability.PolyTime.CSP.Table
+import Complexity.Logics.Propositional.CSP.Edge.Augmenting
+import Complexity.Logics.Propositional.CSP.Table.DeltaMatroid
+import Complexity.Foundations.Data.BitString.CyclicDifference
+import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
 import Complexity.Tactic.PolyTime
 
 open Cslib.Complexity Turing.MultiTapeTM
@@ -239,6 +270,17 @@ Here is the tree, with the reduction for each edge and the completeness theorem 
   3SAT to exact 3SAT ({name}`polyTimeReducible_ThreeSAT_ExactThreeSAT`,
   {name}`ExactThreeSAT_npComplete`) and to subset sum ({name}`polyTimeReducible_ThreeSAT_SubsetSum`,
   {name}`SubsetSum_npComplete`).
+* 3SAT reduces to maximum 2-satisfiability ({name}`polyTimeReducible_ThreeSAT_MaxTwoSAT`,
+  {name}`MaxTwoSAT_npComplete`): given clauses of at most two literals and a binary target `K`,
+  can some assignment satisfy `K` of them? Each clause of three literals becomes the ten-clause
+  gadget of Garey, Johnson and Stockmeyer ({name}`MaxTwoSAT.gadget`) with a fresh variable, whose
+  satisfied clauses depend only on four truth values ({name}`MaxTwoSAT.countP_gadget`). An
+  assignment satisfies at most seven of them ({name}`MaxTwoSAT.gadgetScore_le`), seven when the
+  source clause holds and the fresh variable is the majority of its literals
+  ({name}`MaxTwoSAT.gadgetScore_majority`), and at most six when it fails
+  ({name}`MaxTwoSAT.gadgetScore_false_le`). Short clauses
+  are first padded by repetition through {name}`toExactThreeSAT`. Plain 2-satisfiability, by
+  contrast, is in `NL` ({name}`TwoSAT.mem_NL`).
 * 3SAT reduces to {name}`ThreeSATThree` via {name}`toThreeSATThree`
   ({name}`ThreeSATThree_npComplete`). Its clauses have at most three literals, including binary
   clauses, and every variable has at most three literal occurrences. Repetitions within a clause
@@ -306,15 +348,31 @@ Here is the tree, with the reduction for each edge and the completeness theorem 
   their satisfying extensions are unique.
 * Subset sum reduces to partition ({name}`polyTimeReducible_SubsetSum_Partition`,
   {name}`Partition_npComplete`), knapsack ({name}`polyTimeReducible_SubsetSum_Knapsack`,
-  {name}`Knapsack_npComplete`) and zero-one integer programming
-  ({name}`polyTimeReducible_SubsetSum_ZeroOneIP`, {name}`ZeroOneIP_npComplete`).
+  {name}`Knapsack_npComplete`), zero-one integer programming
+  ({name}`polyTimeReducible_SubsetSum_ZeroOneIP`, {name}`ZeroOneIP_npComplete`) and sequencing
+  with deadlines and penalties ({name}`polyTimeReducible_SubsetSum_JobSequencing`,
+  {name}`JobSequencing_npComplete`). Partition reduces to weighted maximum cut through Karp's
+  complete graph weighted by products ({name}`polyTimeReducible_Partition_MaxCut`,
+  {name}`MaxCut_npComplete`).
 * SAT reduces to independent set ({name}`polyTimeReducible_SAT_IndependentSet`,
   {name}`IndependentSet_npComplete`), which reduces to clique
   ({name}`polyTimeReducible_IndependentSet_Clique`, {name}`Clique_npComplete`) and vertex cover
   ({name}`polyTimeReducible_IndependentSet_VertexCover`, {name}`VertexCover_npComplete`).
+* Vertex cover reduces to directed feedback vertex set by replacing every edge with two opposite
+  arcs ({name}`polyTimeReducible_VertexCover_FeedbackVertexSet`,
+  {name}`FeedbackVertexSet_npComplete`), which reduces to feedback arc set by splitting every
+  vertex into an arc ({name}`polyTimeReducible_FeedbackVertexSet_FeedbackArcSet`,
+  {name}`FeedbackArcSet_npComplete`).
+* Vertex cover reduces to dominating set through a hub adjacent to a copy of every vertex, a
+  pendant on the hub, and a vertex for every edge adjacent to the copies of its endpoints
+  ({name}`polyTimeReducible_VertexCover_DominatingSet`, {name}`DominatingSet_npComplete`).
 * SAT reduces to three-colorability ({name}`polyTimeReducible_SAT_ThreeColoring`,
   {name}`ThreeColoring_npComplete`) and to `k`-colorability for every `k ≥ 3`
-  ({name}`polyTimeReducible_SAT_KColoring`, {name}`KColoring_npComplete`).
+  ({name}`polyTimeReducible_SAT_KColoring`, {name}`KColoring_npComplete`). Fixed colorability
+  reduces to chromatic number, with the number of colors in the input
+  ({name}`polyTimeReducible_KColoring_ChromaticNumber`, {name}`ChromaticNumber_npComplete`), which
+  reduces to clique cover by complementing the graph
+  ({name}`polyTimeReducible_ChromaticNumber_CliqueCover`, {name}`CliqueCover_npComplete`).
 * SAT reduces to directed Hamiltonian paths and cycles ({name}`polyTimeReducible_SAT_DirHamPath`,
   {name}`DirHamPath_npComplete`, {name}`polyTimeReducible_SAT_DirHamCycle`,
   {name}`DirHamCycle_npComplete`), these reduce to their undirected versions
@@ -339,10 +397,11 @@ results by problem, with the module to import for each.
 
 # Boolean Constraint Languages
 
-Schaefer's Boolean dichotomy classifies fixed finite constraint languages over
-`Bool`; the constraints may have any fixed arity. The full six-case complexity
-classification is still open in this library. One structural case is proved:
-majority preservation is equivalent to definability by clauses of width at most
+Schaefer's full Boolean dichotomy is proved for fixed finite constraint languages
+over `Bool`, with arbitrary fixed relation arities and explicit binary instance
+encoding. The six common-polymorphism cases are native P; otherwise the problem
+is native NP-complete. Its structural ingredients include majority preservation
+being equivalent to definability by clauses of width at most
 two, with no auxiliary variables
 ({name}`Cslib.Logic.PL.isPolymorphism_majority_iff_exists_twoCNF`).
 
@@ -360,6 +419,116 @@ Here preservation applies the operation coordinatewise to satisfying tuples.
 projection, and {name}`Cslib.Logic.IsPolymorphism.substitute` covers repeated
 variables. Empty and nullary relations are allowed. This characterization alone
 does not supply a polynomial-time certificate for constructing the formula.
+
+For native complexity, {name}`CSPSAT` fixes a relation alphabet, arities and list
+semantics, and rejects input scopes with incorrect lengths. Variable labels are
+arbitrary natural numbers encoded in binary by {name}`encCSP` with {name}`encNat`.
+Every fixed finite Boolean language is in NP ({name}`CSPSAT.mem_NP`). Common unary
+constants and majority give native P via {name}`CSPSAT.mem_P_of_constant` and
+{name}`CSPSAT.mem_P_of_majority`. Empty relations are handled explicitly.
+
+```lean
+open Cslib.Logic.PL in
+example {Rel : Type} [Finite Rel] (encRel : Rel ↪ List Bool)
+    (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
+    (h : CSP.HasPolymorphism arity sem (Cslib.majority 3)) :
+    CSPSAT arity sem ∈ P (encCSP encRel encNat) :=
+  CSPSAT.mem_P_of_majority encRel arity sem h
+```
+
+The language is fixed: template lookup is finite preprocessing. The reduction
+instantiates its local clauses in native polynomial time and uses the existing
+native 2SAT theorem; no solver hypothesis is needed.
+
+The positive-arity Boolean clone classification is proved in
+{module}`Complexity.Logics.Polymorphism.BooleanClone`:
+{name}`Cslib.Logic.BooleanClone.classification` covers every positive arity.
+For a language lacking the six common operations,
+{name}`Cslib.Logic.PL.CSP.projection_or_negation_of_not_hasSchaeferPolymorphism`
+identifies every polymorphism as a projection or negated projection. This supplies
+the algebraic ingredient used by the native hardness application below.
+
+For reductions between fixed Boolean languages,
+{name}`Cslib.Logic.PL.CSP.exists_ppGadget_of_polymorphisms` constructs equality-free
+primitive-positive gadgets for nonempty target relations with separating columns.
+{name}`Cslib.Complexity.CSP.computableInPolyTime_replaceGadgetsGuarded` certifies
+fixed-gadget replacement with binary labels, fresh auxiliaries and exact-arity
+rejection. The hardness application must discharge nonemptiness, separation and
+polymorphism invariance; general equality elimination is outside this gadget API.
+The shared guard certificate is
+{name}`Cslib.Complexity.CSP.computableInPolyTime_validArity` in
+{module}`Complexity.Computability.PolyTime.CSP.Boolean`.
+
+The hard branch is native and unconditional:
+{name}`CSPSAT.npComplete_of_not_hasSchaeferPolymorphism` proves NP-completeness
+for any fixed finite language lacking all six common operations. The proof imports
+the proved clone classification, constructs gadgets for the eight self-dual
+reference lifts of signed ternary clauses, and compiles them in native polynomial
+time. Their nonemptiness and separating columns are proved internally. Empty and
+nullary language relations remain allowed.
+
+```lean
+open Cslib.Logic.PL in
+example {Rel : Type} [Finite Rel] (encRel : Rel ↪ List Bool)
+    (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
+    (h : ¬ CSP.HasSchaeferPolymorphism arity sem) :
+    NPComplete (encCSP encRel encNat) (CSPSAT arity sem) :=
+  CSPSAT.npComplete_of_not_hasSchaeferPolymorphism encRel arity sem h
+```
+
+{name}`CSPSAT.exists_linear_size_reduction_from_threeSAT` gives the actual
+hardness reduction together with correctness, native polynomial-time computation
+and `output.numVars + output.length ≤ C * input.length`. Thus the number of
+distinct output variables plus constraints is at most a fixed constant times the
+number of input clauses, and hence at most `C * (input.numVars + input.length)`.
+The constant depends only on the fixed language. The bound holds on all raw CNFs,
+including malformed and empty inputs; it concerns combinatorial counts rather
+than encoded bit length or running time.
+
+```lean
+open Cslib.Logic.PL Turing.MultiTapeTM in
+example {Rel : Type} [Finite Rel] (encRel : Rel ↪ List Bool)
+    (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
+    (h : ¬ CSP.HasSchaeferPolymorphism arity sem) :
+    ∃ (f : CNF ℕ → CSP Rel ℕ) (C : ℕ),
+      ComputableInPolyTime f encCNF (encCSP encRel encNat) ∧
+      (∀ φ, φ ∈ ThreeSAT ↔ f φ ∈ CSPSAT arity sem) ∧
+      (∀ φ, (f φ).numVars + (f φ).length ≤ C * (φ.numVars + φ.length)) := by
+  obtain ⟨f, C, hp, hm, hs⟩ :=
+    CSPSAT.exists_linear_size_reduction_from_threeSAT encRel arity sem h
+  refine ⟨f, C, hp, hm, fun φ => (hs φ).trans ?_⟩
+  apply Nat.mul_le_mul_left
+  omega
+```
+
+The remaining tractable normal forms have proved native solvers:
+{name}`Cslib.Logic.PL.isPolymorphism_and_iff_exists_hornCNF` and
+{name}`Cslib.Logic.PL.isPolymorphism_or_iff_exists_dualHornCNF` characterize
+AND/OR preservation. {name}`HornSAT.mem_P` and {name}`DualHornSAT.mem_P` decide
+all-width formulas under {name}`encCNF`. Horn syntax counts positive occurrences,
+so repeating a positive literal twice is rejected as non-Horn syntax.
+
+{name}`Cslib.Logic.PL.isPolymorphism_parity_iff_exists_affineSystem`
+characterizes ternary parity preservation by affine equations.
+{name}`XORSAT.satisfiable_mem_P` certifies ordinary sparse XOR-SAT with binary
+variable names; repeated variables cancel modulo two. The dense Gaussian
+elimination algorithm and sparse compiler both have native certificates.
+Their fixed-language compilers give {name}`CSPSAT.mem_P_of_and`,
+{name}`CSPSAT.mem_P_of_or` and {name}`CSPSAT.mem_P_of_parity`, including repeated
+scope variables, sparse binary labels and empty/nullary relations. Malformed
+scopes are rejected before instantiation.
+
+{name}`CSPSAT.schaefer_dichotomy` assembles all six cases and the hard branch.
+Its unconditional corollary uses no assumption separating P and NP:
+
+```lean
+open Cslib.Logic.PL in
+example {Rel : Type} [Finite Rel] (encRel : Rel ↪ List Bool)
+    (arity : Rel → ℕ) (sem : Rel → List Bool → Bool) :
+    CSPSAT arity sem ∈ P (encCSP encRel encNat) ∨
+      NPComplete (encCSP encRel encNat) (CSPSAT arity sem) :=
+  CSPSAT.mem_P_or_npComplete encRel arity sem
+```
 
 # Proving a Problem NP-Complete
 %%%
@@ -489,3 +658,154 @@ A new problem follows the same outline. Define it with its encoding, give a veri
 {name}`IsVerifier`, certify the verifier, give a reduction map from a problem in the catalogue and
 prove it correct, certify the map, and combine. Put it in its own module under
 `Complexity/Computability/Complexity/Problems/`, next to the problems it reduces from.
+
+
+# Planar Boolean CSP Prerequisites
+
+Ordered cyclic differences are defined by
+{name}`Cslib.BitString.cyclicDifference`. They determine a tuple up to simultaneous
+complementation and have exactly the even-parity tuples as their image.
+{name}`Cslib.BitString.cyclicIntegral` supplies a prefix-parity inverse:
+
+```lean
+open Cslib Cslib.BitString in
+example {n : ℕ} (d : Fin n → Bool)
+    (hd : parityOn Finset.univ d = false) :
+    cyclicDifference (cyclicIntegral d) = d :=
+  cyclicDifference_cyclicIntegral d hd
+```
+
+{name}`Cslib.BitString.IsDeltaMatroid` requires nonemptiness and one-sided
+symmetric exchange. {name}`Cslib.BitString.IsEvenDeltaMatroid` adds common parity,
+which may be odd. It forces exchange to flip two distinct coordinates:
+
+```lean
+open Cslib.BitString in
+example {ι : Type} [Fintype ι] [DecidableEq ι]
+    {R : Set (ι → Bool)} (hR : IsEvenDeltaMatroid R)
+    {x y : ι → Bool} (hx : x ∈ R) (hy : y ∈ R)
+    {i : ι} (hi : x i ≠ y i) :
+    ∃ j, j ≠ i ∧ x j ≠ y j ∧ flipOn {i, j} x ∈ R :=
+  hR.exchange hx hy hi
+```
+
+Twists, coordinate transport and feasible two-bit connectivity are also proved.
+The difference tests show that ternary NAE has an even delta-matroid difference
+relation. These are mathematical prerequisites; a planar embedding algorithm,
+general edge-CSP solver and full planar dichotomy remain to be formalized.
+
+
+# Indexed CSP and Table Operations
+
+{name}`Cslib.Logic.PL.CSP.Occurrence` preserves constraint and scope positions,
+including repeated variables and identical constraints. Given a supplied value
+`outside : D`, consistent valid local labels reconstruct precisely a global CSP
+model. Reconstruction uses `outside` at nonoccurring variables; this hypothesis
+matters when the domain may be empty. The native incidence graph retains one
+edge per argument; it never expands sparse binary names to a range.
+
+```lean
+open Cslib.Logic.PL in
+example {Rel V D : Type} (sem : Rel → List D → Bool)
+    (F : CSP Rel V) (outside : D) :
+    F.Satisfiable sem ↔ ∃ l : F.OccurrenceLabeling D,
+      CSP.ValidLabeling sem l ∧ CSP.ConsistentLabeling l :=
+  CSP.satisfiable_iff_exists_labeling sem outside
+```
+
+{name}`Cslib.Logic.PL.CSP.Table` is an explicit relation alphabet for the same CSP
+lists. Its semantics rejects malformed row widths. Local contraction projects
+outside coordinates and appends a connector bit for zero or one internal
+change. The local native certificate does not yet prove blossom correctness.
+Exactly-one generation takes a scope list whose length funds its quadratic
+output:
+
+```lean
+open Cslib.Logic.PL.CSP Cslib.Complexity.CSP in
+example (scope : List ℕ) (hs : scope ≠ []) :
+    ∃ row, (Table.exactlyOne scope).sem row = true :=
+  (Table.exists_sem_exactlyOne scope).mpr
+    (List.length_pos_iff.mpr hs)
+```
+
+```lean
+open Cslib.Complexity Cslib.Logic.PL.CSP
+  Cslib.Complexity.CSP Turing.MultiTapeTM in
+example : ComputableInPolyTime (Table.exactlyOne (V := ℕ))
+    (encList encNat) encTable :=
+  computableInPolyTime_tableExactlyOne
+```
+
+{name}`Cslib.Complexity.Graph.RotationSystem` retains indexed ends of loops and
+parallel edges, all face orbits including fixed points, and cyclic vertex orders.
+{name}`Cslib.Complexity.CSP.RespectsArgumentOrder` requires the constraint-side
+rotation to follow the scope's cyclic order. This rotation structure imposes no
+genus-zero condition and supplies no planarity recognizer or solver.
+
+
+# Delta-Matroid Closure for Local Contraction
+
+{name}`Cslib.BitString.IsDeltaMatroid.comp` and
+{name}`Cslib.BitString.IsEvenDeltaMatroid.comp` prove relational composition
+along finite shared coordinates. They require a nonempty output: nonempty input
+relations can disagree on the shared values. The proofs use the one-sided
+exchange axiom and permit empty external coordinate types.
+
+For the actual guarded table operation,
+{name}`Cslib.Logic.PL.CSP.Table.isEvenDeltaMatroid_contract` supplies the
+mathematical invariant used by blossom contraction. A feasible reference and
+distinct in-range internal positions are enough; the reference witnesses output
+nonemptiness internally:
+
+```lean
+open Cslib.BitString Cslib.Logic.PL.CSP in
+example {table : Table} {reference : List Bool} {positions : List ℕ}
+    (hR : IsEvenDeltaMatroid (booleanRelation Table.arity Table.sem table))
+    (hc : Table.canContract table reference positions = true) :
+    IsEvenDeltaMatroid (booleanRelation Table.arity Table.sem
+      (Table.contract table reference positions)) :=
+  Table.isEvenDeltaMatroid_contract hR hc
+```
+
+The new connector's exactly-one relation is even for every nonempty scope,
+with odd common parity. Empty scopes are excluded. These local mathematical
+closures do not prove whole-blossom lifting, the edge solver, or its native cost.
+
+
+# Prefix-Valid Edge-CSP Augmentation
+
+{name}`Cslib.Logic.PL.CSP.defects` counts distinct inconsistent variables.
+{name}`Cslib.Logic.PL.CSP.Walk.IsFWalk` requires distinct endpoints, consistent
+internal variables, and validity after every variable-ended prefix. An
+augmenting walk removes exactly two defects:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP in
+example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
+    (h : EdgeInstance F) {sem : Rel → List Bool → Bool}
+    {f : OccurrenceLabeling F Bool} {w : Walk F}
+    (hw : w.IsAugmenting sem f) :
+    (defects (w.flip f)).card + 2 = (defects f).card :=
+  hw.card_defects_flip_add_two h
+```
+
+For even delta-matroid constraints,
+{name}`Cslib.Logic.PL.CSP.EdgeInstance.augmentingWalk` is a total deterministic
+two-phase routine. Its correctness requires an improving valid comparison
+labeling as input; it does not search for that labeling. The combined exchange
+count is bounded by half the initial occurrence Hamming distance. No native
+machine-runtime bound is claimed yet.
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP in
+example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
+    (h : EdgeInstance F) {sem : Rel → List Bool → Bool}
+    (hM : EdgeInstance.EvenConstraints sem F)
+    {f : OccurrenceLabeling F Bool} :
+    IsOptimalLabeling sem f ↔ ValidLabeling sem f ∧
+      ¬ ∃ w : Walk F, w.IsAugmenting sem f :=
+  h.isOptimalLabeling_iff_no_augmentingWalk hM
+```
+
+The test module also rejects final-only validity. A complete solver still needs
+DAG/forest/blossom search and the native runtime certificate.

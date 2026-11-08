@@ -43,7 +43,7 @@ example :
     ((pi bits).toOuterMeasure {u | u 0 = true}).toReal ≤ (2 : ℝ) ^
       (-∑ j, dist (((pi bits).filter {u | u 0 = true} first_true_mem).map fun u => u j)
         (bits j) ^ 2) :=
-  ⟨by simpa using sq_sum_dist_map_filter_pi_le bits {u | u 0 = true} first_true_mem,
+  ⟨by simpa using sq_sum_dist_map_filter_pi_le bits {u | u 0 = true} first_true_mem Finset.univ,
     toOuterMeasure_toReal_le_two_rpow bits _ first_true_mem⟩
 
 end ComplexityTests.ProductConditioning

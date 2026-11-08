@@ -22,6 +22,7 @@ import Complexity.Languages.Probabilistic.Notation
 import Complexity.Crypto.Primitives.PRG.NextBit
 import Complexity.Crypto.Game.Statistical
 import Complexity.Probability.PMF.Uniform
+import Complexity.Probability.StatisticalDistance.ClosedForm
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Foundations.Data.Nat.Asymptotics
 import Complexity.Tactic.PPT
@@ -1256,11 +1257,6 @@ private theorem bind_four_comm_fifth {α₁ α₂ α₃ α₄ α₅ β : Type*}
   congr 1; funext a₃
   exact PMF.bind_comm p₄ p₅ (fun a₄ a₅ => PMF.pure (F a₁ a₂ a₃ a₄ a₅))
 
-private theorem ofList_take_eq_ofList (m : ℕ) (w : List Bool) :
-    ofList m (w.take m) = ofList m w := by
-  funext i
-  simp [ofList, List.getD_eq_getElem?_getD, List.getElem?_take_of_lt i.isLt]
-
 private theorem ofList_ofFn_ofList_of_le {m L : ℕ} (h : m ≤ L) (w : List Bool) :
     ofList m (List.ofFn (ofList L w)) = ofList m w := by
   funext i
@@ -1359,7 +1355,7 @@ private theorem entropy_fullGen_condSeedSet_ge (g : List Bool → List Bool) (im
     have hmap_lhl : D_lhl = D_out.map (fun y : BitString L => ofList m_lhl (List.ofFn y)) := by
       simp only [D_lhl, D_out, PMF.map_comp, Function.comp_def]
       congr 1; funext z
-      rw [ofList_take_eq_ofList, ofList_ofFn_ofList_of_le (lhlPrefixLen_le_output d γ k n)]
+      rw [BitString.ofList_take, ofList_ofFn_ofList_of_le (lhlPrefixLen_le_output d γ k n)]
     rw [hmap_out, hmap_lhl]
     exact PMF.entropy_map_le D_out _
   let packLHL
@@ -2870,11 +2866,6 @@ private theorem log_le_two_mul_log_of_le_pow {E k n : ℕ} (hk : 2 ≤ k) (hn : 
   have hle : n ≤ 2 ^ (2 * E * Nat.log 2 k) := hn.trans (pow_le_two_pow_two_mul_log E hk)
   exact (Nat.log_mono_right hle).trans_eq (Nat.log_pow Nat.one_lt_two _)
 
-private theorem dist_bool_eq_abs_sub (P₁ P₂ : PMF Bool) :
-    dist P₁ P₂ = |(P₁ true).toReal - (P₂ true).toReal| := by
-  rw [← coe_nndist, ← Game.advantage_eq_nndist, Game.coe_advantage]
-  simp [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal]
-
 private theorem dist_bool_le_of_xor_sub_le (P₁ P₂ : PMF Bool) (B : ℝ)
     (h : ∀ pol : Bool,
       ((P₁.map (fun b => b ^^ pol)) true).toReal -
@@ -2893,7 +2884,7 @@ private theorem dist_bool_le_of_xor_sub_le (P₁ P₂ : PMF Bool) (B : ℝ)
     simp [hfalse_eq]
   rw [hmap_false, hmap_false] at hfalse
   rw [hmap_true, hmap_true] at htrue
-  rw [dist_bool_eq_abs_sub, abs_sub_le_iff]
+  rw [dist_bool, abs_sub_le_iff]
   exact ⟨hfalse, by linarith⟩
 
 private theorem length_encPair_le_condCoinBudget (c_eval d_eval γ n : ℕ) {w : List Bool}
@@ -3048,7 +3039,7 @@ private theorem dist_condSeedSet_uniform_le (g : List Bool → List Bool) (imgLe
     have hle_abs :
         (P₀ true).toReal - ((P₂.map (fun b => b ^^ pol)) true).toReal ≤
           dist P₀ (P₂.map (fun b => b ^^ pol)) :=
-      (le_abs_self _).trans_eq (dist_bool_eq_abs_sub P₀ (P₂.map (fun b => b ^^ pol))).symm
+      (le_abs_self _).trans_eq (dist_bool P₀ (P₂.map (fun b => b ^^ pol))).symm
     refine hle_abs.trans ?_
     rw [hP₀_eq, hP₂_pol]
     refine (PMF.dist_bind_le _ _ _).trans ?_

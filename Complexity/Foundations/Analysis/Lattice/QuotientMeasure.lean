@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Mathlib.Algebra.Module.ZLattice.Covolume
 public import Mathlib.MeasureTheory.Measure.Haar.Quotient
+import Complexity.Foundations.MeasureTheory.Group.FundamentalDomain
 
 /-!
 # Normalization of lattice quotient measures
@@ -17,7 +18,9 @@ public import Mathlib.MeasureTheory.Measure.Haar.Quotient
 The reference measure is the canonical quotient pushforward of Haar measure restricted to
 an actual fundamental domain, divided by the positive covolume. No new measure is defined;
 these are consequences of Mathlib's fundamental-domain and quotient Haar measure APIs.
-The opposite subgroup action agrees with Mathlib's canonical quotient conventions.
+Fundamental domains are taken for the opposite subgroup action, following Mathlib's canonical
+quotient conventions; `MeasureTheory.isAddFundamentalDomain_op_iff` converts them to fundamental
+domains for the lattice itself, as the covolume API expects.
 
 ## Main results
 
@@ -46,21 +49,11 @@ variable (μ : Measure E) [μ.IsAddHaarMeasure]
 
 local instance : Countable L.toAddSubgroup := inferInstanceAs (Countable L)
 
-omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] [BorelSpace E]
-    [DiscreteTopology L] [IsZLattice ℝ L] [μ.IsAddHaarMeasure] in
-private theorem fundamentalDomain_of_op {F : Set E}
-    (hF : IsAddFundamentalDomain L.toAddSubgroup.op F μ) : IsAddFundamentalDomain L F μ := by
-  let e : L.toAddSubgroup.op ≃ L := (AddSubgroup.equivOp L.toAddSubgroup).symm
-  have h := hF.preimage_of_equiv (QuasiMeasurePreserving.id μ) e.bijective (fun g x ↦ ?_)
-  · convert! h using 1
-  · change ((e g : L) : E) + x = x + AddOpposite.unop (g : Eᵃᵒᵖ)
-    exact add_comm _ _
-
 /-- A fundamental domain has finite ambient measure equal to the positive real covolume. -/
 theorem measure_eq_ofReal_covolume_of_op {F : Set E}
     (hF : IsAddFundamentalDomain L.toAddSubgroup.op F μ) :
     μ F = ENNReal.ofReal (covolume L μ) := by
-  have h := fundamentalDomain_of_op L μ hF
+  have h : IsAddFundamentalDomain L F μ := isAddFundamentalDomain_op_iff.mp hF
   have : VAddInvariantMeasure L E μ :=
     inferInstanceAs (VAddInvariantMeasure L.toAddSubgroup E μ)
   have hfin : μ F ≠ ∞ := by
