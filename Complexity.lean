@@ -3846,6 +3846,7 @@ public import Complexity.Foundations.Combinatorics.MajorityTree
 public import Complexity.Foundations.Combinatorics.MajorityVote
 public import Complexity.Foundations.Combinatorics.MajorityVote.Weighted
 public import Complexity.Foundations.Combinatorics.Multigraph
+public import Complexity.Foundations.Combinatorics.Multigraph.CutSpace
 public import Complexity.Foundations.Combinatorics.PacketPacking
 public import Complexity.Foundations.Combinatorics.PartialLabelScores
 public import Complexity.Foundations.Combinatorics.PessimisticEstimator
@@ -4011,6 +4012,7 @@ public import Complexity.Foundations.Data.MvPolynomial.PartialDerivatives
 public import Complexity.Foundations.Data.MvPolynomial.SetMultilinear
 public import Complexity.Foundations.Data.MvPolynomial.SetMultilinearProjection
 public import Complexity.Foundations.Data.MvPolynomial.SetMultilinearProjectionProd
+public import Complexity.Foundations.Data.MvPolynomial.Substitution
 public import Complexity.Foundations.Data.MvPolynomial.Support
 public import Complexity.Foundations.Data.MvPolynomial.TruncateTotalDegree
 public import Complexity.Foundations.Data.Nat.ArithmeticProgression
@@ -4449,12 +4451,16 @@ public import Complexity.Logics.Polymorphism.BooleanClone
 public import Complexity.Logics.Propositional.Algebraic.Boolean
 public import Complexity.Logics.Propositional.Algebraic.CNF
 public import Complexity.Logics.Propositional.Algebraic.CNF.Boolean
+public import Complexity.Logics.Propositional.Algebraic.CNF.Parity
 public import Complexity.Logics.Propositional.Algebraic.Nullstellensatz.Combination
 public import Complexity.Logics.Propositional.Algebraic.Nullstellensatz.PolynomialCalculus
 public import Complexity.Logics.Propositional.Algebraic.Nullstellensatz.Proof
+public import Complexity.Logics.Propositional.Algebraic.Nullstellensatz.Tseitin
 public import Complexity.Logics.Propositional.Algebraic.PolynomialCalculus.Invariant
 public import Complexity.Logics.Propositional.Algebraic.PolynomialCalculus.Nullstellensatz
 public import Complexity.Logics.Propositional.Algebraic.PolynomialCalculus.Proof
+public import Complexity.Logics.Propositional.Algebraic.PolynomialCalculus.Tseitin
+public import Complexity.Logics.Propositional.Algebraic.PolynomialCalculus.TseitinExpander
 public import Complexity.Logics.Propositional.Algebraic.SubsetSum
 public import Complexity.Logics.Propositional.CNF
 public import Complexity.Logics.Propositional.CNF.Coding

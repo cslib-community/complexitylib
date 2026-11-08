@@ -735,12 +735,15 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Algebraic proof systems** ([#2861]). Foundations, generic soundness, quantitative NS-to-PC
   simulation and PC-to-NS certificate conversion without resource bounds are in
   `Logics/Propositional/Algebraic`, together with clause-only pointwise CNF arithmetization, the
-  Boolean-axiom CNF encoding, completeness over fields and the Impagliazzo–Pudlák–Sgall subset-sum
-  degree lower bound. Remaining work includes CNF translation with complementary axioms, the
+  Boolean-axiom CNF encoding, completeness over fields, the Impagliazzo–Pudlák–Sgall subset-sum
+  degree lower bound and the linear polynomial calculus degree lower bound for Tseitin formulas
+  over fields with `2 ≠ 0` ([#3213](https://github.com/cslib-community/complexitylib/issues/3213)).
+  Remaining work includes CNF translation with complementary axioms, the
   sharper completeness degree `max(D, n + 1)` and the matching `⌈n/2⌉ + 1` subset-sum upper
   bound, size and degree bounds for PC-to-NS, Cook–Reckhow packaging, proof-system separations
   (including the translation of bounded-width resolution into low-degree polynomial calculus),
-  pigeonhole degree lower bounds and size lower bounds.
+  pigeonhole degree lower bounds and size lower bounds (the polynomial calculus size–degree
+  trade-off would turn the Tseitin degree bound into an exponential size lower bound).
 - **Feasible interpolation** ([#1817]): the transfer of communication lower bounds to proof-size
   lower bounds ([#2019]).
 - **Proof search:** automatizability and weak automatizability with explicit encodings and

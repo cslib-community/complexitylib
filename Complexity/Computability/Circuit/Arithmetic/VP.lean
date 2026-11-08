@@ -12,6 +12,7 @@ public import Complexity.Computability.Circuit.Pi
 public import Cslib.Computability.Circuit.Synthesis
 public import Cslib.Foundations.Data.Nat.PolynomialBound
 public import Mathlib.Algebra.MvPolynomial.Degrees
+import Complexity.Foundations.Data.MvPolynomial.Substitution
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
 
@@ -249,20 +250,6 @@ theorem IsProjection.trans {P : MvPolynomial υ K} {Q : MvPolynomial σ K} {R : 
   obtain ⟨ρ, rfl⟩ := hPQ
   obtain ⟨ρ', rfl⟩ := hQR
   exact ⟨_, (projection_projection ρ ρ' R).symm⟩
-
-/-- Substituting polynomials of degree at most one does not raise the degree. -/
-private theorem totalDegree_aeval_le {g : τ → MvPolynomial σ K}
-    (hg : ∀ i, (g i).totalDegree ≤ 1) (P : MvPolynomial τ K) :
-    (aeval g P).totalDegree ≤ P.totalDegree := by
-  conv_lhs => rw [P.as_sum]
-  rw [map_sum]
-  refine totalDegree_finsetSum_le fun s hs => ?_
-  rw [aeval_monomial, algebraMap_eq]
-  refine (totalDegree_mul _ _).trans ?_
-  rw [totalDegree_C, zero_add]
-  refine (totalDegree_finsetProd _ _).trans ((Finset.sum_le_sum fun i _ => ?_).trans
-    (le_totalDegree hs))
-  exact (totalDegree_pow _ _).trans ((Nat.mul_le_mul_left _ (hg i)).trans (Nat.mul_one _).le)
 
 /-- Projections do not raise the total degree. -/
 theorem totalDegree_projection_le (ρ : τ → σ ⊕ K) (P : MvPolynomial τ K) :

@@ -214,6 +214,54 @@ check them. Not yet formalized: the matching upper bound of Theorem 4.2, the siz
 the same paper, pigeonhole degree lower bounds, the simulation of bounded-width resolution by
 polynomial calculus, and sum-of-squares.
 
+### Tseitin formulas
+
+[The Tseitin degree lower bound](../../Complexity/Logics/Propositional/Algebraic/PolynomialCalculus/Tseitin.lean)
+is the polynomial calculus counterpart of the Ben-Sasson–Wigderson width lower bound. Take a field
+`K` with `2 ≠ 0` and a connected multigraph `ends : E → Sym2 V`. Then a polynomial calculus
+refutation of degree `d` of the clause polynomials of `CNF.tseitinFormula ends χ`, together with
+the Boolean axioms, forces `e(G) ≤ 2 d`
+(`Tseitin.minBalancedCut_le_two_mul_of_pc_refutableInDegree`). Here `e(G)` is
+`Multigraph.minBalancedCut`, the same expansion used in the width bound. The Nullstellensatz form
+follows through `PC.RefutableInDegree.of_ns`
+(`Tseitin.minBalancedCut_le_two_mul_of_ns_refutableInDegree`). The statement is the
+characteristic-`≠ 2` degree bound of Buss, Grigoriev, Impagliazzo and Pitassi (JCSS 2001), as
+stated in Buss and Nordström, Handbook of Satisfiability, §7.5.4. The theorem number in the
+original paper has not been checked against a copy. The proof uses the invariant method with
+the change of variables `x ↦ (1 - y) / 2`. The invariant is the common kernel of linear
+functionals indexed by sets `T` of at most `d` edges. Each functional sends a monomial to the
+sign `(-1) ^ χ(U)` of the unique set `U` of fewer than `|V| / 3` vertices whose edge cut is `T`
+plus the odd-degree variables of the monomial, or to `0` if there is no such `U`. The terms of a
+clause polynomial cancel in pairs, and `2 ≠ 0` turns `2 S = 0` into `S = 0`.
+
+[The expander corollary](../../Complexity/Logics/Propositional/Algebraic/PolynomialCalculus/TseitinExpander.lean)
+turns this into `h(G) |V| / 6 ≤ d` on rotation maps with edge expansion `h(G) > 0`. With
+`RotationMap.expander` it gives `CNF.exists_forall_pc_refutableInDegree_le`. For every `n ≥ 2`,
+this is an unsatisfiable formula with at most `120 n` variables, at most `2 ^ 120 · n` clauses
+and at most `120` literals per clause. Every polynomial calculus refutation of it over every field
+with `2 ≠ 0` has degree at least `n / 36000`. As in the resolution case, the expanders come from
+a counting argument, so the formulas exist but have no explicit generator.
+
+[The characteristic-2 upper bound](../../Complexity/Logics/Propositional/Algebraic/Nullstellensatz/Tseitin.lean)
+shows that `2 ≠ 0` cannot be dropped. In characteristic `2`, the clause polynomials of the parity
+constraint at a vertex add up to the charge plus the sum of the incident variables
+(`CNF.sum_toBoolPoly_parityOnEq`). By the handshake argument the clause polynomials of the whole
+formula add up to `1`, so `CNF.ns_refutableInDegree_tseitinFormula_of_charP_two` gives a
+Nullstellensatz refutation whose degree is the largest number of edges at a vertex. The
+[tests](../../ComplexityTests/ProofComplexity/AlgebraicTseitin.lean) check the following instances:
+
+- On the triangle, the bound rules out degree `0` over `ℚ` and over `ZMod 3`, and over `ZMod 2`
+  the formula has a refutation of degree `2`.
+- A triangle with an isolated charged vertex has `e(G) = 2` but a refutation of degree `0`, so
+  connectivity is needed.
+- An expander on `5000000` vertices has `e(G) > 240` but a refutation of degree `120` over
+  `ZMod 2`, so `2 ≠ 0` is needed.
+- The hard formulas, instantiated over `ZMod 3`.
+
+Run `scripts/build.sh ComplexityTests.ProofComplexity.AlgebraicTseitin` to check them. Not yet
+formalized: the size–degree trade-off for polynomial calculus, which would turn the degree bound
+into an exponential size lower bound for Tseitin formulas on expanders.
+
 ## Three resolution representations
 
 | Representation | What it supplies | Cost |
@@ -242,6 +290,6 @@ Two lemmas from the subset-sum degree lower bound of Impagliazzo, Pudlák and Sg
 
 ## Known Limitations
 
-This chapter covers propositional syntax, resolution, algebraic proof predicates over the Boolean cube and one algebraic degree lower bound. It does not reclassify PCPs or interactive proofs as resolution proof systems; their verifier and protocol models have separate owners. The endpoint statements and model conventions are source-inspected, while every proof body and every original lower-bound paper has not been independently checked in this worker pass.
+This chapter covers propositional syntax, resolution, algebraic proof predicates over the Boolean cube and two algebraic degree lower bounds (subset sum and Tseitin formulas). It does not reclassify PCPs or interactive proofs as resolution proof systems; their verifier and protocol models have separate owners. The endpoint statements and model conventions are source-inspected, while every proof body and every original lower-bound paper has not been independently checked in this worker pass.
 
 [complexitylib]: ../sources.md#complexitylib
