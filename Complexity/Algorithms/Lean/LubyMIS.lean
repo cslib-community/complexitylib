@@ -17,10 +17,11 @@ import Mathlib.Data.Nat.Choose.Bounds
 /-!
 # Luby's randomized maximal independent set algorithm
 
-Luby's algorithm [Luby1986] [AlonBabaiItai1986] finds a maximal independent set of a graph in
-phases. This module formalizes the random-priority variant of Métivier, Robson, Saheb-Djahromi
-and Zemmari [MetivierRobsonSahebDjahromiZemmari2011], in the form of Algorithm 7.12 ("Fast MIS 2")
-of [Wattenhofer2016]. In each phase:
+Luby's algorithm [Luby1986] finds a maximal independent set of a graph in phases; Alon, Babai and
+Itai [AlonBabaiItai1986] gave a closely related randomized parallel algorithm at the same time.
+This module formalizes the random-priority variant of Métivier, Robson, Saheb-Djahromi and Zemmari
+[MetivierRobsonSahebDjahromiZemmari2011], in the form of Algorithm 7.12 ("Fast MIS 2") of
+[Wattenhofer2016]. In each phase:
 
 1. every live vertex draws a random priority;
 2. every live vertex whose priority is below those of all its live neighbours joins the set;
@@ -49,9 +50,10 @@ about the law `ProbComp.eval`.
   probability bound is proved instead by iterating it and applying Markov's inequality to the
   number of live edges: `O(log n)` phases with explicit constants, failure at most `n ^ (-c)` after
   `(c + 2) ⌈log₂ n⌉ + 1` phases. The expected number of phases (Theorem 7.15) is not formalized.
-* **Luby's original algorithm**, which marks each vertex with probability `1 / (2 d(v))` and
-  unmarks the lower-degree endpoint of each marked edge, its pairwise-independent analysis and its
-  derandomization are not formalized.
+* **Luby's original algorithm**, in the form of Algorithm 7.6 ("Fast MIS") of [Wattenhofer2016]
+  (each vertex marks itself with probability `1 / (2 d(v))` and joins unless a marked neighbour
+  has higher degree), its pairwise-independent analysis and its derandomization are not
+  formalized.
 
 ## Main definitions
 
@@ -70,7 +72,7 @@ about the law `ProbComp.eval`.
 * `isIndepSet_of_mem_support_lubyMIS`: after any number of phases, every possible output is an
   independent set.
 * `Invariant.maximal_iff`, `maximal_of_mem_support_lubyMIS`: the chosen set is maximal exactly
-  when no vertex is live, which holds for every outcome after `card V` phases.
+  when no vertex is live, which holds for every outcome after `k ≥ card V` phases.
 * `two_mul_expect_liveEdges_phase_le`: one phase keeps at most half the live edges in expectation
   ([Wattenhofer2016], Lemma 7.14), from the counting form `two_mul_sum_liveEdges_step_le`.
 * `two_pow_mul_expect_liveEdges_run_le`: after `k` phases, at most `|E| / 2 ^ k` live edges
@@ -108,7 +110,9 @@ structure State (V : Type) where
   /-- The live vertices: neither chosen nor adjacent to a chosen vertex. -/
   live : Finset V
 
-/-- The live graph: the edges of `G` between live vertices, on the whole vertex type. -/
+/-- The live graph: the edges of `G` between live vertices, on the whole vertex type. It is
+`(G.induce L).spanningCoe` (`liveGraph_eq_spanningCoe_induce`), stated directly so that its
+adjacency is decidable and unfolds by `Iff.rfl`. -/
 @[expose] def liveGraph (L : Finset V) : SimpleGraph V where
   Adj u v := G.Adj u v ∧ u ∈ L ∧ v ∈ L
   symm := ⟨fun _ _ h => ⟨h.1.symm, h.2.2, h.2.1⟩⟩
@@ -117,6 +121,19 @@ structure State (V : Type) where
 omit [Fintype V] [DecidableEq V] [DecidableRel G.Adj] in
 @[simp] theorem liveGraph_adj {L : Finset V} {u v : V} :
     (liveGraph G L).Adj u v ↔ G.Adj u v ∧ u ∈ L ∧ v ∈ L := Iff.rfl
+
+omit [Fintype V] [DecidableEq V] [DecidableRel G.Adj] in
+/-- The live graph is the induced subgraph on the live vertices, viewed on all of `V`. -/
+theorem liveGraph_eq_spanningCoe_induce (L : Finset V) :
+    liveGraph G L = (G.induce (L : Set V)).spanningCoe := by
+  ext u v
+  simp only [liveGraph_adj, SimpleGraph.map_adj, SimpleGraph.comap_adj,
+    Function.Embedding.coe_subtype]
+  constructor
+  · rintro ⟨h, hu, hv⟩
+    exact ⟨⟨u, hu⟩, ⟨v, hv⟩, h, rfl, rfl⟩
+  · rintro ⟨⟨u', hu⟩, ⟨v', hv⟩, h, rfl, rfl⟩
+    exact ⟨h, hu, hv⟩
 
 instance (L : Finset V) : DecidableRel (liveGraph G L).Adj :=
   fun u v => inferInstanceAs (Decidable (G.Adj u v ∧ u ∈ L ∧ v ∈ L))
@@ -272,29 +289,29 @@ theorem card_step_live_lt {s : State V} (hs : s.live.Nonempty) (σ : Ranking V) 
   refine card_lt_card ⟨step_live_subset G s σ, fun hsub => ?_⟩
   exact ((mem_step_live G).1 (hsub hv)).2.1 hJ
 
-/-- **Las Vegas correctness.** After `card V` phases, every possible output is a maximal
+/-- **Las Vegas correctness.** After `k ≥ card V` phases, every possible output is a maximal
 independent set. -/
-theorem maximal_of_mem_support_lubyMIS {S : Finset V}
-    (hS : S ∈ (ProbComp.eval (lubyMIS G (Fintype.card V))).support) :
+theorem maximal_of_mem_support_lubyMIS {k : ℕ} (hk : Fintype.card V ≤ k) {S : Finset V}
+    (hS : S ∈ (ProbComp.eval (lubyMIS G k)).support) :
     Maximal G.IsIndepSet (S : Set V) := by
   rw [lubyMIS, ProbComp.eval_map, PMF.support_map] at hS
   obtain ⟨s, hs, rfl⟩ := hS
   refine (invariant_of_mem_support_run G hs).maximal_iff.2 ?_
-  have hcard := ProbComp.iterate_invariant (Fintype.card V) (phase G) init
-    (fun i s => s.live.card + i ≤ Fintype.card V) (by simp [init])
+  -- Until the live set empties, each phase removes a live vertex.
+  have hcard := ProbComp.iterate_invariant k (phase G) init
+    (fun i s => s.live = ∅ ∨ s.live.card + i ≤ Fintype.card V) (Or.inr (by simp [init]))
     (fun i _ s hs next hnext => by
       rw [eval_phase, PMF.support_map] at hnext
       obtain ⟨σ, -, rfl⟩ := hnext
       rcases s.live.eq_empty_or_nonempty with he | hne
-      · have : (step G s σ).live = ∅ := subset_empty.1 (he ▸ step_live_subset G s σ)
-        rw [this]
-        rw [he] at hs
-        simp only [card_empty] at hs ⊢
-        omega
-      · have := card_step_live_lt G hne σ
-        omega) s hs
-  simp only [add_le_iff_nonpos_left, nonpos_iff_eq_zero, card_eq_zero] at hcard
-  exact hcard
+      · exact Or.inl (subset_empty.1 (he ▸ step_live_subset G s σ))
+      · rcases hs with he | hs
+        · exact absurd he hne.ne_empty
+        · have := card_step_live_lt G hne σ
+          exact Or.inr (by omega)) s hs
+  rcases hcard with he | hcard
+  · exact he
+  · exact card_eq_zero.1 (by omega)
 
 /-- **Independence.** After any number of phases, every possible output is an independent set. -/
 theorem isIndepSet_of_mem_support_lubyMIS {k : ℕ} {S : Finset V}
@@ -612,7 +629,7 @@ theorem one_sub_le_toOuterMeasure_maximal_lubyMIS_clog (t : ℕ) :
 
 omit [DecidableEq V] in
 /-- A graph on `n` vertices has at most `2 ^ (2 ⌈log₂ n⌉)` edges. -/
-theorem card_edgeFinset_le_two_pow_two_mul_clog :
+private theorem card_edgeFinset_le_two_pow_two_mul_clog :
     G.edgeFinset.card ≤ 2 ^ (2 * Nat.clog 2 (Fintype.card V)) :=
   calc G.edgeFinset.card ≤ (Fintype.card V).choose 2 := G.card_edgeFinset_le_card_choose_two
     _ ≤ Fintype.card V ^ 2 := Nat.choose_le_pow _ _

@@ -17,7 +17,7 @@ Concrete runs of `Complexity.Algorithms.Lean.LubyMIS`:
   `{0}` is not;
 * on the triangle, every ranking finishes in one phase with exactly one chosen vertex;
 * on the path `0 - 1 - 2 - 3`, the identity ranking keeps one of the three edges live, so a phase
-  need not remove every edge;
+  need not remove every edge; over all `24` rankings, exactly `2` live edges remain in total;
 * the support of the algorithm is nonempty and its outputs are maximal (nonvacuity of the Las
   Vegas statement), and an instance of the high-probability bound.
 -/
@@ -85,6 +85,18 @@ example : liveEdges (pathGraph 4) init = 3 ∧
     liveEdges (pathGraph 4) (step (pathGraph 4) init (idRanking 4)) = 1 := by
   decide
 
+/-- The counting form of edge removal on the path `0 - 1 - 2 - 3`, over all `24` rankings: only
+the rankings `0 < 1 < 2 < 3` and `3 < 2 < 1 < 0` keep an edge, so `2` live edges remain in total,
+against the bound `24 * 3 / 2 = 36` of `two_mul_sum_liveEdges_step_le`. -/
+example : Fintype.card (Ranking (Fin 4)) = 24 ∧
+    ∑ σ : Ranking (Fin 4), liveEdges (pathGraph 4) (step (pathGraph 4) init σ) = 2 := by
+  decide
+
+/-- An instance of `two_mul_sum_liveEdges_step_le`. -/
+example : 2 * ∑ σ : Ranking (Fin 4), liveEdges (pathGraph 4) (step (pathGraph 4) init σ) ≤
+    Fintype.card (Ranking (Fin 4)) * liveEdges (pathGraph 4) init :=
+  two_mul_sum_liveEdges_step_le (pathGraph 4) init
+
 /-! ### The algorithm -/
 
 /-- The Las Vegas statement is not vacuous: some output exists, and it is maximal. -/
@@ -92,7 +104,7 @@ example : ∃ S ∈ (ProbComp.eval (lubyMIS (pathGraph 3) (Fintype.card (Fin 3))
     Maximal (pathGraph 3).IsIndepSet (S : Set (Fin 3)) := by
   obtain ⟨S, hS⟩ := ProbComp.support_nonempty (lubyMIS (pathGraph 3) (Fintype.card (Fin 3)))
   rw [← ProbComp.support_eval] at hS
-  exact ⟨S, hS, maximal_of_mem_support_lubyMIS _ hS⟩
+  exact ⟨S, hS, maximal_of_mem_support_lubyMIS _ le_rfl hS⟩
 
 /-- On the triangle (`|E| = 3 ≤ 2 ^ 2`), four phases succeed with probability at least `1/2`. -/
 example : 1 - (2 ^ 1 : ℝ≥0∞)⁻¹ ≤
