@@ -1142,6 +1142,11 @@ Richard P. Stanley. *Topics in Algebraic Combinatorics*. Course notes, version o
 
 Mechthild Stoer and Frank Wagner. "A Simple Min-Cut Algorithm." *Journal of the ACM* 44(4), 585–591, 1997. https://doi.org/10.1145/263867.263872 . Bibliographic metadata checked against the Crossref record on 2026-11-08. The publisher's PDF returned HTTP 403 and was not retried, so the paper was not inspected. Its numbering (the phase recursion as Theorem 2.1, the cut-of-the-phase lemma as Lemma 3.1) comes from secondary descriptions and is unverified, which is why the Lean docstrings name the results rather than the numbers. The 8-vertex example graph in `ComplexityTests/StoerWagner.lean` and the trace of the worked example's first phase come from the English Wikipedia article "Stoer–Wagner algorithm", consulted on 2026-11-08, not from the paper's figure. A. Frank's note on MA orderings was unreachable (connection failure), and the corresponding section of Schrijver's 2003 monograph was not consulted; neither is cited.
 
+<a id="sleatortarjan85b"></a>
+## sleatortarjan85b
+
+Daniel Dominic Sleator, Robert Endre Tarjan. “Self-Adjusting Binary Search Trees.” *Journal of the ACM* 32(3), 652–686, 1985. https://doi.org/10.1145/3828.3835 ; author PDF https://www.cs.cmu.edu/~sleator/papers/self-adjusting.pdf . The author PDF was consulted on 2026-11-08 for Section 2 (Lemma 1, Theorems 1–4, pp. 658–660) and Section 3, Lemma 2 (pp. 663–664).
+
 <a id="sudantrevisanvadhan01"></a>
 ## sudantrevisanvadhan01
 

@@ -2026,7 +2026,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - Request sequences, online strategies, offline optima and competitive ratios with additive
   constants; distinguish deterministic and randomized strategies and oblivious and adaptive
   adversaries. Compare algorithms in the same action and cost model, including initialization.
-- **Adaptive search trees:** working-set and dynamic-finger bounds for splay trees, and a BST
+- **Adaptive search trees:** `DataStructure/SplayTree/*` covers the Access Lemma with arbitrary
+  positive weights, the Balance, Static Optimality, Static Finger and Working Set theorems with
+  explicit constants, and the update bounds
+  ([#3143](https://github.com/cslib-community/complexitylib/issues/3143)). Extend to
+  Sleator–Tarjan's Unified Theorem and Cole's Dynamic Finger theorem for splay trees, and a BST
   access-and-rotation model with Wilber-style lower bounds. State dynamic optimality as a
   conjectural research target with explicit strategy and sequence quantifiers.
 - **Beyond deterministic ski rental and list update:** randomized strategies against an oblivious

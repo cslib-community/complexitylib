@@ -4076,6 +4076,7 @@ public import Complexity.DataStructure.SearchTree.Impl
 public import Complexity.DataStructure.SplayTree.AccessLemma
 public import Complexity.DataStructure.SplayTree.Basic
 public import Complexity.DataStructure.SplayTree.Impl
+public import Complexity.DataStructure.SplayTree.WorkingSet
 public import Complexity.DataStructure.Stack.Controller
 public import Complexity.DataStructure.Stack.Doubling
 public import Complexity.DataStructure.Stack.Memory
