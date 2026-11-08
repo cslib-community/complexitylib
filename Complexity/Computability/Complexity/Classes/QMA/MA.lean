@@ -23,8 +23,9 @@ and Arthur's random string `r` of length `p(n)`. Its quantum simulation
 * it reads Merlin's proof as a witness state on `q(n)` qubits;
 * it prepares Arthur's coins with one Hadamard gate on each of `p(n)` fresh zero qubits
   (`Cslib.Quantum.hadamardCodes`);
-* it runs the exact reversible simulation of `V` on the word `x ++ y ++ r` from `QMA/NP.lean`
-  (`Cslib.Quantum.UniformVerifierFamily.ofNP`).
+* it runs the exact reversible simulation of `V` on the word `x ++ y ++ r`
+  (`Cslib.Quantum.UniformVerifierFamily.ofNP`, in
+  `Complexity/Computability/Complexity/Classes/QMA/NP.lean`).
 
 This is the gate-by-gate simulation of randomized circuits, with random bits produced by Hadamard
 gates, of [Watrous][Watrous2008], Section IV.3 (Figure 7), there used for `BPP ⊆ BQP`; the
