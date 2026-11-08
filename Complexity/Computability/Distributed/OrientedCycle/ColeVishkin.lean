@@ -43,6 +43,8 @@ initial colouring with colours below `N` is assumed.
 * `Cslib.Distributed.OrientedCycle.threeColoring`: the Cole–Vishkin 3-colouring algorithm.
 * `Cslib.Distributed.OrientedCycle.cvRule`: `2 s` reduction steps as a rule of radius `s`.
 * `Cslib.Distributed.OrientedCycle.fastThreeColoring`: two reduction steps per round.
+* `Cslib.Distributed.OrientedCycle.fastThreeColoringRule`: `fastThreeColoring s` as a rule of
+  radius `s + 3`.
 
 ## Main results
 
@@ -56,6 +58,8 @@ initial colouring with colours below `N` is assumed.
   identifiers below `N`.
 * `Cslib.Distributed.OrientedCycle.fastThreeColoring_run`: 3-colouring in `s + 3` rounds when
   `log* N ≤ 2 s`.
+* `Cslib.Distributed.OrientedCycle.fastThreeColoringRule_toFun`: the same for the rule, read off on
+  the infinite oriented path.
 
 ## References
 
@@ -427,5 +431,38 @@ theorem fastThreeColoring_run {n N s : ℕ} {x : ZMod n → ℕ} (hx : IsProperC
   rw [hrun]
   exact threeColoring_run_of_iterate_le (N := 6) (cvRule_apply_isProperColoring hx s)
     (cvRule_apply_lt hx hN hs) le_rfl (by omega)
+
+/-- The Cole–Vishkin algorithm `fastThreeColoring s` as a rule of radius `s + 3`. -/
+def fastThreeColoringRule (s : ℕ) : LocalRule ℕ ℕ (s + 3) :=
+  (fastThreeColoring s).toLocalRule (s + 3)
+
+/-- On the infinite oriented path, `fastThreeColoringRule s` 3-colours every proper colouring
+with colours below `N` when `log* N ≤ 2s`: node `0` and node `1` get different colours below
+`3`. -/
+theorem fastThreeColoringRule_toFun {s N : ℕ} {y : ℤ → ℕ} (hy : ∀ i, y i ≠ y (i + 1))
+    (hN : ∀ i, y i < N) (hs : Nat.logStar N ≤ 2 * s) :
+    (fastThreeColoringRule s).toFun y ≠ (fastThreeColoringRule s).toFun (fun i => y (i + 1)) ∧
+      (fastThreeColoringRule s).toFun y < 3 := by
+  have h := fastThreeColoring_run (n := 0) (x := y) hy hN hs le_rfl
+  have h0 : window (n := 0) y 0 = y := by
+    funext j
+    simp only [window]
+    rw [zero_add]
+    rfl
+  have h1 : window (n := 0) y 1 = fun i => y (i + 1) := by
+    funext j
+    simp only [window]
+    rw [add_comm]
+    rfl
+  have e0 := (fastThreeColoring s).run_eq_apply (n := 0) y (s + 3) 0
+  have e1 := (fastThreeColoring s).run_eq_apply (n := 0) y (s + 3) 1
+  simp only [LocalRule.apply, h0, h1] at e0 e1
+  refine ⟨?_, ?_⟩
+  · have := h.1 0
+    rw [e0, zero_add, e1] at this
+    exact this
+  · have := h.2 0
+    rw [e0] at this
+    exact this
 
 end Cslib.Distributed.OrientedCycle

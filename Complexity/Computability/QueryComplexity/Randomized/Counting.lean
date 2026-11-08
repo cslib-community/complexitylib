@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.QueryComplexity.Randomized
-public import Complexity.Computability.DecisionTree.Leaves
+import Complexity.Computability.DecisionTree.Leaves
 
 /-!
 # Counting lower bounds for randomized decision trees
