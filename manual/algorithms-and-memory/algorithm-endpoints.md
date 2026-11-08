@@ -155,7 +155,9 @@ So a cost function with floor and ceiling splits, or several subproblems of size
 
 The clients below follow this recipe.
 
-`DivideConquerBound.le_sum` unrolls the recursion for monotone `f`. For `f n = c n ^ d` the three cases follow:
+`DivideConquerBound` itself imposes no condition on `a`, `b` or `n₀`, and without further hypotheses the conclusions below can fail. For example, `T n = n` with `a = b = n₀ = T₀ = 1` and `c = d = 0` satisfies the contract, because `⌈n/1⌉ = n`, yet case 2 would give `T 2 ≤ 1`.
+
+`DivideConquerBound.le_sum` unrolls the recursion for `a ≥ 1` and monotone `f`. For `f n = c n ^ d` the three cases follow. All three statements in the table assume `a ≥ 1`, `b ≥ 2` and `n₀ ≥ 1`:
 
 | Case | Lean statement | Bound |
 |---|---|---|

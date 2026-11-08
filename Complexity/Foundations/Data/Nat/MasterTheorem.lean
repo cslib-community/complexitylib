@@ -25,18 +25,24 @@ stated in a form that cost functions satisfy directly. For every `n > n₀`, eve
 different sizes up to `⌈n/b⌉` are therefore covered. `T` need not be monotone or satisfy an
 equality.
 
-The general bound unrolls the recursion: for monotone `f` and `n ≤ n₀ b ^ k`,
+The general bound unrolls the recursion: for `a ≥ 1`, monotone `f` and `n ≤ n₀ b ^ k`,
 
 `T n ≤ a ^ k T₀ + ∑ i < k, a ^ i f (n₀ b ^ (k - i))`
 
 (`Nat.DivideConquerBound.le_sum`). For `f n = c n ^ d` the sum is geometric with ratio `a / b ^ d`,
-and the three cases of the master theorem follow with explicit constants. Write `K = ⌈log_b n⌉`.
+and the three cases of the master theorem follow with explicit constants.
+
+`DivideConquerBound` itself imposes no condition on `a`, `b` or `n₀`. Every bound below assumes
+`a ≥ 1`, and the bounds in terms of `n` also assume `b ≥ 2` and `n₀ ≥ 1`. Without them the
+conclusions can fail. For example, `T n = n` with `a = b = n₀ = T₀ = 1` and `c = d = 0` satisfies
+`DivideConquerBound`, because `⌈n/1⌉ = n`, yet the second bound would give `T 2 ≤ 1`. Write
+`K = ⌈log_b n⌉`.
 
 * `a > b ^ d`: `(a - b ^ d) T n ≤ ((a - b ^ d) T₀ + c n₀ ^ d b ^ d) a ^ K`.
 * `a = b ^ d`: `T n ≤ (b n) ^ d (T₀ + c n₀ ^ d K)` for `n ≠ 0`.
 * `a < b ^ d`: `(b ^ d - a) T n ≤ ((b ^ d - a) T₀ + c n₀ ^ d b ^ d) (b n) ^ d` for `n ≠ 0`.
 
-The first and third bounds hold for all `a`. They are trivial outside their case, where the
+The first and third bounds hold for all `a ≥ 1`. They are trivial outside their case, where the
 left factor is zero. The `n`-forms use `b ^ ⌈log_b n⌉ ≤ b n` (`Nat.pow_clog_le_mul`).
 `Complexity.Foundations.Data.Nat.MasterTheoremAsymptotics` converts them into
 `O(n ^ log_b a)`, `O(n ^ d log n)` and `O(n ^ d)`.

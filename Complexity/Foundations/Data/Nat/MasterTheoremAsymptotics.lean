@@ -18,7 +18,9 @@ import Complexity.Foundations.Data.Nat.LogTwoRpow
 
 This module converts the explicit bounds of `Complexity.Foundations.Data.Nat.MasterTheorem` into
 real powers and Mathlib's `Asymptotics.IsBigO`. Let `T` satisfy
-`Nat.DivideConquerBound T a b n₀ T₀ (fun n => c n ^ d)` with `b ≥ 2` and `n₀ ≥ 1`.
+`Nat.DivideConquerBound T a b n₀ T₀ (fun n => c n ^ d)` with `a ≥ 1`, `b ≥ 2` and `n₀ ≥ 1`.
+`DivideConquerBound` does not impose these. In cases 1 and 2 `a ≥ 1` follows from the case
+condition, so only the case-3 theorem `isBigO_pow` takes it as a hypothesis.
 
 * `a > b ^ d`: `T n ≤ (T₀ + c n₀ ^ d b ^ d / (a - b ^ d)) a n ^ log_b a` for `n ≠ 0`, so
   `T = O(n ^ log_b a)`.
