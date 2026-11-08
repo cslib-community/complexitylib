@@ -1289,6 +1289,16 @@ each statement against the numbered result. Organize modules by subject, not cha
   certificates (Cramer's rule with the Hadamard bound), giving LP feasibility in NP ∩ coNP with
   machine-checked certificate verifiers; and a polynomial-time LP algorithm (ellipsoid or
   interior point) with bit complexity and intermediate precision accounted for.
+- **Extension complexity** ([#3258](https://github.com/cslib-community/complexitylib/issues/3258)):
+  nonnegative rank, slack matrices, extended formulations with free equations, Yannakakis's
+  factorization theorem `xc P = rank₊ S` for nontrivial polytopes, and the rectangle covering bound
+  `N¹(supp M) ≤ ⌈log₂ rank₊ M⌉` are in `Foundations/LinearAlgebra/Matrix/NonnegRank`,
+  `Foundations/Analysis/Convex/ExtendedFormulation` and
+  `Communication/Nondeterministic/{CoverNumber,ExtensionComplexity}`. Remaining: the facet
+  form of the theorem (an extension with `r` facets); exponential lower bounds for the
+  correlation, cut, stable-set and TSP polytopes (Fiorini–Massar–Pokutta–Tiwary–de Wolf), for
+  instance through Kaibel–Weltge's `(3/2)^n` rectangle-cover bound for unique disjointness;
+  semidefinite and conic extensions; and Rothvoß's lower bound for the perfect matching polytope.
 - **Separation and optimization:** a precise oracle interface and a separation–optimization
   equivalence with its representation, accuracy and well-boundedness hypotheses. Extend to
   convex optimization through explicit oracle and numerical-error contracts.

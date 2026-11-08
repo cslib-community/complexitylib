@@ -734,6 +734,16 @@ Import `Complexity.Foundations.LinearAlgebra.Matrix.LinearProgramming` ([LinearP
 
 The [checked examples](../../ComplexityTests/Foundations/LinearAlgebra/Matrix/LinearProgramming.lean) give an infeasible system with its certificate, a feasible system with no certificate, an empty system, programs with values `3` and `22 / 5`, and an unbounded program with infeasible dual. Not formalized: bit-size bounds on solutions and certificates, membership of rational LP feasibility in NP ∩ coNP, and any polynomial-time LP algorithm ([ROADMAP](../../ROADMAP.md#optimization-and-duality)).
 
+## Extended formulations and Yannakakis's factorization theorem
+
+Import `Complexity.Foundations.Analysis.Convex.ExtendedFormulation` ([ExtendedFormulation.lean](../../Complexity/Foundations/Analysis/Convex/ExtendedFormulation.lean)). As with the LP section, this is mathematics over a linearly ordered field with no machine model. A polytope is given twice, as `P = {x | A *ᵥ x ≤ b}` and as `P = convexHull K (Set.range V)` for finitely many points `V`, and both descriptions are hypotheses. Its slack matrix is `Matrix.slackMatrix A b V`, with entries `b i - A i ⬝ᵥ V j`. An extended formulation (`IsExtendedFormulation`) is a system `E *ᵥ x + F *ᵥ y ≤ g`, `E' *ᵥ x + F' *ᵥ y = g'` whose projection onto `x` is `P`. Its size is the number of inequalities, and equations cost nothing. This is definition (1) of Fiorini, Massar, Pokutta, Tiwary and de Wolf [fmptw15][fmptw15]. `extensionComplexity P : ℕ∞` is the least size.
+
+- **Nonnegative rank:** `Matrix.nonnegRank` ([NonnegRank.lean](../../Complexity/Foundations/LinearAlgebra/Matrix/NonnegRank.lean)) is the least inner dimension of a factorization `M = T * U` with `T, U ≥ 0`, and `⊤` if there is none. It is finite exactly for nonnegative matrices (`nonnegRank_ne_top_iff`), and is at most the number of rows and of columns. It is at least the rank (`rank_le_nonnegRank`), invariant under transposition, and monotone under submatrices.
+- **Yannakakis's theorem:** `extensionComplexity_eq_nonnegRank_slackMatrix` proves `xc P = rank₊ S` for `P.Nontrivial`, which is FMPTW's `dim P ≥ 1` (their Theorem 3, (i) ⇔ (iii); the theorem is due to Yannakakis [yannakakis91][yannakakis91], cited here through FMPTW). The direction `xc P ≤ rank₊ S` needs no dimension hypothesis. The converse uses the affine Farkas lemma (`IsExtendedFormulation.exists_nonneg_dotProduct_eq`, FMPTW Lemma 2). The module documentation gives two counterexamples. The point `{0}` with a redundant inequality has `xc = 0 < 1 = rank₊ S`. A segment shows that equations must be free.
+- **Communication bound:** see [query and communication complexity](../circuits-logic-and-other-models/query-and-communication.md#major-communication-bridges-and-bounds) for the rectangle covering bound and `N¹`.
+
+The [checked examples](../../ComplexityTests/Foundations/Analysis/Convex/ExtendedFormulation.lean) prove that the triangle has extension complexity `3` and the unit square `4`. For the square, the slack matrix has rank `3`. Both lower bounds come from fooling sets on the slack matrix. The point counterexample is also checked. Not formalized: the facet form of the theorem (FMPTW Theorem 3 (ii)), and the exponential lower bounds for the correlation, cut, stable-set and TSP polytopes ([ROADMAP](../../ROADMAP.md#optimization-and-duality)).
+
 ## Freivalds' matrix-product verification
 
 Import `Complexity.Algorithms.Lean.Freivalds` ([Complexity/Algorithms/Lean/Freivalds.lean](../../Complexity/Algorithms/Lean/Freivalds.lean)). It checks a claimed product `A * B = C` of rectangular matrices `l × m`, `m × n` and `l × n` over any ring with decidable equality, following [Freivalds][freivalds79]. The deterministic check `checkM A B C x` computes `A *ᵥ (B *ᵥ x)` and `C *ᵥ x` in `TimeM` and compares them. The cost model charges `2` per dot-product entry (one multiplication, one addition) and `1` per compared entry; reads, sampling and the vector encoding are free, and ring operations have unit cost whatever the operand size. Under it, `time_checkM` is exactly `2 * (m * n + l * m + l * n) + l`, independent of `x`, and `time_checkAllM_square` gives `k * (6 * n ^ 2 + n)` for `k` checks of square matrices.
@@ -767,8 +777,10 @@ The numeric values above are transcriptions of checked source statements, not re
 [freivalds79]: ../sources.md#freivalds79
 [hierholzer73]: ../sources.md#hierholzer73
 [kortevygen18]: ../sources.md#kortevygen18
+[fmptw15]: ../sources.md#fmptw15
 [mitzenmacherupfal17]: ../sources.md#mitzenmacherupfal17
 [schrijver17]: ../sources.md#schrijver17
 [vww18]: ../sources.md#vww18
 [thorup13]: ../sources.md#thorup13
 [williamsonshmoys11]: ../sources.md#williamsonshmoys11
+[yannakakis91]: ../sources.md#yannakakis91
