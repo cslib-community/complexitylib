@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.PCP.Approximation.LabelCover
 public import Complexity.Computability.PCP.Approximation.MaxCSP
+public import Complexity.Computability.PCP.Encoded.Simple
 import Complexity.Computability.PCP.Encoded.Count
 import Complexity.Foundations.Data.List.Filter
 import Complexity.Foundations.Data.BitString.Enumeration
@@ -21,12 +22,15 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fi
 Each edge occurrence becomes a left vertex carrying a pair of symbols, and two total projection
 edges check the two endpoint labels. Invalid pair labels retract to a satisfying pair, using a
 fixed exhaustive list. A relation with no satisfying pair instead produces a fixed contradictory
-projection instance. Loops and parallel edges retain their occurrence identities.
+projection instance. Loops and parallel edges retain their occurrence identities. The output is
+simple (`Cslib.PCP.Encoded.Graph.IsSimple`) whenever the input is loopless
+(`isSimple_reduce`), which parallel repetition requires.
 
 The construction and factor-two gap bound are original library adaptations to the existing
 executable graph and total-projection APIs. The source hardness theorem is the already-proved
 `Cslib.Complexity.GapTwoCSP_npHard`. This is a constant-gap prerequisite for small-soundness Label
-Cover; parallel repetition is not established here.
+Cover, which applies parallel repetition after loop removal in
+`Complexity.Computability.PCP.Approximation.LabelCover.SmallSoundness`.
 
 ## Main definitions
 
@@ -38,6 +42,7 @@ Cover; parallel repetition is not established here.
 
 * `Cslib.PCP.Encoded.LabelCoverIncidence.satisfiable_reduce`: perfect completeness.
 * `Cslib.PCP.Encoded.LabelCoverIncidence.half_unsatVal_le_reduce`: the factor-two gap bound.
+* `Cslib.PCP.Encoded.LabelCoverIncidence.isSimple_reduce`: loopless inputs give simple outputs.
 * `Cslib.PCP.Encoded.LabelCoverIncidence.isPolyTime_reduce`: native polynomial-time compilation
   under the existing framed graph/table encodings, for a fixed finite alphabet.
 * `Cslib.Complexity.GapLabelCover_npHard`: constant-gap hardness with `128²` left labels and
@@ -96,9 +101,29 @@ theorem length_edges_incidence (pairs : List (α × α)) (fallback : α × α)
   simp [incidence, List.length_flatMap, block, List.map_const', List.sum_replicate,
     Nat.mul_comm]
 
-/-- Two constant projections to distinct symbols cannot both be satisfied. -/
+/-- Two constant projections to distinct symbols cannot both be satisfied: two left vertices
+`0` and `1` project to the symbols `a` and `b` at the same right vertex `0`. The two edges have
+different left ends, so the instance is simple. -/
 def contradiction (a b : α) : Graph (α × α → α) :=
-  ⟨1, [⟨0, 0, fun _ => a⟩, ⟨0, 0, fun _ => b⟩]⟩
+  ⟨2, [⟨0, 0, fun _ => a⟩, ⟨1, 0, fun _ => b⟩]⟩
+
+/-- The contradictory instance is simple. -/
+theorem isSimple_contradiction (a b : α) : (contradiction a b).IsSimple := by
+  simp [contradiction, Graph.IsSimple]
+
+/-- Within an occurrence block the two edges have different right ends when the source edge is not
+a loop, and blocks of different occurrences have different left ends. -/
+theorem isSimple_incidence (pairs : List (α × α)) (fallback : α × α)
+    {g : Graph (α → α → Bool)} (hg : g.IsLoopless) : (incidence pairs fallback g).IsSimple := by
+  unfold Graph.IsSimple incidence
+  simp only [List.map_flatMap]
+  refine List.nodup_flatMap.mpr ⟨fun p hp => ?_, ?_⟩
+  · have h := hg p.1 (List.fst_mem_of_mem_zipIdx hp)
+    simp [block, h]
+  · refine List.Pairwise.of_map Prod.snd (fun p q hne => ?_) (by
+      rw [List.zipIdx_map_snd]
+      exact List.nodup_range' (s := 0) (n := g.edges.length))
+    simp [Function.onFun, block, Ne.symm hne]
 
 /-- Send an empty relation to the contradictory instance; otherwise take incidence projections. -/
 def reduce (pairs : List (α × α)) (a b : α) (g : Graph (α → α → Bool)) :
@@ -106,6 +131,14 @@ def reduce (pairs : List (α × α)) (a b : α) (g : Graph (α → α → Bool))
   if g.edges.any (fun d => !(pairs.any fun p => d.constraint p.1 p.2)) then
     contradiction a b
   else incidence pairs (a, a) g
+
+/-- **The reduction of a loopless binary constraint graph is a simple Label Cover instance.** -/
+theorem isSimple_reduce (pairs : List (α × α)) (a b : α) {g : Graph (α → α → Bool)}
+    (hg : g.IsLoopless) : (reduce pairs a b g).IsSimple := by
+  unfold reduce
+  split
+  · exact isSimple_contradiction a b
+  · exact isSimple_incidence pairs (a, a) hg
 
 variable [DecidableEq α]
 
@@ -392,7 +425,8 @@ private theorem mem_dinurPairs (p : (Bool × (Fin 6 → Bool)) × (Bool × (Fin 
     ⟨p.2, mem_dinurAlphabet _, rfl⟩⟩
 
 /-- Label Cover with left alphabet of `128²` symbols and right alphabet of `128` symbols is
-NP-hard at the constant soundness `1 - 2⁻⁶²`. Arbitrarily small soundness still needs repetition. -/
+NP-hard at the constant soundness `1 - 2⁻⁶²`. Arbitrarily small soundness, with growing alphabets,
+is `Cslib.Complexity.exists_GapLabelCover_npHard`. -/
 theorem GapLabelCover_npHard :
     PromiseProblem.NPHard
       (Graph.encoding (encPi (encPair encBool (encPi encBool))))

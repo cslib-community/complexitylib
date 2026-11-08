@@ -371,8 +371,20 @@ unsatisfied value of the instance. The conclusion bounds the satisfied proportio
 repetition `LabelCoverRepetition.pow k g`. The bound does not require the edge list to be nonempty
 or well formed. The [Label Cover repetition clients](../../ComplexityTests/LabelCoverRepetition.lean)
 compute the numbering of a two-fold repetition, separate simple from non-simple instances, and
-bound the repetitions of an instance of value `1/2` by `(1 - (1/2)³ / 6000)^{k / 2}`. NP-hardness of
-small-soundness Label Cover is not yet derived
+bound the repetitions of an instance of value `1/2` by `(1 - (1/2)³ / 6000)^{k / 2}`.
+
+For a hardness result, import
+[LabelCover/SmallSoundness.lean](../../Complexity/Computability/PCP/Approximation/LabelCover/SmallSoundness.lean).
+`polyTimeReducible_GapTwoCSP_GapLabelCover_pow a b hab encA hε hε1 hk` reduces
+`GapTwoCSP α (1 - ε)` to Label Cover over `k`-tuples, for any finite alphabet `α` with two
+distinct symbols, `0 < ε ≤ 1` and `0 < k`. The soundness is
+`(1 - (ε / 2)³ / 6000)^{k / log₂ (|α|² |α|)}`. To make a binary CSP instance simple, apply
+`Graph.deloop` before `LabelCoverIncidence.reduce`. Compose with a hard source through
+`PromiseProblem.NPHard.trans`, as `GapLabelCover_npHard_pow` does with `GapTwoCSP_npHard`, and
+weaken the soundness with `PromiseProblem.NPHard.mono`, as `exists_GapLabelCover_npHard` does. The
+[small-soundness clients](../../ComplexityTests/LabelCoverSmallSoundness.lean) remove a concrete
+loop, show that the incidence reduction of a loop is not simple and becomes simple after loop
+removal, and instantiate both hardness theorems. Håstad's reductions from Label Cover remain open
 ([#886](https://github.com/cslib-community/complexitylib/issues/886)).
 
 ## Project a continuous Gaussian density

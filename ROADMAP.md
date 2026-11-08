@@ -825,10 +825,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   distinguishing satisfiable E3-CNF formulas from those where every assignment satisfies at most
   `7/8 + ε` of the clauses. Holenstein's parallel repetition theorem for two-prover games is
   proved (`TwoProverGame.value_pow_le`), and so is parallel repetition for simple Label Cover
-  instances (`LabelCoverRepetition.one_sub_unsatVal_pow_le`). What remains is NP-hardness of
-  small-soundness Label Cover (loop removal before the incidence reduction, so that its output is
-  simple, and a polynomial-time certificate for the repetition) and Håstad's separate
-  perfect-completeness construction for MAX-E3SAT.
+  instances (`LabelCoverRepetition.one_sub_unsatVal_pow_le`), and Label Cover is NP-hard with
+  perfect completeness and every soundness `δ ∈ (0, 1)` (`exists_GapLabelCover_npHard`, with
+  `128^{2k}` and `128^k` labels for `k` depending on `δ`). What remains is Håstad's reduction from
+  small-soundness Label Cover to MAX-E3LIN and MAX-E3SAT (long-code test and its Fourier
+  analysis), and his separate perfect-completeness construction for MAX-E3SAT.
 - The FGLSS clique-hardness reduction and its amplification, retaining the exact gap and
   reduction runtime.
 - Gap and approximation-preserving reductions, APX/PTAS/FPTAS, inapproximability consequences of

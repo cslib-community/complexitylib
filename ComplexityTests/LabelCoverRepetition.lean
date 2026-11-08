@@ -26,9 +26,9 @@ def conflict : Graph (Bool → Bool) :=
 example : conflict.IsSimple := by decide
 example : conflict.WellFormed := (Graph.isWellFormed_eq_true _).mp (by decide)
 
--- The fixed contradictory instance of the incidence reduction joins the same two vertices twice,
--- so it is not simple.
-example : ¬(LabelCoverIncidence.contradiction false true).IsSimple := by decide
+-- The fixed contradictory instance of the incidence reduction uses two left vertices, so it is
+-- simple.
+example : (LabelCoverIncidence.contradiction false true).IsSimple := by decide
 
 -- Opposite directions between two vertices, and an edge from left `0` to right `0`, are allowed.
 example : (⟨1, [⟨0, 0, id⟩, ⟨0, 1, id⟩, ⟨1, 0, id⟩]⟩ : Graph (Bool → Bool)).IsSimple := by decide
