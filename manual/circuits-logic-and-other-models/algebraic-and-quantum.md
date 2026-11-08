@@ -193,6 +193,27 @@ These modules use states `EuclideanSpace ℂ ι` over an arbitrary finite index 
 
 [Checked clients](../../ComplexityTests/QuantumProtocols.lean) teleport `|0⟩`, `|1⟩` and `|+⟩` and decode all four superdense messages. They also show that CNOT clones both basis states but not `|+⟩`, as the orthogonal-or-equal dichotomy requires, and that in dimension 1 a cloner up to a nonzero factor exists for a nonzero blank. Build them with `lake build ComplexityTests.QuantumProtocols`.
 
+## Density matrices, no-signalling and the quantum one-time pad
+
+[DensityMatrix.lean](../../Complexity/Foundations/Quantum/DensityMatrix.lean) represents mixed states as matrices, following [de Wolf][dewolf19], §15.1 and §18.3. `IsDensityMatrix ρ` means positive semidefinite with trace one. `pureState ψ` is `|ψ⟩⟨ψ|`, a density matrix for a unit vector (`isDensityMatrix_pureState`). `partialTraceLeft` and `partialTraceRight` give the reduced state of the second and of the first system of a matrix on `ι × κ`. Each is a sum of principal submatrices, so it preserves positive semidefiniteness, and it preserves the trace; reduced states of density matrices are therefore density matrices. On a Kronecker product, `Tr_A (A ⊗ₖ B) = tr A • B`. Mathlib's `Matrix.trace_kronecker` and `Matrix.PosSemidef.kronecker` cover the full trace and products.
+
+An operator on the traced-out system moves cyclically under `Tr_A` (`partialTraceLeft_kronecker_one_mul`). This gives **no-signalling** for a Kraus family on Alice's system: `Tr_A (∑ⱼ (Kⱼ ⊗ 1) ρ (Kⱼ ⊗ 1)ᴴ) = Tr_A ρ` whenever `∑ⱼ Kⱼᴴ Kⱼ = 1` (`partialTraceLeft_kraus`). The special cases are a local unitary (`partialTraceLeft_conj_unitary`; [de Wolf][dewolf19], Chapter 18, Exercise 7, here for mixed states) and a computational-basis measurement whose outcome is discarded (`partialTraceLeft_measure`). The Kraus form is a standard generalization of the exercise, not a new result. General channels (CPTP maps, Stinespring and Choi representations), von Neumann entropy and trace distance are not formalized.
+
+[PauliTwirl.lean](../../Complexity/Foundations/Quantum/PauliTwirl.lean) works on the bit strings `ι → Bool`. It defines the bit flip `X^a |z⟩ = |z + a⟩` (`pauliXPow`), the phase flip `Z^b |z⟩ = (-1)^{b · z} |z⟩` (`pauliZPow`) and the Pauli string `X^a Z^b` (`pauliString`), all unitary. On one qubit they are the matrices of Pauli.lean after reindexing, which the tests check. The **Pauli twirl** is completely depolarizing: `∑_{a,b} X^a Z^b ρ (X^a Z^b)ᴴ = 2ⁿ tr ρ • 1` (`sum_pauliTwirl`). The proof sums over `b` by character orthogonality (`BitString.sum_signVal_dotProduct_mul_signVal_dotProduct`) and then over `a` by a translation. With a reference system, the twirl gives `2ⁿ 1 ⊗ Tr_A ρ` (`sum_pauliTwirl_kronecker_one`).
+
+[OneTimePad.lean](../../Complexity/Crypto/Protocols/Quantum/OneTimePad.lean) formalizes the **quantum one-time pad** of [Ambainis, Mosca, Tapp and de Wolf][ambainismoscatappdewolf00], Theorem 4.1, without ancilla; [de Wolf][dewolf19], Chapter 18, Exercise 5 is the one-qubit case. A uniformly random `2n`-bit key `(a, b)` encrypts `ρ` as `X^a Z^b ρ (X^a Z^b)ᴴ` (`encrypt`). Decryption is exact (`decrypt_encrypt`), and ciphertexts of states are states (`isDensityMatrix_encrypt`). The key-averaged ciphertext of every state is `1 / 2ⁿ` (`averageCiphertext_eq`), so it is the same for all plaintexts (`averageCiphertext_eq_averageCiphertext`). Suppose the eavesdropper also holds a reference system entangled with the plaintext. The key-averaged joint state is then `1 / 2ⁿ ⊗ Tr_A ρ` (`averageCiphertextWith_eq`), which depends only on the reference system's own state. Secrecy is stated as equality of the eavesdropper's averaged state. This is the quantum analogue of the ciphertext-distribution form of cslib's `PerfectlySecret`, not an instance of that classical interface. The matching lower bound, that `2n` bits of key entropy are necessary (Corollary 5.4 there), is not formalized.
+
+[Checked clients](../../ComplexityTests/QuantumDensity.lean) check the following:
+
+- a basis state is a density matrix, and the trace-one condition is not vacuous;
+- either half of a maximally entangled state is maximally mixed, and stays so under Alice's unitaries and measurements;
+- the `n`-qubit Pauli powers restrict to `X` and `Z` on one qubit;
+- encrypting `|z⟩` gives `|z + a⟩`;
+- `|0⟩` and every unit state have the same average ciphertext `1 / 2`, and a traceless matrix twirls to zero;
+- encrypting half of an EPR pair leaves Eve's joint state `1 / 2 ⊗ 1 / 2`.
+
+Build them with `lake build ComplexityTests.QuantumDensity`.
+
 ## Quantum query algorithms
 
 The quantum query model is separate from uniform circuits. [State](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/QueryComplexity/Quantum/Search.lean#L83) has a query-position register, a control bit and finite workspace. A controlled phase oracle multiplies a basis amplitude by the sign determined by the selected input bit and control; arbitrary input-independent linear isometries alternate with oracle calls. Only oracle calls are charged. Workspace size and implementation of those isometries are free in the query count.
@@ -257,6 +278,8 @@ Not formalized: the mixed-state and commuting-operator models, general XOR games
 
 The selected definitions and headline statements have been source-inspected; the full algebraic hitting, contraction, and quantum proof chains have not been independently rederived or rebuilt in this worker pass. In particular, arbitrary field/real/unitary parameters are not finite encodings, semantic operations are not native instructions, a query upper bound is not a gate or bit-time upper bound, and a tensor rank or field-circuit gate bound is not an integer bit-cost bound.
 
+[ambainismoscatappdewolf00]: ../sources.md#ambainismoscatappdewolf00
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib
+[dewolf19]: ../sources.md#dewolf19
 [mignonressayre04]: ../sources.md#mignonressayre04

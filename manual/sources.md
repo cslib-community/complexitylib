@@ -29,6 +29,11 @@ Noga Alon, Yossi Matias, Mario Szegedy. “The Space Complexity of Approximating
 
 Noga Alon, Raphael Yuster, Uri Zwick. "Color-Coding." *Journal of the ACM* 42(4), 844–856, 1995. https://doi.org/10.1145/210332.210337 . Bibliographic data from the DOI record. The locator Lemma 3.1 (colorful paths by dynamic programming over color sets) was taken from secondary descriptions; the full text was not inspected in this pass.
 
+<a id="ambainismoscatappdewolf00"></a>
+## ambainismoscatappdewolf00
+
+Andris Ambainis, Michele Mosca, Alain Tapp and Ronald de Wolf. *Private Quantum Channels*. 41st Annual Symposium on Foundations of Computer Science (FOCS 2000), 547–553. https://doi.org/10.1109/SFCS.2000.892142 ; author-hosted copy https://homepages.cwi.nl/~rdewolf/publ/qc/AMTW00.pdf . Read in the author-hosted copy on 2026-11-08: Definition 3.1 (private quantum channel: the key-averaged image of every plaintext state is one fixed state), Theorem 4.1 (the uniformly random `n`-qubit Pauli product is a private quantum channel for all of `H_{2^n}` with output `I / 2^n`; its proof remarks that this holds for a qubit "no matter if it is entangled with other qubits") and Corollary 5.4 (key entropy at least `2n`, the lower bound, which is not formalized). Definition 3.1 quantifies over pure plaintext states; the library states secrecy for every density matrix, which follows by linearity. The arXiv preprint quant-ph/0003101, *Private Quantum Channels and the Cost of Randomizing Quantum Information*, lists only Mosca, Tapp and de Wolf; locators follow the FOCS version.
+
 <a id="barak-steurer16"></a>
 ## barak-steurer16
 
@@ -235,6 +240,11 @@ Marek Cygan, Fedor V. Fomin, Łukasz Kowalik, Daniel Lokshtanov, Dániel Marx, M
 ## dasguptagupta03
 
 Sanjoy Dasgupta, Anupam Gupta. “An Elementary Proof of a Theorem of Johnson and Lindenstrauss.” *Random Structures & Algorithms* 22(1), 60–65, 2003. https://doi.org/10.1002/rsa.10073 . Author-hosted copy: https://cseweb.ucsd.edu/~dasgupta/papers/jl.pdf . Checked against that copy on 2026-11-07 UTC: Theorem 2.1 on p. 61 (`0 < ε < 1` and `k ≥ 4 (ε²/2 - ε³/3)⁻¹ ln n`), and Lemma 2.2 on p. 62 (tails for the projection of a random unit vector onto `k` coordinates, proved with `𝔼 exp (sX²) = (1 - 2s)^(-1/2)` for a standard Gaussian `X`).
+
+<a id="dewolf19"></a>
+## dewolf19
+
+Ronald de Wolf. *Quantum Computing: Lecture Notes*. arXiv:1907.09415, read in v6. https://arxiv.org/abs/1907.09415 . For the density-matrix modules the following were checked on 2026-11-08: §15.1 (density matrices are the positive semidefinite matrices of trace one; a pure state is `|φ⟩⟨φ|`; unitaries act by `ρ ↦ UρU*`), §18.3 (the partial trace, defined by `Tr_B (C ⊗ D) = C · Tr D` and extended linearly; the reduced state of an EPR pair is `I / 2`), and Chapter 18, Exercises 5 (the random Pauli on one qubit, "a quantum one-time pad") and 7 (Alice cannot signal to Bob by a unitary on her half of an entangled pure state). The Kraus-family form of no-signalling in the library is a standard generalization of Exercise 7, not a statement from the notes.
 
 <a id="dinur2007"></a>
 ## dinur2007
