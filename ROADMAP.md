@@ -926,10 +926,12 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Kernelization lower bounds**
   ([#3210](https://github.com/cslib-community/complexitylib/issues/3210)): `NP/poly`, and the
   Fortnow–Santhanam theorem that an OR-distillation of an `NP`-hard problem gives
-  `coNP ⊆ NP/poly`, in the class-wise form over a polynomial equivalence relation. Remaining:
-  OR-cross-composition, polynomial compressions and the Bodlaender–Jansen–Kratsch theorem ruling
-  out polynomial kernels unless `coNP ⊆ NP/poly`; concrete lower bounds (k-Path, Clique
-  parameterized by vertex cover); Yap's collapse `coNP ⊆ NP/poly → PH = Σ₃`; AND-composition
+  `coNP ⊆ NP/poly`, in the class-wise form over a polynomial equivalence relation; polynomial
+  compressions, OR-cross-composition and the Bodlaender–Jansen–Kratsch theorem ruling out
+  polynomial kernels and compressions unless `coNP ⊆ NP/poly`. Remaining
+  ([#3266](https://github.com/cslib-community/complexitylib/issues/3266)): concrete lower bounds
+  (k-Path, Clique parameterized by vertex cover); cross-compositions of bounded cost and the
+  complementary witness lemma; Yap's collapse `coNP ⊆ NP/poly → PH = Σ₃`; AND-composition
   (Drucker).
 - **Color coding** ([#2870](https://github.com/cslib-community/complexitylib/issues/2870)):
   colorful k-Path is in `FPT` by the dynamic programming over color sets. Remaining: random
@@ -1026,8 +1028,8 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   strategies (Atserias–Dalmau Lemma 3) and width and clause space at least `n` for the extended
   `3`-CNF pigeonhole formula with `n` holes. The converse, Atserias–Dalmau Lemma 2
   ([#3375](https://github.com/cslib-community/complexitylib/issues/3375)), gives their Theorem 2
-  for formulas of narrow clauses, and the space–width inequality is proved from any Duplicator
-  strategy. Next:
+  for formulas without clauses of width exactly `w + 1`, and the space–width inequality is proved
+  from any Duplicator strategy. Next:
   - space lower bounds for the wide pigeonhole formula and random `k`-CNFs;
   - total and variable space;
   - time–space trade-offs for pebbling formulas, building on `Complexity/Computability/Pebbling`;
@@ -1170,6 +1172,16 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   determinant through the adjugate circuits of
   [`Arithmetic/Adjugate`](Complexity/Computability/Circuit/Arithmetic/Adjugate.lean), which needs
   a circuit model with division.
+- **Determinantal complexity**
+  ([#3384](https://github.com/cslib-community/complexitylib/issues/3384)): the Mignon–Ressayre
+  bound `n² ≤ 2 · dc(perm_n)` is proved in
+  [`Arithmetic/DeterminantalComplexity`](Complexity/Computability/Circuit/Arithmetic/DeterminantalComplexity.lean)
+  over every field of characteristic zero or of characteristic at least `n`. Remaining:
+  Valiant's universality (every polynomial has a determinantal representation, so `dc` is finite)
+  and Grenet's upper bound `dc(perm_n) ≤ 2ⁿ - 1`; the Cai–Chen–Li extension to every
+  characteristic other than two; Yabe's real bound `dc(perm_n) ≥ (n - 1)² + 1` through
+  Sylvester's law of inertia; and border determinantal complexity in the geometric complexity
+  theory programme (Landsberg–Manivel–Ressayre).
 - **The matrix multiplication exponent** (ω ≤ 9/4): Pass's constructive proof
   (arXiv:2610.28627v2) of OpenAI's bound is formalized over every field of characteristic zero:
   for every `τ > 9/4` an exact bilinear algorithm for some `v × v` multiplication with fewer than
@@ -1341,9 +1353,13 @@ each statement against the numbered result. Organize modules by subject, not cha
   public-coin NOF protocols, cylinder intersections and the multiparty discrepancy bound
   `2 γ ≤ 2 ^ c disc_ν(f)`, with the two-player case matching the two-party discrepancy; the cube
   bound `disc(f) ^ (2 ^ k) ≤ E(f)` and the Babai–Nisan–Szegedy lower bound `Ω(n / 4 ^ k)` for
-  generalized inner product. Remaining: the sharper `Ω(n / 2 ^ k)` bound for
-  generalized inner product (source to be verified before citing) and Grolmusz's `O(k n / 2 ^ k)`
-  protocol; matrix multiplication (Raz) and NOF disjointness lower bounds; and applications to
+  generalized inner product; leaves as cylinder intersections (the star lemma) and the
+  Chandra–Furst–Lipton lower bound `D(Exactly-N) → ∞` for three players via Mathlib's corners
+  theorem ([#3424](https://github.com/cslib-community/complexitylib/issues/3424)). Remaining: the
+  sharper `Ω(n / 2 ^ k)` bound for generalized inner product (source to be verified before citing)
+  and Grolmusz's `O(k n / 2 ^ k)` protocol; for Exactly-N, the converse from corner-free colorings,
+  upper bounds from Behrend's construction, quantitative corners bounds and the `k`-player version;
+  matrix multiplication (Raz) and NOF disjointness lower bounds; and applications to
   `ACC⁰` and branching-program lower bounds. A two-party companion is the Aho–Ullman–Yannakakis bound
   `D(f) = O(N⁰(f) N¹(f))` relating deterministic and nondeterministic communication.
 - Multiparty number-in-hand protocols, direct-product results, and reductions to streaming,
