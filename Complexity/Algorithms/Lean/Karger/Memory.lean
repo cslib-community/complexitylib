@@ -130,6 +130,9 @@ noncomputable def framed : Memory.Framed spec w :=
     (fun o hs hv b _ hb => by
       obtain ⟨-, -, -, -, -, hfr⟩ := (wp_iff _ _ _).mp (wp_methods hs o hv)
       exact hfr b hb)
+    (fun o hs hv => by
+      obtain ⟨-, -, -, -, hfr, -⟩ := (wp_iff _ _ _).mp (wp_methods hs o hv)
+      exact hfr)
 
 @[simp] theorem framed_toRefinement : (framed L w).toRefinement = refinement L w := rfl
 
