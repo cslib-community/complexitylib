@@ -1770,8 +1770,11 @@ pivotal-voter proof) are in `GameTheory/SocialChoice`. Remaining directions:
   arithmetic and every transition, with support and mixing hypotheses explicit.
 - **FPRAS and almost-uniform sampling:** `Classes/FPRAS` and `Classes/FPAUS` give the two
   interfaces, and `Classes/FPAUS/FPRAS` proves FPAUS ⇒ FPRAS for one-bit self-reducible
-  witness families (#3039). Prove the converse FPRAS ⇒ FPAUS with Jerrum–Valiant–Vazirani
-  rejection sampling, allow self-reductions fixing several symbols per step, and instantiate both
+  witness families ([#3039](https://github.com/cslib-community/complexitylib/issues/3039)).
+  `Classes/FPAUS/Sampler` proves the output-law half of the converse: the Jerrum–Valiant–Vazirani
+  sampler built from an approximate counter is within statistical distance `2 ^ (-q)` of uniform.
+  Certify that sampler as strict PPT when the counter is an FPRAS, giving the class inclusion
+  FPRAS ⇒ FPAUS. Allow self-reductions fixing several symbols per step, and instantiate both
   directions for concrete relations such as DNF assignments.
 - Extend to randomized approximate counting for matchings and permanents of nonnegative
   rational matrices through explicit mixing and reduction theorems. Reuse the coupling and
