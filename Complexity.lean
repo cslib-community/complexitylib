@@ -4952,6 +4952,7 @@ public import Complexity.Logics.Propositional.Resolution.SizeWidth
 public import Complexity.Logics.Propositional.Resolution.Space
 public import Complexity.Logics.Propositional.Resolution.SpaceWidth
 public import Complexity.Logics.Propositional.Resolution.TreeLike
+public import Complexity.Logics.Propositional.Resolution.TreeLikeSpace
 public import Complexity.Logics.Propositional.Resolution.Tseitin
 public import Complexity.Logics.Propositional.Resolution.TseitinExpander
 public import Complexity.Logics.Propositional.Resolution.TseitinSpace
