@@ -1532,6 +1532,8 @@ public import Complexity.Computability.Complexity.Classes.IP.TQBF.Words
 public import Complexity.Computability.Complexity.Classes.Immune
 public import Complexity.Computability.Complexity.Classes.Immune.Complete
 public import Complexity.Computability.Complexity.Classes.Immune.Construction
+public import Complexity.Computability.Complexity.Classes.Immune.Core
+public import Complexity.Computability.Complexity.Classes.Immune.PolyTimeCore
 public import Complexity.Computability.Complexity.Classes.Inclusions
 public import Complexity.Computability.Complexity.Classes.Ladner
 public import Complexity.Computability.Complexity.Classes.Ladner.Basic
@@ -1601,6 +1603,7 @@ public import Complexity.Computability.Complexity.Classes.Oracle.WitnessBit
 public import Complexity.Computability.Complexity.Classes.P
 public import Complexity.Computability.Complexity.Classes.P.Closure
 public import Complexity.Computability.Complexity.Classes.P.Complement
+public import Complexity.Computability.Complexity.Classes.P.Countable
 public import Complexity.Computability.Complexity.Classes.P.FirstOrder
 public import Complexity.Computability.Complexity.Classes.P.FirstOrder.ModelChecker
 public import Complexity.Computability.Complexity.Classes.P.Slices
@@ -2461,6 +2464,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Halting
 public import Complexity.Computability.Machines.Turing.MultiTape.Halting.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Halting.Computable
 public import Complexity.Computability.Machines.Turing.MultiTape.Halting.Computable.Defs
+public import Complexity.Computability.Machines.Turing.MultiTape.Halting.Countable
 public import Complexity.Computability.Machines.Turing.MultiTape.Halting.Hardwire
 public import Complexity.Computability.Machines.Turing.MultiTape.Halting.Partialize
 public import Complexity.Computability.Machines.Turing.MultiTape.Halting.Partrec
