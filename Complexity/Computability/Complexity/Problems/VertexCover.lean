@@ -46,6 +46,7 @@ first-order interpretations.
 ## Main definitions
 
 * `Cslib.Complexity.VertexCover`.
+* `Cslib.Complexity.VertexCover.declaredEdges`: the listed edges between declared vertices.
 * `Cslib.Complexity.VertexCover.isUncoveredEdge`, `Cslib.Complexity.VertexCover.uncoveredEdges`,
   `Cslib.Complexity.VertexCover.isCover`, `Cslib.Complexity.VertexCover.verifier`.
 * `Cslib.Complexity.IndependentSet.toVertexCover`.
@@ -199,6 +200,37 @@ theorem computableInPolyTime_toVertexCover :
 end IndependentSet
 
 namespace VertexCover
+
+/-- Whether both endpoints of `e` are declared vertices of `G`. -/
+def isDeclaredEdge (G : Graph) (e : ℕ × ℕ) : Bool :=
+  decide (e.1 ∈ G.1) && decide (e.2 ∈ G.1)
+
+/-- The listed edges of `G` between declared vertices. -/
+def declaredEdges (G : Graph) : List (ℕ × ℕ) :=
+  G.2.filter (isDeclaredEdge G)
+
+/-- An edge is declared when it is listed and both endpoints are declared vertices. -/
+theorem mem_declaredEdges {G : Graph} {e : ℕ × ℕ} :
+    e ∈ declaredEdges G ↔ e ∈ G.2 ∧ e.1 ∈ G.1 ∧ e.2 ∈ G.1 := by
+  simp [declaredEdges, isDeclaredEdge]
+
+/-- Testing whether an edge joins declared vertices is polynomial-time. -/
+@[local fun_prop]
+private theorem computableInPolyTime_isDeclaredEdge :
+    ComputableInPolyTime (fun p : Graph × (ℕ × ℕ) => isDeclaredEdge p.1 p.2)
+      (encPair encGraph (encPair encNat encNat)) encBool := by
+  unfold isDeclaredEdge encGraph
+  fun_prop
+
+/-- Listing the edges between declared vertices is polynomial-time. -/
+@[fun_prop]
+theorem computableInPolyTime_declaredEdges :
+    ComputableInPolyTime declaredEdges encGraph (encList (encPair encNat encNat)) := by
+  have hE : ComputableInPolyTime (fun G : Graph => G.2) encGraph
+      (encList (encPair encNat encNat)) := by
+    unfold encGraph
+    fun_prop
+  exact filterWithInput hE computableInPolyTime_isDeclaredEdge
 
 /-- Whether the edge `e` joins two distinct declared vertices of `G` and neither endpoint is in
 `C`. -/

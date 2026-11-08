@@ -19,7 +19,6 @@ import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
 import Mathlib.Logic.Equiv.Prod
-import Mathlib.Analysis.SpecialFunctions.Log.NegMulLog
 import Mathlib.Combinatorics.Pigeonhole
 
 /-!
