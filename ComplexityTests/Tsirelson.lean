@@ -11,8 +11,9 @@ import Complexity.Computability.PCP.TwoProverGame.Tsirelson
 Checked instances of the POVM and quantum-strategy API: the trivial and computational-basis
 measurements, the projective measurement of a `±1` observable (and that such an observable is
 unitary), deterministic strategies as quantum strategies, the winning probability of specific
-deterministic strategies for CHSH, and Tsirelson's bound, which shows that no quantum strategy wins
-CHSH with certainty.
+deterministic strategies for CHSH, the correlations of the optimal EPR strategy (which attains
+Tsirelson's inequality with equality), and the values of CHSH: no quantum strategy wins with
+certainty, and the entangled value `1/2 + √2/4` exceeds the classical value `3/4`.
 -/
 
 namespace ComplexityTests.Tsirelson
@@ -80,6 +81,23 @@ example (x y : Bool) :
   rw [QuantumStrategy.correlation_eq]
   simp [QuantumStrategy.prob, QuantumStrategy.ofDeterministic, POVM.const]
 
+/-! ### The EPR strategy -/
+
+-- Bob's EPR observables are `±1` observables, hence unitary.
+example (y : Bool) : chshBobObservable y ∈ unitaryGroup Bool ℂ :=
+  mem_unitaryGroup_of_isHermitian_of_mul_self (isHermitian_chshBobObservable y)
+    (chshBobObservable_mul_self y)
+
+-- On questions `(1, 1)` the EPR answers are anticorrelated.
+example : chshEPR.correlation true true = -(√2 / 2) := by
+  simp [correlation_chshEPR]
+
+-- The EPR strategy attains Tsirelson's inequality with equality.
+example : chshEPR.correlation false false + chshEPR.correlation false true +
+    chshEPR.correlation true false - chshEPR.correlation true true = 2 * √2 := by
+  simp only [correlation_chshEPR, Bool.and_true, Bool.and_false, Bool.cond_true, Bool.cond_false]
+  ring
+
 /-! ### Values -/
 
 -- Entanglement does not hurt.
@@ -89,6 +107,14 @@ example : (3 / 4 : ℝ) ≤ chsh.quantumValue := value_chsh ▸ chsh.value_le_qu
 example : chsh.quantumValue < 1 := by
   refine quantumValue_chsh_le.trans_lt ?_
   rw [cos_sq_pi_div_eight]
+  nlinarith [Real.sq_sqrt (zero_le_two : (0 : ℝ) ≤ 2), Real.sqrt_nonneg 2]
+
+-- The entangled value of CHSH in closed form, and a numerical check: it exceeds `0.85`.
+example : chsh.quantumValue = 1 / 2 + √2 / 4 := by
+  rw [quantumValue_chsh, cos_sq_pi_div_eight]
+
+example : (0.85 : ℝ) < chsh.quantumValue := by
+  rw [quantumValue_chsh, cos_sq_pi_div_eight]
   nlinarith [Real.sq_sqrt (zero_le_two : (0 : ℝ) ≤ 2), Real.sqrt_nonneg 2]
 
 end ComplexityTests.Tsirelson

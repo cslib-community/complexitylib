@@ -9,6 +9,8 @@ module
 
 public import Complexity.Computability.PCP.TwoProverGame.CHSH
 public import Complexity.Computability.PCP.TwoProverGame.Quantum
+public import Complexity.Foundations.Quantum.Bell
+public import Complexity.Foundations.Quantum.Pauli
 public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 
 /-!
@@ -30,6 +32,12 @@ CHSH with probability at most `1/2 + √2/4 = cos²(π/8)`
 (`Cslib.PCP.TwoProverGame.quantumWinProb_chsh_le`, `Cslib.PCP.TwoProverGame.quantumValue_chsh_le`)
 [Cleve, Høyer, Toner, Watrous, §3.1][CleveHoyerTonerWatrous2004].
 
+The bound is attained by the EPR strategy `Cslib.PCP.TwoProverGame.chshEPR`: the two players share
+the Bell state `(|00⟩ + |11⟩)/√2`, Alice measures `Z` or `X`, and Bob measures `(Z ± X)/√2`. Hence
+the entangled value of CHSH is exactly `cos²(π/8)` (`Cslib.PCP.TwoProverGame.quantumValue_chsh`),
+which strictly exceeds the classical value `3/4`
+(`Cslib.PCP.TwoProverGame.value_chsh_lt_quantumValue_chsh`).
+
 The measurements are arbitrary POVMs, not only projective ones, and the dimensions are arbitrary
 finite types. The model is the finite-dimensional tensor-product model with a pure shared state.
 
@@ -37,6 +45,7 @@ finite types. The model is the finite-dimensional tensor-product model with a pu
 
 * `Cslib.PCP.QuantumStrategy.correlation`: the correlation `⟨ψ|A_x ⊗ B_y|ψ⟩` of a strategy with
   binary answers.
+* `Cslib.PCP.TwoProverGame.chshEPR`: the optimal EPR strategy for CHSH.
 
 ## Main results
 
@@ -46,6 +55,8 @@ finite types. The model is the finite-dimensional tensor-product model with a pu
 * `Cslib.PCP.QuantumStrategy.chsh_correlation_le`: Tsirelson's inequality.
 * `Cslib.PCP.TwoProverGame.quantumValue_chsh_le`: the entangled value of CHSH is at most
   `cos²(π/8)`.
+* `Cslib.PCP.TwoProverGame.quantumValue_chsh`: the entangled value of CHSH is `cos²(π/8)`.
+* `Cslib.PCP.TwoProverGame.value_chsh_lt_quantumValue_chsh`: entanglement strictly helps in CHSH.
 
 ## References
 
@@ -215,6 +226,95 @@ theorem quantumWinProb_chsh_le {ι κ : Type*} [Fintype ι] [DecidableEq ι] [Fi
 /-- The entangled value of CHSH is at most `cos²(π/8)`. -/
 theorem quantumValue_chsh_le : chsh.quantumValue ≤ Real.cos (π / 8) ^ 2 :=
   chsh.quantumValue_le (sq_nonneg _) fun S => quantumWinProb_chsh_le S
+
+/-! ### The optimal EPR strategy -/
+
+/-- Alice's observables in the optimal CHSH strategy: `Z` on question `0` and `X` on
+question `1`. -/
+noncomputable def chshAliceObservable (x : Bool) : Matrix Bool Bool ℂ :=
+  bif x then pauliX else pauliZ
+
+/-- Bob's observables in the optimal CHSH strategy: `(Z + X)/√2` on question `0` and `(Z - X)/√2`
+on question `1`. -/
+noncomputable def chshBobObservable (y : Bool) : Matrix Bool Bool ℂ :=
+  ((√2 / 2 : ℝ) : ℂ) • bif y then pauliZ - pauliX else pauliZ + pauliX
+
+theorem isHermitian_chshAliceObservable (x : Bool) : (chshAliceObservable x).IsHermitian := by
+  cases x
+  · exact pauliZ_isHermitian
+  · exact pauliX_isHermitian
+
+theorem chshAliceObservable_mul_self (x : Bool) :
+    chshAliceObservable x * chshAliceObservable x = 1 := by
+  cases x
+  · exact pauliZ_mul_self
+  · exact pauliX_mul_self
+
+theorem isHermitian_chshBobObservable (y : Bool) : (chshBobObservable y).IsHermitian := by
+  have hc : IsSelfAdjoint ((√2 / 2 : ℝ) : ℂ) := Complex.conj_ofReal _
+  cases y
+  · exact (pauliZ_isHermitian.add pauliX_isHermitian).smul hc
+  · exact (pauliZ_isHermitian.sub pauliX_isHermitian).smul hc
+
+private theorem sqrt_two_div_two_mul_self :
+    ((√2 / 2 : ℝ) : ℂ) * ((√2 / 2 : ℝ) : ℂ) = 2⁻¹ := by
+  rw [← Complex.ofReal_mul, div_mul_div_comm, Real.mul_self_sqrt zero_le_two]
+  norm_num
+
+theorem chshBobObservable_mul_self (y : Bool) :
+    chshBobObservable y * chshBobObservable y = 1 := by
+  cases y
+  · rw [chshBobObservable, Bool.cond_false, smul_mul_smul_comm, add_mul, mul_add, mul_add,
+      pauliZ_mul_self, pauliX_mul_self, pauliZ_mul_pauliX, sqrt_two_div_two_mul_self]
+    module
+  · rw [chshBobObservable, Bool.cond_true, smul_mul_smul_comm, sub_mul, mul_sub, mul_sub,
+      pauliZ_mul_self, pauliX_mul_self, pauliZ_mul_pauliX, sqrt_two_div_two_mul_self]
+    module
+
+/-- The **optimal CHSH strategy** [Cleve, Høyer, Toner, Watrous, §3.1][CleveHoyerTonerWatrous2004]:
+the EPR pair `(|00⟩ + |11⟩)/√2` (`Cslib.Quantum.maxEntangled Bool`, which is how
+`Cslib.Quantum.bell` is defined), with Alice measuring `Z` or `X` and Bob measuring
+`(Z ± X)/√2`. These are the measurements at angles `0, π/4` and `±π/8` of the source. -/
+noncomputable def chshEPR : QuantumStrategy Bool Bool Bool Bool Bool Bool where
+  state := maxEntangled Bool
+  norm_state := norm_maxEntangled
+  alice x := POVM.ofObservable (chshAliceObservable x) (isHermitian_chshAliceObservable x)
+    (chshAliceObservable_mul_self x)
+  bob y := POVM.ofObservable (chshBobObservable y) (isHermitian_chshBobObservable y)
+    (chshBobObservable_mul_self y)
+
+/-- The EPR strategy has correlation `√2/2` on every question pair except `(1, 1)`, where it is
+`-√2/2`. -/
+theorem correlation_chshEPR (x y : Bool) :
+    chshEPR.correlation x y = bif x && y then -(√2 / 2) else √2 / 2 := by
+  have hA : (chshEPR.alice x).observable = chshAliceObservable x :=
+    POVM.observable_ofObservable _ (isHermitian_chshAliceObservable x)
+      (chshAliceObservable_mul_self x)
+  have hB : (chshEPR.bob y).observable = chshBobObservable y :=
+    POVM.observable_ofObservable _ (isHermitian_chshBobObservable y)
+      (chshBobObservable_mul_self y)
+  have hS : chshEPR.state = maxEntangled Bool := rfl
+  rw [QuantumStrategy.correlation, hA, hB, hS, star_maxEntangled_dotProduct_kronecker_mulVec]
+  cases x <;> cases y <;>
+    simp [chshAliceObservable, chshBobObservable]
+
+/-- The EPR strategy wins CHSH with probability `cos²(π/8)`. -/
+theorem quantumWinProb_chsh_chshEPR : chsh.quantumWinProb chshEPR = Real.cos (π / 8) ^ 2 := by
+  rw [quantumWinProb_chsh, cos_sq_pi_div_eight]
+  simp only [correlation_chshEPR, Bool.and_true, Bool.and_false, Bool.cond_true, Bool.cond_false]
+  ring
+
+/-- **The entangled value of CHSH** is `cos²(π/8)`
+[Cleve, Høyer, Toner, Watrous, §3.1][CleveHoyerTonerWatrous2004]. -/
+theorem quantumValue_chsh : chsh.quantumValue = Real.cos (π / 8) ^ 2 :=
+  le_antisymm quantumValue_chsh_le
+    (quantumWinProb_chsh_chshEPR ▸ chsh.quantumWinProb_le_quantumValue chshEPR)
+
+/-- Entanglement strictly helps in CHSH: the classical value `3/4` is less than the entangled value
+`cos²(π/8)`. -/
+theorem value_chsh_lt_quantumValue_chsh : chsh.value < chsh.quantumValue := by
+  rw [value_chsh, quantumValue_chsh, cos_sq_pi_div_eight]
+  nlinarith [Real.sq_sqrt (zero_le_two : (0 : ℝ) ≤ 2), Real.sqrt_nonneg 2]
 
 end TwoProverGame
 

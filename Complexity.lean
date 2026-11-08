@@ -4668,8 +4668,8 @@ public import Complexity.Foundations.Quantum.HadamardTransform
 public import Complexity.Foundations.Quantum.Measurement
 public import Complexity.Foundations.Quantum.Measurement.Overlap
 public import Complexity.Foundations.Quantum.Measurement.Restrict
-public import Complexity.Foundations.Quantum.POVM
 public import Complexity.Foundations.Quantum.NoCloning
+public import Complexity.Foundations.Quantum.POVM
 public import Complexity.Foundations.Quantum.Pauli
 public import Complexity.Foundations.Quantum.TensorPower
 public import Complexity.Foundations.Relation.Acyclic
