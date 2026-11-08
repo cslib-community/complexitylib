@@ -124,10 +124,6 @@ private theorem eq_of_abs_sub_le_mul_sub {φ f : ℝ → ℝ} {a b : ℝ} (hab :
   have := abs_nonpos_iff.1 hle
   linarith
 
-/-- One bidder's truthfulness constraints along its own bid, with the others' bids fixed. -/
-private def Truthful (x p : ℝ → ℝ) : Prop :=
-  ∀ v z, 0 ≤ v → 0 ≤ z → v * x z - p z ≤ v * x v - p v
-
 private theorem intervalIntegrable_of_monotoneOn {x : ℝ → ℝ} (hx : MonotoneOn x (Set.Ici 0))
     {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) : IntervalIntegrable x volume a b :=
   (hx.mono fun c (hc : c ∈ Set.uIcc a b) => le_trans (le_inf ha hb) hc.1).intervalIntegrable
@@ -154,14 +150,14 @@ private theorem integral_split {x : ℝ → ℝ} (hx : MonotoneOn x (Set.Ici 0))
 
 /-- Uniqueness in one dimension: truthfulness forces `p(b) = p(0) + b x(b) − ∫₀^b x`. -/
 private theorem payment_eq_of_truthful {x p : ℝ → ℝ} (hx : MonotoneOn x (Set.Ici 0))
-    (h : Truthful x p) {b : ℝ} (hb : 0 ≤ b) :
+    (h : IsTruthfulOn x p (Set.Ici 0)) {b : ℝ} (hb : 0 ≤ b) :
     p b = p 0 + (b * x b - ∫ t in (0 : ℝ)..b, x t) := by
   set φ : ℝ → ℝ := fun v => (v * x v - p v) - ∫ t in (0 : ℝ)..v, x t with hφ
   have hconst : φ b = φ 0 := by
     refine eq_of_abs_sub_le_mul_sub (f := x) hb fun z y hz hzy _ => ?_
     have hy : 0 ≤ y := hz.trans hzy
-    have h1 := h y z hy hz
-    have h2 := h z y hz hy
+    have h1 := h y hy z hz
+    have h2 := h z hz y hy
     obtain ⟨hI1, hI2⟩ := integral_bounds_of_monotoneOn hx hz hzy
     simp only [hφ]
     rw [integral_split hx hz hy, abs_le]
@@ -171,8 +167,9 @@ private theorem payment_eq_of_truthful {x p : ℝ → ℝ} (hx : MonotoneOn x (S
 
 /-- Sufficiency in one dimension: Myerson's payments make a monotone curve truthful. -/
 private theorem truthful_of_payment_eq {x p : ℝ → ℝ} (hx : MonotoneOn x (Set.Ici 0))
-    (hp : ∀ b, 0 ≤ b → p b = p 0 + (b * x b - ∫ t in (0 : ℝ)..b, x t)) : Truthful x p := by
-  intro v z hv hz
+    (hp : ∀ b, 0 ≤ b → p b = p 0 + (b * x b - ∫ t in (0 : ℝ)..b, x t)) :
+    IsTruthfulOn x p (Set.Ici 0) := by
+  intro v hv z hz
   rw [hp v hv, hp z hz, integral_split hx hz hv]
   rcases le_total z v with hzv | hvz
   · obtain ⟨h1, -⟩ := integral_bounds_of_monotoneOn hx hz hzv
@@ -189,8 +186,7 @@ nonnegative bid profile. -/
 theorem Mechanism.IsDSIC.payment_eq {M : Mechanism ι} (hM : M.IsDSIC) (i : ι) {b : ι → ℝ}
     (hb : 0 ≤ b) :
     M.payment b i = M.payment (Function.update b i 0) i + myersonPayment M.allocation b i := by
-  have := payment_eq_of_truthful (hM.isMonotone i b hb)
-    (fun v z hv hz => hM.utility_update_le i hb hv hz) (hb i)
+  have := payment_eq_of_truthful (hM.isMonotone i b hb) (hM.isTruthfulOn i hb) (hb i)
   simpa only [Function.update_eq_self, myersonPayment] using this
 
 /-- **Myerson's Lemma, sufficiency** ([Roughgarden2013CS364A], Lecture 3, Theorem 4.3 (a), "if",
@@ -198,12 +194,12 @@ and (c)): a monotone allocation rule is DSIC with Myerson's payments. The proof 
 picture" of Lecture 3, Figure 2, for arbitrary monotone rules. -/
 theorem myerson_isDSIC {x : (ι → ℝ) → ι → ℝ} (hx : IsMonotone x) : (myerson x).IsDSIC := by
   intro i b v hb hv
-  have hT : Truthful (fun z => x (Function.update b i z) i)
-      (fun z => myersonPayment x (Function.update b i z) i) := by
+  have hT : IsTruthfulOn (fun z => x (Function.update b i z) i)
+      (fun z => myersonPayment x (Function.update b i z) i) (Set.Ici 0) := by
     refine truthful_of_payment_eq (hx i b hb) fun c _ => ?_
     simp only [myersonPayment, Function.update_idem, Function.update_self,
       intervalIntegral.integral_same, zero_mul, sub_zero, zero_add]
-  have := hT v (b i) hv (hb i)
+  have := hT v hv (b i) (hb i)
   simpa only [myerson, Mechanism.utility, Function.update_eq_self] using this
 
 /-- **Myerson's Lemma (a)** ([Roughgarden2013CS364A], Lecture 3, Theorem 4.3 (a)): an allocation
