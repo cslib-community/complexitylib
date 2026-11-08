@@ -943,9 +943,74 @@ checks radix-one/empty arrays, unique selected-degree coverage, quarter-root
 boundaries, a fully computed network and a nonvacuous family of native certificates.
 
 The outstanding semantic step is equality of this modular contraction sum with
-the sparse-system solution count, including dead arrays and invalid local ranks.
+the sparse-system solution count. The extra-array zero and local-rank coverage
+obligations are now proved below.
 Then high-incidence branching, greedy parity queries, sharper sparsification and
 weighted reconstruction/time rescaling must be assembled. The old end-to-end
 counter still has its squared-log-log overhead. Common-occurrence positive
 serialized rows remain a frontend restriction; arbitrary variable-length rows,
 table and graph endpoints, full Theorem 7.1 and ALL-main remain open.
+
+
+### Reconstruct the source-supported incidence sum and its count target
+
+Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceArraySupport`
+and `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceCountReconstruction`,
+and open `Cslib.Circuits.Frontier.IncidenceNetwork`.
+
+`unrankCombination_coverage` proves that the existing false-first decoder covers
+fixed-weight words uniquely, without enumerating the whole Boolean cube.
+`selectBlock_coverage` transfers this to the actual incidence sublists.
+`array_and_ranks_coverage` derives the unique decoded degree array and every
+unique valid local rank from a selected incidence monomial. The system supplies
+the actual incidence lists; their distinctness follows from `nodup_pairInc`,
+even with repeated raw variables or tests. The total selected degree supplies
+the array coordinate bounds. No rank or basis is input advice.
+
+`FeasibleArray` is the mathematical source condition: the actual global degree
+check passes and each degree is at most the capacity of its computed group pair.
+`polyContraction_eq_zero_of_not_feasible` proves that every extra array in the
+full radix box has zero contraction over natural coefficient polynomials,
+before modular reduction. Cap overflow writes the isolated dead row. Capacity
+overflow makes the actual row entry zero at every word. This includes a block
+with no bits: `length_blockIndices` ensures it is checked rather than skipped by
+`zip`. `sumArrays_eq_feasible` therefore identifies the existing native output
+with the modular sum over exactly the feasible decoded arrays. This filter is a
+mathematical identity of the existing output, not an extra loop or an assumed
+counter contract; the approved actual construction/streaming time and workspace
+certificates above remain unchanged.
+
+`systemIncidencePolynomial k (n,sys)` uses the actual listed equations, their
+finite monomials/scopes and the computed cap $k(a+2n)$. It is the existing source
+incidence expansion, used as a specification rather than evaluated by monomial
+enumeration. `rootCount_eq_incidenceResidue` derives the exact solution count by
+summing its coefficients below $V^{n+1}$ and taking the least nonnegative residue
+modulo $2^{n+1}$. Its hypotheses are canonical equations, declared variable
+indices and listed monomial lengths at most $k$. The finite degree bound is
+proved from those lengths, and the existing declared-variable count bridge and
+coefficient cutoff discharge recovery. No supplied polynomial coefficients,
+answer or native output equality is a premise. This covers zero declared
+variables, no equations, contradiction, and variables outside every scope.
+
+These are the local uniqueness, zero-contribution and original-input recovery
+stages of OpenAI2026ETH, Appendix D.3, Lemma D.2, equations (D.1)–(D.2), PDF
+pp.55–56. From the repository root run
+`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceReconstruction`.
+The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceReconstruction.lean)
+checks decoder ranks, deduplicated incidences, unique subset/array coverage,
+valid and invalid zero-width blocks, dead/capacity-zero padded contractions,
+actual native output support and exact count recovery including free variables
+and constant contradiction. A duplicate-monomial negative case checks that the
+normalization hypothesis is material.
+
+The remaining global correspondence must identify the supported native
+contraction sum with `systemIncidencePolynomial` in the truncated ring. In
+particular, prove that a shared edge assignment gives the same local rank at
+both endpoints, that valid ranks assemble without multiplicity, that padding
+contributes one, and that group coefficient products and free-variable weights
+match the global incidence expansion. Local uniqueness and zero support do not
+establish that identity by themselves. High-incidence branches, parity queries,
+sharper sparsification and actual eta-time absorption/rescaling then remain.
+The old counter's extra log-log factor and the weighted common-occurrence,
+variable-length raw-row, table, graph and full Theorem 7.1/ALL-main gaps remain
+explicitly open.

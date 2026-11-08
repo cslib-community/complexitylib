@@ -1083,10 +1083,40 @@ derived from `IsSparseBranch`, not supplied as an oracle or runtime budget.
 
 This is a concrete algorithm/resource milestone, not the full sharper counter:
 `sumArrays_eq` proves exactly the modular sum of constructed contractions, but
-its equality with the sparse-system count remains unproved. Dead arrays/invalid
-ranks must be covered in that reconstruction. High-incidence branches, parity
+its equality with the sparse-system count remains unproved. Extra arrays now have zero-contribution proofs, and valid local ranks have unique
+coverage as recorded below; the shared-wire/global-product correspondence remains. High-incidence branches, parity
 queries, sharper sparsification and weighted time rescaling remain to compose.
 No new eta-time bound is claimed for the old end-to-end interpolation program;
 its extra log-log factor has not been removed. Common-occurrence positive
 serialized rows, arbitrary variable-length raw rows, tables and graphs retain
 the limitations above. Full Theorem 7.1 and ALL-main remain open.
+
+
+The next reconstruction stages are now proved in `IncidenceBlockCoverage`,
+`IncidenceArraySupport` and `IncidenceCountReconstruction`. The actual combination
+unranker covers fixed-weight words and incidence sublists uniquely. A selected
+incidence monomial of bounded total degree determines one actual decoded array
+and one valid local rank per computed group pair, without supplied ranks or
+incidence distinctness. Impossible local capacities are rejected even at width
+zero. Both global-cap overflow and local-capacity overflow annihilate actual
+padded network contractions before modular reduction. Thus the existing native
+`sumArrays` output is exactly its sum over source-feasible arrays, with its
+approved actual binary time and polynomial original-input space unchanged.
+
+The exact count target is also derived from actual canonical sparse input:
+`rootCount_eq_incidenceResidue` instantiates the incidence polynomial with the
+computed cap `k*(a+2*n)`, derives finite degrees from listed monomial lengths,
+and proves that its coefficient sum below `n+1`, modulo `2^(n+1)`, recovers the
+declared-variable count. No supplied coefficient or answer congruence is assumed.
+This is a mathematical reconstruction specification, not an exponential
+monomial-enumeration implementation.
+
+Still missing is the global equality between that polynomial and the supported
+native contraction sum: common-wire rank decoding at both endpoints, coverage
+of the full wire assignment space, padding contribution one, and group
+coefficient/free-variable-weight factorization. Then high-incidence branches,
+parity queries, sharper sparsification, actual eta-time absorption and weighted
+rescaling remain to compose. The old complete counter retains the extra log-log
+factor. No complete sharper counter or Theorem 7.1/ALL-main completion is claimed;
+common-occurrence positive weighted rows and raw-row/table/graph limitations
+remain as above.

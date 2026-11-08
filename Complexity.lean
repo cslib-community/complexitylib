@@ -1111,6 +1111,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ClauseNetw
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ClauseNetworkPolyTime
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.CoeffScheme
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Constraint
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ContractionZero
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Deformation
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DescribedContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DescribedLift
@@ -1130,7 +1131,10 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContra
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionSize
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionStep
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceArraySum
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceArraySupport
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceArrays
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceBlockCoverage
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceCountReconstruction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntry
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryBounds
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryCertificate
@@ -3577,6 +3581,7 @@ public import Complexity.Foundations.Data.BitString.Basic
 public import Complexity.Foundations.Data.BitString.Binary
 public import Complexity.Foundations.Data.BitString.Block
 public import Complexity.Foundations.Data.BitString.Combination
+public import Complexity.Foundations.Data.BitString.CombinationCoverage
 public import Complexity.Foundations.Data.BitString.Convolution
 public import Complexity.Foundations.Data.BitString.Counter
 public import Complexity.Foundations.Data.BitString.CoverCoding
