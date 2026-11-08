@@ -1103,7 +1103,8 @@ open Cslib.Logic.PL.CSP Cslib.Complexity.CSP Cslib.Complexity.CSP.EdgeForest in
 example (input : Input)
     (hw : input.labels.length = (incidenceList input.body).length) :
     (run input).bind (decode input.body) =
-      some (Forest.search Table.sem (EdgeAugmenting.labeling input.body input.labels)) :=
+      some (Forest.search Table.sem
+        (EdgeAugmenting.labeling input.body input.labels)) :=
   decode_run input hw
 ```
 
@@ -1119,11 +1120,13 @@ open Cslib.Logic.PL.CSP Cslib.Complexity.CSP Cslib.Complexity.CSP.EdgeForest in
 example (input : Input)
     (hw : input.labels.length = (incidenceList input.body).length)
     (hF : EdgeInstance input.body)
-    (hf : ValidLabeling Table.sem (EdgeAugmenting.labeling input.body input.labels))
+    (hf : ValidLabeling Table.sem
+      (EdgeAugmenting.labeling input.body input.labels))
     (hM : EdgeInstance.EvenConstraints Table.sem input.body)
     {m : Forest.Meeting input.body}
     (hr : (run input).bind (decode input.body) = some (.augment m)) :
-    m.walk.IsAugmenting Table.sem (EdgeAugmenting.labeling input.body input.labels) := by
+    m.walk.IsAugmenting Table.sem
+      (EdgeAugmenting.labeling input.body input.labels) := by
   have hs := run_spec input hw hF hf hM
   rw [hr] at hs
   exact hs.1
