@@ -928,7 +928,7 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   Håstad's separate test for satisfiable formulas (Theorem 6.5).
 - **Unique Games with perfect completeness**
   ([#3363](https://github.com/cslib-community/complexitylib/issues/3363)): label propagation
-  decides satisfiable unique games (`UniqueGames.Propagation.solvedBy_gapUniqueGames_one`), with
+  decides satisfiable unique games (`Cslib.Complexity.solvedBy_gapUniqueGames_one`), with
   an `O(L · (N + E))` step bound in an explicit `TimeM` cost model (`solveM_time_le`). Remaining:
   `GapUniqueGames (Fin L) 1 s ∈ PromiseP` under the encoding of `UniqueGamesConjecture`, through
   the plain polynomial-time framework.

@@ -155,12 +155,12 @@ example : (solve (List.finRange 2) constTables).isSome = false := by decide
 /-! ### Charged steps -/
 
 /-- The exact charge of `solveM` on the cycle: `4` for the slots, `9` for the incidence lists,
-`3` to allocate the table, `98` for the outer loop (one component of three pops, each visiting two
-edges), `3` to extract the labelling and `9` for the check. -/
-example : (solveM (List.finRange 3) cyc).time = 126 := by decide
+`3` to allocate the table, `102` for the outer loop (one component of three pops, each visiting
+two edges), `3` to extract the labelling and `9` for the check. -/
+example : (solveM (List.finRange 3) cyc).time = 130 := by decide
 
-/-- The general bound on the cycle: `(3 + 5) · 3 + (8 · 3 + 15) · 3 + 1 = 142`. -/
-example : (solveM (List.finRange 3) cyc).time ≤ 142 :=
+/-- The general bound on the cycle: `(3 + 5) · 3 + (9 · 3 + 16) · 3 + 1 = 154`. -/
+example : (solveM (List.finRange 3) cyc).time ≤ 154 :=
   solveM_time_le (List.finRange 3) cyc
 
 end ComplexityTests.UniqueGamesPropagation

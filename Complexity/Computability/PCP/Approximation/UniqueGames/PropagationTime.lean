@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.PCP.Approximation.UniqueGames.Propagation
 public import Cslib.Algorithms.Lean.TimeM
+import all Complexity.Computability.PCP.Approximation.UniqueGames.Propagation
 import Complexity.Foundations.Data.List.Lookup
 import Mathlib.Data.List.GetD
 
@@ -18,9 +19,11 @@ import Mathlib.Data.List.GetD
 `Cslib.Complexity.UniqueGames.Propagation.solveM` is the propagation algorithm
 `Cslib.Complexity.UniqueGames.Propagation.solve` in the `TimeM` monad, with explicit charges.
 It returns the same answer (`solveM_ret`). On an instance with `N` vertex slots and `E` edges, it
-is charged at most `(L + 5) · N + (8 L + 15) · E + 1` steps for a list of `L` labels
-(`solveM_time_le`). That is `O(L · (N + E))`, the bound for label propagation
-[Khot, Section 2.4][Khot2010]. On a well-formed instance `N` is the declared number of vertices.
+is charged at most `(L + 5) · N + (9 L + 16) · E + 1` steps for a list of `L` labels
+(`solveM_time_le`), that is `O(L · (N + E))`. On a well-formed instance `N` is the declared
+number of vertices. Khot observes that propagation runs in polynomial time
+[Khot, Section 2.4][Khot2010]. The explicit charge and its analysis are this formalization's own,
+in the cost model below.
 
 ## Cost model
 
@@ -30,8 +33,9 @@ candidate table, the inverse of an edge's bijection) is an array of `L` entries:
 
 * computing the number of slots: `E + 1`; building the incidence lists: `N + 2 E`;
   allocating the vertex table: `N`;
-* in the outer loop, `1` per edge to read the table at its first endpoint, and `L + 1` to reset
-  the candidate table when that endpoint starts a new component;
+* in the outer loop, `1` per edge to read the table at its first endpoint, and, when that
+  endpoint starts a new component, `L + 1` to reset the candidate table and `L + 1` to write the
+  identity table at the seed;
 * `1` per pop of the stack, and `3 (L + 1)` per incident edge visited: inverting the edge's
   bijection, composing it with a stored table, and filtering the candidates, one pass each;
 * settling a component: `L + 1` to pick a surviving candidate and `L + 1` per vertex frozen;
@@ -202,15 +206,15 @@ omit [DecidableEq α] in
   return { S with table := t, comp := [] }
 
 /-- Process one edge of the outer loop: read the table at its first endpoint (one step) and, if
-that endpoint is unvisited, reset the candidate table (one pass), explore and settle its
-component. -/
+that endpoint is unvisited, reset the candidate table and write the identity table at the seed
+(one pass each), then explore and settle its component. -/
 @[expose] def stepM [Inhabited α] (labels : List α) (n : ℕ) (bs : List (List (Edge (α → α))))
     (S : State α) (e : Edge (α → α)) : TimeM ℕ (State α) := do
   TimeM.tick 1
   match S.get e.src with
   | some _ => return S
   | none => do
-    TimeM.tick (pass labels)
+    TimeM.tick (2 * pass labels)
     let T ← exploreM labels bs n (start S e.src)
     settleM labels T
 
@@ -445,7 +449,7 @@ private theorem stepM_time [Inhabited α] (labels : List α) {g : Graph (α → 
     {bs : List (List (Edge (α → α)))} (hbs : ∀ u, bs.getD u [] = adj g u) {S : State α}
     (hlen : S.table.length = slots g) {e : Edge (α → α)} (he : e ∈ g.edges) :
     (stepM labels (slots g) bs S e).time + credit labels g (step labels g S e) ≤
-      credit labels g S + 1 + 2 * pass labels := by
+      credit labels g S + 1 + 3 * pass labels := by
   unfold stepM step
   cases hs : S.get e.src with
   | some _ => simp only [TimeM.time_bind, TimeM.time_tick, TimeM.time_pure]; omega
@@ -467,7 +471,7 @@ private theorem stepsM_time [Inhabited α] (labels : List α) {g : Graph (α →
     (l : List (Edge (α → α))) (hl : ∀ e ∈ l, e ∈ g.edges) {S : State α}
     (hlen : S.table.length = slots g) :
     (stepsM labels (slots g) bs S l).time ≤
-      credit labels g S + (1 + 2 * pass labels) * l.length := by
+      credit labels g S + (1 + 3 * pass labels) * l.length := by
   induction l generalizing S with
   | nil => simp [stepsM]
   | cons e l ih =>
@@ -529,10 +533,12 @@ theorem checkAllM_time (σ : ℕ → α) (l : List (Edge (α → α))) :
     · simp only [TimeM.time_pure]; omega
 
 /-- **The step bound**: label propagation on `slots g` slots and `|E|` edges, with `L` labels,
-is charged `O(L · (slots g + |E|))` steps [Khot, Section 2.4][Khot2010]. -/
+is charged `O(L · (slots g + |E|))` steps in the cost model of this module. Khot observes that
+propagation runs in polynomial time [Khot, Section 2.4][Khot2010]; this explicit charge and its
+analysis are this formalization's own. -/
 theorem solveM_time_le [Inhabited α] (labels : List α) (g : Graph (α → α)) :
     (solveM labels g).time ≤
-      (labels.length + 5) * slots g + (8 * labels.length + 15) * g.edges.length + 1 := by
+      (labels.length + 5) * slots g + (9 * labels.length + 16) * g.edges.length + 1 := by
   simp only [solveM, TimeM.time_bind, TimeM.time_tick, TimeM.time_pure]
   rw [show (slotsM g).ret = slots g from rfl, show (slotsM g).time = g.edges.length + 1 from rfl,
     bucketsM_time, bucketsM_ret]
@@ -549,7 +555,7 @@ theorem solveM_time_le [Inhabited α] (labels : List α) (g : Graph (α → α))
 theorem solveM_time_le_of_wellFormed [Inhabited α] (labels : List α) {g : Graph (α → α)}
     (hg : g.WellFormed) :
     (solveM labels g).time ≤
-      (labels.length + 5) * g.vertices + (8 * labels.length + 15) * g.edges.length + 1 := by
+      (labels.length + 5) * g.vertices + (9 * labels.length + 16) * g.edges.length + 1 := by
   simpa only [slots_eq_vertices hg] using solveM_time_le labels g
 
 end Cslib.Complexity.UniqueGames.Propagation

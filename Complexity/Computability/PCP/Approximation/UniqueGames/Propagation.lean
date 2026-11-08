@@ -30,6 +30,11 @@ when the edge points towards the stored endpoint. An edge with both endpoints st
 the guesses that violate it. When the component is exhausted, any surviving guess fixes a label
 at each of its vertices. A final check of every edge makes the answer sound unconditionally.
 
+The search is written here rather than reusing `Cslib.Algorithms.Lean.DFS` or the breadth-first
+reachability modules: those track only a set of visited vertices, while propagation stores a
+table at each vertex, prunes the candidates on closing edges and settles each component when it
+is exhausted.
+
 ## Main definitions
 
 * `Cslib.Complexity.UniqueGames.Propagation.solve`: the propagation algorithm, returning a
@@ -274,25 +279,25 @@ theorem slots_eq_vertices {C : Type} {g : Graph C} (hg : g.WellFormed) :
 namespace State
 
 /-- A slot is done when it is visited and no longer on the stack. -/
-@[expose] def Done (S : State α) (v : ℕ) : Prop := (S.get v).isSome ∧ v ∉ S.stack
+private def Done (S : State α) (v : ℕ) : Prop := (S.get v).isSome ∧ v ∉ S.stack
 
 /-- An edge is settled when both endpoints are visited and every surviving guess satisfies it. -/
-@[expose] def Settled (S : State α) (e : Edge (α → α)) : Prop :=
+private def Settled (S : State α) (e : Edge (α → α)) : Prop :=
   ∃ f h, S.get e.src = some f ∧ S.get e.dst = some h ∧
     ∀ a, S.cand a = true → e.constraint (f a) = h a
 
 /-- The unvisited slots. -/
-@[expose] def unvisited (S : State α) : Finset ℕ :=
+private def unvisited (S : State α) : Finset ℕ :=
   (Finset.range S.table.length).filter fun v => (S.get v).isNone
 
 /-- The termination measure of the search: unvisited slots plus stack entries. -/
-@[expose] def potential (S : State α) : ℕ := S.unvisited.card + S.stack.length
+private def potential (S : State α) : ℕ := S.unvisited.card + S.stack.length
 
 /-- A weighted potential: the weights of the unvisited slots and of the stack entries. -/
-@[expose] def wpot (S : State α) (w : ℕ → ℕ) : ℕ := ∑ v ∈ S.unvisited, w v + (S.stack.map w).sum
+private def wpot (S : State α) (w : ℕ → ℕ) : ℕ := ∑ v ∈ S.unvisited, w v + (S.stack.map w).sum
 
 /-- With unit weights the weighted potential is the potential. -/
-theorem wpot_one (S : State α) : S.wpot (fun _ => 1) = S.potential := by
+private theorem wpot_one (S : State α) : S.wpot (fun _ => 1) = S.potential := by
   simp [wpot, potential]
 
 end State
@@ -300,7 +305,7 @@ end State
 /-- Monotone progress within one component's search: stored tables persist, candidates only
 shrink, done slots are unchanged, every new stack entry is a newly visited slot, and no
 weighted potential increases. -/
-structure Step (S T : State α) : Prop where
+private structure Step (S T : State α) : Prop where
   /-- Stored tables persist. -/
   get : ∀ v f, S.get v = some f → T.get v = some f
   /-- Candidates only shrink. -/
@@ -317,15 +322,15 @@ structure Step (S T : State α) : Prop where
   wpot : ∀ w, T.wpot w ≤ S.wpot w
 
 /-- The potential does not increase along a `Step`. -/
-theorem Step.potential_le {S T : State α} (h : Step S T) : T.potential ≤ S.potential := by
+private theorem Step.potential_le {S T : State α} (h : Step S T) : T.potential ≤ S.potential := by
   simpa only [State.wpot_one] using h.wpot fun _ => 1
 
 /-- `Step` is reflexive. -/
-theorem Step.refl (S : State α) : Step S S :=
+private theorem Step.refl (S : State α) : Step S S :=
   ⟨fun _ _ h => h, fun _ h => h, fun _ => Iff.rfl, rfl, fun _ h => Or.inl h, rfl, fun _ => le_rfl⟩
 
 /-- `Step` is transitive. -/
-theorem Step.trans {S T U : State α} (h₁ : Step S T) (h₂ : Step T U) : Step S U where
+private theorem Step.trans {S T U : State α} (h₁ : Step S T) (h₂ : Step T U) : Step S U where
   get v f h := h₂.get v f (h₁.get v f h)
   cand a h := h₁.cand a (h₂.cand a h)
   done v := (h₂.done v).trans (h₁.done v)
@@ -344,28 +349,28 @@ theorem Step.trans {S T U : State α} (h₁ : Step S T) (h₂ : Step T U) : Step
   wpot w := (h₂.wpot w).trans (h₁.wpot w)
 
 /-- A settled edge stays settled along a `Step`. -/
-theorem State.Settled.mono {S T : State α} {e : Edge (α → α)} (h : S.Settled e) (hST : Step S T) :
-    T.Settled e := by
+private theorem State.Settled.mono {S T : State α} {e : Edge (α → α)} (h : S.Settled e)
+    (hST : Step S T) : T.Settled e := by
   obtain ⟨f, k, hf, hk, hfk⟩ := h
   exact ⟨f, k, hST.get _ _ hf, hST.get _ _ hk, fun a ha => hfk a (hST.cand a ha)⟩
 
 /-- `push` stores its table. -/
-theorem get_push_self {S : State α} {w : ℕ} (hw : w < S.table.length) (f : α → α) :
+private theorem get_push_self {S : State α} {w : ℕ} (hw : w < S.table.length) (f : α → α) :
     (push S w f).get w = some f :=
   List.getD_set_self hw
 
 /-- `push` leaves the other slots alone. -/
-theorem get_push_ne (S : State α) {w v : ℕ} (h : w ≠ v) (f : α → α) :
+private theorem get_push_ne (S : State α) {w v : ℕ} (h : w ≠ v) (f : α → α) :
     (push S w f).get v = S.get v :=
   List.getD_set_ne h
 
 /-- `push` keeps the number of slots. -/
-theorem length_push (S : State α) (w : ℕ) (f : α → α) :
+private theorem length_push (S : State α) (w : ℕ) (f : α → α) :
     (push S w f).table.length = S.table.length :=
   List.length_set
 
 /-- `push` visits its slot. -/
-theorem unvisited_push {S : State α} {w : ℕ} (hw : w < S.table.length) (f : α → α) :
+private theorem unvisited_push {S : State α} {w : ℕ} (hw : w < S.table.length) (f : α → α) :
     (push S w f).unvisited = S.unvisited.erase w := by
   ext v
   simp only [State.unvisited, Finset.mem_filter, Finset.mem_range, Finset.mem_erase,
@@ -377,12 +382,12 @@ theorem unvisited_push {S : State α} {w : ℕ} (hw : w < S.table.length) (f : �
     simp [Ne.symm hv]
 
 /-- An unvisited slot in range is in `unvisited`. -/
-theorem mem_unvisited {S : State α} {w : ℕ} (hw : w < S.table.length) (hnone : S.get w = none) :
-    w ∈ S.unvisited := by
+private theorem mem_unvisited {S : State α} {w : ℕ} (hw : w < S.table.length)
+    (hnone : S.get w = none) : w ∈ S.unvisited := by
   simp [State.unvisited, hw, hnone]
 
 /-- Pushing an unvisited slot in range is a `Step`. -/
-theorem step_push {S : State α} {w : ℕ} (hw : w < S.table.length) (hnone : S.get w = none)
+private theorem step_push {S : State α} {w : ℕ} (hw : w < S.table.length) (hnone : S.get w = none)
     (f : α → α) : Step S (push S w f) where
   get v g hv := by
     have : w ≠ v := by rintro rfl; simp [hnone] at hv
@@ -444,7 +449,7 @@ private theorem step_extend (labels : List α) {S : State α} {e : Edge (α → 
   · exact Step.refl S
 
 /-- Visiting an edge with endpoints in range is a `Step`. -/
-theorem step_visit (labels : List α) {S : State α} {e : Edge (α → α)}
+private theorem step_visit (labels : List α) {S : State α} {e : Edge (α → α)}
     (hsrc : e.src < S.table.length) (hdst : e.dst < S.table.length) :
     Step S (visit labels S e) :=
   (step_extend labels hsrc hdst).trans (step_prune _ e)
@@ -472,14 +477,14 @@ private theorem length_extend (labels : List α) (S : State α) (e : Edge (α �
   split <;> first | exact length_push _ _ _ | rfl
 
 /-- Visiting an edge keeps the stored tables. -/
-theorem get_visit (labels : List α) {S : State α} (e : Edge (α → α)) {v : ℕ} {f : α → α}
+private theorem get_visit (labels : List α) {S : State α} (e : Edge (α → α)) {v : ℕ} {f : α → α}
     (hv : S.get v = some f) : (visit labels S e).get v = some f := by
   unfold visit
   rw [get_prune]
   exact get_extend labels e hv
 
 /-- Visiting an edge keeps the number of slots. -/
-theorem length_visit (labels : List α) (S : State α) (e : Edge (α → α)) :
+private theorem length_visit (labels : List α) (S : State α) (e : Edge (α → α)) :
     (visit labels S e).table.length = S.table.length := by
   obtain ⟨p, hp⟩ := prune_eq (extend labels S e) e
   unfold visit
@@ -583,7 +588,7 @@ private theorem sem_visit {labels : List α} (hlabels : ∀ a, a ∈ labels) {τ
   sem_prune hsat (sem_extend hlabels hπ hsat h)
 
 /-- Visiting a list of edges with endpoints in range is a `Step`. -/
-theorem foldl_visit_step (labels : List α) (l : List (Edge (α → α))) {S : State α}
+private theorem foldl_visit_step (labels : List α) (l : List (Edge (α → α))) {S : State α}
     (hl : ∀ e ∈ l, e.src < S.table.length ∧ e.dst < S.table.length) :
     Step S (l.foldl (visit labels) S) := by
   induction l generalizing S with
@@ -628,14 +633,14 @@ private theorem foldl_visit_sem {labels : List α} (hlabels : ∀ a, a ∈ label
       (sem_visit hlabels (hl e (by simp)).1 (hl e (by simp)).2 h)
 
 /-- Visiting a list of edges keeps the number of slots. -/
-theorem foldl_visit_length (labels : List α) (l : List (Edge (α → α))) (S : State α) :
+private theorem foldl_visit_length (labels : List α) (l : List (Edge (α → α))) (S : State α) :
     (l.foldl (visit labels) S).table.length = S.table.length := by
   induction l generalizing S with
   | nil => rfl
   | cons e l ih => rw [List.foldl_cons, ih, length_visit]
 
 /-- Visiting a list of edges keeps the stored tables. -/
-theorem foldl_visit_get (labels : List α) (l : List (Edge (α → α))) {S : State α} {v : ℕ}
+private theorem foldl_visit_get (labels : List α) (l : List (Edge (α → α))) {S : State α} {v : ℕ}
     {f : α → α} (hv : S.get v = some f) : (l.foldl (visit labels) S).get v = some f := by
   induction l generalizing S with
   | nil => exact hv
@@ -651,24 +656,24 @@ variable {α : Type} [DecidableEq α]
 
 omit [DecidableEq α] in
 /-- The incident edges of `v` are the edges with `v` as an endpoint. -/
-theorem mem_adj {g : Graph (α → α)} {v : ℕ} {e : Edge (α → α)} :
+private theorem mem_adj {g : Graph (α → α)} {v : ℕ} {e : Edge (α → α)} :
     e ∈ adj g v ↔ e ∈ g.edges ∧ (e.src = v ∨ e.dst = v) := by
   simp [adj, incident]
 
 /-- Scanning an empty stack does nothing. -/
-theorem scan_nil (labels : List α) (g : Graph (α → α)) {S : State α} (h : S.stack = []) :
+private theorem scan_nil (labels : List α) (g : Graph (α → α)) {S : State α} (h : S.stack = []) :
     scan labels g S = S := by
   unfold scan; rw [h]
 
 /-- Scanning pops the top slot and visits its incident edges. -/
-theorem scan_cons (labels : List α) (g : Graph (α → α)) {S : State α} {u : ℕ} {rest : List ℕ}
-    (h : S.stack = u :: rest) :
+private theorem scan_cons (labels : List α) (g : Graph (α → α)) {S : State α} {u : ℕ}
+    {rest : List ℕ} (h : S.stack = u :: rest) :
     scan labels g S =
       (adj g u).foldl (visit labels) { S with stack := rest, comp := u :: S.comp } := by
   unfold scan; rw [h]
 
 /-- Scanning keeps the number of slots. -/
-theorem length_scan (labels : List α) (g : Graph (α → α)) (S : State α) :
+private theorem length_scan (labels : List α) (g : Graph (α → α)) (S : State α) :
     (scan labels g S).table.length = S.table.length := by
   unfold scan
   split
@@ -683,14 +688,14 @@ private theorem get_scan (labels : List α) (g : Graph (α → α)) {S : State �
   · exact foldl_visit_get labels _ hv
 
 /-- Repeated scanning keeps the number of slots. -/
-theorem length_iterate_scan (labels : List α) (g : Graph (α → α)) (k : ℕ) (S : State α) :
+private theorem length_iterate_scan (labels : List α) (g : Graph (α → α)) (k : ℕ) (S : State α) :
     ((scan labels g)^[k] S).table.length = S.table.length := by
   induction k with
   | zero => rfl
   | succ k ih => rw [Function.iterate_succ_apply', length_scan, ih]
 
 /-- Repeated scanning keeps the stored tables. -/
-theorem get_iterate_scan (labels : List α) (g : Graph (α → α)) (k : ℕ) {S : State α} {v : ℕ}
+private theorem get_iterate_scan (labels : List α) (g : Graph (α → α)) (k : ℕ) {S : State α} {v : ℕ}
     {f : α → α} (hv : S.get v = some f) : ((scan labels g)^[k] S).get v = some f := by
   induction k with
   | zero => exact hv
@@ -698,8 +703,8 @@ theorem get_iterate_scan (labels : List α) (g : Graph (α → α)) (k : ℕ) {S
 
 omit [DecidableEq α] in
 /-- With `slots g` slots, the incident edges of any slot have endpoints in range. -/
-theorem adj_bounds {g : Graph (α → α)} {S : State α} (hlen : S.table.length = slots g) (u : ℕ) :
-    ∀ e ∈ adj g u, e.src < S.table.length ∧ e.dst < S.table.length := fun e he => by
+private theorem adj_bounds {g : Graph (α → α)} {S : State α} (hlen : S.table.length = slots g)
+    (u : ℕ) : ∀ e ∈ adj g u, e.src < S.table.length ∧ e.dst < S.table.length := fun e he => by
   rw [hlen]
   exact ⟨src_lt_slots (mem_adj.1 he).1, dst_lt_slots (mem_adj.1 he).1⟩
 
@@ -939,27 +944,27 @@ private theorem foldl_freeze_length (c : α) (l : List ℕ) (t : List (Option (�
 
 omit [DecidableEq α] in
 /-- Settling freezes exactly the tables of the component. -/
-theorem settle_get [Inhabited α] (labels : List α) (S : State α) (v : ℕ) :
+private theorem settle_get [Inhabited α] (labels : List α) (S : State α) (v : ℕ) :
     (settle labels S).get v =
       if v ∈ S.comp then freeze ((labels.find? S.cand).getD default) (S.get v) else S.get v :=
   foldl_freeze_get _ _ _ _
 
 omit [DecidableEq α] in
 /-- Settling keeps the number of slots. -/
-theorem settle_length [Inhabited α] (labels : List α) (S : State α) :
+private theorem settle_length [Inhabited α] (labels : List α) (S : State α) :
     (settle labels S).table.length = S.table.length :=
   foldl_freeze_length _ _ _
 
 omit [DecidableEq α] in
 /-- Settling keeps the visited slots. -/
-theorem settle_isSome [Inhabited α] (labels : List α) (S : State α) (v : ℕ) :
+private theorem settle_isSome [Inhabited α] (labels : List α) (S : State α) (v : ℕ) :
     ((settle labels S).get v).isSome = (S.get v).isSome := by
   rw [settle_get]
   split_ifs <;> simp [freeze]
 
 omit [DecidableEq α] in
 /-- Settling keeps the unvisited slots. -/
-theorem unvisited_settle [Inhabited α] (labels : List α) (S : State α) :
+private theorem unvisited_settle [Inhabited α] (labels : List α) (S : State α) :
     (settle labels S).unvisited = S.unvisited := by
   ext v
   simp only [State.unvisited, Finset.mem_filter, Finset.mem_range, settle_length,
@@ -1077,7 +1082,7 @@ private theorem step_src [Inhabited α] (labels : List α) (g : Graph (α → α
     rw [settle_isSome, get_iterate_scan labels g _ h1]; rfl
 
 /-- A step of the outer loop keeps the number of slots. -/
-theorem length_step [Inhabited α] (labels : List α) (g : Graph (α → α)) (S : State α)
+private theorem length_step [Inhabited α] (labels : List α) (g : Graph (α → α)) (S : State α)
     (e : Edge (α → α)) : (step labels g S e).table.length = S.table.length := by
   unfold step
   split
@@ -1199,7 +1204,7 @@ theorem mem_yes_gapUniqueGames_one_iff [DecidableEq α] [Nonempty α] {s : ℝ}
 
 /-- **Satisfiable unique games are easy** [Khot, Section 2.4][Khot2010]: label propagation
 decides `GapUniqueGames α 1 s` for every soundness `s`, given a list of all labels. This is the
-decision problem only; its polynomial-time cost is in
+decision problem only; its step count in an explicit cost model is in
 `Complexity.Computability.PCP.Approximation.UniqueGames.PropagationTime`. -/
 theorem solvedBy_gapUniqueGames_one [DecidableEq α] [Inhabited α] {labels : List α}
     (hlabels : ∀ a, a ∈ labels) (s : ℝ) :
