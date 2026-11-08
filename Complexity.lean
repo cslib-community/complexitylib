@@ -3814,6 +3814,7 @@ public import Complexity.Crypto.Protocols.PIR.LinearSummation
 public import Complexity.Crypto.Protocols.PIR.SingleServer
 public import Complexity.Crypto.Protocols.PIR.SmoothCode
 public import Complexity.Crypto.Protocols.PolynomialCommitment.Basic
+public import Complexity.Crypto.Protocols.Quantum.OneTimePad
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort.FiatShamir
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort.RandomOracle
@@ -4954,6 +4955,7 @@ public import Complexity.Foundations.Probability.StochasticAtom
 public import Complexity.Foundations.Probability.TrueSampleMeans
 public import Complexity.Foundations.Quantum.Bell
 public import Complexity.Foundations.Quantum.Bipartite
+public import Complexity.Foundations.Quantum.DensityMatrix
 public import Complexity.Foundations.Quantum.Fourier
 public import Complexity.Foundations.Quantum.HadamardTransform
 public import Complexity.Foundations.Quantum.Measurement
@@ -4962,6 +4964,7 @@ public import Complexity.Foundations.Quantum.Measurement.Restrict
 public import Complexity.Foundations.Quantum.NoCloning
 public import Complexity.Foundations.Quantum.POVM
 public import Complexity.Foundations.Quantum.Pauli
+public import Complexity.Foundations.Quantum.PauliTwirl
 public import Complexity.Foundations.Quantum.Register
 public import Complexity.Foundations.Quantum.TensorPower
 public import Complexity.Foundations.Relation.Acyclic
