@@ -20,7 +20,7 @@ import Complexity.Probability.Product
 The `k`-fold parallel repetition of a Label Cover instance `g` with left labels `β` and right
 labels `γ` has left labels `Fin k → β` and right labels `Fin k → γ`. Its edges are the `k`-tuples
 of edges of `g`. The tuple `e` goes from the tuple of the left ends of its entries to the tuple of
-their right ends, numbered by iterated Cantor pairing (`tupleCode`). It carries the projection
+their right ends, numbered by iterated `Nat.pair` (`tupleCode`). It carries the projection
 that applies the projection of `e i` in each coordinate `i`. A labelling satisfies it when it
 satisfies all the coordinates at once. This is the repetition `V^ℓ` of a two-query projection
 verifier [Arora and Barak, Definition 19.1][AroraBarak07]; repetition keeps the projection
@@ -38,12 +38,13 @@ then bounds the value of the repeated instance.
 **Scope.** This is the parallel repetition theorem of Raz [Raz1998] for simple Label Cover
 instances, in the explicit form of Holenstein [Holenstein2009]. The constants are explicit but
 astronomically large: an instance of value at most `1 - ε` repeats to value at most
-`(1 - ε³ / 6000)^{k / log₂ (|β| |γ|)}`. Simplicity is needed: an instance with parallel edges
-does not define a game with the same value.
+`(1 - ε³ / 6000)^{k / log₂ (|β| |γ|)}`. Simplicity is assumed: an instance with parallel edges
+need not define a game with the same value. Parallel edges with equal projections do, but
+conflicting parallel projections break the correspondence.
 
 ## Main definitions
 
-* `Cslib.PCP.Encoded.LabelCoverRepetition.tupleCode`: iterated Cantor pairing of tuples.
+* `Cslib.PCP.Encoded.LabelCoverRepetition.tupleCode`: iterated `Nat.pair` of tuples.
 * `Cslib.PCP.Encoded.LabelCoverRepetition.tuples`: the `k`-tuples of the entries of a list.
 * `Cslib.PCP.Encoded.LabelCoverRepetition.pow`: the `k`-fold parallel repetition of an instance.
 * `Cslib.PCP.Encoded.LabelCoverRepetition.game`: the two-prover game of an instance.
@@ -73,7 +74,7 @@ open Cslib.Complexity Finset
 
 /-! ### Tuples -/
 
-/-- The number of a `k`-tuple of natural numbers, by iterated Cantor pairing: the empty tuple is
+/-- The number of a `k`-tuple of natural numbers, by iterated `Nat.pair`: the empty tuple is
 `0`, and `Fin.cons a t` is `Nat.pair a (tupleCode t)`. -/
 def tupleCode : (k : ℕ) → (Fin k → ℕ) → ℕ
   | 0, _ => 0
