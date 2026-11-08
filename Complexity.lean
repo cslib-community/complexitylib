@@ -4845,7 +4845,9 @@ public import Complexity.Privacy.DifferentialPrivacy.Basic
 public import Complexity.Privacy.DifferentialPrivacy.Composition
 public import Complexity.Privacy.DifferentialPrivacy.DiscreteLaplace
 public import Complexity.Privacy.DifferentialPrivacy.Hamming
+public import Complexity.Privacy.DifferentialPrivacy.Packing
 public import Complexity.Privacy.DifferentialPrivacy.RandomizedResponse
+public import Complexity.Privacy.DifferentialPrivacy.Reconstruction
 public import Complexity.Probability.AdaptiveWeights
 public import Complexity.Probability.ApproximateCounting
 public import Complexity.Probability.ApproximateCounting.Relative
