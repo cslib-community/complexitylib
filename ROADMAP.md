@@ -499,10 +499,11 @@ index links to canonical definitions rather than keeping a second set.
   `n` are in `Foundations/NumberTheory/Primality`, together with the Rabin–Monier bound
   `4 · #strong liars ≤ φ(n)` for odd composite `n ≠ 9` (`Primality/RabinMonier`), and an explicit
   Miller–Rabin verifier puts the primes in `coRP` independently of AKS
-  (`Problems/Primes/MillerRabin`). Remaining
-  ([#2958](https://github.com/cslib-community/complexitylib/issues/2958)): a polynomial-time Jacobi
-  symbol, and the Solovay–Strassen verifier stated as a `coRP` membership (with its gcd step, since
-  non-units can satisfy Euler's congruence).
+  (`Problems/Primes/MillerRabin`). The Jacobi symbol is computable in polynomial time on binary
+  inputs (`PolyTime/Nat/Jacobi`). Remaining
+  ([#2958](https://github.com/cslib-community/complexitylib/issues/2958)): the Solovay–Strassen
+  verifier stated as a `coRP` membership (with its gcd step, since non-units can satisfy Euler's
+  congruence).
 - The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
   its input.
 - **Space:** Savitch bounds for general space-constructible functions.
