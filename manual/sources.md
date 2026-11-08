@@ -421,6 +421,11 @@ Thomas Holenstein. “Parallel Repetition: Simplifications and the No-Signaling 
 
 William M. Hoza. *Better Pseudodistributions and Derandomization for Space-Bounded Computation*. APPROX/RANDOM 2021, LIPIcs 207, 28:1–28:23, 2021. https://doi.org/10.4230/LIPIcs.APPROX/RANDOM.2021.28 . Appendix A (Lemma A.2 and the proof of Theorem A.3) was checked against the LIPIcs text on 2026-11-08.
 
+<a id="hueffner2009"></a>
+## hueffner2009
+
+Falk Hüffner. "Algorithm Engineering for Optimal Graph Bipartization." *Journal of Graph Algorithms and Applications* 13(2), 77–98, 2009. https://doi.org/10.7155/jgaa.00177 . Journal PDF inspected on 2026-11-08 (https://jgaa.info/index.php/jgaa/article/download/paper177/2776): Section 3, Lemma 2 (p. 84; the disjoint-compression characterization by valid colourings and vertex cuts, after subdividing the edges at the old solution), the Compress-OCC routine (p. 85), and the running-time paragraph with Theorem 1 (p. 86). There Hüffner records that Reed, Smith and Vetta state `O(4^k · kmn)`, and shows that assigning each vertex of the old solution one of three roles (deleted, or one of two colourings of its neighbours) gives `3^k` minimum vertex cut problems and `O(3^k · kmn)` (Theorem 1). [OddCycleTransversal](../Complexity/Algorithms/Lean/IterativeCompression/OddCycleTransversal.lean) credits the `3^k` count to this theorem; the improvement to `O(3^k · mn)` (Theorem 2, p. 88) is not formalized.
+
 <a id="immerman1988"></a>
 ## immerman1988
 
@@ -624,7 +629,7 @@ Tibor Radó. *On Non-Computable Functions*. The Bell System Technical Journal 41
 <a id="reedsmithvetta2004"></a>
 ## reedsmithvetta2004
 
-Bruce Reed, Kaleigh Smith and Adrian Vetta. "Finding Odd Cycle Transversals." *Operations Research Letters* 32(4), 299–301, 2004. https://doi.org/10.1016/j.orl.2003.10.009 . Bibliographic data from the DOI record; the full text was not inspected. The attribution of iterative compression for odd cycle transversal with an `O*(3^k)` bound follows the secondary literature and is used in [OddCycleTransversal](../Complexity/Algorithms/Lean/IterativeCompression/OddCycleTransversal.lean) without a theorem locator. The textbook presentation cited alongside it is [cygan2015](#cygan2015), Section 4.4; its statement number (Theorem 4.17, `O(3^k · k n (n + m))`) comes from secondary sources and is not used in the Lean docstrings.
+Bruce Reed, Kaleigh Smith and Adrian Vetta. "Finding Odd Cycle Transversals." *Operations Research Letters* 32(4), 299–301, 2004. https://doi.org/10.1016/j.orl.2003.10.009 . Bibliographic data from the DOI record; the full text was not inspected. It introduces iterative compression and the odd cycle transversal algorithm used in [OddCycleTransversal](../Complexity/Algorithms/Lean/IterativeCompression/OddCycleTransversal.lean), cited without a theorem locator. Its stated running time is `O(4^k · kmn)`, as recorded by [hueffner2009](#hueffner2009), p. 86; the `3^k` analysis formalized here is credited to [hueffner2009](#hueffner2009), Theorem 1. The textbook presentation cited alongside it is [cygan2015](#cygan2015), Section 4.4; its statement number (Theorem 4.17, `O(3^k · k n (n + m))`) comes from secondary sources and is not used in the Lean docstrings.
 
 <a id="reingold2008"></a>
 ## reingold2008

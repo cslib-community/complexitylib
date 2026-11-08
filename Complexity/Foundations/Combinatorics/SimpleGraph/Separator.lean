@@ -8,6 +8,7 @@ module
 -- upstream: candidate (Mathlib, `Mathlib/Combinatorics/SimpleGraph/Separator.lean`)
 
 public import Complexity.Init
+public import Mathlib.Combinatorics.SimpleGraph.Paths
 public import Mathlib.Combinatorics.SimpleGraph.Walk.Basic
 import Mathlib.Combinatorics.SimpleGraph.Walk.Operations
 
@@ -18,11 +19,13 @@ A set `Y` of vertices *separates* `A` from `B` in a simple graph `G` (`SimpleGra
 when every walk from a vertex of `A` to a vertex of `B` visits a vertex of `Y`. This is the
 `A`–`B` separator of graph theory; `Y` may meet `A` and `B`, and a vertex of `A ∩ B` must lie in
 `Y` (the trivial walk). A walk avoiding `Y` contains a path avoiding `Y` with the same endpoints,
-so quantifying over walks or over paths gives the same notion.
+so quantifying over walks or over paths gives the same notion
+(`SimpleGraph.isSeparator_iff_forall_isPath`). For single terminals `A = {u}`, `B = {v}` with
+`u, v ∉ Y`, this is the `u`–`v` vertex separator of Menger's theorem.
 
 `SimpleGraph.reachAvoiding G A Y` is the set of vertices reached from `A` by walks avoiding `Y`.
 `Y` separates `A` from `B` exactly when no vertex of `B` is reached
-(`SimpleGraph.isSeparator_iff_forall_not_mem_reachAvoiding`). A Boolean labelling that is
+(`SimpleGraph.isSeparator_iff_forall_notMem_reachAvoiding`). A Boolean labelling that is
 constant along edges outside `Y`, true on `A \ Y` and false on `B \ Y`, certifies that `Y`
 separates `A` from `B` (`SimpleGraph.isSeparator_of_forall_adj`). This is the form in which a
 minimum cut of a flow network certifies a vertex separator.
@@ -34,9 +37,12 @@ minimum cut of a flow network certifies a vertex separator.
 
 ## Main results
 
-* `SimpleGraph.isSeparator_iff_forall_not_mem_reachAvoiding`: separation in terms of
+* `SimpleGraph.isSeparator_iff_forall_notMem_reachAvoiding`: separation in terms of
   `reachAvoiding`.
+* `SimpleGraph.mem_reachAvoiding_of_mem`, `SimpleGraph.mem_reachAvoiding_of_adj`,
+  `SimpleGraph.notMem_of_mem_reachAvoiding`: closure properties of `reachAvoiding`.
 * `SimpleGraph.isSeparator_of_forall_adj`: a labelling certificate for separation.
+* `SimpleGraph.isSeparator_iff_forall_isPath`: it suffices to check paths.
 * `SimpleGraph.IsSeparator.mono`: enlarging the separator.
 * `SimpleGraph.isSeparator_of_subset_left`: a separator containing `A`.
 -/
@@ -68,7 +74,7 @@ theorem isSeparator_of_subset_left (h : A ⊆ Y) : G.IsSeparator A B Y :=
 theorem mem_reachAvoiding_of_mem {v : V} (hA : v ∈ A) (hY : v ∉ Y) : v ∈ G.reachAvoiding A Y :=
   ⟨v, hA, Walk.nil, by simpa using hY⟩
 
-theorem not_mem_of_mem_reachAvoiding {v : V} (h : v ∈ G.reachAvoiding A Y) : v ∉ Y := by
+theorem notMem_of_mem_reachAvoiding {v : V} (h : v ∈ G.reachAvoiding A Y) : v ∉ Y := by
   obtain ⟨_, _, p, hp⟩ := h
   exact hp v p.end_mem_support
 
@@ -82,8 +88,18 @@ theorem mem_reachAvoiding_of_adj {u v : V} (hu : u ∈ G.reachAvoiding A Y) (huv
   · exact hp x hx
   · exact hv
 
+/-- It suffices to check paths: a walk avoiding `Y` contains a path (`Walk.bypass`) with the same
+endpoints and fewer vertices. -/
+theorem isSeparator_iff_forall_isPath :
+    G.IsSeparator A B Y ↔
+      ∀ ⦃a⦄, a ∈ A → ∀ ⦃b⦄, b ∈ B → ∀ p : G.Walk a b, p.IsPath → ∃ x ∈ p.support, x ∈ Y := by
+  classical
+  refine ⟨fun h a ha b hb p _ => h ha hb p, fun h a ha b hb p => ?_⟩
+  obtain ⟨x, hx, hxY⟩ := h ha hb p.bypass p.bypass_isPath
+  exact ⟨x, p.support_bypass_subset_support hx, hxY⟩
+
 /-- `Y` separates `A` from `B` exactly when no vertex of `B` is reached from `A` avoiding `Y`. -/
-theorem isSeparator_iff_forall_not_mem_reachAvoiding :
+theorem isSeparator_iff_forall_notMem_reachAvoiding :
     G.IsSeparator A B Y ↔ ∀ b ∈ B, b ∉ G.reachAvoiding A Y := by
   constructor
   · rintro h b hb ⟨a, ha, p, hp⟩

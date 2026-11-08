@@ -25,9 +25,9 @@ minimum size such that `Z ∪ X` separates `A` from `B` (`SimpleGraph.IsSeparato
 
 ## Construction
 
-The *split network* (`Cslib.Algorithms.Lean.MaxFlow.splitNetwork`) has a source, a sink, and an
-in-copy and an out-copy of every vertex (`Cslib.Algorithms.Lean.MaxFlow.SplitNode`), with
-capacities
+The *split network* (`Cslib.Algorithms.Lean.MaxFlow.vertexSplitNetwork`) has a source, a sink,
+and an in-copy and an out-copy of every vertex (`Cslib.Algorithms.Lean.MaxFlow.SplitNode`), with
+capacities (`Cslib.Algorithms.Lean.MaxFlow.vertexSplitCap`)
 
 * `n + 1` from the source to the in-copy of each vertex of `A`;
 * `n + 1` from the out-copy of each vertex of `B` to the sink;
@@ -59,8 +59,9 @@ augmenting-path rounds.
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.MaxFlow.SplitNode`, `Cslib.Algorithms.Lean.MaxFlow.splitNetwork`: the
-  split network.
+* `Cslib.Algorithms.Lean.MaxFlow.SplitNode`, `Cslib.Algorithms.Lean.MaxFlow.vertexSplitCap`,
+  `Cslib.Algorithms.Lean.MaxFlow.vertexSplitNetwork`: the split network.
+* `Cslib.Algorithms.Lean.MaxFlow.SeparatorOutput`: a separator with its side labelling.
 * `Cslib.Algorithms.Lean.MaxFlow.minSeparatorM`: the minimum vertex separator in `TimeM ℕ`.
 * `Cslib.Algorithms.Lean.MaxFlow.minSeparatorCost`: its charged running time.
 
@@ -68,6 +69,9 @@ augmenting-path rounds.
 
 * `Cslib.Algorithms.Lean.MaxFlow.minSeparatorM_isSeparator`: the output separates.
 * `Cslib.Algorithms.Lean.MaxFlow.minSeparatorM_length_sep_le`: the output is a minimum separator.
+* `Cslib.Algorithms.Lean.MaxFlow.minSeparatorM_nodup_sep`,
+  `Cslib.Algorithms.Lean.MaxFlow.minSeparatorM_vget_eq_false_of_mem_sep`: the output is a list of
+  distinct vertices outside `Z`.
 * `Cslib.Algorithms.Lean.MaxFlow.minSeparatorM_side_eq_of_adj`,
   `Cslib.Algorithms.Lean.MaxFlow.minSeparatorM_side_eq_true`,
   `Cslib.Algorithms.Lean.MaxFlow.minSeparatorM_side_eq_false`: the side labelling certificate.
@@ -102,14 +106,14 @@ namespace SplitNode
 
 /-- The index of a split node: the source is `0`, the sink `1`, the in-copies `2, …, n + 1` and
 the out-copies `n + 2, …, 2n + 1`. -/
-@[expose] def toFin {n : ℕ} : SplitNode n → Fin (n + n + 2)
+def toFin {n : ℕ} : SplitNode n → Fin (n + n + 2)
   | src => ⟨0, by omega⟩
   | snk => ⟨1, by omega⟩
   | inV v => ⟨v.1 + 2, by have := v.2; omega⟩
   | outV v => ⟨v.1 + n + 2, by have := v.2; omega⟩
 
 /-- The split node with a given index, inverse to `toFin`. -/
-@[expose] def ofFin {n : ℕ} (i : Fin (n + n + 2)) : SplitNode n :=
+def ofFin {n : ℕ} (i : Fin (n + n + 2)) : SplitNode n :=
   if h0 : i.1 = 0 then src
   else if h1 : i.1 = 1 then snk
   else if h : i.1 < n + 2 then inV ⟨i.1 - 2, by omega⟩
@@ -146,16 +150,16 @@ variable {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj]
 /-- Capacities of the split network: `n + 1` from the source to the in-copies of `A`, from the
 out-copies of `B` to the sink and from the out-copy of `u` to the in-copy of `v` for each edge
 `G.Adj u v`; `1` from the in-copy to the out-copy of each vertex outside `Z`; `0` otherwise. -/
-@[expose] def splitCap (Z A B : Vector Bool n) : SplitNode n → SplitNode n → ℕ
+@[expose] def vertexSplitCap (Z A B : Vector Bool n) : SplitNode n → SplitNode n → ℕ
   | .src, .inV v => if vget A v = true then n + 1 else 0
   | .outV u, .snk => if vget B u = true then n + 1 else 0
   | .inV u, .outV v => if u = v ∧ vget Z u = false then 1 else 0
   | .outV u, .inV v => if G.Adj u v then n + 1 else 0
   | _, _ => 0
 
-/-- The split network of `G` for the vertex sets `Z`, `A` and `B` (`splitCap`). -/
-@[expose] def splitNetwork (Z A B : Vector Bool n) : Network (SplitNode n) where
-  cap := splitCap G Z A B
+/-- The split network of `G` for the vertex sets `Z`, `A` and `B` (`vertexSplitCap`). -/
+@[expose] def vertexSplitNetwork (Z A B : Vector Bool n) : Network (SplitNode n) where
+  cap := vertexSplitCap G Z A B
   s := .src
   t := .snk
 
@@ -171,7 +175,7 @@ minimum cut of the split network (Edmonds–Karp on `Fin (2n + 2)`). Reading off
 from the cut is charged `4n + 2` ticks: `2n + 2` to tabulate the cut over the split nodes and `2n`
 to scan the vertices. -/
 @[expose] def minSeparatorM (Z A B : Vector Bool n) : TimeM ℕ (SeparatorOutput n) := do
-  let out ← edmondsKarpDenseM ((splitNetwork G Z A B).reindex (SplitNode.equivFin n))
+  let out ← edmondsKarpDenseM ((vertexSplitNetwork G Z A B).reindex (SplitNode.equivFin n))
   let S := Network.cutOfReindex (SplitNode.equivFin n) out.cut
   ✓[4 * n + 2] pure
     { sep := (List.finRange n).filter fun v =>
@@ -194,7 +198,7 @@ variable {G} {Z A B : Vector Bool n}
 private def minCut (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (Z A B : Vector Bool n) :
     Finset (SplitNode n) :=
   Network.cutOfReindex (SplitNode.equivFin n)
-    (edmondsKarpDenseM ((splitNetwork G Z A B).reindex (SplitNode.equivFin n))).ret.cut
+    (edmondsKarpDenseM ((vertexSplitNetwork G Z A B).reindex (SplitNode.equivFin n))).ret.cut
 
 private theorem ret_sep : (minSeparatorM G Z A B).ret.sep = (List.finRange n).filter fun v =>
     !vget Z v && decide (SplitNode.inV v ∈ minCut G Z A B) &&
@@ -212,13 +216,13 @@ private theorem mem_sep_iff {v : Fin n} : v ∈ (minSeparatorM G Z A B).ret.sep 
     decide_eq_false_iff_not, and_assoc]
 
 private theorem reindex_s_ne_t :
-    ((splitNetwork G Z A B).reindex (SplitNode.equivFin n)).s ≠
-      ((splitNetwork G Z A B).reindex (SplitNode.equivFin n)).t :=
-  (SplitNode.equivFin n).injective.ne (by simp [splitNetwork])
+    ((vertexSplitNetwork G Z A B).reindex (SplitNode.equivFin n)).s ≠
+      ((vertexSplitNetwork G Z A B).reindex (SplitNode.equivFin n)).t :=
+  (SplitNode.equivFin n).injective.ne (by simp [vertexSplitNetwork])
 
-private theorem isMinCut_minCut : (splitNetwork G Z A B).IsMinCut (minCut G Z A B) := by
+private theorem isMinCut_minCut : (vertexSplitNetwork G Z A B).IsMinCut (minCut G Z A B) := by
   set e := SplitNode.equivFin n
-  set N := splitNetwork G Z A B
+  set N := vertexSplitNetwork G Z A B
   obtain ⟨-, hmin, -⟩ := edmondsKarpDenseM_correct (N := N.reindex e) reindex_s_ne_t
   refine ⟨Network.isCut_cutOfReindex e hmin.1, fun T hT => ?_⟩
   have hT' : (N.reindex e).IsCut (T.map e.toEmbedding) := by
@@ -232,12 +236,12 @@ private theorem isMinCut_minCut : (splitNetwork G Z A B).IsMinCut (minCut G Z A 
   rwa [hround] at h
 
 /-- The positive capacities of the split network. -/
-private theorem splitCap_ne_zero {x y : SplitNode n} (h : splitCap G Z A B x y ≠ 0) :
+private theorem vertexSplitCap_ne_zero {x y : SplitNode n} (h : vertexSplitCap G Z A B x y ≠ 0) :
     (∃ v, x = .src ∧ y = .inV v ∧ vget A v = true) ∨
     (∃ u, x = .outV u ∧ y = .snk ∧ vget B u = true) ∨
     (∃ u, x = .inV u ∧ y = .outV u ∧ vget Z u = false) ∨
     (∃ u v, x = .outV u ∧ y = .inV v ∧ G.Adj u v) := by
-  rcases x with _ | _ | u | u <;> rcases y with _ | _ | v | v <;> simp_all [splitCap]
+  rcases x with _ | _ | u | u <;> rcases y with _ | _ | v | v <;> simp_all [vertexSplitCap]
 
 /-- A single arc leaving a cut is bounded by the cut capacity. -/
 private theorem cap_le_cutCapacity {N : Network (SplitNode n)} {S : Finset (SplitNode n)}
@@ -252,19 +256,19 @@ private theorem cap_le_cutCapacity {N : Network (SplitNode n)} {S : Finset (Spli
 /-- The unit arcs leaving a cut bound its capacity from below. -/
 private theorem card_le_cutCapacity {S : Finset (SplitNode n)} {X : Finset (Fin n)}
     (hX : ∀ v ∈ X, vget Z v = false ∧ SplitNode.inV v ∈ S ∧ SplitNode.outV v ∉ S) :
-    X.card ≤ (splitNetwork G Z A B).cutCapacity S := by
+    X.card ≤ (vertexSplitNetwork G Z A B).cutCapacity S := by
   unfold Network.cutCapacity
-  rw [← Finset.sum_product' (f := fun x y => (splitNetwork G Z A B).cap x y)]
-  calc X.card = ∑ v ∈ X, (splitNetwork G Z A B).cap (.inV v) (.outV v) := by
+  rw [← Finset.sum_product' (f := fun x y => (vertexSplitNetwork G Z A B).cap x y)]
+  calc X.card = ∑ v ∈ X, (vertexSplitNetwork G Z A B).cap (.inV v) (.outV v) := by
         rw [Finset.card_eq_sum_ones]
         refine Finset.sum_congr rfl fun v hv => ?_
-        simp [splitNetwork, splitCap, (hX v hv).1]
+        simp [vertexSplitNetwork, vertexSplitCap, (hX v hv).1]
     _ = ∑ p ∈ X.image (fun v => (SplitNode.inV v, SplitNode.outV v)),
-          (splitNetwork G Z A B).cap p.1 p.2 :=
-        (Finset.sum_image (f := fun p => (splitNetwork G Z A B).cap p.1 p.2)
+          (vertexSplitNetwork G Z A B).cap p.1 p.2 :=
+        (Finset.sum_image (f := fun p => (vertexSplitNetwork G Z A B).cap p.1 p.2)
           (g := fun v => (SplitNode.inV v, SplitNode.outV v))
           fun a _ b _ h => by simpa using h).symm
-    _ ≤ ∑ p ∈ S ×ˢ (Finset.univ \ S), (splitNetwork G Z A B).cap p.1 p.2 := by
+    _ ≤ ∑ p ∈ S ×ˢ (Finset.univ \ S), (vertexSplitNetwork G Z A B).cap p.1 p.2 := by
         refine Finset.sum_le_sum_of_subset fun p hp => ?_
         obtain ⟨v, hv, rfl⟩ := Finset.mem_image.mp hp
         simp only [Finset.mem_product, Finset.mem_sdiff, Finset.mem_univ, true_and]
@@ -285,26 +289,27 @@ avoiding `Z ∪ Y`. -/
 private theorem exists_isCut_cutCapacity_le {Y : Finset (Fin n)}
     (hY : G.IsSeparator {v | vget A v = true} {v | vget B v = true}
       ({v | vget Z v = true} ∪ ↑Y)) :
-    ∃ T, (splitNetwork G Z A B).IsCut T ∧ (splitNetwork G Z A B).cutCapacity T ≤ Y.card := by
+    ∃ T, (vertexSplitNetwork G Z A B).IsCut T ∧
+      (vertexSplitNetwork G Z A B).cutCapacity T ≤ Y.card := by
   classical
   set R := G.reachAvoiding {v | vget A v = true} ({v | vget Z v = true} ∪ ↑Y) with hR
   set T := Finset.univ.filter (sepCutPred G A R)
   have hmem : ∀ x, x ∈ T ↔ sepCutPred G A R x := fun x => by simp [T]
   refine ⟨T, ⟨(hmem _).mpr trivial, fun h => (hmem _).mp h⟩, ?_⟩
   unfold Network.cutCapacity
-  rw [← Finset.sum_product' (f := fun x y => (splitNetwork G Z A B).cap x y)]
-  calc ∑ p ∈ T ×ˢ (Finset.univ \ T), (splitNetwork G Z A B).cap p.1 p.2
+  rw [← Finset.sum_product' (f := fun x y => (vertexSplitNetwork G Z A B).cap x y)]
+  calc ∑ p ∈ T ×ˢ (Finset.univ \ T), (vertexSplitNetwork G Z A B).cap p.1 p.2
       ≤ ∑ p ∈ Y.image (fun u => (SplitNode.inV u, SplitNode.outV u)),
-          (splitNetwork G Z A B).cap p.1 p.2 := by
+          (vertexSplitNetwork G Z A B).cap p.1 p.2 := by
         refine Finset.sum_le_sum_of_ne_zero fun p hp hne => ?_
         simp only [Finset.mem_product, Finset.mem_sdiff, Finset.mem_univ, true_and, hmem] at hp
         obtain ⟨hx, hy⟩ := hp
-        rcases splitCap_ne_zero hne with ⟨v, hpx, hpy, hA⟩ | ⟨u, hpx, hpy, hB⟩ |
+        rcases vertexSplitCap_ne_zero hne with ⟨v, hpx, hpy, hA⟩ | ⟨u, hpx, hpy, hB⟩ |
             ⟨u, hpx, hpy, hZ⟩ | ⟨u, v, hpx, hpy, huv⟩
         · rw [hpy] at hy
           exact (hy (Or.inl hA)).elim
         · rw [hpx] at hx
-          exact (isSeparator_iff_forall_not_mem_reachAvoiding.mp hY u hB hx).elim
+          exact (isSeparator_iff_forall_notMem_reachAvoiding.mp hY u hB hx).elim
         · rw [hpx] at hx
           rw [hpy] at hy
           refine Finset.mem_image.mpr ⟨u, ?_, Prod.ext hpx.symm hpy.symm⟩
@@ -318,40 +323,41 @@ private theorem exists_isCut_cutCapacity_le {Y : Finset (Fin n)}
         · rw [hpx] at hx
           rw [hpy] at hy
           exact (hy (Or.inr ⟨u, hx, huv⟩)).elim
-    _ = ∑ u ∈ Y, (splitNetwork G Z A B).cap (.inV u) (.outV u) :=
-        Finset.sum_image (f := fun p => (splitNetwork G Z A B).cap p.1 p.2)
+    _ = ∑ u ∈ Y, (vertexSplitNetwork G Z A B).cap (.inV u) (.outV u) :=
+        Finset.sum_image (f := fun p => (vertexSplitNetwork G Z A B).cap p.1 p.2)
           (g := fun v => (SplitNode.inV v, SplitNode.outV v))
           fun a _ b _ h => by simpa using h
     _ ≤ ∑ _u ∈ Y, 1 := Finset.sum_le_sum fun u _ => by
-        simp only [splitNetwork, splitCap, true_and]
+        simp only [vertexSplitNetwork, vertexSplitCap, true_and]
         split_ifs <;> omega
     _ = Y.card := (Finset.card_eq_sum_ones Y).symm
 
 private theorem cutCapacity_minCut_le {Y : Finset (Fin n)}
     (hY : G.IsSeparator {v | vget A v = true} {v | vget B v = true}
       ({v | vget Z v = true} ∪ ↑Y)) :
-    (splitNetwork G Z A B).cutCapacity (minCut G Z A B) ≤ Y.card := by
+    (vertexSplitNetwork G Z A B).cutCapacity (minCut G Z A B) ≤ Y.card := by
   obtain ⟨T, hT, hcap⟩ := exists_isCut_cutCapacity_le hY
   exact (isMinCut_minCut.2 T hT).trans hcap
 
 private theorem cutCapacity_minCut_le_n :
-    (splitNetwork G Z A B).cutCapacity (minCut G Z A B) ≤ n := by
+    (vertexSplitNetwork G Z A B).cutCapacity (minCut G Z A B) ≤ n := by
   have h := cutCapacity_minCut_le (G := G) (Z := Z) (A := A) (B := B) (Y := Finset.univ)
     (isSeparator_of_subset_left fun a _ => Or.inr (Finset.mem_coe.mpr (Finset.mem_univ a)))
   rwa [Finset.card_univ, Fintype.card_fin] at h
 
 /-- Arcs of capacity `n + 1` do not leave the minimum cut. -/
 private theorem mem_minCut_of_cap {x y : SplitNode n} (hx : x ∈ minCut G Z A B)
-    (hcap : splitCap G Z A B x y = n + 1) : y ∈ minCut G Z A B := by
+    (hcap : vertexSplitCap G Z A B x y = n + 1) : y ∈ minCut G Z A B := by
   by_contra hy
-  have h := (cap_le_cutCapacity (N := splitNetwork G Z A B) hx hy).trans cutCapacity_minCut_le_n
-  change splitCap G Z A B x y ≤ n at h
+  have h :=
+    (cap_le_cutCapacity (N := vertexSplitNetwork G Z A B) hx hy).trans cutCapacity_minCut_le_n
+  change vertexSplitCap G Z A B x y ≤ n at h
   omega
 
 private theorem src_mem_minCut : SplitNode.src ∈ minCut G Z A B :=
   (isMinCut_minCut (G := G) (Z := Z) (A := A) (B := B)).1.1
 
-private theorem snk_not_mem_minCut : SplitNode.snk ∉ minCut G Z A B :=
+private theorem snk_notMem_minCut : SplitNode.snk ∉ minCut G Z A B :=
   (isMinCut_minCut (G := G) (Z := Z) (A := A) (B := B)).1.2
 
 variable (G Z A B)
@@ -377,7 +383,7 @@ theorem minSeparatorM_side_eq_of_adj {u v : Fin n} (huv : G.Adj u v) (hu : vget 
       SplitNode.outV a ∈ minCut G Z A B → SplitNode.outV b ∈ minCut G Z A B := by
     intro a b hab hb hbs ha
     have hin : SplitNode.inV b ∈ minCut G Z A B :=
-      mem_minCut_of_cap ha (by simp [splitCap, hab])
+      mem_minCut_of_cap ha (by simp [vertexSplitCap, hab])
     by_contra hout
     exact hbs (mem_sep_iff.mpr ⟨hb, hin, hout⟩)
   rw [vget_ret_side, vget_ret_side]
@@ -389,7 +395,7 @@ theorem minSeparatorM_side_eq_true {v : Fin n} (hA : vget A v = true) (hZ : vget
     vget (minSeparatorM G Z A B).ret.side v = true := by
   rw [vget_ret_side, decide_eq_true_iff]
   have hin : SplitNode.inV v ∈ minCut G Z A B :=
-    mem_minCut_of_cap src_mem_minCut (by simp [splitCap, hA])
+    mem_minCut_of_cap src_mem_minCut (by simp [vertexSplitCap, hA])
   by_contra hout
   exact hvs (mem_sep_iff.mpr ⟨hZ, hin, hout⟩)
 
@@ -398,7 +404,7 @@ theorem minSeparatorM_side_eq_false {v : Fin n} (hB : vget B v = true) :
     vget (minSeparatorM G Z A B).ret.side v = false := by
   rw [vget_ret_side, decide_eq_false_iff_not]
   intro hout
-  exact snk_not_mem_minCut (mem_minCut_of_cap hout (by simp [splitCap, hB]))
+  exact snk_notMem_minCut (mem_minCut_of_cap hout (by simp [vertexSplitCap, hB]))
 
 /-- **Separation.** `Z ∪ sep` separates `A` from `B`. -/
 theorem minSeparatorM_isSeparator :
@@ -423,7 +429,7 @@ theorem minSeparatorM_length_sep_le {Y : Finset (Fin n)}
 
 /-- **Running time.** `minSeparatorM` takes at most `minSeparatorCost n` ticks. -/
 theorem time_minSeparatorM_le : (minSeparatorM G Z A B).time ≤ minSeparatorCost n := by
-  have h := edmondsKarpDenseM_time_le ((splitNetwork G Z A B).reindex (SplitNode.equivFin n))
+  have h := edmondsKarpDenseM_time_le ((vertexSplitNetwork G Z A B).reindex (SplitNode.equivFin n))
   simp only [minSeparatorM, TimeM.time_bind, TimeM.time_tick, TimeM.time_pure, Nat.add_zero,
     minSeparatorCost]
   exact Nat.add_le_add_right h _

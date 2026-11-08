@@ -925,10 +925,13 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Iterative compression** ([#3456](https://github.com/cslib-community/complexitylib/issues/3456)):
   odd cycle transversal on `SimpleGraph` with the compression lemma, a minimum vertex separator by
   vertex splitting and Edmonds–Karp, and the `TimeM` algorithm `octM` in `O(3^k · n^6)`.
-  Remaining: the textbook `O(3^k · k n (n + m))` (at most `k + 1` augmenting paths on adjacency
-  lists), encoded `OddCycleTransversal ∈ FPT` on multi-tape machines, the `O*(2.3146^k)`
-  LP-based algorithm (Lokshtanov–Narayanaswamy–Raman–Ramanujan–Saurabh), feedback vertex set and
-  directed variants by iterative compression.
+  Remaining: Hüffner's `O(3^k · k m n)` and `O(3^k · m n)` (at most `k + 1` augmenting paths on
+  adjacency lists, then incremental flow updates), encoded `OddCycleTransversal ∈ FPT` on
+  multi-tape machines, the `O*(2.3146^k)` LP-based algorithm
+  (Lokshtanov–Narayanaswamy–Raman–Ramanujan–Saurabh), feedback vertex set and directed variants
+  by iterative compression; once Menger's theorem
+  ([#3413](https://github.com/cslib-community/complexitylib/pull/3413)) lands, the bridge
+  `MaxFlow.IsVertexSeparator G u v T ↔ u ∉ T ∧ v ∉ T ∧ G.IsSeparator {u} {v} T`.
 - **Kernelization lower bounds**
   ([#3210](https://github.com/cslib-community/complexitylib/issues/3210)): `NP/poly`, and the
   Fortnow–Santhanam theorem that an OR-distillation of an `NP`-hard problem gives

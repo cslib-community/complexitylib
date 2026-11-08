@@ -20,7 +20,8 @@ import Mathlib.Tactic.Ring
 `Fin n` has an odd cycle transversal (`SimpleGraph.IsOddCycleTransversal`) of at most `k` vertices.
 When one exists it returns one, together with a Boolean colouring that is proper on the edges
 outside it. This is the iterative compression algorithm of Reed, Smith and Vetta
-[ReedSmithVetta2004], in the form of [CyganEtAl2015, Section 4.4].
+[ReedSmithVetta2004], with the three-way guess of [Hueffner2009, Section 3] and
+[CyganEtAl2015, Section 4.4].
 
 ## Algorithm
 
@@ -39,7 +40,7 @@ off `W` (`Cslib.Algorithms.Lean.IterativeCompression.guesses`). A vertex `w ∈ 
 part of `W`, compute a minimum separator `X` of the keep terminals from the flip terminals in
 `G - W` (`Cslib.Algorithms.Lean.MaxFlow.minSeparatorM`). Accept if the deleted part of `W` and `X`
 together have at most `k` vertices. Correctness is the compression lemma
-`SimpleGraph.isOddCycleTransversal_card_le_iff` and its two directions.
+`SimpleGraph.exists_isOddCycleTransversal_card_le_iff` and its two directions.
 
 ## Cost model
 
@@ -57,10 +58,11 @@ trusted:
 
 The resulting bound (`Cslib.Algorithms.Lean.IterativeCompression.time_octM_le`) is
 `O(3 ^ k · n ^ 6)`: `n` steps, `3 ^ (k + 1)` guesses per step and `O(n ^ 5)` per minimum
-separator. This is the `O*(3 ^ k)` of [ReedSmithVetta2004]. The polynomial factor comes from the
-dense Edmonds–Karp solver. The sharper textbook bound `O(3 ^ k · k n (n + m))`
-[CyganEtAl2015, Section 4.4] stops each flow computation after `k + 1` augmenting paths on
-adjacency lists; it is not formalized here.
+separator. Reed, Smith and Vetta state `O(4 ^ k · k m n)` for their algorithm. The `3 ^ k`
+count, one of three roles for each vertex of `W`, is the analysis of [Hueffner2009, Theorem 1],
+which gives `O(3 ^ k · k m n)`; see also [CyganEtAl2015, Section 4.4]. The polynomial factor here
+comes from the dense Edmonds–Karp solver. The sharper bounds stop each flow computation after
+`k + 1` augmenting paths on adjacency lists; they are not formalized here.
 
 The enumeration charge follows the library's `Vector` convention: an update costs one tick even
 when the vector is shared between branches of the guess tree, where a persistent implementation
@@ -69,21 +71,39 @@ would copy it.
 ## Main definitions
 
 * `Cslib.Algorithms.Lean.IterativeCompression.prefixGraph`: the subgraph on the first `m` vertices.
+* `Cslib.Algorithms.Lean.IterativeCompression.IsProperOff`: a colouring vector is proper on the
+  edges outside a list of vertices.
+* `Cslib.Algorithms.Lean.IterativeCompression.findSomeM`: the first successful branch of a list.
+* `Cslib.Algorithms.Lean.IterativeCompression.guesses`: the `3 ^ |W|` guesses on `W`.
+* `Cslib.Algorithms.Lean.IterativeCompression.leafM`: one guess, solved by a minimum separator.
 * `Cslib.Algorithms.Lean.IterativeCompression.compressM`: the compression step.
+* `Cslib.Algorithms.Lean.IterativeCompression.stepM`,
+  `Cslib.Algorithms.Lean.IterativeCompression.loopM`: one step of the iteration, and the iteration.
 * `Cslib.Algorithms.Lean.IterativeCompression.octM`: odd cycle transversal of size at most `k`.
+* `Cslib.Algorithms.Lean.IterativeCompression.leafCost`,
+  `Cslib.Algorithms.Lean.IterativeCompression.stepCost`: the charged cost of a leaf and of a step.
 
 ## Main results
 
+* `Cslib.Algorithms.Lean.IterativeCompression.length_guesses`,
+  `Cslib.Algorithms.Lean.IterativeCompression.mem_guesses`: the guesses are exactly the
+  `Option Bool` labellings that are `none` off `W`, and there are `3 ^ |W|` of them.
 * `Cslib.Algorithms.Lean.IterativeCompression.compressM_sound`,
   `Cslib.Algorithms.Lean.IterativeCompression.compressM_complete`: the compression step.
-* `Cslib.Algorithms.Lean.IterativeCompression.octM_isOddCycleTransversal`,
+* `Cslib.Algorithms.Lean.IterativeCompression.octM_sound`,
+  `Cslib.Algorithms.Lean.IterativeCompression.octM_isOddCycleTransversal`,
   `Cslib.Algorithms.Lean.IterativeCompression.octM_eq_none`,
   `Cslib.Algorithms.Lean.IterativeCompression.octM_isSome_iff`: correctness.
+* `Cslib.Algorithms.Lean.IterativeCompression.time_leafM_le`,
+  `Cslib.Algorithms.Lean.IterativeCompression.time_compressM_le`,
+  `Cslib.Algorithms.Lean.IterativeCompression.time_octM_le_stepCost`: the running time, step by
+  step.
 * `Cslib.Algorithms.Lean.IterativeCompression.time_octM_le`: the `O(3 ^ k · n ^ 6)` running time.
 
 ## References
 
 * [B. Reed, K. Smith, A. Vetta, *Finding odd cycle transversals*][ReedSmithVetta2004]
+* [F. Hüffner, *Algorithm engineering for optimal graph bipartization*][Hueffner2009]
 * [M. Cygan, F. V. Fomin, Ł. Kowalik, D. Lokshtanov, D. Marx, M. Pilipczuk, M. Pilipczuk,
   S. Saurabh, *Parameterized Algorithms*][CyganEtAl2015]
 -/
@@ -163,7 +183,7 @@ theorem time_findSomeM_le {α β : Type*} (f : α → TimeM ℕ (Option β)) (l 
 
 /-- The `3 ^ |ws|` guesses on `ws`: the vectors `g` with `g v = none` off `ws` and `g w ∈
 {none, some false, some true}` on `ws`. -/
-@[expose] def guesses : List (Fin n) → List (Vector (Option Bool) n)
+def guesses : List (Fin n) → List (Vector (Option Bool) n)
   | [] => [Vector.replicate n none]
   | w :: ws => (guesses ws).flatMap fun g =>
       [vset g w none, vset g w (some false), vset g w (some true)]
@@ -209,26 +229,26 @@ theorem mem_guesses {ws : List (Fin n)} {g : Vector (Option Bool) n}
 /-! ### Terminal tables -/
 
 /-- The membership table of `W`. -/
-@[expose] def memTable (W : List (Fin n)) : Vector Bool n :=
+def memTable (W : List (Fin n)) : Vector Bool n :=
   Vector.ofFn fun v => decide (v ∈ W)
 
 /-- The keep terminals of a guess `g` relative to the colouring `c₀`: the vertices `v ∉ W` with a
 neighbour `w ∈ W` such that `g w = some b` and `b ≠ c₀ v`. -/
-@[expose] def keepTable (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (W : List (Fin n))
+def keepTable (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (W : List (Fin n))
     (g : Vector (Option Bool) n) (c₀ : Vector Bool n) : Vector Bool n :=
   Vector.ofFn fun v => decide (v ∉ W ∧
     ∃ w ∈ W, (vget g w).isSome ∧ G.Adj w v ∧ (vget g w).getD false ≠ vget c₀ v)
 
 /-- The flip terminals of a guess `g` relative to the colouring `c₀`: the vertices `v ∉ W` with a
 neighbour `w ∈ W` such that `g w = some b` and `b = c₀ v`. -/
-@[expose] def flipTable (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (W : List (Fin n))
+def flipTable (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (W : List (Fin n))
     (g : Vector (Option Bool) n) (c₀ : Vector Bool n) : Vector Bool n :=
   Vector.ofFn fun v => decide (v ∉ W ∧
     ∃ w ∈ W, (vget g w).isSome ∧ G.Adj w v ∧ (vget g w).getD false = vget c₀ v)
 
 /-- The colouring produced by a guess `g` and a side labelling: `g` on `W`; off `W`, keep the
 colour `c₀ v` where `side v = true` and flip it where `side v = false`. -/
-@[expose] def newColour (W : List (Fin n)) (g : Vector (Option Bool) n) (c₀ side : Vector Bool n) :
+def newColour (W : List (Fin n)) (g : Vector (Option Bool) n) (c₀ side : Vector Bool n) :
     Vector Bool n :=
   Vector.ofFn fun v => if v ∈ W then (vget g v).getD false else (vget c₀ v == vget side v)
 
@@ -491,9 +511,9 @@ variable (G)
     let r ← loopM k i (by omega)
     stepM G k ⟨i, h⟩ r
 
-/-- **Odd cycle transversal by iterative compression** [ReedSmithVetta2004]: an odd cycle
-transversal of `G` with at most `k` vertices and a colouring proper off it, or `none` if there is
-no such transversal. -/
+/-- **Odd cycle transversal by iterative compression** [ReedSmithVetta2004] [Hueffner2009]: an odd
+cycle transversal of `G` with at most `k` vertices and a colouring proper off it, or `none` if
+there is no such transversal. -/
 @[expose] def octM (k : ℕ) : TimeM ℕ (Option (List (Fin n) × Vector Bool n)) :=
   loopM G k n le_rfl
 

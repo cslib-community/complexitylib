@@ -37,7 +37,7 @@ must, if it survives, receive the colour `!σ w`. Relative to `c₀`, it keeps i
 
 The guess extends to a solution `D ∪ X` with `X ∩ W = ∅` exactly when `X` separates the keep
 terminals from the flip terminals in `G - W`, that is, when `W ∪ X` separates them in `G`
-(`SimpleGraph.isOddCycleTransversal_card_le_iff`):
+(`SimpleGraph.exists_isOddCycleTransversal_card_le_iff`):
 
 * given a solution `S`, take `D = S ∩ W`, `σ` its colouring and `X = S \ W`
   (`SimpleGraph.OddCycleTransversal.isSeparator_of_proper`);
@@ -45,8 +45,11 @@ terminals from the flip terminals in `G - W`, that is, when `W ∪ X` separates 
   labelling that is constant along the edges of `G - W - X`, true on the keep terminals and false
   on the flip terminals (`SimpleGraph.OddCycleTransversal.proper_of_side`).
 
-There are `3 ^ |W|` guesses: each vertex of `W` is deleted or receives one of two colours. The
-minimum separator of each guess is a minimum vertex cut, computed in
+There are `3 ^ |W|` guesses: each vertex of `W` is deleted or receives one of two colours. This
+three-way count is the analysis of [Hueffner2009, Section 3]. The case `D = ∅` corresponds to
+[Hueffner2009, Lemma 2], which subdivides the edges at `W` first and phrases the guess as a valid
+colouring of the neighbours of `W`; here `σ` colours `W` directly and no subdivision is needed.
+The minimum separator of each guess is a minimum vertex cut, computed in
 `Cslib.Algorithms.Lean.IterativeCompression.OddCycleTransversal`. The statement here is
 combinatorial; `W` is any odd cycle transversal, and `|W| = k + 1` only matters for the running
 time.
@@ -61,15 +64,20 @@ time.
 
 * `SimpleGraph.isOddCycleTransversal_iff_exists_bool`: a colouring proper off `S`.
 * `SimpleGraph.isOddCycleTransversal_iff_forall_odd_walk`: every odd closed walk visits `S`.
+* `SimpleGraph.IsOddCycleTransversal.mono`, `SimpleGraph.IsOddCycleTransversal.anti`,
+  `SimpleGraph.isOddCycleTransversal_univ`: monotonicity in the set and the graph.
 * `SimpleGraph.isOddCycleTransversal_empty_iff`: `∅` is an odd cycle transversal exactly when `G`
   is bipartite.
+* `SimpleGraph.OddCycleTransversal.mem_keepTerminals`,
+  `SimpleGraph.OddCycleTransversal.mem_flipTerminals`: membership in the terminal sets.
 * `SimpleGraph.OddCycleTransversal.isSeparator_of_proper`,
   `SimpleGraph.OddCycleTransversal.proper_of_side`: the two directions of the compression lemma.
-* `SimpleGraph.isOddCycleTransversal_card_le_iff`: the compression lemma.
+* `SimpleGraph.exists_isOddCycleTransversal_card_le_iff`: the compression lemma.
 
 ## References
 
 * [B. Reed, K. Smith, A. Vetta, *Finding odd cycle transversals*][ReedSmithVetta2004]
+* [F. Hüffner, *Algorithm engineering for optimal graph bipartization*][Hueffner2009]
 * [M. Cygan, F. V. Fomin, Ł. Kowalik, D. Lokshtanov, D. Marx, M. Pilipczuk, M. Pilipczuk,
   S. Saurabh, *Parameterized Algorithms*][CyganEtAl2015]
 -/
@@ -261,14 +269,15 @@ private theorem exists_side_of_isSeparator {W D X : Set V} {σ c₀ : V → Bool
   · exact decide_eq_decide.mpr ⟨hR huv hvW hvX, hR huv.symm huW huX⟩
   · exact decide_eq_true (mem_reachAvoiding_of_mem hv
       (by simp only [Set.mem_union, not_or]; exact ⟨hv.1, hvX⟩))
-  · exact decide_eq_false (isSeparator_iff_forall_not_mem_reachAvoiding.mp hX v hv)
+  · exact decide_eq_false (isSeparator_iff_forall_notMem_reachAvoiding.mp hX v hv)
 
-/-- **Compression lemma** [ReedSmithVetta2004] [CyganEtAl2015, Section 4.4]. Let `W` be a set with
-a colouring `c₀` that is proper off `W`. Then `G` has an odd cycle transversal of at most `k`
-vertices exactly when there are `D ⊆ W`, a colouring `σ` proper on `W \ D`, and `X` disjoint from
-`W` such that `W ∪ X` separates the keep terminals from the flip terminals of `(D, σ)` and
-`|D| + |X| ≤ k`. -/
-theorem _root_.SimpleGraph.isOddCycleTransversal_card_le_iff {W : Finset V}
+/-- **Compression lemma** [ReedSmithVetta2004] [Hueffner2009, Lemma 2]
+[CyganEtAl2015, Section 4.4]. Let `W` be a set with a colouring `c₀` that is proper off `W`. Then
+`G` has an odd cycle transversal of at most `k` vertices exactly when there are `D ⊆ W`, a
+colouring `σ` proper on `W \ D`, and `X` disjoint from `W` such that `W ∪ X` separates the keep
+terminals from the flip terminals of `(D, σ)` and `|D| + |X| ≤ k`. [Hueffner2009, Lemma 2] is the
+disjoint case `D = ∅`, after subdividing the edges at `W`. -/
+theorem _root_.SimpleGraph.exists_isOddCycleTransversal_card_le_iff {W : Finset V}
     {c₀ : V → Bool} (hc₀ : ∀ ⦃u v⦄, G.Adj u v → u ∉ W → v ∉ W → c₀ u ≠ c₀ v) (k : ℕ) :
     (∃ S : Finset V, G.IsOddCycleTransversal S ∧ S.card ≤ k) ↔
       ∃ (D X : Finset V) (σ : V → Bool), D ⊆ W ∧ Disjoint X W ∧
