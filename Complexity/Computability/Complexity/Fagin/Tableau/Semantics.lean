@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Fagin.Tableau.Defs
+import Complexity.Computability.Machines.Turing.MultiTape.InputAt
 
 /-!
 # Semantic realization of the first-order tableau formulas on `Fin B`
@@ -131,21 +132,11 @@ theorem realize_inputAtFormula {u w : List Bool}
   · -- `s = none`
     simp only [inputAtFormula, Formula.realize_sup, realize_isZero hlt, Formula.realize_iExs,
       Formula.realize_inf, realize_rel₁, realize_lt hlt, Sum.elim_inl, Sum.elim_inr,
-      Fin.lt_def]
-    constructor
-    · rintro (hj0 | ⟨yE, hE, hltE⟩)
-      · simp [inputAt, hj0]
-      · have hE' := (hI.endPos_iff (yE 0)).1 hE
-        simp only [inputAt, show (env vJ : ℕ) ≠ 0 by omega, ite_false]
-        exact List.getElem?_eq_none (by simp; omega)
-    · intro hnone
-      by_cases hj0 : (env vJ : ℕ) = 0
-      · exact Or.inl hj0
-      · right
-        simp only [inputAt, hj0, ite_false, List.getElem?_eq_none_iff, List.length_append] at hnone
-        refine ⟨![(⟨u.length + w.length, by omega⟩ : Fin B)], (hI.endPos_iff _).2 rfl, ?_⟩
-        dsimp
-        omega
+      Fin.lt_def, inputAt_eq_none_iff, List.length_append]
+    refine or_congr Iff.rfl ⟨fun ⟨yE, hE, hltE⟩ => ?_, fun hj => ?_⟩
+    · have hE' := (hI.endPos_iff (yE 0)).1 hE
+      omega
+    · exact ⟨![⟨u.length + w.length, by omega⟩], (hI.endPos_iff _).2 rfl, hj⟩
   · -- `s = some b`
     have huBit_iff : ∀ (p : Fin B) (hp : (p : ℕ) < u.length),
         (if b then RelMap r.uBit ![p] else ¬RelMap r.uBit ![p]) ↔ u[(p : ℕ)]? = some b := by
@@ -172,45 +163,33 @@ theorem realize_inputAtFormula {u w : List Bool}
           Formula.realize_not, realize_succ hlt, realize_rel₁, realize_lt hlt,
           realize_le hlt, Sum.elim_inl, Sum.elim_inr, Fin.lt_def, Fin.le_def,
           Bool.false_eq_true, ↓reduceIte]
-    rw [hform]
+    rw [hform, inputAt_eq_some_iff]
     constructor
     · rintro (⟨y, ⟨⟨hp, hU⟩, hltU⟩, hBit⟩ | ⟨y, ⟨⟨⟨hU, hE⟩, hgtU⟩, hleE⟩, hCert⟩)
       · have hU' := (hI.uLen_iff (y 1)).1 hU
         have hp_lt : (y 0 : ℕ) < u.length := by omega
-        have hj_sub : (env vJ : ℕ) - 1 = (y 0 : ℕ) := by omega
-        simp only [inputAt, show (env vJ : ℕ) ≠ 0 by omega, ite_false, hj_sub,
-          List.getElem?_append_left hp_lt]
+        refine ⟨y 0, hp, ?_⟩
+        rw [List.getElem?_append_left hp_lt]
         exact (huBit_iff (y 0) hp_lt).1 hBit
       · have hU' := (hI.uLen_iff (y 0)).1 hU
         have hE' := (hI.endPos_iff (y 1)).1 hE
-        have hge : u.length ≤ (env vJ : ℕ) - 1 := by omega
-        simp only [inputAt, show (env vJ : ℕ) ≠ 0 by omega, ite_false,
-          List.getElem?_append_right hge]
+        refine ⟨(env vJ : ℕ) - 1, by omega, ?_⟩
+        rw [List.getElem?_append_right (by omega)]
         exact (hcert_iff (env vJ) (by omega) (by omega)).1 hCert
-    · intro hsome
-      have hj0 : (env vJ : ℕ) ≠ 0 := by rintro h0; simp [inputAt, h0] at hsome
-      simp only [inputAt, hj0, ite_false] at hsome
-      by_cases hju : (env vJ : ℕ) ≤ u.length
-      · left
-        have hp_lt : (env vJ : ℕ) - 1 < u.length := by omega
-        rw [List.getElem?_append_left hp_lt] at hsome
-        let p : Fin B := ⟨(env vJ : ℕ) - 1, by omega⟩
-        let uFin : Fin B := ⟨u.length, by omega⟩
-        refine ⟨![p, uFin], ⟨⟨by dsimp [p]; omega, (hI.uLen_iff uFin).2 rfl⟩, hp_lt⟩, ?_⟩
-        rw [Matrix.cons_val_zero, huBit_iff p hp_lt]
-        exact hsome
-      · right
-        have hge : u.length ≤ (env vJ : ℕ) - 1 := by omega
-        rw [List.getElem?_append_right hge] at hsome
-        have hidx : (env vJ : ℕ) - 1 - u.length < w.length := by
-          by_contra hle
-          rw [List.getElem?_eq_none (by omega)] at hsome
-          cases hsome
-        let uFin : Fin B := ⟨u.length, by omega⟩
-        let eFin : Fin B := ⟨u.length + w.length, by omega⟩
-        refine ⟨![uFin, eFin], ⟨⟨⟨(hI.uLen_iff uFin).2 rfl, (hI.endPos_iff eFin).2 rfl⟩,
-          by dsimp [uFin]; omega⟩, by dsimp [eFin]; omega⟩, ?_⟩
-        rw [hcert_iff (env vJ) (by omega) (by omega)]
+    · rintro ⟨q, hq, hsome⟩
+      rcases lt_or_ge q u.length with hqu | hqu
+      · -- the position lies in the input `u`
+        rw [List.getElem?_append_left hqu] at hsome
+        let p : Fin B := ⟨q, by omega⟩
+        exact Or.inl ⟨![p, ⟨u.length, by omega⟩], ⟨⟨hq, (hI.uLen_iff _).2 rfl⟩, hqu⟩,
+          (huBit_iff p hqu).2 hsome⟩
+      · -- the position lies in the certificate `w`
+        rw [List.getElem?_append_right hqu] at hsome
+        have hidx : q - u.length < w.length := (List.getElem?_eq_some_iff.mp hsome).choose
+        refine Or.inr ⟨![⟨u.length, by omega⟩, ⟨u.length + w.length, by omega⟩],
+          ⟨⟨⟨(hI.uLen_iff _).2 rfl, (hI.endPos_iff _).2 rfl⟩, by dsimp; omega⟩, by dsimp; omega⟩,
+          ?_⟩
+        rw [hcert_iff (env vJ) (by omega) (by omega), hq, Nat.add_sub_cancel]
         exact hsome
 
 /-- Predicate stating that the relation symbols of `r` at time `t : Fin B` agree with a

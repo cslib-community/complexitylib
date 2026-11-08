@@ -2922,6 +2922,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Halting.Reducti
 public import Complexity.Computability.Machines.Turing.MultiTape.Halting.Rice
 public import Complexity.Computability.Machines.Turing.MultiTape.Halting.SMN
 public import Complexity.Computability.Machines.Turing.MultiTape.HaltsAt
+public import Complexity.Computability.Machines.Turing.MultiTape.InputAt
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryAddition
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryComparison
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryCounter
