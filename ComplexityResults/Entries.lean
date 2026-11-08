@@ -65,7 +65,9 @@ name/number or precise locator has not yet been collected; it must not be guesse
 The results that the curated formal abstracts selected until their retirement on 2026-11-08,
 registered against the library theorems that the abstracts' bridges applied. A group whose
 theorems live in several modules is split into one entry per module. Bibliography keys come from
-the citations of the defining modules.
+the citations of the defining modules. The depth-two threshold bounds for Andreev's function are
+left out: they are original results, which `results/README.md` admits only once original results
+have an explicit representation.
 -/
 
 register_result "cook-levin" where
@@ -95,10 +97,11 @@ register_result "pcp" where
   theorems := [
     Cslib.Complexity.NP_eq_PCP_log
   ]
-  scope := "NP = PCP(log n, 1) for every injective instance encoding. One polynomial-time \
-    algorithm computes the coin count, the nonadaptive proof addresses and the verdict, with \
-    O(log n + 1) random bits, O(1) queries, perfect completeness and soundness at most one \
-    half; NP is the library's deterministic-verifier class. Construction constants are large."
+  scope := "NP = PCP(log n, 1) for every injective instance encoding. The verifier's coin \
+    count, nonadaptive proof addresses and verdict are each computable in polynomial time; it \
+    uses O(log n + 1) random bits and O(1) queries, with perfect completeness and soundness at \
+    most one half. NP is the library's deterministic-verifier class. Construction constants \
+    are large."
 
 register_result "fagin" where
   title := "Fagin: logic captures NP"
@@ -172,9 +175,9 @@ register_result "reingold" where
     Cslib.Complexity.USTCON_mem_L
   ]
   scope := "Simple undirected graphs encoded by a unary header 1^n 0 1^s 0 1^t 0 and the \
-    row-major adjacency matrix (encUSTCON). One native machine halts on every input within \
-    c·(⌊log₂ L⌋ + 1) work cells on inputs of length L; correctness is required only on \
-    encodings of instances. The reduction-defined SL = L corollary is not part of this entry."
+    row-major adjacency matrix (encUSTCON). One native machine halts on and decides every \
+    encoded instance of length L within c·(⌊log₂ L⌋ + 1) work cells; malformed inputs are \
+    unconstrained. The reduction-defined SL = L corollary is not part of this entry."
 
 register_result "primes" where
   title := "Agrawal–Kayal–Saxena: PRIMES is in P"
@@ -317,8 +320,8 @@ register_result "braverman" where
     Cslib.Circuits.Boolean.Braverman.fools_of_isKWiseIndependent
   ]
   scope := "A circuit of NOT and unbounded fan-in AND/OR gates of depth at most d, with at most \
-    2^q gates of fan-in below 2^q (q ≥ 1), is fooled with error 2^(-q) in expectation by every \
-    k-wise independent distribution (vanishing biases on nonempty sets of at most k \
+    2^q gates, each of fan-in below 2^q (q ≥ 1), is fooled with error 2^(-q) in expectation by \
+    every k-wise independent distribution (vanishing biases on nonempty sets of at most k \
     coordinates) once k ≥ (64q)^((2d + 3)(d + 7) + 1). Our own constants and exponent, weaker \
     than Braverman's; size and depth count NOT gates and constants; nonuniform and \
     information-theoretic."
@@ -350,80 +353,6 @@ register_result "formula-bounds-andreev" where
     formula leaf size L of Andreev's function on 2^b + b·m bits (explicit block indexing) \
     satisfies 2^(2b)·m³ ≤ 144·b²·(⌊log₂ b⌋ + 2)³·L². Finite quantitative bound; no \
     general-circuit lower bound."
-
-register_result "andreev-threshold" where
-  title := "Depth-two threshold circuits for Andreev's function: exact quadratic upper bound"
-  topic := "circuit complexity"
-  sources := [
-    { paper := KaneWilliams2016, theorem := unverified, locator := unverified }
-  ]
-  theorems := [
-    Cslib.Circuits.Boolean.WeightedThreshold.computes_andreevCircuit,
-    Cslib.Circuits.Boolean.WeightedThreshold.size_andreevCircuit,
-    Cslib.Circuits.Boolean.WeightedThreshold.depth_andreevCircuit_le,
-    Cslib.Circuits.Boolean.WeightedThreshold.wireCount_andreevCircuit_le,
-    Cslib.Circuits.Boolean.WeightedThreshold.lines_andreevCircuit_bottom_or_top
-  ]
-  scope := "For all b and m, Andreev's function on n = 2^b + b·m bits is computed by an explicit \
-    depth-two circuit of real-weight threshold gates with 2·4^b + b·m·2^b + 1 gates and at most \
-    (2·4^b + b·m·2^b)(n + 1) active wires; bottom gates read only inputs with integer weights \
-    of absolute value at most 2, the top gate reads only gates with odd weights below 2n. An \
-    original result improving the cited Kane–Williams O(n³/log n) bound; nonuniform."
-
-register_result "andreev-threshold-average-upper" where
-  title := "Depth-two threshold circuits for Andreev's function: average-case upper bounds"
-  topic := "circuit complexity"
-  sources := [
-    { paper := KaneWilliams2016, theorem := unverified, locator := unverified }
-  ]
-  theorems := [
-    Cslib.Circuits.Boolean.WeightedThreshold.card_eval_andreevWindowedCircuit_self_ne_le,
-    Cslib.Circuits.Boolean.WeightedThreshold.card_eval_andreevWindowedCircuit_eq_andreev_ge_sqrt
-  ]
-  scope := "Agreement bounds for the explicit windowed depth-two threshold circuit \
-    andreevWindowedCircuit b m r B (4·2^r·B + 1 gates; size, depth and wire counts are separate \
-    lemmas): whenever t ≥ 0 and 3t + 1/2 ≤ B, for r = b it errs on at most a fraction \
-    2^(b+1)(exp(-2t²/2^b) + exp(-2t²/(bm))) of inputs, and for r < b it agrees on at least a \
-    fraction 1/2 + 1/(2√(2·2^(b-r))) minus 2^(r+1) times the same tail. Original result; \
-    explicit finite bounds; nonuniform."
-
-register_result "andreev-threshold-lower" where
-  title := "Depth-two threshold circuits for Andreev's function: average-case lower bounds"
-  topic := "circuit complexity"
-  sources := [
-    { paper := KaneWilliams2016, theorem := unverified, locator := unverified }
-  ]
-  theorems := [
-    Cslib.Circuits.Boolean.WeightedThreshold.size_ge_of_card_eval_eq_andreev_ge_of_le_eps,
-    Cslib.Circuits.Boolean.WeightedThreshold.size_ge_of_card_eval_eq_andreev_ge_of_le_two_pow,
-    Cslib.Circuits.Boolean.WeightedThreshold.wireCount_ge_of_card_eval_eq_andreev_ge_of_le_eps,
-    Cslib.Circuits.Boolean.WeightedThreshold.wireCount_ge_of_card_eval_eq_andreev_ge_of_le_two_pow
-  ]
-  scope := "A depth-two circuit of real-weight threshold gates on n = 2^b + b·m bits, m > 0, \
-    agreeing with Andreev's function on a fraction 1/2 + ε of inputs with \
-    3(b + 2)/√(2^b) ≤ ε satisfies m·2^b·ε² ≤ 36(b + 2 + log(size + 1))·size·√n and \
-    m·√m·2^b·ε² ≤ 36(b + 2 + log(W + 1))·W for W active nonzero-weight wires; for m ≤ 2^b \
-    and ε ≤ 1 the factor becomes 144(b + 2). Size counts all gates. Improves Kane–Williams, \
-    whose restriction lemmas are used; explicit finite bounds; nonuniform."
-
-register_result "andreev-threshold-majority" where
-  title := "Depth-two threshold circuits for Andreev's function: majority-vote lower bounds"
-  topic := "circuit complexity"
-  sources := [
-    { paper := KaneWilliams2016, theorem := unverified, locator := unverified }
-  ]
-  theorems := [
-    Cslib.Circuits.Boolean.WeightedThreshold.size_ge_of_approxMajority_andreev_of_le_two_pow,
-    Cslib.Circuits.Boolean.WeightedThreshold.wireCount_ge_of_approxMajority_andreev_of_le_two_pow,
-    Cslib.Circuits.Boolean.WeightedThreshold.size_ge_of_majorityVote_andreev_of_le_two_pow,
-    Cslib.Circuits.Boolean.WeightedThreshold.wireCount_ge_of_majorityVote_andreev_of_le_two_pow
-  ]
-  scope := "For t > 0 depth-two real-weight threshold circuits on n = 2^b + b·m bits, \
-    0 < m ≤ 2^b, each with at most s gates (respectively s active wires): if on every input a \
-    fraction at least 1/2 + ε of them agree with Andreev's function, 3(b + 2)/√(2^b) ≤ ε, then \
-    m·2^b·ε² ≤ 144(b + 2)·s·√n (wires: m·√m·2^b·ε² ≤ 144(b + 2)·s); a strict majority vote \
-    with 3(b + 2)/√(2^b) ≤ 1/(2t) gives m·2^b ≤ 576(b + 2)·t²·s·√n (wires analogously). \
-    Stated through the number of correct members per input; the top gate is not counted."
 
 register_result "constant-depth-arithmetic" where
   title := "Limaye–Srinivasan–Tavenas over any field (after Forbes): constant-depth algebraic \
@@ -611,7 +540,8 @@ register_result "partial-mcsp" where
     Cslib.Complexity.ETH.not_decidableInSubexpTime_PartialMCSP,
     Cslib.Complexity.ETH.not_decidableInSubexpTime_PartialMCSP_tableSize,
     Cslib.Complexity.ETH.not_decidableInSubexpTime_PartialMCSP_encBinary,
-    Cslib.Complexity.ETH.not_decidableInSubexpTime_PartialMCSP_binaryGate
+    Cslib.Complexity.ETH.not_decidableInSubexpTime_PartialMCSP_binaryGate,
+    Cslib.Complexity.ETH.not_decidableInSubexpTime_PartialMCSP_binaryGate_encBinary
   ]
   scope := "Under the library's ETH, PartialMCSP on m-variable partial truth tables is not \
     decidable by deterministic multi-tape machines in time 2^o(m log m) = N^o(log log N), \

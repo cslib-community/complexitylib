@@ -228,8 +228,8 @@ the root checkout and, when `<branch>` exists only on `origin`, checks it out tr
 [cache guide](scripts/cache/README.md#automatic-restoration) explains bootstrap and dependency costs.
 Run `python3 scripts/check_hygiene.py` to audit `-- upstream:` markers,
 forbidden proof tokens, `set_option` justifications, the key order of `references.bib`, that
-every docstring citation key has an entry there and that `ROADMAP.md` adds no `[#N]:` link
-definitions
+every docstring citation key has an entry there and that `ROADMAP.md` entries are short scope
+statements with inline links
 (pass `--check-simp` to also run the heuristic check for non-terminal bare `simp` calls in
 candidate modules). After a build,
 `python3 scripts/check_changed_files.py` checks the files your branch adds or changes: each name
@@ -278,12 +278,16 @@ findings without requiring a duplicate local run.
 
 Keep each fact in one maintained location. The README explains the purpose and points to useful
 entry points; module docstrings explain the mathematics and API; checked Lean examples show usage.
-ROADMAP lists open directions only; status and progress live on issues and PRs, so a PR does not
-edit ROADMAP unless it opens or closes a direction. Write a new issue or PR link in ROADMAP inline,
-as `[#N](https://github.com/cslib-community/cslib-frontier/issues/N)`, rather than as a
-`[#N]: …` reference definition appended to the end of the file: such appended lines conflict
-between PRs in the merge queue, and `scripts/check_hygiene.py` rejects new ones. UPSTREAM records
-coordination and exceptional integration decisions, while source markers record module status.
+ROADMAP lists open directions only, grouped by area.
+Each entry states one direction's scope in a few sentences, one sentence per line, with its issue
+linked inline as `[#N](https://github.com/cslib-community/cslib-frontier/issues/N)`.
+Status and progress live on issues and PRs, so a PR edits ROADMAP only when it opens or closes a
+direction, and a direction leaves ROADMAP only when it is completed or deliberately dropped.
+`scripts/check_hygiene.py` rejects link reference definitions, nested bullets and entries over 600
+characters of Markdown (a link counts as its text): definitions appended to the end of the file and
+growing progress notes conflicted between PRs in the merge queue.
+UPSTREAM records coordination and exceptional integration decisions, while source markers record
+module status.
 Batch measurements and validation/review evidence belong in commit or PR descriptions.
 Link to these sources instead of repeating them in new guides. Add a separate document only when
 it provides useful explanation that does not already have a suitable home.

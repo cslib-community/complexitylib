@@ -62,11 +62,11 @@ Distinguish these dispositions in the issue:
 
 - **Completed:** the agreed acceptance criteria are satisfied.
 - **Milestone completed:** a bounded deliverable is finished; link the remaining objective.
-- **Deferred / not planned:** work is intentionally stopped; preserve its results and explain
-  what remains unproved.
+- **Not planned (dropped):** work is intentionally stopped; preserve its results, explain what
+  remains unproved, and remove the direction from `ROADMAP.md`, which has no deferred tier.
 
 Close a milestone issue as completed when its own criteria are met. Keep the broader objective
-open, or, when authorized to defer it, close it as not planned and link the completed milestone.
+open, or, when authorized to drop it, close it as not planned and link the completed milestone.
 PR descriptions must distinguish mathematical progress from infrastructure, refactoring, and
 documentation progress.
 
