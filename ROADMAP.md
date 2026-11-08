@@ -565,6 +565,14 @@ index links to canonical definitions rather than keeping a second set.
   game on the tableau of a polynomial-time machine (`Tableau.ValueGame`, which gives
   `APSPACE = EXP`) in logarithmic space. This needs a word game machine whose round reads the
   input from the input tape and keeps only the `O(log n)`-bit wire claim on its work tape.
+- **Pebble games and space lower bounds**
+  ([#2995](https://github.com/cslib-community/complexitylib/issues/2995)): the black pebble game
+  on a `Digraph`, the path-blocking lower-bound engine, and the exact prices `h + 2` of the
+  complete binary tree and the pyramid (Cook) are in `Complexity/Computability/Pebbling`. Next:
+  connect `s`-pebble black pebblings to `s`-register evaluation of `Cslib.Circuits.Program`
+  straight-line programs; black-white and reversible pebbling; the Hopcroft–Paul–Valiant
+  `O(n / log n)` pebbling of bounded-indegree DAGs and the matching Paul–Tarjan–Celoni
+  `Ω(n / log n)` family; Gilbert–Tarjan and Lengauer–Tarjan time–space trade-offs.
 - **Deeper consequences of a Boolean-hierarchy collapse:** Kadin's sparse `S` with
   `coNP ⊆ NP^S`, and the collapse of `PH` into `P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`, which follows from
   results of Wagner and of Chang and Kadin, not from Kadin's 1988 argument (see his erratum).
@@ -672,9 +680,11 @@ index links to canonical definitions rather than keeping a second set.
 
 - **MIP = NEXP** ([#892]): `NEXP ⊆ MIP₂` through the BFL multilinearity test and arithmetization
   of exponential-time tableaux; an efficient GKR verifier under log-space uniformity.
-- Private-to-public-coin transformations (Goldwasser–Sipser `IP[k] ⊆ AM[k + 2]`), the
-  Babai–Moran speedup `AM[2 t(n)] = AM[t(n)]` for polynomially many rounds (patterns that depend
-  on the input length), interactive-machine characterizations of Arthur–Merlin classes, and
+- **Goldwasser–Sipser** ([#2981](https://github.com/cslib-community/complexitylib/issues/2981)):
+  `IP[k] ⊆ AM[k + 2]` for the private-coin games `IPk`, by the set lower bound protocol on the
+  gap-amplified game (`IPGameClass.exists_repeat`).
+- The Babai–Moran speedup `AM[2 t(n)] = AM[t(n)]` for polynomially many rounds (patterns that
+  depend on the input length), interactive-machine characterizations of Arthur–Merlin classes, and
   statistical and perfect zero knowledge.
 
 ### Descriptive complexity and first-order reductions
@@ -752,6 +762,13 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 ### Search, parameterized and fine-grained complexity
 
 - **TFNP:** CLS, further local search, fixed-point and equilibrium problems.
+- **Sperner's lemma** ([#2999](https://github.com/cslib-community/complexitylib/issues/2999)):
+  the parity form on the triangulated square grid by door-following, and circuit `Sperner2D` in
+  `PPAD` as the end-of-line relation of its door graph. Remaining
+  ([#3087](https://github.com/cslib-community/complexitylib/issues/3087)): `PPAD`-hardness of
+  two-dimensional Sperner/Brouwer (Chen–Deng), `PPAD`-completeness of three-dimensional Sperner
+  (Papadimitriou 1994), and the `d`-dimensional simplex form with general Sperner boundary
+  conditions.
 - **Parameterized:** strongly uniform variants (computable `f`), further explicit polynomial
   kernels, the W and A hierarchies, and parameterized lower bounds; connect these to
   [structural graph algorithms](#structural-graph-algorithms) and their decomposition costs.
@@ -814,11 +831,12 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 - **Williams's NEXP ⊄ ACC⁰ and Murray–Williams's NQP ⊄ ACC⁰** ([#889]): no polynomial-size,
   constant-depth circuits over AND, OR, NOT and fixed-modulus counting gates for some language in
-  NEXP. `SymAnd/ACC0.lean` proves that every `AC0Mod m` and `ACC0` circuit is a `SYM ∘ AND`
-  circuit of polylogarithmic fan-in and quasi-polynomial size, with explicit bounds (Yao;
-  Beigel–Tarui, Theorem 1.1). This is an existence theorem. Still open: constructing that circuit
-  in quasi-polynomial time, Williams's fast `SYM ∘ AND` evaluation and ACC-SAT algorithm, a fine
-  nondeterministic time hierarchy, and the `E^NP` and NEXP lower bounds.
+  NEXP. `SymAnd/ACC0.lean` defines the `SYM ∘ AND` circuit `Circuit.toSymAnd` of every circuit
+  with `MOD_m` gates, `m > 0`, and proves that it computes the same function with polylogarithmic
+  fan-in and quasi-polynomial size, with explicit bounds (Yao; Beigel–Tarui, Theorem 1.1); every
+  language of `AC0Mod m` (any `m`) and of `ACC0` follows. Still open: a machine computing that
+  circuit in quasi-polynomial time, Williams's fast `SYM ∘ AND` evaluation and ACC-SAT algorithm,
+  a fine nondeterministic time hierarchy, and the `E^NP` and NEXP lower bounds.
 - **Circuit lower bounds from refuting ETH** ([#1539]): `E^NP ⊄ SIZE(O(n))`, and a language in
   `E^NP` whose fan-in-two circuits need more than `c n √log n` gates infinitely often, by
   Williams's witness-circuit argument with the library's #CircuitSAT counters. `E^NP` is defined,
@@ -956,7 +974,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   O'Donnell's *Analysis of Boolean Functions*
   ([#2131](https://github.com/cslib-community/complexitylib/issues/2131)), including the book-form
   statements of its Chapter 9 (the KKL edge-isoperimetric theorem, and Friedgut's junta theorem
-  with its spectral concentration).
+  with its spectral concentration) and the low-degree consequences of hypercontractivity beyond
+  the FKN Theorem ([#3054](https://github.com/cslib-community/complexitylib/issues/3054)): the
+  `L¹`–`L²` comparison for low-degree functions, the low-degree tail bound, and the Gotsman–Linial
+  lower bound on the low-degree weight of polynomial threshold functions.
 - **Resource-bounded measure and dimension:** martingales and gales with explicit computation
   budgets, their success sets, and measure and dimension within complexity classes; connect
   quantitative randomness to the Kolmogorov-complexity development. State the resource bounds
@@ -1004,10 +1025,14 @@ each statement against the numbered result. Organize modules by subject, not cha
   `Θ(√n / ε²)` sample bounds for `ε ≤ 1/2` on even domains: the collision tester and Paninski's
   lower bound. Identity testing to any fixed distribution reduces to uniformity on `4n` points
   through Goldreich's kernel, which gives `O(√n / ε²)` samples
-  ([#2930](https://github.com/cslib-community/complexitylib/issues/2930)). Remaining: further access
-  models, the odd-domain lower bound, instance-optimal identity testing, closeness, tolerant and
-  structured-property distribution testing, canonical testers and further query and sample lower
-  bounds.
+  ([#2930](https://github.com/cslib-community/complexitylib/issues/2930)). Closeness testing has
+  the two-sample model and the collision-based tolerant `ℓ₂` tester with `O(√b / ε²)` samples
+  when both squared `ℓ₂` norms are at most `b`, hence `O(n / ε²)` samples in statistical distance
+  ([#3017](https://github.com/cslib-community/complexitylib/issues/3017)). Remaining: the optimal
+  `O(n^{2/3} ε^{-4/3} + √n ε^{-2})` closeness tester by flattening and its matching lower bound,
+  further access models, the odd-domain lower bound, instance-optimal identity testing, tolerant
+  and structured-property distribution testing, canonical testers and further query and sample
+  lower bounds.
 - **Kolmogorov complexity and metacomplexity** ([#798], [#884]): the near-linear threshold regime
   of Liu–Pass Theorem 3.1 (c), hardness for every polynomial `t(n) ≥ (1 + ε)n` rather than above a
   polynomial threshold, which needs a rate-1 efficient conditional EP-PRG running in `n + O(n^c)`
@@ -1025,7 +1050,8 @@ each statement against the numbered result. Organize modules by subject, not cha
   incompatible models, and a bridge between the query and circuit models; complete problems for
   BQP; for QMA ([#2876](https://github.com/cslib-community/complexitylib/issues/2876)), error
   reduction from an inverse-polynomial gap, strong error reduction that keeps the witness length,
-  `QMA ⊆ PP`, `MA ⊆ QMA`, mixed witnesses, QCMA and the local Hamiltonian problem; related query,
+  `QMA ⊆ PP` ([#3028](https://github.com/cslib-community/complexitylib/issues/3028)), `MA ⊆ QMA`,
+  mixed witnesses, QCMA and the local Hamiltonian problem; related query,
   communication and interactive classes, with amplification, containments and complete problems.
   Supply the
   [quantum adversary models](#concurrent-and-quantum-security) needed by cryptographic
@@ -1205,7 +1231,11 @@ finite outcome sets are in `GameTheory/Mechanism`. Remaining directions:
   every clause shares a variable with fewer than `2 ^ (k - 3)` others
   ([#2879](https://github.com/cslib-community/complexitylib/issues/2879)). Extend it to the
   variable form of the Local Lemma under `e p (d + 1) ≤ 1` (witness trees, sharper expected
-  bounds), with native sampling and event-detection costs.
+  bounds), with native sampling and event-detection costs. The Kolmogorov form of the argument
+  is relative to an explicit decoder
+  ([#3043](https://github.com/cslib-community/complexitylib/issues/3043)); implement the decoder
+  as a multi-tape machine taking the formula to transfer it to the conditional universal
+  complexity `condPlain`.
 - **Conditional expectations and pessimistic estimators:** algorithmic alteration, and coloring,
   MAX-CUT or combinatorial-construction clients of the certified greedy choice rule
   (`Cslib.PessimisticEstimator.greedy_spec`). Preserve the quantitative guarantee when converting
