@@ -86,7 +86,8 @@ Sahai and Vadhan's polarization of statistical distance is formalized on explici
 over finite types, with the half-L1 `dist` above. The source is Sahai–Vadhan 2003, §3.2: the
 Polarization Lemma is Lemma 3.3, extended to thresholds `α² > β` in the remark after its proof; the
 Direct Product Lemma is Lemma 3.4 and the XOR Lemma is Lemma 3.5. Statistical Difference is defined
-in §3.1.
+in §3.1 with the strict thresholds `2/3` and `1/3`; the variant `SD^{α,β}` with non-strict
+thresholds, used below, is defined on p. 234.
 
 - **XOR construction.** Import
   [StatisticalDistance/XOR.lean](../../Complexity/Probability/StatisticalDistance/XOR.lean).
@@ -170,7 +171,8 @@ uniform inputs, defined in
   from `SD^{α,β}` to `SD^{α',β'}`, for all constants `0 < β' < α' < 1`.
   The raw code generators behind the certificate are in
   [Circuit/Boolean/Polarization/PolyTime.lean](../../Complexity/Computability/Circuit/Boolean/Polarization/PolyTime.lean).
-  Each generator has a `_code` lemma stating exact agreement with the typed circuit.
+  Import that module directly to use them; `StatisticalDifference/PolyTime.lean` does not
+  re-export it. Each generator has a `_code` lemma stating exact agreement with the typed circuit.
   `polarizeCode` builds on `replicateCode`, from
   [CodeReplication.lean](../../Complexity/Computability/Circuit/Boolean/CodeReplication.lean),
   and on `muxCode`, from
