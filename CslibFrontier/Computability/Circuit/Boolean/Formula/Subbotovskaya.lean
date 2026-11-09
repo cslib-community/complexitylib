@@ -145,8 +145,7 @@ theorem IsLeafMinimal.arg {op : Op} {args : Fin (signature.Arity op) → Formula
   have hcomp : (gate op (update args j G)).Computes interpretation
       ((gate op args).eval interpretation) := fun x => by
     simp only [eval_gate]
-    congr 1
-    funext k
+    congr 1 with k : 1
     by_cases hk : k = j
     · subst hk
       simpa using hG x

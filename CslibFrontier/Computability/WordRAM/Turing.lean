@@ -417,8 +417,7 @@ theorem denote_initState {B : Basis} {r : ℕ} (input : List ℕ) :
     (initState B r input).denote = (State.init input : State r).toGeneric B := by
   simp only [FiniteState.denote, initState, FiniteState.initConst, FiniteState.init,
     State.toGeneric, State.init, Data.toGeneric, Data.init]
-  congr 2
-  funext a
+  congr 2 with a : 1
   exact read_initMemory input a
 
 /-- From an input that fits, the finite initial state holds only words. -/

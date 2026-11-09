@@ -72,8 +72,7 @@ theorem eval_tree (source : Fin ℓ → Bool) (child : ℕ → Fin d → ℕ)
     | succ i =>
       simp only [tree, Tree.eval_node, paddedGate, Nat.succ_ne_zero, ite_false, value,
         next]
-      congr 1
-      funext j
+      congr 1 with j : 1
       have hj := hchild (i + 1) (by omega) j
       exact ih (by omega)
 
