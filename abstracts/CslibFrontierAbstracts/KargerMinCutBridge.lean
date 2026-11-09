@@ -2137,9 +2137,9 @@ private theorem fastCutCode_toExact {n w : ℕ} {W : Fin n → Fin n → ℕ}
     exact hws.of_le (by omega)
   obtain ⟨y_s, e_s, hm_s, hsb_s, hn_s⟩ := fastCutSetup_exec (W := W) hn hw
   obtain ⟨m_t, hm_t, _, _, _⟩ :=
-    fastCutTree_spec hn hW hsb_s hn_s (hm_s ▸ holdsMatrix_init_fastCut W) hws hsp htot
+    fastCutTree_spec hn hW hsb_s hn_s (hm_s ▸ holdsMatrix_init_single W) hws hsp htot
   have hm_t_ex :=
-    fastCutTree_toExact hn hW hsb_s hn_s (hm_s ▸ holdsMatrix_init_fastCut W) hws hsp htot hm_t
+    fastCutTree_toExact hn hW hsb_s hn_s (hm_s ▸ holdsMatrix_init_single W) hws hsp htot hm_t
   exact (ExactExecRand.seqExec_noSub rfl e_s ⟨hm_t, hm_t_ex⟩).toExact hm
 
 private theorem fastCutAmpBody_toExact {w sb n R i : ℕ} {W : Fin n → Fin n → ℕ}
@@ -2225,7 +2225,7 @@ private theorem fastCutHighProbCode_toExact {n w : ℕ} {W : Fin n → Fin n →
     fastCutHighProbSetup_exec (W := W) hn hw
   have hinv₀ : KSAmpInv 2 n (fastCutTrials n) 0 W
       (Data.init (r := 24) (n :: flattenMatrix W)).mem y_s :=
-    ⟨hsb_s, hn_s_r, hnt_s, hti_s, hm_s ▸ holdsMatrix_init_fastCut W,
+    ⟨hsb_s, hn_s_r, hnt_s, hti_s, hm_s ▸ holdsMatrix_init_single W,
       hm_s ▸ Modifies.refl _ _, fun h0 => absurd h0 (by omega)⟩
   obtain ⟨_, hex_l⟩ :=
     fastCutAmpLoop_exact hn hW h1 hws hsp hhp_fit htot (fastCutTrials n) 0 y_s

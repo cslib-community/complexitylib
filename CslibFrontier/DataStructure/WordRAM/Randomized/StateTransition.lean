@@ -10,6 +10,7 @@ module
 public import CslibFrontier.DataStructure.WordRAM.StateTransition
 public import CslibFrontier.Computability.WordRAM.Randomized.Expected
 import CslibFrontier.Probability.PMF.Expect
+import CslibFrontier.Probability.PMF.SupportTsum
 
 /-!
 # Composable Randomized Word-RAM State-Transition Implementations
@@ -518,39 +519,12 @@ noncomputable abbrev ofFn {stepFn : (s : D.State) → (o : D.Op) → D.State × 
       rw [PMF.mem_support_map_iff] at hq_step
       obtain ⟨_, _, rfl⟩ := hq_step
       rfl
-    · have hPot_inner : ∀ t : CoupledState Seed D.State r_ds,
-          (∑' q', μ_step t q' * (potential q'.seed q'.data : ℝ≥0∞)) =
-            ∑' q, μ_det (proj t) q * (potential q.1 q.2 : ℝ≥0∞) := by
-        intro t
-        dsimp only [μ_step]
-        rw [Cslib.Probability.PMF.tsum_map_mul]
-      simp_rw [hPot_inner]
-      have hLHS :
-          (∑' t, ν t * (T_step t + ∑' q, μ_det (proj t) q * (potential q.1 q.2 : ℝ≥0∞))) =
-            ∑' p, ν_det p * (T_det p + ∑' q, μ_det p q * (potential q.1 q.2 : ℝ≥0∞)) :=
-        (Cslib.Probability.PMF.tsum_map_mul ν proj fun p =>
-          T_det p + ∑' q, μ_det p q * (potential q.1 q.2 : ℝ≥0∞)).symm
-      have hRHS_pot :
-          (∑' p, ν_det p * (potential p.1 p.2 : ℝ≥0∞)) =
-            ∑' t, ν t * (potential t.seed t.data : ℝ≥0∞) :=
-        Cslib.Probability.PMF.tsum_map_mul ν proj fun p => (potential p.1 p.2 : ℝ≥0∞)
-      have hRHS_charge :
-          (charge s o : ℝ≥0∞) + (∑' t, ν t * (potential t.seed t.data : ℝ≥0∞)) =
-            ∑' t, ν t * ((charge t.state o : ℝ≥0∞) + (potential t.seed t.data : ℝ≥0∞)) := by
-        have hch : (charge s o : ℝ≥0∞) = ∑' t, ν t * (charge t.state o : ℝ≥0∞) := by
-          calc
-            (charge s o : ℝ≥0∞)
-              = ∑' t, ν t * (charge s o : ℝ≥0∞) := by
-                  rw [ENNReal.tsum_mul_right, ν.tsum_coe, one_mul]
-            _ = ∑' t, ν t * (charge t.state o : ℝ≥0∞) := by
-                  refine tsum_congr fun t => ?_
-                  by_cases ht : t ∈ ν.support
-                  · rw [hs t ht]
-                  · rw [(PMF.apply_eq_zero_iff _ _).mpr ht, zero_mul, zero_mul]
-        rw [hch, ← tsum_add]
-        simp_rw [mul_add]
-      rw [hLHS, ← hRHS_charge, ← hRHS_pot]
-      exact hamort_det
+    · -- Pull the deterministic amortization back along `proj`. On the support the abstract
+      -- state is pinned to `s`, so the per-state charge is the constant `charge s o`.
+      simp only [ν_det, proj, Cslib.Probability.PMF.tsum_map_mul] at hamort_det
+      simp only [μ_step, T_step, proj, Cslib.Probability.PMF.tsum_map_mul]
+      exact hamort_det.trans_eq
+        (Cslib.Probability.PMF.tsum_mul_add_of_support ν fun t ht => by rw [hs t ht]).symm
 
 /-- Deterministic one-step execution of `P.code` when `[D.HasStepFn stepFn]`. -/
 theorem step_exec_ofFn (C : StateTransitionImpl P D w base params s₀)
@@ -621,28 +595,10 @@ theorem step_exec_ofFn (C : StateTransitionImpl P D w base params s₀)
       rfl
     rw [hmap_eq]
     exact hseed_rel' θ'
-  · have hPot_inner : ∀ p : C.Seed × Data r_ds,
-        (∑' q, μ_step p q * (C.potential q.1 q.2 : ℝ≥0∞)) =
-          ∑' q_rel, μ_rel (lift p) q_rel * (C.potential q_rel.seed q_rel.data : ℝ≥0∞) := by
-      intro p
-      dsimp only [μ_step]
-      rw [Cslib.Probability.PMF.tsum_map_mul]
-    simp_rw [hPot_inner]
-    have hLHS :
-        (∑' p, ν p * (T_step p +
-            ∑' q_rel, μ_rel (lift p) q_rel * (C.potential q_rel.seed q_rel.data : ℝ≥0∞))) =
-          ∑' t, ν_rel t * (T_rel t +
-            ∑' q_rel, μ_rel t q_rel * (C.potential q_rel.seed q_rel.data : ℝ≥0∞)) :=
-      (Cslib.Probability.PMF.tsum_map_mul ν lift fun t =>
-        T_rel t + ∑' q_rel, μ_rel t q_rel * (C.potential q_rel.seed q_rel.data : ℝ≥0∞)).symm
-    have hRHS :
-        (∑' t, ν_rel t * ((C.charge t.state o : ℝ≥0∞) + (C.potential t.seed t.data : ℝ≥0∞))) =
-          (C.charge s o : ℝ≥0∞) + ∑' p, ν p * (C.potential p.1 p.2 : ℝ≥0∞) := by
-      rw [Cslib.Probability.PMF.tsum_map_mul]
-      dsimp only [lift]
-      simp_rw [mul_add, tsum_add, ENNReal.tsum_mul_right, ν.tsum_coe, one_mul]
-    rw [hLHS, ← hRHS]
-    exact hamort_rel
+  · -- Push the relational amortization forward along `lift`; every lifted state is `s`.
+    simp only [ν_rel, lift, Cslib.Probability.PMF.tsum_map_mul] at hamort_rel
+    simp only [μ_step, T_step, lift, Cslib.Probability.PMF.tsum_map_mul]
+    exact hamort_rel.trans_eq (Cslib.Probability.PMF.tsum_mul_add_of_support ν fun _ _ => rfl)
 
 /-! ### Projection 1: Basis lifting (`mapSimulates`, `toStandard`) -/
 
@@ -901,18 +857,14 @@ theorem frame_caller_dist (C : StateTransitionImpl P D w base params s₀)
     obtain ⟨hb', hreg, hmem⟩ := hframe t ht x' hx'
     exact (C.frame_caller (hrep t ht) hb' hreg hdisj hmem).1
   · rw [frameStateDist, Cslib.Probability.PMF.tsum_bind_mul]
-    refine tsum_congr fun t => ?_
-    by_cases ht : t ∈ ν.support
-    · rw [Cslib.Probability.PMF.tsum_map_mul]
-      have hpot_eq : (∑' x', μ_caller t x' * (C.potential t.seed (x'.comap f) : ℝ≥0∞)) =
-          ∑' x', μ_caller t x' * (C.potential t.seed (t.data.comap f) : ℝ≥0∞) := by
-        refine tsum_congr fun x' => ?_
-        by_cases hx' : x' ∈ (μ_caller t).support
-        · obtain ⟨hb', hreg, hmem⟩ := hframe t ht x' hx'
-          rw [(C.frame_caller (hrep t ht) hb' hreg hdisj hmem).2]
-        · rw [(PMF.apply_eq_zero_iff _ _).mpr hx', zero_mul, zero_mul]
-      rw [hpot_eq, ENNReal.tsum_mul_right, (μ_caller t).tsum_coe, one_mul]
-    · rw [(PMF.apply_eq_zero_iff _ _).mpr ht, zero_mul, zero_mul]
+    refine Cslib.Probability.PMF.tsum_mul_congr_support ν fun t ht => ?_
+    rw [Cslib.Probability.PMF.tsum_map_mul]
+    have hpot_eq : (∑' x', μ_caller t x' * (C.potential t.seed (x'.comap f) : ℝ≥0∞)) =
+        ∑' x', μ_caller t x' * (C.potential t.seed (t.data.comap f) : ℝ≥0∞) := by
+      refine Cslib.Probability.PMF.tsum_mul_congr_support (μ_caller t) fun x' hx' => ?_
+      obtain ⟨hb', hreg, hmem⟩ := hframe t ht x' hx'
+      rw [(C.frame_caller (hrep t ht) hb' hreg hdisj hmem).2]
+    rw [hpot_eq, ENNReal.tsum_mul_right, (μ_caller t).tsum_coe, one_mul]
 
 /-- Coupled caller distribution after a caller transition kernel `μ_caller` that does not resample
 the DS seed `θ`. -/
@@ -1178,32 +1130,10 @@ theorem code_rename_ofFn (C : StateTransitionImpl P D w base params s₀)
       rfl
     rw [hmap_eq]
     exact hseed_rel' θ'
-  · have hPot_inner : ∀ p : C.Seed × Data r_caller,
-        (∑' q, μ_caller p q * (C.potential q.1 (q.2.comap f) : ℝ≥0∞)) =
-          ∑' q_rel,
-            μ_rel (lift p) q_rel * (C.potential q_rel.seed (q_rel.data.comap f) : ℝ≥0∞) := by
-      intro p
-      dsimp only [μ_caller]
-      rw [Cslib.Probability.PMF.tsum_map_mul]
-    simp_rw [hPot_inner]
-    have hLHS :
-        (∑' p, ν p * (T_caller p +
-            ∑' q_rel,
-              μ_rel (lift p) q_rel * (C.potential q_rel.seed (q_rel.data.comap f) : ℝ≥0∞))) =
-          ∑' t, ν_rel t * (T_rel t +
-            ∑' q_rel, μ_rel t q_rel * (C.potential q_rel.seed (q_rel.data.comap f) : ℝ≥0∞)) :=
-      (Cslib.Probability.PMF.tsum_map_mul ν lift fun t =>
-        T_rel t +
-          ∑' q_rel, μ_rel t q_rel * (C.potential q_rel.seed (q_rel.data.comap f) : ℝ≥0∞)).symm
-    have hRHS :
-        (∑' t, ν_rel t *
-            ((C.charge t.state o : ℝ≥0∞) + (C.potential t.seed (t.data.comap f) : ℝ≥0∞))) =
-          (C.charge s o : ℝ≥0∞) + ∑' p, ν p * (C.potential p.1 (p.2.comap f) : ℝ≥0∞) := by
-      rw [Cslib.Probability.PMF.tsum_map_mul]
-      dsimp only [lift]
-      simp_rw [mul_add, tsum_add, ENNReal.tsum_mul_right, ν.tsum_coe, one_mul]
-    rw [hLHS, ← hRHS]
-    exact hamort_rel
+  · -- Push the relational amortization forward along `lift`; every lifted state is `s`.
+    simp only [ν_rel, lift, Cslib.Probability.PMF.tsum_map_mul] at hamort_rel
+    simp only [μ_caller, T_caller, lift, Cslib.Probability.PMF.tsum_map_mul]
+    exact hamort_rel.trans_eq (Cslib.Probability.PMF.tsum_mul_add_of_support ν fun _ _ => rfl)
 
 /-- Execute `.seq prep (P.code.rename f)` inline after a (deterministic or randomized) caller
 argument-preparation block `prep` that preserves persistent DS registers and memory in
@@ -1308,22 +1238,18 @@ theorem call_rename (C : StateTransitionImpl P D w base params s₀)
           ∑' t, ν t * ((C.charge t.state o : ℝ≥0∞) +
             (C.potential t.seed (t.data.comap f) : ℝ≥0∞)) := by
       simp only [ν_prep, frameStateDist, Cslib.Probability.PMF.tsum_bind_mul]
-      refine tsum_congr fun t => ?_
-      by_cases ht : t ∈ ν.support
-      · rw [Cslib.Probability.PMF.tsum_map_mul]
-        have hpot_eq : (∑' x', μ_prep t x' * ((C.charge t.state o : ℝ≥0∞) +
-              (C.potential t.seed (x'.comap f) : ℝ≥0∞))) =
-            ∑' x', μ_prep t x' * ((C.charge t.state o : ℝ≥0∞) +
-              (C.potential t.seed (t.data.comap f) : ℝ≥0∞)) := by
-          refine tsum_congr fun x' => ?_
-          by_cases hx' : x' ∈ (μ_prep t).support
-          · obtain ⟨_, _, hfr_x'⟩ := hprep t ht
-            obtain ⟨_, hreg, hmem, _⟩ := hfr_x' x' hx'
-            rw [C.potential_supported (x := t.data.comap f) (x' := x'.comap f) hreg hmem
-              (hrep t ht).2]
-          · rw [(PMF.apply_eq_zero_iff _ _).mpr hx', zero_mul, zero_mul]
-        rw [hpot_eq, ENNReal.tsum_mul_right, (μ_prep t).tsum_coe, one_mul]
-      · rw [(PMF.apply_eq_zero_iff _ _).mpr ht, zero_mul, zero_mul]
+      refine Cslib.Probability.PMF.tsum_mul_congr_support ν fun t ht => ?_
+      rw [Cslib.Probability.PMF.tsum_map_mul]
+      have hpot_eq : (∑' x', μ_prep t x' * ((C.charge t.state o : ℝ≥0∞) +
+            (C.potential t.seed (x'.comap f) : ℝ≥0∞))) =
+          ∑' x', μ_prep t x' * ((C.charge t.state o : ℝ≥0∞) +
+            (C.potential t.seed (t.data.comap f) : ℝ≥0∞)) := by
+        refine Cslib.Probability.PMF.tsum_mul_congr_support (μ_prep t) fun x' hx' => ?_
+        obtain ⟨_, _, hfr_x'⟩ := hprep t ht
+        obtain ⟨_, hreg, hmem, _⟩ := hfr_x' x' hx'
+        rw [C.potential_supported (x := t.data.comap f) (x' := x'.comap f) hreg hmem
+          (hrep t ht).2]
+      rw [hpot_eq, ENNReal.tsum_mul_right, (μ_prep t).tsum_coe, one_mul]
     have hdecomp :
         (∑' t, ν t * (T_call t + ∑' q, μ_call t q * (C.potential q.seed (q.data.comap f) : ℝ≥0∞))) =
           (∑' t, ν t * T_prep t) +
@@ -1475,32 +1401,12 @@ theorem call_rename_ofFn (C : StateTransitionImpl P D w base params s₀)
       rfl
     rw [hmap_eq]
     exact hseed_rel' θ'
-  · have hPot_inner : ∀ p : C.Seed × Data r_caller,
-        (∑' q, μ_call p q * (C.potential q.1 (q.2.comap f) : ℝ≥0∞)) =
-          ∑' q_rel,
-            μ_rel (lift p) q_rel * (C.potential q_rel.seed (q_rel.data.comap f) : ℝ≥0∞) := by
-      intro p
-      dsimp only [μ_call]
-      rw [Cslib.Probability.PMF.tsum_map_mul]
-    simp_rw [hPot_inner]
-    have hLHS :
-        (∑' p, ν p * (T_call p +
-            ∑' q_rel,
-              μ_rel (lift p) q_rel * (C.potential q_rel.seed (q_rel.data.comap f) : ℝ≥0∞))) =
-          ∑' t, ν_rel t * (T_rel t +
-            ∑' q_rel, μ_rel t q_rel * (C.potential q_rel.seed (q_rel.data.comap f) : ℝ≥0∞)) :=
-      (Cslib.Probability.PMF.tsum_map_mul ν lift fun t =>
-        T_rel t +
-          ∑' q_rel, μ_rel t q_rel * (C.potential q_rel.seed (q_rel.data.comap f) : ℝ≥0∞)).symm
-    have hRHS :
-        (∑' t, ν_rel t *
-            ((C.charge t.state o : ℝ≥0∞) + (C.potential t.seed (t.data.comap f) : ℝ≥0∞))) =
-          (C.charge s o : ℝ≥0∞) + ∑' p, ν p * (C.potential p.1 (p.2.comap f) : ℝ≥0∞) := by
-      rw [Cslib.Probability.PMF.tsum_map_mul]
-      dsimp only [lift]
-      simp_rw [mul_add, tsum_add, ENNReal.tsum_mul_right, ν.tsum_coe, one_mul]
-    rw [hLHS, add_assoc, ← hRHS]
-    exact hamort_rel
+  · -- Push the relational amortization forward along `lift`; every lifted state is `s`.
+    simp only [ν_rel, lift, Cslib.Probability.PMF.tsum_map_mul] at hamort_rel
+    simp only [μ_call, T_call, lift, Cslib.Probability.PMF.tsum_map_mul]
+    refine hamort_rel.trans_eq ?_
+    rw [Cslib.Probability.PMF.tsum_mul_add_of_support ν (c := (C.charge s o : ℝ≥0∞))
+      fun _ _ => rfl, add_assoc]
 
 /-! ### Projection 6: End-to-end expected-amortized sequence telescope (`steps_expected_amortized`,
 `seq_expected_amortized`, `steps_expected_amortized_ofFn`, `seq_expected_amortized_ofFn`) -/
@@ -1615,11 +1521,9 @@ theorem steps_expected_amortized (C : StateTransitionImpl P D w base params s₀
             ((C.charge t'.state o : ℝ≥0∞) + (C.potential t'.seed t'.data : ℝ≥0∞))) =
           ∑' t, ν t * ((C.charge t.state o : ℝ≥0∞) + (C.potential t.seed t.data : ℝ≥0∞)) := by
       rw [Cslib.Probability.PMF.tsum_map_mul]
-      refine tsum_congr fun t => ?_
-      by_cases ht : t ∈ ν.support
-      · dsimp only [prepMap]
-        rw [C.prepare_potential (hrep t ht)]
-      · rw [(PMF.apply_eq_zero_iff _ _).mpr ht, zero_mul, zero_mul]
+      refine Cslib.Probability.PMF.tsum_mul_congr_support ν fun t ht => ?_
+      dsimp only [prepMap]
+      rw [C.prepare_potential (hrep t ht)]
     obtain ⟨μ_step, T_step, hstep, hseed₁, hsingle₁, hamort₁⟩ :=
       C.step_exec o ν_prep hsingle_prep hseed_prep hsupp_prep
     let μ_op : CoupledState C.Seed D.State r_ds → PMF (CoupledState C.Seed D.State r_ds) :=
@@ -1808,25 +1712,19 @@ theorem ExecSteps.toOfFn {C : StateTransitionImpl P D w base params s₀}
       rw [PMF.bind_map, PMF.map_bind]
       ext q
       simp only [PMF.bind_apply, Function.comp_apply, μ_det]
-      refine tsum_congr fun t => ?_
-      by_cases ht : t ∈ ν_rel.support
-      · rw [hlift_proj t ht]
-      · rw [(PMF.apply_eq_zero_iff _ _).mpr ht, zero_mul, zero_mul]
+      refine Cslib.Probability.PMF.tsum_mul_congr_support ν_rel fun t ht => ?_
+      rw [hlift_proj t ht]
     have hT_eq : (∑' p, (ν_rel.map proj) p * T_det p) = ∑' t, ν_rel t * T_step t := by
       rw [Cslib.Probability.PMF.tsum_map_mul]
-      refine tsum_congr fun t => ?_
-      by_cases ht : t ∈ ν_rel.support
-      · dsimp only [T_det]
-        rw [hlift_proj t ht]
-      · rw [(PMF.apply_eq_zero_iff _ _).mpr ht, zero_mul, zero_mul]
+      refine Cslib.Probability.PMF.tsum_mul_congr_support ν_rel fun t ht => ?_
+      dsimp only [T_det]
+      rw [hlift_proj t ht]
     have hC_eq : (∑' t, ν_rel t * (C.charge t.state o : ℝ≥0∞)) = (C.charge s o : ℝ≥0∞) := by
       calc
         (∑' t, ν_rel t * (C.charge t.state o : ℝ≥0∞))
           = ∑' t, ν_rel t * (C.charge s o : ℝ≥0∞) := by
-              refine tsum_congr fun t => ?_
-              by_cases ht : t ∈ ν_rel.support
-              · rw [hs t ht]
-              · rw [(PMF.apply_eq_zero_iff _ _).mpr ht, zero_mul, zero_mul]
+              refine Cslib.Probability.PMF.tsum_mul_congr_support ν_rel fun t ht => ?_
+              rw [hs t ht]
         _ = (C.charge s o : ℝ≥0∞) := by
               rw [ENNReal.tsum_mul_right, ν_rel.tsum_coe, one_mul]
     refine ⟨?_, ?_, ?_⟩

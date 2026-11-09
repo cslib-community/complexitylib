@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Protocols.VOLE.Circuit
 public import CslibFrontier.Crypto.Protocols.VOLE.AdaptiveMulCheck
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 
 /-!
@@ -163,12 +164,10 @@ theorem circuitReceiverView_eq_expand (C : Circuit (arithSignature F) (p + k) m)
   intro c hc
   have hfirst := circuitPublicFirst_correct C statement.1 w statement.2 hy c
     (valid_of_mem_support_voleIdealDist hc)
-  simp only [OracleComp.interpret_bind, OracleComp.interpret_pure,
-    ProbOracleComp.interpret_query, OracleComp.sumHandler, PMF.monad_bind_eq_bind,
-    PMF.monad_pure_eq_pure, PMF.pure_bind, VOLECorrelation.senderView, interpret_liftVerifier]
-  simp only [circuitReceiverAdapter, OracleComp.interpret_bind, OracleComp.interpret_pure,
-    PMF.map_bind, PMF.pure_map, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-    PMF.bind_bind, PMF.pure_bind]
+  simp only [pmf_norm, OracleComp.interpret_bind, OracleComp.interpret_pure,
+    ProbOracleComp.interpret_query, OracleComp.sumHandler, VOLECorrelation.senderView,
+    interpret_liftVerifier]
+  simp only [pmf_norm, circuitReceiverAdapter, OracleComp.interpret_bind, OracleComp.interpret_pure]
   congr 1
   funext verifier
   simp [circuitCheck, maskedMulCheck, liftProver, ProbOracleComp.query,

@@ -1529,8 +1529,7 @@ private theorem exactWithBad_map_fst (q : PermQuery α) (st : Cache α × Bool)
         rw [hans, ← uniformOfFintype_bind_ite_uniformOfFinset (unusedRange cache) hne,
           PMF.map_bind]
       rw [PMF.map_bind]
-      congr 1
-      funext y₀
+      congr 1 with y₀ : 1
       by_cases hy₀ : y₀ ∈ unusedRange cache
       · have his : (invLookup cache y₀).isSome = false := by
           rw [Option.isSome_eq_false_iff, Option.isNone_iff_eq_none]
@@ -1553,8 +1552,7 @@ private theorem exactWithBad_map_fst (q : PermQuery α) (st : Cache α × Bool)
         rw [hans, ← uniformOfFintype_bind_ite_uniformOfFinset (unusedDomain cache) hne,
           PMF.map_bind]
       rw [PMF.map_bind]
-      congr 1
-      funext x₀
+      congr 1 with x₀ : 1
       by_cases hx₀ : x₀ ∈ unusedDomain cache
       · have his : (cache.lookup x₀).isSome = false := by
           rw [Option.isSome_eq_false_iff, Option.isNone_iff_eq_none]

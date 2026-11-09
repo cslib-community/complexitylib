@@ -155,46 +155,9 @@ theorem fits_fastCutTrials_of_logWidth_four {n w : ℕ} (hn : 2 ≤ n) (hw : log
 `InputFits w (n :: flattenMatrix W)`. -/
 theorem inputFits_fastCut {n w : ℕ} {W : Fin n → Fin n → ℕ} (hn : 2 ≤ n)
     (hw : logWidth 4 n ≤ w) (htot : Fits w (totalDoubledWeight W)) :
-    InputFits w (n :: flattenMatrix W) := by
-  have hws := fits_fastCutWorkspace_of_logWidth_four hn hw
-  refine ⟨?_, ?_⟩
-  · simp only [List.length_cons, length_flattenMatrix]
-    exact hws.of_le (by omega)
-  · intro v hv
-    rcases List.mem_cons.mp hv with rfl | hmem
-    · exact hws.of_le (by nlinarith)
-    · exact htot.of_le (mem_flattenMatrix_le_totalDoubledWeight W hmem)
-
-/-- In `Data.init (n :: flattenMatrix W)`, memory holds `W` at base `2` with stride `n`. -/
-theorem holdsMatrix_init_fastCut {r n : ℕ} (W : Fin n → Fin n → ℕ) :
-    HoldsMatrix (Data.init (r := r) (n :: flattenMatrix W)).mem 2 n W := by
-  intro i j
-  have haddr : 2 + i.val * n + j.val = (1 + (i.val * n + j.val)) + 1 := by omega
-  rw [haddr, Data.init_mem_succ]
-  have hlt : i.val * n + j.val < (flattenMatrix W).length := by
-    rw [length_flattenMatrix]
-    nlinarith [i.isLt, j.isLt]
-  change (n :: flattenMatrix W).getD (1 + (i.val * n + j.val)) 0 = W i j
-  have hcons : (n :: flattenMatrix W).getD (1 + (i.val * n + j.val)) 0 =
-      (flattenMatrix W).getD (i.val * n + j.val) 0 := by
-    rw [Nat.add_comm 1, List.getD_cons_succ]
-  rw [hcons, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hlt, Option.getD_some]
-  exact getElem_flattenMatrix W i j
-
-private theorem toOuterMeasure_mono_support {α : Type} (m : ProbComp α) {S T : Set α}
-    (h : ∀ a ∈ m.support, a ∈ S → a ∈ T) :
-    m.eval.toOuterMeasure S ≤ m.eval.toOuterMeasure T := by
-  classical
-  rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply]
-  refine tsum_le_tsum fun a => ?_
-  by_cases ha : a ∈ S
-  · simp only [Set.indicator_of_mem ha]
-    by_cases hs : a ∈ m.support
-    · simp only [Set.indicator_of_mem (h a hs ha), le_rfl]
-    · have hs' : a ∉ m.eval.support := by rwa [ProbComp.support_eval]
-      have hz : m.eval a = 0 := (PMF.apply_eq_zero_iff m.eval a).mpr hs'
-      simp [hz]
-  · simp [Set.indicator_of_notMem ha]
+    InputFits w (n :: flattenMatrix W) :=
+  inputFits_cons_flattenMatrix (fits_fastCutWorkspace_of_logWidth_four hn hw) (by omega)
+    (by nlinarith) htot
 
 /-! ### Register layout (`r = 24`) -/
 
@@ -2062,7 +2025,7 @@ theorem branchContractAndPush_spec {n w fp b k : ℕ} {W₀ : Fin n → Fin n �
     (Lean.Karger.survives_contractLaw (fastCutThreshold_ge_two (by omega))
       (Nat.le_of_lt (fastCutThreshold_lt (by omega))) hmin hC hB hBmin)
   rw [← hlaw, ProbComp.eval_map, PMF.toOuterMeasure_map_apply] at hprob
-  refine hprob.trans (toOuterMeasure_mono_support m fun z _ hz => ?_)
+  refine hprob.trans (PMF.toOuterMeasure_mono _ fun z ⟨hz, _⟩ => ?_)
   obtain ⟨W', part', B', hgraph, hC', hpb⟩ := hz
   exact ⟨W', part', B', hC', frameGraph_eq_iff.mp hgraph,
     isNonTrivialCut_of_pullbackCut part' (hpb ▸ isNonTrivialCut_pullbackCut hC.surj hB),
@@ -3012,7 +2975,7 @@ theorem fastCutCode_law {n w : ℕ} {W : Fin n → Fin n → ℕ}
   have hsp := fits_sp_of_ws hn hws
   obtain ⟨y_s, e_s, hm_s, hsb_s, hn_s⟩ := fastCutSetup_exec (W := W) hn hw
   have htree := fastCutTree_law hn hW hsb_s hn_s
-    (hm_s ▸ holdsMatrix_init_fastCut W) hws hsp htot
+    (hm_s ▸ holdsMatrix_init_single W) hws hsp htot
   exact (ExecRandLaw.seq_det e_s.within htree).mono
     (fun _ h => hm_s ▸ h.1) le_rfl le_rfl
 
@@ -3618,7 +3581,7 @@ theorem fastCutHighProbCode_law {n w : ℕ} {W : Fin n → Fin n → ℕ}
     fastCutHighProbSetup_exec (W := W) hn hw
   have hinv₀ : KSAmpInv 2 n (fastCutTrials n) 0 W
       (Data.init (r := 24) (n :: flattenMatrix W)).mem y_s :=
-    ⟨hsb_s, hn_s_r, hnt_s, hti_s, hm_s ▸ holdsMatrix_init_fastCut W,
+    ⟨hsb_s, hn_s_r, hnt_s, hti_s, hm_s ▸ holdsMatrix_init_single W,
       hm_s ▸ Modifies.refl _ _, fun h0 => absurd h0 (by omega)⟩
   have hloop := fastCutAmpLoop_law (fastCutTrials_pos n) hn hW h1 hws hsp hhp_fit htot
     (fastCutTrials n) 0 y_s (Nat.zero_add _) hinv₀

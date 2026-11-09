@@ -187,10 +187,7 @@ private theorem exists_costCodes {n : α → ℕ} {C : α × List Bool → ℕ}
       (binaryWord (m a) (C (a, u))).length = m a := by
     have hb := hbound (a, u)
     simp only [encNat_apply, length_encPair, encBits_apply, hu] at hb
-    have hbits : (C (a, u)).bits.length ≤ m a := by
-      rw [show 2 * (enc a).length + 1 + n a + 1 =
-        2 * (enc a).length + n a + 2 by omega] at hb
-      exact hb
+    have hbits : (C (a, u)).bits.length ≤ m a := by grind
     simp only [binaryWord, List.length_append, List.length_replicate, List.length_reverse]
     omega
   obtain ⟨code, hcode, hsem⟩ := exists_uniformCircuitCodes hn hm

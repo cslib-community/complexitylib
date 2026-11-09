@@ -219,8 +219,7 @@ theorem pi_bind_update_pair [DecidableEq ι] (p : ∀ i, PMF (α i)) (i : ι) :
       (pi (Function.update p i (PMF.pure value))).map (value, ·)) =
         (pi p).map (fun outcome => (outcome i, outcome)) := by
   conv_rhs => rw [← pi_bind_update p i, PMF.map_bind]
-  congr 1
-  funext value
+  congr 1 with value : 1
   apply map_congr_on_support
   intro outcome houtcome
   have h := (mem_support_pi_iff _ _).mp houtcome i
@@ -258,8 +257,7 @@ theorem pi_bind_pair [∀ i, Finite (β i)] (p : ∀ i, PMF (α i))
         (fun outcome => (fun i => (outcome i).1, fun i => (outcome i).2)) =
       (pi p).bind (fun outcome => (pi (fun i => kernel i (outcome i))).map (outcome, ·)) := by
   rw [pi_bind, PMF.map_bind]
-  congr 1
-  funext outcome
+  congr 1 with outcome : 1
   rw [pi_map, PMF.map_comp]
   rfl
 
