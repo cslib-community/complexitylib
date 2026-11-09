@@ -1702,6 +1702,7 @@ public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.
 public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.Interfaces
 public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.Promise
 public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.Separation
+public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.ShapeBounds
 public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.TruncatedBoundedDegree
 public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.TruncatedEntry
 public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.TruncatedSum
