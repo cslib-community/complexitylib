@@ -61,11 +61,11 @@ Distinguish these dispositions in the issue:
 
 - **Completed:** the agreed acceptance criteria are satisfied.
 - **Milestone completed:** a bounded deliverable is finished; link the remaining objective.
-- **Deferred / not planned:** work is intentionally stopped; preserve its results and explain
-  what remains unproved.
+- **Not planned (dropped):** work is intentionally stopped; preserve its results, explain what
+  remains unproved, and remove the direction from `ROADMAP.md`, which has no deferred tier.
 
 Close a milestone issue as completed when its own criteria are met. Keep the broader objective
-open, or, when authorized to defer it, close it as not planned and link the completed milestone.
+open, or, when authorized to drop it, close it as not planned and link the completed milestone.
 PR descriptions must distinguish mathematical progress from infrastructure, refactoring, and
 documentation progress.
 
@@ -468,17 +468,20 @@ still waiting. Authors do not queue their own PRs.
 Merge `main` into a PR only when it conflicts with `main`, needs a change on `main` to pass CI, or a
 lower stacked PR has landed. The merge queue tests every PR on top of the current `main`, and `main`
 does not require branches to be up to date, so refreshing an approved PR only replaces the approved
-head.
+head. After the merge, regenerate the import aggregates with `lake exe mk_all`, or let the opt-in
+[`leanagg` driver](CONTRIBUTING.md#proposing-and-contributing-work) merge them; never trust a
+`merge=union` result, which keeps deleted imports and can misorder added ones.
 
 A restack keeps its approval when `python3 scripts/check_restack.py <approved head> <new head>`
 passes and CI passes at the new head. The script replays the approved change onto the `main` that
 the new head is based on, which is what the merge queue would have built from the approved head,
-and passes only when the new head's tree is exactly that replay. The one exception is that the
-`mk_all` import aggregates may order their lines differently, since CI's `mk_all --check` pins the
-order. A conflict in the replay, and any other difference, fails it. The replay merges
-`references.bib` entry by entry, as `scripts/resolve_bib_conflict.py` does, so a bibliography
-merge written by that script, with nothing else changed, passes. After `git fetch origin`, run the
-script from a checkout of current `origin/main`, not of the PR's branch, which could change it.
+and passes only when the new head's tree is exactly that replay. The one exception is the
+`mk_all` import aggregates, which must instead be exactly what `lake exe mk_all` writes for the new
+head's tree. A conflict in the replay elsewhere, and any other difference, fails it. The replay
+merges `references.bib` entry by entry, as `scripts/resolve_bib_conflict.py` does, so a
+bibliography merge written by that script, with nothing else changed, passes. After
+`git fetch origin`, run the script from a checkout of current `origin/main`, not of the PR's
+branch, which could change it.
 An approval given while a PR is based on another branch also names that branch's head, and the
 check then needs `--approved-base <that head>`. Without it, the lower branch's changes, which this
 review did not cover, would carry the approval if the lower PR never landed. Anyone, including

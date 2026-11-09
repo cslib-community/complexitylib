@@ -191,8 +191,7 @@ private lemma card_mul_le_of_injOn (a : tm.AbsCfg) (t : ℕ) {S : Finset ℕ}
         _ ≤ 2 ^ Nat.log 2 m := Nat.pow_le_pow_right two_pos hlog
         _ ≤ m := Nat.pow_log_le_self 2 hm0
     have hmP : m ≤ 2 * (m - (Fintype.card (Option tm.State) + 1) ^ L) := by omega
-    calc m * L ≤ 2 * (m - (Fintype.card (Option tm.State) + 1) ^ L) * L :=
-          Nat.mul_le_mul_right _ hmP
+    calc m * L ≤ 2 * (m - (Fintype.card (Option tm.State) + 1) ^ L) * L := by gcongr
       _ = 2 * ((m - (Fintype.card (Option tm.State) + 1) ^ L) * L) := by ring
       _ ≤ 2 * t := Nat.mul_le_mul_left _ (hcnt.trans hsum)
 

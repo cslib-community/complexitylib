@@ -37,7 +37,20 @@ def bib(*entries: str) -> str:
     return "\n\n".join(entries) + "\n"
 
 
-AGGREGATE = "-- generated\n\nimport A\nimport C\nimport E\n"
+LAKEFILE = 'name = "fixture"\n\n[[lean_lib]]\nname = "Complexity"\n'
+PREAMBLE = "module  -- shake: keep-all --deprecated_module: ignore\n\n"
+
+
+def aggregate(*names: str, preamble: str = PREAMBLE, keyword: str = "public import") -> str:
+    """`Complexity.lean` importing `Complexity.<name>` for each name, in the order given."""
+    return preamble + "".join(f"{keyword} Complexity.{name}\n" for name in names)
+
+
+def modules(*names: str) -> dict[str, str]:
+    return {f"Complexity/{name}.lean": f"theorem {name.lower()}_holds : True := trivial\n"
+            for name in names}
+
+
 LIB = "namespace Foo\ndef x := 1\nend Foo\n\nnamespace Bar\ndef y := 2\nend Bar\n"
 
 
@@ -48,7 +61,9 @@ class RestackTests(unittest.TestCase):
         self.addCleanup(tmp.cleanup)
         self.root = pathlib.Path(tmp.name)
         self.git("init", "-q", "-b", "main")
-        self.commit("base", {"Complexity.lean": AGGREGATE, "Lib.lean": LIB,
+        # `merge=union` is what `main` used before #3601; the replay must not depend on it.
+        self.commit("base", {"lakefile.toml": LAKEFILE, "Complexity.lean": aggregate("A", "C", "E"),
+                             **modules("A", "C", "E"), "Lib.lean": LIB,
                              ".gitattributes": "Complexity.lean merge=union\n"})
 
     def git(self, *args: str) -> str:
@@ -81,11 +96,10 @@ class RestackTests(unittest.TestCase):
         return code, output.getvalue()
 
     def feature(self, files: dict[str, str | bytes | None] | None = None) -> str:
-        """A PR branch adding `import B` and a module; returns its approved head."""
+        """A PR branch adding the module `Complexity.B`; returns its approved head."""
         self.git("checkout", "-q", "-b", "feature", "main")
-        return self.commit("feature", files or {
-            "Complexity.lean": "-- generated\n\nimport A\nimport B\nimport C\nimport E\n",
-            "B.lean": "theorem b : True := trivial\n"})
+        return self.commit("feature", files or {"Complexity.lean": aggregate("A", "B", "C", "E"),
+                                                **modules("B")})
 
     def on_main(self, files: dict[str, str | bytes | None]) -> str:
         self.git("checkout", "-q", "main")
@@ -118,14 +132,40 @@ class RestackTests(unittest.TestCase):
         code, out = self.check(approved, self.git("rev-parse", "HEAD"))
         self.assertEqual(code, 0, out)
 
-    def test_aggregate_in_sorted_order_passes(self) -> None:
+    def test_aggregate_as_mk_all_writes_it_passes(self) -> None:
         approved = self.feature()
-        self.on_main({"Complexity.lean": "-- generated\n\nimport A\nimport Bb\nimport C\nimport E\n",
-                      "Bb.lean": "def bb := 0\n"})
-        sorted_imports = "-- generated\n\nimport A\nimport B\nimport Bb\nimport C\nimport E\n"
-        code, out = self.check(approved, self.merge_main({"Complexity.lean": sorted_imports}))
+        self.on_main({"Complexity.lean": aggregate("A", "Bb", "C", "E"), **modules("Bb")})
+        # The union replay puts `main`'s line first, out of order.
+        regenerated = aggregate("A", "B", "Bb", "C", "E")
+        code, out = self.check(approved, self.merge_main({"Complexity.lean": regenerated}))
         self.assertEqual(code, 0, out)
-        self.assertIn("aggregates differing only in line order: Complexity.lean", out)
+        self.assertIn("unlike the replay: Complexity.lean", out)
+
+    def test_aggregate_conflict_resolved_as_mk_all_writes_it_passes(self) -> None:
+        # Without a merge attribute, the replay conflicts in the aggregate, as on GitHub.
+        self.on_main({".gitattributes": "# no aggregate merge driver\n"})
+        approved = self.feature()
+        self.on_main({"Complexity.lean": aggregate("A", "Bb", "C", "E"), **modules("Bb")})
+        new = self.merge_main({"Complexity.lean": aggregate("A", "B", "Bb", "C", "E")})
+        code, out = self.check(approved, new)
+        self.assertEqual(code, 0, out)
+        self.assertIn("unlike the replay: Complexity.lean", out)
+
+    def test_import_resurrected_by_a_union_merge_is_reported(self) -> None:
+        # The PR moves `Complexity.C` to `Complexity.D`; `main` adds `Complexity.B` next to it.
+        approved = self.feature({"Complexity.lean": aggregate("A", "D", "E"),
+                                 "Complexity/C.lean": None, **modules("D")})
+        self.on_main({"Complexity.lean": aggregate("A", "B", "C", "E"), **modules("B")})
+        union = self.merge_main()
+        self.assertIn("import Complexity.C\n", (self.root / "Complexity.lean").read_text())
+        code, out = self.check(approved, union)
+        self.assertEqual(code, 1, out)
+        self.assertIn("Complexity.lean: not what `lake exe mk_all` writes", out)
+        self.assertIn("+public import Complexity.C", out)
+        regenerated = self.commit("mk_all", {"Complexity.lean": aggregate("A", "B", "D", "E")})
+        code, out = self.check(approved, regenerated)
+        self.assertEqual(code, 0, out)
+        self.assertIn("unlike the replay: Complexity.lean", out)
 
     def stack(self, lower_final: str) -> tuple[str, str, str]:
         """An upper PR approved on a lower PR that then lands, squashed, as `lower_final`.
@@ -161,10 +201,11 @@ class RestackTests(unittest.TestCase):
 
     def test_edited_pr_line_is_reported(self) -> None:
         approved = self.feature()
-        code, out = self.check(approved, self.commit("edit", {"B.lean": "theorem b : True := by trivial\n"}))
+        edit = {"Complexity/B.lean": "theorem b_holds : True := by trivial\n"}
+        code, out = self.check(approved, self.commit("edit", edit))
         self.assertEqual(code, 1, out)
-        self.assertIn("B.lean: the new head differs", out)
-        self.assertIn("+theorem b : True := by trivial", out)
+        self.assertIn("Complexity/B.lean: the new head differs", out)
+        self.assertIn("+theorem b_holds : True := by trivial", out)
 
     def test_carriage_return_cannot_hide_content(self) -> None:
         approved = self.feature({"s.py": "y = 1\n"})
@@ -220,15 +261,50 @@ class RestackTests(unittest.TestCase):
 
     def test_aggregate_with_an_extra_import_is_reported(self) -> None:
         approved = self.feature()
-        new = self.commit("sneak", {
-            "Complexity.lean": "-- generated\n\nimport A\nimport B\nimport C\nimport D\nimport E\n"})
+        new = self.commit("sneak", {"Complexity.lean": aggregate("A", "B", "C", "D", "E")})
         code, out = self.check(approved, new)
         self.assertEqual(code, 1, out)
-        self.assertIn("+import D", out)
+        self.assertIn("+public import Complexity.D", out)
+
+    def test_unsorted_aggregate_is_reported(self) -> None:
+        approved = self.feature()
+        self.on_main({"Complexity.lean": aggregate("A", "Bb", "C", "E"), **modules("Bb")})
+        # This is also what the union replay holds, so the trees are identical.
+        new = self.merge_main({"Complexity.lean": aggregate("A", "Bb", "B", "C", "E")})
+        code, out = self.check(approved, new)
+        self.assertEqual(code, 1, out)
+        self.assertIn("Complexity.lean: not what `lake exe mk_all` writes", out)
+
+    def test_aggregate_switching_style_is_reported(self) -> None:
+        approved = self.feature()
+        self.on_main({"Other.lean": "def o := 0\n"})
+        plain = aggregate("A", "B", "C", "E", preamble="", keyword="import")
+        code, out = self.check(approved, self.merge_main({"Complexity.lean": plain}))
+        self.assertEqual(code, 1, out)
+        self.assertIn("Complexity.lean: not what `lake exe mk_all` writes", out)
+
+    def test_aggregate_of_an_unknown_layout_is_compared_with_the_replay(self) -> None:
+        self.on_main({"lakefile.lean": "-- Lake prefers this file\n"})
+        approved = self.feature()
+        self.on_main({"Other.lean": "def o := 0\n"})
+        code, out = self.check(approved, self.merge_main())
+        self.assertEqual(code, 0, out)
+        self.assertIn("Complexity.lean compared with the replay only", out)
+        reordered = self.commit("reorder", {"Complexity.lean": aggregate("A", "C", "B", "E")})
+        code, out = self.check(approved, reordered)
+        self.assertEqual(code, 1, out)
+        self.assertIn("its `mk_all` content could not be derived: Lake reads `lakefile.lean`", out)
+
+    def test_unusual_module_paths_are_not_derived(self) -> None:
+        for path, mode in (("Complexity/Odd-name.lean", "100644"), ("Complexity/Link", "120000"),
+                           ("Complexity/Sub.lean/X.lean", "100644")):
+            entries = {"Complexity": "040000", "Complexity/A.lean": "100644", path: mode}
+            with self.subTest(path=path), self.assertRaises(check_restack.Underivable):
+                check_restack.canonical_aggregate(entries, "", "Complexity", True)
 
     def test_mode_change_is_reported(self) -> None:
         approved = self.feature()
-        self.git("update-index", "--chmod=+x", "B.lean")
+        self.git("update-index", "--chmod=+x", "Complexity/B.lean")
         self.git("commit", "-q", "-m", "chmod")
         code, out = self.check(approved, self.git("rev-parse", "HEAD"))
         self.assertEqual(code, 1, out)
@@ -293,7 +369,7 @@ class RestackTests(unittest.TestCase):
         honest = self.merge_main()
         self.git("checkout", "-q", "-b", "dishonest", "main")
         self.git("merge", "-q", "--no-ff", "--no-edit", "feature")
-        dishonest = self.commit("edit", {"B.lean": "theorem b : True := by sorry\n"})
+        dishonest = self.commit("edit", {"Complexity/B.lean": "theorem b : True := by sorry\n"})
         self.git("replace", dishonest, honest)
         code, out = self.check(approved, dishonest)
         self.assertEqual(code, 1, out)
@@ -311,6 +387,13 @@ class RestackTests(unittest.TestCase):
             code, out = self.check(approved, new)
         self.assertEqual(code, 1, out)
         self.assertIn("notes.txt", out)
+
+    def test_configured_aggregate_driver_is_replaced_by_this_checkout(self) -> None:
+        self.git("config", "merge.leanagg.driver", "true")
+        options = check_restack.driver_config(self.root)
+        drivers = [option for option in options if option.startswith("merge.leanagg.driver=")]
+        self.assertEqual(len(drivers), 1, options)
+        self.assertTrue(drivers[0].endswith("resolve_aggregate_conflict.py %O %A %B"), drivers)
 
     def test_configured_driver_shadowing_a_builtin_is_refused(self) -> None:
         approved = self.feature()
@@ -478,6 +561,13 @@ class AggregateListTests(unittest.TestCase):
     def test_listed_aggregates_exist(self) -> None:
         for path in check_restack.AGGREGATES:
             self.assertTrue((ROOT / path).is_file(), path)
+
+    @unittest.skipUnless(shutil.which("git") and (ROOT / ".git").exists(), "needs a git checkout")
+    def test_committed_aggregates_are_what_mk_all_writes(self) -> None:
+        # Keeps the derivation in step with `scripts/MkAll.lean` and the Lake layout.
+        head = check_restack.out(ROOT, "rev-parse", "HEAD")
+        canonical, wrong, underivable = check_restack.check_aggregates(ROOT, head, head)
+        self.assertEqual(sorted(canonical), sorted(check_restack.AGGREGATES), (wrong, underivable))
 
 
 if __name__ == "__main__":

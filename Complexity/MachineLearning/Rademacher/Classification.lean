@@ -322,10 +322,9 @@ private theorem PACLearning.IsERM.rademacherComplexity_le_add [Fintype α] (D : 
     have hmis : (empiricalMiscount (A S) S : ℝ) / m ≤ (empiricalMiscount c S : ℝ) / m :=
       div_le_div_of_nonneg_right (by exact_mod_cast hmin c hc) hm'.le
     linarith [hS'.1 (A S) hAC, hS'.2]
-  · refine (ENNReal.toReal_mono (ENNReal.add_ne_top.2 ⟨Probability.PMF.toOuterMeasure_ne_top _ _,
-      Probability.PMF.toOuterMeasure_ne_top _ _⟩) (MeasureTheory.measure_union_le _ _)).trans ?_
-    rw [ENNReal.toReal_add (Probability.PMF.toOuterMeasure_ne_top _ _)
-      (Probability.PMF.toOuterMeasure_ne_top _ _)]
+  · refine (ENNReal.toReal_le_add (MeasureTheory.measure_union_le _ _)
+      (Probability.PMF.toOuterMeasure_ne_top _ _)
+      (Probability.PMF.toOuterMeasure_ne_top _ _)).trans ?_
     linarith
 
 /-- **Agnostic learning by empirical risk minimization**: with probability at least `1 - δ` over

@@ -337,10 +337,7 @@ theorem length_mul_edgeCost_steinerMST_le {δ : α → α → ℕ} (hsymm : ∀ 
       exact fun hx => .trans _ _ _ (ih1 hx) (ih2 (.trans _ _ _ (.symm _ _ hxy) hx))
   have hRu : ∀ a ∈ R, Relation.EqvGen (fun x y => (x, y) ∈ T') a u := fun a ha =>
     hlift a u (hT a ha u hu) (hT a ha u hu)
-  have hT'u : ∀ e ∈ T', Relation.EqvGen (fun x y => (x, y) ∈ T') e.1 u := by
-    intro e he
-    have := of_decide_eq_true (List.mem_filter.1 he).2
-    exact hlift _ _ this this
+  have hT'u : ∀ e ∈ T', Relation.EqvGen (fun x y => (x, y) ∈ T') e.1 u := by grind
   -- Step 2: double it.
   set H := T' ++ T'.map Prod.swap with hH
   have hswap : ((T'.map Prod.swap).map undirected).Perm (T'.map undirected) := by

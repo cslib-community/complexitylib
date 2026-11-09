@@ -297,10 +297,7 @@ theorem searchM_spec {w : Array α} {sa : Array ℕ} (hsa : IsSuffixArray w.toLi
     have := hhi4 r (by omega) hr
     rw [← Bool.not_eq_true, ret_probeAtMostM w sa p hr] at this
     exact this h
-  have hlohi : lo ≤ hi := by
-    by_contra hc
-    have hr : hi < sa.size := by omega
-    exact absurd ((hatmost hi hr).mp (le_of_lt ((hbelow hi hr).mpr (by omega)))) (lt_irrefl _)
+  have hlohi : lo ≤ hi := by grind
   refine ⟨hlohi, by omega, fun r hr => ?_⟩
   rw [List.prefix_iff_eq_take]
   constructor

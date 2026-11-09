@@ -68,10 +68,10 @@ def arithmeticAmplify (g : Graph Constraint) : Graph Constraint :=
 @[fun_prop]
 theorem isPolyTime_arithmeticAmplify {Input : Type} {input : Input ↪ List Bool}
     {graph : Input → Graph Constraint}
-    (hgraph : ComputableInPolyTime graph input (encoding (encPi (encPi encBool))))
+    (hgraph : ComputableInPolyTime graph input (encoding encConstraintTable))
     (hwellFormed : ∀ x, (graph x).WellFormed) :
     ComputableInPolyTime (fun x => arithmeticAmplify (graph x))
-      input (encoding (encPi (encPi encBool))) := by
+      input (encoding encConstraintTable) := by
   have hcost := RotationMap.polytime_arithmeticExpanderRotate (encFinEnum Label)
   unfold arithmeticAmplify
   exact isPolyTime_amplifyIter_clog hgraph hwellFormed RotationMap.arithmeticExpander
