@@ -53,7 +53,7 @@ theorem isOneSidedTester_triangleTester_three :
     classical
     have hne : (G.cliqueFinset 3).Nonempty := by
       rw [nonempty_iff_ne_empty, Ne, cliqueFinset_eq_empty_iff]
-      exact fun h => not_isFar_of h (by norm_num) hG
+      exact fun h => not_isFar_of_property h (by norm_num) hG
     have hle : #(G.cliqueFinset 3) ≤ 1 := card_cliqueFinset_le.trans (by simp)
     rw [acceptProb_triangleTester, le_antisymm hle hne.card_pos]
     norm_num
@@ -168,7 +168,7 @@ theorem isOneSidedTester_queryAdj :
     simp
   reject G hG := by
     classical
-    have hG' : ¬ G.Adj 0 1 := fun h => not_isFar_of h (by norm_num) hG
+    have hG' : ¬ G.Adj 0 1 := fun h => not_isFar_of_property h (by norm_num) hG
     rw [acceptProb_eq, evalWith_queryAdj, decide_eq_false hG']
     norm_num
 
