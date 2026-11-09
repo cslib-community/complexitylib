@@ -12,7 +12,8 @@ import Mathlib.Algebra.Field.ZMod
 
 Non-vacuous concrete evaluations and end-to-end protocol instantiations over `ZMod 5` (`p = 5`,
 `m = 3`, threshold `t = 1` with `2 * t = 2 < 3 = m`, evaluation points `1, 2, 3 : ZMod 5`)
-exercising `CslibFrontier.Crypto.Protocols.MPC.BGW`:
+exercising `CslibFrontier.Crypto.Protocols.SecretSharing.Shamir.Linear` and
+`CslibFrontier.Crypto.Protocols.MPC.BGW`:
 
 1. **Shamir parameters, linear homomorphisms, and Lagrange weights (`ZMod 5`, `m = 3`, `t = 1`):**
    explicit 3-party degree-1 Shamir parameter bundle `params3`, additive and scalar-multiplicative
@@ -97,6 +98,13 @@ example :
       (fun i : ({1, 2} : Finset (Fin 3)) =>
         (2 : ZMod 5) * share params3 rA 3 i) = (1 : ZMod 5) :=
   reconstruct_share_smul params3 2 rA 3 (by decide)
+
+/-- Additivity of `Shamir.reconstruct` on concrete share vectors over `{0, 1}`. -/
+example (σ₁ σ₂ : ({0, 1} : Finset (Fin 3)) → ZMod 5) :
+    reconstruct params3 ({0, 1} : Finset (Fin 3)) (σ₁ + σ₂) =
+      reconstruct params3 ({0, 1} : Finset (Fin 3)) σ₁ +
+        reconstruct params3 ({0, 1} : Finset (Fin 3)) σ₂ :=
+  reconstruct_add params3 ({0, 1} : Finset (Fin 3)) σ₁ σ₂
 
 /-! ### 2. Multiplicative property and BGW degree reduction (`2 * t < 3`) -/
 
