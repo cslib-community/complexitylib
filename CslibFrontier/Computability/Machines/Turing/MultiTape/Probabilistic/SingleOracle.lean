@@ -130,8 +130,7 @@ theorem runOracle_singleOracle (i₀ : ι) (machine : MultiTapePTM k Symbol Stat
           simp only [embedSingleConfig, ↓reduceIte]
         simp only [MultiTapeMachine.runConfigFrom, embedSingleConfig_tapes, hs, bind_map_left,
           map_bind]
-        congr 1
-        funext bit
+        congr 1 with bit : 1
         simp only [singleOracle, hanswer]
         cases htr : machine.tr state cfg.tapes.inputSymbol cfg.tapes.workTapeSymbols
             cfg.answerSymbols bit with

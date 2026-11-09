@@ -208,12 +208,6 @@ noncomputable def writer : CounterProgram where
 
 variable {ntm D} (w : List Bool) {B : ℕ}
 
-private theorem flatMap_range_true (M : ℕ) :
-    (List.range M).flatMap (fun _ => [true]) = List.replicate M true := by
-  induction M with
-  | zero => rfl
-  | succ M ih => simp [List.range_succ, List.replicate_succ', ih]
-
 /-- Bounded registers. -/
 private theorem bounded_regs {L u v y : ℕ} (hL : L ≤ B) (hu : u ≤ B) (hv : v ≤ B) (hy : y ≤ B) :
     ∀ r ∈ [L, u, v, y], r ≤ B := by
@@ -266,8 +260,8 @@ private theorem reachesOut_ones {b body exit M : ℕ} {bound : Expr}
     [w.length, i₀, 0, 0] (bounded_regs hL hi₀ (by omega) (by omega))
     (by simp)
   obtain ⟨rfl, -⟩ := hinv
-  rw [flatMap_range_true] at hreach
-  exact hreach
+  rwa [List.flatMap_def, List.map_const', List.length_range,
+    List.flatten_replicate_singleton] at hreach
 
 /-- The entry at labels `29` and `30`: compare the Boolean value of an expression with `0`. -/
 private theorem reachesOut_bit {l : ℕ} {e : Expr} {regs : List ℕ} {b : Bool}

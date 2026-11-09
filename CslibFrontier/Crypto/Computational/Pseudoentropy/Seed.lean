@@ -14,6 +14,7 @@ public import CslibFrontier.Probability.EntropyConcentration
 import CslibFrontier.Computability.Probabilistic.CoinTape
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Tactic.PolyTime.Init
 
 /-!
@@ -80,7 +81,7 @@ theorem exists_observationBound (pair : SamplablePair) :
   have hsupported : pair.encode n observation ∈ (ProbComp.eval
       (Prod.fst <$> pair.sample n)).support := by
     obtain ⟨result, hresult, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hobservation
-    simp only [ProbComp.eval_map, pair.eval_sample, PMF.map_comp, Function.comp_def]
+    simp only [pmf_norm, pair.eval_sample]
     exact (PMF.mem_support_map_iff _ _ _).mpr ⟨result, hresult, rfl⟩
   simpa only [encBits, Function.Embedding.refl_apply, encUnary_apply, List.length_replicate] using
     hbound n (pair.encode n observation) hsupported
@@ -211,8 +212,7 @@ theorem isPPTOn_sampleWithSeed : IsPPTOn encUnary
 theorem eval_sampleWithSeed (n : ℕ) : ProbComp.eval (seed.sampleWithSeed n) =
     (seed.jointWithSeed n).map (fun ((obs, label), bits) =>
       ((pair.encode n obs, label), List.ofFn bits)) := by
-  simp only [sampleWithSeed, bind_pure_comp, ProbComp.eval_map, jointWithSeed, PMF.map_comp,
-    Function.comp_def, seed.encode_output]
+  simp only [pmf_norm, sampleWithSeed, bind_pure_comp, jointWithSeed, seed.encode_output]
   simp only [BitString.eval_sampleList, BitString.uniformList, PMF.map_comp, Function.comp_def]
 
 /-- Every possible output has at least the probability of one complete seed. -/

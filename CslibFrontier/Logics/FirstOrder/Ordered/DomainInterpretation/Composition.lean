@@ -105,8 +105,7 @@ private theorem exists_unrank_comp (hI : I.Admissible) :
     refine ⟨i, ?_⟩
     rw [hi]
     conv_rhs => rw [← flattenTuple_finProdFinEquiv x]
-    congr 1
-    funext j
+    congr 1 with j : 1
     exact unrank_rank (hb j)
   have hφ : StrictMono fun r : Fin (I.card M) => lexEquiv (I.unrank M r) :=
     fun _ _ h => Fin.lt_def.mpr (strictMono_lexRank_unrank h)

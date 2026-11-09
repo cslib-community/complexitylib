@@ -245,10 +245,8 @@ private noncomputable def doubleJointOracle (S : IndexedSignatureScheme) (b : Bo
     (challengeSk otherSk : List Bool) (bound : ℕ → ℕ → ℕ) (n : ℕ) (q : Unit × List Bool)
     (state : List (ℕ × List Bool) × List (ℕ × List Bool)) :
     PMF (List Bool × List (ℕ × List Bool) × List (ℕ × List Bool)) :=
-  ((OracleComp.interpret
-    (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-      (fun q' s' => ProbComp.eval (S.indexedSigningOracle n challengeSk q' s')))
-    (S.doubleHandler b otherSk bound n q state.1)).run state.2).map
+  (ProbOracleComp.runWith (fun q' s' => ProbComp.eval (S.indexedSigningOracle n challengeSk q' s'))
+      (S.doubleHandler b otherSk bound n q state.1) state.2).map
       (fun r => (r.1.1, r.1.2, r.2))
 
 /-- Invariant relating the outer log `signed` and the inner `S`-oracle log `ext`: `0` has been used
@@ -273,11 +271,11 @@ private theorem doubleJointOracle_planted {S : IndexedSignatureScheme} {b : Bool
   have hnot0 : 0 ∉ ext.map Prod.fst := fun h0 => hfresh.2 (hslot ▸ hinv.1.mp h0)
   unfold doubleJointOracle doubleHandler
   simp only [hfresh.1, hfresh.2, not_false_eq_true, and_self, ↓reduceIte]
-  simp only [hslot, ↓reduceIte, OracleComp.interpret_map, StateT.run_map,
-    ProbOracleComp.interpret_query, PMF.monad_map_eq_map, PMF.map_comp, Function.comp_def]
-  simp only [StateT.run, indexedSigningOracle, requestDecoder.decode_enc, hpos, hnot0,
-    not_false_eq_true, and_self, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_bind,
-    PMF.pure_map]
+  simp only [hslot, ↓reduceIte, ProbOracleComp.runWith_map, ProbOracleComp.runWith_query,
+    PMF.map_comp, Function.comp_def]
+  simp only [indexedSigningOracle, requestDecoder.decode_enc, hpos, hnot0, not_false_eq_true,
+    and_self, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_bind, PMF.pure_map,
+    Prod.map_apply, id_eq]
 
 private theorem doubleJointOracle_unplanted {S : IndexedSignatureScheme} {b : Bool}
     {challengeSk otherSk : List Bool} {bound : ℕ → ℕ → ℕ} {n : ℕ}
@@ -289,8 +287,8 @@ private theorem doubleJointOracle_unplanted {S : IndexedSignatureScheme} {b : Bo
         PMF.pure (σ, requestDecoder.decode w :: signed, ext) := by
   unfold doubleJointOracle doubleHandler
   simp only [hfresh.1, hfresh.2, not_false_eq_true, and_self, ↓reduceIte]
-  simp only [hslot, ↓reduceIte, OracleComp.interpret_map, StateT.run_map,
-    ProbOracleComp.run_interpret_sample, PMF.monad_map_eq_map, PMF.map_comp, Function.comp_def]
+  simp only [hslot, ↓reduceIte, ProbOracleComp.runWith_map,
+    ProbOracleComp.runWith_sample, PMF.map_comp, Function.comp_def]
   rfl
 
 private theorem doubleJointOracle_refused {S : IndexedSignatureScheme} {b : Bool}
@@ -300,8 +298,8 @@ private theorem doubleJointOracle_refused {S : IndexedSignatureScheme} {b : Bool
       (requestDecoder.decode w).1 ∉ signed.map Prod.fst)) :
     doubleJointOracle S b challengeSk otherSk bound n ((), w) (signed, ext) =
       PMF.pure ([], signed, ext) := by
-  simp only [doubleJointOracle, doubleHandler, href, ↓reduceIte, OracleComp.interpret_pure,
-    StateT.run_pure, PMF.monad_pure_eq_pure, PMF.pure_map]
+  simp only [doubleJointOracle, doubleHandler, href, ↓reduceIte, ProbOracleComp.runWith_pure,
+    PMF.pure_map]
 
 private theorem doubleLogInv_preserve {S : IndexedSignatureScheme} {b : Bool}
     {challengeSk otherSk : List Bool} {bound : ℕ → ℕ → ℕ} {n : ℕ} (hcap : 1 ≤ S.capacity n)
@@ -349,34 +347,28 @@ private theorem map_run_doubleJointOracle {S : IndexedSignatureScheme}
     {α : Type} (program : WordOracleComp Unit α) :
     let bundledSk := if b then encPair encBits encBits (otherSk, challengeSk)
       else encPair encBits encBits (challengeSk, otherSk)
-    (((OracleComp.interpret
-        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-          (doubleJointOracle S b challengeSk otherSk bound n))
-        program).run ([], [])).map (fun r => (r.1, r.2.1)) =
+    ((ProbOracleComp.runWith (doubleJointOracle S b challengeSk otherSk bound n) program
+        ([], [])).map (fun r => (r.1, r.2.1)) =
       ProbComp.eval ((OracleComp.interpret
         (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
           ((S.double hcap).indexedSigningOracle n bundledSk))
         program).run [])) ∧
-    ∀ r ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-          (doubleJointOracle S b challengeSk otherSk bound n))
-        program).run ([], [])).support,
+    ∀ r ∈ (ProbOracleComp.runWith (doubleJointOracle S b challengeSk otherSk bound n) program
+        ([], [])).support,
       doubleLogInv b r.2 := by
   intro bundledSk
-  have hinvAll : ∀ r ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-          (doubleJointOracle S b challengeSk otherSk bound n))
-        program).run ([], [])).support,
+  have hinvAll : ∀ r ∈ (ProbOracleComp.runWith (doubleJointOracle S b challengeSk otherSk bound n)
+      program ([], [])).support,
       doubleLogInv b r.2 := by
     intro r hr
-    exact ProbOracleComp.run_interpret_invariant
+    exact ProbOracleComp.runWith_invariant
       (oracle := doubleJointOracle S b challengeSk otherSk bound n)
       (invariant := doubleLogInv b)
       (fun q st hst a next hmem => doubleLogInv_preserve (hcap n) q st hst a next hmem)
       program ([], []) ⟨by simp, by simp⟩ r.1 r.2 hr
   refine ⟨?_, hinvAll⟩
-  rw [ProbOracleComp.eval_run_interpret]
-  refine ProbOracleComp.run_interpret_map_state_of_invariant _ _
+  rw [ProbOracleComp.eval_run_interpret_eq_runWith]
+  refine ProbOracleComp.runWith_map_state_of_invariant _ _
     Prod.fst (doubleLogInv b)
     (fun q st hst a next hmem => doubleLogInv_preserve (hcap n) q st hst a next hmem)
     ?_ program ([], []) ⟨by simp, by simp⟩
@@ -428,15 +420,13 @@ private theorem eval_indexedEufCmaGame_doubleForgerAt (S : IndexedSignatureSchem
     ProbComp.eval (S.indexedEufCmaGame (S.doubleForgerAt bound adversary b) n) =
       (ProbComp.eval (S.keyGen n)).bind fun challenge =>
         (ProbComp.eval (S.keyGen n)).bind fun other =>
-          ((OracleComp.interpret
-            (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-              (doubleJointOracle S b challenge.2 other.2 bound n))
-            (adversary n (doublePlantPk b challenge.1 other.1))).run ([], [])).map fun r =>
+          (ProbOracleComp.runWith (doubleJointOracle S b challenge.2 other.2 bound n)
+              (adversary n (doublePlantPk b challenge.1 other.1)) ([], [])).map fun r =>
               !r.2.2.contains (0, r.1.2.1) && S.verify challenge.1 0 r.1.2.1 r.1.2.2 := by
   simp only [indexedEufCmaGame, doubleForgerAt, ProbComp.eval_bind, ProbComp.eval_pure,
-    ProbOracleComp.eval_run_interpret, OracleComp.interpret_bind, OracleComp.interpret_pure,
-    StateT.run_bind, StateT.run_pure, ProbOracleComp.run_interpret_sample,
-    ProbOracleComp.run_interpret_run_interpret, PMF.bind_map, PMF.bind_bind, PMF.pure_bind,
+    ProbOracleComp.eval_run_interpret_eq_runWith, OracleComp.interpret_bind,
+    OracleComp.interpret_pure, StateT.run_bind, StateT.run_pure, ProbOracleComp.runWith_sample,
+    ProbOracleComp.runWith_run_interpret, PMF.bind_map, PMF.bind_bind, PMF.pure_bind,
     Function.comp_def]
   rfl
 
@@ -458,8 +448,8 @@ theorem succProbability_indexedEufCmaGame_double_le {S : IndexedSignatureScheme}
         (ProbComp.eval (ProbComp.uniform Bool)).bind fun b =>
           ProbComp.eval (S.indexedEufCmaGame (S.doubleForgerAt bound adversary b) n) := by
     simp only [indexedEufCmaGame, doubleForger, ProbComp.eval_bind, ProbComp.eval_pure,
-      ProbOracleComp.eval_run_interpret, OracleComp.interpret_bind, StateT.run_bind,
-      ProbOracleComp.run_interpret_sample, PMF.bind_map, PMF.bind_bind, Function.comp_def]
+      ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.runWith_bind,
+      ProbOracleComp.runWith_sample, PMF.bind_map, PMF.bind_bind, Function.comp_def]
     exact PMF.bind_comm _ _ _
   have htwo :
       (2 : ℝ≥0∞) * (ProbComp.eval (S.indexedEufCmaGame (S.doubleForger bound adversary) n)) true =

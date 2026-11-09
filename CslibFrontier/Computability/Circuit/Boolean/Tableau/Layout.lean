@@ -706,8 +706,7 @@ theorem posOf_offset {c : ℕ} {l : Loc k State} (hl : l.ColOK T c) :
   · have hi := l.idx_lt
     have h₁ : c * scanWidth k + l.idx < globStart k T := scan_offset_lt_globStart hl l
     have h₂ : (c * scanWidth k + l.idx) / scanWidth k = c := Nat.mul_add_div_of_lt c hi
-    have h₃ : (c * scanWidth k + l.idx) % scanWidth k = l.idx := by
-      rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hi]
+    have h₃ : (c * scanWidth k + l.idx) % scanWidth k = l.idx := Nat.mul_add_mod_of_lt hi
     simp only [h₁, ↓reduceIte, h₂, h₃, ScanLoc.ofIdx_idx]
   · have hi := l.idx_lt
     subst hl

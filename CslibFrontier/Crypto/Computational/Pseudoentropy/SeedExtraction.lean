@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.RepeatedExtraction
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.Seed
+import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
 # Statistical extraction from a sampler's seed
@@ -73,8 +74,7 @@ theorem observation_extraction {pair : SamplablePair} (saved : pair.SeedRealizat
     (fun n => Prod.fst <$> pair.latentSample n) saved.length inverseSlack outputBits
     ?_ key hash hhash (by simpa only [ProbComp.eval_map, pair.eval_latentSample] using hbudget)
   intro n value hvalue
-  simp only [ProbComp.eval_map, pair.eval_latentSample, ← saved.output_distribution,
-    PMF.map_comp, Function.comp_def] at hvalue ⊢
+  simp only [pmf_norm, pair.eval_latentSample, ← saved.output_distribution] at hvalue ⊢
   simpa [BitString, Real.logb_pow] using
     uniform_map_mass_ge (fun bits => (saved.output n bits).1) value hvalue
 
@@ -110,8 +110,7 @@ theorem observation_word_extraction {pair : SamplablePair} (saved : pair.SeedRea
   intro n
   have hpublic : ProbComp.eval (Prod.fst <$> pair.sample n) =
       (ProbComp.eval (Prod.fst <$> pair.latentSample n)).map (pair.encode n) := by
-    simp only [ProbComp.eval_map, pair.eval_latentSample, pair.eval_sample,
-      PMF.map_comp, Function.comp_def]
+    simp only [pmf_norm, pair.eval_latentSample, pair.eval_sample]
   dsimp only
   rw [ProbComp.eval_replicate_map hpublic
     (ExtractionSchedule.count n (saved.length n) (inverseSlack n))]
@@ -206,7 +205,7 @@ theorem remainingSeed_word_extraction {pair : SamplablePair} (saved : pair.SeedR
     (ExtractionSchedule.count n (saved.length n) (inverseSlack n)) (key n) hpublic
   have hleft := congrArg (fun law => law.bind (test n)) hreal.symm
   have hright := congrArg (fun law => law.bind (test n)) hideal
-  simpa only [ProbComp.eval_bind, PMF.bind_map, Function.comp_def, observe] using
+  simpa only [pmf_norm, observe] using
     congrArg₂ Game.advantage hleft hright
 
 end Cslib.Crypto.Pseudoentropy.SamplablePair.SeedRealization

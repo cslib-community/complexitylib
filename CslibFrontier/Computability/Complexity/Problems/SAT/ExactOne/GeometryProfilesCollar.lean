@@ -176,13 +176,13 @@ private theorem profile_collar_core_contact (p : ClauseProfile)
 
 private theorem profile_collar_connector_disjoint (p : ClauseProfile)
     (h : LocalGeometry.PrefixCheck (profilePrefixGeometry p))
-    {s : PortAssignment} (hs : s.Distinct) {e f : LocalIncidence}
+    {s : PortAssignment} {e f : LocalIncidence}
     (he : e ∈ (profilePrefixGeometry p).incidenceRoutes)
     (hf : f ∈ (profilePrefixGeometry p).incidenceRoutes)
     (ht : f.2.1 ∈ (profilePrefixGeometry p).terminalVariables) (hv : f.2.1 ≠ e.2.1) :
     Disjoint (support (collarRoute (collarReflected s) e.2.2))
       (support ((collarRoutes s).getD (terminalIndex (profilePrefixGeometry p) f.2.1) [])) := by
-  apply disjoint_collarRoute_connector hs (profile_prefix_incidence_bounds p h he)
+  apply disjoint_collarRoute_connector (profile_prefix_incidence_bounds p h he)
   rw [← profile_prefix_terminal_endpoint p f.2.1 ht]
   exact LocalGeometry.prefix_variable_not_mem_support h he
     (v := ⟨f.2.1, (LocalGeometry.prefix_incidence_endpoints h hf).2.1⟩) hv
@@ -201,9 +201,7 @@ theorem profileCollarRoute_contact (p : ClauseProfile)
   have hve (ht : e.2.1 ∈ (profilePrefixGeometry p).terminalVariables) : e.2.1 ≠ f.2.1 := by
     intro hv
     exact profile_prefix_shared_variable_not_terminal p he hf hne hv ht
-  have hvf (ht : f.2.1 ∈ (profilePrefixGeometry p).terminalVariables) : f.2.1 ≠ e.2.1 := by
-    intro hv
-    exact profile_prefix_shared_variable_not_terminal p hf he (Ne.symm hne) hv ht
+  have hvf (ht : f.2.1 ∈ (profilePrefixGeometry p).terminalVariables) : f.2.1 ≠ e.2.1 := by grind
   unfold profileCollarRoute at hz hw
   split_ifs at hz with hte <;> split_ifs at hw with htf
   · have hle := (LocalGeometry.prefix_incidence_endpoints h he).2.2.2
@@ -232,14 +230,14 @@ theorem profileCollarRoute_contact (p : ClauseProfile)
     rcases hz with hz | hz
     · exact profile_collar_core_contact p h he hf hne hz hw
     · exact False.elim (Set.disjoint_left.mp
-        (profile_collar_connector_disjoint p h hs hf he hte (hve hte)) hw hz)
+        (profile_collar_connector_disjoint p h hf he hte (hve hte)) hw hz)
   · have hlf := (LocalGeometry.prefix_incidence_endpoints h hf).2.2.2
     rw [profile_prefix_terminal_endpoint p f.2.1 htf] at hlf
     rw [support_collarPrefixRoute hs hlf] at hw
     rcases hw with hw | hw
     · exact profile_collar_core_contact p h he hf hne hz hw
     · exact False.elim (Set.disjoint_left.mp
-        (profile_collar_connector_disjoint p h hs he hf htf (hvf htf)) hz hw)
+        (profile_collar_connector_disjoint p h he hf htf (hvf htf)) hz hw)
   · exact profile_collar_core_contact p h he hf hne hz hw
 
 /-- A collared incidence avoids every nonincident actual auxiliary vertex. -/
@@ -296,16 +294,14 @@ theorem profileCollarRoute_source_not_mem_support (p : ClauseProfile)
     cases hr : (collarRoutes s).getD i [] with
     | nil => rw [hr] at hhead; cases hhead
     | cons a as =>
-      have ha : a = collarOuterPort (s.side i) := by
-        rw [hr] at hhead
-        exact Option.some.inj hhead
+      have ha : a = collarOuterPort (s.side i) := by grind
       rw [← ha]
       exact List.mem_cons_self
   have hsupp : realPoint (collarOuterPort (s.side i)) ∈
       support ((collarRoutes s).getD i []) := Or.inl ⟨_, hm, rfl⟩
   have hd : Disjoint (support (collarRoute (collarReflected s) e.2.2))
       (support ((collarRoutes s).getD i [])) := by
-    apply disjoint_collarRoute_connector hs (profile_prefix_incidence_bounds p h he)
+    apply disjoint_collarRoute_connector (profile_prefix_incidence_bounds p h he)
     rw [← profile_prefix_terminal_endpoint p v ht]
     exact LocalGeometry.prefix_variable_not_mem_support h he
       (v := ⟨v, profile_prefix_terminal_lt p v ht⟩) hv

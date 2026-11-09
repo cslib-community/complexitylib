@@ -79,9 +79,7 @@ theorem not_solvesByzantineAgreement_of_partition {t R : ℕ} (g : P → Fin 3)
   -- Faulty processes replay the cover to each correct process `i`, placed in copy `σ i`.
   let adv : (P → Bool) → ℕ → P → P → M := fun σ r j i =>
     π.send r j (cover r (nbr (i, σ i) j)) i
-  have hmem : ∀ k j, j ∉ ({i | g i = k} : Finset P) ↔ g j ≠ k := by
-    intro k j
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+  have hmem : ∀ k j, j ∉ ({i | g i = k} : Finset P) ↔ g j ≠ k := by grind
   -- With group `k` faulty, a placement `σ` of the other groups compatible with the wiring makes
   -- every correct process behave as its node of the cover.
   have key : ∀ (k : Fin 3) (σ : P → Bool),

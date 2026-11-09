@@ -81,8 +81,7 @@ theorem step_eq_run_interpret (machine : MultiTapePTM k Bool Control Operation)
       OracleComp.interpret_bind, StateT.run_bind,
       ProbOracleComp.interpret_sample, OracleComp.run_interpret_lift,
       bind_map_left]
-    congr 1
-    funext coin
+    congr 1 with coin : 1
     cases machine.tr control pair.1.tapes.inputSymbol pair.1.tapes.workTapeSymbols
         pair.1.answerSymbols coin <;>
       simp only [OracleComp.interpret_map, OracleComp.interpret_pure,

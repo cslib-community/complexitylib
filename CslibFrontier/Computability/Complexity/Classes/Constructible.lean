@@ -165,6 +165,12 @@ private theorem cube_add_le (u v : ℕ) : (u + v) ^ 3 ≤ 8 * (u ^ 3 + v ^ 3) :=
     have h₂ : (2 * u) ^ 3 = 8 * u ^ 3 := by ring
     omega
 
+/-- A power of the number of binary digits of `m` is linear in any bound `M + 1` on `m`. -/
+private theorem exists_pow_length_encNat_le_of_le (d : ℕ) :
+    ∃ C, ∀ m M, m ≤ M + 1 → ((encNat m).length + 1) ^ d ≤ C * M + C := by
+  obtain ⟨C, hC⟩ := exists_pow_length_encNat_le d
+  exact ⟨2 * C, fun m M hm => (hC m).trans (by nlinarith)⟩
+
 /-- If `f n` is computed in binary from words of length `n` within time `O((n + 1) * f n)` and
 `n ≤ f n`, then `(n + 1) * f n` is time-constructible: writing the length of the word in binary
 takes time `O(n ^ 2)`, and the product time polylogarithmic in the factors. -/
@@ -176,8 +182,8 @@ theorem TimeConstructible.succ_mul_of_computableInO {f : ℕ → ℕ} {T : List 
     TimeConstructible fun n => (n + 1) * f n := by
   have hlen := ComputableInO.natSucc.comp ComputableInO.lengthNat
   have h := computableInDegree_mul.inO.comp (hlen.prod hf)
-  obtain ⟨C, hC⟩ := exists_pow_length_encNat_le 3
-  obtain ⟨C₂, hC₂⟩ := exists_pow_length_encNat_le 2
+  obtain ⟨C, hC⟩ := exists_pow_length_encNat_le_of_le 3
+  obtain ⟨C₂, hC₂⟩ := exists_pow_length_encNat_le_of_le 2
   refine TimeConstructible.of_computableInO (150 * C + C₂ + c + 10) h (fun x => ?_)
     (s := fun n =>
     n + 1 + ((encNat n).length + 1) + S n + (2 * (encNat (n + 1)).length + 1 +
@@ -187,29 +193,16 @@ theorem TimeConstructible.succ_mul_of_computableInO {f : ℕ → ℕ} {T : List 
     set n := x.length
     have hfn := hn n
     have h₁ : (n + 1) ^ 2 ≤ 2 * ((n + 1) * f n) + 1 := by nlinarith
-    have h₂ : ((encNat n).length + 1) ^ 2 ≤ C₂ * ((n + 1) * f n) + C₂ := by
-      have := hC₂ n
-      have : C₂ * (n + 1) ≤ C₂ * ((n + 1) * f n + 1) := Nat.mul_le_mul_left _ (by nlinarith)
-      have e : C₂ * ((n + 1) * f n + 1) = C₂ * ((n + 1) * f n) + C₂ := by ring
-      omega
-    have h₃ : f n ≤ (n + 1) * f n := Nat.le_mul_of_pos_left _ (by omega)
+    have h₂ : f n ≤ (n + 1) * f n := Nat.le_mul_of_pos_left _ (by omega)
+    have h₃ := hC₂ n ((n + 1) * f n) (by omega)
     have h₄ := cube_add_le (2 * ((encNat (n + 1)).length + 1)) ((encNat (f n)).length + 1)
     have h₅ : (2 * ((encNat (n + 1)).length + 1)) ^ 3 = 8 * ((encNat (n + 1)).length + 1) ^ 3 := by
       ring
-    have h₆ := hC (n + 1)
-    have h₇ := hC (f n)
+    have h₆ := hC (n + 1) ((n + 1) * f n) (by omega)
+    have h₇ := hC (f n) ((n + 1) * f n) (by omega)
     have h₈ : (2 * (encNat (n + 1)).length + 1 + (encNat (f n)).length + 1) ^ 3 ≤
         (2 * ((encNat (n + 1)).length + 1) + ((encNat (f n)).length + 1)) ^ 3 :=
       Nat.pow_le_pow_left (by omega) 3
-    have h₉ : C * (n + 1 + 1) ≤ C * ((n + 1) * f n) + 2 * C := by
-      have : n + 1 + 1 ≤ (n + 1) * f n + 2 := by nlinarith
-      have := Nat.mul_le_mul_left C this
-      have e : C * ((n + 1) * f n + 2) = C * ((n + 1) * f n) + 2 * C := by ring
-      omega
-    have h₁₀ : C * (f n + 1) ≤ C * ((n + 1) * f n) + C := by
-      have := Nat.mul_le_mul_left C (Nat.add_le_add_right h₃ 1)
-      have e : C * ((n + 1) * f n + 1) = C * ((n + 1) * f n) + C := by ring
-      omega
     have e : (150 * C + C₂ + c + 10) * ((n + 1) * f n) =
         150 * (C * ((n + 1) * f n)) + C₂ * ((n + 1) * f n) + c * ((n + 1) * f n) +
           10 * ((n + 1) * f n) := by
@@ -228,15 +221,10 @@ theorem TimeConstructible.succ_mul {f : ℕ → ℕ} (hf : TimeConstructible f) 
 /-- `(n + 1) ^ 2` is time-constructible. -/
 theorem timeConstructible_succ_sq : TimeConstructible fun n => (n + 1) ^ 2 := by
   have hlen := ComputableInO.natSucc.comp ComputableInO.lengthNat
-  obtain ⟨C₂, hC₂⟩ := exists_pow_length_encNat_le 2
+  obtain ⟨C₂, hC₂⟩ := exists_pow_length_encNat_le_of_le 2
   have h := TimeConstructible.succ_mul_of_computableInO (f := fun n => n + 1)
     (S := fun n => n + 1 + ((encNat n).length + 1)) (C₂ + 2) hlen (fun x => by
-      have := hC₂ x.length
-      have e : (C₂ + 2) * ((x.length + 1) * (x.length + 1)) =
-          C₂ * ((x.length + 1) * (x.length + 1)) + 2 * ((x.length + 1) * (x.length + 1)) := by
-        ring
-      have : C₂ * (x.length + 1) ≤ C₂ * ((x.length + 1) * (x.length + 1)) :=
-        Nat.mul_le_mul_left _ (Nat.le_mul_of_pos_left _ (by omega))
+      have := hC₂ x.length ((x.length + 1) * (x.length + 1)) (by nlinarith)
       nlinarith) fun n => Nat.le_succ n
   simpa only [sq] using h
 

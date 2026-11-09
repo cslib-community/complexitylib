@@ -56,8 +56,9 @@ deterministically from its own `PartyView`.
   `Cslib.Crypto.Protocols.MPC.Functionality.ofDeterministic`,
   `Cslib.Crypto.Protocols.MPC.CoalitionSimulator`, `Cslib.Crypto.Protocols.MPC.idealJoint`,
   `Cslib.Crypto.Protocols.MPC.PerfectSemiHonestPrivate`,
-  `Cslib.Crypto.Protocols.MPC.PerfectSemiHonestPrivateProper`: ideal joint view-and-output
-  execution and perfect semi-honest privacy.
+  `Cslib.Crypto.Protocols.MPC.PerfectSemiHonestPrivateProper`,
+  `Cslib.Crypto.Protocols.MPC.PerfectSemiHonestPrivateLe`: ideal joint view-and-output
+  execution and perfect semi-honest privacy (full, proper-coalition, and `t`-threshold).
 
 ## Main results
 
@@ -69,9 +70,12 @@ deterministically from its own `PartyView`.
   `Cslib.Crypto.Protocols.MPC.Steps.evalWith_message`,
   `Cslib.Crypto.Protocols.MPC.Steps.evalWith_oracle`: structural evaluation rules for protocols
   and steps.
-* `Cslib.Crypto.Protocols.MPC.PerfectSemiHonestPrivate.proper`: full-coalition privacy implies
-  proper-coalition privacy.
-* `Cslib.Crypto.Protocols.MPC.perfectSemiHonestPrivate_of_deterministic`: for deterministic
+* `Cslib.Crypto.Protocols.MPC.PerfectSemiHonestPrivate.proper`,
+  `Cslib.Crypto.Protocols.MPC.PerfectSemiHonestPrivate.le`,
+  `Cslib.Crypto.Protocols.MPC.PerfectSemiHonestPrivateLe.proper_of_succ_eq`: implications between
+  full-coalition, threshold (`I.card ≤ t`), and proper-coalition privacy.
+* `Cslib.Crypto.Protocols.MPC.perfectSemiHonestPrivate_of_deterministic`,
+  `Cslib.Crypto.Protocols.MPC.perfectSemiHonestPrivateLe_of_deterministic`: for deterministic
   functionalities, matching the marginal coalition view distribution (Eq. 7.39, cf. Eqs. 7.7–7.8)
   together with output correctness on the support yields full joint view-and-output privacy
   (Eq. 7.40, cf. Eqs. 7.9–7.10).
@@ -561,6 +565,17 @@ def PerfectSemiHonestPrivateProper {m : ℕ} {spec : MultiOracleSpec} {sc : Sche
   ∀ (I : Finset (Fin m)), I ≠ Finset.univ → ∀ (x : (i : Fin m) → In i),
     ProbComp.eval (idealJoint f I (S I) x) = proto.realJoint W I x
 
+/-- Threshold (`t`-private) perfect semi-honest privacy against all static coalitions `I` of size
+at most `t` (`I.card ≤ t`, following [BenOrGoldwasserWigderson1988] and [AsharovLindell2017],
+Section 2.1, Definition 2.1; cf. [Goldreich2004], Definition 7.5.1), with the same exact equality
+and unrestricted simulators as `PerfectSemiHonestPrivate`. -/
+def PerfectSemiHonestPrivateLe {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m spec}
+    {In Coins Out : Fin m → Type} (t : ℕ) (proto : Protocol m spec sc In Coins Out)
+    (W : MultiOracleWorld spec) (f : Functionality m In Out)
+    (S : (I : Finset (Fin m)) → CoalitionSimulator sc In Coins Out I) : Prop :=
+  ∀ (I : Finset (Fin m)), I.card ≤ t → ∀ (x : (i : Fin m) → In i),
+    ProbComp.eval (idealJoint f I (S I) x) = proto.realJoint W I x
+
 /-- Full-coalition perfect semi-honest privacy implies proper-coalition privacy. -/
 theorem PerfectSemiHonestPrivate.proper
     {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m spec} {In Coins Out : Fin m → Type}
@@ -570,6 +585,30 @@ theorem PerfectSemiHonestPrivate.proper
     (h : PerfectSemiHonestPrivate proto W f S) :
     PerfectSemiHonestPrivateProper proto W f S :=
   fun I _ x => h I x
+
+/-- Full-coalition perfect semi-honest privacy implies threshold privacy for every `t`. -/
+theorem PerfectSemiHonestPrivate.le
+    {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m spec} {In Coins Out : Fin m → Type}
+    {proto : Protocol m spec sc In Coins Out} {W : MultiOracleWorld spec}
+    {f : Functionality m In Out}
+    {S : (I : Finset (Fin m)) → CoalitionSimulator sc In Coins Out I}
+    (h : PerfectSemiHonestPrivate proto W f S) (t : ℕ) :
+    PerfectSemiHonestPrivateLe t proto W f S :=
+  fun I _ x => h I x
+
+/-- When `t + 1 = m`, threshold privacy `PerfectSemiHonestPrivateLe t` implies proper-coalition
+privacy `PerfectSemiHonestPrivateProper` (`I ≠ Finset.univ`). -/
+theorem PerfectSemiHonestPrivateLe.proper_of_succ_eq
+    {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m spec} {In Coins Out : Fin m → Type}
+    {t : ℕ} {proto : Protocol m spec sc In Coins Out} {W : MultiOracleWorld spec}
+    {f : Functionality m In Out}
+    {S : (I : Finset (Fin m)) → CoalitionSimulator sc In Coins Out I}
+    (h : PerfectSemiHonestPrivateLe t proto W f S) (htm : t + 1 = m) :
+    PerfectSemiHonestPrivateProper proto W f S := by
+  intro I hI x
+  have hlt : I.card < m := by
+    simpa [Fintype.card_fin] using Finset.card_lt_card (Ne.lt_top hI)
+  exact h I (by omega) x
 
 /-- Bridge lemma (Goldreich Def. 7.5.1, Eqs. 7.39–7.40, p. 696; cf. Def. 7.2.1, Eqs. 7.7–7.10,
 p. 620, and equivalence remark on p. 621): for a deterministic functionality `f`, matching the
@@ -589,6 +628,26 @@ theorem perfectSemiHonestPrivate_of_deterministic
   intro I x
   simp only [idealJoint, Functionality.ofDeterministic, pure_bind, bind_pure_comp,
     ProbComp.eval_map, hView I x, PMF.map_comp, Protocol.realJoint]
+  refine PMF.map_congr_on_support (proto.evalWith W x) _ _ fun r hr => ?_
+  simp [Prod.map, hOut x r hr]
+
+/-- Deterministic bridge lemma for threshold semi-honest privacy (cf.
+`perfectSemiHonestPrivate_of_deterministic`): for a deterministic functionality `f`, matching the
+marginal coalition view distribution whenever `I.card ≤ t` together with output correctness on the
+support yields `PerfectSemiHonestPrivateLe t`. -/
+theorem perfectSemiHonestPrivateLe_of_deterministic
+    {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m spec} {In Coins Out : Fin m → Type}
+    (t : ℕ) (proto : Protocol m spec sc In Coins Out) (W : MultiOracleWorld spec)
+    (f : ((i : Fin m) → In i) → (i : Fin m) → Out i)
+    (S : (I : Finset (Fin m)) → CoalitionSimulator sc In Coins Out I)
+    (hView : ∀ I, I.card ≤ t → ∀ x,
+      ProbComp.eval (S I (I.restrict x) (I.restrict (f x))) =
+        (proto.evalWith W x).map (fun r => I.restrict r.1))
+    (hOut : ∀ x r, r ∈ (proto.evalWith W x).support → r.2 = f x) :
+    PerfectSemiHonestPrivateLe t proto W (Functionality.ofDeterministic f) S := by
+  intro I hI x
+  simp only [idealJoint, Functionality.ofDeterministic, pure_bind, bind_pure_comp,
+    ProbComp.eval_map, hView I hI x, PMF.map_comp, Protocol.realJoint]
   refine PMF.map_congr_on_support (proto.evalWith W x) _ _ fun r hr => ?_
   simp [Prod.map, hOut x r hr]
 

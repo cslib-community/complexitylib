@@ -11,6 +11,7 @@ public import CslibFrontier.DataStructure.Dictionary.Spec
 public import CslibFrontier.DataStructure.HashFamily.WordRAM.MultiplyShift
 public import CslibFrontier.Computability.WordRAM.ExactNotation
 public import CslibFrontier.DataStructure.WordRAM.Randomized.StateTransition
+import CslibFrontier.Computability.WordRAM.SymbolicExec
 import CslibFrontier.Probability.PMF.Expect
 import Mathlib.Data.Nat.Log
 
@@ -795,11 +796,8 @@ private theorem storeHeader_spec {U V n_max w base : ℕ}
       ∃ y, Exec w (storeHeader U n_max) x y 11 ∧
         y.regs frontierReg = base + space n_max ∧
         y.regs baseReg = base ∧
-        y.mem = Function.update (Function.update (Function.update
-          (Function.update x.mem base b.val)
-          (base + 1) (bucketBits n_max))
-          (base + 1 + 1) (hashBits U n_max))
-          (base + 1 + 1 + 1) 0 := by
+        y.mem = ((((x.write base b.val).write (base + 1) (bucketBits n_max)).write
+          (base + 1 + 1) (hashBits U n_max)).write (base + 1 + 1 + 1) 0).mem := by
     refine ⟨?z, ?e, ?_, ?_, ?_⟩
     case e =>
       ram_exact_eval [storeHeader, hbase, hb, f0, f1, fb1, fb2, fb3, fM, fw0]
@@ -807,31 +805,19 @@ private theorem storeHeader_spec {U V n_max w base : ℕ}
     · simp +decide [hbase]
     · rfl
   refine ⟨y, he, hyfr, ?_, ?_⟩
-  · refine ⟨he.within.bounded hx, hybase, ?_, ?_, ?_, ?_, by simp,
-      Dictionary.valuesBounded_empty U V, ?_⟩
-    · rw [hym, Function.update_of_ne (by omega), Function.update_of_ne (by omega),
-        Function.update_of_ne (by omega), Function.update_self]
-    · rw [hym, Function.update_of_ne (by omega), Function.update_of_ne (by omega),
-        Function.update_self]
-    · rw [hym, Function.update_of_ne (by omega),
-        show base + 2 = base + 1 + 1 by omega, Function.update_self]
-    · rw [hym, show base + 3 = base + 1 + 1 + 1 by omega, Function.update_self,
-        Dictionary.card_dom_empty]
-    · intro bk hbk
-      refine ⟨[], ?_⟩
-      have hhead0 : y.mem (headBase base + bk) = 0 := by
-        dsimp only [headBase]
-        rw [hym, Function.update_of_ne (by omega), Function.update_of_ne (by omega),
-          Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
-        exact hz (base + 4 + bk) (by rw [Block.mem_footprint]; dsimp [Block.Owns, space]; omega)
-      refine ⟨hhead0 ▸ IsChain.nil, List.nodup_nil, ?_, ?_⟩
-      · intro _ h; cases h
-      · intro u v _ h; simp [Dictionary.empty] at h
+  · refine ⟨he.within.bounded hx, hybase, by wram_simp [hym], by wram_simp [hym],
+      by wram_simp [hym], by wram_simp [hym, Dictionary.card_dom_empty], by simp,
+      Dictionary.valuesBounded_empty U V, fun bk hbk => ⟨[], ?_⟩⟩
+    have hhead0 : y.mem (headBase base + bk) = 0 := by
+      wram_simp [hym, headBase]
+      exact hz (base + 4 + bk) (by rw [Block.mem_footprint]; dsimp [Block.Owns, space]; omega)
+    refine ⟨hhead0 ▸ IsChain.nil, List.nodup_nil, ?_, ?_⟩
+    · intro _ h; cases h
+    · intro u v _ h; simp [Dictionary.empty] at h
   · rw [Modifies.block_iff]
     intro a ha
     dsimp only [Block.Owns] at ha
-    rw [hym, Function.update_of_ne (by omega), Function.update_of_ne (by omega),
-      Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
+    wram_simp [hym]
 
 private theorem initSetup_spec {U V n_max w base : ℕ}
     (hw : 2 * hashBits U n_max ≤ w) (hS : Fits w (base + space n_max))
@@ -1466,17 +1452,14 @@ private theorem finishInsertMiss_spec {U V n_max w base : ℕ}
   have fvaddr : Fits w (valBase base n_max + sz) := hS.of_le (by unfold valBase; omega)
   have fhaddr : Fits w (headBase base + bk) := hS.of_le (by unfold headBase; omega)
   have fnaddr : Fits w (nextBase base n_max + sz) := hS.of_le (by unfold nextBase; omega)
-  let m₁ := Function.update (Function.update (Function.update y.mem (base + 3) (sz + 1))
-    (keyBase base n_max + sz) u.val) (valBase base n_max + sz) v
+  let z' := ((((y.write (base + 3) (sz + 1)).write (keyBase base n_max + sz) u.val).write
+    (valBase base n_max + sz) v).write (nextBase base n_max + sz)
+    (y.mem (headBase base + bk))).write (headBase base + bk) (sz + 1)
   have hne1 : headBase base + bk ≠ valBase base n_max + sz := by unfold headBase valBase; omega
   have hne2 : headBase base + bk ≠ keyBase base n_max + sz := by unfold headBase keyBase; omega
   have hne3 : headBase base + bk ≠ base + 3 := by unfold headBase; omega
   obtain ⟨z, he, hmz, hbasez⟩ :
-      ∃ z, Exec w finishOp y z 19 ∧
-        z.mem = Function.update (Function.update m₁
-          (nextBase base n_max + sz) (y.mem (headBase base + bk)))
-          (headBase base + bk) (sz + 1) ∧
-        z.regs baseReg = base := by
+      ∃ z, Exec w finishOp y z 19 ∧ z.mem = z'.mem ∧ z.regs baseReg = base := by
     refine ⟨?_, ?e, ?_, ?_⟩
     case e =>
       ram_exact_eval [finishOp, finishInsert, finishInsertMiss,
@@ -1487,80 +1470,23 @@ private theorem finishInsertMiss_spec {U V n_max w base : ℕ}
   have hz_bdd : z.Bounded w := he.within.bounded hy_bdd
   have hz_hdr : z.mem base = b.val ∧ z.mem (base + 1) = bucketBits n_max ∧
       z.mem (base + 2) = hashBits U n_max ∧ z.mem (base + 3) = sz + 1 := by
-    refine ⟨?_, ?_, ?_, ?_⟩
-    · rw [hmz, Function.update_of_ne (by unfold headBase; omega),
-        Function.update_of_ne (by unfold nextBase; omega)]
-      dsimp only [m₁]
-      rw [Function.update_of_ne (by unfold valBase; omega),
-        Function.update_of_ne (by unfold keyBase; omega),
-        Function.update_of_ne (by omega), hmy, hr.mem_seed]
-    · rw [hmz, Function.update_of_ne (by unfold headBase; omega),
-        Function.update_of_ne (by unfold nextBase; omega)]
-      dsimp only [m₁]
-      rw [Function.update_of_ne (by unfold valBase; omega),
-        Function.update_of_ne (by unfold keyBase; omega),
-        Function.update_of_ne (by omega), hmy, hr.mem_M]
-    · rw [hmz, Function.update_of_ne (by unfold headBase; omega),
-        Function.update_of_ne (by unfold nextBase; omega)]
-      dsimp only [m₁]
-      rw [Function.update_of_ne (by unfold valBase; omega),
-        Function.update_of_ne (by unfold keyBase; omega),
-        Function.update_of_ne (by omega), hmy, hr.mem_w0]
-    · rw [hmz, Function.update_of_ne (by unfold headBase; omega),
-        Function.update_of_ne (by unfold nextBase; omega)]
-      dsimp only [m₁]
-      rw [Function.update_of_ne (by unfold valBase; omega),
-        Function.update_of_ne (by unfold keyBase; omega),
-        Function.update_self]
-  have hz_head_eq : z.mem (headBase base + bk) = sz + 1 := by
-    rw [hmz, Function.update_self]
+    wram_simp [hmz, z', headBase, keyBase, valBase, nextBase, hmy, hr.mem_seed, hr.mem_M,
+      hr.mem_w0]
+  have hz_head_eq : z.mem (headBase base + bk) = sz + 1 := by wram_simp [hmz, z']
   have hz_head_ne : ∀ bk' < numBuckets n_max, bk' ≠ bk →
       z.mem (headBase base + bk') = x.mem (headBase base + bk') := by
     intro bk' hbk' hne
-    rw [hmz, Function.update_of_ne (by unfold headBase; omega),
-      Function.update_of_ne (by unfold nextBase headBase; omega)]
-    dsimp only [m₁]
-    rw [Function.update_of_ne (by unfold valBase headBase; omega),
-      Function.update_of_ne (by unfold keyBase headBase; omega),
-      Function.update_of_ne (by unfold headBase; omega), hmy]
+    wram_simp [hmz, z', headBase, keyBase, valBase, nextBase, hmy]
   have hz_slot_sz : z.mem (keyBase base n_max + sz) = u.val ∧
       z.mem (valBase base n_max + sz) = v ∧
       z.mem (nextBase base n_max + sz) = x.mem (headBase base + bk) := by
-    refine ⟨?_, ?_, ?_⟩
-    · rw [hmz, Function.update_of_ne (by unfold headBase keyBase; omega),
-        Function.update_of_ne (by unfold nextBase keyBase; omega)]
-      dsimp only [m₁]
-      rw [Function.update_of_ne (by unfold valBase keyBase; omega), Function.update_self]
-    · rw [hmz, Function.update_of_ne (by unfold headBase valBase; omega),
-        Function.update_of_ne (by unfold nextBase valBase; omega)]
-      dsimp only [m₁]
-      rw [Function.update_self]
-    · rw [hmz, Function.update_of_ne (by unfold headBase nextBase; omega),
-        Function.update_self, hmy]
+    wram_simp [hmz, z', headBase, keyBase, valBase, nextBase, hmy]
   have hz_slot_lt : ∀ j < sz,
       z.mem (keyBase base n_max + j) = x.mem (keyBase base n_max + j) ∧
       z.mem (valBase base n_max + j) = x.mem (valBase base n_max + j) ∧
       z.mem (nextBase base n_max + j) = x.mem (nextBase base n_max + j) := by
     intro j hj
-    refine ⟨?_, ?_, ?_⟩
-    · rw [hmz, Function.update_of_ne (by unfold headBase keyBase; omega),
-        Function.update_of_ne (by unfold nextBase keyBase; omega)]
-      dsimp only [m₁]
-      rw [Function.update_of_ne (by unfold valBase keyBase; omega),
-        Function.update_of_ne (by unfold keyBase; omega),
-        Function.update_of_ne (by unfold keyBase; omega), hmy]
-    · rw [hmz, Function.update_of_ne (by unfold headBase valBase; omega),
-        Function.update_of_ne (by unfold nextBase valBase; omega)]
-      dsimp only [m₁]
-      rw [Function.update_of_ne (by unfold valBase; omega),
-        Function.update_of_ne (by unfold keyBase valBase; omega),
-        Function.update_of_ne (by unfold valBase; omega), hmy]
-    · rw [hmz, Function.update_of_ne (by unfold headBase nextBase; omega),
-        Function.update_of_ne (by unfold nextBase; omega)]
-      dsimp only [m₁]
-      rw [Function.update_of_ne (by unfold valBase nextBase; omega),
-        Function.update_of_ne (by unfold keyBase nextBase; omega),
-        Function.update_of_ne (by unfold nextBase; omega), hmy]
+    wram_simp [hmz, z', headBase, keyBase, valBase, nextBase, hmy]
   refine ⟨z, he.within.mono (by omega), ?_, ?_⟩
   · refine ⟨hz_bdd, hbasez, hz_hdr.1, hz_hdr.2.1, hz_hdr.2.2.1,
       hz_hdr.2.2.2.trans hcard_eq.symm,
@@ -1635,13 +1561,8 @@ private theorem finishInsertMiss_spec {U V n_max w base : ℕ}
         exact ⟨j, hj, (hz_slot_lt j hj_lt).1.trans hkj⟩
   · rw [Modifies.block_iff]
     intro a ha
-    dsimp only [Block.Owns] at ha
-    rw [hmz, Function.update_of_ne (by unfold headBase space at *; omega),
-      Function.update_of_ne (by unfold nextBase space at *; omega)]
-    dsimp only [m₁]
-    rw [Function.update_of_ne (by unfold valBase space at *; omega),
-      Function.update_of_ne (by unfold keyBase space at *; omega),
-      Function.update_of_ne (by unfold space at *; omega), hmy]
+    dsimp only [Block.Owns, space] at ha
+    wram_simp [hmz, z', headBase, keyBase, valBase, nextBase, hmy]
 
 /-- Number of keys `u' ∈ (dom s).erase u` that collide with `u` under `multiplyShift w₀ M b`. -/
 def collCount {U : ℕ} (n_max : ℕ) (s : Dictionary.State U) (u : Fin U)

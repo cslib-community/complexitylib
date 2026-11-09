@@ -14,9 +14,10 @@ public import CslibFrontier.Computability.Circuit.Boolean.Iteration
 # Encoded state spaces and burn-in
 
 The fixed-power bound applies to a map `f` on any finite invariant set `S` of a type in any
-universe, given an injective bit encoding `e` of `S` and a Boolean circuit realizing `f` on the
-encodings (`fixed_power_encoded`). All computation is charged on the encoding; no gate evaluates
-`f` itself. Its storage term counts `|S|`.
+universe, given a bit encoding `e` of `S` and a Boolean circuit realizing `f` on the encodings
+(`fixed_power_encoded`). All computation is charged on the encoding; no gate evaluates `f`
+itself. Its storage term counts `|S|`; the encoding need not be injective, and any `0 < L` is
+allowed.
 
 After a burn-in of `d` steps, computed by a separate circuit, every orbit lies in the image of
 `f^[d]`, so the storage term of the remaining steps counts only that image
@@ -53,13 +54,21 @@ private theorem iterate_encoded (f : α → α) (S : Finset α) (e : α → BitS
     rw [Function.iterate_succ_apply', Function.iterate_succ_apply', ih]
     exact hstep _ (Set.MapsTo.iterate (f := f) (s := ↑S) hS T hx)
 
-/-- **Encoded fixed powers.** If an injective encoding `e` of a finite invariant set `S` of an
-arbitrary type is realized by a circuit `c`, then for every exponent `T` and `0 < L ≤ 2 ^ n` some
-circuit of size at most `40000 * powerBudget n c.size S.card L` realizes `f^[T]` on `S`. -/
+/-- The integer budget is monotone in the storage count. -/
+theorem powerBudget_mono {w s M M' L : ℕ} (hM : M ≤ M') :
+    powerBudget w s M L ≤ powerBudget w s M' L := by
+  unfold powerBudget
+  have : M / L ≤ M' / L := Nat.div_le_div_right hM
+  gcongr
+
+/-- **Encoded fixed powers.** If an encoding `e` of a finite invariant set `S` of an arbitrary
+type is realized by a circuit `c`, then for every exponent `T` and `0 < L` some circuit of size at
+most `40000 * powerBudget n c.size S.card L` realizes `f^[T]` on `S`. When `2 ^ n < L`, the
+circuit is built with parameter `2 ^ n`, whose budget is no larger. -/
 theorem fixed_power_encoded (f : α → α) (S : Finset α) (e : α → BitString n)
-    (he : Set.InjOn e S) (c : Circuit signature n n) (hS : ∀ x ∈ S, f x ∈ S)
+    (c : Circuit signature n n) (hS : ∀ x ∈ S, f x ∈ S)
     (hstep : ∀ x ∈ S, c.eval interpretation (e x) = e (f x))
-    (T L : ℕ) (hL : 0 < L) (hLN : L ≤ 2 ^ n) :
+    (T L : ℕ) (hL : 0 < L) :
     ∃ out : Circuit signature n n,
       (∀ x ∈ S, out.eval interpretation (e x) = e (f^[T] x)) ∧
       out.size ≤ 40000 * powerBudget n c.size S.card L := by
@@ -69,8 +78,25 @@ theorem fixed_power_encoded (f : α → α) (S : Finset α) (e : α → BitStrin
     obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hy
     rw [hstep x hx]
     exact Finset.mem_image.mpr ⟨f x, hS x hx, rfl⟩
-  obtain ⟨out, hout, hsize⟩ := fixed_power_on n c (S.image e) T L himage hL hLN
-  refine ⟨out, fun x hx => ?_, by simpa only [Finset.card_image_of_injOn he] using hsize⟩
+  obtain ⟨out, hout, hsize⟩ := fixed_power_on n c (S.image e) T (min L (2 ^ n)) himage
+    (lt_min hL (Nat.two_pow_pos n)) (min_le_right _ _)
+  have hcard : (S.image e).card ≤ S.card := Finset.card_image_le
+  have hbudget : powerBudget n c.size (S.image e).card (min L (2 ^ n)) ≤
+      powerBudget n c.size S.card L := by
+    rcases le_or_gt L (2 ^ n) with hLN | hLN
+    · rw [min_eq_left hLN]
+      exact powerBudget_mono hcard
+    · rw [min_eq_right hLN.le]
+      have hN : (S.image e).card ≤ 2 ^ n := by
+        simpa only [Fintype.card_fun, Fintype.card_fin, Fintype.card_bool] using
+          Finset.card_le_univ (S.image e)
+      have h1 : (S.image e).card / 2 ^ n ≤ 1 :=
+        Nat.div_le_of_le_mul (by rw [Nat.mul_one]; exact hN)
+      unfold powerBudget
+      refine Nat.add_le_add (Nat.mul_le_mul_right _ hLN.le) (Nat.mul_le_mul_left _ ?_)
+      have := Nat.zero_le (S.card / L)
+      omega
+  refine ⟨out, fun x hx => ?_, hsize.trans (Nat.mul_le_mul_left _ hbudget)⟩
   rw [hout (Finset.mem_coe.mpr (Finset.mem_image.mpr ⟨x, hx, rfl⟩))]
   exact iterate_encoded f S e c hS hstep hx T
 

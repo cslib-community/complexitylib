@@ -318,10 +318,8 @@ private theorem dinitzLoop_spec {n : ℕ} {N : Network (Fin n)} {adj : Fin n →
     refine ⟨fun hreach => ?_, filter_bfsDistVec_eq_reachableCut _, ⟨flows, hrun, rfl, hph⟩, hk⟩
     have hlt := (M.toFlow.resDist_lt_card_iff_resReachable N.t).mpr hreach
     have hadd := hrun.resDist_add_le
-    have hpos : 0 < (flows 0).resDist N.t := by
-      rcases Nat.eq_zero_or_pos ((flows 0).resDist N.t) with h0 | h0
-      · exact absurd ((flows 0).eq_source_of_resDist_eq_zero h0).symm hst
-      · exact h0
+    have hpos : 0 < (flows 0).resDist N.t :=
+      Nat.pos_of_ne_zero fun h0 => hst ((flows 0).eq_source_of_resDist_eq_zero h0).symm
     rw [hph, Fintype.card_fin] at *
     omega
   | fuel + 1, M, ph, k, flows, hfuel, hrun, hph, hk => by

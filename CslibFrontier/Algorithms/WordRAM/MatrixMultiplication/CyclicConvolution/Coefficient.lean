@@ -29,11 +29,13 @@ open Cslib.WordRAM Cslib.WordRAM.Signed Cslib.CyclicIntRing
 /-- A natural envelope for both input coefficients, products and every partial accumulator. -/
 @[expose] def magnitudeBound (p A B : ℕ) : ℕ := A + B + (p + 1) * (A * B) + 1
 
-private theorem inputA_le_bound (p A B : ℕ) : A ≤ magnitudeBound p A B := by
+/-- The envelope bounds the first input magnitude. -/
+theorem le_magnitudeBound_left (p A B : ℕ) : A ≤ magnitudeBound p A B := by
   unfold magnitudeBound
   omega
 
-private theorem inputB_le_bound (p A B : ℕ) : B ≤ magnitudeBound p A B := by
+/-- The envelope bounds the second input magnitude. -/
+theorem le_magnitudeBound_right (p A B : ℕ) : B ≤ magnitudeBound p A B := by
   unfold magnitudeBound
   omega
 
@@ -93,9 +95,9 @@ theorem exec_coefficient {w p r A B : ℕ} (x : Data 32) (u v : ℕ → ℤ)
     let j := subIndex p r i
     have hj : j < p := subIndex_lt hr hlt
     have huf : GenericRAM.Signed.Fits w (u i) :=
-      hbound.of_natAbs_le ((hu i hlt).trans (inputA_le_bound p A B))
+      hbound.of_natAbs_le ((hu i hlt).trans (le_magnitudeBound_left p A B))
     have hvf : GenericRAM.Signed.Fits w (v j) :=
-      hbound.of_natAbs_le ((hv j hj).trans (inputB_le_bound p A B))
+      hbound.of_natAbs_le ((hv j hj).trans (le_magnitudeBound_right p A B))
     have hpf : GenericRAM.Signed.Fits w (u i * v j) := hbound.of_natAbs_le (by
       rw [Int.natAbs_mul]
       exact (Nat.mul_le_mul (hu i hlt) (hv j hj)).trans (product_le_bound p A B))

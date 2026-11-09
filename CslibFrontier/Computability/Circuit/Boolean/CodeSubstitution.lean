@@ -122,8 +122,7 @@ theorem code_prefixCircuit {n m : ℕ} (r : List Bool)
     rfl
   · simp only [prefixCircuit, Circuit.comp, Circuit.code,
       prefixCode, List.map_ofFn, Function.comp_apply]
-    congr 1
-    funext i
+    congr 1 with i : 1
     rw [Program.appendedWire_toNat]
     change Program.appendWireCode n (r.length + n) 2
       (substituteCircuit (prefixInputs r n)).outputs (c.outputs i).toNat = _
@@ -150,8 +149,7 @@ theorem isSome_ofCode_prefixCode {n m : ℕ} (r : List Bool)
     (prefixCircuit r c).eval interpretation x =
       c.eval interpretation (Fin.append (fun i => r[i.val]) x) := by
   rw [prefixCircuit, Circuit.eval_comp, eval_substituteCircuit]
-  congr 1
-  funext i
+  congr 1 with i : 1
   refine Fin.addCases (fun j => ?_) (fun j => ?_) i <;> simp [substitute, prefixInputs]
 
 /-- Reading the hardwired raw code's output wires gives the original circuit's outputs. -/
@@ -162,8 +160,7 @@ theorem evalOutputs_prefixCode {n m : ℕ} (r : List Bool)
       List.ofFn (c.eval interpretation (Fin.append (fun i => r[i.val]) x)) := by
   rw [← code_prefixCircuit, ← eval_prefixCircuit r c x]
   simp only [Circuit.code, List.map_ofFn]
-  congr 1
-  funext j
+  congr 1 with j : 1
   exact ((prefixCircuit r c).eval_eq_evalOutput x j).symm
 
 /-- Exactly two gates are added, even if the constants or all outputs are unused. -/

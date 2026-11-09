@@ -75,8 +75,7 @@ namespace Turing.MultiTapeTM
 /-- Reversing a most-significant-first word gives its little-endian binary decoding. -/
 theorem ofBits_reverse (w : List Bool) : ofBits w.reverse = Cslib.BitString.binaryValue w := by
   rw [ofBits, List.foldr_reverse, Cslib.BitString.binaryValue]
-  congr 1
-  funext v b
+  congr 1 with v b : 2
   rw [Nat.bit_val]
 
 /-- The encoding charges every bit and every delimiter in the enumerated words. -/
@@ -154,15 +153,8 @@ theorem bitsGetElem? {α : Type} {input : α ↪ List Bool}
 
 /-- Remove the framing from a list of bits. -/
 @[fun_prop]
-theorem listToBits : ComputableTidilyInPolyTime (fun l => l) (encList encBool) encBits := by
-  have h := foldl_of_bounded_growth (encA := encBool)
-    (step := fun acc bit => acc ++ [bit]) (init := fun _ => [])
-    (id' (encIn := encList encBool)) (const [])
-    (show ComputableTidilyInPolyTime (fun p : List Bool × Bool => p.1 ++ [p.2])
-      (encPair encBits encBool) encBits by fun_prop)
-    (growth := 1) (fun _ _ => by simp)
-  simpa only [List.foldl_append_eq_append, List.nil_append, List.flatten_eq_flatMap,
-    List.flatMap_map, id_eq, List.flatMap_singleton'] using h
+theorem listToBits : ComputableTidilyInPolyTime (fun l => l) (encList encBool) encBits :=
+  ComputableInPolyTime.listToBits.tidy
 
 /-- Repeat a fixed bit a unary number of times. -/
 @[fun_prop]

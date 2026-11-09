@@ -227,8 +227,7 @@ theorem eval_graft (l : List ι) (k : (ι → Bool) → DecisionTree ι β) (a x
     have : (graft (i :: l) k a).eval x = (graft l k (Function.update a i (x i))).eval x := by
       cases hx : x i <;> simp [graft, hx]
     rw [this, ih]
-    congr 2
-    funext j
+    congr 2 with j : 1
     by_cases hj : j ∈ l
     · simp [hj]
     · by_cases hji : j = i

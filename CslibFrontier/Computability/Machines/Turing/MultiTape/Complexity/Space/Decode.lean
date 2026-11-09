@@ -304,31 +304,9 @@ private theorem stackStep :
 /-- **Decoding a stack tape is polynomial-time.** -/
 private theorem decodeStackTape :
     ComputableTidilyInPolyTime MultiTapeTM.decodeStackTape encBits (encStackTape encBool) := by
-  have hbits := bitsReverse.comp cellsTransducer_run
-  have hfold := foldl' (encA := encBool) (encL := encBits) hbits (const (none, StackTape.nil))
-    stackStep (B := fun word => 1 + 4 * (cellsTransducer.run cellsTransducer.q₀ word).length)
-    ((PolyBounded.const 1).add ((PolyBounded.const 4).mul (polyBounded_length cellsTransducer_run)))
-    fun word i _ => by
-      have hgrowth : ∀ (bits : List Bool) state,
-          (encPair (encOption encBool) (encStackTape encBool)
-            (bits.foldl Turing.MultiTapeTM.stackStep state)).length ≤
-          (encPair (encOption encBool) (encStackTape encBool) state).length + 4 * bits.length := by
-        intro bits
-        induction bits with
-        | nil => simp
-        | cons bit bits ih =>
-          intro state
-          have := length_stackStep_le state bit
-          have := ih (Turing.MultiTapeTM.stackStep state bit)
-          simp only [List.foldl_cons, List.length_cons]
-          omega
-      have := hgrowth (((cellsTransducer.run cellsTransducer.q₀ word).reverse.take i)) (none, .nil)
-      simp only [List.length_take, List.length_reverse, Function.comp_apply] at this ⊢
-      have hnil : (encPair (encOption encBool) (encStackTape encBool)
-          ((none : Option Bool), (StackTape.nil : StackTape Bool))).length = 1 := rfl
-      have : min i (cellsTransducer.run cellsTransducer.q₀ word).length ≤
-          (cellsTransducer.run cellsTransducer.q₀ word).length := min_le_right _ _
-      omega
+  have hfold := foldl_of_bounded_growth (encA := encBool) (encL := encBits)
+    (bitsReverse.comp cellsTransducer_run) (const (none, StackTape.nil)) stackStep
+    (growth := 4) length_stackStep_le
   exact (snd (encOption encBool) (encStackTape encBool)).comp hfold
 
 /-- Decoding a cell is polynomial-time. -/

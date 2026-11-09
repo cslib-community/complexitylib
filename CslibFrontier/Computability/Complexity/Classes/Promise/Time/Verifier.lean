@@ -10,10 +10,8 @@ module
 public import CslibFrontier.Computability.Complexity.AcceptCount
 public import CslibFrontier.Computability.Complexity.Classes.Promise.Time
 import CslibFrontier.Computability.Complexity.Classes.Time.SampleVerify
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayInput
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayVerdict
 import CslibFrontier.Foundations.Analysis.ENNRealFraction
 
 /-!
@@ -109,54 +107,7 @@ theorem exists_verifier_of_mem_PromiseBPTIME {Q : PromiseProblem α} {t : ℕ �
   let V : α × List Bool → Bool := fun p => decide (machine.runClosedCoins p.2 (enc p.1) = [true])
   refine ⟨V, c₁ + c₂, ?_, fun a L hL => ?_⟩
   · -- replay the coins, then compare the output with `[true]`
-    have hswap : ComputableInO (fun p : α × List Bool => (p.2, enc p.1)) (encPair enc encBits)
-        (encPair encBits encBits)
-        (fun p => (encPair enc encBits p).length +
-          ((encPair enc encBits p).length + (enc p.1).length))
-        (fun p => (encPair enc encBits p).length +
-          ((encPair enc encBits p).length + (enc p.1).length)) :=
-      (ComputableInO.snd enc encBits).prod
-        ((ComputableInO.of_eq (f := fun x : α => enc x) (encIn := enc) (encMid := encBits)
-          fun _ => rfl).comp (ComputableInO.fst enc encBits))
-    have hrun := (ComputableInO.of_linear
-      (MultiTapePTM.computableInDegree_runClosedCoins machine)).comp hswap
-    obtain ⟨cr, hcr⟩ := hrun.length_le_time
-    have heq := ComputableInO.eqWords.comp ((ComputableInO.const (encIn := encPair enc encBits)
-      (encMid := encBits) [true]).prod hrun)
-    have hfun : ((fun p : List Bool × List Bool => decide (p.1 = p.2)) ∘
-        fun p : α × List Bool => ([true], ((fun q : List Bool × List Bool =>
-          machine.runClosedCoins q.1 q.2) ∘ fun p : α × List Bool => (p.2, enc p.1)) p)) = V := by
-      funext p
-      simp [V, eq_comm]
-    rw [hfun] at heq
-    -- every part is linear in the encoded pair, including the replayed output
-    have hbound (p : α × List Bool) :
-        (encPair enc encBits p).length + ((encPair enc encBits p).length +
-          ((encPair enc encBits p).length + (enc p.1).length) +
-          (encPair encBits encBits (p.2, enc p.1)).length) +
-        2 * ((machine.runClosedCoins p.2 (enc p.1)).length + 2) ≤
-          (9 + 10 * cr) * ((encPair enc encBits p).length + 1) := by
-      have hc := hcr p
-      simp only [Function.comp_apply, encBits_apply] at hc
-      have hle : (enc p.1).length ≤ (encPair enc encBits p).length := by
-        simp only [encPair_apply, List.length_append, length_frame, encBits_apply]
-        omega
-      have hsw : (encPair encBits encBits (p.2, enc p.1)).length ≤
-          2 * (encPair enc encBits p).length := by
-        simp only [encPair_apply, List.length_append, length_frame, encBits_apply]
-        omega
-      generalize (encPair enc encBits p).length = N at *
-      generalize (machine.runClosedCoins p.2 (enc p.1)).length = R at *
-      generalize (encPair encBits encBits (p.2, enc p.1)).length = W at *
-      have hR : R ≤ cr * (5 * N + 1) := hc.trans (Nat.mul_le_mul_left cr (by omega))
-      nlinarith
-    refine heq.mono (9 + 10 * cr) (fun p => ?_) fun p => ?_
-    · have := hbound p
-      simp only [Function.comp_apply, List.length_singleton] at this ⊢
-      nlinarith
-    · have := hbound p
-      simp only [Function.comp_apply, List.length_singleton] at this ⊢
-      omega
+    exact MultiTapePTM.computableInO_decide_runClosedCoins machine
   · -- at `L` coins, the halted run is distributed as the replays
     obtain ⟨hhalt, hyes, hno⟩ := hQ a
     have hT : c₁ * t (enc a).length + c₂ ≤ L :=

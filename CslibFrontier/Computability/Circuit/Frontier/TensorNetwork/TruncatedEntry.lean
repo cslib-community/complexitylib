@@ -167,20 +167,9 @@ theorem exists_entryAdmissible_specNet (C : ℕ) :
       Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
     -- The input of the specialized entry is at most `3 n + 3` bits.
     have hq : (encPair (encSpecDesc encT) encBits ((u.2, P, ℓ, fl, ζ), bs)).length ≤ 3 * n + 3 := by
-      have h1 := length_le_encList_of_mem (encPair (encList encNat) (encSpecDesc encT)) hv
-      have h2 : (encList (encPair (encList encNat) (encSpecDesc encT))
-          (DescribedNetwork.specNet P ℓ fl ζ G).vertices).length ≤ L' := by
-        rw [hL']
-        change _ ≤ (encPair encUnary (encList (encPair (encList encNat) (encSpecDesc encT)))
-          ((DescribedNetwork.specNet P ℓ fl ζ G).numEdges,
-            (DescribedNetwork.specNet P ℓ fl ζ G).vertices)).length
-        rw [length_encPair]
-        dsimp only
-        omega
-      have h3 := length_le_length_encList encNat u.1
-      rw [length_encPair] at h1 ⊢
-      change 2 * (encSpecDesc encT (u.2, P, ℓ, fl, ζ)).length + 1 + bs.length ≤ 3 * n + 3
-      dsimp only at h1
+      have h := (DescribedNetwork.specNet P ℓ fl ζ G).length_entryInput_le
+        (encT := encSpecDesc encT) hv hbs
+      dsimp only at h
       omega
     -- The original entry is at most `cO (C (n + 1) ^ C + 1)` bits.
     have hout : (encList encNat (entry u.2 bs)).length ≤ cO * (C * (n + 1) ^ C + 1) :=

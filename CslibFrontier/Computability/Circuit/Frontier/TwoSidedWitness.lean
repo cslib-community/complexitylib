@@ -42,40 +42,47 @@ namespace Cslib.Circuits.Frontier
 
 open Set
 
-variable {ι U : Type*} [Finite ι] [Finite U] {S : Set (ι → U)} {K : ℕ} {b : ℝ}
+variable {ι U : Type*} {S : Set (ι → U)} {K : ℕ} {b : ℝ}
+
+private theorem rectangleBias_contradiction (hS : RectangleBias S K b) (hb : b < 1 / 2)
+    (hK : 0 < K) {X : Set ι} {A : Set (X → U)} {B : Set (↥Xᶜ → U)}
+    (hA : (K : ℕ∞) ≤ A.encard) (hB : (K : ℕ∞) ≤ B.encard)
+    (hcase : ∀ {A' : Set (X → U)} {B' : Set (↥Xᶜ → U)},
+      A' ⊆ A → B' ⊆ B → rectangle X A' B' ∩ S = rectangle X A' B' ∨
+        rectangle X A' B' ∩ S = ∅) : False := by
+  obtain ⟨A', hA'sub, hA'enc⟩ := Set.exists_subset_encard_eq hA
+  obtain ⟨B', hB'sub, hB'enc⟩ := Set.exists_subset_encard_eq hB
+  have hA' : A'.ncard = K := by rw [Set.ncard_def, hA'enc]; rfl
+  have hB' : B'.ncard = K := by rw [Set.ncard_def, hB'enc]; rfl
+  have hpos : (0 : ℝ) < (rectangle X A' B').ncard := by
+    rw [ncard_rectangle, hA', hB']
+    exact_mod_cast Nat.mul_pos hK hK
+  have hbound := hS X A' B' hA'.ge hB'.ge
+  rcases hcase hA'sub hB'sub with hfull | hempty
+  · rw [hfull, abs_of_nonneg (by linarith)] at hbound
+    nlinarith
+  · rw [hempty, ncard_empty, Nat.cast_zero, zero_sub, abs_neg,
+      abs_of_nonneg (by positivity)] at hbound
+    nlinarith
 
 /-- A set with bias strictly below one half on large rectangles contains no such rectangle. -/
 theorem RectangleBias.rectangleFree (hS : RectangleBias S K b) (hb : b < 1 / 2)
     (hK : 0 < K) : RectangleFree S K := by
-  apply rectangleFree_iff.mpr
   intro X A B hAB
   by_contra h
   push Not at h
-  have hpos : (0 : ℝ) < (rectangle X A B).ncard := by
-    rw [ncard_rectangle]
-    exact_mod_cast Nat.mul_pos (hK.trans_le h.1) (hK.trans_le h.2)
-  have hbound := hS X A B h.1 h.2
-  rw [inter_eq_left.mpr hAB, abs_of_nonneg (by linarith)] at hbound
-  nlinarith
+  exact rectangleBias_contradiction hS hb hK h.1 h.2 fun hA' hB' => Or.inl <|
+    inter_eq_left.mpr fun x hx => hAB ⟨hA' (mem_rectangle.mp hx).1, hB' (mem_rectangle.mp hx).2⟩
 
 /-- The complement of a set with bias strictly below one half also contains no large rectangle. -/
 theorem RectangleBias.rectangleFree_compl (hS : RectangleBias S K b) (hb : b < 1 / 2)
     (hK : 0 < K) : RectangleFree Sᶜ K := by
-  apply rectangleFree_iff.mpr
   intro X A B hAB
   by_contra h
   push Not at h
-  have hpos : (0 : ℝ) < (rectangle X A B).ncard := by
-    rw [ncard_rectangle]
-    exact_mod_cast Nat.mul_pos (hK.trans_le h.1) (hK.trans_le h.2)
-  have hbound := hS X A B h.1 h.2
-  have hempty : rectangle X A B ∩ S = ∅ := by
-    apply eq_empty_iff_forall_notMem.mpr
-    intro x hx
-    exact hAB hx.1 hx.2
-  rw [hempty, ncard_empty, Nat.cast_zero, zero_sub, abs_neg,
-    abs_of_nonneg (by positivity)] at hbound
-  nlinarith
+  exact rectangleBias_contradiction hS hb hK h.1 h.2 fun hA' hB' => Or.inr <|
+    eq_empty_iff_forall_notMem.mpr fun x hx =>
+      hAB ⟨hA' (mem_rectangle.mp hx.1).1, hB' (mem_rectangle.mp hx.1).2⟩ hx.2
 
 /-- For every input length, there is a Boolean function whose two fibers are
 `16 (n + 1)`-rectangle-free. This is nonconstructive; no evaluation-time bound is asserted. -/

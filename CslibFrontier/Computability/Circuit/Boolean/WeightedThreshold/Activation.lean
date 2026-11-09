@@ -176,25 +176,10 @@ private theorem masked_activation_succ (p : Program activationSignature n g)
           ∑ j, activationGateWeight p gate j *
             (if j.val < gate.val then
               p.eval activationInterpretation x j else false).toNat)) := by
-  have heval := eval_activationGate_eq p x gate
-  have hsum : (∑ j, activationGateWeight p gate j *
-      (p.eval activationInterpretation x j).toNat) =
-      ∑ j, activationGateWeight p gate j *
-        (if j.val < gate.val then p.eval activationInterpretation x j else false).toNat := by
-    apply sum_congr rfl
-    intro j _
-    by_cases hj : j < gate
-    · simp [hj]
-    · simp [hj, activationGateWeight_eq_zero_of_le p gate j (le_of_not_gt hj)]
-  rw [hsum] at heval
-  funext j
-  by_cases hj : j = gate
-  · subst j
-    simpa using heval
-  · rw [Function.update_of_ne hj]
-    have hv : j.val ≠ gate.val := fun h => hj (Fin.ext h)
-    have heq : (j.val < gate.val + 1) ↔ j.val < gate.val := by omega
-    simp only [heq]
+  rw [ite_val_lt_succ_eq_update, eval_activationGate_eq p x gate,
+    sum_mul_toNat_congr_of_lt (activationGateWeight_eq_zero_of_le p gate)
+      (v := fun j => if j.val < gate.val then p.eval activationInterpretation x j else false)
+      fun j hj => by simp [hj]]
 
 private theorem masked_activation_step (p : Program activationSignature n g)
     (T : Fin g → ℕ)

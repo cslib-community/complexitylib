@@ -110,11 +110,9 @@ theorem eval_weightedTrial_bind {Code : Type} (candidates : ProbComp Code) (sour
         test code value)) := by
   simp only [weightedTrial, ProbComp.eval_bind]
   rw [PMF.bind_comm]
-  congr 1
-  funext value
+  congr 1 with value : 1
   rw [PMF.bind_comm]
-  congr 1
-  funext active
+  congr 1 with active : 1
   cases active <;> simp only [Bool.false_eq_true, ite_false, ite_true, PMF.bind_const,
     ProbComp.eval_bind]
 
@@ -130,10 +128,8 @@ theorem weightedTrial_not (source : ProbComp α) (mask test : α → ProbComp Bo
   have hlaw : ProbComp.eval (weightedTrial source mask (fun value => Bool.not <$> test value)) =
       ProbComp.eval (Bool.not <$> weightedTrial source mask test) := by
     simp only [weightedTrial, map_bind, ProbComp.eval_bind]
-    congr 1
-    funext value
-    congr 1
-    funext active
+    congr 1 with value : 1
+    congr 1 with active : 1
     cases active <;> simp only [Bool.false_eq_true, ite_false, ite_true, hfair]
   simpa only [hlaw, ProbComp.eval_map] using
     ProbComp.probability_not (weightedTrial source mask test)

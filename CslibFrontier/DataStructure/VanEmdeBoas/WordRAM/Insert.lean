@@ -308,10 +308,7 @@ theorem insertLoop_spec {d w base key : ℕ} {tree : Tree d} {s : Data 32}
       | some bounds =>
         obtain ⟨m, M⟩ := bounds
         have ⟨hpres, ⟨hm, hM⟩, hq, _⟩ := hr
-        have hle : m ≤ M := by
-          have hext := ht.extrema
-          simp only [Tree.Extrema, Tree.bounds] at hext
-          exact hext.1
+        have hle : m ≤ M := (ht.extrema_of_bounds rfl).1
         by_cases heq : key = m
         · apply insertLoop_finish hs he
           · simp +decide [insertNext, hpres, hm, heq]
@@ -370,10 +367,7 @@ theorem insertLoop_spec {d w base key : ℕ} {tree : Tree d} {s : Data 32}
       | some bounds =>
         obtain ⟨m, M⟩ := bounds
         obtain ⟨hpres, ⟨hm, hM⟩, hq, hspan⟩ := hr.1
-        have hle : m ≤ M := by
-          have hext := ht.extrema
-          simp only [Tree.Extrema, Tree.bounds] at hext
-          exact hext.1
+        have hle : m ≤ M := (ht.extrema_of_bounds rfl).1
         by_cases heq : key = m
         · apply finish
           · simp +decide [insertNext, hpres, hm, heq]

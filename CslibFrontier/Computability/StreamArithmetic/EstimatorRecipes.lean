@@ -987,23 +987,11 @@ private theorem sum_fin_two_pow_prefix {m : ℕ} (f : ℕ → ℝ) :
     (∑ i : Fin (2 ^ (m + 1)), if i.val ≤ m then f i.val else 0) =
       ∑ r ∈ range (m + 1), f r := by
   have hm_lt : m + 1 ≤ 2 ^ (m + 1) := (Nat.lt_two_pow_self (n := m + 1)).le
-  have hfin : (∑ i : Fin (2 ^ (m + 1)), if i.val ≤ m then f i.val else 0) =
-      ∑ k ∈ range (2 ^ (m + 1)), if k ≤ m then f k else 0 :=
-    Fin.sum_univ_eq_sum_range (fun k => if k ≤ m then f k else 0) (2 ^ (m + 1))
-  rw [hfin]
-  have hsplit : 2 ^ (m + 1) = (m + 1) + (2 ^ (m + 1) - (m + 1)) := by omega
-  rw [hsplit, sum_range_add]
-  have htail : ∑ x ∈ range (2 ^ (m + 1) - (m + 1)),
-      (if m + 1 + x ≤ m then f (m + 1 + x) else 0) = 0 :=
-    sum_eq_zero fun x _ => by
-      have hnot : ¬ m + 1 + x ≤ m := by omega
-      simp [hnot]
-  rw [htail, add_zero]
-  refine sum_congr rfl fun r hr => ?_
-  have hr_le : r ≤ m := by
-    rw [mem_range] at hr
-    omega
-  simp [hr_le]
+  rw [Fin.sum_univ_eq_sum_range (fun k => if k ≤ m then f k else 0), ← sum_filter]
+  congr 1
+  ext k
+  simp only [mem_filter, mem_range]
+  omega
 
 /-- `FixedRecipe` computing `1 / (1 + max 0 (2 ^ m * R.targetVal val sEnv))` via the smooth dyadic
 partition of unity over `r ∈ {0, ..., m}`. -/
@@ -1107,10 +1095,7 @@ noncomputable def invOneAddScaledFixed {Op : Type u} {Struct : Type v}
       set q := R.targetVal (fun op => streamVal (env op)) sEnv
       have hq_hi : q ≤ 1 := (abs_le.mp (R.abs_targetVal_le_one hR)).2
       have hmax_mul : Max.max (0 : ℝ) ((2 : ℝ) ^ m * q) = (2 : ℝ) ^ m * Max.max 0 q := by
-        rcases le_total 0 q with hq0 | hq0
-        · rw [max_eq_right hq0, max_eq_right (mul_nonneg (by positivity) hq0)]
-        · rw [max_eq_left hq0, mul_zero,
-            max_eq_left (mul_nonpos_of_nonneg_of_nonpos (by positivity) hq0)]
+        rw [mul_max_of_nonneg _ _ (by positivity : (0 : ℝ) ≤ 2 ^ m), mul_zero]
       set w := 1 + Max.max (0 : ℝ) ((2 : ℝ) ^ m * q)
       have hw_lo : 1 ≤ w := by
         dsimp only [w]
@@ -1257,19 +1242,14 @@ noncomputable def rationalRamp4NormFixed {Op : Type u} {Struct : Type v}
       set q := R.targetVal (fun op => streamVal (env op)) sEnv
       have hq_hi : q ≤ 1 := (abs_le.mp (R.abs_targetVal_le_one hR)).2
       have hmax_mul : Max.max (0 : ℝ) ((2 : ℝ) ^ m * q) = (2 : ℝ) ^ m * Max.max 0 q := by
-        rcases le_total 0 q with hq0 | hq0
-        · rw [max_eq_right hq0, max_eq_right (mul_nonneg (by positivity) hq0)]
-        · rw [max_eq_left hq0, mul_zero,
-            max_eq_left (mul_nonpos_of_nonneg_of_nonpos (by positivity) hq0)]
+        rw [mul_max_of_nonneg _ _ (by positivity : (0 : ℝ) ≤ 2 ^ m), mul_zero]
       set u := Max.max (0 : ℝ) ((2 : ℝ) ^ m * q)
       set s := 1 / (1 + u)
       set P := -3 + 6 * s - 4 * s ^ 2 + s ^ 3
       have hramp_eq : Cslib.rationalRamp4Unit ((2 : ℝ) ^ m * q) / (2 : ℝ) ^ m =
           Max.max 0 q + P / (2 : ℝ) ^ m := by
         have hdec := rationalRamp4Unit_eq_poly_add_inv ((2 : ℝ) ^ m * q)
-        have hdec' : Cslib.rationalRamp4Unit ((2 : ℝ) ^ m * q) = u + P := by
-          dsimp only [u, P, s]
-          linarith
+        have hdec' : Cslib.rationalRamp4Unit ((2 : ℝ) ^ m * q) = u + P := by grind
         rw [hdec', add_div, hmax_mul, mul_div_cancel_left₀ _ (by positivity)]
       have havg_eq :
           (((1 / 4 : ℚ) : ℝ) * Max.max 0 q + P / (4 * (2 : ℝ) ^ m)) / 2 =
@@ -1717,68 +1697,36 @@ old default, and active support entries. -/
     | .floor => floorR
     | .oldDefault => oldDefaultR
     | .entry x μ => if x ∈ items then entryR x μ else ratRecipe d hd 0 (by norm_num)
+  -- Each per-child slack, coefficient and validity fact holds for the floor, old-default and
+  -- listed entry recipes by hypothesis, and for the zero filler recipe directly.
+  have hchild (P : UniformStreamRecipe Op Struct → Prop) (hF : P floorR) (hD : P oldDefaultR)
+      (hE : ∀ x ∈ items, ∀ μ, P (entryR x μ)) (hZ : P (ratRecipe d hd 0 (by norm_num))) :
+      ∀ idx, P (child idx) := by
+    intro idx
+    cases idx with
+    | floor => exact hF
+    | oldDefault => exact hD
+    | entry x μ =>
+        dsimp only [child]
+        split_ifs with hx
+        · exact hE x hx μ
+        · exact hZ
   let raw := (rowCompressionNewDefaultPrim (Struct := Struct) d hd items hNodup κ hLen n K).comp
     child cA cB cC (max 8 cInt)
-    (fun idx => by
-      cases idx with
-      | floor => exact hSlackFloor
-      | oldDefault => exact hSlackDef
-      | entry x μ =>
-          dsimp only [child]
-          split_ifs with hx
-          · exact hSlackEntry x hx μ
-          · rfl)
-    (fun idx => by
-      cases idx with
-      | floor => exact hAFloor
-      | oldDefault => exact hADef
-      | entry x μ =>
-          dsimp only [child]
-          split_ifs with hx
-          · exact hAEntry x hx μ
-          · exact Nat.zero_le _)
-    (fun idx => by
-      cases idx with
-      | floor => exact hBFloor
-      | oldDefault => exact hBDef
-      | entry x μ =>
-          dsimp only [child]
-          split_ifs with hx
-          · exact hBEntry x hx μ
-          · exact Nat.zero_le _)
-    (fun idx => by
-      cases idx with
-      | floor => exact hCFloor
-      | oldDefault => exact hCDef
-      | entry x μ =>
-          dsimp only [child]
-          split_ifs with hx
-          · exact hCEntry x hx μ
-          · exact Nat.zero_le _)
-    (fun idx => by
-      cases idx with
-      | floor => exact hIntFloor.trans (le_max_right 8 _)
-      | oldDefault => exact hIntDef.trans (le_max_right 8 _)
-      | entry x μ =>
-          dsimp only [child]
-          split_ifs with hx
-          · exact (hIntEntry x hx μ).trans (le_max_right 8 _)
-          · exact le_max_left 8 _)
+    (hchild (·.slack = d) hSlackFloor hSlackDef hSlackEntry rfl)
+    (hchild (·.coeffA ≤ cA) hAFloor hADef hAEntry (Nat.zero_le _))
+    (hchild (·.coeffB ≤ cB) hBFloor hBDef hBEntry (Nat.zero_le _))
+    (hchild (·.coeffC ≤ cC) hCFloor hCDef hCEntry (Nat.zero_le _))
+    (hchild (·.intrinsicCoeff ≤ max 8 cInt) (hIntFloor.trans (le_max_right 8 _))
+      (hIntDef.trans (le_max_right 8 _))
+      (fun x hx μ => (hIntEntry x hx μ).trans (le_max_right 8 _)) (le_max_left 8 _))
   (raw.weakenValid
     (fun env sEnv =>
       floorR.ValidEnv env sEnv ∧ oldDefaultR.ValidEnv env sEnv ∧
         ∀ x ∈ items, ∀ μ, (entryR x μ).ValidEnv env sEnv)
     (fun {env sEnv} ⟨hFl, hDf, hEn⟩ => by
-      have hCh : ∀ idx, (child idx).ValidEnv env sEnv := by
-        intro idx
-        cases idx with
-        | floor => exact hFl
-        | oldDefault => exact hDf
-        | entry x μ =>
-            dsimp only [child]
-            split_ifs with hx
-            · exact hEn x hx μ
-            · trivial
+      have hCh : ∀ idx, (child idx).ValidEnv env sEnv :=
+        hchild (·.ValidEnv env sEnv) hFl hDf hEn trivial
       have hNorm : ∀ idx, IsNormSignedStream (fun u => ((child idx).digitProg u).eval env sEnv) :=
         fun idx => ⟨(child idx).emits_signed (hCh idx), by
           rw [(child idx).emits_exact (hCh idx)]
@@ -1818,71 +1766,38 @@ default, and row entries. -/
     | .floor => floorR
     | .oldDefault => oldDefaultR
     | .entry x μ => if x = y ∨ x ∈ items then entryR x μ else ratRecipe d hd 0 (by norm_num)
+  -- Each per-child slack, coefficient and validity fact holds for the floor, old-default and
+  -- updated or listed entry recipes by hypothesis, and for the zero filler recipe directly.
+  have hchild (P : UniformStreamRecipe Op Struct → Prop) (hF : P floorR) (hD : P oldDefaultR)
+      (hE : ∀ x, (x = y ∨ x ∈ items) → ∀ μ, P (entryR x μ))
+      (hZ : P (ratRecipe d hd 0 (by norm_num))) : ∀ idx, P (child idx) := by
+    intro idx
+    cases idx with
+    | floor => exact hF
+    | oldDefault => exact hD
+    | entry x μ =>
+        dsimp only [child]
+        split_ifs with hx
+        · exact hE x hx μ
+        · exact hZ
   let raw := (rowCompressionUpdatePrim (Struct := Struct) d hd items hNodup κ hLen n K y ν).comp
     child cA cB cC (max 8 cInt)
-    (fun idx => by
-      cases idx with
-      | floor => exact hSlackFloor
-      | oldDefault => exact hSlackDef
-      | entry x μ =>
-          dsimp only [child]
-          split_ifs with hx
-          · exact hSlackEntry x hx μ
-          · rfl)
-    (fun idx => by
-      cases idx with
-      | floor => exact hAFloor
-      | oldDefault => exact hADef
-      | entry x μ =>
-          dsimp only [child]
-          split_ifs with hx
-          · exact hAEntry x hx μ
-          · exact Nat.zero_le _)
-    (fun idx => by
-      cases idx with
-      | floor => exact hBFloor
-      | oldDefault => exact hBDef
-      | entry x μ =>
-          dsimp only [child]
-          split_ifs with hx
-          · exact hBEntry x hx μ
-          · exact Nat.zero_le _)
-    (fun idx => by
-      cases idx with
-      | floor => exact hCFloor
-      | oldDefault => exact hCDef
-      | entry x μ =>
-          dsimp only [child]
-          split_ifs with hx
-          · exact hCEntry x hx μ
-          · exact Nat.zero_le _)
-    (fun idx => by
-      cases idx with
-      | floor => exact hIntFloor.trans (le_max_right 8 _)
-      | oldDefault => exact hIntDef.trans (le_max_right 8 _)
-      | entry x μ =>
-          dsimp only [child]
-          split_ifs with hx
-          · exact (hIntEntry x hx μ).trans (le_max_right 8 _)
-          · exact le_max_left 8 _)
+    (hchild (·.slack = d) hSlackFloor hSlackDef hSlackEntry rfl)
+    (hchild (·.coeffA ≤ cA) hAFloor hADef hAEntry (Nat.zero_le _))
+    (hchild (·.coeffB ≤ cB) hBFloor hBDef hBEntry (Nat.zero_le _))
+    (hchild (·.coeffC ≤ cC) hCFloor hCDef hCEntry (Nat.zero_le _))
+    (hchild (·.intrinsicCoeff ≤ max 8 cInt) (hIntFloor.trans (le_max_right 8 _))
+      (hIntDef.trans (le_max_right 8 _))
+      (fun x hx μ => (hIntEntry x hx μ).trans (le_max_right 8 _)) (le_max_left 8 _))
   (raw.weakenValid
     (fun env sEnv =>
       floorR.ValidEnv env sEnv ∧ oldDefaultR.ValidEnv env sEnv ∧
         (∀ μ, (entryR y μ).ValidEnv env sEnv) ∧
         ∀ x ∈ items, ∀ μ, (entryR x μ).ValidEnv env sEnv)
     (fun {env sEnv} ⟨hFl, hDf, hY, hEn⟩ => by
-      have hCh : ∀ idx, (child idx).ValidEnv env sEnv := by
-        intro idx
-        cases idx with
-        | floor => exact hFl
-        | oldDefault => exact hDf
-        | entry x μ =>
-            dsimp only [child]
-            split_ifs with hx
-            · rcases hx with rfl | hmem
-              · exact hY μ
-              · exact hEn x hmem μ
-            · trivial
+      have hCh : ∀ idx, (child idx).ValidEnv env sEnv :=
+        hchild (·.ValidEnv env sEnv) hFl hDf
+          (fun x hx μ => hx.elim (fun h => h ▸ hY μ) (fun hmem => hEn x hmem μ)) trivial
       have hNorm : ∀ idx, IsNormSignedStream (fun u => ((child idx).digitProg u).eval env sEnv) :=
         fun idx => ⟨(child idx).emits_signed (hCh idx), by
           rw [(child idx).emits_exact (hCh idx)]

@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Computability.CellProbe.Chronogram
 public import Mathlib.Data.ZMod.Defs
 import CslibFrontier.Foundations.Data.Code.HammingBound
+import CslibFrontier.Foundations.Data.Finset.ApplyUpdate
 import CslibFrontier.Foundations.Data.Nat.Choose.Sum
 import Mathlib.Data.ZMod.Basic
 
@@ -494,11 +495,10 @@ theorem hardAnswer_update (X : HardInput β L) (j : Fin L)
     (x : Fin (β ^ (L - (j : ℕ))) → ZMod 2) (q : Fin (β ^ L)) :
     hardAnswer (Function.update X j x) q =
       prefixParity x ⟨q / β ^ (j : ℕ), hardBlock_lt j.2 q.2⟩ +
-        ∑ k ∈ univ.erase j, prefixParity (X k) ⟨q / β ^ (k : ℕ), hardBlock_lt k.2 q.2⟩ := by
-  unfold hardAnswer
-  rw [← add_sum_erase _ _ (mem_univ j), Function.update_self]
-  congr 1
-  exact sum_congr rfl fun k hk => by rw [Function.update_of_ne (ne_of_mem_erase hk)]
+        ∑ k ∈ univ.erase j, prefixParity (X k) ⟨q / β ^ (k : ℕ), hardBlock_lt k.2 q.2⟩ :=
+  sum_apply_update_of_mem (mem_univ j)
+    (fun k (y : Fin (β ^ (L - (k : ℕ))) → ZMod 2) =>
+      prefixParity y ⟨q / β ^ (k : ℕ), hardBlock_lt k.2 q.2⟩) X x
 
 /-! ### The encoding argument -/
 
@@ -608,9 +608,7 @@ private theorem hammingDist_mul_le (hD : AnswersQueries D) (hβ : 0 < β) (hL : 
           have h1 : p.1 = p'.1 := Fin.ext <| by
             have := congrArg (· / β ^ (j : ℕ)) h
             simpa only [f, hdiv] using this
-          have h2 : (p.2 : ℕ) = p'.2 := by
-            simp only [f, h1] at h
-            omega
+          have h2 : (p.2 : ℕ) = p'.2 := by grind
           exact Prod.ext h1 (Fin.ext h2)
     _ ≤ _ := card_union_le _ _
 
