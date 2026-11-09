@@ -34,6 +34,8 @@ statements.
 * `Cslib.Probability.PMF.pi_sum_abs_sub_mean_ge`: the two-sided bound.
 * `Cslib.Probability.PMF.uniform_abs_sum_div_sub_expect_ge_le`: the two-sided bound for the
   empirical average of a `[-1, 1]`-valued function at independent uniform points.
+* `Cslib.Probability.PMF.pi_abs_sum_div_sub_sum_mul_ge_le`: the same bound at independent samples
+  of any distribution.
 
 ## References
 
@@ -189,6 +191,45 @@ theorem uniform_abs_sum_div_sub_expect_ge_le {m : ℕ} {α : Type*} [Fintype α]
     ext ω
     have hsum : ∑ j, (1 + s (ω j)) - m * (1 + 𝔼 a, s a) =
         m * ((∑ j, s (ω j)) / m - 𝔼 a, s a) := by
+      simp only [sum_add_distrib, sum_const, card_univ, Fintype.card_fin, nsmul_eq_mul, mul_one]
+      field_simp
+      ring
+    simp only [Set.mem_ofPred_eq, hsum, abs_mul, abs_of_pos hmR]
+    exact (mul_le_mul_iff_right₀ hmR).symm
+  rw [hevent]
+  refine h.trans_eq ?_
+  congr 2
+  field_simp
+
+/-- **Hoeffding's inequality for an empirical average** under any distribution: the average of a
+function with values in `[-1, 1]` at `m` independent samples of `p` is off from its mean by at
+least `γ` with probability at most `2 exp (-m γ² / 2)`. -/
+theorem pi_abs_sum_div_sub_sum_mul_ge_le {m : ℕ} {α : Type*} [Fintype α] (p : PMF α)
+    (s : α → ℝ) (hs : ∀ a, |s a| ≤ 1) {γ : ℝ} (hγ : 0 ≤ γ) :
+    (pi fun _ : Fin m => p).toOuterMeasure
+      {ω | γ ≤ |(∑ j, s (ω j)) / m - ∑ a, (p a).toReal * s a|} ≤
+        ENNReal.ofReal (2 * Real.exp (-(m * γ ^ 2) / 2)) := by
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · -- without samples, the bound is at least one
+    refine (PMF.toOuterMeasure_le_one _ _).trans ?_
+    rw [← ENNReal.ofReal_one]
+    refine ENNReal.ofReal_le_ofReal ?_
+    simp only [CharP.cast_eq_zero, zero_mul, neg_zero, zero_div, Real.exp_zero, mul_one]
+    norm_num
+  rw [ENNReal.le_ofReal_iff_toReal_le (toOuterMeasure_ne_top _ _) (by positivity)]
+  set μ := ∑ a, (p a).toReal * s a
+  have h := pi_sum_abs_sub_mean_ge (fun _ : Fin m => p)
+    (fun _ a => 1 + s a) (bound := 2) (ε := m * γ) (by norm_num)
+    (fun _ a _ => ⟨by linarith [(abs_le.1 (hs a)).1], by linarith [(abs_le.1 (hs a)).2]⟩)
+    (by positivity)
+  have hmean : ∑ a, (p a).toReal * (1 + s a) = 1 + μ := by
+    simp only [mul_add, mul_one, sum_add_distrib, PMF.sum_toReal, μ]
+  simp only [hmean, sum_const, card_univ, Fintype.card_fin, nsmul_eq_mul] at h
+  have hmR : (0 : ℝ) < m := Nat.cast_pos.2 hm
+  have hevent : {ω : Fin m → α | γ ≤ |(∑ j, s (ω j)) / m - μ|} =
+      {ω | m * γ ≤ |∑ j, (1 + s (ω j)) - m * (1 + μ)|} := by
+    ext ω
+    have hsum : ∑ j, (1 + s (ω j)) - m * (1 + μ) = m * ((∑ j, s (ω j)) / m - μ) := by
       simp only [sum_add_distrib, sum_const, card_univ, Fintype.card_fin, nsmul_eq_mul, mul_one]
       field_simp
       ring

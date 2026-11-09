@@ -11,6 +11,7 @@ public import Complexity.Computability.Circuit.Boolean.Encoding.Certificate
 public import Complexity.Computability.Complexity.Classes.NP
 public import Complexity.Computability.MCSP.Basic
 public import Complexity.Foundations.Data.BitString.Enumeration
+import Complexity.Computability.Circuit.Encoding.Layer
 import Complexity.Foundations.Data.BitString.List
 public import Complexity.Foundations.Data.BitString.List.Binary
 import Complexity.Computability.Circuit.Boolean.Hierarchy
@@ -180,9 +181,7 @@ theorem exists_checkCertificateOn_append {α : Type} {tests : List α}
       accept t (C.eval interpretation y 0) = true) :
     ∃ u : List Bool, u.length = certLength m S ∧
       ∀ extra, checkCertificateOn tests input accept m S (u ++ extra) = true := by
-  have hcode : Program.IsCodeFrom signature m 0 C.code.1 := by
-    rw [← Program.isSome_ofCode_iff, Circuit.code, Program.ofCode_code]
-    rfl
+  have hcode := C.isCodeFrom_code
   refine ⟨certificate m S C.code.1 (C.outputs 0).toNat, length_certificate_code C hcS,
     fun extra => ?_⟩
   simp only [checkCertificateOn, validCertificate, evalCertificate,
@@ -525,8 +524,7 @@ theorem computableInPolyTime_checkCertificate_table {α : Type} {encT : List α 
     have hlog : 2 * Nat.log 2 T + 1 ≤ 2 * T + 1 := by
       have := Nat.log_le_self 2 T
       omega
-    calc 2 ^ Nat.log 2 T * (2 * Nat.log 2 T + 1) ≤ (T + 1) * (2 * T + 1) :=
-          Nat.mul_le_mul hpow hlog
+    calc 2 ^ Nat.log 2 T * (2 * Nat.log 2 T + 1) ≤ (T + 1) * (2 * T + 1) := by gcongr
       _ ≤ (encIn r).length * (encIn r).length :=
           Nat.mul_le_mul (by omega) hT_enc
   have hproj : ComputableInPolyTime

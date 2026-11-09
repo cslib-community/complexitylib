@@ -10,11 +10,11 @@ module
 public import Complexity.Languages.Probabilistic.Selection
 public import Complexity.Computability.Probabilistic.PPT
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
-import Complexity.Computability.Probabilistic.Oracle.Composition
-import Complexity.Computability.Probabilistic.Repeat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Probabilistic.Adaptive
+import Complexity.Computability.Probabilistic.Repeat
 import Complexity.Tactic.PPT
 
 /-!
@@ -80,26 +80,20 @@ theorem IsPPTOn.selectBest {α : Type} {input : α ↪ List Bool}
             encUnary)
         simpa only [decide_eq_true_eq] using hc.ite (by fun_prop) (by fun_prop)
     exact hupd.of_enc_eq fun ⟨⟨_, ⟨_, _, _⟩⟩, _⟩ => rfl
-  have horacle := IsOraclePPTOn.iterateWith_spec' (Operation := Empty)
+  have hloop := (IsPPTOn.iterateWith_spec'
     (stateEncoding := stateEncoding) (initial := fun _ => (0, 0, 0))
-    (step := fun a s => ProbOracleComp.sample (OracleComp.selectStep (trials a) (test a) s))
-    hcount (by dsimp only [stateEncoding]; fun_prop)
-    (hstep.isOraclePPTOn (Operation := Empty))
+    (step := fun a s => OracleComp.selectStep (trials a) (test a) s)
+    hcount (by dsimp only [stateEncoding]; fun_prop) hstep
     (fun a i state => state.1 = i ∧ state.2.1 ≤ i ∧ state.2.2 ≤ trials a)
     (by simp) (fun a i ⟨next, best, count⟩ _ hstate ⟨next', best', count'⟩ hnext =>
       ProbComp.selectStep_bounded (trials a) (test a) i next best count hstate next' best' count'
-        ((ProbOracleComp.support_sample _).subset hnext))
+        hnext)
     (size := fun a => 4 * count a + trials a + 2)
     (ComputableInPolyTime.polyBounded (by fun_prop)) (by
       intro a i state hi hstate
       dsimp only [stateEncoding]
       simp only [length_encPair, encUnary_apply, List.length_replicate]
-      lia)
-  have hloop : IsPPTOn input stateEncoding
-      (fun a => OracleComp.iterate (count a)
-        (OracleComp.selectStep (trials a) (test a)) (0, 0, 0)) := by
-    apply IsOraclePPTOn.isPPTOn
-    simpa only [ProbOracleComp.sample, OracleComp.interpret_iterate] using horacle.1
+      lia)).1
   have hproj : ComputableInPolyTime (fun s : ℕ × ℕ × ℕ => s.2.1) stateEncoding encUnary := by
     dsimp only [stateEncoding]; fun_prop
   exact hloop.map (hproj.of_enc_eq fun ⟨_, _, _⟩ => rfl)

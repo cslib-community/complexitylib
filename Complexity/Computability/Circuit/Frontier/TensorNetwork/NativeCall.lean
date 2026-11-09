@@ -154,8 +154,7 @@ theorem val_recover_eq_contraction {a u h p Δ : ℕ} (hu : 1 ≤ u) (huM : u �
       (Nat.mul_le_mul_left _ (Nat.sub_le _ _)).trans (by omega)
     have e1 : 6 * h * 2 ^ (a - padicValInt 2 t) ≤ 8 * h * 2 ^ (a - padicValInt 2 t) :=
       Nat.mul_le_mul_right _ (by omega)
-    have e2 : h * (u - padicValInt 2 t) * (a + 1) ≤ 8 * D.numEdges * (a + 1) :=
-      Nat.mul_le_mul_right _ h1
+    have e2 : h * (u - padicValInt 2 t) * (a + 1) ≤ 8 * D.numEdges * (a + 1) := by gcongr
     simp only [nodePrecision, taperMult]
     omega
   have hrec := val_recover_of_eq_add hirr (RingO hirr) hB
