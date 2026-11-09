@@ -274,7 +274,14 @@ class-search sum/max remain explicit costs in that envelope. `SearchResources` n
 normalizes generated class pairs/full states and selected direct searches, including
 orientation/materialization and both producer/matcher temporaries. Its whole-source
 composition leaves only the selected restarted-search sum/max explicit, including
-classes skipped after hits. Next normalize those actual restarted-window, label/control,
+classes skipped after hits. The installed emitter/window envelopes in
+`StreamingEmitBounds` and `KeyJoinBatchBounds` now sum actual group wires and
+bound scalar states at every prefix. Their cumulative population potential pays
+emissions from remaining capacity plus quarter records scanned. Use these with
+the complete batch client; do not reintroduce maximum group size times group
+count. The actual count/division/filter/cross callback sum/max are still explicit,
+so these envelopes are not sharp global bounds. Next normalize those actual
+restarted-window, label/control,
 callback/frame and simultaneous workspace costs; do not repeat the completed prepass,
 direct branch or envelope proofs. The residuals are cost expressions, not runtime
 hypotheses or sharp whole-run bounds. The direct-only checked client is not a general

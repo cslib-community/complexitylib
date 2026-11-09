@@ -2343,6 +2343,7 @@ public import CslibFrontier.Computability.GenericRAM.Native.PolynomialOverhead
 public import CslibFrontier.Computability.GenericRAM.Native.StackRecursion
 public import CslibFrontier.Computability.GenericRAM.Native.StackRecursionTree
 public import CslibFrontier.Computability.GenericRAM.Native.StreamingEmit
+public import CslibFrontier.Computability.GenericRAM.Native.StreamingEmitBounds
 public import CslibFrontier.Computability.GenericRAM.Native.StreamingFold
 public import CslibFrontier.Computability.GenericRAM.Native.StreamingFoldBounds
 public import CslibFrontier.Computability.GenericRAM.Native.SubsetPairFold
@@ -2571,6 +2572,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.K
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyGrouping
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoin
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoinBatch
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoinBatchBounds
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoinStream
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.RadixPartition
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.RadixSort

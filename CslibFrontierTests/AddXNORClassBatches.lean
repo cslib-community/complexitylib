@@ -8,6 +8,7 @@ module
 -- upstream: local-only (restarted class-batch source integration regression tests)
 
 public import CslibFrontier.Cryptanalysis.AddXNORSearchResources
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoinBatchBounds
 import all CslibFrontier.Cryptanalysis.AddXNORSearchResources
 import all CslibFrontier.Computability.GenericRAM.Native.StreamingFoldBounds
 import all CslibFrontier.Cryptanalysis.AddXNORJoinedDissection
@@ -311,3 +312,57 @@ example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
   with_reducible
     rw [timePow, spacePow, timeEq, spaceEq, balanceEq] at instantiated
     simpa only [Nat.zero_add, Nat.reduceAdd] using instantiated
+
+-- The installed window certificate is the machine used by the actual source batch constructor.
+-- This checks arbitrary runtime contexts, both orientations and all labels, not just a fixture.
+example : ∃ K : ℕ, ∀ (context : JoinedProbe.Context) (g i : ℕ),
+    let groups := JoinedProbe.groups context g
+    let bounds := (i*ClassBatches.capacity context, ClassBatches.capacity context)
+    KeyJoinBatch.windowCertificate.time (bounds, groups) ≤
+      K*(KeyJoinBatch.windowCallbackTime bounds groups+
+        (encPair (encPair encNat encNat)
+          (encList (encList RadixPartition.recordEncoding)) (bounds, groups)).length+
+        (groups.length+1)*((encPair encNat encNat bounds).length+1)+
+        2*(encList RadixPartition.recordEncoding groups.flatten).length+1) := by
+  obtain ⟨K, bound⟩ := KeyJoinBatch.windowCertificate_bounds
+  exact ⟨K, fun context g i => (bound _ _).1⟩
+
+-- Cumulative actual callback emissions pay one capacity plus quarter records at every prefix.
+-- These populations are not used as a replacement for callback machine clocks.
+example (context : JoinedProbe.Context) (g i n : ℕ)
+    (hn : n ≤ (JoinedProbe.groups context g).length) :
+    let groups := JoinedProbe.groups context g
+    let bounds := (i*ClassBatches.capacity context, ClassBatches.capacity context)
+    (∑ j ∈ Finset.range n, if h : j < groups.length then
+      (KeyJoinBatch.groupWindow
+        (streamState bounds (fun q => KeyJoinBatch.advance q.1 q.2) groups j)
+        groups[j]).length else 0) ≤
+      ClassBatches.capacity context+ClassBatches.quarterVolume context := by
+  have h := KeyJoinBatch.window_prefix_population
+    (i*ClassBatches.capacity context, ClassBatches.capacity context)
+    (JoinedProbe.groups context g) n hn
+  have sub := List.take_sublist n (JoinedProbe.groups context g)
+  have rows := sub.flatten.length_le
+  rw [ClassBatches.groups_length] at rows
+  dsimp only at h ⊢
+  omega
+
+-- Uneven groups include empty buckets, collisions, an unmatched bucket, and a cut Cartesian row.
+def unevenWindowGroups : List (List SortedMatch.Record) :=
+  [[], [(1, 0), (1, 2), (1, 4), (1, 1), (1, 3)], [(7, 0)], [], [(9, 1)]]
+
+example : KeyJoinBatch.window (1, 3) unevenWindowGroups = [(1, 0), (1, 1)] := by
+  decide +kernel
+example : KeyJoinBatch.window (0, 0) unevenWindowGroups = [] := by decide +kernel
+example : KeyJoinBatch.window (100, 3) unevenWindowGroups = [] := by decide +kernel
+example : KeyJoinBatch.window (0, 5) unevenWindowGroups =
+    [(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1)] := by decide +kernel
+
+-- A real arithmetic-hit restart's window overhead uses the scalar-state theorem at every prefix.
+example (j : ℕ) :
+    let input := Source.prepare restartArithmeticHit
+    let context := JoinedDissection.probeContext input 0
+    let bounds := (0, ClassBatches.capacity context)
+    (encPair encNat encNat (streamState bounds (fun q => KeyJoinBatch.advance q.1 q.2)
+      (JoinedProbe.groups context 0) j)).length ≤ (encPair encNat encNat bounds).length := by
+  exact KeyJoinBatch.window_state_wire _ _ j

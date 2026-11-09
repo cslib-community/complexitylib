@@ -2428,6 +2428,22 @@ remains open: the actual restarted window scan/cut/division, label/control/callb
 frames and simultaneous temporaries still require composition. These residual
 expressions are not supplied runtime hypotheses or a completed Theorem 7 bound.
 
+[`StreamingEmitBounds.lean`](../../CslibFrontier/Computability/GenericRAM/Native/StreamingEmitBounds.lean)
+now bounds the unchanged installed emitter by summed actual callback clocks and
+summed token wires, with a separate maximum for callback workspace and every
+prefix state charged. This matters when tokens are whole groups: multiplying
+maximum group wire size by the number of groups introduces an unnecessary
+quadratic term. [`KeyJoinBatchBounds.lean`](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Algorithms/KeyJoinBatchBounds.lean)
+applies this to the actual window certificate. Its binary skip/count state never
+exceeds the original scalar widths. At each prefix, emitted population plus
+remaining capacity is at most initial capacity plus quarter records scanned;
+empty groups, collisions, zero capacity and a cut Cartesian row are included.
+The complete batch client applies the certificate to arbitrary runtime source
+contexts and checks uneven groups. The actual count/division/filter/cross
+callback clocks and workspace remain explicit. This closes the cumulative
+emitter/window framing inequality, **not** their scalar-polynomial normalization
+or the general restarted-search sum/max and sharp whole-source theorem.
+
 The all-class search uses the same fixed streaming kernel over an actually
 generated class-index list. The approved uniform index generator supplies its
 real time/space profile and the derived wire bound $2^p(2p+1)$; the capped source
