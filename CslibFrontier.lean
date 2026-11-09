@@ -3604,6 +3604,7 @@ public import CslibFrontier.Computability.WordRAM.Signed.Input
 public import CslibFrontier.Computability.WordRAM.Signed.Operations
 public import CslibFrontier.Computability.WordRAM.Signed.State
 public import CslibFrontier.Computability.WordRAM.Structured
+public import CslibFrontier.Computability.WordRAM.Structured.FastEval
 public import CslibFrontier.Computability.WordRAM.Subroutine
 public import CslibFrontier.Computability.WordRAM.SymbolicExec
 public import CslibFrontier.Computability.WordRAM.SymbolicExec.Call
