@@ -262,9 +262,7 @@ private theorem uniformOfFintype_map_apply_of_bijective {X Y : Type} [Fintype X]
     {f : X → Y} (hf : Function.Bijective f) (y : Y) :
     ((PMF.uniformOfFintype X).map f) y = (Fintype.card X : ℝ≥0∞)⁻¹ := by
   obtain ⟨x, rfl⟩ := hf.2 y
-  have hfiber : Nat.card {a // f a = f x} = 1 := Nat.card_eq_one_iff_unique.mpr
-    ⟨⟨fun a b => Subtype.ext (hf.1 (a.2.trans b.2.symm))⟩, ⟨⟨x, rfl⟩⟩⟩
-  rw [PMF.uniformOfFintype_map_apply, hfiber, Nat.cast_one, one_div]
+  rw [PMF.map_apply_of_injective _ hf.1, PMF.uniformOfFintype_apply]
 
 /-- **Lemma 12.5 (`1 / q ^ 2` joint point mass)** ([BonehShoup2023], Section 12.5.1,
 printed p. 485): under uniform `(σ, τ) : ZMod (F.order d) × ZMod (F.order d)`, for any non-DH
