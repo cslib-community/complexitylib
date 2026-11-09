@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Communication.Randomized
 public import Mathlib.Analysis.SpecialFunctions.Exp
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.ToReal
 import CslibFrontier.Probability.PMF.Union
 import CslibFrontier.Probability.Concentration
 import Mathlib.Analysis.SpecialFunctions.Exponential
@@ -84,7 +85,7 @@ private theorem pi_sum_err_ge_toReal_le [Finite X] [Finite Y] {μ : PublicCoin X
   have h := PMF.pi_sum_ge_mean_add (fun _ : BitString k => ν)
     (fun _ s => if s (x, y) then (1 : ℝ) else 0) (bound := 1) (ε := 2 ^ k * δ) zero_le_one
     (fun _ _ _ => by split_ifs <;> simp) (by positivity)
-  refine le_trans (ENNReal.toReal_mono (PMF.toOuterMeasure_ne_top _ _) (measure_mono ?_))
+  refine le_trans (PMF.toOuterMeasure_toReal_mono _ ?_)
     (h.trans_eq ?_)
   · intro s hs
     simp only [Set.mem_ofPred_eq] at hs ⊢
