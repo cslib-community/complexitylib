@@ -34,4 +34,10 @@ example {p q : Point} (h : ePoint p = ePoint q) : p = q := ePoint.injective h
 example : ComputableInDegree (fun p : Point => Point.mk p.x p.y p.z) ePoint ePoint 1 1 := by
   fun_prop (disch := lia)
 
+/-- Reading a generated field retains the caller's budget, including for unary list elements. -/
+example {α : Type} {enc : α ↪ List Bool} {S : α → ℕ} {f : α → Point}
+    (hf : ComputableInSpace f enc ePoint S) :
+    ComputableInSpace (fun a => (f a).z) enc (encList encUnary) S :=
+  ePoint_z_budget hf
+
 end CslibFrontierTests.StructureEncoding
