@@ -1381,13 +1381,16 @@ declarations and native charged-word conventions, not undocumented admission or 
 | Theorem 1.3; Lemmas 6.1–6.2 | `VCOne`, `VCOneClosure`, `VCOneSeparator`, `VCOneFrontend` | Constructive closure/separators and binary resources under actual per-table VC-one promise. |
 | Theorem 6.3 | `VCOneDispatch`, `VCOneCountingResources` | Complete actual table counter, arbitrary overlapping injective scopes, direct/empty branches and original count. |
 | Lemma 3.2; Proposition 4.2 | `IncidenceGeneralResources`, generic frontend composition | Actual general-density single-loglog fixed-width counter and sequential resource composition. The old squared-loglog interpolation algorithm is not relabeled. |
+| Lemma 3.1 | Row-selection mathematics and integer Gram/binary backend | General row-selection semantics reused; actual weighted/exact-one integer inputs are covered. A standalone arbitrary-rational byte frontend/resource transfer is not supplied. |
+| Lemma 3.3; Appendix A.1 | `FunctionalCNF`, `CardinalityInterval`, `PaddedCardinality` | Actual functional cardinality circuits, binary target normalization, linear gate/clause bounds and unique extensions; padded per-class refinement now composed. |
+| Lemma A.1; Corollary A.2 | Not yet mapped to a complete frontend | Generic polynomially bounded integer weights, signed literals, linear functional 3-CNF and complete joint weighted distributions remain open. Unit-weight cardinality and fixed normalized-demand equations do not establish this source claim. |
 | Theorem 7.1 | `WeightedRaggedResources` | Parsed arbitrary ragged positive-binary-weight rows, repeated/mixed literals and signed targets, fixed normalized-demand bound, actual all-cases sharp counting. |
 | Corollary 7.2; Lemma C.1 | `DegreeThreshold`, `SigmaRhoInput`, `SigmaRhoCountingResources`, `SigmaRhoDistribution` | Arbitrary fixed finite/cofinite pair, optional binary natural interval, original-set counts and full ordered cardinality distribution, including sharp native resources/output. General signed-bound wrapper is a remaining encoding extension. |
-| Theorem 7.3 | `DegreePartition`, `DegreePartitionCountingResources` | Actual arbitrary fixed labeled finite/cofinite matrices without size tests, original partition counts, source dimension/width and complete sharp native resources. Input class bounds, size-vector traversal/output and separate explicit vertex-clause bound remain open. |
-| Corollary 7.4; Propositions D.1–D.5 | Existing graph counter modules; MIM/Upper witness modules | All six decision specializations covered. Full optimum/witness for MIM and Upper; four other recovery specializations remain open. |
+| Theorem 7.3 | `DegreePartition`, `BoundedDegreePartitionCountingResources`, `DegreePartitionDistribution` | Actual fixed finite/cofinite labeled matrices, runtime binary natural class bounds, original counts and all tagged size vectors with exact order/coverage/output bounds; source query budgets and complete sharp native resources. Explicit canonical graph/unary/native model. |
+| Corollary 7.4; D.1–D.5 and Appendix D.5 | Existing graph counter modules; MIM/Upper witness modules | All six decision specializations covered. Full optimum/witness for MIM and Upper; four other recovery specializations remain open. |
 | Corollary 7.5 | `InducedMatching.Distribution` | Full ordered edge-size distribution and sharper no-size-test total construction, including output resources. |
 | Proposition 7.6 / Appendix D.3 | `UpperDomination`, `UpperDominationUnique` | Initial pair count/decision and augmented width-four exact original-set counter covered. Shared-marker width-three refinement remains open. |
-| Proposition C.2 | Current d=1 matching specialization | General fixed d-regular compact `2v+a-1` construction, size tests and resources remain open; no connectivity restriction is permitted. |
+| Proposition C.2 | General counts via Cor7.2; compact d=1 matching specialization | General fixed-d regular counts/size tests/sharp resources follow from the general degree-rule counter. The compact `2v+a-1`, width `d+2`, `O_d(v^(d+2))` construction for d>=2 remains open. No connectivity restriction. |
 
 Supporting row-selection mathematics and the actual integer Gram/basis/consistency/candidate backend
 are reused, along with linear functional cardinality writing (Lemma 3.3). This does not assert a new
@@ -1395,6 +1398,14 @@ arbitrary-rational byte frontend for Lemma 3.1. The advertised Appendix A.3 one-
 alternative is not supplied by the existing two-query Theorem 7.1 endpoint; it remains unmapped.
 
 Remaining STOC1575 objectives, keeping the original inventory open:
+
+- Lemma A.1 / Corollary A.2 (PDF pp.28–29): actual signed-literal comparisons with arbitrary
+  nonnegative integer weights bounded by n^c (fixed c), binary integer targets, a uniform O_c(n)
+  functional 3-CNF construction, its ordinary two-query transfer and full joint weight-distribution
+  traversal/resources remain unmapped. Existing cardinality tests are unit-weight specializations;
+  Theorem 7.1's arbitrary binary row weights with a fixed normalized-demand cap are a different
+  scope, not a proof of this general linear-auxiliary weighted-comparison tool. Do not conflate
+  these with monomial-weighted interpolation or connected-domination methods from other papers.
 
 - Theorems 1.1–1.2 / 5.1–5.2 / Corollary 5.3: actual generic bounded-term DNF constructor/count/resource transfer and the
   signed-equation/side-2-CNF route are covered for the explicit encodings above. Alternative byte
@@ -1415,17 +1426,23 @@ Remaining STOC1575 objectives, keeping the original inventory open:
   cardinality distribution is now covered by `SigmaRhoDistribution`, including actual traversal,
   prefix encodings, output and sharp native resources. A general signed-bound wrapper remains an
   encoding extension. Reuse these finished point/distribution counters and threshold proofs.
-- Theorem 7.3: `DegreePartitionCountingResources` now covers arbitrary fixed finite/cofinite
-  q-by-q matrices without size tests: executable one-hot/threshold/state writing, exact ordinary
-  labeled partition counts, no label quotient or auxiliary multiplicity, actual binary polynomial
-  construction, source no-test dimension/width and complete sharp native time/global workspace.
-  All labels and empty classes are retained; no connectivity condition is imposed. The actual
-  input-varying per-class cardinality frontend, its unique gate extension/combined resources,
-  full size-vector traversal/output and explicit vertex-polynomial clause-volume bound remain
-  open. `InClassBounds` is only the ordinary semantic predicate, not the missing constructor.
-  Preserve `q(2D+1)v+a-1` variables, width `max(q,D+2)`, `a=O_q(v)` (zero without tests),
-  input-bound intersection with `[0,v]`, and polynomially many ordered class-size tuples. Reuse
-  the finished general no-test matrix counter instead of repeating its construction/count proof.
+- Theorem 7.3: arbitrary fixed q-by-q finite/cofinite matrices, actual runtime per-class binary
+  natural intervals and complete ordinary labeled partition counts are covered by
+  `BoundedDegreePartitionCountingResources`. This reuses the approved no-test constructor and
+  adds actual functional tests with a=q*952(v+1) allocated, uniquely fixed gate/padding slots;
+  a<=1904qv for positive v. Source dimension `q(2D+1)v+a-1`, width `max(q,D+2)`, valid indices,
+  explicit vertex-polynomial clause volume and complete actual sharp native time/global space
+  are proved. No-test mode remains the old zero-gate endpoint. `DegreePartitionDistribution`
+  actually emits all `(v+1)^q` ordered size vectors and original counts, retaining zero coefficients,
+  with exact coverage/order, tagged output length and whole-loop sharp time/global workspace.
+  First coordinate varies slowest; last varies fastest. Fixed q/D/matrix versus runtime graph/bounds
+  is explicit: no uniform growing-q polynomial or label quotient is claimed. Empty classes/graphs,
+  clamping/contradictions and declared isolates are retained without connectivity restrictions.
+  The recorded model uses canonical explicit simple graphs, unary declarations, binary natural
+  bounds and native charged-word certificates; general signed wrappers, alternative admission/
+  succinct encodings and fresh binary-transition realization remain separate representation/model
+  transfers. General-class minimum/maximum extraction mentioned after the theorem has not been
+  packaged as a separate native endpoint; the full vector output is available for that purpose.
 - Corollary 7.4: independent-domination counting with input size bounds, outgoing-absorbing
   kernel counting/decision, labeled perfect-matching-cut counting/decision and actual dominating-
   induced-matching counting/decision and maximum-induced-matching signed-threshold counting/
@@ -1433,7 +1450,8 @@ Remaining STOC1575 objectives, keeping the original inventory open:
   covered for the stated explicit encodings. Full optimum/witness composition is covered for
   Maximum Induced Matching and Upper Domination, including an actual returned original solution.
   The other four predicates still need their optimum/witness recovery specializations. General
-  degree rules/partitions and the width-three path-marker refinement are separate source clauses.
+  degree-rule/partition counting is now covered above; the width-three path-marker refinement
+  remains a separate source clause.
 - Corollary 7.5: total counts with the sharper no-size-test `2v-1` query construction, exact
   edge-size coefficients and the full ordered distribution/output/sharp-time/global-space endpoint
   are covered for the stated canonical explicit encoding. Alternative admission/succinct encoding

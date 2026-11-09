@@ -1670,6 +1670,7 @@ public import Complexity.Computability.Complexity.Fagin.Witness
 public import Complexity.Computability.Complexity.FineGrained
 public import Complexity.Computability.Complexity.FineGrained.Assignment
 public import Complexity.Computability.Complexity.FineGrained.BinaryWeightedCounting
+public import Complexity.Computability.Complexity.FineGrained.BoundedDegreePartitionCountingResources
 public import Complexity.Computability.Complexity.FineGrained.BruteForce
 public import Complexity.Computability.Complexity.FineGrained.CircuitCounting
 public import Complexity.Computability.Complexity.FineGrained.CircuitLowerBoundBudget
@@ -1690,6 +1691,7 @@ public import Complexity.Computability.Complexity.FineGrained.CountingSparsifica
 public import Complexity.Computability.Complexity.FineGrained.CountingSparsifyContext
 public import Complexity.Computability.Complexity.FineGrained.CountingTreeBound
 public import Complexity.Computability.Complexity.FineGrained.DegreePartitionCountingResources
+public import Complexity.Computability.Complexity.FineGrained.DegreePartitionDistribution
 public import Complexity.Computability.Complexity.FineGrained.DensityBranchCounting
 public import Complexity.Computability.Complexity.FineGrained.DigraphKernel
 public import Complexity.Computability.Complexity.FineGrained.DominatingInducedMatching
@@ -2620,6 +2622,8 @@ public import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidence
 public import Complexity.Computability.PolyTime.BooleanAnalysis.IncidenceBranching
 public import Complexity.Computability.PolyTime.BooleanAnalysis.SparsePolyCounter
 public import Complexity.Computability.PolyTime.BudgetTuples
+public import Complexity.Computability.PolyTime.CNF.BoundedDegreePartition
+public import Complexity.Computability.PolyTime.CNF.BoundedDegreePartitionVolumes
 public import Complexity.Computability.PolyTime.CNF.BranchedSparseCNFCounter
 public import Complexity.Computability.PolyTime.CNF.CardinalityInterval
 public import Complexity.Computability.PolyTime.CNF.DegreePartition
@@ -2633,6 +2637,8 @@ public import Complexity.Computability.PolyTime.CNF.IndependentDomination
 public import Complexity.Computability.PolyTime.CNF.IndependentDominationInterval
 public import Complexity.Computability.PolyTime.CNF.InducedMatching
 public import Complexity.Computability.PolyTime.CNF.InducedMatchingInterval
+public import Complexity.Computability.PolyTime.CNF.PaddedCardinality
+public import Complexity.Computability.PolyTime.CNF.PartitionSizeVectors
 public import Complexity.Computability.PolyTime.CNF.PerfectMatchingCut
 public import Complexity.Computability.PolyTime.CNF.SigmaRho
 public import Complexity.Computability.PolyTime.CNF.SigmaRhoInput
@@ -4176,11 +4182,13 @@ public import Complexity.Logics.FirstOrder.Reduction.QuantifierFree
 public import Complexity.Logics.FirstOrder.Subformula
 public import Complexity.Logics.FirstOrder.Tuple
 public import Complexity.Logics.Propositional.CNF
+public import Complexity.Logics.Propositional.CNF.BoundedDegreePartition
 public import Complexity.Logics.Propositional.CNF.Coding
 public import Complexity.Logics.Propositional.CNF.Compact
 public import Complexity.Logics.Propositional.CNF.Compact.ModelCount
 public import Complexity.Logics.Propositional.CNF.Compact.Relabel
 public import Complexity.Logics.Propositional.CNF.DegreePartition
+public import Complexity.Logics.Propositional.CNF.DegreePartitionVolumes
 public import Complexity.Logics.Propositional.CNF.ExactOne
 public import Complexity.Logics.Propositional.CNF.ExactOne.BlockBounds
 public import Complexity.Logics.Propositional.CNF.ExactOne.Blocks
