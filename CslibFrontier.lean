@@ -2069,6 +2069,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.SparseBranchSch
 public import CslibFrontier.Computability.Complexity.FineGrained.SparseCountingScale
 public import CslibFrontier.Computability.Complexity.FineGrained.SparseParitySchedule
 public import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
+public import CslibFrontier.Computability.Complexity.FineGrained.SparsificationRounds
 public import CslibFrontier.Computability.Complexity.FineGrained.ThreeOccurrenceReduction
 public import CslibFrontier.Computability.Complexity.FineGrained.WideClauseCounting
 public import CslibFrontier.Computability.Complexity.FineGrained.WordRAM
