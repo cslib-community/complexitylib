@@ -291,9 +291,11 @@ theorem three_mul_length_mul_freqMoment_le {k K n : ℕ} (hk : k ≠ 0) {η : �
 /-- The `rpow` form `3 k n ^ (1 - 1/k) ≤ K η²` of the group size condition of
 [AlonMatiasSzegedy1999, proof of Theorem 2.1] implies the form `(3 k) ^ k n ^ (k - 1) ≤ (K η²) ^ k`
 used here. -/
-theorem pow_mul_pow_sub_one_le_of_mul_rpow_le {k K n : ℕ} (hk : k ≠ 0) {η : ℝ}
+theorem pow_mul_pow_sub_one_le_of_mul_rpow_le {k K n : ℕ} {η : ℝ}
     (h : 3 * k * (n : ℝ) ^ (1 - 1 / (k : ℝ)) ≤ K * η ^ 2) :
     (3 * k : ℝ) ^ k * n ^ (k - 1) ≤ (K * η ^ 2) ^ k := by
+  rcases eq_or_ne k 0 with rfl | hk
+  · simp
   have hk' : (0 : ℝ) < k := Nat.cast_pos.2 (Nat.pos_of_ne_zero hk)
   have hpow : ((n : ℝ) ^ (1 - 1 / (k : ℝ))) ^ k = (n : ℝ) ^ (k - 1) := by
     rw [← Real.rpow_mul_natCast (Nat.cast_nonneg n), ← Real.rpow_natCast]
@@ -477,7 +479,7 @@ theorem solves_fkEstimator_of_rpow [Fintype α] [NeZero m] (hk : k ≠ 0) {η δ
     (hδ : (8 / 9 : ℝ) ^ r ≤ δ) :
     (fkEstimator α k m r K).Solves δ
       (fun s Y => s.length = m → |Y - freqMoment k s| ≤ η * freqMoment k s) m :=
-  solves_fkEstimator hk hη (pow_mul_pow_sub_one_le_of_mul_rpow_le hk hK) hδ
+  solves_fkEstimator hk hη (pow_mul_pow_sub_one_le_of_mul_rpow_le hK) hδ
 
 /-! ### Memory -/
 

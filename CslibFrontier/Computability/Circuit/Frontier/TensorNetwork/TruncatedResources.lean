@@ -69,18 +69,6 @@ variable {T : Type} {encT : T ↪ List Bool}
 
 /-! ### Sizes -/
 
-/-- A list of values, each at most `Yb` bits, is at most `(2 Yb + 1)` bits per value. -/
-private theorem length_encList_le_of_forall {vals : List (List ℕ)} {Yb : ℕ}
-    (h : ∀ v ∈ vals, (encList encNat v).length ≤ Yb) :
-    (encList (encList encNat) vals).length ≤ vals.length * (2 * Yb + 1) := by
-  rw [length_encList]
-  have h' := List.sum_le_length_nsmul (vals.map fun a => 2 * (encList encNat a).length + 1)
-    (2 * Yb + 1) fun x hx => by
-      obtain ⟨v, hv, rfl⟩ := List.mem_map.mp hx
-      have := h v hv
-      omega
-  rwa [List.length_map, smul_eq_mul] at h'
-
 /-- The length of an input `(fl, P, ℓ, r, G)` of the reduction, by components. -/
 theorem length_encEngine (fl : List ℕ) (P ℓ r : ℕ) (G : DescribedNetwork T) :
     (encEngine encT (fl, P, ℓ, r, G)).length = 2 * (encList encNat fl).length + 1 +
@@ -171,8 +159,8 @@ theorem length_run_engineStep_le (y : List ℕ × ℕ × ℕ × ℕ × Described
     (encS (IndexFold.run (engineStep core) j (y, []))).length ≤
       2 * (encNat j).length + 2 * (encEngine encT y).length + 2 + j * (2 * Yb + 1) := by
   rw [run_engineStep]
-  have h := length_encList_le_of_forall (vals := (List.range j).map fun k => core (coreInput y k))
-    (Yb := Yb) fun v hv => by
+  have h := Turing.MultiTapeTM.length_encList_le (encList encNat)
+    ((List.range j).map fun k => core (coreInput y k)) (b := Yb) fun v hv => by
       obtain ⟨k, hk, rfl⟩ := List.mem_map.mp hv
       exact hY k (List.mem_range.mp hk)
   simp only [List.length_map, List.length_range] at h

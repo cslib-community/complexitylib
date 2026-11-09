@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeEndpoint
 import CslibFrontier.Computability.Complexity.FineGrained.CountingScaleBounds
+import CslibFrontier.Foundations.Data.Nat.Power
 import CslibFrontier.Logics.Propositional.CNF.ModelCount.DenseRelabel
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
@@ -54,16 +55,6 @@ namespace Cslib.Complexity.CountingNativeEndpoint
 
 open Cslib.Logic.PL Turing.MultiTapeTM SubexponentialSAT
 
-/-- A polynomial length bound `L ≤ p Y ^ q`, with `1 ≤ Y`, bounds every power of `L + 1`:
-`(L + 1) ^ k ≤ (p + 1) ^ k Y ^ (q k)`. -/
-private theorem add_one_pow_le_of_le_mul_pow {L p q Y : ℕ} (hY : 1 ≤ Y) (h : L ≤ p * Y ^ q)
-    (k : ℕ) : (L + 1) ^ k ≤ (p + 1) ^ k * Y ^ (q * k) := by
-  have hlen : L + 1 ≤ (p + 1) * Y ^ q := by
-    have h1 : 1 ≤ Y ^ q := Nat.one_le_pow _ _ hY
-    nlinarith
-  calc (L + 1) ^ k ≤ ((p + 1) * Y ^ q) ^ k := Nat.pow_le_pow_left hlen k
-    _ = (p + 1) ^ k * Y ^ (q * k) := by rw [mul_pow, pow_mul]
-
 /-- General composition of `CountingNativeEndpoint.exists_declaredCounter` with any polynomial-time
 reduction `g : α → ℕ × CNF ℕ` and polynomial-time validity guard `valid : α → Bool`. -/
 public theorem exists_counter_of_polyTime_toDeclared {α : Type} {encA : α ↪ List Bool} (k : ℕ)
@@ -90,7 +81,7 @@ public theorem exists_counter_of_polyTime_toDeclared {α : Type} {encA : α ↪ 
   -- guard and reduction overhead `P x` is below `3 (|x| + 1) ^ E` for every `E > dv + dg`.
   have hpow : ∀ x k, ((encPair encUnary encCNF (g x)).length + 1) ^ k ≤
       (p + 1) ^ k * ((encA x).length + 1) ^ (q * k) := fun x =>
-    add_one_pow_le_of_le_mul_pow (Nat.le_add_left 1 _) (hp x)
+    Nat.add_one_pow_le_of_le_mul_pow (Nat.succ_pos _) (hp x)
   have hP_le : ∀ x E, dv + dg + 1 ≤ E → P x ≤ 3 * ((encA x).length + 1) ^ E := by
     intro x E hE
     have hY1 : 1 ≤ (encA x).length + 1 := Nat.le_add_left 1 _
@@ -205,7 +196,7 @@ public theorem exists_modelCounter (k : ℕ) :
   all_goals
     set Y := (encCNF φ).length + 1 with hY
     have hY1 : 1 ≤ Y := Nat.le_add_left 1 _
-    have hpow := add_one_pow_le_of_le_mul_pow hY1 (hp φ)
+    have hpow := Nat.add_one_pow_le_of_le_mul_pow hY1 (hp φ)
   · -- time
     set X : ℝ := (2 : ℝ) ^ ((A : ℝ) * interpolationScale φ.numVars) with hX
     set N := ⌈X⌉₊
@@ -294,7 +285,7 @@ public theorem exists_shiftedCounter_of_polyTime_toCNF {α : Type} {encA : α �
   all_goals
     set Y : ℕ := (encA x).length + 1
     have hY1 : 1 ≤ Y := Nat.le_add_left 1 _
-    have hφ_pow := add_one_pow_le_of_le_mul_pow hY1 (hfCNF_len x)
+    have hφ_pow := Nat.add_one_pow_le_of_le_mul_pow hY1 (hfCNF_len x)
     have hφ_b₀ : ((encCNF (fCNF x)).length + 1) ^ b₀ ≤ (p + 1) ^ b₀ * Y ^ (q * b₀) := hφ_pow b₀
     have hSpair_le : Y ^ d₂ + (Y ^ d₁ + ((encCNF (fCNF x)).length + 1) ^ b₀) ≤
         (2 + (p + 1) ^ b₀) * Y ^ B₁ := by
@@ -318,9 +309,7 @@ public theorem exists_shiftedCounter_of_polyTime_toCNF {α : Type} {encA : α �
             ≤ c_pair * ((3 + (p + 1) ^ b₀) * Y ^ B₁) + Y ^ B₁ :=
               Nat.add_le_add (h1.trans (Nat.mul_le_mul_left c_pair hS1)) hYB₁
           _ = M * Y ^ B₁ := by dsimp only [M]; ring
-      calc ((encPair encNat encNat (fPow x, countCNF (fCNF x))).length + 1) ^ d₃
-          ≤ (M * Y ^ B₁) ^ d₃ := Nat.pow_le_pow_left h2 d₃
-        _ = M ^ d₃ * Y ^ (B₁ * d₃) := by rw [mul_pow, pow_mul]
+      exact Nat.pow_le_pow_mul_pow_of_le_mul_pow h2 d₃
   · set N : ℕ := ⌈(2 : ℝ) ^ ((A : ℝ) * interpolationScale (μ x))⌉₊
     have hN1 : 1 ≤ N := Nat.one_le_ceil_iff.mpr (Real.rpow_pos_of_pos (by norm_num) _)
     have hnum_le : (fCNF x).numVars ≤ C * μ x + D := by

@@ -58,29 +58,35 @@ open Polynomial Finset
 local notation "ℤ₍₂₎" => Valuation.integer (Rat.padicValuation 2)
 
 /-- An integer is `2 ^ v₂(n)` times its odd part `n / 2 ^ v₂(n)`. -/
-private theorem two_pow_mul_ediv (n : ℤ) : 2 ^ padicValInt 2 n * (n / 2 ^ padicValInt 2 n) = n :=
+theorem two_pow_mul_ediv (n : ℤ) : 2 ^ padicValInt 2 n * (n / 2 ^ padicValInt 2 n) = n :=
   Int.mul_ediv_cancel' (by exact_mod_cast padicValInt_dvd (p := 2) n)
 
 /-- The odd part of a nonzero integer is nonzero. -/
-private theorem ediv_ne_zero {n : ℤ} (hn : n ≠ 0) : n / 2 ^ padicValInt 2 n ≠ 0 := by
+theorem ediv_two_pow_ne_zero {n : ℤ} (hn : n ≠ 0) : n / 2 ^ padicValInt 2 n ≠ 0 := by
   intro h
   exact hn (by rw [← two_pow_mul_ediv n, h, mul_zero])
 
-/-- The odd part of a nonzero integer is not divisible by `2`. -/
-private theorem padicValInt_ediv_eq_zero {n : ℤ} (hn : n ≠ 0) :
-    padicValInt 2 (n / 2 ^ padicValInt 2 n) = 0 := by
-  refine padicValInt.eq_zero_of_not_dvd fun ⟨c, hc⟩ => ?_
-  have hc' : n / 2 ^ padicValInt 2 n = 2 * c := by exact_mod_cast hc
+/-- The odd part of a nonzero integer is odd. -/
+theorem odd_ediv_two_pow {n : ℤ} (hn : n ≠ 0) : Odd (n / 2 ^ padicValInt 2 n) := by
+  rw [← Int.not_even_iff_odd, even_iff_two_dvd]
+  rintro ⟨c, hc⟩
   have h2 : (2 : ℤ) ^ (padicValInt 2 n + 1) ∣ n := ⟨c, by
     calc n = 2 ^ padicValInt 2 n * (n / 2 ^ padicValInt 2 n) := (two_pow_mul_ediv n).symm
-      _ = 2 ^ (padicValInt 2 n + 1) * c := by rw [hc', pow_succ]; ring⟩
+      _ = 2 ^ (padicValInt 2 n + 1) * c := by rw [hc, pow_succ]; ring⟩
   have h := (padicValInt_dvd_iff (p := 2) (padicValInt 2 n + 1) n).mp (by exact_mod_cast h2)
   omega
+
+/-- The odd part of a nonzero integer is not divisible by `2`. -/
+private theorem padicValInt_ediv_eq_zero {n : ℤ} (hn : n ≠ 0) :
+    padicValInt 2 (n / 2 ^ padicValInt 2 n) = 0 :=
+  padicValInt.eq_zero_of_not_dvd fun h =>
+    Int.not_even_iff_odd.mpr (odd_ediv_two_pow hn) (even_iff_two_dvd.mpr (by exact_mod_cast h))
 
 /-- The valuation of the odd part of a nonzero integer is one. -/
 private theorem padicValuation_ediv {n : ℤ} (hn : n ≠ 0) :
     Rat.padicValuation 2 (((n / 2 ^ padicValInt 2 n : ℤ) : ℚ)) = 1 := by
-  rw [Rat.padicValuation_intCast_of_ne_zero 2 (ediv_ne_zero hn), padicValInt_ediv_eq_zero hn]
+  rw [Rat.padicValuation_intCast_of_ne_zero 2 (ediv_two_pow_ne_zero hn),
+    padicValInt_ediv_eq_zero hn]
   rfl
 
 /-- The inverse of an odd part is `2`-integral. -/
@@ -247,7 +253,7 @@ theorem localKernel_eq_prod {a : ℕ} {t d : ℤ} (ht : t ∈ cauchyGrid (2 ^ a)
         _ = padicValInt 2 (t - d) + sv := by rw [erase_right_comm]
     have hvd := padicValInt_sub_le ht hd hdt
     have hw : w ≠ 0 := prod_ne_zero_iff.mpr fun q hq => by
-      exact_mod_cast ediv_ne_zero (sub_ne_zero.mpr (Ne.symm (ne_of_mem_erase hq)))
+      exact_mod_cast ediv_two_pow_ne_zero (sub_ne_zero.mpr (Ne.symm (ne_of_mem_erase hq)))
     rw [← mul_prod_erase _ _ htd, prod_shift_eq ht _ hsub,
       show C (t : ℚ) + C ((2 : ℚ) ^ (a + 1)) * X - C (t : ℚ) = C ((2 : ℚ) ^ (a + 1)) * X by ring]
     have hL : C (2 ^ S₀ * w)⁻¹ * (C ((2 : ℚ) ^ (a + 1)) * X * (C ((2 : ℚ) ^ sv) * U)) =

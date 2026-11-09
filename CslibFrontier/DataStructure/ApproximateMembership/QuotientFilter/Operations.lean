@@ -422,11 +422,7 @@ theorem IntervalValid.remAt_probeSlot_eq_getElem {U b f : ℕ} {S : Finset (Fin 
         (List.range ℓ).flatMap (fun j => bucketRun S quot rem (probeSlot b o j)) := by
     have := congrArg (List.map Prod.snd) hinv.slots_eq_flatMap
     simpa [List.map_map, List.map_flatMap, map_snd_taggedRun, Function.comp_def] using this
-  have hr : List.range ℓ =
-      List.range a ++ [a] ++ (List.range (ℓ - (a + 1))).map (a + 1 + ·) := by
-    have h1 : List.range ℓ = List.range (a + 1) ++ (List.range (ℓ - (a + 1))).map (a + 1 + ·) := by
-      rw [← List.range_add, Nat.add_sub_of_le (by omega)]
-    rw [h1, List.range_succ, List.append_assoc, List.singleton_append]
+  have hr := range_eq_split ha
   have hpref_len :
       ((List.range a).flatMap (fun j => bucketRun S quot rem (probeSlot b o j))).length = S_a := by
     have hmap :
@@ -836,11 +832,7 @@ theorem flatMap_taggedRun_three_split {U b f : ℕ} (S : Finset (Fin U))
         taggedRun (bucketRun S quot rem (probeSlot b o a)) ++
         (((List.range (n - (a + 1))).map (a + 1 + ·)).flatMap fun j =>
           taggedRun (bucketRun S quot rem (probeSlot b o j))) := by
-  have hr : List.range n =
-      List.range a ++ [a] ++ (List.range (n - (a + 1))).map (a + 1 + ·) := by
-    have h1 : List.range n = List.range (a + 1) ++ (List.range (n - (a + 1))).map (a + 1 + ·) := by
-      rw [← List.range_add, Nat.add_sub_of_le (by omega)]
-    rw [h1, List.range_succ, List.append_assoc, List.singleton_append]
+  have hr := range_eq_split ha
   conv_lhs => rw [hr, List.flatMap_append, List.flatMap_append, List.flatMap_singleton]
 
 theorem take_append_drop_middle {α : Type*} (pref mid suff : List α) (x : α)

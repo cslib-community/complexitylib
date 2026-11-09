@@ -155,8 +155,7 @@ theorem fiatShamirAbortSign_run_succ (x : X) (y : Y) (msg : M) (K : ℕ) (state 
         ((first.1.2.map fun z => (first.1.1, z)).orElse (fun _ => later.1), later.2) := by
   simp only [pmf_norm, iid, Fin.cons_zero, Fin.tail_cons, fiatShamirAbortSign, run_interpret_bind,
     run_interpret_pure, PMF.map]
-  congr 1
-  funext coin
+  congr 1 with coin : 1
   exact PMF.bind_comm _ _ _
 
 /-- Sequential witness invariance retains the complete final external state of all attempts.
@@ -172,8 +171,7 @@ theorem fiatShamirAbortSign_run_eq_of_transcript_eq {x x' : X} {y : Y}
   | succ K ih =>
     rw [fiatShamirAbortSign_run_succ, fiatShamirAbortSign_run_succ,
       fiatShamir_sign_run_eq_of_transcript_eq (fun x => x) P answer h msg state]
-    congr 1
-    funext first
+    congr 1 with first : 1
     rw [ih]
 
 end View

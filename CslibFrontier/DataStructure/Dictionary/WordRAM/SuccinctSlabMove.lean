@@ -834,8 +834,7 @@ def promoteLoopProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × �
   | succ m ih =>
     unfold iterate
     rw [promoteStepGenProg_mk]
-    congr 1
-    funext s'
+    congr 1 with s' : 1
     exact ih s'
 
 @[simp] theorem promoteLoopGenProg_mk (U V w n_max h_space : ℕ)

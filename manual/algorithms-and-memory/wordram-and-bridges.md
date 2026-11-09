@@ -57,6 +57,15 @@ The routine specification supplies its instruction allowance and full postcondit
 routine body stays closed. A fixed-time existential contract and a time-indexed `WP` contract
 are both supported. In the latter case, bind `y`, the returned allowance, and its postcondition.
 
+The same tactics prove exact instruction counts. On a goal `Exec w c x y T` or
+`∃ y, Exec w c x y T ∧ P y`, `wram_exec` runs with the rules of `WP.Exact`, the
+weakest-precondition form of `Exec`, and closes the final count `t = T` with `omega` when it can;
+a count it cannot close remains as the first conjunct of the goal. At a stop, continue from an
+exact specification with `refine WP.Exact.of_exec h ?_`, or apply an exact contract
+`∃ y, Exec w c x y T ∧ P y` with `wram_call`. `WP.Exact.toWP` weakens an exact count to a bound.
+The [symbolic-execution examples](../../CslibFrontierTests/WordRAMSymbolicExec.lean) check exact
+counts through a conditional, a wrong count left as a goal and a call to an exact specification.
+
 For an injective bank, use `wram_call routine_spec renamed bank_injective with y ⟨post, frame⟩`.
 Here the specification starts from the caller's `Data.comap bank`; `frame` preserves registers
 outside the bank. Memory and register projections of bank views are normalized once. Preparation,
@@ -69,12 +78,28 @@ its actual continuation, a variable allowance and rejected wrong-code/insufficie
 `wram_exec` and `wram_simp` read a register past `Data.set` when both names are literals, and
 also when names with free variables are distinct by the context: a hypothesis `j ≠ i` either way
 round, `j ∉ Set.range f` against a renamed register `f a`, `Function.Injective f` for `f b` and
-`f a`, or names such as `i.castAdd 3` and `⟨i + 9, _⟩` whose values the discharger separates.
-Other names stay unread. Memory passed whole to a definition, as in `swapMem y.mem i j`, becomes
-`Function.update`; reads at an address still go through the discharger. `Data.set_set` drops an
-overwritten register. The
+`f a`, an instance of a quantified disequality `∀ xs, a ≠ b` or `∀ xs, ¬a = b` either way round,
+or names such as `i.castAdd 3` and `⟨i + 9, _⟩` whose values the discharger separates. A
+quantified hypothesis such as `∀ i j, src i ≠ tmp j` separates two renamed banks. It is used only
+when matching its two sides against the names determines every bound variable. A hypothesis with
+a premise, such as `∀ i j, i ≠ j → tmp i ≠ tmp j`, is never instantiated; state that fact as
+`Function.Injective tmp`. Other names stay unread. Memory passed whole to a definition, as in
+`swapMem y.mem i j`, becomes `Function.update`; reads at an address still go through the
+discharger. `Data.set_set` drops an overwritten register. The
 [symbolic-execution examples](../../CslibFrontierTests/WordRAMSymbolicExec.lean) check each case,
-including names left unread.
+including two banks separated by quantified hypotheses, a premise-bearing hypothesis left unused,
+and names left unread.
+
+`wram_exec` also runs `Op.alu` instructions through `WP.alu`, for a basis given by a definition,
+such as `Basis.additive` (including `Op.addAdditive`), or for `Basis.standard` written with the
+constructor. `Basis.reduceInterp` unfolds the operation on the argument registers' values, and
+execution continues only when the result is `some v`. The fitting condition `Fits w v` is
+proved like other fitting conditions or left as a goal, and the instruction is charged as one
+instruction. An operation that does not unfold to `some v` without comparing the values, such as
+`Basis.exact` subtraction, stops `wram_exec` with a `could not evaluate` error; write such
+instructions as `Op.exactBin`, which has its own rules. The
+[other-bases examples](../../CslibFrontierTests/WordRAMSymbolicExec.lean) check additive and
+standard instructions and that failure.
 
 When a continuation would otherwise rebuild many caller-register equalities, import
 [`SymbolicExec.CanonicalCall`](../../CslibFrontier/Computability/WordRAM/SymbolicExec/CanonicalCall.lean)

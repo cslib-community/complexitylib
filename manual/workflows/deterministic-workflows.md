@@ -20,7 +20,7 @@ example (routine : ℕ × ℕ → ℕ)
       (encPair encNat encNat) encNat := by polytime
 ```
 
-Prove certificates for opaque subroutines, then let `fun_prop` compose registered rules or use `polytime` for the richer certificate search.
+Prove certificates for opaque subroutines, then let `fun_prop` compose registered rules or use `polytime` for the richer certificate search. For an explicit `ComputableInDegree … 1 1` contract, import `CslibFrontier.Tactic.Degree` and use `degree`; the [degree workflow](../design-and-assurance/automation.md#preserve-explicit-polynomial-degrees) gives the complete checked client and its limits.
 
 **Result:** argument swapping followed by `routine` is polynomial-time computable under the stated binary encodings. This does not establish any additional functional specification of `routine`.
 

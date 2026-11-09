@@ -74,6 +74,18 @@ universe u v
 
 variable {D : Type u} {R : Type v}
 
+/-- The logarithmic form of a packing bound with success probability `1 / 2`: if
+`2 ^ n · 2⁻¹ ≤ exp x` then `(n - 1) ln 2 ≤ x`. -/
+theorem sub_one_mul_log_two_le_of_two_pow_mul_inv_two_le_ofReal_exp {n : ℕ} {x : ℝ}
+    (h : (2 : ℝ≥0∞) ^ n * 2⁻¹ ≤ ENNReal.ofReal (Real.exp x)) : ((n : ℝ) - 1) * Real.log 2 ≤ x := by
+  have hlhs : (2 : ℝ≥0∞) ^ n * 2⁻¹ = ENNReal.ofReal (2 ^ n / 2) := by
+    rw [ENNReal.ofReal_div_of_pos two_pos, ENNReal.ofReal_pow zero_le_two, ENNReal.ofReal_ofNat,
+      div_eq_mul_inv]
+  rw [hlhs, ENNReal.ofReal_le_ofReal_iff (Real.exp_pos _).le] at h
+  have hlog := Real.log_le_log (by positivity) h
+  rw [Real.log_exp, Real.log_div (by positivity) two_ne_zero, Real.log_pow] at hlog
+  linarith
+
 namespace DifferentiallyPrivate
 
 variable {Adj : D → D → Prop} {M : D → PMF R} {ε : ℝ} {δ : ℝ≥0∞}
@@ -135,16 +147,8 @@ theorem log_two_mul_le_of_hammingDist_le (h : DifferentiallyPrivate HammingAdjac
     Real.log 2 * (s - 1) ≤ Δ * ε := by
   have hle := h.card_mul_le_of_hammingDist_le_of_pure Finset.univ (x 0) x
     (fun j _ => hx j 0) (fun i _ j _ hij => hB hij) (fun j _ => hp j)
-  rw [Finset.card_univ, Fintype.card_fin] at hle
-  have hlhs : ((2 ^ s : ℕ) : ℝ≥0∞) * 2⁻¹ = ENNReal.ofReal (2 ^ s / 2) := by
-    rw [ENNReal.ofReal_div_of_pos two_pos, ENNReal.ofReal_pow zero_le_two, ENNReal.ofReal_ofNat,
-      div_eq_mul_inv]
-    push_cast
-    rfl
-  rw [hlhs, ENNReal.ofReal_le_ofReal_iff (Real.exp_pos _).le] at hle
-  have hpos : (0 : ℝ) < 2 ^ s / 2 := by positivity
-  have := Real.log_le_log hpos hle
-  rw [Real.log_exp, Real.log_div (by positivity) two_ne_zero, Real.log_pow] at this
+  rw [Finset.card_univ, Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat] at hle
+  have := sub_one_mul_log_two_le_of_two_pow_mul_inv_two_le_ofReal_exp hle
   linarith
 
 end DifferentiallyPrivate
@@ -230,16 +234,9 @@ theorem two_pow_mul_le_of_oneWayMarginals (h : DifferentiallyPrivate HammingAdja
 `(k - 1) ln 2 ≤ n ε`. -/
 theorem log_two_mul_le_of_oneWayMarginals (h : DifferentiallyPrivate HammingAdjacent M ε 0)
     (hp : ∀ x, 2⁻¹ ≤ (M x).toOuterMeasure (accurateMarginals x)) :
-    (Fintype.card κ - 1) * Real.log 2 ≤ Fintype.card ι * ε := by
-  have hle := h.two_pow_mul_le_of_oneWayMarginals hp
-  have hlhs : (2 : ℝ≥0∞) ^ Fintype.card κ * 2⁻¹ = ENNReal.ofReal (2 ^ Fintype.card κ / 2) := by
-    rw [ENNReal.ofReal_div_of_pos two_pos, ENNReal.ofReal_pow zero_le_two, ENNReal.ofReal_ofNat,
-      div_eq_mul_inv]
-  rw [hlhs, ENNReal.ofReal_le_ofReal_iff (Real.exp_pos _).le] at hle
-  have hpos : (0 : ℝ) < 2 ^ Fintype.card κ / 2 := by positivity
-  have := Real.log_le_log hpos hle
-  rw [Real.log_exp, Real.log_div (by positivity) two_ne_zero, Real.log_pow] at this
-  linarith
+    (Fintype.card κ - 1) * Real.log 2 ≤ Fintype.card ι * ε :=
+  sub_one_mul_log_two_le_of_two_pow_mul_inv_two_le_ofReal_exp
+    (h.two_pow_mul_le_of_oneWayMarginals hp)
 
 end DifferentiallyPrivate
 

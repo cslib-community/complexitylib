@@ -209,12 +209,10 @@ private theorem succProbability_prvSimExp_false_prvIndToSim (hCompat : Φ.Compat
     have hlen₁ : x₁.length = G.inLen f₁ := hx₁.trans (hCompat.inLen_eq hphi)
     refine ⟨(ProbComp.eval (S k (G.ev f₁ x₁) (Φ.phi f₁))).bind fun answer =>
       ProbComp.eval (A.guess k st (some answer)), ?_⟩
-    congr 1
-    funext c
+    congr 1 with c : 1
     cases c <;> simp [hV, hx₀, hlen₁, hphi, hev, ProbComp.eval_bind, PMF.map, Function.comp_def]
   · refine ⟨ProbComp.eval (A.guess k st none), ?_⟩
-    congr 1
-    funext c
+    congr 1 with c : 1
     by_cases hx₀ : x₀.length = G.inLen f₀ <;>
       simp [hV, hx₀, ProbComp.eval_bind, PMF.bind_const, PMF.map, Function.comp_def]
 
@@ -228,8 +226,7 @@ private theorem eval_prvSimExp_true_prvIndToSim (hCompat : Φ.Compatible G)
   simp only [prvSimExp, prvIndToSim, prvIndExp, ProbComp.eval_bind, ProbComp.eval_uniform,
     ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, PMF.map_bind]
   rw [PMF.bind_comm]
-  congr 1
-  funext c
+  congr 1 with c : 1
   congr 1
   funext ⟨⟨f₀, f₁, x₀, x₁⟩, st⟩
   by_cases hV : prvIndValid G Φ f₀ f₁ x₀ x₁
@@ -329,12 +326,10 @@ private theorem succProbability_obvSimExp_false_obvIndToSim (hCompat : Φ.Compat
     have hlen₁ : x₁.length = G.inLen f₁ := hx₁.trans (hCompat.inLen_eq hphi)
     refine ⟨(ProbComp.eval (S k (Φ.phi f₁))).bind fun answer =>
       ProbComp.eval (A.guess k st (some answer)), ?_⟩
-    congr 1
-    funext c
+    congr 1 with c : 1
     cases c <;> simp [hV, hx₀, hlen₁, hphi, ProbComp.eval_bind, PMF.map, Function.comp_def]
   · refine ⟨ProbComp.eval (A.guess k st none), ?_⟩
-    congr 1
-    funext c
+    congr 1 with c : 1
     by_cases hx₀ : x₀.length = G.inLen f₀ <;>
       simp [hV, hx₀, ProbComp.eval_bind, PMF.bind_const, PMF.map, Function.comp_def]
 
@@ -348,8 +343,7 @@ private theorem eval_obvSimExp_true_obvIndToSim (hCompat : Φ.Compatible G)
   simp only [obvSimExp, obvIndToSim, obvIndExp, ProbComp.eval_bind, ProbComp.eval_uniform,
     ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, PMF.map_bind]
   rw [PMF.bind_comm]
-  congr 1
-  funext c
+  congr 1 with c : 1
   congr 1
   funext ⟨⟨f₀, f₁, x₀, x₁⟩, st⟩
   by_cases hV : obvIndValid G Φ f₀ f₁ x₀ x₁

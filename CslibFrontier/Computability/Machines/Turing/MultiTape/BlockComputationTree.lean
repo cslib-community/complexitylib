@@ -123,8 +123,7 @@ private theorem intervalGate_value {n : ℕ} (hn : n < q) :
   rw [value, dite_eq_left hn]
   simp only [intervalGate, child, dite_eq_left hn, Fin.cases_zero, Fin.cases_succ,
     Equiv.symm_apply_apply]
-  congr 2
-  funext h d
+  congr 2 with h d : 2
   split
   next hfirst =>
     rw [value]

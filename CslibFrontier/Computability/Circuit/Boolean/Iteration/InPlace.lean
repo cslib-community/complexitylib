@@ -40,9 +40,11 @@ only if the run ever halts, and equals the halting configuration whenever one is
 The circuit theorems (`inplace_fixed_power`, `inplace_fixed_power_optimized`,
 `inplace_configs_optimized`, `inplace_time_optimized`, `inplace_halting`) apply
 `fixed_power_encoded` to the forward-invariant reachable set `reach M n`, assuming an encoding
-`e : Config Q Γ n h → BitString w` injective on `reach M n`, a circuit `c` computing `M.step` on
-`e '' reach M n`, and a circuit `ι` computing `x ↦ e (M.init x)` (charging `c.size` and `ι.size`
-rather than compiling `M.δ` into gates). In `inplace_halting`, the circuit outputs the encoded
+`e : Config Q Γ n h → BitString w`, a circuit `c` computing `M.step` on `e '' reach M n`, and a
+circuit `ι` computing `x ↦ e (M.init x)` (charging `c.size` and `ι.size` rather than compiling
+`M.δ` into gates). The square-root forms also assume `e` injective on `reach M n`, which bounds
+`(reach M n).card` by `2 ^ w`; `inplace_fixed_power` needs neither injectivity nor
+`L ≤ 2 ^ w`. In `inplace_halting`, the circuit outputs the encoded
 configuration after `|Γ|^n * n^h * |Q|` steps together with the semantic halting equivalence, not a
 separately costed single-bit halting test. Finally, for a machine whose rounds of `τ` steps realize
 `P : BitString m → BitString m`, `round_lower_bound_of_hard` and `round_bounds_of_hard` transfer
@@ -290,13 +292,6 @@ theorem iterate_card_halting [Fintype Q] [Fintype Γ] (M : Machine Q Γ h)
     rw [← Function.iterate_add_apply, Nat.sub_add_cancel ht₀] at hfix
     exact hfix.symm
 
-/-- The integer budget is monotone in the storage count. -/
-theorem powerBudget_mono {w s M M' L : ℕ} (hM : M ≤ M') :
-    powerBudget w s M L ≤ powerBudget w s M' L := by
-  unfold powerBudget
-  have : M / L ≤ M' / L := Nat.div_le_div_right hM
-  gcongr
-
 /-- The real budget is monotone in the storage count. -/
 theorem optimizedBudget_mono {w s M M' : ℕ} (hM : M ≤ M') :
     optimizedBudget w s M ≤ optimizedBudget w s M' := by
@@ -317,17 +312,17 @@ private theorem reach_card_le_two_pow (e : Config Q Γ n h → BitString w)
 
 /-- Every fixed power on the initial configurations, with any upper bound `R` on the number of
 reachable configurations in the storage term. The initial-encoding circuit `ι` is charged. -/
-theorem inplace_fixed_power (e : Config Q Γ n h → BitString w) (he : Set.InjOn e (reach M n))
+theorem inplace_fixed_power (e : Config Q Γ n h → BitString w)
     (c : Circuit signature w w)
     (hstep : ∀ z ∈ reach M n, c.eval interpretation (e z) = e (M.step z))
     (ι : Circuit signature n w)
     (hι : ∀ x, ι.eval interpretation x = e (M.init x))
-    (R : ℕ) (hR : (reach M n).card ≤ R) (T L : ℕ) (hL : 0 < L) (hLw : L ≤ 2 ^ w) :
+    (R : ℕ) (hR : (reach M n).card ≤ R) (T L : ℕ) (hL : 0 < L) :
     ∃ out : Circuit signature n w,
       (∀ x, out.eval interpretation x = e (M.step^[T] (M.init x))) ∧
       out.size ≤ ι.size + 40000 * powerBudget w c.size R L := by
-  obtain ⟨d, hd, hs⟩ := fixed_power_encoded M.step (reach M n) e he c
-    (fun z hz => step_mem_reach M hz) hstep T L hL hLw
+  obtain ⟨d, hd, hs⟩ := fixed_power_encoded M.step (reach M n) e c
+    (fun z hz => step_mem_reach M hz) hstep T L hL
   refine ⟨d.comp ι, fun x => ?_, ?_⟩
   · rw [Circuit.eval_comp, hι, hd _ (init_mem_reach M x)]
   · rw [Circuit.size_comp]
@@ -344,9 +339,9 @@ theorem inplace_fixed_power_optimized (e : Config Q Γ n h → BitString w)
     ∃ out : Circuit signature n w,
       (∀ x, out.eval interpretation x = e (M.step^[T] (M.init x))) ∧
       (out.size : ℝ) ≤ ι.size + 120000 * optimizedBudget w c.size R := by
-  obtain ⟨L, hL, hLw, hopt⟩ := exists_powerBudget_le_optimizedBudget w c.size (reach M n).card
+  obtain ⟨L, hL, -, hopt⟩ := exists_powerBudget_le_optimizedBudget w c.size (reach M n).card
     (reach_card_le_two_pow M e he)
-  obtain ⟨out, hout, hs⟩ := inplace_fixed_power M e he c hstep ι hι _ le_rfl T L hL hLw
+  obtain ⟨out, hout, hs⟩ := inplace_fixed_power M e c hstep ι hι _ le_rfl T L hL
   refine ⟨out, hout, ?_⟩
   have hs' : (out.size : ℝ) ≤ ι.size + 40000 * (powerBudget w c.size (reach M n).card L : ℝ) := by
     exact_mod_cast hs

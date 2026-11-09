@@ -70,7 +70,7 @@ theorem exists_runFrom_nodeAt_bounded {k q s p r m : ℕ} {Q : Type} [Finite Q] 
     (hcapacity : r ≤ ((2 ^ m) ^ ((k * 3 + 1) * r)).size)
     (hb : Encoding.width k s b ≤ r * m) (hm : 0 < m) (hsp : 2 ^ m ≤ p)
     (h : Fin (2 ^ m) ↪ ZMod p) (hh : ∀ a, h a = (a.val : ZMod p)) :
-    let params : GateVector.Params := (((w.length, b, 0, 0, m, 0, r * m),
+    let params : GateVector.Params := (((⟨w.length, b, 0, 0, m, 0, r * m⟩ : Interpolation.Context),
       (p, 2 ^ m, (k * 3 + 1) * r), point, (2 ^ m) ^ ((k * 3 + 1) * r)), r)
     let args : Args := ((σ, q, path.map Fin.val), params)
     ∃ T values, (machine M e).halted ((machine M e).runFrom w (initial M e args) T) = true ∧
@@ -84,13 +84,14 @@ theorem exists_runFrom_nodeAt_bounded {k q s p r m : ℕ} {Q : Type} [Finite Q] 
         allowance k s Q args := by
   classical
   dsimp only
-  let params : GateVector.Params := (((w.length, b, 0, 0, m, 0, r * m),
+  let params : GateVector.Params := (((⟨w.length, b, 0, 0, m, 0, r * m⟩ : Interpolation.Context),
     (p, 2 ^ m, (k * 3 + 1) * r), point, (2 ^ m) ^ ((k * 3 + 1) * r)), r)
   let address : ImplicitPath.WalkArgs := (σ, q, path.map Fin.val)
   let index := ImplicitPath.walk k address
   have hprepare : prepare k (address, params) =
-      (QueryGate.gateParams (s := 2 ^ m) (w.length, b, σ, index - 1, m, 0, r * m) x, r) := by
-    change (((w.length, b, σ, index - 1, m, 0, r * m),
+      (QueryGate.gateParams (s := 2 ^ m)
+          (⟨w.length, b, σ, index - 1, m, 0, r * m⟩ : Interpolation.Context) x, r) := by
+    change (((⟨w.length, b, σ, index - 1, m, 0, r * m⟩ : Interpolation.Context),
       (p, 2 ^ m, (k * 3 + 1) * r), NormalizePoint.normalize p point,
       (2 ^ m) ^ ((k * 3 + 1) * r)), r) = _
     rw [hpoint]
@@ -140,7 +141,8 @@ theorem exists_runFrom_nodeAt_bounded {k q s p r m : ℕ} {Q : Type} [Finite Q] 
         GateVector.exists_runFrom_gateExtension_bounded M e w b σ i x hb hm hsp h hh
       have hstart : initial M e (address, params) =
           .inr (GateVector.initial
-            (QueryGate.gateParams (s := 2 ^ m) (w.length, b, σ, i.val, m, 0, r * m) x, r)) := by
+            (QueryGate.gateParams (s := 2 ^ m)
+                (⟨w.length, b, σ, i.val, m, 0, r * m⟩ : Interpolation.Context) x, r)) := by
         simp only [initial, htag, show ImplicitPath.walk k address ≠ 0 from hz,
           ↓reduceIte, hprepare, i]
       refine ⟨T, values, ?_, ?_, ?_, ?_⟩
@@ -158,7 +160,7 @@ theorem exists_runFrom_nodeAt_bounded {k q s p r m : ℕ} {Q : Type} [Finite Q] 
         have hlocal := hsize t ht
         change (GateVector.encState ((GateVector.machine M e).runFrom w
           (GateVector.initial (QueryGate.gateParams (s := 2 ^ m)
-            (w.length, b, σ, i.val, m, 0, r * m) x, r)) t)).length + 1 ≤ _
+            (⟨w.length, b, σ, i.val, m, 0, r * m⟩ : Interpolation.Context) x, r)) t)).length + 1 ≤ _
         rw [allowance, hprepare]
         dsimp only [i] at hlocal ⊢
         simp only [GateVector.setChunk_gateParams]
@@ -203,7 +205,7 @@ theorem exists_runFrom_nodeAt_padded_bounded {k q s p r m : ℕ} {Q : Type}
     (hb : Encoding.width k s b ≤ r * m) (hm : 0 < m) (hsp : 2 ^ m ≤ p)
     (h : Fin (2 ^ m) ↪ ZMod p) (hh : ∀ a, h a = (a.val : ZMod p)) :
     let point := List.ofFn (fun a : Fin ((k * 3 + 1) * r) => p + (blocksEquiv.symm x a).val)
-    let params : GateVector.Params := (((w.length, b, 0, 0, m, 0, r * m),
+    let params : GateVector.Params := (((⟨w.length, b, 0, 0, m, 0, r * m⟩ : Interpolation.Context),
       (p, 2 ^ m, (k * 3 + 1) * r), point, (2 ^ m) ^ ((k * 3 + 1) * r)), r)
     let args : Args := ((σ, q, path.map Fin.val), params)
     ∃ T values, (machine M e).halted ((machine M e).runFrom w (initial M e args) T) = true ∧
@@ -231,7 +233,7 @@ theorem exists_runFrom_nodeAt {k q s p r m : ℕ} {Q : Type} [Finite Q] [Fact p.
     (hcapacity : r ≤ ((2 ^ m) ^ ((k * 3 + 1) * r)).size)
     (hb : Encoding.width k s b ≤ r * m) (hm : 0 < m) (hsp : 2 ^ m ≤ p)
     (h : Fin (2 ^ m) ↪ ZMod p) (hh : ∀ a, h a = (a.val : ZMod p)) :
-    let params : GateVector.Params := (((w.length, b, 0, 0, m, 0, r * m),
+    let params : GateVector.Params := (((⟨w.length, b, 0, 0, m, 0, r * m⟩ : Interpolation.Context),
       (p, 2 ^ m, (k * 3 + 1) * r), point, (2 ^ m) ^ ((k * 3 + 1) * r)), r)
     let args : Args := ((σ, q, path.map Fin.val), params)
     ∃ T values, (machine M e).halted ((machine M e).runFrom w (initial M e args) T) = true ∧
@@ -254,7 +256,7 @@ theorem exists_runFrom_nodeAt_padded {k q s p r m : ℕ} {Q : Type} [Finite Q] [
     (hb : Encoding.width k s b ≤ r * m) (hm : 0 < m) (hsp : 2 ^ m ≤ p)
     (h : Fin (2 ^ m) ↪ ZMod p) (hh : ∀ a, h a = (a.val : ZMod p)) :
     let point := List.ofFn (fun a : Fin ((k * 3 + 1) * r) => p + (blocksEquiv.symm x a).val)
-    let params : GateVector.Params := (((w.length, b, 0, 0, m, 0, r * m),
+    let params : GateVector.Params := (((⟨w.length, b, 0, 0, m, 0, r * m⟩ : Interpolation.Context),
       (p, 2 ^ m, (k * 3 + 1) * r), point, (2 ^ m) ^ ((k * 3 + 1) * r)), r)
     let args : Args := ((σ, q, path.map Fin.val), params)
     ∃ T values, (machine M e).halted ((machine M e).runFrom w (initial M e args) T) = true ∧

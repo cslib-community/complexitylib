@@ -467,8 +467,7 @@ private theorem reg_add (qs : List ℕ) (X y : ℕ → Bool) (l : List ℕ) (b :
       simpa [Nat.add_assoc, Nat.add_comm 1 k] using hl (k + 1) (by simp; omega)
     rw [List.length_cons, ← Nat.add_assoc, Nat.add_right_comm, ih', reg_succ, h0,
       List.range_succ_eq_map, List.map_cons, List.map_map, Nat.add_zero, setQubits_cons]
-    congr 2
-    funext k
+    congr 2 with k : 1
     simp only [Function.comp_apply, Nat.succ_eq_add_one]
     congr 1
     omega
@@ -826,8 +825,7 @@ theorem contraction_network {R : Type*} [CommRing R] (S : List ℕ) (X : List Bo
             (fun j => (gs.foldl pathStep (X, List.ofFn π', false)).1.getD j false)
             then 1 else 0 := by
     rw [← trajWeight_sum]
-    congr 1
-    funext r0
+    congr 1 with r0 : 1
     exact hC _
   simp only [hstep, hinner]
   rw [hC, onesGap, Int.cast_sum]
@@ -860,8 +858,7 @@ theorem network_mapTables {R R' : Type*} [CommSemiring R] [CommSemiring R'] (ψ 
   have hgate (c i : ℕ) : (fun v : List ℕ × List R => (v.1, v.2.map ψ)) (gateVertex neg X gs c i) =
       gateVertex (ψ neg) X gs c i := by
     simp only [gateVertex, boundedTable, List.map_map]
-    congr 2
-    funext idx
+    congr 2 with idx : 1
     simp only [Function.comp_apply, gateEntry]
     split_ifs <;> simp
   have hglue (w : ℕ) : (fun v : List ℕ × List R => (v.1, v.2.map ψ)) (glueVertex S gs w) =

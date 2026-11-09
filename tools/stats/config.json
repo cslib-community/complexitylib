@@ -1,0 +1,8 @@
+{
+  "categories": [
+    {"id": "library", "label": "Library", "prefixes": ["CslibFrontier/", "Complexity/"], "files": ["CslibFrontier.lean", "Complexity.lean"]},
+    {"id": "tests", "label": "Tests", "prefixes": ["CslibFrontierTests/", "ComplexityTests/"]},
+    {"id": "results", "label": "Results and abstracts", "prefixes": ["CslibFrontierResults/", "ComplexityResults/", "abstracts/"], "files": ["CslibFrontierResults.lean", "ComplexityResults.lean"]},
+    {"id": "other", "label": "Guide and tooling", "fallback": true}
+  ]
+}

@@ -159,13 +159,14 @@ theorem setChunk_encoding_mono (params : QueryGate.Params Interpolation.Context)
       (QueryGate.encParams Interpolation.encContext (setChunk params b)).length := by
   rcases params with ⟨⟨N, block, σ, i, m, previous, stride⟩, parameters, point, limit⟩
   have h := length_encNat_mono hab
-  enc_len [setChunk, QueryGate.encParams, Interpolation.encContext]
+  enc_len [setChunk, QueryGate.encParams, Interpolation.encContext_apply,
+    Interpolation.encContextFields]
 
 omit [Finite Q] in
 /-- The replay allowance is monotone in the binary chunk-index metadata. -/
 theorem calleeSpace_chunk_mono (N block σ i m stride : ℕ) {a b : ℕ} (hab : a ≤ b) :
-    Interpolation.calleeSpace k s Q (N, block, σ, i, m, a, stride) ≤
-      Interpolation.calleeSpace k s Q (N, block, σ, i, m, b, stride) := by
+    Interpolation.calleeSpace k s Q (⟨N, block, σ, i, m, a, stride⟩ : Interpolation.Context) ≤
+      Interpolation.calleeSpace k s Q (⟨N, block, σ, i, m, b, stride⟩ : Interpolation.Context) := by
   have h := length_encNat_mono hab
   enc_len [Interpolation.calleeSpace, SupplierChunk.encContext]
 
@@ -179,8 +180,9 @@ theorem exists_runFrom_gateExtension_bounded {p q r m : ℕ} [Fact p.Prime]
     let f := codeGate (MultiTapePTM.ofDeterministic M) w b (scheduleOfNat k q σ)
       (Encoding.encode e) (Encoding.decode e) (i.val + 1)
     let params : Params := (QueryGate.gateParams (s := 2 ^ m)
-      (w.length, b, σ, i.val, m, 0, r * m) x, r)
-    let maxContext : Interpolation.Context := (w.length, b, σ, i.val, m, r, r * m)
+      (⟨w.length, b, σ, i.val, m, 0, r * m⟩ : Interpolation.Context) x, r)
+    let maxContext : Interpolation.Context :=
+        (⟨w.length, b, σ, i.val, m, r, r * m⟩ : Interpolation.Context)
     let maxParams := QueryGate.gateParams (s := 2 ^ m) maxContext x
     ∃ T values, (machine M e).runFrom w (initial params) T = .inl (params, r, values) ∧
       values.length = r ∧ (∀ value ∈ values, value < p) ∧
@@ -194,8 +196,9 @@ theorem exists_runFrom_gateExtension_bounded {p q r m : ℕ} [Fact p.Prime]
   let f := codeGate (MultiTapePTM.ofDeterministic M) w b (scheduleOfNat k q σ)
     (Encoding.encode e) (Encoding.decode e) (i.val + 1)
   let params : Params := (QueryGate.gateParams (s := 2 ^ m)
-    (w.length, b, σ, i.val, m, 0, r * m) x, r)
-  let maxContext : Interpolation.Context := (w.length, b, σ, i.val, m, r, r * m)
+    (⟨w.length, b, σ, i.val, m, 0, r * m⟩ : Interpolation.Context) x, r)
+  let maxContext : Interpolation.Context :=
+      (⟨w.length, b, σ, i.val, m, r, r * m⟩ : Interpolation.Context)
   let maxParams := QueryGate.gateParams (s := 2 ^ m) maxContext x
   let B := 16 * ((QueryGate.encParams Interpolation.encContext maxParams).length + 1) +
     Interpolation.calleeSpace k s Q maxContext + 2
@@ -221,7 +224,7 @@ theorem exists_runFrom_gateExtension_bounded {p q r m : ℕ} [Fact p.Prime]
     · intro t ht
       have hpar := setChunk_encoding_mono
         (QueryGate.gateParams (s := 2 ^ m)
-          (w.length, b, σ, i.val, m, 0, r * m) x) (Nat.le_of_lt hjr)
+          (⟨w.length, b, σ, i.val, m, 0, r * m⟩ : Interpolation.Context) x) (Nat.le_of_lt hjr)
       simp only [setChunk_gateParams] at hpar
       have hcallee := calleeSpace_chunk_mono (k := k) (s := s) (Q := Q)
         w.length b σ i.val m (r * m) (Nat.le_of_lt hjr)
@@ -229,7 +232,7 @@ theorem exists_runFrom_gateExtension_bounded {p q r m : ℕ} [Fact p.Prime]
       dsimp only at hlocal
       have hbound : (Interpolation.encState ((Interpolation.machine M e).runFrom w
           (Interpolation.initial (QueryGate.gateParams (s := 2 ^ m)
-            (w.length, b, σ, i.val, m, j, r * m) x)) t)).length ≤ B := by
+            (⟨w.length, b, σ, i.val, m, j, r * m⟩ : Interpolation.Context) x)) t)).length ≤ B := by
         dsimp only [B, maxParams, maxContext]
         omega
       simpa only [start, prefixState, params, setChunk_gateParams] using hbound
@@ -263,7 +266,7 @@ theorem exists_runFrom_gateExtension {p q r m : ℕ} [Fact p.Prime]
     let f := codeGate (MultiTapePTM.ofDeterministic M) w b (scheduleOfNat k q σ)
       (Encoding.encode e) (Encoding.decode e) (i.val + 1)
     let params : Params := (QueryGate.gateParams (s := 2 ^ m)
-      (w.length, b, σ, i.val, m, 0, r * m) x, r)
+      (⟨w.length, b, σ, i.val, m, 0, r * m⟩ : Interpolation.Context) x, r)
     ∃ T values, (machine M e).runFrom w (initial params) T = .inl (params, r, values) ∧
       values.length = r ∧ (∀ value ∈ values, value < p) ∧
       (∀ j : Fin r, (values.getD j.val 0 : ZMod p) =
