@@ -18,6 +18,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.LinearPrimiti
 import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Deterministic
 import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayInput
 import Complexity.Computability.Machines.Turing.MultiTape.Run
+import Complexity.Tactic.EncLen
 
 /-!
 # Guessing a chain of configurations in `Σ₂TIME`
@@ -185,8 +186,7 @@ private def pick (i j L : ℕ) : List Bool :=
     List.replicate (L - (i + j + 2)) false)
 
 private theorem length_pick {i j L : ℕ} (h : i + j + 2 ≤ L) : (pick i j L).length = L := by
-  simp only [pick, List.length_append, List.length_replicate, List.length_cons]
-  omega
+  enc_len [pick]
 
 private theorem leadingTrues_pick (i j L : ℕ) : leadingTrues (pick i j L) = i :=
   leadingTrues_replicate_append _ _
@@ -271,8 +271,7 @@ private theorem lin_eq_short {g₁ g₂ : α × (List Bool × List Bool) → Lis
     nlinarith
   · have := hl₁ x
     have := hl₂ x
-    simp only [length_encPair, encBits_apply]
-    omega
+    enc_len
 
 /-- The verifier is linear, given linear replays `rF` and `rG` and a linear parameter. -/
 private theorem chainCheck_inO {rF rG : List Bool × List Bool → List Bool} {Pb : α → List Bool}
@@ -463,8 +462,7 @@ theorem mem_SigmaTwoTIME_of_chain {π σ : Type} {eP : π ↪ List Bool} {eS : �
     set u := frame bw ++ (frame (encList eS l) ++
       List.replicate (L - (2 * bw.length + 2 * (encList eS l).length + 2)) false) with hu_def
     have hlen : u.length = L := by
-      simp only [hu_def, List.length_append, length_frame, List.length_replicate]
-      omega
+      enc_len [hu_def]
     have hu₁ : unframe u = bw := unframe_frame_append _ _
     have hws : eS s₀ :: frames (unframe (dropFrame u)) =
         (List.range (m + 1)).map fun i => eS (step^[i] s₀) := by

@@ -544,7 +544,7 @@ private theorem sum_accept_le {ε : ℝ} (h : IsFar G (fun H => H.IsBipartite) �
   have hV : 0 < Fintype.card V := by
     rcases Nat.eq_zero_or_pos (Fintype.card V) with hV | hV
     · have : IsEmpty V := Fintype.card_eq_zero_iff.mp hV
-      exact absurd h (not_isFar_of (Colorable.of_isEmpty 2) hε.le)
+      exact absurd h (not_isFar_of_property (Colorable.of_isEmpty 2) hε.le)
     · exact hV
   have hB := card_filter_lt_uncoveredDegree_le (G := G) hε hV s
   have h8 := two_pow_mul_one_sub_pow_le (by linarith) hm
@@ -715,7 +715,8 @@ theorem acceptProb_bipartiteTester_le_one_third {n s m : ℕ} {ε : ℝ} (hs : 1
     (hm : s + 3 ≤ ε * m) {G : SimpleGraph (Fin n)} (hG : IsFar G (fun H => H.IsBipartite) ε) :
     acceptProb (bipartiteTester n s m) G ≤ 1 / 3 := by
   cases n with
-  | zero => exact absurd hG (not_isFar_of (Colorable.of_isEmpty 2) (pos_of_twelve_le hs).le)
+  | zero =>
+    exact absurd hG (not_isFar_of_property (Colorable.of_isEmpty 2) (pos_of_twelve_le hs).le)
   | succ n' =>
     classical
     rw [bipartiteTester, acceptProb_bipartiteRun, div_le_iff₀ (by positivity)]
