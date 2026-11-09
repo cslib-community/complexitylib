@@ -143,8 +143,7 @@ theorem interpret_searchProgram {A : Set (List Bool)}
     OracleComp.interpret (m := Id) (languageOracle A) (searchProgram prog φ) =
       selfReduce (fun ψ => decide (encCNF ψ ∈ A)) φ := by
   rw [searchProgram, OracleComp.interpret_id_iterate, selfReduce_eq_iterate]
-  congr 1
-  funext answers
+  congr 1 with answers : 1
   exact interpret_searchStepProgram hprog φ answers
 
 /-! ### Polynomial time -/

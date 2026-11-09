@@ -63,8 +63,7 @@ private def maskedPrefixEquiv (w : Fin n → F) (delta : F) :
     rcases uv with ⟨u, v⟩
     dsimp
     simp only [voleCommitWitness, sub_sub_cancel, Fin.snoc_init_self]
-    congr 1
-    funext j
+    congr 1 with j : 1
     ring
   right_inv qdb := by
     rcases qdb with ⟨q, d, b⟩
@@ -193,8 +192,7 @@ private theorem interpret_liftVerifier {α : Type} (c : VOLECorrelation F (n + 1
         receiverLaw c.receiverView program := by
   rw [liftVerifier, OracleComp.interpret_interpret]
   unfold receiverLaw
-  congr 1
-  funext query
+  congr 1 with query : 1
   cases query <;> simp [OracleComp.sumHandler, ProbOracleComp.query]
 
 private theorem maskedMulCheckReceiverView_eq (left right output : ι → Fin n)
@@ -226,8 +224,7 @@ private theorem maskedMulCheckReceiverView_eq (left right output : ι → Fin n)
     erw [voleWorld_cached_run (F := F) (n := n + 1) c]
   dsimp only [voleWorld]
   simp only [pmf_norm]
-  congr 1
-  funext c
+  congr 1 with c : 1
   simp [OracleComp.interpret_bind, OracleComp.interpret_pure, interpret_liftVerifier,
     maskedMulCheck, liftProver, ProbOracleComp.query, OracleComp.sumHandler,
     runAgainst, ProverStrategy.hoist, VerifierStrategy.hoist, maskedMulCheckSpec,
@@ -281,8 +278,7 @@ theorem maskedMulCheckReceiverView_eq_simulate (left right output : ι → Fin n
     ext u
     rw [PMF.bind_comm]
   rw [PMF.bind_comm]
-  congr 1
-  funext delta
+  congr 1 with delta : 1
   have hprefix := uniform_maskedPrefix w delta (fun u v => do
     let c := voleSample u v delta
     let verifier ← receiverLaw c.receiverView (V z)
@@ -307,20 +303,15 @@ theorem maskedMulCheckReceiverView_eq_simulate (left right output : ι → Fin n
   simp_rw [hshare]
   dsimp only [voleSample]
   simp_rw [hcorr]
-  congr 1
-  funext q
+  congr 1 with q : 1
   conv_rhs => rw [PMF.bind_comm]
-  congr 1
-  funext d
+  congr 1 with d : 1
   rw [PMF.bind_comm]
-  congr 1
-  funext v
+  congr 1 with v : 1
   rw [PMF.bind_comm]
-  congr 1
-  funext challenge
+  congr 1 with challenge : 1
   rw [PMF.bind_comm]
-  congr 1
-  funext pair
+  congr 1 with pair : 1
   rcases pair with ⟨r, continuation⟩
   simpa only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure] using
     uniform_maskedReply left right output w delta q d r h (fun reply => do

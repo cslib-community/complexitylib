@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Computability.Probabilistic.UniformNat
@@ -99,17 +100,13 @@ open scoped ENNReal NNReal
 
 variable (F : PrimeOrderGroupFamily)
 
-private theorem dropFrame_encPair_encBits {α : Type} (e : α ↪ List Bool) (a : α)
-    (s : List Bool) : dropFrame (encPair e encBits (a, s)) = s := by
+private theorem dropFrame_encPair_encBits {α : Type} (e : α ↪ List Bool) (p : α × List Bool) :
+    dropFrame (encPair e encBits p) = p.2 := by
   simp only [encPair_apply, dropFrame_frame_append, encBits_apply]
 
 private theorem unframe_encPair_encBits (p : List Bool × List Bool) :
     unframe (encPair encBits encBits p) = p.1 := by
   simp only [encPair_apply, unframe_frame_append, encBits_apply]
-
-private theorem dropFrame_encPair_encBits_pair (p : List Bool × List Bool) :
-    dropFrame (encPair encBits encBits p) = p.2 := by
-  simp only [encPair_apply, dropFrame_frame_append, encBits_apply]
 
 /-- Probabilistic polynomial-time ElGamal key generation for a group description family
 `d : ℕ → F.Desc` ([BonehShoup2023], Section 11.5, p. 445, and Exercise 11.5, p. 459): sample
@@ -198,8 +195,7 @@ theorem hashedElGamalDecaps_hashedElGamalEncapsProb (H : F.Desc × List Bool →
   simp only [hashedElGamalEncapsProb, ProbComp.eval_bind, ProbComp.eval_pure,
     PMF.mem_support_bind_iff, PMF.support_pure, Set.mem_singleton_iff] at hencaps
   rcases hencaps with ⟨b, _, rfl⟩
-  have hbits : ofBits (encNat a) = a := Nat.foldr_bit_bits a
-  simp only [hashedElGamalDecaps, hbits, dropFrame_encPair_encBits,
+  simp only [hashedElGamalDecaps, ofBits_encNat, dropFrame_encPair_encBits,
     encodeElGamalPublicKey_eq_encode, F.smul_encode, smul_smul, mul_comm (a : ZMod (F.order (d n)))]
 
 /-- DDH distinguisher constructed from a `KEMAdversary` (`Distinguisher`) for
@@ -253,6 +249,26 @@ theorem isPPTOn_kemToKDFDistinguisher {distinguisher : Distinguisher}
   F.isPPTOn_kemToDDHDistinguisher (H := fun p => p.2) (ComputableInPolyTime.snd F.encDesc encBits)
     hD
 
+private theorem advantage_bind_sampleExp_pair_le (d : F.Desc) (n : ℕ)
+    (k : ZMod (F.order d) → ZMod (F.order d) → Game) :
+    Game.advantage
+      ((ProbComp.eval (F.sampleExp n d)).bind fun a =>
+        (ProbComp.eval (F.sampleExp n d)).bind fun b =>
+          k (a : ZMod (F.order d)) (b : ZMod (F.order d)))
+      ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
+        (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β => k α β) ≤
+      2 / 2 ^ n := by
+  refine (Game.advantage_triangle _
+    ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
+      (ProbComp.eval (F.sampleExp n d)).bind fun b =>
+        k α (b : ZMod (F.order d))) _).trans ?_
+  have h1 := F.advantage_bind_sampleExp_le n d (fun α =>
+    (ProbComp.eval (F.sampleExp n d)).bind fun b => k α (b : ZMod (F.order d)))
+  have h2 := advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order d))) _ _
+    (fun α => F.advantage_bind_sampleExp_le n d (k α))
+  calc _ ≤ (1 : ℝ≥0) / 2 ^ n + 1 / 2 ^ n := add_le_add h1 h2
+    _ = 2 / 2 ^ n := by ring
+
 private theorem advantage_eval_kemRealGame_ddhRealGame_le
     (H : F.Desc × List Bool → List Bool) (d : ℕ → F.Desc)
     (distinguisher : Distinguisher) (n : ℕ) :
@@ -274,7 +290,7 @@ private theorem advantage_eval_kemRealGame_ddhRealGame_le
         (ProbComp.eval (F.sampleExp n (d n))).bind fun b =>
           k (a : ZMod (F.order (d n))) (b : ZMod (F.order (d n))) := by
     simp only [kemRealGame, kemRealGameWith,
-    elGamalKeyGenProb, hashedElGamalEncapsProb, ProbComp.eval_bind,
+      elGamalKeyGenProb, hashedElGamalEncapsProb, ProbComp.eval_bind,
       ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, dropFrame_encPair_encBits,
       encodeElGamalPublicKey_eq_encode, F.smul_encode, smul_smul,
       mul_comm _ (_ : ZMod (F.order (d n))), k]
@@ -284,16 +300,7 @@ private theorem advantage_eval_kemRealGame_ddhRealGame_le
         (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun β => k α β := by
     simp only [ddhRealGame, kemToDDHDistinguisher, PMF.monad_bind_eq_bind, PMF.pure_bind, k]
   rw [hreal, hddh]
-  refine (Game.advantage_triangle _
-    ((PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun α =>
-      (ProbComp.eval (F.sampleExp n (d n))).bind fun b =>
-        k α (b : ZMod (F.order (d n)))) _).trans ?_
-  have h1 := F.advantage_bind_sampleExp_le n (d n) (fun α =>
-    (ProbComp.eval (F.sampleExp n (d n))).bind fun b => k α (b : ZMod (F.order (d n))))
-  have h2 := advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order (d n)))) _ _
-    (fun α => F.advantage_bind_sampleExp_le n (d n) (k α))
-  calc _ ≤ (1 : ℝ≥0) / 2 ^ n + 1 / 2 ^ n := add_le_add h1 h2
-    _ = 2 / 2 ^ n := by ring
+  exact F.advantage_bind_sampleExp_pair_le (d n) n k
 
 private theorem advantage_kdfIdealGame_eval_kemIdealGame_le (keyLen : ℕ → ℕ)
     (H : F.Desc × List Bool → List Bool) (d : ℕ → F.Desc)
@@ -319,7 +326,7 @@ private theorem advantage_kdfIdealGame_eval_kemIdealGame_le (keyLen : ℕ → �
         (ProbComp.eval (F.sampleExp n (d n))).bind fun b =>
           k (a : ZMod (F.order (d n))) (b : ZMod (F.order (d n))) := by
     simp only [kemIdealGame, kemIdealGameWith, kemRealGameWith,
-    elGamalKeyGenProb, hashedElGamalEncapsProb, ProbComp.eval_bind,
+      elGamalKeyGenProb, hashedElGamalEncapsProb, ProbComp.eval_bind,
       ProbComp.eval_pure, Cslib.BitString.eval_sampleList, PMF.bind_bind, PMF.pure_bind,
       encodeElGamalPublicKey_eq_encode, F.smul_encode, k]
   have hkdf :
@@ -329,16 +336,7 @@ private theorem advantage_kdfIdealGame_eval_kemIdealGame_le (keyLen : ℕ → �
         (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun β => k α β := by
     simp only [kdfIdealGame, kemToKDFDistinguisher, PMF.monad_bind_eq_bind, PMF.pure_bind, k]
   rw [Game.advantage_comm, hideal, hkdf]
-  refine (Game.advantage_triangle _
-    ((PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun α =>
-      (ProbComp.eval (F.sampleExp n (d n))).bind fun b =>
-        k α (b : ZMod (F.order (d n)))) _).trans ?_
-  have h1 := F.advantage_bind_sampleExp_le n (d n) (fun α =>
-    (ProbComp.eval (F.sampleExp n (d n))).bind fun b => k α (b : ZMod (F.order (d n))))
-  have h2 := advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order (d n)))) _ _
-    (fun α => F.advantage_bind_sampleExp_le n (d n) (k α))
-  calc _ ≤ (1 : ℝ≥0) / 2 ^ n + 1 / 2 ^ n := add_le_add h1 h2
-    _ = 2 / 2 ^ n := by ring
+  exact F.advantage_bind_sampleExp_pair_le (d n) n k
 
 /-- **Quantitative KEM IND-CPA bound for Hashed ElGamal**: the KEM distinguishing advantage of
 `distinguisher` against `(elGamalKeyGenProb d, hashedElGamalEncapsProb H d)` is bounded by the DDH
@@ -362,30 +360,16 @@ theorem advantage_kemGame_hashedElGamalEncapsProb_le (keyLen : ℕ → ℕ)
           (F.kemToKDFDistinguisher distinguisher) n) +
       4 / 2 ^ n := by
   have h0 := F.advantage_eval_kemRealGame_ddhRealGame_le H d distinguisher n
-  have h3 := F.advantage_kdfIdealGame_eval_kemIdealGame_le keyLen H d distinguisher n
-  have htri1 := Game.advantage_triangle
-    (ProbComp.eval
-      (kemRealGame (F.elGamalKeyGenProb d) (F.hashedElGamalEncapsProb H d) distinguisher n))
-    (F.ddhRealGame (fun m => PMF.pure (d m)) (F.kemToDDHDistinguisher H distinguisher) n)
-    (ProbComp.eval
-      (kemIdealGame keyLen (F.elGamalKeyGenProb d)
-        (F.hashedElGamalEncapsProb H d) distinguisher n))
-  have htri2 := Game.advantage_triangle
+  have h1 := (Game.advantage_comm _ _).trans_le
+    (F.advantage_kdfIdealGame_eval_kemIdealGame_le keyLen H d distinguisher n)
+  have hmid := Game.advantage_triangle
     (F.ddhRealGame (fun m => PMF.pure (d m)) (F.kemToDDHDistinguisher H distinguisher) n)
     (F.ddhIdealGame (fun m => PMF.pure (d m)) (F.kemToDDHDistinguisher H distinguisher) n)
-    (ProbComp.eval
-      (kemIdealGame keyLen (F.elGamalKeyGenProb d)
-        (F.hashedElGamalEncapsProb H d) distinguisher n))
-  conv at htri2 => rhs; arg 2; arg 1; rw [F.ddhIdealGame_kemToDDHDistinguisher_eq_kdfRealGame]
-  have htri3 := Game.advantage_triangle
-    (F.kdfRealGame (fun m => PMF.pure (d m)) H (F.kemToKDFDistinguisher distinguisher) n)
     (F.kdfIdealGame (fun m => PMF.pure (d m)) keyLen
       (F.kemToKDFDistinguisher distinguisher) n)
-    (ProbComp.eval
-      (kemIdealGame keyLen (F.elGamalKeyGenProb d)
-        (F.hashedElGamalEncapsProb H d) distinguisher n))
-  exact (htri1.trans (add_le_add h0 (htri2.trans (add_le_add le_rfl
-    (htri3.trans (add_le_add le_rfl h3)))))).trans_eq (by ring)
+  conv at hmid => rhs; arg 2; arg 1; rw [F.ddhIdealGame_kemToDDHDistinguisher_eq_kdfRealGame]
+  exact (Game.advantage_four_hop_le h0 h1).trans
+    ((add_le_add (add_le_add le_rfl hmid) le_rfl).trans_eq (by ring))
 
 /-- **Hashed ElGamal KEM is `Encryption.KEMINDCPA`-secure under DDH and `SecureKDF`**
 ([BonehShoup2023], Section 11.5.2, Theorem 11.5, pp. 449–451, and Exercise 11.9, pp. 460–461): for
@@ -546,9 +530,8 @@ theorem elGamalDecryptDet_elGamalEncryptProb (d : ℕ → F.Desc) (n : ℕ)
   simp only [elGamalEncryptProb, ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
     PMF.support_pure, Set.mem_singleton_iff] at hct
   rcases hct with ⟨b, _, rfl⟩
-  have hbits : ofBits (encNat a) = a := Nat.foldr_bit_bits a
-  simp only [elGamalDecryptDet, hbits, unframe_encPair_encBits, dropFrame_encPair_encBits_pair,
-    dropFrame_encPair_encBits, F.decodeElGamal_encodeElGamalEncrypt]
+  simp only [elGamalDecryptDet, ofBits_encNat, unframe_encPair_encBits, dropFrame_encPair_encBits,
+    F.decodeElGamal_encodeElGamalEncrypt]
 
 /-- The native `Encryption.gameOn` experiment for
 `(elGamalKeyGenProb d, elGamalEncryptProb encodeMsg d)` is within statistical distance `2 / 2 ^ n`

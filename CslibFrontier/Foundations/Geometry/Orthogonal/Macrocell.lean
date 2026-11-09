@@ -31,7 +31,8 @@ The integer cell indices may be negative. A positive integer radius `r` gives ce
 
 ## Main results
 
-* Translation preserves continuous support, orthogonality, simplicity and wire length.
+* Translation preserves continuous support, orthogonality, simplicity, wire length and the
+  number of segments.
 * An open cell is disjoint from every distinct closed cell.
 * Equal ports of distinct cells are on opposite sides of adjacent cells.
 
@@ -107,6 +108,11 @@ theorem length_add (v a b : Point) : length (a + v) (b + v) = length a b := by
 theorem wireLength_translate (v : Point) (r : Route) :
     wireLength (translate v r) = wireLength r := by
   simp only [wireLength, consecutivePairs_translate, List.map_map, Function.comp_def, length_add]
+
+/-- Translation preserves the number of segments. -/
+theorem consecutivePairs_length_translate (v : Point) (r : Route) :
+    (translate v r).consecutivePairs.length = r.consecutivePairs.length := by
+  rw [consecutivePairs_translate, List.length_map]
 
 /-- Translation preserves endpoint-only contact certificates. -/
 theorem endpointContacts_add_iff (v a b c d : Point) :

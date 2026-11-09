@@ -165,9 +165,7 @@ theorem DifferentiallyPrivate.aboveThresholdMechanism {D : Type*} {Adj : D → D
     (hν : ∀ v, ν v ≤ ENNReal.ofReal (Real.exp ε₂) * ν (v + 2 * s)) :
     DifferentiallyPrivate Adj (Privacy.aboveThresholdMechanism ρ ν T fs) (ε₁ + ε₂) 0 := by
   refine DifferentiallyPrivate.of_apply_le fun x y hxy o => ?_
-  have hc : 1 ≤ ENNReal.ofReal (Real.exp ε₂) := by
-    rw [← ENNReal.ofReal_one]
-    exact ENNReal.ofReal_le_ofReal (Real.one_le_exp hε₂)
+  have hc : 1 ≤ ENNReal.ofReal (Real.exp ε₂) := ENNReal.one_le_ofReal.mpr (Real.one_le_exp hε₂)
   have hab : List.Forall₂ (fun a b : ℝ => a - s ≤ b ∧ b ≤ a + s) (fs.map fun f => f x)
       (fs.map fun f => f y) := by
     rw [List.forall₂_map_left_iff, List.forall₂_map_right_iff, List.forall₂_same]
