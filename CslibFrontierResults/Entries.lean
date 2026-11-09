@@ -15,10 +15,6 @@ import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
 import CslibFrontier.Computability.Circuit.Boolean.Hastad.Sharp
 import CslibFrontier.Computability.Circuit.Boolean.Khrapchenko
 import CslibFrontier.Computability.Circuit.Boolean.Smolensky
-import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Andreev
-import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevApproxMajority
-import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevAverage
-import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevLowerBound
 import CslibFrontier.Computability.Communication.Discrepancy
 import CslibFrontier.Computability.Communication.Disjointness
 import CslibFrontier.Computability.Complexity.Classes.Alternation.Savitch

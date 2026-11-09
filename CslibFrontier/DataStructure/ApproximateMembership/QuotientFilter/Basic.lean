@@ -367,6 +367,12 @@ private theorem countP_fst_flatMap_taggedRun {U b f : ℕ} (S : Finset (Fin U))
       occBefore_succ, hocc m (by omega)]
     cases hrun : bucketRun S quot rem (probeSlot b o m) <;> simp
 
+/-- Split `List.range n` around an index `a < n`: the indices below `a`, then `a`, then the
+indices above it. -/
+theorem range_eq_split {a n : ℕ} (ha : a < n) :
+    List.range n = List.range a ++ [a] ++ (List.range (n - (a + 1))).map (a + 1 + ·) := by
+  rw [← List.range_succ, ← List.range_add, Nat.add_sub_of_le ha]
+
 private theorem flatMap_taggedRun_split {U b f : ℕ} (S : Finset (Fin U))
     (quot : Fin U → Fin (2 ^ b)) (rem : Fin U → Fin (2 ^ f)) (o : Fin (2 ^ b))
     {m ℓ : ℕ} (hm : m ≤ ℓ) :
@@ -928,12 +934,8 @@ theorem IntervalValid.queryCluster_eq_true_iff {U b f : ℕ} {S : Finset (Fin U)
       (((List.range ℓ).map (fun i => st.remAt (probeSlot b o i))).drop S_a).take
           (bucketRun S quot rem (probeSlot b o a)).length =
         bucketRun S quot rem (probeSlot b o a) := by
-    have hr :
-        List.range ℓ = List.range a ++ (a :: (List.range (ℓ - (a + 1))).map (a + 1 + ·)) := by
-      have h1 :
-          List.range ℓ = List.range (a + 1) ++ (List.range (ℓ - (a + 1))).map (a + 1 + ·) := by
-        rw [← List.range_add, Nat.add_sub_of_le ha1]
-      rw [h1, List.range_succ, List.append_assoc, List.singleton_append]
+    have hr := range_eq_split ha
+    rw [List.append_assoc, List.singleton_append] at hr
     rw [hrem_list, hr, List.flatMap_append, List.flatMap_cons]
     have hlen_pref :
         ((List.range a).flatMap (fun j => bucketRun S quot rem (probeSlot b o j))).length =

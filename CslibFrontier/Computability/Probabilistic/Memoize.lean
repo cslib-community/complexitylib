@@ -51,8 +51,7 @@ open Turing.MultiTapeTM
 private theorem lookup_eq_map_find {K V : Type} [BEq K] (key : K) (cache : List (K × V)) :
     cache.lookup key = (cache.find? (fun entry => key == entry.1)).map Prod.snd := by
   simp only [List.lookup_eq_findSome?, List.find?_eq_findSome?_guard, List.map_findSome?]
-  congr 1
-  funext entry
+  congr 1 with entry : 1
   cases h : key == entry.1 <;> simp [Option.guard, h]
 
 /-- Cache a certified sampler's results using an ordinary list. Runtime query data, captured

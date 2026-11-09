@@ -200,11 +200,8 @@ theorem elements_erase {t : AVLTree α} (ht : Ordered t) (x : α) :
           Finset.erase_union_distrib, Finset.erase_eq_of_notMem hxl]
       · have heq : x = a := le_antisymm (le_of_not_gt hax) (le_of_not_gt hxa)
         subst heq
-        have hx_notMem : x ∉ elements l ∪ elements r := by
-          intro hm
-          rcases Finset.mem_union.mp hm with hm | hm
-          · exact lt_irrefl x (hl_a x hm)
-          · exact lt_irrefl x (ha_r x hm)
+        have hx_notMem : x ∉ elements l ∪ elements r :=
+          SearchTree.Ordered.notMem_elements_union ⟨hol, hor, hl_a, ha_r⟩
         rw [elements_glue, elements_node, Finset.erase_insert hx_notMem]
 
 private theorem valid_and_height_erase {t : AVLTree α} (ht : Valid t) (x : α) :

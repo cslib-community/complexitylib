@@ -165,8 +165,7 @@ theorem map_eval_affineFactor_indicator {A : Type*} [CommRing A] [Algebra ℚ A]
         (MvPolynomial.eval fun i => BitString.bitVal A (decide (i ∈ U))) =
       M.shiftedFactorEval Φ t U f (fun v => M.evalRow t f v x) := by
   rw [Cslib.AffineTaylor.map_eval_affineFactor, shiftedFactorEval, MvPolynomial.aeval_def]
-  congr 1
-  funext v
+  congr 1 with v : 1
   exact M.map_eval_affineInput_indicator t U f v x
 
 /-- Evaluating the `j`-th Taylor coefficient of `AffineTaylor.factorProduct` at the indicator of

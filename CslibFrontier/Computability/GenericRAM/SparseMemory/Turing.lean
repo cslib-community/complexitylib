@@ -99,18 +99,21 @@ def maxKeyLength (s : SparseMemory Address Value) : ℕ :=
 def maxValueLength (s : SparseMemory Address Value) : ℕ :=
   listMax (fun e => (encV e.2).length) (entries s)
 
+/-- Every stored cell's encoded address and value are within the store's maxima. -/
+private theorem length_le_max_of_mem {s : SparseMemory Address Value} {e : Address × Value}
+    (he : e ∈ entries s) :
+    (encA e.1).length ≤ maxKeyLength encA s ∧ (encV e.2).length ≤ maxValueLength encV s :=
+  ⟨le_listMax (f := fun e : Address × Value => (encA e.1).length) he,
+    le_listMax (f := fun e : Address × Value => (encV e.2).length) he⟩
+
 /-- The encoded store depends on the number and encoded sizes of stored cells. -/
 theorem length_encoding_le (s : SparseMemory Address Value) :
     (encoding encA encV s).length ≤ (entries s).length *
       (4 * maxKeyLength encA s + 2 * maxValueLength encV s + 3) := by
   have h := length_encList_le (encPair encA encV) (entries s)
     (b := 2 * maxKeyLength encA s + 1 + maxValueLength encV s) (fun e he => by
-      have hk := le_listMax (f := fun e : Address × Value => (encA e.1).length) he
-      have hv := le_listMax (f := fun e : Address × Value => (encV e.2).length) he
+      obtain ⟨hk, hv⟩ := length_le_max_of_mem encA encV he
       simp only [length_encPair]
-      change 2 * (encA e.1).length + 1 + (encV e.2).length ≤ _
-      change (encA e.1).length ≤ maxKeyLength encA s at hk
-      change (encV e.2).length ≤ maxValueLength encV s at hv
       omega)
   simp only [encoding_apply]
   convert h using 1
@@ -131,10 +134,7 @@ theorem scanTime_le (q : Address × SparseMemory Address Value) :
       ((encA q.1).length + 1) * ((encA q.1).length + maxKeyLength encA q.2 + 1) := by
     apply listMax_le
     intro e he
-    have hk := le_listMax (f := fun e : Address × Value => (encA e.1).length) he
-    have hv := le_listMax (f := fun e : Address × Value => (encV e.2).length) he
-    change (encA e.1).length ≤ maxKeyLength encA q.2 at hk
-    change (encV e.2).length ≤ maxValueLength encV q.2 at hv
+    obtain ⟨hk, hv⟩ := length_le_max_of_mem encA encV he
     simp only [compareTime, length_encPair]
     nlinarith
   have := Nat.mul_le_mul_left ((entries q.2).length + 1) hm
@@ -155,10 +155,7 @@ theorem scanSpace_le (q : Address × SparseMemory Address Value) :
       (2 * (encA q.1).length + maxKeyLength encA q.2 + 1) := by
     apply listMax_le
     intro e he
-    have hk := le_listMax (f := fun e : Address × Value => (encA e.1).length) he
-    have hv := le_listMax (f := fun e : Address × Value => (encV e.2).length) he
-    change (encA e.1).length ≤ maxKeyLength encA q.2 at hk
-    change (encV e.2).length ≤ maxValueLength encV q.2 at hv
+    obtain ⟨hk, hv⟩ := length_le_max_of_mem encA encV he
     enc_len [compareSpace]
   unfold scanSpace
   omega

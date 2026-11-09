@@ -93,9 +93,9 @@ theorem emptyChildWrites_subset_nodeWrites {L f d : ℕ} (hd : d < L) :
     omega
 
 /-- No node changes the original input or any other cell below the workspace. -/
-theorem notMem_nodeWrites_before {L f d c : ℕ} (hd : d ≤ L) (hc : c < f) :
+theorem notMem_nodeWrites_before {L f d c : ℕ} (hc : c < f) :
     c ∉ nodeWrites L f d := by
-  rw [mem_nodeWrites_iff hd]
+  simp only [nodeWrites, Finset.mem_union, Block.mem_footprint, Block.Owns]
   omega
 
 /-- A node preserves every occupied or unoccupied cell of its own request row. -/

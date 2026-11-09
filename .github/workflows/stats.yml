@@ -1,0 +1,37 @@
+name: Source history dashboard
+
+on:
+  pull_request:
+    paths:
+      - 'tools/stats/**'
+      - '.github/workflows/stats.yml'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stats:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install pinned Tokei
+        run: bash tools/stats/install-tokei.sh "$RUNNER_TEMP/tokei-bin"
+      - name: Test history counts and exports
+        env:
+          TOKEI: ${{ runner.temp }}/tokei-bin/tokei
+        run: python3 -m unittest discover -s tools/stats -p 'test_*.py'
+      - name: Test dashboard controls
+        run: |
+          node --check tools/stats/dashboard.js
+          node tools/stats/test_dashboard.cjs
+      - name: Build actual history
+        run: python3 tools/stats/build.py --tokei "$RUNNER_TEMP/tokei-bin/tokei"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-history-dashboard
+          path: tools/stats/_site
+          if-no-files-found: error

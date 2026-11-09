@@ -5,6 +5,7 @@ Authors: Christian Reitwiessner
 -/
 
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
 
 /-! Tests of `enc_structure`. -/
 
@@ -39,5 +40,13 @@ example {α : Type} {enc : α ↪ List Bool} {S : α → ℕ} {f : α → Point}
     (hf : ComputableInSpace f enc ePoint S) :
     ComputableInSpace (fun a => (f a).z) enc (encList encUnary) S :=
   ePoint_z_budget hf
+
+-- Reading fields and rebuilding the structure, with the bounds checked once.
+example : ComputableInO (fun p : Point => Point.mk p.x p.y p.z.tail) ePoint ePoint
+    (fun p => 8 * ((ePoint p).length + 1)) fun p => 8 * ((ePoint p).length + 1) := by
+  refine .mono (by fun_prop) 16 (fun p => ?_) fun p => ?_ <;>
+  · simp only [ePoint_apply, length_encPair]
+    have := ((List.tail_sublist p.z).flatMap (frame ∘ encUnary)).length_le
+    omega
 
 end CslibFrontierTests.StructureEncoding

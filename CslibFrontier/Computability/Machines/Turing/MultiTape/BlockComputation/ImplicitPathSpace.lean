@@ -125,7 +125,7 @@ theorem walk_inSpace (k : ℕ) :
   have hstates (a : WalkArgs) (i : ℕ) (_hi : i ≤ a.2.2.length) :
       (encNat ((a.2.2.take i).foldl (fun n j => child k (a.1, a.2.1, n, j))
         a.2.1)).length ≤ (encNat a.2.1).length :=
-    ComputableTidilyInO.length_encNat_mono (walk_le k a.1 a.2.1 (a.2.2.take i))
+    length_encNat_mono (walk_le k a.1 a.2.1 (a.2.2.take i))
   have hspace (a : WalkArgs) (i : ℕ) (hi : i < a.2.2.length) :
       (encPair (encPair encProviderArgs encNat) encNat
         (((a.1, a.2.1), (a.2.2.take i).foldl

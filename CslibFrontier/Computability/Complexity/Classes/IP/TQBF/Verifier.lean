@@ -16,6 +16,7 @@ public import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Prime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Search
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
@@ -267,14 +268,8 @@ private lemma unary_mod'_pt {γ : Type} {encIn : γ ↪ List Bool} {a b : γ →
     ComputableInPolyTime (fun x => a x % b x) encIn encUnary :=
   unary_mod.comp (ha.prod hb)
 
-private lemma unary_decide_eq_pt {γ : Type} {encIn : γ ↪ List Bool} {a b : γ → ℕ}
-    (ha : ComputableInPolyTime a encIn encUnary)
-    (hb : ComputableInPolyTime b encIn encUnary) :
-    ComputableInPolyTime (fun x => decide (a x = b x)) encIn encBool :=
-  ha.decide_eq' hb
-
 attribute [local fun_prop] ComputableInPolyTime.bool_and' listTail_pt listIsEmpty_pt listHeadD_pt
-  unary_mod'_pt unary_decide_eq_pt computableInPolyTime_connectiveMod
+  unary_mod'_pt computableInPolyTime_connectiveMod
   computableInPolyTime_operatorMod
 
 private lemma xs_pt :
@@ -425,18 +420,14 @@ private theorem length_encClaim_map_le (I : LoopInput) (f : ℕ → ℕ)
   simp only [encClaim, length_encPair, encUnary_apply, List.length_replicate, claimBound]
   nlinarith
 
-private theorem length_encList_tail_le {α : Type} (enc : α ↪ List Bool) (l : List α) :
-    (encList enc l.tail).length ≤ (encList enc l).length := by
-  cases l <;> simp
-
 /-- Replacing the next token and the top claim by at most two claims of bounded encodings adds at
 most a bounded amount of storage. -/
 private theorem length_encVState_push_le (st : VState) (entries : List Claim) (b : Bool) {B : ℕ}
     (hlen : entries.length ≤ 2) (hentries : ∀ e ∈ entries, (encClaim e).length ≤ B) :
     (encVState (st.1.tail, entries ++ st.2.1.tail, b)).length ≤
       (encVState st).length + (8 * B + 8) := by
-  have htok := length_encList_tail_le encArithToken st.1
-  have hstk := length_encList_tail_le encClaim st.2.1
+  have htok := length_encList_sublist encArithToken st.1.tail_sublist
+  have hstk := length_encList_sublist encClaim st.2.1.tail_sublist
   have hentry : (encList encClaim entries).length ≤ 2 * (2 * B + 1) := by
     rw [length_encList]
     calc (entries.map fun e => 2 * (encClaim e).length + 1).sum

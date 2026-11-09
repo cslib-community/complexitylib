@@ -638,8 +638,8 @@ private theorem isSpanningForestFrom_of_cons_of_rel {n : ℕ} {W : Type} {p : Pa
 
 /-- Exchange step shared by Kruskal's optimality and uniqueness proofs: when `e`'s endpoints lie in
 distinct classes of `p`, a relative spanning forest `H` of `e :: es` over `p` is a permutation of
-some `f :: H'` with `H'` a relative spanning forest of `es` over `p.merge e.u e.v`, where `f = e`
-if `H` uses `e` and `f ∈ es` otherwise. -/
+some `f :: H'` with `H'` a relative spanning forest of `es` over `p.merge e.u e.v`, where `f` is
+either `e` or an edge of `es`. -/
 private theorem exists_perm_cons_isSpanningForestFrom_merge {n : ℕ} {W : Type}
     {p : Partition n} {e : WeightedEdge n W} {es H : List (WeightedEdge n W)}
     (hrel : p.rel e.u e.v = false) (hH : IsSpanningForestFrom p (e :: es) H) :

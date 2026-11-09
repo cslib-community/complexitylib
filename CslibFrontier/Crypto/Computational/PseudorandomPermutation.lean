@@ -502,7 +502,7 @@ private theorem eval_interpret_liftForwardDistinguisher (blockLen : ℕ → ℕ)
   rw [liftForwardDistinguisher, liftForward_handler_eq, OracleComp.run_interpret_lift,
     OracleComp.interpret_map, OracleComp.interpret_map, Functor.map_map]
   simp only [id_map', OracleComp.interpret_interpret]
-  congr 1; funext q; rcases q with k | request
+  congr 1 with q : 1; rcases q with k | request
   · simp [OracleComp.sumHandler, ProbOracleComp.sample, ProbComp.unifFin]
   · simp [OracleComp.sumHandler, PMF.monad_map_eq_map]
 

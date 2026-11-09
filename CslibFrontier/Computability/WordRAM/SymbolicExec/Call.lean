@@ -25,12 +25,14 @@ including the facts passed to the continuation. The supplied contract retains al
 alias, memory and frame obligations.
 
 An existing time-indexed `WP` specification is also accepted; its continuation binds the returned
-data, the instruction allowance and its postcondition. No alternative execution or resource model
+data, the instruction allowance and its postcondition. At a `WP.Exact` goal, which counts
+instructions exactly, the contract states an exact count, `∃ y, Exec w c x y T ∧ P y`, or is a
+time-indexed `WP.Exact` specification. No alternative execution or resource model
 is added.
 
 ## Main results
 
-* `WP.of_spec`: continue from a fixed-time existential routine contract.
+* `WP.of_spec`, `WP.Exact.of_spec`: continue from a fixed-time existential routine contract.
 * `wram_call`: consume a proved routine contract without unfolding its program.
 -/
 
@@ -46,6 +48,14 @@ theorem WP.of_spec {B : Basis} {r w T : ℕ} {c : Code B r} {x : Data r}
   obtain ⟨y, hy, hP⟩ := h
   exact WP.of_execWithin hy (hQ y hP)
 
+/-- Continue from a routine's complete postcondition at its exact instruction count. -/
+theorem WP.Exact.of_spec {B : Basis} {r w T : ℕ} {c : Code B r} {x : Data r}
+    {P : Data r → Prop} {Q : Data r → ℕ → Prop}
+    (h : ∃ y, Exec w c x y T ∧ P y) (hQ : ∀ y, P y → Q y T) :
+    WP.Exact w c x Q := by
+  obtain ⟨y, hy, hP⟩ := h
+  exact WP.Exact.of_exec hy (hQ y hP)
+
 /-- Apply a fixed-time or time-indexed routine contract and expose its continuation.
 Only bank-view projections are normalized; the callee program remains closed. -/
 syntax (name := wramCall) "wram_call " term:max " with" (ppSpace colGt rintroPat)+ : tactic
@@ -56,6 +66,8 @@ macro_rules
       first
       | refine Cslib.WordRAM.WP.of_spec $h ?_
       | refine Cslib.WordRAM.WP.mono $h ?_
+      | refine Cslib.WordRAM.WP.Exact.of_spec $h ?_
+      | refine Cslib.WordRAM.WP.Exact.mono $h ?_
       rintro $pats*
       try simp only [Cslib.WordRAM.Data.comap_regs, Cslib.WordRAM.Data.comap_mem] at *))
 
@@ -68,6 +80,8 @@ syntax (name := wramCallRenamed) "wram_call " term:max " renamed " term:max " wi
 
 macro_rules
   | `(tactic| wram_call $h renamed $hf with $pats*) =>
-    `(tactic| wram_call (Cslib.WordRAM.ExecWithin.rename_post $hf $h) with $pats*)
+    `(tactic| first
+      | wram_call (Cslib.WordRAM.ExecWithin.rename_post $hf $h) with $pats*
+      | wram_call (Cslib.WordRAM.Exec.rename_post $hf $h) with $pats*)
 
 end Cslib.WordRAM
