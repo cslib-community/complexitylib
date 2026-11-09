@@ -1732,12 +1732,7 @@ theorem toOuterMeasure_bad_choose_two_le {ι σ β : Type} {spec : ι → Type}
           tsum_le_tsum hterm
       _ = (handler q s).toOuterMeasure {x | bad x.2} + K := by
           simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
-            PMF.toOuterMeasure_apply]
-          congr 1
-          refine tsum_congr fun y => ?_
-          by_cases hy : y ∈ {x : spec q × σ | bad x.2}
-          · rw [Set.indicator_of_mem hy, Set.indicator_of_mem hy, Pi.one_apply, mul_one]
-          · rw [Set.indicator_of_notMem hy, Set.indicator_of_notMem hy, mul_zero]
+            Probability.PMF.toOuterMeasure_eq_tsum_mul_indicator]
       _ ≤ size s * δ + K := add_le_add (hstep q s hs) le_rfl
       _ = ((n + 1) * size s + (n + 1).choose 2 : ℕ) * δ := by
           simp only [K, Nat.choose_succ_succ' n 1, Nat.choose_one_right, Nat.cast_add,

@@ -201,10 +201,7 @@ theorem rbrFrom_le : ∀ (s : Spec) (smp : PerChallenge ProbComp s)
           tsum_le_tsum fun c => by gcongr; exact hinner c
       _ = (ProbComp.eval smp.1).toOuterMeasure A + PerChallenge.sum s ε.2 := by
           simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
-            PMF.toOuterMeasure_apply]
-          congr 1
-          refine tsum_congr fun c => ?_
-          by_cases hc : c ∈ A <;> simp [hc]
+            Probability.PMF.toOuterMeasure_eq_tsum_mul_indicator]
       _ ≤ ε.1 + PerChallenge.sum s ε.2 := by gcongr; exact h.1 hS
 
 /-- **Round-by-round soundness implies soundness**, with the sum of the per-round errors. -/

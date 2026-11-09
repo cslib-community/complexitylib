@@ -246,12 +246,7 @@ theorem toOuterMeasure_bad_le {handler : (q : ι) → StateT σ PMF (spec q)} {b
           tsum_le_tsum hterm
       _ = (handler q s).toOuterMeasure {x | bad x.2} + K := by
           simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
-            PMF.toOuterMeasure_apply]
-          congr 1
-          refine tsum_congr fun y => ?_
-          by_cases hy : y ∈ {x : spec q × σ | bad x.2}
-          · rw [Set.indicator_of_mem hy, Set.indicator_of_mem hy, Pi.one_apply, mul_one]
-          · rw [Set.indicator_of_notMem hy, Set.indicator_of_notMem hy, mul_zero]
+            Probability.PMF.toOuterMeasure_eq_tsum_mul_indicator]
       _ ≤ cost q * (budget s + (n + 1 : ℕ) * δ) +
             (k - cost q : ℕ) * (budget s + (n + 1 : ℕ) * δ) := by
           refine add_le_add ((hstep q s hs).trans ?_) (le_of_eq ?_)

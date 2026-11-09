@@ -112,12 +112,7 @@ theorem toOuterMeasure_bad_le_two_budgets {ι σ β : Type} {spec : ι → Type}
           tsum_le_tsum hterm
       _ = (handler q s).toOuterMeasure {x | bad x.2} + K := by
           simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
-            PMF.toOuterMeasure_apply]
-          congr 1
-          refine tsum_congr fun y => ?_
-          by_cases hy : y ∈ {x : spec q × σ | bad x.2}
-          · rw [Set.indicator_of_mem hy, Set.indicator_of_mem hy, Pi.one_apply, mul_one]
-          · rw [Set.indicator_of_notMem hy, Set.indicator_of_notMem hy, mul_zero]
+            Probability.PMF.toOuterMeasure_eq_tsum_mul_indicator]
       _ ≤ ((cost₁ q : ℝ≥0∞) * B₁ + (cost₂ q : ℝ≥0∞) * B₂) + K := by
           refine add_le_add ((hstep q s hs).trans ?_) le_rfl
           refine add_le_add ?_ ?_
