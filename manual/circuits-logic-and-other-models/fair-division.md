@@ -6,7 +6,7 @@ Authors: Christian Reitwiessner
 
 # Finite additive fair division
 
-Import [MMSImpossibility.lean](../../Complexity/GameTheory/FairDivision/MMSImpossibility.lean)
+Import [MMSImpossibility.lean](../../CslibFrontier/GameTheory/FairDivision/MMSImpossibility.lean)
 for Ezra and Garbuz's STOC submission 115, Theorem 2 (PDF p. 13).
 An `Allocation` assigns each of eleven indivisible goods to one of four agents;
 `bundle a i` is its fiber. Thus every good is allocated exactly once, and empty
@@ -29,17 +29,17 @@ the union of the first two agents' bundles must have first-row value at least
 required splits. The theorem quantifies over arbitrary complete allocations,
 not merely a preselected collection of partitions.
 
-The [checked client](../../ComplexityTests/PaperEndpointsBatchB.lean) gives an
+The [checked client](../../CslibFrontierTests/PaperEndpointsBatchB.lean) gives an
 allocation with utility vector $(22,20,20,24)$, attaining minimum 20, and shows
 that threshold 22 is impossible even for a single valuation's maximin partition.
 After building the library, elaborate that complete client with
-`lake env lean ComplexityTests/PaperEndpointsBatchB.lean`; expected success is
+`lake env lean CslibFrontierTests/PaperEndpointsBatchB.lean`; expected success is
 no diagnostics. If its imports are missing, follow the normal checkout/cache
 bootstrap instructions before retrying.
 
 ## Chores and the constant bound
 
-Import [MMSChores.lean](../../Complexity/GameTheory/FairDivision/MMSChores.lean)
+Import [MMSChores.lean](../../CslibFrontier/GameTheory/FairDivision/MMSChores.lean)
 for Theorem 4 (PDF p. 14). The source's eleven-item positive cost table uses
 exactly the same allocation utilities, agent types and witness partitions.
 `Caps t c` means a complete partition with every bundle costing at most $c$;
@@ -54,7 +54,7 @@ subset-splitting certificate, with no restrictions on allocations.
 
 ## Uniform asymptotic goods and chores hardness
 
-Import [MMSAsymptotic.lean](../../Complexity/GameTheory/FairDivision/MMSAsymptotic.lean)
+Import [MMSAsymptotic.lean](../../CslibFrontier/GameTheory/FairDivision/MMSAsymptotic.lean)
 for the actual parameterized construction in Section 2.1 of STOC submission 115
 (PDF p. 8). `Good k d` contains the $X,Y,G,Z,P,Q,D$ item families, with
 $n=2k+2+d$ agents and exactly $n+5k$ items (`card_goods`). `weight`, `correction`,
@@ -84,7 +84,7 @@ goods and chores MMS $204k^3$ for every balanced even-length word, over all
 complete partitions. The checked client includes a concrete balanced type with
 $k=8$, $d=110$ and exact MMS $104448$, so these premises are satisfiable.
 
-Import [MMSCodes.lean](../../Complexity/GameTheory/FairDivision/MMSCodes.lean)
+Import [MMSCodes.lean](../../CslibFrontier/GameTheory/FairDivision/MMSCodes.lean)
 for actual code existence. `exists_population_code n` constructs $n$ distinct
 balanced words of length $64(\lfloor\log_2 n\rfloor+1)$ and pairwise Hamming
 distance at least $2(\lfloor\log_2 n\rfloor+2)$. The proof uses the existing
@@ -95,10 +95,10 @@ constant distance and rate. It does not claim Lemma 5's exact constants.
 `population_item_count` proves the actual instantiated item type has exactly
 $n+5k$ items and at most $n+640\lfloor\log_2 n\rfloor$ items. The common
 binomial estimates now live in
-[HammingBallBounds.lean](../../Complexity/Foundations/Data/Code/HammingBallBounds.lean),
+[HammingBallBounds.lean](../../CslibFrontier/Foundations/Data/Code/HammingBallBounds.lean),
 shared with Justesen codes, with their original declarations and source credit.
 
-Import [MMSPopulation.lean](../../Complexity/GameTheory/FairDivision/MMSPopulation.lean)
+Import [MMSPopulation.lean](../../CslibFrontier/GameTheory/FairDivision/MMSPopulation.lean)
 for the quantified Theorems 1 and 3. `population_hardness n hn` applies to every
 $n\ge65536$. It supplies the actual label sets, strictly positive item values
 and costs, exact goods and chores MMS over all partitions, and a loss for every
@@ -111,7 +111,7 @@ for the constructed code's weaker distance; the source's original constants are
 not asserted.
 
 The proof in
-[MMSAllocationLoss.lean](../../Complexity/GameTheory/FairDivision/MMSAllocationLoss.lean)
+[MMSAllocationLoss.lean](../../CslibFrontier/GameTheory/FairDivision/MMSAllocationLoss.lean)
 first forces one high item per bundle and auxiliary weight exactly $T$.
 `allocation_label_distance` then proves that the types receiving $P$ and $Q$
 have one-sided label distance at most $5\ell$ when every correction is at least
@@ -128,9 +128,9 @@ sufficiently large $n$, ruling out simultaneous $1-Cn^{-\varepsilon}$ goods
 and $1+Cn^{-\varepsilon}$ chores guarantees. The exponent is an arbitrary
 positive real, not only an integer.
 
-Import [MMSExistence.lean](../../Complexity/GameTheory/FairDivision/MMSExistence.lean)
+Import [MMSExistence.lean](../../CslibFrontier/GameTheory/FairDivision/MMSExistence.lean)
 for the exact-existence consequences. The reusable model definitions live in
-[MaximinShare.lean](../../Complexity/GameTheory/FairDivision/MaximinShare.lean),
+[MaximinShare.lean](../../CslibFrontier/GameTheory/FairDivision/MaximinShare.lean),
 which can be imported independently of the construction. `bundleValue` is a complete allocation's
 additive fiber value. `GoodsMMSAllocation` compares the received bundle with the
 least bundle of every competing partition; `ChoresMMSAllocation` compares it
@@ -149,11 +149,11 @@ another, for goods and chores. Feige's theorem is neither proved nor independent
 source-audited here. Hummel's four-agent minimality result also remains external;
 the four-agent constructions prove the advertised ratios without proving minimality.
 
-The [uniform-hardness client](../../ComplexityTests/MMSPopulation.lean) checks the
+The [uniform-hardness client](../../CslibFrontierTests/MMSPopulation.lean) checks the
 first admissible population's code length and dummy count, applies both
 existence-budget obstructions, and checks exact-MMS semantics on one-agent and
 two-agent instances (including failed allocations). It also applies the
 asymptotic comparison to the nonintegral exponent $1/3$. From a bootstrapped
 checkout with the library built, run
-`lake env lean ComplexityTests/MMSPopulation.lean`; success produces no diagnostics.
+`lake env lean CslibFrontierTests/MMSPopulation.lean`; success produces no diagnostics.
 Use the normal cache bootstrap if imported artifacts are missing.

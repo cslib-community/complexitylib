@@ -15,7 +15,7 @@ OUTPUT_ROOT = ROOT / '_build'
 SOURCE_REVISION = None
 SOURCE_PATHS = set()
 CHANGED_PATHS = set()
-REPOSITORY_URL = 'https://github.com/cslib-community/complexitylib'
+REPOSITORY_URL = 'https://github.com/cslib-community/cslib-frontier'
 ORDER = [
     ('design-and-assurance', ['index', 'architecture', 'automation', 'assurance', 'upstream-and-credit']),
     ('machines-and-classes', ['index', 'native-and-resources', 'intermediate-and-legacy',
