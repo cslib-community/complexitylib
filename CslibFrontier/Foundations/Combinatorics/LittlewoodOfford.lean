@@ -251,8 +251,7 @@ theorem one_div_sqrt_add_two_mul_sqrt_sub_one_le {n : ℕ} (hn : 1 ≤ n) :
     have hsum_le : Real.sqrt n + Real.sqrt (n - 1) ≤ 2 * Real.sqrt n := by
       linarith [Real.sqrt_le_sqrt (by linarith : (n : ℝ) - 1 ≤ n)]
     calc 1 = (Real.sqrt n - Real.sqrt (n - 1)) * (Real.sqrt n + Real.sqrt (n - 1)) := hdiff.symm
-      _ ≤ (Real.sqrt n - Real.sqrt (n - 1)) * (2 * Real.sqrt n) :=
-        mul_le_mul_of_nonneg_left hsum_le hsub_nonneg
+      _ ≤ (Real.sqrt n - Real.sqrt (n - 1)) * (2 * Real.sqrt n) := by gcongr
   have hdiv : 1 / Real.sqrt n ≤ 2 * Real.sqrt n - 2 * Real.sqrt (n - 1) := by
     rw [div_le_iff₀ (by positivity)]
     linarith

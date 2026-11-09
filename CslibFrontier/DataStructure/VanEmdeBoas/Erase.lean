@@ -140,11 +140,6 @@ Section 20.3, p. 554). -/
 @[simp] theorem erase_empty (d x : ℕ) : (empty d).erase x = empty d := by
   cases d <;> rfl
 
-private theorem index_lt_index {u i j a b : ℕ} (ha : a < u) (hij : i < j) :
-    i * u + a < j * u + b := by
-  have h := Nat.mul_le_mul_right u (show i + 1 ≤ j by omega)
-  nlinarith
-
 private theorem singleton_contains_of_bounds_eq {t : Tree d} (ht : t.Valid) {m : ℕ}
     (hb : t.bounds = some (m, m)) (y : ℕ) : t.Contains y ↔ y = m := by
   have he := ht.extrema

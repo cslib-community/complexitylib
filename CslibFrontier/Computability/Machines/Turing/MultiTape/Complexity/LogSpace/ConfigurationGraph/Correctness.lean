@@ -70,9 +70,7 @@ theorem outputCode_append (w : List Bool) (b : Option Bool) :
         have := congrArg List.length heq
         have : w.length = 0 := by simpa using this
         exact h (List.length_eq_zero_iff.mp this)
-      have hc : outputCode w ≠ 0 := by
-        unfold outputCode
-        split_ifs <;> omega
+      have hc : outputCode w ≠ 0 := by grind [outputCode]
       rw [outputStep, ite_eq_right hc]
       simp [outputCode, h, hnot]
 

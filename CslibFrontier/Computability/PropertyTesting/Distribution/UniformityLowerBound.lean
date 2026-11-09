@@ -280,9 +280,7 @@ theorem two_mul_le_of_isTester_uniform_prod [NeZero m] {k : ℕ}
       rw [hq, dist_self]
       exact hδ0
     linarith
-  have hε : |2 * δ| ≤ 1 := by
-    rw [abs_of_pos (by linarith)]
-    linarith
+  have hε : |2 * δ| ≤ 1 := by grind
   have hfar : ∀ σ : Fin m → Bool, ∀ q ∈ ({uniformOfFintype (Fin m × Bool)} :
       Set (PMF (Fin m × Bool))), δ ≤ dist (paninski hε σ) q := by
     intro σ q hq

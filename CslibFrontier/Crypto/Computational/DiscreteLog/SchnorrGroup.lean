@@ -15,6 +15,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.PowMod
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Foundations.Data.Nat.Bits
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 
 /-!
 # Schnorr groups
@@ -148,9 +149,6 @@ def encode (d : Desc) (x : Carrier d) : List Bool :=
 theorem encode_injective (d : Desc) : Function.Injective (encode d) := fun _ _ h =>
   Additive.toMul.injective (Subtype.ext (Units.ext (ZMod.val_injective _
     (encNat.injective h))))
-
-/-- Reading back binary digits. -/
-private theorem ofBits_bits (n : ℕ) : ofBits n.bits = n := Nat.foldr_bit_bits n
 
 /-- Multiplication modulo `p` of encoded residues. -/
 def add (input : Desc × List Bool × List Bool) : List Bool :=

@@ -204,8 +204,7 @@ theorem iterate_cvBound_twoTower_le (m s : ℕ) :
       have := Nat.one_lt_two_pow (Nat.twoTower_pos m).ne'
       omega
     have hle : 4 + 2 * Nat.twoTower (m + 1) ≤ 2 ^ (Nat.twoTower m + 2) := by
-      rw [Nat.twoTower_succ, pow_add]
-      omega
+      grind [Nat.twoTower_succ, pow_add]
     unfold cvBound
     have := Nat.clog_le_of_le_pow hle
     omega

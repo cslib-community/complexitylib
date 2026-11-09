@@ -169,8 +169,7 @@ end LiftNet
     liftAdversary (n := n) (In := In) (Out := Out) (Machine.id (netSpec NetQ NetR)) =
       Machine.id (protocolSpec n In Out NetQ NetR) := by
   simp only [liftAdversary, Machine.id]
-  congr 1
-  funext q s
+  congr 1 with q s : 2
   cases q with
   | inl p => rfl
   | inr q =>
@@ -184,8 +183,7 @@ theorem liftAdversary_comp (A : Machine (netSpec NetQ₁ NetR₁) (netSpec AdvQ 
     liftAdversary (n := n) (In := In) (Out := Out) (A.comp S) =
       (liftAdversary A).comp (liftAdversary S) := by
   simp only [liftAdversary, Machine.comp]
-  congr 1
-  funext q s
+  congr 1 with q s : 2
   cases q with
   | inl p =>
     change (StateT.lift (ProbOracleComp.query (spec := protocolSpec n In Out NetQ₂ NetR₂)
