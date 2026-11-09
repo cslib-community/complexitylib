@@ -1,0 +1,84 @@
+/-
+Copyright (c) 2026 Erik Demaine. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Erik Demaine
+-/
+
+module
+-- upstream: candidate
+
+import CslibFrontier.Computability.WordRAM.Call
+public import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Product.Program
+
+/-!
+# Charged copies across the producer/consumer boundary
+
+## Main results
+
+* `QueriedProduct.exec_copyCall`: real argument setup and the unchanged dynamic native copy,
+  with both address orders, equality, complete memory meaning and caller-register frame.
+
+These are internal execution interfaces. Complete product clients derive the numerical fits
+and separation from the original input and the explicit computed layout.
+-/
+
+namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.QueriedProduct
+
+open Cslib.WordRAM
+
+/-- Each existing 96-register callee has exactly its original register semantics. -/
+public theorem bank_injective : Function.Injective bank := by
+  intro i j h
+  exact Fin.ext (congrArg (fun i : Fin 160 => i.val) h)
+
+private theorem copyBank_injective : Function.Injective copyBank := by
+  intro i j h
+  exact Fin.ext (congrArg (fun i : Fin 160 => i.val) h)
+
+/-- Dynamic native argument setup and every copy instruction are charged. The caller's
+source/destination/length registers, and every register beyond the seven-register callee,
+are preserved. Source and destination separation is a numerical layout obligation. -/
+public theorem exec_copyCall {w : ℕ} (x : Data 160) (h1 : Fits w 1)
+    (hs : Fits w (x.regs Reg.source + x.regs Reg.length))
+    (hd : Fits w (x.regs Reg.destination + x.regs Reg.length))
+    (hsep : x.regs Reg.source + x.regs Reg.length ≤ x.regs Reg.destination ∨
+      x.regs Reg.destination + x.regs Reg.length ≤ x.regs Reg.source ∨
+      x.regs Reg.source = x.regs Reg.destination) :
+    ∃ y, ExecWithin w copyCall x y (7 * x.regs Reg.length + 7) ∧
+      y.mem =
+        ArrayCopy.copyPrefix x.mem (x.regs Reg.source) (x.regs Reg.destination)
+          (x.regs Reg.length) ∧
+      (∀ i, 7 ≤ i.val → y.regs i = x.regs i) := by
+  let x1 := x.set (0 : Fin 160) (x.regs Reg.source)
+  let x2 := x1.set (1 : Fin 160) (x.regs Reg.destination)
+  let x3 := x2.set (2 : Fin 160) (x.regs Reg.length)
+  have h0 : ExecWithin (B := .standard) w (.op (.copy (0 : Fin 160) Reg.source)) x x1 1 :=
+    ExecWithin.copy
+  have h01 :
+      ExecWithin (B := .standard) w (.op (.copy (1 : Fin 160) Reg.destination)) x1 x2 1 := by
+    ram_eval [x1, x2, Reg.source, Reg.destination]
+  have h02 : ExecWithin (B := .standard) w (.op (.copy (2 : Fin 160) Reg.length)) x2 x3 1 := by
+    ram_eval [x1, x2, x3, Reg.source, Reg.destination, Reg.length]
+  obtain ⟨y, he, ⟨hm, _, _, _⟩, hframe⟩ := ExecWithin.rename_post copyBank_injective
+    (ArrayCopy.exec_of_separated_or_eq (x3.comap copyBank) h1
+      (by simpa [x1, x2, x3, copyBank, ArrayCopy.src, ArrayCopy.len] using hs)
+      (by simpa [x1, x2, x3, copyBank, ArrayCopy.dst, ArrayCopy.len] using hd)
+      (by simpa [x1, x2, x3, copyBank, ArrayCopy.src, ArrayCopy.dst, ArrayCopy.len] using hsep))
+  refine ⟨y, ?_, ?_, ?_⟩
+  · have hlen : (x3.comap copyBank).regs ArrayCopy.len = x.regs Reg.length := by
+      simp [x1, x2, x3, copyBank, ArrayCopy.len]
+    rw [hlen] at he
+    exact (h0.seq (h01.seq (h02.seq he))).mono (by omega)
+  · simpa [x1, x2, x3, copyBank, ArrayCopy.src, ArrayCopy.dst, ArrayCopy.len] using hm
+  · intro i hi
+    rw [hframe i (by
+      intro j hj
+      have hv := congrArg (fun r : Fin 160 => r.val) hj
+      change j.val = i.val at hv
+      omega)]
+    simp only [x3, x2, x1, Data.set_regs,
+      Function.update_of_ne (show i ≠ (2 : Fin 160) by omega),
+      Function.update_of_ne (show i ≠ (1 : Fin 160) by omega),
+      Function.update_of_ne (show i ≠ (0 : Fin 160) by omega)]
+
+end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.QueriedProduct
