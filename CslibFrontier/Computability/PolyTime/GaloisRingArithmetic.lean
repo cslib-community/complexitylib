@@ -552,24 +552,21 @@ theorem computableInPolyTime_one {fl : α → List ℕ}
     (ComputableInPolyTime.const 1) (ComputableInPolyTime.const 0)).of_enc_eq fun q => ?_
   by_cases h : q.2 = 0 <;> simp [h]
 
+/-- The length `e (2 p + 1)` of a reduced coefficient list is polynomially bounded. -/
+theorem polyBounded_reducedLength {p : α → ℕ} {fl : α → List ℕ}
+    (hp : ComputableInPolyTime p encIn encUnary)
+    (hfl : ComputableInPolyTime fl encIn (encList encNat)) :
+    PolyBounded (fun x => (encIn x).length) (fun x => (fl x).length * (2 * p x + 1)) :=
+  (length_polyTime hfl).polyBounded.mul
+    (((PolyBounded.const 2).mul hp.polyBounded).add (PolyBounded.const 1))
+
 /-- The length bound shared by the folds below: a pair of reduced lists. -/
 private theorem polyBounded_reduced {p : α → ℕ} {fl : α → List ℕ}
     (hp : ComputableInPolyTime p encIn encUnary)
     (hfl : ComputableInPolyTime fl encIn (encList encNat)) :
     PolyBounded (fun x => (encIn x).length)
-      (fun x => 3 * ((fl x).length * (2 * p x + 1)) + 1) := by
-  have hpl := (ComputableInPolyTime.polyBounded_length hp)
-  have hfll := (ComputableInPolyTime.polyBounded_length hfl)
-  refine (((PolyBounded.const 3).mul (hfll.mul (((PolyBounded.const 2).mul hpl).add
-    (PolyBounded.const 1)))).add (PolyBounded.const 1)).mono fun x => ?_
-  have h1 : p x ≤ (encUnary (p x)).length := by simp
-  have h2 : (fl x).length ≤ (encList encNat (fl x)).length := by
-    rw [length_encList]
-    calc (fl x).length = ((fl x).map fun _ => 1).sum := by simp
-      _ ≤ ((fl x).map fun a => 2 * (encNat a).length + 1).sum :=
-        List.sum_le_sum fun a _ => by omega
-  have := Nat.mul_le_mul h2 (Nat.add_le_add_right (Nat.mul_le_mul_left 2 h1) 1)
-  omega
+      (fun x => 3 * ((fl x).length * (2 * p x + 1)) + 1) :=
+  ((PolyBounded.const 3).mul (polyBounded_reducedLength hp hfl)).add (PolyBounded.const 1)
 
 /-- **Multiplication is polynomial-time**, with the precision in unary. Every intermediate pair is
 reduced after its first step, so its length is bounded by the precision and the degree. -/
