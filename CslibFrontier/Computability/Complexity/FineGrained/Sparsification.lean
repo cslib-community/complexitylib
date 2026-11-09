@@ -290,9 +290,7 @@ private theorem iterate_step {k M : ℕ} (hkK : k ≤ K) (hM : LeafBound K α M)
     rw [← List.toFinset_card_of_nodup hnd]
     exact (BranchingRule.card_le_of_isLeafWord hK hα hred hk0 φ.vars.toFinset mem_vars_of_mem_root
       L.toFinset fun w hw => (hL w).mp (List.mem_toFinset.mp hw)).trans (hM φ.numVars)
-  have hNr : N ≤ rounds M φ := by
-    rw [rounds, CNF.length_distinctVars, pow_succ]
-    omega
+  have hNr : N ≤ rounds M φ := by grind [rounds, CNF.length_distinctVars, pow_succ]
   have hinit : ([root k φ], false) = ([s₀].map Subtype.val, false) := rfl
   obtain ⟨hfin, hmid⟩ := h [] false
   have hacc : (L.map (R.tree.walk s₀)).foldl (fun acc t => acc || g t.1) false =
@@ -601,10 +599,7 @@ theorem decidableInExpTime_search {k M : ℕ} (hkK : k ≤ K) (hM : LeafBound K 
     have : 1 ≤ 2 ^ (N / M) := Nat.one_le_two_pow
     omega
   -- the polynomial parts
-  have hpoly : (L + 1) ^ dn + (L + 1) ^ di ≤ 2 * P := by
-    have := hP dn (by omega)
-    have := hP di (by omega)
-    omega
+  have hpoly : (L + 1) ^ dn + (L + 1) ^ di ≤ 2 * P := by grind
   have hrnd : (stateBound K α φ + 1) ^ d + stateBound K α φ +
       ((encNat (rounds M φ)).length + 1) ^ 2 ≤ C₁ * P := by
     have h₁ : (stateBound K α φ + 1) ^ d ≤ (c₂ + 1) ^ d * (L + 1) ^ (3 * d) := by

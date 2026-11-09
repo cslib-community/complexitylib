@@ -429,18 +429,8 @@ private theorem run_eq_bind_piPresample [Fintype ι] [DecidableEq ι]
     obtain ⟨i₀, m⟩ := q
     have hm : m ∈ (BitString.shortWords L).toList :=
       Finset.mem_toList.mpr (BitString.mem_shortWords.mpr hq)
-    have hdi₀ : d i₀ = (d i₀ - 1) + 1 := by
-      have := hd i₀
-      lia
-    have hd' : ∀ i, k ≤ Function.update d i₀ (d i₀ - 1) i := by
-      intro i
-      by_cases h : i = i₀
-      · subst h
-        have := hd i
-        simp only [Function.update_self]
-        lia
-      · simp only [Function.update_of_ne h]
-        exact (Nat.le_succ k).trans (hd i)
+    have hdi₀ : d i₀ = (d i₀ - 1) + 1 := by grind
+    have hd' : ∀ i, k ≤ Function.update d i₀ (d i₀ - 1) i := by grind
     change ((OracleComp.interpret (Prover.independent P).respond
         (OracleComp.query (i₀, m) >>= next)).run s).map Prod.fst =
       (piPresample P L (BitString.shortWords L).toList d s).bind fun f =>
@@ -754,9 +744,7 @@ theorem validFrom_candidateProver (H : List (List (List Bool × List Bool)))
       cases hmem_match
     | cons first more =>
       obtain ⟨r₀, rest₀⟩ := first
-      have hfirst_mem : (r₀, rest₀) ∈ cand.filterMap filterFn := by
-        rw [hm]
-        exact List.mem_cons_self
+      have hfirst_mem : (r₀, rest₀) ∈ cand.filterMap filterFn := by grind
       rw [List.mem_filterMap] at hfirst_mem
       obtain ⟨h₀, hh₀, hfilter₀⟩ := hfirst_mem
       cases h₀ with

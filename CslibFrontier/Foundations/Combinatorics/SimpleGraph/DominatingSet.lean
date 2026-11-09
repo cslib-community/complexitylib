@@ -21,6 +21,10 @@ vertex; these markings are not unique certificates. This is the interpretation o
 
 The equivalent membership-or-adjacency API from main is retained by
 `isDominatingSet_iff`, together with its monotonicity and nonemptiness lemmas.
+Domination is also the source problem for the metric k-center hardness reduction
+([WilliamsonShmoys2011], Section 2.2). The encoded decision problem is
+`Cslib.Complexity.DominatingSet_npComplete`; the metric bridge is
+`Cslib.Algorithms.Lean.KCenter.isDominatingSet_of_radius_le_mul`.
 
 ## Main results
 
@@ -56,7 +60,7 @@ theorem isDominatingSet_iff {G : SimpleGraph V} {S : Set V} :
   constructor
   · intro h v
     obtain ⟨u, hu, he | ha⟩ := h v
-    · exact Or.inl (he ▸ hu)
+    · exact Or.inl (he.symm ▸ hu)
     · exact Or.inr ⟨u, hu, ha⟩
   · intro h v
     rcases h v with hv | ⟨u, hu, ha⟩
