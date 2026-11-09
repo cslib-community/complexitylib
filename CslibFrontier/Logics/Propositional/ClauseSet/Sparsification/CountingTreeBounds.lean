@@ -464,22 +464,9 @@ theorem countP_eval_toCNF_countingLeaves_nontautological (θ : ℕ → ℕ) (φ 
     (x : V → Bool) :
     ((countingLeaves θ (reduce (nontautological φ.toClauseSet))).map ClauseSet.toCNF).countP
         (fun F => F.eval x) =
-      if φ.eval x then 1 else 0 := by
-  rw [List.countP_map]
-  have hcongr : (Function.comp (fun F : CNF V => F.eval x) ClauseSet.toCNF) =
-      fun L : ClauseSet V => decide (L.Sat x) := by
-    funext L
-    exact Bool.eq_iff_iff.mpr
-      ((ClauseSet.eval_toCNF_eq_true_iff L x).trans decide_eq_true_iff.symm)
-  rw [hcongr, countP_sat_countingLeaves]
-  by_cases hev : φ.eval x = true
-  · have hsat : (reduce (nontautological φ.toClauseSet)).Sat x :=
-      (sat_reduce_nontautological_iff φ.toClauseSet x).mpr ((CNF.sat_toClauseSet_iff φ x).mpr hev)
-    rw [ite_eq_left hsat, ite_eq_left hev]
-  · have hnsat : ¬ (reduce (nontautological φ.toClauseSet)).Sat x :=
-      fun h => hev ((CNF.sat_toClauseSet_iff φ x).mp
-        ((sat_reduce_nontautological_iff φ.toClauseSet x).mp h))
-    rw [ite_eq_right hnsat, ite_eq_right hev]
+      if φ.eval x then 1 else 0 :=
+  countP_eval_toCNF_countingLeaves_of_sat_iff θ
+    ((sat_reduce_nontautological_iff φ.toClauseSet x).trans (CNF.sat_toClauseSet_iff φ x))
 
 /-- **Normalized CNF model-count conservation.**
 Summing `L.toCNF.modelCountOn declared` across the leaves of
