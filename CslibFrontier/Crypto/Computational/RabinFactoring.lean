@@ -449,12 +449,6 @@ private theorem crtSqrt_sq_mod_eq {desc : BlumDesc} {a b x : ℕ}
     rw [Nat.ModEq, mul_comm desc.q desc.p, Nat.mod_eq_of_lt hy_lt] at hmod
     exact hmod
 
-/-- Expectation under a point mass. -/
-private theorem tsum_pure_mul {α : Type*} (a : α) (k : α → ℝ≥0∞) :
-    ∑' b, PMF.pure a b * k b = k a := by
-  rw [tsum_eq_single a fun b hb => by simp [PMF.pure_apply, hb]]
-  simp [PMF.pure_apply]
-
 /-- Success probability of `factoringGame gen F n` is at most that of
 `rabinInversionGame gen (factorToRabin F) n`. -/
 theorem succProbability_factoringGame_le (gen : BlumGen)
@@ -476,7 +470,8 @@ theorem succProbability_factoringGame_le (gen : BlumGen)
       simp only [factorToRabin, ProbComp.eval_bind, PMF.tsum_bind_mul]
       refine tsum_le_tsum fun ab => mul_le_mul_of_nonneg_left ?_ zero_le
       split_ifs with h
-      · rw [ProbComp.eval_pure, tsum_pure_mul, ite_eq_left (crtSqrt_sq_mod_eq h.1 h.2.1 h.2.2)]
+      · simp only [ProbComp.eval_pure, PMF.pure_apply, ite_mul, one_mul, zero_mul, tsum_ite_eq]
+        rw [ite_eq_left (crtSqrt_sq_mod_eq h.1 h.2.1 h.2.2)]
       · exact zero_le
 
 /-- If Rabin squaring is one-way for `gen`, then factoring is hard for `gen`. -/
@@ -869,11 +864,12 @@ theorem succProbability_rabinInversionGame_le (gen : BlumGen)
   congr 1
   refine Finset.sum_congr rfl fun x _ => ?_
   split_ifs with h
-  · rw [ProbComp.eval_pure, tsum_pure_mul, ite_eq_left (rabinFactorPair_good_iff.mpr h)]
+  · simp only [ProbComp.eval_pure, PMF.pure_apply, ite_mul, one_mul, zero_mul, tsum_ite_eq]
+    rw [ite_eq_left (rabinFactorPair_good_iff.mpr h)]
   · rw [ProbComp.eval_bind, PMF.tsum_bind_mul]
     refine tsum_congr fun x' => ?_
-    rw [ProbComp.eval_pure, tsum_pure_mul]
-    simp only [rabinFactorPair_good_iff]
+    simp only [ProbComp.eval_pure, PMF.pure_apply, ite_mul, one_mul, zero_mul, tsum_ite_eq,
+      rabinFactorPair_good_iff]
 
 /-- If factoring is hard for `gen`, then Rabin squaring is one-way for `gen`. -/
 theorem rabinOneWay_of_factoringHard {gen : BlumGen} (h : FactoringHard gen) :
