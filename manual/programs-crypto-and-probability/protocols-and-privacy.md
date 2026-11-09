@@ -1708,7 +1708,7 @@ $4VR(B+q)$ and each reconstruction prefix by $2(\mu+Q+1)R(B+q)$, including
 pair input, reconstructed output and internal callback tapes. Pair widths are
 derived from actual original quarter witnesses, even with collisions.
 These phase allowances reuse the approved matcher bound; window scan/cut/division,
-retained/group-emission composition, balance/orientation/loop/label control and
+retained/group-emission composition, internal class-search control and
 simultaneously live ambient frames remain separate obligations.
 
 [`AddXNORWholeRunResources.lean`](../../Complexity/Cryptanalysis/AddXNORWholeRunResources.lean)
@@ -1729,10 +1729,26 @@ Captured parameters, every prefix state, input/output/framing and generated
 class-index data are charged. Parked packed-witness widths follow from original
 soundness, including empty lists and early hits. The complete client computes
 non-unit/empty fold budgets and applies the envelope to the actual arithmetic fallback.
-This is a whole-run envelope, not the sharp Theorem 7 inequality: $T_b,S_b,T_c,S_c$
-still need closed bounds in original widths and computed balance. In particular,
-window scan/cut/division, retained/group emission and internal class-search
-lifetimes remain in those costs. The source fast reachable-state prepass remains open.
+[`AddXNORBalanceResources.lean`](../../Complexity/Cryptanalysis/AddXNORBalanceResources.lean)
+closes the installed balance prepass, including both regenerated count callbacks,
+scalar min/max, every prefix state, label generation and copy/frame workspace.
+For actual quarter population $Q$, its `balanceCertificate_bounds` gives
+$T_b\le 2^p(Q+2)A(B)$ and $S_b\le(2^p+Q+2)A(B)$ in original quarter-input
+width $B$. The actual source cut has $Q\le11\cdot2^{\lfloor q/4\rfloor}$ and capped
+$p\le\lfloor q/4\rfloor$. Thus `source_balance_bounds` derives half-exponential time
+and quarter-exponential workspace in original physical input bits, without a
+supplied resource invariant. `sourceCertificate_search_bounds` composes this into
+the unchanged whole run:
+$$
+T_{\mathrm{source}}\le (T_c+2^{\lfloor q/2\rfloor})P(I),\qquad
+S_{\mathrm{source}}\le (S_c+2^{\lfloor q/4\rfloor})P(I).
+$$
+The client checks the actual arithmetic fallback and zero-width/no-operator input
+with an overlarge requested class depth. These are not sharp whole-run bounds:
+$T_c,S_c$ still include unnormalized window scan/cut/division, retained/group
+emission and internal class-search lifetimes. Regenerated counts fit the
+half-exponential total time but do not prove the source's faster quarter-time
+reachable-state-DP all-count prepass, which remains open.
 
 The all-class search uses the same fixed streaming kernel over an actually
 generated class-index list. The approved uniform index generator supplies its

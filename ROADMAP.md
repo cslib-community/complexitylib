@@ -370,8 +370,7 @@ sum; opposite counting repeated at generated restart labels is amortized by actu
 Full-state reconstruction of actual windows also has a summed phase allowance and every-batch
 prefix workspace bound, including pair/output/callback tapes. These results are not the total
 assembled profiles: window scan/cut/division, retained-join/group emission composition,
-scalar balance/orientation and outer/label control plus simultaneous ambient frames remain
-unclosed. `WholeRunResources.sourceCertificate_bounds` now gives an actual whole
+internal class-search control and simultaneous ambient frames remain unclosed. `WholeRunResources.sourceCertificate_bounds` now gives an actual whole
 original-input preparation-to-readback envelope: time is bounded by the installed balance
 prepass allowance plus `(classTime + numberOfClasses + 1) * P(originalInputBits)`, and space
 by the prepass workspace plus `(classSpace + numberOfClasses + 1) * P(originalInputBits)`.
@@ -379,9 +378,13 @@ by the prepass workspace plus `(classSpace + numberOfClasses + 1) * P(originalIn
 internal search costs; neither is a supplied runtime contract. The installed outer-loop
 callback copies, every prefix state, generated labels and boundary phases are now composed
 in original widths. A generic envelope for the unchanged streaming fold supplies actual
-callback sums versus workspace maxima. Sharp normalization remains necessary for those
-balance/search allowances, including window/control/retained emission and internal lifetimes.
-The source reachable-state-DP all-count and quarter-time prepass remain open.
+callback sums versus workspace maxima. `BalanceResources` closes the installed balance
+prepass: regenerated counts, scalar min/max, labels, copies and every prefix fit
+half-exponential time and quarter-exponential space at the actual source cut, with
+polynomial factors in original physical input width. Its `sourceCertificate_search_bounds`
+composes this into the whole run. Sharp normalization remains necessary for the actual
+class-search sum and maximum, including window/control/retained emission and internal
+lifetimes. The source reachable-state-DP all-count and faster quarter-time prepass remain open.
 No sharp global bit inequalities follow from the encoding or record-volume
 bounds. Older solver sources are preserved; the new direct route bypasses their
 interpreter without removing their costs from their own certificates. A real

@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (restarted class-batch source integration regression tests)
 
-public import Complexity.Cryptanalysis.AddXNORWholeRunResources
+public import Complexity.Cryptanalysis.AddXNORBalanceResources
 import all Complexity.Computability.GenericRAM.Native.StreamingFoldBounds
 import all Complexity.Cryptanalysis.AddXNORJoinedDissection
 import all Complexity.Cryptanalysis.AddXNORClassBatches
@@ -192,5 +192,46 @@ example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
       Source.ofWords 0 (0 : BitVec 3) (List.replicate 14 0 ++ [1]) := by decide +kernel
   obtain ⟨P, hP, mono, bound⟩ := WholeRunResources.sourceCertificate_bounds
   refine ⟨P, hP, mono, ?_⟩
+  rw [originalEq]
+  exact bound 3 0 0 (List.replicate 14 0 ++ [1])
+
+-- Both scalar prepasses execute and compute the actual maximum, including the zero-width case.
+example : ClassBalance.balance (Source.prepare restartArithmeticHit) = 64 := by decide +kernel
+example : ClassBalance.balance (Source.prepare (Source.ofWords 9 (0 : BitVec 0) [])) = 1 := by
+  decide +kernel
+
+-- One polynomial covers the actual fallback and zero-width/no-operator capped input.
+example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
+    (ClassBalance.balanceCertificate.time (Source.prepare restartArithmeticHit) ≤
+        128*P ((Source.encoding restartArithmeticHit).length) ∧
+      ClassBalance.balanceCertificate.space (Source.prepare restartArithmeticHit) ≤
+        8*P ((Source.encoding restartArithmeticHit).length)) ∧
+    (let original := Source.ofWords 9 (0 : BitVec 0) [];
+      ClassBalance.balanceCertificate.time (Source.prepare original) ≤
+          P ((Source.encoding original).length) ∧
+        ClassBalance.balanceCertificate.space (Source.prepare original) ≤
+          P ((Source.encoding original).length)) := by
+  obtain ⟨P, hP, mono, bound⟩ := BalanceResources.source_balance_bounds
+  refine ⟨P, hP, mono, ?_, ?_⟩
+  · have originalEq : restartArithmeticHit =
+        Source.ofWords 0 (0 : BitVec 3) (List.replicate 14 0 ++ [1]) := by decide +kernel
+    rw [originalEq]
+    exact bound 3 0 0 (List.replicate 14 0 ++ [1])
+  · simpa only [List.length_nil, Nat.zero_div, pow_zero, one_mul] using
+      bound 0 9 0 []
+
+-- The original source run has its prepass closed; search clocks/workspaces remain explicit.
+example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
+    let prepared := Source.prepare restartArithmeticHit
+    JoinedDissection.sourceCertificate.time restartArithmeticHit ≤
+        (WholeRunResources.classTime prepared+128)*
+          P ((Source.encoding restartArithmeticHit).length) ∧
+      JoinedDissection.sourceCertificate.space restartArithmeticHit ≤
+        (WholeRunResources.classSpace prepared+8)*
+          P ((Source.encoding restartArithmeticHit).length) := by
+  obtain ⟨P, hP, mono, bound⟩ := BalanceResources.sourceCertificate_search_bounds
+  refine ⟨P, hP, mono, ?_⟩
+  have originalEq : restartArithmeticHit =
+      Source.ofWords 0 (0 : BitVec 3) (List.replicate 14 0 ++ [1]) := by decide +kernel
   rw [originalEq]
   exact bound 3 0 0 (List.replicate 14 0 ++ [1])

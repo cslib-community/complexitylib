@@ -249,18 +249,21 @@ at every generated restart label include real recomputation. It also sums actual
 full-state reconstruction allowances and bounds each reconstruction prefix, deriving
 pair widths from original quarter witnesses. Reuse these results with the matcher
 bounds; do not redo them or charge those phases as unit-cost input volume. The
-window scan/cut/division and retained/group-emission composition, balance/orientation/
-label/outer control and all ambient frames still need complete normalization.
+window scan/cut/division, retained/group emission and internal class-search
+control/ambient frames still need complete normalization.
 `WholeRunResources.sourceCertificate_bounds` now composes the actual original-input
 certificate through decoding. Its residual costs are explicitly the installed balance
 certificate and the sum/max of installed class searches, with only original-input-width
 polynomial and class-label overhead. The outer loop's captured state/copies/labels are
 charged using `NativeCertificate.foldlStream_bounds`; its workspace uses prefix maxima,
-and parked witness widths are derived from original soundness. The original machine
-and allowance fields are unchanged. Reuse this whole-run envelope rather than another
-unconnected phase budget; next close balance and search sum/max inequalities, including
-window scan/cut/division, retained/group emission and their actual ambient frames.
-These remaining costs are expressions, not assumed runtime hypotheses or sharp bounds.
+and parked witness widths are derived from original soundness. `BalanceResources`
+now normalizes the complete installed scalar prepass, including both count callbacks,
+min/max, label generation, copies and every prefix. At the actual source cut it fits
+half-exponential time and quarter-exponential workspace in original input widths.
+`sourceCertificate_search_bounds` composes this into the unchanged whole run; only
+class-search sum/max remain explicit costs. Next close those costs, including window
+scan/cut/division, retained/group emission and actual ambient frames. Neither these
+residual expressions nor the normalized prepass alone prove sharp whole-run bounds.
 Orientation recomputes counts; no cached-size oracle is input. The faster source
 reachable-state-DP all-count and quarter-time prepass remain separate open endpoints.
 Do not promote pair/batch traversal sums or unnormalized machine profiles to

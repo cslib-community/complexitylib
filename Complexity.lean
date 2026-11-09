@@ -2903,6 +2903,7 @@ public import Complexity.Computability.WordRAM.Turing.ListOutput
 public import Complexity.Computability.WordRAM.Turing.Overhead
 public import Complexity.Computability.WordRAM.Width
 public import Complexity.Cryptanalysis.AddXNOR
+public import Complexity.Cryptanalysis.AddXNORBalanceResources
 public import Complexity.Cryptanalysis.AddXNORBatchedAccess
 public import Complexity.Cryptanalysis.AddXNORBitExecution
 public import Complexity.Cryptanalysis.AddXNORBitInput
