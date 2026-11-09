@@ -4323,6 +4323,7 @@ public import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation
 public import CslibFrontier.Foundations.Analysis.Convex.FirstOrder
 public import CslibFrontier.Foundations.Analysis.Convex.Strong
 public import CslibFrontier.Foundations.Analysis.ENNRealFraction
+public import CslibFrontier.Foundations.Analysis.ENNRealNatDiv
 public import CslibFrontier.Foundations.Analysis.ENNRealTsum
 public import CslibFrontier.Foundations.Analysis.Fourier.ZModMultiples
 public import CslibFrontier.Foundations.Analysis.Fourier.ZModProd
