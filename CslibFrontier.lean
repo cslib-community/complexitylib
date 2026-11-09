@@ -2358,6 +2358,7 @@ public import CslibFrontier.Computability.GenericRAM.Simulation.Turing
 public import CslibFrontier.Computability.GenericRAM.SparseMemory.Basic
 public import CslibFrontier.Computability.GenericRAM.SparseMemory.Turing
 public import CslibFrontier.Computability.Geometry.Orthogonal.Encoding
+public import CslibFrontier.Computability.Geometry.Orthogonal.PointPolyTime
 public import CslibFrontier.Computability.Geometry.Orthogonal.Subdivision
 public import CslibFrontier.Computability.Interactive.AuxZK
 public import CslibFrontier.Computability.Interactive.Basic
