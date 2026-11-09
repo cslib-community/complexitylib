@@ -33,7 +33,7 @@ The survey baseline is `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. This section 
 | Upstream information-theoretic schemes | PMF encryption/commitment/sharing interfaces | Perfect/statistical distribution equality; no native-time claim | One-time-pad secrecy and Shamir secret sharing |
 | Differentially private mechanisms | Dataset-indexed output PMFs; finite `ProbComp` programs or ideal noise laws | `(ε, δ)` event bounds for an explicit adjacency relation; no sampling-cost or native-time claim | Randomized response is exactly `ln 3`-private; adaptive composition |
 
-Circuit-bounded PRG tests are a different admissibility model from uniform PPT and belong in the [circuits section](../circuits-logic-and-other-models/index.md); the relevant interface is [IsCircuitTest](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Primitives/PRG/Circuit.lean#L74). Read-once branching-program tests (`IsReadOnceTest`, used for Nisan's generator) are described with the [read-once programs](../circuits-logic-and-other-models/networks-and-iteration.md#deterministic-read-once-programs-and-nisans-generator). Randomized Word-RAM's unit-cost finite uniform instruction belongs in [algorithms and memory](../algorithms-and-memory/index.md). The underlying parametric Turing machines and complexity classes belong in [machines and classes](../machines-and-classes/index.md).
+Circuit-bounded PRG tests are a different admissibility model from uniform PPT and belong in the [circuits section](../circuits-logic-and-other-models/index.md); the relevant interface is [IsCircuitTest](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Primitives/PRG/Circuit.lean#L74). Read-once branching-program tests (`IsReadOnceTest`, used for Nisan's generator) are described with the [read-once programs](../circuits-logic-and-other-models/networks-and-iteration.md#deterministic-read-once-programs-and-nisans-generator). Randomized Word-RAM's unit-cost finite uniform instruction belongs in [algorithms and memory](../algorithms-and-memory/index.md). The underlying parametric Turing machines and complexity classes belong in [machines and classes](../machines-and-classes/index.md).
 
 ## Design rationale
 
@@ -49,7 +49,7 @@ The model map groups protocol constructions by their computational/security inte
 
 Differential privacy is covered by `Privacy/DifferentialPrivacy` (added after the survey baseline): `(ε, δ)`-privacy of exact output laws for an explicit adjacency relation, post-processing, adaptive and advanced composition, Hamming group privacy, randomized response, the geometric/discrete Laplace mechanisms, the exponential mechanism, AboveThreshold/Sparse with discrete noise, and packing, reconstruction (from all subset counts or from random `±1` queries) and small-universe lower bounds; see [Protocols and privacy](protocols-and-privacy.md#differential-privacy). Rényi, concentrated and computational differential privacy, continuous Laplace/Gaussian mechanisms and sampling costs are not covered.
 
-Existing tests include [ComplexityTests/ProbabilisticComposition.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/ProbabilisticComposition.lean), [ComplexityTests/ComputationalCrypto.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/ComputationalCrypto.lean), [ComplexityTests/Crypto/AssumptionNonvacuity.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/Crypto/AssumptionNonvacuity.lean), [ComplexityTests/Crypto/GSWFullyHomomorphic.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/Crypto/GSWFullyHomomorphic.lean), and [ComplexityTests/Crypto/MPC.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/Crypto/MPC.lean). Their presence is source evidence; they were not rerun by this author.
+Existing tests include [CslibFrontierTests/ProbabilisticComposition.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/ProbabilisticComposition.lean), [CslibFrontierTests/ComputationalCrypto.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/ComputationalCrypto.lean), [CslibFrontierTests/Crypto/AssumptionNonvacuity.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/Crypto/AssumptionNonvacuity.lean), [CslibFrontierTests/Crypto/GSWFullyHomomorphic.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/Crypto/GSWFullyHomomorphic.lean), and [CslibFrontierTests/Crypto/MPC.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/Crypto/MPC.lean). Their presence is source evidence; they were not rerun by this author.
 
 ## Source-review scope
 
@@ -69,16 +69,16 @@ sources directly; copied files and generated audit reports are not maintained in
 The work associated with STOC submissions 587, 191 and 152 includes the general
 finite-horizon covariance identity, information and auditing bounds, DPI rigidity
 results, and scheduling policy–LP frontier documented below. The expanded
-headline programme remains open in [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
+headline programme remains open in [issue 2527](https://github.com/cslib-community/cslib-frontier/issues/2527).
 STOC submission 191’s binary-input two-batch FPTAS, exact-selection hardness and
 integer-cost pseudopolynomial optimizer are proved; its partial/adaptive-cover main results
 remain open. These imports
 do not establish completion of the expanded programme. The source
 versions and PDF digests are recorded under `Aldridge2027`, `Wang2027` and `Kong2027`
 in [the bibliography](../../references.bib). The checked clients are in
-[Stoc2027BatchC.lean](../../ComplexityTests/Stoc2027BatchC.lean).
+[Stoc2027BatchC.lean](../../CslibFrontierTests/Stoc2027BatchC.lean).
 
-- [AdaptivePolicy.Covariance](../../Complexity/Probability/AdaptivePolicy/Covariance.lean)
+- [AdaptivePolicy.Covariance](../../CslibFrontier/Probability/AdaptivePolicy/Covariance.lean)
   proves STOC submission 587, Lemma 3.3 and Theorem 3.4 (PDF p. 3), for every finite
   state/action space, finite horizon and randomized Markov policy. `FiniteMDP`
   supplies a normalized nonnegative initial law and controlled transition kernels,
@@ -91,10 +91,10 @@ in [the bibliography](../../references.bib). The checked clients are in
   a Bellman equation or an identity as a hypothesis. `traceCovariance_sub_state`
   permits any state-only baseline. Time indices start at zero and `totalCost π H`
   includes exactly the times in `Finset.range H`, including an empty horizon.
-  [AdaptivePolicyCovariance.lean](../../ComplexityTests/AdaptivePolicyCovariance.lean)
+  [AdaptivePolicyCovariance.lean](../../CslibFrontierTests/AdaptivePolicyCovariance.lean)
   constructs the actual two-step investment MDP, independently calculates both
   trajectory costs and recovers their difference using the general theorem.
-- [AdaptivePolicy.Information](../../Complexity/Probability/AdaptivePolicy/Information.lean)
+- [AdaptivePolicy.Information](../../CslibFrontier/Probability/AdaptivePolicy/Information.lean)
   proves STOC submission 587, Theorem 4.2 (PDF p. 4). `jointLaw` is the actual
   state/action law and `productLaw` uses its original marginals. `mutualInformation`
   is their finite KL sum in **nats**, with support inclusion proved from the policy.
@@ -103,7 +103,7 @@ in [the bibliography](../../references.bib). The checked clients are in
   real costs and endogenous transitions. For score bounds, use `actionSpan_le`;
   `sub_le_actionSpan` supplies the reverse inequality from a supported witness.
   The proof reuses the library's Pinsker inequality and bounded-score change-of-law API.
-- [AdaptivePolicy.Sharpness](../../Complexity/Probability/AdaptivePolicy/Sharpness.lean)
+- [AdaptivePolicy.Sharpness](../../CslibFrontier/Probability/AdaptivePolicy/Sharpness.lean)
   proves Proposition 4.3 (PDF p. 4). `sharpness_family` constructs the uniform binary
   mismatch-cost experiment with matching probability $(1+\epsilon)/2$, for every
   $0<\epsilon<1$. Its supported span is one, its absolute adaptivity cost is
@@ -111,7 +111,7 @@ in [the bibliography](../../references.bib). The checked clients are in
   `information_tendsto_zero` and `sharp_ratio` prove the vanishing-information and
   limiting-ratio claims by differentiation. This establishes optimality of the
   $1/\sqrt2$ coefficient in nats, rather than merely checking selected parameters.
-- [AdaptivePolicy.Regret](../../Complexity/Probability/AdaptivePolicy/Regret.lean)
+- [AdaptivePolicy.Regret](../../CslibFrontier/Probability/AdaptivePolicy/Regret.lean)
   proves Corollaries 3.6–3.7 and 4.4–4.5 (PDF pp. 3–4). `IsOptimal` compares actual
   total costs against every Markov policy; `IsOptimalOpenLoop` compares against every
   state-independent randomized policy. The three-part regret decomposition has
@@ -122,17 +122,17 @@ in [the bibliography](../../references.bib). The checked clients are in
   $H(H+1)\sqrt{R/2}/2$. These theorems quantify over optimizers; they do not construct
   an optimal-policy algorithm. `exogenous_covariance_characterization` justifies
   immediate-cost auditing when the supplied transitions are action independent.
-- [AdaptivePolicy.Pathwise](../../Complexity/Probability/AdaptivePolicy/Pathwise.lean)
+- [AdaptivePolicy.Pathwise](../../CslibFrontier/Probability/AdaptivePolicy/Pathwise.lean)
   proves Theorem 3.1 and Corollary 3.2 (PDF p. 3). The path index is any nonempty
   finite type, costs are arbitrary real vectors, and actions lie in a compact convex
   feasible set. `pathwise_decomposition` constructs an attained best fixed comparator,
   with the unnormalized sample covariance and nonnegative static gap.
   `pathwise_covariance_le_regret` gives the inequality and characterizes equality by
   global optimality of the empirical mean action. No stochastic model is assumed.
-  [AdaptivePolicyInformation.lean](../../ComplexityTests/AdaptivePolicyInformation.lean)
+  [AdaptivePolicyInformation.lean](../../CslibFrontierTests/AdaptivePolicyInformation.lean)
   checks a negative-regret path, zero and nonzero information channels, and a supported
   span that ignores an impossible action with cost one million.
-- [AdaptivePolicy.Nonidentifiability](../../Complexity/Probability/AdaptivePolicy/Nonidentifiability.lean)
+- [AdaptivePolicy.Nonidentifiability](../../CslibFrontier/Probability/AdaptivePolicy/Nonidentifiability.lean)
   proves the finite-context case of STOC submission 587, Proposition 5.2 (PDF p. 5).
   `finite_nonidentifiability` takes a context set of positive initial probability and
   an action with positive marginal probability that is never played on that set.
@@ -142,7 +142,7 @@ in [the bibliography](../../references.bib). The checked clients are in
   the empty log. Logged propensities are functions of the recorded context, so adding
   them does not distinguish the instances. The checked client exhibits a gap change
   of $-1/4$. For arbitrary measurable context spaces, use the following module.
-- [AdaptivePolicy.MeasurableNonidentifiability](../../Complexity/Probability/AdaptivePolicy/MeasurableNonidentifiability.lean)
+- [AdaptivePolicy.MeasurableNonidentifiability](../../CslibFrontier/Probability/AdaptivePolicy/MeasurableNonidentifiability.lean)
   proves Proposition 5.2 (PDF p. 5) for arbitrary measurable contexts. Start with a
   probability context law `D` and Markov kernel `π`; `kernel_nonidentifiability`
   assumes a measurable positive-mass context set on which a positive-marginal action
@@ -154,7 +154,7 @@ in [the bibliography](../../references.bib). The checked clients are in
   client uses a Gaussian/binary product context, so the API is exercised beyond
   finite context types. Logged propensities, as deterministic functions of context,
   cannot distinguish the equal log laws.
-- [AdaptivePolicy.ContextualAudit](../../Complexity/Probability/AdaptivePolicy/ContextualAudit.lean)
+- [AdaptivePolicy.ContextualAudit](../../CslibFrontier/Probability/AdaptivePolicy/ContextualAudit.lean)
   supplies Theorem 5.3 (PDF p. 5). Start with a probability law on a measurable
   context and a bounded potential-cost vector. The action probabilities depend only
   on context. `banditObservation` retains the context, propensities, selected action
@@ -168,7 +168,7 @@ in [the bibliography](../../references.bib). The checked clients are in
   At zero divergence, `contextual_gap_eq_zero` makes output zero exact with no samples;
   the library explicitly totalizes empty block means to zero. Target marginal
   frequencies are known, as in Remark 5.1; estimating them is not part of the guarantee.
-- [AdaptivePolicy.AuditLowerBound](../../Complexity/Probability/AdaptivePolicy/AuditLowerBound.lean)
+- [AdaptivePolicy.AuditLowerBound](../../CslibFrontier/Probability/AdaptivePolicy/AuditLowerBound.lean)
   supplies Theorem 5.4 (PDF p. 5). `auditing_lower_bound` constructs a binary policy
   with exactly the prescribed $\Gamma\ge1/3$ and two actual bounded Bernoulli-cost
   instances. Their complete logged-data laws are `hardLaw`, with independent repeated
@@ -179,7 +179,7 @@ in [the bibliography](../../references.bib). The checked clients are in
   $0<\eta\le1/8$. Logged propensities are deterministic functions of the retained
   context. The proof derives single-log KL, product additivity and the testing bound;
   no lower-bound or concentration premise is bundled into an instance.
-- [AdaptivePolicy.EpisodicAudit](../../Complexity/Probability/AdaptivePolicy/EpisodicAudit.lean)
+- [AdaptivePolicy.EpisodicAudit](../../CslibFrontier/Probability/AdaptivePolicy/EpisodicAudit.lean)
   supplies Theorem 5.5 (PDF pp. 5–6). `episodeLaw` follows the actual finite MDP
   transitions. `episodeLoss_integral` connects its total trajectory cost to `totalCost`;
   `episodeLaw_change` proves cancellation of transition factors in the likelihood
@@ -194,21 +194,21 @@ in [the bibliography](../../references.bib). The checked clients are in
   episode count with $H^2\chi^2$ in place of $\bar\chi^2$; `episodic_gap_eq_zero`
   handles the zero parameter, including horizon zero. Episodes are independent;
   successive time steps within an episode need not be independent.
-  [AdaptivePolicyAuditing.lean](../../ComplexityTests/AdaptivePolicyAuditing.lean)
+  [AdaptivePolicyAuditing.lean](../../CslibFrontierTests/AdaptivePolicyAuditing.lean)
   checks outliers, even and empty blocks, a positive-divergence integer-sample
   auditor, a Gaussian context, binary hard-instance endpoints and actual two-step
   trajectories. The shared concentration, importance-sampling and testing proofs
   live in `Probability/MedianOfMeans`, `ImportanceSampling`, `Testing` and
   `ProductDivergence`. These are sample-complexity guarantees for mathematical
   estimators, with no certified machine runtime or empirical numerical claim.
-- [AdaptivePolicy.SignReversal](../../Complexity/Probability/AdaptivePolicy/SignReversal.lean)
+- [AdaptivePolicy.SignReversal](../../CslibFrontier/Probability/AdaptivePolicy/SignReversal.lean)
   realizes Aldridge's Proposition 3.8 (PDF p. 4) with Boolean states and actions. The
   initial state is uniform, investment costs $a(1+s)$, the transition is $s'=s\land a$,
   and the terminal cost is $-ms'$. `sign_reversal` gives myopic covariance $1/4$ and
   actual policy-minus-open-loop cost $(1-m)/4<0$ for every real $m>1$. The second
   action has no effect. Retaining only $s\land a$ preserves the two-state claim;
   the paper's stored pair contains redundant information.
-- [StochasticOracle.FullCover](../../Complexity/Probability/StochasticOracle/FullCover.lean)
+- [StochasticOracle.FullCover](../../CslibFrontier/Probability/StochasticOracle/FullCover.lean)
   implements Wang's Theorem 1 (PDF pp. 6–7) for failure-oblivious full-cover
   selection. `FullCoverInstance` has finitely many labeled call opportunities,
   strictly positive probabilities below one, positive expected token costs and
@@ -226,29 +226,29 @@ in [the bibliography](../../references.bib). The checked clients are in
   `Plan` has a parametric number of padded slots: empty batches issue no calls;
   erase them to obtain the paper's nonempty batch sequences. `Plan.Feasible`
   requires no reuse and bounds the sum of maximum batch cutoffs, excluding local
-  computation. [ExecutionFeasibility](../../Complexity/Probability/StochasticOracle/ExecutionFeasibility.lean)
+  computation. [ExecutionFeasibility](../../CslibFrontier/Probability/StochasticOracle/ExecutionFeasibility.lean)
   proves this contract for every supported stopped execution.
-  [RationalFullCover](../../Complexity/Probability/StochasticOracle/RationalFullCover.lean)
+  [RationalFullCover](../../CslibFrontier/Probability/StochasticOracle/RationalFullCover.lean)
   supplies `optimal_rational_program`: all numerical inputs are rational but
   competitors may randomize with arbitrary real probabilities. The optimum has
   an exact finite-uniform `ProbComp` sampler and `ProbOracleComp` execution whose
-  law is proved in [Programs](../../Complexity/Probability/StochasticOracle/Programs.lean).
+  law is proved in [Programs](../../CslibFrontier/Probability/StochasticOracle/Programs.lean).
   This certifies exact sampling, without a strict worst-case fair-coin time bound.
-  [RandomCost](../../Complexity/Probability/StochasticOracle/RandomCost.lean)'s
+  [RandomCost](../../CslibFrontier/Probability/StochasticOracle/RandomCost.lean)'s
   `billed_cost_eq` covers arbitrary probability spaces and integrable random bills,
   including correlation with the current batch's success. Its assumptions are the
   stopped-trace law and conditional expected costs per selected batch and slot;
   it derives the total expected cost. Import `RationalFullCover`,
   `ExecutionFeasibility` and `RandomCost`, and check the complete
-  [StochasticOracleFullCover.lean](../../ComplexityTests/StochasticOracleFullCover.lean)
+  [StochasticOracleFullCover.lean](../../CslibFrontierTests/StochasticOracleFullCover.lean)
   client: heterogeneous deadlines, internal randomization after failure, a mixed
   optimum, exact non-dyadic sampling, zero/one endpoints, zero turns and
   success-correlated bills. The rational optimizer uses the generic
-  [one-constraint LP](../../Complexity/Foundations/Optimization/OneConstraint.lean)
+  [one-constraint LP](../../CslibFrontier/Foundations/Optimization/OneConstraint.lean)
   support reduction and finite vertex enumeration; its schedule set can be
   exponential. The partial-cover selector and adaptive
-  endpoints remain open under [issue 2527](https://github.com/cslib-community/complexitylib/issues/2527).
-- [PartialCover](../../Complexity/Probability/StochasticOracle/PartialCover.lean)
+  endpoints remain open under [issue 2527](https://github.com/cslib-community/cslib-frontier/issues/2527).
+- [PartialCover](../../CslibFrontier/Probability/StochasticOracle/PartialCover.lean)
   proves submission 191, Lemma 1 (PDF pp. 9, 15). `Instance` supplies the finite
   universe, original weighted sets and a nonnegative feasible dual vector.
   `retain` processes returned subfamilies in order and accepts only a nonempty
@@ -256,7 +256,7 @@ in [the bibliography](../../references.bib). The checked clients are in
   covered elements once; overlapping/repeated sets cannot increase the assembled
   cover's weight beyond that charge. `retain_cover_bound` compares every
   completed result with the dual objective and every integral cover.
-  Import [PartialCoverRisk](../../Complexity/Probability/StochasticOracle/PartialCoverRisk.lean)
+  Import [PartialCoverRisk](../../CslibFrontier/Probability/StochasticOracle/PartialCoverRisk.lean)
   for Theorem 4's conditional-risk probability bound. `ResponseKernel` gives
   arbitrary real conditional laws on all original-set subfamilies, depending
   on the complete preceding response-subfamily history. `Admissible` requires
@@ -274,7 +274,7 @@ in [the bibliography](../../references.bib). The checked clients are in
   allows arbitrary correlations and real probabilities; no finite underlying
   random-seed assumption is imposed. Token bills, latencies and a native
   sampler/runtime are not part of this response-law model.
-  Import [PartialCoverGreedy](../../Complexity/Probability/StochasticOracle/PartialCoverGreedy.lean)
+  Import [PartialCoverGreedy](../../CslibFrontier/Probability/StochasticOracle/PartialCoverGreedy.lean)
   for the executable rational-cost selector in `Cslib.Algorithms.Lean.Multicover`. Its input is a
   list of `Oracle` values with finite eligibility sets and rational cost bounds.
   `choose_spec` proves exact minimum cost/gain selection among positive marginals;
@@ -290,14 +290,14 @@ in [the bibliography](../../references.bib). The checked clients are in
   positive rational source bounds satisfy this condition. Duplicate calls are
   billed individually. Ties retain the earlier listed oracle and zero-gain
   oracles are skipped. `batch` accepts an integral demand. Import
-  [PartialCoverThreshold](../../Complexity/Probability/StochasticOracle/PartialCoverThreshold.lean)
+  [PartialCoverThreshold](../../CslibFrontier/Probability/StochasticOracle/PartialCoverThreshold.lean)
   for `rationalRepetitions`, an exact rational-power search proved equal to the
   real-log ceiling, including equality at an integral threshold. `rationalBatch`
   uses that search and emits exactly the batch analyzed with real logarithms;
   for the sufficient demand pass the rational failure budget `(1-η)/n`.
   The search has no native binary resource bound. Check the complete
-  [threshold client](../../ComplexityTests/StochasticOraclePartialCoverThreshold.lean)
-  with `lake build ComplexityTests.StochasticOraclePartialCoverThreshold` for
+  [threshold client](../../CslibFrontierTests/StochasticOraclePartialCoverThreshold.lean)
+  with `lake build CslibFrontierTests.StochasticOraclePartialCoverThreshold` for
   exact-power, between-power and zero-demand cases and compiled selector execution.
   `rationalBatch_execution` derives the emitted calls’ total realized bill cap
   and parallel completion by `D` from individual token caps and cutoffs at most `D`.
@@ -315,41 +315,41 @@ in [the bibliography](../../references.bib). The checked clients are in
   Native binary time/space and asymptotic approximation
   consequences and hardness transfer remain open, as do Theorems 5–6.
   From a configured checkout, check the complete
-  [StochasticOracleMulticoverGreedy](../../ComplexityTests/StochasticOracleMulticoverGreedy.lean)
-  client with `lake build ComplexityTests.StochasticOracleMulticoverGreedy` for
+  [StochasticOracleMulticoverGreedy](../../CslibFrontierTests/StochasticOracleMulticoverGreedy.lean)
+  client with `lake build CslibFrontierTests.StochasticOracleMulticoverGreedy` for
   exact rational choices, repeated calls, harmonic and risk comparisons,
   empty universes and inputs that fail to cover. For response-law examples,
   import `PartialCoverRisk` and check the complete
-  [StochasticOraclePartialCover](../../ComplexityTests/StochasticOraclePartialCover.lean)
-  client with `lake build ComplexityTests.StochasticOraclePartialCover`: it
+  [StochasticOraclePartialCover](../../CslibFrontierTests/StochasticOraclePartialCover.lean)
+  client with `lake build CslibFrontierTests.StochasticOraclePartialCover`: it
   checks accepted/rejected overlaps, exact two-call probability `3/4`, a correlated
   response law, a failing conditional guarantee, zero calls and an empty universe.
-- [TwoBatchMinimum](../../Complexity/Probability/StochasticOracle/TwoBatchMinimum.lean)
+- [TwoBatchMinimum](../../CslibFrontier/Probability/StochasticOracle/TwoBatchMinimum.lean)
   completes Proposition 1 (PDF pp. 6, 14): `one_turn_cost` gives the exact
   one-turn value; `two_batch_reduction` and `minimum_two_batch` prove the attained
   minimum over nonempty complementary first batches against every randomized
   maximum-success competitor. The two-turn minimum assumes a nonempty population
   and that querying every opportunity concurrently meets the deadline. Empty
   first slots in competing schedules are normalized, rather than excluded.
-- [TwoBatchApproximation](../../Complexity/Probability/StochasticOracle/TwoBatchApproximation.lean)
+- [TwoBatchApproximation](../../CslibFrontier/Probability/StochasticOracle/TwoBatchApproximation.lean)
   supplies an executable rational-input selector indexed by `Fin k`. Starting
   from a `FullCoverInstance (Fin k) ℚ`, `choose I ε D` returns the best exact-saving
   candidate from cutoff families and rounded-product tables. It includes the
   full concurrent batch as fallback. `choose_feasible` needs `0 < k` and the
   original full-batch deadline; `choose_success` proves maximum success exactly.
   Check the complete
-  [StochasticOracleApproximation.lean](../../ComplexityTests/StochasticOracleApproximation.lean)
+  [StochasticOracleApproximation.lean](../../CslibFrontierTests/StochasticOracleApproximation.lean)
   client: the heterogeneous example returns saving four at deadline three and
   saving zero at deadline two; its optimum lower bound covers arbitrary randomized
   policies. The client also checks zero-rounded-cost collisions and mandatory
   selections. Kernel evaluation uses `decide +kernel`, not `native_decide`.
-  [CutoffFamilies](../../Complexity/Probability/StochasticOracle/CutoffFamilies.lean)
+  [CutoffFamilies](../../CslibFrontier/Probability/StochasticOracle/CutoffFamilies.lean)
   proves exact deadline soundness, coverage and at most $k(k+1)$ families.
-  [MinProduct](../../Complexity/Algorithms/Lean/DynamicProgramming/MinProduct.lean)
+  [MinProduct](../../CslibFrontier/Algorithms/Lean/DynamicProgramming/MinProduct.lean)
   proves table soundness, minimum-product dominance, reconstruction, state and
   operation bounds. Its operation count charges rational multiplication and
   comparison as single operations; it is **not a binary runtime certificate**.
-  [RoundedProduct](../../Complexity/Algorithms/Lean/DynamicProgramming/RoundedProduct.lean)
+  [RoundedProduct](../../CslibFrontier/Algorithms/Lean/DynamicProgramming/RoundedProduct.lean)
   derives the multiplicative product–sum guarantee for each maximum-cost-member
   branch. Scaling divides by the number of potentially selected branch members,
   including the mandatory member; this bounds the same total rounding loss as
@@ -359,7 +359,7 @@ in [the bibliography](../../references.bib). The checked clients are in
   nonempty: strict positivity of success makes the comparison first-batch failure
   product strictly smaller than one, whereas an empty first batch has product one.
   For rational $0<ε<1$, import
-  [TwoBatchGuarantees](../../Complexity/Probability/StochasticOracle/TwoBatchGuarantees.lean)
+  [TwoBatchGuarantees](../../CslibFrontier/Probability/StochasticOracle/TwoBatchGuarantees.lean)
   and use `choose_real_policy_approximation` to compare with arbitrary real-randomized
   feasible maximum-success policies. `choose_optimum_guarantees` derives an attained
   optimum over those policies and both advertised savings/cost inequalities; it
@@ -368,7 +368,7 @@ in [the bibliography](../../references.bib). The checked clients are in
   real-policy bound and a three-opportunity rounding collision whose result must
   retain a nonempty first batch.
 
-  [TwoBatchResources](../../Complexity/Probability/StochasticOracle/TwoBatchResources.lean)
+  [TwoBatchResources](../../CslibFrontier/Probability/StochasticOracle/TwoBatchResources.lean)
   defines `inputEncoding` using framed reduced signed binary numerators and positive
   binary denominators. `inputSize_bounds` bounds the population and each rational
   field by the full input length. `candidates_length_le` bounds the whole candidate
@@ -376,17 +376,17 @@ in [the bibliography](../../references.bib). The checked clients are in
   tolerance and is not assumed polynomial in the binary tolerance length. The
   exact products, summed costs and savings comparisons have polynomial binary
   operand widths. Scaling and flooring operand bounds are in `RoundedProduct`.
-  [PolyTime.Rat.Binary](../../Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Rat/Binary.lean)
+  [PolyTime.Rat.Binary](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Rat/Binary.lean)
   supplies native multitape polynomial-time arithmetic, comparison, division and
   flooring under `encRatBin`, including binary gcd normalization and zero/negative
-  cases. [DynamicProgramming.Native](../../Complexity/Algorithms/Lean/DynamicProgramming/Native.lean)
+  cases. [DynamicProgramming.Native](../../CslibFrontier/Algorithms/Lean/DynamicProgramming/Native.lean)
   certifies insertion, pruning and the entire recurrence with runtime-computed
   populations, keys and probability fields. Table keys use unary because the
   rounded key budget is polynomial; probabilities and costs remain binary.
   Rational list sums/products charge traversal, operand copying and normalization.
 
   For the complete Theorem 2(2) algorithm, import
-  [TwoBatchBinary](../../Complexity/Probability/StochasticOracle/TwoBatchBinary.lean)
+  [TwoBatchBinary](../../CslibFrontier/Probability/StochasticOracle/TwoBatchBinary.lean)
   and use `TwoBatchNative.runSchedule` on a `BinaryInput` to emit both batch index
   lists; `run` returns its first batch. The input fields are only `epsilon`,
   `deadline` and the ordered binary rational `calls` triples. `encBinaryInput`
@@ -400,14 +400,14 @@ in [the bibliography](../../references.bib). The checked clients are in
   plus inverse tolerance plus one. No unary budget, machine or runtime proof is
   required from the caller.
 
-  [TwoBatchNative](../../Complexity/Probability/StochasticOracle/TwoBatchNative.lean)
+  [TwoBatchNative](../../CslibFrontier/Probability/StochasticOracle/TwoBatchNative.lean)
   implements all cutoff-family/maximum-member enumeration, input lookups, exact
   arithmetic, DP/pruning, reconstructed index lists, membership scans and final
   savings comparisons. `computable_schedule` also charges the final complement
   scan and emits both batches; no batch reconstruction is deferred to an uncharged
   output step. It saturates rounded keys on invalid data to keep the
   internal compiler total and polynomial. The
-  [correctness bridge](../../Complexity/Probability/StochasticOracle/TwoBatchNativeCorrectness.lean)
+  [correctness bridge](../../CslibFrontier/Probability/StochasticOracle/TwoBatchNativeCorrectness.lean)
   proves that saturation is inactive on eligible valid-input items and that
   `decode (run (BinaryInput.ofInstance I ε D))` equals the original selector,
   including ordering and ties. `decode` interprets the emitted list of indices;
@@ -424,7 +424,7 @@ in [the bibliography](../../references.bib). The checked clients are in
   heterogeneous deadline, zero-saving fallback, rounding collision, derived budget,
   exact success probability and total behavior on empty/invalid data.
 - For Theorem 3's exact decision problem, import
-  [TwoBatchHardness](../../Complexity/Probability/StochasticOracle/TwoBatchHardness.lean).
+  [TwoBatchHardness](../../CslibFrontier/Probability/StochasticOracle/TwoBatchHardness.lean).
   `TwoBatchHardness.Input` contains the ordered rational probability/cost/cutoff triples,
   deadline and expected-cost threshold, with valid oracle parameters. `encInput` encodes
   only those numerical fields in binary. `Decision` asks for a feasible maximum-success
@@ -436,7 +436,7 @@ in [the bibliography](../../references.bib). The checked clients are in
   actual policy decision equivalence, rather than a deterministic-schedule surrogate.
 
   For exact optimization with positive integer costs, import
-  [TwoBatchIntegralRuntime](../../Complexity/Probability/StochasticOracle/TwoBatchIntegralRuntime.lean).
+  [TwoBatchIntegralRuntime](../../CslibFrontier/Probability/StochasticOracle/TwoBatchIntegralRuntime.lean).
   Build a `TwoBatchIntegral.Input` with binary `calls : List (ℚ × ℕ × ℚ)` and
   `deadline`; `run` returns a feasibility flag and both batch-index lists. No budget
   or tolerance is supplied. `runtime` derives uniform native time and workspace
@@ -457,11 +457,11 @@ in [the bibliography](../../references.bib). The checked clients are in
   zero and is feasible exactly for a nonnegative deadline; an infeasible flag does
   not claim that the accompanying batch lists meet the deadline. A single call
   has zero achievable saving. Local selection time is excluded from the cutoff deadline.
-  From a configured checkout, run `lake env lean ComplexityTests/StochasticOracleExact.lean`
-  to check the [complete client](../../ComplexityTests/StochasticOracleExact.lean),
+  From a configured checkout, run `lake env lean CslibFrontierTests/StochasticOracleExact.lean`
+  to check the [complete client](../../CslibFrontierTests/StochasticOracleExact.lean),
   including both hardness answers, zeros, duplicate weights, exact output/cost/success,
   heterogeneous deadlines, impossible deadlines, empty input and a singleton.
-- [Submodular.OracleSavings](../../Complexity/Algorithms/Lean/Submodular/OracleSavings.lean)
+- [Submodular.OracleSavings](../../CslibFrontier/Algorithms/Lean/Submodular/OracleSavings.lean)
   proves Wang's Theorem 2(1) (PDF p. 7). A finite type indexes all oracles;
   `savings p c A` is exactly $(1-\prod_{i\in A}(1-p_i))\sum_{i\notin A}c_i$.
   Use `savings_nonneg` and `savings_isSubmodular` with pointwise $0\le p_i\le1$
@@ -470,7 +470,7 @@ in [the bibliography](../../references.bib). The checked clients are in
   The scheduling theorem and binary-input FPTAS are supplied by `StochasticOracle`.
   Theorem 3's exact-selection results are described above; Theorems 4–6's partial
   and adaptive-cover endpoints remain open.
-- [PeerPrediction.Quadratic](../../Complexity/Probability/PeerPrediction/Quadratic.lean)
+- [PeerPrediction.Quadratic](../../CslibFrontier/Probability/PeerPrediction/Quadratic.lean)
   implements Kong's equation (8), Lemma 7.2 and Theorem 7.3 (PDF pp. 18–19).
   `IsJoint` means a nonnegative finite probability table of total mass one;
   `reportedLaw` sums conditional reporting probabilities over latent signals.
@@ -483,12 +483,12 @@ in [the bibliography](../../references.bib). The checked clients are in
   identity and contraction. There is no full-support or equal-alphabet assumption.
   This construction covers restricted own channels; it makes no general-channel
   QMI or history-dependent-strategy claim. The rigidity APIs are described next.
-- [FiniteSampleInformation.Rigidity](../../Complexity/Probability/FiniteSampleInformation/Rigidity.lean)
+- [FiniteSampleInformation.Rigidity](../../CslibFrontier/Probability/FiniteSampleInformation/Rigidity.lean)
   is the entry point for Kong's finite-sample information limits (STOC submission 152).
   Import it for the sharp polynomial/sample bounds and actual finite-task payments;
-  import [DimensionChanging](../../Complexity/Probability/FiniteSampleInformation/DimensionChanging.lean)
+  import [DimensionChanging](../../CslibFrontier/Probability/FiniteSampleInformation/DimensionChanging.lean)
   alone for alphabet-changing collapse. The
-  [checked clients](../../ComplexityTests/FiniteSampleInformation/Main.lean) include a
+  [checked clients](../../CslibFrontierTests/FiniteSampleInformation/Main.lean) include a
   dependent zero-row law, nonzero rectangular Gram law, an impossible five-task
   three-symbol reward, and an attaining eight-task four-symbol mechanism.
 
@@ -498,7 +498,7 @@ in [the bibliography](../../references.bib). The checked clients are in
   has nonnegative entries and column sums one, and Alice's channel acts by
   left multiplication. `swapAgents` transposes a law; `bobReports S U` applies
   Bob's channel by right multiplication with its transpose. The
-  [QMI bridges](../../Complexity/Probability/FiniteSampleInformation/QuadraticBridge.lean)
+  [QMI bridges](../../CslibFrontier/Probability/FiniteSampleInformation/QuadraticBridge.lean)
   identify these tables and channels with the existing four-task API.
 
   For a smooth functional, use `zero_row_vanishing_openNeighborhood` or
@@ -519,7 +519,7 @@ in [the bibliography](../../references.bib). The checked clients are in
   $2\le n\le m$; `gramDetPoly_nonzero_on_simplex` supplies a normalized witness.
   `SquarePolynomial.square_simplex_det_sq` gives the square-case factorization.
   The general generic-minor algebra is in
-  [Foundations/Algebra/Polynomial/MaximalMinor](../../Complexity/Foundations/Algebra/Polynomial/MaximalMinor/MaximalMinorWeight.lean).
+  [Foundations/Algebra/Polynomial/MaximalMinor](../../CslibFrontier/Foundations/Algebra/Polynomial/MaximalMinor/MaximalMinorWeight.lean).
   The analytic and algebraic proofs port Yuqing Kong's Apache-2.0 author
   formalization at `4e27ef9d167be69902385307d40123ec665dc532`, with original
   authorship and port credit preserved.
@@ -585,9 +585,9 @@ these obligations; the accounting lemma below does **not** complete the theorem.
   $\eta\le\Pr[\mathrm{Bin}(v,p_+)\ge r_b]$. The matching-envelope consequence
   (equal $a,b$, probabilities and costs) compares bounds within $1/\eta$.
 
-Import [AdaptiveLowerCost](../../Complexity/Probability/StochasticOracle/AdaptiveLowerCost.lean)
+Import [AdaptiveLowerCost](../../CslibFrontier/Probability/StochasticOracle/AdaptiveLowerCost.lean)
 and check the complete
-[client](../../ComplexityTests/StochasticOracleAdaptiveLowerCost.lean).
+[client](../../CslibFrontierTests/StochasticOracleAdaptiveLowerCost.lean).
 `conditional_lower_cost` proves the finite-transcript expectation argument for the
 universal cost bound. `history t` partitions transcripts by all information after
 batch selection and before its response. The two conditional inequalities are
@@ -599,8 +599,8 @@ first bit in the second history, checks a valid conditional envelope and shows
 that the two events fail the independence identity. A zero-turn edge is included.
 
 For finite conditional response kernels, import
-[AdaptiveComparison](../../Complexity/Probability/StochasticOracle/AdaptiveComparison.lean)
-and check its [complete client](../../ComplexityTests/StochasticOracleAdaptiveComparison.lean).
+[AdaptiveComparison](../../CslibFrontier/Probability/StochasticOracle/AdaptiveComparison.lean)
+and check its [complete client](../../CslibFrontierTests/StochasticOracleAdaptiveComparison.lean).
 `progressExpectation` evaluates a terminal payoff of the progress count using a
 conditional law indexed by the entire response transcript (newest response first).
 `progressExpectation_le` and `le_progressExpectation` compare any increasing
@@ -611,15 +611,15 @@ so the history need not consist only of progress bits. The client uses success
 probability $1/4$ before any success and $3/4$ afterwards: its two-success
 probability is $3/16$, between comparison values $1/16$ and $9/16$.
 
-Import [AdaptiveBinomial](../../Complexity/Probability/StochasticOracle/AdaptiveBinomial.lean)
+Import [AdaptiveBinomial](../../CslibFrontier/Probability/StochasticOracle/AdaptiveBinomial.lean)
 for `bernoulliExpectation_eq_integral`, `progress_tail_le` and `le_progress_tail`.
 The comparison recurrence is now identified with Mathlib's actual binomial law,
 including both increasing count-tail comparisons. No independence of actual events
 is used.
 
 For actual proposals, import
-[AdaptiveSelection](../../Complexity/Probability/StochasticOracle/AdaptiveSelection.lean)
-and check [the complete selection client](../../ComplexityTests/StochasticOracleAdaptiveSelection.lean).
+[AdaptiveSelection](../../CslibFrontier/Probability/StochasticOracle/AdaptiveSelection.lean)
+and check [the complete selection client](../../CslibFrontierTests/StochasticOracleAdaptiveSelection.lean).
 `selected` decodes each response into a list of proposed subfamilies and runs the
 existing local dual test in chronological order; `selected_bound` preserves its
 certificate. `productive` computes the truncated additive decrease from actual
@@ -667,7 +667,7 @@ the marginal expected charges and bounds their series by $cr/p$. Its partial
 sums equal finite accrued-bill expectations by the tower identity and converge by
 `Summable.hasSum`. These results establish a finite expected-charge series.
 
-`Complexity.Probability.StochasticOracle.AdaptivePath` constructs an infinite
+`CslibFrontier.Probability.StochasticOracle.AdaptivePath` constructs an infinite
 response law `responseMeasure` using Mathlib's Ionescu–Tulcea theorem. The initial
 response has table `law []`; `responseKernel` then reads every preceding response
 in newest-first order, including auxiliary response data. The alphabet is finite
@@ -703,7 +703,7 @@ or termination is assumed. The complete client checks response-dependent costs
 under the correlated law and the empty-ground, `p=1` endpoint.
 
 For the weaker source envelope, import
-`Complexity.Probability.StochasticOracle.AdaptiveReachable`.
+`CslibFrontier.Probability.StochasticOracle.AdaptiveReachable`.
 `Reachable law h` means that every response in the transcript was sampled with
 positive conditional probability from its preceding history.
 `ae_responseHistory_reachable` proves that all prefixes of the original infinite
@@ -724,13 +724,13 @@ recovers the response table by conditioning on a positive-mass selected batch.
 The proved tower identity and supported-batch mean bounds compose in
 `selectedBatch_totalStoppedBill`. No condition is imposed on null batches. This is
 finite discrete disintegration, not a general measurable-space disintegration theorem.
-The [complete reachable-history client](../../ComplexityTests/StochasticOracleAdaptiveReachable.lean)
+The [complete reachable-history client](../../CslibFrontierTests/StochasticOracleAdaptiveReachable.lean)
 uses a correlated response law with a null response that poisons subsequent kernels
 and charges. It checks that both old all-history envelopes fail at that unreachable
 history, while actual finite completion, a.s. completion and total-cost conclusions
 hold. It also checks the selected-batch envelope and the full composed batch/response
 total-cost theorem with a deliberately bad null batch.
-Import `Complexity.Probability.StochasticOracle.AdaptiveStopping` for actual stopping
+Import `CslibFrontier.Probability.StochasticOracle.AdaptiveStopping` for actual stopping
 and physical resources. `completionTime` reuses Mathlib's first hitting time of
 zero residual, preserving infinity for a nonterminating path. It is measurable,
 and `completionTime_le_iff` identifies each finite stopping event with the actual
@@ -766,7 +766,7 @@ budget, empty ground and `p=1`. A full batch/response joint client retains the
 selected batch and tolerates poisoned null histories and a null batch.
 
 For universal comparisons, import
-`Complexity.Probability.StochasticOracle.SelectionOptimum`. `SelectionPolicy.Oracle`
+`CslibFrontier.Probability.StochasticOracle.SelectionOptimum`. `SelectionPolicy.Oracle`
 fixes conditional responses, all valid proposed sets, token charges and physical
 durations. An arbitrary `Policy` supplies randomized batch-or-halt choices and a
 randomized terminal output kernel. `law` samples the selected batch then its response;
@@ -804,7 +804,7 @@ cost. `matching_envelope_ratio` derives the `1/eta` comparison with that univers
 infimum for matching coverage/probability/cost envelopes and positive `eta`.
 No optimum attainment, lower optimum bound or optimality certificate is assumed.
 
-The [complete policy client](../../ComplexityTests/StochasticOracleSelectionPolicy.lean)
+The [complete policy client](../../CslibFrontierTests/StochasticOracleSelectionPolicy.lean)
 checks universal local contracts for every policy of a correlated oracle, randomized
 early halt, randomized final output, the physical one-call deadline inside a two-turn
 budget, and the matching comparison. Its second instance offers a costly bundle
@@ -821,8 +821,8 @@ also remain open. Theorem 4's native runtime/asymptotic/hardness claims remain o
 ### Submission 191: actual Theorem 6 residual construction and policy optima
 
 The source setup (1)–(3), PDF pages 12–13, and Theorem 6/proof, PDF page 13, are
-implemented in `Complexity.Probability.StochasticOracle.ResidualCover` and
-`Complexity.Probability.StochasticOracle.ResidualPolicy`. Start with any $z\ge3$
+implemented in `CslibFrontier.Probability.StochasticOracle.ResidualCover` and
+`CslibFrontier.Probability.StochasticOracle.ResidualPolicy`. Start with any $z\ge3$
 nonempty promised X3C yes-inputs (`Block`). Each has an arbitrary family of triples
 on `Fin (3*r)` and a disjoint exact-cover witness. That witness fixes the hidden
 oracle answers; it is not a dual certificate, optimum value or input to the
@@ -869,7 +869,7 @@ for each nonempty concurrent batch; `unit_deadlines` gives the one/two-turn
 bounds at $D=2$. `adaptiveTwo_residual` identifies the actual follow-up batch
 with computation from the received near-cover residual.
 
-The [complete residual client](../../ComplexityTests/StochasticOracleResidualCover.lean)
+The [complete residual client](../../CslibFrontierTests/StochasticOracleResidualCover.lean)
 constructs five six-point X3C blocks with an overlapping unused triple. It derives
 the dual/primal and residual/certificate claims, checks universal randomized
 competitor bounds of five and three, constructs successful policies attaining
@@ -887,10 +887,10 @@ ownership, review, validation and human direction are unchanged.
 
 ### Submission 191: a concrete native-to-behavioral bridge
 
-Import `Complexity.Computability.Probabilistic.NativeOneTurn` for a reusable
+Import `CslibFrontier.Computability.Probabilistic.NativeOneTurn` for a reusable
 one-turn protocol with actual native fair-coin multi-tape machines, and
-`Complexity.Probability.StochasticOracle.NativeResidualOneTurn` for the residual
-instance lower-bound corollary. The [complete native client](../../ComplexityTests/NativeOneTurn.lean)
+`CslibFrontier.Probability.StochasticOracle.NativeResidualOneTurn` for the residual
+instance lower-bound corollary. The [complete native client](../../CslibFrontierTests/NativeOneTurn.lean)
 includes its imports, actual transition tables, clocks, adapters and proofs.
 
 `NativeOneTurn A R O` has finite observable action, response and output types.
@@ -961,10 +961,10 @@ these new modules or selects this bounded bridge as a headline.
 
 ### Submission 191: actual multi-query open execution and public path representation
 
-Import `Complexity.Computability.Probabilistic.NativeOpenExecution` for actual
-open native execution and `Complexity.Computability.Probabilistic.NativeOpenSelection`
-for successful-output provenance. The complete [native open client](../../ComplexityTests/NativeOpenExecution.lean)
-and [observed-process client](../../ComplexityTests/ObservedProcess.lean) include
+Import `CslibFrontier.Computability.Probabilistic.NativeOpenExecution` for actual
+open native execution and `CslibFrontier.Computability.Probabilistic.NativeOpenSelection`
+for successful-output provenance. The complete [native open client](../../CslibFrontierTests/NativeOpenExecution.lean)
+and [observed-process client](../../CslibFrontierTests/ObservedProcess.lean) include
 all imports, state definitions, transition tables and local proofs.
 
 `execute` interprets the existing `MultiTapePTM.runConfigFrom` against a stateful
@@ -1041,9 +1041,9 @@ correlated public path probabilities and harmless null-history completion.
 
 ### Removing a common native clock
 
-Import `Complexity.Computability.Probabilistic.NativeUnboundedExecution` to
+Import `CslibFrontier.Computability.Probabilistic.NativeUnboundedExecution` to
 observe actual open native execution without a uniformly sufficient instruction
-bound. The complete [unbounded native client](../../ComplexityTests/NativeUnboundedExecution.lean)
+bound. The complete [unbounded native client](../../CslibFrontierTests/NativeUnboundedExecution.lean)
 executes a fair-coin local waiting loop, then queries and halts. Every finite
 clock has positive live mass, but its terminal law and almost-sure termination
 are proved, together with expected bill $4$ and physical duration $7/2$.
@@ -1098,9 +1098,9 @@ admitting machines to a quantitative turn/deadline theorem.
 
 ### Connecting actual native instructions and the response interface
 
-Import `Complexity.Computability.Probabilistic.NativeInterface` to expose the
+Import `CslibFrontier.Computability.Probabilistic.NativeInterface` to expose the
 query selected by the actual open native transition table before sampling its
-response. The complete [interface client](../../ComplexityTests/NativeInterface.lean)
+response. The complete [interface client](../../CslibFrontierTests/NativeInterface.lean)
 reuses the preceding actual native machines, including the work-tape bit shared
 across correlated calls and the unbounded fair-coin waiting loop.
 
@@ -1157,9 +1157,9 @@ instruction ticks; whole-policy quantitative transfer still needs proof.
 
 ### Stopping at the next query or halt
 
-Import `Complexity.Computability.Probabilistic.NativeEpoch`. The actual
-[next-epoch client](../../ComplexityTests/NativeEpoch.lean) and
-[quantitative policy client](../../ComplexityTests/NativeEpochPolicy.lean) check
+Import `CslibFrontier.Computability.Probabilistic.NativeEpoch`. The actual
+[next-epoch client](../../CslibFrontierTests/NativeEpoch.lean) and
+[quantitative policy client](../../CslibFrontierTests/NativeEpochPolicy.lean) check
 unbounded silent waiting, response-dependent queries, silent halting and
 probability-one silent divergence. These are actual stopping epochs, rather
 than another instruction-level posterior.
@@ -1223,10 +1223,10 @@ client, not unrestricted Theorem 5 or 6.
 
 ### Checked concurrent batch packets and source epochs
 
-Import `Complexity.Computability.Probabilistic.NativeBatch` and
-`Complexity.Probability.StochasticOracle.ConcurrentBatch.FiniteOracle`. Start with
-[the correlated batch client](../../ComplexityTests/ConcurrentBatch.lean) and
-[the actual packet-writing PTM](../../ComplexityTests/NativeBatch.lean).
+Import `CslibFrontier.Computability.Probabilistic.NativeBatch` and
+`CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.FiniteOracle`. Start with
+[the correlated batch client](../../CslibFrontierTests/ConcurrentBatch.lean) and
+[the actual packet-writing PTM](../../CslibFrontierTests/NativeBatch.lean).
 `ConcurrentBatch.Batch n` stores one optional preformed query word for each labeled
 opportunity and proves that at least one is selected. `encodeBatch`/`decodeBatch`
 use the existing self-delimiting word codec, reject malformed/noncanonical packets,
@@ -1276,9 +1276,9 @@ onto its output tape. It is not the source's native upper selector.
 
 ### Whole-policy native traces and quantitative kernels
 
-Import `Complexity.Computability.Probabilistic.NativeBatch.Quantitative`. The
-[complete two-batch native client](../../ComplexityTests/NativeBatchPolicy.lean) and
-[unbounded metadata/divergence client](../../ComplexityTests/NativeBatchMetadata.lean)
+Import `CslibFrontier.Computability.Probabilistic.NativeBatch.Quantitative`. The
+[complete two-batch native client](../../CslibFrontierTests/NativeBatchPolicy.lean) and
+[unbounded metadata/divergence client](../../CslibFrontierTests/NativeBatchMetadata.lean)
 use actual finite-control native code and the fixed concurrent handler. They do
 not construct a finite `FiniteProfile` as a substitute for the native policy.
 
@@ -1349,14 +1349,14 @@ already charged first receipt rather than turning its previous bill into zero.
 
 ### Native revealed progress, coverage and stopped costs
 
-Start with `Complexity.Computability.Probabilistic.NativeBatch.Retained`. The complete
-[correlated native progress client](../../ComplexityTests/NativeBatchProgress.lean)
-and [successful selection-only machine](../../ComplexityTests/NativeBatchSuccess.lean)
+Start with `CslibFrontier.Computability.Probabilistic.NativeBatch.Retained`. The complete
+[correlated native progress client](../../CslibFrontierTests/NativeBatchProgress.lean)
+and [successful selection-only machine](../../CslibFrontierTests/NativeBatchSuccess.lean)
 include their imports, concrete code, instances and envelope proofs. From a warm
 checkout, build them with:
 
 ```bash
-scripts/build.sh ComplexityTests.NativeBatchProgress ComplexityTests.NativeBatchSuccess
+scripts/build.sh CslibFrontierTests.NativeBatchProgress CslibFrontierTests.NativeBatchSuccess
 ```
 
 This is targeted development validation, not the full six integration gates. Each
@@ -1394,7 +1394,7 @@ a positive finite $p$, and the original native admission. The required progress 
 and cost lower conclusion are proved, not premises. `revealed_envelope` derives zero
 progress on halt/divergence padding. `success_binomial` bounds actual native output
 success by the binomial tail for `limits.turns`, with no extra trial for completion.
-Import `Complexity.Computability.Probabilistic.NativeBatch.Deadline` for the exact
+Import `CslibFrontier.Computability.Probabilistic.NativeBatch.Deadline` for the exact
 physical deadline refinement described below.
 
 `Retained.completion` uses the existing local dual retention test and residual-count
@@ -1421,17 +1421,17 @@ nonvacuity; they do not implement the source's uniform upper policy on all insta
 
 ### Native physical deadline transfer
 
-Import `Complexity.Computability.Probabilistic.NativeBatch.Deadline` and use the
+Import `CslibFrontier.Computability.Probabilistic.NativeBatch.Deadline` and use the
 same actual machines, sampler and initial oracle state as above. The
-[two-batch client](../../ComplexityTests/NativeBatchPolicy.lean) now proves its
+[two-batch client](../../CslibFrontierTests/NativeBatchPolicy.lean) now proves its
 latency envelope from real concurrent receipts, including the absolute-deadline
 cancellation in its second batch. The
-[successful native client](../../ComplexityTests/NativeBatchSuccess.lean) applies the
+[successful native client](../../CslibFrontierTests/NativeBatchSuccess.lean) applies the
 assembled guarantee to its proved admission and actual output code. Build both
 from the warm checkout with:
 
 ```bash
-scripts/build.sh ComplexityTests.NativeBatchPolicy ComplexityTests.NativeBatchSuccess
+scripts/build.sh CslibFrontierTests.NativeBatchPolicy CslibFrontierTests.NativeBatchSuccess
 ```
 
 `Deadline.LowerLatency` is the source almost-sure batch lower envelope on positive
@@ -1474,13 +1474,13 @@ clock semantics and the infinite-instruction path-cost limit remain separate.
 
 ### Uniform native local certification and retention
 
-Import `Complexity.Probability.StochasticOracle.NativeRetention.Execution`. The
-[complete local-phase client](../../ComplexityTests/NativeRetention.lean) contains
+Import `CslibFrontier.Probability.StochasticOracle.NativeRetention.Execution`. The
+[complete local-phase client](../../CslibFrontierTests/NativeRetention.lean) contains
 runtime data, checked dual feasibility, accepting/rejecting proposal cases and a
 connection to an actual correlated source receipt. From a warm checkout, run:
 
 ```bash
-scripts/build.sh ComplexityTests.NativeRetention ComplexityTests.StochasticOracleSelectionPolicy
+scripts/build.sh CslibFrontierTests.NativeRetention CslibFrontierTests.StochasticOracleSelectionPolicy
 ```
 
 `NativeRetention.Input` contains incidence rows, candidate weights, element dual
@@ -1551,14 +1551,14 @@ ownership, review and validation procedures are unchanged.
 
 ### Complete raw-interface adaptive retention program
 
-Import `Complexity.Probability.StochasticOracle.NativeRetention.Selector`. The
-[complete two-turn client](../../ComplexityTests/NativeRetentionSelector.lean)
+Import `CslibFrontier.Probability.StochasticOracle.NativeRetention.Selector`. The
+[complete two-turn client](../../CslibFrontierTests/NativeRetentionSelector.lean)
 constructs the scheduler, original source batches and correlated oracle, then
 checks the entire program's actual result and joint resources. From a matching
 warm checkout, run:
 
 ```bash
-scripts/build.sh ComplexityTests.NativeRetentionSelector ComplexityTests.NativeRetention
+scripts/build.sh CslibFrontierTests.NativeRetentionSelector CslibFrontierTests.NativeRetention
 ```
 
 `NativeRetention.Selector.program choose input budget` is a `ProbOracleComp`
@@ -1609,15 +1609,15 @@ The prior native lower and retained-receipt quantitative results remain separate
 
 ### Native full replies and unbounded phase composition
 
-Import `Complexity.Computability.Probabilistic.NativeQueryAll`. It also exposes
+Import `CslibFrontier.Computability.Probabilistic.NativeQueryAll`. It also exposes
 `NativeSequential` and `NativeOutputBuffer`. The
-[complete native source client](../../ComplexityTests/NativeQueryAll.lean) starts
+[complete native source client](../../CslibFrontierTests/NativeQueryAll.lean) starts
 from actual machine configurations and checks real concurrent response packets,
 cancellation charges, unbounded geometric invoice metadata and native halting/
 diverging continuations. From a matching warm checkout, run:
 
 ```bash
-scripts/build.sh ComplexityTests.NativeQueryAll ComplexityTests.NativeRetentionSelector
+scripts/build.sh CslibFrontierTests.NativeQueryAll CslibFrontierTests.NativeRetentionSelector
 ```
 
 `NativeQueryAll.machine op k` is one binary finite-control machine. It scans the
@@ -1656,7 +1656,7 @@ instructions. `NativeQueryAll.terminal_then` specializes this to full-reply read
 continuation code. These are compiler theorems, not assumed source-validity or
 machine-to-program representation contracts.
 
-Import `Complexity.Probability.StochasticOracle.NativeRetention.Packets` for
+Import `CslibFrontier.Probability.StochasticOracle.NativeRetention.Packets` for
 native processing of full raw histories. Its `Work` input contains original rational
 rows/certificate data, a unary opportunity count and the newest-first raw response
 words. It ignores any initial decoded proposal list. `computable_decision` compiles
@@ -1674,12 +1674,12 @@ state. It makes no claim of agreement on arbitrary malformed report words.
 computed flag/mask. `run_native_law` gives the exact joint law of actual raw program
 execution followed by that native local computation, preserving all hidden state
 and resource observations. The
-[correlated two-query client](../../ComplexityTests/NativeRetentionSelector.lean)
+[correlated two-query client](../../CslibFrontierTests/NativeRetentionSelector.lean)
 checks both complementary-cover branches, cancellation billing, ignored fabricated
 proposals, rejection and empty ground. From the same warm starting point, run:
 
 ```bash
-scripts/build.sh ComplexityTests.NativeRetentionSelector
+scripts/build.sh CslibFrontierTests.NativeRetentionSelector
 ```
 
 There is a proved obstruction to applying the current clocked tidy-loop API here.
@@ -1705,7 +1705,7 @@ function: pointwise closed syntax does not supply uniform native scheduler code.
 Do not infer such code from that type alone.
 
 For an actual reader-to-continuation program, import
-`Complexity.Computability.Probabilistic.NativeResponseExecution`.
+`CslibFrontier.Computability.Probabilistic.NativeResponseExecution`.
 `NativeResponseExecution.machine continuation` sequences the full reader/output
 buffer, real native marker/rewind code, and virtual-input continuation. The flag
 tape starts blank; preparation takes the received word's length plus four local
@@ -1722,7 +1722,7 @@ and nonzero head positions; the fresh response/marker tapes alone start blank.
 `terminal_machine` remains the blank-storage entry, rather than silently changing
 its initial-state convention.
 
-Import `Complexity.Computability.Probabilistic.NativeRuntimeContext` for a concrete
+Import `CslibFrontier.Computability.Probabilistic.NativeRuntimeContext` for a concrete
 runtime transport client. `restoringProgram` is one finite-control program for all
 context words, supplied once on its entry work tape: it issues the initial request,
 receives the complete first reply,
@@ -1745,17 +1745,17 @@ submits the updated context word, which is not in general an admitted source bat
 encoding. The outer first-response buffer/flag remain retained. General buffer
 reuse, repeated adaptive selection, source admission and semantic budget/stopping
 updates are still open; this is not a complete native selector or Theorem 5 upper
-bound. See the [complete context client](../../ComplexityTests/NativeRuntimeContext.lean)
+bound. See the [complete context client](../../CslibFrontierTests/NativeRuntimeContext.lean)
 for one correlated geometric source, genuine unbounded reply lengths, both
 context/reply-dependent second requests, unchanged joint invoices, empty words and
 zero charges. From the same matching warm checkout, run:
 
 ```bash
-scripts/build.sh ComplexityTests.NativeRuntimeContext
+scripts/build.sh CslibFrontierTests.NativeRuntimeContext
 ```
 
 For initial loading, import
-`Complexity.Probability.StochasticOracle.NativeRetention.InitialContext`.
+`CslibFrontier.Probability.StochasticOracle.NativeRetention.InitialContext`.
 `Startup` encodes the original rational instance with runtime unary turn/opportunity
 counts and a private selector word. It contains no precomputed context or machine
 witness. The native initializer computes the header, clears scratch storage, writes
@@ -1773,14 +1773,14 @@ any actual four-tape consumer, including divergent consumers; its computational
 premise concerns only the pure initializer. It assumes no consumer success or
 representation law. The concrete initializer's computability is proved internally.
 
-The [original-input client](../../ComplexityTests/NativeContextLoader.lean) checks one
+The [original-input client](../../CslibFrontierTests/NativeContextLoader.lean) checks one
 machine for all runtime inputs against a fixed correlated geometric source with
 unbounded reply lengths, original-instance readback in the actual second request,
 a nonempty feasible-dual instance with ignored fabricated proposals, zero allowances
 and empty ground. From the same matching warm checkout, run:
 
 ```bash
-scripts/build.sh ComplexityTests.NativeContextLoader
+scripts/build.sh CslibFrontierTests.NativeContextLoader
 ```
 
 For initial stopping, use `exists_guarded_original_input`. It constructs one finite
@@ -1793,14 +1793,14 @@ execution and correlated joint resource law. `NativeStopGuard.terminal_stop` and
 `terminal_go` provide the reusable transition-level branch laws without assuming
 consumer termination or success.
 
-The [native guard client](../../ComplexityTests/NativeStopGuard.lean) checks this
+The [native guard client](../../CslibFrontierTests/NativeStopGuard.lean) checks this
 same blank-tape machine on zero turns, zero opportunities, and empty ground with
 a nonempty candidate list (returning the all-false mask). Its live branch uses a
 single correlated source with arbitrarily long positive-probability replies.
 From the same matching warm checkout, run:
 
 ```bash
-scripts/build.sh ComplexityTests.NativeStopGuard
+scripts/build.sh CslibFrontierTests.NativeStopGuard
 ```
 
 This closes initial stop enforcement for this binary startup ABI. The older
@@ -1814,7 +1814,7 @@ buffer cleanup/restart and the native quantitative upper/optimum endpoint remain
 open.
 
 For uniform semantic postprocessing, import
-`Complexity.Probability.StochasticOracle.NativeRetention.RuntimeControl`.
+`CslibFrontier.Probability.StochasticOracle.NativeRetention.RuntimeControl`.
 `RuntimeControl.State` stores the original rational input, total parser opportunity
 count, stored raw histories, private word and remaining turn/planning/allotment
 counts. `afterReply` appends the actual request/reply history, appends the framed
@@ -1840,20 +1840,20 @@ the ordinary output is empty, and the eventual mask is stored in the new packet.
 The exact law preserves the sampled response, hidden-state transition, invoice and
 oracle duration jointly.
 
-The [runtime-control client](../../ComplexityTests/NativeRuntimeControl.lean)
+The [runtime-control client](../../CslibFrontierTests/NativeRuntimeControl.lean)
 checks a nonempty two-row locally certified cover, ignored fabricated proposals,
 cancellation, correlated hidden state and unbounded invoice reports. It checks all
 three exhausted counters and observes the recomputed stop bit on the actual native
 tape. From the same matching warm checkout, run:
 
 ```bash
-scripts/build.sh ComplexityTests.NativeRuntimeControl
+scripts/build.sh CslibFrontierTests.NativeRuntimeControl
 ```
 
 This older API executes one post-response phase and always issues its one query,
 even on already stopped input. To execute the initial guard and convert original
 input to the runtime ABI, import
-`Complexity.Probability.StochasticOracle.NativeRetention.GuardedStartup`.
+`CslibFrontier.Probability.StochasticOracle.NativeRetention.GuardedStartup`.
 `GuardedStartup.Input` contains the original `Startup` and a reservation allowance,
 with no supplied history or prepared State. `exists_guarded_phase` constructs one
 program before quantifying over those inputs, the oracle and its hidden memory.
@@ -1872,7 +1872,7 @@ and otherwise enters a silent terminal continuation. It issues no second query.
 `RuntimeControl.HistoryMatches` relates stored raw requests/replies/private bytes
 to actual native events. `initial_history_matches` and
 `afterReply_history_matches` establish initialization and preservation for the
-actual framed-State request. The [guarded startup client](../../ComplexityTests/NativeGuardedStartup.lean)
+actual framed-State request. The [guarded startup client](../../CslibFrontierTests/NativeGuardedStartup.lean)
 checks the compiled code on initial completion, each exhausted allowance,
 nonempty cover and a single hidden-state source with arbitrarily long correlated
 reports, including the observed history invariant. The same compiled program
@@ -1882,7 +1882,7 @@ Exhausted turn/planning/reservation and empty-report cases exercise the final gu
 From the same warm checkout:
 
 ```bash
-scripts/build.sh ComplexityTests.NativeGuardedStartup
+scripts/build.sh CslibFrontierTests.NativeGuardedStartup
 ```
 
 This closes initial guarded ABI conversion and one-response final dispatch,
@@ -1897,7 +1897,7 @@ cleanup/re-entry. Neither final emission nor raw feedback supplies source batch
 admission or a native upper-policy/optimum theorem.
 
 For actual same-code runtime feedback, import
-`Complexity.Probability.StochasticOracle.NativeRetention.Feedback`.
+`CslibFrontier.Probability.StochasticOracle.NativeRetention.Feedback`.
 `Feedback.exists_native_controller` constructs one finite native program before
 quantifying over original `GuardedStartup.Input`, environments and hidden memory.
 It starts with blank work tapes, computes the fresh runtime packet, tests the
@@ -1920,7 +1920,7 @@ and private words against events from a matching initial ledger; fresh original
 input matches an empty ledger, not arbitrary previous external events.
 `run_call_bounds` bounds issued calls by each initial scalar allowance.
 
-The [feedback client](../../ComplexityTests/NativeRetentionFeedback.lean) runs one
+The [feedback client](../../CslibFrontierTests/NativeRetentionFeedback.lean) runs one
 consistent source with correlated unbounded invoice reports. A first cancellation
 updates the actual history/private word and therefore the second query. A second
 accepted two-row cover emits `[true, true]` before a third still-allowed call.
@@ -1930,7 +1930,7 @@ completion; empty zero-bill replies exercise both cleanup layers. From the same
 matching warm checkout, run:
 
 ```bash
-scripts/build.sh ComplexityTests.NativeRetentionFeedback
+scripts/build.sh CslibFrontierTests.NativeRetentionFeedback
 ```
 
 This completes this concrete raw-State transport controller. Its request remains
@@ -1942,19 +1942,19 @@ common-oracle optimum comparison for that same admitted controller remain open,
 along with external encodings, general measurable interfaces and divergent-path
 cost packaging. No unrestricted Theorem 5/6 or ALL-main completion is claimed.
 
-Import `Complexity.Probability.StochasticOracle.NativeRetention.ResponseExecution`
+Import `CslibFrontier.Probability.StochasticOracle.NativeRetention.ResponseExecution`
 for `exists_query_retention`. Its continuation code is derived from the existing
 raw-parser/rational-retention computability proof. One complete native program
 queries, copies the actual full report, prepares its buffer and computes the
 retained source mask; it emits the mask on computed completion and `[]` otherwise.
-The [complete source client](../../ComplexityTests/NativeRetentionResponse.lean)
+The [complete source client](../../CslibFrontierTests/NativeRetentionResponse.lean)
 checks two hidden response branches with a billed cancellation, one fixed source
 with unbounded geometric invoice packets, original nonempty cover data, rejection,
 empty ground, and the existing whole-policy native trace transfer. From a matching
 warm checkout, run:
 
 ```bash
-scripts/build.sh ComplexityTests.NativeRetentionResponse
+scripts/build.sh CslibFrontierTests.NativeRetentionResponse
 ```
 
 The specialization fixes `Packets.Work` at code construction: its quantifiers are

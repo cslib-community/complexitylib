@@ -1,0 +1,150 @@
+/-
+Copyright (c) 2026 Yuqing Kong, Christian Reitwiessner. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yuqing Kong, Christian Reitwiessner
+-/
+
+module
+-- upstream: candidate
+
+public import CslibFrontier.Init
+public import CslibFrontier.Foundations.Algebra.Polynomial.MaximalMinor.FiniteSubsetOrder
+
+/-!
+# Generic minors over a commutative coefficient ring
+
+The primaryness induction changes the coefficient ring after localizing at a
+corner variable.  Consequently the determinantal definitions used by that
+induction must be polymorphic in the coefficient ring, even though the final
+probability application has real coefficients.
+
+An index for a minor stores its size and the increasing row and column
+embeddings.  The size is bounded by `min n m`, so the type of all minors is
+finite and includes the empty minor.
+
+Ported by Christian Reitwiessner from Yuqing Kong's Apache-2.0 formalization,
+`GenericMinorBasic.lean` at commit
+`4e27ef9d167be69902385307d40123ec665dc532` of
+https://github.com/yuqkong-1844/finite-sample-information-monotones .
+The mathematical source is [Kong2027]. This general algebra is intended for
+Mathlib; its placement exception is recorded in `UPSTREAM.md`.
+-/
+
+public section
+
+namespace Cslib
+
+noncomputable section
+
+open scoped BigOperators
+
+namespace GenericMaximalMinor
+
+/-- The row-column positions of a generic rectangular matrix. -/
+abbrev GenericVar (n m : ℕ) := Fin n × Fin m
+
+/-- Polynomials over a coefficient semiring in generic matrix entries. -/
+abbrev GenericPoly (D : Type*) [CommSemiring D] (n m : ℕ) :=
+  MvPolynomial (GenericVar n m) D
+
+/-- An arbitrary minor of an `n × m` matrix, including the empty minor. -/
+structure MinorIndex (n m : ℕ) where
+  /-- The order of the square submatrix. -/
+  size : Fin (min n m + 1)
+  /-- The increasing selection of row indices. -/
+  rows : Fin size.val ↪o Fin n
+  /-- The increasing selection of column indices. -/
+  cols : Fin size.val ↪o Fin m
+
+instance minorIndexDecidableEq (n m : ℕ) : DecidableEq (MinorIndex n m) :=
+  Classical.decEq _
+
+/-- The set of rows selected by a minor. -/
+@[expose] def MinorIndex.rowSet {n m : ℕ} (d : MinorIndex n m) : Finset (Fin n) :=
+  Finset.univ.map d.rows.toEmbedding
+
+/-- The set of columns selected by a minor. -/
+@[expose] def MinorIndex.colSet {n m : ℕ} (d : MinorIndex n m) : Finset (Fin m) :=
+  Finset.univ.map d.cols.toEmbedding
+
+@[simp] lemma MinorIndex.card_rowSet {n m : ℕ} (d : MinorIndex n m) :
+    d.rowSet.card = d.size.val := by
+  simp [MinorIndex.rowSet]
+
+@[simp] lemma MinorIndex.card_colSet {n m : ℕ} (d : MinorIndex n m) :
+    d.colSet.card = d.size.val := by
+  simp [MinorIndex.colSet]
+
+/-- The standard partial order on minors: both row and column sets are in the
+prefix order. -/
+def MinorLE {n m : ℕ} (d e : MinorIndex n m) : Prop :=
+  d.rowSet ≼ₚ e.rowSet ∧ d.colSet ≼ₚ e.colSet
+
+/-- Notation for `MinorLE`. -/
+scoped infix:50 " ≼ₘ " => MinorLE
+
+lemma minorLE_refl {n m : ℕ} (d : MinorIndex n m) : d ≼ₘ d :=
+  ⟨prefixLE_refl _, prefixLE_refl _⟩
+
+lemma minorLE_trans {n m : ℕ} {d e f : MinorIndex n m}
+    (hde : d ≼ₘ e) (hef : e ≼ₘ f) : d ≼ₘ f :=
+  ⟨prefixLE_trans hde.1 hef.1, prefixLE_trans hde.2 hef.2⟩
+
+lemma size_ge_of_minorLE {n m : ℕ} {d e : MinorIndex n m}
+    (h : d ≼ₘ e) : e.size.val ≤ d.size.val := by
+  simpa using card_ge_of_prefixLE h.1
+
+/-- The square matrix whose determinant is the indicated generic minor. -/
+@[expose] def minorMatrix {D : Type*} [CommRing D] {n m : ℕ} (d : MinorIndex n m) :
+    Matrix (Fin d.size.val) (Fin d.size.val) (GenericPoly D n m) :=
+  fun i j ↦ MvPolynomial.X (d.rows i, d.cols j)
+
+/-- A minor of the generic `n × m` matrix. -/
+@[expose] def minorPoly {D : Type*} [CommRing D] {n m : ℕ} (d : MinorIndex n m) :
+    GenericPoly D n m :=
+  Matrix.det (minorMatrix d)
+
+lemma eval_minorPoly {D : Type*} [CommRing D] {n m : ℕ}
+    (d : MinorIndex n m) (x : GenericVar n m → D) :
+    MvPolynomial.eval x (minorPoly d) =
+      Matrix.det (fun i j ↦ x (d.rows i, d.cols j)) := by
+  rw [minorPoly]
+  let ev : GenericPoly D n m →+* D := MvPolynomial.eval x
+  change ev (Matrix.det (minorMatrix d)) = _
+  rw [ev.map_det, RingHom.mapMatrix_apply]
+  congr 1
+  ext i j
+  simp [ev, minorMatrix]
+
+/-- The canonical minor index associated to a maximal set of columns. -/
+@[expose] def maximalIndex {n m : ℕ} (hnm : n ≤ m) (S : Fin n ↪o Fin m) :
+    MinorIndex n m where
+  size := ⟨n, by omega⟩
+  rows := OrderEmbedding.id (Fin n)
+  cols := S
+
+/-- An increasing column embedding selecting a maximal minor. -/
+abbrev MaximalMinorIndex (n m : ℕ) := Fin n ↪o Fin m
+
+/-- A maximal minor over an arbitrary commutative coefficient ring. -/
+@[expose] def maximalMinorPolyOver {D : Type*} [CommRing D] {n m : ℕ}
+    (hnm : n ≤ m) (S : MaximalMinorIndex n m) : GenericPoly D n m :=
+  minorPoly (maximalIndex hnm S)
+
+/-- The ideal generated by the maximal minors of a generic `n × m` matrix. -/
+@[expose] def maximalMinorIdealOver (D : Type*) [CommRing D]
+    (n m : ℕ) (hnm : n ≤ m) : Ideal (GenericPoly D n m) :=
+  Ideal.span (Set.range (maximalMinorPolyOver (D := D) hnm))
+
+lemma maximalMinorPolyOver_mem_ideal {D : Type*} [CommRing D]
+    {n m : ℕ} (hnm : n ≤ m) (S : MaximalMinorIndex n m) :
+    maximalMinorPolyOver (D := D) hnm S ∈
+      maximalMinorIdealOver D n m hnm := by
+  apply Ideal.subset_span
+  exact Set.mem_range_self S
+
+end GenericMaximalMinor
+
+end
+
+end Cslib

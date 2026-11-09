@@ -8,7 +8,7 @@ The authoritative records are:
   [lean-toolchain](lean-toolchain) for pinned versions;
 * each module's `-- upstream:` markers for candidate, submitted, vendored or local-only status,
   including PR numbers and copied revisions; markers can also identify blocks within a module;
-* [Complexity.lean](Complexity.lean) for the module inventory.
+* [CslibFrontier.lean](CslibFrontier.lean) for the module inventory.
 
 Use `python3 scripts/upstream_sync.py --offline` to list copied dependencies, and
 `python3 scripts/upstream_sync.py` to compare recorded revisions and the base pin with upstream.
@@ -67,7 +67,7 @@ product bound rather than keeping it inside the application proof.
 * **Mathlib TM2.** `Computability/Machines/Turing/TM2/*` certifies Mathlib's stack-machine
   statements directly through the tidy calculus; it does not depend on the TM0 simulator in
   [Complexitylib PR #72](https://github.com/SamuelSchlesinger/complexitylib/pull/72).
-  Its dependent finite-table helpers (`Encodings/DPi` and `Complexity/PolyTime/DPi` under
+  Its dependent finite-table helpers (`Encodings/DPi` and `CslibFrontier/PolyTime/DPi` under
   `Machines/Turing/MultiTape`) extend the existing table API. Coordinate these helpers with
   the machine-calculus work above before upstreaming. The forward bridges preserve polynomial
   time and transfer terminating polynomial-stack-space computations, using configuration counting
@@ -80,7 +80,7 @@ product bound rather than keeping it inside the application proof.
   These comparisons do not preserve sublinear work-space conventions.
 * **Probabilistic programs.** Coordinate the shared `PFunctor.FreeM` API with #1086–#1089 and
   typed oracles with #1129. The copied PMF blocks have their own markers and removal instructions
-  in [Probability/PMF.lean](Complexity/Probability/PMF.lean); remove only the merged blocks.
+  in [Probability/PMF.lean](CslibFrontier/Probability/PMF.lean); remove only the merged blocks.
 * **Security games.** The #1068 negligible-bound base is now supplied by the cslib pin.
   `Crypto/Negligible.lean` imports it and retains the #1069 `fun_prop` registrations, with
   pointwise addition/multiplication wrappers needed by lambda-shaped automation clients;
@@ -168,7 +168,7 @@ product bound rather than keeping it inside the application proof.
   not reflection of source faults; transfer from Anthropic's modular signed machine and its
   3SUM/APSP algorithms remains separate.
 * **Native shared tensor encoder.** `Algorithms/WordRAM/MatrixMultiplication/Schonhage/` implements the complete shared left/right
-  encoding milestone ([#1493](https://github.com/cslib-community/complexitylib/issues/1493)).
+  encoding milestone ([#1493](https://github.com/cslib-community/cslib-frontier/issues/1493)).
   Fixed standard-WordRAM code with 32 registers transforms one coordinate at a time between
   two disjoint `10^L` buffers. It starts from `State.init` with a depth header and `7^L`
   sign-and-magnitude words, computes all public `encodingL`/`encodingR` values, and preserves
@@ -186,7 +186,7 @@ product bound rather than keeping it inside the application proof.
   This encoder is reused by the shared-band, routed-product and complete native composition
   described below; its standalone contract does not assert the complete 3SUM exponent.
 * **Native shared-band preparation.** The native shared-band preparation component
-  ([#1523](https://github.com/cslib-community/complexitylib/issues/1523)) computes a deterministic
+  ([#1523](https://github.com/cslib-community/cslib-frontier/issues/1523)) computes a deterministic
   `Layout` and both subset tables by native mask/popcount scans, computes the square-root block
   count and its square by renaming `NatSqrt.program` (`BandPreparation.rootRegisters`) followed by
   one multiplication (`5*sqrt(k)+8` steps), and decodes each band-array index into the original
@@ -221,7 +221,7 @@ product bound rather than keeping it inside the application proof.
   The host's source-width threshold is `(20κ+125)clog₂(N+2)`; signed kernels use target width `w+2`.
   This host module remains parametric in a concrete solver's execution/correctness/frame theorem;
   the actual canonical solver and complete 1.9992 ordinary-host composition are described below.
-  [#1394](https://github.com/cslib-community/complexitylib/issues/1394) tracks maintainer integration.
+  [#1394](https://github.com/cslib-community/cslib-frontier/issues/1394) tracks maintainer integration.
   Anthropic's copyright and attribution are retained; native proofs and representation choices
   are local.
   Native numeric parameter computation, signed-residue/histogram counting, trial-division prime
@@ -324,7 +324,7 @@ product bound rather than keeping it inside the application proof.
   ternary recursion and composition with the frontend. At polynomial magnitudes it gives explicit
   length, count and magnitude bounds; `scanPairs` counts candidate-prime/element pairs and is not
   a charged running time. Generic finite-average and prime-counting lemmas live in Foundations.
-  See milestone [#1435](https://github.com/cslib-community/complexitylib/issues/1435).
+  See milestone [#1435](https://github.com/cslib-community/cslib-frontier/issues/1435).
   `Algorithms/ExactTriangle/Lopsided.lean` adapts the finite unweighted lopsided query/counting
   interface from the same pin's `Sec3/MatrixLanguage.lean`: arbitrary-injection zero padding,
   common-neighbor counts as product entries, detection, the zero/one converse, and signed products
@@ -335,7 +335,7 @@ product bound rather than keeping it inside the application proof.
   consumes a direct iff on queried edges. No additional weighted-triangle predicate or source
   machine is introduced.
   This is the mathematical interface milestone
-  [#1438](https://github.com/cslib-community/complexitylib/issues/1438), with no sparsity assumption,
+  [#1438](https://github.com/cslib-community/cslib-frontier/issues/1438), with no sparsity assumption,
   preprocessing/time claim or solver. `Algorithms/ExactTriangle/{Weights,Hashing}.lean` now adapts
   the modular counting/coefficient identities, minimum-count prime and uniform false-positive
   bound from `Sec3/Theorem17/Hashing.lean`, using supplied matrices and the existing decision
@@ -346,9 +346,9 @@ product bound rather than keeping it inside the application proof.
   all-window prime-count bound lives in `Foundations/NumberTheory/PrimeWindow.lean`, retaining
   the source credit to Mathlib, Patrick Stevens and Bolton Bailey. These are mathematical
   statements, not native instructions or an assumed solver. See
-  [#1442](https://github.com/cslib-community/complexitylib/issues/1442).
+  [#1442](https://github.com/cslib-community/cslib-frontier/issues/1442).
   The native cyclic-convolution prerequisite under
-  [#1701](https://github.com/cslib-community/complexitylib/issues/1701) reuses that quotient in
+  [#1701](https://github.com/cslib-community/cslib-frontier/issues/1701) reuses that quotient in
   `Foundations/RingTheory/CyclicIntRing/Coefficients.lean` and supplies actual standard signed
   array multiplication in `Algorithms/WordRAM/MatrixMultiplication/CyclicConvolution/`.
   Source indexing/quotient mathematics adapt pinned Anthropic `RingOps.lean`/`Cyclic.lean`;
@@ -409,11 +409,11 @@ product bound rather than keeping it inside the application proof.
   ordinary 1.9992 composition is described above. The native ET2.99835 bound does not claim the
   sharper source ET2.9983 exponent or its separate Light/signed-modular machine predicate.
   `Algorithms/ExactTriangle/{Splitting,Witnesses}.lean` adapts the complete finite splitting and
-  witness recovery component ([#1447](https://github.com/cslib-community/complexitylib/issues/1447)),
+  witness recovery component ([#1447](https://github.com/cslib-community/cslib-frontier/issues/1447)),
   using the existing matrices, lopsided graph and `Set.EqOn` answer API. Computable integer parameters
   retain the source's exact real floor/ceiling specifications through checked bridges.
   `Algorithms/WordRAM/ExactTriangle/` implements the complete initialized preparation component
-  ([#1532](https://github.com/cslib-community/complexitylib/issues/1532)). Fixed sixty-four-register
+  ([#1532](https://github.com/cslib-community/cslib-frontier/issues/1532)). Fixed sixty-four-register
   code of at most 641 flat instructions consumes raw `(D,g,n,p)` headers and signed-encoded
   A–B, B–C and A–C weights. It computes the residue classes, query chunks and records and writes
   both padded instance matrices. These matrices contain raw unsigned zero/one words; a signed
@@ -431,8 +431,8 @@ product bound rather than keeping it inside the application proof.
   error, full evaluation, shared encodings, pruned values, visited leaves and passed-set totals.
   Its pure finite recursion traces are not native machine semantics or charged instruction costs.
   The zero-depth empty-query root exception is explicit, with an unconditional root-or-leaf API.
-  See [#1459](https://github.com/cslib-community/complexitylib/issues/1459). The complete finite
-  thin-product component ([#1463](https://github.com/cslib-community/complexitylib/issues/1463))
+  See [#1459](https://github.com/cslib-community/cslib-frontier/issues/1459). The complete finite
+  thin-product component ([#1463](https://github.com/cslib-community/cslib-frontier/issues/1463))
   adapts `Sec2/{Levels,Lemma9,Tiling,Orders,Lemma11,Theorem5}` and needed finite magnitude bounds.
   Layouts contain only indexing choices, whose existence is proved; sparse bounds are derived
   from exact contributing-leaf counts. Generic function-position counts, ordered gluing, binomial
@@ -443,9 +443,9 @@ product bound rather than keeping it inside the application proof.
   The ordinary host retains its parametric `Host.Callee` interface and exhaustive reference
   instance. The canonical automatic ET callee and complete native 1.9992 composition are proved
   as described above, with integration tracked in
-  [#1394](https://github.com/cslib-community/complexitylib/issues/1394). Anthropic's copyright and
+  [#1394](https://github.com/cslib-community/cslib-frontier/issues/1394). Anthropic's copyright and
   attribution are retained; native proofs and representation choices are local.
-* **Finite Section 4 boxes.** The cube/box prerequisite ([#2160](https://github.com/cslib-community/complexitylib/issues/2160))
+* **Finite Section 4 boxes.** The cube/box prerequisite ([#2160](https://github.com/cslib-community/cslib-frontier/issues/2160))
   adapts `Sec4/{Boxes,Lemma27_28,BoxesFromLeaves,Lemma29}` at the same formal-math pin,
   preserving Anthropic's credit and reusing the existing terms, encodings, signed leaf order
   and alpha/beta counts. Cubes fix terms or admit every term at a star; boxes additionally
@@ -458,7 +458,7 @@ product bound rather than keeping it inside the application proof.
   The native compact-table, query and complete 1.9992 pipeline below consume these finite facts;
   this prerequisite alone is not a runtime theorem. No curated abstract changes are needed.
 * **Native shared box tables.** The original native representation in
-  [#2176](https://github.com/cslib-community/complexitylib/issues/2176) reuses the finite boxes
+  [#2176](https://github.com/cslib-community/cslib-frontier/issues/2176) reuses the finite boxes
   and value recurrence above. A one-time directory over `(m-t+1)*10^L` slots computes compact
   ranks and three-word descriptors. Per-tile code writes one signed value per box, reading
   only earlier child ranks; lookup reads those stored words. This replaces the primary
@@ -471,7 +471,7 @@ product bound rather than keeping it inside the application proof.
   `Foundations/Data/{Finset/LowestMax,Nat/RadixUpdate}` hold the small general ordered-subset
   and radix-update facts used by these concrete clients. No curated abstract or rendering
   changes are needed for this native data-structure prerequisite.
-* **Native sparse box query.** [#2203](https://github.com/cslib-community/complexitylib/issues/2203)
+* **Native sparse box query.** [#2203](https://github.com/cslib-community/cslib-frontier/issues/2203)
   reuses the finite `starBelow` partition and actual compact table above. A five-word native
   task stack enumerates only prefixes of contributing leaves with order at most `t`.
   Full leaves below the threshold multiply the original signed words; threshold leaves
@@ -487,7 +487,7 @@ product bound rather than keeping it inside the application proof.
   for every prefix. Shared table setup and retained storage remain explicit. The following
   routed-product component supplies all-tile reuse and actual routing; the complete ordinary
   composition is described above. This query milestone changes no curated abstract or rendering.
-* **Routed native box product.** [#2314](https://github.com/cslib-community/complexitylib/issues/2314)
+* **Routed native box product.** [#2314](https://github.com/cslib-community/cslib-frontier/issues/2314)
   reuses the existing actual raw-coordinate router, shared band producer and original-order
   reconstruction. One native geometry construction serves all tiles; each actual retained-value
   table and sparse query batch is charged, including temporary-result copies and every repeated
@@ -503,7 +503,7 @@ product bound rather than keeping it inside the application proof.
   `ParameterSelecting` compose the actual ET and ordinary 1.9992 endpoint described above.
   No curated abstract or rendering changes.
 * **Callable box products and actual ET records.**
-  [#2335](https://github.com/cslib-community/complexitylib/issues/2335) translates the full routed
+  [#2335](https://github.com/cslib-community/cslib-frontier/issues/2335) translates the full routed
   box product with the existing native memory-window compiler. Original dimensions derive a
   polynomial virtual window and logarithmic physical admission; no bounded-scratch or source-fit
   oracle is supplied. Two real instructions extend final normalization to the appended threshold.
@@ -516,7 +516,7 @@ product bound rather than keeping it inside the application proof.
   finite saving charges adapter and halt, with producer work separate. Canonical `StreamingFixedPrime`
   performs the complete record traversal, and `ParameterSelecting` supplies actual parameters
   and prime selection for the 1.9992 ordinary composition. Curated abstracts are unchanged.
-* **Native pruned-query evaluator.** The explicit-stack pruned-query evaluator ([#1526](https://github.com/cslib-community/complexitylib/issues/1526))
+* **Native pruned-query evaluator.** The explicit-stack pruned-query evaluator ([#1526](https://github.com/cslib-community/cslib-frontier/issues/1526))
   is original native code, reusing the finite `Pruned.result`, `childSet` and trace/leaf
   quantities from `Sec2/Lemma10.lean`. `PrunedQuery.queryIndex` directly applies the existing
   encoder `leafIndex` to `privateLeaf`; its executable output dictionary retains digit nine
@@ -526,7 +526,7 @@ product bound rather than keeping it inside the application proof.
   have explicit source-magnitude, address and outside-frame contracts. The actual bound including
   halt is `8192*(L+Q+1+(L+1)*|leaves(requested queries)|)`. The source Light implementation's
   semantics and instruction constants are not reused.
-  Native wanted-query routing ([#1561](https://github.com/cslib-community/complexitylib/issues/1561))
+  Native wanted-query routing ([#1561](https://github.com/cslib-community/cslib-frontier/issues/1561))
   uses actual count, prefix and stable-scatter passes after computing the subset table and each
   query's tile/code. It reuses `MaskTable.layout`, `outStrOfPos`, `wantedStrings` and the existing
   `PrunedQuery.queryIndex`/encoder leaf order; no parallel layout or output-string universe is
@@ -542,7 +542,7 @@ product bound rather than keeping it inside the application proof.
   Within-tile order is stable input order; no sorted or duplicate-free query premise is needed
   by the pruned kernel.
   The band catalogue retains the same leaf ordering and canonical signed words.
-  Native queried-product composition ([#1581](https://github.com/cslib-community/complexitylib/issues/1581))
+  Native queried-product composition ([#1581](https://github.com/cslib-community/cslib-frontier/issues/1581))
   now connects those actual programs. It computes all protected buffers and tile arguments,
   calls the shared encoders and pruned pointer/epoch kernel, and reconstructs every requested
   `Matrix.mul` value in original order, retaining duplicates. Original signed matrices and raw
@@ -561,7 +561,7 @@ product bound rather than keeping it inside the application proof.
   proofs, not a transfer of source Light semantics or instruction constants. This reusable
   pruned product does not itself compose the full ET/3SUM algorithm; the canonical improved
   box-backed 1.9992 pipeline is described above.
-  Caller-safe queried products ([#1618](https://github.com/cslib-community/complexitylib/issues/1618))
+  Caller-safe queried products ([#1618](https://github.com/cslib-community/cslib-frontier/issues/1618))
   rebase actual memory accesses above a runtime caller base. The generic `WordRAM.MemoryWindow`
   compiler charges an addition/load/remainder for each load and an addition/store for each
   store, reusing ordinary native `Exec` and `Code`. Its clipped-memory view permits dirty
@@ -584,7 +584,7 @@ product bound rather than keeping it inside the application proof.
   to bound the protected caller prefix. The generic compiler theorem remains separate from
   the concrete thin-geometry admission and saving.
   The real ET-record/matrix/query adapter is tracked in
-  [#1626](https://github.com/cslib-community/complexitylib/issues/1626). Its fixed 320-register
+  [#1626](https://github.com/cslib-community/cslib-frontier/issues/1626). Its fixed 320-register
   native code computes the selected record address, reads all six fields, recovers the exact
   `4^m` exponent with existing `NatLog`, stores local original headers and copies the two raw
   matrices and interleaved occurrence coordinates above the actual producer heap. Raw zero/one
@@ -604,7 +604,7 @@ product bound rather than keeping it inside the application proof.
   independent of physical width. The canonical fixed-prime controller, automatic selection
   and ordinary composition above supply the complete native endpoint beyond this record API.
   The original-weight consumer in
-  [#1639](https://github.com/cslib-community/complexitylib/issues/1639) composes actual producer,
+  [#1639](https://github.com/cslib-community/cslib-frontier/issues/1639) composes actual producer,
   product and verification code in 400 registers. It reads original interleaved pairs, computes
   the piece interval with the native square-root kernel, and invokes the entire renamed
   32-register signed verifier only while searching and on nonzero actual answers. The native
@@ -621,9 +621,9 @@ product bound rather than keeping it inside the application proof.
   ET controller and parameter selector supply the complete native endpoint described above;
   this verification component changes no curated abstract.
   The bounded fixed-prime continuation developed in
-  [#1662](https://github.com/cslib-community/complexitylib/issues/1662) is now the canonical
-  box-backed `StreamingFixedPrime` controller ([#2341](https://github.com/cslib-community/complexitylib/issues/2341),
-  [#2498](https://github.com/cslib-community/complexitylib/pull/2498)). It computes the catalogue
+  [#1662](https://github.com/cslib-community/cslib-frontier/issues/1662) is now the canonical
+  box-backed `StreamingFixedPrime` controller ([#2341](https://github.com/cslib-community/cslib-frontier/issues/2341),
+  [#2498](https://github.com/cslib-community/cslib-frontier/pull/2498)). It computes the catalogue
   once and constructs/consumes each logical record in one reused physical slot in a fixed
   416-register program. The materialized fixed-prime execution API is retired; the independent
   `Instances` producer and record product/witness APIs remain. A derived standalone output
@@ -634,7 +634,7 @@ product bound rather than keeping it inside the application proof.
   root/query/controller work, one global failed-scan reserve and halt remain explicit.
   `CallableFixedPrime` adds actual original-array copy/sum, computed-width setup, memory-window
   translation and return copies while preserving the selector bank and caller frame
-  ([#2355](https://github.com/cslib-community/complexitylib/issues/2355)). Original-input
+  ([#2355](https://github.com/cslib-community/cslib-frontier/issues/2355)). Original-input
   logarithmic admission and polynomial every-wide prefix words/support cover this actual code.
   The source Light host uses piece-major rounds and per-round matrix construction; the native
   producer prepares a chunk-major catalogue once and later products stop after success.
@@ -645,7 +645,7 @@ product bound rather than keeping it inside the application proof.
   callers use the flat initialized runs, width theorem or pointer/epoch kernel. The narrow
   `WordRAM.ArrayAppend` and `WordRAM.InputArray` topic modules keep append/input dependencies
   and interface changes away from the widely imported `Allocation` core.
-  Post-integration [#1553](https://github.com/cslib-community/complexitylib/issues/1553) replaces
+  Post-integration [#1553](https://github.com/cslib-community/cslib-frontier/issues/1553) replaces
   pruned `powers` with five retained constant initializations (`powerSetup`) followed by
   `Power.program.rename powerRegisters`, preserving the `4L+10` step bound and `PowersLocal`
   frame, and replaces `BandPreparation.rootCode` with `NatSqrt.program.rename rootRegisters`
@@ -796,14 +796,14 @@ product bound rather than keeping it inside the application proof.
   reducibility and an `evaln` relative to the whole oracle. Upstreaming must reconcile with
   #38973 rather than compete with it; the prefix-based `evaln`, the use principle and
   `KleenePost` are the parts it lacks. Its oracle `evaln` code and jump are a possible route to
-  the Kleene–Post bound `A, B ≤ᵀ ∅′` ([#3379](https://github.com/cslib-community/complexitylib/issues/3379)).
+  the Kleene–Post bound `A, B ≤ᵀ ∅′` ([#3379](https://github.com/cslib-community/cslib-frontier/issues/3379)).
 
 These are coordination references, not a second record of live PR status. Check the relevant
 upstream discussion before starting or submitting overlapping work.
 
 ## Placement decisions not already recorded in source
 
-Paths below omit `Complexity/` and `.lean`. The default CSLib destination mirrors the source
+Paths below omit `CslibFrontier/` and `.lean`. The default CSLib destination mirrors the source
 path. A destination recorded in a source marker takes precedence; the alternatives below need
 agreement during upstream review.
 
@@ -942,7 +942,7 @@ Proof hygiene). This list records earlier changes that had no mechanical success
     `hastadGraphProb_longCode_of_satisfies` (now `graphLinearProb_longCode_of_satisfies`) and
     `hastad_gapLabelCover_dichotomy` (now `gapLabelCover_dichotomy`).
   - The conditional sumset-extractor frontier layer (#391), whose extractor-family hypothesis was
-    never discharged: `Circuit/Frontier/Extractor.lean` and `Complexity/FrontierExtractor.lean`
+    never discharged: `Circuit/Frontier/Extractor.lean` and `CslibFrontier/FrontierExtractor.lean`
     (whole modules), and the decimal restatements
     `eventually_456249_div_100000_sub_mul_lt_innerSize`,
     `circuitLowerBound_456249_div_100000`, `averageCaseBound_456249_div_100000`,
@@ -987,7 +987,7 @@ Proof hygiene). This list records earlier changes that had no mechanical success
   opened; use dot notation (`G.toSimpleGraph_adj`) or full names. Upstreaming the frontier
   multigraph therefore follows `Foundations/Combinatorics/Multigraph.lean`.
 
-The [historical ledger](https://github.com/cslib-community/complexitylib/blob/d0e6373970029a91018528463ca7a5ccd0fc9fd1/UPSTREAM.md)
+The [historical ledger](https://github.com/cslib-community/cslib-frontier/blob/d0e6373970029a91018528463ca7a5ccd0fc9fd1/UPSTREAM.md)
 preserves earlier integration notes and per-module follow-up ideas.
 
 * **Word-RAM word-size contracts (2026-10-22).** Time and encoding arguments now depend on
@@ -1007,12 +1007,12 @@ preserves earlier integration notes and per-module follow-up ideas.
 ### Finite-sample information monotones
 
 The generic-minor development under
-`Complexity/Foundations/Algebra/Polynomial/MaximalMinor/` ports Yuqing Kong's
+`CslibFrontier/Foundations/Algebra/Polynomial/MaximalMinor/` ports Yuqing Kong's
 Apache-2.0 formalization at `4e27ef9d167be69902385307d40123ec665dc532`
 from https://github.com/yuqkong-1844/finite-sample-information-monotones .
 This is general commutative algebra intended for Mathlib, a placement exception
 to the CSLib destination rule. Analytic and statistical consumers are in
-`Complexity/Probability/FiniteSampleInformation/`. Original formalization and
+`CslibFrontier/Probability/FiniteSampleInformation/`. Original formalization and
 mathematical credit are preserved; Christian Reitwiessner is the port author.
 The source is not a dependency: local proofs must check against the pinned
 CSLib/Mathlib and use the project module system. This port does not certify the
