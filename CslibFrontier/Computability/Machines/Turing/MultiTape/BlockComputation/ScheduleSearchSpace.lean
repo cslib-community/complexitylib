@@ -68,7 +68,8 @@ theorem allowance_schedule_mono (k s : ℕ) (Q : Type) (N b q σ τ : ℕ) (hσ�
     Initializer.bankCells, parameters, Initializer.encMetadata, Initializer.encArgs,
     encParameters, RawController.Query.queryStateBound, ConcreteSupplier.encContext,
     ConcreteSupplier.replySpace, ConcreteSupplier.gateSpace, ConcreteSupplier.metadataSpace,
-    QueryGate.encParams, Interpolation.encContext, encNat3, length_encPair]
+    QueryGate.encParams, Interpolation.encContext_apply,
+    Interpolation.encContextFields, encNat3, length_encPair]
   omega
 
 /-- Every accepted schedule's concrete execution allowance fits the uniform candidate bound. -/

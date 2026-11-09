@@ -166,7 +166,8 @@ theorem selected_metadataSpace_le (N b σ q d B : ℕ) (hd : 0 < d) (hB : 0 < B)
   have hp := fieldModulus_size_le hd hB
   have hlimit := assignment_limit_size_le hd hB
   simp only [length_encNat_eq_size] at hBsize hmSize
-  simp only [ConcreteSupplier.metadataSpace, QueryGate.encParams, Interpolation.encContext,
+  simp only [ConcreteSupplier.metadataSpace, QueryGate.encParams, Interpolation.encContext_apply,
+    Interpolation.encContextFields,
     encNat3, length_encPair, length_encNat_eq_size, Nat.size_pow]
   have hempty : (encList encNat []).length = 0 := rfl
   rw [hempty]
@@ -176,7 +177,8 @@ private theorem context_le_metadataSpace (N b σ q m alphabet limit p d r : ℕ)
     (ConcreteSupplier.encContext (N, b, σ, q, m, alphabet, limit)).length ≤
       ConcreteSupplier.metadataSpace N b σ q m alphabet limit p d r := by
   simp only [ConcreteSupplier.encContext, ConcreteSupplier.metadataSpace, QueryGate.encParams,
-    Interpolation.encContext, encNat3, length_encPair]
+    Interpolation.encContext_apply,
+    Interpolation.encContextFields, encNat3, length_encPair]
   omega
 
 private theorem log2_le_size (N : ℕ) : Nat.log2 N ≤ N.size := by
