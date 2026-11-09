@@ -82,6 +82,8 @@ time-bounded Kolmogorov complexity `Cslib.Kolmogorov.levinKt` (`Kt`).
 * `Cslib.Kolmogorov.DescriptionMethod.exists_etimeBoundedComplexity_universalTM_le_ofMultiTapeTM`,
   `Cslib.Kolmogorov.DescriptionMethod.exists_etimeBoundedComplexity_universalTM_le_ofSingleTapeTM`:
   time-bounded optimality over multi-tape and single-tape Turing machines.
+* `Cslib.Kolmogorov.DescriptionMethod.exists_runFor_length_add_clog_le_iff`: a witness with
+  $|p| + \lceil \log_2 s \rceil \le k$ exists iff one runs within $2^{k - |p|}$ steps.
 * `Cslib.Kolmogorov.timeBounded_eq_timeBoundedAt`: `timeBounded t x = timeBoundedAt (t x.length) x`.
 * `Cslib.Kolmogorov.timeBoundedAt_antitone`, `Cslib.Kolmogorov.timeBounded_antitone`,
   `Cslib.Kolmogorov.timeBounded_anti`: monotonicity in the time bound $t$.
@@ -331,6 +333,25 @@ theorem exists_simulation_literal_universalTM :
   obtain ⟨k, State, hfin, tm, ⟨Slit⟩⟩ := exists_simulation_literal
   obtain ⟨c, ⟨Stm⟩⟩ := exists_simulation_ofMultiTapeTM tm
   exact ⟨0 + c, ⟨Slit.trans Stm fun _ _ _ _ => le_rfl⟩⟩
+
+/-! ### Exponential step budgets -/
+
+/-- **Exponential-step form of a Levin-style threshold.** Some program $p$ outputs $x$ within $s$
+steps with $|p| + \lceil \log_2 s \rceil \le k$ iff some program of length at most $k$ outputs $x$
+within $2^{k - |p|}$ steps. With the threshold characterizations of `levinKt` and `condLevinKt`,
+this gives their exponential-step witness characterizations. -/
+theorem exists_runFor_length_add_clog_le_iff {α : Type*} {M : DescriptionMethod α} {x : α}
+    {k : ℕ} :
+    (∃ (p : List Bool) (s : ℕ), x ∈ (M.run p).runFor s ∧ p.length + Nat.clog 2 s ≤ k) ↔
+      ∃ p : List Bool, p.length ≤ k ∧ x ∈ (M.run p).runFor (2 ^ (k - p.length)) := by
+  constructor
+  · rintro ⟨p, s, hp, hle⟩
+    have hs : s ≤ 2 ^ (k - p.length) := (Nat.clog_le_iff_le_pow one_lt_two).mp (by omega)
+    exact ⟨p, by omega, Computation.mem_runFor_of_le hs hp⟩
+  · rintro ⟨p, hplen, hp⟩
+    refine ⟨p, 2 ^ (k - p.length), hp, ?_⟩
+    rw [Nat.clog_pow _ _ one_lt_two]
+    omega
 
 end DescriptionMethod
 
