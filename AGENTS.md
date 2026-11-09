@@ -268,9 +268,10 @@ any Lean examples introduced; a local whole-library rebuild is unnecessary.
 For the edit loop, `scripts/check.sh --quick [--base REF]` builds changed Lean modules and their
 transitive importing clients, then checks import aggregates. The comparison uses the merge base
 with local `origin/main` by default, including committed, staged, unstaged and untracked changes;
-it does not fetch. Quick mode skips the global test/lint/style/init-import gates and is not full
-validation. Non-Lean changes, deletions/renames, changed aggregates, unsupported layouts and
-ambiguous change/import analysis fall back to all six gates. The one exception is
+it does not fetch. Quick mode lints only the affected library modules, skips the global
+test/style/init-import gates and is not full validation. Non-Lean changes, deletions/renames,
+changed aggregates, unsupported layouts and ambiguous change/import analysis fall back to all
+six gates. The one exception is
 `scripts/encoding_readability_baseline.json`, which no Lean gate reads: a change to it runs the
 encoding-readability lint instead. Quick success alone does not satisfy the full validation
 requirement above; documentation-only checks need not invoke quick mode.
