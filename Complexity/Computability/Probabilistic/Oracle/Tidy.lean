@@ -108,7 +108,8 @@ theorem congr {program program' : α → WordOracleComp Operation γ}
   obtain ⟨hops, k, Control, hfinite, machine, c, d, h⟩ := h
   refine ⟨hops, k, Control, hfinite, machine, c, d, fun a => (h a).congr ?_⟩
   intro State oracle s
-  simp only [OracleComp.interpret_map, StateT.run_map, heq]
+  rw [ProbOracleComp.runWith_map, ProbOracleComp.runWith_map]
+  exact congrArg _ (heq a State oracle s)
 
 /-- A program returning its declared encoding has the same clean realizations. -/
 theorem iff_encoded {program : α → WordOracleComp Operation γ} :
@@ -221,8 +222,7 @@ theorem bind {first : α → WordOracleComp Operation β} {second : β → WordO
   have hcomp := (hsource a).comp true (prog₂ := continuation) (t₂ := secondTime (input a).length)
     (fun word State oracle s s' hword => by
       have hlength := (hsource a).length_output_le oracle s hword
-      rw [OracleComp.interpret_map, StateT.run_map, PMF.monad_map_eq_map,
-        PMF.mem_support_map_iff] at hword
+      rw [ProbOracleComp.runWith_map, PMF.mem_support_map_iff] at hword
       obtain ⟨⟨b, s₁⟩, _, heq⟩ := hword
       obtain ⟨rfl, rfl⟩ := Prod.mk.inj heq
       rw [hcontinuation]

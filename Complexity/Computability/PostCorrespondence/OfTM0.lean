@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Machines.Turing.SingleTape.TM0Restrict
 public import Complexity.Computability.PostCorrespondence.Rewrite
 public import Mathlib.Computability.TuringMachine.PostTuringMachine
 public import Mathlib.Data.Fintype.Option
@@ -37,17 +38,14 @@ Two differences from Sipser's construction: Mathlib's `TM0` has a two-way infini
 when its transition function is undefined, with no accept state, so the instance encodes halting
 rather than acceptance, and it has rules to extend the tape on both sides.
 
-`OfTM0.restrict` restricts a `TM0` machine to a set of states closed under its transitions;
-`OfTM0.eval_restrict_dom` shows that the restriction halts on the same inputs. It turns a machine
-supported on a finite set of states into a machine with finitely many states.
+Configuration representations and machine restriction come from
+`Complexity.Computability.Machines.Turing.SingleTape.TM0Restrict` (`Turing.TM0`).
 
 ## Main definitions
 
 * `Cslib.PostCorrespondence.OfTM0.Letter`: the letters of configuration words.
 * `Cslib.PostCorrespondence.OfTM0.Rule`: the rewriting rules simulating a machine.
 * `Cslib.PostCorrespondence.OfTM0.mInstance`: the MPCP instance of a machine and an input.
-* `Cslib.PostCorrespondence.OfTM0.restrict`: the restriction of a machine to a closed set of
-  states.
 
 ## Main results
 
@@ -55,7 +53,6 @@ supported on a finite set of states into a machine with finitely many states.
   solvable.
 * `Cslib.PostCorrespondence.OfTM0.primrec_mInstance`: the instance depends primitive recursively
   on the input.
-* `Cslib.PostCorrespondence.OfTM0.eval_restrict_dom`: restriction preserves halting.
 
 ## References
 
@@ -66,7 +63,7 @@ public section
 
 namespace Cslib.PostCorrespondence.OfTM0
 
-open Relation Turing
+open Relation Turing TM0
 
 variable {Γ Λ : Type*}
 
@@ -229,21 +226,7 @@ private theorem rb_notMem_word {x : Letter Γ Λ} (hx : x ≠ rb) (L R : List Γ
 
 section Machine
 
-variable [Inhabited Γ]
-
-/-- The configuration with state `q`, scanned symbol `a`, the cells `L` to the left (nearest
-first) and the cells `R` to the right. -/
-@[expose] def cfgOf (q : Λ) (a : Γ) (L R : List Γ) : TM0.Cfg Γ Λ :=
-  ⟨q, ⟨a, ListBlank.mk L, ListBlank.mk R⟩⟩
-
-theorem exists_cfgOf (c : TM0.Cfg Γ Λ) : ∃ q a L R, c = cfgOf q a L R := by
-  obtain ⟨q, ⟨a, L, R⟩⟩ := c
-  induction L using ListBlank.induction_on with
-  | h L =>
-  induction R using ListBlank.induction_on with
-  | h R => exact ⟨q, a, L, R, rfl⟩
-
-variable [Inhabited Λ]
+variable [Inhabited Γ] [Inhabited Λ]
 
 /-- The rules of the semi-Thue system simulating a `TM0` machine `M`; each rule is a domino whose
 top rewrites to its bottom. -/
@@ -300,43 +283,6 @@ theorem mem_dominoes [Fintype Γ] [Fintype Λ] {M : TM0.Machine Γ Λ} {d : Domi
 noncomputable def mInstance [Fintype Γ] [Fintype Λ] (M : TM0.Machine Γ Λ) (l : List Γ) :
     MInstance (Letter Γ Λ) :=
   ⟨⟨[], word (cell default l.headI) [] l.tail⟩, dominoes M⟩
-
-/-! ### Steps of the machine -/
-
-theorem init_eq (l : List Γ) : (TM0.init l : TM0.Cfg Γ Λ) = cfgOf default l.headI [] l.tail :=
-  rfl
-
-theorem step_of_eq_none {M : TM0.Machine Γ Λ} {q a} (h : M q a = none) (L R : List Γ) :
-    TM0.step M (cfgOf q a L R) = none := by
-  change (M q a).map _ = none
-  rw [h]
-  rfl
-
-theorem step_of_eq_write {M : TM0.Machine Γ Λ} {q a q' b} (h : M q a = some (q', .write b))
-    (L R : List Γ) : TM0.step M (cfgOf q a L R) = some (cfgOf q' b L R) := by
-  change (M q a).map _ = _
-  rw [h]
-  rfl
-
-theorem step_of_eq_right {M : TM0.Machine Γ Λ} {q a q'} (h : M q a = some (q', .move .right))
-    (L R : List Γ) : TM0.step M (cfgOf q a L R) = some (cfgOf q' R.headI (a :: L) R.tail) := by
-  change (M q a).map _ = _
-  rw [h]
-  rfl
-
-theorem step_of_eq_left {M : TM0.Machine Γ Λ} {q a q'} (h : M q a = some (q', .move .left))
-    (L R : List Γ) : TM0.step M (cfgOf q a L R) = some (cfgOf q' L.headI L.tail (a :: R)) := by
-  change (M q a).map _ = _
-  rw [h]
-  rfl
-
-/-- The machine halts on input `l`. -/
-@[expose] def Halts (M : TM0.Machine Γ Λ) (l : List Γ) : Prop :=
-  ∃ c, StateTransition.Reaches (TM0.step M) (TM0.init l) c ∧ TM0.step M c = none
-
-theorem eval_dom_iff (M : TM0.Machine Γ Λ) (l : List Γ) : (TM0.eval M l).Dom ↔ Halts M l := by
-  rw [TM0.eval, Part.map_Dom, Part.dom_iff_mem]
-  exact exists_congr fun _ => StateTransition.mem_eval
 
 /-! ### Soundness: the words reachable from the initial word -/
 
@@ -552,59 +498,5 @@ theorem primrec_mInstance [Fintype Γ] [Fintype Λ] [Primcodable Γ] [Primcodabl
 
 end Machine
 
-/-! ### Restricting a machine to a closed set of states -/
-
-section Restrict
-
-open StateTransition
-
-variable [Inhabited Γ] [Inhabited Λ]
-
-/-- The restriction of a `TM0` machine to a set of states closed under its transitions. -/
-def restrict (M : TM0.Machine Γ Λ) {S : Set Λ}
-    (hS : ∀ {q a q' s}, (q', s) ∈ M q a → q ∈ S → q' ∈ S) [Inhabited S] :
-    TM0.Machine Γ S := fun q a =>
-  (M q.1 a).pmap (fun x hx => (⟨x.1, hS hx q.2⟩, x.2)) fun _ h => h
-
-/-- The configuration of the original machine underlying a configuration of the restriction. -/
-def liftCfg {S : Set Λ} (c : TM0.Cfg Γ S) : TM0.Cfg Γ Λ := ⟨c.q.1, c.Tape⟩
-
-omit [Inhabited Λ] in
-private theorem map_pmap_val {S : Set Λ} {β : Type*} (o : Option (Λ × β))
-    (f : ∀ x ∈ o, x.1 ∈ S) :
-    (o.pmap (fun x hx => ((⟨x.1, f x hx⟩ : S), x.2)) fun _ h => h).map
-      (Prod.map Subtype.val id) = o := by
-  cases o <;> rfl
-
-theorem step_liftCfg (M : TM0.Machine Γ Λ) {S : Set Λ}
-    (hS : ∀ {q a q' s}, (q', s) ∈ M q a → q ∈ S → q' ∈ S) [Inhabited S] (c : TM0.Cfg Γ S) :
-    (TM0.step (restrict M hS) c).map liftCfg = TM0.step M (liftCfg c) := by
-  obtain ⟨q, T⟩ := c
-  have h := map_pmap_val (S := S) (M q.1 T.head) fun x hx => hS (q := q.1) (a := T.head) hx q.2
-  change ((restrict M hS q T.head).map _).map liftCfg = (M q.1 T.head).map _
-  rw [← h, Option.map_map, Option.map_map]
-  rfl
-
-theorem restrict_respects (M : TM0.Machine Γ Λ) {S : Set Λ}
-    (hS : ∀ {q a q' s}, (q', s) ∈ M q a → q ∈ S → q' ∈ S) [Inhabited S] :
-    Respects (TM0.step (restrict M hS)) (TM0.step M) fun c c' => liftCfg c = c' := by
-  refine fun_respects.2 fun c => ?_
-  have h := step_liftCfg M hS c
-  rcases e : TM0.step (restrict M hS) c with _ | c'
-  · rw [e] at h
-    exact h.symm
-  · rw [e] at h
-    exact TransGen.single h.symm
-
-theorem eval_restrict_dom (M : TM0.Machine Γ Λ) {S : Set Λ}
-    (hS : ∀ {q a q' s}, (q', s) ∈ M q a → q ∈ S → q' ∈ S) [Inhabited S]
-    (hd : (default : S).1 = default) (l : List Γ) :
-    (TM0.eval (restrict M hS) l).Dom ↔ (TM0.eval M l).Dom := by
-  simp only [TM0.eval, Part.map_Dom]
-  have h0 : liftCfg (TM0.init l : TM0.Cfg Γ S) = TM0.init l := by
-    simp only [liftCfg, TM0.init, hd]
-  exact (tr_eval_dom (restrict_respects M hS) h0).symm
-
-end Restrict
 
 end Cslib.PostCorrespondence.OfTM0
