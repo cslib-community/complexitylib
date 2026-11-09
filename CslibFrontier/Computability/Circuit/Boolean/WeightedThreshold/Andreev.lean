@@ -161,6 +161,10 @@ theorem andreev_eq_table_parities (b m : ℕ) (w : BitString (2 ^ b + b * m)) :
     andreev b m w = w (andreevTableIndex b m (BitString.equivFin b (andreevParities b m w))) :=
   rfl
 
+/-- `andreevTableIndex b m` is injective. -/
+theorem andreevTableIndex_injective (b m : ℕ) : Function.Injective (andreevTableIndex b m) :=
+  Fin.castAdd_injective (2 ^ b) (b * m)
+
 /-- The unnormalized integer Walsh-Fourier score
 `X_S(w) = ∑_{c : BitString b} χ_S(c) * (1 - 2 * x_c(w))`. -/
 def andreevTableScore (b m : ℕ) (S : Finset (Fin b)) (w : BitString (2 ^ b + b * m)) : ℤ :=
