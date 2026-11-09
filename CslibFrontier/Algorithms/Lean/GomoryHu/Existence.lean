@@ -100,20 +100,14 @@ private theorem step_swap {E : Set (CEdge V)} {x₀ y₀ a b : V}
     (h : Relation.ReflTransGen (Step E x₀ y₀) a b) :
     Relation.ReflTransGen (Step E y₀ x₀) b a :=
   Relation.ReflTransGen.mono (fun _ _ ⟨e, he, hsep, hends⟩ =>
-    ⟨e, he, ⟨fun hx hy => hsep.mp hy hx,
-      fun hy => Classical.byContradiction fun hx => hy (hsep.mpr hx)⟩, hends.symm⟩) _ _
-    (Relation.reflTransGen_swap.mpr h)
+    ⟨e, he, by tauto, by tauto⟩) _ _ (Relation.reflTransGen_swap.mpr h)
 
-/-- A property of all edges of `E₁`, `E₂` and the edge `e` holds on `E₁ ∪ E₂ ∪ {e}`. -/
-private theorem forall_mem_union_insert {E₁ E₂ : Set (CEdge V)} {e : CEdge V}
+/-- A property of all edges of `E₁`, `E₂` and the edge `e` holds on `E₁ ∪ E₂ ∪ {e}`, the edge
+set of a glued tree. -/
+private theorem forall_mem_union_singleton {E₁ E₂ : Set (CEdge V)} {e : CEdge V}
     {P : CEdge V → Prop} (h₁ : ∀ e ∈ E₁, P e) (h₂ : ∀ e ∈ E₂, P e) (he : P e) :
-    ∀ e' ∈ E₁ ∪ E₂ ∪ {e}, P e' := by
-  rintro e' ((h | h) | h)
-  · exact h₁ e' h
-  · exact h₂ e' h
-  · rw [Set.mem_singleton_iff] at h
-    subst h
-    exact he
+    ∀ e' ∈ E₁ ∪ E₂ ∪ {e}, P e' :=
+  Set.forall_mem_union.mpr ⟨Set.forall_mem_union.mpr ⟨h₁, h₂⟩, Set.forall_mem_singleton.mpr he⟩
 
 /-! ### From a partial tree on all vertices to a Gomory–Hu tree -/
 
@@ -125,6 +119,8 @@ variable [Preorder β] {f : Finset V → β} {L : Finset V → Prop} {R : Finset
 private def treeOf (E : Set (CEdge V)) : SimpleGraph V :=
   SimpleGraph.fromRel fun x y => ∃ e ∈ E, e.u = x ∧ e.v = y
 
+/-- Two vertices are adjacent in `treeOf E` when an edge of `E` joins them, in either
+orientation. -/
 private theorem Inv.treeOf_adj {E : Set (CEdge V)} (I : Inv f L R E) {x y : V} :
     (treeOf E).Adj x y ↔ ∃ e ∈ E, (e.u = x ∧ e.v = y) ∨ (e.u = y ∧ e.v = x) := by
   simp only [treeOf, SimpleGraph.fromRel_adj]
@@ -265,15 +261,15 @@ private theorem glue [Preorder β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ =
       exact (hU.le_of_separates hsym hst).trans ((I₁.edge e he).le_of_separates hsym hY')
   let enew : CEdge V := ⟨r₁, r₂, U⟩
   refine ⟨E₁ ∪ E₂ ∪ {enew}, ⟨?_, ?_, ?_, ?_, ?_, ?_⟩⟩
-  · exact forall_mem_union_insert
+  · exact forall_mem_union_singleton
       (fun e he => ⟨Finset.mem_of_mem_inter_left (I₁.mem e he).1,
         Finset.mem_of_mem_inter_left (I₁.mem e he).2⟩)
       (fun e he => ⟨Finset.mem_of_mem_inter_left (I₂.mem e he).1,
         Finset.mem_of_mem_inter_left (I₂.mem e he).2⟩)
       ⟨Finset.mem_of_mem_inter_left hr₁, Finset.mem_of_mem_inter_left hr₂⟩
-  · exact forall_mem_union_insert (fun e he => (I₁.good e he).1) (fun e he => (I₂.good e he).1)
+  · exact forall_mem_union_singleton (fun e he => (I₁.good e he).1) (fun e he => (I₂.good e he).1)
       hLU
-  · exact forall_mem_union_insert I₁.edge I₂.edge newEdge
+  · exact forall_mem_union_singleton I₁.edge I₂.edge newEdge
   · -- Nesting: within each side by induction, across the sides by `side₁`/`side₂`, and for the
     -- new edge because each side lies on one side of `U`.
     intro e he e' he' hne
@@ -326,11 +322,11 @@ private theorem glue [Preorder β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ =
     by_cases hz : z ∈ U
     · obtain ⟨r, hr, hzr⟩ := I₁.rep z
       have hrU : r ∈ U := Finset.mem_of_mem_inter_right hr
-      exact ⟨r, Finset.mem_of_mem_inter_left hr, forall_mem_union_insert hzr
+      exact ⟨r, Finset.mem_of_mem_inter_left hr, forall_mem_union_singleton hzr
         (fun e he => side₂ e he z r hz hrU) ⟨fun _ => hrU, fun _ => hz⟩⟩
     · obtain ⟨r, hr, hzr⟩ := I₂.rep z
       have hrU : r ∉ U := Finset.mem_compl.mp (Finset.mem_of_mem_inter_right hr)
-      exact ⟨r, Finset.mem_of_mem_inter_left hr, forall_mem_union_insert
+      exact ⟨r, Finset.mem_of_mem_inter_left hr, forall_mem_union_singleton
         (fun e he => side₁ e he z r hz hrU) hzr
         ⟨fun h => absurd h hz, fun h => absurd h hrU⟩⟩
 
@@ -404,9 +400,8 @@ theorem exists_isGomoryHuTree [Nonempty V] {f : Finset V → β} (hsym : ∀ X, 
   have hadj : (treeOf E).Adj e.u e.v := I.treeOf_adj.mpr ⟨e, he, Or.inl ⟨rfl, rfl⟩⟩
   -- No other tree edge crosses `e.S`, so it is the side of the edge of `e` containing `e.u`.
   have hside : edgeSide (treeOf E) e.u e.v = e.S :=
-    SimpleGraph.edgeSide_eq_of_forall_adj htree hadj hS.left_mem hS.right_notMem (by
-      intro x y hxy hne
-      exact I.mem_iff_of_adj he hxy hne)
+    SimpleGraph.edgeSide_eq_of_forall_adj htree hadj hS.left_mem hS.right_notMem
+      fun _ _ => I.mem_iff_of_adj he
   rcases hends with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
   · rw [hside]
     exact hS
