@@ -99,9 +99,7 @@ after `u` in a closed walk costs at most `δ u v + δ v u`, by the triangle ineq
 theorem cycleCost_append_cons_cons_le (δ : α → α → ℕ) (htri : ∀ x y z, δ x z ≤ δ x y + δ y z)
     (A B : List α) (u v : α) :
     cycleCost δ (A ++ u :: v :: B) ≤ cycleCost δ (A ++ u :: B) + (δ u v + δ v u) := by
-  have hrot : ∀ X : List α, cycleCost δ (A ++ X) = cycleCost δ (X ++ A) := fun X => by
-    rw [← cycleCost_rotate δ (A ++ X) A.length, List.rotate_append_length_eq]
-  rw [hrot, hrot]
+  rw [cycleCost_append_comm δ A, cycleCost_append_comm δ A]
   simp only [List.cons_append]
   rw [cycleCost_cons, cycleCost_cons]
   simp only [walkCost]
