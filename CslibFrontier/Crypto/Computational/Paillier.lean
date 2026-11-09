@@ -18,6 +18,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Gcd
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.PowMod
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Probability.PMF
@@ -307,9 +308,6 @@ theorem computableInPolyTime_addCiphertexts :
   fun_prop
 
 /-! ### Correctness and the additive homomorphism -/
-
-/-- Decoding the binary encoding of a natural number returns it. -/
-theorem ofBits_encNat (x : ℕ) : ofBits (encNat x) = x := Nat.foldr_bit_bits x
 
 /-- The first component of the binary encoding of a pair of natural numbers. -/
 theorem unframe_encPair_encNat (a b : ℕ) :
