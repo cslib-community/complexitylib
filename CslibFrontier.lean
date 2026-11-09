@@ -2716,6 +2716,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.D
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.BitString
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.BitString.Cut
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.Option
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.Primitives
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Doubled
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Fold
@@ -5723,6 +5724,7 @@ public import CslibFrontier.Probability.Uniform
 public import CslibFrontier.Probability.UniformNat
 public import CslibFrontier.Probability.UniformOrder
 public import CslibFrontier.Probability.UniversalHash
+public import CslibFrontier.Tactic.Degree
 public import CslibFrontier.Tactic.EncLen
 public import CslibFrontier.Tactic.FOOperator
 public import CslibFrontier.Tactic.FOOperator.Init
