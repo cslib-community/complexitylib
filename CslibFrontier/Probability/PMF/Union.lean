@@ -23,6 +23,8 @@ Carathéodory-measurable for it (`PMF.toOuterMeasure_caratheodory`).
   disjoint events.
 * `Cslib.Probability.PMF.sum_toOuterMeasure_le_one`: the probabilities of finitely many pairwise
   disjoint events add up to at most `1`.
+* `Cslib.Probability.PMF.toOuterMeasure_toReal_biUnion_finset_le`: the union bound for
+  real-valued probabilities of finitely many events.
 -/
 
 @[expose] public section
@@ -54,5 +56,16 @@ theorem sum_toOuterMeasure_le_one {ι : Type*} (p : PMF α) (J : Finset ι) {B :
   rw [← toOuterMeasure_biUnion_finset p J hB]
   exact (p.toOuterMeasure.mono (Set.subset_univ _)).trans_eq
     ((PMF.toOuterMeasure_apply_eq_one_iff p _).mpr (Set.subset_univ _))
+
+/-- **Union bound** for real-valued probabilities: the probability of a union of finitely many
+events is at most the sum of their probabilities. -/
+theorem toOuterMeasure_toReal_biUnion_finset_le {ι : Type*} (p : PMF α) (J : Finset ι)
+    (B : ι → Set α) :
+    (p.toOuterMeasure (⋃ j ∈ J, B j)).toReal ≤ ∑ j ∈ J, (p.toOuterMeasure (B j)).toReal := by
+  have hfin (s : Set α) : p.toOuterMeasure s ≠ ⊤ := by
+    simpa only [PMF.toOuterMeasure_apply] using p.tsum_coe_indicator_ne_top s
+  rw [← ENNReal.toReal_sum fun j _ => hfin (B j)]
+  exact ENNReal.toReal_mono (ENNReal.sum_ne_top.2 fun j _ => hfin (B j))
+    (MeasureTheory.measure_biUnion_finset_le J B)
 
 end Cslib.Probability.PMF
