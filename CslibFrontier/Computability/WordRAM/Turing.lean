@@ -442,6 +442,22 @@ theorem length_entries_initState {B : Basis} {r : ℕ} (input : List ℕ) :
     (SparseMemory.entries (initState B r input).memory).length = input.length + 1 := by
   simp [initState, FiniteState.initConst, FiniteState.init, entries_initMemory, initEntries]
 
+/-- From a fitting input, the encoded outcomes of the first `T` steps of a clocked run are
+bounded by `stateBound` with `|input| + 1 + T` stored cells. -/
+theorem length_resultEncoding_run_initState_le {B : Basis} {r w : ℕ} {input : List ℕ}
+    (h : InputFits w input) (p : GenericRAM.Program B.genericModel r) {T j : ℕ} (hj : j ≤ T) :
+    (FiniteState.resultEncoding B.encoding
+      (FiniteState.run w p j (initState B r input))).length ≤
+      stateBound r (labelBound p) w (input.length + 1 + T) := by
+  have hrun := (wordBounded_initState (B := B) (r := r) h).length_resultEncoding_run_le
+    (p := p) (by simp) j
+  rw [length_entries_initState] at hrun
+  refine hrun.trans ?_
+  simp only [stateBound]
+  have := Nat.mul_le_mul_right (6 * w + 3)
+    (show input.length + 1 + j ≤ input.length + 1 + T by omega)
+  omega
+
 /-- Building the initial memory is polynomial-time on framed lists of binary words. -/
 theorem initMemory_polyTime :
     Turing.MultiTapeTM.ComputableInPolyTime initMemory (encList encNat)
@@ -503,6 +519,39 @@ theorem exists_unary_majorant {u : α → ℕ}
   simpa only [Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_pow, Polynomial.eval_add,
     Polynomial.eval_X, Polynomial.eval_one] using h a
 
+/-- The simulation's initial states are computable in polynomial time when the input words are:
+build the memory `0 ↦ n, i + 1 ↦ xᵢ` and set zero registers and default. -/
+theorem exists_initState_certificate {words : α → List ℕ}
+    (h : Turing.MultiTapeTM.ComputableInPolyTime words encIn (encList encNat)) :
+    ∃ c : NativeCertificate (fun a => initState B r (words a)) encIn
+      (FiniteState.encoding B.encoding), c.IsPolynomial := by
+  have hmem := initMemory_polyTime.comp h
+  exact ⟨FiniteState.initConstCertificate B.encoding (NativeCertificate.const 0)
+      (NativeCertificate.const 0) (ofPolyTime hmem),
+    FiniteState.initConstCertificate_isPolynomial _ _ _ _ (const_isPolynomial 0)
+      (const_isPolynomial 0) (ofPolyTime_isPolynomial hmem)⟩
+
+/-- **The simulation's outcomes are polynomially bounded.** For a word size and fitting input
+words computable in polynomial time, and a step budget polynomial in the input length, the
+encoded outcomes of the first `steps a` steps are bounded by one polynomially bounded function. -/
+theorem exists_polyBounded_resultEncoding_run_le (p : GenericRAM.Program B.genericModel r)
+    {width : α → ℕ} {words : α → List ℕ} {steps : α → ℕ}
+    (hwidth : Turing.MultiTapeTM.ComputableInPolyTime width encIn encUnary)
+    (hwords : Turing.MultiTapeTM.ComputableInPolyTime words encIn (encList encNat))
+    (hfits : ∀ a, InputFits (width a) (words a))
+    (hsteps : PolyBounded (fun a => (encIn a).length) steps) :
+    ∃ bound : α → ℕ, PolyBounded (fun a => (encIn a).length) bound ∧
+      ∀ a, ∀ j ≤ steps a, (FiniteState.resultEncoding B.encoding
+        (FiniteState.run (width a) p j (initState B r (words a)))).length ≤ bound a := by
+  refine ⟨fun a => stateBound r (labelBound p) (width a) ((words a).length + 1 + steps a), ?_,
+    fun a j hj => length_resultEncoding_run_initState_le (hfits a) p hj⟩
+  have hw := hwidth.polyBounded
+  have hE : PolyBounded (fun a => (encIn a).length) (fun a => (words a).length + 1 + steps a) :=
+    ((hwords.polyBounded_length.mono fun a => length_le_length_encList encNat (words a)).add
+      (.const 1)).add hsteps
+  dsimp only [stateBound]
+  growth_poly
+
 /-- **Word-RAM time at a polynomial-time width schedule gives Turing-machine polynomial time.**
 
 Let `p` be a fixed program over a basis whose checked operations are polynomial-time on a unary
@@ -533,39 +582,10 @@ theorem Program.ComputesInTime.turingComputableInPolyTime_of_width
       ∃ m ≤ steps a, Executes (width a) p (State.init (encode (width a) a)) (f a) m := by
     obtain ⟨m, hm, hle⟩ := h a (width a) (hallowed a) (hfits a)
     exact ⟨m, hle.trans (hsteps a), hm⟩
-  -- Initialization: the memory `0 ↦ n, i + 1 ↦ xᵢ`, zero registers and default.
-  have hmem : Turing.MultiTapeTM.ComputableInPolyTime
-      (fun a => initMemory (encode (width a) a)) encIn (SparseMemory.encoding encNat encNat) :=
-    initMemory_polyTime.comp hencode
-  let cInit := FiniteState.initConstCertificate (r := r) B.encoding
-    (NativeCertificate.const (ei := encIn) 0) (NativeCertificate.const 0) (ofPolyTime hmem)
-  have hInit : cInit.IsPolynomial :=
-    FiniteState.initConstCertificate_isPolynomial _ _ _ _ (const_isPolynomial 0)
-      (const_isPolynomial 0) (ofPolyTime_isPolynomial hmem)
-  -- Every simulated outcome is bounded by a polynomial in the input length.
-  let bound : α → ℕ := fun a => stateBound r (labelBound p.toGeneric) (width a)
-    ((encode (width a) a).length + 1 + steps a)
-  have hbound : PolyBounded (fun a => (encIn a).length) bound := by
-    have hw := hwidth.polyBounded
-    have hE : PolyBounded (fun a => (encIn a).length)
-        (fun a => (encode (width a) a).length + 1 + steps a) :=
-      ((hencode.polyBounded_length.mono fun a =>
-        length_le_length_encList encNat (encode (width a) a)).add (.const 1)).add
-          hstepsU.polyBounded
-    dsimp only [bound, stateBound]
-    growth_poly
-  have hOutLen (a : α) (j : ℕ) (hj : j ≤ steps a) :
-      (FiniteState.resultEncoding B.encoding (FiniteState.run (width a) p.toGeneric j
-        (initState B r (encode (width a) a)))).length ≤ bound a := by
-    have hrun := (wordBounded_initState (B := B) (r := r) (hfits a)).length_resultEncoding_run_le
-      (p := p.toGeneric) (by simp) j
-    rw [length_entries_initState] at hrun
-    refine hrun.trans ?_
-    simp only [bound, stateBound]
-    have := Nat.mul_le_mul_right (6 * width a + 3)
-      (show (encode (width a) a).length + 1 + j ≤ (encode (width a) a).length + 1 + steps a by
-        omega)
-    omega
+  -- Initialization, and a polynomial bound on every simulated outcome.
+  obtain ⟨cInit, hInit⟩ := exists_initState_certificate (B := B) (r := r) hencode
+  obtain ⟨bound, hbound, hOutLen⟩ := exists_polyBounded_resultEncoding_run_le p.toGeneric
+    hwidth hencode hfits hstepsU.polyBounded
   exact WordRAM.transport_polyTime B.encoding (B.nativePrimitivesOfPolyTime hop) p
     (ofPolyTime hstepsT) (ofPolyTime hwidth) cInit
     (u := fun a => State.init (encode (width a) a))
