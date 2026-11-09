@@ -137,7 +137,7 @@ theorem decryptNat_eq {N c m r : ℕ} (hN : 1 < N) (hcop : N.Coprime N.totient)
       one_add_pow_mul_pow_pow_totient m hr]
     conv_lhs => rw [← Nat.mod_add_div (m * N.totient) N]
     push_cast
-    linear_combination ((m * N.totient / N : ℕ) : ZMod (N ^ 2)) * natCast_mul_self N
+    linear_combination ((m * N.totient / N : ℕ) : ZMod (N ^ 2)) * ZMod.natCast_mul_self_eq_zero N
   -- `φ(N) ^ (φ(N) - 1)` inverts `φ(N)` modulo `N`, by Euler's theorem.
   have heuler : (N.totient : ZMod N) ^ N.totient = 1 := by
     have := congrArg Units.val (ZMod.pow_totient (ZMod.unitOfCoprime N.totient hcop.symm))
@@ -311,11 +311,13 @@ theorem computableInPolyTime_addCiphertexts :
 /-- Decoding the binary encoding of a natural number returns it. -/
 theorem ofBits_encNat (x : ℕ) : ofBits (encNat x) = x := Nat.foldr_bit_bits x
 
-private theorem unframe_encPair_encNat (a b : ℕ) :
+/-- The first component of the binary encoding of a pair of natural numbers. -/
+theorem unframe_encPair_encNat (a b : ℕ) :
     unframe (encPair encNat encNat (a, b)) = encNat a := by
   simp only [encPair_apply, unframe_frame_append]
 
-private theorem dropFrame_encPair_encNat (a b : ℕ) :
+/-- The second component of the binary encoding of a pair of natural numbers. -/
+theorem dropFrame_encPair_encNat (a b : ℕ) :
     dropFrame (encPair encNat encNat (a, b)) = encNat b := by
   simp only [encPair_apply, dropFrame_frame_append]
 

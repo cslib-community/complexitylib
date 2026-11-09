@@ -29,10 +29,11 @@ function of the primary input length `(input a).length` alone.
 `IsPPTWithAux` and `IsOraclePPTWithAux` capture this machine contract for closed and oracle
 probabilistic programs. Because `frame (input a)` is self-delimiting (`unframe (frame (input a) ++
 z) = input a`), a machine can recover the primary input length from the combined input tape without
-scanning `z`. Generalizing `IsTidyOraclePPTOn.runOracle` to any polynomial-time computable clock
-therefore shows that every `IsOraclePPTWithAux` (resp. `IsPPTWithAux`) program is automatically a
-standard `IsOraclePPTOn` (resp. `IsPPTOn`) program on `encPair input encBits`. Moreover, by the
-input-tape prefix-locality theorem (`runOracle_append_take` / `runClosed_append_take`), a run of
+scanning `z`. Since a machine run under any polynomial-time computable clock is clean
+(`IsTidyOraclePPTOn.runOracle_of_clock`), every `IsOraclePPTWithAux` (resp. `IsPPTWithAux`)
+program is automatically a standard `IsOraclePPTOn` (resp. `IsPPTOn`) program on
+`encPair input encBits`. Moreover, by the input-tape prefix-locality theorem
+(`runOracle_append_take` / `runClosed_append_take`), a run of
 `T = c * ((input a).length + 1) ^ d` steps on `frame (input a) ++ z` depends only on `z.take T`.
 
 ## Main definitions
@@ -78,61 +79,6 @@ open _root_.Turing _root_.Turing.MultiTapeMachine _root_.Turing.MultiTapeTM
 variable {Operation α β : Type} [DecidableEq Operation]
   {input : α ↪ List Bool} {output : β ↪ List Bool}
 
-private theorem runOracle_of_clock_tidy {k : ℕ} {Control : Type}
-    [Finite Operation] [Finite Control]
-    (machine : _root_.Turing.MultiTapePTM k Bool Control Operation)
-    {clock : List Bool → ℕ} (hclock : ComputableInPolyTime clock encBits encUnary) :
-    IsTidyOraclePPTOn encBits encBits
-      (fun word : List Bool => machine.runOracle (clock word) word) := by
-  let _ := Fintype.ofFinite Operation
-  obtain ⟨cf, hconfigurationSize⟩ :=
-    length_encFiniteConfig_le (k := k) (State := Control) (Oracle := Operation)
-  have hclockPoly : PolyBounded (fun word => (encBits word).length) clock := by
-    simpa only [encUnary_apply, List.length_replicate] using hclock.polyBounded_length
-  have hstart : ComputableInPolyTime
-      (fun word => FiniteConfig.init (k := k) (Oracle := Operation) machine.initial word)
-      encBits encFiniteConfig := by fun_prop
-  let step (word : List Bool) (cfg : FiniteConfig k Bool Control Operation) :
-      WordOracleComp Operation (FiniteConfig k Bool Control Operation) :=
-    machine.finiteStep (fun choices => choices <$> ProbOracleComp.sample (ProbComp.uniform Bool))
-      (fun op query => List.take (clock word) <$> ProbOracleComp.query (op, query)) cfg
-  have hstep : IsTidyOraclePPTOn (encPair encBits encFiniteConfig) encFiniteConfig
-      (fun pair => step pair.1 pair.2) :=
-    (IsTidyOraclePPTOn.finiteStep machine).preprocess
-      (prepare := fun pair : List Bool × FiniteConfig k Bool Control Operation =>
-        (clock pair.1, pair.2)) (by fun_prop)
-  have hloop := (IsTidyOraclePPTOn.iterateWith_spec hclock hstart hstep
-    (fun word i cfg => FiniteConfig.SpaceBound word.length i (clock word) cfg)
-    (fun word => FiniteConfig.spaceBound_init _ _ _)
-    (by
-      intro word i cfg _ hcfg next hnext
-      cases hstate : cfg.tapes.state with
-      | none =>
-        simp only [step, MultiTapeMachine.finiteStep, hstate] at hnext
-        exact (OracleComp.eq_of_mem_supportWith_pure hnext) ▸
-          hcfg.mono le_rfl (Nat.le_succ i) le_rfl
-      | some control =>
-        simp only [step, MultiTapeMachine.finiteStep, hstate] at hnext
-        obtain ⟨action, _, hnext⟩ := OracleComp.mem_supportWith_bind_iff.mp hnext
-        cases action with
-        | step action symbol move =>
-          exact (OracleComp.eq_of_mem_supportWith_pure hnext) ▸ hcfg.step action symbol move
-        | query channel control =>
-          obtain ⟨answer, hanswer, hnext⟩ := OracleComp.mem_supportWith_bind_iff.mp hnext
-          obtain ⟨reply, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hanswer
-          exact (OracleComp.eq_of_mem_supportWith_pure hnext) ▸
-            hcfg.receive channel control _ (List.length_take_le _ _))
-    (size := fun word => cf * (word.length + clock word + clock word + 1))
-    ((PolyBounded.const cf).mul
-      (((PolyBounded.self.add hclockPoly).add hclockPoly).add (.const 1)))
-    (fun word i cfg hi hcfg => (hconfigurationSize _ _ _ cfg hcfg).trans
-      (Nat.mul_le_mul_left cf (by lia)))).1
-  refine (hloop.map (by fun_prop : ComputableInPolyTime
-    (fun cfg : FiniteConfig k Bool Control Operation => cfg.tapes.output)
-    encFiniteConfig encBits)).congr fun word State oracle s => ?_
-  rw [← finiteRunFrom_take_runOracle]
-  rfl
-
 /-- Every clocked run of a finite-control oracle machine under a polynomial-time computable clock
 `clock : List Bool → ℕ` is `IsOraclePPTOn`. -/
 theorem IsOraclePPTOn.runOracle_of_clock {k : ℕ} {Control : Type}
@@ -141,7 +87,7 @@ theorem IsOraclePPTOn.runOracle_of_clock {k : ℕ} {Control : Type}
     {clock : List Bool → ℕ} (hclock : ComputableInPolyTime clock encBits encUnary) :
     IsOraclePPTOn encBits encBits
       (fun word : List Bool => machine.runOracle (clock word) word) :=
-  (runOracle_of_clock_tidy machine hclock).isOraclePPTOn
+  (IsTidyOraclePPTOn.runOracle_of_clock machine hclock).isOraclePPTOn
 
 /-- **Closed uniform strict PPT clocked in the primary input.** One finite fair-coin machine runs
 on the pair encoding `encPair input encBits (a, z) = frame (input a) ++ z`, clocked by a polynomial
@@ -228,7 +174,7 @@ theorem IsOraclePPTWithAux.isOraclePPTOn {program : α → List Bool → WordOra
     fun_prop
   have htidy : IsTidyOraclePPTOn (encPair input encBits) encBits
       (fun (a, z) => output <$> program a z) := by
-    refine ((runOracle_of_clock_tidy machine hclock).preprocess
+    refine ((IsTidyOraclePPTOn.runOracle_of_clock machine hclock).preprocess
       (ComputableInPolyTime.of_eq (encOut := encBits)
         (f := encPair input encBits) fun _ => rfl)).congr fun (a, z) State oracle s => ?_
     have hunframe : clock (encPair input encBits (a, z)) = c * ((input a).length + 1) ^ d := by

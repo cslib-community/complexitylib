@@ -38,8 +38,10 @@ heart (`potential_countingChild_lt`, `potential_countingChild_lt_pow`).
 Using this strict potential decrease, `countingLeaves` recursively enumerates the finite list of
 leaves obtained from `chooseBranch` and `countingChild`. Along the recursion we establish:
 * leaf sparsity (`sparse_of_mem_countingLeaves`) whenever `2 ≤ θ j` for `1 ≤ j`;
-* preservation of declared variable support (`support_of_mem_countingLeaves`), clause width
-  (`card_le_of_mem_countingLeaves`), and reducedness (`reduced_of_mem_countingLeaves`);
+* inheritance at every leaf of any property preserved by the branching steps
+  (`of_mem_countingLeaves`), giving preservation of declared variable support
+  (`support_of_mem_countingLeaves`), clause width (`card_le_of_mem_countingLeaves`), and
+  reducedness (`reduced_of_mem_countingLeaves`);
 * exact assignment partition: every satisfying assignment of the root satisfies a unique leaf
   occurrence (`countP_sat_countingLeaves`, `sat_iff_existsUnique_fin_countingLeaves`,
   `sat_iff_existsUnique_mem_countingLeaves`), while unsatisfying assignments satisfy none;
@@ -65,6 +67,8 @@ Lemmas A.1–A.3) are separate results not claimed in this module.
   decrease for the geometric schedule `θ j = M ^ j` with `2 ≤ M`.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.sparse_of_mem_countingLeaves`: every leaf is sparse when
   `2 ≤ θ j` for `1 ≤ j`.
+* `Cslib.Logic.PL.ClauseSet.Sparsification.of_mem_countingLeaves`: a property preserved by every
+  branching step holds at every leaf.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.support_of_mem_countingLeaves`: declared-variable
   support is preserved at every leaf.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.countP_sat_countingLeaves`: exact `0`/`1`
@@ -445,87 +449,53 @@ theorem sparse_of_mem_countingLeaves_pow {M : ℕ} (hM : 2 ≤ M)
       (by simpa only [pow_one] using Nat.pow_le_pow_right (by omega : 0 < M) hj))
     hL
 
+/-- **Invariant inheritance.** A property of clause sets that holds at the root `ψ` and passes from
+a node to both counting children at every branching step of `countingLeaves` (a valid `Choice` whose
+flower has at least two clauses) holds at every leaf of `countingLeaves θ ψ`. -/
+theorem of_mem_countingLeaves {θ : ℕ → ℕ} {P : ClauseSet V → Prop}
+    (step : ∀ ψ c H, Choice θ ψ c H → 2 ≤ (flower ψ c H).card → P ψ →
+      ∀ b, P (countingChild ψ c H b))
+    {ψ L : ClauseSet V} (hψ : P ψ) (hL : L ∈ countingLeaves θ ψ) : P L := by
+  induction hp : potential ψ using Nat.strong_induction_on generalizing ψ with
+  | _ n ih =>
+    rw [countingLeaves] at hL
+    by_cases h : ¬ Sparse θ ψ ∧ 2 ≤ (flower ψ (chooseBranch θ ψ).1 (chooseBranch θ ψ).2).card
+    · rw [ite_eq_left h, List.mem_append] at hL
+      have hch := choice_chooseBranch h.1
+      have hlt (b : Bool) :=
+        potential_countingChild_lt_of_two_le_card_flower hch.1.1 hch.1.2.1 h.2 b
+      rcases hL with hL | hL
+      · exact ih _ (hp ▸ hlt false) (step _ _ _ hch h.2 hψ false) hL rfl
+      · exact ih _ (hp ▸ hlt true) (step _ _ _ hch h.2 hψ true) hL rfl
+    · rw [ite_eq_right h, List.mem_singleton] at hL
+      exact hL ▸ hψ
+
 /-- **Variable-support preservation.** If all variables occurring in `ψ` belong to `declared`, then
 all variables occurring in every leaf `L ∈ countingLeaves θ ψ` belong to `declared`. -/
 theorem support_of_mem_countingLeaves {θ : ℕ → ℕ} {ψ L : ClauseSet V} {declared : Finset V}
     (hψ : ∀ C ∈ ψ, ∀ l ∈ C, l.1 ∈ declared) (hL : L ∈ countingLeaves θ ψ) :
     ∀ C ∈ L, ∀ l ∈ C, l.1 ∈ declared := by
-  suffices ∀ n (ψ : ClauseSet V), potential ψ = n →
-      (∀ C ∈ ψ, ∀ l ∈ C, l.1 ∈ declared) → L ∈ countingLeaves θ ψ →
-      ∀ C ∈ L, ∀ l ∈ C, l.1 ∈ declared from
-    this (potential ψ) ψ rfl hψ hL
-  intro n
-  induction n using Nat.strong_induction_on with
-  | _ n ih =>
-    intro ψ hp hψ hL
-    rw [countingLeaves] at hL
-    by_cases h : ¬ Sparse θ ψ ∧ 2 ≤ (flower ψ (chooseBranch θ ψ).1 (chooseBranch θ ψ).2).card
-    · rw [ite_eq_left h, List.mem_append] at hL
-      set ch := chooseBranch θ ψ
-      have hch := (choice_chooseBranch h.1).1
-      obtain ⟨D, hD⟩ := card_pos.mp (lt_of_lt_of_le (by omega : 0 < 2) h.2)
-      obtain ⟨hDψ, -, hHD⟩ := mem_flower.mp hD
-      have hH : ∀ l ∈ ch.2, l.1 ∈ declared := fun l hl => hψ D hDψ l (hHD hl)
-      rcases hL with hL | hL
-      · have hlt := potential_countingChild_lt_of_two_le_card_flower hch.1 hch.2.1 h.2 false
-        exact ih _ (hp ▸ hlt) _ rfl (support_countingChild ψ ch.1 ch.2 declared hψ hH false) hL
-      · have hlt := potential_countingChild_lt_of_two_le_card_flower hch.1 hch.2.1 h.2 true
-        exact ih _ (hp ▸ hlt) _ rfl (support_countingChild ψ ch.1 ch.2 declared hψ hH true) hL
-    · rw [ite_eq_right h, List.mem_singleton] at hL
-      exact hL ▸ hψ
+  refine of_mem_countingLeaves (P := fun L => ∀ C ∈ L, ∀ l ∈ C, l.1 ∈ declared)
+    (fun ψ c H _ hz hψ b => ?_) hψ hL
+  obtain ⟨D, hD⟩ := card_pos.mp (lt_of_lt_of_le (by omega : 0 < 2) hz)
+  obtain ⟨hDψ, -, hHD⟩ := mem_flower.mp hD
+  exact support_countingChild ψ c H declared hψ (fun l hl => hψ D hDψ l (hHD hl)) b
 
 /-- **Clause-width preservation.** If every clause of `ψ` has width at most `k`, then every clause
 of every leaf `L ∈ countingLeaves θ ψ` has width at most `k`. -/
 theorem card_le_of_mem_countingLeaves {θ : ℕ → ℕ} {ψ L : ClauseSet V} {k : ℕ}
     (hk : ∀ C ∈ ψ, C.card ≤ k) (hL : L ∈ countingLeaves θ ψ) :
     ∀ C ∈ L, C.card ≤ k := by
-  suffices ∀ n (ψ : ClauseSet V), potential ψ = n →
-      (∀ C ∈ ψ, C.card ≤ k) → L ∈ countingLeaves θ ψ → ∀ C ∈ L, C.card ≤ k from
-    this (potential ψ) ψ rfl hk hL
-  intro n
-  induction n using Nat.strong_induction_on with
-  | _ n ih =>
-    intro ψ hp hk hL
-    rw [countingLeaves] at hL
-    by_cases h : ¬ Sparse θ ψ ∧ 2 ≤ (flower ψ (chooseBranch θ ψ).1 (chooseBranch θ ψ).2).card
-    · rw [ite_eq_left h, List.mem_append] at hL
-      set ch := chooseBranch θ ψ
-      have hch := (choice_chooseBranch h.1).1
-      have hne : (flower ψ ch.1 ch.2).Nonempty :=
-        card_pos.mp (lt_of_lt_of_le (by omega : 0 < 2) h.2)
-      rcases hL with hL | hL
-      · have hlt := potential_countingChild_lt_of_two_le_card_flower hch.1 hch.2.1 h.2 false
-        exact ih _ (hp ▸ hlt) _ rfl
-          (fun C hC => card_le_of_mem_countingChild hch.1 hch.2.1 hne hk hC) hL
-      · have hlt := potential_countingChild_lt_of_two_le_card_flower hch.1 hch.2.1 h.2 true
-        exact ih _ (hp ▸ hlt) _ rfl
-          (fun C hC => card_le_of_mem_countingChild hch.1 hch.2.1 hne hk hC) hL
-    · rw [ite_eq_right h, List.mem_singleton] at hL
-      exact hL ▸ hk
+  refine of_mem_countingLeaves (P := fun L => ∀ C ∈ L, C.card ≤ k)
+    (fun ψ c H hch hz hk b C hC => ?_) hk hL
+  exact card_le_of_mem_countingChild hch.1.1 hch.1.2.1
+    (card_pos.mp (lt_of_lt_of_le (by omega : 0 < 2) hz)) hk hC
 
 /-- **Reducedness preservation.** From a reduced root `ψ`, every leaf in `countingLeaves θ ψ` is
 reduced. -/
 theorem reduced_of_mem_countingLeaves {θ : ℕ → ℕ} {ψ L : ClauseSet V}
-    (hred : Reduced ψ) (hL : L ∈ countingLeaves θ ψ) : Reduced L := by
-  suffices ∀ n (ψ : ClauseSet V), potential ψ = n →
-      Reduced ψ → L ∈ countingLeaves θ ψ → Reduced L from
-    this (potential ψ) ψ rfl hred hL
-  intro n
-  induction n using Nat.strong_induction_on with
-  | _ n ih =>
-    intro ψ hp hred hL
-    rw [countingLeaves] at hL
-    by_cases h : ¬ Sparse θ ψ ∧ 2 ≤ (flower ψ (chooseBranch θ ψ).1 (chooseBranch θ ψ).2).card
-    · rw [ite_eq_left h, List.mem_append] at hL
-      set ch := chooseBranch θ ψ
-      have hch := (choice_chooseBranch h.1).1
-      rcases hL with hL | hL
-      · have hlt := potential_countingChild_lt_of_two_le_card_flower hch.1 hch.2.1 h.2 false
-        exact ih _ (hp ▸ hlt) _ rfl (reduced_countingChild ψ ch.1 ch.2 false) hL
-      · have hlt := potential_countingChild_lt_of_two_le_card_flower hch.1 hch.2.1 h.2 true
-        exact ih _ (hp ▸ hlt) _ rfl (reduced_countingChild ψ ch.1 ch.2 true) hL
-    · rw [ite_eq_right h, List.mem_singleton] at hL
-      exact hL ▸ hred
+    (hred : Reduced ψ) (hL : L ∈ countingLeaves θ ψ) : Reduced L :=
+  of_mem_countingLeaves (fun ψ c H _ _ _ b => reduced_countingChild ψ c H b) hred hL
 
 /-! ### Exact assignment partition and model-count conservation -/
 

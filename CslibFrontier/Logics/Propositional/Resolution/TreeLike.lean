@@ -10,6 +10,7 @@ module
 public import Cslib.Foundations.Logic.InferenceSystem
 public import CslibFrontier.Logics.Propositional.Resolution.Proof
 public import CslibFrontier.Computability.DecisionTree.Leaves
+import CslibFrontier.Logics.Propositional.CNF.Eval
 import CslibFrontier.Logics.Propositional.Resolution.SizeWidth
 
 /-!
@@ -224,22 +225,18 @@ theorem eval_toDecisionTree : {c : Clause V} → (d : φ.Derivation c) → {σ :
       d.toDecisionTree.eval σ ∈ φ ∧ (d.toDecisionTree.eval σ).eval σ = false
   | _, mem hc, _, hσ => ⟨hc, hσ⟩
   | _, resolvent (c₁ := c₁) (c₂ := c₂) v d₁ d₂ _ _, σ, hσ => by
-    have hσ' : ∀ l ∈ c₁.resolvent c₂ v, σ l.1 ≠ l.2 := fun l hl h =>
-      Bool.false_ne_true (hσ.symm.trans ((Clause.eval_eq_true_iff _ _).2 ⟨l, hl, h⟩))
+    have hσ' := (Clause.eval_eq_false_iff σ _).1 hσ
     simp only [toDecisionTree, DecisionTree.eval]
+    -- the premise resolved on the literal that `σ v` falsifies is falsified by `σ`
     cases hv : σ v
-    · refine d₁.eval_toDecisionTree (Bool.eq_false_iff.2 fun h => ?_)
-      obtain ⟨l, hl, hl'⟩ := (Clause.eval_eq_true_iff _ _).1 h
+    · refine d₁.eval_toDecisionTree ((Clause.eval_eq_false_iff σ _).2 fun l hl => ?_)
       by_cases hlv : l = (v, true)
-      · subst hlv
-        simp [hv] at hl'
-      · exact hσ' l (Clause.mem_resolvent.2 (Or.inl ⟨hl, hlv⟩)) hl'
-    · refine d₂.eval_toDecisionTree (Bool.eq_false_iff.2 fun h => ?_)
-      obtain ⟨l, hl, hl'⟩ := (Clause.eval_eq_true_iff _ _).1 h
+      · rw [hlv, hv, Bool.not_true]
+      · exact hσ' l (Clause.mem_resolvent.2 (Or.inl ⟨hl, hlv⟩))
+    · refine d₂.eval_toDecisionTree ((Clause.eval_eq_false_iff σ _).2 fun l hl => ?_)
       by_cases hlv : l = (v, false)
-      · subst hlv
-        simp [hv] at hl'
-      · exact hσ' l (Clause.mem_resolvent.2 (Or.inr ⟨hl, hlv⟩)) hl'
+      · rw [hlv, hv, Bool.not_false]
+      · exact hσ' l (Clause.mem_resolvent.2 (Or.inr ⟨hl, hlv⟩))
 
 end Derivation
 
@@ -329,9 +326,8 @@ private theorem exists_derivation_of_eval (φ : CNF V) :
         cases a <;> cases a' <;> simp_all
       · rw [Function.update_of_ne hxu]
         exact hσ₀ _ hl'
-    have := (ht _ hext).2
-    rw [Bool.eq_false_iff] at this
-    exact this ((Clause.eval_eq_true_iff _ _).2 ⟨(u, a), hl, by simp⟩)
+    have := (Clause.eval_eq_false_iff _ c).1 (ht _ hext).2 _ hl
+    simp at this
   | .node u t₀ t₁, π, hπ, ht => by
     have hcount : t₀.leafCount + t₁.leafCount = (DecisionTree.node u t₀ t₁).leafCount := rfl
     have hr₀ := DecisionTree.rank_left_le_rank_node u t₀ t₁

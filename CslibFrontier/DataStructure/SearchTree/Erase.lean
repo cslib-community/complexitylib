@@ -147,29 +147,15 @@ theorem elements_erase {t : BinaryTree α} (ht : Ordered t) (x : α) :
     obtain ⟨hl, hr, hla, har⟩ := ht
     simp only [erase]
     split <;> rename_i hx
-    · ext y
-      simp only [elements, il hl, Finset.mem_insert, Finset.mem_union, Finset.mem_erase]
-      constructor
-      · rintro (rfl | ⟨hyx, hy⟩ | hy)
-        · exact ⟨ne_of_gt hx, Or.inl rfl⟩
-        · exact ⟨hyx, Or.inr (Or.inl hy)⟩
-        · exact ⟨fun h => lt_asymm hx (h ▸ har y hy), Or.inr (Or.inr hy)⟩
-      · rintro ⟨hyx, rfl | hy | hy⟩
-        · exact Or.inl rfl
-        · exact Or.inr (Or.inl ⟨hyx, hy⟩)
-        · exact Or.inr (Or.inr hy)
+    · -- `x < a`: `x` lies in no part of the node except possibly `l`.
+      have hxr : x ∉ elements r := fun h => lt_asymm hx (har x h)
+      rw [elements, il hl, elements, Finset.erase_insert_of_ne (ne_of_gt hx),
+        Finset.erase_union_distrib, Finset.erase_eq_of_notMem hxr]
     · split <;> rename_i ha
-      · ext y
-        simp only [elements, ir hr, Finset.mem_insert, Finset.mem_union, Finset.mem_erase]
-        constructor
-        · rintro (rfl | hy | ⟨hyx, hy⟩)
-          · exact ⟨ne_of_lt ha, Or.inl rfl⟩
-          · exact ⟨fun h => lt_asymm ha (h ▸ hla y hy), Or.inr (Or.inl hy)⟩
-          · exact ⟨hyx, Or.inr (Or.inr hy)⟩
-        · rintro ⟨hyx, rfl | hy | hy⟩
-          · exact Or.inl rfl
-          · exact Or.inr (Or.inl hy)
-          · exact Or.inr (Or.inr ⟨hyx, hy⟩)
+      · -- `a < x`: symmetrically, `x` can only lie in `r`.
+        have hxl : x ∉ elements l := fun h => lt_asymm ha (hla x h)
+        rw [elements, ir hr, elements, Finset.erase_insert_of_ne (ne_of_lt ha),
+          Finset.erase_union_distrib, Finset.erase_eq_of_notMem hxl]
       · have he : x = a := le_antisymm (le_of_not_gt ha) (le_of_not_gt hx)
         subst he
         have hx : x ∉ elements l ∪ elements r := by grind

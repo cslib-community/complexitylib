@@ -38,17 +38,6 @@ The algorithm and recursive invariant are `Tree.successor` and `Tree.Valid`, imp
 
 namespace Cslib.DataStructure.VanEmdeBoas.Tree
 
-private theorem index_lt_index {u i j a b : ℕ} (ha : a < u) (hij : i < j) :
-    i * u + a < j * u + b := by
-  have h := Nat.mul_le_mul_right u (show i + 1 ≤ j by omega)
-  nlinarith
-
-private theorem bounds_isSome_of_contains {d : ℕ} {t : Tree d} {x : ℕ}
-    (hx : t.Contains x) : t.bounds.isSome = true := by
-  cases hb : t.bounds with
-  | none => exact False.elim (not_contains_of_bounds_none hb x hx)
-  | some b => rfl
-
 private theorem maximum_any_iff {d x : ℕ} {t : Tree d} :
     t.maximum.any (x < ·) = true ↔ ∃ m M, t.bounds = some (m, M) ∧ x < M := by
   cases hb : t.bounds with

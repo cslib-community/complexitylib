@@ -787,39 +787,6 @@ private theorem exists_computableInO_nodeJet :
   refine le_trans ?_ (hsum.trans (Nat.mul_le_mul_left _ (by omega)))
   dsimp only [S_cnt, M_cnt, G_cnt]; exact le_of_eq (by ring)
 
-private theorem bi_insertSorted : PolyT (fun p : List ℕ × ℕ => insertSorted p.1 p.2)
-    (encPair (encList encNat) encNat) (encList encNat) := by
-  unfold insertSorted
-  have hm := fst (encList encNat) encNat
-  have hv := snd (encList encNat) encNat
-  have hp := fst (encPair (encList encNat) encNat) encNat
-  have hu := snd (encPair (encList encNat) encNat) encNat
-  exact listAppend'
-    (listAppend' (bi_filterWithId (binary_lt' hu (hv.comp hp)) hm) (cons' hv (const [])))
-    (bi_filterWithId (binary_lt' (hv.comp hp) hu) hm)
-
-private theorem bi_sortDedup : PolyT sortDedup (encList encNat) (encList encNat) :=
-  foldl' (encA := encNat) (encL := encList encNat) (encB := encList encNat)
-    (list := fun x => x) (init := fun _ => []) (step := insertSorted)
-    id' (const []) bi_insertSorted
-    (B := fun vs => (encList encNat vs).length * (2 * (encList encNat vs).length + 1))
-    (PolyBounded.self.mul (((PolyBounded.const 2).mul .self).add (.const 1))) fun vs i _ => by
-      change (encList encNat (sortDedup (vs.take i))).length ≤ _
-      have htake := length_encList_sublist encNat (List.take_sublist i vs)
-      have hsd : (sortDedup (vs.take i)).length ≤ (vs.take i).length := by
-        rw [← List.toFinset_card_of_nodup (nodup_sortDedup _), toFinset_sortDedup]
-        exact List.toFinset_card_le _
-      have hlen := hsd.trans ((List.length_take_le' i vs).trans
-        (SizedListEncoding.length_le (encA := encNat) (encL := encList encNat) vs))
-      exact (length_encList_le encNat (sortDedup (vs.take i)) fun u hu =>
-        SizedListEncoding.length_elem_le (encA := encNat) (encL := encList encNat)
-          (vs.take i) u (mem_sortDedup.mp hu)).trans
-        (Nat.mul_le_mul hlen (Nat.add_le_add_right (Nat.mul_le_mul_left 2 htake) 1))
-
-private theorem bi_equationVars :
-    PolyT equationVars (encList (encList encNat)) (encList encNat) :=
-  bi_sortDedup.comp (bi_flatten encNat)
-
 private def branchQ_u (inp : BranchEvalInput) : ℕ := min inp.numVars inp.numNodes
 private def branchR_u (inp : BranchEvalInput) : ℕ := min inp.numVars inp.rowBound
 private def branchr_u (inp : BranchEvalInput) : ℕ := min inp.numVars inp.numGroups
@@ -875,7 +842,8 @@ private theorem computableInPolyTime_branchClamped :
     exact (Nat.min_eq_right (Nat.div_le_self _ _)).symm
   exact ⟨hn', hk', heqs, hQu, hRu, hru, hA₀u, hDcap, hq,
     computableInPolyTime_withNeutralScopesListWithInput
-      (bi_mapWithId (bi_equationVars.comp (snd encBranchEvalInput (encList (encList encNat))))
+      (bi_mapWithId (computableInPolyTime_equationVars.comp
+        (snd encBranchEvalInput (encList (encList encNat))))
         heqs) hn'⟩
 
 private def prepScheduleParams (inp : BranchEvalInput) : BalancedSchedules.ScheduleParams :=
@@ -1067,7 +1035,7 @@ private theorem exists_boundedIncidenceBranch_cert :
         (fun p : (BranchEvalInput × ReplacementDesignData) × List JetRows =>
           (List.range (branchQ_u p.1.1)).map fun (t : ℕ) => ((t : ℤ) + 1)) eF (encList encIntBin) :=
       mapWithInput (range.comp hQu_f) hnode_fn
-    have hΩ := bi_intBin_pow' (bi_intBin_pow' (bi_intBin_pow'
+    have hΩ := intBin_pow' (intBin_pow' (intBin_pow'
       (computableInPolyTime_denom hdat) hk_f) h2ℓ_sub1) hmeq_f
     have hrec_nat := intBin_toNat.comp
       (CommonCountingAccum.computableInPolyTime_recoverOuterJetSumModPowTwo

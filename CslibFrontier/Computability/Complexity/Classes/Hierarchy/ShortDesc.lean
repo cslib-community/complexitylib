@@ -77,9 +77,7 @@ private lemma run_halveT (q : Bool) (k : ℕ) :
     cases q
     · simp only [halveT, Bool.not_false, Bool.false_eq_true, ↓reduceIte, List.nil_append,
         Bool.toNat_true, Bool.toNat_false]
-    · have e : (k + 1 + Bool.toNat true) / 2 = (k + Bool.toNat false) / 2 + 1 := by
-        simp only [Bool.toNat_true, Bool.toNat_false]
-        omega
+    · have e : (k + 1 + Bool.toNat true) / 2 = (k + Bool.toNat false) / 2 + 1 := by grind
       rw [e, List.replicate_succ]
       rfl
 
