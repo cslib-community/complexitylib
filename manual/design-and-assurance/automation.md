@@ -175,6 +175,13 @@ a wider word, conjunctions and negations of fitting facts, a product bound and b
 To check them, run `lake build CslibFrontierTests.FitsTactic --wfail --iofail` from the repository
 root after [setup](../workflows/getting-started.md).
 
+`ram_eval` and `ram_exact_eval` decide the fitting conditions of the values they write the same
+way, with the simplification procedure `Cslib.WordRAM.reduceFits`. It uses only the hypotheses
+that mention `Fits`, and at most 16 of them; past that it only matches a hypothesis of the same
+statement. A value that fits by a larger fitting fact in context therefore needs no named
+`Fits` statement among their simp lemmas. These tactics' modules import `CslibFrontier.Tactic.Fits`,
+so their clients can call `fits` without importing it.
+
 A side condition used once can be proved where it is used, as the argument `(by fits)`. Products
 are atoms for `omega`: give a bound on one as a term, as in
 `fits [Nat.mul_le_mul_right b hc]`. A hypothesis about a different word width is related to `w`

@@ -23,6 +23,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.OfBits
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptionPrimitives
@@ -113,13 +114,6 @@ theorem computableInPolyTime_qPorts {w : α → ℕ} (hw : ComputableInPolyTime 
 
 end Data
 
-private theorem lsbValue_eq_ofBits : ∀ w : List Bool, BitString.lsbValue w = ofBits w
-  | [] => rfl
-  | c :: w => by
-    rw [BitString.lsbValue, lsbValue_eq_ofBits w]
-    simp only [ofBits, List.foldr_cons, Nat.bit_val]
-    ring
-
 /-- The falsifying word of a list of unary ports. -/
 theorem computableInPolyTime_falsifier {os : α → List (Occurrence ℕ)}
     (hos : ComputableInPolyTime os inp encOs) {ps : α → List ℕ}
@@ -131,7 +125,7 @@ theorem computableInPolyTime_falsifier {os : α → List (Occurrence ℕ)}
       (unary_div.comp ((snd _ _).prod (const 3)))))
   have hbits := (bits_encList_polyTime encBool).2.comp hlist
   have hnum := ComputableInPolyTime.bitsToNat.comp hbits
-  simpa only [falsifier, lsbValue_eq_ofBits, Function.comp_def] using hnum
+  simpa only [falsifier, ← ofBits_eq_lsbValue, Function.comp_def] using hnum
 
 /-- **Row vertices are polynomial-time** when every entry of the row tables, at a fixed word
 value, is polynomial-time in the input and the unary row number. -/
