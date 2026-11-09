@@ -3791,6 +3791,7 @@ public import CslibFrontier.Crypto.Computational.Kilian.NP
 public import CslibFrontier.Crypto.Computational.Kilian.Soundness
 public import CslibFrontier.Crypto.Computational.Kilian.Succinct
 public import CslibFrontier.Crypto.Computational.LWE.Basic
+public import CslibFrontier.Crypto.Computational.Lattice.ShortestVector
 public import CslibFrontier.Crypto.Computational.LubyRackoff
 public import CslibFrontier.Crypto.Computational.MAC
 public import CslibFrontier.Crypto.Computational.MerkleDamgard
@@ -4327,6 +4328,7 @@ public import CslibFrontier.Foundations.Analysis.InnerProductSpace.NearlyOrthogo
 public import CslibFrontier.Foundations.Analysis.Lattice.Covolume
 public import CslibFrontier.Foundations.Analysis.Lattice.Dual
 public import CslibFrontier.Foundations.Analysis.Lattice.Fourier
+public import CslibFrontier.Foundations.Analysis.Lattice.Minimum
 public import CslibFrontier.Foundations.Analysis.Lattice.Periodization
 public import CslibFrontier.Foundations.Analysis.Lattice.Poisson
 public import CslibFrontier.Foundations.Analysis.Lattice.QuotientMeasure
