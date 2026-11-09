@@ -265,9 +265,9 @@ private theorem direction (p : ι → K) {s : Finset ι} (hs : 2 < s.card) :
         ⟨fun h => hi (h ▸ ha), fun h => hi (h ▸ hb), fun h => hi (h ▸ hc)⟩
       simp [this.1, this.2.1, this.2.2]
     · simp only [sum_add_distrib, sum_ite_eq', mem_univ, ↓reduceIte]
-      ; ring
+      ring
     · simp only [add_mul, ite_mul, zero_mul, sum_add_distrib, sum_ite_eq', mem_univ, ↓reduceIte]
-      ; ring
+      ring
     · by_cases h : p b = p c
       · refine ⟨c, ?_⟩
         simp only [Ne, hac.symm, hbc.symm, ↓reduceIte, zero_add, sub_eq_zero]
@@ -488,7 +488,7 @@ private theorem interval_vertex (pa pb ca cb η t : K)
       · exact Or.inl (by ring)
       · right; right
         field_simp
-        ; ring
+        ring
 
 open scoped Classical in
 /-- The finitely many endpoint/intersection candidates for a one-constraint LP. -/

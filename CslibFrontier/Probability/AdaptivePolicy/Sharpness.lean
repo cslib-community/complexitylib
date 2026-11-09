@@ -159,7 +159,7 @@ theorem sharp_ratio :
   have hlim' : Tendsto (fun ε => (1/2 : ℝ) / Real.sqrt (information ε / ε^2 / 2))
       (𝓝[>] 0) (𝓝 1) := by
     convert! tendsto_const_nhds.div hlim
-      (by norm_num : Real.sqrt ((1/2 : ℝ)/2) ≠ 0) using 1 ; norm_num
+      (by norm_num : Real.sqrt ((1/2 : ℝ)/2) ≠ 0) using 1; norm_num
   apply hlim'.congr'
   have hsmall : ∀ᶠ ε : ℝ in 𝓝[>] 0, ε < 1 :=
     nhdsWithin_le_nhds (Iio_mem_nhds (by norm_num))
