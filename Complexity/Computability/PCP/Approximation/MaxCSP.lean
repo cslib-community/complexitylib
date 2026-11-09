@@ -80,7 +80,7 @@ of `128` symbols, distinguishing satisfiable constraint graphs from those in whi
 violates at least the proportion `2 ^ (-61)` of the edges is NP-hard. The reduction is Dinur's
 gap construction `Cslib.PCP.Encoded.gapGraph` composed with the Cook–Levin reduction. -/
 theorem GapTwoCSP_npHard :
-    PromiseProblem.NPHard (Graph.encoding (encPi (encPi encBool)))
+    PromiseProblem.NPHard (Graph.encoding encConstraintTable)
       (GapTwoCSP (Bool × (Fin 6 → Bool)) (1 - 1 / 2 ^ 61)) := by
   refine PromiseProblem.npHard_of_polyTimeReducible_SAT
     ⟨gapGraph, isPolyTime_gapGraph .id', fun φ hφ => ?_,
@@ -95,7 +95,7 @@ theorem GapTwoCSP_npHard :
 `128` symbols from those of value at most `1 - 2 ^ (-61)`. -/
 theorem GapTwoCSP_notMem_PromiseP {β : Type} {enc : β ↪ List Bool} (h : P enc ≠ NP enc) :
     GapTwoCSP (Bool × (Fin 6 → Bool)) (1 - 1 / 2 ^ 61) ∉
-      PromiseP (Graph.encoding (encPi (encPi encBool))) :=
+      PromiseP (Graph.encoding encConstraintTable) :=
   GapTwoCSP_npHard.notMem_PromiseP h
 
 end Cslib.Complexity

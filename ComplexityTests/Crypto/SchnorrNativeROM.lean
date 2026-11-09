@@ -109,7 +109,7 @@ example : ProbOracleComp.runWith
 example (F : PrimeOrderGroupFamily) (n : ℕ) (d : F.Desc) {m : ℕ} (hm : 2 ^ m ≤ F.order d)
     (x : ZMod (F.order d)) (u : F.Carrier d) (msg : List Bool)
     (cache : List (List Bool × BitString m)) :
-    Interactive.CloseTo
+    CloseTo
       (((F.schnorrWordROMScheme d hm).signCoins (x, u) msg).bind fun coins =>
         (OracleComp.runWith (oracle (BitString m))
           ((F.schnorrWordROMScheme d hm).sign (x, u) msg coins) cache).map
@@ -121,7 +121,7 @@ example (F : PrimeOrderGroupFamily) (n : ℕ) (d : F.Desc) {m : ℕ} (hm : 2 ^ m
 
 -- Key generation pays its own error; the signing theorem does not assert exact native keys.
 example (F : PrimeOrderGroupFamily) (n : ℕ) (d : F.Desc) :
-    Interactive.CloseTo (F.schnorrIdealKeyGen d) (ProbComp.eval (F.schnorrSigKeyGen n d))
+    CloseTo (F.schnorrIdealKeyGen d) (ProbComp.eval (F.schnorrSigKeyGen n d))
       (1 / 2 ^ n : ℝ≥0) := F.closeTo_schnorrSigKeyGen n d
 
 end ComplexityTests.Crypto.SchnorrNativeROM

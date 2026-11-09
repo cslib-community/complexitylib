@@ -12,6 +12,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Sum
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.Call
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Cases
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Sum
+import Complexity.Tactic.EncLen
 
 /-!
 # Total checked replay with paid rejection output
@@ -70,15 +71,12 @@ theorem blank_inSpace : ComputableInSpace (List.map (fun _ : Bool => false)) enc
   have hstate (word : List Bool) (i : ℕ) (hi : i ≤ word.length) :
       (encBits ((word.take i).foldl (fun acc _ => acc ++ [false]) [])).length ≤
         4 * ((encBits word).length + 1) := by
-    simp only [blankFold, List.nil_append, encBits_apply, List.length_map, List.length_take]
-    omega
+    enc_len [blankFold, List.nil_append, List.length_map, List.length_take]
   have hspace (word : List Bool) (i : ℕ) (hi : i < word.length) :
       (encPair encBits encBool
         ((word.take i).foldl (fun acc _ => acc ++ [false]) [], word[i])).length ≤
           4 * ((encBits word).length + 1) := by
-    simp only [blankFold, List.nil_append, length_encPair, encBits_apply, encBool_apply,
-      List.length_map, List.length_take, List.length_singleton]
-    omega
+    enc_len [blankFold, List.nil_append, List.length_map, List.length_take, List.length_singleton]
   have h := foldl hid hinit hstep hspace hstate
   exact h.weaken (.of_le_linear 16 16 fun _ => by omega) |>.of_enc_eq fun word => by
     simp only [blankFold, List.nil_append]

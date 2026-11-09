@@ -118,8 +118,7 @@ theorem one_add_pow_apply_le (W : Matrix V V (MinTropical R)) :
       rw [Matrix.add_apply, Matrix.one_apply_eq]
       exact add_le_left _ _
     have h2 := one_add_pow_apply_le W k i [] (Nat.zero_le _)
-    calc (1 + W) i i * ((1 + W) ^ k) i ([].getLastD i) ≤ 1 * walkWeight W i [] :=
-          mul_le_mul' h1 h2
+    calc (1 + W) i i * ((1 + W) ^ k) i ([].getLastD i) ≤ 1 * walkWeight W i [] := by gcongr
       _ = walkWeight W i [] := one_mul _
   | k + 1, i, v :: l, h => by
     rw [pow_succ', Matrix.mul_apply, List.getLastD_cons, walkWeight_cons]

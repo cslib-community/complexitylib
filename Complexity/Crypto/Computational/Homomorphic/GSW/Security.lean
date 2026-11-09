@@ -111,20 +111,16 @@ theorem advantage_uniformEnsemble_le (n m w : ℕ → ℕ)
 advantage plus the shared-public-matrix statistical error. No efficiency is needed for this law. -/
 theorem advantage_game_le (n m w η : ℕ → ℕ)
     (adversary : Encryption.Adversary) (security : ℕ) :
-    Game.advantage
-      (ProbComp.eval (Encryption.game
-        (fun k => keyGenSerialized (n k) (m k) (w k) (η k))
-        (fun k => encryptSerialized (n k) (m k) (w k)) adversary false security))
-      (ProbComp.eval (Encryption.game
-        (fun k => keyGenSerialized (n k) (m k) (w k) (η k))
-        (fun k => encryptSerialized (n k) (m k) (w k)) adversary true security)) ≤
+    Encryption.advantage (Encryption.game (fun k => keyGenSerialized (n k) (m k) (w k) (η k))
+      (fun k => encryptSerialized (n k) (m k) (w k)) adversary) security ≤
       2 * Game.advantage
         (distinguishingGame (LWE.realEnsemble n m w (fun k => noiseLaw (w k) (η k)) security)
           (lweDistinguisher n m w adversary security))
         (distinguishingGame (LWE.uniformEnsemble n m w security)
           (lweDistinguisher n m w adversary security)) +
             hidingError (n security) (m security) (w security) := by
-  simp only [Encryption.eval_game_eq_publicKeyGame, eval_keyGenSerialized_publicWord]
+  simp only [Encryption.advantage, Encryption.eval_game_eq_publicKeyGame,
+    eval_keyGenSerialized_publicWord]
   exact (Encryption.advantage_publicKeyGame_le _ (LWE.uniformEnsemble n m w security)
     _ adversary security).trans
       (add_le_add le_rfl (advantage_uniformEnsemble_le n m w adversary security))

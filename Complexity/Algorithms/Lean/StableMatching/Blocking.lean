@@ -80,9 +80,7 @@ private theorem blocking_of_not_better {μ : Matching n} {q : Fin n}
   have hDx : I.deferredAcceptance (I.deferredAcceptance.symm (μ q)) = μ q :=
     Equiv.apply_symm_apply _ _
   generalize hxdef : I.deferredAcceptance.symm (μ q) = x at hx hDx ⊢
-  have hxq : x ≠ q := by
-    rintro rfl
-    exact hx hq
+  have hxq : x ≠ q := by grind
   have hμx : μ x ≠ μ q := fun h => hxq (μ.injective h)
   push Not at hx
   rw [hDx] at hx
