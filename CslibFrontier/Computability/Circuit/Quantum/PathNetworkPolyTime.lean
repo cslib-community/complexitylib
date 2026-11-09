@@ -186,8 +186,10 @@ theorem computableInPolyTime_gateVertex {neg : α → ℕ} {X : α → List Bool
   · exact ite_decide (decide_eq' (bool_and' ((headD false).comp hins) ((headD false).comp houts))
       (const true)) hneg (const 1)
   · have htl := (tail (encA := encBool)).comp hins
-    exact ite_decide (decide_eq' houts (cons' (bool_xor.comp (((headD false).comp hins).prod
-      (allWithInput htl (snd _ _)))) htl)) (const 1) (const 0)
+    -- Elaborated without an expected type, which `comp` would otherwise unify by unfolding.
+    have hxor := bool_xor.comp (((headD false).comp hins).prod
+      (allWithInput (test := fun _ => id) htl (snd _ _)))
+    exact ite_decide (decide_eq' houts (cons' hxor htl)) (const 1) (const 0)
 
 /-- **Glue vertices are polynomial-time.** -/
 theorem computableInPolyTime_glueVertex {S : α → List ℕ}
@@ -250,9 +252,12 @@ theorem computableInPolyTime_network {neg : α → ℕ} {S : α → List ℕ} {X
         ((ports_unary_to_binary (cons' (unary_mul' (const 2) (snd _ _))
           (cons' (unary_add' (unary_mul' (const 2) (snd _ _)) (const 1)) (const [])))).prod
           (const _)))
+  -- Elaborated without an expected type: propagating one into `comp` makes the unifier try
+  -- `?f ∘ ?g =?= fun a => …` and fail only after unfolding `ComputableInPolyTime`.
+  have hnet := computableInPolyTime_equivProd_symm.comp
+    ((unary_mul' (const 2) (unary_mul' (const 2) hN)).prod hverts)
   unfold network
   exact (unary_to_binary.comp (unary_add' (unary_add' (unary_mul' (const 2) hL) hN)
-    (const 1))).prod (computableInPolyTime_equivProd_symm.comp
-      ((unary_mul' (const 2) (unary_mul' (const 2) hN)).prod hverts))
+    (const 1))).prod hnet
 
 end Cslib.Quantum.PathNetwork

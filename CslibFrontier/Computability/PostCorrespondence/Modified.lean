@@ -227,7 +227,7 @@ private theorem complete_of_marked (I : MInstance α) :
       have h' : starBefore T ++ start :: (starBefore I.start.top ++ tops ρ) =
           (starBefore B ++ [sep]) ++ start :: (sep :: starAfter I.start.bottom ++ bottoms ρ) := by
         simpa [startPiece] using h
-      obtain ⟨h'', -⟩ := (append_cons_inj_of_notMem_prefix (start_notMem_starBefore T)
+      obtain ⟨h'', -⟩ := (List.append_cons_inj_of_notMem_prefix (start_notMem_starBefore T)
         (by simp [start_notMem_starBefore])).mp h'
       have := congrArg List.length h''
       simp only [List.length_append, length_starBefore, List.length_singleton] at this
@@ -236,7 +236,7 @@ private theorem complete_of_marked (I : MInstance α) :
       have h' : (starBefore T ++ [sep]) ++ stop :: tops ρ =
           (starBefore B ++ [sep]) ++ stop :: bottoms ρ := by
         simpa [stopPiece] using h
-      obtain ⟨h'', -⟩ := (append_cons_inj_of_notMem_prefix (by simp [stop_notMem_starBefore])
+      obtain ⟨h'', -⟩ := (List.append_cons_inj_of_notMem_prefix (by simp [stop_notMem_starBefore])
         (by simp [stop_notMem_starBefore])).mp h'
       have hTB : T = B := starBefore_injective (List.append_cancel_right h'')
       exact ⟨[], fun _ h => absurd h List.not_mem_nil, by rw [hTB, tops_nil, bottoms_nil]⟩
@@ -275,7 +275,7 @@ theorem solvable_toPCP_iff (I : MInstance α) : Solvable (toPCP I) ↔ I.Solvabl
   · rintro ⟨ρ, hne, hρ, heq⟩
     by_cases hs : startPiece I.start ∈ ρ
     · obtain ⟨ρ₁, _, ρ₂, rfl, rfl, hρ₁⟩ :=
-        exists_eq_append_cons_of_exists_mem (p := (· = startPiece I.start)) ⟨_, hs, rfl⟩
+        List.exists_eq_append_cons_of_exists_mem (p := (· = startPiece I.start)) ⟨_, hs, rfl⟩
       -- no domino before the start domino contains `▷`
       have hnot : ∀ d ∈ ρ₁, start ∉ d.top ∧ start ∉ d.bottom := by
         intro d hd
@@ -293,7 +293,7 @@ theorem solvable_toPCP_iff (I : MInstance α) : Solvable (toPCP I) ↔ I.Solvabl
         exact fun d hd => (hnot d hd).2
       simp only [tops_append, tops_cons, startPiece, bottoms_append, bottoms_cons,
         List.cons_append] at heq
-      obtain ⟨-, heq⟩ := (append_cons_inj_of_notMem_prefix ht hb).mp heq
+      obtain ⟨-, heq⟩ := (List.append_cons_inj_of_notMem_prefix ht hb).mp heq
       have hρ₂ : ∀ d ∈ ρ₂, d ∈ toPCP I := fun d hd =>
         hρ d (List.mem_append_right _ (List.mem_cons_of_mem _ hd))
       exact complete_of_marked I ρ₂ I.start.top I.start.bottom hρ₂ (by

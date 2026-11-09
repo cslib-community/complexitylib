@@ -37,11 +37,17 @@ simulation and state-representation rules.
 
 * `Cslib.ProbOracleComp.runWith_lift`, `Cslib.ProbOracleComp.acceptProbWith_lift`: against a
   memoryless oracle, the instances of `OracleComp.evalWith`.
+* `Cslib.ProbOracleComp.induction`: structural induction over returned values, private uniform
+  draws and external calls; `Cslib.ProbOracleComp.sample_unifFin` identifies a draw with its
+  sampling request.
 * `Cslib.ProbOracleComp.runWith_pure`, `Cslib.ProbOracleComp.runWith_bind`,
   `Cslib.ProbOracleComp.runWith_map`, `Cslib.ProbOracleComp.runWith_query`,
   `Cslib.ProbOracleComp.runWith_sample`: structural rules for `runWith`.
 * `Cslib.ProbOracleComp.eval_run_interpret_eq_runWith`: evaluating a closed run is `runWith`
   against the evaluated handler.
+* `Cslib.ProbOracleComp.runWith_sample_bind`: a private sample averages the continuation's run.
+* `Cslib.ProbOracleComp.runWith_interpret`, `Cslib.ProbOracleComp.runWith_interpret_sumHandler`:
+  running an interpreted program runs the original program against the handler programs' runs.
 * `Cslib.ProbOracleComp.acceptProbWith_bind`: sequencing for acceptance probability.
 * `Cslib.ProbOracleComp.acceptProbWith_query_bind`,
   `Cslib.ProbOracleComp.acceptProbWith_sample_bind`: averages over replies and samples.
@@ -57,6 +63,28 @@ open scoped ENNReal
 
 variable {Query : Type} {spec : Query → Type} {State α β : Type}
   (oracle : (q : Query) → StateT State PMF (spec q))
+
+/-- A private uniform draw is the sampling request that it embeds. -/
+theorem sample_unifFin (n : ℕ) :
+    sample (spec := spec) (ProbComp.unifFin n) = OracleComp.query (Sum.inl n) := by
+  simp [sample, ProbComp.unifFin]
+
+/-- Structural induction on a program with private samples and external calls: a returned value,
+a private uniform draw followed by a continuation, or an external call followed by a
+continuation. -/
+@[elab_as_elim] theorem induction {motive : ProbOracleComp spec α → Prop}
+    (pure : ∀ a, motive (pure a))
+    (sample_bind : ∀ n (cont : Fin (n + 1) → ProbOracleComp spec α), (∀ i, motive (cont i)) →
+      motive (sample (ProbComp.unifFin n) >>= cont))
+    (query_bind : ∀ q (cont : spec q → ProbOracleComp spec α), (∀ a, motive (cont a)) →
+      motive (query q >>= cont))
+    (program : ProbOracleComp spec α) : motive program := by
+  induction program using OracleComp.induction with
+  | pure a => exact pure a
+  | query_bind q cont ih =>
+    cases q with
+    | inl n => rw [← sample_unifFin]; exact sample_bind n cont ih
+    | inr q => exact query_bind q cont ih
 
 /-- The joint law of the result of `program` and the final state of the oracle answering its
 external calls, starting from the state `s`. Private samples are fresh. This is the generic
@@ -117,6 +145,41 @@ state it reached. -/
 @[simp] theorem runWith_sample (program : ProbComp α) (s : State) :
     runWith oracle (sample (spec := spec) program) s = (ProbComp.eval program).map (·, s) :=
   run_interpret_sample _ _ _
+
+/-- A private sample followed by a continuation averages the continuation's run over the sample,
+from the same oracle state. -/
+theorem runWith_sample_bind (program : ProbComp α) (next : α → ProbOracleComp spec β)
+    (s : State) :
+    runWith oracle (sample program >>= next) s =
+      (ProbComp.eval program).bind fun a => runWith oracle (next a) s := by
+  rw [runWith_bind, runWith_sample, PMF.bind_map]
+  rfl
+
+/-- Running a program whose calls a handler answers with `ProbOracleComp spec` programs is a
+stateful run of the original program, each call answered by running its handler program. -/
+theorem runWith_interpret {ι : Type} {spec' : OracleSpec ι}
+    (handler : (q : ι) → ProbOracleComp spec (spec' q)) (program : OracleComp spec' α)
+    (s : State) :
+    runWith oracle (OracleComp.interpret handler program) s =
+      OracleComp.runWith (fun q => runWith oracle (handler q)) program s := by
+  rw [runWith, OracleComp.runWith, OracleComp.runWith, OracleComp.interpret_interpret]
+  rfl
+
+/-- A program whose private draws are forwarded and whose external calls a handler answers with
+`ProbOracleComp spec` programs runs against the oracle that runs each handler program. -/
+theorem runWith_interpret_sumHandler {Query' : Type} {spec' : Query' → Type}
+    (handler : (q : Query') → ProbOracleComp spec (spec' q)) (program : ProbOracleComp spec' α)
+    (s : State) :
+    runWith oracle (OracleComp.interpret
+        (OracleComp.sumHandler (fun n => sample (ProbComp.unifFin n)) handler) program) s =
+      runWith (fun q => runWith oracle (handler q)) program s := by
+  rw [runWith_interpret, runWith]
+  congr 1
+  funext q t
+  cases q with
+  | inl n =>
+    simp [OracleComp.sumHandler, StateT.lift, ProbComp.unifOracle, PMF.map, Function.comp_def]
+  | inr q => rfl
 
 /-- Evaluating a closed run, in which a handler program answers the external calls, is `runWith`
 against the evaluated handler. -/

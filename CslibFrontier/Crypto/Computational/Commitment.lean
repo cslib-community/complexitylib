@@ -14,6 +14,7 @@ public import CslibFrontier.Crypto.Computational.OneWayToPRG
 public import CslibFrontier.Crypto.Computational.Stretch
 public import CslibFrontier.Crypto.Computational.Hybrid.Sequence
 public import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -338,9 +339,8 @@ theorem CommitmentReceiver.isPPT_ofDeterministic {r : ℕ → List Bool} {b₀ b
         (commitmentHidingGame commit (CommitmentReceiver.ofDeterministic r b₀ b₁ D) aux bit n) =
       distinguishingGame
         ((BitString.uniformList n).map (commit (r n) (if bit then b₁ n else b₀ n))) (D n) := by
-  simp only [commitmentHidingGame, CommitmentReceiver.ofDeterministic, distinguishingGame,
-    ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList, PMF.pure_bind,
-    PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm, commitmentHidingGame, CommitmentReceiver.ofDeterministic, distinguishingGame,
+    BitString.eval_sampleList]
 
 /-- Stateful-receiver hiding implies the deterministic-family hiding interface: any commitment
 function satisfying `StatefulHiding` hides commitments for all deterministic polynomial-time
@@ -399,8 +399,7 @@ theorem eval_commitmentHidingGame_naorCommit (generator : List Bool → List Boo
       distinguishingGame (generatorEnsemble generator n)
         (naorReceiverDistinguisher receiver aux bit n) := by
   unfold commitmentHidingGame distinguishingGame generatorEnsemble naorReceiverDistinguisher
-  simp only [ProbComp.eval_bind, BitString.eval_sampleList, PMF.monad_bind_eq_bind, PMF.bind_map,
-    Function.comp_def]
+  simp only [pmf_norm, BitString.eval_sampleList]
   exact PMF.bind_comm _ _ _
 
 /-- On a truly uniform `m`-bit pad, `naorReceiverDistinguisher receiver aux bit n` presents an
@@ -811,9 +810,8 @@ theorem eval_replicate_map_naorCommitSplit (m : ℕ) (generator : List Bool → 
   induction bits generalizing openFlags seeds with
   | nil => rfl
   | cons b bits ih =>
-    simp only [List.length_cons, OracleComp.replicate_succ, ProbComp.eval_map,
-      ProbComp.eval_bind, BitString.eval_sampleList, PMF.map_bind, PMF.map_comp,
-      Function.comp_def, naorCommitSplit, naorMaskBits, List.headD_cons, List.tail_cons]
+    simp only [pmf_norm, List.length_cons, OracleComp.replicate_succ, BitString.eval_sampleList,
+      naorCommitSplit, naorMaskBits, List.headD_cons, List.tail_cons]
     have htail := ih openFlags.tail seeds.tail
     simp only [ProbComp.eval_map] at htail
     have hstep (f : List Bool → List Bool) (g : List (List Bool) → List (List Bool)) :
@@ -823,7 +821,7 @@ theorem eval_replicate_map_naorCommitSplit (m : ℕ) (generator : List Bool → 
         ((BitString.uniformList m).map f).bind (fun head =>
           ((ProbComp.eval (OracleComp.replicate bits.length (BitString.sampleList m))).map g).map
             (head :: ·)) := by
-      simp only [PMF.bind_map, PMF.map_comp, Function.comp_def]
+      simp only [pmf_norm]
     rw [hstep, uniformList_map_naorCommitAt, htail, ← hstep]
 
 /-- `naorMaskBits` distributes over list append when the first segments have equal length. -/
@@ -997,13 +995,11 @@ theorem eval_replicate_naorSelectPads (s : ℕ) (generator : List Bool → List 
   | nil => simp only [List.length_nil, OracleComp.replicate_zero, pure_bind, ProbComp.eval_pure,
       naorSelectPads, naorSelectSeeds, map_pure]
   | cons b bits ih =>
-    simp only [List.length_cons, OracleComp.replicate_succ, ProbComp.eval_map,
-      ProbComp.eval_bind, BitString.eval_sampleList, PMF.map_bind, PMF.bind_map,
-      PMF.map_comp, Function.comp_def, PMF.bind_bind, ProbComp.eval_pure,
+    simp only [pmf_norm, List.length_cons, OracleComp.replicate_succ, BitString.eval_sampleList,
       naorSelectPads, naorSelectSeeds, List.replicate_succ, List.headD_cons, List.tail_cons,
       List.tail_nil, ↓reduceIte]
     have htail := ih openFlags.tail
-    simp only [ProbComp.eval_map, ProbComp.eval_bind, ProbComp.eval_pure] at htail
+    simp only [pmf_norm] at htail
     set D_s := ProbComp.eval (OracleComp.replicate bits.length (BitString.sampleList s))
     set D_p := ProbComp.eval
       (OracleComp.replicate bits.length (generator <$> BitString.sampleList s))
@@ -1022,7 +1018,7 @@ theorem eval_replicate_naorSelectPads (s : ℕ) (generator : List Bool → List 
         ((if openFlags.headD false then generator u else v) :: q.1,
           (if openFlags.headD false then BitString.listRow s 0 u else List.replicate s false) ::
             q.2))) htail
-      simpa only [PMF.map_bind, PMF.pure_map, PMF.map_comp, Function.comp_def, D_s, D_p]
+      simpa only [pmf_norm, D_s, D_p]
         using hcongr
     simp_rw [PMF.bind_comm D_s (BitString.uniformList s), hstep]
     cases openFlags.headD false <;>
