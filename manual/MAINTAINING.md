@@ -24,7 +24,7 @@ defines the required assessment, mandatory coordinator review of both manuals an
 review of affected content.
 
 Keep one source of truth. Explain the task here; link to current [policy](../AGENTS.md),
-[cache documentation](../scripts/cache/README.md), [guide](../guide/ComplexityGuide.lean),
+[cache documentation](../scripts/cache/README.md), [guide](../guide/CslibFrontierGuide.lean),
 module docstrings and complete tests for their details. Do not copy a new body of Lean code
 into this manual without a checked source client. The workflow snippets are contextual
 excerpts, each declared in `workflows/data/*-excerpts.json`. They retain source authorship
