@@ -3123,6 +3123,7 @@ public import Complexity.Computability.Machines.Turing.SingleTape.NLogNGap
 public import Complexity.Computability.Machines.Turing.SingleTape.Palindrome
 public import Complexity.Computability.Machines.Turing.SingleTape.Partrec
 public import Complexity.Computability.Machines.Turing.SingleTape.PostTuringMachine
+public import Complexity.Computability.Machines.Turing.SingleTape.TM0Restrict
 public import Complexity.Computability.Machines.Turing.TM2.ConfigBound
 public import Complexity.Computability.Machines.Turing.TM2.Degree
 public import Complexity.Computability.Machines.Turing.TM2.Encoding
@@ -4056,6 +4057,8 @@ public import Complexity.DataStructure.Dictionary.PerfectHashing.Construction
 public import Complexity.DataStructure.Dictionary.PerfectHashing.Table
 public import Complexity.DataStructure.Dictionary.Spec
 public import Complexity.DataStructure.Dictionary.Spillover
+public import Complexity.DataStructure.Dictionary.SubconstantRedundancy.Params
+public import Complexity.DataStructure.Dictionary.SubconstantRedundancy.Schedule
 public import Complexity.DataStructure.Dictionary.SuccinctBucket
 public import Complexity.DataStructure.Dictionary.UniformProbing
 public import Complexity.DataStructure.Dictionary.WordRAM.BitPackedArray
