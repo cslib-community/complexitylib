@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Algorithms.Lean.TSP.Shortcut
 public import CslibFrontier.Algorithms.Lean.VertexCover.Matching
-import Mathlib.Data.List.MinMax
+import CslibFrontier.Foundations.Data.List.ArgMin
 
 /-!
 # Minimum-weight perfect matchings and the matching bound for metric TSP
@@ -173,21 +173,6 @@ ties). The recursion makes at most `fuel` rounds; fuel `k` suffices for lists of
     ((L.map fun b => (a, b) :: minPerfectMatching δ k (L.erase b)).argmin
       fun M => (M.map fun e => δ e.1 e.2).sum).getD []
 
-omit [DecidableEq α] in
-private theorem getD_argmin_mem {β : Type*} {f : β → ℕ} {l : List β} (hl : l ≠ []) (d : β) :
-    (l.argmin f).getD d ∈ l := by
-  obtain ⟨m, hm⟩ := Option.ne_none_iff_exists'.1 (mt (List.argmin_eq_none (f := f)).1 hl)
-  rw [hm, Option.getD_some]
-  exact List.argmin_mem hm
-
-omit [DecidableEq α] in
-private theorem getD_argmin_le {β : Type*} {f : β → ℕ} {l : List β} {x : β} (hx : x ∈ l)
-    (d : β) : f ((l.argmin f).getD d) ≤ f x := by
-  obtain ⟨m, hm⟩ :=
-    Option.ne_none_iff_exists'.1 (mt (List.argmin_eq_none (f := f)).1 (List.ne_nil_of_mem hx))
-  rw [hm, Option.getD_some]
-  exact List.le_of_mem_argmin hx hm
-
 /-- With fuel for half its length, exhaustive search returns a perfect matching on a list of even
 length. -/
 theorem endpoints_minPerfectMatching_perm (δ : α → α → ℕ) {k : ℕ} {O : List α}
@@ -205,7 +190,7 @@ theorem endpoints_minPerfectMatching_perm (δ : α → α → ℕ) {k : ℕ} {O 
       obtain ⟨M₀, hM₀mem, hM₀⟩ :
           ∃ M₀ ∈ L.map fun b => (a, b) :: minPerfectMatching δ k (L.erase b),
             minPerfectMatching δ (k + 1) (a :: L) = M₀ :=
-        ⟨_, getD_argmin_mem (by simpa using hL) [], rfl⟩
+        ⟨_, List.getD_argmin_mem (by simpa using hL) [], rfl⟩
       obtain ⟨b, hb, rfl⟩ := List.mem_map.1 hM₀mem
       rw [hM₀]
       have hlen : (L.erase b).length + 1 = L.length := List.length_erase_add_one hb
@@ -253,7 +238,7 @@ theorem sum_minPerfectMatching_le {δ : α → α → ℕ} (hsymm : ∀ x y, δ 
         (hbN.trans (List.perm_cons_erase hb)).cons_inv
       have hlen : (L.erase b).length + 1 = L.length := List.length_erase_add_one hb
       have hih := ih (O := L.erase b) (by simp only [List.length_cons] at hk; omega) hN
-      have hle := getD_argmin_le (f := fun M => (M.map fun e => δ e.1 e.2).sum)
+      have hle := List.getD_argmin_le (f := fun M => (M.map fun e => δ e.1 e.2).sum)
         (List.mem_map_of_mem (f := fun b => (a, b) :: minPerfectMatching δ k (L.erase b)) hb) []
       refine hle.trans ?_
       simp only [List.map_cons, List.sum_cons]
