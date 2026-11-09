@@ -880,7 +880,7 @@ subgraph is both matching and induced, its unordered edge count equals the retur
 **every** induced matching has at most that many edges. This is the optimum and witness clause
 of Corollary 7.4 / Appendix D.5 (PDF pp. 26, 37), not merely another threshold decision.
 
-`Optimum.run` scans edge thresholds $0,ldots,v$, keeping the greatest feasible value.
+`Optimum.run` scans edge thresholds $0,\ldots,v$, keeping the greatest feasible value.
 `Optimum.run_optimal` proves attainment and global optimality using the proved two-endpoints-per-
 edge bound. This uses $v+1$ tests instead of the paper's logarithmic binary search; it preserves
 the stated sharp asymptotic bound. `Witness.run` then inspects the $v$ original vertices. It
@@ -894,8 +894,8 @@ a matching; it does not leave decoding to an existentially chosen extension.
 `Witness.solve` composes the actual value and witness passes. The native certificates charge
 all threshold calls, repeated restricted-matrix writing, retained original input, every-prefix
 live state, and binary value/selection output. They give global polynomial workspace and
-$L^{O(1)}2^{O(eta(v))}$ time on canonical simple graphs, with the same single-loglog
-$eta(v)=vloglog v/sqrt{log v}$ for $vge16$. Rounded certificates include all smaller
+$L^{O(1)}2^{O(\eta(v))}$ time on canonical simple graphs, with the same single-loglog
+$\eta(v)=v\log\log v/\sqrt{\log v}$ for $v\ge16$. Rounded certificates include all smaller
 and empty cases. An empty graph returns zero and the empty word; an edgeless graph returns zero
 with every declared vertex unselected. No vertices or artificial positive weights are added.
 Raw malformed frames still have a total algorithm and polynomial workspace; graph correctness
