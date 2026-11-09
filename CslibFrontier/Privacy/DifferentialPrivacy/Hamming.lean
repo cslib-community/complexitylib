@@ -185,8 +185,7 @@ theorem DifferentiallyPrivate.pi {ι X Y : Type*} [Fintype ι] [Finite Y]
   simp only [Probability.PMF.pi_apply]
   by_cases hxy' : x = y
   · subst hxy'
-    exact le_mul_of_one_le_left zero_le (by
-      rw [← ENNReal.ofReal_one]; exact ENNReal.ofReal_le_ofReal (Real.one_le_exp hε))
+    exact le_mul_of_one_le_left zero_le (ENNReal.one_le_ofReal.mpr (Real.one_le_exp hε))
   obtain ⟨i, hi⟩ := Function.ne_iff.mp hxy'
   have hrest : ∀ j ∈ Finset.univ.erase i, M j (x j) (r j) = M j (y j) (r j) := by
     intro j hj
