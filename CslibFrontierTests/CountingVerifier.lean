@@ -55,7 +55,7 @@ private theorem framed_halts : MultiTapeCTM.HaltsWithin framed 5
 example : (runList framed 5 (framed.initialConfig [false]).tapes).map Cfg.output =
     [[true, false, false, false], [true, false, false, true]] := by
   unfold framed
-  rw [runList_seq_prependOutput frameOne guessMachine GuessMachine.nonblocking
+  rw [runList_seq_prependOutput frameOne guessMachine
     [false] [true, false, false] 3 2 frameOne_ready (GuessMachine.haltsWithin [false])]
   decide
 
@@ -72,7 +72,7 @@ private theorem readLast_halts : ∀ result ∈ runList framed 5 (framed.initial
   intro result hresult
   rw [haltsWithin_ofDeterministic_iff]
   unfold framed at hresult
-  rw [runList_seq_prependOutput frameOne guessMachine GuessMachine.nonblocking
+  rw [runList_seq_prependOutput frameOne guessMachine
     [false] [true, false, false] 3 2 frameOne_ready (GuessMachine.haltsWithin [false])] at hresult
   obtain ⟨original, horiginal, rfl⟩ := List.mem_map.mp hresult
   have hout : original.output = [false] ∨ original.output = [true] := by

@@ -123,27 +123,15 @@ theorem wire_cells_agree {φ : CNF ℕ}
   intro o ho c hc
   unfold wire at hc
   obtain ⟨⟨p, k⟩, hpk, rfl⟩ := List.mem_map.mp hc
-  obtain ⟨hk, heq⟩ := List.getElem?_eq_some_iff.mp (List.mem_zipIdx_iff_getElem?.mp hpk)
-  change (occurrencePath φ o).dropLast[k] = p at heq
+  obtain ⟨hk, heq⟩ := List.mem_zipIdx' hpk
   have hk' : k < (occurrencePath φ o).length := by
     simp only [List.length_dropLast] at hk
     omega
-  have heq' : (occurrencePath φ o)[k] = p := by
-    rw [← List.getElem_dropLast hk]
-    exact heq
-  have hpo : p ∈ occurrencePath φ o := heq' ▸ List.getElem_mem hk'
-  have hpod : p ∈ (occurrencePath φ o).dropLast := by
-    rw [← heq]
-    exact List.getElem_mem hk
+  have heq' : (occurrencePath φ o)[k] = p := (List.getElem_dropLast hk).symm.trans heq.symm
+  have hpod : p ∈ (occurrencePath φ o).dropLast := List.fst_mem_of_mem_zipIdx hpk
+  have hpo : p ∈ occurrencePath φ o := List.dropLast_subset _ hpod
   by_cases hp : p ∈ crossingSites φ
-  · have hl : side p (p - (1, 0)) = 0 := by
-      simpa [PairedPorts.neighbor, sub_eq_add_neg] using side_neighbor p 0
-    have hr : side p (p + (1, 0)) = 1 := by
-      simpa [PairedPorts.neighbor, sub_eq_add_neg] using side_neighbor p 1
-    have hb : side p (p - (0, 1)) = 2 := by
-      simpa [PairedPorts.neighbor, sub_eq_add_neg] using side_neighbor p 2
-    have ht : side p (p + (0, 1)) = 3 := by
-      simpa [PairedPorts.neighbor, sub_eq_add_neg] using side_neighbor p 3
+  · obtain ⟨hl, hr, hb, ht⟩ := PlanarCompile.side_cardinal p
     -- a straight crossing enters and leaves on opposite sides of the same axis
     rcases PlanarCompile.occurrencePath_crossing_straight hw hv ho hp hpo with hs | hs <;>
     · obtain ⟨_, _, hnb⟩ := hs.getD_neighbors (PlanarCompile.occurrencePath_nodup ho) hk' heq'

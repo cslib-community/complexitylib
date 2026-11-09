@@ -108,38 +108,30 @@ private theorem map_idxOf_of_nodup {α : Type*} [DecidableEq α] (l : List α) (
   simp only [List.getElem_map, List.getElem_range]
   exact List.Nodup.idxOf_getElem hl i _
 
+/-- `distinctVars.idxOf` is injective on the occurring variables. -/
+private theorem injOn_idxOf_distinctVars (φ : CNF V) :
+    Set.InjOn φ.distinctVars.idxOf {v | v ∈ φ.vars} :=
+  fun _ ha _ _ h => (List.idxOf_inj (mem_distinctVars.mpr ha)).mp h
+
 /-- The distinct variables of `φ.denseRelabel` in order of first occurrence are
 `0, …, φ.numVars - 1`. -/
 @[simp]
 theorem distinctVars_denseRelabel (φ : CNF V) :
     φ.denseRelabel.distinctVars = List.range φ.numVars := by
-  have hinj : Set.InjOn φ.distinctVars.idxOf {v | v ∈ φ.vars} :=
-    fun _ ha _ _ h => (List.idxOf_inj (mem_distinctVars.mpr ha)).mp h
-  rw [denseRelabel, distinctVars_relabel_of_injOn φ φ.distinctVars.idxOf hinj,
+  rw [denseRelabel, distinctVars_relabel_of_injOn φ _ (injOn_idxOf_distinctVars φ),
     map_idxOf_of_nodup φ.distinctVars φ.nodup_distinctVars, length_distinctVars]
 
 /-- Dense variable relabeling preserves the exact literal-occurrence count of every occurring
 variable. -/
 theorem count_vars_denseRelabel (φ : CNF V) {v : V} (hv : v ∈ φ.vars) :
-    φ.denseRelabel.vars.count (φ.distinctVars.idxOf v) = φ.vars.count v := by
-  rw [denseRelabel, vars_relabel]
-  simp only [List.count_eq_countP, List.countP_map, Function.comp_def]
-  apply List.countP_congr
-  intro w _
-  simp only [beq_iff_eq]
-  rw [eq_comm, List.idxOf_inj (mem_distinctVars.mpr hv), eq_comm]
+    φ.denseRelabel.vars.count (φ.distinctVars.idxOf v) = φ.vars.count v :=
+  count_vars_relabel_of_injOn φ _ (injOn_idxOf_distinctVars φ) hv
 
 /-- Any upper bound on original literal-occurrence counts is preserved by `CNF.denseRelabel`. -/
 theorem count_vars_denseRelabel_le (φ : CNF V) {B : ℕ}
     (h : ∀ v, φ.vars.count v ≤ B) (i : ℕ) :
-    φ.denseRelabel.vars.count i ≤ B := by
-  by_cases hi : i ∈ φ.denseRelabel.vars
-  · rw [denseRelabel, vars_relabel] at hi
-    obtain ⟨v, hv, rfl⟩ := List.mem_map.mp hi
-    rw [count_vars_denseRelabel φ hv]
-    exact h v
-  · rw [List.count_eq_zero.mpr hi]
-    exact Nat.zero_le _
+    φ.denseRelabel.vars.count i ≤ B :=
+  count_vars_relabel_le_of_injOn φ _ (injOn_idxOf_distinctVars φ) h i
 
 /-- Reading original variable values at their `distinctVars` indices recovers the evaluation of
 `φ`. -/

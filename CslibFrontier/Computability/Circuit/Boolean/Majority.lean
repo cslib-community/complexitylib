@@ -156,8 +156,7 @@ theorem eval_padCircuit (a : ℕ) (x : BitString n) :
     (padCircuit φ n a).eval I x = Fin.append x fun j => decide (j.val < a) := by
   simp only [padCircuit, Circuit.eval_append, Circuit.eval_comp, Circuit.eval_wiring,
     Function.comp_id]
-  congr 1
-  funext j
+  congr 1 with j : 1
   rw [Function.comp_apply]
   split_ifs with h
   · exact (eval_constCircuit true x 0).trans (decide_eq_true h).symm

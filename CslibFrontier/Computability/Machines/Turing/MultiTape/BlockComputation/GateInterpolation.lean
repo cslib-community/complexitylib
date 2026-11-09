@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplaySupplierChunkInit
 public import CslibFrontier.Computability.TreeEval.Ary.Packed.QueryGateSpace
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Sum
 
 /-!
@@ -33,12 +34,26 @@ open Cslib.TreeEval.Ary.Packed
 variable {k s : ℕ} {Q : Type}
 
 /-- Input length, block width, schedule, interval, chunk width/index and padded child stride. -/
-abbrev Context := ℕ × ℕ × ℕ × ℕ × ℕ × ℕ × ℕ
+structure Context where
+  /-- Original input length. -/
+  inputLength : ℕ
+  /-- Simulation block width. -/
+  blockWidth : ℕ
+  /-- Enumerated schedule number. -/
+  schedule : ℕ
+  /-- Interval being evaluated. -/
+  interval : ℕ
+  /-- Number of bits in a packed chunk. -/
+  chunkWidth : ℕ
+  /-- Requested output chunk. -/
+  chunk : ℕ
+  /-- Padded child stride. -/
+  stride : ℕ
 
-/-- The actual binary supplier metadata is charged beside the interpolation point. -/
-@[expose] noncomputable def encContext : Context ↪ List Bool :=
-  encPair encNat (encPair encNat (encPair encNat (encPair encNat
-    (encPair encNat (encPair encNat encNat)))))
+/-- Binary supplier metadata, in the original seven-field framed order. -/
+enc_structure encContext : Context where
+  inputLength : encNat, blockWidth : encNat, schedule : encNat, interval : encNat,
+  chunkWidth : encNat, chunk : encNat, stride : encNat
 
 /-- A running interpolation caller, or that caller suspended beside one table supplier. -/
 abbrev State (k : ℕ) (Q : Type) :=
@@ -47,12 +62,14 @@ abbrev State (k : ℕ) (Q : Type) :=
 /-- Initialize the next actual table request from stored metadata, limit and counter. -/
 @[expose] noncomputable def start (e : Q ≃ Fin s) : QueryGate.State Context →
     SupplierChunk.State k Q :=
-  fun (((N, b, σ, i, m, chunk, stride), _, _, limit), counter, _) =>
-    SupplierChunk.prepare e ((m, chunk), (N, b, σ, i, limit, counter, stride))
+  fun ((context, _, _, limit), counter, _) =>
+    SupplierChunk.prepare e ((context.chunkWidth, context.chunk),
+      (context.inputLength, context.blockWidth, context.schedule, context.interval,
+        limit, counter, context.stride))
 
 /-- Default metadata affects only `init`; actual interpolation states are prepared separately. -/
 @[expose] def template : QueryGate.Params Context :=
-  ((0, 0, 0, 0, 0, 0, 0), (0, 0, 0), [], 0)
+  (⟨0, 0, 0, 0, 0, 0, 0⟩, (0, 0, 0), [], 0)
 
 /-- Fresh caller counters for actual prepared parameters, rather than the template metadata. -/
 @[expose] def initial : QueryGate.Params Context → State k Q :=
@@ -91,13 +108,13 @@ theorem start_inSpace (e : Q ≃ Fin s) :
       SupplierChunk.encState (fun a => (QueryGate.encState encContext a).length) := by
   have hpar := fst (QueryGate.encParams encContext) (encPair encNat encNat)
   have hctx := hpar.fst'
-  have hN := hctx.fst'
-  have hb := hctx.snd'.fst'
-  have hσ := hctx.snd'.snd'.fst'
-  have hi := hctx.snd'.snd'.snd'.fst'
-  have hm := hctx.snd'.snd'.snd'.snd'.fst'
-  have hchunk := hctx.snd'.snd'.snd'.snd'.snd'.fst'
-  have hstride := hctx.snd'.snd'.snd'.snd'.snd'.snd'
+  have hN := budget_comp_linear (of_inO encContext_inputLength_inO) hctx
+  have hb := budget_comp_linear (of_inO encContext_blockWidth_inO) hctx
+  have hσ := budget_comp_linear (of_inO encContext_schedule_inO) hctx
+  have hi := budget_comp_linear (of_inO encContext_interval_inO) hctx
+  have hm := budget_comp_linear (of_inO encContext_chunkWidth_inO) hctx
+  have hchunk := budget_comp_linear (of_inO encContext_chunk_inO) hctx
+  have hstride := budget_comp_linear (of_inO encContext_stride_inO) hctx
   have hlimit := hpar.snd'.snd'.snd'
   have hcounter := (snd (QueryGate.encParams encContext) (encPair encNat encNat)).fst'
   exact (budget_comp_linear (SupplierChunk.prepare_inSpace (k := k) e)

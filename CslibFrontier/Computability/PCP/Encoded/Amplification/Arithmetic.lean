@@ -8,7 +8,6 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.PCP.Encoded.Amplification.Iteration
-public import CslibFrontier.Computability.PCP.Encoded.SelectedComposition.Enumeration
 public import CslibFrontier.Computability.PCP.Amplification.Arithmetic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.RotationMap.TowerTable.Family
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.RotationMap.Family
@@ -61,7 +60,6 @@ attribute [local instance] HadamardTester.instFinEnumBool
 @[irreducible]
 def arithmeticAmplify (g : Graph Constraint) : Graph Constraint :=
   amplifyIter (fun _ _ => true) RotationMap.arithmeticExpanderRotate walkLength killRate
-    (FinEnum.toList _) FinEnum.equiv (FinEnum.toList _) (FinEnum.toList _)
     (Nat.clog 2 g.edges.length) g
 
 /-- The concrete amplifier is polynomial-time in any efficiently computed well-formed input. -/
@@ -76,9 +74,7 @@ theorem isPolyTime_arithmeticAmplify {Input : Type} {input : Input ↪ List Bool
   unfold arithmeticAmplify
   exact isPolyTime_amplifyIter_clog hgraph hwellFormed RotationMap.arithmeticExpander
     RotationMap.arithmeticExpanderRotate RotationMap.arithmeticExpanderRotate_eq
-    (by fun_prop)
-    (fun _ _ => true) walkLength killRate (FinEnum.toList _) FinEnum.equiv
-    (FinEnum.toList _) (FinEnum.toList _)
+    (by fun_prop) (fun _ _ => true) walkLength killRate
 
 /-- Valid endpoint indices are preserved, including when the program performs no rounds. -/
 theorem wellFormed_arithmeticAmplify {g : Graph Constraint} (hg : g.WellFormed) :
@@ -90,7 +86,11 @@ theorem wellFormed_arithmeticAmplify {g : Graph Constraint} (hg : g.WellFormed) 
     rw [Function.iterate_succ_apply']
     exact wellFormed_amplify _ id (fun _ _ => true) RotationMap.arithmeticExpander
       RotationMap.arithmeticExpanderRotate RotationMap.arithmeticExpanderRotate_eq
-      walkLength killRate (FinEnum.toList _) FinEnum.equiv (FinEnum.toList _) (FinEnum.toList _)
+      walkLength killRate
+
+/- The round's statements count labels with the `Fintype` instance of their enumeration. The
+arithmetic constants use the structural instance, so they are transferred by `convert` and
+`Nat.card`; both instances give the same values. -/
 
 /-- The fully specified arithmetic construction preserves satisfiability. -/
 theorem satisfiable_arithmeticAmplify_iff (g : Graph Constraint) :
@@ -98,9 +98,8 @@ theorem satisfiable_arithmeticAmplify_iff (g : Graph Constraint) :
   unfold arithmeticAmplify
   exact satisfiable_amplifyIter_iff (fun _ _ => true) RotationMap.arithmeticExpander
     RotationMap.arithmeticExpanderRotate RotationMap.arithmeticExpanderRotate_eq
-    walkLength killRate (FinEnum.toList _) FinEnum.equiv (FinEnum.toList _) (FinEnum.toList _)
-    FinEnum.nodup_toList FinEnum.mem_toList FinEnum.nodup_toList FinEnum.nodup_toList
-    FinEnum.mem_toList FinEnum.mem_toList _ RotationMap.spectralExpansion_arithmeticExpander_le
+    walkLength killRate (1 - 9 / (400 * (257 : ℝ) ^ 16))
+    (fun n => by convert RotationMap.spectralExpansion_arithmeticExpander_le n using 2)
     (by norm_num) one_le_walkLength two_le_killRate _ g
 
 /-- Every unsatisfiable graph reaches the fixed positive gap after logarithmically many rounds. -/
@@ -110,9 +109,9 @@ theorem gap_le_unsatVal_arithmeticAmplify {g : Graph Constraint}
   unfold arithmeticAmplify
   exact gap_le_unsatVal_amplifyIter_clog (fun _ _ => true) RotationMap.arithmeticExpander
     RotationMap.arithmeticExpanderRotate RotationMap.arithmeticExpanderRotate_eq
-    walkLength killRate (FinEnum.toList _) FinEnum.equiv (FinEnum.toList _) (FinEnum.toList _)
-    FinEnum.nodup_toList FinEnum.mem_toList FinEnum.nodup_toList FinEnum.nodup_toList
-    FinEnum.mem_toList FinEnum.mem_toList _ RotationMap.spectralExpansion_arithmeticExpander_le
-    (by norm_num) two_le_killRate walkLength_eq gap_pos.le gap_le_one gain hunsat
+    walkLength killRate (1 - 9 / (400 * (257 : ℝ) ^ 16))
+    (fun n => by convert RotationMap.spectralExpansion_arithmeticExpander_le n using 2)
+    (by norm_num) two_le_killRate walkLength_eq gap_pos.le gap_le_one
+    (by simpa only [Fintype.card_eq_nat_card] using gain) hunsat
 
 end Cslib.PCP.Encoded.Graph

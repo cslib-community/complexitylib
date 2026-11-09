@@ -49,7 +49,7 @@ theorem NodeProgress.child_source {L f a0 b0 n d p E base : ℕ}
     ring
   rw [haddr]
   have hbefore := hx.source_before hbase (Fin.cons t v)
-  have hnot := notMem_nodeWrites_before hd.le hbefore
+  have hnot := notMem_nodeWrites_before (L := L) (d := d) hbefore
   rw [hpush _ (fun h => hnot (childWrites_subset_nodeWrites hd h)), hy.footprint _ hnot]
   exact hc (Fin.cons t v)
 

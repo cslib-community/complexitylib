@@ -189,6 +189,11 @@ Manuel Blum. *A Machine-Independent Theory of the Complexity of Recursive Functi
 
 Markus Bläser and Bodo Manthey. *Smoothed Complexity Theory*. ACM Transactions on Computation Theory 7(2), Article 6, 2015; preliminary version in MFCS 2012. https://doi.org/10.1145/2656210 ; arXiv:1202.1936. Read in arXiv v2 (29 June 2012) on 2026-11-08. §5, in the paragraph before Theorem 5.2, attributes `DistNP ⊆ Avg-P ⇒ NE = E` to Ben-David, Chor, Goldreich and Luby. Journal metadata checked against the Crossref record.
 
+<a id="bmr16"></a>
+## bmr16
+
+Marshall Ball, Tal Malkin, Mike Rosulek. "Garbling Gadgets for Boolean and Arithmetic Circuits." *Proceedings of the 2016 ACM SIGSAC Conference on Computer and Communications Security (CCS '16)*, 565–577, 2016. https://doi.org/10.1145/2976749.2978410 . Full version: Cryptology ePrint Archive, Report 2016/969. Bibliographic data from the DOI record. Read in the ePrint text on 2026-11-09. Locators checked there: Figure 1 (the garbling scheme for mixed-moduli simple circuits, with free addition and constant multiplication and projection gates of at most `m - 1` ciphertexts after choosing `W_j^0 = -H(g, W_i^{-τ}) - φ(-τ)Δ_n`), the oracle `O(g, i, j, X, a, c) = H(g, X + aΔ_{m_i}) + cΔ_{m_j}`, and Definition 1 (mixed-modulus circular correlation robustness against adversaries that query their oracle on distinct `g` values and `a ≠ 0`). Section numbers were not checked.
+
 <a id="bmr90"></a>
 ## bmr90
 
@@ -446,6 +451,11 @@ Jeff Erickson, Ivor van der Hoog, Tillmann Miltzow. “Smoothing the Gap Between
 
 Alex Fabrikant, Christos H. Papadimitriou, and Kunal Talwar. *The Complexity of Pure Nash Equilibria*. Proceedings of the 36th Annual ACM Symposium on Theory of Computing (STOC 2004), 604–612. https://doi.org/10.1145/1007352.1007445 . Bibliographic metadata checked against Crossref on 2026-11-08; the PLS-completeness theorem is attributed as cited in Roughgarden's CS364A Lecture #19, Theorem 3.1. The paper itself was not consulted.
 
+<a id="fips203"></a>
+## fips203
+
+National Institute of Standards and Technology. *Module-Lattice-Based Key-Encapsulation Mechanism Standard*, Federal Information Processing Standards Publication 203, 2024. https://doi.org/10.6028/NIST.FIPS.203 . Cited for the rounding maps `Compress_d` and `Decompress_d` (Section 4.2.1), `SamplePolyCBD` (Section 4.2.2, Algorithm 8), K-PKE (Section 5, Algorithms 13–15), the internal ML-KEM algorithms (Section 6, Algorithms 16–18), the ML-KEM interface (Section 7, Algorithms 19–21) and the parameter sets (Section 8, Table 2); the Lean modules record the model differences (uniform matrix, sampled coins, coefficient form). The locators follow the structure of the published standard; the PDF was not re-read in this pass.
+
 <a id="fks84"></a>
 ## fks84
 
@@ -506,15 +516,15 @@ D. R. Fulkerson. "Note on Dilworth's Decomposition Theorem for Partially Ordered
 
 Craig Gentry. “Fully Homomorphic Encryption Using Ideal Lattices.” *STOC 2009*, 169–178. https://doi.org/10.1145/1536414.1536440 . Bibliographic data and theorem locator taken from the pinned repository; full text not independently re-audited here.
 
-<a id="ggm86"></a>
-## ggm86
-
-Oded Goldreich, Shafi Goldwasser, Silvio Micali. “How to Construct Random Functions.” *Journal of the ACM* 33(4), 792–807, 1986. Author-hosted version of record: https://www.wisdom.weizmann.ac.il/~oded/X/ggm-jacm.pdf . Adaptive function-test definition consulted.
-
 <a id="gglrs00"></a>
 ## gglrs00
 
 Oded Goldreich, Shafi Goldwasser, Eric Lehman, Dana Ron and Alex Samorodnitsky. *Testing Monotonicity*. Combinatorica 20(3), 301–337, 2000. https://doi.org/10.1007/s004930070011 . Bibliographic metadata checked against the Crossref record on 2026-11-08. The journal version is paywalled, and the author-hosted pages could not be reached (connection reset), so the text was not inspected and no theorem locator is claimed. The manual attributes the edge tester for Boolean functions on the hypercube to this paper, as [roughgarden15cc](#roughgarden15cc) does.
+
+<a id="ggm86"></a>
+## ggm86
+
+Oded Goldreich, Shafi Goldwasser, Silvio Micali. “How to Construct Random Functions.” *Journal of the ACM* 33(4), 792–807, 1986. Author-hosted version of record: https://www.wisdom.weizmann.ac.il/~oded/X/ggm-jacm.pdf . Adaptive function-test definition consulted.
 
 <a id="gibbard73"></a>
 ## gibbard73
@@ -840,7 +850,7 @@ Peter Kairouz, Sewoong Oh and Pramod Viswanath. *The Composition Theorem for Dif
 <a id="ks08"></a>
 ## ks08
 
-Vladimir Kolesnikov, Thomas Schneider. "Improved Garbled Circuit: Free XOR Gates and Applications." *Automata, Languages and Programming, 35th International Colloquium (ICALP 2008)*, 486–498, 2008. https://doi.org/10.1007/978-3-540-70583-3_40 ; author's copy: https://www.cs.toronto.edu/~vlad/papers/XOR_ICALP08.pdf . Cited at paper level for the free-XOR technique, which it proves secure in the random oracle model; no theorem numbers are claimed.
+Vladimir Kolesnikov, Thomas Schneider. "Improved Garbled Circuit: Free XOR Gates and Applications." *Automata, Languages and Programming, 35th International Colloquium (ICALP 2008)*, Lecture Notes in Computer Science 5126, 486–498, 2008. https://doi.org/10.1007/978-3-540-70583-3_40 ; author's copy: https://www.cs.toronto.edu/~vlad/papers/XOR_ICALP08.pdf . Cited at paper level for the free-XOR technique, which it proves secure in the random oracle model; no theorem numbers are claimed.
 
 <a id="lamportshostakpease1982"></a>
 ## lamportshostakpease1982
@@ -982,15 +992,15 @@ Zsigmond Nagy. “A Constructive Estimation of the Ramsey Numbers” (in Hungari
 
 Moni Naor and Moti Yung. “Universal One-Way Hash Functions and their Cryptographic Applications.” *Proceedings of the Twenty-First Annual ACM Symposium on Theory of Computing (STOC 1989)*, 33–43, 1989. https://doi.org/10.1145/73007.73011 . Authors' revised manuscript (March 13, 1995): https://www.wisdom.weizmann.ac.il/~naor/PAPERS/uowhf.ps (§2, §2.3, §3 and §4).
 
-<a id="nisan92"></a>
-## nisan92
-
-Noam Nisan. *Pseudorandom Generators for Space-Bounded Computation*. Combinatorica 12(4), 449–461, 1992. DOI: [10.1007/BF01305237](https://doi.org/10.1007/BF01305237). The publisher copy is paywalled and was not consulted, so its theorem numbering is unverified. The statement was checked against S. Vadhan, *Pseudorandomness* (2012), §8.2.1, and P. Hatami and W. Hoza, *Paradigms for Unconditional Pseudorandom Generators* (2024), Definition 1.5 and §3.2. The Lean proof is the library's own derivation of the hashing argument in expectation form.
-
 <a id="nisan07"></a>
 ## nisan07
 
 Noam Nisan. "Introduction to Mechanism Design (for Computer Scientists)." Chapter 9 of Noam Nisan, Tim Roughgarden, Éva Tardos and Vijay V. Vazirani (eds.), *Algorithmic Game Theory*, Cambridge University Press, 2007, 209–242. https://doi.org/10.1017/CBO9780511800481.011 . A university-hosted PDF of the book was consulted on 2026-11-08 for §9.2 (pp. 211–215): Definition 9.1 (social welfare and social choice functions), Definition 9.4 (manipulation and incentive compatibility), Definition 9.5 and Proposition 9.6 (one-voter monotonicity is equivalent to incentive compatibility), Definition 9.7 (dictator), Theorem 9.8 (Gibbard–Satterthwaite, for rules onto at least three alternatives), Definition 9.9 (moving a set `S` to the top, and the induced social welfare function), and the proof of Lemmas 9.10 and 9.11 (the claim that the outcome lies in `S`, transitivity, unanimity and IIA). The library's proof follows this reduction; its main theorem assumes three alternatives in the range rather than onto, which needs an extension of rankings of the range to all alternatives.
+
+<a id="nisan92"></a>
+## nisan92
+
+Noam Nisan. *Pseudorandom Generators for Space-Bounded Computation*. Combinatorica 12(4), 449–461, 1992. DOI: [10.1007/BF01305237](https://doi.org/10.1007/BF01305237). The publisher copy is paywalled and was not consulted, so its theorem numbering is unverified. The statement was checked against S. Vadhan, *Pseudorandomness* (2012), §8.2.1, and P. Hatami and W. Hoza, *Paradigms for Unconditional Pseudorandom Generators* (2024), Definition 1.5 and §3.2. The Lean proof is the library's own derivation of the hashing argument in expectation form.
 
 <a id="nisanwigderson94"></a>
 ## nisanwigderson94
@@ -1197,6 +1207,11 @@ Michael Sipser. *Introduction to the Theory of Computation*, third edition. Ceng
 
 Daniel D. Sleator, Robert E. Tarjan. “Amortized Efficiency of List Update and Paging Rules.” *Communications of the ACM* 28(2), 202–208, 1985. https://doi.org/10.1145/2786.2793 ; author PDF https://www.cs.cmu.edu/~sleator/papers/amortized-efficiency.pdf . Paging scope and equal-capacity specialization checked against source and local mapping. The list-update cost model of Section 2, Theorem 1 (`C_MF(s) ≤ 2C_A(s) + X_A(s) − F_A(s) − m`) and the remark after its proof (different initial lists, plus the initial inversion count) were checked against the author PDF on 2026-11-07 UTC.
 
+<a id="sleatortarjan85b"></a>
+## sleatortarjan85b
+
+Daniel Dominic Sleator, Robert Endre Tarjan. “Self-Adjusting Binary Search Trees.” *Journal of the ACM* 32(3), 652–686, 1985. https://doi.org/10.1145/3828.3835 ; author PDF https://www.cs.cmu.edu/~sleator/papers/self-adjusting.pdf . The author PDF was consulted on 2026-11-08 for Section 2 (Lemma 1, Theorems 1–4, pp. 658–660) and Section 3, Lemma 2 (pp. 663–664).
+
 <a id="smithtutte41"></a>
 ## smithtutte41
 
@@ -1216,11 +1231,6 @@ Richard P. Stanley. *Topics in Algebraic Combinatorics*. Course notes, version o
 ## stoerwagner97
 
 Mechthild Stoer and Frank Wagner. "A Simple Min-Cut Algorithm." *Journal of the ACM* 44(4), 585–591, 1997. https://doi.org/10.1145/263867.263872 . Bibliographic metadata checked against the Crossref record on 2026-11-08. The publisher's PDF returned HTTP 403 and was not retried, so the paper was not inspected. Its numbering (the phase recursion as Theorem 2.1, the cut-of-the-phase lemma as Lemma 3.1) comes from secondary descriptions and is unverified, which is why the Lean docstrings name the results rather than the numbers. The 8-vertex example graph in `CslibFrontierTests/StoerWagner.lean` and the trace of the worked example's first phase come from the English Wikipedia article "Stoer–Wagner algorithm", consulted on 2026-11-08, not from the paper's figure. A. Frank's note on MA orderings was unreachable (connection failure), and the corresponding section of Schrijver's 2003 monograph was not consulted; neither is cited.
-
-<a id="sleatortarjan85b"></a>
-## sleatortarjan85b
-
-Daniel Dominic Sleator, Robert Endre Tarjan. “Self-Adjusting Binary Search Trees.” *Journal of the ACM* 32(3), 652–686, 1985. https://doi.org/10.1145/3828.3835 ; author PDF https://www.cs.cmu.edu/~sleator/papers/self-adjusting.pdf . The author PDF was consulted on 2026-11-08 for Section 2 (Lemma 1, Theorems 1–4, pp. 658–660) and Section 3, Lemma 2 (pp. 663–664).
 
 <a id="sudantrevisanvadhan01"></a>
 ## sudantrevisanvadhan01
@@ -1297,6 +1307,11 @@ R. Ryan Williams. *Simulating Time With Square-Root Space*. arXiv:2502.17779v1 (
 
 David P. Williamson and David B. Shmoys. *The Design of Approximation Algorithms*. Cambridge University Press, 2011. https://doi.org/10.1017/CBO9780511921735 . Section 1.6 (Algorithm 1.2, Theorems 1.11 and 1.12) and the Chapter 1 Chapter Notes attribution of the greedy set-cover analysis to Chvátal (Mathematics of Operations Research 4(3), 233–235, 1979, https://doi.org/10.1287/moor.4.3.233) were checked against the authors' electronic edition at https://www.designofapproxalgs.com on 2026-11-07, as were Section 2.4 (Lemma 2.10, Theorems 2.11 and 2.12) and the Chapter 2 Chapter Notes, which attribute nearest addition and its analysis to Rosenkrantz, Stearns and Lewis (1977) and call the double-tree algorithm folklore. The handshake argument, Theorem 2.13 (Christofides' algorithm is a 3/2-approximation) and its proof, and the Chapter 2 Notes attribution to Christofides (reference [73]) were checked against the same edition on 2026-11-08, as were Exercise 2.5 (the MST 2-approximation for Steiner tree, metric part (a) and metric completion part (b)), Section 12.3 and the Chapter 12 Notes attribution of the factor-2 Steiner heuristic to Moore via Gilbert and Pollak (reference [130]). Section 2.2 (Algorithm 2.1, Theorems 2.3 and 2.4) and the Chapter 2 Chapter Notes, which attribute the k-center algorithm and analysis to Gonzalez (Theoretical Computer Science 38, 293–306, 1985, https://doi.org/10.1016/0304-3975(85)90224-5), an alternative 2-approximation to Hochbaum and Shmoys (Mathematics of Operations Research 10(2), 180–184, 1985, https://doi.org/10.1287/moor.10.2.180) and Theorem 2.4 to Hsu and Nemhauser (Discrete Applied Mathematics 1(3), 209–215, 1979, https://doi.org/10.1016/0166-218X(79)90044-1), were checked against the same electronic edition on 2026-11-08; the three original papers were not checked.
 
+<a id="yannakakis91"></a>
+## yannakakis91
+
+Mihalis Yannakakis. *Expressing Combinatorial Optimization Problems by Linear Programs*. Journal of Computer and System Sciences 43(3), 441–466, 1991. https://doi.org/10.1016/0022-0000(91)90024-Y . Bibliographic metadata checked against the Crossref record on 2026-11-08 UTC. The publisher page returned HTTP 403 and the primary text was not inspected. No theorem number is claimed; the factorization theorem and the rectangle covering bound are attributed to this paper as reported by [fmptw15](#fmptw15), Section 1 and Theorems 3 and 4.
+
 <a id="yao77"></a>
 ## yao77
 
@@ -1312,20 +1327,15 @@ Andrew Chi-Chih Yao. "New Algorithms for Bin Packing." *Journal of the ACM* 27(2
 
 F. Frances Yao. "Efficient Dynamic Programming Using Quadrangle Inequalities." *Proceedings of the 12th Annual ACM Symposium on Theory of Computing* (STOC 1980), 429–435. https://doi.org/10.1145/800141.804691 . The bibliographic data come from secondary indexes and search summaries; the paper was not inspected in this pass. The manual credits it, as secondary sources do, with the lemma that the optimal cost inherits the quadrangle inequality from a monotone weight satisfying it, and with the resulting monotonicity of optimal roots. Its lemma and theorem numbers are not cited.
 
-<a id="yekhanin12"></a>
-## yekhanin12
-
-Sergey Yekhanin. *Locally Decodable Codes*. Foundations and Trends in Theoretical Computer Science 6(3), 139–255, 2012. https://doi.org/10.1561/0400000030 . Definition 6.1 and Lemma 6.2 (§6.1.1, private information retrieval from perfectly smooth codes) were checked on 2026-11-08 against the author's draft at https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/LDC_now.pdf ; the numbering of the published monograph was not checked.
-
-<a id="yannakakis91"></a>
-## yannakakis91
-
-Mihalis Yannakakis. *Expressing Combinatorial Optimization Problems by Linear Programs*. Journal of Computer and System Sciences 43(3), 441–466, 1991. https://doi.org/10.1016/0022-0000(91)90024-Y . Bibliographic metadata checked against the Crossref record on 2026-11-08 UTC. The publisher page returned HTTP 403 and the primary text was not inspected. No theorem number is claimed; the factorization theorem and the rectangle covering bound are attributed to this paper as reported by [fmptw15](#fmptw15), Section 1 and Theorems 3 and 4.
-
 <a id="yao86"></a>
 ## yao86
 
 Andrew Chi-Chih Yao. "How to Generate and Exchange Secrets (Extended Abstract)." *27th Annual Symposium on Foundations of Computer Science (FOCS 1986)*, 162–167, 1986. https://doi.org/10.1109/SFCS.1986.25 . Bibliographic data from the DOI record and secondary listings, cited as the customary origin of garbled circuits. The full text was not inspected in this pass.
+
+<a id="yekhanin12"></a>
+## yekhanin12
+
+Sergey Yekhanin. *Locally Decodable Codes*. Foundations and Trends in Theoretical Computer Science 6(3), 139–255, 2012. https://doi.org/10.1561/0400000030 . Definition 6.1 and Lemma 6.2 (§6.1.1, private information retrieval from perfectly smooth codes) were checked on 2026-11-08 against the author's draft at https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/LDC_now.pdf ; the numbering of the published monograph was not checked.
 
 <a id="younger67"></a>
 ## younger67
@@ -1341,3 +1351,8 @@ Jacob Ziv and Abraham Lempel. "A Universal Algorithm for Sequential Data Compres
 ## zivlempel78
 
 Jacob Ziv and Abraham Lempel. "Compression of Individual Sequences via Variable-Rate Coding." *IEEE Transactions on Information Theory* 24(5), 530–536, 1978. https://doi.org/10.1109/TIT.1978.1055934 . Bibliographic data from the DOI record and secondary summaries. The incremental parsing rule (each phrase is the shortest new prefix) is attributed through [Cover and Thomas](#coverthomas06); the paper's text was not inspected in this pass.
+
+<a id="zre15"></a>
+## zre15
+
+Samee Zahur, Mike Rosulek, David Evans. "Two Halves Make a Whole: Reducing Data Transfer in Garbled Circuits Using Half Gates." *Advances in Cryptology – EUROCRYPT 2015*, Lecture Notes in Computer Science 9057, 220–250, 2015. https://doi.org/10.1007/978-3-662-46803-6_8 . Full version: Cryptology ePrint Archive, Report 2014/756. The half-gates construction, the circular correlation robustness assumption and simulation privacy are cited at paper level. No theorem numbers are claimed.

@@ -90,8 +90,7 @@ private theorem intBox_shift_lookup_le {Ω M D : Type} [DecidableEq M]
       let y ← uniformOfFinset (intBox (Fin m) r) (intBox_nonempty r)
       return (cache h).lookup (msg h, A *ᵥ (Int.cast ∘ y) - shift A h) |>.isSome) := by
     simp only [pmf_norm, real, test, PMF.map]
-    congr 1
-    funext A
+    congr 1 with A : 1
     exact PMF.bind_comm _ _ _
   have hideal : ideal.bind test = (do
       let A ← PMF.uniformOfFintype (Matrix (Fin n) (Fin m) (ZMod q))
@@ -99,8 +98,7 @@ private theorem intBox_shift_lookup_le {Ω M D : Type} [DecidableEq M]
       let w ← PMF.uniformOfFintype (Fin n → ZMod q)
       return (cache h).lookup (msg h, w - shift A h) |>.isSome) := by
     simp only [pmf_norm, ideal, test, PMF.map]
-    congr 1
-    funext A
+    congr 1 with A : 1
     exact PMF.bind_comm _ _ _
   have hi : (ideal.bind test) true ≤ Q / (q : ℝ≥0∞) ^ n := by
     rw [hideal]

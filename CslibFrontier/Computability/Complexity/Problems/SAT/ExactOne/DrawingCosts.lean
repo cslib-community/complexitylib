@@ -245,16 +245,12 @@ private theorem source_edge_weight_sum {φ : CNF ℕ} {d : Graph.OrthogonalDrawi
       exact List.map_congr_left fun o ho => by rw [sourceEdgeIndex_occurrence φ ho]
     _ = _ := congrArg List.sum hlist
 
-private theorem segmentCount_translate (v : Point) (r : Route) :
-    (translate v r).consecutivePairs.length = r.consecutivePairs.length := by
-  simp only [segmentCount_eq, translate, List.length_map]
-
 private theorem exterior_segment_sum {φ : CNF ℕ} {d : Graph.OrthogonalDrawing}
     (hd : Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph φ) d) :
     (φ.zipIdx.map fun a => (a.1.zipIdx.map fun l =>
       (positiveExterior φ d a.2 l.2).consecutivePairs.length).sum).sum =
         Graph.drawingSegmentCount d := by
-  simp only [positiveExterior, segmentCount_translate, exteriorRoute_segmentCount]
+  simp only [positiveExterior, consecutivePairs_length_translate, exteriorRoute_segmentCount]
   exact source_edge_weight_sum hd (fun r : Route => r.consecutivePairs.length)
 
 private theorem exterior_wire_sum_le {φ : CNF ℕ} {d : Graph.OrthogonalDrawing}

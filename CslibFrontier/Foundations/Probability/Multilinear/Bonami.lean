@@ -90,7 +90,7 @@ private theorem integral_add_mul_pow {n : ℕ} (hm : MemLp id n m) (e d : ℝ) :
   simp_rw [add_comm e, add_pow]
   rw [integral_finsetSum _ hint]
   refine sum_congr rfl fun j _ => ?_
-  rw [← integral_const_mul]; congr 1; funext z; simp only [mul_pow]; ring
+  rw [← integral_const_mul]; congr 1 with z : 1; simp only [mul_pow]; ring
 
 /-- `E[(e + z d)²] = e² + d²`. -/
 theorem integral_add_mul_sq (hm : HasInvarianceMoments m) (e d : ℝ) :

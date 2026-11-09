@@ -324,12 +324,9 @@ private theorem listPiPMF_extract [DecidableEq ι] (default : α) (μ : ι → P
       simp only [listPiPMF, Probability.PMF.monad_bind_eq_bind, PMF.map_bind, PMF.map_comp,
         Function.comp_def]
       rw [PMF.bind_comm]
-      congr 1
-      funext a₀
-      congr 1
-      funext a
-      congr 1
-      funext f
+      congr 1 with a₀ : 1
+      congr 1 with a : 1
+      congr 1 with f : 1
       exact Function.update_comm h a₀ a f
 
 /-- Presample an independent tuple of `Sigma TreeStrategy` across all channels `i : ι`. -/
@@ -376,8 +373,7 @@ private theorem piPresample_step [Fintype ι] [DecidableEq ι] (P : ι → Prove
     (presampleTree_step (P i₀) L queries d' (s i₀) hm)
   simp only [PMF.bind_map, PMF.bind_bind, Function.comp_def] at hstep
   rw [hstep]
-  congr 1
-  funext ys
+  congr 1 with ys : 1
   have hcongr : listPiPMF defaultTree (μ d s) ((Finset.univ : Finset ι).toList.erase i₀) =
       listPiPMF defaultTree (μ (Function.update d i₀ d') (Function.update s i₀ ys.2))
         ((Finset.univ : Finset ι).toList.erase i₀) := by
@@ -455,11 +451,9 @@ private theorem run_eq_bind_piPresample [Fintype ι] [DecidableEq ι]
     simp only [PMF.bind_map, PMF.bind_bind, Function.comp_def] at hstep
     rw [hstep]
     simp only [StateT.run_mk, PMF.bind_map, Function.comp_def]
-    congr 1
-    funext ys
+    congr 1 with ys : 1
     rw [ih ys.1 (Function.update d i₀ (d i₀ - 1)) hd' (Function.update s i₀ ys.2)]
-    congr 1
-    funext f'
+    congr 1 with f' : 1
     rw [← htake ys.1]
     rfl
 

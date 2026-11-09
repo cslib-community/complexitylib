@@ -346,8 +346,7 @@ theorem Generator.toReal_predictionExperiment_nextBitPredictor
         adversary fun j => if (j : ℕ) < i then y j else Function.update z i r j) =
       G.outputDist.bind fun y => (uniformOfFintype (Fin m → Bool)).bind fun z =>
         adversary fun j => if (j : ℕ) < i then y j else z j := by
-    congr 1
-    funext y
+    congr 1 with y : 1
     exact uniformOfFintype_bind_bind_update i fun w =>
       adversary fun j => if (j : ℕ) < i then y j else w j
   rw [hlast]

@@ -19,7 +19,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.CoinT
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayVerdict
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.PPT.Clock
-import CslibFrontier.Computability.Probabilistic.Sampling
+import CslibFrontier.Computability.Probabilistic.Sampling.Verifier
 import CslibFrontier.Foundations.Analysis.ENNRealFraction
 import CslibFrontier.Probability.PMF.Map
 import Mathlib.Data.Set.Finite.List
@@ -387,19 +387,14 @@ theorem mem_BPP_iff_exists_mem_BPTIME {α : Type} {enc : α ↪ List Bool} {A : 
   constructor
   · rintro ⟨p, V, hV, hA⟩
     -- sample a random string and run the verifier on it
-    let program (a : α) : ProbComp Bool :=
-      (fun w => V (a, w)) <$> BitString.sampleList (p.eval (enc a).length)
-    have hcount : ComputableInPolyTime (fun a => p.eval (enc a).length) enc encUnary :=
-      (ComputableInPolyTime.unary_eval p).comp (ComputableInPolyTime.encoding_length enc)
-    have hprogram : IsPPTOn enc encBool program := hcount.sampleList.map_with hV
-    obtain ⟨k, State, hfinite, machine, c, d, heval, hhalt⟩ := hprogram.exists_halting_machine
+    obtain ⟨k, State, hfinite, machine, c, d, heval, hhalt⟩ :=
+      (isPPTOn_sampleVerify p hV).exists_halting_machine
     refine ⟨d, c * 2 ^ d, c, k, State, hfinite, machine,
       MultiTapePTM.DecidesWithBoundedErrorInTime.mono (t := fun a => c * ((enc a).length + 1) ^ d)
         (fun a => ⟨hhalt (enc a), ?_⟩) fun a => Nat.mul_add_one_pow_le_two_pow c d _⟩
     rw [← heval a, show [MultiTapeTM.indicator A a] = encBool (MultiTapeTM.indicator A a) from rfl,
-      Probability.PMF.map_apply_of_injective _ encBool.injective]
-    simp only [program, ProbComp.eval_map, BitString.eval_sampleList]
-    rw [BitString.uniformList_map_apply]
+      Probability.PMF.map_apply_of_injective _ encBool.injective, ProbComp.eval_map,
+      BitString.eval_sampleList, BitString.uniformList_map_apply]
     exact ENNReal.two_div_three_le_natCast_div_two_pow_iff.mpr (hA.two_mul_le a)
   · rintro ⟨d, c₁, c₂, k, State, hfinite, machine, hA⟩
     -- replay the coins
