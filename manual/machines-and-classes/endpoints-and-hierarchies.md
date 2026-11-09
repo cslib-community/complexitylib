@@ -41,6 +41,30 @@ Toda's original paper establishes PH containment in randomized parity and polyno
 
 Dinur's paper presents the gap-amplification proof and states the logarithmic-randomness, constant-query PCP theorem with perfect completeness and one-half soundness in its opening definition and Theorem 1.1. cslib-frontier combines Cook–Levin with a concrete encoded gap construction and verifier, then proves the converse by enumerating logarithmically many random strings and reconciling repeated queried addresses. The final fixed alphabet is encoded by seven bits; fixed construction constants are large. No near-linear proof-length bound should be inferred from this asymptotic class equality. [dinur2007][dinur2007] [Formal endpoint construction](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/PCP/Completeness.lean#L17)
 
+## Apply the classical randomized quadratic-space bound
+
+Import `CslibFrontier.Computability.Complexity.Classes.LogSpace.Savitch` and work in
+`Cslib.Complexity`. Apply `RL_subset_DSPACE_log2_sq` to a certificate `h : A ∈ RL enc`;
+the result is `A ∈ DSPACE enc (fun n => Nat.log2 n ^ 2)`. It composes the accepting-coin-path
+bridge `RL_subset_NL` with native Savitch simulation. It establishes a deterministic workspace
+bound, not polynomial time or `RL = L`; the support argument does not apply to two-sided `BPL`.
+
+The complete [LogSpaceSavitch client](../../CslibFrontierTests/LogSpaceSavitch.lean) uses the
+existing logspace first-bit reader to place words beginning in `true` in `RL`, obtains the
+quadratic-space native decider, and checks accepted, rejected and empty inputs. Its runtime
+client also checks that the named Savitch accessors preserve the original tuple encoding and
+that projection certificates retain the caller's space budget.
+
+For machine-level reuse, [LogSpace/Savitch.lean](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/Savitch.lean)
+keeps the runtime tuple layout but names its counter, mode, round, radix, input length, vertex
+width and recursion state. Their `Runtime.*_budget` certificates use the existing budget-preserving
+pair projections; option inspection/defaults use the shared `ComputableInSpace.budget_option*`
+rules. Binary vertex width returned in unary uses `ComputableInSpace.natSizeUnary` from
+[InSpace/NatSize.lean](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/InSpace/NatSize.lean),
+also used by the inductive-counting simulator. Keep it distinct from `natSize`, which returns
+binary output. Neither operation expands the original number to unary. The original input
+remains read-only; these API changes do not weaken the charged workspace or stack bound.
+
 ## Deterministic time in square-root space
 
 [`DTIME_subset_DSPACE_sqrt`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/TimeSpace/Williams.lean#L111) proves, for every injective binary input encoding and every function `t` satisfying `n ≤ t(n)` pointwise,

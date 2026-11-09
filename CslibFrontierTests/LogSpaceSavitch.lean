@@ -5,6 +5,8 @@ Authors: Christian Reitwiessner
 -/
 
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.Savitch
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Words
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatSize
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Savitch
 
 /-!
@@ -14,6 +16,8 @@ Words of a fixed width and the start word written as `(x + 2 ^ W).bits.dropLast`
 phase of the query machine; the recursion deciding acceptance for a machine without work tapes
 that accepts every input, so that the hypotheses of the machine-level theorem are satisfiable; and
 the class inclusions `NL ⊆ DSPACE(log² n)` and `RL ⊆ DSPACE(log² n)` on concrete problems.
+A nontrivial first-bit language checks the RL bridge and the quadratic-space conclusion on
+accepting, rejecting and empty inputs.
 -/
 
 namespace CslibFrontierTests.LogSpaceSavitch
@@ -85,5 +89,40 @@ example {α : Type} (enc : α ↪ List Bool) : RL enc ⊆ DSPACE enc fun n => Na
 example {α : Type} {enc : α ↪ List Bool} {A : Set α} (h : A ∈ L enc) :
     A ∈ DSPACE enc fun n => Nat.log2 n ^ 2 :=
   RL_subset_DSPACE_log2_sq (L_subset_RL h)
+
+/-! ### A nontrivial language through the RL and native Savitch bridges -/
+
+/-- Words beginning in `true`; the empty word is rejected. -/
+private def startsTrue : Set (List Bool) := {w | w.headD false = true}
+
+private theorem startsTrue_mem_RL : startsTrue ∈ RL encBits :=
+  L_subset_RL ⟨_, ComputableInLogSpace.bitsHeadD false, fun _ => Iff.rfl⟩
+
+example : [true, false] ∈ startsTrue := by simp [startsTrue]
+example : [false, true] ∉ startsTrue := by simp [startsTrue]
+example : [] ∉ startsTrue := by simp [startsTrue]
+
+/-- An actual logspace client reaches the deterministic quadratic-space endpoint. -/
+example : startsTrue ∈ DSPACE encBits fun n => Nat.log2 n ^ 2 :=
+  RL_subset_DSPACE_log2_sq startsTrue_mem_RL
+
+/-- The native simulation supplies a total decider, not just a graph-level reachability fact. -/
+example : ∃ c₁ c₂ t, DecidableInTimeAndSpace startsTrue encBits t
+    fun w => c₁ * Nat.log2 (encBits w).length ^ 2 + c₂ :=
+  mem_DSPACE_iff.mp (RL_subset_DSPACE_log2_sq startsTrue_mem_RL)
+
+/-! ### Runtime accessors retain the encoded tuple layout -/
+
+example (s : Runtime) : encRuntime s =
+    encPair encNat (encPair encBool (Cslib.Reachability.Savitch.encRound encParam))
+      (s.counter, s.started, s.round) := rfl
+
+example {α : Type} {enc : α ↪ List Bool} {S : α → ℕ} {s : α → Runtime}
+    (hs : ComputableInSpace s enc encRuntime S) :
+    ComputableInSpace (fun a => (s a).radix) enc encNat S :=
+  Runtime.radix_budget hs
+
+example : ComputableInSpace Nat.size encNat encUnary fun n => (encNat n).length :=
+  ComputableInSpace.natSizeUnary
 
 end CslibFrontierTests.LogSpaceSavitch
