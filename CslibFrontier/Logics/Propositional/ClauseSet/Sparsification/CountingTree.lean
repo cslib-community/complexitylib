@@ -166,20 +166,6 @@ theorem card_le_of_mem_countingChild {ψ : ClauseSet V} {c k : ℕ} {H : Finset 
     · have hu := card_of_mem_negatedHeartUnits hCneg
       omega
 
-omit [DecidableEq V] in
-private theorem potential_mono {α β : ClauseSet V} (h : α ⊆ β) :
-    potential α ≤ potential β := by
-  classical
-  unfold potential
-  have := sum_sdiff h (f := fun C : Finset (Literal V) => 2 ^ C.card)
-  omega
-
-private theorem potential_union_le (α β : ClauseSet V) :
-    potential (α ∪ β) ≤ potential α + potential β := by
-  unfold potential
-  have := sum_union_inter (s₁ := α) (s₂ := β) (f := fun C : Finset (Literal V) => 2 ^ C.card)
-  omega
-
 private theorem petal_unit_potential_bound {c h z : ℕ} (h1 : 1 ≤ h) (hlt : h < c) (hz : 2 ≤ z) :
     z * 2 ^ (c - h) + 2 * h < z * 2 ^ c := by
   have hj_le : c - h ≤ c - 1 := by omega
@@ -206,57 +192,19 @@ theorem potential_countingChild_lt_of_two_le_card_flower
     {ψ : ClauseSet V} {c : ℕ} {H : Finset (Literal V)}
     (h1 : 1 ≤ H.card) (hlt : H.card < c) (hz : 2 ≤ (flower ψ c H).card) (b : Bool) :
     potential (countingChild ψ c H b) < potential ψ := by
-  set F := flower ψ c H
-  have hFsplit : potential ψ = potential (ψ \ F) + potential F := by
-    unfold potential
-    rw [← sum_sdiff (flower_subset ψ c H)]
-  have hF : potential F = F.card * 2 ^ c := by
-    unfold potential
-    rw [sum_congr rfl fun C hC => by rw [(mem_flower.mp hC).2.1], sum_const, smul_eq_mul]
   have hdisj := disjoint_flower_countingChild ψ h1 hlt b
   cases b with
   | false =>
-    have hsub : countingChild ψ c H false ⊆ (ψ \ F) ∪ {H} := by
-      intro C hC
-      rcases mem_union.mp (child_subset ψ c H false hC) with hCψ | hCH
-      · exact mem_union_left _ (mem_sdiff.mpr ⟨hCψ, fun hCF => disjoint_left.mp hdisj hCF hC⟩)
-      · simp only [intro] at hCH
-        exact mem_union_right _ hCH
-    have hHlt : potential ({H} : ClauseSet V) < F.card * 2 ^ c := by
-      unfold potential
-      rw [sum_singleton]
-      calc 2 ^ H.card < 2 ^ c := Nat.pow_lt_pow_right (by omega) hlt
-        _ ≤ F.card * 2 ^ c := Nat.le_mul_of_pos_left _ (by omega)
-    calc potential (countingChild ψ c H false)
-        ≤ potential ((ψ \ F) ∪ {H}) := potential_mono hsub
-      _ ≤ potential (ψ \ F) + potential ({H} : ClauseSet V) := potential_union_le _ _
-      _ < potential (ψ \ F) + potential F := by rw [hF]; exact Nat.add_lt_add_left hHlt _
-      _ = potential ψ := hFsplit.symm
+    exact potential_lt_of_flower_exchange (child_subset ψ c H false) hdisj
+      (potential_heart_lt hlt (by omega))
   | true =>
-    have hsub : countingChild ψ c H true ⊆ (ψ \ F) ∪ (petals ψ c H ∪ negatedHeartUnits H) := by
-      intro C hC
-      rcases mem_union.mp (reduce_subset _ hC) with hC' | hCneg
-      · rcases mem_union.mp hC' with hCψ | hCpet
-        · exact mem_union_left _ (mem_sdiff.mpr ⟨hCψ, fun hCF => disjoint_left.mp hdisj hCF hC⟩)
-        · exact mem_union_right _ (mem_union_left _ hCpet)
-      · exact mem_union_right _ (mem_union_right _ hCneg)
-    have hpet : potential (petals ψ c H) = F.card * 2 ^ (c - H.card) := by
-      unfold potential
-      calc ∑ C ∈ petals ψ c H, 2 ^ C.card
-          = ∑ _C ∈ petals ψ c H, 2 ^ (c - H.card) :=
-            sum_congr rfl fun C hC => by rw [card_of_mem_petals hC]
-        _ = F.card * 2 ^ (c - H.card) := by rw [sum_const, card_petals, smul_eq_mul]
-    have hnew : potential (petals ψ c H ∪ negatedHeartUnits H) < F.card * 2 ^ c := by
-      calc potential (petals ψ c H ∪ negatedHeartUnits H)
-          ≤ potential (petals ψ c H) + potential (negatedHeartUnits H) := potential_union_le _ _
-        _ = F.card * 2 ^ (c - H.card) + 2 * H.card := by rw [hpet, potential_negatedHeartUnits]
-        _ < F.card * 2 ^ c := petal_unit_potential_bound h1 hlt hz
-    calc potential (countingChild ψ c H true)
-        ≤ potential ((ψ \ F) ∪ (petals ψ c H ∪ negatedHeartUnits H)) := potential_mono hsub
-      _ ≤ potential (ψ \ F) + potential (petals ψ c H ∪ negatedHeartUnits H) :=
-          potential_union_le _ _
-      _ < potential (ψ \ F) + potential F := by rw [hF]; exact Nat.add_lt_add_left hnew _
-      _ = potential ψ := hFsplit.symm
+    refine potential_lt_of_flower_exchange (X := petals ψ c H ∪ negatedHeartUnits H)
+      (by rw [← union_assoc]; exact reduce_subset _) hdisj ?_
+    calc potential (petals ψ c H ∪ negatedHeartUnits H)
+        ≤ potential (petals ψ c H) + potential (negatedHeartUnits H) := potential_union_le _ _
+      _ = (flower ψ c H).card * 2 ^ (c - H.card) + 2 * H.card := by
+          rw [potential_petals, potential_negatedHeartUnits]
+      _ < (flower ψ c H).card * 2 ^ c := petal_unit_potential_bound h1 hlt hz
 
 /-- Any threshold schedule satisfying `2 ≤ θ j` for `1 ≤ j` guarantees at least two clauses in the
 flower of every heavy heart. -/
