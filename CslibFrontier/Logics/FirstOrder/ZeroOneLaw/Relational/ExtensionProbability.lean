@@ -169,8 +169,7 @@ theorem tendsto_sentenceProb_extensionAxiom (k : ℕ) (p : NewAtom L k → Bool)
   simp only [sub_zero, structProb_not, sub_sub_cancel] at this
   refine this.congr fun n => ?_
   rw [sentenceProb_def]
-  congr 1
-  funext S
+  congr 1 with S : 1
   exact propext (@realize_extensionAxiom L (Fin n) S _ k p).symm
 
 /-- Every sentence of the extension theory holds almost surely. -/
