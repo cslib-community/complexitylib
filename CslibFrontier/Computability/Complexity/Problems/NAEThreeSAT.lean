@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Problems.EUThreeSAT
 public import CslibFrontier.Computability.Complexity.Problems.ThreeSATThree
 public import CslibFrontier.Logics.Propositional.CNF.NotAllEqual.ThreeOccurrence
+import CslibFrontier.Computability.Complexity.Classes.NP.Closure
 import CslibFrontier.Computability.Complexity.Problems.OneInThreeSAT.Reduction
 import CslibFrontier.Computability.Complexity.Problems.ThreeSATThree.Syntax
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
@@ -103,31 +104,27 @@ end NAESAT
 
 /-- Width-three NAE satisfiability belongs to NP. -/
 theorem NAEThreeSAT.mem_NP : NAEThreeSAT ∈ NP encCNF := by
-  have h : NAEThreeSAT =
-      {φ | (φ.all fun c => decide (c.length ≤ 3)) = true ∧ φ ∈ NAESAT} := by
+  have h : NAEThreeSAT = {φ | (φ.all fun c => decide (c.length ≤ 3)) = true} ∩ NAESAT := by
     ext φ
     simp [NAEThreeSAT, NAESAT]
   rw [h]
-  exact ⟨Polynomial.X, fun x => (x.1.all fun c => decide (c.length ≤ 3)) && NAESAT.verifier x,
-    by fun_prop [encCNF], NAESAT.isVerifier.guard⟩
+  exact inter_mem_NP (P_subset_NP ⟨_, by fun_prop [encCNF], fun _ => Iff.rfl⟩) NAESAT.mem_NP
 
 /-- Exact-three distinct-variable NAE satisfiability belongs to NP. -/
 theorem NAEEUThreeSAT.mem_NP : NAEEUThreeSAT ∈ NP encCNF := by
-  have h : NAEEUThreeSAT = {φ | EUThreeSAT.syntaxCheck φ = true ∧ φ ∈ NAESAT} := by
+  have h : NAEEUThreeSAT = {φ | EUThreeSAT.syntaxCheck φ = true} ∩ NAESAT := by
     ext φ
     simp [NAEEUThreeSAT, NAESAT, EUThreeSAT.syntaxCheck_iff]
   rw [h]
-  exact ⟨Polynomial.X, fun x => EUThreeSAT.syntaxCheck x.1 && NAESAT.verifier x,
-    by fun_prop, NAESAT.isVerifier.guard⟩
+  exact inter_mem_NP (P_subset_NP ⟨_, by fun_prop, fun _ => Iff.rfl⟩) NAESAT.mem_NP
 
 /-- Width-three occurrence-three NAE satisfiability belongs to NP. -/
 theorem NAEThreeSATThree.mem_NP : NAEThreeSATThree ∈ NP encCNF := by
-  have h : NAEThreeSATThree = {φ | ThreeSATThree.syntaxCheck φ = true ∧ φ ∈ NAESAT} := by
+  have h : NAEThreeSATThree = {φ | ThreeSATThree.syntaxCheck φ = true} ∩ NAESAT := by
     ext φ
     simp [NAEThreeSATThree, NAESAT, ThreeSATThree.syntaxCheck_iff, and_assoc]
   rw [h]
-  exact ⟨Polynomial.X, fun x => ThreeSATThree.syntaxCheck x.1 && NAESAT.verifier x,
-    by fun_prop, NAESAT.isVerifier.guard⟩
+  exact inter_mem_NP (P_subset_NP ⟨_, by fun_prop, fun _ => Iff.rfl⟩) NAESAT.mem_NP
 
 namespace NAEEUThreeSAT
 
