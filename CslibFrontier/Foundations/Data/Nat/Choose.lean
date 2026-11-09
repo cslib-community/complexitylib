@@ -50,34 +50,57 @@ the Kővári–Sós–Turán bound.
 
 namespace Nat
 
-/-- Scaling the ground set by `q ≥ 1` scales a descending factorial by at least `q ^ d`. -/
-theorem pow_mul_descFactorial_le {q : ℕ} (hq : 1 ≤ q) {k d : ℕ} (hd : d ≤ k) :
-    q ^ d * k.descFactorial d ≤ (q * k).descFactorial d := by
-  induction d with
+/-- Termwise comparison of descending factorials: if `A (x - i) ≤ (y - i) B` for every `i < k`,
+then `A ^ k x^{(k)} ≤ y^{(k)} B ^ k`. -/
+private theorem pow_mul_descFactorial_le_descFactorial_mul_pow {A B x y : ℕ} (k : ℕ)
+    (h : ∀ i < k, A * (x - i) ≤ (y - i) * B) :
+    A ^ k * x.descFactorial k ≤ y.descFactorial k * B ^ k := by
+  induction k with
   | zero => simp
-  | succ d ih =>
-    have hqk : q * (k - d) ≤ q * k - d := by
-      rw [Nat.mul_sub_left_distrib]
-      exact Nat.sub_le_sub_left (Nat.le_mul_of_pos_left d (by omega)) (q * k)
-    rw [Nat.pow_succ, descFactorial_succ, descFactorial_succ]
-    calc q ^ d * q * ((k - d) * k.descFactorial d)
-        = (q * (k - d)) * (q ^ d * k.descFactorial d) := by ac_rfl
-      _ ≤ (q * k - d) * (q * k).descFactorial d := Nat.mul_le_mul hqk (ih (by omega))
+  | succ k ih =>
+    rw [descFactorial_succ, descFactorial_succ, pow_succ, pow_succ]
+    calc A ^ k * A * ((x - k) * x.descFactorial k)
+        = A ^ k * x.descFactorial k * (A * (x - k)) := by ring
+      _ ≤ y.descFactorial k * B ^ k * ((y - k) * B) :=
+          Nat.mul_le_mul (ih fun i hi => h i (by omega)) (h k (by omega))
+      _ = (y - k) * y.descFactorial k * (B ^ k * B) := by ring
+
+/-- The binomial form of `pow_mul_descFactorial_le_descFactorial_mul_pow`: if
+`A (x - i) ≤ (y - i) B` for every `i < k`, then `A ^ k C(x, k) ≤ C(y, k) B ^ k`. -/
+private theorem pow_mul_choose_le_choose_mul_pow_of_le {A B x y : ℕ} (k : ℕ)
+    (h : ∀ i < k, A * (x - i) ≤ (y - i) * B) :
+    A ^ k * x.choose k ≤ y.choose k * B ^ k := by
+  have H := pow_mul_descFactorial_le_descFactorial_mul_pow k h
+  rw [descFactorial_eq_factorial_mul_choose, descFactorial_eq_factorial_mul_choose] at H
+  refine Nat.le_of_mul_le_mul_left (?_ : k.factorial * _ ≤ k.factorial * _) (factorial_pos k)
+  calc k.factorial * (A ^ k * x.choose k)
+      = A ^ k * (k.factorial * x.choose k) := by ring
+    _ ≤ k.factorial * y.choose k * B ^ k := H
+    _ = k.factorial * (y.choose k * B ^ k) := by ring
+
+/-- One factor of `pow_mul_descFactorial_le`: `q (k - i) ≤ q k - i` for `1 ≤ q`, stated with a
+factor `1` to fit `pow_mul_descFactorial_le_descFactorial_mul_pow`. -/
+private theorem mul_sub_le_mul_sub {q : ℕ} (hq : 1 ≤ q) (k i : ℕ) :
+    q * (k - i) ≤ (q * k - i) * 1 := by
+  rw [Nat.mul_one, Nat.mul_sub_left_distrib]
+  exact Nat.sub_le_sub_left (Nat.le_mul_of_pos_left i (by omega)) (q * k)
+
+/-- Scaling the ground set by `q ≥ 1` scales a descending factorial by at least `q ^ d`. -/
+theorem pow_mul_descFactorial_le {q : ℕ} (hq : 1 ≤ q) (k d : ℕ) :
+    q ^ d * k.descFactorial d ≤ (q * k).descFactorial d := by
+  simpa using pow_mul_descFactorial_le_descFactorial_mul_pow d fun i _ => mul_sub_le_mul_sub hq k i
 
 /-- Scaling the ground set by `q ≥ 1` scales the number of `d`-subsets by at least `q ^ d`. -/
-theorem pow_mul_choose_le_choose_mul {q : ℕ} (hq : 1 ≤ q) {k d : ℕ} (hd : d ≤ k) :
+theorem pow_mul_choose_le_choose_mul {q : ℕ} (hq : 1 ≤ q) (k d : ℕ) :
     q ^ d * k.choose d ≤ (q * k).choose d := by
-  have h := pow_mul_descFactorial_le hq hd
-  rw [descFactorial_eq_factorial_mul_choose, descFactorial_eq_factorial_mul_choose] at h
-  refine Nat.le_of_mul_le_mul_left (c := d.factorial) ?_ (factorial_pos d)
-  simpa [Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] using h
+  simpa using pow_mul_choose_le_choose_mul_pow_of_le d fun i _ => mul_sub_le_mul_sub hq k i
 
 /-- A `d`-subset of an `n`-set lies in at most a `q ^ (-d)` fraction of its `k`-subsets when
 `q k ≤ n`. -/
 theorem pow_mul_choose_sub_le_choose {q n k d : ℕ} (hq : 1 ≤ q) (hd : d ≤ k) (hn : q * k ≤ n) :
     q ^ d * (n - d).choose (k - d) ≤ n.choose k := by
   have h : q ^ d * k.choose d * (n - d).choose (k - d) ≤ n.choose d * (n - d).choose (k - d) :=
-    Nat.mul_le_mul_right _ ((pow_mul_choose_le_choose_mul hq hd).trans (choose_le_choose d hn))
+    Nat.mul_le_mul_right _ ((pow_mul_choose_le_choose_mul hq k d).trans (choose_le_choose d hn))
   rw [← choose_mul (n := n) hd] at h
   refine Nat.le_of_mul_le_mul_left (c := k.choose d) ?_ (choose_pos hd)
   simpa [Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] using h
@@ -120,59 +143,25 @@ theorem pow_mul_choose_sub_le_choose_of_mul_le {m ℓ s q : ℕ} (hs : s ≤ ℓ
     _ = m.choose ℓ * (q * ℓ) ^ s := by rw [Nat.mul_pow]; ring
     _ ≤ m.choose ℓ * (m - ℓ + 1) ^ s := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hqℓ s)
 
+/-- One factor of `descFactorial_mul_pow_le`: `n (s - i) ≤ (n - i) s` for `s ≤ n`. -/
+private theorem mul_sub_le_sub_mul {s n : ℕ} (h : s ≤ n) (i : ℕ) : n * (s - i) ≤ (n - i) * s := by
+  rcases le_or_gt i s with his | his
+  · zify [his, his.trans h]
+    nlinarith
+  · rw [Nat.sub_eq_zero_of_le his.le, mul_zero]
+    exact Nat.zero_le _
+
 /-- Descending factorials compare like powers: `s^{(k)} / n^{(k)} ≤ (s / n)^k` for `s ≤ n`. -/
 theorem descFactorial_mul_pow_le {s n : ℕ} (h : s ≤ n) (k : ℕ) :
     s.descFactorial k * n ^ k ≤ s ^ k * n.descFactorial k := by
-  induction k with
-  | zero => simp
-  | succ k ih =>
-    have hk : (s - k) * n ≤ s * (n - k) := by
-      rcases le_or_gt k s with hks | hks
-      · zify [hks, hks.trans h]
-        nlinarith
-      · rw [Nat.sub_eq_zero_of_le hks.le, zero_mul]
-        exact Nat.zero_le _
-    rw [descFactorial_succ, descFactorial_succ, pow_succ, pow_succ]
-    calc (s - k) * s.descFactorial k * (n ^ k * n)
-        = s.descFactorial k * n ^ k * ((s - k) * n) := by ring
-      _ ≤ s ^ k * n.descFactorial k * (s * (n - k)) := Nat.mul_le_mul ih hk
-      _ = s ^ k * s * ((n - k) * n.descFactorial k) := by ring
+  rw [Nat.mul_comm, Nat.mul_comm (s ^ k)]
+  exact pow_mul_descFactorial_le_descFactorial_mul_pow k fun i _ => mul_sub_le_sub_mul h i
 
 /-- For `a ≤ s`, `C(a, k) * s ^ k ≤ C(s, k) * a ^ k`. -/
 theorem choose_mul_pow_le {a s : ℕ} (has : a ≤ s) (k : ℕ) :
     a.choose k * s ^ k ≤ s.choose k * a ^ k := by
-  refine Nat.le_of_mul_le_mul_left ?_ (factorial_pos k)
-  calc k.factorial * (a.choose k * s ^ k)
-      = (k.factorial * a.choose k) * s ^ k := by ring
-    _ = a.descFactorial k * s ^ k := by rw [← descFactorial_eq_factorial_mul_choose]
-    _ ≤ a ^ k * s.descFactorial k := descFactorial_mul_pow_le has k
-    _ = a ^ k * (k.factorial * s.choose k) := by rw [descFactorial_eq_factorial_mul_choose]
-    _ = k.factorial * (s.choose k * a ^ k) := by ring
-
-/-- Descending factorials on a smaller ground set:
-`(d + 1 - s) ^ k m^{(k)} ≤ d^{(k)} (m + 1 - s) ^ k` for `k ≤ s ≤ d ≤ m`, since
-`(d + 1 - s) (m - i) ≤ (d - i) (m + 1 - s)` for `i < s`. -/
-private theorem pow_mul_descFactorial_le_descFactorial_mul_pow {d m s : ℕ} (hsd : s ≤ d)
-    (hdm : d ≤ m) {k : ℕ} (hks : k ≤ s) :
-    (d + 1 - s) ^ k * m.descFactorial k ≤ d.descFactorial k * (m + 1 - s) ^ k := by
-  induction k with
-  | zero => simp
-  | succ k ih =>
-    have hk : (d + 1 - s) * (m - k) ≤ (d - k) * (m + 1 - s) := by
-      obtain ⟨j, rfl⟩ : ∃ j, s = k + 1 + j := ⟨s - k - 1, by omega⟩
-      obtain ⟨a, rfl⟩ : ∃ a, d = k + 1 + j + a := ⟨d - (k + 1 + j), by omega⟩
-      obtain ⟨b, rfl⟩ : ∃ b, m = k + 1 + j + a + b := ⟨m - (k + 1 + j + a), by omega⟩
-      rw [show k + 1 + j + a + 1 - (k + 1 + j) = a + 1 by omega,
-        show k + 1 + j + a + b - k = 1 + j + a + b by omega,
-        show k + 1 + j + a - k = 1 + j + a by omega,
-        show k + 1 + j + a + b + 1 - (k + 1 + j) = a + b + 1 by omega]
-      nlinarith [Nat.zero_le (b * j)]
-    rw [descFactorial_succ, descFactorial_succ, pow_succ, pow_succ]
-    calc (d + 1 - s) ^ k * (d + 1 - s) * ((m - k) * m.descFactorial k)
-        = (d + 1 - s) ^ k * m.descFactorial k * ((d + 1 - s) * (m - k)) := by ring
-      _ ≤ d.descFactorial k * (m + 1 - s) ^ k * ((d - k) * (m + 1 - s)) :=
-          Nat.mul_le_mul (ih (by omega)) hk
-      _ = (d - k) * d.descFactorial k * ((m + 1 - s) ^ k * (m + 1 - s)) := by ring
+  rw [Nat.mul_comm]
+  exact pow_mul_choose_le_choose_mul_pow_of_le k fun i _ => mul_sub_le_sub_mul has i
 
 /-- Shrinking the ground set from `m` to `d ≤ m` shrinks the number of `s`-subsets by at most
 `((m + 1 - s) / (d + 1 - s)) ^ s`: `(d + 1 - s) ^ s C(m, s) ≤ C(d, s) (m + 1 - s) ^ s`. -/
@@ -183,13 +172,16 @@ theorem pow_mul_choose_le_choose_mul_pow {d m s : ℕ} (hdm : d ≤ m) :
     · simp
     · rw [show d + 1 - s = 0 by omega, zero_pow hs.ne', zero_mul]
       exact Nat.zero_le _
-  refine Nat.le_of_mul_le_mul_left ?_ (factorial_pos s)
-  have h := pow_mul_descFactorial_le_descFactorial_mul_pow hsd hdm le_rfl
-  rw [descFactorial_eq_factorial_mul_choose, descFactorial_eq_factorial_mul_choose] at h
-  calc s.factorial * ((d + 1 - s) ^ s * m.choose s)
-      = (d + 1 - s) ^ s * (s.factorial * m.choose s) := by ring
-    _ ≤ s.factorial * d.choose s * (m + 1 - s) ^ s := h
-    _ = s.factorial * (d.choose s * (m + 1 - s) ^ s) := by ring
+  -- for `i < s ≤ d ≤ m`: `(d + 1 - s) (m - i) ≤ (d - i) (m + 1 - s)`
+  refine pow_mul_choose_le_choose_mul_pow_of_le s fun k hk => ?_
+  obtain ⟨j, rfl⟩ : ∃ j, s = k + 1 + j := ⟨s - k - 1, by omega⟩
+  obtain ⟨a, rfl⟩ : ∃ a, d = k + 1 + j + a := ⟨d - (k + 1 + j), by omega⟩
+  obtain ⟨b, rfl⟩ : ∃ b, m = k + 1 + j + a + b := ⟨m - (k + 1 + j + a), by omega⟩
+  rw [show k + 1 + j + a + 1 - (k + 1 + j) = a + 1 by omega,
+    show k + 1 + j + a + b - k = 1 + j + a + b by omega,
+    show k + 1 + j + a - k = 1 + j + a by omega,
+    show k + 1 + j + a + b + 1 - (k + 1 + j) = a + b + 1 by omega]
+  nlinarith [Nat.zero_le (b * j)]
 
 /-- `C(b * m - m, k) * b ^ k ≤ C(b * m, k) * (b - 1) ^ k`. -/
 theorem choose_mul_sub_mul_pow_le (b m k : ℕ) :
