@@ -12,7 +12,7 @@ public import CslibFrontier.Computability.WordRAM.Width
 public import CslibFrontier.Computability.GenericRAM.Signed.Fits
 public import Mathlib.Data.Nat.Log
 import CslibFrontier.Computability.WordRAM.Admission
-import CslibFrontier.Algorithms.WordRAM.NatClog
+import CslibFrontier.Foundations.Data.Nat.PowClog
 
 /-!
 # Initialized native ExactTriangle preparation
@@ -306,7 +306,7 @@ private theorem pow_width_lt (n D g p A : ℕ) :
   let V := envelope n D g p A
   let k := Nat.clog 2 V
   have hV : 1 < V := by dsimp only [V, envelope]; omega
-  have h : 2 ^ k < 2 * V := NatClog.two_pow_clog_lt_two_mul hV
+  have h : 2 ^ k < 2 * V := Nat.pow_clog_lt_mul Nat.one_lt_two (by omega)
   change 2 ^ (k + 3) < 16 * V
   rw [pow_add]
   omega

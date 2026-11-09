@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CountPrime.Width
 public import CslibFrontier.Computability.WordRAM.Width
 import Mathlib.Data.List.GetD
-import CslibFrontier.Algorithms.WordRAM.NatClog
+import CslibFrontier.Foundations.Data.Nat.PowClog
 
 /-!
 # Actual initialized halting modular counter and every-wide-width prefixes
@@ -58,7 +58,7 @@ private theorem pow_width_lt (n p A : ℕ) :
   have hB : 0 < addressBudget n p (Nat.clog 2 n) (3 + 3 * (n * n)) 3 (3 + n * n)
       (3 + 2 * (n * n)) := by unfold addressBudget; positivity
   have hE : 1 < E := by dsimp only [E, envelope]; omega
-  have h : 2 ^ k < 2 * E := NatClog.two_pow_clog_lt_two_mul hE
+  have h : 2 ^ k < 2 * E := Nat.pow_clog_lt_mul Nat.one_lt_two (by omega)
   change 2 ^ (k + 3) < 16 * E
   rw [pow_add]
   omega

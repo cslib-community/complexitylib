@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxBatch.InputLayout
 import Mathlib.Data.Nat.Log
 import CslibFrontier.Computability.WordRAM.Admission
-import CslibFrontier.Algorithms.WordRAM.NatClog
+import CslibFrontier.Foundations.Data.Nat.PowClog
 
 /-!
 # Original-input logarithmic admission for native query batches
@@ -62,8 +62,8 @@ theorem admission_bounds {W L m t N A B : ℕ} (hW : admissionWidth L m t N A B 
 theorem pow_admissionWidth_lt_wordBound (L m t N A B : ℕ) :
     2 ^ admissionWidth L m t N A B < wordBound L m t N A B := by
   let budget : ℕ := BoxQuery.magnitudeBound L A B + originalAddressBound L m t N + 1
-  have hN : 1 < budget := by dsimp only [budget]; unfold originalAddressBound; omega
-  have h := NatClog.two_pow_clog_lt_two_mul hN
+  have h : 2 ^ Nat.clog 2 budget < 2 * budget :=
+    Nat.pow_clog_lt_mul Nat.one_lt_two (Nat.succ_ne_zero _)
   change 2 ^ (Nat.clog 2 budget + 3) < 16 * budget
   rw [pow_add]
   omega

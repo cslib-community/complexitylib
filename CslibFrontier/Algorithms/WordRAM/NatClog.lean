@@ -21,8 +21,6 @@ public import Mathlib.Data.Nat.Log
 ## Main results
 
 * `NatClog.exec`: the ceiling logarithm with a logarithmic charged instruction bound.
-* `NatClog.two_pow_clog_lt_two_mul`: `2 ^ ⌈log₂ n⌉ < 2 n` for `n ≥ 2`, the strict base-two form
-  of `Nat.pow_clog_le_mul`.
 -/
 
 @[expose] public section
@@ -30,12 +28,6 @@ public import Mathlib.Data.Nat.Log
 namespace Cslib.Algorithms.WordRAM.NatClog
 
 open Cslib.WordRAM
-
-/-- For `n ≥ 2`, the power `2 ^ ⌈log₂ n⌉` overshoots `n` by strictly less than a factor two. -/
-theorem two_pow_clog_lt_two_mul {n : ℕ} (hn : 1 < n) : 2 ^ Nat.clog 2 n < 2 * n := by
-  have h := Nat.pow_pred_clog_lt_self (by decide : 1 < 2) hn
-  rw [← Nat.succ_pred_eq_of_pos (Nat.clog_pos (by decide) hn), pow_succ]
-  omega
 
 /-- Quotient, initially the input. -/
 abbrev arg : Fin 4 := 0

@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxProduct.FrontProgram
 public import Mathlib.Data.Nat.Log
 import CslibFrontier.Computability.WordRAM.Admission
-import CslibFrontier.Algorithms.WordRAM.NatClog
+import CslibFrontier.Foundations.Data.Nat.PowClog
 
 /-!
 # Original-input width admission for routed native box products
@@ -57,8 +57,8 @@ theorem admission_bounds {W L m t N Q A : ℕ}
 theorem pow_admissionWidth_lt_wordBound (L m t N Q A : ℕ) :
     2 ^ admissionWidth L m t N Q A < wordBound L m t N Q A := by
   let budget := magnitudeBound L A + wordBudget L m t N Q + 1
-  have hbudget : 1 < budget := by dsimp only [budget]; unfold wordBudget; omega
-  have h := NatClog.two_pow_clog_lt_two_mul hbudget
+  have h : 2 ^ Nat.clog 2 budget < 2 * budget :=
+    Nat.pow_clog_lt_mul Nat.one_lt_two (Nat.succ_ne_zero _)
   change 2 ^ (Nat.clog 2 budget + 3) < 16 * budget
   rw [pow_add]
   omega
