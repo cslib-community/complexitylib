@@ -293,11 +293,16 @@ theorem empiricalRademacherComplexity_mono {F G : Set (Z → ℝ)} (hFG : F ⊆ 
 form a finite set of `P` vectors, then the empirical Rademacher complexity of a class bounded by
 `B` is at most `B √(2 log P / m)`. The source states the case of `{-1, +1}`-valued classes, where
 `P` is at most the growth function. -/
-theorem empiricalRademacherComplexity_le_of_finite {F : Set (Z → ℝ)} {B : ℝ} (hB : 0 ≤ B)
+theorem empiricalRademacherComplexity_le_of_finite {F : Set (Z → ℝ)} {B : ℝ}
     (hF : ∀ f ∈ F, ∀ z, |f z| ≤ B) {m : ℕ} (S : Fin m → Z)
     (hP : ((fun f : Z → ℝ => fun i => f (S i)) '' F).Finite) :
     empiricalRademacherComplexity F S ≤
       B * √(2 * Real.log ((fun f : Z → ℝ => fun i => f (S i)) '' F).ncard / m) := by
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · simp [empiricalRademacherComplexity, rademacherAverage, Real.iSup_const_zero]
+  rcases F.eq_empty_or_nonempty with rfl | ⟨f₀, hf₀⟩
+  · simp [empiricalRademacherComplexity_empty]
+  have hB : 0 ≤ B := (abs_nonneg (f₀ (S ⟨0, hm⟩))).trans (hF f₀ hf₀ _)
   have hPa : ∀ p ∈ hP.toFinset, ∀ i, |p i| ≤ B := by
     intro p hp i
     obtain ⟨f, hf, rfl⟩ := hP.mem_toFinset.1 hp
