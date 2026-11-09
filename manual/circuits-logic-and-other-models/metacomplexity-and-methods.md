@@ -653,9 +653,10 @@ Small test oracles enumerate original selections only; production uses the prove
 These are native word/resource certificates on explicit framed encodings, with unary declarations,
 binary references and signed binary bounds. They do not add a fresh bit-transition machine
 simulation or arbitrary untrusted-byte graph admission. General finite/cofinite degree-rule and
-labeled partition constructors, upper-domination marking/set counts and other predicates' full
-witness/optimum composition remain open. The continuations cover kernels, matching applications,
-Maximum Induced Matching optimization/witness recovery and the full induced-matching distribution.
+labeled partition constructors, unique-mark upper-domination set counts and four graph predicates'
+full witness/optimum composition remain open. The continuations cover kernels, matching
+applications, Maximum Induced Matching and Upper Domination optimization/witness recovery, and
+the full induced-matching distribution.
 ALL-main remains open.
 
 ### Outgoing-absorbing kernels in directed graphs
@@ -818,7 +819,8 @@ Corollary 7.2's general sigma-rho rules and Theorem 7.3's fixed degree-matrix fr
 For Corollary 7.4, independent-domination counting with size bounds is covered, as are count/
 decision for kernels, perfect matching cuts and dominating induced matchings.
 The continuations below supply signed-threshold Maximum Induced Matching and Upper Dominating
-Set decision. Complete witness/optimum composition for the other graph predicates remains open.
+Set decision and their full optimum/witness composition. The other four recovery specializations
+remain open.
 Corollary 7.5's unrestricted matching bijection, total counts and full size distribution are covered below.
 Proposition 7.6's unique-mark original-set refinements remain open; its initial set–marking
 construction is supplied below. ALL-main remains open.
@@ -915,7 +917,7 @@ edges' four endpoints and clears the middle vertex. The tiny threshold oracle ev
 approved real construction on original selections/unique traces; production instantiates the
 proved sharp native decider. It is not exhaustive matching search.
 
-The other five graph predicates' full witness/optimum composition remains open, together with
+The other four graph predicates' full witness/optimum composition remains open, together with
 general sigma-rho rules, labeled degree matrices and the unique-mark Upper Dominating Set
 refinements. The continuation below completes Corollary 7.5's full distribution and sharper no-size-test construction. The other source
 clauses keep the paperwide/ALL-main objective open.
@@ -967,8 +969,8 @@ that construction test enumerates neither selections nor matchings. Tiny query/t
 tests only; production certificates instantiate the approved unrestricted-density native counter.
 
 General sigma-rho rules, labeled degree matrices, unique-mark Upper Dominating Set refinements
-and the other graph predicates' full witness/optimum composition remain open. Corollary 7.5 is covered under the stated
-encoding; that milestone does not close the paperwide/ALL-main objective or alternative admission/
+and four other graph predicates' full witness/optimum composition remain open. Corollary 7.5 is
+covered under the stated encoding; that milestone does not close the paperwide/ALL-main objective or alternative admission/
 succinct-encoding transfers.
 
 ### Upper domination through private-neighbor markings
@@ -1010,10 +1012,10 @@ Its tiny assignment enumeration is a test oracle; the production machine uses th
 This completes Proposition 7.6's initial width-three decision construction and Corollary 7.4's
 Upper Dominating Set decision specialization for the stated encoding. The unique-mark width-four
 original-set counter on $5v+a-1$ query variables and the width-three path-marker refinement on
-$6v+a-1$ variables remain open. Upper-domination optimum-value extraction is supplied below; witness output remains open.
+$6v+a-1$ variables remain open. Upper-domination optimum-value and actual witness extraction are supplied below.
 All six Corollary 7.4 decision predicates are now covered in their recorded explicit models;
-only Maximum Induced Matching has its full optimum/witness composition. Upper domination now
-also has the optimum value, as described below. General Corollary 7.2
+Maximum Induced Matching and Upper Domination have full optimum/witness composition, as
+described below; the other four recovery specializations remain open. General Corollary 7.2
 finite/cofinite degree rules, Theorem 7.3 labeled degree partitions, alternative admission/succinct
 encodings and the paper-wide independent audit remain outstanding. These limits keep ALL-main open.
 
@@ -1044,14 +1046,56 @@ graphs, declared isolates, edges, paths, stars, cycles and complete graphs. A th
 returns two, although a singleton dominates it; an edge returns one despite six valid marking
 pairs. It checks acceptance at the returned threshold and rejection at the next threshold.
 
-Attainment is an existential correctness theorem, not an algorithm returning the attaining set.
-Upper-domination witness output remains open: the source fixes original selection bits by adding
-unit clauses while leaving marking bits free. This needs pointwise functional-extension/selection
-correspondence under those extra clauses, followed by actual native traversal and output-resource
-composition. Graph restriction by deleting edges is not a substitute because it changes minimal
-domination. The other four non-MIM graph predicates still need full optimum/witness composition;
-general degree-rule/partition and unique-mark Proposition 7.6 refinements remain open. This value
-endpoint does not complete the entire Corollary 7.4 recovery clause or the paperwide audit.
+The value theorem asserts existential attainment. The following endpoint separately returns the
+attaining original set; it does not replace witness output by that existential statement.
+
+### Return an actual maximum minimal dominating set
+
+Import `Complexity.Computability.Complexity.FineGrained.UpperDominationWitness`.
+`UpperDomination.Witness.solve` computes the approved optimum value, recovers a satisfying word
+of the actual selection/gate/mark formula by unit-clause self-reduction, then returns exactly the
+original $v$ selection bits with the binary value. `selected` decodes those bits to an ordinary
+vertex set. `exists_optimalWitness_realEta_certificate` proves that this returned set is itself
+inclusion-minimal dominating, its cardinality equals the output value, and every inclusion-minimal
+dominating set has at most that cardinality. Empty graphs return `(0, [])`; original isolates stay
+selected. No attaining set, optimum, rank or desired runtime is supplied as input advice.
+
+The reusable `TwoBoundary.BinaryFrontend.Witness.run` retains an original explicit CNF/DNF
+input and a fixed Boolean prefix. It tries the next bit false by appending actual unit clauses;
+if that trial has no satisfying extension it fixes the bit true. Its invariant preserves a real
+extension, and its final complete declared word satisfies the original formula. The actual
+sharp counter is instantiated in `exists_recovery_sharp_certificate`, with explicit unit-writing,
+branching, every-prefix state lengths, sequential counter calls and output charges. Trial prefixes
+are capped at the declared length, including the terminal state charged by the resource calculus.
+This does not assume an unimplemented oracle. For this graph construction all $2v+a$ wires are
+fixed, including gates and private marks, then discarded except for the original prefix. Since
+$a\le952(v+1)$, this still makes $O(v)$ feasibility calls. Appendix D.5 permits leaving markings
+unfixed; fixing them as well preserves its bound and avoids a separate conditional count bridge.
+
+`model_sound` checks the actual recovered formula word pointwise: functional gate acceptance
+yields the cardinality bound, and the original private-neighbor constraints yield inclusion
+minimality. The full algorithm charges normalization/writing, the optimum scan, recovery,
+intermediate encodings, binary value and prefix trimming/output. Time is
+$C(L+1)^e2^{A\eta(v)}$ for $v\ge16$, with rounded bounds for all smaller sizes and global polynomial
+peak workspace. It retains the explicit canonical simple-graph promise, unary declaration and
+native charged-word model. No new malformed-input admission, succinct declaration or binary
+Turing-transition realization is claimed. The recovery theorem requires feasibility; the complete
+optimizer proves that feasibility at its computed optimum, including the empty graph.
+
+From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.UpperDominationWitness`.
+The [complete computed client](../../ComplexityTests/PaperEndpoints/UpperDominationWitness.lean)
+checks actual returned words on empty/isolated/edge/path/star/triangle/cycle graphs. It independently
+checks domination, private neighbors, bit count and output value on representative outputs.
+A four-cycle returns an adjacent selected pair, illustrating that independence is not required.
+A generic CNF/DNF client also retains a declared unused variable. Tiny trace enumeration is a test
+oracle; production uses the proved sharp counter and never enumerates a vertex-set or gate cube.
+
+This completes Upper Domination's Corollary 7.4 optimum/witness clause for the recorded encoding.
+The other four non-MIM/Upper graph predicates still need their recovery specializations. General
+Corollary 7.2 finite/cofinite degree rules, Theorem 7.3 labeled degree partitions, Proposition 7.6's
+unique-mark exact-set refinements, alternative encodings/admission and the independent paperwide
+audit remain open. The initial pair counter is still not an exact unmarked-set counter. ALL-main
+is not completed by this witness endpoint.
 
 ## Known Limitations
 

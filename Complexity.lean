@@ -1736,8 +1736,10 @@ public import Complexity.Computability.Complexity.FineGrained.SparseParitySchedu
 public import Complexity.Computability.Complexity.FineGrained.Sparsification
 public import Complexity.Computability.Complexity.FineGrained.ThreeOccurrenceReduction
 public import Complexity.Computability.Complexity.FineGrained.TwoBoundaryFrontend
+public import Complexity.Computability.Complexity.FineGrained.TwoBoundaryWitness
 public import Complexity.Computability.Complexity.FineGrained.UpperDomination
 public import Complexity.Computability.Complexity.FineGrained.UpperDominationOptimum
+public import Complexity.Computability.Complexity.FineGrained.UpperDominationWitness
 public import Complexity.Computability.Complexity.FineGrained.VCOneCountingResources
 public import Complexity.Computability.Complexity.FineGrained.WeightedCountingPlan
 public import Complexity.Computability.Complexity.FineGrained.WeightedCountingResources

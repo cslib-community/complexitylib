@@ -1350,6 +1350,15 @@ query writes, iteration and binary output. Sharp single-loglog time and global p
 workspace are proved on the recorded explicit/native model, including the empty graph. This is
 the source Corollary 7.4 / Appendix D.5 optimum-value clause, not a returned witness.
 
+`UpperDomination.Witness` now returns an actual original-vertex minimal dominating set at the
+computed optimum, with cardinality equal to the binary output value and a bound on every other
+minimal dominating set. The actual generic unit-clause recovery fixes the linear selection/gate/
+mark word, preserves an extension at each step, then trims auxiliaries. Complete native resource
+composition includes both passes, every-prefix encodings, unit writes, branch/counter/iterator
+costs and output, retaining sharp time/global polynomial peak workspace. This closes Upper's
+Corollary 7.4 recovery clause in the explicit encoding; nonunique pair counts remain distinct
+from exact unmarked-set counts.
+
 Remaining STOC1575 objectives, keeping the original inventory open:
 
 - Theorems 1.1–1.2: actual generic bounded-term DNF constructor/count/resource transfer and the
@@ -1375,10 +1384,9 @@ Remaining STOC1575 objectives, keeping the original inventory open:
   induced-matching counting/decision and maximum-induced-matching signed-threshold counting/
   decision, plus Upper Dominating Set decision via private-neighbor marking-pair positivity, are
   covered for the stated explicit encodings. Full optimum/witness composition is covered for
-  Maximum Induced Matching. Upper domination also has actual attained/global optimum-value
-  recovery; its witness output remains open. The other four predicates still need both recovery
-  clauses. For Upper witness, pointwise selection/functional-extension correspondence under added
-  unit clauses and the actual native self-reduction/output resource composition remain to prove.
+  Maximum Induced Matching and Upper Domination, including an actual returned original solution.
+  The other four predicates still need their optimum/witness recovery specializations. General
+  degree rules/partitions and unique-mark refinements are separate outstanding source clauses.
 - Corollary 7.5: total counts with the sharper no-size-test `2v-1` query construction, exact
   edge-size coefficients and the full ordered distribution/output/sharp-time/global-space endpoint
   are covered for the stated canonical explicit encoding. Alternative admission/succinct encoding
@@ -1387,7 +1395,7 @@ Remaining STOC1575 objectives, keeping the original inventory open:
   (`4v+a-1` variables) are covered. The alternative unique-mark width-four original-set counter
   (`5v+a-1` variables) and width-three path-marker refinement (`6v+a-1` variables) remain open.
   Preserve the pair/set count distinction, input thresholds, empty graphs and polynomially many
-  distribution/self-reduction calls. Upper optimum value is covered; witness output remains open.
+  distribution/self-reduction calls. Upper optimum and actual witness output are covered in the recorded model.
 
 Remaining graph/general-rule and other-paper/ALL-main endpoints remain open; generic DNF,
 independent-domination, kernel, perfect-matching-cut, efficient-edge-domination and maximum-induced-
