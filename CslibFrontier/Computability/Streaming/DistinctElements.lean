@@ -16,7 +16,7 @@ public import Mathlib.Order.Prod.Lex.Basic
 import CslibFrontier.Foundations.Combinatorics.SmallSubsets
 import CslibFrontier.Foundations.Data.Finset.LowestInsert
 import CslibFrontier.Foundations.Data.Nat.Choose.Sum
-import CslibFrontier.Probability.MedianOfMeans
+import CslibFrontier.Probability.MedianTrick
 import CslibFrontier.Probability.PairwiseIndependentHash.Retention
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Uniform

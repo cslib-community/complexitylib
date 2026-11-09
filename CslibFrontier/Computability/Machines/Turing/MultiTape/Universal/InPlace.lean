@@ -492,8 +492,7 @@ public lemma foldEnd_inO : ComputableTidilyInO foldEnd eSt eSt
     (g := foldEnd) fun s => rfl).mono 100 (fun s => ?_) fun s => ?_
   all_goals
     have hr : (encNat s.2.1).length ≤ (eSt s).length := by simp only [length_encPair]; omega
-    have h₁ : ((encNat s.2.1).length + 1) ^ 2 ≤ ((eSt s).length + 1) ^ 2 :=
-      Nat.pow_le_pow_left (by omega) 2
+    have h₁ : ((encNat s.2.1).length + 1) ^ 2 ≤ ((eSt s).length + 1) ^ 2 := by gcongr
     have h₂ : ((eSt s).length + 1) ^ 2 ≤ ((eSt s).length + 1) ^ 3 :=
       Nat.pow_le_pow_right (by omega) (by omega)
     have hL : (eSt s).length + 1 ≤ ((eSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _

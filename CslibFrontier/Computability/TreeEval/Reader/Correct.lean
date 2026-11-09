@@ -152,10 +152,7 @@ private theorem runFrom_scan_loop {p : ℕ} [Fact p.Prime] {fr : Frame} {st : Li
     · simp [List.getD_eq_getElem?_getD]
   | succ k ih =>
     obtain ⟨acc, h', hlen, hlt, hsum⟩ := ih (by omega)
-    have hℓ : 0 < ℓ := by
-      rcases Nat.eq_zero_or_pos ℓ with h0 | h0
-      · simp [tableLength, h0] at hk
-      · exact h0
+    have hℓ : 0 < ℓ := by grind [tableLength]
     have hbit : T.body.getD (pathOffset ℓ H (path st) + k) false = tableBit f k := by
       rw [List.getD_eq_getElem?_getD, Tree.getElem_body_gate T hf (by omega)]
       rfl

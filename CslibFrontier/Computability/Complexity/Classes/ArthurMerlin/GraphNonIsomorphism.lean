@@ -596,8 +596,7 @@ private theorem length_distinctVertices_mul_le (G₀ G₁ : Graph) :
   -- the lengths
   have := G₀.length_distinctVertices_le
   have : G₀.distinctVertices.length ≤ (encPair encGraph encGraph (G₀, G₁)).length := by
-    simp only [length_encPair]
-    omega
+    grind [length_encPair]
   nlinarith
 
 /-- For graphs with equally many distinct vertices, `certifiedSet` has the same cardinality as the

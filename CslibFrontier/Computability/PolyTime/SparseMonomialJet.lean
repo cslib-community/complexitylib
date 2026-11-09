@@ -426,10 +426,7 @@ theorem rowEntry_evalAffineInputZJetTable_eq_coeff_affineInput {J n j : ℕ} (hj
           (fun i : Fin n => ofCoeffList ((rowsCoeffs.getD v []).getD i []))
           t (fun i : Fin n => x.getD i false)).map
         (MvPolynomial.eval fun i : Fin n => bitVal ℤ (U.getD i false))).coeff j := by
-  have hlen : (rowsCoeffs.getD v []).length ≤ n := by
-    by_cases hv : v < rowsCoeffs.length
-    · rw [List.getD_eq_getElem _ [] hv]; exact hrows _ (List.getElem_mem hv)
-    · rw [List.getD_eq_default rowsCoeffs [] (by omega)]; exact Nat.zero_le n
+  have hlen : (rowsCoeffs.getD v []).length ≤ n := by grind
   rw [rowEntry_evalAffineInputZJetTable_of_lt hj]
   exact getD_evalAffineInputZJet_eq_coeff_affineInput_fin hj t hlen U x
 

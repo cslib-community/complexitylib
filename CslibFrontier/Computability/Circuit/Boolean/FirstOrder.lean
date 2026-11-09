@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Circuit.Boolean.Unbounded
 public import CslibFrontier.Computability.Circuit.Formula
+public import CslibFrontier.Logics.FirstOrder.Atom
 public import CslibFrontier.Logics.FirstOrder.Interpretation
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
@@ -19,9 +20,9 @@ import Mathlib.Tactic.Linarith
 # First-order model checking in constant depth
 
 A structure for a relational first-order language `L` on the universe `Fin n` is determined by the
-truth values of its atomic facts `R(a₁, …, aₗ)` (`ModelChecking.Atom`, `ModelChecking.Model`), and
+truth values of its atomic facts `R(a₁, …, aₗ)` (`Cslib.Logic.FO.Atom`, `Cslib.Logic.FO.Model`), and
 every structure with `n` elements is isomorphic to one of these through an enumeration
-(`ModelChecking.realize_iff_atomsOf`). Expanding each universal quantifier into a conjunction over
+(`Cslib.Logic.FO.realize_iff_atomsOf`). Expanding each universal quantifier into a conjunction over
 the `n` elements turns a first-order formula into a formula of negations and unbounded fan-in
 conjunctions and disjunctions over the atomic facts (`ModelChecking.toUnbounded`), which computes
 whether the structure satisfies it (`ModelChecking.eval_toUnbounded`). Its depth is bounded
@@ -40,10 +41,9 @@ The canonical ordered extension, including genuine `0`, `1`, and `max` constants
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.ModelChecking.Atom`: the atomic facts of a structure on `Fin n`.
-* `Cslib.Circuits.Boolean.ModelChecking.Model`,
-  `Cslib.Circuits.Boolean.ModelChecking.atomsOf`: the structure with given true atomic facts, and
-  the atomic facts of an arbitrary finite structure through an enumeration.
+Atomic facts `Cslib.Logic.FO.Atom`, models `Cslib.Logic.FO.Model`, and `Cslib.Logic.FO.atomsOf`
+are provided by `CslibFrontier.Logics.FirstOrder.Atom`.
+
 * `Cslib.Circuits.Boolean.ModelChecking.constUnbounded`,
   `Cslib.Circuits.Boolean.ModelChecking.toUnbounded`: a Boolean constant and a first-order formula
   as formulas over the unbounded fan-in basis.
@@ -70,28 +70,9 @@ The canonical ordered extension, including genuine `0`, `1`, and `max` constants
 namespace Cslib.Circuits.Boolean.ModelChecking
 
 open FirstOrder FirstOrder.Language
-open Cslib.Logic.FO (termVar realize_termVar)
+open Cslib.Logic.FO (Atom Model atomsOf realize_iff_atomsOf termVar realize_termVar)
 
 variable {L : Language} [L.IsRelational] {n N : ℕ}
-
-/-- The atomic facts of a structure for `L` on `Fin n`: a relation symbol and a tuple of
-elements. -/
-def Atom (L : Language) (n : ℕ) : Type _ :=
-  Σ R : Σ l, L.Relations l, Fin R.1 → Fin n
-
-/-- The universe `Fin n` with the structure whose true atomic facts are those given by `x`. -/
-@[nolint unusedArguments]
-def Model (_x : Atom L n → Bool) : Type :=
-  Fin n
-
-/-- The first-order `L.Structure` on `Model x` whose relations are given by the truth table `x`. -/
-instance (x : Atom L n → Bool) : L.Structure (Model x) where
-  funMap f := isEmptyElim f
-  RelMap {l} R t := x ⟨⟨l, R⟩, t⟩ = true
-
-/-- There are finitely many atomic facts on `Fin n` when `L` has finitely many relation symbols. -/
-instance [Fintype (Σ l, L.Relations l)] : Fintype (Atom L n) :=
-  inferInstanceAs (Fintype (Σ R : Σ l, L.Relations l, Fin R.1 → Fin n))
 
 /-- The constant `b` as a formula over the unbounded fan-in basis. -/
 def constUnbounded (b : Bool) : Formula Unbounded.signature N :=
@@ -254,24 +235,6 @@ theorem leafSize_toUnbounded_le (e : Atom L n ≃ Fin N) {k : ℕ} (φ : L.Bound
 section Structures
 
 variable {M : Type*} [L.Structure M]
-
-open Classical in
-/-- The atomic facts of a structure on `M`, read through an enumeration `e` of `M` by `Fin n`. -/
-noncomputable def atomsOf (e : M ≃ Fin n) : Atom L n → Bool :=
-  fun a => decide (Structure.RelMap a.1.2 (e.symm ∘ a.2))
-
-/-- An enumeration of `M` is an isomorphism onto the structure with the atomic facts of `M`. -/
-private def equivModel (e : M ≃ Fin n) : M ≃[L] Model (atomsOf (L := L) e) where
-  toEquiv := e
-  map_fun' f := isEmptyElim f
-  map_rel' R t := by
-    change atomsOf e ⟨⟨_, R⟩, e ∘ t⟩ = true ↔ Structure.RelMap R t
-    simp [atomsOf, Function.comp_def]
-
-/-- A structure satisfies a sentence exactly when the structure with its atomic facts does. -/
-theorem realize_iff_atomsOf (e : M ≃ Fin n) (φ : L.Sentence) :
-    M ⊨ φ ↔ Model (atomsOf (L := L) e) ⊨ φ :=
-  StrongHomClass.realize_sentence (equivModel e) φ
 
 /-- The translation of a sentence decides it on every structure, through its atomic facts. -/
 theorem eval_toUnbounded_atomsOf (e : Atom L n ≃ Fin N) (eM : M ≃ Fin n) (φ : L.Sentence) :
