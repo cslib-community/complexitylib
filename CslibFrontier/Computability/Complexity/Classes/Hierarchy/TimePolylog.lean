@@ -79,13 +79,13 @@ its first argument times the total length, so the constant `[eBit true]` is put 
 quadratic `Cslib.Complexity.Diagonal.computableInO_verdict` puts the result first.) -/
 private theorem computableInO_verdict_linear :
     ComputableInO verdict eOut encBool (fun r => (eOut r).length) fun r => (eOut r).length := by
-  have heq := (ComputableInO.eq (encList encUnary)).tidy.comp
-    ((ComputableTidilyInO.const (encMid := encList encUnary) [eBit true]).prod
-      (ComputableTidilyInO.fst (encList encUnary) encBool))
-  have hfin := (ComputableTidilyInDegree.of_finite (encIn := encPair encBool encBool)
+  have heq := (ComputableInO.eq (encList encUnary)).comp
+    ((ComputableInO.const (encMid := encList encUnary) [eBit true]).prod
+      (ComputableInO.fst (encList encUnary) encBool))
+  have hfin := (ComputableInDegree.of_finite (encIn := encPair encBool encBool)
     (encMid := encBool) fun q : Bool × Bool => !(q.1 && q.2)).inO_one
-  refine (((hfin.comp ((ComputableTidilyInO.snd (encList encUnary) encBool).prod heq)).mono 64
-    (fun r => ?_) fun r => ?_).of_enc_eq fun r => ?_).computableInO
+  refine ((hfin.comp ((ComputableInO.snd (encList encUnary) encBool).prod heq)).mono 64
+    (fun r => ?_) fun r => ?_).of_enc_eq fun r => ?_
   rotate_left 2
   · simp only [verdict, Function.comp_apply, encBool_apply, List.cons.injEq, and_true]
     rw [decide_eq_decide.mpr eq_comm]
@@ -155,14 +155,14 @@ theorem exists_computableInO_timeDiagonal_polylog : ∃ k, ∀ {J : ℕ → ℕ}
     (by fun_prop)
   obtain ⟨K, hK⟩ := polylogBounds_aux 6 ed ce cA (by norm_num)
   refine ⟨ed * 6, fun {J} hJ => ?_⟩
-  have hu : ComputableTidilyInO unframe encBits encBits (fun x => x.length) fun x => x.length :=
-    ComputableTidilyInO.of_linear (.of_unframe fun _ => rfl)
-  have hdesc := hdec.inO.tidy.comp hu
-  have hsym := Universal.computableTidilyInDegree_map_eBit.inO_one
-  have hclock := hJ.computableInO.tidy
-  have hU := computableInO_universal_nlogn.tidy.comp (hdesc.prod (hsym.prod hclock))
-  have h := computableInO_shortDesc.tidy.ite (computableInO_verdict_linear.tidy.comp hU)
-    (ComputableTidilyInO.const (encMid := encBool) false)
+  have hu : ComputableInO unframe encBits encBits (fun x => x.length) fun x => x.length :=
+    ComputableInO.of_linear (.of_unframe fun _ => rfl)
+  have hdesc := hdec.inO.comp hu
+  have hsym := Universal.computableInO_map_eBit
+  have hclock := hJ.computableInO
+  have hU := computableInO_universal_nlogn.comp (hdesc.prod (hsym.prod hclock))
+  have h := computableInO_shortDesc.ite (computableInO_verdict_linear.comp hU)
+    (ComputableInO.const (encMid := encBool) false)
   obtain ⟨cO, hcO⟩ := hU.length_le
   have hbound (x : List Bool) (hs : shortDesc x = true) :
       x.length + ((unframe x).length + 1) ^ dd + (x.length + J x.length) +
@@ -184,7 +184,7 @@ theorem exists_computableInO_timeDiagonal_polylog : ∃ k, ∀ {J : ℕ → ℕ}
     · obtain ⟨b, -, rfl⟩ := List.mem_map.mp ha
       cases b <;> decide
     · enc_len [descLen]
-  refine (h.mono ((K + 1) * (cO + 1) + 2) (fun x => ?_) fun x => ?_).computableInO
+  refine h.mono ((K + 1) * (cO + 1) + 2) (fun x => ?_) fun x => ?_
   all_goals
     have hO := hcO x
     dsimp only [Function.comp_apply, encBits_apply] at hO ⊢

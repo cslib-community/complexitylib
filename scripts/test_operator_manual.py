@@ -22,7 +22,7 @@ with mock.patch.object(sys, "path", [str(DATA), *sys.path]):
 
 class ManualChecks(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="complexitylib-manual-check-")
+        self.temp = tempfile.TemporaryDirectory(prefix="cslib-frontier-manual-check-")
         self.addCleanup(self.temp.cleanup)
         self.repo = Path(self.temp.name)
         self.manual = self.repo / "manual"
@@ -111,7 +111,7 @@ class BookRegistration(unittest.TestCase):
     """Run the chapter-list check with the real builder on placeholder copies of its pages."""
 
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="complexitylib-manual-registration-")
+        self.temp = tempfile.TemporaryDirectory(prefix="cslib-frontier-manual-registration-")
         self.addCleanup(self.temp.cleanup)
         self.repo = Path(self.temp.name)
         self.manual = self.repo / "manual"
@@ -163,7 +163,7 @@ class BookInputs(unittest.TestCase):
     """Exercise the actual assembler, replacing only Git and publishing-tool rendering."""
 
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="complexitylib-manual-book-")
+        self.temp = tempfile.TemporaryDirectory(prefix="cslib-frontier-manual-book-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name) / "manual"
         (self.root / "data").mkdir(parents=True)
@@ -311,7 +311,7 @@ class BookInputs(unittest.TestCase):
 
 class PortableLinks(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="complexitylib-manual-links-")
+        self.temp = tempfile.TemporaryDirectory(prefix="cslib-frontier-manual-links-")
         self.addCleanup(self.temp.cleanup)
         self.repo = Path(self.temp.name)
         self.root = self.repo / 'manual'

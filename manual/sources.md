@@ -104,6 +104,11 @@ Shai Ben-David, Benny Chor, Oded Goldreich and Michael Luby. *On the Theory of A
 
 Eli Ben-Sasson, Alessandro Chiesa and Nicholas Spooner. *Interactive Oracle Proofs*. TCC 2016-B II, 31–60. https://doi.org/10.1007/978-3-662-53644-5_2 .
 
+<a id="bdfkk18"></a>
+## bdfkk18
+
+Chris Brzuska, Antoine Delignat-Lavaud, Cédric Fournet, Konrad Kohbrok and Markulf Kohlweiss. *State Separation for Code-Based Game-Playing Proofs*. ASIACRYPT 2018, Lecture Notes in Computer Science 11274, 222–249. https://doi.org/10.1007/978-3-030-03332-3_9 . Bibliographic metadata as in the library bibliography. The primary text was not inspected, and no theorem number is claimed. The manual attributes to this paper only the package calculus: packages composed sequentially and side by side, and the reduction and hybrid steps built from them.
+
 <a id="beigelgill92"></a>
 ## beigelgill92
 
@@ -162,7 +167,7 @@ Manuel Blum, Robert W. Floyd, Vaughan Pratt, Ronald L. Rivest and Robert E. Tarj
 <a id="bhr12"></a>
 ## bhr12
 
-Mihir Bellare, Viet Tung Hoang, Phillip Rogaway. "Foundations of Garbled Circuits." *Proceedings of the 2012 ACM Conference on Computer and Communications Security (CCS '12)*, 784–796, 2012. https://doi.org/10.1145/2382196.2382279 . Full version: Cryptology ePrint Archive, Report 2012/265. Bibliographic data from the DOI record and secondary listings. The ePrint copy returned HTTP 403 and the ACM page sat behind a bot challenge in this pass, so no theorem or definition numbers are claimed. The garbling-scheme syntax and simulation-based privacy with topology side information are cited at paper level only.
+Mihir Bellare, Viet Tung Hoang, Phillip Rogaway. "Foundations of Garbled Circuits." *Proceedings of the 2012 ACM Conference on Computer and Communications Security (CCS '12)*, 784–796, 2012. https://doi.org/10.1145/2382196.2382279 . Full version: Cryptology ePrint Archive, Report 2012/265. Bibliographic data from the DOI record and secondary listings (`BellareHoangRogaway2012`). The abstract garbling-scheme framework in `Garbling/{Scheme,Games,Foundations}.lean` follows Sections 3–4 of ePrint 2012/265 (syntax in §3.1, side information in §3.3, the five security games in §§3.4–3.6, invertible side information in §4.1, and the indistinguishability/simulation reductions of Propositions 2 and 3 in §§4.2–4.3), while the concrete point-and-permute circuit garbling in `Garbling/{Basic,Privacy}.lean` cites the garbling-scheme syntax and simulation-based privacy with topology side information at paper level only, because the ePrint copy returned HTTP 403 and the ACM page sat behind a bot challenge in the pass that added those modules.
 
 <a id="bjkst02"></a>
 ## bjkst02
@@ -244,6 +249,11 @@ Ran Canetti. *Universally Composable Security*. Journal of the ACM 67(5), Articl
 
 Gruia Călinescu, Chandra Chekuri, Martin Pál, Jan Vondrák. “Maximizing a Monotone Submodular Function subject to a Matroid Constraint.” *SIAM Journal on Computing* 40(6), 1740–1766, 2011. https://doi.org/10.1137/080733991 . The `p`-system definition and the greedy ratios `1/p` (modular) and `1/(p+1)` (monotone submodular) in Section 1, and the proof of the `1/(p+1)` bound in Appendix B (“Analysis of Greedy for p-systems”), were checked on 2026-11-08 against the authors' manuscript dated September 21, 2009, at https://theory.stanford.edu/~jvondrak/data/submod-matroid.pdf ; the journal pagination was not checked. The manual reports the original Fisher–Nemhauser–Wolsey and Jenkyns attributions as stated in this paper.
 
+<a id="cdpw07"></a>
+## cdpw07
+
+Ran Canetti, Yevgeniy Dodis, Rafael Pass and Shabsi Walfish. *Universally Composable Security with Global Setup*. TCC 2007, Lecture Notes in Computer Science 4392, 61–85; full version Cryptology ePrint Archive 2006/432. https://doi.org/10.1007/978-3-540-70936-7_4 . The primary text was not inspected, and no theorem number is claimed. The manual attributes to this paper only the setting of sessions that share a global functionality which the environment also queries directly.
+
 <a id="cf01"></a>
 ## cf01
 
@@ -312,7 +322,7 @@ Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest and Clifford Stein. *In
 <a id="complexitylib"></a>
 ## complexitylib
 
-Complexitylib contributors. *Complexitylib*, source snapshot `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. [Pinned repository](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8). Individual declarations are linked in the text. The repository bibliography records mathematical sources; attribution here reports those source annotations unless independent verification is explicitly stated.
+cslib-frontier contributors. *cslib-frontier* (named Complexitylib at this snapshot), source snapshot `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. [Pinned repository](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8). Individual declarations are linked in the text. The repository bibliography records mathematical sources; attribution here reports those source annotations unless independent verification is explicitly stated.
 
 <a id="cook74"></a>
 ## cook74
@@ -1210,7 +1220,7 @@ Justin Thaler. *Proofs, Arguments, and Zero-Knowledge*. Foundations and Trends i
 <a id="thorup13"></a>
 ## thorup13
 
-Mikkel Thorup. “Simple Tabulation, Fast Expanders, Double Tabulation, and High Independence.” *FOCS 2013*, 90–99. https://doi.org/10.1109/FOCS.2013.18 ; author preprint https://arxiv.org/abs/1311.3121v2 . Bibliographic record checked; the formalization's quantitative adaptation is grounded in the pinned abstract and library source.
+Mikkel Thorup. “Simple Tabulation, Fast Expanders, Double Tabulation, and High Independence.” *FOCS 2013*, 90–99. https://doi.org/10.1109/FOCS.2013.18 ; author preprint https://arxiv.org/abs/1311.3121v2 . Bibliographic record checked; the formalization's quantitative adaptation is grounded in the formal abstract at the pinned revision (since retired) and the library source.
 
 <a id="toda1991"></a>
 ## toda1991

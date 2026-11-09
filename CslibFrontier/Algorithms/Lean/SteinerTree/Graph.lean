@@ -39,12 +39,11 @@ and Berman [KouMarkowskyBerman1981].
   `metricCompletion w G` (`IsShortestWalkOracle.walkWeight_eq`).
 * `kmbEdges w P R` runs `steinerMST` on the costs `walkWeight w (P u v)` and returns the set of
   edges of the walks `P u v` along the tree edges.
-* The bounds assume duplicate-free terminals (`R.Nodup`), because they are derived from the metric
-  theorems of `CslibFrontier.Algorithms.Lean.SteinerTree.Metric`. There, `Nodup` is needed only for
-  costs with a nonzero diagonal. Oracle costs have a zero diagonal (`walkWeight w (P x x) ≤
-  walkWeight w Walk.nil = 0`), so repeated terminals do not change the weight of the minimum
-  spanning tree. Dropping the hypothesis would need a zero-diagonal variant of the metric theorem,
-  which is not proved here.
+* Shortest-walk oracle costs have a zero diagonal
+  (`walkWeight w (P x x) ≤ walkWeight w Walk.nil = 0`), so repeated terminals do not change the
+  weight of the minimum spanning tree. The bounds use the zero-diagonal metric variant
+  `length_mul_edgeCost_steinerMST_le_of_diag` and hold for arbitrary terminal lists without
+  assuming `R.Nodup`.
 
 ## Source mapping
 
@@ -157,6 +156,10 @@ theorem IsShortestWalkOracle.triangle {P : ∀ u v : V, G.Walk u v}
     (hP : IsShortestWalkOracle w G P) (x y z : V) :
     walkWeight w (P x z) ≤ walkWeight w (P x y) + walkWeight w (P y z) :=
   (hP x z _).trans_eq (walkWeight_append w (P x y) (P y z))
+
+theorem IsShortestWalkOracle.walkWeight_self {P : ∀ u v : V, G.Walk u v}
+    (hP : IsShortestWalkOracle w G P) (x : V) : walkWeight w (P x x) = 0 :=
+  Nat.le_zero.1 (hP x x Walk.nil)
 
 theorem IsShortestWalkOracle.le_of_adj {P : ∀ u v : V, G.Walk u v}
     (hP : IsShortestWalkOracle w G P) {u v : V} (h : G.Adj u v) :
@@ -282,12 +285,12 @@ theorem isSteinerSubgraph_kmbEdges (P : ∀ u v : V, G.Walk u v) (R : List V) :
   ⟨expandEdges_subset P _, fun a ha b hb =>
     reachable_expandEdges P (connects_steinerMST _ R a ha b hb)⟩
 
-/-- **The Kou–Markowsky–Berman heuristic, sharp form**: for a shortest-walk oracle and
-duplicate-free terminals `R`, `|R| · cost(kmbEdges) ≤ 2 (|R| - 1) · cost(F)` for every Steiner
-subgraph `F`. This is the factor `2 (1 - 1/|R|)`, a restricted form of [KouMarkowskyBerman1981]'s
-`2 (1 - 1/ℓ)` with `ℓ` the number of leaves of an optimal tree. -/
+/-- **The Kou–Markowsky–Berman heuristic, sharp form**: for a shortest-walk oracle,
+`|R| · cost(kmbEdges) ≤ 2 (|R| - 1) · cost(F)` for every Steiner subgraph `F`. This is the factor
+`2 (1 - 1/|R|)`, a restricted form of [KouMarkowskyBerman1981]'s `2 (1 - 1/ℓ)` with `ℓ` the number
+of leaves of an optimal tree. -/
 theorem length_mul_sum_kmbEdges_le {P : ∀ u v : V, G.Walk u v} (hP : IsShortestWalkOracle w G P)
-    {R : List V} (hR : R.Nodup) {F : Finset (Sym2 V)} (hF : IsSteinerSubgraph G R F) :
+    (R : List V) {F : Finset (Sym2 V)} (hF : IsSteinerSubgraph G R F) :
     R.length * (kmbEdges w P R).sum w ≤ 2 * (R.length - 1) * F.sum w := by
   set δ : V → V → ℕ := fun u v => walkWeight w (P u v)
   have hconn : Connects (F.toList.map Quot.out) R := fun a ha b hb =>
@@ -296,19 +299,21 @@ theorem length_mul_sum_kmbEdges_le {P : ∀ u v : V, G.Walk u v} (hP : IsShortes
       ≤ R.length * edgeCost δ (steinerMST δ R) :=
         Nat.mul_le_mul_left _ (sum_expandEdges_le P _)
     _ ≤ 2 * (R.length - 1) * edgeCost δ (F.toList.map Quot.out) :=
-        length_mul_edgeCost_steinerMST_le hP.symm hP.triangle hR hconn
+        length_mul_edgeCost_steinerMST_le_of_diag (fun x => hP.walkWeight_self x) hP.symm
+          hP.triangle hconn
     _ ≤ 2 * (R.length - 1) * F.sum w := Nat.mul_le_mul_left _ (edgeCost_out_le hP hF.1)
 
 /-- The heuristic costs at most twice any Steiner subgraph. -/
 theorem sum_kmbEdges_le_two_mul {P : ∀ u v : V, G.Walk u v} (hP : IsShortestWalkOracle w G P)
-    {R : List V} (hR : R.Nodup) {F : Finset (Sym2 V)} (hF : IsSteinerSubgraph G R F) :
+    (R : List V) {F : Finset (Sym2 V)} (hF : IsSteinerSubgraph G R F) :
     (kmbEdges w P R).sum w ≤ 2 * F.sum w := by
   set δ : V → V → ℕ := fun u v => walkWeight w (P u v)
   have hconn : Connects (F.toList.map Quot.out) R := fun a ha b hb =>
     eqvGen_of_reachable (hF.2 a ha b hb)
   calc (kmbEdges w P R).sum w ≤ edgeCost δ (steinerMST δ R) := sum_expandEdges_le P _
     _ ≤ 2 * edgeCost δ (F.toList.map Quot.out) :=
-        edgeCost_steinerMST_le_two_mul hP.symm hP.triangle hR hconn
+        edgeCost_steinerMST_le_two_mul_of_diag (fun x => hP.walkWeight_self x) hP.symm
+          hP.triangle hconn
     _ ≤ 2 * F.sum w := Nat.mul_le_mul_left _ (edgeCost_out_le hP hF.1)
 
 omit [DecidableEq V] in
@@ -322,10 +327,10 @@ theorem exists_isSteinerSubgraph_sum_eq_graphSteinerOpt (P : ∀ u v : V, G.Walk
 /-- **The metric-completion MST 2-approximation for Steiner tree in graphs**
 ([WilliamsonShmoys2011], Exercise 2.5(b)): `cost(kmbEdges) ≤ 2 · OPT`. -/
 theorem sum_kmbEdges_le_two_mul_graphSteinerOpt {P : ∀ u v : V, G.Walk u v}
-    (hP : IsShortestWalkOracle w G P) {R : List V} (hR : R.Nodup) :
+    (hP : IsShortestWalkOracle w G P) (R : List V) :
     (kmbEdges w P R).sum w ≤ 2 * graphSteinerOpt w G R := by
   obtain ⟨F, hF, hc⟩ := exists_isSteinerSubgraph_sum_eq_graphSteinerOpt (w := w) P R
   rw [← hc]
-  exact sum_kmbEdges_le_two_mul hP hR hF
+  exact sum_kmbEdges_le_two_mul hP R hF
 
 end Cslib.Algorithms.Lean.SteinerTree

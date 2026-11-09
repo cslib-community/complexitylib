@@ -190,8 +190,7 @@ private theorem integral_multilinearEval_pow_four_le_aux (hμ : ∀ i, HasInvari
       have hZ : Z ≤ 3 * 9 ^ k * A * B := by
         refine (pow_le_pow_iff_left₀ hZ0 (by positivity) two_ne_zero).1 ?_
         calc Z ^ 2 ≤ X * Y := hCS
-          _ ≤ (9 ^ (k + 1) * A ^ 2) * (9 ^ k * B ^ 2) :=
-            mul_le_mul hX hY hY0 (by positivity)
+          _ ≤ (9 ^ (k + 1) * A ^ 2) * (9 ^ k * B ^ 2) := by gcongr
           _ = (3 * 9 ^ k * A * B) ^ 2 := by ring
       have hYm : Y * m4 ≤ Y * 9 := mul_le_mul_of_nonneg_left hm4 hY0
       calc X + 6 * Z + Y * m4

@@ -68,4 +68,4 @@ Focused regression tests use independent temporary Git repositories and run with
 python3 -B -m unittest discover -s scripts -p test_aggregate_merge.py -v
 ```
 
-No Lean statement, definition, selected abstract, catalogue entry or rendered PDF changes.
+No Lean statement or definition changes.

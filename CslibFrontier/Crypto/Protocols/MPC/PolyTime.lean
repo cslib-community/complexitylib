@@ -872,16 +872,6 @@ private theorem isPPTOn_pi_sampleList {α : Type} {input : α ↪ List Bool}
     rw [OracleComp.pi_succ]
     simp [ProbComp.eval_bind, ProbComp.eval_map]
 
-/-- Private sampling in `ProbOracleComp` binds directly on `ProbComp.eval` without touching the
-external oracle state `s`. -/
-private theorem runWith_sample_bind {ι : Type} {spec : ι → Type} {α β State : Type}
-    (oracle : (i : ι) → StateT State PMF (spec i))
-    (d : ProbComp α) (k : α → ProbOracleComp spec β) (s : State) :
-    ProbOracleComp.runWith oracle (ProbOracleComp.sample d >>= k) s =
-      (ProbComp.eval d).bind (fun a => ProbOracleComp.runWith oracle (k a) s) := by
-  simp [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample,
-    PMF.bind_map, Function.comp_def]
-
 /-- Private coin draws `ProbOracleComp.sample d` commute with arbitrary stateful oracle
 computations `m` under `ProbOracleComp.runWith`. -/
 private theorem runWith_sample_comm {ι : Type} {spec : ι → Type} {α β γ State : Type}
@@ -892,12 +882,12 @@ private theorem runWith_sample_comm {ι : Type} {spec : ι → Type} {α β γ S
       (ProbOracleComp.sample d >>= fun a => m >>= fun b => k a b) s =
     ProbOracleComp.runWith oracle
       (m >>= fun b => ProbOracleComp.sample d >>= fun a => k a b) s := by
-  rw [runWith_sample_bind]
+  rw [ProbOracleComp.runWith_sample_bind]
   conv_lhs => arg 2; ext a; rw [ProbOracleComp.runWith_bind]
   rw [PMF.bind_comm, ProbOracleComp.runWith_bind]
   congr 1
   funext b
-  rw [← runWith_sample_bind]
+  rw [← ProbOracleComp.runWith_sample_bind]
 
 /-! ### Section 4B: Word-Level Real and Simulated Runners and Their PPT Certificates -/
 
@@ -2429,7 +2419,7 @@ private theorem runWith_sample_congr_eq {ι : Type} {spec : ι → Type} {α γ 
     (k : α → ProbOracleComp spec γ) (s : State) :
     ProbOracleComp.runWith oracle (ProbOracleComp.sample d₁ >>= k) s =
       ProbOracleComp.runWith oracle (ProbOracleComp.sample d₂ >>= k) s := by
-  rw [runWith_sample_bind, runWith_sample_bind, heval]
+  rw [ProbOracleComp.runWith_sample_bind, ProbOracleComp.runWith_sample_bind, heval]
 
 private theorem runWith_sample_runEncoded_compose_twoPartyMul {m : ℕ} {OState : Type}
     {State Out : Fin m → Type} {sc₂ : Schedule m (sharedMulSpec 2)}

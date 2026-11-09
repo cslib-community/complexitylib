@@ -444,8 +444,7 @@ theorem list_hits (n s : ℕ) (hs : 1 ≤ s) : Hits s (list n s) := by
 /-- The matrix dimension of `list n s` is at most `256 * (n + s + 1) ^ 10`. -/
 theorem list_dimension_bound (n s : ℕ) : (list n s).dimension ≤ 256 * (n + s + 1) ^ 10 := by
   have hd : CyclotomicRing.degree (Parameters.exponent n s) ≤ Parameters.ambientDimension n s := by
-    unfold CyclotomicRing.degree Parameters.ambientDimension
-    exact Nat.pow_le_pow_right (by omega) (by omega)
+    grind [CyclotomicRing.degree, Parameters.ambientDimension]
   change Parameters.ambientDimension n s * CyclotomicRing.degree (Parameters.exponent n s) ≤ _
   calc _ ≤ (16 * (n + s + 1) ^ 5) * (16 * (n + s + 1) ^ 5) :=
              Nat.mul_le_mul (Parameters.polynomial_M n s) (hd.trans (Parameters.polynomial_M n s))

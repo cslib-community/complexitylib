@@ -668,8 +668,7 @@ private theorem coeffNorm1_prod_C_sub_X_le {Q : ℕ} (E : Finset (Fin Q)) :
         coeffNorm1_C_sub_X_mul_le _ _
       _ = ((s.1 + 1) + 1) * (∏ t ∈ E, (C ((t.1 : ℤ) + 1) - X)).coeffNorm1 := by
         rw [hnat]
-      _ ≤ ((s.1 + 1) + 1) * ∏ t ∈ E, ((t.1 + 1) + 1) :=
-        Nat.mul_le_mul_left _ ih
+      _ ≤ ((s.1 + 1) + 1) * ∏ t ∈ E, ((t.1 + 1) + 1) := by gcongr
 
 private theorem prod_add_one_add_one_le {Q : ℕ} (E : Finset (Fin Q)) :
     (∏ s ∈ E, ((s.1 + 1) + 1)) ≤ ∏ s ∈ E, (2 * (s.1 + 1)) := by

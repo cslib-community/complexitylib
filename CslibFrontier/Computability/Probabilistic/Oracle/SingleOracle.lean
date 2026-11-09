@@ -54,13 +54,10 @@ theorem WordOracleComp.singleOracle_map (i₀ : ι) (f : α → β) (p : WordOra
 theorem WordOracleComp.run_interpret_singleOracle {State : Type} (i₀ : ι)
     (oracle : ι × List Bool → StateT State PMF (List Bool)) (p : WordOracleComp Unit α)
     (s : State) :
-    (OracleComp.interpret
-      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-      (WordOracleComp.singleOracle i₀ p)).run s =
-    (OracleComp.interpret
-      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
-        (fun q : Unit × List Bool => oracle (i₀, q.2))) p).run s := by
-  rw [WordOracleComp.singleOracle, OracleComp.interpret_interpret]
+    ProbOracleComp.runWith oracle (WordOracleComp.singleOracle i₀ p) s =
+    ProbOracleComp.runWith (fun q : Unit × List Bool => oracle (i₀, q.2)) p s := by
+  rw [WordOracleComp.singleOracle, ProbOracleComp.runWith, ProbOracleComp.runWith,
+    OracleComp.runWith, OracleComp.runWith, OracleComp.interpret_interpret]
   congr 2
   funext q
   cases q <;> simp only [OracleComp.sumHandler, ProbOracleComp.query, OracleComp.interpret_query]

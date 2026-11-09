@@ -204,15 +204,8 @@ theorem entry_length_le_of_reach {x : ℕ × List ℕ × ℕ × DescribedNetwork
     obtain ⟨u, hu, rfl⟩ := List.mem_map.mp hw
     rw [length_encSum]
     simp only [Sum.elim_inl]
-    have h1 := length_le_encList_of_mem (encPair (encList encNat) encT) hu
-    have h2 : (encList (encPair (encList encNat) encT) G.vertices).length ≤
-        (DescribedNetwork.encDescribed encT G).length := by
-      change _ ≤ (encPair encUnary (encList (encPair (encList encNat) encT))
-        (G.numEdges, G.vertices)).length
-      rw [length_encPair]
-      dsimp only
-      omega
-    rw [length_encPair] at h1
+    have h1 := G.length_vertex_le (encT := encT) hu
+    simp only [DescribedNetwork.encVertex, length_encPair] at h1
     have : Z ≤ (Z + 1) ^ 2 := (Nat.le_succ Z).trans (Nat.le_self_pow (by norm_num) _)
     omega
   obtain ⟨hc, hv, hf⟩ := hsh.length_le entry rfl rfl rfl hZ1 hZ2

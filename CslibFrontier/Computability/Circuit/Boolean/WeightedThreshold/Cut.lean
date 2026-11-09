@@ -143,22 +143,6 @@ private theorem weightedSum_eq_zero_of_zero (w : Fin n → ℝ) (x : Fin n → B
   · simp [hw]
   · simp [h i hw]
 
-private theorem eval_gate_eq_of_lt (prog : Program signature n g)
-    (x : Fin n → Bool) (v : Fin g → Bool) (j : Fin g)
-    (hv : ∀ k : Fin g, k < j → prog.eval interpretation x k = v k) :
-    prog.eval interpretation x j =
-      decide ((prog.lines j).op.threshold ≤
-        weightedSum (inputWeight prog j) x +
-          ∑ k : Fin g, if k < j then gateWeight prog j k * (v k).toNat else 0) := by
-  rw [eval_gate_eq]
-  congr 2
-  rw [weightedSum]
-  congr 1
-  refine sum_congr rfl fun k _ => ?_
-  by_cases hk : k < j
-  · simp [hk, hv k hk]
-  · simp [hk, gateWeight_eq_zero_of_le prog j k (le_of_not_gt hk)]
-
 /-! ### Medians and halving -/
 
 /-- Every finite set `P` equipped with a real-valued function `f` has a threshold `μ` such that
@@ -310,7 +294,7 @@ private theorem cutInv_succ (prog : Program signature n g) (U A B : Finset (Fin 
   obtain ⟨P, Q, v, hPzero, hQzero, hv, hP, hQ⟩ := h
   set j₀ : Fin g := ⟨m, hm⟩
   set c : ℝ :=
-    (∑ k : Fin g, if k < j₀ then gateWeight prog j₀ k * (v k).toNat else 0) -
+    (∑ k : Fin g, gateWeight prog j₀ k * (v k).toNat) -
       (prog.lines j₀).op.threshold
   set α : (U → Bool) → ℝ :=
     fun p => weightedSum (inputWeight prog j₀) (glue U p fun _ => false)
@@ -319,9 +303,10 @@ private theorem cutInv_succ (prog : Program signature n g) (U A B : Finset (Fin 
   have hgate : ∀ p ∈ P, ∀ q ∈ Q,
       prog.eval interpretation (glue U p q) j₀ = decide (0 ≤ α p + β q + c) := by
     intro p hp q hq
-    rw [eval_gate_eq_of_lt prog (glue U p q) v j₀
-      (fun k hk => hv p hp q hq k (Fin.lt_def.mp hk)),
-      weightedSum_glue]
+    rw [eval_gate_eq_of_forall_lt prog (glue U p q) j₀
+      fun k hk => hv p hp q hq k (Fin.lt_def.mp hk)]
+    change decide (_ ≤ weightedSum (inputWeight prog j₀) (glue U p q) + _) = _
+    rw [weightedSum_glue]
     apply decide_eq_decide.mpr
     dsimp only [α, β, c]
     constructor <;> intro <;> linarith
