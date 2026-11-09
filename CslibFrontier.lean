@@ -2120,6 +2120,10 @@ public import CslibFrontier.Computability.Complexity.FineGrained.UpperDomination
 public import CslibFrontier.Computability.Complexity.FineGrained.UpperDominationUnique
 public import CslibFrontier.Computability.Complexity.FineGrained.UpperDominationWitness
 public import CslibFrontier.Computability.Complexity.FineGrained.VCOneCountingResources
+public import CslibFrontier.Computability.Complexity.FineGrained.WeightedComparisonConstruction
+public import CslibFrontier.Computability.Complexity.FineGrained.WeightedComparisonCounting
+public import CslibFrontier.Computability.Complexity.FineGrained.WeightedComparisonDistribution
+public import CslibFrontier.Computability.Complexity.FineGrained.WeightedComparisonSource
 public import CslibFrontier.Computability.Complexity.FineGrained.WeightedCountingPlan
 public import CslibFrontier.Computability.Complexity.FineGrained.WeightedCountingResources
 public import CslibFrontier.Computability.Complexity.FineGrained.WeightedRaggedResources
@@ -3335,7 +3339,11 @@ public import CslibFrontier.Computability.PolyTime.CNF.VCOneClosure
 public import CslibFrontier.Computability.PolyTime.CNF.VCOneDispatch
 public import CslibFrontier.Computability.PolyTime.CNF.VCOneFrontend
 public import CslibFrontier.Computability.PolyTime.CNF.VCOneSeparator
+public import CslibFrontier.Computability.PolyTime.CNF.WeightedComparison.Family
 public import CslibFrontier.Computability.PolyTime.CNF.WeightedComparison.Frontend
+public import CslibFrontier.Computability.PolyTime.CNF.WeightedComparison.Generator
+public import CslibFrontier.Computability.PolyTime.CNF.WeightedComparison.Signed
+public import CslibFrontier.Computability.PolyTime.CNF.WeightedComparison.WithBase
 public import CslibFrontier.Computability.PolyTime.CNF.WeightedNormalization
 public import CslibFrontier.Computability.PolyTime.CNF.WeightedPlan
 public import CslibFrontier.Computability.PolyTime.CNF.WeightedQuery

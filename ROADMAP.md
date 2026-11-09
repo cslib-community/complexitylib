@@ -829,28 +829,30 @@ The openai/math formalizations are Apache 2.0, as is Complexitylib, so adaptatio
 
 ## Branch implementation milestones pending integration review
 
-- **The sharper Theorem 1.1 bound** ([#1538](https://github.com/cslib-community/cslib-frontier/issues/1538)):
-  `ContractionCounting.exists_modelCounter_fixedDensity` proves the fixed-density bound
-  `2^{O_{k,D}(n / √log n)}` by tensor contraction (Theorem D.1 with `ℓ = 1`), and
-  `DensityBranchCounting.exists_modelCounter` combines it with the interpolation-scale counter in
-  one machine. `CountingSimulation.truncEntryContractionAlgorithm` now supplies polynomial
-  truncation order and precision `O(s log s)`, with a linear vertex bound. The arbitrary-density
-  bound `2^{O_k(n log log n / √log n)}` still needs the full Lemma D.2 branch/array
-  composition and its application to parity queries. The incidence entry-resource link below
-  now instantiates native truncated contraction on the constructed networks; #1538 remains open.
-- **Exact optimization and large weights:** `MaxSAT.exists_histogram_algorithm` and
-  `MaxSAT.exists_optimum_algorithm` compute the complete score distribution and optimum value in
-  contraction time measured by literal occurrences plus clauses. Their sparse fixed-width
-  specializations give `2^{O_{k,c}(n / √log n)}` time and polynomial space.
-  `BinaryWeights.certificate` contracts natural tensor tables exactly when their bit lengths are
-  polynomial in the structural size; `BinaryWeightedCounting.exists_partitionFunctionCounter`
-  supplies the native weighted-CSP application. Remaining extensions are native optimizing
-  assignment extraction and signed or rational weight interfaces. A variable-count rate for
-  dense exact MAX-SAT is not established by these results or by ordinary SAT sparsification.
+
+**The sharper Theorem 1.1 bound** ([#1538](https://github.com/cslib-community/cslib-frontier/issues/1538)):
+`ContractionCounting.exists_modelCounter_fixedDensity` proves the fixed-density bound
+`2^{O_{k,D}(n / √log n)}` by tensor contraction (Theorem D.1 with `ℓ = 1`), and
+`DensityBranchCounting.exists_modelCounter` combines it with the interpolation-scale counter in
+one machine. `CountingSimulation.truncEntryContractionAlgorithm` now supplies polynomial
+truncation order and precision `O(s log s)`, with a linear vertex bound. The arbitrary-density
+bound `2^{O_k(n log log n / √log n)}` still needs the full Lemma D.2 branch/array
+composition and its application to parity queries. The incidence entry-resource link below
+now instantiates native truncated contraction on the constructed networks; #1538 remains open.
+
+**Exact optimization and large weights:** `MaxSAT.exists_histogram_algorithm` and
+`MaxSAT.exists_optimum_algorithm` compute the complete score distribution and optimum value in
+contraction time measured by literal occurrences plus clauses. Their sparse fixed-width
+specializations give `2^{O_{k,c}(n / √log n)}` time and polynomial space.
+`BinaryWeights.certificate` contracts natural tensor tables exactly when their bit lengths are
+polynomial in the structural size; `BinaryWeightedCounting.exists_partitionFunctionCounter`
+supplies the native weighted-CSP application. Remaining extensions are native optimizing
+assignment extraction and signed or rational weight interfaces. A variable-count rate for
+dense exact MAX-SAT is not established by these results or by ordinary SAT sparsification.
 
 ## Documentation and repository
 
-- **The guide** ([#585]): a chapter per area, including Foundations (bit strings, Fourier
+- **The guide** ([#585](https://github.com/cslib-community/cslib-frontier/issues/585)): a chapter per area, including Foundations (bit strings, Fourier
   analysis, PMF and `ProbComp`, codes), proof complexity, descriptive complexity, and Word RAM
   and algorithms, reusing checked examples.
 - **Curated formal abstracts:** improve readability, and compare each changed abstract with its
@@ -862,70 +864,16 @@ The openai/math formalizations are Apache 2.0, as is Complexitylib, so adaptatio
 These remain coverage targets but are deferred from the active queue; their issues were closed as
 not planned, not as proved.
 
-- The full VNP-completeness reduction for the permanent ([#321]). Arithmetic formulas now
+- The full VNP-completeness reduction for the permanent ([#321](https://github.com/cslib-community/cslib-frontier/issues/321)). Arithmetic formulas now
   project to the permanent with dimension `Formula.size + 1` over every commutative semiring;
   a selector occurring in one permanent entry can be eliminated with one extra dimension when
   `2` is invertible. The conversion from VP witnesses to formulas, the two-entry gadget and
   general Boolean-sum elimination needed for VNP-hardness remain open.
-- General auxiliary-input zero knowledge ([#324]); see the GMW theorem above.
-- Williams's square-root-space simulation ([#361]) and implicit Tree Evaluation ([#367]), now the
-  frontier track [#888].
-- Vollmer's generalized-quantifier survey ([#399]): ordered leaf words, explicit uniformity and
+- General auxiliary-input zero knowledge ([#324](https://github.com/cslib-community/cslib-frontier/issues/324)); see the GMW theorem above.
+- Williams's square-root-space simulation ([#361](https://github.com/cslib-community/cslib-frontier/issues/361)) and implicit Tree Evaluation ([#367](https://github.com/cslib-community/cslib-frontier/issues/367)), now the
+  frontier track [#888](https://github.com/cslib-community/cslib-frontier/issues/888).
+- Vollmer's generalized-quantifier survey ([#399](https://github.com/cslib-community/cslib-frontier/issues/399)): ordered leaf words, explicit uniformity and
   input-access models, finite-monoid classification and generalized logical quantifiers.
-
-[archive]: https://github.com/cslib-community/cslib-frontier/blob/c89dd48c/ROADMAP.md
-[archive-fhe]: https://github.com/cslib-community/cslib-frontier/blob/c89dd48c/ROADMAP.md#modern-fhe-methods-and-deployment-priorities
-[#321]: https://github.com/cslib-community/cslib-frontier/issues/321
-[#324]: https://github.com/cslib-community/cslib-frontier/issues/324
-[#361]: https://github.com/cslib-community/cslib-frontier/issues/361
-[#367]: https://github.com/cslib-community/cslib-frontier/issues/367
-[#399]: https://github.com/cslib-community/cslib-frontier/issues/399
-[#456]: https://github.com/cslib-community/cslib-frontier/issues/456
-[#459]: https://github.com/cslib-community/cslib-frontier/issues/459
-[#474]: https://github.com/cslib-community/cslib-frontier/issues/474
-[#486]: https://github.com/cslib-community/cslib-frontier/issues/486
-[#581]: https://github.com/cslib-community/cslib-frontier/issues/581
-[#585]: https://github.com/cslib-community/cslib-frontier/issues/585
-[#608]: https://github.com/cslib-community/cslib-frontier/issues/608
-[#640]: https://github.com/cslib-community/cslib-frontier/issues/640
-[#643]: https://github.com/cslib-community/cslib-frontier/issues/643
-[#798]: https://github.com/cslib-community/cslib-frontier/issues/798
-[#800]: https://github.com/cslib-community/cslib-frontier/issues/800
-[#862]: https://github.com/cslib-community/cslib-frontier/issues/862
-[#884]: https://github.com/cslib-community/cslib-frontier/issues/884
-[#886]: https://github.com/cslib-community/cslib-frontier/issues/886
-[#888]: https://github.com/cslib-community/cslib-frontier/issues/888
-[#889]: https://github.com/cslib-community/cslib-frontier/issues/889
-[#890]: https://github.com/cslib-community/cslib-frontier/issues/890
-[#891]: https://github.com/cslib-community/cslib-frontier/issues/891
-[#892]: https://github.com/cslib-community/cslib-frontier/issues/892
-[#894]: https://github.com/cslib-community/cslib-frontier/issues/894
-[#895]: https://github.com/cslib-community/cslib-frontier/issues/895
-[#896]: https://github.com/cslib-community/cslib-frontier/issues/896
-[#897]: https://github.com/cslib-community/cslib-frontier/issues/897
-[#939]: https://github.com/cslib-community/cslib-frontier/issues/939
-[#949]: https://github.com/cslib-community/cslib-frontier/issues/949
-[#999]: https://github.com/cslib-community/cslib-frontier/issues/999
-[#1002]: https://github.com/cslib-community/cslib-frontier/issues/1002
-[#1104]: https://github.com/cslib-community/cslib-frontier/issues/1104
-[#1124]: https://github.com/cslib-community/cslib-frontier/issues/1124
-[#1155]: https://github.com/cslib-community/cslib-frontier/issues/1155
-[#1351]: https://github.com/cslib-community/cslib-frontier/issues/1351
-[#1539]: https://github.com/cslib-community/cslib-frontier/issues/1539
-[#1572]: https://github.com/cslib-community/cslib-frontier/issues/1572
-[#2468]: https://github.com/cslib-community/cslib-frontier/issues/2468
-[#1817]: https://github.com/cslib-community/cslib-frontier/issues/1817
-[#1885]: https://github.com/cslib-community/cslib-frontier/pull/1885
-[#2019]: https://github.com/cslib-community/cslib-frontier/issues/2019
-[#2062]: https://github.com/cslib-community/cslib-frontier/issues/2062
-[#2063]: https://github.com/cslib-community/cslib-frontier/issues/2063
-[#2205]: https://github.com/cslib-community/cslib-frontier/issues/2205
-[#2213]: https://github.com/cslib-community/cslib-frontier/issues/2213
-[#2289]: https://github.com/cslib-community/cslib-frontier/issues/2289
-[#2145]: https://github.com/cslib-community/cslib-frontier/issues/2145
-[#2084]: https://github.com/cslib-community/cslib-frontier/issues/2084
-[#2290]: https://github.com/cslib-community/cslib-frontier/issues/2290
-[#2423]: https://github.com/cslib-community/cslib-frontier/issues/2423
 
 The STOC1575 weighted-row module now proves Theorem 7.1 equations (24)–(25)
 assignment semantics for positive capped signed rows, per-row binomial counts,
@@ -1405,7 +1353,7 @@ declarations and native charged-word conventions, not undocumented admission or 
 | Lemma 3.2; Proposition 4.2 | `IncidenceGeneralResources`, generic frontend composition | Actual general-density single-loglog fixed-width counter and sequential resource composition. The old squared-loglog interpolation algorithm is not relabeled. |
 | Lemma 3.1 | Row-selection mathematics and integer Gram/binary backend | General row-selection semantics reused; actual weighted/exact-one integer inputs are covered. A standalone arbitrary-rational byte frontend/resource transfer is not supplied. |
 | Lemma 3.3; Appendix A.1 | `FunctionalCNF`, `CardinalityInterval`, `PaddedCardinality` | Actual functional cardinality circuits, binary target normalization, linear gate/clause bounds and unique extensions; padded per-class refinement now composed. |
-| Lemma A.1; Corollary A.2 | `WeightedSum.{Grouping,Circuit,Comparisons,Joint,Code}`, `WeightedComparison.Frontend` | Actual general polynomial-weight signed-literal comparisons, full functional 3-CNF/unique extensions and explicit linear gates/clauses; simultaneous correlated tests and exact signed-coefficient normalization. Binary gate-list writing equals the typed construction. Original binary frames/admission/derived-width resources covered. Whole generator-time and native two-query/joint-distribution resources remain open. |
+| Lemma A.1; Corollary A.2 | `WeightedSum.{Grouping,Circuit,Comparisons,Joint,Code}`, `WeightedComparison.Frontend` | Actual general polynomial-weight signed-literal comparisons, full functional 3-CNF/unique extensions and explicit linear gates/clauses; simultaneous correlated tests and exact signed-coefficient normalization. Binary gate-list writing equals the typed construction. Complete binary generator time/space and actual original-instance sharp counter/joint-distribution traversal are covered by `WeightedComparisonSource`, including real source exponents and fixed-linear eta rescaling; native/unary encoding conventions remain explicit. |
 | Theorem 7.1 | `WeightedRaggedResources` | Parsed arbitrary ragged positive-binary-weight rows, repeated/mixed literals and signed targets, fixed normalized-demand bound, actual all-cases sharp counting. |
 | Corollary 7.2; Lemma C.1 | `DegreeThreshold`, `SigmaRhoInput`, `SigmaRhoCountingResources`, `SigmaRhoDistribution` | Arbitrary fixed finite/cofinite pair, optional binary natural interval, original-set counts and full ordered cardinality distribution, including sharp native resources/output. General signed-bound wrapper is a remaining encoding extension. |
 | Theorem 7.3 | `DegreePartition`, `BoundedDegreePartitionCountingResources`, `DegreePartitionDistribution` | Actual fixed finite/cofinite labeled matrices, runtime binary natural class bounds, original counts and all tagged size vectors with exact order/coverage/output bounds; source query budgets and complete sharp native resources. Explicit canonical graph/unary/native model. |
@@ -1421,26 +1369,26 @@ alternative is not supplied by the existing two-query Theorem 7.1 endpoint; it r
 
 Remaining STOC1575 objectives, keeping the original inventory open:
 
-- Lemma A.1 / Corollary A.2 (PDF pp.28–29): `WeightedSum` now constructs general
-  nonnegative weights <=n^c for fixed natural exponent c and mixed-polarity literals, all weak/
-  equality/strict binary integer targets, simultaneous correlated tests and full unique-extension
-  3-CNF. The actual radix is 2^(floor(clog2(n+1)/2)+1), with 2c+1 positions and a derived
-  full-total word width. The group-size partition and reconstructed original sum, no-overflow
-  arithmetic and explicit O_c(n+1) gates/clauses are proved; no fixed-demand cap or unit-weight
-  substitution is used. Negative coefficients are a proved extension by literal flip and exact
-  negative constant offset, under the same magnitude promise. Direct gate-list generators have
-  exact code/CNF correspondence and a separate polynomial serialized-output bound. Original
-  binary frames preserve unary-declared zero-weight inputs; actual admission and derived-width
-  computations have polynomial certificates.
-  The complete gate-list/CNF generator's binary time and peak intermediate storage, original
-  two-query/native sharp counter transfer and complete joint weighted-distribution traversal/
-  output/resources remain open. Serialized output and linear gate counts are not runtime proofs.
-  The formal exponent is natural; the cofinal enlargement of a fixed real source exponent and
-  the source's direct n<=1 handling are not separately packaged as a real-parameter theorem.
-  Next certify the actual code combinators/filtering/group arithmetic under original encInput,
-  then append the proved functional clauses to the finished base counter and run polynomially
-  many joint exact-target calls. No desired encoder/runtime/distribution contract is assumed.
-  Do not conflate these tests with monomial interpolation or connected-domination techniques.
+
+Lemma A.1 / Corollary A.2 (PDF pp.28–29): the actual general nonnegative-weight,
+mixed-polarity functional 3-CNF construction now has complete binary generator time/peak-space
+certificates, including gate-list/CNF writing and exact signed-coefficient scalar normalization.
+`WeightedComparisonCounting` composes original-instance augmentation with the actual native
+counter, retaining all predicates and annotation multiplicities. `WeightedComparisonDistribution`
+emits every ordered joint bin and exact original count, including zeros; coverage, no duplicates,
+output length/bits, all sequential calls and retained prefixes are charged. For fixed labels and
+exponent there are polynomially many query pairs, not two queries for the full distribution.
+`WeightedComparisonSource` handles any fixed real c>=0 via its natural ceiling. Under p<=n and
+n+h<=Kp it proves L^O(1) 2^O(eta(p)) beyond the explicit fixed threshold max(16,K), with global
+polynomial workspace and no extra loglog. Exact counts include n<=1. Extra cofinal-grid bins
+have their exact (possibly zero) coefficients. The joint source table is for nonnegative weights
+and signed literals; negative coefficients additionally have a certified scalar normalization,
+not a separately advertised negative-index output table. Source encodings remain explicit binary
+frames with unary declarations and the recorded native backend/model. Alternative raw parsers,
+succinct declarations and fresh transition-level backend realizations are separate transfers.
+A concrete API-placement follow-up is to move `IndependentDominationInterval.lift_cnf` and
+`DegreePartition.Distribution.vector_bits_le` to general CNF/list modules: the new augmentation
+and distribution proofs reuse them through proof-only imports, without graph hypotheses.
 
 - Theorems 1.1–1.2 / 5.1–5.2 / Corollary 5.3: actual generic bounded-term DNF constructor/count/resource transfer and the
   signed-equation/side-2-CNF route are covered for the explicit encodings above. Alternative byte
@@ -1452,41 +1400,45 @@ Remaining STOC1575 objectives, keeping the original inventory open:
   Alternative raw table formats/parser/admission transfers remain separate.
 - Theorem 7.1: the parsed ragged weighted-row counting/reduction is covered for the explicit
   nonsuccinct unary-declaration input encoding, with actual sharp time/polynomial space.
-- Corollary 7.2 / Lemma C.1: the actual general fixed finite/cofinite sigma-rho constructor,
-  unique threshold/gate extension, ordinary original-set count and complete sharp-time/global
-  polynomial-space composition are covered by `SigmaRhoCountingResources`. Runtime input is an
-  explicit canonical simple graph with unary declaration and binary natural interval bounds;
-  fixed rules/cutoff are compiled problem parameters. Actual query variable/width/polynomial
-  clause bounds are proved, including all gates; no-test mode has zero gates. The full ordered
-  cardinality distribution is now covered by `SigmaRhoDistribution`, including actual traversal,
-  prefix encodings, output and sharp native resources. A general signed-bound wrapper remains an
-  encoding extension. Reuse these finished point/distribution counters and threshold proofs.
-- Theorem 7.3: arbitrary fixed q-by-q finite/cofinite matrices, actual runtime per-class binary
-  natural intervals and complete ordinary labeled partition counts are covered by
-  `BoundedDegreePartitionCountingResources`. This reuses the approved no-test constructor and
-  adds actual functional tests with a=q*952(v+1) allocated, uniquely fixed gate/padding slots;
-  a<=1904qv for positive v. Source dimension `q(2D+1)v+a-1`, width `max(q,D+2)`, valid indices,
-  explicit vertex-polynomial clause volume and complete actual sharp native time/global space
-  are proved. No-test mode remains the old zero-gate endpoint. `DegreePartitionDistribution`
-  actually emits all `(v+1)^q` ordered size vectors and original counts, retaining zero coefficients,
-  with exact coverage/order, tagged output length and whole-loop sharp time/global workspace.
-  First coordinate varies slowest; last varies fastest. Fixed q/D/matrix versus runtime graph/bounds
-  is explicit: no uniform growing-q polynomial or label quotient is claimed. Empty classes/graphs,
-  clamping/contradictions and declared isolates are retained without connectivity restrictions.
-  The recorded model uses canonical explicit simple graphs, unary declarations, binary natural
-  bounds and native charged-word certificates; general signed wrappers, alternative admission/
-  succinct encodings and fresh binary-transition realization remain separate representation/model
-  transfers. General-class minimum/maximum extraction mentioned after the theorem has not been
-  packaged as a separate native endpoint; the full vector output is available for that purpose.
-- Corollary 7.4: independent-domination counting with input size bounds, outgoing-absorbing
-  kernel counting/decision, labeled perfect-matching-cut counting/decision and actual dominating-
-  induced-matching counting/decision and maximum-induced-matching signed-threshold counting/
-  decision, plus Upper Dominating Set decision via private-neighbor marking-pair positivity, are
-  covered for the stated explicit encodings. Full optimum/witness composition is covered for
-  Maximum Induced Matching and Upper Domination, including an actual returned original solution.
-  The other four predicates still need their optimum/witness recovery specializations. General
-  degree-rule/partition counting is now covered above; the width-three path-marker refinement
-  remains a separate source clause.
+
+Corollary 7.2 / Lemma C.1: the actual general fixed finite/cofinite sigma-rho constructor,
+unique threshold/gate extension, ordinary original-set count and complete sharp-time/global
+polynomial-space composition are covered by `SigmaRhoCountingResources`. Runtime input is an
+explicit canonical simple graph with unary declaration and binary natural interval bounds;
+fixed rules/cutoff are compiled problem parameters. Actual query variable/width/polynomial
+clause bounds are proved, including all gates; no-test mode has zero gates. The full ordered
+cardinality distribution is now covered by `SigmaRhoDistribution`, including actual traversal,
+prefix encodings, output and sharp native resources. A general signed-bound wrapper remains an
+encoding extension. Reuse these finished point/distribution counters and threshold proofs.
+
+Theorem 7.3: arbitrary fixed q-by-q finite/cofinite matrices, actual runtime per-class binary
+natural intervals and complete ordinary labeled partition counts are covered by
+`BoundedDegreePartitionCountingResources`. This reuses the approved no-test constructor and
+adds actual functional tests with a=q*952(v+1) allocated, uniquely fixed gate/padding slots;
+a<=1904qv for positive v. Source dimension `q(2D+1)v+a-1`, width `max(q,D+2)`, valid indices,
+explicit vertex-polynomial clause volume and complete actual sharp native time/global space
+are proved. No-test mode remains the old zero-gate endpoint. `DegreePartitionDistribution`
+actually emits all `(v+1)^q` ordered size vectors and original counts, retaining zero coefficients,
+with exact coverage/order, tagged output length and whole-loop sharp time/global workspace.
+First coordinate varies slowest; last varies fastest. Fixed q/D/matrix versus runtime graph/bounds
+is explicit: no uniform growing-q polynomial or label quotient is claimed. Empty classes/graphs,
+clamping/contradictions and declared isolates are retained without connectivity restrictions.
+The recorded model uses canonical explicit simple graphs, unary declarations, binary natural
+bounds and native charged-word certificates; general signed wrappers, alternative admission/
+succinct encodings and fresh binary-transition realization remain separate representation/model
+transfers. General-class minimum/maximum extraction mentioned after the theorem has not been
+packaged as a separate native endpoint; the full vector output is available for that purpose.
+
+Corollary 7.4: independent-domination counting with input size bounds, outgoing-absorbing
+kernel counting/decision, labeled perfect-matching-cut counting/decision and actual dominating-
+induced-matching counting/decision and maximum-induced-matching signed-threshold counting/
+decision, plus Upper Dominating Set decision via private-neighbor marking-pair positivity, are
+covered for the stated explicit encodings. Full optimum/witness composition is covered for
+Maximum Induced Matching and Upper Domination, including an actual returned original solution.
+The other four predicates still need their optimum/witness recovery specializations. General
+degree-rule/partition counting is now covered above; the width-three path-marker refinement
+remains a separate source clause.
+
 - Corollary 7.5: total counts with the sharper no-size-test `2v-1` query construction, exact
   edge-size coefficients and the full ordered distribution/output/sharp-time/global-space endpoint
   are covered for the stated canonical explicit encoding. Alternative admission/succinct encoding

@@ -1384,21 +1384,59 @@ a polynomial binary certificate; so does derived width computation. `build_ofDat
 actual original-input writing to the proved functional formula. Raw construction is total,
 with zero defaults for missing positions; correctness uses the canonical admitted source frame.
 
-The complete generator-time/intermediate-space certificate and Corollary A.2's actual sharp
-native counter/joint-distribution composition remain open. The separate serialized-output bound
-is not a runtime proof. The formal exponent is natural; a real-parameter cofinal-enlargement
-wrapper is not supplied. This milestone does not complete Lemma A.1's full binary-resource
-statement, Corollary A.2 or ALL-main. Reuse the grouped construction and unique-extension proofs
-when adding the remaining resource composition.
+Import `CslibFrontier.Computability.Complexity.FineGrained.WeightedComparisonSource` for the
+complete resource endpoints. `Generator`, `Family` and `Signed` certify the actual binary digit
+filters, population counts, constant multiplications, signed offsets, comparisons, gate lists and
+full CNF writes. `WeightedComparisonConstruction` packages polynomial native time and peak
+workspace for the complete programs. These certificates follow the machine calculus, independently
+of the serialized-output and linear-gate bounds. Huge binary targets use constant branches;
+coefficient magnitudes are never expanded into unary occurrences.
 
-From the checkout root run `scripts/build.sh CslibFrontierTests.PaperEndpoints.WeightedComparison`.
-The [complete computed client](../../CslibFrontierTests/PaperEndpoints/WeightedComparison.lean)
-executes actual generated gate lists and full CNF on deterministic traces, enumerating only tiny
-original assignments. It checks nonunit/zero weights, mixed polarities, negative targets and
-coefficients, exact cancellation/strict boundaries, shared-bit correlated tests, empty input/test
-families, huge binary cutoffs and admission rejection. For $2x_0+\neg x_1=1$, exactly one original
-assignment works. A zero-weight declared variable remains free. Production construction never
-searches the auxiliary cube.
+`WithBase.build` appends the functional clauses to the actual original side CNF, increases the
+unary variable declaration by the computed gate count, and retains every original DNF predicate,
+including repeated annotations. `exists_count_sharp_certificate` composes that writer with the
+proved unrestricted-density counter and actual count reconstruction. It counts original
+assignments passing every correlated test. Its clock is $L^{O(1)}2^{O(\eta(n+h))}$, with global
+polynomial peak workspace; $h$ is the original predicate-list length, before adding gates.
+There is one ordinary query when the original predicate list is empty and two otherwise.
+The space charge includes intermediate binary integers, formulas and retained output.
+
+`Distribution.run` generates every vector in $[0,n^{c+1}]^r$, first coordinate slowest, and
+retains its vector tag and exact original coefficient, including zeros. The complete grid has
+$R=(n^{c+1}+1)^r$ entries and no duplicates. `grid_coverage`, `attainable_vector_mem`,
+`output_length` and `output_bits_le` prove coverage and explicit framed output bounds.
+`exists_distribution_sharp_certificate` instantiates the actual weighted counter; the sequential
+list-map certificate charges every call, output tag and retained prefix. Time is
+$L^{O(1)}2^{O(\eta(n+h))}$ and peak workspace is polynomial for fixed $r,c,b,d$.
+There are $R$ queries without original predicates and $2R$ otherwise, not two for the entire
+distribution. No polynomial claim is made for a growing number of weight labels.
+
+The real-source wrappers `weight_bound_of_parameter`, `exists_count_source_certificate` and
+`exists_distribution_source_certificate` use $\lceil c\rceil$ for any fixed real $c\ge0$.
+Under $p\le n$, weights at most $p^c$ and $n+h\le Kp$, they prove the original source clock
+$L^{O(1)}2^{O(\eta(p))}$ for $p\ge\max(16,K)$, where
+$\eta(p)=p\log\log p/\sqrt{\log p}$. The exact counts and rounded-clock bounds also cover
+empty and one-variable inputs. Fixed-linear rescaling changes only the constant in the exponent;
+no extra loglog factor is discarded. The distribution may include additional impossible bins
+from the cofinal exponent enlargement. Signed coefficients have a certified scalar normalization;
+the source joint table concerns nonnegative weight totals with arbitrary literal polarities.
+
+These are the existing native output-charged machine certificates and explicit binary frames,
+with a unary original variable declaration. They do not add an alternative raw parser, succinct
+declaration transfer or fresh transition-level realization of the reused backend. Other ALL-main
+clauses remain listed in ROADMAP.
+
+From the checkout root run
+`scripts/build.sh CslibFrontierTests.PaperEndpoints.WeightedComparisonResources --wfail --iofail`.
+The [complete resource client](../../CslibFrontierTests/PaperEndpoints/WeightedComparisonResources.lean)
+executes the actual writer and full joint traversal on small original inputs. Two complementary
+unit tests on one shared bit produce coefficients $0,1,1,0$, rather than independent counts.
+Repeated original predicates, contradictions, zero weights, an unused original bit, negative
+coefficient offsets, huge binary magnitudes/targets, zero labels and the empty declaration are
+checked. It also pins the full native resource types and a nonintegral source exponent.
+The [construction client](../../CslibFrontierTests/PaperEndpoints/WeightedComparison.lean) retains
+strict/equality boundaries, signed cancellation and unique-extension checks. Tiny test evaluators
+search original assignments only; production uses the proved native counter.
 
 ## Known Limitations
 

@@ -16,7 +16,8 @@ meta import CslibFrontier.Computability.Circuit.Boolean.FunctionalCNF
 
 Only tiny original inputs are enumerated. The actual generated full gate code is evaluated in
 an array, then its complete CNF is checked on that deterministic trace. No auxiliary cube is
-searched. This client does not claim the missing binary generator-time/distribution certificate.
+searched. `WeightedComparisonResources` checks the complete binary resource and distribution
+continuation.
 -/
 
 public section
