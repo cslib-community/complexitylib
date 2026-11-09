@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (restarted class-batch source integration regression tests)
 
-public import Complexity.Cryptanalysis.AddXNORMatcherResources
+public import Complexity.Cryptanalysis.AddXNORProducerResources
 import all Complexity.Cryptanalysis.AddXNORJoinedDissection
 import all Complexity.Cryptanalysis.AddXNORClassBatches
 import all Complexity.Cryptanalysis.AddXNORJoinedProbe
@@ -124,3 +124,37 @@ example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
   exact bound 3 20 right [(0, 0), (0, 1)] [(0, 2), (7, 3)] (by omega) (by decide +kernel)
 
 example := MatcherResources.original_restart_bounds
+
+-- Real generation/counting includes inverse addition and collisions, and the empty quarter.
+example : ClassJoin.count (((3, 2), ([1], [1])), 5) = 2 := by decide +kernel
+example : ClassJoin.count (((0, 0), ([], [])), 0) = 1 := by decide +kernel
+
+-- A fixed physical-width polynomial covers both non-unit-width and zero-width producers.
+example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
+    ClassJoin.countCertificate.time (((3, 2), ([1], [1])), 5)+
+        ClassJoin.countCertificate.space (((3, 2), ([1], [1])), 5) ≤
+      5*P ((ClassJoin.encoding (((3, 2), ([1], [1])), 5)).length+1) ∧
+    ClassJoin.countCertificate.time (((0, 0), ([], [])), 0)+
+        ClassJoin.countCertificate.space (((0, 0), ([], [])), 0) ≤
+      3*P ((ClassJoin.encoding (((0, 0), ([], [])), 0)).length+1) := by
+  obtain ⟨P, hP, mono, bound⟩ := ProducerResources.countCertificate_bounds
+  exact ⟨P, hP, mono, bound (((3, 2), ([1], [1])), 5), bound (((0, 0), ([], [])), 0)⟩
+
+example := ProducerResources.original_count_bounds
+example := ProducerResources.original_restarted_count_bounds
+example := ProducerResources.original_reconstruction_sum
+
+-- The phase resource theorem applies to the genuine installed arithmetic fallback above.
+example (i : ℕ) : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
+    ProducerResources.reconstructionAllowance (Source.prepare restartArithmeticHit) 0 i ≤
+      2*(ClassBalance.balance (Source.prepare restartArithmeticHit)+
+        JoinedDissection.quarterBudget (Source.prepare restartArithmeticHit)+1)*
+          P ((ClassBalance.encoding (Source.prepare restartArithmeticHit)).length+16) := by
+  have sourceEq : Source.prepare restartArithmeticHit = ProgramGeneration.originalSource 0
+      (List.replicate 3 (0 : BitVec 3)) (List.replicate 3 0) (List.replicate 3 0)
+        (List.replicate 5 0 ++ [1]) 0 0 := by decide +kernel
+  obtain ⟨P, hP, mono, bound⟩ := ProducerResources.original_reconstruction_sum
+  refine ⟨P, hP, mono, ?_⟩
+  rw [sourceEq]
+  exact (bound (by decide : 0 ≤ 3) (List.replicate 3 0) (List.replicate 3 0)
+    (List.replicate 3 0) (List.replicate 5 0 ++ [1]) 0).2 (0 : BitVec 0) i

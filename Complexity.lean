@@ -2979,6 +2979,7 @@ public import Complexity.Cryptanalysis.AddXNORNativeSelectedClass
 public import Complexity.Cryptanalysis.AddXNORNativeSelectedProbe
 public import Complexity.Cryptanalysis.AddXNOROutputCodec
 public import Complexity.Cryptanalysis.AddXNORParity
+public import Complexity.Cryptanalysis.AddXNORProducerResources
 public import Complexity.Cryptanalysis.AddXNORProgramGeneration
 public import Complexity.Cryptanalysis.AddXNORProgramTemplate
 public import Complexity.Cryptanalysis.AddXNORReachability

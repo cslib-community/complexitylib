@@ -1693,6 +1693,24 @@ The complete restarted client checks a genuine fallback residue, batches crossin
 rows, padded labels, non-self-inverse addition, a returned original witness and
 an exhaustive miss, rather than only the selected single-match branch.
 
+[`AddXNORProducerResources.lean`](../../Complexity/Cryptanalysis/AddXNORProducerResources.lean)
+now normalizes the installed count route's actual preparation, forward/inverse
+quarter generation, reflection, tagging, sorting and one-pass count allowances.
+Its counter polynomial sees binary width derived from quarter populations, not
+the numeric population or an assumed class size. With $V=6H+4\cdot2^p(Q+1)$,
+`original_count_bounds` charges both orientations over all classes by
+$2^p(Q+2)P(B)$, where $B$ is original encoded-input length plus $p+1$.
+`original_restarted_count_bounds` charges opposite counting repeated at every
+generated restart label by $VP(B)$. This pays real recomputation with capacity,
+not just copied input. It is not the source's reachable-state-DP fast prepass.
+`original_reconstruction_sum` charges actual window full-state evaluation by
+$4VR(B+q)$ and each reconstruction prefix by $2(\mu+Q+1)R(B+q)$, including
+pair input, reconstructed output and internal callback tapes. Pair widths are
+derived from actual original quarter witnesses, even with collisions.
+These phase allowances reuse the approved matcher bound; window scan/cut/division,
+retained/group-emission composition, balance/orientation/loop/label control and
+simultaneously live ambient frames remain separate obligations.
+
 The all-class search uses the same fixed streaming kernel over an actually
 generated class-index list. The approved uniform index generator supplies its
 real time/space profile and the derived wire bound $2^p(2p+1)$; the capped source
@@ -1705,9 +1723,9 @@ framing, setup and readback remain charged.
 
 This composes an actual global bit-clock/prefix-space profile, but does not prove
 the requested sharp source inequalities. The installed fallback no longer executes the per-pair retained/growing-buffer
-copy path. Closed scalar-width bounds for all installed callbacks, quarter
-generation/sorting and the summed global time/simultaneous workspace
-profiles still need to be proved. The installed scalar prepass removes table
+copy path. The remaining window/control/retained-emission bounds and the summed complete
+time/simultaneous workspace profiles still need to be proved; the normalized
+count and reconstruction phase allowances above do not establish them. The installed scalar prepass removes table
 reversal/reduction, and the preparation/readback boundary polynomial is proved. Logical
 occupancy or matching-pair totals do not remove those machine costs. The old
 complete solvers and their association-list/cubic-compaction costs are unchanged;

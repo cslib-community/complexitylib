@@ -353,9 +353,8 @@ with derived prefix width, bypassing table construction/reversal/reduction.
 Preparation, half-array construction and the installed readback machine have proved polynomial bounds
 in the physical original input, using derived search-result payload size.
 The per-pair retained/buffer copy path is no longer installed. Sharp resources
-still require closed bounds for actual scalar callback widths, quarter generation/
-sorting, full-state evaluation and global profile composition, including
-all simultaneous intermediates. Per-batch parameter copies and repeated quarter
+still require the remaining window/control/retained-emission bounds and complete
+profile composition, including all simultaneous intermediates. Per-batch parameter copies and repeated quarter
 scans are now explicitly amortized by actual class populations plus capacity. Neither a traversal sum nor
 the now-composed actual bit clock establishes the target source asymptotics.
 `SortedMatchBounds` now normalizes the installed matcher certificate, including tagging,
@@ -363,9 +362,16 @@ radix passes, witness scan and framed argument/intermediate copies. `MatcherReso
 derives its physical widths from original generated records, sums the actual fallback
 matching clocks over all class/batch labels, and bounds each matching prefix workspace
 by computed maximum balance plus quarter allowance times one fixed width polynomial.
-This closes matching clocks rather than treating records as unit cost. It excludes the
-other phase clocks: recomputed counts/division, quarter generation/sorting and window/
-full-state production still require scalar-width normalization and full profile composition.
+This closes matching clocks rather than treating records as unit cost.
+`ProducerResources` now normalizes the installed inverse quarter, class sorting/counting
+and projected count certificates, including real preparation, generation, tagging, sorting
+and binary counter widths. Both count orientations have an original-input all-class phase
+sum; opposite counting repeated at generated restart labels is amortized by actual capacity.
+Full-state reconstruction of actual windows also has a summed phase allowance and every-batch
+prefix workspace bound, including pair/output/callback tapes. These results are not the total
+assembled profiles: window scan/cut/division, retained-join/group emission composition,
+scalar balance/orientation and outer/label control plus simultaneous ambient frames remain
+unclosed. The source reachable-state-DP all-count and quarter-time prepass remain open.
 No sharp global bit inequalities follow from the encoding or record-volume
 bounds. Older solver sources are preserved; the new direct route bypasses their
 interpreter without removing their costs from their own certificates. A real

@@ -242,8 +242,17 @@ component: actual tagging/sorting/scan clocks, argument copies, all-class/batch
 clock sum and every matching-prefix workspace are bounded in original physical
 widths. Build the complete restarted client for this result; it includes both
 orientations and non-unit-width collision records. These are matching-only
-profiles, not count/division/producer clocks or a global source resource theorem.
-Orientation recomputes counts; no cached-size oracle is input.
+profiles, not a global source resource theorem.
+`ProducerResources` additionally normalizes installed quarter-generation/sort/count
+allowances in physical scalar widths. Its all-class count phase and counts repeated
+at every generated restart label include real recomputation. It also sums actual
+full-state reconstruction allowances and bounds each reconstruction prefix, deriving
+pair widths from original quarter witnesses. Reuse these results with the matcher
+bounds; do not redo them or charge those phases as unit-cost input volume. The
+window scan/cut/division and retained/group-emission composition, balance/orientation/
+label/outer control and all ambient frames still need complete normalization.
+Orientation recomputes counts; no cached-size oracle is input. The faster source
+reachable-state-DP all-count and quarter-time prepass remain separate open endpoints.
 Do not promote pair/batch traversal sums or unnormalized machine profiles to
 sharp source TM bounds. The per-pair copy path is no longer installed, but sharp
 global inequalities remain required. The old solvers and
