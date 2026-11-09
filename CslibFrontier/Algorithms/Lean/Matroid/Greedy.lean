@@ -221,8 +221,7 @@ private theorem map_greedyStepM {α : Type} [DecidableEq α]
     (indep : Finset α → m Bool) (acc : Finset α) (x : α) :
     f (greedyStepM indep acc x) = greedyStepM (fun S => f (indep S)) acc x := by
   simp only [greedyStepM, hf.map_bind]
-  congr 1
-  funext b
+  congr 1 with b : 1
   cases b <;> simp [hf.map_pure]
 
 private theorem map_foldlM_greedyStepM {α : Type} [DecidableEq α]
@@ -235,8 +234,7 @@ private theorem map_foldlM_greedyStepM {α : Type} [DecidableEq α]
   | nil => simp [hf.map_pure]
   | cons x rest ih =>
     simp only [List.foldlM_cons, hf.map_bind, map_greedyStepM hf]
-    congr 1
-    funext acc'
+    congr 1 with acc' : 1
     exact ih acc'
 
 @[grind .]

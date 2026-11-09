@@ -85,8 +85,7 @@ theorem scanView_eq (M : Methods (spec n K V) (Memory.spec w)) (u : Fin n) (du :
     scanView M u du = (M (.inr (.inr (.degree u))) >>= fun d : ℕ =>
         link M ((List.range d).forM (relaxEdge u du))) := by
       unfold scanView
-      congr 1
-      funext d
+      congr 1 with d : 1
       change ℕ at d
       rw [link_forM, List.range_eq_range']
       exact (range'_forM_eq (fun i => link M (relaxEdge u du i)) d d 0 (by omega)).symm
@@ -125,8 +124,7 @@ theorem loopView_eq (M : Methods (spec n K V) (Memory.spec w)) (k : ℕ) :
     simp only [loopStep, bind_assoc, Nat.add_sub_cancel]
     change (M (.inl .extractMin) >>= _) = _
     unfold loop link queue
-    congr 1
-    funext e
+    congr 1 with e : 1
     cases e with
     | none =>
       simp only [pure_bind, boundedWhile_of_not (fun (_ : Unit) (a : ℕ) => a ≠ 0)

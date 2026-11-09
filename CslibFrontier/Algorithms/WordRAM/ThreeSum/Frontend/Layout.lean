@@ -97,8 +97,7 @@ def array (U Λ : ℕ) (rs : List (ℕ × ℕ)) (j : ℕ) : List ℕ :=
 theorem select_extra (U β β' v mode : ℕ) (rs : List (ℕ × ℕ)) (hm : 3 ≤ mode) :
     select U β β' v mode rs = select U 0 0 0 mode rs := by
   unfold select
-  congr 2
-  funext p
+  congr 2 with p : 1
   unfold keep flag
   split <;> first | rfl | omega
 

@@ -182,8 +182,7 @@ theorem vget_gomoryHuLoopM (W : Fin n → Fin n → ℕ) (adj : Fin n → List (
       exact vget_gomoryHuLoopM W adj r l p
     · simp only [gomoryHuLoopM, TimeM.ret_bind, hsr, ↓reduceIte, gusfieldLoop]
       rw [vget_gomoryHuLoopM W adj r l]
-      congr 1
-      funext z
+      congr 1 with z : 1
       exact vget_gusfieldStepM W adj p s z
 
 /-- **Gusfield's Gomory–Hu tree algorithm** ([Gusfield1990]) over `Fin n` in `TimeM ℕ`: start
@@ -197,8 +196,7 @@ Edmonds–Karp computation each. Returns the parent array of the tree. -/
 theorem vget_gomoryHuM (W : Fin n → Fin n → ℕ) (adj : Fin n → List (Fin n)) (r : Fin n) :
     vget (gomoryHuM W adj r).ret = gusfieldParent (ekCut W adj) r (List.finRange n) := by
   simp only [gomoryHuM, TimeM.ret_bind, vget_gomoryHuLoopM, replicateM_ret, gusfieldParent]
-  congr 1
-  funext z
+  congr 1 with z : 1
   exact vget_replicate r z
 
 /-- **Correctness of Gusfield's algorithm with Edmonds–Karp** ([Gusfield1990]): for a weighted
