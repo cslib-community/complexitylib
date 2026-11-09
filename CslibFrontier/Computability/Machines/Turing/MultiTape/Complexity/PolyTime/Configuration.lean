@@ -237,25 +237,9 @@ theorem moveInputPos {word : α → List Bool} {position : ∀ a, Fin ((word a).
     (hword : ComputableTidilyInPolyTime word input encBits)
     (hposition : ComputableTidilyInPolyTime (fun a => (position a).val) input encUnary)
     (move : SignType) : ComputableTidilyInPolyTime
-      (fun a => (Turing.moveInputPos (position a) move).val) input encUnary := by
-  cases move with
-  | neg =>
-    apply (unary_sub.comp (hposition.prod (const 1))).of_enc_eq
-    intro a
-    apply congrArg encUnary
-    have h := val_moveInputPos_eq (position a) .neg
-    have hp := (position a).isLt
-    simp only [SignType.cast, Function.comp_def] at h ⊢
-    lia
-  | zero => simpa using hposition
-  | pos =>
-    apply (unary_min.comp ((unary_add.comp (hposition.prod (const 1))).prod
-      (unary_add.comp ((length_bits.comp hword).prod (const 1))))).of_enc_eq
-    intro a
-    apply congrArg encUnary
-    have h := val_moveInputPos_eq (position a) .pos
-    simp only [SignType.cast, Function.comp_def] at h ⊢
-    lia
+      (fun a => (Turing.moveInputPos (position a) move).val) input encUnary :=
+  ComputableInPolyTime.tidy (ComputableInPolyTime.moveInputPos hword.computableInPolyTime
+    hposition.computableInPolyTime move)
 
 /-- Execute a fixed ordinary native action, including all retained storage. -/
 @[fun_prop]
@@ -268,11 +252,9 @@ theorem finiteCfg_step (action : Action k Bool State) : ComputableTidilyInPolyTi
 theorem finiteCfg_init {word : α → List Bool}
     (hword : ComputableTidilyInPolyTime word input encBits) (state : State) :
     ComputableTidilyInPolyTime (fun a => FiniteCfg.init (k := k) state (word a))
-      input encFiniteCfg := by
-  apply finiteCfg_mk hword (const _)
-  · simpa using (const (encIn := input) (encMid := encUnary) 1)
-  · exact const _
-  · exact const _
+      input encFiniteCfg :=
+  ComputableInPolyTime.tidy (ComputableInPolyTime.finiteCfg_init hword.computableInPolyTime
+    state)
 
 variable {Oracle : Type} [Fintype Oracle]
 

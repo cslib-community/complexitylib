@@ -115,23 +115,13 @@ def moveOutCodes (n p W k : ℕ) : List GateCode :=
 theorem mem_moveInCodes {n p W k : ℕ} {g : GateCode} :
     g ∈ moveInCodes n p W k ↔
       ∃ j < k, ∃ i < p, g = (false, i + n + (j + 1) * W, [i + p * j + n]) := by
-  simp only [moveInCodes, List.mem_flatMap, List.mem_range, List.mem_map]
-  constructor
-  · rintro ⟨j, hj, i, hi, rfl⟩
-    exact ⟨j, hj, i, hi, rfl⟩
-  · rintro ⟨j, hj, i, hi, rfl⟩
-    exact ⟨j, hj, i, hi, rfl⟩
+  simp only [moveInCodes, List.mem_flatMap, List.mem_range, List.mem_map, eq_comm (a := g)]
 
 /-- The gates of `moveOutCodes`. -/
 theorem mem_moveOutCodes {n p W k : ℕ} {g : GateCode} :
     g ∈ moveOutCodes n p W k ↔
       ∃ j < k, ∃ i < p, g = (false, i + p * j + n, [i + n + (j + 1) * W]) := by
-  simp only [moveOutCodes, List.mem_flatMap, List.mem_range, List.mem_map]
-  constructor
-  · rintro ⟨j, hj, i, hi, rfl⟩
-    exact ⟨j, hj, i, hi, rfl⟩
-  · rintro ⟨j, hj, i, hi, rfl⟩
-    exact ⟨j, hj, i, hi, rfl⟩
+  simp only [moveOutCodes, List.mem_flatMap, List.mem_range, List.mem_map, eq_comm (a := g)]
 
 /-- Qubit `i` of block `j < k` of width `p` lies in the first `k p` qubits. -/
 private theorem add_mul_lt {p k i j : ℕ} (hj : j < k) (hi : i < p) : i + p * j < k * p := by
@@ -340,18 +330,10 @@ theorem isClassical_moveCodes (hW : n + 2 * R * p ≤ W) :
     IsClassical (Amplify.width W (2 * R) R)
       (moveInCodes n p W (2 * R) ++ moveOutCodes n p W (2 * R)) := by
   refine IsClassical.append.mpr ⟨fun g hg => ?_, fun g hg => ?_⟩
-  · obtain ⟨j, hj, i, hi, rfl⟩ := mem_moveInCodes.mp hg
-    have := add_mul_lt (k := 2 * R) hj hi
-    have := Amplify.block_le_width (w := W) (k := 2 * R) (t := R) hj
-    have := le_add_mul (W := W) (i := i + n) (j := j)
-    have := lt_width_of_lt (R := R) (show i + p * j + n < W by omega)
-    refine ⟨rfl, by simp, ?_, ?_⟩
-    · simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false, List.nodup_nil,
-        not_false_eq_true, and_true]
-      omega
-    · simp only [List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq]
-      omega
-  · obtain ⟨j, hj, i, hi, rfl⟩ := mem_moveOutCodes.mp hg
+  on_goal 1 => obtain ⟨j, hj, i, hi, rfl⟩ := mem_moveInCodes.mp hg
+  on_goal 2 => obtain ⟨j, hj, i, hi, rfl⟩ := mem_moveOutCodes.mp hg
+  -- both are CNOTs between qubits `i + p j + n` and `i + n + (j + 1) W`, in either direction
+  all_goals
     have := add_mul_lt (k := 2 * R) hj hi
     have := Amplify.block_le_width (w := W) (k := 2 * R) (t := R) hj
     have := le_add_mul (W := W) (i := i + n) (j := j)

@@ -206,17 +206,10 @@ theorem lcpLen_le_lcpLen_of_le_of_le_left {u v x : List α} (huv : u ≤ v) (hvx
 with `x`. -/
 theorem lcpLen_le_lcpLen_of_le_of_le_right {u v x : List α} (huv : u ≤ v) (hvx : v ≤ x) :
     lcpLen u x ≤ lcpLen v x := by
-  set k := lcpLen u x
-  obtain ⟨hku, hkx, htake⟩ := le_lcpLen_iff.mp (le_refl k)
-  have hpu : u.take k <+: u := take_prefix k u
-  have hpx : u.take k <+: x := htake ▸ take_prefix k x
-  have hpv : u.take k <+: v := IsPrefix.of_prefix_of_le_of_le hpu hpx huv hvx
-  have hlen : (u.take k).length = k := by simp only [length_take]; omega
-  refine le_lcpLen_iff.mpr ⟨?_, hkx, ?_⟩
-  · have := hpv.length_le; omega
-  · have := prefix_iff_eq_take.mp hpv
-    rw [hlen] at this
-    rw [← this, htake]
+  -- `v` agrees with `u` on the first `lcpLen u x` entries, and `u` agrees there with `x`.
+  obtain ⟨-, hkv, huv'⟩ := le_lcpLen_iff.mp (lcpLen_le_lcpLen_of_le_of_le_left huv hvx)
+  obtain ⟨-, hkx, hux⟩ := le_lcpLen_iff.mp (le_refl (lcpLen u x))
+  exact le_lcpLen_iff.mpr ⟨hkv, hkx, huv'.symm.trans hux⟩
 
 end order
 

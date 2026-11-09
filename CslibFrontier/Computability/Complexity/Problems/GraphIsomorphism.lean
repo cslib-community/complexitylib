@@ -161,12 +161,13 @@ theorem computableInPolyTime_verifier :
 of the length of the encoded pair of graphs. -/
 theorem isVerifier :
     IsVerifier (encPair encGraph encGraph) (Polynomial.X ^ 2) verifier GraphIsomorphism := by
-  have hmem (x : Graph × Graph) : x ∈ GraphIsomorphism ↔
-      ∃ p : List ℕ, p.Nodup ∧ (∀ v, v ∈ p ↔ v ∈ x.2.1) ∧
+  have hset : GraphIsomorphism =
+      {x : Graph × Graph | ∃ p : List ℕ, p.Nodup ∧ (∀ v, v ∈ p ↔ v ∈ x.2.1) ∧
         p.length = x.1.distinctVertices.length ∧
         ∀ i < x.1.distinctVertices.length, ∀ j < x.1.distinctVertices.length,
-          x.2.adjBool (p.getD i 0) (p.getD j 0) = x.1.adjIndex i j := by
-    obtain ⟨G, H⟩ := x
+          x.2.adjBool (p.getD i 0) (p.getD j 0) = x.1.adjIndex i j} := by
+    ext ⟨G, H⟩
+    rw [Set.mem_ofPred_eq]
     constructor
     · rintro ⟨φ⟩
       let f : Fin G.distinctVertices.length → ℕ := fun i => φ (G.vertexEquiv i)
@@ -194,12 +195,6 @@ theorem isVerifier :
         ← hadj i i.isLt j j.isLt, List.getD_eq_getElem _ _ (i.isLt.trans_eq hlen.symm),
         List.getD_eq_getElem _ _ (j.isLt.trans_eq hlen.symm)]
       rfl
-  have hset : GraphIsomorphism =
-      {x : Graph × Graph | ∃ p : List ℕ, p.Nodup ∧ (∀ v, v ∈ p ↔ v ∈ x.2.1) ∧
-        p.length = x.1.distinctVertices.length ∧
-        ∀ i < x.1.distinctVertices.length, ∀ j < x.1.distinctVertices.length,
-          x.2.adjBool (p.getD i 0) (p.getD j 0) = x.1.adjIndex i j} :=
-    Set.ext hmem
   rw [hset]
   refine Graph.isVerifier_verifyOrdering
     (fun x => x.2.length_vertices_le_encGraph.trans (by simp only [length_encPair]; omega))

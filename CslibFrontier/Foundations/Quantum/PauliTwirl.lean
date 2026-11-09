@@ -118,8 +118,7 @@ theorem pauliXPow_mul_self (a : ι → Bool) : pauliXPow a * pauliXPow a = 1 := 
 
 theorem pauliZPow_mul_self (b : ι → Bool) : pauliZPow b * pauliZPow b = 1 := by
   rw [pauliZPow, diagonal_mul_diagonal, ← diagonal_one]
-  congr 1
-  funext z
+  congr 1 with z : 1
   rw [← Complex.ofReal_mul, signVal_mul_self, Complex.ofReal_one]
 
 theorem pauliXPow_mem_unitaryGroup (a : ι → Bool) : pauliXPow a ∈ unitaryGroup (ι → Bool) ℂ :=

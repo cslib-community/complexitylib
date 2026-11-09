@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Computability.WordRAM.Allocation
 import CslibFrontier.Computability.WordRAM.ExactNotation
 import CslibFrontier.Computability.WordRAM.SymbolicExec
 
@@ -12,11 +13,12 @@ import CslibFrontier.Computability.WordRAM.SymbolicExec
 
 Regressions for `wram_exec` and `wram_simp`: a concrete program runs to its exact result and
 instruction count; registers and memory hold symbolic values, reads after writes to other
-addresses reduce, and a conditional the facts do not decide splits; execution stops at a
-subprogram, continues from its specification and resumes; and goals of the wrong form, or
-programs with nothing to execute, fail with an explanation. The simplification procedures
-`Data.reduceRegs` and `Data.reduceMem` read through writes on their own, also with register names
-that have free variables, `Data.reduceWriteMem` unfolds memory that is not read at an address, and
+addresses reduce, and a conditional the facts do not decide splits; instructions `Op.alu` of other
+bases, such as `Basis.additive`, run too; execution stops at a subprogram, continues from its
+specification and resumes; and goals of the wrong form, or programs with nothing to execute, fail
+with an explanation. The simplification procedures `Data.reduceRegs` and `Data.reduceMem` read
+through writes on their own, also with register names that have free variables and banks separated
+by quantified hypotheses, `Data.reduceWriteMem` unfolds memory that is not read at an address, and
 `wram_bounded` proves the fitting conditions it can.
 -/
 
@@ -57,11 +59,18 @@ example (x : Data 4) :
 
 /-- A fitting condition that neither `simp` nor the discharger proves remains as a goal, tagged
 `hfit`, after the main goal. -/
-example (w : ℕ) (x : Data 4) (h : x.regs a = 3) (h7 : Fits w 7) :
+example (w : ℕ) (x : Data 4) (h : x.regs a = 3) (h7 : 7 ≤ w) :
     ∃ y, ExecWithin w ram[ b ← a + a ] x y 1 ∧ y.regs b = 6 := by
   wram_exec [h]
   · wram_simp
-  case hfit => exact h7.of_le (by omega)
+  case hfit => exact (fits_self w).of_le (by omega)
+
+/-- The default discharger proves a fitting condition from the word-size facts in context with
+`fits`. -/
+example (w : ℕ) (x : Data 4) (h : x.regs a = 3) (h7 : Fits w 7) :
+    ∃ y, ExecWithin w ram[ b ← a + a ] x y 1 ∧ y.regs b = 6 := by
+  wram_exec [h]
+  wram_simp
 
 /-! ## Symbolic values -/
 
@@ -81,7 +90,7 @@ example (w p : ℕ) (x : Data 4) (ha : x.regs a = p) (hb : x.regs b = 1) (hfit :
     ∃ y, ExecWithin w shiftDecrement x y 9 ∧ y.mem (p + 1) = x.mem p ∧
       y.regs d = x.mem p - 1 := by
   unfold shiftDecrement
-  wram_exec (disch := first | omega | exact hv.of_le (by omega)) [ha, hb, hfit]
+  wram_exec [ha, hb, hfit]
   case pos => wram_simp; omega
   case neg => wram_simp
 
@@ -90,7 +99,7 @@ example (w p : ℕ) (x : Data 4) (ha : x.regs a = p) (hb : x.regs b = 1) (hfit :
     (hv : Fits w (x.mem p)) (hpos : 0 < x.mem p) :
     ∃ y, ExecWithin w shiftDecrement x y 10 ∧ y.regs d + 1 = x.mem p := by
   unfold shiftDecrement
-  wram_exec (disch := first | omega | exact hv.of_le (by omega)) [ha, hb, hfit]
+  wram_exec [ha, hb, hfit]
   wram_simp
   omega
 
@@ -113,6 +122,42 @@ example (w u v q : ℕ) (x : Data 4) (ha : x.regs a = u) (hb : x.regs b = v) (hd
     case neg => wram_simp [ha]; omega
   · wram_exec [hc, hd']
     wram_simp
+
+/-! ## Other bases -/
+
+/-- Addition and truncated subtraction over `Basis.additive`: instructions `Op.alu` of a basis given
+by a definition. -/
+def addSub : Code .additive 4 :=
+  .seq (.op (.addAdditive c a b)) (.op (.alu ⟨.bin .sub, by decide⟩ a ![c, b]))
+
+/-- `WP.alu` evaluates the operation on the values read (`Basis.reduceInterp`); the fitting
+conditions are hypotheses. -/
+example (w u v : ℕ) (x : Data 4) (ha : x.regs a = u) (hb : x.regs b = v) (huv : Fits w (u + v))
+    (hu : Fits w u) :
+    ∃ y, ExecWithin w addSub x y 2 ∧ y.regs a = u ∧ y.regs c = u + v := by
+  unfold addSub
+  wram_exec [ha, hb]
+  wram_simp
+
+/-- An instruction `Op.alu` of the standard basis, written with the constructor. -/
+example (w u v : ℕ) (x : Data 4) (ha : x.regs a = u) (hb : x.regs b = v) (h : Fits w (u * v)) :
+    ∃ y, ExecWithin w (.op (.alu (B := .standard) (.bin .mul) c ![a, b])) x y 1 ∧
+      y.regs c = u * v := by
+  wram_exec [ha, hb]
+  wram_simp
+
+-- Exact subtraction written as `Op.alu`: its value depends on comparing the operands, so it does
+-- not unfold to `some v`; `Op.exactBin` instructions have their own rules.
+/-- error: wram_exec: could not evaluate
+  Basis.exact.interp 8 (StandardOp.bin BinOp.sub) fun a => x.regs (![WordRAMSymbolicExec.a, b] a)
+It simplifies to
+  StandardOp.evalExact 8 (StandardOp.bin BinOp.sub) fun a => x.regs (![WordRAMSymbolicExec.a, b] a)
+which does not have the form
+  some ?v -/
+#guard_msgs (whitespace := lax) in
+example (x : Data 4) (ha : x.regs a = 2) (hb : x.regs b = 1) :
+    ∃ y, ExecWithin 8 (.op (.alu (B := .exact) (.bin .sub) c ![a, b])) x y 1 ∧ y.regs c = 1 := by
+  wram_exec [ha, hb]
 
 /-! ## Subprograms -/
 
@@ -216,6 +261,27 @@ example {r s : ℕ} (w : ℕ) (x : Data s) (f : Fin r → Fin s) (hf : f.Injecti
       y.regs (f t₂) = 0 ∧ y.regs (f t₁) = 0 ∧ y.regs z = 0 := by
   wram_exec [hz0]
   wram_simp [hz0]
+
+/-- Two renamed banks separated by quantified hypotheses, as a call copies its arguments `src` into
+scratch registers `tmp`: the instances `src 4 ≠ tmp 9` and `frontier ≠ tmp 2`, also stated as
+`¬tmp j = frontier`, read past the copies. -/
+example {r : ℕ} (w : ℕ) (x : Data r) (src : Fin 5 → Fin r) (tmp : Fin 10 → Fin r)
+    (frontier : Fin r) (hi : tmp.Injective) (hd : ∀ i j, src i ≠ tmp j)
+    (hf : ∀ j, ¬tmp j = frontier) :
+    ∃ y, ExecWithin (B := .standard) w
+        (.seq (.op (.copy (tmp 2) (src 4))) (.op (.copy (tmp 9) (src 3)))) x y 2 ∧
+      y.regs (src 4) = x.regs (src 4) ∧ y.regs frontier = x.regs frontier ∧
+      y.regs (tmp 2) = x.regs (src 4) := by
+  wram_exec
+  wram_simp
+
+/-- A quantified hypothesis with a premise is not instantiated: the read past `set` stays. -/
+example {r : ℕ} (x : Data r) (tmp : Fin 10 → Fin r) (_hne : ∀ i j, i ≠ j → tmp i ≠ tmp j)
+    (p : ℕ) (h : (x.set (tmp 1) 5).regs (tmp 2) = 0) :
+    ((x.set (tmp 1) 5).write p 2).regs (tmp 2) = 0 := by
+  wram_simp
+  guard_target =ₛ (x.set (tmp 1) 5).regs (tmp 2) = 0
+  exact h
 
 /-- `Data.set_set`: setting a register twice keeps the second value. -/
 example (x : Data 4) : ExecWithin (B := .standard) 8 ram[ c ← #1; c ← #2 ] x (x.set c 2) 2 := by

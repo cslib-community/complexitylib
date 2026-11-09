@@ -74,8 +74,7 @@ def recordLayout (x : Data 128) (M : ℕ) : NodePacking.Layout :=
 theorem nodeState_layout (x : Data 128) :
     NodePacking.layout ((nodeState x).comap kernel) = recordLayout x (x.regs selected) := by
   unfold NodePacking.layout recordLayout
-  congr 1
-  funext j
+  congr 1 with j : 1
   fin_cases j <;> rfl
 
 /-- The layout reads only persistent record/controller fields outside the selected-modulus word. -/

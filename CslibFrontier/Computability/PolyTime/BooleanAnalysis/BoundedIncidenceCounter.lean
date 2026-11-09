@@ -107,11 +107,6 @@ private theorem chooseBeta_le_succ_of_le_mul_clog_pow {n' b w β C_inc : ℕ}
   obtain ⟨h1, _, _, hmin⟩ := ParameterCheck.chooseBeta_spec (b := b) (w := w) hlam2
   exact ⟨h1, by_contra fun hgt => hmin (β + 1) (Nat.succ_pos β) (Nat.lt_of_not_ge hgt) ⟨hb', hw'⟩⟩
 
-private theorem exp_le_two_rpow_two_mul {x : ℝ} (hx : 0 ≤ x) : Real.exp x ≤ (2 : ℝ) ^ (2 * x) := by
-  rw [Real.rpow_def_of_pos two_pos, Real.exp_le_exp]
-  have h1 : 1 ≤ 2 * Real.log 2 := by linarith [Real.one_sub_inv_le_log_of_pos zero_lt_two]
-  exact ((one_mul x).symm.le.trans (mul_le_mul_of_nonneg_right h1 hx)).trans_eq (by ring)
-
 private theorem step_prefactor_le {rQ Q r S M G L : ℕ} (hrQ : rQ ≤ L) (hQ : Q ≤ L) (hr2 : 2 ≤ r)
     (hrL : r ≤ L) (hS : 1 ≤ S) (hM : 1 ≤ M) (hG : 1 ≤ G) :
     (rQ + 1) + (Q + 1) * (S + 1) * (M + 1) * (r * (G + 1) + 1) ≤
@@ -872,7 +867,7 @@ private theorem exists_computableInO_mkDesignPair :
     unfold BalancedSchedules.encScheduleParams prepScheduleParams
     exact (hn'.prod (((length_list (encList encNat)).comp haug).prod hQu)).prod
       (((unary_to_binary.comp hru).prod
-        (bi_binary_add' BranchEvalInput.computableInPolyTime_factorIncidence
+        (binary_add' BranchEvalInput.computableInPolyTime_factorIncidence
           BranchEvalInput.computableInPolyTime_factorWidth)).prod
         (computableInPolyTime_scopeIncidencesList hn' haug))
   let eSchOut := encPair (encList (encList encNat)) (encList (encList encNat))

@@ -141,12 +141,6 @@ private theorem reachesOut_unaryProgram (e : Expr) {v : ℕ} (hv : e.eval [a, b,
   obtain ⟨rfl, -⟩ := hinv
   exact ⟨_, (hhead.trans hset).trans hloop, bounded4 (by omega) (by omega) (by omega) (by omega)⟩
 
-private theorem flatMap_range_true (n : ℕ) :
-    (List.range n).flatMap (fun _ => [true]) = List.replicate n true := by
-  induction n with
-  | zero => rfl
-  | succ n ih => rw [List.range_succ, List.flatMap_append, ih, List.replicate_succ']; rfl
-
 /-- The binary digits of `v`, least significant first, are its bits below its size. -/
 private theorem bits_eq_map_testBit (v : ℕ) : v.bits = (List.range v.size).map v.testBit := by
   refine List.ext_getElem (by simp [Nat.size_eq_bits_len]) fun i h _ => ?_
@@ -242,7 +236,10 @@ theorem computableInLogSpace_unary (e : Expr) (d : ℕ) (he : ∀ a b, e.eval [a
     ((hF a b).trans (Nat.pow_le_pow_left (by omega) d))
   obtain ⟨regs, h, hregs⟩ := reachesOut_unaryProgram (B := (2 * a + 1 + b + 1) ^ (d + 2)) e
     (he a b) (by omega) (by omega)
-  exact ⟨(9, regs), _, [], h, rfl, by rw [flatMap_range_true, List.append_nil]; rfl, hregs⟩
+  refine ⟨(9, regs), _, [], h, rfl, ?_, hregs⟩
+  rw [List.flatMap_def, List.map_const', List.length_range, List.flatten_replicate_singleton,
+    List.append_nil]
+  rfl
 
 /-- **A polynomially bounded function of two unary numbers given by an expression, with binary
 output, is computable in logarithmic space.** The expression `e` is evaluated with `a` in

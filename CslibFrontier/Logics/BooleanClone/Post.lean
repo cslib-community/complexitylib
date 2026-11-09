@@ -172,8 +172,8 @@ theorem constants_mem_of_not_selfDual (hnot : notOp ∈ C.operations 1)
     · have he' : (fun i => args i x) = fun i => !(a i) := by
         funext i; cases hai : a i <;> simp [args, hx, hai]
       exact ((congrArg f he').trans he).symm
-    · congr 1
-      funext i; cases hai : a i <;> simp [args, hx, hai]
+    · congr 1 with i : 1
+      cases hai : a i <;> simp [args, hx, hai]
   intro b
   cases hfa : f a <;> cases b
   · simpa only [hfa] using hc

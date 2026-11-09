@@ -167,14 +167,6 @@ theorem mulCarry_succ (x y k : ℕ) :
   simp only [mulCarry, mulPrefix_succ, pow_succ, ← Nat.div_div_eq_div_mul,
     Nat.add_mul_div_right _ _ (Nat.two_pow_pos k)]
 
-private theorem testBit_toNat (x k : ℕ) : (x.testBit k).toNat = x / 2 ^ k % 2 := by
-  rw [Nat.testBit_eq_decide_div_mod_eq]
-  have := Nat.mod_lt (x / 2 ^ k) two_pos
-  by_cases h : x / 2 ^ k % 2 = 1
-  · simp [h]
-  · have hz : x / 2 ^ k % 2 = 0 := by lia
-    simp [hz]
-
 /-- The actual carries satisfy the exact, nonmodular column equation. -/
 theorem mulCarry_add_column (x y k : ℕ) :
     mulCarry x y k + mulColumn x y k = ((x * y).testBit k).toNat + 2 * mulCarry x y (k + 1) := by
@@ -182,7 +174,7 @@ theorem mulCarry_add_column (x y k : ℕ) :
   rw [pow_succ, Nat.mod_mul_right_div_self, Nat.mod_mul_right_div_self,
     mulPrefix_succ, Nat.add_mul_div_right _ _ (Nat.two_pow_pos k)] at hm
   change (mulCarry x y k + mulColumn x y k) % 2 = x * y / 2 ^ k % 2 at hm
-  rw [mulCarry_succ, testBit_toNat, ← hm]
+  rw [mulCarry_succ, Nat.toNat_testBit, ← hm]
   exact (Nat.mod_add_div _ _).symm
 
 /-- Carries never exceed the number of available rows. -/
@@ -225,7 +217,7 @@ private theorem mulPrefix_eq_of_carries {x y z j s : ℕ} (c : ℕ → ℕ)
         _ = z % 2 ^ (j + t) + ((z.testBit (j + t)).toNat + 2 * c (t + 1)) * 2 ^ (j + t) := by
           rw [hstep t (by lia)]
         _ = z % 2 ^ (j + t + 1) + c (t + 1) * 2 ^ (j + t + 1) := by
-          rw [pow_succ, Nat.mod_mul, ← testBit_toNat]
+          rw [pow_succ, Nat.mod_mul, ← Nat.toNat_testBit]
           ring
   exact hp s (le_refl s)
 

@@ -1319,17 +1319,14 @@ private theorem branch_step_bounds {solver : ℕ → List (List (List ℕ)) → 
     PrepareStepInput.accPair, PrepareStepInput.header,
     BranchInput.numVars, BranchInput.vars, BranchInput.system, BranchInput.varSystem]
     at hbcT hbcS houtL hlen_add haddT haddS hsolT hsolS hvT hvS hbodyT hbodyS
+  rw [hvT, hbodyT, hvS, hbodyS]
   refine ⟨hlen_inner, ?_, ?_⟩
-  · rw [hvT, hbodyT]
+  all_goals
     dsimp only [visitOverhead, prepareStepCert, binaryAddCert,
       PrepareStepInput.inp, PrepareStepInput.vals,
       PrepareStepInput.accPair, PrepareStepInput.header,
-      BranchInput.numVars, BranchInput.vars, BranchInput.system, BranchInput.varSystem]; omega
-  · rw [hvS, hbodyS]
-    dsimp only [visitOverhead, prepareStepCert, binaryAddCert,
-      PrepareStepInput.inp, PrepareStepInput.vals,
-      PrepareStepInput.accPair, PrepareStepInput.header,
-      BranchInput.numVars, BranchInput.vars, BranchInput.system, BranchInput.varSystem]; omega
+      BranchInput.numVars, BranchInput.vars, BranchInput.system, BranchInput.varSystem]
+    omega
 
 /-- **Space-efficient streaming `ComputableInO` bound for `streamBranches`** (§5.5 of
 [OpenAI2026ETH]): for fixed `solver` bounded by `2 ^ n'` with time `≤ R_solver` and space
