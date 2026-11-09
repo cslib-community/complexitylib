@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.Propositional.CNF.Moser
 public import CslibFrontier.Probability.LocalLemma
+import CslibFrontier.Logics.Propositional.CNF.Eval
 
 /-!
 # The Lovász Local Lemma for `k`-SAT

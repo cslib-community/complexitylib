@@ -13,6 +13,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryDivision
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 
 /-!
@@ -299,9 +300,8 @@ theorem eval_modLeveledAdversary_choose_eq_map_coins (E : Scheme)
     dsimp only [Function.comp_def]
     rw [BitString.uniformList_bind_split (coins n) (2 * coins n + zeroCoins)
       (fun first rest => PMF.pure (afterHop first rest))]
-    simp only [modLeveledAdversary, hpos, and_self, ↓reduceIte, ProbComp.eval_bind,
-      Scheme.sampleModIndex, ProbComp.sampleModNat, ProbComp.sampleBinaryNat,
-      ProbComp.eval_map, BitString.eval_sampleList, PMF.bind_map, Function.comp_def]
+    simp only [pmf_norm, modLeveledAdversary, hpos, and_self, ↓reduceIte, Scheme.sampleModIndex,
+      ProbComp.sampleModNat, ProbComp.sampleBinaryNat, BitString.eval_sampleList]
     congr 1 with first : 1
     by_cases hfirst : index 3 first = 0
     · change min 3 (BitString.binaryValue first % 3) = 0 at hfirst
@@ -309,8 +309,7 @@ theorem eval_modLeveledAdversary_choose_eq_map_coins (E : Scheme)
         (publicKeyGame E adversary false) n keyCoins challengePk hkey
       have hbudget : 2 * coins n + depth n * keyCoins ≤ 2 * coins n + zeroCoins := by omega
       rw [← BitString.uniformList_take hbudget, PMF.map_comp] at hlaw
-      simpa only [afterHop, index, hfirst, ↓reduceIte, ProbComp.eval_map, PMF.map_comp, PMF.map,
-        Function.comp_def, PMF.bind_bind, PMF.pure_bind] using
+      simpa only [pmf_norm, afterHop, index, hfirst, ↓reduceIte, PMF.map] using
           congrArg (PMF.map (tagLeveledChoice false false)) hlaw
     · change ¬min 3 (BitString.binaryValue first % 3) = 0 at hfirst
       by_cases hsecond : min 3 (BitString.binaryValue first % 3) = 1
@@ -318,11 +317,11 @@ theorem eval_modLeveledAdversary_choose_eq_map_coins (E : Scheme)
           (publicKeyGame E adversary true) n keyCoins challengePk hkey
         have hbudget : 2 * coins n + depth n * keyCoins ≤ 2 * coins n + zeroCoins := by omega
         rw [← BitString.uniformList_take hbudget, PMF.map_comp] at hlaw
-        simpa only [afterHop, index, hfirst, hsecond, ↓reduceIte, ProbComp.eval_map, PMF.map_comp,
-          PMF.map, Function.comp_def, PMF.bind_bind, PMF.pure_bind, Nat.one_ne_zero] using
+        simpa only [pmf_norm, afterHop, index, hfirst, hsecond, ↓reduceIte, PMF.map,
+          Nat.one_ne_zero] using
             congrArg (PMF.map (tagLeveledChoice false true ∘ swapLeveledChoice)) hlaw
-      · simp only [afterHop, index, hfirst, hsecond, ↓reduceIte, ProbComp.eval_bind,
-          ProbComp.eval_map, BitString.eval_sampleList, PMF.bind_map, Function.comp_def]
+      · simp only [pmf_norm, afterHop, index, hfirst, hsecond, ↓reduceIte,
+          BitString.eval_sampleList]
         have hsize : 2 * coins n + zeroCoins = coins n + (coins n + zeroCoins) := by omega
         rw [hsize, BitString.uniformList_bind_split (coins n) (coins n + zeroCoins)
           (fun second rest => PMF.pure

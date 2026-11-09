@@ -29,10 +29,11 @@ function of the primary input length `(input a).length` alone.
 `IsPPTWithAux` and `IsOraclePPTWithAux` capture this machine contract for closed and oracle
 probabilistic programs. Because `frame (input a)` is self-delimiting (`unframe (frame (input a) ++
 z) = input a`), a machine can recover the primary input length from the combined input tape without
-scanning `z`. Generalizing `IsTidyOraclePPTOn.runOracle` to any polynomial-time computable clock
-therefore shows that every `IsOraclePPTWithAux` (resp. `IsPPTWithAux`) program is automatically a
-standard `IsOraclePPTOn` (resp. `IsPPTOn`) program on `encPair input encBits`. Moreover, by the
-input-tape prefix-locality theorem (`runOracle_append_take` / `runClosed_append_take`), a run of
+scanning `z`. Since a machine run under any polynomial-time computable clock is clean
+(`IsTidyOraclePPTOn.runOracle_of_clock`), every `IsOraclePPTWithAux` (resp. `IsPPTWithAux`)
+program is automatically a standard `IsOraclePPTOn` (resp. `IsPPTOn`) program on
+`encPair input encBits`. Moreover, by the input-tape prefix-locality theorem
+(`runOracle_append_take` / `runClosed_append_take`), a run of
 `T = c * ((input a).length + 1) ^ d` steps on `frame (input a) ++ z` depends only on `z.take T`.
 
 ## Main definitions
@@ -78,61 +79,6 @@ open _root_.Turing _root_.Turing.MultiTapeMachine _root_.Turing.MultiTapeTM
 variable {Operation α β : Type} [DecidableEq Operation]
   {input : α ↪ List Bool} {output : β ↪ List Bool}
 
-private theorem runOracle_of_clock_tidy {k : ℕ} {Control : Type}
-    [Finite Operation] [Finite Control]
-    (machine : _root_.Turing.MultiTapePTM k Bool Control Operation)
-    {clock : List Bool → ℕ} (hclock : ComputableInPolyTime clock encBits encUnary) :
-    IsTidyOraclePPTOn encBits encBits
-      (fun word : List Bool => machine.runOracle (clock word) word) := by
-  let _ := Fintype.ofFinite Operation
-  obtain ⟨cf, hconfigurationSize⟩ :=
-    length_encFiniteConfig_le (k := k) (State := Control) (Oracle := Operation)
-  have hclockPoly : PolyBounded (fun word => (encBits word).length) clock := by
-    simpa only [encUnary_apply, List.length_replicate] using hclock.polyBounded_length
-  have hstart : ComputableInPolyTime
-      (fun word => FiniteConfig.init (k := k) (Oracle := Operation) machine.initial word)
-      encBits encFiniteConfig := by fun_prop
-  let step (word : List Bool) (cfg : FiniteConfig k Bool Control Operation) :
-      WordOracleComp Operation (FiniteConfig k Bool Control Operation) :=
-    machine.finiteStep (fun choices => choices <$> ProbOracleComp.sample (ProbComp.uniform Bool))
-      (fun op query => List.take (clock word) <$> ProbOracleComp.query (op, query)) cfg
-  have hstep : IsTidyOraclePPTOn (encPair encBits encFiniteConfig) encFiniteConfig
-      (fun pair => step pair.1 pair.2) :=
-    (IsTidyOraclePPTOn.finiteStep machine).preprocess
-      (prepare := fun pair : List Bool × FiniteConfig k Bool Control Operation =>
-        (clock pair.1, pair.2)) (by fun_prop)
-  have hloop := (IsTidyOraclePPTOn.iterateWith_spec hclock hstart hstep
-    (fun word i cfg => FiniteConfig.SpaceBound word.length i (clock word) cfg)
-    (fun word => FiniteConfig.spaceBound_init _ _ _)
-    (by
-      intro word i cfg _ hcfg next hnext
-      cases hstate : cfg.tapes.state with
-      | none =>
-        simp only [step, MultiTapeMachine.finiteStep, hstate] at hnext
-        exact (OracleComp.eq_of_mem_supportWith_pure hnext) ▸
-          hcfg.mono le_rfl (Nat.le_succ i) le_rfl
-      | some control =>
-        simp only [step, MultiTapeMachine.finiteStep, hstate] at hnext
-        obtain ⟨action, _, hnext⟩ := OracleComp.mem_supportWith_bind_iff.mp hnext
-        cases action with
-        | step action symbol move =>
-          exact (OracleComp.eq_of_mem_supportWith_pure hnext) ▸ hcfg.step action symbol move
-        | query channel control =>
-          obtain ⟨answer, hanswer, hnext⟩ := OracleComp.mem_supportWith_bind_iff.mp hnext
-          obtain ⟨reply, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hanswer
-          exact (OracleComp.eq_of_mem_supportWith_pure hnext) ▸
-            hcfg.receive channel control _ (List.length_take_le _ _))
-    (size := fun word => cf * (word.length + clock word + clock word + 1))
-    ((PolyBounded.const cf).mul
-      (((PolyBounded.self.add hclockPoly).add hclockPoly).add (.const 1)))
-    (fun word i cfg hi hcfg => (hconfigurationSize _ _ _ cfg hcfg).trans
-      (Nat.mul_le_mul_left cf (by lia)))).1
-  refine (hloop.map (by fun_prop : ComputableInPolyTime
-    (fun cfg : FiniteConfig k Bool Control Operation => cfg.tapes.output)
-    encFiniteConfig encBits)).congr fun word State oracle s => ?_
-  rw [← finiteRunFrom_take_runOracle]
-  rfl
-
 /-- Every clocked run of a finite-control oracle machine under a polynomial-time computable clock
 `clock : List Bool → ℕ` is `IsOraclePPTOn`. -/
 theorem IsOraclePPTOn.runOracle_of_clock {k : ℕ} {Control : Type}
@@ -141,7 +87,7 @@ theorem IsOraclePPTOn.runOracle_of_clock {k : ℕ} {Control : Type}
     {clock : List Bool → ℕ} (hclock : ComputableInPolyTime clock encBits encUnary) :
     IsOraclePPTOn encBits encBits
       (fun word : List Bool => machine.runOracle (clock word) word) :=
-  (runOracle_of_clock_tidy machine hclock).isOraclePPTOn
+  (IsTidyOraclePPTOn.runOracle_of_clock machine hclock).isOraclePPTOn
 
 /-- **Closed uniform strict PPT clocked in the primary input.** One finite fair-coin machine runs
 on the pair encoding `encPair input encBits (a, z) = frame (input a) ++ z`, clocked by a polynomial
@@ -163,13 +109,9 @@ def IsOraclePPTWithAux {Operation α β : Type} [DecidableEq Operation]
   Finite Operation ∧ ∃ (k : ℕ) (Control : Type) (_ : Finite Control)
     (machine : Turing.MultiTapePTM k Bool Control Operation) (c d : ℕ),
     ∀ a z (State : Type) (oracle : Operation × List Bool → StateT State PMF (List Bool)) s,
-      (OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (output <$> program a z)).run s =
-      (OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (machine.runOracle (c * ((input a).length + 1) ^ d)
-            (encPair input encBits (a, z)))).run s
+      ProbOracleComp.runWith oracle (output <$> program a z) s =
+      ProbOracleComp.runWith oracle
+          (machine.runOracle (c * ((input a).length + 1) ^ d) (encPair input encBits (a, z))) s
 
 /-- A fixed finite-control closed machine and polynomial clock in the primary input supply an
 `IsPPTWithAux` certificate directly. -/
@@ -204,16 +146,12 @@ theorem IsOraclePPTWithAux.of_machine [Finite Operation] {k : ℕ} {Control : Ty
 theorem IsOraclePPTWithAux.congr {program program' : α → List Bool → WordOracleComp Operation β}
     (h : IsOraclePPTWithAux input output program)
     (heq : ∀ a z (State : Type) (oracle : Operation × List Bool → StateT State PMF (List Bool)) s,
-      (OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (program a z)).run s =
-      (OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (program' a z)).run s) :
+      ProbOracleComp.runWith oracle (program a z) s =
+      ProbOracleComp.runWith oracle (program' a z) s) :
     IsOraclePPTWithAux input output program' := by
   obtain ⟨hops, k, Control, hfinite, machine, c, d, h⟩ := h
   refine ⟨hops, k, Control, hfinite, machine, c, d, fun a z State oracle s => ?_⟩
-  simpa only [OracleComp.interpret_map, StateT.run_map, heq] using h a z State oracle s
+  simpa only [ProbOracleComp.runWith_map, heq] using h a z State oracle s
 
 /-- Every `IsOraclePPTWithAux` program is a standard `IsOraclePPTOn` program on
 `encPair input encBits`: the machine recovers `(input a).length` by unframing the self-delimiting
@@ -228,7 +166,7 @@ theorem IsOraclePPTWithAux.isOraclePPTOn {program : α → List Bool → WordOra
     fun_prop
   have htidy : IsTidyOraclePPTOn (encPair input encBits) encBits
       (fun (a, z) => output <$> program a z) := by
-    refine ((runOracle_of_clock_tidy machine hclock).preprocess
+    refine ((IsTidyOraclePPTOn.runOracle_of_clock machine hclock).preprocess
       (ComputableInPolyTime.of_eq (encOut := encBits)
         (f := encPair input encBits) fun _ => rfl)).congr fun (a, z) State oracle s => ?_
     have hunframe : clock (encPair input encBits (a, z)) = c * ((input a).length + 1) ^ d := by
@@ -244,7 +182,6 @@ theorem IsPPTWithAux.isOraclePPTWithAux {program : α → List Bool → ProbComp
   obtain ⟨k, State, hfinite, machine, c, d, h⟩ := h
   refine ⟨inferInstance, k, State, hfinite, MultiTapePTM.ofClosed machine, c, d,
     fun a z OracleState oracle s => ?_⟩
-  change ProbOracleComp.runWith oracle _ s = ProbOracleComp.runWith oracle _ s
   rw [MultiTapePTM.run_interpret_runOracle_ofClosed, ← h a z, ← ProbOracleComp.sample_map,
     ProbOracleComp.runWith_sample, ProbComp.eval_map]
 
@@ -683,9 +620,7 @@ private theorem computesTidily_takePrefixPTM {k : ℕ} {State : Type}
   have hp₃ : ∀ y (OracleState : Type)
       (oracle : Operation × List Bool → StateT OracleState PMF (List Bool))
       (s₀ s₁ : OracleState),
-      (y, s₁) ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-        (pure (x.take K))).run s₀).support →
+      (y, s₁) ∈ (ProbOracleComp.runWith oracle (pure (x.take K)) s₀).support →
       (ofDeterministic (Oracle := Operation)
         ((clearWork Bool).extendTapes (tapeEmb (Fin.last k)))).RunsWords
         x ws ([] ++ id y) (3 * (K + 1)) (pure ())
@@ -698,9 +633,7 @@ private theorem computesTidily_takePrefixPTM {k : ℕ} {State : Type}
   have hp₂₃ : ∀ w' (OracleState : Type)
       (oracle : Operation × List Bool → StateT OracleState PMF (List Bool))
       (s s' : OracleState),
-      (w', s') ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-        (pure w)).run s).support →
+      (w', s') ∈ (ProbOracleComp.runWith oracle (pure w) s).support →
       (((ofDeterministic takeFromWorkTM : MultiTapePTM 1 Bool _ Operation).extendTapes
         (tapeEmb (Fin.last k))).seq
         (ofDeterministic (Oracle := Operation)
@@ -708,8 +641,7 @@ private theorem computesTidily_takePrefixPTM {k : ℕ} {State : Type}
         x (Function.update (fun _ => []) (Fin.last k) w') ([] ++ []) ((3 * K + 5) + 3 * (K + 1))
         (pure (x.take K)) (fun _ _ => []) id := by
     intro w' OracleState oracle s s' hw'
-    simp only [OracleComp.interpret_pure, StateT.run_pure, Probability.PMF.monad_pure_eq_pure,
-      PMF.mem_support_pure_iff] at hw'
+    simp only [ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff] at hw'
     rcases Prod.mk.inj hw' with ⟨rfl, rfl⟩
     have hseq := hp₂.seq_pure_right hinj₂ hp₃
     have happend : (fun a : List Bool => id a ++ []) = id := by
@@ -827,9 +759,8 @@ theorem IsPPTOn.isPPTWithAux_take {program : α → List Bool → ProbComp β}
   obtain ⟨_, k, Control, hfinite, machine, c', d', hmachine⟩ := horacle
   refine ⟨k, Control, hfinite, machine, c', d', fun a z => ?_⟩
   have hrun := congrArg (PMF.map Prod.fst) (hmachine a z Unit (fun q => q.1.elim) ())
-  rw [← ProbOracleComp.sample_map, ProbOracleComp.run_interpret_sample,
-    runOracle_eq_sample_runClosed, ProbOracleComp.run_interpret_sample,
-    PMF.map_comp, PMF.map_comp, ProbComp.eval_map] at hrun
+  rw [← ProbOracleComp.sample_map, ProbOracleComp.runWith_sample, runOracle_eq_sample_runClosed,
+    ProbOracleComp.runWith_sample, PMF.map_comp, PMF.map_comp, ProbComp.eval_map] at hrun
   have hid : (Prod.fst ∘ fun word : List Bool => (word, ())) = id := rfl
   rwa [hid, PMF.map_id, PMF.map_id] at hrun
 
@@ -853,16 +784,13 @@ theorem IsOraclePPTWithAux.length_le {program : α → List Bool → WordOracleC
     (h : IsOraclePPTWithAux input output program) :
     ∃ c d : ℕ, ∀ (a : α) (z : List Bool) (State : Type)
       (oracle : Operation × List Bool → StateT State PMF (List Bool)) (s s' : State) (result : β),
-      (result, s') ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (program a z)).run s).support →
+      (result, s') ∈ (ProbOracleComp.runWith oracle (program a z) s).support →
       (output result).length ≤ c * ((input a).length + 1) ^ d := by
   obtain ⟨_, k, Control, _, machine, c, d, h⟩ := h
   refine ⟨c, d, fun a z State oracle s s' result hresult => ?_⟩
-  have hmap : (output result, s') ∈ ((OracleComp.interpret
-      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-        (output <$> program a z)).run s).support := by
-    rw [OracleComp.interpret_map, StateT.run_map, PMF.monad_map_eq_map]
+  have hmap : (output result, s') ∈ (ProbOracleComp.runWith oracle (output <$> program a z)
+      s).support := by
+    rw [ProbOracleComp.runWith_map]
     exact (PMF.mem_support_map_iff _ _ _).mpr ⟨(result, s'), hresult, rfl⟩
   rw [h a z State oracle s] at hmap
   exact machine.length_output_runOracle_le oracle _ _ _ s s' hmap
@@ -890,22 +818,14 @@ theorem IsOraclePPTWithAux.exists_run_interpret_take
     ∃ c d : ℕ, ∀ (a : α) (z : List Bool) {m : ℕ},
       c * ((input a).length + 1) ^ d ≤ m →
       ∀ (State : Type) (oracle : Operation × List Bool → StateT State PMF (List Bool)) (s : State),
-        (OracleComp.interpret
-          (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-            (program a (z.take m))).run s =
-        (OracleComp.interpret
-          (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-            (program a z)).run s := by
+        ProbOracleComp.runWith oracle (program a (z.take m)) s =
+        ProbOracleComp.runWith oracle (program a z) s := by
   obtain ⟨_, k, Control, hfinite, machine, c, d, h⟩ := h
   refine ⟨c, d, fun a z {m} hm State oracle s => ?_⟩
-  have hinj : Function.Injective (fun p : β × State => (output p.1, p.2)) := by
-    intro ⟨b₁, s₁⟩ ⟨b₂, s₂⟩ heq
-    simp only [Prod.mk.injEq] at heq
-    exact Prod.ext (output.injective heq.1) heq.2
-  apply PMF.map_injective hinj
+  apply PMF.map_injective (output.injective.prodMap (Function.injective_id (α := State)))
   have h₁ := h a (z.take m) State oracle s
   have h₂ := h a z State oracle s
-  simp only [OracleComp.interpret_map, StateT.run_map, PMF.monad_map_eq_map] at h₁ h₂
+  simp only [ProbOracleComp.runWith_map] at h₁ h₂
   rw [h₁, h₂]
   simp only [encPair_apply, encBits, Function.Embedding.coe_refl, id]
   rw [machine.runOracle_append_take_of_le hm]

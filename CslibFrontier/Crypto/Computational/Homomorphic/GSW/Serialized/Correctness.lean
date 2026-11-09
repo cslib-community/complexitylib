@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Serialized
+import CslibFrontier.Languages.Probabilistic.Norm
 import Mathlib.Algebra.BigOperators.Fin
 import CslibFrontier.Foundations.Data.List.Lookup
 
@@ -161,9 +162,7 @@ theorem length_encryptWithCoinsSerialized (n m w : ℕ) (publicWord : List Bool)
 theorem eval_keyGenSerialized (n m w η : ℕ) :
     ProbComp.eval (keyGenSerialized n m w η) = (ProbComp.eval (keyGen n m w η)).map
       (fun keys => (serializePublicMatrix keys.1, serializeSecret keys.2)) := by
-  simp only [keyGenSerialized, keyGen, ProbComp.eval_bind, ProbComp.eval_pure,
-    eval_sampleKeyInputsSerialized,
-    PMF.bind_map, PMF.map_bind, PMF.pure_map, Function.comp_def,
+  simp only [pmf_norm, keyGenSerialized, keyGen, eval_sampleKeyInputsSerialized,
     publicMatrixSerialized_serializeKeyInputs, secretSerialized_serializeKeyInputs]
 
 /-- The efficient encryption sampler agrees with typed encryption of every decoded public word. -/
@@ -171,9 +170,7 @@ theorem eval_encryptSerialized (n m w : ℕ) (publicWord : List Bool) (message :
     ProbComp.eval (encryptSerialized n m w publicWord message) =
       (ProbComp.eval (encrypt (Cslib.Matrix.ofBinary m (n + 1) w publicWord) message)).map
         serializeCiphertext := by
-  simp only [encryptSerialized, encrypt, ProbComp.eval_bind, ProbComp.eval_pure,
-    eval_sampleCoinsSerialized,
-    PMF.bind_map, PMF.map_bind, PMF.pure_map, Function.comp_def,
+  simp only [pmf_norm, encryptSerialized, encrypt, eval_sampleCoinsSerialized,
     encryptWithCoinsSerialized_eq, decode_serializeCoins]
 
 /-- Canonical public words have the exact original typed encryption distribution. -/

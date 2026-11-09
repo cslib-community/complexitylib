@@ -142,11 +142,6 @@ theorem components_inSpace (d : Desc) :
       budget_ite hzero (budget_const none (.refl _)) hsym
   have hctx := budget_prod (budget_prod (budget_const (encB := eDesc) d (.refl _)) hp) hin
   have hstep := budget_comp_linear (of_inO stepWith_inO) hctx
-  have hsome : ComputableInSpace Option.isSome eSym encBool
-      (fun s => (eSym s).length) := of_inO (ComputableInDegree.isSome encUnary).inO_one
-  have hget : ComputableInSpace (fun s : Option ℕ => s.getD 0) eSym encUnary
-      (fun s => (eSym s).length) :=
-    of_inO (ComputableInDegree.getD (enc₁ := encUnary) 0).inO_one
   have hunary : ComputableInSpace (fun n : ℕ => encUnary n) encUnary encBits
       (fun n => (encUnary n).length) :=
     of_inO (.of_eq fun _ => rfl)
@@ -157,12 +152,12 @@ theorem components_inSpace (d : Desc) :
     refine (budget_finite (encC := encBool) Bool.not hempty).of_enc_eq ?_
     intro n
     cases n <;> simp [outputBit, encUnary_apply]
-  have hemit := budget_ite (budget_comp_linear hsome hstep.snd')
+  have hemit := budget_ite (budget_optionIsSome hstep.snd')
     (budget_finite (encC := encBits) (fun b : Bool => [b])
-      (budget_comp_linear hbit (budget_comp_linear hget hstep.snd')))
+      (budget_comp_linear hbit (budget_optionGetD 0 hstep.snd')))
     (budget_const [] (.refl _))
   have hhalt := budget_finite (encC := encBool) Bool.not
-    (budget_comp_linear hsome fields_inSpace.fst')
+    (budget_optionIsSome fields_inSpace.fst')
   refine ⟨budget_natPred hpos, hstep.fst', hemit.of_enc_eq ?_,
     hhalt.of_enc_eq ?_, budget_const [] (.refl _)⟩
   · intro p

@@ -11,6 +11,7 @@ public import CslibFrontier.Foundations.BooleanAnalysis.Degree
 public import CslibFrontier.Foundations.BooleanAnalysis.Influence
 public import Mathlib.Data.Finset.Density
 import CslibFrontier.Foundations.BooleanAnalysis.Decomposition
+import CslibFrontier.Foundations.BooleanAnalysis.MaximalSupport
 import CslibFrontier.Foundations.Data.Finset.Expect
 import Mathlib.Algebra.Order.BigOperators.Expect
 import Mathlib.Data.Finset.Max
@@ -133,14 +134,8 @@ private theorem one_le_two_pow_card_mul_dens_ne_zero (S : Finset ι) :
   induction S using Finset.induction_on with
   | empty =>
     intro h hS hT
-    have hconst (x : ι → Bool) : h x = fourierCoeff h ∅ := by
-      rw [← sum_fourierCoeff_mul_chi h x, sum_eq_single (∅ : Finset ι)]
-      · rw [chi_empty, mul_one]
-      · intro T _ hT0
-        rw [hT T (empty_ssubset.2 (nonempty_iff_ne_empty.2 hT0)), zero_mul]
-      · exact fun h => absurd (mem_univ _) h
     have hall : ({x | h x ≠ 0} : Finset (ι → Bool)) = univ :=
-      filter_true_of_mem fun x _ => by rw [hconst x]; exact hS
+      filter_true_of_mem fun x _ => by rwa [apply_eq_fourierCoeff_empty_of_maximal hT x]
     rw [hall, dens_univ, card_empty, pow_zero, one_mul, NNRat.cast_one]
   | insert i S hi ih =>
     intro h hS hT

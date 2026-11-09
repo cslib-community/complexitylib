@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Crypto.Protocols.Cipher.LubyRackoff
 import CslibFrontier.Foundations.Data.BitString.List.Operations
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.CoinFixing
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.Product
@@ -722,7 +723,7 @@ private theorem bind_uniformOfFintype_fin_three {X β : Type} [Fintype X] [Nonem
       left_inv := fun _ => rfl, right_inv := fun f => by funext i; fin_cases i <;> rfl }
   rw [← PMF.uniformOfFintype_map_equiv e, PMF.bind_map, ← PMF.uniformOfFintype_prod,
     ← PMF.uniformOfFintype_prod]
-  simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]; rfl
+  simp only [pmf_norm]; rfl
 
 /-- **Three random Feistel rounds against a random permutation**, for randomized word-oracle
 adversaries ([BonehShoup2023], proof of Theorem 4.9): with independent uniform random round
@@ -1119,7 +1120,7 @@ private theorem bind_uniformOfFintype_fin_four {X β : Type} [Fintype X] [Nonemp
       right_inv := fun f => by funext i; fin_cases i <;> rfl }
   rw [← PMF.uniformOfFintype_map_equiv e, PMF.bind_map, ← PMF.uniformOfFintype_prod,
     ← PMF.uniformOfFintype_prod, ← PMF.uniformOfFintype_prod]
-  simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]; rfl
+  simp only [pmf_norm]; rfl
 
 /-- **Four random Feistel rounds against a random permutation, in both directions**
 ([LubyRackoff1988]), for randomized bidirectional word-oracle adversaries: with independent

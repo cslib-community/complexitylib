@@ -172,25 +172,13 @@ theorem externalInfoCost_sub_internalInfoCost (law : PMF (X × Y × τ)) :
     (G := fun q => (q.2.1, q.1)) (e := Prod.swap) Prod.swap_injective (fun _ _ => rfl)
   have e2 := entropy_map_eq_of_comp law (F := fun q : X × Y × τ => (q.1, q.2.1, q.2.2))
     (G := fun q => (q.2.1, q.1, q.2.2)) (e := fun t => (t.2.1, t.1, t.2.2))
-    (fun s t h => by
-      obtain ⟨_, _, _⟩ := s
-      obtain ⟨_, _, _⟩ := t
-      simp only [Prod.mk.injEq] at h
-      simp [h]) (fun _ _ => rfl)
+    (fun s t h => by grind) (fun _ _ => rfl)
   have e3 := entropy_map_eq_of_comp law (F := fun q : X × Y × τ => (q.1, q.2.1, q.2.2))
     (G := fun q => ((q.1, q.2.1), q.2.2)) (e := fun t => ((t.1, t.2.1), t.2.2))
-    (fun s t h => by
-      obtain ⟨_, _, _⟩ := s
-      obtain ⟨_, _, _⟩ := t
-      simp only [Prod.mk.injEq] at h
-      simp [h]) (fun _ _ => rfl)
+    (fun s t h => by grind) (fun _ _ => rfl)
   have e4 := entropy_map_eq_of_comp law (F := fun q : X × Y × τ => (q.1, q.2.1, q.2.2))
     (G := fun q => (q.2.2, q.1, q.2.1)) (e := fun t => (t.2.2, t.1, t.2.1))
-    (fun s t h => by
-      obtain ⟨_, _, _⟩ := s
-      obtain ⟨_, _, _⟩ := t
-      simp only [Prod.mk.injEq] at h
-      simp [h]) (fun _ _ => rfl)
+    (fun s t h => by grind) (fun _ _ => rfl)
   have e5 := entropy_map_eq_of_comp law (F := fun q : X × Y × τ => (q.1, q.2.2))
     (G := fun q => (q.2.2, q.1)) (e := Prod.swap) Prod.swap_injective (fun _ _ => rfl)
   have e6 := entropy_map_eq_of_comp law (F := fun q : X × Y × τ => (q.2.1, q.2.2))

@@ -781,6 +781,20 @@ theorem FilterInv.clusterLen_sub_one_le_sum_scaleOverload
   have hℓ_le_S : ℓ ≤ #S := hinv.clusterLen_le_card hS_lt q
   have hcard_J : #(S.filter fun x => h i x ∈ cyclicInterval b₀ q a ℓ) = ℓ :=
     hinv.card_filter_quot_mem_cyclicInterval_eq hS_lt q
+  -- A single overloaded scale `r` with `k₀ ≤ 2 ^ r` already bounds `k₀` by the sum.
+  have key : ∀ r ∈ Finset.Icc 1 b₀, k₀ ≤ 2 ^ r → scaleOverload b₀ h (S.erase u) u r i →
+      (k₀ : ℝ) ≤ ∑ r ∈ Finset.Icc 1 b₀,
+        (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0) := by
+    intro r hr hk_le hov
+    calc (k₀ : ℝ) ≤ (2 ^ r : ℝ) := by exact_mod_cast hk_le
+      _ = (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0) := by
+          simp [hov]
+      _ ≤ _ := by
+          refine Finset.single_le_sum
+            (f := fun r =>
+              (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0))
+            (fun r _ => ?_) hr
+          split_ifs <;> positivity
   by_cases hk₀ : 1 ≤ k₀
   · by_cases ht_pos : 1 ≤ t
     · set j := Nat.log 2 k₀ + 1
@@ -819,16 +833,7 @@ theorem FilterInv.clusterLen_sub_one_le_sum_scaleOverload
           simp only [Finset.mem_filter] at hx ⊢
           exact ⟨hx.1, hsub hx.2⟩
         omega
-      calc (k₀ : ℝ) ≤ (2 ^ j : ℝ) := by exact_mod_cast hk₀_lt_2j.le
-        _ = (2 ^ j : ℝ) * (if scaleOverload b₀ h (S.erase u) u j i then (1 : ℝ) else 0) := by
-            simp [hov]
-        _ ≤ ∑ r ∈ Finset.Icc 1 b₀,
-              (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0) := by
-            refine Finset.single_le_sum
-              (f := fun r =>
-                (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0))
-              (fun r _ => ?_) hj_mem
-            split_ifs <;> positivity
+      exact key j hj_mem hk₀_lt_2j.le hov
     · have ht0 : t = 0 := by omega
       have hfull_q : st.isFull q = false := by
         have h1 := hinv.isFull_probeSlot_fwdLen hS_lt q
@@ -873,18 +878,7 @@ theorem FilterInv.clusterLen_sub_one_le_sum_scaleOverload
           simp only [Finset.mem_filter] at hx ⊢
           exact ⟨hx.1, hsub hx.2⟩
         omega
-      calc (k₀ : ℝ) ≤ (2 ^ j : ℝ) := by
-            have : k₀ ≤ 2 ^ j := by omega
-            exact_mod_cast this
-        _ = (2 ^ j : ℝ) * (if scaleOverload b₀ h (S.erase u) u j i then (1 : ℝ) else 0) := by
-            simp [hov]
-        _ ≤ ∑ r ∈ Finset.Icc 1 b₀,
-              (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0) := by
-            refine Finset.single_le_sum
-              (f := fun r =>
-                (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0))
-              (fun r _ => ?_) hj_mem
-            split_ifs <;> positivity
+      exact key j hj_mem (by omega) hov
   · have hk0 : k₀ = 0 := by omega
     rw [hk0, Nat.cast_zero]
     refine Finset.sum_nonneg fun r _ => ?_

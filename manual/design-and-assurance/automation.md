@@ -1,6 +1,6 @@
 # Proof automation and client interfaces
 
-The automation layer searches for proofs of explicit mathematical contracts. It generally reuses named certificates and compositional rules; it is not a compiler that can assign a polynomial bound to an arbitrary Lean program. In particular, a short tactic call hides a checked derivation, but the model, algorithm and invariant still have to be right. [complexitylib][complexitylib]
+The automation layer searches for proofs of explicit mathematical contracts. It generally reuses named certificates and compositional rules; it is not a compiler that can assign a polynomial bound to an arbitrary Lean program. In particular, a short tactic call hides a checked derivation, but the model, algorithm and invariant still have to be right. [cslib-frontier][complexitylib]
 
 ## Assemble joint time and space bounds
 
@@ -40,6 +40,15 @@ explains the joint certificate and charged-space convention in context.
 
 [`polytime`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/PolyTime.lean#L25) combines these certificates with `fun_prop` composition and the Aesop `PolyTime` rules. Loops use Hoare-style iteration theorems plus bounds on state growth and iteration count. A bounded number of calls to individually efficient routines is insufficient if intermediate data grows exponentially; the growth hypotheses are part of the proof obligation. Ordinary search failure can expose a failed compositional attempt as a diagnostic, not as evidence of noncomputability.
 
+Before searching, `polytime` and `ppt` prepare the goal the same way. `polytime [f, g]` (or
+`ppt [f, g]`) unfolds the definitions `f` and `g` in the goal and inlines the `let`s this exposes;
+use it for a program defined in the same module, instead of a separate `unfold`. Both forms also
+replace local encoding `let`s, such as `let EIn := encPair encUnary encBits`, by their values, and
+add the certificates stored in fields of local structures as local facts: a scheme `S` contributes
+fields such as `S.encrypt_ppt`, an admissibility hypothesis `hA` its stage certificates. A hint
+that does not occur in the goal is an error. The checked
+[client](../../CslibFrontierTests/OraclePPTTactic.lean) shows each step.
+
 Plain and internal tidy predicates have separate search rules at this snapshot. The preferred plain tactic does not change the user's goal to tidy computability or silently restate hypotheses. Machine-level proofs may still use tidy witnesses internally. This is the implemented direction even where older prose or issues describe a stronger prohibition on tidy use inside proofs.
 
 ## Rewrite option matches before resource automation
@@ -77,7 +86,7 @@ certificates and bounds. Rewriting alone does not supply a missing resource cert
 | Tactic/interface | Input contract and strategy | Boundary |
 |---|---|---|
 | [`logspace`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/LogSpace.lean#L15) | Named certificates, recomputation-based composition, bounded output vectors and loop rules | Arbitrarily long intermediate output cannot simply be retained in logarithmic workspace |
-| [`ppt`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/PPT.lean#L18) | Closed strict fair-coin program certificates, deterministic calls, supported sampling, bounded-growth iteration | Arbitrary ideal PMFs and open oracle programs need additional realization theorems |
+| [`ppt`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/PPT.lean#L18) | Closed strict fair-coin program certificates, deterministic calls, supported sampling, bounded-growth iteration; strict oracle programs (`IsOraclePPTOn`, `IsOraclePPT`) by plain `fun_prop` composition of charged reply prefixes, sequencing, maps, conditionals and sampling | Arbitrary ideal PMFs need realization theorems; handler substitution and adaptive oracle loops keep their explicit rules, whose invariants and growth bounds are part of the claim |
 | [`stateful`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/Stateful.lean#L14) | Local semantic/operation-cost Hoare contracts and Aesop rules | Intermediate assertions and implementations for bind/link are supplied explicitly; total machine time remains separate |
 | [`wordram`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/WordRAM.lean#L16) | Registered controller/refinement and polynomial-time certificates | Width, basis and fixed-code realization matter; host-language continuation work is not automatically free |
 
@@ -152,6 +161,36 @@ If nothing expands, the diagnostic recommends plain `omega`. If the expanded goa
 inspect its bounds, supply missing arithmetic facts or name a local encoding lemma. An unknown
 lemma reports the underlying name-resolution error; check its spelling, namespace and import.
 The tactic neither invents a growth bound nor searches for an encoding definition to unfold.
+
+## Close word-size bounds
+
+Word-RAM instructions need a fitting condition `Fits w v`, which unfolds to `v < 2 ^ w`, for
+each value they write. Import `CslibFrontier.Tactic.Fits` and prove such a condition with `fits`
+instead of choosing a larger fact `h` and writing `h.of_le (by omega)`. The tactic unfolds `Fits`
+in the goal and in the hypotheses that mention it, adds that each power of two `2 ^ e` among them
+is positive, and runs `omega`. It finds the hypotheses by their statements, so it does not depend
+on their names, and the goal may also be written `v < 2 ^ w`. The
+[checked clients](../../CslibFrontierTests/FitsTactic.lean) cover offsets, constants, masks, shifts,
+a wider word, conjunctions and negations of fitting facts, a product bound and both diagnostics.
+To check them, run `lake build CslibFrontierTests.FitsTactic --wfail --iofail` from the repository
+root after [setup](../workflows/getting-started.md).
+
+`ram_eval` and `ram_exact_eval` decide the fitting conditions of the values they write the same
+way, with the simplification procedure `Cslib.WordRAM.reduceFits`. It uses only the hypotheses
+that mention `Fits`, and at most 16 of them; past that it only matches a hypothesis of the same
+statement. A value that fits by a larger fitting fact in context therefore needs no named
+`Fits` statement among their simp lemmas. These tactics' modules import `CslibFrontier.Tactic.Fits`,
+so their clients can call `fits` without importing it.
+
+A side condition used once can be proved where it is used, as the argument `(by fits)`. Products
+are atoms for `omega`: give a bound on one as a term, as in
+`fits [Nat.mul_le_mul_right b hc]`. A hypothesis about a different word width is related to `w`
+only when `omega` can see it, as for `w + 1`; otherwise weaken it first with `Fits.mono`.
+
+If the goal is not a word-size bound `Fits w v` or `v < 2 ^ w`, the diagnostic recommends plain
+`omega`.
+If `omega` fails, the diagnostic shows the unfolded goal with the facts it was given; supply the
+missing bound, for instance on a product or on a value read from memory.
 
 ## Proof style as interface maintenance
 

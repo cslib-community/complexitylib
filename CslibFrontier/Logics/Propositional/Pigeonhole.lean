@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Logics.Propositional.CNF
 public import Mathlib.Data.Fintype.Card
 public import Mathlib.Data.List.FinRange
+import CslibFrontier.Foundations.Data.List.Counting
 import Mathlib.Data.Fintype.Pigeonhole
 import Mathlib.Data.Fintype.Prod
 
@@ -148,20 +149,12 @@ theorem length_le_of_mem_pigeonhole {c : Clause (Fin m × Fin n)} (hc : c ∈ pi
   · simp
   · simp
 
-private theorem length_flatMap_le {α β : Type*} {f : α → List β} {k : ℕ}
-    (h : ∀ a, (f a).length ≤ k) : ∀ l : List α, (l.flatMap f).length ≤ l.length * k
-  | [] => by simp
-  | a :: l => by
-    simp only [List.flatMap_cons, List.length_append, List.length_cons, Nat.add_one_mul,
-      Nat.add_comm _ k]
-    exact Nat.add_le_add (h a) (length_flatMap_le h l)
-
 /-- `PHP^m_n` has at most `m + n m²` clauses. -/
 theorem length_pigeonhole_le (m n : ℕ) : (pigeonhole m n).length ≤ m + n * m ^ 2 := by
   rw [pigeonhole, List.length_append, List.length_map, List.length_finRange]
   refine Nat.add_le_add_left ?_ m
-  refine (length_flatMap_le (k := m ^ 2) (fun j => ?_) _).trans_eq (by simp)
-  refine (length_flatMap_le (k := m) (fun i => ?_) _).trans_eq (by simp [Nat.pow_two])
+  refine (List.length_flatMap_le (k := m ^ 2) fun j _ => ?_).trans_eq (by simp)
+  refine (List.length_flatMap_le (k := m) fun i _ => ?_).trans_eq (by simp [Nat.pow_two])
   rw [List.length_map]
   exact (List.length_filter_le _ _).trans (by simp)
 

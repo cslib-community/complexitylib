@@ -26,6 +26,7 @@ and bounds by exponentials.
   `1 ≤ k → x ≤ 2 ^ (a * k) → y ≤ 2 ^ (b * k) → x + y ≤ 2 ^ ((a + b + 1) * k)`.
 * `Nat.le_two_pow_mul`: `1 ≤ k → c ≤ 2 ^ (c * k)`.
 * `Nat.mul_add_one_pow_le`: `(R + 1) * d ≤ M → R * (M + 1) ^ d ≤ (R + 1) * M ^ d`.
+* `Nat.two_mul_lt_two_pow`: `3 ≤ w → 2 * w < 2 ^ w`.
 * `Nat.sq_le_two_pow`: `4 ≤ s → s ^ 2 ≤ 2 ^ s`.
 * `Nat.pow_le_two_pow`: `1 ≤ D → 4 * D ^ 2 ≤ b → b ^ D ≤ 2 ^ b`.
 * `Nat.succ_pow_sub_pow_le`: `(c + 1) ^ (j + 1) - c ^ (j + 1) ≤ (j + 1) * (c + 1) ^ j`.
@@ -101,6 +102,12 @@ theorem mul_add_one_pow_le {R M d : ℕ} (h : (R + 1) * d ≤ M) :
         rw [show d + r - d = r by omega]
         nlinarith
     _ = (R + 1) * M ^ d * (M - d) := by ring
+
+/-- For `w ≥ 3`, `2 * w < 2 ^ w`. -/
+theorem two_mul_lt_two_pow {w : ℕ} (hw : 3 ≤ w) : 2 * w < 2 ^ w := by
+  induction w, hw using Nat.le_induction with
+  | base => decide
+  | succ k _ ih => rw [pow_succ]; omega
 
 /-- For `s ≥ 4`, `s ^ 2 ≤ 2 ^ s`. -/
 theorem sq_le_two_pow : ∀ {s : ℕ}, 4 ≤ s → s ^ 2 ≤ 2 ^ s

@@ -204,15 +204,8 @@ theorem entry_length_le_of_reach {x : ℕ × List ℕ × ℕ × DescribedNetwork
     obtain ⟨u, hu, rfl⟩ := List.mem_map.mp hw
     rw [length_encSum]
     simp only [Sum.elim_inl]
-    have h1 := length_le_encList_of_mem (encPair (encList encNat) encT) hu
-    have h2 : (encList (encPair (encList encNat) encT) G.vertices).length ≤
-        (DescribedNetwork.encDescribed encT G).length := by
-      change _ ≤ (encPair encUnary (encList (encPair (encList encNat) encT))
-        (G.numEdges, G.vertices)).length
-      rw [length_encPair]
-      dsimp only
-      omega
-    rw [length_encPair] at h1
+    have h1 := G.length_vertex_le (encT := encT) hu
+    simp only [DescribedNetwork.encVertex, length_encPair] at h1
     have : Z ≤ (Z + 1) ^ 2 := (Nat.le_succ Z).trans (Nat.le_self_pow (by norm_num) _)
     omega
   obtain ⟨hc, hv, hf⟩ := hsh.length_le entry rfl rfl rfl hZ1 hZ2
@@ -558,26 +551,7 @@ theorem exists_fastCore_le
     (NativeCertificate.ofPolyTime rootCall_polyTime) _ F TL SL hnode hframe hvalue x _ N H he
   have hrT' : (runCore ce).time x ≤ _ := hrT
   have hrS' : (runCore ce).space x ≤ _ := hrS
-  -- The output of the run, and direct summation below `s₀`.
-  have hdec (v : ℕ × List ℕ) (hv : (reachInv entry nativeMk (rootCall x)).value v) :
-      (NativeCertificate.ofPolyTime (valueTag_polyTime (encT := encT))).time (x, v) +
-        (NativeCertificate.ofPolyTime (valueTag_polyTime (encT := encT))).space (x, v) +
-        (NativeCertificate.ofPolyTime (valueList_polyTime (encT := encT))).time (x, v) +
-        (NativeCertificate.ofPolyTime (valueList_polyTime (encT := encT))).space (x, v) +
-        (NativeCertificate.ofPolyTime
-          (ComputableInPolyTime.fst (encInput encT) encValue)).time (x, v) +
-        (NativeCertificate.ofPolyTime
-          (ComputableInPolyTime.fst (encInput encT) encValue)).space (x, v) ≤
-        c₂ * (Ka + 2) ^ d₂ * B ^ ((Ka + 1) * d₂) := by
-    refine (h₂ (x, v)).trans ?_
-    rw [Nat.mul_assoc, pow_mul, ← mul_pow]
-    refine Nat.mul_le_mul_left _ (Nat.pow_le_pow_left ?_ _)
-    have := hvalue v hv
-    have hB1 : B ≤ B ^ (Ka + 1) := Nat.le_self_pow (by omega) _
-    have hBK := Nat.mul_le_mul_left Ka
-      (Nat.pow_le_pow_right (by omega : 1 ≤ B) (by omega : Ka ≤ Ka + 1))
-    simp only [length_encPair (enc₁ := encInput encT) (enc₂ := encValue), add_mul]
-    omega
+  -- Direct summation below `s₀`.
   have hdir (hs₀ : s < s₀) : (directCore entry ce).time x ≤ K₂ * 2 ^ (K₂ * s₀) * B ^ K₂ :=
     hdT.trans (le_of_le_of_eq (Nat.mul_le_mul_left _
       (Nat.pow_le_pow_right (by norm_num) (Nat.mul_le_mul_left _ hs₀.le))) (by ring))
@@ -591,17 +565,8 @@ theorem exists_fastCore_le
   refine hK (by omega) hrT' hrS' (by rw [Nat.mul_assoc]; omega) ?_ (clock_le hs hA.2.1 hA.2.2.1 hPD)
     hHFS hTL
   rw [Nat.mul_assoc 2, Nat.mul_assoc 2]
-  rcases hr : (scheme entry nativeMk).run clock rootCall x with _ | ⟨tag, coeffs⟩
-  · have hs₀ : s < s₀ := Nat.lt_of_not_le fun h => by rw [hbig h] at hr; cases hr
-    have := hdir hs₀
-    simp only [Option.elim_none]; omega
-  · have hd := hdec (tag, coeffs) (Scheme.value_of_run_eq_some he hr)
-    simp only [Option.elim_some]
-    split_ifs with h0
-    · omega
-    · have hs₀ : s < s₀ := Nat.lt_of_not_le fun h => by
-        rw [hbig h] at hr; cases hr; simp at h0
-      have := hdir hs₀; omega
+  exact outputStep_le (fun _ => Scheme.value_of_run_eq_some he)
+    (fun v hv => le_of_le_encPair (h₂ (x, v)) hB (hvalue v hv) (by omega)) hbig hdir hdirS
 
 /-! ### The contraction algorithm -/
 
