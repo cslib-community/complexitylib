@@ -368,8 +368,7 @@ private theorem card_filter_lineListDecode_ne_of_lt_lineAgree_le {d D : ℕ} (hd
           rw [lineListDecode_eq g p d D] at hdec
           exact ⟨⟨by rw [firstNonzero_smul, inv_mul_cancel₀ hl],
             by rwa [lineAgree_smul A _ _ (inv_ne_zero hl)]⟩, hdec⟩
-        · simp only [coe_filter, mem_univ, true_and, Set.mem_ofPred_eq] at hz hz'
-          have e1 := firstNonzero_smul_inv_smul (u := z - x)
+        · have e1 := firstNonzero_smul_inv_smul (u := z - x)
           have e2 := firstNonzero_smul_inv_smul (u := z' - x)
           have h1 := congrArg Sigma.fst heq
           have h2 := congrArg Sigma.snd heq

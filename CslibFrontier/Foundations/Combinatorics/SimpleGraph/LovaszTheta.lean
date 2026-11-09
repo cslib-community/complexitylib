@@ -128,36 +128,27 @@ theorem IsOrthonormalRepresentation.tmul {E F : Type*} [NormedAddCommGroup E]
     · rw [hu.inner_eq_zero h₁ h₂, zero_mul]
     · rw [hw.inner_eq_zero h₁ h₂, mul_zero]
 
-/-- Any orthonormal representation `u` in a finite-dimensional real inner product space, with a
-unit handle `c` and `1 ≤ t ⟪c, u v⟫²` for all `v`, bounds `ϑ(G) ≤ t`. -/
-private theorem lovaszTheta_le_of_finiteDim_rep {E : Type*} [NormedAddCommGroup E]
-    [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] {u : V → E}
-    (hu : G.IsOrthonormalRepresentation u) {c : E} (hc : ‖c‖ = 1) {t : ℝ} (ht : 0 < t)
-    (h : ∀ v, 1 ≤ t * ⟪c, u v⟫ ^ 2) : G.lovaszTheta ≤ t := by
-  refine csInf_le bddBelow_feasible ⟨ht, ?_⟩
-  let b := stdOrthonormalBasis ℝ E
-  refine ⟨_, b.repr ∘ u, b.repr c, hu.map b.repr.toLinearIsometry, ?_, fun v => ?_⟩
-  · rw [LinearIsometryEquiv.norm_map]
-    exact hc
-  · rw [Function.comp_apply, LinearIsometryEquiv.inner_map_map]
-    exact h v
-
 /-- Any orthonormal representation `u` of a finite graph, in any real inner product space, with
 a unit handle `c` and `1 ≤ t ⟪c, u v⟫²` for all `v`, bounds `ϑ(G) ≤ t`. -/
 theorem lovaszTheta_le_of_rep [Finite V] {E : Type*} [NormedAddCommGroup E]
     [InnerProductSpace ℝ E] {u : V → E} (hu : G.IsOrthonormalRepresentation u) {c : E}
     (hc : ‖c‖ = 1) {t : ℝ} (ht : 0 < t) (h : ∀ v, 1 ≤ t * ⟪c, u v⟫ ^ 2) :
     G.lovaszTheta ≤ t := by
+  refine csInf_le bddBelow_feasible ⟨ht, ?_⟩
   let S : Submodule ℝ E := Submodule.span ℝ (insert c (Set.range u))
   have : FiniteDimensional ℝ S :=
     FiniteDimensional.span_of_finite ℝ ((Set.finite_range u).insert c)
   have huS (v : V) : u v ∈ S := Submodule.subset_span (Set.mem_insert_of_mem _ ⟨v, rfl⟩)
+  let b := stdOrthonormalBasis ℝ S
   let u' : V → S := fun v => ⟨u v, huS v⟩
   let c' : S := ⟨c, Submodule.subset_span (Set.mem_insert _ _)⟩
   have hu' : G.IsOrthonormalRepresentation u' :=
     ⟨fun v => hu.norm_eq_one v, fun _ _ hvw hadj => hu.inner_eq_zero hvw hadj⟩
-  have hc' : ‖c'‖ = 1 := by simpa [c'] using hc
-  exact lovaszTheta_le_of_finiteDim_rep hu' hc' ht h
+  refine ⟨_, b.repr ∘ u', b.repr c', hu'.map b.repr.toLinearIsometry, ?_, fun v => ?_⟩
+  · rw [LinearIsometryEquiv.norm_map]
+    exact hc
+  · rw [Function.comp_apply, LinearIsometryEquiv.inner_map_map]
+    exact h v
 
 /-- Bessel's inequality bound: an orthonormal representation with handle `c` and
 `1 ≤ t ⟪c, u v⟫²` for all `v` bounds `α(G) ≤ t`. -/
@@ -324,79 +315,17 @@ theorem lovaszTheta_strongPow_zero_le : (G.strongPow 0).lovaszTheta ≤ 1 :=
     (c := EuclideanSpace.single (0 : Fin 1) (1 : ℝ)) (by simp) one_pos fun _ => by simp
 
 /-- `ϑ(Gᵏ) ≤ ϑ(G)ᵏ` for the strong powers. -/
-theorem lovaszTheta_strongPow_le (k : ℕ) :
+theorem lovaszTheta_strongPow_le [Finite V] (k : ℕ) :
     (G.strongPow k).lovaszTheta ≤ G.lovaszTheta ^ k := by
-  rcases Nat.eq_zero_or_pos k with rfl | hk
-  · simpa using lovaszTheta_strongPow_zero_le
-  rcases isEmpty_or_nonempty V with hV | hV
-  · have : IsEmpty (Fin k → V) := ⟨fun f => IsEmpty.false (f ⟨0, hk⟩)⟩
-    rw [lovaszTheta_eq_zero_of_isEmpty, lovaszTheta_eq_zero_of_isEmpty, zero_pow hk.ne']
-  let F := {t : ℝ | 0 < t ∧ ∃ (d : ℕ) (u : V → EuclideanSpace ℝ (Fin d))
-    (c : EuclideanSpace ℝ (Fin d)),
-    G.IsOrthonormalRepresentation u ∧ ‖c‖ = 1 ∧ ∀ v, 1 ≤ t * ⟪c, u v⟫ ^ 2}
-  rcases Set.eq_empty_or_nonempty F with hF | hF
-  · have hFk : {t : ℝ | 0 < t ∧ ∃ (d : ℕ) (u : (Fin k → V) → EuclideanSpace ℝ (Fin d))
-        (c : EuclideanSpace ℝ (Fin d)),
-        (G.strongPow k).IsOrthonormalRepresentation u ∧ ‖c‖ = 1 ∧
-          ∀ v, 1 ≤ t * ⟪c, u v⟫ ^ 2} = ∅ := by
-      ext t
-      refine ⟨fun ⟨ht, d, u, c, hu, hc, h⟩ => ?_, False.elim⟩
-      let diag : G ↪g G.strongPow k :=
-        { toFun := fun v _ => v
-          inj' := fun v w hvw => congrFun hvw ⟨0, hk⟩
-          map_rel_iff' := fun {v w} => by
-            simp only [strongPow_adj]
-            constructor
-            · rintro ⟨hne, hadj⟩
-              exact ((hadj ⟨0, hk⟩).resolve_left fun hvw => hne (funext fun _ => hvw))
-            · intro hadj
-              exact ⟨fun hvw => hadj.ne (congrFun hvw ⟨0, hk⟩), fun _ => .inr hadj⟩ }
-      have htF : t ∈ F := ⟨ht, d, u ∘ diag, c, hu.comp diag, hc, fun v => h (diag v)⟩
-      rw [hF] at htF
-      exact htF
-    change sInf _ ≤ (sInf F) ^ k
-    rw [hFk, hF, Real.sInf_empty, zero_pow hk.ne']
-  have key : ∀ t ∈ F, ∀ n, (G.strongPow n).lovaszTheta ≤ t ^ n := by
-    rintro t ⟨ht, d, u, c, hu, hc, h⟩ n
-    suffices ∀ m, ∃ (dm : ℕ) (um : (Fin m → V) → EuclideanSpace ℝ (Fin dm))
-        (cm : EuclideanSpace ℝ (Fin dm)),
-        (G.strongPow m).IsOrthonormalRepresentation um ∧ ‖cm‖ = 1 ∧
-          ∀ x, 1 ≤ t ^ m * ⟪cm, um x⟫ ^ 2 by
-      rcases this n with ⟨dn, un, cn, hun, hcn, hn⟩
-      exact lovaszTheta_le_of_finiteDim_rep hun hcn (pow_pos ht n) hn
-    intro m
-    induction m with
-    | zero =>
-      refine ⟨1, fun _ => EuclideanSpace.single 0 1, EuclideanSpace.single 0 1,
-        ⟨fun _ => by simp, fun x y hxy => absurd (Subsingleton.elim x y) hxy⟩,
-        by simp, fun _ => by simp⟩
-    | succ m ih =>
-      rcases ih with ⟨dm, um, cm, hum, hcm, hm⟩
-      let φ : G.strongPow (m + 1) ≃g G.strongPow m ⊠ G :=
-        (G.strongPowAddIso m 1).trans
-          { toEquiv := Equiv.prodCongr (Equiv.refl _) G.strongPowOneIso.toEquiv
-            map_rel_iff' := by
-              intro a b
-              simp [strongProd_adj, Prod.ext_iff, G.strongPowOneIso.map_rel_iff] }
-      let E := EuclideanSpace ℝ (Fin dm) ⊗[ℝ] EuclideanSpace ℝ (Fin d)
-      let b := stdOrthonormalBasis ℝ E
-      refine ⟨Module.finrank ℝ E, b.repr ∘ fun x => um (φ x).1 ⊗ₜ[ℝ] u (φ x).2,
-        b.repr (cm ⊗ₜ[ℝ] c),
-        ((hum.tmul hu).comp φ.toEmbedding).map b.repr.toLinearIsometry, ?_, fun x => ?_⟩
-      · rw [LinearIsometryEquiv.norm_map, TensorProduct.norm_tmul, hcm, hc, one_mul]
-      · rw [Function.comp_apply, LinearIsometryEquiv.inner_map_map, TensorProduct.inner_tmul,
-          mul_pow, pow_succ]
-        calc (1 : ℝ) = 1 * 1 := (mul_one 1).symm
-          _ ≤ (t ^ m * ⟪cm, um (φ x).1⟫ ^ 2) * (t * ⟪c, u (φ x).2⟫ ^ 2) :=
-              mul_le_mul (hm (φ x).1) (h (φ x).2) zero_le_one (zero_le_one.trans (hm _))
-          _ = t ^ m * t * (⟪cm, um (φ x).1⟫ ^ 2 * ⟪c, u (φ x).2⟫ ^ 2) := by ring
-  have hrpow : (G.strongPow k).lovaszTheta ^ ((k : ℝ)⁻¹) ≤ G.lovaszTheta := by
-    refine le_csInf hF fun t ht => ?_
-    exact (Real.rpow_inv_le_iff_of_pos lovaszTheta_nonneg ht.1.le (Nat.cast_pos.mpr hk)).2
-      (by simpa [Real.rpow_natCast] using key t ht k)
-  rw [← Real.rpow_natCast]
-  exact (Real.rpow_inv_le_iff_of_pos lovaszTheta_nonneg lovaszTheta_nonneg
-    (Nat.cast_pos.mpr hk)).1 hrpow
+  induction k with
+  | zero => simpa using lovaszTheta_strongPow_zero_le
+  | succ k ih =>
+    rw [(G.strongPowAddIso k 1).lovaszTheta_eq, pow_succ]
+    calc (G.strongPow k ⊠ G.strongPow 1).lovaszTheta
+        ≤ (G.strongPow k).lovaszTheta * (G.strongPow 1).lovaszTheta := lovaszTheta_strongProd_le
+      _ ≤ G.lovaszTheta ^ k * G.lovaszTheta := by
+        rw [G.strongPowOneIso.lovaszTheta_eq]
+        exact mul_le_mul_of_nonneg_right ih lovaszTheta_nonneg
 
 /-- **Lovász's bound on the Shannon capacity**: `Θ(G) ≤ ϑ(G)`. -/
 theorem shannonCapacity_le_lovaszTheta [Finite V] : G.shannonCapacity ≤ G.lovaszTheta :=

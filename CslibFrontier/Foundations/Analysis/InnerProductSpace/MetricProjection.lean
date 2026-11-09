@@ -82,14 +82,14 @@ theorem inner_sub_metricProjection_le_zero (hc : IsComplete K) (hK : Convex ℝ 
     (norm_sub_metricProjection ⟨z, hz⟩ hc hK y) z hz
 
 /-- A point of `K` is the projection of `y` iff it satisfies the variational inequality. -/
-theorem metricProjection_eq_iff (hne : K.Nonempty) (hc : IsComplete K) (hK : Convex ℝ K)
+theorem metricProjection_eq_iff (hc : IsComplete K) (hK : Convex ℝ K)
     {y x : E} (hx : x ∈ K) :
     metricProjection K y = x ↔ ∀ z ∈ K, ⟪y - x, z - x⟫ ≤ 0 := by
   refine ⟨fun h => h ▸ fun z hz => inner_sub_metricProjection_le_zero hc hK y hz,
     fun h => ?_⟩
   set p := metricProjection K y
   have h1 : ⟪y - p, x - p⟫ ≤ 0 := inner_sub_metricProjection_le_zero hc hK y hx
-  have h2 := h p (metricProjection_mem hne hc hK y)
+  have h2 := h p (metricProjection_mem ⟨x, hx⟩ hc hK y)
   have hsum : ‖p - x‖ ^ 2 = ⟪y - p, x - p⟫ + ⟪y - x, p - x⟫ := by
     rw [← real_inner_self_eq_norm_sq, show y - x = (y - p) + (p - x) by abel, inner_add_left,
       show x - p = -(p - x) by abel, inner_neg_right]
@@ -99,10 +99,10 @@ theorem metricProjection_eq_iff (hne : K.Nonempty) (hc : IsComplete K) (hK : Con
   exact sub_eq_zero.mp (norm_eq_zero.mp this)
 
 /-- A point of `K` is the projection of `y` iff it is a nearest point of `K` to `y`. -/
-theorem metricProjection_eq_iff_forall_norm_le (hne : K.Nonempty) (hc : IsComplete K)
+theorem metricProjection_eq_iff_forall_norm_le (hc : IsComplete K)
     (hK : Convex ℝ K) {y x : E} (hx : x ∈ K) :
     metricProjection K y = x ↔ ∀ z ∈ K, ‖y - x‖ ≤ ‖y - z‖ := by
-  rw [metricProjection_eq_iff hne hc hK hx, ← norm_eq_iInf_iff_real_inner_le_zero hK hx]
+  rw [metricProjection_eq_iff hc hK hx, ← norm_eq_iInf_iff_real_inner_le_zero hK hx]
   have hbdd : BddBelow (Set.range fun w : K => ‖y - w‖) :=
     ⟨0, Set.forall_mem_range.mpr fun _ => norm_nonneg _⟩
   have : Nonempty K := ⟨⟨x, hx⟩⟩

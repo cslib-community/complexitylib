@@ -40,7 +40,7 @@ theorem K_proj : IsPythagoreanProjection K (metricProjection K) :=
 
 /-- The projection of `2` onto `[-1, 1]` is `1`. -/
 example : metricProjection K 2 = 1 := by
-  rw [metricProjection_eq_iff K_nonempty K_isComplete K_convex (by norm_num)]
+  rw [metricProjection_eq_iff K_isComplete K_convex (by norm_num)]
   intro z hz
   rw [real_inner]
   linarith [hz.2]
