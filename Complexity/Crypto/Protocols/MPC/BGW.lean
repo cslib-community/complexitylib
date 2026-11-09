@@ -43,9 +43,9 @@ Ben-Or–Goldwasser–Wigderson (BGW) semi-honest arithmetic gate protocols over
      products `share params r₁ a i * share params r₂ b i`—or of degree-$2t$ zero-randomized
      products `bgwMulStep params r₁ a r₂ b r_z`—recovers $a \cdot b$
      (`reconstruct_mul_share_eq_mul`, `reconstruct_bgwMulStep_eq_mul`).
-   - **Commutativity of Lagrange Reconstruction and Shamir Sharing (`reconstruct_share_comm`):**
-     in the Gennaro–Rabin–Rabin / Asharov–Lindell BGW degree-reduction step
-     ([GennaroRabinRabin1998]; [AsharovLindell2017], Section 3.2), each party $j$ reshares its
+   - **Commutativity of Lagrange Reconstruction and Shamir Sharing (`bgwDegreeReduceShare_share`):**
+     in the Gennaro–Rabin–Rabin simplification of the BGW degree-reduction step
+     ([GennaroRabinRabin1998]; [AsharovLindell2017], Section 6.1), each party $j$ reshares its
      degree-$2t$ intermediate value $d_j$ using fresh degree-$t$ Shamir randomness
      $r_{\text{sub}}(j)$, and each party $i$ applies Lagrange reconstruction
      (`bgwDegreeReduceShare`) to its column of received sub-shares. This produces genuine
@@ -126,7 +126,7 @@ Ben-Or–Goldwasser–Wigderson (BGW) semi-honest arithmetic gate protocols over
   `Cslib.Crypto.Protocols.MPC.BGW.reconstruct_mul_share_eq_mul`,
   `Cslib.Crypto.Protocols.MPC.BGW.reconstruct_bgwMulStep_eq_mul`: multiplicative property of
   Shamir shares for $2t < |\text{Party}|$.
-* `Cslib.Crypto.Protocols.MPC.BGW.reconstruct_share_comm`,
+* `Cslib.Crypto.Protocols.MPC.BGW.bgwDegreeReduceShare_share`,
   `Cslib.Crypto.Protocols.MPC.BGW.bgwDegreeReduceShare_mul_eq_share`,
   `Cslib.Crypto.Protocols.MPC.BGW.reconstruct_bgwDegreeReduceShare_mul_eq_mul`: commutativity of
   Lagrange reconstruction with Shamir sharing and correctness of BGW degree reduction.
@@ -228,7 +228,7 @@ theorem share_zero (params : Params F Party) (i : Party) :
     share params 0 0 i = 0 :=
   share_zero_randomness params 0 i
 
-/-- Additive homomorphism of Shamir sharing ([BenOrGoldwasserWigderson1988], Section 3):
+/-- Additive homomorphism of Shamir sharing ([AsharovLindell2017], Section 4.1, addition gates):
 adding two share values at party `i` produces party `i`'s share of `s₁ + s₂` under randomness
 `r₁ + r₂`. -/
 theorem share_add (params : Params F Party) (r₁ r₂ : Randomness params) (s₁ s₂ : F) (i : Party) :
@@ -532,9 +532,9 @@ theorem reconstruct_mul_share_eq_mul (params : Params F Party)
       (a * b) (2 * params.threshold) (mulTailCoeffs a r₁ b r₂)) ?_
   exact_mod_cast Nat.succ_le_of_lt h2t
 
-/-- Local BGW degree-$2t$ zero-randomized multiplication step ([BenOrGoldwasserWigderson1988],
-Section 3): party `i` multiplies its degree-$t$ shares of `a` and `b` and adds a degree-$2t$
-Shamir share of `0` with randomness `r_z : Fin (2 * params.threshold) → F`. -/
+/-- Local BGW degree-$2t$ zero-randomized multiplication step ([AsharovLindell2017], Section 4.3,
+Protocol 4.5, steps 1–2): party `i` multiplies its degree-$t$ shares of `a` and `b` and adds a
+degree-$2t$ Shamir share of `0` with randomness `r_z : Fin (2 * params.threshold) → F`. -/
 noncomputable def bgwMulStep (params : Params F Party)
     (r₁ : Randomness params) (a : F) (r₂ : Randomness params) (b : F)
     (r_z : Fin (2 * params.threshold) → F) (i : Party) : F :=
@@ -577,24 +577,24 @@ theorem reconstruct_bgwMulStep_eq_mul (params : Params F Party)
 
 /-- Combined degree-$t$ Shamir randomness resulting from Lagrange recombination of per-party
 resharing polynomials `r_sub : Party → Randomness params` ([GennaroRabinRabin1998];
-[AsharovLindell2017], Section 3.2). -/
+[AsharovLindell2017], Section 6.1). -/
 noncomputable def bgwReducedRandomness (params : Params F Party)
     (r_sub : Party → Randomness params) : Randomness params :=
   ∑ j : Party, lagrangeWeightAtZero params.point j • r_sub j
 
 /-- BGW degree-reduction recombination step ([GennaroRabinRabin1998]; [AsharovLindell2017],
-Section 3.2): party `i` applies Lagrange reconstruction at zero (`Polynomial.reconstruct
+Section 6.1): party `i` applies Lagrange reconstruction at zero (`Polynomial.reconstruct
 params.point`) to the column `j ↦ subShares j i` of sub-shares sent to `i`. -/
 noncomputable def bgwDegreeReduceShare (params : Params F Party)
     (subShares : Party → Party → F) (i : Party) : F :=
   Polynomial.reconstruct params.point (fun j => subShares j i)
 
 /-- **Commutativity of Lagrange Reconstruction and Shamir Sharing** ([GennaroRabinRabin1998];
-[AsharovLindell2017], Claim 3.4): when each party `j` shares its intermediate value `d j` using
+[AsharovLindell2017], Section 6.1): when each party `j` shares its intermediate value `d j` using
 degree-$t$ Shamir randomness `r_sub j`, applying `bgwDegreeReduceShare` at party `i` yields party
 `i`'s degree-$t$ Shamir share of `Polynomial.reconstruct params.point d` under randomness
 `bgwReducedRandomness params r_sub`. -/
-theorem reconstruct_share_comm (params : Params F Party)
+theorem bgwDegreeReduceShare_share (params : Params F Party)
     (r_sub : Party → Randomness params) (d : Party → F) (i : Party) :
     bgwDegreeReduceShare params (fun j k => share params (r_sub j) (d j) k) i =
       share params (bgwReducedRandomness params r_sub)
@@ -614,7 +614,7 @@ theorem reconstruct_share_comm (params : Params F Party)
 
 /-- When `2 * params.threshold < Fintype.card Party`, BGW degree reduction on the unmasked product
 shares `d j = share params r₁ a j * share params r₂ b j` produces a genuine degree-$t$ Shamir
-sharing of `a * b` ([GennaroRabinRabin1998]; [AsharovLindell2017], Section 3.2). -/
+sharing of `a * b` ([GennaroRabinRabin1998]; [AsharovLindell2017], Section 6.1). -/
 theorem bgwDegreeReduceShare_mul_eq_share (params : Params F Party)
     (h2t : 2 * params.threshold < Fintype.card Party)
     (r₁ r₂ : Randomness params) (a b : F)
@@ -622,7 +622,7 @@ theorem bgwDegreeReduceShare_mul_eq_share (params : Params F Party)
     bgwDegreeReduceShare params
         (fun j k => share params (r_sub j) (share params r₁ a j * share params r₂ b j) k) i =
       share params (bgwReducedRandomness params r_sub) (a * b) i := by
-  rw [reconstruct_share_comm, reconstruct_mul_share_eq_mul params h2t]
+  rw [bgwDegreeReduceShare_share, reconstruct_mul_share_eq_mul params h2t]
 
 /-- When `2 * params.threshold < Fintype.card Party`, BGW degree reduction on the degree-$2t$
 zero-randomized product shares `bgwMulStep params r₁ a r₂ b r_z` also produces a genuine degree-$t$
@@ -634,7 +634,7 @@ theorem bgwDegreeReduceShare_bgwMulStep_eq_share (params : Params F Party)
     bgwDegreeReduceShare params
         (fun j k => share params (r_sub j) (bgwMulStep params r₁ a r₂ b r_z j) k) i =
       share params (bgwReducedRandomness params r_sub) (a * b) i := by
-  rw [reconstruct_share_comm, reconstruct_bgwMulStep_eq_mul params h2t]
+  rw [bgwDegreeReduceShare_share, reconstruct_bgwMulStep_eq_mul params h2t]
 
 /-- Any degree-$t$ authorized coalition `s` (`params.threshold + 1 ≤ s.card`) reconstructs `a * b`
 from the BGW degree-reduced shares whenever `2 * params.threshold < Fintype.card Party`. -/
@@ -741,7 +741,7 @@ theorem shareZeroRestrictHom_surjective (params : Params F Party) (I : Finset Pa
   ext i
   exact share_interpCoeffs params I hI 0 σ i
 
-/-- **Unauthorized-Coalition Marginal Uniformity** ([Shamir1979]; [AsharovLindell2017], Claim 3.1):
+/-- **Unauthorized-Coalition Marginal Uniformity** ([Shamir1979]; [AsharovLindell2017], Claim 3.2):
 for any coalition `I` with `I.card ≤ params.threshold` and any secret `secret : F`, the restriction
 of `share params coeffs secret` to `I` under uniform `coeffs : Randomness params` is uniformly
 distributed on `I → F`. -/
@@ -941,7 +941,7 @@ theorem PerfectSemiHonestPrivateLe.proper_of_succ_eq
     PerfectSemiHonestPrivateProper proto W f S := by
   intro I hI x
   have hlt : I.card < m := by
-    simpa [Fintype.card_fin] using Finset.card_lt_card ( Ne.lt_top hI)
+    simpa [Fintype.card_fin] using Finset.card_lt_card (Ne.lt_top hI)
   exact h I (by omega) x
 
 /-- Threshold perfect semi-honest privacy implies zero distinguishing advantage
@@ -1058,7 +1058,7 @@ private theorem eval_pi_uniform_randomness {m : ℕ} (params : Params F (Fin m))
   exact PMF.pi_uniformOfFintype
 
 /-- 1-round synchronous $m$-party BGW degree-reduction multiplication gate protocol over
-`noOracleSpec` ([GennaroRabinRabin1998]; [AsharovLindell2017], Section 3.2):
+`noOracleSpec` ([GennaroRabinRabin1998]; [AsharovLindell2017], Section 6.1):
 1. Each party `s : Fin m` holds input share pair `uv_s = (u_s, v_s) : F × F` and samples fresh
    degree-$t$ Shamir randomness `r_s : Randomness params`.
 2. Each party `s` sends the sub-share `share params r_s (u_s * v_s) i` to each party `i : Fin m`
@@ -1140,7 +1140,7 @@ theorem reconstruct_output_bgwDegreeReductionProtocol_eq_mul {m : ℕ} (params :
     (bgwReducedRandomness params (fun j => (res.1 j).coins)) (a * b) hs
 
 /-- Coalition view simulator for `bgwDegreeReductionProtocol params` ([AsharovLindell2017],
-Section 3.2): given only the coalition's input share pairs `uvI : (i : I) → F × F`, samples uniform
+Claim 3.4): given only the coalition's input share pairs `uvI : (i : I) → F × F`, samples uniform
 coins `rI` for `i ∈ I` and independent uniform sub-share vectors `hCompl : Iᶜ → I → F` from honest
 senders `s ∉ I`, and assembles each corrupted party's inbox. -/
 noncomputable def bgwDegreeReductionViewSim {m : ℕ} (params : Params F (Fin m))
@@ -1157,7 +1157,7 @@ noncomputable def bgwDegreeReductionViewSim {m : ℕ} (params : Params F (Fin m)
       else
         hCompl ⟨s, Finset.mem_compl.mpr hs⟩ i
 
-/-- **$t$-Privacy of BGW Degree-Reduction Views** ([AsharovLindell2017], Section 3.2): for every
+/-- **$t$-Privacy of BGW Degree-Reduction Views** ([AsharovLindell2017], Claim 3.4): for every
 coalition `I` with `I.card ≤ params.threshold` and every input tuple `uv : Fin m → F × F`, the
 marginal distribution of `I`'s views in `bgwDegreeReductionProtocol params` equals
 `ProbComp.eval (bgwDegreeReductionViewSim params I (I.restrict uv))`, which depends only on
@@ -1208,7 +1208,7 @@ def bgwSumFunctionality (m : ℕ) : Functionality m (fun _ => F) (fun _ => F) :=
   Functionality.ofDeterministic (fun x _ => ∑ j : Fin m, x j)
 
 /-- 2-round synchronous $m$-party BGW sum protocol over `noOracleSpec`
-([BenOrGoldwasserWigderson1988], Section 3; [AsharovLindell2017]):
+([AsharovLindell2017], Section 4.2, Protocol 4.1, for a circuit of addition gates):
 1. Each party `s : Fin m` samples degree-$t$ Shamir randomness `r_s : Randomness params` and sends
    `share params r_s (x s) rcv` to each receiver `rcv : Fin m` via `pairwiseSteps`.
 2. Each party `k : Fin m` sums its received shares `Y_k = ∑ s : Fin m, inbox_k s` and broadcasts
@@ -1327,7 +1327,7 @@ noncomputable def bgwSumSim {m : ℕ} (params : Params F (Fin m)) (I : Finset (F
       pure (fun i => bgwSumViewOf params i.1 (xI i) 0 0 0)
 
 /-- **Full Joint View-and-Output $t$-Privacy of `bgwSumProtocol`**
-([BenOrGoldwasserWigderson1988], Theorem 1 for addition; [AsharovLindell2017], Section 3.1):
+(cf. [AsharovLindell2017], Section 4.2, Protocol 4.1 and Claim 4.3, for addition gates only):
 for every static coalition `I` with `I.card ≤ params.threshold`, `bgwSumProtocol params` privately
 computes `bgwSumFunctionality m` in `noOracleWorld` with simulator `bgwSumSim params`. -/
 theorem perfectSemiHonestPrivateLe_bgwSum {m : ℕ} (params : Params F (Fin m)) :
