@@ -10,7 +10,7 @@ dropped while the PR evolved, costs a review round. This tool extracts the backt
 Markdown text (the body of PR N fetched with `gh pr view N --json body`, a file, `-` for standard
 input, or the `pull_request` event payload that GitHub Actions stores at `$GITHUB_EVENT_PATH`),
 keeps those that look like Lean names, and reports the ones not declared in the sources of the
-checked-out revision (or of `--root DIR`): `Complexity/`, `ComplexityTests/`, `abstracts/`,
+checked-out revision (or of `--root DIR`): `CslibFrontier/`, `CslibFrontierTests/`, `abstracts/`,
 `scripts/`, every package under `.lake/packages` (cslib, Mathlib, Batteries, ...) and, when `lean`
 is on the path, the toolchain's `Init`, `Std` and `Lean` sources. Run it on the PR's head checkout.
 
@@ -24,7 +24,7 @@ The check reads source text, not the compiled environment, and errs towards acce
 * a declaration's full name combines its `namespace` blocks with its declared name, and a token
   is declared when it equals a full name or is a dot-separated suffix of one (`Nodup` and
   `List.Nodup` both match `List.Nodup`); a namespace name matches its `namespace` block or any
-  declaration under it, and a module name or a dotted suffix of one (`Complexity.Crypto.PRF`,
+  declaration under it, and a module name or a dotted suffix of one (`CslibFrontier.Crypto.PRF`,
   `Crypto.PRF`) matches its file;
 * structure fields and parent projections, inductive constructors, `where` auxiliaries, `alias`
   and `irreducible_def` names, and the names Lean generates (`.mk`, `.rec`, `.ext_iff`, `.eq_1`,
@@ -62,7 +62,7 @@ from pathlib import Path
 from proof_lengths import masks
 
 ROOT = Path(__file__).resolve().parents[1]
-LOCAL_DIRS = ("Complexity", "ComplexityTests", "abstracts", "scripts")
+LOCAL_DIRS = ("CslibFrontier", "CslibFrontierTests", "abstracts", "scripts")
 
 # --- Extracting candidate names from Markdown -----------------------------------------------------
 
@@ -394,7 +394,7 @@ def head_words(token: str) -> set[str]:
 def module_suffixes(roots: list[Path]) -> set[str]:
     """Every dotted suffix of the module names of the `.lean` files under `roots`.
 
-    `Homomorphic.Layered` and `Layered` are suffixes of `Complexity.Crypto.Homomorphic.Layered`."""
+    `Homomorphic.Layered` and `Layered` are suffixes of `CslibFrontier.Crypto.Homomorphic.Layered`."""
     rg = shutil.which("rg")
     paths: list[Path] = []
     if rg and roots:
