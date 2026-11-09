@@ -471,6 +471,13 @@ index links to canonical definitions rather than keeping a second set.
   nonloop last-edge contraction. Directed blocks, duplicate declarations, splitting
   components and isolated-point conventions are explicit; face-even extension premises
   are discharged internally. These operations assert no geometric or runtime endpoint.
+  Actual atom/probe boundaries are constructed. Existential projection at every free position
+  and the exact cyclic constructor preserve supplied finite witnesses on the existing PP bodies.
+  Canonical port distinctness, literal body restriction and full ordered numerical target
+  checks are proved, including nullaries and unused ports. Choice-based static inverses do
+  not prove the input-varying native compiler's acceptance theorem. Adjacent identification,
+  derived pin/disequality attachment, remaining expanded-language recipes and whole-instance
+  native target acceptance remain open; macro tables do not complete language substitution.
   The actual ordered incidence-to-polygon bridge now preserves every face and component
   and proves the numerical Euler equivalence under positive actual scopes. Its abstract
   rotation maps still need native and geometric compilation.
