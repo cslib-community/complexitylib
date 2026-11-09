@@ -8,8 +8,9 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Rado
-public import CslibFrontier.Foundations.ModelTheory.Graph
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw
+public import Mathlib.Combinatorics.SimpleGraph.Maps
+import CslibFrontier.Foundations.ModelTheory.Graph
 import Mathlib.Data.Fintype.EquivFin
 
 /-!

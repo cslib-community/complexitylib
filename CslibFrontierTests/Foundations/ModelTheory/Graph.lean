@@ -39,7 +39,8 @@ def hasNeighbour : Language.graph.Formula Unit :=
 theorem realize_hasNeighbour {V : Type*} (G : SimpleGraph V) (v : Unit → V) :
     (letI := G.structure; hasNeighbour.Realize v) ↔ ∃ w, G.Adj (v ()) w := by
   let := G.structure
-  simp [hasNeighbour, Formula.Realize]
+  simp only [Formula.Realize, hasNeighbour, BoundedFormula.realize_ex,
+    BoundedFormula.realize_rel₂, Term.realize_var, Sum.elim_inl]
   rfl
 
 /-- The free-variable formula transfers along the explicit isomorphism: the image `2` of the
