@@ -10,9 +10,9 @@ dropped while the PR evolved, costs a review round. This tool extracts the backt
 Markdown text (the body of PR N fetched with `gh pr view N --json body`, a file, `-` for standard
 input, or the `pull_request` event payload that GitHub Actions stores at `$GITHUB_EVENT_PATH`),
 keeps those that look like Lean names, and reports the ones not declared in the sources of the
-checked-out revision (or of `--root DIR`): `Complexity/`, `ComplexityTests/`, `abstracts/`,
-`scripts/`, every package under `.lake/packages` (cslib, Mathlib, Batteries, ...) and, when `lean`
-is on the path, the toolchain's `Init`, `Std` and `Lean` sources. Run it on the PR's head checkout.
+checked-out revision (or of `--root DIR`): `CslibFrontier/`, `CslibFrontierTests/`, `scripts/`, every
+package under `.lake/packages` (cslib, Mathlib, Batteries, ...) and, when `lean` is on the path,
+the toolchain's `Init`, `Std` and `Lean` sources. Run it on the PR's head checkout.
 
 The check reads source text, not the compiled environment, and errs towards accepting a name:
 
@@ -24,7 +24,7 @@ The check reads source text, not the compiled environment, and errs towards acce
 * a declaration's full name combines its `namespace` blocks with its declared name, and a token
   is declared when it equals a full name or is a dot-separated suffix of one (`Nodup` and
   `List.Nodup` both match `List.Nodup`); a namespace name matches its `namespace` block or any
-  declaration under it, and a module name or a dotted suffix of one (`Complexity.Crypto.PRF`,
+  declaration under it, and a module name or a dotted suffix of one (`CslibFrontier.Crypto.PRF`,
   `Crypto.PRF`) matches its file;
 * structure fields and parent projections, inductive constructors, `where` auxiliaries, `alias`
   and `irreducible_def` names, and the names Lean generates (`.mk`, `.rec`, `.ext_iff`, `.eq_1`,
@@ -62,7 +62,7 @@ from pathlib import Path
 from proof_lengths import masks
 
 ROOT = Path(__file__).resolve().parents[1]
-LOCAL_DIRS = ("Complexity", "ComplexityTests", "abstracts", "scripts")
+LOCAL_DIRS = ("CslibFrontier", "CslibFrontierTests", "scripts")
 
 # --- Extracting candidate names from Markdown -----------------------------------------------------
 
@@ -90,7 +90,7 @@ TACTICS = {
     "field_simp", "fin_cases", "first_order", "interval_cases", "native_decide", "norm_cast",
     "norm_num", "push_cast", "push_neg", "rw_mod_cast", "simp_all", "simp_arith", "simp_rw",
     "split_ifs", "nlinarith", "decide_eq_true", "ring_nf", "set_option", "maxHeartbeats",
-    "maxRecDepth", "autoImplicit", "relaxedAutoImplicit", "check_abstract", "print_axioms",
+    "maxRecDepth", "autoImplicit", "relaxedAutoImplicit", "print_axioms",
     "lake", "mk_all", "lint_style", "checkInitImports", "runLinter", "pull_request",
     "merge_group", "workflow_dispatch", "to_additive", "to_dual", "simps", "irreducible_def",
     "fun_prop", "reducible_and_instances",
@@ -394,7 +394,7 @@ def head_words(token: str) -> set[str]:
 def module_suffixes(roots: list[Path]) -> set[str]:
     """Every dotted suffix of the module names of the `.lean` files under `roots`.
 
-    `Homomorphic.Layered` and `Layered` are suffixes of `Complexity.Crypto.Homomorphic.Layered`."""
+    `Homomorphic.Layered` and `Layered` are suffixes of `CslibFrontier.Crypto.Homomorphic.Layered`."""
     rg = shutil.which("rg")
     paths: list[Path] = []
     if rg and roots:

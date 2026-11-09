@@ -24,8 +24,8 @@ REFERENCE = [f'{s}/{n}.md' for s, names in base.ORDER[:-1] for n in names]
 HISTORY = [f'development-history/{n}.md' for n in base.ORDER[-1][1]]
 APPENDICES = ['model-map.md', 'MAINTAINING.md', 'BUILD.md', 'workflows/agent-operations.md', 'index.md']
 FILES = WORKFLOWS + REFERENCE + HISTORY + APPENDICES
-STEM = 'complexitylib-operators-manual'
-AGENT_STEM = 'complexitylib-agent-operators-manual'
+STEM = 'cslib-frontier-operators-manual'
+AGENT_STEM = 'cslib-frontier-agent-operators-manual'
 AGENT_FILES = ['AGENT_OPERATORS.md']
 HISTORICAL_REVISION = '13e6a31951bf1c89a1a6258c44f9444aecbbefd8'
 EXCLUDED_DIRECTORIES = {'_build', '_generated', '__pycache__'}
@@ -126,18 +126,19 @@ def write(ast):
 
 
 def preamble(revision, dirty, agent=False):
-    title = "Complexitylib Agent Operator's Manual" if agent else "Complexitylib Operator's Manual"
+    title = ("cslib-frontier Agent Operator's Manual" if agent
+             else "cslib-frontier Operator's Manual")
     short_title = "Agent Operator's Manual" if agent else "Operator's Manual"
     stem = AGENT_STEM if agent else STEM
     text = base.PREAMBLE.split(r'\begin{document}')[0]
-    text = text.replace('% Generated from the reviewed Complexitylib research dossier.',
+    text = text.replace('% Generated from the reviewed cslib-frontier research dossier.',
                         '% Generated from the canonical ' + title + '.')
-    text = text.replace('xelatex complexitylib-survey.tex (twice for cross-references).',
+    text = text.replace('xelatex cslib-frontier-survey.tex (twice for cross-references).',
                         f'xelatex {stem}.tex (three times for cross-references).')
-    text = text.replace('Complexitylib: models, design, and development', title)
-    text = text.replace('Complexitylib: Models, Design, and Automated Development', title)
+    text = text.replace('cslib-frontier: models, design, and development', title)
+    text = text.replace('cslib-frontier: Models, Design, and Automated Development', title)
     text = text.replace('Source-based survey at revision 13e6a319',
-                        'Human direction of agents' if agent else 'Using and extending Complexitylib')
+                        'Human direction of agents' if agent else 'Using and extending cslib-frontier')
     text = text.replace('pdfauthor={Research draft}', 'pdfauthor={}')
     text += r'''
 \makeatletter
@@ -146,7 +147,7 @@ def preamble(revision, dirty, agent=False):
 \begin{document}
 \begin{titlepage}
 \vspace*{1.1in}
-{\Huge\bfseries Complexitylib\par}
+{\Huge\bfseries cslib-frontier\par}
 \vspace{0.25in}
 {\LARGE MANUAL-TITLE\par}
 \vspace{0.4in}
@@ -233,7 +234,7 @@ def main():
     parts, inputs, figure_outputs = [preamble(revision, dirty, agent=args.agent_manual)], {}, {}
     for relative in files:
         if not args.agent_manual and relative == WORKFLOWS[0]:
-            parts.append(r'\part{Using Complexitylib}' + '\n')
+            parts.append(r'\part{Using cslib-frontier}' + '\n')
         elif relative == REFERENCE[0]:
             parts.append(r'\part{Models, theorems, and design reference}' + '\n')
         elif relative == HISTORY[0]:
