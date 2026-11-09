@@ -262,6 +262,15 @@ private theorem det_parentMatrix_of_acyclic {f : {v // v ≠ r} → V} (hf : Acy
   · refine Finset.prod_eq_one fun i _ => ?_
     simp [parentMatrix, hne i]
 
+open Classical in
+/-- The determinant of the parent matrix is `1` for an acyclic parent function and `0`
+otherwise. -/
+private theorem det_parentMatrix (f : {v // v ≠ r} → V) :
+    (parentMatrix f : Matrix _ _ R).det = if Acyclic f then 1 else 0 := by
+  split_ifs with hf
+  · exact det_parentMatrix_of_acyclic hf
+  · exact det_parentMatrix_of_not_acyclic hf
+
 /-- The determinant of the reduced Laplacian expands over parent functions. -/
 private theorem det_laplacian_submatrix_eq_sum (A : Matrix V V R) (r : V) :
     (A.laplacian.submatrix (Subtype.val : {v // v ≠ r} → V) Subtype.val).det =
@@ -301,14 +310,7 @@ theorem det_laplacian_submatrix_eq_finsum_isInArborescence (A : Matrix V V R) (r
         ∏ᶠ (p : V × V) (_ : T.Adj p.1 p.2), A p.1 p.2 := by
   classical
   rw [det_laplacian_submatrix_eq_sum]
-  have hterm : ∀ f : {v // v ≠ r} → V,
-      (∏ i : {v // v ≠ r}, A i (f i)) * (parentMatrix f : Matrix _ _ R).det =
-        if Acyclic f then ∏ i : {v // v ≠ r}, A i (f i) else 0 := by
-    intro f
-    split_ifs with hf
-    · rw [det_parentMatrix_of_acyclic hf, mul_one]
-    · rw [det_parentMatrix_of_not_acyclic hf, mul_zero]
-  simp only [hterm]
+  simp only [det_parentMatrix, mul_ite, mul_one, mul_zero]
   rw [← Finset.sum_filter, Finset.sum_subtype (p := Acyclic) _ (fun f => by simp),
     ← finsum_subtype_eq_finsum_cond, ← finsum_comp_equiv parentEquiv, finsum_eq_sum_of_fintype]
   refine Finset.sum_congr rfl fun f _ => ?_
@@ -332,9 +334,8 @@ theorem det_laplacian_submatrix_eq_finsum_reachable (A : Matrix V V R) (r : V) :
     ⟨fun h v => exists_iterate_of_reflTransGen f (h v),
       fun h v => (isInArborescence_toDigraph h).reachable v⟩
   change _ = if ∀ v, Relation.ReflTransGen (toDigraph f).Adj v r then _ else _
-  split_ifs with hf
-  · rw [det_parentMatrix_of_acyclic (hiff.mp hf), mul_one]
-  · rw [det_parentMatrix_of_not_acyclic (mt hiff.mpr hf), mul_zero]
+  rw [det_parentMatrix, mul_ite, mul_one, mul_zero]
+  exact if_congr hiff.symm rfl rfl
 
 omit [Fintype V] [DecidableEq V] in
 open Classical in
