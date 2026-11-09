@@ -93,7 +93,6 @@ when `w = 0`; clearing theorems hold in any `CommRing K`; and Cramer recovery re
 namespace Cslib.CommonCountingAccum
 
 open Cslib.BitString Cslib.GenericRAM Turing.MultiTapeTM
-open ComputableTidilyInO (length_encNat_mono)
 
 attribute [local irreducible] ComputableInPolyTime
 

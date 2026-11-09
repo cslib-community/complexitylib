@@ -2069,6 +2069,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.SparseBranchSch
 public import CslibFrontier.Computability.Complexity.FineGrained.SparseCountingScale
 public import CslibFrontier.Computability.Complexity.FineGrained.SparseParitySchedule
 public import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
+public import CslibFrontier.Computability.Complexity.FineGrained.SparsificationRounds
 public import CslibFrontier.Computability.Complexity.FineGrained.ThreeOccurrenceReduction
 public import CslibFrontier.Computability.Complexity.FineGrained.WideClauseCounting
 public import CslibFrontier.Computability.Complexity.FineGrained.WordRAM
@@ -4722,6 +4723,7 @@ public import CslibFrontier.Foundations.Data.Fin.Order
 public import CslibFrontier.Foundations.Data.Fin.Tuple
 public import CslibFrontier.Foundations.Data.Finset.ApplyUpdate
 public import CslibFrontier.Foundations.Data.Finset.Average
+public import CslibFrontier.Foundations.Data.Finset.Density
 public import CslibFrontier.Foundations.Data.Finset.Expect
 public import CslibFrontier.Foundations.Data.Finset.ExpectPi
 public import CslibFrontier.Foundations.Data.Finset.ExpectResample
@@ -4773,6 +4775,7 @@ public import CslibFrontier.Foundations.Data.List.Filter
 public import CslibFrontier.Foundations.Data.List.FilterMap
 public import CslibFrontier.Foundations.Data.List.Fold
 public import CslibFrontier.Foundations.Data.List.FoldlIdx
+public import CslibFrontier.Foundations.Data.List.IdxOf
 public import CslibFrontier.Foundations.Data.List.IsSortedLT
 public import CslibFrontier.Foundations.Data.List.Last
 public import CslibFrontier.Foundations.Data.List.Lex
