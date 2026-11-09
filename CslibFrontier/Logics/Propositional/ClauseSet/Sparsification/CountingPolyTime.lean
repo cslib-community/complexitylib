@@ -103,17 +103,9 @@ theorem computableInPolyTime_countingNextWith {P : Type} {encP : P ↪ List Bool
     (hθ : ComputableInPolyTime (fun x : P × ℕ × ℕ => decide (θ x.1 x.2.1 ≤ x.2.2))
       (encPair encP (encPair encUnary encUnary)) encBool) (k : ℕ) :
     ComputableInPolyTime (fun x : P × (CNF V × Bool) => countingNext (θ x.1) k x.2.1 x.2.2)
-      (encPair encP (encPair encF encBool)) encF := by
-  have hchild := computableInPolyTime_countingChild encV
-  have hc0 := computableInPolyTime_choiceWith encV hθ k
-  have hchoice : ComputableInPolyTime
-      (fun x : P × (CNF V × Bool) => choice (θ x.1) k x.2.1)
-      (encPair encP (encPair encF encBool)) (encPair encUnary encC) := by
-    simpa only [Function.comp_def] using
-      hc0.comp ((fst encP (encPair encF encBool)).prod (snd encP (encPair encF encBool)).fst')
-  have h := hchild.comp ((snd encP (encPair encF encBool)).fst'.prod
-    (hchoice.prod (snd encP (encPair encF encBool)).snd'))
-  simpa only [Function.comp_def, countingNext] using h
+      (encPair encP (encPair encF encBool)) encF :=
+  computableInPolyTime_childAtChoiceWith encV hθ k (f := countingChild)
+    (computableInPolyTime_countingChild encV)
 
 /-- **The list-level counting-sparsification step is polynomial-time.** -/
 theorem computableInPolyTime_countingNext {θ : ℕ → ℕ}
