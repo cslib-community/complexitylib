@@ -19,19 +19,22 @@ import Mathlib.Combinatorics.Nullstellensatz
 Mathlib's `MvPolynomial.schwartz_zippel_totalDegree` bounds the proportion of the points of
 `S ^ n` at which a nonzero polynomial in the variables `Fin n` vanishes by `totalDegree / |S|`.
 `MvPolynomial.schwartz_zippel_totalDegree_fintype` transports it to the variables of any finite
-type `σ`, by renaming along `Fintype.equivFin σ`. A nonzero polynomial of total degree below `|S|`
-does not vanish on all of `S ^ σ` (`MvPolynomial.exists_eval_ne_zero_of_totalDegree_lt_card`), a
-consequence of Mathlib's `MvPolynomial.eq_zero_of_eval_zero_at_prod_finset`.
+type `σ`, by renaming along `Fintype.equivFin σ`. For `n` variables over a finite domain with `q`
+elements it reads `#zeros * q ≤ d * q ^ n` (`MvPolynomial.card_filter_eval_eq_zero_mul_card_le`).
+A nonzero polynomial of total degree below `|S|` does not vanish on all of `S ^ σ`
+(`MvPolynomial.exists_eval_ne_zero_of_totalDegree_lt_card`), a consequence of Mathlib's
+`MvPolynomial.eq_zero_of_eval_zero_at_prod_finset`.
 
 A determinant of polynomials of total degree at most `d` has total degree at most `|ι| * d`
 (`MvPolynomial.totalDegree_det_le`), since each term of the Leibniz expansion is a product of
-`|ι|` entries. Together the two lemmas bound the probability that a polynomial determinant vanishes
-at a random point.
+`|ι|` entries. Together with the Schwartz–Zippel bound it controls the probability that a
+polynomial determinant vanishes at a random point.
 
 ## Main results
 
 * `MvPolynomial.schwartz_zippel_totalDegree_fintype`: the Schwartz–Zippel lemma for variables
   indexed by a finite type.
+* `MvPolynomial.card_filter_eval_eq_zero_mul_card_le`: its counting form over a finite domain.
 * `MvPolynomial.exists_eval_ne_zero_of_totalDegree_lt_card`: a nonzero polynomial of total degree
   below `|S|` has a nonzero value at a point of `S ^ σ`.
 * `MvPolynomial.totalDegree_det_le`: the total degree of a polynomial determinant.
