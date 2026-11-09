@@ -12,6 +12,7 @@ public import CslibFrontier.Foundations.Data.BitString.Binary
 public import CslibFrontier.Foundations.Data.BitString.Counter
 public import CslibFrontier.Foundations.Data.BitString.List.Binary
 public import CslibFrontier.Logics.Propositional.CSP
+import CslibFrontier.Foundations.Data.List.Counting
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Log
 
@@ -176,11 +177,6 @@ def CSP.toBoolean (q : ℕ) (N : ℕ) (F : CSP Rel ℕ) : CSP (Option Rel) ℕ :
   (List.range N).map (fun v => (none, CSP.bitScope b v)) ++
   F.map (fun c => (some c.1, c.2.flatMap (CSP.bitScope b)))
 
-private theorem length_flatMap_of_forall_length_eq {α β : Type*} (b : ℕ) (vs : List α)
-    (g : α → List β) (hg : ∀ x ∈ vs, (g x).length = b) :
-    (vs.flatMap g).length = vs.length * b := by
-  rw [List.length_flatMap, List.map_congr_left hg, List.map_const', List.sum_replicate, smul_eq_mul]
-
 /-- The constraint scope length of every clause in the compiled Boolean CSP is bounded by
 `max 1 k * bitWidth q`. -/
 theorem CSP.all_length_le_toBoolean {k q N : ℕ} {F : CSP Rel ℕ}
@@ -194,7 +190,7 @@ theorem CSP.all_length_le_toBoolean {k q N : ℕ} {F : CSP Rel ℕ}
     have : 1 * b ≤ max 1 k * b := Nat.mul_le_mul_right b (le_max_left 1 k)
     simpa using this
   · dsimp only
-    rw [length_flatMap_of_forall_length_eq b _ _ fun v _ => CSP.bitScope_length b v]
+    rw [List.length_flatMap_of_forall_length_eq fun v _ => CSP.bitScope_length b v]
     have hle : c₀.2.length ≤ max 1 k := (hF c₀ hc₀).trans (le_max_right 1 k)
     exact Nat.mul_le_mul_right b hle
 
@@ -347,7 +343,7 @@ private theorem eval_some_constraint_encodeAssign (q N : ℕ) (hq : 0 < q)
     (τ ⟨v, Finset.mem_range.mpr h⟩).val else 0)
   have hg_len : ∀ v ∈ c.2, (g v).length = b := fun _ _ => length_lowBits _ _
   have hbs_len : (c.2.flatMap g).length = c.2.length * b :=
-    length_flatMap_of_forall_length_eq b c.2 g hg_len
+    List.length_flatMap_of_forall_length_eq hg_len
   have hr : (c.2.flatMap g).length / b = c.2.length := by
     rw [hbs_len, Nat.mul_div_cancel _ hb]
   have hmod : (c.2.flatMap g).length % b = 0 := by
