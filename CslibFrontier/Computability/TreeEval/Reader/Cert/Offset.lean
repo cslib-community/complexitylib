@@ -222,7 +222,9 @@ private theorem three_mul_length_le (st : List Frame) : 3 * st.length ≤
 
 private theorem length_encList_bools (l : List Bool) :
     (encList encBool l).length = 3 * l.length := by
-  simp [length_encList, Nat.mul_comm]
+  induction l with
+  | nil => rfl
+  | cons b l ih => rw [length_encList] at ih ⊢; simp; ring
 
 theorem dirs_inSpace :
     ComputableInSpace (fun st : List Frame => st.foldl (fun acc fr => fr.dir :: acc) [])
