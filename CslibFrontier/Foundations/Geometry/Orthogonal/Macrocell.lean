@@ -155,36 +155,22 @@ private theorem support_subset_convex {s : Set (ℝ × ℝ)} (hs : Convex ℝ s)
 /-- Bounds on the listed vertices control the entire continuous support in an open cell. -/
 theorem support_subset_openCell {r : ℤ} {c : Point} {a : Route}
     (h : ∀ q ∈ a, realPoint q ∈ openCell r c) : support a ⊆ openCell r c := by
-  have hc : Convex ℝ (openCell r c) := by
-    have heq : openCell r c =
-        Set.Ioo ((2 * r * c.1 : ℤ) : ℝ) ((2 * r * (c.1 + 1) : ℤ) : ℝ) ×ˢ
-        Set.Ioo ((2 * r * c.2 : ℤ) : ℝ) ((2 * r * (c.2 + 1) : ℤ) : ℝ) := by
-      ext p
-      simp only [openCell, Set.mem_ofPred_eq, Set.mem_prod, Set.mem_Ioo, and_assoc]
-    rw [heq]
-    exact
-      (convex_Ioo (𝕜 := ℝ) ((2 * r * c.1 : ℤ) : ℝ)
-        ((2 * r * (c.1 + 1) : ℤ) : ℝ)).prod
-        (convex_Ioo (𝕜 := ℝ) ((2 * r * c.2 : ℤ) : ℝ)
-          ((2 * r * (c.2 + 1) : ℤ) : ℝ))
-  exact support_subset_convex hc h
+  have heq : openCell r c =
+      Set.Ioo ((2 * r * c.1 : ℤ) : ℝ) ((2 * r * (c.1 + 1) : ℤ) : ℝ) ×ˢ
+      Set.Ioo ((2 * r * c.2 : ℤ) : ℝ) ((2 * r * (c.2 + 1) : ℤ) : ℝ) := by
+    ext p
+    simp only [openCell, Set.mem_ofPred_eq, Set.mem_prod, Set.mem_Ioo, and_assoc]
+  exact support_subset_convex (heq ▸ (convex_Ioo _ _).prod (convex_Ioo _ _)) h
 
 /-- Bounds on the listed vertices control the entire continuous support in a closed cell. -/
 theorem support_subset_closedCell {r : ℤ} {c : Point} {a : Route}
     (h : ∀ q ∈ a, realPoint q ∈ closedCell r c) : support a ⊆ closedCell r c := by
-  have hc : Convex ℝ (closedCell r c) := by
-    have heq : closedCell r c =
-        Set.Icc ((2 * r * c.1 : ℤ) : ℝ) ((2 * r * (c.1 + 1) : ℤ) : ℝ) ×ˢ
-        Set.Icc ((2 * r * c.2 : ℤ) : ℝ) ((2 * r * (c.2 + 1) : ℤ) : ℝ) := by
-      ext p
-      simp only [closedCell, Set.mem_ofPred_eq, Set.mem_prod, Set.mem_Icc, and_assoc]
-    rw [heq]
-    exact
-      (convex_Icc (𝕜 := ℝ) ((2 * r * c.1 : ℤ) : ℝ)
-        ((2 * r * (c.1 + 1) : ℤ) : ℝ)).prod
-        (convex_Icc (𝕜 := ℝ) ((2 * r * c.2 : ℤ) : ℝ)
-          ((2 * r * (c.2 + 1) : ℤ) : ℝ))
-  exact support_subset_convex hc h
+  have heq : closedCell r c =
+      Set.Icc ((2 * r * c.1 : ℤ) : ℝ) ((2 * r * (c.1 + 1) : ℤ) : ℝ) ×ˢ
+      Set.Icc ((2 * r * c.2 : ℤ) : ℝ) ((2 * r * (c.2 + 1) : ℤ) : ℝ) := by
+    ext p
+    simp only [closedCell, Set.mem_ofPred_eq, Set.mem_prod, Set.mem_Icc, and_assoc]
+  exact support_subset_convex (heq ▸ (convex_Icc _ _).prod (convex_Icc _ _)) h
 
 private theorem index_eq_of_open_closed {r i j : ℤ} (hr : 0 < r) {x : ℝ}
     (hi : (2 * r * i : ℤ) < x ∧ x < (2 * r * (i + 1) : ℤ))
