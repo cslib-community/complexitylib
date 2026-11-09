@@ -199,3 +199,24 @@ under `_generated/data/` and writes JSON, SVG and PNG under
 `--data-dir` for another history directory, and the plotter's `--census-dir` and `--output`
 for other census and figure directories. A missing-input error means an earlier extraction
 is absent; do not substitute empty data. Neither generated analysis nor plots are book inputs.
+
+## Live repository source statistics
+
+The daily **API documentation** workflow also publishes the
+[Lean source history dashboard](https://www.cslib.io/cslib-frontier/stats/). It counts daily UTC
+first-parent snapshots with pinned Tokei, including the old and renamed module roots. Its
+interactive categories, measure selector, exact-value table and CSV/JSON downloads describe
+source volume, not mathematical completion. Today’s snapshot is partial.
+
+For a standalone build from full Git history (no Lean dependencies needed):
+
+```bash
+bash tools/stats/install-tokei.sh /tmp/frontier-tokei
+python3 tools/stats/build.py --tokei /tmp/frontier-tokei/tokei
+```
+
+Publish the generated `tools/stats/_site/` as a unit; the existing docs workflow copies it to
+`stats/` before the single Pages upload. It refreshes on the daily schedule or a manual docs
+workflow dispatch on `main`. The [dashboard README](../tools/stats/README.md) documents the
+category config, history/cache semantics, local regression tests and output overrides.
+Generated counts and pages are not versioned and are not inputs to either manual PDF.

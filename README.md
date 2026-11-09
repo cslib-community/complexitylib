@@ -145,7 +145,8 @@ python3 -m http.server --bind 127.0.0.1 --directory docbuild/.lake/build/doc
 ```
 
 Open `http://localhost:8000` to browse and search. The **API documentation** workflow publishes
-`main` to the [API documentation site](https://www.cslib.io/cslib-frontier/) nightly.
+`main` to the [API documentation site](https://www.cslib.io/cslib-frontier/) nightly, including
+the [Lean source history dashboard](https://www.cslib.io/cslib-frontier/stats/).
 A manual run on another branch produces an `api-docs` artifact instead; serve it by replacing
 the directory argument above with the extracted artifact directory.
 
