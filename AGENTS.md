@@ -176,7 +176,9 @@ cannot damage the user's checkout or another worker's repository.
 
 Machines are shared between agents. Stop only processes and tasks you started, by PID or task
 ID; never use pattern-based kills such as `pkill -f`, which also hit other agents' builds. Keep
-scratch files under a directory or name unique to your agent.
+scratch files under a directory or name unique to your agent. Concurrent Lean builds usually
+exhaust the host's file handles before its processors; agree on a limit on concurrent builds
+(see [the troubleshooting chapter](manual/workflows/troubleshooting.md#diagnose-too-many-open-files-in-system)).
 
 ### Placement and reuse
 
