@@ -1688,6 +1688,7 @@ public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.
 public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.Assembly
 public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.BlockNetworks
 public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.Containments
+public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.ContractionCall
 public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.Count
 public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.CountingClasses
 public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.EntryAnalysis
