@@ -590,38 +590,36 @@ theorem length_mul_edgeCost_steinerMST_le_of_diag {δ : α → α → ℕ} (hdia
     rw [h0]
     simp
 
+/-- The factor-2 bound follows from the sharp form: divide by `|R|`, and for `R = []` the tree is
+empty. -/
+private theorem edgeCost_steinerMST_le_two_mul_of_length_mul {δ : α → α → ℕ} {R : List α}
+    {c : ℕ} (h : R.length * edgeCost δ (steinerMST δ R) ≤ 2 * (R.length - 1) * c) :
+    edgeCost δ (steinerMST δ R) ≤ 2 * c := by
+  rcases Nat.eq_zero_or_pos R.length with h0 | hpos
+  · obtain rfl : R = [] := List.eq_nil_of_length_eq_zero h0
+    have hle := (kruskalEdges_isAcyclic (completeEdges (terminalCost δ []))).length_le
+    rw [edgeCost_steinerMST, List.eq_nil_of_length_eq_zero (Nat.le_zero.1 hle)]
+    simp
+  · refine Nat.le_of_mul_le_mul_left (h.trans ?_) hpos
+    calc 2 * (R.length - 1) * c ≤ 2 * R.length * c :=
+          Nat.mul_le_mul_right _ (Nat.mul_le_mul_left 2 (Nat.sub_le _ _))
+      _ = R.length * (2 * c) := by ring
+
 /-- **The MST heuristic for metric Steiner tree** ([WilliamsonShmoys2011], Exercise 2.5(a)): the
 heuristic costs at most twice any edge list connecting the terminals. -/
 theorem edgeCost_steinerMST_le_two_mul {δ : α → α → ℕ} (hsymm : ∀ x y, δ x y = δ y x)
     (htri : ∀ x y z, δ x z ≤ δ x y + δ y z) {R : List α} (hR : R.Nodup)
     {T : List (α × α)} (hT : Connects T R) :
-    edgeCost δ (steinerMST δ R) ≤ 2 * edgeCost δ T := by
-  have h := length_mul_edgeCost_steinerMST_le hsymm htri hR hT
-  rcases Nat.eq_zero_or_pos R.length with h0 | hpos
-  · obtain rfl : R = [] := List.eq_nil_of_length_eq_zero h0
-    have hle := (kruskalEdges_isAcyclic (completeEdges (terminalCost δ []))).length_le
-    rw [edgeCost_steinerMST, List.eq_nil_of_length_eq_zero (Nat.le_zero.1 hle)]
-    simp
-  · refine Nat.le_of_mul_le_mul_left (h.trans ?_) hpos
-    calc 2 * (R.length - 1) * edgeCost δ T ≤ 2 * R.length * edgeCost δ T :=
-          Nat.mul_le_mul_right _ (Nat.mul_le_mul_left 2 (Nat.sub_le _ _))
-      _ = R.length * (2 * edgeCost δ T) := by ring
+    edgeCost δ (steinerMST δ R) ≤ 2 * edgeCost δ T :=
+  edgeCost_steinerMST_le_two_mul_of_length_mul (length_mul_edgeCost_steinerMST_le hsymm htri hR hT)
 
 /-- The 2-approximation for zero-diagonal costs and arbitrary terminal lists. -/
 theorem edgeCost_steinerMST_le_two_mul_of_diag {δ : α → α → ℕ} (hdiag : ∀ x, δ x x = 0)
     (hsymm : ∀ x y, δ x y = δ y x) (htri : ∀ x y z, δ x z ≤ δ x y + δ y z) {R : List α}
     {T : List (α × α)} (hT : Connects T R) :
-    edgeCost δ (steinerMST δ R) ≤ 2 * edgeCost δ T := by
-  have h := length_mul_edgeCost_steinerMST_le_of_diag hdiag hsymm htri hT
-  rcases Nat.eq_zero_or_pos R.length with h0 | hpos
-  · obtain rfl : R = [] := List.eq_nil_of_length_eq_zero h0
-    have hle := (kruskalEdges_isAcyclic (completeEdges (terminalCost δ []))).length_le
-    rw [edgeCost_steinerMST, List.eq_nil_of_length_eq_zero (Nat.le_zero.1 hle)]
-    simp
-  · refine Nat.le_of_mul_le_mul_left (h.trans ?_) hpos
-    calc 2 * (R.length - 1) * edgeCost δ T ≤ 2 * R.length * edgeCost δ T :=
-          Nat.mul_le_mul_right _ (Nat.mul_le_mul_left 2 (Nat.sub_le _ _))
-      _ = R.length * (2 * edgeCost δ T) := by ring
+    edgeCost δ (steinerMST δ R) ≤ 2 * edgeCost δ T :=
+  edgeCost_steinerMST_le_two_mul_of_length_mul
+    (length_mul_edgeCost_steinerMST_le_of_diag hdiag hsymm htri hT)
 
 /-- **The MST 2-approximation for metric Steiner tree** ([WilliamsonShmoys2011], Exercise 2.5(a)):
 `cost(steinerMST δ R) ≤ 2 · OPT`. -/
