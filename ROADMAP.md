@@ -305,8 +305,13 @@ composed phase and table/control copying. The installed count consumer now
 bypasses groups: one pass over sorted tagged quarter records stores one key and
 three binary counters. Its actual multitape time is `I+(n+1)P(B)` and charged
 all-prefix space is `I+P(B)`, where `B` includes the maximum physical row and
-the binary encoding of `n^2+1`. Generic join emitters still pay polynomial
-grouped-wire cost. `ClassBalance` now derives unique complete
+the binary encoding of `n^2+1`. Retention now also uses a real nested streamed
+join: parity filters produce the two occurrence runs, each replay is charged
+to actual emitted pairs, and grouped control sums callback work and takes peak
+workspace. Its time and charged every-prefix space are `(N+M+G+1)P(B)` for
+quarter records N, emitted class pairs M, groups G and maximum physical row B.
+For generated groups G is at most N; selected M is bounded by computed balance.
+Filtered runs, current group and materialized class output are all charged. `ClassBalance` now derives unique complete
 half words, exact original-half counter counts in both directions, computed
 balance and count-selected retention. `JoinedDissection` assembles that retention
 with the actual bounded-batch counter probe, fixed all-class release/iteration,
@@ -314,10 +319,13 @@ source preparation and original witness readback; witness/miss and returned
 computed-balance correctness are proved. Count-table and simultaneous retained/
 live-buffer prefix encodings are bounded separately from machine temporaries.
 The source's fast reachable-state count prepass remains unimplemented on this
-sorted-list route. Sharp resources still require resource-faithful group consumers, a joined
-opposite-class producer and persistent retained-tape fusion: the current route
+sorted-list route. Sharp resources still require a joined opposite-class producer and persistent
+retained-tape fusion, plus tight preprocessing/readback/global composition: the current route
 regenerates counts/quarters per class, scans opposite half words and copies
-captured retained/buffer state, with grouped-volume polynomial costs charged.
+captured retained/buffer state; count-table reversal/reduction and outer control
+also retain their actual certificate costs, including polynomial captured-input
+callback bounds. The materializing join must not be substituted for the missing
+online larger-class producer.
 No sharp global bit inequalities follow from the encoding or record-volume
 bounds. Older solver sources are preserved; the new direct route bypasses their
 interpreter without removing their costs from their own certificates. A real

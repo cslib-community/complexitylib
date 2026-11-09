@@ -80,3 +80,6 @@ example := ClassJoin.fullRecords_computable
 
 example (input : ClassJoin.Input) := ClassJoin.count_streaming input
 example := ClassJoin.sortedCertificate.computes
+
+example (input : ClassJoin.Input) := ClassJoin.groups_input_length input
+example (input : ClassJoin.Input) := ClassJoin.groups_volume input

@@ -31,8 +31,9 @@ The computed populations determine orientation and the retained list. A count-on
 outer counter computes their maximum smaller population before retention. Actual
 bit-machine certificates charge generation, grouping, consumer temporaries and
 outer-state copying. Retained encoding bounds do not assert sharp auxiliary TM
-workspace. Generic grouped consumers and opposite-side access still need sharper
-bounds for [WangLvShenZhang2027], Lemma 8/Theorem 7, PDF pp. 21–22.
+workspace. The retained join now has output-sensitive bit bounds; opposite-side
+access, preprocessing/control and global composition still need sharper bounds
+for [WangLvShenZhang2027], Lemma 8/Theorem 7, PDF pp. 21–22.
 
 ## Main definitions
 
@@ -45,6 +46,7 @@ bounds for [WangLvShenZhang2027], Lemma 8/Theorem 7, PDF pp. 21–22.
 * `original_records`: exhaustive original half-word semantics in both directions.
 * `count_eq_counter`, `balance_eq_counter`: exact agreement with original-half counters.
 * `retained_prefix_wire`, `table_prefix_wire`: derived physical prefix encoding bounds.
+* `retained_join_volume`: streamed selected-class join cost uses the computed balance.
 * `retainCertificate`, `balanceCertificate`: actual generated retention and count-only prepass.
 -/
 
@@ -155,6 +157,21 @@ theorem class_le_balance (input : Input) (g : ℕ) (hg : g < 2 ^ depth input) :
   exact le_listMax (a := (count input false g, count input true g)) (l := table input)
     (f := fun counts : ℕ × ℕ => min counts.1 counts.2)
     (by rw [table_eq]; exact List.mem_map.mpr ⟨g, List.mem_range.mpr hg, rfl⟩)
+
+/-- The actual streamed join budget for the selected side is bounded by quarter volume and
+computed balance. This bounds that machine phase, not all producer/probe temporaries. -/
+theorem retained_join_volume (input : Input) (g : ℕ) (hg : g < 2 ^ depth input) :
+    let query := queryInput input (retainRight input g) g
+    let ((_, (first, second)), _) := query
+    KeyJoinStream.volume (ClassJoin.groups query) ≤
+      2 * (2 ^ first.length + 2 ^ second.length) + balance input + 1 := by
+  have h := ClassJoin.groups_volume (queryInput input (retainRight input g) g)
+  have hc := class_le_balance input g hg
+  have hr := records_length input (retainRight input g) g
+  change (retain input g).length = ClassJoin.count (queryInput input (retainRight input g) g) at hr
+  rw [hr] at hc
+  dsimp only at h ⊢
+  omega
 
 /-- Every prefix of every generated retained list is bounded by the actual computed balance.
 This is list occupancy, not a bound on internal bit-machine callback workspace. -/

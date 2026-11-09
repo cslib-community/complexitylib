@@ -1595,15 +1595,33 @@ the former whole-group polynomial count callback in the assembled certificates;
 it is a count-consumer bound, not a global solver theorem. Quarter generation,
 sorting, all-class control and their materialized phase boundaries remain charged.
 
-The generic join emitters still pay polynomial cost in whole grouped wire
-volume. The new route recomputes quarters/counts per class, scans opposite half
+Retention now also bypasses the generic polynomial grouped join callback.
+`KeyJoinStream.join_computable` executes actual side-tag filters, then nested
+record streaming. Replaying the right occurrence run for each left record is
+charged to the emitted Cartesian pairs. Outer control streams groups without a
+growing output accumulator. If $N$ is the number of input quarter records, $M$
+the emitted class population, $G$ the group count and $B$ the maximum physical
+row width plus one, both time and charged prefix space are
+$O((N+M+G+1)P(B))$. This includes filtered runs, decoded current group, callback
+tapes, framing/state replay and final materialized class output. Generated groups
+are nonempty, so $G\le N$; `groups_volume` derives the quarter input size and
+`ClassBalance.retained_join_volume` bounds the selected output factor by the
+actual computed balance. Both orientations and full-state reconstruction inherit
+the installed machine through `witnessesCertificate`. This remains a join-phase
+bound; preparation, quarter generation/sorting and full-state readback have
+separate composed profiles.
+
+The route still recomputes quarters/counts per class, scans opposite half
 words for each class, and copies captured retained/buffer state. The count
-prepass also charges table copying/reversal/reduction. The outer certificate uses
+prepass also charges table copying/reversal/reduction. Probe callbacks and table
+reduction still have polynomial bounds in their captured/list input volume. The
+new materializing join is used only for retention; it cannot replace an online
+opposite-class producer when that class exceeds the computed balance. The outer certificate uses
 a maximum-round time bound; a sharp sum over actual class work is not proved.
 These actual costs prevent
 a sharp global time or internal peak-space conclusion; the physical list bounds
-above do not remove them. Resource-faithful group consumption, a joined opposite
-class stream and persistent-tape producer/probe fusion remain required. The old
+above do not remove them. A joined opposite class stream, persistent-tape
+producer/probe fusion and tight preprocessing/readback/global composition remain required. The old
 complete solvers and their association-list/cubic-compaction costs are unchanged;
 the new direct multitape route bypasses that interpreter but retains the costs
 just listed. Lemma 8/Theorem 7 resources and the whole-paper objective remain open.
@@ -1612,12 +1630,15 @@ From the repository root, build
 `lake build Complexity.Cryptanalysis.AddXNORJoinedDissection`, then run
 `lake env lean ComplexityTests/AddXNORClassBalance.lean` and
 `lake env lean ComplexityTests/AddXNORJoinedDissection.lean`; also run
-`lake env lean ComplexityTests/KeyCount.lean` for the direct streamed counter. The
+`lake env lean ComplexityTests/KeyCount.lean` for the direct streamed counter and
+`lake env lean ComplexityTests/KeyJoinStream.lean` for the installed join. The
 [class-balance client](../../ComplexityTests/AddXNORClassBalance.lean) checks
 unequal computed populations, both orientations, empty backward classes and
 fourth-quarter residue, including execution of the actual new count path in
 both directions. The [counter client](../../ComplexityTests/KeyCount.lean) checks
-empty/one-sided runs, repeated occurrences and key changes. The complete
+empty/one-sided runs, repeated occurrences and key changes. The
+[join client](../../ComplexityTests/KeyJoinStream.lean) checks ordering, duplicates,
+empty groups and the uniform input/output-sensitive resource theorem. The complete
 [joined dissection client](../../ComplexityTests/AddXNORJoinedDissection.lean)
 executes original non-self-inverse additions/collisions through decoded hits and
 exhaustive misses, including zero/empty/capped input. It also applies the general

@@ -10,6 +10,7 @@ module
 public import Complexity.Cryptanalysis.AddXNORGroupedQuarter
 public import Complexity.Cryptanalysis.AddXNORSortedMeet
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.KeyCount
+public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoinStream
 import all Complexity.Cryptanalysis.AddXNORClassStreaming
 import all Complexity.Cryptanalysis.AddXNORSortedMeet
 import all Complexity.Cryptanalysis.AddXNORSource
@@ -34,8 +35,9 @@ This implements the class-join semantics in [WangLvShenZhang2027], Lemma 8,
 PDF pp. 21–22. The source-input preparation computes the cut, projection and
 zero-target conventions. Counts now consume sorted tagged records directly with
 near-linear bit time and logarithmic counters, bypassing grouped materialization.
-The join emitter still pays a grouped-volume polynomial; fused retention/probing
-and sharp global time and simultaneous peak space remain open. The complete old
+The installed join emitter now streams nested occurrence runs with an
+output-sensitive physical-width bound. Fused opposite-class probing and sharp
+global time and simultaneous peak space remain open. The complete old
 uniform solver is unchanged.
 
 ## Main definitions
@@ -48,6 +50,7 @@ uniform solver is unchanged.
 
 * `mem_fullStates`, `original_zero_iff`: original-input witness and exhaustive-miss semantics.
 * `count_streaming`: direct sorted-record counting feeds the existing class semantics.
+* `groups_volume`: the actual bit join budget is quarter input plus computed class output.
 * `fullRecords_computable`: per-pair streamed full-state reconstruction.
 * `tableCertificate`, `original_table_zero_iff`: actual uniform all-class counting.
 * `table_wire`: quarter-scale stored counts, separately from internal machine workspace.
@@ -170,11 +173,14 @@ noncomputable def countCertificate : NativeCertificate count encoding encNat := 
   exact NativeCertificate.congr (consumer.comp sortedCertificate)
     (fun input => (count_streaming input).symm)
 
-/-- The executable join, including its current polynomial grouped-list overhead. -/
+/-- Actual nested streaming emits the retained class. Its time and charged prefix space
+are linear in quarter/class occurrence volume times a polynomial in physical record width. -/
 noncomputable def witnessesCertificate : NativeCertificate witnesses encoding
-    (encList (encPair encNat encNat)) :=
-  NativeCertificate.congr ((NativeCertificate.ofPolyTime KeyJoin.join_polyTime).comp
-    groupsCertificate) (fun _ => rfl)
+    (encList (encPair encNat encNat)) := by
+  let h := (Classical.choose_spec KeyJoinStream.join_computable).2.2
+  let emit : NativeCertificate KeyJoin.join KeyGrouping.outputEncoding
+      (encList (encPair encNat encNat)) := ⟨_, _, h⟩
+  exact NativeCertificate.congr (emit.comp groupsCertificate) (fun _ => rfl)
 
 /-- Original source operands and a runtime class index. -/
 abbrev SourceInput := Source.Input × ℕ
@@ -425,8 +431,8 @@ theorem fullRecords_computable : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded 
   intro q
   rw [List.map_eq_flatMap]
 
-/-- Original-input grouped join followed by per-occurrence full-state emission. All phase
-profiles are charged; the join consumer's grouped-volume polynomial remains visible. -/
+/-- Original-input output-sensitive grouped join and per-occurrence full-state emission.
+All phase materialization, callback and readback profiles remain charged. -/
 noncomputable def fullStatesCertificate : NativeCertificate fullStates sourceEncoding
     (encList (encPair encNat (encPair encNat encNat))) := by
   let original : NativeCertificate (id : SourceInput → _) sourceEncoding sourceEncoding :=
@@ -448,22 +454,43 @@ private theorem quarter_length (input : SortedQuarterMachine.Input) :
     SortedQuarterMachine.indices_eq_range,
     List.length_map, List.length_range] using h
 
+/-- The join input contains only the two actual quarter spaces, including empty quarters. -/
+theorem groups_input_length (input : Input) :
+    let ((_, (first, second)), _) := input
+    (groups input).flatten.length = 2 ^ first.length + 2 ^ second.length := by
+  dsimp only
+  change (KeyGrouping.run (RadixSort.sort
+    ((batches input).1, SortedMatch.tagged (batches input)))).flatten.length = _
+  rw [KeyGrouping.flatten_run, RadixSort.sort,
+    (RadixSort.prefix_invariants (SortedMatch.tagged (batches input))
+      (batches input).1).2.length_eq]
+  simp only [SortedMatch.tagged, batches, List.length_append, List.length_map,
+    SortedMeet.inverse, quarter_length, SortedMeet.inverseInput, List.length_reverse]
+
+/-- The installed bit join's work/space volume is quarter input plus actual class output.
+Nonempty generated groups bound its control volume without a supplied class-size oracle. -/
+theorem groups_volume (input : Input) :
+    let ((_, (first, second)), _) := input
+    KeyJoinStream.volume (groups input) ≤
+      2 * (2 ^ first.length + 2 ^ second.length) + count input + 1 := by
+  dsimp only
+  have nonempty (g : List (ℕ × ℕ)) (hg : g ∈ groups input) : 1 ≤ g.length :=
+    List.length_pos_iff.mpr (KeyGrouping.group_nonempty _ g hg)
+  have hn := List.sum_le_sum (fun g hg => nonempty g hg)
+  simp only [List.map_const', List.sum_replicate, smul_eq_mul, mul_one,
+    ← List.length_flatten] at hn
+  rw [KeyJoinStream.volume_eq]
+  have hl := groups_input_length input
+  dsimp only at hl
+  change (groups input).flatten.length + count input + (groups input).length + 1 ≤ _
+  omega
+
 /-- The computed count is bounded by generated quarter volume, without enumerating half words. -/
 theorem count_le_quarters (input : Input) :
     let ((_, (first, second)), _) := input
     count input ≤ (2 ^ first.length + 2 ^ second.length) ^ 2 := by
-  dsimp only
   have h := KeyJoin.count_le_square (groups input)
-  have hl : (groups input).flatten.length =
-      2 ^ input.1.2.1.length + 2 ^ input.1.2.2.length := by
-    change (KeyGrouping.run (RadixSort.sort
-      ((batches input).1, SortedMatch.tagged (batches input)))).flatten.length = _
-    rw [KeyGrouping.flatten_run, RadixSort.sort,
-      (RadixSort.prefix_invariants (SortedMatch.tagged (batches input))
-        (batches input).1).2.length_eq]
-    simp only [SortedMatch.tagged, batches, List.length_append, List.length_map,
-      SortedMeet.inverse, quarter_length, SortedMeet.inverseInput, List.length_reverse]
-  rwa [hl] at h
+  rwa [groups_input_length] at h
 
 private theorem source_count_le (input : Source.Input) (g : ℕ) :
     run (input, g) ≤ (2 ^ (input.2.tail.length / 4) + 2 ^ (input.2.tail.length / 4)) ^ 2 := by

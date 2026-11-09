@@ -1963,6 +1963,7 @@ public import Complexity.Computability.Machines.ReadMachine.VirtualWord.Runtime
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.KeyCount
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.KeyGrouping
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoin
+public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoinStream
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.RadixPartition
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.RadixSort
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.SortedMatch
@@ -2230,6 +2231,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Spac
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Streaming
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.StreamingFilter
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.StreamingFlatMap
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.StreamingFlatMapBounds
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Translate
 public import Complexity.Computability.Machines.Turing.MultiTape.Configuration
 public import Complexity.Computability.Machines.Turing.MultiTape.Counting

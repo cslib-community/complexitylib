@@ -196,16 +196,23 @@ Operator's Manual when handing it over. The installed count certificate now
 feeds the sorted quarter records directly to `KeyCount.run`, bypassing grouped
 materialization in both directions. Its one-key/three-counter state has proved
 near-linear record bit time and small callback prefix space, including binary
-count widths; this improves the count consumer, not the whole solver bound.
+count widths. Retention now uses `KeyJoinStream.join_computable`: actual side
+filters and nested streaming charge run replays to emitted pairs, avoiding the
+whole-group polynomial join callback. Its charged prefix space includes filtered
+runs, current group, callback tapes and materialized class output; the selected
+join volume is derived from quarter sizes and computed balance. These phase
+bounds do not establish the whole solver bound.
 
 Keep its resource limits visible: count-table and retained/live-buffer prefix
-encodings have derived bounds, but actual machine profiles also charge grouped
-polynomial join emitters, repeated quarter/count generation, opposite half scans,
-captured dictionary/buffer copying and all internal temporaries. Orientation
+encodings have derived bounds, but actual machine profiles also charge
+repeated quarter/count generation, opposite half scans,
+captured dictionary/buffer copying, polynomial captured-input callback bounds
+and all internal temporaries. The new materializing join is for the retained
+side; using it to store the larger opposite class would lose the space target. Orientation
 recomputes the counts; no cached-size oracle is input. Do not promote the list
 bounds or batch record-volume accounting to sharp TM time/peak space. A joined
-opposite producer, resource-faithful group consumers and persistent retained-tape
-fusion still need implementation and global resource proofs. The old solvers and
+opposite producer and persistent retained-tape fusion still need implementation,
+with tight preprocessing/readback costs and global resource proofs. The old solvers and
 all their charges remain intact; the new direct route bypasses their interpreter.
 
 ## Correct course and hand work over

@@ -29,7 +29,7 @@ included in the uniform bit execution.
 
 This assembles the class producer with an executable search endpoint for
 [WangLvShenZhang2027], Lemma 8/Theorem 7, pp. 21–22. The opposite producer still
-scans half words per class; grouped consumers and retained-state copying retain
+scans half words per class; retained-state copying and preprocessing/control retain
 their charged overhead. Logical retained/batch occupancy does not imply sharp
 internal TM workspace. Sharp global bit resources remain open.
 
@@ -507,7 +507,7 @@ private noncomputable def solveCertificate : NativeCertificate solve ClassBalanc
 
 /-- One uniform original-input bit execution computes both counts/balance, generated smaller
 classes, batch probes, outer control and decoded output. Its charged profiles retain every old
-scan/copying and grouped-volume polynomial cost; no sharp source resource claim is made. -/
+scan/copying, preprocessing and control costs; no sharp global source resource claim is made. -/
 noncomputable def sourceCertificate : NativeCertificate run Source.encoding
     (encPair encNat (encOption encBits)) :=
   NativeCertificate.congr ((ClassBalance.balanceCertificate.prod solveCertificate).comp

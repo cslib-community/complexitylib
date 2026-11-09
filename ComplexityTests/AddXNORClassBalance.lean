@@ -96,3 +96,11 @@ example (input : ClassBalance.Input) (right : Bool) (g : ℕ) :
     KeyCount.run (ClassJoin.sortedRecords (ClassBalance.queryInput input right g)) =
       ClassBalance.count input right g :=
   (ClassJoin.count_streaming _).symm
+
+-- The installed retained join uses actual quarter inputs and the computed smaller-side balance.
+example (input : ClassBalance.Input) (g : ℕ) (hg : g < 2 ^ ClassBalance.depth input) :=
+  ClassBalance.retained_join_volume input g hg
+example := ClassBalance.retained_join_volume (Source.prepare backwardSmallerFixture) 0
+  (by decide +kernel)
+example := ClassBalance.retained_join_volume (Source.prepare backwardEmptyFixture) 1
+  (by decide +kernel)
