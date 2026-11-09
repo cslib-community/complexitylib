@@ -3085,6 +3085,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilisti
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.WithOracle
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.WithOracleInput
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayInput
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayVerdict
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.RunsWords
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Sampling
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Sequential
@@ -3107,6 +3108,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.TapeLemmas
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.TrackedRun
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Basic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Bit
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.BitLength
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Bound
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Clocked
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Complexity
@@ -3936,7 +3938,9 @@ public import CslibFrontier.Crypto.Negligible.Dyadic
 public import CslibFrontier.Crypto.Primitives.BlockCipher.CBCMAC
 public import CslibFrontier.Crypto.Primitives.BlockCipher.Modes
 public import CslibFrontier.Crypto.Primitives.Garbling.Basic
+public import CslibFrontier.Crypto.Primitives.Garbling.CorrelationRobust
 public import CslibFrontier.Crypto.Primitives.Garbling.Foundations
+public import CslibFrontier.Crypto.Primitives.Garbling.FreeXOR
 public import CslibFrontier.Crypto.Primitives.Garbling.Games
 public import CslibFrontier.Crypto.Primitives.Garbling.Privacy
 public import CslibFrontier.Crypto.Primitives.Garbling.Scheme
@@ -4811,6 +4815,7 @@ public import CslibFrontier.Foundations.Data.Nat.Choose.PrimePowerDvd
 public import CslibFrontier.Foundations.Data.Nat.Choose.Real
 public import CslibFrontier.Foundations.Data.Nat.Choose.Sum
 public import CslibFrontier.Foundations.Data.Nat.Choose.Vandermonde
+public import CslibFrontier.Foundations.Data.Nat.ClogPow
 public import CslibFrontier.Foundations.Data.Nat.Div
 public import CslibFrontier.Foundations.Data.Nat.Doubling
 public import CslibFrontier.Foundations.Data.Nat.Factorial
@@ -4832,6 +4837,7 @@ public import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 public import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Log
 public import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Polynomial
 public import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Rpow
+public import CslibFrontier.Foundations.Data.Nat.PowClog
 public import CslibFrontier.Foundations.Data.Nat.Power
 public import CslibFrontier.Foundations.Data.Nat.Prime
 public import CslibFrontier.Foundations.Data.Nat.Primrec

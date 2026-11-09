@@ -35,6 +35,8 @@ satisfiable, by the Hall matching argument; they are not the width-at-most-three
 
 ## Main results
 
+* `PositiveOneInExactThreeSAT.ite_flatMap_mem_iff`: total correctness of a guarded clause-wise
+  compiler from positive exact-three exact-one SAT; shared with the NAE reduction.
 * `EUThreeSAT_npComplete`: NP-completeness under the binary CNF encoding.
 
 The reduction and its computational certificate are original. Its source hardness theorem is
@@ -138,6 +140,27 @@ theorem EUThreeSATThree.mem_P : EUThreeSATThree ∈ P encCNF := by
   exact ⟨fun h => ⟨h.1, (fun c hc => (h.1 c hc).1.le), h.2⟩,
     fun h => ⟨h.1, h.2.2⟩⟩
 
+/-- **Total correctness of a guarded exact-three compiler.** Suppose the compiler rejects inputs
+failing the positive exact-three syntax guard and otherwise replaces each clause `c` by `f c`.
+Suppose also that `f` preserves exact-three distinct-variable syntax, and that on well-formed
+sources the compiled formula satisfies `P` exactly when the source is exact-one satisfiable. Then
+the compiler reduces `PositiveOneInExactThreeSAT` to `{ψ | ψ.IsExactThreeDistinct ∧ P ψ}`. -/
+theorem PositiveOneInExactThreeSAT.ite_flatMap_mem_iff {P : CNF ℕ → Prop}
+    {f : Clause ℕ → CNF ℕ} (hex : ∀ c : Clause ℕ, c.IsExactThreeDistinct →
+      (f c).IsExactThreeDistinct)
+    {φ : CNF ℕ} (hsem : φ.IsExactThreeDistinct → (P (φ.flatMap f) ↔ φ.OneSatisfiable)) :
+    (if syntaxCheck φ then φ.flatMap f else [[]]) ∈
+        {ψ : CNF ℕ | ψ.IsExactThreeDistinct ∧ P ψ} ↔
+      φ ∈ PositiveOneInExactThreeSAT := by
+  split_ifs with hg
+  · obtain ⟨hw, hp⟩ := (syntaxCheck_iff φ).mp hg
+    have he : CNF.IsExactThreeDistinct (φ.flatMap f) := fun d hd => by
+      obtain ⟨c, hc, hd⟩ := List.mem_flatMap.mp hd
+      exact hex c (hw c hc) d hd
+    exact ⟨fun h => ⟨hw, hp, (hsem hw).mp h.2⟩, fun h => ⟨he, (hsem hw).mpr h.2.2⟩⟩
+  · refine iff_of_false (fun h => ?_) fun h => hg ((syntaxCheck_iff φ).mpr ⟨h.1, h.2.1⟩)
+    simpa [Clause.IsExactThreeDistinct] using h.1 [] (by simp)
+
 /-- Replace positive exact-one triples by ordinary exact-three clauses; reject invalid syntax. -/
 def toEUThreeSAT (φ : CNF ℕ) : CNF ℕ :=
   if PositiveOneInExactThreeSAT.syntaxCheck φ then φ.flatMap EUThreeSAT.clause else [[]]
@@ -151,27 +174,11 @@ theorem computableInPolyTime_toEUThreeSAT :
 /-- Total correctness includes source inputs outside the positive exact-three syntax. -/
 theorem mem_EUThreeSAT_toEUThreeSAT_iff (φ : CNF ℕ) :
     toEUThreeSAT φ ∈ EUThreeSAT ↔ φ ∈ PositiveOneInExactThreeSAT := by
-  unfold toEUThreeSAT
-  split_ifs with hg
-  · obtain ⟨hw, hp⟩ := (PositiveOneInExactThreeSAT.syntaxCheck_iff φ).mp hg
-    have he : CNF.IsExactThreeDistinct (φ.flatMap EUThreeSAT.clause) := by
-      intro d hd
-      obtain ⟨c, hc, hd⟩ := List.mem_flatMap.mp hd
-      exact EUThreeSAT.exact_clause c (hw c hc) d hd
-    have hv (σ : ℕ → Bool) : CNF.eval σ (φ.flatMap EUThreeSAT.clause) = φ.evalOne σ := by
-      rw [Bool.eq_iff_iff, CNF.eval_flatMap_eq_true_iff, CNF.evalOne_eq_true_iff]
-      exact forall₂_congr fun c hc => by rw [EUThreeSAT.eval_clause σ c (hw c hc).1]
-    change (_ ∧ _) ↔ _ ∧ _ ∧ _
-    have hs : CNF.Satisfiable (φ.flatMap EUThreeSAT.clause) ↔ φ.OneSatisfiable := by
-      grind [CNF.Satisfiable, CNF.OneSatisfiable]
-    simp only [he, hp, true_and]
-    exact ⟨fun h => ⟨hw, hs.mp h⟩, fun h => hs.mpr h.2⟩
-  · have hg' : ¬((∀ c ∈ φ, c.length = 3 ∧ (c.map Prod.fst).Nodup) ∧
-        OneSAT.positiveCheck φ = true) :=
-      fun h => hg ((PositiveOneInExactThreeSAT.syntaxCheck_iff φ).mpr h)
-    simp only [EUThreeSAT, Set.mem_ofPred_eq, CNF.IsExactThreeDistinct,
-      Clause.IsExactThreeDistinct, PositiveOneInExactThreeSAT] at *
-    simp_all
+  refine PositiveOneInExactThreeSAT.ite_flatMap_mem_iff EUThreeSAT.exact_clause fun hw => ?_
+  have hv (σ : ℕ → Bool) : CNF.eval σ (φ.flatMap EUThreeSAT.clause) = φ.evalOne σ := by
+    rw [Bool.eq_iff_iff, CNF.eval_flatMap_eq_true_iff, CNF.evalOne_eq_true_iff]
+    exact forall₂_congr fun c hc => by rw [EUThreeSAT.eval_clause σ c (hw c hc).1]
+  grind [CNF.Satisfiable, CNF.OneSatisfiable]
 
 /-- Positive exact-three exact-one SAT reduces to ordinary EU3SAT. -/
 theorem polyTimeReducible_PositiveOneInExactThreeSAT_EUThreeSAT :

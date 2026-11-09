@@ -1,6 +1,6 @@
 # Networks and finite dynamics
 
-The frontier development studies how local constraints or local weights interact with a graph layout. It supports lower bounds by exposing separators and algorithms by organizing contractions. Several neighboring types deliberately use different acceptance semantics. [complexitylib][complexitylib]
+The frontier development studies how local constraints or local weights interact with a graph layout. It supports lower bounds by exposing separators and algorithms by organizing contractions. Several neighboring types deliberately use different acceptance semantics. [cslib-frontier][complexitylib]
 
 ## Expander certificates and cut rank
 

@@ -7,7 +7,7 @@ nonatomic congestion games, price-of-anarchy and price-of-stability bounds, fair
 strong Nash equilibria, no-regret (Hedge) dynamics, and bimatrix games with the Lemke–Howson parity
 argument. Most of it is mathematics about real-valued costs or payoffs with no machine model. The
 exception is the membership of pure Nash equilibria of explicit congestion games in `PLS`, which
-uses the native polynomial-time interface [complexitylib][complexitylib].
+uses the native polynomial-time interface [cslib-frontier][complexitylib].
 
 ## The strategic-game layer
 

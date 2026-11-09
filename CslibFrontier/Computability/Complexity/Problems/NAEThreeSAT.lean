@@ -205,24 +205,9 @@ theorem computableInPolyTime_toNAEEUThreeSAT :
 
 /-- Total correctness of the exact-three distinct-variable NAE compiler. -/
 theorem mem_NAEEUThreeSAT_toNAEEUThreeSAT_iff (φ : CNF ℕ) :
-    toNAEEUThreeSAT φ ∈ NAEEUThreeSAT ↔ φ ∈ PositiveOneInExactThreeSAT := by
-  unfold toNAEEUThreeSAT
-  split_ifs with hg
-  · obtain ⟨hw, hp⟩ := (PositiveOneInExactThreeSAT.syntaxCheck_iff φ).mp hg
-    have he : CNF.IsExactThreeDistinct (φ.flatMap NAEEUThreeSAT.clause) := by
-      intro d hd
-      obtain ⟨c, hc, hd⟩ := List.mem_flatMap.mp hd
-      exact NAEEUThreeSAT.exact_clause c (hw c hc) d hd
-    change (_ ∧ _) ↔ _ ∧ _ ∧ _
-    simp only [he, hp, true_and]
-    have hs := NAEEUThreeSAT.naeSatisfiable_formula φ hw
-    exact ⟨fun h => ⟨hw, hs.mp h⟩, fun h => hs.mpr h.2⟩
-  · have hg' : ¬((∀ c ∈ φ, c.length = 3 ∧ (c.map Prod.fst).Nodup) ∧
-        OneSAT.positiveCheck φ = true) :=
-      fun h => hg ((PositiveOneInExactThreeSAT.syntaxCheck_iff φ).mpr h)
-    simp only [NAEEUThreeSAT, Set.mem_ofPred_eq, CNF.IsExactThreeDistinct,
-      Clause.IsExactThreeDistinct, PositiveOneInExactThreeSAT] at *
-    simp_all
+    toNAEEUThreeSAT φ ∈ NAEEUThreeSAT ↔ φ ∈ PositiveOneInExactThreeSAT :=
+  PositiveOneInExactThreeSAT.ite_flatMap_mem_iff NAEEUThreeSAT.exact_clause
+    (NAEEUThreeSAT.naeSatisfiable_formula φ)
 
 /-- Positive exact-three exact-one SAT reduces to exact-three distinct-variable NAE SAT. -/
 theorem polyTimeReducible_PositiveOneInExactThreeSAT_NAEEUThreeSAT :
