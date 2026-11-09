@@ -256,10 +256,7 @@ theorem ret_advanceM_eq_nextLen {α : Type*} [DecidableEq α]
     · have hsub1 : k - 1 + 1 = k := by omega
       have hval : pi[k - 1]'hpi = borderLen p.toList k := by
         simpa only [hsub1] using htab.2 (k - 1) hpi
-      have hpne : p.toList ≠ [] := by
-        intro hnil
-        simp only [hnil, List.length_nil] at hklist
-        omega
+      have hpne : p.toList ≠ [] := by grind
       have hblt : borderLen p.toList k < k := borderLen_lt (by omega) hpne
       exact False.elim (hlt (hval ▸ hblt))
     · omega

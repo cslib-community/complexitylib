@@ -822,8 +822,7 @@ private theorem le_leafTime {K M L_coeff : ℕ} {δ : ℝ} (hδ : 0 ≤ δ) {c e
       2 ^ (δ * ((occBound K M * φ.numVars + 1 : ℕ) : ℝ)) :=
     Real.rpow_le_rpow_of_exponent_le (by norm_num)
       (mul_le_mul_of_nonneg_left (by exact_mod_cast hlen) hδ)
-  have h₂ : (((encCNF ψ).length : ℝ) + 1) ^ e ≤ ((nodeBound K L_coeff φ : ℝ) + 1) ^ e :=
-    pow_le_pow_left₀ (by positivity) (by exact_mod_cast Nat.add_le_add_right henc 1) e
+  have h₂ : (((encCNF ψ).length : ℝ) + 1) ^ e ≤ ((nodeBound K L_coeff φ : ℝ) + 1) ^ e := by gcongr
   have h₃ := mul_le_mul h₁ h₂ (by positivity) (by positivity)
   have h₄ := mul_le_mul_of_nonneg_left h₃ (Nat.cast_nonneg c : (0 : ℝ) ≤ c)
   exact Nat.cast_le.mp ((ht.trans (add_le_add h₄ le_rfl)).trans (Nat.le_ceil _))
@@ -946,8 +945,7 @@ private theorem search_time_bound (K M B L_coeff d dn di : ℕ)
       have hnb_add : nodeBound K L_coeff φ + 1 ≤ (c₁ + 1) * (L + 1) ^ 2 :=
         (Nat.add_le_add hnb (Nat.one_le_pow 2 (L + 1) (Nat.succ_pos L))).trans_eq (by ring)
       have hpow_nat : (nodeBound K L_coeff φ + 1) ^ e ≤ (c₁ + 1) ^ e * P := by
-        calc (nodeBound K L_coeff φ + 1) ^ e ≤ ((c₁ + 1) * (L + 1) ^ 2) ^ e :=
-              Nat.pow_le_pow_left hnb_add e
+        calc (nodeBound K L_coeff φ + 1) ^ e ≤ ((c₁ + 1) * (L + 1) ^ 2) ^ e := by gcongr
           _ = (c₁ + 1) ^ e * (L + 1) ^ (2 * e) := by rw [mul_pow, ← pow_mul]
           _ ≤ (c₁ + 1) ^ e * P := Nat.mul_le_mul_left _ (hP (2 * e) (by dsimp only [E]; omega))
       exact_mod_cast hpow_nat
@@ -960,8 +958,7 @@ private theorem search_time_bound (K M B L_coeff d dn di : ℕ)
         c * 2 ^ δ * ((c₁ : ℝ) + 1) ^ e * Y * P := by
       calc (c : ℝ) * (2 ^ δ * Y * ((nodeBound K L_coeff φ : ℝ) + 1) ^ e)
           = (c * 2 ^ δ * Y) * ((nodeBound K L_coeff φ : ℝ) + 1) ^ e := by ring
-        _ ≤ (c * 2 ^ δ * Y) * (((c₁ : ℝ) + 1) ^ e * P) :=
-          mul_le_mul_of_nonneg_left h₂ (by positivity)
+        _ ≤ (c * 2 ^ δ * Y) * (((c₁ : ℝ) + 1) ^ e * P) := by gcongr
         _ = c * 2 ^ δ * ((c₁ : ℝ) + 1) ^ e * Y * P := by ring
     have h₅ : (c : ℝ) + 1 ≤ ((c : ℝ) + 1) * (Y * P) :=
       le_mul_of_one_le_right (by positivity) (one_le_mul_of_one_le_of_one_le hY hP1)

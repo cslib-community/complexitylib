@@ -59,8 +59,8 @@ instead of allowing a downloader to race compilation; ordinary cache misses and 
 timeouts remain optional. The helpers never remove Git locks; forced termination can still
 leave one behind.
 
-Lean CI, API docs and Comparator disable only lean-action's built-in Mathlib fetch and call this helper
-with `--lean-action`, preserving that action's URL handling: unset `MATHLIB_CACHE_GET_URL` selects
+Lean CI, API docs and Comparator call this helper with `--lean-action`, preserving the Mathlib URL
+handling that lean-action had (API docs still run lean-action, with its own Mathlib fetch disabled): unset `MATHLIB_CACHE_GET_URL` selects
 `https://cache.mathlib.org/mathlib4`, an empty value selects the Mathlib client's default, and an
 explicit URL is retained. Local `get.sh` and the Guide workflow use the same retries while retaining
 their existing client-default/environment behavior. API docs also use the existing missing-only
@@ -69,8 +69,10 @@ the Actions cache and then uses the same missing-only restore. Cache failures re
 installation and validation failures remain strict.
 
 The Lean workflows also restore elan and the toolchain named in `lean-toolchain` (`~/.elan`,
-about 600 MB) from the Actions cache before `leanprover/lean-action` runs, so that the action does
-not download the toolchain. On a miss, `.github/actions/install-lean` installs them with bounded
+about 600 MB) from the Actions cache, so that no run depends on a GitHub release download. Lean CI,
+the guide and Comparator no longer run `leanprover/lean-action`: with every feature off it only
+reinstalled elan from GitHub releases, without retries, so a release outage failed every run. On a
+miss, `.github/actions/install-lean` installs them with bounded
 retries and saves the entry before any Lake command runs, so it never contains the local artifact
 cache above.
 
@@ -107,8 +109,11 @@ following builds while preserving the public cache's authorization boundary.
   code), hashes and traces. It omits only `ir/**/*.setup.json` and `ir/**/*.irsetup.json`: Lake's
   transient compiler setup inputs. Lake writes these inside a compilation action and does not
   require them to reuse completed modules. Other JSON files are retained. File-type/link checks
-  still cover omitted entries; the 100,000-file, 4 GiB unpacked and 1 GiB compressed payload limits
-  are unchanged. Packing reports retained and omitted counts/sizes, including on a limit miss.
+  still cover omitted entries. The payload limits are 300,000 files, 12 GiB unpacked and 4 GiB
+  compressed; a full build measured 101,848 files, 4.64 GB and 1.67 GB on November 8, 2026. The
+  earlier 100,000-file, 4 GiB and 1 GiB limits had been outgrown, which silently disabled the
+  handoff. Packing reports retained and omitted counts/sizes, and in Actions a limit miss or any
+  other unavailable handoff is a workflow warning on the run summary.
 - **Kill switch.** Setting the repository variable `DISABLE_BUILD_HANDOFF` to `1` or `true`
   (`gh variable set DISABLE_BUILD_HANDOFF --body 1`) disables both merge-group staging and `main`
   restoration without a commit; `scripts/cache_handoff.py` also honors `DISABLE_BUILD_HANDOFF` in
