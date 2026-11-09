@@ -111,14 +111,14 @@ class QuickCheckTests(unittest.TestCase):
 
     def test_relocated_source_directory(self):
         with (self.root / "lakefile.toml").open("a") as f:
-            f.write('[[lean_lib]]\nname = "Abstracts"\nsrcDir = "abstracts"\n')
-        self.write("abstracts/Abstracts.lean", "import Abstracts.Topic\n")
-        self.write("abstracts/Abstracts/Topic.lean", "import Demo.Base\n")
-        self.write("DemoTests/Client.lean", "import Abstracts\n")
+            f.write('[[lean_lib]]\nname = "Relocated"\nsrcDir = "relocated"\n')
+        self.write("relocated/Relocated.lean", "import Relocated.Topic\n")
+        self.write("relocated/Relocated/Topic.lean", "import Demo.Base\n")
+        self.write("DemoTests/Client.lean", "import Relocated\n")
         self.commit()
         self.git("update-ref", "refs/remotes/origin/main", "HEAD")
         self.write("Demo/Base.lean", "def value : Nat := 2\n")
-        self.assertIn("Abstracts.Topic", self.plan().targets)
+        self.assertIn("Relocated.Topic", self.plan().targets)
         self.assertIn("DemoTests.Client", self.plan().targets)
 
     def test_explicit_base_uses_merge_base(self):
@@ -213,55 +213,6 @@ class QuickCheckTests(unittest.TestCase):
         self.commit()
         self.git("update-ref", "refs/remotes/origin/main", "HEAD")
         with self.assertRaises(quick.FullCheck):
-            self.plan()
-
-    def add_on_demand_library(self, ignored=True):
-        """A library like the comparator challenges: empty default facets, generated sources."""
-        with (self.root / "lakefile.toml").open("a") as f:
-            f.write('[[lean_lib]]\nname = "DemoChallenges"\nroots = []\n'
-                    'globs = ["DemoChallenges.+"]\ndefaultFacets = []\n')
-        if ignored:
-            self.write(".gitignore", ".lake/\n/DemoChallenges/\n")
-        self.commit()
-        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
-
-    def test_absent_on_demand_library_keeps_quick_plan(self):
-        self.add_on_demand_library()
-        self.write("Demo/Base.lean", "def value : Nat := 2\n")
-        self.assertEqual(self.plan().targets,
-                         ["Demo.Base", "Demo.Middle", "DemoTests.AllClient", "DemoTests.Client"])
-
-    def test_ignored_on_demand_sources_are_not_planned(self):
-        self.add_on_demand_library()
-        self.write("DemoChallenges/Hole.lean", "import Demo.Base\ntheorem hole : value = 2 := sorry\n")
-        self.write("Demo/Base.lean", "def value : Nat := 2\n")
-        self.assertEqual(self.plan().targets,
-                         ["Demo.Base", "Demo.Middle", "DemoTests.AllClient", "DemoTests.Client"])
-
-    def test_tracked_on_demand_sources_are_still_planned(self):
-        self.add_on_demand_library(ignored=False)
-        self.write("DemoChallenges/Client.lean", "import Demo.Base\nexample : Nat := value\n")
-        self.commit()
-        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
-        self.write("Demo/Base.lean", "def value : Nat := 2\n")
-        self.assertIn("DemoChallenges.Client", self.plan().targets)
-
-    def test_importing_absent_or_ignored_on_demand_source_falls_back(self):
-        self.add_on_demand_library()
-        self.write("DemoTests/Client.lean", "import DemoChallenges.Hole\n")
-        with self.assertRaisesRegex(quick.FullCheck, "missing local import"):
-            self.plan()
-        self.write("DemoChallenges/Hole.lean", "import Demo.Base\n")
-        with self.assertRaisesRegex(quick.FullCheck, "missing local import"):
-            self.plan()
-
-    def test_nonempty_default_facets_fall_back(self):
-        with (self.root / "lakefile.toml").open("a") as f:
-            f.write('defaultFacets = ["shared"]\n')
-        self.commit()
-        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
-        self.write("Demo/Base.lean", "def value : Nat := 2\n")
-        with self.assertRaisesRegex(quick.FullCheck, "default facets"):
             self.plan()
 
     def test_missing_local_import_falls_back(self):
@@ -393,7 +344,7 @@ class LocalManualGateTests(unittest.TestCase):
     write = QuickCheckTests.write
 
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="complexitylib-manual-gates-")
+        self.temp = tempfile.TemporaryDirectory(prefix="cslib-frontier-manual-gates-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         for source in ("scripts/check.sh", "scripts/check_operator_manual.py", "manual/data/visuals.py"):
@@ -443,7 +394,7 @@ class LocalManualGateTests(unittest.TestCase):
                     ["lake", "test", "--wfail", "--iofail"], ["lake", "lint"],
                     ["lake", "exe", "lint-style"], ["lake", "exe", "checkInitImports"]]
                 self.assertEqual(commands[1:], expected)
-                self.assertFalse(list(self.root.glob("complexitylib-check.*")))
+                self.assertFalse(list(self.root.glob("cslib-frontier-check.*")))
                 self.log.unlink()
         bad = self.run_gate("--not-an-option")
         self.assertEqual(bad.returncode, 2)
@@ -472,11 +423,12 @@ class LocalManualGateTests(unittest.TestCase):
 class RepositoryLayoutTests(unittest.TestCase):
     def test_repository_libraries_are_in_quick_scope(self):
         # An unsupported library layout in the real lakefile sends every quick check to all six
-        # gates; #1729's `defaultFacets = []` did so unnoticed.
-        modules, aggregates, roots, _ = quick.source_modules(REPO)
-        self.assertIn("Complexity", aggregates)
-        self.assertIn("ComplexityComparatorChallenges", roots)
-        self.assertIn("ComplexityTests.Axioms", modules)
+        # gates; #1729's `defaultFacets = []` once did so unnoticed.
+        modules, aggregates, roots = quick.source_modules(REPO)
+        self.assertIn("CslibFrontier", aggregates)
+        self.assertIn("CslibFrontierResults", aggregates)
+        self.assertIn("CslibFrontierTests", roots)
+        self.assertIn("CslibFrontierTests.Axioms", modules)
 
 
 class NativeLeanTests(unittest.TestCase):

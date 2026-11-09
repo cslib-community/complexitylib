@@ -101,7 +101,7 @@ def restore(root, env, missing=False):
     urls = origins(env)
     timeout = seconds(env, "COMPLEXITYLIB_CACHE_ORIGIN_TIMEOUT", 180)
     if not urls:
-        print("COMPLEXITYLIB_CACHE_URL is empty; skipping the Complexitylib cache.", flush=True)
+        print("COMPLEXITYLIB_CACHE_URL is empty; skipping the cslib-frontier cache.", flush=True)
         return False
     if missing:
         shallow = run(["git", "rev-parse", "--is-shallow-repository"], timeout=10,
@@ -114,8 +114,8 @@ def restore(root, env, missing=False):
                 if deepened.returncode:
                     print("warning: could not deepen clone; using available history", file=sys.stderr)
     for index, origin in enumerate(urls, 1):
-        print(f"Complexitylib cache origin {index}/{len(urls)}: {origin}", flush=True)
-        with tempfile.TemporaryDirectory(prefix="complexitylib-cache-") as temporary:
+        print(f"cslib-frontier cache origin {index}/{len(urls)}: {origin}", flush=True)
+        with tempfile.TemporaryDirectory(prefix="cslib-frontier-cache-") as temporary:
             args = [sys.executable, "-B", str(Path(__file__).resolve()), "--one", origin,
                     "--work", temporary, "--checkout", str(root)]
             if missing:
