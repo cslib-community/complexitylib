@@ -442,6 +442,16 @@ theorem specEntryCertificate_le :
 
 /-! ### Direct summation -/
 
+/-- A vertex is no longer than its network. -/
+private theorem length_vertex_le {T' : Type} (encT' : T' ↪ List Bool) (G : DescribedNetwork T')
+    {v : List ℕ × T'} (hv : v ∈ G.vertices) :
+    (encPair (encList encNat) encT' v).length ≤ (DescribedNetwork.encDescribed encT' G).length := by
+  have h1 := List.le_sum_of_mem
+    (List.mem_map_of_mem (f := fun a => (encPair (encList encNat) encT' a).length) hv)
+  have h2 := sum_length_le_length_encList (encPair (encList encNat) encT') G.vertices
+  rw [length_encDescribed]
+  omega
+
 /-- **Time and space of direct summation over a specialized network.** There is `K` such that,
 at the input `x = (P, fl, r, G')` for the network `G'` specialized at a point, of length `n`, if
 the entry certificate takes time at most `E` and space at most `ES` at every vertex of the original
@@ -499,7 +509,7 @@ theorem directCoreCertificate_le (entry : T → List Bool → List ℕ)
         (specEntryCertificate entry ce).space (v'.2, bs) ≤ ES + Uf Z ∧
           (encList encNat (specEntry entry v'.2 bs)).length ≤ cS * (Z + Uf Z + 1) := by
     intro v' hv' bs hbs
-    have hvl := G'.length_vertex_le (encT := encSpecDesc encT) hv'
+    have hvl := length_vertex_le (encSpecDesc encT) G' hv'
     rw [hG', DescribedNetwork.vertices_specNet, List.mem_map] at hv'
     obtain ⟨v, hvG, rfl⟩ := hv'
     simp only at hbs ⊢

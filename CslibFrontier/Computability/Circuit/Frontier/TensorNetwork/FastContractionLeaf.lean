@@ -114,8 +114,15 @@ theorem length_net_le (x : Call T) :
 /-- A vertex of a call is at most its encoded length. -/
 theorem length_vertex_le {x : Call T} {v : List ℕ × VertexDesc T}
     (hv : v ∈ x.net.vertices) :
-    (encPair (encList encNat) (VertexDesc.enc encT) v).length ≤ (encCall encT x).length :=
-  (x.net.length_vertex_le hv).trans (length_net_le encT x)
+    (encPair (encList encNat) (VertexDesc.enc encT) v).length ≤ (encCall encT x).length := by
+  have h := length_le_encList_of_mem (encPair (encList encNat) (VertexDesc.enc encT)) hv
+  have h2 : (encList (encPair (encList encNat) (VertexDesc.enc encT)) x.net.vertices).length ≤
+      (DescribedNetwork.encDescribed (VertexDesc.enc encT) x.net).length := by
+    change _ ≤ (encPair encUnary (encList (encPair (encList encNat) (VertexDesc.enc encT)))
+      (x.net.numEdges, x.net.vertices)).length
+    enc_len
+  have h3 := length_net_le encT x
+  omega
 
 /-- The number of vertices of a call is at most its encoded length. -/
 theorem length_vertices_le (x : Call T) :
