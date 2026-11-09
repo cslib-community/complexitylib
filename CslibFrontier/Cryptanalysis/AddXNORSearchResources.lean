@@ -119,6 +119,50 @@ private theorem groups_count_le (rows : List (ℕ × ℕ)) :
         List.length_pos_iff.mpr (KeyGrouping.group_nonempty rows group hg))
     _ = rows.length := by rw [← List.length_flatten, KeyGrouping.flatten_run]
 
+/-- The actual quarter generation/sort/group pipeline, before any Cartesian pair emission,
+is quarter-linear in time and all-prefix workspace with physical scalar-width factors. -/
+theorem groupsCertificate_bounds : ∃ P : ℕ → ℕ, PolynomiallyBounded P ∧ Monotone P ∧
+    ∀ input : ClassJoin.Input,
+      ClassJoin.groupsCertificate.time input+ClassJoin.groupsCertificate.space input ≤
+        (ProducerResources.quarterVolume input+1)*P ((ClassJoin.encoding input).length+1) := by
+  obtain ⟨D, hD, mD, wire⟩ := sorted_wire
+  obtain ⟨C, hC, mC, counted⟩ := ProducerResources.countCertificate_bounds
+  let K := Classical.choose KeyGrouping.run_computable
+  have hK := (Classical.choose_spec KeyGrouping.run_computable).1
+  have mK : Monotone K := (Classical.choose_spec KeyGrouping.run_computable).2.1
+  let P := fun B => C B+4*(D B+1)+2*K (D B+1)
+  refine ⟨P, by dsimp only [P]; fun_prop, ?_, ?_⟩
+  · intro a b hab
+    have hd := mD hab
+    have hc := mC hab
+    have hk := mK (Nat.add_le_add_right hd 1)
+    dsimp only [P]; omega
+  · intro input
+    let B := (ClassJoin.encoding input).length+1
+    let Q := ProducerResources.quarterVolume input
+    let rows := ClassJoin.sortedRecords input
+    have len : rows.length = Q := (wire input).1
+    have maxRow : streamRecordLength er rows ≤ D B := (wire input).2
+    have inputWire := length_encList_le er rows (fun r hr =>
+      (le_listMax (f := fun row => (er row).length) hr).trans maxRow)
+    rw [len] at inputWire
+    have sorted : ClassJoin.sortedCertificate.time input+ClassJoin.sortedCertificate.space input ≤
+        (Q+1)*C B := by
+      have h := counted input
+      dsimp only [ClassJoin.countCertificate, NativeCertificate.congr, NativeCertificate.comp] at h
+      change _ ≤ (Q+1)*C B at h
+      omega
+    have callback := Nat.mul_le_mul_left (Q+2) (mK (Nat.add_le_add_right maxRow 1))
+    have profile : ClassJoin.groupsCertificate.time input+ClassJoin.groupsCertificate.space input =
+        ClassJoin.sortedCertificate.time input+ClassJoin.sortedCertificate.space input+
+        2*(el rows).length+(rows.length+2)*K (streamRecordLength er rows+1) := by
+      dsimp only [ClassJoin.groupsCertificate, NativeCertificate.congr, NativeCertificate.comp]
+      ring
+    rw [profile, len]
+    change _ ≤ (Q+1)*P B
+    dsimp only [P]
+    nlinarith only [sorted, inputWire, callback]
+
 /-- Actual quarter generation, sorting, grouping and class-pair emission, including every
 internal prefix and the materialized class output. The class population is computed by
 this same construction, not supplied as a size hypothesis. -/
@@ -130,19 +174,15 @@ theorem witnessesCertificate_bounds : ∃ P : ℕ → ℕ, PolynomiallyBounded P
         streamRecordLength RadixPartition.recordEncoding (ClassJoin.witnesses input) ≤
           P ((ClassJoin.encoding input).length+1) := by
   obtain ⟨D, hD, mD, wire⟩ := sorted_wire
-  obtain ⟨C, hC, mC, counted⟩ := ProducerResources.countCertificate_bounds
-  let K := Classical.choose KeyGrouping.run_computable
-  have hK := (Classical.choose_spec KeyGrouping.run_computable).1
-  have mK : Monotone K := (Classical.choose_spec KeyGrouping.run_computable).2.1
+  obtain ⟨C, hC, mC, grouped⟩ := groupsCertificate_bounds
   let J := Classical.choose KeyJoinStream.join_computable
   have hJ := (Classical.choose_spec KeyJoinStream.join_computable).1
   have mJ : Monotone J := (Classical.choose_spec KeyJoinStream.join_computable).2.1
-  let P := fun B => C B+10*(D B+1)+2*K (D B+1)+4*J (D B+1)
+  let P := fun B => C B+10*(D B+1)+4*J (D B+1)
   refine ⟨P, by dsimp only [P]; fun_prop, ?_, ?_⟩
   · intro a b hab
     have hd := mD hab
     have hc := mC hab
-    have hk := mK (by omega : D a+1 ≤ D b+1)
     have hj := mJ (by omega : D a+1 ≤ D b+1)
     dsimp only [P]; omega
   · intro input
@@ -174,27 +214,11 @@ theorem witnessesCertificate_bounds : ∃ P : ℕ → ℕ, PolynomiallyBounded P
       rw [sumEq, flatten, len]
       change Q+N+groups.length+1 ≤ _
       omega
-    have sorted : ClassJoin.sortedCertificate.time input+ClassJoin.sortedCertificate.space input ≤
-        (Q+1)*C B := by
-      have h := counted input
-      dsimp only [ClassJoin.countCertificate, NativeCertificate.congr, NativeCertificate.comp] at h
-      change _ ≤ (Q+1)*C B at h
-      omega
     have grouping : ClassJoin.groupsCertificate.time input+
-        ClassJoin.groupsCertificate.space input ≤
-          (Q+1)*(C B+4*(D B+1)+2*K (D B+1)) := by
-      have callback := Nat.mul_le_mul_left (Q+2) (mK (Nat.add_le_add_right maxRow 1))
-      have profile : ClassJoin.groupsCertificate.time input+
-          ClassJoin.groupsCertificate.space input =
-          ClassJoin.sortedCertificate.time input+ClassJoin.sortedCertificate.space input+
-          2*(el rows).length+(rows.length+2)*K (streamRecordLength er rows+1) := by
-        dsimp only [ClassJoin.groupsCertificate, NativeCertificate.congr, NativeCertificate.comp]
-        ring
-      rw [profile, len]
-      nlinarith only [sorted, inputWire, callback]
+        ClassJoin.groupsCertificate.space input ≤ (Q+1)*C B := grouped input
     have joined : ClassJoin.witnessesCertificate.time input+
         ClassJoin.witnessesCertificate.space input ≤
-          (Q+1)*(C B+4*(D B+1)+2*K (D B+1))+2*(2*Q+N+1)*J (D B+1) := by
+          (Q+1)*C B+2*(2*Q+N+1)*J (D B+1) := by
       have callback := Nat.mul_le_mul population (mJ width)
       have profile : ClassJoin.witnessesCertificate.time input+
           ClassJoin.witnessesCertificate.space input =
@@ -207,8 +231,7 @@ theorem witnessesCertificate_bounds : ∃ P : ℕ → ℕ, PolynomiallyBounded P
     constructor
     · change _ ≤ (Q+N+1)*P B
       dsimp only [P]
-      nlinarith only [joined, Nat.zero_le (N*C B), Nat.zero_le (N*(D B+1)),
-        Nat.zero_le (N*K (D B+1))]
+      nlinarith only [joined, Nat.zero_le (N*C B), Nat.zero_le (N*(D B+1))]
     · apply listMax_le
       intro pair hp
       have rows (r : ℕ × ℕ) (hr : r ∈ groups.flatten) : (er r).length ≤ D B := by

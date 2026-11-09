@@ -42,7 +42,7 @@ deterministic multitape bit convention on p. 6.
 * `batch_sound`, `batch_cover`, `run_none`, `run_sound`: actual occurrence/witness completeness.
 * `batch_length`, `copyAllowance`: derived batch storage and repeated-input charges.
 * `groups_length`, `batchCount_le_quarter`, `labels_wire`: actual quarter and label data bounds.
-* `batchCertificate`, `runCertificate`: uniform executable bounded-batch composition.
+* `batchCertificate`, `matchLabelCertificate`, `runCertificate`: executable bounded-batch stages.
 -/
 
 public section
@@ -297,9 +297,11 @@ noncomputable def batchCertificate : NativeCertificate
   exact NativeCertificate.congr (ClassBalance.emitCertificate.comp
     (context.fst.prod selected)) (fun _ => rfl)
 
-private noncomputable def matchCertificate : NativeCertificate
+/-- Guard, build and match one generated label, with all retained-context copies and scalar
+count/division controls included in the installed resource profiles. -/
+noncomputable def matchLabelCertificate : NativeCertificate
     (fun q : (JoinedProbe.Context × ℕ) × ℕ => matchLabel q.1.1 q.1.2 q.2)
-    (encPair ei encNat) (encOption er) := by
+    (encPair (encPair JoinedProbe.encoding encNat) encNat) encNatPairOption := by
   let e := encPair ei encNat
   let original : NativeCertificate (id : (JoinedProbe.Context × ℕ) × ℕ → _) e e :=
     .linear (.of_eq (fun _ => rfl))
@@ -330,7 +332,7 @@ noncomputable def runCertificate : NativeCertificate
   let e := encPair (encPair ei (encOption er)) encNat
   let arg : NativeCertificate (id : ((JoinedProbe.Context × ℕ) × Option (ℕ × ℕ)) × ℕ → _) e e :=
     .linear (.of_eq (fun _ => rfl))
-  let fresh := matchCertificate.comp (arg.fst.fst.prod arg.snd)
+  let fresh := matchLabelCertificate.comp (arg.fst.fst.prod arg.snd)
   let found := arg.fst.snd
   let parked : NativeCertificate
       (fun q : (((JoinedProbe.Context × ℕ) × Option (ℕ × ℕ)) × ℕ) × (ℕ × ℕ) => some q.2)

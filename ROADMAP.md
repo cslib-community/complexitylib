@@ -369,9 +369,14 @@ and projected count certificates, including real preparation, generation, taggin
 and binary counter widths. Both count orientations have an original-input all-class phase
 sum; opposite counting repeated at generated restart labels is amortized by actual capacity.
 Full-state reconstruction of actual windows also has a summed phase allowance and every-batch
-prefix workspace bound, including pair/output/callback tapes. These results are not the total
-assembled profiles: the separately normalized window phase, retained-join/group emission,
-internal class-search control and simultaneous ambient frames remain unclosed. `WholeRunResources.sourceCertificate_bounds` now gives an actual whole
+prefix workspace bound, including pair/output/callback tapes. `BatchResources` now composes the installed scalar count/division, retained-context copies,
+quarter regeneration/sort, bounded window, full-state reconstruction and two-orientation
+matcher into the actual guarded label callback. Its source-cut sum is half-exponential and
+each callback's all-prefix workspace is quarter-plus-computed-balance, with polynomial
+factors in original physical widths. Padding labels and both computed orientations are
+included. These results are not the total assembled profiles: label generation/fold control,
+parked prefix witness states, retained preparation and simultaneous ambient frames remain
+unclosed. `WholeRunResources.sourceCertificate_bounds` now gives an actual whole
 original-input preparation-to-readback envelope: time is bounded by the installed balance
 prepass allowance plus `(classTime + numberOfClasses + 1) * P(originalInputBits)`, and space
 by the prepass workspace plus `(classSpace + numberOfClasses + 1) * P(originalInputBits)`.
@@ -388,8 +393,9 @@ class-pair/full-state emission and all selected direct-search clocks/workspaces,
 including computed orientation/materialization and producer/matcher tapes. Its
 `sourceCertificate_restart_bounds` leaves the installed selected restarted-search sum/max
 explicit, conservatively including skipped classes. Sharp normalization of those costs
-still needs complete class-control/retained-preparation/callback-frame and simultaneous
-ambient workspace composition. Installed window callbacks are now normalized in binary
+still needs generated-label loop/retained-preparation and simultaneous ambient workspace
+composition. The complete guarded callback's retained-context frames are now charged by
+`BatchResources.source_label_bounds`. Installed window callbacks are now normalized in binary
 scalar/record widths, including count scans, filters, multiplication/division, cutting and
 Cartesian emission. `RestartResources` derives original-source widths and charges all
 class/label windows using computed capacities. Its source-cut half-time and

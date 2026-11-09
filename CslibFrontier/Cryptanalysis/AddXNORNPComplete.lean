@@ -45,7 +45,7 @@ open Turing.MultiTapeTM Cslib.Complexity
 open scoped List
 
 /-- Binary Subset-Sum input: a list of individually framed binary numbers, itself framed
-before the binary target. Order, zero entries and repetitions are retained. -/
+before the unframed binary target. Order, zero entries and repetitions are retained. -/
 abbrev subsetSumEncoding : List ℕ × ℕ ↪ List Bool := encPair (encList encNat) encNat
 
 /-- Natural-number implementation of the alternating gadget operands. -/

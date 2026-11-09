@@ -283,9 +283,15 @@ count. `KeyJoinBatchCallbackBounds` now normalizes the installed count/division/
 profiles in scalar/record widths. `RestartResources.original_window_bounds` derives those
 widths from original source operands and generated labels; `original_window_sum` and
 `source_window_bounds` close the all-class window phase using computed capacity/balance.
-These are not sharp whole-run bounds: next compose the remaining label/control,
-retained preparation, callback/frame and simultaneous ambient workspace costs.
-Do not repeat the completed window phase, prepass,
+`BatchResources.matchLabelCertificate_bounds` now composes those windows with actual
+count/division, quarter regeneration/sort, reconstruction, matcher and retained-context
+frames. `source_label_bounds` sums complete guarded callbacks over all generated labels
+in both computed orientations; its space bound covers every callback prefix, including
+padding/missing branches. These are not sharp whole-run bounds: next compose generated-label
+setup/fold control, derived parked witness widths, retained preparation and simultaneous
+ambient workspace. Use the installed `ClassBatches.matchLabelCertificate`; do not substitute
+record volume or a generic polynomial in the full retained-context encoding.
+Do not repeat the completed callback pipeline, window phase, prepass,
 direct branch or envelope proofs. The residuals are cost expressions, not runtime
 hypotheses or sharp whole-run bounds. The direct-only checked client is not a general
 restart theorem; the fallback guard verifies that its costs have not disappeared.

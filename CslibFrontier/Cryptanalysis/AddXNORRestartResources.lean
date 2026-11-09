@@ -60,7 +60,7 @@ private theorem original_window_width :
         (g : BitVec p) (i : ℕ),
         let input := ProgramGeneration.originalSource p as bs cs ds s 0
         let context := JoinedDissection.probeContext input g.toNat
-        let q := as.length+bs.length+cs.length+ds.length
+        let q := as.length + bs.length + cs.length + ds.length
         i ∈ ClassBatches.labels context g.toNat →
         KeyJoinBatch.windowWidth (i*ClassBatches.capacity context, ClassBatches.capacity context)
           (JoinedProbe.groups context g.toNat) ≤
@@ -79,7 +79,7 @@ private theorem original_window_width :
     intro hi
     let input := ProgramGeneration.originalSource p as bs cs ds s 0
     let context := JoinedDissection.probeContext input g.toNat
-    let q := as.length+bs.length+cs.length+ds.length
+    let q := as.length + bs.length + cs.length + ds.length
     let B := (ClassBalance.encoding input).length+q+p+1
     let N := ClassBatches.quarterVolume context
     let C := ClassBatches.capacity context
@@ -176,7 +176,7 @@ theorem original_window_bounds :
         (g : BitVec p) (i : ℕ),
         let input := ProgramGeneration.originalSource p as bs cs ds s 0
         let context := JoinedDissection.probeContext input g.toNat
-        let q := as.length+bs.length+cs.length+ds.length
+        let q := as.length + bs.length + cs.length + ds.length
         i ∈ ClassBatches.labels context g.toNat →
         callbackAllowance input g.toNat i+windowAllowance input g.toNat i ≤
           ClassBatches.capacity context*P ((ClassBalance.encoding input).length+q+p+1) := by
@@ -191,7 +191,7 @@ theorem original_window_bounds :
   intro hi
   let input := ProgramGeneration.originalSource p as bs cs ds s 0
   let context := JoinedDissection.probeContext input g.toNat
-  let q := as.length+bs.length+cs.length+ds.length
+  let q := as.length + bs.length + cs.length + ds.length
   let B := (ClassBalance.encoding input).length+q+p+1
   let N := ClassBatches.quarterVolume context
   let capacity := ClassBatches.capacity context
@@ -227,42 +227,49 @@ theorem original_window_bounds :
   change _ ≤ capacity*(4*(A (D B)+C (D B)))
   nlinarith only [combined, scaled]
 
-/-- Sum of actual installed window allowances over all computed classes and generated labels,
-with a simultaneous per-window bound using computed balance. These are window-phase bounds,
-not whole-run clocks or a replacement for preprocessing, retained joins, matching and control. -/
-theorem original_window_sum :
+/-- Weighted restart accounting: a derived capacity-linear callback allowance sums over
+actual generated labels and is bounded simultaneously using the computed balance. This is an
+arithmetic composition lemma, not an assumed machine simulation or a whole-run bound. -/
+theorem original_capacity_sum
+    (cost : ClassBalance.Input → ℕ → ℕ → ℕ)
+    (bounded : ∃ P : ℕ → ℕ, PolynomiallyBounded P ∧ Monotone P ∧
+      ∀ {m p : ℕ}, p ≤ m → ∀ (as bs cs ds : List (BitVec m)) (s : BitVec m)
+        (g : BitVec p) (i : ℕ),
+        let input := ProgramGeneration.originalSource p as bs cs ds s 0
+        let context := JoinedDissection.probeContext input g.toNat
+        let q := as.length + bs.length + cs.length + ds.length
+        i ∈ ClassBatches.labels context g.toNat →
+        cost input g.toNat i ≤ ClassBatches.capacity context *
+          P ((ClassBalance.encoding input).length + q + p + 1)) :
     ∃ P : ℕ → ℕ, PolynomiallyBounded P ∧ Monotone P ∧
       ∀ {m p : ℕ}, p ≤ m → ∀ (as bs cs ds : List (BitVec m)) (s : BitVec m),
         let input := ProgramGeneration.originalSource p as bs cs ds s 0
-        let q := as.length+bs.length+cs.length+ds.length
+        let q := as.length + bs.length + cs.length + ds.length
         let B := (ClassBalance.encoding input).length+q+p+1
         (∑ g : BitVec p,
           ((ClassBatches.labels (JoinedDissection.probeContext input g.toNat) g.toNat).map
-            (windowAllowance input g.toNat)).sum) ≤
+            (cost input g.toNat)).sum) ≤
           (6*(2^(as.length+bs.length)+2^(cs.length+ds.length))+
             4*2^p*(JoinedDissection.quarterBudget input+1))*P B ∧
         ∀ (g : BitVec p) (i : ℕ),
           i ∈ ClassBatches.labels (JoinedDissection.probeContext input g.toNat) g.toNat →
-          windowAllowance input g.toNat i ≤
+          cost input g.toNat i ≤
             (ClassBalance.balance input+JoinedDissection.quarterBudget input+1)*P B := by
-  obtain ⟨P, hP, mP, bounds⟩ := original_window_bounds
+  obtain ⟨P, hP, mP, bounds⟩ := bounded
   refine ⟨P, hP, mP, ?_⟩
   intro m p hp as bs cs ds s
   let input := ProgramGeneration.originalSource p as bs cs ds s 0
-  let q := as.length+bs.length+cs.length+ds.length
+  let q := as.length + bs.length + cs.length + ds.length
   let B := (ClassBalance.encoding input).length+q+p+1
   have each (g : BitVec p) (i : ℕ)
       (hi : i ∈ ClassBatches.labels (JoinedDissection.probeContext input g.toNat) g.toNat) :
-      windowAllowance input g.toNat i ≤
+      cost input g.toNat i ≤
         ClassBatches.capacity (JoinedDissection.probeContext input g.toNat)*P B := by
-    have h := bounds hp as bs cs ds s g i hi
-    change callbackAllowance input g.toNat i+windowAllowance input g.toNat i ≤
-      ClassBatches.capacity (JoinedDissection.probeContext input g.toNat)*P B at h
-    omega
+    exact bounds hp as bs cs ds s g i hi
   constructor
   · have classBound (g : BitVec p) :
         ((ClassBatches.labels (JoinedDissection.probeContext input g.toNat) g.toNat).map
-          (windowAllowance input g.toNat)).sum ≤
+          (cost input g.toNat)).sum ≤
             JoinedDissection.restartCopyWork input g.toNat*P B := by
       have h := List.sum_le_sum (fun i hi => each g i hi)
       simp only [List.map_const', List.sum_replicate, smul_eq_mul] at h
@@ -280,11 +287,48 @@ theorem original_window_sum :
         ClassBalance.balance input+JoinedDissection.quarterBudget input+1 := by omega
     exact h.trans (Nat.mul_le_mul_right (P B) capBound)
 
-/-- The actual window phase, summed over every generated source class/label, fits half-exponential
-bit time and quarter-exponential-plus-computed-balance simultaneous window workspace. Polynomial
-factors use original input bits. Ambient solver frames, retained preparation, matching, loop
-control and readback still require whole-run composition; this is not the source Theorem 7. -/
-theorem source_window_bounds :
+
+/-- Sum of actual installed window allowances over all computed classes and generated labels,
+with a simultaneous per-window bound using computed balance. These are window-phase bounds,
+not whole-run clocks or a replacement for preprocessing, retained joins, matching and control. -/
+theorem original_window_sum :
+    ∃ P : ℕ → ℕ, PolynomiallyBounded P ∧ Monotone P ∧
+      ∀ {m p : ℕ}, p ≤ m → ∀ (as bs cs ds : List (BitVec m)) (s : BitVec m),
+        let input := ProgramGeneration.originalSource p as bs cs ds s 0
+        let q := as.length + bs.length + cs.length + ds.length
+        let B := (ClassBalance.encoding input).length+q+p+1
+        (∑ g : BitVec p,
+          ((ClassBatches.labels (JoinedDissection.probeContext input g.toNat) g.toNat).map
+            (windowAllowance input g.toNat)).sum) ≤
+          (6*(2^(as.length+bs.length)+2^(cs.length+ds.length))+
+            4*2^p*(JoinedDissection.quarterBudget input+1))*P B ∧
+        ∀ (g : BitVec p) (i : ℕ),
+          i ∈ ClassBatches.labels (JoinedDissection.probeContext input g.toNat) g.toNat →
+          windowAllowance input g.toNat i ≤
+            (ClassBalance.balance input+JoinedDissection.quarterBudget input+1)*P B := by
+  apply original_capacity_sum windowAllowance
+  obtain ⟨P, hP, mP, bounds⟩ := original_window_bounds
+  refine ⟨P, hP, mP, ?_⟩
+  intro m p hp as bs cs ds s g i
+  dsimp only
+  intro hi
+  have h := bounds hp as bs cs ds s g i hi
+  exact (Nat.le_add_left _ _).trans h
+
+/-- Source cut/cap specialization of weighted capacity accounting. The input/output and
+callback allowances must already be derived for the actual installed phase; this lemma only
+normalizes the quarter powers, generated class count and computed balance. -/
+theorem source_capacity_bounds
+    (cost : ClassBalance.Input → ℕ → ℕ → ℕ)
+    (bounded : ∃ P : ℕ → ℕ, PolynomiallyBounded P ∧ Monotone P ∧
+      ∀ {m p : ℕ}, p ≤ m → ∀ (as bs cs ds : List (BitVec m)) (s : BitVec m)
+        (g : BitVec p) (i : ℕ),
+        let input := ProgramGeneration.originalSource p as bs cs ds s 0
+        let context := JoinedDissection.probeContext input g.toNat
+        let q := as.length + bs.length + cs.length + ds.length
+        i ∈ ClassBatches.labels context g.toNat →
+        cost input g.toNat i ≤ ClassBatches.capacity context *
+          P ((ClassBalance.encoding input).length + q + p + 1)) :
     ∃ P : ℕ → ℕ, PolynomiallyBounded P ∧ Monotone P ∧
       ∀ (m p : ℕ) (s : BitVec m) (tail : List (BitVec m)),
         let original := Source.ofWords p s tail
@@ -292,12 +336,12 @@ theorem source_window_bounds :
         let I := (Source.encoding original).length
         (∑ g : BitVec (ClassBalance.depth input),
           ((ClassBatches.labels (JoinedDissection.probeContext input g.toNat) g.toNat).map
-            (windowAllowance input g.toNat)).sum) ≤ 2^(tail.length/2)*P I ∧
+            (cost input g.toNat)).sum) ≤ 2^(tail.length/2)*P I ∧
         ∀ (g : BitVec (ClassBalance.depth input)) (i : ℕ),
           i ∈ ClassBatches.labels (JoinedDissection.probeContext input g.toNat) g.toNat →
-          windowAllowance input g.toNat i ≤
+          cost input g.toNat i ≤
             (2^(tail.length/4)+ClassBalance.balance input)*P I := by
-  obtain ⟨A, hA, mA, windows⟩ := original_window_sum
+  obtain ⟨A, hA, mA, windows⟩ := original_capacity_sum cost bounded
   obtain ⟨D, hD, mD, layout⟩ := WholeRunResources.sourceScalarWidth
   let P := fun I => 100*(A (D I)+1)
   refine ⟨P, by dsimp only [P]; fun_prop,
@@ -360,7 +404,7 @@ theorem source_window_bounds :
       12*(quarter+ClassBalance.balance input) := by omega
   change (∑ g : BitVec (ClassBalance.depth input),
     ((ClassBatches.labels (JoinedDissection.probeContext input g.toNat) g.toNat).map
-      (windowAllowance input g.toNat)).sum) ≤ half*P I ∧ _
+      (cost input g.toNat)).sum) ≤ half*P I ∧ _
   rw [depthEq]
   constructor
   · have upper := typed.1.trans (Nat.mul_le_mul work scaled)
@@ -370,5 +414,31 @@ theorem source_window_bounds :
     have upper := (typed.2 g i hi).trans (Nat.mul_le_mul workspace scaled)
     change _ ≤ (quarter+ClassBalance.balance input)*(100*(A (D I)+1))
     nlinarith only [upper, Nat.zero_le ((quarter+ClassBalance.balance input)*A (D I))]
+
+/-- The actual window phase, summed over every generated source class/label, fits half-exponential
+bit time and quarter-exponential-plus-computed-balance simultaneous window workspace. Polynomial
+factors use original input bits. Ambient solver frames, retained preparation, matching, loop
+control and readback still require whole-run composition; this is not the source Theorem 7. -/
+theorem source_window_bounds :
+    ∃ P : ℕ → ℕ, PolynomiallyBounded P ∧ Monotone P ∧
+      ∀ (m p : ℕ) (s : BitVec m) (tail : List (BitVec m)),
+        let original := Source.ofWords p s tail
+        let input := Source.prepare original
+        let I := (Source.encoding original).length
+        (∑ g : BitVec (ClassBalance.depth input),
+          ((ClassBatches.labels (JoinedDissection.probeContext input g.toNat) g.toNat).map
+            (windowAllowance input g.toNat)).sum) ≤ 2^(tail.length/2)*P I ∧
+        ∀ (g : BitVec (ClassBalance.depth input)) (i : ℕ),
+          i ∈ ClassBatches.labels (JoinedDissection.probeContext input g.toNat) g.toNat →
+          windowAllowance input g.toNat i ≤
+            (2^(tail.length/4)+ClassBalance.balance input)*P I := by
+  apply source_capacity_bounds windowAllowance
+  obtain ⟨P, hP, mP, bounds⟩ := original_window_bounds
+  refine ⟨P, hP, mP, ?_⟩
+  intro m p hp as bs cs ds s g i
+  dsimp only
+  intro hi
+  have h := bounds hp as bs cs ds s g i hi
+  exact (Nat.le_add_left _ _).trans h
 
 end Cslib.Cryptanalysis.AddXNOR.RestartResources

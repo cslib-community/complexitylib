@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (restarted class-batch source integration regression tests)
 
-public import CslibFrontier.Cryptanalysis.AddXNORRestartResources
+public import CslibFrontier.Cryptanalysis.AddXNORBatchResources
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoinBatchBounds
 import all CslibFrontier.Cryptanalysis.AddXNORRestartResources
 import all CslibFrontier.Cryptanalysis.AddXNORSearchResources
@@ -425,5 +425,49 @@ example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
       RestartResources.windowAllowance input g.toNat i ≤
         (1+ClassBalance.balance input)*P ((Source.encoding original).length) := by
   obtain ⟨P, hP, mP, bound⟩ := RestartResources.source_window_bounds
+  refine ⟨P, hP, mP, ?_⟩
+  simpa only [List.length_nil, Nat.zero_div, pow_zero] using (bound 0 9 0 []).2
+
+-- The complete installed callback, rather than only window or record-volume work,
+-- is charged on both genuinely restarted source orientations (including padding labels).
+example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
+    ∀ original ∈ [restartArithmeticHit, restartArithmeticMiss, restartBackward],
+      let input := Source.prepare original
+      (∑ g : BitVec (ClassBalance.depth input),
+        ((ClassBatches.labels (JoinedDissection.probeContext input g.toNat) g.toNat).map
+          (BatchResources.labelAllowance input g.toNat)).sum) ≤
+        2^((original.2.length-1)/2)*P ((Source.encoding original).length) := by
+  obtain ⟨P, hP, mP, bound⟩ := BatchResources.source_label_bounds
+  refine ⟨P, hP, mP, ?_⟩
+  intro original ho
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at ho
+  rcases ho with rfl | rfl | rfl
+  · have eq : restartArithmeticHit =
+        Source.ofWords 0 (0 : BitVec 3) (List.replicate 14 0 ++ [1]) := by decide +kernel
+    rw [eq]
+    simpa only [Source.ofWords, List.length_map, List.length_cons, Nat.add_sub_cancel]
+      using (bound 3 0 0 (List.replicate 14 0 ++ [1])).1
+  · have eq : restartArithmeticMiss =
+        Source.ofWords 0 (2 : BitVec 5) (List.replicate 14 0 ++ [1]) := by decide +kernel
+    rw [eq]
+    simpa only [Source.ofWords, List.length_map, List.length_cons, Nat.add_sub_cancel]
+      using (bound 5 0 2 (List.replicate 14 0 ++ [1])).1
+  · have eq : restartBackward =
+        Source.ofWords 5 (0 : BitVec 6)
+          (List.replicate 10 0 ++ (List.range' 1 10).map (BitVec.ofNat 6)) := by
+      decide +kernel
+    rw [eq]
+    simpa only [Source.ofWords, List.length_map, List.length_cons, Nat.add_sub_cancel]
+      using (bound 6 5 0 (List.replicate 10 0 ++ (List.range' 1 10).map (BitVec.ofNat 6))).1
+
+-- Every callback prefix, including the empty/zero-width padded label, fits the source bound.
+example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
+    let original := Source.ofWords 9 (0 : BitVec 0) []
+    let input := Source.prepare original
+    ∀ (g : BitVec (ClassBalance.depth input)) (i : ℕ),
+      i ∈ ClassBatches.labels (JoinedDissection.probeContext input g.toNat) g.toNat →
+      BatchResources.labelAllowance input g.toNat i ≤
+        (1+ClassBalance.balance input)*P ((Source.encoding original).length) := by
+  obtain ⟨P, hP, mP, bound⟩ := BatchResources.source_label_bounds
   refine ⟨P, hP, mP, ?_⟩
   simpa only [List.length_nil, Nat.zero_div, pow_zero] using (bound 0 9 0 []).2

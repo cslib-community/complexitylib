@@ -808,7 +808,7 @@ private theorem classInput_polyTime : ComputableInPolyTime
 per-batch parameter copies, full-state reconstruction and matcher temporaries are charged. -/
 private noncomputable def batchSearchCertificate : NativeCertificate
     (fun q : ClassBalance.Input × ℕ => ClassBatches.run (probeContext q.1 q.2) q.2)
-    (encPair ClassBalance.encoding encNat) (encNatPairOption) := by
+    (encPair ClassBalance.encoding encNat) encNatPairOption := by
   let original : NativeCertificate (id : ClassBalance.Input × ℕ → _)
       classEncoding classEncoding := .linear (.of_eq (fun _ => rfl))
   let orientation := ClassBalance.orientationCertificate
@@ -903,7 +903,7 @@ quarter-plus-retained allowance, and the bounded restarted-window machine otherw
 All count, materialization, matching, copy and callback temporaries remain charged. -/
 noncomputable def searchCertificate : NativeCertificate
     (fun q : ClassBalance.Input × ℕ => search q.1 q.2)
-    (encPair ClassBalance.encoding encNat) (encNatPairOption) :=
+    (encPair ClassBalance.encoding encNat) encNatPairOption :=
   NativeCertificate.congr (NativeCertificate.branch materializeCertificate
     directSearchCertificate batchSearchCertificate) (fun _ => rfl)
 
@@ -930,7 +930,7 @@ private noncomputable def allStepCertificate : NativeCertificate
 executed class rounds; peak workspace takes their actual prefix maximum and includes the index
 list/setup, state copies and final readback. No maximum-class-time multiplication is used. -/
 noncomputable def allCertificate : NativeCertificate allSearch ClassBalance.encoding
-    (encNatPairOption) := by
+    encNatPairOption := by
   let e := encPair (encPair ClassBalance.encoding (encOption recEncoding)) encNat
   let original : NativeCertificate
       (id : (ClassBalance.Input × Option (ℕ × ℕ)) × ℕ → _) e e :=
@@ -958,7 +958,7 @@ noncomputable def halvesCertificate : NativeCertificate halves ClassBalance.enco
 /-- The actual packed-witness decoder used by the assembled source solver. -/
 noncomputable def readbackCertificate : NativeCertificate
     (fun q : SortedMeet.Input × Option (ℕ × ℕ) => q.2.map (SortedMeet.decodeWitness q.1))
-    (encPair SortedMeet.encoding (encNatPairOption)) (encOption encBits) :=
+    (encPair SortedMeet.encoding encNatPairOption) (encOption encBits) :=
   .ofPolyTime SortedMeet.readback_polyTime
 
 /-- Preparation, half-array construction and final decoding cost only a polynomial
@@ -1009,7 +1009,7 @@ theorem preparation_readback_bounds : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBou
     have witnessSize : (encNatPairOption (allSearch prepared)).length ≤
         3 * size + 2 := by dsimp only [prepared, original]; omega
     have halfSize : (SortedMeet.encoding (halves prepared)).length ≤ B size := boundB original
-    have inputSize : (encPair SortedMeet.encoding (encNatPairOption)
+    have inputSize : (encPair SortedMeet.encoding encNatPairOption
         (halves prepared, allSearch prepared)).length ≤ 2 * B size + 3 * size + 3 := by
       simp only [length_encPair]
       omega

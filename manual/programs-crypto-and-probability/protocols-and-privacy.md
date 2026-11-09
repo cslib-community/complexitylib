@@ -2456,16 +2456,24 @@ using computed capacities, and bounds each window's workspace by computed balanc
 plus quarter volume. `source_window_bounds` specializes the actual source cut to
 $2^{\lfloor q/2\rfloor}P(I)$ summed window allowances and
 $(2^{\lfloor q/4\rfloor}+\mu_p)P(I)$ simultaneous window workspace.
-These are **window-phase bounds**, not a complete solver theorem: captured retained
-frames, the surrounding class-control program, retained preparation, matching and
-readback still need full composition. Source reachable-state-DP all-count/fast
+[`AddXNORBatchResources.lean`](../../CslibFrontier/Cryptanalysis/AddXNORBatchResources.lean)
+composes these windows with actual recomputed counts/division, quarter generation/sort,
+full-state reconstruction, retained-context copies and either computed matcher orientation.
+`matchLabelCertificate_bounds` bounds the installed guarded label callback, including its
+padding-label miss branch. `source_label_bounds` gives the same half-time and
+quarter-plus-balance bounds for the sum of complete callback allowances and each callback's
+all-prefix workspace. Scalar factors use original widths; the dictionary contributes linearly
+through actual computed capacity, amortized over labels.
+These remain **callback-phase bounds**, not a complete solver theorem: generated-label setup,
+fold control and parked witness states, retained preparation and ambient solver frames still
+need full composition. Source reachable-state-DP all-count/fast
 prepass and the other paper objectives remain open.
 
 The binary layouts in these public APIs use documented reducible names:
-`encNatPairList` frames each binary pair, `encNatPairOption` uses an empty word for
+`encNatPairList` frames each binary pair (whose second coordinate is unframed), `encNatPairOption` uses an empty word for
 `none` and a true bit before a `some` pair, `encFoldStep` frames the parameter/state
-pair before the record, and `subsetSumEncoding` frames the binary number list
-before its binary target. They preserve the existing encodings without defaults
+pair before the unframed record, and `subsetSumEncoding` frames the binary number list
+before its unframed binary target. They preserve the existing encodings without defaults
 or typeclass selection.
 
 The all-class search uses the same fixed streaming kernel over an actually
@@ -2480,10 +2488,9 @@ framing, setup and readback remain charged.
 
 This composes an actual global bit-clock/prefix-space profile, but does not prove
 the requested sharp source inequalities. The installed fallback no longer executes the per-pair retained/growing-buffer
-copy path. The normalized window phase still needs class-control/retained-emission
-composition before complete summed-time and simultaneous-space bounds follow.
-The individual count, reconstruction and window phase allowances do not by
-themselves establish that composition. The installed scalar prepass removes table
+copy path. The complete guarded callback is now normalized, but generated-label loop/retained-emission
+composition is still needed before complete summed-time and simultaneous-space bounds follow.
+The callback sum does not charge the enclosing fold or simultaneous ambient solver frames. The installed scalar prepass removes table
 reversal/reduction, and the preparation/readback boundary polynomial is proved. Logical
 occupancy or matching-pair totals do not remove those machine costs. The old
 complete solvers and their association-list/cubic-compaction costs are unchanged;

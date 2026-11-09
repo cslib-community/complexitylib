@@ -713,7 +713,7 @@ private noncomputable def emitCertificate : NativeCertificate
 readback form one uniform bit computation. All intermediate phase profiles are charged. -/
 noncomputable def recordsCertificate : NativeCertificate
     (fun q : (Input × Bool) × ℕ => records q.1.1 q.1.2 q.2)
-    (encPair (encPair encoding encBool) encNat) (encNatPairList) := by
+    (encPair (encPair encoding encBool) encNat) encNatPairList := by
   let original : NativeCertificate (id : (Input × Bool) × ℕ → _) taskEncoding taskEncoding :=
     .linear (.of_eq (fun _ => rfl))
   let query := NativeCertificate.ofPolyTime queryInput_polyTime
@@ -741,7 +741,7 @@ private noncomputable def orientationCertificate : NativeCertificate
 /-- Counts are computed before only the selected side is generated and retained. -/
 noncomputable def retainCertificate : NativeCertificate
     (fun q : Input × ℕ => retain q.1 q.2) (encPair encoding encNat)
-    (encNatPairList) := by
+    encNatPairList := by
   let original : NativeCertificate (id : Input × ℕ → _) classEncoding classEncoding :=
     .linear (.of_eq (fun _ => rfl))
   exact NativeCertificate.congr (recordsCertificate.comp
@@ -768,7 +768,7 @@ private noncomputable def countStepCertificate : NativeCertificate
 
 /-- Actual finite-counter prepass for both directions, with table and control copying charged. -/
 noncomputable def tableCertificate : NativeCertificate table encoding
-    (encNatPairList) := by
+    encNatPairList := by
   have clock : ComputableInPolyTime (fun input : Input => 2 ^ depth input) encoding encNat :=
     ComputableInPolyTime.binary_pow' (.const 2) depth_polyTime
   let loop := ClassStreaming.loopCertificate encoding (encList recEncoding)

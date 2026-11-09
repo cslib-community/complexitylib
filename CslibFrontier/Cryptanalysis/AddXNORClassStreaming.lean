@@ -563,7 +563,7 @@ noncomputable def countCertificate : NativeCertificate
 Polynomial callback workspace is not replaced by the retained-list length theorem. -/
 private noncomputable def collectCertificate : NativeCertificate
     (fun q : Input × Bool => collect q.1 q.2)
-    (encPair encoding encBool) (encNatPairList) :=
+    (encPair encoding encBool) encNatPairList :=
   loopCertificate taskEncoding (encList recordEncoding) _ (fun q => retainStep q.1 q.2) []
     limit_polyTime (NativeCertificate.ofPolyTime retainStep_polyTime)
 
@@ -571,7 +571,7 @@ private noncomputable def collectCertificate : NativeCertificate
 /-- Actual selected-class sorting charges input, output and sort callback temporaries. -/
 noncomputable def retainCertificate : NativeCertificate
     (fun q : Input × Bool => retain q.1 q.2)
-    (encPair encoding encBool) (encNatPairList) := by
+    (encPair encoding encBool) encNatPairList := by
   have hw : ComputableInPolyTime (fun q : Input × Bool => q.1.1.1.1)
       taskEncoding encUnary := by
     dsimp only [taskEncoding, encoding, SortedMeet.encoding]; fun_prop
@@ -640,8 +640,8 @@ private theorem probeStep_polyTime : ComputableInPolyTime
 /-- Opposite packed words are evaluated singly; the retained list is captured and charged. -/
 noncomputable def probeCertificate : NativeCertificate
     (fun q : (Input × Bool) × List (ℕ × ℕ) => probe q.1.1 q.1.2 q.2)
-    (encPair (encPair encoding encBool) (encNatPairList))
-    (encNatPairOption) := by
+    (encPair (encPair encoding encBool) encNatPairList)
+    encNatPairOption := by
   have hn : ComputableInPolyTime
       (fun q : (Input × Bool) × List (ℕ × ℕ) => limit q.1.1 (!q.1.2)) probeEncoding encNat := by
     have h : ComputableInPolyTime
@@ -667,7 +667,7 @@ noncomputable def orientationCertificate : NativeCertificate retainRight encodin
 
 /-- Count, retain one class, then stream/probe its opposite. No half-space producer is composed. -/
 noncomputable def searchCertificate : NativeCertificate search encoding
-    (encNatPairOption) := by
+    encNatPairOption := by
   let original : NativeCertificate (id : Input → _) encoding encoding :=
     .linear (.of_eq (fun _ => rfl))
   let selected := original.prod orientationCertificate
@@ -703,7 +703,7 @@ private noncomputable def allStepCertificate : NativeCertificate
 /-- The outer counter charges maxima over actual class executions, including all temporaries.
 The previous class's list is absent from its output; only counter/input/hit cross classes. -/
 noncomputable def allCertificate : NativeCertificate allSearch
-    (encPair SortedMeet.encoding encUnary) (encNatPairOption) := by
+    (encPair SortedMeet.encoding encUnary) encNatPairOption := by
   have hn : ComputableInPolyTime (fun q : SortedMeet.Input × ℕ => 2 ^ q.2)
       allEncoding encNat := by dsimp only [allEncoding]; fun_prop
   exact loopCertificate allEncoding (encOption recordEncoding) _ allStep none hn allStepCertificate

@@ -34,7 +34,7 @@ namespace Cslib.GenericRAM.NativeCertificate
 open Turing.MultiTapeTM
 
 /-- Fold callback input `((parameter, state), record)`. The parameter is framed before
-its state, and that pair is framed before the record. -/
+the unframed state, and that pair is framed before the unframed record. -/
 abbrev encFoldStep {π σ α : Type} (ep : π ↪ List Bool) (es : σ ↪ List Bool)
     (ea : α ↪ List Bool) : (π × σ) × α ↪ List Bool := encPair (encPair ep es) ea
 
