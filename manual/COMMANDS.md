@@ -7,7 +7,7 @@ which evidence is required. A zero exit status means that command's stated scope
 | Situation | Command | Result and next step |
 |---|---|---|
 | Cold editor checkout | `scripts/cache/ensure.sh` | Attempts cache restoration; if imports are still missing, build the affected target or follow the cache guide |
-| Check a complete named client | `scripts/build.sh ComplexityTests.NPCompleteness --wfail --iofail` | Builds that client and dependencies; inspect the first error before broadening the build |
+| Check a complete named client | `scripts/build.sh CslibFrontierTests.NPCompleteness --wfail --iofail` | Builds that client and dependencies; inspect the first error before broadening the build |
 | Check library changes and importing clients | `scripts/check.sh --quick` | Checks the manuals, then uses local Git comparison; unsupported layouts fall back to full checks; inspect the reported scope |
 | Validate the final source locally | `scripts/check.sh` | Checks the manuals and runs all six Lean gates; any failure prevents treating the run as full validation |
 | Add a library module | `lake exe mk_all` | Regenerates the library aggregate; inspect its diff and check the affected client |
@@ -29,14 +29,14 @@ The following read-only searches use `rg` (ripgrep). If it is unavailable, use e
 workspace search. After dependencies are present, search all three libraries:
 
 ```bash
-rg -n 'ComputableInPolyTime' Complexity ComplexityTests .lake/packages/cslib/Cslib
-rg -n 'iterate_spec|iterateWith_spec' Complexity .lake/packages/cslib/Cslib
-rg -n 'yourCandidateName' Complexity .lake/packages/cslib/Cslib .lake/packages/mathlib/Mathlib
+rg -n 'ComputableInPolyTime' CslibFrontier CslibFrontierTests .lake/packages/cslib/Cslib
+rg -n 'iterate_spec|iterateWith_spec' CslibFrontier .lake/packages/cslib/Cslib
+rg -n 'yourCandidateName' CslibFrontier .lake/packages/cslib/Cslib .lake/packages/mathlib/Mathlib
 ```
 
 A hit gives a source location to inspect, not an interchangeable theorem. Read its full
 statement and imports. If there are no hits, check spelling and namespace, related notions,
-the [model routes](workflows/finding-results.md) and [upstream coordination](../UPSTREAM.md)
+the [model routes](workflows/finding-results.md) and [upstream coordination](../CONTRIBUTING.md#upstreaming)
 before declaring the API absent.
 
 ## Vocabulary
