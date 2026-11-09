@@ -380,9 +380,11 @@ finite domain, `#zeros * q ≤ d * q ^ n`.
 The [checked clients](../../CslibFrontierTests/EdmondsMatching.lean) compute the `2 × 2`
 determinant of the complete graph, apply the test to a graph whose right vertex `1` is
 unmatched, and show that values from the one-element set `{0}` miss the matching of a single edge.
-The bound `|V| < |S|` comes from Schwartz–Zippel and is not sharp in general: the determinant has
-degree at most `1` in each variable, so over an integral domain any `S` with two elements detects a
-perfect matching (not formalized). Run
+The hypothesis `|V| < |S|` is not sharp. `exists_det_edmondsEval_ne_zero` applies Mathlib's
+`MvPolynomial.eq_zero_of_eval_zero_at_prod_finset` with the total degree `|V|` as a crude bound on
+each variable's degree. The determinant has degree at most `1` in each variable, so the same lemma
+shows that over an integral domain any `S` with two elements detects a perfect matching (not
+formalized). Run
 `scripts/build.sh CslibFrontierTests.EdmondsMatching`.
 
 For a general graph, import [Matching/Tutte.lean](../../CslibFrontier/Algorithms/Matching/Tutte.lean).
