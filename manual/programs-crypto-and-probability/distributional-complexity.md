@@ -1,10 +1,10 @@
 # Distributional problems, AvgP, HeurP and Levin reductions
 
-This page covers the distributional average-case framework of Levin, in the form given by Bogdanov and Trevisan [bt06][bt06]. The framework lives under [Complexity/Computability/Complexity/Classes/AverageCase/](../../Complexity/Computability/Complexity/Classes/AverageCase/). It is separate from the [Liu–Pass hardness predicates](average-case-hardness.md). Those predicates fix the uniform distribution and quantify over heuristics for a function. The distributional framework pairs a language with an arbitrary ensemble and studies classes of such pairs under reductions. A [proved bridge](#bridge-to-mild-hardness) connects the two.
+This page covers the distributional average-case framework of Levin, in the form given by Bogdanov and Trevisan [bt06][bt06]. The framework lives under [CslibFrontier/Computability/Complexity/Classes/AverageCase/](../../CslibFrontier/Computability/Complexity/Classes/AverageCase/). It is separate from the [Liu–Pass hardness predicates](average-case-hardness.md). Those predicates fix the uniform distribution and quantify over heuristics for a function. The distributional framework pairs a language with an arbitrary ensemble and studies classes of such pairs under reductions. A [proved bridge](#bridge-to-mild-hardness) connects the two.
 
 ## Ensembles and their efficiency classes
 
-[Ensemble](../../Complexity/Computability/Complexity/Classes/AverageCase/Ensemble.lean) is a family `dist : ℕ → PMF (List Bool)` with `dist n` supported on words of length exactly `n`. This is the setting of the source's uniform ensemble and of its compression argument (Claim 20). Algorithms read `n` as the length of their input. The source also allows `D_n` to be supported on words of several lengths (§2.3). Such ensembles are not modelled, and no reindexing bridge is provided.
+[Ensemble](../../CslibFrontier/Computability/Complexity/Classes/AverageCase/Ensemble.lean) is a family `dist : ℕ → PMF (List Bool)` with `dist n` supported on words of length exactly `n`. This is the setting of the source's uniform ensemble and of its compression argument (Claim 20). Algorithms read `n` as the length of their input. The source also allows `D_n` to be supported on words of several lengths (§2.3). Such ensembles are not modelled, and no reindexing bridge is provided.
 
 | Declaration | Meaning | Source |
 |---|---|---|
@@ -17,7 +17,7 @@ The source does not fix how cdf values are represented. Here they are exact rati
 
 ## Distributional classes
 
-[DistProblem](../../Complexity/Computability/Complexity/Classes/AverageCase/Distributional.lean) pairs `lang : Set (List Bool)` with `ens : Ensemble`. All four algorithm predicates require correctness only on the support of the ensemble. Each run is a total, deterministic polynomial-time computation on all inputs.
+[DistProblem](../../CslibFrontier/Computability/Complexity/Classes/AverageCase/Distributional.lean) pairs `lang : Set (List Bool)` with `ens : Ensemble`. All four algorithm predicates require correctness only on the support of the ensemble. Each run is a total, deterministic polynomial-time computation on all inputs.
 
 | Predicate / class | Algorithm type | Guarantee on each length `n` | Source |
 |---|---|---|---|
@@ -33,7 +33,7 @@ Levin's original definition bounds a moment `E[t(x)^ε]` of the running time. It
 
 ## Reductions and completeness
 
-[DistReduction L L'](../../Complexity/Computability/Complexity/Classes/AverageCase/Reduction.lean) bundles the following data:
+[DistReduction L L'](../../CslibFrontier/Computability/Complexity/Classes/AverageCase/Reduction.lean) bundles the following data:
 
 - a map `f : List Bool → List Bool` with `ComputableInPolyTime f encBits encBits`;
 - correctness `x ∈ L.lang ↔ f x ∈ L'.lang` on the support of `L.ens.dist n`;
@@ -51,14 +51,14 @@ Source Definition 17 asks for domination only on the target support. `Probabilit
 
 ## Levin's completeness theorem
 
-[BoundedHalting.distComplete_problem](../../Complexity/Computability/Complexity/Classes/AverageCase/Completeness.lean) proves Theorem 19 of the source, which goes back to Levin [lev86][lev86]: the distributional bounded halting problem `(BH, U^BH)` is complete for `DistNP` under `DistReduction`. Consequently `problem_mem_AvgP_iff` and `problem_mem_HeurP_iff` state that `(BH, U^BH)` lies in `AvgP` (resp. `HeurP`) exactly when all of `DistNP` does. The proof has four parts.
+[BoundedHalting.distComplete_problem](../../CslibFrontier/Computability/Complexity/Classes/AverageCase/Completeness.lean) proves Theorem 19 of the source, which goes back to Levin [lev86][lev86]: the distributional bounded halting problem `(BH, U^BH)` is complete for `DistNP` under `DistReduction`. Consequently `problem_mem_AvgP_iff` and `problem_mem_HeurP_iff` state that `(BH, U^BH)` lies in `AvgP` (resp. `HeurP`) exactly when all of `DistNP` does. The proof has four parts.
 
 | Part | Declarations | Source |
 |---|---|---|
-| Collapse of the uniform ensemble at a polynomial-time prefix code of headers: exact dyadic cdf, `PComp`, and probability `2^{-|h|}` for a padded header `h` | [HeaderParser](../../Complexity/Computability/Complexity/Classes/AverageCase/Collapse.lean), `collapse`, `ensemble`, `cdf_ensemble`, `pComp_ensemble`, `ensemble_dist_collapse` | definition of `U^BH_N`, §3.2 |
-| The problem: `BH`, its header code, `U^BH`, `BH ∈ NP` and `(BH, U^BH) ∈ DistNP` | [BoundedHalting](../../Complexity/Computability/Complexity/Classes/AverageCase/BoundedHalting.lean): `BH`, `encode`, `parser`, `uniformBH`, `uniformBH_dist_encode`, `uniformBH_pComp`, `BH_mem_NP`, `problem_mem_DistNP` | (3.1) |
-| Compression: `C` is computable in polynomial time and injective on each length, with `|C(x)| ≤ |x| + 1` and `2^{|C(x)|} D_n(x) ≤ 2` | [Compression](../../Complexity/Computability/Complexity/Classes/AverageCase/Compression.lean): `compress`, `compress_polyTime`, `compress_injective`, `length_compress_le`, `two_pow_length_compress_mul_le` | Claim 20 |
-| The reduction `x ↦ (c, code x, 1^{t(x)})` onto length `N(n)`, with domination factor `2^{2|c|+4} (6n+5)^2 (2n+1)^2` | [distHard_problem](../../Complexity/Computability/Complexity/Classes/AverageCase/Completeness.lean), `code`, `codeVerifier`, `two_pow_length_header_code_mul_le` | Theorem 19 |
+| Collapse of the uniform ensemble at a polynomial-time prefix code of headers: exact dyadic cdf, `PComp`, and probability `2^{-|h|}` for a padded header `h` | [HeaderParser](../../CslibFrontier/Computability/Complexity/Classes/AverageCase/Collapse.lean), `collapse`, `ensemble`, `cdf_ensemble`, `pComp_ensemble`, `ensemble_dist_collapse` | definition of `U^BH_N`, §3.2 |
+| The problem: `BH`, its header code, `U^BH`, `BH ∈ NP` and `(BH, U^BH) ∈ DistNP` | [BoundedHalting](../../CslibFrontier/Computability/Complexity/Classes/AverageCase/BoundedHalting.lean): `BH`, `encode`, `parser`, `uniformBH`, `uniformBH_dist_encode`, `uniformBH_pComp`, `BH_mem_NP`, `problem_mem_DistNP` | (3.1) |
+| Compression: `C` is computable in polynomial time and injective on each length, with `|C(x)| ≤ |x| + 1` and `2^{|C(x)|} D_n(x) ≤ 2` | [Compression](../../CslibFrontier/Computability/Complexity/Classes/AverageCase/Compression.lean): `compress`, `compress_polyTime`, `compress_injective`, `length_compress_le`, `two_pow_length_compress_mul_le` | Claim 20 |
+| The reduction `x ↦ (c, code x, 1^{t(x)})` onto length `N(n)`, with domination factor `2^{2|c|+4} (6n+5)^2 (2n+1)^2` | [distHard_problem](../../CslibFrontier/Computability/Complexity/Classes/AverageCase/Completeness.lean), `code`, `codeVerifier`, `two_pow_length_header_code_mul_le` | Theorem 19 |
 
 The formal statement differs from the source in these modelling choices:
 
@@ -72,7 +72,7 @@ The formal statement differs from the source in these modelling choices:
 
 ## Worst-case consequences: `DistNP ⊆ HeurP` implies `E = NE`
 
-Ben-David, Chor, Goldreich and Luby proved that `DistNP ⊆ AvgP` implies `NE = E` [bcgl92][bcgl92]. The primary text was not inspected. The attribution is checked against Bläser and Manthey [bm15][bm15], §5. The source works in Levin's model, with a single distribution on all words. The Lean statements use this page's length-indexed ensembles and the scheme classes `AvgP` and `HeurP`, and no bridge between the two models is formalized. [WorstCase](../../Complexity/Computability/Complexity/Classes/AverageCase/WorstCase.lean) proves the stronger `HeurP` form by a standard padding argument. The strengthening is not claimed as new. The hypothesis is not vacuous: `NP ⊆ P` gives `DistNP ⊆ AvgP` through `mem_AvgP_of_mem_P`.
+Ben-David, Chor, Goldreich and Luby proved that `DistNP ⊆ AvgP` implies `NE = E` [bcgl92][bcgl92]. The primary text was not inspected. The attribution is checked against Bläser and Manthey [bm15][bm15], §5. The source works in Levin's model, with a single distribution on all words. The Lean statements use this page's length-indexed ensembles and the scheme classes `AvgP` and `HeurP`, and no bridge between the two models is formalized. [WorstCase](../../CslibFrontier/Computability/Complexity/Classes/AverageCase/WorstCase.lean) proves the stronger `HeurP` form by a standard padding argument. The strengthening is not claimed as new. The hypothesis is not vacuous: `NP ⊆ P` gives `DistNP ⊆ AvgP` through `mem_AvgP_of_mem_P`.
 
 | Statement | Lean |
 |---|---|
@@ -83,15 +83,15 @@ Ben-David, Chor, Goldreich and Luby proved that `DistNP ⊆ AvgP` implies `NE = 
 | `DistNP ⊆ HeurP` implies that every `B ∈ NP` agrees with some `B' ∈ P` on all `frame u ++ 1^m` with `2^{|u|} ≤ m` | `expPaddedNPEasy_of_DistNP_subset_HeurP` |
 | `DistNP ⊆ HeurP` implies `NE ⊆ E`, `E = NE` and `EXP = NEXP`; `DistNP ⊆ AvgP` implies `E = NE`; `E ≠ NE` implies `¬ DistNP ⊆ HeurP` | `NE_subset_E_of_DistNP_subset_HeurP`, `E_eq_NE_of_DistNP_subset_HeurP`, `EXP_eq_NEXP_of_DistNP_subset_HeurP`, `E_eq_NE_of_DistNP_subset_AvgP`, `not_DistNP_subset_HeurP_of_E_ne_NE` |
 
-The padded ensemble is the collapse of the uniform ensemble (`HeaderParser.ensemble`) at the prefix code of framed words. Let `N = 2|u| + 1 + m` be the length of a padded word with `2^{|u|} ≤ m`. Its probability is at least `1/(2N²)`, so the scheme run with parameter `2N²` cannot err on it. The padding side is in [Padding](../../Complexity/Computability/Complexity/Classes/Padding.lean). Book's translation lemma uses the `P` decider of a padded problem only on padded instances. So `NTIME_subset_iUnion_DTIME_of_agree_padded` assumes only agreement on `frame u ++ 1^{t |u|}`. `ExpPaddedNPEasy` is that hypothesis for exponential padding, and `NE_subset_E_of_expPaddedNPEasy` and `NEXP_subset_EXP_of_expPaddedNPEasy` derive the collapses from it. The `NP ⊆ P` theorems (`NE_subset_E_of_NP_subset_P` and others) are now corollaries of these, with unchanged statements.
+The padded ensemble is the collapse of the uniform ensemble (`HeaderParser.ensemble`) at the prefix code of framed words. Let `N = 2|u| + 1 + m` be the length of a padded word with `2^{|u|} ≤ m`. Its probability is at least `1/(2N²)`, so the scheme run with parameter `2N²` cannot err on it. The padding side is in [Padding](../../CslibFrontier/Computability/Complexity/Classes/Padding.lean). Book's translation lemma uses the `P` decider of a padded problem only on padded instances. So `NTIME_subset_iUnion_DTIME_of_agree_padded` assumes only agreement on `frame u ++ 1^{t |u|}`. `ExpPaddedNPEasy` is that hypothesis for exponential padding, and `NE_subset_E_of_expPaddedNPEasy` and `NEXP_subset_EXP_of_expPaddedNPEasy` derive the collapses from it. The `NP ⊆ P` theorems (`NE_subset_E_of_NP_subset_P` and others) are now corollaries of these, with unchanged statements.
 
 ## Bridge to mild hardness
 
-[not_mildlyHardOnAverageDet_of_mem_HeurP](../../Complexity/Computability/Complexity/Classes/AverageCase/MildHardness.lean) shows the following. If `({x | b x = true}, Ensemble.uniform) ∈ HeurP`, then `fun x => (b x).toNat` is not `MildlyHardOnAverageDet`. The proof runs the scheme with confidence `2 p(n)`, which errs with probability at most `1/(2p(n)+1) < 1/p(n)`. Because the bound holds at every length (`exists_heuristic_of_mem_HeurP`), `not_mildlyHardOnAverageIO_of_mem_HeurP` also rules out infinitely-often hardness. `not_mildlyHardOnAverage_of_mem_HeurP` gives the strict-PPT version through the existing PPT-to-deterministic specialization. Only Boolean targets under the uniform ensemble are bridged.
+[not_mildlyHardOnAverageDet_of_mem_HeurP](../../CslibFrontier/Computability/Complexity/Classes/AverageCase/MildHardness.lean) shows the following. If `({x | b x = true}, Ensemble.uniform) ∈ HeurP`, then `fun x => (b x).toNat` is not `MildlyHardOnAverageDet`. The proof runs the scheme with confidence `2 p(n)`, which errs with probability at most `1/(2p(n)+1) < 1/p(n)`. Because the bound holds at every length (`exists_heuristic_of_mem_HeurP`), `not_mildlyHardOnAverageIO_of_mem_HeurP` also rules out infinitely-often hardness. `not_mildlyHardOnAverage_of_mem_HeurP` gives the strict-PPT version through the existing PPT-to-deterministic specialization. Only Boolean targets under the uniform ensemble are bridged.
 
 ## Checked examples
 
-[ComplexityTests/AverageCaseDistributional.lean](../../ComplexityTests/AverageCaseDistributional.lean) checks the following:
+[CslibFrontierTests/AverageCaseDistributional.lean](../../CslibFrontierTests/AverageCaseDistributional.lean) checks the following:
 
 - uniform `PComp` and `PSamp`, and a concrete cdf value;
 - bit complementation as a dominating reduction (`flipReduction`, factor `1`);
@@ -100,14 +100,14 @@ The padded ensemble is the collapse of the uniform ensemble (`HeaderParser.ensem
 - membership of `(Set.univ, uniform)` in `AvgP`, `HeurP` and `DistNP`;
 - a bridge instance.
 
-[ComplexityTests/AverageCaseCompleteness.lean](../../ComplexityTests/AverageCaseCompleteness.lean) checks the following:
+[CslibFrontierTests/AverageCaseCompleteness.lean](../../CslibFrontierTests/AverageCaseCompleteness.lean) checks the following:
 
 - the prefix and predecessor facts on concrete words, and a common-prefix split of `5 < 6`;
 - Claim 20 for the uniform ensemble, under which no word is heavy;
 - the header length and the exact probability `2^{-9}` of a concrete `BH` instance, and that the empty word is not in `BH`;
 - `(BH, U^BH) ∈ DistNP`, completeness, and the `AvgP`/`HeurP` corollaries.
 
-[ComplexityTests/AverageCaseWorstCase.lean](../../ComplexityTests/AverageCaseWorstCase.lean) checks the following:
+[CslibFrontierTests/AverageCaseWorstCase.lean](../../CslibFrontierTests/AverageCaseWorstCase.lean) checks the following:
 
 - the exact probability `2^{-3}` of the padded word `frame [true] ++ 1^2` under `PaddedFrame.ensemble`; which concrete words begin with a framed word; `(B, PaddedFrame.ensemble) ∈ DistNP` for `B ∈ NP`;
 - the threshold of `correct_of_lt` is sharp: a heuristic scheme for `(∅, U)` errs on `[true]`, whose probability is exactly `1/(1+1)`;
