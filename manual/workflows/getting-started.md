@@ -16,7 +16,7 @@ Do not replace them with the historical survey's pins.
 
 ```bash
 git clone https://github.com/cslib-community/cslib-frontier.git
-cd complexitylib
+cd cslib-frontier
 scripts/build.sh --wfail --iofail
 ```
 
@@ -38,7 +38,7 @@ run the helper before using MCP in a cold checkout.
 
 ## Read the directory names correctly
 
-The package is `complexitylib`; imports start with `CslibFrontier.`. Most declarations live in `Cslib` namespaces; the Turing-machine API uses `Turing`. A module path and its declarations' namespace therefore need not have the same first component.
+The package is `cslib-frontier`; imports start with `CslibFrontier.`. Most declarations live in `Cslib` namespaces; the Turing-machine API uses `Turing`. A module path and its declarations' namespace therefore need not have the same first component.
 
 | Place | Use it for |
 |---|---|
