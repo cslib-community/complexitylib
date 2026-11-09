@@ -25,7 +25,7 @@ theorem count_spec :
     ComputableInPolyTime.id'.tidy.polyBounded_length
   intro n k a hk ha
   rw [ha]
-  exact ComputableTidilyInO.length_encNat_mono hk
+  exact length_encNat_mono hk
 
 /-- The raw bound interface retains the original input across all iterations. -/
 def copyFlag (p : ℕ × Bool) : Bool := p.1.fold (fun _ _ _ => p.2) false

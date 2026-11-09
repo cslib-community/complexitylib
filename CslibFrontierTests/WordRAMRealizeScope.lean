@@ -13,8 +13,8 @@ import CslibFrontier.Tactic.Realize
 /-!
 # Importing realization machinery does not activate its tactic
 
-A private import, including one through an abstract's bridge, must not make `realize` available
-outside the Word-RAM scope. Opening either the namespace or its scope activates the same tactic.
+A private import must not make `realize` available outside the Word-RAM scope. Opening either the
+namespace or its scope activates the same tactic.
 -/
 
 public section

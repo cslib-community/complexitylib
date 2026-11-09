@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Protocols.VOLE.Basic
 public import CslibFrontier.Computability.Interactive.Basic
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 
@@ -98,15 +99,11 @@ theorem voleWorld_cached_run {α : Type} (c : VOLECorrelation F n)
   · cases q with
     | inl q =>
       cases q
-      simp only [oracle, OracleComp.sumHandler, StateT.lift, PMF.monad_bind_eq_bind,
-        PMF.monad_pure_eq_pure, PMF.pure_bind, PMF.pure_map,
-        voleWorld_cached_sender]
+      simp only [pmf_norm, oracle, OracleComp.sumHandler, StateT.lift, voleWorld_cached_sender]
       rfl
     | inr q =>
       cases q
-      simp only [oracle, OracleComp.sumHandler, StateT.lift, PMF.monad_bind_eq_bind,
-        PMF.monad_pure_eq_pure, PMF.pure_bind, PMF.pure_map,
-        voleWorld_cached_receiver]
+      simp only [pmf_norm, oracle, OracleComp.sumHandler, StateT.lift, voleWorld_cached_receiver]
       rfl
 
 /-- Sampling the cached correlation before execution preserves every output law, including
@@ -129,12 +126,10 @@ theorem voleWorld_eval {α : Type}
   have h := ProbOracleComp.run_interpret_simulation (voleWorld F n).impl oracle relate
     (fun q state => ?_) program none
   · have houtput := congrArg (fun law => law.map Prod.fst) h
-    simp only [PMF.map, Function.comp_def, PMF.bind_bind, PMF.pure_bind,
-      PMF.bind_const] at houtput
+    simp only [pmf_norm, PMF.map, PMF.bind_const] at houtput
     refine houtput.trans ?_
     change (voleIdealDist F n).bind _ = _
-    congr 1
-    funext c
+    congr 1 with c : 1
     change ((OracleComp.interpret
       (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       program).run c).map Prod.fst = _

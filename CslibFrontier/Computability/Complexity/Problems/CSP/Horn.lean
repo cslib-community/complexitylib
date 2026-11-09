@@ -70,68 +70,36 @@ theorem exists_dualHornCNF_templates (arity : Rel → ℕ) (sem : Rel → List B
   exact ⟨fun R => (φ R).relabel Fin.val, CSP.cnfTemplates_relabel_fin heval,
     fun R => (CNF.isDualHorn_relabel _ _).mpr (hφ R)⟩
 
-private def guardedCNF (arity : Rel → ℕ) (template : Rel → CNF ℕ)
-    (F : CSP Rel ℕ) : CNF ℕ :=
-  if F.validArity arity then F.instantiateCNF 0 template else [[]]
-
 /-- Fixed correct Horn templates give a native polynomial-time reduction to ordinary HornSAT.
 The guard rejects every malformed scope, regardless of the semantics on lists of wrong length. -/
 theorem polyTimeReducible_HornSAT_of_templates [Finite Rel] (encRel : Rel ↪ List Bool)
     (arity : Rel → ℕ) (sem : Rel → List Bool → Bool) (template : Rel → CNF ℕ)
     (ht : CSP.CNFTemplates arity sem template) (hh : ∀ R, (template R).IsHorn) :
     PolyTimeReducible (encCSP encRel encNat) encCNF (CSPSAT arity sem) HornSAT := by
-  have hp : ComputableInPolyTime (guardedCNF arity template)
-      (encCSP encRel encNat) encCNF :=
-    (Cslib.Complexity.CSP.computableInPolyTime_validArity encRel arity).ite
-      (CSP.computableInPolyTime_instantiateCNF encRel template)
-      (ComputableInPolyTime.const [[]])
-  refine ⟨guardedCNF arity template, hp, fun F => ?_⟩
-  by_cases hF : F.WellFormed arity
-  · have hsyntax : (F.instantiateCNF 0 template).IsHorn := by
-      intro c hc
-      obtain ⟨d, _, hd⟩ := List.mem_flatMap.mp hc
-      exact ((CNF.isHorn_relabel _ _).mpr (hh d.1)) c hd
-    have heq : guardedCNF arity template F = F.instantiateCNF 0 template := by
-      simp [guardedCNF, (CSP.validArity_eq_true_iff arity F).mpr hF]
-    change (F.WellFormed arity ∧ F.Satisfiable sem) ↔
-      (guardedCNF arity template F).IsHorn ∧ (guardedCNF arity template F).Satisfiable
-    rw [heq, CSP.satisfiable_instantiateCNF ht 0 hF]
-    exact ⟨fun h => ⟨hsyntax, h.2⟩, fun h => ⟨hF, h.2⟩⟩
-  · have hguard : F.validArity arity = false := by
-      cases hg : F.validArity arity
-      · rfl
-      · exact (hF ((CSP.validArity_eq_true_iff arity F).mp hg)).elim
-    simp [guardedCNF, hguard, mem_iff, hF, HornSAT, CNF.Satisfiable, CNF.eval, Clause.eval]
+  refine polyTimeReducible_of_guard encRel arity sem [[]]
+    (CSP.computableInPolyTime_instantiateCNF encRel template) (fun F hF => ?_)
+    (by simp [HornSAT, CNF.Satisfiable, CNF.eval, Clause.eval])
+  have hsyntax : (F.instantiateCNF 0 template).IsHorn := by
+    intro c hc
+    obtain ⟨d, _, hd⟩ := List.mem_flatMap.mp hc
+    exact ((CNF.isHorn_relabel _ _).mpr (hh d.1)) c hd
+  exact (CSP.satisfiable_instantiateCNF ht 0 hF).symm.trans (and_iff_right hsyntax).symm
 
 /-- Fixed correct dual Horn templates give a native polynomial-time reduction to dual HornSAT. -/
 theorem polyTimeReducible_DualHornSAT_of_templates [Finite Rel] (encRel : Rel ↪ List Bool)
     (arity : Rel → ℕ) (sem : Rel → List Bool → Bool) (template : Rel → CNF ℕ)
     (ht : CSP.CNFTemplates arity sem template) (hh : ∀ R, (template R).IsDualHorn) :
     PolyTimeReducible (encCSP encRel encNat) encCNF (CSPSAT arity sem) DualHornSAT := by
-  have hp : ComputableInPolyTime (guardedCNF arity template)
-      (encCSP encRel encNat) encCNF :=
-    (Cslib.Complexity.CSP.computableInPolyTime_validArity encRel arity).ite
-      (CSP.computableInPolyTime_instantiateCNF encRel template)
-      (ComputableInPolyTime.const [[]])
-  refine ⟨guardedCNF arity template, hp, fun F => ?_⟩
-  by_cases hF : F.WellFormed arity
-  · have hsyntax : (F.instantiateCNF 0 template).IsDualHorn := by
-      apply (CNF.isDualHorn_iff _).mpr
-      intro c hc
-      obtain ⟨d, _, hd⟩ := List.mem_flatMap.mp hc
-      exact (CNF.isDualHorn_iff _).mp
-        ((CNF.isDualHorn_relabel _ _).mpr (hh d.1)) c hd
-    have heq : guardedCNF arity template F = F.instantiateCNF 0 template := by
-      simp [guardedCNF, (CSP.validArity_eq_true_iff arity F).mpr hF]
-    change (F.WellFormed arity ∧ F.Satisfiable sem) ↔
-      (guardedCNF arity template F).IsDualHorn ∧ (guardedCNF arity template F).Satisfiable
-    rw [heq, CSP.satisfiable_instantiateCNF ht 0 hF]
-    exact ⟨fun h => ⟨hsyntax, h.2⟩, fun h => ⟨hF, h.2⟩⟩
-  · have hguard : F.validArity arity = false := by
-      cases hg : F.validArity arity
-      · rfl
-      · exact (hF ((CSP.validArity_eq_true_iff arity F).mp hg)).elim
-    simp [guardedCNF, hguard, mem_iff, hF, DualHornSAT, CNF.Satisfiable, CNF.eval, Clause.eval]
+  refine polyTimeReducible_of_guard encRel arity sem [[]]
+    (CSP.computableInPolyTime_instantiateCNF encRel template) (fun F hF => ?_)
+    (by simp [DualHornSAT, CNF.Satisfiable, CNF.eval, Clause.eval])
+  have hsyntax : (F.instantiateCNF 0 template).IsDualHorn := by
+    apply (CNF.isDualHorn_iff _).mpr
+    intro c hc
+    obtain ⟨d, _, hd⟩ := List.mem_flatMap.mp hc
+    exact (CNF.isDualHorn_iff _).mp
+      ((CNF.isDualHorn_relabel _ _).mpr (hh d.1)) c hd
+  exact (CSP.satisfiable_instantiateCNF ht 0 hF).symm.trans (and_iff_right hsyntax).symm
 
 /-- **Native polynomial-time tractability of a fixed finite AND-preserved Boolean language.** -/
 theorem mem_P_of_and [Finite Rel] (encRel : Rel ↪ List Bool) (arity : Rel → ℕ)

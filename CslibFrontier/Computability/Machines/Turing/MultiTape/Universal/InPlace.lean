@@ -492,8 +492,7 @@ public lemma foldEnd_inO : ComputableTidilyInO foldEnd eSt eSt
     (g := foldEnd) fun s => rfl).mono 100 (fun s => ?_) fun s => ?_
   all_goals
     have hr : (encNat s.2.1).length ≤ (eSt s).length := by simp only [length_encPair]; omega
-    have h₁ : ((encNat s.2.1).length + 1) ^ 2 ≤ ((eSt s).length + 1) ^ 2 :=
-      Nat.pow_le_pow_left (by omega) 2
+    have h₁ : ((encNat s.2.1).length + 1) ^ 2 ≤ ((eSt s).length + 1) ^ 2 := by gcongr
     have h₂ : ((eSt s).length + 1) ^ 2 ≤ ((eSt s).length + 1) ^ 3 :=
       Nat.pow_le_pow_right (by omega) (by omega)
     have hL : (eSt s).length + 1 ≤ ((eSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
@@ -685,8 +684,8 @@ public lemma length_eSt_le (d : Desc) (x : List ℕ) (t i j : ℕ) :
     gcongr)
   have hpos := (inv_iterate d x (min i t)).1.inputPos
   obtain ⟨hk, hcur⟩ := scan_take x (run d x (min i t)).inputPos 0 j
-  have hr := ComputableTidilyInO.length_encNat_mono (show t - i ≤ t by omega)
-  have hk' := ComputableTidilyInO.length_encNat_mono (hk.trans hpos)
+  have hr := length_encNat_mono (show t - i ≤ t by omega)
+  have hk' := length_encNat_mono (hk.trans hpos)
   simp only [length_encPair, encUnary_apply, List.length_replicate, stateSpace, descLen] at *
   omega
 

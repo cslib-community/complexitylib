@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.LogSpace.Randomized
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.PairedPorts
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.FairCoin.PairedPorts.LogSpace
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.CounterBounds
+import CslibFrontier.Foundations.Data.List.IdxOf
 
 /-!
 # Paired-port time-layered reduction for randomized logarithmic space
@@ -90,16 +91,6 @@ private theorem mem_of_map_val_iff {N : ℕ} {l : List (Fin N)} {lNat : List ℕ
     exact ⟨x, hx, rfl⟩
   · rintro ⟨y, hy, hyx⟩
     exact Fin.ext hyx ▸ hy
-
-private theorem idxOf_eq_idxOf_map_val {N : ℕ} :
-    ∀ (l : List (Fin N)) (x : Fin N), (l.map Fin.val).idxOf x.val = l.idxOf x
-  | [], _ => rfl
-  | y :: ys, x => by
-    have hbeq : (y.val == x.val) = (y == x) := by simp [Fin.ext_iff]
-    simp only [List.map_cons, List.idxOf_cons, hbeq]
-    split_ifs
-    · rfl
-    · exact congrArg Nat.succ (idxOf_eq_idxOf_map_val ys x)
 
 end ListFinHelpers
 
@@ -221,7 +212,7 @@ theorem compactPairedPorts_outPort_val (machine : MultiTapePTM k Bool State)
       exact ⟨hg, rfl⟩
     rw [hsome, Option.map_some]
     dsimp only [q]
-    rw [← idxOf_eq_idxOf_map_val, map_val_compactInSources]
+    rw [← List.idxOf_map_of_injective Fin.val_injective, map_val_compactInSources]
 
 /-- Natural-number value of `(compactPairedPorts machine R B w).inPort v q`. -/
 theorem compactPairedPorts_inPort_val (machine : MultiTapePTM k Bool State)
@@ -259,7 +250,7 @@ theorem compactPairedPorts_inPort_val (machine : MultiTapePTM k Bool State)
       exact ⟨hg, rfl⟩
     rw [hsome, Option.map_some]
     dsimp only [p]
-    rw [← idxOf_eq_idxOf_map_val, map_val_compactOutTargets]
+    rw [← List.idxOf_map_of_injective Fin.val_injective, map_val_compactOutTargets]
 
 /-- Outgoing port weight of `compactPairedPorts` in terms of `coinCountWithSymbol`. -/
 theorem compactPairedPorts_outWeight (machine : MultiTapePTM k Bool State)
@@ -477,14 +468,12 @@ theorem exists_compactTimeLayer_of_mem_RL (h : A ∈ RL enc) :
         p ∈ Set.Icc 0 1 ∧
         (a ∈ A → 1 / 2 ≤ p x₀) ∧ (a ∉ A → p x₀ = 0) := by
   classical
-  obtain ⟨k, State, _, M, c, hM⟩ := h
+  obtain ⟨k, State, _, M, c, d, hM⟩ := exists_polyClock_of_mem_RL h
   let : Fintype State := Fintype.ofFinite State
-  obtain ⟨d, hd⟩ := M.toNTM.exists_runsInTime_polynomial_of_runsInSpace_log c
   refine ⟨k, State, inferInstance, M, c, d, fun a => ?_⟩
-  obtain ⟨hs, t, ht, hmem, hnot⟩ := hM a
+  obtain ⟨hs, hT, hmem, hnot⟩ := hM a
   refine ⟨hs, ?_⟩
   dsimp only
-  have hT := hd hs ht
   have hP0 := compactCoinMatrix_nonneg (machine := M) (R := ℝ)
     (radix (radixExponent State c) (enc a).length) (enc a)
   have hP1 := compactCoinMatrix_mulVec_one_le (machine := M) (R := ℝ)
@@ -501,21 +490,13 @@ theorem exists_compactTimeLayer_of_mem_RL (h : A ∈ RL enc) :
     dsimp only [Function.comp_apply]
     split_ifs <;> simp
   · intro ha
-    rw [finTimeLayer_compactCoinMatrix_acceptance]
-    have hn := (M.two_pow_mul_le_iff ht hT 1 2).mp (by simpa only [one_mul] using hmem ha)
-    simp only [one_mul] at hn
-    have hc : (2 : ℝ) ^ (2 * (2 * ((enc a).length + 1)) ^ d) ≤
-        2 * (M.acceptCoins (enc a) (2 * (2 * ((enc a).length + 1)) ^ d) : ℝ) := by
-      exact_mod_cast hn
-    rw [le_div_iff₀ (by positivity)]
+    rw [finTimeLayer_compactCoinMatrix_acceptance, le_div_iff₀ (by positivity)]
+    have hc := (Nat.cast_le (α := ℝ)).mpr (hmem ha)
+    push_cast at hc
     linarith
   · intro ha
     rw [finTimeLayer_compactCoinMatrix_acceptance]
-    have heq := M.acceptCoins_mul_two_pow ht hT
-    rw [hnot ha, zero_mul] at heq
-    have h0 : M.acceptCoins (enc a) (2 * (2 * ((enc a).length + 1)) ^ d) = 0 :=
-      (Nat.mul_eq_zero.mp heq).resolve_right (Nat.two_pow_pos t).ne'
-    simp [h0]
+    simp [hnot ha]
 
 /-- A Turing-machine-independent family of polynomial-size strict-upper-triangular substochastic
 matrices over `ℝ` indexed by `a : α` (under encoding `enc`), equipped with bounded-degree paired
@@ -808,30 +789,21 @@ theorem exists_pairedTimeLayerFamily_of_mem_BPL (h : A ∈ BPL enc) :
       ∀ a, (a ∈ A → 2 / 3 ≤ F.potential a (F.start a)) ∧
         (a ∉ A → F.potential a (F.start a) ≤ 1 / 3) := by
   classical
-  obtain ⟨k, State, _, M, c, hM⟩ := h
+  obtain ⟨k, State, _, M, c, d, hM⟩ := exists_polyClock_of_mem_BPL h
   let : Fintype State := Fintype.ofFinite State
-  obtain ⟨d, hd⟩ := M.toNTM.exists_runsInTime_polynomial_of_runsInSpace_log c
-  let hs : ∀ a, M.toNTM.RunsInSpace (enc a) (c * (Nat.log2 (enc a).length + 1)) :=
-    fun a => (hM a).1
-  refine ⟨PairedTimeLayerFamily.ofMachine enc M c d hs, fun a => ?_⟩
-  obtain ⟨_, t, ht, hmem, hnot⟩ := hM a
-  have hT := hd (hs a) ht
+  refine ⟨PairedTimeLayerFamily.ofMachine enc M c d fun a => (hM a).1, fun a => ?_⟩
+  obtain ⟨_, _, hmem, hnot⟩ := hM a
   rw [PairedTimeLayerFamily.ofMachine_potential_start]
   constructor
   · intro ha
-    have hn := (M.two_pow_mul_le_iff ht hT 2 3).mp (hmem ha)
-    have hc : (2 : ℝ) * 2 ^ (2 * (2 * ((enc a).length + 1)) ^ d) ≤
-        3 * (M.acceptCoins (enc a) (2 * (2 * ((enc a).length + 1)) ^ d) : ℝ) := by
-      exact_mod_cast hn
     rw [le_div_iff₀ (by positivity)]
+    have hc := (Nat.cast_le (α := ℝ)).mpr (hmem ha)
+    push_cast at hc
     linarith
   · intro ha
-    have hn := (M.mul_le_two_pow_iff ht hT 1 3).mp (by simpa only [one_mul] using hnot ha)
-    simp only [one_mul] at hn
-    have hc : (3 : ℝ) * (M.acceptCoins (enc a) (2 * (2 * ((enc a).length + 1)) ^ d) : ℝ) ≤
-        2 ^ (2 * (2 * ((enc a).length + 1)) ^ d) := by
-      exact_mod_cast hn
     rw [div_le_iff₀ (by positivity)]
+    have hc := (Nat.cast_le (α := ℝ)).mpr (hnot ha)
+    push_cast at hc
     linarith
 
 /-- **Paired-port time-layered reduction for `RL` (Lemma 2.1 of [OpenAI2026LogSpace]).**
@@ -842,29 +814,18 @@ theorem exists_pairedTimeLayerFamily_of_mem_RL (h : A ∈ RL enc) :
       ∀ a, (a ∈ A → 1 / 2 ≤ F.potential a (F.start a)) ∧
         (a ∉ A → F.potential a (F.start a) = 0) := by
   classical
-  obtain ⟨k, State, _, M, c, hM⟩ := h
+  obtain ⟨k, State, _, M, c, d, hM⟩ := exists_polyClock_of_mem_RL h
   let : Fintype State := Fintype.ofFinite State
-  obtain ⟨d, hd⟩ := M.toNTM.exists_runsInTime_polynomial_of_runsInSpace_log c
-  let hs : ∀ a, M.toNTM.RunsInSpace (enc a) (c * (Nat.log2 (enc a).length + 1)) :=
-    fun a => (hM a).1
-  refine ⟨PairedTimeLayerFamily.ofMachine enc M c d hs, fun a => ?_⟩
-  obtain ⟨_, t, ht, hmem, hnot⟩ := hM a
-  have hT := hd (hs a) ht
+  refine ⟨PairedTimeLayerFamily.ofMachine enc M c d fun a => (hM a).1, fun a => ?_⟩
+  obtain ⟨_, _, hmem, hnot⟩ := hM a
   rw [PairedTimeLayerFamily.ofMachine_potential_start]
   constructor
   · intro ha
-    have hn := (M.two_pow_mul_le_iff ht hT 1 2).mp (by simpa only [one_mul] using hmem ha)
-    simp only [one_mul] at hn
-    have hc : (2 : ℝ) ^ (2 * (2 * ((enc a).length + 1)) ^ d) ≤
-        2 * (M.acceptCoins (enc a) (2 * (2 * ((enc a).length + 1)) ^ d) : ℝ) := by
-      exact_mod_cast hn
     rw [le_div_iff₀ (by positivity)]
+    have hc := (Nat.cast_le (α := ℝ)).mpr (hmem ha)
+    push_cast at hc
     linarith
   · intro ha
-    have heq := M.acceptCoins_mul_two_pow ht hT
-    rw [hnot ha, zero_mul] at heq
-    have h0 : M.acceptCoins (enc a) (2 * (2 * ((enc a).length + 1)) ^ d) = 0 :=
-      (Nat.mul_eq_zero.mp heq).resolve_right (Nat.two_pow_pos t).ne'
-    simp [h0]
+    simp [hnot ha]
 
 end Cslib.Complexity

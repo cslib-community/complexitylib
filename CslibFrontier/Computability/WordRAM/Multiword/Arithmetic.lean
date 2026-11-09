@@ -221,10 +221,8 @@ private theorem exec_borrow_framed {w : ℕ} (hw : 2 ≤ w) (bs ds : List (Fin (
     simp only [z, Data.set_regs, Function.update_apply, hne.1, hne.2.1, hne.2.2,
       ↓reduceIte]
   have hzvalue (es : List (Fin (r + 4))) (hes : ∀ i ∈ es, IsDigit i) :
-      Multiword.value (radix w) z es = Multiword.value (radix w) x es := by
-    unfold Multiword.value
-    congr 1
-    exact List.map_congr_left fun i hi => hz i (hes i hi)
+      Multiword.value (radix w) z es = Multiword.value (radix w) x es :=
+    Multiword.value_congr fun i hi => hz i (hes i hi)
   obtain ⟨y, he, hyd, hyc, hyeq, hyf⟩ := exec_digits hw bs ds hlen hbs hds hnd hdis z
     (by simp [z, base, one, borrow]) (by simp [z, one, borrow])
     (fun i hi => by rw [hz i (hbs i hi)]; exact hb i hi)
@@ -307,10 +305,7 @@ theorem exec_truncating {w : ℕ} (hw : 2 ≤ w) (bs ds : List (Fin (r + 4)))
       have := one_lt_radix hw
       omega
     · rw [Nat.sub_eq_zero_of_le (Nat.le_of_lt hlt)]
-      unfold Multiword.value
-      have hm : ds.map y.regs = List.replicate ds.length 0 := by
-        simpa only [List.map_const'] using List.map_congr_left hy
-      rw [hm, Nat.ofDigits_replicate_zero]
+      exact Multiword.value_eq_zero_of_forall hy
   · have hc0 : z.regs borrow = 0 := by omega
     let y := z.set borrow (z.regs borrow)
     have hey : Exec w (.op (.copy (B := .standard) borrow borrow)) z y 1 := by
@@ -320,10 +315,8 @@ theorem exec_truncating {w : ℕ} (hw : 2 ≤ w) (bs ds : List (Fin (r + 4)))
     have he' := he.seq hbranch
     have hyi (i : Fin (r + 4)) : y.regs i = z.regs i := by
       simp [y, Data.set_regs]
-    have hyvalue : Multiword.value (radix w) y ds = Multiword.value (radix w) z ds := by
-      unfold Multiword.value
-      congr 1
-      exact List.map_congr_left fun i _ => hyi i
+    have hyvalue : Multiword.value (radix w) y ds = Multiword.value (radix w) z ds :=
+      Multiword.value_congr fun i _ => hyi i
     refine ⟨y, ⟨_, ?_, he'⟩, ?_, ?_, rfl.trans hzf.1,
       fun i hi hid => he'.regs_eq (preserves_truncatingProgram w bs ds i hi hid)⟩
     · exact Nat.add_le_add_left (le_max_right _ _) _

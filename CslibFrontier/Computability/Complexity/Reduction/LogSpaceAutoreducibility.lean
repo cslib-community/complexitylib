@@ -133,11 +133,7 @@ theorem LogSpaceBTTAutoreducible.logSpaceBTTReducible
 theorem logSpaceKTruthTableAutoreducible_one_of_complement_witness {f : α → α}
     (hf : ComputableInLogSpace f encA encA) (hA : ∀ a, a ∉ A ↔ f a ∈ A) :
     LogSpaceKTruthTableAutoreducible 1 encA A := by
-  have hne : ∀ a, f a ≠ a := by
-    intro a heq
-    have h := hA a
-    rw [heq] at h
-    tauto
+  have hne : ∀ a, f a ≠ a := by grind
   refine ⟨fun _ => 1, fun p => f p.1, fun p => !p.2.headD false,
     ComputableInLogSpace.const 1, by fun_prop, by fun_prop,
     fun _ => le_rfl, fun a _ _ => hne a, fun a => ?_⟩

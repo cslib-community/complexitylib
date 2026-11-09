@@ -244,7 +244,7 @@ theorem consecutivePairs_length_collarPrefixRoute {s : PortAssignment} (hs : s.D
 
 /-- A placed core route avoiding an inner port is disjoint from that port's annular connector.
 -/
-theorem disjoint_collarRoute_connector {s : PortAssignment} (hs : s.Distinct)
+theorem disjoint_collarRoute_connector {s : PortAssignment}
     {i : Fin 3} {r : Route}
     (hb : ∀ q ∈ r, 0 ≤ q.1 ∧ q.1 ≤ 180000 ∧ 0 ≤ q.2 ∧ q.2 ≤ 180000)
     (hi : realPoint (innerTemplatePort i) ∉ support r) :
@@ -252,6 +252,19 @@ theorem disjoint_collarRoute_connector {s : PortAssignment} (hs : s.Distinct)
       (support ((collarRoutes s).getD i [])) := by
   rw [Set.disjoint_left]
   intro p hp hq
+  by_cases hs : s.Distinct
+  swap
+  · -- Repeated sides have no table entry, so the connector is empty.
+    have hall : ∀ a ∈ collarAssignments, a.Distinct := by decide
+    have hn : s ∉ collarAssignments := fun hm => hs (hall s hm)
+    have hnil : collarRoutes s = [] := by
+      rw [collarRoutes, List.idxOf_eq_length hn, List.getD_eq_getElem?_getD,
+        List.getElem?_eq_none (by decide : collarRouteTable.length ≤ collarAssignments.length),
+        Option.getD_none]
+    rw [hnil, List.getD_nil] at hq
+    rcases hq with ⟨_, ha, _⟩ | ⟨_, he, _⟩
+    · exact List.not_mem_nil ha
+    · exact List.not_mem_nil he
   have hport := collar_core_contact hs hq (collarRoute_in_innerBox _ hb hp)
   have he : collarReal (collarReflected s) (realPoint (innerTemplatePort i)) =
       realPoint (collarInnerPort (collarReflected s) i) := by
@@ -281,8 +294,8 @@ theorem collarPrefixRoute_contact {s : PortAssignment} (hs : s.Distinct)
     have hxy := collarReal_injective (collarReflected s) (hxp.trans hyp.symm)
     subst y
     exact ⟨x, hx, hy, hxp.symm⟩
-  · exact False.elim (Set.disjoint_left.mp (disjoint_collarRoute_connector hs hbr hri) hp hq)
-  · exact False.elim (Set.disjoint_left.mp (disjoint_collarRoute_connector hs hbt htj) hq hp)
+  · exact False.elim (Set.disjoint_left.mp (disjoint_collarRoute_connector hbr hri) hp hq)
+  · exact False.elim (Set.disjoint_left.mp (disjoint_collarRoute_connector hbt htj) hq hp)
   · exact False.elim (Set.disjoint_left.mp (collar_disjoint hs hij) hp hq)
 
 /-- An extended prefix avoids a placed inner-template vertex when its local route avoids

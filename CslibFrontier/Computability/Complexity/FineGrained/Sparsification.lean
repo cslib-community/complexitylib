@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.FineGrained.Exponents
+public import CslibFrontier.Computability.Complexity.FineGrained.SparsificationRounds
 public import CslibFrontier.Logics.Propositional.ClauseSet.Sparsification.Tree
 public import CslibFrontier.Logics.Propositional.ClauseSet.Sparsification.PolyTime
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
@@ -48,7 +49,8 @@ constant for the thresholds given by
 `Cslib.Logic.PL.ClauseSet.Sparsification.exists_sum_choose_le`. Meanwhile the stack holds at most
 `O(n)` formulas of the tree, each with `O(n + m)` clauses, and the leaves, being sparse, have at
 most `c * n + 1` clauses (`Cslib.Logic.PL.ClauseSet.Sparsification.card_le_of_sparse`). The search
-runs a fixed number `2 ^ (n / M + 2)` of rounds, the last ones on the empty stack, for `ε = 1 / M`.
+runs a fixed number `2 ^ (n / M + 2)` of rounds (`Cslib.Complexity.Sparsify.rounds`), the last ones
+on the empty stack, for `ε = 1 / M`.
 
 ## Main definitions
 
@@ -105,10 +107,7 @@ clauses otherwise. -/
 def root (k : ℕ) (φ : CNF ℕ) : CNF ℕ :=
   if φ.all fun c => decide (c.length ≤ k) then normalize φ else []
 
-/-- The number of rounds of the search, `2 ^ (n / M + 2)` on formulas with `n` variables. -/
-def rounds (M : ℕ) (φ : CNF ℕ) : ℕ := 2 ^ (φ.distinctVars.length / M + 2)
-
-/-- **The sparsification search**: run the search for the given number of rounds from the root,
+/-- **The sparsification search**: run the search for `rounds M φ` rounds from the root,
 and report the accumulator. -/
 def search (K α k M : ℕ) (g : CNF ℕ → Bool) (φ : CNF ℕ) : Bool :=
   ((step K α g)^[rounds M φ] ([root k φ], false)).2
@@ -290,9 +289,7 @@ private theorem iterate_step {k M : ℕ} (hkK : k ≤ K) (hM : LeafBound K α M)
     rw [← List.toFinset_card_of_nodup hnd]
     exact (BranchingRule.card_le_of_isLeafWord hK hα hred hk0 φ.vars.toFinset mem_vars_of_mem_root
       L.toFinset fun w hw => (hL w).mp (List.mem_toFinset.mp hw)).trans (hM φ.numVars)
-  have hNr : N ≤ rounds M φ := by
-    rw [rounds, CNF.length_distinctVars, pow_succ]
-    omega
+  have hNr : N ≤ rounds M φ := by grind [rounds, CNF.length_distinctVars, pow_succ]
   have hinit : ([root k φ], false) = ([s₀].map Subtype.val, false) := rfl
   obtain ⟨hfin, hmid⟩ := h [] false
   have hacc : (L.map (R.tree.walk s₀)).foldl (fun acc t => acc || g t.1) false =
@@ -380,13 +377,6 @@ private theorem computableInPolyTime_root (k : ℕ) :
       encState := by
   have h := computableInPolyTime_normalize encNat
   unfold root encState encCNF
-  fun_prop
-
-private theorem computableInPolyTime_rounds (M : ℕ) :
-    ComputableInPolyTime (rounds M) encCNF encNat := by
-  have hvars := SAT.computableInPolyTime_distinctVars
-  have h := unary_div_const M
-  unfold rounds
   fun_prop
 
 /-- **The time of a step**: a polynomial in the length of the encoded state, plus the time of the
@@ -591,20 +581,10 @@ theorem decidableInExpTime_search {k M : ℕ} (hkK : k ≤ K) (hM : LeafBound K 
     have e₁ : 2 * (((Kx + 1) * (L + 1)) * ((2 * c₁ + 1) * (L + 1) ^ 2)) + 2 * (L + 1) ^ 3 =
         c₂ * (L + 1) ^ 3 := by simp only [c₂]; ring
     omega
-  have henc : (encNat (rounds M φ)).length = N / M + 3 := by
-    rw [rounds, CNF.length_distinctVars, encNat_two_pow, List.length_append,
-      List.length_replicate, List.length_singleton]
-  have hr : rounds M φ + 1 ≤ 5 * 2 ^ (N / M) := by
-    have : rounds M φ = 4 * 2 ^ (N / M) := by
-      rw [rounds, CNF.length_distinctVars, pow_add]
-      ring
-    have : 1 ≤ 2 ^ (N / M) := Nat.one_le_two_pow
-    omega
+  have henc : (encNat (rounds M φ)).length = N / M + 3 := length_encNat_rounds M φ
+  have hr : rounds M φ + 1 ≤ 5 * 2 ^ (N / M) := rounds_add_one_le M φ
   -- the polynomial parts
-  have hpoly : (L + 1) ^ dn + (L + 1) ^ di ≤ 2 * P := by
-    have := hP dn (by omega)
-    have := hP di (by omega)
-    omega
+  have hpoly : (L + 1) ^ dn + (L + 1) ^ di ≤ 2 * P := by grind
   have hrnd : (stateBound K α φ + 1) ^ d + stateBound K α φ +
       ((encNat (rounds M φ)).length + 1) ^ 2 ≤ C₁ * P := by
     have h₁ : (stateBound K α φ + 1) ^ d ≤ (c₂ + 1) ^ d * (L + 1) ^ (3 * d) := by

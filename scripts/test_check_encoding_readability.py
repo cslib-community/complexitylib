@@ -206,9 +206,9 @@ class RatchetTests(unittest.TestCase):
         self.module = self.root / "CslibFrontier/Area/A.lean"
         self.module.parent.mkdir(parents=True)
         self.write("abc")
-        # Not checked: an `Internal` module, the tests and the abstracts.
+        # Not checked: an `Internal` module, the tests and sources outside `CslibFrontier/`.
         for rel in ("CslibFrontier/Area/Internal/B.lean", "CslibFrontierTests/C.lean",
-                    "abstracts/D.lean"):
+                    "guide/D.lean"):
             path = self.root / rel
             path.parent.mkdir(parents=True)
             path.write_text(HEADER + "".join(theorem(n) for n in "abc"))

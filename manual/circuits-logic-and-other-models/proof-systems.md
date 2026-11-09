@@ -1,6 +1,6 @@
 # Propositional models and resolution proof complexity
 
-Complexitylib represents propositional syntax as concrete finite data and distinguishes satisfiability, derivability and resource-bounded proof objects. This supports reductions, model counting and lower bounds without identifying a proof's length with the time needed to find it. [complexitylib][complexitylib]
+cslib-frontier represents propositional syntax as concrete finite data and distinguishes satisfiability, derivability and resource-bounded proof objects. This supports reductions, model counting and lower bounds without identifying a proof's length with the time needed to find it. [cslib-frontier][complexitylib]
 
 ## CNF, CSP and quantified formulas
 
@@ -138,7 +138,10 @@ normal forms internally and invokes a certified compiler and solver. There is no
 template hypothesis. Bounds apply to each fixed language; no uniform bound on preprocessing a
 supplied language or truth table is asserted. Local positions use unary lookup indices; original
 variable names remain binary throughout. The shared arity-check certificate is
-`Cslib.Complexity.CSP.computableInPolyTime_validArity` in `PolyTime.CSP.Boolean`.
+`Cslib.Complexity.CSP.computableInPolyTime_validArity` in `PolyTime.CSP.Boolean`;
+`CSPSAT.polyTimeReducible_of_guard` in `Problems.CSP.Basic` turns any polynomial-time compiler
+that is faithful on well-formed instances, together with a fixed reject instance outside the
+target, into the guarded reduction used by each endpoint.
 
 [The full checked client](../../CslibFrontierTests/Schaefer.lean) exercises every tractable arm,
 a concrete NAE hard language, arbitrary fixed arities, sparse labels and an empty alphabet.
@@ -397,7 +400,7 @@ The clauses of `PHP^m_n` have width `n`, so the Atserias–Dalmau inequality giv
 
 - `Tseitin.minBalancedCut_le_of_refutableInSpace` gives `e(G) ≤ s + k - 3` on a connected multigraph whose vertices have at most `k` non-loop edges;
 - `Tseitin.edgeExpansion_mul_card_div_three_add_three_le_of_refutableInSpace` gives `h(G) |V| / 3 + 3 ≤ s + |D|` on a rotation map with `h(G) > 0`;
-- `CNF.exists_forall_refutableInSpace_le` is a family with explicit constants. For `n ≥ 4392000` it has at most `120 n` variables, `2 ^ 120 · n` clauses of width at most `120`, and every refutation in clause space `s` has `n ≤ 36000 s`. It shares its setup with the size family of the Tseitin-expander module through `Tseitin.exists_expander_tseitinFormula`. That lemma gives the Tseitin formula of the `120`-regular expander on `n ≥ 2` vertices with its explicit constants: connectivity, degree at most `120`, `e(G) ≥ n / 18000`, at most `120 n` variables and `2 ^ 120 · n` clauses, clauses with at most `120` literals (so of width at most `120`), and unsatisfiability.
+- `CNF.exists_forall_refutableInSpace_le` is a family with explicit constants. For `n ≥ 4392000` it has at most `120 n` variables, `2 ^ 120 · n` clauses of width at most `120`, and every refutation in clause space `s` has `n ≤ 36000 s`. It shares its setup with the size family of the Tseitin-expander module through `Tseitin.exists_expander_tseitinFormula`. That lemma gives the Tseitin formula of the `120`-regular expander on `n ≥ 2` vertices with its explicit constants: connectivity, degree at most `120`, `e(G) ≥ n / 18000`, at most `120 n` variables and `2 ^ 120 · n` clauses, clauses with at most `120` literals (so of width at most `120`), and unsatisfiability. Its graph, and that of the sum-of-squares family below, comes from `Multigraph.exists_expander` in [the multigraph-expander module](../../CslibFrontier/Foundations/Combinatorics/Expander/MultigraphExistence.lean): a connected multigraph on `Fin n` with at most `120 n` edges, degree at most `120` and `e(G) ≥ n / 18000`.
 
 As with the size bound, the expanders come from a counting argument.
 

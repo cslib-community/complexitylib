@@ -94,18 +94,8 @@ theorem exists_choice_seq_of_isNodeWord (s : σ) {w : List Bool} (hw : R.tree.Is
         R.toClauseSet (R.tree.walk s (w.take (i + 1))) =
           countingChild (R.toClauseSet (R.tree.walk s (w.take i))) (c i) (H i) (w.getD i false)) ∧
       (∀ i < w.length, Choice θ (R.toClauseSet (R.tree.walk s (w.take i))) (c i) (H i)) := by
-  classical
   have hns := hw.not_isLeaf_take
-  have hch (i : ℕ) (hi : i < w.length) := R.exists_choice_next _ (hns i hi)
-  let c (i : ℕ) : ℕ := if hi : i < w.length then (hch i hi).choose else 0
-  let H (i : ℕ) : Finset (Literal V) :=
-    if hi : i < w.length then (hch i hi).choose_spec.choose else ∅
-  have hspec (i : ℕ) (hi : i < w.length) :
-      Choice θ (R.toClauseSet (R.tree.walk s (w.take i))) (c i) (H i) ∧
-        ∀ b, R.toClauseSet (R.next (R.tree.walk s (w.take i)) b) =
-          countingChild (R.toClauseSet (R.tree.walk s (w.take i))) (c i) (H i) b := by
-    simp only [c, H, dite_eq_left hi]
-    exact (hch i hi).choose_spec.choose_spec
+  choose! c H hspec using fun i (hi : i < w.length) => R.exists_choice_next _ (hns i hi)
   refine ⟨c, H, fun i hi => ?_, fun i hi => (hspec i hi).1⟩
   rw [R.tree.walk_take_succ s w hi]
   exact (hspec i hi).2 _

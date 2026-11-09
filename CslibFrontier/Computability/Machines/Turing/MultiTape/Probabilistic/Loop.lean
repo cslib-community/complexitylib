@@ -258,7 +258,6 @@ theorem RunsWords.repeatUntilBlank_round (i : Fin k) {body : MultiTapePTM k Bool
     (repeatUntilBlank i body).RunsWords x ws₀ out₀ (t₁ + t₂)
       (prog₁ >>= fun a => (fun b => (a, b)) <$> prog₂ a)
       (fun p : α × β => ws₂ p.1 p.2) (fun p : α × β => emit₁ p.1 ++ emit₂ p.1 p.2) := by
-  classical
   intro OracleState oracle s cfg htapes hbuf
   let cfg₀ : Config k Bool State Operation x :=
     { tapes := wordsCfg x (some body.initial) ws₀ out₀, channels := cfg.channels }
@@ -289,58 +288,17 @@ theorem RunsWords.repeatUntilBlank_round (i : Fin k) {body : MultiTapePTM k Bool
   dsimp only
   rw [hcfg, run_interpret_runOracleConfigFrom_add i body oracle cfg₀ t₁ t₂ s hrest]
   constructor
-  · rw [PMF.map_bind]
-    let g (p : Cfg k Bool State x × OracleState) :
-        PMF (Cfg k Bool (RepeatUntilBlankState State) x × OracleState) :=
-      if h : ∃ a, p.1 = f a then
-        (ProbOracleComp.runWith oracle (prog₂ (Classical.choose h)) p.2).map
-          (fun (b, s₂) =>
-            (wordsCfg x none (ws₂ (Classical.choose h) b)
-              (out₀ ++ (emit₁ (Classical.choose h) ++ emit₂ (Classical.choose h) b)), s₂))
-      else PMF.pure (wordsCfg x none ws₀ out₀, p.2)
-    have hg (a : α) (s₁ : OracleState) :
-        g (f a, s₁) =
-          (ProbOracleComp.runWith oracle (prog₂ a) s₁).map
-            (fun (b, s₂) =>
-              (wordsCfg x none (ws₂ a b) (out₀ ++ (emit₁ a ++ emit₂ a b)), s₂)) := by
-      have hex : ∃ a', f a = f a' := ⟨a, rfl⟩
-      have hchoose : Classical.choose hex = a := hf (Classical.choose_spec hex).symm
-      change (if h : ∃ a', f a = f a' then _ else _) = _
-      simp only [hex, ↓reduceDIte, hchoose]
-    have hcongr :
-        (ProbOracleComp.runWith oracle (body.runOracleConfigFrom t₁ cfg₀) s).bind
-          (fun result =>
-            PMF.map (fun (final, s') => (final.tapes, s'))
-              (ProbOracleComp.runWith oracle
-                  ((repeatUntilBlank i body).runOracleConfigFrom t₂ (runConfig result.1))
-                  result.2)) =
-        (ProbOracleComp.runWith oracle (body.runOracleConfigFrom t₁ cfg₀) s).bind
-          (fun result => g (result.1.tapes, result.2)) := by
-      apply PMF.bind_congr_on_support
-      rintro ⟨mid, s₁⟩ hmid
-      obtain ⟨⟨a, ha, hmidTapes⟩, hmidBuf⟩ := h₁.mem_support oracle s cfg₀ rfl hbuf hmid
-      have hlaw := ((h₂ a OracleState oracle s s₁ ha) OracleState oracle s₁
-        (runConfig mid) (hcheck mid a hmidTapes) hmidBuf).1
-      rw [runOracleConfigFrom_fromCheck] at hlaw
-      dsimp only
-      rw [hlaw, hmidTapes, hg a s₁]
-      congr 1
-      funext ⟨b, s₂⟩
-      simp only [List.append_assoc]
-    rw [hcongr]
-    have hmapBind :
-        (ProbOracleComp.runWith oracle (body.runOracleConfigFrom t₁ cfg₀) s).bind
-          (fun result => g (result.1.tapes, result.2)) =
-        ((ProbOracleComp.runWith oracle (body.runOracleConfigFrom t₁ cfg₀) s).map
-          (fun (final, s') => (final.tapes, s'))).bind g := by
-      rw [PMF.bind_map]
-      rfl
-    rw [hmapBind, (h₁ OracleState oracle s cfg₀ rfl hbuf).1, PMF.bind_map]
-    simp only [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_map, PMF.map_bind, PMF.map_comp,
-      Function.comp_def]
+  · refine law_bind Config.tapes Config.tapes hf
+      (fun a b => wordsCfg x none (ws₂ a b) (out₀ ++ (emit₁ a ++ emit₂ a b)))
+      (h₁ OracleState oracle s cfg₀ rfl hbuf).1 fun ⟨mid, s₁⟩ hmid => ?_
+    obtain ⟨⟨a, ha, hmidTapes⟩, hmidBuf⟩ := h₁.mem_support oracle s cfg₀ rfl hbuf hmid
+    have hlaw := ((h₂ a OracleState oracle s s₁ ha) OracleState oracle s₁
+      (runConfig mid) (hcheck mid a hmidTapes) hmidBuf).1
+    rw [runOracleConfigFrom_fromCheck] at hlaw
+    refine ⟨a, hmidTapes, hlaw.trans ?_⟩
     congr 1
-    funext ⟨a, s₁⟩
-    exact hg a s₁
+    funext ⟨b, s₂⟩
+    simp only [List.append_assoc]
   · intro final hfinal op
     obtain ⟨⟨mid, s₁⟩, hmid, hfinal⟩ := (PMF.mem_support_bind_iff _ _ _).mp hfinal
     obtain ⟨⟨a, ha, hmidTapes⟩, hmidBuf⟩ := h₁.mem_support oracle s cfg₀ rfl hbuf hmid

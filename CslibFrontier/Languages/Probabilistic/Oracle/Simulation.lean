@@ -275,8 +275,7 @@ theorem run_interpret_run_interpret {Query' : Type} {spec' : Query' → Type}
         (hidden, external)).map
           (fun ⟨a, b, c⟩ => ((a, b), c)) := by
   rw [OracleComp.run_interpret_run_interpret, _root_.PMF.monad_map_eq_map]
-  congr 3
-  funext q state
+  congr 3 with q state : 2
   cases q with
   | inl n =>
     change PMF.map _ ((OracleComp.interpret (m := StateT External PMF) _

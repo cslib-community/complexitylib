@@ -438,26 +438,25 @@ theorem append (h : IsProof Γ ls) (h' : IsProof Γ ls') : IsProof Γ (ls ++ ls'
 `Γ`. -/
 theorem holds (h : IsProof Γ ls) {σ : V → Bool} (hσ : ∀ I ∈ Γ, I.Holds σ) (hI : I ∈ ls) :
     I.Holds σ := by
+  -- the new line holds by the rule that adds it, and the earlier ones by induction
   induction h generalizing I with
   | nil => simp at hI
-  | hyp _ hJ ih =>
-    rcases List.mem_cons.1 hI with rfl | hI
-    exacts [hσ _ hJ, ih hI]
-  | nonneg _ v ih =>
-    rcases List.mem_cons.1 hI with rfl | hI
-    exacts [holds_nonneg σ v, ih hI]
-  | leOne _ v ih =>
-    rcases List.mem_cons.1 hI with rfl | hI
-    exacts [holds_leOne σ v, ih hI]
-  | add _ h₁ h₂ ih =>
-    rcases List.mem_cons.1 hI with rfl | hI
-    exacts [(ih h₁).add (ih h₂), ih hI]
-  | smul _ c _ h₁ ih =>
-    rcases List.mem_cons.1 hI with rfl | hI
-    exacts [(ih h₁).nsmul c, ih hI]
-  | div _ c hc hdvd h₁ ih =>
-    rcases List.mem_cons.1 hI with rfl | hI
-    exacts [(ih h₁).div hc hdvd, ih hI]
+  | hyp _ hJ ih => exact List.forall_mem_cons.2 ⟨hσ _ hJ, fun _ => ih⟩ _ hI
+  | nonneg _ v ih => exact List.forall_mem_cons.2 ⟨holds_nonneg σ v, fun _ => ih⟩ _ hI
+  | leOne _ v ih => exact List.forall_mem_cons.2 ⟨holds_leOne σ v, fun _ => ih⟩ _ hI
+  | add _ h₁ h₂ ih => exact List.forall_mem_cons.2 ⟨(ih h₁).add (ih h₂), fun _ => ih⟩ _ hI
+  | smul _ c _ h₁ ih => exact List.forall_mem_cons.2 ⟨(ih h₁).nsmul c, fun _ => ih⟩ _ hI
+  | div _ c hc hdvd h₁ ih => exact List.forall_mem_cons.2 ⟨(ih h₁).div hc hdvd, fun _ => ih⟩ _ hI
+
+/-- One step of `Cslib.Logic.PL.CuttingPlanes.IsProof.comp`: replaying a line `J` on top of
+`ls'' ++ ls` covers the lines of `J :: ls'` with one more line. -/
+private theorem comp_cons {ls'' : List (Ineq V)} (h : IsProof Γ (J :: (ls'' ++ ls)))
+    (hup : ∀ K ∈ ls', K ∈ ls'' ++ ls) (hlen : ls''.length ≤ ls'.length) :
+    ∃ ls₀, IsProof Γ (ls₀ ++ ls) ∧ (∀ K ∈ J :: ls', K ∈ ls₀ ++ ls) ∧
+      ls₀.length ≤ (J :: ls').length := by
+  refine ⟨J :: ls'', h, fun K hK => ?_, by simpa using hlen⟩
+  rcases List.mem_cons.1 hK with rfl | hK
+  exacts [List.mem_cons_self, List.mem_cons_of_mem _ (hup K hK)]
 
 /-- **Composing proofs**: a proof `ls'` from `Δ` replays on top of a proof `ls` from `Γ` when every
 inequality of `Δ` is in `Γ` or a line of `ls`, adding at most as many lines as `ls'` has. -/
@@ -468,37 +467,25 @@ theorem comp (hΔ : IsProof Δ ls') (h : IsProof Γ ls) (hΔΓ : ∀ I ∈ Δ, I
   | @hyp ls' I _ hI ih =>
     obtain ⟨ls'', h'', hup, hlen⟩ := ih
     rcases hΔΓ I hI with hI | hI
-    · refine ⟨I :: ls'', h''.hyp hI, fun J hJ => ?_, by simpa using hlen⟩
-      rcases List.mem_cons.1 hJ with rfl | hJ
-      exacts [List.mem_cons_self, List.mem_cons_of_mem _ (hup J hJ)]
+    · exact comp_cons (h''.hyp hI) hup hlen
     · refine ⟨ls'', h'', fun J hJ => ?_, hlen.trans (Nat.le_succ _)⟩
       rcases List.mem_cons.1 hJ with rfl | hJ
       exacts [List.mem_append_right _ hI, hup J hJ]
-  | @nonneg ls' _ v ih =>
+  | nonneg _ v ih =>
     obtain ⟨ls'', h'', hup, hlen⟩ := ih
-    refine ⟨_ :: ls'', h''.nonneg v, fun J hJ => ?_, by simpa using hlen⟩
-    rcases List.mem_cons.1 hJ with rfl | hJ
-    exacts [List.mem_cons_self, List.mem_cons_of_mem _ (hup J hJ)]
-  | @leOne ls' _ v ih =>
+    exact comp_cons (h''.nonneg v) hup hlen
+  | leOne _ v ih =>
     obtain ⟨ls'', h'', hup, hlen⟩ := ih
-    refine ⟨_ :: ls'', h''.leOne v, fun J hJ => ?_, by simpa using hlen⟩
-    rcases List.mem_cons.1 hJ with rfl | hJ
-    exacts [List.mem_cons_self, List.mem_cons_of_mem _ (hup J hJ)]
-  | @add ls' I₁ I₂ _ h₁ h₂ ih =>
+    exact comp_cons (h''.leOne v) hup hlen
+  | add _ h₁ h₂ ih =>
     obtain ⟨ls'', h'', hup, hlen⟩ := ih
-    refine ⟨_ :: ls'', h''.add (hup _ h₁) (hup _ h₂), fun J hJ => ?_, by simpa using hlen⟩
-    rcases List.mem_cons.1 hJ with rfl | hJ
-    exacts [List.mem_cons_self, List.mem_cons_of_mem _ (hup J hJ)]
-  | @smul ls' I₁ _ c hc h₁ ih =>
+    exact comp_cons (h''.add (hup _ h₁) (hup _ h₂)) hup hlen
+  | smul _ c hc h₁ ih =>
     obtain ⟨ls'', h'', hup, hlen⟩ := ih
-    refine ⟨_ :: ls'', h''.smul c hc (hup _ h₁), fun J hJ => ?_, by simpa using hlen⟩
-    rcases List.mem_cons.1 hJ with rfl | hJ
-    exacts [List.mem_cons_self, List.mem_cons_of_mem _ (hup J hJ)]
-  | @div ls' I₁ _ c hc hdvd h₁ ih =>
+    exact comp_cons (h''.smul c hc (hup _ h₁)) hup hlen
+  | div _ c hc hdvd h₁ ih =>
     obtain ⟨ls'', h'', hup, hlen⟩ := ih
-    refine ⟨_ :: ls'', h''.div c hc hdvd (hup _ h₁), fun J hJ => ?_, by simpa using hlen⟩
-    rcases List.mem_cons.1 hJ with rfl | hJ
-    exacts [List.mem_cons_self, List.mem_cons_of_mem _ (hup J hJ)]
+    exact comp_cons (h''.div c hc hdvd (hup _ h₁)) hup hlen
 
 /-- Enlarging the hypotheses keeps a proof a proof. -/
 theorem mono (h : IsProof Γ ls) (hΓΔ : Γ ⊆ Δ) : IsProof Δ ls := by

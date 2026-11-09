@@ -130,21 +130,26 @@ private theorem abs_sum_mul_le {u v : m → ℤ} {B : ℕ} (hu : ∀ i, |u i| �
     _ = (Fintype.card m * B ^ 2 : ℕ) := by
         simp [Finset.sum_const, Finset.card_univ, sq]
 
-/-- **Small basic solutions.** If an integer system `A *ᵥ x = b` with entries of absolute value at
-most `B` has a nonnegative solution over some linearly ordered field, then it has a nonnegative
-rational solution `p / d` with `p` and `d` integers bounded by
-`(card n)! * (card m * B ^ 2 + 1) ^ card n`. -/
-theorem exists_int_nonneg_mulVec_eq {A : Matrix m n ℤ} {b : m → ℤ} {B : ℕ}
-    (hA : ∀ i j, |A i j| ≤ B) (hb : ∀ i, |b i| ≤ B)
-    {x : n → K} (hx : 0 ≤ x) (hAx : A.map (Int.cast : ℤ → K) *ᵥ x = fun i => (b i : K)) :
-    ∃ (d : ℤ) (p : n → ℤ), 0 < d ∧ 0 ≤ p ∧ A *ᵥ p = d • b ∧
-      d ≤ ((Fintype.card n)! * (Fintype.card m * B ^ 2 + 1) ^ Fintype.card n : ℕ) ∧
-      ∀ j, p j ≤ ((Fintype.card n)! * (Fintype.card m * B ^ 2 + 1) ^ Fintype.card n : ℕ) := by
+/-- `|det M| ≤ (card n)! * C ^ card n` for an integer matrix with entries of absolute value at
+most `C` (`Matrix.det_le` with the usual absolute value). -/
+private theorem abs_det_le [DecidableEq n] {M : Matrix n n ℤ} {C : ℕ}
+    (hM : ∀ j k, |M j k| ≤ C) : |M.det| ≤ ((Fintype.card n)! * C ^ Fintype.card n : ℕ) := by
+  simpa using det_le (abv := AbsoluteValue.abs) hM
+
+/-- **The Gram system of a basic solution.** If `A *ᵥ y = b` and no nonzero kernel vector of `A`
+is supported inside the support of `y`, then `y` is the unique solution of a square integer
+system `G *ᵥ y = c`: the Gram system `Aᵀ A` restricted to the support of `y`, padded by the
+identity outside it. Its entries are at most `card m * B ^ 2 + 1` when those of `A` and `b` are
+at most `B`. -/
+private theorem exists_gram_system [DecidableEq n] {A : Matrix m n ℤ} {b : m → ℤ} {B : ℕ}
+    (hA : ∀ i j, |A i j| ≤ B) (hb : ∀ i, |b i| ≤ B) {y : n → K}
+    (hAy : A.map (Int.cast : ℤ → K) *ᵥ y = fun i => (b i : K))
+    (hymin : ∀ w : n → K, (∀ j, y j = 0 → w j = 0) → A.map (Int.cast : ℤ → K) *ᵥ w = 0 → w = 0) :
+    ∃ (G : Matrix n n ℤ) (c : n → ℤ), G.map (Int.cast : ℤ → K) *ᵥ y = (fun j => (c j : K)) ∧
+      G.det ≠ 0 ∧ (∀ j, |c j| ≤ (Fintype.card m * B ^ 2 + 1 : ℕ)) ∧
+      ∀ j k, |G j k| ≤ (Fintype.card m * B ^ 2 + 1 : ℕ) := by
   classical
-  obtain ⟨y, hy, hAy, -, hymin⟩ := exists_nonneg_mulVec_eq_forall_mulVec_eq_zero hx hAx
-  set N : ℕ := (Fintype.card n)! * (Fintype.card m * B ^ 2 + 1) ^ Fintype.card n with hN
   set AK : Matrix m n K := A.map (Int.cast : ℤ → K) with hAK
-  -- The Gram matrix of the support columns, padded by the identity.
   let G : Matrix n n ℤ := of fun j k =>
     if y j ≠ 0 ∧ y k ≠ 0 then ∑ i, A i j * A i k else if j = k then 1 else 0
   let c : n → ℤ := fun j => if y j ≠ 0 then ∑ i, A i j * b i else 0
@@ -155,6 +160,7 @@ theorem exists_int_nonneg_mulVec_eq {A : Matrix m n ℤ} {b : m → ℤ} {B : �
     rw [hGK, hAK, map_apply]
     simp only [G, of_apply]
     split_ifs <;> push_cast <;> rfl
+  -- Off the support `G` acts as the identity; on it, as `Aᵀ A` on vectors supported there.
   have hG0 : ∀ (v : n → K) j, y j = 0 → (GK *ᵥ v) j = v j := by
     intro v j hj
     simp only [mulVec, dotProduct, hGK_apply]
@@ -174,6 +180,7 @@ theorem exists_int_nonneg_mulVec_eq {A : Matrix m n ℤ} {b : m → ℤ} {B : �
       simp [c, hj]
     · rw [hG1 y (fun _ h => h) j hj, ← mulVec_mulVec, hAy]
       simp [c, hj, mulVec, dotProduct, AK]
+  -- `G` is nonsingular: a kernel vector `v` is supported in that of `y` and `‖A v‖² = 0`.
   have hinj : ∀ v : n → K, GK *ᵥ v = 0 → v = 0 := by
     intro v hv
     have hv0 : ∀ k, y k = 0 → v k = 0 := fun k hk => by
@@ -188,84 +195,95 @@ theorem exists_int_nonneg_mulVec_eq {A : Matrix m n ℤ} {b : m → ℤ} {B : �
       · simp [hv0 j hj]
       · simp [hv1 j hj]
     exact hymin v hv0 hAv
-  have hdetK : GK.det ≠ 0 := fun h => by
-    obtain ⟨v, hv, hGv⟩ := exists_mulVec_eq_zero_iff.2 h
+  have hdet : G.det ≠ 0 := fun h => by
+    have hGK0 : GK.det = 0 := by
+      have hcast : ((G.det : ℤ) : K) = GK.det := (Int.castRingHom K).map_det G
+      rw [← hcast, h, Int.cast_zero]
+    obtain ⟨v, hv, hGv⟩ := exists_mulVec_eq_zero_iff.2 hGK0
     exact hv (hinj v hGv)
-  have hdet : ((G.det : ℤ) : K) = GK.det := by
-    rw [hGK]
-    exact (Int.castRingHom K).map_det G
-  have hcr : G *ᵥ cramer G c = G.det • c := mulVec_cramer G c
-  have hcrK : GK *ᵥ (fun j => ((cramer G c j : ℤ) : K)) = (G.det : K) • fun j => (c j : K) := by
-    funext j
-    have := congrArg (fun v => ((v j : ℤ) : K)) hcr
-    simp only [Pi.smul_apply, smul_eq_mul, Int.cast_mul] at this ⊢
-    rw [← this, hGK]
-    exact ((Int.castRingHom K).map_mulVec G (cramer G c) j).symm
-  have hp : (fun j => ((cramer G c j : ℤ) : K)) = (G.det : K) • y := by
-    have : GK *ᵥ ((fun j => ((cramer G c j : ℤ) : K)) - (G.det : K) • y) = 0 := by
-      rw [mulVec_sub, mulVec_smul, hcrK, hGy, sub_self]
-    exact sub_eq_zero.1 (hinj _ this)
-  have hd0 : G.det ≠ 0 := fun h => hdetK (by rw [← hdet, h, Int.cast_zero])
-  have hAp : A *ᵥ cramer G c = G.det • b := by
-    funext i
-    apply Int.cast_injective (α := K)
-    have h1 := (Int.castRingHom K).map_mulVec A (cramer G c) i
-    simp only [eq_intCast] at h1
-    rw [h1]
-    change (AK *ᵥ fun j => ((cramer G c j : ℤ) : K)) i = _
-    rw [hp, mulVec_smul, hAy]
-    simp
-  -- Entry bounds.
-  have hc : ∀ i, |c i| ≤ (Fintype.card m * B ^ 2 + 1 : ℕ) := by
-    intro i
-    simp only [c]
+  refine ⟨G, c, hGy, hdet, fun j => ?_, fun j k => ?_⟩
+  · simp only [c]
     split_ifs
-    · exact (abs_sum_mul_le (fun k => hA k i) hb).trans (by push_cast; linarith)
+    · exact (abs_sum_mul_le (fun k => hA k j) hb).trans (by push_cast; linarith)
     · rw [abs_zero]
       positivity
-  have hGentry : ∀ j k, |G j k| ≤ (Fintype.card m * B ^ 2 + 1 : ℕ) := by
-    intro j k
-    simp only [G, of_apply]
+  · simp only [G, of_apply]
     split_ifs
     · exact (abs_sum_mul_le (fun i => hA i j) (fun i => hA i k)).trans (by push_cast; linarith)
     · rw [abs_one]
       exact_mod_cast Nat.le_add_left 1 _
     · rw [abs_zero]
       positivity
-  have hdetle : ∀ M : Matrix n n ℤ, (∀ j k, |M j k| ≤ (Fintype.card m * B ^ 2 + 1 : ℕ)) →
-      |M.det| ≤ N := by
-    intro M hM
-    have := det_le (abv := AbsoluteValue.abs) hM
-    simpa [hN] using this
-  have hdbound : |G.det| ≤ N := hdetle G hGentry
-  have hpbound : ∀ j, |cramer G c j| ≤ N := by
-    intro j
+
+omit [Fintype m] in
+/-- **Cramer's rule over an extension.** If the integer system `G *ᵥ y = c` holds after casting
+into a commutative ring `R`, then the cast of Cramer's integer vector `cramer G c` is
+`det G • y`. -/
+private theorem intCast_cramer_eq_det_smul {R : Type*} [CommRing R] [DecidableEq n]
+    {G : Matrix n n ℤ} {c : n → ℤ} {y : n → R}
+    (hGy : G.map (Int.cast : ℤ → R) *ᵥ y = fun j => (c j : R)) :
+    (fun j => (cramer G c j : R)) = (G.det : R) • y := by
+  have h := (Int.castRingHom R).map_mulVec (adjugate G) c
+  simp only [eq_intCast, Int.coe_castRingHom] at h
+  calc (fun j => (cramer G c j : R))
+      = (adjugate G).map (Int.cast : ℤ → R) *ᵥ fun j => (c j : R) := by
+        rw [cramer_eq_adjugate_mulVec]
+        exact funext h
+    _ = (G.det : R) • y := by
+        have hadj : (adjugate G).map (Int.cast : ℤ → R) = adjugate (G.map Int.cast) :=
+          (Int.castRingHom R).map_adjugate G
+        have hdet : ((G.det : ℤ) : R) = (G.map (Int.cast : ℤ → R)).det :=
+          (Int.castRingHom R).map_det G
+        rw [← hGy, mulVec_mulVec, hadj, adjugate_mul, smul_mulVec, one_mulVec, hdet]
+
+/-- **Small basic solutions.** If an integer system `A *ᵥ x = b` with entries of absolute value at
+most `B` has a nonnegative solution over some linearly ordered field, then it has a nonnegative
+rational solution `p / d` with `p` and `d` integers bounded by
+`(card n)! * (card m * B ^ 2 + 1) ^ card n`. -/
+theorem exists_int_nonneg_mulVec_eq {A : Matrix m n ℤ} {b : m → ℤ} {B : ℕ}
+    (hA : ∀ i j, |A i j| ≤ B) (hb : ∀ i, |b i| ≤ B)
+    {x : n → K} (hx : 0 ≤ x) (hAx : A.map (Int.cast : ℤ → K) *ᵥ x = fun i => (b i : K)) :
+    ∃ (d : ℤ) (p : n → ℤ), 0 < d ∧ 0 ≤ p ∧ A *ᵥ p = d • b ∧
+      d ≤ ((Fintype.card n)! * (Fintype.card m * B ^ 2 + 1) ^ Fintype.card n : ℕ) ∧
+      ∀ j, p j ≤ ((Fintype.card n)! * (Fintype.card m * B ^ 2 + 1) ^ Fintype.card n : ℕ) := by
+  classical
+  set N : ℕ := (Fintype.card n)! * (Fintype.card m * B ^ 2 + 1) ^ Fintype.card n
+  -- Pass to a basic solution `y`, the unique solution of a square integer system `G y = c`;
+  -- Cramer's rule writes `det G • y` as the integer vector `cramer G c`.
+  obtain ⟨y, hy, hAy, -, hymin⟩ := exists_nonneg_mulVec_eq_forall_mulVec_eq_zero hx hAx
+  obtain ⟨G, c, hGy, hd0, hc, hG⟩ := exists_gram_system hA hb hAy hymin
+  -- Both `det G` and the entries of `cramer G c` are determinants of matrices with small entries.
+  have hdbound : |G.det| ≤ N := abs_det_le hG
+  have hpbound : ∀ j, |cramer G c j| ≤ N := fun j => by
     rw [cramer_apply]
-    refine hdetle _ fun k l => ?_
+    refine abs_det_le fun k l => ?_
     rw [updateCol_apply]
     split_ifs
     · exact hc k
-    · exact hGentry k l
-  rcases lt_or_gt_of_ne hd0 with hneg | hpos
-  · refine ⟨-G.det, -cramer G c, neg_pos.2 hneg, fun j => ?_, ?_, ?_, fun j => ?_⟩
-    · have := congrFun hp j
-      simp only [Pi.smul_apply, smul_eq_mul] at this
-      have h' : ((cramer G c j : ℤ) : K) ≤ 0 :=
-        this ▸ mul_nonpos_of_nonpos_of_nonneg (by exact_mod_cast hneg.le) (hy j)
-      simpa using (show cramer G c j ≤ 0 by exact_mod_cast h')
-    · rw [mulVec_neg, hAp, neg_smul]
-    · have := hdbound
-      rw [abs_of_neg hneg] at this
-      exact this
-    · exact (neg_le_abs _).trans (hpbound j)
-  · refine ⟨G.det, cramer G c, hpos, fun j => ?_, hAp, ?_, fun j => ?_⟩
-    · have := congrFun hp j
-      simp only [Pi.smul_apply, smul_eq_mul] at this
-      have h' : (0 : K) ≤ ((cramer G c j : ℤ) : K) :=
-        this ▸ mul_nonneg (by exact_mod_cast hpos.le) (hy j)
-      exact_mod_cast h'
-    · exact (le_abs_self _).trans hdbound
-    · exact (le_abs_self _).trans (hpbound j)
+    · exact hG k l
+  -- Normalize the sign: `d = |det G|` and `p = ±cramer G c` still satisfy `p = d • y` in `K`.
+  obtain ⟨d, p, hd, hpy, hdN, hpN⟩ : ∃ (d : ℤ) (p : n → ℤ), 0 < d ∧
+      (fun j => (p j : K)) = (d : K) • y ∧ d ≤ N ∧ ∀ j, |p j| ≤ N := by
+    have hp := intCast_cramer_eq_det_smul hGy
+    rcases lt_or_gt_of_ne hd0 with hneg | hpos
+    · refine ⟨-G.det, -cramer G c, neg_pos.2 hneg, ?_, by rwa [← abs_of_neg hneg],
+        fun j => by simpa using hpbound j⟩
+      simp only [Pi.neg_apply, Int.cast_neg, neg_smul, ← hp]
+      rfl
+    · exact ⟨G.det, cramer G c, hpos, hp, (le_abs_self _).trans hdbound, hpbound⟩
+  refine ⟨d, p, hd, fun j => ?_, ?_, hdN, fun j => (le_abs_self _).trans (hpN j)⟩
+  · have h : (0 : K) ≤ p j := by
+      rw [congrFun hpy j]
+      exact mul_nonneg (by exact_mod_cast hd.le) (hy j)
+    exact_mod_cast h
+  · funext i
+    apply Int.cast_injective (α := K)
+    have h1 := (Int.castRingHom K).map_mulVec A p i
+    simp only [eq_intCast] at h1
+    rw [h1]
+    change (A.map (Int.cast : ℤ → K) *ᵥ fun j => (p j : K)) i = _
+    rw [hpy, mulVec_smul, hAy]
+    simp
 
 /-- **Small solutions of integer inequality systems.** If `A *ᵥ x ≤ b`, with integer entries of
 absolute value at most `B`, has a solution over some linearly ordered field, then it has a

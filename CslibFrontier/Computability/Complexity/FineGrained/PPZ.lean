@@ -422,7 +422,7 @@ drawn during the run, and the probability is computed directly. -/
 theorem runWith_apply_restrict {O : (Fin n → Option Bool) → Fin n → Option Bool}
     {σ : Fin n → Bool}
     (hO : ∀ τ, (∀ y b, τ y = some b → σ y = b) → ∀ x b, O τ x = some b → σ x = b)
-    (π : Equiv.Perm (Fin n)) {i : ℕ} (hi : i ≤ n) :
+    (π : Equiv.Perm (Fin n)) {i : ℕ} :
     runWith O π i (restrict σ (prefixSet π i)) = (2⁻¹ : ENNReal) ^ unforcedCountWith O σ π i := by
   induction i with
   | zero =>
@@ -431,52 +431,66 @@ theorem runWith_apply_restrict {O : (Fin n → Option Bool) → Fin n → Option
       simp [restrict, prefixSet_zero]
     simp [runWith_zero, this, unforcedCountWith]
   | succ i ih =>
-    have h : i < n := by omega
-    set x := π ⟨i, h⟩
-    set T := restrict σ (prefixSet π i)
-    set T' := restrict σ (prefixSet π (i + 1))
-    have hxi : x ∉ prefixSet π i := apply_notMem_prefixSet_self π h
-    have hT'x : T' = Function.update T x (some (σ x)) := by
-      change restrict σ (prefixSet π (i + 1)) =
-        Function.update (restrict σ (prefixSet π i)) (π ⟨i, h⟩) (some (σ (π ⟨i, h⟩)))
-      rw [prefixSet_succ π h, restrict_insert]
-    rw [runWith_succ O π h, PMF.bind_apply, tsum_eq_single T]
-    · rw [PMF.map_apply, tsum_eq_single (σ x)]
-      · rw [ite_eq_left hT'x, ih (by omega), unforcedCountWith_succ O σ π h, pow_add]
+    by_cases h : i < n
+    · set x := π ⟨i, h⟩
+      set T := restrict σ (prefixSet π i)
+      set T' := restrict σ (prefixSet π (i + 1))
+      have hxi : x ∉ prefixSet π i := apply_notMem_prefixSet_self π h
+      have hT'x : T' = Function.update T x (some (σ x)) := by
+        change restrict σ (prefixSet π (i + 1)) =
+          Function.update (restrict σ (prefixSet π i)) (π ⟨i, h⟩) (some (σ (π ⟨i, h⟩)))
+        rw [prefixSet_succ π h, restrict_insert]
+      rw [runWith_succ O π h, PMF.bind_apply, tsum_eq_single T]
+      · rw [PMF.map_apply, tsum_eq_single (σ x)]
+        · rw [ite_eq_left hT'x, ih, unforcedCountWith_succ O σ π h, pow_add]
+          congr 1
+          split_ifs with hU
+          · rw [stepWith_of_eq_none hU]
+            simp [Cslib.Probability.PMF.uniformOfFintype_apply]
+          · obtain ⟨b, hb⟩ := Option.ne_none_iff_exists'.mp hU
+            rw [stepWith_of_eq_some hb, hO T (fun _ _ => eq_of_restrict_eq_some) x b hb]
+            simp
+        · intro b hb
+          rw [ite_eq_right]
+          intro e
+          have := congrFun e x
+          rw [hT'x, Function.update_self, Function.update_self] at this
+          exact hb (Option.some_injective _ this).symm
+      · intro τ hτ
+        by_cases hsupp : τ ∈ (runWith O π i).support
+        · rw [PMF.map_apply]
+          convert mul_zero _
+          refine tsum_eq_zero_iff.mpr fun b => ite_eq_right fun e => hτ ?_
+          funext y
+          by_cases hy : y = x
+          · subst hy
+            rw [eq_none_of_mem_support_runWith hsupp hxi]
+            simp [T, restrict, hxi]
+          · have := congrFun e y
+            rw [Function.update_of_ne hy, hT'x, Function.update_of_ne hy] at this
+            exact this.symm
+        · rw [(PMF.apply_eq_zero_iff _ _).mpr hsupp, zero_mul]
+    · have hle : n ≤ i := not_lt.mp h
+      have hpref : prefixSet π (i + 1) = prefixSet π i := by
+        ext x
+        simp only [mem_prefixSet]
+        have := (π.symm x).isLt
+        omega
+      have hcnt : unforcedCountWith O σ π (i + 1) = unforcedCountWith O σ π i := by
+        unfold unforcedCountWith
         congr 1
-        split_ifs with hU
-        · rw [stepWith_of_eq_none hU]
-          simp [Cslib.Probability.PMF.uniformOfFintype_apply]
-        · obtain ⟨b, hb⟩ := Option.ne_none_iff_exists'.mp hU
-          rw [stepWith_of_eq_some hb, hO T (fun _ _ => eq_of_restrict_eq_some) x b hb]
-          simp
-      · intro b hb
-        rw [ite_eq_right]
-        intro e
-        have := congrFun e x
-        rw [hT'x, Function.update_self, Function.update_self] at this
-        exact hb (Option.some_injective _ this).symm
-    · intro τ hτ
-      by_cases hsupp : τ ∈ (runWith O π i).support
-      · rw [PMF.map_apply]
-        convert mul_zero _
-        refine tsum_eq_zero_iff.mpr fun b => ite_eq_right fun e => hτ ?_
-        funext y
-        by_cases hy : y = x
-        · subst hy
-          rw [eq_none_of_mem_support_runWith hsupp hxi]
-          simp [T, restrict, hxi]
-        · have := congrFun e y
-          rw [Function.update_of_ne hy, hT'x, Function.update_of_ne hy] at this
-          exact this.symm
-      · rw [(PMF.apply_eq_zero_iff _ _).mpr hsupp, zero_mul]
+        ext j
+        simp only [mem_filter, mem_univ, true_and]
+        exact and_congr_left fun _ =>
+          iff_of_true (Nat.lt_succ_of_lt (j.isLt.trans_le hle)) (j.isLt.trans_le hle)
+      rw [runWith_succ_of_le O π hle, hpref, hcnt, ih]
 
 /-- **A PPZ run in a fixed order produces the solution with probability `2^{-u}`**, where `u`
 counts the unforced variables along the run that agrees with `σ`. -/
 theorem run_apply_restrict {φ : CNF (Fin n)} {σ : Fin n → Bool} (hσ : φ.eval σ = true)
-    (π : Equiv.Perm (Fin n)) {i : ℕ} (hi : i ≤ n) :
+    (π : Equiv.Perm (Fin n)) {i : ℕ} :
     run φ π i (restrict σ (prefixSet π i)) = (2⁻¹ : ENNReal) ^ unforcedCount φ σ π i :=
-  runWith_apply_restrict (fun _ hτ _ _ h => forced_eq hσ hτ h) π hi
+  runWith_apply_restrict (fun _ hτ _ _ h => forced_eq hσ hτ h) π
 
 /-! ### Averaging over the orders -/
 
@@ -493,7 +507,7 @@ theorem roundWith_apply_eq {O : (Fin n → Option Bool) → Fin n → Option Boo
     ENNReal.toReal_sum (fun π _ => ENNReal.mul_ne_top
     (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _))]
   refine sum_congr rfl fun π _ => ?_
-  rw [← restrict_prefixSet_self σ π, runWith_apply_restrict hO π le_rfl, ENNReal.toReal_mul,
+  rw [← restrict_prefixSet_self σ π, runWith_apply_restrict hO π, ENNReal.toReal_mul,
     Cslib.Probability.PMF.uniformOfFintype_apply, ENNReal.toReal_inv, ENNReal.toReal_natCast,
     Fintype.card_perm, Fintype.card_fin, ENNReal.toReal_pow, ENNReal.toReal_inv]
   norm_num

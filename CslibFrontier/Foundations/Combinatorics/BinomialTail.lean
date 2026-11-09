@@ -257,57 +257,20 @@ theorem sum_filter_le_sub_choose_mul_pow_le (Q : ℕ) {p t : ℝ} (hp₀ : 0 ≤
   nlinarith [hmarkov, exp_pos (2 * t ^ 2 / Q)]
 
 /-- **Lower-tail Hoeffding inequality for `Bin(Q, p)`**: for `p ∈ [0, 1]` and `0 ≤ t`, the
-binomial probability mass on `Q p - k ≥ t` is at most `exp (-2 t² / Q)`. -/
+binomial probability mass on `Q p - k ≥ t` is at most `exp (-2 t² / Q)`. The reflection
+`k ↦ Q - k` turns it into the upper tail of `Bin(Q, 1 - p)`. -/
 theorem sum_filter_le_mul_sub_choose_mul_pow_le (Q : ℕ) {p t : ℝ} (hp₀ : 0 ≤ p) (hp₁ : p ≤ 1)
     (ht : 0 ≤ t) :
     ∑ k ∈ range (Q + 1) with t ≤ Q * p - ((k : ℕ) : ℝ),
       (Q.choose k : ℝ) * p ^ k * (1 - p) ^ (Q - k) ≤
     exp (-2 * t ^ 2 / Q) := by
-  rcases Nat.eq_zero_or_pos Q with rfl | hQ
-  · exact (sum_filter_choose_mul_pow_le_one 0 hp₀ hp₁ _).trans_eq
-      (by simp only [Nat.cast_zero, div_zero, exp_zero])
-  have hQ_pos : (0 : ℝ) < Q := Nat.cast_pos.mpr hQ
-  set s : ℝ := 4 * t / Q
-  have hs : 0 ≤ s := by positivity
-  set S : ℝ := ∑ k ∈ range (Q + 1) with t ≤ Q * p - ((k : ℕ) : ℝ),
-    (Q.choose k : ℝ) * p ^ k * (1 - p) ^ (Q - k)
-  have hmarkov : S * exp (s * t) ≤ exp (2 * t ^ 2 / Q) := by
-    calc S * exp (s * t)
-        = ∑ k ∈ range (Q + 1) with t ≤ Q * p - ((k : ℕ) : ℝ),
-            (Q.choose k : ℝ) * p ^ k * (1 - p) ^ (Q - k) * exp (s * t) := sum_mul _ _ _
-      _ ≤ ∑ k ∈ range (Q + 1) with t ≤ Q * p - ((k : ℕ) : ℝ),
-            (Q.choose k : ℝ) * p ^ k * (1 - p) ^ (Q - k) * exp ((-s) * ((k : ℝ) - Q * p)) := by
-          refine sum_le_sum fun k hk => mul_le_mul_of_nonneg_left (exp_le_exp.mpr ?_)
-            (choose_mul_pow_nonneg Q k hp₀ hp₁)
-          have hk' := (mem_filter.mp hk).2
-          calc s * t ≤ s * (Q * p - (k : ℝ)) := mul_le_mul_of_nonneg_left hk' hs
-            _ = (-s) * ((k : ℝ) - Q * p) := by ring
-      _ ≤ ∑ k ∈ range (Q + 1),
-            (Q.choose k : ℝ) * p ^ k * (1 - p) ^ (Q - k) * exp ((-s) * ((k : ℝ) - Q * p)) :=
-          sum_le_sum_of_subset_of_nonneg (filter_subset _ _) fun k _ _ =>
-            mul_nonneg (choose_mul_pow_nonneg Q k hp₀ hp₁) (exp_pos _).le
-      _ = ((1 - p) * exp (-(-s) * p) + p * exp ((-s) * (1 - p))) ^ Q :=
-          sum_choose_mul_pow_mul_exp Q p (-s)
-      _ ≤ exp ((-s) ^ 2 / 8) ^ Q :=
-          pow_le_pow_left₀ (by have h1p : 0 ≤ 1 - p := sub_nonneg.mpr hp₁; positivity)
-            (one_sub_mul_exp_add_mul_exp_le hp₀ hp₁ (-s)) Q
-      _ = exp (2 * t ^ 2 / Q) := by
-          rw [← exp_nat_mul]
-          congr 1
-          dsimp only [s]
-          field_simp
-          ring
-  have hexp_st : exp (s * t) = exp (2 * t ^ 2 / Q) * exp (2 * t ^ 2 / Q) := by
-    rw [← exp_add]
-    congr 1
-    dsimp only [s]
-    field_simp
-    ring
-  change S ≤ exp (-2 * t ^ 2 / Q)
-  rw [show -2 * t ^ 2 / (Q : ℝ) = -(2 * t ^ 2 / Q) by ring, exp_neg, inv_eq_one_div,
-    le_div_iff₀ (exp_pos _)]
-  rw [hexp_st] at hmarkov
-  nlinarith [hmarkov, exp_pos (2 * t ^ 2 / Q)]
+  refine le_of_eq_of_le ?_
+    (sum_filter_le_sub_choose_mul_pow_le Q (sub_nonneg.2 hp₁) (sub_le_self 1 hp₀) ht)
+  rw [sum_filter, sum_filter, ← sum_range_reflect]
+  refine sum_congr rfl fun j hj => ?_
+  have hjQ : j ≤ Q := Nat.lt_succ_iff.1 (mem_range.1 hj)
+  rw [add_tsub_cancel_right, Nat.cast_sub hjQ, Nat.choose_symm hjQ, Nat.sub_sub_self hjQ,
+    sub_sub_cancel, show (Q : ℝ) * p - (Q - j) = j - Q * (1 - p) by ring, mul_right_comm]
 
 /-- **Two-sided Hoeffding inequality for `Bin(Q, p)`** `[Hoeffding1963]`: for `p ∈ [0, 1]` and
 `0 ≤ t`, the binomial probability mass on `|k - Q p| ≥ t` is at most `2 exp (-2 t² / Q)`. -/

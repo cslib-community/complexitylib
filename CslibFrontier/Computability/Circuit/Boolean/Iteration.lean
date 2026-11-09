@@ -212,9 +212,7 @@ theorem fixed_power_on (n : ℕ) (c : Circuit signature n n) (S : Finset (BitStr
     rw [hpow]
     change 2 ^ (d - 1) < _ at hp
     omega
-  have hfit : 2 * L < 2 ^ (n + 2) := by
-    simp only [Nat.pow_succ]
-    omega
+  have hfit : 2 * L < 2 ^ (n + 2) := by grind
   obtain ⟨out, hout, hsize⟩ := exists_fixedOutput (w := n + 2) c T (2 * L) d cp
   refine ⟨out, fun x hx => ?_, ?_⟩
   · rw [hout x]

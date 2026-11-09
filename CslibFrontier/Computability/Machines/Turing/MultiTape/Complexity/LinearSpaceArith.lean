@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinaryAddition
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinaryComparison
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinarySizeFacts
 public import Mathlib.Data.Nat.Size
 
 /-!
@@ -20,8 +21,9 @@ arithmetic outputs and identify successor iteration, for clients with fixed work
 
 ## Main results
 
-* `Turing.MultiTapeTM.length_encNat_mono`, `.length_encNat_add_le_add`, `.length_encNat_mul_le`:
-  monotonicity and lengths of sums and products in binary.
+* `Turing.MultiTapeTM.length_encNat_add_le_add`, `.length_encNat_mul_le`: lengths of sums and
+  products in binary. Monotonicity, `Turing.MultiTapeTM.length_encNat_mono`, is in
+  `Internal/BinarySizeFacts`.
 * `Turing.MultiTapeTM.ComputableInO.natAdd`: binary addition in quadratic time and linear space.
 -/
 
@@ -31,11 +33,6 @@ namespace Turing.MultiTapeTM
 
 theorem length_encNat_eq_size (n : ℕ) : (encNat n).length = n.size := by
   rw [encNat_apply, Nat.size_eq_bits_len]
-
-/-- Binary length is monotone in the value. -/
-theorem length_encNat_mono {m n : ℕ} (h : m ≤ n) : (encNat m).length ≤ (encNat n).length := by
-  simp only [length_encNat_eq_size]
-  exact Nat.size_le_size h
 
 /-- A number is at least as large as its length. -/
 theorem length_encNat_le_self (n : ℕ) : (encNat n).length ≤ n := by
