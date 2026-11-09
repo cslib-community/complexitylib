@@ -34,6 +34,7 @@ No source batch-admission or complete adaptive selector claim is made here.
 ## Main results
 
 * `exists_processor`: one uniform local native context-to-context processor.
+* `terminal_loaded`: actual blank-tape loader/full-reader/continuation whole-state law.
 * `exists_query_processor`: actual blank-tape loading/query/reader/processor joint law.
 -/
 
@@ -369,6 +370,32 @@ theorem observe_inputWorld {k : ℕ} {S P : Type} {word : List Bool}
     (memory : Memory Unit P) : World k S Unit P input :=
   ⟨⟨wordsCfg input state words [], channels⟩, memory⟩
 
+/-- Canonical context storage embeds exactly when its reserved zero tape is preserved. -/
+theorem wordWorld_embed_zero {k width : ℕ} [NeZero k] [NeZero width] {S P : Type}
+    (e : Fin k ↪ Fin width) (he : e 0 = 0) (input word : List Bool)
+    (state : Option S) (channels : Unit → Channel Bool) (memory : Memory Unit P) :
+    NativeSequential.embedStorage e
+      (wordWorld input state (Function.update (fun _ => []) 0 word) channels memory) =
+      wordWorld input state (Function.update (fun _ => []) 0 word) channels memory := by
+  apply congrArg (fun cfg => (⟨cfg, memory⟩ : World width S Unit P input))
+  apply Config.ext
+  · change MultiTapeTM.embed e
+      (wordsCfg input state (Function.update (fun _ => []) 0 word) [])
+      (fun _ _ => none) (fun _ => 0) = _
+    have hz : (fun _ : Fin width => fun _ : ℤ => (none : Option Bool)) =
+        (fun _ => tapeOfList ([] : List Bool)) := by simp
+    rw [hz]
+    apply embed_wordsCfg
+    · intro j
+      by_cases hj : j = 0
+      · subst j; simp [he]
+      · have hn : e j ≠ 0 := fun h => hj (e.injective (h.trans he.symm))
+        simp [hj, hn]
+    · intro j hj
+      have hn : j ≠ 0 := fun h => hj ⟨0, he.trans h.symm⟩
+      simp [hn]
+  · rfl
+
 /-- A proved deterministic tape transformation has its actual native terminal law. -/
 theorem terminal_transform {k : ℕ} {S P : Type}
     (code : MultiTapeTM k Bool S) (env : Environment Unit P)
@@ -397,31 +424,33 @@ theorem terminal_transform {k : ℕ} {S P : Type}
   rw [hr]
   rfl
 
-/-- Blank-tape native execution loads its original context, issues the query, reads
-its entire reply and executes the same uniform postprocessor. The actual updated
-context, output and joint resource-bearing oracle memory have the displayed law.
-This is one phase, not a guarded repeated selector or a source batch codec. -/
-theorem exists_query_processor {A : Type} (encoding : A ↪ List Bool)
-    (process : A × List Bool → List Bool)
-    (hprocess : ComputableInPolyTime process (encPair encoding framedBits) encBits) :
-    ∃ (k : ℕ) (S : Type) (_ : Finite S) (program : MultiTapePTM ((3 + k) + 2) Bool S Unit),
-      ∀ (P : Type) (env : Environment Unit P) (a : A) (memory : Memory Unit P),
-        (NativeUnboundedExecution.terminal program env
-          ⟨program.initialConfig (frame (encoding a)), memory⟩).map
-          (Option.map (observe 0)) =
-          (env ((), frame (encoding a)) memory).map fun (reply, next) =>
-            some (⟨tapeOfList (process (a, reply.word)), [],
-              memory.record ((), frame (encoding a)) reply next⟩ : Observation P) := by
-  obtain ⟨k, S, hS, localCode, hl⟩ := exists_processor encoding process hprocess
-  let localProgram := MultiTapePTM.ofDeterministic (Oracle := Unit) localCode
-  let reader := NativeResponseExecution.machine localProgram
-  let loader := loadWord Bool (0 : Fin ((3 + k) + 2))
+/-- Actual blank-tape loading before the full reader and a native continuation. -/
+def loadedMachine {width : ℕ} {S : Type}
+    (continuation : MultiTapePTM width Bool S Unit) :=
+  (MultiTapePTM.ofDeterministic (loadWord Bool (0 : Fin (width + 2)))).seq
+    (NativeResponseExecution.machine continuation)
+
+/-- The actual loader/full-reader compiler preserves the continuation's entire
+unbounded law. Its retained context is the query word, not a supplied realization. -/
+theorem terminal_loaded {width : ℕ} [NeZero width] {S P : Type}
+    (continuation : MultiTapePTM width Bool S Unit) (env : Environment Unit P)
+    (input : List Bool) (memory : Memory Unit P) :
+    NativeUnboundedExecution.terminal (loadedMachine continuation) env
+      ⟨(loadedMachine continuation).initialConfig input, memory⟩ =
+      (env ((), input) memory).bind fun (reply, next) =>
+        (NativeUnboundedExecution.terminal continuation env
+          (NativeResponseExecution.localStartFrom continuation input memory reply next
+            (NativeResponseExecution.Workspace.words
+              (Function.update (fun _ => []) 0 input)))).map
+          (Option.map fun final => NativeSequential.right
+            (First := (Unit ⊕ RewindState) ⊕ RewindWorkState)
+            (NativeResponseExecution.resultWorld input final)) := by
+  have hwidth : 0 < width := Nat.pos_of_ne_zero (NeZero.ne width)
+  let reader := NativeResponseExecution.machine continuation
+  let loader := loadWord Bool (0 : Fin (width + 2))
   let program := (MultiTapePTM.ofDeterministic loader).seq reader
-  refine ⟨k, _, inferInstance, program, ?_⟩
-  intro P env a memory
-  let input := frame (encoding a)
-  let words : Fin ((3 + k) + 2) → List Bool := Function.update (fun _ => []) 0 input
-  have hload := transformsTapes_loadWord (0 : Fin ((3 + k) + 2)) input
+  let words : Fin (width + 2) → List Bool := Function.update (fun _ => []) 0 input
+  have hload := transformsTapes_loadWord (0 : Fin (width + 2)) input
   have hload' := hload.imp
     (P' := fun inp ws => inp = input ∧ ws = fun _ => [])
     (Q' := fun _ _ ws' emitted => ws' = words ∧ emitted = [])
@@ -442,11 +471,13 @@ theorem exists_query_processor {A : Type} (encoding : A ↪ List Bool)
       · rfl
       · rfl
     · rfl
-  rw [hi, NativeSequential.terminal_seq, ht, PMF.pure_bind, PMF.map_comp]
+  change NativeUnboundedExecution.terminal program env ⟨program.initialConfig input, memory⟩ = _
+  rw [hi, NativeSequential.terminal_seq, ht, PMF.pure_bind]
+  dsimp only
   have he : NativeSequential.resume reader
       (wordWorld input (S := (Unit ⊕ RewindState) ⊕ RewindWorkState)
         none words (fun _ => ⟨[], [], 0⟩) memory) =
-      NativeResponseExecution.startFrom localProgram input memory
+      NativeResponseExecution.startFrom continuation input memory
         (NativeResponseExecution.Workspace.words
           (Function.update (fun _ => []) 0 input)) := by
     apply congrArg (fun cfg => (⟨cfg, memory⟩ : World _ _ Unit P input))
@@ -462,18 +493,18 @@ theorem exists_query_processor {A : Type} (encoding : A ↪ List Bool)
           rw [Fin.append_left]
           by_cases hj : j = 0
           · subst j
-            have hz : (0 : Fin (3 + k)).castAdd 2 = 0 := Fin.ext rfl
+            have hz : (0 : Fin width).castAdd 2 = 0 := Fin.ext rfl
             simp [words, hz]
-          · have hn : j.castAdd 2 ≠ (0 : Fin ((3 + k) + 2)) := by
+          · have hn : j.castAdd 2 ≠ (0 : Fin (width + 2)) := by
               intro h; apply hj
-              exact Fin.ext (congrArg (fun i : Fin ((3 + k) + 2) => i.val) h)
+              exact Fin.ext (congrArg (fun i : Fin (width + 2) => i.val) h)
             simp only [words, Function.update_of_ne hn, Function.update_of_ne hj]
         | right j =>
           rw [Fin.append_right]
-          have hn : Fin.natAdd (3 + k) j ≠ 0 := by
+          have hn : Fin.natAdd width j ≠ 0 := by
             intro h
             have hv := congrArg Fin.val h
-            change 3 + k + j.val = 0 at hv
+            change width + j.val = 0 at hv
             omega
           simp only [words, Function.update_of_ne hn]
           fin_cases j <;> simp
@@ -486,6 +517,35 @@ theorem exists_query_processor {A : Type} (encoding : A ↪ List Bool)
       · rfl
     · rfl
   rw [he, NativeResponseExecution.terminal_from, PMF.map_bind]
+  apply PMF.bind_congr_on_support
+  intro pair _
+  rw [PMF.map_comp]
+  congr 1
+  funext result
+  cases result <;> rfl
+
+/-- Blank-tape native execution loads its original context, issues the query, reads
+its entire reply and executes the same uniform postprocessor. The actual updated
+context, output and joint resource-bearing oracle memory have the displayed law.
+This is one phase, not a guarded repeated selector or a source batch codec. -/
+theorem exists_query_processor {A : Type} (encoding : A ↪ List Bool)
+    (process : A × List Bool → List Bool)
+    (hprocess : ComputableInPolyTime process (encPair encoding framedBits) encBits) :
+    ∃ (k : ℕ) (S : Type) (_ : Finite S) (program : MultiTapePTM ((3 + k) + 2) Bool S Unit),
+      ∀ (P : Type) (env : Environment Unit P) (a : A) (memory : Memory Unit P),
+        (NativeUnboundedExecution.terminal program env
+          ⟨program.initialConfig (frame (encoding a)), memory⟩).map
+          (Option.map (observe 0)) =
+          (env ((), frame (encoding a)) memory).map fun (reply, next) =>
+            some (⟨tapeOfList (process (a, reply.word)), [],
+              memory.record ((), frame (encoding a)) reply next⟩ : Observation P) := by
+  obtain ⟨k, S, hS, localCode, hl⟩ := exists_processor encoding process hprocess
+  let localProgram := MultiTapePTM.ofDeterministic (Oracle := Unit) localCode
+  let program := loadedMachine localProgram
+  refine ⟨k, _, inferInstance, program, ?_⟩
+  intro P env a memory
+  let input := frame (encoding a)
+  rw [terminal_loaded, PMF.map_bind]
   conv_rhs => rw [PMF.map]
   apply PMF.bind_congr_on_support
   intro pair _

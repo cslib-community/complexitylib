@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-public import Complexity.Probability.StochasticOracle.NativeRetention.RuntimeControl
+public import Complexity.Probability.StochasticOracle.NativeRetention.FinalizedResponse
 public import Complexity.Computability.Probabilistic.NativeGuardedContext
 import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.RunsWords
 import Complexity.Probability.PMF.Bind
@@ -19,7 +19,9 @@ import Mathlib.Tactic
 The original rational instance and startup allowances determine a fresh runtime
 state, with empty authenticated history. Native code checks its computed guard
 before entering the actual runtime updater on a prepared virtual input.
-This is initial guarded composition, not a repeated source-admitted selector.
+The newly computed post-response guard is also executed for final emission.
+A live response branch still terminates silently; this is not repeated feedback
+or a source-admitted selector.
 Reservations are not measured physical deadlines [Wang2027], model pp. 4--6.
 
 ## Main definitions
@@ -30,8 +32,8 @@ Reservations are not measured physical deadlines [Wang2027], model pp. 4--6.
 ## Main results
 
 * `exists_guarded_phase`: one actual blank-tape native program executes the initial
-  guard, converts the live original input and runs one full query/update phase.
-  The updated guard remains stored; post-response dispatch/restart is not proved.
+  guard, converts the live original input and runs one full query/update/dispatch phase.
+  The updated guard is executed for final emission; repeated feedback is not proved.
 -/
 
 public section
@@ -283,10 +285,12 @@ private theorem input_program :
           (Option.map (NativeReplyContext.observe ⟨4, by omega⟩)) =
           (env ((), frame (RuntimeControl.encoding (state data))) memory).map
             fun (reply, next) => some
-              (⟨tapeOfList (RuntimeControl.process (state data, reply.word)), [],
+              (⟨tapeOfList (RuntimeControl.process (state data, reply.word)),
+                if RuntimeControl.stopped (RuntimeControl.afterReply (state data) reply.word) then
+                  RuntimeControl.result (RuntimeControl.afterReply (state data) reply.word) else [],
                 memory.record ((), frame (RuntimeControl.encoding (state data))) reply next⟩ :
                   NativeReplyContext.Observation P) := by
-  obtain ⟨k, S, hS, phase, hp⟩ := RuntimeControl.exists_native_phase
+  obtain ⟨k, S, hS, phase, hp⟩ := FinalizedResponse.exists_native_phase
   let width := (3 + k) + 2
   let body := (marker width).seq (phase.inputFromTape.extendTapes (virtualTapes width))
   obtain ⟨scratch, R, hR, loader, hl⟩ :=
@@ -302,7 +306,9 @@ private theorem input_program :
           (Option.map (NativeReplyContext.observe ⟨4, by dsimp [width]; omega⟩)) =
           (env ((), frame (RuntimeControl.encoding (state data))) memory).map
             fun (reply, next) => some
-              (⟨tapeOfList (RuntimeControl.process (state data, reply.word)), [],
+              (⟨tapeOfList (RuntimeControl.process (state data, reply.word)),
+                if RuntimeControl.stopped (RuntimeControl.afterReply (state data) reply.word) then
+                  RuntimeControl.result (RuntimeControl.afterReply (state data) reply.word) else [],
                 memory.record ((), frame (RuntimeControl.encoding (state data))) reply next⟩ :
                   NativeReplyContext.Observation P) := by
     refine ⟨_, inferInstance, program, ?_⟩
@@ -331,6 +337,7 @@ private theorem input_program :
           (NativeContextLoader.loadedStart (marker width) (encoding data)
             (frame (RuntimeControl.encoding (state data))) memory) := rfl
       rw [he, body_terminal, hp]
+      rfl
   obtain ⟨T, hT, code, hcode⟩ := hresult
   let e : Fin ((4 + width) + scratch) ↪ Fin (4 + (width + scratch)) :=
     Fin.castLEEmb (by omega)
@@ -423,8 +430,9 @@ private theorem clear_then {k : ℕ} {S P : Type}
 
 /-- One actual native program starts on original instance/startup input with blank
 work tapes. Its computed initial guard runs before any query, and only the live
-branch converts to the runtime-State ABI and executes the uniform updater.
-The live branch still executes one raw transport phase, not a feedback selector. -/
+branch converts to the runtime-State ABI, executes the uniform updater and reads
+the actual new guard for final emission.
+An updated live flag enters a silent terminal continuation; this is not feedback. -/
 theorem exists_guarded_phase :
     ∃ (width : ℕ) (S : Type) (_ : Finite S)
       (program : MultiTapePTM width Bool S Unit) (context : Fin width),
@@ -437,7 +445,9 @@ theorem exists_guarded_phase :
             NativeReplyContext.Observation P))
         else (env ((), frame (RuntimeControl.encoding (state data))) memory).map
           fun (reply, next) => some
-            (⟨tapeOfList (RuntimeControl.process (state data, reply.word)), [],
+            (⟨tapeOfList (RuntimeControl.process (state data, reply.word)),
+                if RuntimeControl.stopped (RuntimeControl.afterReply (state data) reply.word) then
+                  RuntimeControl.result (RuntimeControl.afterReply (state data) reply.word) else [],
               memory.record ((), frame (RuntimeControl.encoding (state data))) reply next⟩ :
                 NativeReplyContext.Observation P) := by
   obtain ⟨k, hk, S, hS, phase, hp⟩ := input_program

@@ -14,7 +14,8 @@ import Mathlib.Tactic
 One finite program handles original inputs with zero/live allowances and empty
 or nonempty ground. Stopped inputs never call the environment. Live inputs reach
 the same uniform updater with a correlated unbounded reply and authenticated raw
-history. This is initial guarding plus one phase, not a feedback/deadline selector.
+history. The updated guard is executed after this phase; a live branch still terminates
+silently rather than executing a feedback/deadline selector.
 -/
 
 noncomputable section
@@ -41,7 +42,9 @@ private def liveOutcome (input : GuardedStartup.Input) (success : Bool) (seed va
     NativeReplyContext.Observation (Bool × ℕ) :=
   let old := GuardedStartup.state input
   let tokens := seed + value
-  ⟨tapeOfList (RuntimeControl.process (old, report success tokens)), [],
+  let updated := RuntimeControl.afterReply old (report success tokens)
+  ⟨tapeOfList (RuntimeControl.process (old, report success tokens)),
+    if RuntimeControl.stopped updated then RuntimeControl.result updated else [],
     (memory success seed).record ((), frame (RuntimeControl.encoding old))
       (receipt success tokens) (success, tokens)⟩
 
@@ -151,9 +154,8 @@ example : ∃ (width : ℕ) (S : Type) (_ : Finite S)
   exact RuntimeControl.afterReply_history_matches _ _ (memory success seed) _ _
     (RuntimeControl.initial_history_matches _ _)
 
-/-- The integrated entry computes a stopped packet after consuming its last turn,
-planning allowance or reservation. It still halts with stored control and empty
-ordinary output; this is deliberately not an executed post-response finalizer. -/
+/-- The integrated entry executes its stopped packet after consuming its last turn,
+planning allowance or reservation. The single actual billed event is retained. -/
 example : ∃ (width : ℕ) (S : Type) (_ : Finite S)
     (program : MultiTapePTM width Bool S Unit) (context : Fin width),
     ∀ input ∈ [data 1 2 4, data 3 1 4, data 3 2 1], ∀ seed,
@@ -161,8 +163,8 @@ example : ∃ (width : ℕ) (S : Type) (_ : Finite S)
         ⟨program.initialConfig (GuardedStartup.encoding input), memory false seed⟩).map
         (Option.map (NativeReplyContext.observe context))).map
         (Option.map fun result =>
-          (result.contextTape 0, result.output, result.memory.events.length)) =
-        PMF.pure (some (some true, [], 1)) := by
+          (result.contextTape 0, result.memory.events.length)) =
+        PMF.pure (some (some true, 1)) := by
   obtain ⟨width, S, hS, program, context, hp⟩ := actual_native_law
   refine ⟨width, S, hS, program, context, ?_⟩
   intro input hi seed
@@ -175,9 +177,9 @@ example : ∃ (width : ℕ) (S : Type) (_ : Finite S)
   rw [hp, hl]
   simp only [Bool.false_eq_true, ↓reduceIte, PMF.map_comp]
   have he : (Option.map (fun result : NativeReplyContext.Observation (Bool × ℕ) =>
-      (result.contextTape 0, result.output, result.memory.events.length)) ∘
+      (result.contextTape 0, result.memory.events.length)) ∘
       (fun value => some (liveOutcome input false seed value))) =
-      fun _ => some (some true, [], 1) := by
+      fun _ => some (some true, 1) := by
     funext value
     simp only [List.mem_cons, List.not_mem_nil, or_false] at hi
     rcases hi with rfl | rfl | rfl <;>
@@ -186,6 +188,67 @@ example : ∃ (width : ℕ) (S : Type) (_ : Finite S)
         RuntimeControl.initial, data, tapeOfList_zero, Memory.record, memory]
   rw [he]
   exact PMF.map_const _ _
+
+private theorem success_dispatch (tokens : ℕ) :
+    (if RuntimeControl.stopped (RuntimeControl.afterReply
+        (GuardedStartup.state (data 3 2 4)) (report true tokens)) then
+      RuntimeControl.result (RuntimeControl.afterReply
+        (GuardedStartup.state (data 3 2 4)) (report true tokens)) else []) = [true, true] := by
+  norm_num [RuntimeControl.stopped, RuntimeControl.result, RuntimeControl.afterReply,
+    GuardedStartup.state, RuntimeControl.initial, data, Packets.decision, Packets.assemble,
+    report, Packets.families_report, proposals, sourceIndices, complete, output, retain,
+    ground, covered, population, NativeRetention.step, certified, newly, decodeFamily,
+    List.range_succ, List.ofFn_succ, Finset.mem_filter, List.filterMap_cons,
+    List.filterMap_nil, NativeRetention.normalize, cost, price]
+
+private theorem cancel_dispatch (tokens : ℕ) :
+    (if RuntimeControl.stopped (RuntimeControl.afterReply
+        (GuardedStartup.state (data 3 2 4)) (report false tokens)) then
+      RuntimeControl.result (RuntimeControl.afterReply
+        (GuardedStartup.state (data 3 2 4)) (report false tokens)) else []) = [] := by
+  norm_num [RuntimeControl.stopped, RuntimeControl.result, RuntimeControl.afterReply,
+    GuardedStartup.state, RuntimeControl.initial, data, Packets.decision, Packets.assemble,
+    report, Packets.families_report, proposals, sourceIndices, complete, output, retain,
+    ground, covered, population]
+  intro _
+  exact ⟨0, by decide⟩
+
+private theorem live_output (success : Bool) (seed value : ℕ) :
+    (liveOutcome (data 3 2 4) success seed value).output =
+      if success then [true, true] else [] := by
+  dsimp only [liveOutcome]
+  cases success
+  · simp only [Bool.false_eq_true, ↓reduceIte]
+    exact cancel_dispatch (seed + value)
+  · simp only [↓reduceIte]
+    exact success_dispatch (seed + value)
+
+private theorem project_live (input : GuardedStartup.Input) (success : Bool) (seed value : ℕ) :
+    Option.map (fun observed : NativeReplyContext.Observation (Bool × ℕ) =>
+      (observed.output, observed.memory.events.length))
+        (some (liveOutcome input success seed value)) =
+      some ((liveOutcome input success seed value).output, (1 : ℕ)) := rfl
+
+/-- The same blank-tape machine actually emits the locally retained full-cover mask
+on success and no mask on cancellation. Its single event keeps the correlated
+unbounded invoice and duration jointly; private context bytes are not output. -/
+example : ∃ (width : ℕ) (S : Type) (_ : Finite S)
+    (program : MultiTapePTM width Bool S Unit) (context : Fin width), ∀ (success : Bool) (seed : ℕ),
+      ((NativeUnboundedExecution.terminal program environment
+        ⟨program.initialConfig (GuardedStartup.encoding (data 3 2 4)), memory success seed⟩).map
+        (Option.map (NativeReplyContext.observe context))).map
+        (Option.map fun observed : NativeReplyContext.Observation (Bool × ℕ) =>
+          (observed.output, observed.memory.events.length)) =
+      NativeBatchMetadata.metadata.map fun _ =>
+        some (if success then [true, true] else [], (1 : ℕ)) := by
+  obtain ⟨width, S, hS, program, context, hp⟩ := actual_native_law
+  refine ⟨width, S, hS, program, context, ?_⟩
+  intro success seed
+  rw [hp, live]
+  simp only [Bool.false_eq_true, ↓reduceIte, PMF.map_comp]
+  apply congrArg (fun f : ℕ → Option (List Bool × ℕ) => NativeBatchMetadata.metadata.map f)
+  funext value
+  rw [Function.comp_apply, project_live, live_output]
 
 private def emptySource : Environment Unit Unit :=
   fun _ memory => PMF.pure (⟨[], 0, 0⟩, memory.privateState)
@@ -198,7 +261,11 @@ example : ∃ (width : ℕ) (S : Type) (_ : Finite S)
       ⟨program.initialConfig (GuardedStartup.encoding (data 3 2 4)), ⟨(), []⟩⟩).map
       (Option.map (NativeReplyContext.observe context)) =
       PMF.pure (some (⟨tapeOfList
-        (RuntimeControl.process (GuardedStartup.state (data 3 2 4), [])), [],
+        (RuntimeControl.process (GuardedStartup.state (data 3 2 4), [])),
+        if RuntimeControl.stopped
+            (RuntimeControl.afterReply (GuardedStartup.state (data 3 2 4)) []) then
+          RuntimeControl.result
+            (RuntimeControl.afterReply (GuardedStartup.state (data 3 2 4)) []) else [],
         (⟨(), []⟩ : Memory Unit Unit).record
           ((), frame (RuntimeControl.encoding (GuardedStartup.state (data 3 2 4))))
           ⟨[], 0, 0⟩ ()⟩ : NativeReplyContext.Observation Unit)) := by

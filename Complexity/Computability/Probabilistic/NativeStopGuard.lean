@@ -18,7 +18,8 @@ A computed stop bit and framed output occupy the beginning of context tape zero.
 The native guard emits the stored output without an oracle call when stopping;
 otherwise it enters the actual consumer on unchanged tapes. Stopped laws are
 proved from the transition table, preserving arbitrary consumer divergence and
-shared oracle memory. This is an initial guard, not a post-response controller or
+shared oracle memory and arbitrary live answer channels. The channel-general laws
+also support post-response dispatch; this reader is not a complete
 source-admitted adaptive selector for [Wang2027], Theorem 5 p. 12/App. A.5 p. 16.
 
 ## Main definitions
@@ -29,6 +30,7 @@ source-admitted adaptive selector for [Wang2027], Theorem 5 p. 12/App. A.5 p. 16
 ## Main results
 
 * `terminal_stop`, `terminal_go`: exact unbounded native laws for both branches.
+* `terminal_stop_channels`, `terminal_go_channels`: dispatch retaining live answer channels.
 * `runtime_observation`: the joint law with the existing correlated two-query carrier.
 -/
 
@@ -87,19 +89,25 @@ private theorem terminal_run {S P : Type} {input : List Bool}
 
 private def point {S P : Type} (_consumer : MultiTapePTM 4 Bool S Unit)
     (input word : List Bool) (memory : Memory Unit P) (state : Option (Fin 3 ⊕ S))
-    (head : ℕ) (out : List Bool) : World 4 (Fin 3 ⊕ S) Unit P input :=
+    (head : ℕ) (out : List Bool)
+    (channels : Unit → Channel Bool := fun _ => ⟨[], [], 0⟩) : World 4 (Fin 3 ⊕ S) Unit P input :=
   ⟨⟨⟨state, 1, ![tapeOfList word, fun _ => none, fun _ => none, fun _ => none],
-    ![(head : ℤ), 0, 0, 0], out⟩, fun _ => ⟨[], [], 0⟩⟩, memory⟩
+    ![(head : ℤ), 0, 0, 0], out⟩, channels⟩, memory⟩
 
 private theorem tag_step {S P : Type} (consumer : MultiTapePTM 4 Bool S Unit)
     (env : Environment Unit P) (input pre rest payload out : List Bool)
-    (memory : Memory Unit P) (bit : Bool) :
+    (memory : Memory Unit P) (bit : Bool) (channels : Unit → Channel Bool) :
     NativeOpenExecution.step (machine consumer) env
-      (point consumer input (pre ++ true :: bit :: (frame rest ++ payload)) memory
+      (point (channels := channels) consumer input (pre ++ true :: bit :: (frame rest ++ payload))
+        memory
         (some (.inl 1)) pre.length out) =
-      PMF.pure (point consumer input (pre ++ true :: bit :: (frame rest ++ payload)) memory
+      PMF.pure (point (channels := channels) consumer
+        input (pre ++ true :: bit :: (frame rest ++ payload))
+        memory
         (some (.inl 2)) (pre.length + 1) out) := by
-  have hs : (point consumer input (pre ++ true :: bit :: (frame rest ++ payload)) memory
+  have hs : (point (channels := channels) consumer
+        input (pre ++ true :: bit :: (frame rest ++ payload))
+        memory
       (some (.inl 1)) pre.length out).config.tapes.workTapeSymbols 0 = some true := by
     simp [point, Cfg.workTapeSymbols]
   simp only [point] at hs
@@ -112,17 +120,22 @@ private theorem tag_step {S P : Type} (consumer : MultiTapePTM 4 Bool S Unit)
     · simp [Config.step, Action.apply]
     · funext i; fin_cases i <;> simp [Config.step, Action.apply]
     · simp [Config.step, Action.apply]
-  · rfl
+  · simp [Config.step]
 
 private theorem value_step {S P : Type} (consumer : MultiTapePTM 4 Bool S Unit)
     (env : Environment Unit P) (input pre rest payload out : List Bool)
-    (memory : Memory Unit P) (bit : Bool) :
+    (memory : Memory Unit P) (bit : Bool) (channels : Unit → Channel Bool) :
     NativeOpenExecution.step (machine consumer) env
-      (point consumer input (pre ++ true :: bit :: (frame rest ++ payload)) memory
+      (point (channels := channels) consumer input (pre ++ true :: bit :: (frame rest ++ payload))
+        memory
         (some (.inl 2)) (pre.length + 1) out) =
-      PMF.pure (point consumer input (pre ++ true :: bit :: (frame rest ++ payload)) memory
+      PMF.pure (point (channels := channels) consumer
+        input (pre ++ true :: bit :: (frame rest ++ payload))
+        memory
         (some (.inl 1)) (pre.length + 2) (out ++ [bit])) := by
-  have hs : (point consumer input (pre ++ true :: bit :: (frame rest ++ payload)) memory
+  have hs : (point (channels := channels) consumer
+        input (pre ++ true :: bit :: (frame rest ++ payload))
+        memory
       (some (.inl 2)) (pre.length + 1) out).config.tapes.workTapeSymbols 0 = some bit := by
     have hx : tapeOfList (pre ++ true :: bit :: (frame rest ++ payload))
         ((pre.length + 1 : ℕ) : ℤ) = some bit := by
@@ -139,16 +152,17 @@ private theorem value_step {S P : Type} (consumer : MultiTapePTM 4 Bool S Unit)
   · refine Cfg.ext rfl ?_ rfl ?_ rfl
     · simp [Config.step, Action.apply]
     · funext i; fin_cases i <;> simp [Config.step, Action.apply]; omega
-  · rfl
+  · simp [Config.step]
 
 private theorem tag_end {S P : Type} (consumer : MultiTapePTM 4 Bool S Unit)
     (env : Environment Unit P) (input pre payload out : List Bool)
-    (memory : Memory Unit P) :
+    (memory : Memory Unit P) (channels : Unit → Channel Bool) :
     NativeOpenExecution.step (machine consumer) env
-      (point consumer input (pre ++ false :: payload) memory (some (.inl 1)) pre.length out) =
-      PMF.pure (point consumer input (pre ++ false :: payload) memory none
+      (point (channels := channels) consumer input (pre ++ false :: payload)
+        memory (some (.inl 1)) pre.length out) =
+      PMF.pure (point (channels := channels) consumer input (pre ++ false :: payload) memory none
         (pre.length + 1) out) := by
-  have hs : (point consumer input (pre ++ false :: payload) memory
+  have hs : (point (channels := channels) consumer input (pre ++ false :: payload) memory
       (some (.inl 1)) pre.length out).config.tapes.workTapeSymbols 0 = some false := by
     simp [point, Cfg.workTapeSymbols]
   simp only [point] at hs
@@ -161,15 +175,18 @@ private theorem tag_end {S P : Type} (consumer : MultiTapePTM 4 Bool S Unit)
     · simp [Config.step, Action.apply]
     · funext i; fin_cases i <;> simp [Config.step, Action.apply]
     · simp [Config.step, Action.apply]
-  · rfl
+  · simp [Config.step]
 
 private theorem frame_terminal {S P : Type} (consumer : MultiTapePTM 4 Bool S Unit)
-    (env : Environment Unit P) (input rest payload : List Bool) (memory : Memory Unit P) :
+    (env : Environment Unit P) (input rest payload : List Bool) (memory : Memory Unit P)
+    (channels : Unit → Channel Bool) :
     ∀ pre out,
     NativeUnboundedExecution.terminal (machine consumer) env
-      (point consumer input (pre ++ frame rest ++ payload) memory (some (.inl 1))
+      (point (channels := channels) consumer input (pre ++ frame rest ++ payload) memory
+        (some (.inl 1))
         pre.length out) =
-      PMF.pure (some (point consumer input (pre ++ frame rest ++ payload) memory none
+      PMF.pure (some (point (channels := channels) consumer input
+        (pre ++ frame rest ++ payload) memory none
         (pre.length + 2 * rest.length + 1) (out ++ rest))) := by
   induction rest with
   | nil =>
@@ -199,11 +216,12 @@ private theorem frame_terminal {S P : Type} (consumer : MultiTapePTM 4 Bool S Un
 /-- Actual stopped world: the output is emitted from its frame on the work tape,
 and the complete runtime payload and previous oracle memory remain intact. -/
 @[expose] def stopped {S P : Type} (_consumer : MultiTapePTM 4 Bool S Unit)
-    (input output payload : List Bool) (memory : Memory Unit P) :
+    (input output payload : List Bool) (memory : Memory Unit P)
+    (channels : Unit → Channel Bool := fun _ => ⟨[], [], 0⟩) :
     World 4 (Fin 3 ⊕ S) Unit P input :=
   ⟨⟨⟨none, 1,
     ![tapeOfList (packet true output payload), fun _ => none, fun _ => none, fun _ => none],
-    ![(1 + 2 * output.length + 1 : ℕ), 0, 0, 0], output⟩, fun _ => ⟨[], [], 0⟩⟩, memory⟩
+    ![(1 + 2 * output.length + 1 : ℕ), 0, 0, 0], output⟩, channels⟩, memory⟩
 
 private theorem initial_point {S P : Type} (consumer : MultiTapePTM 4 Bool S Unit)
     (input word : List Bool) (memory : Memory Unit P) :
@@ -217,11 +235,14 @@ private theorem initial_point {S P : Type} (consumer : MultiTapePTM 4 Bool S Uni
   · rfl
 
 private theorem check_stop {S P : Type} (consumer : MultiTapePTM 4 Bool S Unit)
-    (env : Environment Unit P) (input output payload : List Bool) (memory : Memory Unit P) :
+    (env : Environment Unit P) (input output payload : List Bool)
+    (memory : Memory Unit P) (channels : Unit → Channel Bool) :
     NativeOpenExecution.step (machine consumer) env
-      (point consumer input (packet true output payload) memory (some (.inl 0)) 0 []) =
-      PMF.pure (point consumer input (packet true output payload) memory (some (.inl 1)) 1 []) := by
-  have hs : (point consumer input (packet true output payload) memory
+      (point (channels := channels) consumer input (packet true output payload)
+        memory (some (.inl 0)) 0 []) =
+      PMF.pure (point (channels := channels) consumer input (packet true output payload)
+        memory (some (.inl 1)) 1 []) := by
+  have hs : (point (channels := channels) consumer input (packet true output payload) memory
       (some (.inl 0)) 0 []).config.tapes.workTapeSymbols 0 = some true := by
     simp [point, packet, Cfg.workTapeSymbols, tapeOfList_zero]
   simp only [point] at hs
@@ -232,7 +253,7 @@ private theorem check_stop {S P : Type} (consumer : MultiTapePTM 4 Bool S Unit)
   · refine Cfg.ext rfl ?_ rfl ?_ rfl
     · simp [Config.step, Action.apply]
     · funext i; fin_cases i <;> simp [Config.step, Action.apply]
-  · rfl
+  · simp [Config.step]
 
 /-- The true guard halts without executing any consumer instruction or sampling
 any oracle response. The actual framed output is emitted and earlier bills persist. -/
@@ -245,17 +266,39 @@ theorem terminal_stop {S P : Type} (consumer : MultiTapePTM 4 Bool S Unit)
   rw [initial_point, NativeUnboundedExecution.terminal, StoppedProcess.terminal_step,
     check_stop, PMF.pure_bind]
   change NativeUnboundedExecution.terminal (machine consumer) env _ = _
-  exact frame_terminal consumer env input output payload memory [true] []
+  exact frame_terminal consumer env input output payload memory (fun _ => ⟨[], [], 0⟩) [true] []
+
+/-- The executed stop reader also preserves arbitrary live answer channels.
+It can therefore run immediately after an actual response, without resetting the oracle. -/
+theorem terminal_stop_channels {S P : Type} (consumer : MultiTapePTM 4 Bool S Unit)
+    (env : Environment Unit P) (input output payload : List Bool) (memory : Memory Unit P)
+    (channels : Unit → Channel Bool) :
+    NativeUnboundedExecution.terminal (machine consumer) env
+      ⟨{ (NativeContextLoader.loadedStart (machine consumer) input
+        (packet true output payload) memory).config with channels := channels }, memory⟩ =
+      PMF.pure (some (stopped consumer input output payload memory channels)) := by
+  have hi : (⟨{ (NativeContextLoader.loadedStart (machine consumer) input
+      (packet true output payload) memory).config with channels := channels }, memory⟩ :
+      World 4 (Fin 3 ⊕ S) Unit P input) =
+      point (channels := channels) consumer input (packet true output payload) memory
+        (some (.inl 0)) 0 [] := by
+    rw [initial_point]
+    rfl
+  rw [hi, NativeUnboundedExecution.terminal, StoppedProcess.terminal_step,
+    check_stop, PMF.pure_bind]
+  change NativeUnboundedExecution.terminal (machine consumer) env _ = _
+  exact frame_terminal consumer env input output payload memory channels [true] []
 
 private theorem check_go {S P : Type} (consumer : MultiTapePTM 4 Bool S Unit)
-    (env : Environment Unit P) (input output payload : List Bool) (memory : Memory Unit P) :
+    (env : Environment Unit P) (input output payload : List Bool) (memory : Memory Unit P)
+    (channels : Unit → Channel Bool) :
     NativeOpenExecution.step (machine consumer) env
-      (NativeContextLoader.loadedStart (machine consumer) input
-        (packet false output payload) memory) =
+      (point (channels := channels) consumer input (packet false output payload) memory
+        (some (.inl 0)) 0 []) =
       PMF.pure (NativeSequential.right (First := Fin 3)
-        (NativeContextLoader.loadedStart consumer input (packet false output payload) memory)) := by
-  rw [initial_point]
-  have hs : (point consumer input (packet false output payload) memory
+        (⟨{ (NativeContextLoader.loadedStart consumer input
+          (packet false output payload) memory).config with channels := channels }, memory⟩)) := by
+  have hs : (point (channels := channels) consumer input (packet false output payload) memory
       (some (.inl 0)) 0 []).config.tapes.workTapeSymbols 0 = some false := by
     simp [point, packet, Cfg.workTapeSymbols, tapeOfList_zero]
   simp only [point] at hs
@@ -272,7 +315,7 @@ private theorem check_go {S P : Type} (consumer : MultiTapePTM 4 Bool S Unit)
     · funext i; fin_cases i <;>
         simp [NativeContextLoader.loadedStart, Sequential.right,
           Cfg.mapState, Config.step, Action.apply, wordsCfg]
-  · rfl
+  · simp [Config.step, Sequential.right]
 
 /-- The false guard dispatches to actual consumer code on unchanged native storage.
 Its unbounded response-dependent execution, divergence and resource law are retained. -/
@@ -284,7 +327,8 @@ theorem terminal_go {S P : Type} (consumer : MultiTapePTM 4 Bool S Unit)
       (NativeUnboundedExecution.terminal consumer env
         (NativeContextLoader.loadedStart consumer input (packet false output payload) memory)).map
         (Option.map (NativeSequential.right (First := Fin 3))) := by
-  rw [NativeUnboundedExecution.terminal, StoppedProcess.terminal_step, check_go, PMF.pure_bind]
+  rw [initial_point, NativeUnboundedExecution.terminal, StoppedProcess.terminal_step,
+    check_go, PMF.pure_bind]
   exact terminal_run consumer env _
 
 /-- The guard composed with the concrete runtime carrier. True means no oracle
@@ -323,5 +367,28 @@ theorem runtime_observation {P : Type} (env : Environment Unit P)
   | true =>
     rw [terminal_stop, PMF.pure_map]
     rfl
+
+/-- Live dispatch preserves actual response channels as well as ordinary storage.
+The consumer may query again using the same shared hidden oracle state. -/
+theorem terminal_go_channels {S P : Type} (consumer : MultiTapePTM 4 Bool S Unit)
+    (env : Environment Unit P) (input output payload : List Bool) (memory : Memory Unit P)
+    (channels : Unit → Channel Bool) :
+    NativeUnboundedExecution.terminal (machine consumer) env
+      ⟨{ (NativeContextLoader.loadedStart (machine consumer) input
+        (packet false output payload) memory).config with channels := channels }, memory⟩ =
+      (NativeUnboundedExecution.terminal consumer env
+        ⟨{ (NativeContextLoader.loadedStart consumer input
+          (packet false output payload) memory).config with channels := channels }, memory⟩).map
+          (Option.map (NativeSequential.right (First := Fin 3))) := by
+  have hi : (⟨{ (NativeContextLoader.loadedStart (machine consumer) input
+      (packet false output payload) memory).config with channels := channels }, memory⟩ :
+      World 4 (Fin 3 ⊕ S) Unit P input) =
+      point (channels := channels) consumer input (packet false output payload) memory
+        (some (.inl 0)) 0 [] := by
+    rw [initial_point]
+    rfl
+  rw [hi, NativeUnboundedExecution.terminal, StoppedProcess.terminal_step,
+    check_go, PMF.pure_bind]
+  exact terminal_run consumer env _
 
 end Cslib.Probability.NativeStopGuard

@@ -273,8 +273,15 @@ the oracle ledger. Native marker/virtual-input execution supplies the conversion
 not a host-supplied continuation or prepared State. `RuntimeControl.HistoryMatches`
 authenticates raw stored requests/replies/private bytes against actual events, with
 initialization and actual-response preservation laws. A correlated unbounded-report
-client checks the same code. Post-response dispatch/final output, actual batch
-admission and repeated feedback remain open; no native upper theorem follows yet.
+client checks the same code. The live branch now composes
+`FinalizedResponse.exists_native_phase`: actual full reading and semantic updating
+are followed by the executed native guard on the actual answer channels. A stopped
+packet emits its stored mask (or failure word); a live packet enters a silent
+terminal continuation. The integrated client observes a genuine two-row cover mask
+and correlated unbounded invoice/duration, not merely a stored flag. This closes
+one-response finalization, not repeated feedback: native next-query re-entry,
+outer buffer/marker/cursor normalization and actual batch admission remain open;
+no native upper theorem follows yet.
 It supplies neither native upper quantitative guarantees nor an optimum comparison.
 An injective header format carries original encoded data, old raw histories,
 private storage and budget/availability/stop/output fields. Those header fields

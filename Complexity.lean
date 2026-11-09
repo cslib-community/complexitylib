@@ -4416,6 +4416,7 @@ public import Complexity.Probability.StochasticOracle.NativeResidualOneTurn
 public import Complexity.Probability.StochasticOracle.NativeRetention
 public import Complexity.Probability.StochasticOracle.NativeRetention.Correctness
 public import Complexity.Probability.StochasticOracle.NativeRetention.Execution
+public import Complexity.Probability.StochasticOracle.NativeRetention.FinalizedResponse
 public import Complexity.Probability.StochasticOracle.NativeRetention.GuardedStartup
 public import Complexity.Probability.StochasticOracle.NativeRetention.InitialContext
 public import Complexity.Probability.StochasticOracle.NativeRetention.Packets

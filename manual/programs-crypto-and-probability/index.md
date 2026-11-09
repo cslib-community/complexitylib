@@ -1861,7 +1861,11 @@ the computed output while preserving the entire prior oracle ledger. The live
 branch clears the packet, computes the fresh State from the original input, and
 uses native marker/virtual-input execution to run the full query/updater. The
 returned observation contains the actual updated packet, ordinary output and
-hidden oracle memory jointly. It does not dispatch on the new stop bit.
+hidden oracle memory jointly. Its live branch now uses
+`FinalizedResponse.exists_native_phase`, which executes the updated guard after
+the full reply and uniform semantic update. The actual native reader checks the
+new packet on retained response channels, emits the computed mask on stopping,
+and otherwise enters a silent terminal continuation. It issues no second query.
 
 `RuntimeControl.HistoryMatches` relates stored raw requests/replies/private bytes
 to actual native events. `initial_history_matches` and
@@ -1869,22 +1873,27 @@ to actual native events. `initial_history_matches` and
 actual framed-State request. The [guarded startup client](../../ComplexityTests/NativeGuardedStartup.lean)
 checks the compiled code on initial completion, each exhausted allowance,
 nonempty cover and a single hidden-state source with arbitrarily long correlated
-reports, including the observed history invariant. From the same warm checkout:
+reports, including the observed history invariant. The same compiled program
+now emits the locally retained nontrivial cover mask on a successful report and
+no mask on cancellation, keeping the actual unbounded invoice and duration jointly.
+Exhausted turn/planning/reservation and empty-report cases exercise the final guard.
+From the same warm checkout:
 
 ```bash
 scripts/build.sh ComplexityTests.NativeGuardedStartup
 ```
 
-This closes initial guarded ABI conversion, not post-response dispatch or repeated
-feedback. Its request remains framed runtime-state data, not a proved
+This closes initial guarded ABI conversion and one-response final dispatch,
+not repeated feedback. Its request remains framed runtime-state data, not a proved
 source-admitted batch packet. The opportunity count is a
 single-opportunity planning allowance, not a verified consumed-opportunity ledger
 for arbitrary concurrent batches. Allotments reserve latency units; the native
-interface does not expose the ledger's real elapsed time. The final guard packet
-must still be read, its payload handed to the next phase, and a source-valid next
-batch planned before a feedback loop is obtained. The outer reader's reply buffer
-and marker also remain to be cleared. In particular, recomputing a stop bit is not
-an executed guarded restart or native upper-policy/optimum theorem.
+interface does not expose the ledger's real elapsed time. A live final packet's
+payload must still be handed to a source-valid next batch planner and the next
+query entered by the same code before a feedback loop is obtained. The outer reader's reply buffer
+and marker also remain to be cleared, and the virtual-input cursors normalized.
+Executed final emission alone is not an executed guarded restart or native
+upper-policy/optimum theorem.
 
 Import `Complexity.Probability.StochasticOracle.NativeRetention.ResponseExecution`
 for `exists_query_retention`. Its continuation code is derived from the existing
