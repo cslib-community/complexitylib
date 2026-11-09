@@ -46,6 +46,7 @@ import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.EdgeCon
 import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Declarations
 import Complexity.Computability.Complexity.Problems.Graph.ClosedPassages.Loop
 import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Bouquet
+import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Converse
 import Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Germs
 import Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Neighborhood
 import Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Points
@@ -978,9 +979,9 @@ For permutation-only proofs, import `Complexity.Foundations.GroupTheory.Perm.Ins
 
 The loop-only forward realization is proved below. The general equivalence
 between numerical genus zero and geometric realization remains unproved.
-Its remaining steps are geometric restoration of nonloop contractions by
-directed contiguous vertex splits and the finite segment-to-face-color converse
-with subdivision and suppression. Topological taming, indexed FZ versus DK set conventions and
+It still needs general forward restoration of nonloop contractions by directed
+contiguous vertex splits. The finite segment-to-face-color converse is proved
+below. Topological taming, indexed FZ versus DK set conventions and
 source comparison, frozen-switch completeness, Hanani–Tutte recognition and the
 full #3091 endpoint remain open.
 
@@ -1123,8 +1124,86 @@ Numerical nonalternation supplies disjoint or nested port intervals; the
 construction proves actual real-parameter nonintersection internally.
 `ComplexityTests/PolygonalBouquet.lean` also checks a nonvacuous unbounded-degree
 family, nested/disjoint loops, interlacing obstruction and reversed-order
-rejection. This loop-only forward theorem leaves nonloop restoration and the
-geometric converse open, without a coordinate-bit or native-runtime claim.
+rejection. This loop-only forward theorem combines with the converse below.
+General nonloop restoration remains open; no coordinate-bit or native-runtime
+claim is made.
+
+## Polygonal-to-Numerical Converse
+
+Ordinary import
+`Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Converse`
+supplies the arbitrary finite PL direction, on the existing genuine drawing
+and numerical models:
+
+```lean
+open Cslib.Complexity Graph in
+example {G : Graph} {D : PolygonalDrawing G} {r : RotationSystem G}
+    (hD : D.IsEmbedding) (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (hR : D.Realizes r) : r.NumericalGenusZero :=
+  hD.numericalGenusZero hG hR
+```
+
+There is no genus, face-color, disk, Jordan or HT provider. The proof retains
+all real segment parameters, both loop ends, indexed parallel occurrences,
+arbitrary degree, sparse/duplicate declarations, disconnected components and
+points. Endpoint declarations remain explicit.
+
+The actual intermediate colors are also available to clients:
+
+```lean
+open Cslib.Complexity Graph in
+example {G : Graph} {D : PolygonalDrawing G} {r : RotationSystem G}
+    (hD : D.IsEmbedding) (hR : D.Realizes r)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (x : Fin G.2.length → Bool) (hx : G.VertexEven x) :
+    ∃ q : r.Face → Bool, r.faceBoundary q = x :=
+  hD.exists_faceColors hR hG x hx
+```
+
+Right-side ray values transport through actual segments and bends, then through
+the empty literal clockwise vertex sectors. They descend to the existing face
+quotient. The indexed-dual/lifting exactness criterion supplies Euler equality;
+its face-color premise is discharged internally in the final theorem.
+
+Combining the two directions gives the exact loop-only equivalence:
+
+```lean
+open Cslib.Complexity Graph in
+example {G : Graph} (r : RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (hloop : ∀ e : Fin G.2.length,
+      (Dart.vertex (G := G) (e, false)) = Dart.vertex (e, true)) :
+    r.NumericalGenusZero ↔
+      ∃ D : PolygonalDrawing G, D.IsEmbedding ∧ D.Realizes r := by
+  constructor
+  · exact fun hr => r.exists_polygonalDrawing_of_loops hG hr hloop
+  · rintro ⟨D, hD, hR⟩
+    exact hD.numericalGenusZero hG hR
+```
+
+A failure of numerical genus excludes that specific realized rotation:
+
+```lean
+open Cslib.Complexity Graph in
+example {G : Graph} (r : RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (hbad : ¬r.NumericalGenusZero) :
+    ¬∃ D : PolygonalDrawing G, D.IsEmbedding ∧ D.Realizes r := by
+  rintro ⟨D, hD, hR⟩
+  exact hbad (hD.numericalGenusZero hG hR)
+```
+
+This does not assert nonplanarity of the underlying graph. The complete
+`ComplexityTests/PolygonalConverse.lean` applies the endpoint to actual loop,
+bridge, parallel-digon and degree-five clockwise star drawings; it also checks
+nonzero loop face colors, sparse/duplicate points, emptiness and a torus
+rotation obstruction. `PolygonalConverseAudit.lean` records scoped stored
+declaration/axiom/environment checks.
+
+The proof is an original finite PL argument. General forward restoration,
+arbitrary topological-arc/source comparison, frozen-switch completeness,
+Hanani–Tutte/recognition and full #3091 remain open. No coordinate-bit or
+native-runtime bound is claimed.
 
 # Ordered Incidence-to-Polygon Rotations
 

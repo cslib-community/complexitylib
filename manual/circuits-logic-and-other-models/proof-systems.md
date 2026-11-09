@@ -353,9 +353,9 @@ dichotomy remain open under [#3091](https://github.com/cslib-community/complexit
 
 Loop-only numerical-genus-zero rotations now have actual polygonal embeddings with their
 exact clockwise order, as documented below. The general numerical-genus / polygonal-realization
-equivalence remains unproved. Its two remaining obligations are geometric restoration of nonloop
-contractions by directed contiguous vertex splits and a finite segment-to-face-color converse
-including subdivision and suppression. Topological taming, indexed FZ versus DK set conventions
+equivalence still needs general forward restoration of nonloop contractions by directed
+contiguous vertex splits. The finite polygonal-to-numerical converse is proved below from
+actual embeddings and literal clockwise realization. Topological taming, indexed FZ versus DK set conventions
 and source comparison, frozen-switch completeness, Hanani–Tutte recognition and the full
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091) endpoint remain open.
 
@@ -445,8 +445,51 @@ The [bouquet tests](../../ComplexityTests/PolygonalBouquet.lean) supply a nonvac
 at every degree, nested/disjoint loops, negative interlacing and reversed-order cases;
 [their audit](../../ComplexityTests/PolygonalBouquetAudit.lean) checks stored declarations.
 Run `scripts/build.sh ComplexityTests.PolygonalBouquet ComplexityTests.PolygonalBouquetAudit --wfail --iofail`.
-This proves the loop-only forward direction. Nonloop restoration and the geometric converse
-remain open, along with the full planar objective.
+This proves the loop-only forward direction. Together with the converse below it gives the
+loop-only equivalence. General nonloop restoration and the full planar objective remain open.
+
+## Polygonal embeddings imply numerical genus zero
+
+Import `Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Converse`.
+For an actual `D : PolygonalDrawing G`, `hD : D.IsEmbedding`, declared incident endpoints
+`hG` and literal clockwise realization `hR : D.Realizes r`, apply
+`hD.numericalGenusZero hG hR`. The conclusion is the existing componentwise
+`r.NumericalGenusZero`. No genus, face-color, lifting, disk, Jordan or Hanani–Tutte premise
+is supplied. Coordinates are arbitrary complex numbers; all real parameters on every affine
+segment are retained. Loops keep two ends, parallel occurrences keep their positions, and
+arbitrary degree, disconnected graphs, sparse/duplicate declarations, points and empty graphs
+are included. The [checked guide](../../guide/ComplexityGuide/NPCompleteness.lean) gives
+complete ordinary-import clients and combines it with the loop-only forward theorem.
+
+The constructive intermediate API is `hD.exists_faceColors hR hG x hx`, from
+`PolygonalDrawing.FaceColors`. For every actual `x : Fin G.2.length → Bool` satisfying
+`hx : G.VertexEven x`, it constructs colors `q : r.Face → Bool` with
+`r.faceBoundary q = x`. These are the actual permutation face classes, not a replacement
+geometric-face definition. A generic ray direction is chosen from the finite segment endpoints;
+angular-prefix values transport along all real segment interiors, through bends and through
+the empty inverse-rotation sectors. Vertex-evenness cancels endpoint cuts, including singleton
+rotations and both ends of loops. The values descend through the literal `faceNext`; the exact
+indexed dual/lifting cycle-space criterion then proves numerical genus zero.
+
+Generic ray, determinant, segment and fan-order facts live under
+`Complexity.Foundations.Geometry.Polygonal`; their proofs have no graph dependency.
+The graph-specific construction data stay private. The existing lifting-based criterion is a
+proof tool: callers of the final theorem do not supply its face-color premise. The two needed
+`LocalSplitFan`/`LocalSplitOrder` modules are copied unchanged from the restoration checkpoint;
+the remaining cut/join scaffolding belongs to the still-open forward lane.
+
+Run `scripts/build.sh ComplexityTests.PolygonalConverse ComplexityTests.PolygonalConverseAudit --wfail --iofail`.
+The [concrete converse client](../../ComplexityTests/PolygonalConverse.lean) applies the endpoint
+to actual loop, bridge and parallel-digon embeddings and a clockwise degree-five star, then
+checks sparse/duplicate isolates and emptiness. A nonzero loop label separates its two actual
+faces. The torus test rules out realizing that interlaced rotation; it makes no nonplanarity
+claim about the underlying graph. The [audit](../../ComplexityTests/PolygonalConverseAudit.lean)
+covers stored declarations in the new endpoint modules, with its exclusions explicit.
+
+This is an original finite PL proof. General forward restoration, arbitrary topological-arc
+taming and source-model comparison, frozen-switch completeness, HT/recognition, native
+coordinate/runtime bounds and full [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091)
+remain separate obligations.
 
 ## Ordered incidence-to-polygon rotations
 
