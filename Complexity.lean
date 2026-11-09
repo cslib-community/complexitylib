@@ -3945,6 +3945,7 @@ public import Complexity.Crypto.Protocols.Commitment.World
 public import Complexity.Crypto.Protocols.KEM.FujisakiOkamoto
 public import Complexity.Crypto.Protocols.MAC.CarterWegman
 public import Complexity.Crypto.Protocols.MPC.Advantage
+public import Complexity.Crypto.Protocols.MPC.BGW
 public import Complexity.Crypto.Protocols.MPC.Basic
 public import Complexity.Crypto.Protocols.MPC.BatchOT
 public import Complexity.Crypto.Protocols.MPC.Beaver
