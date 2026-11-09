@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunProp
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.FunProp
 public meta import Lean.Elab.Command
 
 /-!
@@ -23,6 +23,7 @@ of its fields, with everything a certificate needs to work with it:
 * `eS_fields_deg`, the linear map from a structure to the tuple of its fields;
 * for each field `f`, the linear rules `eS_f_deg` and `eS_f_inO`;
 * for each field `f`, `eS_f_budget`, retaining a caller’s workspace budget;
+* `eS_mk_budget`, constructing a record whose fields share a workspace budget;
 * the constructor rules `eS_mk_deg`, on tuples, and `eS_mk_inO`, which adds up the bounds of its
   arguments.
 
@@ -98,7 +99,7 @@ private def component (ns : Name) (h : Term) (i n : Nat) : MacroM Term := do
       ComputableInDegree $proj $eS $e 1 1 := $body))
     elabCommand (← `(@[scoped fun_prop] public theorem $(app name s!"_{f.getId}_inO"):ident :
       ComputableInO $proj $eS $e $linE $linE := ComputableInDegree.inO_one $deg))
-    elabCommand (← `(public theorem $(app name s!"_{f.getId}_budget"):ident
+    elabCommand (← `(@[scoped fun_prop] public theorem $(app name s!"_{f.getId}_budget"):ident
       {γ : Type} {encIn : γ ↪ List Bool} {S : γ → ℕ} {g : γ → $S}
       (h : ComputableInSpace g encIn $eS S) :
       ComputableInSpace (fun a => $proj (g a)) encIn $e S :=
@@ -146,5 +147,19 @@ private def component (ns : Name) (h : Term) (i n : Nat) : MacroM Term := do
     {$encIn : $γ ↪ List Bool} $binders* :
     ComputableInO (fun $x => $appl) $encIn $eS (fun $x => $sumT) fun $x => $sumS :=
       ComputableInO.of_enc_eq $prod fun _ => rfl))
+  let budget := mkIdent `budget
+  let mut budgetBinders : TSyntaxArray ``Lean.Parser.Term.bracketedBinder := #[]
+  for j in [0:n] do
+    budgetBinders := budgetBinders.push (← `(bracketedBinder| {$(xN j) : $γ → _}))
+  for e in es, j in Array.range n do
+    budgetBinders := budgetBinders.push (← `(bracketedBinder|
+      ($(hN j) : ComputableInSpace $(xN j) $encIn $e $budget)))
+  let mut budgetProd : Term := hN last
+  for j in (List.range last).reverse do
+    budgetProd ← `(ComputableInSpace.budget_prod $(hN j) $budgetProd)
+  elabCommand (← `(@[scoped fun_prop] public theorem $(app name "_mk_budget"):ident {$γ : Type}
+    {$encIn : $γ ↪ List Bool} {$budget : $γ → ℕ} $budgetBinders* :
+    ComputableInSpace (fun $x => $appl) $encIn $eS $budget :=
+      ComputableInSpace.of_enc_eq $budgetProd fun _ => rfl))
 
 end Turing.MultiTapeTM
