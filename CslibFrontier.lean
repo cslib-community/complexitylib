@@ -5252,6 +5252,7 @@ public import CslibFrontier.Logics.Propositional.CNF.Compact
 public import CslibFrontier.Logics.Propositional.CNF.Compact.ModelCount
 public import CslibFrontier.Logics.Propositional.CNF.Compact.Relabel
 public import CslibFrontier.Logics.Propositional.CNF.Encoding
+public import CslibFrontier.Logics.Propositional.CNF.Eval
 public import CslibFrontier.Logics.Propositional.CNF.ExactDistinct
 public import CslibFrontier.Logics.Propositional.CNF.ExactOne
 public import CslibFrontier.Logics.Propositional.CNF.ExactOne.BlockBounds
