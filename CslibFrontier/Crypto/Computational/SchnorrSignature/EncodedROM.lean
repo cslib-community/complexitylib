@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.SchnorrSignature.NativeROM
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 
 /-!
@@ -180,8 +181,8 @@ theorem runWith_schnorrEncodedROMScheme_sign_ideal (x : ZMod (F.order d)) (u : F
   change (PMF.uniformOfFintype (ZMod (F.order d))).bind (fun r => runWith reply
     ((F.schnorrEncodedROMScheme d m keyLaw (PMF.uniformOfFintype (ZMod (F.order d)))).sign
       (F.encScalar d x) msg r) state) = _
-  simp only [schnorrWordROMScheme, fiatShamir, schnorrWordSigma, schnorrBitSigma, schnorr,
-    linear, PMF.map_comp, PMF.map_bind, PMF.bind_map]
+  simp only [pmf_norm, schnorrWordROMScheme, fiatShamir, schnorrWordSigma, schnorrBitSigma, schnorr,
+    linear]
   apply PMF.bind_congr_on_support
   intro r _
   rw [F.schnorrEncodedROMScheme_sign_encScalar d hm keyLaw _ x r u msg, runWith_map]
@@ -215,10 +216,7 @@ theorem runWith_schnorrDecodedForger
     have h := F.runWith_schnorrEncodedROMScheme_sign_ideal d hm keyLaw x u
       (oracle (BitString m)) msg st.1
     have hlog := congrArg (PMF.map (fun out => (out.1, (out.2, msg :: st.2)))) h.symm
-    simpa only [StateT.run,
-      handler, PMF.monad_map_eq_map, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-      PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def, Prod.map, id_eq,
-      runWith] using hlog
+    simpa only [pmf_norm, StateT.run, handler, PMF.map, Prod.map, id_eq, runWith] using hlog
   | inr word => simp [sumHandler, interpret_query, handler]
 
 /-- Exact equality of the existing ideal EUF-CMA games after changing key and signature
