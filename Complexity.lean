@@ -1857,10 +1857,15 @@ public import Complexity.Computability.Complexity.Problems.CSP.Horn
 public import Complexity.Computability.Complexity.Problems.CSP.Incidence
 public import Complexity.Computability.Complexity.Problems.CSP.Majority
 public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
+public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.AdjacentIdentification
 public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.AppendScope
+public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.AppendScopeIndex
+public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.ArgumentCorners
 public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.ArgumentIndices
+public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.ArgumentOrderTable
 public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Darts
+public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Identification
 public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.LastArgument
 public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Nullary
 public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.OccurrenceTransport
@@ -1873,6 +1878,7 @@ public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Pr
 public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Relabel
 public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.ScopeReindex
 public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Symbols
+public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.VariableDarts
 public import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.VertexFibers
 public import Complexity.Computability.Complexity.Problems.CSP.Schaefer
 public import Complexity.Computability.Complexity.Problems.CSP.SelfDualThreeSAT
@@ -1901,7 +1907,9 @@ public import Complexity.Computability.Complexity.Problems.Graph.PerfectMatching
 public import Complexity.Computability.Complexity.Problems.Graph.Ports
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Certificate
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.CertificateCornerSwap
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.CertificateLookup
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.CertificatePredecessor
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.CertificateTransport
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.ComponentCounts
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Components
@@ -4197,6 +4205,7 @@ public import Complexity.Foundations.Data.List.EraseDupsBy
 public import Complexity.Foundations.Data.List.Filter
 public import Complexity.Foundations.Data.List.FilterMap
 public import Complexity.Foundations.Data.List.Fold
+public import Complexity.Foundations.Data.List.IdxOfIdentification
 public import Complexity.Foundations.Data.List.IdxOfInjective
 public import Complexity.Foundations.Data.List.Last
 public import Complexity.Foundations.Data.List.Lex
@@ -4384,6 +4393,7 @@ public import Complexity.Foundations.LinearAlgebra.Tensor.Round
 public import Complexity.Foundations.LinearAlgebra.Tensor.Separate
 public import Complexity.Foundations.LinearAlgebra.VariableCopyPlacement
 public import Complexity.Foundations.Logic.Function.Iterate
+public import Complexity.Foundations.Logic.Function.UpdateKernel
 public import Complexity.Foundations.MeasureTheory.Constructions.BorelSpace.Order
 public import Complexity.Foundations.MeasureTheory.Group.ConvolutionDensity
 public import Complexity.Foundations.MeasureTheory.Group.FundamentalDomain
@@ -4812,6 +4822,7 @@ public import Complexity.Logics.Propositional.CSP.Planar.Embedding.BoundaryDelet
 public import Complexity.Logics.Propositional.CSP.Planar.Embedding.Crossover
 public import Complexity.Logics.Propositional.CSP.Planar.Embedding.Cyclic
 public import Complexity.Logics.Propositional.CSP.Planar.Embedding.EdgeDeletion
+public import Complexity.Logics.Propositional.CSP.Planar.Embedding.Equality
 public import Complexity.Logics.Propositional.CSP.Planar.Embedding.GadgetCyclic
 public import Complexity.Logics.Propositional.CSP.Planar.Embedding.LastArgument
 public import Complexity.Logics.Propositional.CSP.Planar.Embedding.Probe

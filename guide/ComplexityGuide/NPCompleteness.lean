@@ -48,6 +48,7 @@ import Complexity.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Eu
 import Complexity.Logics.Propositional.CSP.Planar.Embedding.AtomBoundary
 import Complexity.Logics.Propositional.CSP.Planar.Embedding.Projection
 import Complexity.Logics.Propositional.CSP.Planar.Embedding.GadgetCyclic
+import Complexity.Logics.Propositional.CSP.Planar.Embedding.Equality
 import Complexity.Computability.PolyTime.CSP.Table
 import Complexity.Computability.PolyTime.CSP.CyclicDifference.Size
 import Complexity.Computability.PolyTime.CSP.Edge.Augmenting
@@ -1470,7 +1471,8 @@ ordered planar hardness and full #3091 remain open.
 # Ordered Boundary and Static Gadget Closure
 
 Ordinary imports are `Complexity.Logics.Propositional.CSP.Planar.Embedding.AtomBoundary`,
-`...Embedding.Projection` and `...Embedding.GadgetCyclic`. The actual semantic
+`...Embedding.Projection`, `...Embedding.GadgetCyclic` and `...Embedding.Equality`.
+The actual semantic
 objects remain `Cslib.Logic.PL.CSP.PPGadget`; numerical boundary witnesses live
 in `Cslib.Complexity.CSP.OrderedBoundary`.
 
@@ -1561,6 +1563,49 @@ noncomputable example {Rel : Type} {arity : Rel → ℕ}
     GadgetWitness (g.relabelFree (fun i => i + 1)) := w.rotate
 ```
 
+Adjacent equality targets the exact existing `g.equalDrop`; it adds no equality
+symbol. Consecutive probe arguments supply cofacial variable corners internally.
+The duplicate marker is removed before Nodup body extraction, retaining the
+original scopes, nullaries and repeated constraint positions:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity in
+open Cslib.Complexity.CSP.OrderedBoundary in
+noncomputable example {Rel : Type} {arity : Rel → ℕ}
+    {sem : Rel → List Bool → Bool} {n : ℕ}
+    {R : Set (Fin (n + 2) → Bool)} {g : PPGadget arity sem R}
+    (w : GadgetWitness g) : GadgetWitness g.equalDrop := w.equalDrop
+
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity in
+open Cslib.Complexity.CSP.OrderedBoundary in
+example {Rel : Type} {arity : Rel → ℕ}
+    {sem : Rel → List Bool → Bool} {n : ℕ}
+    {R : Set (Fin (n + 2) → Bool)} {g : PPGadget arity sem R}
+    (w : GadgetWitness g) :
+    w.equalDrop.certificate = equalDropCertificate g.body n w.certificate :=
+  w.equalDrop_certificate
+```
+
+The whole generated NAE table is explicit, not merely an existence claim:
+
+```lean
+open Cslib.Complexity.CSP.OrderedBoundary in
+example :
+    equalDropCertificate
+      ([((), [0, 1, 2])] : Cslib.Logic.PL.CSP Unit ℕ) 1
+      (atomBoundaryCertificate 3) =
+        (⟨[8, 3, 0, 5, 6, 1, 4, 9, 2, 7]⟩ :
+          Cslib.Complexity.Graph.RotationCertificate) := by
+  decide +kernel
+```
+
+`ComplexityTests/PlanarEqualityBoundary.lean` ties that table to the exact
+original-language NAE body and derives disequality and both OneHot pins.
+General attachment and expanded-language recipes remain separate obligations.
+The raw table program uses bounded predecessor lookup, an outgoing swap and
+prefix restriction. Its residual arity is static; it carries no uniform native
+runtime claim for arbitrary binary arity or language/template size.
+
 First-port projection keeps a simpler literal prefix equation:
 
 ```lean
@@ -1607,7 +1652,7 @@ finite choice and are intentionally `noncomputable`. Fixing a language and
 its templates permits nonuniform certificate preprocessing; it does not prove
 the input-varying native compiler's target acceptance or framed time bound.
 Figure 1/NAND boundary tables are macro skeletons until original-language
-substitution is supplied. Adjacent identification, remaining pin/disequality
+substitution is supplied. Remaining pin/disequality
 recipes, expanded language endpoints, native target acceptance, geometric/
 source comparison, recognition and full #3091 remain open.
 

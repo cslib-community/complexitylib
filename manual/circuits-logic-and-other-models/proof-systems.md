@@ -756,12 +756,13 @@ optimality theorem and concrete decisions. Geometric realization/recognition, or
 hardness transfer and final dichotomy assembly remain open under
 [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
 
-## Ordered boundaries, projection and cyclic gadget closure
+## Ordered boundaries and static gadget closure
 
 From the repository root, import
 `Complexity.Logics.Propositional.CSP.Planar.Embedding.AtomBoundary`,
 `Complexity.Logics.Propositional.CSP.Planar.Embedding.Projection` and
-`Complexity.Logics.Propositional.CSP.Planar.Embedding.GadgetCyclic`.
+`Complexity.Logics.Propositional.CSP.Planar.Embedding.GadgetCyclic` and
+`Complexity.Logics.Propositional.CSP.Planar.Embedding.Equality`.
 The namespace is `Cslib.Complexity.CSP.OrderedBoundary`; gadgets remain the existing
 `Cslib.Logic.PL.CSP.PPGadget`. The [checked guide](../../guide/ComplexityGuide/NPCompleteness.lean)
 shows ordinary-import clients, including empty alphabets and nullaries.
@@ -822,6 +823,24 @@ The [projection tests](../../ComplexityTests/PlanarProjectionAll.lean) check mid
 and semantics, canonical Nodup extraction, degree five, unused sparse names, an empty alphabet
 and retained nullaries.
 
+`GadgetWitness.equalDrop w` supplies the boundary of exactly the existing `g.equalDrop`,
+identifying its first two free labels without adding an equality symbol. Their consecutive
+directed probe arguments give the selected variable corners two literal face steps apart;
+cofaciality is proved internally before applying the outgoing corner swap. Original argument
+cycles, indexed duplicates, cut vertices and closed/nullary components are retained. The label
+map needs only the selected-pair kernel on occurring names, not global injectivity.
+
+Identification leaves a duplicate probe marker. It is deleted before the surviving canonical
+ports are proved Nodup and body extraction is applied. `equalDrop_certificate` identifies the
+entire output with `equalDropCertificate g.body n w.certificate`: bounded predecessor lookup,
+an outgoing successor swap and first-return restriction. Residual arity `n` is static; there
+is no uniform native runtime bound for arbitrary binary arity or language/template size.
+The [equality client](../../ComplexityTests/PlanarEqualityBoundary.lean) proves the complete
+NAE-derived table, executes both checkers, derives disequality with original symbols, and checks
+both OneHot-derived pins. These concrete examples do not replace arbitrary-language attachment
+or expanded recipe proofs. Empty alphabets/bodies, degree five, repeated constraints and false
+nullaries also have nonvacuous tests.
+
 These are static finite constructors. Some inverse occurrence maps use finite choice, so
 general projection and cyclic constructors are intentionally `noncomputable`. Fixing a language
 and its templates permits nonuniform certificate preprocessing; it does not supply the
@@ -841,7 +860,7 @@ Run `scripts/build.sh ComplexityTests.PlanarProjectionAll ComplexityTests.Planar
 The boundary convention is Dvořák–Kupec's reverse outer port order, printed p. 436; the probe
 and finite surgery are original. Fulla–Živný's indexed positive-arity model and the original
 decision/nullary extension are distinguished from DK's constraint sets; no deduplication or
-geometric equivalence is assumed. Adjacent identification, pin/disequality attachment, remaining
+geometric equivalence is assumed. Pin/disequality attachment, remaining
 expanded-language recipes, native whole-instance target acceptance, geometric/source comparison
 and bare recognition remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 

@@ -475,8 +475,11 @@ index links to canonical definitions rather than keeping a second set.
   and the exact cyclic constructor preserve supplied finite witnesses on the existing PP bodies.
   Canonical port distinctness, literal body restriction and full ordered numerical target
   checks are proved, including nullaries and unused ports. Choice-based static inverses do
-  not prove the input-varying native compiler's acceptance theorem. Adjacent identification,
-  derived pin/disequality attachment, remaining expanded-language recipes and whole-instance
+  not prove the input-varying native compiler's acceptance theorem. Adjacent equality on the
+  exact existing PP body now derives cofaciality from directed probe arguments, removes its
+  duplicate marker before Nodup extraction and proves the entire generated table equation.
+  Concrete NAE disequality and OneHot pins are checked; general derived pin/disequality
+  attachment, remaining expanded-language recipes and whole-instance
   native target acceptance remain open; macro tables do not complete language substitution.
   The actual ordered incidence-to-polygon bridge now preserves every face and component
   and proves the numerical Euler equivalence under positive actual scopes. Its abstract
