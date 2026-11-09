@@ -236,6 +236,14 @@ library theorem or a Lean core, Batteries, Mathlib or cslib theorem already has,
 universe levels, the order of hypotheses and instance arguments, and the notations `≥`, `>`, `≠`;
 CI runs that notice too. `--all` examines the whole library: `python3 scripts/parallel_defs.py
 --theorems --all --limit 1000` lists every such group, the candidates of #949 item A.2.
+On pull requests CI also runs a third advisory notice, `python3 scripts/proof_copies.py`, which
+reads only the sources. It lists tactic blocks of four or more lines, on lines a change adds or
+modifies, that repeat a block of another proof in the same file or directory up to local names
+and at most two renamed constants
+([#3725](https://github.com/cslib-community/cslib-frontier/issues/3725)). If both blocks make the
+same argument and a lemma would make both proofs clearer, prove it once and use it in both;
+otherwise leave them. Its candidates, and those that `--all` lists for the whole library, are not
+a count to drive down.
 
 The helper hard-links package sources by default, copies root and dependency build caches with
 independent files (including symlink targets), isolates dependency `.git` directories and pointer
