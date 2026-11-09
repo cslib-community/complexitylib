@@ -2893,6 +2893,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Na
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Division
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Subtraction
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Words
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Option
