@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.WordRAM.Multiword.Circuit
 public import CslibFrontier.Computability.WordRAM.Multiword.Compile
 public import CslibFrontier.Computability.WordRAM.Multiword.CircuitRun
 public import CslibFrontier.Computability.WordRAM.Compile
+import CslibFrontier.Foundations.Data.Nat.Power
 import Mathlib.Tactic.FinCases
 
 /-!
@@ -174,14 +175,6 @@ private theorem clusterSize_lt {w : ℕ} (hw : 3 ≤ w) : clusterSize w < w := b
   rw [he] at hsq
   nlinarith
 
-/-- Twice the physical width itself fits in a physical word at widths at least three. -/
-private theorem twice_width_lt {w : ℕ} (hw : 3 ≤ w) : 2 * w < 2 ^ w := by
-  induction w, hw using Nat.le_induction with
-  | base => decide
-  | succ w hw ih =>
-    rw [pow_succ]
-    nlinarith
-
 /-- The two guarded comparison inputs and their sums fit in physical words. -/
 private theorem guarded_fits {w z : ℕ} (hw : 3 ≤ w) (hz : z < 2 ^ clusterSize w) :
     Fits w (2 ^ clusterSize w) ∧ Fits w z ∧ Fits w (2 ^ clusterSize w + z) := by
@@ -200,7 +193,7 @@ private theorem shift_amounts_fit {w x : ℕ} (hw : 3 ≤ w) :
     Fits w (smallMSB (clusterSize w) (clusterSummary (clusterSize w) x) *
       clusterSize w) := by
   obtain ⟨hs, _, hsq, hsw⟩ := clusterSize_bounds (show 0 < w by omega)
-  have htw := twice_width_lt hw
+  have htw := Nat.two_mul_lt_two_pow hw
   have hc := smallMSB_lt hs (clusterSummary_lt (clusterSize w) x)
   refine ⟨hsq.trans_lt htw, ?_, ?_, ?_⟩
   · exact hsw.trans_lt (by have := Nat.lt_two_pow_self (n := w); exact this)

@@ -296,8 +296,7 @@ private theorem eval_run_counting [Fintype H] [Nonempty H]
       (interpret countingUniform program).run count := by
   rw [ProbOracleComp.eval_run_interpret, interpret_interpret]
   congr 1
-  congr 1
-  funext q n
+  congr 1 with q n : 2
   simp only [ProbOracleComp.interpret_query, ProbComp.eval_bind, ProbComp.eval_uniform,
     ProbComp.eval_pure]
   rfl

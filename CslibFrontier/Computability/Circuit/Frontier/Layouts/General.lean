@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Frontier.Layouts.Compression
+import CslibFrontier.Computability.Circuit.Frontier.Layouts.Core
 import Mathlib.Combinatorics.SimpleGraph.Acyclic
 import Mathlib.Tactic.Linarith
 
@@ -103,14 +104,9 @@ theorem exists_width_le_of_card_add_one_eq [Finite V] [Finite E] {d : ℕ}
       rw [c.sum_ncard_edgeCut, Finset.sum_const, Finset.card_univ, smul_eq_mul,
         ← Nat.card_eq_fintype_card]
       omega
-    -- It merges with the block at the other end of an edge leaving it.
-    obtain ⟨e, he⟩ := c.edgeCut_nonempty hG two B
-    obtain ⟨B', hB'B, he'⟩ := c.exists_ne_mem_edgeCut he
-    have hsum := G.ncard_edgeCut_union_add (c.disjoint_of_ne hB'B.symm)
-    have hjoin : (G.edgeCut {v | v ∈ B.1} ∩ G.edgeCut {v | v ∈ B'.1}).Nonempty := ⟨e, he, he'⟩
-    have := hjoin.ncard_pos
-    have := c.ncard_edgeCut_le _ B'.2
-    have := hc _ B.2 _ B'.2 (fun h => hB'B (Subtype.ext h).symm) hjoin
+    -- But saturation leaves at least three edges leaving every block.
+    have := (hc.three_le_ncard_incidenceSet_quotient hG two B).trans_eq
+      (c.ncard_incidenceSet_quotient B)
     omega
   obtain ⟨π, hπ⟩ := c.exists_width_le (Classical.arbitrary _)
   refine ⟨π, hπ.trans ?_⟩

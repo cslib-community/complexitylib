@@ -1131,13 +1131,7 @@ theorem clientResult_resolveIndexedSlotProg {U V w n_max h_space : ℕ}
       unfold gmSlabDirIdx at hdir_eq
       rw [hdir_eq]
       rfl
-    · unfold bCount at hj_bc
-      simp only [hb0, ↓reduceIte, hb] at hj_bc
-      have hr_lt : d.2 - gmAt d.1.1 U V w n_max h_space s.mem (gmQIdx d.1.2) * slabSize n_max <
-          gmAt d.1.1 U V w n_max h_space s.mem (gmRIdx d.1.2) := by omega
-      have hr_cap : d.2 - gmAt d.1.1 U V w n_max h_space s.mem (gmQIdx d.1.2) * slabSize n_max <
-          tailCapPerBucket n_max :=
-        lt_of_lt_of_le hr_lt ((hinv.multi_r_bounds hb_pos d.1.2 hb).1.le)
+    · have hr_cap := (hinv.tailOffset_lt hb_pos hb hj_bc hj_slab).2
       have hptr_lt : gmTailPtrBase n_max + (d.1.2 * tailCapPerBucket n_max +
           (d.2 - gmAt d.1.1 U V w n_max h_space s.mem (gmQIdx d.1.2) * slabSize n_max)) <
           globalMetaLen n_max :=
@@ -1196,7 +1190,7 @@ private theorem resolveIndexedSlot_slab_fit {U V w₀ n_max h_space w : ℕ}
   exact fits_of_le_max_n_one henv hw hnU hU (by omega)
 
 private theorem resolveIndexedSlot_tailIdx_lt {U V w₀ n_max h_space : ℕ}
-    (hb0 : ¬bucketBits n_max = 0) (hb_pos : 0 < bucketBits n_max)
+    (hb_pos : 0 < bucketBits n_max)
     (d : (ℕ × ℕ) × ℕ) (s : Memory.State)
     (hinv : SlotStoreInv n_max (gmAt d.1.1 U V w₀ n_max h_space s.mem))
     (hb : d.1.2 < numBuckets n_max)
@@ -1210,17 +1204,10 @@ private theorem resolveIndexedSlot_tailIdx_lt {U V w₀ n_max h_space : ℕ}
   have hj_not_slab := hc
   have hq_lt : 4 + 3 * d.1.2 < globalMetaLen n_max := gmQIdx_lt hb_pos hb
   rw [clientResult_readGMProg _ hq_lt] at hj_not_slab ⊢
-  unfold bCount at hj_bc
-  simp only [hb0, ↓reduceIte, hb, gmQIdx] at hj_bc
-  have hr_lt : d.2 - gmAt d.1.1 U V w₀ n_max h_space s.mem (4 + 3 * d.1.2) * slabSize n_max <
-      gmAt d.1.1 U V w₀ n_max h_space s.mem (gmRIdx d.1.2) := by omega
-  have hr_cap : d.2 - gmAt d.1.1 U V w₀ n_max h_space s.mem (4 + 3 * d.1.2) * slabSize n_max <
-      tailCapPerBucket n_max :=
-    lt_of_lt_of_le hr_lt ((hinv.multi_r_bounds hb_pos d.1.2 hb).1.le)
-  exact gmTailPtrIdx_lt hb_pos hb hr_cap
+  exact gmTailPtrIdx_lt hb_pos hb (hinv.tailOffset_lt hb_pos hb hj_bc hj_not_slab).2
 
 private theorem resolveIndexedSlot_tail_le {U V w₀ n_max h_space : ℕ}
-    (hb0 : ¬bucketBits n_max = 0) (hb_pos : 0 < bucketBits n_max)
+    (hb_pos : 0 < bucketBits n_max)
     (d : (ℕ × ℕ) × ℕ) (s : Memory.State)
     (hinv : SlotStoreInv n_max (gmAt d.1.1 U V w₀ n_max h_space s.mem))
     (hb : d.1.2 < numBuckets n_max)
@@ -1234,15 +1221,14 @@ private theorem resolveIndexedSlot_tail_le {U V w₀ n_max h_space : ℕ}
           (d.2 - (Memory.spec 0).clientResult s
             (readGMProg U V w₀ n_max h_space (d.1.1, 4 + 3 * d.1.2)) *
             slabSize n_max)))) ≤ n_max - 1 := by
-  have hptr_lt := resolveIndexedSlot_tailIdx_lt hb0 hb_pos d s hinv hb hj_bc hc
+  have hptr_lt := resolveIndexedSlot_tailIdx_lt hb_pos d s hinv hb hj_bc hc
   have hj_not_slab := hc
   have hq_lt : 4 + 3 * d.1.2 < globalMetaLen n_max := gmQIdx_lt hb_pos hb
   rw [clientState_readGMProg, clientResult_readGMProg _ hptr_lt]
   rw [clientResult_readGMProg _ hq_lt] at hj_not_slab ⊢
-  unfold bCount at hj_bc
-  simp only [hb0, ↓reduceIte, hb, gmQIdx] at hj_bc
   have hr_lt : d.2 - gmAt d.1.1 U V w₀ n_max h_space s.mem (4 + 3 * d.1.2) * slabSize n_max <
-      gmAt d.1.1 U V w₀ n_max h_space s.mem (gmRIdx d.1.2) := by omega
+      gmAt d.1.1 U V w₀ n_max h_space s.mem (gmRIdx d.1.2) :=
+    (hinv.tailOffset_lt hb_pos hb hj_bc hj_not_slab).1
   have htail := hinv.multi_tail hb_pos
   have ht_lt : gmAt d.1.1 U V w₀ n_max h_space s.mem
       (gmTailPtrIdx n_max d.1.2
@@ -1312,17 +1298,14 @@ theorem realizes_resolveIndexedSlotGen :
   · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero ‹¬bucketBits n_max = 0›
     exact resolveIndexedSlot_slab_fit hw hnU hU hb_pos d s h.1 h.2.1 h.2.2.1 h.2.2.2.2 hc
   · omega
-  · have hb0 : ¬bucketBits n_max = 0 := ‹¬bucketBits n_max = 0›
-    have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hb0
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero ‹¬bucketBits n_max = 0›
     exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (resolveIndexedSlot_tailIdx_lt hb0 hb_pos d s h.2.1 h.2.2.1 h.2.2.2.1 hc))
+      (le_of_lt (resolveIndexedSlot_tailIdx_lt hb_pos d s h.2.1 h.2.2.1 h.2.2.2.1 hc))
   · exact h.1
-  · have hb0 : ¬bucketBits n_max = 0 := ‹¬bucketBits n_max = 0›
-    have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hb0
-    exact resolveIndexedSlot_tailIdx_lt hb0 hb_pos d s h.2.1 h.2.2.1 h.2.2.2.1 hc
-  · have hb0 : ¬bucketBits n_max = 0 := ‹¬bucketBits n_max = 0›
-    have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hb0
-    exact resolveIndexedSlot_tail_le hb0 hb_pos d s h.2.1 h.2.2.1 h.2.2.2.1 hc
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero ‹¬bucketBits n_max = 0›
+    exact resolveIndexedSlot_tailIdx_lt hb_pos d s h.2.1 h.2.2.1 h.2.2.2.1 hc
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero ‹¬bucketBits n_max = 0›
+    exact resolveIndexedSlot_tail_le hb_pos d s h.2.1 h.2.2.1 h.2.2.2.1 hc
 
 /-! ## Section 4: Pure state effects and costs of `read*Prog` and `write*Prog` -/
 

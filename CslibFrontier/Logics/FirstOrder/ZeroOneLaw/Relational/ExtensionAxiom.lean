@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.Circuit.Boolean.FirstOrder
+public import CslibFrontier.Logics.FirstOrder.Atom
 public import CslibFrontier.Logics.FirstOrder.Basic
 public import Mathlib.ModelTheory.PartialEquiv
 public import Mathlib.ModelTheory.Satisfiability
@@ -69,7 +69,7 @@ extension axioms of simple graphs in `CslibFrontier.Logics.FirstOrder.ZeroOneLaw
 
 public section
 
-open FirstOrder Language Structure BoundedFormula Cardinal Cslib.Circuits.Boolean.ModelChecking
+open FirstOrder Language Structure BoundedFormula Cardinal
 
 namespace Cslib.Logic.FO.Relational
 

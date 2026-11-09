@@ -12,6 +12,7 @@ public import Mathlib.Algebra.Polynomial.BigOperators
 public import Mathlib.Algebra.Polynomial.CoeffList
 public import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import CslibFrontier.Foundations.Data.List.OfFn
+import CslibFrontier.Foundations.Data.Polynomial.CoeffSumBounds
 import Mathlib.Algebra.Order.Ring.Abs
 import Mathlib.Data.List.GetD
 import Mathlib.Tactic.Linarith
@@ -69,10 +70,8 @@ theorem coeffNorm1_zero : coeffNorm1 0 = 0 := by
 
 /-- Sum expression for `coeffNorm1` over any superset `S ⊇ p.support`. -/
 theorem coeffNorm1_eq_sum_of_support_subset {p : ℤ[X]} {S : Finset ℕ} (hS : p.support ⊆ S) :
-    coeffNorm1 p = ∑ i ∈ S, (p.coeff i).natAbs := by
-  unfold coeffNorm1
-  refine sum_subset hS fun i _ hi => ?_
-  rw [notMem_support_iff.mp hi, Int.natAbs_zero]
+    coeffNorm1 p = ∑ i ∈ S, (p.coeff i).natAbs :=
+  sum_eq_of_subset _ (fun _ => Int.natAbs_zero) hS
 
 /-- Every individual coefficient of `p` has absolute value at most `coeffNorm1 p`. -/
 theorem natAbs_coeff_le_coeffNorm1 (p : ℤ[X]) (k : ℕ) :
@@ -116,20 +115,8 @@ theorem coeffNorm1_neg (p : ℤ[X]) : coeffNorm1 (-p) = coeffNorm1 p := by
 
 /-- Triangle inequality for `coeffNorm1`. -/
 theorem coeffNorm1_add_le (p q : ℤ[X]) :
-    coeffNorm1 (p + q) ≤ coeffNorm1 p + coeffNorm1 q := by
-  have hsub : (p + q).support ⊆ p.support ∪ q.support := support_add
-  calc
-    coeffNorm1 (p + q)
-      ≤ ∑ i ∈ p.support ∪ q.support, ((p + q).coeff i).natAbs :=
-        sum_le_sum_of_subset hsub
-    _ ≤ ∑ i ∈ p.support ∪ q.support, ((p.coeff i).natAbs + (q.coeff i).natAbs) := by
-        refine sum_le_sum fun i _ => ?_
-        rw [coeff_add]
-        exact Int.natAbs_add_le _ _
-    _ = (∑ i ∈ p.support ∪ q.support, (p.coeff i).natAbs) +
-          ∑ i ∈ p.support ∪ q.support, (q.coeff i).natAbs := sum_add_distrib
-    _ ≤ coeffNorm1 p + coeffNorm1 q :=
-        add_le_add (sum_natAbs_coeff_le_coeffNorm1 p _) (sum_natAbs_coeff_le_coeffNorm1 q _)
+    coeffNorm1 (p + q) ≤ coeffNorm1 p + coeffNorm1 q :=
+  sum_add_le_of_subadditive Int.natAbs_zero Int.natAbs_add_le p q
 
 /-- Difference triangle inequality for `coeffNorm1`. -/
 theorem coeffNorm1_sub_le (p q : ℤ[X]) :
@@ -139,28 +126,19 @@ theorem coeffNorm1_sub_le (p q : ℤ[X]) :
 
 /-- Finite-sum triangle inequality for `coeffNorm1`. -/
 theorem coeffNorm1_sum_le {ι : Type*} (s : Finset ι) (f : ι → ℤ[X]) :
-    coeffNorm1 (∑ i ∈ s, f i) ≤ ∑ i ∈ s, coeffNorm1 (f i) := by
-  classical
-  induction s using Finset.induction_on with
-  | empty => simp only [sum_empty, coeffNorm1_zero, le_refl]
-  | insert a s ha ih =>
-    rw [sum_insert ha, sum_insert ha]
-    exact (coeffNorm1_add_le (f a) (∑ i ∈ s, f i)).trans (Nat.add_le_add_left ih _)
+    coeffNorm1 (∑ i ∈ s, f i) ≤ ∑ i ∈ s, coeffNorm1 (f i) :=
+  le_sum_of_subadditive coeffNorm1 coeffNorm1_zero.le coeffNorm1_add_le s f
+
+/-- `coeffNorm1` is submultiplicative on `ℤ[X]`. -/
+theorem coeffNorm1_mul_le (p q : ℤ[X]) :
+    coeffNorm1 (p * q) ≤ coeffNorm1 p * coeffNorm1 q :=
+  sum_mul_le_of_submultiplicative Int.natAbs_zero Int.natAbs_add_le
+    (fun a b => (Int.natAbs_mul a b).le) p q
 
 /-- Scaling by `C a` scales `coeffNorm1` by at most `a.natAbs`. -/
 theorem coeffNorm1_C_mul_le (a : ℤ) (p : ℤ[X]) :
-    coeffNorm1 (C a * p) ≤ a.natAbs * coeffNorm1 p := by
-  have hsub : (C a * p).support ⊆ p.support := by
-    intro i hi
-    rw [mem_support_iff, coeff_C_mul] at hi
-    exact mem_support_iff.mpr (right_ne_zero_of_mul hi)
-  calc
-    coeffNorm1 (C a * p) ≤ ∑ i ∈ p.support, ((C a * p).coeff i).natAbs :=
-      sum_le_sum_of_subset hsub
-    _ = a.natAbs * coeffNorm1 p := by
-      rw [coeffNorm1, mul_sum]
-      refine sum_congr rfl fun i _ => ?_
-      rw [coeff_C_mul, Int.natAbs_mul]
+    coeffNorm1 (C a * p) ≤ a.natAbs * coeffNorm1 p :=
+  coeffNorm1_C a ▸ coeffNorm1_mul_le (C a) p
 
 /-- Multiplying by `X` preserves `coeffNorm1`. -/
 theorem coeffNorm1_X_mul (p : ℤ[X]) : coeffNorm1 (X * p) = coeffNorm1 p := by
@@ -181,26 +159,10 @@ theorem coeffNorm1_X_mul (p : ℤ[X]) : coeffNorm1 (X * p) = coeffNorm1 p := by
 /-- Multiplying by `X ^ k` does not increase `coeffNorm1`. -/
 theorem coeffNorm1_mul_X_pow_le (p : ℤ[X]) (k : ℕ) :
     coeffNorm1 (p * X ^ k) ≤ coeffNorm1 p := by
-  rw [coeffNorm1]
-  have hsub : (p * X ^ k).support ⊆ p.support.map ⟨fun i => i + k, add_left_injective k⟩ := by
-    intro i hi
-    rw [mem_support_iff] at hi
-    rw [mem_map]
-    by_cases hik : k ≤ i
-    · refine ⟨i - k, ?_, by simp only [Function.Embedding.coeFn_mk]; omega⟩
-      rw [mem_support_iff]
-      intro h0
-      apply hi
-      have hi_eq : i = i - k + k := (Nat.sub_add_cancel hik).symm
-      rw [hi_eq, coeff_mul_X_pow, h0]
-    · exfalso
-      apply hi
-      rw [mul_comm, coeff_X_pow_mul']
-      simp only [hik, ↓reduceIte]
-  refine (sum_le_sum_of_subset hsub).trans ?_
-  rw [sum_map]
-  refine le_of_eq (sum_congr rfl fun i _ => ?_)
-  simp only [Function.Embedding.coeFn_mk, coeff_mul_X_pow]
+  have hX : coeffNorm1 (X ^ k) = 1 := by
+    rw [X_pow_eq_monomial, coeffNorm1, support_monomial k one_ne_zero, sum_singleton,
+      coeff_monomial_same, Int.natAbs_one]
+  simpa only [hX, mul_one] using coeffNorm1_mul_le p (X ^ k)
 
 /-- Multiplying by `C a - X` scales `coeffNorm1` by at most `a.natAbs + 1`. -/
 theorem coeffNorm1_C_sub_X_mul_le (a : ℤ) (p : ℤ[X]) :
@@ -225,26 +187,6 @@ theorem coeffNorm1_one_sub_X_pow_mul_le (ℓ : ℕ) (p : ℤ[X]) :
     rw [hEq, pow_succ', mul_assoc]
     exact (coeffNorm1_one_sub_X_mul_le _).trans (Nat.mul_le_mul_left 2 ih)
 
-/-- `coeffNorm1` is submultiplicative on `ℤ[X]`. -/
-theorem coeffNorm1_mul_le (p q : ℤ[X]) :
-    coeffNorm1 (p * q) ≤ coeffNorm1 p * coeffNorm1 q := by
-  have hdecomp : p * q = ∑ i ∈ p.support, C (p.coeff i) * (q * X ^ i) := by
-    conv_lhs => rw [p.as_sum_support_C_mul_X_pow]
-    rw [sum_mul]
-    refine sum_congr rfl fun i _ => ?_
-    ring
-  rw [hdecomp]
-  calc
-    coeffNorm1 (∑ i ∈ p.support, C (p.coeff i) * (q * X ^ i))
-      ≤ ∑ i ∈ p.support, coeffNorm1 (C (p.coeff i) * (q * X ^ i)) :=
-        coeffNorm1_sum_le _ _
-    _ ≤ ∑ i ∈ p.support, (p.coeff i).natAbs * coeffNorm1 q := by
-        refine sum_le_sum fun i _ => ?_
-        exact (coeffNorm1_C_mul_le (p.coeff i) _).trans
-          (Nat.mul_le_mul_left _ (coeffNorm1_mul_X_pow_le q i))
-    _ = coeffNorm1 p * coeffNorm1 q := by
-        rw [← sum_mul, ← coeffNorm1]
-
 /-- `coeffNorm1 (p ^ k) ≤ coeffNorm1 p ^ k`. -/
 theorem coeffNorm1_pow_le (p : ℤ[X]) (k : ℕ) :
     coeffNorm1 (p ^ k) ≤ coeffNorm1 p ^ k := by
@@ -257,14 +199,8 @@ theorem coeffNorm1_pow_le (p : ℤ[X]) (k : ℕ) :
 
 /-- `coeffNorm1` of a finite product is at most the product of the `coeffNorm1`s. -/
 theorem coeffNorm1_prod_le {ι : Type*} (s : Finset ι) (f : ι → ℤ[X]) :
-    coeffNorm1 (∏ a ∈ s, f a) ≤ ∏ a ∈ s, coeffNorm1 (f a) := by
-  classical
-  induction s using Finset.induction_on with
-  | empty =>
-    simp only [prod_empty, coeffNorm1_one, le_refl]
-  | insert a s ha ih =>
-    rw [prod_insert ha, prod_insert ha]
-    exact (coeffNorm1_mul_le _ _).trans (Nat.mul_le_mul_left _ ih)
+    coeffNorm1 (∏ a ∈ s, f a) ≤ ∏ a ∈ s, coeffNorm1 (f a) :=
+  le_prod_of_submultiplicative coeffNorm1 coeffNorm1_one.le coeffNorm1_mul_le s f
 
 /-- Casting `coeffNorm1 p` to `ℤ` gives the sum of integer absolute values `|p.coeff i|`. -/
 theorem natCast_coeffNorm1 (p : ℤ[X]) :

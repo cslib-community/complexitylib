@@ -244,6 +244,19 @@ theorem reducedLimbCount_le (t : ℕ) : reducedLimbCount t ≤ 54 := by
   dsimp only [reducedLimbCount]
   omega
 
+/-- A trinomial step above `3` comes from more than two target bits, so
+`2 * 3 ^ (t - 1) < B` (`two_mul_three_pow_pred_lt_of_two_lt`). -/
+private theorem two_mul_three_pow_pred_lt_reducedTargetBits {w₀ b b' : ℕ}
+    (ht : ¬reducedTrinomialStep w₀ b b' ≤ 3) :
+    2 * 3 ^ (reducedTrinomialStep w₀ b b' - 1) < reducedTargetBits w₀ b b' := by
+  have hB2 : 2 < reducedTargetBits w₀ b b' := by
+    by_contra hle
+    push Not at hle
+    have ht0 : reducedTrinomialStep w₀ b b' = 0 := by
+      rw [reducedTrinomialStep, trinomialStepAux, ite_eq_left hle]
+    omega
+  exact (two_mul_three_pow_pred_lt_of_two_lt hB2).2
+
 /-- Whenever `w₀ ≤ w`, `b' ≤ w`, and `2 ≤ w`, `2 * reducedChunkBits (reducedTrinomialStep w₀ b b')`
 fits in a single `w`-bit word (`≤ w`) unconditionally for all `b : ℕ`. -/
 theorem two_mul_reducedChunkBits_le {w₀ b b' w : ℕ} (hw₀ : w₀ ≤ w) (hb' : b' ≤ w) (hw : 2 ≤ w) :
@@ -258,14 +271,7 @@ theorem two_mul_reducedChunkBits_le {w₀ b b' w : ℕ} (hw₀ : w₀ ≤ w) (hb
       dsimp only [reducedChunkBits]
       rw [Nat.sub_eq_zero_of_le ht, pow_zero]
     omega
-  · have hB2 : 2 < B := by
-      by_contra hle
-      push Not at hle
-      have ht0 : t = 0 := by
-        dsimp only [t, reducedTrinomialStep]
-        rw [trinomialStepAux, ite_eq_left hle]
-      omega
-    obtain ⟨_, hlt⟩ := two_mul_three_pow_pred_lt_of_two_lt hB2
+  · have hlt := two_mul_three_pow_pred_lt_reducedTargetBits ht
     have hpow : 3 ^ (t - 3) ≤ 3 ^ (t - 1) :=
       Nat.pow_le_pow_right (by decide) (by omega)
     dsimp only [reducedChunkBits]
@@ -302,14 +308,7 @@ theorem reducedTableBits_le {w₀ b b' : ℕ} (hb' : b' ≤ 3 * b) :
     dsimp only [reducedTableBits]
     rw [hc1]
     exact le_max_left 8 _
-  · have hB2 : 2 < B := by
-      by_contra hle
-      push Not at hle
-      have ht0 : t = 0 := by
-        dsimp only [t, reducedTrinomialStep]
-        rw [trinomialStepAux, ite_eq_left hle]
-      omega
-    obtain ⟨_, hlt⟩ := two_mul_three_pow_pred_lt_of_two_lt hB2
+  · have hlt := two_mul_three_pow_pred_lt_reducedTargetBits ht
     change 2 * 3 ^ (t - 1) < B at hlt
     have hpow9 : 3 ^ (t - 1) = 9 * reducedChunkBits t := by
       dsimp only [reducedChunkBits]

@@ -276,46 +276,42 @@ theorem sum_mem_range_blockMonomial_iff {blk : σ → Fin d} {S : Finset (Fin d)
   simp only [mem_range_blockMonomial_iff, Finsupp.mapDomain_finsetSum]
   exact sum_eq_sum_single_one_iff fun j => (y j).mapDomain blk
 
+/-- The ordered splits of `S` into two parts are the pairs `(T, S \ T)` with `T ⊆ S`. This lets
+the two-factor statements below be read off from their `ι`-indexed versions at `ι = Fin 2`. -/
+private theorem mem_blockSplits_two {S : Finset (Fin d)} {T : Fin 2 → Finset (Fin d)} :
+    T ∈ blockSplits (Fin 2) S ↔ T 0 ⊆ S ∧ T 1 = S \ T 0 := by
+  have hpair : Pairwise (Disjoint on T) ↔ Disjoint (T 0) (T 1) := by
+    refine ⟨fun h => h Fin.zero_ne_one, fun h j k hjk => ?_⟩
+    fin_cases j <;> fin_cases k
+    exacts [absurd rfl hjk, h, h.symm, absurd rfl hjk]
+  have hunion : univ.biUnion T = T 0 ∪ T 1 := by
+    ext i
+    simp only [mem_biUnion, mem_univ, true_and, Fin.exists_fin_two, mem_union]
+  rw [mem_blockSplits, hpair, hunion]
+  constructor
+  · rintro ⟨hdisj, rfl⟩
+    exact ⟨subset_union_left, (union_sdiff_cancel_left hdisj).symm⟩
+  · rintro ⟨hT, h1⟩
+    rw [h1]
+    exact ⟨disjoint_sdiff, union_sdiff_of_subset hT⟩
+
 /-- Two monomials multiply to a set-multilinear monomial on `S` exactly when they are
-set-multilinear on complementary parts of `S` (original). -/
+set-multilinear on complementary parts of `S` (original). This is the case `ι = Fin 2` of
+`sum_mem_range_blockMonomial_iff`. -/
 theorem add_mem_range_blockMonomial_iff {blk : σ → Fin d} {S : Finset (Fin d)} {a b : σ →₀ ℕ} :
     a + b ∈ Set.range (blockMonomial blk S) ↔
       ∃ T ∈ S.powerset, a ∈ Set.range (blockMonomial blk T) ∧
         b ∈ Set.range (blockMonomial blk (S \ T)) := by
-  classical
-  simp only [mem_range_blockMonomial_iff, Finsupp.mapDomain_add, mem_powerset]
+  have h := sum_mem_range_blockMonomial_iff (blk := blk) (S := S) ![a, b]
+  simp only [Fin.sum_univ_two, Fin.forall_fin_two, Matrix.cons_val_zero,
+    Matrix.cons_val_one] at h
+  rw [h]
   constructor
-  · intro h
-    have hi (i : Fin d) : a.mapDomain blk i + b.mapDomain blk i = if i ∈ S then 1 else 0 := by
-      rw [← sum_single_one_apply, ← h, Finsupp.add_apply]
-    refine ⟨(a.mapDomain blk).support, fun i hi' => ?_, ?_, ?_⟩
-    · have h' := hi i
-      have ha := Finsupp.mem_support_iff.1 hi'
-      by_contra hS
-      rw [ite_eq_right hS] at h'
-      omega
-    · ext i
-      have h' := hi i
-      rw [sum_single_one_apply]
-      by_cases ha : a.mapDomain blk i = 0
-      · rw [ite_eq_right (Finsupp.notMem_support_iff.2 ha), ha]
-      · rw [ite_eq_left (Finsupp.mem_support_iff.2 ha)]
-        split_ifs at h' <;> omega
-    · ext i
-      have h' := hi i
-      rw [sum_single_one_apply]
-      by_cases hS : i ∈ S
-      · rw [ite_eq_left hS] at h'
-        by_cases ha : a.mapDomain blk i = 0
-        · rw [ite_eq_left (mem_sdiff.2 ⟨hS, Finsupp.notMem_support_iff.2 ha⟩)]
-          omega
-        · rw [ite_eq_right fun h => (mem_sdiff.1 h).2 (Finsupp.mem_support_iff.2 ha)]
-          omega
-      · rw [ite_eq_right hS] at h'
-        rw [ite_eq_right fun h => hS (mem_sdiff.1 h).1]
-        omega
   · rintro ⟨T, hT, ha, hb⟩
-    rw [ha, hb, ← sum_union disjoint_sdiff, union_sdiff_of_subset hT]
+    obtain ⟨hT0, hT1⟩ := mem_blockSplits_two.1 hT
+    exact ⟨T 0, mem_powerset.2 hT0, ha, hT1 ▸ hb⟩
+  · rintro ⟨T, hT, ha, hb⟩
+    exact ⟨![T, S \ T], mem_blockSplits_two.2 ⟨mem_powerset.1 hT, rfl⟩, ha, hb⟩
 
 end Splits
 
@@ -473,41 +469,6 @@ private theorem smProj_eq_sum [DecidablePred (· ∈ Set.range (blockMonomial bl
   conv_lhs => rw [f.as_sum, map_sum]
   exact sum_congr rfl fun m _ => smProj_monomial' m _
 
-/-- **The projection of a product** (original as stated; the expansion in the proof of
-[Forbes2024, Lemma 26]): the set-multilinear part of `f * g` on `S` is the sum, over the parts
-`T ⊆ S`, of the product of the part of `f` on `T` and the part of `g` on `S \ T`. -/
-theorem smProj_mul (blk : σ → Fin d) (S : Finset (Fin d)) (f g : MvPolynomial σ K) :
-    smProj blk S (f * g) = ∑ T ∈ S.powerset, smProj blk T f * smProj blk (S \ T) g := by
-  classical
-  have key (a b : σ →₀ ℕ) (x y : K) :
-      ∑ T ∈ S.powerset, (if a ∈ Set.range (blockMonomial blk T) then x else 0) *
-          (if b ∈ Set.range (blockMonomial blk (S \ T)) then y else 0) =
-        if a + b ∈ Set.range (blockMonomial blk S) then x * y else 0 := by
-    simp only [ite_zero_mul_ite_zero]
-    by_cases h : a + b ∈ Set.range (blockMonomial blk S)
-    · obtain ⟨T₀, hT₀, ha, hb⟩ := add_mem_range_blockMonomial_iff.1 h
-      rw [ite_eq_left h, sum_eq_single_of_mem T₀ hT₀ fun T _ hT =>
-        ite_eq_right fun h' => hT (eq_of_mem_range_blockMonomial h'.1 ha), ite_eq_left ⟨ha, hb⟩]
-    · rw [ite_eq_right h]
-      exact sum_eq_zero fun T hT =>
-        ite_eq_right fun h' => h (add_mem_range_blockMonomial_iff.2 ⟨T, hT, h'⟩)
-  have hexp (s t : Finset (σ →₀ ℕ)) (x y : (σ →₀ ℕ) → K) :
-      (∑ a ∈ s, monomial a (x a)) * ∑ b ∈ t, monomial b (y b) =
-        ∑ a ∈ s, ∑ b ∈ t, monomial (a + b) (x a * y b) := by
-    rw [sum_mul_sum]
-    exact sum_congr rfl fun a _ => sum_congr rfl fun b _ => monomial_mul_monomial ..
-  have hT (T : Finset (Fin d)) : smProj blk T f * smProj blk (S \ T) g =
-      ∑ a ∈ f.support, ∑ b ∈ g.support, monomial (a + b)
-        ((if a ∈ Set.range (blockMonomial blk T) then f.coeff a else 0) *
-          (if b ∈ Set.range (blockMonomial blk (S \ T)) then g.coeff b else 0)) := by
-    rw [smProj_eq_sum f, smProj_eq_sum g, hexp]
-  rw [sum_congr rfl fun T _ => hT T, sum_comm]
-  conv_lhs => rw [f.as_sum, g.as_sum, hexp, map_sum]
-  refine sum_congr rfl fun a _ => ?_
-  rw [map_sum, sum_comm]
-  refine sum_congr rfl fun b _ => ?_
-  rw [smProj_monomial', ← map_sum, key]
-
 /-- **The projection of a finite product** (original as stated; the expansion in the proof of
 [Forbes2024, Lemma 26]): the set-multilinear part of `∏ j, f j` on `S` is the sum, over the
 ordered splits `T` of `S` into pairwise disjoint parts `T j` covering `S`, of the products of the
@@ -540,6 +501,24 @@ theorem smProj_prod {ι : Type*} [Fintype ι] [DecidableEq ι] (blk : σ → Fin
     prod_congr rfl fun j _ => (f j).as_sum, hexp, map_sum]
   refine sum_congr rfl fun y _ => ?_
   rw [smProj_monomial', ← map_sum, key]
+
+/-- **The projection of a product** (original as stated; the expansion in the proof of
+[Forbes2024, Lemma 26]): the set-multilinear part of `f * g` on `S` is the sum, over the parts
+`T ⊆ S`, of the product of the part of `f` on `T` and the part of `g` on `S \ T`. This is the
+case `ι = Fin 2` of `smProj_prod`, with the split `(T, S \ T)` indexed by its first part. -/
+theorem smProj_mul (blk : σ → Fin d) (S : Finset (Fin d)) (f g : MvPolynomial σ K) :
+    smProj blk S (f * g) = ∑ T ∈ S.powerset, smProj blk T f * smProj blk (S \ T) g := by
+  have h := smProj_prod blk S ![f, g]
+  simp only [Fin.prod_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one] at h
+  rw [h]
+  refine sum_nbij' (fun T => T 0) (fun T => ![T, S \ T]) (fun T hT => ?_)
+    (fun T hT => mem_blockSplits_two.2 ⟨mem_powerset.1 hT, rfl⟩) (fun T hT => ?_)
+    (fun T _ => rfl) (fun T hT => ?_)
+  · exact mem_powerset.2 (mem_blockSplits_two.1 hT).1
+  · funext j
+    fin_cases j
+    exacts [rfl, (mem_blockSplits_two.1 hT).2.symm]
+  · rw [(mem_blockSplits_two.1 hT).2]
 
 /-- **The projection commutes with renaming along the blocks** (original): if the renaming `e`
 sends each variable to a variable of the same block, then renaming the part of `f` on `S` gives

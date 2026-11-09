@@ -100,17 +100,20 @@ private theorem headD_mem_uncoveredEdges {G : Graph} {C : List ℕ}
   | nil => simp [hle] at h
   | cons e es => simp
 
+/-- Outside a cover, a branching step adds one vertex of `G` to `C`. -/
+private theorem exists_branchStep_eq_cons {G : Graph} {C : List ℕ} (b : Bool)
+    (h : isCover G C = false) : ∃ w ∈ G.1, branchStep G C b = w :: C := by
+  obtain ⟨_, he₁, he₂, _, _, _⟩ := mem_uncoveredEdges_iff.mp (headD_mem_uncoveredEdges h)
+  refine ⟨_, ?_, by rw [branchStep, h]; rfl⟩
+  split_ifs <;> assumption
+
 private theorem mem_of_mem_branchStep {G : Graph} {C : List ℕ} {b : Bool} (hC : ∀ v ∈ C, v ∈ G.1) :
     ∀ v ∈ branchStep G C b, v ∈ G.1 := by
-  unfold branchStep
   cases h : isCover G C
-  · dsimp only [Bool.false_eq_true, ↓reduceIte]
-    obtain ⟨_, he₁, he₂, _, _, _⟩ := mem_uncoveredEdges_iff.mp (headD_mem_uncoveredEdges h)
-    intro v hv
-    rcases List.mem_cons.mp hv with rfl | hv
-    · split_ifs <;> assumption
-    · exact hC v hv
-  · simpa using hC
+  · obtain ⟨w, hw, hstep⟩ := exists_branchStep_eq_cons b h
+    rw [hstep]
+    exact List.forall_mem_cons.mpr ⟨hw, hC⟩
+  · simpa [branchStep, h] using hC
 
 private theorem length_branchStep_le (G : Graph) (C : List ℕ) (b : Bool) :
     (branchStep G C b).length ≤ C.length + 1 := by
@@ -156,10 +159,7 @@ private theorem exists_foldBranch_subset (G : Graph) {S : Finset ℕ}
       have hadj : G.toSimpleGraph.Adj e.1 e.2 := ⟨hne, Or.inl he⟩
       have heS : e.1 ∈ S ∨ e.2 ∈ S := hS e.1 he₁ e.2 he₂ hadj
       let b : Bool := decide (e.1 ∉ S)
-      have hwS : (if b then e.2 else e.1) ∈ S := by
-        by_cases h₁ : e.1 ∈ S
-        · simp [b, h₁]
-        · simp [b, h₁, heS.resolve_left h₁]
+      have hwS : (if b then e.2 else e.1) ∈ S := by grind
       have hwC : (if b then e.2 else e.1) ∉ C := by
         split_ifs <;> assumption
       have hstep : foldBranch G (bs ++ [b]) = (if b then e.2 else e.1) :: C := by
@@ -279,24 +279,15 @@ theorem computableInPolyTime_branchStep :
 private theorem length_encList_branchStep_le (G : Graph) (C : List ℕ) (b : Bool) :
     (encList encNat (branchStep G C b)).length ≤
       (encList encNat C).length + (2 * (encGraph G).length + 2) := by
-  unfold branchStep
   cases h : isCover G C
-  · dsimp only [Bool.false_eq_true, ↓reduceIte]
-    obtain ⟨_, he₁, he₂, _, _, _⟩ := mem_uncoveredEdges_iff.mp (headD_mem_uncoveredEdges h)
-    have h₁ : (encNat ((uncoveredEdges G C).headD (0, 0)).1).length ≤ (encGraph G).length := by
-      calc (encNat ((uncoveredEdges G C).headD (0, 0)).1).length
-          ≤ (encList encNat G.1).length := length_le_encList_of_mem encNat he₁
+  · obtain ⟨w, hw, hstep⟩ := exists_branchStep_eq_cons b h
+    have hlen : (encNat w).length ≤ (encGraph G).length := by
+      calc (encNat w).length
+          ≤ (encList encNat G.1).length := length_le_encList_of_mem encNat hw
         _ ≤ (encGraph G).length := by simp only [encGraph, length_encPair]; omega
-    have h₂ : (encNat ((uncoveredEdges G C).headD (0, 0)).2).length ≤ (encGraph G).length := by
-      calc (encNat ((uncoveredEdges G C).headD (0, 0)).2).length
-          ≤ (encList encNat G.1).length := length_le_encList_of_mem encNat he₂
-        _ ≤ (encGraph G).length := by simp only [encGraph, length_encPair]; omega
-    have hw : (encNat (if b then ((uncoveredEdges G C).headD (0, 0)).2
-        else ((uncoveredEdges G C).headD (0, 0)).1)).length ≤ (encGraph G).length := by
-      split_ifs <;> assumption
-    simp only [Bool.false_eq_true, ↓reduceIte, encList_cons, List.length_append, length_frame]
+    simp only [hstep, encList_cons, List.length_append, length_frame]
     omega
-  · simp only [↓reduceIte]
+  · simp only [branchStep, h, ↓reduceIte]
     omega
 
 /-- Candidate path tuples `((G, k), cap (G, k), i)`, with `cap (G, k)` in unary. -/

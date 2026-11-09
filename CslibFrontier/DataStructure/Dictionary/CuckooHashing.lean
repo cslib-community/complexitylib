@@ -12,6 +12,7 @@ public import CslibFrontier.Languages.Probabilistic.RandomOracle
 public import CslibFrontier.Probability.KWiseIndependent.DoubleTabulation
 public import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Foundations.Data.Nat.Power
+import CslibFrontier.Probability.KWiseIndependent.DoubleTabulation.Parameters
 import CslibFrontier.Probability.KWiseIndependent.Restriction
 import CslibFrontier.Probability.PMF.UniformBound
 
@@ -2802,45 +2803,16 @@ theorem isCuckooHashPair_doubleTabHash {c b U M : ℕ}
   let k := 2 * MaxLoop + 2
   let GoodTop := Finset.univ.filter fun T₁ : DoubleTabTopSeed c (8 * c) b =>
     IsKUnique k (simpleTabTuple T₁)
-  let BadTop := Finset.univ.filter fun T₁ : DoubleTabTopSeed c (8 * c) b =>
-    ¬ IsKUnique k (simpleTabTuple T₁)
-  let B := max n_max 1 * max MaxLoop 1
-  let Code := doubleTabCodeBound c (8 * c) 4 k
-  let N_top := Fintype.card (DoubleTabTopSeed c (8 * c) b)
-  have hB_ge : 1 ≤ B := Nat.mul_pos (by omega) (by omega)
-  have hbound_code : 2 * Code ≤ 2 ^ (3 * b) := by
-    calc 2 * Code = 2 * 1 * Code := by ring
-      _ ≤ 2 * B * Code := Nat.mul_le_mul_right Code (Nat.mul_le_mul_left 2 hB_ge)
-      _ ≤ 2 ^ (3 * b) := hbound
-  have hbad_le := card_not_isKUnique_eight_mul_le (b := b) hc hbound_code
-  have hsub_card : N_top - GoodTop.card = BadTop.card := by
-    have hdisj : Disjoint GoodTop BadTop :=
-      Finset.disjoint_filter.mpr fun _ _ h₁ h₂ => h₂ h₁
-    have hunion : GoodTop ∪ BadTop = Finset.univ := by
-      ext T₁
-      simp only [GoodTop, BadTop, Finset.mem_union, Finset.mem_filter, Finset.mem_univ, true_and,
-        iff_true]
-      exact em _
-    have hadd : GoodTop.card + BadTop.card = N_top := by
-      rw [← Finset.card_union_of_disjoint hdisj, hunion, Finset.card_univ]
-    omega
-  have hwhp : 2 * (N_top - GoodTop.card) * B ≤ N_top := by
-    rw [hsub_card]
-    have hmul : 2 ^ (6 * b) * (2 * BadTop.card * B) ≤ 2 ^ (6 * b) * N_top := by
-      calc 2 ^ (6 * b) * (2 * BadTop.card * B)
-          = (2 * B) * (2 ^ (6 * b) * BadTop.card) := by ring
-        _ ≤ (2 * B) * (2 * Code ^ 2 * N_top) := Nat.mul_le_mul_left _ hbad_le
-        _ = (2 * B * (2 * Code ^ 2)) * N_top := by ring
-        _ ≤ (2 * B * Code) ^ 2 * N_top := by
-          refine Nat.mul_le_mul_right N_top ?_
-          have hB_sq : B ≤ B * B := Nat.le_mul_of_pos_left B hB_ge
-          nlinarith
-        _ ≤ (2 ^ (3 * b)) ^ 2 * N_top := by gcongr
-        _ = 2 ^ (6 * b) * N_top := by
-          rw [← Nat.pow_mul]
-          congr 2
-          ring
-    exact Nat.le_of_mul_le_mul_left hmul (Nat.two_pow_pos (6 * b))
+  have hwhp : 2 * (Fintype.card (DoubleTabTopSeed c (8 * c) b) - GoodTop.card) *
+      (max n_max 1 * max MaxLoop 1) ≤ Fintype.card (DoubleTabTopSeed c (8 * c) b) := by
+    have hsplit : GoodTop.card + (Finset.univ.filter fun T₁ : DoubleTabTopSeed c (8 * c) b =>
+        ¬ IsKUnique k (simpleTabTuple T₁)).card = Fintype.card (DoubleTabTopSeed c (8 * c) b) := by
+      rw [← Finset.card_univ]
+      exact Finset.card_filter_add_card_filter_not _
+    rw [show Fintype.card (DoubleTabTopSeed c (8 * c) b) - GoodTop.card =
+      (Finset.univ.filter fun T₁ : DoubleTabTopSeed c (8 * c) b =>
+        ¬ IsKUnique k (simpleTabTuple T₁)).card by omega]
+    exact two_mul_card_not_isKUnique_mul_le hc (Nat.mul_pos (by omega) (by omega)) hbound
   exact isCuckooHashPair_of_whp_kWiseIndependent n_max MaxLoop GoodTop
     (fun T₁ hT₁ => isKWiseIndependentHash_doubleTabHash_of_isKUnique hU
       (Finset.mem_filter.mp hT₁).2)
@@ -2866,29 +2838,9 @@ private theorem isCuckooHashPair_seedAux (reg : Bool) {c_exp n_max U M : ℕ}
     let c := 2 * max c_exp 1
     let b := (1 + Nat.clog 2 (max n_max 4)) / 2
     have hc2 : 2 ≤ c := by omega
-    have hclog_le : Nat.clog 2 (max n_max 4) ≤ 2 * b := by omega
-    have hmax_le_2b : max n_max 4 ≤ 2 ^ (2 * b) :=
-      (Nat.le_pow_clog (by decide) (max n_max 4)).trans
-        (Nat.pow_le_pow_right (by decide) hclog_le)
-    have hU_cb : U ≤ 2 ^ (c * b) := by
-      calc U ≤ max n_max 4 ^ c_exp := hU
-        _ ≤ max n_max 4 ^ max c_exp 1 :=
-          Nat.pow_le_pow_right (by omega) (le_max_left c_exp 1)
-        _ ≤ (2 ^ (2 * b)) ^ max c_exp 1 := by gcongr
-        _ = 2 ^ (c * b) := by
-          rw [← Nat.pow_mul]
-          congr 1
-          dsimp only [c]
-          ring
-    have hb_ge : doubleTabMinB c_exp ≤ b := by
-      have hpow_le : 2 ^ (2 * doubleTabMinB c_exp) ≤ 2 ^ Nat.clog 2 (max n_max 4) := by
-        rw [← doubleTabThreshold_eq]
-        exact (hge.trans (le_max_left n_max 4)).trans (Nat.le_pow_clog (by decide) (max n_max 4))
-      have hclog_ge : 2 * doubleTabMinB c_exp ≤ Nat.clog 2 (max n_max 4) :=
-        (Nat.pow_le_pow_iff_right (by decide)).mp hpow_le
-      omega
+    obtain ⟨hU_cb, hb_ge, hmax_le_2b⟩ : U ≤ 2 ^ (c * b) ∧ doubleTabMinB c_exp ≤ b ∧
+        max n_max 4 ≤ 2 ^ (2 * b) := doubleTab_canonical_params hge hU
     have hb_min_def : doubleTabMinB c_exp = 4 * (24 * c + 8) ^ 2 := doubleTabMinB_eq c_exp
-    have hb_8c : 8 * c ≤ b := by nlinarith
     have hb_64 : 64 ≤ b := by nlinarith
     have hclog2_le : Nat.clog 2 (max n_max 2) ≤ 2 * b :=
       (Nat.clog_le_iff_le_pow (by decide)).mpr
@@ -2898,43 +2850,16 @@ private theorem isCuckooHashPair_seedAux (reg : Bool) {c_exp n_max U M : ℕ}
     have h2ev_sq : 2 * max (maxEvictions n_max) 1 ≤ b ^ 2 := by
       have : max (maxEvictions n_max) 1 = maxEvictions n_max := by omega
       nlinarith
-    have hck_cube : c * (2 * maxEvictions n_max + 2) ≤ b ^ 3 := by
-      have h2ev2 : 2 * maxEvictions n_max + 2 ≤ b ^ 2 := by nlinarith
-      calc c * (2 * maxEvictions n_max + 2)
-          ≤ b * (b ^ 2) := Nat.mul_le_mul (by omega) h2ev2
-        _ = b ^ 3 := by ring
-    have hcode_pow : doubleTabCodeBound c (8 * c) 4 (2 * maxEvictions n_max + 2) ≤
-        b ^ (24 * c + 5) := by
-      unfold doubleTabCodeBound
-      calc c * ((c * (2 * maxEvictions n_max + 2)) ^ (2 * c) * (8 * c)) ^ 4
-          ≤ b * (((b ^ 3) ^ (2 * c) * b) ^ 4) :=
-            Nat.mul_le_mul (by omega) (Nat.pow_le_pow_left
-              (Nat.mul_le_mul (Nat.pow_le_pow_left hck_cube (2 * c)) hb_8c) 4)
-        _ = b ^ (24 * c + 5) := by
-          rw [← Nat.pow_mul, ← pow_succ, ← Nat.pow_mul, ← pow_succ']
-          congr 1
-          ring
-    have hprod_le : 2 * (max n_max 1 * max (maxEvictions n_max) 1) *
-        doubleTabCodeBound c (8 * c) 4 (2 * maxEvictions n_max + 2) ≤ 2 ^ (3 * b) := by
+    have h2ev2 : 2 * maxEvictions n_max + 2 ≤ b ^ 2 := by nlinarith
+    have hload_le : 2 * (max n_max 1 * max (maxEvictions n_max) 1) ≤ 2 ^ (2 * b) * b ^ 2 := by
       have hmax1_le : max n_max 1 ≤ 2 ^ (2 * b) :=
         (by omega : max n_max 1 ≤ max n_max 4).trans hmax_le_2b
-      calc 2 * (max n_max 1 * max (maxEvictions n_max) 1) *
-            doubleTabCodeBound c (8 * c) 4 (2 * maxEvictions n_max + 2)
-          = max n_max 1 * (2 * max (maxEvictions n_max) 1) *
-              doubleTabCodeBound c (8 * c) 4 (2 * maxEvictions n_max + 2) := by ring
-        _ ≤ (2 ^ (2 * b) * b ^ 2) * b ^ (24 * c + 5) := by gcongr
-        _ = 2 ^ (2 * b) * b ^ (24 * c + 7) := by
-            rw [Nat.mul_assoc, ← Nat.pow_add]
-            congr 2
-            ring
-        _ ≤ 2 ^ (2 * b) * b ^ (24 * c + 8) :=
-            Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by omega) (by omega))
-        _ ≤ 2 ^ (2 * b) * 2 ^ b :=
-            Nat.mul_le_mul_left _ (Nat.pow_le_two_pow (by omega) (hb_min_def ▸ hb_ge))
-        _ = 2 ^ (3 * b) := by
-            rw [← Nat.pow_add]
-            congr 1
-            ring
+      calc 2 * (max n_max 1 * max (maxEvictions n_max) 1)
+          = max n_max 1 * (2 * max (maxEvictions n_max) 1) := by ring
+        _ ≤ 2 ^ (2 * b) * b ^ 2 := Nat.mul_le_mul hmax1_le h2ev_sq
+    have hprod_le : 2 * (max n_max 1 * max (maxEvictions n_max) 1) *
+        doubleTabCodeBound c (8 * c) 4 (2 * maxEvictions n_max + 2) ≤ 2 ^ (3 * b) :=
+      mul_doubleTabCodeBound_le hb_ge h2ev2 hload_le
     exact isCuckooHashPair_doubleTabHash (by omega) hU_cb n_max (maxEvictions n_max)
       hm le_rfl hloop_le hprod_le
   · dsimp only [SeedAux, SingleSeedAux, evalHash1Aux, evalHash2Aux, evalSingleAux,

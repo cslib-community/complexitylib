@@ -12,6 +12,8 @@ public import CslibFrontier.Computability.Streaming.Frequency
 public import CslibFrontier.Foundations.Data.Finset.Median
 public import CslibFrontier.Probability.KWiseIndependent
 public import CslibFrontier.Probability.UniversalHash
+import CslibFrontier.Foundations.Algebra.FiniteMagnitude
+import CslibFrontier.Foundations.Data.Fintype.Grid
 import CslibFrontier.Probability.KWiseIndependent.CountSketch
 import CslibFrontier.Probability.MedianTrick
 import CslibFrontier.Probability.PMF.Event
@@ -214,11 +216,8 @@ theorem errorProb_countSketchRandom [Fintype ι] [Nonempty ι] [Fintype κ] [Non
     (R : List α → (α → ℝ) → Prop) (s : List α)
     [DecidablePred fun ω : Fin (2 * r) → ι × κ => ¬R s ((countSketch h g sgn r ω).run s)] :
     (countSketchRandom h g sgn r).errorProb R s =
-      dens {ω : Fin (2 * r) → ι × κ | ¬R s ((countSketch h g sgn r ω).run s)} := by
-  unfold Randomized.errorProb countSketchRandom
-  rw [PMF.toOuterMeasure_map_apply, nnratCast_dens]
-  exact Probability.PMF.toOuterMeasure_uniformOfFintype_toReal
-    {ω : Fin (2 * r) → ι × κ | ¬R s ((countSketch h g sgn r ω).run s)}
+      dens {ω : Fin (2 * r) → ι × κ | ¬R s ((countSketch h g sgn r ω).run s)} :=
+  Randomized.errorProb_map_uniformOfFintype _ R s
 
 /-- **The Count-Sketch answers point queries** [Chakrabarti2025, equation (5.7)]: with a
 two-universal bucket family `h`, an independent pairwise independent family `sgn ∘ g` of signs of
@@ -269,22 +268,13 @@ theorem mem_Icc_state_countSketch_snd (hsgn : ∀ y, |sgn y| ≤ 1) (ω : Fin (2
     {m : ℕ} {s : List α} (hs : s.length ≤ m) (i : Fin (2 * r)) (j : Fin w) :
     ((countSketch h g sgn r ω).state s).2 i j ∈ Icc (-(m : ℤ)) m := by
   rw [state_countSketch, mem_Icc]
-  have hle : ∀ x ∈ s.map fun a => if h (ω i).1 a = j then sgn (g (ω i).2 a) else 0,
-      |x| ≤ 1 := by
-    simp only [List.mem_map]
-    rintro _ ⟨a, -, rfl⟩
+  have hle : ∀ a, |if h (ω i).1 a = j then sgn (g (ω i).2 a) else 0| ≤ 1 := by
+    intro a
     split_ifs
     · exact hsgn _
     · simp only [abs_zero, zero_le_one]
-  have hm : ((s.map fun a => if h (ω i).1 a = j then sgn (g (ω i).2 a) else 0).length : ℤ) ≤ m :=
-    by rw [List.length_map]; exact_mod_cast hs
-  constructor
-  · have := List.length_nsmul_le_sum _ (-1 : ℤ) fun x hx => neg_le_of_abs_le (hle x hx)
-    rw [nsmul_eq_mul, mul_neg_one] at this
-    linarith
-  · have := List.sum_le_length_nsmul _ (1 : ℤ) fun x hx => le_of_abs_le (hle x hx)
-    rw [nsmul_eq_mul, mul_one] at this
-    linarith
+  exact abs_le.1 ((List.abs_sum_map_le hle s).trans
+    (by exact_mod_cast hs : ((s.length : ℕ) : ℤ) ≤ m))
 
 /-- **The memory of the randomized Count-Sketch** [Chakrabarti2025, Section 5.3.2]: every sketch it
 draws uses at most `b` bits of memory on streams of at most `m` items when
@@ -305,10 +295,9 @@ theorem spaceLE_countSketchRandom [Fintype ι] [Nonempty ι] [Fintype κ] [Nonem
     refine ⟨?_, fun i => Fintype.mem_piFinset.2 fun j =>
       mem_Icc_state_countSketch_snd hsgn ω hs i j⟩
     rw [state_countSketch, mem_singleton]
-  · have hc : (↑m + 1 - -(m : ℤ)).toNat = 2 * m + 1 := by omega
-    simp only [card_product, card_singleton, one_mul, Fintype.card_piFinset, Int.card_Icc, hc,
-      prod_const, card_univ, Fintype.card_fin]
-    rwa [← pow_mul, mul_comm w]
+  · rw [card_product, card_singleton, one_mul, Fintype.card_piFinset_Icc, Fintype.card_fin,
+      Fintype.card_fin]
+    exact hb
 
 /-- **The memory of the Count-Sketch with its seeds stored** [Chakrabarti2025, Section 5.3.2]: on
 streams of at most `m` items, the states reachable from all seeds together have a single injective
@@ -329,9 +318,8 @@ theorem exists_injOn_iUnion_reachable_countSketch [Fintype ι] [Fintype κ]
     rw [mem_coe, mem_product, Fintype.mem_piFinset]
     exact ⟨mem_univ _, fun i => Fintype.mem_piFinset.2 fun j =>
       mem_Icc_state_countSketch_snd hsgn ω hs i j⟩
-  · have hc : (↑m + 1 - -(m : ℤ)).toNat = 2 * m + 1 := by omega
-    simp only [T, card_product, card_univ, Fintype.card_pi, Fintype.card_prod, Fintype.card_fin,
-      prod_const, Fintype.card_piFinset, Int.card_Icc, hc]
-    rwa [← pow_mul (2 * m + 1), mul_comm w]
+  · rw [card_product, Fintype.card_piFinset_Icc, Fintype.card_fin, Fintype.card_fin, card_univ,
+      Fintype.card_fun, Fintype.card_prod, Fintype.card_fin]
+    exact hb
 
 end Cslib.Streaming

@@ -95,8 +95,7 @@ theorem run_spec (G : ListInstance) {w : ℕ}
   let T : Block := ⟨f, G.n⟩
   let base := f + G.n
   let s₁ : Memory.State := ⟨s₀.mem, base + (9 * G.n + 5)⟩
-  have hf : (Memory.State.init G.encode).frontier = G.n + 2 * G.m + 4 := by
-    simp only [Memory.State.init, G.encode_length]
+  have hf : (Memory.State.init G.encode).frontier = G.n + 2 * G.m + 4 := Memory.frontier_init G
   have hn : Fits w G.n := hfit.of_le (by nlinarith)
   have hK : Fits w K := hfit.of_le (by dsimp only [K]; nlinarith)
   have hT : Dictionary.Memory.Valid T w G.n (K + 1) :=
@@ -147,21 +146,8 @@ theorem run_spec (G : ListInstance) {w : ℕ}
         dsimp only [ListInstance.outAddr, f, s₀]
         rw [hf]
       rw [ha]
-      change _ = encodeDist (G.dist G.source v)
-      generalize hword : ((Memory.spec w).clientState s₁
-        (link M.methods (dijkstra G.source))).mem (f + v) = value at hcell ⊢
-      cases value with
-      | zero =>
-        have hD : G.dist G.source v = ⊤ := by
-          by_contra hD
-          obtain ⟨d, he⟩ := ENat.ne_top_iff_exists.mp hD
-          have hd := (hdv v d).mpr he.symm
-          rw [← hcell] at hd
-          cases hd
-        simp [hD, encodeDist]
-      | succ x =>
-        have hd : G.dist G.source v = x := (hdv v x).mp hcell.symm
-        simp [hd, encodeDist]
+      refine Memory.eq_encodeDist fun d => ?_
+      rw [← hdv v d, ← hcell]
   have htriple : Triple w s₀ run (rateBound (rate G.n) G.n G.m + 5)
       (fun _ s' => ∀ v : Fin G.n, s'.mem (G.outAddr v) = encodeDist (G.dist G.source v)) := by
     have hn1 : s₀.mem 1 = G.n := rfl

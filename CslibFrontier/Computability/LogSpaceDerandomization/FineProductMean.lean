@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.LogSpaceDerandomization.ConditionalProductMean
+import CslibFrontier.Foundations.Algebra.FiniteMagnitude
 import Mathlib.Analysis.MeanInequalitiesPow
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Positivity
@@ -173,9 +174,7 @@ theorem conditionalTableMean_change_terminal {πa πb : ℝ} (hπb : 0 < πb)
     have hpos : (0 : ℝ) < dens {τ | Yb τ y} := by rw [hYbπ]; exact hπb
     rw [hz] at hpos
     norm_num at hpos
-  have hTS : ({τ | Yb τ y} : Finset Υ) ⊆ ({τ | Ya τ y} : Finset Υ) := by
-    intro τ hτ
-    simpa using hsub τ y (by simpa using hτ)
+  have hTS : ({τ | Yb τ y} : Finset Υ) ⊆ ({τ | Ya τ y} : Finset Υ) := by grind
   rw [conditionalTableMean_two_product, conditionalTableMean_two_product,
     expect_product, expect_product]
   refine expect_congr rfl fun γ _ => ?_
@@ -239,23 +238,6 @@ theorem rowNormPow_fineMean_le {s : ℕ} {N u c πa πb : ℝ} (hs : s ≠ 0)
 
 end ProductSlices
 
-private theorem sum_mul_le_of_row_cap {α : Type*} (T : Finset α) {A D : α → ℝ}
-    {CA CD : ℝ} {K : ℕ} (hCA : 0 ≤ CA) (hCD : 0 ≤ CD)
-    (hA : ∀ z, A z ≤ CA) (hD0 : ∀ z, 0 ≤ D z) (hD : ∀ z, D z ≤ CD)
-    (hK : #{z ∈ T | A z ≠ 0} ≤ K) : ∑ z ∈ T, A z * D z ≤ K * CA * CD := by
-  classical
-  have hsum : ∑ z ∈ T, A z * D z = ∑ z ∈ T with A z ≠ 0, A z * D z := by
-    rw [sum_filter]
-    refine sum_congr rfl fun z _ => ?_
-    by_cases hz : A z = 0 <;> simp [hz]
-  rw [hsum]
-  calc
-    _ ≤ ∑ z ∈ T with A z ≠ 0, CA * CD :=
-      sum_le_sum fun z _ => mul_le_mul (hA z) (hD z) (hD0 z) hCA
-    _ = (#{z ∈ T | A z ≠ 0} : ℝ) * (CA * CD) := by rw [sum_const, nsmul_eq_mul]
-    _ ≤ K * (CA * CD) := mul_le_mul_of_nonneg_right (by exact_mod_cast hK) (mul_nonneg hCA hCD)
-    _ = _ := by ring
-
 /-- **Ordinary coupled product errors**. Both left row caps bound each actual product by
 `Kf * CF * CB`. The resulting ordinary-versus-root factor is explicit, and the remaining
 product estimate retains the exact source-release factor `f / u`. -/
@@ -289,12 +271,12 @@ theorem rowNormPow_product_sub_le {s Kf Kr Kc : ℕ} {N u f CF CB : ℝ}
     refine rowNormPow_sub_le_rootDistPow hs (by positivity) ?_ ?_
     · intro σ x y hx _
       exact ⟨sum_nonneg fun z _ => mul_nonneg (hF σ x z) (hB σ z y),
-        sum_mul_le_of_row_cap _ hCF hCB (hFbound σ x) (fun z => hB σ z y)
-          (fun z => hBbound σ z y) (hleft σ x hx)⟩
+        sum_mul_le_of_card_support_le _ hCF hCB (fun z _ => hFbound σ x z)
+          (fun z _ => hB σ z y) (fun z _ => hBbound σ z y) (hleft σ x hx)⟩
     · intro σ x y hx _
       exact ⟨sum_nonneg fun z _ => mul_nonneg (hF' σ x z) (hB' σ z y),
-        sum_mul_le_of_row_cap _ hCF hCB (hF'bound σ x) (fun z => hB' σ z y)
-          (fun z => hB'bound σ z y) (hleft' σ x hx)⟩
+        sum_mul_le_of_card_support_le _ hCF hCB (fun z _ => hF'bound σ x z)
+          (fun z _ => hB' σ z y) (fun z _ => hB'bound σ z y) (hleft' σ x hx)⟩
   calc
     _ ≤ _ := hproduct
     _ ≤ ((s : ℝ) * ((Kf : ℝ) * CF * CB) ^ (((s : ℝ) - 1) / s)) ^ s *
@@ -324,8 +306,7 @@ theorem fineScaleCost_le {s : ℕ} (hs : s ≠ 0) {a b πa πb Ca cb : ℝ}
     rw [Nat.add_sub_cancel, pow_succ]
     field_simp
   calc
-    _ ≤ (b / a) ^ s * ((Ca / cb) * (a / b)) :=
-      mul_le_mul_of_nonneg_left hratio (by positivity)
+    _ ≤ (b / a) ^ s * ((Ca / cb) * (a / b)) := by gcongr
     _ = (Ca / cb) * ((b / a) ^ s * (a / b)) := by ring
     _ = _ := by rw [hcancel]
 
@@ -376,9 +357,7 @@ theorem rowNormPow_fineProductMean_le {Γ Υ : Type*} [Fintype Γ] [Fintype Υ]
       ∑ z ∈ ({z | Z σ z} : Finset V), F' σ x z * B' σ z y
   have ha : 0 < a := hb.trans_le hba
   have hNu : 0 ≤ N * u := mul_nonneg hN.le hu.le
-  have hEsupport : ∀ σ x y, ¬ Yb σ.2 y → E σ x y = 0 := by
-    intro σ x y hy
-    simp [E, hBsupport σ _ y hy, hB'support σ _ y hy]
+  have hEsupport : ∀ σ x y, ¬ Yb σ.2 y → E σ x y = 0 := by grind
   have hscale : ((b / a) * (f / πf)) ^ s * (πa / πb) ≤
       (f / πf) ^ s * (Ca / cb) * (b / a) ^ (s - 1) := by
     rw [mul_pow]

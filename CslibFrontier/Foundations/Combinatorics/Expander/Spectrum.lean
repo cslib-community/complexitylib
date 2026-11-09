@@ -180,30 +180,41 @@ private theorem inner_self_eq_sum_eigenvalues (u : E) :
 
 end SpectralDecomposition
 
+/-- A nonzero eigenfunction `G.walk f = μ • f` has a positive second moment, and its Rayleigh
+quotient is `μ`: `𝔼 v, f v * G.walk f v = μ * 𝔼 v, f v ^ 2`. -/
+private theorem expect_sq_pos_and_expect_mul_walk_eq {f : V → ℝ} {μ : ℝ} (hf : f ≠ 0)
+    (hwalk : G.walk f = μ • f) :
+    0 < 𝔼 v, f v ^ 2 ∧ 𝔼 v, f v * G.walk f v = μ * 𝔼 v, f v ^ 2 := by
+  obtain ⟨v₀, hv₀⟩ := Function.ne_iff.1 hf
+  refine ⟨expect_pos' (fun _ _ ↦ sq_nonneg _) ⟨v₀, mem_univ v₀, sq_pos_iff.2 hv₀⟩, ?_⟩
+  rw [hwalk, mul_expect]
+  exact expect_congr rfl fun v _ ↦ by
+    simp only [Pi.smul_apply, smul_eq_mul]
+    ring
+
 section OrthogonalSpectrum
 
 variable {n : ℕ} (hn : Module.finrank ℝ (orthogonalSubmodule V) = n)
 
+/-- The `i`-th eigenvector of `G.orthogonalWalk`, as a function on `V`, has expectation zero, a
+positive second moment, and Rayleigh quotient equal to its eigenvalue. -/
+private theorem exists_orthogonalWalk_eigenfunction (i : Fin n) :
+    ∃ f : V → ℝ, 𝔼 v, f v = 0 ∧ 0 < 𝔼 v, f v ^ 2 ∧
+      𝔼 v, f v * G.walk f v = G.isSymmetric_orthogonalWalk.eigenvalues hn i * 𝔼 v, f v ^ 2 := by
+  set u := G.isSymmetric_orthogonalWalk.eigenvectorBasis hn i
+  set f : V → ℝ := u.1.ofLp
+  have hu_ne : u ≠ 0 := (G.isSymmetric_orthogonalWalk.eigenvectorBasis hn).toBasis.ne_zero i
+  have hwalk : G.walk f = G.isSymmetric_orthogonalWalk.eigenvalues hn i • f :=
+    congrArg (fun w : orthogonalSubmodule V ↦ w.1.ofLp)
+      (G.isSymmetric_orthogonalWalk.apply_eigenvectorBasis hn i)
+  exact ⟨f, (mem_orthogonalSubmodule_iff f).1 (by simp [f]),
+    G.expect_sq_pos_and_expect_mul_walk_eq
+      (fun h ↦ hu_ne (Subtype.ext (WithLp.ofLp_injective 2 h))) hwalk⟩
+
 /-- Every eigenvalue of `G.orthogonalWalk` has absolute value at most `λ(G)`. -/
 theorem abs_orthogonalWalk_eigenvalues_le (i : Fin n) :
     |G.isSymmetric_orthogonalWalk.eigenvalues hn i| ≤ G.spectralExpansion := by
-  set u := G.isSymmetric_orthogonalWalk.eigenvectorBasis hn i
-  set μ := G.isSymmetric_orthogonalWalk.eigenvalues hn i
-  set f : V → ℝ := u.1.ofLp
-  have hf : 𝔼 v, f v = 0 := (mem_orthogonalSubmodule_iff f).1 (by simp [f])
-  have hu_ne : u ≠ 0 := (G.isSymmetric_orthogonalWalk.eigenvectorBasis hn).toBasis.ne_zero i
-  have hf_ne : f ≠ 0 := fun h ↦ hu_ne (Subtype.ext (WithLp.ofLp_injective 2 h))
-  obtain ⟨v₀, hv₀⟩ := Function.ne_iff.1 hf_ne
-  have hpos : 0 < 𝔼 v, f v ^ 2 :=
-    expect_pos' (fun _ _ ↦ sq_nonneg _) ⟨v₀, mem_univ v₀, sq_pos_iff.2 hv₀⟩
-  have hwalk : G.walk f = μ • f :=
-    congrArg (fun w : orthogonalSubmodule V ↦ w.1.ofLp)
-      (G.isSymmetric_orthogonalWalk.apply_eigenvectorBasis hn i)
-  have hmul : 𝔼 v, f v * G.walk f v = μ * 𝔼 v, f v ^ 2 := by
-    rw [hwalk, mul_expect]
-    exact expect_congr rfl fun v _ ↦ by
-      simp only [Pi.smul_apply, smul_eq_mul]
-      ring
+  obtain ⟨f, hf, hpos, hmul⟩ := G.exists_orthogonalWalk_eigenfunction hn i
   have habs := G.abs_expect_mul_walk_le hf
   rw [hmul, abs_mul, abs_of_pos hpos] at habs
   exact le_of_mul_le_mul_right habs hpos
@@ -211,23 +222,7 @@ theorem abs_orthogonalWalk_eigenvalues_le (i : Fin n) :
 /-- Every eigenvalue of `G.orthogonalWalk` is at most `λ₂(G)`. -/
 theorem orthogonalWalk_eigenvalues_le_secondEigenvalue (i : Fin n) :
     G.isSymmetric_orthogonalWalk.eigenvalues hn i ≤ G.secondEigenvalue := by
-  set u := G.isSymmetric_orthogonalWalk.eigenvectorBasis hn i
-  set μ := G.isSymmetric_orthogonalWalk.eigenvalues hn i
-  set f : V → ℝ := u.1.ofLp
-  have hf : 𝔼 v, f v = 0 := (mem_orthogonalSubmodule_iff f).1 (by simp [f])
-  have hu_ne : u ≠ 0 := (G.isSymmetric_orthogonalWalk.eigenvectorBasis hn).toBasis.ne_zero i
-  have hf_ne : f ≠ 0 := fun h ↦ hu_ne (Subtype.ext (WithLp.ofLp_injective 2 h))
-  obtain ⟨v₀, hv₀⟩ := Function.ne_iff.1 hf_ne
-  have hpos : 0 < 𝔼 v, f v ^ 2 :=
-    expect_pos' (fun _ _ ↦ sq_nonneg _) ⟨v₀, mem_univ v₀, sq_pos_iff.2 hv₀⟩
-  have hwalk : G.walk f = μ • f :=
-    congrArg (fun w : orthogonalSubmodule V ↦ w.1.ofLp)
-      (G.isSymmetric_orthogonalWalk.apply_eigenvectorBasis hn i)
-  have hmul : 𝔼 v, f v * G.walk f v = μ * 𝔼 v, f v ^ 2 := by
-    rw [hwalk, mul_expect]
-    exact expect_congr rfl fun v _ ↦ by
-      simp only [Pi.smul_apply, smul_eq_mul]
-      ring
+  obtain ⟨f, hf, hpos, hmul⟩ := G.exists_orthogonalWalk_eigenfunction hn i
   have hle := G.expect_mul_walk_le_secondEigenvalue_mul hf
   rw [hmul] at hle
   exact le_of_mul_le_mul_right hle hpos
@@ -332,20 +327,11 @@ variable {m : ℕ} (hm : Module.finrank ℝ (EuclideanSpace ℝ V) = m)
 theorem abs_walkEuclidean_eigenvalues_le_one (i : Fin m) :
     |G.isSymmetric_walkEuclidean.eigenvalues hm i| ≤ 1 := by
   set u := G.isSymmetric_walkEuclidean.eigenvectorBasis hm i
-  set μ := G.isSymmetric_walkEuclidean.eigenvalues hm i
   set f : V → ℝ := u.ofLp
   have hu_ne : u ≠ 0 := (G.isSymmetric_walkEuclidean.eigenvectorBasis hm).toBasis.ne_zero i
-  have hf_ne : f ≠ 0 := fun h ↦ hu_ne (WithLp.ofLp_injective 2 h)
-  obtain ⟨v₀, hv₀⟩ := Function.ne_iff.1 hf_ne
-  have hpos : 0 < 𝔼 v, f v ^ 2 :=
-    expect_pos' (fun _ _ ↦ sq_nonneg _) ⟨v₀, mem_univ v₀, sq_pos_iff.2 hv₀⟩
-  have hwalk : G.walk f = μ • f :=
-    congrArg WithLp.ofLp (G.isSymmetric_walkEuclidean.apply_eigenvectorBasis hm i)
-  have hmul : 𝔼 v, f v * G.walk f v = μ * 𝔼 v, f v ^ 2 := by
-    rw [hwalk, mul_expect]
-    exact expect_congr rfl fun v _ ↦ by
-      simp only [Pi.smul_apply, smul_eq_mul]
-      ring
+  obtain ⟨hpos, hmul⟩ := G.expect_sq_pos_and_expect_mul_walk_eq (f := f)
+    (μ := G.isSymmetric_walkEuclidean.eigenvalues hm i) (fun h ↦ hu_ne (WithLp.ofLp_injective 2 h))
+    (congrArg WithLp.ofLp (G.isSymmetric_walkEuclidean.apply_eigenvectorBasis hm i))
   have habs := G.abs_expect_mul_walk_le_expect_sq f
   rw [hmul, abs_mul, abs_of_pos hpos] at habs
   exact le_of_mul_le_mul_right (by linarith) hpos

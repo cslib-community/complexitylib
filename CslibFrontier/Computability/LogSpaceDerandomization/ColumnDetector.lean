@@ -193,10 +193,7 @@ theorem card_filter_rowGate_lt_one_mul_le (T : Finset κ) (x : V) (hf : 0 < f) {
       fun _ _ hw => hw.le).trans hGk
   have hbadK : ∀ t ∈ T, rowGate ρ K f G {w | Y t w} x < 1 → (K : ℝ) ≤ #{w ∈ W | Y t w} := by
     intro t _ ht
-    have hlt : η < kthLargest K {w | Y t w} (fun w => G x w / f) := by
-      by_contra hle
-      rw [rowGate, hρη _ (not_lt.mp hle)] at ht
-      exact lt_irrefl _ ht
+    have hlt : η < kthLargest K {w | Y t w} (fun w => G x w / f) := by grind [rowGate]
     have hcard := (lt_kthLargest_iff hK hη.le).mp hlt
     have hsub : ({w ∈ ({w | Y t w} : Finset V) | η < G x w / f} : Finset V) ⊆
         {w ∈ W | Y t w} := fun w hw => by
@@ -416,9 +413,7 @@ theorem le_columnDetector (hch : RetentionChannels X Y f π cπ Cπ Cpair Cvar) 
       simp only [N, L, natCast_card_filter, ← sum_add_distrib]
       refine sum_congr rfl fun x _ => ?_
       by_cases hX : X s x <;> by_cases hg : gate t x < 1 <;> simp [hX, hg]
-    have hJle : (J : ℝ) ≤ #{x ∈ A | X s x ∧ ¬ gate t x < 1} := by
-      have : 4 * (J : ℝ) < #A * π := hRJ.trans_lt hnπ
-      linarith
+    have hJle : (J : ℝ) ≤ #{x ∈ A | X s x ∧ ¬ gate t x < 1} := by grind
     refine (le_kthLargest_iff hJ one_pos).mpr ?_
     refine Nat.cast_le.mp (hJle.trans ?_)
     refine Nat.cast_le.mpr (card_le_card fun x hx => ?_)

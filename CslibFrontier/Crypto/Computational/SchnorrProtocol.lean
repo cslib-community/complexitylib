@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 
 /-!
 # Schnorr's Sigma protocol with an efficient extractor and simulator
@@ -159,7 +160,7 @@ theorem efficientSpecialSoundness_schnorr :
       exact .of_tidy (ComputableTidilyInPolyTime.natBits.comp hext.tidy)
     · intro i u t c z c' z'
       simp only [schnorrEncoding, encScalar, encodeEmbedding, Function.Embedding.coeFn_mk,
-        encNat_apply, ofBits, Nat.foldr_bit_bits, schnorrExtract, ZMod.val_natCast, extractNat,
+        encNat_apply, ofBits_bits, schnorrExtract, ZMod.val_natCast, extractNat,
         Nat.mod_mod]
 
 /-! ### Special HVZK -/
@@ -188,7 +189,7 @@ private theorem eval_schnorrSimulateWord (n : ℕ) (d : F.Desc) (u : F.Carrier d
     rw [Nat.mod_eq_of_lt (ZMod.val_lt c), Nat.cast_sub (ZMod.val_lt c).le, ZMod.natCast_self,
       ZMod.natCast_zmod_val, zero_sub]
   rw [schnorrSimulateWord, ProbComp.eval_bind, PMF.map_comp]
-  simp only [ProbComp.eval_pure, encNat_apply, ofBits, Nat.foldr_bit_bits, F.smul_encode,
+  simp only [ProbComp.eval_pure, encNat_apply, ofBits_bits, F.smul_encode,
     F.add_encode, hneg,
     neg_smul, ← sub_eq_add_neg]
   rw [← PMF.bind_pure_comp]

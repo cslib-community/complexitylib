@@ -258,53 +258,28 @@ theorem aboveThresholdAux_toOuterMeasure_not_thresholdAccurate_le (ν : PMF ℤ)
   | nil =>
     simp [aboveThresholdAux, ThresholdAccurate]
   | cons a as ih =>
-    rw [aboveThresholdAux, PMF.toOuterMeasure_bind_apply]
-    have hterm (v : ℤ) :
-        (if T + r ≤ a + v then PMF.pure (some 0) else
-          (aboveThresholdAux ν (T + r) as).map (Option.map Nat.succ)).toOuterMeasure
-            {o | ¬ ThresholdAccurate T (α₁ + α₂) (a :: as) o} ≤
-          {v : ℤ | α₂ < |(v : ℝ)|}.indicator 1 v +
-            as.length * ν.toOuterMeasure {v | α₂ < |(v : ℝ)|} := by
-      have habs := abs_le.mp hr
-      split_ifs with hv
+    rw [aboveThresholdAux]
+    refine (Probability.PMF.toOuterMeasure_bind_failure_le ν _ {v : ℤ | α₂ < |(v : ℝ)|}ᶜ _
+      (as.length * ν.toOuterMeasure {v | α₂ < |(v : ℝ)|}) fun v _ hv => ?_).trans_eq ?_
+    · have habs := abs_le.mp hr
+      have hvabs := abs_le.mp (by simpa using hv : |(v : ℝ)| ≤ α₂)
+      split_ifs with hle
       · rw [PMF.toOuterMeasure_pure_apply]
         split_ifs with hbad
         · simp only [Set.mem_ofPred_eq, ThresholdAccurate, not_le] at hbad
-          have hbig : α₂ < |(v : ℝ)| := by
-            rw [lt_abs]
-            left
-            linarith [habs.1, habs.2]
-          rw [Set.indicator_of_mem (by exact hbig)]
-          exact le_self_add
+          exfalso
+          linarith [habs.1, hvabs.2]
         · exact zero_le
-      · by_cases ha : a ≤ T + (α₁ + α₂)
-        · rw [PMF.toOuterMeasure_map_apply]
-          refine le_trans (MeasureTheory.measure_mono fun o ho => ?_) (ih.trans le_add_self)
-          simp only [Set.mem_preimage, Set.mem_ofPred_eq] at ho ⊢
-          intro hacc
-          apply ho
-          cases o with
-          | none => exact ⟨ha, hacc⟩
-          | some n => exact ⟨ha, hacc⟩
-        · have hbig : α₂ < |(v : ℝ)| := by
-            rw [lt_abs]
-            right
-            linarith [habs.1, habs.2]
-          rw [Set.indicator_of_mem (by exact hbig)]
-          exact (Probability.PMF.toOuterMeasure_le_one _ _).trans le_self_add
-    calc ∑' v, ν v * (if T + r ≤ a + v then PMF.pure (some 0) else
-          (aboveThresholdAux ν (T + r) as).map (Option.map Nat.succ)).toOuterMeasure
-            {o | ¬ ThresholdAccurate T (α₁ + α₂) (a :: as) o}
-        ≤ ∑' v, ν v * ({v : ℤ | α₂ < |(v : ℝ)|}.indicator 1 v +
-            as.length * ν.toOuterMeasure {v | α₂ < |(v : ℝ)|}) :=
-          tsum_le_tsum fun v => by gcongr; exact hterm v
-      _ = ν.toOuterMeasure {v | α₂ < |(v : ℝ)|} +
-            as.length * ν.toOuterMeasure {v | α₂ < |(v : ℝ)|} := by
-          simp only [mul_add]
-          rw [tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
-            ← Probability.PMF.toOuterMeasure_eq_tsum_mul_indicator]
-      _ = (a :: as).length * ν.toOuterMeasure {v | α₂ < |(v : ℝ)|} := by
-          rw [List.length_cons, Nat.cast_succ, add_mul, one_mul, add_comm]
+      · have ha : a ≤ T + (α₁ + α₂) := by linarith [habs.2, hvabs.1]
+        rw [PMF.toOuterMeasure_map_apply]
+        refine le_trans (MeasureTheory.measure_mono fun o ho => ?_) ih
+        simp only [Set.mem_preimage, Set.mem_ofPred_eq] at ho ⊢
+        intro hacc
+        apply ho
+        cases o with
+        | none => exact ⟨ha, hacc⟩
+        | some n => exact ⟨ha, hacc⟩
+    · rw [compl_compl, List.length_cons, Nat.cast_succ, add_mul, one_mul, add_comm]
 
 /-- AboveThreshold on `k` answers fails to be `(α₁ + α₂)`-accurate with probability at most
 `Pr[|ρ| > α₁] + k · Pr[|ν| > α₂]` [DworkRoth2014, proof of Theorem 3.24]. -/
@@ -313,28 +288,9 @@ theorem aboveThreshold_toOuterMeasure_not_thresholdAccurate_le (ρ ν : PMF ℤ)
     (aboveThreshold ρ ν T as).toOuterMeasure {o | ¬ ThresholdAccurate T (α₁ + α₂) as o} ≤
       ρ.toOuterMeasure {r | α₁ < |(r : ℝ)|} +
         as.length * ν.toOuterMeasure {v | α₂ < |(v : ℝ)|} := by
-  classical
-  rw [aboveThreshold, PMF.toOuterMeasure_bind_apply]
-  have hterm (r : ℤ) :
-      (aboveThresholdAux ν (T + r) as).toOuterMeasure
-          {o | ¬ ThresholdAccurate T (α₁ + α₂) as o} ≤
-        {r : ℤ | α₁ < |(r : ℝ)|}.indicator 1 r +
-          as.length * ν.toOuterMeasure {v | α₂ < |(v : ℝ)|} := by
-    by_cases hr : α₁ < |(r : ℝ)|
-    · rw [Set.indicator_of_mem (by exact hr)]
-      exact (Probability.PMF.toOuterMeasure_le_one _ _).trans le_self_add
-    · exact (aboveThresholdAux_toOuterMeasure_not_thresholdAccurate_le ν (not_lt.mp hr) as).trans
-        le_add_self
-  calc ∑' r, ρ r * (aboveThresholdAux ν (T + r) as).toOuterMeasure
-        {o | ¬ ThresholdAccurate T (α₁ + α₂) as o}
-      ≤ ∑' r, ρ r * ({r : ℤ | α₁ < |(r : ℝ)|}.indicator 1 r +
-          as.length * ν.toOuterMeasure {v | α₂ < |(v : ℝ)|}) :=
-        tsum_le_tsum fun r => by gcongr; exact hterm r
-    _ = ρ.toOuterMeasure {r | α₁ < |(r : ℝ)|} +
-          as.length * ν.toOuterMeasure {v | α₂ < |(v : ℝ)|} := by
-        simp only [mul_add]
-        rw [tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
-          ← Probability.PMF.toOuterMeasure_eq_tsum_mul_indicator]
+  rw [aboveThreshold, ← compl_compl {r : ℤ | α₁ < |(r : ℝ)|}]
+  exact Probability.PMF.toOuterMeasure_bind_failure_le ρ _ _ _ _ fun r _ hr =>
+    aboveThresholdAux_toOuterMeasure_not_thresholdAccurate_le ν (by simpa using hr) as
 
 /-- Accuracy of AboveThreshold with discrete Laplace noise (scales `2 / ε` and `4 / ε`): on `k`
 answers it is `α`-accurate except with probability at most `β`, for

@@ -28,8 +28,11 @@ weighted threshold circuits ([KaneWilliams2016], `arXiv:1511.07860v1`, Theorem 2
    `(2 ^ |κ| + 1) ^ ((|κ| + 2) * q + |κ| + 1)` functions in `IsDepthTwoWithGates q`.
    The original fixed-weight refinement `IsDepthTwoOverWeights` counts threshold shifts from a
    fixed finite family `W`: `card_isThresholdShift_le`, `card_isWeightShift_le`, and
-   `card_isDepthTwoOverWeights_le`. Its per-survivor description costs `O(|κ| + log (#W + 1))`
-   bits. This refinement is not attributed to Kane–Williams.
+   `card_isDepthTwoOverWeights_le`; it is monotone in `q` and `W`
+   (`IsDepthTwoOverWeights.mono`, `IsDepthTwoOverWeights.mono_weights`) and contains the
+   constants (`isDepthTwoOverWeights_const`). Its per-survivor
+   description costs `O(|κ| + log (#W + 1))` bits. This refinement is not attributed to
+   Kane–Williams.
 3. **Depth-two circuit collapse under subcube restrictions (`embedUpdate`,
    `sum_card_filter_embedUpdate`, `isDepthTwoWithGates_eval_embedUpdate`,
    `isDepthTwoWithGates_eval_embedUpdate_const`,
@@ -353,6 +356,19 @@ theorem IsDepthTwoOverWeights.mono {κ : Type*} [Fintype κ] {W : Finset (κ →
   refine ⟨padFeatures g, fun r => ?_, hthr.padFeatures hq⟩
   rcases padFeatures_eq g r with ⟨r', hr'⟩ | hr' <;> rw [hr']
   exacts [hg r', Or.inl rfl]
+
+/-- `IsDepthTwoOverWeights W q` is monotone in the set `W` of bottom weight vectors. -/
+theorem IsDepthTwoOverWeights.mono_weights {κ : Type*} [Fintype κ] {W₁ W₂ : Finset (κ → ℝ)}
+    (hW : W₁ ⊆ W₂) {q : ℕ} {f : (κ → Bool) → Bool} (hf : IsDepthTwoOverWeights W₁ q f) :
+    IsDepthTwoOverWeights W₂ q f := by
+  rcases hf with ⟨g, hg, hthr⟩
+  exact ⟨g, fun r => (hg r).imp_right fun ⟨β, hβ, hshift⟩ => ⟨β, hW hβ, hshift⟩, hthr⟩
+
+/-- Every constant Boolean function belongs to `IsDepthTwoOverWeights W q`. -/
+theorem isDepthTwoOverWeights_const {κ : Type*} [Fintype κ] (W : Finset (κ → ℝ)) (q : ℕ)
+    (b : Bool) : IsDepthTwoOverWeights W q fun _ => b := by
+  refine ⟨fun _ _ => false, fun _ => Or.inl rfl, 0, if b then 0 else 1, fun u => ?_⟩
+  cases b <;> simp [ltfEval]
 
 /-- **Counting depth-two threshold functions over fixed bottom weight vectors**: there are at most
 `((2 ^ |κ| + 1) * min (#W + 1) ((2 ^ |κ| + 1) ^ |κ|)) ^ q * (2 ^ |κ| + 1) ^ (q + |κ| + 1)`

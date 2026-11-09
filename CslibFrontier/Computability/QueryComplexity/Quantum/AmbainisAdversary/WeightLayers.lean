@@ -126,12 +126,8 @@ theorem one_sub_mul_sqrt_le_two_mul_mul_sub_of_le {ψ₀ : State N W} (hψ₀ : 
       · obtain ⟨hqR, hqi, hq1⟩ := mem_filter.1 hq
         obtain ⟨-, hq2, hq12⟩ := hmemR.1 hqR
         obtain ⟨-, hqi2⟩ := Bool.lt_iff.1 (lt_of_le_of_ne (hq12 i) hqi)
-        refine mem_filter.2 ⟨mem_univ _, fun j => ?_, hq2⟩
-        by_cases hj : j = i
-        · subst hj
-          simp [hqi2]
-        · rw [update_of_ne hj, ← hq1]
-          exact hq12 j
+        exact mem_filter.2 ⟨mem_univ _,
+          update_le_iff.2 ⟨hqi2.ge, fun j _ => (congrFun hq1 j).ge.trans (hq12 j)⟩, hq2⟩
       · obtain ⟨-, -, hq1⟩ := mem_filter.1 hq
         obtain ⟨-, -, hr1⟩ := mem_filter.1 hr
         exact Prod.ext (hq1.trans hr1.symm) h
@@ -144,12 +140,8 @@ theorem one_sub_mul_sqrt_le_two_mul_mul_sub_of_le {ψ₀ : State N W} (hψ₀ : 
       · obtain ⟨hqR, hqi, hq2⟩ := mem_filter.1 hq
         obtain ⟨hq1, -, hq12⟩ := hmemR.1 hqR
         obtain ⟨hqi1, -⟩ := Bool.lt_iff.1 (lt_of_le_of_ne (hq12 i) hqi)
-        refine mem_filter.2 ⟨mem_univ _, fun j => ?_, hq1⟩
-        by_cases hj : j = i
-        · subst hj
-          simp [hqi1]
-        · rw [update_of_ne hj, ← hq2]
-          exact hq12 j
+        exact mem_filter.2 ⟨mem_univ _,
+          le_update_iff.2 ⟨hqi1.le, fun j _ => (hq12 j).trans (congrFun hq2 j).le⟩, hq1⟩
       · obtain ⟨-, -, hq2⟩ := mem_filter.1 hq
         obtain ⟨-, -, hr2⟩ := mem_filter.1 hr
         exact Prod.ext h (hq2.trans hr2.symm)
@@ -177,10 +169,6 @@ theorem one_sub_mul_sqrt_le_two_mul_mul_sub_of_le {ψ₀ : State N W} (hψ₀ : 
   have habR : (a : ℝ) < b := by exact_mod_cast hab
   have hbNR : (b : ℝ) ≤ N := by exact_mod_cast hbN
   have hba : (0 : ℝ) ≤ b - a := by linarith
-  rcases le_or_gt 1 δ with h1 | h1
-  · have : (1 - δ) * √((N - a) * b) ≤ 0 :=
-      mul_nonpos_of_nonpos_of_nonneg (by linarith) (Real.sqrt_nonneg _)
-    exact this.trans (mul_nonneg (by positivity) hba)
   have hLpos : (0 : ℝ) < √((l : ℝ) * l') :=
     Real.sqrt_pos.2 (mul_pos (by exact_mod_cast hl) (by exact_mod_cast hl'))
   have h0 : (0 : ℝ) ≤ (N - a) * b := mul_nonneg (by linarith) (Nat.cast_nonneg b)

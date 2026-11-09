@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.DiffieHellman
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Uniform
 
 /-!
@@ -297,15 +298,13 @@ theorem advantage_multiDDH_le (d : F.Desc) (ι : Type*) [Fintype ι] [DecidableE
         (F.multiDDHRerandomizeLaw d ι t.1 t.2.1 t.2.2).bind (test t.1)) =
       ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
         (F.multiDDHRealTupleLaw d ι α).bind (test (α • F.generator d))) := by
-    simp only [ddhRealTupleLaw, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind,
-      PMF.pure_bind, multiDDHRerandomizeLaw_real, PMF.bind_const]
+    simp only [pmf_norm, ddhRealTupleLaw, multiDDHRerandomizeLaw_real, PMF.bind_const]
   rw [← hreal]
   refine (Game.advantage_triangle _
     ((F.ddhIdealTupleLaw d).bind fun t =>
       (F.multiDDHRerandomizeLaw d ι t.1 t.2.1 t.2.2).bind (test t.1)) _).trans ?_
   refine add_le_add le_rfl ?_
-  simp only [ddhIdealTupleLaw, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind,
-    PMF.pure_bind]
+  simp only [pmf_norm, ddhIdealTupleLaw]
   -- Bound the advantage inside the outer `α, β` averages using `Game.advantage_bind_le`.
   have hpoint (α β : ZMod (F.order d)) :
       (Game.advantage

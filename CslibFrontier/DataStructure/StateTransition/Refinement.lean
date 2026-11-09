@@ -422,9 +422,6 @@ theorem Amortized.demonic (A : M.Amortized lower upper potential) (p : D.Client 
     exact ⟨he, [], .pure _ _, by simp⟩
   | liftBind o k ih =>
     obtain ⟨hv_o, hv_k⟩ := (D.demonicValid_liftBind_iff _ o k).mp hv
-    have heq : link M.methods (.liftBind o k) =
-        (M.methods o).bind (fun r => link M.methods (k r)) := rfl
-    rw [heq] at hrun
     obtain ⟨res, e₁, tr₁, tr₂, hrun₁, hrun₂, rfl⟩ := E.clientRun_bind_iff.mp hrun
     obtain ⟨hstep₁, he₁⟩ := M.correct o he hv_o hrun₁
     have hc₁ := A.step o he hv_o hrun₁

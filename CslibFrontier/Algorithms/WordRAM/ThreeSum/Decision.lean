@@ -35,7 +35,7 @@ standalone catalogue-producing preprocessing API remains available independently
 `Decision.width` and `Decision.cost` retain their existing values. Initialized execution and every
 reachable prefix at every admitted wider width retain the polynomial word and zero-support bounds.
 The concrete 848-register endpoint in `ThreeSum.Decision.One9992` supplies ordinary native time
-O(n^1.9992); import that module for the final theorem. Curated selection is separate.
+O(n^1.9992); import that module for the final theorem.
 
 ## Main definitions
 

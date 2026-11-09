@@ -383,6 +383,16 @@ private theorem advance_ofCfg (hd : 0 < d)
       (ctx, (p, d, r), ofCfg (Ary.Iter.step hd e E (units p) read q)) := by
   rw [advance, step_ofCfg hd e E read q reply hreply hround]
 
+/-- Every typed configuration reached from an initial one keeps its stack within the tree height
+and its round counters below the field's `p - 1` units. -/
+private theorem controlBounds_runFrom_units (hd : 0 < d) (e : (Fin b → Bool) → Fin r → ZMod p)
+    (E : Gate d b → (Fin d → Fin r → ZMod p) → Fin r → ZMod p) {H : ℕ} (T : Tree d b H)
+    (S : Ary.State (ZMod p) d r) (c : ZMod p) (t : Fin (d + 1)) (n : ℕ) :
+    Ary.Iter.ControlBounds H (p - 1)
+      (Ary.Iter.runFrom hd e E (units p) T.nodeAt (Ary.Iter.initialCfg S c t) n) := by
+  simpa only [units, List.length_map, List.length_range] using
+    Ary.Iter.runFrom_initial_bounds T hd e E (units p) S c t n
+
 /-- Only actual requested states require the supplier contract. Non-requesting control steps
 use a proved reply-independent transition. Each callee run uses the very same original `w`. -/
 theorem exists_runFrom_typedPrefix (initial : Context γ) (N : QueryMachine τ)
@@ -409,11 +419,8 @@ theorem exists_runFrom_typedPrefix (initial : Context γ) (N : QueryMachine τ)
     obtain ⟨clock, hclock⟩ := ih
     let typed := Ary.Iter.runFrom hd e E (units p) T.nodeAt (Ary.Iter.initialCfg S c t) n
     let q : Context γ := (ctx, (p, d, r), ofCfg typed)
-    have hround : ∀ fr ∈ typed.stack, fr.round < p - 1 := by
-      have hb := Ary.Iter.runFrom_initial_bounds T hd e E (units p) S c t n
-      intro fr hfr
-      have hr := hb.2 fr hfr
-      simpa only [units, List.length_map, List.length_range] using hr
+    have hround : ∀ fr ∈ typed.stack, fr.round < p - 1 :=
+      (controlBounds_runFrom_units hd e E T S c t n).2
     have hmacro : ∃ U, (machine initial N start answer).runFrom w (.inl q) U =
         .inl (ctx, (p, d, r), ofCfg (Ary.Iter.step hd e E (units p) T.nodeAt typed)) := by
       cases hn : need p d r (ofCfg typed) with
@@ -511,11 +518,8 @@ theorem exists_runFrom_typedPrefix_bounded (encG : γ ↪ List Bool) (encT : τ 
     let qnext : Context γ := (ctx, (p, d, r), ofCfg typedNext)
     have hq : (encContext encG q).length ≤ R := hcaller n
     have hqnext : (encContext encG qnext).length ≤ R := hcaller (n + 1)
-    have hround : ∀ fr ∈ typed.stack, fr.round < p - 1 := by
-      have hb := Ary.Iter.runFrom_initial_bounds T hd e E (units p) S c t n
-      intro fr hfr
-      have hr := hb.2 fr hfr
-      simpa only [units, List.length_map, List.length_range] using hr
+    have hround : ∀ fr ∈ typed.stack, fr.round < p - 1 :=
+      (controlBounds_runFrom_units hd e E T S c t n).2
     have hmacro : ∃ U, (machine initial N start answer).runFrom w (.inl q) U = .inl qnext ∧
         ∀ i ≤ U, (encMachineState encG encT
           ((machine initial N start answer).runFrom w (.inl q) i)).length ≤ 2 * R + B + 2 := by
@@ -633,11 +637,7 @@ theorem exists_runFrom_root_encoded_bound (encG : γ ↪ List Bool) (encT : τ �
       (encContext encG (ctx, (p, d, r), ofCfg
         (Ary.Iter.runFrom hd e E (units p) T.nodeAt (Ary.Iter.initialCfg S c t) n))).length ≤
           2 * (encG ctx).length + 1 + fullSpaceBound p d r H := by
-    have hc := Ary.Iter.runFrom_initial_bounds T hd e E (units p) S c t n
-    have hc' : Ary.Iter.ControlBounds H (p - 1)
-        (Ary.Iter.runFrom hd e E (units p) T.nodeAt (Ary.Iter.initialCfg S c t) n) := by
-      simpa only [units, List.length_map, List.length_range] using hc
-    have hr := length_encFullState_ofCfg_le _ hc'
+    have hr := length_encFullState_ofCfg_le _ (controlBounds_runFrom_units hd e E T S c t n)
     rw [length_encPair]
     dsimp only [Prod.fst, Prod.snd]
     omega

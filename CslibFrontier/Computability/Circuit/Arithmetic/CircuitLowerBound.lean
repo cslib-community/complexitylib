@@ -239,9 +239,7 @@ theorem eventually_pow_lt_size_of_imm (K : Type*) [Field K] (Δ c : ℕ) :
       (4 ^ max Δ 1 - 1))).and (eventually_mul_sq_le_two_pow (4 * max Δ 1 + 10)))
   refine eventually_atTop.mpr ⟨2 ^ 2 ^ D, fun n hn _ N e C hC hCΔ hCP => ?_⟩
   have hLD : 2 ^ D ≤ Nat.log 2 n := Nat.le_log_of_pow_le one_lt_two hn
-  have hL0 : Nat.log 2 n ≠ 0 := by
-    have := (Nat.one_le_two_pow (n := D)).trans hLD
-    omega
+  have hL0 : Nat.log 2 n ≠ 0 := by grind
   obtain ⟨hdq, hdpow⟩ := hD _ (Nat.le_log_of_pow_le one_lt_two hLD)
   exact pow_lt_size_of_imm (le_max_right Δ 1) (Nat.pow_log_le_self 2 (NeZero.ne n))
     (Nat.lt_pow_succ_log_self one_lt_two n) (Nat.pow_log_le_self 2 hL0) hdq hdpow e hC
