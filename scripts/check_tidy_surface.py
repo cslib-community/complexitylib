@@ -5,7 +5,7 @@ Usage: python3 scripts/check_tidy_surface.py [--update [--allow-increase]] [--no
 
 Tidy computability (`ComputableTidily…`, `ComputesTidily…`, `IsTidy…`) is a proof device: it may
 appear anywhere inside proofs, never in a public statement. A public declaration of the
-`Complexity` library has a *tidy statement* when a tidy constant occurs in its type (a theorem's
+`CslibFrontier` library has a *tidy statement* when a tidy constant occurs in its type (a theorem's
 statement, a definition's type, a structure field) or in the exposed body of a definition.
 Proofs, bodies that are not exposed and private declarations do not count, and neither do the raw
 machine constructions listed in `scripts/tidy_allowlist.txt` (#608).
@@ -21,7 +21,7 @@ statements is moved.
 
 Declarations written in source come from the `.ilean` files and statements from the `.olean`
 files, read by `scripts/lean_outputs.py` and `scripts/LeanOutputs.lean`. The check needs the
-build outputs of `lake build Complexity ComplexityTests ComplexityAbstracts` (`lake build` and
+build outputs of `lake build CslibFrontier CslibFrontierTests CslibFrontierAbstracts` (`lake build` and
 `lake test`), and refuses stale ones unless `--no-build-check` is given.
 This is a post-build audit; the default freshness probe invokes Lake and may materialize
 dependencies.
@@ -63,7 +63,7 @@ def tidy_statements(lib: lo.Library, allowlist: set[str]) -> dict[str, list[Stat
             continue
         const = lib.constants[name]
         mentions = sorted(set(const["tidy"]) | set(const.get("tb", ())))
-        path = "Complexity/" + decl["path"]
+        path = "CslibFrontier/" + decl["path"]
         if mentions and path not in allowlist:
             found[path].append((name, decl["range"][0] if decl["range"] else 0, mentions))
     return {path: sorted(rows, key=lambda row: (row[1], row[0])) for path, rows in found.items()}
