@@ -2423,10 +2423,9 @@ $$
 The direct-branch client derives both whole-source bounds on a real original input
 with two colliding low-bit classes, and checks a full-state miss with complete
 projected collisions. The arithmetic fallback client checks that the residual still
-contains its full class-search costs. General sharp normalization of $R_T,R_S$
-remains open: the now-normalized window phase still needs composition with actual
-label/control/callback frames, retained preparation and simultaneous ambient temporaries. These residual
-expressions are not supplied runtime hypotheses or a completed Theorem 7 bound.
+contains its full class-search costs. These residual expressions are actual certificate costs, not supplied runtime
+hypotheses. `SourceResources.source_restart_bounds`, described below, now normalizes
+both for the general restarted branch and composes the whole-run bounds.
 
 [`StreamingEmitBounds.lean`](../../CslibFrontier/Computability/GenericRAM/Native/StreamingEmitBounds.lean)
 now bounds the unchanged installed emitter by summed actual callback clocks and
@@ -2464,17 +2463,16 @@ padding-label miss branch. `source_label_bounds` gives the same half-time and
 quarter-plus-balance bounds for the sum of complete callback allowances and each callback's
 all-prefix workspace. Scalar factors use original widths; the dictionary contributes linearly
 through actual computed capacity, amortized over labels.
-These remain **callback-phase bounds**, not a complete solver theorem: generated-label setup,
-fold control and parked witness states, retained preparation and ambient solver frames still
-need full composition. Source reachable-state-DP all-count/fast
+These are callback-phase bounds. The enclosing setup/loop and retained/ambient
+composition is supplied by the following resource endpoint. Source reachable-state-DP all-count/fast
 prepass and the other paper objectives remain open.
 
-The binary layouts in these public APIs use documented reducible names:
-`encNatPairList` frames each binary pair (whose second coordinate is unframed), `encNatPairOption` uses an empty word for
-`none` and a true bit before a `some` pair, `encFoldStep` frames the parameter/state
-pair before the unframed record, and `subsetSumEncoding` frames the binary number list
-before its unframed binary target. They preserve the existing encodings without defaults
-or typeclass selection.
+The binary layouts in these public APIs use documented reducible names: `encNatPairList`
+frames each binary pair (whose second coordinate is unframed), `encNatPairOption` uses
+an empty word for `none` and a true bit before a `some` pair, `encFoldStep` frames the
+parameter/state pair before the unframed record, and `subsetSumEncoding` frames the
+binary number list before its unframed binary target. They preserve the existing
+encodings without defaults or typeclass selection.
 
 The all-class search uses the same fixed streaming kernel over an actually
 generated class-index list. The approved uniform index generator supplies its
@@ -2486,23 +2484,54 @@ found-hit parking; workspace takes their actual prefix maximum, with each class
 released before the next and only a found pair surviving. Index generation,
 framing, setup and readback remain charged.
 
-This composes an actual global bit-clock/prefix-space profile, but does not prove
-the requested sharp source inequalities. The installed fallback no longer executes the per-pair retained/growing-buffer
-copy path. The complete guarded callback is now normalized, but generated-label loop/retained-emission
-composition is still needed before complete summed-time and simultaneous-space bounds follow.
-The callback sum does not charge the enclosing fold or simultaneous ambient solver frames. The installed scalar prepass removes table
-reversal/reduction, and the preparation/readback boundary polynomial is proved. Logical
-occupancy or matching-pair totals do not remove those machine costs. The old
-complete solvers and their association-list/cubic-compaction costs are unchanged;
-the new direct multitape route bypasses that interpreter but retains the costs
-just listed. Lemma 8/Theorem 7 resources and the whole-paper objective remain open.
+[`AddXNORBatchLoopResources.lean`](../../CslibFrontier/Cryptanalysis/AddXNORBatchLoopResources.lean)
+now charges the actual generated-label setup, scalar controls, option parking and
+retained-context frames around the callbacks. `prefix_wire` derives each parked
+witness's physical width from actual full-state matching. `runCertificate_bounds`
+uses the installed streaming fold's clock sum and workspace maximum: time is
+label count times capacity times an original-width polynomial, while simultaneous
+space pays capacity once. Label storage, initial/final framing and empty/padding
+branches are included. The setup and round certificates factor the existing bodies;
+they preserve the loop's actual time/space profiles.
+
+[`AddXNORSourceResources.lean`](../../CslibFrontier/Cryptanalysis/AddXNORSourceResources.lean)
+composes original-input orientation/counts, retained construction, task/context
+layout, labels/parking, every producer/matcher callback, class release and ambient
+frames. `source_restart_bounds` closes the general restart sum/max. Its
+`sourceCertificate_bounds` then composes the approved DIRECT, balance and whole-run
+preparation/readback envelopes to prove
+$$
+T_{\mathrm{source}}\le 2^{\lfloor q/2\rfloor}P(I),\qquad
+S_{\mathrm{source}}\le (2^{\lfloor q/4\rfloor}+\mu_d)P(I).
+$$
+This bounds the existing uniform deterministic multitape certificate, including
+encoded input/output and internal tapes at every execution prefix. $I$ is the
+physical original input size (unary word width/requested depth and binary original
+operand list); $q$ is the number of operators. The first operand is the seed,
+the target is zero, the fourth quarter keeps the remainder, and the existing
+machine computes $d=\min(p,m,\lfloor q/4\rfloor)$ from the requested depth $p$.
+The balance in this bound is $\mu_d$, namely
+`ClassBalance.balance (Source.prepare original)`; when the requested depth fits
+width and quarter size, $d=p$. It is derived from actual counts, rather than
+supplied as a space bound; no direct-only restriction or runtime conclusion is
+a premise. `JoinedDissection.original_correct` supplies witness soundness and
+exhaustive misses for the same executed function. The complete client couples
+this correctness and both resource inequalities for arbitrary typed source inputs,
+as well as arithmetic hit/miss, backward retention and empty/zero-width cases.
+
+These are the whole solver's worst-case time/space bounds, not the complete
+source Theorem 7: reachable-state-DP all-counts and the faster quarter-time balance
+prepass remain unproved. The old association-list/cubic-filter interpreter is
+unchanged; the resource theorem uses the assembled sorted-list route. Other
+small-operand, multiplicity, sparsification and ideal-model paper objectives also
+remain open.
 
 The installed fallback is checked by
 [`CslibFrontierTests/AddXNORClassBatches.lean`](../../CslibFrontierTests/AddXNORClassBatches.lean),
 including actual hit/miss runs with non-self-inverse addition in the inverse direction.
 
 From the repository root, build
-`lake build CslibFrontier.Cryptanalysis.AddXNORJoinedDissection`, then run
+`lake build CslibFrontier.Cryptanalysis.AddXNORSourceResources`, then run
 `lake env lean CslibFrontierTests/AddXNORClassBalance.lean` and
 `lake env lean CslibFrontierTests/AddXNORJoinedDissection.lean`; also run
 `lake env lean CslibFrontierTests/KeyCount.lean` for the direct streamed counter and

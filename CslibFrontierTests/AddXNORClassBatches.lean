@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (restarted class-batch source integration regression tests)
 
-public import CslibFrontier.Cryptanalysis.AddXNORBatchResources
+public import CslibFrontier.Cryptanalysis.AddXNORSourceResources
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoinBatchBounds
 import all CslibFrontier.Cryptanalysis.AddXNORRestartResources
 import all CslibFrontier.Cryptanalysis.AddXNORSearchResources
@@ -471,3 +471,75 @@ example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
   obtain ⟨P, hP, mP, bound⟩ := BatchResources.source_label_bounds
   refine ⟨P, hP, mP, ?_⟩
   simpa only [List.length_nil, Nat.zero_div, pow_zero] using (bound 0 9 0 []).2
+
+-- The same uniform source function has both proved resources and original witness/miss
+-- correctness, for every runtime width, requested depth, tail length and quarter residue.
+example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
+    ∀ (m p : ℕ) (s : BitVec m) (tail : List (BitVec m)),
+      let original := Source.ofWords p s tail
+      let input := Source.prepare original
+      let I := (Source.encoding original).length
+      JoinedDissection.sourceCertificate.time original ≤ 2^(tail.length/2)*P I ∧
+        JoinedDissection.sourceCertificate.space original ≤
+          (2^(tail.length/4)+ClassBalance.balance input)*P I ∧
+        ((JoinedDissection.run original).2 = none ↔ ¬ Solvable tail s 0) ∧
+        ∀ ops, (JoinedDissection.run original).2 = some ops →
+          ops.length = tail.length ∧ eval (ops.zip tail) s = 0 := by
+  obtain ⟨P, hP, mP, bounds⟩ := SourceResources.sourceCertificate_bounds
+  refine ⟨P, hP, mP, ?_⟩
+  intro m p s tail
+  exact ⟨(bounds m p s tail).1, (bounds m p s tail).2,
+    (JoinedDissection.original_correct p s tail).1,
+    (JoinedDissection.original_correct p s tail).2⟩
+
+-- Real arithmetic hit/miss and backward-retention fallback use the whole certificate,
+-- including preparation, generated-label control, parked state and decoded output.
+example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
+    ∀ original ∈ [restartArithmeticHit, restartArithmeticMiss, restartBackward],
+      JoinedDissection.sourceCertificate.time original ≤
+          2^((original.2.length-1)/2)*P ((Source.encoding original).length) ∧
+        JoinedDissection.sourceCertificate.space original ≤
+          (2^((original.2.length-1)/4)+ClassBalance.balance (Source.prepare original))*
+            P ((Source.encoding original).length) := by
+  obtain ⟨P, hP, mP, bounds⟩ := SourceResources.sourceCertificate_bounds
+  refine ⟨P, hP, mP, ?_⟩
+  intro original ho
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at ho
+  rcases ho with rfl | rfl | rfl
+  · have eq : restartArithmeticHit =
+        Source.ofWords 0 (0 : BitVec 3) (List.replicate 14 0 ++ [1]) := by decide +kernel
+    rw [eq]
+    have lengthEq : (Source.ofWords 0 (0 : BitVec 3) (List.replicate 14 0 ++ [1])).2.length-1 =
+        (List.replicate 14 (0 : BitVec 3) ++ [1]).length := by
+      simp only [Source.ofWords, List.length_map, List.length_cons, Nat.add_sub_cancel]
+    rw [lengthEq]
+    exact bounds 3 0 0 (List.replicate 14 0 ++ [1])
+  · have eq : restartArithmeticMiss =
+        Source.ofWords 0 (2 : BitVec 5) (List.replicate 14 0 ++ [1]) := by decide +kernel
+    rw [eq]
+    have lengthEq : (Source.ofWords 0 (2 : BitVec 5) (List.replicate 14 0 ++ [1])).2.length-1 =
+        (List.replicate 14 (0 : BitVec 5) ++ [1]).length := by
+      simp only [Source.ofWords, List.length_map, List.length_cons, Nat.add_sub_cancel]
+    rw [lengthEq]
+    exact bounds 5 0 2 (List.replicate 14 0 ++ [1])
+  · have eq : restartBackward = Source.ofWords 5 (0 : BitVec 6)
+        (List.replicate 10 0 ++ (List.range' 1 10).map (BitVec.ofNat 6)) := by decide +kernel
+    rw [eq]
+    have lengthEq : (Source.ofWords 5 (0 : BitVec 6)
+        (List.replicate 10 0 ++ (List.range' 1 10).map (BitVec.ofNat 6))).2.length-1 =
+        (List.replicate 10 0 ++ (List.range' 1 10).map (BitVec.ofNat 6)).length := by
+      simp only [Source.ofWords, List.length_map, List.length_cons, Nat.add_sub_cancel]
+    rw [lengthEq]
+    exact bounds 6 5 0 (List.replicate 10 0 ++ (List.range' 1 10).map (BitVec.ofNat 6))
+
+-- Zero width, no operators and a larger requested depth need no separate resource premise.
+example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
+    let original := Source.ofWords 9 (0 : BitVec 0) []
+    JoinedDissection.sourceCertificate.time original ≤ P ((Source.encoding original).length) ∧
+      JoinedDissection.sourceCertificate.space original ≤
+        (1+ClassBalance.balance (Source.prepare original))*
+          P ((Source.encoding original).length) := by
+  obtain ⟨P, hP, mP, bounds⟩ := SourceResources.sourceCertificate_bounds
+  refine ⟨P, hP, mP, ?_⟩
+  with_reducible
+    simpa only [List.length_nil, Nat.zero_div, pow_zero, one_mul] using (bounds 0 9 0 [])

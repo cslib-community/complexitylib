@@ -3658,6 +3658,7 @@ public import CslibFrontier.Computability.WordRAM.Turing.Overhead
 public import CslibFrontier.Computability.WordRAM.Width
 public import CslibFrontier.Cryptanalysis.AddXNOR
 public import CslibFrontier.Cryptanalysis.AddXNORBalanceResources
+public import CslibFrontier.Cryptanalysis.AddXNORBatchLoopResources
 public import CslibFrontier.Cryptanalysis.AddXNORBatchResources
 public import CslibFrontier.Cryptanalysis.AddXNORBatchedAccess
 public import CslibFrontier.Cryptanalysis.AddXNORBitExecution
@@ -3749,6 +3750,7 @@ public import CslibFrontier.Cryptanalysis.AddXNORSortedQuarterMachine
 public import CslibFrontier.Cryptanalysis.AddXNORSortedRecords
 public import CslibFrontier.Cryptanalysis.AddXNORSource
 public import CslibFrontier.Cryptanalysis.AddXNORSourceQuarter
+public import CslibFrontier.Cryptanalysis.AddXNORSourceResources
 public import CslibFrontier.Cryptanalysis.AddXNORSpectrum
 public import CslibFrontier.Cryptanalysis.AddXNORStripping
 public import CslibFrontier.Cryptanalysis.AddXNORSubsetSum

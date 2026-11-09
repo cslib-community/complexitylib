@@ -1038,7 +1038,7 @@ private noncomputable def solveCertificate : NativeCertificate solve ClassBalanc
 /-- One uniform original-input bit execution computes both counts/balance, generated smaller
 classes, restarted opposite windows, outer control and decoded output. Charged profiles include
 per-batch copying, internal callbacks, preprocessing and control.
-Sharp global resources remain open. -/
+Sharp normalization is supplied by the source resource-composition module. -/
 noncomputable def sourceCertificate : NativeCertificate run Source.encoding
     (encPair encNat (encOption encBits)) :=
   NativeCertificate.congr ((ClassBalance.balanceCertificate.prod solveCertificate).comp

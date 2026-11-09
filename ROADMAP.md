@@ -353,9 +353,10 @@ The actual balance certificate now streams count minima into one scalar maximum,
 with derived prefix width, bypassing table construction/reversal/reduction.
 Preparation, half-array construction and the installed readback machine have proved polynomial bounds
 in the physical original input, using derived search-result payload size.
-The per-pair retained/buffer copy path is no longer installed. Sharp resources
-still require complete class-control/retained-emission composition and
-profile composition, including all simultaneous intermediates. Per-batch parameter copies and repeated quarter
+The per-pair retained/buffer copy path is no longer installed. The actual sorted-list
+source certificate now has proved worst-case half-exponential bit time and
+quarter-exponential-plus-computed-balance all-prefix workspace, including retained
+preparation and simultaneous intermediates (`SourceResources.sourceCertificate_bounds`). Per-batch parameter copies and repeated quarter
 scans are now explicitly amortized by actual class populations plus capacity. Neither a traversal sum nor
 the now-composed actual bit clock establishes the target source asymptotics.
 `SortedMatchBounds` now normalizes the installed matcher certificate, including tagging,
@@ -368,16 +369,18 @@ This closes matching clocks rather than treating records as unit cost.
 and projected count certificates, including real preparation, generation, tagging, sorting
 and binary counter widths. Both count orientations have an original-input all-class phase
 sum; opposite counting repeated at generated restart labels is amortized by actual capacity.
-Full-state reconstruction of actual windows also has a summed phase allowance and every-batch
-prefix workspace bound, including pair/output/callback tapes. `BatchResources` now composes the installed scalar count/division, retained-context copies,
-quarter regeneration/sort, bounded window, full-state reconstruction and two-orientation
-matcher into the actual guarded label callback. Its source-cut sum is half-exponential and
-each callback's all-prefix workspace is quarter-plus-computed-balance, with polynomial
-factors in original physical widths. Padding labels and both computed orientations are
-included. These results are not the total assembled profiles: label generation/fold control,
-parked prefix witness states, retained preparation and simultaneous ambient frames remain
-unclosed. `WholeRunResources.sourceCertificate_bounds` now gives an actual whole
-original-input preparation-to-readback envelope: time is bounded by the installed balance
+Full-state reconstruction of actual windows also has a summed phase allowance and
+every-batch prefix workspace bound, including pair/output/callback tapes.
+`BatchResources` now composes the installed scalar count/division, retained-context
+copies, quarter regeneration/sort, bounded window, full-state reconstruction and
+two-orientation matcher into the actual guarded label callback. Its source-cut sum is
+half-exponential and each callback's all-prefix workspace is
+quarter-plus-computed-balance, with polynomial factors in original physical widths.
+Padding labels and both computed orientations are included. `BatchLoopResources` now
+charges generated-label setup/fold control and derives parked prefix witness widths.
+`SourceResources` composes retained preparation and simultaneous ambient frames into the
+whole source certificate. `WholeRunResources.sourceCertificate_bounds` gives the
+preparation-to-readback envelope: time is bounded by the installed balance
 prepass allowance plus `(classTime + numberOfClasses + 1) * P(originalInputBits)`, and space
 by the prepass workspace plus `(classSpace + numberOfClasses + 1) * P(originalInputBits)`.
 `classTime` is the sum of installed searches, `classSpace` their maximum, including all
@@ -391,35 +394,36 @@ polynomial factors in original physical input width. Its `sourceCertificate_sear
 composes this into the whole run. `SearchResources` additionally normalizes actual
 class-pair/full-state emission and all selected direct-search clocks/workspaces,
 including computed orientation/materialization and producer/matcher tapes. Its
-`sourceCertificate_restart_bounds` leaves the installed selected restarted-search sum/max
-explicit, conservatively including skipped classes. Sharp normalization of those costs
-still needs generated-label loop/retained-preparation and simultaneous ambient workspace
-composition. The complete guarded callback's retained-context frames are now charged by
-`BatchResources.source_label_bounds`. Installed window callbacks are now normalized in binary
-scalar/record widths, including count scans, filters, multiplication/division, cutting and
-Cartesian emission. `RestartResources` derives original-source widths and charges all
-class/label windows using computed capacities. Its source-cut half-time and
-quarter-plus-computed-balance space bounds cover the window phase, not the complete solver.
-A checked direct-only input closes both resource inequalities but does not replace that
-general obligation. The source reachable-state-DP all-count and faster
+`sourceCertificate_restart_bounds` leaves installed selected restarted-search sum/max
+expressions explicit. `SourceResources.source_restart_bounds` now closes them using
+actual generated-label capacities, original-width scalar polynomials and computed balance;
+`sourceCertificate_bounds` composes them with the DIRECT, balance and whole-run envelopes.
+This proves the actual uniform original-input solver's worst-case bit time
+`2^(q/2) P(I)` and simultaneous space `(2^(q/4) + mu_d) P(I)`, including every callback,
+control/frame, intermediate and readback tape. Integer divisions use floors; the fourth
+quarter keeps every residue. The input supplies original typed words and requested depth,
+with computed depth `d = min(requestedDepth, wordWidth, q/4)`; no generated dictionary, runtime
+bound, witness conclusion or direct-case restriction is a premise. These are the
+worst-case resource bounds, not the source's faster count/prepass clauses or ALL-main.
+The complete client couples the general bounds to correctness and checks real
+restarted arithmetic hit/miss and backward-retention cases. The source reachable-state-DP all-count and faster
 quarter-time prepass remain open.
-No sharp global bit inequalities follow from the encoding or record-volume
-bounds. Older solver sources are preserved; the new direct route bypasses their
-interpreter without removing their costs from their own certificates. A real
-streaming default filter also removes whole-list accumulator copying,
-with `O(I+(n+1)P(B))` time and `O(I+P(B))` charged space. It is an alternative
-component, not installed in the existing cubic-filter uniform execution. Those
-old charges must remain in any composed execution bound.
-The total metadata reader's defaults and empty/malformed raw input handling are
-not a full source-input validator. Association-list scan time and polynomial
-internal interpreter workspace remain; filtering and a retained encoding bound
-do not prove sharp source bit time/peak space. Composition of the sorted-list
-components with resource-faithful access, transient/output workspace bounds and
-sharp global bit resources
-remain open. No source global bit asymptotic is claimed. Small-operand resources,
-reduction multiplicity and
-sparsification refinements, and repaired ideal-model bounds remain open as well.
-These components do not close Lemma 8/Theorem 7 or 733 ALL-main. Earlier component
+The sharp global bit inequalities follow from actual certificate composition, not
+encoding or record-volume bounds alone. Older solver sources are preserved; the new
+direct route bypasses their interpreter without removing their costs from their own
+certificates. A real streaming default filter also removes whole-list accumulator
+copying, with `O(I+(n+1)P(B))` time and `O(I+P(B))` charged space. It is an alternative
+component, not installed in the existing cubic-filter uniform execution. Those old
+charges must remain in any composed execution bound. The total metadata reader's
+defaults and empty/malformed raw input handling are not a full source-input validator.
+Association-list scan time and polynomial internal interpreter workspace remain;
+filtering and a retained encoding bound do not prove sharp source bit time/peak space.
+The sorted-list route now composes resource-faithful access and all transient/output
+workspace into the stated sharp global bit time/space bounds. This does not establish
+the source's reachable-state-DP all-count or faster quarter-time balance prepass.
+Small-operand resources, reduction multiplicity and sparsification refinements, and
+repaired ideal-model bounds remain open as well. The faster prepass and other source
+clauses still prevent closing Lemma 8/Theorem 7 or 733 ALL-main. Earlier component
 contracts above are not individually the global resource endpoint.
 The pointer/Boolean and counter-operation
 models do not replace native bit-runtime or peak-space certificates. The actual fixed

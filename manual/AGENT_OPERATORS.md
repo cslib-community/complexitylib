@@ -287,14 +287,16 @@ widths from original source operands and generated labels; `original_window_sum`
 count/division, quarter regeneration/sort, reconstruction, matcher and retained-context
 frames. `source_label_bounds` sums complete guarded callbacks over all generated labels
 in both computed orientations; its space bound covers every callback prefix, including
-padding/missing branches. These are not sharp whole-run bounds: next compose generated-label
-setup/fold control, derived parked witness widths, retained preparation and simultaneous
-ambient workspace. Use the installed `ClassBatches.matchLabelCertificate`; do not substitute
-record volume or a generic polynomial in the full retained-context encoding.
-Do not repeat the completed callback pipeline, window phase, prepass,
-direct branch or envelope proofs. The residuals are cost expressions, not runtime
-hypotheses or sharp whole-run bounds. The direct-only checked client is not a general
-restart theorem; the fallback guard verifies that its costs have not disappeared.
+padding/missing branches. `BatchLoopResources.runCertificate_bounds` now charges the
+actual label setup/fold control and derives parked witness widths from matching
+soundness. Its time is label count times capacity times an original-width polynomial;
+space charges capacity once, including all prefix/control/callback tapes.
+`SourceResources.source_restart_bounds` composes retained preparation and ambient frames,
+then `sourceCertificate_bounds` closes the actual whole original-input bit time and
+space using the approved DIRECT, balance and whole-run envelopes. Use this endpoint
+and the complete batch client; do not repeat completed stages or substitute record
+volume, native live support or a generic polynomial in a whole retained list.
+The setup/round factoring preserves the installed loop profiles and execution route.
 Public binary pair containers and fold/Subset-Sum inputs now use documented reducible
 encoding names (`encNatPairList`, `encNatPairOption`, `encFoldStep`, `subsetSumEncoding`).
 Run the changed-module encoding ratchet against the PR base; do not exempt new modules
@@ -302,8 +304,9 @@ by raising the baseline. These names preserve layout and do not introduce defaul
 Orientation recomputes counts; no cached-size oracle is input. The faster source
 reachable-state-DP all-count and quarter-time prepass remain separate open endpoints.
 Do not promote pair/batch traversal sums or unnormalized machine profiles to
-sharp source TM bounds. The per-pair copy path is no longer installed, but sharp
-global inequalities remain required. The old solvers and
+sharp source TM bounds. The global worst-case inequalities are now proved for the
+sorted-list source certificate; the source fast prepass/DP and other main clauses
+remain open. The old solvers and
 all their charges remain intact; the new direct route bypasses their interpreter.
 
 ## Correct course and hand work over

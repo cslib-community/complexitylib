@@ -316,19 +316,10 @@ noncomputable def matchLabelCertificate : NativeCertificate
   exact NativeCertificate.congr (NativeCertificate.branch selected matched missing) (fun q => by
     simp [matchLabel])
 
-/-- A fixed uniform outer stream consumes actually generated batch labels, reuses its
-retained parameter once per batch and releases batch outputs. All callback/state/control
-and producer/matcher temporaries are charged in the composed time/prefix-space profiles. -/
-noncomputable def runCertificate : NativeCertificate
-    (fun q : JoinedProbe.Context × ℕ => run q.1 q.2)
-    (encPair JoinedProbe.encoding encNat) (encOption (encPair encNat encNat)) := by
-  let original : NativeCertificate (id : JoinedProbe.Context × ℕ → _) ei ei :=
-    .linear (.of_eq (fun _ => rfl))
-  let power := (NativeCertificate.ofPolyTime ComputableInPolyTime.binary_size).comp countCertificate
-  let generation := (Classical.choose_spec SortedQuarterMachine.indices_computable).2.2
-  let generated : NativeCertificate SortedQuarterMachine.indices encUnary (encList encNat) :=
-    ⟨_, _, generation⟩
-  let indices := generated.comp power
+private noncomputable def roundCertificate : NativeCertificate
+    (fun q : ((JoinedProbe.Context × ℕ) × Option (ℕ × ℕ)) × ℕ =>
+      q.1.2.orElse (fun _ => matchLabel q.1.1.1 q.1.1.2 q.2))
+    (encPair (encPair ei (encOption er)) encNat) (encOption er) := by
   let e := encPair (encPair ei (encOption er)) encNat
   let arg : NativeCertificate (id : ((JoinedProbe.Context × ℕ) × Option (ℕ × ℕ)) × ℕ → _) e e :=
     .linear (.of_eq (fun _ => rfl))
@@ -338,17 +329,35 @@ noncomputable def runCertificate : NativeCertificate
       (fun q : (((JoinedProbe.Context × ℕ) × Option (ℕ × ℕ)) × ℕ) × (ℕ × ℕ) => some q.2)
       (encPair e er) (encOption er) :=
     ((NativeCertificate.linear (.of_eq (fun _ => rfl))).snd).some
-  let step : NativeCertificate
-      (fun q : ((JoinedProbe.Context × ℕ) × Option (ℕ × ℕ)) × ℕ =>
-        q.1.2.orElse (fun _ => matchLabel q.1.1.1 q.1.1.2 q.2)) e (encOption er) :=
-    NativeCertificate.congr (found.option fresh parked) (fun q => by
+  exact NativeCertificate.congr (found.option fresh parked) (fun q => by
       rcases q with ⟨⟨input, found⟩, i⟩
       cases found <;> rfl)
-  let loop := NativeCertificate.foldlStream ei (encOption er) encNat
-    (fun q found i => found.orElse (fun _ => matchLabel q.1 q.2 i)) step
+
+private noncomputable def setupCertificate : NativeCertificate
+    (fun q : JoinedProbe.Context × ℕ => (q, ((none : Option (ℕ × ℕ)), labels q.1 q.2)))
+    ei (encPair ei (encPair (encOption er) (encList encNat))) := by
+  let original : NativeCertificate (id : JoinedProbe.Context × ℕ → _) ei ei :=
+    .linear (.of_eq (fun _ => rfl))
+  let power := (NativeCertificate.ofPolyTime ComputableInPolyTime.binary_size).comp countCertificate
+  let generation := (Classical.choose_spec SortedQuarterMachine.indices_computable).2.2
+  let generated : NativeCertificate SortedQuarterMachine.indices encUnary (encList encNat) :=
+    ⟨_, _, generation⟩
+  let indices := generated.comp power
   let initial : NativeCertificate (fun _ : JoinedProbe.Context × ℕ =>
       (none : Option (ℕ × ℕ))) ei (encOption er) := .const _
-  let searched := loop.comp (original.prod (initial.prod indices))
+  exact NativeCertificate.congr (original.prod (initial.prod indices)) (fun _ => rfl)
+
+/-- A fixed uniform outer stream consumes actually generated batch labels, reuses its
+retained parameter once per batch and releases batch outputs. All callback/state/control
+and producer/matcher temporaries are charged in the composed time/prefix-space profiles. -/
+noncomputable def runCertificate : NativeCertificate
+    (fun q : JoinedProbe.Context × ℕ => run q.1 q.2)
+    (encPair JoinedProbe.encoding encNat) (encOption (encPair encNat encNat)) := by
+  let original : NativeCertificate (id : JoinedProbe.Context × ℕ → _) ei ei :=
+    .linear (.of_eq (fun _ => rfl))
+  let loop := NativeCertificate.foldlStream ei (encOption er) encNat
+    (fun q found i => found.orElse (fun _ => matchLabel q.1 q.2 i)) roundCertificate
+  let searched := loop.comp setupCertificate
   have foldEq (q : JoinedProbe.Context × ℕ) (xs : List ℕ) (found : Option (ℕ × ℕ)) :
       xs.foldl (fun found i => found.orElse (fun _ => matchLabel q.1 q.2 i)) found =
         found.orElse (fun _ => xs.findSome? (matchLabel q.1 q.2)) := by
