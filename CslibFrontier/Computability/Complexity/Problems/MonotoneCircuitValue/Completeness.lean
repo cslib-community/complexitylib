@@ -93,6 +93,13 @@ section
 
 variable {α : Type} {encIn : α ↪ List Bool} {Bs : α → ℕ}
 
+/-- Computing a rail wire `Monotone.railWire c w` preserves a space budget. -/
+private theorem railWire_inSpace (c : Bool) (hin : (fun x => (encIn x).length) ≼ Bs)
+    {w : α → ℕ} (hw : ComputableInSpace w encIn encNat Bs) :
+    ComputableInSpace (fun x => Monotone.railWire c (w x)) encIn encNat Bs :=
+  (budget_natAdd (budget_natMul (budget_const (encB := encNat) 2 hin) hw)
+    (budget_const (encB := encNat) (if c then 1 else 2) hin)).of_enc_eq fun _ => rfl
+
 /-- **The translated gates within a budget**, from a gate within the budget. -/
 private theorem dualGateDM_inSpace (b : Bool) {g : α → Boolean.Op × List ℕ}
     (hg : ComputableInSpace g encIn encGate Bs) (hin : (fun x => (encIn x).length) ≼ Bs) :
@@ -101,10 +108,8 @@ private theorem dualGateDM_inSpace (b : Bool) {g : α → Boolean.Op × List ℕ
   have hargs := snd' hg
   have ha := budget_headD 0 hargs
   have hb := budget_headD 0 (budget_tail hargs)
-  have hrail (c : Bool) {w : α → ℕ} (hw : ComputableInSpace w encIn encNat Bs) :
-      ComputableInSpace (fun x => Monotone.railWire c (w x)) encIn encNat Bs :=
-    (budget_natAdd (budget_natMul (budget_const (encB := encNat) 2 hin) hw)
-      (budget_const (encB := encNat) (if c then 1 else 2) hin)).of_enc_eq fun _ => rfl
+  have hrail (c : Bool) {w : α → ℕ} (hw : ComputableInSpace w encIn encNat Bs) :=
+    railWire_inSpace c hin hw
   have hnil := budget_const (encB := encList encNat) ([] : List ℕ) hin
   have hcons {a : α → ℕ} {L : α → List ℕ} (ha : ComputableInSpace a encIn encNat Bs)
       (hL : ComputableInSpace L encIn (encList encNat) Bs) :=
@@ -239,35 +244,11 @@ private theorem dualChunk_inSpace {n j : α → ℕ}
   have hg := Tableau.gateCode_inSpace tm hn (timeBound_inSpace C d hin hn) hin hj
   exact dualChunkGates_inSpace hin hg
 
-private theorem dualTrailerWire_inSpace {w : α → ℕ}
-    (hw : ComputableInSpace w encIn encNat Bs) :
-    ComputableInSpace (fun x => [true, false] ++
-      doubled (Turing.MultiTapeTM.frame (encNat (w x))) ++ [false, true]) encIn encBits Bs := by
-  have hmid := budget_comp_linear doubled_inSpace
-    (budget_comp_linear (ComputableInSpace.frame encNat) hw)
-  have h₁ := (budget_const (encB := encBits) [true, false] hin).append hmid
-    (g := fun x => [true, false] ++ doubled (Turing.MultiTapeTM.frame (encNat (w x))))
-    (encD := encBits) (fun _ => by dsimp only [encBits_apply])
-  exact ((h₁.weaken (.add (.refl _) (.refl _))).append
-    (budget_const (encB := encBits) [false, true] hin)
-    (g := fun x => [true, false] ++ doubled (Turing.MultiTapeTM.frame (encNat (w x))) ++
-      [false, true]) (encD := encBits)
-    (fun _ => by dsimp only [encBits_apply])).weaken (.add (.refl _) (.refl _))
-
 private theorem dualTrailer_inSpace {n : α → ℕ}
     (hn : ComputableInSpace n encIn encNat Bs) :
-    ComputableInSpace (fun x => (dualSpec tm C d).trailer (n x)) encIn encBits Bs := by
-  have hT := timeBound_inSpace C d hin hn
-  have ho : ComputableInSpace (fun x => Tableau.outWire k State (n x)
-      (timeBound C d (n x))) encIn encNat Bs :=
-    budget_natAdd (budget_natAdd (budget_natAdd hn (budget_const 2 hin))
-      (budget_natMul hT (Tableau.blockSize_inSpace (k := k) (State := State) hT hin)))
-      (budget_natAdd (Tableau.gfStart_inSpace (k := k) (State := State) hT hin)
-        (budget_const _ hin))
-  have hr : ComputableInSpace (fun x => Monotone.railWire true
-      (Tableau.outWire k State (n x) (timeBound C d (n x)))) encIn encNat Bs :=
-    budget_natAdd (budget_natMul (budget_const 2 hin) ho) (budget_const 1 hin)
-  exact dualTrailerWire_inSpace hin hr
+    ComputableInSpace (fun x => (dualSpec tm C d).trailer (n x)) encIn encBits Bs :=
+  trailerWire_inSpace hin [false, true]
+    (railWire_inSpace true hin (outWire_inSpace (k := k) (State := State) C d hin hn))
 
 end Space
 
@@ -282,14 +263,11 @@ theorem computableInLogSpace_dualTableauInstance :
   have hs := (ComputableInSpace.fst encNat3 encBool).weaken hin
   have hn := fst' (snd' hs)
   have hi := snd' (snd' hs)
-  refine (dualSpec tm C d).computableInLogSpace
+  exact (dualSpec tm C d).computableInLogSpace
     (encMonotoneCircuitValue_dualTableauInstance tm C d)
     (numGates_inSpace (k := k) (State := State) hin (timeBound_inSpace C d hin hn))
-    (dualChunk_inSpace tm C d hin hn hi) (dualTrailer_inSpace tm C d hin hn) ?_
-  change PolynomiallyBounded fun n => Tableau.numGates k State (timeBound C d n)
-  simp only [Tableau.numGates, Tableau.blockSize, Tableau.colStart, Tableau.gfStart,
-    Tableau.globStart, Tableau.numCols, timeBound]
-  fun_prop
+    (dualChunk_inSpace tm C d hin hn hi) (dualTrailer_inSpace tm C d hin hn)
+    (polynomiallyBounded_numGates_timeBound (k := k) (State := State) C d)
 
 end Instance
 
