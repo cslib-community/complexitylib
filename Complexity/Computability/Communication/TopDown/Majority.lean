@@ -218,8 +218,7 @@ private theorem coordinateDensity_of_neighbor {n : ℕ} (X : Finset (Fin n → B
   apply (le_div_iff₀ (by positivity)).mpr
   have hpw := pow_le_pow_right₀ (by norm_num : (1 : ℝ) ≤ 2) hsmall
   calc
-    _ ≤ (2 : ℝ) ^ (-(128 : ℝ)) * (2 : ℝ) ^ (128 : ℕ) :=
-      mul_le_mul_of_nonneg_left hpw (by positivity)
+    _ ≤ (2 : ℝ) ^ (-(128 : ℝ)) * (2 : ℝ) ^ (128 : ℕ) := by gcongr
     _ = 1 := by rw [← Real.rpow_natCast, ← Real.rpow_add (by norm_num)]; norm_num
     _ ≤ _ := hc
 

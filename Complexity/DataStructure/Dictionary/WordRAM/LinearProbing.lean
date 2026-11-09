@@ -12,6 +12,7 @@ public import Complexity.DataStructure.Dictionary.Spec
 public import Complexity.DataStructure.HashFamily.WordRAM.KWise
 public import Complexity.DataStructure.Dictionary.WordRAM.LinearProbing.FiveWise
 public import Complexity.DataStructure.WordRAM.Randomized.StateTransition
+import Complexity.Computability.WordRAM.SymbolicExec.Call
 
 /-!
 # Open-Addressed Linear Probing on the Randomized Word RAM
@@ -1244,17 +1245,10 @@ theorem allocSpan_execWithin {w base n_max : ℕ} {x : Data rLP}
       x₁.regs 0 = base ∧
       x₁.regs 18 = base + space n_max := by
   have hfit_sp : Fits w (space n_max) := hfit.of_le (by omega)
-  set s1 := x.set 0 base
-  have e1 : Exec w (.op (.copy 0 18) : Code .exact 24) x s1 1 := by
-    simpa +decide [s1, hfr] using (Exec.copy (B := .exact) (w := w) (d := 0) (s := 18) (x := x))
-  set s2 := s1.set 3 (space n_max)
-  have e2 : Exec w (.op (.const 3 (space n_max)) : Code .exact 24) s1 s2 1 :=
-    Exec.const hfit_sp
-  set s3 := s2.set 18 (base + space n_max)
-  have e3 : Exec w (.op (.exactBin .add 18 0 3) : Code .exact 24) s2 s3 1 :=
-    exec_exactBin (by simp +decide [s2, s1]) hfit
-  exact ⟨s3, ⟨3, le_rfl, e1.seq (e2.seq e3)⟩, rfl, by simp +decide [s3, s2, s1],
-    by simp +decide [s3]⟩
+  refine WP.exists_execWithin ?_
+  unfold allocSpan
+  wram_exec [hfr, hfit_sp, hfit]
+  wram_simp
 
 /-- `initSetup U n_max` initializes the `5`-wise independent hash table and leaves the zeroed
 linear-probing arrays representing the empty dictionary in at most `setupTime U n_max` expected
@@ -1424,85 +1418,15 @@ theorem probeCheckCode_execWithin {U w base n_max : ℕ} (u : Fin U)
     hfit_space.of_le (by dsimp only [usedBase, space]; omega)
   have hfit_kaddr : Fits w (keyBase base n_max + pos.val) :=
     hfit_space.of_le (by dsimp only [keyBase, usedBase, space]; omega)
-  have hfit_0 : Fits w 0 := hfit_space.of_le (Nat.zero_le _)
   have hfit_1 : Fits w 1 :=
     hfit_space.of_le (by dsimp only [space]; have := tableSize_pos n_max; omega)
-  set s1 := x.set 8 (usedBase base n_max + pos.val)
-  have e1 : Exec w (.op (.exactBin .add 8 4 2) : Code .exact 24) x s1 1 :=
-    exec_exactBin (by simp +decide [h4, h2]) hfit_uaddr
-  set s2 := s1.set 9 (usedAt base n_max x.mem pos)
-  have e2 : Exec w (.op (.load 9 8) : Code .exact 24) s1 s2 1 := by
-    simpa +decide [s2, s1, usedAt] using
-      (Exec.load (B := .exact) (w := w) (d := 9) (a := 8) (x := s1))
-  by_cases hused : usedAt base n_max x.mem pos = 1
-  · have hc_outer : (Cond.eq (9 : Fin 24) 10).Holds s2 := by
-      simp +decide [Cond.Holds, s2, s1, h10, hused]
-    set s3 := s2.set 8 (keyBase base n_max + pos.val)
-    have e3 : Exec w (.op (.exactBin .add 8 5 2) : Code .exact 24) s2 s3 1 :=
-      exec_exactBin (by simp +decide [s2, s1, h5, h2]) hfit_kaddr
-    set s4 := s3.set 8 (keyAt base n_max x.mem pos)
-    have e4 : Exec w (.op (.load 8 8) : Code .exact 24) s3 s4 1 := by
-      simpa +decide [s4, s3, s2, s1, keyAt] using
-        (Exec.load (B := .exact) (w := w) (d := 8) (a := 8) (x := s3))
-    by_cases hkey : keyAt base n_max x.mem pos = u.val
-    · have hc_inner : (Cond.eq (8 : Fin 24) 1).Holds s4 := by
-        simp +decide [Cond.Holds, s4, s3, s2, s1, h1, hkey]
-      set s5 := s4.set 7 0
-      have e5 : Exec w (.op (.const 7 0) : Code .exact 24) s4 s5 1 := Exec.const hfit_0
-      have hall : Exec w probeCheckCode x s5 7 :=
-        e1.seq (e2.seq (Exec.branch_pos hc_outer (e3.seq (e4.seq (Exec.branch_pos hc_inner e5)))))
-      refine ⟨s5, ⟨7, by decide, hall⟩, rfl,
-        by simp +decide [s5, s4, s3, s2, s1, h0],
-        by simp +decide [s5, s4, s3, s2, s1, h1],
-        by simp +decide [s5, s4, s3, s2, s1, h2],
-        by simp +decide [s5, s4, s3, s2, s1, h3],
-        by simp +decide [s5, s4, s3, s2, s1, h4],
-        by simp +decide [s5, s4, s3, s2, s1, h5],
-        by simp +decide [s5, s4, s3, s2, s1, h6],
-        by simp [s5, hused, hkey],
-        by simp +decide [s5, s4, s3, s2],
-        by simp +decide [s5, s4, s3, s2, s1, h10],
-        by simp +decide [s5, s4, s3, s2, s1],
-        by simp +decide [s5, s4, s3, s2, s1]⟩
-    · have hc_inner : ¬(Cond.eq (8 : Fin 24) 1).Holds s4 := by
-        simp +decide [Cond.Holds, s4, s3, s2, s1, h1, hkey]
-      set s5 := s4.set 7 1
-      have e5 : Exec w (.op (.const 7 1) : Code .exact 24) s4 s5 1 := Exec.const hfit_1
-      have hall : Exec w probeCheckCode x s5 8 :=
-        e1.seq (e2.seq (Exec.branch_pos hc_outer (e3.seq (e4.seq (Exec.branch_neg hc_inner e5)))))
-      refine ⟨s5, ⟨8, le_rfl, hall⟩, rfl,
-        by simp +decide [s5, s4, s3, s2, s1, h0],
-        by simp +decide [s5, s4, s3, s2, s1, h1],
-        by simp +decide [s5, s4, s3, s2, s1, h2],
-        by simp +decide [s5, s4, s3, s2, s1, h3],
-        by simp +decide [s5, s4, s3, s2, s1, h4],
-        by simp +decide [s5, s4, s3, s2, s1, h5],
-        by simp +decide [s5, s4, s3, s2, s1, h6],
-        by simp [s5, hused, hkey],
-        by simp +decide [s5, s4, s3, s2],
-        by simp +decide [s5, s4, s3, s2, s1, h10],
-        by simp +decide [s5, s4, s3, s2, s1],
-        by simp +decide [s5, s4, s3, s2, s1]⟩
-  · have hc_outer : ¬(Cond.eq (9 : Fin 24) 10).Holds s2 := by
-      simp +decide [Cond.Holds, s2, s1, h10, hused]
-    set s3 := s2.set 7 0
-    have e3 : Exec w (.op (.const 7 0) : Code .exact 24) s2 s3 1 := Exec.const hfit_0
-    have hall : Exec w probeCheckCode x s3 5 :=
-      e1.seq (e2.seq (Exec.branch_neg hc_outer e3))
-    refine ⟨s3, ⟨5, by decide, hall⟩, rfl,
-      by simp +decide [s3, s2, s1, h0],
-      by simp +decide [s3, s2, s1, h1],
-      by simp +decide [s3, s2, s1, h2],
-      by simp +decide [s3, s2, s1, h3],
-      by simp +decide [s3, s2, s1, h4],
-      by simp +decide [s3, s2, s1, h5],
-      by simp +decide [s3, s2, s1, h6],
-      by simp [s3, hused],
-      by simp +decide [s3, s2],
-      by simp +decide [s3, s2, s1, h10],
-      by simp +decide [s3, s2, s1],
-      by simp +decide [s3, s2, s1]⟩
-
+  have hused : x.mem (usedBase base n_max + pos.val) = usedAt base n_max x.mem pos := rfl
+  have hkey : x.mem (keyBase base n_max + pos.val) = keyAt base n_max x.mem pos := rfl
+  refine WP.exists_execWithin ?_
+  unfold probeCheckCode
+  wram_exec [h1, h2, h4, h5, h10, hfit_uaddr, hfit_kaddr, hfit_1, hused, hkey]
+  all_goals wram_simp [h0, h1, h2, h3, h4, h5, h6, h10]
+  all_goals split_ifs <;> omega
 /-- `probeSetupCode n_max` executes in at most `16` deterministic steps, initializing registers
 `3, 4, 5, 6, 10` and running `probeCheckCode` on the initial hash bucket `pos`. -/
 theorem probeSetupCode_execWithin {U w base n_max : ℕ} (u : Fin U)
@@ -1542,45 +1466,18 @@ theorem probeSetupCode_execWithin {U w base n_max : ℕ} (u : Fin U)
     hfit_space.of_le (by dsimp only [valBase, keyBase, usedBase, space]; omega)
   have hfit_1 : Fits w 1 :=
     hfit_space.of_le (by dsimp only [space]; omega)
-  set s1 := x.set 3 (tableSize n_max - 1)
-  have e1 : Exec w (.op (.const 3 (tableSize n_max - 1)) : Code .exact 24) x s1 1 :=
-    Exec.const hfit_mask
-  set s2 := s1.set 4 (KWise.space n_max 5)
-  have e2 : Exec w (.op (.const 4 (KWise.space n_max 5)) : Code .exact 24) s1 s2 1 :=
-    Exec.const hfit_ksp
-  set s3 := s2.set 4 (usedBase base n_max)
-  have e3 : Exec w (.op (.exactBin .add 4 0 4) : Code .exact 24) s2 s3 1 :=
-    exec_exactBin (by simp +decide [s2, s1, h0, usedBase]) hfit_ub
-  set s4 := s3.set 5 (tableSize n_max)
-  have e4 : Exec w (.op (.const 5 (tableSize n_max)) : Code .exact 24) s3 s4 1 :=
-    Exec.const hfit_ts
-  set s5 := s4.set 5 (keyBase base n_max)
-  have e5 : Exec w (.op (.exactBin .add 5 4 5) : Code .exact 24) s4 s5 1 :=
-    exec_exactBin (by simp +decide [s4, s3, keyBase]) hfit_kb
-  set s6 := s5.set 6 (tableSize n_max)
-  have e6 : Exec w (.op (.const 6 (tableSize n_max)) : Code .exact 24) s5 s6 1 :=
-    Exec.const hfit_ts
-  set s7 := s6.set 6 (valBase base n_max)
-  have e7 : Exec w (.op (.exactBin .add 6 5 6) : Code .exact 24) s6 s7 1 :=
-    exec_exactBin (by simp +decide [s6, s5, valBase]) hfit_vb
-  set s8 := s7.set 10 1
-  have e8 : Exec w (.op (.const 10 1) : Code .exact 24) s7 s8 1 :=
-    Exec.const hfit_1
-  obtain ⟨y, ⟨m, hm, he9⟩, hymem, hy0, hy1, hy2, hy3, hy4, hy5, hy6, hy7, hy9, hy10, hy22, hy23⟩ :=
-    probeCheckCode_execWithin u pos (x := s8)
-      (by simp +decide [s8, s7, s6, s5, s4, s3, s2, s1, h0])
-      (by simp +decide [s8, s7, s6, s5, s4, s3, s2, s1, h1])
-      (by simp +decide [s8, s7, s6, s5, s4, s3, s2, s1, h2])
-      (by simp +decide [s8, s7, s6, s5, s4, s3, s2, s1])
-      (by simp +decide [s8, s7, s6, s5, s4, s3])
-      (by simp +decide [s8, s7, s6, s5])
-      (by simp +decide [s8, s7])
-      (by simp +decide [s8])
-      hfit_space
-  have hall := e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq (e8.seq he9)))))))
-  exact ⟨y, ⟨_, by omega, hall⟩, hymem, hy0, hy1, hy2, hy3, hy4, hy5, hy6, hy7, hy9, hy10,
-    by simpa +decide [s8, s7, s6, s5, s4, s3, s2, s1] using hy22,
-    by simpa +decide [s8, s7, s6, s5, s4, s3, s2, s1] using hy23⟩
+  have hub : base + KWise.space n_max 5 = usedBase base n_max := rfl
+  have hkb : usedBase base n_max + tableSize n_max = keyBase base n_max := rfl
+  have hvb : keyBase base n_max + tableSize n_max = valBase base n_max := rfl
+  refine WP.exists_execWithin ?_
+  unfold probeSetupCode
+  wram_exec [h0, hfit_mask, hfit_ksp, hfit_ub, hfit_ts, hfit_kb, hfit_vb, hfit_1, hub, hkb, hvb]
+  wram_call (probeCheckCode_execWithin u pos (by wram_simp [h0]) (by wram_simp [h1])
+    (by wram_simp [h2]) (by wram_simp) (by wram_simp) (by wram_simp) (by wram_simp)
+    (by wram_simp) hfit_space) with y ⟨hymem, hy0, hy1, hy2, hy3, hy4, hy5, hy6, hy7, hy9, hy10,
+      hy22, hy23⟩
+  wram_simp at hymem hy7 hy9 hy22 hy23
+  exact ⟨by omega, hymem, hy0, hy1, hy2, hy3, hy4, hy5, hy6, hy7, hy9, hy10, hy22, hy23⟩
 
 /-- One iteration of `probeBody` advances `pos` to `probeSlot (tableLog n_max) pos 1` and inspects
 the new slot in at most `10` deterministic steps. -/
@@ -1622,27 +1519,15 @@ theorem probeBody_execWithin {U w base n_max : ℕ} (u : Fin U)
   have hand_eq : (pos.val + 1) &&& (tableSize n_max - 1) = pos'.val := by
     dsimp only [tableSize, pos', probeSlot, cyclicSlotMod]
     exact Nat.and_two_pow_sub_one_eq_mod (pos.val + 1) (tableLog n_max)
-  set s1 := x.set 2 (pos.val + 1)
-  have e1 : Exec w (.op (.exactBin .add 2 2 10) : Code .exact 24) x s1 1 :=
-    exec_exactBin (by simp +decide [h2, h10]) hfit_p1
-  set s2 := s1.set 2 pos'.val
-  have e2 : Exec w (.op (.exactBin .and 2 2 3) : Code .exact 24) s1 s2 1 :=
-    exec_exactBin (by simp +decide [s1, h3, hand_eq]) hfit_pos'
-  obtain ⟨y, ⟨m, hm, he3⟩, hymem, hy0, hy1, hy2, hy3, hy4, hy5, hy6, hy7, hy9, hy10, hy22, hy23⟩ :=
-    probeCheckCode_execWithin u pos' (x := s2)
-      (by simp +decide [s2, s1, h0])
-      (by simp +decide [s2, s1, h1])
-      (by simp +decide [s2])
-      (by simp +decide [s2, s1, h3])
-      (by simp +decide [s2, s1, h4])
-      (by simp +decide [s2, s1, h5])
-      (by simp +decide [s2, s1, h6])
-      (by simp +decide [s2, s1, h10])
-      hfit_space
-  exact ⟨y, ⟨_, by omega, e1.seq (e2.seq he3)⟩, hymem, hy0, hy1, hy2, hy3, hy4, hy5, hy6, hy7,
-    hy9, hy10,
-    by simpa +decide [s2, s1] using hy22,
-    by simpa +decide [s2, s1] using hy23⟩
+  refine WP.exists_execWithin ?_
+  unfold probeBody
+  wram_exec [h2, h3, h10, hfit_p1, hfit_pos', hand_eq]
+  wram_call (probeCheckCode_execWithin u pos' (by wram_simp [h0]) (by wram_simp [h1])
+    (by wram_simp) (by wram_simp [h3]) (by wram_simp [h4]) (by wram_simp [h5]) (by wram_simp [h6])
+    (by wram_simp [h10]) hfit_space) with y ⟨hymem, hy0, hy1, hy2, hy3, hy4, hy5, hy6, hy7, hy9,
+      hy10, hy22, hy23⟩
+  wram_simp at hymem hy7 hy9 hy22 hy23
+  exact ⟨by omega, hymem, hy0, hy1, hy2, hy3, hy4, hy5, hy6, hy7, hy9, hy10, hy22, hy23⟩
 
 /-- `probeLoop` halts deterministically at the stopping slot
 `p = probeSlot (tableLog n_max) b (hinv.probeLen u b)` in at most
@@ -1782,33 +1667,10 @@ theorem insertFinishCode_execWithin {U w base n_max : ℕ} (u : Fin U) (v : ℕ)
   have hfit_vaddr : Fits w (valBase base n_max + p.val) :=
     hfit_space.of_le (by dsimp only [valBase, keyBase, usedBase, space]; omega)
   have hfit_0 : Fits w 0 := hfit_space.of_le (Nat.zero_le _)
-  set s1 := x.set 8 (usedBase base n_max + p.val)
-  have e1 : Exec w (.op (.exactBin .add 8 4 2) : Code .exact 24) x s1 1 :=
-    exec_exactBin (by simp +decide [h4, h2]) hfit_uaddr
-  set s2 := s1.write (usedBase base n_max + p.val) 1
-  have e2 : Exec w (.op (.store 8 10) : Code .exact 24) s1 s2 1 := by
-    simpa +decide [s2, s1, h10] using
-      (Exec.store (B := .exact) (w := w) (a := 8) (s := 10) (x := s1))
-  set s3 := s2.set 8 (keyBase base n_max + p.val)
-  have e3 : Exec w (.op (.exactBin .add 8 5 2) : Code .exact 24) s2 s3 1 :=
-    exec_exactBin (by simp +decide [s2, s1, h5, h2]) hfit_kaddr
-  set s4 := s3.write (keyBase base n_max + p.val) u.val
-  have e4 : Exec w (.op (.store 8 1) : Code .exact 24) s3 s4 1 := by
-    simpa +decide [s4, s3, s2, s1, h1] using
-      (Exec.store (B := .exact) (w := w) (a := 8) (s := 1) (x := s3))
-  set s5 := s4.set 8 (valBase base n_max + p.val)
-  have e5 : Exec w (.op (.exactBin .add 8 6 2) : Code .exact 24) s4 s5 1 :=
-    exec_exactBin (by simp +decide [s4, s3, s2, s1, h6, h2]) hfit_vaddr
-  set s6 := s5.write (valBase base n_max + p.val) v
-  have e6 : Exec w (.op (.store 8 23) : Code .exact 24) s5 s6 1 := by
-    simpa +decide [s6, s5, s4, s3, s2, s1, h23] using
-      (Exec.store (B := .exact) (w := w) (a := 8) (s := 23) (x := s5))
-  set s7 := s6.set 2 0
-  have e7 : Exec w (.op (.const 2 0) : Code .exact 24) s6 s7 1 :=
-    Exec.const hfit_0
-  have hall := e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq e7)))))
-  exact ⟨s7, ⟨7, le_rfl, hall⟩, rfl, by simp +decide [s7, s6, s5, s4, s3, s2, s1, h0],
-    by simp +decide [s7]⟩
+  refine WP.exists_execWithin ?_
+  unfold insertFinishCode
+  wram_exec [h1, h2, h4, h5, h6, h10, h23, hfit_uaddr, hfit_kaddr, hfit_vaddr]
+  exact ⟨rfl, by wram_simp [h0], by wram_simp⟩
 
 /-- `queryFinishCode` executes in at most `4` deterministic steps, writing `val[p] + 1` into `reg 2`
 when `s u = some (val[p])` (`used[p] = 1`) and `0` into `reg 2` when `s u = none` (`used[p] = 0`).
@@ -1832,38 +1694,22 @@ theorem queryFinishCode_execWithin {U V w base n_max : ℕ} {θ : Seed U n_max}
       y.mem = x.mem ∧
       y.regs 0 = base ∧
       decodeOp (V := V) (n_max := n_max) (.query u) y.regs = some (s u) := by
+  have hstop := hinv.probeStop_spec u
+  dsimp only at hstop
   set p := probeSlot (tableLog n_max) (hashFn U n_max θ u) (hinv.probeLen u (hashFn U n_max θ u))
   have hp_lt : p.val < tableSize n_max := p.isLt
   have hfit_vaddr : Fits w (valBase base n_max + p.val) :=
     hfit_space.of_le (by dsimp only [valBase, keyBase, usedBase, space]; omega)
-  have hfit_0 : Fits w 0 := hfit_space.of_le (Nat.zero_le _)
-  rcases hinv.probeStop_spec u with ⟨hp0, hnone⟩ | ⟨hp1, _, hsome⟩
-  · have hc : ¬(Cond.eq (9 : Fin 24) 10).Holds x := by
-      simp [Cond.Holds, h9, p, hp0, h10]
-    set s1 := x.set 2 0
-    have e1 : Exec w (.op (.const 2 0) : Code .exact 24) x s1 1 := Exec.const hfit_0
-    have ebr : Exec w queryFinishCode x s1 3 := Exec.branch_neg hc e1
-    refine ⟨s1, ⟨3, by decide, ebr⟩, rfl, by simp +decide [s1, h0], ?_⟩
-    have hs1_2 : s1.regs 2 = 0 := by simp +decide [s1]
-    simp only [decodeOp, hs1_2, ↓reduceIte, hnone]
-  · have hc : (Cond.eq (9 : Fin 24) 10).Holds x := by
-      simp [Cond.Holds, h9, p, hp1, h10]
-    have hv_lt : valAt base n_max x.mem p < V := hinv.values_bounded u _ hsome
+  have hval : x.mem (valBase base n_max + p.val) = valAt base n_max x.mem p := rfl
+  refine WP.exists_execWithin ?_
+  unfold queryFinishCode
+  rcases hstop with ⟨hp0, hnone⟩ | ⟨hp1, -, hsome⟩
+  · wram_exec [h9, h10, hp0]
+    exact ⟨rfl, by wram_simp [h0], by wram_simp [decodeOp, hnone]⟩
+  · have hv_lt : valAt base n_max x.mem p < V := hinv.values_bounded u _ hsome
     have hfit_vp1 : Fits w (valAt base n_max x.mem p + 1) := hfit_V.of_le (by omega)
-    set s1 := x.set 8 (valBase base n_max + p.val)
-    have e1 : Exec w (.op (.exactBin .add 8 6 2) : Code .exact 24) x s1 1 :=
-      exec_exactBin (by simp +decide [h6, h2, p]) hfit_vaddr
-    set s2 := s1.set 2 (valAt base n_max x.mem p)
-    have e2 : Exec w (.op (.load 2 8) : Code .exact 24) s1 s2 1 := by
-      simpa +decide [s2, s1, valAt, p] using
-        (Exec.load (B := .exact) (w := w) (d := 2) (a := 8) (x := s1))
-    set s3 := s2.set 2 (valAt base n_max x.mem p + 1)
-    have e3 : Exec w (.op (.exactBin .add 2 2 10) : Code .exact 24) s2 s3 1 :=
-      exec_exactBin (by simp +decide [s2, s1, h10]) hfit_vp1
-    have ebr : Exec w queryFinishCode x s3 4 := Exec.branch_pos hc (e1.seq (e2.seq e3))
-    refine ⟨s3, ⟨4, le_rfl, ebr⟩, rfl, by simp +decide [s3, s2, s1, h0], ?_⟩
-    have hs3_2 : s3.regs 2 = valAt base n_max x.mem p + 1 := by simp +decide [s3]
-    simp only [decodeOp, hs3_2, Nat.add_one_ne_zero, ↓reduceIte, Nat.add_sub_cancel, hsome, p]
+    wram_exec [h2, h6, h9, h10, hp1, hfit_vaddr, hval, hfit_vp1]
+    exact ⟨rfl, by wram_simp [h0], by wram_simp [decodeOp, hsome]⟩
 
 /-- The key queried or updated by dictionary operation `o`. -/
 @[expose] def opKey {U : ℕ} : Dictionary.Op U → Fin U

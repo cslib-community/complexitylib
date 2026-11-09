@@ -727,10 +727,7 @@ private theorem validIdxChain_bicyclicChains {L : ℕ} {p s j : Fin (L + 1)}
         dsimp only [stepPred] at hq3
         split_ifs at hq3 <;> omega
     · obtain ⟨hq1, hq2, hq3, hq4⟩ := mem_buildFreshChains_fst L false p.val L le_rfl q hq
-      have hp_even : p.val % 2 = 0 := by
-        rcases Nat.mod_two_eq_zero_or_one p.val with h0 | h1
-        · exact h0
-        · exfalso; exact htab1 (beq_iff_eq.mpr h1)
+      have hp_even : p.val % 2 = 0 := by grind
       refine ⟨fun h => ?_, fun h => ?_⟩
       · have hval : p.val = q.1.val := congrArg Fin.val h
         have hlt : q.1.val - 1 < p.val := by omega
@@ -777,10 +774,7 @@ private theorem validIdxChain_bicyclicChains {L : ℕ} {p s j : Fin (L + 1)}
           · omega
           · omega
       · obtain ⟨hq1, hq2, hq3, hq4⟩ := mem_buildFreshChains_fst L false p.val L le_rfl q hq_base
-        have hpar2 : (L - p.val + 1) % 2 = 0 := by
-          rcases Nat.mod_two_eq_zero_or_one (L - p.val + 1) with h0 | h1
-          · exact h0
-          · exfalso; exact htab2 (beq_iff_eq.mpr h1)
+        have hpar2 : (L - p.val + 1) % 2 = 0 := by grind
         have hp_ne_L : p.val ≠ L := by omega
         refine ⟨fun h => ?_, fun h => ?_⟩
         · have hval : (if p.val = L then 0 else L) = q.1.val := congrArg Fin.val h
@@ -1009,11 +1003,7 @@ private theorem card_image_add_length_le_of_validEqChain {U m : ℕ} (h : Fin U 
       refine Finset.mem_erase.mpr ⟨?_, hsub (by simp [eqChainKeys, hx])⟩
       rintro rfl
       exact hw_not_rest hx
-    have himg_eq : K.image h = (K.erase w).image h := by
-      conv_lhs => rw [← Finset.insert_erase hw_mem]
-      rw [Finset.image_insert, Finset.insert_eq_of_mem]
-      rw [hw_eq_v]
-      exact Finset.mem_image_of_mem h hv_erase
+    have himg_eq : K.image h = (K.erase w).image h := by grind
     have ih := card_image_add_length_le_of_validEqChain h hvalid_rest hrest_sub heq_rest
     have hcard_erase : (K.erase w).card + 1 = K.card := Finset.card_erase_add_one hw_mem
     rw [himg_eq, List.length_cons]
@@ -1404,9 +1394,7 @@ private theorem IsRawWalkTrace.hasAltPath_of_fresh_segment {U m N : ℕ} {h₁ h
         rcases Nat.mod_two_eq_zero_or_one d with hd' | hd' <;>
         simp [hs, hd'] at hsum ⊢ <;>
         simp [hsum]
-    have hpred_eq : stepPred (ℓ + 1) d = d := by
-      unfold stepPred
-      rw [ite_eq_right (by omega)]
+    have hpred_eq : stepPred (ℓ + 1) d = d := by grind [stepPred]
     dsimp only [y]
     have hidx1 : start + (d + 1) = start + d + 1 := by omega
     have hidx2 : start + stepPred (ℓ + 1) d = start + d := by rw [hpred_eq]
@@ -2212,8 +2200,7 @@ private theorem sum_cuckooWalkRounds_le {Θ₁ Θ₂ : Type*} [Fintype Θ₁] [F
         rw [Finset.mem_filter] at hθ ⊢
         rw [Finset.mem_Ico] at hr
         exact ⟨Finset.mem_univ _, lt_cuckooWalkRounds_imp_dichotomy hr.1 hu hθ.2⟩
-    _ ≤ Fintype.card (Θ₁ × Θ₂) + Fintype.card (Θ₁ × Θ₂) :=
-        Nat.add_le_add_left htail _
+    _ ≤ Fintype.card (Θ₁ × Θ₂) + Fintype.card (Θ₁ × Θ₂) := by gcongr
     _ = 2 * Fintype.card (Θ₁ × Θ₂) := by ring
 
 /-- At `r = MaxLoop ≥ maxEvictions n_max`, the number of seeds satisfying `WalkBadAt` is bounded by
@@ -2250,8 +2237,7 @@ private theorem two_mul_walkBadAt_maxLoop_le {Θ₁ Θ₂ : Type*} [Fintype Θ�
     have hpow_le : 8 * (max n_max 1 * max MaxLoop 1) ≤ 32 ^ ℓ := by
       calc 8 * (max n_max 1 * max MaxLoop 1)
           = 2 ^ 3 * max n_max 1 * max MaxLoop 1 := by ring
-        _ ≤ 2 ^ 3 * 2 ^ Nat.clog 2 (max n_max 2) * 2 ^ MaxLoop :=
-            Nat.mul_le_mul (Nat.mul_le_mul_left (2 ^ 3) hclog_le) hloop_pow
+        _ ≤ 2 ^ 3 * 2 ^ Nat.clog 2 (max n_max 2) * 2 ^ MaxLoop := by gcongr
         _ = 2 ^ (Nat.clog 2 (max n_max 2) + MaxLoop + 3) := by
             rw [← pow_add, ← pow_add]
             congr 1; omega
@@ -2334,16 +2320,13 @@ private theorem two_mul_card_not_goodForSet_le {Θ₁ Θ₂ : Type*} [Fintype Θ
         _ = ∑ u ∈ S, 2 * S.card * (E u).card := by rw [Finset.mul_sum]
         _ ≤ ∑ _u ∈ S, Fintype.card (Θ₁ × Θ₂) := by
             refine Finset.sum_le_sum fun u hu => ?_
-            have herase : (S.erase u).card ≤ max n_max 4 := by
-              have := Finset.card_erase_lt_of_mem hu
-              omega
+            have herase : (S.erase u).card ≤ max n_max 4 := by grind
             have hstep := two_mul_walkBadAt_maxLoop_le hk₁ hk₂ hm hloop_ge hloop_le herase u
             have hscard_le : 2 * S.card ≤ 2 * (max n_max 1 * max MaxLoop 1) := by
               have h1 : S.card ≤ max n_max 1 := by omega
               have h2 : 1 ≤ max MaxLoop 1 := by omega
               calc 2 * S.card ≤ 2 * (max n_max 1 * 1) := by omega
-                _ ≤ 2 * (max n_max 1 * max MaxLoop 1) :=
-                    Nat.mul_le_mul_left 2 (Nat.mul_le_mul_left _ h2)
+                _ ≤ 2 * (max n_max 1 * max MaxLoop 1) := by gcongr
             exact le_trans (Nat.mul_le_mul_right _ hscard_le) hstep
         _ = S.card * Fintype.card (Θ₁ × Θ₂) := by rw [Finset.sum_const, smul_eq_mul]
         _ = Fintype.card (Θ₁ × Θ₂) * S.card := Nat.mul_comm _ _
@@ -2424,9 +2407,7 @@ theorem isCuckooHashPair_of_kWiseIndependent {Θ₁ Θ₂ : Type*}
       rcases le_total a 1 with h | h
       · rw [max_eq_right h, max_eq_right (by exact_mod_cast h), Nat.cast_one]
       · rw [max_eq_left h, max_eq_left (by exact_mod_cast h)]
-    have hB_cast : (B : ℝ≥0∞) = max (n_max : ℝ≥0∞) 1 * max (MaxLoop : ℝ≥0∞) 1 := by
-      dsimp only [B]
-      rw [Nat.cast_mul, hmax, hmax]
+    have hB_cast : (B : ℝ≥0∞) = max (n_max : ℝ≥0∞) 1 * max (MaxLoop : ℝ≥0∞) 1 := by grind
     rw [hB_cast] at hmeas
     exact mod_cast hmeas
 
@@ -2550,9 +2531,7 @@ private theorem four_mul_card_not_goodForSet_le {Θ₁ Θ₂ : Type*} [Fintype �
         _ = ∑ u ∈ S, 4 * S.card * (E u).card := by rw [Finset.mul_sum]
         _ ≤ ∑ _u ∈ S, Fintype.card (Θ₁ × Θ₂) := by
             refine Finset.sum_le_sum fun u hu => ?_
-            have herase : (S.erase u).card ≤ max n_max 4 := by
-              have := Finset.card_erase_lt_of_mem hu
-              omega
+            have herase : (S.erase u).card ≤ max n_max 4 := by grind
             have hstep := two_mul_walkBadAt_maxLoop_le hk₁ hk₂ hm hloop_ge hloop_le herase u
             have hscard_le : 4 * S.card ≤ 2 * (max n_max 1 * max MaxLoop 1) := by
               have h1 : S.card ≤ max n_max 1 := by omega
@@ -2793,9 +2772,7 @@ theorem isCuckooHashPair_of_whp_kWiseIndependent {Θ_top Θ_bot : Type*}
       rcases le_total a 1 with h | h
       · rw [max_eq_right h, max_eq_right (by exact_mod_cast h), Nat.cast_one]
       · rw [max_eq_left h, max_eq_left (by exact_mod_cast h)]
-    have hB_cast : (B : ℝ≥0∞) = max (n_max : ℝ≥0∞) 1 * max (MaxLoop : ℝ≥0∞) 1 := by
-      dsimp only [B]
-      rw [Nat.cast_mul, hmax, hmax]
+    have hB_cast : (B : ℝ≥0∞) = max (n_max : ℝ≥0∞) 1 * max (MaxLoop : ℝ≥0∞) 1 := by grind
     rw [hB_cast] at hmeas
     exact mod_cast hmeas
 
@@ -2858,8 +2835,7 @@ theorem isCuckooHashPair_doubleTabHash {c b U M : ℕ}
           refine Nat.mul_le_mul_right N_top ?_
           have hB_sq : B ≤ B * B := Nat.le_mul_of_pos_left B hB_ge
           nlinarith
-        _ ≤ (2 ^ (3 * b)) ^ 2 * N_top :=
-          Nat.mul_le_mul_right N_top (Nat.pow_le_pow_left hbound 2)
+        _ ≤ (2 ^ (3 * b)) ^ 2 * N_top := by gcongr
         _ = 2 ^ (6 * b) * N_top := by
           rw [← Nat.pow_mul]
           congr 2
@@ -2898,8 +2874,7 @@ private theorem isCuckooHashPair_seedAux (reg : Bool) {c_exp n_max U M : ℕ}
       calc U ≤ max n_max 4 ^ c_exp := hU
         _ ≤ max n_max 4 ^ max c_exp 1 :=
           Nat.pow_le_pow_right (by omega) (le_max_left c_exp 1)
-        _ ≤ (2 ^ (2 * b)) ^ max c_exp 1 :=
-          Nat.pow_le_pow_left hmax_le_2b (max c_exp 1)
+        _ ≤ (2 ^ (2 * b)) ^ max c_exp 1 := by gcongr
         _ = 2 ^ (c * b) := by
           rw [← Nat.pow_mul]
           congr 1
@@ -2918,9 +2893,7 @@ private theorem isCuckooHashPair_seedAux (reg : Bool) {c_exp n_max U M : ℕ}
     have hclog2_le : Nat.clog 2 (max n_max 2) ≤ 2 * b :=
       (Nat.clog_le_iff_le_pow (by decide)).mpr
         ((by omega : max n_max 2 ≤ max n_max 4).trans hmax_le_2b)
-    have hev_le : maxEvictions n_max ≤ 12 * b + 12 := by
-      unfold maxEvictions
-      omega
+    have hev_le : maxEvictions n_max ≤ 12 * b + 12 := by grind [maxEvictions]
     have h18_ev : 18 ≤ maxEvictions n_max := eighteen_le_maxEvictions n_max
     have h2ev_sq : 2 * max (maxEvictions n_max) 1 ≤ b ^ 2 := by
       have : max (maxEvictions n_max) 1 = maxEvictions n_max := by omega
@@ -2949,8 +2922,7 @@ private theorem isCuckooHashPair_seedAux (reg : Bool) {c_exp n_max U M : ℕ}
             doubleTabCodeBound c (8 * c) 4 (2 * maxEvictions n_max + 2)
           = max n_max 1 * (2 * max (maxEvictions n_max) 1) *
               doubleTabCodeBound c (8 * c) 4 (2 * maxEvictions n_max + 2) := by ring
-        _ ≤ (2 ^ (2 * b) * b ^ 2) * b ^ (24 * c + 5) :=
-            Nat.mul_le_mul (Nat.mul_le_mul hmax1_le h2ev_sq) hcode_pow
+        _ ≤ (2 ^ (2 * b) * b ^ 2) * b ^ (24 * c + 5) := by gcongr
         _ = 2 ^ (2 * b) * b ^ (24 * c + 7) := by
             rw [Nat.mul_assoc, ← Nat.pow_add]
             congr 2

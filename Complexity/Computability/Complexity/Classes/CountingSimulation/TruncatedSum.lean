@@ -303,8 +303,7 @@ theorem exists_truncSum_certificate {Adm : ℕ → ℕ → ℕ × DescribedNetwo
   have hR : R c ≤ U c * E := Finset.sup_le fun i hi => (hterm i (mem_range.mp hi)).1
   have hQ : Q c ≤ U c := Finset.sup_le fun i hi => (hterm i (mem_range.mp hi)).2
   have hWc := hWad c
-  have hK : a' * (L c + 1) ^ d' ≤ (a' + d' + K₀) * (L c + 1) ^ (a' + d' + K₀) :=
-    Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right (by omega) (by omega))
+  have hK : a' * (L c + 1) ^ d' ≤ (a' + d' + K₀) * (L c + 1) ^ (a' + d' + K₀) := by gcongr <;> omega
   have hEK : E ≤ 2 ^ ((a' + d' + K₀) * s c / Nat.sqrt (Nat.log 2 (s c))) :=
     Nat.pow_le_pow_right (by omega)
       (Nat.div_le_div_right (Nat.mul_le_mul_right _ (by omega)))

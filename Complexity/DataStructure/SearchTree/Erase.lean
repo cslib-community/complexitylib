@@ -172,11 +172,7 @@ theorem elements_erase {t : BinaryTree α} (ht : Ordered t) (x : α) :
           · exact Or.inr (Or.inr ⟨hyx, hy⟩)
       · have he : x = a := le_antisymm (le_of_not_gt ha) (le_of_not_gt hx)
         subst he
-        have hx : x ∉ elements l ∪ elements r := by
-          intro h
-          rcases Finset.mem_union.mp h with h | h
-          · exact lt_irrefl x (hla x h)
-          · exact lt_irrefl x (har x h)
+        have hx : x ∉ elements l ∪ elements r := by grind
         rw [elements_glue, elements, Finset.erase_insert hx]
 
 /-- The binary-search-tree invariant survives deletion. -/

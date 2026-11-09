@@ -221,8 +221,7 @@ private theorem tower_fanIn_le {B F p : ℕ} (hF : F ≤ B) (hp : p ≤ B) :
     simp [hF]
   have h1 : 2 * (B + 1) - 1 ≤ 3 * B := by omega
   have h2 : (p - 1) * B ≤ B * B := Nat.mul_le_mul_right B (by omega)
-  calc F * ((2 * (B + 1) - 1) * ((p - 1) * B)) ≤ B * (3 * B * (B * B)) :=
-        Nat.mul_le_mul hF (Nat.mul_le_mul h1 h2)
+  calc F * ((2 * (B + 1) - 1) * ((p - 1) * B)) ≤ B * (3 * B * (B * B)) := by gcongr
     _ = 3 * B ^ 4 := by ring
 
 private theorem tower_log_size_le {B e : ℕ} (hB : 1 ≤ B) (he : e ≤ 3 * B ^ 4) :
@@ -237,8 +236,7 @@ private theorem tower_log_size_le {B e : ℕ} (hB : 1 ≤ B) (he : e ≤ 3 * B ^
 
 private theorem tower_size_le {B B' p N e : ℕ} (hpB : p ≤ 2 ^ B) (hN : N ≤ 2 ^ B)
     (hle : B * (B + 1) + B * e ≤ B') : p ^ (B + 1) * N ^ e ≤ 2 ^ B' :=
-  calc p ^ (B + 1) * N ^ e ≤ (2 ^ B) ^ (B + 1) * (2 ^ B) ^ e :=
-        Nat.mul_le_mul (Nat.pow_le_pow_left hpB _) (Nat.pow_le_pow_left hN _)
+  calc p ^ (B + 1) * N ^ e ≤ (2 ^ B) ^ (B + 1) * (2 ^ B) ^ e := by gcongr
     _ = 2 ^ (B * (B + 1) + B * e) := by rw [← pow_mul, ← pow_mul, ← pow_add]
     _ ≤ 2 ^ B' := Nat.pow_le_pow_right (by norm_num) hle
 
@@ -272,8 +270,7 @@ private theorem collapseRun_spec [Fintype T] [DecidableEq T] (C : SymAnd T)
         _ < 2 ^ (B + 1) := Nat.pow_lt_pow_right (by norm_num) (Nat.lt_succ_self B)
         _ ≤ L.p ^ (B + 1) := Nat.pow_le_pow_left hp.two_le _
     have he := tower_fanIn_le hf hpB
-    have h45 : 3 * B ^ 4 ≤ 5 * B ^ 5 :=
-      Nat.mul_le_mul (by norm_num) (Nat.pow_le_pow_right hB (by norm_num))
+    have h45 : 3 * B ^ 4 ≤ 5 * B ^ 5 := by gcongr <;> omega
     have hB₁ : B ≤ 5 * B ^ 5 := by
       have : B ^ 1 ≤ B ^ 5 := Nat.pow_le_pow_right hB (by norm_num)
       rw [pow_one] at this
