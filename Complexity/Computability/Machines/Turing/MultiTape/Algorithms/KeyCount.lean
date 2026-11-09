@@ -254,11 +254,6 @@ theorem run_computable : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Mo
     apply Nat.pow_le_pow_left
     have hs := state_bound rows rows.length le_rfl
     omega
-  have empty_emit (s : State) (rows : List SortedMatch.Record) :
-      streamEmit step (fun _ => encBits []) s rows = [] := by
-    induction rows generalizing s with
-    | nil => rfl
-    | cons row rows ih => simpa only [streamEmit, encBits_apply, List.nil_append] using ih _
   obtain ⟨C, hc⟩ := ComputableTidilyInTimeAndSpace.streamFold
     (g := run) (encA := encFramed er) (encS := es) (encIn := encList er) (encOut := encNat)
     (next := step) (finish := finish)
@@ -267,7 +262,7 @@ theorem run_computable : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Mo
     hI.computableTidilyInTimeAndSpace hN hE.computableTidilyInTimeAndSpace hF
     (fun rows => by
       simp only [Function.const_apply, id_eq]
-      rw [empty_emit, List.nil_append]
+      simp only [encBits_apply, streamEmit_const_nil, List.nil_append]
       simp only [run, streamState, List.take_length])
     (tMax := fun rows => P (width rows)) (sMax := fun rows => P (width rows))
     (lMax := fun rows => 20 * width rows + 20)
