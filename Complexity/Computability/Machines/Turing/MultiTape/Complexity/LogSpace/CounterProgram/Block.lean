@@ -60,6 +60,14 @@ the choice, some branch reaches the label `T` with registers satisfying `G` abov
   ∃ regs', G regs' ∧ ∀ c : Bool, ∃ c' : Bool,
     Branches (P := P) (w := w) (l, c.toNat :: regs) (T, c'.toNat :: regs')
 
+/-- Transport an instruction fact along an equality of labels, for labels computed by `omega`. -/
+theorem instr_of_eq {l l' : ℕ} {i : Instr} (h : P.instr l = i) (hl : l = l') :
+    P.instr l' = i := hl ▸ h
+
+/-- Transport a code-placement fact along an equality of labels. -/
+theorem codeAt_of_eq {l l' : ℕ} {c : List Instr} (h : P.CodeAt l c) (hl : l = l') :
+    P.CodeAt l' c := hl ▸ h
+
 private theorem forall_mem_cons_toNat {c : Bool} {regs : List ℕ} (hB : 1 ≤ B)
     (h : ∀ r ∈ regs, r ≤ B) :
     ∀ r ∈ c.toNat :: regs, r ≤ B := by

@@ -76,10 +76,7 @@ private theorem append_singleton_isSuffix_iff {α : Type*} {u t : List α} {a c 
   constructor
   · rintro ⟨s, hs⟩
     rw [← List.append_assoc] at hs
-    have hlen : (s ++ u).length = t.length := by
-      have h := congrArg List.length hs
-      simp only [List.length_append, List.length_singleton] at h ⊢
-      omega
+    have hlen : (s ++ u).length = t.length := by grind [List.length_append, List.length_singleton]
     obtain ⟨hsu, hac⟩ := List.append_inj hs hlen
     exact ⟨⟨s, hsu⟩, List.singleton_inj.mp hac⟩
   · rintro ⟨⟨s, rfl⟩, rfl⟩
@@ -116,10 +113,7 @@ theorem isProperBorderLen_iff_take_eq_drop {α : Type*} {w : List α} {k : ℕ} 
   constructor
   · rintro ⟨hk, s, hs⟩
     refine ⟨hk, ?_⟩
-    have hslen : s.length = w.length - k := by
-      have hlen := congrArg List.length hs
-      simp only [List.length_append, List.length_take, Nat.min_eq_left (Nat.le_of_lt hk)] at hlen
-      omega
+    have hslen : s.length = w.length - k := by grind
     have hdrop : (s ++ w.take k).drop s.length = w.take k := List.drop_left
     rw [hs, hslen] at hdrop
     exact hdrop.symm
@@ -338,10 +332,7 @@ theorem borderLen_one {α : Type*} [DecidableEq α] (p : List α) : borderLen p 
 
 theorem borderLen_lt {α : Type*} [DecidableEq α] {p : List α} {q : ℕ}
     (hq : 0 < q) (hp : p ≠ []) : borderLen p q < q := by
-  have hlen : 0 < (p.take q).length := by
-    cases p with
-    | nil => exact False.elim (hp rfl)
-    | cons _ _ => simp only [List.length_take, List.length_cons]; omega
+  have hlen : 0 < (p.take q).length := by grind
   have hlt := maxBorderLen_lt_length hlen
   have htake_le : (p.take q).length ≤ q := List.length_take_le q p
   exact Nat.lt_of_lt_of_le hlt htake_le
@@ -395,14 +386,8 @@ theorem mem_borderChain_iff {α : Type*} [DecidableEq α] {p : List α} {q j : �
     j ∈ borderChain p q ↔ IsProperBorderLen (p.take q) j := by
   induction q using Nat.strongRecOn with
   | ind q ih =>
-    have hp : p ≠ [] := by
-      rintro rfl
-      simp only [List.length_nil] at hqp
-      omega
-    have hcond : ¬ (q = 0 ∨ p = []) := by
-      rintro (rfl | hp0)
-      · omega
-      · exact hp hp0
+    have hp : p ≠ [] := by grind
+    have hcond : ¬ (q = 0 ∨ p = []) := by grind
     have hlen : (p.take q).length = q := List.length_take_of_le hqp
     have hb_proper : IsProperBorderLen (p.take q) (borderLen p q) :=
       isProperBorderLen_maxBorderLen (by rw [hlen]; omega)
@@ -470,10 +455,7 @@ borders. -/
   else 0
 termination_by k
 decreasing_by
-  have hp : p ≠ [] := by
-    rintro rfl
-    simp only [List.length_nil] at hk
-    omega
+  have hp : p ≠ [] := by grind
   exact borderLen_lt (by omega) hp
 
 theorem nextLen_le_succ {α : Type*} [DecidableEq α] (p : List α) (k : ℕ) (c : α) :

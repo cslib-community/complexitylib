@@ -69,17 +69,11 @@ theorem advantage_scheme_eq_leveledAdversary {E : Scheme}
     (budget capacity : ℕ → ℕ) (adversary : Encryption.Adversary) (n width : ℕ)
     (hwidth : ∀ keys ∈ (ProbComp.eval (E.keyGen n)).support, keys.2.length = width)
     (hcapacity : width ≤ capacity n) :
-    Game.advantage
-      (ProbComp.eval (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
-        adversary false n))
-      (ProbComp.eval (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
-        adversary true n)) =
+    Encryption.advantage (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
+      adversary) n =
     4 * (dyadicSize (2 * budget n) : ℝ≥0) * dyadicSize (capacity n) *
-      Game.advantage
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (leveledAdversary E (fun n => 2 * budget n) capacity adversary) false n))
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (leveledAdversary E (fun n => 2 * budget n) capacity adversary) true n)) :=
+      Encryption.advantage (Encryption.game E.keyGen E.encrypt
+        (leveledAdversary E (fun n => 2 * budget n) capacity adversary)) n :=
   advantage_game_eq_leveledAdversary E budget capacity adversary n width hwidth hcapacity
 
 /-- Polynomial concrete-security bound for the depth-budgeted scheme `scheme D budget` with
@@ -92,17 +86,11 @@ theorem advantage_scheme_le_mul_leveledAdversary {E : Scheme}
     (budget capacity : ℕ → ℕ) (adversary : Encryption.Adversary) (n width : ℕ)
     (hwidth : ∀ keys ∈ (ProbComp.eval (E.keyGen n)).support, keys.2.length = width)
     (hcapacity : width ≤ capacity n) :
-    Game.advantage
-      (ProbComp.eval (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
-        adversary false n))
-      (ProbComp.eval (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
-        adversary true n)) ≤
+    Encryption.advantage (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
+      adversary) n ≤
     16 * (2 * budget n + 1 : ℝ≥0) * (capacity n + 1) *
-      Game.advantage
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (leveledAdversary E (fun n => 2 * budget n) capacity adversary) false n))
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (leveledAdversary E (fun n => 2 * budget n) capacity adversary) true n)) :=
+      Encryption.advantage (Encryption.game E.keyGen E.encrypt
+        (leveledAdversary E (fun n => 2 * budget n) capacity adversary)) n :=
   advantage_game_le_mul_leveledAdversary E budget capacity adversary n width hwidth hcapacity
 
 variable {E : Scheme}

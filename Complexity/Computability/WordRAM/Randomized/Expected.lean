@@ -14,6 +14,7 @@ public import Complexity.Probability.PMF.Bind
 public import Complexity.Probability.PMF.Event
 import Complexity.Foundations.Analysis.ENNRealTsum
 import Complexity.Probability.PMF.Expect
+import Complexity.Probability.PMF.Map
 
 /-!
 # Expected running time for randomized word RAMs
@@ -1620,15 +1621,6 @@ private theorem extend_left_injective {r' : ℕ} {f : Fin r → Fin r'} (hf : f.
   have h' := congrArg (Data.comap f) h
   simpa [Data.comap_extend hf] using h'
 
-private theorem pmf_map_apply_injective {α β : Type*} (p : PMF α) {g : α → β}
-    (hg : g.Injective) (a : α) :
-    p.map g (g a) = p a := by
-  rw [PMF.map_apply, tsum_eq_single a]
-  · simp
-  · intro a' ha'
-    have hne : g a ≠ g a' := hg.ne ha'.symm
-    simp [hne]
-
 private theorem pmf_map_apply_not_mem_range {α β : Type*} (p : PMF α) (g : α → β) {b : β}
     (hb : b ∉ Set.range g) :
     p.map g b = 0 := by
@@ -1759,7 +1751,7 @@ theorem rename {r' : ℕ} {f : Fin r → Fin r'} (hf : f.Injective) {x : Data r'
     have hx_eq : x = g (x.comap f) := (Data.extend_comap hf x).symm
     by_cases hy' : y' ∈ Set.range g
     · obtain ⟨y, rfl⟩ := hy'
-      rw [pmf_map_apply_injective _ hg,
+      rw [Probability.PMF.map_apply_of_injective _ hg,
         loopExitPMF_apply_of_hasSum (hasSum_loopExitDensity hp_pos hp_top hinv hp_exit hx_inv)]
       refine iSup_congr fun K => ?_
       have hiter : loopIterPMF (cond.rename f) μ_body' K x =
@@ -1770,7 +1762,7 @@ theorem rename {r' : ℕ} {f : Fin r → Fin r'} (hf : f.Injective) {x : Data r'
       by_cases hcy : ¬cond.Holds y
       · have hcy' : ¬(cond.rename f).Holds (g y) := by
           simpa [g, Cond.holds_rename, Data.comap_extend hf] using hcy
-        simp [Set.indicator_of_mem, hcy, hcy', pmf_map_apply_injective _ hg]
+        simp [Set.indicator_of_mem, hcy, hcy', Probability.PMF.map_apply_of_injective _ hg]
       · have hcy' : ¬¬(cond.rename f).Holds (g y) := by
           simpa [g, Cond.holds_rename, Data.comap_extend hf] using hcy
         simp [Set.indicator_of_notMem, hcy, hcy']

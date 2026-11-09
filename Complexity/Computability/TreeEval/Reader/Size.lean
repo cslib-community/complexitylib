@@ -191,8 +191,7 @@ theorem stateBudget_le {ℓ H : ℕ} {s : State} (hb : Bounds ℓ H s) :
   have hm := length_encMode_lt m
   have ht := length_encTag_lt c.toTuple.1
   obtain ⟨hacc₁, hacc₂⟩ := hacc
-  have hstk' : st.length * (4 * (L + 3) + 51) ≤ H * (4 * (L + 3) + 51) :=
-    Nat.mul_le_mul_right _ hst
+  have hstk' : st.length * (4 * (L + 3) + 51) ≤ H * (4 * (L + 3) + 51) := by gcongr
   have hX : regLen (State.toTuple ⟨e, h, p, R, st, m, c⟩) + e + 1 ≤ 5 * ℓ + 1 := by
     simp only [regLen, State.toTuple, Tuple.regs, Tuple.acc]; omega
   have hY : (encNat p).length + (encNat (st.headD dfr).round).length + (encNat e).length + 4 ≤

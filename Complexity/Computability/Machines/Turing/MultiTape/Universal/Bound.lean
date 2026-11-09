@@ -38,7 +38,8 @@ namespace Turing.MultiTapeTM.Universal
 
 /-! ### Numbers in the description -/
 
-lemma getD_le_length (o : Option ℕ) : o.getD 0 ≤ (eSym o).length := by
+/-- A symbol is at most the length of its encoding. -/
+public lemma getD_le_length_eSym (o : Option ℕ) : o.getD 0 ≤ (eSym o).length := by
   cases o <;> simp
 
 public lemma length_eSym_le {o : Option ℕ} {b : ℕ} (h : o.getD 0 ≤ b) :
@@ -50,40 +51,50 @@ variable (d : Desc)
 /-- The length of the encoded description, which bounds all numbers in it. -/
 public abbrev descLen : ℕ := (eDesc d).length
 
-lemma length_act_le' {e : Key × Act} (he : e ∈ d.table) : (eAct e.2).length ≤ descLen d := by
+/-- An action of a transition of a description is encoded within its length. -/
+public lemma length_act_le {d : Desc} {e : Key × Act} (he : e ∈ d.table) :
+    (eAct e.2).length ≤ descLen d := by
   have := length_le_encList_of_mem (encPair eKey eAct) he
   simp only [descLen, eDesc_apply, length_encPair] at this ⊢
   omega
 
-lemma next_le {e : Key × Act} (he : e ∈ d.table) : e.2.state.getD 0 ≤ descLen d := by
-  have := length_act_le' d he
-  have := getD_le_length e.2.state
+/-- The next state of a transition of a description is within its length. -/
+public lemma state_le {d : Desc} {e : Key × Act} (he : e ∈ d.table) :
+    e.2.state.getD 0 ≤ descLen d := by
+  have := length_act_le he
+  have := getD_le_length_eSym e.2.state
   simp only [eAct_apply, length_encPair] at *
   omega
 
-lemma out_le {e : Key × Act} (he : e ∈ d.table) : e.2.output.getD 0 ≤ descLen d := by
-  have := length_act_le' d he
-  have := getD_le_length e.2.output
+/-- The output symbol of a transition of a description is within its length. -/
+public lemma output_le {d : Desc} {e : Key × Act} (he : e ∈ d.table) :
+    e.2.output.getD 0 ≤ descLen d := by
+  have := length_act_le he
+  have := getD_le_length_eSym e.2.output
   simp only [eAct_apply, length_encPair] at *
   omega
 
-lemma write_le {e : Key × Act} (he : e ∈ d.table) {ta : TapeAct} (hta : ta ∈ e.2.workTapes) :
-    (ta.1.getD none).getD 0 ≤ descLen d := by
-  have h₁ := length_act_le' d he
+/-- A symbol written by a transition of a description is within its length. -/
+public lemma write_le {d : Desc} {e : Key × Act} (he : e ∈ d.table) {ta : TapeAct}
+    (hta : ta ∈ e.2.workTapes) : (ta.1.getD none).getD 0 ≤ descLen d := by
+  have h₁ := length_act_le he
   have h₂ := length_le_encList_of_mem eTA hta
-  have h₃ := getD_le_length (ta.1.getD none)
+  have h₃ := getD_le_length_eSym (ta.1.getD none)
   have h₄ : (eSym (ta.1.getD none)).length ≤ (encOption eSym ta.1).length := by
     cases ta.1 <;> simp
   simp only [eAct_apply, length_encPair] at *
   omega
 
-lemma q₀_le : d.q₀ ≤ descLen d := by
+/-- The initial state of a description is within its length. -/
+public lemma q₀_le : d.q₀ ≤ descLen d := by
   simp only [descLen, eDesc_apply, length_encPair, encUnary_apply, List.length_replicate]; omega
 
-lemma tapes_le : d.tapes ≤ descLen d := by
+/-- The number of work tapes of a description is within its length. -/
+public lemma tapes_le : d.tapes ≤ descLen d := by
   simp only [descLen, eDesc_apply, length_encPair, encUnary_apply, List.length_replicate]; omega
 
-lemma table_le : d.table.length ≤ descLen d := by
+/-- The number of transitions of a description is within its length. -/
+public lemma table_le : d.table.length ≤ descLen d := by
   have := length_le_length_encList (encPair eKey eAct) d.table
   simp only [descLen, eDesc_apply, length_encPair] at this ⊢
   omega
@@ -191,11 +202,11 @@ lemma Inv.step {x : List ℕ} {j : ℕ} {c : SCfg} (h : Inv (descLen d) x.length
       by simp⟩
   rw [show Universal.step d x c = (a.apply x c, a.output) by simp [Universal.step, hs, hf]]
   have he := List.mem_of_find?_eq_some hf
-  refine ⟨⟨next_le d he, moveInput_le h.inputPos _, ?_, fun t' ht' => ?_⟩, out_le d he⟩
+  refine ⟨⟨state_le he, moveInput_le h.inputPos _, ?_, fun t' ht' => ?_⟩, output_le he⟩
   · simpa [Act.apply, length_applyTapes_eq] using h.tapes
   · obtain ⟨t, ht, h' | ⟨ta, hta, h'⟩⟩ := mem_applyTapes ht'
     · exact h' ▸ (h.workTapes t ht).mono (Nat.le_succ _)
-    · exact h' ▸ (h.workTapes t ht).apply (write_le d he hta)
+    · exact h' ▸ (h.workTapes t ht).apply (write_le he hta)
 
 /-- The configuration and the output after `j` steps. -/
 public lemma inv_iterate (x : List ℕ) (j : ℕ) :

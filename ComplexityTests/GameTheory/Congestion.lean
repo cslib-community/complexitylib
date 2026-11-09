@@ -5,7 +5,8 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.GameTheory.Congestion.Affine
-import Complexity.GameTheory.Congestion.Nonatomic
+import Complexity.GameTheory.Congestion.Hedge
+import Complexity.GameTheory.Congestion.PigouBound
 
 /-!
 # Congestion games and the price of anarchy
@@ -16,7 +17,8 @@ social cost `4`, while splitting costs `3`, so the pure price of anarchy of this
 is at least `4/3`, within the `5/2` bound. Quadratic latencies are not affine. The bounds `5/2`
 and `4/3` are sharp: no smaller constant bounds the price of anarchy over all affine instances.
 A nonatomic network with linear latencies `x` and `2 x` has a Wardrop equilibrium that is also
-optimal, and a feasible flow that is not a Wardrop equilibrium.
+optimal, and a feasible flow that is not a Wardrop equilibrium. Hedge dynamics on `twoLinks` start
+uniform, and the price-of-anarchy bound for Hedge dynamics applies to it for every horizon.
 -/
 
 namespace ComplexityTests.GameTheory.Congestion
@@ -82,6 +84,43 @@ example : (Convexity.StdSimplex.single (fun _ => (0 : Fin 2))).weights.sum
     ≤ 5 / 2 * twoLinks.toCostGame.socialCost ![0, 1] :=
   twoLinks.expected_socialCost_le twoLinks_hasAffineLatencies
     twoLinks_isPureNash.isCoarseCorrelatedEquilibrium _
+
+/-- The costs of `twoLinks` are bounded by `2`. -/
+theorem twoLinks_abs_cost_le (i : Fin 2) (s : Fin 2 → Fin 2) :
+    |twoLinks.toCostGame.cost i s| ≤ 2 := by
+  have hload : twoLinks.load s (s i) ≤ 2 :=
+    (Finset.card_filter_le _ _).trans (by simp)
+  rw [CongestionGame.toCostGame_cost]
+  change |∑ e ∈ ({s i} : Finset (Fin 2)), twoLinks.latency e (twoLinks.load s e)| ≤ 2
+  rw [Finset.sum_singleton]
+  simp only [twoLinks]
+  split_ifs
+  · rw [abs_of_nonneg (Nat.cast_nonneg _)]
+    exact_mod_cast hload
+  · norm_num
+
+/-- In the first round of Hedge dynamics both players split evenly. -/
+example (M : ℝ) (T : ℕ) (i : Fin 2) (a : Fin 2) :
+    twoLinks.toCostGame.hedgeProb M T 0 i a = 1 / 2 := by
+  rw [CostGame.hedgeProb_zero, Fintype.card_fin, Nat.cast_ofNat]
+
+/-- The price-of-anarchy bound for Hedge dynamics applies to `twoLinks` for every horizon `T ≥ 1`:
+the time-averaged expected social cost is at most `5/2 · 3 + 12 √(ln 2 / T)`. -/
+example (T : ℕ) (hT0 : 0 < T) :
+    (timeAverage (twoLinks.toCostGame.hedgeDist 2 T) T hT0).weights.sum
+        (fun s w => w * twoLinks.toCostGame.socialCost s)
+      ≤ 5 / 2 * 3 + 12 * √(Real.log 2 / T) := by
+  have hlog : Real.log 2 ≤ T := by
+    have h1 : Real.log 2 ≤ 2 - 1 := Real.log_le_sub_one_of_pos (by norm_num)
+    have h2 : (1 : ℝ) ≤ T := by exact_mod_cast hT0
+    linarith
+  have h := twoLinks.timeAverage_hedgeDist_socialCost_le twoLinks_hasAffineLatencies
+    (by norm_num : (0 : ℝ) < 2) twoLinks_abs_cost_le hT0
+    (fun _ => by rw [Fintype.card_fin, Nat.cast_ofNat]; exact hlog) ![0, 1]
+  rw [twoLinks_socialCost_split] at h
+  simp only [Fintype.card_fin, Nat.cast_ofNat, Finset.sum_const, Finset.card_univ,
+    nsmul_eq_mul] at h
+  linarith
 
 /-- A quadratic latency is not affine. -/
 example : ¬ (⟨fun _ _ => {()}, fun _ k => (k : ℝ) ^ 2⟩ :
