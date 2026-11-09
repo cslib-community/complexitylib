@@ -296,4 +296,17 @@ example (x : Data 4) : (x.set c 7).regs c = 7 := by
 example (x : Data 4) : ∃ y, ExecWithin 8 straight x y 6 ∧ y.mem 5 = 7 := by
   wram_exec +decide
 
+-- Exact subtraction written as `Op.alu`: its value depends on comparing the operands, so it does
+-- not unfold to `some v`; `Op.exactBin` instructions have their own rules.
+/-- error: wram_exec: could not evaluate
+  Basis.exact.interp 8 (StandardOp.bin BinOp.sub) fun a => x.regs (![WordRAMSymbolicExec.a, b] a)
+It simplifies to
+  StandardOp.evalExact 8 (StandardOp.bin BinOp.sub) fun a => x.regs (![WordRAMSymbolicExec.a, b] a)
+which does not have the form
+  some ?v -/
+#guard_msgs (whitespace := lax) in
+example (x : Data 4) (ha : x.regs a = 1) (hb : x.regs b = 2) :
+    ∃ y, ExecWithin 8 (.op (.alu (B := .exact) (.bin .sub) c ![a, b])) x y 1 ∧ y.regs c = 0 := by
+  wram_exec [ha, hb]
+
 end CslibFrontierTests.WordRAMSymbolicExec

@@ -350,13 +350,8 @@ private meta def injective? (f : Expr) : MetaM (Option Expr) := do
       | return none
     return if f' == f then some d.toExpr else none
 
-/-- The body of `e` under its leading `∀` binders, with loose bound variables. -/
-meta def forallBody : Expr → Expr
-  | .forallE _ _ b _ => forallBody b
-  | e => e
-
 /-- The sides `a` and `b` of a statement `a ≠ b` or `¬a = b`. -/
-meta def neSides? (p : Expr) : Option (Expr × Expr) :=
+private meta def neSides? (p : Expr) : Option (Expr × Expr) :=
   if p.isAppOfArity ``Ne 3 then some (p.getArg! 1, p.getArg! 2)
   else if p.isAppOfArity ``Not 1 && p.appArg!.isAppOfArity ``Eq 3 then
     some (p.appArg!.getArg! 1, p.appArg!.getArg! 2)
@@ -366,11 +361,11 @@ meta def neSides? (p : Expr) : Option (Expr × Expr) :=
 `hd : ∀ i j, src i ≠ tmp j` separates two renamed banks of registers. The instance is found by
 unifying `a` and `b` with the names at reducible transparency, and every bound variable must be
 determined by them, so that a hypothesis with premises is not used. Gives `j ≠ i`. -/
-meta def forallNe? (j i : Expr) : MetaM (Option Expr) := do
+private meta def forallNe? (j i : Expr) : MetaM (Option Expr) := do
   (← getLCtx).findDeclRevM? fun d => do
     if d.isImplementationDetail then return none
     let ty := (← instantiateMVars d.type).cleanupAnnotations
-    unless ty.isForall && (neSides? (forallBody ty)).isSome do return none
+    unless ty.isForall && (neSides? ty.getForallBody).isSome do return none
     withNewMCtxDepth do
       let (xs, _, body) ← forallMetaTelescope ty
       let some (a, b) := neSides? body | return none
@@ -477,7 +472,7 @@ private meta def reduceWriteMemStep (e : Expr) : SimpM Simp.Step := do
 
 /-- Evaluate an operation of a basis, `B.interp w f vals`, by unfolding it, when it unfolds to a
 value `some v`; otherwise leave it. -/
-meta def reduceInterpStep (e : Expr) : SimpM Simp.DStep := do
+private meta def reduceInterpStep (e : Expr) : SimpM Simp.DStep := do
   let_expr Basis.interp _ _ _ _ := e | return .continue
   let e ← whnfD e
   return if e.isAppOfArity ``Option.some 2 then .visit e else .continue
