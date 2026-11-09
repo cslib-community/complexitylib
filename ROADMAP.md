@@ -741,7 +741,7 @@ Social welfare and social choice functions on strict rankings, from Arrow's impo
 - **Ropes** ([#3670](https://github.com/cslib-community/cslib-frontier/issues/3670)): a persistent sequence over an arbitrary element type, stored as an AVL-balanced binary tree with bounded non-empty chunks at its leaves and verified against `List`.
   Indexing, concatenation by join and positional splitting, with insertion, range erasure, extraction and replacement derived from split and join.
   Explicit cost bounds in `TimeM` on the same definitions, counting internal nodes inspected and elements copied: join linear in the height difference and split logarithmic in the length.
-- **B-trees** ([#3674](https://github.com/cslib-community/cslib-frontier/issues/3674)): comparison bounds for B-tree operations in CSLib's query model, with linear and binary in-node search, and the `⌈log₂(n + 1)⌉` comparison lower bound for search, which a bulk-loaded tree meets.
+- **B-trees** ([#3674](https://github.com/cslib-community/cslib-frontier/issues/3674)): comparison bounds for B-tree operations in CSLib's query model, with linear and binary in-node search, and the `⌈log₂(n + 1)⌉` comparison lower bound for search.
   Read-only operations behind a node-access oracle, whose query counts equal the node-visit counts.
   B+-trees, with only separator keys in interior nodes and every entry in a leaf: structure, queries, updates, bulk loading and the same cost bounds.
 
