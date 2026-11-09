@@ -111,14 +111,14 @@ class QuickCheckTests(unittest.TestCase):
 
     def test_relocated_source_directory(self):
         with (self.root / "lakefile.toml").open("a") as f:
-            f.write('[[lean_lib]]\nname = "Abstracts"\nsrcDir = "abstracts"\n')
-        self.write("abstracts/Abstracts.lean", "import Abstracts.Topic\n")
-        self.write("abstracts/Abstracts/Topic.lean", "import Demo.Base\n")
-        self.write("DemoTests/Client.lean", "import Abstracts\n")
+            f.write('[[lean_lib]]\nname = "Relocated"\nsrcDir = "relocated"\n')
+        self.write("relocated/Relocated.lean", "import Relocated.Topic\n")
+        self.write("relocated/Relocated/Topic.lean", "import Demo.Base\n")
+        self.write("DemoTests/Client.lean", "import Relocated\n")
         self.commit()
         self.git("update-ref", "refs/remotes/origin/main", "HEAD")
         self.write("Demo/Base.lean", "def value : Nat := 2\n")
-        self.assertIn("Abstracts.Topic", self.plan().targets)
+        self.assertIn("Relocated.Topic", self.plan().targets)
         self.assertIn("DemoTests.Client", self.plan().targets)
 
     def test_explicit_base_uses_merge_base(self):
@@ -202,6 +202,80 @@ class QuickCheckTests(unittest.TestCase):
                     self.assertEqual(quick.main([], self.root), lint_status)
                 self.assertEqual(calls, expected)
 
+    def use_lint_driver(self, extra=""):
+        """Configure runLinter for the default `Demo` and `Other` libraries; tests stay unlinted.
+
+        `Demo.Side` is a second importer of `Demo.Base`, and `Other.Use` one in another package.
+        """
+        self.write("lakefile.toml", 'name = "quickfixture"\nlintDriver = "batteries/runLinter"\n'
+                   'defaultTargets = ["Demo", "Other"]\n' + extra + '[[lean_lib]]\nname = "Demo"\n'
+                   '[[lean_lib]]\nname = "DemoTests"\n[[lean_lib]]\nname = "Other"\n')
+        self.write("Demo.lean", "import Demo.Base\nimport Demo.Middle\nimport Demo.Side\n")
+        self.write("Demo/Side.lean", "import Demo.Base\ndef side := value\n")
+        self.write("Other.lean", "import Other.Use\n")
+        self.write("Other/Use.lean", "import Demo.Middle\ndef use := middle\n")
+        self.commit()
+        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
+
+    def test_lint_lists_affected_library_modules_and_lints_each_package_through_its_clients(self):
+        self.use_lint_driver()
+        self.write("Demo/Base.lean", "def value : Nat := 2\n")
+        plan = self.plan()
+        # `Demo.Base` is checked once, through one of its two importers in `Demo`. `Other.Use`
+        # imports it too, but linting `Other.Use` covers only package `Other`.
+        self.assertEqual(plan.lint, {"Demo.Middle": ["Demo.Base", "Demo.Middle"],
+                                     "Demo.Side": ["Demo.Side"], "Other.Use": ["Other.Use"]})
+        self.assertIn("DemoTests.Client", plan.targets)
+
+    def test_lint_scope_without_driver_or_library_changes(self):
+        self.write("Demo/Base.lean", "def value : Nat := 2\n")
+        self.assertEqual(self.plan().lint, {})
+        self.use_lint_driver()
+        self.write("DemoTests/Client.lean", "import Demo.Middle\nexample : Nat := middle + 1\n")
+        self.assertEqual(self.plan().lint, {})
+
+    def test_other_lint_driver_or_changed_linter_falls_back(self):
+        self.write("lakefile.toml", 'lintDriver = "other/driver"\n'
+                   + (self.root / "lakefile.toml").read_text())
+        self.commit()
+        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
+        self.write("Demo/Base.lean", "def value : Nat := 2\n")
+        with self.assertRaisesRegex(quick.FullCheck, "lint driver"):
+            self.plan()
+        self.use_lint_driver()
+        self.write("Demo/Base.lean", "@[env_linter] def value : Nat := 2\n")
+        with self.assertRaisesRegex(quick.FullCheck, "linter"):
+            self.plan()
+
+    def test_lint_runs_one_process_per_target_after_the_build(self):
+        lint = {"Demo.Middle": ["Demo.Base", "Demo.Middle"], "Demo.Side": ["Demo.Side"]}
+        plan = quick.Plan("base", ["Demo.Base", "Demo.Middle", "Demo.Side"], [], lint)
+        for lint_status in (0, 5):
+            with self.subTest(lint_status=lint_status):
+                calls, listings = [], []
+
+                def run(root, command, label):
+                    calls.append(command)
+                    if command[:2] == ["lake", "lint"]:
+                        listing = Path(command[4].removeprefix("--only-modules="))
+                        listings.append(listing)
+                        self.assertEqual(listing.read_text().split(), lint[command[5]])
+                        # The first target fails; the second still runs, reporting all failures.
+                        return lint_status if len(listings) == 1 else 0
+                    return 0
+
+                with patch.object(quick, "make_plan", return_value=plan), \
+                     patch.object(quick, "run_check", side_effect=run):
+                    self.assertEqual(quick.main([], self.root), lint_status)
+                expected = [["lake", "build", "--wfail", "--iofail", *plan.targets],
+                            *(["lake", "lint", "--", "--no-build", f"--only-modules={listing}",
+                               target] for listing, target in zip(listings, lint))]
+                if not lint_status:
+                    expected.append(["lake", "exe", "mk_all", "--check"])
+                self.assertEqual(calls, expected)
+                self.assertEqual(len(listings), 2)
+                self.assertFalse(any(listing.exists() for listing in listings))
+
     def test_deleted_or_renamed_module_falls_back(self):
         (self.root / "Demo/Base.lean").rename(self.root / "Demo/Renamed.lean")
         with self.assertRaises(quick.FullCheck):
@@ -213,55 +287,6 @@ class QuickCheckTests(unittest.TestCase):
         self.commit()
         self.git("update-ref", "refs/remotes/origin/main", "HEAD")
         with self.assertRaises(quick.FullCheck):
-            self.plan()
-
-    def add_on_demand_library(self, ignored=True):
-        """A library like the comparator challenges: empty default facets, generated sources."""
-        with (self.root / "lakefile.toml").open("a") as f:
-            f.write('[[lean_lib]]\nname = "DemoChallenges"\nroots = []\n'
-                    'globs = ["DemoChallenges.+"]\ndefaultFacets = []\n')
-        if ignored:
-            self.write(".gitignore", ".lake/\n/DemoChallenges/\n")
-        self.commit()
-        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
-
-    def test_absent_on_demand_library_keeps_quick_plan(self):
-        self.add_on_demand_library()
-        self.write("Demo/Base.lean", "def value : Nat := 2\n")
-        self.assertEqual(self.plan().targets,
-                         ["Demo.Base", "Demo.Middle", "DemoTests.AllClient", "DemoTests.Client"])
-
-    def test_ignored_on_demand_sources_are_not_planned(self):
-        self.add_on_demand_library()
-        self.write("DemoChallenges/Hole.lean", "import Demo.Base\ntheorem hole : value = 2 := sorry\n")
-        self.write("Demo/Base.lean", "def value : Nat := 2\n")
-        self.assertEqual(self.plan().targets,
-                         ["Demo.Base", "Demo.Middle", "DemoTests.AllClient", "DemoTests.Client"])
-
-    def test_tracked_on_demand_sources_are_still_planned(self):
-        self.add_on_demand_library(ignored=False)
-        self.write("DemoChallenges/Client.lean", "import Demo.Base\nexample : Nat := value\n")
-        self.commit()
-        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
-        self.write("Demo/Base.lean", "def value : Nat := 2\n")
-        self.assertIn("DemoChallenges.Client", self.plan().targets)
-
-    def test_importing_absent_or_ignored_on_demand_source_falls_back(self):
-        self.add_on_demand_library()
-        self.write("DemoTests/Client.lean", "import DemoChallenges.Hole\n")
-        with self.assertRaisesRegex(quick.FullCheck, "missing local import"):
-            self.plan()
-        self.write("DemoChallenges/Hole.lean", "import Demo.Base\n")
-        with self.assertRaisesRegex(quick.FullCheck, "missing local import"):
-            self.plan()
-
-    def test_nonempty_default_facets_fall_back(self):
-        with (self.root / "lakefile.toml").open("a") as f:
-            f.write('defaultFacets = ["shared"]\n')
-        self.commit()
-        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
-        self.write("Demo/Base.lean", "def value : Nat := 2\n")
-        with self.assertRaisesRegex(quick.FullCheck, "default facets"):
             self.plan()
 
     def test_missing_local_import_falls_back(self):
@@ -393,7 +418,7 @@ class LocalManualGateTests(unittest.TestCase):
     write = QuickCheckTests.write
 
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="complexitylib-manual-gates-")
+        self.temp = tempfile.TemporaryDirectory(prefix="cslib-frontier-manual-gates-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         for source in ("scripts/check.sh", "scripts/check_operator_manual.py", "manual/data/visuals.py"):
@@ -443,7 +468,7 @@ class LocalManualGateTests(unittest.TestCase):
                     ["lake", "test", "--wfail", "--iofail"], ["lake", "lint"],
                     ["lake", "exe", "lint-style"], ["lake", "exe", "checkInitImports"]]
                 self.assertEqual(commands[1:], expected)
-                self.assertFalse(list(self.root.glob("complexitylib-check.*")))
+                self.assertFalse(list(self.root.glob("cslib-frontier-check.*")))
                 self.log.unlink()
         bad = self.run_gate("--not-an-option")
         self.assertEqual(bad.returncode, 2)
@@ -472,11 +497,22 @@ class LocalManualGateTests(unittest.TestCase):
 class RepositoryLayoutTests(unittest.TestCase):
     def test_repository_libraries_are_in_quick_scope(self):
         # An unsupported library layout in the real lakefile sends every quick check to all six
-        # gates; #1729's `defaultFacets = []` did so unnoticed.
-        modules, aggregates, roots, _ = quick.source_modules(REPO)
-        self.assertIn("Complexity", aggregates)
-        self.assertIn("ComplexityComparatorChallenges", roots)
-        self.assertIn("ComplexityTests.Axioms", modules)
+        # gates; #1729's `defaultFacets = []` once did so unnoticed.
+        modules, aggregates, roots = quick.source_modules(REPO)
+        self.assertIn("CslibFrontier", aggregates)
+        self.assertIn("CslibFrontierResults", aggregates)
+        self.assertIn("CslibFrontierTests", roots)
+        self.assertIn("CslibFrontierTests.Axioms", modules)
+
+    def test_repository_lint_driver_is_in_quick_scope(self):
+        # Another lint driver or invalid default targets would send every quick check to all six
+        # gates; the default libraries' modules are linted and the tests are not, as in CI.
+        lint = quick.lint_scope(
+            REPO, {"CslibFrontier", "CslibFrontierResults"},
+            {"CslibFrontier.A", "CslibFrontierResults.B", "CslibFrontierTests.C"},
+            quick.defaultdict(set))
+        self.assertEqual(lint, {"CslibFrontier.A": ["CslibFrontier.A"],
+                                "CslibFrontierResults.B": ["CslibFrontierResults.B"]})
 
 
 class NativeLeanTests(unittest.TestCase):

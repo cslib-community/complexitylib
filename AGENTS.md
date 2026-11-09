@@ -1,15 +1,18 @@
 # Project Instructions
 
-Complexitylib is a Lean 4 library of computational complexity theory built on **cslib**
-(`leanprover/cslib`). Library modules must be upstreamable unchanged apart from rewriting
-`Complexity.` → `Cslib.`. General mathematics destined for Mathlib and local project scaffolding
-are documented exceptions; see `UPSTREAM.md` and the source markers.
+cslib-frontier is the frontier formalization library for **cslib** (`leanprover/cslib`): a Lean 4
+library covering computer science generally, including algorithms and data structures,
+complexity, cryptography, logic and models of computation. Library modules must be upstreamable
+unchanged apart from rewriting `CslibFrontier.` → `Cslib.`. General mathematics destined for Mathlib
+and local project scaffolding are documented exceptions, recorded in each module's `-- upstream:`
+marker.
 
 Read the pinned cslib `AGENTS.md`, `CONTRIBUTING.md` and `CODESTYLE.md` in
 `.lake/packages/cslib` (or a checkout at the same revision). Follow its mathematical, API and
 style conventions. This repository's workflow, validation and test layout are defined here and
 in `CONTRIBUTING.md`; when submitting upstream, follow that repository's current process.
-`ROADMAP.md` records outstanding directions; `UPSTREAM.md` records coordination decisions.
+`ROADMAP.md` records outstanding directions; `CONTRIBUTING.md` (Upstreaming) lists live upstream
+coordination threads.
 
 At the start of work and when resuming, read the current checkout's instructions. Old task text
 and copied policy snapshots may describe superseded decisions. Surface material conflicts with
@@ -97,8 +100,7 @@ when a milestone completes only part of it.
    resolve overlapping claims before editing, and check ownership when returning.
 4. Implement, self-review and validate. Assess both manuals for every change and update affected
    instructions, reference sections and checked examples in the same change, following
-   [the manual requirements](CONTRIBUTING.md#maintaining-the-manuals). Update selected
-   abstracts when the change affects them, according to the requirements below.
+   [the manual requirements](CONTRIBUTING.md#maintaining-the-manuals).
 5. Open a PR with validation and limitations; link its issue when there is one and request
    coordinator review. Record the handoff once. Awaiting review is not abandoned work. Keep
    linked issues open until integration or an explicit disposition.
@@ -127,7 +129,8 @@ tooling.
 - Resolve ownership and dependency conflicts, and help stale tasks reach a useful next step.
 - Require review of both the Operator's Manual and the Agent Operator's Manual, including any
   reason that no edit is needed. Make this part of reviewing and integrating each change.
-  Check affected `ROADMAP.md`, `abstracts/catalogue.json`, `UPSTREAM.md` and other documentation.
+  Check affected `ROADMAP.md`, the [results inventory](results/README.md), upstream markers, the
+  coordination threads in `CONTRIBUTING.md` and other documentation.
   Preserve source credit and the distinction between a completed milestone and its open objective.
 - Merge only with required validation and independent review of the current revision. Reviewers
   queue the heads they approve ([Approve and queue](#approve-and-queue)); coordinators queue any
@@ -174,7 +177,9 @@ cannot damage the user's checkout or another worker's repository.
 
 Machines are shared between agents. Stop only processes and tasks you started, by PID or task
 ID; never use pattern-based kills such as `pkill -f`, which also hit other agents' builds. Keep
-scratch files under a directory or name unique to your agent.
+scratch files under a directory or name unique to your agent. Concurrent Lean builds can
+exhaust the host's file handles before its processors; agree on a limit on concurrent builds
+(see [the troubleshooting chapter](manual/workflows/troubleshooting.md#diagnose-too-many-open-files-in-system)).
 
 ### Placement and reuse
 
@@ -219,7 +224,7 @@ benchmark campaign or separate design study for every small improvement.
 Bootstrap a cold checkout with `scripts/cache/ensure.sh` before Lean elaboration or building.
 Retry when needed artifacts are missing or toolchain/dependency changes require new ones;
 a new commit or branch switch alone does not require a manual bootstrap if outputs are warm.
-MCP's `lean_build(fetch_cache=true)` fetches Mathlib's cache, not Complexitylib's. Cache misses
+MCP's `lean_build(fetch_cache=true)` fetches Mathlib's cache, not cslib-frontier's. Cache misses
 or download failures leave Lean to compile missing outputs. The helper's actual retry behavior
 and opt-out for warm local builds are documented in [the cache guide](scripts/cache/README.md).
 
@@ -263,19 +268,20 @@ any Lean examples introduced; a local whole-library rebuild is unnecessary.
 For the edit loop, `scripts/check.sh --quick [--base REF]` builds changed Lean modules and their
 transitive importing clients, then checks import aggregates. The comparison uses the merge base
 with local `origin/main` by default, including committed, staged, unstaged and untracked changes;
-it does not fetch. Quick mode skips the global test/lint/style/init-import gates and is not full
-validation. Non-Lean changes, deletions/renames, changed aggregates, unsupported layouts and
-ambiguous change/import analysis fall back to all six gates. The one exception is
+it does not fetch. Quick mode lints only the affected library modules, skips the global
+test/style/init-import gates and is not full validation. Non-Lean changes, deletions/renames,
+changed aggregates, unsupported layouts and ambiguous change/import analysis fall back to all
+six gates. The one exception is
 `scripts/encoding_readability_baseline.json`, which no Lean gate reads: a change to it runs the
 encoding-readability lint instead. Quick success alone does not satisfy the full validation
 requirement above; documentation-only checks need not invoke quick mode.
 
-`lake exe mk_all` regenerates `Complexity.lean` after adding a file. New test files go in
-`ComplexityTests/`; the test library is built from a Lake glob, so there is no aggregator to update.
+`lake exe mk_all` regenerates `CslibFrontier.lean` after adding a file. New test files go in
+`CslibFrontierTests/`; the test library is built from a Lake glob, so there is no aggregator to update.
 
 ## File rules
 
-1. **Path and namespace mirror cslib.** `Complexity/Foundations/Data/Encoding.lean` is destined
+1. **Path and namespace mirror cslib.** `CslibFrontier/Foundations/Data/Encoding.lean` is destined
    for `Cslib/Foundations/Data/Encoding.lean`; multi-tape machine files use the upstream root
    namespace `Turing`, everything else `Cslib.*` as upstream does.
 2. **File template:** use the Apache header below, `module`, an `-- upstream:` marker,
@@ -294,7 +300,7 @@ requirement above; documentation-only checks need not invoke quick mode.
    module
    -- upstream: candidate
 
-   public import Complexity.Init
+   public import CslibFrontier.Init
 
    /-!
    # <Module topic>
@@ -304,26 +310,55 @@ requirement above; documentation-only checks need not invoke quick mode.
 
    public section
    ```
+   In a new file, `<authors>` names (a) the originator(s) of the issue or proposal the file
+   implements: the person named in the issue's "Originated by" field when someone wrote the issue
+   on their behalf, and otherwise the issue's author; and (b) the person whose agents did the
+   implementation (the human, not a fleet or bot account). The rule applies going forward, not
+   retroactively: existing headers stay unless someone asks for a correction. A port still keeps
+   the original authors (rule 3).
 3. **Upstream marker** values: `candidate`, `submitted #N @SHA` (a copy of an open cslib pull
    request at its head `SHA`), `vendored <owner>:<branch> @SHA (unsubmitted)` (a copy of a branch
-   of a contributor's cslib fork that has no pull request yet), `merged @SHA` (delete the file and
-   bump the pin in the same commit), `local-only (reason)`. Nothing is `local-only` without a
-   reason; valid reasons are project scaffolding and tests of local-only files.
+   of a contributor's cslib fork that has no pull request yet), `merged @SHA` (a deprecated shim
+   for a module that cslib provides from its commit `SHA`; see below), `local-only (reason)`.
+   Nothing is `local-only` without a reason; valid reasons are project scaffolding and tests of
+   local-only files.
+   When the pin adopts a module, whether it was upstreamed from here or copied from upstream
+   work, the commit that bumps the pin replaces the file with a deprecated shim instead of
+   deleting it, so that downstream `import CslibFrontier.X` keeps working with a warning. The shim
+   keeps the file's copyright header and otherwise contains only the following, where `Cslib.X`
+   is the upstream module and the date is that of the pin bump:
+   ```lean
+   module -- shake: keep-all
+   -- upstream: merged @SHA
+
+   public import Cslib.X
+
+   deprecated_module "upstreamed to cslib" (since := "YYYY-MM-DD")
+   ```
+   `deprecated_module` is Lean's core command, and Mathlib writes its stubs the same way:
+   importing the shim warns and names `Cslib.X` as the replacement. Because `--wfail` builds fail
+   on that warning, the same commit points every in-repository import at `Cslib.X`; only the
+   generated `CslibFrontier.lean` imports the shim, under its `-- deprecated_module: ignore`
+   pragma. Shims are the one exception to the rule against compatibility wrappers under
+   [Proof hygiene](#proof-hygiene). Delete a shim once its `since` date is six months old,
+   Mathlib's window for removing deprecations; a pin bump that moves or removes `Cslib.X`
+   repoints or deletes the shim itself.
    A port keeps the authors of the files it is ported from: v1's PCP internals, Sipser–Lautemann
    and containment internals are by Bolton Bailey, so their ports carry
    `Copyright (c) 2026 Bolton Bailey, Samuel Schlesinger` and `Authors: Bolton Bailey, Samuel
    Schlesinger`; ports of Christian Reitwiessner's work carry his name likewise. Check the v1
    file's `Authors:` line before porting.
-4. **Every module publicly imports `Cslib.Init`** (through `Complexity.Init`); the test driver
+4. **Every module publicly imports `Cslib.Init`** (through `CslibFrontier.Init`); the test driver
    runs `checkInitImports`.
 5. **Reuse upstream first.** Before defining anything, search cslib (`.lake/packages/cslib/Cslib`,
-   or the local `../cslib/Cslib` checkout) and the
-   in-flight PRs recorded in source markers, and consult `UPSTREAM.md`. A thin local copy of an
+   or the local `../cslib/Cslib` checkout) and the in-flight PRs recorded in source markers, and
+   consult the coordination threads in `CONTRIBUTING.md` (Upstreaming). A thin local copy of an
    unmerged upstream PR (or an unsubmitted branch of an upstream contributor) is allowed at the
    mirrored path, keeping the
    original authors and declaration names, marked `-- upstream: submitted #N @SHA` (or
    `vendored …`). A copy holds only what the pinned cslib lacks: when a PR modifies an existing
-   cslib file, the copy contains just its additions. Copies are deleted when the pin adopts the merged work.
+   cslib file, the copy contains just its additions. When the pin adopts the merged work, the
+   copy becomes a deprecated shim (rule 3).
 6. **Bit strings.** Declarations about bit strings and the cube `ι → Bool` (operations, sampling,
    Fourier analysis, sensitivity, influence, codes) live in `Cslib.BitString`; only the named
    Boolean functions `parityOn`, `parity`, `threshold`, `majority`, `strictMajority` sit in `Cslib`
@@ -339,13 +374,16 @@ requirement above; documentation-only checks need not invoke quick mode.
 
 Keep the cslib pin on an upstream `main` SHA. Coordinate updates in focused dependency PRs,
 fixing breakage in the same change; update it within another task when that task needs new
-upstream code or removes a merged copy. Merely inspecting upstream does not require a pin bump.
+upstream code or turns a merged module into its shim. Merely inspecting upstream does not
+require a pin bump.
 
 Run `scripts/upstream_sync.py` during synchronization work. Inspect changed, merged or closed
-upstream PRs against source markers and `UPSTREAM.md`; preserve documented local adaptations
-and contributor work rather than blindly replacing copies. When adopting merged work, advance
-the pin past it and remove the superseded local copy together. Record unresolved decisions in
-`UPSTREAM.md` or a linked task instead of expanding an unrelated PR.
+upstream PRs against source markers, `-- vendored:` comments and module docstrings; preserve
+documented local adaptations and contributor work rather than blindly replacing copies. When
+adopting merged work, advance the pin past it and, in the same commit, replace the superseded
+local file with its deprecated shim ([file rule 3](#file-rules)). Record unresolved decisions in
+the module's marker or docstring, the coordination threads in `CONTRIBUTING.md`, or a linked issue
+instead of expanding an unrelated PR.
 
 ## Proof hygiene
 
@@ -373,10 +411,10 @@ purpose, not its letter.
   intermediate value would not improve readability. Check affected proofs when changing notation.
 - Before the first supported release, do not add deprecated aliases or compatibility wrappers
   for renamed, moved, removed or privatized declarations. Update all in-repository clients
-  (library, tests, abstracts and guide) and remove the superseded interface in the same change.
+  (library, tests, results inventory and guide) and remove the superseded interface in the same change.
   Remove obsolete aliases as part of the relevant migration, not unrelated cleanup. Revisit
   compatibility guarantees before supporting external consumers.
-- `ComplexityTests/Axioms.lean` audits all declarations stored in imported `Complexity` modules
+- `CslibFrontierTests/Axioms.lean` audits all declarations stored in imported `CslibFrontier` modules
   for dependencies beyond `propext`, `Classical.choice` and `Quot.sound`. Because that audit
   already covers the standard set, add a named `#print axioms` guard only when a result is meant
   to depend on fewer axioms than these three, for example a choice-free result; place it in the
@@ -426,8 +464,8 @@ that it preserves meaning, exported availability, attributes, imports and automa
 and checks affected clients. Record that limited carry-forward decision. A typo fix may qualify,
 and [Restacks](#restacks) gives a mechanical check for merging `main` or rebasing; a proof repair,
 privatization, changed test coverage or a conflict resolution that changes the PR's own lines is
-not automatically mechanical. Changed reasoning, API, source claims, security claims or abstracts,
-and uncertain cases, need fresh non-author review of the affected delta.
+not automatically mechanical. Changed reasoning, API, source claims or security claims, and
+uncertain cases, need fresh non-author review of the affected delta.
 
 A non-authoring agent may independently review work from the same coordinator or account. It must
 inspect the source and evidence in a separate review context and reach its own verdict; an
@@ -469,8 +507,15 @@ Merge `main` into a PR only when it conflicts with `main`, needs a change on `ma
 lower stacked PR has landed. The merge queue tests every PR on top of the current `main`, and `main`
 does not require branches to be up to date, so refreshing an approved PR only replaces the approved
 head. After the merge, regenerate the import aggregates with `lake exe mk_all`, or let the opt-in
-[`leanagg` driver](CONTRIBUTING.md#proposing-and-contributing-work) merge them; never trust a
-`merge=union` result, which keeps deleted imports and can misorder added ones.
+[`leanagg` driver](CONTRIBUTING.md#proposing-and-contributing-work) merge them and then check them
+with `lake exe mk_all --check`, since the driver sees only the aggregates and not the merged tree;
+never trust a `merge=union` result, which keeps deleted imports and can misorder added ones.
+
+A branch that forked before the module root was renamed from Complexity to CslibFrontier is
+restacked with `python3 scripts/rename_module_root.py --restack` (from a checkout of current
+`main`; `--onto` names the restacked head of a lower stacked branch). It merges the rename and
+converts the branch's own module names and paths; `--verify-carry` compares the result with
+the approved head. See the script's documentation.
 
 A restack keeps its approval when `python3 scripts/check_restack.py <approved head> <new head>`
 passes and CI passes at the new head. The script replays the approved change onto the `main` that
@@ -514,7 +559,7 @@ and usage harder.
 An encoding is part of what a statement claims, so statements show every encoding; but a reader
 should not have to parse the same nested encoding again and again. New declarations, and
 declarations whose statements change, follow these rules. Existing code is brought into line by
-a tracked sweep ([#1656](https://github.com/cslib-community/complexitylib/issues/1656)), and the
+a tracked sweep ([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)), and the
 encoding-readability lint checks rule 1 against a per-module baseline that may only fall.
 
 1. **Name repeated compound encodings.** A *compound encoding* is a term of type
@@ -552,45 +597,7 @@ encoding-readability lint checks rule 1 against a per-module baseline that may o
    and matrices, and framing that changes a length bound stay visible: the name or the first line
    of its docstring states the choice (`encUnaryPair`, not `encArgs`). A name must not hide one.
 7. **No hidden defaults.** Do not let an elaborator or typeclass choose an encoding for a type;
-   the `enc%` proposal (#1830) is parked. Curated abstracts stay fully spelled out: they write each
-   encoding in place or define it in the abstract itself.
-
-## Curated formal abstracts
-
-`abstracts/catalogue.json` selects the public headline results. Each selected group has a checked
-`*Abstract.lean` and `*Bridge.lean` under `abstracts/ComplexityAbstracts/`, imported by the
-dedicated `ComplexityAbstracts` library. `ComplexityTests/Abstracts/All.lean` imports that library,
-and its regression tests sit beside it. Existing declaration namespaces remain stable across the
-source relocation. The Lean definitions and statements are the source of truth; PDFs are generated
-from them, with proof bodies omitted. There is no separately maintained paper/TeX index.
-
-Selection has a higher bar than inclusion in the library: a headline must be a substantial proved
-endpoint with conventional, inspectable semantics, hypotheses that are satisfiable or are standard
-open assumptions stated as such, explicit models and encodings, and honest quantitative bounds.
-Partial constructions, conditional substitutes for a standard theorem, bounded experiments and
-helper APIs do not become headlines by acquiring an abstract. Prefer a small coherent selection.
-Preserve Samuel's editorial choices and source credit; keep outstanding endpoints in `ROADMAP.md`.
-
-Assess abstract impact when Lean statements, definitions, models, encodings, bounds or catalogue
-selection change. Update affected statements and scope notes, and record the assessment once in
-the PR. Reuse it while the relevant source is unchanged; metadata edits and unrelated changes
-need no new no-impact report. New library theorems need not become headlines.
-
-For abstract changes, follow the local `lean-abstract` skill and run the affected `#check_abstract`
-audits. An allowlist may expose narrowly identified foundational models with their meaning
-explained; it must not hide the result or its complexity-class semantics. The audit checks elaborated dependencies, not human interpretation.
-Independent review must cover API quality, correctness and each changed abstract against the final
-Lean sources, including quantifiers, encoding, resource bounds, nonvacuity and readability. This may
-be part of the same review above; reuse unchanged evidence. Record revisions and findings once in
-the PR. Do not imply human editorial approval.
-
-`scripts/build_abstracts.py` generates individual PDFs, a combined catalogue and provenance with
-source digests and exact declaration links. The **Formal abstract PDFs** workflow uploads review
-and main artifacts, and the **API documentation** workflow publishes main builds under
-`https://www.cslib.io/complexitylib/abstracts/`. When abstracts or rendering
-change, inspect affected rendered pages and declaration links before integration; record the
-artifact/run and revisions. Unaffected abstracts and rendering need no new PDF review. Local
-generation is supported. Generated TeX, PDFs and auxiliary products are not versioned.
+   the `enc%` proposal (#1830) is parked.
 
 ## Design commitments (do not re-litigate casually)
 

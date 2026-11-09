@@ -289,17 +289,17 @@ class GitTests(unittest.TestCase):
         # Tracked `merge=union` merges same-gap imports into an unsorted list without reporting
         # a conflict; the plain text merge reports it, so the merge is refused.
         start = self.branch("union", {
-            ".gitattributes": "Complexity.lean merge=union\nreferences.bib merge=bibkeys\n",
-            "Complexity.lean": "import A.W\nimport A.Z\n"})
-        self.bib_branches(start, ours={"Complexity.lean": "import A.W\nimport A.Y\nimport A.Z\n"},
-                          theirs={"Complexity.lean": "import A.W\nimport A.X\nimport A.Z\n"})
+            ".gitattributes": "CslibFrontier.lean merge=union\nreferences.bib merge=bibkeys\n",
+            "CslibFrontier.lean": "import A.W\nimport A.Z\n"})
+        self.bib_branches(start, ours={"CslibFrontier.lean": "import A.W\nimport A.Y\nimport A.Z\n"},
+                          theirs={"CslibFrontier.lean": "import A.W\nimport A.X\nimport A.Z\n"})
         names = self.git("merge-tree", "--write-tree", "--name-only", "--no-messages",
                          "feature", "upstream", check=False)
         self.assertEqual(names.splitlines()[1:], ["references.bib"], "git applies the union")
         for source in (None, "HEAD"):
             with self.subTest(GIT_ATTR_SOURCE=source):
                 with patch.dict(os.environ, {"GIT_ATTR_SOURCE": source} if source else {}):
-                    self.assert_refused(r"CONFLICT \(contents\): Complexity\.lean")
+                    self.assert_refused(r"CONFLICT \(contents\): CslibFrontier\.lean")
 
     def test_local_info_attributes_are_refused(self) -> None:
         self.bib_branches()

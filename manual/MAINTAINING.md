@@ -24,7 +24,7 @@ defines the required assessment, mandatory coordinator review of both manuals an
 review of affected content.
 
 Keep one source of truth. Explain the task here; link to current [policy](../AGENTS.md),
-[cache documentation](../scripts/cache/README.md), [guide](../guide/ComplexityGuide.lean),
+[cache documentation](../scripts/cache/README.md), [guide](../guide/CslibFrontierGuide.lean),
 module docstrings and complete tests for their details. Do not copy a new body of Lean code
 into this manual without a checked source client. The workflow snippets are contextual
 excerpts, each declared in `workflows/data/*-excerpts.json`. They retain source authorship
@@ -58,6 +58,17 @@ with the untracked book products.
    Both are required in CI and run before Lean work in full and quick `scripts/check.sh` modes.
    They need only Python, without publishing tools or regenerated research data. Inserting unrelated
    lines above an excerpt is allowed. Changing, removing or duplicating its text needs attention.
+   A relative source link such as `File.lean#L120` or `File.lean#L120-L180` must also start where
+   the cited text starts: an unindented declaration (after modifiers such as `private` or
+   `noncomputable`), an `@[…]` attribute or a `/--` docstring, outside any comment. A range may
+   instead start at `/-!`, `section` or `namespace`, and `#L1` links a whole file. An edit that
+   adds or removes lines above an anchored declaration, even inside a proof, moves it: find the
+   links with `git grep -n 'File.lean#L' manual/` and repoint them in the same change. The checker
+   cannot tell that a link starts on the declaration its text names, so check the name when
+   repointing. `STALE_SOURCE_ANCHORS` in the checker lists links that are stale, or that queued
+   pull requests will make stale, and tolerates them until those pull requests land
+   ([#3991](https://github.com/cslib-community/cslib-frontier/issues/3991)); repointing one of
+   those links needs no edit to the list.
 4. When Lean examples or their imports change, check the complete affected source clients under
    the [validation policy](../AGENTS.md#validation-sequence). The documentation checker is not
    a Lean build. Existing hosted validation can cover unchanged examples at the same revision.

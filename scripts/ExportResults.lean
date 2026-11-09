@@ -5,18 +5,17 @@ Authors: Christian Reitwiessner
 -/
 
 -- upstream: local-only (result registry export tooling)
-import ComplexityResults.Registry
+import CslibFrontierResults.Registry
 
 /-! Export records stored by the compiled canonical Lean registry. -/
 
-open Lean ComplexityResults
+open Lean CslibFrontierResults
 
 unsafe def main : IO Unit := do
   initSearchPath (← findSysroot)
   enableInitializersExecution
-  let env ← importModules #[{ module := `ComplexityResults }] {} (loadExts := true)
+  let env ← importModules #[{ module := `CslibFrontierResults }] {} (loadExts := true)
   let records := entries.getState env
   IO.println (Json.mkObj [
     ("schema_version", toJson (1 : Nat)),
-    ("abstract_catalogue", toJson ("abstracts/catalogue.json" : String)),
     ("results", Json.arr (records.map Entry.json))]).compress

@@ -1,7 +1,7 @@
-name = "complexitylib"
+name = "cslib-frontier"
 version = "0.2.0"
-defaultTargets = ["Complexity", "ComplexityResults"]
-testDriver = "ComplexityTests"
+defaultTargets = ["CslibFrontier", "CslibFrontierResults"]
+testDriver = "CslibFrontierTests"
 lintDriver = "batteries/runLinter"
 # Share build outputs between local checkouts (worktrees, agent sandboxes) through Lake's
 # content-addressed artifact cache, so a module built in one checkout is reused by every other
@@ -36,23 +36,17 @@ git = "https://github.com/leanprover/cslib"
 rev = "254e30e6d4299c51323aaeaf5f51a4763b375d4a"
 
 [[lean_lib]]
-name = "Complexity"
+name = "CslibFrontier"
 
 [[lean_lib]]
-name = "ComplexityAbstracts"
-srcDir = "abstracts"
+name = "CslibFrontierResults"
 leanOptions = {weak.linter.style.header = false}
 allowNonModules = true
 
 [[lean_lib]]
-name = "ComplexityResults"
-leanOptions = {weak.linter.style.header = false}
-allowNonModules = true
-
-[[lean_lib]]
-name = "ComplexityTests"
+name = "CslibFrontierTests"
 roots = []
-globs = ["ComplexityTests.+"]
+globs = ["CslibFrontierTests.+"]
 leanOptions = {weak.linter.style.header = false}
 # The test files do not use the module system, but they import Mathlib, whose package sets
 # `requiresModuleSystem`.
@@ -69,18 +63,3 @@ supportInterpreter = true
 name = "checkInitImports"
 srcDir = "scripts"
 root = "CheckInitImports"
-
-# Optional statement-comparison suites; neither is a default target.
-[[lean_lib]]
-name = "ComplexityComparator"
-srcDir = "comparator"
-roots = []
-globs = ["ComplexityComparator.+"]
-
-# Generated children are explicit comparator inputs, never default build targets or aggregates.
-[[lean_lib]]
-name = "ComplexityComparatorChallenges"
-srcDir = "comparator"
-roots = []
-globs = ["ComplexityComparatorChallenges.+"]
-defaultFacets = []
