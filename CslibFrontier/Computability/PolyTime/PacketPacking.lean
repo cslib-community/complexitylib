@@ -762,11 +762,6 @@ in binary. -/
 @[expose] def encPlacements : ℕ × List (ℕ × ℕ) ↪ List Bool :=
   encPair encNat (encList (encPair encNat encNat))
 
-private theorem binary_add'' {α : Type} {input : α ↪ List Bool} {f g : α → ℕ}
-    (hf : ComputableInPolyTime f input encNat) (hg : ComputableInPolyTime g input encNat) :
-    ComputableInPolyTime (fun x => f x + g x) input encNat :=
-  ComputableInPolyTime.binary_add.comp (hf.prod hg)
-
 private theorem binary_max' {α : Type} {input : α ↪ List Bool} {f g : α → ℕ}
     (hf : ComputableInPolyTime f input encNat) (hg : ComputableInPolyTime g input encNat) :
     ComputableInPolyTime (fun x => max (f x) (g x)) input encNat :=
@@ -838,12 +833,12 @@ private theorem computableInPolyTime_packetOf :
   have hc' : ComputableInPolyTime (fun p : (((ℕ × ℕ) × (List ℕ × List ℕ)) × ℕ) × ℕ => p.1.2)
       encI encNat := ComputableInPolyTime.unary_to_binary.comp (by fun_prop)
   have hterm := (ComputableInPolyTime.binary_testBit hc' hi).ite'
-    (binary_add'' hmin (ComputableInPolyTime.binary_mul' hr' hmax))
-    (binary_add'' hmax (ComputableInPolyTime.binary_mul' hr' hmin))
+    (ComputableInPolyTime.binary_add' hmin (ComputableInPolyTime.binary_mul' hr' hmax))
+    (ComputableInPolyTime.binary_add' hmax (ComputableInPolyTime.binary_mul' hr' hmin))
   have hpow : ComputableInPolyTime (fun p : (((ℕ × ℕ) × (List ℕ × List ℕ)) × ℕ) × ℕ =>
       (p.1.1.1.2 * p.1.1.1.2) ^ p.2) encI encNat :=
     ComputableInPolyTime.binary_pow' (ComputableInPolyTime.binary_mul' hr' hr') hi
-  exact binary_add''
+  exact ComputableInPolyTime.binary_add'
     ((show ComputableInPolyTime List.sum (encList encNat) encNat by fun_prop).comp
       (ComputableInPolyTime.mapWithInput (by fun_prop)
         (ComputableInPolyTime.binary_mul' hterm hpow))) hblock
@@ -928,7 +923,7 @@ private theorem computableInPolyTime_numPacketsOf :
   have hload := ComputableInPolyTime.unary_to_binary.comp computableInPolyTime_maxLoadOf
   unfold numPacketsOf
   exact ComputableInPolyTime.binary_mul'
-    (ComputableInPolyTime.binary_div.comp ((binary_add'' hload
+    (ComputableInPolyTime.binary_div.comp ((ComputableInPolyTime.binary_add' hload
       (ComputableInPolyTime.binary_sub' h2a (.const 1))).prod h2a))
     (ComputableInPolyTime.binary_pow' (ComputableInPolyTime.binary_mul' hr hr) ha)
 

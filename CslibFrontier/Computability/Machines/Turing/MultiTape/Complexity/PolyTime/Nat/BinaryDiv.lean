@@ -44,6 +44,8 @@ have length at most `word.length`, keeping the encoded pair linearly bounded thr
   remainder on `encNat`.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_div'`, `.binary_mod'`: composition rules
   for `fun_prop` and `polytime`.
+* `Turing.MultiTapeTM.ComputableInPolyTime.binary_div'`: named composition rule for plain
+  certificates.
 
 ## References
 
@@ -113,3 +115,14 @@ theorem binary_mod' {α : Type} {input : α ↪ List Bool} {left right : α → 
   binary_mod.comp (hleft.prod hright)
 
 end Turing.MultiTapeTM.ComputableTidilyInPolyTime
+
+namespace Turing.MultiTapeTM.ComputableInPolyTime
+
+/-- Divide computed binary values using the shared plain certificate. -/
+theorem binary_div' {α : Type} {input : α ↪ List Bool} {left right : α → ℕ}
+    (hleft : ComputableInPolyTime left input encNat)
+    (hright : ComputableInPolyTime right input encNat) :
+    ComputableInPolyTime (fun a => left a / right a) input encNat :=
+  binary_div.comp (hleft.prod hright)
+
+end Turing.MultiTapeTM.ComputableInPolyTime

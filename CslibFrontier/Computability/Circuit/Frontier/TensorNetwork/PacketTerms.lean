@@ -425,15 +425,6 @@ section PolyTime
 
 variable {α : Type} {encIn : α ↪ List Bool}
 
-/-- Whether two binary integers differ. -/
-private theorem decide_ne_polyTime {u v : α → ℤ} (hu : ComputableInPolyTime u encIn encIntBin)
-    (hv : ComputableInPolyTime v encIn encIntBin) :
-    ComputableInPolyTime (fun x => decide (u x ≠ v x)) encIn encBool :=
-  (ComputableInPolyTime.ite (ComputableInPolyTime.beq hu hv)
-    (ComputableInPolyTime.const (encOut := encBool) false)
-    (ComputableInPolyTime.const (encOut := encBool) true)).of_enc_eq fun x => by
-      by_cases h : u x = v x <;> simp [h]
-
 /-- **The odd part of `C'(0)` is polynomial-time**, with `L` in unary. -/
 theorem kernelUnitDen_polyTime {p : α → ℕ} {fl : α → List ℕ} {L : α → ℕ}
     (hp : ComputableInPolyTime p encIn encUnary)
@@ -443,7 +434,7 @@ theorem kernelUnitDen_polyTime {p : α → ℕ} {fl : α → List ℕ} {L : α �
   have h1 := ComputableInPolyTime.fst encIn encIntBin
   have h2 := ComputableInPolyTime.snd encIn encIntBin
   have hfilt := ComputableInPolyTime.filterWithInput (test := fun _ q => decide (q ≠ 0))
-    (gridList_polyTime.comp hL) (decide_ne_polyTime h2 (ComputableInPolyTime.const 0))
+    (gridList_polyTime.comp hL) (h2.decide_ne (ComputableInPolyTime.const 0))
   exact prodList_polyTime hp hfl (ComputableInPolyTime.mapWithInput
     (f := fun x q => intConst (p x) (fl x) ((0 - q) / 2 ^ twoVal (0 - q))) hfilt
     (intConst_oddPart_polyTime (hp.comp h1) (hfl.comp h1)
