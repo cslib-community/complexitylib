@@ -1263,12 +1263,14 @@ public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Comp
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Cut
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.DepthTwo
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.InnerProduct
+public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.KaneWilliamsB
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.LTF
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Menus
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.PendingBias
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Potential
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.RandomRestriction
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.ScalarActivity
+public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.SharedBottom
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.SupportBound
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.SupportBoundAsymptotics
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.ThresholdCounting
@@ -4308,6 +4310,7 @@ public import CslibFrontier.Foundations.Analysis.HarmonicMean
 public import CslibFrontier.Foundations.Analysis.InnerProductSpace.Basic
 public import CslibFrontier.Foundations.Analysis.InnerProductSpace.GramSchmidtOrtho
 public import CslibFrontier.Foundations.Analysis.InnerProductSpace.MetricProjection
+public import CslibFrontier.Foundations.Analysis.InnerProductSpace.NearlyOrthogonal
 public import CslibFrontier.Foundations.Analysis.Lattice.Covolume
 public import CslibFrontier.Foundations.Analysis.Lattice.Dual
 public import CslibFrontier.Foundations.Analysis.Lattice.Fourier
@@ -4616,6 +4619,7 @@ public import CslibFrontier.Foundations.Data.BitString.CyclicDifference
 public import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Basic
 public import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Composition
 public import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Operations
+public import CslibFrontier.Foundations.Data.BitString.Discriminator
 public import CslibFrontier.Foundations.Data.BitString.Enumeration
 public import CslibFrontier.Foundations.Data.BitString.Flip
 public import CslibFrontier.Foundations.Data.BitString.HalfSplit
@@ -5650,6 +5654,7 @@ public import CslibFrontier.Probability.SaksZhou
 public import CslibFrontier.Probability.SaksZhou.Snap
 public import CslibFrontier.Probability.Shearer
 public import CslibFrontier.Probability.SmallBias
+public import CslibFrontier.Probability.SmallBias.Correlation
 public import CslibFrontier.Probability.SmallBias.Powering
 public import CslibFrontier.Probability.SmallBias.Random
 public import CslibFrontier.Probability.Split
