@@ -2,9 +2,6 @@
  "CslibFrontier/Computability/Circuit/Frontier/TensorNetwork/ClauseNetworkPolyTime.lean": {
   "encPair (encList encNat) (encList encNat)": 3
  },
- "CslibFrontier/Computability/Circuit/Frontier/TensorNetwork/DescribedContraction.lean": {
-  "encPair (encList encNat) ?1": 4
- },
  "CslibFrontier/Computability/Circuit/Frontier/TensorNetwork/IncidenceEntryPolyTime.lean": {
   "encList (encPair encNat encNat)": 3
  },

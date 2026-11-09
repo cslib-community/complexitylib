@@ -72,12 +72,8 @@ theorem IsOraclePPTOn.isOraclePPT
 theorem IsOraclePPT.congr (h : IsOraclePPT output program)
     (heq : ∀ n input (State : Type)
       (oracle : Operation × List Bool → StateT State PMF (List Bool)) state,
-      (OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (program n input)).run state =
-      (OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (program' n input)).run state) : IsOraclePPT output program' :=
+      ProbOracleComp.runWith oracle (program n input) state =
+      ProbOracleComp.runWith oracle (program' n input) state) : IsOraclePPT output program' :=
   h.on.congr (fun input => heq input.1 input.2)
 
 /-- The same polynomial bounds external calls and request lengths, independently of replies. -/

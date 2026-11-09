@@ -114,6 +114,7 @@ theorem run_singleOracle_independent (P : ι → Prover Unit) (i₀ : ι)
       (Prod.map id (fun s' => s' i₀)) =
       (P i₀).run p (s i₀) := by
   rw [Prover.run, WordOracleComp.run_interpret_singleOracle, Prover.run]
+  unfold ProbOracleComp.runWith OracleComp.runWith
   induction p using PFunctor.FreeM.induction generalizing s with
   | pure a =>
     simp only [OracleComp.interpret_pure, StateT.run_pure, Probability.PMF.monad_pure_eq_pure,

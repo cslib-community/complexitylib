@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import Cslib.Foundations.Data.BitString
 public import Mathlib.Data.ENat.Lattice
 public import Mathlib.Logic.Function.Basic
+import CslibFrontier.Foundations.Data.ENat.IInf
 
 /-!
 # Number-on-forehead protocols
@@ -163,13 +164,7 @@ theorem exists_solves_depth_eq_ecomplexity (h : ∃ p : Protocol X Z, p.Solves R
 exactly when some protocol of depth at most `k` solves it. -/
 theorem ecomplexity_le_iff {k : ℕ} :
     ecomplexity R A ≤ k ↔ ∃ p : Protocol X Z, p.Solves R A ∧ p.depth ≤ k := by
-  constructor
-  · intro h
-    obtain ⟨p, hp, hdepth⟩ := exists_solves_depth_eq_ecomplexity
-      (ecomplexity_ne_top_iff.mp (ne_top_of_le_ne_top (ENat.natCast_ne_top k) h))
-    exact ⟨p, hp, by exact_mod_cast hdepth.trans_le h⟩
-  · rintro ⟨p, hp, hk⟩
-    exact (ecomplexity_le_depth hp).trans (by exact_mod_cast hk)
+  simp only [ecomplexity, ENat.iInf_natCast_le_natCast_iff, Subtype.exists, exists_prop]
 
 /-- Lower bounds on communication complexity are lower bounds on the depth of every protocol
 solving the relation, including when there is none. -/

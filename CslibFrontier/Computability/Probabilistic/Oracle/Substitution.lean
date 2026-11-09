@@ -136,9 +136,8 @@ theorem IsOraclePPTOn.run_interpret_preprocess_open_of_polyBounded
           (output <$> program (prepare a))).run (initial a) := by
     rw [OracleComp.interpret_map, StateT.run_map, Functor.map_map]
     rfl
-  rw [hout, OracleComp.interpret_map, StateT.run_map, OracleComp.interpret_map, StateT.run_map,
-    ProbOracleComp.run_interpret_run_interpret, ProbOracleComp.run_interpret_run_interpret,
-    hrealize]
+  rw [hout, ProbOracleComp.runWith_map, ProbOracleComp.runWith_map,
+    ProbOracleComp.runWith_run_interpret, ProbOracleComp.runWith_run_interpret, hrealize]
 
 
 /-- Substitute a stateful handler with its own external calls into an oracle program. The

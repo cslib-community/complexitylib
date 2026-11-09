@@ -152,8 +152,7 @@ theorem lyubashevsky_acceptedTranscript (S : Matrix (Fin m) (Fin k) ℤ)
       (boxReject (Fin m) γ β (S *ᵥ lyubashevskyChallenge c)).map (Option.map fun z =>
         (y.1 *ᵥ (Int.cast ∘ (z - S *ᵥ lyubashevskyChallenge c)), z)) := by
   simp only [acceptedTranscript, transcript, lyubashevsky, boxReject, shiftReject, PMF.map_comp]
-  congr 1
-  funext r
+  congr 1 with r : 1
   simp only [Function.comp_apply]
   split_ifs <;> simp
 
@@ -295,8 +294,7 @@ theorem lyubashevsky_nonAbortSpecialHVZK {η : ℕ} (hβ : β ≤ γ) (hη : k *
       boxReject_eq (v' := 0) hβ
         (intBox_mono hη (mulVec_lyubashevskyChallenge_mem_intBox hSy.2 c))
         (zero_mem_intBox β)]
-    congr 1
-    funext oz
+    congr 1 with oz : 1
     cases oz with
     | none => rfl
     | some z =>
