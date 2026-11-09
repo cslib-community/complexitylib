@@ -92,12 +92,12 @@ private def powerFacts (es : Array Expr) : MetaM (Array Hypothesis) := do
 proofs that state one generated fact per written value, `prove?` only looks for a hypothesis of the
 same statement: `omega` over many large facts, once per value written, would cost more than the
 statements save. -/
-def maxFacts : ℕ := 16
+private def maxFacts : ℕ := 16
 
 /-- The heartbeats `prove?` may spend on one bound, in thousands, as for `maxHeartbeats`: a bound
 that `omega` does not settle quickly, for instance through case splits on divisions, is left to
 the given simp lemmas rather than slowing every evaluation, which may try hundreds of bounds. -/
-def maxHeartbeats : ℕ := 200
+private def maxHeartbeats : ℕ := 200
 
 /-- A proof of the word-size bound `target` by `omega` from the hypotheses that mention `Fits`,
 unfolded, or `none`. Unlike `fits` it uses no other hypotheses and adds no positivity facts, so
@@ -133,7 +133,7 @@ def prove? (target : Expr) : MetaM (Option Expr) := do
     return none
 
 /-- Rewrite a word-size bound `Fits w v` to `True` when `prove?` proves it. -/
-def reduceFitsStep : Simp.Simproc := fun e => do
+private def reduceFitsStep : Simp.Simproc := fun e => do
   unless e.isAppOfArity ``Cslib.WordRAM.Fits 2 do return .continue
   let some h ← prove? e | return .continue
   return .done { expr := mkConst ``True, proof? := some (← mkEqTrue h) }
