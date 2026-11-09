@@ -468,9 +468,7 @@ private theorem exists_perm_cons_of_numComponents_add_length_eq_succ {n : ℕ} {
       · exact (hperm.cons e).trans (List.Perm.swap f e L₁)
       · simpa only [edgePartitionFrom_cons] using hpart
     · rw [Partition.merge_of_rel hrel] at h
-      have hacyc : IsAcyclicFrom p L₀ := by
-        unfold IsAcyclicFrom
-        omega
+      have hacyc : IsAcyclicFrom p L₀ := by grind [IsAcyclicFrom]
       refine ⟨e, L₀, List.Perm.refl _, ?_, hacyc⟩
       rw [edgePartitionFrom_cons, Partition.merge_of_rel hrel]
 

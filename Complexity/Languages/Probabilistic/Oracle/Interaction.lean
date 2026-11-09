@@ -25,7 +25,8 @@ word queries and replies (`Cslib.Complexity.Prover.run_eq_runWith`).
 `OracleComp.sumHandler` of fresh uniform draws for private samples, which keep the state, and
 `oracle` for external calls. Against a memoryless oracle it is `OracleComp.evalWith` of the sum of
 the uniform handler and the oracle, with the state unchanged (`runWith_lift`). Its structural
-rules are those of `OracleComp.runWith`.
+rules are those of `OracleComp.runWith`; `Languages.Probabilistic.Oracle.Simulation` gives its
+simulation and state-representation rules.
 
 ## Main definitions
 
@@ -39,6 +40,8 @@ rules are those of `OracleComp.runWith`.
 * `Cslib.ProbOracleComp.runWith_pure`, `Cslib.ProbOracleComp.runWith_bind`,
   `Cslib.ProbOracleComp.runWith_map`, `Cslib.ProbOracleComp.runWith_query`,
   `Cslib.ProbOracleComp.runWith_sample`: structural rules for `runWith`.
+* `Cslib.ProbOracleComp.eval_run_interpret_eq_runWith`: evaluating a closed run is `runWith`
+  against the evaluated handler.
 * `Cslib.ProbOracleComp.acceptProbWith_bind`: sequencing for acceptance probability.
 * `Cslib.ProbOracleComp.acceptProbWith_query_bind`,
   `Cslib.ProbOracleComp.acceptProbWith_sample_bind`: averages over replies and samples.
@@ -114,6 +117,15 @@ state it reached. -/
 @[simp] theorem runWith_sample (program : ProbComp α) (s : State) :
     runWith oracle (sample (spec := spec) program) s = (ProbComp.eval program).map (·, s) :=
   run_interpret_sample _ _ _
+
+/-- Evaluating a closed run, in which a handler program answers the external calls, is `runWith`
+against the evaluated handler. -/
+theorem eval_run_interpret_eq_runWith (oracle : (q : Query) → StateT State ProbComp (spec q))
+    (program : ProbOracleComp spec α) (s : State) :
+    ProbComp.eval ((OracleComp.interpret
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifFin n)) oracle) program).run s) =
+      runWith (fun q state => ProbComp.eval (oracle q state)) program s :=
+  eval_run_interpret oracle program s
 
 /-- A pure program accepts with probability `1` if it returns `true` and `0` otherwise. -/
 theorem acceptProbWith_pure (b : Bool) (s : State) :

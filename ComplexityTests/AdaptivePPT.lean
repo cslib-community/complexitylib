@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Tactic.PPT
+import Complexity.Computability.Probabilistic.Retry
 import Complexity.Probability.BitString.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Mathlib.Logic.Relation
@@ -51,6 +52,19 @@ private theorem grow_length (state next : List Bool)
   simp only [grow, ProbComp.eval_bind, ProbComp.eval_pure] at h
   obtain ⟨bit, _, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp h
   simp [← heq]
+
+-- Bounded retries: up to `n` fair coins, returning the first `true`.
+example : IsPPTOn encUnary (encOption encBool)
+    (fun n => OracleComp.retry (fun b : Bool => b = true) (ProbComp.uniform Bool) n) :=
+  IsPPTOn.retry (good := fun b => b) (by ppt) (ComputableInPolyTime.id' (encIn := encBool))
+    (ComputableInPolyTime.id' (encIn := encUnary))
+
+-- The registered certificate lets `ppt` find the retry rule for any polynomial-time test.
+example (good : List Bool → Bool) (hgood : ComputableInPolyTime good encBits encBool) :
+    IsPPTOn encUnary (encOption encBits)
+      (fun n => OracleComp.retry (fun l => good l = true) (grow []) (n * n)) := by
+  have hstep := grow_ppt
+  ppt
 
 -- A full functional client certifies a quadratic number of state-dependent transitions.
 example : IsPPTOn encUnary encBits (fun n => OracleComp.iterate (n * n) grow []) := by

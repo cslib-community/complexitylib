@@ -17,12 +17,14 @@ public import Mathlib.Algebra.BigOperators.Fin
 Return values and costs of two loop combinators run in `Cslib.Algorithms.Lean.TimeM`:
 `Vector.ofFnM`, which fills a vector cell by cell, and `List.foldlM`. The return value of either
 loop is the corresponding pure loop over the return values. The cost of `Vector.ofFnM` is the sum
-of the cell costs, and a `List.foldlM` whose step always costs `c` costs `c` per element.
+of the cell costs, and a `List.foldlM` whose step always costs `c` costs `c` per element; more
+generally, if the cost of a step depends only on the element, the fold costs the sum of the element
+costs.
 
 ## Main results
 
 * `Cslib.Algorithms.Lean.TimeM.ret_vectorOfFnM`, `time_vectorOfFnM`.
-* `Cslib.Algorithms.Lean.TimeM.ret_foldlM`, `time_foldlM_of_time_eq`.
+* `Cslib.Algorithms.Lean.TimeM.ret_foldlM`, `time_foldlM_of_time_eq`, `time_foldlM_eq_sum`.
 -/
 
 public section
@@ -76,5 +78,14 @@ theorem time_foldlM_of_time_eq {α β : Type*} (f : β → α → TimeM ℕ β) 
   | nil => simp only [List.foldlM_nil, time_pure, List.length_nil, zero_mul]
   | cons a l ih =>
     rw [List.foldlM_cons, time_bind, ih, hf, List.length_cons, Nat.succ_mul, Nat.add_comm]
+
+/-- A fold in the time monad whose step cost depends only on the element costs the sum of those
+costs. -/
+theorem time_foldlM_eq_sum {α β : Type*} (f : β → α → TimeM ℕ β) (c : α → ℕ)
+    (hf : ∀ acc a, (f acc a).time = c a) (l : List α) (b : β) :
+    (l.foldlM f b).time = (l.map c).sum := by
+  induction l generalizing b with
+  | nil => rfl
+  | cons a l ih => rw [List.foldlM_cons, time_bind, ih, hf, List.map_cons, List.sum_cons]
 
 end Cslib.Algorithms.Lean.TimeM

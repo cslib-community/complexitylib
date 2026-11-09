@@ -712,8 +712,7 @@ theorem natAbs_rowEntry_convJet_le {J ℓ MA MB : ℕ} {A B : List (List ℤ)}
             exact Nat.mul_le_mul (hA' j₁ u₁) (hB' (j - j₁) (u - u₁))
       _ = (j + 1) * (u + 1) * (MA * MB) := by
             simp only [Finset.sum_const, Finset.card_range, smul_eq_mul, Nat.mul_assoc]
-      _ ≤ J * ℓ * (MA * MB) :=
-            Nat.mul_le_mul_right _ (Nat.mul_le_mul hj hu)
+      _ ≤ J * ℓ * (MA * MB) := by gcongr <;> omega
   · exact Nat.zero_le _
 
 /-- Binary magnitude-size bound for `convJet`: if stored entries of `A` and `B` have binary
