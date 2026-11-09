@@ -482,9 +482,7 @@ end Correctness
 /-! ### Polynomial time -/
 
 open ComputableInPolyTime
-
-/-- The encoding of the list of nodes at a level of the tree. -/
-local notation "encNodes" => encList (encList (encPair encNat encBool))
+open Fortune (encNodes)
 
 section PolyTime
 
