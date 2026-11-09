@@ -71,9 +71,6 @@ namespace Cslib.Probability
 open Finset Fintype
 open scoped BigOperators
 
-/-- A `[0, 1]`-valued score with mean `p` has `|𝔼 (g - p) ^ c| ≤ p` for every `c ≥ 2`: the centered
-value lies in `[-1, 1]`, so its `c`-th power is at most its square, whose mean `p - p ^ 2` is at
-most `p`. -/
 private theorem abs_expect_sub_expect_pow_le {Y : Type*} [Fintype Y] [Nonempty Y]
     (g : Y → ℝ) (hg : ∀ y, g y ∈ Set.Icc 0 1) {c : ℕ} (hc : 2 ≤ c) :
     |𝔼 y, (g y - 𝔼 y', g y') ^ c| ≤ 𝔼 y, g y := by
@@ -94,10 +91,6 @@ private theorem abs_expect_sub_expect_pow_le {Y : Type*} [Fintype Y] [Nonempty Y
     _ = p - 2 * p * p + p ^ 2 := hlin
     _ ≤ p := by nlinarith
 
-/-- Counting tuples with exactly `r` distinct entries, weighted by the product of `p` over their
-image: relabelling the image by `Fin r` in all `r!` ways maps each such tuple injectively to a
-pattern `Fin n_tup → Fin r` together with a list of values `Fin r → R`, so
-`r! * ∑ t, ∏ z ∈ image t, p z ≤ r ^ n_tup * (∑ z ∈ R, p z) ^ r`. -/
 private theorem sum_prod_image_card_eq_le {X : Type*} [DecidableEq X]
     (R : Finset X) (p : X → ℝ) (hp : ∀ z ∈ R, 0 ≤ p z) (n_tup r : ℕ) :
     (r.factorial : ℝ) *
@@ -177,99 +170,6 @@ private theorem sum_prod_image_card_eq_le {X : Type*} [DecidableEq X]
           simp only [sum_const, card_univ, Fintype.card_fun, Fintype.card_fin, nsmul_eq_mul,
             Nat.cast_pow, sum_pow']
 
-/-- **One tuple of the expanded moment.** For a `2m`-tuple `t` of keys in `R`, the centered product
-`∏ j, (g (t j) (h i (t j)) - 𝔼 g (t j))` has seed average zero when some key occurs exactly once,
-since that key's centered factor averages to zero. Otherwise every key occurs at least twice, so at
-most `m` distinct keys occur, and the average is at most the product of their means. -/
-private theorem expect_prod_sub_expect_le {ι X Y : Type*} [Fintype ι] [Fintype Y] [DecidableEq Y]
-    [Nonempty Y] [DecidableEq X] {m : ℕ} {h : ι → X → Y} (hh : IsKWiseIndependentHash (2 * m) h)
-    (R : Finset X) (g : X → Y → ℝ) (hg : ∀ z ∈ R, ∀ y, g z y ∈ Set.Icc 0 1)
-    {t : Fin (2 * m) → X} (ht : t ∈ piFinset fun _ => R) :
-    𝔼 i, ∏ j, (g (t j) (h i (t j)) - 𝔼 y, g (t j) y) ≤
-      if #(univ.image t) ≤ m then ∏ z ∈ univ.image t, 𝔼 y, g z y else 0 := by
-  have htR : ∀ z ∈ univ.image t, z ∈ R := by
-    intro z hz
-    obtain ⟨j, -, rfl⟩ := mem_image.mp hz
-    exact mem_piFinset.mp ht j
-  -- Group the `2m` factors by key; `2m`-wise independence factors the average over keys.
-  have hprod (i : ι) : ∏ j, (g (t j) (h i (t j)) - 𝔼 y, g (t j) y) =
-      ∏ z ∈ univ.image t, (g z (h i z) - 𝔼 y, g z y) ^ #{j | t j = z} :=
-    prod_comp (fun z => g z (h i z) - 𝔼 y, g z y) t
-  simp only [hprod]
-  rw [hh.expect_prod (card_image_le.trans (by simp))
-    fun z y => (g z y - 𝔼 y', g z y') ^ #{j | t j = z}]
-  have hmean0 : 0 ≤ ∏ z ∈ univ.image t, 𝔼 y, g z y :=
-    prod_nonneg fun z hz => expect_nonneg fun y _ => (hg z (htR z hz) y).1
-  by_cases hsingle : ∃ z ∈ univ.image t, #{j | t j = z} = 1
-  · -- A key occurring once contributes the centered average `𝔼 (g z - 𝔼 g z) = 0`.
-    obtain ⟨z, hz, hc⟩ := hsingle
-    have hzero : 𝔼 y, (g z y - 𝔼 y', g z y') ^ #{j | t j = z} = 0 := by
-      simp only [hc, pow_one]
-      exact Fintype.expect_balance _
-    rw [prod_eq_zero hz hzero]
-    split_ifs
-    exacts [hmean0, le_rfl]
-  · -- Every key occurs at least twice, so at most `m` distinct keys occur.
-    push Not at hsingle
-    have htwice : ∀ z ∈ univ.image t, 2 ≤ #{j | t j = z} := by
-      intro z hz
-      obtain ⟨j, -, rfl⟩ := mem_image.mp hz
-      have hpos : 0 < #{j' | t j' = t j} := card_pos.mpr ⟨j, by simp⟩
-      have := hsingle (t j) hz
-      omega
-    have hcard : 2 * #(univ.image t) ≤ 2 * m :=
-      (mul_card_image_le_card univ 2 htwice).trans_eq (Finset.card_fin _)
-    rw [ite_eq_left (by omega)]
-    refine (le_abs_self _).trans ?_
-    rw [abs_prod]
-    exact prod_le_prod₀ (fun _ _ => abs_nonneg _) fun z hz =>
-      abs_expect_sub_expect_pow_le (g z) (hg z (htR z hz)) (htwice z hz)
-
-/-- **Tuples with `r ≤ m` distinct keys.** For `2 * m ≤ 3 * μ`, the tuples of
-`Fin (2 * m) → R` with exactly `r` distinct keys contribute at most
-`(1 / 2) ^ (m - r) * (3 * m * μ) ^ m` to the expanded moment: there are at most
-`r ^ (2 * m) / r!` relabelled patterns per weighted choice of keys, `r ^ r ≤ 3 ^ r * r!`, and each
-of the `m - r` missing keys trades a factor `2 * m ≤ 3 * μ` for a factor `1 / 2`. -/
-private theorem sum_prod_image_card_eq_le_half_pow {X : Type*} [DecidableEq X] (R : Finset X)
-    (p : X → ℝ) (hp : ∀ z ∈ R, 0 ≤ p z) {m r : ℕ} (hrm : r ≤ m) {μ : ℝ}
-    (hmean : ∑ z ∈ R, p z ≤ μ) (hmμ : 2 * (m : ℝ) ≤ 3 * μ) :
-    ∑ t ∈ {t ∈ piFinset (fun _ : Fin (2 * m) => R) | #(univ.image t) = r},
-        ∏ z ∈ univ.image t, p z ≤
-      ((1 : ℝ) / 2) ^ (m - r) * (3 * (m : ℝ) * μ) ^ m := by
-  have hsum0 : 0 ≤ ∑ z ∈ R, p z := sum_nonneg hp
-  have hμ0 : 0 ≤ μ := hsum0.trans hmean
-  -- `r ^ (2 * m) = r ^ r * r ^ (2 * m - r) ≤ (3 ^ r * r!) * m ^ (2 * m - r)`.
-  have hr_pow : r ^ (2 * m) ≤ 3 ^ r * r.factorial * m ^ (2 * m - r) := by
-    calc r ^ (2 * m) = r ^ r * r ^ (2 * m - r) := by rw [← pow_add, Nat.add_sub_cancel' (by omega)]
-      _ ≤ (3 ^ r * r.factorial) * m ^ (2 * m - r) :=
-        Nat.mul_le_mul (Nat.pow_self_le_three_pow_mul_factorial r) (Nat.pow_le_pow_left hrm _)
-  have hcount : ∑ t ∈ {t ∈ piFinset (fun _ : Fin (2 * m) => R) | #(univ.image t) = r},
-        ∏ z ∈ univ.image t, p z ≤ (3 : ℝ) ^ r * (m : ℝ) ^ (2 * m - r) * μ ^ r := by
-    refine le_of_mul_le_mul_left ?_ (by positivity : (0 : ℝ) < r.factorial)
-    calc (r.factorial : ℝ) *
-          ∑ t ∈ {t ∈ piFinset (fun _ : Fin (2 * m) => R) | #(univ.image t) = r},
-            ∏ z ∈ univ.image t, p z
-        ≤ (r : ℝ) ^ (2 * m) * (∑ z ∈ R, p z) ^ r := sum_prod_image_card_eq_le R p hp (2 * m) r
-      _ ≤ ((3 ^ r * r.factorial * m ^ (2 * m - r) : ℕ) : ℝ) * μ ^ r := by
-        gcongr
-        exact_mod_cast hr_pow
-      _ = (r.factorial : ℝ) * ((3 : ℝ) ^ r * (m : ℝ) ^ (2 * m - r) * μ ^ r) := by
-        push_cast
-        ring
-  -- Each of the `m - r` missing keys trades `m` for `(1 / 2) * (3 * μ)`.
-  have hmissing : (m : ℝ) ^ (m - r) ≤ ((1 : ℝ) / 2) ^ (m - r) * (3 * μ) ^ (m - r) := by
-    rw [← mul_pow]
-    exact pow_le_pow_left₀ (Nat.cast_nonneg m) (by linarith) _
-  calc _ ≤ (3 : ℝ) ^ r * (m : ℝ) ^ (2 * m - r) * μ ^ r := hcount
-    _ = (m : ℝ) ^ m * (m : ℝ) ^ (m - r) * (3 * μ) ^ r := by
-      rw [show 2 * m - r = m + (m - r) by omega, pow_add, mul_pow]
-      ring
-    _ ≤ (m : ℝ) ^ m * (((1 : ℝ) / 2) ^ (m - r) * (3 * μ) ^ (m - r)) * (3 * μ) ^ r := by gcongr
-    _ = ((1 : ℝ) / 2) ^ (m - r) * ((m : ℝ) ^ m * ((3 * μ) ^ (m - r) * (3 * μ) ^ r)) := by ring
-    _ = ((1 : ℝ) / 2) ^ (m - r) * (3 * (m : ℝ) * μ) ^ m := by
-      rw [← pow_add, Nat.sub_add_cancel hrm, ← mul_pow]
-      ring
-
 /-- **Variance-sensitive `2m`-th central moment bound under `2m`-wise independence**
 (cf. [BellareRompel1994]; [SchmidtSiegelSrinivasan1995, Theorem 5]): for `1 ≤ m`, a `2m`-wise
 independent family `h : ι → X → Y`, scores `g z : Y → [0, 1]` on `R : Finset X` with total mean at
@@ -282,49 +182,137 @@ theorem expect_sum_sub_expect_pow_le {ι X Y : Type*} [Fintype ι] [Fintype Y] [
     (hmean : ∑ z ∈ R, (𝔼 y, g z y) ≤ μ) (hmμ : 2 * (m : ℝ) ≤ 3 * μ) :
     𝔼 i, (∑ z ∈ R, (g z (h i z) - 𝔼 y, g z y)) ^ (2 * m) ≤ 2 * (3 * (m : ℝ) * μ) ^ m := by
   classical
+  have := hh.nonempty
   let p (z : X) : ℝ := 𝔼 y, g z y
+  let Z (z : X) (y : Y) : ℝ := g z y - p z
   have hp0 : ∀ z ∈ R, 0 ≤ p z := fun z hz => expect_nonneg fun y _ => (hg z hz y).1
-  have hμ0 : 0 ≤ μ := (sum_nonneg hp0).trans hmean
-  let S := piFinset fun _ : Fin (2 * m) => R
-  -- Group the tuples with at most `m` distinct keys by their number `r ∈ [1, m]` of keys.
-  have hpart : (∑ t ∈ S, if #(univ.image t) ≤ m then ∏ z ∈ univ.image t, p z else 0) =
-      ∑ r ∈ Icc 1 m, ∑ t ∈ {t ∈ S | #(univ.image t) = r}, ∏ z ∈ univ.image t, p z := by
-    rw [← sum_filter, ← sum_fiberwise_of_maps_to (g := fun t => #(univ.image t)) (t := Icc 1 m)]
-    · refine sum_congr rfl fun r hr => ?_
-      rw [filter_filter]
-      refine sum_congr (filter_congr fun t _ => ?_) fun _ _ => rfl
-      exact ⟨And.right, fun hcard => ⟨hcard.le.trans (mem_Icc.mp hr).2, hcard⟩⟩
-    · intro t ht
-      refine mem_Icc.mpr ⟨card_pos.mpr ⟨t ⟨0, by omega⟩, mem_image_of_mem t (mem_univ _)⟩, ?_⟩
-      exact (mem_filter.mp ht).2
-  -- The geometric factors `(1 / 2) ^ (m - r)` over `r ∈ [1, m]` sum to at most `2`.
-  have hgeom : ∑ r ∈ Icc 1 m, ((1 : ℝ) / 2) ^ (m - r) ≤ 2 := by
-    have hreflect : ∑ r ∈ Icc 1 m, ((1 : ℝ) / 2) ^ (m - r) =
-        ∑ j ∈ range m, ((1 : ℝ) / 2) ^ j := by
-      refine sum_nbij' (fun r => m - r) (fun j => m - j) ?_ ?_ ?_ ?_ fun _ _ => rfl
-      · intro r hr
-        simp only [mem_Icc, mem_range] at hr ⊢
-        omega
-      · intro j hj
-        simp only [mem_Icc, mem_range] at hj ⊢
-        omega
-      · intro r hr
-        simp only [mem_Icc] at hr
-        omega
-      · intro j hj
-        simp only [mem_range] at hj
-        omega
-    rw [hreflect]
-    exact sum_geometric_two_le m
+  have hsum_p0 : 0 ≤ ∑ z ∈ R, p z := sum_nonneg hp0
+  have hμ0 : 0 ≤ μ := hsum_p0.trans hmean
   simp only [sum_pow']
   rw [expect_sum_comm]
-  calc ∑ t ∈ S, 𝔼 i, ∏ j, (g (t j) (h i (t j)) - 𝔼 y, g (t j) y)
-      ≤ ∑ t ∈ S, if #(univ.image t) ≤ m then ∏ z ∈ univ.image t, p z else 0 :=
-        sum_le_sum fun t ht => expect_prod_sub_expect_le hh R g hg ht
-    _ = ∑ r ∈ Icc 1 m, ∑ t ∈ {t ∈ S | #(univ.image t) = r}, ∏ z ∈ univ.image t, p z := hpart
-    _ ≤ ∑ r ∈ Icc 1 m, ((1 : ℝ) / 2) ^ (m - r) * (3 * (m : ℝ) * μ) ^ m :=
-        sum_le_sum fun r hr =>
-          sum_prod_image_card_eq_le_half_pow R p hp0 (mem_Icc.mp hr).2 hmean hmμ
+  have hterm : ∀ t ∈ piFinset (fun _ : Fin (2 * m) => R),
+      𝔼 i, ∏ j, Z (t j) (h i (t j)) ≤
+        if #(univ.image t) ≤ m then ∏ z ∈ univ.image t, p z else 0 := by
+    intro t ht
+    have htR : ∀ z ∈ univ.image t, z ∈ R := by
+      intro z hz
+      obtain ⟨j, -, rfl⟩ := mem_image.mp hz
+      exact mem_piFinset.mp ht j
+    have hprod (i : ι) : ∏ j, Z (t j) (h i (t j)) =
+        ∏ z ∈ univ.image t, Z z (h i z) ^ #{j | t j = z} :=
+      prod_comp (fun z => Z z (h i z)) t
+    simp only [hprod]
+    rw [hh.expect_prod (card_image_le.trans (by simp)) fun z y => Z z y ^ #{j | t j = z}]
+    split_ifs with hI
+    · by_cases hall2 : ∀ z ∈ univ.image t, 2 ≤ #{j | t j = z}
+      · refine (le_abs_self _).trans ?_
+        rw [abs_prod]
+        exact Finset.prod_le_prod₀ (fun _ _ => abs_nonneg _) fun z hz =>
+          abs_expect_sub_expect_pow_le (g z) (hg z (htR z hz)) (hall2 z hz)
+      · push Not at hall2
+        obtain ⟨z, hz, hlt2⟩ := hall2
+        obtain ⟨j, -, rfl⟩ := mem_image.mp hz
+        have hpos : 0 < #{j' | t j' = t j} := card_pos.mpr ⟨j, by simp⟩
+        have hc1 : #{j' | t j' = t j} = 1 := by omega
+        rw [prod_eq_zero hz (by simp only [hc1, pow_one, Z, p]; exact Fintype.expect_balance _)]
+        exact prod_nonneg fun w hw => hp0 w (htR w hw)
+    · obtain ⟨z, hz, hc⟩ : ∃ z ∈ univ.image t, #{j | t j = z} = 1 := by
+        by_contra hne
+        push Not at hne
+        have hsum := card_eq_sum_card_image t (univ : Finset (Fin (2 * m)))
+        have h2 : ∑ z ∈ univ.image t, 2 ≤ ∑ z ∈ univ.image t, #{j | t j = z} := by
+          refine sum_le_sum fun z hz => ?_
+          obtain ⟨j, -, rfl⟩ := mem_image.mp hz
+          have hpos : 0 < #{j' | t j' = t j} := card_pos.mpr ⟨j, by simp⟩
+          have := hne (t j) hz
+          omega
+        rw [← hsum, sum_const, card_univ, Fintype.card_fin, smul_eq_mul] at h2
+        omega
+      rw [prod_eq_zero hz (by simp only [hc, pow_one, Z, p]; exact Fintype.expect_balance _)]
+  have hpart :
+      (∑ t ∈ piFinset (fun _ : Fin (2 * m) => R),
+        if #(univ.image t) ≤ m then ∏ z ∈ univ.image t, p z else 0) =
+      ∑ r ∈ Icc 1 m,
+        ∑ t ∈ {t ∈ piFinset (fun _ : Fin (2 * m) => R) | #(univ.image t) = r},
+          ∏ z ∈ univ.image t, p z := by
+    rw [← sum_filter, ← sum_biUnion]
+    · refine sum_congr ?_ fun _ _ => rfl
+      ext t
+      simp only [mem_filter, mem_biUnion, mem_Icc]
+      refine ⟨fun ⟨ht, hle⟩ => ⟨#(univ.image t), ⟨?_, hle⟩, ht, rfl⟩,
+        fun ⟨r, ⟨_, hrm⟩, ht, hcard⟩ => ⟨ht, hcard.le.trans hrm⟩⟩
+      have hne_img : (univ.image t).Nonempty :=
+        ⟨t ⟨0, by omega⟩, mem_image_of_mem t (mem_univ _)⟩
+      exact card_pos.mpr hne_img
+    · intro r₁ _ r₂ _ hne s hs₁ hs₂ t ht
+      have h1 := (mem_filter.mp (hs₁ ht)).2
+      have h2 := (mem_filter.mp (hs₂ ht)).2
+      exact False.elim (hne (h1.symm.trans h2))
+  have hr_bound : ∀ r ∈ Icc 1 m,
+      ∑ t ∈ {t ∈ piFinset (fun _ : Fin (2 * m) => R) | #(univ.image t) = r},
+        ∏ z ∈ univ.image t, p z ≤
+      ((1 : ℝ) / 2) ^ (m - r) * (3 * (m : ℝ) * μ) ^ m := by
+    intro r hr
+    rcases mem_Icc.mp hr with ⟨hr1, hrm⟩
+    have hfac_pos : (0 : ℝ) < r.factorial := by exact_mod_cast Nat.factorial_pos r
+    have hstep := sum_prod_image_card_eq_le R p hp0 (2 * m) r
+    have hpow_μ : (∑ z ∈ R, p z) ^ r ≤ μ ^ r := pow_le_pow_left₀ hsum_p0 hmean r
+    have hr_pow : r ^ (2 * m) ≤ 3 ^ r * r.factorial * m ^ (2 * m - r) := by
+      have hsplit : 2 * m = r + (2 * m - r) := by omega
+      calc r ^ (2 * m) = r ^ r * r ^ (2 * m - r) := by
+            conv_lhs => rw [hsplit]
+            rw [pow_add]
+        _ ≤ (3 ^ r * r.factorial) * m ^ (2 * m - r) :=
+            Nat.mul_le_mul (Nat.pow_self_le_three_pow_mul_factorial r)
+              (Nat.pow_le_pow_left hrm _)
+    have hr_real : (r : ℝ) ^ (2 * m) * (∑ z ∈ R, p z) ^ r ≤
+        (r.factorial : ℝ) * ((3 : ℝ) ^ r * (m : ℝ) ^ (2 * m - r) * μ ^ r) := by
+      calc (r : ℝ) ^ (2 * m) * (∑ z ∈ R, p z) ^ r
+          ≤ (r : ℝ) ^ (2 * m) * μ ^ r := by gcongr
+        _ ≤ ((3 ^ r * r.factorial * m ^ (2 * m - r) : ℕ) : ℝ) * μ ^ r := by
+            gcongr; exact_mod_cast hr_pow
+        _ = (r.factorial : ℝ) * ((3 : ℝ) ^ r * (m : ℝ) ^ (2 * m - r) * μ ^ r) := by
+            push_cast; ring
+    have hdiv : ∑ t ∈ {t ∈ piFinset (fun _ : Fin (2 * m) => R) | #(univ.image t) = r},
+          ∏ z ∈ univ.image t, p z ≤
+        (3 : ℝ) ^ r * (m : ℝ) ^ (2 * m - r) * μ ^ r :=
+      le_of_mul_le_mul_left (hstep.trans hr_real) hfac_pos
+    refine hdiv.trans ?_
+    have h2mr : 2 * m - r = m + (m - r) := by omega
+    have hm_sub : (2 * (m : ℝ)) ^ (m - r) * (3 * μ) ^ r ≤ (3 * μ) ^ m := by
+      calc (2 * (m : ℝ)) ^ (m - r) * (3 * μ) ^ r
+          ≤ (3 * μ) ^ (m - r) * (3 * μ) ^ r := by gcongr
+        _ = (3 * μ) ^ m := by rw [← pow_add, Nat.sub_add_cancel hrm]
+    have hhalf : (m : ℝ) ^ (m - r) * (3 * μ) ^ r ≤ ((1 : ℝ) / 2) ^ (m - r) * (3 * μ) ^ m := by
+      have hpos2 : (0 : ℝ) < 2 ^ (m - r) := by positivity
+      apply le_of_mul_le_mul_left _ hpos2
+      calc (2 : ℝ) ^ (m - r) * ((m : ℝ) ^ (m - r) * (3 * μ) ^ r)
+          = (2 * (m : ℝ)) ^ (m - r) * (3 * μ) ^ r := by rw [mul_pow]; ring
+        _ ≤ (3 * μ) ^ m := hm_sub
+        _ = (2 : ℝ) ^ (m - r) * (((1 : ℝ) / 2) ^ (m - r) * (3 * μ) ^ m) := by
+            rw [← mul_assoc, ← mul_pow]; norm_num
+    calc (3 : ℝ) ^ r * (m : ℝ) ^ (2 * m - r) * μ ^ r
+        = (m : ℝ) ^ m * ((m : ℝ) ^ (m - r) * (3 * μ) ^ r) := by
+          rw [h2mr, pow_add, mul_pow]; ring
+      _ ≤ (m : ℝ) ^ m * (((1 : ℝ) / 2) ^ (m - r) * (3 * μ) ^ m) := by gcongr
+      _ = ((1 : ℝ) / 2) ^ (m - r) * (3 * (m : ℝ) * μ) ^ m := by rw [mul_pow]; ring
+  have hgeom : ∑ r ∈ Icc 1 m, ((1 : ℝ) / 2) ^ (m - r) ≤ 2 := by
+    have hbij : ∑ r ∈ Icc 1 m, ((1 : ℝ) / 2) ^ (m - r) = ∑ j ∈ range m, ((1 : ℝ) / 2) ^ j := by
+      refine sum_nbij' (fun r => m - r) (fun j => m - j) ?_ ?_ ?_ ?_ ?_
+      · intro r hr; rw [mem_Icc] at hr; rw [mem_range]; omega
+      · intro j hj; rw [mem_range] at hj; rw [mem_Icc]; omega
+      · intro r hr; rw [mem_Icc] at hr; omega
+      · intro j hj; rw [mem_range] at hj; omega
+      · intro _ _; rfl
+    rw [hbij]
+    exact sum_geometric_two_le m
+  calc ∑ t ∈ piFinset (fun _ : Fin (2 * m) => R), 𝔼 i, ∏ j, Z (t j) (h i (t j))
+      ≤ ∑ t ∈ piFinset (fun _ : Fin (2 * m) => R),
+          if #(univ.image t) ≤ m then ∏ z ∈ univ.image t, p z else 0 := sum_le_sum hterm
+    _ = ∑ r ∈ Icc 1 m,
+          ∑ t ∈ {t ∈ piFinset (fun _ : Fin (2 * m) => R) | #(univ.image t) = r},
+            ∏ z ∈ univ.image t, p z := hpart
+    _ ≤ ∑ r ∈ Icc 1 m, ((1 : ℝ) / 2) ^ (m - r) * (3 * (m : ℝ) * μ) ^ m := sum_le_sum hr_bound
     _ = (∑ r ∈ Icc 1 m, ((1 : ℝ) / 2) ^ (m - r)) * (3 * (m : ℝ) * μ) ^ m := (sum_mul _ _ _).symm
     _ ≤ 2 * (3 * (m : ℝ) * μ) ^ m := by gcongr
 
