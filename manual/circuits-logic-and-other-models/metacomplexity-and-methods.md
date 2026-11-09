@@ -6,98 +6,98 @@ Metacomplexity treats a function's representation or truth table as input and as
 
 | Variant | Instance and acceptance |
 |---|---|
-| [Instance](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/MCSP/Basic.lean#L97) | Arity n, table of exactly `2^n` bits, threshold s; some De Morgan circuit of at most s gates computes the table. |
-| [Instance](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/MCSP/Partial.lean#L91) | Table entries are optional booleans; a circuit must agree at every defined position. |
-| [Instance](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/MCSP/Succinct.lean#L64) | Finite set of input/output samples; one circuit must satisfy all sample constraints. |
-| [GapMCSP](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/MCSP/Basic.lean#L270) | Promise separates complexity at most a lower threshold from complexity above an upper threshold. |
+| [Instance](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/MCSP/Basic.lean#L97) | Arity n, table of exactly `2^n` bits, threshold s; some De Morgan circuit of at most s gates computes the table. |
+| [Instance](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/MCSP/Partial.lean#L91) | Table entries are optional booleans; a circuit must agree at every defined position. |
+| [Instance](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/MCSP/Succinct.lean#L64) | Finite set of input/output samples; one circuit must satisfy all sample constraints. |
+| [GapMCSP](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/MCSP/Basic.lean#L270) | Promise separates complexity at most a lower threshold from complexity above an upper threshold. |
 
 “Succinct” here means a sample-set specification, not an arbitrary circuit encoding of a longer truth table. Partial MCSP supplies both the default all-operation count and a binary AND/OR-only cost measure. The library also distinguishes unary and binary threshold encodings. A theorem stated in function arity n may become a qualitatively different bound when expressed in truth-table length `N=2^n`.
 
-The [partial-MCSP abstract](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/PartialMCSPAbstract.lean) states NP membership and ETH-conditional hardness at the `2^o(n log n)` scale, equivalently `N^o(log log N)`. It preserves the different cost/threshold conventions. At this snapshot the library also contains a separate [native fixed-width SAT counting endpoint](../machines-and-classes/native-counting.md) deriving the negation of ETH. Consequently the historical ETH-conditional implication remains a valid formal theorem, but its premise is false within the combined development. That chapter gives the native encodings, quantitative contract, manuscript mapping and review limits; this interaction affects how the conditional result may be applied and is not a proof inconsistency.
+The [partial-MCSP abstract](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/CslibFrontierAbstracts/PartialMCSPAbstract.lean) states NP membership and ETH-conditional hardness at the `2^o(n log n)` scale, equivalently `N^o(log log N)`. It preserves the different cost/threshold conventions. At this snapshot the library also contains a separate [native fixed-width SAT counting endpoint](../machines-and-classes/native-counting.md) deriving the negation of ETH. Consequently the historical ETH-conditional implication remains a valid formal theorem, but its premise is false within the combined development. That chapter gives the native encodings, quantitative contract, manuscript mapping and review limits; this interaction affects how the conditional result may be applied and is not a proof inconsistency.
 
 ## Hardness magnification
 
-The [magnification abstract](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/MagnificationAbstract.lean) gives decision, no-oracle and size-only specializations. Under `NP subset P/poly`, there is a constant c such that every threshold function s and every arity n admit a decision circuit for the corresponding MCSP slice of size at most `2^n c (n+s(n)+1)^c`; a polynomial threshold yields `2^n c(n+1)^c` after changing c. Contrapositive lower bounds therefore imply `NP` is not contained in P/poly and, through the native containment bridge, `P != NP`.
+The [magnification abstract](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/CslibFrontierAbstracts/MagnificationAbstract.lean) gives decision, no-oracle and size-only specializations. Under `NP subset P/poly`, there is a constant c such that every threshold function s and every arity n admit a decision circuit for the corresponding MCSP slice of size at most `2^n c (n+s(n)+1)^c`; a polynomial threshold yields `2^n c(n+1)^c` after changing c. Contrapositive lower bounds therefore imply `NP` is not contained in P/poly and, through the native containment bridge, `P != NP`.
 
-The [implementation](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/MCSP/Magnification.lean) explicitly maps this version to the cited McKay–Murray–Williams lemma/theorem and explains its stronger lower-bound premise and restricted scope. It uses fixed-threshold witness certificates, binary subcube merging and a polynomial-hierarchy collapse. It should not be cited as every search, oracle or fine quantitative formulation of magnification in the literature.
+The [implementation](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/MCSP/Magnification.lean) explicitly maps this version to the cited McKay–Murray–Williams lemma/theorem and explains its stronger lower-bound premise and restricted scope. It uses fixed-threshold witness certificates, binary subcube merging and a polynomial-hierarchy collapse. It should not be cited as every search, oracle or fine quantitative formulation of magnification in the literature.
 
 ## Hardness versus randomness
 
-[IsAverageCaseHard](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/HardnessAmplification.lean#L58) says that every Boolean function of De Morgan circuit complexity at most s agrees with a target function on at most a `1/2 + 1/s` fraction of uniformly distributed inputs. Both the gate bound and agreement bound are non-strict. This is a nonuniform circuit predicate, distinct from hardness against uniform probabilistic heuristics. XOR amplification and the Nisan–Wigderson generator use it as an intermediate interface.
+[IsAverageCaseHard](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/HardnessAmplification.lean#L58) says that every Boolean function of De Morgan circuit complexity at most s agrees with a target function on at most a `1/2 + 1/s` fraction of uniformly distributed inputs. Both the gate bound and agreement bound are non-strict. This is a nonuniform circuit predicate, distinct from hardness against uniform probabilistic heuristics. XOR amplification and the Nisan–Wigderson generator use it as an intermediate interface.
 
-The [average-case endpoint](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/BPP/Derandomization.lean#L302) assumes a binary language in native E and a positive natural c such that its n-bit slice satisfies this predicate at size `2^(n/c)` at all sufficiently large lengths, with natural-number division. It proves `P enc = BPP enc` for every supplied instance encoding. The native deterministic decider computes a Nisan–Wigderson generator and enumerates its short seeds. The result credits Nisan and Wigderson. [nisanwigderson94][nisanwigderson94]
+The [average-case endpoint](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/BPP/Derandomization.lean#L302) assumes a binary language in native E and a positive natural c such that its n-bit slice satisfies this predicate at size `2^(n/c)` at all sufficiently large lengths, with natural-number division. It proves `P enc = BPP enc` for every supplied instance encoding. The native deterministic decider computes a Nisan–Wigderson generator and enumerates its short seeds. The result credits Nisan and Wigderson. [nisanwigderson94][nisanwigderson94]
 
-The [worst-case endpoint](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/BPP/WorstCaseHardness.lean#L80) assumes instead a native E language and a real `gamma > 0` whose slices require at least `2^(gamma*n)` De Morgan gates at **all sufficiently large lengths**. It derives the same native class equality through Reed–Muller/Hadamard encoding and local list decoding. The endpoint is credited to Impagliazzo and Wigderson, while the source identifies the Sudan–Trevisan–Vadhan proof route. These declarations assume their circuit lower bounds; an infinitely-often hardness hypothesis and simulation variant are not formalized here. [impagliazzowigderson97][impagliazzowigderson97] [sudantrevisanvadhan01][sudantrevisanvadhan01]
+The [worst-case endpoint](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/BPP/WorstCaseHardness.lean#L80) assumes instead a native E language and a real `gamma > 0` whose slices require at least `2^(gamma*n)` De Morgan gates at **all sufficiently large lengths**. It derives the same native class equality through Reed–Muller/Hadamard encoding and local list decoding. The endpoint is credited to Impagliazzo and Wigderson, while the source identifies the Sudan–Trevisan–Vadhan proof route. These declarations assume their circuit lower bounds; an infinitely-often hardness hypothesis and simulation variant are not formalized here. [impagliazzowigderson97][impagliazzowigderson97] [sudantrevisanvadhan01][sudantrevisanvadhan01]
 
 The [machine endpoint account](../machines-and-classes/endpoints-and-hierarchies.md#hardness-versus-randomness) states the uniform class side and the literature-check scope. Here the inspected evidence is the circuit-hardness definition, the final theorem statements and their direct native bridge, not an independent reconstruction of the hardness amplification or generator proof.
 
 ## Hard-core measures and hard-core sets
 
-Impagliazzo's hard-core lemma turns mild average-case hardness into near-maximal hardness on a dense part of the input space. [impagliazzo95][impagliazzo95] Two forms are formalized for Boolean functions `f` on `n` bits and nonuniform De Morgan circuits, with sizes counted by `Cslib.Circuits.complexity`. A hard-core measure ([`IsHardCoreMeasure`](../../Complexity/Computability/Circuit/Boolean/HardCore.lean)) has weights `M x ∈ [0, 1]` and mass at least `δ 2^n`. Every function of complexity at most `s` agrees with `f` on at most a `1/2 + ε` fraction of that mass. A hard-core set ([`IsHardCoreSet`](../../Complexity/Computability/Circuit/Boolean/HardCore/Set.lean)) has at least `δ 2^n` elements, and every such function agrees with `f` on at most a `1/2 + ε` fraction of them. `isHardCoreSet_iff_isHardCoreMeasure` identifies hard-core sets with the hard-core measures that have `0`/`1` weights, so the set form is the stronger conclusion.
+Impagliazzo's hard-core lemma turns mild average-case hardness into near-maximal hardness on a dense part of the input space. [impagliazzo95][impagliazzo95] Two forms are formalized for Boolean functions `f` on `n` bits and nonuniform De Morgan circuits, with sizes counted by `Cslib.Circuits.complexity`. A hard-core measure ([`IsHardCoreMeasure`](../../CslibFrontier/Computability/Circuit/Boolean/HardCore.lean)) has weights `M x ∈ [0, 1]` and mass at least `δ 2^n`. Every function of complexity at most `s` agrees with `f` on at most a `1/2 + ε` fraction of that mass. A hard-core set ([`IsHardCoreSet`](../../CslibFrontier/Computability/Circuit/Boolean/HardCore/Set.lean)) has at least `δ 2^n` elements, and every such function agrees with `f` on at most a `1/2 + ε` fraction of them. `isHardCoreSet_iff_isHardCoreMeasure` identifies hard-core sets with the hard-core measures that have `0`/`1` weights, so the set form is the stronger conclusion.
 
-`exists_isHardCoreMeasure` is the measure form, proved by Impagliazzo's boosting argument. Take `T` rounds with `3 ε² δ² T ≥ 1`. If every function of complexity at most `T s + 2 + 2T(T + 2)` agrees with `f` on at most a `1 - δ` fraction of the inputs, `f` has a hard-core measure of density `δ` against size `s` with advantage `ε`. `exists_isHardCoreMeasure_of_le` restates this from hardness at a given size `S`. Yao's XOR lemma (`card_eq_xorPower_div_le` in [XorLemma.lean](../../Complexity/Computability/Circuit/Boolean/XorLemma.lean)) is derived from the measure form.
+`exists_isHardCoreMeasure` is the measure form, proved by Impagliazzo's boosting argument. Take `T` rounds with `3 ε² δ² T ≥ 1`. If every function of complexity at most `T s + 2 + 2T(T + 2)` agrees with `f` on at most a `1 - δ` fraction of the inputs, `f` has a hard-core measure of density `δ` against size `s` with advantage `ε`. `exists_isHardCoreMeasure_of_le` restates this from hardness at a given size `S`. Yao's XOR lemma (`card_eq_xorPower_div_le` in [XorLemma.lean](../../CslibFrontier/Computability/Circuit/Boolean/XorLemma.lean)) is derived from the measure form.
 
 The set form is obtained by randomized rounding, following Holenstein's Lemma 2.2: each input joins the set independently with probability `M x`. [holenstein05][holenstein05] Hoeffding's inequality and a union bound over the `C` functions of complexity at most `s` (`computableFunctions n s`) give a good outcome in `exists_finset_card_agree_lt`. Rounding costs no circuit size. Padding the measure to `(1 - γδ) M x + γδ` first makes up for the density that rounding loses (`IsHardCoreMeasure.pad`). So `IsHardCoreMeasure.exists_isHardCoreSet` turns a hard-core measure of density `δ ∈ (0, 1)` and advantage `ε ≥ 0` into a hard-core set with at least `δ 2^n` elements and advantage `ε + 2γ`, for `0 < γ ≤ 1`. It assumes the explicit counting condition `(C + 1) exp(-2 (γ δ (1 - δ))² 2^n) < 1`. Since `log C = O((s + 1) log(n + s + 1))` by the De Morgan counting bound, the condition holds for polynomial `s` and fixed `γ` and `δ` once `n` is large. `exists_isHardCoreSet` and `exists_isHardCoreSet_of_le` chain the two steps into the set form of the lemma.
 
-Scope: hardness `δ` gives density `δ`, the parameters of Impagliazzo's lemma as Holenstein recalls them in Section 2. Holenstein's optimal density, a set of density `δ` from hardness `δ/2` (his Lemma 2.1), is not formalized, and neither are uniform versions of the lemma ([#3557](https://github.com/cslib-community/complexitylib/issues/3557)). Existence is nonuniform: no construction of the measure, the set or the circuits is claimed. [HardnessAmplification.lean](../../ComplexityTests/HardnessAmplification.lean) checks a concrete hard-core measure. [HardCoreSet.lean](../../ComplexityTests/HardCoreSet.lean) checks a hard-core set of two-bit parity and shows that a constant function has no hard-core set of positive density. It then rounds the constant measure `1/2` for thirteen-bit parity, verifying the counting condition `14 exp(-16) < 1`, and instantiates the parameters of `exists_isHardCoreSet`.
+Scope: hardness `δ` gives density `δ`, the parameters of Impagliazzo's lemma as Holenstein recalls them in Section 2. Holenstein's optimal density, a set of density `δ` from hardness `δ/2` (his Lemma 2.1), is not formalized, and neither are uniform versions of the lemma ([#3557](https://github.com/cslib-community/cslib-frontier/issues/3557)). Existence is nonuniform: no construction of the measure, the set or the circuits is claimed. [HardnessAmplification.lean](../../CslibFrontierTests/HardnessAmplification.lean) checks a concrete hard-core measure. [HardCoreSet.lean](../../CslibFrontierTests/HardCoreSet.lean) checks a hard-core set of two-bit parity and shows that a constant function has no hard-core set of positive density. It then rounds the constant measure `1/2` for thirteen-bit parity, verifying the counting condition `14 exp(-16) < 1`, and instantiates the parameters of `exists_isHardCoreSet`.
 
 ## Random graph connectivity
 
-[The connectivity module](../../Complexity/Foundations/Probability/Combinatorics/BinomialRandomGraph/Connectivity.lean) proves the upper half of the Erdős–Rényi connectivity threshold for Mathlib's binomial random graph `G(V, p)` (`SimpleGraph.binomialRandom`, `p : unitInterval`), in the `G(n, p)` form proved in the proof of [Frieze and Karoński, Theorem 4.1](../sources.md#friezekaronski2016). A fixed finite set of non-diagonal edges is absent with probability `(1 - p) ^ |t|` (`binomialRandom_real_disjoint_edgeSet`). A disconnected graph on `n ≥ 1` vertices has an empty cut `S` with `1 ≤ |S| ≤ n / 2` (`exists_forall_not_adj_of_not_connected`, a pure graph-theory lemma in [the connectivity topic module](../../Complexity/Foundations/Combinatorics/SimpleGraph/Connectivity/Connected.lean)), so `P(G(n, p) is not connected) ≤ ∑_{k=1}^{⌊n/2⌋} C(n, k) (1 - p) ^ (k (n - k))` (`binomialRandom_real_not_connected_le_sum`). For `n ≥ 1` and `n exp (-(n p)) ≤ 1 / 64` this is at most `35 n exp (-(n p))` (`binomialRandom_real_not_connected_le`), and `tendsto_binomialRandom_real_connected` gives `P(G(n, p(n)) is connected) → 1` whenever `n p(n) - log n → ∞`. The union bound over cuts replaces the source's count of components through spanning trees; the constants `1 / 64` and `35` are not optimized. [The simple-graph measurability module](../../Complexity/Foundations/MeasureTheory/Constructions/SimpleGraph.lean) provides a `MeasurableSingletonClass` instance for countable `V`. For finite `V` this makes every event about a graph measurable (`MeasurableSet.of_discrete`). The [checked instances](../../ComplexityTests/BinomialRandomGraphConnectivity.lean) cover `p = 0` and `p = 1`, the union bound on two vertices, and show the explicit bound is nonvacuous: `G(20, 1/2)` is disconnected with probability below `1 / 20`.
+[The connectivity module](../../CslibFrontier/Foundations/Probability/Combinatorics/BinomialRandomGraph/Connectivity.lean) proves the upper half of the Erdős–Rényi connectivity threshold for Mathlib's binomial random graph `G(V, p)` (`SimpleGraph.binomialRandom`, `p : unitInterval`), in the `G(n, p)` form proved in the proof of [Frieze and Karoński, Theorem 4.1](../sources.md#friezekaronski2016). A fixed finite set of non-diagonal edges is absent with probability `(1 - p) ^ |t|` (`binomialRandom_real_disjoint_edgeSet`). A disconnected graph on `n ≥ 1` vertices has an empty cut `S` with `1 ≤ |S| ≤ n / 2` (`exists_forall_not_adj_of_not_connected`, a pure graph-theory lemma in [the connectivity topic module](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/Connectivity/Connected.lean)), so `P(G(n, p) is not connected) ≤ ∑_{k=1}^{⌊n/2⌋} C(n, k) (1 - p) ^ (k (n - k))` (`binomialRandom_real_not_connected_le_sum`). For `n ≥ 1` and `n exp (-(n p)) ≤ 1 / 64` this is at most `35 n exp (-(n p))` (`binomialRandom_real_not_connected_le`), and `tendsto_binomialRandom_real_connected` gives `P(G(n, p(n)) is connected) → 1` whenever `n p(n) - log n → ∞`. The union bound over cuts replaces the source's count of components through spanning trees; the constants `1 / 64` and `35` are not optimized. [The simple-graph measurability module](../../CslibFrontier/Foundations/MeasureTheory/Constructions/SimpleGraph.lean) provides a `MeasurableSingletonClass` instance for countable `V`. For finite `V` this makes every event about a graph measurable (`MeasurableSet.of_discrete`). The [checked instances](../../CslibFrontierTests/BinomialRandomGraphConnectivity.lean) cover `p = 0` and `p = 1`, the union bound on two vertices, and show the explicit bound is nonvacuous: `G(20, 1/2)` is disconnected with probability below `1 / 20`.
 
-To use it, `import Complexity.Foundations.Probability.Combinatorics.BinomialRandomGraph.Connectivity` and `open SimpleGraph` for the scoped notation `G(V, p)`. An edge probability is a `unitInterval` element such as `(⟨1 / 2, by norm_num, by norm_num⟩ : unitInterval)`. To apply `tendsto_binomialRandom_real_connected` to a sequence `p : ℕ → unitInterval`, prove `Tendsto (fun n : ℕ => n * (p n : ℝ) - Real.log n) atTop atTop`; the checked instances do this for constant `p = 1 / 2` from `log n ≤ n / e`.
+To use it, `import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.Connectivity` and `open SimpleGraph` for the scoped notation `G(V, p)`. An edge probability is a `unitInterval` element such as `(⟨1 / 2, by norm_num, by norm_num⟩ : unitInterval)`. To apply `tendsto_binomialRandom_real_connected` to a sequence `p : ℕ → unitInterval`, prove `Tendsto (fun n : ℕ => n * (p n : ℝ) - Real.log n) atTop atTop`; the checked instances do this for constant `p = 1 / 2` from `log n ≤ n / e`.
 
-[The isolated-vertex module](../../Complexity/Foundations/Probability/Combinatorics/BinomialRandomGraph/IsolatedVertices.lean) proves the lower half, through the sharp threshold for isolated vertices: the `G(n, p)` form of [Frieze and Karoński, Lemma 1.11](../sources.md#friezekaronski2016) (stated there for `G(n, m)`) and the case `c_n → -∞` of their Theorem 4.1. The isolated-vertex predicate is Mathlib's `SimpleGraph.IsIsolated`. Let `X` count the isolated vertices and `μ = n (1 - p) ^ (n - 1)`. A vertex is isolated with probability `(1 - p) ^ (n - 1)` (`binomialRandom_real_isIsolated`) and two distinct vertices both are with probability `(1 - p) ^ (2 n - 3)` (`binomialRandom_real_isIsolated_and`). So `E[X] = μ` (`integral_natCard_isIsolated`) and `E[X ^ 2] = μ + n (n - 1) (1 - p) ^ (2 n - 3)` (`integral_natCard_isIsolated_sq`). The first moment gives `P(X > 0) ≤ μ` (`binomialRandom_real_exists_isIsolated_le`). Chebyshev's inequality (Mathlib's `meas_ge_le_variance_div_sq`, not a separate second-moment lemma) gives `P(X = 0) ≤ 1 / μ + p / (1 - p)` for `n ≥ 1` and `p < 1` (`binomialRandom_real_forall_not_isIsolated_le`). Since a connected graph on `n ≥ 2` vertices has no isolated vertex, the same bound holds for `P(G(n, p) is connected)` (`binomialRandom_real_connected_le`). Asymptotically, `tendsto_binomialRandom_real_exists_isIsolated_atTop` and `tendsto_binomialRandom_real_exists_isIsolated_atBot` give `P(X > 0) → 0` when `n p(n) - log n → ∞` and `P(X > 0) → 1` when `n p(n) - log n → -∞`. `tendsto_binomialRandom_real_connected_atBot` gives `P(G(n, p(n)) is connected) → 0` in the second case. Its [checked instances](../../ComplexityTests/BinomialRandomGraphIsolatedVertices.lean) cover `p = 0`, `p = 1`, two vertices, the mean `3 / 4` for `G(3, 1/2)`, and the nonvacuous bound `P(G(20, 1/20) is connected) < 1 / 5`. They also cover the sequence `p(n) = 1 / (n + 1)`. To apply the lower half, `import Complexity.Foundations.Probability.Combinatorics.BinomialRandomGraph.IsolatedVertices` and prove `Tendsto (fun n : ℕ => n * (p n : ℝ) - Real.log n) atTop atBot`; for `p(n) = 1 / (n + 1)` the checked instance bounds the left side by `1 - log n`.
+[The isolated-vertex module](../../CslibFrontier/Foundations/Probability/Combinatorics/BinomialRandomGraph/IsolatedVertices.lean) proves the lower half, through the sharp threshold for isolated vertices: the `G(n, p)` form of [Frieze and Karoński, Lemma 1.11](../sources.md#friezekaronski2016) (stated there for `G(n, m)`) and the case `c_n → -∞` of their Theorem 4.1. The isolated-vertex predicate is Mathlib's `SimpleGraph.IsIsolated`. Let `X` count the isolated vertices and `μ = n (1 - p) ^ (n - 1)`. A vertex is isolated with probability `(1 - p) ^ (n - 1)` (`binomialRandom_real_isIsolated`) and two distinct vertices both are with probability `(1 - p) ^ (2 n - 3)` (`binomialRandom_real_isIsolated_and`). So `E[X] = μ` (`integral_natCard_isIsolated`) and `E[X ^ 2] = μ + n (n - 1) (1 - p) ^ (2 n - 3)` (`integral_natCard_isIsolated_sq`). The first moment gives `P(X > 0) ≤ μ` (`binomialRandom_real_exists_isIsolated_le`). Chebyshev's inequality (Mathlib's `meas_ge_le_variance_div_sq`, not a separate second-moment lemma) gives `P(X = 0) ≤ 1 / μ + p / (1 - p)` for `n ≥ 1` and `p < 1` (`binomialRandom_real_forall_not_isIsolated_le`). Since a connected graph on `n ≥ 2` vertices has no isolated vertex, the same bound holds for `P(G(n, p) is connected)` (`binomialRandom_real_connected_le`). Asymptotically, `tendsto_binomialRandom_real_exists_isIsolated_atTop` and `tendsto_binomialRandom_real_exists_isIsolated_atBot` give `P(X > 0) → 0` when `n p(n) - log n → ∞` and `P(X > 0) → 1` when `n p(n) - log n → -∞`. `tendsto_binomialRandom_real_connected_atBot` gives `P(G(n, p(n)) is connected) → 0` in the second case. Its [checked instances](../../CslibFrontierTests/BinomialRandomGraphIsolatedVertices.lean) cover `p = 0`, `p = 1`, two vertices, the mean `3 / 4` for `G(3, 1/2)`, and the nonvacuous bound `P(G(20, 1/20) is connected) < 1 / 5`. They also cover the sequence `p(n) = 1 / (n + 1)`. To apply the lower half, `import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.IsolatedVertices` and prove `Tendsto (fun n : ℕ => n * (p n : ℝ) - Real.log n) atTop atBot`; for `p(n) = 1 / (n + 1)` the checked instance bounds the left side by `1 - log n`.
 
-The limit `e ^ (-e ^ (-c))` at `p = (log n + c) / n` (the Poisson limit of `X`), the hitting-time theorem and the translation to `G(n, m)` are not formalized ([#3485](https://github.com/cslib-community/complexitylib/issues/3485)).
+The limit `e ^ (-e ^ (-c))` at `p = (log n + c) / n` (the Poisson limit of `X`), the hitting-time theorem and the translation to `G(n, m)` are not formalized ([#3485](https://github.com/cslib-community/cslib-frontier/issues/3485)).
 
 ## Explicit Ramsey graphs
 
-Explicit Ramsey graphs are a standard derandomization benchmark: the counting argument shows that most graphs have no large homogeneous set, but it names none. [`SimpleGraph.ramseyNumber`](../../Complexity/Foundations/Combinatorics/SimpleGraph/Ramsey/Basic.lean) is the least `n` such that every simple graph on `n` vertices has a `k`-clique or an `l`-independent set. It is characterized on any finite vertex type by `ramseyNumber_le_card_iff` (upper bounds) and `card_lt_ramseyNumber_iff` (lower bounds: exhibit one graph with neither). The Erdős–Szekeres recursion gives `ramseyNumber_le_four_pow`. [erdosszekeres1935][erdosszekeres1935] The [Erdős module](../../Complexity/Foundations/Combinatorics/SimpleGraph/Ramsey/Erdos.lean) proves the lower bound `two_rpow_half_lt_ramseyNumber`, `2 ^ (k / 2) < R(k, k)` for `k ≥ 3`, by finite counting. The underlying count `lt_ramseyNumber_of_two_mul_choose_lt` (`2 C(n, k) < 2 ^ C(k, 2)`) needs no probability space. [erdos1947][erdos1947]
+Explicit Ramsey graphs are a standard derandomization benchmark: the counting argument shows that most graphs have no large homogeneous set, but it names none. [`SimpleGraph.ramseyNumber`](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/Ramsey/Basic.lean) is the least `n` such that every simple graph on `n` vertices has a `k`-clique or an `l`-independent set. It is characterized on any finite vertex type by `ramseyNumber_le_card_iff` (upper bounds) and `card_lt_ramseyNumber_iff` (lower bounds: exhibit one graph with neither). The Erdős–Szekeres recursion gives `ramseyNumber_le_four_pow`. [erdosszekeres1935][erdosszekeres1935] The [Erdős module](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/Ramsey/Erdos.lean) proves the lower bound `two_rpow_half_lt_ramseyNumber`, `2 ^ (k / 2) < R(k, k)` for `k ≥ 3`, by finite counting. The underlying count `lt_ramseyNumber_of_two_mul_choose_lt` (`2 C(n, k) < 2 ^ C(k, 2)`) needs no probability space. [erdos1947][erdos1947]
 
-The explicit counterpart is [Nagy's graph](../../Complexity/Foundations/Combinatorics/SimpleGraph/Ramsey/Nagy.lean). Its vertices are the `3`-subsets of a `t`-element type, and two vertices are adjacent when they meet in exactly one point. Oddtown and the uniform Fisher inequality bound its cliques and independent sets by `t`. Both are proved through one [Gram-matrix rank bound](../../Complexity/Foundations/LinearAlgebra/Matrix/UniformGram.lean) over `ZMod 2` and `ℚ` ([set-family module](../../Complexity/Foundations/Combinatorics/SetFamily/Oddtown.lean)). Hence `choose_three_lt_ramseyNumber` gives `C(t, 3) < R(t + 1, t + 1)`. [nagy1972][nagy1972]
+The explicit counterpart is [Nagy's graph](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/Ramsey/Nagy.lean). Its vertices are the `3`-subsets of a `t`-element type, and two vertices are adjacent when they meet in exactly one point. Oddtown and the uniform Fisher inequality bound its cliques and independent sets by `t`. Both are proved through one [Gram-matrix rank bound](../../CslibFrontier/Foundations/LinearAlgebra/Matrix/UniformGram.lean) over `ZMod 2` and `ℚ` ([set-family module](../../CslibFrontier/Foundations/Combinatorics/SetFamily/Oddtown.lean)). Hence `choose_three_lt_ramseyNumber` gives `C(t, 3) < R(t + 1, t + 1)`. [nagy1972][nagy1972]
 
-Graph bounds and explicitness are separate obligations. [`Cslib.ExplicitRamsey`](../../Complexity/Computability/Complexity/ExplicitRamsey.lean) names a vertex by its increasing triple `(a, b, c)` with `a < b < c < t`. `nagyLabel_injective` and `range_nagyLabel` show that these names are a bijection onto the triples accepted by `nagyIsLabel`. `nagyGraph_adj_iff_nagyAdj` transfers adjacency to `nagyAdj` on names. `computableInPolyTime_nagyAdj` and `computableInPolyTime_nagyIsLabel` are plain `ComputableInPolyTime` certificates for binary naturals; one machine serves every `t`. The cost is therefore polylogarithmic in the number of vertices, the strongly explicit regime. The [checked clients](../../ComplexityTests/Ramsey.lean) include `R(3, 3) = 6` and a Fano-plane instance attaining the uniform Fisher bound.
+Graph bounds and explicitness are separate obligations. [`Cslib.ExplicitRamsey`](../../CslibFrontier/Computability/Complexity/ExplicitRamsey.lean) names a vertex by its increasing triple `(a, b, c)` with `a < b < c < t`. `nagyLabel_injective` and `range_nagyLabel` show that these names are a bijection onto the triples accepted by `nagyIsLabel`. `nagyGraph_adj_iff_nagyAdj` transfers adjacency to `nagyAdj` on names. `computableInPolyTime_nagyAdj` and `computableInPolyTime_nagyIsLabel` are plain `ComputableInPolyTime` certificates for binary naturals; one machine serves every `t`. The cost is therefore polylogarithmic in the number of vertices, the strongly explicit regime. The [checked clients](../../CslibFrontierTests/Ramsey.lean) include `R(3, 3) = 6` and a Fano-plane instance attaining the uniform Fisher bound.
 
-The [Ray-Chaudhuri–Wilson module](../../Complexity/Foundations/Combinatorics/SetFamily/RayChaudhuriWilson.lean) proves intersection bounds by the multilinear polynomial method of Alon, Babai and Suzuki, using the [low-degree functions on the cube](../../Complexity/Foundations/BooleanAnalysis/LowDegree.lean) and their dimension bound. Over any field, if no member size lies in `L` and every pairwise intersection size does, the family has at most `∑_{i ≤ |L|} C(n, i)` members (`Fintype.card_le_sum_choose_of_card_inter_mem`). A `d`-uniform family has at most `C(n, |L|)` members when also `(j : K) ≠ d` for `j < |L|` (`Fintype.card_le_choose_of_card_inter_mem`). Two specializations follow. `Fintype.card_le_choose_of_card_inter_mem_of_lt` is Ray-Chaudhuri–Wilson for a set of naturals below `d`. `Fintype.card_le_choose_of_card_inter_mem_zmod` is the modular Frankl–Wilson bound over `ZMod p` with `d mod p ∉ L`. [alonbabaisuzuki1991][alonbabaisuzuki1991] [raychaudhuriwilson1975][raychaudhuriwilson1975] [franklwilson1981][franklwilson1981]
+The [Ray-Chaudhuri–Wilson module](../../CslibFrontier/Foundations/Combinatorics/SetFamily/RayChaudhuriWilson.lean) proves intersection bounds by the multilinear polynomial method of Alon, Babai and Suzuki, using the [low-degree functions on the cube](../../CslibFrontier/Foundations/BooleanAnalysis/LowDegree.lean) and their dimension bound. Over any field, if no member size lies in `L` and every pairwise intersection size does, the family has at most `∑_{i ≤ |L|} C(n, i)` members (`Fintype.card_le_sum_choose_of_card_inter_mem`). A `d`-uniform family has at most `C(n, |L|)` members when also `(j : K) ≠ d` for `j < |L|` (`Fintype.card_le_choose_of_card_inter_mem`). Two specializations follow. `Fintype.card_le_choose_of_card_inter_mem_of_lt` is Ray-Chaudhuri–Wilson for a set of naturals below `d`. `Fintype.card_le_choose_of_card_inter_mem_zmod` is the modular Frankl–Wilson bound over `ZMod p` with `d mod p ∉ L`. [alonbabaisuzuki1991][alonbabaisuzuki1991] [raychaudhuriwilson1975][raychaudhuriwilson1975] [franklwilson1981][franklwilson1981]
 
-The modular bound is a restricted form: it assumes `|L| ≤ d mod p`, the condition the triangular polynomial argument needs. Some side condition is necessary, and a checked counterexample in the [tests](../../ComplexityTests/FranklWilson.lean) shows the bound failing without it. Frankl and Wilson's inclusion-matrix theorem reportedly needs only `|L| ≤ d` (not checked against the paper). It covers, for example, `p = 3`, `d = 4`, `L = {0, 2}`, which the restricted form does not, and it is not formalized.
+The modular bound is a restricted form: it assumes `|L| ≤ d mod p`, the condition the triangular polynomial argument needs. Some side condition is necessary, and a checked counterexample in the [tests](../../CslibFrontierTests/FranklWilson.lean) shows the bound failing without it. Frankl and Wilson's inclusion-matrix theorem reportedly needs only `|L| ≤ d` (not checked against the paper). It covers, for example, `p = 3`, `d = 4`, `L = {0, 2}`, which the restricted form does not, and it is not formalized.
 
-The [Frankl–Wilson graph](../../Complexity/Foundations/Combinatorics/SimpleGraph/Ramsey/FranklWilson.lean) `franklWilsonGraph α p d` has the `d`-subsets of `α` as vertices. Two vertices are adjacent when their intersection size is not congruent to `d` mod `p`. For a prime `p` with `d ≡ -1 (mod p)`, the modular bound excludes cliques of size `C(n, p - 1) + 1` (`cliqueFree_franklWilsonGraph`). Ray-Chaudhuri–Wilson excludes independent sets of size `C(n, ⌊d / p⌋) + 1` (`indepSetFree_franklWilsonGraph`). With `n = p³` and `d = p² - 1`, `choose_lt_ramseyNumber_franklWilson` gives `C(p³, p² - 1) < R(k, k)` for `k = C(p³, p - 1) + 1`. `pow_lt_ramseyNumber_franklWilson` records `k ^ c < R(k, k)` for every prime `p ≥ 6c + 3`, a superpolynomial explicit bound along this sequence of `k`.
+The [Frankl–Wilson graph](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/Ramsey/FranklWilson.lean) `franklWilsonGraph α p d` has the `d`-subsets of `α` as vertices. Two vertices are adjacent when their intersection size is not congruent to `d` mod `p`. For a prime `p` with `d ≡ -1 (mod p)`, the modular bound excludes cliques of size `C(n, p - 1) + 1` (`cliqueFree_franklWilsonGraph`). Ray-Chaudhuri–Wilson excludes independent sets of size `C(n, ⌊d / p⌋) + 1` (`indepSetFree_franklWilsonGraph`). With `n = p³` and `d = p² - 1`, `choose_lt_ramseyNumber_franklWilson` gives `C(p³, p² - 1) < R(k, k)` for `k = C(p³, p - 1) + 1`. `pow_lt_ramseyNumber_franklWilson` records `k ^ c < R(k, k)` for every prime `p ≥ 6c + 3`, a superpolynomial explicit bound along this sequence of `k`.
 
-The [explicitness module](../../Complexity/Computability/Complexity/ExplicitRamsey/FranklWilson.lean) names a `d`-subset of `Fin n` by its increasing list of elements. `subsetLabel_injective` and `range_subsetLabel` identify the names with the lists accepted by `isSubsetLabel`. `franklWilsonGraph_adj_iff_subsetAdj` transfers adjacency to `subsetAdj`. The four `computableInPolyTime_*` theorems are plain `ComputableInPolyTime` certificates for binary naturals. `franklWilsonIsLabel` and `franklWilsonAdj` take only `p`, so one machine serves every prime. A name has `O(p² log p)` bits, logarithmic in the number of vertices.
+The [explicitness module](../../CslibFrontier/Computability/Complexity/ExplicitRamsey/FranklWilson.lean) names a `d`-subset of `Fin n` by its increasing list of elements. `subsetLabel_injective` and `range_subsetLabel` identify the names with the lists accepted by `isSubsetLabel`. `franklWilsonGraph_adj_iff_subsetAdj` transfers adjacency to `subsetAdj`. The four `computableInPolyTime_*` theorems are plain `ComputableInPolyTime` certificates for binary naturals. `franklWilsonIsLabel` and `franklWilsonAdj` take only `p`, so one machine serves every prime. A name has `O(p² log p)` bits, logarithmic in the number of vertices.
 
-Nagy's graph has `Θ(k ^ 3)` vertices for homogeneous-set bound `k`. Frankl and Wilson's has `k ^ Θ(log k / log log k)`, and Erdős's existential bound is exponential in `k`. Erdős's bound overtakes Nagy's at `k = 20`. The two-source disperser and extractor graphs are not formalized. An explicit graph on `2 ^ Ω(k)` vertices is an open problem ([#3041](https://github.com/cslib-community/complexitylib/issues/3041)).
+Nagy's graph has `Θ(k ^ 3)` vertices for homogeneous-set bound `k`. Frankl and Wilson's has `k ^ Θ(log k / log log k)`, and Erdős's existential bound is exponential in `k`. Erdős's bound overtakes Nagy's at `k = 20`. The two-source disperser and extractor graphs are not formalized. An explicit graph on `2 ^ Ω(k)` vertices is an open problem ([#3041](https://github.com/cslib-community/cslib-frontier/issues/3041)).
 
 ## Random graphs and thresholds
 
-The binomial random graph `G(V, p)` is Mathlib's `SimpleGraph.binomialRandom`, a measure on `SimpleGraph V` with `p : unitInterval`. The library adds its basic probabilities, the first moment method for every fixed subgraph and the second moment method for triangles. To use it, `import Complexity.Foundations.Probability.Combinatorics.BinomialRandomGraph.Clique` and `open SimpleGraph` for the scoped notation `G(V, p)`; an edge probability is a `unitInterval` element such as `(⟨1 / 2, by norm_num, by norm_num⟩ : unitInterval)`. [Binomial random graph basics](../../Complexity/Foundations/Probability/Combinatorics/BinomialRandomGraph/Basic.lean) show that a fixed finite set of non-diagonal edges is present with probability `p ^ |s|` (`binomialRandom_real_subset_edgeSet`) and a fixed subgraph with probability `p ^ e(H)` (`binomialRandom_real_setOf_le`). The expected number of labelled copies of `H` is the falling factorial `|V| (|V| - 1) ⋯ (|V| - v(H) + 1)` times `p ^ e(H)` (`integral_labelledCopyCount`), and the union bound gives the same bound on the probability of containing `H` (`binomialRandom_real_isContained_le`). `tendsto_binomialRandom_real_isContained` is the first-moment half of the small-subgraph threshold theorem: if `n ^ v(H) p(n) ^ e(H) → 0`, then `G(n, p(n))` contains `H` with probability tending to `0`. Applied to the densest subgraph of `H`, this is the `0`-statement below `n ^ (-1 / m(H))`. [jansonluczakrucinski2000][jansonluczakrucinski2000]
+The binomial random graph `G(V, p)` is Mathlib's `SimpleGraph.binomialRandom`, a measure on `SimpleGraph V` with `p : unitInterval`. The library adds its basic probabilities, the first moment method for every fixed subgraph and the second moment method for triangles. To use it, `import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.Clique` and `open SimpleGraph` for the scoped notation `G(V, p)`; an edge probability is a `unitInterval` element such as `(⟨1 / 2, by norm_num, by norm_num⟩ : unitInterval)`. [Binomial random graph basics](../../CslibFrontier/Foundations/Probability/Combinatorics/BinomialRandomGraph/Basic.lean) show that a fixed finite set of non-diagonal edges is present with probability `p ^ |s|` (`binomialRandom_real_subset_edgeSet`) and a fixed subgraph with probability `p ^ e(H)` (`binomialRandom_real_setOf_le`). The expected number of labelled copies of `H` is the falling factorial `|V| (|V| - 1) ⋯ (|V| - v(H) + 1)` times `p ^ e(H)` (`integral_labelledCopyCount`), and the union bound gives the same bound on the probability of containing `H` (`binomialRandom_real_isContained_le`). `tendsto_binomialRandom_real_isContained` is the first-moment half of the small-subgraph threshold theorem: if `n ^ v(H) p(n) ^ e(H) → 0`, then `G(n, p(n))` contains `H` with probability tending to `0`. Applied to the densest subgraph of `H`, this is the `0`-statement below `n ^ (-1 / m(H))`. [jansonluczakrucinski2000][jansonluczakrucinski2000]
 
-[The clique module](../../Complexity/Foundations/Probability/Combinatorics/BinomialRandomGraph/Clique.lean) proves the **triangle threshold** `p = 1 / n` with explicit bounds. A fixed `k`-set is a clique with probability `p ^ C(k, 2)` (`binomialRandom_real_isClique`), so the expected number of `k`-cliques is `C(|V|, k) p ^ C(k, 2)` (`integral_card_cliqueFinset`). The first moment gives `P(G(n, p) has a triangle) ≤ (n p) ^ 3 / 6` (`binomialRandom_real_not_cliqueFree_three_le`). The second moment gives `P(G(n, p) is triangle-free) ≤ 1 / (C(n, 3) p ^ 3) + 3 (n - 3) / (C(n, 3) p)` for `n ≥ 3` and `p > 0` (`binomialRandom_real_cliqueFree_three_le_choose`), and hence `≤ 16 / (n p) ^ 3 + 48 / (n p)` for `n ≥ 4` and `p > 0` (`binomialRandom_real_cliqueFree_three_le`). The `48 / (n p)` term is loose, since the exact covariance term is of order `1 / (n ^ 2 p)`, but a bound in `n p` alone suffices for the threshold. The asymptotic forms are `tendsto_binomialRandom_real_not_cliqueFree_three` (`n p(n) → 0`) and `tendsto_binomialRandom_real_cliqueFree_three` / `tendsto_binomialRandom_real_not_cliqueFree_three_nhds_one` (`n p(n) → ∞`). [alonspencer2016][alonspencer2016]
+[The clique module](../../CslibFrontier/Foundations/Probability/Combinatorics/BinomialRandomGraph/Clique.lean) proves the **triangle threshold** `p = 1 / n` with explicit bounds. A fixed `k`-set is a clique with probability `p ^ C(k, 2)` (`binomialRandom_real_isClique`), so the expected number of `k`-cliques is `C(|V|, k) p ^ C(k, 2)` (`integral_card_cliqueFinset`). The first moment gives `P(G(n, p) has a triangle) ≤ (n p) ^ 3 / 6` (`binomialRandom_real_not_cliqueFree_three_le`). The second moment gives `P(G(n, p) is triangle-free) ≤ 1 / (C(n, 3) p ^ 3) + 3 (n - 3) / (C(n, 3) p)` for `n ≥ 3` and `p > 0` (`binomialRandom_real_cliqueFree_three_le_choose`), and hence `≤ 16 / (n p) ^ 3 + 48 / (n p)` for `n ≥ 4` and `p > 0` (`binomialRandom_real_cliqueFree_three_le`). The `48 / (n p)` term is loose, since the exact covariance term is of order `1 / (n ^ 2 p)`, but a bound in `n p` alone suffices for the threshold. The asymptotic forms are `tendsto_binomialRandom_real_not_cliqueFree_three` (`n p(n) → 0`) and `tendsto_binomialRandom_real_cliqueFree_three` / `tendsto_binomialRandom_real_not_cliqueFree_three_nhds_one` (`n p(n) → ∞`). [alonspencer2016][alonspencer2016]
 
-The second-moment step uses two measure-theoretic statements in [SecondMoment](../../Complexity/Foundations/Probability/SecondMoment.lean). Under a probability measure, `measureReal_nonpos_le_variance_div_sq` bounds `P(X ≤ 0)` by `Var X / (E X) ^ 2` for square-integrable `X` (`MemLp X 2`) with `E X > 0`. For measurable events `A k` with `S = ∑ P(A k) > 0`, `measureReal_forall_notMem_le` bounds the probability that none of them occurs by `(∑∑ P(A k ∩ A l) - S ^ 2) / S ^ 2`. `integral_sum_indicator_one` computes the mean `S` of the count of events. For a count of edge-set events, each pair probability is again `p ^ |s ∪ t|`, so the variance computation reduces to counting overlaps. The [checked instances](../../ComplexityTests/BinomialRandomGraph.lean) cover `p = 0` and `p = 1`, the expected numbers of edges and triangles, and both sides of the threshold. They also show the bound is nonvacuous: `G(1000, 1/2)` contains a triangle with probability above `9 / 10`.
+The second-moment step uses two measure-theoretic statements in [SecondMoment](../../CslibFrontier/Foundations/Probability/SecondMoment.lean). Under a probability measure, `measureReal_nonpos_le_variance_div_sq` bounds `P(X ≤ 0)` by `Var X / (E X) ^ 2` for square-integrable `X` (`MemLp X 2`) with `E X > 0`. For measurable events `A k` with `S = ∑ P(A k) > 0`, `measureReal_forall_notMem_le` bounds the probability that none of them occurs by `(∑∑ P(A k ∩ A l) - S ^ 2) / S ^ 2`. `integral_sum_indicator_one` computes the mean `S` of the count of events. For a count of edge-set events, each pair probability is again `p ^ |s ∪ t|`, so the variance computation reduces to counting overlaps. The [checked instances](../../CslibFrontierTests/BinomialRandomGraph.lean) cover `p = 0` and `p = 1`, the expected numbers of edges and triangles, and both sides of the threshold. They also show the bound is nonvacuous: `G(1000, 1/2)` contains a triangle with probability above `9 / 10`.
 
-Only the triangle case (`v = e = 3`) of the threshold `n ^ (-v / e)` for balanced graphs is proved; the general balanced-graph second-moment theorem, Janson's inequality and the Poisson limit at the threshold are not formalized ([#3275](https://github.com/cslib-community/complexitylib/issues/3275)). The connectivity threshold `log n / n` is covered under [random graph connectivity](#random-graph-connectivity). The uniform `G(n, 1/2)` of the [first-order 0-1 law](finite-model-logic.md) is a separate PMF construction, and no bridge to `binomialRandom` is proved.
+Only the triangle case (`v = e = 3`) of the threshold `n ^ (-v / e)` for balanced graphs is proved; the general balanced-graph second-moment theorem, Janson's inequality and the Poisson limit at the threshold are not formalized ([#3275](https://github.com/cslib-community/cslib-frontier/issues/3275)). The connectivity threshold `log n / n` is covered under [random graph connectivity](#random-graph-connectivity). The uniform `G(n, 1/2)` of the [first-order 0-1 law](finite-model-logic.md) is a separate PMF construction, and no bridge to `binomialRandom` is proved.
 
 ## Natural proofs and cryptographic assumptions
 
-[NaturalProof.IsLarge](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/NaturalProof.lean#L147) separates largeness, constructivity and usefulness. A property is a family of sets of Boolean functions. Constructivity concerns deciding from a full truth table; polynomial in that input length is exponential in the function's arity. Usefulness excludes every easy language's slices eventually. Largeness is a quantitative density condition.
+[NaturalProof.IsLarge](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/NaturalProof.lean#L147) separates largeness, constructivity and usefulness. A property is a family of sets of Boolean functions. Constructivity concerns deciding from a full truth table; polynomial in that input length is exponential in the function's arity. Usefulness excludes every easy language's slices eventually. Largeness is a quantitative density condition.
 
-The Razborov–Rudich barrier is stated through concrete circuit distinguishers: a property excluding a small-circuit keyed family distinguishes its truth tables from uniform random function tables with advantage equal to the property's density. An exponentially secure keyed family prevents a P/poly-natural useful property. A [generator-to-barrier bridge](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/NaturalProof/Generator.lean) uses the GGM construction and its circuit-size analysis. Security is an explicit hypothesis and belongs to the cryptographic model in the [programs section](../programs-crypto-and-probability/index.md), not an unconditional result.
+The Razborov–Rudich barrier is stated through concrete circuit distinguishers: a property excluding a small-circuit keyed family distinguishes its truth tables from uniform random function tables with advantage equal to the property's density. An exponentially secure keyed family prevents a P/poly-natural useful property. A [generator-to-barrier bridge](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/NaturalProof/Generator.lean) uses the GGM construction and its circuit-size analysis. Security is an explicit hypothesis and belongs to the cryptographic model in the [programs section](../programs-crypto-and-probability/index.md), not an unconditional result.
 
 ## Lower-bound interfaces beyond one theorem
 
-[Atom](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Fusion/Basic.lean#L60) represents a gate together with argument values as an atom and a finite collection of invariant failures as a cover. The central inequality `coverComplexity_le_ecomplexityFrom` lets a combinatorial cover lower bound imply a weighted source-relative circuit lower bound. This factors semantic lower-bound arguments away from a particular syntax traversal.
+[Atom](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Fusion/Basic.lean#L60) represents a gate together with argument values as an atom and a finite collection of invariant failures as a cover. The central inequality `coverComplexity_le_ecomplexityFrom` lets a combinatorial cover lower bound imply a weighted source-relative circuit lower bound. This factors semantic lower-bound arguments away from a particular syntax traversal.
 
-[SemifilterWitness](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Fusion/Semifilter.lean#L127) specializes the argument to monotone truth-valued maps on subsets that preserve the empty and full set. These maps need not preserve intersections, so they are not filters in the usual algebraic sense. Pair covers connect their witness failures to AND complexity, including the conondeterministic model in which both input polarities and OR gates are free.
+[SemifilterWitness](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Fusion/Semifilter.lean#L127) specializes the argument to monotone truth-valued maps on subsets that preserve the empty and full set. These maps need not preserve intersections, so they are not filters in the usual algebraic sense. Pair covers connect their witness failures to AND complexity, including the conondeterministic model in which both input polarities and OR gates are free.
 
-[Scheme](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Approximation.lean#L55) compares exact and approximate interpretations of the same circuit program. A correctness relation can be one-sided; each gate has a finite exception set with bounded cardinality. The approximate value is correct outside the union of gate exceptions, giving a failure bound by total charged cost. A shared gate is charged once even if its output has many uses. This reusable statement supports the monotone approximation method rather than reproving the same union argument for every lower bound.
+[Scheme](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Approximation.lean#L55) compares exact and approximate interpretations of the same circuit program. A correctness relation can be one-sided; each gate has a finite exception set with bounded cardinality. The approximate value is correct outside the union of gate exceptions, giving a failure bound by total charged cost. A shared gate is charged once even if its output has many uses. This reusable statement supports the monotone approximation method rather than reproving the same union argument for every lower bound.
 
 These are mathematical proof interfaces, not automatically encoded certificates or proof-search procedures. Other reusable measures in the query and formula layers—sensitivity, certificate complexity, degree, Khrapchenko edge counts—play a similar role while using different objects and costs.
 
 ## Two-boundary CNF counting
 
-Import [`TwoBoundary`](../../Complexity/Logics/Propositional/CNF/TwoBoundary.lean)
+Import [`TwoBoundary`](../../CslibFrontier/Logics/Propositional/CNF/TwoBoundary.lean)
 and open `Cslib.Logic.PL.TwoBoundary`. Supply an existing `CNF V`, an internal
 path length `r`, and `P : Fin (r + 1) → DNF V`.
 Each `P j` uses the existing `DNF` syntax with conjunctions of literals as terms;
@@ -112,14 +112,14 @@ queries to recover the solution count of `B` and all the predicates.
 `query_width`, `query_length` and `declared_variables` give width at most
 $\max(b,d+2)$, at most $m_B+2\sum_j |T_j|$ clauses, and exactly
 $n+h-1$ variables with $h=r+1$. With no predicates, use `B` itself.
-The [checked client](../../ComplexityTests/PaperEndpoints/TwoBoundary.lean)
+The [checked client](../../CslibFrontierTests/PaperEndpoints/TwoBoundary.lean)
 includes one-edge paths, empty terms, failed predicates, unused variables and
 a general three-variable count identity. This is an algebraic reduction;
 no external subexponential SAT theorem or native runtime bound is assumed.
 
 ## Original-row selection
 
-Import [`RowSelection`](../../Complexity/Foundations/LinearAlgebra/RowSelection.lean)
+Import [`RowSelection`](../../CslibFrontier/Foundations/LinearAlgebra/RowSelection.lean)
 and open `Cslib.LinearSystem`. Supply coefficient rows `A`, right-hand side `b`,
 and an actual rational solution `x₀` to `exists_original_rows`. It returns a finite
 subset of original row indices, independent coefficient rows, the same rational
@@ -127,7 +127,7 @@ solution set, and selected cardinality equal to the row-space dimension.
 `exists_original_rows_of_two_solutions` takes two distinct rational solutions and
 proves that the selected cardinality is strictly below the number of columns.
 `solution_eq_of_span_eq_top` handles uniqueness when the rows span the column space.
-The [checked client](../../ComplexityTests/PaperEndpoints/RowSelection.lean) uses five
+The [checked client](../../CslibFrontierTests/PaperEndpoints/RowSelection.lean) uses five
 repeated exact-one equations, an unused column, two distinct solutions, and an
 inconsistent system that cannot supply the required witness.
 
@@ -143,7 +143,7 @@ the sharper quantitative bound by direct substitution.
 
 ## Executing elimination and query assembly
 
-Import [`ExactOneElimination`](../../Complexity/Logics/Propositional/CNF/ExactOneElimination.lean)
+Import [`ExactOneElimination`](../../CslibFrontier/Logics/Propositional/CNF/ExactOneElimination.lean)
 and open `Cslib.Logic.PL.ExactOne`. Supply the original finite signed scopes and
 polarities, with ordered row and declared-variable types (for example `Fin m` and
 `Fin r`), and the side CNF to `preprocess B S p`. The result is a `CountPlan`:
@@ -165,7 +165,7 @@ With no retained rows, the two queries are the deduplicated binary side CNF and
 an unsatisfiable CNF on the same declared bits.
 
 For general rational systems, import
-[`Elimination`](../../Complexity/Foundations/LinearAlgebra/Elimination.lean) and use
+[`Elimination`](../../CslibFrontier/Foundations/LinearAlgebra/Elimination.lean) and use
 `Cslib.LinearSystem.eliminateCached rows columns A b`. The explicit lists determine
 pivot order. `eliminateCached_eq` connects its materialized computation to the
 verified `eliminate` kernel. `eliminate_point`, `eliminate_consistent_iff` and
@@ -173,14 +173,14 @@ verified `eliminate` kernel. `eliminate_point`, `eliminate_consistent_iff` and
 `eliminate_unique` determines those coordinates when every listed column gets a
 pivot. Selected indices always come from `rows` and number at most `columns.length`.
 Intermediate matrices, right-hand sides and back-substituted points use
-[`Function.tabulate`](../../Complexity/Foundations/Data/Function/Tabulate.lean)
+[`Function.tabulate`](../../CslibFrontier/Foundations/Data/Function/Tabulate.lean)
 to share their computed entries. Lookup is a finite linear scan.
 
-The [executed client](../../ComplexityTests/PaperEndpoints/ExactOneElimination.lean)
+The [executed client](../../CslibFrontierTests/PaperEndpoints/ExactOneElimination.lean)
 checks all 256 ordered pairs of two-bit signed rows against independent direct
 counts, rational row permutations, inconsistency, unused bits, and a 40-variable
 instance with 80 repeated rows. From the checkout root, validate it with
-`LEAN_NUM_THREADS=2 scripts/build.sh ComplexityTests.PaperEndpoints.ExactOneElimination`.
+`LEAN_NUM_THREADS=2 scripts/build.sh CslibFrontierTests.PaperEndpoints.ExactOneElimination`.
 If a different imported version is used, check the module search path and the
 checkout's toolchain and dependency manifest before investigating a proof failure.
 
@@ -192,7 +192,7 @@ bounded-demand/graph applications remain separate open objectives.
 
 ## Signed exact-one counting queries
 
-Import [`ExactOneCounting`](../../Complexity/Logics/Propositional/CNF/ExactOneCounting.lean)
+Import [`ExactOneCounting`](../../CslibFrontier/Logics/Propositional/CNF/ExactOneCounting.lean)
 and open `Cslib.Logic.PL.ExactOne`. Use a finite ordered declared variable type
 (such as `Fin r`), scopes `S : I → Finset V` and polarities `p : I → V → Bool`.
 A variable occurs once per scope; `Holds (S i) (p i) x` says precisely one of its
@@ -230,14 +230,14 @@ zero or one and checking the side CNF on `candidateBits z`. `coverScopes` and
 `coverScopes_iff` transpose indexed Exact Cover without identifying equal
 candidate sets or dropping empty candidate-set variables.
 
-The [complete client](../../ComplexityTests/PaperEndpoints/ExactOne.lean) starts
+The [complete client](../../CslibFrontierTests/PaperEndpoints/ExactOne.lean) starts
 from repeated original signed rows, an unused bit and explicit different
 solutions. It checks the rank-derived bounds and the individual counts $8$ and
 $4$, whose difference is the source count $4$. Invalid extensions cancel;
 neither individual query is intended to count only source solutions. The client
 also checks side clauses, non-Boolean rational candidates, empty scopes, zero
 variables and equal/empty indexed cover candidates. From the repository root,
-run `scripts/build.sh ComplexityTests.PaperEndpoints.ExactOne` to elaborate it.
+run `scripts/build.sh CslibFrontierTests.PaperEndpoints.ExactOne` to elaborate it.
 
 This proves the actual rank-derived query existence/correctness portion of
 STOC submission 1575, Theorems 1.2/5.2 and Corollary 5.3, and the Exact Cover
@@ -251,7 +251,7 @@ headline abstract is added by this inventory assessment.
 ## Tables of VC dimension at most one
 
 From the repository root, import
-[`VCOneTables`](../../Complexity/Logics/Propositional/CNF/VCOneTables.lean)
+[`VCOneTables`](../../CslibFrontier/Logics/Propositional/CNF/VCOneTables.lean)
 and open `Cslib.Logic.PL.VCOne`. A table is a `Finset (Fin w → Bool)`;
 repeated listed tuples are identified by `List.toFinset`. `DimensionOne R` is
 Mathlib's finite set-family VC dimension bound on `family R`, the positive
@@ -314,7 +314,7 @@ the caller. `tables_queries_of_two_rational_solutions` exposes the rank-derived
 nonunique branch separately. `directCount_correct` and `directCount_small`
 cover direct enumeration when at most one global bit is declared.
 
-The [complete checked client](../../ComplexityTests/PaperEndpoints/VCOne.lean)
+The [complete checked client](../../CslibFrontierTests/PaperEndpoints/VCOne.lean)
 starts from a three-row table whose closure adds exactly one unwanted tuple.
 It checks the greedy separator and a global instance with opposite signs on
 overlapping scopes and one unused bit, giving four source assignments. It
@@ -324,7 +324,7 @@ two-row listing (two outputs and 126 attempted extensions), zero-width cases,
 global equation enumeration, derived scopes, and opposite signs on overlapping
 columns. These runtime checks supplement the kernel-checked general proofs;
 they do not prove correctness by executing a solver. Run
-`scripts/build.sh ComplexityTests.PaperEndpoints.VCOne` from the repository root.
+`scripts/build.sh CslibFrontierTests.PaperEndpoints.VCOne` from the repository root.
 If a scope cannot be embedded injectively or the missing-pattern proof fails,
 check distinctness of its coordinates and its actual four pair patterns before
 applying the theorem.
@@ -341,7 +341,7 @@ remain open. The broad issue is not complete and no curated abstract is added.
 
 ## Executing plans from overlapping VC-one tables
 
-Import [`VCOneElimination`](../../Complexity/Logics/Propositional/CNF/VCOneElimination.lean)
+Import [`VCOneElimination`](../../CslibFrontier/Logics/Propositional/CNF/VCOneElimination.lean)
 and use `Cslib.Logic.PL.VCOne.tablePlan w scope R` with tables indexed by `Fin m`.
 `equationList` enumerates missing closure tuples using the proved prefix listing,
 retaining each table's index. `listedScopes` and `listedPolarity` number and align
@@ -356,17 +356,17 @@ Binary restrictions execute through `scanBinary`. The proved compiler equality
 `binary_eq_scanBinary` preserves the exact original `binary` syntax while replacing
 a generic finite universal test over all Boolean tuples by a scan of the actual
 table. This distinction matters even when a table contains only two rows on many
-coordinates. The [global executed client](../../ComplexityTests/PaperEndpoints/VCOneElimination.lean)
+coordinates. The [global executed client](../../CslibFrontierTests/PaperEndpoints/VCOneElimination.lean)
 counts overlapping positive/negative scopes with an unused bit, handles both
 zero-width table cases, and constructs the plan for a 32-coordinate two-row table.
 From the checkout root, run
-`LEAN_NUM_THREADS=2 scripts/build.sh ComplexityTests.PaperEndpoints.VCOneElimination`.
+`LEAN_NUM_THREADS=2 scripts/build.sh CslibFrontierTests.PaperEndpoints.VCOneElimination`.
 The functional bridge does not discharge the coefficient-growth/encoded-runtime
 obligation described above or prove the whole-paper algorithmic endpoint.
 
 ### Binary square-system recovery
 
-Import `Complexity.Computability.PolyTime.Int.Cramer` for an independently certified
+Import `CslibFrontier.Computability.PolyTime.Int.Cramer` for an independently certified
 square-system component. `Cslib.LinearSystem.cramerCertificate A b` takes an integer
 row table `A` and RHS list `b`, returning a common denominator and numerator list.
 The dimension is `A.length`; missing entries read as zero and extra columns/RHS
@@ -390,17 +390,17 @@ by $\beta+n(1+n+\beta)+2$, where $n=A.length$.
 `cramerColumnRows_stage_bits_le` controls the actual numerator determinant stages;
 the reused determinant API also controls partial sums/products and table encodings.
 
-The [complete checked client](../../ComplexityTests/PaperEndpoints/CramerBinary.lean)
+The [complete checked client](../../CslibFrontierTests/PaperEndpoints/CramerBinary.lean)
 executes negative-denominator, non-Boolean, singular, dimension-zero, ragged and
 128-bit examples and compares all 1,296 signed two-variable/RHS inputs with direct
 Boolean testing whenever nonsingular. From the checkout root, run
-`LEAN_NUM_THREADS=2 scripts/build.sh ComplexityTests.PaperEndpoints.CramerBinary`.
+`LEAN_NUM_THREADS=2 scripts/build.sh CslibFrontierTests.PaperEndpoints.CramerBinary`.
 The rectangular API below reuses this square solver. Neither binary component
 replaces `originalElimination` or certifies the global `tablePlan` pipeline yet.
 
 ### Binary rectangular row selection and consistency
 
-Import `Complexity.Computability.PolyTime.Int.Rectangular` for the general integer
+Import `CslibFrontier.Computability.PolyTime.Int.Rectangular` for the general integer
 row-table component. Supply the declared column count `n`, a list of integer rows
 `A`, and a RHS list `b`. Width is explicit, so empty matrices and unused columns
 retain their intended dimension. Missing entries/RHS values read as zero; columns
@@ -438,16 +438,16 @@ bits and each final numerator at most $n+\beta+B+1$ bits.
 `transposeNumerators_partial_sum_natAbs_lt` control the actual Gram sums, Bird
 stages and recovery sums; the determinant API additionally bounds stage products.
 
-The [complete checked client](../../ComplexityTests/PaperEndpoints/RectangularBinary.lean)
+The [complete checked client](../../CslibFrontierTests/PaperEndpoints/RectangularBinary.lean)
 executes tall, wide, dependent, contradictory, empty, zero-width, ragged and
 128-bit cases, a 40-column/80-row dependent input, and all 1,296 signed two-variable
 systems/RHS combinations against the existing rational elimination kernel.
 From the checkout root, run
-`LEAN_NUM_THREADS=2 scripts/build.sh ComplexityTests.PaperEndpoints.RectangularBinary`.
+`LEAN_NUM_THREADS=2 scripts/build.sh CslibFrontierTests.PaperEndpoints.RectangularBinary`.
 
 ### Counting plans using the binary selector
 
-Import `Complexity.Logics.Propositional.CNF.ExactOneBinary` for
+Import `CslibFrontier.Logics.Propositional.CNF.ExactOneBinary` for
 `binaryPreprocess S p B`, on `n` declared bits and `m` signed equations indexed
 by `Fin n` and `Fin m`. `integerRows` materializes coefficients in
 $\{-1,0,1\}$ and `integerRhs` moves negative-literal constants to the right
@@ -460,16 +460,16 @@ emits the existing two-query construction. `binaryPreprocess_correct` and
 `binaryPreprocess_budget` prove exact counting and the global syntax budgets.
 
 For actual tables, import
-`Complexity.Logics.Propositional.CNF.VCOneElimination` and use
+`CslibFrontier.Logics.Propositional.CNF.VCOneElimination` and use
 `binaryTablePlan w scope R` with declared variables `Fin r`.
 `binaryTablePlan_correct` requires each table to have dimension at most one;
 `binaryTablePlan_budget` applies without this semantic premise. Overlapping
 scopes share columns, and unused declared variables retain their multiplicity.
 The rational `preprocess` and `tablePlan` interfaces remain available.
 
-From the checkout root, check the [complete binary client](../../ComplexityTests/PaperEndpoints/ExactOneBinary.lean)
-and [overlapping-table client](../../ComplexityTests/PaperEndpoints/VCOneElimination.lean)
-with `scripts/build.sh ComplexityTests.PaperEndpoints.ExactOneBinary ComplexityTests.PaperEndpoints.VCOneElimination`.
+From the checkout root, check the [complete binary client](../../CslibFrontierTests/PaperEndpoints/ExactOneBinary.lean)
+and [overlapping-table client](../../CslibFrontierTests/PaperEndpoints/VCOneElimination.lean)
+with `scripts/build.sh CslibFrontierTests.PaperEndpoints.ExactOneBinary CslibFrontierTests.PaperEndpoints.VCOneElimination`.
 The former executes all 256 ordered pairs of two-bit signed equations against
 an independent source count, plus direct, no-equation and 40-bit cases.
 
@@ -512,7 +512,7 @@ original signed equations, retaining separate rows and shared signed columns.
 The complete client checks conflicting signs, empty equations, unused columns
 and the no-equation case. This certifies the equation-to-consistency stage.
 
-Import `Complexity.Computability.PolyTime.CNF.VCOneFrontend` for the resource-certified
+Import `CslibFrontier.Computability.PolyTime.CNF.VCOneFrontend` for the resource-certified
 preprocessing path, in namespaces `VCOne.BinaryClosure`, `VCOne.BinarySeparator` and
 `VCOne.BinaryFrontend` under `Cslib.Logic.PL`. `BinaryClosure.enumerate` takes a unary local
 width and explicit bit rows. It extends full-width prefixes in reverse coordinate order, scans
@@ -553,8 +553,8 @@ available as follows. Generic Theorem 1.1 resource transfer, graph applications 
 open where not separately covered.
 
 From the repository root run
-`scripts/build.sh ComplexityTests.PaperEndpoints.VCOneResources`.
-The [complete client](../../ComplexityTests/PaperEndpoints/VCOneResources.lean) executes missing
+`scripts/build.sh CslibFrontierTests.PaperEndpoints.VCOneResources`.
+The [complete client](../../CslibFrontierTests/PaperEndpoints/VCOneResources.lean) executes missing
 point/separator extraction, width-zero empty/tautological relations, a 32-coordinate two-row
 closure, a capped non-VC-one relation, shared columns with opposite signs, a contradictory
 shared-scope system and original assignment count 4 with an unused bit.
@@ -562,7 +562,7 @@ shared-scope system and original assignment count 4 with an unused bit.
 ### Complete original-table dispatch and sharp counting resources
 
 From the checkout root, import
-`Complexity.Computability.Complexity.FineGrained.VCOneCountingResources` and open
+`CslibFrontier.Computability.Complexity.FineGrained.VCOneCountingResources` and open
 `Cslib.Logic.PL.VCOne`. Pass the original `tablePayload w scope R` to
 `BinaryFrontend.compile`. Its tagged result is a binary direct answer or two explicit CNFs with
 a unary declaration. It computes the side/equation payload, consistency and an original-row basis.
@@ -591,8 +591,8 @@ and unary global/local declarations are material; no succinct binary-declaration
 raw-table parser/admission theorem is asserted. Polynomial space holds for all raw payloads;
 correctness and sharp time use locally VC-one tables with injective individual scopes.
 
-Run `scripts/build.sh ComplexityTests.PaperEndpoints.VCOneDispatch` from the repository root.
-The [complete checked client](../../ComplexityTests/PaperEndpoints/VCOneDispatch.lean) checks
+Run `scripts/build.sh CslibFrontierTests.PaperEndpoints.VCOneDispatch` from the repository root.
+The [complete checked client](../../CslibFrontierTests/PaperEndpoints/VCOneDispatch.lean) checks
 zero/one declarations, empty and zero-width tables, the binary 256-bit free answer, inconsistent
 and fractional/full-rank candidates, rank-zero side constraints, deficient-rank queries and
 original overlapping tables with unused bits. Its exhaustive small counter is a test oracle only;
@@ -600,7 +600,7 @@ the resource theorem instantiates the proved native sharp counter.
 
 ### Generic explicit DNF conditions without a VC-one promise
 
-Import `Complexity.Computability.Complexity.FineGrained.TwoBoundaryFrontend` and open
+Import `CslibFrontier.Computability.Complexity.FineGrained.TwoBoundaryFrontend` and open
 `Cslib.Logic.PL.TwoBoundary.BinaryFrontend`. The original input contains a unary declaration,
 a side CNF and an explicit list of DNFs. Literal indices are binary and lists are framed.
 Use `declared`, `side` and `conditions` to inspect the input, and `compile` to write the plan.
@@ -629,15 +629,15 @@ that the number of conditions is linear in $n$. These are the existing native wo
 certificates, with a unary declaration; untrusted-byte parsing/admission and succinct declarations
 are not added by these statements.
 
-From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.TwoBoundaryFrontend`.
-The [complete checked client](../../ComplexityTests/PaperEndpoints/TwoBoundaryFrontend.lean)
+From the checkout root run `scripts/build.sh CslibFrontierTests.PaperEndpoints.TwoBoundaryFrontend`.
+The [complete checked client](../../CslibFrontierTests/PaperEndpoints/TwoBoundaryFrontend.lean)
 checks arbitrary two-literal terms, overlapping/repeated/contradictory terms, empty conditions and
 terms, side clauses, unused bits, zero variables, one-versus-two calls and a 256-variable writer.
 It also proves the full-cube counterexample to a generic VC-one conversion.
 
 ### Original-graph independent domination without a cardinality test
 
-Import `Complexity.Computability.Complexity.FineGrained.IndependentDomination` and open
+Import `CslibFrontier.Computability.Complexity.FineGrained.IndependentDomination` and open
 `Cslib.Logic.PL.IndependentDomination`. `ofGraph G` is the canonical explicit square Boolean
 adjacency matrix of a simple undirected graph on `Fin n`, with unary vertex declaration and
 framed literal Boolean cells. `build` writes edge exclusions and one closed-neighborhood DNF
@@ -657,14 +657,14 @@ predicate of Appendix D.4, Proposition D.3. The continuation below supplies vari
 cardinality bounds. Size distributions, general finite/cofinite rules, labeled partition matrices
 and the remaining graph applications are separate. Graph correctness uses the canonical simple undirected input; arbitrary raw matrix
 shapes have total polynomial construction/global space without an additional graph-admission claim.
-Run `scripts/build.sh ComplexityTests.PaperEndpoints.IndependentDomination` from the root.
-The [complete checked client](../../ComplexityTests/PaperEndpoints/IndependentDomination.lean)
+Run `scripts/build.sh CslibFrontierTests.PaperEndpoints.IndependentDomination` from the root.
+The [complete checked client](../../CslibFrontierTests/PaperEndpoints/IndependentDomination.lean)
 checks empty/isolated/edge/path/triangle/star graphs, original counts and exact query budgets.
 Its small exhaustive oracle is a test instrument, not the production counting algorithm.
 
 ### Independent domination with signed binary input cardinality bounds
 
-Import `Complexity.Computability.Complexity.FineGrained.IndependentDominationInterval` and open
+Import `CslibFrontier.Computability.Complexity.FineGrained.IndependentDominationInterval` and open
 `Cslib.Logic.PL.IndependentDominationInterval.Signed`. `ofGraph G lo hi` retains the canonical
 simple undirected adjacency matrix and adds two signed binary input bounds. The accepted original
 selections satisfy $\mathrm{lo}\le |S|\le\mathrm{hi}$. Set both bounds equal for an exact-size
@@ -692,11 +692,11 @@ $v\ge16$; the rounded certificate includes every smaller graph. Constants are un
 input bounds. The fixed-linear rescaling charges $2v+a$, retaining the single loglog factor.
 
 From the checkout root run
-`scripts/build.sh ComplexityTests.PaperEndpoints.IndependentDominationInterval`.
-The [complete graph client](../../ComplexityTests/PaperEndpoints/IndependentDominationInterval.lean)
+`scripts/build.sh CslibFrontierTests.PaperEndpoints.IndependentDominationInterval`.
+The [complete graph client](../../CslibFrontierTests/PaperEndpoints/IndependentDominationInterval.lean)
 computes edge/path/triangle/isolated/empty cases, overlapping neighborhoods, impossible intervals,
 negative bounds, huge binary cutoffs, actual query metadata and direct empty dispatch.
-The [cardinality client](../../ComplexityTests/PaperEndpoints/CardinalityInterval.lean) checks
+The [cardinality client](../../CslibFrontierTests/PaperEndpoints/CardinalityInterval.lean) checks
 unique-trace evaluation and constant-size generation at out-of-range 512/1024-bit thresholds.
 Small test oracles enumerate original selections only; production uses the proved sharp counter.
 
@@ -711,7 +711,7 @@ ALL-main remains open.
 
 ### Outgoing-absorbing kernels in directed graphs
 
-Import `Complexity.Computability.Complexity.FineGrained.DigraphKernel` and open
+Import `CslibFrontier.Computability.Complexity.FineGrained.DigraphKernel` and open
 `Cslib.Logic.PL.DigraphKernel`. `ofDigraph G` writes the canonical directed adjacency matrix on
 `Fin v`. It retains arc orientation, unary vertex declaration and framed Boolean cells. The input
 encoding and actual arc-exclusion/neighborhood traversal are shared with `IndependentDomination`;
@@ -741,8 +741,8 @@ looplessness hypothesis hidden in the interface. Raw encoded construction/global
 without asserting arbitrary-byte graph admission. Certificates use the existing native word/resource
 model, not a fresh bit-transition simulation; declarations remain unary.
 
-From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.DigraphKernel`.
-The [complete checked client](../../ComplexityTests/PaperEndpoints/DigraphKernel.lean) computes
+From the checkout root run `scripts/build.sh CslibFrontierTests.PaperEndpoints.DigraphKernel`.
+The [complete checked client](../../CslibFrontierTests/PaperEndpoints/DigraphKernel.lean) computes
 empty, isolated, single-arc, reversed-arc, oriented-star, directed odd/even cycle, transitive and
 dense symmetric cases. It checks actual original selections, the stronger loop case, nonvacuous
 kernel/nonkernel instances and query metadata at 64 vertices without selection enumeration.
@@ -757,7 +757,7 @@ counter appears below. These graph milestones do not complete ALL-main.
 
 ### Perfect matching cuts with labeled sides
 
-Import `Complexity.Computability.Complexity.FineGrained.PerfectMatchingCut` and open
+Import `CslibFrontier.Computability.Complexity.FineGrained.PerfectMatchingCut` and open
 `Cslib.Logic.PL.PerfectMatchingCut`. Reuse `IndependentDomination.ofGraph G`, `Input` and
 `encInput` for the canonical explicit simple-undirected adjacency matrix on `Fin v`: the vertex
 declaration is unary and Boolean cells are framed. The new `upper`, `conditions` and `build`
@@ -795,8 +795,8 @@ word/resource model. Raw construction/global space are total; graph correctness 
 use canonical matrices. Arbitrary-byte graph admission, succinct declarations, unordered quotients,
 a fresh bit-transition simulation and complete witness extraction are separate.
 
-From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.PerfectMatchingCut`.
-The [complete checked client](../../ComplexityTests/PaperEndpoints/PerfectMatchingCut.lean) executes
+From the checkout root run `scripts/build.sh CslibFrontierTests.PaperEndpoints.PerfectMatchingCut`.
+The [complete checked client](../../CslibFrontierTests/PaperEndpoints/PerfectMatchingCut.lean) executes
 empty, isolated, edge, path, disjoint-edge, cycle and dense cases, with original labeled selections
 and actual written queries. A complete four-vertex graph and a six-cycle have perfect matchings but
 no perfect matching cut. Concrete two-vertex examples check both a proper cut and a rejected
@@ -814,7 +814,7 @@ width-three path-marker refinement remains open; exact width-four counting appea
 
 ### Dominating induced matchings with exact edge-domination counts
 
-Import `Complexity.Computability.Complexity.FineGrained.DominatingInducedMatching` and open
+Import `CslibFrontier.Computability.Complexity.FineGrained.DominatingInducedMatching` and open
 `Cslib.Logic.PL.DominatingInducedMatching`. Reuse `IndependentDomination.Input`, `encInput` and
 `ofGraph G` for the canonical explicit simple-undirected Boolean matrix, with unary vertex
 declaration and framed cells. `upper` writes a negative triple for each vertex and distinct
@@ -853,8 +853,8 @@ word/resource model, not a fresh bit-transition simulation. Raw construction/glo
 total; graph correctness/sharp time use canonical simple matrices. Arbitrary-byte admission,
 succinct declarations and matching witness extraction are separate.
 
-From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.DominatingInducedMatching`.
-The [complete checked client](../../ComplexityTests/PaperEndpoints/DominatingInducedMatching.lean)
+From the checkout root run `scripts/build.sh CslibFrontierTests.PaperEndpoints.DominatingInducedMatching`.
+The [complete checked client](../../CslibFrontierTests/PaperEndpoints/DominatingInducedMatching.lean)
 executes empty, isolated, edge, path, disjoint-edge, triangle, star, cycle and dense cases, with
 original support selections and actual query metadata. A single edge has one matching, not two
 orientations. On a four-vertex path only the middle edge works; two outer edges double-dominate
@@ -875,7 +875,7 @@ construction is supplied below. ALL-main remains open.
 
 ### Maximum induced matching with a varying binary threshold
 
-Import `Complexity.Computability.Complexity.FineGrained.InducedMatchingInterval` and open
+Import `CslibFrontier.Computability.Complexity.FineGrained.InducedMatchingInterval` and open
 `Cslib.Logic.PL.InducedMatchingInterval.Maximum`. `Input` is the existing canonical simple-graph
 matrix frame paired with a signed binary edge threshold. `ofGraph G k` retains the unary vertex
 declaration, including isolated vertices. `prepare` computes the natural endpoint interval
@@ -906,8 +906,8 @@ induced matchings; impossible thresholds count zero, without exponential thresho
 The resource model remains the existing native word/resource model, with binary encodings,
 not a new bit-transition simulation or arbitrary-byte graph admission theorem.
 
-From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.InducedMatchingInterval`.
-The [complete checked client](../../ComplexityTests/PaperEndpoints/InducedMatchingInterval.lean)
+From the checkout root run `scripts/build.sh CslibFrontierTests.PaperEndpoints.InducedMatchingInterval`.
+The [complete checked client](../../CslibFrontierTests/PaperEndpoints/InducedMatchingInterval.lean)
 executes empty, isolated, single-edge, path, disjoint-edge, triangle, cycle and dense cases.
 Two disjoint edges admit a size-two matching; the two outer edges of a four-vertex path do not.
 The client checks actual query writing, exact endpoint-size coefficients, and negative/oversized
@@ -923,7 +923,7 @@ below. These remaining source endpoints keep ALL-main open.
 
 ### Returning the optimum value and an actual maximum induced matching
 
-Import `Complexity.Computability.Complexity.FineGrained.InducedMatchingWitness` and open
+Import `CslibFrontier.Computability.Complexity.FineGrained.InducedMatchingWitness` and open
 `Cslib.Logic.PL.InducedMatchingInterval.Maximum`. The original input is just
 `IndependentDomination.Input`, encoded by `IndependentDomination.encInput`; the user supplies
 neither an optimum value nor a matching. The complete native endpoint is
@@ -957,8 +957,8 @@ Raw malformed frames still have a total algorithm and polynomial workspace; grap
 and sharp time use the existing canonical promise, not an added validation/admission theorem.
 The encoding remains nonsuccinct with a unary declaration, in the existing native resource model.
 
-From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.InducedMatchingOptimum`.
-The [complete computed client](../../ComplexityTests/PaperEndpoints/InducedMatchingOptimum.lean)
+From the checkout root run `scripts/build.sh CslibFrontierTests.PaperEndpoints.InducedMatchingOptimum`.
+The [complete computed client](../../CslibFrontierTests/PaperEndpoints/InducedMatchingOptimum.lean)
 checks actual returned values and words for empty/edgeless graphs, an edge, paths, disjoint edges,
 a triangle, a dense graph and declared isolates. On a five-vertex path it returns the two outer
 edges' four endpoints and clears the middle vertex. The tiny threshold oracle evaluates the
@@ -972,7 +972,7 @@ clauses keep the paperwide/ALL-main objective open.
 
 ### Total induced matching counts and the complete size distribution
 
-Import `Complexity.Computability.Complexity.FineGrained.InducedMatchingDistribution` and open
+Import `CslibFrontier.Computability.Complexity.FineGrained.InducedMatchingDistribution` and open
 `Cslib.Logic.PL.InducedMatching`. Reuse the original canonical simple undirected matrix frame,
 `IndependentDomination.Input`, `IndependentDomination.encInput` and
 `IndependentDomination.ofGraph G`, with its unary declaration and framed Boolean cells. This completes Corollary 7.5 / Appendix D.1 (PDF pp. 26, 34) in that encoding.
@@ -1008,8 +1008,8 @@ unchanged, and graph correctness/sharp time still use the canonical promise. Glo
 workspace holds even for malformed raw frames; a new arbitrary-byte validator or succinct
 vertex declaration is not asserted. The empty graph's complete list is `[1]`, not an empty list.
 
-From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.InducedMatchingDistribution`.
-The [complete computed client](../../ComplexityTests/PaperEndpoints/InducedMatchingDistribution.lean)
+From the checkout root run `scripts/build.sh CslibFrontierTests.PaperEndpoints.InducedMatchingDistribution`.
+The [complete computed client](../../CslibFrontierTests/PaperEndpoints/InducedMatchingDistribution.lean)
 checks total-query execution and full lists on empty/edgeless/edge/path/disjoint-edge/triangle/
 dense/isolate/cycle instances. It retains infeasible-size zeros and checks total counts against
 coefficient sums. A 32-vertex query construction has 63 variables per query without any size gates;
@@ -1024,7 +1024,7 @@ succinct-encoding transfers.
 
 ### Upper domination through private-neighbor markings
 
-Import `Complexity.Computability.Complexity.FineGrained.UpperDomination`.
+Import `CslibFrontier.Computability.Complexity.FineGrained.UpperDomination`.
 This implements the width-three construction of STOC1575 Proposition 7.6, PDF p.27 and
 Appendix D.3 pp.34–35. The original input is an explicitly framed graph with unary declared
 vertex count and a varying signed binary threshold. For a canonical simple graph $G$ on $v$
@@ -1052,8 +1052,8 @@ frames; correctness and sharp graph time use the canonical simple-graph promise.
 the existing native word-cost model and is not a new simulation by binary Turing transitions.
 Unused declared vertices are retained. The empty graph accepts exactly $k\le0$.
 
-From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.UpperDomination`.
-The [computed client](../../ComplexityTests/PaperEndpoints/UpperDomination.lean) covers empty and
+From the checkout root run `scripts/build.sh CslibFrontierTests.PaperEndpoints.UpperDomination`.
+The [computed client](../../CslibFrontierTests/PaperEndpoints/UpperDomination.lean) covers empty and
 edgeless graphs, paths, cycles, complete graphs, adjacent selected vertices, pair multiplicity,
 512-bit positive/negative thresholds, actual query metadata and the real-eta decision certificate.
 Its tiny assignment enumeration is a test oracle; the production machine uses the sharp counter.
@@ -1070,7 +1070,7 @@ audit remain outstanding. These limits keep ALL-main open.
 
 ### Compute the upper-domination optimum value
 
-Import `Complexity.Computability.Complexity.FineGrained.UpperDominationOptimum`.
+Import `CslibFrontier.Computability.Complexity.FineGrained.UpperDominationOptimum`.
 Corollary 7.4 and Appendix D.5, PDF pp.26,37, explicitly claim optimum-threshold and witness
 recovery. `UpperDomination.Optimum.run` computes the value using the existing original-graph
 threshold iterator, instantiated with the actual Upper Dominating Set decider. It makes $v+1$
@@ -1089,8 +1089,8 @@ the rounded certificate covers every smaller size. Every-prefix graph-state enco
 at most $5(L+1)$, and the loop uses maximum round workspace rather than multiplying space by
 its time. The same canonical graph/unary-declaration/native word-cost conventions apply as above.
 
-From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.UpperDominationOptimum`.
-The [computed client](../../ComplexityTests/PaperEndpoints/UpperDominationOptimum.lean) covers empty
+From the checkout root run `scripts/build.sh CslibFrontierTests.PaperEndpoints.UpperDominationOptimum`.
+The [computed client](../../CslibFrontierTests/PaperEndpoints/UpperDominationOptimum.lean) covers empty
 graphs, declared isolates, edges, paths, stars, cycles and complete graphs. A three-vertex path
 returns two, although a singleton dominates it; an edge returns one despite six valid marking
 pairs. It checks acceptance at the returned threshold and rejection at the next threshold.
@@ -1100,7 +1100,7 @@ attaining original set; it does not replace witness output by that existential s
 
 ### Return an actual maximum minimal dominating set
 
-Import `Complexity.Computability.Complexity.FineGrained.UpperDominationWitness`.
+Import `CslibFrontier.Computability.Complexity.FineGrained.UpperDominationWitness`.
 `UpperDomination.Witness.solve` computes the approved optimum value, recovers a satisfying word
 of the actual selection/gate/mark formula by unit-clause self-reduction, then returns exactly the
 original $v$ selection bits with the binary value. `selected` decodes those bits to an ordinary
@@ -1131,8 +1131,8 @@ native charged-word model. No new malformed-input admission, succinct declaratio
 Turing-transition realization is claimed. The recovery theorem requires feasibility; the complete
 optimizer proves that feasibility at its computed optimum, including the empty graph.
 
-From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.UpperDominationWitness`.
-The [complete computed client](../../ComplexityTests/PaperEndpoints/UpperDominationWitness.lean)
+From the checkout root run `scripts/build.sh CslibFrontierTests.PaperEndpoints.UpperDominationWitness`.
+The [complete computed client](../../CslibFrontierTests/PaperEndpoints/UpperDominationWitness.lean)
 checks actual returned words on empty/isolated/edge/path/star/triangle/cycle graphs. It independently
 checks domination, private neighbors, bit count and output value on representative outputs.
 A four-cycle returns an adjacent selected pair, illustrating that independence is not required.
@@ -1147,7 +1147,7 @@ is not completed by this witness endpoint.
 
 ### Count original minimal dominating sets with unique marks
 
-Import `Complexity.Computability.Complexity.FineGrained.UpperDominationUnique`.
+Import `CslibFrontier.Computability.Complexity.FineGrained.UpperDominationUnique`.
 This implements Proposition 7.6 / Appendix D.3, PDF pp.27,35, augmented exact counting. The input
 is the same explicit canonical simple-graph frame and varying signed binary lower size threshold.
 `UpperDomination.Unique.complete` writes one extra DNF predicate per original vertex: the mark is
@@ -1174,8 +1174,8 @@ an extra loglog factor. The existing unary declaration, canonical graph promise 
 charged-word model apply. This adds no malformed-byte admission or succinct/binary-transition
 simulation claim and does not change the reviewed width-three decision/witness algorithms.
 
-From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.UpperDominationUnique`.
-The [complete computed client](../../ComplexityTests/PaperEndpoints/UpperDominationUnique.lean)
+From the checkout root run `scripts/build.sh CslibFrontierTests.PaperEndpoints.UpperDominationUnique`.
+The [complete computed client](../../CslibFrontierTests/PaperEndpoints/UpperDominationUnique.lean)
 checks empty graphs, isolates, edges, paths, cycles, cliques, an edge with an isolate, 512-bit
 thresholds, the marking/count distinction and actual width/dimension/size metadata. Positive and
 negative conventional marking instances ensure completeness is not vacuous. Tiny trace-based
@@ -1190,7 +1190,7 @@ This does not complete ALL-main or the independent paperwide audit.
 
 ### General fixed finite/cofinite degree rules
 
-Import `Complexity.Computability.Complexity.FineGrained.SigmaRhoCountingResources`.
+Import `CslibFrontier.Computability.Complexity.FineGrained.SigmaRhoCountingResources`.
 This implements the general count and optional input-size interval of Corollary 7.2 / Appendix C.2
 (PDF pp.24–25,31–32), rather than only independent domination. `SimpleGraph.IsSigmaRhoSet`
 uses ordinary open-neighbor counts: selected vertices follow $\sigma$, other vertices follow
@@ -1227,14 +1227,14 @@ actual linear dimension rescaling preserves the single loglog exponent. The reco
 simple-graph promise, nonsuccinct unary declarations and native charged-word conventions remain.
 No malformed-byte admission or binary-transition simulation theorem is added.
 
-From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.SigmaRho`.
-The [complete computed client](../../ComplexityTests/PaperEndpoints/SigmaRho.lean) checks overlapping
+From the checkout root run `scripts/build.sh CslibFrontierTests.PaperEndpoints.SigmaRho`.
+The [complete computed client](../../CslibFrontierTests/PaperEndpoints/SigmaRho.lean) checks overlapping
 open neighborhoods, exact finite rules versus cofinite tails, empty/rejecting rules, isolates,
 contradictory/512-bit bounds and actual query metadata. Test-only original-selection enumeration
 computes auxiliary traces deterministically; production uses the proved sharp counter.
 
 The full general-rule cardinality distribution is now provided by
-`Complexity.Computability.Complexity.FineGrained.SigmaRhoDistribution`.
+`CslibFrontier.Computability.Complexity.FineGrained.SigmaRhoDistribution`.
 `SigmaRho.Distribution.run` performs the actual successive exact-size calls for $k=0,\ldots,v$,
 accumulates binary counts and reverses them into increasing size order. The
 `exists_distribution_finiteCofinite_certificate` theorem instantiates the proved point counter
@@ -1246,7 +1246,7 @@ Zero coefficients are retained, and the empty graph produces the sole coefficien
 
 ### General labeled degree matrices without class-size tests
 
-Import `Complexity.Computability.Complexity.FineGrained.DegreePartitionCountingResources`.
+Import `CslibFrontier.Computability.Complexity.FineGrained.DegreePartitionCountingResources`.
 `SimpleGraph.IsDegreePartition` is an ordered family of $q$ original vertex sets: every vertex
 belongs to exactly one class, and a vertex in source class $i$ has its open-neighbor count in
 target class $j$ accepted by matrix entry $M[i,j]$. Labels are retained; empty classes are allowed
@@ -1277,8 +1277,8 @@ This is the zero-gate variant. The bounded constructor and complete vector outpu
 its approved one-hot, matrix and threshold proofs. Use the bounded API when class-size intervals
 are present; unconstrained bounds passed to that API still materialize functional tests.
 
-From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.DegreePartition`.
-The [complete computed client](../../ComplexityTests/PaperEndpoints/DegreePartition.lean) checks
+From the checkout root run `scripts/build.sh CslibFrontierTests.PaperEndpoints.DegreePartition`.
+The [complete computed client](../../CslibFrontierTests/PaperEndpoints/DegreePartition.lean) checks
 multiple labels ($q^v$ universal counts), empty classes, empty graphs, rejecting matrices, exact
 opposite-neighbor rules, query metadata and complete sigma-rho distributions (including finite
 versus cofinite tails and all zero coefficients). Test-only label enumeration derives thresholds
@@ -1288,7 +1288,7 @@ recorded in `ROADMAP.md`.
 
 ### Input-bounded labeled partitions and complete size-vector output
 
-Import `Complexity.Computability.Complexity.FineGrained.DegreePartitionDistribution`.
+Import `CslibFrontier.Computability.Complexity.FineGrained.DegreePartitionDistribution`.
 Theorem 7.3 / Appendix C.2 (PDF pp.25,32) is supplied in the recorded explicit graph/native model.
 The label count $q$, finite/cofinite matrix and common positive cutoff are fixed; the original
 graph and **every** class's inclusive interval vary at runtime. No maximum-degree or connectivity
@@ -1338,8 +1338,8 @@ The canonical simple-graph promise, nonsuccinct unary declaration, binary natura
 charged-word conventions apply. No general signed-bound wrapper, arbitrary-byte admission, succinct
 input transfer or new binary-transition realization is asserted.
 
-From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.BoundedDegreePartition`.
-The [complete computed client](../../ComplexityTests/PaperEndpoints/BoundedDegreePartition.lean)
+From the checkout root run `scripts/build.sh CslibFrontierTests.PaperEndpoints.BoundedDegreePartition`.
+The [complete computed client](../../CslibFrontierTests/PaperEndpoints/BoundedDegreePartition.lean)
 checks distinct/asymmetric labels, empty classes, single-label boundaries, empty graphs, contradictions,
 512/1024-bit bounds, complete vector order/zero coefficients and actual query metadata. On an edge
 with two universal labels there are four labelings; the vector $(1,1)$ has coefficient two. Tiny
@@ -1348,7 +1348,7 @@ proved native counter. The complete native endpoint types are checked by the sam
 
 ### General polynomial-weight comparisons
 
-Import `Complexity.Computability.PolyTime.CNF.WeightedComparison.Frontend` and open
+Import `CslibFrontier.Computability.PolyTime.CNF.WeightedComparison.Frontend` and open
 `Cslib.Circuits.Boolean.WeightedSum`. This supplies the actual linear functional construction
 underlying Lemma A.1 (PDF pp.28–29), with an explicit formal promise: for a fixed natural exponent
 $c$, each nonnegative coefficient is at most $n^c$. Literals may be positive or negative; weights
@@ -1391,8 +1391,8 @@ wrapper is not supplied. This milestone does not complete Lemma A.1's full binar
 statement, Corollary A.2 or ALL-main. Reuse the grouped construction and unique-extension proofs
 when adding the remaining resource composition.
 
-From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.WeightedComparison`.
-The [complete computed client](../../ComplexityTests/PaperEndpoints/WeightedComparison.lean)
+From the checkout root run `scripts/build.sh CslibFrontierTests.PaperEndpoints.WeightedComparison`.
+The [complete computed client](../../CslibFrontierTests/PaperEndpoints/WeightedComparison.lean)
 executes actual generated gate lists and full CNF on deterministic traces, enumerating only tiny
 original assignments. It checks nonunit/zero weights, mixed polarities, negative targets and
 coefficients, exact cancellation/strict boundaries, shared-bit correlated tests, empty input/test
@@ -1421,7 +1421,7 @@ The conditional statements, truth-table scales and source-specific quantitative 
 
 ### Weighted signed row semantics
 
-Import `Complexity.Logics.Propositional.CNF.WeightedRow` and open
+Import `CslibFrontier.Logics.Propositional.CNF.WeightedRow` and open
 `Cslib.Logic.PL.WeightedRow`. `Row V d` represents distinct variables with fixed
 polarities, positive natural weights, demand at most `d`, and weights capped at
 `demand + 1`. `Row.value` sums the weights of true row literals. For equations
@@ -1435,10 +1435,10 @@ an unattainable demand produces an empty false DNF.
 per-row width and binomial size bounds. `query`, `counting_identity` and
 `query_width` reuse the existing two-boundary construction for a nonempty indexed
 family of rows, obtaining exact counts and width at most `d + 2`.
-[The complete checked client](../../ComplexityTests/WeightedRow.lean) exercises
+[The complete checked client](../../CslibFrontierTests/WeightedRow.lean) exercises
 weights 2 and 1, both polarities, overweight rejection, zero demand, unattainable
 demand and the counting wrapper. It can be checked from the repository root with
-`scripts/build.sh ComplexityTests.WeightedRow` after the usual setup.
+`scripts/build.sh CslibFrontierTests.WeightedRow` after the usual setup.
 
 This is row-local progress, not the full Theorem 7.1 reduction. Subset listing
 uses noncomputable `Finset.toList`; no executable enumeration or runtime theorem
@@ -1448,7 +1448,7 @@ and global signed clause counting. All direct branches and full
 construction/counting time and space remain open.
 Graph endpoints are unaffected.
 
-Import `Complexity.Logics.Propositional.CNF.WeightedNormalization` for original
+Import `CslibFrontier.Logics.Propositional.CNF.WeightedNormalization` for original
 occurrence-indexed rows. `Occurrences r m` accepts repeated variables, both signs,
 positive natural weights and an integer target. `normalize` aggregates each sign,
 extracts the common constant, rejects targets outside the residual interval,
@@ -1459,15 +1459,15 @@ normalized demand is at most `d`; it does not assume normalization correctness.
 `toRow_iff` and `formula_iff` connect valid rows to the reviewed weighted formulas.
 The original declared variable type is retained throughout, including unused bits.
 
-[The complete normalization client](../../ComplexityTests/WeightedNormalization.lean)
+[The complete normalization client](../../CslibFrontierTests/WeightedNormalization.lean)
 checks repeated positive occurrences, both polarities, complementation, capping,
 negative and overlarge targets, zero demand and deletion of a constant row. From
-the repository root, run `scripts/build.sh ComplexityTests.WeightedNormalization`.
+the repository root, run `scripts/build.sh CslibFrontierTests.WeightedNormalization`.
 This normalization has no encoded runtime certificate. Subsequent rank selection
 must use its **capped** affine system; the original coefficient matrix can have a
 different rank. The all-cases mathematical plan is available below; composed runtime/space remain unproved.
 
-Import `Complexity.Logics.Propositional.CNF.WeightedGlobal` to deduplicate the
+Import `CslibFrontier.Logics.Propositional.CNF.WeightedGlobal` to deduplicate the
 upper clauses across every retained row. `upperKeys` identifies clauses by finite
 sets of signed literals, so literal order and source row do not affect identity.
 `globalBase_upper_eval` proves all upper bounds; `global_counting_identity` and
@@ -1479,13 +1479,13 @@ sets of signed literals, so literal order and source row do not affect identity.
 extra row factor on the upper clauses. This is a noncomputable finite listing;
 the affine module below supplies capped-rank row selection separately, while
 encoded construction time remains open.
-[The complete global client](../../ComplexityTests/WeightedGlobal.lean) checks
+[The complete global client](../../CslibFrontierTests/WeightedGlobal.lean) checks
 cross-row duplicates, accepted/rejected assignments, count recovery and the
 normalization connection. From the repository root run
-`scripts/build.sh ComplexityTests.WeightedGlobal`.
+`scripts/build.sh CslibFrontierTests.WeightedGlobal`.
 
 
-Import `Complexity.Logics.Propositional.CNF.WeightedAffine` for the actual capped
+Import `CslibFrontier.Logics.Propositional.CNF.WeightedAffine` for the actual capped
 integer affine conversion. `Row.coefficients` lists signed weights in declared
 variable order, with zero outside support; `Row.rhs` subtracts the negative-literal
 constant. `Row.affine_iff` preserves each Boolean assignment. `cappedRows` deletes
@@ -1493,14 +1493,14 @@ true rows, while `cappedRows_iff` requires that no rejected row was present.
 `cappedMatrix` and `cappedRhs` materialize these rows for the existing rectangular
 solver. `selectedCappedRow_iff` pulls its computed indices back to actual capped
 rows under the computed rational consistency test. No basis is supplied by the caller.
-The [complete affine client](../../ComplexityTests/WeightedAffine.lean) checks mixed
+The [complete affine client](../../CslibFrontierTests/WeightedAffine.lean) checks mixed
 weights and signs, an unused variable, rejection, and the empty zero equation.
-From the repository root run `scripts/build.sh ComplexityTests.WeightedAffine`.
+From the repository root run `scripts/build.sh CslibFrontierTests.WeightedAffine`.
 This bridge does not assemble all direct branches or certify the full reduction's
 runtime, space or graph endpoints.
 
 
-Import `Complexity.Logics.Propositional.CNF.WeightedCounting` for the all-cases
+Import `CslibFrontier.Logics.Propositional.CNF.WeightedCounting` for the all-cases
 mathematical assembler. `originalCountingPlan R hd` takes actual occurrence rows
 and bounds on their computed normalized demands, normalizes them, and returns a
 `CountingPlan` with exact count recovery on every declared variable. No rank,
@@ -1513,12 +1513,12 @@ capped rows. Each query has at most `2*n-2` variables, width `d+2`, and at most
 `countingBudget n d` clauses, a degree `d+1` polynomial for fixed `d`.
 This is a noncomputable mathematical plan, with no composed encoded runtime or
 space guarantee. Theorem 7.1 and the graph endpoints remain incomplete.
-The [counting client](../../ComplexityTests/WeightedCounting.lean) exercises the
+The [counting client](../../CslibFrontierTests/WeightedCounting.lean) exercises the
 original-input entry point and the direct and query interfaces. From the
-repository root run `scripts/build.sh ComplexityTests.WeightedCounting`.
+repository root run `scripts/build.sh CslibFrontierTests.WeightedCounting`.
 
 For executable bounded subset enumeration on `Fin n`, import
-`Complexity.Logics.Propositional.CNF.WeightedExecutable`. `boundedLists` visits
+`CslibFrontier.Logics.Propositional.CNF.WeightedExecutable`. `boundedLists` visits
 only the requested lengths using `List.sublistsLen`; its exact binomial count and
 `boundedLists_polynomial` bound include empty inputs. `upperList` and
 `attainmentList` write signed clauses and terms from the canonical support order.
@@ -1526,14 +1526,14 @@ only the requested lengths using `List.sublistsLen`; its exact binomial count an
 boundary writer. `executableQuery_eval` proves pointwise agreement with
 `globalQuery`, and `executable_counting_identity` transfers exact full-variable
 count recovery. Width is at most `d+2`; the row candidate budgets are polynomial
-for fixed `d`. Run `scripts/build.sh ComplexityTests.WeightedExecutable` from the
+for fixed `d`. Run `scripts/build.sh CslibFrontierTests.WeightedExecutable` from the
 repository root to check concrete mixed-sign, overweight, duplicate-row and
 boundary-query examples. These row/query writers are used by the executable
 all-cases assembler below.
 Candidate and output bounds alone are not runtime certificates.
 
 
-Import `Complexity.Logics.Propositional.CNF.WeightedExecution` to execute the
+Import `CslibFrontier.Logics.Propositional.CNF.WeightedExecution` to execute the
 complete original-input dispatcher. `executableOriginalCountingPlan R hd` takes
 finite occurrence rows and a bound on their computed normalized demands. It
 computes aggregation, constant extraction, interval rejection, complementation,
@@ -1551,8 +1551,8 @@ mathematical plan's count; query ordering may differ. No rank, basis, consistenc
 output or runtime conclusion is supplied by the caller. The API also handles
 `d=0`, beyond the source's stated `d>=1` scope.
 
-From the repository root run `scripts/build.sh ComplexityTests.WeightedExecution`.
-The [complete client](../../ComplexityTests/WeightedExecution.lean) checks actual
+From the repository root run `scripts/build.sh CslibFrontierTests.WeightedExecution`.
+The [complete client](../../CslibFrontierTests/WeightedExecution.lean) checks actual
 returned constructors and direct answers, full-rank Boolean and fractional
 candidates, inconsistency, duplicate partial-rank rows, repeated opposite
 polarities, empty input and rank zero. A test-only exhaustive oracle checks
@@ -1563,7 +1563,7 @@ continuation composes its binary cost with actual counting and supplies a parsed
 adapter. Table construction and graph endpoints remain separate.
 
 
-Import `Complexity.Computability.PolyTime.CNF.WeightedNormalization` for the
+Import `CslibFrontier.Computability.PolyTime.CNF.WeightedNormalization` for the
 certified binary normalizer/backend stage in namespace
 `Cslib.Logic.PL.WeightedRow.BinaryNormalization`. `Input` stores an explicit list
 of `(variable, sign, integer weight)` occurrences and a signed integer target.
@@ -1595,8 +1595,8 @@ width without supplied coefficient-growth advice.
 `materialize_output_polyBounded` derives storage from the proved runtime, not
 runtime from output size.
 
-From the repository root run `scripts/build.sh ComplexityTests.WeightedBinaryNormalization`.
-The [complete client](../../ComplexityTests/WeightedBinaryNormalization.lean) checks
+From the repository root run `scripts/build.sh CslibFrontierTests.WeightedBinaryNormalization`.
+The [complete client](../../CslibFrontierTests/WeightedBinaryNormalization.lean) checks
 repeated opposite signs, a `2^80` coefficient, deleted true rows, rejection,
 inconsistency, unused variables and Boolean/fractional full-rank recovery.
 The complete tagged continuation below now composes this stage with direct
@@ -1604,7 +1604,7 @@ answers and query writing. Advertised counting runtime, full table frontend
 and graph endpoints remain open; Theorem 7.1 and ALL-main remain incomplete.
 
 
-Import `Complexity.Computability.PolyTime.CNF.WeightedQuery` for the certified
+Import `CslibFrontier.Computability.PolyTime.CNF.WeightedQuery` for the certified
 selected-query branch, in namespace `Cslib.Logic.PL.WeightedRow.BinaryQuery`.
 `RowData` stores canonical signed variable/weight entries and a binary demand;
 `encRow`, `encLiteral` and `encCNF` frame unary variable indices, polarity bits
@@ -1646,8 +1646,8 @@ from the actual machine-time certificate. This is polynomial stage workspace
 through the independent time/space predicate, not a numerical peak-space
 polynomial or a complete counting-algorithm space theorem.
 
-From the repository root run `scripts/build.sh ComplexityTests.WeightedBinaryQuery`.
-The [complete client](../../ComplexityTests/WeightedBinaryQuery.lean) checks exact
+From the repository root run `scripts/build.sh CslibFrontierTests.WeightedBinaryQuery`.
+The [complete client](../../CslibFrontierTests/WeightedBinaryQuery.lean) checks exact
 sublist/dedup order, duplicate and unattainable rows, all boundary cases, actual
 query counts on declared bits, computed original-row selection, repeated opposite
 occurrences and a `2^80` coefficient. Test-only exhaustive counting is absent
@@ -1657,7 +1657,7 @@ on dependent occurrence families; the parsed ragged adapter follows below. Table
 remain open.
 
 
-Import `Complexity.Computability.PolyTime.CNF.WeightedPlan` for the complete
+Import `CslibFrontier.Computability.PolyTime.CNF.WeightedPlan` for the complete
 binary construction, in namespace `Cslib.Logic.PL.WeightedRow.BinaryPlan`.
 `compile d n rows` consumes original occurrence records and returns `Output`:
 a tagged binary natural answer, or a declared variable count and the false/true
@@ -1689,8 +1689,8 @@ weights and a common occurrence count `m` across all rows, with bounded normaliz
 demands. Arbitrary variable-length raw rows are not covered by this semantic
 bridge. Total execution on raw lists does not certify their parser or semantics.
 
-From the repository root run `scripts/build.sh ComplexityTests.WeightedBinaryPlan`.
-The [complete client](../../ComplexityTests/WeightedBinaryPlan.lean) checks zero/one
+From the repository root run `scripts/build.sh CslibFrontierTests.WeightedBinaryPlan`.
+The [complete client](../../CslibFrontierTests/WeightedBinaryPlan.lean) checks zero/one
 variables, no rows, rejection, inconsistency, Boolean/fractional full rank,
 positive deficient rank, duplicate constraints, large binary coefficients and a
 binary `2^80` direct answer. Exhaustive counting appears only in tiny test oracles.
@@ -1702,7 +1702,7 @@ on dependent occurrence families, with the parsed ragged adapter below. Table/gr
 and ALL-main remain incomplete.
 
 
-Import `Complexity.Computability.Complexity.FineGrained.WeightedCountingPlan`
+Import `CslibFrontier.Computability.Complexity.FineGrained.WeightedCountingPlan`
 for whole-algorithm polynomial-space counting in the same `BinaryPlan` namespace.
 `counterInput beta p` reads the actual tagged output and selects its declaration
 and formula; its certificate includes conversion from the writer's unary indices
@@ -1722,13 +1722,13 @@ count `m` and bounded normalized demands. They do not serve as rank, basis, outp
 or resource advice. All direct
 and query branches are covered by the previously proved original-plan equality.
 
-From the repository root run `scripts/build.sh ComplexityTests.WeightedCountingPlan`.
-The [complete client](../../ComplexityTests/WeightedCountingPlan.lean) checks tag
+From the repository root run `scripts/build.sh CslibFrontierTests.WeightedCountingPlan`.
+The [complete client](../../CslibFrontierTests/WeightedCountingPlan.lean) checks tag
 selection, large direct answers, unused declared bits, both boundary counts,
 contradictory rows and a nonzero instance of the existential native machine.
 The tiny exhaustive counter in this client is test-only.
 
-Import `Complexity.Computability.Complexity.FineGrained.WeightedCountingResources`
+Import `CslibFrontier.Computability.Complexity.FineGrained.WeightedCountingResources`
 for the actual sharper execution certificate. `exists_count_sharp_certificate d` constructs
 one native implementation of the tagged compiler, direct-tag readback, sequential false/true
 CNF calls and binary subtraction. It has global polynomial workspace on typed raw records.
@@ -1748,14 +1748,14 @@ budget and proved fixed-linear scale comparison for both queries. A fixed additi
 handles all smaller query dimensions; no extra loglog factor or faster-oracle assumption is used.
 The older `exists_count_polySpace` API now selects this sharper general-density counter too.
 
-From the repository root run `scripts/build.sh ComplexityTests.WeightedCountingResources`.
-The [complete client](../../ComplexityTests/WeightedCountingResources.lean) couples one actual
+From the repository root run `scripts/build.sh CslibFrontierTests.WeightedCountingResources`.
+The [complete client](../../CslibFrontierTests/WeightedCountingResources.lean) couples one actual
 machine with repeated-occurrence partial-rank queries, fractional full-rank rejection, a $2^{80}$
 coefficient, unused variables, an 81-bit direct answer, and real resource bounds for declared
 empty systems at arbitrary size. These APIs now allow each row its own occurrence length.
 The actual parsed arbitrary-row frontend follows.
 
-Import `Complexity.Computability.Complexity.FineGrained.WeightedRaggedResources`, namespace
+Import `CslibFrontier.Computability.Complexity.FineGrained.WeightedRaggedResources`, namespace
 `Cslib.Logic.PL.WeightedRow.BinaryRagged`. `Input` is the declared size paired with a list of
 rows; each row is a list of `(index, polarity, weight)` occurrences and a signed target.
 `encInput` uses a unary declaration and framed ragged lists, binary indices, and signed binary
@@ -1781,15 +1781,15 @@ machine certificates, rather than inferred from output length. All declared assi
 counted, including unused variables; small sizes use the rounded theorem's actual direct paths.
 This supplies Theorem 7.1's weighted-row frontend and counting resources for this explicit encoding.
 
-From the repository root run `scripts/build.sh ComplexityTests.WeightedRagged`.
-The [complete client](../../ComplexityTests/WeightedRagged.lean) couples one actual machine with
+From the repository root run `scripts/build.sh CslibFrontierTests.WeightedRagged`.
+The [complete client](../../CslibFrontierTests/WeightedRagged.lean) couples one actual machine with
 rows of lengths 0, 1 and 3, repeated mixed polarities, an 81-bit coefficient, an unused variable,
 empty contradictions, zero-variable systems, invalid large indices/nonpositive coefficients and
 malformed words. Table closure/equation/separator/overlap resources, graph endpoints and ALL-main
 remain open.
 
 
-Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryBounds`
+Import `CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryBounds`
 for a resource link in the sharper counter, in namespace
 `Cslib.Circuits.Frontier.IncidenceNetwork`. This is the construction of Lemma D.2
 of [the counter manuscript](https://github.com/openai/math/blob/7ef5c0cc5ca4b0e072b7a050fca09ab24bc6fa3a/preprints/The-Exponential-Time-Hypothesis-is-False-October-25-2026/paper.pdf),
@@ -1816,8 +1816,8 @@ contract and computes the source degree cap `k*(sys.length+2*n)` itself. It does
 not take an entry-time bound, contraction oracle or chosen answer as advice.
 
 From the repository root run
-`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceEntryBounds`.
-The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceEntryBounds.lean)
+`scripts/build.sh CslibFrontierTests.Computability.Circuit.Frontier.TensorNetworkIncidenceEntryBounds`.
+The [complete client](../../CslibFrontierTests/Computability/Circuit/Frontier/TensorNetworkIncidenceEntryBounds.lean)
 checks row/column/dead/padding incidence counts and actual admissible padded
 networks at all sufficiently large sizes.
 
@@ -1830,7 +1830,7 @@ rows to share a common occurrence count `m`; arbitrary variable-length raw rows,
 tables and graphs remain material gaps. No Theorem 7.1 or ALL-main completion follows.
 
 
-Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryCorrectness`
+Import `CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryCorrectness`
 for the semantics of the actual entry-extraction program, in the same
 `IncidenceNetwork` namespace. `val_factorCoeffs` proves that the binary residue
 list represents the integer parity factor in the truncated ring, including its
@@ -1859,8 +1859,8 @@ actual time and polynomial workspace. The new specification introduces no
 counting oracle or runtime assumption.
 
 From the repository root run
-`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceEntryCorrectness`.
-The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceEntryCorrectness.lean)
+`scripts/build.sh CslibFrontierTests.Computability.Circuit.Frontier.TensorNetworkIncidenceEntryCorrectness`.
+The [complete client](../../CslibFrontierTests/Computability/Circuit/Frontier/TensorNetworkIncidenceEntryCorrectness.lean)
 checks signed coefficients, zero parameters, exact selections, repeated variables
 and rows, invalid indices, free-variable columns and a constructed row whose
 coefficient is $-6V$ modulo $16$.
@@ -1880,7 +1880,7 @@ remain material limitations.
 
 ### Stream the computed degree arrays and their native contractions
 
-Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceArraySum`
+Import `CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceArraySum`
 and open `Cslib.Circuits.Frontier.IncidenceNetwork`. `ArrayInput` contains the
 unary declared variable count `n` and the actual equation list, with binary
 monomial indices. `degreeCap k` computes $K=k(a+2n)$ from its equation count $a$;
@@ -1923,8 +1923,8 @@ PDF pp. 55–57, toward 1575 Lemma 3.2/Proposition 4.2, rather than a new bound 
 old interpolation counter.
 
 From the repository root run
-`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceArrays`.
-The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceArrays.lean)
+`scripts/build.sh CslibFrontierTests.Computability.Circuit.Frontier.TensorNetworkIncidenceArrays`.
+The [complete client](../../CslibFrontierTests/Computability/Circuit/Frontier/TensorNetworkIncidenceArrays.lean)
 checks radix-one/empty arrays, unique selected-degree coverage, quarter-root
 boundaries, a fully computed network and a nonvacuous family of native certificates.
 
@@ -1940,8 +1940,8 @@ table and graph endpoints, full Theorem 7.1 and ALL-main remain open.
 
 ### Reconstruct the source-supported incidence sum and its count target
 
-Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceArraySupport`
-and `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceCountReconstruction`,
+Import `CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceArraySupport`
+and `CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceCountReconstruction`,
 and open `Cslib.Circuits.Frontier.IncidenceNetwork`.
 
 `unrankCombination_coverage` proves that the existing false-first decoder covers
@@ -1981,8 +1981,8 @@ variables, no equations, contradiction, and variables outside every scope.
 These are the local uniqueness, zero-contribution and original-input recovery
 stages of OpenAI2026ETH, Appendix D.3, Lemma D.2, equations (D.1)–(D.2), PDF
 pp.55–56. From the repository root run
-`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceReconstruction`.
-The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceReconstruction.lean)
+`scripts/build.sh CslibFrontierTests.Computability.Circuit.Frontier.TensorNetworkIncidenceReconstruction`.
+The [complete client](../../CslibFrontierTests/Computability/Circuit/Frontier/TensorNetworkIncidenceReconstruction.lean)
 checks decoder ranks, deduplicated incidences, unique subset/array coverage,
 valid and invalid zero-width blocks, dead/capacity-zero padded contractions,
 actual native output support and exact count recovery including free variables
@@ -2003,10 +2003,10 @@ graph and ALL-main endpoints remain open.
 
 ### Identify physical wire assignments, padding and coefficient products
 
-Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceWireRanks`,
-`Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidencePadding`,
-`Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceGroupCoefficients`
-and `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceColumnWeights`.
+Import `CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceWireRanks`,
+`CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidencePadding`,
+`CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceGroupCoefficients`
+and `CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceColumnWeights`.
 The namespace is `Cslib.Circuits.Frontier.IncidenceNetwork`.
 
 `blockIndices_rowPorts` and `blockIndices_colPorts` characterize the actual fold
@@ -2045,8 +2045,8 @@ $J>0$; the wire and padding theorems also handle no blocks.
 These are the concrete shared-wire, assignment-coverage, padding and group-weight
 steps of OpenAI2026ETH, Appendix D.3, Lemma D.2, PDF pp.55–56. From the repository
 root run
-`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceGlobal`.
-The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceGlobal.lean)
+`scripts/build.sh CslibFrontierTests.Computability.Circuit.Frontier.TensorNetworkIncidenceGlobal`.
+The [complete client](../../CslibFrontierTests/Computability/Circuit/Frontier/TensorNetworkIncidenceGlobal.lean)
 checks distinct row/column port orders, actual readback, unique fitting-rank
 assignments, zero widths and no blocks, forced padding multiplicity, live/dead
 padded readback, a negative test-coefficient product modulo 16, and variables
@@ -2064,7 +2064,7 @@ table/graph endpoints and ALL-main remain open.
 
 ### Read the actual native stream as a fitting-rank incidence sum
 
-Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceRankSum`
+Import `CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceRankSum`
 and open `Cslib.Circuits.Frontier.IncidenceNetwork`.
 `polyContraction_eq_rankPolynomial` is an exact finite-sum identity for each
 actual padded network. It reindexes all main-wire assignments by full-width
@@ -2095,8 +2095,8 @@ polynomial peak-space certificates remain unchanged. The complete client
 combines the output identity with that certificate on a genuine sparse family.
 
 From the repository root run
-`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceRankSum`.
-The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceRankSum.lean)
+`scripts/build.sh CslibFrontierTests.Computability.Circuit.Frontier.TensorNetworkIncidenceRankSum`.
+The [complete client](../../CslibFrontierTests/Computability/Circuit/Frontier/TensorNetworkIncidenceRankSum.lean)
 checks a genuine unused two-bit encoding (three fitting singleton subsets), zero
 from impossible capacity and cap overflow, the unique empty-assignment term,
 padded truncated reconstruction and exact native grouped readback/resource
@@ -2112,7 +2112,7 @@ contraction-sum paragraphs; no full 1575 Lemma 3.2 or Theorem 7.1 is claimed.
 
 ### Remove the global array and rank indices
 
-Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceSelectionSum`.
+Import `CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceSelectionSum`.
 `sum_rankIncidencePolynomial_eq_selectionPolynomial` replaces the complete array/rank sum
 by `selectionPolynomial`: choose a sublist of each actual `pairInc` block, keep exactly
 families whose total length is at most the cap, and multiply the corresponding group
@@ -2130,8 +2130,8 @@ polynomial in the original encoding. No output-size bound is substituted for run
 no extra log-log factor is discarded.
 
 From the repository root run
-`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceSelectionSum`.
-The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceSelectionSum.lean)
+`scripts/build.sh CslibFrontierTests.Computability.Circuit.Frontier.TensorNetworkIncidenceSelectionSum`.
+The [complete client](../../CslibFrontierTests/Computability/Circuit/Frontier/TensorNetworkIncidenceSelectionSum.lean)
 checks separate positions for repeated equations, a cap that admits a singleton and one
 that rejects it, native readback for a nonconstant equation, no equations and a constant
 contradiction, and composition with the existing binary time/space certificate.
@@ -2142,7 +2142,7 @@ STOC1575 Lemma 3.2 and Theorem 7.1 still need the separate resource compositions
 
 ### Count original assignments with the native incidence stream
 
-Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceOriginalCounter`
+Import `CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceOriginalCounter`
 and open `Cslib.Circuits.Frontier.IncidenceNetwork`.
 `selectionPolynomial_eq_incidenceSum` transports the capped family sum to the original
 finite equations. Its identity is exact over integer polynomials at every cap. Local
@@ -2177,8 +2177,8 @@ lists. The actual branch test, direct output, binary network writing and streame
 are charged by the composed certificate. The degree-array multiplier remains explicit.
 
 From the repository root run
-`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceOriginalCount`.
-The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceOriginalCount.lean)
+`scripts/build.sh CslibFrontierTests.Computability.Circuit.Frontier.TensorNetworkIncidenceOriginalCount`.
+The [complete client](../../CslibFrontierTests/Computability/Circuit/Frontier/TensorNetworkIncidenceOriginalCount.lean)
 derives numeric original counts for a three-variable parity equation, declared free variables,
 repeated equations in different groups, interleaved local positions, a nonlinear equation with a
 constant term, empty and contradictory systems, and the zero-variable dispatch. It also checks
@@ -2192,7 +2192,7 @@ weight and contraction-sum paragraphs.
 
 ### Run the sharper normalized sparse-system counter
 
-Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceSparseCounter`
+Import `CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceSparseCounter`
 and open `Cslib.Circuits.Frontier.IncidenceNetwork`. `countSparse k (n, sys)` computes the
 source high-incidence variables, streams their assignments, and uses the certified incidence
 solver on reduced systems. The direct contradiction and tautology branches retain their
@@ -2226,15 +2226,15 @@ $N\le Cn$ and $n\ge\max(16,C)$, it is at most $120C\eta(n)$. These proved numeri
 comparisons support the weighted plan's variable bound; they are not a supplied CNF runtime.
 
 From the repository root run
-`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceSparseCounter`.
-The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceSparseCounter.lean)
+`scripts/build.sh CslibFrontierTests.Computability.Circuit.Frontier.TensorNetworkIncidenceSparseCounter`.
+The [complete client](../../CslibFrontierTests/Computability/Circuit/Frontier/TensorNetworkIncidenceSparseCounter.lean)
 checks a genuinely heavy variable with both a reduced incidence-solver call and a contradictory
 branch, the original answer, invalid-input rejection, zero-variable cases, a numerical rounding
 instance, linear rescaling and a nonempty all-size sparse family with the real resource certificate.
 
 ### Count polylogarithmic-density parity leaves with the native machine
 
-Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceParityCounter`.
+Import `CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceParityCounter`.
 `countParity k β N₀ (n, ψ)` runs the actual initial-row search and greedy parity reduction,
 using `uniformSparseCount k (paritySparsity β) N₀` for every candidate system. It counts over
 all declared variables, including unused bits. `countParity_eq_modelCountOn` proves the
@@ -2287,7 +2287,7 @@ traversal clock in polynomial time/space; `sharp_rounds_le` bounds its value by
 $4\,2^{\texttt{Nat.logLogSqrtLogScale}(n)}$ for supported formulas and $n\ge4$, independently
 of clause density. Computing this clock does not mean executing its steps takes polynomial time.
 
-Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceGeneralCounter`.
+Import `CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceGeneralCounter`.
 `exists_countGeneralParity_eq_modelCountOn` derives fixed density and small-size parameters
 from the width and proves the original declared-variable count for **arbitrary clause density**.
 `countGeneralParity` uses direct counting below the fixed cutoff and the existing executable
@@ -2297,15 +2297,15 @@ clauses and zero variables are included. No leaf-counter or sparsifier-correctne
 assumed. The companion whole-machine resource certificate below now covers this same function.
 
 From the repository root run
-`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceSharpParity`.
-The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceSharpParity.lean)
+`scripts/build.sh CslibFrontierTests.Computability.Circuit.Frontier.TensorNetworkIncidenceSharpParity`.
+The [complete client](../../CslibFrontierTests/Computability/Circuit/Frontier/TensorNetworkIncidenceSharpParity.lean)
 checks ceiling rounding, actual traversal clocks, polynomial absorption including zero, sharp
 native parity resources with original-count semantics, dense repeated clauses, unused declared
 bits, zero-variable direct branches and a nonempty family above the general counter's cutoff.
 
 ### Use the whole general-density machine certificate
 
-Import `Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceGeneralResources`.
+Import `CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceGeneralResources`.
 `exists_countGeneralParity_sharp_certificate k` fixes one actual `countGeneralParity` machine
 and all parameters before its input, for fixed $k\ge2$. It counts every valid original declared
 CNF, rejects invalid width/support inputs, and has global native time
@@ -2326,8 +2326,8 @@ There is no assumption on $m/n$, and unused declared bits remain counted. The re
 comparison applies already at $n\ge16$; every smaller size is covered by the rounded certificate.
 
 From the repository root run
-`scripts/build.sh ComplexityTests.Computability.Circuit.Frontier.TensorNetworkIncidenceGeneralResources`.
-The [complete client](../../ComplexityTests/Computability/Circuit/Frontier/TensorNetworkIncidenceGeneralResources.lean)
+`scripts/build.sh CslibFrontierTests.Computability.Circuit.Frontier.TensorNetworkIncidenceGeneralResources`.
+The [complete client](../../CslibFrontierTests/Computability/Circuit/Frontier/TensorNetworkIncidenceGeneralResources.lean)
 checks a family with $n^2$ repeated clauses and $n-1$ unused variables, original count $2^{n-1}$,
 and the actual source time/space witness. It also covers zero-variable contradiction/tautology
 and an unbounded invalid-support family rejected in polynomial charged time at declared size zero.
