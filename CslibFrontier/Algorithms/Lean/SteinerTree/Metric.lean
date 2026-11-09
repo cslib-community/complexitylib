@@ -74,9 +74,8 @@ minimum spanning tree (`mul_totalWeight_kruskalEdges_le`).
 
 ## Main results
 
-* `totalWeight_kruskalEdges_completeEdges_le`,
-  `totalWeight_kruskalEdges_le_sum_consecutivePairs`: Kruskal's tree on a complete graph weighs at
-  most any duplicate-free connected edge list, in particular any Hamiltonian path.
+* `totalWeight_kruskalEdges_le_sum_consecutivePairs`: Kruskal's tree on a complete graph weighs at
+  most any Hamiltonian path (through `TSP.totalWeight_kruskalEdges_completeEdges_le`).
 * `mul_totalWeight_kruskalEdges_le`: `k · MST ≤ (k - 1) · cost(C)` for every Hamiltonian cycle `C`
   on `k` vertices. This sharpens [WilliamsonShmoys2011], Lemma 2.10, which states `MST ≤ cost(C)`.
 * `connects_steinerMST`: the heuristic connects the terminals.
@@ -176,26 +175,6 @@ theorem exists_connects_edgeCost_eq_steinerOpt (δ : α → α → ℕ) (R : Lis
     ⟨_, steinerMST δ R, connects_steinerMST δ R, rfl⟩
 
 /-! ### Minimum spanning trees of complete graphs -/
-
-/-- Kruskal's tree on the complete graph weighs at most any duplicate-free list of its edges that
-connects all vertices. -/
-theorem totalWeight_kruskalEdges_completeEdges_le {k : ℕ} (δ : Fin k → Fin k → ℕ)
-    {H : List (WeightedEdge k ℕ)} (hHnd : H.Nodup) (hHw : ∀ e ∈ H, e.weight = δ e.u e.v)
-    (hconn : ∀ x y : Fin k, Relation.EqvGen (fun a b => ∃ e ∈ H, a = e.u ∧ b = e.v) x y) :
-    totalWeight (kruskalEdges (completeEdges δ)) ≤ totalWeight H := by
-  have hHsub : H.Subperm (completeEdges δ) :=
-    hHnd.subperm fun e he => mem_completeEdges.2 (hHw e he)
-  have hpart : edgePartition H = edgePartition (completeEdges δ) := by
-    ext x y
-    rw [(rel_edgePartition_iff_eqvGen _ x y).2 (hconn x y),
-      (rel_edgePartition_iff_eqvGen _ x y).2
-        (.rel _ _ ⟨⟨x, y, δ x y⟩, mem_completeEdges.2 rfl, rfl, rfl⟩)]
-  have hsf : IsSpanningForest (completeEdges δ) (kruskalEdges H) :=
-    ⟨(kruskalEdges_subperm H).trans hHsub, kruskalEdges_isAcyclic H,
-      (edgePartition_kruskalEdges H).trans hpart⟩
-  calc totalWeight (kruskalEdges (completeEdges δ)) ≤ totalWeight (kruskalEdges H) :=
-        (kruskalEdges_isMinSpanningForest _).2 _ hsf
-    _ ≤ totalWeight H := totalWeight_kruskalEdges_le H fun _ _ => Nat.zero_le _
 
 private theorem map_fst_consecutivePairs {β : Type*} :
     ∀ l : List β, l.consecutivePairs.map Prod.fst = l.dropLast
