@@ -66,7 +66,7 @@ theorem isPolyTime_amplifyEnumerated {Input : Type} {input : Input ↪ List Bool
       (encPair enc (encPair alphabet alphabet)) encBool)
     (fallback : C) (T q : ℕ) [NeZero q] :
     ComputableInPolyTime (fun x => (graph x).amplifyEnumerated eval fallback rotate T q)
-      input (encoding (encPi (encPi encBool))) := by
+      input (encoding encConstraintTable) := by
   unfold amplifyEnumerated
   fun_prop
 
