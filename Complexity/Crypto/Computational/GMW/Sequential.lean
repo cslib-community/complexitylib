@@ -23,6 +23,7 @@ import Complexity.Computability.Probabilistic.Oracle.Composition
 import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Repeat
 import Complexity.Computability.Probabilistic.Sampling
+import Complexity.Languages.Probabilistic.Norm
 import Complexity.Logics.Propositional.CNF.PolyTime
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Map
@@ -173,13 +174,12 @@ theorem run_gmwSeqProver_fst {α : Type} (generator : List Bool → List Bool) (
         (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) P.respond)
         prog).run P.init).bind (fun (a, s') => (relate s').map (a, ·))).map Prod.fst =
       (P.run prog P.init).map Prod.fst := by
-    simp only [Prover.run, PMF.map_bind, PMF.map_comp, Function.comp_def]
+    simp only [pmf_norm, Prover.run]
     have hconst : ∀ x : α × P.State, PMF.map (fun _ : State' => x.1) (relate x.2) = PMF.pure x.1 :=
       fun _ => PMF.map_const _ _
     simp only [hconst]; rfl
   rw [hlhs] at hmap; rw [hmap]
-  simp only [P, gmwSeqProver, relate, ProbComp.eval_bind, ProbComp.eval_map,
-    PMF.map_bind, PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm, P, gmwSeqProver, relate]
   exact congrArg (PMF.bind _) (funext fun coinsList => by rw [eval_runSeq]; rfl)
 
 /-- The PPT program realizing `gmwSeqProver`'s interaction with a verifier `prog`. -/
@@ -413,16 +413,14 @@ private theorem eval_bind_replicate_runSeq_gmwVerifier {α : Type}
   induction K with
   | zero => simp [OracleComp.replicate]
   | succ K ih =>
-    simp only [OracleComp.replicate_succ, map_bind, runSeq_bind, runSeq_map,
-      Functor.map_map, Prod.map_fst, ProbComp.eval_bind, ProbComp.eval_map, PMF.bind_bind,
-      PMF.bind_map, Function.comp_def]
+    simp only [pmf_norm, OracleComp.replicate_succ, map_bind, runSeq_bind, runSeq_map,
+      Functor.map_map, Prod.map_fst]
     refine congrArg (PMF.bind _) (funext fun coins => ?_)
-    simp only [runSeq_gmwVerifier, ProbComp.eval_map, PMF.bind_map, Function.comp_def]
+    simp only [pmf_norm, runSeq_gmwVerifier]
     rw [PMF.bind_comm]
     refine congrArg (PMF.bind _) (funext fun p => ?_)
     have hih := congrArg (PMF.map (List.cons p.1)) ih
-    simpa only [ProbComp.eval_bind, ProbComp.eval_map, PMF.map_bind, PMF.map_comp,
-      Function.comp_def] using hih
+    simpa only [pmf_norm] using hih
 
 /-- **Completeness of the sequentially amplified GMW protocol.** When
 `ThreeSAT.verifier (f a, w) = true`, `gmwSeqProver` makes `gmwSeqVerifier` accept with
@@ -693,14 +691,13 @@ theorem eval_game0Opt_eq_bind_bernoulliAttemptOpt {β : Type} (enc : β ↪ List
   apply Probability.PMF.map_injective (encOption enc).injective
   rw [← ProbComp.eval_map, map_encOption_game0Opt,
     eval_game0_eq_bind_bernoulliAttempt, run_gmwProver_fst]
-  simp only [runTwoRound_map, Functor.map_map, Prod.map_fst, ProbComp.eval_bind,
-    ProbComp.eval_map, PMF.map_bind, PMF.bind_bind, PMF.bind_map,
-    map_encOption_bernoulliAttemptOpt, Function.comp_def]
+  simp only [pmf_norm, runTwoRound_map, Functor.map_map, Prod.map_fst,
+    map_encOption_bernoulliAttemptOpt]
 
 private theorem bind_bernoulliAttemptOpt_ite {β : Type} (μ ν : PMF β) :
     (μ.bind bernoulliAttemptOpt).bind
       (fun o => match o with | some x => PMF.pure x | none => ν) = mixThree μ ν := by
-  simp only [bernoulliAttemptOpt, mixThree, PMF.bind_bind, PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm, bernoulliAttemptOpt, mixThree]
   rw [PMF.bind_comm]
   refine congrArg (PMF.bind _) (funext fun ch_guess => ?_)
   cases [false, false, false] == ch_guess
@@ -714,8 +711,7 @@ theorem eval_firstSuccess_replicate_eq_repeatAttempt {β : Type} (d : β)
   induction k with
   | zero => simp [repeatAttempt]
   | succ k ih =>
-    simp only [OracleComp.replicate_succ, map_bind, ProbComp.eval_bind, ProbComp.eval_map,
-      PMF.map_comp, Function.comp_def, firstSuccess_cons, repeatAttempt]
+    simp only [pmf_norm, OracleComp.replicate_succ, map_bind, firstSuccess_cons, repeatAttempt]
     have hstep (o : Option β) :
         (ProbComp.eval (OracleComp.replicate k g)).map
           (fun xs => match o with | some x => x | none => firstSuccess d xs) =
@@ -1376,9 +1372,7 @@ theorem eval_gmwSeqInteract_runOracle_eq_iterate_realSessionStep {k : ℕ} {Cont
           (false, coinsList))) =
       ProbComp.eval (gmwSeqInteract generator s m φ w K (machine.runOracle T word)) := by
     rw [← hrun]
-    simp only [gmwSeqInteract, runSeq_map, Functor.map_map, Prod.map_fst,
-      ProbComp.eval_bind, ProbComp.eval_map, PMF.map_bind, PMF.map_comp, Function.comp_def,
-      bind_pure_comp]
+    simp only [pmf_norm, gmwSeqInteract, runSeq_map, Functor.map_map, Prod.map_fst, bind_pure_comp]
   have hrhs : PMF.map (fun p : ℕ × FiniteConfig k Bool Control Unit => p.2.tapes.output)
       (ProbComp.eval (do
         let st' ← OracleComp.iterate K (realSessionStep machine generator s m T φ w)
@@ -1388,9 +1382,8 @@ theorem eval_gmwSeqInteract_runOracle_eq_iterate_realSessionStep {k : ℕ} {Cont
         let st' ← OracleComp.iterate K (realSessionStep machine generator s m T φ w)
           (T, FiniteConfig.init machine.initial word)
         finishSessionRun machine T st') := by
-    simp only [finishSessionRun, runEmptyOracle, OracleComp.interpret_map, StateT.run_map,
-      Functor.map_map, ProbComp.eval_bind, ProbComp.eval_map,
-      PMF.map_bind, PMF.map_comp, Function.comp_def]
+    simp only [pmf_norm, finishSessionRun, runEmptyOracle, OracleComp.interpret_map, StateT.run_map,
+      Functor.map_map]
   rw [← hlhs, ← hrhs, hmap]
 
 end Cslib.Crypto.GMW

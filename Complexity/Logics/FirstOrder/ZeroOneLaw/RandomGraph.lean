@@ -66,6 +66,10 @@ noncomputable def randomGraph (n : ℕ) : PMF (SimpleGraph (Fin n)) :=
 noncomputable def randomGraphProb (n : ℕ) (P : SimpleGraph (Fin n) → Prop) : ℝ :=
   ((randomGraph n).toOuterMeasure {G | P G}).toReal
 
+theorem randomGraphProb_def (n : ℕ) (P : SimpleGraph (Fin n) → Prop) :
+    randomGraphProb n P = ((randomGraph n).toOuterMeasure {G | P G}).toReal := by
+  rw [randomGraphProb]
+
 /-- The probability of `P` is the fraction of labelled graphs on `Fin n` with property `P`. -/
 theorem randomGraphProb_eq (n : ℕ) (P : SimpleGraph (Fin n) → Prop) :
     randomGraphProb n P = Nat.card {G // P G} / Nat.card (SimpleGraph (Fin n)) := by
