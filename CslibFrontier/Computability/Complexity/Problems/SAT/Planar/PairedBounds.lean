@@ -381,17 +381,13 @@ private theorem links_stat (sites : List Point) (r : Route) (cost : PlacedClause
     simp [Nat.mul_comm]
   rw [he, length_links, ← Nat.mul_assoc, Nat.mul_comm k 2]
 
-private theorem segments_translate (p : Point) (r : Route) :
-    (translate p r).consecutivePairs.length = r.consecutivePairs.length := by
-  simp [translate, List.consecutivePairs]
-
 private theorem ordinary_route_costs (p : Point) :
     ((ordinaryClauses p).map fun c => c.2.2.length).sum = 16 ∧
       ((ordinaryClauses p).map fun c =>
         (c.2.2.map fun r => r.consecutivePairs.length).sum).sum = 16 ∧
       ((ordinaryClauses p).map fun c => (c.2.2.map wireLength).sum).sum = 800 := by
   simp only [ordinaryClauses, List.map_map, Function.comp_def, List.length_map,
-    segments_translate, wireLength_translate]
+    consecutivePairs_length_translate, wireLength_translate]
   decide +kernel
 
 private theorem crossing_route_costs (p : Point) :
@@ -400,7 +396,7 @@ private theorem crossing_route_costs (p : Point) :
         (c.2.2.map fun r => r.consecutivePairs.length).sum).sum = 407 ∧
       ((crossingClauses p).map fun c => (c.2.2.map wireLength).sum).sum = 2192 := by
   simp only [crossingClauses, List.map_map, Function.comp_def, List.length_map,
-    segments_translate, wireLength_translate]
+    consecutivePairs_length_translate, wireLength_translate]
   decide +kernel
 
 private theorem access_wire_cost (sites : List Point) (p q : Point) (lane : Fin 2) :

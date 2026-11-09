@@ -12,7 +12,6 @@ public import CslibFrontier.Computability.Complexity.Problems.SAT.Incidence.Degr
 public import CslibFrontier.Logics.Propositional.CNF.Planar.CrossoverSplit
 import CslibFrontier.Foundations.Data.List.Filter
 import Mathlib.Data.List.GetD
-import Mathlib.Tactic.SplitIfs
 
 /-!
 # Compatible assignments on canonical paths
@@ -336,36 +335,15 @@ theorem exists_compatible_assignment {φ : CNF ℕ}
   intro o ho c hc
   unfold wire at hc
   obtain ⟨⟨p, k⟩, hpk, rfl⟩ := List.mem_map.mp hc
-  have hget := List.mem_zipIdx_iff_getElem?.mp hpk
-  obtain ⟨hk, heq⟩ := List.getElem?_eq_some_iff.mp hget
+  obtain ⟨hk, heq⟩ := List.mem_zipIdx' hpk
   have hk' : k < (occurrencePath φ o).length := by
     simp only [List.length_dropLast] at hk
     omega
-  have heq' : (occurrencePath φ o)[k] = p := by
-    rw [← List.getElem_dropLast hk]
-    exact heq
-  have hpo : p ∈ occurrencePath φ o := heq' ▸ List.getElem_mem hk'
-  change (List.dropLast (occurrencePath φ o))[k] = p at heq
-  have hpod : p ∈ (occurrencePath φ o).dropLast := by
-    rw [← heq]
-    exact List.getElem_mem hk
+  have heq' : (occurrencePath φ o)[k] = p := (List.getElem_dropLast hk).symm.trans heq.symm
+  have hpod : p ∈ (occurrencePath φ o).dropLast := List.fst_mem_of_mem_zipIdx hpk
+  have hpo : p ∈ occurrencePath φ o := List.dropLast_subset _ hpod
   by_cases hp : p ∈ crossingSites φ
-  · have hl : side p (p - (1, 0)) = 0 := by
-      rcases p with ⟨x, y⟩
-      simp only [side, Prod.fst_sub, Prod.snd_sub]
-      split_ifs <;> first | rfl | omega
-    have hr : side p (p + (1, 0)) = 1 := by
-      rcases p with ⟨x, y⟩
-      simp only [side, Prod.fst_add, Prod.snd_add]
-      split_ifs <;> first | rfl | omega
-    have ht : side p (p - (0, 1)) = 2 := by
-      rcases p with ⟨x, y⟩
-      simp only [side, Prod.fst_sub, Prod.snd_sub]
-      split_ifs <;> first | rfl | omega
-    have hb : side p (p + (0, 1)) = 3 := by
-      rcases p with ⟨x, y⟩
-      simp only [side, Prod.fst_add, Prod.snd_add]
-      split_ifs <;> first | rfl | omega
+  · obtain ⟨hl, hr, ht, hb⟩ := side_cardinal p
     rcases occurrencePath_crossing_straight hw hv ho hp hpo with hs | hs
     · have hav := haxis ho hp hpo (Or.inl rfl) hs
       have hports := (hcross p).2
