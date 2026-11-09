@@ -664,8 +664,7 @@ private theorem pow_absorb (K₀ z : ℕ) (hz : 1 ≤ z) :
   have hz' : z ≤ z ^ K := by
     calc z = z ^ 1 := (pow_one z).symm
       _ ≤ z ^ K := Nat.pow_le_pow_right hz (by omega)
-  calc K₀ * (5 * z + 1) ^ K₀ + 5 * z ≤ K₀ * (6 ^ K₀ * z ^ K) + 5 * z ^ K :=
-        Nat.add_le_add (Nat.mul_le_mul_left _ h6) (Nat.mul_le_mul_left _ hz')
+  calc K₀ * (5 * z + 1) ^ K₀ + 5 * z ≤ K₀ * (6 ^ K₀ * z ^ K) + 5 * z ^ K := by gcongr
     _ = (K₀ * 6 ^ K₀ + 5) * z ^ K := by ring
     _ ≤ K * z ^ K := Nat.mul_le_mul_right _ (by omega)
 

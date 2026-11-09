@@ -254,8 +254,7 @@ private theorem vcSampleSize_aux {d m : ℕ} {ε δ : ℝ} (hε : 0 < ε) (hε1 
         Real.log_le_log (by positivity) (by gcongr; linarith [Real.exp_one_lt_d9])
       have h2 := Real.log_le_sub_one_of_pos hy
       linarith
-    calc d * Real.log A ≤ d * (Real.log (48 / ε) + ε * m / (8 * d)) :=
-          mul_le_mul_of_nonneg_left hlogA hd0
+    calc d * Real.log A ≤ d * (Real.log (48 / ε) + ε * m / (8 * d)) := by gcongr
       _ = d * Real.log (48 / ε) + ε * m / 8 := by
           field_simp
   have hApow : 0 < A ^ d := by

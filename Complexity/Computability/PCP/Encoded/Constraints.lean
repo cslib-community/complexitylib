@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.PCP.Encoded.Basic
+public import Complexity.Computability.PCP.Encoded.Encoding
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi
 import Complexity.Tactic.PolyTime
@@ -17,7 +18,7 @@ import Complexity.Tactic.PolyTime
 
 `g.mapConstraints f` changes the descriptor on every edge while retaining all endpoints and
 edge indices. At a fixed finite alphabet, `g.mapConstraints eval` materializes each executable
-constraint as its complete Boolean table, encoded with `encPi (encPi encBool)`. This returns
+constraint as its complete Boolean table, encoded with `encConstraintTable`. This returns
 successive graph transformations to the same descriptor type `α → α → Bool`.
 
 Tabulation requires an efficient evaluator jointly in the descriptor and both alphabet symbols.
@@ -119,7 +120,7 @@ theorem isPolyTime_constraintTable [Fintype α] {alphabet : α ↪ List Bool}
     {eval : C → α → α → Bool}
     (heval : ComputableInPolyTime (fun p : C × α × α => eval p.1 p.2.1 p.2.2)
       (encPair enc (encPair alphabet alphabet)) encBool) :
-    ComputableInPolyTime eval enc (encPi (encPi encBool)) := by
+    ComputableInPolyTime eval enc encConstraintTable := by
   apply ComputableInPolyTime.pi
   intro a
   apply ComputableInPolyTime.pi
@@ -133,21 +134,19 @@ theorem isPolyTime_tabulateConstraints [Fintype α] {alphabet : α ↪ List Bool
     {eval : C → α → α → Bool}
     (heval : ComputableInPolyTime (fun p : C × α × α => eval p.1 p.2.1 p.2.2)
       (encPair enc (encPair alphabet alphabet)) encBool) :
-    ComputableInPolyTime (mapConstraints eval) (encoding enc)
-      (encoding (encPi (encPi encBool))) :=
+    ComputableInPolyTime (mapConstraints eval) (encoding enc) (encoding encConstraintTable) :=
   isPolyTime_mapConstraints (.id' (encIn := encoding enc)) (isPolyTime_constraintTable heval)
 
 /-- Evaluate a stored constraint table at both runtime alphabet symbols. -/
 @[fun_prop]
 theorem isPolyTime_constraintTableEval [Fintype α] (alphabet : α ↪ List Bool) :
     ComputableInPolyTime (fun p : (α → α → Bool) × α × α => p.1 p.2.1 p.2.2)
-      (encPair (encPi (encPi encBool)) (encPair alphabet alphabet)) encBool := by
+      (encPair encConstraintTable (encPair alphabet alphabet)) encBool := by
   polytime
 
 /-- The full two-dimensional constraint table has bounded encoded size, including its framing. -/
 theorem length_constraintTable_le [Fintype α] (table : α → α → Bool) :
-    (encPi (encPi encBool) table).length ≤
-      Fintype.card α * (6 * Fintype.card α + 1) := by
+    (encConstraintTable table).length ≤ Fintype.card α * (6 * Fintype.card α + 1) := by
   have hrow (a : α) : (encPi encBool (table a)).length ≤ 3 * Fintype.card α := by
     simpa only [Nat.mul_comm, show 2 * 1 + 1 = 3 from rfl] using
       length_encPi_le encBool (table a) (bound := 1) (by intro b; simp)
@@ -185,7 +184,7 @@ theorem length_encoding_mapConstraints_le (g : Graph C) (f : C → C') (bound : 
 /-- Normalization to fixed-alphabet tables adds at most a constant number of bits per edge. -/
 theorem length_encoding_tabulateConstraints_le [Fintype α] (g : Graph C)
     (eval : C → α → α → Bool) :
-    (encoding (encPi (encPi encBool)) (g.mapConstraints eval)).length ≤
+    (encoding encConstraintTable (g.mapConstraints eval)).length ≤
       (encoding enc g).length + 2 * g.edges.length *
         (Fintype.card α * (6 * Fintype.card α + 1)) :=
   g.length_encoding_mapConstraints_le eval _ fun c =>

@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 
-import Complexity.Foundations.Probability.HierarchyAccess
+import Complexity.Computability.LogSpaceDerandomization.HierarchyAccess
 
 /-! Actual global requests distinguish negative endpoints, reset sources and fixed suffixes. -/
 
