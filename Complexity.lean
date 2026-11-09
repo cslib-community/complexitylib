@@ -4025,6 +4025,8 @@ public import Complexity.Crypto.Protocols.VOLE.MaskedMulCheck
 public import Complexity.Crypto.Protocols.VOLE.MulCheck
 public import Complexity.Crypto.Protocols.VOLE.Native
 public import Complexity.Crypto.Protocols.VOLE.NativePPT
+public import Complexity.Crypto.Protocols.VOLE.RingMAC
+public import Complexity.Crypto.Protocols.VOLE.RingMulCheck
 public import Complexity.Crypto.Protocols.VOLE.World
 public import Complexity.DataStructure.AVLTree.Basic
 public import Complexity.DataStructure.AVLTree.Erase
@@ -4846,6 +4848,7 @@ public import Complexity.Foundations.Data.ZMod.Basic
 public import Complexity.Foundations.Data.ZMod.DotProduct
 public import Complexity.Foundations.Data.ZMod.ModulusSwitch
 public import Complexity.Foundations.Data.ZMod.Multiples
+public import Complexity.Foundations.Data.ZMod.PolynomialRoots
 public import Complexity.Foundations.FieldTheory.Finite.Basic
 public import Complexity.Foundations.FieldTheory.Finite.BinaryField
 public import Complexity.Foundations.FieldTheory.Finite.LinearizedPolynomial
