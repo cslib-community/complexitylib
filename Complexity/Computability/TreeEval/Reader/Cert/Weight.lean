@@ -11,6 +11,7 @@ public import Complexity.Computability.TreeEval.Reader.Cert.Residue
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Bit
 public import Mathlib.Data.Nat.Bitwise
 public import Mathlib.Data.List.GetD
+import Complexity.Tactic.EncLen
 
 /-!
 # The weights of table entries within linear work space
@@ -168,15 +169,13 @@ private theorem half_inSpace :
     have h₁ := length_halfStep_le p k o x j
     have h₂ : (encNat j).length ≤ n := (length_encNat_le_self j).trans hj
     rw [iterate_halfStep] at h₁ ⊢
-    simp only [length_encPair] at h₁ h₂ ⊢
-    omega
+    enc_len at h₁ h₂ ⊢
   have h := iterate (n := fun h : ((ℕ × ℕ × ℕ) × List ℕ) × ℕ => h.2) hn hinit halfStep_inSpace
     (Q := fun h => 4 * ((encHalfIn h).length + h.2 + 1) + 1)
     (B := fun h => 4 * ((encHalfIn h).length + h.2 + 1))
     (fun h j hj => by have := hlen h j hj; dsimp only; omega) (fun h j hj => hlen h j hj)
   refine (snd' (snd' h)).mono_le fun h => ?_
-  simp only [length_encPair] at *
-  omega
+  enc_len at *
 
 /-- The encoding of the arguments of a weight. -/
 abbrev encWeightIn : (ℕ × ℕ × ℕ) × List ℕ × List ℕ ↪ List Bool :=
