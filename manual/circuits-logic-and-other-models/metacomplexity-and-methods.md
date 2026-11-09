@@ -193,10 +193,12 @@ run `scripts/build.sh ComplexityTests.PaperEndpoints.ExactOne` to elaborate it.
 
 This proves the actual rank-derived query existence/correctness portion of
 STOC submission 1575, Theorems 1.2/5.2 and Corollary 5.3, and the Exact Cover
-transposition of Corollary 5.4. It does not complete those algorithmic statements:
-polynomial-bit-time rank preprocessing, bounded-demand/graph extensions and
-the sharper counting runtime remain unproved. No curated headline abstract is added for this partial
-coverage.
+transposition of Corollary 5.4. The binary rank/dispatch and sharp signed-clause counter are
+completed in the later executable sections (`ExactOneCountingResources`); they support Theorems
+1.2/5.1–5.2 and Corollary 5.3 on the recorded distinct-variable signed-clause encoding. For
+Corollary 5.4, the actual original indexed candidate-list transposition and complete native resource
+composition remain open; equal/empty candidates must retain separate original bits. No curated
+headline abstract is added by this inventory assessment.
 
 ## Tables of VC dimension at most one
 
@@ -653,7 +655,7 @@ Small test oracles enumerate original selections only; production uses the prove
 These are native word/resource certificates on explicit framed encodings, with unary declarations,
 binary references and signed binary bounds. They do not add a fresh bit-transition machine
 simulation or arbitrary untrusted-byte graph admission. General finite/cofinite degree-rule and
-labeled partition constructors, unique-mark upper-domination set counts and four graph predicates'
+labeled partition constructors, the width-three private-mark refinement and four graph predicates'
 full witness/optimum composition remain open. The continuations cover kernels, matching
 applications, Maximum Induced Matching and Upper Domination optimization/witness recovery, and
 the full induced-matching distribution.
@@ -704,7 +706,7 @@ decision are covered here. The continuations below cover Perfect Matching Cut an
 Induced Matching, signed-threshold Maximum Induced Matching and Upper Dominating Set.
 Maximum Induced Matching's optimum/witness extraction and Corollary 7.5's complete distribution
 appear below. The other predicates' full witness/optimum composition and Proposition 7.6's
-unique-mark original-set variants remain open. These graph milestones do not complete
+the width-three path-marker refinement remains open; the exact width-four counter appears below. These graph milestones do not complete
 ALL-main.
 
 ### Perfect matching cuts with labeled sides
@@ -762,7 +764,7 @@ bounds, kernel counting/decision and labeled perfect-matching-cut counting/decis
 The continuations below cover dominating induced matching and signed-threshold Maximum Induced
 Matching, its complete optimum/witness recovery, Corollary 7.5's full distribution and Upper
 Dominating Set decision. Other predicates' full witness/optimum recovery and Proposition 7.6's
-unique-mark original-set refinements remain open. This concrete bipartition endpoint does not
+width-three path-marker refinement remains open; exact width-four counting appears below. This concrete bipartition endpoint does not
 complete the general partition theorem or ALL-main.
 
 ### Dominating induced matchings with exact edge-domination counts
@@ -822,7 +824,7 @@ The continuations below supply signed-threshold Maximum Induced Matching and Upp
 Set decision and their full optimum/witness composition. The other four recovery specializations
 remain open.
 Corollary 7.5's unrestricted matching bijection, total counts and full size distribution are covered below.
-Proposition 7.6's unique-mark original-set refinements remain open; its initial set–marking
+Proposition 7.6's width-three path-marker refinement remains open; its exact width-four and initial set–marking
 construction is supplied below. ALL-main remains open.
 
 ### Maximum induced matching with a varying binary threshold
@@ -870,7 +872,7 @@ This closes the signed-threshold counting/decision specialization; the continuat
 its optimum value and witness. Threshold zero gives Corollary 7.5's unrestricted total count, using
 the functional size circuit rather than that corollary's sharper no-size-test query budget. Witness/optimum extraction for the other graph predicates and
 general Corollary 7.2 sigma-rho rules, Theorem 7.3 labeled degree matrices and Proposition 7.6
-unique-mark upper-domination refinements remain open; its initial decision construction appears
+width-three upper-domination path-marker refinement remains open; its initial decision construction appears
 below. These remaining source endpoints keep ALL-main open.
 
 ### Returning the optimum value and an actual maximum induced matching
@@ -918,8 +920,8 @@ approved real construction on original selections/unique traces; production inst
 proved sharp native decider. It is not exhaustive matching search.
 
 The other four graph predicates' full witness/optimum composition remains open, together with
-general sigma-rho rules, labeled degree matrices and the unique-mark Upper Dominating Set
-refinements. The continuation below completes Corollary 7.5's full distribution and sharper no-size-test construction. The other source
+general sigma-rho rules, labeled degree matrices and the width-three Upper Dominating Set
+path-marker refinement. The continuation below completes Corollary 7.5's full distribution and sharper no-size-test construction. The other source
 clauses keep the paperwide/ALL-main objective open.
 
 ### Total induced matching counts and the complete size distribution
@@ -968,7 +970,7 @@ coefficient sums. A 32-vertex query construction has 63 variables per query with
 that construction test enumerates neither selections nor matchings. Tiny query/trace oracles are
 tests only; production certificates instantiate the approved unrestricted-density native counter.
 
-General sigma-rho rules, labeled degree matrices, unique-mark Upper Dominating Set refinements
+General sigma-rho rules, labeled degree matrices, the width-three Upper Dominating Set refinement
 and four other graph predicates' full witness/optimum composition remain open. Corollary 7.5 is
 covered under the stated encoding; that milestone does not close the paperwide/ALL-main objective or alternative admission/
 succinct-encoding transfers.
@@ -1011,8 +1013,8 @@ Its tiny assignment enumeration is a test oracle; the production machine uses th
 
 This completes Proposition 7.6's initial width-three decision construction and Corollary 7.4's
 Upper Dominating Set decision specialization for the stated encoding. The unique-mark width-four
-original-set counter on $5v+a-1$ query variables and the width-three path-marker refinement on
-$6v+a-1$ variables remain open. Upper-domination optimum-value and actual witness extraction are supplied below.
+original-set counter on $5v+a-1$ query variables appears below. The width-three path-marker
+refinement on at most $6v+a-1$ variables remains open. Upper-domination optimum-value and actual witness extraction are supplied below.
 All six Corollary 7.4 decision predicates are now covered in their recorded explicit models;
 Maximum Induced Matching and Upper Domination have full optimum/witness composition, as
 described below; the other four recovery specializations remain open. General Corollary 7.2
@@ -1093,9 +1095,52 @@ oracle; production uses the proved sharp counter and never enumerates a vertex-s
 This completes Upper Domination's Corollary 7.4 optimum/witness clause for the recorded encoding.
 The other four non-MIM/Upper graph predicates still need their recovery specializations. General
 Corollary 7.2 finite/cofinite degree rules, Theorem 7.3 labeled degree partitions, Proposition 7.6's
-unique-mark exact-set refinements, alternative encodings/admission and the independent paperwide
+width-three path-marker refinement, alternative encodings/admission and the independent paperwide
 audit remain open. The initial pair counter is still not an exact unmarked-set counter. ALL-main
 is not completed by this witness endpoint.
+
+### Count original minimal dominating sets with unique marks
+
+Import `Complexity.Computability.Complexity.FineGrained.UpperDominationUnique`.
+This implements Proposition 7.6 / Appendix D.3, PDF pp.27,35, augmented exact counting. The input
+is the same explicit canonical simple-graph frame and varying signed binary lower size threshold.
+`UpperDomination.Unique.complete` writes one extra DNF predicate per original vertex: the mark is
+true, or two distinct selected closed neighbors exist. Pair terms reuse original selection wires;
+ordered pair enumeration may repeat terms but introduces neither variables nor counted choices.
+`Unique.build` retains the reviewed gate/mark wires and side clauses, adding these actual predicates.
+
+`SimpleGraph.completePrivateMarking_iff` proves the augmented predicate equivalent to ordinary
+inclusion-minimal domination together with the canonical marking of **all** private closed
+neighbors. `card_completePrivateMarking` is an explicit forgetful bijection. The actual functional
+gate/mark representation and `Unique.exists_count_realEta_certificate` therefore count original
+sets exactly once, not set–marking pairs. For an edge this gives two rather than six; for a
+triangle it gives three rather than twenty-one. Negative thresholds count all minimal sets;
+thresholds above the declaration give zero. Empty graphs contribute one exactly when $k\le0$.
+
+For positive $v$, `Unique.query_count`, `query_budget` and `query_cubic_budget` prove exactly two
+ordinary width-four queries on $5v+a-1$ variables, with valid indices and at most $6000v^3$ clauses
+each. The actual generated cardinality circuit satisfies $a\le952(v+1)$. Binary polynomial
+construction includes every pair/term/literal write. The complete counter charges writing,
+sequential unrestricted-density width-four counting, reconstruction and binary output, with
+$C(L+1)^e2^{A\eta(v)}$ time for $v\ge16$ and global polynomial peak workspace. Rounded bounds
+cover all smaller sizes; fixed-linear rescaling uses the actual $5v+a$ dimension, without dropping
+an extra loglog factor. The existing unary declaration, canonical graph promise and native
+charged-word model apply. This adds no malformed-byte admission or succinct/binary-transition
+simulation claim and does not change the reviewed width-three decision/witness algorithms.
+
+From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.UpperDominationUnique`.
+The [complete computed client](../../ComplexityTests/PaperEndpoints/UpperDominationUnique.lean)
+checks empty graphs, isolates, edges, paths, cycles, cliques, an edge with an isolate, 512-bit
+thresholds, the marking/count distinction and actual width/dimension/size metadata. Positive and
+negative conventional marking instances ensure completeness is not vacuous. Tiny trace-based
+selection/mark enumeration is test-only; production uses the certified sharp counter.
+
+This closes the augmented width-four exact-set clause. The source's optional shared path-marker
+width-three construction on at most $6v+a-1$ variables is still open; ordinary clause splitting
+would add too many variables. General degree rules/partitions, four other recovery specializations,
+the indexed Exact Cover encoded-transposition composition and the remaining explicit inventory
+stay open. The semantic `coverScopes_iff` alone is not that encoded frontend/resource theorem.
+This does not complete ALL-main or the independent paperwide audit.
 
 ## Known Limitations
 

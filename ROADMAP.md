@@ -1359,11 +1359,48 @@ costs and output, retaining sharp time/global polynomial peak workspace. This cl
 Corollary 7.4 recovery clause in the explicit encoding; nonunique pair counts remain distinct
 from exact unmarked-set counts.
 
+`UpperDomination.Unique` now implements the actual augmented exact original-set counter of
+Proposition 7.6 / Appendix D.3: complete private marks and functional gates extend each ordinary
+minimal dominating set exactly once. Actual additional pair-or-mark predicates give two width-four
+queries on `5v+a-1` variables and at most `6000v³` clauses, with complete sharp native time/global
+polynomial workspace, signed binary thresholds and empty/isolated inputs. The old nonunique pair
+counter and all approved decision/optimum/witness algorithms are unchanged.
+
+### STOC1575 current source inventory
+
+The following maps every headline result to its actual endpoint or missing clause. Earlier milestone
+paragraphs retain historical gap descriptions; this is the current disposition, pending independent
+paperwide audit. All completed algorithmic entries use their recorded explicit encodings/unary
+declarations and native charged-word conventions, not undocumented admission or succinct formats.
+
+| Primary source | Lean entry | Current scope |
+|---|---|---|
+| Theorem 1.1; Lemma 4.1 | `TwoBoundary.BinaryFrontend` / `FineGrained/TwoBoundaryFrontend` | Actual arbitrary bounded-term DNF writer/count; exponent depends on `n+h`, h=0 one query. |
+| Theorems 1.2, 5.1, 5.2; Corollary 5.3 | `ExactOne.BinaryPlan`, `ExactOneCountingResources` | Original signed-clause/side-2-CNF rank/dispatch/query counter; positive clauses specialize exact-one hitting sets. Distinct underlying variables are a source promise. |
+| Corollary 5.4 | `ExactOne.coverScopes_iff` | Indexed Exact Cover semantic transposition is proved; actual encoded candidate-list transposition/native count composition remains open. Parameter is candidate count, retaining equal/empty candidates. |
+| Theorem 1.3; Lemmas 6.1–6.2 | `VCOne`, `VCOneClosure`, `VCOneSeparator`, `VCOneFrontend` | Constructive closure/separators and binary resources under actual per-table VC-one promise. |
+| Theorem 6.3 | `VCOneDispatch`, `VCOneCountingResources` | Complete actual table counter, arbitrary overlapping injective scopes, direct/empty branches and original count. |
+| Lemma 3.2; Proposition 4.2 | `IncidenceGeneralResources`, generic frontend composition | Actual general-density single-loglog fixed-width counter and sequential resource composition. The old squared-loglog interpolation algorithm is not relabeled. |
+| Theorem 7.1 | `WeightedRaggedResources` | Parsed arbitrary ragged positive-binary-weight rows, repeated/mixed literals and signed targets, fixed normalized-demand bound, actual all-cases sharp counting. |
+| Corollary 7.2; Lemma C.1 | Current independent-domination specialization | General fixed finite/cofinite rules and their threshold-bit construction/distribution remain open. |
+| Theorem 7.3 | Current perfect-matching-cut specialization | General fixed labeled degree matrices, varying class bounds and tuple traversal remain open. |
+| Corollary 7.4; Propositions D.1–D.5 | Existing graph counter modules; MIM/Upper witness modules | All six decision specializations covered. Full optimum/witness for MIM and Upper; four other recovery specializations remain open. |
+| Corollary 7.5 | `InducedMatching.Distribution` | Full ordered edge-size distribution and sharper no-size-test total construction, including output resources. |
+| Proposition 7.6 / Appendix D.3 | `UpperDomination`, `UpperDominationUnique` | Initial pair count/decision and augmented width-four exact original-set counter covered. Shared-marker width-three refinement remains open. |
+| Proposition C.2 | Current d=1 matching specialization | General fixed d-regular compact `2v+a-1` construction, size tests and resources remain open; no connectivity restriction is permitted. |
+
+Supporting row-selection mathematics and the actual integer Gram/basis/consistency/candidate backend
+are reused, along with linear functional cardinality writing (Lemma 3.3). This does not assert a new
+arbitrary-rational byte frontend for Lemma 3.1. The advertised Appendix A.3 one-query bounded-demand
+alternative is not supplied by the existing two-query Theorem 7.1 endpoint; it remains unmapped.
+
 Remaining STOC1575 objectives, keeping the original inventory open:
 
-- Theorems 1.1–1.2: actual generic bounded-term DNF constructor/count/resource transfer and the
+- Theorems 1.1–1.2 / 5.1–5.2 / Corollary 5.3: actual generic bounded-term DNF constructor/count/resource transfer and the
   signed-equation/side-2-CNF route are covered for the explicit encodings above. Alternative byte
   formats/admission and succinct declarations are separate, not implicit source promises.
+- Corollary 5.4: actual original indexed Exact Cover candidate-list transposition and native
+  sharp-time/polynomial-space composition remain open; only the semantic bijection is mapped.
 - Theorem 1.3 / 6.3 tables: actual representation and complete original-count/sharp-time/global
   polynomial-space composition are covered under the explicit canonical promise/encoding above.
   Alternative raw table formats/parser/admission transfers remain separate.
@@ -1386,14 +1423,14 @@ Remaining STOC1575 objectives, keeping the original inventory open:
   covered for the stated explicit encodings. Full optimum/witness composition is covered for
   Maximum Induced Matching and Upper Domination, including an actual returned original solution.
   The other four predicates still need their optimum/witness recovery specializations. General
-  degree rules/partitions and unique-mark refinements are separate outstanding source clauses.
+  degree rules/partitions and the width-three path-marker refinement are separate source clauses.
 - Corollary 7.5: total counts with the sharper no-size-test `2v-1` query construction, exact
   edge-size coefficients and the full ordered distribution/output/sharp-time/global-space endpoint
   are covered for the stated canonical explicit encoding. Alternative admission/succinct encoding
   transfers remain separate.
 - Proposition 7.6: the actual initial width-three set–marking-pair construction/count and decision
-  (`4v+a-1` variables) are covered. The alternative unique-mark width-four original-set counter
-  (`5v+a-1` variables) and width-three path-marker refinement (`6v+a-1` variables) remain open.
+  (`4v+a-1` variables) and augmented unique-mark width-four original-set counter (`5v+a-1`)
+  are covered. The width-three shared path-marker refinement (at most `6v+a-1`) remains open.
   Preserve the pair/set count distinction, input thresholds, empty graphs and polynomially many
   distribution/self-reduction calls. Upper optimum and actual witness output are covered in the recorded model.
 

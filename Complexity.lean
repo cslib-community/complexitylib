@@ -1739,6 +1739,7 @@ public import Complexity.Computability.Complexity.FineGrained.TwoBoundaryFronten
 public import Complexity.Computability.Complexity.FineGrained.TwoBoundaryWitness
 public import Complexity.Computability.Complexity.FineGrained.UpperDomination
 public import Complexity.Computability.Complexity.FineGrained.UpperDominationOptimum
+public import Complexity.Computability.Complexity.FineGrained.UpperDominationUnique
 public import Complexity.Computability.Complexity.FineGrained.UpperDominationWitness
 public import Complexity.Computability.Complexity.FineGrained.VCOneCountingResources
 public import Complexity.Computability.Complexity.FineGrained.WeightedCountingPlan
@@ -2632,6 +2633,7 @@ public import Complexity.Computability.PolyTime.CNF.SparseCNFLeafCounter
 public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
 public import Complexity.Computability.PolyTime.CNF.TwoBoundaryFrontend
 public import Complexity.Computability.PolyTime.CNF.UpperDomination
+public import Complexity.Computability.PolyTime.CNF.UpperDominationUnique
 public import Complexity.Computability.PolyTime.CNF.VCOneClosure
 public import Complexity.Computability.PolyTime.CNF.VCOneDispatch
 public import Complexity.Computability.PolyTime.CNF.VCOneFrontend
@@ -3619,6 +3621,7 @@ public import Complexity.Foundations.Combinatorics.SimpleGraph.DominatingSet
 public import Complexity.Foundations.Combinatorics.SimpleGraph.InducedMatching
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
 public import Complexity.Foundations.Combinatorics.SimpleGraph.PerfectMatchingCut
+public import Complexity.Foundations.Combinatorics.SimpleGraph.PrivateNeighborMarks
 public import Complexity.Foundations.Combinatorics.SmallSubsets
 public import Complexity.Foundations.Combinatorics.SubsetPairCount
 public import Complexity.Foundations.Combinatorics.Sunflower
