@@ -50,6 +50,11 @@ constant, and ratios for ski rental are stated with additive constant `0`.
   `2 - 1/B`, hence is `(2, 0)`-competitive.
 * `exists_witness`, `exists_ratio_violation_of_lt`, `not_isCompetitive_one`: no deterministic
   strategy beats ratio `2 - 1/B` without an additive constant.
+* `exists_rentThenBuy_cost_eq`: on boundedly many days, every deterministic strategy has the
+  cost of a rent-then-buy strategy.
+
+Randomized ski rental (ratio `1 / (1 - (1 - 1/B)^B) ≤ e/(e-1)` and its matching lower bound) is in
+`Complexity.DataStructure.Online.SkiRental.Randomized`.
 
 ## References
 
@@ -163,9 +168,7 @@ theorem exists_optimal_schedule (B : Nat) (reqs : List Unit) :
   by_cases hn : reqs.length ≤ B
   · refine ⟨_, validSchedule_replicate (b := false) (fun h => h) reqs, ?_⟩
     rw [scheduleCost_replicate_false, Nat.min_eq_left hn]
-  · have hne : reqs ≠ [] := by
-      rintro rfl
-      exact hn (Nat.zero_le B)
+  · have hne : reqs ≠ [] := by grind
     refine ⟨_, validSchedule_replicate (b := true) (fun _ => rfl) reqs, ?_⟩
     rw [scheduleCost_replicate_true B hne, Nat.min_eq_right (by omega)]
 
@@ -186,6 +189,29 @@ theorem scheduleCost_replicate_false_append_true (B d : Nat) (reqs : List Unit)
       change stepCost B false r false +
         (problem B).scheduleCost false rs (List.replicate d false ++ [true]) = _
       rw [stepCost_false_false, ih rs (by simpa using hlen)]
+      omega
+
+/-- A valid schedule that rents for `d` days and then buys costs `d + B`, whatever follows the
+purchase. -/
+theorem scheduleCost_replicate_false_append_true_cons {B d : Nat} {reqs : List Unit}
+    {tail : List Bool}
+    (hv : (problem B).ValidSchedule false reqs (List.replicate d false ++ true :: tail)) :
+    (problem B).scheduleCost false reqs (List.replicate d false ++ true :: tail) = d + B := by
+  induction d generalizing reqs with
+  | zero =>
+    cases reqs with
+    | nil => cases hv
+    | cons r rs =>
+      change stepCost B false r true + (problem B).scheduleCost true rs tail = 0 + B
+      rw [stepCost_false_true, scheduleCost_true_eq_zero hv.2]
+      omega
+  | succ d ih =>
+    cases reqs with
+    | nil => cases hv
+    | cons r rs =>
+      change stepCost B false r false +
+        (problem B).scheduleCost false rs (List.replicate d false ++ true :: tail) = d + 1 + B
+      rw [stepCost_false_false, ih hv.2]
       omega
 
 /-! ### Rent-then-buy strategies -/
@@ -410,10 +436,7 @@ theorem exists_ratio_violation_of_lt {B : Nat} (A : DetStrategy (problem B)) {p 
     (hpq : p * B < (2 * B - 1) * q) :
     ∃ reqs states, (problem B).ValidSchedule false reqs states ∧
       p * (problem B).scheduleCost false reqs states < q * A.cost false reqs := by
-  have hB : 1 ≤ B := by
-    rcases Nat.eq_zero_or_pos B with rfl | h
-    · simp only [Nat.mul_zero, Nat.zero_sub, Nat.zero_mul, Nat.lt_irrefl] at hpq
-    · exact h
+  have hB : 1 ≤ B := by grind
   obtain ⟨reqs, states, hv, hpos, hle⟩ := exists_witness hB A
   refine ⟨reqs, states, hv, ?_⟩
   set opt := (problem B).scheduleCost false reqs states
@@ -432,5 +455,42 @@ theorem not_isCompetitive_one {B : Nat} (hB : 2 ≤ B) (A : DetStrategy (problem
   obtain ⟨reqs, states, hv, hlt⟩ := exists_ratio_violation_of_lt A (p := 1) (q := 1) (by omega)
   have := h false rfl reqs states hv
   omega
+
+/-- On the first `N` ski days every deterministic strategy behaves like a rent-then-buy strategy:
+there is a threshold `t` with `A.cost = (rentThenBuy B t).cost` on every `n ≤ N` days. Take `t`
+to be the number of days the strategy rents before buying when it skis `N` days, or `N` if it never
+buys. This reduces lower bounds over arbitrary deterministic strategies, such as the randomized
+lower bound in `Complexity.DataStructure.Online.SkiRental.Randomized`, to threshold strategies. -/
+theorem exists_rentThenBuy_cost_eq {B : Nat} (A : DetStrategy (problem B)) (N : Nat) :
+    ∃ t, ∀ n ≤ N, A.cost false (List.replicate n ()) =
+      (rentThenBuy B t).cost false (List.replicate n ()) := by
+  have hlen : (A.states false (List.replicate N ())).length = N := by
+    rw [DetStrategy.length_states, List.length_replicate]
+  have htake : ∀ n ≤ N, A.states false (List.replicate n ()) =
+      (A.states false (List.replicate N ())).take n := fun n hn => by
+    rw [← DetStrategy.states_take, List.take_replicate, Nat.min_eq_left hn]
+  have hrep : ∀ n, (problem B).scheduleCost false (List.replicate n ())
+      (List.replicate n false) = n := fun n => by
+    have := scheduleCost_replicate_false B (List.replicate n ())
+    rwa [List.length_replicate] at this
+  rcases bool_list_cases (A.states false (List.replicate N ())) with hall | ⟨d, tail, hsplit⟩
+  · -- The strategy never buys within `N` days.
+    refine ⟨N, fun n hn => ?_⟩
+    rw [cost_rentThenBuy, List.length_replicate, ite_eq_left hn]
+    change (problem B).scheduleCost false _ (A.states false _) = n
+    rw [htake n hn, hall, hlen, List.take_replicate, Nat.min_eq_left hn, hrep]
+  · -- The strategy buys on day `d + 1`.
+    refine ⟨d, fun n hn => ?_⟩
+    have hvn := A.validSchedule_states (s₀ := false) rfl (List.replicate n ())
+    rw [cost_rentThenBuy, List.length_replicate]
+    change (problem B).scheduleCost false _ (A.states false _) = _
+    rw [htake n hn, hsplit] at hvn ⊢
+    split_ifs with hnd
+    · rw [List.take_append_of_le_length (by rw [List.length_replicate]; exact hnd),
+        List.take_replicate, Nat.min_eq_left hnd, hrep]
+    · rw [List.take_append, List.take_of_length_le (by rw [List.length_replicate]; omega),
+        List.length_replicate, show n - d = (n - d - 1) + 1 by omega, List.take_succ_cons]
+        at hvn ⊢
+      exact scheduleCost_replicate_false_append_true_cons hvn
 
 end Cslib.DataStructure.Online.SkiRental

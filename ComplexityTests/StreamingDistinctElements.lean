@@ -22,7 +22,8 @@ Verifies non-vacuity and concrete behavior of:
 2. the accuracy bound `Cslib.Streaming.dens_abs_kmvEstimate_sub_gt_le`, applied to a genuine
    pairwise independent family with a short seed (the affine maps over `ZMod 31`,
    `Cslib.Probability.isKWiseIndependentHash_polynomialHash`) on a set of `d ≥ t` items, so that
-   the estimate is not trivially exact;
+   the estimate is not trivially exact, and the amplified `Cslib.Streaming.solves_kmv` for the same
+   family;
 3. the memory bounds `Cslib.Streaming.spaceLE_kmv` (seeds not charged) and
    `Cslib.Streaming.exists_injOn_iUnion_reachable_kmvSketch` (seeds stored), with explicit numbers;
 4. failure cases: with a constant hash the keys are ordered by the items alone, and the sketch
@@ -93,6 +94,13 @@ example : (dens {c : Fin 2 → ZMod 31 |
     (by norm_num) (by norm_num) (by rw [card_univ, Fintype.card_fin])
   refine h.trans ?_
   norm_num
+
+/-- With `t = 24`, `ε = 1 / 2` (so `t ε² = 6`) and `2 · 6` copies, the randomized sketch solves
+`F₀` estimation on streams of length at most `31` with error probability `1 / 2 ≥ (8 / 9) ^ 6`. -/
+example : (kmv affineHash 24 (2 * 6)).Solves (1 / 2)
+    (fun s Y => |Y - freqMoment 0 s| ≤ 1 / 2 * freqMoment 0 s) 31 :=
+  solves_kmv isPairwiseIndependentHash_affineHash (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) le_rfl
 
 /-! ## 3. Memory -/
 

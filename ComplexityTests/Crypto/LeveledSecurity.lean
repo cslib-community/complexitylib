@@ -157,32 +157,20 @@ example : (leveledAdversary fixture (fun n => 2 * (n + 1)) (fun _ => 2) adversar
   isPPT_leveledAdversary encrypt_ppt adversary_ppt keyGen_ppt (by fun_prop) (by fun_prop)
 
 example (n : ℕ) :
-    Game.advantage
-      (ProbComp.eval (Encryption.game (fun n => keyGen fixture n 1) (encrypt fixture)
-        adversary false n))
-      (ProbComp.eval (Encryption.game (fun n => keyGen fixture n 1) (encrypt fixture)
-        adversary true n)) =
+    Encryption.advantage
+      (Encryption.game (fun n => keyGen fixture n 1) (encrypt fixture) adversary) n =
     4 * (dyadicSize (2 * 1) : NNReal) * dyadicSize 2 *
-      Game.advantage
-        (ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
-          (leveledAdversary fixture (fun _ => 2 * 1) (fun _ => 2) adversary) false n))
-        (ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
-          (leveledAdversary fixture (fun _ => 2 * 1) (fun _ => 2) adversary) true n)) :=
+      Encryption.advantage (Encryption.game fixture.keyGen fixture.encrypt
+        (leveledAdversary fixture (fun _ => 2 * 1) (fun _ => 2) adversary)) n :=
   advantage_game_eq_leveledAdversary fixture (fun _ => 1) (fun _ => 2) adversary n 2
     (secret_width n) le_rfl
 
 example (n : ℕ) :
-    Game.advantage
-      (ProbComp.eval (Encryption.game (fun n => keyGen fixture n 1) (encrypt fixture)
-        adversary false n))
-      (ProbComp.eval (Encryption.game (fun n => keyGen fixture n 1) (encrypt fixture)
-        adversary true n)) ≤
+    Encryption.advantage
+      (Encryption.game (fun n => keyGen fixture n 1) (encrypt fixture) adversary) n ≤
     16 * (2 * (1 : ℕ) + 1 : NNReal) * ((2 : ℕ) + 1) *
-      Game.advantage
-        (ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
-          (leveledAdversary fixture (fun _ => 2 * 1) (fun _ => 2) adversary) false n))
-        (ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
-          (leveledAdversary fixture (fun _ => 2 * 1) (fun _ => 2) adversary) true n)) :=
+      Encryption.advantage (Encryption.game fixture.keyGen fixture.encrypt
+        (leveledAdversary fixture (fun _ => 2 * 1) (fun _ => 2) adversary)) n :=
   advantage_game_le_mul_leveledAdversary fixture (fun _ => 1) (fun _ => 2) adversary n 2
     (secret_width n) le_rfl
 
@@ -222,50 +210,28 @@ example : Encryption.INDCPA (scheme forgetfulCircuits (fun n => n + 1)).keyGen
 
 -- Exact Gentry Theorem 4 reduction loss (without dyadicSize rounding) on the forgetful scheme.
 example (n : ℕ) :
-    Game.advantage
-      (ProbComp.eval (Encryption.game (scheme forgetfulCircuits (fun n => n + 1)).keyGen
-        (scheme forgetfulCircuits (fun n => n + 1)).encrypt adversary false n))
-      (ProbComp.eval (Encryption.game (scheme forgetfulCircuits (fun n => n + 1)).keyGen
-        (scheme forgetfulCircuits (fun n => n + 1)).encrypt adversary true n)) =
+    Encryption.advantage (Encryption.game (scheme forgetfulCircuits (fun n => n + 1)).keyGen
+      (scheme forgetfulCircuits (fun n => n + 1)).encrypt adversary) n =
     3 * (2 * ((n + 1 : ℕ) : NNReal)) * (2 : ℕ) *
-      Game.advantage
-        (ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt
-          (exactLeveledAdversary forgetful (fun n => 2 * (n + 1)) (fun _ => 2) adversary)
-          false n))
-        (ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt
-          (exactLeveledAdversary forgetful (fun n => 2 * (n + 1)) (fun _ => 2) adversary)
-          true n)) :=
+      Encryption.advantage (Encryption.game forgetful.keyGen forgetful.encrypt
+        (exactLeveledAdversary forgetful (fun n => 2 * (n + 1)) (fun _ => 2) adversary)) n :=
   advantage_scheme_eq_exactLeveledAdversary forgetfulCircuits (fun n => n + 1) (fun _ => 2)
     adversary n 2 (Nat.succ_pos n) (by decide) (secret_width n) le_rfl
 
 -- Unattenuated three-hop decomposition via exactLinkAdversary and zeroLinkAdversary.
 example (n : ℕ) :
-    Game.advantage
-      (ProbComp.eval (Encryption.game (scheme forgetfulCircuits (fun _ => 1)).keyGen
-        (scheme forgetfulCircuits (fun _ => 1)).encrypt adversary false n))
-      (ProbComp.eval (Encryption.game (scheme forgetfulCircuits (fun _ => 1)).keyGen
-        (scheme forgetfulCircuits (fun _ => 1)).encrypt adversary true n)) ≤
+    Encryption.advantage (Encryption.game (scheme forgetfulCircuits (fun _ => 1)).keyGen
+      (scheme forgetfulCircuits (fun _ => 1)).encrypt adversary) n ≤
     (2 * (1 : ℕ) : NNReal) * 2 *
-      Game.advantage
-        (ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt
-          (forgetful.exactLinkAdversary (fun _ => 2 * 1) (fun _ => 2)
-            (publicKeyGame forgetful adversary false)) false n))
-        (ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt
-          (forgetful.exactLinkAdversary (fun _ => 2 * 1) (fun _ => 2)
-            (publicKeyGame forgetful adversary false)) true n)) +
-    Game.advantage
-      (ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt
-        (zeroLinkAdversary forgetful (fun _ => 2 * 1) adversary) false n))
-      (ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt
-        (zeroLinkAdversary forgetful (fun _ => 2 * 1) adversary) true n)) +
+      Encryption.advantage (Encryption.game forgetful.keyGen forgetful.encrypt
+        (forgetful.exactLinkAdversary (fun _ => 2 * 1) (fun _ => 2)
+          (publicKeyGame forgetful adversary false))) n +
+    Encryption.advantage (Encryption.game forgetful.keyGen forgetful.encrypt
+      (zeroLinkAdversary forgetful (fun _ => 2 * 1) adversary)) n +
     (2 * (1 : ℕ) : NNReal) * 2 *
-      Game.advantage
-        (ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt
-          (forgetful.exactLinkAdversary (fun _ => 2 * 1) (fun _ => 2)
-            (publicKeyGame forgetful adversary true)) false n))
-        (ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt
-          (forgetful.exactLinkAdversary (fun _ => 2 * 1) (fun _ => 2)
-            (publicKeyGame forgetful adversary true)) true n)) :=
+      Encryption.advantage (Encryption.game forgetful.keyGen forgetful.encrypt
+        (forgetful.exactLinkAdversary (fun _ => 2 * 1) (fun _ => 2)
+          (publicKeyGame forgetful adversary true))) n :=
   advantage_scheme_le_exactLinkAdversary_add_zeroLinkAdversary forgetfulCircuits (fun _ => 1)
     (fun _ => 2) adversary n 2 (secret_width n) le_rfl
 
@@ -276,19 +242,12 @@ example : (modLeveledAdversary fixture (fun n => 2 * n) (fun n => 2 * (n + 1))
     (by fun_prop) (by fun_prop)
 
 example (n : ℕ) (htail : 3 + 2 * 1 + 2 ≤ 2 ^ n) :
-    Game.advantage
-      (ProbComp.eval (Encryption.game (scheme forgetfulCircuits (fun _ => 1)).keyGen
-        (scheme forgetfulCircuits (fun _ => 1)).encrypt adversary false n))
-      (ProbComp.eval (Encryption.game (scheme forgetfulCircuits (fun _ => 1)).keyGen
-        (scheme forgetfulCircuits (fun _ => 1)).encrypt adversary true n)) ≤
+    Encryption.advantage (Encryption.game (scheme forgetfulCircuits (fun _ => 1)).keyGen
+      (scheme forgetfulCircuits (fun _ => 1)).encrypt adversary) n ≤
     3 * (2 * (1 : ℕ) : NNReal) * 2 *
-      (Game.advantage
-        (ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt
-          (modLeveledAdversary forgetful (fun n => 2 * n) (fun _ => 2 * 1) (fun _ => 2) adversary)
-          false n))
-        (ProbComp.eval (Encryption.game forgetful.keyGen forgetful.encrypt
-          (modLeveledAdversary forgetful (fun n => 2 * n) (fun _ => 2 * 1) (fun _ => 2) adversary)
-          true n)) +
+      (Encryption.advantage (Encryption.game forgetful.keyGen forgetful.encrypt
+        (modLeveledAdversary forgetful (fun n => 2 * n) (fun _ => 2 * 1) (fun _ => 2)
+          adversary)) n +
         2 / 2 ^ n) :=
   advantage_scheme_le_modLeveledAdversary_two_mul forgetfulCircuits (fun _ => 1) (fun _ => 2)
     adversary n 2 (by decide) (by decide) (secret_width n) le_rfl htail

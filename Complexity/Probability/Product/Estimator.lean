@@ -409,8 +409,7 @@ theorem le_toOuterMeasure_productEstimate (μ : κ → PMF S) (A : κ → Set S)
         mul_le_mul_of_nonneg_left hm_lo (by linarith)
       have h2 : 0 ≤ ε * (ε * R) := mul_nonneg hε.le hεR
       linarith [hlt.1]
-    · have h1 : (1 + ε / 2) * m ≤ (1 + ε / 2) * ((1 + ε / 3) * R) :=
-        mul_le_mul_of_nonneg_left hm_hi (by linarith)
+    · have h1 : (1 + ε / 2) * m ≤ (1 + ε / 2) * ((1 + ε / 3) * R) := by gcongr
       have h2 : ε * (ε * R) ≤ 1 * (ε * R) := mul_le_mul_of_nonneg_right hε1 hεR
       linarith [hlt.2]
   have hcompl := toOuterMeasure_toReal_add_compl P E

@@ -32,6 +32,8 @@ hypotheses.
   `⟪y - Π y, z - Π y⟫ ≤ 0` for `z ∈ K`.
 * `Cslib.metricProjection_eq_iff`: a point of `K` is the projection iff it satisfies the
   variational inequality.
+* `Cslib.metricProjection_eq_iff_forall_norm_le`: a point of `K` is the projection iff it is a
+  nearest point of `K`.
 * `Cslib.metricProjection_eq_self`: points of `K` are fixed.
 * `Cslib.norm_metricProjection_sub_le`: the Pythagorean inequality `‖Π y - z‖ ≤ ‖y - z‖` for
   `z ∈ K`, [Hazan2022] Theorem 2.1.
@@ -95,6 +97,17 @@ theorem metricProjection_eq_iff (hne : K.Nonempty) (hc : IsComplete K) (hK : Con
   have hp : ‖p - x‖ ^ 2 ≤ 0 := by linarith
   have : ‖p - x‖ = 0 := by nlinarith [norm_nonneg (p - x)]
   exact sub_eq_zero.mp (norm_eq_zero.mp this)
+
+/-- A point of `K` is the projection of `y` iff it is a nearest point of `K` to `y`. -/
+theorem metricProjection_eq_iff_forall_norm_le (hne : K.Nonempty) (hc : IsComplete K)
+    (hK : Convex ℝ K) {y x : E} (hx : x ∈ K) :
+    metricProjection K y = x ↔ ∀ z ∈ K, ‖y - x‖ ≤ ‖y - z‖ := by
+  rw [metricProjection_eq_iff hne hc hK hx, ← norm_eq_iInf_iff_real_inner_le_zero hK hx]
+  have hbdd : BddBelow (Set.range fun w : K => ‖y - w‖) :=
+    ⟨0, Set.forall_mem_range.mpr fun _ => norm_nonneg _⟩
+  have : Nonempty K := ⟨⟨x, hx⟩⟩
+  refine ⟨fun h z hz => h ▸ ciInf_le hbdd ⟨z, hz⟩, fun h => ?_⟩
+  exact le_antisymm (le_ciInf fun w => h w w.2) (ciInf_le hbdd ⟨x, hx⟩)
 
 /-- Pythagoras for projections ([Hazan2022] Theorem 2.1): projecting onto `K` does not increase
 the distance to any point of `K`. -/

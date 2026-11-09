@@ -21,11 +21,13 @@ import Complexity.Computability.Complexity.Problems.IntegerProgramming
 import Complexity.Computability.Complexity.Problems.JobSequencing
 import Complexity.Computability.Complexity.Problems.Knapsack
 import Complexity.Computability.Complexity.Problems.MaxCut
+import Complexity.Computability.Complexity.Problems.MaxTwoSAT
 import Complexity.Computability.Complexity.Problems.Partition
 import Complexity.Computability.Complexity.Problems.PlanarPositiveOneInThreeSAT
 import Complexity.Computability.Complexity.Problems.PlanarThreeSATThree
 import Complexity.Computability.Complexity.Problems.SubsetSum
 import Complexity.Computability.Complexity.Problems.TSP
+import Complexity.Computability.Complexity.Problems.TwoSAT.Completeness
 import Complexity.Computability.Complexity.Problems.ThreeSAT
 import Complexity.Computability.Complexity.Problems.ThreeSATThree
 import Complexity.Computability.Complexity.Problems.VertexCover
@@ -37,7 +39,13 @@ import Complexity.Computability.Complexity.Problems.HornSAT
 import Complexity.Computability.Complexity.Problems.XORSAT
 import Complexity.Computability.PolyTime.CSP.Gadget
 import Complexity.Logics.Polymorphism.BooleanClone
+import Complexity.Logics.BooleanClone.Post
 import Complexity.Logics.Propositional.CNF.Majority
+import Complexity.Computability.Complexity.Problems.CSP.Incidence
+import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
+import Complexity.Computability.PolyTime.CSP.Table
+import Complexity.Logics.Propositional.CSP.Edge.Augmenting
+import Complexity.Logics.Propositional.CSP.Table.DeltaMatroid
 import Complexity.Foundations.Data.BitString.CyclicDifference
 import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
 import Complexity.Tactic.PolyTime
@@ -64,6 +72,11 @@ development imports the problems it uses. The first examples need only these:
 ```
 import Complexity.Computability.Complexity.CookLevin.Completeness
 import Complexity.Computability.Complexity.Problems.Clique
+import Complexity.Computability.Complexity.Problems.CSP.Incidence
+import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
+import Complexity.Computability.PolyTime.CSP.Table
+import Complexity.Logics.Propositional.CSP.Edge.Augmenting
+import Complexity.Logics.Propositional.CSP.Table.DeltaMatroid
 import Complexity.Foundations.Data.BitString.CyclicDifference
 import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
 import Complexity.Tactic.PolyTime
@@ -258,6 +271,17 @@ Here is the tree, with the reduction for each edge and the completeness theorem 
   3SAT to exact 3SAT ({name}`polyTimeReducible_ThreeSAT_ExactThreeSAT`,
   {name}`ExactThreeSAT_npComplete`) and to subset sum ({name}`polyTimeReducible_ThreeSAT_SubsetSum`,
   {name}`SubsetSum_npComplete`).
+* 3SAT reduces to maximum 2-satisfiability ({name}`polyTimeReducible_ThreeSAT_MaxTwoSAT`,
+  {name}`MaxTwoSAT_npComplete`): given clauses of at most two literals and a binary target `K`,
+  can some assignment satisfy `K` of them? Each clause of three literals becomes the ten-clause
+  gadget of Garey, Johnson and Stockmeyer ({name}`MaxTwoSAT.gadget`) with a fresh variable, whose
+  satisfied clauses depend only on four truth values ({name}`MaxTwoSAT.countP_gadget`). An
+  assignment satisfies at most seven of them ({name}`MaxTwoSAT.gadgetScore_le`), seven when the
+  source clause holds and the fresh variable is the majority of its literals
+  ({name}`MaxTwoSAT.gadgetScore_majority`), and at most six when it fails
+  ({name}`MaxTwoSAT.gadgetScore_false_le`). Short clauses
+  are first padded by repetition through {name}`toExactThreeSAT`. Plain 2-satisfiability, by
+  contrast, is in `NL` ({name}`TwoSAT.mem_NL`).
 * 3SAT reduces to {name}`ThreeSATThree` via {name}`toThreeSATThree`
   ({name}`ThreeSATThree_npComplete`). Its clauses have at most three literals, including binary
   clauses, and every variable has at most three literal occurrences. Repetitions within a clause
@@ -418,12 +442,19 @@ instantiates its local clauses in native polynomial time and uses the existing
 native 2SAT theorem; no solver hypothesis is needed.
 
 The positive-arity Boolean clone classification is proved in
-{module}`Complexity.Logics.Polymorphism.BooleanClone`:
+{module}`Complexity.Logics.BooleanClone.Classification`:
 {name}`Cslib.Logic.BooleanClone.classification` covers every positive arity.
 For a language lacking the six common operations,
 {name}`Cslib.Logic.PL.CSP.projection_or_negation_of_not_hasSchaeferPolymorphism`
 identifies every polymorphism as a projection or negated projection. This supplies
 the algebraic ingredient used by the native hardness application below.
+
+Post's functional-completeness criterion shares this same classification:
+{name}`Cslib.Logic.BooleanClone.functionallyComplete_iff` characterizes generating
+families by witnesses outside the five closed classes. Its completeness notion
+quantifies over positive input arities, with unary constant functions. In particular,
+NAND is complete in that sense; the stronger circuit notion also requires zero-input
+functions. No circuit-size bound is asserted by this criterion.
 
 For reductions between fixed Boolean languages,
 {name}`Cslib.Logic.PL.CSP.exists_ppGadget_of_polymorphisms` constructs equality-free
@@ -670,3 +701,119 @@ Twists, coordinate transport and feasible two-bit connectivity are also proved.
 The difference tests show that ternary NAE has an even delta-matroid difference
 relation. These are mathematical prerequisites; a planar embedding algorithm,
 general edge-CSP solver and full planar dichotomy remain to be formalized.
+
+
+# Indexed CSP and Table Operations
+
+{name}`Cslib.Logic.PL.CSP.Occurrence` preserves constraint and scope positions,
+including repeated variables and identical constraints. Given a supplied value
+`outside : D`, consistent valid local labels reconstruct precisely a global CSP
+model. Reconstruction uses `outside` at nonoccurring variables; this hypothesis
+matters when the domain may be empty. The native incidence graph retains one
+edge per argument; it never expands sparse binary names to a range.
+
+```lean
+open Cslib.Logic.PL in
+example {Rel V D : Type} (sem : Rel → List D → Bool)
+    (F : CSP Rel V) (outside : D) :
+    F.Satisfiable sem ↔ ∃ l : F.OccurrenceLabeling D,
+      CSP.ValidLabeling sem l ∧ CSP.ConsistentLabeling l :=
+  CSP.satisfiable_iff_exists_labeling sem outside
+```
+
+{name}`Cslib.Logic.PL.CSP.Table` is an explicit relation alphabet for the same CSP
+lists. Its semantics rejects malformed row widths. Local contraction projects
+outside coordinates and appends a connector bit for zero or one internal
+change. The local native certificate does not yet prove blossom correctness.
+Exactly-one generation takes a scope list whose length funds its quadratic
+output:
+
+```lean
+open Cslib.Logic.PL.CSP Cslib.Complexity.CSP in
+example (scope : List ℕ) (hs : scope ≠ []) :
+    ∃ row, (Table.exactlyOne scope).sem row = true :=
+  (Table.exists_sem_exactlyOne scope).mpr
+    (List.length_pos_iff.mpr hs)
+```
+
+```lean
+open Cslib.Complexity Cslib.Logic.PL.CSP
+  Cslib.Complexity.CSP Turing.MultiTapeTM in
+example : ComputableInPolyTime (Table.exactlyOne (V := ℕ))
+    (encList encNat) encTable :=
+  computableInPolyTime_tableExactlyOne
+```
+
+{name}`Cslib.Complexity.Graph.RotationSystem` retains indexed ends of loops and
+parallel edges, all face orbits including fixed points, and cyclic vertex orders.
+{name}`Cslib.Complexity.CSP.RespectsArgumentOrder` requires the constraint-side
+rotation to follow the scope's cyclic order. This rotation structure imposes no
+genus-zero condition and supplies no planarity recognizer or solver.
+
+
+# Delta-Matroid Closure for Local Contraction
+
+{name}`Cslib.BitString.IsDeltaMatroid.comp` and
+{name}`Cslib.BitString.IsEvenDeltaMatroid.comp` prove relational composition
+along finite shared coordinates. They require a nonempty output: nonempty input
+relations can disagree on the shared values. The proofs use the one-sided
+exchange axiom and permit empty external coordinate types.
+
+For the actual guarded table operation,
+{name}`Cslib.Logic.PL.CSP.Table.isEvenDeltaMatroid_contract` supplies the
+mathematical invariant used by blossom contraction. A feasible reference and
+distinct in-range internal positions are enough; the reference witnesses output
+nonemptiness internally:
+
+```lean
+open Cslib.BitString Cslib.Logic.PL.CSP in
+example {table : Table} {reference : List Bool} {positions : List ℕ}
+    (hR : IsEvenDeltaMatroid (booleanRelation Table.arity Table.sem table))
+    (hc : Table.canContract table reference positions = true) :
+    IsEvenDeltaMatroid (booleanRelation Table.arity Table.sem
+      (Table.contract table reference positions)) :=
+  Table.isEvenDeltaMatroid_contract hR hc
+```
+
+The new connector's exactly-one relation is even for every nonempty scope,
+with odd common parity. Empty scopes are excluded. These local mathematical
+closures do not prove whole-blossom lifting, the edge solver, or its native cost.
+
+
+# Prefix-Valid Edge-CSP Augmentation
+
+{name}`Cslib.Logic.PL.CSP.defects` counts distinct inconsistent variables.
+{name}`Cslib.Logic.PL.CSP.Walk.IsFWalk` requires distinct endpoints, consistent
+internal variables, and validity after every variable-ended prefix. An
+augmenting walk removes exactly two defects:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP in
+example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
+    (h : EdgeInstance F) {sem : Rel → List Bool → Bool}
+    {f : OccurrenceLabeling F Bool} {w : Walk F}
+    (hw : w.IsAugmenting sem f) :
+    (defects (w.flip f)).card + 2 = (defects f).card :=
+  hw.card_defects_flip_add_two h
+```
+
+For even delta-matroid constraints,
+{name}`Cslib.Logic.PL.CSP.EdgeInstance.augmentingWalk` is a total deterministic
+two-phase routine. Its correctness requires an improving valid comparison
+labeling as input; it does not search for that labeling. The combined exchange
+count is bounded by half the initial occurrence Hamming distance. No native
+machine-runtime bound is claimed yet.
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP in
+example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
+    (h : EdgeInstance F) {sem : Rel → List Bool → Bool}
+    (hM : EdgeInstance.EvenConstraints sem F)
+    {f : OccurrenceLabeling F Bool} :
+    IsOptimalLabeling sem f ↔ ValidLabeling sem f ∧
+      ¬ ∃ w : Walk F, w.IsAugmenting sem f :=
+  h.isOptimalLabeling_iff_no_augmentingWalk hM
+```
+
+The test module also rejects final-only validity. A complete solver still needs
+DAG/forest/blossom search and the native runtime certificate.

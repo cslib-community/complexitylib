@@ -19,6 +19,10 @@ At `n = 3` the Mignon–Ressayre point is the all-ones matrix with `-2` at `(0, 
 vanishes there and the Hessian has full rank `9`. Over `ZMod 2` the `3 × 3` permanent is the
 `3 × 3` determinant, so the bound fails at `n = 3`, where `(n - 1)! = 0`: the factorial hypothesis
 cannot be dropped.
+
+Grenet's theorem bounds the determinantal complexity of the `n × n` permanent by `2ⁿ - 1` over
+every commutative ring, so `5 ≤ dc(perm₃) ≤ 7` over `ℚ`. At `n = 2` it gives `3`, above the exact
+value `2`.
 -/
 
 namespace ComplexityTests.ArithmeticDeterminantalComplexity
@@ -108,5 +112,39 @@ example : HasDeterminantalRepresentation (genericMatrix (ZMod 2) 3).permanent 3 
   ⟨by
     rw [← Matrix.det_eq_permanent_of_charTwo]
     exact hasDeterminantalRepresentation_det 3, by omega, by decide⟩
+
+/-! ### Grenet's upper bound -/
+
+/-- The determinant of Grenet's `3 × 3` matrix of a `2 × 2` integer matrix is its permanent. -/
+example : (!![1, 2; 3, 4] : Matrix (Fin 2) (Fin 2) ℤ).grenetMatrix.det = 10 := by
+  rw [← Matrix.permanent_eq_det_grenetMatrix, Matrix.permanent_succ_row_zero, Fin.sum_univ_two,
+    Matrix.permanent_succ_row_zero, Matrix.permanent_succ_row_zero, Fin.sum_univ_one,
+    Fin.sum_univ_one]
+  simp [Matrix.permanent, Fin.succAbove]
+
+/-- The sandwich `5 ≤ dc(perm₃) ≤ 7` over `ℚ`: Mignon–Ressayre below, Grenet above. -/
+example : 5 ≤ determinantalComplexity (genericMatrix ℚ 3).permanent ∧
+    determinantalComplexity (genericMatrix ℚ 3).permanent ≤ 7 := by
+  refine ⟨le_determinantalComplexity_iff.2 fun m hm => ?_,
+    determinantalComplexity_permanent_le 3⟩
+  have := sq_le_two_mul_of_hasDeterminantalRepresentation_permanent (K := ℚ) (by norm_num) hm
+  exact_mod_cast (show 5 ≤ m by omega)
+
+/-- In characteristic zero, `n² ≤ 2 · dc(perm_n)` and `dc(perm_n) ≤ 2ⁿ - 1`. -/
+example (n : ℕ) : (n : ℕ∞) ^ 2 ≤ 2 * determinantalComplexity (genericMatrix ℚ n).permanent ∧
+    determinantalComplexity (genericMatrix ℚ n).permanent ≤ (2 ^ n - 1 : ℕ) :=
+  ⟨sq_le_two_mul_determinantalComplexity_permanent_of_charZero n,
+    determinantalComplexity_permanent_le n⟩
+
+/-- At `n = 0` the bound is `2⁰ - 1 = 0`: the empty permanent is `1`, the empty determinant. -/
+example : determinantalComplexity (genericMatrix ℚ 0).permanent ≤ 0 :=
+  determinantalComplexity_permanent_le 0
+
+/-- Grenet's projection holds over every commutative ring, for example `ℤ` and `ZMod 2`. -/
+example : IsProjection (genericMatrix ℤ 3).permanent (genericMatrix ℤ 7).det :=
+  isProjection_permanent_det_two_pow_sub_one 3
+
+example : determinantalComplexity (genericMatrix (ZMod 2) 4).permanent ≤ 15 :=
+  determinantalComplexity_permanent_le 4
 
 end ComplexityTests.ArithmeticDeterminantalComplexity

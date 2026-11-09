@@ -241,7 +241,7 @@ theorem mem_Icc_state_amsSketch_snd (hsgn : ∀ y, |sgn y| ≤ 1) (ω : Fin (2 *
     (by exact_mod_cast hs : ((s.length : ℕ) : ℤ) ≤ m))
 
 /-- The number of values of `2 r k` counters in `[-m, m]`. -/
-private theorem card_piFinset_Icc (m : ℕ) :
+theorem card_piFinset_Icc (m : ℕ) :
     (Fintype.piFinset fun _ : Fin (2 * r) => Fintype.piFinset fun _ : Fin k =>
       Icc (-(m : ℤ)) m).card = (2 * m + 1) ^ (2 * r * k) := by
   have : (↑m + 1 - -(m : ℤ)).toNat = 2 * m + 1 := by omega

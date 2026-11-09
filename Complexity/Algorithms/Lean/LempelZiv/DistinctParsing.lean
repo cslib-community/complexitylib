@@ -209,13 +209,7 @@ theorem mul_logb_sub_le_of_forall_mul_le {k c n : ℕ} (hk : 2 ≤ k)
   rcases le_or_gt t 0 with ht0 | ht0
   · nlinarith
   have hL0 : 0 ≤ L := logb_natCast_nonneg hk1 n
-  have hLpos : 0 < L := by
-    rcases hL0.lt_or_eq with h | h
-    · exact h
-    · exfalso
-      rw [← h] at ht
-      simp only [Real.logb_zero, sub_zero, zero_sub] at ht
-      linarith
+  have hLpos : 0 < L := by grind [Real.logb_zero, sub_zero, zero_sub]
   have hn1 : (1 : ℝ) < n := by
     by_contra h
     replace h := not_lt.1 h

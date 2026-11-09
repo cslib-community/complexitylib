@@ -217,8 +217,7 @@ theorem CNF.length_le_of_mem_prop64Leaves [Fintype V] [DecidableEq V]
     unfold CNF.prop64LeafClauseRatio
     calc L.card
         ≤ 2 * (∑ c ∈ range k, M ^ c) * Fintype.card V + 1 := hcard_le
-      _ ≤ 2 * (∑ c ∈ range k, M ^ c) * Fintype.card V + Fintype.card V :=
-          Nat.add_le_add_left hn1 _
+      _ ≤ 2 * (∑ c ∈ range k, M ^ c) * Fintype.card V + Fintype.card V := by gcongr
       _ = (2 * (∑ c ∈ range k, M ^ c) + 1) * Fintype.card V := by ring
 
 /-- **Proposition 6.4 polylogarithmic threshold-base bound (printed pp. 43–44):**
@@ -248,8 +247,7 @@ theorem CNF.exists_prop64ThresholdBase_le_mul_clog_sq {k : ℕ} (hk : 2 ≤ k) :
     have hM := hA (numGroups n) hs_pos
     calc countingThresholdBase k (numGroups n)
         ≤ A * numGroups n * (Nat.clog 2 (numGroups n) + 1) := hM
-      _ ≤ A * lam * (2 * lam) :=
-          Nat.mul_le_mul (Nat.mul_le_mul_left A hs_le_lam) hclog_s
+      _ ≤ A * lam * (2 * lam) := by gcongr
       _ = (2 * A) * lam ^ 2 := by ring
       _ ≤ max (2 * A) 2 * lam ^ 2 := Nat.mul_le_mul_right _ (le_max_left _ _)
 
@@ -276,8 +274,7 @@ theorem CNF.exists_prop64LeafClauseRatio_le_mul_clog_pow {k : ℕ} (hk : 2 ≤ k
           have hc_lt : c < k := mem_range.mp hc
           exact Nat.pow_le_pow_right hM1 (by omega)
       _ = k * M ^ (k - 1) := by rw [sum_const, card_range, smul_eq_mul]
-      _ ≤ k * (C_M * lam ^ 2) ^ (k - 1) :=
-          Nat.mul_le_mul_left k (Nat.pow_le_pow_left hM_bound (k - 1))
+      _ ≤ k * (C_M * lam ^ 2) ^ (k - 1) := by gcongr
       _ = k * (C_M ^ (k - 1) * lam ^ (2 * (k - 1))) := by
           rw [Nat.mul_pow, ← pow_mul]
   have hpow1 : 1 ≤ lam ^ (2 * (k - 1)) := Nat.one_le_pow _ lam hlam1

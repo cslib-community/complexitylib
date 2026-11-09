@@ -24,33 +24,38 @@ probability at least `1 - 2^{-q(n)}` and other instances with probability at mos
 
 This is the majority-vote error reduction of `BPP`
 (`Cslib.Complexity.mem_BPP_iff_forall_decidesWithErrorExponent`), carried out inside a quantum
-circuit, since acceptance is the measurement of a single qubit at the end. The amplified family
-(`Cslib.Quantum.UniformCircuitFamily.amplify`) runs `2 r` copies of the circuit side by side and
-takes a reversible majority vote of their answers. On inputs of length `n` its register holds the
-input, `2 r` blocks of the original width `w`, and the ancillas of a threshold counter:
+circuit, since acceptance is the measurement of a single qubit at the end. The threshold vote of a
+family (`Cslib.Quantum.UniformCircuitFamily.threshold`) runs `k` copies of the circuit side by side
+and reversibly decides whether more than `t` of them accept. On inputs of length `n` its register
+holds the input, `k` blocks of the original width `w`, and the ancillas of a threshold counter:
 
 1. CNOT gates copy the input into each block (`Cslib.Quantum.Amplify.copyCodes`);
 2. each block runs the original circuit, with its qubit numbers shifted
    (`Cslib.Quantum.Amplify.copiesCodes`);
-3. a reversible counter computes whether more than `r` of the blocks' first qubits are one
+3. a reversible counter computes whether more than `t` of the blocks' first qubits are one
    (`Cslib.Quantum.Counter.codes`);
 4. three CNOT gates swap that answer into qubit `0` (`Cslib.Quantum.GateCode.swapCodes`).
 
 The copies act on disjoint blocks, so their measurement outcomes are independent
 (`Cslib.Quantum.Circuit.matrix_flatMap_mapWires`), and the classical steps permute the outcomes. The
-acceptance probability of the amplified family is therefore the probability that a strict majority
-of `2 r` independent trials succeed, each with the original acceptance probability
-(`Cslib.Quantum.UniformCircuitFamily.acceptProb_amplify`). The exponential-moment bound
-`Cslib.sum_prod_le_of_card_filter_le` makes the error at most `(8 / 9) ^ r`, and `r = 6 q` gives
-`2^{-q}`.
+acceptance probability of the threshold vote is therefore the probability that more than `t` of `k`
+independent trials succeed, each with the original acceptance probability
+(`Cslib.Quantum.UniformCircuitFamily.acceptProb_threshold`). The amplified family
+(`Cslib.Quantum.UniformCircuitFamily.amplify`) is the strict majority `k = 2 r`, `t = r`. The
+exponential-moment bound `Cslib.sum_prod_le_of_card_filter_le` makes its error at most
+`(8 / 9) ^ r`, and `r = 6 q` gives `2^{-q}`. Other thresholds amplify any constant gap, also
+away from `1 / 2` (`Cslib.Complexity.mem_BQP_of_gap`).
 
 ## Main definitions
 
-* `Cslib.Quantum.Amplify.codes`, `Cslib.Quantum.Amplify.width`: the amplified circuit.
-* `Cslib.Quantum.UniformCircuitFamily.amplify`: the amplified family.
+* `Cslib.Quantum.Amplify.codes`, `Cslib.Quantum.Amplify.width`: the threshold circuit.
+* `Cslib.Quantum.UniformCircuitFamily.threshold`: the threshold vote of a family.
+* `Cslib.Quantum.UniformCircuitFamily.amplify`: the amplified family, a strict majority vote.
 
 ## Main results
 
+* `Cslib.Quantum.UniformCircuitFamily.acceptProb_threshold`: the acceptance probability of the
+  threshold vote is that of more than `t` successes among `k` independent copies.
 * `Cslib.Quantum.UniformCircuitFamily.acceptProb_amplify`: the acceptance probability of the
   amplified family is that of a strict majority of independent copies.
 * `Cslib.Complexity.mem_BQP_iff_forall_errorExponent`: error reduction for `BQP`.
@@ -81,51 +86,53 @@ def copyCodes (n w k : ℕ) : List GateCode :=
 def copiesCodes (w k : ℕ) (gs : List GateCode) : List GateCode :=
   (List.range k).flatMap fun j => gs.map (shift ((j + 1) * w))
 
-/-- The first ancilla of the counter, after the input block and `2 r` copies of width `w`. -/
-def base (w r : ℕ) : ℕ := (2 * r + 1) * w
+/-- The first ancilla of the counter, after the input block and `k` copies of width `w`. -/
+def base (w k : ℕ) : ℕ := (k + 1) * w
 
-/-- The register width of the amplified circuit: the blocks and the counter's ancillas. -/
-def width (w r : ℕ) : ℕ := base w r + 1 + (2 * r + 1) * (r + 1)
+/-- The register width of the threshold circuit: the blocks and the counter's ancillas, `t + 1`
+levels for each of its `k + 1` stages. -/
+def width (w k t : ℕ) : ℕ := base w k + 1 + (k + 1) * (t + 1)
 
-/-- The counter's qubit that reads whether more than `r` of the `2 r` copies accept. -/
-def answer (w r : ℕ) : ℕ := Counter.level (base w r) (r + 1) (2 * r) r
+/-- The counter's qubit that reads whether more than `t` of the `k` copies accept. -/
+def answer (w k t : ℕ) : ℕ := Counter.level (base w k) (t + 1) k t
 
-/-- **The amplified circuit**: copy the input of length `n` into `2 r` blocks of width `w`, run
-the circuit `gs` on each, count the blocks whose first qubit is one, and swap the strict majority
-into qubit `0`. -/
-def codes (n w r : ℕ) (gs : List GateCode) : List GateCode :=
-  copyCodes n w (2 * r) ++ (copiesCodes w (2 * r) gs ++
-    (Counter.codes (base w r) (r + 1) (fun s => (s + 1) * w) (2 * r) ++ swapCodes (answer w r)))
+/-- **The threshold circuit**: copy the input of length `n` into `k` blocks of width `w`, run the
+circuit `gs` on each, count the blocks whose first qubit is one, and swap into qubit `0` whether
+more than `t` of them are. -/
+def codes (n w k t : ℕ) (gs : List GateCode) : List GateCode :=
+  copyCodes n w k ++ (copiesCodes w k gs ++
+    (Counter.codes (base w k) (t + 1) (fun s => (s + 1) * w) k ++ swapCodes (answer w k t)))
 
-variable {n w r : ℕ}
+variable {n w k t : ℕ}
 
-theorem base_eq (w r : ℕ) : base w r = 2 * r * w + w := by
+theorem base_eq (w k : ℕ) : base w k = k * w + w := by
   unfold base
   rw [Nat.add_mul, Nat.one_mul]
 
-theorem block_lt {j i : ℕ} (hj : j < 2 * r) (hi : i < w) :
-    i + (j + 1) * w < base w r := by
-  have := Nat.mul_le_mul_right w (show j + 1 ≤ 2 * r by omega)
+theorem block_lt {j i : ℕ} (hj : j < k) (hi : i < w) : i + (j + 1) * w < base w k := by
+  have := Nat.mul_le_mul_right w (show j + 1 ≤ k by omega)
   rw [base_eq]
   omega
 
-theorem base_lt_width : base w r < width w r := by
+theorem base_lt_width : base w k < width w k t := by
   unfold width
   omega
 
-theorem answer_lt_width : answer w r < width w r := by
+theorem answer_lt_width : answer w k t < width w k t := by
   unfold answer width Counter.level
-  have : 2 * r * (r + 1) + r < (2 * r + 1) * (r + 1) := by
-    rw [Nat.add_mul (2 * r), Nat.one_mul]
+  have : k * (t + 1) + t < (k + 1) * (t + 1) := by
+    rw [Nat.add_mul k, Nat.one_mul]
     omega
   omega
 
-theorem base_le_answer : base w r ≤ answer w r := by
+theorem base_le_answer : base w k ≤ answer w k t := by
   unfold answer Counter.level
   omega
 
-/-- The blocks `1, …, 2 r` of the amplified register. -/
-def blocks (w r : ℕ) : Fin (2 * r) × Fin w ↪ Fin (width w r) where
+theorem le_base : w ≤ base w k := Nat.le_mul_of_pos_left w (Nat.succ_pos k)
+
+/-- The blocks `1, …, k` of the threshold register. -/
+def blocks (w k t : ℕ) : Fin k × Fin w ↪ Fin (width w k t) where
   toFun p := ⟨p.2 + (p.1 + 1) * w, (block_lt p.1.2 p.2.2).trans base_lt_width⟩
   inj' p p' h := by
     have h' : (p.2 : ℕ) + (p.1 + 1) * w = p'.2 + (p'.1 + 1) * w := congrArg Fin.val h
@@ -138,30 +145,30 @@ def blocks (w r : ℕ) : Fin (2 * r) × Fin w ↪ Fin (width w r) where
       Nat.div_eq_of_lt p'.2.2] at hdiv
     exact Prod.ext (Fin.ext (by omega)) (Fin.ext hmod)
 
-@[simp] theorem blocks_apply_val (p : Fin (2 * r) × Fin w) :
-    (blocks w r p : ℕ) = p.2 + (p.1 + 1) * w := rfl
+@[simp] theorem blocks_apply_val (p : Fin k × Fin w) :
+    (blocks w k t p : ℕ) = p.2 + (p.1 + 1) * w := rfl
 
-theorem block_le_width {j : ℕ} (hj : j < 2 * r) : (j + 1) * w + w ≤ width w r := by
-  have := Nat.mul_le_mul_right w (show j + 1 ≤ 2 * r by omega)
-  have : base w r < width w r := base_lt_width
+theorem block_le_width {j : ℕ} (hj : j < k) : (j + 1) * w + w ≤ width w k t := by
+  have := Nat.mul_le_mul_right w (show j + 1 ≤ k by omega)
+  have : base w k < width w k t := base_lt_width
   rw [base_eq] at this
   omega
 
-/-- Block `j` of the amplified register. -/
-def block (j : Fin (2 * r)) : Fin w ↪ Fin (width w r) :=
+/-- Block `j` of the threshold register. -/
+def block (j : Fin k) : Fin w ↪ Fin (width w k t) :=
   blockEmb ((j + 1) * w) (block_le_width j.2)
 
-theorem block_apply (j : Fin (2 * r)) (i : Fin w) : block j i = blocks w r (j, i) := rfl
+theorem block_apply (j : Fin k) (i : Fin w) : block (t := t) j i = blocks w k t (j, i) := rfl
 
 /-! ### The classical steps -/
 
 theorem isClassical_copyCodes (hn : n ≤ w) (hw : 0 < w) :
-    IsClassical (width w r) (copyCodes n w (2 * r)) := by
+    IsClassical (width w k t) (copyCodes n w k) := by
   refine IsClassical.flatMap fun j hj => fun g hg => ?_
   obtain ⟨i, hi, rfl⟩ := List.mem_map.mp hg
-  have hj : j < 2 * r := List.mem_range.mp hj
+  have hj : j < k := List.mem_range.mp hj
   have hi : i < n := List.mem_range.mp hi
-  have hlt := (block_lt (r := r) hj (show i < w by omega)).trans base_lt_width
+  have hlt := (block_lt (k := k) hj (show i < w by omega)).trans (base_lt_width (t := t))
   have : 0 < (j + 1) * w := Nat.mul_pos (by omega) hw
   refine ⟨rfl, by simp, ?_, ?_⟩
   · simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false, List.nodup_nil,
@@ -171,11 +178,11 @@ theorem isClassical_copyCodes (hn : n ≤ w) (hw : 0 < w) :
     omega
 
 /-- **The copy step puts the input in every block**, and leaves the other qubits unchanged. -/
-theorem readBit_classicalRun_copyCodes (hn : n ≤ w) (hw : 0 < w) (X : Fin (width w r) → Bool)
+theorem readBit_classicalRun_copyCodes (hn : n ≤ w) (hw : 0 < w) (X : Fin (width w k t) → Bool)
     (hX : ∀ p, n ≤ p → readBit X p = false) (p : ℕ) :
-    readBit (classicalRun (copyCodes n w (2 * r)) X) p =
-      if ∃ j < 2 * r, ∃ i < w, p = i + (j + 1) * w then readBit X (p % w) else readBit X p := by
-  have hread : ∀ g ∈ copyCodes n w (2 * r), ∀ g' ∈ copyCodes n w (2 * r), g.2.1 ∉ g'.2.2 := by
+    readBit (classicalRun (copyCodes n w k) X) p =
+      if ∃ j < k, ∃ i < w, p = i + (j + 1) * w then readBit X (p % w) else readBit X p := by
+  have hread : ∀ g ∈ copyCodes n w k, ∀ g' ∈ copyCodes n w k, g.2.1 ∉ g'.2.2 := by
     intro g hg g' hg'
     simp only [copyCodes, List.mem_flatMap, List.mem_map, List.mem_range] at hg hg'
     obtain ⟨j, hj, i, hi, rfl⟩ := hg
@@ -199,9 +206,9 @@ theorem readBit_classicalRun_copyCodes (hn : n ≤ w) (hw : 0 < w) (X : Fin (wid
       rw [foldl_xor_range n n _ _ fun i hi _ => by simp [hp' i hi]]
       simp [hp]
   simp only [hinner]
-  by_cases hp : ∃ j < 2 * r, ∃ i < w, p = i + (j + 1) * w
+  by_cases hp : ∃ j < k, ∃ i < w, p = i + (j + 1) * w
   · obtain ⟨j₀, hj₀, i₀, hi₀, rfl⟩ := hp
-    rw [ite_eq_left ⟨j₀, hj₀, i₀, hi₀, rfl⟩, foldl_xor_range (2 * r) j₀ _ _ fun j _ hne => ?_]
+    rw [ite_eq_left ⟨j₀, hj₀, i₀, hi₀, rfl⟩, foldl_xor_range k j₀ _ _ fun j _ hne => ?_]
     · have hw' : w ≤ (j₀ + 1) * w := Nat.le_mul_of_pos_left w (by omega)
       rw [hX _ (by omega), Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hi₀]
       by_cases hi : i₀ < n
@@ -214,42 +221,42 @@ theorem readBit_classicalRun_copyCodes (hn : n ≤ w) (hw : 0 < w) (X : Fin (wid
       simp only [Nat.add_mul_div_right _ _ hw, Nat.div_eq_of_lt hi₀,
         Nat.div_eq_of_lt (show i < w by omega)] at hmod
       omega
-  · rw [ite_eq_right hp, foldl_xor_range (2 * r) (2 * r) _ _ fun j hj _ => ?_]
+  · rw [ite_eq_right hp, foldl_xor_range k k _ _ fun j hj _ => ?_]
     · simp
     · simp only [Bool.and_eq_false_iff, decide_eq_false_iff_not]
       exact Or.inl fun ⟨i, hi, h⟩ => hp ⟨j, hj, i, by omega, h⟩
 
 theorem isClassical_counter_swap (hw : 0 < w) :
-    IsClassical (width w r) (Counter.codes (base w r) (r + 1) (fun s => (s + 1) * w) (2 * r) ++
-      swapCodes (answer w r)) := by
+    IsClassical (width w k t) (Counter.codes (base w k) (t + 1) (fun s => (s + 1) * w) k ++
+      swapCodes (answer w k t)) := by
   refine IsClassical.append.mpr ⟨Counter.isClassical_codes (fun s hs => ?_) le_rfl,
     isClassical_swapCodes ?_ answer_lt_width⟩
-  · have := block_lt (r := r) hs hw
+  · have := block_lt (k := k) hs hw
     omega
-  · have : 0 < base w r := Nat.mul_pos (by omega) hw
-    have := base_le_answer (w := w) (r := r)
+  · have : 0 < base w k := Nat.mul_pos (by omega) hw
+    have := base_le_answer (w := w) (k := k) (t := t)
     omega
 
-/-- **The classical steps accept by strict majority**: on a register whose qubits from the counter
-on are zero, the counter and the swap leave in qubit `0` whether more than `r` of the blocks' first
-qubits are one. -/
-theorem readBit_classicalRun_counter_swap (hw : 0 < w) (Y : Fin (width w r) → Bool)
-    (hY : ∀ p, base w r ≤ p → readBit Y p = false) :
-    readBit (classicalRun (Counter.codes (base w r) (r + 1) (fun s => (s + 1) * w) (2 * r) ++
-      swapCodes (answer w r)) Y) 0 =
-      decide (r < Counter.count Y (fun s => (s + 1) * w) (2 * r)) := by
+/-- **The classical steps vote by threshold**: on a register whose qubits from the counter on are
+zero, the counter and the swap leave in qubit `0` whether more than `t` of the blocks' first qubits
+are one. -/
+theorem readBit_classicalRun_counter_swap (hw : 0 < w) (Y : Fin (width w k t) → Bool)
+    (hY : ∀ p, base w k ≤ p → readBit Y p = false) :
+    readBit (classicalRun (Counter.codes (base w k) (t + 1) (fun s => (s + 1) * w) k ++
+      swapCodes (answer w k t)) Y) 0 =
+      decide (t < Counter.count Y (fun s => (s + 1) * w) k) := by
   rw [classicalRun_append, readBit_classicalRun_swapCodes _ answer_lt_width]
   · exact (Counter.readBit_classicalRun_codes (fun s hs => by
-      have := block_lt (r := r) hs hw; omega) le_rfl Y hY).2 r (by omega)
-  · have : 0 < base w r := Nat.mul_pos (by omega) hw
-    have := base_le_answer (w := w) (r := r)
+      have := block_lt (k := k) hs hw; omega) le_rfl Y hY).2 t (by omega)
+  · have : 0 < base w k := Nat.mul_pos (by omega) hw
+    have := base_le_answer (w := w) (k := k) (t := t)
     omega
 
 /-! ### The parallel copies -/
 
 theorem ofCodes_copiesCodes {gs : List GateCode} (hgs : ∀ g ∈ gs, WellFormed w g) :
-    Circuit.ofCodes (width w r) (copiesCodes w (2 * r) gs) =
-      ((List.finRange (2 * r)).map block).flatMap (Circuit.mapWires · (Circuit.ofCodes w gs)) := by
+    Circuit.ofCodes (width w k t) (copiesCodes w k gs) =
+      ((List.finRange k).map block).flatMap (Circuit.mapWires · (Circuit.ofCodes w gs)) := by
   rw [copiesCodes, Circuit.ofCodes_flatMap, ← List.map_coe_finRange_eq_range, List.flatMap_map,
     List.flatMap_map]
   congr 1
@@ -257,15 +264,16 @@ theorem ofCodes_copiesCodes {gs : List GateCode} (hgs : ∀ g ∈ gs, WellFormed
   exact Circuit.ofCodes_map_shift _ hgs
 
 theorem pairwise_block :
-    ((List.finRange (2 * r)).map (block (w := w))).Pairwise fun e e' => ∀ i i', e i ≠ e' i' := by
+    ((List.finRange k).map (block (w := w) (t := t))).Pairwise
+      fun e e' => ∀ i i', e i ≠ e' i' := by
   rw [List.pairwise_map]
   refine (List.nodup_finRange _).imp fun {j j'} hjj' i i' h => hjj' ?_
   rw [block_apply, block_apply] at h
-  exact congrArg Prod.fst ((blocks w r).injective h)
+  exact congrArg Prod.fst ((blocks w k t).injective h)
 
 end Amplify
 
-/-! ### Acceptance probability of the amplified circuit -/
+/-! ### Acceptance probability of the threshold circuit -/
 
 /-- Grouping a sum over tuples by a function of their entries. -/
 private theorem sum_mul_prod_fiberwise {α κ R : Type*} [Fintype α] [Fintype κ] [DecidableEq κ]
@@ -284,32 +292,34 @@ private theorem sum_mul_prod_fiberwise {α κ R : Type*} [Fintype α] [Fintype �
   rw [(mem_filter.mp hy).2]
 
 open Amplify in
-/-- **The acceptance probability of the amplified circuit** is the probability that more than `r`
-of `2 r` independent runs of the original circuit accept. -/
-theorem acceptProb_amplify_codes {n w r : ℕ} {gs : List GateCode} (hw : 0 < w) (hn : n ≤ w)
+/-- **The acceptance probability of the threshold circuit** is the probability that more than `t`
+of `k` independent runs of the original circuit accept. -/
+theorem acceptProb_threshold_codes {n w k t : ℕ} {gs : List GateCode} (hw : 0 < w) (hn : n ≤ w)
     (hgs : ∀ g ∈ gs, WellFormed w g) (x : List Bool) (hx : x.length = n) :
-    acceptProb (width w r) (codes n w r gs) x =
-      ∑ b : Fin (2 * r) → Bool with r < (univ.filter fun j => b j = true).card,
+    acceptProb (width w k t) (codes n w k t gs) x =
+      ∑ b : Fin k → Bool with t < (univ.filter fun j => b j = true).card,
         ∏ j, if b j then acceptProb w gs x else 1 - acceptProb w gs x := by
-  set N := width w r
+  set N := width w k t
   set C := Circuit.ofCodes w gs
   set a : (Fin w → Bool) → ℂ := fun z => (Circuit.run C (inputState w x)).ofLp z
-  set X := classicalRun (copyCodes n w (2 * r)) (inputState N x) with hXdef
+  set X := classicalRun (copyCodes n w k) (inputState N x) with hXdef
   have hgetD (p : ℕ) (hp : n ≤ p) : x.getD p false = false := by
     rw [List.getD_eq_getElem?_getD, List.getElem?_eq_none (by omega)]
     rfl
+  have hwN : w ≤ N := by
+    have := base_lt_width (w := w) (k := k) (t := t)
+    have : w ≤ base w k := le_base
+    omega
   have hX₀ (p : ℕ) : readBit (inputState N x) p = x.getD p false := by
     by_cases hp : p < N
     · rw [readBit_of_lt _ hp]
       rfl
     · rw [readBit_of_le _ (not_lt.mp hp), hgetD]
-      have := (base_lt_width (w := w) (r := r))
-      have : w ≤ base w r := by unfold base; exact Nat.le_mul_of_pos_left w (by omega)
       omega
-  have hXbit (p : ℕ) := readBit_classicalRun_copyCodes (r := r) hn hw (inputState N x)
+  have hXbit (p : ℕ) := readBit_classicalRun_copyCodes (k := k) (t := t) hn hw (inputState N x)
     (fun p hp => by rw [hX₀, hgetD p hp]) p
   -- the copy step puts the input in every block and keeps zeros from the counter on
-  have hXblock (j : Fin (2 * r)) : X ∘ block j = inputState w x := by
+  have hXblock (j : Fin k) : X ∘ block (t := t) j = inputState w x := by
     funext i
     have h := hXbit (i + (j + 1) * w)
     rw [ite_eq_left ⟨j, j.2, i, i.2, rfl⟩, Nat.add_mul_mod_self_right,
@@ -317,20 +327,20 @@ theorem acceptProb_amplify_codes {n w r : ℕ} {gs : List GateCode} (hw : 0 < w)
     rw [Function.comp_apply, show X (block j i) = readBit X (block j i) from
       (readBit_fin _ _).symm, block_apply, blocks_apply_val, h]
     rfl
-  have hXhigh (p : ℕ) (hp : base w r ≤ p) : readBit X p = false := by
+  have hXhigh (p : ℕ) (hp : base w k ≤ p) : readBit X p = false := by
     rw [hXbit, ite_eq_right, hX₀, hgetD]
-    · have : w ≤ base w r := by unfold base; exact Nat.le_mul_of_pos_left w (by omega)
+    · have : w ≤ base w k := le_base
       omega
     · rintro ⟨j, hj, i, hi, rfl⟩
       exact absurd hp (not_le.mpr (block_lt hj hi))
   -- the amplitudes of the copies are products
   have hamp (Y : Fin N → Bool) :
-      (Circuit.eval (Circuit.ofCodes N (copiesCodes w (2 * r) gs)) (ket X)).ofLp Y =
-        if AgreeOff (blocks w r) Y X then ∏ j, a (Y ∘ block j) else 0 := by
+      (Circuit.eval (Circuit.ofCodes N (copiesCodes w k gs)) (ket X)).ofLp Y =
+        if AgreeOff (blocks w k t) Y X then ∏ j, a (Y ∘ block (t := t) j) else 0 := by
     rw [Circuit.eval_ket_apply, ofCodes_copiesCodes hgs,
       Circuit.matrix_flatMap_mapWires _ _ pairwise_block]
-    have hcond : (∀ p, (∀ e ∈ (List.finRange (2 * r)).map block, ∀ i, e i ≠ p) → Y p = X p) ↔
-        AgreeOff (blocks w r) Y X := by
+    have hcond : (∀ p, (∀ e ∈ (List.finRange k).map (block (t := t)), ∀ i, e i ≠ p) →
+        Y p = X p) ↔ AgreeOff (blocks w k t) Y X := by
       simp only [List.mem_map, List.mem_finRange, true_and, forall_exists_index,
         forall_apply_eq_imp_iff, AgreeOff, Prod.forall, block_apply]
     rw [if_congr hcond rfl rfl, List.map_map, ← Fin.prod_univ_def]
@@ -344,15 +354,16 @@ theorem acceptProb_amplify_codes {n w r : ℕ} {gs : List GateCode} (hw : 0 < w)
     Circuit.measureProb_eval_ofCodes (isClassical_counter_swap hw), ← hXdef]
   simp only [hamp]
   have hterm (Y : Fin N → Bool) :
-      (if classicalRun (Counter.codes (base w r) (r + 1) (fun s => (s + 1) * w) (2 * r) ++
-          swapCodes (answer w r)) Y ∈ accepting N then
-        ‖(if AgreeOff (blocks w r) Y X then ∏ j, a (Y ∘ block j) else 0)‖ ^ 2 else 0) =
-      if AgreeOff (blocks w r) Y X then
-        (if r < (univ.filter fun j : Fin (2 * r) => (Y ∘ blocks w r) (j, ⟨0, hw⟩) = true).card
-          then (1 : ℝ) else 0) * ∏ j, ‖a (fun i => (Y ∘ blocks w r) (j, i))‖ ^ 2
+      (if classicalRun (Counter.codes (base w k) (t + 1) (fun s => (s + 1) * w) k ++
+          swapCodes (answer w k t)) Y ∈ accepting N then
+        ‖(if AgreeOff (blocks w k t) Y X then ∏ j, a (Y ∘ block (t := t) j) else 0)‖ ^ 2
+        else 0) =
+      if AgreeOff (blocks w k t) Y X then
+        (if t < (univ.filter fun j : Fin k => (Y ∘ blocks w k t) (j, ⟨0, hw⟩) = true).card
+          then (1 : ℝ) else 0) * ∏ j, ‖a (fun i => (Y ∘ blocks w k t) (j, i))‖ ^ 2
       else 0 := by
-    by_cases hY : AgreeOff (blocks w r) Y X
-    · have hYhigh (p : ℕ) (hp : base w r ≤ p) : readBit Y p = false := by
+    by_cases hY : AgreeOff (blocks w k t) Y X
+    · have hYhigh (p : ℕ) (hp : base w k ≤ p) : readBit Y p = false := by
         rw [← hXhigh p hp]
         by_cases hpN : p < N
         · rw [readBit_of_lt _ hpN, readBit_of_lt _ hpN]
@@ -361,11 +372,11 @@ theorem acceptProb_amplify_codes {n w r : ℕ} {gs : List GateCode} (hw : 0 < w)
           simp only [blocks_apply_val] at this
           exact absurd hp (not_le.mpr (this ▸ block_lt q.1.2 q.2.2))
         · rw [readBit_of_le _ (not_lt.mp hpN), readBit_of_le _ (not_lt.mp hpN)]
-      have hbit (j : Fin (2 * r)) : readBit Y ((j + 1) * w) = (Y ∘ blocks w r) (j, ⟨0, hw⟩) := by
-        rw [Function.comp_apply, ← readBit_fin Y (blocks w r (j, ⟨0, hw⟩)), blocks_apply_val]
+      have hbit (j : Fin k) : readBit Y ((j + 1) * w) = (Y ∘ blocks w k t) (j, ⟨0, hw⟩) := by
+        rw [Function.comp_apply, ← readBit_fin Y (blocks w k t (j, ⟨0, hw⟩)), blocks_apply_val]
         simp only [Nat.zero_add]
-      have hcount : Counter.count Y (fun s => (s + 1) * w) (2 * r) =
-          (univ.filter fun j : Fin (2 * r) => (Y ∘ blocks w r) (j, ⟨0, hw⟩) = true).card := by
+      have hcount : Counter.count Y (fun s => (s + 1) * w) k =
+          (univ.filter fun j : Fin k => (Y ∘ blocks w k t) (j, ⟨0, hw⟩) = true).card := by
         unfold Counter.count
         rw [← card_map Fin.valEmbedding]
         congr 1
@@ -377,10 +388,10 @@ theorem acceptProb_amplify_codes {n w r : ℕ} {gs : List GateCode} (hw : 0 < w)
           exact ⟨⟨s, hs⟩, (hbit ⟨s, hs⟩).symm.trans h, rfl⟩
         · rintro ⟨j, h, rfl⟩
           exact ⟨j.2, (hbit j).trans h⟩
-      have hacc : (classicalRun (Counter.codes (base w r) (r + 1) (fun s => (s + 1) * w) (2 * r) ++
-          swapCodes (answer w r)) Y ∈ accepting N) ↔
-          r < (univ.filter fun j : Fin (2 * r) => (Y ∘ blocks w r) (j, ⟨0, hw⟩) = true).card := by
-        have h0 : 0 < N := by have := base_lt_width (w := w) (r := r); omega
+      have hacc : (classicalRun (Counter.codes (base w k) (t + 1) (fun s => (s + 1) * w) k ++
+          swapCodes (answer w k t)) Y ∈ accepting N) ↔
+          t < (univ.filter fun j : Fin k => (Y ∘ blocks w k t) (j, ⟨0, hw⟩) = true).card := by
+        have h0 : 0 < N := by have := base_lt_width (w := w) (k := k) (t := t); omega
         rw [mem_accepting h0, ← readBit_fin (classicalRun _ Y) (⟨0, h0⟩ : Fin N)]
         change readBit _ 0 = true ↔ _
         rw [readBit_classicalRun_counter_swap hw Y hYhigh, hcount, decide_eq_true_iff]
@@ -388,16 +399,16 @@ theorem acceptProb_amplify_codes {n w r : ℕ} {gs : List GateCode} (hw : 0 < w)
       split_ifs <;> simp [block_apply, Function.comp_def]
     · simp [hY]
   simp only [hterm]
-  rw [sum_agreeOff_comp (blocks w r) X fun z =>
-    (if r < (univ.filter fun j : Fin (2 * r) => z (j, ⟨0, hw⟩) = true).card then (1 : ℝ) else 0) *
+  rw [sum_agreeOff_comp (blocks w k t) X fun z =>
+    (if t < (univ.filter fun j : Fin k => z (j, ⟨0, hw⟩) = true).card then (1 : ℝ) else 0) *
       ∏ j, ‖a (fun i => z (j, i))‖ ^ 2]
-  rw [Fintype.sum_equiv (Equiv.curry (Fin (2 * r)) (Fin w) Bool) (fun z =>
-    (if r < (univ.filter fun j => z (j, ⟨0, hw⟩) = true).card then (1 : ℝ) else 0) *
+  rw [Fintype.sum_equiv (Equiv.curry (Fin k) (Fin w) Bool) (fun z =>
+    (if t < (univ.filter fun j => z (j, ⟨0, hw⟩) = true).card then (1 : ℝ) else 0) *
       ∏ j, ‖a (fun i => z (j, i))‖ ^ 2) (fun y =>
-    (if r < (univ.filter fun j => y j ⟨0, hw⟩ = true).card then (1 : ℝ) else 0) *
+    (if t < (univ.filter fun j => y j ⟨0, hw⟩ = true).card then (1 : ℝ) else 0) *
       ∏ j, ‖a (y j)‖ ^ 2) fun z => rfl]
   refine (sum_mul_prod_fiberwise (fun z : Fin w → Bool => z ⟨0, hw⟩) (fun z => ‖a z‖ ^ 2)
-    fun b => if r < (univ.filter fun j => b j = true).card then (1 : ℝ) else 0).trans ?_
+    fun b => if t < (univ.filter fun j => b j = true).card then (1 : ℝ) else 0).trans ?_
   -- the outcome probabilities of one copy
   have hone : ∑ z, ‖a z‖ ^ 2 = 1 := by
     rw [← measureProb, measureProb_univ, Circuit.norm_run, one_pow]
@@ -422,7 +433,7 @@ theorem acceptProb_amplify_codes {n w r : ℕ} {gs : List GateCode} (hw : 0 < w)
 
 namespace Amplify
 
-/-! ### The amplified circuit is constructed in polynomial time -/
+/-! ### The threshold circuit is constructed in polynomial time -/
 
 variable {γ : Type} {enc : γ ↪ List Bool}
 
@@ -449,29 +460,31 @@ theorem computableInPolyTime_stage {base T b s : γ → ℕ}
   simp only [Counter.stage, Counter.level, Counter.below]
   fun_prop
 
-theorem computableInPolyTime_counter {w r : γ → ℕ}
-    (hw : ComputableInPolyTime w enc encUnary) (hr : ComputableInPolyTime r enc encUnary) :
-    ComputableInPolyTime (fun c => Counter.codes (base (w c) (r c)) (r c + 1)
-      (fun s => (s + 1) * w c) (2 * r c)) enc (encList encGateCode) := by
+theorem computableInPolyTime_counter {w k t : γ → ℕ}
+    (hw : ComputableInPolyTime w enc encUnary) (hk : ComputableInPolyTime k enc encUnary)
+    (ht : ComputableInPolyTime t enc encUnary) :
+    ComputableInPolyTime (fun c => Counter.codes (base (w c) (k c)) (t c + 1)
+      (fun s => (s + 1) * w c) (k c)) enc (encList encGateCode) := by
   have hstage := computableInPolyTime_stage (enc := encPair enc encUnary)
-    (base := fun p => base (w p.1) (r p.1)) (T := fun p => r p.1 + 1)
+    (base := fun p => base (w p.1) (k p.1)) (T := fun p => t p.1 + 1)
     (b := fun p => (p.2 + 1) * w p.1) (s := fun p => p.2)
     (by unfold base; fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
-  have hbase : ComputableInPolyTime (fun c => base (w c) (r c)) enc encUnary := by
+  have hbase : ComputableInPolyTime (fun c => base (w c) (k c)) enc encUnary := by
     unfold base
     fun_prop
   unfold Counter.codes
   fun_prop
 
-theorem computableInPolyTime_codes {n w r : γ → ℕ} {gs : γ → List GateCode}
+theorem computableInPolyTime_codes {n w k t : γ → ℕ} {gs : γ → List GateCode}
     (hn : ComputableInPolyTime n enc encUnary) (hw : ComputableInPolyTime w enc encUnary)
-    (hr : ComputableInPolyTime r enc encUnary)
+    (hk : ComputableInPolyTime k enc encUnary) (ht : ComputableInPolyTime t enc encUnary)
     (hgs : ComputableInPolyTime gs enc (encList encGateCode)) :
-    ComputableInPolyTime (fun c => codes (n c) (w c) (r c) (gs c)) enc (encList encGateCode) := by
-  have h₁ := computableInPolyTime_copyCodes hn hw (k := fun c => 2 * r c) (by fun_prop)
-  have h₂ := computableInPolyTime_copiesCodes hw (k := fun c => 2 * r c) (by fun_prop) hgs
-  have h₃ := computableInPolyTime_counter hw hr
-  have h₄ : ComputableInPolyTime (fun c => swapCodes (answer (w c) (r c))) enc
+    ComputableInPolyTime (fun c => codes (n c) (w c) (k c) (t c) (gs c)) enc
+      (encList encGateCode) := by
+  have h₁ := computableInPolyTime_copyCodes hn hw hk
+  have h₂ := computableInPolyTime_copiesCodes hw hk hgs
+  have h₃ := computableInPolyTime_counter hw hk ht
+  have h₄ : ComputableInPolyTime (fun c => swapCodes (answer (w c) (k c) (t c))) enc
       (encList encGateCode) := by
     simp only [swapCodes, answer, Counter.level, base]
     fun_prop
@@ -484,23 +497,25 @@ namespace UniformCircuitFamily
 
 open Amplify
 
-/-- **The amplified family**: on inputs of length `n`, `2 r(n)` copies of the family's circuit run
-side by side, and a reversible majority vote of their answers is measured. -/
-def amplify (F : UniformCircuitFamily) (r : ℕ → ℕ)
-    (hr : ComputableInPolyTime r encUnary encUnary) : UniformCircuitFamily where
-  width n := Amplify.width (F.width n) (r n)
-  gates n := codes n (F.width n) (r n) (F.gates n)
+/-- **The threshold vote of a family**: on inputs of length `n`, `k(n)` copies of the family's
+circuit run side by side, and the final measurement reads whether more than `t(n)` of them
+accept. -/
+def threshold (F : UniformCircuitFamily) (k t : ℕ → ℕ)
+    (hk : ComputableInPolyTime k encUnary encUnary)
+    (ht : ComputableInPolyTime t encUnary encUnary) : UniformCircuitFamily where
+  width n := Amplify.width (F.width n) (k n) (t n)
+  gates n := codes n (F.width n) (k n) (t n) (F.gates n)
   computableInPolyTime_width := by
     have := F.computableInPolyTime_width
     simp only [Amplify.width, base]
     fun_prop
   computableInPolyTime_gates :=
-    computableInPolyTime_codes (by fun_prop) F.computableInPolyTime_width hr
+    computableInPolyTime_codes (by fun_prop) F.computableInPolyTime_width hk ht
       F.computableInPolyTime_gates
   le_width n := by
     have := F.le_width n
-    have : F.width n ≤ base (F.width n) (r n) := Nat.le_mul_of_pos_left _ (by omega)
-    have := base_lt_width (w := F.width n) (r := r n)
+    have : F.width n ≤ base (F.width n) (k n) := le_base
+    have := base_lt_width (w := F.width n) (k := k n) (t := t n)
     omega
   width_pos n := Nat.lt_of_le_of_lt (Nat.zero_le _) base_lt_width
   wellFormed n g hg := by
@@ -513,6 +528,22 @@ def amplify (F : UniformCircuitFamily) (r : ℕ → ℕ)
       exact (F.wellFormed n g hg').shift (block_le_width (List.mem_range.mp hj))
     · exact (isClassical_counter_swap hw g hg).2
 
+/-- **The acceptance probability of the threshold vote** is the probability that more than `t(n)`
+of `k(n)` independent runs of the family accept, on inputs of length `n`. -/
+theorem acceptProb_threshold (F : UniformCircuitFamily) {k t : ℕ → ℕ}
+    (hk : ComputableInPolyTime k encUnary encUnary)
+    (ht : ComputableInPolyTime t encUnary encUnary) (x : List Bool) :
+    (F.threshold k t hk ht).acceptProb x =
+      ∑ b : Fin (k x.length) → Bool with t x.length < (univ.filter fun j => b j = true).card,
+        ∏ j, if b j then F.acceptProb x else 1 - F.acceptProb x :=
+  acceptProb_threshold_codes (F.width_pos _) (F.le_width _) (F.wellFormed _) x rfl
+
+/-- **The amplified family**: on inputs of length `n`, `2 r(n)` copies of the family's circuit run
+side by side, and a reversible strict majority vote of their answers is measured. -/
+def amplify (F : UniformCircuitFamily) (r : ℕ → ℕ)
+    (hr : ComputableInPolyTime r encUnary encUnary) : UniformCircuitFamily :=
+  F.threshold (fun n => 2 * r n) r (by fun_prop) hr
+
 /-- **The acceptance probability of the amplified family** is the probability that more than
 `r(n)` of `2 r(n)` independent runs of the family accept, on inputs of length `n`. -/
 theorem acceptProb_amplify (F : UniformCircuitFamily) {r : ℕ → ℕ}
@@ -520,7 +551,7 @@ theorem acceptProb_amplify (F : UniformCircuitFamily) {r : ℕ → ℕ}
     (F.amplify r hr).acceptProb x =
       ∑ b : Fin (2 * r x.length) → Bool with r x.length < (univ.filter fun j => b j = true).card,
         ∏ j, if b j then F.acceptProb x else 1 - F.acceptProb x :=
-  acceptProb_amplify_codes (F.width_pos _) (F.le_width _) (F.wellFormed _) x rfl
+  F.acceptProb_threshold _ hr x
 
 /-- The trials of the majority vote: success with probability `p`. -/
 private theorem sum_bernoulli (p : ℝ) : ∑ c : Bool, (if c then p else 1 - p) = 1 := by

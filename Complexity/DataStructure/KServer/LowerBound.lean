@@ -313,11 +313,7 @@ theorem exists_shadow_le {s₀ : Fin k → α} (hs₀ : Function.Injective s₀)
         (∑ i, M.dist (s₀ i) z) + pathLen M z rest := by
   set S := insert z (Finset.univ.image s₀)
   have hzS : z ∈ S := Finset.mem_insert_self _ _
-  have hreq : ∀ r ∈ z :: rest, r ∈ S := by
-    intro r hr
-    rcases List.mem_cons.1 hr with rfl | hr
-    · exact hzS
-    · exact hrest r hr
+  have hreq : ∀ r ∈ z :: rest, r ∈ S := by grind
   have hspec := fun i => shadowStates_spec M S hreq hs₀ (range_iff_insert_image hz)
     ((range_iff_insert_image hz (s₀ i)).1 ⟨i, rfl⟩).1 (hz i)
   have hsum : ∑ i, holeCost M z (s₀ i) (z :: rest) =
@@ -353,10 +349,7 @@ private noncomputable def uncovered (S : Finset α) (x₀ : α) (c : Fin k → �
 private theorem uncovered_spec {S : Finset α} (hS : S.card = k + 1) (x₀ : α) (c : Fin k → α) :
     uncovered S x₀ c ∈ S ∧ ∀ i, c i ≠ uncovered S x₀ c := by
   classical
-  have hlt : (Finset.univ.image c).card < S.card := by
-    have := Finset.card_image_le (s := (Finset.univ : Finset (Fin k))) (f := c)
-    simp only [Finset.card_univ, Fintype.card_fin] at this
-    omega
+  have hlt : (Finset.univ.image c).card < S.card := by grind [Finset.card_univ, Fintype.card_fin]
   obtain ⟨x, hxS, hx⟩ := Finset.exists_mem_notMem_of_card_lt_card hlt
   have h : ∃ x ∈ S, ∀ i, c i ≠ x :=
     ⟨x, hxS, fun i hi => hx (Finset.mem_image.2 ⟨i, Finset.mem_univ _, hi⟩)⟩

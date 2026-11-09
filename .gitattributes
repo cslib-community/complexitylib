@@ -1,10 +1,12 @@
 # Generated root import aggregators are sorted lists of one-line imports. (The test library has
-# no aggregator: Lake builds it from a glob, see `lakefile.toml`.)
-# Union merge avoids spurious 3-line context conflicts when concurrent PRs add
-# imports in the same alphabetical neighborhood; `lake exe mk_all --check` in
-# merge-queue CI still enforces canonical sort order.
-Complexity.lean merge=union
-abstracts/ComplexityAbstracts.lean merge=union
+# no aggregator: Lake builds it from a glob, see `lakefile.toml`.) `leanagg` names the opt-in local
+# driver of `scripts/resolve_aggregate_conflict.py`, which merges import lines as sets and writes
+# them sorted; enable it once per clone with
+# `git config merge.leanagg.driver "python3 scripts/resolve_aggregate_conflict.py %O %A %B"`.
+# GitHub ignores custom drivers (and `merge=union`), and git without the driver configured uses
+# its ordinary text merge. `lake exe mk_all --check` in CI pins the content.
+Complexity.lean merge=leanagg
+abstracts/ComplexityAbstracts.lean merge=leanagg
 # `references.bib` names the opt-in local driver of `scripts/resolve_bib_conflict.py`, which merges
 # entries by key. Where `merge.bibkeys.driver` is not configured, git uses its ordinary text merge.
 references.bib merge=bibkeys

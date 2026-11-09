@@ -41,8 +41,8 @@ These are Dósa and Sgall's bonuses `0.4`, `0.1`, `3/5 * (a - 1/6)` and `0`.
   items, adding the bins holding one item larger than `C / 2`, and accounting for at most one
   bin with two or more items less than `2/3` full and at most one bin holding a single item of
   size at most `C / 2`, the total weight plus `8 * C` is at least `10 * C * FF`. The exception is
-  a First Fit packing in which all bins but one hold a single item larger than `C / 2`; there
-  `FF ≤ OPT + 1` directly, since no two such items share a bin.
+  a First Fit packing in which all bins but at most one hold a single item larger than `C / 2`;
+  there `FF ≤ OPT + 1` directly, since no two such items share a bin.
 
 Dósa and Sgall's sketch in their Section 1.2 leaves three bins unaccounted for and concludes
 `FF ≤ 1.7 * OPT + 3`; they remark that examining those bins brings the constant down to `0.6`.
@@ -134,9 +134,7 @@ theorem sum_map_firstFitWeight_le {C : ℕ} {b : List ℕ} (hb : b.sum ≤ C) :
     simp only [List.sum_cons, List.map_cons] at hs hm
     have hrest := sum_map_firstFitBonus_le (C := C) (l := b.erase L) (by omega)
     have h1 : firstFitBonus C L = 4 * C := by simp [firstFitBonus, hL]
-    have h2 : firstFitBonus C (b.erase L).sum ≤ C := by
-      unfold firstFitBonus
-      split_ifs <;> omega
+    have h2 : firstFitBonus C (b.erase L).sum ≤ C := by grind [firstFitBonus]
     omega
   · push Not at hL
     have := sum_map_firstFitBonus_le_three_mul (C := C) (l := b) (fun a ha => by

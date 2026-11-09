@@ -73,4 +73,21 @@ example : ∃ F : (Fin 80 → Fin 33) → Fin 2 → ℝ,
   refine ⟨j, le_of_eq_of_le ?_ hj⟩
   norm_num
 
+/-- The largest admissible `ε = 1 / 18` needs only `36` rows over `33` items for `k = 2`, and the
+noise bound is `2 / (1024 / 18) = 9 / 256`. -/
+example : ∃ F : (Fin 36 → Fin 33) → Fin 2 → ℝ,
+    (∀ (x : Fin 36 → Fin 33) (σ : Equiv.Perm (Fin 36)), F (x ∘ σ) = F x) ∧
+    (∀ x y : Fin 36 → Fin 33, HammingAdjacent x y → ∀ j, |F x j - F y j| ≤ 1) ∧
+    ∀ M : (Fin 36 → Fin 33) → PMF (Fin 2 → ℝ), DifferentiallyPrivate HammingAdjacent M (1 / 18) 0 →
+      ∃ x, 2⁻¹ < (M x).toOuterMeasure {a | ∃ j, 9 / 256 ≤ |a j - F x j|} := by
+  obtain ⟨F, hsymm, hsens, hF⟩ := exists_symmetric_query_forall_exists_half_lt
+    (ι := Fin 36) (X := Fin 33) (k := 2) le_rfl (by simp) (ε := 1 / 18) (by norm_num) le_rfl
+    (by simp only [Fintype.card_fin]; norm_num)
+  refine ⟨F, hsymm, hsens, fun M hM => ?_⟩
+  obtain ⟨x, hx⟩ := hF M hM
+  refine ⟨x, hx.trans_le ((M x).toOuterMeasure.mono fun a ha => ?_)⟩
+  obtain ⟨j, hj⟩ := ha
+  refine ⟨j, le_of_eq_of_le ?_ hj⟩
+  norm_num
+
 end ComplexityTests.Privacy.SmallUniverse

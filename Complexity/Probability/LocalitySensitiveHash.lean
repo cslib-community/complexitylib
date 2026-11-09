@@ -50,9 +50,10 @@ inequality is `collisionProb_triangle`.
 
 Probabilities are real numbers, the `toReal` of `PMF.toOuterMeasure`, so that the S-curve can be
 manipulated by ordinary real analysis. No finiteness of the seed space is assumed; independent
-draws use `Cslib.Probability.PMF.iid`. These are information-theoretic statements: the
-`(c, r)`-approximate near-neighbour data structure built from them, its `n ^ ρ` query time and the
-cost of evaluating the hashes are not formalized here.
+draws use `Cslib.Probability.PMF.iid`. These are information-theoretic statements. The
+`(c, r)`-approximate near-neighbour structure built from them, with its failure bound and
+parameters, is in `Complexity.DataStructure.NearNeighbor.LSH`; its `n ^ ρ` query time and the
+cost of evaluating the hashes are not formalized.
 
 ## Main definitions
 
@@ -135,10 +136,8 @@ theorem collisionProb_triangle (seed : PMF ι) (hash : ι → X → Y) (x y z : 
     have hset : {i | hash i a = hash i b}ᶜ = {i | hash i a ≠ hash i b} := rfl
     rw [hset] at h
     linarith
-  rw [hcompl, hcompl, hcompl, ← ENNReal.toReal_add (PMF.toOuterMeasure_ne_top _ _)
-    (PMF.toOuterMeasure_ne_top _ _)]
-  refine ENNReal.toReal_mono (ENNReal.add_ne_top.2 ⟨PMF.toOuterMeasure_ne_top _ _,
-    PMF.toOuterMeasure_ne_top _ _⟩) ?_
+  rw [hcompl, hcompl, hcompl]
+  refine ENNReal.toReal_le_add ?_ (PMF.toOuterMeasure_ne_top _ _) (PMF.toOuterMeasure_ne_top _ _)
   have hsub : {i | hash i x ≠ hash i z} ⊆
       {i | hash i x ≠ hash i y} ∪ {i | hash i y ≠ hash i z} := by
     intro i hi
@@ -169,6 +168,13 @@ theorem IsUniversalHash.isLocalitySensitive {seed : PMF ι} {hash : ι → X →
     IsLocalitySensitive (collisionProb seed hash) (· = ·) (· ≠ ·) 1 ε.toReal where
   le_of_near x x' h := by rw [h, collisionProb_self]
   le_of_far x x' h := ENNReal.toReal_mono hε (hh x x' h)
+
+/-- A near pair is not far when `p₂ < p₁`. -/
+theorem IsLocalitySensitive.not_far {prob : X → X → ℝ} {near far : X → X → Prop} {p₁ p₂ : ℝ}
+    (h : IsLocalitySensitive prob near far p₁ p₂) (hp : p₂ < p₁) {x x' : X} (hx : near x x') :
+    ¬ far x x' := fun hf => by
+  have := (h.le_of_near x x' hx).trans (h.le_of_far x x' hf)
+  linarith
 
 /-! ### The AND construction -/
 
@@ -336,8 +342,7 @@ theorem exists_sCurve_gap {p₁ p₂ δ δ' : ℝ} (hp₂ : 0 ≤ p₂) (hp₁�
     have hdiv : c / p₁ ^ k * p₂ ^ k = c * (p₂ / p₁) ^ k := by
       rw [div_pow]
       field_simp
-    calc (⌈Real.log δ⁻¹ / p₁ ^ k⌉₊ : ℝ) * p₂ ^ k ≤ (c / p₁ ^ k + 1) * p₂ ^ k :=
-          mul_le_mul_of_nonneg_right hL (pow_nonneg hp₂ k)
+    calc (⌈Real.log δ⁻¹ / p₁ ^ k⌉₊ : ℝ) * p₂ ^ k ≤ (c / p₁ ^ k + 1) * p₂ ^ k := by gcongr
       _ = c * (p₂ / p₁) ^ k + p₂ ^ k := by rw [add_mul, one_mul, hdiv]
       _ ≤ c * (δ' / (2 * (c + 1))) + δ' / 2 := by gcongr
       _ ≤ δ' / 2 + δ' / 2 := by

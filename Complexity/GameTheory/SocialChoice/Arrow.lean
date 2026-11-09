@@ -7,10 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Init
-public import Mathlib.Data.Fintype.Card
+public import Complexity.GameTheory.SocialChoice.Ranking
 import Mathlib.Data.Fintype.EquivFin
-import Mathlib.Order.Extension.Linear
 
 /-!
 # Arrow's impossibility theorem
@@ -43,19 +41,14 @@ three alternatives and of IIA are needed: majority rule for three voters on two 
 Pareto, IIA and not dictatorial, and the Borda count for two voters on three alternatives is
 Pareto and not dictatorial (so, by the theorem, not IIA).
 
-**Representation.** Rankings are bundled structures holding one relation, not instances of
-Mathlib's `LinearOrder`. A profile assigns different orders on the same type `A` to different
-voters, and the proof builds new rankings pointwise (`Ranking.toTop`, `Ranking.toBottom`).
-Typeclass-carried orders, which also hold decidability and `min`/`max` data, would make both
-awkward. Bridge instances (`IsStrictTotalOrder A r.Prefers`, `IsPreorder A R.AtLeast`,
-`Std.Total R.AtLeast`) give access to Mathlib's unbundled order API.
+**Representation.** The preference model (`Ranking`, `WeakRanking`, `Profile`) is in
+`Complexity.GameTheory.SocialChoice.Ranking`, which explains why rankings are bundled structures
+rather than instances of Mathlib's `LinearOrder`.
 
 ## Main definitions
 
-* `Ranking`: a strict linear order on the alternatives, with `Ranking.toTop` and
-  `Ranking.toBottom` moving one alternative to the top or the bottom.
-* `WeakRanking`: a complete preorder, with strict part `WeakRanking.Prefers`.
-* `Profile`, `SocialWelfareFunction`.
+* `SocialWelfareFunction`: maps every `Profile` of rankings to a `WeakRanking` (both from
+  `Complexity.GameTheory.SocialChoice.Ranking`).
 * `SocialWelfareFunction.IsPareto`, `SocialWelfareFunction.IsIIA`,
   `SocialWelfareFunction.IsDictator`, `SocialWelfareFunction.IsDictatorial`,
   `SocialWelfareFunction.dictatorship`.
@@ -81,201 +74,7 @@ public section
 
 namespace Cslib.GameTheory.SocialChoice
 
-/-- A **ranking** of the alternatives `A`: a strict linear order, read `r.Prefers a b` as
-"`a` is ranked above `b`". -/
-@[ext] structure Ranking (A : Type*) where
-  /-- `Prefers a b`: the alternative `a` is ranked strictly above `b`. -/
-  Prefers : A → A → Prop
-  irrefl : ∀ a, ¬ Prefers a a
-  trans : ∀ a b c, Prefers a b → Prefers b c → Prefers a c
-  total : ∀ a b, a ≠ b → Prefers a b ∨ Prefers b a
-
-/-- A **weak ranking** of the alternatives `A`: a complete preorder, read `R.AtLeast a b` as
-"`a` is ranked at least as high as `b`". Ties are allowed. -/
-@[ext] structure WeakRanking (A : Type*) where
-  /-- `AtLeast a b`: the alternative `a` is ranked at least as high as `b`. -/
-  AtLeast : A → A → Prop
-  total : ∀ a b, AtLeast a b ∨ AtLeast b a
-  trans : ∀ a b c, AtLeast a b → AtLeast b c → AtLeast a c
-
 variable {A : Type*}
-
-namespace Ranking
-
-variable (r : Ranking A)
-
-theorem asymm {a b : A} (h : r.Prefers a b) : ¬ r.Prefers b a :=
-  fun h' => r.irrefl a (r.trans a b a h h')
-
-theorem ne_of_prefers {a b : A} (h : r.Prefers a b) : a ≠ b := by
-  rintro rfl
-  exact r.irrefl a h
-
-theorem prefers_of_not_prefers {a b : A} (hab : a ≠ b) (h : ¬ r.Prefers a b) : r.Prefers b a :=
-  (r.total a b hab).resolve_left h
-
-theorem not_prefers_iff {a b : A} (hab : a ≠ b) : ¬ r.Prefers a b ↔ r.Prefers b a :=
-  ⟨r.prefers_of_not_prefers hab, r.asymm⟩
-
-instance isStrictTotalOrder (r : Ranking A) : IsStrictTotalOrder A r.Prefers where
-  irrefl := r.irrefl
-  trans := r.trans
-  trichotomous a b hab hba := by
-    by_contra h
-    exact (r.total a b h).elim hab hba
-
-/-- The reverse ranking. -/
-def reverse : Ranking A where
-  Prefers a b := r.Prefers b a
-  irrefl := r.irrefl
-  trans _ _ _ hab hbc := r.trans _ _ _ hbc hab
-  total a b h := (r.total a b h).symm
-
-@[simp] theorem reverse_prefers {a b : A} : r.reverse.Prefers a b ↔ r.Prefers b a := Iff.rfl
-
-/-- Move `b` to the top of `r`, keeping the order of the other alternatives. -/
-def toTop (b : A) : Ranking A where
-  Prefers x y := x ≠ y ∧ (x = b ∨ (y ≠ b ∧ r.Prefers x y))
-  irrefl x h := h.1 rfl
-  trans x y z := by
-    rintro ⟨hxy, hx | ⟨hy, h1⟩⟩ ⟨hyz, hy' | ⟨hz, h2⟩⟩
-    · exact absurd (hx.trans hy'.symm) hxy
-    · exact ⟨by rintro rfl; exact hz hx, Or.inl hx⟩
-    · exact absurd hy' hy
-    · exact ⟨r.ne_of_prefers (r.trans _ _ _ h1 h2), Or.inr ⟨hz, r.trans _ _ _ h1 h2⟩⟩
-  total x y hxy := by
-    by_cases hx : x = b
-    · exact Or.inl ⟨hxy, Or.inl hx⟩
-    by_cases hy : y = b
-    · exact Or.inr ⟨hxy.symm, Or.inl hy⟩
-    rcases r.total x y hxy with h | h
-    · exact Or.inl ⟨hxy, Or.inr ⟨hy, h⟩⟩
-    · exact Or.inr ⟨hxy.symm, Or.inr ⟨hx, h⟩⟩
-
-/-- Move `b` to the bottom of `r`, keeping the order of the other alternatives. -/
-def toBottom (b : A) : Ranking A := (r.reverse.toTop b).reverse
-
-/-- `b` is ranked above every other alternative. -/
-@[expose] def IsTop (b : A) : Prop := ∀ x, x ≠ b → r.Prefers b x
-
-/-- `b` is ranked below every other alternative. -/
-@[expose] def IsBottom (b : A) : Prop := ∀ x, x ≠ b → r.Prefers x b
-
-theorem toTop_prefers_of_ne {b x y : A} (hx : x ≠ b) (hy : y ≠ b) :
-    (r.toTop b).Prefers x y ↔ r.Prefers x y := by
-  constructor
-  · rintro ⟨-, h | ⟨-, h⟩⟩
-    · exact absurd h hx
-    · exact h
-  · intro h
-    exact ⟨r.ne_of_prefers h, Or.inr ⟨hy, h⟩⟩
-
-theorem toBottom_prefers_of_ne {b x y : A} (hx : x ≠ b) (hy : y ≠ b) :
-    (r.toBottom b).Prefers x y ↔ r.Prefers x y :=
-  r.reverse.toTop_prefers_of_ne hy hx
-
-theorem isTop_toTop (b : A) : (r.toTop b).IsTop b :=
-  fun _ hx => ⟨hx.symm, Or.inl rfl⟩
-
-theorem isBottom_toBottom (b : A) : (r.toBottom b).IsBottom b :=
-  r.reverse.isTop_toTop b
-
-/-- If `b` is at the top of two rankings, they agree on every comparison involving `b`. -/
-theorem prefers_iff_of_isTop {s : Ranking A} {b x y : A} (hr : r.IsTop b) (hs : s.IsTop b)
-    (hxy : x = b ∨ y = b) : r.Prefers x y ↔ s.Prefers x y := by
-  rcases hxy with rfl | rfl
-  · by_cases hy : y = x
-    · subst hy; exact iff_of_false (r.irrefl _) (s.irrefl _)
-    · exact iff_of_true (hr y hy) (hs y hy)
-  · by_cases hx : x = y
-    · subst hx; exact iff_of_false (r.irrefl _) (s.irrefl _)
-    · exact iff_of_false (r.asymm (hr x hx)) (s.asymm (hs x hx))
-
-/-- If `b` is at the bottom of two rankings, they agree on every comparison involving `b`. -/
-theorem prefers_iff_of_isBottom {s : Ranking A} {b x y : A} (hr : r.IsBottom b)
-    (hs : s.IsBottom b) (hxy : x = b ∨ y = b) : r.Prefers x y ↔ s.Prefers x y :=
-  r.reverse.prefers_iff_of_isTop (s := s.reverse) hr hs hxy.symm
-
-/-- Every type carries a ranking, by the Szpilrajn extension theorem
-(`extend_partialOrder`). -/
-theorem nonempty (A : Type*) : Nonempty (Ranking A) := by
-  have : IsPartialOrder A (· = ·) :=
-    { refl := fun _ => rfl, trans := fun _ _ _ => Eq.trans, antisymm := fun _ _ h _ => h }
-  obtain ⟨s, hs, -⟩ := extend_partialOrder (α := A) (· = ·)
-  exact ⟨{ Prefers := fun a b => s a b ∧ a ≠ b
-           irrefl := fun a h => h.2 rfl
-           trans := fun a b c hab hbc => ⟨hs.trans _ _ _ hab.1 hbc.1, fun hac => by
-             subst hac; exact hab.2 (hs.antisymm _ _ hab.1 hbc.1)⟩
-           total := fun a b hab => (hs.total a b).imp (⟨·, hab⟩) (⟨·, hab.symm⟩) }⟩
-
-instance (A : Type*) : Nonempty (Ranking A) := Ranking.nonempty A
-
-end Ranking
-
-namespace WeakRanking
-
-variable (R : WeakRanking A)
-
-/-- The strict part of a weak ranking: `a` is ranked strictly above `b`. -/
-@[expose] def Prefers (a b : A) : Prop := ¬ R.AtLeast b a
-
-theorem refl (a : A) : R.AtLeast a a := (R.total a a).elim id id
-
-instance isPreorder (R : WeakRanking A) : IsPreorder A R.AtLeast where
-  refl := R.refl
-  trans := R.trans
-
-instance instTotal (R : WeakRanking A) : Std.Total R.AtLeast := ⟨R.total⟩
-
-theorem atLeast_of_prefers {a b : A} (h : R.Prefers a b) : R.AtLeast a b :=
-  (R.total a b).resolve_right h
-
-theorem prefers_irrefl (a : A) : ¬ R.Prefers a a := fun h => h (R.refl a)
-
-theorem prefers_asymm {a b : A} (h : R.Prefers a b) : ¬ R.Prefers b a :=
-  fun h' => h' (R.atLeast_of_prefers h)
-
-theorem prefers_trans {a b c : A} (hab : R.Prefers a b) (hbc : R.Prefers b c) :
-    R.Prefers a c :=
-  fun hca => hbc (R.trans _ _ _ hca (R.atLeast_of_prefers hab))
-
-/-- `b` is ranked strictly above every other alternative. -/
-@[expose] def IsTop (b : A) : Prop := ∀ x, x ≠ b → R.Prefers b x
-
-/-- `b` is ranked strictly below every other alternative. -/
-@[expose] def IsBottom (b : A) : Prop := ∀ x, x ≠ b → R.Prefers x b
-
-end WeakRanking
-
-/-- A ranking, viewed as a weak ranking with no ties. -/
-@[expose] def Ranking.toWeakRanking (r : Ranking A) : WeakRanking A where
-  AtLeast a b := a = b ∨ r.Prefers a b
-  total a b := by
-    by_cases h : a = b
-    · exact Or.inl (Or.inl h)
-    · exact (r.total a b h).imp Or.inr Or.inr
-  trans a b c := by
-    rintro (rfl | hab) (rfl | hbc)
-    · exact Or.inl rfl
-    · exact Or.inr hbc
-    · exact Or.inr hab
-    · exact Or.inr (r.trans _ _ _ hab hbc)
-
-@[simp] theorem Ranking.toWeakRanking_atLeast (r : Ranking A) {a b : A} :
-    r.toWeakRanking.AtLeast a b ↔ a = b ∨ r.Prefers a b := Iff.rfl
-
-@[simp] theorem Ranking.toWeakRanking_prefers (r : Ranking A) {a b : A} :
-    r.toWeakRanking.Prefers a b ↔ r.Prefers a b := by
-  constructor
-  · intro h
-    have hab : a ≠ b := fun hab => h (Or.inl hab.symm)
-    exact (r.not_prefers_iff hab.symm).1 fun h' => h (Or.inr h')
-  · rintro h (hba | hba)
-    · exact r.ne_of_prefers h hba.symm
-    · exact r.asymm h hba
-
-/-- A **preference profile**: one ranking for each voter. -/
-abbrev Profile (V A : Type*) := V → Ranking A
 
 /-- A **social welfare function** aggregates every preference profile into a weak ranking. -/
 abbrev SocialWelfareFunction (V A : Type*) := Profile V A → WeakRanking A
@@ -557,10 +356,11 @@ theorem IsDictator.unique [Nontrivial A] {i j : V} (hi : F.IsDictator i) (hj : F
   obtain ⟨s, hs⟩ : ∃ s : Ranking A, s.Prefers a b := by
     rcases r.total a b hab with h | h
     · exact ⟨r, h⟩
-    · exact ⟨r.reverse, h⟩
+    · exact ⟨r.reverse, r.reverse_prefers.2 h⟩
   let P : Profile V A := fun k => if k = i then s else s.reverse
   have h1 : (F P).Prefers a b := hi P a b (by simp only [P, ite_true]; exact hs)
-  have h2 : (F P).Prefers b a := hj P b a (by simp only [P, Ne.symm hij, ite_false]; exact hs)
+  have h2 : (F P).Prefers b a := hj P b a (by
+    simp only [P, Ne.symm hij, ite_false]; exact s.reverse_prefers.2 hs)
   exact (F P).prefers_asymm h1 h2
 
 /-- **Arrow's impossibility theorem** ([Arrow1951], [Geanakoplos2005]): with finitely many

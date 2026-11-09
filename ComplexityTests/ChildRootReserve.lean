@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of finite rooted child-cost reserves)
-import Complexity.Foundations.Probability.NormalizedAtomRows.RootReserveOutput
+import Complexity.Computability.LogSpaceDerandomization.NormalizedAtomRows.RootReserveOutput
 import all ComplexityTests.ReserveOutput
 import all ComplexityTests.HierarchyChildError
 

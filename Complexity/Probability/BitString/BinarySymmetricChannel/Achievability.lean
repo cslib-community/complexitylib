@@ -54,8 +54,10 @@ Hoeffding's inequality bounds `T` by `exp (-2 (ρ - p) ^ 2 n)` and the entropy b
 for all large `n` (`Cslib.BitString.eventually_exists_code_decodingError_le`).
 
 The theorems cover nearest codeword (maximum-likelihood) decoders only. They prove the
-achievability half of the theorem for `BSC_p`; the converse (rates above `1 - h₂(p)` fail), general
-discrete memoryless channels and explicit or efficiently decodable capacity-achieving codes are not
+achievability half of the theorem for `BSC_p`. The converses (rates above `1 - h₂(p)` fail) are in
+`Complexity.Probability.BitString.BinarySymmetricChannel.Converse` and
+`Complexity.Probability.BitString.BinarySymmetricChannel.StrongConverse`; general discrete
+memoryless channels and explicit or efficiently decodable capacity-achieving codes are not
 formalized here.
 
 ## Main results
