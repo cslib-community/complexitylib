@@ -261,8 +261,7 @@ theorem exists_computableInO_simulate (F : NetworkFamily encN value Admissible c
       have h1 : (scheduleCount F.heads c.2 + 1) * (a * (sz c + 1) ^ d + R c) ≤
           2 * (a * (sz c + 1) ^ d + U c) * (scheduleCount F.heads c.2 * E c) := by
         have hAE : a * (sz c + 1) ^ d ≤ a * (sz c + 1) ^ d * E c := Nat.le_mul_of_pos_right _ (hE c)
-        calc _ ≤ (scheduleCount F.heads c.2 + 1) * (a * (sz c + 1) ^ d + U c * E c) :=
-              Nat.mul_le_mul_left _ (by omega)
+        calc _ ≤ (scheduleCount F.heads c.2 + 1) * (a * (sz c + 1) ^ d + U c * E c) := by gcongr
           _ ≤ (2 * scheduleCount F.heads c.2) * ((a * (sz c + 1) ^ d + U c) * E c) :=
               Nat.mul_le_mul (by have := hcnt1 c; omega)
                 ((Nat.add_le_add_right hAE (U c * E c)).trans_eq (Nat.add_mul _ _ _).symm)
@@ -300,11 +299,9 @@ theorem exists_computableInO_simulate (F : NetworkFamily encN value Admissible c
   have hVk (c : List Bool × ℕ) : V c ≤ k * (c.1.length + c.2 + 1) ^ k := by
     have hszc : sz c + 1 ≤ 2 * (c.1.length + c.2 + 1) := by enc_len [sz]
     calc V c ≤ k₀ * (sz c + 1) ^ d₀ := hV c
-      _ ≤ k₀ * (2 * (c.1.length + c.2 + 1)) ^ d₀ :=
-          Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hszc _)
+      _ ≤ k₀ * (2 * (c.1.length + c.2 + 1)) ^ d₀ := by gcongr
       _ = k₀ * 2 ^ d₀ * (c.1.length + c.2 + 1) ^ d₀ := by rw [mul_pow, mul_assoc]
-      _ ≤ k * (c.1.length + c.2 + 1) ^ k :=
-          Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right (by omega) (by omega))
+      _ ≤ k * (c.1.length + c.2 + 1) ^ k := by gcongr <;> omega
   refine ⟨k, csim.computes.mono_le (fun c => ?_) fun c => (hspace c).trans (hVk c)⟩
   have hEk : E c ≤ 2 ^ (k * c.2 / Nat.sqrt (Nat.log 2 c.2)) :=
     Nat.pow_le_pow_right (by norm_num)
@@ -510,8 +507,7 @@ theorem exists_computableInO_countWith (F : NetworkFamily encN value Admissible 
           2 ^ (C * T x.length / Nat.sqrt (Nat.log 2 (T x.length)))) := by
         have := Nat.add_le_add hfirst (hpost'.trans hsecond)
         nlinarith only [this]
-      _ ≤ (a + 1) * 2 ^ (C' * T x.length / Nat.sqrt (Nat.log 2 (T x.length))) :=
-        Nat.mul_le_mul_left _ hmain
+      _ ≤ (a + 1) * 2 ^ (C' * T x.length / Nat.sqrt (Nat.log 2 (T x.length))) := by gcongr
       _ ≤ 2 ^ ((a + 2) * (C' + 1) * T x.length /
           Nat.sqrt (Nat.log 2 (T x.length))) := by
         have := Nat.mul_two_pow_div_sqrt_log_two_add_le

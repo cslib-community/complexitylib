@@ -310,8 +310,7 @@ theorem hardwiredExperiment_nextBitPredictor_pure (D : Design ℓ n a m)
     PMF.bind_bind,
     Function.comp_apply, PMF.pure_bind]
   rw [PMF.bind_comm]
-  congr 1
-  funext r
+  congr 1 with r : 1
   rw [PMF.bind_comm]
   rfl
 

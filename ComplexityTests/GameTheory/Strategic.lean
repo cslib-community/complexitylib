@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import Complexity.GameTheory.Strategic.Mixed
+import Complexity.GameTheory.Strategic.NoRegret
 import Complexity.GameTheory.Strategic.Potential
 import Complexity.GameTheory.Strategic.Smooth
 
@@ -14,7 +16,9 @@ The Prisoner's Dilemma of [MondererShapley1996], Section 2, in cost form, has an
 and therefore a pure Nash equilibrium, mutual defection, at which the social cost exceeds that of
 mutual cooperation. Matching pennies has no pure Nash equilibrium, so it has neither the finite
 improvement property nor a generalized ordinal potential. A pure Nash equilibrium is a coarse
-correlated equilibrium as a point mass.
+correlated equilibrium as a point mass. In matching pennies, uniform mixing is a coarse correlated
+equilibrium. A pure equilibrium played in every round has no regret, so Proposition 3.1 of
+[Roughgarden2013CS364A], Lecture 17, recovers it from its time average.
 -/
 
 namespace ComplexityTests.GameTheory.Strategic
@@ -110,5 +114,33 @@ example : ¬ pennies.HasFIP := fun h =>
 example : ¬ ∃ Φ, pennies.IsGeneralizedOrdinalPotential Φ := fun ⟨_, hΦ⟩ =>
   let ⟨s, hs⟩ := hΦ.exists_isPureNash
   pennies_not_isPureNash s hs
+
+/-- The uniform mixed strategies of matching pennies. -/
+noncomputable def penniesUniform : Convexity.StdSimplex ℝ (Fin 2 → Bool) :=
+  productDist (p := fun _ _ => 1 / 2) (fun _ _ => by norm_num)
+    (fun _ => by rw [Fintype.sum_bool]; norm_num)
+
+/-- Uniform mixing is a coarse correlated equilibrium of matching pennies, which has no pure Nash
+equilibrium. -/
+theorem pennies_isCoarseCorrelatedEquilibrium_uniform :
+    pennies.IsCoarseCorrelatedEquilibrium penniesUniform := by
+  intro i a
+  rw [penniesUniform, productDist_sum, productDist_sum,
+    ← (piFinTwoEquiv fun _ => Bool).symm.sum_comp, ← (piFinTwoEquiv fun _ => Bool).symm.sum_comp]
+  simp only [Fintype.sum_prod_type, Fintype.sum_bool, productWeight, Fin.prod_univ_two,
+    piFinTwoEquiv_symm_apply]
+  fin_cases i <;> cases a <;> norm_num [pennies, Function.update, Fin.cons_zero, Fin.cons_one]
+
+/-- A pure Nash equilibrium played in every round has no regret, and Proposition 3.1 recovers it
+as a coarse correlated equilibrium of the time average. -/
+example (T : ℕ) (hT : 0 < T) (i : Fin 2) (a : Bool) :
+    (timeAverage (fun _ => Convexity.StdSimplex.single fun _ => true) T hT).weights.sum
+        (fun s w => w * pd.cost i s)
+      ≤ (timeAverage (fun _ => Convexity.StdSimplex.single fun _ => true) T hT).weights.sum
+          (fun s w => w * pd.cost i (Function.update s i a)) + 0 / T := by
+  refine CostGame.timeAverage_le_add (G := pd) hT (R := fun _ => 0) (fun j b => ?_) i a
+  simp only [Convexity.StdSimplex.weights_single, Finsupp.sum_single_index, zero_mul, one_mul,
+    add_zero]
+  exact Finset.sum_le_sum fun _ _ => pd_isPureNash_defect j b
 
 end ComplexityTests.GameTheory.Strategic

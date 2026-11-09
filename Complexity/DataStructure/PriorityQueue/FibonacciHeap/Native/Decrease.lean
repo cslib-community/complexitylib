@@ -152,10 +152,7 @@ private theorem cutCascade_domains {n K w base : ℕ} {mem : Memory.State}
   have hsafe := cutSafe_of_cascading hfit halloc hc hv_fn hpar
   obtain ⟨rtail, hcirc, hperm⟩ := hc.roots
   obtain ⟨hdp, hdp2, hdp_le, hroots, hnr, hnm⟩ := hc.cut_pre hperm hv_fn hpar
-  have hv_ne : ∀ T ∈ ts, v ∈ T.nodes → T.root ≠ v := by
-    intro T hT _ he
-    have := he ▸ (hc.valid T hT).2.1
-    omega
+  have hv_ne : ∀ T ∈ ts, v ∈ T.nodes → T.root ≠ v := by grind
   have hwp : Record.wp (Cell.ok n) w (cut v p) (fun _ g' _ =>
       ∃ ts', Cascading n K (abs n ((layout n base).abs mem)) (view n g') v m (some p) ts' ∧
         (∃ T ∈ ts', T.root = v) ∧ (∀ T ∈ ts', p ∈ T.nodes → T.root ≠ v) ∧

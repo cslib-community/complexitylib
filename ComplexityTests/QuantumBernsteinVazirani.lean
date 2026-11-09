@@ -11,7 +11,7 @@ strings `{0,1}^2`. -/
 
 namespace ComplexityTests.QuantumBernsteinVazirani
 
-open Cslib Cslib.Quantum Cslib.BitString
+open Cslib Cslib.Quantum Cslib.QueryComplexity Cslib.BitString
 
 /-- The positions `Fin 4` identified with `{0,1}^2`. -/
 noncomputable def e4 : Fin 4 ≃ (Fin 2 → Bool) := Fintype.equivOfCardEq (by simp)

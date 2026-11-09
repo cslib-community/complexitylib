@@ -286,8 +286,7 @@ theorem degree_le_spectralSensitivity_sq (f : BooleanFunction n) :
       exact sum_nonneg fun i _ => hv _
   rw [← hS]
   calc (#S : ℝ) = √(#S : ℝ) ^ 2 := (Real.sq_sqrt (Nat.cast_nonneg _)).symm
-    _ ≤ spectralSensitivity f ^ 2 :=
-        pow_le_pow_left₀ (Real.sqrt_nonneg _) h 2
+    _ ≤ spectralSensitivity f ^ 2 := by gcongr
 
 end QueryComplexity
 
